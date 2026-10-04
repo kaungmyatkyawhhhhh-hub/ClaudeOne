@@ -649,11 +649,12 @@ menuButton.Activated:Connect(function()
 end)
 UIBus.OpenGenetics.Event:Connect(open)
 
--- First join: reveal right away.
+-- First join: reveal right after the player presses Play on the menu screen.
 task.spawn(function()
 	local data = ClientData.Get()
+	UIBus.WaitForMenu()
 	if not data.onboarding.geneticsRevealed then
-		task.wait(1)
+		task.wait(0.6)
 		open()
 	end
 end)

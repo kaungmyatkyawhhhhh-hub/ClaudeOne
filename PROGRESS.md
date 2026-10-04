@@ -19,12 +19,63 @@
 > (step 5). Badges for the big titles need ids from the Roblox website (step 6). The popup-fix request from before
 > never reached me (step 0).
 >
-> **Not started:** menu screen + first-5-minutes onboarding, coach quests, spotting/arm wrestling.
+> **Not started:** coach quests, spotting/arm wrestling. (Menu + onboarding: see the newest entry below.)
 
 All game code lives in this repo under `src/` and Rojo syncs it into the Studio place (GYM ARC,
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
 Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
 Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## Menu screen + first 5 minutes onboarding (2026-10-04) ✅ (needs your playtest)
+
+**Built**
+- **Menu screen** (`MenuClient`, new): shows the moment you join and covers data loading ("Loading..." until your
+  save is in). The camera stands in the entrance hall and slowly drifts left/right in front of your character, who
+  faces the camera with the gym visible through the doorway behind. Panel on the right: "GYM ARC", "Everyone
+  starts tiny.", **Play**, and for returning players **Titles** and **Settings** (they open the existing Title Book
+  and Settings panel). New players get the simplified menu: Play only. Movement is frozen and the side menu is
+  hidden until Play; then the camera glides behind your character (now facing the gym) and you're in.
+- **Genetics reveal** now waits for Play (it used to open by itself on join).
+- **Tutorial** (`TutorialClient`, new; steps in `Config/Onboarding`, so changing a line or a step = editing a table):
+  1. Walk to the Flat Bench (glowing dot path on the floor + outline on the bench)
+  2. Tap to lift → first rep (Beginner Gains title pops in the corner as before)
+  3. Every rep uses stamina, keep lifting until it runs low
+  4. Stamina refills when you rest
+  5. Head to the Squat Rack (path + outline; "Tap Exit, then..." if you're still on the bench)
+  6. Three squat reps
+  7. Open Stats (the Stats button gets its "new" dot)
+  8. The Growth Spurt goal (7 seconds, or until you close Stats) → "You're all set. Go get big."
+  One small coach line at the top center (moves to the bottom while Stats is open so it never covers the goal
+  panel). The dot path uses Roblox pathfinding, so it walks around the free-weight zone benches.
+- **Save data:** `onboarding.tutorialStep` (server-validated, forward only). Leaving mid-tutorial resumes at the
+  same step. Saves from before the tutorial that already have reps skip it (so your own save won't see it).
+
+**How to test**
+1. `git pull` (Rojo adds MenuClient, TutorialClient, Config/Onboarding and updates 7 scripts).
+2. **Returning player (your save):** Play → menu with Play / Titles / Settings over your character. Try Titles and
+   Settings, then Play: camera glides behind you, side menu appears, no tutorial.
+3. **New player:** select **Workspace** → Properties → Attributes → **+** → name `ReplayTutorial`, type
+   **boolean**, tick it. Play → simplified menu (Play only) → genetics reveal → follow the coach line through all 8
+   steps. Untick the attribute afterwards (it's Studio-only; live servers ignore it).
+4. Device Emulator (phone landscape): menu panel and coach line fit and don't cover the side menu.
+
+**Assumptions**
+- Menu buttons only for features that exist (brief: "only show a button once its feature exists"): no Wardrobe,
+  Crew, offline gains, streak or Muscle of the Day info yet.
+- "GYM ARC" on the menu stays in capitals: it's the game's name/wordmark, not a heading.
+- Character on the menu: your real character at the spawn, framed in the doorway (instead of a separate pan through
+  the gym), so the camera never clips walls; the gym shows behind you through the door.
+- **Skipped steps:** "stamina + free shake" has no shake (Energy Shakes don't exist yet), and "first quest" is left
+  out (quests are build step 8). Both slot in as table entries in `Config/Onboarding` later.
+- The tutorial coach line is a small panel, not a pop-up, and is the only new on-screen element.
+- If steps are added to `Config/Onboarding` later, players who finished the old list will see the new steps.
+
+**Not verified**
+- No playtest from the cloud. Code compiles and Rojo builds; layout positions were checked against the real place
+  (spawn at 0,0,0, gym door 3.5 studs north, free-weight zone between the door and the bench row). Camera framing
+  numbers are at the top of `MenuClient` (`CAMERA`) if the shot needs a tweak.
 
 ---
 

@@ -1,4 +1,4 @@
--- Player intents outside of machines (Growth Spurt, titles, genetics). Every action is
+-- Player intents outside of machines (Growth Spurt, titles, genetics, tutorial). Every action is
 -- validated here; the client only asks.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -44,6 +44,11 @@ end
 -- The player has seen their genetics reveal (first join).
 handlers.GeneticsSeen = function(player)
 	PlayerData.SetFlag(player, "geneticsRevealed", true)
+end
+
+-- Tutorial: the client reports the step it reached (validated in PlayerData).
+handlers.TutorialStep = function(player, step)
+	PlayerData.SetTutorialStep(player, step)
 end
 
 -- Settings menu: { music = 0-1, effects = 0-1 }

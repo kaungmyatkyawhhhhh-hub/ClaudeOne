@@ -25,7 +25,7 @@ function DataTemplate.new()
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest tier index, selected = tier index }
 		stats = { totalReps = 0, bestSet = 0 },
-		onboarding = { geneticsRevealed = false },
+		onboarding = { geneticsRevealed = false, tutorialStep = 1 }, -- tutorialStep: Config.Onboarding (Done = finished)
 		settings = { music = 1, effects = 1 }, -- sound volumes (Settings menu)
 		meta = { firstJoin = 0, lastSeen = 0, sessions = 0 },
 	}

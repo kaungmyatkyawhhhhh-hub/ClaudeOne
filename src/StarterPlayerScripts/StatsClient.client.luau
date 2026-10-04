@@ -502,6 +502,7 @@ local function open()
 	step(1)
 	Theme.Fade(root, true, OVERLAY.FadeTime)
 	RunService:BindToRenderStep("StatsLabels", Enum.RenderPriority.Camera.Value + 1, step)
+	UIBus.StatsVisible:Fire(true)
 end
 
 local function close()
@@ -509,6 +510,7 @@ local function close()
 	isOpen = false
 	statsButton:SetActive(false)
 	collapse()
+	UIBus.StatsVisible:Fire(false)
 	local tween = Theme.Fade(root, false, OVERLAY.FadeTime)
 	for _, entry in ipairs(entries) do Theme.Fade(entry.root, false, OVERLAY.FadeTime) end
 	local function finish()

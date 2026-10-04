@@ -9,6 +9,7 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
 local SideMenu = require(Shared.UI.SideMenu)
+local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -123,6 +124,9 @@ menuButton.Activated:Connect(function()
 	if isOpen then close() else open() end
 end)
 closeButton.Activated:Connect(close)
+UIBus.OpenSettings.Event:Connect(function()
+	if not isOpen then open() end
+end)
 
 -- saved volumes, then music
 task.spawn(function()

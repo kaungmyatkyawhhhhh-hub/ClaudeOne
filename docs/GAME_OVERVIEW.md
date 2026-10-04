@@ -33,6 +33,7 @@ for where everything sits in Studio.
 | `Sounds` | every sound id, volume, group |
 | `CoachNotes` | the coach one-liners on the machine HUD |
 | `Poses` | where the body goes on each machine |
+| `Onboarding` | the tutorial steps and their coach lines |
 
 ## Code structure
 **Server** (`ServerScriptService`)
@@ -60,17 +61,20 @@ for where everything sits in Studio.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.
 - `OverheadTitleClient`: local effects on overhead title tags.
+- `MenuClient`: menu screen on join (covers data loading; Play, plus Titles/Settings for returning players).
+- `TutorialClient`: first 5 minutes coach line, glowing floor path and machine outline (steps in `Config/Onboarding`).
 
 **Shared helpers** (`ReplicatedStorage/Shared`)
 - `ClientData`: client mirror of the player's data (`Get()`, `Changed`).
 - `Audio`: plays sounds from `Config/Sounds` through SoundGroups.
 - `UI/Theme`: the "clean minimal" design system (colors, fonts, spacing,
   `Theme.New`, panels, buttons). **All UI should use it.**
-- `UI/SideMenu`, `UI/Notify`, `UI/Icons`, `UI/UIBus`.
+- `UI/SideMenu`, `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
+  stats/genetics visible, open titles/settings).
 
 ## Open tasks (from the owner's task list, 4 Oct 2026)
 - ~~Clean minimal UI: CLAUDE.md + Theme~~ (done)
 - ~~Restyle all screens~~ (done in code; needs a visual check in Studio)
-- Menu screen + first 5 minutes onboarding
+- ~~Menu screen + first 5 minutes onboarding~~ (built; needs a playtest)
 - Sound overhaul + settings (Settings panel already exists)
 - Test, screenshots, PROGRESS.md

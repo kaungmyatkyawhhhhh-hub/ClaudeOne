@@ -10,6 +10,7 @@ local Theme = require(Shared.UI.Theme)
 local Notify = require(Shared.UI.Notify)
 local Icons = require(Shared.UI.Icons)
 local SideMenu = require(Shared.UI.SideMenu)
+local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -164,6 +165,9 @@ button.Activated:Connect(function()
 	if isOpen then close() else open() end
 end)
 exitButton.Activated:Connect(close)
+UIBus.OpenTitles.Event:Connect(function()
+	if not isOpen then open() end
+end)
 
 ClientData.Changed:Connect(function(path)
 	if path[1] == "titles" and isOpen then refresh() end

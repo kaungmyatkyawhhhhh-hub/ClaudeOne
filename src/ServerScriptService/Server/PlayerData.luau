@@ -12,6 +12,7 @@ local Genetics = require(Config.Genetics)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local Stamina = require(Config.Stamina)
 local Titles = require(Config.Titles)
+local Onboarding = require(Config.Onboarding)
 local DataTemplate = require(script.Parent.DataTemplate)
 
 local Remotes = ReplicatedStorage.Remotes
@@ -179,8 +180,19 @@ local function onPlayerAdded(player)
 		end
 	end
 
+	-- Saves from before the tutorial existed: players who already lifted skip it.
+	local onboarding = data.onboarding
+	if onboarding and onboarding.tutorialStep == nil and data.stats and (data.stats.totalReps or 0) > 0 then
+		onboarding.tutorialStep = Onboarding.Done
+	end
 	reconcile(data, DataTemplate.new())
 	data.sessionLock = nil
+	-- Studio testing: set a "ReplayTutorial" attribute (checked) on Workspace to see the genetics reveal and
+	-- the tutorial again. Ignored on live servers.
+	if RunService:IsStudio() and workspace:GetAttribute("ReplayTutorial") then
+		data.onboarding.geneticsRevealed = false
+		data.onboarding.tutorialStep = 1
+	end
 	if not data.genetics then
 		data.genetics = Genetics.Roll()
 	end
@@ -383,6 +395,15 @@ function PlayerData.SetFlag(player, flag, value)
 	if not data then return end
 	data.onboarding[flag] = value
 	replicate(player, { "onboarding", flag }, value)
+end
+
+-- Tutorial progress only moves forward (any step up to Onboarding.Done); no rewards hang on it.
+function PlayerData.SetTutorialStep(player, step)
+	local data = PlayerData.Get(player)
+	if not data or type(step) ~= "number" or step ~= math.floor(step) then return end
+	if step <= data.onboarding.tutorialStep or step > Onboarding.Done then return end
+	data.onboarding.tutorialStep = step
+	replicate(player, { "onboarding", "tutorialStep" }, step)
 end
 
 -- Sound volume settings (0-1 each), clamped here so the client can't store anything odd.
