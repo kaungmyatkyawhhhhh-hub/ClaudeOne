@@ -26,62 +26,60 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - Use a menu screen to cover data loading time.
 - Modular code: shared config ModuleScripts for muscles, machines, titles, genetics, so adding content = adding a table entry.
 
-## UI design system: "gym materials" (ALL UI must follow this)
-- Build a shared Theme ModuleScript. Every UI reads from it. No hardcoded colors/fonts anywhere else.
-- Materials: panels look like black rubber mats (#1A1A1A, screen backgrounds #141414) with thick
-  steel-gray borders (#2E2E2E, 3px). No glossy effects or colorful gradients.
-- Depth (all 2D panels, buttons and tapes, via Theme.AddDepth / Theme.Panel): a soft dark drop shadow under
-  the bottom edge (stacked faint strokes, none along the top), a subtle 1px chalk highlight on the inner top
-  edge (on chalk buttons a faint dark shade along the bottom), the steel border slightly lighter on top, and
-  faint rubber flecks on mat panels. Built only from frames and strokes (no images) so it stays crisp.
-- Corners: medium rounded. Panels 12px, buttons 8px, bar segments 3px, plate discs and icons fully round,
-  tape strips 2px (keep them sharp on purpose).
-- Chalk white #F4F1EA for main text and fills (never pure white). Muted text #8F8A80.
-- Fonts: Oswald for headings, numbers and buttons (headings in ALL CAPS).
-  Permanent Marker only for "tape labels" (titles, coach notes, small jokes). No other fonts.
-- Tape labels: chalk-white strip, black text, rotated 1.5-3 degrees. Use for callouts and notes.
+## UI design system: "clean minimal" (ALL UI must follow this)
+- One shared Theme ModuleScript (`Shared.UI.Theme`). Every UI reads from it. No hardcoded colors/fonts anywhere else.
+- Panels: dark see-through (#0E0E10 at 55% transparency) with a thin 1px white border at 85% transparency.
+  No glossy effects, no colorful gradients, no textures.
+- Depth (via Theme.AddDepth / Theme.Panel / Theme.Button): a soft dark drop shadow under panels and buttons
+  (stacked faint strokes, lighter toward the top). Frames and strokes only (no images) so it stays crisp.
+- Corners: panels and buttons 10px, bar segments 3px, plate discs and icons fully round.
+- Text: white #FFFFFF for main text, gray #B8B8BE for secondary text. Normal sentence case, no ALL CAPS.
+- Font: Montserrat only, in three weights: Light (big calm numbers), Regular (normal text), SemiBold
+  (important numbers and button labels). No other fonts, no handwritten/marker fonts, no tape labels.
+- Color only means something: bumper plate colors for weight tiers, grades and rarity. Everything else is
+  white/gray on dark.
 - Progress bars are chunky segmented blocks (like stacked plates), not thin smooth bars.
 - Grades and rarity use real bumper plate colors, shown as plate discs (circle with darker rim):
   D/common white #F4F1EA, C/uncommon green #2E9E4F, B/rare yellow #E8C21C (dark text),
-  A/epic blue #1F5FBF, S/legendary red #D7262E.
-- Red #D7262E also marks "needs work" notes (marker font).
-- Main buttons: chalk-white block with black Oswald text and a thick border, min 44px for mobile.
-  Secondary buttons (like EXIT) are outline style. Press = shrink to 0.95.
+  A/epic blue #1F5FBF, S/legendary red #D7262E. Secret titles: black plate #141414.
+- Soft light red #FF8A8A marks "needs work" and very low stamina.
+- Text over the 3D world gets a subtle dark outline (Theme.TextShadow) so it stays readable.
+- Buttons: Primary = white fill at 85% transparency with a light border; Secondary = the dark see-through panel
+  style. White SemiBold label, min 44px tall for mobile. Press = shrink to 0.95 with a very soft click.
 
 ## Crisp text (no blur, whole game)
 - Minimum text size 14px. Whole-number TextSize only (Theme text sizes); no plain TextScaled in screen UI.
   (Only world-space UI may scale text: BillboardGuis sized in studs and SurfaceGuis on signs/posters.)
 - Never use UIScale to scale whole screens (a press-shrink on a single button is fine).
-- Don't rotate containers that hold small (14px) text. Rotated tape labels need 18px+ text.
+- Don't rotate containers that hold text.
 - Don't fade screens with CanvasGroups (they rasterize and blur text). Fade by tweening each element's
   transparency (Theme.Fade).
 
 ## Side menu buttons (left middle)
-- 64x72, 12px corners, #1A1A1A at ~15% transparency, thin 1.5px #2E2E2E border. No thick white outlines.
-- Chalk-white line icon (same style for all) above a small Oswald label: Stats = flexing figure,
-  Titles = trophy, Genetics = DNA strand, Bag = gym bag, Crew = two people. No emojis.
-- Active: the open menu's button turns chalk white (#F4F1EA) with a dark icon and label.
-- Small red (#D7262E) dot top-right when something is new; clears when opened.
+- 64x68, 10px corners, dark see-through panel style with the thin light border and soft shadow.
+- White line icon (same style for all) above a small gray Montserrat label: Stats = flexing figure,
+  Titles = trophy, Genetics = DNA strand, Settings = gear, Bag = gym bag, Crew = two people. No emojis.
+- Active: the open menu's button gets a faint white fill, a brighter border and a white label.
+- Small white dot top-right when something is new; clears when opened.
 - Press = shrink to 0.95. Stacked vertically on the left middle, 8px gaps.
 - Only show a button once its feature exists (Bag and Crew come later).
 
 ## Overhead title
 - BillboardGui sized in studs (scales with distance), just above the head and the player's name, MaxDistance ~60.
-- No tape strip or box: Oswald ALL CAPS with a thin dark text stroke and a tiny plate disc in front.
-- Text color = rarity color (common #F4F1EA, uncommon #2E9E4F, rare #E8C21C, epic #1F5FBF, legendary #D7262E).
-  Legendary titles get a subtle slow shine every few seconds.
+- No box: Montserrat SemiBold in the rarity color with a thin dark text stroke and a tiny plate disc in front.
+  Secret titles use white text (their plate is black).
+- Legendary titles get a subtle slow shine every few seconds.
 - The local player's own title is smaller and ~40% transparent so it never blocks their view.
-- Tape-label style only inside menus (e.g. the title book).
 
 ## Machine HUD (shown while on a machine)
-- Machine name on a chalk-white tape strip above the panel, rotated about -2 degrees.
-- Weight selector: chalk-white +/- buttons, big Oswald weight number, "LB · TIER N" under it.
+- Machine name in white SemiBold just above the panel (left aligned, text shadow).
+- Weight selector: +/- buttons (line icons), big SemiBold weight number, "lb · tier N" in gray under it.
 - Barbell graphic: plates use the bumper plate color for the current weight tier.
 - Muscles this machine trains, in small muted text under the barbell.
-- Stamina: chunky segmented chalk-white bar; yellow #E8C21C under 40%, red #D7262E under 15%.
-- Rep counter for the current set ("REPS ×12").
-- "EXIT" outline button instead of an X. Coin icon = simple chalk-outline plate icon.
-- Coach note: small Permanent Marker line under the panel, slightly rotated, based on the situation
+- Stamina: chunky segmented white bar (10 segments); soft light red under 15%.
+- Rep counter for the current set ("Reps ×12").
+- "Exit" button instead of an X. Coin icon = simple white outline plate icon.
+- Coach note: one small gray line under the panel (not rotated), based on the situation
   (low stamina, weight too light, first set, etc). 15+ short, original, funny lines. No famous quotes or
   real people's catchphrases. Changes at most every few sets, never every rep.
 - Panel slides up when getting on a machine; stamina segments tween.
@@ -154,19 +152,19 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
 - Opened from the Genetics side menu button (and automatically on first join). No panel behind it: the world
   is blurred (DepthOfField) and slightly dimmed; movement is frozen while it's open. Content stays clear of the
   side menu.
-- Layout: tape label "YOUR GENETICS" top left, DNA tokens top right. The overall grade is the hero: a big 3D
-  bumper plate on the left with "OVERALL" and a short Permanent Marker reaction under it
+- Layout: "Your genetics" title top left, DNA tokens top right. The overall grade is the hero: a big 3D
+  bumper plate on the left with "Overall" and a short reaction line under it
   (S "genetic freak?!", A "blessed!", B "solid start", C "grind time", D "hard gainer... respect").
 - The six groups are real 3D bumper plates on a 3D barbell (ViewportFrame, chrome bar, warm light from above,
   3/4 camera angle). Plates are in the plate colors with a darker rim; better grades have a bigger diameter
   (S biggest, D smallest). The grade letter sits on each plate's front edge (2D text over the 3D plate, because
-  SurfaceGuis don't render in ViewportFrames). Oswald group name + multiplier under each plate.
-  Frame and body type are two chalk tape labels (opposite slight rotations) with their bonus beside them.
-  Small underlined "VIEW ODDS" button opens a clean odds panel. REROLL outline, KEEP solid chalk, 8px corners.
-  When no reroll is available, REROLL turns into a solid gray block reading "NO DNA TOKENS" (not tappable).
+  SurfaceGuis don't render in ViewportFrames). Group name + multiplier under each plate.
+  Frame and body type are two plain text lines ("Frame: Wide") with their bonus in gray beside them.
+  Small underlined "View odds" link opens a clean odds panel. Reroll = secondary button, Keep = primary.
+  When no reroll is available, Reroll turns into a dimmed "No DNA tokens" button (not tappable).
 - Reveal: the empty bar is there; each plate slides onto the sleeve and slams against the last one, left to right
   (~0.15s apart), with a clank (pitch by grade) and a small camera shake; S plates puff chalk. After a pause the
-  big overall plate drops in from above with a deep thud and a bigger shake, then the marker reaction fades in.
+  big overall plate drops in from above with a deep thud and a bigger shake, then the reaction line fades in.
   On reroll the plates slide off the bar (outermost first) and the hero lifts out, then the new set slams on.
 
 ## 7. Growth Spurts (rebirth system — never call it "sacrifice")
@@ -186,11 +184,11 @@ First Growth Spurt should be reachable in ~15-20 minutes.
   Each side is stacked top to bottom with a minimum gap so labels never overlap or cross, kept below the goal
   panel and above the bottom edge of the screen (the stack slides up if it would run off the bottom).
 - Line anchors: arm groups use whichever arm is on the left of the screen, Legs whichever leg is on the right;
-  others anchor to the torso. Short thin chalk elbow lines run from the label to a small dot on the body.
+  others anchor to the torso. Short thin white elbow lines run from the label to a small dot on the body.
   Label and line positions lerp smoothly so animations don't cause jitter.
-- Label style: no box. Oswald group name with a small bumper-plate grade disc (disc on the body side), the level
-  number larger underneath, thin dark text stroke. "Needs work" is small red Permanent Marker text under the
-  weakest group only, and only when there's no tie.
+- Label style: a faint dark see-through backing, group name with a small bumper-plate grade disc (disc on the
+  body side), the level number larger underneath. "Needs work" is small soft-red text under the weakest group
+  only, and only when there's no tie.
 - Labels are not AlwaysOnTop, so ProximityPrompts always draw over them; a label that would sit on a shown prompt
   fades out until the prompt hides. Labels are drawn part of the way toward the camera (scaled to look identical)
   and pulled in front of any equipment or wall between them and the camera, so gym props never hide them.

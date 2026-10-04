@@ -29,7 +29,7 @@ local function session(player)
 	return s
 end
 
--- Equipped title above the head (and above the player's name): Oswald caps in the rarity color with a
+-- Equipped title above the head (and above the player's name): Montserrat SemiBold in the rarity color with a
 -- thin dark stroke and a tiny plate disc in front. Sized in studs so it reads the same at any distance.
 -- The client adds the legendary shine and dims the local player's own title.
 local TAG = {
@@ -40,7 +40,7 @@ local TAG = {
 	Gap = 0.18,          -- studs between disc and text
 }
 local function textRatio(text)
-	-- width / height of the text in Oswald Bold, so the billboard can be exactly as wide as the title
+	-- width / height of the text in the heading font, so the billboard can be exactly as wide as the title
 	local ok, bounds = pcall(function()
 		local params = Instance.new("GetTextBoundsParams")
 		params.Text = text

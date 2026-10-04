@@ -28,6 +28,36 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Clean minimal UI: brief + restyle check (2026-10-04) ✅ (needs a visual check)
+
+**Built**
+- Checked every screen's code against the clean minimal Theme: machine HUD, stats overlay + goal panel,
+  genetics reveal, Title Book, settings, side menu, corner notifications, overhead titles. All of them already
+  use Theme panels, buttons, Montserrat and normal-case text; no tape labels, marker font, Oswald or ALL CAPS
+  remain. (The restyle had been finished before the session limit hit; only the brief was still old.)
+- `docs/DESIGN.md` (the brief) rewritten to describe clean minimal: UI design system, crisp text, side menu,
+  overhead title, machine HUD, genetics layout and stats label style now match what the code does.
+- Tidied leftovers in code (comments and two variable names that still said Oswald/tape/marker). No behavior change.
+- All 30 scripts pass a Luau compile check.
+
+**How to test**
+- `git pull` (Rojo syncs the 3 changed scripts). Play and look at: machine HUD, STATS overlay, GENETICS screen
+  (+ View odds), Title Book, Settings, a corner notification, your overhead title. Everything should look the same
+  as before: dark see-through panels, thin light borders, white/gray Montserrat.
+- Device Emulator (phone landscape) on the same screens.
+
+**Assumptions**
+- The Theme module is the source of truth for the new look; the brief was updated to match it, not the other way.
+- Side menu "new" dots are white (as coded), not red as the old brief said.
+- Stamina turns soft red under 15% only (the old yellow-under-40% step is gone in the code).
+- 3D-only colors (chrome bar and warm light in the genetics ViewportFrame, the legendary shine) stay as constants in
+  their scripts: they are lighting/material values, not UI style.
+
+**Not verified**
+- I can't see Studio from the cloud, so this was a code review only. Tell me if any screen still looks old.
+
+---
+
 ## Scripts moved into Rojo (2026-10-04) ✅ (needs the switch-over below)
 
 **Built**

@@ -107,7 +107,7 @@ Theme.TextShadow(tokensLabel)
 local main = New("Frame", { Name = "Main", LayoutOrder = 2, Size = UDim2.fromScale(1, 0), BackgroundTransparency = 1, Parent = root },
 	{ New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }), Theme.List(Horizontal, "M", Enum.HorizontalAlignment.Left) })
 
--- Hero column: big 3D overall plate, "OVERALL", marker reaction
+-- Hero column: big 3D overall plate, "Overall", reaction line
 local hero = New("Frame", { Name = "Hero", LayoutOrder = 1, Size = UDim2.fromScale(0.26, 1), BackgroundTransparency = 1, Parent = main },
 	{ Theme.List(Vertical, "XS") })
 local heroHolder = New("Frame", { Name = "HeroHolder", LayoutOrder = 1, Size = UDim2.fromScale(1, 0), BackgroundTransparency = 1, Parent = hero },
@@ -128,7 +128,7 @@ local overallLabel = Theme.Text({ LayoutOrder = 2, Text = "Overall", Font = "Reg
 local reaction = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Body", Size = UDim2.new(1, 0, 0, 24), TextTransparency = 1, Parent = hero })
 for _, label in ipairs({ overallLabel, reaction }) do Theme.TextShadow(label) end
 
--- Barbell column: 3D bar (fill), plate names row, frame/body tapes
+-- Barbell column: 3D bar (fill), plate names row, frame/body lines
 local barColumn = New("Frame", { Name = "BarColumn", LayoutOrder = 2, Size = UDim2.fromScale(0, 1), BackgroundTransparency = 1, Parent = main },
 	{ New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }), Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 local barHolder = New("Frame", { Name = "BarHolder", LayoutOrder = 1, Size = UDim2.fromScale(1, 0), BackgroundTransparency = 1, Parent = barColumn },
@@ -164,8 +164,8 @@ local function infoWithBonus(order)
 	Theme.TextShadow(bonus)
 	return text, bonus
 end
-local frameTape, frameBonusLabel = infoWithBonus(1)
-local bodyTape, bodyBonusLabel = infoWithBonus(3)
+local frameLabel, frameBonusLabel = infoWithBonus(1)
+local bodyLabel, bodyBonusLabel = infoWithBonus(3)
 
 -- Buttons row: "View odds" link (left), Reroll and Keep (right)
 local buttons = New("Frame", { Name = "Buttons", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = root },
@@ -191,7 +191,7 @@ local keepButton = Theme.Button("Primary", { Name = "Keep", LayoutOrder = 2, Siz
 	Theme.Text({ Text = "Keep", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
--- Odds panel (opened by VIEW ODDS)
+-- Odds panel (opened by "View odds")
 local oddsPanel = Theme.Panel({
 	Name = "Odds",
 	AnchorPoint = Vector2.new(0.5, 0.5),
@@ -437,8 +437,8 @@ local function clearBoard()
 	heroLetter.Visible = false
 	reaction.TextTransparency = 1
 	for _, entry in ipairs(nameCells) do entry.mult.Text = "" end
-	frameTape.Text, frameBonusLabel.Text = "Frame: ?", ""
-	bodyTape.Text, bodyBonusLabel.Text = "Body: ?", ""
+	frameLabel.Text, frameBonusLabel.Text = "Frame: ?", ""
+	bodyLabel.Text, bodyBonusLabel.Text = "Body: ?", ""
 end
 
 local function slamAll(genetics)
@@ -471,8 +471,8 @@ local function slamAll(genetics)
 	end
 	task.wait(REVEAL.SlideTime + 0.1)
 	local frame, body = Genetics.FrameById[genetics.frame], Genetics.BodyTypeById[genetics.bodyType]
-	frameTape.Text, frameBonusLabel.Text = "Frame: " .. frame.name, frameBonus(frame)
-	bodyTape.Text, bodyBonusLabel.Text = "Body: " .. body.name, bodyBonus(body)
+	frameLabel.Text, frameBonusLabel.Text = "Frame: " .. frame.name, frameBonus(frame)
+	bodyLabel.Text, bodyBonusLabel.Text = "Body: " .. body.name, bodyBonus(body)
 
 	task.wait(REVEAL.StampPause)
 	if not isOpen then return end

@@ -10,12 +10,10 @@
   below; it was the local CLAUDE.md, build exactly what it says, follow its
   working style). Build history and open questions: `PROGRESS.md` (add an entry
   for every step you finish, same format). Code map: `docs/GAME_OVERVIEW.md`.
-- **UI style is mid-change.** The brief's "gym materials" UI section (rubber mats,
-  Oswald, Permanent Marker) is being replaced by a **"clean minimal"** style
-  (dark see-through panels, thin light borders, Montserrat, white/gray text;
-  color only for plates, grades and rarity). The Studio `Theme` module already
-  uses clean minimal: treat `src/ReplicatedStorage/Shared/UI/Theme.luau`
-  as the source of truth for look, and use Theme helpers, never hardcoded styles.
+- **UI style is "clean minimal"** (described in `docs/DESIGN.md`): dark see-through
+  panels, thin light borders, Montserrat, white/gray text, color only for plates,
+  grades and rarity. `src/ReplicatedStorage/Shared/UI/Theme.luau` is the source of
+  truth for the look: use Theme helpers, never hardcoded styles.
 - **All game scripts live in `src/` and Rojo syncs them into Studio.** The repo
   is the source of truth for code: edit the files, never the scripts inside
   Studio (Rojo overwrites Studio-side script edits). Parts, models, lighting and

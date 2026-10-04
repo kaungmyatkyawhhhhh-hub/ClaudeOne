@@ -69,8 +69,8 @@ for where everything sits in Studio.
 - `UI/SideMenu`, `UI/Notify`, `UI/Icons`, `UI/UIBus`.
 
 ## Open tasks (from the owner's task list, 4 Oct 2026)
-- Clean minimal UI: CLAUDE.md + Theme (in progress)
-- Restyle all screens (in progress)
+- ~~Clean minimal UI: CLAUDE.md + Theme~~ (done)
+- ~~Restyle all screens~~ (done in code; needs a visual check in Studio)
 - Menu screen + first 5 minutes onboarding
 - Sound overhaul + settings (Settings panel already exists)
 - Test, screenshots, PROGRESS.md

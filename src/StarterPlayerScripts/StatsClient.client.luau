@@ -1,7 +1,7 @@
 -- StatsClient: the STATS side button and the live stats overlay.
 -- Six group labels float in the 3D world next to their body part (BillboardGuis sized in studs). Each frame they
 -- are placed in camera space: left groups always to the camera's left of the body, right groups always to the
--- right, stacked with a minimum gap so they never overlap or cross. Short chalk elbow lines run to dots on the body.
+-- right, stacked with a minimum gap so they never overlap or cross. Short thin white elbow lines run to dots on the body.
 -- Labels are depth-tested (not AlwaysOnTop) so ProximityPrompts always draw above them. They are drawn part of the
 -- way toward the camera (DepthShare) with their stud size scaled by the same share, so on screen they look exactly
 -- like labels at the body (and scale with distance the same way). If a raycast finds equipment or a wall between
