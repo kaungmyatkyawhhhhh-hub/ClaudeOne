@@ -221,17 +221,17 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 (()=>{
 /* ---------- data ---------- */
 const CATS=[
- {k:"kicks",n:"Kicks",h:28,conds:[["DS",1],["VNDS",.82],["Used",.6]],items:[["J1","Jordan 1 'Chicago'",320],["YZ","Yeezy 350 'Zebra'",260],["DK","Dunk Low 'Panda'",130],["NB","New Balance 990v3",190]]},
- {k:"tech",n:"Tech",h:262,conds:[["Sealed",1.1],["Open box",.88],["Used",.7]],items:[["AP","AirPods Pro 2",160],["SW","Switch OLED",260],["IP","iPhone 14 Pro",620],["FX","Fujifilm X100V",1400]]},
- {k:"vint",n:"Vintage",h:78,conds:[["Mint",1.1],["Good",.85],["Worn",.6]],items:[["CJ","Carhartt Detroit",180],["NT","'93 Nirvana Tee",240],["LV","Levi's 501 '80s",110],["RL","Polo Bear Knit",340]]},
- {k:"cards",n:"Cards",h:325,conds:[["PSA 10",1.4],["PSA 8",.8],["Raw",.5]],items:[["PK","Pikachu Promo",90],["LB","LeBron Rookie",450],["CZ","Charizard Base",900],["MJ","Jordan '86 Fleer",3800]]},
- {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["GS","G-Shock 5600",110],["S5","Seiko 5 Sports",220],["TD","Tudor Black Bay",3200],["SP","Speedmaster Pro",5600]]},
- {k:"toys",n:"Toys",h:210,conds:[["Sealed",1.1],["Loose",.7]],items:[["LA","Labubu Macaron",70],["BB","Bearbrick 400%",260],["KW","KAWS Companion",480]]}
+ {k:"kicks",n:"Kicks",h:28,conds:[["DS",1],["VNDS",.82],["Used",.6]],items:[["HT","Hi-Top '85 'Varsity'",320],["ZB","Boost Runner 'Zebra'",260],["PL","Court Low 'Panda'",130],["DR","Dad Runner 'Grey'",190]]},
+ {k:"tech",n:"Tech",h:262,conds:[["Sealed",1.1],["Open box",.88],["Used",.7]],items:[["BP","Buds Pro 2",160],["PC","Pocket Console OLED",260],["FP","Flagship Phone 14",620],["RC","Retro Compact Cam",1400]]},
+ {k:"vint",n:"Vintage",h:78,conds:[["Mint",1.1],["Good",.85],["Worn",.6]],items:[["WJ","Workwear Detroit Jacket",180],["GT","'93 Grunge Band Tee",240],["SD","'80s Selvedge Denim",110],["TK","Teddy Knit Sweater",340]]},
+ {k:"cards",n:"Cards",h:325,conds:[["PSA 10",1.4],["PSA 8",.8],["Raw",.5]],items:[["EM","Electric Mouse Promo",90],["RK","'03 Rookie Card",450],["FD","Fire Dragon Holo",900],["HL","'86 Hoops Legend",3800]]},
+ {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["SQ","Square Digital",110],["AD","Auto Diver",220],["HD","Heritage Diver",3200],["MC","Moon Chrono",5600]]},
+ {k:"toys",n:"Toys",h:210,conds:[["Sealed",1.1],["Loose",.7]],items:[["MB","Monster Blind Box",70],["BF","Bear Figure 400%",260],["AT","Art Toy Companion",480]]}
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
 const POOL=CATS.flatMap(c=>c.items.map(i=>({cat:c.k,code:i[0],name:i[1],base:i[2]})));
 const NEWS={
- kicks:[["Travis Scott wore them courtside","Surprise collab sold out in 3 minutes"],["Nike restocked everything","Fakes are flooding the market"]],
+ kicks:[["A rapper wore them courtside","Surprise collab sold out in 3 minutes"],["The brand restocked everything","Fakes are flooding the market"]],
  tech:[["Stores are sold out nationwide","An unboxing went viral overnight"],["A new model was just announced","A retailer is dumping inventory"]],
  vint:[["'90s revival on every runway","A celebrity thrift haul went viral"],["Fast fashion copied the look","Thrift TikTok moved on"]],
  cards:[["A graded card just sold for a record","A streamer's box break went viral"],["A reprint was announced","The grading backlog cleared"]],
@@ -596,7 +596,7 @@ function title(){
 fresh();
 S.dayStats={sales:0,spent:0,bonus:0};
 buildMarket();S.market=[newListing(),newListing(),newListing()];
-S.stash=[{cat:"kicks",code:"DK",name:"Dunk Low 'Panda'",cond:"DS",base:130,paid:84,noise:1.02},{cat:"cards",code:"PK",name:"Pikachu Promo",cond:"PSA 10",base:126,paid:150,noise:1}];
+S.stash=[{cat:"kicks",code:"PL",name:"Court Low 'Panda'",cond:"DS",base:130,paid:84,noise:1.02},{cat:"cards",code:"EM",name:"Electric Mouse Promo",cond:"PSA 10",base:126,paid:150,noise:1}];
 CATS.forEach(c=>{let v=1;S.hist[c.k]=Array.from({length:40},()=>v=Math.min(1.5,Math.max(.7,v+rnd(-.06,.06))))});
 S.trend.kicks=S.hist.kicks[39];S.trend.cards=S.hist.cards[39];
 updateMarket();renderStash();renderCollector();renderHud(1);setNews(summary());

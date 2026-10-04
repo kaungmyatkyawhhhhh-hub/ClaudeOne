@@ -2,4 +2,53 @@
 
 A fast mobile reselling game styled like a resale exchange. Buy listings under market, hold to lowball sellers, sell into live price swings and collector demand, and make rent before the bell.
 
-Open `index.html` in a phone browser to play.
+## Project layout
+
+| Path | What it is |
+| --- | --- |
+| `index.html` | The whole game. Edit this file to change the game. |
+| `scripts/build-app.mjs` | Builds `www/` (the app's web bundle) from `index.html`, with fonts bundled for offline play. |
+| `app-src/fonts/` | Bundled Archivo and Geist Mono fonts. |
+| `app-src/assets/` | Source art for the app icon and splash screen. |
+| `ios/` | Xcode project (Capacitor, Swift Package Manager, no CocoaPods). |
+| `android/` | Android Studio project (Capacitor). |
+| `capacitor.config.json` | App name, bundle ID (`com.fliprush.game`) and native settings. |
+
+## Play in a browser
+
+Open `index.html` in any browser.
+
+## After changing the game
+
+```sh
+npm install        # first time only
+npm run sync       # rebuild www/ and copy it into ios/ and android/
+```
+
+If you change the icon art in `app-src/assets/`, run `npm run assets` and then `npm run sync`.
+
+## Release on the Apple App Store
+
+You need a Mac with the latest Xcode, Node.js 22+, and an Apple Developer account ($99/year, https://developer.apple.com/programs/).
+
+1. `npm install`, then `npm run ios`. This builds and opens the project in Xcode.
+2. In Xcode, select the **App** target, open **Signing & Capabilities**, and pick your team. If Xcode says the bundle ID `com.fliprush.game` is taken, change it to something unique, like `com.yourname.fliprush`.
+3. Test on your iPhone: plug it in, select it at the top of Xcode, and press Run.
+4. In App Store Connect (https://appstoreconnect.apple.com), create a new app with the same bundle ID. Fill in the description, screenshots (6.9" and 6.5" iPhone), privacy details ("Data Not Collected"), and age rating.
+5. In Xcode, choose **Product → Archive**, then **Distribute App → App Store Connect → Upload**.
+6. Back in App Store Connect, attach the build to your version and **Submit for Review**. Review usually takes 1–3 days.
+
+## Release on Google Play
+
+You need Android Studio, Node.js 22+, and a Google Play developer account ($25 one time, https://play.google.com/console). Any Windows, Mac or Linux computer works.
+
+1. `npm install`, then `npm run android`. This builds and opens the project in Android Studio.
+2. Test on your phone: enable USB debugging, plug it in, and press Run.
+3. Choose **Build → Generate Signed App Bundle / APK → Android App Bundle** and create a new upload key. Back up the key file and its password; you need them for every future update.
+4. In Play Console, create the app, fill in the store listing, content rating and data safety form (no data collected), and upload the `.aab` from `android/app/release/`.
+5. New personal developer accounts must run a closed test with at least 12 testers for 14 days before going public. Then submit for production.
+
+## Store notes
+
+- Item names in the game are made up on purpose. App stores reject apps that use real brands (sneaker, card, watch or toy brands) without permission.
+- The game collects no data and has no ads or purchases, so the privacy forms are simple.

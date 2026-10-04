@@ -1,0 +1,18 @@
+{
+  "appId": "com.fliprush.game",
+  "appName": "Flip Rush",
+  "webDir": "www",
+  "backgroundColor": "#0b0d11",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false
+  },
+  "android": {
+    "backgroundColor": "#0b0d11"
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": true
+    }
+  }
+}

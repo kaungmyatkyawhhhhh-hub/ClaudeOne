@@ -1,0 +1,23 @@
+{
+  "name": "flip-rush",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flip Rush, a fast mobile reselling game",
+  "scripts": {
+    "build": "node scripts/build-app.mjs",
+    "sync": "npm run build && npx cap sync",
+    "ios": "npm run sync && npx cap open ios",
+    "android": "npm run sync && npx cap open android",
+    "assets": "npx @capacitor/assets generate --assetPath app-src/assets --iconBackgroundColor '#0b0d11' --iconBackgroundColorDark '#0b0d11' --splashBackgroundColor '#eceef2' --splashBackgroundColorDark '#0b0d11'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/status-bar": "^8.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2"
+  }
+}
