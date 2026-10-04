@@ -14,7 +14,7 @@ return {
 	BarRattle = { ids = { 9113757391 }, volume = 0.22, pitch = 0.05, group = "Gameplay", range = { 8, 50 }, maxLength = 1.2 },    -- Chain Hit Metal, Light Sliding: bar picked up / set down
 	PlateSlide = { ids = { 9117681302 }, volume = 0.25, pitch = 0.05, group = "Gameplay", range = { 8, 50 }, maxLength = 0.55 },  -- Sliding Legs of Metal Tripod: plates on/off when the weight changes
 	FloorThud = { ids = { 9113479635 }, volume = 0.45, pitch = 0.05, group = "Gameplay", range = { 10, 60 }, maxLength = 0.9 },   -- Body Falls on Carpet, low thuddy: rubber floor thud
-	Breath = { ids = { 9113585730, 9113586280 }, volume = 0.16, pitch = 0.05, group = "Gameplay", range = { 6, 30 }, maxLength = 1.6 }, -- Breath Exhale 11/20: heavy tiers / low stamina only
+	Breath = { ids = { 9113585730, 9113586280 }, volume = 0.6, pitch = 0.05, group = "Gameplay", range = { 12, 45 }, maxLength = 1.6 }, -- Breath Exhale 11/20: heavy tiers / low stamina only
 
 	-- Training feedback (2D)
 	RepTick = { ids = { 9114212934 }, volume = 0.07, pitch = 0.05, group = "UI" },                       -- Button click: soft tick on each rep
@@ -24,7 +24,7 @@ return {
 	Maxed = { ids = { 9113421788 }, volume = 0.13, pitch = 0, basePitch = 1.3, group = "UI", maxLength = 1.2 },             -- Bell Rings, short and high: a muscle hits its level cap
 	TitleUnlocked = { ids = { 9113421788 }, volume = 0.16, pitch = 0, basePitch = 1.12, group = "UI", maxLength = 1.6 },    -- Bell Rings: a new title
 	TierUnlocked = { ids = { 9116750726, 9116751108 }, volume = 0.3, pitch = 0.03, basePitch = 0.92, group = "Gameplay", maxLength = 1.2 }, -- Metal Plate Impact: heavier plates bought
-	OutOfStamina = { ids = { 9113585730, 9113586280 }, volume = 0.18, pitch = 0.05, group = "Gameplay", maxLength = 1.6 },  -- Breath Exhale: tapped with no stamina left
+	OutOfStamina = { ids = { 9113585730, 9113586280 }, volume = 0.55, pitch = 0.05, group = "Gameplay", maxLength = 1.6 },  -- Breath Exhale: tapped with no stamina left
 
 	-- Interface (2D, quieter than gameplay)
 	Click = { ids = { 9114212934 }, volume = 0.1, pitch = 0.05, group = "UI" },                  -- Button click: every button press
