@@ -185,9 +185,11 @@ local function onPlayerAdded(player)
 	if onboarding and onboarding.tutorialStep == nil and data.stats and (data.stats.totalReps or 0) > 0 then
 		onboarding.tutorialStep = Onboarding.Done
 	end
+	-- read the saved tutorial version before reconcile fills in the template's (current) one
+	local savedTutorialVersion = onboarding and onboarding.tutorialVersion or 1
 	reconcile(data, DataTemplate.new())
 	-- Tutorial v1 had 8 steps and saved 9 for "finished"; v2 added the Coach step before the last one.
-	if (data.onboarding.tutorialVersion or 1) < Onboarding.Version then
+	if savedTutorialVersion < Onboarding.Version then
 		local step = data.onboarding.tutorialStep
 		if step >= 9 then
 			data.onboarding.tutorialStep = Onboarding.Done
