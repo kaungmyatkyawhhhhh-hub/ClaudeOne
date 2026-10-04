@@ -7,7 +7,8 @@ A fast mobile reselling game styled like a resale exchange. Buy listings under m
 | Path | What it is |
 | --- | --- |
 | `index.html` | The whole game. Edit this file to change the game. |
-| `scripts/build-app.mjs` | Builds `www/` (the app's web bundle) from `index.html`, with fonts bundled for offline play. |
+| `scripts/build-app.mjs` | Builds `www/` (native app bundle) and `docs/` (home-screen web app for GitHub Pages) from `index.html`. |
+| `docs/` | Built home-screen web app served by GitHub Pages. Commit it after `npm run build`. |
 | `app-src/fonts/` | Bundled Archivo and Geist Mono fonts. |
 | `app-src/assets/` | Source art for the app icon and splash screen. |
 | `ios/` | Xcode project (Capacitor, Swift Package Manager, no CocoaPods). |
@@ -16,13 +17,15 @@ A fast mobile reselling game styled like a resale exchange. Buy listings under m
 
 ## Play in a browser
 
-Open `index.html` in any browser.
+Live at **https://kaungmyatkyawhhhhh-hub.github.io/ClaudeOne/** once GitHub Pages is turned on (Settings → Pages → Deploy from a branch → this branch, `/docs` folder).
+
+On iPhone, open that link in Safari, tap Share → Add to Home Screen. It installs with its own icon, opens full screen and works offline.
 
 ## After changing the game
 
 ```sh
 npm install        # first time only
-npm run sync       # rebuild www/ and copy it into ios/ and android/
+npm run sync       # rebuild www/ and docs/, copy www/ into ios/ and android/
 ```
 
 If you change the icon art in `app-src/assets/`, run `npm run assets` and then `npm run sync`.
