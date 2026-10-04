@@ -16,7 +16,7 @@ TitleService.Start()
 -- the rest of the game (saving, machines, titles) keeps running.
 local OPTIONAL_SERVICES = { "BoostService", "QuestService", "MuscleOfTheDayService", "StaminaService", "RetentionService",
 	"SocialService", "ArmWrestleService", "LegendService", "ShowOffService",
-	"MonetizationService", "ProGymService" }
+	"MonetizationService", "ProGymService", "CrewService" }
 for _, name in ipairs(OPTIONAL_SERVICES) do
 	task.spawn(function()
 		local ok, err = pcall(function()

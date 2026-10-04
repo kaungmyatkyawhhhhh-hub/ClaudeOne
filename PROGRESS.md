@@ -27,6 +27,36 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Crews (2026-10-05) ✅ (needs a 2-player playtest)
+
+**Built** (`CrewService`, `CrewClient`, limits in `Config/Social` → `Crew`)
+- New **Crew** side button (two-people icon, as in the brief). Without a crew: type a name (3-20) and a tag
+  (2-4 letters/numbers) → Create. With a crew: members "n / 8" (leader marked, "here" if in this server, score),
+  **Invite** buttons for players in this server who have no crew, **Leave crew**.
+- **Invites:** the invited player gets a note + a dot on their Crew button; Join from the panel. Up to 8 members.
+- **Saved across servers** (DataStore "Crews"); your crew id is in your save. If you were removed while away,
+  it's cleared on join. When the leader leaves, another member becomes leader.
+- **Crew tag** above members' heads: small gray "[GAIN]" above the title.
+- **Top crews** (crew leaderboard): crew score = members' muscle levels (+100 per Growth Spurt), updated every
+  2 minutes, top 5 listed at the bottom of the Crew panel.
+- **Text filter:** names and tags go through Roblox's text filter (required for player-typed text); blocked
+  words are refused ("That name isn't allowed").
+
+**How to test**
+1. `git pull`, Play → Crew button → create a crew → your tag appears above your head.
+2. Two players: one creates, invites the other → the other opens Crew → Join → both tags show.
+3. Leave crew → tag disappears.
+
+**Assumptions**
+- Creating a crew is free (`CreateCost = 0`); invites only reach players in the same server (no cross-server
+  friend invites yet).
+- Studio's text filter can behave differently from live servers (it often passes everything in Studio).
+
+**Not verified**
+- No playtest. Compile, type analysis and Rojo build pass.
+
+---
+
 ## Pro gym (Growth Spurt 2) with 11 machines (2026-10-05) ✅ (needs your playtest)
 
 **Built** (`ProGymService`, machines in `Config/Machines`, poses in `Config/Poses` + `MachineClient`)

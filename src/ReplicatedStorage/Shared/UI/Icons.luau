@@ -216,6 +216,17 @@ function Icons.Pose(color)
 	return icon
 end
 
+-- Two people (crews).
+function Icons.People(color)
+	color = color or Colors.Chalk
+	local icon = canvas("People")
+	outline(icon, color, 0.24, 0.24, 0.36, 0.28, UDim.new(1, 0))
+	outline(icon, color, 0.4, 0.3, 0.36, 0.7, UDim.new(0.5, 0))
+	outline(icon, color, 0.2, 0.2, 0.7, 0.32, UDim.new(1, 0))
+	outline(icon, color, 0.32, 0.26, 0.72, 0.7, UDim.new(0.5, 0))
+	return icon
+end
+
 function Icons.Tint(icon, color)
 	for _, part in ipairs(icon:GetDescendants()) do
 		if part:IsA("UIStroke") then

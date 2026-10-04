@@ -38,6 +38,15 @@ Social.ArmWrestle = {
 	RookieStrength = { 0.85, 1.05 },  -- x the player's strength
 }
 
+-- Crews: small groups with a name and a short tag shown above members' heads. Saved across servers.
+Social.Crew = {
+	MaxMembers = 8,
+	NameLength = { 3, 20 },
+	TagLength = { 2, 4 },   -- letters and numbers only
+	CreateCost = 0,         -- coins
+	Refresh = 120,          -- seconds between crew score / top crews updates
+}
+
 -- Strength for arm wrestling from a player's muscle data.
 function Social.Strength(muscleData)
 	local sum = 0
