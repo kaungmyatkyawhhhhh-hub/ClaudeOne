@@ -38,4 +38,10 @@ return {
 
 	-- Music (2D, low in the background, plays the tracks in order and loops)
 	Music = { ids = { 9043990443, 9043990341 }, volume = 0.5, pitch = 0, group = "Music" }, -- APM "Lovely Sunrise" C (underscore) and A (vinyl chillhop)
+
+	-- Area music: which of the music tracks plays where (Audio.SetArea; SettingsClient picks the area).
+	AreaMusic = {
+		Starter = { 9043990443 }, -- underscore: warm, old-school starter gym
+		Pro = { 9043990341 },     -- vinyl chillhop: the darker pro gym
+	},
 }

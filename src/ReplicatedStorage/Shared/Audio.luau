@@ -101,24 +101,54 @@ function Audio.GetVolumes()
 end
 
 local musicStarted = false
+local musicPlayer = nil
+local area = nil
+local playlist = nil -- ids for the current area
+
+-- The tracks for an area (Config.Sounds.AreaMusic), or the whole Music list.
+local function tracksFor(name)
+	local areas = Sounds.AreaMusic
+	return (areas and name and areas[name]) or Sounds.Music.ids
+end
+
 function Audio.StartMusic()
 	if musicStarted then return end
 	musicStarted = true
 	local def = Sounds.Music
-	local player = Instance.new("Sound")
-	player.Name = "Music"
-	player.Volume = def.volume
-	player.SoundGroup = getGroup("Music")
-	player.Parent = SoundService
+	musicPlayer = Instance.new("Sound")
+	musicPlayer.Name = "Music"
+	musicPlayer.Volume = def.volume
+	musicPlayer.SoundGroup = getGroup("Music")
+	musicPlayer.Parent = SoundService
+	playlist = tracksFor(area)
 	local index = 0
 	local function nextTrack()
-		index = index % #def.ids + 1
-		player.SoundId = "rbxassetid://" .. def.ids[index]
-		player.TimePosition = 0
-		player:Play()
+		index = index % #playlist + 1
+		musicPlayer.SoundId = "rbxassetid://" .. playlist[index]
+		musicPlayer.TimePosition = 0
+		musicPlayer:Play()
 	end
-	player.Ended:Connect(nextTrack)
+	musicPlayer.Ended:Connect(nextTrack)
 	nextTrack()
+end
+
+-- Area music: switching area fades the music out and starts that area's tracks.
+function Audio.SetArea(name)
+	if name == area then return end
+	area = name
+	if not musicPlayer then return end
+	local tracks = tracksFor(name)
+	if tracks == playlist then return end
+	playlist = tracks
+	local fade = TweenService:Create(musicPlayer, TweenInfo.new(0.8), { Volume = 0 })
+	fade:Play()
+	fade.Completed:Connect(function()
+		if playlist ~= tracks then return end
+		musicPlayer.SoundId = "rbxassetid://" .. tracks[1]
+		musicPlayer.TimePosition = 0
+		musicPlayer:Play()
+		TweenService:Create(musicPlayer, TweenInfo.new(1.2), { Volume = Sounds.Music.volume }):Play()
+	end)
 end
 
 applyVolumes()

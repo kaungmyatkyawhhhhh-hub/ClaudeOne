@@ -46,12 +46,20 @@
 >
 > **Not built (need art, assets or new areas):** town hub, beach gym + posing stage, skate park/skateboard,
 > smoothie bar building, clothing store/wardrobe/trendy fits, veins/abs detail, gym-goers walking around,
-> progress mirror and before/after snapshot, area music (one area so far), winter sled pulls.
+> progress mirror and before/after snapshot, winter sled pulls.
 
 All game code lives in this repo under `src/` and Rojo syncs it into the Studio place (GYM ARC,
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
 Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
 Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## Area music (2026-10-05) ✅
+
+- The two music tracks are now split by area (`Config/Sounds` → `AreaMusic`): the starter gym plays the warm
+  underscore track, the pro gym the vinyl chillhop one, with a short crossfade when you go through the door
+  (`Audio.SetArea`). Music volume setting still applies. More areas = more entries.
 
 ---
 

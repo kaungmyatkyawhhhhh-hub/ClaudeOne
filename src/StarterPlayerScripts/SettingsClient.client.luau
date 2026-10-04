@@ -135,4 +135,11 @@ task.spawn(function()
 	values.effects = settings.effects or 1
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()
+	-- area music: the pro gym is built far to the south (z < -100), everything else is the starter gym
+	while true do
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if root then Audio.SetArea(root.Position.Z < -100 and "Pro" or "Starter") end
+		task.wait(2)
+	end
 end)
