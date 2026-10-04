@@ -410,6 +410,35 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .tpos.long .tside{background:var(--up)} .tpos.short .tside{background:var(--down)}
 .tkv div{box-shadow:none;background:var(--sunk)}
 .tpos .bigbtn{font-size:1.2rem;padding:14px;background:var(--ink);color:var(--bg)}
+.garage{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.gcar{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow);text-align:left}
+.gcar b{font-size:.84rem}.gcar span{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.gcar.on{box-shadow:inset 0 0 0 2px var(--ink),var(--shadow)}
+.paints{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.paints .eyebrow{margin-right:4px}
+.sw{width:30px;height:30px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.sw.big{width:40px;height:40px;font-family:var(--mono);font-size:.7rem;font-weight:700;color:#fff}
+.sw.on{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ink)}
+.sw.locked{opacity:.35}
+.dcard{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--gold),var(--shadow)}
+.dcard b{font-size:1rem}.dcard .dsub{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.dcard.done{box-shadow:inset 0 0 0 2px var(--up),var(--shadow)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.cal div{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 2px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
+.cal span{font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cal b{font-family:var(--mono);font-size:.64rem}
+.cal .past{opacity:.45}.cal .today{background:var(--gold);color:#1b1200}.cal .today span{color:#1b1200}
+.lifttabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.lifttabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
+.lifttabs b{font-size:.84rem}.lifttabs span{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.lifttabs button.on{box-shadow:inset 0 0 0 2px var(--pc,var(--ink)),var(--shadow)}
+.dcard.meet{box-shadow:inset 0 0 0 2px var(--pc,var(--accent)),var(--shadow)}
+.trow.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.trow.two>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pill.q .pk{color:var(--gold)}
+.lights{display:flex;justify-content:center;gap:16px;padding:26px;border-radius:16px;background:#141824}
+.lights i{width:54px;height:54px;border-radius:50%;background:#2a2f3a;box-shadow:inset 0 -4px 0 rgba(0,0,0,.3)}
+.lights i.r{background:#e2364a;box-shadow:0 0 20px #e2364a}.lights i.g{background:#2fd28a;box-shadow:0 0 24px #2fd28a}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
 @media (max-height:640px){.lst{height:54px}.tile{width:38px;height:38px}.collector{height:44px}.cash{font-size:2.1rem}}
 </style>
@@ -426,7 +455,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills"><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button></div>
+  <div class="hudpills"><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button></div>
 </div>
 <button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -483,6 +512,9 @@ const PLACES=[
  {k:"trade",n:"Trading Centre",c:"#0e1a2f",x:20,y:300,w:180,h:150,door:[110,450],sub:"Live futures charts. Long or short with leverage"},
  {k:"flea",n:"Boardwalk Flea",c:"#f2762e",x:300,y:1440,w:300,h:130,door:[450,1570],region:"beach",sub:"Cheap steals, mystery boxes, fakes"},
  {k:"mbeach",n:"Muscle Beach",c:"#14a3a8",x:1720,y:1450,w:220,h:120,door:[1830,1570],region:"beach",sub:"Outdoor gym, lifts cost half energy"},
+ {k:"airport",n:"Airport",c:"#3b6fd8",x:2150,y:1430,w:380,h:150,door:[2340,1580],region:"beach",sub:"Fly to Tokyo or Paris markets"},
+ {k:"docks",n:"Docks Car Meet",c:"#4a5568",x:40,y:1440,w:200,h:130,door:[140,1570],region:"beach",sub:"Show off your cars and street race"},
+ {k:"club",n:"Nightclub",c:"#7a2fd6",x:1700,y:1250,w:200,h:120,door:[1800,1370],region:"downtown",sub:"VIP tables for a selling boost"},
  {k:"lux",n:"Luxury Exchange",c:"#2b2f3a",x:1600,y:300,w:300,h:220,door:[1750,520],region:"downtown",sub:"High-end only, sales pay +25%"},
  {k:"dealer",n:"Dealership",c:"#0f8fb3",x:2150,y:820,w:300,h:180,door:[2300,1000],region:"downtown",sub:"Scooters and sports cars"}
 ];
@@ -491,8 +523,19 @@ const REGION_NAME={beach:"The Beach",downtown:"Downtown"};
 const regionOf=(x,y)=>y>=1400?"beach":x>=1400?"downtown":"core";
 const regionOpen=r=>r==="core"||!!(S&&S.unl&&S.unl[r]);
 const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop:"mall"},{k:"scooter",n:"Electric scooter",d:"2.2× speed. Silent and quick.",sp:2.2,cost:6000,shop:"dealer"},{k:"car",n:"Sports car",d:"3.2× speed. Red, loud, fast.",sp:3.2,cost:45000,shop:"dealer"}];
-const ride=()=>S&&S.veh?(S.veh.car?"car":S.veh.scooter?"scooter":S.veh.bike?"bike":null):null;
+VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:20000,shop:"dealer"},{k:"classic",n:"Classic coupe",d:"2.8× speed. Sells back for 130%.",sp:2.8,cost:80000,shop:"dealer",resale:1.3},{k:"supercar",n:"Hypercar",d:"4× speed. The fastest thing in town.",sp:4,cost:250000,shop:"dealer"});
+const CARS=["car","truck","classic","supercar"];
+const ride=()=>{if(!S||!S.veh)return null;if(S.cur==="walk")return null;if(S.cur&&S.veh[S.cur])return S.cur;const own=VEH.filter(v=>S.veh[v.k]).sort((a,b)=>b.sp-a.sp);return own.length?own[0].k:null};
+const PROPS=[{n:"Apartment",c:"#e39a52",cost:0,en:0,sell:0,d:"A cozy start."},{n:"Loft",c:"#14a3a8",cost:25000,en:20,sell:0,d:"+20 max energy."},{n:"Penthouse",c:"#2b2f3a",cost:150000,en:50,sell:.1,d:"+50 max energy, +10% on every sale."},{n:"Mansion",c:"#cf9a14",cost:1000000,en:100,sell:.25,d:"+100 max energy, +25% on every sale."}];
+const OUTFITS=[["Classic blue","#2a3cff",0],["Crimson","#e2364a",1],["Gold","#cf9a14",2],["Midnight","#1b1f2a",3],["Neon","#2fd28a",4],["Royal","#8f52d4",5],["Diamond","#7fd6ff",7]];
+const PAINTS=["#e2364a","#2a5bd7","#1b1f2a","#f2f2f2","#cf9a14","#2fd28a","#ff7a3d","#8f52d4"];
+const SEASONS=[{n:"Spring",m:{kicks:1.15,watch:1.05}},{n:"Summer",m:{gym:1.2,vint:.9,tech:1.05}},{n:"Autumn",m:{vint:1.2,cards:1.1}},{n:"Winter",m:{vint:1.3,toys:1.25,gym:.9}}];
+const season=()=>SEASONS[Math.floor(((S?S.day:1)-1)/7)%4];
+const DAILY=[{k:"sales",t:"Make 15 sales",need:15},{k:"pr",t:"Set a new PR on any lift",need:1},{k:"tradewin",t:"Close 3 winning trades",need:3},{k:"arm",t:"Win 2 arm wrestles",need:2},{k:"lift",t:"Do 20 clean lifts",need:20},{k:"earn",t:"Earn $3,000",need:3000}];
+const dayKey=(o=0)=>{const d=new Date(Date.now()+o*864e5);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
+function dailyProg(k,n=1){const d=S.daily;if(!d||d.done||d.k!==k||d.d!==dayKey())return;d.have+=n;if(d.have>=d.need){d.done=1;const rw=Math.round(1500*(1+S.rebirths*.5));S.cash+=rw;dirty=true;SFX.level();banner("Daily challenge done","g");banner("+"+fmt(rw),"u")}}
 const PL={};PLACES.forEach(p=>PL[p.k]=p);
+function syncHome(){if(!S)return;const pr=PROPS[S.home||0];if(PL.home.n!==pr.n){PL.home.n=pr.n;PL.home.c=pr.c;STATIC=null}}
 const UPGRADES=[
  {k:"bag",t:"Bigger backpack",d:"+2 stash slots",cost:l=>Math.round(150*Math.pow(2.2,l)),max:6},
  {k:"shoes",t:"Running shoes",d:"Walk 25% faster",cost:l=>Math.round(200*Math.pow(2.6,l)),max:3},
@@ -512,6 +555,7 @@ const CAFE=[
  {k:"coffee",t:"Coffee",d:"+25 energy",base:10,fx:s=>{s.energy=Math.min(maxEnergy(),s.energy+25)}},
  {k:"drink",t:"Energy drink",d:"+60 energy",base:25,fx:s=>{s.energy=Math.min(maxEnergy(),s.energy+60)}},
  {k:"meal",t:"Big breakfast",d:"Refill all energy",base:55,fx:s=>{s.energy=maxEnergy()}},
+  {k:"meal2",t:"Chicken & rice",d:"Well fed for 3 minutes: bigger green zone and faster energy regen",base:40,fx:s=>{s.buffs=s.buffs||{};s.buffs.fed=180}},
  {k:"shake",t:"Protein shake",d:"Bigger green zone and a slower needle at the gym for 90 seconds",base:30,fx:s=>{s.protein=90}}
 ];
 
@@ -552,22 +596,22 @@ drawMute();
 /* ================= state ================= */
 let S=null,dirty=false;
 function freshLife(keep){
-  S.pos={};
+  S.pos={};S.lifts={bench:20,squat:20,dead:20};S.quest=null;S.shop={open:0,worker:0};
   S.cash=100+400*S.tok.start;S.pr=20;S.bank=0;S.energy=maxEnergyFor(0);S.earned=0;S.protein=0;
   S.unlocked=START_CATS.slice();S.stash=[];
   const k=keep&&S.tok.keep;S.up={bag:k?S.up.bag:0,shoes:k?S.up.shoes:0,legit:0,coach:0,alerts:0,clout:0,phone:0};
 }
 function newGame(){
   S={v:1,rebirths:0,tokens:0,tok:{profit:0,energy:0,start:0,keep:0},up:{},trend:{},hist:{},clock:8,day:1,px:390,py:500,
-     stats:{flips:0,profit:0,best:0,fakes:0,grails:0,lifted:0,heaviest:20,earnedAll:0,armWins:0,beat:[]},flags:{},ach:{},unl:{},veh:{},goal:0,hd:0,nextId:1};
+     stats:{flips:0,profit:0,best:0,fakes:0,grails:0,lifted:0,heaviest:20,earnedAll:0,armWins:0,beat:[]},flags:{},ach:{},unl:{},veh:{},goal:0,hd:0,home:0,skin:0,paint:"#e2364a",login:{d:"",streak:0},awake:0,buffs:{},trades:[],meetDay:3,trophies:0,shop:{open:0,worker:0},nextId:1};
   CATS.forEach(c=>{S.trend[c.k]=1;S.hist[c.k]=Array(40).fill(1)});
   freshLife(false);
 }
 function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 const mult=()=>(1+.5*S.rebirths)*(1+.25*S.tok.profit);
-const maxEnergyFor=str=>100+20*S.tok.energy+2*str;
+const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en;
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
 const STR_TIERS=[[20,"Twig"],[40,"Average"],[60,"Fit"],[90,"Strong"],[130,"Beast"],[180,"Titan"],[250,"Legend"]];
@@ -610,16 +654,16 @@ const ACH=[
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
 const maxEnergy=()=>maxEnergyFor(strLv());
 const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag;
-const walkSpeed=()=>150*(1+.25*S.up.shoes)*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1);
+const walkSpeed=()=>150*(1+.25*S.up.shoes)*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
 const rebirthReq=()=>5000*Math.pow(4,S.rebirths);
-const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1);
+const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]||1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
 function spend(e,el){
   if(S.energy<e){if(el)floatAt(el,"Too tired. Sleep at home.","var(--down)");SFX.nope();buzz(30);if(!S.flags.tiredTip){S.flags.tiredTip=1;banner("Out of energy","r")}return false}
   S.energy-=e;dirty=true;return true;
 }
-function earn(v){S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true;
+function earn(v){S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true;if(S.daily&&S.daily.k==="earn")dailyProg("earn",v);
   for(const[k,need]of Object.entries(UNLOCK))if(!S.unlocked.includes(k)&&S.earned>=need){S.unlocked.push(k);banner(CAT[k].n+" unlocked","g");SFX.level()}}
 
 /* ================= FX ================= */
@@ -664,7 +708,7 @@ function rr(x,y,w,h,r){rrp(ctx,x,y,w,h,r)}
 function night(){const h=S.clock;if(h>=20||h<5)return 1;if(h>=18)return(h-18)/2;if(h<7)return 1-(h-5)/2;return 0}
 const fh=p=>Math.round(p.h*.36);
 function winRects(p){
-  const top=p.y+p.h-fh(p),out=[];if(p.k==="gym"||p.k==="mall"||p.k==="bank"||p.k==="temple"||p.k==="trade")return out;
+  const top=p.y+p.h-fh(p),out=[];if(p.k==="gym"||p.k==="mall"||p.k==="bank"||p.k==="temple"||p.k==="trade"||p.k==="airport")return out;
   const n=Math.max(1,Math.floor((p.w/2-34)/32)),wy=top+fh(p)*.22,wh=fh(p)*.4;
   for(let i=0;i<n;i++){out.push([p.door[0]-34-i*32-20,wy,20,wh],[p.door[0]+34+i*32,wy,20,wh])}
   return out.filter(r=>r[0]>p.x+6&&r[0]+r[2]<p.x+p.w-6);
@@ -694,6 +738,9 @@ function drawBuilding(g,p,P){
   if(p.k==="arena"){g.strokeStyle="#ffffff";g.lineWidth=3;rrp(g,cx-34,cy-20,68,40,4);g.stroke();g.lineWidth=1.5;rrp(g,cx-28,cy-14,56,28,3);g.stroke();g.fillStyle="#ffcc33";[[-34,-20],[34,-20],[-34,20],[34,20]].forEach(([dx,dy])=>{g.beginPath();g.arc(cx+dx,cy+dy,4,0,7);g.fill()})}
   if(p.k==="trade"){g.fillStyle="#0a1222";rrp(g,p.x+16,ry+12,p.w-32,rh-22,6);g.fill();g.strokeStyle="#2fd28a";g.lineWidth=2.5;g.beginPath();[[0,.7],[.15,.55],[.3,.62],[.45,.35],[.6,.45],[.75,.2],[.9,.3],[1,.12]].forEach(([fx,fy2],i)=>{const X=p.x+24+fx*(p.w-48),Y=ry+16+fy2*(rh-32);i?g.lineTo(X,Y):g.moveTo(X,Y)});g.stroke();
     [[.2,1],[.38,0],[.56,1],[.74,1]].forEach(([fx,up])=>{const X=p.x+24+fx*(p.w-48);g.fillStyle=up?"#2fd28a":"#ff5b6e";g.fillRect(X,ry+rh-30,6,14)});g.fillStyle=P.glassD;rrp(g,p.x+12,fy+6,p.w-24,f-14,6);g.fill()}
+  if(p.k==="airport"){g.fillStyle="rgba(0,0,0,.25)";rrp(g,p.x+20,cy-12,p.w-40,24,4);g.fill();g.fillStyle="#fff";for(let x=p.x+34;x<p.x+p.w-34;x+=30)g.fillRect(x,cy-2,16,4);g.fillStyle="#fff";g.beginPath();g.moveTo(cx-30,cy-26);g.lineTo(cx+30,cy-26);g.lineTo(cx+4,cy-34);g.closePath();g.fill()}
+  if(p.k==="club"){for(let i=0;i<14;i++){g.fillStyle=["#ff4fd8","#4fe3ff","#ffe14f"][i%3];g.beginPath();g.arc(p.x+18+i*12.5,ry+rh-12,3,0,7);g.fill()}}
+  if(p.k==="docks"){g.fillStyle="#ffcc33";for(let x=p.x+10;x<p.x+p.w-10;x+=22){g.save();g.translate(x,ry+8);g.rotate(.5);g.fillRect(0,0,8,22);g.restore()}g.fillStyle="#1b1f2a";g.fillRect(p.x+p.w-40,ry+10,6,rh-16);g.fillRect(p.x+p.w-70,ry+10,36,5)}
   if(p.k==="bank"){g.fillStyle="#f2f2f2";for(let x=p.x+14;x<p.x+p.w-14;x+=24){if(Math.abs(x+5-p.door[0])<22)continue;g.fillRect(x,fy+4,10,f-8)}g.fillStyle="rgba(255,255,255,.9)";g.beginPath();g.arc(cx,cy,18,0,7);g.fill();g.fillStyle=p.c;g.font="900 22px "+getComputedStyle(root).getPropertyValue("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText("$",cx,cy+1)}
   // door + mat
   const[dx,dy]=p.door;g.fillStyle="#141824";rrp(g,dx-15,dy-30,30,30,5);g.fill();g.fillStyle="rgba(255,255,255,.18)";g.fillRect(dx-11,dy-26,9,22);g.fillStyle=P.walk;rrp(g,dx-20,dy+1,40,8,3);g.fill();
@@ -773,12 +820,15 @@ function drawPerson(x,y,o){
   ctx.fillStyle=o.skin;ctx.beginPath();ctx.arc(x,y-37+b,9.5,0,7);ctx.fill();ctx.stroke();
   ctx.fillStyle=o.hair;ctx.beginPath();ctx.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);ctx.fill();
   ctx.fillStyle="#1b1d22";ctx.fillRect(x-4,y-37+b,2,2.4);ctx.fillRect(x+2,y-37+b,2,2.4);
+  if(o.crown){ctx.fillStyle="#ffcc33";ctx.beginPath();ctx.moveTo(x-8,y-45+b);ctx.lineTo(x-8,y-53+b);ctx.lineTo(x-4,y-48+b);ctx.lineTo(x,y-55+b);ctx.lineTo(x+4,y-48+b);ctx.lineTo(x+8,y-53+b);ctx.lineTo(x+8,y-45+b);ctx.closePath();ctx.fill()}
   if(o.you){ctx.fillStyle="#2a3cff";ctx.beginPath();ctx.moveTo(x-6,y-60+b);ctx.lineTo(x+6,y-60+b);ctx.lineTo(x,y-52+b);ctx.closePath();ctx.fill()}
 }
 function drawRide(k){
   const x=S.px,y=S.py;
-  if(k==="car"){ctx.save();ctx.translate(x,y-8);ctx.rotate(S.hd||0);ctx.fillStyle="rgba(0,0,0,.25)";rr(-27,-11,56,28,10);ctx.fill();ctx.fillStyle="#e2364a";rr(-28,-14,56,28,10);ctx.fill();
-    ctx.fillStyle="#1b1f2a";rr(4,-11,12,22,4);ctx.fill();rr(-16,-11,8,22,3);ctx.fill();ctx.fillStyle="#ff6b7a";rr(-6,-10,9,20,3);ctx.fill();ctx.fillStyle="#ffe08a";ctx.fillRect(24,-11,4,6);ctx.fillRect(24,5,4,6);ctx.fillStyle="#141414";ctx.fillRect(-20,-16,10,4);ctx.fillRect(10,-16,10,4);ctx.fillRect(-20,12,10,4);ctx.fillRect(10,12,10,4);ctx.restore();return}
+  if(CARS.includes(k)){const L=k==="truck"?64:k==="supercar"?60:56,Wd=k==="truck"?32:k==="supercar"?26:28,col=S.paint||"#e2364a";ctx.save();ctx.translate(x,y-8);ctx.rotate(S.hd||0);ctx.fillStyle="rgba(0,0,0,.25)";rr(-L/2+1,-Wd/2+3,L,Wd,10);ctx.fill();ctx.fillStyle=col;rr(-L/2,-Wd/2,L,Wd,k==="classic"?14:10);ctx.fill();
+    ctx.fillStyle="#1b1f2a";if(k==="truck"){rr(6,-Wd/2+3,14,Wd-6,4);ctx.fill();ctx.fillStyle="rgba(0,0,0,.25)";rr(-L/2+4,-Wd/2+4,L/2,Wd-8,3);ctx.fill()}else{rr(4,-Wd/2+3,12,Wd-6,4);ctx.fill();rr(-16,-Wd/2+3,8,Wd-6,3);ctx.fill();ctx.fillStyle="rgba(255,255,255,.3)";rr(-6,-Wd/2+4,9,Wd-8,3);ctx.fill()}
+    if(k==="supercar"){ctx.fillStyle="#1b1f2a";ctx.fillRect(-L/2-2,-Wd/2,5,Wd)}if(k==="classic"){ctx.fillStyle="#f2f2f2";ctx.fillRect(-L/2,-2,L,4)}
+    ctx.fillStyle="#ffe08a";ctx.fillRect(L/2-4,-Wd/2+3,4,6);ctx.fillRect(L/2-4,Wd/2-9,4,6);ctx.fillStyle="#141414";[-L/2+8,L/2-18].forEach(wx=>{ctx.fillRect(wx,-Wd/2-2,10,4);ctx.fillRect(wx,Wd/2-2,10,4)});ctx.restore();return}
   const f=Math.cos(S.hd||0)<0?-1:1;ctx.fillStyle="rgba(0,0,0,.2)";ctx.beginPath();ctx.ellipse(x,y+2,20,5,0,0,7);ctx.fill();
   if(k==="bike"){ctx.strokeStyle="#1b1f2a";ctx.lineWidth=2.5;[-12,12].forEach(dx=>{ctx.beginPath();ctx.arc(x+dx,y-4,7,0,7);ctx.stroke()});ctx.strokeStyle="#2bb3a3";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-12,y-4);ctx.lineTo(x-2,y-14);ctx.lineTo(x+8*f,y-14);ctx.lineTo(x+12,y-4);ctx.stroke()}
   else{ctx.fillStyle="#1b1f2a";[-14,14].forEach(dx=>{ctx.beginPath();ctx.arc(x+dx,y-3,5,0,7);ctx.fill()});ctx.fillStyle="#ffcc33";rr(x-17,y-9,34,6,3);ctx.fill();ctx.strokeStyle="#1b1f2a";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+14*f,y-8);ctx.lineTo(x+12*f,y-30);ctx.stroke()}
@@ -816,7 +866,7 @@ function drawWorld(){
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(rd!=="car")drawPerson(S.px,S.py-(rd?7:0),{shirt:"#2a3cff",skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
+  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
     ctx.fillStyle="#ffffff";ctx.font="900 26px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";
@@ -831,6 +881,7 @@ function drawWorld(){
     PLACES.forEach(p=>winRects(p).forEach(([x,y,w,h])=>{const sx=x+w/2-cam.x,sy=y+h-cam.y+10;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,30);g.addColorStop(0,`rgba(255,200,110,${.22*nightA})`);g.addColorStop(1,"rgba(255,200,110,0)");ctx.fillStyle=g;ctx.fillRect(sx-30,sy-30,60,60)}));
     FLIES.forEach(f=>{f.a+=.016*f.s;const sx=f.x+Math.sin(f.a)*20-cam.x,sy=f.y+Math.cos(f.a*.8)*14-cam.y;if(sx<0||sy<0||sx>vw||sy>vh)return;const al=(.5+.5*Math.sin(f.a*3))*nightA;ctx.fillStyle=`rgba(220,255,140,${.8*al})`;ctx.beginPath();ctx.arc(sx,sy,1.8,0,7);ctx.fill();ctx.fillStyle=`rgba(220,255,140,${.15*al})`;ctx.beginPath();ctx.arc(sx,sy,6,0,7);ctx.fill()});
     ctx.globalCompositeOperation="source-over"}
+  if(season().n==="Winter"){ctx.fillStyle=isDark()?"rgba(200,220,255,.05)":"rgba(255,255,255,.18)";ctx.fillRect(0,0,vw,vh);ctx.fillStyle="rgba(255,255,255,.85)";for(let i=0;i<70;i++){const sx=(i*137+wt*(18+i%5*6))%(vw+20)-10,sy=(i*71+wt*(40+i%7*8))%(vh+20)-10;ctx.beginPath();ctx.arc(sx,sy,1.2+(i%3)*.6,0,7);ctx.fill()}}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.18)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh);
 }
 function nearPlace(){let best=null,bd=70;for(const p of PLACES){if(!regionOpen(p.region))continue;const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
@@ -838,7 +889,7 @@ function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/
 let lockT=0;
 function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
 function lockedNotice(r){if(wt-lockT<2)return;lockT=wt;banner(REGION_NAME[r]+" is locked","r");SFX.nope()}
-cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
+cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){questFromNPC(np);return}const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
 function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;moving=true}
 
 /* bottom bar */
@@ -859,7 +910,7 @@ function renderHud(){
   $("cash").textContent=fmt(S.cash);
   $("multTxt").textContent=S.rebirths||S.tok.profit?`×${mult().toFixed(2).replace(/\.?0+$/,"")} money · ${S.rebirths} rebirth${S.rebirths===1?"":"s"}`:"";
   const h=Math.floor(S.clock),m=Math.floor((S.clock%1)*60/15)*15;$("timeTxt").textContent=`${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
-  $("dayTxt").textContent="Day "+S.day;
+  $("dayTxt").textContent="Day "+S.day+" · "+season().n;
   const me=maxEnergy();$("enTxt").textContent=`${Math.floor(S.energy)}/${me}`;
   const eb=$("enBar");eb.firstChild.style.width=(S.energy/me*100)+"%";eb.classList.toggle("low",S.energy<me*.2);
   $("strTxt").textContent=S.pr+" kg · "+strTier();$("xpBar").firstChild.style.width=(((S.pr-20)%10)/10*100)+"%";
@@ -872,8 +923,8 @@ function roomHead(title){return `<div class="roomhead"><button class="leave" id=
 function updMini(){const c=$("rCash");if(c){c.textContent=fmt(S.cash);const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
-  const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:"#f2762e"}).c);
-  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,cafe:openCafe,mall:openMall,temple:openTemple,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade})[k]();
+  const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
+  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,cafe:openCafe,mall:openMall,temple:openTemple,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();G=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
@@ -893,21 +944,25 @@ function barbellSVG(w){
    <rect x="150" y="128" width="100" height="10" rx="4" fill="#5b6272"/>
    <text x="200" y="40" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="22" fill="var(--ink)">${w} kg</text></svg>`;
 }
-let G=null;
+let G=null,G0lift=null;
 const liftCost=w=>Math.max(1,Math.ceil((2+w/40)*(G&&G.half?.5:1)));
-function zoneFor(w){const pr=S.pr;let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;return clamp(z,.06,.5)}
+function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;return clamp(z,.06,.5)}
 function newZone(){const z=zoneFor(G.w);G.z=[rnd(.08,.92-z),0];G.z[1]=G.z[0]+z}
+const LIFTS=[["bench","Bench"],["squat","Squat"],["dead","Deadlift"]];
+const liftTotal=()=>S.lifts.bench+S.lifts.squat+S.lifts.dead;
+const syncPR=()=>{S.pr=Math.max(S.lifts.bench,S.lifts.squat,S.lifts.dead)};
 function openGym(half){
-  G={w:Math.min(S.pr+5,S.pr+10),pos:0,dir:1,z:[.4,.6],busy:false,half:!!half};newZone();
+  const l0=G0lift||"dead";G={lift:l0,w:S.lifts[l0]+5,pos:0,dir:1,z:[.4,.6],busy:false,half:!!half};newZone();
   const draw=()=>{
-    const lv=strLv(),cost=liftCost(G.w),over=G.w>S.pr;
+    const lv=strLv(),cost=liftCost(G.w),lp=S.lifts[G.lift],over=G.w>lp;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(G.half?"Muscle Beach":"Gym")}
+      <div class="lifttabs">${LIFTS.map(([k,n])=>`<button class="${G.lift===k?"on":""}" data-lift="${k}"><b>${n}</b><span>${S.lifts[k]} kg</span></button>`).join("")}</div>
       <div class="art" id="gArt">${barbellSVG(G.w)}</div>
-      <div class="kv"><div><span class="eyebrow">Max lift</span><b>${S.pr} kg</b></div><div><span class="eyebrow">Strength</span><b>Lv ${lv}</b></div>
+      <div class="kv"><div><span class="eyebrow">Total (rank)</span><b>${liftTotal()} kg</b></div><div><span class="eyebrow">Strength</span><b>Lv ${lv} · ${strTier()}</b></div>
         <div><span class="eyebrow">Stash slots</span><b>+${Math.min(lv,12)}</b></div><div><span class="eyebrow">Max energy</span><b>+${2*lv}</b></div></div>
-      <div class="wsel"><button class="wbtn" id="wDown" aria-label="Less weight">−</button><div class="wval"><b>${G.w} kg</b><span class="${over?"pr":""}">${over?"New PR attempt":G.w===S.pr?"Your max":"Under your max"}</span></div><button class="wbtn" id="wUp" aria-label="More weight">+</button></div>
+      <div class="wsel"><button class="wbtn" id="wDown" aria-label="Less weight">−</button><div class="wval"><b>${G.w} kg</b><span class="${over?"pr":""}">${over?"New "+LIFTS.find(x=>x[0]===G.lift)[1].toLowerCase()+" PR attempt":G.w===lp?"Your max":"Under your max"}</span></div><button class="wbtn" id="wUp" aria-label="More weight">+</button></div>
       <div class="meter" id="meter"><i class="zone" id="zone" style="left:${G.z[0]*100}%;width:${(G.z[1]-G.z[0])*100}%"></i><i class="needle" id="needle"></i></div>
-      <button class="bigbtn" id="liftBtn">Lift ${G.w} kg<small>Tap when the needle is in the green · ${cost} energy${S.protein>0?" · protein: bigger zone":""}</small></button>
+      <button class="bigbtn" id="liftBtn">Lift ${G.w} kg<small>Tap in the green · ${cost} energy${S.protein>0?" · protein":""}${S.buffs&&S.buffs.fed>0?" · well fed":""}${S.awake>20?" · tired, smaller zone":""}</small></button>
       <div class="sechead"><h3>Strength perks</h3><span class="eyebrow">${strTier()} · ${S.pr} kg</span></div>
       <div class="sperks">
         <div class="on"><b>Every 10 kg</b><span>+1 stash slot (up to 12), +2 max energy, more patient sellers</span></div>
@@ -915,19 +970,21 @@ function openGym(half){
         <div class="on"><b>Arena power</b><span>Your max lift is your arm wrestling strength</span></div>
         ${STR_PERKS.map(([kg,t,d])=>`<div class="${hasStr(kg)?"on":""}"><b>${t} <em>${kg} kg</em></b><span>${d}</span></div>`).join("")}
       </div>
-      <p class="fine">Lift more than your max to set a new PR. You can try up to 10 kg over it. Your character gets bigger as you get stronger.</p></div>`;
+      <p class="fine">Each lift has its own PR, and you can try up to 10 kg over it. Your strength perks use your best lift. Your total of all three counts at powerlifting meets in the Arena.</p></div>`;
     $("leaveBtn").onclick=closeRoom;
-    const setW=w=>{G.w=clamp(w,20,S.pr+10);newZone();draw()};
+    const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+10);newZone();draw()};
+    $("room").querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+5;newZone();draw()});
     $("wDown").onclick=()=>setW(G.w-2.5);$("wUp").onclick=()=>setW(G.w+2.5);
     $("liftBtn").onclick=e=>{audioOn();if(G.busy)return;if(!spend(liftCost(G.w),e.currentTarget))return;
       const ok=G.pos>=G.z[0]&&G.pos<=G.z[1];G.busy=true;
       const bar=$("liftBar");
       if(ok){bar.classList.add("up");SFX.lift();buzz(10);S.stats.lifted++;S.stats.heaviest=Math.max(S.stats.heaviest||20,G.w);
-        if(G.w>S.pr){const before=strLv();S.pr=G.w;SFX.level();banner("New PR "+S.pr+" kg","u");if(strLv()>before)banner("Strength Lv "+strLv(),"a")}
+        dailyProg("lift");
+        if(G.w>S.lifts[G.lift]){const before=strLv();S.lifts[G.lift]=G.w;syncPR();SFX.level();dailyProg("pr");banner(LIFTS.find(x=>x[0]===G.lift)[1]+" PR "+G.w+" kg","u");if(strLv()>before)banner("Strength Lv "+strLv(),"a")}
         else floatAt(e.currentTarget,"Clean lift","var(--up)")}
       else{$("gArt").classList.add("fail");SFX.nope();buzz([30,40,30]);floatAt(e.currentTarget,"Failed the lift","var(--down)")}
       dirty=true;updMini();
-      setTimeout(()=>{if(!G)return;G.busy=false;if(ok&&G.w>=S.pr&&G.w<S.pr+10)G.w=Math.min(S.pr+10,G.w+2.5);newZone();draw()},ok?650:550);
+      setTimeout(()=>{if(!G)return;G.busy=false;const lp2=S.lifts[G.lift];if(ok&&G.w>=lp2&&G.w<lp2+10)G.w=Math.min(lp2+10,G.w+2.5);newZone();draw()},ok?650:550);
     };
   };draw();
 }
@@ -946,7 +1003,16 @@ function openHome(){
   const draw=()=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Home")}
       <div class="art">${homeArt()}</div>
-      <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning</small></button>
+      <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
+      ${dailyCard()}
+      <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
+      <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
+      ${Object.keys(S.veh).length?`<div class="sechead"><h3>Garage</h3><span class="eyebrow">Tap to drive</span></div>
+      <div class="garage">${VEH.filter(v=>S.veh[v.k]).map(v=>`<button class="gcar${ride()===v.k?" on":""}" data-ride="${v.k}"><b>${v.n}</b><span>${v.sp}× speed</span></button>`).join("")}<button class="gcar${S.cur==="walk"?" on":""}" data-ride="walk"><b>Walk</b><span>1× speed</span></button></div>
+      <div class="paints"><span class="eyebrow">Paint</span>${PAINTS.map(c=>`<button class="sw${S.paint===c?" on":""}" data-paint="${c}" style="background:${c}" aria-label="Paint ${c}"></button>`).join("")}</div>`:""}
+      <div class="sechead"><h3>Wardrobe</h3><span class="eyebrow">Unlocked by rebirths</span></div>
+      <div class="paints">${OUTFITS.map(([n,c,rb],i)=>`<button class="sw big${(S.skin||0)===i?" on":""}${S.rebirths<rb?" locked":""}" data-skin="${i}" style="background:${c}" ${S.rebirths<rb?"disabled":""} title="${n}${S.rebirths<rb?" · "+rb+" rebirths":""}">${S.rebirths<rb?rb:""}</button>`).join("")}</div>
+      <p class="fine">${OUTFITS[S.skin||0][0]}${(S.skin||0)>=5?" · crown included":""}. More outfits unlock as you rebirth.</p>
       <div class="sechead"><h3>Your hustle</h3></div>
       <div class="kv">
         <div><span class="eyebrow">Earned this life</span><b>${fmt(S.earned)}</b></div><div><span class="eyebrow">Earned all time</span><b>${fmt(S.stats.earnedAll)}</b></div>
@@ -958,8 +1024,12 @@ function openHome(){
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
     $("leaveBtn").onclick=closeRoom;
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
+    $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
+    $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
+    $("room").querySelectorAll("[data-paint]").forEach(b=>b.onclick=()=>{S.paint=b.dataset.paint;dirty=true;SFX.buy();draw()});
+    $("room").querySelectorAll("[data-skin]").forEach(b=>b.onclick=()=>{S.skin=+b.dataset.skin;dirty=true;SFX.buy();draw()});
     $("sleepBtn").onclick=()=>{audioOn();const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="Zzz";document.body.appendChild(fx);
-      setTimeout(()=>{S.energy=maxEnergy();if(S.clock>=7)S.day++;S.clock=7;dirty=true;draw();updMini()},1300);setTimeout(()=>{fx.remove();banner("Good morning","u")},2600)};
+      setTimeout(()=>{S.energy=maxEnergy();S.awake=0;if(S.clock>=7)S.day++;S.clock=7;dirty=true;draw();updMini()},1300);setTimeout(()=>{fx.remove();banner("Good morning","u")},2600)};
   };draw();
 }
 /* ---------- cafe ---------- */
@@ -979,10 +1049,15 @@ function openMall(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mall")}
       <div class="perks">${UPGRADES.map(u=>{const l=S.up[u.k],mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic${bk===u.k?" bought":""}" data-u="${u.k}" ${mx||c>S.cash?"disabled":""}>
         <span class="t">${u.t}${u.max>1?`<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${u.d}</span><span class="c">${mx?"Owned":fmt(c)}</span></button>`}).join("")}</div>
+      <div class="sechead"><h3>Your shop</h3><span class="eyebrow">Sells from your stash</span></div>
+      <div class="perks"><button class="perk nopic" id="shopRent" ${S.shop.open||S.cash<SHOP_RENT?"disabled":""}><span class="t">${S.shop.open?"✓ ":""}Rent a storefront</span><span class="d">Sells one stash item every 40 seconds at full value, even while you explore.</span><span class="c">${S.shop.open?"Open":fmt(SHOP_RENT)}</span></button>
+      <button class="perk nopic" id="shopWorker" ${!S.shop.open||S.shop.worker||S.cash<SHOP_WORKER?"disabled":""}><span class="t">${S.shop.worker?"✓ ":""}Hire a shop worker</span><span class="d">Sells every 20 seconds instead.</span><span class="c">${S.shop.worker?"Hired":fmt(SHOP_WORKER)}</span></button></div>
       <div class="sechead"><h3>Vehicles</h3><span class="eyebrow">Kept forever</span></div><div class="perks">${vehList("mall")}</div>
       <p class="fine">Upgrades reset when you rebirth, unless you buy Keep your gear at the temple. Vehicles never reset.</p></div>`;
     $("leaveBtn").onclick=closeRoom;
     bindVeh(()=>draw());
+    $("shopRent").onclick=()=>{if(S.shop.open||S.cash<SHOP_RENT)return;S.cash-=SHOP_RENT;S.shop.open=1;dirty=true;SFX.level();banner("Your shop is open","g");draw();updMini()};
+    $("shopWorker").onclick=()=>{if(!S.shop.open||S.shop.worker||S.cash<SHOP_WORKER)return;S.cash-=SHOP_WORKER;S.shop.worker=1;dirty=true;SFX.level();banner("Worker hired","g");draw();updMini()};
     $("room").querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const u=UPGRADES.find(x=>x.k===b.dataset.u),l=S.up[u.k];if(l>=u.max||S.cash<u.cost(l))return;S.cash-=u.cost(l);S.up[u.k]++;SFX.level();dirty=true;const y=$("room").firstChild.scrollTop;draw(u.k);$("room").firstChild.scrollTop=y;updMini()});
   };draw();
 }
@@ -1021,12 +1096,14 @@ function armsSVG(o){return `<svg viewBox="0 0 400 210" aria-hidden="true"><rect 
 function openArena(){
   const list=()=>{A=null;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Arena")}
+      ${meetCard()}
       <div class="note">Arm wrestle for cash. Your power is your max lift: <b>${S.pr} kg</b>. Tap as fast as you can to pin them before the clock runs out. Each match costs 8 energy.</div>
       <div class="perks">${OPPS.map((o,i)=>{const bet=betOf(o),beat=(S.stats.beat||[]).includes(i),r=S.pr/o.kg;return `<button class="perk opp" data-o="${i}" ${bet>S.cash?"disabled":""}>
         <span class="oav" style="background:${o.look[2]}"><i style="background:${o.look[0]}"></i></span>
         <span class="t">${o.n}${beat?' <em class="beat">BEATEN</em>':""}</span><span class="d">${o.kg} kg · ${r>=1.3?"Easy":r>=.9?"Even match":r>=.6?"Tough":"Brutal"} · bet ${fmt(bet)}, win ${fmt(bet*2)}</span>
         <span class="c">Wrestle</span></button>`}).join("")}</div></div>`;
     $("leaveBtn").onclick=closeRoom;
+    const mb=$("meetBtn");if(mb)mb.onclick=()=>runMeet(list);
     $("room").querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{const o=OPPS[+b.dataset.o],bet=betOf(o);if(S.cash<bet)return;if(!spend(8,b))return;S.cash-=bet;dirty=true;match(+b.dataset.o,bet)});
   };
   const match=(i,bet)=>{
@@ -1053,7 +1130,7 @@ function arenaTick(dt){
   A.t-=dt;A.pos-=dt*(.22+.08*Math.sin(wt*2.3+A.i));
   if(A.pos>=1||A.pos<=0||A.t<=0){
     const win=A.pos>=1||(A.t<=0&&A.pos>.5);A.pos=clamp(A.pos,0,1);A.state="done";updArms();
-    if(win){earn(A.bet*2);S.stats.armWins=(S.stats.armWins||0)+1;S.stats.beat=S.stats.beat||[];if(!S.stats.beat.includes(A.i))S.stats.beat.push(A.i);SFX.level();buzz([20,40,20]);banner("You win","u");banner("+"+fmt(A.bet*2),"g")}
+    if(win){earn(A.bet*2);dailyProg("arm");S.stats.armWins=(S.stats.armWins||0)+1;S.stats.beat=S.stats.beat||[];if(!S.stats.beat.includes(A.i))S.stats.beat.push(A.i);SFX.level();buzz([20,40,20]);banner("You win","u");banner("+"+fmt(A.bet*2),"g")}
     else{SFX.loss();buzz([40,60,40]);banner("Pinned","r")}
     dirty=true;updMini();
     const m=$("tugMsg");if(m)m.textContent=win?`You beat ${A.o.n}!`:`${A.o.n} pinned you. Get stronger at the gym.`;
@@ -1061,6 +1138,27 @@ function arenaTick(dt){
     return;
   }
   updArms();
+}
+/* ---------- powerlifting meets ---------- */
+const MEET_NAMES=["Iron Dave","Barbell Betty","Chalky Chen","Big Rosa","Deadlift Dom","Squat Sasha","Benchy Ben","Atlas Aki"];
+const meetPrize=()=>[5000,2000,800].map(v=>Math.round(v*(1+S.rebirths)));
+const meetFee=()=>Math.round(200*(1+S.rebirths));
+function meetCard(){const open=S.day>=(S.meetDay||3),pz=meetPrize();
+  return `<div class="dcard meet"><span class="eyebrow">Powerlifting meet · ${S.trophies||0} trophies</span><b>${open?"Meet day! Your total: "+liftTotal()+" kg":"Next meet on day "+S.meetDay}</b>
+    <span class="dsub">1st ${fmt(pz[0])} · 2nd ${fmt(pz[1])} · 3rd ${fmt(pz[2])} · entry ${fmt(meetFee())} + 30 energy</span>
+    ${open?`<button class="bigbtn" id="meetBtn" style="font-size:1.2rem;padding:14px">Enter the meet</button>`:""}</div>`}
+function runMeet(back){
+  if(S.day<(S.meetDay||3))return;const fee=meetFee();if(S.cash<fee){banner("Need "+fmt(fee),"r");return}if(!spend(30,$("meetBtn")))return;
+  S.cash-=fee;const you=liftTotal(),lvl=Math.max(60,you*rnd(.85,1.05));
+  const field=MEET_NAMES.slice().sort(()=>Math.random()-.5).slice(0,5).map(n=>({n,t:Math.round(lvl*rnd(.75,1.25)/2.5)*2.5}));
+  field.push({n:"You",t:you,me:1});field.sort((a,b)=>b.t-a.t);const place=field.findIndex(x=>x.me)+1,pz=meetPrize()[place-1]||0;
+  S.meetDay=S.day+3;if(pz){earn(pz);S.trophies=(S.trophies||0)+(place===1?1:0)}dirty=true;
+  place===1?SFX.rebirth():pz?SFX.level():SFX.loss();banner(place===1?"Champion!":place<=3?"Podium: #"+place:"Finished #"+place,place===1?"g":place<=3?"u":"r");
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Arena")}<h2 class="h2"><small>POWERLIFTING MEET · DAY ${S.day}</small>${place===1?"Champion.":"#"+place+" place."}</h2>
+    <div class="stmt">${field.map((x,i)=>`<div><span${x.me?' style="font-weight:800;color:var(--accent)"':""}>${i+1}. ${x.n}</span><span>${x.t} kg</span></div>`).join("")}</div>
+    <div class="note">${pz?"You won <b>"+fmt(pz)+"</b>.":"No prize this time."} Next meet on day ${S.meetDay}. Raise your bench, squat and deadlift to climb the podium.</div>
+    <button class="cta" id="meetBack"><span>Back to the Arena</span>${ARROW}</button></div>`;
+  $("leaveBtn").onclick=closeRoom;$("meetBack").onclick=()=>back();updMini();
 }
 /* ---------- bank ---------- */
 const BANK_RATE=.005; // per minute of play
@@ -1075,6 +1173,21 @@ function openBank(){
     $("dAll").onclick=()=>dep(S.cash);$("dHalf").onclick=()=>dep(S.cash/2);
     $("wAll").onclick=()=>{const a=Math.floor(S.bank||0);if(a<=0)return;S.bank-=a;S.cash+=a;SFX.sell();dirty=true;draw();updMini()};
   };draw();
+}
+/* ---------- daily challenge + login reward ---------- */
+function ensureDaily(){const k=dayKey();if(!S.daily||S.daily.d!==k){let h=0;for(const ch of k)h=(h*31+ch.charCodeAt(0))%9973;const t=DAILY[h%DAILY.length];S.daily={d:k,k:t.k,t:t.t,need:t.k==="earn"?Math.round(3000*(1+S.rebirths)):t.need,have:0,done:0};dirty=true}}
+function dailyCard(){ensureDaily();const d=S.daily,rw=Math.round(1500*(1+S.rebirths*.5));return `<div class="dcard${d.done?" done":""}"><span class="eyebrow">Today's challenge</span><b>${d.k==="earn"?"Earn "+fmt(d.need):d.t}</b><div class="bar xp"><i style="width:${Math.min(100,d.have/d.need*100)}%"></i></div><span class="dsub">${d.done?"Done · "+fmt(rw)+" claimed":(d.k==="earn"?fmt(d.have)+" / "+fmt(d.need):Math.floor(d.have)+" / "+d.need)+" · reward "+fmt(rw)}</span></div>`}
+const LOGIN_RW=[200,300,500,800,1200,2000,5000];
+function loginReward(then){
+  const today=dayKey();if(S.login.d===today)return then();
+  S.login.streak=S.login.d===dayKey(-1)?S.login.streak+1:1;S.login.d=today;
+  const day=((S.login.streak-1)%7),rw=Math.round(LOGIN_RW[day]*(1+S.rebirths*.5));
+  const o=$("overlay");o.hidden=false;
+  o.innerHTML=`<div class="sheet"><h2 class="h2"><small>DAILY LOGIN · ${S.login.streak} DAY STREAK</small>Welcome back.</h2>
+    <div class="cal">${LOGIN_RW.map((v,i)=>`<div class="${i<day?"past":i===day?"today":""}"><span>Day ${i+1}</span><b>${fmt(Math.round(v*(1+S.rebirths*.5)))}</b></div>`).join("")}</div>
+    <p class="lede">Come back tomorrow to keep the streak going. Day 7 pays the most.</p>
+    <button class="cta" id="lrClaim"><span>Claim ${fmt(rw)}</span>${ARROW}</button></div>`;
+  $("lrClaim").onclick=()=>{S.cash+=rw;dirty=true;save();SFX.level();banner("+"+fmt(rw),"g");o.hidden=true;then()};
 }
 /* ---------- goals (story chain from Uncle Ray) ---------- */
 const GOALS=[
@@ -1156,8 +1269,9 @@ function openSale(){
 }
 const tileHTML=it=>`<span class="tile sm" style="--h:${CAT[it.cat].h};grid-row:1/3">${it.code}</span>`;
 /* ---------- dealership ---------- */
-function vehList(shop){return VEH.filter(v=>!shop||v.shop===shop).map(v=>{const own=S.veh[v.k];return `<button class="perk nopic" data-v="${v.k}" ${own||v.cost>S.cash?"disabled":""}><span class="t">${v.n}</span><span class="d">${v.d} Yours forever, even after rebirth.</span><span class="c">${own?"Owned":fmt(v.cost)}</span></button>`}).join("")}
-function bindVeh(redraw){$("room").querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{const v=VEH.find(x=>x.k===b.dataset.v);if(S.veh[v.k]||S.cash<v.cost)return;S.cash-=v.cost;S.veh[v.k]=1;dirty=true;SFX.level();buzz([20,40,20]);banner(v.n+" unlocked","g");redraw();updMini()})}
+const vehBack=v=>Math.round(v.cost*(v.resale||.7));
+function vehList(shop){return VEH.filter(v=>!shop||v.shop===shop).map(v=>{const own=S.veh[v.k];return `<button class="perk nopic" data-v="${v.k}" ${!own&&v.cost>S.cash?"disabled":""}><span class="t">${own?"✓ ":""}${v.n}</span><span class="d">${v.d} ${own?"Tap to sell it back.":"Yours forever, even after rebirth."}</span><span class="c">${own?"Sell "+fmt(vehBack(v)):fmt(v.cost)}</span></button>`}).join("")}
+function bindVeh(redraw){$("room").querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{const v=VEH.find(x=>x.k===b.dataset.v);if(S.veh[v.k]){delete S.veh[v.k];if(S.cur===v.k)S.cur=null;S.cash+=vehBack(v);dirty=true;SFX.sell();banner("Sold "+v.n,"u");redraw();updMini();return}if(S.cash<v.cost)return;S.cash-=v.cost;S.veh[v.k]=1;dirty=true;SFX.level();buzz([20,40,20]);banner(v.n+" unlocked","g");redraw();updMini()})}
 function carArt(){return `<svg viewBox="0 0 400 150" aria-hidden="true"><rect width="400" height="150" fill="var(--sunk)"/><rect y="112" width="400" height="38" fill="var(--line)"/>
   <path d="M70 108c0-18 14-26 34-30l40-26c10-6 22-9 34-9h70c14 0 26 6 34 16l20 22c26 2 40 10 40 27v6H70Z" fill="#e2364a"/><path d="M150 54h56v24h-82Z" fill="#1b1f2a" opacity=".85"/><path d="M214 54h44c8 0 14 4 20 10l12 14h-76Z" fill="#1b1f2a" opacity=".85"/>
   <circle cx="122" cy="112" r="20" fill="#141414"/><circle cx="122" cy="112" r="9" fill="#9aa3b3"/><circle cx="282" cy="112" r="20" fill="#141414"/><circle cx="282" cy="112" r="9" fill="#9aa3b3"/><rect x="318" y="88" width="14" height="8" rx="3" fill="#ffe08a"/></svg>`}
@@ -1231,25 +1345,27 @@ function simTick(dt){
 /* positions */
 const liqPx=ps=>ps.side==="long"?ps.entry*(1-.9/ps.lev):ps.entry*(1+.9/ps.lev);
 const posPnl=(k,ps)=>{const p=(F.px[k]||{}).p;return p?(p-ps.entry)*ps.qty*(ps.side==="long"?1:-1):0};
-function checkLiq(k){const ps=S&&S.pos&&S.pos[k],p=(F.px[k]||{}).p;if(!ps||!p)return;if(ps.side==="long"?p<=liqPx(ps):p>=liqPx(ps)){delete S.pos[k];S.stats.liqs=(S.stats.liqs||0)+1;dirty=true;SFX.scam();buzz([40,60,40]);banner(TS[k].n+" liquidated","r");banner("−"+fmt(ps.m).replace("$","$"),"r");if(room==="trade")drawTrade()}}
+function checkLiq(k){const ps=S&&S.pos&&S.pos[k],p=(F.px[k]||{}).p;if(!ps||!p)return;
+  const roe=posPnl(k,ps)/ps.m;if(ps.tp&&roe>=ps.tp)return closePos(k,null,"Take profit");if(ps.sl&&roe<=-ps.sl)return closePos(k,null,"Stop loss");if(ps.side==="long"?p<=liqPx(ps):p>=liqPx(ps)){delete S.pos[k];S.trades=S.trades||[];S.trades.push({k,side:ps.side,lev:ps.lev,net:-Math.round(ps.m),t:Date.now(),why:"Liquidated"});S.stats.liqs=(S.stats.liqs||0)+1;dirty=true;SFX.scam();buzz([40,60,40]);banner(TS[k].n+" liquidated","r");banner("−"+fmt(ps.m).replace("$","$"),"r");if(room==="trade")drawTrade()}}
 function openPos(side,el){
   const k=F.sel,p=(F.px[k]||{}).p;if(!p){floatAt(el,"Waiting for price…","var(--down)");return}
   if(S.pos[k]){floatAt(el,"Close your "+k+" trade first","var(--down)");return}
   const m=Math.floor(S.cash*T.mp);if(m<5){floatAt(el,"Need at least $5","var(--down)");SFX.nope();return}
   if(!spend(2,el))return;
   const fee=m*T.lev*FEE;if(m+fee>S.cash){floatAt(el,"Not enough cash for fees","var(--down)");return}
-  S.cash-=m+fee;S.pos[k]={side,lev:T.lev,m,entry:p,qty:m*T.lev/p,t:Date.now()};dirty=true;
+  S.cash-=m+fee;S.pos[k]={side,lev:T.lev,m,entry:p,qty:m*T.lev/p,t:Date.now(),tp:T.tp,sl:T.sl};dirty=true;
   SFX.buy();buzz(12);banner((side==="long"?"Long ":"Short ")+k+" "+T.lev+"×","a");drawTrade();updMini();
 }
-function closePos(k,el){
+function closePos(k,el,why){
   const ps=S.pos[k],p=(F.px[k]||{}).p;if(!ps||!p)return;
   const pnl=posPnl(k,ps),fee=p*ps.qty*FEE,net=pnl-fee;delete S.pos[k];
   S.cash+=ps.m;if(net>0)earn(net);else S.cash=Math.max(0,S.cash+net);
-  S.stats.tradePnl=(S.stats.tradePnl||0)+net;if(net>0)S.stats.tradeWins=(S.stats.tradeWins||0)+1;dirty=true;
+  S.stats.tradePnl=(S.stats.tradePnl||0)+net;if(net>0){S.stats.tradeWins=(S.stats.tradeWins||0)+1;dailyProg("tradewin")}dirty=true;
   floatAt(el||$("rCash"),(net>=0?"+":"−")+fmt(Math.abs(net)).replace("−",""),net>=0?"var(--up)":"var(--down)");
-  net>=0?SFX.sell(3):SFX.loss();banner(net>=0?"Profit "+fmt(net):"Loss "+fmt(-net),net>=0?"u":"r");drawTrade();updMini();
+  S.trades=S.trades||[];S.trades.push({k,side:ps.side,lev:ps.lev,net:Math.round(net),t:Date.now(),why:why||"Manual"});if(S.trades.length>40)S.trades.shift();
+  net>=0?SFX.sell(3):SFX.loss();if(why)banner(why+" "+k,net>=0?"u":"r");banner(net>=0?"Profit "+fmt(net):"Loss "+fmt(-net),net>=0?"u":"r");drawTrade();updMini();
 }
-let T={mp:.25,lev:10};
+let T={mp:.25,lev:10,tp:0,sl:0};const TPS=[0,.1,.25,.5,1],SLS=[0,.1,.25,.5];
 function openTrade(){
   feedInit().then(()=>{if(room==="trade"){loadCandles();drawTrade()}});
   if(F.src)loadCandles();
@@ -1269,18 +1385,23 @@ function drawTrade(){
       <canvas id="tchart" class="tchart"></canvas>
     </div>
     ${ps?`<div class="tpos ${ps.side}"><div class="tph"><span class="tside">${ps.side.toUpperCase()} ${ps.lev}×</span><span class="eyebrow">${t.n}</span><b id="pPnl"></b></div>
-       <div class="kv tkv"><div><span class="eyebrow">Entry</span><b>${tfmt(k,ps.entry)}</b></div><div><span class="eyebrow">Mark</span><b id="pMark">${tfmt(k,p)}</b></div><div><span class="eyebrow">Liquidation</span><b style="color:var(--down)">${tfmt(k,liqPx(ps))}</b></div><div><span class="eyebrow">Margin</span><b>${fmt(ps.m)}</b></div></div>
+       <div class="kv tkv"><div><span class="eyebrow">Entry</span><b>${tfmt(k,ps.entry)}</b></div><div><span class="eyebrow">Mark</span><b id="pMark">${tfmt(k,p)}</b></div><div><span class="eyebrow">Liquidation</span><b style="color:var(--down)">${tfmt(k,liqPx(ps))}</b></div><div><span class="eyebrow">Margin</span><b>${fmt(ps.m)}</b></div><div><span class="eyebrow">Take profit</span><b style="color:var(--up)">${ps.tp?"+"+ps.tp*100+"% ROE":"Off"}</b></div><div><span class="eyebrow">Stop loss</span><b style="color:var(--down)">${ps.sl?"−"+ps.sl*100+"% ROE":"Off"}</b></div></div>
        <button class="bigbtn" id="tClose">Close position<small id="pNet"></small></button></div>`
      :`<div class="tpanel"><div class="trow"><span class="eyebrow">Margin</span><div class="chips">${MPCT.map(v=>`<button class="${v===T.mp?"on":""}" data-mp="${v}">${v===1?"Max":v*100+"%"}</button>`).join("")}</div></div>
        <div class="trow"><span class="eyebrow">Leverage</span><div class="chips">${LEVS.map(v=>`<button class="${v===T.lev?"on":""}" data-lev="${v}">${v}×</button>`).join("")}</div></div>
+       <div class="trow two"><div><span class="eyebrow">Take profit</span><div class="chips">${TPS.map(v=>`<button class="${v===T.tp?"on":""}" data-tp="${v}">${v?"+"+v*100+"%":"Off"}</button>`).join("")}</div></div>
+       <div><span class="eyebrow">Stop loss</span><div class="chips">${SLS.map(v=>`<button class="${v===T.sl?"on":""}" data-sl="${v}">${v?"−"+v*100+"%":"Off"}</button>`).join("")}</div></div></div>
        <p class="tinfo">Margin <b>${fmt(m)}</b> · size <b>${fmt(notional)}</b> · liq long ${p?tfmt(k,p*(1-.9/T.lev)):"—"} / short ${p?tfmt(k,p*(1+.9/T.lev)):"—"} · fee ${fmt(notional*FEE)}</p>
        <div class="tbtns"><button class="tlong" id="tLong">Long<small>price goes up</small></button><button class="tshort" id="tShort">Short<small>price goes down</small></button></div></div>`}
+    ${tradeStats()}
     <p class="fine">${F.src==="sim"?"The live price feed can't be reached from here, so these prices are simulated.":"Prices are real futures prices streamed live."} All money here is in-game cash. Positions stay open while you explore, and get liquidated if price hits the liquidation level. Rebirth wipes open trades.</p></div>`;
   $("room").firstChild.scrollTop=y;$("leaveBtn").onclick=closeRoom;
   $("room").querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{if(F.sel===b.dataset.s)return;F.sel=b.dataset.s;loadCandles();drawTrade()});
   $("room").querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>{F.tf=b.dataset.tf;loadCandles();drawTrade()});
   $("room").querySelectorAll("[data-mp]").forEach(b=>b.onclick=()=>{T.mp=+b.dataset.mp;drawTrade()});
   $("room").querySelectorAll("[data-lev]").forEach(b=>b.onclick=()=>{T.lev=+b.dataset.lev;drawTrade()});
+  $("room").querySelectorAll("[data-tp]").forEach(b=>b.onclick=()=>{T.tp=+b.dataset.tp;drawTrade()});
+  $("room").querySelectorAll("[data-sl]").forEach(b=>b.onclick=()=>{T.sl=+b.dataset.sl;drawTrade()});
   const L=$("tLong");if(L){L.onclick=e=>{audioOn();openPos("long",e.currentTarget)};$("tShort").onclick=e=>{audioOn();openPos("short",e.currentTarget)}}
   const C=$("tClose");if(C)C.onclick=e=>{audioOn();closePos(k,e.currentTarget)};
   F.dirty=true;tradeTick(0,true);
@@ -1313,8 +1434,22 @@ function drawChart(){
   const lp=(F.px[k]||{}).p||v[v.length-1].c,ly=Y(lp);
   const line=(yy,col,label)=>{g.strokeStyle=col;g.setLineDash([4,4]);g.beginPath();g.moveTo(0,yy);g.lineTo(w-axis,yy);g.stroke();g.setLineDash([]);g.fillStyle=col;g.fillRect(w-axis+2,yy-9,axis-4,18);g.fillStyle="#fff";g.font="700 10px "+cs.getPropertyValue("--mono");g.fillText(label,w-axis+6,yy)};
   if(ps&&lo<liqPx(ps)&&liqPx(ps)<hi)line(Y(liqPx(ps)),DN,"LIQ");
-  if(ps)line(Y(ps.entry),"#8a93a4","ENTRY");
+  if(ps){const dir=ps.side==="long"?1:-1,at=r=>ps.entry*(1+dir*r/ps.lev);if(ps.tp){const v2=at(ps.tp);if(v2>lo&&v2<hi)line(Y(v2),UP,"TP")}if(ps.sl){const v2=at(-ps.sl);if(v2>lo&&v2<hi)line(Y(v2),DN,"SL")}line(Y(ps.entry),"#8a93a4","ENTRY")}
   line(ly,lp>=v[v.length-1].o?UP:DN,tfmt(k,lp).replace("$",""));
+}
+const RIVAL_TR=[["WhaleWatcher",1],["CandleQueen",.7],["DegenDan",.4],["LeverageLarry",.25],["HODLHannah",.12]];
+function rivalPnl(i){const days=S.day+S.rebirths*14,sc=RIVAL_TR[i][1];let h=i*977+days*31;const wob=((h%200)-90)/100;return Math.round((2000+days*days*40)*sc*(1+wob*.3))}
+function tradeStats(){
+  const tr=S.trades||[],wins=tr.filter(t=>t.net>0).length,best=tr.reduce((a,t)=>Math.max(a,t.net),0),tot=S.stats.tradePnl||0;
+  let cum=0;const pts=tr.map(t=>cum+=t.net);
+  const sp=pts.length>1?(()=>{const mn=Math.min(0,...pts),mx=Math.max(0,...pts),rg=mx-mn||1;const d=pts.map((v,i)=>(i?"L":"M")+(i/(pts.length-1)*100).toFixed(1)+" "+(28-(v-mn)/rg*26).toFixed(1)).join("");return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" style="height:44px;color:${tot>=0?"var(--up)":"var(--down)"}"><path class="a" d="${d}L100 30L0 30Z"/><path class="l" d="${d}" vector-effect="non-scaling-stroke"/></svg>`})():"";
+  const board=RIVAL_TR.map((r,i)=>({n:r[0],v:rivalPnl(i)})).concat([{n:"You",v:Math.round(tot),me:1}]).sort((a,b)=>b.v-a.v);
+  return `<div class="sechead"><h3>Your trading</h3><span class="eyebrow">${tr.length} trades</span></div>
+   <div class="kv"><div><span class="eyebrow">Total PnL</span><b style="color:${tot>=0?"var(--up)":"var(--down)"}">${tot>=0?"+":"−"}${fmt(Math.abs(tot)).replace("−","")}</b></div><div><span class="eyebrow">Win rate</span><b>${tr.length?Math.round(wins/tr.length*100)+"%":"—"}</b></div><div><span class="eyebrow">Best trade</span><b>${fmt(best)}</b></div><div><span class="eyebrow">Liquidations</span><b>${S.stats.liqs||0}</b></div></div>
+   ${sp}
+   ${tr.length?`<div class="stmt">${tr.slice(-6).reverse().map(t=>`<div><span>${t.k} ${t.side} ${t.lev}× · <span style="color:var(--muted)">${t.why}</span></span><span class="${t.net>=0?"pos":"neg"}">${t.net>=0?"+":"−"}${fmt(Math.abs(t.net)).replace("−","")}</span></div>`).join("")}</div>`:""}
+   <div class="sechead"><h3>Leaderboard</h3><span class="eyebrow">All-time trading PnL</span></div>
+   <div class="stmt">${board.map((x,i)=>`<div><span${x.me?' style="font-weight:800;color:var(--accent)"':""}>${i+1}. ${x.n}</span><span class="${x.v>=0?"pos":"neg"}">${x.v>=0?"":"−"}${fmt(Math.abs(x.v)).replace("−","")}</span></div>`).join("")}</div>`;
 }
 function renderTrChip(){
   const el=$("trChip"),ks=Object.keys(S.pos||{});if(!ks.length){el.hidden=true;return}el.hidden=false;
@@ -1322,16 +1457,97 @@ function renderTrChip(){
   el.innerHTML=`<span class="pk">Trades</span><span class="pt">${ks.map(k=>k+" "+S.pos[k].side[0].toUpperCase()+S.pos[k].lev+"×").join(" · ")}</span><span class="pr" style="color:${pnl>=0?"var(--up)":"var(--down)"}">${pnl>=0?"+":"−"}${fmt(Math.abs(pnl)).replace("−","")}</span>`;
 }
 $("trChip").onclick=()=>{audioOn();if(!room&&(S.up.phone||nearPlace()===PL.trade))openRoom("trade");else if(!room)walkTo("trade")};
+/* ---------- airport, nightclub, docks ---------- */
+const fare=()=>Math.round(1500*(1+S.rebirths*.6));
+function planeArt(){return `<svg viewBox="0 0 400 140" aria-hidden="true"><rect width="400" height="140" fill="var(--sunk)"/><rect y="104" width="400" height="36" fill="var(--line)"/>${[40,110,180,250,320].map(x=>`<rect x="${x}" y="120" width="40" height="5" fill="var(--surface)"/>`).join("")}
+  <path d="M60 80h230c26 0 46 6 46 14s-20 14-46 14H90l-30-14Z" fill="#f2f2f2"/><path d="M180 82l-40-46h22l60 46Z" fill="#3b6fd8"/><path d="M190 106l-30 30h20l44-30Z" fill="#3b6fd8"/><path d="M70 82l-16-30h14l24 30Z" fill="#3b6fd8"/>${[210,226,242,258,274].map(x=>`<circle cx="${x}" cy="92" r="4" fill="#1b1f2a"/>`).join("")}</svg>`}
+function openAirport(){
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
+    <div class="note">Fly abroad to sell where your items are worth more. Each round trip costs <b>${fmt(fare())}</b>. When you leave the market abroad, you fly home.</div>
+    <div class="perks">
+      <button class="perk nopic" data-fly="tokyo" ${S.cash<fare()?"disabled":""}><span class="t">Tokyo</span><span class="d">Cards and toys sell for +45%, tech +20%. Cheaper listings.</span><span class="c">${fmt(fare())}</span></button>
+      <button class="perk nopic" data-fly="paris" ${S.cash<fare()?"disabled":""}><span class="t">Paris</span><span class="d">Vintage sells for +45%, watches +35%, kicks +15%.</span><span class="c">${fmt(fare())}</span></button>
+    </div></div>`;
+  $("leaveBtn").onclick=closeRoom;
+  $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{if(S.cash<fare())return;S.cash-=fare();dirty=true;SFX.rebirth();
+    const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="✈";document.body.appendChild(fx);const k=b.dataset.fly;
+    setTimeout(()=>{room=k;$("room").style.setProperty("--pc",k==="tokyo"?"#e2364a":"#2a5bd7");openMarket(MKT[k]);$("leaveBtn").onclick=closeRoom;banner("Welcome to "+MKT[k].n,"a")},1200);setTimeout(()=>fx.remove(),2600)});
+}
+const vipCost=()=>Math.max(500,Math.round(S.cash*.03));
+function openClub(){
+  const draw=()=>{const on=S.buffs&&S.buffs.hype>0;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Nightclub")}
+      <div class="art clubart"><svg viewBox="0 0 400 140" aria-hidden="true"><rect width="400" height="140" fill="#120a24"/>${Array.from({length:22},(_,i)=>`<circle cx="${(i*53)%400}" cy="${(i*37)%100+10}" r="${2+(i%3)}" fill="${["#ff4fd8","#4fe3ff","#ffe14f"][i%3]}" opacity=".8"/>`).join("")}<rect y="110" width="400" height="30" fill="#1f1438"/>${[60,140,220,300].map((x,i)=>`<circle cx="${x}" cy="96" r="10" fill="#e8b896"/><rect x="${x-10}" y="104" width="20" height="18" rx="6" fill="${["#ff4fd8","#4fe3ff","#ffe14f","#2fd28a"][i]}"/>`).join("")}</svg></div>
+      <div class="note">${on?`<b>Hype is on for ${Math.ceil(S.buffs.hype)}s.</b> Every sale pays +30%.`:"Book a VIP table to network with collectors. You get <b>+30% on every sale for 3 minutes</b>."}</div>
+      <button class="bigbtn" id="vipBtn" ${on||S.cash<vipCost()?"disabled":""}>VIP table<small>${on?"Already hyped":fmt(vipCost())}</small></button>
+      <button class="bigbtn alt" id="danceBtn">Dance<small>15 energy · maybe meet someone generous</small></button></div>`;
+    $("leaveBtn").onclick=closeRoom;
+    $("vipBtn").onclick=()=>{const c=vipCost();if(S.cash<c||(S.buffs.hype>0))return;S.cash-=c;S.buffs.hype=180;dirty=true;SFX.rebirth();banner("VIP · +30% sales","g");draw();updMini()};
+    $("danceBtn").onclick=e=>{if(!spend(15,e.currentTarget))return;SFX.hot();const r=Math.random();
+      if(r<.35){const v=Math.round(Math.max(60,S.cash*.02));S.cash+=v;banner("Got a "+fmt(v)+" tip","u")}else if(r<.5){S.buffs.hype=Math.max(S.buffs.hype||0,60);banner("Met a collector · 60s hype","g")}else banner("Great night","a");dirty=true;draw();updMini()};
+  };draw();
+}
+function openDocks(){
+  const draw=()=>{const cars=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)),best=cars.sort((a,b)=>b.sp-a.sp)[0],shown=S.flags.showDay===S.day;
+    const opp=[{n:"Tuner Tim",sp:2.6,bet:1000},{n:"Drift Queen",sp:3.2,bet:6000},{n:"Midnight Max",sp:4.2,bet:30000}];
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Docks Car Meet")}
+      ${!best?`<div class="note">Bring a car to join the meet. Trucks, coupes and hypercars are at the Dealership downtown, and the sports car too.</div>`:`
+      <div class="note">You're rolling up in your <b>${best.n}</b> (${best.sp}× speed).</div>
+      <button class="bigbtn" id="showBtn" ${shown?"disabled":""}>Show off your cars<small>${shown?"Come back tomorrow":"Earn fans and cash for each car you own"}</small></button>
+      <div class="sechead"><h3>Street races</h3><span class="eyebrow">Tap GO on green for a better launch</span></div>
+      <div class="perks">${opp.map((o,i)=>{const bet=Math.round(o.bet*(1+S.rebirths*.5));return `<button class="perk nopic" data-race="${i}" ${S.cash<bet?"disabled":""}><span class="t">${o.n}</span><span class="d">${o.sp}× car · bet ${fmt(bet)}, win ${fmt(bet*2)}</span><span class="c">Race</span></button>`}).join("")}</div>`}</div>`;
+    $("leaveBtn").onclick=closeRoom;
+    const sb=$("showBtn");if(sb)sb.onclick=()=>{if(S.flags.showDay===S.day)return;S.flags.showDay=S.day;const v=Math.round(VEH.filter(x=>S.veh[x.k]&&CARS.includes(x.k)).reduce((a,x)=>a+x.cost*.03,0));earn(v);SFX.level();banner("Car show +"+fmt(v),"g");draw();updMini()};
+    $("room").querySelectorAll("[data-race]").forEach(b=>b.onclick=()=>race(opp[+b.dataset.race],best,draw));
+  };draw();
+}
+function race(o,car,back){
+  const bet=Math.round(o.bet*(1+S.rebirths*.5));if(S.cash<bet)return;S.cash-=bet;dirty=true;
+  $("room").innerHTML=`<div class="room-in">${roomHead("Docks Car Meet")}<div class="lights"><i id="L1"></i><i id="L2"></i><i id="L3"></i></div><p class="fine" id="rMsg">Get ready…</p><button class="bigbtn" id="goBtn">GO<small>Wait for green</small></button></div>`;
+  $("leaveBtn").onclick=closeRoom;
+  let green=0,done=false;const t0=performance.now();
+  setTimeout(()=>$("L1")&&$("L1").classList.add("r"),500);setTimeout(()=>$("L2")&&$("L2").classList.add("r"),1100);
+  const gt=1700+Math.random()*1200;setTimeout(()=>{if(!$("L3"))return;["L1","L2","L3"].forEach(id=>$(id).className="g");green=performance.now()},gt);
+  $("goBtn").onclick=()=>{if(done)return;done=true;let launch;if(!green)launch=-.25;else{const rt=(performance.now()-green)/1000;launch=rt<.25?.2:rt<.5?.1:rt<1?0:-.1}
+    const chance=clamp(car.sp/(car.sp+o.sp)+launch,.05,.95),win=Math.random()<chance;
+    if(win){earn(bet*2);SFX.rebirth();banner("You won the race","g")}else{SFX.loss();banner(o.n+" wins","r")}dirty=true;updMini();
+    $("rMsg").textContent=(green?"Launch "+(launch>0?"perfect!":launch<0?"slow.":"okay."):"False start!")+" "+(win?"You beat "+o.n+".":o.n+" took it.");
+    const g=$("goBtn");g.innerHTML="Back<small>"+(win?"+"+fmt(bet*2):"Lost "+fmt(bet))+"</small>";setTimeout(()=>{if(g.isConnected)g.onclick=back},300)};
+}
+/* ---------- your own shop ---------- */
+const SHOP_RENT=5000,SHOP_WORKER=8000;
+let shopT=30;
+function shopTick(dt){
+  if(!S.shop||!S.shop.open)return;shopT-=dt;if(shopT>0)return;shopT=S.shop.worker?20:40;
+  const i=S.stash.findIndex(x=>!x.fake);if(i<0||(M&&room==="market"))return;const it=S.stash[i],v=Math.round(valueOf(it)*mult());
+  S.stash.splice(i,1);earn(v);S.stats.flips++;dirty=true;SFX.sell();banner("Your shop sold "+it.code+" +"+fmt(v),"u");if(M)renderStash();
+}
+/* ---------- side quests from people on the street ---------- */
+const Q_LINES=["My kid wants","I'm hunting for","I need","Help me find"];
+function questFromNPC(n){
+  if(S.quest){rayText("You already promised to help someone. Tap the quest pill to deliver.");return}
+  const cat=pick(S.unlocked),minV=Math.max(60,Math.round(Math.min(5000,S.cash*.15+80)/10)*10),m=+rnd(1.5,1.9).toFixed(2);
+  const name=pick(["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora"]);S.quest={name,cat,minV,m,left:240};dirty=true;SFX.hot();
+  rayTextFrom(name,`${pick(Q_LINES)} some ${CAT[cat].n.toLowerCase()} worth at least ${fmt(minV)}. Bring it within 4 minutes and I'll pay ×${m}.`);
+}
+function rayTextFrom(name,msg){const t=document.createElement("div");t.className="raytoast"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav" style="background:var(--gold)">${name[0]}</span><span><b>${name}</b>${msg}</span>`;document.body.appendChild(t);t.onclick=()=>t.remove();setTimeout(()=>t.remove(),7000)}
+function renderQChip(){const el=$("qChip"),q=S.quest;if(!q){el.hidden=true;return}el.hidden=false;const ok=questItem()>=0;
+  el.innerHTML=`<span class="pk">Quest</span><span class="pt">${q.name}: ${CAT[q.cat].n} ≥ ${fmt(q.minV)}</span><span class="pr" style="color:${ok?"var(--up)":"var(--muted)"}">${ok?"Deliver":Math.ceil(q.left)+"s"}</span>`}
+const questItem=()=>{const q=S.quest;if(!q)return-1;let bi=-1,bv=0;S.stash.forEach((x,i)=>{if(x.cat===q.cat&&!x.fake){const v=valueOf(x);if(v>=q.minV&&(bi<0||v<bv)){bi=i;bv=v}}});return bi};
+$("qChip").onclick=()=>{const q=S.quest;if(!q)return;const i=questItem();if(i<0){rayTextFrom(q.name,`Still waiting on that ${CAT[q.cat].n.toLowerCase()} worth ${fmt(q.minV)}+. Fake ones don't count!`);return}
+  const it=S.stash[i],v=Math.round(valueOf(it)*q.m*mult());S.stash.splice(i,1);earn(v);S.stats.flips++;S.stats.quests=(S.stats.quests||0)+1;S.quest=null;dirty=true;SFX.rebirth();banner("Quest done +"+fmt(v),"g");if(M)renderStash();renderQChip()};
 /* ---------- market (the reselling floor) ---------- */
 let M=null,hold=null;
 const MKT={market:{k:"market",n:"Market",steal:.18,fake:.28,box:.06,price:1,minBase:0,sell:1,grail:.025},
  flea:{k:"flea",n:"Flea Market",steal:.36,fake:.45,box:.14,price:.85,minBase:0,sell:.95,grail:.015},
+ tokyo:{k:"tokyo",n:"Tokyo",steal:.2,fake:.15,box:.12,price:.9,minBase:0,sell:1,grail:.04,cat:{cards:1.45,toys:1.45,tech:1.2,kicks:.9}},
+ paris:{k:"paris",n:"Paris",steal:.15,fake:.2,box:.05,price:.95,minBase:100,sell:1,grail:.05,cat:{vint:1.45,watch:1.35,kicks:1.15,toys:.85}},
  lux:{k:"lux",n:"Luxury",steal:.1,fake:0,box:0,price:1.05,minBase:400,sell:1.25,grail:.07}};
 const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>valueOf(s)*mult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1);
+const sellValue=s=>valueOf(s)*mult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*(S.buffs&&S.buffs.hype>0?1.3:1);
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 function newListing(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
@@ -1460,7 +1676,7 @@ function sellAt(i,v,{hot=false,el=null}={}){
   if(!spend(1,el))return;
   const s=S.stash[i];v=Math.round(v);const gain=v-s.paid;let bonus=0;
   if(gain>0){M.streak=(M.t-M.streakT<4)?M.streak+1:1;M.streakT=M.t;bonus=Math.round(gain*Math.min(.1*(M.streak-1),.5))}else M.streak=0;
-  earn(v+bonus);S.stats.flips++;if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);
+  earn(v+bonus);S.stats.flips++;dailyProg("sales");if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);
   S.stash.splice(i,1);
   if(el)floatAt(el,(gain>=0?"+":"−")+fmt(Math.abs(gain+bonus)).replace("−","")+(bonus?`<small>STREAK ×${(1+Math.min(.1*(M.streak-1),.5)).toFixed(1)}</small>`:hot?"<small>COLLECTOR</small>":""),gain>=0?"var(--up)":"var(--down)");
   if(gain>0){SFX.sell(M.streak);buzz(12)}else{SFX.loss();buzz(35)}
@@ -1537,7 +1753,10 @@ function loop(now){
     if(playing){
       S.clock+=dt/10;if(S.clock>=24){S.clock-=24;S.day++}
       if(S.protein>0)S.protein=Math.max(0,S.protein-dt);
-      S.energy=Math.min(maxEnergy(),S.energy+dt/8);
+      S.energy=Math.min(maxEnergy(),S.energy+dt/8*(S.buffs&&S.buffs.fed>0?2:1));
+      const wasT=S.awake>20;S.awake=(S.awake||0)+dt/10;if(!wasT&&S.awake>20){banner("You're tired","r");rayText("You've been up all day. Lifts are harder and you walk slower until you sleep at Home.")}
+      for(const b in S.buffs)if(S.buffs[b]>0)S.buffs[b]=Math.max(0,S.buffs[b]-dt);
+      if(S.lastSeason!==season().n){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
       if(target&&!room){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
         if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;openRoom(k)}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
           if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
@@ -1556,8 +1775,8 @@ function loop(now){
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
       achT-=dt;if(achT<=0){achT=1;checkGoals();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");SFX.level()}})}
       renderBottom();
-      simTick(dt);tradeTick(dt);
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip()}
+      simTick(dt);tradeTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room)drawWorld();
@@ -1588,7 +1807,7 @@ function title(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
