@@ -343,6 +343,17 @@ POSE_ANIMS.Woodchop = function(character, d, jitter)
 	frontArms(character, rad(30 + 50 * d) + jitter, rad(20), rad(10), 0)
 end
 
+-- Sled push (winter): leaning into the sled's handles, legs driving in a lunge that switches each rep.
+POSE_ANIMS.SledPush = function(character, d, jitter)
+	setJoint(character, "Root", CFrame.new(0, -0.3, 0) * Angles(-rad(35), 0, 0))
+	frontArms(character, rad(80) + jitter, rad(10), rad(20 + 25 * d), 0)
+	local drive = rad(45 * (1 - d))
+	setJoint(character, "RHip", Angles(rad(25) + drive, 0, 0))
+	setJoint(character, "RKnee", Angles(-rad(40) - drive, 0, 0))
+	setJoint(character, "LHip", Angles(rad(25) - drive * 0.6, 0, 0))
+	setJoint(character, "LKnee", Angles(-rad(20), 0, 0))
+end
+
 local function poseFor(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	return machine and machine.pose or "BenchPress"

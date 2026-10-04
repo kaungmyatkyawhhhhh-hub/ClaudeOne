@@ -79,6 +79,33 @@ DECOR.Summer = {
 	end,
 }
 
+-- Winter's sled: a real machine (tag "Machine", MachineId "SledPull"), so MachineService runs it.
+local CollectionService = game:GetService("CollectionService")
+local SLED_PIVOT = CFrame.new(-12, 0.1, -32) -- open floor between the rack area and the free-weight zone, facing +Z
+local function buildSled(parent)
+	local model = Instance.new("Model")
+	model.Name = "SledPull"
+	local steel, dark = Color3.fromHex("#9EA2A8"), Color3.fromHex("#1E1E22")
+	part(model, { Name = "Turf", Size = Vector3.new(3.5, 0.06, 7), Color = Color3.fromHex("#2E5B3A"), Material = Enum.Material.Grass,
+		CFrame = SLED_PIVOT * CFrame.new(0, 0.03, 1.5), CanCollide = false })
+	part(model, { Name = "Sled", Size = Vector3.new(2.2, 0.4, 1.6), Color = dark, CFrame = SLED_PIVOT * CFrame.new(0, 0.3, 2.2), CanCollide = true })
+	for _, x in ipairs({ -0.85, 0.85 }) do
+		part(model, { Name = "Pole", Size = Vector3.new(0.18, 3.2, 0.18), Color = steel, Material = Enum.Material.Metal,
+			CFrame = SLED_PIVOT * CFrame.new(x, 1.9, 1.7) * CFrame.Angles(math.rad(-20), 0, 0) })
+	end
+	-- the plates stack on the sled's pin
+	part(model, { Name = "Bar", Size = Vector3.new(1.4, 0.2, 0.2), Color = steel, Material = Enum.Material.Metal,
+		CFrame = SLED_PIVOT * CFrame.new(0, 0.9, 2.4) })
+	model.WorldPivot = SLED_PIVOT
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText, prompt.ObjectText = "Use", "Sled Pull"
+	prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 8, false
+	prompt.Parent = model:FindFirstChild("Sled")
+	model:SetAttribute("MachineId", "SledPull")
+	model.Parent = parent
+	CollectionService:AddTag(model, "Machine")
+end
+
 local function clearDecor()
 	if decor then decor:Destroy() end
 	decor = nil
@@ -95,6 +122,10 @@ local function buildDecor(season)
 		if not ok then warn("[SeasonService] decor: " .. tostring(err)) end
 	end
 	decor.Parent = Workspace
+	if season.id == "Winter" then
+		local ok, err = pcall(buildSled, decor)
+		if not ok then warn("[SeasonService] sled: " .. tostring(err)) end
+	end
 end
 
 local function setSeason(season)

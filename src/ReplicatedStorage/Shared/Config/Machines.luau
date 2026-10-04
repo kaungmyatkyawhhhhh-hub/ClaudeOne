@@ -142,13 +142,21 @@ for _, machine in ipairs(PRO) do
 	table.insert(Machines.List, machine)
 end
 
+-- Seasonal: only built while Winter Lifts runs (SeasonService). Trains muscles the starter gym already trains,
+-- so it never changes what counts toward a Growth Spurt.
+table.insert(Machines.List, {
+	id = "SledPull", name = "Sled Pull", gym = "Seasonal", pose = "SledPush", layout = "Center", staminaCost = 6,
+	tiers = Machines.TierSets.HeavyBarbell,
+	muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.5 }, { id = "Hamstrings", share = 0.4 } },
+})
+
 Machines.ById = {}
 for _, machine in ipairs(Machines.List) do
 	Machines.ById[machine.id] = machine
 end
 
 -- Gyms open by Growth Spurt count (the pro gym opens at Growth Spurt 2).
-Machines.GymUnlock = { Starter = 0, Pro = 2 }
+Machines.GymUnlock = { Starter = 0, Pro = 2, Seasonal = 0 }
 
 -- Set of muscle ids that some open machine trains (main or secondary).
 function Machines.TrainableMuscles(growthSpurts)

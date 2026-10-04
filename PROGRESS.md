@@ -46,12 +46,22 @@
 >
 > **Not built (need art, assets or new areas):** town hub, beach gym + posing stage, skate park/skateboard,
 > smoothie bar building, clothing store/wardrobe/trendy fits, veins/abs detail, gym-goers walking around,
-> progress mirror and before/after snapshot, winter sled pulls.
+> progress mirror and before/after snapshot.
 
 All game code lives in this repo under `src/` and Rojo syncs it into the Studio place (GYM ARC,
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
 Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
 Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## Winter sled pulls (2026-10-05) ✅
+
+- During **Winter Lifts** a **Sled Pull** machine appears on a strip of turf between the rack area and the
+  free-weight zone (-12, -32): a dark sled with poles, plates stacking on it in the tier colors, and a
+  leaning-in lunge pose. It's a normal machine (HUD, tiers, coins, quests) training Quads, Glutes and Hamstrings,
+  muscles the starter gym already trains, so it never changes the Growth Spurt goal. It disappears when winter ends.
+- Test: `ForceSeason` = `Winter` (string attribute on Workspace) → Play.
 
 ---
 
