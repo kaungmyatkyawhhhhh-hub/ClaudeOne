@@ -1,24 +1,52 @@
 # GYM ARC — Progress log
 
-> ## Morning summary (steps 4–7 done overnight)
-> Everything below was built and playtested with no errors in Output.
+> ## Morning summary (overnight run, 2026-10-05): everything else in the brief
+> Built from the cloud session while you slept. **Nothing here has been playtested** (the cloud can't run
+> Studio). Every step passed: compile, Roblox type analysis (luau-lsp), Rojo build, and the Lune logic tests in
+> `tests/`. One real bug was found by review and fixed (tutorial save conversion). Expect some things to need
+> tuning once you see them, especially the new code-driven poses (pro gym lifts, emotes).
 >
-> **Do first (1 minute):** Lighting → Technology → **Future** in Properties (scripts can't set it; the gym looks
-> too dark without it).
+> **Do first:** `git pull` in your second PowerShell window (Rojo keeps running and syncs everything; no
+> restart needed). Optional: `rokit install` adds Lune for the tests. Lighting → Technology → **Future** if
+> you haven't yet.
 >
-> **Test in this order:**
-> 1. **Join** → the genetics reveal plays (plates slam onto a barbell, then the overall plate stamps down). VIEW ODDS opens the odds. REROLL, then KEEP.
-> 2. **Lift** a rep anywhere → "New title: Beginner Gains" and the title appears above your head.
-> 3. **TITLES** button → Title Book: tap an owned title to equip it; locked ones show "???".
-> 4. **STATS** (side button) → labels float next to your body in 3D (left groups on the left, right groups on the right), elbow lines to your body; keep walking. Goal panel top. GENETICS is now its own side button (see "Two redesigns" below).
-> 5. **Body:** your chest/arms are visibly thicker than your core (muscle levels scale your body; height = 4'0").
-> 6. **Growth Spurt:** max every trainable muscle (long; tuned for ~15–20 min of lifting) → GROWTH SPURT button →
->    taller, muscles reset, "GROWTH SPURT!" moment. I tested this with a script and restored your save afterwards.
+> **New since yesterday, in build order** (details + test steps in each entry below):
+> 1. **Breath** exhale louder.
+> 2. **Step 8: Coach Dex quests + Muscle of the Day**: NPC at the front desk, 12-quest chain + repeatables,
+>    quest tracker on the right, today's 2x group on the chalkboard; tutorial gets its "first quest" step.
+> 3. **Energy Shakes** (shake machine, Drink button, +50% gains 30 s), **stretching mat** 2.5x refill,
+>    **Plates the gym cat** (pet = +10 stamina); tutorial gets its "free shake" step.
+> 4. **Economy:** daily streak (DNA token every 7th day), offline coins (8 h cap), loose plates to re-rack,
+>    DNA tokens for coins at the desk, **rush hour** 2x coins at :00/:30 UTC; streak/offline/MOTD on the menu.
+> 5. **Step 9: Spotting** (bench/squat, +25% for the lifter, coins + Spotter title for the spotter), lifting
+>    together +10%, **arm wrestling** table (vs players or practice opponents, Iron Grip title).
+> 6. **Legend NPCs:** the brief's 8 legends visit every 20-30 min (first one 30 s after Play in Studio),
+>    one-time challenges, matching titles.
+> 7. **Showing off:** leaderboard wall above the front desk (crown for #1), marble **statue** of the #1 player in
+>    the entrance hall, **Emotes** button (double biceps, lat spread, high five, auto shake chug), membership
+>    **player card** (Bronze → Diamond) on the menu.
+> 8. **Monetization framework:** all passes/products wired, **all off** until you paste ids (see entry).
+> 9. **Pro gym** (Growth Spurt 2): door on the starter gym's right wall → dark neon room, **11 machines**,
+>    Calves and Obliques trainable.
+> 10. **Crews:** Crew button, create/invite/join/leave, tag above heads, top crews.
+> 11. **Seasonal events:** Halloween (from Oct 15), Winter, Summer: decor, +25% coins, seasonal titles.
 >
-> **Calves/Obliques:** now trainable in the pro gym (Growth Spurt 2), see the Pro gym entry. Badges for the big titles need ids from the Roblox website (step 6). The popup-fix request from before
-> never reached me (step 0).
+> **Quick test tour (15 min):** Play → menu card + streak line → Coach Dex at the desk (Talk) → buy a shake
+> left of the door, drink it → re-rack a loose plate → pet the cat → arm wrestle on the right side (wait 8 s
+> for a practice opponent) → wait for the legend note (~30 s) → Emotes button → right-wall door ("opens at
+> Growth Spurt 2") → Crew button → create a crew. Add `ForceSeason = Halloween` (string attribute on
+> Workspace) to see the decorations. Two-player tests (spotting, high five, crews, arm wrestling) need
+> Test → Clients and Servers → 2 players.
 >
-> **Overnight run (2026-10-05):** see the newest entries below; each step has its own test list.
+> **Needs you:**
+> - **Monetization ids** (Creator Hub → Monetization) → `Config/Monetization.luau`. Until then no Store.
+> - **Badge ids** for the big titles (unchanged from before).
+> - **Popup fixes:** that request still never reached me (step 0).
+> - Tell me what looks off (poses, positions, prices); most numbers are in the `Config` files.
+>
+> **Not built (need art, assets or new areas):** town hub, beach gym + posing stage, skate park/skateboard,
+> smoothie bar building, clothing store/wardrobe/trendy fits, veins/abs detail, NPC gym-goers walking around,
+> progress mirror and before/after snapshot, area music (one area so far), winter sled pulls.
 
 All game code lives in this repo under `src/` and Rojo syncs it into the Studio place (GYM ARC,
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
