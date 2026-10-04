@@ -29,7 +29,10 @@
 > 9. **Pro gym** (Growth Spurt 2): door on the starter gym's right wall → dark neon room, **11 machines**,
 >    Calves and Obliques trainable.
 > 10. **Crews:** Crew button, create/invite/join/leave, tag above heads, top crews.
-> 11. **Seasonal events:** Halloween (from Oct 15), Winter, Summer: decor, +25% coins, seasonal titles.
+> 11. **Seasonal events:** Halloween (from Oct 15), Winter (with a **Sled Pull** machine), Summer: decor,
+>     +25% coins, seasonal titles.
+> 12. **Polish:** NPC gym-goers curling by the benches, "Maxed" glow on Stats labels, area music (starter vs pro
+>     gym), quest/legend trackers hide while training, logic tests saved in `tests/`.
 >
 > **Quick test tour (15 min):** Play → menu card + streak line → Coach Dex at the desk (Talk) → buy a shake
 > left of the door, drink it → re-rack a loose plate → pet the cat → arm wrestle on the right side (wait 8 s
