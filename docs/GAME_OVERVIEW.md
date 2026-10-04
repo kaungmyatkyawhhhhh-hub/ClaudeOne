@@ -1,7 +1,7 @@
 # GYM ARC: how the game works
 
-Written from the scripts in `export/scripts/` (snapshot of 4 Oct 2026). See
-`export/TREE.md` for where everything sits in Studio.
+Written from the scripts in `src/` (as of 4 Oct 2026). See `export/TREE.md`
+for where everything sits in Studio.
 
 ## The loop
 1. **First join**: the player's **genetics** are rolled (a grade D–S per muscle group,

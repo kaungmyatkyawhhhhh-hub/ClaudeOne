@@ -1,7 +1,7 @@
 # GYM ARC place map
 
 Auto-generated from `export/GymArc.rbxlx` (place saved 4 Oct 2026).
-Scripts themselves are in `export/scripts/`.
+Scripts themselves are in `src/` (synced by Rojo).
 
 ## ServerScriptService
 - Main (Script)

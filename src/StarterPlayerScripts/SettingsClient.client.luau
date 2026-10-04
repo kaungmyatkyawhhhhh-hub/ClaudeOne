@@ -1,0 +1,134 @@
+-- SettingsClient: the Settings side button and panel (Music and Effects volume), and background music.
+-- Volumes apply instantly while dragging and are saved with the player's data when the slider is released.
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local ClientData = require(Shared.ClientData)
+local Theme = require(Shared.UI.Theme)
+local Icons = require(Shared.UI.Icons)
+local SideMenu = require(Shared.UI.SideMenu)
+local Audio = require(Shared.Audio)
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+
+local player = Players.LocalPlayer
+local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
+local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
+
+local PANEL_WIDTH = 280
+local KNOB = 18
+
+local menuButton = SideMenu.Add("Settings", "Settings", Icons.Gear, 9)
+
+local gui = Theme.ScreenGui({ Name = "Settings", Enabled = false, DisplayOrder = 24, Parent = player:WaitForChild("PlayerGui") })
+-- next to the side menu (16px margin + 64px buttons + 12px gap)
+local panel = Theme.Panel({
+	Name = "Panel",
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, Spacing.L + 64 + Spacing.M, 0.5, 0),
+	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Active = true, -- taps on the panel never count as lifts
+	Parent = gui,
+}, { Theme.Pad("L"), Theme.List(Vertical, "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+Theme.Text({ LayoutOrder = 1, Text = "Settings", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+
+local values = { music = 1, effects = 1 }
+local dragging = nil -- the slider being dragged
+
+local function save()
+	Remotes.PlayerAction:FireServer("SetSettings", { music = values.music, effects = values.effects })
+end
+
+-- A labeled slider: name and percent on top, a thin track with a white fill and a round knob.
+local sliders = {}
+local function slider(order, key, labelText)
+	local row = New("Frame", { LayoutOrder = order, Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = panel },
+		{ Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Parent = row })
+	Theme.Text({ Text = labelText, Font = "Regular", TextSize = "Body", Size = UDim2.fromScale(0.6, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+	local percent = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.4, 1), TextXAlignment = Enum.TextXAlignment.Right, Parent = top })
+	-- tall invisible hit area so the thin track is easy to grab on phones
+	local hit = New("TextButton", { Name = key, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = row })
+	local track = New("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.new(1, 0, 0, 4), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.82, Parent = hit }, { Theme.Round("Round") })
+	local fill = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Colors.Text, Parent = track }, { Theme.Round("Round") })
+	local knob = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(KNOB, KNOB), BackgroundColor3 = Colors.Text, ZIndex = 2, Parent = track }, { Theme.Round("Round") })
+	Theme.AddDepth(knob, "Round")
+
+	local entry = { key = key, track = track }
+	function entry.show(value)
+		fill.Size = UDim2.fromScale(value, 1)
+		knob.Position = UDim2.fromScale(value, 0.5)
+		percent.Text = math.floor(value * 100 + 0.5) .. "%"
+	end
+	function entry.setFromX(x)
+		local value = math.clamp((x - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1), 0, 1)
+		values[key] = math.floor(value * 20 + 0.5) / 20 -- 5% steps
+		entry.show(values[key])
+		Audio.SetVolumes(values.music, values.effects)
+	end
+	hit.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = entry
+			entry.setFromX(input.Position.X)
+		end
+	end)
+	sliders[key] = entry
+	return entry
+end
+slider(2, "music", "Music")
+slider(3, "effects", "Effects")
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		dragging.setFromX(input.Position.X)
+	end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		dragging = nil
+		Audio.PlayUI("Click") -- a soft click at the new effects volume
+		save()
+	end
+end)
+
+local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
+	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
+})
+
+local isOpen = false
+local function open()
+	isOpen = true
+	menuButton:SetActive(true)
+	for key, entry in pairs(sliders) do entry.show(values[key]) end
+	gui.Enabled = true
+	Audio.PlayUI("Whoosh")
+	panel.Position = UDim2.new(0, Spacing.L + 64 + Spacing.M - Spacing.L, 0.5, 0)
+	Theme.Tween(panel, { Position = UDim2.new(0, Spacing.L + 64 + Spacing.M, 0.5, 0) })
+	Theme.Fade(panel, true)
+end
+local function close()
+	isOpen = false
+	dragging = nil
+	menuButton:SetActive(false)
+	local tween = Theme.Fade(panel, false)
+	if tween then
+		tween.Completed:Connect(function()
+			if not isOpen then gui.Enabled = false end
+		end)
+	end
+end
+menuButton.Activated:Connect(function()
+	if isOpen then close() else open() end
+end)
+closeButton.Activated:Connect(close)
+
+-- saved volumes, then music
+task.spawn(function()
+	local settings = ClientData.Get().settings or {}
+	values.music = settings.music or 1
+	values.effects = settings.effects or 1
+	Audio.SetVolumes(values.music, values.effects)
+	Audio.StartMusic()
+end)

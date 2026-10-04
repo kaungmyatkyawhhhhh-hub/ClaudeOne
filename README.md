@@ -7,24 +7,22 @@ and you pull them onto your PC where Rojo syncs them live into Studio.
 
 ## Layout
 
-| Folder        | Shows up in Studio as                          | Use for                         |
-|---------------|------------------------------------------------|---------------------------------|
-| `src/server`  | `ServerScriptService > RojoServer`             | Server scripts (`.server.luau`) |
-| `src/client`  | `StarterPlayer > StarterPlayerScripts > RojoClient`| Client scripts (`.client.luau`) |
-| `src/shared`  | `ReplicatedStorage > RojoShared`               | ModuleScripts (`.luau`)         |
+| Folder | Shows up in Studio as |
+|---|---|
+| `src/ServerScriptService` | `ServerScriptService` (server scripts) |
+| `src/ReplicatedStorage/Shared` | `ReplicatedStorage > Shared` (shared modules) |
+| `src/StarterPlayerScripts` | `StarterPlayer > StarterPlayerScripts` (client scripts) |
 
 File names decide the script type:
 
 - `Name.server.luau` → Script
 - `Name.client.luau` → LocalScript
 - `Name.luau` → ModuleScript
-- a folder with `init.luau` (or `init.server.luau` / `init.client.luau`) → that script, with the folder's other files as its children
 
-Rojo only manages the `RojoServer`, `RojoClient` and `RojoShared` folders above.
-Everything else in your place (existing scripts, parts, UI built in Studio) is
-left alone. **Rojo fully controls those three folders**: anything you put inside
-them by hand in Studio is removed on the next sync, so keep hand-made scripts
-elsewhere (e.g. your existing `Server` / `Shared` folders).
+**Edit code in these files, not inside Studio.** Rojo fully controls the three
+places above, so script edits made in Studio, or new scripts added there in
+Studio, are overwritten on the next sync. Parts, models, lighting and
+`ReplicatedStorage > Remotes` are still built in Studio as usual.
 
 The Rojo version in `rokit.toml` must match the Rojo Studio plugin version,
 otherwise connecting fails with a `protocolVersion` error.

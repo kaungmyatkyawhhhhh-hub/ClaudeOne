@@ -14,27 +14,28 @@
   Oswald, Permanent Marker) is being replaced by a **"clean minimal"** style
   (dark see-through panels, thin light borders, Montserrat, white/gray text;
   color only for plates, grades and rarity). The Studio `Theme` module already
-  uses clean minimal: treat `export/scripts/ReplicatedStorage/Shared/UI/Theme.luau`
+  uses clean minimal: treat `src/ReplicatedStorage/Shared/UI/Theme.luau`
   as the source of truth for look, and use Theme helpers, never hardcoded styles.
-- `export/scripts/` is a read-only **snapshot** of the scripts that live in the
-  Studio place (extracted from `export/GymArc.rbxlx`; map in `export/TREE.md`).
-  Rojo does NOT sync it: editing those files changes nothing in Studio. When a
-  change is needed in an existing script, give the owner the full new script
-  to paste into Studio (and say exactly which script), or move that code under
-  `src/` if the owner agrees. The snapshot can be stale; ask the owner to
-  re-export if they changed things in Studio.
+- **All game scripts live in `src/` and Rojo syncs them into Studio.** The repo
+  is the source of truth for code: edit the files, never the scripts inside
+  Studio (Rojo overwrites Studio-side script edits). Parts, models, lighting and
+  `ReplicatedStorage.Remotes` are still built in Studio and are not in the repo.
+- Local sessions (Claude Code on the owner's PC with the Roblox Studio tool):
+  edit code in `src/` with `rojo serve` connected, and use Studio only to
+  playtest and to build parts/models/UI-in-world. Commit and push code changes.
+- `export/GymArc.rbxlx` is an old place snapshot (4 Oct 2026), kept as a backup.
 - All UI is built in code from `ReplicatedStorage.Shared.UI.Theme`; StarterGui is
   empty. New UI must use Theme. All data writes go through `PlayerData`.
 
-## Layout
-- `src/server` → `ServerScriptService.RojoServer` (Scripts: `*.server.luau`)
-- `src/client` → `StarterPlayer.StarterPlayerScripts.RojoClient` (LocalScripts: `*.client.luau`)
-- `src/shared` → `ReplicatedStorage.RojoShared` (ModuleScripts: `*.luau`)
-
-- The Studio place already has hand-made `ServerScriptService.Server`,
-  `ReplicatedStorage.Shared` and `ReplicatedStorage.Remotes` folders (e.g. a
-  `PlayerData` ModuleScript). They are NOT synced; never map Rojo onto those names,
-  or a sync would delete their contents.
+## Layout (`default.project.json`)
+- `src/ServerScriptService` → `ServerScriptService` (`Main.server.luau` + `Server/` modules)
+- `src/ReplicatedStorage/Shared` → `ReplicatedStorage.Shared` (Config, UI, Audio, ClientData)
+- `src/StarterPlayerScripts` → `StarterPlayer.StarterPlayerScripts` (`*.client.luau`)
+- File suffix = script type: `.server.luau` Script, `.client.luau` LocalScript, `.luau` ModuleScript.
+- Rojo fully owns those three places: anything added there inside Studio is
+  removed on the next sync. Add new scripts as files instead.
+- `ReplicatedStorage.Remotes` is NOT synced (built in Studio). A new remote must
+  be created in Studio by the owner, or created from code at server start.
 - Keep `rokit.toml`'s Rojo version equal to the owner's Rojo Studio plugin (7.7.1).
 
 ## Conventions

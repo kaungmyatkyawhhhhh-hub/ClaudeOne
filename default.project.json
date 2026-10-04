@@ -1,22 +1,18 @@
 {
-  "name": "ClaudeOne",
+  "name": "GymArc",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "RojoShared": {
-        "$path": "src/shared"
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared"
       }
     },
     "ServerScriptService": {
-      "RojoServer": {
-        "$path": "src/server"
-      }
+      "$path": "src/ServerScriptService"
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "RojoClient": {
-          "$path": "src/client"
-        }
+        "$path": "src/StarterPlayerScripts"
       }
     }
   }

@@ -21,9 +21,35 @@
 >
 > **Not started:** menu screen + first-5-minutes onboarding, coach quests, spotting/arm wrestling.
 
-All game code lives in the Roblox Studio place (GYM ARC, placeId 80031260599632), not in this folder.
-Shared config: `ReplicatedStorage.Shared.Config`. Server: `ServerScriptService.Server` + `Main`.
-Client: `StarterPlayer.StarterPlayerScripts`. UI look: `ReplicatedStorage.Shared.UI.Theme`.
+All game code lives in this repo under `src/` and Rojo syncs it into the Studio place (GYM ARC,
+placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
+Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
+Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## Scripts moved into Rojo (2026-10-04) ✅ (needs the switch-over below)
+
+**Built**
+- All 30 scripts copied from the place export into `src/`, unchanged. Verified: a Rojo build of the repo gives the
+  same 30 scripts, same types, same places and byte-identical code as the place.
+- `default.project.json` now maps `src/ServerScriptService` → ServerScriptService,
+  `src/ReplicatedStorage/Shared` → ReplicatedStorage.Shared, `src/StarterPlayerScripts` → StarterPlayerScripts.
+- README, CLAUDE.md and the docs updated: edit code in `src/`, never in Studio.
+
+**How to test**
+- Back up the place first (File → Save to File As… → `GymArc-backup.rbxl` somewhere outside the repo).
+- `git pull`, `rojo serve`, Connect in Studio. Accept Rojo's changes if it asks.
+- Delete the leftover `ReplicatedStorage.RojoShared` folder in Studio if it is still there.
+- Play: everything should behave exactly as before (genetics, lifting, stats, titles, settings), no new errors in Output.
+
+**Assumptions**
+- Nothing was added to the scripts in Studio after the 4 Oct export (anything newer would be replaced by the repo version).
+- `ReplicatedStorage.Remotes` stays Studio-built (not synced), so the remotes are untouched.
+
+**Leftovers to delete (couldn't remove them from the cloud session)**
+- `src/server`, `src/client`, `src/shared` (old Rojo test placeholders, no longer synced) and `export/scripts`
+  (duplicate of `src/`).
 
 ---
 
