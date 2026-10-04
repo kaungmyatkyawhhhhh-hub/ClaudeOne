@@ -355,6 +355,20 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .tapbtn{padding:34px 22px;font-size:2.4rem;touch-action:manipulation}
 .bankbtns{display:flex;flex-direction:column;gap:8px}
 .bankbtns .bigbtn{font-size:1.3rem;padding:16px}
+.hudpills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none!important}
+.hudpills .pill{pointer-events:auto}
+.pill{display:flex;align-items:center;gap:8px;max-width:100%;padding:7px 11px;border-radius:12px;font-size:.74rem;text-align:left}
+.pill .pk{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
+.pill .pt{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pill .pr{font-family:var(--mono);font-weight:700;color:var(--up);flex:none}
+.pill.ev .pk{color:var(--ec,var(--accent))}
+.pill.ev{box-shadow:inset 0 0 0 2px var(--ec,var(--accent)),var(--shadow);animation:evp 1s infinite alternate}
+@keyframes evp{to{transform:translateY(-1px)}}
+.raytoast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:45;width:min(92vw,440px);display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:color-mix(in oklab,var(--surface) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 14px 34px -14px rgba(0,0,0,.45);font-size:.86rem;line-height:1.35;animation:rtin .35s cubic-bezier(.2,.8,.2,1)}
+.raytoast b{display:block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.rayav{flex:none;width:34px;height:34px;border-radius:50%;background:#4b5563;color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:900}
+.raytoast.low{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+@keyframes rtin{from{opacity:0;transform:translate(-50%,8px)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
 @media (max-height:640px){.lst{height:54px}.tile{width:38px;height:38px}.collector{height:44px}.cash{font-size:2.1rem}}
 </style>
@@ -371,6 +385,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
+  <div class="hudpills"><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="evChip" hidden></button></div>
 </div>
 <button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -423,8 +438,18 @@ const PLACES=[
  {k:"mall",n:"Mall",c:"#8f52d4",x:790,y:800,w:240,h:170,door:[910,970],sub:"Upgrades for your hustle"},
  {k:"temple",n:"Rebirth Temple",c:"#cf9a14",x:600,y:30,w:200,h:150,door:[700,180],sub:"Rebirth for a bigger multiplier"},
  {k:"arena",n:"Arena",c:"#d6384b",x:40,y:950,w:170,h:150,door:[125,1100],sub:"Arm wrestling for cash"},
- {k:"bank",n:"Bank",c:"#5f6b7e",x:1200,y:760,w:180,h:140,door:[1290,900],sub:"Deposit cash, earn interest"}
+ {k:"bank",n:"Bank",c:"#5f6b7e",x:1200,y:760,w:180,h:140,door:[1290,900],sub:"Deposit cash, earn interest"},
+ {k:"flea",n:"Boardwalk Flea",c:"#f2762e",x:300,y:1440,w:300,h:130,door:[450,1570],region:"beach",sub:"Cheap steals, mystery boxes, fakes"},
+ {k:"mbeach",n:"Muscle Beach",c:"#14a3a8",x:1720,y:1450,w:220,h:120,door:[1830,1570],region:"beach",sub:"Outdoor gym, lifts cost half energy"},
+ {k:"lux",n:"Luxury Exchange",c:"#2b2f3a",x:1600,y:300,w:300,h:220,door:[1750,520],region:"downtown",sub:"High-end only, sales pay +25%"},
+ {k:"dealer",n:"Dealership",c:"#0f8fb3",x:2150,y:820,w:300,h:180,door:[2300,1000],region:"downtown",sub:"Scooters and sports cars"}
 ];
+PLACES.forEach(p=>p.region=p.region||"core");
+const REGION_NAME={beach:"The Beach",downtown:"Downtown"};
+const regionOf=(x,y)=>y>=1400?"beach":x>=1400?"downtown":"core";
+const regionOpen=r=>r==="core"||!!(S&&S.unl&&S.unl[r]);
+const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop:"mall"},{k:"scooter",n:"Electric scooter",d:"2.2× speed. Silent and quick.",sp:2.2,cost:6000,shop:"dealer"},{k:"car",n:"Sports car",d:"3.2× speed. Red, loud, fast.",sp:3.2,cost:45000,shop:"dealer"}];
+const ride=()=>S&&S.veh?(S.veh.car?"car":S.veh.scooter?"scooter":S.veh.bike?"bike":null):null;
 const PL={};PLACES.forEach(p=>PL[p.k]=p);
 const UPGRADES=[
  {k:"bag",t:"Bigger backpack",d:"+2 stash slots",cost:l=>Math.round(150*Math.pow(2.2,l)),max:6},
@@ -491,12 +516,12 @@ function freshLife(keep){
 }
 function newGame(){
   S={v:1,rebirths:0,tokens:0,tok:{profit:0,energy:0,start:0,keep:0},up:{},trend:{},hist:{},clock:8,day:1,px:390,py:500,
-     stats:{flips:0,profit:0,best:0,fakes:0,grails:0,lifted:0,heaviest:20,earnedAll:0,armWins:0,beat:[]},flags:{},ach:{},nextId:1};
+     stats:{flips:0,profit:0,best:0,fakes:0,grails:0,lifted:0,heaviest:20,earnedAll:0,armWins:0,beat:[]},flags:{},ach:{},unl:{},veh:{},goal:0,hd:0,nextId:1};
   CATS.forEach(c=>{S.trend[c.k]=1;S.hist[c.k]=Array(40).fill(1)});
   freshLife(false);
 }
 function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 const mult=()=>(1+.5*S.rebirths)*(1+.25*S.tok.profit);
 const maxEnergyFor=str=>100+20*S.tok.energy+2*str;
@@ -539,7 +564,7 @@ const ACH=[
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
 const maxEnergy=()=>maxEnergyFor(strLv());
 const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag;
-const walkSpeed=()=>150*(1+.25*S.up.shoes)*(hasStr(160)?1.2:1);
+const walkSpeed=()=>150*(1+.25*S.up.shoes)*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1);
 const rebirthReq=()=>5000*Math.pow(4,S.rebirths);
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
@@ -563,26 +588,29 @@ function banner(t,cls=""){bq.push([t,cls]);if(!bBusy)nextBanner()}
 function nextBanner(){const n=bq.shift();if(!n){bBusy=false;return}bBusy=true;const b=document.createElement("div");b.className="banner "+n[1];b.textContent=n[0];document.body.appendChild(b);setTimeout(()=>b.remove(),1100);setTimeout(nextBanner,750)}
 
 /* ================= world ================= */
-const W=1400,H=1400;
+const W=2600,H=2200,SEA=1950;
 const cv=$("world"),ctx=cv.getContext("2d");
 let vw=0,vh=0,dpr=1,Z=1;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);const cw=cv.clientWidth,ch=cv.clientHeight;Z=cw<520?.72:1;vw=cw/Z;vh=ch/Z;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
 addEventListener("resize",()=>{fitScreen();resize()});
 const darkMQ=matchMedia("(prefers-color-scheme: dark)");
 function isDark(){return root.dataset.theme==="dark"||(root.dataset.theme!=="light"&&darkMQ.matches)}
-const PAL_L={grass:"#b9d69c",grass2:"#aecd8f",tuft:"#a3c585",tuft2:"#c8e0ae",road:"#cdd2db",line:"#fbfcfd",walk:"#e6e9ee",curb:"#c3c8d1",tree:"#5a9650",tree2:"#78b16a",tree3:"#93c784",trunk:"#8a6a4a",shadow:"rgba(25,40,25,.22)",sign:"#ffffff",ink:"#0d1015",water:"#8ec3e8",glass:"rgba(255,255,255,.6)",glassD:"rgba(200,225,255,.75)"};
-const PAL_D={grass:"#17241a",grass2:"#1b2a1e",tuft:"#203223",tuft2:"#142016",road:"#262b35",line:"#4b5264",walk:"#2f3542",curb:"#3a4150",tree:"#21402a",tree2:"#2b5135",tree3:"#356140",trunk:"#46372a",shadow:"rgba(0,0,0,.45)",sign:"#14171d",ink:"#eff2f6",water:"#1c3754",glass:"rgba(120,150,200,.22)",glassD:"rgba(120,150,200,.3)"};
-const ROADS=[[655,180,90,1220],[0,655,1400,90],[215,215,970,70],[215,1115,970,70],[215,215,70,970],[1115,215,70,970]];
+const PAL_L={pave:"#dfe2e7",paveLine:"rgba(0,0,0,.05)",sand:"#efdcae",sand2:"#e6cf98",sand3:"#f6e8c4",wet:"#d8c48f",sea:"#6cbfe6",sea2:"#4aa6d6",board:"#c4945f",board2:"#9c7244",towel:"#ffffff",tower:"#7b8496",tower1:"#9aa3b3",tower2:"#4e5667",towerWin:"rgba(210,230,255,.55)",grass:"#b9d69c",grass2:"#aecd8f",tuft:"#a3c585",tuft2:"#c8e0ae",road:"#cdd2db",line:"#fbfcfd",walk:"#e6e9ee",curb:"#c3c8d1",tree:"#5a9650",tree2:"#78b16a",tree3:"#93c784",trunk:"#8a6a4a",shadow:"rgba(25,40,25,.22)",sign:"#ffffff",ink:"#0d1015",water:"#8ec3e8",glass:"rgba(255,255,255,.6)",glassD:"rgba(200,225,255,.75)"};
+const PAL_D={pave:"#20242c",paveLine:"rgba(255,255,255,.03)",sand:"#4a4231",sand2:"#41392a",sand3:"#544a37",wet:"#3a3426",sea:"#143049",sea2:"#0f263b",board:"#5e4630",board2:"#46331f",towel:"#cfcfcf",tower:"#2c3240",tower1:"#363d4d",tower2:"#1b1f29",towerWin:"rgba(120,150,200,.18)",grass:"#17241a",grass2:"#1b2a1e",tuft:"#203223",tuft2:"#142016",road:"#262b35",line:"#4b5264",walk:"#2f3542",curb:"#3a4150",tree:"#21402a",tree2:"#2b5135",tree3:"#356140",trunk:"#46372a",shadow:"rgba(0,0,0,.45)",sign:"#14171d",ink:"#eff2f6",water:"#1c3754",glass:"rgba(120,150,200,.22)",glassD:"rgba(120,150,200,.3)"};
+const ROADS=[[655,180,90,1420],[0,655,2600,90],[215,215,970,70],[215,1115,970,70],[215,215,70,970],[1115,215,70,970],[1955,40,90,1360],[1400,1150,1200,80]];
+const SKY=[[1450,60,160,200],[1650,30,130,220],[2100,60,200,250],[2350,90,200,220],[1450,820,180,240],[1700,880,150,200],[2470,790,110,250],[2150,1260,200,120],[1470,1250,160,130]];
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
-const inBld=(x,y,m=0)=>PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30);
+const inBld=(x,y,m=0)=>PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
 const inPond=(x,y,m=0)=>Math.hypot((x-1290)/1.3,y-1290)<80+m;
-const TREES=[];for(let i=0;i<500&&TREES.length<80;i++){const x=srnd()*W,y=srnd()*H;if(!onRoad(x,y,28)&&!inBld(x,y,30)&&!inPond(x,y,30))TREES.push([x,y,14+srnd()*10])}
-const LAMPS=[];for(let y=240;y<1400;y+=170)LAMPS.push([646,y],[754,y+85]);for(let x=60;x<1400;x+=170)if(Math.abs(x-700)>80)LAMPS.push([x,646]);
+const TREES=[];for(let i=0;i<500&&TREES.length<80;i++){const x=srnd()*1400,y=srnd()*1400;if(!onRoad(x,y,28)&&!inBld(x,y,30)&&!inPond(x,y,30))TREES.push([x,y,14+srnd()*10])}
+const LAMPS=[];for(let y=240;y<1560;y+=170)LAMPS.push([646,y],[754,y+85]);for(let x=60;x<2600;x+=170)if(Math.abs(x-700)>80&&Math.abs(x-2000)>70)LAMPS.push([x,646]);for(let y=80;y<1400;y+=170)if(Math.abs(y-700)>80)LAMPS.push([1946,y],[2054,y+85]);
+const PALMS=[];for(let i=0;i<300&&PALMS.length<30;i++){const x=40+srnd()*2520,y=1690+srnd()*220;if(!inBld(x,y,30)&&Math.abs(x-700)>60)PALMS.push([x,y])}
+const UMBR=[];for(let i=0;i<200&&UMBR.length<14;i++){const x=60+srnd()*2480,y=1720+srnd()*190;if(!inBld(x,y,30)&&!PALMS.some(p=>Math.hypot(p[0]-x,p[1]-y)<50))UMBR.push([x,y,["#e2364a","#2a5bd7","#ffcc33","#2bb3a3"][UMBR.length%4]])}
 const NPCS=Array.from({length:10},()=>{const p=roadPoint();return{x:p[0],y:p[1],t:roadPoint(),sp:rnd(35,60),shirt:pick(["#ff7a3d","#2bb3a3","#46a35a","#e2364a","#a68bd8","#ffcc33","#3a3d45","#f2f2f2","#2a5bd7"]),skin:pick(["#f3d0b5","#e8b896","#d8a682","#b9825c","#8d5a3b","#6b4430"]),hair:pick(["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"]),ph:Math.random()*9}});
 const FLIES=Array.from({length:26},()=>({x:Math.random()*W,y:Math.random()*H,a:Math.random()*7,s:rnd(.6,1.4)}));
-function roadPoint(){const r=pick(ROADS);return[r[0]+10+Math.random()*(r[2]-20),r[1]+10+Math.random()*(r[3]-20)]}
-let target=null,autoEnter=null,moving=false,cam={x:0,y:0},wt=0,FONT=null,STATIC=null,staticDark=null;
+function roadPoint(){const r=pick(ROADS.slice(0,6));return[r[0]+10+Math.random()*(r[2]-20),r[1]+10+Math.random()*(r[3]-20)]}
+let EV=null,target=null,autoEnter=null,moving=false,cam={x:0,y:0},wt=0,FONT=null,STATIC=null,staticDark=null;
 document.fonts&&document.fonts.ready.then(()=>{FONT=null;STATIC=null});
 function shade(hex,f){const n=parseInt(hex.slice(1),16);const r=(n>>16)*f,g=(n>>8&255)*f,b=(n&255)*f;return`rgb(${Math.min(255,r)|0},${Math.min(255,g)|0},${Math.min(255,b)|0})`}
 function rrp(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
@@ -627,12 +655,32 @@ function drawBuilding(g,p,P){
   g.save();g.shadowColor="rgba(0,0,0,.2)";g.shadowBlur=6;g.shadowOffsetY=2;g.fillStyle=P.sign;rrp(g,cx-tw/2,sy-14,tw,28,9);g.fill();g.restore();
   g.fillStyle=P.ink;g.fillText(p.n,cx,sy+1);
 }
+let TLIT=null;
+function towerLit(){if(TLIT)return TLIT;let sd=5;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;TLIT=[];
+  SKY.forEach(([x,y,w,h])=>{const f=Math.round(h*.5),fy=y+h-f;for(let wx=x+10;wx<x+w-14;wx+=16)for(let wy=fy+8;wy<fy+f-10;wy+=16)if(r()<.55)TLIT.push([wx,wy])});return TLIT}
+function drawTower(g,[x,y,w,h],P){
+  const f=Math.round(h*.5),ry=y,rh=h-f,fy=y+h-f;
+  g.save();g.shadowColor=P.shadow;g.shadowBlur=26;g.shadowOffsetY=14;g.fillStyle=P.tower2;rrp(g,x,y,w,h,8);g.fill();g.restore();
+  g.fillStyle=P.tower2;rrp(g,x,fy-8,w,f+8,8);g.fill();
+  const rg=g.createLinearGradient(0,ry,0,ry+rh);rg.addColorStop(0,P.tower1);rg.addColorStop(1,P.tower);g.fillStyle=rg;rrp(g,x,ry,w,rh,8);g.fill();
+  g.fillStyle="rgba(255,255,255,.08)";rrp(g,x+10,ry+10,w-20,rh-20,6);g.fill();g.fillStyle=P.tower2;g.fillRect(x+w*.6,ry+16,w*.22,rh*.3);
+  g.fillStyle=P.towerWin;for(let wx=x+10;wx<x+w-14;wx+=16)for(let wy=fy+8;wy<fy+f-10;wy+=16)g.fillRect(wx,wy,9,10);
+}
 function buildStatic(){
   const P=isDark()?PAL_D:PAL_L,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
   let sd=11;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  const C=1400;
   g.fillStyle=P.grass;g.fillRect(0,0,W,H);
-  g.globalAlpha=.55;g.fillStyle=P.grass2;for(let i=0;i<90;i++){g.beginPath();g.ellipse(r()*W,r()*H,40+r()*130,30+r()*90,r()*3,0,7);g.fill()}g.globalAlpha=1;
-  for(let i=0;i<3200;i++){const x=r()*W,y=r()*H;if(onRoad(x,y,8))continue;g.fillStyle=r()<.5?P.tuft:P.tuft2;g.fillRect(x,y,2,3)}
+  g.globalAlpha=.55;g.fillStyle=P.grass2;for(let i=0;i<90;i++){g.beginPath();g.ellipse(r()*C,r()*C,40+r()*130,30+r()*90,r()*3,0,7);g.fill()}g.globalAlpha=1;
+  for(let i=0;i<3200;i++){const x=r()*C,y=r()*C;if(onRoad(x,y,8))continue;g.fillStyle=r()<.5?P.tuft:P.tuft2;g.fillRect(x,y,2,3)}
+  // downtown paving
+  g.fillStyle=P.pave;g.fillRect(C,0,W-C,C);g.fillStyle=P.paveLine;for(let x=C;x<W;x+=40)g.fillRect(x,0,1,C);for(let y=0;y<C;y+=40)g.fillRect(C,y,W-C,1);
+  // beach: grass to sand, sand, sea
+  const bg=g.createLinearGradient(0,C,0,C+120);bg.addColorStop(0,P.grass);bg.addColorStop(1,P.sand);g.fillStyle=bg;g.fillRect(0,C,W,120);
+  g.fillStyle=P.sand;g.fillRect(0,C+120,W,SEA-C-120);for(let i=0;i<2500;i++){g.fillStyle=r()<.5?P.sand2:P.sand3;g.fillRect(r()*W,C+120+r()*(SEA-C-120),2,2)}
+  g.fillStyle=P.wet;g.fillRect(0,SEA-18,W,18);g.fillStyle=P.sea;g.fillRect(0,SEA,W,H-SEA);g.fillStyle=P.sea2;g.fillRect(0,SEA+60,W,H-SEA-60);
+  // boardwalk
+  g.fillStyle=P.board2;g.fillRect(60,1598,2480,66);g.fillStyle=P.board;g.fillRect(60,1600,2480,62);g.fillStyle="rgba(0,0,0,.12)";for(let x=60;x<2540;x+=14)g.fillRect(x,1600,1.5,62);
   const FL=["#ff8fa3","#ffd166","#ffffff","#b8a1ff"];for(let i=0;i<300;i++){const x=r()*W,y=r()*H;if(onRoad(x,y,12)||inBld(x,y,10)||inPond(x,y,8))continue;g.fillStyle=FL[i%4];g.globalAlpha=isDark()?.45:1;g.beginPath();g.arc(x,y,2.3,0,7);g.fill()}g.globalAlpha=1;
   // pond
   g.fillStyle=P.curb;g.beginPath();g.ellipse(1290,1290,106,80,0,0,7);g.fill();g.fillStyle=P.water;g.beginPath();g.ellipse(1290,1290,96,71,0,0,7);g.fill();
@@ -642,11 +690,21 @@ function buildStatic(){
   ROADS.forEach(([x,y,w,h])=>{g.fillStyle=P.walk;g.fillRect(x-8,y-8,w+16,h+16)});
   ROADS.forEach(([x,y,w,h])=>{g.fillStyle=P.road;g.fillRect(x,y,w,h)});
   g.fillStyle=P.line;
-  for(let y=200;y<1400;y+=40)if(y<600||y>800)g.fillRect(698,y,4,20);
-  for(let x=10;x<1400;x+=40)if(x<600||x>800)g.fillRect(x,698,20,4);
+  for(let y=200;y<1590;y+=40)if(y<600||y>800)g.fillRect(698,y,4,20);
+  for(let x=10;x<2600;x+=40)if((x<600||x>800)&&(x<1930||x>2070))g.fillRect(x,698,20,4);
+  for(let y=50;y<1400;y+=40)if((y<630||y>770)&&(y<1130||y>1250))g.fillRect(1998,y,4,20);
+  for(let x=1410;x<2600;x+=40)if(x<1930||x>2070)g.fillRect(x,1188,20,4);
   for(let i=0;i<7;i++){g.fillRect(661+i*12,760,7,30);g.fillRect(661+i*12,610,7,30);g.fillRect(760,661+i*12,30,7);g.fillRect(610,661+i*12,30,7)}
   // plaza at the main crossing
   g.fillStyle=P.walk;g.beginPath();g.arc(700,700,30,0,7);g.fill();g.fillStyle=P.water;g.beginPath();g.arc(700,700,20,0,7);g.fill();g.fillStyle="rgba(255,255,255,.55)";g.beginPath();g.arc(700,700,6,0,7);g.fill();
+  // downtown towers
+  SKY.forEach(t=>drawTower(g,t,P));
+  [[1500,600],[1880,600],[2200,600],[2480,600],[1880,1080],[2200,1100]].forEach(([x,y])=>{g.fillStyle=P.curb;g.fillRect(x-14,y-14,28,28);g.fillStyle=P.tree;g.beginPath();g.arc(x,y,11,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-3,y-3,6,0,7);g.fill()});
+  // beach props
+  UMBR.forEach(([x,y,c])=>{g.fillStyle=P.towel;g.fillRect(x+10,y+4,26,14);g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+6,y+10,18,7,0,0,7);g.fill();g.fillStyle="#ffffff";g.beginPath();g.arc(x,y,16,0,7);g.fill();g.fillStyle=c;for(let a=0;a<8;a+=2){g.beginPath();g.moveTo(x,y);g.arc(x,y,16,a*Math.PI/4,(a+1)*Math.PI/4);g.fill()}});
+  PALMS.forEach(([x,y])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+14,y+6,22,7,0,0,7);g.fill();g.strokeStyle="#9a7448";g.lineWidth=5;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+8,y-20,x+4,y-40);g.stroke();
+    g.fillStyle="#3f9a4e";for(let a=0;a<6;a++){const an=a*Math.PI/3;g.beginPath();g.ellipse(x+4+Math.cos(an)*14,y-40+Math.sin(an)*8,15,5,an,0,7);g.fill()}g.fillStyle="#7a5a36";g.beginPath();g.arc(x+4,y-38,3.5,0,7);g.fill()});
+  g.fillStyle="#ffffff";g.fillRect(2380,1800,30,8);g.fillStyle="#e2364a";g.fillRect(2384,1760,22,40);g.fillStyle="#ffffff";g.fillRect(2380,1756,30,8);
   // benches by the pond
   [[1190,1220],[1340,1190]].forEach(([x,y])=>{g.fillStyle="#8a6a4a";g.fillRect(x,y,34,8);g.fillStyle="rgba(0,0,0,.2)";g.fillRect(x,y+8,34,2)});
   // lamp posts
@@ -668,6 +726,14 @@ function drawPerson(x,y,o){
   ctx.fillStyle=o.hair;ctx.beginPath();ctx.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);ctx.fill();
   ctx.fillStyle="#1b1d22";ctx.fillRect(x-4,y-37+b,2,2.4);ctx.fillRect(x+2,y-37+b,2,2.4);
   if(o.you){ctx.fillStyle="#2a3cff";ctx.beginPath();ctx.moveTo(x-6,y-60+b);ctx.lineTo(x+6,y-60+b);ctx.lineTo(x,y-52+b);ctx.closePath();ctx.fill()}
+}
+function drawRide(k){
+  const x=S.px,y=S.py;
+  if(k==="car"){ctx.save();ctx.translate(x,y-8);ctx.rotate(S.hd||0);ctx.fillStyle="rgba(0,0,0,.25)";rr(-27,-11,56,28,10);ctx.fill();ctx.fillStyle="#e2364a";rr(-28,-14,56,28,10);ctx.fill();
+    ctx.fillStyle="#1b1f2a";rr(4,-11,12,22,4);ctx.fill();rr(-16,-11,8,22,3);ctx.fill();ctx.fillStyle="#ff6b7a";rr(-6,-10,9,20,3);ctx.fill();ctx.fillStyle="#ffe08a";ctx.fillRect(24,-11,4,6);ctx.fillRect(24,5,4,6);ctx.fillStyle="#141414";ctx.fillRect(-20,-16,10,4);ctx.fillRect(10,-16,10,4);ctx.fillRect(-20,12,10,4);ctx.fillRect(10,12,10,4);ctx.restore();return}
+  const f=Math.cos(S.hd||0)<0?-1:1;ctx.fillStyle="rgba(0,0,0,.2)";ctx.beginPath();ctx.ellipse(x,y+2,20,5,0,0,7);ctx.fill();
+  if(k==="bike"){ctx.strokeStyle="#1b1f2a";ctx.lineWidth=2.5;[-12,12].forEach(dx=>{ctx.beginPath();ctx.arc(x+dx,y-4,7,0,7);ctx.stroke()});ctx.strokeStyle="#2bb3a3";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-12,y-4);ctx.lineTo(x-2,y-14);ctx.lineTo(x+8*f,y-14);ctx.lineTo(x+12,y-4);ctx.stroke()}
+  else{ctx.fillStyle="#1b1f2a";[-14,14].forEach(dx=>{ctx.beginPath();ctx.arc(x+dx,y-3,5,0,7);ctx.fill()});ctx.fillStyle="#ffcc33";rr(x-17,y-9,34,6,3);ctx.fill();ctx.strokeStyle="#1b1f2a";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+14*f,y-8);ctx.lineTo(x+12*f,y-30);ctx.stroke()}
 }
 function grade(h){
   if(h>=5&&h<7.5)return[255,160,130,.16*(1-Math.abs(h-6.2)/1.3)];
@@ -691,13 +757,25 @@ function drawWorld(){
   });
   // temple aura
   const tp=PL.temple,pulse=.5+.5*Math.sin(wt*2);const ag=ctx.createRadialGradient(tp.x+tp.w/2,tp.y+tp.h/2,20,tp.x+tp.w/2,tp.y+tp.h/2,150);ag.addColorStop(0,`rgba(255,210,90,${.18+.12*pulse})`);ag.addColorStop(1,"rgba(255,210,90,0)");ctx.fillStyle=ag;ctx.fillRect(tp.x-60,tp.y-60,tp.w+120,tp.h+140);
+  // waves along the shore
+  if(cam.y+vh>SEA-40){ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=2.5;for(let k=0;k<3;k++){const yy=SEA+6+k*22+Math.sin(wt*1.2+k)*4;ctx.beginPath();for(let x=Math.floor(cam.x/40)*40-40;x<cam.x+vw+40;x+=40){ctx.moveTo(x+((wt*14+k*13)%40),yy);ctx.quadraticCurveTo(x+10+((wt*14+k*13)%40),yy-5,x+20+((wt*14+k*13)%40),yy)}ctx.globalAlpha=.7-k*.2;ctx.stroke()}ctx.globalAlpha=1}
+  if(nightA>.35){ctx.fillStyle="rgba(255,210,130,.9)";towerLit().forEach(([x,y])=>{if(x<cam.x-20||x>cam.x+vw+20||y<cam.y-20||y>cam.y+vh+20)return;ctx.fillRect(x,y,9,10)})}
+  // event marker
+  if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
+    ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
+    ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>drawPerson(S.px,S.py,{shirt:"#2a3cff",skin:"#e8b896",hair:"#3b2a20",mv:moving,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})]);
+  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(rd!=="car")drawPerson(S.px,S.py-(rd?7:0),{shirt:"#2a3cff",skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
+  [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
+    ctx.fillStyle="#ffffff";ctx.font="900 26px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";
+    const lx=r==="beach"?clamp(S.px,200,W-200):x+260,ly=r==="beach"?y+90:clamp(S.py,200,1200);ctx.fillText(REGION_NAME[r].toUpperCase()+" · LOCKED",lx,ly);ctx.font="600 14px "+getComputedStyle(root).getPropertyValue("--body");ctx.fillText(lockHint(r),lx,ly+26)});
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
+  if(EV&&EV.type==="rain"){ctx.strokeStyle=isDark()?"rgba(170,190,230,.35)":"rgba(90,110,150,.35)";ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<90;i++){const rx=(i*97+wt*260)%(vw+40)-20,ry=(i*53+wt*620)%(vh+40)-20;ctx.moveTo(rx,ry);ctx.lineTo(rx-5,ry+14)}ctx.stroke();ctx.fillStyle="rgba(40,60,90,.12)";ctx.fillRect(0,0,vw,vh)}
+  if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -707,9 +785,12 @@ function drawWorld(){
     ctx.globalCompositeOperation="source-over"}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.18)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh);
 }
-function nearPlace(){let best=null,bd=70;for(const p of PLACES){const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
+function nearPlace(){let best=null,bd=70;for(const p of PLACES){if(!regionOpen(p.region))continue;const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
 function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/Z;return[(e.clientX-r.left)*k+cam.x,(e.clientY-r.top)*k+cam.y]}
-cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);target=[clamp(x,10,W-10),clamp(y,10,H-10)];autoEnter=null;moving=true});
+let lockT=0;
+function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
+function lockedNotice(r){if(wt-lockT<2)return;lockT=wt;banner(REGION_NAME[r]+" is locked","r");SFX.nope()}
+cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
 function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;moving=true}
 
 /* bottom bar */
@@ -720,7 +801,7 @@ function renderBottom(){
   let h="";
   if(near)h+=`<button class="enter" id="enterBtn"><span>Enter ${near.n}<small>${near.sub}</small></span>${ARROW}</button>`;
   else if(!S.stats.flips&&!moving)h+=`<span class="tip">Tap the map to walk, or pick a place below</span>`;
-  const ar=achReady();h+=`<div class="places">${PLACES.map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="temple"?"Temple":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
+  const ar=achReady();h+=`<div class="places">${PLACES.filter(p=>regionOpen(p.region)).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="temple"?"Temple":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
   el.innerHTML=h;
   const eb=$("enterBtn");if(eb)eb.onclick=()=>openRoom(near.k);
   el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
@@ -743,11 +824,11 @@ function roomHead(title){return `<div class="roomhead"><button class="leave" id=
 function updMini(){const c=$("rCash");if(c){c.textContent=fmt(S.cash);const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
-  const r=$("room");r.hidden=false;r.style.setProperty("--pc",PL[k].c);
-  ({market:openMarket,gym:openGym,home:openHome,cafe:openCafe,mall:openMall,temple:openTemple,arena:openArena,bank:openBank})[k]();
+  const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:"#f2762e"}).c);
+  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,cafe:openCafe,mall:openMall,temple:openTemple,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
-function closeRoom(){if(room==="market")closeMarket();G=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+function closeRoom(){if(M)closeMarket();G=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 $("phoneBtn").onclick=()=>{audioOn();openRoom("market")};
 
 /* ---------- gym ---------- */
@@ -765,14 +846,14 @@ function barbellSVG(w){
    <text x="200" y="40" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="22" fill="var(--ink)">${w} kg</text></svg>`;
 }
 let G=null;
-const liftCost=w=>Math.ceil(2+w/40);
+const liftCost=w=>Math.max(1,Math.ceil((2+w/40)*(G&&G.half?.5:1)));
 function zoneFor(w){const pr=S.pr;let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;return clamp(z,.06,.5)}
 function newZone(){const z=zoneFor(G.w);G.z=[rnd(.08,.92-z),0];G.z[1]=G.z[0]+z}
-function openGym(){
-  G={w:Math.min(S.pr+5,S.pr+10),pos:0,dir:1,z:[.4,.6],busy:false};newZone();
+function openGym(half){
+  G={w:Math.min(S.pr+5,S.pr+10),pos:0,dir:1,z:[.4,.6],busy:false,half:!!half};newZone();
   const draw=()=>{
     const lv=strLv(),cost=liftCost(G.w),over=G.w>S.pr;
-    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Gym")}
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(G.half?"Muscle Beach":"Gym")}
       <div class="art" id="gArt">${barbellSVG(G.w)}</div>
       <div class="kv"><div><span class="eyebrow">Max lift</span><b>${S.pr} kg</b></div><div><span class="eyebrow">Strength</span><b>Lv ${lv}</b></div>
         <div><span class="eyebrow">Stash slots</span><b>+${Math.min(lv,12)}</b></div><div><span class="eyebrow">Max energy</span><b>+${2*lv}</b></div></div>
@@ -850,8 +931,10 @@ function openMall(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mall")}
       <div class="perks">${UPGRADES.map(u=>{const l=S.up[u.k],mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic${bk===u.k?" bought":""}" data-u="${u.k}" ${mx||c>S.cash?"disabled":""}>
         <span class="t">${u.t}${u.max>1?`<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${u.d}</span><span class="c">${mx?"Owned":fmt(c)}</span></button>`}).join("")}</div>
-      <p class="fine">Upgrades reset when you rebirth, unless you buy Keep your gear at the temple.</p></div>`;
+      <div class="sechead"><h3>Vehicles</h3><span class="eyebrow">Kept forever</span></div><div class="perks">${vehList("mall")}</div>
+      <p class="fine">Upgrades reset when you rebirth, unless you buy Keep your gear at the temple. Vehicles never reset.</p></div>`;
     $("leaveBtn").onclick=closeRoom;
+    bindVeh(()=>draw());
     $("room").querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const u=UPGRADES.find(x=>x.k===b.dataset.u),l=S.up[u.k];if(l>=u.max||S.cash<u.cost(l))return;S.cash-=u.cost(l);S.up[u.k]++;SFX.level();dirty=true;const y=$("room").firstChild.scrollTop;draw(u.k);$("room").firstChild.scrollTop=y;updMini()});
   };draw();
 }
@@ -945,30 +1028,120 @@ function openBank(){
     $("wAll").onclick=()=>{const a=Math.floor(S.bank||0);if(a<=0)return;S.bank-=a;S.cash+=a;SFX.sell();dirty=true;draw();updMini()};
   };draw();
 }
+/* ---------- goals (story chain from Uncle Ray) ---------- */
+const GOALS=[
+ {t:"Make your first sale",d:"Welcome to town, kid. Head to the Market, buy something cheap and sell it for more.",ok:()=>S.stats.flips>=1,rw:50},
+ {t:"Lift 40 kg at the Gym",d:"Strong people carry more and haggle harder. Go hit the Gym.",ok:()=>(S.stats.heaviest||0)>=40,rw:100},
+ {t:"Have $1,000 cash",d:"Stack up a thousand bucks. Then we talk wheels.",ok:()=>S.cash>=1000,rw:150},
+ {t:"Buy a bike at the Mall",d:"Walking is for tourists. Grab a bike at the Mall.",ok:()=>!!S.veh.bike,rw:250},
+ {t:"Earn $5,000 in total",d:"Keep flipping. Word is a flea market is opening on the boardwalk down south.",ok:()=>S.stats.earnedAll>=5000,rw:400,unlock:"beach"},
+ {t:"Buy something at the Boardwalk Flea",d:"The Beach is open! The Boardwalk Flea has crazy steals. And crazy fakes. Watch the ratings.",ok:()=>!!S.flags.fleaBuy,rw:500},
+ {t:"Beat Big Mike at the Arena",d:"Big Mike has been talking trash about you. Go shut him up.",ok:()=>(S.stats.beat||[]).includes(2),rw:900},
+ {t:"Rebirth once",d:"Time to level up for real. Hit the cash goal and visit the Temple.",ok:()=>S.rebirths>=1,rw:1500},
+ {t:"Earn $40,000 in total",d:"Downtown is where the real money is. Earn your way in.",ok:()=>S.stats.earnedAll>=40000,rw:2500,unlock:"downtown"},
+ {t:"Sell at the Luxury Exchange",d:"Downtown is open. The Luxury Exchange pays top dollar for high-end pieces.",ok:()=>!!S.flags.luxSell,rw:3000},
+ {t:"Buy a scooter",d:"Treat yourself. The Dealership has electric scooters.",ok:()=>!!S.veh.scooter,rw:3000},
+ {t:"Beat The Mountain",d:"The Mountain has never lost an arm wrestle. Change that.",ok:()=>(S.stats.beat||[]).includes(3),rw:6000},
+ {t:"Buy the sports car",d:"You've earned it. The red one at the Dealership.",ok:()=>!!S.veh.car,rw:10000},
+ {t:"Earn $1,000,000 in total",d:"One last thing. Make a million and you're a legend.",ok:()=>S.stats.earnedAll>=1e6,rw:50000}
+];
+const rq=[];let rBusy=false;
+let rayEl=null,rayTo=null;
+function rayText(msg){rq.length=0;rq.push(msg);if(rayEl){rayEl.remove();rayEl=null;clearTimeout(rayTo);rBusy=false}if(!rBusy)nextRay()}
+function nextRay(){const m=rq.shift();if(!m){rBusy=false;return}rBusy=true;const t=document.createElement("div");t.className="raytoast"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav">R</span><span><b>Uncle Ray</b>${m}</span>`;document.body.appendChild(t);rayEl=t;t.onclick=()=>{t.remove();rayEl=null};rayTo=setTimeout(()=>{t.remove();rayEl=null;rBusy=false;nextRay()},6500)}
+function checkGoals(){
+  const g=GOALS[S.goal];if(!g||!g.ok())return;
+  S.goal++;S.cash+=g.rw;dirty=true;SFX.level();buzz([20,40,20]);banner("Goal complete","u");banner("+"+fmt(g.rw),"g");
+  if(g.unlock){S.unl[g.unlock]=1;banner(REGION_NAME[g.unlock]+" unlocked","a")}
+  const n=GOALS[S.goal];rayText(n?n.d:"That's every goal. You're a legend, kid. Keep flipping.");renderGoalChip();bKey="";
+}
+function renderGoalChip(){
+  const g=GOALS[S.goal],el=$("goalChip");
+  el.innerHTML=g?`<span class="pk">Goal ${S.goal+1}/${GOALS.length}</span><span class="pt">${g.t}</span><span class="pr">${fmt(g.rw)}</span>`:`<span class="pk">Legend</span><span class="pt">Every goal complete</span>`;
+}
+$("goalChip").onclick=()=>{const g=GOALS[S.goal];if(g)rayText(g.d)};
+/* ---------- random town events ---------- */
+let nextEvT=30;
+function randSpot(){for(let i=0;i<80;i++){const x=rnd(60,W-60),y=rnd(90,SEA-60);if(regionOpen(regionOf(x,y))&&!inBld(x,y,24)&&Math.hypot(x-S.px,y-S.py)>260&&Math.hypot(x-S.px,y-S.py)<1100)return[x,y]}return[clamp(S.px+220,60,1340),S.py]}
+function worldEventStart(){
+  let t=pick(["sale","sale","wallet","celeb","raid","food","rain"]);if(t==="raid"&&!S.stash.some(x=>x.fake))t="celeb";
+  const e={type:t,t:0};
+  if(t==="sale"){[e.x,e.y]=randSpot();Object.assign(e,{dur:75,color:"#f2762e",glyph:"$",title:"Garage sale",desc:"Cheap stuff on a lawn. Get there before it packs up."})}
+  if(t==="wallet"){[e.x,e.y]=randSpot();Object.assign(e,{dur:55,color:"#cf9a14",glyph:"!",title:"Lost wallet",desc:"Someone dropped a wallet. Finders keepers."})}
+  if(t==="food"){Object.assign(e,{x:700,y:785,dur:60,color:"#24a35f",glyph:"+",title:"Food truck",desc:"Free energy refill at the plaza."})}
+  if(t==="celeb")Object.assign(e,{dur:60,title:"Celebrity in town",desc:"Everyone wants what you've got. Sales pay +50%."});
+  if(t==="raid")Object.assign(e,{dur:45,title:"Police raid coming",desc:"Cops are checking for fakes. Sell yours before they search you."});
+  if(t==="rain")Object.assign(e,{dur:50,title:"Rainstorm",desc:"Walking is slower, but listings are 15% cheaper."});
+  EV=e;banner(e.title,"a");SFX.news();buzz(15);rayText(e.desc);
+}
+function worldEventEnd(){
+  if(EV.type==="raid"){const n=S.stash.filter(x=>x.fake).length;if(n){S.stash=S.stash.filter(x=>!x.fake);dirty=true;banner(n+" fake"+(n>1?"s":"")+" confiscated","r");SFX.scam();if(M)renderStash()}else banner("Raid over. You're clean.","u")}
+  if(EV.type==="sale"&&room==="sale")banner("The garage sale packed up","r");
+  EV=null;nextEvT=rnd(45,90);
+}
+function eventArrive(){
+  if(!EV)return;
+  if(EV.type==="sale"){openRoom("sale");return}
+  if(EV.type==="wallet"){const v=Math.round(Math.max(80,S.cash*rnd(.03,.08)));S.cash+=v;dirty=true;SFX.sell();banner("Found "+fmt(v),"g");EV=null;nextEvT=rnd(45,90)}
+  else if(EV.type==="food"){S.energy=maxEnergy();dirty=true;SFX.level();banner("Energy refilled","u");EV=null;nextEvT=rnd(45,90)}
+}
+function renderEvChip(){
+  const el=$("evChip");if(!EV){el.hidden=true;return}el.hidden=false;
+  el.style.setProperty("--ec",EV.color||"var(--accent)");
+  el.innerHTML=`<span class="pk">Event</span><span class="pt">${EV.title}</span><span class="pr">${Math.ceil(EV.dur-EV.t)}s</span>`;
+}
+$("evChip").onclick=()=>{if(EV&&EV.x!=null&&!room){audioOn();target=[EV.x,EV.y];autoEnter=null;moving=true}else if(EV)rayText(EV.desc)};
+function openSale(){
+  if(!EV||EV.type!=="sale"){closeRoom();return}
+  if(!EV.items){EV.items=Array.from({length:4},()=>{const it=pick(affordable(1.6)),c=CAT[it.cat],cond=pick(c.conds),base=Math.round(it.base*cond[1]);return{cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,kg:HEAVY[it.code]||0,price:Math.max(5,Math.round(base*S.trend[it.cat]*rnd(.35,.6)))}})}
+  const draw=()=>{
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Garage sale")}
+      <div class="note">A neighbor is clearing out the garage. Everything is priced to go, and nobody's faking anything here. <b>3 energy</b> per buy.</div>
+      <div class="perks">${EV.items.map((it,i)=>{const v=it.base*S.trend[it.cat];return `<button class="perk opp" data-si="${i}" ${it.sold||it.price>S.cash||(it.kg&&S.pr<it.kg)?"disabled":""}>${tileHTML(it)}
+        <span class="t">${it.name}${it.kg?` <em class="beat" style="color:${S.pr<it.kg?"var(--down)":"var(--muted)"}">${it.kg} KG</em>`:""}</span><span class="d">${it.cond} · worth ${fmt(v)} · ${Math.round((1-it.price/v)*100)}% off</span><span class="c">${it.sold?"Sold":fmt(it.price)}</span></button>`}).join("")}</div>
+      <p class="fine">Stash ${S.stash.length}/${maxSlots()}</p></div>`;
+    $("leaveBtn").onclick=closeRoom;
+    $("room").querySelectorAll("[data-si]").forEach(b=>b.onclick=()=>{const it=EV&&EV.items&&EV.items[+b.dataset.si];if(!it||it.sold)return;
+      if(S.stash.length>=maxSlots()){floatAt(b,"Stash full","var(--down)");SFX.nope();return}if(!spend(3,b))return;
+      S.cash-=it.price;S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:it.cond,base:it.base,noise:rnd(.97,1.03),fake:false,paid:it.price});it.sold=true;SFX.buy();dirty=true;draw();updMini()});
+  };draw();
+}
+const tileHTML=it=>`<span class="tile sm" style="--h:${CAT[it.cat].h};grid-row:1/3">${it.code}</span>`;
+/* ---------- dealership ---------- */
+function vehList(shop){return VEH.filter(v=>!shop||v.shop===shop).map(v=>{const own=S.veh[v.k];return `<button class="perk nopic" data-v="${v.k}" ${own||v.cost>S.cash?"disabled":""}><span class="t">${v.n}</span><span class="d">${v.d} Yours forever, even after rebirth.</span><span class="c">${own?"Owned":fmt(v.cost)}</span></button>`}).join("")}
+function bindVeh(redraw){$("room").querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{const v=VEH.find(x=>x.k===b.dataset.v);if(S.veh[v.k]||S.cash<v.cost)return;S.cash-=v.cost;S.veh[v.k]=1;dirty=true;SFX.level();buzz([20,40,20]);banner(v.n+" unlocked","g");redraw();updMini()})}
+function carArt(){return `<svg viewBox="0 0 400 150" aria-hidden="true"><rect width="400" height="150" fill="var(--sunk)"/><rect y="112" width="400" height="38" fill="var(--line)"/>
+  <path d="M70 108c0-18 14-26 34-30l40-26c10-6 22-9 34-9h70c14 0 26 6 34 16l20 22c26 2 40 10 40 27v6H70Z" fill="#e2364a"/><path d="M150 54h56v24h-82Z" fill="#1b1f2a" opacity=".85"/><path d="M214 54h44c8 0 14 4 20 10l12 14h-76Z" fill="#1b1f2a" opacity=".85"/>
+  <circle cx="122" cy="112" r="20" fill="#141414"/><circle cx="122" cy="112" r="9" fill="#9aa3b3"/><circle cx="282" cy="112" r="20" fill="#141414"/><circle cx="282" cy="112" r="9" fill="#9aa3b3"/><rect x="318" y="88" width="14" height="8" rx="3" fill="#ffe08a"/></svg>`}
+function openDealer(){const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Dealership")}<div class="art">${carArt()}</div><div class="perks">${vehList("dealer")}</div><p class="fine">Your fastest vehicle is used automatically. Bikes are sold at the Mall.</p></div>`;$("leaveBtn").onclick=closeRoom;bindVeh(draw)};draw()}
 /* ---------- market (the reselling floor) ---------- */
 let M=null,hold=null;
+const MKT={market:{k:"market",n:"Market",steal:.18,fake:.28,box:.06,price:1,minBase:0,sell:1,grail:.025},
+ flea:{k:"flea",n:"Flea Market",steal:.36,fake:.45,box:.14,price:.85,minBase:0,sell:.95,grail:.015},
+ lux:{k:"lux",n:"Luxury",steal:.1,fake:0,box:0,price:1.05,minBase:400,sell:1.25,grail:.07}};
+const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>valueOf(s)*mult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1);
-function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)).sort((a,b)=>a.base-b.base).slice(0,4)}
+const sellValue=s=>valueOf(s)*mult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1);
+function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 function newListing(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
   const b0={id:S.nextId++,disc:0,gone:0,fake:false};
-  if(S.earned>600&&Math.random()<.025){
+  if(S.earned>600&&Math.random()<MC().grail){
     const g=pick(POOL.filter(p=>p.base>=900&&p.base<=Math.max(5000,S.cash*3))),c=CAT[g.cat],cond=c.conds[0];
     const base=Math.round(g.base*cond[1]),ask=Math.round(base*S.trend[g.cat]*rnd(.5,.75));
     return {...b0,kind:"grail",cat:g.cat,code:g.code,name:g.name,cond:cond[0],base,ask,price:ask,life:3.4,left:3.4,rating:5};
   }
-  if(Math.random()<.06){
+  if(Math.random()<MC().box){
     const pool=affordable(),avg=pool.reduce((a,p)=>a+p.base,0)/pool.length;
     const ask=Math.max(10,Math.round(avg*rnd(.45,.7)/5)*5);
     return {...b0,kind:"mystery",cat:null,code:"?",name:"Mystery Box",cond:"Sealed",base:0,ask,price:ask,life,left:life,rating:rnd(4.4,5)};
   }
   const it=pick(affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
   const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
-  const steal=Math.random()<.18,r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1);
-  const fake=steal&&Math.random()<.28;
+  const steal=Math.random()<MC().steal,r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
+  const fake=steal&&Math.random()<MC().fake;
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
   return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r)),price:Math.max(5,Math.round(mv*r)),life,left:life,fake,rating};
@@ -985,9 +1158,9 @@ function spark(h){
   return `<svg class="spark" viewBox="0 0 ${w} ${ht}" preserveAspectRatio="none" aria-hidden="true"><path class="a" d="${d}L${w} ${ht}L0 ${ht}Z"/><path class="l" d="${d}" vector-effect="non-scaling-stroke"/></svg>`;
 }
 const slotEls=[];let slotKeys=[];
-function openMarket(){
-  M={market:[null,null,null],restock:[.2,.6,1],ev:null,nextEv:4,auctionT:rnd(35,70),streak:0,streakT:-99,t:0,newsT:0,evKey:null};
-  $("room").innerHTML=`<div class="room-in">${roomHead("Market")}
+function openMarket(cfg){
+  cfg=cfg||MKT.market;M={cfg,market:[null,null,null],restock:[.2,.6,1],ev:null,nextEv:4,auctionT:rnd(35,70),streak:0,streakT:-99,t:0,newsT:0,evKey:null};
+  $("room").innerHTML=`<div class="room-in">${roomHead(cfg.n)}
     <div class="news"><span class="live">LIVE</span><span id="news"></span></div>
     <div id="event" class="collector"></div>
     <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
@@ -1067,7 +1240,7 @@ function tryBuy(i){
   if(!spend(3,el))return;
   S.cash-=l.price;
   const item=l.kind==="mystery"?openBox(l.price):{cat:l.cat,code:l.code,name:l.name,cond:l.cond,base:l.base,noise:rnd(.95,1.05),fake:l.fake};
-  item.paid=l.price;S.stash.push(item);dirty=true;
+  item.paid=l.price;S.stash.push(item);dirty=true;if(M.cfg.k==="flea")S.flags.fleaBuy=1;
   floatAt(el,fmt(-l.price)+(l.disc>0?`<small>LOWBALLED ${Math.round(l.disc*100)}%</small>`:""),"var(--ink)");
   M.market[i]=null;M.restock[i]=rnd(.35,.9);buzz(8);renderStash(S.stash.length-1);updateMarket();updMini();
   if(l.kind==="mystery"){SFX.reveal();const v=valueOf(item);setNews(`Mystery box: <b class="${v>=l.price?"u":"d"}">${item.name}</b> · ${item.cond} · worth ${fmt(v)}`);M.newsT=5;banner(v>l.price*2.5?"Jackpot":"Box opened",v>l.price*2.5?"g":"a")}
@@ -1079,7 +1252,7 @@ function sellAt(i,v,{hot=false,el=null}={}){
   if(!spend(1,el))return;
   const s=S.stash[i];v=Math.round(v);const gain=v-s.paid;let bonus=0;
   if(gain>0){M.streak=(M.t-M.streakT<4)?M.streak+1:1;M.streakT=M.t;bonus=Math.round(gain*Math.min(.1*(M.streak-1),.5))}else M.streak=0;
-  earn(v+bonus);S.stats.flips++;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);
+  earn(v+bonus);S.stats.flips++;if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);
   S.stash.splice(i,1);
   if(el)floatAt(el,(gain>=0?"+":"−")+fmt(Math.abs(gain+bonus)).replace("−","")+(bonus?`<small>STREAK ×${(1+Math.min(.1*(M.streak-1),.5)).toFixed(1)}</small>`:hot?"<small>COLLECTOR</small>":""),gain>=0?"var(--up)":"var(--down)");
   if(gain>0){SFX.sell(M.streak);buzz(12)}else{SFX.loss();buzz(35)}
@@ -1158,7 +1331,8 @@ function loop(now){
       if(S.protein>0)S.protein=Math.max(0,S.protein-dt);
       S.energy=Math.min(maxEnergy(),S.energy+dt/8);
       if(target&&!room){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
-        if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;openRoom(k)}}else{const st=Math.min(d,sp*dt);S.px+=dx/d*st;S.py+=dy/d*st;moving=true;dirty=true}}
+        if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;openRoom(k)}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
+          if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
       drift+=dt;
       if(drift>=.5){drift=0;
         CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.055,.055)+(1-S.trend[c.k])*.035,.5,1.85)});
@@ -1167,13 +1341,14 @@ function loop(now){
         CATS.forEach(c=>{const h=S.hist[c.k];h.push(S.trend[c.k]);h.shift()});
         if(M)renderStash();
       }
-      if(room==="market"&&M)marketTick(dt,now);
+      if(M)marketTick(dt,now);
       if(room==="gym")gymTick(dt);
       if(room==="arena")arenaTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
-      achT-=dt;if(achT<=0){achT=1;S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");SFX.level()}})}
+      if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
+      achT-=dt;if(achT<=0){achT=1;checkGoals();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");SFX.level()}})}
       renderBottom();
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room)drawWorld();
@@ -1193,6 +1368,7 @@ function title(){
         <div><kbd>FLIP</kbd><span>At the Market, tap to buy, hold to lowball, and tap your stash to sell.</span></div>
         <div><kbd>ENERGY</kbd><span>Trading and lifting use energy. Sleep at Home or grab a drink at the Café.</span></div>
         <div><kbd>STRONG</kbd><span>Lift heavier at the Gym to carry heavy items, win arm wrestling at the Arena and unlock perks.</span></div>
+        <div><kbd>EXPLORE</kbd><span>Finish Uncle Ray's goals to unlock the Beach and Downtown, and buy a bike, scooter and sports car. Watch for random town events.</span></div>
         <div><kbd>REBIRTH</kbd><span>Hit the cash goal at the Temple to reset for a permanent money multiplier.</span></div>
       </div>
       ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · ${S.rebirths} rebirth${S.rebirths===1?"":"s"} · Day ${S.day}</small></span>${ARROW}</button>
@@ -1203,7 +1379,7 @@ function title(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){audioOn();$("overlay").hidden=true;playing=true;bKey="";renderHud();renderBottom();if(isNew)banner("Welcome to town","a")}
+function start(isNew){audioOn();$("overlay").hidden=true;playing=true;bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
