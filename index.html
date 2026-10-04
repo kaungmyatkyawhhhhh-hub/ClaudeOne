@@ -279,8 +279,19 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .bigbtn small{font-family:var(--mono);font-size:.72rem;font-weight:600;letter-spacing:0;text-transform:none;opacity:.8}
 .bigbtn:active{transform:scale(.96)}
 .bigbtn[disabled]{background:var(--sunk);color:var(--muted)}
-.lift-bar{transition:transform .12s cubic-bezier(.3,1.6,.5,1)}
-.lift-bar.up{transform:translateY(-34px)}
+.wsel{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center}
+.wbtn{height:52px;display:grid;place-items:center;text-align:center;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-family:var(--mono);font-size:1.6rem;font-weight:700}
+.wbtn:active{transform:scale(.95)}
+.wval{display:flex;flex-direction:column;align-items:center;gap:2px}
+.wval b{font-family:var(--mono);font-size:1.5rem}
+.wval span{font-size:.72rem;color:var(--muted);font-weight:600}
+.wval span.pr{color:var(--gold)}
+.meter{position:relative;height:30px;border-radius:10px;background:var(--sunk);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+.meter .zone{position:absolute;top:0;bottom:0;background:var(--up);opacity:.85;border-radius:6px}
+.meter .needle{position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;background:var(--ink);border-radius:2px;left:0}
+.art.fail{animation:nope .35s}
+.lift-bar{transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
+.lift-bar.up{transform:translateY(-40px)}
 .sleepfx{position:fixed;inset:0;z-index:60;background:#05070d;display:grid;place-items:center;color:#cfd6ff;font-family:var(--display);font-variation-settings:"wdth" 125;font-weight:900;font-size:3rem;animation:sleep 2.6s ease-in-out forwards}
 @keyframes sleep{0%{opacity:0}25%{opacity:1}75%{opacity:1}100%{opacity:0}}
 .note{font-size:.86rem;line-height:1.4;padding:12px 14px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--accent);color:var(--ink)}
@@ -304,7 +315,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
   </div>
   <div class="chip stats">
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
-    <div class="stat"><small>Strength <b id="strTxt">Lv 0</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
+    <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
 </div>
 <button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
@@ -378,7 +389,7 @@ const CAFE=[
  {k:"coffee",t:"Coffee",d:"+25 energy",base:10,fx:s=>{s.energy=Math.min(maxEnergy(),s.energy+25)}},
  {k:"drink",t:"Energy drink",d:"+60 energy",base:25,fx:s=>{s.energy=Math.min(maxEnergy(),s.energy+60)}},
  {k:"meal",t:"Big breakfast",d:"Refill all energy",base:55,fx:s=>{s.energy=maxEnergy()}},
- {k:"shake",t:"Protein shake",d:"Double gym gains for 90 seconds",base:30,fx:s=>{s.protein=90}}
+ {k:"shake",t:"Protein shake",d:"Bigger green zone and a slower needle at the gym for 90 seconds",base:30,fx:s=>{s.protein=90}}
 ];
 
 /* ================= sound ================= */
@@ -418,24 +429,25 @@ drawMute();
 /* ================= state ================= */
 let S=null,dirty=false;
 function freshLife(keep){
-  S.cash=100+400*S.tok.start;S.energy=maxEnergyFor(0);S.str=0;S.xp=0;S.earned=0;S.protein=0;
+  S.cash=100+400*S.tok.start;S.pr=20;S.energy=maxEnergyFor(0);S.earned=0;S.protein=0;
   S.unlocked=START_CATS.slice();S.stash=[];
   const k=keep&&S.tok.keep;S.up={bag:k?S.up.bag:0,shoes:k?S.up.shoes:0,legit:0,coach:0,alerts:0,clout:0,phone:0};
 }
 function newGame(){
   S={v:1,rebirths:0,tokens:0,tok:{profit:0,energy:0,start:0,keep:0},up:{},trend:{},hist:{},clock:8,day:1,px:390,py:500,
-     stats:{flips:0,profit:0,best:0,fakes:0,grails:0,lifted:0,earnedAll:0},flags:{},nextId:1};
+     stats:{flips:0,profit:0,best:0,fakes:0,grails:0,lifted:0,heaviest:20,earnedAll:0},flags:{},nextId:1};
   CATS.forEach(c=>{S.trend[c.k]=1;S.hist[c.k]=Array(40).fill(1)});
   freshLife(false);
 }
 function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 const mult=()=>(1+.5*S.rebirths)*(1+.25*S.tok.profit);
 const maxEnergyFor=str=>100+20*S.tok.energy+2*str;
-const maxEnergy=()=>maxEnergyFor(S.str);
-const maxSlots=()=>4+Math.min(S.str,12)+2*S.up.bag;
-const xpNeed=l=>Math.round(8*Math.pow(1.4,l));
+// Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
+const strLv=()=>Math.floor((S.pr-20)/10);
+const maxEnergy=()=>maxEnergyFor(strLv());
+const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag;
 const rebirthReq=()=>5000*Math.pow(4,S.rebirths);
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
@@ -562,7 +574,7 @@ function renderHud(){
   $("dayTxt").textContent="Day "+S.day;
   const me=maxEnergy();$("enTxt").textContent=`${Math.floor(S.energy)}/${me}`;
   const eb=$("enBar");eb.firstChild.style.width=(S.energy/me*100)+"%";eb.classList.toggle("low",S.energy<me*.2);
-  $("strTxt").textContent="Lv "+S.str;$("xpBar").firstChild.style.width=(S.xp/xpNeed(S.str)*100)+"%";
+  $("strTxt").textContent=S.pr+" kg";$("xpBar").firstChild.style.width=(((S.pr-20)%10)/10*100)+"%";
   $("phoneBtn").hidden=!S.up.phone||!$("room").hidden;
 }
 
@@ -576,34 +588,59 @@ function openRoom(k){
   ({market:openMarket,gym:openGym,home:openHome,cafe:openCafe,mall:openMall,temple:openTemple})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
-function closeRoom(){if(room==="market")closeMarket();room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+function closeRoom(){if(room==="market")closeMarket();G=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 $("phoneBtn").onclick=()=>{audioOn();openRoom("market")};
 
 /* ---------- gym ---------- */
-function gymArt(){return `<svg viewBox="0 0 400 180" aria-hidden="true"><rect width="400" height="180" fill="var(--sunk)"/><rect y="140" width="400" height="40" fill="var(--line)"/>
-  <rect x="20" y="40" width="60" height="100" rx="4" fill="var(--surface)"/>${[0,1,2,3].map(i=>`<rect x="28" y="${50+i*22}" width="44" height="12" rx="6" fill="#3a3d45"/>`).join("")}
-  <rect x="320" y="30" width="60" height="110" rx="4" fill="var(--surface)"/><circle cx="350" cy="60" r="14" fill="#24a35f"/><circle cx="350" cy="100" r="14" fill="#e2364a"/>
-  <g class="lift-bar" id="liftBar"><rect x="110" y="96" width="180" height="8" rx="4" fill="#5b6272"/><rect x="104" y="72" width="22" height="56" rx="5" fill="#1b1f2a"/><rect x="274" y="72" width="22" height="56" rx="5" fill="#1b1f2a"/><rect x="92" y="80" width="14" height="40" rx="4" fill="#2a3cff"/><rect x="294" y="80" width="14" height="40" rx="4" fill="#2a3cff"/></g>
-  <rect x="150" y="128" width="100" height="12" rx="4" fill="#5b6272"/></svg>`}
+// Plates per side for a given total on a 20 kg bar, heaviest first
+const PLATES=[[20,"#2a5bd7",56],[15,"#e8b923",50],[10,"#24a35f",44],[5,"#f2f2f2",34],[2.5,"#e2364a",28]];
+function platesFor(w){let side=(w-20)/2;const out=[];for(const[p,c,h]of PLATES){while(side>=p-1e-9){out.push([p,c,h]);side-=p}}return out}
+function barbellSVG(w){
+  const pl=platesFor(w);let L="",R="",x=0;
+  pl.forEach(([p,c,h])=>{const t=p>=10?12:p>=5?9:7;L+=`<rect x="${124-x-t}" y="${100-h/2}" width="${t}" height="${h}" rx="2" fill="${c}" stroke="rgba(0,0,0,.25)"/>`;R+=`<rect x="${276+x}" y="${100-h/2}" width="${t}" height="${h}" rx="2" fill="${c}" stroke="rgba(0,0,0,.25)"/>`;x+=t+1});
+  return `<svg viewBox="0 0 400 170" aria-hidden="true"><rect width="400" height="170" fill="var(--sunk)"/><rect y="138" width="400" height="32" fill="var(--line)"/>
+   <rect x="18" y="34" width="44" height="104" rx="4" fill="var(--surface)"/>${PLATES.map(([p,c],i)=>`<rect x="24" y="${42+i*19}" width="32" height="12" rx="6" fill="${c}"/>`).join("")}
+   <rect x="338" y="34" width="44" height="104" rx="4" fill="var(--surface)"/><rect x="346" y="40" width="10" height="92" rx="3" fill="#5b6272"/><rect x="364" y="40" width="10" height="92" rx="3" fill="#5b6272"/>
+   <g class="lift-bar" id="liftBar"><rect x="70" y="97" width="260" height="6" rx="3" fill="#8a93a4"/><rect x="118" y="92" width="6" height="16" rx="2" fill="#5b6272"/><rect x="276" y="92" width="6" height="16" rx="2" fill="#5b6272"/>${L}${R}</g>
+   <rect x="150" y="128" width="100" height="10" rx="4" fill="#5b6272"/>
+   <text x="200" y="40" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="22" fill="var(--ink)">${w} kg</text></svg>`;
+}
+let G=null;
+const liftCost=w=>Math.ceil(2+w/40);
+function zoneFor(w){const pr=S.pr;let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;return clamp(z,.06,.5)}
+function newZone(){const z=zoneFor(G.w);G.z=[rnd(.08,.92-z),0];G.z[1]=G.z[0]+z}
 function openGym(){
+  G={w:Math.min(S.pr+5,S.pr+10),pos:0,dir:1,z:[.4,.6],busy:false};newZone();
   const draw=()=>{
-    const need=xpNeed(S.str);
+    const lv=strLv(),cost=liftCost(G.w),over=G.w>S.pr;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Gym")}
-      <div class="art">${gymArt()}</div>
-      <div class="kv"><div><span class="eyebrow">Strength</span><b>Lv ${S.str}</b></div><div><span class="eyebrow">Next level</span><b id="gxp">${S.xp}/${need} reps</b></div>
-        <div><span class="eyebrow">Stash slots</span><b>+${Math.min(S.str,12)}</b></div><div><span class="eyebrow">Max energy</span><b>+${2*S.str}</b></div></div>
-      <div class="bar xp" style="height:10px"><i id="gbar" style="width:${S.xp/need*100}%"></i></div>
-      <button class="bigbtn" id="liftBtn">Lift<small>2 energy per rep${S.protein>0?" · protein ×2 active":""}</small></button>
-      <p class="fine">Every strength level gives +1 stash slot (up to 12), +2 max energy, and makes sellers more patient with your lowballs.</p></div>`;
+      <div class="art" id="gArt">${barbellSVG(G.w)}</div>
+      <div class="kv"><div><span class="eyebrow">Max lift</span><b>${S.pr} kg</b></div><div><span class="eyebrow">Strength</span><b>Lv ${lv}</b></div>
+        <div><span class="eyebrow">Stash slots</span><b>+${Math.min(lv,12)}</b></div><div><span class="eyebrow">Max energy</span><b>+${2*lv}</b></div></div>
+      <div class="wsel"><button class="wbtn" id="wDown" aria-label="Less weight">−</button><div class="wval"><b>${G.w} kg</b><span class="${over?"pr":""}">${over?"New PR attempt":G.w===S.pr?"Your max":"Under your max"}</span></div><button class="wbtn" id="wUp" aria-label="More weight">+</button></div>
+      <div class="meter" id="meter"><i class="zone" id="zone" style="left:${G.z[0]*100}%;width:${(G.z[1]-G.z[0])*100}%"></i><i class="needle" id="needle"></i></div>
+      <button class="bigbtn" id="liftBtn">Lift ${G.w} kg<small>Tap when the needle is in the green · ${cost} energy${S.protein>0?" · protein: bigger zone":""}</small></button>
+      <p class="fine">Lift more than your max to set a new PR. Every 10 kg on your PR is a strength level: +1 stash slot (up to 12), +2 max energy, and more patient sellers. You can try up to 10 kg over your PR.</p></div>`;
     $("leaveBtn").onclick=closeRoom;
-    $("liftBtn").onclick=e=>{audioOn();if(!spend(2,e.currentTarget))return;
-      const g=S.protein>0?2:1;S.xp+=g;S.stats.lifted++;SFX.lift();buzz(8);
-      const bar=$("liftBar");bar.classList.add("up");setTimeout(()=>bar.classList.remove("up"),130);
-      floatAt(e.currentTarget,`+${g} rep${g>1?"s":""}`,"var(--accent)");
-      let up=false;while(S.xp>=xpNeed(S.str)){S.xp-=xpNeed(S.str);S.str++;up=true}
-      if(up){SFX.level();banner("Strength Lv "+S.str,"a");draw()}else{$("gxp").textContent=`${S.xp}/${xpNeed(S.str)} reps`;$("gbar").style.width=(S.xp/xpNeed(S.str)*100)+"%"}
-      updMini();dirty=true};
+    const setW=w=>{G.w=clamp(w,20,S.pr+10);newZone();draw()};
+    $("wDown").onclick=()=>setW(G.w-2.5);$("wUp").onclick=()=>setW(G.w+2.5);
+    $("liftBtn").onclick=e=>{audioOn();if(G.busy)return;if(!spend(liftCost(G.w),e.currentTarget))return;
+      const ok=G.pos>=G.z[0]&&G.pos<=G.z[1];G.busy=true;
+      const bar=$("liftBar");
+      if(ok){bar.classList.add("up");SFX.lift();buzz(10);S.stats.lifted++;S.stats.heaviest=Math.max(S.stats.heaviest||20,G.w);
+        if(G.w>S.pr){const before=strLv();S.pr=G.w;SFX.level();banner("New PR "+S.pr+" kg","u");if(strLv()>before)banner("Strength Lv "+strLv(),"a")}
+        else floatAt(e.currentTarget,"Clean lift","var(--up)")}
+      else{$("gArt").classList.add("fail");SFX.nope();buzz([30,40,30]);floatAt(e.currentTarget,"Failed the lift","var(--down)")}
+      dirty=true;updMini();
+      setTimeout(()=>{if(room!=="gym")return;G.busy=false;if(ok&&G.w>=S.pr&&G.w<S.pr+10)G.w=Math.min(S.pr+10,G.w+2.5);newZone();draw()},ok?650:550);
+    };
   };draw();
+}
+function gymTick(dt){
+  if(!G||G.busy)return;
+  const sp=Math.min(2.6,.8+G.w/140)*(S.protein>0?.85:1);
+  G.pos+=G.dir*sp*dt;if(G.pos>1){G.pos=1;G.dir=-1}if(G.pos<0){G.pos=0;G.dir=1}
+  const n=$("needle");if(n)n.style.left=(G.pos*100)+"%";
 }
 /* ---------- home ---------- */
 function homeArt(){const n=night()>.5;return `<svg viewBox="0 0 400 180" aria-hidden="true"><rect width="400" height="180" fill="var(--sunk)"/><rect y="140" width="400" height="40" fill="#b08660" opacity=".55"/>
@@ -619,7 +656,7 @@ function openHome(){
       <div class="kv">
         <div><span class="eyebrow">Earned this life</span><b>${fmt(S.earned)}</b></div><div><span class="eyebrow">Earned all time</span><b>${fmt(S.stats.earnedAll)}</b></div>
         <div><span class="eyebrow">Flips</span><b>${S.stats.flips}</b></div><div><span class="eyebrow">Best flip</span><b>${fmt(S.stats.best)}</b></div>
-        <div><span class="eyebrow">Reps lifted</span><b>${S.stats.lifted}</b></div><div><span class="eyebrow">Grails</span><b>${S.stats.grails}</b></div>
+        <div><span class="eyebrow">Heaviest lift</span><b>${S.stats.heaviest||S.pr} kg</b></div><div><span class="eyebrow">Grails</span><b>${S.stats.grails}</b></div>
         <div><span class="eyebrow">Rebirths</span><b>${S.rebirths}</b></div><div><span class="eyebrow">Fakes bought</span><b>${S.stats.fakes}</b></div>
       </div></div>`;
     $("leaveBtn").onclick=closeRoom;
@@ -860,7 +897,7 @@ function marketTick(dt,now){
     if(!l||l.id!==hold.id||l.gone)hold=null;else if(!hold.active&&now-hold.t0>170)hold.active=true;
     if(hold&&hold.active){hold.acc+=dt;
       while(hold&&hold.acc>=.09){hold.acc-=.09;l.disc=Math.min(.6,l.disc+.02);l.price=Math.max(1,Math.round(l.ask*(1-l.disc)));SFX.tick(l.disc);
-        const risk=Math.max(0,l.disc-.06)*.16*(1-.3*S.up.coach)*(1-Math.min(.45,.03*S.str));
+        const risk=Math.max(0,l.disc-.06)*.16*(1-.3*S.up.coach)*(1-Math.min(.45,.03*strLv()));
         if(Math.random()<risk){l.gone=.8;hold=null;SFX.walk();buzz([20,40,20])}}}
   }
   for(let i=0;i<3;i++){const l=M.market[i];
@@ -893,6 +930,7 @@ function loop(now){
         if(M)renderStash();
       }
       if(room==="market"&&M)marketTick(dt,now);
+      if(room==="gym")gymTick(dt);
       renderBottom();
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini()}
     }
