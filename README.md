@@ -1,6 +1,6 @@
 # Flip Rush
 
-A resale empire game for phones. Start with Uncle Ray's old hatchback and $150, haggle face to face with customers (sellers, hypebeasts, collectors, shady guys and your rival Dex), and grow from a car trunk to a garage, market stall, boutique, flagship store and warehouse. Hire staff, buy fixtures, pay rent every night, and reach $100,000 net worth. Progress saves automatically.
+A fast mobile reselling game styled like a resale exchange. Buy listings under market, hold to lowball sellers, sell into live price swings and collector demand, and make rent before the bell.
 
 ## Project layout
 
