@@ -186,6 +186,16 @@ local function onPlayerAdded(player)
 		onboarding.tutorialStep = Onboarding.Done
 	end
 	reconcile(data, DataTemplate.new())
+	-- Tutorial v1 had 8 steps and saved 9 for "finished"; v2 added the Coach step before the last one.
+	if (data.onboarding.tutorialVersion or 1) < Onboarding.Version then
+		local step = data.onboarding.tutorialStep
+		if step >= 9 then
+			data.onboarding.tutorialStep = Onboarding.Done
+		elseif step == 8 then
+			data.onboarding.tutorialStep = 9 -- the Goal step moved from 8 to 9
+		end
+		data.onboarding.tutorialVersion = Onboarding.Version
+	end
 	data.sessionLock = nil
 	-- Studio testing: set a "ReplayTutorial" attribute (checked) on Workspace to see the genetics reveal and
 	-- the tutorial again. Ignored on live servers.
@@ -395,6 +405,23 @@ function PlayerData.SetFlag(player, flag, value)
 	if not data then return end
 	data.onboarding[flag] = value
 	replicate(player, { "onboarding", flag }, value)
+end
+
+-- Quest state is owned by QuestService (it validates everything); this only stores and replicates it.
+function PlayerData.SetQuests(player, quests)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	data.quests = quests
+	replicate(player, { "quests" }, quests)
+end
+
+function PlayerData.AddShakes(player, amount)
+	local data = PlayerData.Get(player)
+	if not data or type(amount) ~= "number" then return false end
+	if data.shakes + amount < 0 then return false end
+	data.shakes += amount
+	replicate(player, { "shakes" }, data.shakes)
+	return true
 end
 
 -- Tutorial progress only moves forward (any step up to Onboarding.Done); no rewards hang on it.

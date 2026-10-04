@@ -34,6 +34,8 @@ for where everything sits in Studio.
 | `CoachNotes` | the coach one-liners on the machine HUD |
 | `Poses` | where the body goes on each machine |
 | `Onboarding` | the tutorial steps and their coach lines |
+| `Quests` | Coach quests (chain + repeatables), rewards, Coach lines |
+| `MuscleOfTheDay` | which group gets 2x gains each day |
 
 ## Code structure
 **Server** (`ServerScriptService`)
@@ -48,6 +50,10 @@ for where everything sits in Studio.
   settings). Other services can `Register` more actions.
 - `Server/BodyService`: avatar height and muscle size.
 - `Server/TitleService`: stats, title unlocks, badges, overhead title tag.
+- `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt).
+- `Server/QuestService`: Coach Dex, quest progress and rewards.
+- `Server/MuscleOfTheDayService`: writes today's group on the chalkboard.
+- `Main` starts newer services in protected calls (a failing one can't stop saving or machines).
 
 **Remotes** (`ReplicatedStorage/Remotes`)
 `GetData` (snapshot), `DataChanged` (path, value), `MachineAction`
@@ -62,6 +68,7 @@ for where everything sits in Studio.
 - `SettingsClient`: music/effects volume sliders, background music.
 - `OverheadTitleClient`: local effects on overhead title tags.
 - `MenuClient`: menu screen on join (covers data loading; Play, plus Titles/Settings for returning players).
+- `QuestClient`: quest tracker, Coach speech, Muscle of the Day note.
 - `TutorialClient`: first 5 minutes coach line, glowing floor path and machine outline (steps in `Config/Onboarding`).
 
 **Shared helpers** (`ReplicatedStorage/Shared`)

@@ -19,12 +19,56 @@
 > (step 5). Badges for the big titles need ids from the Roblox website (step 6). The popup-fix request from before
 > never reached me (step 0).
 >
-> **Not started:** coach quests, spotting/arm wrestling. (Menu + onboarding: see the newest entry below.)
+> **Overnight run (2026-10-05):** see the newest entries below; each step has its own test list.
 
 All game code lives in this repo under `src/` and Rojo syncs it into the Studio place (GYM ARC,
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
 Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
 Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## Step 8: Coach quests + Muscle of the Day (2026-10-05) ✅ (needs your playtest)
+
+**Built**
+- **Coach Dex** (`QuestService` + new `NpcService`): an original R15 NPC built from code (chalk-white shirt,
+  dark pants, name label), standing at the gym end of the front desk (11, 0, -9) facing the door aisle. Tap
+  **Talk**: he gives a quest; finish it and talk again for the reward and the next quest. His one-liners show
+  above his head for 5 s (only you see them). All progress is server-side.
+- **Quests** (`Config/Quests`, adding one = adding a table entry): a 12-quest chain (10 reps, 15 squats, unlock a
+  heavier weight, back day, pull-ups, chest level 10, overhead press, crunches, every group level 5, 3 titles,
+  200 reps, first Growth Spurt), then 4 repeatable quests in a loop. Rewards: coins, DNA tokens, shakes.
+- **Quest tracker** (`QuestClient`): small panel at the right middle with the quest, a chunky 10-segment progress
+  bar and "x / y", or "Done. Talk to Coach Dex". Corner note + soft ding when a quest is ready.
+- **Muscle of the Day** (`Config/MuscleOfTheDay`, `MuscleOfTheDayService`): one group per UTC day at 2x gains
+  (same on every server, cycles through all 6). Written on the chalkboard by the front desk ("Legs · 2x gains"),
+  applied inside the gains formula (still under the 5x cap, so popups match), and a corner note after Play.
+- **Tutorial:** the missing "first quest" step is in (Stats → talk to Coach Dex → Growth Spurt goal), with the
+  glowing path leading to him.
+- **Tutorial saves:** "finished" is now a fixed 100, so adding steps never sends finished players back; saves
+  from the earlier tutorial version are converted automatically.
+- **Safety:** new server services start in protected calls; if one fails it warns in Output and the rest of the
+  game keeps running.
+- Shakes are already stored (quest rewards give them); drinking them comes in the next step.
+
+**How to test**
+1. `git pull`, Play. Walk to the front desk: Coach Dex stands at its left end. Tap Talk → line above his head,
+   tracker shows "Do 10 reps on any machine 0 / 10".
+2. Do 10 reps → tracker fills, "Quest done" note → Talk → "Quest reward: +10 coins", next quest given.
+3. Look at the chalkboard next to the desk: today's group + "2x gains". Lift a machine for that group: bigger popups.
+4. Replay the tutorial (`ReplayTutorial` attribute): after Stats, the path leads to Coach Dex.
+
+**Assumptions**
+- Coach name "Coach Dex" and his look are original. He stands still (no animation), like a desk clerk.
+- Reward sizes are first guesses against the tier costs (15-800 coins); tune them in `Config/Quests`.
+- Group-level quests use the trainable muscles only (same rule as the Growth Spurt goal), so Calves/Obliques
+  don't block them.
+- Muscle of the Day uses the UTC date, so it changes at 6:30 am Yangon time.
+
+**Not verified**
+- No playtest from the cloud. Checked: compile, Roblox type analysis (luau-lsp), Rojo build, and Lune tests of the
+  quest/MOTD/gains/onboarding config logic. NPC built with `Players:CreateHumanoidModelFromDescription`; if that
+  ever fails, a simple part figure stands in so Talk still works.
 
 ---
 

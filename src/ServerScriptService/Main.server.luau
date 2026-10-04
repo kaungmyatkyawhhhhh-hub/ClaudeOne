@@ -12,6 +12,18 @@ BodyService.Start()
 ActionService.Start()
 TitleService.Start()
 
+-- Newer services start one by one in protected calls: if one of them fails, it warns in Output and
+-- the rest of the game (saving, machines, titles) keeps running.
+local OPTIONAL_SERVICES = { "QuestService", "MuscleOfTheDayService" }
+for _, name in ipairs(OPTIONAL_SERVICES) do
+	task.spawn(function()
+		local ok, err = pcall(function()
+			require(script.Parent.Server[name]).Start()
+		end)
+		if not ok then warn("[Main] " .. name .. " failed to start: " .. tostring(err)) end
+	end)
+end
+
 -- Stamina refills on its own
 local TICK = 0.25
 while true do

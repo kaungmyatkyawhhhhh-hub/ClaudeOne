@@ -1,7 +1,8 @@
--- gains per rep = tier weight x genetics x frame/body x Growth Spurt x boosts x diminishing
+-- gains per rep = tier weight x genetics x frame/body x Growth Spurt x boosts x Muscle of the Day x diminishing
 local Muscles = require(script.Parent.Muscles)
 local Genetics = require(script.Parent.Genetics)
 local GrowthSpurts = require(script.Parent.GrowthSpurts)
+local MuscleOfTheDay = require(script.Parent.MuscleOfTheDay)
 
 local Gains = {}
 
@@ -32,7 +33,7 @@ function Gains.PerRep(data, machine, tierIndex, boost)
 
 	local result = {}
 	for _, entry in ipairs(machine.muscles) do
-		local multiplier = math.min(Genetics.GetMultiplier(data.genetics, entry.id) * shared, Gains.MaxMultiplier)
+		local multiplier = math.min(Genetics.GetMultiplier(data.genetics, entry.id) * shared * MuscleOfTheDay.MultiplierFor(entry.id), Gains.MaxMultiplier)
 		local diminish = 1 / (1 + data.muscles[entry.id].level / Gains.DiminishLevel)
 		result[entry.id] = Gains.BaseXp * tier.gains * entry.share * multiplier * diminish
 	end

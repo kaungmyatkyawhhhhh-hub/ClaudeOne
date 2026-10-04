@@ -39,7 +39,8 @@ local PATH = {
 -- Wait for the menu, the data, and the genetics reveal
 ------------------------------------------------------------------------
 local data = ClientData.Get()
-if (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done then return end
+local savedStep = data.onboarding.tutorialStep or Onboarding.Done
+if savedStep >= Onboarding.Done or savedStep > #Onboarding.Steps then return end
 UIBus.WaitForMenu()
 
 local geneticsVisible = false
@@ -99,7 +100,11 @@ end
 ------------------------------------------------------------------------
 -- Machines: find them, and the spot just outside each one facing the room
 ------------------------------------------------------------------------
+-- A target is a MachineId, or "Coach" (the Coach NPC, tagged "Coach").
 local function machineModel(machineId)
+	if machineId == "Coach" then
+		return CollectionService:GetTagged("Coach")[1]
+	end
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 		if model:GetAttribute("MachineId") == machineId then return model end
 	end
@@ -272,6 +277,8 @@ end)
 -- What the player is doing
 ------------------------------------------------------------------------
 local onMachine = nil -- MachineId of the machine the player is on
+local statsOpenTime = 0 -- seconds Stats has been open during the current step
+local statsSeenThisStep = false
 local stepIndex = data.onboarding.tutorialStep
 local stepReps = 0
 local stepStarted = os.clock()
@@ -313,6 +320,11 @@ local function check()
 		if ClientData.Get().stamina / Stamina.Max < done.below or stepReps >= done.count then advance() end
 	elseif done.type == "statsOpen" then
 		if statsOpen then advance() end
+	elseif done.type == "statsOpenFor" then
+		if statsOpenTime >= done.count then advance() end
+	elseif done.type == "quest" then
+		local quests = ClientData.Get().quests
+		if quests and quests.active then advance() end
 	elseif done.type == "seconds" then
 		if os.clock() - stepStarted >= done.count then advance() end
 	end
@@ -329,8 +341,11 @@ end
 
 function advance()
 	stepIndex += 1
+	if stepIndex > #Onboarding.Steps then stepIndex = Onboarding.Done end
 	stepReps = 0
 	stepStarted = os.clock()
+	statsOpenTime = 0
+	statsSeenThisStep = statsOpen
 	Remotes.PlayerAction:FireServer("TutorialStep", stepIndex)
 	hidePath()
 	if stepIndex >= Onboarding.Done then
@@ -364,7 +379,7 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 end)
 
 ClientData.Changed:Connect(function(path)
-	if path[1] == "stamina" and stepIndex < Onboarding.Done then check() end
+	if (path[1] == "stamina" or path[1] == "quests") and stepIndex < Onboarding.Done then check() end
 end)
 
 UIBus.StatsVisible.Event:Connect(function(visible)
@@ -372,7 +387,9 @@ UIBus.StatsVisible.Event:Connect(function(visible)
 	if stepIndex >= Onboarding.Done then return end
 	placeLine()
 	local step = stepDef()
-	if not visible and step and step.done.orStatsClosed then
+	if visible then statsSeenThisStep = true end
+	-- closing Stats after a look also finishes a "statsOpenFor" step
+	if not visible and step and step.done.type == "statsOpenFor" and statsSeenThisStep and statsOpenTime > 1 then
 		advance()
 	else
 		check()
@@ -389,9 +406,10 @@ end)
 -- Timed steps
 task.spawn(function()
 	while stepIndex < Onboarding.Done do
-		task.wait(0.5)
+		local dt = task.wait(0.5)
 		local step = stepDef()
-		if step and step.done.type == "seconds" then check() end
+		if statsOpen then statsOpenTime += dt end
+		if step and (step.done.type == "seconds" or step.done.type == "statsOpenFor") then check() end
 	end
 end)
 
