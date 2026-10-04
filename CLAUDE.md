@@ -11,9 +11,15 @@
   ask, or write code that finds instances defensively (`WaitForChild`).
 
 ## Layout
-- `src/server` → `ServerScriptService.Server` (Scripts: `*.server.luau`)
-- `src/client` → `StarterPlayer.StarterPlayerScripts.Client` (LocalScripts: `*.client.luau`)
-- `src/shared` → `ReplicatedStorage.Shared` (ModuleScripts: `*.luau`)
+- `src/server` → `ServerScriptService.RojoServer` (Scripts: `*.server.luau`)
+- `src/client` → `StarterPlayer.StarterPlayerScripts.RojoClient` (LocalScripts: `*.client.luau`)
+- `src/shared` → `ReplicatedStorage.RojoShared` (ModuleScripts: `*.luau`)
+
+- The Studio place already has hand-made `ServerScriptService.Server`,
+  `ReplicatedStorage.Shared` and `ReplicatedStorage.Remotes` folders (e.g. a
+  `PlayerData` ModuleScript). They are NOT synced; never map Rojo onto those names,
+  or a sync would delete their contents.
+- Keep `rokit.toml`'s Rojo version equal to the owner's Rojo Studio plugin (7.7.1).
 
 ## Conventions
 - Luau, `.luau` extension. Use `--!strict` where practical.

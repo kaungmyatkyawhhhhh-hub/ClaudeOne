@@ -1,6 +1,6 @@
--- Synced by Rojo into ReplicatedStorage.Shared
+-- Synced by Rojo into ReplicatedStorage.RojoShared
 -- Shared constants usable from both server and client:
---   local Config = require(game.ReplicatedStorage.Shared.Config)
+--   local Config = require(game.ReplicatedStorage.RojoShared.Config)
 
 local Config = {}
 

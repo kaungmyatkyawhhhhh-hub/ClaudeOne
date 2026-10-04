@@ -1,2 +1,2 @@
--- Synced by Rojo into ServerScriptService.Server
+-- Synced by Rojo into ServerScriptService.RojoServer
 print("[Rojo] Server scripts synced")
