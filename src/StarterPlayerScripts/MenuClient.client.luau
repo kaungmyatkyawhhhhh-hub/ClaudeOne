@@ -102,7 +102,7 @@ local function buildCard(data)
 	New("Frame", { Name = "TierLine", Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = tier.color, LayoutOrder = 0, Parent = card }, { Theme.Round("Segment") })
 	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = card })
 	Theme.Text({ Text = player.DisplayName, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -48, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
-	Theme.Text({ Text = tier.id .. " member", Font = "Regular", TextSize = "Small", TextColor3 = tier.color, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -48, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+	Theme.Text({ Text = tier.id .. " member" .. (player:GetAttribute("Pass_VIP") and "  ·  VIP" or ""), Font = "Regular", TextSize = "Small", TextColor3 = tier.color, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -48, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
 	local overall = data.genetics and data.genetics.overall
 	if overall and Theme.Grades[overall] then
 		local disc = Theme.PlateDisc(Theme.Grades[overall], { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(38, 38), Parent = top })

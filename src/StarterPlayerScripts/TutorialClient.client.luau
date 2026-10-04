@@ -318,7 +318,8 @@ local function check()
 	elseif done.type == "reps" then
 		if stepReps >= done.count then advance() end
 	elseif done.type == "staminaLow" then
-		if ClientData.Get().stamina / Stamina.Max < done.below or stepReps >= done.count then advance() end
+		local max = player:GetAttribute("MaxStamina")
+		if ClientData.Get().stamina / (type(max) == "number" and max or Stamina.Max) < done.below or stepReps >= done.count then advance() end
 	elseif done.type == "statsOpen" then
 		if statsOpen then advance() end
 	elseif done.type == "statsOpenFor" then

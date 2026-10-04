@@ -28,6 +28,37 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Monetization framework (2026-10-05) ✅ (off until you add ids)
+
+**Built** (`MonetizationService`, `StoreClient`, everything in `Config/Monetization`)
+- **Gamepasses** from the brief, each with its effect wired in: 2x Gains, Auto Lift (an on/off toggle appears in
+  the right column; it taps for you on a machine), Iron Lungs (+50% max stamina, the HUD bar follows), Fast
+  Recovery (+50% refill), Shake Fridge (a free shake every 10 minutes played), Gene Lock (rerolls keep your best
+  group's grade), VIP Gym (+10% coins, VIP on the player card).
+- **Developer products:** DNA Token, Shake Pack (5 shakes), Server Boost (2x gains for the whole server for 30
+  minutes; everyone gets a note and a "2x gains 29:10 · by Name" pill shows the buyer's name).
+- Purchases are granted once per purchase id (remembered in the save, so Roblox retries can't double-grant).
+- **Fair, never forced:** no prompt ever opens by itself. The **Store** side button only appears after the tutorial
+  and 5 minutes of play in that session, and lists only items that have an id. Every paid thing is also earnable
+  (DNA tokens from streaks/quests/legends/coins, shakes from quests/coins, boosts from rush hour/spotting).
+- **Right now it's all off:** every id is `nil`, so no Store button and no purchase code runs.
+
+**How to turn it on**
+1. Roblox Creator Hub → your experience → Monetization → create the passes and products (names/prices up to you).
+2. Paste each id into `src/ReplicatedStorage/Shared/Config/Monetization.luau` (`id = 123456789`), commit, push,
+   `git pull`. Studio test purchases are free.
+3. Play for 5 minutes after the tutorial → Store button → Buy.
+
+**Assumptions**
+- "VIP Gym" gives +10% coins and a VIP tag for now; a VIP room can come with the town hub.
+- Gene Lock keeps the single best group (if the new roll is worse there).
+- Auto Lift uses the normal tap path, so animations, sounds and server checks are identical.
+
+**Not verified**
+- No purchases tested (no ids). Compile, type analysis and Rojo build pass.
+
+---
+
 ## Showing off: leaderboards, statue, emotes, membership card (2026-10-05) ✅ (needs your playtest)
 
 **Built** (`ShowOffService`, `EmoteClient`, numbers in `Config/ShowOff`)

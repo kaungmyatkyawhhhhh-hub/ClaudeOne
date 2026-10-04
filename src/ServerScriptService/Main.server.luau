@@ -15,7 +15,8 @@ TitleService.Start()
 -- Newer services start one by one in protected calls: if one of them fails, it warns in Output and
 -- the rest of the game (saving, machines, titles) keeps running.
 local OPTIONAL_SERVICES = { "BoostService", "QuestService", "MuscleOfTheDayService", "StaminaService", "RetentionService",
-	"SocialService", "ArmWrestleService", "LegendService", "ShowOffService" }
+	"SocialService", "ArmWrestleService", "LegendService", "ShowOffService",
+	"MonetizationService" }
 for _, name in ipairs(OPTIONAL_SERVICES) do
 	task.spawn(function()
 		local ok, err = pcall(function()

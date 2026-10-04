@@ -238,8 +238,10 @@ function PlayerData.WaitFor(player, timeout)
 	return PlayerData.Get(player)
 end
 
-function PlayerData.GetMaxStamina(_player)
-	return Stamina.Max
+-- Max stamina (Iron Lungs sets a bigger "MaxStamina" attribute on the player).
+function PlayerData.GetMaxStamina(player)
+	local bonus = player and player:GetAttribute("MaxStamina")
+	return type(bonus) == "number" and bonus or Stamina.Max
 end
 
 function PlayerData.GetLevelCap(player)
@@ -354,7 +356,21 @@ function PlayerData.RerollGenetics(player)
 	else
 		return false
 	end
+	local previous = data.genetics
 	data.genetics = Genetics.Roll()
+	-- Gene Lock pass: the best group keeps its grade (if the new roll is worse)
+	if player:GetAttribute("Pass_GeneLock") and previous and previous.grades then
+		local multOf = {}
+		for _, grade in ipairs(Genetics.Grades) do multOf[grade.id] = grade.mult end
+		local bestGroup, bestMult = nil, -math.huge
+		for groupId, grade in pairs(previous.grades) do
+			if (multOf[grade] or 0) > bestMult then bestGroup, bestMult = groupId, multOf[grade] or 0 end
+		end
+		if bestGroup and (multOf[data.genetics.grades[bestGroup]] or 0) < bestMult then
+			data.genetics.grades[bestGroup] = previous.grades[bestGroup]
+			data.genetics.overall = Genetics.GetOverallGrade(data.genetics.grades)
+		end
+	end
 	replicate(player, { "genetics" }, data.genetics)
 	return true
 end

@@ -658,7 +658,8 @@ local function progressFor(machineId)
 end
 
 local function staminaRatio()
-	return math.clamp(ClientData.Get().stamina / Stamina.Max, 0, 1)
+	local max = player:GetAttribute("MaxStamina") -- Iron Lungs
+	return math.clamp(ClientData.Get().stamina / (type(max) == "number" and max or Stamina.Max), 0, 1)
 end
 
 local function refreshCoins()
@@ -974,6 +975,17 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or not current then return end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		tryLift()
+	end
+end)
+
+-- Auto Lift pass: while it's switched on, keep lifting (same path as a tap, so it looks and sounds the same).
+task.spawn(function()
+	while true do
+		task.wait(0.15)
+		if current and player:GetAttribute("Pass_AutoLift") and player:GetAttribute("AutoLiftOn") then
+			local data = ClientData.Get()
+			if data.stamina >= current.machine.staminaCost then tryLift() end
+		end
 	end
 end)
 

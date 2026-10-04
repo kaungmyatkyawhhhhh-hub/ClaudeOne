@@ -40,6 +40,7 @@ for where everything sits in Studio.
 | `Social` | spotting, lifting together, arm wrestling |
 | `Legends` | legend NPCs, their challenges and titles, visit timing |
 | `ShowOff` | leaderboard wall, statue, emotes, membership tiers |
+| `Monetization` | gamepass / product ids (nil = off) and their effects |
 
 ## Code structure
 **Server** (`ServerScriptService`)
@@ -62,6 +63,7 @@ for where everything sits in Studio.
 - `Server/RetentionService`: daily streak, offline coins, loose plates, DNA tokens at the desk, rush hour.
 - `Server/SocialService`: spotting and the workout-together bonus.
 - `Server/LegendService`: legend visits, challenges and rewards.
+- `Server/MonetizationService`: pass ownership + effects, product receipts, server boost.
 - `Server/ShowOffService`: leaderboard wall, statue of the strongest player, emotes and high fives (creates the `Emote` remote).
 - `Server/ArmWrestleService`: the arm wrestling table, matches and practice opponents (creates the `ArmWrestle` remote).
 - `Main` starts newer services in protected calls (a failing one can't stop saving or machines).
@@ -85,6 +87,7 @@ for where everything sits in Studio.
 - `SocialClient`: arm wrestling panel and input, spotting/together notes.
 - `LegendClient`: legend challenge tracker and notes.
 - `EmoteClient`: Emotes side button and panel, poses for everyone's emotes.
+- `StoreClient`: Store (only with ids, after tutorial + 5 min), Auto Lift toggle, server boost pill.
 - `TutorialClient`: first 5 minutes coach line, glowing floor path and machine outline (steps in `Config/Onboarding`).
 
 **Shared helpers** (`ReplicatedStorage/Shared`)
