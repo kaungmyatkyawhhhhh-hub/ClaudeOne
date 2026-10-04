@@ -22,7 +22,7 @@ img{max-width:100%}
 <title>Flip Rush</title>
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
-/* Layout: a full-screen top-down town on a canvas with a floating HUD; buildings open full-screen rooms (market, gym, home, cafe, mall, rebirth temple). */
+/* Layout: a full-screen top-down town on a canvas with a floating HUD; buildings open full-screen rooms (market, gym, home, cafe, mall, arena, trading and more). */
 :root{
   --bg:#eceef2; --surface:#ffffff; --sunk:#e2e5ea; --ink:#0d1015; --muted:#677080; --line:#d8dce3;
   --accent:#2a3cff; --accent-ink:#ffffff; --up:#08965a; --down:#df2f45; --gold:#b97c00;
@@ -439,6 +439,17 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .lights{display:flex;justify-content:center;gap:16px;padding:26px;border-radius:16px;background:#141824}
 .lights i{width:54px;height:54px;border-radius:50%;background:#2a2f3a;box-shadow:inset 0 -4px 0 rgba(0,0,0,.3)}
 .lights i.r{background:#e2364a;box-shadow:0 0 20px #e2364a}.lights i.g{background:#2fd28a;box-shadow:0 0 24px #2fd28a}
+.lvbar{display:inline-block;width:46px;height:5px;border-radius:5px;background:var(--sunk);vertical-align:middle;margin:0 4px;overflow:hidden}
+.lvbar i{display:block;height:100%;background:var(--gold)}
+.pcards{display:grid;gap:10px}
+.pcard{display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow),inset 0 0 0 2px var(--line);text-align:left;transition:transform .1s}
+.pcard:active{transform:scale(.97)}
+.pcard b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:1.2rem;text-transform:uppercase}
+.pcard span{font-size:.9rem;color:var(--muted)}
+.pcard .pn{font-family:var(--mono);font-size:.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.perkchips{display:flex;flex-wrap:wrap;gap:6px}
+.perkchips span{font-size:.76rem;font-weight:600;padding:6px 10px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow)}
+.perkchips b{font-family:var(--mono);color:var(--gold)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
 @media (max-height:640px){.lst{height:54px}.tile{width:38px;height:38px}.collector{height:44px}.cash{font-size:2.1rem}}
 </style>
@@ -506,7 +517,6 @@ const PLACES=[
  {k:"market",n:"Market",c:"#3346f0",x:780,y:300,w:300,h:220,door:[930,520],sub:"Buy low, sell high"},
  {k:"gym",n:"Gym",c:"#1f9d5b",x:320,y:800,w:240,h:170,door:[440,970],sub:"Lift heavier to get stronger"},
  {k:"mall",n:"Mall",c:"#8f52d4",x:790,y:800,w:240,h:170,door:[910,970],sub:"Upgrades for your hustle"},
- {k:"temple",n:"Rebirth Temple",c:"#cf9a14",x:600,y:30,w:200,h:150,door:[700,180],sub:"Rebirth for a bigger multiplier"},
  {k:"arena",n:"Arena",c:"#d6384b",x:40,y:950,w:170,h:150,door:[125,1100],sub:"Arm wrestling for cash"},
  {k:"bank",n:"Bank",c:"#5f6b7e",x:1200,y:760,w:180,h:140,door:[1290,900],sub:"Deposit cash, earn interest"},
  {k:"trade",n:"Trading Centre",c:"#0e1a2f",x:20,y:300,w:180,h:150,door:[110,450],sub:"Live futures charts. Long or short with leverage"},
@@ -527,13 +537,13 @@ VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:2
 const CARS=["car","truck","classic","supercar"];
 const ride=()=>{if(!S||!S.veh)return null;if(S.cur==="walk")return null;if(S.cur&&S.veh[S.cur])return S.cur;const own=VEH.filter(v=>S.veh[v.k]).sort((a,b)=>b.sp-a.sp);return own.length?own[0].k:null};
 const PROPS=[{n:"Apartment",c:"#e39a52",cost:0,en:0,sell:0,d:"A cozy start."},{n:"Loft",c:"#14a3a8",cost:25000,en:20,sell:0,d:"+20 max energy."},{n:"Penthouse",c:"#2b2f3a",cost:150000,en:50,sell:.1,d:"+50 max energy, +10% on every sale."},{n:"Mansion",c:"#cf9a14",cost:1000000,en:100,sell:.25,d:"+100 max energy, +25% on every sale."}];
-const OUTFITS=[["Classic blue","#2a3cff",0],["Crimson","#e2364a",1],["Gold","#cf9a14",2],["Midnight","#1b1f2a",3],["Neon","#2fd28a",4],["Royal","#8f52d4",5],["Diamond","#7fd6ff",7]];
+const OUTFITS=[["Classic blue","#2a3cff",0],["Crimson","#e2364a",5],["Gold","#cf9a14",10],["Midnight","#1b1f2a",15],["Neon","#2fd28a",20],["Royal","#8f52d4",30],["Diamond","#7fd6ff",40]];
 const PAINTS=["#e2364a","#2a5bd7","#1b1f2a","#f2f2f2","#cf9a14","#2fd28a","#ff7a3d","#8f52d4"];
 const SEASONS=[{n:"Spring",m:{kicks:1.15,watch:1.05}},{n:"Summer",m:{gym:1.2,vint:.9,tech:1.05}},{n:"Autumn",m:{vint:1.2,cards:1.1}},{n:"Winter",m:{vint:1.3,toys:1.25,gym:.9}}];
 const season=()=>SEASONS[Math.floor(((S?S.day:1)-1)/7)%4];
 const DAILY=[{k:"sales",t:"Make 15 sales",need:15},{k:"pr",t:"Set a new PR on any lift",need:1},{k:"tradewin",t:"Close 3 winning trades",need:3},{k:"arm",t:"Win 2 arm wrestles",need:2},{k:"lift",t:"Do 20 clean lifts",need:20},{k:"earn",t:"Earn $3,000",need:3000}];
 const dayKey=(o=0)=>{const d=new Date(Date.now()+o*864e5);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
-function dailyProg(k,n=1){const d=S.daily;if(!d||d.done||d.k!==k||d.d!==dayKey())return;d.have+=n;if(d.have>=d.need){d.done=1;const rw=Math.round(1500*(1+S.rebirths*.5));S.cash+=rw;dirty=true;SFX.level();banner("Daily challenge done","g");banner("+"+fmt(rw),"u")}}
+function dailyProg(k,n=1){const d=S.daily;if(!d||d.done||d.k!==k||d.d!==dayKey())return;d.have+=n;if(d.have>=d.need){d.done=1;const rw=Math.round(1500*(1+SC()*.5));S.cash+=rw;dirty=true;SFX.level();banner("Daily challenge done","g");banner("+"+fmt(rw),"u")}}
 const PL={};PLACES.forEach(p=>PL[p.k]=p);
 function syncHome(){if(!S)return;const pr=PROPS[S.home||0];if(PL.home.n!==pr.n){PL.home.n=pr.n;PL.home.c=pr.c;STATIC=null}}
 const UPGRADES=[
@@ -544,12 +554,6 @@ const UPGRADES=[
  {k:"alerts",t:"Price alerts",d:"Listings stay up 30% longer",cost:l=>Math.round(300*Math.pow(2.5,l)),max:2},
  {k:"clout",t:"Clout",d:"Collectors pay +0.3×",cost:l=>Math.round(500*Math.pow(3,l)),max:3},
  {k:"phone",t:"Reseller phone",d:"Open the market from anywhere in town",cost:()=>2500,max:1}
-];
-const TOKPERKS=[
- {k:"profit",t:"Golden touch",d:"+25% on every sale, forever",cost:l=>1+l,max:10},
- {k:"energy",t:"Iron lungs",d:"+20 max energy, forever",cost:l=>1+l,max:5},
- {k:"start",t:"Trust fund",d:"Start each life with +$400",cost:l=>1+l,max:5},
- {k:"keep",t:"Keep your gear",d:"Backpack and shoes survive rebirth",cost:()=>3,max:1}
 ];
 const CAFE=[
  {k:"coffee",t:"Coffee",d:"+25 energy",base:10,fx:s=>{s.energy=Math.min(maxEnergy(),s.energy+25)}},
@@ -608,10 +612,15 @@ function newGame(){
   freshLife(false);
 }
 function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
-const mult=()=>(1+.5*S.rebirths)*(1+.25*S.tok.profit);
-const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en;
+// Reputation level grows forever from everything you earn; no resets
+const repLevel=()=>Math.floor(Math.sqrt((S.stats.earnedAll||0)/400));
+const lvlFrac=()=>{const L=repLevel(),a=L*L*400,b=(L+1)*(L+1)*400;return((S.stats.earnedAll||0)-a)/(b-a)};
+const SC=()=>Math.floor(repLevel()/5);
+const pk=k=>(S.perks&&S.perks[k])||0;
+const mult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"));
+const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy");
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
 const STR_TIERS=[[20,"Twig"],[40,"Average"],[60,"Fit"],[90,"Strong"],[130,"Beast"],[180,"Titan"],[250,"Legend"]];
@@ -644,7 +653,8 @@ const ACH=[
  ["arm1","Arm wrestler","Win an arm wrestling match",()=>(S.stats.armWins||0)>=1,250],
  ["armMtn","Moved the Mountain","Beat The Mountain at the Arena",()=>(S.stats.beat||[]).includes(3),5000],
  ["grail","Grail hunter","Buy a grail",()=>S.stats.grails>=1,1000],
- ["reb1","Born again","Rebirth once",()=>S.rebirths>=1,2000],
+ ["lvl10","Rising star","Reach level 10",()=>repLevel()>=10,2000],
+ ["lvl25","Big shot","Reach level 25",()=>repLevel()>=25,25000],
  ["life10k","Ten grand","Earn $10K in one life",()=>S.earned>=10000,1500],
  ["saver","Saver","Keep $5K in the bank",()=>(S.bank||0)>=5000,800],
  ["trade1","Day trader","Close a winning trade at the Trading Centre",()=>(S.stats.tradeWins||0)>=1,500],
@@ -653,9 +663,8 @@ const ACH=[
 ];
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
 const maxEnergy=()=>maxEnergyFor(strLv());
-const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag;
-const walkSpeed=()=>150*(1+.25*S.up.shoes)*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
-const rebirthReq=()=>5000*Math.pow(4,S.rebirths);
+const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag+pk("slot");
+const walkSpeed=()=>150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]||1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
@@ -733,8 +742,6 @@ function drawBuilding(g,p,P){
     g.fillStyle=P.glassD;rrp(g,p.x+16,fy+8,p.w-32,f-18,6);g.fill();g.fillStyle="rgba(255,255,255,.35)";for(let x=p.x+30;x<p.x+p.w-20;x+=36)g.fillRect(x,fy+8,2,f-18)}
   if(p.k==="mall"){g.fillStyle=P.glassD;rrp(g,p.x+12,fy+6,p.w-24,f-14,6);g.fill();g.fillStyle="rgba(255,255,255,.4)";for(let x=p.x+12;x<p.x+p.w-12;x+=28)g.fillRect(x,fy+6,2,f-14);g.fillRect(p.x+12,fy+f*.45,p.w-24,2);
     [[p.x+24,ry+16],[p.x+70,ry+16],[p.x+p.w-60,ry+20]].forEach(([x,y])=>{g.fillStyle="rgba(0,0,0,.15)";g.fillRect(x+3,y+3,30,22);g.fillStyle="#d7dbe3";g.fillRect(x,y,30,22);g.fillStyle="#9aa3b3";g.beginPath();g.arc(x+15,y+11,7,0,7);g.fill()})}
-  if(p.k==="temple"){g.fillStyle="rgba(255,255,255,.22)";rrp(g,p.x+18,ry+12,p.w-36,rh-24,10);g.fill();g.fillStyle="rgba(255,255,255,.22)";rrp(g,p.x+42,ry+26,p.w-84,rh-52,8);g.fill();
-    g.fillStyle="#fff7dc";for(let x=p.x+18;x<p.x+p.w-18;x+=26){if(Math.abs(x+5-p.door[0])<22)continue;g.fillRect(x,fy+4,10,f-8)}}
   if(p.k==="arena"){g.strokeStyle="#ffffff";g.lineWidth=3;rrp(g,cx-34,cy-20,68,40,4);g.stroke();g.lineWidth=1.5;rrp(g,cx-28,cy-14,56,28,3);g.stroke();g.fillStyle="#ffcc33";[[-34,-20],[34,-20],[-34,20],[34,20]].forEach(([dx,dy])=>{g.beginPath();g.arc(cx+dx,cy+dy,4,0,7);g.fill()})}
   if(p.k==="trade"){g.fillStyle="#0a1222";rrp(g,p.x+16,ry+12,p.w-32,rh-22,6);g.fill();g.strokeStyle="#2fd28a";g.lineWidth=2.5;g.beginPath();[[0,.7],[.15,.55],[.3,.62],[.45,.35],[.6,.45],[.75,.2],[.9,.3],[1,.12]].forEach(([fx,fy2],i)=>{const X=p.x+24+fx*(p.w-48),Y=ry+16+fy2*(rh-32);i?g.lineTo(X,Y):g.moveTo(X,Y)});g.stroke();
     [[.2,1],[.38,0],[.56,1],[.74,1]].forEach(([fx,up])=>{const X=p.x+24+fx*(p.w-48);g.fillStyle=up?"#2fd28a":"#ff5b6e";g.fillRect(X,ry+rh-30,6,14)});g.fillStyle=P.glassD;rrp(g,p.x+12,fy+6,p.w-24,f-14,6);g.fill()}
@@ -853,8 +860,6 @@ function drawWorld(){
     if(nightA>.35&&(p.k==="gym"||p.k==="mall")){ctx.fillStyle=`rgba(255,214,140,${.45*nightA})`;rr(p.x+14,p.y+p.h-fh(p)+7,p.w-28,fh(p)-16,6);ctx.fill()}
     if(near===p){ctx.strokeStyle=P.ink;ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.lineDashOffset=-wt*20;rr(p.x-5,p.y-5,p.w+10,p.h+10,18);ctx.stroke();ctx.setLineDash([])}
   });
-  // temple aura
-  const tp=PL.temple,pulse=.5+.5*Math.sin(wt*2);const ag=ctx.createRadialGradient(tp.x+tp.w/2,tp.y+tp.h/2,20,tp.x+tp.w/2,tp.y+tp.h/2,150);ag.addColorStop(0,`rgba(255,210,90,${.18+.12*pulse})`);ag.addColorStop(1,"rgba(255,210,90,0)");ctx.fillStyle=ag;ctx.fillRect(tp.x-60,tp.y-60,tp.w+120,tp.h+140);
   // waves along the shore
   if(cam.y+vh>SEA-40){ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=2.5;for(let k=0;k<3;k++){const yy=SEA+6+k*22+Math.sin(wt*1.2+k)*4;ctx.beginPath();for(let x=Math.floor(cam.x/40)*40-40;x<cam.x+vw+40;x+=40){ctx.moveTo(x+((wt*14+k*13)%40),yy);ctx.quadraticCurveTo(x+10+((wt*14+k*13)%40),yy-5,x+20+((wt*14+k*13)%40),yy)}ctx.globalAlpha=.7-k*.2;ctx.stroke()}ctx.globalAlpha=1}
   if(nightA>.35){ctx.fillStyle="rgba(255,210,130,.9)";towerLit().forEach(([x,y])=>{if(x<cam.x-20||x>cam.x+vw+20||y<cam.y-20||y>cam.y+vh+20)return;ctx.fillRect(x,y,9,10)})}
@@ -908,7 +913,7 @@ function renderBottom(){
 let hudT=0;
 function renderHud(){
   $("cash").textContent=fmt(S.cash);
-  $("multTxt").textContent=S.rebirths||S.tok.profit?`×${mult().toFixed(2).replace(/\.?0+$/,"")} money · ${S.rebirths} rebirth${S.rebirths===1?"":"s"}`:"";
+  $("multTxt").innerHTML=`Lv ${repLevel()} <i class="lvbar"><i style="width:${Math.round(lvlFrac()*100)}%"></i></i> ×${mult().toFixed(2)} money`;
   const h=Math.floor(S.clock),m=Math.floor((S.clock%1)*60/15)*15;$("timeTxt").textContent=`${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
   $("dayTxt").textContent="Day "+S.day+" · "+season().n;
   const me=maxEnergy();$("enTxt").textContent=`${Math.floor(S.energy)}/${me}`;
@@ -924,7 +929,7 @@ function updMini(){const c=$("rCash");if(c){c.textContent=fmt(S.cash);const e=$(
 function openRoom(k){
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
-  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,cafe:openCafe,mall:openMall,temple:openTemple,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
+  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();G=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
@@ -946,7 +951,7 @@ function barbellSVG(w){
 }
 let G=null,G0lift=null;
 const liftCost=w=>Math.max(1,Math.ceil((2+w/40)*(G&&G.half?.5:1)));
-function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;return clamp(z,.06,.5)}
+function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;z*=1+.1*pk("lift");return clamp(z,.06,.5)}
 function newZone(){const z=zoneFor(G.w);G.z=[rnd(.08,.92-z),0];G.z[1]=G.z[0]+z}
 const LIFTS=[["bench","Bench"],["squat","Squat"],["dead","Deadlift"]];
 const liftTotal=()=>S.lifts.bench+S.lifts.squat+S.lifts.dead;
@@ -1010,15 +1015,16 @@ function openHome(){
       ${Object.keys(S.veh).length?`<div class="sechead"><h3>Garage</h3><span class="eyebrow">Tap to drive</span></div>
       <div class="garage">${VEH.filter(v=>S.veh[v.k]).map(v=>`<button class="gcar${ride()===v.k?" on":""}" data-ride="${v.k}"><b>${v.n}</b><span>${v.sp}× speed</span></button>`).join("")}<button class="gcar${S.cur==="walk"?" on":""}" data-ride="walk"><b>Walk</b><span>1× speed</span></button></div>
       <div class="paints"><span class="eyebrow">Paint</span>${PAINTS.map(c=>`<button class="sw${S.paint===c?" on":""}" data-paint="${c}" style="background:${c}" aria-label="Paint ${c}"></button>`).join("")}</div>`:""}
-      <div class="sechead"><h3>Wardrobe</h3><span class="eyebrow">Unlocked by rebirths</span></div>
-      <div class="paints">${OUTFITS.map(([n,c,rb],i)=>`<button class="sw big${(S.skin||0)===i?" on":""}${S.rebirths<rb?" locked":""}" data-skin="${i}" style="background:${c}" ${S.rebirths<rb?"disabled":""} title="${n}${S.rebirths<rb?" · "+rb+" rebirths":""}">${S.rebirths<rb?rb:""}</button>`).join("")}</div>
-      <p class="fine">${OUTFITS[S.skin||0][0]}${(S.skin||0)>=5?" · crown included":""}. More outfits unlock as you rebirth.</p>
+      <div class="sechead"><h3>Wardrobe</h3><span class="eyebrow">Unlocked by level</span></div>
+      <div class="paints">${OUTFITS.map(([n,c,rb],i)=>`<button class="sw big${(S.skin||0)===i?" on":""}${repLevel()<rb?" locked":""}" data-skin="${i}" style="background:${c}" ${repLevel()<rb?"disabled":""} title="${n}${repLevel()<rb?" · level "+rb:""}">${repLevel()<rb?rb:""}</button>`).join("")}</div>
+      <p class="fine">${OUTFITS[S.skin||0][0]}${(S.skin||0)>=5?" · crown included":""}. More outfits unlock as you level up.</p>
+      ${S.perks&&Object.keys(S.perks).length?`<div class="sechead"><h3>Your perks</h3><span class="eyebrow">Level ${repLevel()}</span></div><div class="perkchips">${PERK_POOL().concat(CATS.map(c=>({k:"cat_"+c.k,t:c.n+" specialist"}))).filter((c,i,a)=>pk(c.k)&&a.findIndex(x=>x.k===c.k)===i).map(c=>`<span>${c.t} <b>×${pk(c.k)}</b></span>`).join("")}</div>`:""}
       <div class="sechead"><h3>Your hustle</h3></div>
       <div class="kv">
         <div><span class="eyebrow">Earned this life</span><b>${fmt(S.earned)}</b></div><div><span class="eyebrow">Earned all time</span><b>${fmt(S.stats.earnedAll)}</b></div>
         <div><span class="eyebrow">Flips</span><b>${S.stats.flips}</b></div><div><span class="eyebrow">Best flip</span><b>${fmt(S.stats.best)}</b></div>
         <div><span class="eyebrow">Heaviest lift</span><b>${S.stats.heaviest||S.pr} kg</b></div><div><span class="eyebrow">Grails</span><b>${S.stats.grails}</b></div>
-        <div><span class="eyebrow">Rebirths</span><b>${S.rebirths}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
+        <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
@@ -1034,7 +1040,7 @@ function openHome(){
 }
 /* ---------- cafe ---------- */
 function openCafe(){
-  const price=c=>Math.round(c.base*(1+.8*S.rebirths));
+  const price=c=>Math.round(c.base*(1+.8*SC())*Math.max(.4,1-.2*pk("cafe")));
   const draw=bk=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Café")}
       <div class="note">Short on energy? Grab something here instead of walking home. ${S.protein>0?`<b>Protein active: ${Math.ceil(S.protein)}s</b>`:""}</div>
@@ -1053,7 +1059,7 @@ function openMall(){
       <div class="perks"><button class="perk nopic" id="shopRent" ${S.shop.open||S.cash<SHOP_RENT?"disabled":""}><span class="t">${S.shop.open?"✓ ":""}Rent a storefront</span><span class="d">Sells one stash item every 40 seconds at full value, even while you explore.</span><span class="c">${S.shop.open?"Open":fmt(SHOP_RENT)}</span></button>
       <button class="perk nopic" id="shopWorker" ${!S.shop.open||S.shop.worker||S.cash<SHOP_WORKER?"disabled":""}><span class="t">${S.shop.worker?"✓ ":""}Hire a shop worker</span><span class="d">Sells every 20 seconds instead.</span><span class="c">${S.shop.worker?"Hired":fmt(SHOP_WORKER)}</span></button></div>
       <div class="sechead"><h3>Vehicles</h3><span class="eyebrow">Kept forever</span></div><div class="perks">${vehList("mall")}</div>
-      <p class="fine">Upgrades reset when you rebirth, unless you buy Keep your gear at the temple. Vehicles never reset.</p></div>`;
+      <p class="fine">Everything you buy here is yours to keep.</p></div>`;
     $("leaveBtn").onclick=closeRoom;
     bindVeh(()=>draw());
     $("shopRent").onclick=()=>{if(S.shop.open||S.cash<SHOP_RENT)return;S.cash-=SHOP_RENT;S.shop.open=1;dirty=true;SFX.level();banner("Your shop is open","g");draw();updMini()};
@@ -1061,31 +1067,9 @@ function openMall(){
     $("room").querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const u=UPGRADES.find(x=>x.k===b.dataset.u),l=S.up[u.k];if(l>=u.max||S.cash<u.cost(l))return;S.cash-=u.cost(l);S.up[u.k]++;SFX.level();dirty=true;const y=$("room").firstChild.scrollTop;draw(u.k);$("room").firstChild.scrollTop=y;updMini()});
   };draw();
 }
-/* ---------- temple ---------- */
-function openTemple(){
-  let confirm=false;
-  const draw=bk=>{
-    const req=rebirthReq(),ok=S.cash>=req,gain=1+Math.min(4,Math.max(0,Math.floor(S.cash/req)-1));
-    const nextMult=(1+.5*(S.rebirths+1))*(1+.25*S.tok.profit);
-    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Temple")}
-      <div class="kv"><div><span class="eyebrow">Rebirths</span><b>${S.rebirths}</b></div><div><span class="eyebrow">Money multiplier</span><b>×${mult().toFixed(2)}</b></div>
-        <div><span class="eyebrow">Tokens</span><b>${S.tokens}</b></div><div><span class="eyebrow">Next rebirth</span><b>${fmt(req)}</b></div></div>
-      <div class="reqbar"><i style="width:${Math.min(100,S.cash/req*100)}%"></i></div>
-      <div class="note">Rebirth resets your cash, bank, open trades, stash, strength and mall upgrades. You keep your tokens and perks, and every sale pays <b>×${nextMult.toFixed(2)}</b> after this rebirth. You'll earn <b>${gain} token${gain>1?"s":""}</b> (more if you have extra cash).</div>
-      <button class="bigbtn" id="rbBtn" ${ok?"":"disabled"}>${ok?(confirm?"Tap again to rebirth":"Rebirth"):"Need "+fmt(req)}<small>${ok?"×"+mult().toFixed(2)+" → ×"+nextMult.toFixed(2):"You have "+fmt(S.cash)}</small></button>
-      <div class="sechead"><h3>Token perks</h3><span class="eyebrow">Permanent</span></div>
-      <div class="perks">${TOKPERKS.map(t=>{const l=S.tok[t.k],mx=l>=t.max,c=mx?0:t.cost(l);return `<button class="perk nopic${bk===t.k?" bought":""}" data-t="${t.k}" ${mx||c>S.tokens?"disabled":""}>
-        <span class="t">${t.t}${t.max>1?`<span class="pips">${Array.from({length:t.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${t.d}</span><span class="c">${mx?"Owned":c+" token"+(c>1?"s":"")}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;
-    $("rbBtn").onclick=()=>{if(!ok)return;if(!confirm){confirm=true;draw();return}
-      S.rebirths++;S.tokens+=gain;freshLife(true);dirty=true;save();SFX.rebirth();buzz([30,60,30]);
-      banner("Rebirth "+S.rebirths,"g");banner("×"+mult().toFixed(2)+" money","a");confirm=false;draw();updMini()};
-    $("room").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{const t=TOKPERKS.find(x=>x.k===b.dataset.t),l=S.tok[t.k];if(l>=t.max||S.tokens<t.cost(l))return;S.tokens-=t.cost(l);S.tok[t.k]++;SFX.level();dirty=true;draw(t.k);updMini()});
-  };draw();
-}
 /* ---------- arena ---------- */
 let A=null;
-const betOf=o=>Math.round(o.bet*(1+S.rebirths));
+const betOf=o=>Math.round(o.bet*(1+SC()));
 function armsSVG(o){return `<svg viewBox="0 0 400 210" aria-hidden="true"><rect width="400" height="210" fill="var(--sunk)"/>
   <rect x="60" y="150" width="280" height="22" rx="6" fill="#8a6a4a"/><rect x="80" y="172" width="12" height="38" fill="#6e5238"/><rect x="308" y="172" width="12" height="38" fill="#6e5238"/>
   <circle cx="70" cy="128" r="30" fill="#2a3cff"/><circle cx="70" cy="86" r="22" fill="#e8b896"/><path d="M48 80a22 22 0 0 1 44 0" fill="#3b2a20"/>
@@ -1130,7 +1114,7 @@ function arenaTick(dt){
   A.t-=dt;A.pos-=dt*(.22+.08*Math.sin(wt*2.3+A.i));
   if(A.pos>=1||A.pos<=0||A.t<=0){
     const win=A.pos>=1||(A.t<=0&&A.pos>.5);A.pos=clamp(A.pos,0,1);A.state="done";updArms();
-    if(win){earn(A.bet*2);dailyProg("arm");S.stats.armWins=(S.stats.armWins||0)+1;S.stats.beat=S.stats.beat||[];if(!S.stats.beat.includes(A.i))S.stats.beat.push(A.i);SFX.level();buzz([20,40,20]);banner("You win","u");banner("+"+fmt(A.bet*2),"g")}
+    if(win){earn(Math.round(A.bet*2*(1+.15*pk("arena"))));dailyProg("arm");S.stats.armWins=(S.stats.armWins||0)+1;S.stats.beat=S.stats.beat||[];if(!S.stats.beat.includes(A.i))S.stats.beat.push(A.i);SFX.level();buzz([20,40,20]);banner("You win","u");banner("+"+fmt(A.bet*2),"g")}
     else{SFX.loss();buzz([40,60,40]);banner("Pinned","r")}
     dirty=true;updMini();
     const m=$("tugMsg");if(m)m.textContent=win?`You beat ${A.o.n}!`:`${A.o.n} pinned you. Get stronger at the gym.`;
@@ -1141,8 +1125,8 @@ function arenaTick(dt){
 }
 /* ---------- powerlifting meets ---------- */
 const MEET_NAMES=["Iron Dave","Barbell Betty","Chalky Chen","Big Rosa","Deadlift Dom","Squat Sasha","Benchy Ben","Atlas Aki"];
-const meetPrize=()=>[5000,2000,800].map(v=>Math.round(v*(1+S.rebirths)));
-const meetFee=()=>Math.round(200*(1+S.rebirths));
+const meetPrize=()=>[5000,2000,800].map(v=>Math.round(v*(1+SC())));
+const meetFee=()=>Math.round(200*(1+SC()));
 function meetCard(){const open=S.day>=(S.meetDay||3),pz=meetPrize();
   return `<div class="dcard meet"><span class="eyebrow">Powerlifting meet · ${S.trophies||0} trophies</span><b>${open?"Meet day! Your total: "+liftTotal()+" kg":"Next meet on day "+S.meetDay}</b>
     <span class="dsub">1st ${fmt(pz[0])} · 2nd ${fmt(pz[1])} · 3rd ${fmt(pz[2])} · entry ${fmt(meetFee())} + 30 energy</span>
@@ -1166,7 +1150,7 @@ function openBank(){
   const draw=()=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
-      <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. It's lost if you rebirth, so withdraw first.</div>
+      <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
     $("leaveBtn").onclick=closeRoom;
     const dep=a=>{a=Math.floor(a);if(a<=0)return;S.cash-=a;S.bank=(S.bank||0)+a;SFX.buy();dirty=true;draw();updMini()};
@@ -1175,16 +1159,16 @@ function openBank(){
   };draw();
 }
 /* ---------- daily challenge + login reward ---------- */
-function ensureDaily(){const k=dayKey();if(!S.daily||S.daily.d!==k){let h=0;for(const ch of k)h=(h*31+ch.charCodeAt(0))%9973;const t=DAILY[h%DAILY.length];S.daily={d:k,k:t.k,t:t.t,need:t.k==="earn"?Math.round(3000*(1+S.rebirths)):t.need,have:0,done:0};dirty=true}}
-function dailyCard(){ensureDaily();const d=S.daily,rw=Math.round(1500*(1+S.rebirths*.5));return `<div class="dcard${d.done?" done":""}"><span class="eyebrow">Today's challenge</span><b>${d.k==="earn"?"Earn "+fmt(d.need):d.t}</b><div class="bar xp"><i style="width:${Math.min(100,d.have/d.need*100)}%"></i></div><span class="dsub">${d.done?"Done · "+fmt(rw)+" claimed":(d.k==="earn"?fmt(d.have)+" / "+fmt(d.need):Math.floor(d.have)+" / "+d.need)+" · reward "+fmt(rw)}</span></div>`}
+function ensureDaily(){const k=dayKey();if(!S.daily||S.daily.d!==k){let h=0;for(const ch of k)h=(h*31+ch.charCodeAt(0))%9973;const t=DAILY[h%DAILY.length];S.daily={d:k,k:t.k,t:t.t,need:t.k==="earn"?Math.round(3000*(1+SC())):t.need,have:0,done:0};dirty=true}}
+function dailyCard(){ensureDaily();const d=S.daily,rw=Math.round(1500*(1+SC()*.5));return `<div class="dcard${d.done?" done":""}"><span class="eyebrow">Today's challenge</span><b>${d.k==="earn"?"Earn "+fmt(d.need):d.t}</b><div class="bar xp"><i style="width:${Math.min(100,d.have/d.need*100)}%"></i></div><span class="dsub">${d.done?"Done · "+fmt(rw)+" claimed":(d.k==="earn"?fmt(d.have)+" / "+fmt(d.need):Math.floor(d.have)+" / "+d.need)+" · reward "+fmt(rw)}</span></div>`}
 const LOGIN_RW=[200,300,500,800,1200,2000,5000];
 function loginReward(then){
   const today=dayKey();if(S.login.d===today)return then();
   S.login.streak=S.login.d===dayKey(-1)?S.login.streak+1:1;S.login.d=today;
-  const day=((S.login.streak-1)%7),rw=Math.round(LOGIN_RW[day]*(1+S.rebirths*.5));
+  const day=((S.login.streak-1)%7),rw=Math.round(LOGIN_RW[day]*(1+SC()*.5));
   const o=$("overlay");o.hidden=false;
   o.innerHTML=`<div class="sheet"><h2 class="h2"><small>DAILY LOGIN · ${S.login.streak} DAY STREAK</small>Welcome back.</h2>
-    <div class="cal">${LOGIN_RW.map((v,i)=>`<div class="${i<day?"past":i===day?"today":""}"><span>Day ${i+1}</span><b>${fmt(Math.round(v*(1+S.rebirths*.5)))}</b></div>`).join("")}</div>
+    <div class="cal">${LOGIN_RW.map((v,i)=>`<div class="${i<day?"past":i===day?"today":""}"><span>Day ${i+1}</span><b>${fmt(Math.round(v*(1+SC()*.5)))}</b></div>`).join("")}</div>
     <p class="lede">Come back tomorrow to keep the streak going. Day 7 pays the most.</p>
     <button class="cta" id="lrClaim"><span>Claim ${fmt(rw)}</span>${ARROW}</button></div>`;
   $("lrClaim").onclick=()=>{S.cash+=rw;dirty=true;save();SFX.level();banner("+"+fmt(rw),"g");o.hidden=true;then()};
@@ -1198,7 +1182,7 @@ const GOALS=[
  {t:"Earn $5,000 in total",d:"Keep flipping. Word is a flea market is opening on the boardwalk down south.",ok:()=>S.stats.earnedAll>=5000,rw:400,unlock:"beach"},
  {t:"Buy something at the Boardwalk Flea",d:"The Beach is open! The Boardwalk Flea has crazy steals. And crazy fakes. Watch the ratings.",ok:()=>!!S.flags.fleaBuy,rw:500},
  {t:"Beat Big Mike at the Arena",d:"Big Mike has been talking trash about you. Go shut him up.",ok:()=>(S.stats.beat||[]).includes(2),rw:900},
- {t:"Rebirth once",d:"Time to level up for real. Hit the cash goal and visit the Temple.",ok:()=>S.rebirths>=1,rw:1500},
+ {t:"Reach level 10",d:"Every dollar you earn levels you up, and every level lets you pick a perk card. Get to level 10.",ok:()=>repLevel()>=10,rw:1500},
  {t:"Earn $40,000 in total",d:"Downtown is where the real money is. Earn your way in.",ok:()=>S.stats.earnedAll>=40000,rw:2500,unlock:"downtown"},
  {t:"Sell at the Luxury Exchange",d:"Downtown is open. The Luxury Exchange pays top dollar for high-end pieces.",ok:()=>!!S.flags.luxSell,rw:3000},
  {t:"Buy a scooter",d:"Treat yourself. The Dealership has electric scooters.",ok:()=>!!S.veh.scooter,rw:3000},
@@ -1270,7 +1254,7 @@ function openSale(){
 const tileHTML=it=>`<span class="tile sm" style="--h:${CAT[it.cat].h};grid-row:1/3">${it.code}</span>`;
 /* ---------- dealership ---------- */
 const vehBack=v=>Math.round(v.cost*(v.resale||.7));
-function vehList(shop){return VEH.filter(v=>!shop||v.shop===shop).map(v=>{const own=S.veh[v.k];return `<button class="perk nopic" data-v="${v.k}" ${!own&&v.cost>S.cash?"disabled":""}><span class="t">${own?"✓ ":""}${v.n}</span><span class="d">${v.d} ${own?"Tap to sell it back.":"Yours forever, even after rebirth."}</span><span class="c">${own?"Sell "+fmt(vehBack(v)):fmt(v.cost)}</span></button>`}).join("")}
+function vehList(shop){return VEH.filter(v=>!shop||v.shop===shop).map(v=>{const own=S.veh[v.k];return `<button class="perk nopic" data-v="${v.k}" ${!own&&v.cost>S.cash?"disabled":""}><span class="t">${own?"✓ ":""}${v.n}</span><span class="d">${v.d} ${own?"Tap to sell it back.":"Yours forever."}</span><span class="c">${own?"Sell "+fmt(vehBack(v)):fmt(v.cost)}</span></button>`}).join("")}
 function bindVeh(redraw){$("room").querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{const v=VEH.find(x=>x.k===b.dataset.v);if(S.veh[v.k]){delete S.veh[v.k];if(S.cur===v.k)S.cur=null;S.cash+=vehBack(v);dirty=true;SFX.sell();banner("Sold "+v.n,"u");redraw();updMini();return}if(S.cash<v.cost)return;S.cash-=v.cost;S.veh[v.k]=1;dirty=true;SFX.level();buzz([20,40,20]);banner(v.n+" unlocked","g");redraw();updMini()})}
 function carArt(){return `<svg viewBox="0 0 400 150" aria-hidden="true"><rect width="400" height="150" fill="var(--sunk)"/><rect y="112" width="400" height="38" fill="var(--line)"/>
   <path d="M70 108c0-18 14-26 34-30l40-26c10-6 22-9 34-9h70c14 0 26 6 34 16l20 22c26 2 40 10 40 27v6H70Z" fill="#e2364a"/><path d="M150 54h56v24h-82Z" fill="#1b1f2a" opacity=".85"/><path d="M214 54h44c8 0 14 4 20 10l12 14h-76Z" fill="#1b1f2a" opacity=".85"/>
@@ -1282,7 +1266,8 @@ const TSYMS=[{k:"XAU",n:"Gold",b:["XAUUSDT","PAXGUSDT"],y:["XAUTUSDT","PAXGUSDT"
 const TS={};TSYMS.forEach(t=>TS[t.k]=t);
 const SIMBASE={XAU:2400,BTC:65000,ETH:3200,SOL:150,BNB:580,XRP:.55,DOGE:.12};
 const TFS={"1m":{b:"1m",y:"1",ms:6e4},"5m":{b:"5m",y:"5",ms:3e5},"15m":{b:"15m",y:"15",ms:9e5},"1h":{b:"1h",y:"60",ms:36e5}};
-const LEVS=[1,2,5,10,25,50],MPCT=[.1,.25,.5,1],FEE=.0005;
+const LEVS=[1,2,5,10,25,50],MPCT=[.1,.25,.5,1],FEE0=.0005;
+const FEE_=()=>FEE0*Math.max(.25,1-.25*pk("fees"));
 const F={src:null,sym:{},px:{},candles:[],sel:"BTC",tf:"1m",ws:null,kws:null,init:null,simT:0,dirty:true,ping:null};
 const tfmt=(k,v)=>v==null?"—":"$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:TS[k].dp,maximumFractionDigits:TS[k].dp});
 function jget(url,ms=6000){return new Promise((res,rej)=>{const c=new AbortController(),t=setTimeout(()=>{c.abort();rej(new Error("timeout"))},ms);fetch(url,{signal:c.signal}).then(r=>{clearTimeout(t);if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}).then(res,rej)})}
@@ -1352,13 +1337,13 @@ function openPos(side,el){
   if(S.pos[k]){floatAt(el,"Close your "+k+" trade first","var(--down)");return}
   const m=Math.floor(S.cash*T.mp);if(m<5){floatAt(el,"Need at least $5","var(--down)");SFX.nope();return}
   if(!spend(2,el))return;
-  const fee=m*T.lev*FEE;if(m+fee>S.cash){floatAt(el,"Not enough cash for fees","var(--down)");return}
+  const fee=m*T.lev*FEE_();if(m+fee>S.cash){floatAt(el,"Not enough cash for fees","var(--down)");return}
   S.cash-=m+fee;S.pos[k]={side,lev:T.lev,m,entry:p,qty:m*T.lev/p,t:Date.now(),tp:T.tp,sl:T.sl};dirty=true;
   SFX.buy();buzz(12);banner((side==="long"?"Long ":"Short ")+k+" "+T.lev+"×","a");drawTrade();updMini();
 }
 function closePos(k,el,why){
   const ps=S.pos[k],p=(F.px[k]||{}).p;if(!ps||!p)return;
-  const pnl=posPnl(k,ps),fee=p*ps.qty*FEE,net=pnl-fee;delete S.pos[k];
+  const pnl=posPnl(k,ps),fee=p*ps.qty*FEE_(),net=pnl-fee;delete S.pos[k];
   S.cash+=ps.m;if(net>0)earn(net);else S.cash=Math.max(0,S.cash+net);
   S.stats.tradePnl=(S.stats.tradePnl||0)+net;if(net>0){S.stats.tradeWins=(S.stats.tradeWins||0)+1;dailyProg("tradewin")}dirty=true;
   floatAt(el||$("rCash"),(net>=0?"+":"−")+fmt(Math.abs(net)).replace("−",""),net>=0?"var(--up)":"var(--down)");
@@ -1391,10 +1376,10 @@ function drawTrade(){
        <div class="trow"><span class="eyebrow">Leverage</span><div class="chips">${LEVS.map(v=>`<button class="${v===T.lev?"on":""}" data-lev="${v}">${v}×</button>`).join("")}</div></div>
        <div class="trow two"><div><span class="eyebrow">Take profit</span><div class="chips">${TPS.map(v=>`<button class="${v===T.tp?"on":""}" data-tp="${v}">${v?"+"+v*100+"%":"Off"}</button>`).join("")}</div></div>
        <div><span class="eyebrow">Stop loss</span><div class="chips">${SLS.map(v=>`<button class="${v===T.sl?"on":""}" data-sl="${v}">${v?"−"+v*100+"%":"Off"}</button>`).join("")}</div></div></div>
-       <p class="tinfo">Margin <b>${fmt(m)}</b> · size <b>${fmt(notional)}</b> · liq long ${p?tfmt(k,p*(1-.9/T.lev)):"—"} / short ${p?tfmt(k,p*(1+.9/T.lev)):"—"} · fee ${fmt(notional*FEE)}</p>
+       <p class="tinfo">Margin <b>${fmt(m)}</b> · size <b>${fmt(notional)}</b> · liq long ${p?tfmt(k,p*(1-.9/T.lev)):"—"} / short ${p?tfmt(k,p*(1+.9/T.lev)):"—"} · fee ${fmt(notional*FEE_())}</p>
        <div class="tbtns"><button class="tlong" id="tLong">Long<small>price goes up</small></button><button class="tshort" id="tShort">Short<small>price goes down</small></button></div></div>`}
     ${tradeStats()}
-    <p class="fine">${F.src==="sim"?"The live price feed can't be reached from here, so these prices are simulated.":"Prices are real futures prices streamed live."} All money here is in-game cash. Positions stay open while you explore, and get liquidated if price hits the liquidation level. Rebirth wipes open trades.</p></div>`;
+    <p class="fine">${F.src==="sim"?"The live price feed can't be reached from here, so these prices are simulated.":"Prices are real futures prices streamed live."} All money here is in-game cash. Positions stay open while you explore, and get liquidated if price hits the liquidation level.</p></div>`;
   $("room").firstChild.scrollTop=y;$("leaveBtn").onclick=closeRoom;
   $("room").querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{if(F.sel===b.dataset.s)return;F.sel=b.dataset.s;loadCandles();drawTrade()});
   $("room").querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>{F.tf=b.dataset.tf;loadCandles();drawTrade()});
@@ -1413,7 +1398,7 @@ function tradeTick(dt,force){
   const ce=$("tChg");if(ce&&q.o){const ch=(q.p/q.o-1)*100;ce.textContent=(ch>=0?"+":"")+ch.toFixed(2)+"% 24h";ce.className=ch>=0?"u":"d"}
   TSYMS.forEach(x=>{const qq=F.px[x.k]||{},a=$("tp-"+x.k),b=$("tc-"+x.k);if(a)a.textContent=tfmt(x.k,qq.p);if(b&&qq.o){const c=(qq.p/qq.o-1)*100;b.textContent=(c>=0?"+":"")+c.toFixed(2)+"%";b.className=c>=0?"u":"d"}});
   if(ps){const pnl=posPnl(k,ps),pct=pnl/ps.m*100,el=$("pPnl");if(el){el.textContent=(pnl>=0?"+":"−")+fmt(Math.abs(pnl)).replace("−","")+" ("+(pct>=0?"+":"")+pct.toFixed(1)+"%)";el.style.color=pnl>=0?"var(--up)":"var(--down)"}
-    const mk=$("pMark");if(mk)mk.textContent=tfmt(k,q.p);const nt=$("pNet");if(nt)nt.textContent="Get back "+fmt(Math.max(0,ps.m+pnl-(q.p||0)*ps.qty*FEE))}
+    const mk=$("pMark");if(mk)mk.textContent=tfmt(k,q.p);const nt=$("pNet");if(nt)nt.textContent="Get back "+fmt(Math.max(0,ps.m+pnl-(q.p||0)*ps.qty*FEE_()))}
   drawChart();
 }
 function drawChart(){
@@ -1438,7 +1423,7 @@ function drawChart(){
   line(ly,lp>=v[v.length-1].o?UP:DN,tfmt(k,lp).replace("$",""));
 }
 const RIVAL_TR=[["WhaleWatcher",1],["CandleQueen",.7],["DegenDan",.4],["LeverageLarry",.25],["HODLHannah",.12]];
-function rivalPnl(i){const days=S.day+S.rebirths*14,sc=RIVAL_TR[i][1];let h=i*977+days*31;const wob=((h%200)-90)/100;return Math.round((2000+days*days*40)*sc*(1+wob*.3))}
+function rivalPnl(i){const days=S.day+repLevel()*2,sc=RIVAL_TR[i][1];let h=i*977+days*31;const wob=((h%200)-90)/100;return Math.round((2000+days*days*40)*sc*(1+wob*.3))}
 function tradeStats(){
   const tr=S.trades||[],wins=tr.filter(t=>t.net>0).length,best=tr.reduce((a,t)=>Math.max(a,t.net),0),tot=S.stats.tradePnl||0;
   let cum=0;const pts=tr.map(t=>cum+=t.net);
@@ -1458,7 +1443,7 @@ function renderTrChip(){
 }
 $("trChip").onclick=()=>{audioOn();if(!room&&(S.up.phone||nearPlace()===PL.trade))openRoom("trade");else if(!room)walkTo("trade")};
 /* ---------- airport, nightclub, docks ---------- */
-const fare=()=>Math.round(1500*(1+S.rebirths*.6));
+const fare=()=>Math.round(1500*(1+SC()*.6));
 function planeArt(){return `<svg viewBox="0 0 400 140" aria-hidden="true"><rect width="400" height="140" fill="var(--sunk)"/><rect y="104" width="400" height="36" fill="var(--line)"/>${[40,110,180,250,320].map(x=>`<rect x="${x}" y="120" width="40" height="5" fill="var(--surface)"/>`).join("")}
   <path d="M60 80h230c26 0 46 6 46 14s-20 14-46 14H90l-30-14Z" fill="#f2f2f2"/><path d="M180 82l-40-46h22l60 46Z" fill="#3b6fd8"/><path d="M190 106l-30 30h20l44-30Z" fill="#3b6fd8"/><path d="M70 82l-16-30h14l24 30Z" fill="#3b6fd8"/>${[210,226,242,258,274].map(x=>`<circle cx="${x}" cy="92" r="4" fill="#1b1f2a"/>`).join("")}</svg>`}
 function openAirport(){
@@ -1495,14 +1480,14 @@ function openDocks(){
       <div class="note">You're rolling up in your <b>${best.n}</b> (${best.sp}× speed).</div>
       <button class="bigbtn" id="showBtn" ${shown?"disabled":""}>Show off your cars<small>${shown?"Come back tomorrow":"Earn fans and cash for each car you own"}</small></button>
       <div class="sechead"><h3>Street races</h3><span class="eyebrow">Tap GO on green for a better launch</span></div>
-      <div class="perks">${opp.map((o,i)=>{const bet=Math.round(o.bet*(1+S.rebirths*.5));return `<button class="perk nopic" data-race="${i}" ${S.cash<bet?"disabled":""}><span class="t">${o.n}</span><span class="d">${o.sp}× car · bet ${fmt(bet)}, win ${fmt(bet*2)}</span><span class="c">Race</span></button>`}).join("")}</div>`}</div>`;
+      <div class="perks">${opp.map((o,i)=>{const bet=Math.round(o.bet*(1+SC()*.5));return `<button class="perk nopic" data-race="${i}" ${S.cash<bet?"disabled":""}><span class="t">${o.n}</span><span class="d">${o.sp}× car · bet ${fmt(bet)}, win ${fmt(bet*2)}</span><span class="c">Race</span></button>`}).join("")}</div>`}</div>`;
     $("leaveBtn").onclick=closeRoom;
     const sb=$("showBtn");if(sb)sb.onclick=()=>{if(S.flags.showDay===S.day)return;S.flags.showDay=S.day;const v=Math.round(VEH.filter(x=>S.veh[x.k]&&CARS.includes(x.k)).reduce((a,x)=>a+x.cost*.03,0));earn(v);SFX.level();banner("Car show +"+fmt(v),"g");draw();updMini()};
     $("room").querySelectorAll("[data-race]").forEach(b=>b.onclick=()=>race(opp[+b.dataset.race],best,draw));
   };draw();
 }
 function race(o,car,back){
-  const bet=Math.round(o.bet*(1+S.rebirths*.5));if(S.cash<bet)return;S.cash-=bet;dirty=true;
+  const bet=Math.round(o.bet*(1+SC()*.5));if(S.cash<bet)return;S.cash-=bet;dirty=true;
   $("room").innerHTML=`<div class="room-in">${roomHead("Docks Car Meet")}<div class="lights"><i id="L1"></i><i id="L2"></i><i id="L3"></i></div><p class="fine" id="rMsg">Get ready…</p><button class="bigbtn" id="goBtn">GO<small>Wait for green</small></button></div>`;
   $("leaveBtn").onclick=closeRoom;
   let green=0,done=false;const t0=performance.now();
@@ -1510,7 +1495,7 @@ function race(o,car,back){
   const gt=1700+Math.random()*1200;setTimeout(()=>{if(!$("L3"))return;["L1","L2","L3"].forEach(id=>$(id).className="g");green=performance.now()},gt);
   $("goBtn").onclick=()=>{if(done)return;done=true;let launch;if(!green)launch=-.25;else{const rt=(performance.now()-green)/1000;launch=rt<.25?.2:rt<.5?.1:rt<1?0:-.1}
     const chance=clamp(car.sp/(car.sp+o.sp)+launch,.05,.95),win=Math.random()<chance;
-    if(win){earn(bet*2);SFX.rebirth();banner("You won the race","g")}else{SFX.loss();banner(o.n+" wins","r")}dirty=true;updMini();
+    if(win){earn(Math.round(bet*2*(1+.15*pk("arena"))));SFX.rebirth();banner("You won the race","g")}else{SFX.loss();banner(o.n+" wins","r")}dirty=true;updMini();
     $("rMsg").textContent=(green?"Launch "+(launch>0?"perfect!":launch<0?"slow.":"okay."):"False start!")+" "+(win?"You beat "+o.n+".":o.n+" took it.");
     const g=$("goBtn");g.innerHTML="Back<small>"+(win?"+"+fmt(bet*2):"Lost "+fmt(bet))+"</small>";setTimeout(()=>{if(g.isConnected)g.onclick=back},300)};
 }
@@ -1536,6 +1521,31 @@ function renderQChip(){const el=$("qChip"),q=S.quest;if(!q){el.hidden=true;retur
 const questItem=()=>{const q=S.quest;if(!q)return-1;let bi=-1,bv=0;S.stash.forEach((x,i)=>{if(x.cat===q.cat&&!x.fake){const v=valueOf(x);if(v>=q.minV&&(bi<0||v<bv)){bi=i;bv=v}}});return bi};
 $("qChip").onclick=()=>{const q=S.quest;if(!q)return;const i=questItem();if(i<0){rayTextFrom(q.name,`Still waiting on that ${CAT[q.cat].n.toLowerCase()} worth ${fmt(q.minV)}+. Fake ones don't count!`);return}
   const it=S.stash[i],v=Math.round(valueOf(it)*q.m*mult());S.stash.splice(i,1);earn(v);S.stats.flips++;S.stats.quests=(S.stats.quests||0)+1;S.quest=null;dirty=true;SFX.rebirth();banner("Quest done +"+fmt(v),"g");if(M)renderStash();renderQChip()};
+/* ---------- level-up perk cards ---------- */
+const PERK_POOL=()=>[
+ {k:"sales",t:"Silver tongue",d:"+5% on every sale"},
+ {k:"energy",t:"Stamina",d:"+15 max energy"},
+ {k:"slot",t:"Deep pockets",d:"+1 stash slot"},
+ {k:"speed",t:"Quick feet",d:"Move 10% faster"},
+ {k:"lift",t:"Grip strength",d:"Gym green zone 10% bigger"},
+ {k:"arena",t:"Crowd favorite",d:"+15% arena and race winnings"},
+ {k:"fees",t:"Fee hunter",d:"Trading fees 25% lower"},
+ {k:"steal",t:"Eagle eye",d:"15% more steals in every market"},
+ {k:"cafe",t:"Café regular",d:"Café items 20% cheaper"},
+ ...S.unlocked.map(c=>({k:"cat_"+c,t:CAT[c].n+" specialist",d:"+12% when selling "+CAT[c].n.toLowerCase()}))
+];
+function levelCheck(){
+  const L=repLevel();if(S.lvlSeen==null)S.lvlSeen=L;
+  if(L>S.lvlSeen){S.picks=(S.picks||0)+(L-S.lvlSeen);S.lvlSeen=L;dirty=true;SFX.rebirth();banner("Level "+L,"g")}
+  if(S.picks>0&&!room&&$("overlay").hidden)showPerkPick();
+}
+function showPerkPick(){
+  const pool=PERK_POOL().sort(()=>Math.random()-.5).slice(0,3),o=$("overlay");o.hidden=false;
+  o.innerHTML=`<div class="sheet"><h2 class="h2"><small>LEVEL ${repLevel()} · PICK A PERK${S.picks>1?" · "+S.picks+" TO PICK":""}</small>Level up.</h2>
+    <div class="pcards">${pool.map((c,i)=>`<button class="pcard" data-pc="${i}"><span class="pn">${pk(c.k)?"Lv "+(pk(c.k)+1):"New"}</span><b>${c.t}</b><span>${c.d}</span></button>`).join("")}</div>
+    <p class="fine">Perks stack and last forever. Your build is your own.</p></div>`;
+  o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};S.perks[c.k]=(S.perks[c.k]||0)+1;S.picks--;dirty=true;SFX.level();buzz(15);banner(c.t,"a");o.hidden=true;renderHud();bKey=""});
+}
 /* ---------- market (the reselling floor) ---------- */
 let M=null,hold=null;
 const MKT={market:{k:"market",n:"Market",steal:.18,fake:.28,box:.06,price:1,minBase:0,sell:1,grail:.025},
@@ -1547,7 +1557,7 @@ const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>valueOf(s)*mult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*(S.buffs&&S.buffs.hype>0?1.3:1);
+const sellValue=s=>valueOf(s)*mult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*(S.buffs&&S.buffs.hype>0?1.3:1)*(1+.12*pk("cat_"+s.cat));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 function newListing(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
@@ -1564,7 +1574,7 @@ function newListing(){
   }
   const it=pick(affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
   const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
-  const steal=Math.random()<MC().steal,r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
+  const steal=Math.random()<MC().steal*(1+.15*pk("steal")),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
   const fake=steal&&Math.random()<MC().fake;
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
@@ -1773,7 +1783,7 @@ function loop(now){
       if(room==="arena")arenaTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
-      achT-=dt;if(achT<=0){achT=1;checkGoals();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");SFX.level()}})}
+      achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");SFX.level()}})}
       renderBottom();
       simTick(dt);tradeTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip()}
@@ -1790,16 +1800,16 @@ function title(){
   const draw=()=>{
     o.innerHTML=`<div class="sheet">
       <h1 class="wordmark">Flip<span>Rush</span></h1>
-      <p class="lede">Walk the town, flip everything at the market, hit the gym, rest up, and rebirth for bigger and bigger money.</p>
+      <p class="lede">Walk the town, flip everything at the market, hit the gym, trade live charts, and level up forever. Every level lets you pick a new perk.</p>
       <div class="how">
         <div><kbd>WALK</kbd><span>Tap the map to walk. Buttons at the bottom take you straight to a place.</span></div>
         <div><kbd>FLIP</kbd><span>At the Market, tap to buy, hold to lowball, and tap your stash to sell.</span></div>
         <div><kbd>ENERGY</kbd><span>Trading and lifting use energy. Sleep at Home or grab a drink at the Café.</span></div>
         <div><kbd>STRONG</kbd><span>Lift heavier at the Gym to carry heavy items, win arm wrestling at the Arena and unlock perks.</span></div>
         <div><kbd>EXPLORE</kbd><span>Finish Uncle Ray's goals to unlock the Beach and Downtown, and buy a bike, scooter and sports car. Watch for random town events.</span></div>
-        <div><kbd>REBIRTH</kbd><span>Hit the cash goal at the Temple to reset for a permanent money multiplier.</span></div>
+        <div><kbd>LEVEL</kbd><span>Everything you earn levels you up. Each level, pick 1 of 3 perk cards to shape your own build.</span></div>
       </div>
-      ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · ${S.rebirths} rebirth${S.rebirths===1?"":"s"} · Day ${S.day}</small></span>${ARROW}</button>
+      ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · Level ${repLevel()} · Day ${S.day}</small></span>${ARROW}</button>
         <button class="cta" id="bNew" style="background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:.95rem">${confirmNew?"Tap again to erase your save":"New game"}</button>`
        :`<button class="cta" id="bNew"><span>Start playing</span>${ARROW}</button>`}
       <p class="fine">Progress saves automatically.</p></div>`;
