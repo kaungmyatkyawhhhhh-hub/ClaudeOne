@@ -411,8 +411,8 @@ function summary(){
 }
 
 function floatAt(el,html,color){
-  const r=el.getBoundingClientRect(),f=document.createElement("div");
-  f.className="float";f.innerHTML=html;f.style.color=color;f.style.left=(r.left+r.width/2)+"px";f.style.top=(r.top+r.height*.25)+"px";
+  const r=el.getBoundingClientRect(),f=document.createElement("div"),k=cssScale();
+  f.className="float";f.innerHTML=html;f.style.color=color;f.style.left=(r.left+r.width/2)/k+"px";f.style.top=(r.top+r.height*.25)/k+"px";
   document.body.appendChild(f);setTimeout(()=>f.remove(),900);
 }
 function banner(t,cls=""){const b=document.createElement("div");b.className="banner "+cls;b.textContent=t;document.body.appendChild(b);setTimeout(()=>b.remove(),1100)}
@@ -593,6 +593,20 @@ function title(){
 }
 
 /* ---------- boot: sample board behind title ---------- */
+/* ---------- fit phones showing the desktop layout ---------- */
+// iPhone "desktop website" mode ignores the viewport tag and lays the page out ~980px wide,
+// shrinking the game to ~40%. Detect a touch screen whose layout is much wider than the
+// device and zoom the page back up to fill it.
+const root=document.documentElement;
+function cssScale(){const w=root.offsetWidth;return w?root.getBoundingClientRect().width/w:1}
+function fitScreen(){
+  root.style.zoom="";root.style.height="";
+  const sw=Math.min(screen.width,screen.height)>0&&innerWidth<innerHeight?Math.min(screen.width,screen.height):screen.width;
+  if(!matchMedia("(pointer:coarse)").matches||!sw||innerWidth<=sw*1.15)return;
+  const z=innerWidth/sw;root.style.zoom=z;root.style.height=(innerHeight/z)+"px";
+}
+fitScreen();addEventListener("resize",fitScreen);
+
 fresh();
 S.dayStats={sales:0,spent:0,bonus:0};
 buildMarket();S.market=[newListing(),newListing(),newListing()];
