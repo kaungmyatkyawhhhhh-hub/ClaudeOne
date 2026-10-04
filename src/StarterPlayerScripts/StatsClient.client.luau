@@ -227,8 +227,23 @@ for _, group in ipairs(Muscles.Groups) do makeGroupLabel(group) end
 ------------------------------------------------------------------------
 -- Data
 ------------------------------------------------------------------------
+-- "Maxed" glow (brief: level cap reached): a soft white stroke that slowly pulses on the label's box.
+local TweenService = game:GetService("TweenService")
+local MAXED_PULSE = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+local function setMaxedGlow(box, on)
+	local glow = box:FindFirstChild("MaxedGlow")
+	if on and not glow then
+		glow = New("UIStroke", { Name = "MaxedGlow", Color = Colors.Text, Thickness = 1.5, Transparency = 0.15, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = box })
+		TweenService:Create(glow, MAXED_PULSE, { Transparency = 0.7 }):Play()
+	elseif not on and glow then
+		glow:Destroy()
+	end
+end
+
 local function refreshLabels()
 	local data = ClientData.Get()
+	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
+	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	local levels, weakest, weakestCount = {}, nil, 0
 	for _, group in ipairs(Muscles.Groups) do
 		levels[group.id] = math.floor(Muscles.GetGroupLevel(data.muscles, group.id))
@@ -241,9 +256,17 @@ local function refreshLabels()
 		end
 	end
 	for groupId, entry in pairs(groupEntries) do
-		entry.level.Text = tostring(levels[groupId])
-		entry.needs.Visible = groupId == weakest and weakestCount == 1
-		for _, sub in ipairs(entry.subs) do sub.level.Text = tostring(data.muscles[sub.id].level) end
+		local groupMaxed = GrowthSpurts.GoalLevel(data.muscles, Muscles.GroupById[groupId], trainable) >= cap
+		entry.level.Text = groupMaxed and "Maxed" or tostring(levels[groupId])
+		local box = entry.root:FindFirstChild("Box")
+		if box then setMaxedGlow(box, groupMaxed) end
+		entry.needs.Visible = groupId == weakest and weakestCount == 1 and not groupMaxed
+		for _, sub in ipairs(entry.subs) do
+			local level = data.muscles[sub.id].level
+			local maxed = level >= cap
+			sub.level.Text = maxed and "Max" or tostring(level)
+			setMaxedGlow(sub.root, maxed)
+		end
 	end
 end
 

@@ -55,6 +55,16 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## "Maxed" glow on the Stats labels (2026-10-05) ✅
+
+- From the brief ("MAXED glow when reached"): a group whose trainable muscles are all at the level cap shows
+  **"Maxed"** instead of its number, with a soft white glow that pulses on the label; maxed sub-muscles show
+  "Max" with the same glow. "Needs work" never points at a maxed group.
+- After closing and reopening Stats the glow stays but stops pulsing (the open/close fade takes over the stroke);
+  fine for now, easy to polish.
+
+---
+
 ## NPC gym-goers (2026-10-05) ✅ (needs a look)
 
 - Three original regulars (no names shown) stand behind the utility benches in the free-weight zone with a
