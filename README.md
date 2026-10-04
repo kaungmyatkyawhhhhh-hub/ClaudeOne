@@ -1,6 +1,6 @@
 # Flip Rush
 
-A fast mobile reselling game styled like a resale exchange. Buy listings under market, hold to lowball sellers, sell into live price swings and collector demand, and make rent before the bell.
+An open-world reselling game for phones. Walk around town, flip items at the Market (tap to buy, hold to lowball, sell to collectors, take offers, win auctions), lift at the Gym for strength, sleep at Home or grab drinks at the Café to refill energy, buy upgrades at the Mall, and rebirth at the Temple for a permanent money multiplier. No rent, no game over, and progress saves automatically.
 
 ## Project layout
 
