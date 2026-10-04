@@ -111,12 +111,16 @@ local function machineModel(machineId)
 	return nil
 end
 
-local function gymCenter()
+-- The middle of the gym the target is in (machines within 60 studs of it; the pro gym is far away).
+local function gymCenter(near)
 	local sum, count = Vector3.zero, 0
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 		if model:IsA("Model") then
-			sum += model:GetPivot().Position
-			count += 1
+			local position = model:GetPivot().Position
+			if not near or (position - near).Magnitude < 60 then
+				sum += position
+				count += 1
+			end
 		end
 	end
 	return count > 0 and sum / count or nil
@@ -130,7 +134,7 @@ local function approachPoint(model)
 	local start = (holder and holder:IsA("BasePart") and holder.Position)
 		or (holder and holder:IsA("Attachment") and holder.WorldPosition)
 		or boxCFrame.Position
-	local center = gymCenter() or boxCFrame.Position
+	local center = gymCenter(boxCFrame.Position) or boxCFrame.Position
 	local localStart = boxCFrame:PointToObjectSpace(start)
 	local localDir = boxCFrame:VectorToObjectSpace((center - start) * Vector3.new(1, 0, 1))
 	if localDir.Magnitude < 0.01 then localDir = Vector3.new(0, 0, -1) end

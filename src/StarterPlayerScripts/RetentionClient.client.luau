@@ -71,6 +71,11 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 			Notify.Show("Bought a DNA token. Reroll on the Genetics screen.")
 			Audio.PlayUI("LevelUp")
 		end
+	elseif kind == "ProGymLocked" then
+		Notify.Show("The pro gym opens at Growth Spurt " .. tostring(info.spurts) .. ".", nil, "progym")
+	elseif kind == "ProGymEntered" then
+		Notify.Show("Welcome to the pro gym. 11 new machines, including Calves and Obliques.", nil, "progym")
+		Audio.PlayUI("Whoosh")
 	elseif kind == "RushHour" then
 		if info.active then
 			Notify.Show("Rush hour! " .. Economy.RushHour.Coins .. "x coins for " .. Economy.RushHour.LengthMinutes .. " minutes.")

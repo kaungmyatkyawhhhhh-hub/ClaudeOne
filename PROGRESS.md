@@ -15,8 +15,7 @@
 > 6. **Growth Spurt:** max every trainable muscle (long; tuned for ~15–20 min of lifting) → GROWTH SPURT button →
 >    taller, muscles reset, "GROWTH SPURT!" moment. I tested this with a script and restored your save afterwards.
 >
-> **Needs your decision:** Calves/Obliques aren't trainable in the starter gym; the spurt goal ignores them for now
-> (step 5). Badges for the big titles need ids from the Roblox website (step 6). The popup-fix request from before
+> **Calves/Obliques:** now trainable in the pro gym (Growth Spurt 2), see the Pro gym entry. Badges for the big titles need ids from the Roblox website (step 6). The popup-fix request from before
 > never reached me (step 0).
 >
 > **Overnight run (2026-10-05):** see the newest entries below; each step has its own test list.
@@ -25,6 +24,50 @@ All game code lives in this repo under `src/` and Rojo syncs it into the Studio 
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
 Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
 Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## Pro gym (Growth Spurt 2) with 11 machines (2026-10-05) ✅ (needs your playtest)
+
+**Built** (`ProGymService`, machines in `Config/Machines`, poses in `Config/Poses` + `MachineClient`)
+- **The room** (built from code at server start, 150 studs south of the starter gym, sealed): 60 x 46 studs,
+  ceiling 14, dark concrete walls and dark rubber floor, **neon LED strips** along the bottom and top of every wall,
+  a **spotlight pool** over each machine (shadows on), two soft fill lights so nothing is pitch black, and a neon
+  "PRO GYM" sign on the back wall.
+- **Getting there:** a new door on the starter gym's right wall (between the poster and the dumbbell rack, at
+  z = -16) with a "Pro gym" sign. "Enter": below Growth Spurt 2 you get "The pro gym opens at Growth Spurt 2";
+  at 2+ you're teleported in. An exit door on the pro gym's left wall takes you back.
+- **The 11 machines from the brief:** Dips, Lateral Raise, Reverse Fly, Shrugs, Leg Curl, Hip Thrust, Calf Raise,
+  Bicep Curl, Tricep Pushdown, Hanging Leg Raise, Cable Woodchop, with the brief's muscles. Each is a normal
+  machine (same HUD, tiers, unlocks, coins, gains, sounds, quests, spotting rules), built from simple parts: a
+  rubber base, a steel cable-stack frame (plates stack on its pin in the tier colors) or dip bars / leg-curl pad /
+  hip-thrust bench / hanging bar. A new lighter **Cable** tier set (10 → 80 lb) for cable moves.
+- **Lifting animations** for all 11 (dips sink, lateral raises go to shoulder height, leg curls curl the heels,
+  hip thrusts drive the hips, calf raises go up on the toes, curls/pushdowns/woodchops/hanging leg raises...),
+  written with the same joint helpers and angle conventions as the starter lifts.
+- **Calves and Obliques are finally trainable** (Calf Raise, Cable Woodchop). From Growth Spurt 2 the Growth
+  Spurt goal counts them, as the earlier "needs your decision" note expected.
+- Server check: pro machines can't be used below Growth Spurt 2 even if someone gets in.
+- The menu camera and the tutorial path only look at machines near them, so the far-away pro gym doesn't shift them.
+
+**How to test**
+1. `git pull`, Play. Find the door on the right wall of the starter gym → Enter → "opens at Growth Spurt 2".
+2. To try it now: in Studio's command bar during Play (server side), give yourself spurts:
+   `require(game.ServerScriptService.Server.PlayerData).Get(game.Players:GetPlayers()[1]).growthSpurts = 2`
+   then use the door. (Studio only; it saves if you leave it, so set it back to your real value, usually 1.)
+3. In the pro gym, try every machine: pose, plates on the stack, HUD, reps.
+
+**Assumptions**
+- The pro gym is a separate room reached by a door/teleport (cutting a real doorway into the Studio-built walls
+  isn't possible from code without rebuilding them). Move it by changing `CENTER` in `ProGymService`.
+- Lighting (bloom/haze/color grading) is shared with the starter gym; the pro gym's cooler look comes from its
+  dark materials, white neon and spotlights.
+- **Animations are a first pass I couldn't watch.** They use the measured starter-lift conventions, but expect
+  a few to need tweaks (angles are at the bottom of the POSE_ANIMS list in `MachineClient`).
+
+**Not verified**
+- No playtest. Compile, type analysis, Rojo build and Lune tests (every machine has a pose, an animation, 8 tiers,
+  known muscles; pro machines stack plates and keep hands free; Calves/Obliques unlock at Growth Spurt 2) pass.
 
 ---
 

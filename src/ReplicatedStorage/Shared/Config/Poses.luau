@@ -31,6 +31,29 @@ local Poses = {
 		exit = Vector3.new(3, 0, 0.5),
 		follow = "Hands",
 	},
+
+	-- Pro gym (built by ProGymService: the lifter stands at the pivot facing +Z, the stack is in front)
+	Dip = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	LateralRaise = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	ReverseFly = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	Shrug = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	CalfRaise = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	BicepCurl = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	TricepPushdown = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	Woodchop = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	LegCurl = {
+		kind = "Lie",
+		-- face down on the pad, head toward the stack
+		body = CFrame.lookAt(Vector3.new(0, 2.3, 0), Vector3.new(0, 1.3, 0), Vector3.new(0, 0, 1)),
+		exit = Vector3.new(3, 0, 0), follow = "None",
+	},
+	HipThrust = {
+		kind = "Lie",
+		-- face up, shoulders on the pad
+		body = CFrame.lookAt(Vector3.new(0, 2.1, 0), Vector3.new(0, 3.1, 0), Vector3.new(0, 0, 1)),
+		exit = Vector3.new(3, 0, 0), follow = "None",
+	},
+	LegRaise = { kind = "Hang", position = Vector3.new(0, 0, 0), barHeight = 9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 }
 
 return Poses

@@ -151,7 +151,8 @@ local root = nil
 local function gymDirection(fromPosition)
 	local sum, count = Vector3.zero, 0
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:IsA("Model") then
+		-- only the gym next to the spawn (the pro gym is built far away)
+		if model:IsA("Model") and (model:GetPivot().Position - fromPosition).Magnitude < 80 then
 			sum += model:GetPivot().Position
 			count += 1
 		end

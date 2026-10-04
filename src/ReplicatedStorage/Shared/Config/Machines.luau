@@ -39,6 +39,17 @@ Machines.TierSets = {
 		{ weight = 70, label = "+70", gains = 5.4, unlockLevel = 33, cost = 500, coins = 4, plates = { 45, 25 }, color = "Red" },
 		{ weight = 90, label = "+90", gains = 6.5, unlockLevel = 42, cost = 800, coins = 5, plates = { 45, 45 }, color = "Red" },
 	},
+	-- Cable stacks and dumbbell-style moves (pro gym): lighter numbers, same progression.
+	Cable = {
+		{ weight = 10, gains = 1, unlockLevel = 0, cost = 0, coins = 1, plates = {} },
+		{ weight = 20, gains = 1.4, unlockLevel = 3, cost = 15, coins = 1, plates = { 10 }, color = "White" },
+		{ weight = 30, gains = 2, unlockLevel = 7, cost = 40, coins = 2, plates = { 25 }, color = "Green" },
+		{ weight = 40, gains = 2.7, unlockLevel = 12, cost = 90, coins = 2, plates = { 25, 10 }, color = "Yellow" },
+		{ weight = 50, gains = 3.5, unlockLevel = 18, cost = 175, coins = 3, plates = { 45 }, color = "Blue" },
+		{ weight = 60, gains = 4.4, unlockLevel = 25, cost = 300, coins = 3, plates = { 45, 10 }, color = "Red" },
+		{ weight = 70, gains = 5.4, unlockLevel = 33, cost = 500, coins = 4, plates = { 45, 25 }, color = "Red" },
+		{ weight = 80, gains = 6.5, unlockLevel = 42, cost = 800, coins = 5, plates = { 45, 45 }, color = "Red" },
+	},
 }
 
 -- Plate look per weight (thickness/diameter in studs).
@@ -97,6 +108,39 @@ Machines.List = {
 		tiers = Machines.TierSets.Bodyweight, staminaCost = 4,
 	},
 }
+
+-- Pro gym (opens at Growth Spurt 2). Built from code by ProGymService; every one carries its plates on a
+-- weight stack ("Bar" part, centered layout) and the lifter's hands stay free (pose follow = "None").
+local PRO = {
+	{ id = "Dips", name = "Dips", pose = "Dip", tiers = "Bodyweight", staminaCost = 5,
+		muscles = { { id = "MidChest", share = 1 }, { id = "Triceps", share = 0.5 }, { id = "FrontDelts", share = 0.4 } } },
+	{ id = "LateralRaise", name = "Lateral Raise", pose = "LateralRaise", tiers = "Cable", staminaCost = 4,
+		muscles = { { id = "SideDelts", share = 1 } } },
+	{ id = "ReverseFly", name = "Reverse Fly", pose = "ReverseFly", tiers = "Cable", staminaCost = 4,
+		muscles = { { id = "RearDelts", share = 1 }, { id = "Rhomboids", share = 0.5 } } },
+	{ id = "Shrugs", name = "Shrugs", pose = "Shrug", tiers = "Barbell", staminaCost = 4,
+		muscles = { { id = "Traps", share = 1 }, { id = "Forearms", share = 0.4 } } },
+	{ id = "LegCurl", name = "Leg Curl", pose = "LegCurl", tiers = "Cable", staminaCost = 5,
+		muscles = { { id = "Hamstrings", share = 1 } } },
+	{ id = "HipThrust", name = "Hip Thrust", pose = "HipThrust", tiers = "HeavyBarbell", staminaCost = 6,
+		muscles = { { id = "Glutes", share = 1 }, { id = "Hamstrings", share = 0.5 } } },
+	{ id = "CalfRaise", name = "Calf Raise", pose = "CalfRaise", tiers = "Barbell", staminaCost = 4,
+		muscles = { { id = "Calves", share = 1 } } },
+	{ id = "BicepCurl", name = "Bicep Curl", pose = "BicepCurl", tiers = "Cable", staminaCost = 4,
+		muscles = { { id = "Biceps", share = 1 }, { id = "Forearms", share = 0.4 } } },
+	{ id = "TricepPushdown", name = "Tricep Pushdown", pose = "TricepPushdown", tiers = "Cable", staminaCost = 4,
+		muscles = { { id = "Triceps", share = 1 } } },
+	{ id = "HangingLegRaise", name = "Hanging Leg Raise", pose = "LegRaise", tiers = "Bodyweight", staminaCost = 5,
+		muscles = { { id = "Abs", share = 1 }, { id = "Forearms", share = 0.4 } } },
+	{ id = "CableWoodchop", name = "Cable Woodchop", pose = "Woodchop", tiers = "Cable", staminaCost = 4,
+		muscles = { { id = "Obliques", share = 1 }, { id = "Abs", share = 0.5 } } },
+}
+for _, machine in ipairs(PRO) do
+	machine.gym = "Pro"
+	machine.layout = "Center"
+	machine.tiers = Machines.TierSets[machine.tiers]
+	table.insert(Machines.List, machine)
+end
 
 Machines.ById = {}
 for _, machine in ipairs(Machines.List) do

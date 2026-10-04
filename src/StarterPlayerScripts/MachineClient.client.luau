@@ -259,6 +259,90 @@ POSE_ANIMS.Crunch = function(character, d, jitter)
 	end
 end
 
+-- Pro gym poses (first pass, same helpers and angle conventions as the starter lifts above).
+-- Dips: body sinks between the bars, elbows bend back, knees tucked.
+POSE_ANIMS.Dip = function(character, d, jitter)
+	setJoint(character, "Root", CFrame.new(0, -0.8 * d, 0))
+	frontArms(character, -rad(10 + 30 * d) + jitter, rad(12), rad(90 * d), 0)
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Hip", Angles(rad(20), 0, 0))
+		setJoint(character, side[1] .. "Knee", Angles(-rad(70), 0, 0))
+	end
+end
+
+-- Lateral raise: arms out to the sides up to shoulder height at lockout, elbows soft.
+POSE_ANIMS.LateralRaise = function(character, d, jitter)
+	sideArms(character, rad(5), rad(15 + 72 * (1 - d)), rad(12), jitter)
+end
+
+-- Reverse fly: bent over, arms swing out and back.
+POSE_ANIMS.ReverseFly = function(character, d, jitter)
+	lowerBody(character, rad(15), rad(40))
+	setJoint(character, "Waist", Angles(-rad(10), 0, 0))
+	frontArms(character, rad(50) + jitter, rad(15 + 65 * (1 - d)), rad(12), 0)
+end
+
+-- Shrugs: arms hang, shoulders lift at lockout.
+POSE_ANIMS.Shrug = function(character, d, jitter)
+	local lift = 0.28 * (1 - d) + jitter * 0.1
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Shoulder", CFrame.new(0, lift, 0) * Angles(0, 0, side[2] * rad(8)))
+		setJoint(character, side[1] .. "Elbow", CFrame.identity)
+	end
+end
+
+-- Leg curl: face down; heels curl toward the glutes at lockout, arms hold the pad overhead.
+POSE_ANIMS.LegCurl = function(character, d, jitter)
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Knee", Angles(-rad(20 + 100 * (1 - d)) - jitter, 0, 0))
+	end
+	frontArms(character, rad(165), rad(12), rad(20), 0)
+end
+
+-- Hip thrust: face up on the pad, knees bent; hips extend at lockout, flex at the bottom.
+POSE_ANIMS.HipThrust = function(character, d, jitter)
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Hip", Angles(rad(10 + 60 * d) + jitter, 0, 0))
+		setJoint(character, side[1] .. "Knee", Angles(-rad(90), 0, 0))
+	end
+	frontArms(character, rad(10), rad(35), 0, 0)
+end
+
+-- Calf raise: up on the toes at lockout, hands on the handles.
+POSE_ANIMS.CalfRaise = function(character, d, jitter)
+	setJoint(character, "Root", CFrame.new(0, 0.35 * (1 - d), 0))
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Ankle", Angles(-rad(35 * (1 - d)) - jitter, 0, 0))
+	end
+	frontArms(character, rad(70), rad(10), rad(30), 0)
+end
+
+-- Bicep curl: curled up at lockout, arms long at the bottom.
+POSE_ANIMS.BicepCurl = function(character, d, jitter)
+	frontArms(character, rad(5), rad(10), rad(30 + 110 * (1 - d)), jitter)
+end
+
+-- Tricep pushdown: arms straight down at lockout, elbows bend up at the bottom, leaning in a little.
+POSE_ANIMS.TricepPushdown = function(character, d, jitter)
+	setJoint(character, "Waist", Angles(-rad(10), 0, 0))
+	frontArms(character, rad(10), rad(6), rad(10 + 90 * d), jitter)
+end
+
+-- Hanging leg raise: arms overhead on the bar, legs come up at lockout.
+POSE_ANIMS.LegRaise = function(character, d, jitter)
+	sideArms(character, 0, rad(165), 0, 0)
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Hip", Angles(rad(15 + 75 * (1 - d)) + jitter, 0, 0))
+		setJoint(character, side[1] .. "Knee", Angles(-rad(20), 0, 0))
+	end
+end
+
+-- Cable woodchop: twist from high on one side (bottom) to low across the body (lockout).
+POSE_ANIMS.Woodchop = function(character, d, jitter)
+	setJoint(character, "Waist", Angles(0, rad(-50 + 100 * d), 0))
+	frontArms(character, rad(30 + 50 * d) + jitter, rad(20), rad(10), 0)
+end
+
 local function poseFor(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	return machine and machine.pose or "BenchPress"

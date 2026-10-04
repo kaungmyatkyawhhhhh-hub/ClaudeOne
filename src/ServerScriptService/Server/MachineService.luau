@@ -150,6 +150,8 @@ local function enter(player, model)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not machine or not humanoid or not root or humanoid.Health <= 0 or not PlayerData.Get(player) then return end
+	-- gyms open with Growth Spurts (the pro gym at 2)
+	if PlayerData.Get(player).growthSpurts < (Machines.GymUnlock[machine.gym] or 0) then return end
 
 	local session = { model = model, machine = machine, lastRep = 0, connections = {} }
 	sessions[player] = session
