@@ -8,6 +8,7 @@
 --   allGroups: every group >= minLevel
 --   overall:   overall genetics grade == grade
 --   maxedGrade: a group with this genetics grade has reached the level cap
+--   legend:    finished legend `id`'s challenge (Config.Legends adds these automatically)
 --   never:     not obtainable yet (shows as ??? in the book)
 -- badgeId: optional Roblox badge awarded with the title (create the badge on the website, paste the id).
 local Titles = {}
@@ -61,6 +62,15 @@ Titles.List = {
 		description = "Do 500 reps in one visit.", condition = { type = "stat", stat = "sessionReps", min = 500 } },
 }
 
+-- One title per legend NPC (Config.Legends), earned by finishing that legend's challenge.
+local Legends = require(script.Parent.Legends)
+for _, legend in ipairs(Legends.List) do
+	table.insert(Titles.List, {
+		id = Legends.TitleId(legend.id), name = legend.title, rarity = "Epic", category = "Legend",
+		description = "Finish " .. legend.name .. "'s challenge.", condition = { type = "legend", id = legend.id },
+	})
+end
+
 Titles.ById = {}
 for _, title in ipairs(Titles.List) do
 	Titles.ById[title.id] = title
@@ -101,6 +111,8 @@ function Titles.Check(title, ctx)
 		return c.type == "allGroups" or (high - low) <= high * c.spread
 	elseif c.type == "overall" then
 		return data.genetics.overall == c.grade
+	elseif c.type == "legend" then
+		return data.legends ~= nil and data.legends.met[c.id] == true
 	elseif c.type == "maxedGrade" then
 		for groupId, grade in pairs(data.genetics.grades) do
 			if grade == c.grade and (ctx.goalGroups[groupId] or 0) >= ctx.cap then return true end

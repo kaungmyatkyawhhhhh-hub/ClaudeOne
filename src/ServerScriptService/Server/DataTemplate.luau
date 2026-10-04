@@ -28,6 +28,7 @@ function DataTemplate.new()
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
 		shakes = 0, -- Energy Shakes in the bag
 		daily = { lastDay = 0, streak = 0, best = 0 }, -- daily streak (Config.Economy)
+		legends = { met = {}, active = nil }, -- met: legendId -> true; active: { id, progress, goal } (Config.Legends)
 		welcome = { offlineCoins = 0, streakCoins = 0, streakToken = false }, -- what this join paid out (menu info)
 		onboarding = { geneticsRevealed = false, tutorialStep = 1, tutorialVersion = 2 }, -- Config.Onboarding (Done = finished)
 		settings = { music = 1, effects = 1 }, -- sound volumes (Settings menu)

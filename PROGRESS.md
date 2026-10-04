@@ -28,6 +28,38 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Legend NPCs (2026-10-05) ✅ (needs your playtest)
+
+**Built** (`LegendService`, `LegendClient`, list in `Config/Legends`)
+- The 8 legends from the brief (Lance Lats, Brody Pumpkins, Tank McFlex, Kyle Swole, Ricky Reps, Big Beefington,
+  Tiny Tim Gains, Chad Gainsworth), each an original big NPC (wider/deeper body, own colors) built from code.
+- **Visits:** one legend appears in front of the bench row (0, -34.5) every 20-30 minutes for 3 minutes, picked
+  from legends someone in the server hasn't met yet. Corner note when they arrive/leave. First visit 2 minutes
+  after a server starts (**30 s in Studio**, so you can test without waiting).
+- **One-time challenge:** tap Talk → their line + challenge (e.g. Lance Lats: 15 Pull-Up Bar reps). A "Legend
+  challenge" tracker appears in the right column. Finish it any time, even after they leave → +60 coins, +1 DNA
+  token, and their **matching title** (Wingspan, Pumpkin Delts, Tank Mode, Certified Swole, Rep Machine,
+  Beefcake, Small but Mighty, Gainsworth Approved; all Epic, category Legend). One challenge at a time.
+- **Legends met list:** the 8 legend titles in the Title Book (locked ones show ???), plus a "Legends met: 3 / 8"
+  note when you finish one.
+- Legends speak through the same speech bubble as Coach Dex.
+
+**How to test**
+1. `git pull`, Play in Studio, wait ~30 s → "X is in the gym" note → walk to the bench row → Talk.
+2. Do the challenge reps → "Challenge done" + new title in the Title Book.
+3. Talk to the same legend again later → "Good to see you again".
+
+**Assumptions**
+- Names are the brief's own examples (original characters). Lines are original.
+- Challenges can be finished after the legend leaves (3 minutes is short for kids).
+- Legends stand still where they appear; they don't walk around or lift.
+
+**Not verified**
+- No playtest. Compile, type analysis, Rojo build and Lune tests (titles generated per legend, unlock rules,
+  quest machines exist, unique title ids) pass.
+
+---
+
 ## Step 9: Spotting + arm wrestling (2026-10-05) ✅ (needs a 2-player playtest)
 
 **Built** (numbers in `Config/Social`)

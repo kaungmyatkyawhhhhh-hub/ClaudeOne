@@ -38,6 +38,7 @@ for where everything sits in Studio.
 | `MuscleOfTheDay` | which group gets 2x gains each day |
 | `Economy` | daily streak, offline coins, re-racking, DNA token price, rush hour |
 | `Social` | spotting, lifting together, arm wrestling |
+| `Legends` | legend NPCs, their challenges and titles, visit timing |
 
 ## Code structure
 **Server** (`ServerScriptService`)
@@ -59,6 +60,7 @@ for where everything sits in Studio.
 - `Server/StaminaService`: shake machine, drinking shakes, Plates the gym cat.
 - `Server/RetentionService`: daily streak, offline coins, loose plates, DNA tokens at the desk, rush hour.
 - `Server/SocialService`: spotting and the workout-together bonus.
+- `Server/LegendService`: legend visits, challenges and rewards.
 - `Server/ArmWrestleService`: the arm wrestling table, matches and practice opponents (creates the `ArmWrestle` remote).
 - `Main` starts newer services in protected calls (a failing one can't stop saving or machines).
 
@@ -79,6 +81,7 @@ for where everything sits in Studio.
 - `ShakeClient`: Drink shake button + boost countdown, shake/cat notes, cat tail wag.
 - `RetentionClient`: rush hour pill, streak/offline/re-rack/DNA token notes.
 - `SocialClient`: arm wrestling panel and input, spotting/together notes.
+- `LegendClient`: legend challenge tracker and notes.
 - `TutorialClient`: first 5 minutes coach line, glowing floor path and machine outline (steps in `Config/Onboarding`).
 
 **Shared helpers** (`ReplicatedStorage/Shared`)

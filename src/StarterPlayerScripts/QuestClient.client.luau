@@ -1,4 +1,4 @@
--- QuestClient: the quest tracker (small panel, right middle), the Coach's one-liners above his head, quest
+-- QuestClient: the quest tracker (small panel, right middle), the Coach's (and legends') lines above their heads, quest
 -- notes in the corner, and a note about today's Muscle of the Day after Play.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -91,8 +91,9 @@ local function coachHead()
 	return nil
 end
 
-local function coachSays(text)
-	local head = coachHead()
+-- `npc` = a model to speak from (legends); defaults to the Coach.
+local function coachSays(text, npc)
+	local head = (typeof(npc) == "Instance" and npc:FindFirstChild("Head")) or coachHead()
 	if not head then
 		Notify.Show(Quests.CoachName .. ": " .. text)
 		return
@@ -143,6 +144,8 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
 	if kind == "CoachSays" then
 		coachSays(info.text)
+	elseif kind == "NpcSays" then
+		coachSays(info.text, info.npc)
 	elseif kind == "QuestReady" then
 		Notify.Show("Quest done. Talk to " .. Quests.CoachName .. ".", nil, "quest")
 		Audio.PlayUI("LevelUp")
