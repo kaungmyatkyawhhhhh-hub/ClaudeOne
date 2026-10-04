@@ -504,6 +504,14 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .pcard.r3::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);background-size:250% 100%;animation:shim 1.6s linear infinite;pointer-events:none}
 @keyframes shim{from{background-position:150% 0}to{background-position:-100% 0}}
 .pcard .rl{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.phys{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
+.physfig svg{width:100%;display:block}
+.physbars{display:flex;flex-direction:column;gap:9px}
+.physbars>div span{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700}
+.physbars em{font-style:normal;font-family:var(--mono);font-size:.62rem;color:var(--muted);text-transform:uppercase}
+.physbars i{display:block;height:8px;border-radius:8px;background:var(--sunk);overflow:hidden;margin-top:4px}
+.physbars b{display:block;height:100%;background:linear-gradient(90deg,#ff7a3d,#e2364a)}
+.perk.toy:not(.own){box-shadow:inset 0 0 0 1px #cf9a14,var(--shadow)}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -570,7 +578,7 @@ const rint=(a,b)=>Math.floor(rnd(a,b+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);
-  if(a>=1e9)return s+"$"+(a/1e9).toFixed(a>=1e10?1:2)+"B";if(a>=1e6)return s+"$"+(a/1e6).toFixed(a>=1e7?1:2)+"M";
+  if(a>=1e12)return s+"$"+(a/1e12).toFixed(2)+"T";if(a>=1e9)return s+"$"+(a/1e9).toFixed(a>=1e10?1:2)+"B";if(a>=1e6)return s+"$"+(a/1e6).toFixed(a>=1e7?1:2)+"M";
   if(a>=1e5)return s+"$"+Math.round(a/1e3)+"K";if(a>=1e4)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+Math.round(a).toLocaleString("en-US")};
 const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
@@ -616,6 +624,7 @@ const PLACES=[
  {k:"docks",n:"Docks Car Meet",c:"#4a5568",x:40,y:1440,w:200,h:130,door:[140,1570],region:"beach",sub:"Show off your cars and street race"},
  {k:"club",n:"Nightclub",c:"#7a2fd6",x:1700,y:1250,w:200,h:120,door:[1800,1370],region:"downtown",sub:"VIP tables for a selling boost"},
  {k:"lux",n:"Luxury Exchange",c:"#2b2f3a",x:1600,y:300,w:300,h:220,door:[1750,520],region:"downtown",sub:"High-end only, sales pay +25%"},
+ {k:"tower",n:"Flip Tower",c:"#cf9a14",x:1700,y:880,w:150,h:200,door:[1775,1080],region:"downtown",sub:"Build your own skyscraper, floor by floor"},
  {k:"dealer",n:"Dealership",c:"#0f8fb3",x:2150,y:820,w:300,h:180,door:[2300,1000],region:"downtown",sub:"Scooters and sports cars"}
 ];
 PLACES.forEach(p=>p.region=p.region||"core");
@@ -712,7 +721,7 @@ const repLevel=()=>Math.floor(Math.sqrt((S.stats.earnedAll||0)/400));
 const lvlFrac=()=>{const L=repLevel(),a=L*L*400,b=(L+1)*(L+1)*400;return((S.stats.earnedAll||0)-a)/(b-a)};
 const SC=()=>Math.floor(repLevel()/5);
 const pk=k=>(S.perks&&S.perks[k])||0;
-const mult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"));
+const mult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1);
 const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy");
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
@@ -761,7 +770,12 @@ const ACH=[
  ["crowd10","Crowd pleaser","Draw a crowd of 10 while flexing",()=>(S.stats.crowd||0)>=10,1500],
  ["comp1","On stage","Place top 3 at a bodybuilding show",()=>Object.keys(S.trophies||{}).length>0,2000],
  ["fans100k","Influencer","Reach 100K fans",()=>(S.fans||0)>=100000,20000],
- ["olympia","Olympian","Win Mr. Olympia",()=>!!S.trophies&&S.trophies[3]===1,100000]
+ ["olympia","Olympian","Win Mr. Olympia",()=>!!S.trophies&&S.trophies[3]===1,100000],
+ ["tower10","Skyline","Build 10 floors of Flip Tower",()=>(S.tower||0)>=10,50000],
+ ["tower100","Cloud piercer","Build 100 floors of Flip Tower",()=>(S.tower||0)>=100,5e6],
+ ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
+ ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
+ ["swole","Swole","Max out chest, back and legs",()=>{const b=myBuild();return b.c>=1.4&&b.l>=1.4&&b.b>=1.4},20000]
 ];
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
 const maxEnergy=()=>maxEnergyFor(strLv());
@@ -878,7 +892,7 @@ function isDark(){return root.dataset.theme==="dark"||(root.dataset.theme!=="lig
 const PAL_L={pave:"#dfe2e7",paveLine:"rgba(0,0,0,.05)",sand:"#efdcae",sand2:"#e6cf98",sand3:"#f6e8c4",wet:"#d8c48f",sea:"#6cbfe6",sea2:"#4aa6d6",board:"#c4945f",board2:"#9c7244",towel:"#ffffff",tower:"#7b8496",tower1:"#9aa3b3",tower2:"#4e5667",towerWin:"rgba(210,230,255,.55)",grass:"#b9d69c",grass2:"#aecd8f",tuft:"#a3c585",tuft2:"#c8e0ae",road:"#cdd2db",line:"#fbfcfd",walk:"#e6e9ee",curb:"#c3c8d1",tree:"#5a9650",tree2:"#78b16a",tree3:"#93c784",trunk:"#8a6a4a",shadow:"rgba(25,40,25,.22)",sign:"#ffffff",ink:"#0d1015",water:"#8ec3e8",glass:"rgba(255,255,255,.6)",glassD:"rgba(200,225,255,.75)"};
 const PAL_D={pave:"#20242c",paveLine:"rgba(255,255,255,.03)",sand:"#4a4231",sand2:"#41392a",sand3:"#544a37",wet:"#3a3426",sea:"#143049",sea2:"#0f263b",board:"#5e4630",board2:"#46331f",towel:"#cfcfcf",tower:"#2c3240",tower1:"#363d4d",tower2:"#1b1f29",towerWin:"rgba(120,150,200,.18)",grass:"#17241a",grass2:"#1b2a1e",tuft:"#203223",tuft2:"#142016",road:"#262b35",line:"#4b5264",walk:"#2f3542",curb:"#3a4150",tree:"#21402a",tree2:"#2b5135",tree3:"#356140",trunk:"#46372a",shadow:"rgba(0,0,0,.45)",sign:"#14171d",ink:"#eff2f6",water:"#1c3754",glass:"rgba(120,150,200,.22)",glassD:"rgba(120,150,200,.3)"};
 const ROADS=[[655,180,90,1420],[0,655,2600,90],[215,215,970,70],[215,1115,970,70],[215,215,70,970],[1115,215,70,970],[1955,40,90,1360],[1400,1150,1200,80]];
-const SKY=[[1450,60,160,200],[1650,30,130,220],[2100,60,200,250],[2350,90,200,220],[1450,820,180,240],[1700,880,150,200],[2470,790,110,250],[2150,1260,200,120],[1470,1250,160,130]];
+const SKY=[[1450,60,160,200],[1650,30,130,220],[2100,60,200,250],[2350,90,200,220],[1450,820,180,240],[2470,790,110,250],[2150,1260,200,120],[1470,1250,160,130]];
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
 const inBld=(x,y,m=0)=>PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
@@ -898,12 +912,13 @@ function rr(x,y,w,h,r){rrp(ctx,x,y,w,h,r)}
 function night(){const h=S.clock;if(h>=20||h<5)return 1;if(h>=18)return(h-18)/2;if(h<7)return 1-(h-5)/2;return 0}
 const fh=p=>Math.round(p.h*.36);
 function winRects(p){
-  const top=p.y+p.h-fh(p),out=[];if(p.k==="gym"||p.k==="mall"||p.k==="bank"||p.k==="storage"||p.k==="trade"||p.k==="airport")return out;
+  const top=p.y+p.h-fh(p),out=[];if(p.k==="gym"||p.k==="mall"||p.k==="bank"||p.k==="storage"||p.k==="tower"||p.k==="trade"||p.k==="airport")return out;
   const n=Math.max(1,Math.floor((p.w/2-34)/32)),wy=top+fh(p)*.22,wh=fh(p)*.4;
   for(let i=0;i<n;i++){out.push([p.door[0]-34-i*32-20,wy,20,wh],[p.door[0]+34+i*32,wy,20,wh])}
   return out.filter(r=>r[0]>p.x+6&&r[0]+r[2]<p.x+p.w-6);
 }
 function drawBuilding(g,p,P){
+  if(p.k==="tower"){drawTowerLot(g,p,P);return}
   const f=fh(p),ry=p.y,rh=p.h-f,fy=p.y+p.h-f;
   // drop shadow
   g.save();g.shadowColor=P.shadow;g.shadowBlur=22;g.shadowOffsetY=10;g.fillStyle=shade(p.c,.6);rrp(g,p.x,p.y,p.w,p.h,14);g.fill();g.restore();
@@ -1003,13 +1018,23 @@ function buildStatic(){
   STATIC=c;staticDark=isDark();
 }
 function drawPerson(x,y,o){
-  const c=o.g||ctx,s=o.size||1,b=o.mv?Math.sin(o.ph*14)*1.5:0,l=o.mv?Math.sin(o.ph*14)*3:0;
-  c.fillStyle="rgba(0,0,0,.22)";c.beginPath();c.ellipse(x,y+1,11*s,4.5,0,0,7);c.fill();
-  if(o.you){c.strokeStyle="rgba(42,60,255,.55)";c.lineWidth=2;c.beginPath();c.ellipse(x,y+1,15*s,6,0,0,7);c.stroke()}
-  y-=o.bob||0;c.fillStyle=o.legs||"#262b3a";rrp(c,x-6.5*s,y-11-l*.3,5*s,11,2);c.fill();rrp(c,x+1.5*s,y-11+l*.3,5*s,11,2);c.fill();
-  if(!o.pose){c.fillStyle=o.skin;rrp(c,x-14*s,y-27+b+l*.4,5*s,15,2.5);c.fill();rrp(c,x+9*s,y-27+b-l*.4,5*s,15,2.5);c.fill();
-  }
-  c.fillStyle=o.shirt;const tw=o.pose==="lat"?24*s:20*s;rrp(c,x-tw/2,y-29+b,tw,20,7*Math.min(1,s));c.fill();c.strokeStyle="rgba(0,0,0,.18)";c.lineWidth=1;c.stroke();if(o.pose){drawPose(c,x,y+b,s,o);c.strokeStyle="rgba(0,0,0,.18)";c.lineWidth=1;c.lineCap="butt"}
+  const c=o.g||ctx,s=o.size||1,b=o.mv?Math.sin(o.ph*14)*1.5:0,l=o.mv?Math.sin(o.ph*14)*3:0,B=o.build,bc=B?B.c:0,bl=B?B.l:0,bb=B?B.b:0;
+  const lw=5*s*(1+.65*bl),aw=5*s*(1+.75*bc),sw=20*s*(1+.24*bb+.14*bc)*(o.pose==="lat"?1.18:1),wa=Math.min(sw/2,9*s*(1+.12*bl)),hx=sw/2;
+  c.fillStyle="rgba(0,0,0,.22)";c.beginPath();c.ellipse(x,y+1,(11+3*bb)*s,4.5,0,0,7);c.fill();
+  if(o.you){c.strokeStyle="rgba(42,60,255,.55)";c.lineWidth=2;c.beginPath();c.ellipse(x,y+1,(15+3*bb)*s,6,0,0,7);c.stroke()}
+  y-=o.bob||0;c.fillStyle=o.legs||"#262b3a";rrp(c,x-1.5*s-lw,y-11-l*.3,lw,11,2);c.fill();rrp(c,x+1.5*s,y-11+l*.3,lw,11,2);c.fill();
+  if(bl>.35){c.fillStyle="rgba(255,255,255,.12)";c.fillRect(x-1.5*s-lw+1,y-10-l*.3,lw*.4,6);c.fillRect(x+1.5*s+1,y-10+l*.3,lw*.4,6)}
+  if(!o.pose){c.fillStyle=o.skin;rrp(c,x-hx-aw+1,y-27+b+l*.4,aw,15,2.5);c.fill();rrp(c,x+hx-1,y-27+b-l*.4,aw,15,2.5);c.fill();
+    if(bc>.3){c.strokeStyle="rgba(0,0,0,.14)";c.lineWidth=1;c.beginPath();c.moveTo(x-hx-aw*.5+1,y-22+b);c.lineTo(x-hx-aw*.5+1,y-17+b);c.moveTo(x+hx+aw*.5-1,y-22+b);c.lineTo(x+hx+aw*.5-1,y-17+b);c.stroke()}}
+  c.fillStyle=o.shirt;
+  if(B&&(bc+bb)>.05){c.beginPath();c.moveTo(x-hx+4,y-29+b);c.lineTo(x+hx-4,y-29+b);c.quadraticCurveTo(x+hx,y-29+b,x+hx,y-24+b);c.lineTo(x+wa,y-9+b);c.lineTo(x-wa,y-9+b);c.lineTo(x-hx,y-24+b);c.quadraticCurveTo(x-hx,y-29+b,x-hx+4,y-29+b);c.closePath()}
+  else rrp(c,x-sw/2,y-29+b,sw,20,7*Math.min(1,s));
+  c.fill();c.strokeStyle="rgba(0,0,0,.18)";c.lineWidth=1;c.stroke();
+  if(bc>.3){c.strokeStyle=`rgba(0,0,0,${Math.min(.3,.1+bc*.15)})`;c.lineWidth=1.2;c.beginPath();c.moveTo(x-hx*.75,y-22+b);c.quadraticCurveTo(x-hx*.35,y-17+b,x-.5,y-21+b);c.moveTo(x+hx*.75,y-22+b);c.quadraticCurveTo(x+hx*.35,y-17+b,x+.5,y-21+b);c.stroke()}
+  if((bc+bl+bb)/3>.55){c.fillStyle="rgba(0,0,0,.13)";for(let r=0;r<2;r++){c.fillRect(x-3.5,y-16+b+r*3.5,3,2.4);c.fillRect(x+.5,y-16+b+r*3.5,3,2.4)}}
+  if(bc>.2&&!o.pose){c.fillStyle=o.skin;[-1,1].forEach(d=>{c.beginPath();c.arc(x+d*(hx-1),y-26+b,(2.6+2.4*bc)*s,0,7);c.fill()})}
+  if(bb>.2){c.fillStyle=o.skin;const th=3+5*bb;[-1,1].forEach(d=>{c.beginPath();c.moveTo(x+d*3,y-33+b);c.lineTo(x+d*(hx*.8),y-29+b);c.lineTo(x+d*3,y-29+b+th*.2);c.closePath();c.fill()})}
+  if(o.pose){drawPose(c,x,y+b,s,o);c.strokeStyle="rgba(0,0,0,.18)";c.lineWidth=1;c.lineCap="butt"}
   c.fillStyle=o.skin;c.beginPath();c.arc(x,y-37+b,9.5,0,7);c.fill();c.stroke();
   c.fillStyle=o.hair;c.beginPath();c.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);c.fill();
   c.fillStyle="#1b1d22";c.fillRect(x-4,y-37+b,2,2.4);c.fillRect(x+2,y-37+b,2,2.4);
@@ -1017,9 +1042,9 @@ function drawPerson(x,y,o){
   if(o.you){c.fillStyle="#2a3cff";c.beginPath();c.moveTo(x-6,y-60+b);c.lineTo(x+6,y-60+b);c.lineTo(x,y-52+b);c.closePath();c.fill()}
 }
 function drawPose(c,x,y,s,o){
-  const arm=pts=>{c.strokeStyle=o.skin;c.lineWidth=5.5*s;c.lineCap="round";c.lineJoin="round";c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.stroke()},
-    bulge=(bx,by,r)=>{c.fillStyle=o.skin;c.beginPath();c.arc(bx,by,r,0,7);c.fill();c.strokeStyle="rgba(0,0,0,.15)";c.lineWidth=1;c.stroke()},p=o.pose,sy=y-26;
-  [-1,1].forEach(d=>{const sx=x+d*9*s;
+  const mk=1+.65*((o.build&&o.build.c)||0),bk=1+.24*((o.build&&o.build.b)||0);s*=1;const arm=pts=>{c.strokeStyle=o.skin;c.lineWidth=5.5*s*mk;c.lineCap="round";c.lineJoin="round";c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.stroke()},
+    bulge=(bx,by,r)=>{c.fillStyle=o.skin;c.beginPath();c.arc(bx,by,r*mk,0,7);c.fill();c.strokeStyle="rgba(0,0,0,.15)";c.lineWidth=1;c.stroke()},p=o.pose,sy=y-26;
+  [-1,1].forEach(d=>{const sx=x+d*9*s*bk;
     if(p==="bi"){arm([[sx,sy],[sx+d*12*s,sy-2],[sx+d*13*s,sy-15]]);bulge(sx+d*7*s,sy-3.5,3.8*s);bulge(sx+d*13*s,sy-16,3*s)}
     else if(p==="lat"){arm([[sx,sy],[sx+d*9*s,sy+8],[sx+d*3*s,sy+16]])}
     else if(p==="abs"){arm([[sx,sy],[sx+d*9*s,sy-10],[x+d*3,sy-17]])}
@@ -1069,8 +1094,9 @@ function drawWorld(){
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
+  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
+  drawToys();
   [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
     ctx.fillStyle="#ffffff";ctx.font="900 26px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";
     const lx=r==="beach"?clamp(S.px,200,W-200):x+260,ly=r==="beach"?y+90:clamp(S.py,200,1200);ctx.fillText(REGION_NAME[r].toUpperCase()+" · LOCKED",lx,ly);ctx.font="600 14px "+getComputedStyle(root).getPropertyValue("--body");ctx.fillText(lockHint(r),lx,ly+26)});
@@ -1128,7 +1154,7 @@ function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.
 function openRoom(k){
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
-  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
+  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();G=null;GS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
@@ -1167,6 +1193,7 @@ function liftPanel(l0){
       <div class="wsel"><button class="wbtn" id="wDown" aria-label="Less weight">−</button><div class="wval"><b>${G.w} kg</b><span class="${over?"pr":""}">${over?"New "+LIFTS.find(x=>x[0]===G.lift)[1].toLowerCase()+" PR attempt":G.w===lp?"Your max":"Under your max"}</span></div><button class="wbtn" id="wUp" aria-label="More weight">+</button></div>
       <div class="meter" id="meter"><i class="zone" id="zone" style="left:${G.z[0]*100}%;width:${(G.z[1]-G.z[0])*100}%"></i><i class="needle" id="needle"></i></div>
       <button class="bigbtn" id="liftBtn">Lift ${G.w} kg<small>Tap in the green · ${cost} energy${S.protein>0?" · protein":""}${S.buffs&&S.buffs.fed>0?" · well fed":""}${S.awake>20?" · tired, smaller zone":""}</small></button>
+      <div class="sechead"><h3>Physique</h3><span class="eyebrow">Mirror check</span></div>${physiqueCard()}
       <div class="sechead"><h3>Strength perks</h3><span class="eyebrow">${strTier()} · ${S.pr} kg</span></div>
       <div class="sperks">
         <div class="on"><b>Every 10 kg</b><span>+1 stash slot (up to 12), +2 max energy, more patient sellers</span></div>
@@ -1198,6 +1225,110 @@ function gymTick(dt){
   G.pos+=G.dir*sp*dt;if(G.pos>1){G.pos=1;G.dir=-1}if(G.pos<0){G.pos=0;G.dir=1}
   const n=$("needle");if(n)n.style.left=(G.pos*100)+"%";
 }
+/* ---------- physique: each lift builds a different body part ---------- */
+function myBuild(){const L=S.lifts||{bench:20,squat:20,dead:20};return{c:clamp((L.bench-20)/180,0,1.4),l:clamp((L.squat-20)/240,0,1.4),b:clamp((L.dead-20)/280,0,1.4)}}
+function physiqueSVG(B){
+  const c=B.c,l=B.l,b=B.b,sw=40+20*b+12*c,sk="#e8b896",sh="#c98e62",def=Math.min(1,(c+l+b)/2.4),wa=24+3*l;
+  const torso=`M${100-sw+8} 70 Q${100-sw} 72 ${100-sw+2} 84 L${100-wa} 150 L${100+wa} 150 L${100+sw-2} 84 Q${100+sw} 72 ${100+sw-8} 70 Z`;
+  const arm=d=>`<ellipse cx="${100+d*(sw+4)}" cy="104" rx="${9+7*c}" ry="24" fill="${sk}" stroke="${sh}" stroke-width="1"/><ellipse cx="${100+d*(sw+6)}" cy="140" rx="${7+4*c}" ry="22" fill="${sk}" stroke="${sh}" stroke-width="1"/><circle cx="${100+d*(sw-2)}" cy="78" r="${11+8*c}" fill="${sk}" stroke="${sh}" stroke-width="1"/>`;
+  const leg=d=>`<ellipse cx="${100+d*(16+3*l)}" cy="208" rx="${13+10*l}" ry="34" fill="${sk}" stroke="${sh}" stroke-width="1"/><ellipse cx="${100+d*(17+3*l)}" cy="246" rx="${8+5*l}" ry="16" fill="${sk}" stroke="${sh}" stroke-width="1"/>`;
+  const abs=[0,1,2].map(r=>[-1,1].map(d=>`<rect x="${100+(d<0?-15:2)}" y="${110+r*12}" width="13" height="10" rx="4" fill="${sh}" opacity="${(def*.55).toFixed(2)}"/>`).join("")).join("");
+  return `<svg viewBox="0 0 200 270" aria-hidden="true">${leg(-1)}${leg(1)}<rect x="${100-wa-2}" y="146" width="${2*wa+4}" height="36" rx="8" fill="var(--accent)"/>${arm(-1)}${arm(1)}
+    <path d="${torso}" fill="${sk}" stroke="${sh}" stroke-width="1.2"/>
+    <path d="M86 58 L${100-sw+10} ${72-6*b} L${100-sw+14} 74 Z M114 58 L${100+sw-10} ${72-6*b} L${100+sw-14} 74 Z" fill="${sk}" stroke="${sh}" stroke-width="1"/>
+    <ellipse cx="${100-15-3*c}" cy="92" rx="${14+7*c}" ry="${9+5*c}" fill="${sk}" stroke="${sh}" stroke-width="${1+c}"/><ellipse cx="${100+15+3*c}" cy="92" rx="${14+7*c}" ry="${9+5*c}" fill="${sk}" stroke="${sh}" stroke-width="${1+c}"/>
+    ${abs}<rect x="92" y="48" width="16" height="14" fill="${sk}"/><circle cx="100" cy="36" r="17" fill="${sk}" stroke="${sh}" stroke-width="1"/><path d="M83 33 A17 17 0 0 1 117 33 Z" fill="#3b2a20"/></svg>`;
+}
+function physiqueCard(){const B=myBuild(),bar=(n,v,src)=>`<div><span>${n}<em>${src}</em></span><i><b style="width:${Math.min(100,v/1.4*100)}%"></b></i></div>`;
+  return `<div class="phys"><div class="physfig">${physiqueSVG(B)}</div><div class="physbars">${bar("Chest & arms",B.c,"bench")}${bar("Back & traps",B.b,"deadlift")}${bar("Legs",B.l,"squat")}<p class="fine" style="text-align:left">Every PR makes that body part bigger, here and on the map.</p></div></div>`}
+
+/* ---------- Flip Tower: build a skyscraper floor by floor, forever ---------- */
+const TENANTS=["Sneaker lounge","Card vault","Watch atelier","Rooftop gym","Trading floor","Sky café","Recording studio","VIP club","Art gallery","Penthouse suite","Toy museum","Vintage archive"];
+const TOWER_MS=[[10,"Helipad on the roof"],[25,"Glowing spire"],[50,"Sky beacon"],[100,"Gold crown"],[200,"Cloud piercer"]];
+const floorCost=i=>Math.round(50000*Math.pow(1.28,i));
+const towerRate=()=>{let r=0;for(let i=0;i<(S.tower||0);i++)r+=floorCost(i)*.005;return r*(S.toys&&S.toys.island?1.5:1)};
+let towerT=0;
+function towerTick(dt){if(!S.tower)return;towerT+=dt;if(towerT<30)return;towerT=0;const v=Math.round(towerRate()/2);if(v>0){earn(v);if(!room)banner("Flip Tower +"+fmt(v),"u")}}
+function towerArt(){const n=S.tower||0,show=Math.min(n,24),fh_=Math.max(5,Math.min(12,150/Math.max(1,show)));let fl="";
+  for(let i=0;i<show;i++){const y=170-(i+1)*fh_;fl+=`<rect x="150" y="${y}" width="100" height="${fh_-1.5}" fill="${i%2?"#1f2633":"#232b3a"}"/>`+Array.from({length:6},(_,k)=>`<rect x="${156+k*15}" y="${y+1.5}" width="9" height="${Math.max(2,fh_-4.5)}" fill="${(i*7+k*3)%5?"#ffd27a":"#6c7a92"}" opacity=".9"/>`).join("")}
+  const top=170-show*fh_;
+  return `<svg viewBox="0 0 400 190" aria-hidden="true"><rect width="400" height="190" fill="#0d1220"/>${Array.from({length:30},(_,i)=>`<circle cx="${(i*67)%400}" cy="${(i*29)%90}" r="1" fill="#fff" opacity=".6"/>`).join("")}
+   <rect x="20" y="110" width="60" height="60" fill="#1a2030"/><rect x="320" y="90" width="60" height="80" fill="#1a2030"/><rect x="90" y="130" width="40" height="40" fill="#161b28"/>
+   ${n?fl+`<rect x="146" y="${top-6}" width="108" height="6" rx="2" fill="#cf9a14"/>${n>=10?`<circle cx="200" cy="${top-12}" r="7" fill="none" stroke="#ffcc33" stroke-width="2"/><text x="200" y="${top-9}" text-anchor="middle" font-size="8" font-weight="900" fill="#ffcc33">H</text>`:""}${n>=25?`<rect x="198" y="${top-40}" width="4" height="22" fill="#cfd6e3"/>`:""}${n>=50?`<circle cx="200" cy="${top-42}" r="5" fill="#ff4fd8"><animate attributeName="opacity" values="1;.2;1" dur="1.2s" repeatCount="indefinite"/></circle>`:""}`
+     :`<rect x="140" y="160" width="120" height="10" fill="#5b4a33"/><path d="M170 160 V60 H290 M170 70 L200 60" stroke="#ffcc33" stroke-width="4" fill="none"/><rect x="284" y="60" width="4" height="40" fill="#cfd6e3"/><text x="200" y="150" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="700" fill="#ffcc33">YOUR LOT</text>`}
+   <rect y="170" width="400" height="20" fill="#20242c"/></svg>`}
+function openTower(){
+  const draw=()=>{const n=S.tower||0,c=floorCost(n),next=TOWER_MS.find(m=>m[0]>n);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Flip Tower")}<div class="art">${towerArt()}</div>
+      <div class="kv"><div><span class="eyebrow">Floors</span><b>${n}</b></div><div><span class="eyebrow">Tower income</span><b>${fmt(towerRate())}/min</b></div></div>
+      <div class="note">Your own skyscraper downtown. <b>Every floor pays you rent forever</b> and makes the tower taller on the map. There's no top floor.${next?` Next: ${next[1]} at floor ${next[0]}.`:""}</div>
+      <button class="bigbtn" id="tBuild" ${S.cash<c?"disabled":""}>Build floor ${n+1}<small>${fmt(c)} · ${TENANTS[n%TENANTS.length]} · +${fmt(c*.005)}/min</small></button>
+      <button class="bigbtn alt" id="tMax" style="text-align:center" ${S.cash<c?"disabled":""}>Build max</button>
+      ${n?`<div class="sechead"><h3>Tenants</h3><span class="eyebrow">Top 6 floors</span></div><div class="perks">${Array.from({length:Math.min(6,n)},(_,k)=>{const i=n-1-k;return `<div class="perk nopic"><span class="t">Floor ${i+1} · ${TENANTS[i%TENANTS.length]}</span><span class="c">${fmt(floorCost(i)*.005)}/min</span></div>`}).join("")}</div>`:""}
+      <p class="fine">Milestones: ${TOWER_MS.map(m=>(n>=m[0]?"✓ ":"")+m[0]+" "+m[1].toLowerCase()).join(" · ")}</p></div>`;
+    $("leaveBtn").onclick=closeRoom;
+    const build=k=>{let built=0;while(built<k&&S.cash>=floorCost(S.tower||0)){S.cash-=floorCost(S.tower||0);S.tower=(S.tower||0)+1;built++;const m=TOWER_MS.find(x=>x[0]===S.tower);if(m){setTimeout(()=>{banner(m[1],"g");flash("#ffcc33",.5);confetti(220);shake(10,.6);gainCrate(3)},500)}}
+      if(!built)return;dirty=true;STATIC=null;S.stats.floors=Math.max(S.stats.floors||0,S.tower);SFX.rebirth();buzz([20,30,40]);const bt=elC($("tBuild"));if(bt)sparks(bt[0],bt[1],"#ffcc33",20+built*4,1.2);confetti(Math.min(160,30+built*12));shake(4+Math.min(8,built),.35);banner(built>1?"+"+built+" floors":"Floor "+S.tower,"a");draw();updMini()};
+    $("tBuild").onclick=()=>build(1);$("tMax").onclick=()=>build(999);
+  };draw();
+}
+function drawTowerLot(g,p,P){
+  const n=S.tower||0,bot=p.y+p.h,H=n?Math.min(520,150+n*7):0;
+  if(!n){g.fillStyle="#6b5a40";rrp(g,p.x,p.y+40,p.w,p.h-40,8);g.fill();g.fillStyle="rgba(0,0,0,.15)";for(let i=0;i<30;i++)g.fillRect(p.x+10+(i*37)%(p.w-20),p.y+50+(i*53)%(p.h-60),6,3);
+    g.strokeStyle="#ffcc33";g.lineWidth=5;g.beginPath();g.moveTo(p.x+30,bot-10);g.lineTo(p.x+30,p.y-10);g.lineTo(p.x+p.w-10,p.y-10);g.moveTo(p.x+30,p.y+10);g.lineTo(p.x+60,p.y-10);g.stroke();g.fillStyle="#cfd6e3";g.fillRect(p.x+p.w-14,p.y-10,4,40);
+    g.strokeStyle="#e8e2d8";g.lineWidth=2;g.setLineDash([6,4]);g.strokeRect(p.x+2,p.y+42,p.w-4,p.h-44);g.setLineDash([]);
+    g.font=`800 13px ${getComputedStyle(root).getPropertyValue("--display")}`;g.textAlign="center";g.textBaseline="middle";g.fillStyle=P.sign;rrp(g,p.x+p.w/2-60,p.y+p.h/2+10,120,26,8);g.fill();g.fillStyle=P.ink;g.fillText("BUILD A TOWER",p.x+p.w/2,p.y+p.h/2+24);
+    const[dx,dy]=p.door;g.fillStyle=P.walk;rrp(g,dx-20,dy+1,40,8,3);g.fill();return}
+  const top=bot-H,roofH=Math.round(p.h*.55),fy=top+roofH;
+  g.save();g.shadowColor=P.shadow;g.shadowBlur=30;g.shadowOffsetY=16;g.fillStyle="#1b2230";rrp(g,p.x,top,p.w,H,8);g.fill();g.restore();
+  const fg=g.createLinearGradient(p.x,0,p.x+p.w,0);fg.addColorStop(0,"#1c2433");fg.addColorStop(.5,"#2a3446");fg.addColorStop(1,"#18202d");g.fillStyle=fg;rrp(g,p.x,fy-8,p.w,bot-fy+8,8);g.fill();
+  for(let y=fy+6,i=0;y<bot-34;y+=14,i++)for(let x=p.x+10,k=0;x<p.x+p.w-14;x+=16,k++){g.fillStyle=(i*7+k*3)%4?"rgba(255,210,122,.85)":"rgba(140,170,210,.5)";g.fillRect(x,y,10,9)}
+  const rg=g.createLinearGradient(0,top,0,fy);rg.addColorStop(0,"#3a4558");rg.addColorStop(1,"#2a3344");g.fillStyle=rg;rrp(g,p.x,top,p.w,roofH,8);g.fill();
+  g.strokeStyle="#cf9a14";g.lineWidth=3;rrp(g,p.x+6,top+6,p.w-12,roofH-12,6);g.stroke();
+  if(n>=10){g.strokeStyle="#ffcc33";g.lineWidth=3;g.beginPath();g.arc(p.x+p.w/2,top+roofH/2,22,0,7);g.stroke();g.font="900 22px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.textBaseline="middle";g.fillStyle="#ffcc33";g.fillText("H",p.x+p.w/2,top+roofH/2+1)}
+  if(n>=25){g.fillStyle="#cfd6e3";g.fillRect(p.x+p.w-26,top-46,6,52);g.fillRect(p.x+20,top-30,5,36)}
+  if(n>=100){g.fillStyle="#ffcc33";g.beginPath();const cx=p.x+p.w/2,cy=top-6;g.moveTo(cx-36,cy);g.lineTo(cx-36,cy-26);g.lineTo(cx-18,cy-12);g.lineTo(cx,cy-34);g.lineTo(cx+18,cy-12);g.lineTo(cx+36,cy-26);g.lineTo(cx+36,cy);g.closePath();g.fill()}
+  g.fillStyle="#cf9a14";g.fillRect(p.x,bot-36,p.w,4);
+  g.font=`800 14px ${getComputedStyle(root).getPropertyValue("--display")}`;g.textAlign="center";g.textBaseline="middle";const lb="FLIP TOWER · "+n;const tw=g.measureText(lb).width+24;g.fillStyle=P.sign;rrp(g,p.x+p.w/2-tw/2,bot-64,tw,24,8);g.fill();g.fillStyle=P.ink;g.fillText(lb,p.x+p.w/2,bot-51);
+  const[dx,dy]=p.door;g.fillStyle="#141824";rrp(g,dx-16,dy-30,32,30,5);g.fill();g.fillStyle="#ffcc33";g.fillRect(dx-16,dy-32,32,3);g.fillStyle=P.walk;rrp(g,dx-20,dy+1,40,8,3);g.fill();
+}
+
+/* ---------- billionaire toys ---------- */
+const TOYS=[{k:"yacht",n:"Superyacht",cost:5e6,d:"Sails past the beach. Yacht parties bring +300 fans every minute."},
+ {k:"jet",n:"Private jet",cost:25e6,d:"Free flights, and unlocks the Dubai market where everything sells for +40%."},
+ {k:"island",n:"Private island",cost:250e6,d:"Your own island off the coast. Flip Tower income ×1.5."},
+ {k:"statue",n:"Gold statue of you",cost:1e9,d:"A giant gold statue in the town plaza. Every sale +10%, forever."}];
+const hasToy=k=>!!(S.toys&&S.toys[k]);
+let toyT=0;
+function toyTick(dt){if(!hasToy("yacht"))return;toyT+=dt;if(toyT>=60){toyT=0;S.fans=(S.fans||0)+300;dirty=true}}
+function toyList(){return TOYS.map(t=>{const own=hasToy(t.k);return `<button class="perk nopic toy${own?" own":""}" data-toy="${t.k}" ${own||S.cash<t.cost?"disabled":""}><span class="t">${t.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${t.d}</span><span class="c">${own?"Yours":fmt(t.cost)}</span></button>`}).join("")}
+function bindToys(redraw){$("room").querySelectorAll("[data-toy]").forEach(b=>b.onclick=()=>{const t=TOYS.find(x=>x.k===b.dataset.toy);if(hasToy(t.k)||S.cash<t.cost)return;S.cash-=t.cost;S.toys=S.toys||{};S.toys[t.k]=1;dirty=true;STATIC=null;
+  SFX.rebirth();flash("#ffcc33",.6);confetti(260);shake(12,.7);buzz([40,40,80,40,160]);banner(t.n,"g");banner("Billionaire status","u");redraw();updMini()})}
+let jetX=-400,jetT=20;
+function drawToys(){
+  if(hasToy("yacht")){const yx=1200+Math.sin(wt*.05)*900,yy=SEA+120,dir=Math.cos(wt*.05)>0?1:-1;ctx.save();ctx.translate(yx,yy);ctx.scale(dir,1);ctx.fillStyle="rgba(255,255,255,.4)";ctx.beginPath();ctx.moveTo(-90,10);ctx.lineTo(-170,18);ctx.lineTo(-90,22);ctx.fill();
+    ctx.fillStyle="#f4f6fa";ctx.beginPath();ctx.moveTo(-80,-8);ctx.lineTo(70,-8);ctx.lineTo(95,6);ctx.lineTo(70,20);ctx.lineTo(-80,20);ctx.closePath();ctx.fill();ctx.fillStyle="#1b2230";ctx.fillRect(-60,-22,90,14);ctx.fillStyle="#7fd6ff";for(let i=0;i<5;i++)ctx.fillRect(-54+i*17,-19,11,7);ctx.fillStyle="#f4f6fa";ctx.fillRect(-40,-32,50,10);ctx.fillStyle="#cf9a14";ctx.fillRect(-80,14,150,3);ctx.restore()}
+  if(hasToy("island")){const ix=2380,iy=2120;ctx.fillStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.ellipse(ix,iy,170,62,0,0,7);ctx.fill();ctx.fillStyle="#efdcae";ctx.beginPath();ctx.ellipse(ix,iy,150,50,0,0,7);ctx.fill();ctx.fillStyle="#3f9a4e";ctx.beginPath();ctx.ellipse(ix+10,iy-6,100,30,0,0,7);ctx.fill();
+    ctx.fillStyle="#f4f6fa";ctx.fillRect(ix-30,iy-40,70,34);ctx.fillStyle="#2b2f3a";ctx.fillRect(ix-34,iy-46,78,8);ctx.fillStyle="#7fd6ff";ctx.fillRect(ix-22,iy-32,16,12);ctx.fillRect(ix+6,iy-32,16,12);ctx.fillStyle="#4aa6d6";ctx.fillRect(ix-30,iy-4,40,10)}
+  if(hasToy("statue")){const sx=790,sy=610;ctx.fillStyle="rgba(0,0,0,.2)";ctx.beginPath();ctx.ellipse(sx,sy+4,30,10,0,0,7);ctx.fill();ctx.fillStyle="#9aa3b3";rrp(ctx,sx-24,sy-12,48,16,4);ctx.fill();
+    drawPerson(sx,sy-12,{shirt:"#e0a800",skin:"#f2c14e",hair:"#b8860b",size:1.6,pose:"bi",build:{c:1.2,l:1,b:1.2}});const gl=.5+.5*Math.sin(wt*3);ctx.fillStyle=`rgba(255,220,100,${.15+.1*gl})`;ctx.beginPath();ctx.arc(sx,sy-50,50,0,7);ctx.fill()}
+  if(hasToy("jet")){jetT-=1/60;if(jetT<=0&&jetX<-300){jetX=cam.x-300;jetT=rnd(25,45)}if(jetX>-300){jetX+=9;const jy=cam.y+140;if(jetX>cam.x+vw+300)jetX=-400;else{ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(jetX-30,jy);ctx.lineTo(jetX-260,jy);ctx.stroke();
+    ctx.save();ctx.translate(jetX,jy);ctx.fillStyle="rgba(0,0,0,.18)";ctx.beginPath();ctx.ellipse(10,90,40,8,0,0,7);ctx.fill();ctx.fillStyle="#f4f6fa";ctx.beginPath();ctx.ellipse(0,0,40,7,0,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-20,-30);ctx.lineTo(-10,-30);ctx.lineTo(12,0);ctx.lineTo(-10,30);ctx.lineTo(-20,30);ctx.closePath();ctx.fill();ctx.fillStyle="#cf9a14";ctx.fillRect(-38,-2,60,3);ctx.restore()}}}
+}
+
+/* ---------- the rich list: AI tycoons keep getting richer ---------- */
+const TYCOONS=[["Garage Gary",4e4],["Thrift Queen Tia",1.5e5],["Vince",5e5],["Lou Bianchi",2e6],["Mona Mint",8e6],["Sneakerhead Sato",2.5e7],["Duchess Vael",9e7],["Kingsley Croft",3e8],["Octavia Gold",1.2e9],["Marlon Vex",5e9],["Aurelia Stone",2e10],["The Baron",8e10],["Mr. Infinite",4e11]];
+const tycWorth=i=>TYCOONS[i][1]*Math.pow(1.004,S.richT||0);
+function netWorth(){let w=S.cash+(S.bank||0)+stashVal();VEH.forEach(v=>{if(S.veh&&S.veh[v.k])w+=v.cost*.7});w+=PROPS[S.home||0].cost*.8;for(let i=0;i<(S.tower||0);i++)w+=floorCost(i)*.6;TOYS.forEach(t=>{if(hasToy(t.k))w+=t.cost*.7});return w}
+const richRank=()=>{const w=netWorth();return 1+TYCOONS.filter((_,i)=>tycWorth(i)>w).length};
+let richT=0;
+function richTick(dt){S.richT=(S.richT||0)+dt/60;richT+=dt;if(richT<1.5)return;richT=0;const r=richRank();if(S.bestRank==null){S.bestRank=r;return}
+  if(r<S.bestRank){const passed=TYCOONS.map((t,i)=>[t[0],tycWorth(i)]).filter(t=>t[1]<=netWorth()).sort((a,b)=>b[1]-a[1])[0];S.bestRank=r;dirty=true;
+    setTimeout(()=>{banner(r===1?"RICHEST ON EARTH":"Rich list #"+r,"g");if(passed)rayTextFrom("Rich List","You just passed "+passed[0]+". You're now #"+r+" of "+(TYCOONS.length+1)+".");confetti(r===1?300:140);flash("#ffcc33",r===1?.6:.35);shake(r===1?14:7,.5);SFX.rebirth();gainCrate(r===1?5:1)},300)}}
+function richListHTML(){const w=netWorth(),rows=TYCOONS.map((t,i)=>({n:t[0],w:tycWorth(i)}));rows.push({n:"You",w,you:1});rows.sort((a,b)=>b.w-a.w);const me=rows.findIndex(r=>r.you);
+  const show=rows.filter((r,i)=>i<3||Math.abs(i-me)<=2);
+  return `<div class="sechead"><h3>The rich list</h3><span class="eyebrow">You're #${me+1} · ${fmt(w)}</span></div><div class="perks">${show.map(r=>{const i=rows.indexOf(r);return `<div class="perk nopic${r.you?" me":""}"><span class="t">#${i+1} ${r.n}</span><span class="c">${fmt(r.w)}</span></div>`}).join("")}</div><p class="fine">The other tycoons get richer every minute too. Stay on top.</p>`}
+
 /* ---------- gym floor: walk around, lift, flex for a crowd ---------- */
 const GSW=400,GSH=600;
 let GS=null;
@@ -1221,7 +1352,7 @@ const sponsor=()=>{let s=null;SPONSORS.forEach(x=>{if((S.fans||0)>=x[0])s=x});re
 let spT=0;
 function sponsorTick(dt){const sp=sponsor();if(!sp)return;spT+=dt;if(spT<60)return;spT=0;const v=Math.round(sp[2]*(1+repLevel()*.1));earn(v);banner(sp[1]+" +"+fmt(v),"u")}
 function newBro(i,guest){const b=GYM_BROS[i%GYM_BROS.length],sp=G_SPOTS[(i*5)%G_SPOTS.length];
-  return{n:b[0],shirt:b[1],skin:G_SKINS[i%5],hair:G_HAIRS[(i*3)%5],size:rnd(1.02,1.28),x:guest?200:sp[0],y:guest?598:sp[1],tx:sp[0],ty:sp[1],act:"work",t:rnd(3,10),ph:rnd(0,7),slot:-1,popT:rnd(.8,2.5),guest:!!guest,mv:false}}
+  return{build:{c:rnd(.1,1),l:rnd(.1,1),b:rnd(.1,1)},n:b[0],shirt:b[1],skin:G_SKINS[i%5],hair:G_HAIRS[(i*3)%5],size:rnd(1.02,1.28),x:guest?200:sp[0],y:guest?598:sp[1],tx:sp[0],ty:sp[1],act:"work",t:rnd(3,10),ph:rnd(0,7),slot:-1,popT:rnd(.8,2.5),guest:!!guest,mv:false}}
 function gymPop(x,y,txt,col,o={}){if(GS)GS.pops.push({x,y,txt,col,t:0,life:o.life||1.2,heart:o.heart,bubble:o.bubble,flash:o.flash})}
 function openGym(half){
   G=null;GS={half:!!half,px:200,py:572,tx:null,ty:null,mv:false,ph:0,npcs:[],pops:[],flex:null,near:null,pose:null,poseT:0,curlT:0,cw:0,ch:0,bg:null,guestT:0};
@@ -1423,11 +1554,11 @@ function gymDraw(){
   if(!B){c.fillStyle=`rgba(255,79,216,${.05+.05*beat})`;c.fillRect(0,0,GSW,112)}
   // equipment users animate a little
   const ppl=GS.npcs.map(n=>[n.y,()=>{const cheer=n.slot>=0&&!n.mv,work=!n.mv&&n.slot<0&&n.act==="work",bob=cheer?Math.abs(Math.sin(n.ph*9))*4:work?Math.abs(Math.sin(n.ph*3))*1.5:0;
-    drawPerson(n.x,n.y,{g:c,shirt:n.shirt,skin:n.skin,hair:n.hair,size:n.size,mv:n.mv,ph:n.ph,bob,pose:cheer&&Math.sin(n.ph*2)>.3?"abs":null,legs:"#1b1d22"});
+    drawPerson(n.x,n.y,{g:c,build:n.build,shirt:n.shirt,skin:n.skin,hair:n.hair,size:n.size,mv:n.mv,ph:n.ph,bob,pose:cheer&&Math.sin(n.ph*2)>.3?"abs":null,legs:"#1b1d22"});
     if(work&&Math.sin(n.ph*.7)>0){const up=Math.abs(Math.sin(n.ph*3));c.fillStyle="#1b1d22";c.fillRect(n.x+10*n.size,n.y-22-up*10,8,3);c.fillStyle="#5b6272";c.fillRect(n.x+9*n.size,n.y-23-up*10,2,5);c.fillRect(n.x+16*n.size,n.y-23-up*10,2,5)}}]);
   const sz=1+Math.min(.6,(S.pr-20)/300)+(pumped()?.06:0);
   ppl.push([GS.py,()=>{if(F){c.fillStyle="rgba(255,255,255,.08)";c.beginPath();c.ellipse(GS.px,GS.py+1,26,9,0,0,7);c.fill()}
-    drawPerson(GS.px,GS.py,{g:c,crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:GS.mv,ph:GS.ph,you:!F,size:sz,pose:GS.poseT>0?GS.pose:GS.curlT>0?(Math.sin(GS.ph*10)>0?"bi":null):null})}]);
+    drawPerson(GS.px,GS.py,{g:c,build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:GS.mv,ph:GS.ph,you:!F,size:sz,pose:GS.poseT>0?GS.pose:GS.curlT>0?(Math.sin(GS.ph*10)>0?"bi":null):null})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   if(F&&F.T){[160,200,240].forEach((x,i)=>drawPerson(x,392,{g:c,shirt:"#1b1f2a",skin:G_SKINS[i+1],hair:G_HAIRS[i],size:.95,legs:"#1b1d22"}));c.fillStyle="#2b2f3a";rrp(c,136,384,128,18,4);c.fill();c.fillStyle="#454b5a";c.fillRect(136,384,128,3);c.fillStyle="#fff";[160,200,240].forEach(x=>c.fillRect(x-7,389,14,9));c.font="800 8px "+getComputedStyle(root).getPropertyValue("--mono");c.textAlign="center";c.fillStyle="#9aa3b3";c.fillText("JUDGES",200,412)}
   const near=GS.near;if(near&&!F){c.strokeStyle="rgba(255,255,255,.55)";c.lineWidth=2;c.setLineDash([6,5]);c.lineDashOffset=-wt*16;c.beginPath();c.ellipse(near.x,near.y+4,34,14,0,0,7);c.stroke();c.setLineDash([])}
@@ -1467,12 +1598,13 @@ function openHome(){
       <p class="fine">${OUTFITS[S.skin||0][0]}${(S.skin||0)>=5?" · crown included":""}. More outfits unlock as you level up.</p>
       ${S.perks&&Object.keys(S.perks).length?`<div class="sechead"><h3>Your perks</h3><span class="eyebrow">Level ${repLevel()}</span></div><div class="perkchips">${PERK_POOL().concat(CATS.map(c=>({k:"cat_"+c.k,t:c.n+" specialist"}))).filter((c,i,a)=>pk(c.k)&&a.findIndex(x=>x.k===c.k)===i).map(c=>`<span>${c.t} <b>×${pk(c.k)}</b></span>`).join("")}</div>`:""}
       ${S.trophies&&Object.keys(S.trophies).length?`<div class="sechead"><h3>Trophy shelf</h3><span class="eyebrow">${sponsor()?sponsor()[1]:""}</span></div><div class="trophies">${COMPS.map((c,i)=>S.trophies[i]?`<span><i style="background:${["","#ffcc33","#c0c6d0","#cd7f32"][S.trophies[i]]}"></i>${c.n}</span>`:"").join("")}</div>`:""}
+      <div class="sechead"><h3>Mirror</h3><span class="eyebrow">${S.pr} kg max</span></div>${physiqueCard()}
       <div class="sechead"><h3>Your hustle</h3></div>
       <div class="kv">
         <div><span class="eyebrow">Earned this life</span><b>${fmt(S.earned)}</b></div><div><span class="eyebrow">Earned all time</span><b>${fmt(S.stats.earnedAll)}</b></div>
         <div><span class="eyebrow">Flips</span><b>${S.stats.flips}</b></div><div><span class="eyebrow">Best flip</span><b>${fmt(S.stats.best)}</b></div>
         <div><span class="eyebrow">Heaviest lift</span><b>${S.stats.heaviest||S.pr} kg</b></div><div><span class="eyebrow">Grails</span><b>${S.stats.grails}</b></div>
-        <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">Fans</span><b>${fmtN(S.fans||0)}</b></div><div><span class="eyebrow">You vs Vince</span><b>${S.stats.vW||0}–${S.stats.vL||0}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
+        <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">Fans</span><b>${fmtN(S.fans||0)}</b></div><div><span class="eyebrow">Rich list</span><b>#${richRank()}</b></div><div><span class="eyebrow">Tower floors</span><b>${S.tower||0}</b></div><div><span class="eyebrow">You vs Vince</span><b>${S.stats.vW||0}–${S.stats.vL||0}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
@@ -1599,6 +1731,7 @@ function openBank(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
+      ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
     $("leaveBtn").onclick=closeRoom;
     const dep=a=>{a=Math.floor(a);if(a<=0)return;S.cash-=a;S.bank=(S.bank||0)+a;SFX.buy();dirty=true;draw();updMini()};
@@ -1707,7 +1840,7 @@ function bindVeh(redraw){$("room").querySelectorAll("[data-v]").forEach(b=>b.onc
 function carArt(){return `<svg viewBox="0 0 400 150" aria-hidden="true"><rect width="400" height="150" fill="var(--sunk)"/><rect y="112" width="400" height="38" fill="var(--line)"/>
   <path d="M70 108c0-18 14-26 34-30l40-26c10-6 22-9 34-9h70c14 0 26 6 34 16l20 22c26 2 40 10 40 27v6H70Z" fill="#e2364a"/><path d="M150 54h56v24h-82Z" fill="#1b1f2a" opacity=".85"/><path d="M214 54h44c8 0 14 4 20 10l12 14h-76Z" fill="#1b1f2a" opacity=".85"/>
   <circle cx="122" cy="112" r="20" fill="#141414"/><circle cx="122" cy="112" r="9" fill="#9aa3b3"/><circle cx="282" cy="112" r="20" fill="#141414"/><circle cx="282" cy="112" r="9" fill="#9aa3b3"/><rect x="318" y="88" width="14" height="8" rx="3" fill="#ffe08a"/></svg>`}
-function openDealer(){const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Dealership")}<div class="art">${carArt()}</div><div class="perks">${vehList("dealer")}</div><p class="fine">Your fastest vehicle is used automatically. Bikes are sold at the Mall.</p></div>`;$("leaveBtn").onclick=closeRoom;bindVeh(draw)};draw()}
+function openDealer(){const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Dealership")}<div class="art">${carArt()}</div><div class="perks">${vehList("dealer")}</div><p class="fine">Your fastest vehicle is used automatically. Bikes are sold at the Mall.</p><div class="sechead"><h3>Billionaire toys</h3><span class="eyebrow">For when you have everything</span></div><div class="perks">${toyList()}</div></div>`;$("leaveBtn").onclick=closeRoom;bindVeh(draw);bindToys(draw)};draw()}
 /* ---------- trading centre (live futures prices) ---------- */
 const TSYMS=[{k:"XAU",n:"Gold",b:["XAUUSDT","PAXGUSDT"],y:["XAUTUSDT","PAXGUSDT"],dp:2},{k:"BTC",n:"Bitcoin",b:["BTCUSDT"],y:["BTCUSDT"],dp:1},{k:"ETH",n:"Ethereum",b:["ETHUSDT"],y:["ETHUSDT"],dp:2},
  {k:"SOL",n:"Solana",b:["SOLUSDT"],y:["SOLUSDT"],dp:3},{k:"BNB",n:"BNB",b:["BNBUSDT"],y:["BNBUSDT"],dp:2},{k:"XRP",n:"XRP",b:["XRPUSDT"],y:["XRPUSDT"],dp:4},{k:"DOGE",n:"Dogecoin",b:["DOGEUSDT"],y:["DOGEUSDT"],dp:5}];
@@ -1891,7 +2024,7 @@ function renderTrChip(){
 }
 $("trChip").onclick=()=>{audioOn();if(!room&&(S.up.phone||nearPlace()===PL.trade))openRoom("trade");else if(!room)walkTo("trade")};
 /* ---------- airport, nightclub, docks ---------- */
-const fare=()=>Math.round(1500*(1+SC()*.6));
+const fare=()=>hasToy("jet")?0:Math.round(1500*(1+SC()*.6));
 function planeArt(){return `<svg viewBox="0 0 400 140" aria-hidden="true"><rect width="400" height="140" fill="var(--sunk)"/><rect y="104" width="400" height="36" fill="var(--line)"/>${[40,110,180,250,320].map(x=>`<rect x="${x}" y="120" width="40" height="5" fill="var(--surface)"/>`).join("")}
   <path d="M60 80h230c26 0 46 6 46 14s-20 14-46 14H90l-30-14Z" fill="#f2f2f2"/><path d="M180 82l-40-46h22l60 46Z" fill="#3b6fd8"/><path d="M190 106l-30 30h20l44-30Z" fill="#3b6fd8"/><path d="M70 82l-16-30h14l24 30Z" fill="#3b6fd8"/>${[210,226,242,258,274].map(x=>`<circle cx="${x}" cy="92" r="4" fill="#1b1f2a"/>`).join("")}</svg>`}
 function openAirport(){
@@ -1900,11 +2033,12 @@ function openAirport(){
     <div class="perks">
       <button class="perk nopic" data-fly="tokyo" ${S.cash<fare()?"disabled":""}><span class="t">Tokyo</span><span class="d">Cards and toys sell for +45%, tech +20%. Cheaper listings.</span><span class="c">${fmt(fare())}</span></button>
       <button class="perk nopic" data-fly="paris" ${S.cash<fare()?"disabled":""}><span class="t">Paris</span><span class="d">Vintage sells for +45%, watches +35%, kicks +15%.</span><span class="c">${fmt(fare())}</span></button>
+      ${hasToy("jet")?`<button class="perk nopic" data-fly="dubai"><span class="t">Dubai · private jet</span><span class="d">Everything sells for +40%, watches and tech even more.</span><span class="c">Free</span></button>`:`<div class="perk nopic" style="opacity:.6"><span class="t">Dubai</span><span class="d">Needs a private jet (Dealership, Billionaire toys).</span><span class="c">Locked</span></div>`}
     </div></div>`;
   $("leaveBtn").onclick=closeRoom;
   $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{if(S.cash<fare())return;S.cash-=fare();dirty=true;SFX.rebirth();
     const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="✈";document.body.appendChild(fx);const k=b.dataset.fly;
-    setTimeout(()=>{room=k;$("room").style.setProperty("--pc",k==="tokyo"?"#e2364a":"#2a5bd7");openMarket(MKT[k]);$("leaveBtn").onclick=closeRoom;banner("Welcome to "+MKT[k].n,"a")},1200);setTimeout(()=>fx.remove(),2600)});
+    setTimeout(()=>{room=k;$("room").style.setProperty("--pc",k==="tokyo"?"#e2364a":k==="dubai"?"#cf9a14":"#2a5bd7");openMarket(MKT[k]);$("leaveBtn").onclick=closeRoom;banner("Welcome to "+MKT[k].n,"a")},1200);setTimeout(()=>fx.remove(),2600)});
 }
 const vipCost=()=>Math.max(500,Math.round(S.cash*.03));
 function openClub(){
@@ -2187,6 +2321,7 @@ const MKT={market:{k:"market",n:"Market",steal:.18,fake:.28,box:.06,price:1,minB
  flea:{k:"flea",n:"Flea Market",steal:.36,fake:.45,box:.14,price:.85,minBase:0,sell:.95,grail:.015},
  tokyo:{k:"tokyo",n:"Tokyo",steal:.2,fake:.15,box:.12,price:.9,minBase:0,sell:1,grail:.04,cat:{cards:1.45,toys:1.45,tech:1.2,kicks:.9}},
  paris:{k:"paris",n:"Paris",steal:.15,fake:.2,box:.05,price:.95,minBase:100,sell:1,grail:.05,cat:{vint:1.45,watch:1.35,kicks:1.15,toys:.85}},
+ dubai:{k:"dubai",n:"Dubai",steal:.12,fake:.05,box:.04,price:1.1,minBase:300,sell:1.4,grail:.08,cat:{watch:1.25,tech:1.15}},
  lux:{k:"lux",n:"Luxury",steal:.1,fake:0,box:0,price:1.05,minBase:400,sell:1.25,grail:.07}};
 const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
@@ -2417,7 +2552,7 @@ function loop(now){
       if(M)marketTick(dt,now);
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
-      sponsorTick(dt);
+      sponsorTick(dt);towerTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="storage")lotTick(dt);
       findsTick(dt);jobTick(dt);rivalTick(dt);
@@ -2448,6 +2583,7 @@ function title(){
         <div><kbd>STRONG</kbd><span>Walk around the Gym to lift, then flex to draw a crowd, gain fans, land sponsors and compete in bodybuilding shows.</span></div>
         <div><kbd>EXPLORE</kbd><span>Finish Uncle Ray's goals to unlock the Beach and Downtown, and buy a bike, scooter and sports car. Watch for random town events.</span></div>
         <div><kbd>HUNT</kbd><span>Bid blind on storage units, race courier deliveries, grab shiny finds around town, and beat your rival Vince.</span></div>
+        <div><kbd>EMPIRE</kbd><span>Rich already? Build Flip Tower floor by floor, buy a yacht, jet and island, and climb the rich list to #1.</span></div>
         <div><kbd>LEVEL</kbd><span>Everything you earn levels you up. Each level, pick 1 of 3 perk cards to shape your own build.</span></div>
       </div>
       ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · Level ${repLevel()} · Day ${S.day}</small></span>${ARROW}</button>
