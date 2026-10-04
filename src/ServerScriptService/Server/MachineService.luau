@@ -13,6 +13,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local TitleService = require(script.Parent.TitleService)
 local QuestService = require(script.Parent.QuestService)
 local BoostService = require(script.Parent.BoostService)
+local SocialService = require(script.Parent.SocialService)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme) -- bumper plate colors
 
 -- Bars sit loaded when nobody is using them (a mix, so the gym shows every bumper color).
@@ -29,8 +30,12 @@ local MachineService = {}
 local sessions = {}  -- [player] = { model, machine, lastRep, connections }
 local occupants = {} -- [model] = player
 
+-- The machine's own "Use" prompt (SocialService adds a separate "SpotPrompt" next to it).
 local function getPrompt(model)
-	return model:FindFirstChildWhichIsA("ProximityPrompt", true)
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA("ProximityPrompt") and descendant.Name ~= "SpotPrompt" then return descendant end
+	end
+	return nil
 end
 
 -- Plates go on the machine's load part: both sleeves of a bar, or one centered stack.
@@ -197,6 +202,7 @@ local function lift(player)
 	PlayerData.AddCoins(player, coins)
 	TitleService.OnRep(player)
 	QuestService.OnRep(player, machine.id)
+	SocialService.OnRep(player, machine.id)
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
 	Remotes.RepResult:FireClient(player, { levels = levels, maxed = maxed, coins = coins })

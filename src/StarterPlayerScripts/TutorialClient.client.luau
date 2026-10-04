@@ -125,7 +125,7 @@ end
 -- From the machine's prompt, head toward the middle of the gym until leaving the machine's box, then a bit more.
 local function approachPoint(model)
 	local boxCFrame, size = model:GetBoundingBox()
-	local prompt = model:FindFirstChildWhichIsA("ProximityPrompt", true)
+	local prompt = model:FindFirstChildWhichIsA("ProximityPrompt", true) -- Use or Spot: both sit on the same part
 	local holder = prompt and prompt.Parent
 	local start = (holder and holder:IsA("BasePart") and holder.Position)
 		or (holder and holder:IsA("Attachment") and holder.WorldPosition)

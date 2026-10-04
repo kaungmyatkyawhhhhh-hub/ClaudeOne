@@ -24,7 +24,7 @@ function DataTemplate.new()
 		growthSpurts = 1, -- height and level cap come from Config.GrowthSpurts
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest tier index, selected = tier index }
-		stats = { totalReps = 0, bestSet = 0 },
+		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0 },
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
 		shakes = 0, -- Energy Shakes in the bag
 		daily = { lastDay = 0, streak = 0, best = 0 }, -- daily streak (Config.Economy)

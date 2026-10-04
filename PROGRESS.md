@@ -28,6 +28,44 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Step 9: Spotting + arm wrestling (2026-10-05) ✅ (needs a 2-player playtest)
+
+**Built** (numbers in `Config/Social`)
+- **Spotting** (`SocialService`): while someone lifts on the Flat Bench, Incline Bench or Squat Rack, other
+  players see a **Spot** prompt on that machine. Spotting gives the lifter **+25% gains**; the spotter earns
+  **1 coin per spotted rep** and works toward the **Spotter** title (10 spotted reps; it was locked before).
+  The spot ends if either one leaves or the spotter walks more than ~14 studs away. One spotter per lifter.
+- **Workout together:** lifting while another player lifts within 30 studs gives **+10% gains** and counts toward
+  the new **Gym Buddy** title (100 reps).
+- **Arm wrestling** (`ArmWrestleService`, `SocialClient`): a new table with two stools on the right side of the
+  gym (15.5, -29.5, the open floor between the stretching mats and the dip station). Sit down (prompt, or just
+  walk into a stool). With a second player, a 3-2-1 countdown starts; alone, a practice opponent (Rocco, Tess or
+  Big Lou, original characters) stands in after 8 s. Then both tap anywhere / Space as fast as possible: each tap
+  pushes the meter toward you, harder with stronger Biceps, Forearms and Front Delts. Pin it (meter all the way)
+  or be ahead after 12 s. Win 15 coins (8 vs practice), lose 5. Taps over 14/s are ignored. New **Iron Grip**
+  title (10 wins). Bottom panel: meter (you on the left), countdown, result.
+- MachineService now ignores the Spot prompt when it looks for a machine's own Use prompt.
+- New RemoteEvent `ArmWrestle` is created by the server at start (Remotes stays Studio-built otherwise).
+
+**How to test**
+1. `git pull`. Solo: walk to the table on the right side, sit, wait 8 s → a practice opponent → tap fast.
+2. Two players (Test → Clients and Servers → 2 players): one lifts on the bench, the other walks up → Spot →
+   notes on both screens; the lifter's popups are bigger; the spotter's coins go up per rep.
+3. Two players lifting near each other → "Lifting together" note.
+4. Two players on the arm wrestling stools → countdown → match.
+
+**Assumptions**
+- Players sit with the normal Roblox sitting pose; there's no custom arm-wrestling arm animation yet (the meter
+  carries the match). Practice opponents stand behind their stool.
+- The table position is my pick of open floor; move `TableSpot` in `Config/Social` if it blocks anything.
+- Practice wins count toward Iron Grip (kids often play alone).
+
+**Not verified**
+- No playtest (and spotting needs two players). Compile, type analysis, Rojo build and Lune tests (strength,
+  titles, match pacing) pass.
+
+---
+
 ## Economy + retention: streak, offline coins, re-racking, DNA tokens, rush hour (2026-10-05) ✅ (needs your playtest)
 
 **Built** (`RetentionService`, numbers in `Config/Economy`, notes in `RetentionClient`)

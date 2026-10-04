@@ -52,7 +52,11 @@ Titles.List = {
 	{ id = "DefiedGenetics", name = "Defied Genetics", rarity = "Legendary", category = "Genetics",
 		description = "Max out a muscle group with a D grade.", condition = { type = "maxedGrade", grade = "D" }, badgeId = nil },
 	{ id = "Spotter", name = "Spotter", rarity = "Rare", category = "Social",
-		description = "Spot another lifter.", condition = { type = "never" } },
+		description = "Spot other lifters for 10 reps.", condition = { type = "stat", stat = "spotReps", min = 10 } },
+	{ id = "GymBuddy", name = "Gym Buddy", rarity = "Uncommon", category = "Social",
+		description = "Do 100 reps while someone lifts nearby.", condition = { type = "stat", stat = "togetherReps", min = 100 } },
+	{ id = "IronGrip", name = "Iron Grip", rarity = "Rare", category = "Social",
+		description = "Win 10 arm wrestling matches.", condition = { type = "stat", stat = "armWins", min = 10 } },
 	{ id = "NoDaysOff", name = "No Days Off", rarity = "Secret", category = "Secret",
 		description = "Do 500 reps in one visit.", condition = { type = "stat", stat = "sessionReps", min = 500 } },
 }
