@@ -28,6 +28,7 @@ function DataTemplate.new()
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
 		shakes = 0, -- Energy Shakes in the bag
 		daily = { lastDay = 0, streak = 0, best = 0 }, -- daily streak (Config.Economy)
+		seasons = {}, -- seasonId -> reps done during that event (Config.Seasons)
 		crew = { id = nil }, -- crew id (records live in the "Crews" DataStore, see CrewService)
 		receipts = {}, -- developer product purchase ids already granted (MonetizationService)
 		legends = { met = {}, active = nil }, -- met: legendId -> true; active: { id, progress, goal } (Config.Legends)

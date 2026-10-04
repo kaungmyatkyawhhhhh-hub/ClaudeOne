@@ -15,6 +15,7 @@ local QuestService = require(script.Parent.QuestService)
 local BoostService = require(script.Parent.BoostService)
 local SocialService = require(script.Parent.SocialService)
 local LegendService = require(script.Parent.LegendService)
+local SeasonService = require(script.Parent.SeasonService)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme) -- bumper plate colors
 
 -- Bars sit loaded when nobody is using them (a mix, so the gym shows every bumper color).
@@ -207,6 +208,7 @@ local function lift(player)
 	QuestService.OnRep(player, machine.id)
 	SocialService.OnRep(player, machine.id)
 	LegendService.OnRep(player, machine.id)
+	SeasonService.OnRep(player)
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
 	Remotes.RepResult:FireClient(player, { levels = levels, maxed = maxed, coins = coins })

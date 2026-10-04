@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
+local Seasons = require(Shared.Config.Seasons)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
@@ -92,6 +93,10 @@ task.spawn(function()
 	started = true
 	refreshPill()
 	task.wait(3.5)
+	local season = Seasons.ById[ReplicatedStorage:GetAttribute("Season") or ""]
+	if season then
+		Notify.Show(season.name .. " is on: +" .. math.floor((season.coins - 1) * 100 + 0.5) .. "% coins, and " .. season.title.reps .. " reps earn the " .. season.title.name .. " title.")
+	end
 	local welcome = data.welcome or {}
 	if (welcome.streakCoins or 0) > 0 then
 		local streak = data.daily and data.daily.streak or 1

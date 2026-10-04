@@ -9,6 +9,7 @@
 --   overall:   overall genetics grade == grade
 --   maxedGrade: a group with this genetics grade has reached the level cap
 --   legend:    finished legend `id`'s challenge (Config.Legends adds these automatically)
+--   season:    `min` reps during seasonal event `id` (Config.Seasons adds these automatically)
 --   never:     not obtainable yet (shows as ??? in the book)
 -- badgeId: optional Roblox badge awarded with the title (create the badge on the website, paste the id).
 local Titles = {}
@@ -71,6 +72,16 @@ for _, legend in ipairs(Legends.List) do
 	})
 end
 
+-- One title per seasonal event (Config.Seasons), earned by lifting during that event.
+local Seasons = require(script.Parent.Seasons)
+for _, season in ipairs(Seasons.List) do
+	table.insert(Titles.List, {
+		id = Seasons.TitleId(season.id), name = season.title.name, rarity = "Epic", category = "Seasonal",
+		description = "Do " .. season.title.reps .. " reps during " .. season.name .. ".",
+		condition = { type = "season", id = season.id, min = season.title.reps },
+	})
+end
+
 Titles.ById = {}
 for _, title in ipairs(Titles.List) do
 	Titles.ById[title.id] = title
@@ -111,6 +122,8 @@ function Titles.Check(title, ctx)
 		return c.type == "allGroups" or (high - low) <= high * c.spread
 	elseif c.type == "overall" then
 		return data.genetics.overall == c.grade
+	elseif c.type == "season" then
+		return data.seasons ~= nil and (data.seasons[c.id] or 0) >= c.min
 	elseif c.type == "legend" then
 		return data.legends ~= nil and data.legends.met[c.id] == true
 	elseif c.type == "maxedGrade" then

@@ -27,6 +27,29 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Seasonal events (2026-10-05) ✅ (Halloween starts Oct 15)
+
+**Built** (`SeasonService`, dates in `Config/Seasons`)
+- **Halloween Gym** (Oct 15 - Nov 2), **Winter Lifts** (Dec 10 - Jan 6), **Summer Shred** (Jun 15 - Aug 31),
+  UTC dates, every year.
+- While one runs: simple decorations built from parts in the starter gym (Halloween: glowing pumpkins on the front
+  desk, shake machine, by the door and the mirror; Winter: little trees with a glowing star on snow; Summer: beach
+  balls and towels), **+25% coins** for everyone, and a corner note after Play.
+- **Seasonal titles** (Epic): Pumpkin Spice Swole, Snow Plow, Beach Ready, for 200 reps during that event.
+
+**How to test**
+- Studio: Workspace → Attributes → **+** → `ForceSeason`, type **string**, value `Halloween` (or `Winter` /
+  `Summer`) → Play → decorations + note; 200 reps → title. Delete the attribute afterwards (Studio only anyway).
+
+**Assumptions**
+- The brief's beach gym, posing stage and winter sled pulls need new areas/activities; for now each season is
+  decor + bonus + title. A sled pull can become a seasonal machine later.
+
+**Not verified**
+- No playtest. Lune tests cover the date windows (incl. Winter wrapping over New Year) and the titles.
+
+---
+
 ## Crews (2026-10-05) ✅ (needs a 2-player playtest)
 
 **Built** (`CrewService`, `CrewClient`, limits in `Config/Social` → `Crew`)

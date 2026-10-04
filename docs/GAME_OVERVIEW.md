@@ -41,6 +41,7 @@ for where everything sits in Studio.
 | `Legends` | legend NPCs, their challenges and titles, visit timing |
 | `ShowOff` | leaderboard wall, statue, emotes, membership tiers |
 | `Monetization` | gamepass / product ids (nil = off) and their effects |
+| `Seasons` | seasonal event dates, coin bonus, titles |
 
 ## Code structure
 **Server** (`ServerScriptService`)
@@ -64,6 +65,7 @@ for where everything sits in Studio.
 - `Server/SocialService`: spotting and the workout-together bonus.
 - `Server/LegendService`: legend visits, challenges and rewards.
 - `Server/ProGymService`: builds the pro gym room, its 11 machines and the doors.
+- `Server/SeasonService`: seasonal decorations, bonus and rep counting.
 - `Server/CrewService`: crews (create, invite, join, leave, tags, top crews; creates the `Crew` remote).
 - `Server/MonetizationService`: pass ownership + effects, product receipts, server boost.
 - `Server/ShowOffService`: leaderboard wall, statue of the strongest player, emotes and high fives (creates the `Emote` remote).
