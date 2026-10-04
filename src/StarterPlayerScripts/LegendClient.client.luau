@@ -25,7 +25,7 @@ local panel = Theme.Panel({
 	Theme.Pad("M"),
 	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
-RightColumn.Add(panel, 3)
+RightColumn.Add(panel, 3, true) -- hidden while training
 local header = Theme.Text({ LayoutOrder = 1, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 local text = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 local bar = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = panel }, { Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Left) })

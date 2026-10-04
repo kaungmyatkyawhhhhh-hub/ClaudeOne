@@ -55,6 +55,15 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Right column: clean HUD while training (2026-10-05) ✅
+
+- The quest and legend trackers now hide while you're on a machine (the brief's "clean HUD while training";
+  it also keeps them clear of the machine panel on a 667x375 phone). Shake button, Auto Lift and the rush hour /
+  server boost pills stay, since they matter mid-set. Quest-done notes still pop in the corner.
+- The column sits a little above the middle of the screen.
+
+---
+
 ## Seasonal events (2026-10-05) ✅ (Halloween starts Oct 15)
 
 **Built** (`SeasonService`, dates in `Config/Seasons`)
