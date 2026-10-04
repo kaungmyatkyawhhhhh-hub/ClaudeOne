@@ -1,0 +1,288 @@
+# GYM ARC — Roblox Gym Game (project brief)
+
+Read this first. It is the agreed design from planning. Build exactly this; ask before adding features.
+Working title: GYM ARC (tagline: "Everyone starts tiny.").
+
+## Working style
+- Don't stop to ask me questions unless you're truly blocked.
+- If something is unclear, make the best choice based on this file and keep going.
+- At the end of each step, list any assumptions you made so I can review them.
+- Finish the whole step before stopping, then tell me exactly how to test it.
+- One build step at a time. Don't start the next step until I say the current one works.
+
+## Audience and style rules
+- Players are mostly kids, many on mobile. Keep systems simple, big buttons, one-tap machines.
+- Use REAL muscle and exercise names, but keep mechanics simple (plain level stats, no percentages shown).
+- Must feel PREMIUM, not slop and not "AI-looking" (see UI design system below).
+- No free toolbox models (backdoor risk + mismatched look).
+- No big pop-ups. Notifications are small, in a corner, and fade out.
+- No real people's names/likeness (no influencers, no lookalike/off-brand names). Original characters only.
+- No dieting, calories or body-weight mechanics.
+- CUT features (do not add): form-timing minigame, personal-record popups, power outage event, pets, space gyms.
+
+## Technical rules
+- Server-authoritative: all gains, coins, purchases validated on the server. Client only sends intent via RemoteEvents.
+- Save all player data with DataStoreService (one table per player), with retries and session handling.
+- Use a menu screen to cover data loading time.
+- Modular code: shared config ModuleScripts for muscles, machines, titles, genetics, so adding content = adding a table entry.
+
+## UI design system: "gym materials" (ALL UI must follow this)
+- Build a shared Theme ModuleScript. Every UI reads from it. No hardcoded colors/fonts anywhere else.
+- Materials: panels look like black rubber mats (#1A1A1A, screen backgrounds #141414) with thick
+  steel-gray borders (#2E2E2E, 3px). No glossy effects or colorful gradients.
+- Depth (all 2D panels, buttons and tapes, via Theme.AddDepth / Theme.Panel): a soft dark drop shadow under
+  the bottom edge (stacked faint strokes, none along the top), a subtle 1px chalk highlight on the inner top
+  edge (on chalk buttons a faint dark shade along the bottom), the steel border slightly lighter on top, and
+  faint rubber flecks on mat panels. Built only from frames and strokes (no images) so it stays crisp.
+- Corners: medium rounded. Panels 12px, buttons 8px, bar segments 3px, plate discs and icons fully round,
+  tape strips 2px (keep them sharp on purpose).
+- Chalk white #F4F1EA for main text and fills (never pure white). Muted text #8F8A80.
+- Fonts: Oswald for headings, numbers and buttons (headings in ALL CAPS).
+  Permanent Marker only for "tape labels" (titles, coach notes, small jokes). No other fonts.
+- Tape labels: chalk-white strip, black text, rotated 1.5-3 degrees. Use for callouts and notes.
+- Progress bars are chunky segmented blocks (like stacked plates), not thin smooth bars.
+- Grades and rarity use real bumper plate colors, shown as plate discs (circle with darker rim):
+  D/common white #F4F1EA, C/uncommon green #2E9E4F, B/rare yellow #E8C21C (dark text),
+  A/epic blue #1F5FBF, S/legendary red #D7262E.
+- Red #D7262E also marks "needs work" notes (marker font).
+- Main buttons: chalk-white block with black Oswald text and a thick border, min 44px for mobile.
+  Secondary buttons (like EXIT) are outline style. Press = shrink to 0.95.
+
+## Crisp text (no blur, whole game)
+- Minimum text size 14px. Whole-number TextSize only (Theme text sizes); no plain TextScaled in screen UI.
+  (Only world-space UI may scale text: BillboardGuis sized in studs and SurfaceGuis on signs/posters.)
+- Never use UIScale to scale whole screens (a press-shrink on a single button is fine).
+- Don't rotate containers that hold small (14px) text. Rotated tape labels need 18px+ text.
+- Don't fade screens with CanvasGroups (they rasterize and blur text). Fade by tweening each element's
+  transparency (Theme.Fade).
+
+## Side menu buttons (left middle)
+- 64x72, 12px corners, #1A1A1A at ~15% transparency, thin 1.5px #2E2E2E border. No thick white outlines.
+- Chalk-white line icon (same style for all) above a small Oswald label: Stats = flexing figure,
+  Titles = trophy, Genetics = DNA strand, Bag = gym bag, Crew = two people. No emojis.
+- Active: the open menu's button turns chalk white (#F4F1EA) with a dark icon and label.
+- Small red (#D7262E) dot top-right when something is new; clears when opened.
+- Press = shrink to 0.95. Stacked vertically on the left middle, 8px gaps.
+- Only show a button once its feature exists (Bag and Crew come later).
+
+## Overhead title
+- BillboardGui sized in studs (scales with distance), just above the head and the player's name, MaxDistance ~60.
+- No tape strip or box: Oswald ALL CAPS with a thin dark text stroke and a tiny plate disc in front.
+- Text color = rarity color (common #F4F1EA, uncommon #2E9E4F, rare #E8C21C, epic #1F5FBF, legendary #D7262E).
+  Legendary titles get a subtle slow shine every few seconds.
+- The local player's own title is smaller and ~40% transparent so it never blocks their view.
+- Tape-label style only inside menus (e.g. the title book).
+
+## Machine HUD (shown while on a machine)
+- Machine name on a chalk-white tape strip above the panel, rotated about -2 degrees.
+- Weight selector: chalk-white +/- buttons, big Oswald weight number, "LB · TIER N" under it.
+- Barbell graphic: plates use the bumper plate color for the current weight tier.
+- Muscles this machine trains, in small muted text under the barbell.
+- Stamina: chunky segmented chalk-white bar; yellow #E8C21C under 40%, red #D7262E under 15%.
+- Rep counter for the current set ("REPS ×12").
+- "EXIT" outline button instead of an X. Coin icon = simple chalk-outline plate icon.
+- Coach note: small Permanent Marker line under the panel, slightly rotated, based on the situation
+  (low stamina, weight too light, first set, etc). 15+ short, original, funny lines. No famous quotes or
+  real people's catchphrases. Changes at most every few sets, never every rep.
+- Panel slides up when getting on a machine; stamina segments tween.
+- Spacing scale 4/8/12/16/24 using UIPadding and UIListLayout/UIGridLayout. Never position by eye.
+- Sizing: Scale-based with UIAspectRatioConstraint/UISizeConstraint; UITextSizeConstraint instead of
+  plain TextScaled. Respect top bar and mobile safe areas.
+- Motion: TweenService 0.2-0.3s (Quad Out) for menus; nothing pops in instantly.
+- No emojis. Icons are simple white line icons only.
+- Clean HUD while training: stamina bar, stats button, a few small icons. Everything else lives in menus.
+- Test every screen in Studio's Device Emulator (phone, tablet, PC).
+
+## Game feel (lifting must feel satisfying)
+- Instant feedback: play the rep animation and effects on the client immediately on tap. The server still validates and applies gains.
+- Weighty motion: lowering ~0.6s with ease-in-out, pressing ~0.35s with ease-out, 0.1s pause at lockout.
+  Heavier tiers are slightly slower. Under 40% stamina, add arm shake and slow the press.
+- The bar is attached to the hands and moves with the arms. Proper elbow bend using the R15 joints.
+- Sounds: plate clank at lockout with random pitch (±5%), deeper for higher tiers; soft tick on rep count;
+  a soft, short breath exhale at lockout only on heavy tiers or low stamina, never every rep.
+  No grunts on any machine.
+- Gains: BillboardGui "+2 MID CHEST" at the muscle in 3D, pops in with a Back-out bounce, floats up and fades.
+  Secondary muscles smaller and staggered by 0.1s. No "+N" numbers in the corner of the panel.
+- Pump: the trained body part scales up slightly each rep with a small bounce, then slowly settles over time.
+- Camera: tiny FOV punch on lockout for heavy tiers only.
+- HUD: rep number bounces on increase, the drained stamina segment flashes, barbell plates jiggle on heavy reps.
+- Every 10 reps: "set complete" beat with a chime, chalk puff particles and a slightly bigger gain burst. No pop-up.
+- Chalk puff from the hands when getting on a machine; sweat drop particles under 25% stamina.
+- The machine panel stays compact and low so it never covers the lift.
+
+## 1. Muscles (18, in 6 groups)
+Each sub-muscle has its own level. Group level = average of its sub-muscles.
+- Chest: Upper Chest, Mid Chest
+- Shoulders: Front Delts, Side Delts, Rear Delts
+- Back: Lats, Traps, Rhomboids, Lower Back
+- Arms: Biceps, Triceps, Forearms
+- Legs: Quads, Hamstrings, Glutes, Calves
+- Core: Abs, Obliques
+
+## 2. Machines (main muscle 100% + secondaries at ~30-60%)
+Starter gym: Flat Bench (Mid Chest; Front Delts, Triceps), Incline Bench (Upper Chest; Front Delts, Triceps),
+Squat Rack (Quads; Glutes, Lower Back), Deadlift (Lower Back; Hamstrings, Glutes, Traps, Forearms),
+Overhead Press (Front Delts; Side Delts, Triceps), Pull-Up Bar (Lats; Biceps, Rear Delts),
+Barbell Row (Rhomboids; Lats, Rear Delts, Biceps), Crunch Bench (Abs).
+Pro gym (unlocks at Growth Spurt 2): Dips (Mid Chest; Triceps, Front Delts), Lateral Raise (Side Delts),
+Reverse Fly (Rear Delts; Rhomboids), Shrugs (Traps; Forearms), Leg Curl (Hamstrings), Hip Thrust (Glutes; Hamstrings),
+Calf Raise (Calves), Bicep Curl (Biceps; Forearms), Tricep Pushdown (Triceps), Hanging Leg Raise (Abs; Forearms),
+Cable Woodchop (Obliques; Abs).
+Players only see muscle names on machines, never percentages.
+Each machine has weight tiers (empty bar → max) unlocked by muscle level; plates visibly stack.
+
+## 3. Gains formula
+gains per rep = machine weight tier × genetics grade × frame/body bonus × Growth Spurt bonus × shake/server boost × diminishing factor
+- Diminishing: higher muscle level = slower growth (weak muscles catch up fastest).
+- Balanced bonus: small passive bonus if all 6 groups are close together.
+- Muscle level cap per Growth Spurt stage ("MAXED" glow when reached).
+- Cap total stacked multipliers (around 5x max).
+
+## 4. Stamina
+Each rep uses stamina. Refills fast on its own; faster at recovery stations (stretch mat, foam roller, sauna);
+instantly with an Energy Shake. Petting the gym cat = tiny refill.
+
+## 5. Energy Shakes
+Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. Flavors are cosmetic only.
+
+## 6. Genetics (rolled on first join)
+- Each of 6 groups gets a grade: D 0.75x (15%), C 0.9x (25%), B 1.0x (30%), A 1.2x (20%), S 1.5x (10%).
+- Frame: Narrow (+10% Arms, 25%), Average (+5% all, 35%), Wide (+10% Back & Legs, 25%), V-Taper (+10% Shoulders & Lats, 15%).
+- Body type: Lean (abs/detail show earlier, 33%), Balanced (+5% all, 34%), Stocky (abs later, +15% Legs/Back/Traps, 33%).
+- Overall grade D-S shown on player card. One free reroll at start; +1 DNA Token per Growth Spurt.
+- Reroll changes everything at once. Odds must be reachable on the reroll screen ("VIEW ODDS" panel).
+- Opened from the Genetics side menu button (and automatically on first join). No panel behind it: the world
+  is blurred (DepthOfField) and slightly dimmed; movement is frozen while it's open. Content stays clear of the
+  side menu.
+- Layout: tape label "YOUR GENETICS" top left, DNA tokens top right. The overall grade is the hero: a big 3D
+  bumper plate on the left with "OVERALL" and a short Permanent Marker reaction under it
+  (S "genetic freak?!", A "blessed!", B "solid start", C "grind time", D "hard gainer... respect").
+- The six groups are real 3D bumper plates on a 3D barbell (ViewportFrame, chrome bar, warm light from above,
+  3/4 camera angle). Plates are in the plate colors with a darker rim; better grades have a bigger diameter
+  (S biggest, D smallest). The grade letter sits on each plate's front edge (2D text over the 3D plate, because
+  SurfaceGuis don't render in ViewportFrames). Oswald group name + multiplier under each plate.
+  Frame and body type are two chalk tape labels (opposite slight rotations) with their bonus beside them.
+  Small underlined "VIEW ODDS" button opens a clean odds panel. REROLL outline, KEEP solid chalk, 8px corners.
+  When no reroll is available, REROLL turns into a solid gray block reading "NO DNA TOKENS" (not tappable).
+- Reveal: the empty bar is there; each plate slides onto the sleeve and slams against the last one, left to right
+  (~0.15s apart), with a clank (pitch by grade) and a small camera shake; S plates puff chalk. After a pause the
+  big overall plate drops in from above with a deep thud and a bigger shake, then the marker reaction fades in.
+  On reroll the plates slide off the bar (outermost first) and the hero lifts out, then the new set slams on.
+
+## 7. Growth Spurts (rebirth system — never call it "sacrifice")
+Players start short (~4'0"). When all 6 groups hit the goal, Growth Spurt: muscles reset to 0, character gets taller,
+permanent gains bonus. Example: 1 → 4'6" lvl 50 1.25x; 2 → 5'0" lvl 100 1.5x; 3 → 5'6" lvl 175 1.75x;
+4 → 6'0" lvl 275 2x; 5 → 6'6" lvl 400 2.5x. Height caps ~7'0"; later spurts still give bonuses.
+First Growth Spurt should be reachable in ~15-20 minutes.
+
+## 8. Stats: live overlay
+- A live overlay over normal play: the player keeps moving and using the camera. No camera takeover, no
+  movement freeze, no blur or dim.
+- All 6 group labels appear together (one 0.2s fade on open/close) and stay visible. Never hide labels based on
+  facing direction.
+- World-space labels: each group label is a BillboardGui floating next to its body part, sized in studs (with a
+  pixel floor so phones stay readable). Positioned every frame in camera space: Shoulders, Arms, Core always to
+  the camera's LEFT of the body; Chest, Back, Legs always to the RIGHT; a small lift above their anchor.
+  Each side is stacked top to bottom with a minimum gap so labels never overlap or cross, kept below the goal
+  panel and above the bottom edge of the screen (the stack slides up if it would run off the bottom).
+- Line anchors: arm groups use whichever arm is on the left of the screen, Legs whichever leg is on the right;
+  others anchor to the torso. Short thin chalk elbow lines run from the label to a small dot on the body.
+  Label and line positions lerp smoothly so animations don't cause jitter.
+- Label style: no box. Oswald group name with a small bumper-plate grade disc (disc on the body side), the level
+  number larger underneath, thin dark text stroke. "Needs work" is small red Permanent Marker text under the
+  weakest group only, and only when there's no tie.
+- Labels are not AlwaysOnTop, so ProximityPrompts always draw over them; a label that would sit on a shown prompt
+  fades out until the prompt hides. Labels are drawn part of the way toward the camera (scaled to look identical)
+  and pulled in front of any equipment or wall between them and the camera, so gym props never hide them.
+- Numbers update live while open (including while lifting).
+- Tapping a group label expands its sub-muscle labels around that body part (smaller, each with its own line);
+  tapping again collapses. One group open at a time.
+- Only update while open; must run smoothly on phones.
+- The Growth Spurt goal panel lives in this overlay (top center). Genetics is its own side menu button.
+
+## 9. Titles
+Kept forever, one equipped above head, title book shows locked ones as "???" with rarity colors.
+Never purchasable. Biggest ones linked to Roblox badges. Categories: physique patterns (Aesthetics God,
+Boulder Shoulders, Skipped Leg Day, Chicken Legs, Greek Statue, etc.), activity (Gym Rat, Cardio King),
+Growth Spurt (Late Bloomer, Skyscraper), genetics (Genetic Freak, Hard Gainer, Defied Genetics),
+social (Spotter), trend slang (Lock In, Glow Up), legend physiques, and secret titles.
+Conditions compare muscle groups (ratios) with a minimum level.
+
+## 10. Legend NPCs (original characters only)
+Spawn every 20-30 min for 3 min. One-time quest + reward, "Legends Met" list, matching physique titles.
+Examples: Chad Gainsworth, Brody Pumpkins, Tank McFlex, Kyle Swole, Ricky Reps, Big Beefington, Tiny Tim Gains, Lance Lats.
+
+## 11. Economy and retention
+One currency (coins): from reps, quests, re-racking weights, arm wrestling, daily rewards.
+Spent on shakes, weight unlocks, cosmetics, skateboard upgrades, DNA Tokens.
+Offline gains (cap ~8h). Daily streak (missing a day only drops a few days back; DNA Token every 7th day).
+
+## 12. Quests and events
+Coach NPC quests, Muscle of the Day (2x one group, shown on a board), rush hour every 30 min,
+seasonal events (summer beach, Halloween gym, winter sled pulls).
+
+## 13. Social and showing off
+Arm wrestling (Biceps, Forearms, Front Delts + tap speed), spotting (bench/squat), workout-together bonus,
+crews (up to 8, tags, crew leaderboard), emotes (flex poses, high five, shake chug), statue of the strongest player,
+wall leaderboards per muscle group (crown for #1), membership card (Bronze→Diamond), progress mirror,
+shareable before/after snapshot.
+
+## 14. Visuals and feel
+Pump effect (trained muscle temporarily bigger), body part scaling per group, veins/abs/delt detail at high levels,
+trendy gym fits, skateboard, area music, satisfying weight sounds. Gym cat, NPC gym-goers, re-racking plates.
+Pro gym lighting: dark walls/floor, Future lighting, spotlight pools over machines, neon LED strips, light bloom/haze.
+Starter gym: warm, old-school, brick walls.
+
+## Starter gym layout (built)
+- Size: 56 x 44 studs, ceiling 13 (low, dark, exposed pipes/ducts/beams). Door in the middle of the front wall.
+- Floor: black rubber tiles everywhere; lifting platforms (wood center, rubber sides) under the squat rack,
+  deadlift and barbell row.
+- Zones, with a clear center aisle from the door to the bench row:
+  - Entrance: front desk (right of the door) with towels, shake machine (left of the door), water fountain,
+    Muscle of the Day chalkboard next to the desk, cat bed for the gym cat by the desk.
+  - Rack area along the left wall, lifters facing into the room: Squat Rack, Overhead Press, Deadlift,
+    Barbell Row. Wall plate racks between them, chalk bowl in front.
+  - Bench row facing the full mirror wall (back wall): Flat Bench, Incline Bench, Crunch Bench.
+    Neon "GYM ARC" sign above the mirror.
+  - Pull-up/dip corner (back right): Pull-Up Bar + dip station.
+  - Dumbbell rack along the right wall; stretching area (mats, foam rollers, kettlebells) in the right middle.
+- Walls: brick, original text-only motivational posters, hooks with belts and jump ropes, plates leaning
+  against walls, small high windows with soft light.
+- Lighting: Future lighting, warm hanging industrial pendants over each station with shadows between them,
+  window light, the neon sign as an accent, subtle Atmosphere haze, light bloom, warm ColorCorrection.
+- Moody, not dark: warm Ambient/OutdoorAmbient raised a little, slightly higher ExposureCompensation, no
+  pitch-black areas. Floor is dark charcoal rubber (~#2B2B2B) so light pools show. Pendants warm (~#FFC98A) with
+  wide, soft pools spilling onto the floor; soft fill lights along walkways. No harsh white panels.
+- Palette: brick, charcoal/black, chalk white, warm light, one neon accent (the red sign). Bumper plates keep
+  their colors because they mean something. Plates live on plate trees and racks, never scattered on the floor.
+- Windows are frosted high basement windows with soft light (never show the empty baseplate outside).
+- Lamps never block the neon sign; keep the sign's reflection on the mirror subtle.
+- Equipment: bumper plates in the tier colors on every bar (idle bars show a mix), chrome bars, J-hooks and
+  safeties on racks, padded benches with visible legs.
+- Props: chalk bowl, water fountain, towels, kettlebells, fan, speakers, trash cans, gym bags, cat bed.
+- Performance: whole gym ~340 parts, simple shapes, small props don't collide or cast shadows.
+
+## 15. World, menu, onboarding
+Town hub: starter gym, pro gym, beach gym + posing stage, skate park, smoothie bar, clothing store.
+Menu: gym camera pan, player character, Play, Titles, Wardrobe, Crew, Settings, offline gains/streak/Muscle of the Day info.
+NO shop on menu. New players get a simplified menu.
+First 5 minutes: genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack
+→ stats (inspect mode) → first quest → Growth Spurt goal shown. Taught with glowing paths and one-line coach messages.
+No shop/gamepass prompts in the first 5 minutes.
+
+## 16. Monetization (fair, never forced)
+Gamepasses: 2x Gains, Auto Lift, Iron Lungs (bigger stamina), Fast Recovery, Shake Fridge, Gene Lock, VIP Gym.
+Dev products: DNA Tokens, shake packs, Server Boost (2x for whole server 30 min, buyer named on a board).
+Cosmetics, private servers. Everything paid is also earnable free. No fake urgency.
+
+## Build order
+1. Player data: 18 muscles, stamina, coins, genetics, height, titles, saving
+2. One reusable machine script (config table per machine)
+3. Theme module + stats inspect mode
+4. Pump effect + body scaling
+5. Growth Spurts
+6. Titles
+7. Genetics reveal/reroll screen
+8. Coach quests + Muscle of the Day
+9. Spotting + arm wrestling
+Launch small but polished (starter gym, training, genetics, Growth Spurts, titles, stats); add the rest as updates.

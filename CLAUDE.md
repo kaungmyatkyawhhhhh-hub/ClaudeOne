@@ -6,7 +6,16 @@
 - Cloud sessions **cannot** reach Roblox Studio: no playtesting, screenshots,
   or editing parts/UI built in Studio. Work only on code in `src/`, push it,
   and the owner pulls + syncs. Say clearly when something needs checking in Studio.
-- The game is **GYM ARC**. Read `docs/GAME_OVERVIEW.md` first, then the code.
+- The game is **GYM ARC**. The owner's design brief is `docs/DESIGN.md` (imported
+  below; it was the local CLAUDE.md, build exactly what it says, follow its
+  working style). Build history and open questions: `PROGRESS.md` (add an entry
+  for every step you finish, same format). Code map: `docs/GAME_OVERVIEW.md`.
+- **UI style is mid-change.** The brief's "gym materials" UI section (rubber mats,
+  Oswald, Permanent Marker) is being replaced by a **"clean minimal"** style
+  (dark see-through panels, thin light borders, Montserrat, white/gray text;
+  color only for plates, grades and rarity). The Studio `Theme` module already
+  uses clean minimal: treat `export/scripts/ReplicatedStorage/Shared/UI/Theme.luau`
+  as the source of truth for look, and use Theme helpers, never hardcoded styles.
 - `export/scripts/` is a read-only **snapshot** of the scripts that live in the
   Studio place (extracted from `export/GymArc.rbxlx`; map in `export/TREE.md`).
   Rojo does NOT sync it: editing those files changes nothing in Studio. When a
@@ -33,3 +42,5 @@
 - Server is authoritative: validate every RemoteEvent/RemoteFunction argument on the server.
 - Get services with `game:GetService(...)`.
 - Keep the owner's PROGRESS.md / task notes up to date if they add them.
+
+@docs/DESIGN.md
