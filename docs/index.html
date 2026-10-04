@@ -295,18 +295,20 @@ const CATS=[
  {k:"vint",n:"Vintage",h:78,conds:[["Mint",1.1],["Good",.85],["Worn",.6]],items:[["WJ","Workwear Detroit Jacket",180],["GT","'93 Grunge Band Tee",240],["SD","'80s Selvedge Denim",110],["TK","Teddy Knit Sweater",340]]},
  {k:"cards",n:"Cards",h:325,conds:[["PSA 10",1.4],["PSA 8",.8],["Raw",.5]],items:[["EM","Electric Mouse Promo",90],["RK","'03 Rookie Card",450],["FD","Fire Dragon Holo",900],["HL","'86 Hoops Legend",3800]]},
  {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["SQ","Square Digital",110],["AD","Auto Diver",220],["HD","Heritage Diver",3200],["MC","Moon Chrono",5600]]},
- {k:"toys",n:"Toys",h:210,conds:[["Sealed",1.1],["Loose",.7]],items:[["MB","Monster Blind Box",70],["BF","Bear Figure 400%",260],["AT","Art Toy Companion",480]]}
+ {k:"toys",n:"Toys",h:210,conds:[["Sealed",1.1],["Loose",.7]],items:[["MB","Monster Blind Box",70],["BF","Bear Figure 400%",260],["AT","Art Toy Companion",480]]},
+ {k:"gym",n:"Gym",h:125,conds:[["New",1.1],["Like new",.9],["Used",.65]],items:[["PT","Protein Tub 5lb",70],["KB","Kettlebell Set",110],["BT","Lifting Belt",130],["DB","Adjustable Dumbbells",280],["RW","Rowing Machine",900],["SB","Smart Spin Bike",1400],["PR","Power Rack",2200]]}
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
 const POOL=CATS.flatMap(c=>c.items.map(i=>({cat:c.k,code:i[0],name:i[1],base:i[2]})));
-const ORDER=["kicks","vint","toys","tech","cards","watch"];
+const ORDER=["kicks","gym","vint","toys","tech","cards","watch"];
 const NEWS={
  kicks:[["A rapper wore them courtside","Surprise collab sold out in 3 minutes"],["The brand restocked everything","Fakes are flooding the market"]],
  tech:[["Stores are sold out nationwide","An unboxing went viral overnight"],["A new model was just announced","A retailer is dumping inventory"]],
  vint:[["'90s revival on every runway","A celebrity thrift haul went viral"],["Fast fashion copied the look","Thrift TikTok moved on"]],
  cards:[["A graded card just sold for a record","A streamer's box break went viral"],["A reprint was announced","The grading backlog cleared"]],
  watch:[["Dealer waitlists hit two years","The brand raised retail prices"],["The grey market is cooling off","Dealers are dumping stock"]],
- toys:[["A pop star posted her collection","Blind boxes sold out in minutes"],["The factory overproduced","The hype moved on"]]
+ toys:[["A pop star posted her collection","Blind boxes sold out in minutes"],["The factory overproduced","The hype moved on"]],
+ gym:[["New Year's resolutions just kicked in","A fitness influencer's home gym went viral"],["Everyone quit their resolutions","Gyms are running a huge sign-up promo"]]
 };
 const PERKS=[
  {k:"slots",t:"Storage unit",d:"+2 stash slots",cost:l=>150+l*220,max:4},
