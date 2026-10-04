@@ -36,6 +36,16 @@
   be created in Studio by the owner, or created from code at server start.
 - Keep `rokit.toml`'s Rojo version equal to the owner's Rojo Studio plugin (7.7.1).
 
+## Checks (run before every push)
+- `lune run tests/run_all` (logic tests, see `tests/README.md`).
+- Compile every script: `luau-compile --null <file>` (Luau release `luau-ubuntu.zip`).
+- Roblox type analysis: `rojo sourcemap default.project.json -o sourcemap.json`, then
+  `luau-lsp analyze --platform roblox --sourcemap sourcemap.json --defs @roblox=globalTypes.None.d.luau src`
+  (luau-lsp release + `scripts/globalTypes.None.d.luau` from its repo). Only lint warnings are expected.
+- `rojo build . -o test.rbxl` must succeed.
+- New server services go in `Main.server.luau`'s OPTIONAL_SERVICES list (started in protected calls).
+- New remotes are created by the owning service at Start (Remotes is Studio-built and not synced).
+
 ## Conventions
 - Luau, `.luau` extension. Use `--!strict` where practical.
 - Server is authoritative: validate every RemoteEvent/RemoteFunction argument on the server.
