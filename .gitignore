@@ -1,0 +1,13 @@
+# Place files built or saved locally (Studio keeps the real place)
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+*.rbxm
+*.rbxmx
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+sourcemap.json
