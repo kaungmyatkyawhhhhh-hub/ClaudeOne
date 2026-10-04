@@ -28,6 +28,43 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Showing off: leaderboards, statue, emotes, membership card (2026-10-05) ✅ (needs your playtest)
+
+**Built** (`ShowOffService`, `EmoteClient`, numbers in `Config/ShowOff`)
+- **Leaderboard wall:** a dark board on the front wall above the front desk, "Strongest lifters", one column per
+  muscle group with the top 5 across all servers (OrderedDataStores), a small gold crown on each #1. Ranked by
+  Growth Spurt first, then group level ("Lv 23 · GS2"). Updates every 2 minutes (and when you leave).
+- **Statue of the strongest player:** a marble copy of the #1 overall player's real avatar (textures stripped,
+  scaled 1.35x) on a dark pedestal in the entrance hall (-7, 8.5), with a plaque "Strongest lifter: Name".
+  Rebuilt only when the #1 changes.
+- **Emotes:** new **Emotes** side button (flexing-figure icon) → Double biceps, Lat spread, High five. Everyone
+  sees them (each client poses that character, same joint conventions as the machine lifts). Two players
+  high-fiving within 2.5 s and 7 studs → "High five with X!". Drinking a shake plays a **shake chug** pose.
+  Not while on a machine or seated.
+- **Membership card:** returning players see a player card bottom-left on the menu: name, **Bronze → Silver
+  (500 reps) → Gold (2,500) → Platinum (10,000) → Diamond (30,000)** with the tier color as a thin top line,
+  overall genetics grade disc (the brief's "player card"), height, reps, titles, legends met, and the next tier.
+
+**How to test**
+1. `git pull`, Play. Menu: player card bottom-left.
+2. After ~10 s in game: the board above the front desk fills with your levels (DataStores must be enabled:
+   Game Settings → Security → Enable Studio Access to API Services, already on for saving).
+3. Entrance hall, left of spawn: your statue appears after the first board update if you're #1.
+4. Emotes button → try each; drink a shake off-machine to see the chug. High five needs 2 players.
+
+**Assumptions**
+- Leaderboard ranks group levels including Calves/Obliques (the real average), same as the Stats labels.
+- Emote poses are code-driven (no uploaded animations); angles are first guesses from the measured lift poses,
+  so they may need small tweaks after you see them.
+- Membership tiers are by lifetime reps (simple, always going up).
+- Not built: progress mirror and the shareable before/after snapshot (need a camera capture feature Roblox
+  doesn't offer to scripts in a way that fits; left for later), crews (need cross-server groups + moderation).
+
+**Not verified**
+- No playtest. Compile, type analysis, Rojo build and Lune tests (score ordering, tiers, emotes) pass.
+
+---
+
 ## Legend NPCs (2026-10-05) ✅ (needs your playtest)
 
 **Built** (`LegendService`, `LegendClient`, list in `Config/Legends`)

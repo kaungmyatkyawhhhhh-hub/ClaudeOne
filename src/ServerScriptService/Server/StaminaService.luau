@@ -9,6 +9,7 @@ local Stamina = require(ReplicatedStorage.Shared.Config.Stamina)
 local PlayerData = require(script.Parent.PlayerData)
 local BoostService = require(script.Parent.BoostService)
 local ActionService = require(script.Parent.ActionService)
+local ShowOffService = require(script.Parent.ShowOffService)
 
 local Remotes = ReplicatedStorage.Remotes
 
@@ -56,6 +57,7 @@ local function drink(player)
 	BoostService.AddShake(player)
 	local flavor = Stamina.Shake.Flavors[rng:NextInteger(1, #Stamina.Shake.Flavors)]
 	event(player, "ShakeDrunk", { flavor = flavor })
+	ShowOffService.PlayEmote(player, "Chug") -- everyone sees the chug (skipped while on a machine)
 end
 
 -- A free shake (tutorial gift, quest rewards use PlayerData.AddShakes directly).

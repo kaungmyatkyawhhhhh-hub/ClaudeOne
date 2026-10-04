@@ -203,6 +203,19 @@ function Icons.Timer(color)
 	return icon
 end
 
+-- Figure flexing with both arms up (emotes).
+function Icons.Pose(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Pose")
+	outline(icon, color, 0.2, 0.2, 0.5, 0.18, UDim.new(1, 0))
+	line(icon, color, 0.36, 0.5, 0.48, 90)
+	line(icon, color, 0.26, 0.3, 0.36, -40)
+	line(icon, color, 0.26, 0.7, 0.36, 40)
+	line(icon, color, 0.28, 0.42, 0.8, 70)
+	line(icon, color, 0.28, 0.58, 0.8, -70)
+	return icon
+end
+
 function Icons.Tint(icon, color)
 	for _, part in ipairs(icon:GetDescendants()) do
 		if part:IsA("UIStroke") then

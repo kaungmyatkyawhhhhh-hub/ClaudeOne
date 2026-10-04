@@ -16,6 +16,9 @@ UIBus.MenuOpen = true -- set first, before anything else loads, so other scripts
 local Onboarding = require(Shared.Config.Onboarding)
 local Muscles = require(Shared.Config.Muscles)
 local MuscleOfTheDay = require(Shared.Config.MuscleOfTheDay)
+local GrowthSpurts = require(Shared.Config.GrowthSpurts)
+local ShowOff = require(Shared.Config.ShowOff)
+local Legends = require(Shared.Config.Legends)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Audio = require(Shared.Audio)
@@ -78,6 +81,47 @@ end
 playLabel.Text = "Loading..."
 playLabel.TextColor3 = Colors.Muted
 playButton.Active = false
+
+------------------------------------------------------------------------
+-- Player card (returning players): membership tier, overall genetics grade, height and a few numbers
+------------------------------------------------------------------------
+local function buildCard(data)
+	local tier, nextTier = ShowOff.Tier(data.stats and data.stats.totalReps or 0)
+	local card = Theme.Panel({
+		Name = "PlayerCard",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, Spacing.XL * 2, 1, -Spacing.XL * 2),
+		Size = UDim2.fromOffset(280, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Parent = gui,
+	}, {
+		Theme.Pad("L"),
+		Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+	})
+	-- the tier color is a thin line along the top of the card
+	New("Frame", { Name = "TierLine", Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = tier.color, LayoutOrder = 0, Parent = card }, { Theme.Round("Segment") })
+	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = card })
+	Theme.Text({ Text = player.DisplayName, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -48, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+	Theme.Text({ Text = tier.id .. " member", Font = "Regular", TextSize = "Small", TextColor3 = tier.color, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -48, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+	local overall = data.genetics and data.genetics.overall
+	if overall and Theme.Grades[overall] then
+		local disc = Theme.PlateDisc(Theme.Grades[overall], { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(38, 38), Parent = top })
+		Theme.Text({ Text = overall, Font = "SemiBold", TextSize = "Body", TextColor3 = Theme.Grades[overall].Text, Size = UDim2.fromScale(1, 1), Parent = disc })
+	end
+	local metCount, titleCount = 0, 0
+	for _ in pairs(data.legends and data.legends.met or {}) do metCount += 1 end
+	for _ in pairs(data.titles and data.titles.owned or {}) do titleCount += 1 end
+	local lines = {
+		"Height " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts)) .. "  ·  Growth Spurt " .. data.growthSpurts,
+		(data.stats and data.stats.totalReps or 0) .. " reps  ·  " .. titleCount .. " titles  ·  " .. metCount .. "/" .. #Legends.List .. " legends",
+		nextTier and (nextTier.id .. " at " .. nextTier.reps .. " reps") or "Top tier",
+	}
+	for i, text in ipairs(lines) do
+		Theme.Text({ LayoutOrder = 1 + i, Text = text, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
+	end
+	Theme.Fade(card, true)
+	return card
+end
 
 ------------------------------------------------------------------------
 -- Freeze movement and hide the side menu while the menu is up
@@ -167,6 +211,8 @@ task.spawn(function()
 	local returning = (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done
 	titlesButton.Visible, settingsButton.Visible = returning, returning
 	if returning then
+		local okCard, err = pcall(buildCard, data)
+		if not okCard then warn("[MenuClient] player card: " .. tostring(err)) end
 		info.Visible = true
 		local streak = data.daily and data.daily.streak or 0
 		if streak > 0 then infoLine(1, "Day " .. streak .. " streak") end
@@ -218,6 +264,8 @@ local function play()
 
 	Theme.Tween(camera, { FieldOfView = baseFov }, CAMERA.ExitTime)
 	local tween = Theme.Fade(panel, false)
+	local card = gui:FindFirstChild("PlayerCard")
+	if card then Theme.Fade(card, false) end
 	if tween then
 		tween.Completed:Connect(function() gui.Enabled = false end)
 	end
