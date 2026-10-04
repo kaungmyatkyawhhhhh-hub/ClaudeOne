@@ -45,13 +45,23 @@
 > - Tell me what looks off (poses, positions, prices); most numbers are in the `Config` files.
 >
 > **Not built (need art, assets or new areas):** town hub, beach gym + posing stage, skate park/skateboard,
-> smoothie bar building, clothing store/wardrobe/trendy fits, veins/abs detail, NPC gym-goers walking around,
+> smoothie bar building, clothing store/wardrobe/trendy fits, veins/abs detail, gym-goers walking around,
 > progress mirror and before/after snapshot, area music (one area so far), winter sled pulls.
 
 All game code lives in this repo under `src/` and Rojo syncs it into the Studio place (GYM ARC,
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
 Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
 Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## NPC gym-goers (2026-10-05) ✅ (needs a look)
+
+- Three original regulars (no names shown) stand behind the utility benches in the free-weight zone with a
+  dumbbell in each hand (`GymGoerService`). Each client animates them (alternating curls, a double-biceps flex,
+  a short rest, out of sync with each other), so it costs no network.
+- `NpcService` gained `animated` (only the root anchored, joints can move) and `noLabel` options.
+- Not built: gym-goers walking around (needs pathfinding NPC movement; can come later).
 
 ---
 

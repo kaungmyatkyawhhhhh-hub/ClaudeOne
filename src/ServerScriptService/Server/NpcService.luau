@@ -52,7 +52,8 @@ local function fallbackModel(spec)
 end
 
 -- spec: { name, skin = hex, shirt = hex, pants = hex, scale = { height, width, depth, head } (optional),
---         prompt = { action, object, distance } (optional), tag = CollectionService tag (optional) }
+--         prompt = { action, object, distance } (optional), tag = CollectionService tag (optional),
+--         animated = true (only the root is anchored, so clients can pose the joints), noLabel = true (no name) }
 -- cframe: where the character stands (feet on the floor at cframe.Position, facing cframe.LookVector).
 function NpcService.Build(spec, cframe)
 	local model
@@ -87,7 +88,8 @@ function NpcService.Build(spec, cframe)
 	end
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then
-			part.Anchored = true
+			-- animated NPCs only anchor the root, so their joints can still move (clients pose them)
+			part.Anchored = not spec.animated or part.Name == "HumanoidRootPart"
 			part.CanCollide = part.Name == "HumanoidRootPart" or part.Name == "UpperTorso" or part.Name == "LowerTorso"
 		end
 	end
@@ -101,7 +103,7 @@ function NpcService.Build(spec, cframe)
 
 	-- name label: white Montserrat, sized in studs, readable over the world
 	local head = model:FindFirstChild("Head")
-	if head then
+	if head and not spec.noLabel then
 		local label = Instance.new("BillboardGui")
 		label.Name = "NameTag"
 		label.Size = UDim2.fromScale(5, 0.6)

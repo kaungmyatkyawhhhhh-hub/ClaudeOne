@@ -65,6 +65,7 @@ for where everything sits in Studio.
 - `Server/SocialService`: spotting and the workout-together bonus.
 - `Server/LegendService`: legend visits, challenges and rewards.
 - `Server/ProGymService`: builds the pro gym room, its 11 machines and the doors.
+- `Server/GymGoerService`: three animated NPC regulars in the free-weight zone (EmoteClient animates them).
 - `Server/SeasonService`: seasonal decorations, bonus and rep counting.
 - `Server/CrewService`: crews (create, invite, join, leave, tags, top crews; creates the `Crew` remote).
 - `Server/MonetizationService`: pass ownership + effects, product receipts, server boost.

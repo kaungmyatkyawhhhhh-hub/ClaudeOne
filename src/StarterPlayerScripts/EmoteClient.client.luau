@@ -103,6 +103,40 @@ RunService.Stepped:Connect(function()
 end)
 
 ------------------------------------------------------------------------
+-- NPC gym-goers (GymGoerService): a loop of alternating curls, a double-biceps flex, then a short rest
+------------------------------------------------------------------------
+local CollectionService = game:GetService("CollectionService")
+local GOER_CYCLE = { curl = 9, flex = 3, rest = 4 } -- seconds
+local CURL_PERIOD = 2.4
+
+local function goerPose(character, t)
+	local cycle = GOER_CYCLE.curl + GOER_CYCLE.flex + GOER_CYCLE.rest
+	local c = t % cycle
+	if c < GOER_CYCLE.curl then
+		local wave = (t % CURL_PERIOD) / CURL_PERIOD * math.pi * 2
+		frontArm(character, SIDES[1], rad(5), rad(10), rad(25 + 115 * (0.5 + 0.5 * math.sin(wave))))
+		frontArm(character, SIDES[2], rad(5), rad(10), rad(25 + 115 * (0.5 + 0.5 * math.sin(wave + math.pi))))
+	elseif c < GOER_CYCLE.curl + GOER_CYCLE.flex then
+		local into = c - GOER_CYCLE.curl
+		local w = math.min(1, into / EASE, (GOER_CYCLE.flex - into) / EASE)
+		POSES.DoubleBiceps(character, w * w * (3 - 2 * w))
+	else
+		frontArm(character, SIDES[1], rad(3), rad(8), rad(15))
+		frontArm(character, SIDES[2], rad(3), rad(8), rad(15))
+		setJoint(character, "Waist", CFrame.identity)
+	end
+end
+
+RunService.Stepped:Connect(function()
+	local now = os.clock()
+	for _, goer in ipairs(CollectionService:GetTagged("GymGoer")) do
+		if goer:IsDescendantOf(workspace) then
+			goerPose(goer, now + (goer:GetAttribute("Phase") or 0))
+		end
+	end
+end)
+
+------------------------------------------------------------------------
 -- Side button + panel
 ------------------------------------------------------------------------
 local menuButton = SideMenu.Add("Emotes", "Emotes", Icons.Pose, 4)
