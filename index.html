@@ -860,7 +860,7 @@ function openGym(half){
         else floatAt(e.currentTarget,"Clean lift","var(--up)")}
       else{$("gArt").classList.add("fail");SFX.nope();buzz([30,40,30]);floatAt(e.currentTarget,"Failed the lift","var(--down)")}
       dirty=true;updMini();
-      setTimeout(()=>{if(room!=="gym")return;G.busy=false;if(ok&&G.w>=S.pr&&G.w<S.pr+10)G.w=Math.min(S.pr+10,G.w+2.5);newZone();draw()},ok?650:550);
+      setTimeout(()=>{if(!G)return;G.busy=false;if(ok&&G.w>=S.pr&&G.w<S.pr+10)G.w=Math.min(S.pr+10,G.w+2.5);newZone();draw()},ok?650:550);
     };
   };draw();
 }
@@ -1323,7 +1323,7 @@ function loop(now){
         if(M)renderStash();
       }
       if(M)marketTick(dt,now);
-      if(room==="gym")gymTick(dt);
+      if(G)gymTick(dt);
       if(room==="arena")arenaTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
