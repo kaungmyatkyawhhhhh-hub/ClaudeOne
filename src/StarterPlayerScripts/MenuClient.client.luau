@@ -1,6 +1,7 @@
 -- MenuClient: the menu screen shown on join. It covers data loading, frames the player's character with a slow
--- camera drift (the character faces the camera, the gym shows through the doorway behind them), and holds Play (+ Titles and Settings for returning players; new players get a
--- simplified menu with Play only). Movement is frozen and the side menu is hidden until Play.
+-- camera drift (the character faces the camera, the gym shows through the doorway behind them), and holds Play
+-- (+ Titles, Settings and a few info lines for returning players: streak, offline coins, Muscle of the Day; new
+-- players get a simplified menu with Play only). Movement is frozen and the side menu is hidden until Play.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -13,6 +14,8 @@ local UIBus = require(Shared:WaitForChild("UI"):WaitForChild("UIBus"))
 UIBus.MenuOpen = true -- set first, before anything else loads, so other scripts wait for Play
 
 local Onboarding = require(Shared.Config.Onboarding)
+local Muscles = require(Shared.Config.Muscles)
+local MuscleOfTheDay = require(Shared.Config.MuscleOfTheDay)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Audio = require(Shared.Audio)
@@ -64,6 +67,13 @@ local playButton, playLabel = menuButton(4, "Primary", "Play")
 local titlesButton = menuButton(5, "Secondary", "Titles")
 local settingsButton = menuButton(6, "Secondary", "Settings")
 titlesButton.Visible, settingsButton.Visible = false, false -- shown for returning players once data loads
+
+-- info lines (returning players): streak, offline coins, Muscle of the Day
+local info = New("Frame", { LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Visible = false, Parent = panel },
+	{ Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top), New("UIPadding", { PaddingTop = UDim.new(0, Spacing.S) }) })
+local function infoLine(order, text)
+	return Theme.Text({ LayoutOrder = order, Text = text, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = info })
+end
 
 playLabel.Text = "Loading..."
 playLabel.TextColor3 = Colors.Muted
@@ -156,6 +166,31 @@ task.spawn(function()
 	local data = ClientData.Get()
 	local returning = (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done
 	titlesButton.Visible, settingsButton.Visible = returning, returning
+	if returning then
+		info.Visible = true
+		local streak = data.daily and data.daily.streak or 0
+		if streak > 0 then infoLine(1, "Day " .. streak .. " streak") end
+		infoLine(3, "Muscle of the Day: " .. Muscles.GroupById[MuscleOfTheDay.GroupId()].name .. " (" .. MuscleOfTheDay.Multiplier .. "x gains)")
+		-- the server pays streak/offline coins right after load; show them when they arrive
+		local shownOffline = false
+		local function offlineLine()
+			local coins = data.welcome and data.welcome.offlineCoins or 0
+			if coins > 0 and not shownOffline then
+				shownOffline = true
+				infoLine(2, "While you were away: +" .. coins .. " coins")
+			end
+		end
+		offlineLine()
+		ClientData.Changed:Connect(function(path)
+			if path[1] == "welcome" and UIBus.MenuOpen then offlineLine() end
+			if path[1] == "daily" and UIBus.MenuOpen then
+				for _, child in ipairs(info:GetChildren()) do
+					if child:IsA("TextLabel") and child.LayoutOrder == 1 then child:Destroy() end
+				end
+				infoLine(1, "Day " .. data.daily.streak .. " streak")
+			end
+		end)
+	end
 	playLabel.Text = "Play"
 	playLabel.TextColor3 = Colors.Text
 	playButton.Active = true

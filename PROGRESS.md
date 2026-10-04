@@ -28,6 +28,42 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Economy + retention: streak, offline coins, re-racking, DNA tokens, rush hour (2026-10-05) ✅ (needs your playtest)
+
+**Built** (`RetentionService`, numbers in `Config/Economy`, notes in `RetentionClient`)
+- **Daily streak:** paid automatically on the first join of each UTC day: 20 coins + 5 per streak day (counted
+  up to 30 days), and a **DNA token every 7th day**. Missing days only drops the streak 3 days per missed day
+  (never straight to zero, as the brief says).
+- **Offline coins:** 0.5 coins per minute away, capped at 8 hours (240 coins), nothing for breaks under 10 min.
+- **Menu info lines** for returning players (from the brief's menu list): "Day 5 streak", "While you were away:
+  +120 coins", "Muscle of the Day: Legs (2x gains)". Corner notes repeat them after Play.
+- **Re-racking:** up to 3 loose bumper plates lie on the floor near the benches/racks (a new one every 90 s).
+  Tap **Re-rack** for +5 coins; first player to grab it gets it.
+- **DNA tokens for coins:** the front desk gets a short-hold "Buy DNA token · 400 coins" prompt.
+- **Rush hour:** every 30 minutes on the clock (:00 and :30 UTC, same on every server) for 3 minutes: **2x
+  coins** per rep, a corner note, and a "Rush hour 2:41 · 2x coins" pill at the top of the right column.
+
+**How to test**
+1. `git pull`, Play. As a returning player the menu shows your streak line and Muscle of the Day.
+2. Look on the floor near the benches/racks for a loose colored plate → Re-rack → +5 coins.
+3. Front desk → hold "Buy DNA token" (needs 400 coins) → token count goes up on the Genetics screen.
+4. Rush hour: wait for :00 or :30 UTC (6:30 / 7:00 pm etc. in Yangon) or temporarily set
+   `Economy.RushHour.EveryMinutes = 2` in `Config/Economy` to see it quickly (then set it back to 30).
+5. Offline coins: leave, come back after 10+ minutes → menu line + corner note.
+
+**Assumptions**
+- "Offline gains" pays coins (not muscle XP): coins are the brief's one currency and XP offline would skip the
+  lifting loop.
+- Loose plates on the floor are a gameplay chore; the decor rule "plates never scattered" still holds for the
+  built gym. Spots are fixed in `Config/Economy` so they never land inside equipment.
+- Rush hour = 2x coins only (gains stay normal so the Growth Spurt pace doesn't change).
+- Prices are first guesses (DNA token 400 coins).
+
+**Not verified**
+- No playtest. Streak / offline / rush hour math is covered by Lune tests; compile, type analysis and Rojo build pass.
+
+---
+
 ## Energy Shakes, stretching mat, gym cat (2026-10-05) ✅ (needs your playtest)
 
 **Built**

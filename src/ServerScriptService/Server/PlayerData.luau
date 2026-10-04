@@ -407,6 +407,14 @@ function PlayerData.SetFlag(player, flag, value)
 	replicate(player, { "onboarding", flag }, value)
 end
 
+-- Replace one top-level table (e.g. "daily", "welcome") owned and validated by a service.
+function PlayerData.SetTable(player, key, value)
+	local data = PlayerData.Get(player)
+	if not data or type(value) ~= "table" then return end
+	data[key] = value
+	replicate(player, { key }, value)
+end
+
 -- Quest state is owned by QuestService (it validates everything); this only stores and replicates it.
 function PlayerData.SetQuests(player, quests)
 	local data = PlayerData.Get(player)
