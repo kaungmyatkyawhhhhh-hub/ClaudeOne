@@ -28,6 +28,38 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Sound overhaul + settings (2026-10-04) ✅ (needs a listen)
+
+**Already in place (checked, not rebuilt)**
+- `Config/Sounds`: every sound in one table (Roblox's licensed Pro Sound Effects / APM Music), random variants and
+  pitch spread, `Shared.Audio` with Gameplay / UI / Music SoundGroups, 3D falloff for machine sounds, clank deeper
+  for heavier tiers, plate knock on heavy reps, breath exhale only on heavy tiers / low stamina (never grunts),
+  rack rattle + floor thud, set-complete chime, Growth Spurt bell, looping background music.
+- Settings panel: Music and Effects sliders, applied live and saved with the player's data. The menu's Settings
+  button now opens it too.
+
+**Built (the moments that were silent)**
+- Muscle level up: a soft high ding (at most once every 1.5 s, since early levels come fast).
+- Muscle maxed: a short high bell.
+- New title: a bell with the corner note.
+- Heavier plates bought: a plate clank at the machine.
+- Out of stamina: one breath exhale per empty tank (not one per tap).
+- `basePitch` in `Config/Sounds` lets one clip make two different sounds; all new sounds reuse clips the game
+  already uses, so none of them can fail to load.
+
+**How to test**
+- `git pull`, Play, get on a machine: lift until a muscle levels (ding), lift until stamina is empty and keep
+  tapping (one exhale), buy the next weight tier (clank). Earn a title (bell). Move both Settings sliders to check
+  the new sounds follow the Effects volume.
+
+**Assumptions**
+- "Sound overhaul" was mostly done before; this step only filled the gaps. Area music (different music per area)
+  waits until there is more than one area.
+- No new sound ids were picked: I can't audition sounds from the cloud, so new moments reuse existing clips at a
+  different pitch. Swap ids in `Config/Sounds` if you find better ones.
+
+---
+
 ## Menu screen + first 5 minutes onboarding (2026-10-04) ✅ (needs your playtest)
 
 **Built**

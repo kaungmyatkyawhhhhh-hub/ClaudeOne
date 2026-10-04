@@ -3,6 +3,7 @@
 --   ids       one is picked at random each time (variety)
 --   volume    0-1 before the SoundGroup and the player's volume setting
 --   pitch     random pitch spread, 0.05 = +-5% (so repeats never sound robotic)
+--   basePitch optional fixed pitch (1 = normal), so one clip can make two different sounds
 --   group     "Gameplay" | "UI" | "Music" (SoundGroups with balanced volumes; see Shared.Audio)
 --   maxLength stop early with a short fade (seconds), for clips with a long tail
 --   range     3D sounds only: {full volume within, silent beyond} in studs
@@ -19,6 +20,11 @@ return {
 	RepTick = { ids = { 9114212934 }, volume = 0.07, pitch = 0.05, group = "UI" },                       -- Button click: soft tick on each rep
 	SetComplete = { ids = { 9116163687 }, volume = 0.22, pitch = 0.03, group = "Gameplay" },              -- Key Dings, light metal clinking: every 10 reps
 	GrowthSpurt = { ids = { 9113421788 }, volume = 0.25, pitch = 0, group = "Gameplay", maxLength = 2.6 }, -- Bell Rings, resonant: Growth Spurt moment
+	LevelUp = { ids = { 9116163687 }, volume = 0.12, pitch = 0.03, basePitch = 1.25, group = "UI", maxLength = 0.8 },     -- Key Dings, higher: a muscle levels up
+	Maxed = { ids = { 9113421788 }, volume = 0.13, pitch = 0, basePitch = 1.3, group = "UI", maxLength = 1.2 },             -- Bell Rings, short and high: a muscle hits its level cap
+	TitleUnlocked = { ids = { 9113421788 }, volume = 0.16, pitch = 0, basePitch = 1.12, group = "UI", maxLength = 1.6 },    -- Bell Rings: a new title
+	TierUnlocked = { ids = { 9116750726, 9116751108 }, volume = 0.3, pitch = 0.03, basePitch = 0.92, group = "Gameplay", maxLength = 1.2 }, -- Metal Plate Impact: heavier plates bought
+	OutOfStamina = { ids = { 9113585730, 9113586280 }, volume = 0.18, pitch = 0.05, group = "Gameplay", maxLength = 1.6 },  -- Breath Exhale: tapped with no stamina left
 
 	-- Interface (2D, quieter than gameplay)
 	Click = { ids = { 9114212934 }, volume = 0.1, pitch = 0.05, group = "UI" },                  -- Button click: every button press

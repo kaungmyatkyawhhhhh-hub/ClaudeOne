@@ -76,5 +76,5 @@ for where everything sits in Studio.
 - ~~Clean minimal UI: CLAUDE.md + Theme~~ (done)
 - ~~Restyle all screens~~ (done in code; needs a visual check in Studio)
 - ~~Menu screen + first 5 minutes onboarding~~ (built; needs a playtest)
-- Sound overhaul + settings (Settings panel already exists)
+- ~~Sound overhaul + settings~~ (done; needs a listen)
 - Test, screenshots, PROGRESS.md

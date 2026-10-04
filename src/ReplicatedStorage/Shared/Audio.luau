@@ -51,7 +51,7 @@ local function create(name, parent, opts)
 	sound.Name = name
 	sound.SoundId = "rbxassetid://" .. def.ids[rng:NextInteger(1, #def.ids)]
 	sound.Volume = def.volume * (opts.volume or 1)
-	sound.PlaybackSpeed = (opts.pitch or 1) * (1 + rng:NextNumber(-spread, spread))
+	sound.PlaybackSpeed = (def.basePitch or 1) * (opts.pitch or 1) * (1 + rng:NextNumber(-spread, spread))
 	sound.SoundGroup = getGroup(def.group or "Gameplay")
 	if def.range then
 		sound.RollOffMode = Enum.RollOffMode.InverseTapered

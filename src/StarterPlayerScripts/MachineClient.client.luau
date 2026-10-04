@@ -803,6 +803,7 @@ end
 ------------------------------------------------------------------------
 -- Lifting (local player)
 ------------------------------------------------------------------------
+local lastOutOfStaminaSound = 0
 local function outOfStamina()
 	refreshStamina()
 	for _, back in ipairs(segmentBacks) do
@@ -810,6 +811,11 @@ local function outOfStamina()
 		Theme.Tween(back, { BackgroundColor3 = Colors.Text, BackgroundTransparency = SEGMENT_BACK }, Theme.Motion.Time * 2)
 	end
 	Notify.Show("Out of stamina. Catch your breath.", nil, "stamina")
+	-- one breath per empty-tank moment, not one per tap
+	if os.clock() - lastOutOfStaminaSound > 2.5 then
+		lastOutOfStaminaSound = os.clock()
+		Audio.Play2D("OutOfStamina")
+	end
 end
 
 local function beginRep()
@@ -980,7 +986,8 @@ local function open(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	if not machine then return end
 	current = { model = model, machine = machine, reps = 0, setsSinceNote = 0 }
-	local _, selected = progressFor(machine.id)
+	local unlockedNow, selected = progressFor(machine.id)
+	current.knownUnlocked = unlockedNow
 	viewTier = selected
 	baseFov = Workspace.CurrentCamera.FieldOfView
 	lastStamina = nil
@@ -1061,18 +1068,29 @@ Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	end
 end)
 
+local lastLevelSound = 0
 Remotes.RepResult.OnClientEvent:Connect(function(result)
 	if result.noStamina then
 		outOfStamina()
 		return
 	end
+	local leveled, maxed = false, false
 	for muscleId, level in pairs(result.levels or {}) do
 		local name = Muscles.ById[muscleId].name
 		if result.maxed and result.maxed[muscleId] then
 			Notify.Show(name .. " maxed")
+			maxed = true
 		else
 			Notify.Show(name .. " level " .. level)
+			leveled = true
 		end
+	end
+	-- one sound per rep, however many muscles levelled; early levels come fast, so the ding is spaced out
+	if maxed then
+		Audio.Play2D("Maxed")
+	elseif leveled and os.clock() - lastLevelSound > 1.5 then
+		lastLevelSound = os.clock()
+		Audio.Play2D("LevelUp")
 	end
 end)
 
@@ -1084,6 +1102,14 @@ ClientData.Changed:Connect(function(path)
 		refreshCoins()
 		refreshTier()
 	elseif key == "machines" or key == "muscles" then
+		-- heavier plates bought on this machine
+		if key == "machines" and current and path[2] == current.machine.id then
+			local unlocked = progressFor(current.machine.id)
+			if current.knownUnlocked and unlocked > current.knownUnlocked then
+				Audio.PlayAt("TierUnlocked", barOf(current.model))
+			end
+			current.knownUnlocked = unlocked
+		end
 		refreshTier()
 	end
 end)

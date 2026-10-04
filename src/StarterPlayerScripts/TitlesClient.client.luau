@@ -178,6 +178,7 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 		local title = Titles.ById[info.id]
 		if title then
 			Notify.Show("New title: " .. title.name, Theme.Rarity[title.rarity].Fill)
+			Audio.PlayUI("TitleUnlocked")
 			if not isOpen then menuButton:SetDot(true) end
 		end
 	end
