@@ -439,6 +439,29 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .lights{display:flex;justify-content:center;gap:16px;padding:26px;border-radius:16px;background:#141824}
 .lights i{width:54px;height:54px;border-radius:50%;background:#2a2f3a;box-shadow:inset 0 -4px 0 rgba(0,0,0,.3)}
 .lights i.r{background:#e2364a;box-shadow:0 0 20px #e2364a}.lights i.g{background:#2fd28a;box-shadow:0 0 24px #2fd28a}
+.lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
+.lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
+.lotbid .who{font-weight:700;font-size:.88rem}
+.lotbid .lottime{width:100%}
+.lotcall{font-family:var(--mono);font-weight:700;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--down);min-height:1.2em}
+.lottime{height:6px;border-radius:6px;background:var(--sunk);overflow:hidden;margin-top:6px}
+.lottime i{display:block;height:100%;background:var(--accent)}
+.bidders{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.bidders span{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);font-size:.78rem;font-weight:700}
+.bidders span i{width:10px;height:10px;border-radius:50%}
+.bidders span.lead{box-shadow:inset 0 0 0 2px var(--accent),var(--shadow)}
+.bidders span.out{opacity:.4;text-decoration:line-through}
+.lotlog{font-size:.86rem;text-align:center;color:var(--muted);min-height:1.3em;margin:0}
+.revgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rcard{aspect-ratio:3/4;perspective:600px}
+.rcard>div{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.rcard.on>div{transform:rotateY(180deg)}
+.rcard .f,.rcard .b{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;text-align:center}
+.rcard .f{background:linear-gradient(160deg,#a07a52,#7a5a3a);color:rgba(255,255,255,.85);font-family:var(--display);font-weight:800;font-size:1.8rem;box-shadow:var(--shadow)}
+.rcard .b{transform:rotateY(180deg);background:var(--surface);box-shadow:var(--shadow);font-size:.68rem;line-height:1.2}
+.rcard .b b{font-family:var(--mono);font-size:.8rem;color:var(--up)}
+.rcard.junk .b{opacity:.75}.rcard.junk .b b{color:var(--muted)}
+.rcard.big .b{box-shadow:inset 0 0 0 2px var(--gold),var(--shadow)}
 .lvbar{display:inline-block;width:46px;height:5px;border-radius:5px;background:var(--sunk);vertical-align:middle;margin:0 4px;overflow:hidden}
 .lvbar i{display:block;height:100%;background:var(--gold)}
 .pcards{display:grid;gap:10px}
@@ -466,7 +489,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills"><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button></div>
+  <div class="hudpills"><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button></div>
 </div>
 <button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -519,6 +542,8 @@ const PLACES=[
  {k:"mall",n:"Mall",c:"#8f52d4",x:790,y:800,w:240,h:170,door:[910,970],sub:"Upgrades for your hustle"},
  {k:"arena",n:"Arena",c:"#d6384b",x:40,y:950,w:170,h:150,door:[125,1100],sub:"Arm wrestling for cash"},
  {k:"bank",n:"Bank",c:"#5f6b7e",x:1200,y:760,w:180,h:140,door:[1290,900],sub:"Deposit cash, earn interest"},
+ {k:"storage",n:"Storage Lots",c:"#c2410c",x:600,y:30,w:200,h:150,door:[700,180],sub:"Bid blind on abandoned units"},
+ {k:"depot",n:"Courier Depot",c:"#d4a017",x:1200,y:300,w:180,h:140,door:[1290,440],sub:"Deliver packages against the clock"},
  {k:"trade",n:"Trading Centre",c:"#0e1a2f",x:20,y:300,w:180,h:150,door:[110,450],sub:"Live futures charts. Long or short with leverage"},
  {k:"flea",n:"Boardwalk Flea",c:"#f2762e",x:300,y:1440,w:300,h:130,door:[450,1570],region:"beach",sub:"Cheap steals, mystery boxes, fakes"},
  {k:"mbeach",n:"Muscle Beach",c:"#14a3a8",x:1720,y:1450,w:220,h:120,door:[1830,1570],region:"beach",sub:"Outdoor gym, lifts cost half energy"},
@@ -659,7 +684,12 @@ const ACH=[
  ["saver","Saver","Keep $5K in the bank",()=>(S.bank||0)>=5000,800],
  ["trade1","Day trader","Close a winning trade at the Trading Centre",()=>(S.stats.tradeWins||0)>=1,500],
  ["trade10","Chart wizard","Close 10 winning trades",()=>(S.stats.tradeWins||0)>=10,5000],
- ["rekt","Rekt","Get liquidated once",()=>(S.stats.liqs||0)>=1,100]
+ ["rekt","Rekt","Get liquidated once",()=>(S.stats.liqs||0)>=1,100],
+ ["lot1","Storage hunter","Win a storage unit",()=>(S.stats.lots||0)>=1,300],
+ ["jackpot","Jackpot","Make $5K profit on one storage unit",()=>(S.stats.lotBest||0)>=5000,3000],
+ ["deliv10","Express","Deliver 10 packages on time",()=>(S.stats.delivOk||0)>=10,1500],
+ ["finds25","Eagle eyes","Pick up 25 street finds",()=>(S.stats.finds||0)>=25,1000],
+ ["vince5","Top dog","Beat Vince 5 times",()=>(S.stats.vW||0)>=5,3000]
 ];
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
 const maxEnergy=()=>maxEnergyFor(strLv());
@@ -717,7 +747,7 @@ function rr(x,y,w,h,r){rrp(ctx,x,y,w,h,r)}
 function night(){const h=S.clock;if(h>=20||h<5)return 1;if(h>=18)return(h-18)/2;if(h<7)return 1-(h-5)/2;return 0}
 const fh=p=>Math.round(p.h*.36);
 function winRects(p){
-  const top=p.y+p.h-fh(p),out=[];if(p.k==="gym"||p.k==="mall"||p.k==="bank"||p.k==="temple"||p.k==="trade"||p.k==="airport")return out;
+  const top=p.y+p.h-fh(p),out=[];if(p.k==="gym"||p.k==="mall"||p.k==="bank"||p.k==="storage"||p.k==="trade"||p.k==="airport")return out;
   const n=Math.max(1,Math.floor((p.w/2-34)/32)),wy=top+fh(p)*.22,wh=fh(p)*.4;
   for(let i=0;i<n;i++){out.push([p.door[0]-34-i*32-20,wy,20,wh],[p.door[0]+34+i*32,wy,20,wh])}
   return out.filter(r=>r[0]>p.x+6&&r[0]+r[2]<p.x+p.w-6);
@@ -748,6 +778,10 @@ function drawBuilding(g,p,P){
   if(p.k==="airport"){g.fillStyle="rgba(0,0,0,.25)";rrp(g,p.x+20,cy-12,p.w-40,24,4);g.fill();g.fillStyle="#fff";for(let x=p.x+34;x<p.x+p.w-34;x+=30)g.fillRect(x,cy-2,16,4);g.fillStyle="#fff";g.beginPath();g.moveTo(cx-30,cy-26);g.lineTo(cx+30,cy-26);g.lineTo(cx+4,cy-34);g.closePath();g.fill()}
   if(p.k==="club"){for(let i=0;i<14;i++){g.fillStyle=["#ff4fd8","#4fe3ff","#ffe14f"][i%3];g.beginPath();g.arc(p.x+18+i*12.5,ry+rh-12,3,0,7);g.fill()}}
   if(p.k==="docks"){g.fillStyle="#ffcc33";for(let x=p.x+10;x<p.x+p.w-10;x+=22){g.save();g.translate(x,ry+8);g.rotate(.5);g.fillRect(0,0,8,22);g.restore()}g.fillStyle="#1b1f2a";g.fillRect(p.x+p.w-40,ry+10,6,rh-16);g.fillRect(p.x+p.w-70,ry+10,36,5)}
+  if(p.k==="storage"){g.fillStyle="rgba(0,0,0,.12)";for(let x=p.x+8;x<p.x+p.w-8;x+=9)g.fillRect(x,ry+8,3,rh-16);
+    [p.x+14,p.x+p.w-62].forEach(x=>{g.fillStyle="#e8e2d8";rrp(g,x,fy+4,48,f-8,3);g.fill();g.fillStyle="rgba(0,0,0,.16)";for(let y=fy+9;y<fy+f-6;y+=6)g.fillRect(x+3,y,42,1.5)})}
+  if(p.k==="depot"){g.fillStyle="#1b1f2a";g.fillRect(p.x,ry+rh-12,p.w,6);g.fillStyle="#ffcc33";for(let x=p.x;x<p.x+p.w;x+=16)g.fillRect(x,ry+rh-12,8,6);
+    [[p.x+16,ry+14,30,24],[p.x+50,ry+20,24,18],[p.x+p.w-52,ry+12,34,28]].forEach(([x,y,w,h])=>{g.fillStyle="rgba(0,0,0,.15)";g.fillRect(x+3,y+3,w,h);g.fillStyle="#c99a62";g.fillRect(x,y,w,h);g.fillStyle="rgba(0,0,0,.2)";g.fillRect(x+w/2-2,y,4,h)})}
   if(p.k==="bank"){g.fillStyle="#f2f2f2";for(let x=p.x+14;x<p.x+p.w-14;x+=24){if(Math.abs(x+5-p.door[0])<22)continue;g.fillRect(x,fy+4,10,f-8)}g.fillStyle="rgba(255,255,255,.9)";g.beginPath();g.arc(cx,cy,18,0,7);g.fill();g.fillStyle=p.c;g.font="900 22px "+getComputedStyle(root).getPropertyValue("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText("$",cx,cy+1)}
   // door + mat
   const[dx,dy]=p.door;g.fillStyle="#141824";rrp(g,dx-15,dy-30,30,30,5);g.fill();g.fillStyle="rgba(255,255,255,.18)";g.fillRect(dx-11,dy-26,9,22);g.fillStyle=P.walk;rrp(g,dx-20,dy+1,40,8,3);g.fill();
@@ -869,6 +903,8 @@ function drawWorld(){
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
+  drawFinds();
+  if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
@@ -879,6 +915,7 @@ function drawWorld(){
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
   if(EV&&EV.type==="rain"){ctx.strokeStyle=isDark()?"rgba(170,190,230,.35)":"rgba(90,110,150,.35)";ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<90;i++){const rx=(i*97+wt*260)%(vw+40)-20,ry=(i*53+wt*620)%(vh+40)-20;ctx.moveTo(rx,ry);ctx.lineTo(rx-5,ry+14)}ctx.stroke();ctx.fillStyle="rgba(40,60,90,.12)";ctx.fillRect(0,0,vw,vh)}
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
+  if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -905,7 +942,7 @@ function renderBottom(){
   let h="";
   if(near)h+=`<button class="enter" id="enterBtn"><span>Enter ${near.n}<small>${near.sub}</small></span>${ARROW}</button>`;
   else if(!S.stats.flips&&!moving)h+=`<span class="tip">Tap the map to walk, or pick a place below</span>`;
-  const ar=achReady();h+=`<div class="places">${PLACES.filter(p=>regionOpen(p.region)).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="temple"?"Temple":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
+  const ar=achReady();h+=`<div class="places">${PLACES.filter(p=>regionOpen(p.region)).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
   el.innerHTML=h;
   const eb=$("enterBtn");if(eb)eb.onclick=()=>openRoom(near.k);
   el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
@@ -929,7 +966,7 @@ function updMini(){const c=$("rCash");if(c){c.textContent=fmt(S.cash);const e=$(
 function openRoom(k){
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
-  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
+  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();G=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
@@ -1024,7 +1061,7 @@ function openHome(){
         <div><span class="eyebrow">Earned this life</span><b>${fmt(S.earned)}</b></div><div><span class="eyebrow">Earned all time</span><b>${fmt(S.stats.earnedAll)}</b></div>
         <div><span class="eyebrow">Flips</span><b>${S.stats.flips}</b></div><div><span class="eyebrow">Best flip</span><b>${fmt(S.stats.best)}</b></div>
         <div><span class="eyebrow">Heaviest lift</span><b>${S.stats.heaviest||S.pr} kg</b></div><div><span class="eyebrow">Grails</span><b>${S.stats.grails}</b></div>
-        <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
+        <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">You vs Vince</span><b>${S.stats.vW||0}–${S.stats.vL||0}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
@@ -1515,12 +1552,198 @@ function questFromNPC(n){
   const name=pick(["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora"]);S.quest={name,cat,minV,m,left:240};dirty=true;SFX.hot();
   rayTextFrom(name,`${pick(Q_LINES)} some ${CAT[cat].n.toLowerCase()} worth at least ${fmt(minV)}. Bring it within 4 minutes and I'll pay ×${m}.`);
 }
-function rayTextFrom(name,msg){const t=document.createElement("div");t.className="raytoast"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav" style="background:var(--gold)">${name[0]}</span><span><b>${name}</b>${msg}</span>`;document.body.appendChild(t);t.onclick=()=>t.remove();setTimeout(()=>t.remove(),7000)}
+function rayTextFrom(name,msg){document.querySelectorAll(".raytoast.npc").forEach(x=>x.remove());const t=document.createElement("div");t.className="raytoast npc"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav" style="background:${name==="Vince"?"#e2364a":"var(--gold)"}">${name[0]}</span><span><b>${name}</b>${msg}</span>`;document.body.appendChild(t);t.onclick=()=>t.remove();setTimeout(()=>t.remove(),7000)}
 function renderQChip(){const el=$("qChip"),q=S.quest;if(!q){el.hidden=true;return}el.hidden=false;const ok=questItem()>=0;
   el.innerHTML=`<span class="pk">Quest</span><span class="pt">${q.name}: ${CAT[q.cat].n} ≥ ${fmt(q.minV)}</span><span class="pr" style="color:${ok?"var(--up)":"var(--muted)"}">${ok?"Deliver":Math.ceil(q.left)+"s"}</span>`}
 const questItem=()=>{const q=S.quest;if(!q)return-1;let bi=-1,bv=0;S.stash.forEach((x,i)=>{if(x.cat===q.cat&&!x.fake){const v=valueOf(x);if(v>=q.minV&&(bi<0||v<bv)){bi=i;bv=v}}});return bi};
 $("qChip").onclick=()=>{const q=S.quest;if(!q)return;const i=questItem();if(i<0){rayTextFrom(q.name,`Still waiting on that ${CAT[q.cat].n.toLowerCase()} worth ${fmt(q.minV)}+. Fake ones don't count!`);return}
   const it=S.stash[i],v=Math.round(valueOf(it)*q.m*mult());S.stash.splice(i,1);earn(v);S.stats.flips++;S.stats.quests=(S.stats.quests||0)+1;S.quest=null;dirty=true;SFX.rebirth();banner("Quest done +"+fmt(v),"g");if(M)renderStash();renderQChip()};
+/* ---------- storage lots: blind bids on whole units ---------- */
+const BIDDERS=[
+ {n:"Big Lou",c:"#e2364a",line:["Mine.","Don't even try.","Lou's buying."]},
+ {n:"Dee Marsh",c:"#8f52d4",line:["Cute bid, kid.","I smell vintage.","Raise you."]},
+ {n:"Pawn Pete",c:"#2bb3a3",line:["Fair's fair.","Bit more.","Can't let that go."]},
+ {n:"Hoarder Hank",c:"#cf9a14",line:["I need it ALL.","More boxes!","Mine, mine, mine."]}];
+const JUNK=[["Box of cables",8],["Broken lamp",5],["Old magazines",12],["Mystery VHS tapes",15],["Bag of hangers",4],["Dusty rug",20],["Cracked mirror",6],["Mismatched socks",3]];
+const PEEK={kicks:"a stack of shoeboxes",gym:"some weights",vint:"a rack of jackets",toys:"a toy chest",tech:"a box of gadgets",cards:"a card binder",watch:"a locked watch case"};
+const UNIT_SZ=[["Small locker",3,.6],["Garage unit",4,1],["Warehouse bay",6,1.7]];
+const lotInc=b=>b<100?10:b<500?25:b<2000?100:b<10000?250:1000;
+const itemWorth=x=>x.junk?x.v:Math.round(x.base*S.trend[x.cat]*(season().m[x.cat]||1));
+function lotsToday(){if(!S.lots||S.lots.day!==S.day){S.lots={day:S.day,units:[0,1,2].map(makeUnit)};dirty=true}return S.lots.units}
+function makeUnit(i){
+  const sz=UNIT_SZ[i],est=Math.round(350*(1+repLevel()*.35)*sz[2]/10)*10,r=Math.random();
+  const luck=r<.08?rnd(2.6,4.5):r<.3?rnd(.12,.45):rnd(.6,1.5),items=[];let left=est*luck;
+  for(let k=0;k<sz[1];k++){
+    const share=left/(sz[1]-k),pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=share*1.6);
+    if(share<40||!pool.length||Math.random()<.2){const j=pick(JUNK);items.push({junk:1,name:j[0],v:Math.round(j[1]*rnd(.8,1.5))});continue}
+    pool.sort((a,b)=>Math.abs(a.base-share)-Math.abs(b.base-share));
+    const it=pool[Math.floor(Math.random()*Math.min(3,pool.length))],c=CAT[it.cat],cond=pick(c.conds),base=Math.round(it.base*cond[1]);
+    items.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base});left-=base*S.trend[it.cat];
+  }
+  items.sort(()=>Math.random()-.5);
+  return{sz:sz[0],est,items,peek:[...new Set(items.slice(0,3).map(x=>x.junk?"old boxes":PEEK[x.cat]))].slice(0,2),state:0};
+}
+const lotArt=(open,lit)=>`<div class="art"><svg viewBox="0 0 400 130" aria-hidden="true"><rect width="400" height="130" fill="#2a2f3a"/><rect x="0" y="118" width="400" height="12" fill="#1b1f2a"/>
+  <rect x="60" y="14" width="280" height="104" fill="${lit?"#3a3020":"#12151c"}"/>
+  <rect x="78" y="76" width="64" height="42" fill="#8a6a4a"/><rect x="78" y="94" width="64" height="3" fill="#6d5238"/><rect x="150" y="58" width="42" height="60" fill="#5b6272"/><rect x="200" y="86" width="54" height="32" fill="#a07a52"/><rect x="262" y="66" width="58" height="52" fill="#7a5a3a"/><circle cx="172" cy="48" r="10" fill="#9aa3b3"/>
+  ${lit?`<circle cx="200" cy="70" r="70" fill="#ffcc33" opacity=".12"/>`:""}
+  <rect x="60" y="14" width="280" height="${open}" fill="#c2410c"/>${Array.from({length:Math.floor(open/8)},(_,i)=>`<rect x="60" y="${18+i*8}" width="280" height="2" fill="rgba(0,0,0,.22)"/>`).join("")}<rect x="188" y="${open+6}" width="24" height="5" rx="2" fill="#1b1f2a"/>
+  <rect x="50" y="10" width="10" height="110" fill="#5b6272"/><rect x="340" y="10" width="10" height="110" fill="#5b6272"/></svg></div>`;
+let L=null;
+function openStorage(){
+  const units=lotsToday();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Storage Lots")}${lotArt(62)}
+    <div class="note">Three abandoned units go up every day. You only get a peek through the door. <b>Win the bid and everything inside is yours</b>, treasure or trash.</div>
+    <div class="perks">${units.map((u,i)=>`<button class="perk nopic" data-unit="${i}" ${u.state?"disabled":""}><span class="t">${u.sz}</span><span class="d">${u.state===1?"Won for "+fmt(u.paid)+" · worth "+fmt(u.worth):u.state===2?u.to+" paid "+fmt(u.paid)+" · it was worth "+fmt(u.worth):"You spot "+u.peek.join(" and ")+" · est. "+fmt(u.est*.6)+" to "+fmt(u.est*1.4)}</span><span class="c">${u.state===1?"Yours":u.state===2?"Gone":"Bid"}</span></button>`).join("")}</div>
+    <p class="fine">New units every morning. Stash ${S.stash.length}/${maxSlots()}</p></div>`;
+  $("leaveBtn").onclick=closeRoom;
+  $("room").querySelectorAll("[data-unit]").forEach(b=>b.onclick=()=>startLot(+b.dataset.unit));
+}
+function startLot(i){
+  const u=lotsToday()[i];if(!u||u.state)return;
+  const open=Math.max(10,Math.round(u.est*.12/10)*10),riv=BIDDERS.slice().sort(()=>Math.random()-.5).slice(0,i?3:2).map(b=>({...b,max:u.est*rnd(.55,1.35)}));
+  L={i,u,bid:open,leader:null,t:6,dur:6,next:rnd(1.2,2),riv,log:"Bidding opens at "+fmt(open)};SFX.door();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Storage Lots")}${lotArt(78)}
+    <div class="note">${u.sz}. You spot ${u.peek.join(" and ")}. Est. ${fmt(u.est*.6)} to ${fmt(u.est*1.4)}.</div>
+    <div class="lotbid"><span class="eyebrow">Current bid</span><b id="lBid"></b><span class="who" id="lWho"></span><div class="lotcall" id="lCall"></div><div class="lottime"><i id="lTime"></i></div></div>
+    <div class="bidders" id="lRiv"></div><p class="lotlog" id="lLog"></p>
+    <button class="bigbtn" id="lBidBtn"></button><button class="bigbtn alt" id="lQuit">Walk away<small>Let them have it</small></button></div>`;
+  $("leaveBtn").onclick=()=>{L=null;closeRoom()};
+  $("lQuit").onclick=()=>{if(!L||L.done)return;L.quit=true;if(L.leader==="you")L.leader=null;L.t=Math.min(L.t,.01)};
+  $("lBidBtn").onclick=()=>{if(!L||L.done||L.leader==="you"||L.quit)return;const nb=L.leader===null&&!L.any?L.bid:L.bid+lotInc(L.bid);if(nb>S.cash){floatAt($("lBidBtn"),"Not enough cash","var(--down)");SFX.nope();return}
+    L.bid=nb;L.leader="you";L.any=1;L.t=Math.max(L.t,3.2);L.dur=3.2;L.next=rnd(.6,1.4);L.log="You bid "+fmt(nb);SFX.bid();buzz(10);updLot()};
+  updLot();
+}
+function lotTick(dt){
+  if(!L||L.done)return;L.t-=dt;L.next-=dt;
+  if(L.next<=0&&!L.quit){L.next=rnd(.6,1.5);const nb=L.any?L.bid+lotInc(L.bid):L.bid;
+    L.riv.forEach((r,k)=>{if(!r.out&&L.leader!==k&&nb>r.max){r.out=1;L.log=r.n+" drops out"}});
+    const c=L.riv.filter((r,k)=>!r.out&&L.leader!==k);
+    if(c.length&&(L.leader==="you"||L.leader===null||Math.random()<.45)){const r=pick(c);L.bid=nb;L.any=1;L.leader=L.riv.indexOf(r);L.t=Math.max(L.t,3.2);L.dur=3.2;L.log=r.n+": “"+pick(r.line)+"”";SFX.bid()}}
+  else if(L.quit&&L.leader===null){const c=L.riv.filter(r=>!r.out);if(c.length){L.leader=L.riv.indexOf(pick(c));L.any=1}}
+  if(L.t<=0)endLot();else updLot();
+}
+function updLot(){
+  if(!L||!$("lBid"))return;const ld=L.leader==="you"?{n:"You",c:"var(--accent)"}:L.leader===null?null:L.riv[L.leader];
+  $("lBid").textContent=fmt(L.bid);$("lWho").innerHTML=ld?`<span style="color:${ld.c}">●</span> ${ld.n} ${L.leader==="you"?"are":"is"} winning`:"No bids yet";
+  $("lCall").textContent=L.any&&L.t<1.1?"Going twice…":L.any&&L.t<2.2?"Going once…":"";
+  $("lTime").style.width=clamp(L.t/L.dur*100,0,100)+"%";
+  $("lRiv").innerHTML=L.riv.map((r,k)=>`<span class="${r.out?"out":""}${L.leader===k?" lead":""}"><i style="background:${r.c}"></i>${r.n}</span>`).join("");
+  $("lLog").textContent=L.log;
+  const nb=L.any?L.bid+lotInc(L.bid):L.bid,b=$("lBidBtn");b.disabled=L.leader==="you"||nb>S.cash||!!L.quit;
+  b.innerHTML=L.leader==="you"?"You lead<small>Hold your nerve</small>":`Bid ${fmt(nb)}<small>You have ${fmt(S.cash)}</small>`;
+}
+function endLot(){
+  const l=L;l.done=true;const u=l.u,worth=u.items.reduce((a,x)=>a+itemWorth(x),0);u.worth=worth;u.paid=l.bid;dirty=true;
+  if(l.leader==="you"){S.cash-=l.bid;u.state=1;S.stats.lots=(S.stats.lots||0)+1;SFX.grail();buzz([20,40,20]);banner("SOLD to you","g");lotReveal(l)}
+  else{u.state=2;u.to=l.leader===null?"Nobody":l.riv[l.leader].n;SFX.loss();banner("Sold to "+u.to,"r");
+    $("lLog").textContent=`${u.to} opened it up: worth ${fmt(worth)}. ${worth>l.bid?"Ouch, you missed a good one.":"You dodged a dud."}`;$("lCall").textContent="Sold";$("lBidBtn").disabled=true;$("lQuit").innerHTML="Back to the lots<small>&nbsp;</small>";$("lQuit").onclick=()=>{L=null;openStorage()}}
+}
+function lotReveal(l){
+  const u=l.u;
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Storage Lots")}${lotArt(10,true)}
+    <div class="revgrid">${u.items.map((x,i)=>`<div class="rcard${x.junk?" junk":itemWorth(x)>l.bid*.6?" big":""}" id="rc${i}"><div><div class="f">?</div><div class="b">${x.junk?`<span class="tile sm" style="--h:0;filter:grayscale(1)">··</span>`:`<span class="tile sm" style="--h:${CAT[x.cat].h}">${x.code}</span>`}<span>${x.name}</span><b>${fmt(itemWorth(x))}</b></div></div></div>`).join("")}</div>
+    <div class="lotbid" id="rTot" style="visibility:hidden"><span class="eyebrow">Paid ${fmt(l.bid)} · inside worth ${fmt(u.worth)}</span><b style="color:${u.worth>=l.bid?"var(--up)":"var(--down)"}">${u.worth>=l.bid?"+":"−"}${fmt(Math.abs(u.worth-l.bid))}</b></div>
+    <div id="rBtns" style="display:none;flex-direction:column;gap:10px"><button class="bigbtn" id="rKeep">Keep the items<small>Sell them yourself for full price · junk goes to the scrapper</small></button><button class="bigbtn alt" id="rScrap">Sell it all to the scrapper<small>${fmt(Math.round(u.worth*.7))} cash right now</small></button></div></div>`;
+  $("leaveBtn").onclick=()=>{settleLot(l,false);L=null;closeRoom()};
+  u.items.forEach((x,i)=>setTimeout(()=>{const c=$("rc"+i);if(!c)return;c.classList.add("on");if(x.junk)SFX.nope();else if(itemWorth(x)>l.bid*.6){SFX.grail();buzz([20,30,20])}else SFX.reveal()},500+i*450));
+  setTimeout(()=>{if(!$("rTot"))return;$("rTot").style.visibility="visible";$("rBtns").style.display="flex";const p=u.worth-l.bid;if(p>=5000)banner("JACKPOT","g");S.stats.lotBest=Math.max(S.stats.lotBest||0,p);if(p>0)rivalProg("lot",1);
+    $("rKeep").onclick=()=>{settleLot(l,false);L=null;openStorage()};$("rScrap").onclick=()=>{settleLot(l,true);L=null;openStorage()}},700+u.items.length*450);
+}
+function settleLot(l,scrap){
+  if(l.settled)return;l.settled=true;const u=l.u;
+  if(scrap){earn(Math.round(u.worth*.7));SFX.sell();banner("+"+fmt(Math.round(u.worth*.7)),"g");return}
+  let cash=0,kept=0;const real=u.items.filter(x=>!x.junk);
+  u.items.forEach(x=>{if(x.junk||S.stash.length>=maxSlots()||(HEAVY[x.code]||0)>S.pr){cash+=x.junk?x.v:Math.round(itemWorth(x)*.6);return}
+    S.stash.push({cat:x.cat,code:x.code,name:x.name,cond:x.cond,base:x.base,noise:rnd(.97,1.03),fake:false,paid:Math.round(l.bid/Math.max(1,real.length))});kept++});
+  if(cash){earn(cash);banner("Scrapper paid "+fmt(cash),"u")}if(kept)banner(kept+" item"+(kept>1?"s":"")+" to your stash","g");dirty=true;
+}
+
+/* ---------- courier depot: deliveries against the clock ---------- */
+const PKG=[["Sneaker drop",1,1],["Hot pizza",.75,1.5],["Legal papers",1,1.1],["Wedding cake",1.1,1.4],["Mystery crate",1.2,1.9,60],["Vinyl collection",1,1.3,40]];
+let JOBS=null;
+function makeJob(){
+  const from=PL.depot,d=pick(PLACES.filter(p=>p.k!=="depot"&&regionOpen(p.region))),dist=Math.hypot(d.door[0]-from.door[0],d.door[1]-from.door[1]),p=pick(PKG);
+  return{dest:d.k,name:p[0],kg:p[3]||0,dist,limit:Math.round(dist/150*1.15*p[1]+10),pay:Math.round((30+dist*.16)*p[2]*(1+repLevel()*.15)/5)*5};
+}
+function openDepot(){
+  if(!JOBS)JOBS=[makeJob(),makeJob(),makeJob()];
+  const j=S.job,st=S.cStreak||0;
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Courier Depot")}
+    <div class="note">Grab a package and get it to the door before the clock runs out. <b>The faster you are, the bigger the tip.</b> Vehicles help a lot. On-time streak: <b>${st}</b>${st?` (+${Math.min(50,st*10)}% pay)`:""}.</div>
+    ${j?`<div class="lotbid"><span class="eyebrow">On your way</span><b style="font-size:1.6rem">${j.name}</b><span class="who">to ${PL[j.dest].n} · ${j.left>0?Math.ceil(j.left)+"s left":"late"}</span></div><button class="bigbtn alt" id="jCancel">Drop the job<small>Breaks your streak</small></button>`:
+    `<div class="perks">${JOBS.map((x,i)=>`<button class="perk nopic" data-job="${i}" ${x.kg>S.pr?"disabled":""}><span class="t">${x.name} → ${PL[x.dest].n}</span><span class="d">${Math.round(x.dist/10)} m · ${x.limit}s${x.kg?` · ${x.kg} kg lift needed`:""}</span><span class="c">${fmt(x.pay)}+</span></button>`).join("")}</div>`}
+    <p class="fine">Deliveries done: ${S.stats.deliv||0}</p></div>`;
+  $("leaveBtn").onclick=closeRoom;
+  const c=$("jCancel");if(c)c.onclick=()=>{S.job=null;S.cStreak=0;dirty=true;openDepot()};
+  $("room").querySelectorAll("[data-job]").forEach(b=>b.onclick=()=>{const i=+b.dataset.job,x=JOBS[i];if(x.kg>S.pr)return;S.job={...x,left:x.limit};JOBS[i]=makeJob();dirty=true;SFX.hot();buzz(15);closeRoom();banner("Deliver to "+PL[x.dest].n,"a")});
+}
+function jobTick(dt){const j=S.job;if(!j)return;j.left-=dt;if(j.left<-15){S.job=null;S.cStreak=0;dirty=true;SFX.loss();banner("Package returned","r");rayText("Too slow. The "+j.name.toLowerCase()+" went back to the depot.")}}
+function jobArrive(){
+  const j=S.job,d=PL[j.dest];if(Math.hypot(S.px-d.door[0],S.py-d.door[1]-14)>44)return;
+  S.job=null;S.stats.deliv=(S.stats.deliv||0)+1;
+  let pay=j.pay;if(j.left>=0){S.cStreak=(S.cStreak||0)+1;S.stats.delivOk=(S.stats.delivOk||0)+1;pay=Math.round(pay*(1+.5*j.left/j.limit)*(1+.1*Math.min(5,S.cStreak-1)));rivalProg("deliver",1);banner(j.left/j.limit>.4?"Speedy delivery":"Delivered","g")}
+  else{S.cStreak=0;pay=Math.round(pay*.5);banner("Delivered late","r")}
+  earn(pay);SFX.sell();buzz([15,30,15]);banner("+"+fmt(pay),"g");dirty=true;
+  if(autoEnter===j.dest){autoEnter=null;target=null;moving=false}
+}
+function renderJobChip(){const el=$("jobChip"),j=S.job;if(!j){el.hidden=true;return}el.hidden=false;el.style.setProperty("--ec","#d4a017");
+  el.innerHTML=`<span class="pk">Deliver</span><span class="pt">${j.name} → ${PL[j.dest].n}</span><span class="pr" style="${j.left<0?"color:var(--down)":""}">${j.left<0?"LATE":Math.ceil(j.left)+"s"}</span>`}
+$("jobChip").onclick=()=>{if(S.job&&!room){audioOn();walkTo(S.job.dest)}};
+
+/* ---------- street finds: shiny things around town ---------- */
+const FINDS=[];let findT=6;
+function spawnFind(gold){for(let i=0;i<80;i++){const x=rnd(60,W-60),y=rnd(90,SEA-60);if(!regionOpen(regionOf(x,y))||inBld(x,y,24)||inPond(x,y,20))continue;const d=Math.hypot(x-S.px,y-S.py);if(d<180||d>1300)continue;FINDS.push({x,y,gold:gold||Math.random()<.07,life:160,ph:Math.random()*7});return}}
+function findsTick(dt){
+  findT-=dt;if(findT<=0){findT=rnd(22,40);if(FINDS.length<4)spawnFind()}
+  for(let i=FINDS.length-1;i>=0;i--){const f=FINDS[i];f.life-=dt;f.ph+=dt;if(f.life<=0){FINDS.splice(i,1);continue}if(!room&&Math.hypot(S.px-f.x,S.py-f.y)<32){FINDS.splice(i,1);pickFind(f)}}
+}
+function pickFind(f){
+  S.stats.finds=(S.stats.finds||0)+1;rivalProg("finds",1);dirty=true;const r=Math.random(),room_=S.stash.length<maxSlots();
+  const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(HEAVY[p.code]||0)<=S.pr);
+  const give=it=>{const c=CAT[it.cat],cond=pick(c.conds);S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:rnd(.97,1.03),fake:false,paid:0});return it.name};
+  if(f.gold){const it=pick(pool.slice().sort((a,b)=>b.base-a.base).slice(0,5));SFX.grail();buzz([20,40,20,40]);banner("Golden find","g");
+    if(room_)rayText("You found a "+give(it)+" just lying there. It's in your stash.");else{const v=Math.round(it.base*.6);earn(v);rayText("Golden find, but your stash is full. Sold it on the spot for "+fmt(v)+".")}return}
+  if(r<.4||!room_&&r<.75){const v=Math.round(rnd(15,45)*(1+repLevel()*.5));earn(v);SFX.sell();banner("Found "+fmt(v),"g")}
+  else if(r<.75){const n=give(pick(pool.filter(p=>p.base<=Math.max(200,(S.cash+stashVal())*.3)).concat(pool.slice(0,1))));SFX.reveal();banner("Found: "+n,"g")}
+  else{S.energy=Math.min(maxEnergy(),S.energy+30);SFX.level();banner("Free snack · +30 energy","u")}
+}
+function drawFinds(){
+  FINDS.forEach(f=>{if(f.x<cam.x-30||f.x>cam.x+vw+30||f.y<cam.y-30||f.y>cam.y+vh+30)return;const s=1+.25*Math.sin(f.ph*4);
+    ctx.globalAlpha=Math.min(1,f.life/8);ctx.fillStyle="rgba(0,0,0,.18)";ctx.beginPath();ctx.ellipse(f.x,f.y+2,9,3.5,0,0,7);ctx.fill();
+    ctx.save();ctx.translate(f.x,f.y-10-2*Math.sin(f.ph*3));ctx.fillStyle=f.gold?"rgba(255,204,51,.35)":"rgba(255,255,255,.45)";ctx.beginPath();ctx.arc(0,0,(f.gold?16:12)*s,0,7);ctx.fill();
+    ctx.rotate(f.ph*.9);ctx.fillStyle=f.gold?"#ffcc33":"#ffffff";ctx.strokeStyle="rgba(0,0,0,.3)";ctx.lineWidth=1;ctx.beginPath();for(let k=0;k<8;k++){const a=k*Math.PI/4,rr_=k%2?3:(f.gold?12:9)*s;ctx.lineTo(Math.cos(a)*rr_,Math.sin(a)*rr_)}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();ctx.globalAlpha=1});
+}
+function drawPin(x,y,color,glyph){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(x,y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
+  ctx.fillStyle=color;rr(x-15,y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(glyph,x,y-36);
+  ctx.beginPath();ctx.moveTo(x-6,y-23);ctx.lineTo(x+6,y-23);ctx.lineTo(x,y-15);ctx.closePath();ctx.fill()}
+function drawEdgeArrow(x,y,color){const sx=x-cam.x,sy=y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
+
+/* ---------- Vince, your rival reseller ---------- */
+let rivalT=140;
+const V_WIN=["Fine. You got me this time.","Lucky. Enjoy it while it lasts.","Huh. Maybe you're not a total rookie."],V_LOSE=["Ha! Too slow, kid.","Stick to garage sales.","That's why they call me the King of Flips."];
+function rivalStart(){
+  const t=pick(["earn","earn","finds","deliver"].concat(lotsToday().some(u=>!u.state)?["lot"]:[])),Lv=repLevel(),rw=Math.round(300*(1+Lv*.4)/10)*10;let r;
+  if(t==="earn"){const goal=Math.round(Math.max(400,300*(1+Lv))/50)*50;r={t,goal,base:S.stats.earnedAll,dur:180,txt:"Earn "+fmt(goal),rw:Math.max(rw,Math.round(goal*.4))}}
+  if(t==="finds"){r={t,goal:3,have:0,dur:150,txt:"Grab 3 street finds",rw};for(let i=0;i<3;i++)spawnFind()}
+  if(t==="deliver")r={t,goal:2,have:0,dur:240,txt:"Deliver 2 packages on time",rw:Math.round(rw*1.3)};
+  if(t==="lot")r={t,goal:1,have:0,dur:300,txt:"Win a storage unit at a profit",rw:Math.round(rw*1.5)};
+  r.left=r.dur;S.rival=r;dirty=true;SFX.hot();buzz([20,40,20]);banner("Vince challenges you","a");
+  const first=!(S.stats.vW||S.stats.vL);
+  rayTextFrom("Vince",(first?"Name's Vince. I run the resale game in this town. ":pick(["Rematch. ","Back for more? ","You got lucky last time. "]))+r.txt+" in "+(r.dur/60).toFixed(r.dur%60?1:0)+" minutes and I'll pay you "+fmt(r.rw)+". Bet you can't.");
+}
+function rivalProg(t,n){const r=S.rival;if(r&&r.t===t){r.have+=n;dirty=true}}
+function rivalTick(dt){
+  const r=S.rival;if(!r){if(!room&&S.stats.flips>=3){rivalT-=dt;if(rivalT<=0){rivalT=rnd(300,480);rivalStart()}}return}
+  r.left-=dt;const have=r.t==="earn"?S.stats.earnedAll-r.base:r.have;
+  if(have>=r.goal){S.rival=null;S.stats.vW=(S.stats.vW||0)+1;earn(r.rw);SFX.rebirth();buzz([20,40,20,40]);banner("You beat Vince","g");banner("+"+fmt(r.rw),"g");rayTextFrom("Vince",pick(V_WIN)+` (You ${S.stats.vW} · Vince ${S.stats.vL||0})`);dirty=true}
+  else if(r.left<=0){S.rival=null;S.stats.vL=(S.stats.vL||0)+1;SFX.loss();banner("Vince wins","r");rayTextFrom("Vince",pick(V_LOSE)+` (You ${S.stats.vW||0} · Vince ${S.stats.vL})`);dirty=true}
+}
+function renderRvChip(){const el=$("rvChip"),r=S.rival;if(!r){el.hidden=true;return}el.hidden=false;el.style.setProperty("--ec","#e2364a");
+  const have=r.t==="earn"?Math.max(0,S.stats.earnedAll-r.base):r.have,s=Math.max(0,Math.ceil(r.left));
+  el.innerHTML=`<span class="pk">Vince</span><span class="pt">${r.txt}</span><span class="pr">${r.t==="earn"?Math.round(have/r.goal*100)+"%":have+"/"+r.goal} · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`}
+$("rvChip").onclick=()=>{const r=S.rival;if(r)rayTextFrom("Vince",r.txt+". Reward "+fmt(r.rw)+". Clock's ticking.")};
+
 /* ---------- level-up perk cards ---------- */
 const PERK_POOL=()=>[
  {k:"sales",t:"Silver tongue",d:"+5% on every sale"},
@@ -1769,7 +1992,7 @@ function loop(now){
       if(S.lastSeason!==season().n){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
       if(target&&!room){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
         if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;openRoom(k)}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
-          if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
+          if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(S.job)jobArrive();if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
       drift+=dt;
       if(drift>=.5){drift=0;
         CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.055,.055)+(1-S.trend[c.k])*.035,.5,1.85)});
@@ -1781,12 +2004,14 @@ function loop(now){
       if(M)marketTick(dt,now);
       if(G)gymTick(dt);
       if(room==="arena")arenaTick(dt);
+      if(room==="storage")lotTick(dt);
+      findsTick(dt);jobTick(dt);rivalTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");SFX.level()}})}
       renderBottom();
       simTick(dt);tradeTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room)drawWorld();
@@ -1807,6 +2032,7 @@ function title(){
         <div><kbd>ENERGY</kbd><span>Trading and lifting use energy. Sleep at Home or grab a drink at the Café.</span></div>
         <div><kbd>STRONG</kbd><span>Lift heavier at the Gym to carry heavy items, win arm wrestling at the Arena and unlock perks.</span></div>
         <div><kbd>EXPLORE</kbd><span>Finish Uncle Ray's goals to unlock the Beach and Downtown, and buy a bike, scooter and sports car. Watch for random town events.</span></div>
+        <div><kbd>HUNT</kbd><span>Bid blind on storage units, race courier deliveries, grab shiny finds around town, and beat your rival Vince.</span></div>
         <div><kbd>LEVEL</kbd><span>Everything you earn levels you up. Each level, pick 1 of 3 perk cards to shape your own build.</span></div>
       </div>
       ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · Level ${repLevel()} · Day ${S.day}</small></span>${ARROW}</button>
