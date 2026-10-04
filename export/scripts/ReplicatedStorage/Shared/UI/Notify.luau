@@ -1,0 +1,93 @@
+-- Small corner notifications that fade out. Notify.Show(text, color?, key?)
+-- `key` throttles repeats of the same message.
+local Players = game:GetService("Players")
+local Theme = require(script.Parent.Theme)
+
+local Notify = {}
+
+local LIFETIME = 2.5
+local MAX_VISIBLE = 4
+
+local list
+local order = 0
+local lastShown = {}
+
+local function ensure()
+	if list then return end
+	local gui = Theme.ScreenGui({
+		Name = "Notifications",
+		DisplayOrder = 50,
+		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+	})
+	list = Theme.New("Frame", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -12, 0, 12),
+		Size = UDim2.new(0, 260, 1, -24),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	}, {
+		Theme.New("UIListLayout", {
+			Padding = UDim.new(0, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		}),
+	})
+end
+
+function Notify.Show(text, color, key)
+	if key then
+		if lastShown[key] and os.clock() - lastShown[key] < 2 then return end
+		lastShown[key] = os.clock()
+	end
+	ensure()
+
+	local toasts = {}
+	for _, child in ipairs(list:GetChildren()) do
+		if child:IsA("Frame") then table.insert(toasts, child) end
+	end
+	table.sort(toasts, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
+	for i = 1, #toasts - MAX_VISIBLE + 1 do
+		toasts[i]:Destroy()
+	end
+
+	order += 1
+	local toast = Theme.New("Frame", {
+		LayoutOrder = order,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.new(0, 0, 0, 36),
+		BackgroundColor3 = Theme.Colors.Panel,
+		BackgroundTransparency = Theme.Alpha.Panel,
+		Parent = list,
+	}, {
+		Theme.Round("Button"),
+		Theme.Stroke(),
+		Theme.New("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 12) }),
+		Theme.New("Frame", {
+			Size = UDim2.new(0, 3, 1, -12),
+			Position = UDim2.new(0, -8, 0, 6),
+			BackgroundColor3 = color or Theme.Colors.Muted, -- a rarity color for titles, otherwise gray
+			BorderSizePixel = 0,
+		}, { Theme.Round("Segment") }),
+		Theme.New("TextLabel", {
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.new(0, 0, 1, 0),
+			BackgroundTransparency = 1,
+			FontFace = Theme.Fonts.Regular,
+			TextSize = Theme.TextSize.Body,
+			TextColor3 = Theme.Colors.Text,
+			Text = text,
+		}),
+	})
+	Theme.AddDepth(toast, "Button")
+
+	Theme.Fade(toast, true, 0.2)
+	task.delay(LIFETIME, function()
+		if toast.Parent then
+			local tween = Theme.Fade(toast, false, 0.4)
+			if tween then tween.Completed:Wait() end
+			toast:Destroy()
+		end
+	end)
+end
+
+return Notify

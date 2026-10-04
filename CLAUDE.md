@@ -6,9 +6,16 @@
 - Cloud sessions **cannot** reach Roblox Studio: no playtesting, screenshots,
   or editing parts/UI built in Studio. Work only on code in `src/`, push it,
   and the owner pulls + syncs. Say clearly when something needs checking in Studio.
-- Much of the game (UI, machines, existing scripts) may still live only in the
-  Studio place, not in this repo. Don't assume missing code doesn't exist —
-  ask, or write code that finds instances defensively (`WaitForChild`).
+- The game is **GYM ARC**. Read `docs/GAME_OVERVIEW.md` first, then the code.
+- `export/scripts/` is a read-only **snapshot** of the scripts that live in the
+  Studio place (extracted from `export/GymArc.rbxlx`; map in `export/TREE.md`).
+  Rojo does NOT sync it: editing those files changes nothing in Studio. When a
+  change is needed in an existing script, give the owner the full new script
+  to paste into Studio (and say exactly which script), or move that code under
+  `src/` if the owner agrees. The snapshot can be stale; ask the owner to
+  re-export if they changed things in Studio.
+- All UI is built in code from `ReplicatedStorage.Shared.UI.Theme`; StarterGui is
+  empty. New UI must use Theme. All data writes go through `PlayerData`.
 
 ## Layout
 - `src/server` → `ServerScriptService.RojoServer` (Scripts: `*.server.luau`)
