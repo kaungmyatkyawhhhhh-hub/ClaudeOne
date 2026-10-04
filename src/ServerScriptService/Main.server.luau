@@ -14,7 +14,7 @@ TitleService.Start()
 
 -- Newer services start one by one in protected calls: if one of them fails, it warns in Output and
 -- the rest of the game (saving, machines, titles) keeps running.
-local OPTIONAL_SERVICES = { "QuestService", "MuscleOfTheDayService" }
+local OPTIONAL_SERVICES = { "BoostService", "QuestService", "MuscleOfTheDayService", "StaminaService" }
 for _, name in ipairs(OPTIONAL_SERVICES) do
 	task.spawn(function()
 		local ok, err = pcall(function()
@@ -24,11 +24,17 @@ for _, name in ipairs(OPTIONAL_SERVICES) do
 	end)
 end
 
--- Stamina refills on its own
+-- Stamina refills on its own (faster on recovery stations and with boosts)
+local boostsOk, BoostService = pcall(require, script.Parent.Server.BoostService)
 local TICK = 0.25
 while true do
 	task.wait(TICK)
 	for _, player in ipairs(Players:GetPlayers()) do
-		PlayerData.RegenStamina(player, TICK)
+		local multiplier = 1
+		if boostsOk then
+			local ok, value = pcall(BoostService.Regen, player)
+			if ok then multiplier = value end
+		end
+		PlayerData.RegenStamina(player, TICK, multiplier)
 	end
 end

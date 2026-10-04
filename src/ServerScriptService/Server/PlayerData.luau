@@ -306,12 +306,12 @@ function PlayerData.UseStamina(player, amount)
 	return true
 end
 
--- Natural refill; waits Stamina.RegenDelay after the last rep.
-function PlayerData.RegenStamina(player, dt)
+-- Natural refill; waits Stamina.RegenDelay after the last rep. `multiplier` = recovery stations and boosts.
+function PlayerData.RegenStamina(player, dt, multiplier)
 	local data = PlayerData.Get(player)
 	if not data or data.stamina >= PlayerData.GetMaxStamina(player) then return end
 	if os.clock() - (lastStaminaUse[player] or 0) < Stamina.RegenDelay then return end
-	PlayerData.SetStamina(player, data.stamina + Stamina.RegenPerSecond * dt)
+	PlayerData.SetStamina(player, data.stamina + Stamina.RegenPerSecond * dt * (multiplier or 1))
 end
 
 -- Returns true if the title was newly granted.
@@ -427,10 +427,11 @@ end
 -- Tutorial progress only moves forward (any step up to Onboarding.Done); no rewards hang on it.
 function PlayerData.SetTutorialStep(player, step)
 	local data = PlayerData.Get(player)
-	if not data or type(step) ~= "number" or step ~= math.floor(step) then return end
-	if step <= data.onboarding.tutorialStep or step > Onboarding.Done then return end
+	if not data or type(step) ~= "number" or step ~= math.floor(step) then return false end
+	if step <= data.onboarding.tutorialStep or step > Onboarding.Done then return false end
 	data.onboarding.tutorialStep = step
 	replicate(player, { "onboarding", "tutorialStep" }, step)
+	return true
 end
 
 -- Sound volume settings (0-1 each), clamped here so the client can't store anything odd.

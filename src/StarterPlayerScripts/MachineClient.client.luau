@@ -862,7 +862,7 @@ local function localLockout(state)
 
 	local setDone = current.reps % FEEL.SetSize == 0
 	if character then
-		local xp = Gains.PerRep(ClientData.Get(), machine, state.tier)
+		local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost")) -- same boosts as the server
 		for index, entry in ipairs(machine.muscles) do
 			local scale = (index == 1 and 1 or 0.72) * (setDone and 1.3 or 1)
 			local side = index == 1 and 0 or (index % 2 == 0 and -1 or 1)

@@ -28,6 +28,44 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Energy Shakes, stretching mat, gym cat (2026-10-05) ✅ (needs your playtest)
+
+**Built**
+- **Energy Shakes** (`StaminaService`, numbers in `Config/Stamina`): the shake machine by the door gets a
+  "Buy shake · 25 coins" prompt. Shakes go in your bag (max 20). A **Drink shake** button appears in the right
+  column above the quest tracker while you have any: drinking fills stamina and gives **+50% gains for 30 s**
+  (drinking again adds time, up to 90 s); the button then counts down "Shake boost 23s". Random flavor in the note
+  (chocolate, strawberry...), flavors are cosmetic only. Quest rewards also give shakes.
+- **Boosts in one place** (`BoostService`): shakes now, and later rush hour / server boost / gamepasses all
+  multiply gains, coins and stamina refill the same way. Gains still go through the 5x cap; the client's gain
+  popups use the same boost so the numbers match.
+- **Stretching mat:** standing on the stretching area (its `Recovery = StretchMat` attribute, already in the
+  place) refills stamina **2.5x faster**.
+- **Plates the gym cat:** a small part-built cat sits in front of the cat bed by the front desk, tail wagging
+  (animated on each client, no network cost). Tap **Pet**: +10 stamina, once every 30 s per player.
+- **Tutorial:** the "stamina + free shake" step from the brief replaces the plain "rest" step: you get a free
+  shake (given by the server once) and the step ends when you drink it.
+- **Right column** (`Shared/UI/RightColumn`): shake button and quest tracker stack there without overlapping.
+
+**How to test**
+1. `git pull`, Play. Walk to the shake machine left of the door → Buy shake (needs 25 coins) → button appears on
+   the right → Drink: stamina full, countdown starts, gain popups are bigger.
+2. Lift until stamina is low, step onto the stretching mats (right side, middle): it refills much faster.
+3. Pet the cat at the right end of the front desk: "+10 stamina"; pet again right away: "napping".
+4. Replay the tutorial: step 4 gives a free shake and waits for you to drink it.
+
+**Assumptions**
+- Prices/durations are first guesses (25 coins, 30 s, +50%); tune in `Config/Stamina`.
+- The cat's name is "Plates" (original). It doesn't walk around.
+- Foam rollers and a sauna don't exist as separate stations; the whole stretching area counts as one recovery
+  station. Any model can become one by giving it a `Recovery` attribute (`StretchMat`).
+- No gulp/purr sounds: I can't audition new sounds from the cloud, so drinking reuses the soft ding.
+
+**Not verified**
+- No playtest. Compile, type analysis, Rojo build and the logic tests pass.
+
+---
+
 ## Step 8: Coach quests + Muscle of the Day (2026-10-05) ✅ (needs your playtest)
 
 **Built**

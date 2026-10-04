@@ -8,6 +8,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local BodyService = require(script.Parent.BodyService)
 local TitleService = require(script.Parent.TitleService)
 local Titles = require(Config.Titles)
+local Onboarding = require(Config.Onboarding)
 
 local Remotes = ReplicatedStorage.Remotes
 
@@ -48,7 +49,13 @@ end
 
 -- Tutorial: the client reports the step it reached (validated in PlayerData).
 handlers.TutorialStep = function(player, step)
-	PlayerData.SetTutorialStep(player, step)
+	if PlayerData.SetTutorialStep(player, step) then
+		-- a step's gift (e.g. the free shake) is given once, when the step is reached
+		local def = Onboarding.Steps[step]
+		if def and def.gift and def.gift.shakes then
+			PlayerData.AddShakes(player, def.gift.shakes)
+		end
+	end
 end
 
 -- Settings menu: { music = 0-1, effects = 0-1 }

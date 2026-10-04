@@ -26,7 +26,7 @@ for where everything sits in Studio.
 | `Muscles` | 18 muscles in 6 groups (Chest, Shoulders, Back, Arms, Legs, Core), XP curve |
 | `Machines` | the 8 machines, which muscles each trains, weight tiers (cost, unlock level, coins/rep, plates) |
 | `Gains` | XP per rep formula: base 7 × tier × genetics × spurt bonus × balance bonus, capped ×5, diminishing at high level; 0.4s rep cooldown |
-| `Stamina` | max 100, regen 20/s after 1.2s rest |
+| `Stamina` | max 100, regen 20/s after 1.2s rest; recovery stations, Energy Shakes, the gym cat |
 | `Genetics` | grade odds and multipliers (D 0.75× … S 1.5×), frames, body types |
 | `GrowthSpurts` | height, required level and bonus per spurt |
 | `Titles` | every title and its unlock condition |
@@ -53,6 +53,8 @@ for where everything sits in Studio.
 - `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt).
 - `Server/QuestService`: Coach Dex, quest progress and rewards.
 - `Server/MuscleOfTheDayService`: writes today's group on the chalkboard.
+- `Server/BoostService`: every gains/coins/refill multiplier (shakes, events, passes) and recovery stations.
+- `Server/StaminaService`: shake machine, drinking shakes, Plates the gym cat.
 - `Main` starts newer services in protected calls (a failing one can't stop saving or machines).
 
 **Remotes** (`ReplicatedStorage/Remotes`)
@@ -69,6 +71,7 @@ for where everything sits in Studio.
 - `OverheadTitleClient`: local effects on overhead title tags.
 - `MenuClient`: menu screen on join (covers data loading; Play, plus Titles/Settings for returning players).
 - `QuestClient`: quest tracker, Coach speech, Muscle of the Day note.
+- `ShakeClient`: Drink shake button + boost countdown, shake/cat notes, cat tail wag.
 - `TutorialClient`: first 5 minutes coach line, glowing floor path and machine outline (steps in `Config/Onboarding`).
 
 **Shared helpers** (`ReplicatedStorage/Shared`)
@@ -76,7 +79,7 @@ for where everything sits in Studio.
 - `Audio`: plays sounds from `Config/Sounds` through SoundGroups.
 - `UI/Theme`: the "clean minimal" design system (colors, fonts, spacing,
   `Theme.New`, panels, buttons). **All UI should use it.**
-- `UI/SideMenu`, `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
+- `UI/RightColumn` (right-middle stack: shake button, quest tracker), `UI/SideMenu`, `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
   stats/genetics visible, open titles/settings).
 
 ## Open tasks (from the owner's task list, 4 Oct 2026)

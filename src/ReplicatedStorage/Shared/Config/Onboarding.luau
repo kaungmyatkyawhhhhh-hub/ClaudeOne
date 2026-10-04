@@ -8,6 +8,8 @@
 --   statsOpen  the Stats overlay is opened
 --   statsOpenFor  the Stats overlay has been open for `count` seconds in total (or is closed after opening)
 --   quest      the player has a quest from the Coach
+--   shake      the player drinks an Energy Shake
+-- `gift` = given by the server once, when the player reaches the step ({ shakes = n }).
 --   seconds    `count` seconds pass
 -- Saves store the step number and the server only moves it forward. Players who finished never see new steps.
 local Onboarding = {}
@@ -17,7 +19,8 @@ Onboarding.Steps = {
 		target = "FlatBench", done = { type = "onMachine" } },
 	{ id = "FirstLift", text = "Tap anywhere to lift.", done = { type = "reps", count = 1 } },
 	{ id = "Stamina", text = "Every rep uses stamina. Keep lifting until it runs low.", done = { type = "staminaLow", below = 0.4, count = 20 } },
-	{ id = "Rest", text = "Stamina refills on its own when you rest. Legs are next.", done = { type = "seconds", count = 4 } },
+	{ id = "Shake", text = "Stamina refills when you rest. Here's a free Energy Shake: tap Drink shake on the right.",
+		gift = { shakes = 1 }, done = { type = "shake" } },
 	{ id = "GoSquat", text = "Head to the Squat Rack.", onMachineText = "Tap Exit, then head to the Squat Rack.",
 		target = "SquatRack", done = { type = "onMachine" } },
 	{ id = "SquatLift", text = "Tap to lift. Legs need love too.", done = { type = "reps", count = 3, machine = "SquatRack" } },

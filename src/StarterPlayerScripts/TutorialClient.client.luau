@@ -279,6 +279,7 @@ end)
 local onMachine = nil -- MachineId of the machine the player is on
 local statsOpenTime = 0 -- seconds Stats has been open during the current step
 local statsSeenThisStep = false
+local drankShake = false -- during the current step
 local stepIndex = data.onboarding.tutorialStep
 local stepReps = 0
 local stepStarted = os.clock()
@@ -322,6 +323,8 @@ local function check()
 		if statsOpen then advance() end
 	elseif done.type == "statsOpenFor" then
 		if statsOpenTime >= done.count then advance() end
+	elseif done.type == "shake" then
+		if drankShake then advance() end
 	elseif done.type == "quest" then
 		local quests = ClientData.Get().quests
 		if quests and quests.active then advance() end
@@ -346,6 +349,7 @@ function advance()
 	stepStarted = os.clock()
 	statsOpenTime = 0
 	statsSeenThisStep = statsOpen
+	drankShake = false
 	Remotes.PlayerAction:FireServer("TutorialStep", stepIndex)
 	hidePath()
 	if stepIndex >= Onboarding.Done then
@@ -380,6 +384,13 @@ end)
 
 ClientData.Changed:Connect(function(path)
 	if (path[1] == "stamina" or path[1] == "quests") and stepIndex < Onboarding.Done then check() end
+end)
+
+Remotes.PlayerEvent.OnClientEvent:Connect(function(kind)
+	if kind == "ShakeDrunk" and stepIndex < Onboarding.Done then
+		drankShake = true
+		check()
+	end
 end)
 
 UIBus.StatsVisible.Event:Connect(function(visible)

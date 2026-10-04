@@ -12,6 +12,7 @@ local Gains = require(Config.Gains)
 local PlayerData = require(script.Parent.PlayerData)
 local TitleService = require(script.Parent.TitleService)
 local QuestService = require(script.Parent.QuestService)
+local BoostService = require(script.Parent.BoostService)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme) -- bumper plate colors
 
 -- Bars sit loaded when nobody is using them (a mix, so the gym shows every bumper color).
@@ -182,7 +183,7 @@ local function lift(player)
 	local progress = PlayerData.GetMachine(player, machine.id)
 	local tier = machine.tiers[progress.selected]
 	local cap = PlayerData.GetLevelCap(player)
-	local xp = Gains.PerRep(data, machine, progress.selected)
+	local xp = Gains.PerRep(data, machine, progress.selected, BoostService.Gains(player))
 
 	local levels, maxed = {}, {}
 	for muscleId, amount in pairs(xp) do
@@ -192,12 +193,13 @@ local function lift(player)
 			if level >= cap then maxed[muscleId] = true end
 		end
 	end
-	PlayerData.AddCoins(player, tier.coins)
+	local coins = math.max(1, math.floor(tier.coins * BoostService.Coins(player) + 0.5))
+	PlayerData.AddCoins(player, coins)
 	TitleService.OnRep(player)
 	QuestService.OnRep(player, machine.id)
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
-	Remotes.RepResult:FireClient(player, { levels = levels, maxed = maxed, coins = tier.coins })
+	Remotes.RepResult:FireClient(player, { levels = levels, maxed = maxed, coins = coins })
 end
 
 local function isTierIndex(value)

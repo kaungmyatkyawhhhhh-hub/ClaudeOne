@@ -13,6 +13,7 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Notify = require(Shared.UI.Notify)
 local UIBus = require(Shared.UI.UIBus)
+local RightColumn = require(Shared.UI.RightColumn)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -27,18 +28,16 @@ local SPEECH = { Time = 5, Width = 9, Height = 1.6, Offset = 3.2 } -- seconds, s
 ------------------------------------------------------------------------
 -- Tracker
 ------------------------------------------------------------------------
-local gui = Theme.ScreenGui({ Name = "QuestTracker", DisplayOrder = 3, Enabled = false, Parent = playerGui })
 local panel = Theme.Panel({
-	Name = "Panel",
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -Spacing.L, 0.5, 0),
-	Size = UDim2.fromOffset(230, 0),
+	Name = "QuestTracker",
+	Size = UDim2.fromOffset(RightColumn.Width, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
-	Parent = gui,
+	Visible = false, -- shown after Play
 }, {
 	Theme.Pad("M"),
 	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
+RightColumn.Add(panel, 2)
 local header = Theme.Text({ LayoutOrder = 1, Text = "Quest", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 local questText = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 local bar = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = panel }, { Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Left) })
@@ -75,7 +74,7 @@ local function refresh()
 end
 
 ClientData.Changed:Connect(function(path)
-	if path[1] == "quests" and gui.Enabled then refresh() end
+	if path[1] == "quests" and panel.Visible then refresh() end
 end)
 
 ------------------------------------------------------------------------
@@ -159,7 +158,7 @@ task.spawn(function()
 	ClientData.Get()
 	UIBus.WaitForMenu()
 	refresh()
-	gui.Enabled = true
+	panel.Visible = true
 	Theme.Fade(panel, true)
 	task.wait(2)
 	local group = Muscles.GroupById[MuscleOfTheDay.GroupId()]

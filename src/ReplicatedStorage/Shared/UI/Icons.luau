@@ -183,6 +183,26 @@ function Icons.Gear(color)
 end
 
 -- Recolor any icon built here (lines are filled frames, outlines are strokes).
+-- Shaker cup: body, lid line and a straw.
+function Icons.Shake(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Shake")
+	outline(icon, color, 0.44, 0.56, 0.5, 0.62, UDim.new(0.18, 0))
+	line(icon, color, 0.56, 0.5, 0.3)
+	line(icon, color, 0.26, 0.6, 0.16, -60)
+	return icon
+end
+
+-- Clock-style timer: a ring with one hand (shake boost time left).
+function Icons.Timer(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Timer")
+	outline(icon, color, 0.7, 0.7, 0.5, 0.52, UDim.new(1, 0))
+	line(icon, color, 0.24, 0.5, 0.42, 90)
+	line(icon, color, 0.14, 0.5, 0.12)
+	return icon
+end
+
 function Icons.Tint(icon, color)
 	for _, part in ipairs(icon:GetDescendants()) do
 		if part:IsA("UIStroke") then
