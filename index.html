@@ -292,6 +292,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .scard{border-radius:20px;padding:14px;color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.2)}.sc-lucky{background:linear-gradient(135deg,#1f9d5b,#2fd28a)}.sc-gold{background:linear-gradient(135deg,#a8720c,#ffcc33)}.sc-diamond{background:linear-gradient(135deg,#2a5bd7,#7fd6ff 60%,#b05ac8)}.scttl{font:900 1.3rem var(--display);text-align:center;letter-spacing:.04em}.scttl small{display:block;font:700 .7rem var(--mono);opacity:.85}
 .scgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.scc{aspect-ratio:1.2;border:0;border-radius:12px;background:repeating-linear-gradient(45deg,#c9ced8 0 6px,#b7bdc9 6px 12px);font-size:2rem;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}.scc.open{background:#fff;animation:cardin .2s}.scpay{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font:700 .7rem var(--mono)}.scpay span{background:rgba(0,0,0,.18);padding:3px 7px;border-radius:99px}
 .mplb{margin:8px 0}.lbtabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:6px}.lbtabs button{border:0;border-radius:99px;padding:5px 10px;font:700 .72rem var(--body);background:var(--sunk);color:var(--ink);cursor:pointer;flex:none}.lbtabs button.on{background:var(--ink);color:var(--bg)}.lb>div{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;font-size:.82rem}.lb>div.me{background:color-mix(in oklab,var(--accent) 14%,transparent)}.lb b{width:24px;text-align:center}.lb span{flex:1}.lb i{font:700 .78rem var(--mono);font-style:normal}
+.homeart{padding:0;overflow:hidden}.homeart svg{display:block;width:100%;height:auto}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -1273,7 +1274,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawSeasonDecor();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   drawFinds();
@@ -1848,16 +1849,12 @@ function gymDraw(){
   c.restore();
 }
 /* ---------- home ---------- */
-function homeArt(){const n=night()>.5;return `<svg viewBox="0 0 400 180" aria-hidden="true"><rect width="400" height="180" fill="var(--sunk)"/><rect y="140" width="400" height="40" fill="#b08660" opacity=".55"/>
-  <rect x="250" y="26" width="110" height="78" rx="6" fill="${n?"#141a33":"#bfe0ff"}"/>${n?'<circle cx="330" cy="50" r="10" fill="#f4f1d0"/>':'<circle cx="330" cy="50" r="12" fill="#ffd36b"/>'}<rect x="302" y="26" width="6" height="78" fill="var(--surface)"/><rect x="250" y="62" width="110" height="5" fill="var(--surface)"/>
-  <rect x="40" y="96" width="170" height="44" rx="8" fill="#2a3cff"/><rect x="40" y="84" width="54" height="24" rx="8" fill="var(--surface)"/><rect x="30" y="70" width="16" height="74" rx="4" fill="#8a6a4a"/><rect x="204" y="94" width="14" height="50" rx="4" fill="#8a6a4a"/>
-  <rect x="236" y="116" width="40" height="24" rx="3" fill="#8a6a4a"/><circle cx="256" cy="108" r="8" fill="#ffd36b"/></svg>`}
 function openHome(){
   const draw=()=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
-      <div class="art">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
+      <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
-      <div class="bankbtns"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button></div>
+      <div class="bankbtns"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button></div>
       ${dailyCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -1880,14 +1877,14 @@ function openHome(){
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
     $("room").querySelectorAll("[data-paint]").forEach(b=>b.onclick=()=>{S.paint=b.dataset.paint;dirty=true;SFX.buy();draw()});
     $("room").querySelectorAll("[data-skin]").forEach(b=>b.onclick=()=>{S.skin=+b.dataset.skin;dirty=true;SFX.buy();draw()});
     $("sleepBtn").onclick=()=>{audioOn();const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="Zzz";document.body.appendChild(fx);
-      setTimeout(()=>{S.energy=maxEnergy();S.awake=0;if(S.clock>=7)S.day++;S.clock=7;dirty=true;draw();updMini()},1300);setTimeout(()=>{fx.remove();banner("Good morning","u")},2600)};
+      setTimeout(()=>{S.energy=maxEnergy();S.awake=0;if(S.clock>=7)S.day++;S.clock=7;if(comfort()>0)S.buffs.rested=180;dirty=true;draw();updMini()},1300);setTimeout(()=>{fx.remove();banner(comfort()>0?"Good morning · well rested +"+Math.round(restK()*100)+"% sales":"Good morning","u")},2600)};
   };draw();
 }
 /* ---------- cafe ---------- */
@@ -2612,7 +2609,7 @@ const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*(S.buffs&&S.buffs.hype>0?1.3:1)*(1+.12*pk("cat_"+s.cat)));
+const sellValue=s=>valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(1+.12*pk("cat_"+s.cat)));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 function newListing(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
@@ -3720,6 +3717,49 @@ const LB=[["c","Cash",p=>p.c||0,fmt],["lv","Level",p=>p.lv||0,v=>"Lv "+v],["pr",
 let lbK="c";
 function leaderHTML(){if(!MP)return "";const me={n:mpName(),c:Math.round(S.cash),lv:repLevel(),pr:S.pr,cm:S.height||170,f:Math.round(S.fans||0),me:1},L=[me,...Object.values(MP.peers)],M_=LB.find(x=>x[0]===lbK);
   const rows=L.slice().sort((a,b)=>M_[2](b)-M_[2](a));return `<div class="lbtabs">${LB.map(([k,n])=>`<button class="${k===lbK?"on":""}" data-lb="${k}">${n}</button>`).join("")}</div><div class="lb">${rows.map((p,i)=>`<div class="${p.me?"me":""}"><b>${i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</b><span>${esc(String(p.n||"?").slice(0,16))}${p.me?" (you)":""}</span><i>${M_[3](M_[2](p))}</i></div>`).join("")}</div>`}
+
+/* ================= home interior: furniture you see, comfort that pays ================= */
+const FURN=[
+ {k:"rug",n:"Persian rug",cost:2000,cf:2},{k:"plant",n:"Monstera plant",cost:1500,cf:2},{k:"lamp",n:"Designer lamp",cost:6000,cf:3},
+ {k:"tv",n:"85\" OLED TV",cost:25000,cf:5},{k:"shelf",n:"Trophy shelf",cost:40000,cf:4,d:"Shows your trophies and relics"},{k:"games",n:"Gaming setup",cost:80000,cf:5},
+ {k:"aqua",n:"Aquarium",cost:250000,cf:7,d:"Shows the fish you've caught"},{k:"art",n:"Gallery wall",cost:900000,cf:8},{k:"fire",n:"Fireplace",cost:3e6,cf:9},
+ {k:"piano",n:"Grand piano",cost:1.2e7,cf:12},{k:"chand",n:"Crystal chandelier",cost:5e7,cf:15},{k:"gold",n:"Gold everything",cost:5e8,cf:25,d:"Gilds the whole room"}];
+const comfort=()=>FURN.reduce((a,f)=>a+((S.furn||{})[f.k]?f.cf:0),0);
+const restK=()=>Math.min(.25,comfort()*.0025);
+function homeArt(){const n=night()>.5,F=S.furn||{},hm=S.home||0,G=!!F.gold;
+  const wall=G?"#e9d48a":["#f0e2cf","#dfe9f0","#2e3340","#f3ead6","#ece4f7","#e2f2f0","#f4e3e3"][hm]||"#f0e2cf",floor=G?"#c9a24a":["#b08660","#c9b39a","#3a3f4c","#a0764a","#8a6a8a","#b9a37a","#8a5a4a"][hm]||"#b08660",dark=hm===2&&!G;
+  const view=hm>=4?`<rect x="250" y="26" width="120" height="84" fill="${n?"#0e1530":"#8fd8ff"}"/><path d="M250 92 Q300 70 370 90 V110 H250Z" fill="#3f9a4e"/><rect x="250" y="96" width="120" height="14" fill="#2fa6d9"/>`
+    :hm>=2?`<rect x="250" y="26" width="120" height="84" fill="${n?"#0e1530":"#bfe0ff"}"/>${[0,1,2,3,4,5].map(i=>`<rect x="${254+i*20}" y="${56+(i*23)%30}" width="16" height="${54-(i*23)%30}" fill="${n?"#2a3050":"#9fb2c4"}"/>`).join("")}${n?[0,1,2,3,4,5].map(i=>`<rect x="${258+i*20}" y="${62+(i*23)%30}" width="3" height="3" fill="#ffd98a"/>`).join(""):""}`
+    :`<rect x="250" y="26" width="120" height="84" fill="${n?"#141a33":"#bfe0ff"}"/>`;
+  const fishes=Object.keys(S.fish||{}).map(k=>FISH.find(f=>f.k===k)).filter(Boolean).slice(0,6);
+  return `<svg viewBox="0 0 400 220" aria-hidden="true"><rect width="400" height="220" fill="${wall}"/>${G?Array.from({length:12},(_,i)=>`<rect x="${i*34}" y="0" width="2" height="150" fill="#f6e7a8" opacity=".6"/>`).join(""):""}<rect y="150" width="400" height="70" fill="${floor}"/>${Array.from({length:8},(_,i)=>`<rect x="${i*52}" y="150" width="1.5" height="70" fill="rgba(0,0,0,.08)"/>`).join("")}<rect y="146" width="400" height="5" fill="rgba(0,0,0,.12)"/>
+    ${view}${n?'<circle cx="340" cy="44" r="8" fill="#f4f1d0"/>':'<circle cx="345" cy="46" r="9" fill="#ffd36b"/>'}<rect x="306" y="26" width="5" height="84" fill="${dark?"#4a5060":"#fff"}"/><rect x="250" y="64" width="120" height="4" fill="${dark?"#4a5060":"#fff"}"/><rect x="246" y="22" width="128" height="92" fill="none" stroke="${dark?"#4a5060":"#fff"}" stroke-width="5"/>
+    ${F.chand?`<g><path d="M200 0 V18" stroke="#cf9a14"/><path d="M176 26 Q200 14 224 26" stroke="#cf9a14" fill="none" stroke-width="2"/>${[-20,-10,0,10,20].map(d=>`<path d="M${200+d} ${26} l-2 8 2 4 2 -4Z" fill="#dff4ff" opacity=".9"/><circle cx="${200+d}" cy="${24}" r="2" fill="#ffe08a"/>`).join("")}${n?'<circle cx="200" cy="30" r="40" fill="#ffe08a" opacity=".12"/>':""}</g>`:""}
+    ${F.art?`<g>${[[30,30,44,34,"#e2364a"],[82,24,36,46,"#2a5bd7"],[126,34,40,30,"#cf9a14"]].map(([x,y,w,h,c])=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#3b2a20" stroke-width="3"/><rect x="${x+5}" y="${y+5}" width="${w-10}" height="${h-10}" fill="${c}" opacity=".85"/><circle cx="${x+w*.6}" cy="${y+h*.45}" r="${Math.min(w,h)*.18}" fill="#fff" opacity=".6"/>`).join("")}</g>`:""}
+    ${F.shelf?`<g><rect x="186" y="54" width="54" height="4" fill="#7a5a36"/><rect x="186" y="80" width="54" height="4" fill="#7a5a36"/>${Array.from({length:Math.min(4,Object.keys(S.trophies||{}).length+1)},(_,i)=>`<path d="M${192+i*12} 52 h8 v-6 q0 -6 -4 -6 q-4 0 -4 6Z" fill="#ffcc33"/>`).join("")}${Array.from({length:Math.min(4,(S.stats.relics||0)+1)},(_,i)=>`<rect x="${190+i*12}" y="70" width="8" height="10" rx="2" fill="${["#cf9a14","#7a5a36","#2bb3a3","#b05ac8"][i]}"/>`).join("")}</g>`:""}
+    ${F.fire?`<g><rect x="20" y="96" width="70" height="54" fill="#8a6a5a"/><rect x="14" y="90" width="82" height="8" fill="#6e5244"/><rect x="32" y="110" width="46" height="40" fill="#1b1d22"/><path d="M40 150 Q46 124 55 136 Q60 116 66 136 Q72 126 72 150Z" fill="#ff7a3d"><animate attributeName="d" values="M40 150 Q46 124 55 136 Q60 116 66 136 Q72 126 72 150Z;M40 150 Q44 128 55 132 Q62 112 66 132 Q74 130 72 150Z;M40 150 Q46 124 55 136 Q60 116 66 136 Q72 126 72 150Z" dur="1s" repeatCount="indefinite"/></path><path d="M48 150 Q54 134 58 140 Q62 128 66 150Z" fill="#ffcc33"/></g>`:""}
+    ${F.aqua?`<g><rect x="104" y="98" width="70" height="44" rx="3" fill="#2fa6d9" opacity=".85" stroke="#2b2f3a" stroke-width="3"/><rect x="104" y="136" width="70" height="6" fill="#f5e2b0"/><rect x="100" y="142" width="78" height="10" fill="#2b2f3a"/>${(fishes.length?fishes:[FISH[0]]).map((f,i)=>`<g><animateTransform attributeName="transform" type="translate" values="0 0;${i%2?-12:12} 0;0 0" dur="${3+i}s" repeatCount="indefinite"/><path d="M${114+(i*19)%46} ${108+(i*9)%22} q5 -4 10 0 l4 -3 v6 l-4 -3 q-5 4 -10 0Z" fill="${f.c}"/></g>`).join("")}<circle cx="160" cy="120" r="2" fill="#fff" opacity=".7"><animate attributeName="cy" values="132;104" dur="2s" repeatCount="indefinite"/></circle></g>`:""}
+    ${F.piano?`<g><path d="M300 150 L300 128 Q300 112 322 112 L376 112 Q392 112 392 128 L392 150Z" fill="#141824"/><rect x="300" y="124" width="40" height="6" fill="#fff"/>${[0,1,2,3,4,5].map(i=>`<rect x="${302+i*6}" y="124" width="2" height="4" fill="#141824"/>`).join("")}<rect x="304" y="150" width="4" height="14" fill="#141824"/><rect x="384" y="150" width="4" height="14" fill="#141824"/></g>`:""}
+    ${F.rug?`<ellipse cx="200" cy="186" rx="110" ry="20" fill="#a8323e"/><ellipse cx="200" cy="186" rx="92" ry="14" fill="none" stroke="#e8c27a" stroke-width="2"/>`:""}
+    ${F.tv?`<g><rect x="186" y="100" width="70" height="42" rx="3" fill="#141824"/><rect x="189" y="103" width="64" height="36" fill="${n?"#2a5bd7":"#3b6fd8"}" opacity=".85"><animate attributeName="fill" values="#3b6fd8;#2fd28a;#e2364a;#3b6fd8" dur="6s" repeatCount="indefinite"/></rect><rect x="206" y="142" width="30" height="8" fill="#5a3a24"/></g>`:""}
+    ${F.games?`<g><rect x="262" y="132" width="34" height="20" fill="#2b2f3a"/><rect x="266" y="118" width="26" height="15" fill="#141824"/><rect x="268" y="120" width="22" height="11" fill="#b05ac8"><animate attributeName="fill" values="#b05ac8;#4fe3ff;#b05ac8" dur="2s" repeatCount="indefinite"/></rect><rect x="258" y="152" width="16" height="18" rx="3" fill="#e2364a"/></g>`:""}
+    <rect x="${G?60:40}" y="158" width="170" height="40" rx="8" fill="${G?"#8a1d2a":"#2a3cff"}"/><rect x="${G?60:40}" y="146" width="54" height="24" rx="8" fill="${G?"#a8323e":"#4a5cff"}"/><rect x="${G?50:30}" y="140" width="16" height="62" rx="4" fill="${G?"#cf9a14":"#8a6a4a"}"/><rect x="${G?224:204}" y="156" width="14" height="46" rx="4" fill="${G?"#cf9a14":"#8a6a4a"}"/>
+    ${F.plant?`<g><rect x="370" y="168" width="20" height="22" fill="#c9762c"/>${[-.8,-.3,.2,.7].map(a=>`<ellipse cx="${380+Math.sin(a)*12}" cy="${158-Math.cos(a)*8}" rx="8" ry="4" transform="rotate(${a*60} ${380+Math.sin(a)*12} ${158-Math.cos(a)*8})" fill="#2f8a42"/>`).join("")}</g>`:""}
+    ${F.lamp?`<g><rect x="244" y="130" width="3" height="60" fill="#2b2f3a"/><path d="M234 132 L257 132 L250 116 L241 116Z" fill="#ffcc33"/>${n?'<circle cx="245" cy="132" r="30" fill="#ffe08a" opacity=".18"/>':""}</g>`:""}
+    <rect x="256" y="168" width="40" height="24" rx="3" fill="#8a6a4a"/><circle cx="276" cy="162" r="8" fill="#ffd36b"/></svg>`}
+function openInterior(back){S.furn=S.furn||{};
+  const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Interior")}<div class="art homeart">${homeArt()}</div>
+    <div class="kv"><div><span class="eyebrow">Comfort</span><b>${comfort()}</b></div><div><span class="eyebrow">Well rested</span><b>+${Math.round(restK()*100)}% sales</b></div></div>
+    <div class="note">Furniture shows up in your home. Comfort makes you <b>well rested</b> after sleeping: a sales bonus for 3 minutes.</div>
+    <div class="perks">${FURN.map(f=>{const own=S.furn[f.k];return `<button class="perk nopic" data-fu="${f.k}" ${own||S.cash<f.cost?"disabled":""}><span class="t">${f.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${f.d?f.d+". ":""}+${f.cf} comfort</span><span class="c">${own?"Owned":fmt(f.cost)}</span></button>`}).join("")}</div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-fu]").forEach(b=>b.onclick=()=>{const f=FURN.find(x=>x.k===b.dataset.fu);if(S.furn[f.k]||S.cash<f.cost)return;S.cash-=f.cost;S.furn[f.k]=1;dirty=true;SFX.buy();confetti(50);banner(f.n+" placed","g");draw();updMini()})};draw()}
+/* seasonal decorations around town */
+function drawSeasonDecor(){if(room)return;const sn=season().n;if(sn!=="Autumn"&&sn!=="Winter")return;
+  PLACES.forEach((p,i)=>{if(!regionOpen(p.region)||(MPW&&p.k==="home"))return;const[dx,dy]=p.door,x=dx+(i%2?38:-38),y=dy+12;if(x<cam.x-30||x>cam.x+vw+30||y<cam.y-30||y>cam.y+vh+30)return;
+    if(sn==="Autumn"){ctx.fillStyle="#e2762c";ctx.beginPath();ctx.ellipse(x,y,8,6.5,0,0,7);ctx.fill();ctx.strokeStyle="#b85a1c";ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y,3,6.5,0,0,7);ctx.stroke();ctx.fillStyle="#3f7a3a";ctx.fillRect(x-1,y-9,2,4);if(night()>.4){ctx.fillStyle="#ffd36b";ctx.beginPath();ctx.moveTo(x-4,y-1);ctx.lineTo(x-2,y-3);ctx.lineTo(x,y-1);ctx.moveTo(x+1,y-1);ctx.lineTo(x+3,y-3);ctx.lineTo(x+5,y-1);ctx.fill();ctx.fillRect(x-3,y+2,6,1.5)}}
+    else{ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.arc(x,y-10,5,0,7);ctx.fill();ctx.fillStyle="#141824";ctx.fillRect(x-2,y-12,1.5,1.5);ctx.fillRect(x+1,y-12,1.5,1.5);ctx.fillStyle="#ff7a3d";ctx.fillRect(x-.5,y-10,4,1.5);ctx.fillStyle="#e2364a";ctx.fillRect(x-5,y-6,10,2);
+      const lx=p.x,lw=p.w,ly=p.y+p.h-fh(p)-6;for(let k=0;k<lw;k+=14){ctx.fillStyle=["#e2364a","#2fd28a","#ffcc33","#4fe3ff"][(k/14+Math.floor(wt*2))%4|0];ctx.beginPath();ctx.arc(lx+k+7,ly+Math.sin(k)*1.5,2.2,0,7);ctx.fill()}}})}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
