@@ -84,6 +84,9 @@ dimGui.ScreenInsets = Enum.ScreenInsets.None
 local dim = New("TextButton", { Name = "Dim", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Colors.Background, BackgroundTransparency = 0.5, Text = "", AutoButtonColor = false, Parent = dimGui })
 
 local gui = Theme.ScreenGui({ Name = "GeneticsScreen", Enabled = false, DisplayOrder = 26, Parent = playerGui })
+-- Phones (Theme.IsCompact): the content starts right of the side menu (one or two columns, measured on open) and
+-- fills the height; the Frame/Body lines wrap to two rows and the buttons are narrower.
+local COMPACT = Theme.IsCompact()
 local root = New("Frame", {
 	Name = "Root",
 	-- shifted right so it clears the side menu (16px margin + 64px buttons + 16px gap)
@@ -93,7 +96,7 @@ local root = New("Frame", {
 	BackgroundTransparency = 1,
 	Parent = gui,
 }, {
-	Theme.Limit(Vector2.new(520, 300), Vector2.new(940, 480)),
+	Theme.Limit(COMPACT and Vector2.new(400, 240) or Vector2.new(520, 300), Vector2.new(940, 480)),
 	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
 
@@ -145,17 +148,19 @@ local barViewport = New("ViewportFrame", {
 local letterLayer = New("Frame", { Name = "Letters", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = barHolder })
 local namesRow = New("Frame", { Name = "Names", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 38), BackgroundTransparency = 1, Parent = barColumn })
 
-local infoRow = New("Frame", { Name = "Info", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Parent = barColumn },
-	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
+local infoList = Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left)
+infoList.Wraps = true -- narrow screens: "Body: ..." moves to a second row instead of running off the side
+local infoRow = New("Frame", { Name = "Info", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 24), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Parent = barColumn },
+	{ infoList })
 -- "Frame: Average" in white with its bonus in gray beside it
 local function infoWithBonus(order)
-	local text = Theme.Text({ LayoutOrder = order, Font = "Regular", TextSize = "Body", AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), Parent = infoRow })
+	local text = Theme.Text({ LayoutOrder = order, Font = "Regular", TextSize = "Body", AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 24), Parent = infoRow })
 	local bonus = Theme.Text({
 		LayoutOrder = order + 1,
 		Font = "Regular",
 		TextSize = "Small",
 		TextColor3 = Colors.Muted,
-		Size = UDim2.fromScale(0, 1),
+		Size = UDim2.fromOffset(0, 24),
 		AutomaticSize = Enum.AutomaticSize.X, -- one line, as wide as its text (a wrapped second line got clipped)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = infoRow,
@@ -165,7 +170,7 @@ local function infoWithBonus(order)
 	return text, bonus
 end
 local frameLabel, frameBonusLabel = infoWithBonus(1)
-New("Frame", { Name = "Gap", LayoutOrder = 3, Size = UDim2.new(0, Spacing.XL, 1, 0), BackgroundTransparency = 1, Parent = infoRow })
+New("Frame", { Name = "Gap", LayoutOrder = 3, Size = UDim2.fromOffset(Spacing.XL, 24), BackgroundTransparency = 1, Parent = infoRow })
 local bodyLabel, bodyBonusLabel = infoWithBonus(4)
 
 -- Buttons row: "View odds" link (left), Reroll and Keep (right)
@@ -185,10 +190,10 @@ local oddsLink = New("TextButton", {
 	Parent = buttons,
 }, { New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
 Theme.TextShadow(oddsLink)
-local rerollButton = Theme.Button("Secondary", { Name = "Reroll", LayoutOrder = 1, Size = UDim2.new(0, 210, 1, 0), Parent = buttons })
+local rerollButton = Theme.Button("Secondary", { Name = "Reroll", LayoutOrder = 1, Size = UDim2.new(0, COMPACT and 170 or 210, 1, 0), Parent = buttons })
 local rerollStroke = rerollButton:FindFirstChildOfClass("UIStroke")
 local rerollLabel = Theme.Text({ Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), Parent = rerollButton })
-local keepButton = Theme.Button("Primary", { Name = "Keep", LayoutOrder = 2, Size = UDim2.new(0, 150, 1, 0), Parent = buttons }, {
+local keepButton = Theme.Button("Primary", { Name = "Keep", LayoutOrder = 2, Size = UDim2.new(0, COMPACT and 110 or 150, 1, 0), Parent = buttons }, {
 	Theme.Text({ Text = "Keep", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
@@ -565,6 +570,12 @@ end
 local function open()
 	if isOpen then return end
 	isOpen = true
+	if COMPACT then
+		local left = SideMenu.Right() + Spacing.M
+		root.AnchorPoint = Vector2.new(0, 0.5)
+		root.Position = UDim2.new(0, left, 0.5, 0)
+		root.Size = UDim2.new(1, -(left + Spacing.L), 1, -Spacing.M * 2)
+	end
 	menuButton:SetActive(true)
 	oddsPanel.Visible = false
 	UIBus.GeneticsVisible:Fire(true)

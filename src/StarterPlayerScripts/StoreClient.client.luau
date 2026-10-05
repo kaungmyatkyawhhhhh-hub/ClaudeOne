@@ -97,9 +97,9 @@ local panel = Theme.Panel({
 	Name = "Panel",
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(460, 420),
+	Size = UDim2.new(0, 460, 1, -Spacing.L * 2), -- as tall as the screen allows (phones), up to 420
 	Parent = backdrop,
-}, { Theme.Pad("L") })
+}, { Theme.Pad("L"), New("UISizeConstraint", { MaxSize = Vector2.new(460, 420) }) })
 local header = New("Frame", { Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = panel })
 Theme.Text({ Text = "Store", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, -120, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
 local closeButton = Theme.Button("Secondary", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 100, 1, 0), Parent = header }, {
