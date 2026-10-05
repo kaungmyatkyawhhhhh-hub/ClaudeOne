@@ -532,6 +532,10 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 @keyframes lvp{to{transform:scale(1.08);box-shadow:0 0 0 3px rgba(255,255,255,.7),0 0 36px rgba(245,179,1,.95),var(--shadow)}}
 .crcnt{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .crcnt span{padding:5px 10px;border-radius:99px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#fff;background:color-mix(in oklab,var(--c) 45%,transparent);box-shadow:inset 0 0 0 1px var(--c)}
+.wquick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wquick button{padding:11px 8px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow);font-family:var(--mono);font-size:.74rem;font-weight:700}
+.wquick button.on{box-shadow:inset 0 0 0 2px var(--pc,var(--accent)),var(--shadow)}
+.wquick #wMax{background:linear-gradient(135deg,#ff7a3d,#e2364a);color:#fff}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -741,7 +745,7 @@ const repLevel=()=>Math.floor(Math.sqrt((S.stats.earnedAll||0)/400));
 const lvlFrac=()=>{const L=repLevel(),a=L*L*400,b=(L+1)*(L+1)*400;return((S.stats.earnedAll||0)-a)/(b-a)};
 const SC=()=>Math.floor(repLevel()/5);
 const pk=k=>(S.perks&&S.perks[k])||0;
-const mult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1);
+const mult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver());
 const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy");
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
@@ -795,12 +799,13 @@ const ACH=[
  ["tower100","Cloud piercer","Build 100 floors of Flip Tower",()=>(S.tower||0)>=100,5e6],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
  ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
+ ["tall190","Towering","Grow to 190 cm",()=>(S.height||170)>=190,10000],
  ["swole","Swole","Max out chest, back and legs",()=>{const b=myBuild();return b.c>=1.4&&b.l>=1.4&&b.b>=1.4},20000]
 ];
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
 const maxEnergy=()=>maxEnergyFor(strLv());
-const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag+pk("slot");
-const walkSpeed=()=>150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
+const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag+pk("slot")+((S&&S.spurts)||0);
+const walkSpeed=()=>150*(1+.25*S.up.shoes)*(1+.004*cmOver())*(1+.1*pk("speed"))*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]||1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
@@ -1051,6 +1056,8 @@ function buildStatic(){
   STATIC=c;staticDark=isDark();
 }
 function drawPerson(x,y,o){
+  const c0=o.g||ctx,T=o.tall||1;if(T!==1){c0.save();c0.translate(x,y);c0.scale(1+(T-1)*.35,T);c0.translate(-x,-y)}drawPerson0(x,y,o);if(T!==1)c0.restore()}
+function drawPerson0(x,y,o){
   const c=o.g||ctx,s=o.size||1,b=o.mv?Math.sin(o.ph*14)*1.5:0,l=o.mv?Math.sin(o.ph*14)*3:0,B=o.build,bc=B?B.c:0,bl=B?B.l:0,bb=B?B.b:0;
   const lw=5*s*(1+.65*bl),aw=5*s*(1+.75*bc),sw=20*s*(1+.24*bb+.14*bc)*(o.pose==="lat"?1.18:1),wa=Math.min(sw/2,9*s*(1+.12*bl)),hx=sw/2;
   c.fillStyle="rgba(0,0,0,.22)";c.beginPath();c.ellipse(x,y+1,(11+3*bb)*s,4.5,0,0,7);c.fill();
@@ -1127,7 +1134,7 @@ function drawWorld(){
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
+  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   drawToys();
   [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
@@ -1211,9 +1218,15 @@ function barbellSVG(w){
 }
 let G=null,G0lift=null;
 const liftCost=w=>Math.max(1,Math.ceil((2+w/40)*(G&&G.half?.5:1)));
-function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;z*=1+.1*pk("lift");return clamp(z,.06,.5)}
+function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/(10*(1+(S.spurts||0)))*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;z*=(1+.1*pk("lift"))*(1+.06*(S.spurts||0));return clamp(z,.06,.5)}
 function newZone(){const z=zoneFor(G.w);G.z=[rnd(.08,.92-z),0];G.z[1]=G.z[0]+z}
 const LIFTS=[["bench","Bench"],["squat","Squat"],["dead","Deadlift"]];
+// Height: growth spurts reset your lifts but make you taller, and taller means more confidence
+const cmOver=()=>Math.max(0,((S&&S.height)||170)-170);
+const liftOver=()=>10+10*((S&&S.spurts)||0);
+const spurtReq=()=>120+30*(S.spurts||0);
+const spurtGain=()=>Math.min(6,2+Math.floor(Math.max(0,S.pr-spurtReq())/40));
+const tallK=()=>((S&&S.height)||170)/170;
 const liftTotal=()=>S.lifts.bench+S.lifts.squat+S.lifts.dead;
 const syncPR=()=>{S.pr=Math.max(S.lifts.bench,S.lifts.squat,S.lifts.dead)};
 function liftPanel(l0){
@@ -1226,9 +1239,13 @@ function liftPanel(l0){
       <div class="kv"><div><span class="eyebrow">Total (rank)</span><b>${liftTotal()} kg</b></div><div><span class="eyebrow">Strength</span><b>Lv ${lv} · ${strTier()}</b></div>
         <div><span class="eyebrow">Stash slots</span><b>+${Math.min(lv,12)}</b></div><div><span class="eyebrow">Max energy</span><b>+${2*lv}</b></div></div>
       <div class="wsel"><button class="wbtn" id="wDown" aria-label="Less weight">−</button><div class="wval"><b>${G.w} kg</b><span class="${over?"pr":""}">${over?"New "+LIFTS.find(x=>x[0]===G.lift)[1].toLowerCase()+" PR attempt":G.w===lp?"Your max":"Under your max"}</span></div><button class="wbtn" id="wUp" aria-label="More weight">+</button></div>
+      <div class="wquick"><button id="wPR" ${G.w===lp?"class=on":""}>My PR · ${lp} kg</button><button id="wMax" ${G.w===lp+liftOver()?"class=on":""}>Max · ${lp+liftOver()} kg</button></div>
       <div class="meter" id="meter"><i class="zone" id="zone" style="left:${G.z[0]*100}%;width:${(G.z[1]-G.z[0])*100}%"></i><i class="needle" id="needle"></i></div>
       <button class="bigbtn" id="liftBtn">Lift ${G.w} kg<small>Tap in the green · ${cost} energy${S.protein>0?" · protein":""}${S.buffs&&S.buffs.fed>0?" · well fed":""}${S.awake>20?" · tired, smaller zone":""}</small></button>
       <div class="sechead"><h3>Physique</h3><span class="eyebrow">Mirror check</span></div>${physiqueCard()}
+      <div class="sechead"><h3>Growth spurt</h3><span class="eyebrow">${S.height||170} cm · ${S.spurts||0} spurts</span></div>
+      <div class="note">Reset all three lifts to 20 kg and <b>grow taller</b>. Every cm over 170 gives confidence: +0.5% on sales, faster walking, safer lowballing, bigger flex crowds and more fans. Muscle memory makes each climb back faster: bigger green zone, bigger jumps, and more weight allowed over your PR.</div>
+      <button class="bigbtn alt" id="gSpurt" ${S.pr<spurtReq()?"disabled":""}>Growth spurt +${spurtGain()} cm<small>${S.pr<spurtReq()?`Needs ${spurtReq()} kg max lift · you have ${S.pr} kg`:`Lifts go back to 20 kg · you'll be ${(S.height||170)+spurtGain()} cm`}</small></button>
       <div class="sechead"><h3>Strength perks</h3><span class="eyebrow">${strTier()} · ${S.pr} kg</span></div>
       <div class="sperks">
         <div class="on"><b>Every 10 kg</b><span>+1 stash slot (up to 12), +2 max energy, more patient sellers</span></div>
@@ -1236,11 +1253,14 @@ function liftPanel(l0){
         <div class="on"><b>Arena power</b><span>Your max lift is your arm wrestling strength</span></div>
         ${STR_PERKS.map(([kg,t,d])=>`<div class="${hasStr(kg)?"on":""}"><b>${t} <em>${kg} kg</em></b><span>${d}</span></div>`).join("")}
       </div>
-      <p class="fine">Each lift has its own PR, and you can try up to 10 kg over it. Your strength perks use your best lift. Your total of all three counts at powerlifting meets in the Arena.</p></div>`;
+      <p class="fine">Each lift has its own PR, and you can try up to ${liftOver()} kg over it${S.spurts?" thanks to muscle memory":""}. Your strength perks use your best lift. Your total of all three counts at powerlifting meets in the Arena.</p></div>`;
     $("gBack").onclick=closePanel;
-    const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+10);newZone();draw()};
+    const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+liftOver());newZone();draw()};
     P.querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+5;newZone();draw()});
-    $("wDown").onclick=()=>setW(G.w-2.5);$("wUp").onclick=()=>setW(G.w+2.5);
+    $("wDown").onclick=()=>setW(G.w-2.5);$("wUp").onclick=()=>setW(G.w+2.5);{let armed=false;const sb=$("gSpurt");sb.onclick=()=>{if(S.pr<spurtReq())return;if(!armed){armed=true;sb.innerHTML="Tap again to grow<small>All lifts reset to 20 kg</small>";SFX.hot();return}
+      const g=spurtGain();S.height=(S.height||170)+g;S.spurts=(S.spurts||0)+1;S.lifts={bench:20,squat:20,dead:20};syncPR();G.w=25;newZone();dirty=true;
+      SFX.rebirth();flash("#4fe3ff",.55);confetti(220,null,null,["#4fe3ff","#ffffff","#ffcc33","#2fd28a"]);shake(10,.6);buzz([40,40,80,40,160]);banner("GROWTH SPURT","u");banner("+"+g+" cm · "+S.height+" cm","g");if(GS)gymPop(GS.px,GS.py-90,"+"+g+" CM","#4fe3ff",{life:2.2});draw();updMini();renderHud()}}
+    $("wMax").onclick=()=>setW(S.lifts[G.lift]+liftOver());$("wPR").onclick=()=>setW(S.lifts[G.lift]);
     $("liftBtn").onclick=e=>{audioOn();if(G.busy)return;if(!spend(liftCost(G.w),e.currentTarget))return;
       const ok=G.pos>=G.z[0]&&G.pos<=G.z[1];G.busy=true;
       const bar=$("liftBar");
@@ -1250,7 +1270,7 @@ function liftPanel(l0){
         else floatAt(e.currentTarget,"Clean lift","var(--up)")}
       else{$("gArt").classList.add("fail");SFX.nope();buzz([30,40,30]);floatAt(e.currentTarget,"Failed the lift","var(--down)")}
       dirty=true;updMini();
-      setTimeout(()=>{if(!G)return;G.busy=false;const lp2=S.lifts[G.lift];if(ok&&G.w>=lp2&&G.w<lp2+10)G.w=Math.min(lp2+10,G.w+2.5);newZone();draw()},ok?650:550);
+      setTimeout(()=>{if(!G)return;G.busy=false;const lp2=S.lifts[G.lift];if(ok&&G.w>=lp2&&G.w<lp2+liftOver())G.w=Math.min(lp2+liftOver(),G.w+2.5*(1+(S.spurts||0)));newZone();draw()},ok?650:550);
     };
   };draw();
 }
@@ -1448,7 +1468,7 @@ function judge(F,res){
 }
 function ringR(P){return 64-46*clamp(P.t/P.dur,0,1)}
 function flexTap(k){const F=GS&&GS.flex;if(!F||F.done||!F.prompt)return;if(k!==F.prompt.pose)return judge(F,"wrong");const d=Math.abs(ringR(F.prompt)-26);judge(F,d<=6?"perfect":d<=15?"good":"miss")}
-function crowdCap(){return Math.min(14,4+Math.floor(strLv()/2)+(GS.half?2:0))}
+function crowdCap(){return Math.min(14,4+Math.floor(strLv()/2)+(GS.half?2:0)+Math.floor(cmOver()/5))}
 function flexTick(dt){
   const F=GS.flex;if(!F||F.done)return;F.t+=dt;F.hype=Math.max(0,F.hype-1.4*dt);
   if(F.prompt){F.prompt.t+=dt;if(F.prompt.t>=F.prompt.dur)judge(F,"miss")}else{F.gap-=dt;if(F.gap<=0&&F.t<F.dur-.8)newPrompt(F)}
@@ -1477,7 +1497,7 @@ function endFlex(){
     P.innerHTML=`<div class="gpanel-in"><div class="lotbid"><span class="eyebrow">${T.n} · results</span><b>${["","1st","2nd","3rd","4th"][place]}</b><span class="who">Posing ${pose.toFixed(1)}/20 · Physique ${phys.toFixed(1)}/10</span></div>
       <div class="perks">${field.map((x,i)=>`<div class="perk nopic${x.you?" me":""}"><span class="t">${i+1}. ${x.n}</span><span class="c">${x.s}</span></div>`).join("")}</div>
       <div class="kv"><div><span class="eyebrow">Prize</span><b>${fmt(cash)}</b></div><div><span class="eyebrow">New fans</span><b>+${fmtN(fans)}</b></div></div>${back}</div>`}
-  else{const mul=(1+S.pr/120)*(F.stage?1.5:1)*(GS.half?1.3:1)*(pumped()?1.3:1)*(1+.05*pk("sales")),fans=Math.round((F.peak*F.peak*3+F.peak*10+F.pts*4)*mul),tips=Math.round(F.peak*rnd(4,9)*(1+repLevel()*.25));
+  else{const mul=(1+S.pr/120)*(F.stage?1.5:1)*(GS.half?1.3:1)*(pumped()?1.3:1)*(1+.05*pk("sales"))*(1+.02*cmOver()),fans=Math.round((F.peak*F.peak*3+F.peak*10+F.pts*4)*mul),tips=Math.round(F.peak*rnd(4,9)*(1+repLevel()*.25));
     S.fans=(S.fans||0)+fans;if(tips)earn(tips);SFX.sell();if(F.peak>=6){confetti(40+F.peak*8)}if(F.peak>=8&&Math.random()<.4)setTimeout(()=>gainCrate(),1000);
     P.innerHTML=`<div class="gpanel-in"><div class="lotbid"><span class="eyebrow">Flex session</span><b>${F.peak} watched</b><span class="who">${F.pts}/${F.maxPts} pose points${F.stage?" · on stage ×1.5":""}${pumped()?" · pumped ×1.3":""}</span></div>
       <div class="kv"><div><span class="eyebrow">New fans</span><b>+${fmtN(fans)}</b></div><div><span class="eyebrow">Tips</span><b>${fmt(tips)}</b></div><div><span class="eyebrow">Total fans</span><b>${fmtN(S.fans)}</b></div><div><span class="eyebrow">Sponsor</span><b>${sponsor()?sponsor()[1]:"At 500 fans"}</b></div></div>
@@ -1509,7 +1529,7 @@ function gymSceneTick(dt){
   });
   GS.npcs=GS.npcs.filter(n=>!(n.guest&&n.y>600));
   GS.pops.forEach(p=>p.t+=dt);GS.pops=GS.pops.filter(p=>p.t<p.life);
-  $("gFans").textContent=`${fmtN(S.fans||0)} fans${pumped()?" · PUMPED "+Math.ceil(S.buffs.pump)+"s":""}${sponsor()?" · "+sponsor()[1]:""}`;
+  $("gFans").textContent=`${S.height||170} cm · ${fmtN(S.fans||0)} fans${pumped()?" · PUMPED "+Math.ceil(S.buffs.pump)+"s":""}${sponsor()?" · "+sponsor()[1]:""}`;
   if($("gPanel").hidden||GS.flex)gymDraw();
 }
 /* drawing helpers for the gym */
@@ -1593,7 +1613,7 @@ function gymDraw(){
     if(work&&Math.sin(n.ph*.7)>0){const up=Math.abs(Math.sin(n.ph*3));c.fillStyle="#1b1d22";c.fillRect(n.x+10*n.size,n.y-22-up*10,8,3);c.fillStyle="#5b6272";c.fillRect(n.x+9*n.size,n.y-23-up*10,2,5);c.fillRect(n.x+16*n.size,n.y-23-up*10,2,5)}}]);
   const sz=1+Math.min(.6,(S.pr-20)/300)+(pumped()?.06:0);
   ppl.push([GS.py,()=>{if(F){c.fillStyle="rgba(255,255,255,.08)";c.beginPath();c.ellipse(GS.px,GS.py+1,26,9,0,0,7);c.fill()}
-    drawPerson(GS.px,GS.py,{g:c,build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:GS.mv,ph:GS.ph,you:!F,size:sz,pose:GS.poseT>0?GS.pose:GS.curlT>0?(Math.sin(GS.ph*10)>0?"bi":null):null})}]);
+    drawPerson(GS.px,GS.py,{g:c,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:GS.mv,ph:GS.ph,you:!F,size:sz,pose:GS.poseT>0?GS.pose:GS.curlT>0?(Math.sin(GS.ph*10)>0?"bi":null):null})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   if(F&&F.T){[160,200,240].forEach((x,i)=>drawPerson(x,392,{g:c,shirt:"#1b1f2a",skin:G_SKINS[i+1],hair:G_HAIRS[i],size:.95,legs:"#1b1d22"}));c.fillStyle="#2b2f3a";rrp(c,136,384,128,18,4);c.fill();c.fillStyle="#454b5a";c.fillRect(136,384,128,3);c.fillStyle="#fff";[160,200,240].forEach(x=>c.fillRect(x-7,389,14,9));c.font="800 8px "+getComputedStyle(root).getPropertyValue("--mono");c.textAlign="center";c.fillStyle="#9aa3b3";c.fillText("JUDGES",200,412)}
   const near=GS.near;if(near&&!F){c.strokeStyle="rgba(255,255,255,.55)";c.lineWidth=2;c.setLineDash([6,5]);c.lineDashOffset=-wt*16;c.beginPath();c.ellipse(near.x,near.y+4,34,14,0,0,7);c.stroke();c.setLineDash([])}
@@ -1639,7 +1659,7 @@ function openHome(){
         <div><span class="eyebrow">Earned this life</span><b>${fmt(S.earned)}</b></div><div><span class="eyebrow">Earned all time</span><b>${fmt(S.stats.earnedAll)}</b></div>
         <div><span class="eyebrow">Flips</span><b>${S.stats.flips}</b></div><div><span class="eyebrow">Best flip</span><b>${fmt(S.stats.best)}</b></div>
         <div><span class="eyebrow">Heaviest lift</span><b>${S.stats.heaviest||S.pr} kg</b></div><div><span class="eyebrow">Grails</span><b>${S.stats.grails}</b></div>
-        <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">Fans</span><b>${fmtN(S.fans||0)}</b></div><div><span class="eyebrow">Rich list</span><b>#${richRank()}</b></div><div><span class="eyebrow">Tower floors</span><b>${S.tower||0}</b></div><div><span class="eyebrow">You vs Vince</span><b>${S.stats.vW||0}–${S.stats.vL||0}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
+        <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">Height</span><b>${S.height||170} cm</b></div><div><span class="eyebrow">Confidence</span><b>+${cmOver()}%</b></div><div><span class="eyebrow">Fans</span><b>${fmtN(S.fans||0)}</b></div><div><span class="eyebrow">Rich list</span><b>#${richRank()}</b></div><div><span class="eyebrow">Tower floors</span><b>${S.tower||0}</b></div><div><span class="eyebrow">You vs Vince</span><b>${S.stats.vW||0}–${S.stats.vL||0}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
@@ -2554,7 +2574,7 @@ function marketTick(dt,now){
     if(!l||l.id!==hold.id||l.gone)hold=null;else if(!hold.active&&now-hold.t0>170)hold.active=true;
     if(hold&&hold.active){hold.acc+=dt;
       while(hold&&hold.acc>=.09){hold.acc-=.09;l.disc=Math.min(.6,l.disc+.02);l.price=Math.max(1,Math.round(l.ask*(1-l.disc)));SFX.tick(l.disc);
-        const risk=Math.max(0,l.disc-.06)*.16*(1-.3*S.up.coach)*(1-Math.min(.45,.03*strLv()));
+        const risk=Math.max(0,l.disc-.06)*.16*(1-.3*S.up.coach)*(1-Math.min(.45,.03*strLv()))*(1-Math.min(.3,.01*cmOver()));
         if(Math.random()<risk){l.gone=.8;hold=null;SFX.walk();buzz([20,40,20])}}}
   }
   for(let i=0;i<3;i++){const l=M.market[i];
