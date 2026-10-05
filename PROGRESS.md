@@ -123,7 +123,36 @@ place and backed up in `src/`; please File > Save to Roblox first thing.
     with the player rep animation, rest between sets, drink water, chat in pairs. They never take a machine a player
     is on, near or walking toward, and step off within ~2 s if a player walks up (or at once if they tap Use).
     Coach Dex and legends play an idle animation and turn toward nearby players. Name labels: small, 30 studs.
-- Next: Session 3 (town map, shops, beach, skate park).
+- Session 3 (town, shops, beach, skate park): done, walked and skated. Builders: `tools/builders/TownKit`, `Town`.
+  - No baseplate or gray void any more: terrain grass (mixed with leafy grass and ground, gentle bumps) everywhere,
+    hills with tree clusters around the town, sand beach and the sea out to the horizon, a light sky haze.
+  - Main street with sidewalks, curbs, lane dashes, 2 crosswalks, a detailed street lamp every 16 studs (base, ringed
+    pole, curled arm, lantern), bins, hydrants, a bus stop, bike racks, crates, a signpost to every area.
+  - Plaza across from the gym: three-tier fountain with spray, benches, trees in planters, flower beds, string lights;
+    a boardwalk to the beach.
+  - ~20 background buildings with real facades (framed windows with sills and mullions, shutters, balconies,
+    shopfronts with striped awnings and original shop names, wall lamps, pilasters, cornices, drainpipes, rooftop
+    AC units / water tanks / railings and roof gardens), 8 warm colors; a simpler distant skyline on the hills.
+  - Gym exterior: glass canopy on posts over the entrance, step + door mat, lit GYM ARC sign in a framed box, a
+    rooftop GYM ARC sign, big framed street windows into the gym, parapets with coping, drainpipes, wall lights,
+    planters, a bike rack with bikes, benches. The pro gym front is a dark glass curtain wall with chrome mullions,
+    LED trim and a GYM ARC PRO sign; its roof has solar panels. The entrance door frame is now a real frame (it was a
+    solid slab that blocked the doorway once the new town sat on top of it).
+  - Smoothie bar: striped awning, lit sign with a smoothie cup, patio tables with umbrellas and chairs, an A-frame
+    menu; inside a marble counter with blenders, fruit baskets, cups, a readable menu board (prices in coins, all
+    flavors), a lit bottle fridge, bar stools, plants, pendants, and the ShakeMachine (Buy shake).
+  - Gear & Fits: display windows with lit mannequins, awning, lit sign; inside clothing racks with hanging shirts,
+    shelves of folded shirts, a shoe and bag wall, a changing room with a curtain and mirror, a full mirror, the
+    checkout counter with a register (Shop prompt), rugs, pendants.
+  - Beach: varied curved palms with coconuts, umbrellas (pole + 8-panel canopy) with towels and chairs, a lifeguard
+    tower, a volleyball court and net, a surfboard rack, rocks, driftwood, shells, a sand castle.
+  - Beach gym: bamboo shade structure, rubber mats on the sand, 3 real cable machines (Beach Curl / Raise / Shrug), a
+    pull-up bar, a battle rope, kettlebells, a GYM ARC flag. Posing stage: steps with handrails, foot lights, a GYM
+    ARC backdrop, trusses with 4 spotlights, three rows of crowd benches.
+  - Skate park: quarter pipes, a half pipe, a fun box with a rail, a long grind rail, ledges with steel edges, a fence
+    with gates, two original graffiti walls ("RIDE ON", "GYM ARC"), benches, flood lights. Tested on the board:
+    rides up the quarter pipe and over the fun box.
+- Next: Session 4 (UI + stats body map).
 
 ## Decisions made overnight
 - PR banner: your brief's design file lists "personal-record popups" as CUT, but tonight's prompt asks for a NEW PR
@@ -144,6 +173,11 @@ place and backed up in `src/`; please File > Save to Roblox first thing.
 - Pro gym "heavier weight tiers": players get the same 12-tier sets everywhere (one progression per machine); the pro
   gym's regulars lift the top tiers so the glass view shows the heavy plates.
 - Cardio machines are recovery stations (`Stamina.Recovery.Cardio`), not a new training mechanic.
+- Town footprint: the town is now x -142..178 (was -78..78) so the street can run past both gyms; `Config/Town` has all
+  the new numbers (skate area, shop positions, beach, stage). The old "Town" folder was replaced completely.
+- Creator Store: nothing inserted. Every tree, lamp, building and prop is built from parts by the builders.
+- Terrain note for future builders: Roblox draws a solid terrain surface ~2 studs above the filled height (water has
+  no offset), so the Town builder fills everything 2 studs low.
 - NPC clothing/hair: Roblox-made catalog items only (verified creator "Roblox" with GetProductInfo); ids are in
   `tools/builders/NPCs.luau`.
 - Old town pieces that cut through the bigger gyms (a hedge + invisible wall at z -60, the east boundary at x 78 and

@@ -88,8 +88,32 @@ local function starterShell(room)
 		{ { 10, 5 }, { 26, 5 }, { 42, 5 }, { 58, 5 } })
 	wallWithWindows(shell, "BackWall", Vector3.new(S.MinX - 1, 0, S.MinZ - 0.5), Vector3.new(S.MaxX + 1, 0, S.MinZ - 0.5), h, C.Brick, M.Brick,
 		{ { 8, 5 }, { 64, 5 } })
-	p(shell, "FrontWallL", Vector3.new(32, h, 1), CFrame.new(-21, h / 2, -3.5), C.Brick, M.Brick, true)
-	p(shell, "FrontWallR", Vector3.new(32, h, 1), CFrame.new(21, h / 2, -3.5), C.Brick, M.Brick, true)
+	-- front wall (x -37..-5 and 5..37) with big framed street windows, so people outside see into the gym
+	local function frontWall(fromX, toX, windows)
+		local x = fromX
+		table.sort(windows, function(a, b) return a[1] < b[1] end)
+		for _, win in ipairs(windows) do
+			local left, right = win[1] - win[2] / 2, win[1] + win[2] / 2
+			if left > x then p(shell, "FrontWall", Vector3.new(left - x, h, 1), CFrame.new((x + left) / 2, h / 2, -3.5), C.Brick, M.Brick, true) end
+			p(shell, "FrontWall", Vector3.new(win[2], 2.2, 1), CFrame.new(win[1], 1.1, -3.5), C.Brick, M.Brick, true)
+			p(shell, "FrontWall", Vector3.new(win[2], h - 8.2, 1), CFrame.new(win[1], 8.2 + (h - 8.2) / 2, -3.5), C.Brick, M.Brick, true)
+			p(shell, "StreetWindow", Vector3.new(win[2], 6, 0.2), CFrame.new(win[1], 5.2, -3.5), hex("#9DB3BE"), M.Glass, true, { Transparency = 0.55, Reflectance = 0.08 })
+			for _, z in ipairs({ -4.05, -2.95 }) do
+				p(shell, "WindowFrame", Vector3.new(win[2] + 0.3, 0.3, 0.12), CFrame.new(win[1], 8.2, z), C.Frame, M.Metal)
+				p(shell, "WindowFrame", Vector3.new(win[2] + 0.3, 0.3, 0.12), CFrame.new(win[1], 2.2, z), C.Frame, M.Metal)
+				p(shell, "WindowFrame", Vector3.new(0.3, 6.3, 0.12), CFrame.new(left, 5.2, z), C.Frame, M.Metal)
+				p(shell, "WindowFrame", Vector3.new(0.3, 6.3, 0.12), CFrame.new(right, 5.2, z), C.Frame, M.Metal)
+				for i = 1, math.floor(win[2] / 2.2) do
+					p(shell, "Mullion", Vector3.new(0.12, 6, 0.1), CFrame.new(left + i * win[2] / (math.floor(win[2] / 2.2) + 1), 5.2, z), C.Frame, M.Metal)
+				end
+			end
+			p(shell, "OutsideSill", Vector3.new(win[2] + 0.6, 0.25, 0.6), CFrame.new(win[1], 2.15, -2.75), hex("#8E8A82"), M.Concrete)
+			x = right
+		end
+		if toX > x then p(shell, "FrontWall", Vector3.new(toX - x, h, 1), CFrame.new((x + toX) / 2, h / 2, -3.5), C.Brick, M.Brick, true) end
+	end
+	frontWall(-37, -5, { { -31, 6 }, { -19, 6 } })
+	frontWall(5, 37, { { 31, 6 } })
 	p(shell, "DoorHeader", Vector3.new(10, 4, 1), CFrame.new(0, 11, -3.5), C.Brick, M.Brick, true)
 	for _, x in ipairs({ -5.2, 5.2 }) do p(shell, "DoorFrame", Vector3.new(0.4, 9, 1.2), CFrame.new(x, 4.5, -3.5), C.Frame, M.Metal, true) end
 	p(shell, "DoorFrame", Vector3.new(10.6, 0.5, 1.2), CFrame.new(0, 9.1, -3.5), C.Frame, M.Metal, true)
@@ -419,7 +443,21 @@ local function proShell(room)
 	for x = P.MinX + 7, P.MaxX - 1, 7 do p(shell, "FloorJoint", Vector3.new(0.05, 0.01, d), CFrame.new(x, 0.155, cz), hex("#0E0E10")) end
 	p(shell, "EastWall", Vector3.new(1, h, d + 1), CFrame.new(P.MaxX + 0.5, h / 2, cz), C.ProWall, M.Concrete, true)
 	p(shell, "BackWall", Vector3.new(w + 2, h, 1), CFrame.new(cx, h / 2, P.MinZ - 0.5), C.ProWall, M.Concrete, true)
-	p(shell, "FrontWall", Vector3.new(w + 2, h, 1), CFrame.new(cx, h / 2, -3.5), C.ProWall, M.Concrete, true)
+	-- street front: a dark glass curtain wall (x 38..76) with chrome mullions and LED trim, solid where the lockers are
+	local glassFrom, glassTo = 38, 76
+	p(shell, "FrontWall", Vector3.new(P.MaxX + 1 - glassTo, h, 1), CFrame.new((glassTo + P.MaxX + 1) / 2, h / 2, -3.5), C.ProWall, M.Concrete, true)
+	p(shell, "FrontWall", Vector3.new(glassFrom - P.MinX + 1, h, 1), CFrame.new((P.MinX - 1 + glassFrom) / 2, h / 2, -3.5), C.ProWall, M.Concrete, true)
+	p(shell, "FrontSpandrel", Vector3.new(glassTo - glassFrom, h - 11, 1), CFrame.new((glassFrom + glassTo) / 2, 11 + (h - 11) / 2, -3.5), C.ProWall, M.Concrete, true)
+	p(shell, "FrontBase", Vector3.new(glassTo - glassFrom, 0.8, 1), CFrame.new((glassFrom + glassTo) / 2, 0.4, -3.5), C.ProWall, M.Concrete, true)
+	local curtain = p(shell, "CurtainGlass", Vector3.new(glassTo - glassFrom, 10.2, 0.25), CFrame.new((glassFrom + glassTo) / 2, 5.9, -3.5), hex("#1E2A33"), M.Glass, true, { Transparency = 0.35, Reflectance = 0.25 })
+	curtain.CastShadow = false
+	for x = glassFrom, glassTo, 4 do
+		p(shell, "CurtainMullion", Vector3.new(0.3, 10.2, 0.5), CFrame.new(x, 5.9, -3.5), C.Chrome, M.Metal)
+	end
+	p(shell, "CurtainRail", Vector3.new(glassTo - glassFrom, 0.3, 0.5), CFrame.new((glassFrom + glassTo) / 2, 11, -3.5), C.Chrome, M.Metal)
+	p(shell, "CurtainRail", Vector3.new(glassTo - glassFrom, 0.3, 0.5), CFrame.new((glassFrom + glassTo) / 2, 0.8, -3.5), C.Chrome, M.Metal)
+	p(shell, "OutsideLed", Vector3.new(P.MaxX - P.MinX + 2, 0.12, 0.12), CFrame.new(cx, h - 0.4, -2.9), C.Led, M.Neon)
+	p(shell, "OutsideLed", Vector3.new(P.MaxX - P.MinX + 2, 0.12, 0.12), CFrame.new(cx, 0.35, -2.9), C.Led, M.Neon)
 	p(shell, "Ceiling", Vector3.new(w + 2, 1, d + 2), CFrame.new(cx, h + 0.5, cz), hex("#0C0C0E"), M.Concrete, true)
 	-- vertical wall panels with LED seams on the east and back walls
 	for z = P.MinZ + 7, P.MaxZ - 3, 7 do
