@@ -3427,9 +3427,13 @@ function islandArt(i,owner,bl){const nt=night(),dusk=S.clock>=17&&S.clock<20,b=b
     ${nt>.5?"":`<g fill="#fff" opacity=".85"><animateTransform attributeName="transform" type="translate" values="-20 0;30 0;-20 0" dur="30s" repeatCount="indefinite"/><ellipse cx="90" cy="30" rx="22" ry="6"/><ellipse cx="104" cy="26" rx="12" ry="6"/><ellipse cx="250" cy="22" rx="18" ry="5"/></g>`}
     <rect y="96" width="400" height="84" fill="url(#isea)"/>${[110,128,146,164].map((y,j)=>`<path d="M-40 ${y} q20 -4 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="rgba(255,255,255,.3)" stroke-width="1.5" fill="none"><animateTransform attributeName="transform" type="translate" values="0 0;40 0" dur="${3+j}s" repeatCount="indefinite"/></path>`).join("")}
     <ellipse cx="200" cy="114" rx="180" ry="30" fill="#f2dcaa"/><ellipse cx="200" cy="110" rx="168" ry="24" fill="#f5e2b0"/><ellipse cx="205" cy="102" rx="120" ry="18" fill="${t===2?"#5f7a4a":"#4f9a50"}"/>
-    ${extra}${palm(40,112,.9)}${palm(354,110,.95)}${b.garden?palm(140,104,.7)+palm(250,102,.65):""}${L}${gardenF}
+    ${extra}${palm(40,112,.9)}${palm(354,110,.95)}${b.garden?palm(140,104,.7)+palm(250,102,.65):""}${L}${gardenF}${islPeople(b,nt)}${bl&&bl.chest?`<g class="chest"><animateTransform attributeName="transform" type="translate" values="0 0;0 -2;0 0" dur="1.6s" repeatCount="indefinite"/><rect x="92" y="124" width="22" height="13" rx="2" fill="#8a5a2c"/><rect x="92" y="121" width="22" height="6" rx="3" fill="#a0764a"/><rect x="101" y="125" width="4" height="5" fill="#ffcc33"/><circle cx="103" cy="128" r="14" fill="#ffe08a" opacity=".18"/></g>`:""}${bl&&bl.boat?`<g><animateTransform attributeName="transform" type="translate" values="0 0;0 2;0 0" dur="2.6s" repeatCount="indefinite"/><path d="M14 150 H62 L54 160 H22Z" fill="#fff"/><rect x="26" y="142" width="20" height="8" fill="#e9eef4"/><rect x="36" y="128" width="2" height="14" fill="#7a5a36"/><path d="M38 129 L50 140 H38Z" fill="#f4ecd8"/></g>`:""}
     <g fill="none" stroke="${nt>.5?"#cfd6e4":"#3b3a46"}" stroke-width="1" opacity=".55"><animateTransform attributeName="transform" type="translate" values="0 0;40 -8;0 0" dur="14s" repeatCount="indefinite"/><path d="M60 50 q3 -3 6 0 q3 -3 6 0"/><path d="M76 42 q2.5 -2.5 5 0 q2.5 -2.5 5 0"/></g>
     <text x="200" y="172" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="700" fill="#fff" opacity=".9">${owner?esc(String(owner).toUpperCase())+"'S ":""}${i.n.toUpperCase()}</text></svg>`}
+function islPeople(b,nt){if(nt>.6)return "";const n=1+(b.bar?2:0)+(b.hotel?3:0)+(b.villa?1:0)+(b.pool?1:0),cols=["#e2364a","#2a5bd7","#ffcc33","#2bb3a3","#ff8fd8","#7a2fd6","#ff7a3d"],sk=["#e8b896","#c98e62","#8a5a3c","#f3d0b5"];let o="";
+  for(let i=0;i<Math.min(n,8);i++){const x=70+((i*67)%250),y=118+(i%3)*5,dx=(i%2?1:-1)*(14+i*3),dur=6+i*1.3;o+=`<g><animateTransform attributeName="transform" type="translate" values="0 0;${dx} 0;0 0" dur="${dur}s" repeatCount="indefinite"/><ellipse cx="${x}" cy="${y+8}" rx="3.4" ry="1.2" fill="rgba(0,0,0,.18)"/><rect x="${x-1.8}" y="${y+2}" width="1.6" height="6" fill="#262b3a"/><rect x="${x+.3}" y="${y+2}" width="1.6" height="6" fill="#262b3a"/><rect x="${x-2.6}" y="${y-4}" width="5.2" height="7" rx="1.5" fill="${cols[i%cols.length]}"/><circle cx="${x}" cy="${y-6.5}" r="2.6" fill="${sk[i%sk.length]}"/></g>`}
+  for(let i=0;i<Math.min(Math.floor(n/2),4);i++){const x=120+i*55,y=150+(i%2)*8;o+=`<g><animateTransform attributeName="transform" type="translate" values="0 0;${i%2?-10:10} 1;0 0" dur="${4+i}s" repeatCount="indefinite"/><circle cx="${x}" cy="${y}" r="2.6" fill="${sk[i%sk.length]}"/><path d="M${x-6} ${y+2} q6 -3 12 0" stroke="rgba(255,255,255,.7)" fill="none"/></g>`}
+  return o}
 /* fishing: wait for a bite, then stop the needle in the green */
 let FI=null;
 function islFish(k,back){const pier=hasIB(k,"pier");FI={k,st:"cast",t:0,bite:rnd(1.4,3.6),needle:0,dir:1,zone:pier?.3:.2,zc:rnd(.3,.7),back};
@@ -3473,15 +3477,18 @@ function islParty(k,draw){const cost=Math.round(ISLANDS[islTier(k)].cost*.01),po
   SFX.rebirth();confetti(220,null,null,["#ff4fd8","#4fe3ff","#ffcc33","#fff"]);flash("#ff4fd8",.3);shake(6);banner("Beach party! +"+fmtN(f)+" fans","g");if(MP)mpSend("c",{n:mpName(),t:"is throwing a party on "+ISLANDS[islTier(k)].n+" 🎉",sys:1});draw()}
 function openIsland(k,fid){
   const i=ISLANDS.find(x=>x.k===k),p=fid&&MP?MP.peers[fid]:null,mine=!fid;room="island";$("room").hidden=false;$("room").style.setProperty("--pc",i.c);FI=null;
-  const draw=()=>{FI=null;room="island";const relaxOk=!S.relaxT||Date.now()-S.relaxT>120000,gift=Math.round(S.cash*.05),B=mine?islB(k).b:{},pb={};if(!mine&&p&&p.ib&&p.ib[k])p.ib[k].forEach(x=>pb[x]=1);
+  const draw=()=>{FI=null;room="island";const relaxOk=!S.relaxT||Date.now()-S.relaxT>120000,gift=Math.round(S.cash*.05),B=mine?{...islB(k).b,chest:islB(k).chest!==S.day,boat:!!bestBoat()}:{},pb={};if(!mine&&p&&p.ib&&p.ib[k])p.ib[k].forEach(x=>pb[x]=1);
     const built=ISB.filter(b=>B[b.k]).length,partyOk=mine&&islB(k).party!==S.day,pc=Math.round(i.cost*.01),caught=Object.keys(S.fish||{}).length;
-    $("room").innerHTML=`<div class="room-in scroll">${roomHead(i.n)}<div class="art islart">${islandArt(i,mine?null:p&&p.n,mine?B:pb)}</div>
+    const nm=mine&&islB(k).name?islB(k).name:i.n;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(nm))}<div class="art islart" id="islArt">${islandArt({...i,n:nm},mine?null:p&&p.n,mine?B:pb)}</div>
+      ${mine&&B.chest?`<button class="bigbtn" id="iChest">A chest washed ashore!<small>Tap to open · once a day</small></button>`:""}
       ${mine?`<div class="kv"><div><span class="eyebrow">Earns</span><b>${fmt(islRate(k))}/min</b></div><div><span class="eyebrow">Built</span><b>${built}/${ISB.length}</b></div><div><span class="eyebrow">Visitors</span><b>${(S.islVis&&S.islVis[k])||0}</b></div><div><span class="eyebrow">Fish caught</span><b>${S.stats.fish||0}</b></div></div>
         <div class="perks">
           <button class="perk nopic" data-ia="relax" ${relaxOk?"":"disabled"}><span class="t">Relax on the beach</span><span class="d">${relaxOk?"Refill all your energy"+(B.villa?" and get 60s of hype":""):"Come back in a couple of minutes"}</span><span class="c">${relaxOk?"Relax":"Later"}</span></button>
           <button class="perk nopic" data-ia="fish"><span class="t">Go fishing</span><span class="d">${caught}/${FISH.length} species found. Rarer fish out here are worth more</span><span class="c">Fish</span></button>
           <button class="perk nopic" data-ia="dive"><span class="t">Dive for treasure</span><span class="d">Coins, black pearls and ancient relics</span><span class="c">Dive</span></button>
           <button class="perk nopic" data-ia="party" ${partyOk&&S.cash>=pc?"":"disabled"}><span class="t">Throw a beach party</span><span class="d">${partyOk?"Tons of fans and 2 min of hype"+(B.pool?" (pool bonus)":""):"Once a day"}</span><span class="c">${partyOk?fmt(pc):"Done"}</span></button>
+          <button class="perk nopic" data-ia="name"><span class="t">Name your island</span><span class="d">${islB(k).name?"Called "+esc(islB(k).name):"Give it your own name"}</span><span class="c">Rename</span></button>
           <button class="perk nopic" data-ia="album"><span class="t">Fish album</span><span class="d">Every species you've caught</span><span class="c">Open</span></button>
         </div>
         <div class="sechead"><h3>Build</h3><span class="eyebrow">Each one shows on your island</span></div>
@@ -3497,7 +3504,11 @@ function openIsland(k,fid){
       if(a==="fish"){if(!spend(3,b))return;islFish(k,draw)}
       if(a==="dive")islDive(k,draw);
       if(a==="party")islParty(k,draw);
-      if(a==="album")fishAlbum(draw)});
+      if(a==="album")fishAlbum(draw);
+      if(a==="name"){const v=prompt("Name your island",islB(k).name||i.n);if(v!=null){const t=String(v).replace(/[<>]/g,"").trim().slice(0,24);islB(k).name=t||"";dirty=true;draw()}}});
+    const ch=$("iChest");if(ch)ch.onclick=()=>{if(islB(k).chest===S.day)return;islB(k).chest=S.day;const r=Math.random(),base=Math.round(i.cost*.006*moonK());dirty=true;
+      if(r<.45){const v=Math.round(base*rnd(.8,1.4));earn(v);banner("Gold coins +"+fmt(v),"g")}else if(r<.75){gainCrate(2);banner("+2 crates","g")}else if(r<.92){S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,120);banner("Treasure map: full energy and hype","u")}else{const v=Math.round(base*6);earn(v);gainCrate(3);banner("Pirate hoard! +"+fmt(v),"g");shake(8)}
+      SFX.grail();confetti(120,null,null,["#ffcc33","#fff",i.c]);draw();updMini()};
     $("room").querySelectorAll("[data-ib]").forEach(x=>x.onclick=()=>{const b=ISB.find(y=>y.k===x.dataset.ib),c=Math.round(i.cost*b.f);if(B[b.k]||S.cash<c)return;S.cash-=c;islB(k).b[b.k]=1;dirty=true;STATIC=null;SFX.rebirth();confetti(140,null,null,[i.c,"#fff","#ffcc33"]);shake(5);banner(b.n+" built","g");draw();updMini()});
     const ff=$("iFishF");if(ff)ff.onclick=()=>{if(!spend(3,ff))return;islFish(k,draw)};
     const sg=$("iSign");if(sg)sg.onclick=()=>{if(!p)return;mpSend("d",{n:mpName(),t:"visited your "+i.n,isl:k},fid);SFX.hot();banner("Guestbook signed","u");sg.disabled=true};
