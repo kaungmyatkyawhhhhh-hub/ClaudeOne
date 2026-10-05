@@ -336,7 +336,12 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .tapbtn{padding:34px 22px;font-size:2.4rem;touch-action:manipulation}
 .bankbtns{display:flex;flex-direction:column;gap:8px}
 .bankbtns .bigbtn{font-size:1.3rem;padding:16px}
-.hudpills{display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none!important}
+.hudpills{display:flex;flex-direction:row;flex-wrap:nowrap;gap:6px;align-items:center;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:2px 16px 6px;pointer-events:auto!important}
+.hudpills::-webkit-scrollbar{display:none}
+.hudpills>.pill{flex:none;padding:6px 10px;font-size:.7rem;max-width:78vw}
+.hudpills .pill .pt{max-width:44vw}
+.hudpills.min>.pill:not(.tog){display:none}
+.pill.tog{font-family:var(--mono);font-weight:800;font-size:.72rem;min-width:34px;justify-content:center}
 .hudpills .pill{pointer-events:auto}
 .pill{display:flex;align-items:center;gap:8px;max-width:100%;padding:7px 11px;border-radius:12px;font-size:.74rem;text-align:left}
 .pill .pk{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
@@ -630,7 +635,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills"><button class="chip pill" id="goalChip"></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -1289,6 +1294,10 @@ function openRoom(k){
 }
 function closeRoom(){if(M)closeMarket();G=null;GS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play in the Online Town. Reach level 10 to get a free raft at the Harbor on the beach, then sail over.":"Friends play in the Online Town. Go to the Harbor on the beach and sail over.");if(regionOpen("beach"))walkTo("harbor");return}const sh=$("mpSheet");if(!sh.hidden){sh.hidden=true;return}mpUI()};
+// The alert pills sit in one swipeable row; the first button folds them away
+let pillsMin=store.get("fliprush_pillsmin")==="1";
+function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
+$("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("phoneBtn").onclick=()=>{audioOn();openRoom("market")};
 
@@ -1982,7 +1991,7 @@ function checkGoals(){
 }
 function renderGoalChip(){
   const g=GOALS[S.goal],el=$("goalChip");
-  el.innerHTML=g?`<span class="pk">Goal ${S.goal+1}/${GOALS.length}</span><span class="pt">${g.t}</span><span class="pr">${fmt(g.rw)}</span>`:`<span class="pk">Legend</span><span class="pt">Every goal complete</span>`;
+  el.hidden=!g;if(g)el.innerHTML=`<span class="pk">Goal ${S.goal+1}/${GOALS.length}</span><span class="pt">${g.t}</span><span class="pr">${fmt(g.rw)}</span>`;
 }
 $("goalChip").onclick=()=>{const g=GOALS[S.goal];if(g)rayText(g.d)};
 /* ---------- random town events ---------- */
@@ -2793,7 +2802,7 @@ function loop(now){
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderLvlBtn()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderLvlBtn();renderPillTog()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room)drawWorld();
