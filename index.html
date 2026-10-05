@@ -310,6 +310,9 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .wnsheet .cta{width:100%}
 .passcover{border-radius:18px;padding:18px;background:linear-gradient(135deg,#1b2a5a,#2a3cff);color:#ffe08a;text-align:center;margin-bottom:10px}.passcover b{display:block;font:900 1.6rem var(--display);letter-spacing:.2em}.passcover small{color:#cfd6ff;font:600 .75rem var(--mono)}
 .stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;border-radius:16px;background:repeating-linear-gradient(0deg,#fbf6ea 0 22px,#f1e9d6 22px 23px)}.stamp{aspect-ratio:1;display:grid;place-items:center}.stamp svg{width:100%;height:auto}.stamp.lock{border:2px dashed #cbbf9f;border-radius:50%;opacity:.6}.stamp.lock span{font:700 .62rem var(--mono);color:#9a8c6a;text-align:center}
+.gramhead{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}.gav{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:900 1.4rem var(--display);color:#fff;background:conic-gradient(#ff4fd8,#ffcc33,#2fd28a,#4fe3ff,#7a2fd6,#ff4fd8);box-shadow:inset 0 0 0 3px var(--bg)}.gramhead small{display:block;color:var(--muted);font-size:.76rem}
+.gramnew{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.gramnew button{border:0;padding:0;background:none;display:flex;flex-direction:column;gap:3px;align-items:center;cursor:pointer;color:var(--ink)}.gramnew svg{width:100%;aspect-ratio:1;border-radius:12px;display:block}.gramnew small{font-size:.62rem;font-weight:700;text-align:center;line-height:1.1}.gramnew button:disabled{opacity:.45}.gramnew button.lock svg{filter:grayscale(1)}
+.gramfeed{display:flex;flex-direction:column;gap:8px}.gpost{display:flex;gap:10px;align-items:center;background:var(--surface);border-radius:14px;padding:8px;box-shadow:inset 0 0 0 1px var(--line)}.gpost svg{width:64px;height:64px;border-radius:10px;flex:none}.gpost b{font-size:.86rem}.gpost small{display:block;font:700 .74rem var(--mono);color:#e2364a}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -945,6 +948,7 @@ const ACH=[
  ["mars","Red planet","Bring back something from Mars",()=>Object.keys(S.coll||{}).some(k=>k==="space:MC"||k==="space:MX"),5e7],
  ["gpwin","Champion","Win the Monte Carlo Grand Prix",()=>(S.stats.gpWins||0)>=1,2e6],
  ["traveller","World traveller","Get every passport stamp",()=>COUNTRIES.every(c=>(S.visited||{})[c.k]),1e7],
+ ["influencer","Influencer","Get 1M likes on FlipGram",()=>((S.gram||{}).likes||0)>=1e6,3e6],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1880,7 +1884,7 @@ function openHome(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
       <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
-      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button></div>
+      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button></div>
       ${dailyCard()}${missCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -1903,7 +1907,7 @@ function openHome(){
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});bindMiss(draw);
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});bindMiss(draw);
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
@@ -3864,6 +3868,7 @@ const MISS=[
  {k:"deliv",t:"Deliver {n} packages",st:"delivOk",n:[1,2,3]},
  {k:"finds",t:"Grab {n} shiny finds",st:"finds",n:[2,4,6]},
  {k:"gp",t:"Race {n} Grands Prix",st:"gpRaces",n:[1,2,3],need:()=>repLevel()>=25&&!!gpCar()},
+ {k:"post",t:"Post {n} times on FlipGram",st:"posts",n:[1,3,5]},
  {k:"flex",t:"Flex {n} times at the gym",st:"flexes",n:[1,2,3]},
  {k:"shift",t:"Work {n} shifts at your businesses",st:"shifts",n:[1,2,3],need:()=>(S.biz||[]).length>0}];
 function ensureMiss(){const d=dayKey();if(S.miss&&S.miss.d===d)return;let h=0;for(const ch of d+(ACC?ACC.user:""))h=(h*31+ch.charCodeAt(0))%99991;
@@ -4112,6 +4117,40 @@ function welcomeBack(){if(!S||!S.savedAt)return;const away=Date.now()-S.savedAt;
       <button class="cta" id="wbCol"><span>Collect all</span>${ARROW}</button><button class="cta ghost2" id="wbX" style="margin-top:8px">Later</button></div>`;
     document.body.appendChild(ov);const close=()=>ov.remove();ov.querySelector("#wbCol").onclick=()=>{collectAll();updMini();close()};ov.querySelector("#wbX").onclick=close;ov.onclick=e=>{if(e.target===ov)close()}},1500)}
 
+/* ================= FlipGram: post what you own, likes roll in, go viral ================= */
+const GRAM=[
+ {k:"gym",n:"Gym selfie",ok:()=>true,q:1,cap:["No days off 💪","Pump check","Leg day survived"]},
+ {k:"flip",n:"Big flip",ok:()=>(S.stats.best||0)>=500,q:1.1,cap:["Bought low, sold high 📈","Another day another flip","Profit szn"]},
+ {k:"car",n:"Car flex",ok:()=>!!gpCar(),q:1.4,cap:["New whip 🏎️","Late night drive","0-100 in 2.4"]},
+ {k:"pet",n:"Pet pic",ok:()=>!!S.pet,q:1.5,cap:["Best friend 🐾","Who's a good boy","Walkies"]},
+ {k:"fit",n:"Outfit check",ok:()=>Object.keys(S.acc||{}).length>=2,q:1.3,cap:["Fit check 🔥","Drip level: max","Dressed to flip"]},
+ {k:"home",n:"Penthouse view",ok:()=>(S.home||0)>=2,q:1.5,cap:["Home sweet home 🏙️","Up here the city is quiet","Morning view"]},
+ {k:"island",n:"Island sunset",ok:()=>Object.keys(S.isl||{}).length>0,q:1.8,cap:["Private island life 🌴","Sunset from my beach","Do not disturb"]},
+ {k:"travel",n:"Travel post",ok:()=>Object.keys(S.visited||{}).length>0,q:1.6,cap:["Wish you were here ✈️","Passport getting full","New city who dis"]},
+ {k:"biz",n:"Business opening",ok:()=>(S.biz||[]).length>0,q:1.5,cap:["Grand opening! 🎉","Come through","Hiring now"]},
+ {k:"casino",n:"Casino win",ok:()=>(S.stats.casinoBig||0)>=1e6,q:1.7,cap:["House lost tonight 🎰","Lucky night","All in"]},
+ {k:"space",n:"Space selfie",ok:()=>(S.stats.orbits||0)>0,q:2.5,cap:["Hi from orbit 🚀","Earth looks small","Moon walk"]}];
+const gramCD=()=>Math.max(0,120000-(Date.now()-(S.gram&&S.gram.t||0)));
+function gramThumb(k,seed){const r=n=>((seed*9301+n*49297)%233280)/233280;const bg={gym:["#1b1f2a","#2fd28a"],flip:["#2a3cff","#7fd6ff"],car:["#e2364a","#ffcc33"],pet:["#ff8fa3","#ffe0e6"],fit:["#7a2fd6","#ff4fd8"],home:["#141a33","#3b6fd8"],island:["#ff9a6b","#2fa6d9"],travel:["#2bb3a3","#fff1b8"],biz:["#cf9a14","#fff6c8"],casino:["#3a0d1a","#cf9a14"],space:["#0b1030","#7a2fd6"]}[k]||["#333","#666"];
+  const icon={gym:"🏋️",flip:"💸",car:"🏎️",pet:S.pet==="cat"?"🐱":S.pet==="parrot"?"🦜":S.pet==="penguin"?"🐧":S.pet==="dragon"?"🐉":S.pet==="tiger"?"🐯":"🐶",fit:"🕶️",home:"🏙️",island:"🏝️",travel:"✈️",biz:"🏨",casino:"🎰",space:"🚀"}[k];
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="gt${seed}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg[0]}"/><stop offset="1" stop-color="${bg[1]}"/></linearGradient></defs><rect width="100" height="100" fill="url(#gt${seed})"/>${Array.from({length:6},(_,i)=>`<circle cx="${r(i)*100}" cy="${r(i+9)*100}" r="${4+r(i+3)*10}" fill="#fff" opacity=".12"/>`).join("")}<text x="50" y="64" text-anchor="middle" font-size="42">${icon}</text></svg>`}
+function openGram(back){S.gram=S.gram||{posts:[],t:0,likes:0};const G=S.gram;
+  const draw=()=>{const cd=gramCD(),avail=GRAM.filter(p=>p.ok());
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("FlipGram")}
+      <div class="gramhead"><div class="gav">${esc((mpName()[0]||"?").toUpperCase())}</div><div><b>@${esc(mpName())}</b><small>${fmtN(Math.round(S.fans||0))} followers · ${fmtN(G.likes||0)} likes · ${G.posts.length} posts</small></div></div>
+      <div class="sechead"><h3>New post</h3><span class="eyebrow" id="gCd">${cd?"Next post in "+Math.ceil(cd/1000)+"s":"Ready"}</span></div>
+      <div class="gramnew">${GRAM.map(p=>{const ok=p.ok();return `<button data-gp="${p.k}" ${!ok||cd?"disabled":""} class="${ok?"":"lock"}">${gramThumb(p.k,p.k.length*7)}<small>${ok?p.n:"Locked"}</small></button>`}).join("")}</div>
+      <div class="sechead"><h3>Your feed</h3></div>
+      <div class="gramfeed">${G.posts.slice(-12).reverse().map(p=>`<div class="gpost">${gramThumb(p.k,p.s)}<div><b>${esc(p.c)}</b><small>❤ ${fmtN(p.l)}${p.v?" · 🔥 VIRAL":""}</small></div></div>`).join("")||`<p class="fine">No posts yet. Post something!</p>`}</div>
+      <p class="fine">Better posts come from cooler stuff: islands, space and your pets do numbers. More followers means more likes and more sponsor money.</p></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-gp]").forEach(b=>b.onclick=()=>{if(gramCD())return;const P=GRAM.find(x=>x.k===b.dataset.gp);if(!P.ok())return;
+      const viral=Math.random()<.06+charisma()/2000,base=(40+Math.pow(S.fans||0,.85)*.6)*P.q*(.7+charisma()/100)*rnd(.7,1.3),likes=Math.round(base*(viral?rnd(8,15):1)),post={k:P.k,c:pick(P.cap),l:0,s:Math.floor(Math.random()*999),v:viral?1:0};
+      G.posts.push(post);if(G.posts.length>30)G.posts.shift();G.t=Date.now();S.stats.posts=(S.stats.posts||0)+1;dirty=true;SFX.hot();buzz(10);
+      let shown=0;const tgt=likes,iv=setInterval(()=>{shown=Math.min(tgt,shown+Math.ceil(tgt/24));post.l=shown;if(room==="gram"){const f=$("room").querySelector(".gpost small");if(f)f.textContent="❤ "+fmtN(shown)+(post.v?" · 🔥 VIRAL":"")}if(shown>=tgt){clearInterval(iv);G.likes=(G.likes||0)+tgt;const fans=Math.round(tgt*.12),cash=Math.round(tgt*(5+SC()*3));S.fans=(S.fans||0)+fans;earn(cash);dirty=true;banner((viral?"VIRAL! ":"")+fmtN(tgt)+" likes · +"+fmtN(fans)+" fans · +"+fmt(cash),viral?"g":"u");if(viral){confetti(180);shake(6);SFX.grail()}if(room==="gram")draw()}},120);
+      draw()})};
+  room="gram";draw();const tick=setInterval(()=>{if(room!=="gram")return clearInterval(tick);const e=$("gCd"),cd=gramCD();if(e)e.textContent=cd?"Next post in "+Math.ceil(cd/1000)+"s":"Ready";if(!cd&&$("room").querySelector("[data-gp][disabled]:not(.lock)"))draw()},1000)}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4134,7 +4173,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
