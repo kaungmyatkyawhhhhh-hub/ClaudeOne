@@ -10,6 +10,7 @@ local Config = ReplicatedStorage.Shared.Config
 local ShowOff = require(Config.ShowOff)
 local Muscles = require(Config.Muscles)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
+local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 
@@ -124,31 +125,60 @@ local function findPlaque()
 end
 
 local plaque = nil
+
+-- Double biceps, frozen (same angle conventions as the machine and emote poses).
+local TWIST = math.rad(-90)
+local function flexPose(model)
+	local function joint(partName, motorName, cframe)
+		local part = model:FindFirstChild(partName)
+		local motor = part and part:FindFirstChild(motorName)
+		if motor and (motor:IsA("Motor6D") or motor:IsA("AnimationConstraint")) then motor.Transform = cframe end
+	end
+	for _, side in ipairs({ { "Right", 1 }, { "Left", -1 } }) do
+		joint(side[1] .. "UpperArm", side[1] .. "Shoulder",
+			CFrame.Angles(-math.rad(5), 0, 0) * CFrame.Angles(0, 0, side[2] * math.rad(88)) * CFrame.Angles(0, side[2] * TWIST, 0))
+		joint(side[1] .. "LowerArm", side[1] .. "Elbow", CFrame.Angles(math.rad(125), 0, 0))
+		joint(side[1] .. "UpperLeg", side[1] .. "Hip", CFrame.Angles(0, 0, side[2] * math.rad(6)))
+	end
+	joint("UpperTorso", "Waist", CFrame.Angles(math.rad(4), 0, 0))
+end
+
+-- Rebuilds the statue from the strongest player's avatar (or a plain default body while there's no leader yet):
+-- a real R15 rig from the HumanoidDescription, all marble, posed, then every part placed from its joints and anchored
+-- (anchoring before the joints are solved is what left gaps and a missing head before).
 local function refreshStatue()
-	local entries = top("Total", 1)
-	local entry = entries[1]
-	if not entry then return end
-	local userId = tonumber(entry.key)
+	local entry = top("Total", 1)[1]
+	local userId = entry and tonumber(entry.key) or 0
 	if userId == statueUserId and statue and statue.Parent then return end
-	local ok, desc = pcall(Players.GetHumanoidDescriptionFromUserId, Players, userId)
-	if not ok or not desc then return end
+	local desc = nil
+	if userId > 0 then
+		local ok, result = pcall(Players.GetHumanoidDescriptionFromUserId, Players, userId)
+		if ok then desc = result end
+	end
+	desc = desc or Instance.new("HumanoidDescription") -- default rig
 	local okModel, model = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
-	if not okModel or not model then return end
+	if not okModel or not model then
+		warn("[ShowOffService] Could not build the statue:", model)
+		return
+	end
 	statueUserId = userId
 	if statue then statue:Destroy() end
 	statue = model
 	model.Name = "Statue"
+	BodyShape.EnsureJoints(model)
 	local cfg = ShowOff.Statue
 	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") then
-			item.Anchored = true
+		if item:IsA("BaseScript") then
+			item:Destroy()
+		elseif item:IsA("BasePart") then
 			item.Material = cfg.Material
 			item.Color = cfg.Color
 			item.CanCollide = false
+			item.CastShadow = true
 			if item:IsA("MeshPart") then item.TextureID = "" end
 		elseif item:IsA("SpecialMesh") then
 			item.TextureId = ""
-		elseif item:IsA("Decal") or item:IsA("Clothing") or item:IsA("ShirtGraphic") then
+		elseif item:IsA("Decal") or item:IsA("Clothing") or item:IsA("ShirtGraphic") or item:IsA("SurfaceAppearance") then
 			item:Destroy()
 		end
 	end
@@ -161,9 +191,16 @@ local function refreshStatue()
 	local rootHalf = root and root.Size.Y / 2 or 1
 	-- on the pedestal, facing the middle of the hall (+X)
 	local base = cfg.Spot + Vector3.new(0, 1.2, 0)
-	model:PivotTo(CFrame.lookAt(base, base + Vector3.new(1, 0, 0)) + Vector3.new(0, hip + rootHalf, 0))
+	if root then root.CFrame = CFrame.lookAt(base, base + Vector3.new(1, 0, 0)) + Vector3.new(0, hip + rootHalf, 0) end
+	flexPose(model)
+	BodyShape.SolveJoints(model)
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then part.Anchored = true end
+	end
 	model.Parent = Workspace
-	if plaque then plaque.Text = "Strongest lifter: " .. nameOf(userId) end
+	if plaque then
+		plaque.Text = userId > 0 and ("Strongest lifter: " .. nameOf(userId)) or "Strongest lifter: could be you"
+	end
 end
 
 ------------------------------------------------------------------------

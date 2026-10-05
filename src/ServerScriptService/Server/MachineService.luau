@@ -19,10 +19,10 @@ local LegendService = require(script.Parent.LegendService)
 local SeasonService = require(script.Parent.SeasonService)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme) -- bumper plate colors
 
--- Bars sit loaded when nobody is using them (a mix, so the gym shows every bumper color).
-local DISPLAY_TIERS = { FlatBench = 5, InclineBench = 4, OverheadPress = 3, SquatRack = 6, Deadlift = 5, BarbellRow = 4, PullUpBar = 3, CrunchBench = 3 }
+-- Bars sit loaded when nobody is using them (a mix, so the gym shows every plate color).
+local DISPLAY_TIERS = { FlatBench = 7, InclineBench = 5, OverheadPress = 4, SquatRack = 9, Deadlift = 8, BarbellRow = 6, PullUpBar = 3, CrunchBench = 3 }
 local function displayTier(machine)
-	return machine.tiers[math.min(DISPLAY_TIERS[machine.id] or 4, #machine.tiers)]
+	return machine.tiers[math.min(DISPLAY_TIERS[machine.id] or 5, #machine.tiers)]
 end
 
 local Remotes = ReplicatedStorage.Remotes
@@ -30,7 +30,7 @@ local Remotes = ReplicatedStorage.Remotes
 
 local MachineService = {}
 
-local sessions = {}  -- [player] = { model, machine, lastRep, connections }
+local sessions = {}  -- [player] = { model, machine, lastRep, connections, pump, nextBig }
 local occupants = {} -- [model] = player
 
 -- The machine's own "Use" prompt (SocialService adds a separate "SpotPrompt" next to it).
@@ -71,9 +71,9 @@ local function updatePlates(model, tier)
 			plate.Name = "Plate" .. lb
 			plate.Shape = Enum.PartType.Cylinder
 			plate.Size = Vector3.new(spec.thickness, spec.diameter, spec.diameter)
-			local bumper = Theme.Bumper[tier.color or "Black"]
+			local bumper = Theme.Bumper[spec.color] or Theme.Bumper.Black -- one color per weight
 			plate.Color = bumper.Fill
-			plate.Material = Enum.Material.SmoothPlastic
+			plate.Material = spec.color == "Steel" and Enum.Material.Metal or Enum.Material.SmoothPlastic
 			plate.Anchored = true
 			plate.CanCollide = false
 			plate.CanQuery = false
@@ -107,7 +107,11 @@ local function bodyCFrame(character, humanoid, root, model, pose)
 		local upper, lower, hand = character:FindFirstChild("RightUpperArm"), character:FindFirstChild("RightLowerArm"), character:FindFirstChild("RightHand")
 		local shoulder = upper and upper:FindFirstChild("RightShoulder")
 		if torso and shoulder and lower and hand then
-			local shoulderHeight = (torso.CFrame * shoulder.C0).Position.Y - root.Position.Y
+			-- R15 joints are Motor6Ds or (newer avatars) AnimationConstraints between rig attachments
+			local shoulderPoint = if shoulder:IsA("Motor6D") then (torso.CFrame * shoulder.C0).Position
+				elseif shoulder:IsA("AnimationConstraint") and shoulder.Attachment0 then shoulder.Attachment0.WorldPosition
+				else torso.Position + Vector3.new(0, torso.Size.Y * 0.4, 0)
+			local shoulderHeight = shoulderPoint.Y - root.Position.Y
 			local reach = upper.Size.Y + lower.Size.Y + hand.Size.Y * 0.5
 			height = pose.barHeight - shoulderHeight - reach
 		end
@@ -124,6 +128,8 @@ local function leave(player)
 		connection:Disconnect()
 	end
 
+	player:SetAttribute("PumpMeter", nil)
+	player:SetAttribute("PumpedUntil", nil)
 	local model = session.model
 	model:SetAttribute("UserId", nil)
 	local prompt = getPrompt(model)
@@ -162,7 +168,8 @@ local function enter(player, model)
 	local skateOk, SkateService = pcall(require, script.Parent.SkateService)
 	if skateOk then SkateService.Stop(player) end
 
-	local session = { model = model, machine = machine, lastRep = 0, connections = {} }
+	local session = { model = model, machine = machine, lastRep = 0, connections = {},
+		pump = { meter = 0, lastTap = 0, pumpedUntil = 0 }, nextBig = false }
 	sessions[player] = session
 	occupants[model] = player
 	model:SetAttribute("UserId", player.UserId)
@@ -178,8 +185,47 @@ local function enter(player, model)
 	end))
 
 	local progress = PlayerData.GetMachine(player, machine.id)
-	updatePlates(model, machine.tiers[progress.selected])
+	local level = PlayerData.Get(player).muscles[machine.muscles[1].id].level
+	updatePlates(model, machine.tiers[Machines.LiftTier(machine, progress, level)])
 	Remotes.MachineState:FireClient(player, "Enter", model)
+end
+
+------------------------------------------------------------------------
+-- PUMP meter: taps fill it, a full meter = PUMPED for Gains.Pump.Duration (x2 gains), not tapping drains it.
+-- The server owns it; the client predicts it for an instant feel and follows these player attributes.
+------------------------------------------------------------------------
+local Pump = Gains.Pump
+
+local function serverNow()
+	return workspace:GetServerTimeNow()
+end
+
+-- Bring the meter up to date (it drains once the taps stop) and return it.
+local function settlePump(session, now)
+	local pump = session.pump
+	local from = math.max(pump.settled or now, pump.lastTap + Pump.DrainDelay, pump.pumpedUntil)
+	if now > from and pump.meter > 0 then
+		pump.meter = math.max(0, pump.meter - Pump.DrainPerSecond * (now - from))
+	end
+	pump.settled = now
+	return pump
+end
+
+local function tap(player)
+	local session = sessions[player]
+	if not session then return end
+	if not Guard.Allow(player, "tap", Pump.TapsPerSecond, Pump.TapsPerSecond) then return end
+	local now = serverNow()
+	local pump = settlePump(session, now)
+	pump.lastTap = now
+	if now < pump.pumpedUntil then return end -- already PUMPED: it runs out on its own
+	pump.meter = math.min(1, pump.meter + 1 / Pump.TapsToFill)
+	if pump.meter >= 1 then
+		pump.meter = 0
+		pump.pumpedUntil = now + Pump.Duration
+		player:SetAttribute("PumpedUntil", pump.pumpedUntil)
+	end
+	player:SetAttribute("PumpMeter", math.floor(pump.meter * 100 + 0.5) / 100)
 end
 
 local function lift(player)
@@ -199,9 +245,15 @@ local function lift(player)
 	session.lastRep = now
 
 	local progress = PlayerData.GetMachine(player, machine.id)
-	local tier = machine.tiers[progress.selected]
+	local tierIndex = Machines.LiftTier(machine, progress, data.muscles[machine.muscles[1].id].level)
+	local tier = machine.tiers[tierIndex]
 	local cap = PlayerData.GetLevelCap(player)
-	local xp = Gains.PerRep(data, machine, progress.selected, BoostService.Gains(player))
+	-- how the rep was done: PUMPED x2, BIG REP x3 (rolled one rep ahead, so the client can show it at lockout)
+	local pumped = serverNow() < session.pump.pumpedUntil
+	local big = session.nextBig
+	session.nextBig = math.random() < Gains.BigRep.Chance
+	local quality = (pumped and Pump.Multiplier or 1) * (big and Gains.BigRep.Multiplier or 1)
+	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player), quality)
 
 	local levels, maxed = {}, {}
 	for muscleId, amount in pairs(xp) do
@@ -219,8 +271,16 @@ local function lift(player)
 	LegendService.OnRep(player, machine.id)
 	SeasonService.OnRep(player)
 
+	-- personal record: the heaviest weight ever lifted on this machine
+	local pr = nil
+	if tierIndex > (progress.best or 1) then
+		PlayerData.SetMachine(player, machine.id, progress.unlocked, progress.selected, tierIndex)
+		pr = Machines.WeightText(tier)
+	end
+
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
-	Remotes.RepResult:FireClient(player, { levels = levels, maxed = maxed, coins = coins })
+	Remotes.RepResult:FireClient(player, { levels = levels, maxed = maxed, coins = coins, big = big,
+		nextBig = session.nextBig, pumped = pumped, pr = pr })
 end
 
 local function isTierIndex(value)
@@ -233,6 +293,8 @@ local function selectTier(player, index)
 	local machine = session.machine
 	local progress = PlayerData.GetMachine(player, machine.id)
 	if index < 1 or index > progress.unlocked then return end
+	-- bought tiers still need the level (again after a Growth Spurt)
+	if PlayerData.Get(player).muscles[machine.muscles[1].id].level < machine.tiers[index].unlockLevel then return end
 	PlayerData.SetMachine(player, machine.id, progress.unlocked, index)
 	updatePlates(session.model, machine.tiers[index])
 end
@@ -255,6 +317,7 @@ end
 
 local actions = {
 	Lift = lift,
+	Tap = tap,
 	Leave = leave,
 	SelectTier = selectTier,
 	UnlockTier = unlockTier,
@@ -271,7 +334,7 @@ local function setupMachine(model)
 	local prompt = getPrompt(model)
 	if prompt then
 		prompt.ActionText = "Use"
-		prompt.ObjectText = machine.name
+		prompt.ObjectText = machine.name -- each client adds its own next-weight line (MachineClient)
 		Guard.OnTriggered(prompt, function(player)
 			enter(player, model)
 		end)
@@ -285,8 +348,8 @@ function MachineService.Start()
 	end
 	CollectionService:GetInstanceAddedSignal("Machine"):Connect(setupMachine)
 
-	-- taps, tier buttons and Exit: far more than a real player can send, far less than a spam script
-	Guard.Remote(Remotes.MachineAction, "MachineAction", 12, 20, function(player, action, arg)
+	-- reps, taps, tier buttons and Exit: far more than a real player can send, far less than a spam script
+	Guard.Remote(Remotes.MachineAction, "MachineAction", 16, 24, function(player, action, arg)
 		local handler = type(action) == "string" and actions[action]
 		if handler then
 			handler(player, arg)

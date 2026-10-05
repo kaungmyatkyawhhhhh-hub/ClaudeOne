@@ -39,7 +39,7 @@ local function setJoint(character, key, cframe)
 	local spec = JOINTS[key]
 	local part = character:FindFirstChild(spec[1])
 	local motor = part and part:FindFirstChild(spec[2])
-	if motor and motor:IsA("Motor6D") then motor.Transform = cframe end
+	if motor and (motor:IsA("Motor6D") or motor:IsA("AnimationConstraint")) then motor.Transform = cframe end
 end
 
 local function sideArm(character, side, forward, raise, bend)

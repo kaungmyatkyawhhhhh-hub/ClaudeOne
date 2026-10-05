@@ -23,7 +23,7 @@ function DataTemplate.new()
 		dnaTokens = 0,
 		growthSpurts = 0, -- new players start at 4'0" (height and level cap come from Config.GrowthSpurts)
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
-		machines = {}, -- machineId -> { unlocked = highest tier index, selected = tier index }
+		machines = {}, -- machineId -> { unlocked = highest bought tier, selected = tier index, best = heaviest tier lifted }
 		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0 },
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
 		shakes = 0, -- Energy Shakes in the bag

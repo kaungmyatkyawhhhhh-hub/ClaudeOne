@@ -1,5 +1,8 @@
 -- MachineClient: lift input, machine HUD, and all lifting game feel (motion, sounds,
 -- gains, pump, particles). Effects play instantly on tap; the server validates and applies gains.
+-- Reps run on their own at a slow pace; tapping (the Lift button, a click/tap anywhere, Space) makes them faster and
+-- fills the PUMP meter (full = PUMPED: x2 gains, faster reps, a glow). About 1 in 12 reps is a BIG REP (x3, gold).
+-- Nobody is ever punished for not tapping.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -41,8 +44,10 @@ local FEEL = {
 	ShakeDegrees = 3,
 	SweatBelow = 0.25,
 	BufferWindow = 0.25,    -- a tap this close to the end of a rep queues the next one
-	HeavyTier = 5,          -- FOV punch + plate jiggle from this tier up
-	FovPunch = 2.5,
+	HeavyTier = 7,          -- stronger FOV punch + plate jiggle from this tier up
+	FovPunch = 1.2,         -- every rep: a small camera punch at lockout
+	FovPunchHeavy = 2.5,
+	FovPunchBig = 4,        -- BIG REP
 	SetSize = 10,           -- "set complete" beat every this many reps
 	SetBreak = 4,           -- seconds without a rep starts a new set
 	BreathChance = 0.5,     -- soft exhale at lockout, only on heavy tiers or low stamina
@@ -59,7 +64,7 @@ local FEEL = {
 local STAMINA_SEGMENTS = 10
 local STAMINA_LOW = 0.15 -- segments turn soft light red below this
 local SEGMENT_BACK = 0.85 -- empty segments: faint white
-local PLATE_HEIGHT = { [45] = 0.95, [25] = 0.74, [10] = 0.54 }
+
 local PARTICLE_SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local PARTICLE_DROP = "rbxasset://textures/particles/sparkles_main.dds"
 
@@ -81,13 +86,15 @@ local plateOffsets = {} -- [plate] = offset from the racked bar
 local repState = {}     -- [model] = { start, lower, press, hold, shake, tier, lockedOut }
 local posed = {}        -- [model] = character currently posed
 
-local function repDurations(tier, lowStamina)
-	local heavy = 1 + FEEL.HeavyPerTier * ((tier or 1) - 1)
-	return FEEL.Lower * heavy, FEEL.Press * heavy * (lowStamina and FEEL.LowPressMult or 1), FEEL.Hold
+-- Heavier tiers are a little slower (capped, so tier 12 is still snappy); PUMPED reps are faster.
+local function repDurations(tier, lowStamina, pumped)
+	local heavy = 1 + FEEL.HeavyPerTier * math.min((tier or 1) - 1, 6)
+	local speed = pumped and Gains.Pump.Speed or 1
+	return FEEL.Lower * heavy * speed, FEEL.Press * heavy * speed * (lowStamina and FEEL.LowPressMult or 1), FEEL.Hold * speed
 end
 
-local function startRep(model, tier, lowStamina)
-	local lower, press, hold = repDurations(tier, lowStamina)
+local function startRep(model, tier, lowStamina, pumped)
+	local lower, press, hold = repDurations(tier, lowStamina, pumped)
 	repState[model] = { start = os.clock(), lower = lower, press = press, hold = hold, shake = lowStamina, tier = tier or 1 }
 	return lower + press + hold
 end
@@ -146,7 +153,7 @@ local function userCharacter(model)
 	return user and user.Character
 end
 
--- R15 joints by name: { part, Motor6D }
+-- R15 joints by name: { part, joint } (a Motor6D, or an AnimationConstraint on newer avatars: both have Transform)
 local JOINTS = {
 	Root = { "LowerTorso", "Root" },
 	Waist = { "UpperTorso", "Waist" },
@@ -620,7 +627,7 @@ local function popupSpot(character, torso, model, anchorWorld, textWidth, scale,
 	return best
 end
 
-local function gainPopup(character, text, scale, model)
+local function gainPopup(character, text, scale, model, color)
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
 	if not torso or not torso:IsA("BasePart") then return end
 	clearPopup()
@@ -655,6 +662,7 @@ local function gainPopup(character, text, scale, model)
 		TextSize = "Popup",
 		Size = UDim2.fromScale(1, 1),
 		TextXAlignment = onRight and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right,
+		TextColor3 = color or Colors.Text,
 		Parent = holder,
 	})
 	local stroke = Theme.TextShadow(label, 0.45)
@@ -834,12 +842,11 @@ local costLabel = Theme.Text({ LayoutOrder = 3, Font = "SemiBold", TextSize = "B
 
 local barPlates = {} -- plate frames in the HUD barbell (for the heavy-rep jiggle)
 
--- Side view of a loaded barbell; plates take the tier's bumper color.
+-- Side view of a loaded barbell; each plate in its weight's color (Machines.Plates).
 local function drawBarbell(tier)
 	barbell:ClearAllChildren()
 	table.clear(barPlates)
 	Theme.List(Horizontal, nil).Parent = barbell
-	local bumper = Theme.Bumper[tier.color or "White"]
 	local order = 0
 	local function piece(width, height, color, extra)
 		order += 1
@@ -847,7 +854,10 @@ local function drawBarbell(tier)
 	end
 	local function plates(list)
 		for _, lb in ipairs(list) do
-			table.insert(barPlates, piece(0.055, PLATE_HEIGHT[lb], bumper.Fill, { Theme.Round("Segment"), Theme.Stroke(bumper.Rim, Theme.IconStroke) }))
+			local spec = Machines.Plates[lb]
+			local bumper = Theme.Bumper[spec and spec.color or "White"] or Theme.Bumper.White
+			local height = spec and spec.diameter / 2.3 * 0.95 or 0.6
+			table.insert(barPlates, piece(0.05, height, bumper.Fill, { Theme.Round("Segment"), Theme.Stroke(bumper.Rim, Theme.IconStroke) }))
 		end
 	end
 	local reversed = {}
@@ -899,6 +909,15 @@ local baseFov = nil
 local function progressFor(machineId)
 	local progress = ClientData.Get().machines[machineId]
 	return progress and progress.unlocked or 1, progress and progress.selected or 1
+end
+
+local function mainLevel(machine)
+	return ClientData.Get().muscles[machine.muscles[1].id].level
+end
+
+-- The tier this player lifts right now (selected, but never above what the level allows; same as the server).
+local function liftTier(machine)
+	return Machines.LiftTier(machine, ClientData.Get().machines[machine.id], mainLevel(machine))
 end
 
 local function staminaRatio()
@@ -954,8 +973,7 @@ local function jigglePlates()
 end
 
 local function canUnlock(machine, tier)
-	local data = ClientData.Get()
-	return data.muscles[machine.muscles[1].id].level >= tier.unlockLevel and data.coins >= tier.cost
+	return mainLevel(machine) >= tier.unlockLevel and ClientData.Get().coins >= tier.cost
 end
 
 local function isMaxed(machine)
@@ -999,19 +1017,20 @@ local function refreshTier()
 	viewTier = math.clamp(viewTier, 1, maxView)
 
 	local tier = machine.tiers[viewTier]
-	local locked = viewTier > unlocked
+	local main = Muscles.ById[machine.muscles[1].id]
+	local levelOk = mainLevel(machine) >= tier.unlockLevel
+	-- bought tiers still need the level (again after a Growth Spurt)
+	local locked = viewTier > unlocked or not levelOk
 	weightNumber.Text = tier.label or tostring(tier.weight)
 	weightNumber.TextColor3 = locked and Colors.Muted or Colors.Text
-	tierLabel.Text = (tier.weight > 0 and "lb · " or "") .. "tier " .. viewTier
+	tierLabel.Text = (tier.weight > 0 and "lb · " or "") .. "tier " .. viewTier .. " of " .. #machine.tiers
 	setStepButton(minusButton, viewTier > 1)
 	setStepButton(plusButton, viewTier < maxView)
 	drawBarbell(tier)
 
-	local main = Muscles.ById[machine.muscles[1].id]
-	local levelOk = ClientData.Get().muscles[main.id].level >= tier.unlockLevel
 	musclesLabel.Visible = not locked
-	unlockButton.Visible = locked and levelOk
-	needsLabel.Visible = locked and not levelOk
+	unlockButton.Visible = viewTier > unlocked and levelOk
+	needsLabel.Visible = not levelOk
 	if locked and levelOk then
 		-- Can't afford yet: faded button with gray text.
 		costLabel.Text = tostring(tier.cost)
@@ -1021,7 +1040,7 @@ local function refreshTier()
 		unlockText.TextColor3 = ink
 		costLabel.TextColor3 = ink
 		tintIcon(unlockIcon, ink)
-	elseif locked then
+	elseif not levelOk then
 		needsLabel.Text = "Needs " .. main.name .. " level " .. tier.unlockLevel
 	end
 end
@@ -1044,18 +1063,259 @@ local function noteSituation()
 	local machine = current.machine
 	if isMaxed(machine) then return "maxed" end
 	if staminaRatio() < FEEL.LowStamina then return "lowStamina" end
-	local unlocked, selected = progressFor(machine.id)
+	local unlocked = progressFor(machine.id)
 	local nextTier = machine.tiers[unlocked + 1]
 	if nextTier and canUnlock(machine, nextTier) then return "unlockReady" end
-	if selected < unlocked then return "tooLight" end
+	if liftTier(machine) < Machines.UsableTier(machine, ClientData.Get().machines[machine.id], mainLevel(machine)) then return "tooLight" end
 	return "general"
 end
 
-local function fovPunch()
+local function fovPunch(amount)
 	local camera = Workspace.CurrentCamera
 	baseFov = baseFov or camera.FieldOfView
-	camera.FieldOfView = baseFov + FEEL.FovPunch
+	camera.FieldOfView = baseFov + (amount or FEEL.FovPunch)
 	Theme.Tween(camera, { FieldOfView = baseFov }, Theme.Motion.Time)
+end
+
+------------------------------------------------------------------------
+-- Tap button + PUMP meter (bottom right, near the right thumb on phones)
+------------------------------------------------------------------------
+local Pump = Gains.Pump
+local PUMP_SEGMENTS = 10
+local tryLift -- defined with the lifting code below
+local function tryLiftRef() if tryLift then tryLift() end end
+local compact = Theme.IsCompact()
+local TAP_SIZE = compact and 84 or 96
+
+local tapCluster = box({
+	Name = "TapCluster",
+	AnchorPoint = Vector2.new(1, 1),
+	Size = UDim2.fromOffset(TAP_SIZE + 40, TAP_SIZE + 44),
+	ZIndex = 3,
+	Parent = gui,
+}, { Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom) })
+local pumpLabel = Theme.Text({ LayoutOrder = 1, Text = "Pump", Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), Parent = tapCluster })
+Theme.TextShadow(pumpLabel)
+local pumpRow = box({ LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 10), Parent = tapCluster }, { Theme.List(Horizontal, "XS") })
+local pumpSegments = {}
+for i = 1, PUMP_SEGMENTS do
+	local back = box({ LayoutOrder = i, Size = UDim2.fromScale(0, 1), BackgroundTransparency = SEGMENT_BACK, BackgroundColor3 = Colors.Text, Parent = pumpRow },
+		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
+	pumpSegments[i] = box({ Size = UDim2.fromScale(0, 1), BackgroundTransparency = 0, BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
+end
+local tapButton = Theme.Button("Secondary", { Name = "Tap", LayoutOrder = 3, Size = UDim2.fromOffset(TAP_SIZE, TAP_SIZE), Parent = tapCluster })
+tapButton:FindFirstChildOfClass("UICorner").CornerRadius = Theme.Corner.Round
+local tapText = Theme.Text({ Text = "Lift", Font = "SemiBold", TextSize = "Large", Size = UDim2.fromScale(1, 0.5), Position = UDim2.fromScale(0, 0.18), Parent = tapButton })
+local tapHint = Theme.Text({ Text = "tap fast", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.25), Position = UDim2.fromScale(0, 0.58), Parent = tapButton })
+local tapStroke = tapButton:FindFirstChildOfClass("UIStroke")
+-- the button reacts on press (not release), and a held finger doesn't repeat
+tapButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		tryLiftRef()
+	end
+end)
+
+-- keep the cluster just above the machine panel's right end
+local function placeTapCluster()
+	local slot = stackSlot.AbsolutePosition + stackSlot.AbsoluteSize
+	local guiInset = gui.AbsolutePosition
+	tapCluster.Position = UDim2.fromOffset(slot.X - guiInset.X, stackSlot.AbsolutePosition.Y - guiInset.Y - Spacing.S)
+end
+stackSlot:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTapCluster)
+stackSlot:GetPropertyChangedSignal("AbsolutePosition"):Connect(placeTapCluster)
+
+-- Client prediction of the server's meter (MachineService): instant on tap, corrected by the player attributes.
+local pumpMeter, pumpLastTap, pumpSettled = 0, 0, os.clock()
+local tapTimes = {} -- recent tap clocks (the same rate limit as the server, so the prediction never runs ahead)
+
+local function serverNow()
+	return Workspace:GetServerTimeNow()
+end
+local function pumpedLeft()
+	local untilTime = player:GetAttribute("PumpedUntil")
+	return type(untilTime) == "number" and math.max(0, untilTime - serverNow()) or 0
+end
+local function isPumped()
+	return pumpedLeft() > 0
+end
+
+local glows = {} -- Highlights on the trained parts while PUMPED
+local function setPumpGlow(on)
+	for _, glow in ipairs(glows) do glow:Destroy() end
+	table.clear(glows)
+	local character = player.Character
+	if not on or not character or not current then return end
+	local seen = {}
+	for _, entry in ipairs(current.machine.muscles) do
+		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
+			local part = character:FindFirstChild(partName)
+			if part and not seen[part] then
+				seen[part] = true
+				table.insert(glows, New("Highlight", {
+					Adornee = part,
+					FillColor = Colors.Gold,
+					FillTransparency = 0.8,
+					OutlineColor = Colors.Gold,
+					OutlineTransparency = 0.55,
+					DepthMode = Enum.HighlightDepthMode.Occluded,
+					Parent = part,
+				}))
+			end
+		end
+	end
+end
+
+local wasPumped = false
+local function refreshPump(now)
+	local left = pumpedLeft()
+	local pumped = left > 0
+	if pumped ~= wasPumped then
+		wasPumped = pumped
+		if pumped then
+			pumpMeter = 0
+			Audio.Play2D("PumpFull")
+			fovPunch(FEEL.FovPunchBig)
+			if player.Character then chalkPuff(player.Character, 16) end
+		end
+		setPumpGlow(pumped)
+		pumpLabel.Text = pumped and "PUMPED  x2" or "Pump"
+		pumpLabel.TextColor3 = pumped and Colors.Gold or Colors.Text
+		tapStroke.Color = pumped and Colors.Gold or Colors.Border
+		tapStroke.Transparency = pumped and 0.2 or Theme.Alpha.ButtonBorder
+	end
+	-- drain while not tapping (same rule as the server)
+	local from = math.max(pumpSettled, pumpLastTap + Pump.DrainDelay)
+	if not pumped and now > from and pumpMeter > 0 then
+		pumpMeter = math.max(0, pumpMeter - Pump.DrainPerSecond * (now - from))
+	end
+	pumpSettled = now
+	local fill = pumped and (left / Pump.Duration) or pumpMeter
+	local color = pumped and Colors.Gold or Colors.Text
+	for i, segment in ipairs(pumpSegments) do
+		segment.Size = UDim2.fromScale(math.clamp(fill * PUMP_SEGMENTS - (i - 1), 0, 1), 1)
+		segment.BackgroundColor3 = color
+	end
+	if pumped then
+		local pulse = 0.75 + 0.1 * math.sin(now * 8)
+		for _, glow in ipairs(glows) do glow.FillTransparency = pulse end
+	end
+end
+
+-- One tap: counts toward the meter (rate limited like the server) and tells the server.
+local function registerTap()
+	local now = os.clock()
+	for i = #tapTimes, 1, -1 do
+		if now - tapTimes[i] > 1 then table.remove(tapTimes, i) end
+	end
+	if #tapTimes >= Pump.TapsPerSecond then return end
+	table.insert(tapTimes, now)
+	pumpLastTap = now
+	if not isPumped() then
+		pumpMeter = math.min(1, pumpMeter + 1 / Pump.TapsToFill)
+	end
+	Remotes.MachineAction:FireServer("Tap")
+	-- the button breathes with every tap
+	tapText.TextSize = Theme.TextSize.Large + 4
+	Theme.Tween(tapText, { TextSize = Theme.TextSize.Large }, Theme.Motion.PressTime * 2)
+end
+
+-- the server's meter wins when they drift (e.g. taps lost on a slow connection)
+player:GetAttributeChangedSignal("PumpMeter"):Connect(function()
+	local server = player:GetAttribute("PumpMeter")
+	if type(server) == "number" and math.abs(server - pumpMeter) > 0.2 then pumpMeter = server end
+end)
+
+------------------------------------------------------------------------
+-- Big moments: level-up flash, NEW PR banner (both small, never full screen)
+------------------------------------------------------------------------
+local levelFlash = Theme.Text({
+	Name = "LevelFlash",
+	Font = "SemiBold",
+	TextSize = "Large",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -Spacing.S, 0, 0),
+	Size = UDim2.new(0.5, 0, 0, 28),
+	TextXAlignment = Enum.TextXAlignment.Right,
+	TextTransparency = 1,
+	ZIndex = 4,
+	Parent = tapeRow,
+})
+local levelFlashStroke = Theme.TextShadow(levelFlash)
+local levelFlashScale = New("UIScale", { Parent = levelFlash })
+local flashToken = 0
+
+local function sparkleBurst(character, color)
+	local torso = character and character:FindFirstChild("UpperTorso")
+	if not torso then return end
+	local attachment = New("Attachment", { Parent = torso })
+	local emitter = New("ParticleEmitter", {
+		Texture = PARTICLE_DROP,
+		Color = ColorSequence.new(color),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }),
+		Lifetime = NumberRange.new(0.5, 0.9),
+		Speed = NumberRange.new(5, 9),
+		SpreadAngle = Vector2.new(180, 180),
+		Drag = 5,
+		Rate = 0,
+		LightEmission = 0.6,
+		Parent = attachment,
+	})
+	emitter:Emit(18)
+	Debris:AddItem(attachment, 1.2)
+end
+
+local function flashLevel(name, level)
+	flashToken += 1
+	local token = flashToken
+	levelFlash.Text = name .. " · Level " .. level
+	levelFlash.TextTransparency = 0
+	levelFlashStroke.Transparency = Theme.Alpha.TextShadow
+	levelFlashScale.Scale = 0.6
+	Theme.Tween(levelFlashScale, { Scale = 1 }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
+	task.delay(1.2, function()
+		if token ~= flashToken then return end
+		Theme.Tween(levelFlash, { TextTransparency = 1 }, Theme.Motion.Time * 2)
+		Theme.Tween(levelFlashStroke, { Transparency = 1 }, Theme.Motion.Time * 2)
+	end)
+	sparkleBurst(player.Character, Colors.Text)
+end
+
+local prBanner = Theme.Panel({
+	Name = "PersonalRecord",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 84),
+	Size = UDim2.fromOffset(240, 58),
+	Visible = false,
+	ZIndex = 5,
+	Parent = gui,
+}, { Theme.List(Vertical, "XS"), Theme.Pad("S") })
+local prTitle = Theme.Text({ LayoutOrder = 1, Text = "NEW PR", Font = "SemiBold", TextSize = "Large", TextColor3 = Colors.Gold, Size = UDim2.new(1, 0, 0, 24), Parent = prBanner })
+local prInfo = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), Parent = prBanner })
+local prToken = 0
+
+local function showPersonalRecord(weightText)
+	if not current then return end
+	prToken += 1
+	local token = prToken
+	prTitle.Text = "NEW PR"
+	prInfo.Text = current.machine.name .. " · " .. weightText
+	prBanner.Visible = true
+	prBanner.Position = UDim2.new(0.5, 0, 0, 60)
+	Theme.Tween(prBanner, { Position = UDim2.new(0.5, 0, 0, 84) }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
+	Theme.Fade(prBanner, true)
+	Audio.Play2D("PersonalRecord")
+	fovPunch(FEEL.FovPunchBig)
+	sparkleBurst(player.Character, Colors.Gold)
+	task.delay(2.6, function()
+		if token ~= prToken then return end
+		local tween = Theme.Fade(prBanner, false)
+		if tween then
+			tween.Completed:Connect(function()
+				if token == prToken then prBanner.Visible = false end
+			end)
+		end
+	end)
 end
 
 ------------------------------------------------------------------------
@@ -1076,11 +1336,12 @@ local function outOfStamina()
 	end
 end
 
-local function beginRep()
+-- auto = started by the slow automatic pace (no tap): no out-of-stamina warning, it just waits for the refill
+local function beginRep(auto)
 	if not current then return end
 	local data = ClientData.Get()
 	if data.stamina < current.machine.staminaCost then
-		outOfStamina()
+		if not auto then outOfStamina() end
 		return
 	end
 	local now = os.clock()
@@ -1093,21 +1354,37 @@ local function beginRep()
 			setNote(noteSituation())
 		end
 	end
-	local _, selected = progressFor(current.machine.id)
-	local duration = startRep(current.model, selected, staminaRatio() < FEEL.LowStamina)
+	local duration = startRep(current.model, liftTier(current.machine), staminaRatio() < FEEL.LowStamina, isPumped())
+	-- this rep's BIG REP roll came with the last rep's result
+	repState[current.model].big = current.nextBig
+	repState[current.model].pumped = isPumped()
+	current.nextBig = false
 	current.repEnd = now + duration
 	Remotes.MachineAction:FireServer("Lift")
 end
 
-local function tryLift()
+-- A tap: fills the PUMP meter, and starts the next rep now (or right after the current one).
+function tryLift()
 	if not current then return end
+	registerTap()
 	local now = os.clock()
 	if current.repEnd and now < current.repEnd then
-		if current.repEnd - now <= FEEL.BufferWindow then current.queued = true end
+		current.queued = true
 		return
 	end
 	beginRep()
 end
+
+-- The slow automatic pace: a rep starts on its own a little after the last one ends.
+RunService.Heartbeat:Connect(function()
+	if not current then return end
+	local now = os.clock()
+	refreshPump(now)
+	if current.repEnd and now < current.repEnd + Gains.AutoRepGap then return end
+	if current.queued then return end
+	if ClientData.Get().stamina < current.machine.staminaCost then return end
+	beginRep(true)
+end)
 
 -- The local player's lockout: count the rep and fire all the feedback.
 local function localLockout(state)
@@ -1120,25 +1397,33 @@ local function localLockout(state)
 	Audio.Play2D("RepTick")
 
 	local setDone = current.reps % FEEL.SetSize == 0
-	-- the main muscle's gain (same boosts as the server), rounded the way it's shown; the set popup adds these up
+	-- the main muscle's gain (same boosts as the server, incl. PUMPED/BIG REP), rounded the way it's shown; the set
+	-- popup adds these up
 	local main = machine.muscles[1].id
-	local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"))
+	local quality = (state.pumped and Gains.Pump.Multiplier or 1) * (state.big and Gains.BigRep.Multiplier or 1)
+	local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"), quality)
 	local shown = math.max(1, math.floor((xp[main] or 0) + 0.5))
 	current.setGain = (current.setGain or 0) + shown
 	local mode = gainNumbersMode()
 	local showSet = mode ~= "Off" -- On and Minimal
 	local showRep = mode == "On"
-	if character and setDone and showSet then
+	if character and state.big and showSet then
+		-- BIG REP: gold and bigger; Minimal still shows it
+		gainPopup(character, "BIG REP +" .. shown, POPUP.SetScale * 1.1, machineModel, Colors.Gold)
+		Audio.Play2D("BigRep")
+	elseif character and setDone and showSet then
 		local group = Muscles.GroupById[Muscles.ById[main].group]
 		gainPopup(character, "Set done · +" .. current.setGain .. " " .. group.name, POPUP.SetScale, machineModel)
 	elseif character and not setDone and showRep then
-		gainPopup(character, "+" .. shown, 1, machineModel)
+		gainPopup(character, "+" .. shown, 1, machineModel, state.pumped and Colors.Gold or nil)
 	end
 	if setDone then current.setGain = 0 end
 	flashMuscles() -- the secondary muscles get a flash of the HUD's muscle list instead of popups
 
-	if state.tier >= FEEL.HeavyTier then
-		fovPunch()
+	-- every rep a small camera punch; heavy tiers and BIG REPs hit harder
+	fovPunch(state.big and FEEL.FovPunchBig or (state.tier >= FEEL.HeavyTier and FEEL.FovPunchHeavy or FEEL.FovPunch))
+	if state.big then chalkPuff(character, 14) end
+	if state.tier >= FEEL.HeavyTier or state.big then
 		jigglePlates()
 	end
 
@@ -1303,7 +1588,13 @@ end
 local function open(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	if not machine then return end
-	current = { model = model, machine = machine, reps = 0, setsSinceNote = 0, promptConnections = {} }
+	-- repEnd = now: the first automatic rep starts after the normal short gap (time to see the HUD slide up)
+	current = { model = model, machine = machine, reps = 0, setsSinceNote = 0, promptConnections = {}, nextBig = false,
+		repEnd = os.clock() }
+	pumpMeter, pumpLastTap, pumpSettled = 0, 0, os.clock()
+	wasPumped = false
+	pumpLabel.Text, pumpLabel.TextColor3 = "Pump", Colors.Text
+	tapStroke.Color, tapStroke.Transparency = Colors.Border, Theme.Alpha.ButtonBorder
 	barTravel[model] = nil -- measure this lift's bar path fresh
 	-- the lifter never sees this machine's prompts (e.g. "Spot · Help them lift" on their own machine), only on this
 	-- client, so other players still get them; the server's next change after Exit replaces this local value
@@ -1338,6 +1629,9 @@ local function open(model)
 	Audio.PlayAt("BarRattle", barOf(model))
 	stack.Position = HIDDEN_OFFSET
 	Theme.Tween(stack, { Position = UDim2.new() }) -- slides up
+	task.defer(placeTapCluster)
+	tapCluster.Visible = true
+	tapHint.Visible = (ClientData.Get().stats and ClientData.Get().stats.totalReps or 0) < 200 -- new players get the hint
 
 	ContextActionService:BindActionAtPriority("MachineLift", onLiftAction, false,
 		Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space, Enum.KeyCode.ButtonA)
@@ -1356,8 +1650,19 @@ local function close()
 		Audio.PlayAt("BarRattle", barOf(model))
 		if model:FindFirstChild("Platform") then Audio.PlayAt("FloorThud", barOf(model)) end
 		for _, connection in ipairs(current.promptConnections) do connection:Disconnect() end
+		-- The server re-enables the Use prompt just before it sends Exit, and the guard above already caught that change
+		-- and switched it back off, so set the server's state here: Use = free again, Spot = nobody to spot.
+		local free = model:GetAttribute("UserId") == nil
+		for _, prompt in ipairs(model:GetDescendants()) do
+			if prompt:IsA("ProximityPrompt") then
+				prompt.Enabled = prompt.Name ~= "SpotPrompt" and free
+			end
+		end
 	end
 	current = nil
+	setPumpGlow(false)
+	prBanner.Visible = false
+	tapCluster.Visible = false
 	SideMenu.SetTraining(false)
 	setSweat(false)
 	if baseFov then Workspace.CurrentCamera.FieldOfView = baseFov end
@@ -1374,7 +1679,8 @@ local function stepTier(delta)
 	if target < 1 or target > math.min(#current.machine.tiers, unlocked + 1) then return end
 	viewTier = target
 	Audio.PlayAt("PlateSlide", barOf(current.model)) -- plates on/off the bar
-	if viewTier <= unlocked and viewTier ~= selected then
+	local levelOk = mainLevel(current.machine) >= current.machine.tiers[viewTier].unlockLevel
+	if viewTier <= unlocked and levelOk and viewTier ~= selected then
 		Remotes.MachineAction:FireServer("SelectTier", viewTier)
 	end
 	refreshTier()
@@ -1407,9 +1713,11 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 		outOfStamina()
 		return
 	end
+	if current then current.nextBig = result.nextBig == true end
+	if result.pr and current then showPersonalRecord(result.pr) end
 	local leveled, maxed = false, false
-	-- toasts only for the machine's main muscle and only every 5th level: early levels come every rep, and a toast per
-	-- muscle per rep floods the corner (secondary muscles already flash the HUD muscle list)
+	-- the main muscle gets the small "Level 12" flash (with a sparkle burst); secondary muscles only flash the HUD
+	-- muscle list. Maxed muscles get a corner note.
 	local mainId = current and current.machine.muscles[1].id
 	for muscleId, level in pairs(result.levels or {}) do
 		local name = Muscles.ById[muscleId].name
@@ -1417,7 +1725,7 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 			Notify.Show(name .. " maxed")
 			maxed = true
 		else
-			if muscleId == mainId and level % 5 == 0 then Notify.Show(name .. " level " .. level) end
+			if muscleId == mainId then flashLevel(name, level) end
 			leveled = true
 		end
 	end
@@ -1427,6 +1735,43 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 	elseif leveled and os.clock() - lastLevelSound > 1.5 then
 		lastLevelSound = os.clock()
 		Audio.Play2D("LevelUp")
+	end
+end)
+
+------------------------------------------------------------------------
+-- Machine prompts: each machine's prompt shows this player's next weight and what it needs (local text only)
+------------------------------------------------------------------------
+local function promptText(machine)
+	local data = ClientData.Get()
+	local progress = data.machines[machine.id]
+	local level = data.muscles[machine.muscles[1].id].level
+	local usable = Machines.UsableTier(machine, progress, level)
+	local nextTier = machine.tiers[usable + 1]
+	if not nextTier then return machine.name .. " · max weight" end
+	local main = Muscles.ById[machine.muscles[1].id]
+	if level >= nextTier.unlockLevel then
+		local bought = (progress and progress.unlocked or 1) > usable
+		return machine.name .. " · " .. Machines.WeightText(nextTier)
+			.. (bought and " is ready" or (" unlocks for " .. nextTier.cost .. " coins"))
+	end
+	return machine.name .. " · next " .. Machines.WeightText(nextTier) .. " at " .. main.name .. " " .. nextTier.unlockLevel
+end
+
+local function refreshPrompts()
+	if not ClientData.Get().muscles then return end
+	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
+		local machine = Machines.ById[model:GetAttribute("MachineId")]
+		if machine then
+			for _, prompt in ipairs(model:GetDescendants()) do
+				if prompt:IsA("ProximityPrompt") and prompt.Name ~= "SpotPrompt" then prompt.ObjectText = promptText(machine) end
+			end
+		end
+	end
+end
+task.spawn(function()
+	while true do
+		pcall(refreshPrompts)
+		task.wait(2)
 	end
 end)
 

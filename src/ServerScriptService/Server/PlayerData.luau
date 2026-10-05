@@ -396,13 +396,15 @@ end
 function PlayerData.GetMachine(player, machineId)
 	local data = PlayerData.Get(player)
 	local progress = data and data.machines[machineId]
-	return progress or { unlocked = 1, selected = 1 }
+	return progress or { unlocked = 1, selected = 1, best = nil }
 end
 
-function PlayerData.SetMachine(player, machineId, unlocked, selected)
+-- best = heaviest tier ever lifted on it (personal record); nil keeps the current one.
+function PlayerData.SetMachine(player, machineId, unlocked, selected, best)
 	local data = PlayerData.Get(player)
 	if not data then return false end
-	data.machines[machineId] = { unlocked = unlocked, selected = selected }
+	local old = data.machines[machineId]
+	data.machines[machineId] = { unlocked = unlocked, selected = selected, best = best or (old and old.best) }
 	replicate(player, { "machines", machineId }, data.machines[machineId])
 	return true
 end

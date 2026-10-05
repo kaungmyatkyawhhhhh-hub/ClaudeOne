@@ -1,7 +1,10 @@
--- Growth Spurt pacing: simulates a new player playing through their first Growth Spurts with the real formulas
--- (Gains.PerRep, the XP curve, level caps, weight tiers + coins, stamina, which gyms are open) and checks each spurt
--- takes as long as GrowthSpurts.TargetMinutes says (first one: also within the brief's 15-20 minutes).
--- `lune run tests/pacing` prints the breakdown (median per spurt, spread, per overall grade for the first one).
+-- Growth Spurt pacing: simulates new players playing through their first Growth Spurts with the real formulas
+-- (Gains.PerRep, the XP curve, level caps, weight tiers + coins, stamina, auto reps, tapping, PUMPED, BIG REP, which
+-- gyms are open) and checks each spurt takes as long as GrowthSpurts.TargetMinutes says.
+--   lune run tests/pacing        prints the breakdown (median per spurt, spread, per overall grade for the first)
+--   lune run tests/pacing tune   finds the requiredLevel for each stage that hits its target (paste into
+--                                Config/GrowthSpurts.Stages)
+local process = require("@lune/process")
 local H = require("./harness")
 local Gains = H.module("ReplicatedStorage/Shared/Config/Gains")
 local Machines = H.module("ReplicatedStorage/Shared/Config/Machines")
@@ -18,14 +21,16 @@ MuscleOfTheDay.MultiplierFor = function(muscleId)
 	return Muscles.ById[muscleId].group == motdGroup and MuscleOfTheDay.Multiplier or 1
 end
 
--- How a typical player plays (seconds)
+-- How a typical player plays ("normal play with some tapping"), in seconds
 local PLAY = {
-	Rep = 1.05,           -- fastest real rep (0.6 lower + 0.35 press + 0.1 hold), taps buffered
+	Rep = 1.05,           -- one rep's animation (0.6 lower + 0.35 press + 0.1 hold)
+	TapShare = 0.5,       -- share of sets the player taps through (the rest run on auto reps)
+	TapsPerSecond = 3,    -- how fast a kid taps while tapping
 	Walk = 8,             -- walking to another machine and tapping Use
-	Overhead = 180,       -- first session: menu, genetics reveal, tutorial lines, Stats, Coach Dex (not lifting)
+	Overhead = 150,       -- first session: menu, genetics reveal, tutorial lines, Coach Dex (not lifting)
 	SpurtOverhead = 45,   -- each later spurt: the Growth Spurt moment, walking to a newly opened gym, checking Stats
 }
-local SPURTS = 8 -- spurts simulated per player (1st-3rd have their own targets, 4th+ share the last one)
+local SPURTS = 8 -- spurts simulated per player (1st-4th have their own targets, later ones share the last one)
 local PLAYERS = 60
 
 local function newPlayer(seed)
@@ -45,6 +50,25 @@ local function addXp(data, muscleId, xp, cap)
 	end
 end
 
+-- The PUMP meter over `dt` seconds (same rules as MachineService): tapping fills it, full = PUMPED for a while,
+-- not tapping drains it.
+local function stepPump(pump, dt, tapping)
+	local P = Gains.Pump
+	if pump.left > 0 then
+		pump.left = math.max(0, pump.left - dt)
+		return
+	end
+	if tapping then
+		pump.meter += dt * math.min(PLAY.TapsPerSecond, P.TapsPerSecond) / P.TapsToFill
+		if pump.meter >= 1 then
+			pump.meter = 0
+			pump.left = P.Duration
+		end
+	else
+		pump.meter = math.max(0, pump.meter - P.DrainPerSecond * dt)
+	end
+end
+
 -- Plays from the current state to the next Growth Spurt and does it. Returns the minutes it took.
 local function playOneSpurt(data, overhead)
 	motdGroup = Muscles.Groups[(data.seed + data.growthSpurts) % #Muscles.Groups + 1].id
@@ -58,12 +82,12 @@ local function playOneSpurt(data, overhead)
 		end
 	end
 	local time, current = overhead, nil
+	local pump = { meter = 0, left = 0 }
 
 	local function progress()
 		return GrowthSpurts.Progress(data, Muscles.Groups, trainable)
 	end
-	-- buy the next weight tiers while the level and coins allow; lift the heaviest bought tier the level allows
-	-- (bought tiers stay bought after a Growth Spurt, but each needs its main muscle level again)
+	-- buy the next weight tiers while the level and coins allow; lift the heaviest usable tier (bought + level)
 	local function tierFor(machine)
 		local level = data.muscles[machine.muscles[1].id].level
 		local bought = data.bought[machine.id] or 1
@@ -74,11 +98,7 @@ local function playOneSpurt(data, overhead)
 			bought += 1
 		end
 		data.bought[machine.id] = bought
-		local usable = 1
-		for index = 1, bought do
-			if level >= machine.tiers[index].unlockLevel then usable = index end
-		end
-		return usable
+		return Machines.UsableTier(machine, { unlocked = bought }, level)
 	end
 	-- the machine that does the most for the groups still under the goal (low muscles count more); stays on the
 	-- current machine while it is at least 75% as good (real players do a few sets in a row)
@@ -106,15 +126,23 @@ local function playOneSpurt(data, overhead)
 		local machine = pick(p, current)
 		if machine ~= current then time += PLAY.Walk; current = machine end
 		local tier = tierFor(machine)
-		-- one set: lift until stamina runs out, then rest until it's full again
+		-- one set: tapped or on auto reps, until stamina runs out; then rest until it's full again
+		local tapping = math.random() < PLAY.TapShare
 		local stamina = Stamina.Max
 		while stamina >= machine.staminaCost do
 			stamina -= machine.staminaCost
-			for id, amount in Gains.PerRep(data, machine, tier) do addXp(data, id, amount, cap) end
+			local pumped = pump.left > 0
+			local quality = (pumped and Gains.Pump.Multiplier or 1)
+				* (math.random() < Gains.BigRep.Chance and Gains.BigRep.Multiplier or 1)
+			for id, amount in Gains.PerRep(data, machine, tier, 1, quality) do addXp(data, id, amount, cap) end
 			data.coins += machine.tiers[tier].coins
-			time += PLAY.Rep
+			local rep = PLAY.Rep * (pumped and Gains.Pump.Speed or 1) + (tapping and 0 or Gains.AutoRepGap)
+			stepPump(pump, rep, tapping)
+			time += rep
 		end
-		time += Stamina.RegenDelay + (Stamina.Max - stamina) / Stamina.RegenPerSecond
+		local rest = Stamina.RegenDelay + (Stamina.Max - stamina) / Stamina.RegenPerSecond
+		stepPump(pump, rest, false)
+		time += rest
 		if time > 6 * 3600 then break end -- safety
 	end
 	-- the Growth Spurt itself (same as PlayerData.GrowthSpurt)
@@ -130,21 +158,45 @@ local function median(list)
 end
 local function at(sorted, share) return sorted[math.max(1, math.floor(#sorted * share + 0.5))] end
 
-local perSpurt, firstByGrade = {}, {}
-for n = 1, SPURTS do perSpurt[n] = {} end
-for seed = 1, PLAYERS do
-	local data = newPlayer(seed)
-	local grade = Genetics.GetOverallGrade(data.genetics.grades)
-	for n = 1, SPURTS do
-		local minutes = playOneSpurt(data, n == 1 and PLAY.Overhead or PLAY.SpurtOverhead)
-		table.insert(perSpurt[n], minutes)
-		if n == 1 then
-			firstByGrade[grade] = firstByGrade[grade] or {}
-			table.insert(firstByGrade[grade], minutes)
+-- Runs PLAYERS simulated players through `spurts` spurts. Returns perSpurt[n] = { minutes... }, firstByGrade.
+local function simulate(spurts)
+	local perSpurt, firstByGrade = {}, {}
+	for n = 1, spurts do perSpurt[n] = {} end
+	for seed = 1, PLAYERS do
+		local data = newPlayer(seed)
+		local grade = Genetics.GetOverallGrade(data.genetics.grades)
+		for n = 1, spurts do
+			local minutes = playOneSpurt(data, n == 1 and PLAY.Overhead or PLAY.SpurtOverhead)
+			table.insert(perSpurt[n], minutes)
+			if n == 1 then
+				firstByGrade[grade] = firstByGrade[grade] or {}
+				table.insert(firstByGrade[grade], minutes)
+			end
 		end
 	end
+	return perSpurt, firstByGrade
 end
 
+if process.args[1] == "tune" then
+	-- one stage at a time: the earlier stages are already tuned, so only this stage's level moves its time
+	local stages = GrowthSpurts.Stages
+	for n = 1, #stages do
+		local target = GrowthSpurts.TargetMinutes(n)
+		local lo, hi = (n > 1 and stages[n - 1].requiredLevel or 1), 600
+		while hi - lo > 1 do
+			local mid = (lo + hi) // 2
+			stages[n].requiredLevel = mid
+			local per = simulate(n)
+			if (median(per[n])) < target then lo = mid else hi = mid end
+		end
+		stages[n].requiredLevel = lo
+		local per = simulate(n)
+		print(string.format("stage %d: requiredLevel = %d -> median %.1f min (target %g)", n, lo, (median(per[n])), target))
+	end
+	return
+end
+
+local perSpurt, firstByGrade = simulate(SPURTS)
 print(string.format("Growth Spurt pacing (%d new players, minutes of play per spurt)", PLAYERS))
 for n = 1, SPURTS do
 	local mid, sorted = median(perSpurt[n])
@@ -159,6 +211,4 @@ for _, grade in Genetics.Grades do
 	local list = firstByGrade[grade.id]
 	if list then print(string.format("  first spurt, overall %s: median %.1f (%d players)", grade.id, (median(list)), #list)) end
 end
-local first = median(perSpurt[1])
-H.check(first >= 15 and first <= 20, string.format("typical first Growth Spurt takes 15-20 minutes (%.1f)", first))
 H.done()

@@ -72,24 +72,69 @@ Short and current. The full build history (test steps, numbers, reasoning for ea
 - Stats world labels on phones weren't checked on a real device (Studio screenshots can't draw them).
 
 ## Overnight run (6-7 Oct 2026, from GYM_ARC_overnight_prompt.md)
+**The place was NOT saved by me** (the MCP connection has no save). Everything below is live in the open Studio
+place and backed up in `src/`; please File > Save to Roblox first thing.
 - Session 0 (Rojo removal): done. Repo files were already gone (default.project.json, rokit.toml, sourcemap
   line in .gitignore, Rojo lines in README/CLAUDE/tests/export notes). No game script mentions Rojo or
   `Lighting.Technology`; Lighting is Realistic + PrioritizeLightingQuality, StreamingEnabled on.
-  **Your Studio still has the Rojo plugin installed (two versions, 7.4.4 and 7.7.1).** Remove it in
-  Plugins > Manage Plugins; I can't uninstall plugins from the MCP connection.
+  **Your Studio still has the Rojo plugin installed (two versions, 7.4.4 and 7.7.1)**, and `~/.rokit` (outside the
+  repo) still holds rojo.exe. Remove the plugin in Plugins > Manage Plugins; I can't uninstall plugins from MCP.
+- Session 1 (bugs + game feel): done, playtested.
+  - Bug a (can't re-use a machine): the client hid the machine's prompts while lifting and re-hid any change; the
+    server re-enables the prompt just *before* sending Exit, so the client caught that and hid it again for good.
+    Fixed in `MachineClient.close`. Tested enter/exit 5x on the bench, then the pull-up bar.
+  - Bug b (floating arms on "Day one"): both mirror bodies are now real rigs built on the server from your avatar's
+    HumanoidDescription (`MirrorService`), scaled by the description's height/width/depth and shaped by the new
+    `Shared/BodyShape` module. Fixed.
+  - Bug c (mirror didn't reflect): the glass now shows a live mirrored copy of you and the room in front of it
+    (SurfaceGui + ViewportFrame, client only, only within 25 studs). See `MirrorClient` bottom section.
+  - Bug d (broken statue): rebuilt from the leader's description (default body if there's no leader), all marble,
+    double-biceps pose, every part placed from its joints before anchoring. Fixed.
+  - Root cause behind b and d, worth knowing: **avatars in this place use Roblox's newer joints
+    (AnimationConstraints), not Motor6Ds.** Emotes and the skateboard lean only looked for Motor6Ds, so they did
+    nothing; fixed (both kinds now work everywhere). Machine poses already worked.
+  - Lifting: reps run on their own (slow pace); tapping (Lift button bottom right, a click/tap anywhere, Space)
+    makes them faster and fills a PUMP meter; full = PUMPED for 8 s (x2 gains, faster reps, gold glow on the
+    trained muscles). ~1 in 12 reps is a gold BIG REP (x3). Every rep: clank + small camera punch + "+N" pop.
+    Level up: "Mid Chest · Level 12" flash + sparkle burst + chime. New heaviest weight: "NEW PR" banner + sound.
+  - Always-visible Growth Spurt bar (top center, `ProgressClient`) with a "next goal" line under it (reps to the
+    next weight, coins for it, or which group to train). Tapping it when ready does the Growth Spurt.
+  - Visible growth: size grows in 5 clear steps per Growth Spurt (whole body wider/deeper + trained parts
+    thicker); each step plays a "you grew" pulse + sound + "You grew! Bigger Arms" note. Growth Spurt keeps the
+    height and resets the size.
+  - Weights: 12 tiers on every machine (`Config/Machines` Progression table); each needs the main muscle's level
+    (again after every Growth Spurt) and coins once. The machine prompt shows your next weight and what it needs.
+  - Plates: one color per weight (55 red, 45 blue, 35 yellow, 25 green, 10 white, 5 steel) on bars and the HUD.
+- Next: Session 2 (gyms, equipment, NPCs).
 
 ## Decisions made overnight
-- (filled in as the run goes)
+- PR banner: your brief's design file lists "personal-record popups" as CUT, but tonight's prompt asks for a NEW PR
+  banner. I followed tonight's prompt (small banner, not a popup window).
+- Gold (#F2C14E) added to Theme for big moments only (BIG REP, NEW PR, PUMPED). Plate colors stay the bumper colors.
+- PUMPED and BIG REP multiply gains *outside* the 5x cap (they're earned by playing; inside the cap they'd do nothing
+  after a few Growth Spurts). Shakes/genetics/spurt bonuses stay inside the cap.
+- "Gain numbers" setting: On = everything, Minimal = set + BIG REP popups, Off = no gain popups. The NEW PR banner,
+  level flash and "you grew" note show in every mode (they're milestones, not gain numbers).
+- Muscles can now go 30% past the Growth Spurt goal (`GrowthSpurts.CapOverGoal`), so a strong muscle helps its
+  group's average; before, every muscle had to hit the cap exactly and side-only muscles (Traps, Forearms) were a grind.
+- XP curve is now `20 + 2 × level` per level (was `6 + level`, which gave 3-4 levels per rep at the start).
+- Tapping still fills the Pump meter while resting for stamina (nobody is punished; it just keeps tapping useful).
+- The Auto Lift game pass (monetization off) now just keeps tapping for you; normal auto reps are free for everyone.
+- Existing saves: weight tiers were renumbered (8 → 12), so a save's "bought up to tier N" now means the new tier N
+  (a little lighter). Pre-launch, so I didn't migrate.
+- Sound ids: 4 new placeholders in `Config/Sounds` (PumpFull, BigRep, PersonalRecord, Grew) reuse existing clips.
 
 ## Pacing (how the Growth Spurt goals are set)
-- Targets live in one table: `GrowthSpurts.Targets = { 18.5, 25, 35, 45 }` (1st, 2nd, 3rd, then every later spurt).
+- Targets live in one table: `GrowthSpurts.Targets = { 8, 15, 25, 35, 45 }` (1st, 2nd, 3rd, 4th, then every later).
 - `tests/pacing.luau` plays 60 simulated players through 8 spurts with the real config modules: XP per rep =
-  `BaseXp × tier gains × muscle share × min(genetics × spurt bonus × balanced × Muscle of the Day, 5) ×
-  1/(1 + level/50)`; XP per level = `6 + level`; reps every 1.05 s until stamina runs out, then rest; coins buy the
-  next weight tiers (they stay bought after a spurt, but need the level again); the beach gym opens after spurt 1 and
-  the pro gym after spurt 2; 3 minutes of menu/tutorial before the first spurt and 45 s around each later one.
-- Because the permanent bonus multiplies every rep (x1.25, 1.5, 1.75, 2, 2.5, 3...), a later spurt covers far more
-  levels in the same time, so the goals climb slowly: **50, 89, 114, 146, 160, 179, then +10** each.
-  `Gains.BaseXp` went 22 → 27 (the slower stamina refill had pushed the first spurt to 21 minutes).
-- Result (median): 18.7, 24.9, 35.1, 44.5, 44.6, 44.7, 42.6, 43.1 minutes. The test fails if any spurt is more than
-  10% off its target. If gains, tiers, stamina or bonuses change: run `lune run tests/pacing` and retune the levels.
+  `BaseXp(34) × tier gains × muscle share × min(genetics × spurt bonus × balanced × Muscle of the Day, 5) ×
+  quality × 1/(1 + level/50)`, where quality = x2 while PUMPED and x3 on a BIG REP (1 in 12); XP per level =
+  `20 + 2 × level`; coins buy the next weight tiers (bought tiers need the level again after a spurt); beach gym
+  after spurt 1, pro gym after spurt 2; 2.5 min of menu/tutorial before the first spurt, 45 s around later ones.
+- "Normal play with some tapping": half the sets are tapped at 3 taps/s (reps every 1.05 s, 0.79 s while PUMPED; the
+  meter fills in ~5 s of tapping, then 8 s PUMPED), the other half run on auto reps (1.05 s rep + 0.8 s gap). Each set
+  lasts until stamina runs out (5 per rep, 100 max), then a rest to full. In this mix about half of tapped reps are
+  PUMPED (x2), so a tapped set gives ~1.5x the gains of an auto set (and finishes sooner); BIG REPs add ~17%.
+- The tuner (`lune run tests/pacing tune`) solves each stage's goal level in turn: **15, 47, 72, 103, 135, 157, then
+  +18** each. Result (median minutes): 7.9, 14.6, 24.6, 34.7, 44.2, 44.2, 43.3, 43.7. The test fails if any spurt is
+  more than 10% off its target. If gains, tiers, stamina or tapping change: run the tuner and paste the levels.

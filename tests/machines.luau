@@ -10,7 +10,22 @@ local pro = 0
 for _, m in Machines.List do
 	H.check(Poses[m.pose] ~= nil, m.id .. " pose " .. m.pose .. " exists")
 	H.check(client:find("POSE_ANIMS%." .. m.pose .. " =") ~= nil, m.id .. " has a client animation")
-	H.check(type(m.tiers) == "table" and #m.tiers == 8, m.id .. " has 8 tiers")
+	H.check(type(m.tiers) == "table" and #m.tiers == 12, m.id .. " has 12 tiers")
+	for i, tier in m.tiers do
+		local prev = m.tiers[i - 1]
+		if prev then
+			H.check(tier.gains > prev.gains and tier.unlockLevel > prev.unlockLevel and tier.weight > prev.weight,
+				m.id .. " tier " .. i .. " is heavier, pays more and needs a higher level")
+		end
+		local perSide = 0
+		for _, lb in tier.plates do
+			H.check(Machines.Plates[lb] ~= nil, m.id .. " tier " .. i .. " plate " .. lb .. " exists")
+			perSide += lb
+		end
+		if m.tiers == Machines.TierSets.Barbell or m.tiers == Machines.TierSets.HeavyBarbell then
+			H.check(45 + 2 * perSide == tier.weight, m.id .. " tier " .. i .. " plates add up to " .. tier.weight)
+		end
+	end
 	for _, e in m.muscles do H.check(Muscles.ById[e.id] ~= nil and Muscles.Body[e.id] ~= nil, m.id .. " muscle " .. e.id) end
 	if m.gym == "Pro" then
 		pro += 1

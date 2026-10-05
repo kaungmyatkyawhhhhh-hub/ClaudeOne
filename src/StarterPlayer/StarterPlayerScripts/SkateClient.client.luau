@@ -63,7 +63,7 @@ RunService.Stepped:Connect(function(_, dt)
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local lower = character and character:FindFirstChild("LowerTorso")
 	local joint = lower and lower:FindFirstChild("Root")
-	if not root or not joint or not joint:IsA("Motor6D") then return end
+	if not root or not joint or not (joint:IsA("Motor6D") or joint:IsA("AnimationConstraint")) then return end
 	local turn = root.AssemblyAngularVelocity.Y
 	lean += (math.clamp(-turn * 0.06, -0.25, 0.25) - lean) * math.min(1, dt * 8)
 	joint.Transform = joint.Transform * CFrame.Angles(0, 0, lean)

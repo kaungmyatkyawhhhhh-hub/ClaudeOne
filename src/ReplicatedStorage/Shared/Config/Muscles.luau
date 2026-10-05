@@ -70,9 +70,9 @@ Muscles.Body = {
 	Obliques = { part = "LowerTorso", offset = Vector3.new(0.6, 0.3, -0.3), facing = "Front", pump = { "LowerTorso" } },
 }
 
--- XP needed to go from `level` to `level + 1` (1525 XP from 0 to 50).
+-- XP needed to go from `level` to `level + 1` (about one level per rep at the start; 3450 XP from 0 to 50).
 function Muscles.XpToNext(level)
-	return 6 + level
+	return 20 + 2 * level
 end
 
 -- Group level = average of its sub-muscle levels. `muscleData` is data.muscles.

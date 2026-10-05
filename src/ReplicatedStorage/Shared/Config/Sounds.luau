@@ -25,6 +25,11 @@ return {
 	TitleUnlocked = { ids = { 9113421788 }, volume = 0.16, pitch = 0, basePitch = 1.12, group = "UI", maxLength = 1.6 },    -- Bell Rings: a new title
 	TierUnlocked = { ids = { 9116750726, 9116751108 }, volume = 0.3, pitch = 0.03, basePitch = 0.92, group = "Gameplay", maxLength = 1.2 }, -- Metal Plate Impact: heavier plates bought
 	OutOfStamina = { ids = { 9113585730, 9113586280 }, volume = 0.55, pitch = 0.05, group = "Gameplay", maxLength = 1.6 },  -- Breath Exhale: tapped with no stamina left
+	-- PLACEHOLDERS (owner picks the real ids): these reuse clips from above until then
+	PumpFull = { ids = { 9116163687 }, volume = 0.25, pitch = 0.02, basePitch = 1.45, group = "Gameplay", maxLength = 1.0 },       -- PLACEHOLDER (Key Dings, high): the PUMP meter fills, PUMPED starts
+	BigRep = { ids = { 9116750726, 9116751108 }, volume = 0.35, pitch = 0.03, basePitch = 0.8, group = "Gameplay", maxLength = 1.0 }, -- PLACEHOLDER (Metal Plate Impact, deep): a BIG REP
+	PersonalRecord = { ids = { 9113421788 }, volume = 0.2, pitch = 0, basePitch = 1.2, group = "Gameplay", maxLength = 1.8 },       -- PLACEHOLDER (Bell Rings): NEW PR banner
+	Grew = { ids = { 9119388384 }, volume = 0.35, pitch = 0.03, basePitch = 1.15, group = "Gameplay", maxLength = 1.2 },            -- PLACEHOLDER (Distant Metal Booms): "you grew" moment
 
 	-- Interface (2D, quieter than gameplay)
 	Click = { ids = { 9114212934 }, volume = 0.1, pitch = 0.05, group = "UI" },                  -- Button click: every button press

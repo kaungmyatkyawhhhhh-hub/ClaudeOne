@@ -8,22 +8,23 @@ GrowthSpurts.MaxHeight = 84   -- 7'0"
 -- requiredLevel is tuned with tests/pacing to GrowthSpurts.Targets below (the permanent bonus makes later stages much
 -- faster per level, so the goals climb slowly).
 GrowthSpurts.Stages = {
-	{ height = 54, requiredLevel = 50, bonus = 1.25 },
-	{ height = 60, requiredLevel = 89, bonus = 1.5 },
-	{ height = 66, requiredLevel = 114, bonus = 1.75 },
-	{ height = 72, requiredLevel = 146, bonus = 2 },
-	{ height = 78, requiredLevel = 160, bonus = 2.5 },
-	{ height = 84, requiredLevel = 179, bonus = 3 },
+	{ height = 54, requiredLevel = 15, bonus = 1.25 },
+	{ height = 60, requiredLevel = 47, bonus = 1.5 },
+	{ height = 66, requiredLevel = 72, bonus = 1.75 },
+	{ height = 72, requiredLevel = 103, bonus = 2 },
+	{ height = 78, requiredLevel = 135, bonus = 2.5 },
+	{ height = 84, requiredLevel = 157, bonus = 3 },
 }
 
 -- Beyond the table: keep growing until MaxHeight, and keep adding level + bonus. (From here the bonus mostly runs
 -- into Gains.MaxMultiplier, so each extra spurt is a few minutes longer than the last; see tests/pacing.)
-GrowthSpurts.ExtraPerStage = { height = 6, requiredLevel = 10, bonus = 0.5 }
+GrowthSpurts.ExtraPerStage = { height = 6, requiredLevel = 18, bonus = 0.5 }
 
--- How long each Growth Spurt should take a typical player, in minutes of play: 1st, 2nd, 3rd, then every later one.
+-- How long each Growth Spurt should take a typical player, in minutes of play: 1st, 2nd, 3rd, 4th, then every later
+-- one ("normal play with some tapping": half the sets tapped, see tests/pacing).
 -- The requiredLevel values above are tuned to these with tests/pacing, which plays simulated players through the
 -- spurts with the real gains formula. If gains, tiers, stamina or bonuses change, rerun it and retune the levels.
-GrowthSpurts.Targets = { 18.5, 25, 35, 45 }
+GrowthSpurts.Targets = { 8, 15, 25, 35, 45 }
 
 function GrowthSpurts.TargetMinutes(n)
 	local targets = GrowthSpurts.Targets
@@ -49,7 +50,16 @@ function GrowthSpurts.GetBonus(spurts)
 	return spurts == 0 and 1 or GrowthSpurts.Get(spurts).bonus
 end
 
+-- Muscles can go a bit past the goal (CapOverGoal), so a strong muscle helps its group's average and nobody has to
+-- grind a muscle that only a few machines train as a side muscle.
+GrowthSpurts.CapOverGoal = 1.3
+
 function GrowthSpurts.GetLevelCap(spurts)
+	return math.ceil(GrowthSpurts.Get(spurts + 1).requiredLevel * GrowthSpurts.CapOverGoal)
+end
+
+-- The level every group needs for the next Growth Spurt.
+function GrowthSpurts.GetGoal(spurts)
 	return GrowthSpurts.Get(spurts + 1).requiredLevel
 end
 

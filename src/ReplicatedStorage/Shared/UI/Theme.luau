@@ -14,6 +14,7 @@ Theme.Colors = {
 	Ink = Color3.fromHex("#0E0E10"),        -- dark text, only on light plate discs
 	Shadow = Color3.fromHex("#000000"),
 	NeedsWork = Color3.fromHex("#FF8A8A"),  -- soft light red: "needs work", very low stamina
+	Gold = Color3.fromHex("#F2C14E"),       -- big moments only: BIG REP, NEW PR, PUMPED, maxed outline
 }
 
 -- Transparency levels (0 = solid, 1 = invisible)
@@ -38,6 +39,7 @@ Theme.Bumper = {
 	Blue = plate("#1F5FBF", Theme.Colors.Text),
 	Red = plate("#D7262E", Theme.Colors.Text),
 	Black = plate("#141414", Theme.Colors.Text),
+	Steel = plate("#A9ADB3", Theme.Colors.Ink), -- small metal change plate (5 lb)
 }
 Theme.Grades = { D = Theme.Bumper.White, C = Theme.Bumper.Green, B = Theme.Bumper.Yellow, A = Theme.Bumper.Blue, S = Theme.Bumper.Red }
 Theme.Rarity = {
