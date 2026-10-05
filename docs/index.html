@@ -317,6 +317,11 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .dcard.miss{display:flex;flex-direction:column;gap:8px}.mrow{display:flex;gap:10px;align-items:center}.mrow>span{flex:1;display:flex;flex-direction:column;gap:3px}.mrow b{font-size:.88rem}.mrow small{font:600 .68rem var(--mono);color:var(--muted)}.mrow button{border:0;border-radius:99px;padding:7px 12px;font:800 .75rem var(--body);background:var(--accent);color:#fff;cursor:pointer;min-width:58px}.mrow button:disabled{background:var(--sunk);color:var(--muted)}.mrow.done b{text-decoration:line-through;opacity:.6}
 .stlist{display:flex;flex-direction:column;gap:6px}.strow{display:grid;grid-template-columns:44px 1fr 70px 92px;gap:8px;align-items:center;border:0;border-radius:14px;padding:8px 10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);text-align:left;color:var(--ink);cursor:pointer}.strow i{font:800 .62rem var(--mono);font-style:normal;color:#fff;border-radius:10px;height:34px;display:grid;place-items:center}.strow b{font-size:.86rem}.strow small{display:block;font-size:.7rem;color:var(--muted)}.stsp svg{width:70px;height:24px}.stp{font:700 .8rem var(--mono);text-align:right}.stp em{display:block;font-style:normal;font-size:.68rem}.stp em.u,.news b.u{color:var(--up)}.stp em.d,.news b.d{color:var(--down)}
 .stbig{border-radius:18px;padding:14px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--sc)}.stbig b{display:block;font:900 2rem var(--display)}.stchart svg{width:100%;height:90px}
+.shtop{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font:600 .74rem var(--mono);text-align:center;margin-bottom:10px}.shtop span{background:var(--surface);border-radius:12px;padding:8px 4px;box-shadow:inset 0 0 0 1px var(--line)}.shtop b{display:block;font-size:1rem}
+.shorder{border-radius:18px;padding:14px;background:linear-gradient(135deg,#1b1f2a,#2b2f3a);color:#fff;text-align:center}.shorder b{display:block;font:900 1.4rem var(--display);margin:2px 0 8px}.shorder .eyebrow{color:#9aa3b3}.shseq{display:flex;gap:8px;justify-content:center}.shseq span{font-size:1.8rem;width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.08);opacity:.55}.shseq span.now{opacity:1;box-shadow:0 0 0 2px #ffcc33;animation:pulse 1s infinite}.shseq span.ok{opacity:1;background:#1f9d5b}
+.shgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.shbtn{aspect-ratio:1;border:0;border-radius:16px;background:var(--surface);box-shadow:0 4px 0 rgba(0,0,0,.12),inset 0 0 0 1px var(--line);font-size:2rem;cursor:pointer;touch-action:manipulation}.shbtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.12)}.shbtn.bad{background:#ffd9dd}
+.shend{text-align:center;padding:16px 0}.shend>b{display:block;font:900 3.4rem var(--display)}
+@keyframes pulse{50%{transform:scale(1.08)}}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -945,6 +950,7 @@ const ACH=[
  ["lucky","Lucky streak","Scratch 25 cards",()=>(S.stats.scratch||0)>=25,20000],
  ["collector","Collector","Complete 3 collection sets",()=>CATS.filter(c=>collDone(c.k)).length>=3,250000],
  ["wolf","Wolf of Flip Street","Make $1M profit on stocks",()=>(S.stats.stockPnl||0)>=1e6,500000],
+ ["hustler","Hands-on owner","Serve 100 orders on shifts",()=>(S.stats.orders||0)>=100,1e6],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1375,7 +1381,7 @@ function openRoom(k){
   ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
-function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 // buying or claiming redraws the room; keep the scroll position when it's the same screen
 const roomSc={y:0,t:null};
 $("room").addEventListener("scroll",e=>{const t=e.target;if(t.classList&&t.classList.contains("scroll")&&t.parentNode===$("room"))roomSc.y=t.scrollTop},true);
@@ -2865,6 +2871,7 @@ function loop(now){
       sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
+      if(room==="biz")shiftTick(dt);
       if(room==="storage")lotTick(dt);
       findsTick(dt);jobTick(dt);rivalTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
@@ -3354,6 +3361,7 @@ function openBiz(id,back){const b=(S.biz||[]).find(x=>x.id===id);if(!b)return ba
       <div class="seg3">${PRICE_T.map((p,i)=>`<button class="${b.p===i?"on":""}" data-pr="${i}">${p[0]}<small>${p[1]===1?"normal":(p[1]>1?"+":"−")+Math.round(Math.abs(p[1]-1)*100)+"%"} · rep ${p[2]>0?"↑":p[2]<-.5?"↓↓":"↓"}</small></button>`).join("")}</div>
       <div class="sechead"><h3>Manage</h3></div>
       <div class="perks">
+        <button class="perk nopic" id="bzShift" ${b.closed>Date.now()?"disabled":""}><span class="t">${SHIFT[b.t].t}</span><span class="d">45 seconds of ${SHIFT[b.t].v.toLowerCase()}ing orders for tips and reputation</span><span class="c">10 energy</span></button>
         <button class="perk nopic" data-act="exp" ${b.lv>=bizMaxLv||S.cash<ex?"disabled":""}><span class="t">Expand${b.lv>=bizMaxLv?" · maxed":""}</span><span class="d">${b.lv>=bizMaxLv?"As big as it gets":b.t==="apt"||b.t==="condo"||b.t==="hotel"?"Add more floors":b.t==="resort"?"Add more villas":b.t==="rest"?"More tables and a terrace":"More seats and a rooftop"}. +42% income</span><span class="c">${b.lv>=bizMaxLv?"MAX":fmt(ex)}</span></button>
         <button class="perk nopic" data-act="reno" ${S.cash<rc||b.rep>=99?"disabled":""}><span class="t">Renovate</span><span class="d">Fresh decor: +30 reputation</span><span class="c">${fmt(rc)}</span></button>
         <button class="perk nopic" data-act="promo" ${S.cash<pc||promo?"disabled":""}><span class="t">Run a promotion</span><span class="d">${promo?"Running: "+Math.ceil((b.promo-Date.now())/60000)+" min left":"+60% income for 10 minutes"}</span><span class="c">${promo?"On":fmt(pc)}</span></button>
@@ -3361,6 +3369,7 @@ function openBiz(id,back){const b=(S.biz||[]).find(x=>x.id===id);if(!b)return ba
         <button class="perk nopic" data-act="sell"><span class="t">Sell the business</span><span class="d">Get back 70% of what you put in</span><span class="c">${fmt(Math.round(b.inv*.7))}</span></button>
       </div></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{BZV=null;back()};
+    $("bzShift").onclick=()=>openShift(b,()=>openBiz(id,back));
     const dec=$("bzDec");if(dec)dec.onclick=()=>openBizEvent(()=>openBiz(id,back));
     const col=$("bzCol");if(col)col.onclick=()=>{const v=Math.round(b.till||0);if(v<1)return;b.till=0;S.stats.bizCollects=(S.stats.bizCollects||0)+1;earn(v);dirty=true;SFX.sell();confetti(60);banner("+"+fmt(v),"g");draw();updMini()};
     $("room").querySelectorAll("[data-pr]").forEach(x=>x.onclick=()=>{b.p=+x.dataset.pr;dirty=true;SFX.tick(.5);draw()});
@@ -3845,7 +3854,8 @@ const MISS=[
  {k:"collect",t:"Collect from your businesses {n} times",st:"bizCollects",n:[1,3,5],need:()=>(S.biz||[]).length>0},
  {k:"deliv",t:"Deliver {n} packages",st:"delivOk",n:[1,2,3]},
  {k:"finds",t:"Grab {n} shiny finds",st:"finds",n:[2,4,6]},
- {k:"flex",t:"Flex {n} times at the gym",st:"flexes",n:[1,2,3]}];
+ {k:"flex",t:"Flex {n} times at the gym",st:"flexes",n:[1,2,3]},
+ {k:"shift",t:"Work {n} shifts at your businesses",st:"shifts",n:[1,2,3],need:()=>(S.biz||[]).length>0}];
 function ensureMiss(){const d=dayKey();if(S.miss&&S.miss.d===d)return;let h=0;for(const ch of d+(ACC?ACC.user:""))h=(h*31+ch.charCodeAt(0))%99991;
   const pool=MISS.filter(m=>!m.need||m.need()),pickd=[];while(pickd.length<3&&pool.length){const i=h%pool.length;pickd.push(pool.splice(i,1)[0]);h=Math.floor(h/7)+13}
   S.miss={d,list:pickd.map((m,i)=>({k:m.k,need:m.n[i],base:S.stats[m.st]||0,done:0}))};dirty=true}
@@ -3900,6 +3910,37 @@ function openStocks(back){stkInit();room="stocks";let sel=null;
   STKV=draw;draw()}
 const stSpark=h=>spark(h.map(v=>v/h[0]*8));
 const stkFmt=v=>v>=1000?fmt(v):"$"+v.toFixed(2);
+
+/* ================= work a shift: build orders fast for tips and reputation ================= */
+const SHIFT={
+ bar:{t:"Bar shift",v:"Mix",ing:["🍋","🌿","🧊","🥃","🍸","🍊","🍒","🥤"],r:[["Mojito",["🌿","🍋","🥃","🧊"]],["Martini",["🍸","🧊","🍒"]],["Old Fashioned",["🥃","🍊","🧊","🍒"]],["Gin & Tonic",["🍸","🥤","🍋","🧊"]],["Rum Punch",["🥃","🍊","🍒","🥤"]],["Lime Spritz",["🍋","🥤","🧊"]]]},
+ rest:{t:"Kitchen shift",v:"Cook",ing:["🍞","🥩","🧀","🥬","🍅","🥓","🍝","🍤"],r:[["Burger",["🍞","🥩","🧀","🥬","🍞"]],["BLT",["🍞","🥓","🥬","🍅"]],["Pasta",["🍝","🍅","🧀"]],["Surf & Turf",["🥩","🍤","🥬"]],["Caprese",["🍅","🧀","🥬"]],["Club sandwich",["🍞","🥓","🧀","🍅","🍞"]]]},
+ hotel:{t:"Front desk shift",v:"Check in",ing:["🔑","🧳","🛎️","🧴","🛏️","🍾","🌹","📰"],r:[["Standard room",["🛎️","🔑","🧳"]],["Honeymoon suite",["🛎️","🔑","🌹","🍾"]],["Business guest",["🛎️","🔑","📰","🧳"]],["VIP",["🛎️","🍾","🌹","🔑","🧳"]],["Late check-in",["🔑","🛏️","🧴"]]]},
+ apt:{t:"Maintenance shift",v:"Fix",ing:["🔧","🔩","💡","🚿","🧯","🪜","🧹","🔌"],r:[["Leaky tap",["🔧","🔩","🚿"]],["Blown fuse",["🪜","🔌","💡"]],["Hallway clean",["🧹","💡"]],["Fire check",["🧯","🪜","🔌"]],["Shower fix",["🔧","🚿","🔩","🧹"]]]},
+ resort:{t:"Beach shift",v:"Serve",ing:["🥥","🍹","☂️","🐚","🏄","🧴","🍉","🕶️"],r:[["Sunbed setup",["☂️","🧴","🕶️"]],["Coconut cooler",["🥥","🍹"]],["Surf lesson",["🏄","🧴","🕶️"]],["Fruit platter",["🍉","🥥","🍹"]],["Beach VIP",["☂️","🍹","🍉","🐚"]]]}};
+SHIFT.condo=SHIFT.apt;
+let SH=null;
+function openShift(b,back){const T=SHIFT[b.t];if(!T)return;if(!spend(10,$("bzShift")))return;
+  SH={b,T,t:45,score:0,combo:0,best:0,tips:0,o:null,i:0,back,done:false};shNext();
+  const draw=()=>{if(!SH)return;const o=SH.o;
+    $("room").innerHTML=`<div class="room-in">${roomHead(T.t)}
+      <div class="shtop"><span>⏱ <b id="shT">${Math.ceil(SH.t)}</b>s</span><span>Orders <b id="shS">${SH.score}</b></span><span>Combo <b id="shC">×${1+SH.combo*.25}</b></span><span>Tips <b id="shTip">${fmt(SH.tips)}</b></span></div>
+      <div class="shorder"><span class="eyebrow">${T.v}</span><b>${o[0]}</b><div class="shseq">${o[1].map((e,j)=>`<span class="${j<SH.i?"ok":j===SH.i?"now":""}">${e}</span>`).join("")}</div></div>
+      <div class="shgrid">${T.ing.map(e=>`<button class="shbtn" data-sh="${e}">${e}</button>`).join("")}</div>
+      <p class="fine">Tap the items in order. Mistakes reset the order and break your combo.</p></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Stop";$("leaveBtn").onclick=()=>shEnd();
+    $("room").querySelectorAll("[data-sh]").forEach(x=>x.addEventListener("pointerdown",ev=>{ev.preventDefault();shTap(x.dataset.sh,x)}))};
+  SH.draw=draw;draw()}
+function shNext(){SH.o=pick(SH.T.r.filter(r=>!SH.o||r[0]!==SH.o[0]));SH.i=0}
+function shTap(e,el){if(!SH||SH.done)return;const need=SH.o[1][SH.i];
+  if(e===need){SH.i++;SFX.tick(.3+SH.i*.1);buzz(5);if(SH.i>=SH.o[1].length){SH.score++;SH.combo=Math.min(8,SH.combo+1);SH.best=Math.max(SH.best,SH.combo);const tip=Math.round(bizInc(SH.b)*.6*(1+SH.combo*.25)/Math.max(1,SH.b.mgr?1.1:1));SH.tips+=tip;SFX.sell();const c=elC(el);if(c)sparks(c[0],c[1],"#ffcc33",14,1);shNext()}SH.draw()}
+  else{SH.combo=0;SH.i=0;SFX.nope();buzz([30,20,30]);shake(3);el.classList.add("bad");setTimeout(()=>{if(SH)SH.draw()},180)}}
+function shiftTick(dt){if(!SH||SH.done||room!=="biz")return;SH.t-=dt;const t=$("shT");if(t)t.textContent=Math.max(0,Math.ceil(SH.t));if(SH.t<=0)shEnd()}
+function shEnd(){if(!SH||SH.done)return;SH.done=true;const b=SH.b,rep=Math.min(25,SH.score*2);b.rep=clamp(b.rep+rep,0,100);if(SH.tips>0)earn(SH.tips);S.stats.shifts=(S.stats.shifts||0)+1;S.stats.orders=(S.stats.orders||0)+SH.score;dirty=true;
+  const sh=SH;$("room").innerHTML=`<div class="room-in">${roomHead(sh.T.t)}<div class="shend"><b>${sh.score}</b><span>orders served</span><div class="kv"><div><span class="eyebrow">Tips</span><b>${fmt(sh.tips)}</b></div><div><span class="eyebrow">Best combo</span><b>×${1+sh.best*.25}</b></div><div><span class="eyebrow">Reputation</span><b>+${rep}</b></div></div></div>
+    <button class="bigbtn" id="shBack">Done<small>Back to ${esc(b.n)}</small></button></div>`;
+  if(sh.score>=8){confetti(150);SFX.grail()}else{confetti(50);SFX.level()}banner("Shift over · +"+fmt(sh.tips),"g");
+  const back=sh.back;SH=null;$("shBack").onclick=back;$("leaveBtn").onclick=back;updMini()}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
