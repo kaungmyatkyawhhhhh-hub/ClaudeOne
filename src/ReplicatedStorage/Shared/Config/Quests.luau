@@ -7,7 +7,7 @@
 --   allGroups    every group at level `level` (same rule)
 --   anyTier      any machine with weight tier `tier` unlocked
 --   titles       own `count` titles
---   spurts       Growth Spurt count at least `count` (you start at 1)
+--   spurts       Growth Spurt count at least `count` (new players start at 0)
 -- reward: { coins = n, dnaTokens = n, shakes = n } (any of them)
 local Quests = {}
 
@@ -23,7 +23,7 @@ Quests.Chain = {
 	{ id = "AllFive", text = "Get every muscle group to level 5", type = "allGroups", level = 5, reward = { coins = 60 } },
 	{ id = "ThreeTitles", text = "Earn 3 titles", type = "titles", count = 3, reward = { coins = 60 } },
 	{ id = "Grind", text = "Do 200 reps", type = "reps", count = 200, reward = { coins = 100, dnaTokens = 1 } },
-	{ id = "FirstSpurt", text = "Do your first Growth Spurt", type = "spurts", count = 2, reward = { coins = 200, shakes = 2 } },
+	{ id = "FirstSpurt", text = "Do your first Growth Spurt", type = "spurts", count = 1, reward = { coins = 200, shakes = 2 } },
 }
 
 Quests.Repeatable = {

@@ -13,10 +13,10 @@ ShowOff.Leaderboard = {
 
 -- Score so a Growth Spurt always ranks above any level from an earlier spurt.
 function ShowOff.GroupScore(growthSpurts, groupLevel)
-	return (growthSpurts or 1) * 10000 + math.floor(groupLevel)
+	return (growthSpurts or 0) * 10000 + math.floor(groupLevel)
 end
 function ShowOff.TotalScore(growthSpurts, levelSum)
-	return (growthSpurts or 1) * 1000000 + math.floor(levelSum)
+	return (growthSpurts or 0) * 1000000 + math.floor(levelSum)
 end
 function ShowOff.SplitGroupScore(score)
 	return score // 10000, score % 10000 -- growthSpurts, level
