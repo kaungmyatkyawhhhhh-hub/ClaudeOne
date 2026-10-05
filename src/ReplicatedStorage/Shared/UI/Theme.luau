@@ -92,6 +92,26 @@ function Theme.IsCompact()
 	return game:GetService("RunService"):IsStudio() and workspace:GetAttribute("TestPhoneLayout") == true
 end
 
+-- Calls callback(isCompact) now and again whenever the screen switches between compact and normal (the viewport is
+-- often not its final size yet when scripts start, e.g. on phones, and it changes when a window is resized).
+function Theme.OnCompactChanged(callback)
+	local last = Theme.IsCompact()
+	task.spawn(callback, last)
+	local function watch(camera)
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			local now = Theme.IsCompact()
+			if now ~= last then
+				last = now
+				callback(now)
+			end
+		end)
+	end
+	if workspace.CurrentCamera then watch(workspace.CurrentCamera) end
+	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		if workspace.CurrentCamera then watch(workspace.CurrentCamera) end
+	end)
+end
+
 Theme.Motion = {
 	Time = 0.25,
 	Style = Enum.EasingStyle.Quad,

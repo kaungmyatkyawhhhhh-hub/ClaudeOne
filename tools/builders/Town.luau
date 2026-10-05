@@ -73,6 +73,10 @@ local function buildTerrain()
 	}) do
 		terrain:FillBlock(CFrame.new((r[1] + r[2]) / 2, -4.2, (r[3] + r[4]) / 2), Vector3.new(r[2] - r[1], 4, r[4] - r[3]), M.Pavement)
 	end
+	local paved = {
+		{ -152, 188, 16, 40 }, { -39, 96, -76, 20 }, { -50, 50, 36, 72 }, { -140, 178, 36, 58 },
+		{ -134, -40, 0, 20 }, { 94, 172, 0, 20 }, { -72, -18, 68, 116 },
+	}
 	-- gentle bumps on the lawns inside the town (never under roads or buildings: those spots are listed in Town.Lawns)
 	for _, lawn in ipairs(Town.Lawns) do
 		for _ = 1, lawn.bumps do
@@ -108,6 +112,13 @@ local function buildTerrain()
 	terrain:FillBlock(CFrame.new(0, -16, shore + 2400), Vector3.new(7000, 8, 4800), M.Sand)
 	-- sand along the whole shoreline (the hills meet the sea on a beach, not a cliff of grass)
 	terrain:FillBlock(CFrame.new(0, -3.5, shore - 6), Vector3.new(7000, 3, 14), M.Sand)
+	-- last: nothing may stick up through the gyms, streets or paving (big hill balls and lawn bumps reach far), so clear
+	-- everything above the ground there and lay the flat underlay again
+	for _, r in ipairs(paved) do
+		local cx, cz, w, d = (r[1] + r[2]) / 2, (r[3] + r[4]) / 2, r[2] - r[1], r[4] - r[3]
+		terrain:FillBlock(CFrame.new(cx, 20, cz), Vector3.new(w, 44, d), M.Air)
+		terrain:FillBlock(CFrame.new(cx, -4.2, cz), Vector3.new(w, 4, d), M.Pavement)
+	end
 end
 
 ------------------------------------------------------------------------

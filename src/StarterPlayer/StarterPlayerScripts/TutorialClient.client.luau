@@ -53,7 +53,7 @@ task.wait(0.8)
 ------------------------------------------------------------------------
 -- Coach line
 ------------------------------------------------------------------------
-local gui = Theme.ScreenGui({ Name = "Tutorial", DisplayOrder = 23, Parent = playerGui }) -- under open panels (24+)
+local gui = Theme.ScreenGui({ Name = "Tutorial", DisplayOrder = 23, Parent = playerGui }) -- above the stats screen (22), under open panels (24+)
 local line = Theme.Panel({
 	Name = "CoachLine",
 	AnchorPoint = Vector2.new(0.5, 0),
@@ -70,17 +70,16 @@ local lineText = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Bod
 local statsOpen = false
 local onMachine = nil -- MachineId of the machine the player is on
 local function placeLine()
-	local overlay = playerGui:FindFirstChild("StatsOverlay")
-	local goal = overlay and overlay:FindFirstChild("Goal", true)
-	if statsOpen and goal and goal:IsA("GuiObject") then
-		-- the Growth Spurt goal panel owns the top center while Stats is open: sit just under it (the Stats labels
-		-- keep below this line; the bottom of the screen is taken by the machine panel while lifting)
-		-- both are Theme.ScreenGuis (same inset), so the goal's AbsolutePosition is in this gui's space
-		line.AnchorPoint = Vector2.new(0.5, 0)
-		line.Position = UDim2.new(0.5, 0, 0, goal.AbsolutePosition.Y + goal.AbsoluteSize.Y + Spacing.S)
+	-- the Growth Spurt bar (ProgressClient) owns the top center: sit just under it. While the stats screen is open
+	-- the bar hides, so the line moves up to the top (it draws above the stats screen).
+	local spurtGui = playerGui:FindFirstChild("SpurtBar")
+	local bar = spurtGui and spurtGui:FindFirstChild("Panel")
+	line.AnchorPoint = Vector2.new(0.5, 0)
+	if not statsOpen and spurtGui and spurtGui.Enabled and bar and bar:IsA("GuiObject") and bar.AbsoluteSize.Y > 0 then
+		-- both are Theme.ScreenGuis (same inset), so the bar's AbsolutePosition is in this gui's space
+		line.Position = UDim2.new(0.5, 0, 0, bar.AbsolutePosition.Y - gui.AbsolutePosition.Y + bar.AbsoluteSize.Y + Spacing.S)
 	else
-		line.AnchorPoint = Vector2.new(0.5, 0)
-		line.Position = UDim2.new(0.5, 0, 0, GuiService.TopbarInset.Height + Spacing.S)
+		line.Position = UDim2.new(0.5, 0, 0, Spacing.S)
 	end
 end
 
@@ -316,12 +315,16 @@ local function refreshStep()
 	else
 		hidePath()
 	end
-	-- point at the Stats button
+	-- point at the Stats button (the body map is the big target; its panel gets a brighter border)
 	if step.done.type == "statsOpen" then
 		local hud = playerGui:FindFirstChild("MainHud")
 		local button = hud and hud:FindFirstChild("Stats", true)
 		local dot = button and button:FindFirstChild("Dot")
 		if dot then dot.Visible = true end
+		local map = playerGui:FindFirstChild("BodyMap")
+		local panel = map and map:FindFirstChild("Panel")
+		local stroke = panel and panel:FindFirstChildOfClass("UIStroke")
+		if stroke then stroke.Transparency = 0.2 end
 	end
 end
 

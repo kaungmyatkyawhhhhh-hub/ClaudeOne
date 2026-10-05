@@ -9,8 +9,12 @@ local UIBus = require(script.Parent.UIBus)
 
 local RightColumn = {}
 
-local WIDTH = 230
+-- narrower than before, and at the top right (under the Roblox top bar), so it never covers the body map (bottom
+-- left), the Growth Spurt bar (top center) or the Lift button (bottom right)
+local WIDTH = 200 -- 176 on phones (set live in ensure)
 local column, always, idle
+local changed = Instance.new("BindableEvent")
+RightColumn.Changed = changed.Event -- fires when the column's size changes (notifications stack below it)
 
 local function container(name, order)
 	return Theme.New("Frame", {
@@ -28,13 +32,28 @@ local function ensure()
 	local gui = Theme.ScreenGui({ Name = "RightColumn", DisplayOrder = 3, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
 	column = Theme.New("Frame", {
 		Name = "Column",
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -Theme.Spacing.L, 0.42, 0), -- a little above the middle, clear of the machine panel
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -Theme.Spacing.M, 0, Theme.Spacing.S), -- top right, just under the top bar
 		Size = UDim2.fromOffset(WIDTH, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Parent = gui,
-	}, { Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
+	}, { Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top) })
+	column:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() changed:Fire() end)
+	-- narrower on phones; every panel in it fills the column's width
+	Theme.OnCompactChanged(function(isCompact)
+		WIDTH = isCompact and 176 or 200
+		RightColumn.Width = WIDTH
+		column.Size = UDim2.fromOffset(WIDTH, 0)
+		for _, holder in ipairs({ always, idle }) do
+			if holder then
+				holder.Size = UDim2.fromOffset(WIDTH, 0)
+				for _, child in ipairs(holder:GetChildren()) do
+					if child:IsA("GuiObject") then child.Size = UDim2.new(0, WIDTH, child.Size.Y.Scale, child.Size.Y.Offset) end
+				end
+			end
+		end
+	end)
 	always = container("Always", 1)
 	idle = container("Idle", 2)
 
@@ -59,6 +78,12 @@ local function ensure()
 end
 
 RightColumn.Width = WIDTH
+
+-- Pixel y (inside the safe area) of the column's bottom edge.
+function RightColumn.Bottom()
+	ensure()
+	return column.AbsolutePosition.Y - column.Parent.AbsolutePosition.Y + column.AbsoluteSize.Y
+end
 
 -- Parent `frame` into the column; lower `order` sits higher. `idleOnly` = hidden while on a machine.
 function RightColumn.Add(frame, order, idleOnly)

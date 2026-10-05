@@ -86,7 +86,7 @@ local dim = New("TextButton", { Name = "Dim", Size = UDim2.fromScale(1, 1), Back
 local gui = Theme.ScreenGui({ Name = "GeneticsScreen", Enabled = false, DisplayOrder = 26, Parent = playerGui })
 -- Phones (Theme.IsCompact): the content starts right of the side menu (one or two columns, measured on open) and
 -- fills the height; the Frame/Body lines wrap to two rows and the buttons are narrower.
-local COMPACT = Theme.IsCompact()
+local COMPACT = Theme.IsCompact() -- re-measured each time the screen opens
 local root = New("Frame", {
 	Name = "Root",
 	-- shifted right so it clears the side menu (16px margin + 64px buttons + 16px gap)
@@ -581,6 +581,7 @@ end
 local function open()
 	if isOpen then return end
 	isOpen = true
+	COMPACT = Theme.IsCompact() -- measured on open (the viewport can change after this script starts)
 	if COMPACT then
 		-- phones: the side menu steps aside while this screen is up, so the barbell gets the whole width
 		SideMenu.SetHidden(true)

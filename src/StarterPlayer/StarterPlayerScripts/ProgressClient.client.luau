@@ -242,3 +242,8 @@ task.spawn(function()
 		if shown then refresh() end
 	end
 end)
+
+-- phones get a narrower bar (switches live with the screen size)
+Theme.OnCompactChanged(function(isCompact)
+	panel.Size = UDim2.fromOffset(isCompact and 230 or 300, 0)
+end)

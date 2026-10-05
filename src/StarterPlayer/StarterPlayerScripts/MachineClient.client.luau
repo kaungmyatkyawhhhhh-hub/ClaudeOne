@@ -1141,6 +1141,12 @@ tapButton:FindFirstChildOfClass("UICorner").CornerRadius = Theme.Corner.Round
 local tapText = Theme.Text({ Text = "Lift", Font = "SemiBold", TextSize = "Large", Size = UDim2.fromScale(1, 0.5), Position = UDim2.fromScale(0, 0.18), Parent = tapButton })
 local tapHint = Theme.Text({ Text = "tap fast", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.25), Position = UDim2.fromScale(0, 0.58), Parent = tapButton })
 local tapStroke = tapButton:FindFirstChildOfClass("UIStroke")
+-- a little smaller on phones (switches live with the screen size)
+Theme.OnCompactChanged(function(isCompact)
+	local size = isCompact and 84 or 96
+	tapCluster.Size = UDim2.fromOffset(size + 40, size + 44)
+	tapButton.Size = UDim2.fromOffset(size, size)
+end)
 -- the button reacts on press (not release), and a held finger doesn't repeat
 tapButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then

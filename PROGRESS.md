@@ -1,199 +1,99 @@
 # GYM ARC — Progress
 
-Short and current. The full build history (test steps, numbers, reasoning for each step) is in git:
-`git log -p -- PROGRESS.md` or any commit before 6 Oct 2026.
+Short and current (7 Oct 2026, after the overnight run). Full history: `git log -p -- PROGRESS.md`.
 
-## Workflow
-- **Roblox Studio is the source of truth** for scripts and builds.
-- **GitHub is a backup:** after each piece of work every script is exported from Studio into `src/`
-  (`tools/export`, mirrors the Explorer), then committed and pushed.
-- **Save/publish the place in Studio after every session.** Studio edits (scripts, builds, lighting) exist only in
-  the open place until it's saved.
-- World areas were built once from recipes in `tools/builders` (see `tools/bake.md`); edit them as normal parts.
+## Workflow (no Rojo)
+- No Rojo. **Roblox Studio is the source of truth** (edit through the MCP connection); GitHub is a backup.
+- After each piece of work: export the changed scripts into `src/` (`tools/export`), run the checks in CLAUDE.md,
+  commit + push. **Save/publish the place in Studio** after every session (nothing here can save it for you).
+- World areas are built once from recipes in `tools/builders` (see `tools/bake.md`), then edited as normal parts.
 
-## Test first (6 Oct 2026)
-1. **Save the place** (this session changed scripts, the sea, the baseplate and `StarterGui.ScreenOrientation`).
-2. Fresh-player run: Workspace `FreshPlayer` attribute on → Play → genetics (corner messages now wait until you
-   press Keep) → tutorial on the bench: stamina should now visibly drop while lifting → only every 5th main-muscle
-   level shows a corner message.
-3. Phone check (Device Emulator, any phone, landscape): genetics screen (side menu hides, names don't overlap),
-   Title Book / clothing store / mirror (header below the top bar), get on a machine (side menu shows only Stats,
-   top left).
-4. Walk to the beach: the sea now starts at the sand (it used to sit under the grass).
+## First thing to do
+1. **File > Save to Roblox.** The overnight run changed scripts, the whole map (gyms, town, terrain) and lighting in the
+   open place; none of it is saved yet. (`src/` and `tools/builders` have everything if Studio crashed.)
+2. Remove the Rojo plugin: Plugins > Manage Plugins (two versions installed, 7.4.4 and 7.7.1).
+3. Play once on your own save, then once with Workspace `FreshPlayer` on. See "Check these" below.
 
 ## Done
-- Player data: 18 muscles, stamina, coins, genetics, height, titles; DataStore saves with session locks, UpdateAsync.
-- One reusable machine system: 8 starter machines, 11 pro gym machines, 3 beach machines, Sled Pull (winter).
-- Clean minimal Theme UI; Stats live overlay (labels always visible, sub-muscles, Growth Spurt goal).
-- Game feel: rep animation, weighty motion, pump, body scaling, gain popups + "Gain numbers" setting, sounds.
-- Growth Spurts (taller, permanent bonus), titles + Title Book, genetics reveal/reroll (3D barbell).
-- Menu screen + first-5-minutes tutorial; Coach Dex quests; Muscle of the Day.
-- Energy Shakes, stretching mat, gym cat; economy (streak, offline coins, re-racking, DNA tokens, rush hour).
-- Spotting, lifting together, arm wrestling; crews; emotes; leaderboard wall, statue, membership card.
-- Legend NPCs; seasonal events (Halloween, Winter, Summer); area music.
-- Town hub: smoothie bar, clothing store + Wardrobe (gear on the character), skate park + skateboard, beach gym +
-  posing stage, progress mirror (before/after screen).
-- Launch readiness: remote rate limits and prompt distance checks (`Server/Guard`), safer purchase saves, fewer
-  shadow lights, analytics onboarding funnel.
-- All world areas are real Studio builds (pro gym, town, sea, mirror, cat, NPCs, leaderboard wall, statue pedestal,
-  arm wrestle table, season decor). Scripts only find and wire them.
-- Workflow switch: Studio = source of truth, `tools/export` writes scripts back into `src/`.
-- Phone layouts (landscape): genetics, Title Book, clothing store, mirror, machine HUD; game locked to landscape.
-- Growth Spurt pacing: 18.5 / 25 / 35 / 45 minutes (1st / 2nd / 3rd / 4th+), see "Pacing" below.
+- Player data, saving, 18 muscles, stamina, coins, genetics, height, titles; one reusable machine system.
+- Clean minimal Theme UI; menu screen; tutorial; Coach Dex quests; Muscle of the Day; shakes; economy; social
+  (spotting, arm wrestling, crews, emotes); legends; seasons; leaderboard wall; membership card; wardrobe.
+- **Overnight, Session 1:** machines can be used again after Exit; mirror Day one/Now rigs fixed and the mirror glass
+  reflects you; marble statue fixed; reps run on their own, tapping speeds them up and fills a PUMP meter (PUMPED = x2,
+  8 s), BIG REP (x3, ~1 in 12), per-rep camera punch, level flash, NEW PR banner; always-visible Growth Spurt bar with a
+  "next goal" line; body grows in clear steps with a "you grew" moment; 12 weight tiers per machine; Growth Spurts
+  tuned to 8 / 15 / 25 / 35 / 45 minutes.
+- **Session 2:** starter gym ~2x with zones and 18 machines; pro gym rebuilt next to it with real machines (weight
+  stacks), lockers, podium, LEDs, behind a glass wall with a locked glass door (walk-in at Growth Spurt 2); real plate
+  templates (number on the face) everywhere; 8 NPC regulars that walk to machines, lift, rest, drink, chat and yield
+  to players; Coach Dex and legends idle and face players.
+- **Session 3:** terrain everywhere (no baseplate/void), hills and trees around, sea to the horizon; main street with
+  lamps and street props; plaza with fountain and string lights; ~20 detailed background buildings; gym exteriors
+  (canopy, lit signs, street windows, pro glass front, roofs); smoothie bar and Gear & Fits rebuilt inside and out;
+  beach, beach gym, posing stage, skate park (ramps work with the skateboard).
+- **Session 4:** body map stats (front + back, 18 muscle shapes, brightness = level, gold outline = maxed, trained
+  muscles pulse every rep, level + spurt bar under it, tap = full stats screen); compact icon menu (slim column on
+  PC with hover labels, one Menu button on phones); layout zones (menu top left, Growth Spurt bar top center,
+  quest + notifications top right, body map bottom left on PC / top left on touch screens, Lift button bottom
+  right); checked on a small phone, a tablet and 1080p.
 
 ## In progress
-- Nothing half-built. Next candidates: a 2-player playtest pass, Stats labels on a real phone.
+- Nothing half-built.
 
-## Open / waiting on you
-- **Sound ids** (you're picking them). Every sound is in `Config/Sounds.luau`. Placeholders that reuse another clip:
-  `LevelUp` (Set-complete ding, pitched up), `Maxed` and `TitleUnlocked` (Growth Spurt bell, pitched up),
-  `TierUnlocked` and `GeneticsClank` (plate clank), `OutOfStamina` (breath), `GeneticsThudLow` (floor thud),
-  `RepTick` and `Click` (same button click). No sound at all yet: skateboard rolling, sliding doors, buying in the
-  clothing store (uses Click), mirror opening (uses Whoosh). Area music only has Starter and Pro; the town, beach
-  and skate park play whatever was last playing.
+## Waiting on you
+- **Sound ids** (you pick them; all in `Config/Sounds.luau`). New placeholders that reuse other clips: `PumpFull`,
+  `BigRep`, `PersonalRecord`, `Grew`. Older placeholders: `LevelUp`, `Maxed`, `TitleUnlocked`, `TierUnlocked`,
+  `GeneticsClank`, `OutOfStamina`, `GeneticsThudLow`, `RepTick`/`Click`. No sound yet: skateboard rolling, sliding
+  doors, store purchase, mirror opening. Area music only has Starter and Pro.
 - **Badge ids:** Aesthetics God, Skyscraper, Defied Genetics have `badgeId = nil` in `Config/Titles.luau`.
-- **Monetization ids** (stays off until you add them): 7 game passes and 3 developer products in
-  `Config/Monetization.luau`, all `id = nil`. With no ids the Store button never shows.
-- **DataStore name:** Studio's `PlayerData` saves to `"PlayerData_1"`; the repo had `"PlayerData_xz"`. I kept
-  Studio's. If that wasn't a deliberate reset, saves made under the old name won't load. Tell me if it should go back.
-- **Portrait:** I locked phones/tablets to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`); the machine
-  HUD, Stats labels and genetics barbell are landscape designs. Set it back to `Sensor` if you want portrait, and
-  I'll lay the screens out for it.
+- **Monetization ids** (stays off until you add them): 7 game passes, 3 products in `Config/Monetization.luau`.
+- **DataStore name:** Studio saves to `"PlayerData_1"` (the repo once had `"PlayerData_xz"`). Kept; tell me if not.
+- **Portrait:** phones/tablets are locked to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`).
+
+## Check these (things I couldn't fully verify)
+- Phone **Menu button** (top left on phones): the emulator's mouse tool couldn't click it at that screen size, so open
+  and close it once on a real phone or with your mouse in the Device Emulator.
+- Lifting on **pro gym machines** as a Growth Spurt 2+ player (weight stack moving, poses) and walking through the
+  unlocked glass door (my save is Growth Spurt 1; the locked door was tested).
+- 2-player features (spotting, high fives, crews, arm wrestling vs a player) weren't retested.
+- The new **XP numbers** (BaseXp 34, `20 + 2 × level`): play the first 8 minutes and see if it feels right.
 
 ## Known issues
-- Spurts after the 11th get a few minutes longer each (the permanent bonus hits the 5x multiplier cap). Fine for now;
-  lower `ExtraPerStage.requiredLevel` or raise `Gains.MaxMultiplier` if it matters.
-- ProximityPrompts only show when their part is on screen (Roblox behaviour): the mirror on the hall's side wall
-  needs you to face it.
-- Cosmetic headbands can hide under very big hair accessories.
-- On short phone screens a corner message can briefly sit over the right-column pills (rush hour, shake).
-- Not playtested this session: 2-player features (spotting, high fives, crews, arm wrestling vs a player) and lifting
-  on pro gym machines (locked for a new player; needs a Growth Spurt 2 save).
-- Stats world labels on phones weren't checked on a real device (Studio screenshots can't draw them).
-
-## Overnight run (6-7 Oct 2026, from GYM_ARC_overnight_prompt.md)
-**The place was NOT saved by me** (the MCP connection has no save). Everything below is live in the open Studio
-place and backed up in `src/`; please File > Save to Roblox first thing.
-- Session 0 (Rojo removal): done. Repo files were already gone (default.project.json, rokit.toml, sourcemap
-  line in .gitignore, Rojo lines in README/CLAUDE/tests/export notes). No game script mentions Rojo or
-  `Lighting.Technology`; Lighting is Realistic + PrioritizeLightingQuality, StreamingEnabled on.
-  **Your Studio still has the Rojo plugin installed (two versions, 7.4.4 and 7.7.1)**, and `~/.rokit` (outside the
-  repo) still holds rojo.exe. Remove the plugin in Plugins > Manage Plugins; I can't uninstall plugins from MCP.
-- Session 1 (bugs + game feel): done, playtested.
-  - Bug a (can't re-use a machine): the client hid the machine's prompts while lifting and re-hid any change; the
-    server re-enables the prompt just *before* sending Exit, so the client caught that and hid it again for good.
-    Fixed in `MachineClient.close`. Tested enter/exit 5x on the bench, then the pull-up bar.
-  - Bug b (floating arms on "Day one"): both mirror bodies are now real rigs built on the server from your avatar's
-    HumanoidDescription (`MirrorService`), scaled by the description's height/width/depth and shaped by the new
-    `Shared/BodyShape` module. Fixed.
-  - Bug c (mirror didn't reflect): the glass now shows a live mirrored copy of you and the room in front of it
-    (SurfaceGui + ViewportFrame, client only, only within 25 studs). See `MirrorClient` bottom section.
-  - Bug d (broken statue): rebuilt from the leader's description (default body if there's no leader), all marble,
-    double-biceps pose, every part placed from its joints before anchoring. Fixed.
-  - Root cause behind b and d, worth knowing: **avatars in this place use Roblox's newer joints
-    (AnimationConstraints), not Motor6Ds.** Emotes and the skateboard lean only looked for Motor6Ds, so they did
-    nothing; fixed (both kinds now work everywhere). Machine poses already worked.
-  - Lifting: reps run on their own (slow pace); tapping (Lift button bottom right, a click/tap anywhere, Space)
-    makes them faster and fills a PUMP meter; full = PUMPED for 8 s (x2 gains, faster reps, gold glow on the
-    trained muscles). ~1 in 12 reps is a gold BIG REP (x3). Every rep: clank + small camera punch + "+N" pop.
-    Level up: "Mid Chest · Level 12" flash + sparkle burst + chime. New heaviest weight: "NEW PR" banner + sound.
-  - Always-visible Growth Spurt bar (top center, `ProgressClient`) with a "next goal" line under it (reps to the
-    next weight, coins for it, or which group to train). Tapping it when ready does the Growth Spurt.
-  - Visible growth: size grows in 5 clear steps per Growth Spurt (whole body wider/deeper + trained parts
-    thicker); each step plays a "you grew" pulse + sound + "You grew! Bigger Arms" note. Growth Spurt keeps the
-    height and resets the size.
-  - Weights: 12 tiers on every machine (`Config/Machines` Progression table); each needs the main muscle's level
-    (again after every Growth Spurt) and coins once. The machine prompt shows your next weight and what it needs.
-  - Plates: one color per weight (55 red, 45 blue, 35 yellow, 25 green, 10 white, 5 steel) on bars and the HUD.
-- Session 2 (gyms, equipment, NPCs): done, playtested. Builders: `tools/builders/GymAssets`, `GymKit`, `Gyms`, `NPCs`.
-  - Starter gym is now 72 x 70 (about 2x): free weights (3 power racks, 2 press stands, 4 lifting platforms, plate
-    trees, dumbbell rack, chalk), bench row facing the mirror wall (3 flat, 2 incline), bodyweight corner (2 pull-up
-    towers, 2 crunch benches), cardio facing the pro gym glass (treadmills, bikes, rower; a recovery station), a
-    stretching area, reception desk (Coach Dex behind it), fountain, towels, benches, posters, clock, fans, speakers.
-    Same brick / dark rubber / warm pendant look. 18 machines (2-3 of each).
-  - Pro gym rebuilt right next door (x 37..93): dark walls with LED seams, polished floor, light bars, spotlights over
-    every machine, real machines (weight stacks that lift with each rep, pulleys, cables, handles, pads), heavy racks
-    behind the glass, lockers, a lit podium, GYM ARC PRO signs. 15 machines.
-  - Shared wall: big glass window + glass door. Locked: padlock + "Unlocks at Growth Spurt 2", you can't pass (and the
-    server puts anyone inside back out). Unlocked: the doors slide open and you walk in (no teleport). The old pro gym
-    room, its corridor and teleport doors are gone.
-  - Plates: one template per weight (raised rim, recessed face, inset ring, steel hub with a hole, the number on the
-    face), used on every bar, rack, tree and loose plate. Bars got sleeves and collars. The old plate parts are gone.
-  - NPCs: 8 regulars (4 starter, 4 bigger pro lifters) with Roblox-made hair and clothes walk to free machines, lift
-    with the player rep animation, rest between sets, drink water, chat in pairs. They never take a machine a player
-    is on, near or walking toward, and step off within ~2 s if a player walks up (or at once if they tap Use).
-    Coach Dex and legends play an idle animation and turn toward nearby players. Name labels: small, 30 studs.
-- Session 3 (town, shops, beach, skate park): done, walked and skated. Builders: `tools/builders/TownKit`, `Town`.
-  - No baseplate or gray void any more: terrain grass (mixed with leafy grass and ground, gentle bumps) everywhere,
-    hills with tree clusters around the town, sand beach and the sea out to the horizon, a light sky haze.
-  - Main street with sidewalks, curbs, lane dashes, 2 crosswalks, a detailed street lamp every 16 studs (base, ringed
-    pole, curled arm, lantern), bins, hydrants, a bus stop, bike racks, crates, a signpost to every area.
-  - Plaza across from the gym: three-tier fountain with spray, benches, trees in planters, flower beds, string lights;
-    a boardwalk to the beach.
-  - ~20 background buildings with real facades (framed windows with sills and mullions, shutters, balconies,
-    shopfronts with striped awnings and original shop names, wall lamps, pilasters, cornices, drainpipes, rooftop
-    AC units / water tanks / railings and roof gardens), 8 warm colors; a simpler distant skyline on the hills.
-  - Gym exterior: glass canopy on posts over the entrance, step + door mat, lit GYM ARC sign in a framed box, a
-    rooftop GYM ARC sign, big framed street windows into the gym, parapets with coping, drainpipes, wall lights,
-    planters, a bike rack with bikes, benches. The pro gym front is a dark glass curtain wall with chrome mullions,
-    LED trim and a GYM ARC PRO sign; its roof has solar panels. The entrance door frame is now a real frame (it was a
-    solid slab that blocked the doorway once the new town sat on top of it).
-  - Smoothie bar: striped awning, lit sign with a smoothie cup, patio tables with umbrellas and chairs, an A-frame
-    menu; inside a marble counter with blenders, fruit baskets, cups, a readable menu board (prices in coins, all
-    flavors), a lit bottle fridge, bar stools, plants, pendants, and the ShakeMachine (Buy shake).
-  - Gear & Fits: display windows with lit mannequins, awning, lit sign; inside clothing racks with hanging shirts,
-    shelves of folded shirts, a shoe and bag wall, a changing room with a curtain and mirror, a full mirror, the
-    checkout counter with a register (Shop prompt), rugs, pendants.
-  - Beach: varied curved palms with coconuts, umbrellas (pole + 8-panel canopy) with towels and chairs, a lifeguard
-    tower, a volleyball court and net, a surfboard rack, rocks, driftwood, shells, a sand castle.
-  - Beach gym: bamboo shade structure, rubber mats on the sand, 3 real cable machines (Beach Curl / Raise / Shrug), a
-    pull-up bar, a battle rope, kettlebells, a GYM ARC flag. Posing stage: steps with handrails, foot lights, a GYM
-    ARC backdrop, trusses with 4 spotlights, three rows of crowd benches.
-  - Skate park: quarter pipes, a half pipe, a fun box with a rail, a long grind rail, ledges with steel edges, a fence
-    with gates, two original graffiti walls ("RIDE ON", "GYM ARC"), benches, flood lights. Tested on the board:
-    rides up the quarter pipe and over the fun box.
-- Next: Session 4 (UI + stats body map).
+- Spurts after ~11 get a few minutes longer each (the permanent bonus hits the 5x cap); fine for now.
+- Big part count: town ~7,700 parts, gyms ~3,500. StreamingEnabled is on and small props don't collide or cast
+  shadows, but test on a low-end phone; turn trees/buildings into MeshPart templates if it's slow.
+- Cosmetic headbands can hide under big hair; ProximityPrompts only show when their part is on screen.
+- The live mirror reflection shows your character and the room, not other players.
 
 ## Decisions made overnight
-- PR banner: your brief's design file lists "personal-record popups" as CUT, but tonight's prompt asks for a NEW PR
-  banner. I followed tonight's prompt (small banner, not a popup window).
-- Gold (#F2C14E) added to Theme for big moments only (BIG REP, NEW PR, PUMPED). Plate colors stay the bumper colors.
-- PUMPED and BIG REP multiply gains *outside* the 5x cap (they're earned by playing; inside the cap they'd do nothing
-  after a few Growth Spurts). Shakes/genetics/spurt bonuses stay inside the cap.
-- "Gain numbers" setting: On = everything, Minimal = set + BIG REP popups, Off = no gain popups. The NEW PR banner,
-  level flash and "you grew" note show in every mode (they're milestones, not gain numbers).
-- Muscles can now go 30% past the Growth Spurt goal (`GrowthSpurts.CapOverGoal`), so a strong muscle helps its
-  group's average; before, every muscle had to hit the cap exactly and side-only muscles (Traps, Forearms) were a grind.
-- XP curve is now `20 + 2 × level` per level (was `6 + level`, which gave 3-4 levels per rep at the start).
-- Tapping still fills the Pump meter while resting for stamina (nobody is punished; it just keeps tapping useful).
-- The Auto Lift game pass (monetization off) now just keeps tapping for you; normal auto reps are free for everyone.
-- Existing saves: weight tiers were renumbered (8 → 12), so a save's "bought up to tier N" now means the new tier N
-  (a little lighter). Pre-launch, so I didn't migrate.
-- Sound ids: 4 new placeholders in `Config/Sounds` (PumpFull, BigRep, PersonalRecord, Grew) reuse existing clips.
-- Pro gym "heavier weight tiers": players get the same 12-tier sets everywhere (one progression per machine); the pro
-  gym's regulars lift the top tiers so the glass view shows the heavy plates.
+- NEW PR banner: the design file lists "personal-record popups" as cut, but the overnight prompt asked for a NEW PR
+  banner, so it's in (a small banner, not a window). Easy to remove in `MachineClient` if you change your mind.
+- Gold (#F2C14E) added to Theme, only for big moments (BIG REP, NEW PR, PUMPED, maxed outline).
+- PUMPED and BIG REP multiply gains outside the 5x cap (they're earned by playing); shakes/genetics/spurt bonuses stay
+  inside it. "Gain numbers": Minimal = set + BIG REP popups; NEW PR, level flash and "you grew" show in every mode.
+- Muscles can go 30% past the Growth Spurt goal (`GrowthSpurts.CapOverGoal`) so a strong muscle helps its group.
+- XP per level is `20 + 2 × level` (was `6 + level`, 3-4 levels per rep at the start); BaseXp 34.
+- Tapping still fills the meter while resting; Auto Lift pass (off) just keeps tapping for you.
+- Weight tiers renumbered (8 → 12); existing saves keep their tier number (a little lighter). Not migrated.
+- One color per plate weight: 55 red, 45 blue, 35 yellow, 25 green, 10 white, 5 steel.
+- Pro gym uses the same 12 tiers; its NPCs lift the top tiers so the glass view looks heavy.
 - Cardio machines are recovery stations (`Stamina.Recovery.Cardio`), not a new training mechanic.
-- Town footprint: the town is now x -142..178 (was -78..78) so the street can run past both gyms; `Config/Town` has all
-  the new numbers (skate area, shop positions, beach, stage). The old "Town" folder was replaced completely.
-- Creator Store: nothing inserted. Every tree, lamp, building and prop is built from parts by the builders.
-- Terrain note for future builders: Roblox draws a solid terrain surface ~2 studs above the filled height (water has
-  no offset), so the Town builder fills everything 2 studs low.
-- NPC clothing/hair: Roblox-made catalog items only (verified creator "Roblox" with GetProductInfo); ids are in
-  `tools/builders/NPCs.luau`.
-- Old town pieces that cut through the bigger gyms (a hedge + invisible wall at z -60, the east boundary at x 78 and
-  several "skyline" boxes) were removed/moved; Session 3 redoes the town around the new gym footprint.
+- Town footprint x -142..178 so the street runs past both gyms; `Config/Town` holds all positions.
+- NPC hair/clothes: Roblox-made catalog items only (checked with GetProductInfo, creator "Roblox"); ids in
+  `tools/builders/NPCs.luau`. **Creator Store: nothing inserted**; everything else is built from parts.
+- Stats: the old world-space labels with lines are removed. The body map is bottom left on PC and top left on touch
+  screens (the bottom left is the thumbstick there); on phones while lifting only the silhouettes show.
+- Notifications stack just under the quest panel (top right) instead of in their own corner.
+- Terrain: Roblox draws solid terrain ~2 studs above the filled height (water doesn't), so the Town builder fills 2
+  studs low and clears everything above the ground under the gyms, streets and paving at the end.
 
 ## Pacing (how the Growth Spurt goals are set)
-- Targets live in one table: `GrowthSpurts.Targets = { 8, 15, 25, 35, 45 }` (1st, 2nd, 3rd, 4th, then every later).
-- `tests/pacing.luau` plays 60 simulated players through 8 spurts with the real config modules: XP per rep =
-  `BaseXp(34) × tier gains × muscle share × min(genetics × spurt bonus × balanced × Muscle of the Day, 5) ×
-  quality × 1/(1 + level/50)`, where quality = x2 while PUMPED and x3 on a BIG REP (1 in 12); XP per level =
-  `20 + 2 × level`; coins buy the next weight tiers (bought tiers need the level again after a spurt); beach gym
-  after spurt 1, pro gym after spurt 2; 2.5 min of menu/tutorial before the first spurt, 45 s around later ones.
-- "Normal play with some tapping": half the sets are tapped at 3 taps/s (reps every 1.05 s, 0.79 s while PUMPED; the
-  meter fills in ~5 s of tapping, then 8 s PUMPED), the other half run on auto reps (1.05 s rep + 0.8 s gap). Each set
-  lasts until stamina runs out (5 per rep, 100 max), then a rest to full. In this mix about half of tapped reps are
-  PUMPED (x2), so a tapped set gives ~1.5x the gains of an auto set (and finishes sooner); BIG REPs add ~17%.
-- The tuner (`lune run tests/pacing tune`) solves each stage's goal level in turn: **15, 47, 72, 103, 135, 157, then
-  +18** each. Result (median minutes): 7.9, 14.6, 24.6, 34.7, 44.2, 44.2, 43.3, 43.7. The test fails if any spurt is
-  more than 10% off its target. If gains, tiers, stamina or tapping change: run the tuner and paste the levels.
+- Targets: `GrowthSpurts.Targets = { 8, 15, 25, 35, 45 }` minutes (1st, 2nd, 3rd, 4th, then every later one).
+- `tests/pacing.luau` plays 60 simulated players through 8 spurts with the real configs. XP per rep = `BaseXp 34 ×
+  tier gains × muscle share × min(genetics × spurt bonus × balanced × Muscle of the Day, 5) × quality ×
+  1/(1 + level/50)`, quality = x2 while PUMPED, x3 on a BIG REP. 2.5 min of menu/tutorial before the first spurt.
+- "Normal play with some tapping": half the sets tapped at 3 taps/s (1.05 s reps, 0.79 s PUMPED; the meter fills in
+  ~5 s, then 8 s PUMPED), half on auto reps (1.05 s + 0.8 s gap); sets run until stamina is out, then a rest. About
+  half of tapped reps end up PUMPED, so a tapped set gives ~1.5x an auto set; BIG REPs add ~17%.
+- `lune run tests/pacing tune` solves each goal level: **15, 47, 72, 103, 135, 157, then +18**. Result (median
+  minutes): 7.9, 14.6, 24.6, 34.7, 44.2, 44.2, 43.3, 43.7. The test fails if a spurt is more than 10% off.

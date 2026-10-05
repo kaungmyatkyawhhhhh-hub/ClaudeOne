@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local Theme = require(script.Parent.Theme)
 local UIBus = require(script.Parent.UIBus)
+local RightColumn = require(script.Parent.RightColumn)
 
 local Notify = {}
 
@@ -22,10 +23,11 @@ local function ensure()
 		DisplayOrder = 50,
 		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
 	})
+	-- top right, stacked just under the right column (quest, shake button...)
 	list = Theme.New("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -12, 0, 12),
-		Size = UDim2.new(0, 260, 1, -24),
+		Size = UDim2.new(0, 260, 0, 200),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
@@ -35,6 +37,13 @@ local function ensure()
 			HorizontalAlignment = Enum.HorizontalAlignment.Right,
 		}),
 	})
+	-- the notifications use the same safe area as the right column, so they follow its bottom edge
+	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+	local function follow()
+		list.Position = UDim2.new(1, -12, 0, RightColumn.Bottom() + 8)
+	end
+	follow()
+	RightColumn.Changed:Connect(follow)
 end
 
 local function show(text, color)

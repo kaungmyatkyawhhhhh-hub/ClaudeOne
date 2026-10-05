@@ -54,7 +54,7 @@ for where everything sits in Studio.
   plate visuals. Validates everything.
 - `Server/ActionService`: non-machine requests (Growth Spurt, equip title, reroll,
   settings). Other services can `Register` more actions.
-- `Server/BodyService`: avatar height and muscle size.
+- `Server/BodyService`: avatar height and muscle size in clear steps (rules in `Shared/BodyShape`, also used by the mirror rigs and the statue).
 - `Server/TitleService`: stats, title unlocks, badges, overhead title tag.
 - `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt).
 - `Server/QuestService`: Coach Dex, quest progress and rewards.
@@ -79,8 +79,10 @@ for where everything sits in Studio.
 `PlayerAction` (ActionService), `PlayerEvent` (server → client moments).
 
 **Client** (`StarterPlayerScripts`), all UI is built in code (StarterGui is empty)
-- `MachineClient`: lift input, machine HUD, lifting effects and feel.
-- `StatsClient`: STATS side button and 3D muscle-group labels around the body.
+- `MachineClient`: auto reps + tapping (Lift button, PUMP meter, BIG REP), machine HUD, lifting effects and feel, NEW PR banner, level flash, next-weight text on machine prompts.
+- `ProgressClient`: the always-visible Growth Spurt bar (top center) with a "next goal" line, and the "you grew" moment.
+- `ProGymClient`: the glass door between the gyms (slides open from Growth Spurt 2, locked before).
+- `StatsClient`: the body map (front + back, 18 muscle shapes, bottom left) and the full stats screen (groups, muscles, grades, Growth Spurt goal and button).
 - `GeneticsClient`: genetics reveal and reroll screen.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.
@@ -101,7 +103,7 @@ for where everything sits in Studio.
 - `Audio`: plays sounds from `Config/Sounds` through SoundGroups.
 - `UI/Theme`: the "clean minimal" design system (colors, fonts, spacing,
   `Theme.New`, panels, buttons). **All UI should use it.**
-- `UI/RightColumn` (right-middle stack: shake button, quest tracker), `UI/SideMenu`, `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
+- `UI/RightColumn` (top-right stack: quest tracker, shake button; notifications stack under it), `UI/SideMenu` (compact icon menu; folds into one Menu button on phones), `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
   stats/genetics visible, open titles/settings).
 
 ## Open tasks (from the owner's task list, 4 Oct 2026)
