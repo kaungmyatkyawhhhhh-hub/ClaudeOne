@@ -308,6 +308,9 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 @keyframes cardin{from{transform:translateY(-10px) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
 .petgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.petcard{border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);padding:10px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}.petcard.on{box-shadow:inset 0 0 0 2px var(--accent)}.petcard small{font:600 .7rem var(--mono);color:var(--muted)}.bondbar{width:80%;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}.bondbar i{display:block;height:100%;background:linear-gradient(90deg,#ff4fd8,#ff9ad5)}.petbtns{display:flex;gap:6px;margin-top:6px}.petbtns button{border:0;border-radius:999px;padding:6px 12px;font:700 .75rem var(--body);background:var(--ink);color:var(--bg);cursor:pointer}.petbtns button:disabled{opacity:.45}.oav.petav{background:var(--sunk);display:grid;place-items:center;overflow:hidden}.oav.petav svg{width:100%;height:auto}
 .bqart{padding:0;overflow:hidden;display:grid;place-items:center}.bqart canvas{width:min(70vw,300px);height:auto;display:block}
+.scard{border-radius:20px;padding:14px;color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.2)}.sc-lucky{background:linear-gradient(135deg,#1f9d5b,#2fd28a)}.sc-gold{background:linear-gradient(135deg,#a8720c,#ffcc33)}.sc-diamond{background:linear-gradient(135deg,#2a5bd7,#7fd6ff 60%,#b05ac8)}.scttl{font:900 1.3rem var(--display);text-align:center;letter-spacing:.04em}.scttl small{display:block;font:700 .7rem var(--mono);opacity:.85}
+.scgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.scc{aspect-ratio:1.2;border:0;border-radius:12px;background:repeating-linear-gradient(45deg,#c9ced8 0 6px,#b7bdc9 6px 12px);font-size:2rem;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}.scc.open{background:#fff;animation:cardin .2s}.scpay{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font:700 .7rem var(--mono)}.scpay span{background:rgba(0,0,0,.18);padding:3px 7px;border-radius:99px}
+.mplb{margin:8px 0}.lbtabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:6px}.lbtabs button{border:0;border-radius:99px;padding:5px 10px;font:700 .72rem var(--body);background:var(--sunk);color:var(--ink);cursor:pointer;flex:none}.lbtabs button.on{background:var(--ink);color:var(--bg)}.lb>div{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;font-size:.82rem}.lb>div.me{background:color-mix(in oklab,var(--accent) 14%,transparent)}.lb b{width:24px;text-align:center}.lb span{flex:1}.lb i{font:700 .78rem var(--mono);font-style:normal}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -933,6 +936,7 @@ const ACH=[
  ["sailor","Set sail","Sail to the Online Town",()=>!!S.flags.sailed,1000],
  ["islands","Island hopper","Own every island",()=>ISLANDS.every(i=>ownIsl(i.k)),5e7],
  ["highroller","High roller","Win $10M in one casino bet",()=>(S.stats.casinoBig||0)>=1e7,1e6],
+ ["lucky","Lucky streak","Scratch 25 cards",()=>(S.stats.scratch||0)>=25,20000],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1872,6 +1876,7 @@ function openHome(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
       <div class="art">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
+      <div class="bankbtns"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button></div>
       ${dailyCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -1894,7 +1899,7 @@ function openHome(){
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
@@ -1910,8 +1915,8 @@ function openCafe(){
   const draw=bk=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Café")}
       <div class="note">Short on energy? Grab something here instead of walking home. ${S.protein>0?`<b>Protein active: ${Math.ceil(S.protein)}s</b>`:""}</div>
-      <div class="perks">${CAFE.map(c=>`<button class="perk nopic${bk===c.k?" bought":""}" data-c="${c.k}" ${price(c)>S.cash?"disabled":""}><span class="t">${c.t}</span><span class="d">${c.d}</span><span class="c">${fmt(price(c))}</span></button>`).join("")}</div><div class="sechead"><h3>Dates</h3><span class="eyebrow">${S.partner?"❤ "+esc(S.partner.n):"Numbers from the Nightclub"}</span></div>${dateList()}</div>`;
-    $("leaveBtn").onclick=closeRoom;bindDates(()=>draw());
+      <div class="perks">${CAFE.map(c=>`<button class="perk nopic${bk===c.k?" bought":""}" data-c="${c.k}" ${price(c)>S.cash?"disabled":""}><span class="t">${c.t}</span><span class="d">${c.d}</span><span class="c">${fmt(price(c))}</span></button>`).join("")}</div><div class="sechead"><h3>Dates</h3><span class="eyebrow">${S.partner?"❤ "+esc(S.partner.n):"Numbers from the Nightclub"}</span></div>${dateList()}${scratchList()}</div>`;
+    $("leaveBtn").onclick=closeRoom;bindDates(()=>draw());$("room").querySelectorAll("[data-scr]").forEach(b=>b.onclick=()=>scratchCard(b.dataset.scr,()=>draw()));
     $("room").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const c=CAFE.find(x=>x.k===b.dataset.c),p=price(c);if(S.cash<p)return;S.cash-=p;c.fx(S);SFX.buy();dirty=true;draw(c.k);updMini()});
   };draw();
 }
@@ -3131,7 +3136,7 @@ function mpUI(keep){
   sh.innerHTML=`<div class="pshead"><div><small>ROOM · ${peers.length+1} ONLINE</small><b>${MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
     <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
       ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span><button class="mpgift" data-gift="${id}" ${gift<1?"disabled":""}>Gift ${fmt(gift)}</button></div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
-    <div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
+    ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
     <div class="mpjoin"><input id="mpIn" maxlength="80" placeholder="Message" autocomplete="off"><button class="cta" id="mpSendB">Send</button></div>
     <button class="cta ghost2" id="mpLeaveB">Leave room</button>`;
@@ -3140,6 +3145,7 @@ function mpUI(keep){
   $("mpX").onclick=()=>{sh.hidden=true};$("mpLeaveB").onclick=()=>{mpLeave();mpUI()};
   $("mpCopy").onclick=()=>{try{navigator.clipboard.writeText(MP.code).then(()=>banner("Code copied","u"))}catch(e){}};
   $("mpSendB").onclick=()=>say($("mpIn").value);$("mpIn").onkeydown=e=>{if(e.key==="Enter")say($("mpIn").value)};
+  sh.querySelectorAll("[data-lb]").forEach(b=>b.onclick=()=>{lbK=b.dataset.lb;mpUI(true)});
   sh.querySelectorAll("[data-emo]").forEach(b=>b.onclick=()=>say(b.dataset.emo));
   sh.querySelectorAll("[data-gift]").forEach(b=>b.onclick=()=>{const p=MP.peers[b.dataset.gift],a=Math.round(S.cash*.05);if(!p||a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},b.dataset.gift);mpLog(mpName(),"sent "+fmt(a)+" to "+p.n,1);SFX.sell();banner("Sent "+fmt(a)+" to "+String(p.n).slice(0,14),"u");mpUI()});
 }
@@ -3690,6 +3696,49 @@ function openBoutique(back){S.accOwn=S.accOwn||{};S.acc=S.acc||{};
     const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
     $("room").querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acc);if(!S.accOwn[a.k]){if(S.cash<a.cost)return;S.cash-=a.cost;S.accOwn[a.k]=1;SFX.buy();confetti(40);banner(a.n+" bought","g")}
       if(S.acc[a.s]===a.k)delete S.acc[a.s];else S.acc[a.s]=a.k;dirty=true;SFX.tick(.6);draw();updMini()})};draw()}
+
+/* ================= luck: daily prize wheel, scratch cards, room leaderboard ================= */
+const WHEEL=[
+ {t:"Cash",c:"#2fd28a",w:22,fx:()=>{const v=Math.max(500,Math.round((S.cash+(S.bank||0))*.02+1000*(1+SC())));earn(v);return "+"+fmt(v)}},
+ {t:"Crate",c:"#ffcc33",w:18,fx:()=>{gainCrate(1);return "+1 crate"}},
+ {t:"Energy",c:"#4fe3ff",w:16,fx:()=>{S.energy=maxEnergy();return "Full energy"}},
+ {t:"Hype",c:"#ff4fd8",w:14,fx:()=>{S.buffs.hype=Math.max(S.buffs.hype||0,180);return "3 min of hype"}},
+ {t:"Big cash",c:"#1f9d5b",w:10,fx:()=>{const v=Math.max(5000,Math.round((S.cash+(S.bank||0))*.08+5000*(1+SC())));earn(v);return "+"+fmt(v)}},
+ {t:"3 crates",c:"#cf9a14",w:8,fx:()=>{gainCrate(3);return "+3 crates"}},
+ {t:"Fans",c:"#7a2fd6",w:9,fx:()=>{const f=Math.round(100+(S.fans||0)*.05);S.fans=(S.fans||0)+f;return "+"+fmtN(f)+" fans"}},
+ {t:"JACKPOT",c:"#d6384b",w:3,fx:()=>{const v=Math.max(50000,Math.round((S.cash+(S.bank||0))*.25+50000*(1+SC())));earn(v);gainCrate(5);return "JACKPOT +"+fmt(v)+" and 5 crates"}}];
+function wheelReady(){return !S.wheelD||S.wheelD!==dayKey()}
+function openWheel(back){let busy=false,rot=0;const n=WHEEL.length,seg=360/n;
+  const svg=`<svg viewBox="-110 -110 220 220" class="rwheel"><g id="wh">${WHEEL.map((w,i)=>{const a0=(i*seg-90)*Math.PI/180,a1=((i+1)*seg-90)*Math.PI/180,R=100;const mid=(i+.5)*seg;return `<path d="M0 0 L${Math.cos(a0)*R} ${Math.sin(a0)*R} A${R} ${R} 0 0 1 ${Math.cos(a1)*R} ${Math.sin(a1)*R}Z" fill="${w.c}" stroke="#fff" stroke-width="2"/><text transform="rotate(${mid}) translate(0 -64) rotate(0)" text-anchor="middle" font-family="var(--display)" font-weight="900" font-size="${w.t.length>6?9:11}" fill="#fff">${w.t.toUpperCase()}</text>`}).join("")}${Array.from({length:n},(_,i)=>`<circle cx="${Math.cos((i*seg-90)*Math.PI/180)*100}" cy="${Math.sin((i*seg-90)*Math.PI/180)*100}" r="3" fill="#fff"/>`).join("")}<circle r="16" fill="#fff"/><circle r="10" fill="#2a3cff"/></g><path d="M0 -112 L-9 -96 H9Z" fill="#141824"/></svg>`;
+  const draw=msg=>{const ok=wheelReady();$("room").innerHTML=`<div class="room-in scroll">${roomHead("Prize wheel")}<div class="rwrap">${svg}</div><div class="slotmsg" id="whMsg">${msg||(ok?"One free spin every day":"Come back tomorrow for another spin")}</div>
+    <button class="bigbtn" id="whSpin" ${ok?"":"disabled"}>${ok?"Spin":"Spun today"}<small>${ok?"Free":"Resets at midnight"}</small></button></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{if(!busy)back()};$("wh").setAttribute("transform",`rotate(${rot})`);
+    $("whSpin").onclick=()=>{if(busy||!wheelReady())return;busy=true;S.wheelD=dayKey();dirty=true;let x=Math.random()*WHEEL.reduce((a,w)=>a+w.w,0),k=0;for(;k<n-1;k++){if(x<WHEEL[k].w)break;x-=WHEEL[k].w}
+      const target=360*6-(k+.5)*seg+rnd(-seg*.35,seg*.35),from=rot,t0=performance.now();SFX.tick(.6);
+      const tick=()=>{const q=Math.min(1,(performance.now()-t0)/4200),e=1-Math.pow(1-q,4),w=$("wh");if(!w)return;rot=from+(target-from)*e;w.setAttribute("transform",`rotate(${rot})`);if(Math.floor(rot/seg)!==Math.floor((rot-1)/seg))SFX.tick(.2);
+        if(q<1)requestAnimationFrame(tick);else{busy=false;rot%=360;const r=WHEEL[k].fx();dirty=true;if(WHEEL[k].t==="JACKPOT"){confetti(260);shake(10);flash("#ffcc33",.4);SFX.grail()}else{confetti(80);SFX.level()}banner(r,"g");updMini();draw(r)}};requestAnimationFrame(tick)}};draw()}
+/* scratch cards: tap all 6 panels, 3 matching symbols wins */
+const SCRATCH=[{k:"lucky",n:"Lucky 7",cost:1000},{k:"gold",n:"Gold Rush",cost:100000},{k:"diamond",n:"Diamond Deluxe",cost:1e7}];
+const SC_SYM=[["🍀",2],["⭐",3],["💰",5],["💎",15],["👑",60]];
+function scratchCard(t,back){const C=SCRATCH.find(x=>x.k===t);if(S.cash<C.cost)return;S.cash-=C.cost;dirty=true;updMini();
+  const win=Math.random()<.22,ws=win?(()=>{const r=Math.random();return r<.5?0:r<.78?1:r<.93?2:r<.99?3:4})():-1;
+  let cells=[];if(win){cells=[ws,ws,ws];while(cells.length<6){const s=Math.floor(Math.random()*5);if(s!==ws&&cells.filter(x=>x===s).length<2)cells.push(s)}}else{while(cells.length<6){const s=Math.floor(Math.random()*5);if(cells.filter(x=>x===s).length<2)cells.push(s)}}
+  for(let i=cells.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]]}
+  const open=[];const draw=()=>{const done=open.length===6;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(C.n)}<div class="scard sc-${t}"><div class="scttl">${C.n.toUpperCase()}<small>Match 3 to win</small></div><div class="scgrid">${cells.map((s,i)=>`<button class="scc${open.includes(i)?" open":""}" data-sc="${i}">${open.includes(i)?SC_SYM[s][0]:""}</button>`).join("")}</div>
+      <div class="scpay">${SC_SYM.map(([e,m])=>`<span>${e}${e}${e} ${m}×</span>`).join("")}</div></div>
+      <div class="slotmsg">${done?(win?`Three ${SC_SYM[ws][0]}! You win ${fmt(C.cost*SC_SYM[ws][1])}`:"No match this time"):"Tap each panel to scratch"}</div>
+      ${done?`<button class="bigbtn" id="scAgain" ${S.cash<C.cost?"disabled":""}>Buy another<small>${fmt(C.cost)}</small></button>`:`<button class="bigbtn alt" id="scAll">Scratch all<small>&nbsp;</small></button>`}</div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{if(open.length<6){open.splice(0,6,0,1,2,3,4,5);settle()}back()};
+    $("room").querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{const i=+b.dataset.sc;if(open.includes(i))return;open.push(i);SFX.tick(.4+open.length*.08);buzz(5);if(open.length===6)settle();draw()});
+    const a=$("scAll");if(a)a.onclick=()=>{open.splice(0,6,0,1,2,3,4,5);settle();draw()};const ag=$("scAgain");if(ag)ag.onclick=()=>scratchCard(t,back)};
+  let settled=false;const settle=()=>{if(settled)return;settled=true;S.stats.scratch=(S.stats.scratch||0)+1;if(win){const v=C.cost*SC_SYM[ws][1];S.cash+=v;dirty=true;if(ws>=3){confetti(200);shake(8);SFX.grail()}else{confetti(60);SFX.level()}banner("Scratch win +"+fmt(v),"g")}else SFX.nope();updMini()};draw()}
+function scratchList(){return `<div class="sechead"><h3>Scratch cards</h3><span class="eyebrow">Match 3 to win up to 60×</span></div><div class="perks">${SCRATCH.map(c=>`<button class="perk nopic" data-scr="${c.k}" ${S.cash<c.cost?"disabled":""}><span class="t">${c.n}</span><span class="d">Six panels, three of a kind wins</span><span class="c">${fmt(c.cost)}</span></button>`).join("")}</div>`}
+/* leaderboard for your room */
+const LB=[["c","Cash",p=>p.c||0,fmt],["lv","Level",p=>p.lv||0,v=>"Lv "+v],["pr","Max lift",p=>p.pr||20,v=>v+" kg"],["cm","Height",p=>p.cm||170,v=>v+" cm"],["f","Fans",p=>p.f||0,fmtN]];
+let lbK="c";
+function leaderHTML(){if(!MP)return "";const me={n:mpName(),c:Math.round(S.cash),lv:repLevel(),pr:S.pr,cm:S.height||170,f:Math.round(S.fans||0),me:1},L=[me,...Object.values(MP.peers)],M_=LB.find(x=>x[0]===lbK);
+  const rows=L.slice().sort((a,b)=>M_[2](b)-M_[2](a));return `<div class="lbtabs">${LB.map(([k,n])=>`<button class="${k===lbK?"on":""}" data-lb="${k}">${n}</button>`).join("")}</div><div class="lb">${rows.map((p,i)=>`<div class="${p.me?"me":""}"><b>${i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</b><span>${esc(String(p.n||"?").slice(0,16))}${p.me?" (you)":""}</span><i>${M_[3](M_[2](p))}</i></div>`).join("")}</div>`}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
