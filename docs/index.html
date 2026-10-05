@@ -604,6 +604,14 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .house b{font-size:.86rem;color:#141824}.house small{font-family:var(--mono);font-size:.64rem;color:#2b2f3a}
 .house.me{box-shadow:inset 0 0 0 3px var(--accent),var(--shadow)}
 .houseart{background:linear-gradient(#cfe9f7 0 75%,#7fbf6a 75%);padding:10px 0}.houseart svg{width:60%;margin:0 auto}
+.rizz .rzhead{display:flex;gap:10px;align-items:center}.rizz .rzhead b{display:block}.rizz .rzhead small{font-family:var(--mono);font-size:.66rem;color:var(--muted)}
+.rzmeter{position:relative;height:22px;border-radius:11px;background:var(--sunk);overflow:hidden}.rzmeter i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#ff9ad5,#ff4fd8);transition:width .4s}
+.rzmeter span{position:relative;display:block;text-align:center;font-family:var(--mono);font-size:.68rem;font-weight:800;line-height:22px}
+.rzlog{display:flex;flex-direction:column;gap:6px;max-height:190px;overflow-y:auto}
+.rzlog p{margin:0;max-width:80%;padding:9px 12px;border-radius:14px 14px 14px 4px;background:var(--surface);box-shadow:var(--shadow);font-size:.86rem}
+.rzlog p.me{align-self:flex-end;border-radius:14px 14px 4px 14px;background:#ff4fd8;color:#fff}
+.rzopts{display:flex;flex-direction:column;gap:6px}.rzopts button{padding:12px 14px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--shadow);text-align:left;font-size:.88rem;font-weight:600}
+.rzopts button:active{transform:scale(.97);background:color-mix(in oklab,#ff4fd8 18%,var(--surface))}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -718,7 +726,6 @@ const PLACES=[
  {k:"airport",n:"Airport",c:"#3b6fd8",x:2150,y:1430,w:380,h:150,door:[2340,1580],region:"beach",sub:"Fly to Tokyo or Paris markets"},
  {k:"docks",n:"Docks Car Meet",c:"#4a5568",x:40,y:1440,w:200,h:130,door:[140,1570],region:"beach",sub:"Show off your cars and street race"},
  {k:"harbor",n:"Harbor",c:"#0f6fb3",x:860,y:1690,w:240,h:130,door:[980,1820],region:"beach",sub:"Boats, islands and the Online Town"},
- {k:"township",n:"Township",c:"#e39a52",x:1260,y:1690,w:240,h:130,door:[1380,1820],region:"beach",sub:"Friends' houses in the Online Town"},
  {k:"club",n:"Nightclub",c:"#7a2fd6",x:1700,y:1250,w:200,h:120,door:[1800,1370],region:"downtown",sub:"VIP tables for a selling boost"},
  {k:"lux",n:"Luxury Exchange",c:"#2b2f3a",x:1600,y:300,w:300,h:220,door:[1750,520],region:"downtown",sub:"Diamonds, gold and fine art. Sales pay +30%"},
  {k:"tower",n:"Flip Tower",c:"#cf9a14",x:1700,y:880,w:150,h:200,door:[1775,1080],region:"downtown",sub:"Build your own skyscraper, floor by floor"},
@@ -834,14 +841,14 @@ const SC=()=>Math.floor(repLevel()/5);
 const pk=k=>(S.perks&&S.perks[k])||0;
 const PCAP={sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3};
 const pcap=k=>PCAP[k]||30;
-const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver())*(1+.1*emp("ai"));
+const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver())*(1+.1*emp("ai"))*(S&&S.partner?1.05:1);
 // Stacked bonuses have diminishing returns past x2, so money can't run away
 const capM=m=>m<=3?m:3+Math.log2(m/3)*2.6;
 const moonK=()=>emp("moon")?2:1;
 const mult=()=>capM(rawMult())*moonK();
 let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
 const feeNow=()=>WT;
-const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy");
+const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy")+(S&&S.partner?20:0);
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
 const STR_TIERS=[[20,"Twig"],[40,"Average"],[60,"Fit"],[90,"Strong"],[130,"Beast"],[180,"Titan"],[250,"Legend"]];
@@ -897,6 +904,8 @@ const ACH=[
  ["tall190","Towering","Grow to 190 cm",()=>(S.height||170)>=190,10000],
  ["sailor","Set sail","Sail to the Online Town",()=>!!S.flags.sailed,1000],
  ["islands","Island hopper","Own every island",()=>ISLANDS.every(i=>ownIsl(i.k)),5e7],
+ ["rizz1","Smooth talker","Get a number at the Nightclub",()=>(S.stats.rizzWins||0)>=1,500],
+ ["partner","Power couple","Get a partner",()=>!!S.partner,3000],
  ["swole","Swole","Max out chest, back and legs",()=>{const b=myBuild();return b.c>=1.4&&b.l>=1.4&&b.b>=1.4},20000]
 ];
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
@@ -1030,7 +1039,7 @@ const ROADS=[[655,180,90,1420],[0,655,2600,90],[215,215,970,70],[215,1115,970,70
 const SKY=[[1450,60,160,200],[1650,30,130,220],[2100,60,200,250],[2350,90,200,220],[1450,820,180,240],[2470,790,110,250],[2150,1260,200,120],[1470,1250,160,130]];
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
-const inBld=(x,y,m=0)=>PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
+const inBld=(x,y,m=0)=>(x>1150-m&&x<1710+m&&y>1680-m&&y<1948+m)||PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
 const inPond=(x,y,m=0)=>Math.hypot((x-1290)/1.3,y-1290)<80+m;
 const TREES=[];for(let i=0;i<500&&TREES.length<80;i++){const x=srnd()*1400,y=srnd()*1400;if(!onRoad(x,y,28)&&!inBld(x,y,30)&&!inPond(x,y,30))TREES.push([x,y,14+srnd()*10])}
 const LAMPS=[];for(let y=240;y<1560;y+=170)LAMPS.push([646,y],[754,y+85]);for(let x=60;x<2600;x+=170)if(Math.abs(x-700)>80&&Math.abs(x-2000)>70)LAMPS.push([x,646]);for(let y=80;y<1400;y+=170)if(Math.abs(y-700)>80)LAMPS.push([1946,y],[2054,y+85]);
@@ -1161,6 +1170,7 @@ function buildStatic(){
   [[640,640],[740,640],[640,752],[740,752]].forEach(([x,y])=>{g.fillStyle="#8a6a4a";g.fillRect(x,y,22,6);g.fillStyle="rgba(0,0,0,.2)";g.fillRect(x,y+6,22,2)});
   // hedges along the park edges
   [[300,560,160],[790,560,240],[300,1060,200],[800,1060,220]].forEach(([x,y,w])=>{g.fillStyle="#2f7a46";rrp(g,x,y,w,12,6);g.fill();g.fillStyle="#3f9a5a";for(let i=0;i<w;i+=10){g.beginPath();g.arc(x+5+i,y+3,5,0,7);g.fill()}});
+  drawTownStatic(g,P);
   PLACES.slice().sort((a,b)=>a.y-b.y).forEach(p=>drawBuilding(g,p,P));
   STATIC=c;staticDark=isDark();
 }
@@ -1237,7 +1247,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   drawFinds();
@@ -1245,7 +1255,7 @@ function drawWorld(){
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
-  mpPeople(ppl);
+  mpPeople(ppl);drawPartner(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   mpTags();
   drawToys();drawBirds(1/60);
@@ -1266,7 +1276,7 @@ function drawWorld(){
   if(season().n==="Winter"){ctx.fillStyle=isDark()?"rgba(200,220,255,.05)":"rgba(255,255,255,.18)";ctx.fillRect(0,0,vw,vh);ctx.fillStyle="rgba(255,255,255,.85)";for(let i=0;i<70;i++){const sx=(i*137+wt*(18+i%5*6))%(vw+20)-10,sy=(i*71+wt*(40+i%7*8))%(vh+20)-10;ctx.beginPath();ctx.arc(sx,sy,1.2+(i%3)*.6,0,7);ctx.fill()}}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.18)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh);
 }
-function nearPlace(){let best=null,bd=70;for(const p of PLACES){if(!regionOpen(p.region))continue;const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
+function nearPlace(){NEARPLOT=nearPlot();if(NEARPLOT)return{k:"plot:"+NEARPLOT.id,n:NEARPLOT.me?"your house":String(NEARPLOT.n).slice(0,14)+"'s house",sub:"Township · Lv "+NEARPLOT.lv,plot:NEARPLOT,door:plotDoor(NEARPLOT.plot)};let best=null,bd=70;for(const p of PLACES){if(!regionOpen(p.region))continue;const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
 function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/Z;return[(e.clientX-r.left)*k+cam.x,(e.clientY-r.top)*k+cam.y]}
 let lockT=0;
 function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
@@ -1284,7 +1294,7 @@ function renderBottom(){
   else if(!S.stats.flips&&!moving)h+=`<span class="tip">Tap the map to walk, or pick a place below</span>`;
   const ar=achReady();h+=`<div class="places">${PLACES.filter(p=>regionOpen(p.region)).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
   el.innerHTML=h;
-  const eb=$("enterBtn");if(eb)eb.onclick=()=>openRoom(near.k);
+  const eb=$("enterBtn");if(eb)eb.onclick=()=>near.plot?openPlot(near.plot):openRoom(near.k);
   el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
 }
 let hudT=0;
@@ -1311,7 +1321,7 @@ function openRoom(k){
   ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
-function closeRoom(){if(M)closeMarket();G=null;GS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+function closeRoom(){if(M)closeMarket();G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play in the Online Town. Reach level 10 to get a free raft at the Harbor on the beach, then sail over.":"Friends play in the Online Town. Go to the Harbor on the beach and sail over.");if(regionOpen("beach"))walkTo("harbor");return}const sh=$("mpSheet");if(!sh.hidden){sh.hidden=true;return}mpUI()};
 // The alert pills sit in one swipeable row; the first button folds them away
 let pillsMin=store.get("fliprush_pillsmin")==="1";
@@ -1850,8 +1860,8 @@ function openCafe(){
   const draw=bk=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Café")}
       <div class="note">Short on energy? Grab something here instead of walking home. ${S.protein>0?`<b>Protein active: ${Math.ceil(S.protein)}s</b>`:""}</div>
-      <div class="perks">${CAFE.map(c=>`<button class="perk nopic${bk===c.k?" bought":""}" data-c="${c.k}" ${price(c)>S.cash?"disabled":""}><span class="t">${c.t}</span><span class="d">${c.d}</span><span class="c">${fmt(price(c))}</span></button>`).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;
+      <div class="perks">${CAFE.map(c=>`<button class="perk nopic${bk===c.k?" bought":""}" data-c="${c.k}" ${price(c)>S.cash?"disabled":""}><span class="t">${c.t}</span><span class="d">${c.d}</span><span class="c">${fmt(price(c))}</span></button>`).join("")}</div><div class="sechead"><h3>Dates</h3><span class="eyebrow">${S.partner?"❤ "+esc(S.partner.n):"Numbers from the Nightclub"}</span></div>${dateList()}</div>`;
+    $("leaveBtn").onclick=closeRoom;bindDates(()=>draw());
     $("room").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const c=CAFE.find(x=>x.k===b.dataset.c),p=price(c);if(S.cash<p)return;S.cash-=p;c.fx(S);SFX.buy();dirty=true;draw(c.k);updMini()});
   };draw();
 }
@@ -2280,19 +2290,6 @@ function openAirport(){
     setTimeout(()=>{room=k;$("room").style.setProperty("--pc",k==="tokyo"?"#e2364a":k==="dubai"?"#cf9a14":"#2a5bd7");openMarket(MKT[k]);$("leaveBtn").onclick=closeRoom;banner("Welcome to "+MKT[k].n,"a")},1200);setTimeout(()=>fx.remove(),2600)});
 }
 const vipCost=()=>Math.max(500,Math.round(S.cash*.03));
-function openClub(){
-  const draw=()=>{const on=S.buffs&&S.buffs.hype>0;
-    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Nightclub")}
-      <div class="art clubart"><svg viewBox="0 0 400 140" aria-hidden="true"><rect width="400" height="140" fill="#120a24"/>${Array.from({length:22},(_,i)=>`<circle cx="${(i*53)%400}" cy="${(i*37)%100+10}" r="${2+(i%3)}" fill="${["#ff4fd8","#4fe3ff","#ffe14f"][i%3]}" opacity=".8"/>`).join("")}<rect y="110" width="400" height="30" fill="#1f1438"/>${[60,140,220,300].map((x,i)=>`<circle cx="${x}" cy="96" r="10" fill="#e8b896"/><rect x="${x-10}" y="104" width="20" height="18" rx="6" fill="${["#ff4fd8","#4fe3ff","#ffe14f","#2fd28a"][i]}"/>`).join("")}</svg></div>
-      <div class="note">${on?`<b>Hype is on for ${Math.ceil(S.buffs.hype)}s.</b> Every sale pays +30%.`:"Book a VIP table to network with collectors. You get <b>+30% on every sale for 3 minutes</b>."}</div>
-      <button class="bigbtn" id="vipBtn" ${on||S.cash<vipCost()?"disabled":""}>VIP table<small>${on?"Already hyped":fmt(vipCost())}</small></button>
-      <button class="bigbtn alt" id="danceBtn">Dance<small>15 energy · maybe meet someone generous</small></button></div>`;
-    $("leaveBtn").onclick=closeRoom;
-    $("vipBtn").onclick=()=>{const c=vipCost();if(S.cash<c||(S.buffs.hype>0))return;S.cash-=c;S.buffs.hype=180;dirty=true;SFX.rebirth();banner("VIP · +30% sales","g");draw();updMini()};
-    $("danceBtn").onclick=e=>{if(!spend(15,e.currentTarget))return;SFX.hot();const r=Math.random();
-      if(r<.35){const v=Math.round(Math.max(60,S.cash*.02));S.cash+=v;banner("Got a "+fmt(v)+" tip","u")}else if(r<.5){S.buffs.hype=Math.max(S.buffs.hype||0,60);banner("Met a collector · 60s hype","g")}else banner("Great night","a");dirty=true;draw();updMini()};
-  };draw();
-}
 function openDocks(){
   const draw=()=>{const cars=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)),best=cars.sort((a,b)=>b.sp-a.sp)[0],shown=S.flags.showDay===S.day;
     const opp=[{n:"Tuner Tim",sp:2.6,bet:1000},{n:"Drift Queen",sp:3.2,bet:6000},{n:"Midnight Max",sp:4.2,bet:30000}];
@@ -2812,6 +2809,7 @@ function loop(now){
       if(M)marketTick(dt,now);
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
+      if(CS)clubTick(dt);
       sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="storage")lotTick(dt);
@@ -2820,7 +2818,7 @@ function loop(now){
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();
-      simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
+      simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderLvlBtn();renderPillTog()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
@@ -3107,6 +3105,183 @@ function visitHouse(p,back){
   const bl=$("hBell");if(bl)bl.onclick=()=>{if(!peer)return;mpSend("d",{n:mpName(),t:"rang your doorbell 🔔"},p.id);SFX.hot();banner("Ding dong!","u");bl.disabled=true};
   const gf=$("hGift");if(gf)gf.onclick=()=>{if(!peer)return;const a=Math.round(S.cash*.05);if(a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},p.id);SFX.sell();banner("Gift left: "+fmt(a),"u");visitHouse(p,back);updMini()};
 }
+
+/* ================= nightclub floor: walk around, dance, rizz, VIP ================= */
+const CSW=400,CSH=600;let CS=null;
+const CLUB_ST=[{k:"dj",x:200,y:150,n:"DJ booth"},{k:"bar",x:84,y:330,n:"Bar"},{k:"vip",x:330,y:500,n:"VIP booth"},{k:"floor",x:200,y:320,n:"Dance floor"}];
+const CLUB_NAMES=["Ava","Leo","Mila","Noah","Zara","Kai","Luna","Theo","Ivy","Rio","Nina","Jay","Sofia","Eli","Maya","Ari"];
+const RIZZ_LINES={
+ smooth:["I'd flip my whole stash just to buy you a drink.","You look like you belong at the Luxury Exchange.","I came to dance, but I'd rather talk to you.","Is this seat taken, or is it waiting for me?"],
+ funny:["Are you a limited drop? I'd wait in line all night.","My trading bot says you're the best buy in the room.","I deadlift heavy, but you still made my heart drop.","Are you a crit sale? Because you just doubled my night."],
+ flex:["I own a skyscraper downtown.","Want to see my yacht sometime?","I'm kind of a big deal on the rich list.","I just won a bodybuilding show."],
+ cringe:["Do you come here often? I don't.","My mom says I'm really cool.","Nice shoes. Wanna sell them to me?","I've got a stash of fake sneakers."]};
+const VIBES=[["romantic","smooth"],["jokester","funny"],["high roller","flex"]];
+const flexReal=()=>(S.tower||0)>=10||hasToy("yacht")||Object.keys(S.trophies||{}).length>0||richRank()<=8||S.cash>=1e7;
+function charisma(){return Math.round(clamp(20+cmOver()*1.2+(bodyK()-1)*45+Math.min(20,repLevel()*.4)+(S.buffs&&S.buffs.hype>0?12:0)+(S.skin||0)*2+((S.fans||0)>=10000?10:0)+(S.partner?-15:0),5,100))}
+function newClubber(i,single){const v=VIBES[i%3];return{n:pick(CLUB_NAMES),shirt:pick(["#ff4fd8","#4fe3ff","#ffcc33","#e2364a","#a855f7","#f2f2f2","#2fd28a","#1b1f2a"]),skin:G_SKINS[i%5],hair:G_HAIRS[(i*2+1)%5],
+  x:rnd(130,270),y:rnd(240,400),tx:0,ty:0,t:rnd(1,5),ph:rnd(0,7),single,vibe:v[0],likes:v[1],done:false,size:rnd(.95,1.1),mv:false}}
+function openClub(){
+  CS={px:200,py:570,tx:null,ty:null,mv:false,ph:0,npcs:[],pops:[],near:null,cw:0,ch:0,bg:null,beat:0,rz:null};
+  for(let i=0;i<11;i++)CS.npcs.push(newClubber(i,i<4));CS.npcs.forEach(n=>{n.tx=n.x;n.ty=n.y});
+  $("room").innerHTML=`<div class="room-in gymroom">${roomHead("Nightclub")}
+    <div class="gstage" id="cWrap"><canvas id="cCv"></canvas><div class="gfans" id="cInfo"></div></div>
+    <div class="gact" id="cAct"></div><div class="gpanel" id="cPanel" hidden></div></div>`;
+  $("leaveBtn").onclick=closeRoom;$("cCv").addEventListener("pointerdown",clubTap);clubSize();clubAct();
+}
+function clubSize(){const w=$("cWrap");if(!w)return false;const cw=w.clientWidth,ch=w.clientHeight;if(cw===CS.cw&&ch===CS.ch)return true;CS.cw=cw;CS.ch=ch;CS.dpr=Math.min(2,devicePixelRatio||1);const cv=$("cCv");cv.width=Math.round(cw*CS.dpr);cv.height=Math.round(ch*CS.dpr);CS.k=Math.min(cw/CSW,ch/CSH);CS.ox=(cw-CSW*CS.k)/2;CS.oy=(ch-CSH*CS.k)/2;CS.bg=null;return true}
+function clubTap(e){if(!CS||!$("cPanel").hidden)return;audioOn();const cv=$("cCv"),r=cv.getBoundingClientRect(),f=cv.clientWidth/r.width,x=((e.clientX-r.left)*f-CS.ox)/CS.k,y=((e.clientY-r.top)*f-CS.oy)/CS.k;
+  const n=CS.npcs.find(n=>Math.hypot(n.x-x,n.y-24-y)<24);
+  if(n){if(n.single&&!n.done){if(Math.hypot(n.x-CS.px,n.y-CS.py)>80){CS.tx=n.x+26;CS.ty=n.y;CS.walkTo=n}else rizzStart(n)}else clubPop(n.x,n.y-64,pick(["Love this song!","Woo!","The DJ is on fire","Great outfit","*dancing*"]),"#fff",{bubble:1,life:2})}
+  else{CS.tx=clamp(x,24,CSW-24);CS.ty=clamp(y,150,CSH-14);CS.walkTo=null}}
+function clubPop(x,y,txt,col,o={}){if(CS)CS.pops.push({x,y,txt,col,t:0,life:o.life||1.3,bubble:o.bubble,heart:o.heart})}
+function clubAct(){
+  const el=$("cAct");if(!el||!CS)return;const st=CS.near,on=S.buffs&&S.buffs.hype>0;let h="";
+  if(st&&st.k==="bar")h=`<button class="gbtn main" id="cBar">Order a mocktail<small>${fmt(Math.max(20,Math.round(S.cash*.002)))} · +40 energy</small></button>`;
+  else if(st&&st.k==="dj")h=`<button class="gbtn main" id="cDJ">Request a song<small>Hype up the crowd · ${fmt(Math.max(50,Math.round(S.cash*.004)))}</small></button>`;
+  else if(st&&st.k==="vip")h=`<button class="gbtn main" id="cVip" ${on||S.cash<vipCost()?"disabled":""}>VIP table<small>${on?"Hype on "+Math.ceil(S.buffs.hype)+"s":fmt(vipCost())+" · +30% sales 3 min"}</small></button>`;
+  else if(st&&st.k==="floor")h=`<button class="gbtn main" id="cDance">Dance<small>15 energy · tips and charm</small></button>`;
+  else h=`<span class="gtip">Walk to the bar, DJ, VIP booth or dance floor. Tap someone with a ❤ to talk.</span>`;
+  el.innerHTML=h;
+  const b=$("cBar");if(b)b.onclick=()=>{const c=Math.max(20,Math.round(S.cash*.002));if(S.cash<c)return;S.cash-=c;S.energy=Math.min(maxEnergy(),S.energy+40);dirty=true;SFX.buy();clubPop(CS.px,CS.py-70,"+40 ENERGY","#2fd28a");updMini()};
+  const d=$("cDJ");if(d)d.onclick=()=>{const c=Math.max(50,Math.round(S.cash*.004));if(S.cash<c)return;S.cash-=c;CS.beat=12;S.buffs.hype=Math.max(S.buffs.hype||0,45);dirty=true;SFX.rebirth();flash("#ff4fd8",.25);confetti(60);clubPop(200,90,"BANGER","#ff4fd8");CS.npcs.forEach(n=>{if(!n.single){n.tx=rnd(130,270);n.ty=rnd(230,400)}});updMini();clubAct()};
+  const v=$("cVip");if(v)v.onclick=()=>{const c=vipCost();if(S.cash<c||S.buffs.hype>0)return;S.cash-=c;S.buffs.hype=180;dirty=true;SFX.rebirth();confetti(90);banner("VIP · +30% sales","g");updMini();clubAct()};
+  const dn=$("cDance");if(dn)dn.onclick=e=>{if(!spend(15,e.currentTarget))return;CS.danceT=2.5;SFX.hot();const r=Math.random();
+    if(r<.35){const t=Math.round(Math.max(60,S.cash*.02));earn(t);clubPop(CS.px,CS.py-80,"TIP "+fmt(t),"#ffcc33")}else if(r<.5){S.buffs.hype=Math.max(S.buffs.hype||0,60);clubPop(CS.px,CS.py-80,"HYPED","#ff4fd8")}else clubPop(CS.px,CS.py-80,pick(["NICE MOVES","SMOOTH","ICONIC"]),"#4fe3ff");dirty=true;updMini()};
+}
+/* rizz: three rounds of lines; charisma scales how well they land */
+function rizzStart(n){
+  CS.rz={n,round:0,vibe:20,log:[]};CS.tx=null;SFX.door();rizzRound();
+}
+function rizzRound(){
+  const R=CS.rz,P=$("cPanel");P.hidden=false;const cats=["smooth","funny","flex","cringe"].sort(()=>Math.random()-.5).slice(0,3);R.opts=cats.map(c=>({c,t:pick(RIZZ_LINES[c])}));
+  const opener=["Hey. I haven't seen you here before.","This DJ is actually good tonight.","So what do you do?","Are you here with anyone?"][R.round]||"So…";
+  P.innerHTML=`<div class="gpanel-in rizz"><div class="rzhead"><span class="accav" style="background:${R.n.shirt}">${esc(R.n.n[0])}</span><span><b>${esc(R.n.n)}</b><small>Seems ${R.n.vibe} · your rizz ${charisma()}</small></span></div>
+    <div class="rzmeter"><i style="width:${clamp(R.vibe,0,100)}%"></i><span>${R.vibe>=60?"Vibing":R.vibe>=35?"Warming up":"Awkward"}</span></div>
+    <div class="rzlog">${R.log.map(l=>`<p class="${l.me?"me":""}">${esc(l.t)}</p>`).join("")}<p>${esc(opener)}</p></div>
+    <div class="rzopts">${R.opts.map((o,i)=>`<button data-rz="${i}">${esc(o.t)}</button>`).join("")}</div>
+    <button class="cta ghost2" id="rzBye">Walk away</button></div>`;
+  P.querySelectorAll("[data-rz]").forEach(b=>b.onclick=()=>rizzPick(R.opts[+b.dataset.rz]));$("rzBye").onclick=()=>{P.hidden=true;CS.rz=null};
+  const lg=P.querySelector(".rzlog");lg.scrollTop=lg.scrollHeight;
+}
+function rizzPick(o){
+  const R=CS.rz,n=R.n;let base=o.c==="cringe"?(n.likes==="funny"?4:-15):o.c===n.likes?30:12;if(o.c==="flex"&&!flexReal())base=-12;
+  const gain=Math.round(base*(.55+charisma()/100)*(base>0?rnd(.85,1.15):1));R.vibe=clamp(R.vibe+gain,0,100);
+  const react=gain>=25?pick(["Haha, okay that was good 😄","Stop, you're funny 😂","Smooth. I like that."]):gain>=8?pick(["Hm, okay 🙂","Cute.","Fair enough."]):pick(["…what? 😬","Okay then.","That was a lot."]);
+  R.log.push({t:o.t,me:1},{t:react});SFX[gain>=20?"sell":gain>0?"tick":"nope"](.4);clubPop(n.x,n.y-66,gain>=20?"❤":gain>0?"🙂":"😬",gain>=20?"#ff4fd8":"#fff",{heart:gain>=20});
+  R.round++;if(R.round<3)return rizzRound();
+  const P=$("cPanel"),win=R.vibe>=60;n.done=true;S.stats.rizzTries=(S.stats.rizzTries||0)+1;
+  if(win){S.contacts=S.contacts||[];if(!S.contacts.some(c=>c.n===n.n))S.contacts.push({n:n.n,s:n.shirt,k:n.skin,h:n.hair,aff:10});S.stats.rizzWins=(S.stats.rizzWins||0)+1;dirty=true;
+    SFX.grail();confetti(120,null,null,["#ff4fd8","#ff9ad5","#ffffff","#ffcc33"]);banner("Got "+n.n+"'s number","g");}
+  else{SFX.loss();banner(n.n+" walked off","r");n.single=false}
+  P.innerHTML=`<div class="gpanel-in rizz"><div class="lotbid"><span class="eyebrow">${esc(n.n)} · vibe ${R.vibe}/100</span><b>${win?"Number saved ❤":"Not this time"}</b><span class="who">${win?"Take them on a date at the Café.":"Your rizz was "+charisma()+". Height, muscles, level, fans and VIP all help."}</span></div>
+    <button class="cta" id="rzOk" style="justify-content:center">${win?"Let's go":"Shake it off"}</button></div>`;
+  $("rzOk").onclick=()=>{P.hidden=true;CS.rz=null};
+}
+function clubTick(dt){
+  if(!CS||!clubSize())return;CS.ph+=dt;if(CS.beat>0)CS.beat-=dt;if(CS.danceT>0)CS.danceT-=dt;
+  if(CS.tx!=null&&$("cPanel").hidden){const dx=CS.tx-CS.px,dy=CS.ty-CS.py,d=Math.hypot(dx,dy);if(d<2){CS.tx=null;CS.mv=false;if(CS.walkTo&&!CS.walkTo.done){const n=CS.walkTo;CS.walkTo=null;rizzStart(n)}}else{const s=Math.min(d,150*dt);CS.px+=dx/d*s;CS.py+=dy/d*s;CS.mv=true}}else CS.mv=false;
+  let nr=null,bd=48;CLUB_ST.forEach(s=>{const d=Math.hypot(s.x-CS.px,s.y-CS.py);if(d<bd){bd=d;nr=s}});if(nr!==CS.near){CS.near=nr;clubAct()}
+  CS.npcs.forEach(n=>{n.ph+=dt;if(!n.single){n.t-=dt;if(n.t<=0){n.t=rnd(3,8);if(Math.random()<.7){n.tx=rnd(130,270);n.ty=rnd(230,400)}else{n.tx=rnd(90,110);n.ty=rnd(220,440)}}}
+    else if(!(CS.rz&&CS.rz.n===n)){n.t-=dt;if(n.t<=0){n.t=rnd(6,12);n.tx=rnd(110,300);n.ty=rnd(220,470)}}
+    const dx=n.tx-n.x,dy=n.ty-n.y,d=Math.hypot(dx,dy);if(d>2){const s=Math.min(d,45*dt);n.x+=dx/d*s;n.y+=dy/d*s;n.mv=true}else n.mv=false});
+  CS.pops.forEach(p=>p.t+=dt);CS.pops=CS.pops.filter(p=>p.t<p.life);
+  const info=$("cInfo");if(info)info.textContent=`Rizz ${charisma()}${S.buffs&&S.buffs.hype>0?" · HYPE "+Math.ceil(S.buffs.hype)+"s":""}${S.partner?" · ❤ "+S.partner.n:""} · ${(S.contacts||[]).length} numbers`;
+  clubDraw();
+}
+function clubStatic(){
+  const k=CS.k*CS.dpr,c=document.createElement("canvas");c.width=Math.ceil(CSW*k);c.height=Math.ceil(CSH*k);const g=c.getContext("2d");g.scale(k,k);
+  g.fillStyle="#0c0a14";g.fillRect(0,0,CSW,CSH);g.fillStyle="rgba(255,255,255,.025)";for(let y=110;y<CSH;y+=30)for(let x=(y/30%2)*15;x<CSW;x+=30)g.fillRect(x,y,14,14);
+  const wg=g.createLinearGradient(0,0,0,110);wg.addColorStop(0,"#1c1430");wg.addColorStop(1,"#140f22");g.fillStyle=wg;g.fillRect(0,0,CSW,110);
+  g.save();g.font="900 24px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.textBaseline="middle";g.shadowColor="#ff4fd8";g.shadowBlur=18;g.fillStyle="#ffd6f5";g.fillText("AFTER DARK",200,36);g.restore();
+  g.save();g.shadowColor="#4fe3ff";g.shadowBlur=10;g.fillStyle="#7ff0ff";g.fillRect(0,108,CSW,2);g.restore();
+  // DJ booth
+  g.fillStyle="#1b1f2a";rrp(g,130,96,140,46,8);g.fill();g.fillStyle="#2b2f3a";rrp(g,136,100,128,22,5);g.fill();[160,240].forEach(x=>{g.fillStyle="#0c0d11";g.beginPath();g.arc(x,111,9,0,7);g.fill();g.strokeStyle="#4fe3ff";g.lineWidth=1.5;g.stroke()});
+  [[20,46],[350,46]].forEach(([x,y])=>{g.fillStyle="#0c0d11";rrp(g,x,y,30,56,4);g.fill();g.fillStyle="#2a2d36";[0,1].forEach(i=>{g.beginPath();g.arc(x+15,y+16+i*24,9-i*2,0,7);g.fill()})});
+  // bar
+  g.fillStyle="#3a1f2b";rrp(g,14,170,46,300,8);g.fill();g.fillStyle="#5a2f40";rrp(g,14,170,46,8,4);g.fill();
+  for(let i=0;i<8;i++){g.fillStyle=["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a"][i%4];g.globalAlpha=.7;g.fillRect(22+((i*7)%26),182+i*34,5,12);g.globalAlpha=1}
+  for(let i=0;i<5;i++){g.fillStyle="#2b2f3a";g.beginPath();g.arc(74,200+i*60,7,0,7);g.fill()}
+  // VIP booth
+  g.fillStyle="#3b1f5a";rrp(g,290,470,100,80,14);g.fill();g.fillStyle="#5a2f8a";rrp(g,298,478,84,20,8);g.fill();g.fillStyle="#1b1f2a";rrp(g,312,505,56,26,6);g.fill();
+  g.strokeStyle="#cf9a14";g.lineWidth=3;g.beginPath();g.moveTo(282,465);g.lineTo(282,560);g.stroke();g.fillStyle="#ffcc33";g.font="800 9px "+getComputedStyle(root).getPropertyValue("--mono");g.textAlign="center";g.fillText("VIP",340,466);
+  g.fillStyle="#0a0b10";rrp(g,160,586,80,14,4);g.fill();
+  return c;
+}
+function clubDraw(){
+  const cv=$("cCv");if(!cv)return;const c=cv.getContext("2d"),d=CS.dpr,k=CS.k;if(!CS.bg)CS.bg=clubStatic();
+  c.setTransform(1,0,0,1,0,0);c.fillStyle="#0c0a14";c.fillRect(0,0,cv.width,cv.height);c.drawImage(CS.bg,Math.round(CS.ox*d),Math.round(CS.oy*d));
+  c.setTransform(k*d,0,0,k*d,CS.ox*d,CS.oy*d);c.save();c.beginPath();c.rect(0,0,CSW,CSH);c.clip();
+  const bt=wt*(CS.beat>0?4:2.2);
+  // LED dance floor
+  for(let r=0;r<6;r++)for(let q=0;q<6;q++){const h=(r*47+q*83+Math.floor(bt*2)*61)%360,on=((r+q+Math.floor(bt*2))%3)!==0;c.fillStyle=on?`hsla(${h},90%,58%,.55)`:"rgba(255,255,255,.04)";c.fillRect(120+q*27,230+r*27,25,25)}
+  // sweeping light beams
+  c.globalCompositeOperation="lighter";[["255,79,216",-.6],["79,227,255",.6],["255,204,51",0]].forEach(([col,o],i)=>{const a=Math.sin(wt*1.3+i*2)*.6+o*.5,x0=[30,370,200][i],y0=[60,60,20][i];
+    c.fillStyle=`rgba(${col},${CS.beat>0?.22:.12})`;c.beginPath();c.moveTo(x0,y0);c.lineTo(x0+Math.sin(a)*420-40,y0+Math.cos(a)*420);c.lineTo(x0+Math.sin(a)*420+40,y0+Math.cos(a)*420);c.closePath();c.fill()});
+  c.globalCompositeOperation="source-over";
+  const ppl=CS.npcs.map(n=>[n.y,()=>{const dancing=!n.mv&&n.x>115&&n.x<285&&n.y>225&&n.y<395,bob=dancing?Math.abs(Math.sin(n.ph*8))*4:0;
+    drawPerson(n.x,n.y,{g:c,shirt:n.shirt,skin:n.skin,hair:n.hair,size:n.size,mv:n.mv,ph:n.ph,bob,pose:dancing&&Math.sin(n.ph*3)>.4?"abs":null,legs:"#1b1d22"});
+    if(n.single&&!n.done){const y=n.y-58-Math.sin(wt*4)*2;c.fillStyle="#ff4fd8";c.save();c.translate(n.x,y);c.beginPath();c.moveTo(0,5);c.bezierCurveTo(-9,-2,-5,-10,0,-5);c.bezierCurveTo(5,-10,9,-2,0,5);c.fill();c.restore()}}]);
+  ppl.push([150,()=>drawPerson(200,150,{g:c,shirt:"#1b1f2a",skin:G_SKINS[3],hair:"#1b1d22",bob:Math.abs(Math.sin(wt*8))*3,legs:"#1b1d22"})]);
+  ppl.push([330,()=>drawPerson(36,330,{g:c,shirt:"#f2f2f2",skin:G_SKINS[1],hair:G_HAIRS[2],legs:"#1b1d22"})]);
+  ppl.push([CS.py,()=>{const dance=CS.danceT>0;drawPerson(CS.px,CS.py,{g:c,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:CS.mv,ph:CS.ph,you:true,crown:(S.skin||0)>=5,bob:dance?Math.abs(Math.sin(wt*9))*5:0,pose:dance?(Math.sin(wt*4)>0?"bi":"abs"):null})}]);
+  ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
+  if(CS.near){c.strokeStyle="rgba(255,255,255,.5)";c.lineWidth=2;c.setLineDash([6,5]);c.lineDashOffset=-wt*16;c.beginPath();c.ellipse(CS.near.x,CS.near.y+4,36,14,0,0,7);c.stroke();c.setLineDash([])}
+  CS.pops.forEach(p=>{const a=1-p.t/p.life,y=p.y-p.t*26;c.globalAlpha=Math.min(1,a*2);
+    if(p.bubble){c.font="700 11px "+getComputedStyle(root).getPropertyValue("--body");c.textAlign="center";c.textBaseline="middle";const tw=c.measureText(p.txt).width+16,bx=clamp(p.x,tw/2+4,CSW-tw/2-4);c.fillStyle="rgba(255,255,255,.95)";rrp(c,bx-tw/2,p.y-12,tw,24,10);c.fill();c.fillStyle="#141824";c.fillText(p.txt,bx,p.y)}
+    else{c.font="900 "+(p.txt.length>4?14:20)+"px "+getComputedStyle(root).getPropertyValue("--display");c.textAlign="center";c.textBaseline="middle";c.lineWidth=4;c.strokeStyle="rgba(0,0,0,.6)";c.strokeText(p.txt,p.x,y);c.fillStyle=p.col;c.fillText(p.txt,p.x,y)}c.globalAlpha=1});
+  const vg=c.createRadialGradient(200,320,150,200,320,420);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(0,0,0,.5)");c.fillStyle=vg;c.fillRect(0,0,CSW,CSH);
+  c.restore();
+}
+/* dates at the café: affection grows; at 100 they become your partner */
+function dateList(){const L=S.contacts||[];if(!L.length)return `<p class="fine">No numbers yet. Try your rizz at the Nightclub.</p>`;
+  const cost=Math.max(80,Math.round(S.cash*.01));
+  return `<div class="perks">${L.map((c,i)=>{const p=S.partner&&S.partner.n===c.n;return `<button class="perk nopic" data-date="${i}" ${S.cash<cost?"disabled":""}><span class="t">${p?"❤ ":""}${esc(c.n)}${p?' <em class="beat">PARTNER</em>':""}</span><span class="d">${p?"Date night: full energy and 60s of hype":"Affection "+Math.min(100,Math.round(c.aff))+"/100"}</span><span class="c">${fmt(cost)}</span></button>`}).join("")}</div>`}
+function bindDates(redraw){$("room").querySelectorAll("[data-date]").forEach(b=>b.onclick=()=>{const c=S.contacts[+b.dataset.date],cost=Math.max(80,Math.round(S.cash*.01));if(!c||S.cash<cost)return;S.cash-=cost;dirty=true;
+  if(S.partner&&S.partner.n===c.n){S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,60);SFX.level();confetti(60,null,null,["#ff4fd8","#ff9ad5","#fff"]);banner("Date night with "+c.n,"g")}
+  else{const g=Math.round(rnd(18,32)*(.6+charisma()/100));c.aff=Math.min(100,(c.aff||0)+g);SFX.hot();banner(c.n+" +"+g+" ❤","u");
+    if(c.aff>=100&&!S.partner){S.partner={n:c.n,s:c.s,k:c.k,h:c.h};SFX.rebirth();flash("#ff4fd8",.4);confetti(200,null,null,["#ff4fd8","#ff9ad5","#ffffff","#ffcc33"]);banner("You're dating "+c.n+" ❤","g");rayText(c.n+" will walk with you around town now. Power couple: +5% on every sale and +20 max energy.")}}
+  redraw();updMini()})}
+// your partner follows you around town
+let PT=null;
+function drawPartner(ppl){if(!S.partner||room)return;if(!PT)PT={x:S.px-28,y:S.py+4,ph:0};const tx=S.px-30*Math.cos(S.hd||0),ty=S.py-30*Math.sin(S.hd||0)*.5+6,dx=tx-PT.x,dy=ty-PT.y,d=Math.hypot(dx,dy);
+  const mv=d>6;if(mv){const s=Math.min(d,walkSpeed()/60*1.05);PT.x+=dx/d*s;PT.y+=dy/d*s}PT.ph+=1/60;const p=S.partner;
+  ppl.push([PT.y,()=>{drawPerson(PT.x,PT.y,{shirt:p.s,skin:p.k,hair:p.h,mv,ph:PT.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(PT.x,PT.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore()}])}
+
+/* ================= township district: empty plots that fill with players' houses ================= */
+const TWN={x:1160,y:1690,w:540,h:248};
+const PLOTS=[[1172,1700],[1290,1700],[1462,1700],[1580,1700],[1172,1838],[1290,1838],[1462,1838],[1580,1838]].map(([x,y],i)=>({x,y,w:108,h:92,top:i<4}));
+const inTown=(x,y,m=0)=>x>TWN.x-m&&x<TWN.x+TWN.w+m&&y>TWN.y-m&&y<TWN.y+TWN.h+m;
+// Everyone in the room sorts players by id the same way, so each player lands on the same plot for all
+function townPlayers(){if(!MPW)return[];const L=[{id:MP_ID,me:1,n:mpName(),s:OUTFITS[S.skin||0][1],hm:S.home||0,lv:repLevel()}];
+  if(MP)for(const id in MP.peers){const p=MP.peers[id];L.push({id,n:p.n,s:p.s,hm:p.hm||0,lv:p.lv||0})}
+  return L.sort((a,b)=>a.id<b.id?-1:1).slice(0,PLOTS.length).map((p,i)=>({...p,plot:PLOTS[i]}))}
+const plotDoor=pl=>[pl.x+pl.w/2,pl.top?pl.y+pl.h+4:pl.y-4];
+function drawTownStatic(g,P){
+  g.fillStyle="#7fbf6a";rrp(g,TWN.x,TWN.y,TWN.w,TWN.h,16);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<220;i++)g.fillRect(TWN.x+((i*53)%TWN.w),TWN.y+((i*97)%TWN.h),3,2);
+  g.fillStyle=P.road;g.fillRect(TWN.x+8,1798,TWN.w-16,34);g.fillRect(1418,1664,36,134);g.fillStyle=P.line;for(let x=TWN.x+20;x<TWN.x+TWN.w-20;x+=36)g.fillRect(x,1814,18,3);
+  PLOTS.forEach(pl=>{g.fillStyle="rgba(255,255,255,.12)";rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.fill();g.setLineDash([7,5]);g.strokeStyle="rgba(255,255,255,.7)";g.lineWidth=2;rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.stroke();g.setLineDash([]);
+    const[dx,dy]=plotDoor(pl);g.fillStyle=P.walk;g.fillRect(dx-6,pl.top?pl.y+pl.h:dy,12,pl.top?8:8)});
+  g.save();g.font="800 13px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.textBaseline="middle";g.fillStyle=P.sign;rrp(g,1436-56,1672,112,22,8);g.fill();g.fillStyle=P.ink;g.fillText("TOWNSHIP",1436,1684);g.restore();
+}
+function drawHouse(x,y,w,h,hm,col){
+  const c=ctx,cx=x+w/2,b=y+h-6;c.fillStyle="rgba(0,0,0,.2)";c.fillRect(x+10,b-2,w-14,8);
+  if(hm>=3){c.fillStyle="#7fd6ff";c.fillRect(x+w-30,y+h-26,22,14);c.fillStyle=col;c.fillRect(x+8,y+30,w-16,h-40);c.fillStyle="#2b2f3a";c.beginPath();c.moveTo(x+2,y+34);c.lineTo(cx,y+8);c.lineTo(x+w-2,y+34);c.fill();c.fillStyle="#ffe08a";[x+18,x+w-34].forEach(wx=>c.fillRect(wx,y+44,14,12))}
+  else if(hm===2){c.fillStyle=col;c.fillRect(cx-22,y+6,44,h-12);c.fillStyle="#ffe08a";for(let r=0;r<4;r++){c.fillRect(cx-16,y+14+r*16,10,9);c.fillRect(cx+6,y+14+r*16,10,9)}}
+  else if(hm===1){c.fillStyle=col;c.fillRect(x+16,y+30,w-32,h-40);c.fillStyle="#1b2230";c.fillRect(x+14,y+24,w-28,8);c.fillStyle="#ffe08a";c.fillRect(x+24,y+42,14,14);c.fillRect(x+w-38,y+42,14,14)}
+  else{c.fillStyle=col;c.fillRect(x+22,y+40,w-44,h-50);c.fillStyle="#8a3e22";c.beginPath();c.moveTo(x+14,y+44);c.lineTo(cx,y+18);c.lineTo(x+w-14,y+44);c.fill();c.fillStyle="#ffe08a";c.fillRect(x+28,y+52,10,10);c.fillRect(x+w-38,y+52,10,10)}
+  c.fillStyle="#3b2a20";c.fillRect(cx-6,b-18,12,16);
+}
+function drawTown(){
+  if(!MPW){if(cam.y+vh>TWN.y&&cam.x+vw>TWN.x&&cam.x<TWN.x+TWN.w){ctx.save();ctx.font="700 12px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.fillStyle="rgba(10,14,22,.65)";rr(1436-92,1752,184,24,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText("Online only · sail from the Harbor",1436,1765);ctx.restore()}return}
+  townPlayers().forEach(p=>{const pl=p.plot;drawHouse(pl.x,pl.y,pl.w,pl.h,p.hm,p.s||"#2a3cff");
+    ctx.font="800 11px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.textBaseline="middle";const lab=String(p.n).slice(0,12)+(p.me?" (you)":""),w=ctx.measureText(lab).width+14,ly=pl.top?pl.y+8:pl.y+pl.h-8;
+    ctx.fillStyle=p.me?"rgba(42,60,255,.85)":"rgba(10,14,22,.75)";rr(pl.x+pl.w/2-w/2,ly-9,w,18,8);ctx.fill();ctx.fillStyle="#fff";ctx.fillText(lab,pl.x+pl.w/2,ly)});
+  if(NEARPLOT){const pl=NEARPLOT.plot;ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.lineDashOffset=-wt*20;rr(pl.x-4,pl.y-4,pl.w+8,pl.h+8,10);ctx.stroke();ctx.setLineDash([])}
+}
+let NEARPLOT=null,townSeen={};
+function nearPlot(){if(!MPW)return null;let best=null,bd=60;townPlayers().forEach(p=>{const[dx,dy]=plotDoor(p.plot),d=Math.hypot(S.px-dx,S.py-dy);if(d<bd){bd=d;best=p}});return best}
+function townTick(){if(!MPW)return;const ids=townPlayers().map(p=>p.id);ids.forEach(id=>{if(!townSeen[id]&&id!==MP_ID){const p=MP&&MP.peers[id];if(p)banner(String(p.n).slice(0,14)+"'s house appeared","u")}townSeen[id]=1});for(const id in townSeen)if(!ids.includes(id))delete townSeen[id]}
+function openPlot(p){room="house";$("room").hidden=false;$("room").style.setProperty("--pc",p.s||"#2a3cff");SFX.door();visitHouse(p,()=>{closeRoom()});renderHud()}
 
 /* ================= title ================= */
 function title(){
