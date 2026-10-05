@@ -25,7 +25,7 @@ for where everything sits in Studio.
 |---|---|
 | `Muscles` | 18 muscles in 6 groups (Chest, Shoulders, Back, Arms, Legs, Core), XP curve |
 | `Machines` | the 8 starter + 11 pro machines, muscles trained, weight tiers (cost, unlock level, coins/rep, plates) |
-| `Gains` | XP per rep formula: base 7 × tier × genetics × spurt bonus × balance bonus, capped ×5, diminishing at high level; 0.4s rep cooldown |
+| `Gains` | XP per rep formula: base 22 × tier × genetics × spurt bonus × balance bonus, capped ×5, diminishing at high level; 0.4s rep cooldown |
 | `Stamina` | max 100, regen 20/s after 1.2s rest; recovery stations, Energy Shakes, the gym cat |
 | `Genetics` | grade odds and multipliers (D 0.75× … S 1.5×), frames, body types |
 | `GrowthSpurts` | height, required level and bonus per spurt |

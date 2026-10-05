@@ -58,6 +58,43 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## 2. Growth Spurt pacing: first spurt in ~18-19 minutes (2026-10-05) ✅ (simulated, `tests/pacing.luau`)
+
+**The goal** (brief): a new player's first Growth Spurt in 15-20 minutes. First spurt = all 6 groups at level 50
+(average of the muscles the starter gym trains; Calves/Obliques open with the pro gym). Level cap before it = 50.
+
+**The math the simulation runs** (the real config modules, not a copy):
+- XP per rep for each muscle = `BaseXp × tier.gains × share × min(genetics × spurt bonus × balanced bonus, 5) ×
+  1 / (1 + level / 50)`. A new player has spurt bonus 1 (Growth Spurt 0).
+- XP to go from level L to L+1 = `6 + L`, so 0 → 50 = 1,525 XP per muscle; 16 trainable muscles.
+- A rep takes 1.05 s (0.6 lower + 0.35 press + 0.1 hold). Stamina 100, 4-6 per rep, so a set is ~17-25 reps, then
+  1.2 s delay + refill at 20/s (~6 s rest).
+- Weight tiers: bought as soon as the main muscle's level and the player's coins allow; coins come only from reps
+  (the sim ignores Coach Dex quest rewards, the daily streak and re-racking, so real players are a bit faster).
+- The player trains the machine that helps most with the groups still under 50 (low muscles count more), stays on it
+  while it's at least 75% as good as the best one, and walks 8 s to switch. Plus 3 minutes of menu, genetics reveal
+  and tutorial lines.
+
+**Before:** median **45 minutes** (200 random genetics rolls), every group finishing between 37 and 46 minutes, so
+no single bottleneck: XP was ~3x too slow, and coins held back the weight tiers (with unlimited coins the same XP
+was ~40% faster). The start-at-Growth-Spurt-0 fix (earlier today) had also removed a x1.25 bonus new players got by
+mistake.
+
+**Changes**
+- `Gains.BaseXp` 7 → **22**.
+- Coins per rep doubled at the low tiers: 2, 2, 3, 3, 4, 5, 6, 7 (was 1, 1, 2, 2, 3, 3, 4, 5).
+- Early weight tiers cheaper: 10, 25, 50, 90, 160 coins (was 15, 40, 90, 175, 300); the last two (500, 800) unchanged.
+
+**After:** median **18.6 min**; 90% of players between 17.3 and 19.8 min. By overall grade: A 18.0, B 18.7, C 19.6,
+D ~19 (rare). Run `lune run tests/pacing` to see it; it fails if the median leaves 15-20 minutes.
+
+**Assumptions / needs you**
+- Everything else scales with BaseXp too, so later spurts (and the pro gym) are also ~3x faster than before. Later
+  spurts still take longer each time (higher levels, diminishing returns); tell me if you want them slower.
+- Coins: shakes (25) and DNA tokens are relatively cheaper now since players earn about twice as many coins early.
+
+---
+
 ## 2. Launch readiness, part 1 (2026-10-05) 🟡 (in progress; stopped at the usage limit)
 
 **Security (done)**: new `Server/Guard` module.
