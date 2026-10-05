@@ -58,6 +58,21 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## 2. Analytics: onboarding funnel (2026-10-05) ✅ (code; needs a live server to show data)
+
+**Built** (`Server/Analytics`, hooked in `ActionService`)
+- Roblox **AnalyticsService onboarding funnel**, 13 steps in order: 1 Joined, 2 Genetics kept, 3-11 one per tutorial
+  step ("Tutorial: GoBench" ... "Tutorial: Goal", logged when the player reaches it), 12 Tutorial done,
+  13 First Growth Spurt. Plus a custom event **FirstGrowthSpurt** whose value is the minutes since first join.
+- Only players who haven't finished onboarding are in the funnel; each step is sent once (Roblox also counts each
+  funnel step once per player). All calls are protected, so analytics can never break gameplay.
+- Steps come from `Config/Onboarding`, so adding a tutorial step adds a funnel step automatically.
+
+**How to see it:** Creator Hub → your experience → Analytics → Onboarding funnel (data appears from live servers,
+not Studio, usually within a day).
+
+---
+
 ## 2. Growth Spurt pacing: first spurt in ~18-19 minutes (2026-10-05) ✅ (simulated, `tests/pacing.luau`)
 
 **The goal** (brief): a new player's first Growth Spurt in 15-20 minutes. First spurt = all 6 groups at level 50

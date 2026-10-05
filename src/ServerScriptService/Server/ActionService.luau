@@ -6,6 +6,7 @@ local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
+local Analytics = require(script.Parent.Analytics)
 local BodyService = require(script.Parent.BodyService)
 local TitleService = require(script.Parent.TitleService)
 local Titles = require(Config.Titles)
@@ -19,6 +20,7 @@ local handlers = {}
 handlers.GrowthSpurt = function(player)
 	if PlayerData.GrowthSpurt(player) then
 		local data = PlayerData.Get(player)
+		Analytics.GrowthSpurt(player, data)
 		BodyService.Rebuild(player)
 		TitleService.Check(player)
 		Remotes.PlayerEvent:FireClient(player, "GrowthSpurt", {
@@ -46,11 +48,13 @@ end
 -- The player has seen their genetics reveal (first join).
 handlers.GeneticsSeen = function(player)
 	PlayerData.SetFlag(player, "geneticsRevealed", true)
+	Analytics.GeneticsKept(player)
 end
 
 -- Tutorial: the client reports the step it reached (validated in PlayerData).
 handlers.TutorialStep = function(player, step)
 	if PlayerData.SetTutorialStep(player, step) then
+		Analytics.TutorialStep(player, step)
 		-- a step's gift (e.g. the free shake) is given once, when the step is reached
 		local def = Onboarding.Steps[step]
 		if def and def.gift and def.gift.shakes then
@@ -72,6 +76,7 @@ function ActionService.Register(action, handler)
 end
 
 function ActionService.Start()
+	PlayerData.Loaded:Connect(Analytics.Joined) -- onboarding funnel (new players only)
 	-- menus, settings, tutorial steps, shakes: plenty for a real player, not for a spam script
 	Guard.Remote(Remotes.PlayerAction, "PlayerAction", 8, 15, function(player, action, arg)
 		local handler = type(action) == "string" and handlers[action]
