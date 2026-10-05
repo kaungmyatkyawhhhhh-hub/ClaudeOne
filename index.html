@@ -517,6 +517,12 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .wquick button{padding:11px 8px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow);font-family:var(--mono);font-size:.74rem;font-weight:700}
 .wquick button.on{box-shadow:inset 0 0 0 2px var(--pc,var(--accent)),var(--shadow)}
 .wquick #wMax{background:linear-gradient(135deg,#ff7a3d,#e2364a);color:#fff}
+.psall{justify-content:center!important;background:linear-gradient(135deg,#ffd34d,#f5a300)!important;color:#1b1400!important;box-shadow:none!important;font-size:.9rem!important;padding:13px!important}
+.pgot{display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow-y:auto}
+.pgot div{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.pgot div.r1{box-shadow:inset 0 0 0 2px #3b82f6}.pgot div.r2{box-shadow:inset 0 0 0 2px #a855f7}.pgot div.r3{box-shadow:inset 0 0 0 2px #f5b301;background:color-mix(in oklab,#f5b301 12%,var(--bg))}
+.pgot .rl{font-family:var(--mono);font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.pgot b{font-size:.86rem}.pgot em{font-style:normal;font-family:var(--mono);font-weight:700;color:var(--up)}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -2349,12 +2355,26 @@ function levelCheck(){
 }
 function renderLvlBtn(){const b=$("lvlBtn");if(!b||!S)return;const on=S.picks>0&&$("perkSheet").hidden;b.hidden=!on;if(on)$("lvlN").textContent=S.picks}
 function closePerkSheet(){const sh=$("perkSheet");sh.hidden=true;sh.innerHTML="";S.pickNew=0;dirty=true;renderLvlBtn()}
+function makeOffer(){return PERK_POOL().sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=[1,2,3,5][t],cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}})}
+// Use every waiting pick at once: each one takes a random card from its own set of 3
+function collectAllPerks(){
+  const n=S.picks||0;if(n<=0)return;const got={};let best=0;S.perks=S.perks||{};
+  for(let i=0;i<n;i++){const offer=i===0&&S.offer&&S.offer.length===3?S.offer:makeOffer(),c=pick(offer);S.perks[c.k]=(S.perks[c.k]||0)+c.m;best=Math.max(best,c.rt);
+    const g=got[c.k]||(got[c.k]={t:c.t,m:0,rt:0});g.m+=c.m;g.rt=Math.max(g.rt,c.rt)}
+  S.picks=0;S.offer=null;S.pickNew=0;dirty=true;
+  const o=$("perkSheet"),list=Object.values(got).sort((a,b)=>b.rt-a.rt||b.m-a.m);
+  o.innerHTML=`<div class="pshead"><div><small>${n} PERK${n>1?"S":""} COLLECTED · RANDOM PICKS</small><b>Perks added</b></div><button class="psx" id="psClose" aria-label="Close">✕</button></div>
+    <div class="pgot">${list.map(g=>`<div class="r${g.rt}"><span class="rl" style="color:${RAR[g.rt].c}">${RAR[g.rt].n}</span><b>${g.t}</b><em>+${g.m}</em></div>`).join("")}</div>
+    <button class="cta" id="psDone" style="justify-content:center">Nice</button>`;
+  $("psClose").onclick=$("psDone").onclick=()=>{closePerkSheet();renderHud();bKey=""};
+  const c=elC(o)||[fxW/2,fxH*.7];SFX.crit(Math.max(1,best));buzz([30,30,60]);sparks(c[0],c[1],RAR[best].c,30+best*15,1.2+best*.3);confetti(60+best*60+Math.min(100,n*8));if(best>=2){flash(RAR[best].c,.35);shake(4*best,.4)}banner(n+" perks collected","a");renderLvlBtn();
+}
 function showPerkPick(){
-  const valid=S.offer&&S.offer.length===3&&S.offer.every(c=>PERK_POOL().some(x=>x.k===c.k));const pool=valid?S.offer:S.offer=PERK_POOL().sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=[1,2,3,5][t],cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}}),o=$("perkSheet");o.hidden=false;renderLvlBtn();if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
+  const valid=S.offer&&S.offer.length===3&&S.offer.every(c=>PERK_POOL().some(x=>x.k===c.k));const pool=valid?S.offer:S.offer=makeOffer(),o=$("perkSheet");o.hidden=false;renderLvlBtn();if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
   o.innerHTML=`<div class="pshead"><div><small>LEVEL ${repLevel()} · PICK A PERK${S.picks>1?" · "+S.picks+" TO PICK":""}</small><b>Level up</b></div><button class="psx" id="psClose" aria-label="Later">✕</button></div>
     <div class="pcards">${pool.map((c,i)=>`<button class="pcard r${c.rt}" data-pc="${i}"><span class="rl" style="color:${RAR[c.rt].c}">${RAR[c.rt].n}${c.m>1?" ×"+c.m:""}</span><b>${c.t}</b><span>${c.d}</span><span class="pn">${pk(c.k)?"Lv "+(pk(c.k)+c.m):"New"}</span></button>`).join("")}</div>
-    <p class="fine">Close it to pick later. Tap the gold star any time.</p>`;
-  $("psClose").onclick=closePerkSheet;
+    ${S.picks>1?`<button class="cta ghost psall" id="psAll">Collect all ${S.picks} · random picks</button>`:""}<p class="fine">Close it to pick later. Tap the gold star any time.</p>`;
+  $("psClose").onclick=closePerkSheet;const pa=$("psAll");if(pa)pa.onclick=collectAllPerks;
   o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};S.perks[c.k]=(S.perks[c.k]||0)+c.m;S.picks--;dirty=true;SFX.level();buzz(15);const bc=elC(b);if(bc)sparks(bc[0],bc[1],RAR[c.rt].c,20+c.rt*15,1+c.rt*.3);if(c.rt>=2){confetti(60*c.rt);shake(4*c.rt)}banner(c.rt?RAR[c.rt].n+" "+c.t:c.t,"a");S.offer=null;closePerkSheet();if(S.picks>0){S.pickNew=1;setTimeout(()=>{if(!room)showPerkPick()},450)}renderHud();bKey=""});
 }
 /* ---------- market (the reselling floor) ---------- */
