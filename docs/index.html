@@ -2005,7 +2005,7 @@ function feedInit(){
   return F.init;
 }
 const symK=sym=>Object.keys(F.sym).find(k=>F.sym[k]===sym);
-function onPrice(k,p,o){if(!k||!isFinite(p))return;const q=F.px[k]||{};q.p=p;if(o!=null&&isFinite(o))q.o=o;F.px[k]=q;checkLiq(k);F.dirty=true}
+function onPrice(k,p,o){if(!k||!isFinite(p))return;F.lastMsg=Date.now();const q=F.px[k]||{};q.p=p;if(o!=null&&isFinite(o))q.o=o;F.px[k]=q;checkLiq(k);F.dirty=true}
 function onKline(t,o,h,l,c){const a=F.candles;if(!a.length)return;const last=a[a.length-1];if(t===last.t)Object.assign(last,{o,h,l,c});else if(t>last.t){a.push({t,o,h,l,c});if(a.length>120)a.shift()}F.dirty=true}
 function openPriceWS(){
   try{if(F.ws)F.ws.close()}catch(e){}
@@ -2037,6 +2037,18 @@ async function loadCandles(){
   try{const c=await REST[F.src](F.sym[k],tf,90);if(F.sel===k&&F.tf===tf){F.candles=c;F.dirty=true}}catch(e){}
   subKline();
 }
+// Phones drop websockets silently (app switch, lock screen, flaky network).
+// If the stream goes quiet, poll prices over REST and reconnect the stream.
+let feedPollT=0;
+function feedWatch(dt){
+  if(!F.src||F.src==="sim"||!Object.keys(F.sym).length)return;
+  const quiet=Date.now()-(F.lastMsg||0);feedPollT-=dt;
+  if(quiet>6000&&feedPollT<=0){feedPollT=4;
+    Object.entries(F.sym).forEach(([k,sym])=>REST[F.src](sym,"1m",2).then(c=>{const l=c[c.length-1];if(l){const q=F.px[k]||{};q.p=l.c;F.px[k]=q;checkLiq(k);F.dirty=true}}).catch(()=>{}));
+    if(room==="trade"&&F.candles.length)REST[F.src](F.sym[F.sel],F.tf,2).then(c=>c.forEach(x=>onKline(x.t,x.o,x.h,x.l,x.c))).catch(()=>{});
+    if(quiet>15000&&(!F.reT||Date.now()-F.reT>15000)){F.reT=Date.now();openPriceWS();if(room==="trade")subKline()}}
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&F.src&&F.src!=="sim"){F.lastMsg=0;feedPollT=0;F.reT=0}});
 function simTick(dt){
   if(F.src!=="sim")return;F.simT+=dt;if(F.simT<1)return;F.simT=0;
   TSYMS.forEach(t=>{const q=F.px[t.k];q.p*=1+rnd(-1,1)*.0012;checkLiq(t.k)});
@@ -2051,7 +2063,7 @@ function checkLiq(k){const ps=S&&S.pos&&S.pos[k],p=(F.px[k]||{}).p;if(!ps||!p)re
 function openPos(side,el){
   const k=F.sel,p=(F.px[k]||{}).p;if(!p){floatAt(el,"Waiting for price…","var(--down)");return}
   if(S.pos[k]){floatAt(el,"Close your "+k+" trade first","var(--down)");return}
-  const m=Math.floor(S.cash*T.mp);if(m<5){floatAt(el,"Need at least $5","var(--down)");SFX.nope();return}
+  const m=Math.floor(S.cash*T.mp/(1+T.lev*FEE_())*.999);if(m<5){floatAt(el,"Need at least $5","var(--down)");SFX.nope();return}
   if(!spend(2,el))return;
   const fee=m*T.lev*FEE_();if(m+fee>S.cash){floatAt(el,"Not enough cash for fees","var(--down)");return}
   S.cash-=m+fee;S.pos[k]={side,lev:T.lev,m,entry:p,qty:m*T.lev/p,t:Date.now(),tp:T.tp,sl:T.sl};dirty=true;
@@ -2715,7 +2727,7 @@ function loop(now){
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();
-      simTick(dt);tradeTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
+      simTick(dt);feedWatch(dt);tradeTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderLvlBtn()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
