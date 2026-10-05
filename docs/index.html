@@ -334,6 +334,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .gramfeed{display:flex;flex-direction:column;gap:8px}.gpost{display:flex;gap:10px;align-items:center;background:var(--surface);border-radius:14px;padding:8px;box-shadow:inset 0 0 0 1px var(--line)}.gpost svg{width:64px;height:64px;border-radius:10px;flex:none}.gpost b{font-size:.86rem}.gpost small{display:block;font:700 .74rem var(--mono);color:#e2364a}
 .garprev{border-radius:16px;overflow:hidden;margin-bottom:8px}.garprev canvas{display:block;width:100%;height:auto}.garrow{cursor:default}.pmbtns .swc{width:26px;height:26px;padding:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.15)}.pmbtns .swc.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
 .expart{border-radius:20px;padding:20px;text-align:center;color:#fff;background:linear-gradient(135deg,var(--ec),color-mix(in oklab,var(--ec) 50%,#141824))}.expart span{font-size:3.4rem;display:block}.expart b{display:block;font:900 1.3rem var(--display)}.expart small{font:700 .8rem var(--mono);opacity:.9}
+.swrow{display:flex;flex-wrap:wrap;gap:8px}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -1275,7 +1276,10 @@ function drawPerson0(x,y,o){
   if(AC.c||AC.b==="pack")accChest(c,AC.c,AC.b,x,y+b,hx);
   if(o.pose){drawPose(c,x,y+b,s,o);c.strokeStyle="rgba(0,0,0,.18)";c.lineWidth=1;c.lineCap="butt"}
   c.fillStyle=o.skin;c.beginPath();c.arc(x,y-37+b,9.5,0,7);c.fill();c.stroke();
-  c.fillStyle=o.hair;c.beginPath();c.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);c.fill();
+  {const hs=o.hs||0;c.fillStyle=o.hair;if(hs===1){c.beginPath();c.arc(x,y-39+b,9.8,Math.PI*1.02,Math.PI*1.98);c.fill();c.fillRect(x-9.8,y-40+b,3.4,12);c.fillRect(x+6.4,y-40+b,3.4,12)}
+    else if(hs===2){c.beginPath();c.moveTo(x-3,y-46+b);[-2,0,2].forEach((d,i)=>{c.lineTo(x+d*1.6-1,y-53+b-(i===1?2:0));c.lineTo(x+d*1.6+1,y-46+b)});c.lineTo(x+3,y-46+b);c.closePath();c.fill();c.fillRect(x-3,y-47+b,6,3)}
+    else if(hs===3){c.beginPath();c.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);c.fill();c.beginPath();c.arc(x,y-50+b,4.2,0,7);c.fill()}
+    else if(hs!==4){c.beginPath();c.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);c.fill()}}
   c.fillStyle="#1b1d22";c.fillRect(x-4,y-37+b,2,2.4);c.fillRect(x+2,y-37+b,2,2.4);if(AC.g)accGlasses(c,AC.g,x,y-37+b);if(AC.h){accHat(c,AC.h,x,y-37+b);o={...o,crown:0}}
   if(o.crown){c.fillStyle="#ffcc33";c.beginPath();c.moveTo(x-8,y-45+b);c.lineTo(x-8,y-53+b);c.lineTo(x-4,y-48+b);c.lineTo(x,y-55+b);c.lineTo(x+4,y-48+b);c.lineTo(x+8,y-53+b);c.lineTo(x+8,y-45+b);c.closePath();c.fill()}
   if(o.you){c.fillStyle="#2a3cff";c.beginPath();c.moveTo(x-6,y-60+b);c.lineTo(x+6,y-60+b);c.lineTo(x,y-52+b);c.closePath();c.fill()}
@@ -1338,7 +1342,7 @@ function drawWorld(){
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
+  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   mpPeople(ppl);drawPartner(ppl);drawPet(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   mpTags();
@@ -1885,7 +1889,7 @@ function gymDraw(){
     if(work&&Math.sin(n.ph*.7)>0){const up=Math.abs(Math.sin(n.ph*3));c.fillStyle="#1b1d22";c.fillRect(n.x+10*n.size,n.y-22-up*10,8,3);c.fillStyle="#5b6272";c.fillRect(n.x+9*n.size,n.y-23-up*10,2,5);c.fillRect(n.x+16*n.size,n.y-23-up*10,2,5)}}]);
   const sz=bodyK()+(pumped()?.06:0);
   ppl.push([GS.py,()=>{if(F){c.fillStyle="rgba(255,255,255,.08)";c.beginPath();c.ellipse(GS.px,GS.py+1,26,9,0,0,7);c.fill()}
-    drawPerson(GS.px,GS.py,{acc:myAcc(),g:c,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:GS.mv,ph:GS.ph,you:!F,size:sz,pose:GS.poseT>0?GS.pose:GS.curlT>0?(Math.sin(GS.ph*10)>0?"bi":null):null})}]);
+    drawPerson(GS.px,GS.py,{acc:myAcc(),g:c,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),mv:GS.mv,ph:GS.ph,you:!F,size:sz,pose:GS.poseT>0?GS.pose:GS.curlT>0?(Math.sin(GS.ph*10)>0?"bi":null):null})}]);
   peersIn(c,ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   if(F&&F.T){[160,200,240].forEach((x,i)=>drawPerson(x,392,{g:c,shirt:"#1b1f2a",skin:G_SKINS[i+1],hair:G_HAIRS[i],size:.95,legs:"#1b1d22"}));c.fillStyle="#2b2f3a";rrp(c,136,384,128,18,4);c.fill();c.fillStyle="#454b5a";c.fillRect(136,384,128,3);c.fillStyle="#fff";[160,200,240].forEach(x=>c.fillRect(x-7,389,14,9));c.font="800 8px "+getComputedStyle(root).getPropertyValue("--mono");c.textAlign="center";c.fillStyle="#9aa3b3";c.fillText("JUDGES",200,412)}
@@ -1911,7 +1915,7 @@ function openHome(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
       <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
-      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button></div>
+      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button><button class="bigbtn alt" id="lookBtn">Wardrobe<small>Skin and hair</small></button></div>
       ${dailyCard()}${missCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -1934,7 +1938,7 @@ function openHome(){
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});bindMiss(draw);
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});bindMiss(draw);
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
@@ -1980,9 +1984,9 @@ let A=null;
 const betOf=o=>Math.round(o.bet*(1+SC()));
 function armsSVG(o){return `<svg viewBox="0 0 400 210" aria-hidden="true"><rect width="400" height="210" fill="var(--sunk)"/>
   <rect x="60" y="150" width="280" height="22" rx="6" fill="#8a6a4a"/><rect x="80" y="172" width="12" height="38" fill="#6e5238"/><rect x="308" y="172" width="12" height="38" fill="#6e5238"/>
-  <circle cx="70" cy="128" r="30" fill="#2a3cff"/><circle cx="70" cy="86" r="22" fill="#e8b896"/><path d="M48 80a22 22 0 0 1 44 0" fill="#3b2a20"/>
+  <circle cx="70" cy="128" r="30" fill="#2a3cff"/><circle cx="70" cy="86" r="22" fill="${mySkin()}"/><path d="M48 80a22 22 0 0 1 44 0" fill="${myHair()}"/>
   <circle cx="330" cy="128" r="30" fill="${o.look[2]}"/><circle cx="330" cy="86" r="22" fill="${o.look[0]}"/><path d="M308 80a22 22 0 0 1 44 0" fill="${o.look[1]}"/>
-  <line id="armL" x1="150" y1="158" x2="200" y2="70" stroke="#e8b896" stroke-width="24" stroke-linecap="round"/><line id="armR" x1="250" y1="158" x2="200" y2="70" stroke="${o.look[0]}" stroke-width="24" stroke-linecap="round"/>
+  <line id="armL" x1="150" y1="158" x2="200" y2="70" stroke="${mySkin()}" stroke-width="24" stroke-linecap="round"/><line id="armR" x1="250" y1="158" x2="200" y2="70" stroke="${o.look[0]}" stroke-width="24" stroke-linecap="round"/>
   <circle id="fist" cx="200" cy="70" r="17" fill="#d9a07a" stroke="rgba(0,0,0,.2)"/>
   <text x="70" y="200" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="13" fill="var(--ink)">YOU ${S.pr}KG</text><text x="330" y="200" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="13" fill="var(--ink)">${o.kg}KG</text></svg>`}
 function openArena(){
@@ -3141,7 +3145,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild();return{n:mpName(),x:Math.round(S.px),y:Math.round(S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),rd:ride()||0,pt:S.paint||0,cm:S.cmod||0,ls:plistState(),ac:S.acc||0,pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild();return{n:mpName(),x:Math.round(S.px),y:Math.round(S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cm:S.cmod||0,ls:plistState(),ac:S.acc||0,pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -3149,7 +3153,7 @@ function mpTick(dt){
   if(gone){renderMpChip();mpRefresh()}
   mpRoomTick()
 }
-function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cm)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cm);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:"#e8b896",hair:"#3b2a20",mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
+function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cm)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cm);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
 function bubble(x,y,txt,col){ctx.font="700 12px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.textBaseline="middle";const w=Math.min(220,ctx.measureText(txt).width+18);ctx.fillStyle=col||"rgba(255,255,255,.96)";rr(x-w/2,y-13,w,26,11);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y+12);ctx.lineTo(x+5,y+12);ctx.lineTo(x,y+18);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(txt.length>34?txt.slice(0,33)+"…":txt,x,y+1)}
 function mpTags(){
   if(myBub)bubble(S.px,S.py-70*tallK(),myBub.txt);
@@ -3751,7 +3755,7 @@ function openBoutique(back){S.accOwn=S.accOwn||{};S.acc=S.acc||{};
       <div class="note">Wear one item per slot. Everything you wear adds a little <b>rizz</b> (now +${accRizz()}) and friends see it in the Online Town.</div>
       ${Object.entries(ACC_SLOT).map(([sl,nm])=>`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${ACCS.filter(a=>a.s===sl).map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&S.cash<a.cost?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.d||"+"+a.rz+" rizz"}</span><span class="c">${on?"Take off":own?"Wear":fmt(a.cost)}</span></button>`}).join("")}</div>`).join("")}</div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-    const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
+    const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
     $("room").querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acc);if(!S.accOwn[a.k]){if(S.cash<a.cost)return;S.cash-=a.cost;S.accOwn[a.k]=1;SFX.buy();confetti(40);banner(a.n+" bought","g")}
       if(S.acc[a.s]===a.k)delete S.acc[a.s];else S.acc[a.s]=a.k;dirty=true;SFX.tick(.6);draw();updMini()})};draw()}
 
@@ -4262,6 +4266,22 @@ function expEnd(c,E){XP.done=true;S.expD[XP.k]=dayKey();S.stats.exps=(S.stats.ex
   $("room").innerHTML=`<div class="room-in">${roomHead(E[0])}<div class="shend"><b>${E[1]}</b><span>${"★".repeat(h)}${"☆".repeat(3-h)}</span></div><div class="note">${h===3?"Perfect! ":h?"":"Tough luck. "}${txt}</div><button class="bigbtn" id="xDone">Back to ${c.n}<small>Come back tomorrow for another go</small></button></div>`;
   if(h===3){confetti(150);SFX.grail()}else{confetti(40);SFX.level()}banner(E[0]+": "+txt,"g");$("xDone").onclick=$("leaveBtn").onclick=back;updMini()}
 
+/* ================= wardrobe: skin tone and hair ================= */
+const SKINS=["#f6d5bd","#e8b896","#d9a77c","#c98e62","#a8714a","#7a4f33"],HAIRS=["#3b2a20","#141414","#7a4a26","#c9963f","#e8d27a","#b5552b","#cfd6e4","#ff4fd8"];
+const HSTY=["Short","Long","Mohawk","Bun","Bald"],myHs=()=>(S&&S.look&&S.look.hs)||0;
+const mySkin=()=>SKINS[(S&&S.look&&S.look.sk!=null)?S.look.sk:1],myHair=()=>HAIRS[(S&&S.look&&S.look.hr)||0];
+function openWardrobe(back){S.look=S.look||{sk:1,hr:0};
+  const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Wardrobe")}<div class="art bqart"><canvas id="wdCv" width="300" height="240"></canvas></div>
+    <div class="sechead"><h3>Skin tone</h3></div><div class="swrow">${SKINS.map((c,i)=>`<button class="sw big${S.look.sk===i?" on":""}" data-sk="${i}" style="background:${c}"></button>`).join("")}</div>
+    <div class="sechead"><h3>Hair</h3></div><div class="swrow">${HAIRS.map((c,i)=>`<button class="sw big${S.look.hr===i?" on":""}" data-hr="${i}" style="background:${c}"></button>`).join("")}</div>
+    <div class="sechead"><h3>Hairstyle</h3></div><div class="lbtabs">${HSTY.map((n,i)=>`<button class="${myHs()===i?"on":""}" data-hs="${i}">${n}</button>`).join("")}</div>
+    <p class="fine">Free to change any time. Friends see your look in the Online Town. Shirts are below on the Home screen; hats and more are in the Boutique.</p></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    const cv=$("wdCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
+    $("room").querySelectorAll("[data-sk]").forEach(b=>b.onclick=()=>{S.look.sk=+b.dataset.sk;dirty=true;SFX.tick(.5);draw()});
+    $("room").querySelectorAll("[data-hr]").forEach(b=>b.onclick=()=>{S.look.hr=+b.dataset.hr;dirty=true;SFX.tick(.5);draw()});
+    $("room").querySelectorAll("[data-hs]").forEach(b=>b.onclick=()=>{S.look.hs=+b.dataset.hs;dirty=true;SFX.tick(.5);draw()})};draw()}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4291,7 +4311,7 @@ function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>i
   if(room==="arena"&&(!A||A.state==="done"&&!A.pvp)&&ARENA_LIST){const k=peersHere().map(([id])=>id).join()+"|"+(MP.awAsk?MP.awAsk.f:"")+"|"+(MP.awOut||"");if(k!==arenaKey){arenaKey=k;if(!A)ARENA_LIST()}}}
 // your friends walk around inside with you; their partners tag along in town
 function peersIn(c,ppl){peersHere().forEach(([id,p])=>{if(!p.i||p.ix==null)return;const pose=p.i[3]==="d"?(Math.sin(wt*4)>0?"bi":"abs"):(p.i[3]||null);
-  ppl.push([p.iy,()=>{drawPerson(p.ix,p.iy,{acc:p.ac||null,g:c,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null,shirt:p.s||"#2a3cff",skin:"#e8b896",hair:"#3b2a20",mv:!!p.i[2],ph:p.ph,crown:(p.k||0)>=5,pose,bob:p.i[3]==="d"?Math.abs(Math.sin(wt*9))*5:0});
+  ppl.push([p.iy,()=>{drawPerson(p.ix,p.iy,{acc:p.ac||null,g:c,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,mv:!!p.i[2],ph:p.ph,crown:(p.k||0)>=5,pose,bob:p.i[3]==="d"?Math.abs(Math.sin(wt*9))*5:0});
     c.font="800 10px "+getComputedStyle(root).getPropertyValue("--body");c.textAlign="center";c.textBaseline="middle";const lab=String(p.n||"?").slice(0,12),w=c.measureText(lab).width+12,top=p.iy-56*(p.t||1);
     c.fillStyle="rgba(10,14,22,.78)";rrp(c,p.ix-w/2,top-8,w,16,7);c.fill();c.fillStyle="#2fd28a";c.fillText(lab,p.ix,top);if(p.bubT>0&&p.bub){c.fillStyle="rgba(255,255,255,.95)";const bw=Math.min(180,c.measureText(p.bub).width+14);rrp(c,p.ix-bw/2,top-30,bw,18,8);c.fill();c.fillStyle="#141824";c.fillText(p.bub.slice(0,28),p.ix,top-21)}}])})}
 function peerPartner(p,ppl){if(!p.pa)return;if(!p.pt)p.pt={x:p.dx-28,y:p.dy+4,ph:0};const q=p.pt,h=p.h||0,tx=p.dx-30*Math.cos(h),ty=p.dy-30*Math.sin(h)*.5+6,dx=tx-q.x,dy=ty-q.y,d=Math.hypot(dx,dy),mv=d>6;
@@ -4550,7 +4570,7 @@ function clubDraw(){
     if(n.single&&!n.done){const y=n.y-58-Math.sin(wt*4)*2;c.fillStyle="#ff4fd8";c.save();c.translate(n.x,y);c.beginPath();c.moveTo(0,5);c.bezierCurveTo(-9,-2,-5,-10,0,-5);c.bezierCurveTo(5,-10,9,-2,0,5);c.fill();c.restore()}}]);
   ppl.push([150,()=>drawPerson(200,150,{g:c,shirt:"#1b1f2a",skin:G_SKINS[3],hair:"#1b1d22",bob:Math.abs(Math.sin(wt*8))*3,legs:"#1b1d22"})]);
   ppl.push([330,()=>drawPerson(36,330,{g:c,shirt:"#f2f2f2",skin:G_SKINS[1],hair:G_HAIRS[2],legs:"#1b1d22"})]);
-  ppl.push([CS.py,()=>{const dance=CS.danceT>0;drawPerson(CS.px,CS.py,{acc:myAcc(),g:c,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:CS.mv,ph:CS.ph,you:true,crown:(S.skin||0)>=5,bob:dance?Math.abs(Math.sin(wt*9))*5:0,pose:dance?(Math.sin(wt*4)>0?"bi":"abs"):null})}]);
+  ppl.push([CS.py,()=>{const dance=CS.danceT>0;drawPerson(CS.px,CS.py,{acc:myAcc(),g:c,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),mv:CS.mv,ph:CS.ph,you:true,crown:(S.skin||0)>=5,bob:dance?Math.abs(Math.sin(wt*9))*5:0,pose:dance?(Math.sin(wt*4)>0?"bi":"abs"):null})}]);
   peersIn(c,ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   if(CS.near){c.strokeStyle="rgba(255,255,255,.5)";c.lineWidth=2;c.setLineDash([6,5]);c.lineDashOffset=-wt*16;c.beginPath();c.ellipse(CS.near.x,CS.near.y+4,36,14,0,0,7);c.stroke();c.setLineDash([])}
