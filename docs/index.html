@@ -896,14 +896,14 @@ const SC=()=>Math.floor(repLevel()/5);
 const pk=k=>(S.perks&&S.perks[k])||0;
 const PCAP={sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3};
 const pcap=k=>PCAP[k]||30;
-const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver())*(1+.1*emp("ai"))*(S&&S.partner?1.05:1);
+const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver())*(1+.1*emp("ai"))*(S&&S.partner?(S.partner.married?1.1:1.05):1);
 // Stacked bonuses have diminishing returns past x2, so money can't run away
 const capM=m=>m<=3?m:3+Math.log2(m/3)*2.6;
 const moonK=()=>emp("moon")?2:1;
 const mult=()=>capM(rawMult())*moonK();
 let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
 const feeNow=()=>WT;
-const maxEnergyFor=str=>Math.round(15*petK("pug"))+100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy")+(S&&S.partner?20:0);
+const maxEnergyFor=str=>Math.round(15*petK("pug"))+100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy")+(S&&S.partner?(S.partner.married?40:20):0);
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
 const STR_TIERS=[[20,"Twig"],[40,"Average"],[60,"Fit"],[90,"Strong"],[130,"Beast"],[180,"Titan"],[250,"Legend"]];
@@ -969,6 +969,7 @@ const ACH=[
  ["gpwin","Champion","Win the Monte Carlo Grand Prix",()=>(S.stats.gpWins||0)>=1,2e6],
  ["traveller","World traveller","Get every passport stamp",()=>COUNTRIES.every(c=>(S.visited||{})[c.k]),1e7],
  ["influencer","Influencer","Get 1M likes on FlipGram",()=>((S.gram||{}).likes||0)>=1e6,3e6],
+ ["married","Just married","Marry your partner",()=>(S.stats.weddings||0)>=1,500000],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -4152,10 +4153,11 @@ const GRAM=[
  {k:"travel",n:"Travel post",ok:()=>Object.keys(S.visited||{}).length>0,q:1.6,cap:["Wish you were here ✈️","Passport getting full","New city who dis"]},
  {k:"biz",n:"Business opening",ok:()=>(S.biz||[]).length>0,q:1.5,cap:["Grand opening! 🎉","Come through","Hiring now"]},
  {k:"casino",n:"Casino win",ok:()=>(S.stats.casinoBig||0)>=1e6,q:1.7,cap:["House lost tonight 🎰","Lucky night","All in"]},
+ {k:"wedding",n:"Wedding photo",ok:()=>!!(S.partner&&S.partner.married),q:2.2,cap:["Just married 💍","Best day ever","Forever starts now"]},
  {k:"space",n:"Space selfie",ok:()=>(S.stats.orbits||0)>0,q:2.5,cap:["Hi from orbit 🚀","Earth looks small","Moon walk"]}];
 const gramCD=()=>Math.max(0,120000-(Date.now()-(S.gram&&S.gram.t||0)));
-function gramThumb(k,seed){const r=n=>((seed*9301+n*49297)%233280)/233280;const bg={gym:["#1b1f2a","#2fd28a"],flip:["#2a3cff","#7fd6ff"],car:["#e2364a","#ffcc33"],pet:["#ff8fa3","#ffe0e6"],fit:["#7a2fd6","#ff4fd8"],home:["#141a33","#3b6fd8"],island:["#ff9a6b","#2fa6d9"],travel:["#2bb3a3","#fff1b8"],biz:["#cf9a14","#fff6c8"],casino:["#3a0d1a","#cf9a14"],space:["#0b1030","#7a2fd6"]}[k]||["#333","#666"];
-  const icon={gym:"🏋️",flip:"💸",car:"🏎️",pet:S.pet==="cat"?"🐱":S.pet==="parrot"?"🦜":S.pet==="penguin"?"🐧":S.pet==="dragon"?"🐉":S.pet==="tiger"?"🐯":"🐶",fit:"🕶️",home:"🏙️",island:"🏝️",travel:"✈️",biz:"🏨",casino:"🎰",space:"🚀"}[k];
+function gramThumb(k,seed){const r=n=>((seed*9301+n*49297)%233280)/233280;const bg={wedding:["#ff8fa3","#fff1f4"],gym:["#1b1f2a","#2fd28a"],flip:["#2a3cff","#7fd6ff"],car:["#e2364a","#ffcc33"],pet:["#ff8fa3","#ffe0e6"],fit:["#7a2fd6","#ff4fd8"],home:["#141a33","#3b6fd8"],island:["#ff9a6b","#2fa6d9"],travel:["#2bb3a3","#fff1b8"],biz:["#cf9a14","#fff6c8"],casino:["#3a0d1a","#cf9a14"],space:["#0b1030","#7a2fd6"]}[k]||["#333","#666"];
+  const icon={wedding:"💍",gym:"🏋️",flip:"💸",car:"🏎️",pet:S.pet==="cat"?"🐱":S.pet==="parrot"?"🦜":S.pet==="penguin"?"🐧":S.pet==="dragon"?"🐉":S.pet==="tiger"?"🐯":"🐶",fit:"🕶️",home:"🏙️",island:"🏝️",travel:"✈️",biz:"🏨",casino:"🎰",space:"🚀"}[k];
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="gt${seed}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg[0]}"/><stop offset="1" stop-color="${bg[1]}"/></linearGradient></defs><rect width="100" height="100" fill="url(#gt${seed})"/>${Array.from({length:6},(_,i)=>`<circle cx="${r(i)*100}" cy="${r(i+9)*100}" r="${4+r(i+3)*10}" fill="#fff" opacity=".12"/>`).join("")}<text x="50" y="64" text-anchor="middle" font-size="42">${icon}</text></svg>`}
 function openGram(back){S.gram=S.gram||{posts:[],t:0,likes:0};const G=S.gram;
   const draw=()=>{const cd=gramCD(),avail=GRAM.filter(p=>p.ok());
@@ -4206,6 +4208,31 @@ function openWorldLB(back){room="worldlb";
     $("room").querySelectorAll("[data-glb]").forEach(b=>b.onclick=()=>{glbK=b.dataset.glb;draw()});$("glbR").onclick=()=>{GLB=null;draw();load()}};
   const load=()=>{lbPushT=0;lbTick(0);lbFetch().then(r=>{GLB=r||[];if(room==="worldlb")draw()})};
   draw();if(!GLB)load()}
+
+/* ================= weddings ================= */
+const RINGS=[{k:"silver",n:"Silver ring",cost:1e4,p:.6},{k:"gold",n:"Gold ring",cost:1e5,p:.8},{k:"diamond",n:"Diamond ring",cost:1e6,p:.95},{k:"pink",n:"Pink diamond ring",cost:1e7,p:1}];
+const VENUES=[{k:"hall",n:"Town hall",cost:0,c:"#8a9bb0",ok:()=>true},{k:"paris",n:"Paris, by the Eiffel Tower",cost:5e5,c:"#2a5bd7",ok:()=>!!(S.visited||{}).paris},{k:"island",n:"Your private island",cost:1e6,c:"#2bb3a3",ok:()=>Object.keys(S.isl||{}).length>0},{k:"monaco",n:"Monte Carlo palace",cost:5e6,c:"#cf9a14",ok:()=>!!(S.visited||{}).monaco}];
+function weddingArt(v,p){const bg={hall:["#dfe6ee","#b9c6d6"],paris:["#f7c59f","#fdf0dc"],island:["#7fd0f7","#f5e2b0"],monaco:["#8fd8ff","#f2e3c6"]}[v.k];
+  return `<svg viewBox="0 0 400 200" aria-hidden="true"><defs><linearGradient id="wbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${bg[0]}"/><stop offset="1" stop-color="${bg[1]}"/></linearGradient></defs><rect width="400" height="200" fill="url(#wbg)"/>
+    ${v.k==="paris"?`<g transform="translate(330 0) scale(.7)" fill="#3b3a46"><path d="M-34 200 Q-16 150 -8 90 L-4 30 L4 30 L8 90 Q16 150 34 200 L24 200 Q8 170 0 170 Q-8 170 -24 200Z"/></g>`:v.k==="island"?`<rect y="150" width="400" height="50" fill="#2fa6d9"/>${treeSVG("palm",40,160,1.3)}${treeSVG("palm",360,158,1.3)}`:v.k==="monaco"?`<rect x="260" y="70" width="120" height="80" fill="#f2e3c6"/><path d="M300 70 Q320 40 340 70Z" fill="#7aa7a0"/>`:`<rect x="250" y="40" width="130" height="110" fill="#eef1f6"/>${[270,300,330,360].map(x=>`<rect x="${x}" y="60" width="10" height="90" fill="#cfd6e4"/>`).join("")}`}
+    <rect y="160" width="400" height="40" fill="${v.k==="island"?"#f5e2b0":"#e9e2d4"}"/><rect x="140" y="160" width="120" height="40" fill="#d6384b" opacity=".7"/>
+    <path d="M150 160 V80 Q200 30 250 80 V160" fill="none" stroke="#f4f6fa" stroke-width="8"/>${Array.from({length:14},(_,i)=>{const a=Math.PI*(i/13);return `<circle cx="${200-Math.cos(a)*50}" cy="${80-Math.sin(a)*48+ (i%2)*2}" r="6" fill="${["#ff8fa3","#fff","#ffd166"][i%3]}"/>`}).join("")}
+    <g transform="translate(182 160)"><rect x="-7" y="-36" width="14" height="22" rx="3" fill="${OUTFITS[S.skin||0][1]}"/><rect x="-6" y="-14" width="5" height="14" fill="#262b3a"/><rect x="1" y="-14" width="5" height="14" fill="#262b3a"/><circle cy="-44" r="8" fill="#e8b896"/><path d="M-8 -46 a8 8 0 0 1 16 0" fill="#3b2a20"/></g>
+    <g transform="translate(218 160)"><path d="M-12 0 L-6 -34 H6 L12 0Z" fill="#fff"/><rect x="-6" y="-38" width="12" height="8" fill="#fff"/><circle cy="-46" r="8" fill="${p.k||"#e8b896"}"/><path d="M-9 -48 a9 9 0 0 1 18 0 v10 h-3 v-8 h-12 v8 h-3Z" fill="${p.h||"#3b2a20"}"/><path d="M-10 -52 Q0 -64 10 -52 L14 -20 L-14 -20Z" fill="#fff" opacity=".45"/></g>
+    <path d="M200 96 c-4 -6 -12 -2 -8 4 l8 8 8 -8 c4 -6 -4 -10 -8 -4Z" fill="#e2364a"><animate attributeName="opacity" values="1;.5;1" dur="1.2s" repeatCount="indefinite"/></path>
+    <text x="200" y="22" text-anchor="middle" font-family="var(--display)" font-weight="900" font-size="15" fill="#3b2a20">${esc(mpName())} ❤ ${esc(p.n)}</text></svg>`}
+function openProposal(back){const p=S.partner;if(!p||p.married)return back();let ring=null;
+  const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Proposal")}
+    <div class="note">Pick a ring for <b>${esc(p.n)}</b>. Better rings make a yes more likely. Then pick where to get married.</div>
+    <div class="sechead"><h3>Ring</h3></div><div class="perks">${RINGS.map(r=>`<button class="perk nopic${ring===r?" bought":""}" data-ring="${r.k}" ${S.cash<r.cost?"disabled":""}><span class="t">${ring===r?"✓ ":""}${r.n}</span><span class="d">${Math.round(r.p*100)}% chance they say yes</span><span class="c">${fmt(r.cost)}</span></button>`).join("")}</div>
+    <div class="sechead"><h3>Venue</h3></div><div class="perks">${VENUES.map(v=>{const ok=v.ok();return `<button class="perk nopic" data-ven="${v.k}" ${!ring||!ok||S.cash<ring.cost+v.cost?"disabled":""}><span class="t">${v.n}</span><span class="d">${ok?(v.cost?"":"Free"):v.k==="island"?"Needs an island":"Visit first"}</span><span class="c">${v.cost?fmt(v.cost):"Free"}</span></button>`}).join("")}</div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-ring]").forEach(b=>b.onclick=()=>{ring=RINGS.find(r=>r.k===b.dataset.ring);SFX.tick(.6);draw()});
+    $("room").querySelectorAll("[data-ven]").forEach(b=>b.onclick=()=>{const v=VENUES.find(x=>x.k===b.dataset.ven);if(!ring||S.cash<ring.cost+v.cost)return;S.cash-=ring.cost;dirty=true;
+      if(Math.random()>ring.p){SFX.loss();shake(5);banner(p.n+" said not yet… (the ring is gone)","r");updMini();return back()}
+      S.cash-=v.cost;p.married=1;p.wday=S.day;p.ring=ring.k;p.venue=v.k;S.stats.weddings=(S.stats.weddings||0)+1;const f=Math.round(200+(S.fans||0)*.05*(1+RINGS.indexOf(ring)));S.fans=(S.fans||0)+f;dirty=true;
+      $("room").innerHTML=`<div class="room-in scroll">${roomHead("Just married")}<div class="art spart">${weddingArt(v,p)}</div><div class="shend"><b>💍</b><span>You married ${esc(p.n)}!</span></div><div class="note">+10% on every sale and +40 max energy from now on. +${fmtN(f)} fans from the wedding photos.</div><button class="bigbtn" id="wDone">Back<small>&nbsp;</small></button></div>`;
+      SFX.grail();confetti(300,null,null,["#ff8fa3","#fff","#ffd166","#e2364a"]);flash("#ffffff",.4);banner("Just married ❤","g");if(MP)mpSend("c",{n:mpName(),t:"just married "+p.n+" 💍",sys:1});$("wDone").onclick=$("leaveBtn").onclick=back;updMini()})};draw()}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
@@ -4508,8 +4535,8 @@ function clubDraw(){
 /* dates at the café: affection grows; at 100 they become your partner */
 function dateList(){const L=S.contacts||[];if(!L.length)return `<p class="fine">No numbers yet. Try your rizz at the Nightclub.</p>`;
   const cost=Math.max(80,Math.round(S.cash*.01));
-  return `<div class="perks">${L.map((c,i)=>{const p=S.partner&&S.partner.n===c.n;return `<button class="perk nopic" data-date="${i}" ${S.cash<cost?"disabled":""}><span class="t">${p?"❤ ":""}${esc(c.n)}${p?' <em class="beat">PARTNER</em>':""}</span><span class="d">${p?"Date night: full energy and 60s of hype":"Affection "+Math.min(100,Math.round(c.aff))+"/100"}</span><span class="c">${fmt(cost)}</span></button>`}).join("")}</div>${S.partner?`<button class="bigbtn alt" id="divorce">Divorce ${esc(S.partner.n)}<small>They take half your cash (${fmt(Math.round(S.cash/2))})</small></button>`:""}`}
-function bindDates(redraw){const dv=$("divorce");if(dv)dv.onclick=()=>{if(!dv.dataset.sure){dv.dataset.sure=1;dv.firstChild.textContent="Tap again to divorce "+S.partner.n;return}
+  return `<div class="perks">${L.map((c,i)=>{const p=S.partner&&S.partner.n===c.n;return `<button class="perk nopic" data-date="${i}" ${S.cash<cost?"disabled":""}><span class="t">${p?"❤ ":""}${esc(c.n)}${p?' <em class="beat">PARTNER</em>':""}</span><span class="d">${p?"Date night: full energy and 60s of hype":"Affection "+Math.min(100,Math.round(c.aff))+"/100"}</span><span class="c">${fmt(cost)}</span></button>`}).join("")}</div>${S.partner&&!S.partner.married?`<button class="bigbtn" id="propose">Propose to ${esc(S.partner.n)} 💍<small>Pick a ring and a venue</small></button>`:""}${S.partner&&S.partner.married?`<p class="fine">Married to <b>${esc(S.partner.n)}</b> since day ${S.partner.wday||1} · +10% on every sale, +40 max energy</p>`:""}${S.partner?`<button class="bigbtn alt" id="divorce">Divorce ${esc(S.partner.n)}<small>They take half your cash (${fmt(Math.round(S.cash/2))})</small></button>`:""}`}
+function bindDates(redraw){const pp=$("propose");if(pp)pp.onclick=()=>openProposal(redraw);const dv=$("divorce");if(dv)dv.onclick=()=>{if(!dv.dataset.sure){dv.dataset.sure=1;dv.firstChild.textContent="Tap again to divorce "+S.partner.n;return}
     const n=S.partner.n,half=Math.round(S.cash/2);S.cash-=half;const c=(S.contacts||[]).find(x=>x.n===n);if(c)c.aff=0;S.partner=null;PT=null;dirty=true;SFX.nope();shake(6);flash("#555",.3);banner("Divorced "+n+" · −"+fmt(half),"r");rayText(n+" took half your cash and moved out. You can date again at the Café.");redraw();updMini()};
   $("room").querySelectorAll("[data-date]").forEach(b=>b.onclick=()=>{const c=S.contacts[+b.dataset.date],cost=Math.max(80,Math.round(S.cash*.01));if(!c||S.cash<cost)return;S.cash-=cost;dirty=true;
   if(S.partner&&S.partner.n===c.n){S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,60);SFX.level();confetti(60,null,null,["#ff4fd8","#ff9ad5","#fff"]);banner("Date night with "+c.n,"g")}
