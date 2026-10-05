@@ -336,6 +336,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .expart{border-radius:20px;padding:20px;text-align:center;color:#fff;background:linear-gradient(135deg,var(--ec),color-mix(in oklab,var(--ec) 50%,#141824))}.expart span{font-size:3.4rem;display:block}.expart b{display:block;font:900 1.3rem var(--display)}.expart small{font:700 .8rem var(--mono);opacity:.9}
 .swrow{display:flex;flex-wrap:wrap;gap:8px}
 .setrow .tog{grid-row:1/3;grid-column:2;align-self:center;padding:0;width:46px;height:26px;border-radius:13px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line);position:relative;flex:none;transition:background .15s}.setrow .tog i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}.setrow .tog.on{background:#2fd28a}.setrow .tog.on i{left:23px}
+.djart{background:#0c0a14}.djpads{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.djpads button{height:74px;border:0;border-radius:18px;background:radial-gradient(circle,var(--pc) 0 30%,color-mix(in oklab,var(--pc) 35%,#141024) 31%);box-shadow:0 0 18px -4px var(--pc);touch-action:manipulation;cursor:pointer}.djpads button:active{transform:scale(.95);filter:brightness(1.3)}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -975,6 +976,7 @@ const ACH=[
  ["influencer","Influencer","Get 1M likes on FlipGram",()=>((S.gram||{}).likes||0)>=1e6,3e6],
  ["married","Just married","Marry your partner",()=>(S.stats.weddings||0)>=1,500000],
  ["tourist","Tourist","Try 10 local experiences",()=>(S.stats.exps||0)>=10,2e6],
+ ["djstar","Headliner","Get an S grade on a DJ set",()=>(S.stats.djS||0)>=1,1e6],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1412,7 +1414,7 @@ function openRoom(k){
   ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
-function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;XP=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;XP=null;DJ=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 // buying or claiming redraws the room; keep the scroll position when it's the same screen
 const roomSc={y:0,t:null};
 $("room").addEventListener("scroll",e=>{const t=e.target;if(t.classList&&t.classList.contains("scroll")&&t.parentNode===$("room"))roomSc.y=t.scrollTop},true);
@@ -4297,6 +4299,37 @@ function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, pe
     $("setTut").onclick=()=>{S.tut=0;tutKey="";dirty=true;closeRoom();banner("Tutorial restarted","a")};
     $("setWn").onclick=()=>{S.flags.wn=0;const t=S.tut;S.tut=99;whatsNew();S.tut=t}};draw()}
 
+/* ================= DJ set: notes fall down three lanes, tap on the beat ================= */
+let DJ=null;
+function openDJ(back){const W=360,H=520,bpm=rnd(112,132),beat=60/bpm,dur=36;const notes=[];let t=2;
+  while(t<dur){const r=Math.random();const lane=Math.floor(Math.random()*3);notes.push({t,lane});if(r<.18&&t>8)notes.push({t,lane:(lane+1+Math.floor(Math.random()*2))%3});t+=beat*(r<.55?1:r<.85?.5:2)*(t>20?.85:1)}
+  DJ={W,H,notes,t:-1.2,dur,score:0,combo:0,best:0,hits:0,perf:0,miss:0,fx:[],back,pulse:[0,0,0],done:false,spd:300};room="dj";
+  $("room").innerHTML=`<div class="room-in">${roomHead("DJ set")}<div class="art lart djart"><canvas id="djCv" width="${W}" height="${H}"></canvas></div>
+    <div class="djpads">${[0,1,2].map(i=>`<button data-dj="${i}" style="--pc:${["#ff4fd8","#4fe3ff","#ffcc33"][i]}"></button>`).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Stop";$("leaveBtn").onclick=()=>{if(DJ){DJ.t=DJ.dur+9}};
+  $("room").querySelectorAll("[data-dj]").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();djHit(+b.dataset.dj)}));
+  const cv=$("djCv");cv.addEventListener("pointerdown",e=>{const r=cv.getBoundingClientRect();djHit(clamp(Math.floor((e.clientX-r.left)/r.width*3),0,2))});
+  let last=performance.now();const loop=now=>{if(!DJ||!$("djCv"))return;const dt=Math.min(.05,(now-last)/1000);last=now;DJ.t+=dt;djDraw();if(DJ.t<DJ.dur+1.5)requestAnimationFrame(loop);else djEnd()};requestAnimationFrame(loop)}
+function djHit(l){const D=DJ;if(!D||D.done)return;D.pulse[l]=1;let best=null,bd=.2;D.notes.forEach(n=>{if(n.done||n.lane!==l)return;const d=Math.abs(n.t-D.t);if(d<bd){bd=d;best=n}});
+  if(!best){D.combo=0;SFX.tick(.15);return}best.done=1;const perf=bd<.07;D.hits++;if(perf)D.perf++;D.combo++;D.best=Math.max(D.best,D.combo);D.score+=(perf?100:60)*(1+Math.min(D.combo,30)*.05);
+  D.fx.push({l,txt:perf?"PERFECT":"GOOD",c:perf?"#ffcc33":"#4fe3ff",a:1});SFX.tick(perf?.9:.6);buzz(perf?8:4)}
+function djDraw(){const D=DJ,cv=$("djCv");if(!cv)return;const g=cv.getContext("2d"),W=D.W,H=D.H,lw=W/3,hy=H-110,cols=["#ff4fd8","#4fe3ff","#ffcc33"];
+  D.notes.forEach(n=>{if(!n.done&&!n.miss&&D.t-n.t>.2){n.miss=1;D.miss++;D.combo=0}});
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#0c0a14");bg.addColorStop(1,"#241238");g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const beatGlow=.5+.5*Math.sin(D.t*Math.PI*4);g.globalCompositeOperation="lighter";[0,1,2].forEach(i=>{g.fillStyle=`rgba(${["255,79,216","79,227,255","255,204,51"][i]},${.05+.05*beatGlow+D.pulse[i]*.25})`;g.fillRect(i*lw+6,0,lw-12,H);D.pulse[i]=Math.max(0,D.pulse[i]-.06)});g.globalCompositeOperation="source-over";
+  g.fillStyle="rgba(255,255,255,.12)";[1,2].forEach(i=>g.fillRect(i*lw-1,0,2,H));
+  g.fillStyle="rgba(255,255,255,.85)";g.fillRect(8,hy-2,W-16,4);[0,1,2].forEach(i=>{g.strokeStyle=cols[i];g.lineWidth=3;g.beginPath();g.arc(i*lw+lw/2,hy,22,0,7);g.stroke()});
+  D.notes.forEach(n=>{if(n.done)return;const y=hy-(n.t-D.t)*D.spd;if(y<-30||y>H+30)return;const x=n.lane*lw+lw/2;g.fillStyle=n.miss?"rgba(120,120,140,.5)":cols[n.lane];g.shadowColor=cols[n.lane];g.shadowBlur=n.miss?0:14;g.beginPath();g.arc(x,y,18,0,7);g.fill();g.shadowBlur=0;g.fillStyle="rgba(255,255,255,.7)";g.beginPath();g.arc(x-5,y-5,5,0,7);g.fill()});
+  for(let i=0;i<14;i++){const x=12+i*25,b=Math.abs(Math.sin(D.t*8+i))*(D.combo>5?8:4);g.fillStyle="#141024";g.beginPath();g.arc(x,H-30-b,9,0,7);g.fill();g.fillRect(x-9,H-30-b,18,30)}
+  D.fx.forEach(f=>{g.globalAlpha=f.a;g.fillStyle=f.c;g.font="900 18px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.fillText(f.txt,f.l*lw+lw/2,hy-40-(1-f.a)*30);f.a-=.03});g.globalAlpha=1;D.fx=D.fx.filter(f=>f.a>0);
+  g.fillStyle="#fff";g.font="900 22px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="left";g.fillText(Math.round(D.score),14,32);g.font="700 12px "+getComputedStyle(root).getPropertyValue("--mono");g.fillText(D.combo>1?"COMBO ×"+D.combo:"",14,52);
+  g.textAlign="right";g.fillText(Math.max(0,Math.ceil(D.dur-D.t))+"s",W-14,32);if(D.t<0){g.font="900 60px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.fillText("READY",W/2,H/2-40)}}
+function djEnd(){const D=DJ;if(!D||D.done)return;D.done=true;DJ=null;const tot=D.notes.length,acc=tot?D.hits/tot:0,grade=acc>.9?"S":acc>.75?"A":acc>.55?"B":acc>.35?"C":"D";
+  const fans=Math.round((50+(S.fans||0)*.02)*acc*(1+D.best/40)),tips=Math.round(D.score*(3+SC()*2));S.fans=(S.fans||0)+fans;earn(tips);if(acc>.6)S.buffs.hype=Math.max(S.buffs.hype||0,90);S.stats.djSets=(S.stats.djSets||0)+1;S.stats.djBest=Math.max(S.stats.djBest||0,Math.round(D.score));if(grade==="S")S.stats.djS=(S.stats.djS||0)+1;dirty=true;
+  $("room").innerHTML=`<div class="room-in">${roomHead("DJ set")}<div class="shend"><b>${grade}</b><span>${Math.round(acc*100)}% of notes · best combo ×${D.best}</span><div class="kv"><div><span class="eyebrow">Score</span><b>${fmtN(Math.round(D.score))}</b></div><div><span class="eyebrow">Tips</span><b>${fmt(tips)}</b></div><div><span class="eyebrow">New fans</span><b>+${fmtN(fans)}</b></div><div><span class="eyebrow">Perfects</span><b>${D.perf}</b></div></div></div>
+    <button class="bigbtn" id="djBack">Back to the club<small>${acc>.6?"The crowd is hyped: +30% sales for 90s":"&nbsp;"}</small></button></div>`;
+  if(grade==="S"){confetti(220,null,null,["#ff4fd8","#4fe3ff","#ffcc33"]);SFX.grail()}else{confetti(60);SFX.level()}banner("DJ set: "+grade+" · +"+fmtN(fans)+" fans","g");$("djBack").onclick=$("leaveBtn").onclick=D.back;updMini()}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4319,7 +4352,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram","worldlb","exp"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram","worldlb","exp","dj"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
@@ -4499,12 +4532,13 @@ function clubPop(x,y,txt,col,o={}){if(CS)CS.pops.push({x,y,txt,col,t:0,life:o.li
 function clubAct(){
   const el=$("cAct");if(!el||!CS)return;const st=CS.near,on=S.buffs&&S.buffs.hype>0;let h="";
   if(st&&st.k==="bar")h=`<button class="gbtn main" id="cBar">Order a mocktail<small>${fmt(Math.max(20,Math.round(S.cash*.002)))} · +40 energy</small></button>`;
-  else if(st&&st.k==="dj")h=`<button class="gbtn main" id="cDJ">Request a song<small>Hype up the crowd · ${fmt(Math.max(50,Math.round(S.cash*.004)))}</small></button>`;
+  else if(st&&st.k==="dj")h=`<button class="gbtn main" id="cSet">Play a DJ set<small>Rhythm game · 15 energy</small></button><button class="gbtn flex" id="cDJ">Request a song<small>${fmt(Math.max(50,Math.round(S.cash*.004)))}</small></button>`;
   else if(st&&st.k==="vip")h=`<button class="gbtn main" id="cVip" ${on||S.cash<vipCost()?"disabled":""}>VIP table<small>${on?"Hype on "+Math.ceil(S.buffs.hype)+"s":fmt(vipCost())+" · +30% sales 3 min"}</small></button>`;
   else if(st&&st.k==="floor")h=`<button class="gbtn main" id="cDance">Dance<small>15 energy · tips and charm</small></button>`;
   else h=`<span class="gtip">Walk to the bar, DJ, VIP booth or dance floor. Tap someone with a ❤ to talk.</span>`;
   el.innerHTML=h;
   const b=$("cBar");if(b)b.onclick=()=>{const c=Math.max(20,Math.round(S.cash*.002));if(S.cash<c)return;S.cash-=c;S.energy=Math.min(maxEnergy(),S.energy+40);dirty=true;SFX.buy();clubPop(CS.px,CS.py-70,"+40 ENERGY","#2fd28a");updMini()};
+  const ds=$("cSet");if(ds)ds.onclick=e=>{if(!spend(15,e.currentTarget))return;openDJ(()=>{closeRoom();openRoom("club")})};
   const d=$("cDJ");if(d)d.onclick=()=>{const c=Math.max(50,Math.round(S.cash*.004));if(S.cash<c)return;S.cash-=c;CS.beat=12;S.buffs.hype=Math.max(S.buffs.hype||0,45);dirty=true;SFX.rebirth();flash("#ff4fd8",.25);confetti(60);clubPop(200,90,"BANGER","#ff4fd8");CS.npcs.forEach(n=>{if(!n.single){n.tx=rnd(130,270);n.ty=rnd(230,400)}});updMini();clubAct()};
   const v=$("cVip");if(v)v.onclick=()=>{const c=vipCost();if(S.cash<c||S.buffs.hype>0)return;S.cash-=c;S.buffs.hype=180;dirty=true;SFX.rebirth();confetti(90);banner("VIP · +30% sales","g");updMini();clubAct()};
   const dn=$("cDance");if(dn)dn.onclick=e=>{if(!spend(15,e.currentTarget))return;CS.danceT=2.5;SFX.hot();const r=Math.random();
