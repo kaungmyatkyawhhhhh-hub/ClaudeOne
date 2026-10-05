@@ -333,6 +333,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .gramnew{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.gramnew button{border:0;padding:0;background:none;display:flex;flex-direction:column;gap:3px;align-items:center;cursor:pointer;color:var(--ink)}.gramnew svg{width:100%;aspect-ratio:1;border-radius:12px;display:block}.gramnew small{font-size:.62rem;font-weight:700;text-align:center;line-height:1.1}.gramnew button:disabled{opacity:.45}.gramnew button.lock svg{filter:grayscale(1)}
 .gramfeed{display:flex;flex-direction:column;gap:8px}.gpost{display:flex;gap:10px;align-items:center;background:var(--surface);border-radius:14px;padding:8px;box-shadow:inset 0 0 0 1px var(--line)}.gpost svg{width:64px;height:64px;border-radius:10px;flex:none}.gpost b{font-size:.86rem}.gpost small{display:block;font:700 .74rem var(--mono);color:#e2364a}
 .garprev{border-radius:16px;overflow:hidden;margin-bottom:8px}.garprev canvas{display:block;width:100%;height:auto}.garrow{cursor:default}.pmbtns .swc{width:26px;height:26px;padding:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.15)}.pmbtns .swc.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
+.expart{border-radius:20px;padding:20px;text-align:center;color:#fff;background:linear-gradient(135deg,var(--ec),color-mix(in oklab,var(--ec) 50%,#141824))}.expart span{font-size:3.4rem;display:block}.expart b{display:block;font:900 1.3rem var(--display)}.expart small{font:700 .8rem var(--mono);opacity:.9}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -970,6 +971,7 @@ const ACH=[
  ["traveller","World traveller","Get every passport stamp",()=>COUNTRIES.every(c=>(S.visited||{})[c.k]),1e7],
  ["influencer","Influencer","Get 1M likes on FlipGram",()=>((S.gram||{}).likes||0)>=1e6,3e6],
  ["married","Just married","Marry your partner",()=>(S.stats.weddings||0)>=1,500000],
+ ["tourist","Tourist","Try 10 local experiences",()=>(S.stats.exps||0)>=10,2e6],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1404,7 +1406,7 @@ function openRoom(k){
   ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
-function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;XP=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 // buying or claiming redraws the room; keep the scroll position when it's the same screen
 const roomSc={y:0,t:null};
 $("room").addEventListener("scroll",e=>{const t=e.target;if(t.classList&&t.classList.contains("scroll")&&t.parentNode===$("room"))roomSc.y=t.scrollTop},true);
@@ -2894,6 +2896,7 @@ function loop(now){
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
+      if(room==="exp")expTick(dt);
       if(room==="storage")lotTick(dt);
       findsTick(dt);jobTick(dt);rivalTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
@@ -3349,6 +3352,7 @@ function openCity(k,arrive){const c=CTRY(k);CITY=k;if(arrive)stampCity(k);if(M)c
       <button class="perk nopic" data-cg="realty"><span class="t">Real estate</span><span class="d">Buy apartments, bars, restaurants, condos, hotels${c.biz.includes("resort")?" and resorts":""}</span><span class="c">${mine.length?mine.length+" owned":"Browse"}</span></button>
       ${c.k==="monaco"?`<button class="perk nopic" data-cg="gp"><span class="t">Grand Prix 🏁</span><span class="d">Race your car through Monte Carlo. Wins: ${S.stats.gpWins||0}</span><span class="c">Race</span></button>`:""}
       ${c.casino?`<button class="perk nopic prestige" data-cg="casino"><span class="t">Casino</span><span class="d">Slots, roulette and blackjack. Biggest win: ${fmt(S.stats.casinoBig||0)}</span><span class="c">Enter</span></button>`:""}
+      ${EXPS[k]?`<button class="perk nopic" data-cg="exp" ${(S.expD||{})[k]===dayKey()?"disabled":""}><span class="t">${EXPS[k][1]} ${EXPS[k][0]}</span><span class="d">${(S.expD||{})[k]===dayKey()?"Done today, come back tomorrow":"A local experience · "+({fans:"fans",cash:"cash",energy:"energy",hype:"hype and fans"})[EXPS[k][3]]}</span><span class="c">${(S.expD||{})[k]===dayKey()?"Done":"Go"}</span></button>`:""}
       <button class="perk nopic" data-cg="sight" ${today?"disabled":""}><span class="t">Visit the ${c.lm}</span><span class="d">${today?"Come back tomorrow":"Full energy, 90s of hype and new fans"}</span><span class="c">${today?"Seen":"Go"}</span></button>
     </div>
     ${mine.length?`<div class="sechead"><h3>Your businesses here</h3><span class="eyebrow">${fmt(mine.reduce((a,b)=>a+bizInc(b),0))}/min</span></div><div class="perks">${mine.map(bizRow).join("")}</div>`:""}
@@ -3358,6 +3362,7 @@ function openCity(k,arrive){const c=CTRY(k);CITY=k;if(arrive)stampCity(k);if(M)c
     else if(g==="realty")openRealty(k,()=>openCity(k));
     else if(g==="casino")openCasino(k,()=>openCity(k));
     else if(g==="gp")openGP(()=>openCity(k));
+    else if(g==="exp")openExp(k,()=>openCity(k));
     else if(g==="sight"){if(S.seen&&S.seen[k]===dayKey())return banner("Already visited today","a");S.seen=S.seen||{};S.seen[k]=dayKey();S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,90);const f=Math.round(50+(S.fans||0)*.02);S.fans=(S.fans||0)+f;dirty=true;SFX.rebirth();confetti(120,null,null,[c.tone,"#fff","#ffcc33"]);banner(c.lm+" · +"+fmtN(f)+" fans","u");openCity(k)}};
   $("room").querySelectorAll("[data-cg]").forEach(b=>b.onclick=()=>go(b.dataset.cg));
   $("room").querySelectorAll(".citysvg [data-go]").forEach(g=>g.addEventListener("click",()=>go(g.dataset.go)));
@@ -4234,6 +4239,28 @@ function openProposal(back){const p=S.partner;if(!p||p.married)return back();let
       $("room").innerHTML=`<div class="room-in scroll">${roomHead("Just married")}<div class="art spart">${weddingArt(v,p)}</div><div class="shend"><b>💍</b><span>You married ${esc(p.n)}!</span></div><div class="note">+10% on every sale and +40 max energy from now on. +${fmtN(f)} fans from the wedding photos.</div><button class="bigbtn" id="wDone">Back<small>&nbsp;</small></button></div>`;
       SFX.grail();confetti(300,null,null,["#ff8fa3","#fff","#ffd166","#e2364a"]);flash("#ffffff",.4);banner("Just married ❤","g");if(MP)mpSend("c",{n:mpName(),t:"just married "+p.n+" 💍",sys:1});$("wDone").onclick=$("leaveBtn").onclick=back;updMini()})};draw()}
 
+/* ================= local experiences: one per city, once a day ================= */
+const EXPS={tokyo:["Karaoke night","🎤","Hit the high notes","fans"],paris:["Art gallery opening","🖼️","Spot the masterpiece","cash"],london:["Tea at the Ritz","🫖","Pour without spilling","energy"],rome:["Gladiator school","⚔️","Time your strikes","fans"],seoul:["K-pop dance class","💃","Hit every beat","fans"],bangkok:["Tuk-tuk race","🛺","Take the corners","cash"],nyc:["Broadway show","🎭","Applaud on cue","hype"],vegas:["Magic show","🎩","Catch the card","cash"],rio:["Carnival parade","🎊","Samba on the beat","fans"],sydney:["Surf lesson","🏄","Catch the wave","energy"],dubai:["Desert safari","🐪","Ride the dunes","hype"],geneva:["Watchmaking class","⌚","Set the gears","cash"],monaco:["Yacht party","🛥️","Pop the champagne","fans"]};
+let XP=null;
+function openExp(k,back){const E=EXPS[k],c=CTRY(k);S.expD=S.expD||{};if(S.expD[k]===dayKey())return;
+  XP={k,round:0,hits:0,pos:0,dir:1,zc:rnd(.25,.75),zw:.2,sp:.9,back,done:false};room="exp";
+  const draw=msg=>{$("room").innerHTML=`<div class="room-in">${roomHead(E[0])}<div class="expart" style="--ec:${c.tone}"><span>${E[1]}</span><b>${E[2]}</b><small>Round ${Math.min(3,XP.round+1)}/3 · ${"★".repeat(XP.hits)}${"☆".repeat(3-XP.hits)}</small></div>
+    <div class="fishbar" id="xBar"><i id="xZone" style="left:${(XP.zc-XP.zw/2)*100}%;width:${XP.zw*100}%"></i><b id="xNeedle"></b></div>
+    <p class="fine" id="xMsg">${msg||"Tap when the line is in the green"}</p><button class="bigbtn tapbtn" id="xTap">TAP<small>${c.n}</small></button></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{XP=null;back()};
+    $("xTap").addEventListener("pointerdown",e=>{e.preventDefault();if(!XP||XP.done)return;const ok=Math.abs(XP.pos-XP.zc)<=XP.zw/2;XP.hits+=ok?1:0;XP.round++;SFX[ok?"hot":"nope"]();buzz(ok?10:[20,20]);
+      if(XP.round>=3)return expEnd(c,E);XP.zc=rnd(.2,.8);XP.zw=Math.max(.1,XP.zw-.04);XP.sp+=.35;draw(ok?"Nice!":"Missed")})};
+  XP.draw=draw;draw()}
+function expTick(dt){if(!XP||XP.done||room!=="exp")return;XP.pos+=XP.dir*dt*XP.sp;if(XP.pos>1){XP.pos=1;XP.dir=-1}if(XP.pos<0){XP.pos=0;XP.dir=1}const n=$("xNeedle");if(n)n.style.left=XP.pos*100+"%"}
+function expEnd(c,E){XP.done=true;S.expD[XP.k]=dayKey();S.stats.exps=(S.stats.exps||0)+1;const h=XP.hits,m=[.3,.7,1.2,2][h],lv=1+SC();let txt;
+  if(E[3]==="fans"){const f=Math.round((150+(S.fans||0)*.03)*m);S.fans=(S.fans||0)+f;txt="+"+fmtN(f)+" fans"}
+  else if(E[3]==="cash"){const v=Math.round(40000*lv*m*(1+c.bz));earn(v);txt="+"+fmt(v)}
+  else if(E[3]==="energy"){S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,30*h);txt="Full energy"+(h?" and "+30*h+"s of hype":"")}
+  else{S.buffs.hype=Math.max(S.buffs.hype||0,60+60*h);const f=Math.round(80*m*lv);S.fans=(S.fans||0)+f;txt=(60+60*h)+"s of hype, +"+fmtN(f)+" fans"}
+  dirty=true;const back=XP.back;XP=null;
+  $("room").innerHTML=`<div class="room-in">${roomHead(E[0])}<div class="shend"><b>${E[1]}</b><span>${"★".repeat(h)}${"☆".repeat(3-h)}</span></div><div class="note">${h===3?"Perfect! ":h?"":"Tough luck. "}${txt}</div><button class="bigbtn" id="xDone">Back to ${c.n}<small>Come back tomorrow for another go</small></button></div>`;
+  if(h===3){confetti(150);SFX.grail()}else{confetti(40);SFX.level()}banner(E[0]+": "+txt,"g");$("xDone").onclick=$("leaveBtn").onclick=back;updMini()}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4256,7 +4283,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram","worldlb"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram","worldlb","exp"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
