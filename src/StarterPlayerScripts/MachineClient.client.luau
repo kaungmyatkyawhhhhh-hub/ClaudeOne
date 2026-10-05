@@ -119,8 +119,20 @@ local function loadPart(model)
 	return model:FindFirstChild(machine and machine.load or "Bar")
 end
 
+-- [model] = { low = CFrame, high = CFrame }: the lowest and highest the bar has been while someone lifts on it
+-- (the gain popup keeps clear of the whole path, not just where the bar is at lockout)
+local barTravel = {}
+
 local function placeBar(model, cframe)
 	loadPart(model).CFrame = cframe
+	local travel = barTravel[model]
+	if not travel then
+		barTravel[model] = { low = cframe, high = cframe }
+	elseif cframe.Y < travel.low.Y then
+		travel.low = cframe
+	elseif cframe.Y > travel.high.Y then
+		travel.high = cframe
+	end
 	for _, plate in ipairs(model.Plates:GetChildren()) do
 		local offset = plateOffsets[plate]
 		if offset then plate.CFrame = cframe * offset end
@@ -491,8 +503,15 @@ end
 -- Settings → Gain numbers: On (both), Minimal (set popups only), Off (none).
 ------------------------------------------------------------------------
 local POPUP = {
-	Side = 1.2,      -- studs beside the chest edge (camera right), times the body's height scale
-	SetScale = 1.25, -- set popups are slightly bigger
+	Side = 1.2,       -- studs beside the chest edge, times the body's height scale
+	Low = 1.4,        -- studs lower for the "below the chest" spots
+	Far = 3,          -- studs beside the chest edge for the last-resort spots
+	Float = 1,        -- studs it floats up while fading
+	SetScale = 1.25,  -- set popups are slightly bigger
+	Height = 40,      -- px
+	CharWidth = 15,   -- px per character at the Popup text size (Montserrat SemiBold), for the clear-spot check
+	BarGap = 0.3,     -- studs kept clear around the bar and its plates (all along its path)
+	ScreenMargin = 8, -- px from the screen edges
 }
 local activePopup = nil -- { billboard, attachment }
 
@@ -510,7 +529,97 @@ local function clearPopup()
 	end
 end
 
-local function gainPopup(character, text, scale)
+-- Screen rectangle (minX, minY, maxX, maxY) of a part's box.
+local function screenRect(camera, part)
+	local half = part.Size / 2
+	local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
+	for _, x in ipairs({ -1, 1 }) do
+		for _, y in ipairs({ -1, 1 }) do
+			for _, z in ipairs({ -1, 1 }) do
+				local p = camera:WorldToViewportPoint(part.CFrame:PointToWorldSpace(half * Vector3.new(x, y, z)))
+				minX, minY, maxX, maxY = math.min(minX, p.X), math.min(minY, p.Y), math.max(maxX, p.X), math.max(maxY, p.Y)
+			end
+		end
+	end
+	return minX, minY, maxX, maxY
+end
+
+-- Where the popup goes: the first spot beside the chest whose on-screen box (including where it floats to) stays on
+-- screen and misses the head and the bar's whole path (rack to bottom of the rep, thickened by the plates). If no
+-- spot is fully clear, the one with the least overlap. Returns the camera-space offset (x > 0 = camera right).
+local function popupSpot(character, torso, model, anchorWorld, textWidth, scale, bodyScale)
+	local camera = Workspace.CurrentCamera
+	local viewport = camera.ViewportSize
+	local edge = torso.Size.X / 2
+	local near, far, low = edge + POPUP.Side * bodyScale, edge + POPUP.Far * bodyScale, POPUP.Low * bodyScale
+	local spots = {}
+	for _, y in ipairs({ 0, -low, -2 * low }) do
+		for _, x in ipairs({ near, -near, far, -far }) do table.insert(spots, { x = x, y = y }) end
+	end
+	local head = character:FindFirstChild("Head")
+	local hx0, hy0, hx1, hy1
+	if head and head:IsA("BasePart") then hx0, hy0, hx1, hy1 = screenRect(camera, head) end
+	-- the bar (or cable load) as sample points along its longest axis, across its travel; points near the ends get
+	-- the plates' radius as margin, the middle only the bar's own thickness
+	local samples = {} -- { Vector2 point, pad px }
+	local load = model and loadPart(model)
+	if load and load:IsA("BasePart") then
+		local size = load.Size
+		local axis = (size.X >= size.Y and size.X >= size.Z) and Vector3.xAxis or (size.Y >= size.Z and Vector3.yAxis or Vector3.zAxis)
+		local length = (size * axis).Magnitude
+		local across = size - size * axis
+		local thickness = math.max(across.X, across.Y, across.Z)
+		local plateRadius = 0
+		local plates = model:FindFirstChild("Plates")
+		for _, plate in ipairs(plates and plates:GetChildren() or {}) do
+			if plate:IsA("BasePart") then
+				plateRadius = math.max(plateRadius, math.max(plate.Size.X, plate.Size.Y, plate.Size.Z) / 2)
+			end
+		end
+		local travel = barTravel[model] or { low = load.CFrame, high = load.CFrame }
+		local tanHalf = math.tan(math.rad(camera.FieldOfView) / 2)
+		for _, t in ipairs({ 0, 0.25, 0.5, 0.75, 1 }) do
+			local cf = travel.low:Lerp(travel.high, t)
+			for i = 0, 16 do
+				local along = (i / 16 - 0.5) * length
+				local p = camera:WorldToViewportPoint(cf:PointToWorldSpace(axis * along))
+				if p.Z > 0 then
+					local pxPerStud = viewport.Y / (2 * p.Z * tanHalf)
+					local radius = math.abs(along) > length * 0.2 and math.max(plateRadius, thickness / 2) or thickness / 2
+					table.insert(samples, { Vector2.new(p.X, p.Y), (radius + POPUP.BarGap) * pxPerStud })
+				end
+			end
+		end
+	end
+	local w, h = (textWidth + 8) * scale, POPUP.Height * scale
+	local right, up = camera.CFrame.RightVector, camera.CFrame.UpVector
+	local best, bestScore = spots[1], math.huge
+	for _, spot in ipairs(spots) do
+		local world = anchorWorld + right * spot.x + up * spot.y
+		local p = camera:WorldToViewportPoint(world)
+		local top = camera:WorldToViewportPoint(world + Vector3.new(0, POPUP.Float, 0)) -- where it floats to
+		if p.Z > 0 then
+			local x0 = spot.x > 0 and p.X or p.X - w
+			local x1 = x0 + w
+			local y0, y1 = math.min(p.Y, top.Y) - h / 2, math.max(p.Y, top.Y) + h / 2
+			local score = 0
+			if x0 < POPUP.ScreenMargin or x1 > viewport.X - POPUP.ScreenMargin
+				or y0 < POPUP.ScreenMargin or y1 > viewport.Y - POPUP.ScreenMargin then
+				score += 1000
+			end
+			if hx0 and not (x1 < hx0 or x0 > hx1 or y1 < hy0 or y0 > hy1) then score += 100 end
+			for _, sample in ipairs(samples) do
+				local q, pad = sample[1], sample[2]
+				if q.X > x0 - pad and q.X < x1 + pad and q.Y > y0 - pad and q.Y < y1 + pad then score += 1 end
+			end
+			if score == 0 then return spot end
+			if score < bestScore then best, bestScore = spot, score end
+		end
+	end
+	return best
+end
+
+local function gainPopup(character, text, scale, model)
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
 	if not torso or not torso:IsA("BasePart") then return end
 	clearPopup()
@@ -518,24 +627,33 @@ local function gainPopup(character, text, scale)
 	local heightValue = humanoid and humanoid:FindFirstChild("BodyHeightScale")
 	local bodyScale = if heightValue and heightValue:IsA("NumberValue") then heightValue.Value else 1
 	local attachment = New("Attachment", { Position = Vector3.new(0, torso.Size.Y * 0.2, 0), Parent = torso })
+	local spot = popupSpot(character, torso, model, attachment.WorldPosition, #text * POPUP.CharWidth, scale, bodyScale)
+	local onRight = spot.x > 0
 	local billboard = New("BillboardGui", {
 		Adornee = attachment,
-		Size = UDim2.fromOffset(320, 40),
-		SizeOffset = Vector2.new(0.5, 0), -- left edge at the anchor, so the text starts beside the chest
-		StudsOffset = Vector3.new(torso.Size.X / 2 + POPUP.Side * bodyScale, 0, 0),
+		Size = UDim2.fromOffset(320, POPUP.Height),
+		-- the text starts at the anchor and grows away from the body
+		SizeOffset = Vector2.new(onRight and 0.5 or -0.5, 0),
+		StudsOffset = Vector3.new(spot.x, spot.y, 0),
 		AlwaysOnTop = true,
 		LightInfluence = 0,
 		ResetOnSpawn = false,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
-	local holder = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = billboard })
+	local holder = New("Frame", {
+		AnchorPoint = Vector2.new(onRight and 0 or 1, 0.5), -- the pop-in grows from the body side
+		Position = UDim2.fromScale(onRight and 0 or 1, 0.5),
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Parent = billboard,
+	})
 	local popScale = New("UIScale", { Scale = 0, Parent = holder })
 	local label = Theme.Text({
 		Text = text,
 		Font = "SemiBold",
 		TextSize = "Popup",
 		Size = UDim2.fromScale(1, 1),
-		TextXAlignment = Enum.TextXAlignment.Left,
+		TextXAlignment = onRight and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right,
 		Parent = holder,
 	})
 	local stroke = Theme.TextShadow(label, 0.45)
@@ -546,7 +664,7 @@ local function gainPopup(character, text, scale)
 	task.delay(Theme.Motion.Time * 1.4, function()
 		if activePopup ~= popup then return end -- already replaced
 		local fade = Theme.Motion.Time * 2.4
-		Theme.Tween(billboard, { StudsOffsetWorldSpace = Vector3.new(0, 1.5, 0) }, fade)
+		Theme.Tween(billboard, { StudsOffsetWorldSpace = Vector3.new(0, POPUP.Float, 0) }, fade)
 		Theme.Tween(label, { TextTransparency = 1 }, fade)
 		Theme.Tween(stroke, { Transparency = 1 }, fade)
 		task.delay(fade, function()
@@ -992,7 +1110,7 @@ end
 
 -- The local player's lockout: count the rep and fire all the feedback.
 local function localLockout(state)
-	local machine = current.machine
+	local machine, machineModel = current.machine, current.model
 	local character = player.Character
 	current.lastLockout = os.clock()
 	current.reps += 1
@@ -1011,9 +1129,9 @@ local function localLockout(state)
 	local showRep = mode == "On"
 	if character and setDone and showSet then
 		local group = Muscles.GroupById[Muscles.ById[main].group]
-		gainPopup(character, "Set done · +" .. current.setGain .. " " .. group.name, POPUP.SetScale)
+		gainPopup(character, "Set done · +" .. current.setGain .. " " .. group.name, POPUP.SetScale, machineModel)
 	elseif character and not setDone and showRep then
-		gainPopup(character, "+" .. shown, 1)
+		gainPopup(character, "+" .. shown, 1, machineModel)
 	end
 	if setDone then current.setGain = 0 end
 	flashMuscles() -- the secondary muscles get a flash of the HUD's muscle list instead of popups
@@ -1096,8 +1214,9 @@ end)
 
 local function setupMachine(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
-	local bar = model:WaitForChild(machine and machine.load or "Bar", 10)
-	local plates = model:WaitForChild("Plates", 10)
+	-- no timeout: with Workspace streaming a machine can arrive late (it runs in its own thread)
+	local bar = model:WaitForChild(machine and machine.load or "Bar")
+	local plates = model:WaitForChild("Plates")
 	if not bar or not plates then return end
 	barRest[model] = bar.CFrame
 	for _, plate in ipairs(plates:GetChildren()) do trackPlate(model, plate) end
@@ -1184,6 +1303,7 @@ local function open(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	if not machine then return end
 	current = { model = model, machine = machine, reps = 0, setsSinceNote = 0, promptConnections = {} }
+	barTravel[model] = nil -- measure this lift's bar path fresh
 	-- the lifter never sees this machine's prompts (e.g. "Spot · Help them lift" on their own machine), only on this
 	-- client, so other players still get them; the server's next change after Exit replaces this local value
 	for _, prompt in ipairs(model:GetDescendants()) do

@@ -135,6 +135,7 @@ local function buildCat()
 	prompt.MaxActivationDistance = 7
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = head
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent -- Workspace streaming: always on every client
 	CollectionService:AddTag(model, "GymCat")
 	local npcs = Workspace:FindFirstChild("NPCs") or Instance.new("Folder")
 	npcs.Name = "NPCs"

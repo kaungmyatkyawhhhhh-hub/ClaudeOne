@@ -58,6 +58,47 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## 1b. Stats labels never disappear (2026-10-05) ✅ (playtested in Studio)
+
+**Built** (`StatsClient`)
+- Every Stats label is now **AlwaysOnTop** (the lines and dots were already a 2D screen layer), so walls, racks,
+  machines and anything else between the camera and a label can never hide or cut it.
+- Labels **never fade for prompts** any more: a label that would cover a shown ProximityPrompt is nudged just above or
+  below it (whichever is the smaller move), before and after the left/right stacking, and stays visible.
+- The old "pull the label in front of walls" raycast is gone (not needed any more), which saves a raycast per label
+  per frame on phones.
+- Brief ("Stats: live overlay") and `CLAUDE.md` updated with the rule.
+
+**Tested in Studio** (fresh player, Stats open, label state read every time; see the note below on screenshots)
+- Behind the squat rack, behind the pull-up bar (its upright between camera and player) and behind the back wall
+  (the wall between camera and player): **6 / 6 labels visible** each time.
+- Standing at three spots by the Flat Bench with its Use prompt on screen: 6 / 6 labels visible, **0 over the prompt**.
+
+**Note:** Studio's screenshot tool can't draw AlwaysOnTop BillboardGuis (I checked: switching two labels back to
+depth-tested made them appear in the capture). So the labels are verified by their state, not by screenshot.
+Please look at it once in Studio: open Stats and walk behind the squat rack.
+
+---
+
+## 1. Gain popup: never over the bar or the face (2026-10-05) ✅ (playtested in Studio)
+
+The rest of your popup fix was already in (entry below); this adds the "never covers the bar or face" part.
+- The popup now picks its spot every time: 12 spots beside the chest (camera right/left, near/far, level/lower) and
+  takes the first whose on-screen box, including where it floats to, stays on screen and misses the head and the
+  **bar's whole path** (recorded from the rack to the bottom of the rep, thickened by the plates' radius). If none is
+  fully clear it takes the one with the least overlap.
+- Tested on the Flat Bench (empty 45 lb bar across the screen): a full set, every frame of every popup checked
+  against the moving bar and the head: **0 overlaps** (it lands below-left of the chest there).
+- Tuning: `POPUP` at the top of the popup code in `MachineClient`.
+
+**Also fixed while testing: Workspace streaming.** The place has StreamingEnabled on (Roblox's default). A client
+waited at most 10 s for a machine's bar and plates and then gave up for good, so that machine never animated
+(seen once: taps did nothing on the bench). Machines, NPCs (Coach, legends, gym-goers) and the gym cat are now
+`ModelStreamingMode = Persistent` (always on every client, arriving whole), and the client waits without a
+time limit.
+
+---
+
 ## Gain popups: one number at a time + "Gain numbers" setting (2026-10-05) ✅ (playtested in Studio)
 
 Your popup fix (the step 0 request that never reached me before).

@@ -257,6 +257,8 @@ local function setupMachine(model)
 		warn("[MachineService] Unknown MachineId on", model:GetFullName())
 		return
 	end
+	-- Workspace streaming: the whole machine is always on every client (posing, plates and the bar need all of it)
+	if model:IsA("Model") then model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent end
 	local prompt = getPrompt(model)
 	if prompt then
 		prompt.ActionText = "Use"

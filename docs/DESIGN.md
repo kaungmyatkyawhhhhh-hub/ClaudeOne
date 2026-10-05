@@ -100,7 +100,7 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   a soft, short breath exhale at lockout only on heavy tiers or low stamina, never every rep.
   No grunts on any machine.
 - Gains: per rep ONE small BillboardGui popup with only the main muscle's gain number ("+12", no muscle name),
-  offset to the side of the chest; pops in with a Back-out bounce, floats up and fades. No popups for secondary
+  offset to the side of the chest so it never covers the bar (its whole path) or the face; pops in with a Back-out bounce, floats up and fades. No popups for secondary
   muscles: instead the muscle list in the machine HUD briefly flashes. Never stack popups: a new one replaces the
   old one. No "+N" numbers in the corner of the panel.
 - Pump: the trained body part scales up slightly each rep with a small bounce, then slowly settles over time.
@@ -110,7 +110,7 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   "Set done · +[total] Chest" popup (total of the set's main-muscle gains, the main muscle's group name), replacing
   the rep popup. No big pop-up window.
 - Setting "Gain numbers: On / Minimal / Off" in Settings: On = rep + set popups, Minimal = set popups only,
-  Off = no gain popups (the chime, chalk and HUD flash stay). Saved per player.
+  Off = no gain popups (the chime, chalk and HUD flash stay). Default On, saved per player.
 - Chalk puff from the hands when getting on a machine; sweat drop particles under 25% stamina.
 - The machine panel stays compact and low so it never covers the lift.
 
@@ -195,9 +195,11 @@ First Growth Spurt should be reachable in ~15-20 minutes.
 - Label style: a faint dark see-through backing, group name with a small bumper-plate grade disc (disc on the
   body side), the level number larger underneath. "Needs work" is small soft-red text under the weakest group
   only, and only when there's no tie.
-- Labels are not AlwaysOnTop, so ProximityPrompts always draw over them; a label that would sit on a shown prompt
-  fades out until the prompt hides. Labels are drawn part of the way toward the camera (scaled to look identical)
-  and pulled in front of any equipment or wall between them and the camera, so gym props never hide them.
+- Stats labels NEVER disappear while Stats is open: all labels, lines and dots stay fully visible even when a wall,
+  machine, rack or any other object is between them and the camera. Label BillboardGuis are AlwaysOnTop (lines and
+  dots are a 2D screen layer). Labels never fade for prompts either: a label that would cover a shown
+  ProximityPrompt is nudged slightly up or down so the prompt stays readable. Labels are drawn part of the way
+  toward the camera (scaled to look identical).
 - Numbers update live while open (including while lifting).
 - Tapping a group label expands its sub-muscle labels around that body part (smaller, each with its own line);
   tapping again collapses. One group open at a time.

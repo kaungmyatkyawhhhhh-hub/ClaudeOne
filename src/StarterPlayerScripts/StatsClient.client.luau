@@ -2,10 +2,10 @@
 -- Six group labels float in the 3D world next to their body part (BillboardGuis sized in studs). Each frame they
 -- are placed in camera space: left groups always to the camera's left of the body, right groups always to the
 -- right, stacked with a minimum gap so they never overlap or cross. Short thin white elbow lines run to dots on the body.
--- Labels are depth-tested (not AlwaysOnTop) so ProximityPrompts always draw above them. They are drawn part of the
--- way toward the camera (DepthShare) with their stud size scaled by the same share, so on screen they look exactly
--- like labels at the body (and scale with distance the same way). If a raycast finds equipment or a wall between
--- the camera and a label, that label is pulled in front of it (never closer than MinDepth).
+-- Labels are AlwaysOnTop (lines and dots are a 2D screen layer), so walls, racks and machines never hide or cut
+-- them: all labels stay visible the whole time Stats is open. A label that would cover a shown ProximityPrompt is
+-- nudged just above or below it instead of fading. They are drawn part of the way toward the camera (DepthShare)
+-- with their stud size scaled by the same share, so on screen they look exactly like labels at the body.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -48,7 +48,7 @@ local OVERLAY = {
 	Elbow = 14,                               -- px of the horizontal part of each leader line
 	LineTransparency = 0.25,
 	ScreenMargin = 24,                        -- px kept free at the bottom of the screen
-	PromptRect = Vector2.new(260, 110),       -- screen area kept clear around a shown ProximityPrompt
+	PromptRect = Vector2.new(170, 84),        -- px around a shown ProximityPrompt that labels are nudged off of
 }
 local SIDE = { Shoulders = -1, Arms = -1, Core = -1, Chest = 1, Back = 1, Legs = 1 } -- -1 = camera left
 
@@ -133,6 +133,7 @@ local function newBillboard(name, size)
 		Adornee = attachment,
 		Size = UDim2.new(size.Studs.X, size.Pixels.X, size.Studs.Y, size.Pixels.Y),
 		LightInfluence = 0,
+		AlwaysOnTop = true, -- walls, racks and machines never hide or cut a label
 		Enabled = false,
 		Parent = anchorPart,
 	})
@@ -325,19 +326,12 @@ local function promptRects(camera)
 		local parent = prompt.Parent
 		local position = parent and (parent:IsA("Attachment") and parent.WorldPosition or parent:IsA("BasePart") and parent.Position)
 		if position then
-			local point, onScreen = camera:WorldToScreenPoint(position)
+			-- viewport pixels (same rows as the label stacking math)
+			local point, onScreen = camera:WorldToViewportPoint(position)
 			if onScreen then table.insert(rects, { Vector2.new(point.X, point.Y), OVERLAY.PromptRect / 2 }) end
 		end
 	end
 	return rects
-end
-
-local function overlaps(center, half, rects)
-	for _, rect in ipairs(rects) do
-		local d = center - rect[1]
-		if math.abs(d.X) < half.X + rect[2].X and math.abs(d.Y) < half.Y + rect[2].Y then return true end
-	end
-	return false
 end
 
 local function setVisible(entry, visible)
@@ -359,10 +353,6 @@ local function drawLine(line, a, b, side)
 	segment(line[2], elbow, b)
 end
 
-local rayParams = RaycastParams.new()
-rayParams.FilterType = Enum.RaycastFilterType.Exclude
-rayParams.IgnoreWater = true
-
 local function step(dt)
 	local character = player.Character
 	local camera = Workspace.CurrentCamera
@@ -377,7 +367,6 @@ local function step(dt)
 	local alpha = 1 - math.exp(-OVERLAY.Smoothing * dt)
 	local origin = lineLayer.AbsolutePosition
 	local rects = promptRects(camera)
-	rayParams.FilterDescendantsInstances = { character, camera }
 
 	local center = cf:PointToObjectSpace(torso.Position)
 	local arm = character:FindFirstChild("LeftUpperArm")
@@ -398,15 +387,8 @@ local function step(dt)
 		if world then
 			local a = cf:PointToObjectSpace(world)
 			local bodyZ = math.min(a.Z, -0.6)
-			local z = math.min(bodyZ * OVERLAY.DepthShare, -OVERLAY.MinDepth)
-			-- pull the label in front of anything between it and the camera
-			local probe = cf:PointToWorldSpace(entry.smoothed or a * (z / bodyZ))
-			local ray = probe - cf.Position
-			local hit = Workspace:Raycast(cf.Position, ray, rayParams)
-			if hit and hit.Instance.Transparency < 0.9 then
-				z = math.min(z * math.max(hit.Distance - 0.3, 0) / ray.Magnitude, -OVERLAY.MinDepth)
-			end
-			z = math.max(z, bodyZ) -- never behind the body
+			-- (labels are AlwaysOnTop, so walls and equipment can't hide them whatever their depth)
+			local z = math.max(math.min(bodyZ * OVERLAY.DepthShare, -OVERLAY.MinDepth), bodyZ) -- never behind the body
 			local share = z / bodyZ
 			entry.share = share
 			local pxPerStud = viewport.Y / (2 * -z * tanHalf)
@@ -449,6 +431,20 @@ local function step(dt)
 	local function setY(entry, y)
 		entry.target = Vector3.new(entry.target.X, y, entry.target.Z)
 	end
+	-- A label that would cover a shown ProximityPrompt moves just above or below it (whichever is the smaller move)
+	-- instead of fading: labels stay visible the whole time Stats is open.
+	local function nudgeOffPrompts(entry)
+		for _, rect in ipairs(rects) do
+			local half = entry.studSize * entry.pxPerStud / 2
+			local cx = viewport.X / 2 + entry.target.X * entry.pxPerStud
+			local cy = viewport.Y / 2 - entry.target.Y * entry.pxPerStud
+			if math.abs(cx - rect[1].X) < half.X + rect[2].X and math.abs(cy - rect[1].Y) < half.Y + rect[2].Y then
+				local above = rect[1].Y - rect[2].Y - half.Y - Spacing.XS
+				local below = rect[1].Y + rect[2].Y + half.Y + Spacing.XS
+				setY(entry, screenY(entry, math.abs(above - cy) <= math.abs(below - cy) and above or below))
+			end
+		end
+	end
 	local function stackDown(list)
 		for i = 2, #list do
 			local above, entry = list[i - 1], list[i]
@@ -457,6 +453,7 @@ local function step(dt)
 		end
 	end
 	for _, list in pairs(perSide) do
+		for _, entry in ipairs(list) do nudgeOffPrompts(entry) end
 		table.sort(list, function(a, b) return a.target.Y > b.target.Y end)
 		stackDown(list)
 		-- if the stack runs off the bottom (e.g. an expanded group), push labels up from the bottom only as needed
@@ -479,6 +476,8 @@ local function step(dt)
 				stackDown(list)
 			end
 		end
+		-- stacking can push a label back onto a prompt: one more nudge (labels never hide for prompts)
+		for _, entry in ipairs(list) do nudgeOffPrompts(entry) end
 	end
 
 	for _, entry in ipairs(active) do
@@ -493,7 +492,7 @@ local function step(dt)
 			local dotScreen = camera:WorldToScreenPoint(entry.anchorWorld)
 			local pixelSize = entry.studSize * entry.pxPerStud
 			local labelCenter = Vector2.new(labelScreen.X, labelScreen.Y)
-			setVisible(entry, onScreen and not overlaps(labelCenter, pixelSize / 2, rects))
+			setVisible(entry, onScreen) -- only hidden when its spot is behind the camera
 
 			local dot = Vector2.new(dotScreen.X, dotScreen.Y) - origin
 			entry.dotSmoothed = entry.dotSmoothed and entry.dotSmoothed:Lerp(dot, alpha) or dot
