@@ -71,6 +71,16 @@ Short and current. The full build history (test steps, numbers, reasoning for ea
   on pro gym machines (locked for a new player; needs a Growth Spurt 2 save).
 - Stats world labels on phones weren't checked on a real device (Studio screenshots can't draw them).
 
+## Overnight run (6-7 Oct 2026, from GYM_ARC_overnight_prompt.md)
+- Session 0 (Rojo removal): done. Repo files were already gone (default.project.json, rokit.toml, sourcemap
+  line in .gitignore, Rojo lines in README/CLAUDE/tests/export notes). No game script mentions Rojo or
+  `Lighting.Technology`; Lighting is Realistic + PrioritizeLightingQuality, StreamingEnabled on.
+  **Your Studio still has the Rojo plugin installed (two versions, 7.4.4 and 7.7.1).** Remove it in
+  Plugins > Manage Plugins; I can't uninstall plugins from the MCP connection.
+
+## Decisions made overnight
+- (filled in as the run goes)
+
 ## Pacing (how the Growth Spurt goals are set)
 - Targets live in one table: `GrowthSpurts.Targets = { 18.5, 25, 35, 45 }` (1st, 2nd, 3rd, then every later spurt).
 - `tests/pacing.luau` plays 60 simulated players through 8 spurts with the real config modules: XP per rep =
