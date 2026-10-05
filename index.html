@@ -2038,12 +2038,12 @@ function openBank(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
-      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button></div>
+      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button></div>
       ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
     $("leaveBtn").onclick=closeRoom;
     const dep=a=>{a=Math.floor(a);if(a<=0)return;S.cash-=a;S.bank=(S.bank||0)+a;SFX.buy();dirty=true;draw();updMini()};
-    $("bkRe").onclick=()=>openRealty("home",()=>{room="bank";openBank()});$("bkEmp").onclick=()=>openEmpire(()=>{room="bank";openBank()});
+    $("bkRe").onclick=()=>openRealty("home",()=>{room="bank";openBank()});$("bkEmp").onclick=()=>openEmpire(()=>{room="bank";openBank()});$("bkLb").onclick=()=>openWorldLB(()=>{room="bank";openBank()});
     $("dAll").onclick=()=>dep(S.cash);$("dHalf").onclick=()=>dep(S.cash/2);
     $("wAll").onclick=()=>{const a=Math.floor(S.bank||0);if(a<=0)return;S.bank-=a;S.cash+=a;SFX.sell();dirty=true;draw();updMini()};
   };draw();
@@ -2870,7 +2870,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -4167,6 +4167,27 @@ function bindGarage(redraw){const cv=$("garCv");if(cv){const g=cv.getContext("2d
   $("room").querySelectorAll("[data-cmb]").forEach(b=>b.onclick=()=>{const m=CMODS.find(x=>x.k===b.dataset.cmb);if(S.cash<m.cost)return;S.cash-=m.cost;S.cmodOwn[m.k]=1;S.cmod[m.k]=m.opts[0];dirty=true;SFX.buy();confetti(50);banner(m.n+" fitted","g");redraw();updMini()});
   $("room").querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>{const[k,v]=b.dataset.cm.split("|");if(!S.cmodOwn[k])return;S.cmod[k]=v==="0"?0:k==="spoiler"?1:v;dirty=true;SFX.tick(.5);redraw()})}
 
+/* ================= world leaderboard: every player's best, kept on the broker ================= */
+const LBT="fliprush/v1/lb/";let lbPushT=20,GLB=null,glbK="nw";
+function lbMine(){return{n:mpName(),nw:Math.round(netWorth()),lv:repLevel(),pr:S.pr,f:Math.round(S.fans||0),cm:S.height||170,t:Date.now()}}
+function lbTick(dt){if(!ACC||!ACC.cls||!ACC.cls.length||ACC.kicked)return;lbPushT-=dt;if(lbPushT>0)return;lbPushT=300;try{cloudPut(ACC.cls,LBT+ACC.h,JSON.stringify(lbMine()))}catch(e){}}
+function lbFetch(){return new Promise(async res=>{let cls=ACC&&ACC.cls&&ACC.cls.length?ACC.cls:null,own=false;if(!cls){try{cls=await cloudConnect();own=true}catch(e){cls=[]}}if(!cls.length)return res(null);
+  const seen={};const h=(tp,buf)=>{if(!tp.startsWith(LBT))return;try{const d=JSON.parse(buf.toString());const id=tp.slice(LBT.length);if(d&&typeof d.n==="string"&&d.nw>=0&&d.nw<1e19&&(!seen[id]||seen[id].t<d.t))seen[id]={...d,id}}catch(e){}};
+  cls.forEach(c=>{c.on("message",h);c.subscribe(LBT+"#",{qos:0})});setTimeout(()=>{cls.forEach(c=>{c.removeListener("message",h);try{c.unsubscribe(LBT+"#")}catch(e){}if(own)try{c.end(true)}catch(e){}});res(Object.values(seen).filter(d=>Date.now()-d.t<60*864e5))},3200)})}
+const GLBM=[["nw","Net worth",d=>d.nw,fmt],["lv","Level",d=>d.lv||0,v=>"Lv "+v],["pr","Max lift",d=>d.pr||20,v=>v+" kg"],["f","Fans",d=>d.f||0,fmtN],["cm","Height",d=>d.cm||170,v=>v+" cm"]];
+function openWorldLB(back){room="worldlb";
+  const draw=()=>{const M_=GLBM.find(x=>x[0]===glbK),me=ACC&&ACC.h;let rows=GLB?GLB.slice():null;if(rows){const mine=lbMine();rows=rows.filter(r=>r.id!==me);rows.push({...mine,id:me,me:1});rows.sort((a,b)=>M_[2](b)-M_[2](a))}
+    const myRank=rows?rows.findIndex(r=>r.me)+1:0;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("World leaderboard")}
+      <div class="note">Every player of Flip Rush with an account shows up here. ${rows?`You're <b>#${myRank}</b> of ${rows.length} by ${M_[1].toLowerCase()}.`:"Loading players…"}</div>
+      <div class="lbtabs">${GLBM.map(([k,n])=>`<button class="${k===glbK?"on":""}" data-glb="${k}">${n}</button>`).join("")}</div>
+      <div class="lb glb">${rows?rows.slice(0,50).map((p,i)=>`<div class="${p.me?"me":""}"><b>${i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</b><span>${esc(String(p.n).slice(0,18))}${p.me?" (you)":""}</span><i>${M_[3](M_[2](p))}</i></div>`).join("")+(myRank>50?`<div class="me"><b>${myRank}</b><span>${esc(mpName())} (you)</span><i>${M_[3](M_[2](lbMine()))}</i></div>`:""):`<p class="fine">Connecting…</p>`}</div>
+      <button class="bigbtn alt" id="glbR">Refresh<small>&nbsp;</small></button></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-glb]").forEach(b=>b.onclick=()=>{glbK=b.dataset.glb;draw()});$("glbR").onclick=()=>{GLB=null;draw();load()}};
+  const load=()=>{lbPushT=0;lbTick(0);lbFetch().then(r=>{GLB=r||[];if(room==="worldlb")draw()})};
+  draw();if(!GLB)load()}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4189,7 +4210,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram","worldlb"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
