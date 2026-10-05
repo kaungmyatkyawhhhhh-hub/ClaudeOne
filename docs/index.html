@@ -1349,7 +1349,7 @@ function drawWorld(){
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   drawFinds();
-  if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
+  if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();drawHol();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
@@ -2924,7 +2924,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);huntTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);huntTick(dt);holTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3758,7 +3758,7 @@ function seasonFx(){const sn=season().n;if(SET.nofx)return;
 
 /* ================= boutique: accessories you wear (friends see them too) ================= */
 const ACCS=[
- {k:"cap",s:"h",n:"Snapback cap",cost:500,rz:1},{k:"beanie",s:"h",n:"Beanie",cost:900,rz:1},{k:"cowboy",s:"h",n:"Cowboy hat",cost:6000,rz:2},{k:"top",s:"h",n:"Top hat",cost:60000,rz:3},{k:"halo",s:"h",n:"Golden halo",cost:2e8,rz:8},
+ {k:"cap",s:"h",n:"Snapback cap",cost:500,rz:1},{k:"beanie",s:"h",n:"Beanie",cost:900,rz:1},{k:"cowboy",s:"h",n:"Cowboy hat",cost:6000,rz:2},{k:"top",s:"h",n:"Top hat",cost:60000,rz:3},{k:"halo",s:"h",n:"Golden halo",cost:2e8,rz:8},{k:"pumpkinhat",s:"h",n:"Pumpkin head",cost:0,rz:4,ev:"Collect 25 pumpkins in October"},{k:"santa",s:"h",n:"Santa hat",cost:0,rz:4,ev:"Collect 25 presents in December"},
  {k:"shades",s:"g",n:"Shades",cost:300,rz:1},{k:"aviator",s:"g",n:"Aviators",cost:4000,rz:2},{k:"dshades",s:"g",n:"Diamond shades",cost:2e6,rz:5},
  {k:"silver",s:"c",n:"Silver chain",cost:2500,rz:1},{k:"gold",s:"c",n:"Gold chain",cost:50000,rz:3},{k:"diamond",s:"c",n:"Diamond chain",cost:8e6,rz:6},
  {k:"pack",s:"b",n:"Backpack",cost:1200,rz:0,d:"+1 stash slot"},{k:"cape",s:"b",n:"Superhero cape",cost:1.5e7,rz:4},{k:"wings",s:"b",n:"Angel wings",cost:5e8,rz:10}];
@@ -3777,15 +3777,17 @@ function accHat(c,k,x,y){if(k==="cap"){c.fillStyle="#2a5bd7";c.beginPath();c.arc
   if(k==="beanie"){c.fillStyle="#e2364a";c.beginPath();c.arc(x,y-3,10,Math.PI,0);c.fill();c.fillStyle="#fff";c.fillRect(x-10,y-4,20,3);c.beginPath();c.arc(x,y-13,2.6,0,7);c.fill()}
   if(k==="cowboy"){c.fillStyle="#8a5a2c";c.beginPath();c.ellipse(x,y-5,16,3.4,0,0,7);c.fill();rrp(c,x-7,y-15,14,11,4);c.fill();c.fillStyle="#3b2a20";c.fillRect(x-7,y-8,14,2)}
   if(k==="top"){c.fillStyle="#141824";c.beginPath();c.ellipse(x,y-6,13,3,0,0,7);c.fill();c.fillRect(x-7,y-22,14,16);c.fillStyle="#d6384b";c.fillRect(x-7,y-10,14,2.5)}
+  if(k==="pumpkinhat"){c.fillStyle="#ff7a3d";c.beginPath();c.ellipse(x,y-2,12,11,0,0,7);c.fill();c.strokeStyle="#c9541c";c.lineWidth=1;c.beginPath();c.ellipse(x,y-2,5,11,0,0,7);c.stroke();c.fillStyle="#3f7a3a";c.fillRect(x-1.5,y-16,3,4);c.fillStyle="#ffe08a";c.beginPath();c.moveTo(x-6,y-3);c.lineTo(x-3,y-7);c.lineTo(x-1,y-3);c.moveTo(x+1,y-3);c.lineTo(x+3,y-7);c.lineTo(x+6,y-3);c.fill();c.fillRect(x-5,y+2,10,2)}
+  if(k==="santa"){c.fillStyle="#e2364a";c.beginPath();c.moveTo(x-10,y-4);c.quadraticCurveTo(x,y-22,x+12,y-14);c.lineTo(x+8,y-4);c.fill();c.fillStyle="#fff";c.fillRect(x-11,y-6,22,4);c.beginPath();c.arc(x+12,y-14,3,0,7);c.fill()}
   if(k==="halo"){c.strokeStyle="#ffcc33";c.lineWidth=2.4;c.globalAlpha=.75+.25*Math.sin(wt*4);c.beginPath();c.ellipse(x,y-17+Math.sin(wt*3)*1,9,3,0,0,7);c.stroke();c.globalAlpha=1}}
 function openBoutique(back){S.accOwn=S.accOwn||{};S.acc=S.acc||{};
   const draw=()=>{const prev=`<div class="art bqart"><canvas id="bqCv" width="300" height="240"></canvas></div>`;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Boutique")}${prev}
       <div class="note">Wear one item per slot. Everything you wear adds a little <b>rizz</b> (now +${accRizz()}) and friends see it in the Online Town.</div>
-      ${Object.entries(ACC_SLOT).map(([sl,nm])=>`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${ACCS.filter(a=>a.s===sl).map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&S.cash<a.cost?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.d||"+"+a.rz+" rizz"}</span><span class="c">${on?"Take off":own?"Wear":fmt(a.cost)}</span></button>`}).join("")}</div>`).join("")}</div>`;
+      ${Object.entries(ACC_SLOT).map(([sl,nm])=>`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${ACCS.filter(a=>a.s===sl).map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&(a.ev||S.cash<a.cost)?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.ev&&!own?a.ev:a.d||"+"+a.rz+" rizz"}</span><span class="c">${on?"Take off":own?"Wear":a.ev?"Event":fmt(a.cost)}</span></button>`}).join("")}</div>`).join("")}</div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
-    $("room").querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acc);if(!S.accOwn[a.k]){if(S.cash<a.cost)return;S.cash-=a.cost;S.accOwn[a.k]=1;SFX.buy();confetti(40);banner(a.n+" bought","g")}
+    $("room").querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acc);if(!S.accOwn[a.k]){if(a.ev||S.cash<a.cost)return;S.cash-=a.cost;S.accOwn[a.k]=1;SFX.buy();confetti(40);banner(a.n+" bought","g")}
       if(S.acc[a.s]===a.k)delete S.acc[a.s];else S.acc[a.s]=a.k;dirty=true;SFX.tick(.6);draw();updMini()})};draw()}
 
 /* ================= luck: daily prize wheel, scratch cards, room leaderboard ================= */
@@ -3868,7 +3870,7 @@ function openInterior(back){S.furn=S.furn||{};
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-fu]").forEach(b=>b.onclick=()=>{const f=FURN.find(x=>x.k===b.dataset.fu);if(S.furn[f.k]||S.cash<f.cost)return;S.cash-=f.cost;S.furn[f.k]=1;dirty=true;SFX.buy();confetti(50);banner(f.n+" placed","g");draw();updMini()})};draw()}
 /* seasonal decorations around town */
-function drawSeasonDecor(){if(room)return;const sn=season().n;if(sn!=="Autumn"&&sn!=="Winter")return;
+function drawSeasonDecor(){if(room)return;const hm=new Date().getMonth(),sn=hm===9?"Autumn":hm===11?"Winter":season().n;if(sn!=="Autumn"&&sn!=="Winter")return;
   PLACES.forEach((p,i)=>{if(!regionOpen(p.region)||(MPW&&p.k==="home"))return;const[dx,dy]=p.door,x=dx+(i%2?38:-38),y=dy+12;if(x<cam.x-30||x>cam.x+vw+30||y<cam.y-30||y>cam.y+vh+30)return;
     if(sn==="Autumn"){ctx.fillStyle="#e2762c";ctx.beginPath();ctx.ellipse(x,y,8,6.5,0,0,7);ctx.fill();ctx.strokeStyle="#b85a1c";ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y,3,6.5,0,0,7);ctx.stroke();ctx.fillStyle="#3f7a3a";ctx.fillRect(x-1,y-9,2,4);if(night()>.4){ctx.fillStyle="#ffd36b";ctx.beginPath();ctx.moveTo(x-4,y-1);ctx.lineTo(x-2,y-3);ctx.lineTo(x,y-1);ctx.moveTo(x+1,y-1);ctx.lineTo(x+3,y-3);ctx.lineTo(x+5,y-1);ctx.fill();ctx.fillRect(x-3,y+2,6,1.5)}}
     else{ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.arc(x,y-10,5,0,7);ctx.fill();ctx.fillStyle="#141824";ctx.fillRect(x-2,y-12,1.5,1.5);ctx.fillRect(x+1,y-12,1.5,1.5);ctx.fillStyle="#ff7a3d";ctx.fillRect(x-.5,y-10,4,1.5);ctx.fillStyle="#e2364a";ctx.fillRect(x-5,y-6,10,2);
@@ -4417,6 +4419,18 @@ function openRequests(back){ensureReq();
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-rq]").forEach(b=>b.onclick=()=>{const r=S.req.list[+b.dataset.rq],m=reqMatch(r);if(r.done||!m)return;const pay=Math.round(sellValue(m[0])*r.m);S.stash.splice(m[1],1);r.done=1;earn(pay);S.stats.flips++;S.stats.reqs=(S.stats.reqs||0)+1;dirty=true;SFX.sell();confetti(80);banner("Delivered · +"+fmt(pay),"g");draw();updMini()})};draw()}
 
+/* ================= holiday events by real month: Halloween (October), Christmas (December) ================= */
+const HOLI=()=>{const m=new Date().getMonth();return m===9?{k:"hw",n:"Halloween",item:"pumpkin",c:"#ff7a3d",hat:"pumpkinhat"}:m===11?{k:"xm",n:"Christmas",item:"present",c:"#e2364a",hat:"santa"}:null};
+let HOLS=[],holT=8;
+function holTick(dt){const H=HOLI();if(!H||room||!S){return}holT-=dt;if(holT<=0&&HOLS.length<4){holT=rnd(18,32);for(let i=0;i<30;i++){const a=Math.random()*7,d=rnd(140,320),x=S.px+Math.cos(a)*d,y=S.py+Math.sin(a)*d;if(x>40&&x<W-40&&y>80&&y<SEA-40&&regionOpen(regionOf(x,y))&&!inBld(x,y,20)){HOLS.push({x,y,t:0});break}}}
+  HOLS.forEach(h=>h.t+=dt);HOLS=HOLS.filter(h=>h.t<70);
+  for(let i=HOLS.length-1;i>=0;i--){const h=HOLS[i];if(Math.hypot(S.px-h.x,S.py-h.y)<28){HOLS.splice(i,1);S.hol=S.hol||{};const k=H.k+new Date().getFullYear();S.hol[k]=(S.hol[k]||0)+1;const n=S.hol[k],v=Math.round(300*(1+SC()));earn(v);dirty=true;SFX.sell();buzz(8);
+      if(n===25){S.accOwn=S.accOwn||{};S.accOwn[H.hat]=1;SFX.grail();confetti(200,null,null,[H.c,"#fff"]);banner(H.n+" hat unlocked! Wear it from the Boutique","g")}else banner((H.k==="hw"?"🎃 ":"🎁 ")+n+(n<25?"/25":"")+" · +"+fmt(v),"u")}}}
+function drawHol(){const H=HOLI();if(!H||room)return;HOLS.forEach(h=>{const b=Math.sin(wt*3+h.x)*2,{x,y}=h;ctx.fillStyle="rgba(0,0,0,.2)";ctx.beginPath();ctx.ellipse(x,y+6,10,3.5,0,0,7);ctx.fill();
+  if(H.k==="hw"){ctx.fillStyle="#ff7a3d";ctx.beginPath();ctx.ellipse(x,y-4+b,11,9,0,0,7);ctx.fill();ctx.strokeStyle="#c9541c";ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(x,y-4+b,4,9,0,0,7);ctx.stroke();ctx.fillStyle="#3f7a3a";ctx.fillRect(x-1.5,y-16+b,3,5);ctx.fillStyle="#ffe08a";ctx.beginPath();ctx.moveTo(x-6,y-6+b);ctx.lineTo(x-3,y-9+b);ctx.lineTo(x-1,y-6+b);ctx.moveTo(x+1,y-6+b);ctx.lineTo(x+3,y-9+b);ctx.lineTo(x+6,y-6+b);ctx.fill();ctx.fillRect(x-4,y-2+b,8,2)}
+  else{ctx.fillStyle="#e2364a";ctx.fillRect(x-9,y-14+b,18,16);ctx.fillStyle="#ffcc33";ctx.fillRect(x-2,y-14+b,4,16);ctx.fillRect(x-9,y-8+b,18,3);ctx.beginPath();ctx.arc(x-3,y-16+b,3,0,7);ctx.arc(x+3,y-16+b,3,0,7);ctx.fill()}
+  ctx.globalAlpha=.4+.3*Math.sin(wt*5);ctx.strokeStyle=H.c;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+6,16,6,0,0,7);ctx.stroke();ctx.globalAlpha=1})}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4841,7 +4855,7 @@ function titleMain(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack()}if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
