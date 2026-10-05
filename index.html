@@ -272,6 +272,12 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 #tut[hidden]{display:none}#tut b{color:#4fe3ff}#tut .n{font:800 .68rem var(--mono);color:#4fe3ff;flex:none;margin-top:3px;letter-spacing:.04em}#tut p{margin:0;flex:1}
 #tut button{pointer-events:auto;flex:none;background:rgba(255,255,255,.1);border:0;border-radius:999px;color:rgba(255,255,255,.75);font:700 .72rem var(--body);padding:5px 10px;cursor:pointer}
 @keyframes tutIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+.cityart{padding:0;overflow:hidden}.cityart svg{display:block;width:100%;height:auto}.citysvg .cbld{cursor:pointer;transition:filter .15s}.citysvg .cbld:hover,.citysvg .cbld:active{filter:brightness(1.12) drop-shadow(0 0 4px rgba(255,255,255,.7))}
+.citybar{display:flex;gap:10px;align-items:center;margin:10px 0}.citybar .flag{border-radius:3px;box-shadow:0 0 0 1px var(--line);flex:none}.citybar span{display:flex;flex-direction:column}.citybar small{color:var(--muted);font-size:.8rem}
+.perk.dest .oav.fl{background:none;display:grid;place-items:center}.perk.dest .flag{border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.perk.prestige{background:linear-gradient(135deg,#15161c,#2b2410);color:#f4e7c4}.perk.prestige .d{color:#cdbb8e}.perk.prestige .c{background:#cf9a14;color:#15161c}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.seg3 button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:9px 6px;font:800 .85rem var(--body);display:flex;flex-direction:column;gap:2px;cursor:pointer}.seg3 button small{font:600 .66rem var(--mono);color:var(--muted)}.seg3 button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.seg3 button.on small{color:inherit;opacity:.75}
+.flyov{background:linear-gradient(#7fc4f0,#d9efff)}.flyclouds{position:absolute;left:-50%;right:-50%;top:58%;height:30%;background:radial-gradient(ellipse 60px 22px at 50% 50%,#fff 60%,transparent 62%) 0 0/180px 80px;animation:waves 1.2s linear infinite;opacity:.9}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -683,13 +689,15 @@ const CATS=[
  {k:"tech",n:"Tech",h:262,conds:[["Sealed",1.1],["Open box",.88],["Used",.7]],items:[["BP","Buds Pro 2",160],["PC","Pocket Console OLED",260],["FP","Flagship Phone 14",620],["RC","Retro Compact Cam",1400],["PX","Prototype Console",4800]]},
  {k:"cards",n:"Cards",h:325,conds:[["PSA 10",1.4],["PSA 8",.8],["Raw",.5]],items:[["EM","Electric Mouse Promo",90],["RK","'03 Rookie Card",450],["FD","Fire Dragon Holo",900],["HL","'86 Hoops Legend",3800],["GR","1-of-1 Gold Rookie",16000]]},
  {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["SQ","Square Digital",110],["AD","Auto Diver",220],["HD","Heritage Diver",3200],["MC","Moon Chrono",5600],["PP","Platinum Perpetual",26000]]},
- {k:"lux",n:"Luxury",h:45,conds:[["Mint",1.1],["Excellent",.95],["Estate",.8]],items:[["DN","Diamond Tennis Bracelet",18000],["SA","Sapphire Brooch",28000],["RG","Gold Chronograph 'Regent'",42000],["CG","Couture Evening Gown",24000],["CB","Crocodile Top-Handle Bag",65000],["GN","Gilded Grand Piano",150000],["PK","Pink Diamond Ring",240000],["JE","Jeweled Imperial Egg",480000],["OM","Old Master Painting",900000],["YN","Yellow Diamond Necklace",1200000]]}
+ {k:"lux",n:"Luxury",h:45,conds:[["Mint",1.1],["Excellent",.95],["Estate",.8]],items:[["DN","Diamond Tennis Bracelet",18000],["SA","Sapphire Brooch",28000],["RG","Gold Chronograph 'Regent'",42000],["CG","Couture Evening Gown",24000],["CB","Crocodile Top-Handle Bag",65000],["GN","Gilded Grand Piano",150000],["PK","Pink Diamond Ring",240000],["JE","Jeweled Imperial Egg",480000],["OM","Old Master Painting",900000],["YN","Yellow Diamond Necklace",1200000]]},
+ {k:"elite",n:"Prestige",h:50,conds:[["Concours",1.1],["Pristine",1]],items:[["HC","Hypercar 1-of-1 Prototype",5e7],["RW","Royal Wristwatch 'Emperor'",5.2e7],["FE","Imperial Jeweled Egg Set",5.5e7],["PJ","Long-Range Private Jet",6.5e7],["GT","'62 Grand Tourer Berlinetta",7e7],["SC","Ancient Marble Sculpture",7.5e7],["BD","Blue Diamond 'Ocean Star'",8e7],["MP","Modern Masterpiece Canvas",9e7],["SY","Superyacht 'Aurora'",9.5e7],["PS","Penthouse Deed, Central Park",1e8]]}
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
 const POOL=CATS.flatMap(c=>c.items.map(i=>({cat:c.k,code:i[0],name:i[1],base:i[2]})));
 const START_CATS=["kicks","gym","vint"];
 const UNLOCK={toys:1500,tech:5000,cards:15000,watch:40000};
 const NEWS={
+ elite:[["A sovereign fund is buying trophy assets","A record was set at a Geneva auction"],["Billionaires are cashing out","An auction house had a quiet night"]],
  lux:[["A royal wedding has everyone buying jewels","Billionaires are bidding wars at auction"],["A luxury tax just passed","Old money is quietly selling off"]],
  kicks:[["A rapper wore them courtside","A surprise collab sold out in 3 minutes"],["The brand restocked everything","Fakes are flooding the market"]],
  gym:[["New Year's resolutions just kicked in","A fitness influencer's home gym went viral"],["Everyone quit their resolutions","Gyms are running a huge sign-up promo"]],
@@ -729,7 +737,7 @@ const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop
 VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:20000,shop:"dealer"},{k:"classic",n:"Classic coupe",d:"2.8× speed. Sells back for 130%.",sp:2.8,cost:80000,shop:"dealer",resale:1.3},{k:"supercar",n:"Hypercar",d:"4× speed. The fastest thing in town.",sp:4,cost:250000,shop:"dealer"});
 const CARS=["car","truck","classic","supercar"];
 const ride=()=>{if(!S||!S.veh)return null;if(S.cur==="walk")return null;if(S.cur&&S.veh[S.cur])return S.cur;const own=VEH.filter(v=>S.veh[v.k]).sort((a,b)=>b.sp-a.sp);return own.length?own[0].k:null};
-const PROPS=[{n:"Apartment",c:"#e39a52",cost:0,en:0,sell:0,d:"A cozy start."},{n:"Loft",c:"#14a3a8",cost:25000,en:20,sell:0,d:"+20 max energy."},{n:"Penthouse",c:"#2b2f3a",cost:150000,en:50,sell:.1,d:"+50 max energy, +10% on every sale."},{n:"Mansion",c:"#cf9a14",cost:1000000,en:100,sell:.25,d:"+100 max energy, +25% on every sale."}];
+const PROPS=[{n:"Apartment",c:"#e39a52",cost:0,en:0,sell:0,d:"A cozy start."},{n:"Loft",c:"#14a3a8",cost:25000,en:20,sell:0,d:"+20 max energy."},{n:"Penthouse",c:"#2b2f3a",cost:150000,en:50,sell:.1,d:"+50 max energy, +10% on every sale."},{n:"Mansion",c:"#cf9a14",cost:1000000,en:100,sell:.25,d:"+100 max energy, +25% on every sale."},{n:"Sky Villa",c:"#7a2fd6",cost:1e7,en:150,sell:.32,d:"+150 max energy, +32% on every sale."},{n:"Island Estate",c:"#14a3a8",cost:1e8,en:220,sell:.4,d:"+220 max energy, +40% on every sale."},{n:"Royal Palace",c:"#8a1d2a",cost:1e9,en:300,sell:.5,d:"+300 max energy, +50% on every sale."}];
 const OUTFITS=[["Classic blue","#2a3cff",0],["Crimson","#e2364a",5],["Gold","#cf9a14",10],["Midnight","#1b1f2a",15],["Neon","#2fd28a",20],["Royal","#8f52d4",30],["Diamond","#7fd6ff",40]];
 const PAINTS=["#e2364a","#2a5bd7","#1b1f2a","#f2f2f2","#cf9a14","#2fd28a","#ff7a3d","#8f52d4"];
 const SEASONS=[{n:"Spring",m:{kicks:1.15,watch:1.05}},{n:"Summer",m:{gym:1.2,vint:.9,tech:1.05}},{n:"Autumn",m:{vint:1.2,cards:1.1}},{n:"Winter",m:{vint:1.3,toys:1.25,gym:.9}}];
@@ -1318,7 +1326,7 @@ function openRoom(k){
   ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
-function closeRoom(){if(M)closeMarket();G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 // buying or claiming redraws the room; keep the scroll position when it's the same screen
 const roomSc={y:0,t:null};
 $("room").addEventListener("scroll",e=>{const t=e.target;if(t.classList&&t.classList.contains("scroll")&&t.parentNode===$("room"))roomSc.y=t.scrollTop},true);
@@ -1974,10 +1982,12 @@ function openBank(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
+      <div class="bankbtns"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button></div>
       ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
     $("leaveBtn").onclick=closeRoom;
     const dep=a=>{a=Math.floor(a);if(a<=0)return;S.cash-=a;S.bank=(S.bank||0)+a;SFX.buy();dirty=true;draw();updMini()};
+    $("bkRe").onclick=()=>openRealty("home",()=>{room="bank";openBank()});$("bkEmp").onclick=()=>openEmpire(()=>{room="bank";openBank()});
     $("dAll").onclick=()=>dep(S.cash);$("dHalf").onclick=()=>dep(S.cash/2);
     $("wAll").onclick=()=>{const a=Math.floor(S.bank||0);if(a<=0)return;S.bank-=a;S.cash+=a;SFX.sell();dirty=true;draw();updMini()};
   };draw();
@@ -2282,19 +2292,6 @@ $("trChip").onclick=()=>{audioOn();if(!room&&(S.up.phone||nearPlace()===PL.trade
 const fare=()=>hasToy("jet")?0:Math.round(1500*(1+SC()*.6));
 function planeArt(){return `<svg viewBox="0 0 400 140" aria-hidden="true"><rect width="400" height="140" fill="var(--sunk)"/><rect y="104" width="400" height="36" fill="var(--line)"/>${[40,110,180,250,320].map(x=>`<rect x="${x}" y="120" width="40" height="5" fill="var(--surface)"/>`).join("")}
   <path d="M60 80h230c26 0 46 6 46 14s-20 14-46 14H90l-30-14Z" fill="#f2f2f2"/><path d="M180 82l-40-46h22l60 46Z" fill="#3b6fd8"/><path d="M190 106l-30 30h20l44-30Z" fill="#3b6fd8"/><path d="M70 82l-16-30h14l24 30Z" fill="#3b6fd8"/>${[210,226,242,258,274].map(x=>`<circle cx="${x}" cy="92" r="4" fill="#1b1f2a"/>`).join("")}</svg>`}
-function openAirport(){
-  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
-    <div class="note">Fly abroad to sell where your items are worth more. Each round trip costs <b>${fmt(fare())}</b>. When you leave the market abroad, you fly home.</div>
-    <div class="perks">
-      <button class="perk nopic" data-fly="tokyo" ${S.cash<fare()?"disabled":""}><span class="t">Tokyo</span><span class="d">Cards and toys sell for +45%, tech +20%. Cheaper listings.</span><span class="c">${fmt(fare())}</span></button>
-      <button class="perk nopic" data-fly="paris" ${S.cash<fare()?"disabled":""}><span class="t">Paris</span><span class="d">Vintage sells for +45%, watches +35%, kicks +15%.</span><span class="c">${fmt(fare())}</span></button>
-      ${hasToy("jet")?`<button class="perk nopic" data-fly="dubai"><span class="t">Dubai · private jet</span><span class="d">Everything sells for +40%, watches and tech even more.</span><span class="c">Free</span></button>`:`<div class="perk nopic" style="opacity:.6"><span class="t">Dubai</span><span class="d">Needs a private jet (Dealership, Billionaire toys).</span><span class="c">Locked</span></div>`}
-    </div></div>`;
-  $("leaveBtn").onclick=closeRoom;
-  $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{if(S.cash<fare())return;S.cash-=fare();dirty=true;SFX.rebirth();
-    const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="✈";document.body.appendChild(fx);const k=b.dataset.fly;
-    setTimeout(()=>{room=k;$("room").style.setProperty("--pc",k==="tokyo"?"#e2364a":k==="dubai"?"#cf9a14":"#2a5bd7");openMarket(MKT[k]);$("leaveBtn").onclick=closeRoom;banner("Welcome to "+MKT[k].n,"a")},1200);setTimeout(()=>fx.remove(),2600)});
-}
 const vipCost=()=>Math.max(500,Math.round(S.cash*.03));
 function openDocks(){
   const draw=()=>{const cars=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)),best=cars.sort((a,b)=>b.sp-a.sp)[0],shown=S.flags.showDay===S.day;
@@ -2589,7 +2586,7 @@ const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*(S.buffs&&S.buffs.hype>0?1.3:1)*(1+.12*pk("cat_"+s.cat)));
+const sellValue=s=>valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*(S.buffs&&S.buffs.hype>0?1.3:1)*(1+.12*pk("cat_"+s.cat)));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 function newListing(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
@@ -2604,7 +2601,7 @@ function newListing(){
     const ask=Math.max(10,Math.round(avg*rnd(.45,.7)/5)*5);
     return {...b0,kind:"mystery",cat:null,code:"?",name:"Mystery Box",cond:"Sealed",base:0,ask,price:ask,life,left:life,rating:rnd(4.4,5)};
   }
-  const luxP=MC().k==="lux"?(()=>{const lp=POOL.filter(p=>p.cat==="lux"),cap=Math.max(30000,(S.cash+stashVal())*1.5),ok=lp.filter(p=>p.base<=cap);return ok.length?ok:lp.slice(0,3)})():null;
+  const only=MC().only||(MC().k==="lux"?"lux":null),luxP=only?(()=>{const lp=POOL.filter(p=>p.cat===only);if(only!=="lux")return lp;const cap=Math.max(30000,(S.cash+stashVal())*1.5),ok=lp.filter(p=>p.base<=cap);return ok.length?ok:lp.slice(0,3)})():null;
   const it=pick(luxP||affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
   const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
   const steal=Math.random()<MC().steal*(1+.15*pk("steal")),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
@@ -2816,7 +2813,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);bizTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="storage")lotTick(dt);
       findsTick(dt);jobTick(dt);rivalTick(dt);
@@ -3106,6 +3103,221 @@ function mpUI(keep){
   sh.querySelectorAll("[data-gift]").forEach(b=>b.onclick=()=>{const p=MP.peers[b.dataset.gift],a=Math.round(S.cash*.05);if(!p||a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},b.dataset.gift);mpLog(mpName(),"sent "+fmt(a)+" to "+p.n,1);SFX.sell();banner("Sent "+fmt(a)+" to "+String(p.n).slice(0,14),"u");mpUI()});
 }
 
+/* ================= travel: countries, prestige houses and businesses abroad ================= */
+const COUNTRIES=[
+ {k:"tokyo",cn:"Japan",n:"Tokyo",sky:["#ffc2d1","#fff1e6"],far:"#d79ab0",tone:"#e2364a",tree:"sakura",sea:0,fare:1,lv:0,bz:1.2,d:"Neon alleys, cherry blossoms and card shops.",spec:"Cards and toys +45%, tech +20%",lm:"Tokyo Tower",el:{HC:1.25,RW:1.15},biz:["apt","bar","rest","condo","hotel"]},
+ {k:"paris",cn:"France",n:"Paris",sky:["#f7c59f","#fdf0dc"],far:"#c9a58a",tone:"#2a5bd7",tree:"plane",sea:0,fare:1,lv:0,bz:1.3,d:"Cafés, boutiques and the Seine at golden hour.",spec:"Vintage +45%, watches +35%",lm:"Eiffel Tower",el:{MP:1.3,FE:1.2},biz:["apt","bar","rest","condo","hotel"]},
+ {k:"london",cn:"United Kingdom",n:"London",sky:["#b9c6d6","#e9eef4"],far:"#8f9db0",tone:"#c8102e",tree:"plane",sea:1,fare:1.1,lv:5,bz:1.4,d:"Auction houses, red buses and the Thames.",spec:"Vintage +30%, watches +25%, luxury +20%",lm:"Big Ben",el:{FE:1.3,SC:1.15},biz:["apt","bar","rest","condo","hotel"]},
+ {k:"rome",cn:"Italy",n:"Rome",sky:["#ffd59e","#fff4df"],far:"#d1a77a",tone:"#1f9d5b",tree:"cypress",sea:0,fare:1,lv:5,bz:1.1,d:"Ancient ruins, espresso bars and supercar showrooms.",spec:"Vintage +35%, luxury +25%",lm:"Colosseum",el:{SC:1.35,GT:1.2},biz:["apt","bar","rest","condo","hotel"]},
+ {k:"seoul",cn:"South Korea",n:"Seoul",sky:["#a9c8ff","#eef4ff"],far:"#8aa3cf",tone:"#2a5bd7",tree:"ginkgo",sea:0,fare:1,lv:8,bz:1,d:"K-pop billboards, tech towers and street food.",spec:"Tech +45%, toys +30%",lm:"N Seoul Tower",el:{HC:1.2,PJ:1.15},biz:["apt","bar","rest","condo","hotel"]},
+ {k:"bangkok",cn:"Thailand",n:"Bangkok",sky:["#ffb38a","#ffe8c9"],far:"#cf8e6a",tone:"#cf9a14",tree:"palm",sea:1,fare:.8,lv:8,bz:.6,d:"Golden temples, night markets and river boats.",spec:"Cheap listings, gym +25%, toys +20%",lm:"Wat Arun",el:{BD:1.2,SC:1.1},biz:["apt","bar","rest","condo","hotel","resort"]},
+ {k:"nyc",cn:"United States",n:"New York",sky:["#9fc2e8","#e8f1fb"],far:"#7f97b3",tone:"#ffcc33",tree:"plane",sea:1,fare:1.2,lv:10,bz:1.5,d:"Yellow cabs, sneaker drops and penthouses.",spec:"Kicks +40%, cards +30%",lm:"Empire State",el:{PS:1.35,MP:1.15},biz:["apt","bar","rest","condo","hotel"]},
+ {k:"rio",cn:"Brazil",n:"Rio de Janeiro",sky:["#7fd3ff","#e6f8ff"],far:"#6fae9a",tone:"#1f9d5b",tree:"palm",sea:1,fare:1.3,lv:12,bz:.7,d:"Beaches, samba and mountain views.",spec:"Gym +45%, kicks +20%",lm:"Christ the Redeemer",el:{SY:1.2,GT:1.15},biz:["apt","bar","rest","condo","hotel","resort"]},
+ {k:"sydney",cn:"Australia",n:"Sydney",sky:["#8fd0ff","#eaf7ff"],far:"#7aa9c9",tone:"#0f6fb3",tree:"gum",sea:1,fare:1.5,lv:12,bz:1.1,d:"Harbour sails, surf and sunshine.",spec:"Gym +30%, vintage +15%",lm:"Opera House",el:{SY:1.25,PJ:1.2},biz:["apt","bar","rest","condo","hotel","resort"]},
+ {k:"dubai",cn:"UAE",n:"Dubai",sky:["#ffd08a","#fff6e0"],far:"#d6b07a",tone:"#cf9a14",tree:"palm",sea:1,fare:2,lv:15,bz:1.4,d:"Gold souks, supertall towers and desert sun.",spec:"Everything +40%, watches and tech more",lm:"Burj Khalifa",el:{SY:1.25,PJ:1.25,BD:1.15},biz:["apt","bar","rest","condo","hotel","resort"]},
+ {k:"geneva",cn:"Switzerland",n:"Geneva",sky:["#b8dcff","#f2f9ff"],far:"#9fb6cc",tone:"#e2364a",tree:"pine",sea:1,fare:1.6,lv:20,bz:1.6,d:"Private banks, watchmakers and the Alps.",spec:"Watches +60%, luxury +20%",lm:"Jet d'Eau",el:{RW:1.4,BD:1.2},biz:["apt","bar","rest","condo","hotel"]},
+ {k:"monaco",cn:"Monaco",n:"Monte Carlo",sky:["#8fd8ff","#f0fbff"],far:"#9ec2cf",tone:"#e2364a",tree:"palm",sea:1,fare:3,lv:25,bz:2,d:"Superyachts, the casino and the Grand Prix.",spec:"Luxury +40%, watches +30%, sales +25%",lm:"Casino de Monte-Carlo",el:{SY:1.35,GT:1.3,HC:1.2},biz:["apt","bar","rest","condo","hotel","resort"]}];
+const HOMECITY={k:"home",cn:"Home",n:"Flip City",bz:.8,tone:"#2a3cff",biz:["apt","bar","rest","condo","hotel"]};
+const CTRY=k=>k==="home"?HOMECITY:COUNTRIES.find(c=>c.k===k);
+Object.assign(MKT,{
+ london:{k:"london",n:"London Market",steal:.15,fake:.2,box:.06,price:1,minBase:100,sell:1.05,grail:.05,cat:{vint:1.3,watch:1.25,lux:1.2}},
+ rome:{k:"rome",n:"Rome Market",steal:.17,fake:.25,box:.06,price:.95,minBase:50,sell:1,grail:.04,cat:{vint:1.35,lux:1.25,kicks:1.1}},
+ seoul:{k:"seoul",n:"Seoul Market",steal:.2,fake:.2,box:.12,price:.92,minBase:0,sell:1,grail:.04,cat:{tech:1.45,toys:1.3,kicks:1.15}},
+ bangkok:{k:"bangkok",n:"Bangkok Night Market",steal:.32,fake:.42,box:.14,price:.8,minBase:0,sell:.95,grail:.03,cat:{toys:1.2,gym:1.25}},
+ nyc:{k:"nyc",n:"New York Market",steal:.16,fake:.25,box:.08,price:1,minBase:100,sell:1.05,grail:.05,cat:{kicks:1.4,cards:1.3,tech:1.1}},
+ rio:{k:"rio",n:"Rio Market",steal:.22,fake:.3,box:.1,price:.9,minBase:0,sell:1,grail:.03,cat:{gym:1.45,kicks:1.2}},
+ sydney:{k:"sydney",n:"Sydney Market",steal:.16,fake:.18,box:.06,price:1,minBase:50,sell:1.05,grail:.04,cat:{gym:1.3,vint:1.15,tech:1.1}},
+ geneva:{k:"geneva",n:"Geneva Market",steal:.12,fake:.1,box:.03,price:1.05,minBase:500,sell:1.1,grail:.07,cat:{watch:1.6,lux:1.2}},
+ monaco:{k:"monaco",n:"Monte Carlo Market",steal:.1,fake:.05,box:.02,price:1.1,minBase:1000,sell:1.25,grail:.08,cat:{lux:1.4,watch:1.3}}});
+const cMkt=c=>({...MKT[c.k],n:c.n+" Market"});
+const prestigeMkt=c=>({k:"elite",n:"Prestige House · "+c.n,only:"elite",steal:.12,fake:0,box:0,price:c.k==="monaco"?1.06:c.k==="bangkok"||c.k==="rio"?.95:1,minBase:0,sell:1,grail:0,code:c.el});
+const cFare=c=>hasToy("jet")?0:Math.round(fare()*c.fare);
+/* businesses */
+const BIZ={
+ apt:{n:"Apartment block",cost:2e6,inc:4500,mg:"Property manager",d:"Rent out flats. Steady and cheap to run."},
+ bar:{n:"Cocktail bar",cost:3.5e6,inc:8000,mg:"Bar manager",d:"Late nights, big margins."},
+ rest:{n:"Restaurant",cost:6e6,inc:14000,mg:"Head chef",d:"Feed the city. Reputation matters a lot."},
+ condo:{n:"Condo tower",cost:3e7,inc:65000,mg:"Concierge",d:"Luxury flats for the rich."},
+ hotel:{n:"Hotel",cost:9e7,inc:190000,mg:"General manager",d:"Rooms, a lobby bar and a rooftop pool."},
+ resort:{n:"Luxury resort",cost:4.5e8,inc:900000,mg:"Resort director",d:"Beach villas and infinity pools."}};
+const BIZ_NAMES={apt:["Residences","Court","Heights","Lofts","House"],bar:["Lounge","Social","Room","Club","Bar"],rest:["Bistro","Kitchen","Trattoria","Grill","Table"],condo:["Tower","One","Park","Sky","Place"],hotel:["Grand Hotel","Palace","Hotel","Suites","Royal"],resort:["Resort & Spa","Retreat","Sands","Villas","Lagoon"]};
+const BIZ_PRE={tokyo:["Sakura","Ginza","Kyo","Neon","Hoshi"],paris:["Lumière","Rive","Belle","Le Marais","Étoile"],london:["Mayfair","Kensington","Soho","Regent","Albion"],rome:["Aurelia","Via","Trevi","Bella","Roma"],seoul:["Gangnam","Hanok","Seoul","Namsan","Bit"],bangkok:["Siam","Lotus","Chao","Golden","Orchid"],nyc:["Fifth","Hudson","Empire","Madison","Brooklyn"],rio:["Copa","Ipanema","Samba","Sol","Leblon"],sydney:["Harbour","Bondi","Coral","Southern","Bay"],dubai:["Palm","Oasis","Marina","Desert","Al Noor"],geneva:["Lac","Alpine","Mont","Rhône","Edel"],monaco:["Riviera","Azur","Monte","Prince","Port"],home:["Flip","Hustle","Corner","Main St","Downtown"]};
+const PRICE_T=[["Budget",.8,.6],["Standard",1,-.2],["Premium",1.35,-.8]];
+const bizMaxLv=10;
+const bizCost=(t,c)=>Math.round(BIZ[t].cost*CTRY(c).bz);
+const bizExp=b=>Math.round(bizCost(b.t,b.c)*.55*Math.pow(1.6,b.lv-1));
+const bizMgrCost=b=>Math.round(bizCost(b.t,b.c)*.2);
+const bizRenoCost=b=>Math.round(bizCost(b.t,b.c)*.06*b.lv);
+const bizInc=b=>BIZ[b.t].inc*Math.pow(CTRY(b.c).bz,.85)*Math.pow(1.42,b.lv-1)*(.5+b.rep/100*.8)*PRICE_T[b.p][1]*(b.promo>Date.now()?1.6:1)*(b.mgr?.9:1)*moonK();
+const bizCap=b=>bizInc(b)*180;
+function bizName(t,c){const P=BIZ_PRE[c]||BIZ_PRE.home,N=BIZ_NAMES[t];return pick(P)+" "+pick(N)}
+let bizT=0,bizPay=0,bizPayT=0;
+function bizTick(dt){bizT+=dt;if(bizT<1)return;bizT=0;const now=Date.now();
+  (S.biz||[]).forEach(b=>{let m=(now-(b.at||now))/60000;b.at=now;if(m<=0)return;m=Math.min(m,b.mgr?480:600);const v=bizInc(b)*m;
+    b.rep=clamp(b.rep+PRICE_T[b.p][2]*m,0,100);if(b.mgr)bizPay+=v;else b.till=Math.min(bizCap(b),(b.till||0)+v);b.made=(b.made||0)+v});
+  bizPayT+=1;if(bizPay>0&&(bizPayT>=30||bizPay>S.cash)){const v=Math.round(bizPay);bizPay=0;bizPayT=0;earn(v);if(!room)banner("Businesses +"+fmt(v),"u")}
+  if(room==="biz"&&BZV){const t=$("bzTill"),i=$("bzInc"),r=$("bzRep");if(t)t.textContent=BZV.mgr?"Auto":fmt(BZV.till||0);if(i)i.textContent=fmt(bizInc(BZV))+"/min";if(r)r.textContent=Math.round(BZV.rep)}}
+const empireInc=()=>(S.biz||[]).reduce((a,b)=>a+bizInc(b),0);
+const tillAll=()=>(S.biz||[]).reduce((a,b)=>a+(b.mgr?0:b.till||0),0);
+function collectAll(){let v=0;(S.biz||[]).forEach(b=>{if(!b.mgr){v+=b.till||0;b.till=0}});v=Math.round(v);if(v<1)return 0;earn(v);dirty=true;SFX.sell();confetti(Math.min(160,40+Math.log10(v)*12));banner("Collected "+fmt(v),"g");return v}
+/* art */
+function flagSVG(k,w=36){const h=Math.round(w*2/3),s=(b)=>`<svg class="flag" viewBox="0 0 30 20" width="${w}" height="${h}" aria-hidden="true">${b}</svg>`;
+  const V=(a,b,c)=>`<rect width="10" height="20" fill="${a}"/><rect x="10" width="10" height="20" fill="${b}"/><rect x="20" width="10" height="20" fill="${c}"/>`;
+  switch(k){
+  case"tokyo":return s(`<rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="6" fill="#bc002d"/>`);
+  case"paris":return s(V("#0055a4","#fff","#ef4135"));
+  case"rome":return s(V("#009246","#fff","#ce2b37"));
+  case"london":return s(`<rect width="30" height="20" fill="#012169"/><path d="M0 0L30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L30 20M30 0L0 20" stroke="#c8102e" stroke-width="1.5"/><path d="M15 0V20M0 10H30" stroke="#fff" stroke-width="6"/><path d="M15 0V20M0 10H30" stroke="#c8102e" stroke-width="3.5"/>`);
+  case"seoul":return s(`<rect width="30" height="20" fill="#fff"/><path d="M10 10a5 5 0 0 1 10 0Z" fill="#cd2e3a"/><path d="M10 10a5 5 0 0 0 10 0Z" fill="#0047a0"/><g stroke="#000" stroke-width="1"><path d="M4 4l3 2M24 4l-3 2M4 16l3-2M24 16l-3-2"/></g>`);
+  case"bangkok":return s(`<rect width="30" height="20" fill="#a51931"/><rect y="3.3" width="30" height="13.4" fill="#f4f5f8"/><rect y="6.7" width="30" height="6.6" fill="#2d2a4a"/>`);
+  case"nyc":return s(`${[0,1,2,3,4,5,6].map(i=>`<rect y="${i*20/6.5}" width="30" height="${20/13}" fill="#b22234"/>`).join("")}<rect width="30" height="20" fill="url(#none)"/><rect width="13" height="10.8" fill="#3c3b6e"/>${[0,1,2].map(r=>[0,1,2,3].map(c=>`<circle cx="${2+c*3}" cy="${2+r*3.3}" r=".7" fill="#fff"/>`).join("")).join("")}`).replace('<svg','<svg style="background:#fff"');
+  case"rio":return s(`<rect width="30" height="20" fill="#009c3b"/><path d="M15 2L28 10L15 18L2 10Z" fill="#ffdf00"/><circle cx="15" cy="10" r="4.5" fill="#002776"/>`);
+  case"sydney":return s(`<rect width="30" height="20" fill="#012169"/><rect width="13" height="9" fill="#012169"/><path d="M6.5 0V9M0 4.5H13" stroke="#fff" stroke-width="2.5"/><path d="M6.5 0V9M0 4.5H13" stroke="#c8102e" stroke-width="1.2"/>${[[22,4],[25,9],[20,12],[23,16],[7,15]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.1" fill="#fff"/>`).join("")}`);
+  case"dubai":return s(`<rect width="30" height="20" fill="#fff"/><rect width="30" height="6.7" fill="#00732f"/><rect y="13.3" width="30" height="6.7" fill="#000"/><rect width="8" height="20" fill="#ff0000"/>`);
+  case"geneva":return s(`<rect width="30" height="20" fill="#d52b1e"/><path d="M15 5V15M10 10H20" stroke="#fff" stroke-width="3"/>`);
+  case"monaco":return s(`<rect width="30" height="10" fill="#ce1126"/><rect y="10" width="30" height="10" fill="#fff"/>`);
+  default:return s(`<rect width="30" height="20" fill="#2a3cff"/><text x="15" y="14" text-anchor="middle" font-size="10" fill="#fff">$</text>`)}}
+function landmark(k){switch(k){
+ case"tokyo":return `<path d="M20 150 L95 52 L170 150Z" fill="#e8eef6" opacity=".9"/><path d="M78 74 L95 52 L112 74 L104 70 L95 76 L86 70Z" fill="#fff"/><!--F-->
+  <g transform="translate(300 0)"><path d="M-22 150 L-3 20 L3 20 L22 150Z" fill="#e2364a"/>${[40,62,84,106,128].map((y,i)=>`<rect x="${-6-i*3.4}" y="${y}" width="${12+i*6.8}" height="4" fill="${i%2?"#fff":"#c8102e"}"/>`).join("")}<rect x="-12" y="70" width="24" height="9" fill="#fff"/><rect x="-16" y="110" width="32" height="10" fill="#fff"/><path d="M-2 20V2" stroke="#e2364a" stroke-width="2"/>${[-14,-6,2,10].map(x=>`<path d="M${x} 150 L${x/3} 40" stroke="rgba(0,0,0,.18)" stroke-width="1"/>`).join("")}</g>`;
+ case"paris":return `<g transform="translate(300 0)" fill="#3b3a46"><path d="M-34 150 Q-16 110 -8 60 L-4 14 L4 14 L8 60 Q16 110 34 150 L24 150 Q8 122 0 122 Q-8 122 -24 150Z"/><rect x="-14" y="92" width="28" height="5"/><rect x="-9" y="58" width="18" height="4"/><path d="M0 14V0" stroke="#3b3a46" stroke-width="2"/></g><g stroke="#3b3a46" stroke-width=".6" opacity=".6">${[70,80,100,110,130].map(y=>`<path d="M${300-(150-y)*.2-4} ${y} L${300+(150-y)*.2+4} ${y}"/>`).join("")}</g>`;
+ case"london":return `<rect x="0" y="138" width="400" height="14" fill="#5c7e9a" opacity=".8"/><g transform="translate(300 0)"><rect x="-13" y="40" width="26" height="110" fill="#c9a86a"/><path d="M-15 40 L0 6 L15 40Z" fill="#4a5a52"/><rect x="-13" y="44" width="26" height="22" fill="#e3c98e"/><circle cy="55" r="9" fill="#fffbe6" stroke="#2b2f3a" stroke-width="1.5"/><path d="M0 55V49M0 55H5" stroke="#2b2f3a" stroke-width="1.4"/>${[76,92,108,124].map(y=>`<rect x="-9" y="${y}" width="18" height="10" fill="#a68a55"/>`).join("")}</g><rect x="210" y="118" width="70" height="32" fill="#c9a86a" opacity=".85"/>${[218,232,246,260].map(x=>`<path d="M${x} 118 V108 L${x+4} 102 L${x+8} 108 V118Z" fill="#b39258"/>`).join("")}`;
+ case"rome":return `<g transform="translate(290 0)"><path d="M-70 150 V86 Q0 66 70 86 V150Z" fill="#d9b48a"/><path d="M-70 86 Q0 66 70 86 V96 Q0 76 -70 96Z" fill="#c49a6c"/>${[0,1,2].map(r=>Array.from({length:9},(_,i)=>`<path d="M${-62+i*15} ${140-r*18} v-10 a5 5 0 0 1 10 0 v10Z" fill="#8a6440" opacity=".75"/>`).join("")).join("")}<path d="M40 86 L70 92 V150 H52Z" fill="#b48a5c"/></g>`;
+ case"seoul":return `<path d="M200 150 Q300 70 400 150Z" fill="#5a9650"/><!--F--><g transform="translate(300 0)"><rect x="-3" y="34" width="6" height="74" fill="#eef1f6"/><rect x="-11" y="56" width="22" height="16" rx="5" fill="#f4f6fa"/><rect x="-11" y="64" width="22" height="3" fill="#2a5bd7"/><path d="M0 34V8" stroke="#e2364a" stroke-width="2"/><circle cy="8" r="2" fill="#e2364a"/></g>`;
+ case"bangkok":return `<rect x="0" y="138" width="400" height="14" fill="#b9864f" opacity=".7"/><g transform="translate(300 0)" fill="#e7c06a"><path d="M-38 150 L-28 110 L28 110 L38 150Z"/><path d="M-24 110 L-16 72 L16 72 L24 110Z" fill="#f2d48c"/><path d="M-12 72 L-6 34 L6 34 L12 72Z"/><path d="M-4 34 L0 6 L4 34Z" fill="#fff1c4"/>${[120,132,86,96,50].map(y=>`<rect x="-30" y="${y}" width="60" height="2" fill="#c45e5e" opacity=".55"/>`).join("")}<path d="M-70 150 L-62 122 L-54 150Z M54 150 L62 122 L70 150Z" fill="#e0b259"/></g>`;
+ case"nyc":return `<g transform="translate(300 0)" fill="#8d97a6"><rect x="-22" y="70" width="44" height="80"/><rect x="-16" y="46" width="32" height="24"/><rect x="-10" y="30" width="20" height="16"/><rect x="-5" y="16" width="10" height="14"/><path d="M0 16V0" stroke="#8d97a6" stroke-width="2"/>${Array.from({length:12},(_,i)=>`<rect x="${-18+(i%4)*10}" y="${78+Math.floor(i/4)*20}" width="5" height="12" fill="#ffe08a" opacity=".7"/>`).join("")}</g><g fill="#6f7a8a"><rect x="210" y="90" width="26" height="60"/><rect x="350" y="100" width="30" height="50"/></g>`;
+ case"rio":return `<path d="M150 150 Q190 30 235 150Z" fill="#4f7d50"/><!--F--><path d="M230 150 Q305 10 380 150Z" fill="#5f8f5c"/><g transform="translate(305 82)" fill="#f4f6fa"><rect x="-2.5" y="-30" width="5" height="30"/><rect x="-17" y="-25" width="34" height="4.5" rx="2"/><circle cy="-33" r="3.4"/><path d="M-4 0 H4 L6 4 H-6Z"/></g><path d="M0 140 Q100 150 200 142 T400 140 V152 H0Z" fill="#f5e2b0"/>`;
+ case"sydney":return `<rect x="0" y="134" width="400" height="18" fill="#2f86c4"/><path d="M190 134 Q240 60 300 134" stroke="#7f8a99" stroke-width="5" fill="none"/><path d="M190 134 Q240 70 300 134" stroke="#7f8a99" stroke-width="1.5" fill="none"/>${[205,220,235,250,265,280].map(x=>`<path d="M${x} ${134-Math.sin((x-190)/110*Math.PI)*58} V134" stroke="#7f8a99" stroke-width="1"/>`).join("")}<g transform="translate(330 0)" fill="#f8f8f2"><rect x="-44" y="122" width="90" height="12" fill="#d9c9a8"/><path d="M-40 122 Q-30 82 -14 122Z"/><path d="M-22 122 Q-8 70 10 122Z"/><path d="M2 122 Q16 78 30 122Z"/><path d="M22 122 Q34 92 44 122Z"/></g>`;
+ case"dubai":return `<g transform="translate(300 0)" fill="#b9c4d2"><path d="M-14 150 L-12 100 L-8 100 L-7 60 L-4 60 L-3 24 L-1 24 L0 0 L1 24 L3 24 L4 60 L7 60 L8 100 L12 100 L14 150Z"/><path d="M0 0 L1 24 L3 24 L4 60 L7 60 L8 100 L12 100 L14 150 L0 150Z" fill="#9aa7b8"/></g><path d="M200 150 Q215 108 232 150Z" fill="#d4c2a0"/><g transform="translate(225 0)" fill="#8d9bb0"><path d="M-6 150 V96 Q8 70 14 96 V150Z"/></g>`;
+ case"geneva":return `<path d="M0 120 L60 60 L110 110 L170 40 L240 115 L300 55 L360 105 L400 80 V150 H0Z" fill="#9fb2c4"/><path d="M160 50 L170 40 L182 52 L174 50Z M290 62 L300 55 L310 64Z M52 68 L60 60 L68 70Z" fill="#fff"/><!--F--><rect x="0" y="128" width="400" height="24" fill="#5aa7d6"/><g transform="translate(300 128)"><path d="M0 0 Q-3 -50 0 -96 Q3 -50 0 0" fill="rgba(255,255,255,.85)"/><ellipse cy="-96" rx="8" ry="5" fill="rgba(255,255,255,.7)"/></g>`;
+ case"monaco":return `<path d="M0 100 L80 70 L160 96 L240 64 L320 92 L400 78 V150 H0Z" fill="#8fae9a"/><!--F--><rect x="0" y="132" width="400" height="20" fill="#2f86c4"/>${[40,110,180].map(x=>`<g transform="translate(${x} 128)"><path d="M-22 0 H24 L18 8 H-16Z" fill="#fff"/><rect x="-10" y="-6" width="22" height="6" fill="#e9eef4"/><rect x="-6" y="-10" width="12" height="4" fill="#fff"/></g>`).join("")}<g transform="translate(300 0)"><rect x="-44" y="96" width="88" height="36" fill="#f2e3c6"/><path d="M-14 96 Q0 66 14 96Z" fill="#7aa7a0"/><rect x="-50" y="92" width="100" height="5" fill="#e3cfa6"/>${[-36,-22,-8,6,20,34].map(x=>`<rect x="${x}" y="104" width="6" height="22" fill="#d9c49c"/>`).join("")}<path d="M-44 96 V82 H-34 V96Z M34 96 V82 H44 V96Z" fill="#efdcb8"/></g>`;
+ default:return ""}}
+function treeSVG(t,x,y,s=1){const tr=`<rect x="${x-1.5*s}" y="${y-10*s}" width="${3*s}" height="${10*s}" fill="#7a5a36"/>`;
+  if(t==="palm")return `<path d="M${x} ${y} Q${x+3*s} ${y-14*s} ${x+1*s} ${y-24*s}" stroke="#8a6a46" stroke-width="${2.6*s}" fill="none"/>${[0,1,2,3,4].map(a=>`<ellipse cx="${x+1*s+Math.cos(a*1.26)*7*s}" cy="${y-24*s+Math.sin(a*1.26)*3*s}" rx="${8*s}" ry="${2.4*s}" transform="rotate(${a*72} ${x+1*s+Math.cos(a*1.26)*7*s} ${y-24*s+Math.sin(a*1.26)*3*s})" fill="#3f9a4e"/>`).join("")}`;
+  if(t==="sakura")return tr+`<circle cx="${x}" cy="${y-14*s}" r="${8*s}" fill="#ffb7c5"/><circle cx="${x-5*s}" cy="${y-11*s}" r="${5*s}" fill="#ffc9d5"/><circle cx="${x+5*s}" cy="${y-12*s}" r="${5*s}" fill="#ff9fb4"/>`;
+  if(t==="cypress")return tr+`<ellipse cx="${x}" cy="${y-18*s}" rx="${4*s}" ry="${14*s}" fill="#2f6a3e"/>`;
+  if(t==="pine")return tr+`<path d="M${x-8*s} ${y-8*s} L${x} ${y-28*s} L${x+8*s} ${y-8*s}Z" fill="#2f6a46"/>`;
+  if(t==="ginkgo")return tr+`<circle cx="${x}" cy="${y-14*s}" r="${8*s}" fill="#f2c53d"/><circle cx="${x-4*s}" cy="${y-17*s}" r="${4*s}" fill="#ffd95e"/>`;
+  if(t==="gum")return tr+`<ellipse cx="${x}" cy="${y-15*s}" rx="${9*s}" ry="${7*s}" fill="#7fa77a"/>`;
+  return tr+`<circle cx="${x}" cy="${y-14*s}" r="${8*s}" fill="#4f9a4f"/><circle cx="${x-3*s}" cy="${y-17*s}" r="${4*s}" fill="#6fbf62"/>`}
+const BIZ_COL={apt:"#e39a52",bar:"#7a2fd6",rest:"#d6384b",condo:"#3b6fd8",hotel:"#cf9a14",resort:"#14a3a8"};
+function citySVG(c){let sd=c.k.length*97+c.n.length*13;const r=()=>(sd=(sd*16807)%2147483647)/2147483647,nt=night()>.5;
+  const sky=nt?["#0e1530","#2a2850"]:c.sky,mine=(S.biz||[]).filter(b=>b.c===c.k).slice(0,6);
+  let far="";for(let x=0;x<400;){const w=14+r()*22,h=30+r()*60;far+=`<rect x="${x}" y="${150-h}" width="${w}" height="${h}" fill="${c.far}" opacity="${nt?.5:.55}"/>`;for(let wy=150-h+6;wy<146;wy+=8)for(let wx=x+3;wx<x+w-3;wx+=6)if(r()<(nt?.5:.25))far+=`<rect x="${wx}" y="${wy}" width="2.5" height="3" fill="${nt?"#ffd98a":"#fff"}" opacity=".6"/>`;x+=w+2}
+  const own=mine.map((b,i)=>{const x=14+i*30,h=26+b.lv*3,col=BIZ_COL[b.t];return `<g class="cbld" data-biz="${b.id}"><rect x="${x}" y="${150-h}" width="24" height="${h}" rx="2" fill="${col}"/>${Array.from({length:Math.floor(h/9)},(_,j)=>`<rect x="${x+4}" y="${150-h+5+j*9}" width="16" height="3" fill="${nt?"#ffd98a":"rgba(255,255,255,.55)"}"/>`).join("")}<path d="M${x+12} ${150-h-9} l2.4 5 5.4.6-4 3.6 1.1 5.3-4.9-2.8-4.9 2.8 1.1-5.3-4-3.6 5.4-.6Z" fill="#ffcc33" stroke="#7a5a10" stroke-width=".6"/></g>`}).join("");
+  const shop=(x,go,name,body)=>`<g class="cbld" data-go="${go}">${body}<rect x="${x+8}" y="171" width="${104}" height="15" rx="4" fill="rgba(255,255,255,.95)"/><text x="${x+60}" y="182" text-anchor="middle" font-family="var(--display)" font-weight="800" font-size="9.5" fill="#141824">${name}</text></g>`;
+  const awn=(x,col)=>Array.from({length:8},(_,i)=>`<path d="M${x+i*15} 190 h15 v9 a7.5 7.5 0 0 1 -15 0Z" fill="${i%2?"#fff":col}"/>`).join("");
+  const s1=shop(10,"mkt","MARKET",`<rect x="10" y="166" width="120" height="68" rx="4" fill="${shade(c.tone,.9)}"/>${awn(10,c.tone)}<rect x="22" y="206" width="30" height="22" fill="${nt?"#ffd98a":"#bfe0ff"}"/><rect x="88" y="206" width="30" height="22" fill="${nt?"#ffd98a":"#bfe0ff"}"/><rect x="60" y="206" width="20" height="28" fill="#3b2a20"/>${["#ffcc33","#e2364a","#2bb3a3","#ff8fa3"].map((cl,i)=>`<rect x="${24+i*7}" y="${220-i%2*3}" width="5" height="6" fill="${cl}"/>`).join("")}`);
+  const s2=shop(140,"prestige","PRESTIGE HOUSE",`<rect x="140" y="160" width="120" height="74" rx="3" fill="#15161c"/><rect x="140" y="160" width="120" height="6" fill="#cf9a14"/><path d="M150 166 L200 154 L250 166Z" fill="#cf9a14"/>${[150,166,234,250].map(x=>`<rect x="${x}" y="192" width="6" height="42" fill="#efe6d2"/><rect x="${x-2}" y="190" width="10" height="3" fill="#d8c9a8"/>`).join("")}<rect x="182" y="198" width="36" height="36" fill="${nt?"#ffd98a":"#2a2c38"}" stroke="#cf9a14" stroke-width="2"/><path d="M200 198 V234" stroke="#cf9a14" stroke-width="1.5"/><circle cx="200" cy="211" r="3" fill="#ffcc33"/><rect x="172" y="232" width="56" height="3" fill="#8a1d2a"/>`);
+  const s3=shop(270,"realty","REAL ESTATE",`<rect x="270" y="162" width="120" height="72" rx="4" fill="#e9eef4"/><rect x="276" y="192" width="108" height="36" fill="${nt?"#ffd98a":"#9fd0ef"}" opacity=".85"/>${[294,312,330,348,366].map(x=>`<rect x="${x}" y="192" width="2" height="36" fill="#fff"/>`).join("")}<rect x="316" y="206" width="28" height="28" fill="#2b2f3a"/><rect x="300" y="196" width="10" height="8" fill="#fff"/><path d="M302 202 l3-4 3 4Z" fill="${c.tone}"/>`);
+  const bunt=`<path d="M0 158 Q100 168 200 158 T400 158" stroke="rgba(0,0,0,.25)" fill="none"/>${Array.from({length:20},(_,i)=>{const x=10+i*20,y=158+Math.sin(i*1.05+.4)*4+3;return `<path d="M${x-4} ${y-2} L${x+4} ${y-2} L${x} ${y+6}Z" fill="${[c.tone,"#fff","#ffcc33"][i%3]}"/>`}).join("")}`;
+  const lamps=[135,265].map(x=>`<rect x="${x-1}" y="196" width="2" height="40" fill="#2b2f3a"/><circle cx="${x}" cy="195" r="4" fill="${nt?"#ffe08a":"#f4f6fa"}"/>${nt?`<circle cx="${x}" cy="195" r="12" fill="#ffe08a" opacity=".25"/>`:""}`).join("");
+  const trees=[[6,166],[396,166],[134,166],[266,166]].map(([x,y])=>treeSVG(c.tree,x,y,.9)).join("");
+  return `<svg viewBox="0 0 400 250" class="citysvg" aria-hidden="true"><defs><linearGradient id="sky_${c.k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
+    <rect width="400" height="250" fill="url(#sky_${c.k})"/>${nt?Array.from({length:30},()=>`<circle cx="${r()*400}" cy="${r()*90}" r="${.6+r()*.8}" fill="#fff" opacity=".8"/>`).join("")+`<circle cx="60" cy="34" r="12" fill="#f4f1d0"/>`:`<circle cx="70" cy="40" r="22" fill="#fff6c8" opacity=".9"/><circle cx="70" cy="40" r="40" fill="#fff6c8" opacity=".25"/>`}
+    ${nt?"":`<g fill="#fff" opacity=".8"><animateTransform attributeName="transform" type="translate" values="-30 0;40 0;-30 0" dur="40s" repeatCount="indefinite"/><ellipse cx="150" cy="30" rx="26" ry="7"/><ellipse cx="166" cy="25" rx="14" ry="7"/><ellipse cx="350" cy="50" rx="22" ry="6"/><ellipse cx="250" cy="18" rx="16" ry="4.5"/></g>`}
+    <g><animateTransform attributeName="transform" type="translate" values="-60 0;460 -20" dur="22s" repeatCount="indefinite"/><path d="M0 60 h16 c3 0 5 1 5 2s-2 2-5 2H4l-4-2Z" fill="${nt?"#cfd6e4":"#fff"}"/><path d="M8 60 l-4-5h3l6 5Z M8 64 l-3 4h3l5-4Z" fill="${c.tone}"/>${nt?`<circle cx="21" cy="62" r="1" fill="#ff5b6e"><animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/></circle>`:""}</g>
+    <g fill="none" stroke="${nt?"#cfd6e4":"#3b3a46"}" stroke-width="1" opacity=".6"><animateTransform attributeName="transform" type="translate" values="0 0;30 -6;0 0" dur="12s" repeatCount="indefinite"/><path d="M110 70 q3 -3 6 0 q3 -3 6 0"/><path d="M126 62 q2.5 -2.5 5 0 q2.5 -2.5 5 0"/></g>
+    ${(()=>{const L=landmark(c.k).split("<!--F-->");return L.length>1?`<g class="cbld" data-go="sight">${L[0]}</g>${far}<g class="cbld" data-go="sight">${L[1]}</g>`:`${far}<g class="cbld" data-go="sight">${L[0]}</g>`})()}${own}
+    <rect y="150" width="400" height="12" fill="${nt?"#3a3d4a":"#d8d2c4"}"/>${trees}${bunt}${s1}${s2}${s3}${lamps}
+    <rect y="234" width="400" height="16" fill="${nt?"#24262e":"#5b6272"}"/>${Array.from({length:10},(_,i)=>`<rect x="${i*42+8}" y="241" width="22" height="2.5" fill="#fff" opacity=".7"/>`).join("")}</svg>`}
+function bizSVG(b){const c=CTRY(b.c),t=b.t,lv=b.lv,col=BIZ_COL[t],nt=night()>.5,win=nt?"#ffd98a":"#cfe8ff";let g="";
+  const sky=nt?["#141a33","#2a2850"]:(c.sky||["#bfe0ff","#eef7ff"]);
+  if(t==="apt"){const fl=3+lv,h=fl*12;g=`<rect x="120" y="${180-h}" width="160" height="${h}" fill="${col}"/>${Array.from({length:fl},(_,i)=>[0,1,2,3,4].map(j=>`<rect x="${130+j*30}" y="${186-h+i*12}" width="16" height="7" fill="${win}"/><rect x="${128+j*30}" y="${193-h+i*12}" width="20" height="2" fill="rgba(0,0,0,.25)"/>`).join("")).join("")}<rect x="190" y="160" width="20" height="20" fill="#3b2a20"/><rect x="116" y="${176-h}" width="168" height="5" fill="${shade(col,.7)}"/>${Array.from({length:Math.min(fl,6)},(_,i)=>`<rect x="${130+(i%5)*30}" y="${193-h+i*12}" width="16" height="2.5" fill="#3f9a4e"/><circle cx="${134+(i%5)*30}" cy="${192-h+i*12}" r="1.6" fill="#ff8fa3"/><circle cx="${141+(i%5)*30}" cy="${192-h+i*12}" r="1.6" fill="#ffd166"/>`).join("")}<path d="M184 160 H216 L220 154 H180Z" fill="${shade(col,.75)}"/>`}
+  if(t==="condo"){const fl=6+lv*2,h=Math.min(170,fl*8);g=`<rect x="150" y="${180-h}" width="100" height="${h}" rx="3" fill="#3b6fd8"/><rect x="150" y="${180-h}" width="100" height="${h}" fill="url(#glass)"/>${Array.from({length:Math.floor(h/8)},(_,i)=>`<rect x="150" y="${184-h+i*8}" width="100" height="1.2" fill="rgba(255,255,255,.5)"/>`).join("")}${lv>=6?`<circle cx="200" cy="${176-h}" r="9" fill="#2b2f3a"/><text x="200" y="${179-h}" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">H</text>`:""}${lv>=3?`<rect x="250" y="${180-h*.6}" width="40" height="${h*.6}" fill="#5b86e0"/>`:""}<rect x="185" y="164" width="30" height="16" fill="#1b2230"/><path d="M178 164 H222 L226 158 H174Z" fill="#cf9a14"/><rect x="198" y="${168-h}" width="4" height="12" fill="#2b2f3a"/><circle cx="200" cy="${167-h}" r="2.5" fill="#ff5b6e"><animate attributeName="opacity" values="1;.2;1" dur="1.6s" repeatCount="indefinite"/></circle>`}
+  if(t==="rest"){g=`<rect x="110" y="110" width="180" height="70" fill="#f4ecd8"/>${lv>=5?`<rect x="110" y="80" width="180" height="30" fill="#efe2c4"/><path d="M110 80 h180" stroke="#7a5a36" stroke-width="3"/>${[130,170,210,250].map(x=>`<circle cx="${x}" cy="72" r="6" fill="#3f9a4e"/>`).join("")}`:""}${Array.from({length:12},(_,i)=>`<path d="M${110+i*15} 110 h15 v10 a7.5 7.5 0 0 1 -15 0Z" fill="${i%2?"#fff":col}"/>`).join("")}<rect x="125" y="132" width="40" height="32" fill="${win}"/><rect x="235" y="132" width="40" height="32" fill="${win}"/><rect x="185" y="140" width="30" height="40" fill="#5a3a24"/>${Array.from({length:Math.min(lv+1,7)},(_,i)=>{const x=40+i*48-(i>=2?0:0);if(x>100&&x<300)return"";return `<g><circle cx="${x}" cy="196" r="9" fill="#fff" stroke="#ddd"/><rect x="${x-1}" y="170" width="2" height="26" fill="#7a5a36"/><path d="M${x-16} 172 Q${x} 156 ${x+16} 172Z" fill="${i%2?col:"#fff"}"/></g>`}).join("")}`}
+  if(t==="bar"){g=`<rect x="120" y="100" width="160" height="80" fill="#1b1d26"/>${lv>=4?`<rect x="120" y="76" width="160" height="24" fill="#24273a"/>${Array.from({length:9},(_,i)=>`<circle cx="${128+i*18}" cy="80" r="2.5" fill="${["#ffcc33","#ff4fd8","#4fe3ff"][i%3]}"/>`).join("")}`:""}<path d="M120 100 Q200 116 280 100" stroke="#ffe08a" fill="none"/>${Array.from({length:10},(_,i)=>`<circle cx="${126+i*16}" cy="${103+Math.sin(i/9*Math.PI)*8}" r="2.2" fill="#ffe08a"/>`).join("")}<rect x="150" y="118" width="100" height="22" rx="6" fill="none" stroke="#ff4fd8" stroke-width="2.5"/><text x="200" y="134" text-anchor="middle" font-family="var(--display)" font-weight="800" font-size="12" fill="#ff9ae6">COCKTAILS</text><rect x="135" y="146" width="30" height="24" fill="#7a2fd6" opacity=".6"/><rect x="235" y="146" width="30" height="24" fill="#7a2fd6" opacity=".6"/><rect x="185" y="146" width="30" height="34" fill="#0c0d12"/>${Array.from({length:Math.min(lv,8)},(_,i)=>`<g><rect x="${30+i*12+(i>=4?270:0)}" y="182" width="3" height="14" fill="#555"/><circle cx="${31.5+i*12+(i>=4?270:0)}" cy="181" r="4" fill="#d6384b"/></g>`).join("")}`}
+  if(t==="hotel"){const fl=4+lv,h=Math.min(160,fl*11),st=Math.min(5,1+Math.floor(lv/2));g=`<rect x="100" y="${180-h}" width="200" height="${h}" fill="#f2e6cf"/><rect x="96" y="${174-h}" width="208" height="8" fill="${col}"/>${Array.from({length:fl},(_,i)=>Array.from({length:7},(_,j)=>`<rect x="${110+j*27}" y="${186-h+i*11}" width="14" height="6" fill="${(i+j)%3?win:"#e9dcc0"}"/>`).join("")).join("")}<path d="M170 168 H230 L240 158 H160Z" fill="${col}"/><rect x="185" y="164" width="30" height="16" fill="#3b2a20"/>${[150,250].map(x=>`<rect x="${x}" y="${170-h*.25}" width="2" height="${h*.25+10}" fill="#999"/><rect x="${x+2}" y="${170-h*.25}" width="14" height="9" fill="${c.tone||col}"/>`).join("")}<text x="200" y="${168-h}" text-anchor="middle" font-size="12" fill="#cf9a14">${"★".repeat(st)}</text>${lv>=5?`<rect x="110" y="${168-h}" width="50" height="6" rx="3" fill="#7fd6ff"/>`:""}`}
+  if(t==="resort"){g=`<rect x="0" y="150" width="400" height="50" fill="#f5e2b0"/><rect x="0" y="182" width="400" height="18" fill="#2f86c4"/><rect x="130" y="150" width="140" height="22" rx="10" fill="#7fd6ff" stroke="#fff" stroke-width="3"/>${Array.from({length:Math.min(lv+1,8)},(_,i)=>{const x=i%2?352-Math.floor(i/2)*38:48+Math.floor(i/2)*38,y=i>=4?112:128;return `<g><rect x="${x-15}" y="${y}" width="30" height="22" fill="#f4ecd8"/><rect x="${x-4}" y="${y+8}" width="8" height="14" fill="#7a5a36"/><path d="M${x-19} ${y+2} L${x} ${y-14} L${x+19} ${y+2}Z" fill="#a0764a"/><rect x="${x-12}" y="${y+5}" width="6" height="5" fill="${win}"/></g>`}).join("")}<rect x="148" y="72" width="104" height="8" fill="#e9dcc0"/><rect x="160" y="90" width="80" height="40" fill="#fff"/><path d="M152 92 L200 66 L248 92Z" fill="#14a3a8"/>${treeSVG("palm",110,150,1.3)+treeSVG("palm",290,150,1.3)}`}
+  return `<svg viewBox="0 0 400 210" aria-hidden="true"><defs><linearGradient id="bzsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.35)"/><stop offset=".5" stop-color="rgba(255,255,255,0)"/><stop offset="1" stop-color="rgba(255,255,255,.2)"/></linearGradient></defs>
+    <rect width="400" height="210" fill="url(#bzsky)"/><rect y="180" width="400" height="30" fill="${nt?"#2a2c36":"#b9b2a6"}"/>${t!=="resort"?treeSVG(c.tree||"plane",70,182,1.4)+treeSVG(c.tree||"plane",340,182,1.4):""}${g}
+    ${bizStreet(b,nt)}<rect x="0" y="198" width="400" height="12" fill="rgba(0,0,0,.12)"/><text x="12" y="20" font-family="var(--mono)" font-size="11" font-weight="700" fill="${nt?"#fff":"#141824"}">LV ${lv}${lv>=bizMaxLv?" · MAX":""}</text></svg>`}
+function bizStreet(b,nt){const id=b.id||"x";let h=0;for(const ch of id)h=(h*31+ch.charCodeAt(0))%997;const cars=["#e2364a","#2a5bd7","#f2f2f2","#1b1f2a","#ffcc33","#14a3a8"],car=cars[h%cars.length],P=[["#e8b896","#2a5bd7"],["#c98e62","#e2364a"],["#8a5a3c","#2bb3a3"],["#f3d0b5","#ffcc33"]];
+  const person=(x,i)=>{const[sk,sh]=P[(h+i)%P.length];return `<g><ellipse cx="${x}" cy="199" rx="5" ry="1.6" fill="rgba(0,0,0,.2)"/><rect x="${x-2.6}" y="189" width="2.2" height="9" fill="#262b3a"/><rect x="${x+.4}" y="189" width="2.2" height="9" fill="#262b3a"/><rect x="${x-4}" y="180" width="8" height="10" rx="2.5" fill="${sh}"/><circle cx="${x}" cy="176.5" r="3.6" fill="${sk}"/></g>`};
+  const lamp=x=>`<rect x="${x-1}" y="160" width="2" height="38" fill="#2b2f3a"/><path d="M${x-5} 160 h10 l-2 -5 h-6Z" fill="#2b2f3a"/><circle cx="${x}" cy="161" r="2.4" fill="${nt?"#ffe08a":"#f4f6fa"}"/>${nt?`<circle cx="${x}" cy="166" r="16" fill="#ffe08a" opacity=".18"/>`:""}`;
+  const carX=b.t==="resort"?-100:h%2?24:318;
+  return `${lamp(110)}${lamp(290)}${b.t==="resort"?"":`<g transform="translate(${carX} 186)"><rect x="0" y="0" width="58" height="12" rx="5" fill="${car}"/><path d="M10 0 L16 -8 H40 L48 0Z" fill="${car}"/><path d="M18 -6 H28 V0 H14Z M31 -6 H39 L45 0 H31Z" fill="${nt?"#ffe08a":"#bfe0ff"}" opacity=".9"/><circle cx="14" cy="12" r="5" fill="#141414"/><circle cx="44" cy="12" r="5" fill="#141414"/><circle cx="14" cy="12" r="2" fill="#9aa3b3"/><circle cx="44" cy="12" r="2" fill="#9aa3b3"/></g>`}
+    ${[0,1,2].slice(0,1+Math.min(2,Math.floor(b.lv/3))).map(i=>person(150+i*46+(h%3)*6,i)).join("")}
+    ${b.t!=="resort"&&b.t!=="condo"?[130,256].map(x=>`<rect x="${x}" y="190" width="14" height="8" rx="2" fill="#8a6a4a"/>${[0,1,2].map(j=>`<circle cx="${x+3+j*4}" cy="189" r="2.6" fill="${["#ff8fa3","#ffd166","#b8a1ff"][j]}"/>`).join("")}`).join(""):""}`}
+/* screens */
+let CITY=null,BZV=null;
+function flyTo(c){const ov=document.createElement("div");ov.className="sailov flyov";ov.innerHTML=`<div class="sailsky"></div><div class="sailboat"><svg viewBox="0 0 160 90"><path d="M20 46h96c12 0 22 3 22 7s-10 7-22 7H36l-16-7Z" fill="#f4f6fa"/><path d="M70 47l-18-24h11l28 24Z" fill="${c.tone}"/><path d="M76 59l-14 16h10l20-16Z" fill="${c.tone}"/><path d="M26 47l-8-15h7l11 15Z" fill="${c.tone}"/>${[92,100,108,116].map(x=>`<circle cx="${x}" cy="52" r="2" fill="#1b1f2a"/>`).join("")}</svg></div><div class="flyclouds"></div><div class="saillab"><b>Flying to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`;
+  document.body.appendChild(ov);SFX.door();const t0=performance.now(),sec=1.6;const tick=()=>{const k=Math.min(1,(performance.now()-t0)/(sec*1000)),b=ov.querySelector("#sailBar");if(b)b.style.width=k*100+"%";if(k<1)requestAnimationFrame(tick);else{ov.classList.add("out");setTimeout(()=>ov.remove(),350);SFX.level();openCity(c.k,true)}};requestAnimationFrame(tick)}
+function openAirport(){const L=repLevel();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
+    <div class="note">Fly anywhere in the world. Every city has its own <b>market</b>, a <b>Prestige House</b> trading $50M–$100M pieces, and <b>real estate</b> you can buy and run. ${hasToy("jet")?"Your private jet flies free.":"Fares grow with distance."}</div>
+    ${(S.biz||[]).length?`<button class="bigbtn" id="apEmp">Your businesses<small>${(S.biz||[]).length} owned · ${fmt(empireInc())}/min${tillAll()>=1?" · "+fmt(tillAll())+" to collect":""}</small></button>`:""}
+    <div class="sechead"><h3>Destinations</h3><span class="eyebrow">${COUNTRIES.length} cities</span></div>
+    <div class="perks">${COUNTRIES.map(c=>{const lock=L<c.lv&&!(c.k==="dubai"&&hasToy("jet")),f=cFare(c),n=(S.biz||[]).filter(b=>b.c===c.k).length;return `<button class="perk opp dest" data-fly="${c.k}" ${lock||S.cash<f?"disabled":""}><span class="oav fl">${flagSVG(c.k,34)}</span><span class="t">${c.n} <small style="opacity:.6;font-weight:600">${c.cn}</small>${n?` <em class="beat">${n} BIZ</em>`:""}</span><span class="d">${lock?"Unlocks at level "+c.lv:c.spec}</span><span class="c">${lock?"Locked":f?fmt(f):"Free"}</span></button>`}).join("")}</div></div>`;
+  $("leaveBtn").onclick=closeRoom;const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);
+  $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{const c=CTRY(b.dataset.fly),f=cFare(c);if(S.cash<f)return;S.cash-=f;dirty=true;flyTo(c)})}
+function openCity(k,arrive){const c=CTRY(k);CITY=k;if(M)closeMarket();room="abroad";$("room").hidden=false;$("room").style.setProperty("--pc",c.tone);
+  const today=S.seen&&S.seen[k]===S.day,mine=(S.biz||[]).filter(b=>b.c===k);
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead(c.n)}
+    <div class="art cityart">${citySVG(c)}</div>
+    <div class="citybar">${flagSVG(k,28)}<span><b>${c.cn}</b><small>${c.d}</small></span></div>
+    <div class="perks">
+      <button class="perk nopic" data-cg="mkt"><span class="t">${c.n} Market</span><span class="d">${c.spec}</span><span class="c">Enter</span></button>
+      <button class="perk nopic prestige" data-cg="prestige"><span class="t">Prestige House</span><span class="d">Only $50M–$100M pieces. ${Object.keys(c.el).map(x=>(POOL.find(p=>p.code===x&&p.cat==="elite")||{}).name).filter(Boolean).slice(0,2).join(" and ")} sell for more here</span><span class="c">Enter</span></button>
+      <button class="perk nopic" data-cg="realty"><span class="t">Real estate</span><span class="d">Buy apartments, bars, restaurants, condos, hotels${c.biz.includes("resort")?" and resorts":""}</span><span class="c">${mine.length?mine.length+" owned":"Browse"}</span></button>
+      <button class="perk nopic" data-cg="sight" ${today?"disabled":""}><span class="t">Visit the ${c.lm}</span><span class="d">${today?"Come back tomorrow":"Full energy, 90s of hype and new fans"}</span><span class="c">${today?"Seen":"Go"}</span></button>
+    </div>
+    ${mine.length?`<div class="sechead"><h3>Your businesses here</h3><span class="eyebrow">${fmt(mine.reduce((a,b)=>a+bizInc(b),0))}/min</span></div><div class="perks">${mine.map(bizRow).join("")}</div>`:""}
+    <button class="bigbtn alt" id="cHome">Fly home<small>${c.n} → Flip City</small></button></div>`;
+  const go=g=>{if(g==="mkt"){room=k;openMarket(cMkt(c));backTo(()=>openCity(k))}
+    else if(g==="prestige"){room="prestige";openMarket(prestigeMkt(c));backTo(()=>openCity(k))}
+    else if(g==="realty")openRealty(k,()=>openCity(k));
+    else if(g==="sight"){if(S.seen&&S.seen[k]===S.day)return banner("Already visited today","a");S.seen=S.seen||{};S.seen[k]=S.day;S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,90);const f=Math.round(50+(S.fans||0)*.02);S.fans=(S.fans||0)+f;dirty=true;SFX.rebirth();confetti(120,null,null,[c.tone,"#fff","#ffcc33"]);banner(c.lm+" · +"+fmtN(f)+" fans","u");openCity(k)}};
+  $("room").querySelectorAll("[data-cg]").forEach(b=>b.onclick=()=>go(b.dataset.cg));
+  $("room").querySelectorAll(".citysvg [data-go]").forEach(g=>g.addEventListener("click",()=>go(g.dataset.go)));
+  $("room").querySelectorAll("[data-biz]").forEach(b=>b.addEventListener("click",()=>openBiz(b.dataset.biz,()=>openCity(k))));
+  $("leaveBtn").onclick=closeRoom;$("cHome").onclick=closeRoom;if(arrive)banner("Welcome to "+c.n,"a");renderHud()}
+function backTo(fn){const l=$("leaveBtn");if(l){l.onclick=()=>{closeMarket();fn()};l.innerHTML=ARROW+"Back"}}
+const bizRow=b=>`<button class="perk opp" data-biz="${b.id}"><span class="oav" style="background:${BIZ_COL[b.t]}"><i style="background:#fff;opacity:.85"></i></span><span class="t">${esc(b.n)}${b.mgr?' <em class="beat">MANAGED</em>':""}</span><span class="d">${BIZ[b.t].n} · ${CTRY(b.c).n} · Lv ${b.lv} · ${fmt(bizInc(b))}/min</span><span class="c">${b.mgr?"Auto":(b.till||0)>=1?fmt(b.till):"Manage"}</span></button>`;
+function openRealty(k,back){const c=CTRY(k),mine=(S.biz||[]).filter(b=>b.c===k);room=k==="home"?"bank":"abroad";
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Real estate · "+c.n)}
+    <div class="note">Buy a business and it earns every minute, even while you're away. Without a manager the till fills up to 3 hours of income, so come back and collect. Expand it to grow income, keep its reputation up, and pick your prices.</div>
+    <div class="perks">${c.biz.map(t=>{const cost=bizCost(t,k),inc=BIZ[t].inc*Math.pow(c.bz,.85)*.98*moonK();return `<button class="perk nopic" data-buy="${t}" ${S.cash<cost?"disabled":""}><span class="t">${BIZ[t].n}</span><span class="d">${BIZ[t].d} About ${fmt(inc)}/min to start</span><span class="c">${fmt(cost)}</span></button>`}).join("")}</div>
+    ${mine.length?`<div class="sechead"><h3>Owned in ${c.n}</h3></div><div class="perks">${mine.map(bizRow).join("")}</div>`:""}</div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("room").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const t=b.dataset.buy,cost=bizCost(t,k);if(S.cash<cost)return;S.cash-=cost;S.biz=S.biz||[];const id=Math.random().toString(36).slice(2,9);
+    S.biz.push({id,t,c:k,n:bizName(t,k),lv:1,rep:60,p:1,mgr:0,till:0,at:Date.now(),inv:cost,made:0});dirty=true;SFX.rebirth();confetti(160,null,null,[BIZ_COL[t],"#fff","#ffcc33"]);shake(6);banner(BIZ[t].n+" bought","g");openBiz(id,()=>openRealty(k,back))});
+  $("room").querySelectorAll("[data-biz]").forEach(b=>b.onclick=()=>openBiz(b.dataset.biz,()=>openRealty(k,back)));updMini()}
+function openBiz(id,back){const b=(S.biz||[]).find(x=>x.id===id);if(!b)return back();BZV=b;room="biz";
+  const draw=()=>{const c=CTRY(b.c),T=BIZ[b.t],ex=bizExp(b),mc=bizMgrCost(b),rc=bizRenoCost(b),pc=Math.round(bizInc(b)*30),promo=b.promo>Date.now();
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(b.n))}
+      <div class="art">${bizSVG(b)}</div>
+      <div class="kv"><div><span class="eyebrow">Income</span><b id="bzInc">${fmt(bizInc(b))}/min</b></div><div><span class="eyebrow">Reputation</span><b><span id="bzRep">${Math.round(b.rep)}</span>/100</b></div><div><span class="eyebrow">Till</span><b id="bzTill">${b.mgr?"Auto":fmt(b.till||0)}</b></div><div><span class="eyebrow">Earned so far</span><b>${fmt(b.made||0)}</b></div></div>
+      <p class="fine">${T.n} in ${c.n}${c.cn&&c.k!=="home"?", "+c.cn:""} · level ${b.lv}/${bizMaxLv}${promo?" · promo running":""}</p>
+      ${b.mgr?"":`<button class="bigbtn" id="bzCol" ${(b.till||0)<1?"disabled":""}>Collect ${fmt(b.till||0)}<small>The till holds up to ${fmt(bizCap(b))} (3 hours)</small></button>`}
+      <div class="sechead"><h3>Prices</h3><span class="eyebrow">Higher prices earn more but hurt reputation</span></div>
+      <div class="seg3">${PRICE_T.map((p,i)=>`<button class="${b.p===i?"on":""}" data-pr="${i}">${p[0]}<small>${p[1]===1?"normal":(p[1]>1?"+":"−")+Math.round(Math.abs(p[1]-1)*100)+"%"} · rep ${p[2]>0?"↑":p[2]<-.5?"↓↓":"↓"}</small></button>`).join("")}</div>
+      <div class="sechead"><h3>Manage</h3></div>
+      <div class="perks">
+        <button class="perk nopic" data-act="exp" ${b.lv>=bizMaxLv||S.cash<ex?"disabled":""}><span class="t">Expand${b.lv>=bizMaxLv?" · maxed":""}</span><span class="d">${b.lv>=bizMaxLv?"As big as it gets":b.t==="apt"||b.t==="condo"||b.t==="hotel"?"Add more floors":b.t==="resort"?"Add more villas":b.t==="rest"?"More tables and a terrace":"More seats and a rooftop"}. +42% income</span><span class="c">${b.lv>=bizMaxLv?"MAX":fmt(ex)}</span></button>
+        <button class="perk nopic" data-act="reno" ${S.cash<rc||b.rep>=99?"disabled":""}><span class="t">Renovate</span><span class="d">Fresh decor: +30 reputation</span><span class="c">${fmt(rc)}</span></button>
+        <button class="perk nopic" data-act="promo" ${S.cash<pc||promo?"disabled":""}><span class="t">Run a promotion</span><span class="d">${promo?"Running: "+Math.ceil((b.promo-Date.now())/60000)+" min left":"+60% income for 10 minutes"}</span><span class="c">${promo?"On":fmt(pc)}</span></button>
+        <button class="perk nopic" data-act="mgr" ${b.mgr||S.cash<mc?"disabled":""}><span class="t">${b.mgr?T.mg+" hired":"Hire a "+T.mg.toLowerCase()}</span><span class="d">${b.mgr?"Income goes straight to your cash (10% cut)":"Collects for you automatically, even offline. Takes a 10% cut"}</span><span class="c">${b.mgr?"Hired":fmt(mc)}</span></button>
+        <button class="perk nopic" data-act="sell"><span class="t">Sell the business</span><span class="d">Get back 70% of what you put in</span><span class="c">${fmt(Math.round(b.inv*.7))}</span></button>
+      </div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{BZV=null;back()};
+    const col=$("bzCol");if(col)col.onclick=()=>{const v=Math.round(b.till||0);if(v<1)return;b.till=0;earn(v);dirty=true;SFX.sell();confetti(60);banner("+"+fmt(v),"g");draw();updMini()};
+    $("room").querySelectorAll("[data-pr]").forEach(x=>x.onclick=()=>{b.p=+x.dataset.pr;dirty=true;SFX.tick(.5);draw()});
+    $("room").querySelectorAll("[data-act]").forEach(x=>x.onclick=()=>{const a=x.dataset.act;
+      if(a==="exp"){if(b.lv>=bizMaxLv||S.cash<ex)return;S.cash-=ex;b.inv+=ex;b.lv++;SFX.rebirth();confetti(100);shake(5);banner(b.n+" → level "+b.lv,"g")}
+      if(a==="reno"){if(S.cash<rc)return;S.cash-=rc;b.inv+=rc*.3;b.rep=Math.min(100,b.rep+30);SFX.level();banner("Renovated · reputation "+Math.round(b.rep),"u")}
+      if(a==="promo"){if(S.cash<pc||promo)return;S.cash-=pc;b.promo=Date.now()+600000;SFX.hot();banner("Promotion on for 10 min","u")}
+      if(a==="mgr"){if(b.mgr||S.cash<mc)return;S.cash-=mc;b.inv+=mc;if(b.till>=1){earn(Math.round(b.till));b.till=0}b.mgr=1;SFX.level();banner(T.mg+" hired","u")}
+      if(a==="sell"){if(!x.dataset.sure){x.dataset.sure=1;x.querySelector(".t").textContent="Tap again to sell";return}const v=Math.round(b.inv*.7+(b.till||0));S.biz=S.biz.filter(y=>y!==b);earn(v);dirty=true;BZV=null;SFX.sell();banner("Sold for "+fmt(v),"g");return back()}
+      dirty=true;draw();updMini()})};draw();renderHud()}
+function openEmpire(back){const L=S.biz||[];room=room||"bank";
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Your businesses")}
+    <div class="kv"><div><span class="eyebrow">Owned</span><b>${L.length}</b></div><div><span class="eyebrow">Income</span><b>${fmt(empireInc())}/min</b></div><div><span class="eyebrow">Ready to collect</span><b>${fmt(tillAll())}</b></div></div>
+    <button class="bigbtn" id="empCol" ${tillAll()<1?"disabled":""}>Collect everything<small>From every business without a manager</small></button>
+    <div class="perks">${L.map(bizRow).join("")||`<p class="fine">You don't own any yet. Fly somewhere from the Airport, or buy at home from the Bank.</p>`}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("empCol").onclick=()=>{collectAll();openEmpire(back);updMini()};
+  $("room").querySelectorAll("[data-biz]").forEach(b=>b.onclick=()=>openBiz(b.dataset.biz,()=>openEmpire(back)))}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -3128,7 +3340,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
