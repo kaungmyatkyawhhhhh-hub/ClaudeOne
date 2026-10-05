@@ -1,50 +1,43 @@
-# ClaudeOne — Roblox game (Rojo project)
+# ClaudeOne — Roblox game
 
 ## How this repo is used
-- The game is built in Roblox Studio on the owner's PC. Scripts in this repo
-  are synced into Studio with Rojo (`default.project.json`).
-- Cloud sessions **cannot** reach Roblox Studio: no playtesting, screenshots,
-  or editing parts/UI built in Studio. Work only on code in `src/`, push it,
-  and the owner pulls + syncs. Say clearly when something needs checking in Studio.
-- The game is **GYM ARC**. The owner's design brief is `docs/DESIGN.md` (imported
-  below; it was the local CLAUDE.md, build exactly what it says, follow its
-  working style). Build history and open questions: `PROGRESS.md` (add an entry
-  for every step you finish, same format). Code map: `docs/GAME_OVERVIEW.md`.
-- **UI style is "clean minimal"** (described in `docs/DESIGN.md`): dark see-through
-  panels, thin light borders, Montserrat, white/gray text, color only for plates,
-  grades and rarity. `src/ReplicatedStorage/Shared/UI/Theme.luau` is the source of
-  truth for the look: use Theme helpers, never hardcoded styles.
-- **All game scripts live in `src/` and Rojo syncs them into Studio.** The repo
-  is the source of truth for code: edit the files, never the scripts inside
-  Studio (Rojo overwrites Studio-side script edits). Parts, models, lighting and
-  `ReplicatedStorage.Remotes` are still built in Studio and are not in the repo.
-- Local sessions (Claude Code on the owner's PC with the Roblox Studio tool):
-  edit code in `src/` with `rojo serve` connected, and use Studio only to
-  playtest and to build parts/models/UI-in-world. Commit and push code changes.
+- The game is **GYM ARC**, built in Roblox Studio on the owner's PC. The owner's design brief is `docs/DESIGN.md`
+  (imported below; build exactly what it says, follow its working style). Build history and open items:
+  `PROGRESS.md` (keep it short and current). Code map: `docs/GAME_OVERVIEW.md`.
+- **Roblox Studio is the source of truth** (scripts and builds). We do **not** use Rojo: ignore Rojo sync
+  instructions. Edit scripts and builds directly in Studio (local sessions use the Studio MCP connection).
+- **GitHub is backup only.** After each finished piece of work, export every script from Studio into `src/`
+  (`tools/export`, see below), then commit + push with a clear message.
+- After any big change, remind the owner to **save/publish the place** in Studio. Never assume it's saved.
+- Cloud sessions can't reach Studio: they can only edit `src/`, and the owner must copy those changes into Studio.
+  Say so clearly.
+- **UI style is "clean minimal"** (described in `docs/DESIGN.md`): dark see-through panels, thin light borders,
+  Montserrat, white/gray text, color only for plates, grades and rarity. `ReplicatedStorage.Shared.UI.Theme` is the
+  source of truth for the look: use Theme helpers, never hardcoded styles. StarterGui is empty; all UI is built in
+  code from Theme. All data writes go through `PlayerData`.
+- Monetization stays OFF (no gamepasses/products/badges created). No emojis in UI, no grunt sounds, no real
+  people/brands/copyrighted art. The owner picks sound IDs; never pick new ones.
+- Lighting: `Lighting.Technology` no longer exists; never set it. Use `LightingStyle = Realistic` and
+  `PrioritizeLightingQuality = true` (already set in the place).
 - `export/GymArc.rbxlx` is an old place snapshot (4 Oct 2026), kept as a backup.
-- All UI is built in code from `ReplicatedStorage.Shared.UI.Theme`; StarterGui is
-  empty. New UI must use Theme. All data writes go through `PlayerData`.
 
-## Layout (`default.project.json`)
-- `src/ServerScriptService` → `ServerScriptService` (`Main.server.luau` + `Server/` modules)
-- `src/ReplicatedStorage/Shared` → `ReplicatedStorage.Shared` (Config, UI, Audio, ClientData)
-- `src/StarterPlayerScripts` → `StarterPlayer.StarterPlayerScripts` (`*.client.luau`)
+## Layout of `src/` (mirrors the Explorer)
+- `src/ServerScriptService` (`Main.server.luau` + `Server/` modules), `src/ReplicatedStorage/Shared` (Config, UI,
+  Audio, ClientData), `src/StarterPlayer/StarterPlayerScripts` (`*.client.luau`).
 - File suffix = script type: `.server.luau` Script, `.client.luau` LocalScript, `.luau` ModuleScript.
-- Rojo fully owns those three places: anything added there inside Studio is
-  removed on the next sync. Add new scripts as files instead.
-- `ReplicatedStorage.Remotes` is NOT synced (built in Studio). A new remote must
-  be created in Studio by the owner, or created from code at server start.
-- Keep `rokit.toml`'s Rojo version equal to the owner's Rojo Studio plugin (7.7.1).
+- `ReplicatedStorage.Remotes` is built in Studio; a new remote is created by its owning service at Start.
+- Export: run `tools/export/receive.ps1` (localhost receiver), turn on HttpService, run `tools/export/Export.luau`
+  in Studio's command bar (or via MCP), turn HttpService off again. Delete files in `src/` whose script no longer
+  exists in Studio.
 
-## Checks (run before every push)
+## Checks (run on the exported `src/` before every push)
 - `lune run tests/run_all` (logic tests, see `tests/README.md`).
-- Compile every script: `luau-compile --null <file>` (Luau release `luau-ubuntu.zip`).
-- Roblox type analysis: `rojo sourcemap default.project.json -o sourcemap.json`, then
-  `luau-lsp analyze --platform roblox --sourcemap sourcemap.json --defs @roblox=globalTypes.None.d.luau src`
-  (luau-lsp release + `scripts/globalTypes.None.d.luau` from its repo). Only lint warnings are expected.
-- `rojo build . -o test.rbxl` must succeed.
+- Compile every script: `luau-compile --null <file>`.
+- Roblox type analysis (only lint warnings expected): `luau-lsp analyze --platform roblox --sourcemap sourcemap.json
+  --defs @roblox=globalTypes.None.d.luau src`. The sourcemap is generated from `default.project.json`, which is
+  kept only for this offline check (not for syncing).
+- Play in Studio and read Output: no new errors or warnings.
 - New server services go in `Main.server.luau`'s OPTIONAL_SERVICES list (started in protected calls).
-- New remotes are created by the owning service at Start (Remotes is Studio-built and not synced).
 
 ## Conventions
 - Luau, `.luau` extension. Use `--!strict` where practical.

@@ -18,7 +18,7 @@ local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
 
-local STORE_NAME = "PlayerData_xz"
+local STORE_NAME = "PlayerData_1"
 local SESSION_ID = HttpService:GenerateGUID(false)
 local LOCK_EXPIRY = 300 -- seconds; a lock older than this belongs to a crashed server
 -- Studio playtests often stop before the lock is released; there, take over stale locks right away

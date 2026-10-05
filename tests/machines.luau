@@ -3,7 +3,7 @@ local H = require("./harness")
 local Machines = H.module("ReplicatedStorage/Shared/Config/Machines")
 local Poses = H.module("ReplicatedStorage/Shared/Config/Poses")
 local Muscles = H.module("ReplicatedStorage/Shared/Config/Muscles")
-local client = fs.readFile(require("@lune/process").cwd .. "/src/StarterPlayerScripts/MachineClient.client.luau")
+local client = fs.readFile(require("@lune/process").cwd .. "/src/StarterPlayer/StarterPlayerScripts/MachineClient.client.luau")
 local builder = fs.readFile(require("@lune/process").cwd .. "/tools/builders/ProGym.luau")
 print("Machines")
 local pro = 0
