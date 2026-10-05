@@ -541,6 +541,9 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .accf input,.accf textarea,.acccode{font:600 1.05rem var(--body);padding:14px;border-radius:14px;border:0;background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);outline:none;width:100%;box-sizing:border-box}
 .accf input:focus,.accf textarea:focus{box-shadow:inset 0 0 0 2px var(--accent)}
 .accf textarea,.acccode{font-family:var(--mono);font-size:.72rem;word-break:break-all;resize:none}
+.acctabs{display:flex;gap:6px;background:var(--surface);padding:4px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line)}.acctabs button{flex:1;border:0;background:transparent;color:var(--muted);font:700 .9rem var(--body);padding:10px;border-radius:10px}.acctabs button.on{background:var(--ink);color:var(--bg)}
+.lpick{display:flex;flex-direction:column;gap:8px;font-size:.85rem;padding:12px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line)}.lpick>span{font-weight:700;font-size:.78rem;color:var(--muted)}.lpick label{display:flex;gap:8px;align-items:center}
+.kickov{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
 .accmsg{margin:0;min-height:1.1em;font-size:.84rem;font-weight:600;color:var(--down)}
 .accbar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-size:.9rem}
 .accbar .accav{width:30px;height:30px;font-size:.9rem;border-radius:9px}
@@ -810,7 +813,7 @@ function newGame(){
   CATS.forEach(c=>{S.trend[c.k]=1;S.hist[c.k]=Array(40).fill(1)});
   freshLife(false);
 }
-function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
+function save(){if(ACC&&ACC.kicked)return;if(S){S.savedAt=Date.now();store.set(SAVE,JSON.stringify(S))}dirty=false}
 function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};d.bestPr=Math.max(d.bestPr||0,d.pr||20,...Object.values(d.lifts||{}));d.bestLifts=d.bestLifts||{};for(const k in d.lifts||{})d.bestLifts[k]=Math.max(d.bestLifts[k]||0,d.lifts[k]);if(d.trend&&d.hist)CATS.forEach(c=>{if(d.trend[c.k]==null){d.trend[c.k]=1;d.hist[c.k]=Array(40).fill(1)}});for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 // Reputation level grows forever from everything you earn; no resets
@@ -1327,12 +1330,12 @@ function barbellSVG(w){
 }
 let G=null,G0lift=null;
 const liftCost=w=>Math.max(1,Math.ceil((2+w/40)*(G&&G.half?.5:1)));
-function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/(10*(1+(S.spurts||0)))*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;z*=(1+.1*pk("lift"))*(1+.06*(S.spurts||0));return clamp(z,.06,.5)}
+function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/10*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;z*=(1+.1*pk("lift"));return clamp(z,.06,.5)}
 function newZone(){const z=zoneFor(G.w);G.z=[rnd(.08,.92-z),0];G.z[1]=G.z[0]+z}
 const LIFTS=[["bench","Bench"],["squat","Squat"],["dead","Deadlift"]];
 // Height: growth spurts reset your lifts but make you taller, and taller means more confidence
 const cmOver=()=>Math.max(0,((S&&S.height)||170)-170);
-const liftOver=()=>10+10*((S&&S.spurts)||0);
+const liftOver=()=>10;
 const spurtReq=()=>120+30*(S.spurts||0);
 const spurtGain=()=>Math.min(6,2+Math.floor(Math.max(0,S.pr-spurtReq())/40));
 // Height is exaggerated on screen so every cm shows: 180 cm looks ~13% taller, 200 cm ~39%
@@ -1356,7 +1359,7 @@ function liftPanel(l0){
       <button class="bigbtn" id="liftBtn">Lift ${G.w} kg<small>Tap in the green · ${cost} energy${S.protein>0?" · protein":""}${S.buffs&&S.buffs.fed>0?" · well fed":""}${S.awake>20?" · tired, smaller zone":""}</small></button>
       <div class="sechead"><h3>Physique</h3><span class="eyebrow">Mirror check</span></div>${physiqueCard()}
       <div class="sechead"><h3>Growth spurt</h3><span class="eyebrow">${S.height||170} cm · ${S.spurts||0} spurts</span></div>
-      <div class="note">Reset all three lifts to 20 kg and <b>grow taller</b>. Every cm over 170 gives confidence: +0.5% on sales, faster walking, safer lowballing, bigger flex crowds and more fans. Muscle memory makes each climb back faster: bigger green zone, bigger jumps, and more weight allowed over your PR.</div>
+      <div class="note">Reset all three lifts to 20 kg and <b>grow taller</b>. Every cm over 170 gives confidence: +0.5% on sales, faster walking, safer lowballing, bigger flex crowds and more fans.</div>
       <button class="bigbtn alt" id="gSpurt" ${S.pr<spurtReq()?"disabled":""}>Growth spurt +${spurtGain()} cm<small>${S.pr<spurtReq()?`Needs ${spurtReq()} kg max lift · you have ${S.pr} kg`:`Lifts go back to 20 kg · you'll be ${(S.height||170)+spurtGain()} cm`}</small></button>
       <div class="sechead"><h3>Strength perks</h3><span class="eyebrow">${strTier()} · ${S.pr} kg</span></div>
       <div class="sperks">
@@ -1365,7 +1368,7 @@ function liftPanel(l0){
         <div class="on"><b>Arena power</b><span>Your max lift is your arm wrestling strength</span></div>
         ${STR_PERKS.map(([kg,t,d])=>`<div class="${hasStr(kg)?"on":""}"><b>${t} <em>${kg} kg</em></b><span>${d}</span></div>`).join("")}
       </div>
-      <p class="fine">Each lift has its own PR, and you can try up to ${liftOver()} kg over it${S.spurts?" thanks to muscle memory":""}. Your strength perks use your best lift. Your total of all three counts at powerlifting meets in the Arena.</p></div>`;
+      <p class="fine">Each lift has its own PR, and you can try up to ${liftOver()} kg over it. Your strength perks use your best lift. Your total of all three counts at powerlifting meets in the Arena.</p></div>`;
     $("gBack").onclick=closePanel;
     const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+liftOver());newZone();draw()};
     P.querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+(S.liftMax?liftOver():5);newZone();draw()});
@@ -1382,7 +1385,7 @@ function liftPanel(l0){
         else floatAt(e.currentTarget,"Clean lift","var(--up)")}
       else{$("gArt").classList.add("fail");SFX.nope();buzz([30,40,30]);floatAt(e.currentTarget,"Failed the lift","var(--down)")}
       dirty=true;updMini();
-      setTimeout(()=>{if(!G)return;G.busy=false;const lp2=S.lifts[G.lift];if(S.liftMax)G.w=lp2+liftOver();else if(ok&&G.w>=lp2&&G.w<lp2+liftOver())G.w=Math.min(lp2+liftOver(),G.w+2.5*(1+(S.spurts||0)));newZone();draw()},ok?650:550);
+      setTimeout(()=>{if(!G)return;G.busy=false;const lp2=S.lifts[G.lift];if(S.liftMax)G.w=lp2+liftOver();else if(ok&&G.w>=lp2&&G.w<lp2+liftOver())G.w=Math.min(lp2+liftOver(),G.w+2.5);newZone();draw()},ok?650:550);
     };
   };draw();
 }
@@ -1442,7 +1445,7 @@ function drawFountain(){const x=700,y=700;if(x<cam.x-60||x>cam.x+vw+60||y<cam.y-
   ctx.fillStyle="rgba(255,255,255,.85)";ctx.beginPath();ctx.ellipse(x,y-10-Math.sin(wt*5)*2,2.4,9,0,0,7);ctx.fill()}
 
 /* ---------- physique: each lift builds a different body part ---------- */
-function myBuild(){const c=S.lifts||{bench:20,squat:20,dead:20},bl=S.bestLifts||{},L={};for(const k of["bench","squat","dead"])L[k]=Math.max(c[k]||20,(bl[k]||0)*.6);return{c:clamp((L.bench-20)/180,0,1.4),l:clamp((L.squat-20)/240,0,1.4),b:clamp((L.dead-20)/280,0,1.4)}}
+function myBuild(){const c=S.lifts||{bench:20,squat:20,dead:20},L={};for(const k of["bench","squat","dead"])L[k]=c[k]||20;return{c:clamp((L.bench-20)/180,0,1.4),l:clamp((L.squat-20)/240,0,1.4),b:clamp((L.dead-20)/280,0,1.4)}}
 function physiqueSVG(B){
   const c=B.c,l=B.l,b=B.b,sw=40+20*b+12*c,sk="#e8b896",sh="#c98e62",def=Math.min(1,(c+l+b)/2.4),wa=24+3*l;
   const torso=`M${100-sw+8} 70 Q${100-sw} 72 ${100-sw+2} 84 L${100-wa} 150 L${100+wa} 150 L${100+sw-2} 84 Q${100+sw} 72 ${100+sw-8} 70 Z`;
@@ -2880,11 +2883,119 @@ async function copyTransfer(btn){save();const a=accCur(),code=await encodeSave(a
   const done=()=>{floatAt(btn,"Copied","var(--up)");banner("Transfer code copied","u")};
   const fallback=()=>{const o=$("overlay");o.hidden=false;o.innerHTML=`<div class="sheet"><h2 class="h2"><small>TRANSFER CODE</small>Copy this code.</h2><textarea class="acccode" id="aCode" rows="8" readonly>${code}</textarea><button class="cta" id="aBack"><span>Done</span>${ARROW}</button></div>`;const t=$("aCode");t.focus();t.select();$("aBack").onclick=()=>{o.hidden=true}};
   try{navigator.clipboard.writeText(code).then(done,fallback)}catch(e){fallback()}}
-function accountCard(){const a=accCur();return `<div class="sechead"><h3>Account</h3><span class="eyebrow">${a?esc(a.name):""}</span></div>
-  <div class="accrow"><button class="perk nopic" id="accCopy"><span class="t">Copy transfer code</span><span class="d">Paste it on another phone or PC to play this account there</span></button>
-  <button class="perk nopic" id="accSwitch"><span class="t">Switch account</span><span class="d">Your progress is saved first</span></button></div>`}
-function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>{save();store.set(CUR_KEY,"");location.reload()}}
+function accountCard(){return `<div class="sechead"><h3>Account</h3><span class="eyebrow">${ACC?esc(ACC.user):""}</span></div>
+  <div class="accrow"><button class="perk nopic" id="accSwitch"><span class="t">Log out</span><span class="d">Your progress is saved to your account first. Log in on any device with your username and password</span></button>
+  <button class="perk nopic" id="accCopy"><span class="t">Copy backup code</span><span class="d">A spare copy of your save, just in case</span></button></div>`}
+function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout()}
 
+/* ================= cloud accounts: username + password, one device at a time ================= */
+// Saves are encrypted on the device with a key made from your password (PBKDF2 + AES-GCM),
+// then stored as retained messages on the public MQTT brokers. A "session" message says which
+// device owns the account; when another device takes over, this one locks itself.
+const CLOUD_KEY="fliprush_cloud";
+const DEV_ID=(()=>{let d=store.get("fliprush_dev");if(!d){d=Math.random().toString(36).slice(2,12);store.set("fliprush_dev",d)}return d})();
+const devName=()=>{const u=navigator.userAgent;return /iPhone/.test(u)?"an iPhone":/iPad/.test(u)?"an iPad":/Android/.test(u)?"an Android phone":/Mac/.test(u)?"a Mac":/Windows/.test(u)?"a PC":"another device"};
+let ACC=null;
+const enc=t=>new TextEncoder().encode(t);
+async function sha256hex(t){const b=await crypto.subtle.digest("SHA-256",enc(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,32)}
+async function deriveKey(user,pass){const base=await crypto.subtle.importKey("raw",enc(pass),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt:enc("fliprush:"+user.toLowerCase()),iterations:150000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},true,["encrypt","decrypt"])}
+async function seal(key,obj){const iv=crypto.getRandomValues(new Uint8Array(12)),raw=JSON.stringify(obj),z=await deflate(raw).catch(()=>null);
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,z||enc(raw));return JSON.stringify({v:1,c:z?1:0,iv:b64u(iv),d:b64u(ct)})}
+async function unseal(key,txt){const o=JSON.parse(txt),pt=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:ub64u(o.iv)},key,ub64u(o.d)));return JSON.parse(o.c?await inflate(pt):new TextDecoder().decode(pt))}
+const accTopic=(h,k)=>"fliprush/v1/acct/"+h+"/"+k;
+async function cloudConnect(){
+  await loadMqtt();const list=(store.get("fliprush_broker")?[store.get("fliprush_broker")]:[]).concat(MP_BROKERS);
+  const cls=await Promise.all(list.map(url=>new Promise(res=>{let c;try{c=mqtt.connect(url,{clientId:"fra_"+DEV_ID+"_"+Math.random().toString(36).slice(2,6),clean:true,connectTimeout:6000,reconnectPeriod:5000,keepalive:30})}catch(e){return res(null)}
+    const t=setTimeout(()=>{try{c.end(true)}catch(e){}res(null)},7000);c.once("connect",()=>{clearTimeout(t);res(c)});c.on("error",()=>{})})));
+  return cls.filter(Boolean);
+}
+function cloudGet(cls,topic,ms=3500){return new Promise(res=>{const out=[];let fin=false;const done=()=>{if(fin)return;fin=true;clearTimeout(t);cls.forEach(c=>{c.removeListener("message",c.__h);try{c.unsubscribe(topic)}catch(e){}});res(out)};const t=setTimeout(done,ms);
+  cls.forEach(c=>{c.__h=(tp,buf)=>{if(tp===topic){out.push(buf.toString());if(out.length>=cls.length)done()}};c.on("message",c.__h);c.subscribe(topic,{qos:1})})})}
+function cloudPut(cls,topic,payload){cls.forEach(c=>{try{c.publish(topic,payload,{qos:1,retain:true})}catch(e){}})}
+async function newestSave(cls,h,key){const got=await cloudGet(cls,accTopic(h,"save"));let best=null,bad=0;
+  for(const g of got){try{const o=await unseal(key,g);if(!best||o.t>best.t)best=o}catch(e){bad++}}return{best,found:got.length,bad}}
+async function sessionNow(cls,h){const got=await cloudGet(cls,accTopic(h,"sess"),2500);let s=null;const sids=[];got.forEach(g=>{try{const o=JSON.parse(g);sids.push(o.sid);if(!s||o.t>s.t)s=o}catch(e){}});if(ACC)ACC.prev=sids;return s}
+function cacheGet(){try{return JSON.parse(store.get(CLOUD_KEY))}catch(e){return null}}
+async function cacheSet(user,h,key){const jwk=await crypto.subtle.exportKey("jwk",key);store.set(CLOUD_KEY,JSON.stringify({u:user,h,k:jwk}))}
+async function cacheKey(c){return crypto.subtle.importKey("jwk",c.k,{name:"AES-GCM"},true,["encrypt","decrypt"])}
+/* claim this device, watch for takeovers, keep the cloud copy fresh */
+function cloudClaim(){if(!ACC||!ACC.cls.length)return;ACC.sid=Math.random().toString(36).slice(2,12);ACC.claimT=Date.now();ACC.kicked=false;
+  const h=ACC.h,sess=()=>JSON.stringify({sid:ACC.sid,dev:DEV_ID,dn:devName(),t:Date.now()});cloudPut(ACC.cls,accTopic(h,"sess"),sess());
+  ACC.cls.forEach(c=>{c.subscribe(accTopic(h,"sess"),{qos:1});c.on("message",(tp,buf)=>{if(tp!==accTopic(h,"sess")||!ACC||ACC.kicked)return;try{const o=JSON.parse(buf.toString());if(o.sid!==ACC.sid&&!(ACC.prev||[]).includes(o.sid))cloudKicked(o)}catch(e){}});
+    c.on("connect",()=>{if(ACC&&!ACC.kicked)c.subscribe(accTopic(h,"sess"),{qos:1})})});
+  clearInterval(ACC.beat);ACC.beat=setInterval(()=>{if(!ACC||ACC.kicked)return;cloudPut(ACC.cls,accTopic(h,"sess"),sess());cloudUpload()},30000);
+}
+let upBusy=false;
+async function cloudUpload(){if(!ACC||ACC.kicked||!ACC.cls.length||!S||upBusy)return;upBusy=true;try{if(playing)save();const raw=store.get(SAVE);if(raw){cloudPut(ACC.cls,accTopic(ACC.h,"save"),await seal(ACC.key,{u:ACC.user,t:Date.now(),s:raw}))}}catch(e){}upBusy=false}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")cloudUpload()});
+function cloudKicked(o){ACC.kicked=true;playing=false;try{mpLeave(true)}catch(e){}clearInterval(ACC.beat);
+  const ov=document.createElement("div");ov.className="kickov";ov.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1>
+    <h2 class="h2"><small>ACCOUNT MOVED</small>This device is closed.</h2><p class="lede">${esc(ACC.user)} is now playing on ${esc(o.dn||"another device")}. Your progress went with it.</p>
+    <button class="cta" id="kBack"><span>Move it back to this device</span>${ARROW}</button><button class="cta ghost2" id="kOut">Log out</button></div>`;
+  document.body.appendChild(ov);$("kBack").onclick=()=>location.reload();$("kOut").onclick=()=>{store.del(CLOUD_KEY);location.reload()};
+}
+/* screens */
+function cloudScreen(msg,mode){
+  const o=$("overlay");o.hidden=false;mode=mode||"login";
+  o.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1>
+    <div class="acctabs"><button class="${mode==="login"?"on":""}" id="tLog">Log in</button><button class="${mode==="new"?"on":""}" id="tNew">Create account</button></div>
+    <label class="accf"><span>Username</span><input id="cUser" maxlength="16" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="3 to 16 letters, numbers or _"></label>
+    <label class="accf"><span>Password</span><input id="cPass" type="password" maxlength="64" autocomplete="${mode==="new"?"new-password":"current-password"}" placeholder="At least 4 characters"></label>
+    ${mode==="new"?localPick():""}
+    <p class="accmsg" id="cMsg">${msg||""}</p>
+    <button class="cta" id="cGo"><span>${mode==="new"?"Create account":"Log in"}</span>${ARROW}</button>
+    <p class="fine">Your account works on any phone or PC, one device at a time. Your password never leaves this device; it locks your save before it's uploaded. If you forget it, the save can't be recovered.</p></div>`;
+  $("tLog").onclick=()=>cloudScreen("","login");$("tNew").onclick=()=>cloudScreen("","new");
+  const go=()=>mode==="new"?cloudCreate():cloudLogin();$("cGo").onclick=go;$("cPass").onkeydown=e=>{if(e.key==="Enter")go()};
+  o.querySelectorAll("[name=lsave]").forEach(r=>r.onchange=()=>{});
+}
+function localSaves(){const out=[];accList().forEach(a=>{const raw=store.get(accKey(a.id));if(raw)try{const d=JSON.parse(raw);out.push({k:accKey(a.id),n:a.name,cash:d.cash,day:d.day})}catch(e){}});
+  if(!out.length&&store.get(SAVE0))try{const d=JSON.parse(store.get(SAVE0));out.push({k:SAVE0,n:"Saved game",cash:d.cash,day:d.day})}catch(e){}return out.sort((a,b)=>b.cash-a.cash)}
+function localPick(){const L=localSaves();if(!L.length)return"";return `<div class="lpick"><span>Bring your progress from this device</span>${L.map((s,i)=>`<label><input type="radio" name="lsave" value="${i}" ${i===0?"checked":""}> ${esc(s.n)} · ${fmt(s.cash)} · Day ${s.day}</label>`).join("")}<label><input type="radio" name="lsave" value="-1"> Start fresh</label></div>`}
+const cMsg=t=>{const e=$("cMsg");if(e)e.textContent=t};
+const userOk=u=>/^[A-Za-z0-9_]{3,16}$/.test(u);
+async function cloudCreate(){
+  const u=$("cUser").value.trim(),p=$("cPass").value;if(!userOk(u))return cMsg("Username: 3 to 16 letters, numbers or _.");if(p.length<4)return cMsg("Password needs at least 4 characters.");
+  const pickEl=document.querySelector("[name=lsave]:checked"),pick=pickEl?+pickEl.value:-1,L=localSaves();
+  $("cGo").disabled=true;cMsg("Connecting…");let cls=[];try{cls=await cloudConnect()}catch(e){}
+  if(!cls.length){$("cGo").disabled=false;return cMsg("Can't reach the account server. Check your internet and try again.")}
+  const h=await sha256hex(u.toLowerCase());cMsg("Checking username…");const taken=await cloudGet(cls,accTopic(h,"save"),3000);
+  if(taken.length){$("cGo").disabled=false;cls.forEach(c=>c.end(true));return cMsg("That username is taken.")}
+  const key=await deriveKey(u,p);SAVE=SAVE0+":c:"+h;
+  if(pick>=0&&L[pick])store.set(SAVE,store.get(L[pick].k));else{newGame();save()}
+  ACC={user:u,h,key,cls};await cacheSet(u,h,key);cloudClaim();await cloudUpload();SFX.level();titleMain();
+}
+async function cloudLogin(){
+  const u=$("cUser").value.trim(),p=$("cPass").value;if(!userOk(u)||p.length<4)return cMsg("Check your username and password.");
+  $("cGo").disabled=true;cMsg("Connecting…");const h=await sha256hex(u.toLowerCase()),key=await deriveKey(u,p);let cls=[];try{cls=await cloudConnect()}catch(e){}
+  if(!cls.length){const c=cacheGet();$("cGo").disabled=false;if(c&&c.h===h&&store.get(SAVE0+":c:"+h)){SAVE=SAVE0+":c:"+h;ACC={user:u,h,key,cls:[],offline:1};return titleMain()}return cMsg("Can't reach the account server. Check your internet and try again.")}
+  cMsg("Unlocking your save…");const r=await newestSave(cls,h,key);
+  if(!r.found){$("cGo").disabled=false;cls.forEach(c=>c.end(true));return cMsg("No account with that username.")}
+  if(!r.best){$("cGo").disabled=false;cls.forEach(c=>c.end(true));return cMsg("Wrong password.")}
+  await afterAuth({user:u,h,key,cls},r.best);
+}
+async function afterAuth(acc,cloud){
+  SAVE=SAVE0+":c:"+acc.h;const local=store.get(SAVE);let lt=0;try{lt=JSON.parse(local).savedAt||0}catch(e){}
+  if(cloud&&cloud.s){let ct=0;try{ct=JSON.parse(cloud.s).savedAt||cloud.t}catch(e){}if(!local||ct>=lt)store.set(SAVE,cloud.s)}
+  ACC=acc;await cacheSet(acc.user,acc.h,acc.key);
+  const sess=await sessionNow(acc.cls,acc.h);
+  if(sess&&sess.dev!==DEV_ID&&Date.now()-sess.t<120000){const o=$("overlay");o.hidden=false;
+    o.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1><h2 class="h2"><small>${esc(acc.user).toUpperCase()}</small>Already playing on ${esc(sess.dn||"another device")}.</h2>
+      <p class="lede">An account can only be played on one device at a time. Move it here? The other device will close and its progress comes with you.</p>
+      <button class="cta" id="mvYes"><span>Move to this device</span>${ARROW}</button><button class="cta ghost2" id="mvNo">Cancel</button></div>`;
+    $("mvYes").onclick=async()=>{const r=await newestSave(acc.cls,acc.h,acc.key);if(r.best)store.set(SAVE,r.best.s);cloudClaim();titleMain()};
+    $("mvNo").onclick=()=>{acc.cls.forEach(c=>c.end(true));ACC=null;store.del(CLOUD_KEY);cloudScreen("")};return}
+  cloudClaim();titleMain();
+}
+async function cloudResume(){
+  const c=cacheGet(),o=$("overlay");o.hidden=false;o.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1><p class="lede">Signing in as <b>${esc(c.u)}</b>…</p></div>`;
+  let key;try{key=await cacheKey(c)}catch(e){store.del(CLOUD_KEY);return cloudScreen("")}
+  let cls=[];try{cls=await cloudConnect()}catch(e){}
+  if(!cls.length){SAVE=SAVE0+":c:"+c.h;ACC={user:c.u,h:c.h,key,cls:[],offline:1};return titleMain()}
+  const r=await newestSave(cls,c.h,key);await afterAuth({user:c.u,h:c.h,key,cls},r.best);
+}
+function cloudLogout(){cloudUpload().finally(()=>{setTimeout(()=>{store.del(CLOUD_KEY);location.reload()},600)})}
 /* ================= multiplayer: rooms over a public MQTT broker ================= */
 // Everyone in a room sees each other walk around town, chats, emotes and can send gifts.
 // Each player keeps their own save; the broker only relays small messages.
@@ -2893,7 +3004,7 @@ const MP_ID=(()=>{let id=store.get("fliprush_mpid");if(!id){id=Math.random().toS
 const EMOTES=["👋","💪","🔥","😂","💰","GG"];
 let MP=null,myBub=null;
 const mpT=c=>"fliprush/v1/"+c;
-const mpName=()=>{const a=accCur();return a?a.name:"Player"};
+const mpName=()=>ACC?ACC.user:"Player";
 function loadMqtt(){if(window.mqtt)return Promise.resolve();return new Promise((res,rej)=>{const go=l=>{if(!l.length)return rej();const sc=document.createElement("script");sc.src=l[0];sc.onload=()=>window.mqtt?res():go(l.slice(1));sc.onerror=()=>go(l.slice(1));document.head.appendChild(sc)};go(["vendor/mqtt.min.js","https://unpkg.com/mqtt@5/dist/mqtt.min.js"])})}
 function mpStatus(t){const e=$("mpMsg");if(e)e.textContent=t||""}
 async function mpJoin(code,quiet){
@@ -3265,13 +3376,14 @@ function townTick(){if(!MPW)return;const ids=townPlayers().map(p=>p.id);ids.forE
 function openPlot(p){room="house";$("room").hidden=false;$("room").style.setProperty("--pc",p.s||"#2a3cff");SFX.door();visitHouse(p,()=>{closeRoom()});renderHud()}
 
 /* ================= title ================= */
-function title(){
-  accMigrate();const acc=accCur();if(!acc){accScreen();return}accUse(acc);newGame();
+function title(){accMigrate();if(!ACC){const c=cacheGet();if(c&&c.u&&c.k)return cloudResume();return cloudScreen("",localSaves().length?"new":"login")}titleMain()}
+function titleMain(){
+  const acc={name:ACC.user};newGame();
   const o=$("overlay"),has=load();o.hidden=false;let confirmNew=false;
   const draw=()=>{
     o.innerHTML=`<div class="sheet">
       <h1 class="wordmark">Flip<span>Rush</span></h1>
-      <div class="accbar"><span class="accav">${esc(acc.name[0]||"?").toUpperCase()}</span><span>Playing as <b>${esc(acc.name)}</b></span><button id="accSw">Switch</button></div>
+      <div class="accbar"><span class="accav">${esc(acc.name[0]||"?").toUpperCase()}</span><span>Playing as <b>${esc(acc.name)}</b></span><button id="accSw">Log out</button></div>
       <p class="lede">Walk the town, flip everything at the market, hit the gym, trade live charts, and level up forever. Every level lets you pick a new perk.</p>
       <div class="how">
         <div><kbd>WALK</kbd><span>Tap the map to walk. Buttons at the bottom take you straight to a place.</span></div>
@@ -3287,8 +3399,8 @@ function title(){
       ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · Level ${repLevel()} · Day ${S.day}</small></span>${ARROW}</button>
         <button class="cta" id="bNew" style="background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:.95rem">${confirmNew?"Tap again to erase your save":"New game"}</button>`
        :`<button class="cta" id="bNew"><span>Start playing</span>${ARROW}</button>`}
-      <p class="fine">Progress saves automatically.</p></div>`;
-    $("accSw").onclick=()=>{store.set(CUR_KEY,"");accScreen()};
+      <p class="fine">${ACC.offline?"Offline: saving on this device. It syncs to your account when you're back online.":"Progress saves to your account automatically."}</p></div>`;
+    $("accSw").onclick=()=>cloudLogout();
     if(has)$("bCont").onclick=()=>start();
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
