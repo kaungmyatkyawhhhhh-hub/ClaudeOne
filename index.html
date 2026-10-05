@@ -698,7 +698,15 @@ const CAFE=[
 
 /* ================= sound ================= */
 let ac=null,muted=store.get("fliprush_muted")==="1";
-function audioOn(){if(ac)return;try{ac=new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){ac=null}}
+// iOS suspends (or "interrupts") audio when the app goes to the background; wake it on the next touch
+function audioOn(){try{
+  if(ac&&(ac.state==="closed"||ac.state==="interrupted")){try{ac.close()}catch(e){}ac=null}
+  if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();
+  if(ac.state!=="running"){const r=ac.resume();if(r&&r.catch)r.catch(()=>{});const b=ac.createBuffer(1,1,22050),src=ac.createBufferSource();src.buffer=b;src.connect(ac.destination);src.start(0)}
+}catch(e){ac=null}}
+["pointerdown","touchend","keydown"].forEach(ev=>document.addEventListener(ev,()=>{if(ac&&ac.state!=="running")audioOn()},true));
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&ac&&ac.state!=="running"){const r=ac.resume();if(r&&r.catch)r.catch(()=>{})}});
+addEventListener("pageshow",()=>{if(ac&&ac.state!=="running"){const r=ac.resume();if(r&&r.catch)r.catch(()=>{})}});
 function tone(f,d,{type="sine",vol=.07,to=0,at=0}={}){
   if(!ac||muted)return;const t=ac.currentTime+at,o=ac.createOscillator(),g=ac.createGain();
   o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);
