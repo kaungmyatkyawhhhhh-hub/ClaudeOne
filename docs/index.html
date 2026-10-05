@@ -315,6 +315,8 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .collgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.citem{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);text-align:center}.citem small{font-size:.68rem;font-weight:700;line-height:1.15}.citem i{font:600 .62rem var(--mono);font-style:normal;color:var(--muted)}.citem.lock small{color:var(--muted)}
 .oav.pmt{background:none;display:grid;place-items:center}.plrow{cursor:default}.pmbtns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.pmbtns button{border:0;border-radius:99px;padding:5px 8px;font:700 .68rem var(--mono);background:var(--ink);color:var(--bg);cursor:pointer}.pmbtns button:disabled{opacity:.4}
 .dcard.miss{display:flex;flex-direction:column;gap:8px}.mrow{display:flex;gap:10px;align-items:center}.mrow>span{flex:1;display:flex;flex-direction:column;gap:3px}.mrow b{font-size:.88rem}.mrow small{font:600 .68rem var(--mono);color:var(--muted)}.mrow button{border:0;border-radius:99px;padding:7px 12px;font:800 .75rem var(--body);background:var(--accent);color:#fff;cursor:pointer;min-width:58px}.mrow button:disabled{background:var(--sunk);color:var(--muted)}.mrow.done b{text-decoration:line-through;opacity:.6}
+.stlist{display:flex;flex-direction:column;gap:6px}.strow{display:grid;grid-template-columns:44px 1fr 70px 92px;gap:8px;align-items:center;border:0;border-radius:14px;padding:8px 10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);text-align:left;color:var(--ink);cursor:pointer}.strow i{font:800 .62rem var(--mono);font-style:normal;color:#fff;border-radius:10px;height:34px;display:grid;place-items:center}.strow b{font-size:.86rem}.strow small{display:block;font-size:.7rem;color:var(--muted)}.stsp svg{width:70px;height:24px}.stp{font:700 .8rem var(--mono);text-align:right}.stp em{display:block;font-style:normal;font-size:.68rem}.stp em.u,.news b.u{color:var(--up)}.stp em.d,.news b.d{color:var(--down)}
+.stbig{border-radius:18px;padding:14px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--sc)}.stbig b{display:block;font:900 2rem var(--display)}.stchart svg{width:100%;height:90px}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -942,6 +944,7 @@ const ACH=[
  ["highroller","High roller","Win $10M in one casino bet",()=>(S.stats.casinoBig||0)>=1e7,1e6],
  ["lucky","Lucky streak","Scratch 25 cards",()=>(S.stats.scratch||0)>=25,20000],
  ["collector","Collector","Complete 3 collection sets",()=>CATS.filter(c=>collDone(c.k)).length>=3,250000],
+ ["wolf","Wolf of Flip Street","Make $1M profit on stocks",()=>(S.stats.stockPnl||0)>=1e6,500000],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1612,7 +1615,7 @@ function drawToys(){
 /* ---------- the rich list: AI tycoons keep getting richer ---------- */
 const TYCOONS=[["Garage Gary",4e4],["Thrift Queen Tia",1.5e5],["Vince",5e5],["Lou Bianchi",2e6],["Mona Mint",8e6],["Sneakerhead Sato",2.5e7],["Duchess Vael",9e7],["Kingsley Croft",3e8],["Octavia Gold",1.2e9],["Marlon Vex",5e9],["Aurelia Stone",2e10],["The Baron",8e10],["Mr. Infinite",4e11],["Galactic Gail",3e12],["Neo Kaiser",2e13],["The Syndicate",1.5e14],["Omega Holdings",1e15],["Cosmo Rex",8e15],["The Architect",6e16]];
 const tycWorth=i=>TYCOONS[i][1]*Math.pow(1.004,S.richT||0);
-function netWorth(){let w=S.cash+(S.bank||0)+stashVal();VEH.forEach(v=>{if(S.veh&&S.veh[v.k])w+=v.cost*.7});w+=PROPS[S.home||0].cost*.8;for(let i=0;i<(S.tower||0);i++)w+=floorCost(i)*.6;TOYS.forEach(t=>{if(hasToy(t.k))w+=t.cost*.7});return w}
+function netWorth(){let w=S.cash+(S.bank||0)+stashVal()+stkVal();VEH.forEach(v=>{if(S.veh&&S.veh[v.k])w+=v.cost*.7});w+=PROPS[S.home||0].cost*.8;for(let i=0;i<(S.tower||0);i++)w+=floorCost(i)*.6;TOYS.forEach(t=>{if(hasToy(t.k))w+=t.cost*.7});return w}
 const richRank=()=>{const w=netWorth();return 1+TYCOONS.filter((_,i)=>tycWorth(i)>w).length};
 let richT=0;
 function richTick(dt){S.richT=(S.richT||0)+dt/60;richT+=dt;if(richT<1.5)return;richT=0;WT=clamp(.02+Math.max(0,Math.log10(Math.max(1,netWorth()))-6)*.01,.02,.12);const r=richRank();if(S.bestRank==null){S.bestRank=r;return}
@@ -2253,7 +2256,7 @@ function drawTrade(){
   const syms=TSYMS.filter(x=>!F.src||F.src==="sim"||F.sym[x.k]);
   const src=!F.src?'<span class="srcb">Connecting…</span>':F.src==="sim"?'<span class="srcb sim">Simulated · live feed unavailable</span>':`<span class="srcb live">Live · ${F.src==="binance"?"Binance":"Bybit"} futures</span>`;
   const m=Math.floor(S.cash*T.mp),notional=m*T.lev,p=q.p;
-  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Trading")}
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Trading")}<button class="bigbtn alt" id="tStocks" style="margin-bottom:10px">Stock exchange<small>${STK.length} companies · portfolio ${fmt(stkVal())}</small></button>
     <div class="ttabs">${syms.map(x=>{const qq=F.px[x.k]||{},c=qq.o?(qq.p/qq.o-1)*100:0;return `<button class="ttab${x.k===k?" on":""}${S.pos[x.k]?" has":""}" data-s="${x.k}"><b>${x.k}</b><span id="tp-${x.k}">${tfmt(x.k,qq.p)}</span><em id="tc-${x.k}" class="${c>=0?"u":"d"}">${qq.o?(c>=0?"+":"")+c.toFixed(2)+"%":""}</em></button>`}).join("")}</div>
     <div class="tcard">
       <div class="thead"><div><span class="eyebrow">${t.n} · ${F.sym[k]||k+"USDT"} perp</span><b class="tprice" id="tPrice">${tfmt(k,p)}</b><span id="tChg" class="${ch>=0?"u":"d"}">${q.o?(ch>=0?"+":"")+ch.toFixed(2)+"% 24h":""}</span></div>${src}</div>
@@ -2271,7 +2274,7 @@ function drawTrade(){
        <div class="tbtns"><button class="tlong" id="tLong">Long<small>price goes up</small></button><button class="tshort" id="tShort">Short<small>price goes down</small></button></div></div>`}
     ${tradeStats()}
     <p class="fine">${F.src==="sim"?"The live price feed can't be reached from here, so these prices are simulated.":"Prices are real futures prices streamed live."} All money here is in-game cash. Positions stay open while you explore, and get liquidated if price hits the liquidation level.</p></div>`;
-  $("room").firstChild.scrollTop=y;$("leaveBtn").onclick=closeRoom;
+  $("room").firstChild.scrollTop=y;$("leaveBtn").onclick=closeRoom;$("tStocks").onclick=()=>openStocks(()=>{room="trade";openTrade()});
   $("room").querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{if(F.sel===b.dataset.s)return;F.sel=b.dataset.s;loadCandles();drawTrade()});
   $("room").querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>{F.tf=b.dataset.tf;loadCandles();drawTrade()});
   $("room").querySelectorAll("[data-mp]").forEach(b=>b.onclick=()=>{T.mp=+b.dataset.mp;drawTrade()});
@@ -2859,7 +2862,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="storage")lotTick(dt);
@@ -3853,6 +3856,51 @@ const missRw=i=>Math.round([1500,4000,10000][i]*(1+SC()*.8));
 function missCard(){ensureMiss();return `<div class="dcard miss"><span class="eyebrow">Daily missions · ${S.miss.list.filter(x=>x.done).length}/3</span>${S.miss.list.map((x,i)=>{const m=MISS.find(y=>y.k===x.k),p=missProg(x),ok=p>=x.need;return `<div class="mrow${x.done?" done":""}"><span><b>${missT(m.t,x.need)}</b><div class="bar xp"><i style="width:${p/x.need*100}%"></i></div><small>${p}/${x.need} · ${fmt(missRw(i))}${i===2?" + 2 crates":i===1?" + crate":""}</small></span><button data-mi="${i}" ${x.done||!ok?"disabled":""}>${x.done?"✓":ok?"Claim":"…"}</button></div>`}).join("")}</div>`}
 function bindMiss(redraw){$("room").querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>{const i=+b.dataset.mi,x=S.miss.list[i];if(x.done||missProg(x)<x.need)return;x.done=1;earn(missRw(i));if(i>=1)gainCrate(i);dirty=true;SFX.level();confetti(70);banner("Mission complete +"+fmt(missRw(i)),"g");redraw();updMini()})}
 
+/* ================= stock exchange: buy shares, collect dividends, ride the news ================= */
+const STK=[
+ {k:"FLIP",n:"FlipCorp",s:"Resale marketplace",p:42,v:.018,d:.0012,c:"#2a3cff"},
+ {k:"SNKR",n:"Sole Society",s:"Sneakers",p:85,v:.026,d:.0008,c:"#e2364a"},
+ {k:"IRON",n:"Iron House Gyms",s:"Fitness",p:30,v:.016,d:.0016,c:"#1f9d5b"},
+ {k:"CHIP",n:"Quantum Chips",s:"Tech",p:310,v:.03,d:.0004,c:"#7a2fd6"},
+ {k:"BREW",n:"Bean & Co",s:"Coffee",p:18,v:.012,d:.002,c:"#8a5a2c"},
+ {k:"LUXE",n:"Maison Luxe",s:"Luxury",p:520,v:.02,d:.001,c:"#cf9a14"},
+ {k:"PETZ",n:"Pawsome",s:"Pets",p:24,v:.022,d:.0012,c:"#ff8fa3"},
+ {k:"NEON",n:"Neon Resorts",s:"Casinos",p:66,v:.028,d:.0014,c:"#ff4fd8"},
+ {k:"WAVE",n:"Wave Energy",s:"Energy",p:55,v:.014,d:.0022,c:"#2bb3a3"},
+ {k:"ROCK",n:"Rocket Labs",s:"Space",p:140,v:.045,d:0,c:"#3b6fd8"}];
+const STK_NEWS={up:["smashed earnings","announced a huge buyback","landed a celebrity deal","got a government contract","went viral overnight","beat every forecast"],down:["missed earnings","got hit with a lawsuit","lost its CEO","had a product recall","was downgraded by analysts","had a data breach"]};
+function stkInit(){S.stk=S.stk||{};const T=S.stk;T.px=T.px||{};T.h=T.h||{};T.own=T.own||{};STK.forEach(c=>{if(!T.px[c.k]){let v=c.p;const h=[];for(let i=0;i<40;i++){v*=1+c.v*(Math.random()-.5)*.8;h.push(v)}T.px[c.k]=v;T.h[c.k]=h}})}
+let stkT=0,stkDivT=0,stkNewsT=rnd(40,90),STKV=null;
+function stkTick(dt){if(!S)return;stkInit();stkT+=dt;stkDivT+=dt;stkNewsT-=dt;const T=S.stk;
+  if(stkT>=2){stkT=0;STK.forEach(c=>{const z=(Math.random()+Math.random()+Math.random()-1.5)*1.4,mean=(c.p/T.px[c.k]-1)*.002;T.px[c.k]=Math.max(.5,T.px[c.k]*(1+.0004+mean+c.v*z*.35));const h=T.h[c.k];h.push(T.px[c.k]);if(h.length>40)h.shift()});if(room==="stocks"&&STKV)STKV(true)}
+  if(stkNewsT<=0){stkNewsT=rnd(45,110);const c=pick(STK),up=Math.random()<.55,m=up?rnd(1.08,1.25):rnd(.78,.93);T.px[c.k]*=m;const t=c.n+" "+pick(STK_NEWS[up?"up":"down"])+" "+(up?"▲":"▼")+Math.round(Math.abs(m-1)*100)+"%";T.last={t,up,at:Date.now()};if(T.own[c.k]&&T.own[c.k].n>0)banner(t,up?"g":"r");if(room==="stocks"&&STKV)STKV(true)}
+  if(stkDivT>=60){stkDivT=0;let v=0;STK.forEach(c=>{const o=T.own[c.k];if(o&&o.n>0)v+=o.n*T.px[c.k]*c.d});if(v>=1){v=Math.round(v);earn(v);T.divs=(T.divs||0)+v;if(!room)banner("Dividends +"+fmt(v),"u")}}}
+const stkVal=()=>{if(!S||!S.stk)return 0;return STK.reduce((a,c)=>a+((S.stk.own[c.k]||{}).n||0)*S.stk.px[c.k],0)};
+const stkCost=()=>{if(!S||!S.stk)return 0;return STK.reduce((a,c)=>a+((S.stk.own[c.k]||{}).cost||0),0)};
+function openStocks(back){stkInit();room="stocks";let sel=null;
+  const draw=soft=>{const T=S.stk,pv=stkVal(),pc=stkCost(),pnl=pv-pc;
+    if(soft&&!sel){STK.forEach(c=>{const e=$("sp-"+c.k);if(e){const h=T.h[c.k],ch=(T.px[c.k]/h[0]-1)*100;e.innerHTML=`${stkFmt(T.px[c.k])} <em class="${ch>=0?"u":"d"}">${ch>=0?"+":""}${ch.toFixed(1)}%</em>`;const sp=$("sk-"+c.k);if(sp)sp.innerHTML=stSpark(h)}});const v=$("stPv");if(v)v.textContent=fmt(pv);const pn=$("stPnl");if(pn){pn.textContent=(pnl>=0?"+":"−")+fmt(Math.abs(pnl));pn.style.color=pnl>=0?"var(--up)":"var(--down)"}return}
+    if(soft&&sel){const p=$("stPx");if(p)p.textContent=stkFmt(T.px[sel.k]);const ch=$("stCh");if(ch)ch.innerHTML=stSpark(T.h[sel.k]);const o=$("stOwn");if(o){const ow=T.own[sel.k]||{n:0,cost:0},val=ow.n*T.px[sel.k];o.textContent=ow.n?`${fmtN(ow.n)} shares · ${fmt(val)} · ${val>=ow.cost?"+":"−"}${fmt(Math.abs(val-ow.cost))}`:"You don't own any"}return}
+    if(sel){const c=sel,ow=T.own[c.k]||{n:0,cost:0},px=T.px[c.k];
+      $("room").innerHTML=`<div class="room-in scroll">${roomHead(c.k)}<div class="stbig" style="--sc:${c.c}"><span class="eyebrow">${c.n} · ${c.s}</span><b id="stPx">${stkFmt(px)}</b><div class="stchart" id="stCh">${stSpark(T.h[c.k])}</div></div>
+        <div class="kv"><div><span class="eyebrow">Dividend</span><b>${c.d?(c.d*100).toFixed(2)+"%/min":"None"}</b></div><div><span class="eyebrow">Risk</span><b>${c.v>.03?"Wild":c.v>.02?"High":c.v>.015?"Medium":"Low"}</b></div></div>
+        <p class="fine" id="stOwn">${ow.n?`${fmtN(ow.n)} shares`:"You don't own any"}</p>
+        <div class="bankbtns">${[.1,.5,1].map(f=>`<button class="bigbtn" data-sb="${f}" ${S.cash<px?"disabled":""}>Buy ${f===1?"max":f*100+"%"}<small>${fmt(Math.floor(S.cash*f/px)*px)}</small></button>`).join("")}</div>
+        <div class="bankbtns">${[.5,1].map(f=>`<button class="bigbtn alt" data-ss="${f}" ${!ow.n?"disabled":""}>Sell ${f===1?"all":"half"}<small>${fmt(Math.floor(ow.n*f)*px)}</small></button>`).join("")}</div></div>`;
+      $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{sel=null;draw()};
+      $("room").querySelectorAll("[data-sb]").forEach(b=>b.onclick=()=>{const px=T.px[c.k],n=Math.floor(S.cash*+b.dataset.sb/px);if(n<1)return;S.cash-=n*px;const o=T.own[c.k]=T.own[c.k]||{n:0,cost:0};o.n+=n;o.cost+=n*px;S.stats.stockBuys=(S.stats.stockBuys||0)+1;dirty=true;SFX.buy();banner("Bought "+fmtN(n)+" "+c.k,"u");draw();updMini()});
+      $("room").querySelectorAll("[data-ss]").forEach(b=>b.onclick=()=>{const o=T.own[c.k];if(!o||!o.n)return;const n=Math.max(1,Math.floor(o.n*+b.dataset.ss)),px=T.px[c.k],v=n*px,cb=o.cost*n/o.n;o.cost-=cb;o.n-=n;S.cash+=v;const g=v-cb;if(g>0){S.earned+=g;S.stats.earnedAll+=g}S.stats.stockPnl=(S.stats.stockPnl||0)+g;dirty=true;SFX.sell();banner("Sold "+fmtN(n)+" "+c.k+" "+(g>=0?"+":"−")+fmt(Math.abs(g)),g>=0?"g":"r");draw();updMini()});return}
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Stock exchange")}
+      <div class="kv"><div><span class="eyebrow">Portfolio</span><b id="stPv">${fmt(pv)}</b></div><div><span class="eyebrow">Profit/loss</span><b id="stPnl" style="color:${pnl>=0?"var(--up)":"var(--down)"}">${pnl>=0?"+":"−"}${fmt(Math.abs(pnl))}</b></div><div><span class="eyebrow">Dividends paid</span><b>${fmt(T.divs||0)}</b></div></div>
+      ${T.last&&Date.now()-T.last.at<300000?`<div class="news"><span class="live">NEWS</span><span><b class="${T.last.up?"u":"d"}">${esc(T.last.t)}</b></span></div>`:""}
+      <div class="stlist">${STK.map(c=>{const o=T.own[c.k];return `<button class="strow" data-st="${c.k}"><i style="background:${c.c}">${c.k}</i><span><b>${c.n}</b><small>${c.s}${o&&o.n?" · "+fmtN(o.n)+" owned":""}</small></span><span class="stsp" id="sk-${c.k}">${stSpark(T.h[c.k])}</span><span class="stp" id="sp-${c.k}"></span></button>`}).join("")}</div>
+      <p class="fine">Prices move every couple of seconds and jump on news. Shares you own pay dividends every minute.</p></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{STKV=null;back()};
+    $("room").querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{sel=STK.find(c=>c.k===b.dataset.st);draw()});draw(true)};
+  STKV=draw;draw()}
+const stSpark=h=>spark(h.map(v=>v/h[0]*8));
+const stkFmt=v=>v>=1000?fmt(v):"$"+v.toFixed(2);
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -3875,7 +3923,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
