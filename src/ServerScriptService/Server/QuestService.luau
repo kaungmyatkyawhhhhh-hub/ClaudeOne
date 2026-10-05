@@ -11,16 +11,13 @@ local Machines = require(Config.Machines)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
-local NpcService = require(script.Parent.NpcService)
+local Workspace = game:GetService("Workspace")
 
 local Remotes = ReplicatedStorage.Remotes
 
 local QuestService = {}
 
 -- The Coach stands at the gym end of the front desk, facing the door aisle.
-local COACH_SPOT = CFrame.lookAt(Vector3.new(11, 0.15, -9), Vector3.new(0, 0.15, -9))
-local COACH_LOOK = { name = Quests.CoachName, skin = "#8D5524", shirt = "#F4F1EA", pants = "#1E1E22", tag = "Coach",
-	prompt = { action = "Talk", object = Quests.CoachName, distance = 10 } }
 local TALK_COOLDOWN = 1.5
 
 local rng = Random.new()
@@ -139,10 +136,17 @@ function QuestService.OnRep(player, machineId)
 end
 
 function QuestService.Start()
-	local _, prompt = NpcService.Build(COACH_LOOK, COACH_SPOT)
-	if prompt then
-		Guard.OnTriggered(prompt, talk)
-	end
+	-- Coach Dex is built in Studio (Workspace.NPCs, tag "Coach", made with tools/builders/NPCs.luau)
+	task.spawn(function()
+		local npcs = Workspace:WaitForChild("NPCs", 10)
+		local coach = npcs and npcs:WaitForChild(Quests.CoachName, 10)
+		local prompt = coach and coach:FindFirstChild("TalkPrompt", true)
+		if prompt then
+			Guard.OnTriggered(prompt, talk)
+		else
+			warn("[QuestService] Coach Dex is missing: build him in Studio with tools/builders/NPCs.luau")
+		end
+	end)
 
 	-- state quests (levels, tiers, titles, Growth Spurts) can finish outside of reps too
 	task.spawn(function()

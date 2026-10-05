@@ -1,9 +1,15 @@
--- NPC gym-goers (original, no names shown): three regulars by the free-weight benches with a dumbbell in each
--- hand. They're "animated" NPCs (only the root anchored); every client poses them locally (EmoteClient), so the
--- curls and flexes cost no network.
-local NpcService = require(script.Parent.NpcService)
+-- NPCs builder (run once in Studio; see tools/bake.md): the permanent NPCs, built as real R15 characters with
+-- ServerScriptService.Server.NpcService (original looks, no catalog items) and saved in Workspace.NPCs:
+--   Coach Dex behind the front desk (tag "Coach", prompt "TalkPrompt"; QuestService wires it), and
+--   three gym-goers by the dumbbell rack with a dumbbell in each hand (tag "GymGoer", only the root anchored;
+--   every client poses them locally in EmoteClient).
+-- Visiting legends are NOT here: they come and go, so LegendService still builds them while they visit.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local NpcService = require(ServerScriptService.Server.NpcService)
+local Quests = require(ReplicatedStorage.Shared.Config.Quests)
 
-local GymGoerService = {}
+local Builder = {}
 
 -- In front of the dumbbell rack on the right wall (rack at x = 26, z -30..-20), facing into the room (-X). Kept
 -- 4 studs apart, clear of the stretching mat, the arm wrestling table, the dip station and the pro gym door, and out
@@ -41,24 +47,29 @@ local function dumbbell(hand)
 	model.Parent = hand.Parent
 end
 
-function GymGoerService.Start()
+function Builder.Build(Workspace)
+	local npcs = Workspace:FindFirstChild("NPCs")
+	if npcs then
+		for _, name in ipairs({ Quests.CoachName, "GymGoer1", "GymGoer2", "GymGoer3" }) do
+			local old = npcs:FindFirstChild(name)
+			if old then old:Destroy() end
+		end
+	end
+	local _, prompt = NpcService.Build(Quests.CoachLook, Quests.CoachSpot)
+	if prompt then prompt.Name = "TalkPrompt" end
 	for index, goer in ipairs(GOERS) do
 		local spec = {
 			name = "GymGoer" .. index, skin = goer.skin, shirt = goer.shirt, pants = goer.pants,
 			scale = { height = 1, width = goer.width, depth = 1.1, head = 1 },
 			tag = "GymGoer", animated = true, noLabel = true,
 		}
-		local cframe = CFrame.lookAt(goer.spot, goer.spot + FACING)
-		local ok, err = pcall(function()
-			local model = NpcService.Build(spec, cframe)
-			model:SetAttribute("Phase", index * 2.3) -- so they don't move in sync
-			for _, handName in ipairs({ "RightHand", "LeftHand" }) do
-				local hand = model:FindFirstChild(handName)
-				if hand and hand:IsA("BasePart") then dumbbell(hand) end
-			end
-		end)
-		if not ok then warn("[GymGoerService] " .. tostring(err)) end
+		local model = NpcService.Build(spec, CFrame.lookAt(goer.spot, goer.spot + FACING))
+		model:SetAttribute("Phase", index * 2.3) -- so they don't move in sync
+		for _, handName in ipairs({ "RightHand", "LeftHand" }) do
+			local hand = model:FindFirstChild(handName)
+			if hand and hand:IsA("BasePart") then dumbbell(hand) end
+		end
 	end
 end
 
-return GymGoerService
+return Builder

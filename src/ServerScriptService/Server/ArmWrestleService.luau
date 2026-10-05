@@ -31,58 +31,20 @@ local match = nil -- { state = "waiting" | "countdown" | "live", meter, startedA
 ------------------------------------------------------------------------
 -- The table
 ------------------------------------------------------------------------
-local function part(parent, name, size, cframe, color, material)
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Size = size
-	p.CFrame = cframe
-	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
-	p.Anchored = true
-	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
-	p.Parent = parent
-	return p
-end
-
-local function buildTable()
-	local model = Instance.new("Model")
-	model.Name = "ArmWrestleTable"
-	local base = CFrame.new(Config.TableSpot)
-	local dark = Color3.fromHex("#1E1E22")
-	local steel = Color3.fromHex("#9EA2A8")
-	part(model, "Top", Vector3.new(2.6, 0.25, 2.2), base * CFrame.new(0, 3.1, 0), dark)
-	part(model, "Post", Vector3.new(0.5, 3, 0.5), base * CFrame.new(0, 1.5, 0), steel, Enum.Material.Metal)
-	part(model, "Foot", Vector3.new(2, 0.2, 2), base * CFrame.new(0, 0.1, 0), dark)
-	part(model, "PadA", Vector3.new(0.5, 0.08, 0.7), base * CFrame.new(-0.75, 3.26, 0), Color3.fromHex("#D7262E"))
-	part(model, "PadB", Vector3.new(0.5, 0.08, 0.7), base * CFrame.new(0.75, 3.26, 0), Color3.fromHex("#1F5FBF"))
-	part(model, "Peg", Vector3.new(0.12, 0.6, 0.12), base * CFrame.new(0, 3.5, 0.75), steel, Enum.Material.Metal)
-
+-- The table is built in Studio (Workspace.ArmWrestleTable, made with tools/builders/ArmWrestleTable.luau): two Seats
+-- "Stool1" and "Stool2", each with an "ArmWrestlePrompt". This finds them.
+local function findTable()
+	local model = Workspace:WaitForChild("ArmWrestleTable", 10)
+	if not model then return false end
 	for index, side in ipairs({ -1, 1 }) do
-		-- a real Seat, so players sit with the normal sitting pose; it faces the table
-		local seatPosition = Config.TableSpot + Vector3.new(side * 2.2, 0.9, 0)
-		local stool = Instance.new("Seat")
-		stool.Name = "Stool" .. index
-		stool.Size = Vector3.new(1.4, 1.8, 1.4)
-		stool.CFrame = CFrame.lookAt(seatPosition, Vector3.new(Config.TableSpot.X, seatPosition.Y, Config.TableSpot.Z))
-		stool.Color = dark
-		stool.Material = Enum.Material.SmoothPlastic
-		stool.Anchored = true
-		stool.TopSurface, stool.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
-		stool.Parent = model
+		local stool = model:FindFirstChild("Stool" .. index)
+		if not stool then return false end
 		seats[index].seat = stool
+		seats[index].prompt = stool:FindFirstChild("ArmWrestlePrompt")
 		-- a practice opponent stands just behind the stool
 		seats[index].cframe = CFrame.lookAt(Config.TableSpot + Vector3.new(side * 3, 0, 0), Config.TableSpot)
-		local prompt = Instance.new("ProximityPrompt")
-		prompt.Name = "ArmWrestlePrompt"
-		prompt.ActionText = "Arm wrestle"
-		prompt.ObjectText = "Sit down"
-		prompt.MaxActivationDistance = 7
-		prompt.RequiresLineOfSight = false
-		prompt.Parent = stool
-		seats[index].prompt = prompt
 	end
-	CollectionService:AddTag(model, "ArmWrestleTable")
-	model.Parent = Workspace
+	return true
 end
 
 ------------------------------------------------------------------------
@@ -328,7 +290,10 @@ function ArmWrestleService.Start()
 		remote.Name = "ArmWrestle"
 		remote.Parent = Remotes
 	end
-	buildTable()
+	if not findTable() then
+		warn("[ArmWrestleService] Workspace.ArmWrestleTable is missing: build it in Studio with tools/builders/ArmWrestleTable.luau")
+		return
+	end
 	for index, seat in ipairs(seats) do
 		Guard.OnTriggered(seat.prompt, function(player) prompted(player, index) end)
 		watchSeat(index)

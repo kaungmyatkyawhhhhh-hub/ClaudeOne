@@ -58,6 +58,10 @@
 - Stats labels must never disappear (owner's rule, see "Stats: live overlay" in the brief): label BillboardGuis
   are AlwaysOnTop, lines/dots are 2D; never hide or fade a label for walls, equipment or prompts (nudge it off a
   shown prompt instead). Test by walking behind the squat rack, the pull-up bar and a wall with Stats open.
+- World geometry is built in Studio, never by game scripts (owner's rule): services find Studio-built pieces by
+  name and only wire them (prompts, doors, machines). New areas: write a builder in `tools/builders`, run it once in
+  Studio to make the parts, save the place (see `tools/bake.md`). Small runtime-only visuals (gain popups, cosmetic
+  gear on characters, the skateboard, visiting legends, plates on bars) are fine in code.
 - Studio testing: Workspace attribute `FreshPlayer` (boolean) = play as a new player on unsaved temporary data;
   `ReplayTutorial` = replay the tutorial on your own save.
 
