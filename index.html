@@ -958,6 +958,7 @@ const ACH=[
  ["married","Just married","Marry your partner",()=>(S.stats.weddings||0)>=1,500000],
  ["tourist","Tourist","Try 10 local experiences",()=>(S.stats.exps||0)>=10,2e6],
  ["djstar","Headliner","Get an S grade on a DJ set",()=>(S.stats.djS||0)>=1,1e6],
+ ["hunter","Chest hunter","Win 5 golden chest races online",()=>(S.stats.chests||0)>=5,1e6],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1326,7 +1327,7 @@ function drawWorld(){
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   drawFinds();
-  if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
+  if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
@@ -1341,7 +1342,7 @@ function drawWorld(){
   if(EV&&EV.type==="rain"){ctx.strokeStyle=isDark()?"rgba(170,190,230,.35)":"rgba(90,110,150,.35)";ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<90;i++){const rx=(i*97+wt*260)%(vw+40)-20,ry=(i*53+wt*620)%(vh+40)-20;ctx.moveTo(rx,ry);ctx.lineTo(rx-5,ry+14)}ctx.stroke();ctx.fillStyle="rgba(40,60,90,.12)";ctx.fillRect(0,0,vw,vh)}
   else if(!room)seasonFx();
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}
+  if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -2886,7 +2887,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);huntTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3127,6 +3128,7 @@ function mpOnMsg(topic,buf){
   if(kind==="d"){if(id===MP_ID&&d){const n=String(d.n||"A friend").slice(0,16);banner(n+" "+String(d.t||"").slice(0,40),"u");SFX.hot();buzz([20,40,20]);mpLog(n,String(d.t||"").slice(0,60),1);if(d.isl){S.islVis=S.islVis||{};S.islVis[d.isl]=(S.islVis[d.isl]||0)+1;dirty=true}}return}
   if(kind==="aw"){if(id===MP_ID&&d)pvpMsg(d);return}
   if(kind==="pm"){if(id===MP_ID&&d)pmMsg(d);return}
+  if(kind==="tr"){if(id!==MP_ID)huntMsg(id,d);return}
   if(id===MP_ID)return;
   if(kind==="bye"){const p=MP.peers[id];if(p){mpLog(p.n,"left the room",1);if(A&&A.pvp&&A.peer===id&&A.state!=="done")pvpEnd(MP_ID,"left");delete MP.peers[id];renderMpChip();mpRefresh()}return}
   if(!d)return;
@@ -4314,6 +4316,26 @@ function djEnd(){const D=DJ;if(!D||D.done)return;D.done=true;DJ=null;const tot=D
   $("room").innerHTML=`<div class="room-in">${roomHead("DJ set")}<div class="shend"><b>${grade}</b><span>${Math.round(acc*100)}% of notes · best combo ×${D.best}</span><div class="kv"><div><span class="eyebrow">Score</span><b>${fmtN(Math.round(D.score))}</b></div><div><span class="eyebrow">Tips</span><b>${fmt(tips)}</b></div><div><span class="eyebrow">New fans</span><b>+${fmtN(fans)}</b></div><div><span class="eyebrow">Perfects</span><b>${D.perf}</b></div></div></div>
     <button class="bigbtn" id="djBack">Back to the club<small>${acc>.6?"The crowd is hyped: +30% sales for 90s":"&nbsp;"}</small></button></div>`;
   if(grade==="S"){confetti(220,null,null,["#ff4fd8","#4fe3ff","#ffcc33"]);SFX.grail()}else{confetti(60);SFX.level()}banner("DJ set: "+grade+" · +"+fmtN(fans)+" fans","g");$("djBack").onclick=$("leaveBtn").onclick=D.back;updMini()}
+
+/* ================= golden chest race in the Online Town (the room host calls it) ================= */
+let HUNT=null,huntT=rnd(90,150),huntClaimT=0;
+const isHost=()=>MP&&Object.keys(MP.peers).every(id=>MP_ID<id);
+function huntTick(dt){if(!MP||!MPW){HUNT=null;return}
+  if(HUNT&&Date.now()-HUNT.at>90000){if(isHost())mpSend("tr",{t:"gone",id:HUNT.id});HUNT=null}
+  if(isHost()&&!HUNT&&Object.keys(MP.peers).length){huntT-=dt;if(huntT<=0){huntT=rnd(150,240);let x,y;for(let i=0;i<60;i++){y=rnd(120,SEA-60);x=y<1400?rnd(80,1360):rnd(80,W-80);if(!inBld(x,y,30)&&!onRoad(x,y,0)||i===59)break}
+    const h={id:Math.random().toString(36).slice(2,8),x:Math.round(x),y:Math.round(y),at:Date.now()};HUNT=h;mpSend("tr",{t:"spawn",...h});huntAnnounce()}}
+  if(HUNT&&!HUNT.claimed&&Math.hypot(S.px-HUNT.x,S.py-HUNT.y)<34&&Date.now()-huntClaimT>1500){huntClaimT=Date.now();if(isHost())huntWin(HUNT.id,MP_ID,mpName());else mpSend("tr",{t:"claim",id:HUNT.id,f:MP_ID,n:mpName()})}}
+function huntAnnounce(){SFX.hot();buzz([20,30,20]);banner("A golden chest dropped! Race your friends to it","g")}
+function huntWin(id,who,name){if(!HUNT||HUNT.id!==id||HUNT.claimed)return;HUNT.claimed=1;mpSend("tr",{t:"won",id,who,n:name});huntResult(who,name);HUNT=null}
+function huntResult(who,name){if(who===MP_ID){const v=Math.round(20000*(1+SC())*rnd(.8,1.5));earn(v);gainCrate(2);S.stats.chests=(S.stats.chests||0)+1;dirty=true;SFX.grail();confetti(160,null,null,["#ffcc33","#fff"]);shake(6);banner("You got the chest! +"+fmt(v)+" and 2 crates","g")}else{SFX.nope();banner(String(name||"Someone").slice(0,14)+" got the chest first","r")}mpLog(name,"grabbed the golden chest 🏆",1)}
+function huntMsg(id,d){if(!d)return;if(d.t==="spawn"){HUNT={id:d.id,x:+d.x,y:+d.y,at:Date.now()};huntAnnounce()}
+  else if(d.t==="claim"){if(isHost()&&HUNT&&HUNT.id===d.id)huntWin(d.id,d.f,d.n)}
+  else if(d.t==="won"){if(HUNT&&HUNT.id===d.id)HUNT=null;huntResult(d.who,d.n)}
+  else if(d.t==="gone"){if(HUNT&&HUNT.id===d.id)HUNT=null}}
+function drawHunt(){if(!HUNT||room)return;const{x,y}=HUNT,b=Math.sin(wt*4)*3,pu=.5+.5*Math.sin(wt*6);
+  ctx.fillStyle=`rgba(255,204,51,${.18+.12*pu})`;ctx.beginPath();ctx.ellipse(x,y+4,34+pu*8,14+pu*3,0,0,7);ctx.fill();
+  ctx.fillStyle="rgba(0,0,0,.25)";ctx.beginPath();ctx.ellipse(x,y+6,16,5,0,0,7);ctx.fill();ctx.fillStyle="#a0641c";rr(x-14,y-18+b,28,20,4);ctx.fill();ctx.fillStyle="#ffcc33";rr(x-15,y-22+b,30,9,4);ctx.fill();ctx.fillRect(x-2,y-14+b,4,8);
+  ctx.fillStyle="#fff";for(let i=0;i<4;i++){const a=wt*2+i*1.57;ctx.globalAlpha=.6+.4*Math.sin(wt*5+i);ctx.fillRect(x+Math.cos(a)*24,y-14+Math.sin(a)*12+b,2.5,2.5)}ctx.globalAlpha=1}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
