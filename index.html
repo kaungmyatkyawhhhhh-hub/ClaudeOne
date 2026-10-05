@@ -493,6 +493,26 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .physbars i{display:block;height:8px;border-radius:8px;background:var(--sunk);overflow:hidden;margin-top:4px}
 .physbars b{display:block;height:100%;background:linear-gradient(90deg,#ff7a3d,#e2364a)}
 .perk.toy:not(.own){box-shadow:inset 0 0 0 1px #cf9a14,var(--shadow)}
+.perksheet{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:46;width:min(calc(100vw - 24px),456px);padding:14px;border-radius:22px;background:var(--surface);box-shadow:0 18px 50px rgba(0,0,0,.35),inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:10px;animation:psin .35s cubic-bezier(.3,1.4,.5,1)}
+@keyframes psin{from{transform:translate(-50%,40px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.pshead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.pshead small{display:block;font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.1em;color:var(--muted)}
+.pshead b{font-family:var(--display);font-variation-settings:"wdth" 120;font-weight:900;font-size:1.3rem;text-transform:uppercase}
+.psx{width:36px;height:36px;border-radius:12px;background:var(--sunk);font-size:1rem;font-weight:700;flex:none}
+.perksheet .pcards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.perksheet .pcard{padding:10px 8px;gap:3px;border-radius:14px;text-align:center;align-items:center;justify-content:flex-start}
+.perksheet .pcard b{font-size:.78rem;line-height:1.1}
+.perksheet .pcard span{font-size:.68rem;line-height:1.2}
+.perksheet .pcard .rl{font-size:.52rem;letter-spacing:.08em}
+.perksheet .pcard .pn{font-size:.52rem;margin-top:auto}
+.perksheet .fine{font-size:.66rem}
+.lvlbtn{position:fixed;right:16px;bottom:calc(196px + env(safe-area-inset-bottom,0px));z-index:11;width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#ffd34d,#f5a300);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(255,255,255,.7),0 0 24px rgba(245,179,1,.7),var(--shadow);animation:lvp 1s infinite alternate}
+.lvlbtn svg{width:24px;height:24px}
+.lvlbtn span{font-family:var(--mono);font-size:.46rem;font-weight:800;letter-spacing:.06em}
+.lvlbtn b{position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:#e2364a;color:#fff;font-size:.72rem;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
+@keyframes lvp{to{transform:scale(1.08);box-shadow:0 0 0 3px rgba(255,255,255,.7),0 0 36px rgba(245,179,1,.95),var(--shadow)}}
+.crcnt{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.crcnt span{padding:5px 10px;border-radius:99px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#fff;background:color-mix(in oklab,var(--c) 45%,transparent);box-shadow:inset 0 0 0 1px var(--c)}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -545,7 +565,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
   </div>
   <div class="hudpills"><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
 </div>
-<button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
+<div class="perksheet" id="perkSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
 <div id="room" class="room" hidden></div>
 <div id="overlay" class="overlay" hidden></div>
@@ -833,29 +853,42 @@ function critFX(m,el){const at=elC(el)||fromPt();
 function gainCrate(n=1){S.crates=(S.crates||0)+n;dirty=true;const tg=elC($("crateChip"))||elC(cashTarget())||[fxW-60,60],f=fromPt();FXP.push({t:"icon",x:f[0],y:f[1],x0:f[0],y0:f[1],tx:tg[0],ty:tg[1],age:0,life:.8});SFX.crate(0);setTimeout(()=>{SFX.reveal();bump($("crateChip"))},800);banner("+"+n+" CRATE"+(n>1?"S":""),"a");renderCrateChip()}
 function renderCrateChip(){const el=$("crateChip");if(!el)return;const n=S.crates||0;el.hidden=!n;if(n)el.innerHTML=`<span class="pk">Crate</span><span class="pt">Tap to open</span><span class="pr">×${n}</span>`}
 function rollRarity(){const r=Math.random();return r<.04?3:r<.18?2:r<.48?1:0}
-function crateReward(t){
+function crateReward(t,defer){
   const L=repLevel(),base=200*(1+L*.6),out=[];let cash=0;
   const item=top=>{if(S.stash.length>=maxSlots())return false;const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(HEAVY[p.code]||0)<=S.pr).sort((a,b)=>b.base-a.base),it=top?pick(pool.slice(0,4)):pick(pool.slice(0,Math.max(4,Math.floor(pool.length/2)))),c=CAT[it.cat],cond=c.conds[0];S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:1,fake:false,paid:0});out.push(it.name);return true};
   if(t===0){if(Math.random()<.3){S.energy=maxEnergy();out.push("Full energy")}else cash=base*rnd(1,2)}
   if(t===1){if(Math.random()<.4&&item(false)){}else cash=base*rnd(3,5)}
   if(t===2){cash=base*rnd(8,14);if(Math.random()<.5){S.picks=(S.picks||0)+1;out.push("Free perk pick")}}
   if(t===3){cash=base*rnd(25,40);S.picks=(S.picks||0)+1;out.push("Free perk pick");item(true)}
-  cash=Math.round(cash);if(cash)earn(cash);dirty=true;return{cash,out};
+  cash=Math.round(cash);if(cash&&!defer)earn(cash);dirty=true;return{cash,out};
 }
 function openCrate(){
   if(!(S.crates>0)||room)return;S.crates--;dirty=true;renderCrateChip();const fin=rollRarity();let taps=0,stage=0,done=false;
-  const ov=document.createElement("div");ov.className="crateov";ov.innerHTML=`<div class="crrays" id="crRays"></div><div class="crbox" id="crBox">${crateSVG()}</div><p class="crhint" id="crHint">Tap the crate</p><div class="crres" id="crRes"></div>`;document.body.appendChild(ov);
-  const box=ov.querySelector("#crBox"),rays=ov.querySelector("#crRays");ov.style.setProperty("--rc",RAR[0].c);
+  const ov=document.createElement("div");ov.className="crateov";ov.innerHTML=`<div class="crrays" id="crRays"></div><div class="crbox" id="crBox">${crateSVG()}</div><p class="crhint" id="crHint">Tap the crate</p><div class="crres" id="crRes"></div>${S.crates>0?`<div class="crbtns"><button class="cta ghost" id="crAll">Open all · ${S.crates+1} crates</button></div>`:""}`;document.body.appendChild(ov);
+  const box=ov.querySelector("#crBox"),rays=ov.querySelector("#crRays");ov.style.setProperty("--rc",RAR[0].c);const ca=ov.querySelector("#crAll");if(ca)ca.onclick=()=>{if(done)return;done=true;ov.remove();openAllCrates(1)};
   box.onpointerdown=e=>{e.preventDefault();if(done)return;taps++;stage=taps>=3?fin:Math.max(stage,Math.min(fin,Math.floor(fin*taps/3+Math.random()*.9)));
     const col=RAR[stage].c;ov.style.setProperty("--rc",col);box.classList.remove("hit");void box.offsetWidth;box.classList.add("hit");const c=elC(box);sparks(c[0],c[1],col,10+taps*8,.6+taps*.3);shake(2+taps*2,.25);SFX.crate(taps);buzz(10+taps*10);
-    if(taps<3){ov.querySelector("#crHint").textContent=["","Again!","One more!"][taps];if(stage>0&&taps>1)banner(RAR[stage].n+"?","a");return}
+    if(ca)ca.parentNode.remove();if(taps<3){ov.querySelector("#crHint").textContent=["","Again!","One more!"][taps];if(stage>0&&taps>1)banner(RAR[stage].n+"?","a");return}
     done=true;const res=crateReward(fin),R=RAR[fin];box.classList.add("open");rays.classList.add("on");flash(R.c,fin>=2?.55:.3);confetti(40+fin*60,c[0],c[1],[R.c,"#ffffff",R.c,"#ffcc33"],1+fin*.2);if(fin>=2)confetti(80*fin);shake(4+fin*4,.4+fin*.15);SFX.crit(fin);buzz(fin>=2?[40,30,80,30,120]:[30,30,40]);
     if(res.cash)coinsTo(res.cash,c);
     ov.querySelector("#crHint").textContent="";
     ov.querySelector("#crRes").innerHTML=`<span class="crrar" style="color:${R.c}">${R.n}</span>${res.cash?`<b>+${fmt(res.cash)}</b>`:""}${res.out.map(x=>`<span>${x}</span>`).join("")}
-      <div class="crbtns">${S.crates>0?`<button class="cta" id="crNext">Open next · ${S.crates} left</button>`:""}<button class="cta ghost" id="crDone">${fin>=2?"LET'S GO":"Nice"}</button></div>`;
-    const nx=ov.querySelector("#crNext");if(nx)nx.onclick=()=>{ov.remove();openCrate()};ov.querySelector("#crDone").onclick=()=>{ov.remove();levelCheck()};
+      <div class="crbtns">${S.crates>0?`<button class="cta" id="crNext">Open next · ${S.crates} left</button><button class="cta ghost" id="crAll2">Open all ${S.crates}</button>`:""}<button class="cta ghost" id="crDone">${fin>=2?"LET'S GO":"Nice"}</button></div>`;
+    const nx=ov.querySelector("#crNext");if(nx)nx.onclick=()=>{ov.remove();openCrate()};const a2=ov.querySelector("#crAll2");if(a2)a2.onclick=()=>{ov.remove();openAllCrates(0)};ov.querySelector("#crDone").onclick=()=>{ov.remove();levelCheck()};
   };
+}
+function openAllCrates(extra){
+  const n=(S.crates||0)+extra;if(n<=0)return;S.crates=0;renderCrateChip();let cash=0,best=0;const cnt=[0,0,0,0],extras={};
+  for(let i=0;i<n;i++){const t=rollRarity();cnt[t]++;best=Math.max(best,t);const r=crateReward(t,true);cash+=r.cash;r.out.forEach(x=>extras[x]=(extras[x]||0)+1)}
+  if(cash)earn(cash);dirty=true;const R=RAR[best];
+  const ov=document.createElement("div");ov.className="crateov";ov.style.setProperty("--rc",R.c);
+  ov.innerHTML=`<div class="crrays on"></div><div class="crbox open" style="width:min(44vw,170px)">${crateSVG()}</div>
+    <div class="crres"><span class="crrar" style="color:#fff">${n} crates opened</span><div class="crcnt">${cnt.map((k,i)=>k?`<span style="--c:${RAR[i].c}">${k}× ${RAR[i].n}</span>`:"").join("")}</div>${cash?`<b>+${fmt(cash)}</b>`:""}
+    ${Object.entries(extras).map(([k,v])=>`<span>${v>1?v+"× ":""}${k}</span>`).join("")}
+    <div class="crbtns"><button class="cta" id="crDone">${best>=2?"LET'S GO":"Nice"}</button></div></div>`;
+  document.body.appendChild(ov);const c=elC(ov.querySelector(".crbox"))||[fxW/2,fxH/2];
+  flash(R.c,best>=2?.55:.3);confetti(60+best*70+Math.min(120,n*6),c[0],c[1],[R.c,"#ffffff","#ffcc33"]);if(best>=2)confetti(90*best);shake(5+best*3,.5);SFX.crit(Math.max(1,best));buzz([40,30,80]);if(cash)coinsTo(cash,c);
+  ov.querySelector("#crDone").onclick=()=>{ov.remove();levelCheck()};
 }
 function crateSVG(){return `<svg viewBox="0 0 120 110"><ellipse cx="60" cy="104" rx="46" ry="6" fill="rgba(0,0,0,.25)"/><g class="crbody"><rect x="14" y="40" width="92" height="62" rx="6" fill="#9a5b28"/><rect x="14" y="40" width="92" height="62" rx="6" fill="url(#crg)"/>
   <rect x="20" y="50" width="80" height="4" fill="rgba(0,0,0,.18)"/><rect x="20" y="72" width="80" height="4" fill="rgba(0,0,0,.18)"/><rect x="52" y="40" width="16" height="62" fill="#ffcc33"/><rect x="52" y="40" width="4" height="62" fill="rgba(255,255,255,.4)"/></g>
@@ -1133,12 +1166,14 @@ let room=null;
 function roomHead(title){return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2><span class="pdot"></span>${title}</h2><div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div>`}
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
+  if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
   ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();G=null;GS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+$("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("phoneBtn").onclick=()=>{audioOn();openRoom("market")};
 
 /* ---------- gym ---------- */
@@ -2286,15 +2321,21 @@ const PERK_POOL=()=>[
 ];
 function levelCheck(){
   const L=repLevel();if(S.lvlSeen==null)S.lvlSeen=L;
-  if(L>S.lvlSeen){const n=L-S.lvlSeen;S.picks=(S.picks||0)+n;S.lvlSeen=L;dirty=true;SFX.rebirth();flash("#ffcc33",.45);confetti(160);shake(8,.5);buzz([30,40,30,40,80]);banner("LEVEL UP","u");banner("Level "+L,"g");setTimeout(()=>gainCrate(Math.min(n,5)),900)}
-  if(S.picks>0&&!room&&$("overlay").hidden)showPerkPick();
+  if(L>S.lvlSeen){const old=S.lvlSeen,n=Math.floor(L/5)-Math.floor(old/5);S.lvlSeen=L;dirty=true;
+    if(n>0){S.picks=(S.picks||0)+n;S.pickNew=1;SFX.rebirth();flash("#ffcc33",.45);confetti(160);shake(8,.5);buzz([30,40,30,40,80]);banner("LEVEL "+L,"u");setTimeout(()=>gainCrate(Math.min(n,5)),900)}
+    else{SFX.level();buzz(15);confetti(30);banner("Level "+L,"g")}}
+  if(S.picks>0&&S.pickNew&&!room&&$("overlay").hidden&&$("perkSheet").hidden)showPerkPick();
+  renderLvlBtn();
 }
+function renderLvlBtn(){const b=$("lvlBtn");if(!b||!S)return;const on=S.picks>0&&$("perkSheet").hidden;b.hidden=!on;if(on)$("lvlN").textContent=S.picks}
+function closePerkSheet(){const sh=$("perkSheet");sh.hidden=true;sh.innerHTML="";S.pickNew=0;dirty=true;renderLvlBtn()}
 function showPerkPick(){
-  const pool=PERK_POOL().sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=[1,2,3,5][t],cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}}),o=$("overlay");o.hidden=false;if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
-  o.innerHTML=`<div class="sheet"><h2 class="h2"><small>LEVEL ${repLevel()} · PICK A PERK${S.picks>1?" · "+S.picks+" TO PICK":""}</small>Level up.</h2>
-    <div class="pcards">${pool.map((c,i)=>`<button class="pcard r${c.rt}" data-pc="${i}"><span class="rl" style="color:${RAR[c.rt].c}">${RAR[c.rt].n}${c.m>1?" · ×"+c.m:""}</span><span class="pn">${pk(c.k)?"Lv "+(pk(c.k)+c.m):"New"}</span><b>${c.t}</b><span>${c.d}</span></button>`).join("")}</div>
-    <p class="fine">Perks stack and last forever. Your build is your own.</p></div>`;
-  o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};S.perks[c.k]=(S.perks[c.k]||0)+c.m;S.picks--;dirty=true;SFX.level();buzz(15);const bc=elC(b);if(bc)sparks(bc[0],bc[1],RAR[c.rt].c,20+c.rt*15,1+c.rt*.3);if(c.rt>=2){confetti(60*c.rt);shake(4*c.rt)}banner(c.rt?RAR[c.rt].n+" "+c.t:c.t,"a");o.hidden=true;renderHud();bKey=""});
+  const valid=S.offer&&S.offer.length===3&&S.offer.every(c=>PERK_POOL().some(x=>x.k===c.k));const pool=valid?S.offer:S.offer=PERK_POOL().sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=[1,2,3,5][t],cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}}),o=$("perkSheet");o.hidden=false;renderLvlBtn();if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
+  o.innerHTML=`<div class="pshead"><div><small>LEVEL ${repLevel()} · PICK A PERK${S.picks>1?" · "+S.picks+" TO PICK":""}</small><b>Level up</b></div><button class="psx" id="psClose" aria-label="Later">✕</button></div>
+    <div class="pcards">${pool.map((c,i)=>`<button class="pcard r${c.rt}" data-pc="${i}"><span class="rl" style="color:${RAR[c.rt].c}">${RAR[c.rt].n}${c.m>1?" ×"+c.m:""}</span><b>${c.t}</b><span>${c.d}</span><span class="pn">${pk(c.k)?"Lv "+(pk(c.k)+c.m):"New"}</span></button>`).join("")}</div>
+    <p class="fine">Close it to pick later. Tap the gold star any time.</p>`;
+  $("psClose").onclick=closePerkSheet;
+  o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};S.perks[c.k]=(S.perks[c.k]||0)+c.m;S.picks--;dirty=true;SFX.level();buzz(15);const bc=elC(b);if(bc)sparks(bc[0],bc[1],RAR[c.rt].c,20+c.rt*15,1+c.rt*.3);if(c.rt>=2){confetti(60*c.rt);shake(4*c.rt)}banner(c.rt?RAR[c.rt].n+" "+c.t:c.t,"a");S.offer=null;closePerkSheet();if(S.picks>0){S.pickNew=1;setTimeout(()=>{if(!room)showPerkPick()},450)}renderHud();bKey=""});
 }
 /* ---------- market (the reselling floor) ---------- */
 let M=null,hold=null;
@@ -2542,7 +2583,7 @@ function loop(now){
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();
       simTick(dt);tradeTick(dt);shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderLvlBtn()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room)drawWorld();
