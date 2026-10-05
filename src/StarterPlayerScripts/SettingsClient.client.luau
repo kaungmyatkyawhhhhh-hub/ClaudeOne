@@ -1,5 +1,6 @@
--- SettingsClient: the Settings side button and panel (Music and Effects volume), and background music.
--- Volumes apply instantly while dragging and are saved with the player's data when the slider is released.
+-- SettingsClient: the Settings side button and panel (Music and Effects volume, Gain numbers On/Minimal/Off), and
+-- background music. Volumes apply instantly while dragging and are saved with the player's data when the slider is
+-- released; Gain numbers saves on tap (MachineClient reads it for every rep).
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -35,11 +36,11 @@ local panel = Theme.Panel({
 }, { Theme.Pad("L"), Theme.List(Vertical, "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 Theme.Text({ LayoutOrder = 1, Text = "Settings", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 
-local values = { music = 1, effects = 1 }
+local values = { music = 1, effects = 1, gainNumbers = "On" }
 local dragging = nil -- the slider being dragged
 
 local function save()
-	Remotes.PlayerAction:FireServer("SetSettings", { music = values.music, effects = values.effects })
+	Remotes.PlayerAction:FireServer("SetSettings", { music = values.music, effects = values.effects, gainNumbers = values.gainNumbers })
 end
 
 -- A labeled slider: name and percent on top, a thin track with a white fill and a round knob.
@@ -94,7 +95,41 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
-local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
+-- Gain numbers: On (rep + set popups) / Minimal (set popups only) / Off. Three buttons, the chosen one lit.
+local GAIN_MODES = { "On", "Minimal", "Off" }
+local gainRow = New("Frame", { Name = "GainNumbers", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 20 + Spacing.S + Theme.MinTouch), BackgroundTransparency = 1, Parent = panel },
+	{ Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+Theme.Text({ LayoutOrder = 1, Text = "Gain numbers", Font = "Regular", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = gainRow })
+local gainChoices = New("Frame", { Name = "Choices", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = gainRow },
+	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
+local gainButtons = {}
+local function showGainMode()
+	for mode, entry in pairs(gainButtons) do
+		local chosen = values.gainNumbers == mode
+		entry.button.BackgroundColor3 = chosen and Colors.Text or Colors.Panel
+		entry.button.BackgroundTransparency = chosen and Theme.Alpha.Primary or Theme.Alpha.Panel
+		entry.stroke.Transparency = chosen and 0.6 or Theme.Alpha.ButtonBorder
+		entry.label.TextColor3 = chosen and Colors.Text or Colors.Muted
+	end
+end
+for index, mode in ipairs(GAIN_MODES) do
+	local label = Theme.Text({ Text = mode, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) })
+	local button = Theme.Button("Secondary", { Name = "Gain" .. mode, LayoutOrder = index, Size = UDim2.fromScale(0, 1) }, {
+		label,
+		New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
+	})
+	button.Parent = gainChoices
+	gainButtons[mode] = { button = button, label = label, stroke = button:FindFirstChildOfClass("UIStroke") }
+	button.Activated:Connect(function()
+		if values.gainNumbers == mode then return end
+		values.gainNumbers = mode
+		showGainMode()
+		Audio.PlayUI("Click")
+		save()
+	end)
+end
+
+local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 5, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
@@ -135,6 +170,8 @@ task.spawn(function()
 	local settings = ClientData.Get().settings or {}
 	values.music = settings.music or 1
 	values.effects = settings.effects or 1
+	values.gainNumbers = settings.gainNumbers or "On"
+	showGainMode()
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()
 	-- area music: the pro gym is built far to the south (z < -100), everything else is the starter gym

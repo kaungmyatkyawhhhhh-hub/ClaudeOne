@@ -486,18 +486,43 @@ local function setSweat(on)
 end
 
 ------------------------------------------------------------------------
--- 3D gain popups: "+8 MID CHEST" at the muscle
+-- 3D gain popup: ONE at a time, just to the side of the chest. Per rep "+12" (the main muscle's gain, no name);
+-- every set "Set done · +120 Chest", slightly bigger. A new popup replaces the old one (never stacked).
+-- Settings → Gain numbers: On (both), Minimal (set popups only), Off (none).
 ------------------------------------------------------------------------
--- side: 0 = centered on the muscle, -1/1 = nudged left/right so popups don't stack.
-local function gainPopup(character, muscleId, xp, scale, side)
-	local body = Muscles.Body[muscleId]
-	local part = character:FindFirstChild(body.part)
-	if not part then return end
-	local attachment = New("Attachment", { Position = body.offset, Parent = part })
+local POPUP = {
+	Side = 1.2,      -- studs beside the chest edge (camera right), times the body's height scale
+	SetScale = 1.25, -- set popups are slightly bigger
+}
+local activePopup = nil -- { billboard, attachment }
+
+local function gainNumbersMode(): string -- "On" | "Minimal" | "Off"
+	local settings = ClientData.Get().settings
+	local mode = settings and settings.gainNumbers
+	return (mode == "Minimal" or mode == "Off") and mode or "On"
+end
+
+local function clearPopup()
+	if activePopup then
+		activePopup.billboard:Destroy()
+		activePopup.attachment:Destroy()
+		activePopup = nil
+	end
+end
+
+local function gainPopup(character, text, scale)
+	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	if not torso or not torso:IsA("BasePart") then return end
+	clearPopup()
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local heightValue = humanoid and humanoid:FindFirstChild("BodyHeightScale")
+	local bodyScale = if heightValue and heightValue:IsA("NumberValue") then heightValue.Value else 1
+	local attachment = New("Attachment", { Position = Vector3.new(0, torso.Size.Y * 0.2, 0), Parent = torso })
 	local billboard = New("BillboardGui", {
 		Adornee = attachment,
-		Size = UDim2.fromOffset(200, 34),
-		StudsOffset = Vector3.new((side or 0) * 1.6, 0, 0),
+		Size = UDim2.fromOffset(320, 40),
+		SizeOffset = Vector2.new(0.5, 0), -- left edge at the anchor, so the text starts beside the chest
+		StudsOffset = Vector3.new(torso.Size.X / 2 + POPUP.Side * bodyScale, 0, 0),
 		AlwaysOnTop = true,
 		LightInfluence = 0,
 		ResetOnSpawn = false,
@@ -506,22 +531,27 @@ local function gainPopup(character, muscleId, xp, scale, side)
 	local holder = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = billboard })
 	local popScale = New("UIScale", { Scale = 0, Parent = holder })
 	local label = Theme.Text({
-		Text = "+" .. math.max(1, math.floor(xp + 0.5)) .. " " .. Muscles.ById[muscleId].name,
+		Text = text,
 		Font = "SemiBold",
 		TextSize = "Popup",
 		Size = UDim2.fromScale(1, 1),
+		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = holder,
 	})
 	local stroke = Theme.TextShadow(label, 0.45)
+	local popup = { billboard = billboard, attachment = attachment }
+	activePopup = popup
 
 	Theme.Tween(popScale, { Scale = scale }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
 	task.delay(Theme.Motion.Time * 1.4, function()
+		if activePopup ~= popup then return end -- already replaced
 		local fade = Theme.Motion.Time * 2.4
 		Theme.Tween(billboard, { StudsOffsetWorldSpace = Vector3.new(0, 1.5, 0) }, fade)
 		Theme.Tween(label, { TextTransparency = 1 }, fade)
 		Theme.Tween(stroke, { Transparency = 1 }, fade)
-		Debris:AddItem(billboard, fade)
-		Debris:AddItem(attachment, fade)
+		task.delay(fade, function()
+			if activePopup == popup then clearPopup() end
+		end)
 	end)
 end
 
@@ -791,6 +821,12 @@ local function bounceReps()
 	Theme.Tween(repsScale, { Scale = 1 }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
 end
 
+-- Every rep: the muscle list ("Mid Chest · Front Delts · Triceps") brightens to white, then settles back to gray.
+local function flashMuscles()
+	musclesLabel.TextColor3 = Colors.Text
+	Theme.Tween(musclesLabel, { TextColor3 = Colors.Muted }, Theme.Motion.Time * 2)
+end
+
 local function jigglePlates()
 	for i, plate in ipairs(barPlates) do
 		plate.Rotation = (i % 2 == 0 and 1 or -1) * 8
@@ -931,6 +967,7 @@ local function beginRep()
 	local now = os.clock()
 	if current.lastLockout and now - current.lastLockout > FEEL.SetBreak then
 		current.reps = 0
+		current.setGain = 0 -- a new set: the "Set done" total starts over too
 		refreshReps()
 		current.setsSinceNote += 1
 		if current.setsSinceNote >= FEEL.NoteEvery then
@@ -964,14 +1001,22 @@ local function localLockout(state)
 	Audio.Play2D("RepTick")
 
 	local setDone = current.reps % FEEL.SetSize == 0
-	if character then
-		local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost")) -- same boosts as the server
-		for index, entry in ipairs(machine.muscles) do
-			local scale = (index == 1 and 1 or 0.72) * (setDone and 1.3 or 1)
-			local side = index == 1 and 0 or (index % 2 == 0 and -1 or 1)
-			task.delay((index - 1) * 0.1, gainPopup, character, entry.id, xp[entry.id], scale, side)
-		end
+	-- the main muscle's gain (same boosts as the server), rounded the way it's shown; the set popup adds these up
+	local main = machine.muscles[1].id
+	local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"))
+	local shown = math.max(1, math.floor((xp[main] or 0) + 0.5))
+	current.setGain = (current.setGain or 0) + shown
+	local mode = gainNumbersMode()
+	local showSet = mode ~= "Off" -- On and Minimal
+	local showRep = mode == "On"
+	if character and setDone and showSet then
+		local group = Muscles.GroupById[Muscles.ById[main].group]
+		gainPopup(character, "Set done · +" .. current.setGain .. " " .. group.name, POPUP.SetScale)
+	elseif character and not setDone and showRep then
+		gainPopup(character, "+" .. shown, 1)
 	end
+	if setDone then current.setGain = 0 end
+	flashMuscles() -- the secondary muscles get a flash of the HUD's muscle list instead of popups
 
 	if state.tier >= FEEL.HeavyTier then
 		fovPunch()

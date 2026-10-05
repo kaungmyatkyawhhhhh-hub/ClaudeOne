@@ -99,12 +99,18 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - Sounds: plate clank at lockout with random pitch (±5%), deeper for higher tiers; soft tick on rep count;
   a soft, short breath exhale at lockout only on heavy tiers or low stamina, never every rep.
   No grunts on any machine.
-- Gains: BillboardGui "+2 MID CHEST" at the muscle in 3D, pops in with a Back-out bounce, floats up and fades.
-  Secondary muscles smaller and staggered by 0.1s. No "+N" numbers in the corner of the panel.
+- Gains: per rep ONE small BillboardGui popup with only the main muscle's gain number ("+12", no muscle name),
+  offset to the side of the chest; pops in with a Back-out bounce, floats up and fades. No popups for secondary
+  muscles: instead the muscle list in the machine HUD briefly flashes. Never stack popups: a new one replaces the
+  old one. No "+N" numbers in the corner of the panel.
 - Pump: the trained body part scales up slightly each rep with a small bounce, then slowly settles over time.
 - Camera: tiny FOV punch on lockout for heavy tiers only.
 - HUD: rep number bounces on increase, the drained stamina segment flashes, barbell plates jiggle on heavy reps.
-- Every 10 reps: "set complete" beat with a chime, chalk puff particles and a slightly bigger gain burst. No pop-up.
+- Every 10 reps: "set complete" beat with a chime, chalk puff particles and one slightly bigger
+  "Set done · +[total] Chest" popup (total of the set's main-muscle gains, the main muscle's group name), replacing
+  the rep popup. No big pop-up window.
+- Setting "Gain numbers: On / Minimal / Off" in Settings: On = rep + set popups, Minimal = set popups only,
+  Off = no gain popups (the chime, chalk and HUD flash stay). Saved per player.
 - Chalk puff from the hands when getting on a machine; sweat drop particles under 25% stamina.
 - The machine panel stays compact and low so it never covers the lift.
 

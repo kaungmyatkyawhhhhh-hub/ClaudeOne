@@ -51,5 +51,11 @@
 - Server is authoritative: validate every RemoteEvent/RemoteFunction argument on the server.
 - Get services with `game:GetService(...)`.
 - Keep the owner's PROGRESS.md / task notes up to date if they add them.
+- Gain popups (owner's popup fix, see "Game feel" in the brief): one small "+12" per rep beside the chest (main
+  muscle only, no name), never stacked (new replaces old); secondary muscles only flash the HUD muscle list; every
+  10 reps one slightly bigger "Set done · +[total] Chest". Respect the player's "Gain numbers" setting
+  (On / Minimal = set popups only / Off), stored in `settings.gainNumbers`. Code: `gainPopup` in `MachineClient`.
+- Studio testing: Workspace attribute `FreshPlayer` (boolean) = play as a new player on unsaved temporary data;
+  `ReplayTutorial` = replay the tutorial on your own save.
 
 @docs/DESIGN.md

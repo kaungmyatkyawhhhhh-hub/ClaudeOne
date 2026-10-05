@@ -469,12 +469,22 @@ function PlayerData.SetTutorialStep(player, step)
 end
 
 -- Sound volume settings (0-1 each), clamped here so the client can't store anything odd.
-function PlayerData.SetSettings(player, music, effects)
+local GAIN_NUMBERS = { On = true, Minimal = true, Off = true }
+
+-- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off.
+function PlayerData.SetSettings(player, settings)
 	local data = PlayerData.Get(player)
-	if not data or type(music) ~= "number" or type(effects) ~= "number" then return end
-	if music ~= music or effects ~= effects then return end -- NaN
-	data.settings = { music = math.clamp(math.floor(music * 100 + 0.5) / 100, 0, 1), effects = math.clamp(math.floor(effects * 100 + 0.5) / 100, 0, 1) }
-	replicate(player, { "settings" }, data.settings)
+	if not data or type(settings) ~= "table" then return end
+	local function volume(value)
+		if type(value) ~= "number" or value ~= value then return nil end -- not a number / NaN
+		return math.clamp(math.floor(value * 100 + 0.5) / 100, 0, 1)
+	end
+	local new = table.clone(data.settings)
+	new.music = volume(settings.music) or new.music
+	new.effects = volume(settings.effects) or new.effects
+	if GAIN_NUMBERS[settings.gainNumbers] then new.gainNumbers = settings.gainNumbers end
+	data.settings = new
+	replicate(player, { "settings" }, new)
 end
 
 -- Lifecycle ---------------------------------------------------------------

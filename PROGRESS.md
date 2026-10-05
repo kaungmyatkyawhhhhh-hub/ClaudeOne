@@ -44,7 +44,7 @@
 > **Needs you:**
 > - **Monetization ids** (Creator Hub → Monetization) → `Config/Monetization.luau`. Until then no Store.
 > - **Badge ids** for the big titles (unchanged from before).
-> - **Popup fixes:** that request still never reached me (step 0).
+> - ~~**Popup fixes:** that request still never reached me (step 0).~~ Done 2026-10-05, see "Gain popups" below.
 > - Tell me what looks off (poses, positions, prices); most numbers are in the `Config` files.
 >
 > **Not built (need art, assets or new areas):** town hub, beach gym + posing stage, skate park/skateboard,
@@ -55,6 +55,35 @@ All game code lives in this repo under `src/` and Rojo syncs it into the Studio 
 placeId 80031260599632). Parts, models, lighting and `ReplicatedStorage.Remotes` are built in Studio.
 Shared config: `src/ReplicatedStorage/Shared/Config`. Server: `src/ServerScriptService` (`Main` + `Server/`).
 Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Theme.luau`.
+
+---
+
+## Gain popups: one number at a time + "Gain numbers" setting (2026-10-05) ✅ (playtested in Studio)
+
+Your popup fix (the step 0 request that never reached me before).
+
+**Built** (`gainPopup` in `MachineClient`, setting in `SettingsClient`, saved via `PlayerData.SetSettings`)
+- **Per rep: ONE small popup** with only the main muscle's gain, e.g. "+7" (no muscle name), just to the side of the
+  chest (scales with your height). Pops in with the bounce, floats up and fades.
+- **No secondary muscle popups.** Instead the muscle list in the machine panel ("Mid Chest · Front Delts · Triceps")
+  flashes white and settles back to gray on every rep.
+- **Never stacked:** a new popup replaces the old one immediately.
+- **Every 10 reps:** one slightly bigger "Set done · +64 Chest" (the total of that set's rep numbers, with the main
+  muscle's group name) together with the chime and chalk. If you rest long enough that the rep counter restarts,
+  the total restarts too.
+- **Settings → Gain numbers: On / Minimal / Off** (three buttons, the chosen one lit). On = rep + set popups,
+  Minimal = set popups only, Off = no popups (chime, chalk and the HUD flash stay). Saved with your data; the server
+  only accepts those three values. Existing saves default to On.
+- Brief (`docs/DESIGN.md` → Game feel) and `CLAUDE.md` updated with these rules.
+
+**Tested in Studio** (fresh player, Flat Bench): On → 9 × "+6/+7" then "Set done · +64 Chest" (sum checked), never
+more than one popup alive; Minimal → only "Set done · +60 Chest"; Off → nothing for a full set. Settings row checked
+by screenshot. The popups themselves were checked by logging each one as it appeared (the screenshot tool can't see
+BillboardGuis in PlayerGui), so **take a look at the size and position** (`POPUP` at the top of the popup code).
+
+**Assumptions**
+- "Chest" = the group of the machine's main muscle (Squat Rack → "Legs", Pull-Up Bar → "Back").
+- The set popup replaces that rep's "+N" (one popup at a time); the HUD flash happens in every mode.
 
 ---
 
