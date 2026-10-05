@@ -174,11 +174,15 @@ task.spawn(function()
 	showGainMode()
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()
-	-- area music: the pro gym is built far to the south (z < -100), everything else is the starter gym
+	-- area music: the pro gym is the room east of the starter gym (x 37..93, z -73.5..-4, see the Gyms builder)
 	while true do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
-		if root then Audio.SetArea(root.Position.Z < -100 and "Pro" or "Starter") end
+		if root then
+			local p = root.Position
+			local inPro = p.X > 37 and p.X < 93 and p.Z > -73.5 and p.Z < -4 and p.Y < 20
+			Audio.SetArea(inPro and "Pro" or "Starter")
+		end
 		task.wait(2)
 	end
 end)

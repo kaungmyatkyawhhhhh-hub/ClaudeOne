@@ -110,17 +110,25 @@ local function machineModel(machineId)
 	if machineId == "Coach" then
 		return CollectionService:GetTagged("Coach")[1]
 	end
+	-- the gym has several of each machine: the nearest one nobody is using (any one if all are busy)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local from = root and root.Position or Vector3.zero
+	local best, bestScore = nil, math.huge
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:GetAttribute("MachineId") == machineId then return model end
+		if model:IsA("Model") and model:GetAttribute("MachineId") == machineId then
+			local busy = model:GetAttribute("UserId") ~= nil or model:FindFirstChild("Occupant") ~= nil
+			local score = (model:GetPivot().Position - from).Magnitude + (busy and 1000 or 0)
+			if score < bestScore then best, bestScore = model, score end
+		end
 	end
-	return nil
+	return best
 end
 
--- The middle of the gym the target is in (machines within 60 studs of it; the pro gym is far away).
-local function gymCenter(near)
+-- The middle of the gym the target is in (machines in the same room, within 60 studs of it).
+local function gymCenter(near, room)
 	local sum, count = Vector3.zero, 0
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:IsA("Model") then
+		if model:IsA("Model") and (not room or model.Parent == room) then
 			local position = model:GetPivot().Position
 			if not near or (position - near).Magnitude < 60 then
 				sum += position
@@ -139,7 +147,7 @@ local function approachPoint(model)
 	local start = (holder and holder:IsA("BasePart") and holder.Position)
 		or (holder and holder:IsA("Attachment") and holder.WorldPosition)
 		or boxCFrame.Position
-	local center = gymCenter(boxCFrame.Position) or boxCFrame.Position
+	local center = gymCenter(boxCFrame.Position, model.Parent) or boxCFrame.Position
 	local localStart = boxCFrame:PointToObjectSpace(start)
 	local localDir = boxCFrame:VectorToObjectSpace((center - start) * Vector3.new(1, 0, 1))
 	if localDir.Magnitude < 0.01 then localDir = Vector3.new(0, 0, -1) end

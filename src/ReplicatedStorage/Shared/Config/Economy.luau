@@ -26,10 +26,10 @@ Economy.Rerack = {
 	SpawnEvery = 90,        -- seconds between new loose plates (if fewer than MaxLoose)
 	-- floor spots (x, z) near the benches and racks where someone "left" a plate
 	Spots = {
-		Vector2.new(-9, -33), Vector2.new(7.5, -34), Vector2.new(-14, -24), Vector2.new(9, -26),
-		Vector2.new(-13, -12), Vector2.new(3, -15), Vector2.new(17, -36), Vector2.new(-12, -40),
+		Vector2.new(-10, -61), Vector2.new(20.5, -60), Vector2.new(-24.5, -37), Vector2.new(-24.5, -50),
+		Vector2.new(-11, -24), Vector2.new(-11, -40), Vector2.new(22, -42), Vector2.new(6, -58),
 	},
-	Colors = { "White", "Green", "Yellow", "Blue", "Red" }, -- Theme.Bumper keys
+	Weights = { 10, 25, 35, 45 }, -- plates from ReplicatedStorage.GymAssets
 }
 
 -- DNA tokens can be bought with coins at the front desk.

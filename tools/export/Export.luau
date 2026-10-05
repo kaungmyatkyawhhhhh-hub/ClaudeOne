@@ -27,6 +27,7 @@ end
 
 local function walk(inst, dir)
 	for _, child in ipairs(inst:GetChildren()) do
+		if child.Name == "_Builders" then continue end -- builder dev folder (tools/bake.md), not part of the game
 		local suffix = SUFFIX[child.ClassName]
 		if suffix then
 			local ok, source = pcall(function() return ScriptEditorService:GetEditorSource(child) end)

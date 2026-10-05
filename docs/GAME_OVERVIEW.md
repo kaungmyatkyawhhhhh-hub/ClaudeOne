@@ -64,8 +64,8 @@ for where everything sits in Studio.
 - `Server/RetentionService`: daily streak, offline coins, loose plates, DNA tokens at the desk, rush hour.
 - `Server/SocialService`: spotting and the workout-together bonus.
 - `Server/LegendService`: legend visits, challenges and rewards.
-- `Server/ProGymService`: builds the pro gym room, its 11 machines and the doors.
-- `Server/GymGoerService`: three animated NPC regulars in the free-weight zone (EmoteClient animates them).
+- `Server/ProGymService`: the pro gym next to the starter gym (glass wall + door; keeps locked players out).
+- `Server/GymGoerService`: 8 NPC regulars walk to free machines, lift, rest, drink water, chat (never take a player's machine).
 - `Server/SeasonService`: seasonal decorations, bonus and rep counting.
 - `Server/CrewService`: crews (create, invite, join, leave, tags, top crews; creates the `Crew` remote).
 - `Server/MonetizationService`: pass ownership + effects, product receipts, server boost.

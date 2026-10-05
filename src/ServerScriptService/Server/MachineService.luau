@@ -41,7 +41,46 @@ local function getPrompt(model)
 	return nil
 end
 
--- Plates go on the machine's load part: both sleeves of a bar, or one centered stack.
+-- Plates are clones of the templates in ReplicatedStorage.GymAssets (GymAssets builder): real plates with a rim, hub
+-- and the weight on the face. Barbells also get sleeves + collars (they ride with the plates). Only the outermost
+-- plate on each side shows its number (that's the face people see).
+local Assets = ReplicatedStorage:WaitForChild("GymAssets", 10)
+local SLEEVE_START = 3.0 -- the collar sits at the end of the bar shaft (shaft = 6 studs)
+
+local function plateModel(lb)
+	local template = Assets and Assets.Plates:FindFirstChild("Plate" .. lb)
+	if template then return template:Clone() end
+	-- fallback: a plain disc in the plate's color
+	local spec = Machines.Plates[lb]
+	local m = Instance.new("Model")
+	local disc = Instance.new("Part")
+	disc.Name = "Body"
+	disc.Shape = Enum.PartType.Cylinder
+	disc.Size = Vector3.new(spec.thickness, spec.diameter, spec.diameter)
+	disc.Color = (Theme.Bumper[spec.color] or Theme.Bumper.Black).Fill
+	disc.Anchored, disc.CanCollide, disc.CanQuery, disc.CanTouch = true, false, false, false
+	disc.Parent = m
+	m.PrimaryPart = disc
+	return m
+end
+
+-- Weight stack machines (Stack attribute): the selector pin ("Bar") moves to the block for this tier.
+local function updateStack(model, bar, index)
+	local blocks = model:GetAttribute("StackBlocks") or 12
+	local count = math.clamp(index, 1, blocks)
+	local block = model:FindFirstChild("StackBlock" .. count)
+	if block then
+		local rest = bar:GetAttribute("RestCFrame")
+		if typeof(rest) ~= "CFrame" then
+			bar:SetAttribute("RestCFrame", bar.CFrame)
+			rest = bar.CFrame
+		end
+		-- same x/z as the pin's rest place, the selected block's height
+		bar.CFrame = rest - Vector3.new(0, rest.Position.Y - block.Position.Y, 0)
+	end
+	model:SetAttribute("StackCount", count)
+end
+
 local function updatePlates(model, tier)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	local bar = machine and model:FindFirstChild(machine.load or "Bar")
@@ -53,41 +92,41 @@ local function updatePlates(model, tier)
 		folder.Parent = model
 	end
 	folder:ClearAllChildren()
-	model:SetAttribute("Tier", table.find(machine.tiers, tier) or 1)
+	local index = table.find(machine.tiers, tier) or 1
+	model:SetAttribute("Tier", index)
+	if model:GetAttribute("Stack") then
+		updateStack(model, bar, index)
+		return
+	end
 
 	local centered = machine.layout == "Center"
-	local sleeveStart = bar.Size.X / 2 - 1.3
+	local start = SLEEVE_START + 0.2
 	if centered then
 		-- one stack, centered on the load part
 		local width = 0
 		for _, lb in ipairs(tier.plates) do width += Machines.Plates[lb].thickness + 0.03 end
-		sleeveStart = -width / 2
+		start = -width / 2
+	elseif Assets and Assets:FindFirstChild("BarSleeve") then
+		for _, side in ipairs({ 1, -1 }) do
+			local sleeve = Assets.BarSleeve:Clone()
+			sleeve:PivotTo(bar.CFrame * CFrame.new(side * SLEEVE_START, 0, 0) * (side < 0 and CFrame.Angles(0, math.pi, 0) or CFrame.identity))
+			sleeve.Parent = folder
+		end
 	end
 	for _, side in ipairs(centered and { 1 } or { 1, -1 }) do
-		local x = sleeveStart
-		for _, lb in ipairs(tier.plates) do
+		local x = start
+		for i, lb in ipairs(tier.plates) do
 			local spec = Machines.Plates[lb]
-			local plate = Instance.new("Part")
+			local plate = plateModel(lb)
 			plate.Name = "Plate" .. lb
-			plate.Shape = Enum.PartType.Cylinder
-			plate.Size = Vector3.new(spec.thickness, spec.diameter, spec.diameter)
-			local bumper = Theme.Bumper[spec.color] or Theme.Bumper.Black -- one color per weight
-			plate.Color = bumper.Fill
-			plate.Material = spec.color == "Steel" and Enum.Material.Metal or Enum.Material.SmoothPlastic
-			plate.Anchored = true
-			plate.CanCollide = false
-			plate.CanQuery = false
-			plate.CanTouch = false
-			plate.CFrame = bar.CFrame * CFrame.new(side * (x + spec.thickness / 2), 0, 0)
+			-- turned around on the left sleeve, so the plate's +X face always looks outward
+			plate:PivotTo(bar.CFrame * CFrame.new(side * (x + spec.thickness / 2), 0, 0) * (side < 0 and CFrame.Angles(0, math.pi, 0) or CFrame.identity))
+			if i == #tier.plates then
+				local face = plate:FindFirstChild("FaceRight")
+				local label = face and face:FindFirstChildWhichIsA("SurfaceGui")
+				if label then label.Enabled = true end
+			end
 			plate.Parent = folder
-			local hub = plate:Clone()
-			hub.Name = "Hub"
-			hub.Size = Vector3.new(spec.thickness + 0.04, 0.55, 0.55)
-			hub.Color = bar.Color
-			hub.Material = Enum.Material.Metal
-			hub.Reflectance = 0.25
-			hub.CastShadow = false
-			hub.Parent = folder
 			x += spec.thickness + 0.03
 		end
 	end
@@ -151,8 +190,71 @@ local function leave(player)
 	end
 end
 
+------------------------------------------------------------------------
+-- NPC gym-goers (GymGoerService) use machines too. An NPC on a machine is marked with an "Occupant" ObjectValue
+-- (clients pose that character); a player who taps Use on it gets the machine and the NPC steps off.
+------------------------------------------------------------------------
+local npcEvicted = nil -- callback(npc, model) set by GymGoerService
+
+local function isNpc(occupant)
+	return occupant ~= nil and not occupant:IsA("Player")
+end
+
+function MachineService.IsFree(model)
+	return occupants[model] == nil
+end
+
+function MachineService.OnNpcEvicted(callback)
+	npcEvicted = callback
+end
+
+function MachineService.NpcEnter(npc, model, tierIndex)
+	if occupants[model] then return false end
+	local machine = Machines.ById[model:GetAttribute("MachineId")]
+	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not machine or not humanoid or not root then return false end
+	occupants[model] = npc
+	local marker = Instance.new("ObjectValue")
+	marker.Name = "Occupant"
+	marker.Value = npc
+	marker.Parent = model
+	root.Anchored = true
+	npc:PivotTo(bodyCFrame(npc, humanoid, root, model, Poses[machine.pose]))
+	updatePlates(model, machine.tiers[math.clamp(tierIndex or 1, 1, #machine.tiers)])
+	return true
+end
+
+function MachineService.NpcLift(npc, model)
+	if occupants[model] ~= npc then return false end
+	model:SetAttribute("Reps", (model:GetAttribute("Reps") or 0) + 1)
+	return true
+end
+
+function MachineService.NpcLeave(npc, model)
+	if occupants[model] ~= npc then return end
+	occupants[model] = nil
+	local marker = model:FindFirstChild("Occupant")
+	if marker then marker:Destroy() end
+	local machine = Machines.ById[model:GetAttribute("MachineId")]
+	updatePlates(model, displayTier(machine))
+	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and npc.Parent then
+		local exit = model:GetPivot() * CFrame.new(Poses[machine.pose].exit)
+		npc:PivotTo(CFrame.new(exit.Position + Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0)) * model:GetPivot().Rotation)
+	end
+end
+
 local function enter(player, model)
-	if sessions[player] or occupants[model] then return end
+	if sessions[player] then return end
+	-- an NPC on it steps off for the player
+	local occupant = occupants[model]
+	if isNpc(occupant) then
+		MachineService.NpcLeave(occupant, model)
+		if npcEvicted then task.spawn(npcEvicted, occupant, model) end
+	end
+	if occupants[model] then return end
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")

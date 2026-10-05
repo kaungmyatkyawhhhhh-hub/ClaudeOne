@@ -106,7 +106,7 @@ local function visit()
 	local cframe = CFrame.lookAt(spot, spot + Legends.Visit.Facing)
 	local spec = {
 		name = legend.name, skin = legend.look.skin, shirt = legend.look.shirt, pants = legend.look.pants,
-		scale = legend.look.scale, tag = "Legend", prompt = { action = "Talk", object = legend.name, distance = 11 },
+		scale = legend.look.scale, tag = "Legend", animated = true, prompt = { action = "Talk", object = legend.name, distance = 11 },
 	}
 	local model, prompt = NpcService.Build(spec, cframe)
 	present = { legend = legend, model = model }

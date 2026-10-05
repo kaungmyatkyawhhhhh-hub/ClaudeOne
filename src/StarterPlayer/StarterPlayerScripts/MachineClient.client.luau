@@ -116,6 +116,7 @@ local function repDepth(state, now)
 	return 0, "done"
 end
 
+-- every part of the plates (plate models, sleeves) rides with the bar
 local function trackPlate(model, plate)
 	if plate:IsA("BasePart") and barRest[model] then
 		plateOffsets[plate] = barRest[model]:ToObjectSpace(plate.CFrame)
@@ -141,16 +142,48 @@ local function placeBar(model, cframe)
 	elseif cframe.Y > travel.high.Y then
 		travel.high = cframe
 	end
-	for _, plate in ipairs(model.Plates:GetChildren()) do
+	for _, plate in ipairs(model.Plates:GetDescendants()) do
 		local offset = plateOffsets[plate]
 		if offset then plate.CFrame = cframe * offset end
 	end
 end
 
+-- Weight stack machines (pro gym): the selected blocks (1..StackCount, top down) and the pin rise with each rep.
+local stackRest = {} -- [model] = { [part] = rest CFrame }
+local function placeStack(model, depth)
+	local rest = stackRest[model]
+	if not rest then
+		rest = {}
+		for i = 1, model:GetAttribute("StackBlocks") or 12 do
+			local block = model:FindFirstChild("StackBlock" .. i)
+			if block then
+				rest[block] = block.CFrame
+				for _, child in ipairs(block:GetChildren()) do
+					if child:IsA("BasePart") then rest[child] = child.CFrame end
+				end
+			end
+		end
+		local top = model:FindFirstChild("TopPlate")
+		if top then rest[top] = top.CFrame end
+		stackRest[model] = rest
+	end
+	local count = model:GetAttribute("StackCount") or 1
+	local lift = Vector3.new(0, 1.6 * (1 - depth), 0)
+	for part, cframe in pairs(rest) do
+		local block = part.Parent and part.Parent.Name:match("^StackBlock(%d+)$") and part.Parent or part
+		local index = tonumber(block.Name:match("^StackBlock(%d+)$") or "0")
+		local lifted = part.Name == "TopPlate" or (index >= 1 and index <= count)
+		part.CFrame = lifted and (cframe + lift) or cframe
+	end
+end
+
+-- Who is on a machine: a player (UserId attribute) or an NPC gym-goer ("Occupant" ObjectValue).
 local function userCharacter(model)
 	local userId = model:GetAttribute("UserId")
 	local user = userId and Players:GetPlayerByUserId(userId)
-	return user and user.Character
+	if user then return user.Character end
+	local occupant = model:FindFirstChild("Occupant")
+	return occupant and occupant:IsA("ObjectValue") and occupant.Value or nil
 end
 
 -- R15 joints by name: { part, joint } (a Motor6D, or an AnimationConstraint on newer avatars: both have Transform)
@@ -1479,11 +1512,16 @@ RunService.Stepped:Connect(function()
 			end
 			animate(model, character, depth, state and state.shake and phase == "press")
 			posed[model] = character
+			if model:GetAttribute("Stack") then placeStack(model, depth) end
 		elseif posed[model] then
 			resetPose(posed[model])
 			posed[model] = nil
 			repState[model] = nil
-			placeBar(model, barRest[model])
+			if model:GetAttribute("Stack") then
+				placeStack(model, 0.999)
+			else
+				placeBar(model, barRest[model])
+			end
 		end
 	end
 end)
@@ -1505,9 +1543,9 @@ local function setupMachine(model)
 	local plates = model:WaitForChild("Plates")
 	if not bar or not plates then return end
 	barRest[model] = bar.CFrame
-	for _, plate in ipairs(plates:GetChildren()) do trackPlate(model, plate) end
-	plates.ChildAdded:Connect(function(plate) trackPlate(model, plate) end)
-	plates.ChildRemoved:Connect(function(plate) plateOffsets[plate] = nil end)
+	for _, plate in ipairs(plates:GetDescendants()) do trackPlate(model, plate) end
+	plates.DescendantAdded:Connect(function(plate) trackPlate(model, plate) end)
+	plates.DescendantRemoving:Connect(function(plate) plateOffsets[plate] = nil end)
 	model:GetAttributeChangedSignal("Reps"):Connect(function()
 		-- our own reps start instantly on tap; other lifters start when the server counts them
 		if model:GetAttribute("UserId") ~= player.UserId then

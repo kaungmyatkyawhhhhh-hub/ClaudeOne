@@ -6,7 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = ReplicatedStorage.Shared.Config
 local Economy = require(Config.Economy)
-local Theme = require(ReplicatedStorage.Shared.UI.Theme)
+local Machines = require(Config.Machines)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 local BoostService = require(script.Parent.BoostService)
@@ -76,30 +76,21 @@ local function spawnPlate()
 	if #free == 0 or count >= Economy.Rerack.MaxLoose then return end
 	local index = free[rng:NextInteger(1, #free)]
 	local spot = Economy.Rerack.Spots[index]
-	local bumper = Theme.Bumper[Economy.Rerack.Colors[rng:NextInteger(1, #Economy.Rerack.Colors)]]
-
-	local plate = Instance.new("Part")
-	plate.Name = "LoosePlate"
-	plate.Shape = Enum.PartType.Cylinder
-	plate.Size = Vector3.new(0.3, 1.9, 1.9)
-	plate.Color = bumper.Fill
-	plate.Material = Enum.Material.SmoothPlastic
-	plate.Anchored = true
-	plate.CanCollide = false
+	local weights = Economy.Rerack.Weights
+	local weight = weights[rng:NextInteger(1, #weights)]
+	local assets = ReplicatedStorage:FindFirstChild("GymAssets")
+	local template = assets and assets.Plates:FindFirstChild("Plate" .. weight)
+	local model = template and template:Clone() or Instance.new("Model")
+	model.Name = "LoosePlate"
+	local spec = Machines.Plates[weight]
+	-- lying flat on the floor (the plate's axis pointing up), number side up, at a random turn
+	model:PivotTo(CFrame.new(spot.X, 0.15 + spec.thickness / 2, spot.Y) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), math.rad(90)))
+	local face = model:FindFirstChild("FaceRight")
+	local label = face and face:FindFirstChildWhichIsA("SurfaceGui")
+	if label then label.Enabled = true end
+	local plate = model:FindFirstChild("Body") or model:FindFirstChildWhichIsA("BasePart")
+	if not plate then return end
 	plate.CanQuery = true
-	plate.CastShadow = false
-	-- lying flat on the floor (cylinder axis pointing up), at a random turn
-	plate.CFrame = CFrame.new(spot.X, 0.25, spot.Y) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), math.rad(90))
-	local hub = Instance.new("Part")
-	hub.Name = "Hub"
-	hub.Shape = Enum.PartType.Cylinder
-	hub.Size = Vector3.new(0.34, 0.45, 0.45)
-	hub.Color = Color3.fromHex("#C9CCD2")
-	hub.Material = Enum.Material.Metal
-	hub.Anchored, hub.CanCollide, hub.CanQuery, hub.CastShadow = true, false, false, false
-	hub.CFrame = plate.CFrame
-	hub.Parent = plate
-
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Re-rack"
 	prompt.ObjectText = "+" .. Economy.Rerack.Coins .. " coins"
@@ -112,12 +103,12 @@ local function spawnPlate()
 		claimed = true
 		PlayerData.AddCoins(player, Economy.Rerack.Coins)
 		event(player, "Reracked", { coins = Economy.Rerack.Coins })
-		plate:Destroy()
+		model:Destroy()
 		loose[index] = nil
 	end)
 
-	plate.Parent = plateFolder()
-	loose[index] = plate
+	model.Parent = plateFolder()
+	loose[index] = model
 end
 
 ------------------------------------------------------------------------

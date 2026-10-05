@@ -7,6 +7,7 @@ Stamina.RegenDelay = 2 -- seconds after a rep before refilling starts (shorter =
 -- Recovery stations: standing in a model with this Recovery attribute refills stamina faster.
 Stamina.Recovery = {
 	StretchMat = 2.5, -- x the normal refill speed
+	Cardio = 1.6,     -- treadmills, bikes and rowers: an easy cool-down
 }
 
 -- Energy Shakes: bought at the shake machine by the door (or earned), drunk from the button on the right.

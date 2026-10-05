@@ -1,5 +1,6 @@
--- Builds standing NPCs (the Coach, legends) from a HumanoidDescription: a real R15 character, anchored, with a
--- clean name label above the head and an optional ProximityPrompt. Everything is original (no catalog items).
+-- Builds NPCs (the Coach, legends, gym-goers) from a HumanoidDescription: a real R15 character with a small, clean
+-- name label above the head and an optional ProximityPrompt. Looks are original characters; clothing and hair can be
+-- Roblox-made catalog items (spec.shirtId / pantsId / hairIds), never real people or brands.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -52,6 +53,8 @@ local function fallbackModel(spec)
 end
 
 -- spec: { name, skin = hex, shirt = hex, pants = hex, scale = { height, width, depth, head } (optional),
+--         shirtId / pantsId = catalog clothing ids, hairIds = { accessory ids } (optional; when a shirt is given the
+--         torso isn't painted with the shirt color),
 --         prompt = { action, object, distance } (optional), tag = CollectionService tag (optional),
 --         animated = true (only the root is anchored, so clients can pose the joints), noLabel = true (no name) }
 -- cframe: where the character stands (feet on the floor at cframe.Position, facing cframe.LookVector).
@@ -68,6 +71,13 @@ function NpcService.Build(spec, cframe)
 			desc.DepthScale = spec.scale.depth or 1
 			desc.HeadScale = spec.scale.head or 1
 		end
+		if spec.shirtId then desc.Shirt = spec.shirtId end
+		if spec.pantsId then desc.Pants = spec.pantsId end
+		if spec.hairIds then
+			local ids = {}
+			for _, id in ipairs(spec.hairIds) do table.insert(ids, tostring(id)) end
+			desc.HairAccessory = table.concat(ids, ",")
+		end
 		model = Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
 	end)
 	if not ok or not model then
@@ -75,10 +85,12 @@ function NpcService.Build(spec, cframe)
 	end
 	model.Name = spec.name
 
-	-- the "shirt": torso parts take the shirt color, upper arms too (short sleeves)
-	for _, partName in ipairs({ "UpperTorso", "LowerTorso", "RightUpperArm", "LeftUpperArm" }) do
-		local part = model:FindFirstChild(partName)
-		if part and part:IsA("BasePart") then part.Color = color(spec.shirt or "#2B2B2B") end
+	-- without catalog clothing, the "shirt" is the torso and upper arms painted in the shirt color (short sleeves)
+	if not spec.shirtId then
+		for _, partName in ipairs({ "UpperTorso", "LowerTorso", "RightUpperArm", "LeftUpperArm" }) do
+			local part = model:FindFirstChild(partName)
+			if part and part:IsA("BasePart") then part.Color = color(spec.shirt or "#2B2B2B") end
+		end
 	end
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -101,14 +113,14 @@ function NpcService.Build(spec, cframe)
 	local rootHalf = root and root.Size.Y / 2 or 1
 	model:PivotTo(cframe + Vector3.new(0, hip + rootHalf, 0))
 
-	-- name label: white Montserrat, sized in studs, readable over the world
+	-- name label: small and clean (fixed 14px Montserrat, so it's never bigger than the HUD), only up close
 	local head = model:FindFirstChild("Head")
 	if head and not spec.noLabel then
 		local label = Instance.new("BillboardGui")
 		label.Name = "NameTag"
-		label.Size = UDim2.fromScale(5, 0.6)
-		label.StudsOffset = Vector3.new(0, 1.9, 0)
-		label.MaxDistance = 60
+		label.Size = UDim2.fromOffset(160, 20)
+		label.StudsOffset = Vector3.new(0, 1.7, 0)
+		label.MaxDistance = 30
 		label.LightInfluence = 0
 		label.Parent = head
 		local text = Instance.new("TextLabel")
@@ -116,17 +128,13 @@ function NpcService.Build(spec, cframe)
 		text.BackgroundTransparency = 1
 		text.Text = spec.name
 		text.FontFace = Theme.Fonts.SemiBold
-		text.TextScaled = true -- stud-sized billboard: the only place text may scale
+		text.TextSize = Theme.TextSize.Small
 		text.TextColor3 = Theme.Colors.Text
 		text.Parent = label
 		local stroke = Instance.new("UIStroke")
 		stroke.Color = Theme.Colors.Shadow
 		stroke.Transparency = 0.45
 		stroke.Parent = text
-		local limit = Instance.new("UITextSizeConstraint")
-		limit.MinTextSize = Theme.TextSize.Small
-		limit.MaxTextSize = 40
-		limit.Parent = text
 	end
 
 	local prompt = nil

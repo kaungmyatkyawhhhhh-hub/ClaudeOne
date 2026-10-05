@@ -105,7 +105,25 @@ place and backed up in `src/`; please File > Save to Roblox first thing.
   - Weights: 12 tiers on every machine (`Config/Machines` Progression table); each needs the main muscle's level
     (again after every Growth Spurt) and coins once. The machine prompt shows your next weight and what it needs.
   - Plates: one color per weight (55 red, 45 blue, 35 yellow, 25 green, 10 white, 5 steel) on bars and the HUD.
-- Next: Session 2 (gyms, equipment, NPCs).
+- Session 2 (gyms, equipment, NPCs): done, playtested. Builders: `tools/builders/GymAssets`, `GymKit`, `Gyms`, `NPCs`.
+  - Starter gym is now 72 x 70 (about 2x): free weights (3 power racks, 2 press stands, 4 lifting platforms, plate
+    trees, dumbbell rack, chalk), bench row facing the mirror wall (3 flat, 2 incline), bodyweight corner (2 pull-up
+    towers, 2 crunch benches), cardio facing the pro gym glass (treadmills, bikes, rower; a recovery station), a
+    stretching area, reception desk (Coach Dex behind it), fountain, towels, benches, posters, clock, fans, speakers.
+    Same brick / dark rubber / warm pendant look. 18 machines (2-3 of each).
+  - Pro gym rebuilt right next door (x 37..93): dark walls with LED seams, polished floor, light bars, spotlights over
+    every machine, real machines (weight stacks that lift with each rep, pulleys, cables, handles, pads), heavy racks
+    behind the glass, lockers, a lit podium, GYM ARC PRO signs. 15 machines.
+  - Shared wall: big glass window + glass door. Locked: padlock + "Unlocks at Growth Spurt 2", you can't pass (and the
+    server puts anyone inside back out). Unlocked: the doors slide open and you walk in (no teleport). The old pro gym
+    room, its corridor and teleport doors are gone.
+  - Plates: one template per weight (raised rim, recessed face, inset ring, steel hub with a hole, the number on the
+    face), used on every bar, rack, tree and loose plate. Bars got sleeves and collars. The old plate parts are gone.
+  - NPCs: 8 regulars (4 starter, 4 bigger pro lifters) with Roblox-made hair and clothes walk to free machines, lift
+    with the player rep animation, rest between sets, drink water, chat in pairs. They never take a machine a player
+    is on, near or walking toward, and step off within ~2 s if a player walks up (or at once if they tap Use).
+    Coach Dex and legends play an idle animation and turn toward nearby players. Name labels: small, 30 studs.
+- Next: Session 3 (town map, shops, beach, skate park).
 
 ## Decisions made overnight
 - PR banner: your brief's design file lists "personal-record popups" as CUT, but tonight's prompt asks for a NEW PR
@@ -123,6 +141,13 @@ place and backed up in `src/`; please File > Save to Roblox first thing.
 - Existing saves: weight tiers were renumbered (8 → 12), so a save's "bought up to tier N" now means the new tier N
   (a little lighter). Pre-launch, so I didn't migrate.
 - Sound ids: 4 new placeholders in `Config/Sounds` (PumpFull, BigRep, PersonalRecord, Grew) reuse existing clips.
+- Pro gym "heavier weight tiers": players get the same 12-tier sets everywhere (one progression per machine); the pro
+  gym's regulars lift the top tiers so the glass view shows the heavy plates.
+- Cardio machines are recovery stations (`Stamina.Recovery.Cardio`), not a new training mechanic.
+- NPC clothing/hair: Roblox-made catalog items only (verified creator "Roblox" with GetProductInfo); ids are in
+  `tools/builders/NPCs.luau`.
+- Old town pieces that cut through the bigger gyms (a hedge + invisible wall at z -60, the east boundary at x 78 and
+  several "skyline" boxes) were removed/moved; Session 3 redoes the town around the new gym footprint.
 
 ## Pacing (how the Growth Spurt goals are set)
 - Targets live in one table: `GrowthSpurts.Targets = { 8, 15, 25, 35, 45 }` (1st, 2nd, 3rd, 4th, then every later).

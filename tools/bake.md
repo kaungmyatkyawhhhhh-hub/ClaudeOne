@@ -7,14 +7,17 @@ the recipes that made the code-made areas into real parts, kept so an area can b
 
 | Builder | Makes | Wired by |
 |---|---|---|
-| `ProGym` | `Workspace.ProGymBuild`: pro gym room, 11 machines, spotlights, both doors (`ProGymDoorPrompt`, `StarterDoorPrompt`) | ProGymService, MachineService |
+| `GymAssets` | `ReplicatedStorage.GymAssets`: plate templates `Plates.Plate55..Plate5` (CSG faces, rim, hub, number on `FaceRight`/`FaceLeft`), `BarSleeve` | MachineService (plates on bars), RetentionService (loose plates), GymKit |
+| `GymKit` | (helper module) all gym equipment and props: plate-loaded starter machines, pro machines with weight stacks (`Stack` attribute, `StackBlock1..12`), racks, cardio, desk, lockers, posters, mirrors, pendants | used by `Gyms` |
+| `Gyms` | `Workspace.Gym.StarterGym` (72 x 70 room, zones, props, lights), `Workspace.Gym.Machines` (18 machines), `Workspace.ProGym` (room, 15 machines, `GlassWall.GlassDoor` with `Blocker`, lockers, podium), `Workspace.Gym.NpcSpots`. Keeps `Workspace.Gym.Entrance`. Needs `GymAssets` first | MachineService, ProGymService, ProGymClient, GymGoerService |
+| `ProGym` | old pro gym builder; only `ProGym.BuildMachine` is still used (by `Town` for the beach gym) | |
 | `Town` | `Workspace.Town`: street, smoothie bar (moves the shake machine in), clothing store (`ShopPrompt`), skate park, beach, beach gym (3 machines), posing stage (`PosePrompt`), hedge + skyline; the sea (terrain water); tags the entrance's glass doors `SlidingDoor` | TownService, MachineService, TownClient |
 | `Mirror` | `Workspace.ProgressMirror` (`MirrorPrompt`) | MirrorService |
 | `GymCat` | `Workspace.NPCs.GymCat` (`PetPrompt`) | StaminaService |
 | `ArmWrestleTable` | `Workspace.ArmWrestleTable` (Seats `Stool1`/`Stool2`, `ArmWrestlePrompt`) | ArmWrestleService |
 | `ShowOff` | `Workspace.LeaderboardWall` (rows by group id / `Rank1..5` / `Name`, `Level`), `Workspace.StatuePedestal` (`Plaque`) | ShowOffService |
 | `Seasons` | `ServerStorage.SeasonDecor.<Halloween/Winter/Summer>` templates (Winter has the Sled Pull machine) | SeasonService clones the running season's folder |
-| `NPCs` | `Workspace.NPCs`: Coach Dex (`TalkPrompt`, tag `Coach`), three gym-goers (tag `GymGoer`) | QuestService; EmoteClient animates the gym-goers |
+| `NPCs` | `Workspace.NPCs`: Coach Dex (`TalkPrompt`, tag `Coach`), eight gym regulars (tag `GymNpc`, attribute `Gym`), moves the gym cat | QuestService, GymGoerService |
 
 Visiting legends are still created by LegendService while they visit (they come and go).
 
