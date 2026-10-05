@@ -542,6 +542,9 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .pgot div.r1{box-shadow:inset 0 0 0 2px #3b82f6}.pgot div.r2{box-shadow:inset 0 0 0 2px #a855f7}.pgot div.r3{box-shadow:inset 0 0 0 2px #f5b301;background:color-mix(in oklab,#f5b301 12%,var(--bg))}
 .pgot .rl{font-family:var(--mono);font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
 .pgot b{font-size:.86rem}.pgot em{font-style:normal;font-family:var(--mono);font-weight:700;color:var(--up)}
+.feetag{margin-left:8px;font-family:var(--mono);font-size:.62rem;font-weight:700;padding:3px 7px;border-radius:99px;background:color-mix(in oklab,var(--down) 14%,transparent);color:var(--down)}
+.wquick button.lock{box-shadow:inset 0 0 0 3px #ffcc33,0 0 14px rgba(255,204,51,.6),var(--shadow)}
+.perk.emp:not(.own){box-shadow:inset 0 0 0 1px #cf9a14,var(--shadow)}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -607,8 +610,9 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const rint=(a,b)=>Math.floor(rnd(a,b+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);
-  if(a>=1e12)return s+"$"+(a/1e12).toFixed(2)+"T";if(a>=1e9)return s+"$"+(a/1e9).toFixed(a>=1e10?1:2)+"B";if(a>=1e6)return s+"$"+(a/1e6).toFixed(a>=1e7?1:2)+"M";
+const SUF=[[1e33,"Dc"],[1e30,"No"],[1e27,"Oc"],[1e24,"Sp"],[1e21,"Sx"],[1e18,"Qi"],[1e15,"Qa"],[1e12,"T"],[1e9,"B"],[1e6,"M"]];
+const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);if(!isFinite(a))return s+"$∞";
+  for(const[v,u]of SUF)if(a>=v){const x=a/v;return s+"$"+(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}
   if(a>=1e5)return s+"$"+Math.round(a/1e3)+"K";if(a>=1e4)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+Math.round(a).toLocaleString("en-US")};
 const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
@@ -744,14 +748,24 @@ function newGame(){
   freshLife(false);
 }
 function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 // Reputation level grows forever from everything you earn; no resets
-const repLevel=()=>Math.floor(Math.sqrt((S.stats.earnedAll||0)/400));
-const lvlFrac=()=>{const L=repLevel(),a=L*L*400,b=(L+1)*(L+1)*400;return((S.stats.earnedAll||0)-a)/(b-a)};
+// Each level needs 30% more lifetime earnings than the last
+const LV_B=1.3,lvT=L=>1000*(Math.pow(LV_B,L)-1);
+const repLevel=()=>Math.floor(Math.log((S.stats.earnedAll||0)/1000+1)/Math.log(LV_B));
+const lvlFrac=()=>{const L=repLevel(),a=lvT(L),b=lvT(L+1);return clamp(((S.stats.earnedAll||0)-a)/(b-a),0,1)};
 const SC=()=>Math.floor(repLevel()/5);
 const pk=k=>(S.perks&&S.perks[k])||0;
-const mult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver());
+const PCAP={sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3};
+const pcap=k=>PCAP[k]||30;
+const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver())*(1+.1*emp("ai"));
+// Stacked bonuses have diminishing returns past x2, so money can't run away
+const capM=m=>m<=2?m:2+Math.log2(m/2)*1.6;
+const moonK=()=>emp("moon")?2:1;
+const mult=()=>capM(rawMult())*moonK();
+let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
+const feeNow=()=>WT;
 const maxEnergyFor=str=>100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy");
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
@@ -1058,6 +1072,15 @@ function buildStatic(){
   // trees
   TREES.forEach(([x,y,rr])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+6,y+rr*.75,rr*1.05,rr*.45,0,0,7);g.fill()});
   TREES.slice().sort((a,b)=>a[1]-b[1]).forEach(([x,y,rr])=>{g.fillStyle=P.trunk;g.fillRect(x-3,y-2,6,rr*.7);g.fillStyle=P.tree;g.beginPath();g.arc(x,y-rr*.25,rr,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-rr*.25,y-rr*.45,rr*.7,0,7);g.fill();g.fillStyle=P.tree3;g.beginPath();g.arc(x-rr*.38,y-rr*.62,rr*.32,0,7);g.fill()});
+  // planters by every door
+  PLACES.forEach(p=>{if(p.k==="tower")return;const[dx,dy]=p.door;[[-46,0],[30,0]].forEach(([ox])=>{const x=dx+ox,y=dy+4;if(onRoad(x+8,y+6,0))return;g.fillStyle="rgba(0,0,0,.18)";g.fillRect(x+2,y+3,16,10);g.fillStyle="#8a6a4a";rrp(g,x,y,16,10,3);g.fill();
+    ["#ff8fa3","#ffd166","#b8a1ff","#ffffff"].forEach((c,i)=>{g.fillStyle="#3f8f4a";g.beginPath();g.arc(x+3+i*3.5,y+1,3,0,7);g.fill();g.fillStyle=c;g.beginPath();g.arc(x+3+i*3.5,y-.5,1.7,0,7);g.fill()})})});
+  // parked cars along the ring road
+  [[300,206,0,"#e2364a"],[520,206,0,"#2a5bd7"],[980,206,0,"#f2f2f2"],[420,1194,0,"#ffcc33"],[860,1194,0,"#1b1f2a"],[1194,520,1,"#2bb3a3"],[1194,980,1,"#8f52d4"],[206,700,1,"#ff7a3d"]].forEach(([x,y,v,c])=>{g.save();g.translate(x,y);if(v)g.rotate(Math.PI/2);g.fillStyle="rgba(0,0,0,.22)";rrp(g,-16,-6,34,16,5);g.fill();g.fillStyle=c;rrp(g,-17,-8,34,16,5);g.fill();g.fillStyle="rgba(20,30,45,.75)";rrp(g,1,-6,7,12,2);g.fill();rrp(g,-11,-6,6,12,2);g.fill();g.restore()});
+  // benches and planters around the plaza
+  [[640,640],[740,640],[640,752],[740,752]].forEach(([x,y])=>{g.fillStyle="#8a6a4a";g.fillRect(x,y,22,6);g.fillStyle="rgba(0,0,0,.2)";g.fillRect(x,y+6,22,2)});
+  // hedges along the park edges
+  [[300,560,160],[790,560,240],[300,1060,200],[800,1060,220]].forEach(([x,y,w])=>{g.fillStyle="#2f7a46";rrp(g,x,y,w,12,6);g.fill();g.fillStyle="#3f9a5a";for(let i=0;i<w;i+=10){g.beginPath();g.arc(x+5+i,y+3,5,0,7);g.fill()}});
   PLACES.slice().sort((a,b)=>a.y-b.y).forEach(p=>drawBuilding(g,p,P));
   STATIC=c;staticDark=isDark();
 }
@@ -1134,6 +1157,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
+  drawFountain();drawTraffic(1/60);
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   drawFinds();
@@ -1142,7 +1166,7 @@ function drawWorld(){
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
-  drawToys();
+  drawToys();drawBirds(1/60);
   [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
     ctx.fillStyle="#ffffff";ctx.font="900 26px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";
     const lx=r==="beach"?clamp(S.px,200,W-200):x+260,ly=r==="beach"?y+90:clamp(S.py,200,1200);ctx.fillText(REGION_NAME[r].toUpperCase()+" · LOCKED",lx,ly);ctx.font="600 14px "+getComputedStyle(root).getPropertyValue("--body");ctx.fillText(lockHint(r),lx,ly+26)});
@@ -1236,7 +1260,7 @@ const tallK=()=>((S&&S.height)||170)/170;
 const liftTotal=()=>S.lifts.bench+S.lifts.squat+S.lifts.dead;
 const syncPR=()=>{S.pr=Math.max(S.lifts.bench,S.lifts.squat,S.lifts.dead)};
 function liftPanel(l0){
-  G0lift=l0;G={lift:l0,w:S.lifts[l0]+5,pos:0,dir:1,z:[.4,.6],busy:false,half:GS.half};newZone();const P=$("gPanel");P.hidden=false;
+  G0lift=l0;G={lift:l0,w:S.liftMax?S.lifts[l0]+liftOver():S.lifts[l0]+5,pos:0,dir:1,z:[.4,.6],busy:false,half:GS.half};newZone();const P=$("gPanel");P.hidden=false;
   const draw=()=>{
     const lv=strLv(),cost=liftCost(G.w),lp=S.lifts[G.lift],over=G.w>lp;
     P.innerHTML=`<div class="gpanel-in"><button class="leave" id="gBack">${ARROW}Back to the floor</button>
@@ -1245,7 +1269,7 @@ function liftPanel(l0){
       <div class="kv"><div><span class="eyebrow">Total (rank)</span><b>${liftTotal()} kg</b></div><div><span class="eyebrow">Strength</span><b>Lv ${lv} · ${strTier()}</b></div>
         <div><span class="eyebrow">Stash slots</span><b>+${Math.min(lv,12)}</b></div><div><span class="eyebrow">Max energy</span><b>+${2*lv}</b></div></div>
       <div class="wsel"><button class="wbtn" id="wDown" aria-label="Less weight">−</button><div class="wval"><b>${G.w} kg</b><span class="${over?"pr":""}">${over?"New "+LIFTS.find(x=>x[0]===G.lift)[1].toLowerCase()+" PR attempt":G.w===lp?"Your max":"Under your max"}</span></div><button class="wbtn" id="wUp" aria-label="More weight">+</button></div>
-      <div class="wquick"><button id="wPR" ${G.w===lp?"class=on":""}>My PR · ${lp} kg</button><button id="wMax" ${G.w===lp+liftOver()?"class=on":""}>Max · ${lp+liftOver()} kg</button></div>
+      <div class="wquick"><button id="wPR" ${G.w===lp?"class=on":""}>My PR · ${lp} kg</button><button id="wMax" class="${S.liftMax?"on lock":""}">${S.liftMax?"🔒 Max on":"Max"} · ${lp+liftOver()} kg</button></div>
       <div class="meter" id="meter"><i class="zone" id="zone" style="left:${G.z[0]*100}%;width:${(G.z[1]-G.z[0])*100}%"></i><i class="needle" id="needle"></i></div>
       <button class="bigbtn" id="liftBtn">Lift ${G.w} kg<small>Tap in the green · ${cost} energy${S.protein>0?" · protein":""}${S.buffs&&S.buffs.fed>0?" · well fed":""}${S.awake>20?" · tired, smaller zone":""}</small></button>
       <div class="sechead"><h3>Physique</h3><span class="eyebrow">Mirror check</span></div>${physiqueCard()}
@@ -1262,11 +1286,11 @@ function liftPanel(l0){
       <p class="fine">Each lift has its own PR, and you can try up to ${liftOver()} kg over it${S.spurts?" thanks to muscle memory":""}. Your strength perks use your best lift. Your total of all three counts at powerlifting meets in the Arena.</p></div>`;
     $("gBack").onclick=closePanel;
     const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+liftOver());newZone();draw()};
-    P.querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+5;newZone();draw()});
-    $("wDown").onclick=()=>setW(G.w-2.5);$("wUp").onclick=()=>setW(G.w+2.5);{let armed=false;const sb=$("gSpurt");sb.onclick=()=>{if(S.pr<spurtReq())return;if(!armed){armed=true;sb.innerHTML="Tap again to grow<small>All lifts reset to 20 kg</small>";SFX.hot();return}
+    P.querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+(S.liftMax?liftOver():5);newZone();draw()});
+    $("wDown").onclick=()=>{S.liftMax=0;setW(G.w-2.5)};$("wUp").onclick=()=>{S.liftMax=0;setW(G.w+2.5)};{let armed=false;const sb=$("gSpurt");sb.onclick=()=>{if(S.pr<spurtReq())return;if(!armed){armed=true;sb.innerHTML="Tap again to grow<small>All lifts reset to 20 kg</small>";SFX.hot();return}
       const g=spurtGain();S.height=(S.height||170)+g;S.spurts=(S.spurts||0)+1;S.lifts={bench:20,squat:20,dead:20};syncPR();G.w=25;newZone();dirty=true;
       SFX.rebirth();flash("#4fe3ff",.55);confetti(220,null,null,["#4fe3ff","#ffffff","#ffcc33","#2fd28a"]);shake(10,.6);buzz([40,40,80,40,160]);banner("GROWTH SPURT","u");banner("+"+g+" cm · "+S.height+" cm","g");if(GS)gymPop(GS.px,GS.py-90,"+"+g+" CM","#4fe3ff",{life:2.2});draw();updMini();renderHud()}}
-    $("wMax").onclick=()=>setW(S.lifts[G.lift]+liftOver());$("wPR").onclick=()=>setW(S.lifts[G.lift]);
+    $("wMax").onclick=()=>{S.liftMax=S.liftMax?0:1;dirty=true;setW(S.liftMax?S.lifts[G.lift]+liftOver():S.lifts[G.lift])};$("wPR").onclick=()=>{S.liftMax=0;setW(S.lifts[G.lift])};
     $("liftBtn").onclick=e=>{audioOn();if(G.busy)return;if(!spend(liftCost(G.w),e.currentTarget))return;
       const ok=G.pos>=G.z[0]&&G.pos<=G.z[1];G.busy=true;
       const bar=$("liftBar");
@@ -1276,7 +1300,7 @@ function liftPanel(l0){
         else floatAt(e.currentTarget,"Clean lift","var(--up)")}
       else{$("gArt").classList.add("fail");SFX.nope();buzz([30,40,30]);floatAt(e.currentTarget,"Failed the lift","var(--down)")}
       dirty=true;updMini();
-      setTimeout(()=>{if(!G)return;G.busy=false;const lp2=S.lifts[G.lift];if(ok&&G.w>=lp2&&G.w<lp2+liftOver())G.w=Math.min(lp2+liftOver(),G.w+2.5*(1+(S.spurts||0)));newZone();draw()},ok?650:550);
+      setTimeout(()=>{if(!G)return;G.busy=false;const lp2=S.lifts[G.lift];if(S.liftMax)G.w=lp2+liftOver();else if(ok&&G.w>=lp2&&G.w<lp2+liftOver())G.w=Math.min(lp2+liftOver(),G.w+2.5*(1+(S.spurts||0)));newZone();draw()},ok?650:550);
     };
   };draw();
 }
@@ -1286,6 +1310,55 @@ function gymTick(dt){
   G.pos+=G.dir*sp*dt;if(G.pos>1){G.pos=1;G.dir=-1}if(G.pos<0){G.pos=0;G.dir=1}
   const n=$("needle");if(n)n.style.left=(G.pos*100)+"%";
 }
+/* ---------- empire upgrades: big-money sinks that reach a quadrillion ---------- */
+const EMPIRE=[
+ {k:"ai",t:"AI pricing bot",d:"+10% on every sale per level",cost:l=>1e6*Math.pow(7,l),max:8},
+ {k:"sec",t:"Private security",d:"Fakes and scams 15% rarer per level",cost:l=>5e6*Math.pow(9,l),max:5},
+ {k:"factory",t:"Sneaker factory",d:"Pays you every minute, more per level",cost:l=>2e7*Math.pow(6,l),max:10},
+ {k:"media",t:"Media empire",d:"+2,000 fans a minute per level, sponsors pay +25%",cost:l=>1e8*Math.pow(8,l),max:6},
+ {k:"space",t:"Space tourism",d:"Flip Tower income +50% per level",cost:l=>1e11*Math.pow(10,l),max:4},
+ {k:"moon",t:"Moon base",d:"Everything pays double. The final flex.",cost:()=>1e15,max:1}];
+const emp=k=>(S&&S.emp&&S.emp[k])||0;
+const secK=()=>Math.max(.2,1-.15*emp("sec"));
+const factoryRate=()=>{let r=0;for(let i=0;i<emp("factory");i++)r+=2e7*Math.pow(6,i)*.004;return r*moonK()};
+let empT=0;
+function empTick(dt){empT+=dt;if(empT<30)return;empT=0;const f=Math.round(factoryRate()/2);if(f>0){earn(f);if(!room)banner("Factory +"+fmt(f),"u")}if(emp("media")){S.fans=(S.fans||0)+1000*emp("media");dirty=true}}
+function empireList(){return EMPIRE.map(u=>{const l=emp(u.k),mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic emp${mx?" own":""}" data-emp="${u.k}" ${mx||c>S.cash?"disabled":""}><span class="t">${u.t}${u.max>1?`<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${u.d}${u.k==="factory"&&l?` · now ${fmt(factoryRate())}/min`:""}</span><span class="c">${mx?"Owned":fmt(c)}</span></button>`}).join("")}
+function bindEmpire(redraw){$("room").querySelectorAll("[data-emp]").forEach(b=>b.onclick=()=>{const u=EMPIRE.find(x=>x.k===b.dataset.emp),l=emp(u.k);if(l>=u.max)return;const c=u.cost(l);if(S.cash<c)return;S.cash-=c;S.emp=S.emp||{};S.emp[u.k]=l+1;dirty=true;
+  const bc=elC(b);if(bc)sparks(bc[0],bc[1],"#cf9a14",30,1.3);SFX.rebirth();buzz([20,30,40]);if(u.k==="moon"||l+1===u.max){flash("#ffcc33",.5);confetti(220);shake(10,.6)}else{confetti(60);shake(4)}banner(u.t+(u.max>1?" "+(l+1):""),"g");redraw();updMini()})}
+
+/* ---------- town life: traffic, birds, fountain ---------- */
+const TRAFFIC=[];
+(function(){const cols=["#e2364a","#2a5bd7","#f2f2f2","#1b1f2a","#ffcc33","#2bb3a3","#8f52d4","#ff7a3d"];
+  // ring road loop (clockwise outer lane, counter-clockwise inner lane), downtown streets
+  for(let i=0;i<4;i++)TRAFFIC.push({k:"ring",t:i/4,sp:rnd(.018,.026),dir:i%2?1:-1,c:cols[i]});
+  for(let i=0;i<3;i++)TRAFFIC.push({k:"dh",t:Math.random(),sp:rnd(.05,.08),dir:i%2?1:-1,c:cols[i+4]});
+  for(let i=0;i<2;i++)TRAFFIC.push({k:"dv",t:Math.random(),sp:rnd(.05,.08),dir:i%2?1:-1,c:cols[(i+6)%8]});})();
+function trafficPos(v){
+  if(v.k==="ring"){const lane=v.dir>0?232:268,x0=lane,y0=lane,x1=1400-lane,y1=1400-lane,w=x1-x0,h=y1-y0,P=2*(w+h);let d=((v.t%1)+1)%1*P;
+    if(d<w)return[x0+d,y0,0];d-=w;if(d<h)return[x1,y0+d,Math.PI/2];d-=h;if(d<w)return[x1-d,y1,Math.PI];d-=w;return[x0,y1-d,-Math.PI/2]}
+  if(v.k==="dh"){const y=v.dir>0?1172:1208,x=1400+((v.t%1)+1)%1*1200;return v.dir>0?[x,y,0]:[2600-(x-1400),y,Math.PI]}
+  const x=v.dir>0?1985:2015,y=40+((v.t%1)+1)%1*1360;return v.dir>0?[x,y,Math.PI/2]:[x,1400-(y-40),-Math.PI/2];
+}
+function drawTraffic(dt){
+  const nA=night();TRAFFIC.forEach(v=>{v.t+=v.sp*dt*(v.k==="ring"?1:.6);if(v.k!=="ring"&&!regionOpen("downtown"))return;const[x,y,a]=trafficPos(v);
+    if(x<cam.x-60||x>cam.x+vw+60||y<cam.y-60||y>cam.y+vh+60)return;const ang=v.k==="ring"&&v.dir<0?a+Math.PI:a;
+    ctx.save();ctx.translate(x,y);ctx.rotate(ang);
+    if(nA>.35){const g=ctx.createRadialGradient(40,0,0,40,0,46);g.addColorStop(0,`rgba(255,230,150,${.35*nA})`);g.addColorStop(1,"rgba(255,230,150,0)");ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(14,-6);ctx.lineTo(80,-26);ctx.lineTo(80,26);ctx.lineTo(14,6);ctx.fill()}
+    ctx.fillStyle="rgba(0,0,0,.25)";rr(-17,-8,36,19,6);ctx.fill();ctx.fillStyle=v.c;rr(-18,-9,36,18,6);ctx.fill();ctx.fillStyle="rgba(20,30,45,.8)";rr(2,-7,8,14,2);ctx.fill();rr(-12,-7,6,14,2);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.35)";ctx.fillRect(-6,-7,7,2);ctx.fillStyle="#ffe08a";ctx.fillRect(16,-7,2,4);ctx.fillRect(16,3,2,4);ctx.fillStyle="#e2364a";ctx.fillRect(-18,-7,2,3);ctx.fillRect(-18,4,2,3);ctx.restore()});
+}
+let birdT=12,BIRDS=null;
+function drawBirds(dt){
+  if(!BIRDS){birdT-=dt;if(birdT<=0){const y=cam.y+rnd(60,vh*.5),dir=Math.random()<.5?1:-1;BIRDS={x:dir>0?cam.x-80:cam.x+vw+80,y,dir,n:5+Math.floor(Math.random()*4),t:0}}return}
+  BIRDS.x+=BIRDS.dir*120*dt;BIRDS.t+=dt;if(BIRDS.x<cam.x-200||BIRDS.x>cam.x+vw+200||BIRDS.t>20){BIRDS=null;birdT=rnd(15,35);return}
+  ctx.strokeStyle=isDark()?"rgba(220,230,255,.6)":"rgba(30,35,50,.65)";ctx.lineWidth=2;ctx.lineCap="round";
+  for(let i=0;i<BIRDS.n;i++){const bx=BIRDS.x-BIRDS.dir*(Math.abs(i-BIRDS.n/2)*16),by=BIRDS.y+Math.abs(i-BIRDS.n/2)*10+i%2*3,f=Math.sin(BIRDS.t*10+i)*4;ctx.beginPath();ctx.moveTo(bx-7,by-f);ctx.quadraticCurveTo(bx-3,by-4,bx,by);ctx.quadraticCurveTo(bx+3,by-4,bx+7,by-f);ctx.stroke()}
+}
+function drawFountain(){const x=700,y=700;if(x<cam.x-60||x>cam.x+vw+60||y<cam.y-60||y>cam.y+vh+60)return;
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2+wt*.6,ph=(wt*1.6+i*.37)%1,r=4+ph*13,h=Math.sin(ph*Math.PI)*14;ctx.fillStyle=`rgba(210,240,255,${.85*(1-ph)})`;ctx.beginPath();ctx.arc(x+Math.cos(a)*r,y+Math.sin(a)*r*.55-h,1.8,0,7);ctx.fill()}
+  ctx.fillStyle="rgba(255,255,255,.85)";ctx.beginPath();ctx.ellipse(x,y-10-Math.sin(wt*5)*2,2.4,9,0,0,7);ctx.fill()}
+
 /* ---------- physique: each lift builds a different body part ---------- */
 function myBuild(){const L=S.lifts||{bench:20,squat:20,dead:20};return{c:clamp((L.bench-20)/180,0,1.4),l:clamp((L.squat-20)/240,0,1.4),b:clamp((L.dead-20)/280,0,1.4)}}
 function physiqueSVG(B){
@@ -1307,7 +1380,7 @@ function physiqueCard(){const B=myBuild(),bar=(n,v,src)=>`<div><span>${n}<em>${s
 const TENANTS=["Sneaker lounge","Card vault","Watch atelier","Rooftop gym","Trading floor","Sky café","Recording studio","VIP club","Art gallery","Penthouse suite","Toy museum","Vintage archive"];
 const TOWER_MS=[[10,"Helipad on the roof"],[25,"Glowing spire"],[50,"Sky beacon"],[100,"Gold crown"],[200,"Cloud piercer"]];
 const floorCost=i=>Math.round(50000*Math.pow(1.28,i));
-const towerRate=()=>{let r=0;for(let i=0;i<(S.tower||0);i++)r+=floorCost(i)*.005;return r*(S.toys&&S.toys.island?1.5:1)};
+const towerRate=()=>{let r=0;for(let i=0;i<(S.tower||0);i++)r+=floorCost(i)*.005;return r*(S.toys&&S.toys.island?1.5:1)*(1+.5*emp("space"))*moonK()};
 let towerT=0;
 function towerTick(dt){if(!S.tower)return;towerT+=dt;if(towerT<30)return;towerT=0;const v=Math.round(towerRate()/2);if(v>0){earn(v);if(!room)banner("Flip Tower +"+fmt(v),"u")}}
 function towerArt(){const n=S.tower||0,show=Math.min(n,24),fh_=Math.max(5,Math.min(12,150/Math.max(1,show)));let fl="";
@@ -1378,12 +1451,12 @@ function drawToys(){
 }
 
 /* ---------- the rich list: AI tycoons keep getting richer ---------- */
-const TYCOONS=[["Garage Gary",4e4],["Thrift Queen Tia",1.5e5],["Vince",5e5],["Lou Bianchi",2e6],["Mona Mint",8e6],["Sneakerhead Sato",2.5e7],["Duchess Vael",9e7],["Kingsley Croft",3e8],["Octavia Gold",1.2e9],["Marlon Vex",5e9],["Aurelia Stone",2e10],["The Baron",8e10],["Mr. Infinite",4e11]];
+const TYCOONS=[["Garage Gary",4e4],["Thrift Queen Tia",1.5e5],["Vince",5e5],["Lou Bianchi",2e6],["Mona Mint",8e6],["Sneakerhead Sato",2.5e7],["Duchess Vael",9e7],["Kingsley Croft",3e8],["Octavia Gold",1.2e9],["Marlon Vex",5e9],["Aurelia Stone",2e10],["The Baron",8e10],["Mr. Infinite",4e11],["Galactic Gail",3e12],["Neo Kaiser",2e13],["The Syndicate",1.5e14],["Omega Holdings",1e15],["Cosmo Rex",8e15],["The Architect",6e16]];
 const tycWorth=i=>TYCOONS[i][1]*Math.pow(1.004,S.richT||0);
 function netWorth(){let w=S.cash+(S.bank||0)+stashVal();VEH.forEach(v=>{if(S.veh&&S.veh[v.k])w+=v.cost*.7});w+=PROPS[S.home||0].cost*.8;for(let i=0;i<(S.tower||0);i++)w+=floorCost(i)*.6;TOYS.forEach(t=>{if(hasToy(t.k))w+=t.cost*.7});return w}
 const richRank=()=>{const w=netWorth();return 1+TYCOONS.filter((_,i)=>tycWorth(i)>w).length};
 let richT=0;
-function richTick(dt){S.richT=(S.richT||0)+dt/60;richT+=dt;if(richT<1.5)return;richT=0;const r=richRank();if(S.bestRank==null){S.bestRank=r;return}
+function richTick(dt){S.richT=(S.richT||0)+dt/60;richT+=dt;if(richT<1.5)return;richT=0;WT=clamp(.05+Math.max(0,Math.log10(Math.max(1,netWorth()))-4)*.022,.05,.3);const r=richRank();if(S.bestRank==null){S.bestRank=r;return}
   if(r<S.bestRank){const passed=TYCOONS.map((t,i)=>[t[0],tycWorth(i)]).filter(t=>t[1]<=netWorth()).sort((a,b)=>b[1]-a[1])[0];S.bestRank=r;dirty=true;
     setTimeout(()=>{banner(r===1?"RICHEST ON EARTH":"Rich list #"+r,"g");if(passed)rayTextFrom("Rich List","You just passed "+passed[0]+". You're now #"+r+" of "+(TYCOONS.length+1)+".");confetti(r===1?300:140);flash("#ffcc33",r===1?.6:.35);shake(r===1?14:7,.5);SFX.rebirth();gainCrate(r===1?5:1)},300)}}
 function richListHTML(){const w=netWorth(),rows=TYCOONS.map((t,i)=>({n:t[0],w:tycWorth(i)}));rows.push({n:"You",w,you:1});rows.sort((a,b)=>b.w-a.w);const me=rows.findIndex(r=>r.you);
@@ -1411,7 +1484,7 @@ const RIVAL_BB=["Rex Steel","Brick Mason","Titan Tom","Viktor Vain","Ox Ortiz","
 const fmtN=n=>n>=1e6?(n/1e6).toFixed(1).replace(/\.0$/,"")+"M":n>=1e3?(n/1e3).toFixed(1).replace(/\.0$/,"")+"K":String(Math.round(n));
 const sponsor=()=>{let s=null;SPONSORS.forEach(x=>{if((S.fans||0)>=x[0])s=x});return s};
 let spT=0;
-function sponsorTick(dt){const sp=sponsor();if(!sp)return;spT+=dt;if(spT<60)return;spT=0;const v=Math.round(sp[2]*(1+repLevel()*.1));earn(v);banner(sp[1]+" +"+fmt(v),"u")}
+function sponsorTick(dt){const sp=sponsor();if(!sp)return;spT+=dt;if(spT<60)return;spT=0;const v=Math.round(sp[2]*(1+repLevel()*.1)*(1+.25*emp("media")));earn(v);banner(sp[1]+" +"+fmt(v),"u")}
 function newBro(i,guest){const b=GYM_BROS[i%GYM_BROS.length],sp=G_SPOTS[(i*5)%G_SPOTS.length];
   return{build:{c:rnd(.1,1),l:rnd(.1,1),b:rnd(.1,1)},n:b[0],shirt:b[1],skin:G_SKINS[i%5],hair:G_HAIRS[(i*3)%5],size:rnd(1.02,1.28),x:guest?200:sp[0],y:guest?598:sp[1],tx:sp[0],ty:sp[1],act:"work",t:rnd(3,10),ph:rnd(0,7),slot:-1,popT:rnd(.8,2.5),guest:!!guest,mv:false}}
 function gymPop(x,y,txt,col,o={}){if(GS)GS.pops.push({x,y,txt,col,t:0,life:o.life||1.2,heart:o.heart,bubble:o.bubble,flash:o.flash})}
@@ -1696,13 +1769,14 @@ function openMall(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mall")}
       <div class="perks">${UPGRADES.map(u=>{const l=S.up[u.k],mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic${bk===u.k?" bought":""}" data-u="${u.k}" ${mx||c>S.cash?"disabled":""}>
         <span class="t">${u.t}${u.max>1?`<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${u.d}</span><span class="c">${mx?"Owned":fmt(c)}</span></button>`}).join("")}</div>
+      <div class="sechead"><h3>Empire upgrades</h3><span class="eyebrow">$1M to $1Qa</span></div><div class="perks">${empireList()}</div>
       <div class="sechead"><h3>Your shop</h3><span class="eyebrow">Sells from your stash</span></div>
       <div class="perks"><button class="perk nopic" id="shopRent" ${S.shop.open||S.cash<SHOP_RENT?"disabled":""}><span class="t">${S.shop.open?"✓ ":""}Rent a storefront</span><span class="d">Sells one stash item every 40 seconds at full value, even while you explore.</span><span class="c">${S.shop.open?"Open":fmt(SHOP_RENT)}</span></button>
       <button class="perk nopic" id="shopWorker" ${!S.shop.open||S.shop.worker||S.cash<SHOP_WORKER?"disabled":""}><span class="t">${S.shop.worker?"✓ ":""}Hire a shop worker</span><span class="d">Sells every 20 seconds instead.</span><span class="c">${S.shop.worker?"Hired":fmt(SHOP_WORKER)}</span></button></div>
       <div class="sechead"><h3>Vehicles</h3><span class="eyebrow">Kept forever</span></div><div class="perks">${vehList("mall")}</div>
       <p class="fine">Everything you buy here is yours to keep.</p></div>`;
     $("leaveBtn").onclick=closeRoom;
-    bindVeh(()=>draw());
+    bindVeh(()=>draw());bindEmpire(()=>draw());
     $("shopRent").onclick=()=>{if(S.shop.open||S.cash<SHOP_RENT)return;S.cash-=SHOP_RENT;S.shop.open=1;dirty=true;SFX.level();banner("Your shop is open","g");draw();updMini()};
     $("shopWorker").onclick=()=>{if(!S.shop.open||S.shop.worker||S.cash<SHOP_WORKER)return;S.cash-=SHOP_WORKER;S.shop.worker=1;dirty=true;SFX.level();banner("Worker hired","g");draw();updMini()};
     $("room").querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const u=UPGRADES.find(x=>x.k===b.dataset.u),l=S.up[u.k];if(l>=u.max||S.cash<u.cost(l))return;S.cash-=u.cost(l);S.up[u.k]++;SFX.level();dirty=true;const y=$("room").firstChild.scrollTop;draw(u.k);$("room").firstChild.scrollTop=y;updMini()});
@@ -2147,7 +2221,7 @@ const SHOP_RENT=5000,SHOP_WORKER=8000;
 let shopT=30;
 function shopTick(dt){
   if(!S.shop||!S.shop.open)return;shopT-=dt;if(shopT>0)return;shopT=S.shop.worker?20:40;
-  const i=S.stash.findIndex(x=>!x.fake);if(i<0||(M&&room==="market"))return;const it=S.stash[i],v=Math.round(valueOf(it)*mult());
+  const i=S.stash.findIndex(x=>!x.fake);if(i<0||(M&&room==="market"))return;const it=S.stash[i],v=Math.round(valueOf(it)*mult()*(1-WT));
   S.stash.splice(i,1);earn(v);S.stats.flips++;dirty=true;SFX.sell();banner("Your shop sold "+it.code+" +"+fmt(v),"u");if(M)renderStash();
 }
 /* ---------- side quests from people on the street ---------- */
@@ -2163,7 +2237,7 @@ function renderQChip(){const el=$("qChip"),q=S.quest;if(!q){el.hidden=true;retur
   el.innerHTML=`<span class="pk">Quest</span><span class="pt">${q.name}: ${CAT[q.cat].n} ≥ ${fmt(q.minV)}</span><span class="pr" style="color:${ok?"var(--up)":"var(--muted)"}">${ok?"Deliver":Math.ceil(q.left)+"s"}</span>`}
 const questItem=()=>{const q=S.quest;if(!q)return-1;let bi=-1,bv=0;S.stash.forEach((x,i)=>{if(x.cat===q.cat&&!x.fake){const v=valueOf(x);if(v>=q.minV&&(bi<0||v<bv)){bi=i;bv=v}}});return bi};
 $("qChip").onclick=()=>{const q=S.quest;if(!q)return;const i=questItem();if(i<0){rayTextFrom(q.name,`Still waiting on that ${CAT[q.cat].n.toLowerCase()} worth ${fmt(q.minV)}+. Fake ones don't count!`);return}
-  const it=S.stash[i],v=Math.round(valueOf(it)*q.m*mult());S.stash.splice(i,1);earn(v);S.stats.flips++;S.stats.quests=(S.stats.quests||0)+1;S.quest=null;dirty=true;SFX.rebirth();banner("Quest done +"+fmt(v),"g");if(M)renderStash();renderQChip()};
+  const it=S.stash[i],v=Math.round(valueOf(it)*q.m*mult()*(1-WT));S.stash.splice(i,1);earn(v);S.stats.flips++;S.stats.quests=(S.stats.quests||0)+1;S.quest=null;dirty=true;SFX.rebirth();banner("Quest done +"+fmt(v),"g");if(M)renderStash();renderQChip()};
 /* ---------- storage lots: blind bids on whole units ---------- */
 const BIDDERS=[
  {n:"Big Lou",c:"#e2364a",line:["Mine.","Don't even try.","Lou's buying."]},
@@ -2365,7 +2439,7 @@ const PERK_POOL=()=>[
  ...S.unlocked.map(c=>({k:"cat_"+c,t:CAT[c].n+" specialist",d:"+12% when selling "+CAT[c].n.toLowerCase()}))
 ];
 function levelCheck(){
-  const L=repLevel();if(S.lvlSeen==null)S.lvlSeen=L;
+  const L=repLevel();if(S.lvlSeen==null||S.lvlSeen>L)S.lvlSeen=L;
   if(L>S.lvlSeen){const old=S.lvlSeen,n=Math.floor(L/5)-Math.floor(old/5);S.lvlSeen=L;dirty=true;
     if(n>0){S.picks=(S.picks||0)+n;S.pickNew=1;SFX.rebirth();flash("#ffcc33",.45);confetti(160);shake(8,.5);buzz([30,40,30,40,80]);banner("LEVEL "+L,"u");setTimeout(()=>gainCrate(Math.min(n,5)),900)}
     else{SFX.level();buzz(15);confetti(30);banner("Level "+L,"g")}}
@@ -2374,11 +2448,11 @@ function levelCheck(){
 }
 function renderLvlBtn(){const b=$("lvlBtn");if(!b||!S)return;const on=S.picks>0&&$("perkSheet").hidden;b.hidden=!on;if(on)$("lvlN").textContent=S.picks}
 function closePerkSheet(){const sh=$("perkSheet");sh.hidden=true;sh.innerHTML="";S.pickNew=0;dirty=true;renderLvlBtn()}
-function makeOffer(){return PERK_POOL().sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=[1,2,3,5][t],cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}})}
+function makeOffer(){return PERK_POOL().filter(c=>pk(c.k)<pcap(c.k)).sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=[1,2,3,5][t],cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}})}
 // Use every waiting pick at once: each one takes a random card from its own set of 3
 function collectAllPerks(){
   const n=S.picks||0;if(n<=0)return;const got={};let best=0;S.perks=S.perks||{};
-  for(let i=0;i<n;i++){const offer=i===0&&S.offer&&S.offer.length===3?S.offer:makeOffer(),c=pick(offer);S.perks[c.k]=(S.perks[c.k]||0)+c.m;best=Math.max(best,c.rt);
+  for(let i=0;i<n;i++){const offer=i===0&&S.offer&&S.offer.length?S.offer:makeOffer(),c=offer.length?pick(offer):null;if(!c){earn(Math.round(5000*(1+repLevel())));continue}S.perks[c.k]=Math.min(pcap(c.k),(S.perks[c.k]||0)+c.m);best=Math.max(best,c.rt);
     const g=got[c.k]||(got[c.k]={t:c.t,m:0,rt:0});g.m+=c.m;g.rt=Math.max(g.rt,c.rt)}
   S.picks=0;S.offer=null;S.pickNew=0;dirty=true;
   const o=$("perkSheet"),list=Object.values(got).sort((a,b)=>b.rt-a.rt||b.m-a.m);
@@ -2389,12 +2463,12 @@ function collectAllPerks(){
   const c=elC(o)||[fxW/2,fxH*.7];SFX.crit(Math.max(1,best));buzz([30,30,60]);sparks(c[0],c[1],RAR[best].c,30+best*15,1.2+best*.3);confetti(60+best*60+Math.min(100,n*8));if(best>=2){flash(RAR[best].c,.35);shake(4*best,.4)}banner(n+" perks collected","a");renderLvlBtn();
 }
 function showPerkPick(){
-  const valid=S.offer&&S.offer.length===3&&S.offer.every(c=>PERK_POOL().some(x=>x.k===c.k));const pool=valid?S.offer:S.offer=makeOffer(),o=$("perkSheet");o.hidden=false;renderLvlBtn();if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
+  const valid=S.offer&&S.offer.length>0&&S.offer.every(c=>PERK_POOL().some(x=>x.k===c.k));const pool=valid?S.offer:S.offer=makeOffer(),o=$("perkSheet");o.hidden=false;renderLvlBtn();if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
   o.innerHTML=`<div class="pshead"><div><small>LEVEL ${repLevel()} · PICK A PERK${S.picks>1?" · "+S.picks+" TO PICK":""}</small><b>Level up</b></div><button class="psx" id="psClose" aria-label="Later">✕</button></div>
     <div class="pcards">${pool.map((c,i)=>`<button class="pcard r${c.rt}" data-pc="${i}"><span class="rl" style="color:${RAR[c.rt].c}">${RAR[c.rt].n}${c.m>1?" ×"+c.m:""}</span><b>${c.t}</b><span>${c.d}</span><span class="pn">${pk(c.k)?"Lv "+(pk(c.k)+c.m):"New"}</span></button>`).join("")}</div>
     ${S.picks>1?`<button class="cta ghost psall" id="psAll">Collect all ${S.picks} · random picks</button>`:""}<p class="fine">Close it to pick later. Tap the gold star any time.</p>`;
   $("psClose").onclick=closePerkSheet;const pa=$("psAll");if(pa)pa.onclick=collectAllPerks;
-  o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};S.perks[c.k]=(S.perks[c.k]||0)+c.m;S.picks--;dirty=true;SFX.level();buzz(15);const bc=elC(b);if(bc)sparks(bc[0],bc[1],RAR[c.rt].c,20+c.rt*15,1+c.rt*.3);if(c.rt>=2){confetti(60*c.rt);shake(4*c.rt)}banner(c.rt?RAR[c.rt].n+" "+c.t:c.t,"a");S.offer=null;closePerkSheet();if(S.picks>0){S.pickNew=1;setTimeout(()=>{if(!room)showPerkPick()},450)}renderHud();bKey=""});
+  o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};S.perks[c.k]=Math.min(pcap(c.k),(S.perks[c.k]||0)+c.m);S.picks--;dirty=true;SFX.level();buzz(15);const bc=elC(b);if(bc)sparks(bc[0],bc[1],RAR[c.rt].c,20+c.rt*15,1+c.rt*.3);if(c.rt>=2){confetti(60*c.rt);shake(4*c.rt)}banner(c.rt?RAR[c.rt].n+" "+c.t:c.t,"a");S.offer=null;closePerkSheet();if(S.picks>0){S.pickNew=1;setTimeout(()=>{if(!room)showPerkPick()},450)}renderHud();bKey=""});
 }
 /* ---------- market (the reselling floor) ---------- */
 let M=null,hold=null;
@@ -2408,7 +2482,7 @@ const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>valueOf(s)*mult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*(S.buffs&&S.buffs.hype>0?1.3:1)*(1+.12*pk("cat_"+s.cat));
+const sellValue=s=>valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*(S.buffs&&S.buffs.hype>0?1.3:1)*(1+.12*pk("cat_"+s.cat)));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 function newListing(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
@@ -2426,10 +2500,10 @@ function newListing(){
   const it=pick(affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
   const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
   const steal=Math.random()<MC().steal*(1+.15*pk("steal")),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
-  const fake=steal&&Math.random()<MC().fake;
+  const fake=steal&&Math.random()<MC().fake*secK()*(1+WT*1.5);
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
-  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r)),price:Math.max(5,Math.round(mv*r)),life,left:life,fake,rating};
+  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.9))),price:Math.max(5,Math.round(mv*r*(1+WT*.9))),life,left:life,fake,rating};
 }
 function openBox(price){
   const jackpot=Math.random()<.07;
@@ -2449,7 +2523,7 @@ function openMarket(cfg){
     <div class="news"><span class="live">LIVE</span><span id="news"></span></div>
     <div id="event" class="collector"></div>
     <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
-    <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
+    <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
   const m=$("market");slotEls.length=0;slotKeys=[];
   for(let i=0;i<3;i++){const el=document.createElement("div");el.className="lst";el.dataset.i=i;el.tabIndex=0;m.appendChild(el);slotEls.push(el)}
   m.addEventListener("pointerdown",e=>{const el=e.target.closest(".lst");if(!el)return;const i=+el.dataset.i,l=M.market[i];if(!l||l.gone)return;e.preventDefault();audioOn();hold={i,id:l.id,t0:performance.now(),active:false,acc:0};try{el.setPointerCapture(e.pointerId)}catch(_){}});
@@ -2550,7 +2624,7 @@ const nextBid=a=>a.bid+Math.max(5,Math.round(a.bid*.08/5)*5);
 function spawnEvent(){
   if(M.auctionT<=0){M.auctionT=rnd(70,120);return startAuction()}
   if(S.stash.length&&Math.random()<.42){
-    const s=pick(S.stash),v=valueOf(s)*mult(),scam=Math.random()<(hasStr(50)?.09:.18);
+    const s=pick(S.stash),v=valueOf(s)*mult()*(1-WT),scam=Math.random()<(hasStr(50)?.09:.18)*secK()*(1+WT);
     M.ev={id:S.nextId++,type:"offer",item:s,amt:Math.round(scam?Math.max(v,s.paid)*rnd(2.2,3):v*rnd(.85,1.45)),scam,left:5.5,dur:5.5,who:scam?"New account · gift card":`★${rnd(4.6,5).toFixed(1)} buyer`};SFX.news();buzz(15);return;
   }
   M.ev={id:S.nextId++,type:"collector",cat:pick(S.unlocked),left:6,dur:6};SFX.hot();buzz(20);renderStash();
@@ -2624,8 +2698,8 @@ function loop(now){
           if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(S.job)jobArrive();if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
       drift+=dt;
       if(drift>=.5){drift=0;
-        CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.055,.055)+(1-S.trend[c.k])*.035,.5,1.85)});
-        if(Math.random()<.045){const k=pick(S.unlocked),boom=Math.random()<.55;S.trend[k]=boom?Math.min(1.85,S.trend[k]+.4):Math.max(.5,S.trend[k]-.35);
+        CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.075,.075)+(1-S.trend[c.k])*.03,.4,1.85)});
+        if(Math.random()<.06){const k=pick(S.unlocked),boom=Math.random()<.5;S.trend[k]=boom?Math.min(1.85,S.trend[k]+.4):Math.max(.4,S.trend[k]-.45);
           if(M){setNews(`<b class="${boom?"u":"d"}">${CAT[k].n} ${boom?"▲":"▼"}</b> ${pick(NEWS[k][boom?0:1])}`);M.newsT=5;SFX.news()}}
         CATS.forEach(c=>{const h=S.hist[c.k];h.push(S.trend[c.k]);h.shift()});
         if(M)renderStash();
@@ -2633,7 +2707,7 @@ function loop(now){
       if(M)marketTick(dt,now);
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
-      sponsorTick(dt);towerTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="storage")lotTick(dt);
       findsTick(dt);jobTick(dt);rivalTick(dt);
