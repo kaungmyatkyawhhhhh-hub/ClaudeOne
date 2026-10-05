@@ -337,6 +337,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .swrow{display:flex;flex-wrap:wrap;gap:8px}
 .setrow .tog{grid-row:1/3;grid-column:2;align-self:center;padding:0;width:46px;height:26px;border-radius:13px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line);position:relative;flex:none;transition:background .15s}.setrow .tog i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}.setrow .tog.on{background:#2fd28a}.setrow .tog.on i{left:23px}
 .djart{background:#0c0a14}.djpads{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.djpads button{height:74px;border:0;border-radius:18px;background:radial-gradient(circle,var(--pc) 0 30%,color-mix(in oklab,var(--pc) 35%,#141024) 31%);box-shadow:0 0 18px -4px var(--pc);touch-action:manipulation;cursor:pointer}.djpads button:active{transform:scale(.95);filter:brightness(1.3)}
+.kidgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px}.kidcard{border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);padding:10px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}.kidcard small{font:600 .7rem var(--mono);color:var(--muted)}.kidcard select{margin-top:6px;width:100%;border-radius:10px;padding:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 .74rem var(--body)}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -978,6 +979,7 @@ const ACH=[
  ["tourist","Tourist","Try 10 local experiences",()=>(S.stats.exps||0)>=10,2e6],
  ["djstar","Headliner","Get an S grade on a DJ set",()=>(S.stats.djS||0)>=1,1e6],
  ["hunter","Chest hunter","Win 5 golden chest races online",()=>(S.stats.chests||0)>=5,1e6],
+ ["parent","Family","Start a family",()=>(S.stats.kids||0)>=1,300000],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -1350,7 +1352,7 @@ function drawWorld(){
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:mySkin(),hair:myHair(),hs:myHs(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
-  mpPeople(ppl);drawPartner(ppl);drawPet(ppl);
+  mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   mpTags();
   drawToys();drawBirds(1/60);
@@ -1922,7 +1924,7 @@ function openHome(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
       <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
-      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button><button class="bigbtn alt" id="lookBtn">Wardrobe<small>Skin and hair</small></button><button class="bigbtn alt" id="setBtn">Settings<small>Effects, help</small></button></div>
+      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button><button class="bigbtn alt" id="lookBtn">Wardrobe<small>Skin and hair</small></button><button class="bigbtn alt" id="setBtn">Settings<small>Effects, help</small></button>${S.partner&&S.partner.married?`<button class="bigbtn alt" id="famBtn">Family<small>${(S.kids||[]).length} kid${(S.kids||[]).length===1?"":"s"}</small></button>`:""}</div>
       ${dailyCard()}${missCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -1946,7 +1948,7 @@ function openHome(){
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="lbtabs">${[["ready","Ready ("+ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+")"],["todo","To do"],["done","Done"],["all","All"]].map(([k,n])=>`<button class="${achF===k?"on":""}" data-achf="${k}">${n}</button>`).join("")}</div>
       <div class="perks">${ACH.filter(a=>{const done=S.ach[a[0]],ready=!done&&a[3]();return achF==="all"||(achF==="ready"&&ready)||(achF==="todo"&&!done&&!ready)||(achF==="done"&&done)}).map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")||`<p class="fine">Nothing here right now.</p>`}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});$("setBtn").onclick=()=>openSettings(()=>{room="home";draw()});bindMiss(draw);
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});$("setBtn").onclick=()=>openSettings(()=>{room="home";draw()});const fmb=$("famBtn");if(fmb)fmb.onclick=()=>openFamily(()=>{room="home";draw()});bindMiss(draw);
     $("room").querySelectorAll("[data-achf]").forEach(b=>b.onclick=()=>{achF=b.dataset.achf;draw()});
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
@@ -3250,13 +3252,14 @@ const bizCost=(t,c)=>Math.round(BIZ[t].cost*CTRY(c).bz);
 const bizExp=b=>Math.round(bizCost(b.t,b.c)*.55*Math.pow(1.6,b.lv-1));
 const bizMgrCost=b=>Math.round(bizCost(b.t,b.c)*.2);
 const bizRenoCost=b=>Math.round(bizCost(b.t,b.c)*.06*b.lv);
-const bizInc=b=>BIZ[b.t].inc*Math.pow(CTRY(b.c).bz,.85)*Math.pow(1.42,b.lv-1)*(.5+b.rep/100*.8)*PRICE_T[b.p][1]*(b.promo>Date.now()?1.6:1)*(b.strike>Date.now()?.5:1)*(b.closed>Date.now()?0:1)*(b.mgr?.9:1)*moonK();
+const bizInc=b=>BIZ[b.t].inc*Math.pow(CTRY(b.c).bz,.85)*Math.pow(1.42,b.lv-1)*(.5+b.rep/100*.8)*PRICE_T[b.p][1]*(b.promo>Date.now()?1.6:1)*(b.strike>Date.now()?.5:1)*(b.closed>Date.now()?0:1)*(b.mgr&&!bizKid(b)?.9:1)*moonK();
 const bizCap=b=>bizInc(b)*180;
+const bizKid=b=>!!(b.kid&&(S.kids||[]).some(k=>k.id===b.kid&&kidAge(k)>=14));
 function bizName(t,c){const P=BIZ_PRE[c]||BIZ_PRE.home,N=BIZ_NAMES[t];return pick(P)+" "+pick(N)}
 let bizT=0,bizPay=0,bizPayT=0;
 function bizTick(dt){bizT+=dt;if(bizT<1)return;bizT=0;const now=Date.now();
-  (S.biz||[]).forEach(b=>{let m=(now-(b.at||now))/60000;b.at=now;if(m<=0)return;m=Math.min(m,b.mgr?480:600);const v=bizInc(b)*m;
-    b.rep=clamp(b.rep+PRICE_T[b.p][2]*m,0,100);if(b.mgr)bizPay+=v;else b.till=Math.min(bizCap(b),(b.till||0)+v);b.made=(b.made||0)+v});
+  (S.biz||[]).forEach(b=>{let m=(now-(b.at||now))/60000;b.at=now;if(m<=0)return;const auto=b.mgr||bizKid(b);m=Math.min(m,auto?480:600);const v=bizInc(b)*m;
+    b.rep=clamp(b.rep+PRICE_T[b.p][2]*m,0,100);if(auto)bizPay+=v;else b.till=Math.min(bizCap(b),(b.till||0)+v);b.made=(b.made||0)+v});
   bizPayT+=1;if(bizPay>0&&(bizPayT>=30||bizPay>S.cash)){const v=Math.round(bizPay);bizPay=0;bizPayT=0;earn(v);if(!room)banner("Businesses +"+fmt(v),"u")}
   if(room==="biz"&&BZV){const t=$("bzTill"),i=$("bzInc"),r=$("bzRep");if(t)t.textContent=BZV.mgr?"Auto":fmt(BZV.till||0);if(i)i.textContent=fmt(bizInc(BZV))+"/min";if(r)r.textContent=Math.round(BZV.rep)}}
 const empireInc=()=>(S.biz||[]).reduce((a,b)=>a+bizInc(b),0);
@@ -4358,6 +4361,30 @@ function drawHunt(){if(!HUNT||room)return;const{x,y}=HUNT,b=Math.sin(wt*4)*3,pu=
   ctx.fillStyle=`rgba(255,204,51,${.18+.12*pu})`;ctx.beginPath();ctx.ellipse(x,y+4,34+pu*8,14+pu*3,0,0,7);ctx.fill();
   ctx.fillStyle="rgba(0,0,0,.25)";ctx.beginPath();ctx.ellipse(x,y+6,16,5,0,0,7);ctx.fill();ctx.fillStyle="#a0641c";rr(x-14,y-18+b,28,20,4);ctx.fill();ctx.fillStyle="#ffcc33";rr(x-15,y-22+b,30,9,4);ctx.fill();ctx.fillRect(x-2,y-14+b,4,8);
   ctx.fillStyle="#fff";for(let i=0;i<4;i++){const a=wt*2+i*1.57;ctx.globalAlpha=.6+.4*Math.sin(wt*5+i);ctx.fillRect(x+Math.cos(a)*24,y-14+Math.sin(a)*12+b,2.5,2.5)}ctx.globalAlpha=1}
+
+/* ================= family: kids grow up over real days ================= */
+const KIDN=["Leo","Mia","Kai","Zoe","Max","Ivy","Sam","Luna","Ari","Nia"];
+const kidAge=k=>Math.floor((Date.now()-k.born)/864e5);
+const kidStage=k=>{const a=kidAge(k);return a<3?"Baby":a<7?"Toddler":a<14?"Kid":"Teen"};
+const babyCost=()=>Math.round(5e4*(1+SC()));
+function kidSVG(k){const st=kidStage(k),s=st==="Baby"?.55:st==="Toddler"?.7:st==="Kid"?.85:1,col=k.c;return `<svg viewBox="0 0 60 70" width="54" height="63" aria-hidden="true"><ellipse cx="30" cy="66" rx="${12*s}" ry="3" fill="rgba(0,0,0,.15)"/>${st==="Baby"?`<rect x="12" y="34" width="36" height="22" rx="8" fill="${col}"/><circle cx="30" cy="30" r="11" fill="${k.sk}"/><path d="M19 30 a11 11 0 0 1 22 0" fill="${k.hr}" opacity=".5"/><circle cx="26" cy="31" r="1.4" fill="#141824"/><circle cx="34" cy="31" r="1.4" fill="#141824"/><circle cx="30" cy="40" r="3" fill="#ff8fa3"/>`:`<rect x="${30-6*s}" y="${66-12*s}" width="${5*s}" height="${12*s}" fill="#262b3a"/><rect x="${31}" y="${66-12*s}" width="${5*s}" height="${12*s}" fill="#262b3a"/><rect x="${30-9*s}" y="${66-32*s}" width="${18*s}" height="${21*s}" rx="${5*s}" fill="${col}"/><circle cx="30" cy="${66-40*s}" r="${9*s}" fill="${k.sk}"/><path d="M${30-9*s} ${66-41*s} a${9*s} ${9*s} 0 0 1 ${18*s} 0" fill="${k.hr}"/><circle cx="${30-3*s}" cy="${66-40*s}" r="1.3" fill="#141824"/><circle cx="${30+3*s}" cy="${66-40*s}" r="1.3" fill="#141824"/>`}</svg>`}
+function openFamily(back){const p=S.partner;S.kids=S.kids||[];
+  const draw=()=>{const K=S.kids,cost=babyCost();
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Family")}
+      ${!p||!p.married?`<div class="note">Get married first (propose at the Café), then you can start a family.</div>`:`<div class="note">You and <b>${esc(p.n)}</b>. Kids grow up over real days: baby, toddler (3 days), kid (7 days, walks with you in town), teen (14 days, can run one of your businesses with no cut).</div>`}
+      <div class="kidgrid">${K.map((k,i)=>{const st=kidStage(k),today=k.play===dayKey();return `<div class="kidcard">${kidSVG(k)}<b>${esc(k.n)}</b><small>${st} · ${kidAge(k)} days</small><div class="petbtns"><button data-play="${i}" ${today?"disabled":""}>${today?"Played ❤":"Play"}</button><button data-kname="${i}">Rename</button></div>${st==="Teen"&&(S.biz||[]).length?`<select data-kjob="${i}"><option value="">No job</option>${S.biz.map(b=>`<option value="${b.id}" ${b.kid===k.id?"selected":""}>${esc(b.n)}</option>`).join("")}</select>`:""}</div>`}).join("")}</div>
+      ${p&&p.married&&K.length<3?`<button class="bigbtn" id="fBaby" ${S.cash<cost?"disabled":""}>Have a baby 👶<small>Hospital bills ${fmt(cost)}</small></button>`:""}
+      ${K.length?`<p class="fine">Playing with a kid once a day gives you full energy and 60 seconds of hype.</p>`:""}</div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    const fb=$("fBaby");if(fb)fb.onclick=()=>{if(S.cash<cost||S.kids.length>=3)return;S.cash-=cost;const id=Math.random().toString(36).slice(2,8);S.kids.push({id,n:pick(KIDN.filter(n=>!S.kids.some(k=>k.n===n))),born:Date.now(),c:pick(["#ff8fa3","#7fd6ff","#ffd166","#b8a1ff","#2fd28a"]),sk:Math.random()<.5?mySkin():(p.k||mySkin()),hr:Math.random()<.5?myHair():(p.h||myHair())});S.stats.kids=(S.stats.kids||0)+1;dirty=true;SFX.grail();confetti(200,null,null,["#ff8fa3","#7fd6ff","#fff"]);banner("It's a baby! Welcome "+S.kids[S.kids.length-1].n,"g");draw();updMini()};
+    $("room").querySelectorAll("[data-play]").forEach(b=>b.onclick=()=>{const k=S.kids[+b.dataset.play];if(k.play===dayKey())return;k.play=dayKey();S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,60);dirty=true;SFX.level();confetti(50,null,null,["#ff8fa3","#fff"]);banner("Played with "+k.n+" ❤","u");draw();updMini()});
+    $("room").querySelectorAll("[data-kname]").forEach(b=>b.onclick=()=>{const k=S.kids[+b.dataset.kname],v=prompt("Name",k.n);if(v!=null){const t=String(v).replace(/[<>]/g,"").trim().slice(0,14);if(t){k.n=t;dirty=true;draw()}}});
+    $("room").querySelectorAll("[data-kjob]").forEach(sel=>sel.onchange=()=>{const k=S.kids[+sel.dataset.kjob];(S.biz||[]).forEach(b=>{if(b.kid===k.id)b.kid=null});const b=(S.biz||[]).find(x=>x.id===sel.value);if(b){b.kid=k.id;banner(k.n+" now runs "+b.n,"u")}dirty=true;draw()})};draw()}
+// the oldest kid (7+ days) walks with you in town
+let KT=null;
+function drawKid(ppl){if(room||!S.kids||!S.kids.length)return;const k=S.kids.filter(x=>kidAge(x)>=7).sort((a,b)=>a.born-b.born)[0];if(!k)return;if(!KT)KT={x:S.px-20,y:S.py+10,ph:0};
+  const tx=S.px-20*Math.cos((S.hd||0)-.6),ty=S.py-10*Math.sin((S.hd||0)-.6)+12,dx=tx-KT.x,dy=ty-KT.y,d=Math.hypot(dx,dy),mv=d>5;if(d>500){KT.x=tx;KT.y=ty}else if(mv){const s=Math.min(d,walkSpeed()/60*1.06);KT.x+=dx/d*s;KT.y+=dy/d*s}KT.ph+=1/60;
+  const sz=kidStage(k)==="Teen"?.85:.68;ppl.push([KT.y,()=>drawPerson(KT.x,KT.y,{shirt:k.c,skin:k.sk,hair:k.hr,size:sz,tall:sz,mv,ph:KT.ph})])}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
