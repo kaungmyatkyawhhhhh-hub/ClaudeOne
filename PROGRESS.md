@@ -4,7 +4,7 @@ Short and current. The full build history (test steps, numbers, reasoning for ea
 `git log -p -- PROGRESS.md` or any commit before 6 Oct 2026.
 
 ## Workflow
-- **Roblox Studio is the source of truth** for scripts and builds. Rojo is not used.
+- **Roblox Studio is the source of truth** for scripts and builds.
 - **GitHub is a backup:** after each piece of work every script is exported from Studio into `src/`
   (`tools/export`, mirrors the Explorer), then committed and pushed.
 - **Save/publish the place in Studio after every session.** Studio edits (scripts, builds, lighting) exist only in

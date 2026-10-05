@@ -10,5 +10,7 @@
 .vscode/
 .DS_Store
 Thumbs.db
-sourcemap.json
 tools/.synclist
+
+# Overnight screenshots (local only)
+screenshots/

@@ -1,8 +1,7 @@
 # ClaudeOne
 
 GYM ARC, a Roblox game. **Roblox Studio is the source of truth** for scripts and builds; this repo is a backup.
-After each piece of work, every script is exported from Studio into `src/` (see `tools/export`) and pushed.
-Rojo is not used.
+After each piece of work, every changed script is exported from Studio into `src/` (see `tools/export`) and pushed.
 
 ## Layout (mirrors the Studio Explorer)
 

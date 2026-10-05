@@ -4,10 +4,10 @@
 - The game is **GYM ARC**, built in Roblox Studio on the owner's PC. The owner's design brief is `docs/DESIGN.md`
   (imported below; build exactly what it says, follow its working style). Build history and open items:
   `PROGRESS.md` (keep it short and current). Code map: `docs/GAME_OVERVIEW.md`.
-- **Roblox Studio is the source of truth** (scripts and builds). We do **not** use Rojo: ignore Rojo sync
-  instructions. Edit scripts and builds directly in Studio (local sessions use the Studio MCP connection).
-- **GitHub is backup only.** After each finished piece of work, export every script from Studio into `src/`
-  (`tools/export`, see below), then commit + push with a clear message.
+- No Rojo. Studio is the source of truth (edit through the MCP connection). GitHub is backup only (export changed
+  scripts to src/). Never suggest or set up Rojo.
+- After each finished piece of work, export the changed scripts from Studio into `src/` (`tools/export`, see below),
+  then commit + push with a clear message.
 - After any big change, remind the owner to **save/publish the place** in Studio. Never assume it's saved.
 - Cloud sessions can't reach Studio: they can only edit `src/`, and the owner must copy those changes into Studio.
   Say so clearly.
@@ -33,9 +33,9 @@
 ## Checks (run on the exported `src/` before every push)
 - `lune run tests/run_all` (logic tests, see `tests/README.md`).
 - Compile every script: `luau-compile --null <file>`.
-- Roblox type analysis (only lint warnings expected): `luau-lsp analyze --platform roblox --sourcemap sourcemap.json
-  --defs @roblox=globalTypes.None.d.luau src`. The sourcemap is generated from `default.project.json`, which is
-  kept only for this offline check (not for syncing).
+- Roblox type analysis (only lint warnings expected): `luau-lsp analyze --platform roblox
+  --defs @roblox=globalTypes.None.d.luau src`. Without a sourcemap, `require` paths aren't resolved, so
+  cross-module types show as `any`; that's expected.
 - Play in Studio and read Output: no new errors or warnings.
 - New server services go in `Main.server.luau`'s OPTIONAL_SERVICES list (started in protected calls).
 
@@ -57,5 +57,23 @@
   gear on characters, the skateboard, visiting legends, plates on bars) are fine in code.
 - Studio testing: Workspace attribute `FreshPlayer` (boolean) = play as a new player on unsaved temporary data;
   `ReplayTutorial` = replay the tutorial on your own save.
+
+## Art direction (every build follows this)
+Theme: sunny beach-side fitness town. Stylized-realistic, warm, clean, premium. Kids audience, so it should feel
+bright and inviting, not dark and empty.
+Banned "slop" signs (check every build against this list):
+- Plain single-part boxes used as buildings, furniture or objects
+- Flat untextured surfaces, default gray, everything the same material
+- Floating parts, gaps, z-fighting, parts clipping through each other
+- Big empty floors/walls with nothing on them
+- Gray void or a flat baseplate edge visible anywhere
+- Every object the same size and lined up in a perfect grid
+- Signs that are just a text box stuck on a wall
+Every object is made of several parts with real detail: trims, frames, bevels/edges, bases, small props. Reuse
+well-made templates (one great lamp used 30 times) instead of many bad ones.
+Creator Store: allowed ONLY for meshes/models made by Roblox or trusted creators that match the style. Delete ALL
+scripts inside any inserted model (free models can contain backdoors) and list what you inserted in the report.
+Performance: StreamingEnabled on, reasonable part counts, MeshParts for repeated detail, CastShadow off on small
+props. Must still run smoothly on a phone.
 
 @docs/DESIGN.md

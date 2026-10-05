@@ -1,7 +1,7 @@
 # Place snapshot
 
 - `GymArc.rbxlx`: the place saved from Studio on 4 Oct 2026 (binary format
-  despite the name), kept as a backup from before scripts moved into Rojo.
+  despite the name), kept as an old backup.
 - `TREE.md`: where everything sits in the place.
 
-Game scripts now live in `src/` and are synced into Studio by Rojo.
+Studio is the source of truth. `src/` holds scripts exported from Studio as a backup (`tools/export`).
