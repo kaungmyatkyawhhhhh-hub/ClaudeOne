@@ -643,13 +643,15 @@ const CATS=[
  {k:"toys",n:"Toys",h:210,conds:[["Sealed",1.1],["Loose",.7]],items:[["MB","Monster Blind Box",70],["BF","Bear Figure 400%",260],["AT","Art Toy Companion",480],["GA","Giant Art Toy 1000%",6500]]},
  {k:"tech",n:"Tech",h:262,conds:[["Sealed",1.1],["Open box",.88],["Used",.7]],items:[["BP","Buds Pro 2",160],["PC","Pocket Console OLED",260],["FP","Flagship Phone 14",620],["RC","Retro Compact Cam",1400],["PX","Prototype Console",4800]]},
  {k:"cards",n:"Cards",h:325,conds:[["PSA 10",1.4],["PSA 8",.8],["Raw",.5]],items:[["EM","Electric Mouse Promo",90],["RK","'03 Rookie Card",450],["FD","Fire Dragon Holo",900],["HL","'86 Hoops Legend",3800],["GR","1-of-1 Gold Rookie",16000]]},
- {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["SQ","Square Digital",110],["AD","Auto Diver",220],["HD","Heritage Diver",3200],["MC","Moon Chrono",5600],["PP","Platinum Perpetual",26000]]}
+ {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["SQ","Square Digital",110],["AD","Auto Diver",220],["HD","Heritage Diver",3200],["MC","Moon Chrono",5600],["PP","Platinum Perpetual",26000]]},
+ {k:"lux",n:"Luxury",h:45,conds:[["Mint",1.1],["Excellent",.95],["Estate",.8]],items:[["DN","Diamond Tennis Bracelet",18000],["SA","Sapphire Brooch",28000],["RG","Gold Chronograph 'Regent'",42000],["CG","Couture Evening Gown",24000],["CB","Crocodile Top-Handle Bag",65000],["GN","Gilded Grand Piano",150000],["PK","Pink Diamond Ring",240000],["JE","Jeweled Imperial Egg",480000],["OM","Old Master Painting",900000],["YN","Yellow Diamond Necklace",1200000]]}
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
 const POOL=CATS.flatMap(c=>c.items.map(i=>({cat:c.k,code:i[0],name:i[1],base:i[2]})));
 const START_CATS=["kicks","gym","vint"];
 const UNLOCK={toys:1500,tech:5000,cards:15000,watch:40000};
 const NEWS={
+ lux:[["A royal wedding has everyone buying jewels","Billionaires are bidding wars at auction"],["A luxury tax just passed","Old money is quietly selling off"]],
  kicks:[["A rapper wore them courtside","A surprise collab sold out in 3 minutes"],["The brand restocked everything","Fakes are flooding the market"]],
  gym:[["New Year's resolutions just kicked in","A fitness influencer's home gym went viral"],["Everyone quit their resolutions","Gyms are running a huge sign-up promo"]],
  vint:[["'90s revival on every runway","A celebrity thrift haul went viral"],["Fast fashion copied the look","Thrift TikTok moved on"]],
@@ -674,7 +676,7 @@ const PLACES=[
  {k:"airport",n:"Airport",c:"#3b6fd8",x:2150,y:1430,w:380,h:150,door:[2340,1580],region:"beach",sub:"Fly to Tokyo or Paris markets"},
  {k:"docks",n:"Docks Car Meet",c:"#4a5568",x:40,y:1440,w:200,h:130,door:[140,1570],region:"beach",sub:"Show off your cars and street race"},
  {k:"club",n:"Nightclub",c:"#7a2fd6",x:1700,y:1250,w:200,h:120,door:[1800,1370],region:"downtown",sub:"VIP tables for a selling boost"},
- {k:"lux",n:"Luxury Exchange",c:"#2b2f3a",x:1600,y:300,w:300,h:220,door:[1750,520],region:"downtown",sub:"High-end only, sales pay +25%"},
+ {k:"lux",n:"Luxury Exchange",c:"#2b2f3a",x:1600,y:300,w:300,h:220,door:[1750,520],region:"downtown",sub:"Diamonds, gold and fine art. Sales pay +30%"},
  {k:"tower",n:"Flip Tower",c:"#cf9a14",x:1700,y:880,w:150,h:200,door:[1775,1080],region:"downtown",sub:"Build your own skyscraper, floor by floor"},
  {k:"dealer",n:"Dealership",c:"#0f8fb3",x:2150,y:820,w:300,h:180,door:[2300,1000],region:"downtown",sub:"Scooters and sports cars"}
 ];
@@ -765,7 +767,7 @@ function newGame(){
   freshLife(false);
 }
 function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};if(d.trend&&d.hist)CATS.forEach(c=>{if(d.trend[c.k]==null){d.trend[c.k]=1;d.hist[c.k]=Array(40).fill(1)}});for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 // Reputation level grows forever from everything you earn; no resets
 // Each level needs 30% more lifetime earnings than the last
@@ -778,7 +780,7 @@ const PCAP={sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20
 const pcap=k=>PCAP[k]||30;
 const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S&&S.toys&&S.toys.statue?1.1:1)*(1+.005*cmOver())*(1+.1*emp("ai"));
 // Stacked bonuses have diminishing returns past x2, so money can't run away
-const capM=m=>m<=2?m:2+Math.log2(m/2)*1.6;
+const capM=m=>m<=3?m:3+Math.log2(m/3)*2.6;
 const moonK=()=>emp("moon")?2:1;
 const mult=()=>capM(rawMult())*moonK();
 let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
@@ -797,7 +799,7 @@ const STR_PERKS=[
 ];
 const hasStr=kg=>S.pr>=kg;
 // Heavy items need enough max lift to carry
-const HEAVY={KB:30,DB:40,RW:55,SB:65,PR:100,GA:45,PX:30};
+const HEAVY={GN:120,KB:30,DB:40,RW:55,SB:65,PR:100,GA:45,PX:30};
 const OPPS=[
  {n:"Skinny Steve",kg:30,bet:20,look:["#f3d0b5","#b5552b","#a68bd8"]},
  {n:"Gym Bro Brad",kg:60,bet:120,look:["#e8b896","#3b2a20","#ff7a3d"]},
@@ -1473,7 +1475,7 @@ const tycWorth=i=>TYCOONS[i][1]*Math.pow(1.004,S.richT||0);
 function netWorth(){let w=S.cash+(S.bank||0)+stashVal();VEH.forEach(v=>{if(S.veh&&S.veh[v.k])w+=v.cost*.7});w+=PROPS[S.home||0].cost*.8;for(let i=0;i<(S.tower||0);i++)w+=floorCost(i)*.6;TOYS.forEach(t=>{if(hasToy(t.k))w+=t.cost*.7});return w}
 const richRank=()=>{const w=netWorth();return 1+TYCOONS.filter((_,i)=>tycWorth(i)>w).length};
 let richT=0;
-function richTick(dt){S.richT=(S.richT||0)+dt/60;richT+=dt;if(richT<1.5)return;richT=0;WT=clamp(.05+Math.max(0,Math.log10(Math.max(1,netWorth()))-4)*.022,.05,.3);const r=richRank();if(S.bestRank==null){S.bestRank=r;return}
+function richTick(dt){S.richT=(S.richT||0)+dt/60;richT+=dt;if(richT<1.5)return;richT=0;WT=clamp(.02+Math.max(0,Math.log10(Math.max(1,netWorth()))-6)*.01,.02,.12);const r=richRank();if(S.bestRank==null){S.bestRank=r;return}
   if(r<S.bestRank){const passed=TYCOONS.map((t,i)=>[t[0],tycWorth(i)]).filter(t=>t[1]<=netWorth()).sort((a,b)=>b[1]-a[1])[0];S.bestRank=r;dirty=true;
     setTimeout(()=>{banner(r===1?"RICHEST ON EARTH":"Rich list #"+r,"g");if(passed)rayTextFrom("Rich List","You just passed "+passed[0]+". You're now #"+r+" of "+(TYCOONS.length+1)+".");confetti(r===1?300:140);flash("#ffcc33",r===1?.6:.35);shake(r===1?14:7,.5);SFX.rebirth();gainCrate(r===1?5:1)},300)}}
 function richListHTML(){const w=netWorth(),rows=TYCOONS.map((t,i)=>({n:t[0],w:tycWorth(i)}));rows.push({n:"You",w,you:1});rows.sort((a,b)=>b.w-a.w);const me=rows.findIndex(r=>r.you);
@@ -2507,7 +2509,7 @@ const MKT={market:{k:"market",n:"Market",steal:.18,fake:.28,box:.06,price:1,minB
  tokyo:{k:"tokyo",n:"Tokyo",steal:.2,fake:.15,box:.12,price:.9,minBase:0,sell:1,grail:.04,cat:{cards:1.45,toys:1.45,tech:1.2,kicks:.9}},
  paris:{k:"paris",n:"Paris",steal:.15,fake:.2,box:.05,price:.95,minBase:100,sell:1,grail:.05,cat:{vint:1.45,watch:1.35,kicks:1.15,toys:.85}},
  dubai:{k:"dubai",n:"Dubai",steal:.12,fake:.05,box:.04,price:1.1,minBase:300,sell:1.4,grail:.08,cat:{watch:1.25,tech:1.15}},
- lux:{k:"lux",n:"Luxury",steal:.1,fake:0,box:0,price:1.05,minBase:400,sell:1.25,grail:.07}};
+ lux:{k:"lux",n:"Luxury Exchange",steal:.14,fake:0,box:0,price:1,minBase:0,sell:1.3,grail:0}};
 const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
@@ -2527,13 +2529,14 @@ function newListing(){
     const ask=Math.max(10,Math.round(avg*rnd(.45,.7)/5)*5);
     return {...b0,kind:"mystery",cat:null,code:"?",name:"Mystery Box",cond:"Sealed",base:0,ask,price:ask,life,left:life,rating:rnd(4.4,5)};
   }
-  const it=pick(affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
+  const luxP=MC().k==="lux"?(()=>{const lp=POOL.filter(p=>p.cat==="lux"),cap=Math.max(30000,(S.cash+stashVal())*1.5),ok=lp.filter(p=>p.base<=cap);return ok.length?ok:lp.slice(0,3)})():null;
+  const it=pick(luxP||affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
   const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
   const steal=Math.random()<MC().steal*(1+.15*pk("steal")),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
-  const fake=steal&&Math.random()<MC().fake*secK()*(1+WT*1.5);
+  const fake=steal&&Math.random()<MC().fake*secK()*(1+WT*.5);
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
-  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.9))),price:Math.max(5,Math.round(mv*r*(1+WT*.9))),life,left:life,fake,rating};
+  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.4))),price:Math.max(5,Math.round(mv*r*(1+WT*.4))),life,left:life,fake,rating};
 }
 function openBox(price){
   const jackpot=Math.random()<.07;
@@ -2654,7 +2657,7 @@ const nextBid=a=>a.bid+Math.max(5,Math.round(a.bid*.08/5)*5);
 function spawnEvent(){
   if(M.auctionT<=0){M.auctionT=rnd(70,120);return startAuction()}
   if(S.stash.length&&Math.random()<.42){
-    const s=pick(S.stash),v=valueOf(s)*mult()*(1-WT),scam=Math.random()<(hasStr(50)?.09:.18)*secK()*(1+WT);
+    const s=pick(S.stash),v=valueOf(s)*mult()*(1-WT),scam=Math.random()<(hasStr(50)?.09:.18)*secK();
     M.ev={id:S.nextId++,type:"offer",item:s,amt:Math.round(scam?Math.max(v,s.paid)*rnd(2.2,3):v*rnd(.85,1.45)),scam,left:5.5,dur:5.5,who:scam?"New account · gift card":`★${rnd(4.6,5).toFixed(1)} buyer`};SFX.news();buzz(15);return;
   }
   M.ev={id:S.nextId++,type:"collector",cat:pick(S.unlocked),left:6,dur:6};SFX.hot();buzz(20);renderStash();
@@ -2728,8 +2731,8 @@ function loop(now){
           if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(S.job)jobArrive();if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
       drift+=dt;
       if(drift>=.5){drift=0;
-        CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.075,.075)+(1-S.trend[c.k])*.03,.4,1.85)});
-        if(Math.random()<.06){const k=pick(S.unlocked),boom=Math.random()<.5;S.trend[k]=boom?Math.min(1.85,S.trend[k]+.4):Math.max(.4,S.trend[k]-.45);
+        CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.06,.06)+(1-S.trend[c.k])*.035,.5,1.85)});
+        if(Math.random()<.05){const k=pick(S.unlocked),boom=Math.random()<.58;S.trend[k]=boom?Math.min(1.85,S.trend[k]+.45):Math.max(.5,S.trend[k]-.32);
           if(M){setNews(`<b class="${boom?"u":"d"}">${CAT[k].n} ${boom?"▲":"▼"}</b> ${pick(NEWS[k][boom?0:1])}`);M.newsT=5;SFX.news()}}
         CATS.forEach(c=>{const h=S.hist[c.k];h.push(S.trend[c.k]);h.shift()});
         if(M)renderStash();
@@ -2789,7 +2792,7 @@ function accForm(){
   $("aName").focus();$("aBack").onclick=()=>accScreen();
   $("aGo").onclick=()=>{const name=$("aName").value.trim(),pin=$("aPin").value.trim(),err=t=>{$("aErr").textContent=t;SFX.nope()};
     if(!name)return err("Type a name first.");if(accList().some(a=>a.name.toLowerCase()===name.toLowerCase()))return err("That name is taken on this device.");if(pin&&!/^\d{4}$/.test(pin))return err("PIN must be 4 digits.");
-    const a={id:newAccId(),name,created:Date.now(),last:Date.now()};if(pin)a.pin=pinHash(pin);const l=accList();l.push(a);accPut(l);accUse(a);newGame();save();SFX.level();title()};
+    const a={id:newAccId(),name,created:Date.now(),last:Date.now()};if(pin)a.pin=pinHash(pin);const l=accList();l.push(a);accPut(l);accUse(a);newGame();save();SFX.level();start(true)};
 }
 function accPin(a){
   const o=$("overlay");o.innerHTML=`<div class="sheet"><h2 class="h2"><small>${esc(a.name).toUpperCase()}</small>Enter your PIN.</h2>
