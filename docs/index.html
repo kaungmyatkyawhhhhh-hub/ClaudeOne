@@ -323,6 +323,8 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .shend{text-align:center;padding:16px 0}.shend>b{display:block;font:900 3.4rem var(--display)}
 @keyframes pulse{50%{transform:scale(1.08)}}
 .spart,.lart{padding:0;overflow:hidden}.spart svg{display:block;width:100%;height:auto}.lart canvas{display:block;width:100%;height:auto;max-height:52vh;object-fit:cover}.lbar{display:flex;gap:8px;align-items:center;font:700 .72rem var(--mono);margin:10px 0}.lbar i{flex:1;height:10px;border-radius:5px;background:var(--sunk);overflow:hidden}.lbar b{display:block;height:100%;width:0}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.tiles .bigbtn{padding:14px 8px;font-size:1.05rem;border-radius:16px}.tiles .bigbtn small{font-size:.66rem}
+.wnov{position:fixed;inset:0;z-index:58;background:rgba(10,12,20,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadein .25s}.wnsheet{width:min(100%,480px);max-height:86vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.3)}.wnsheet h2{font:900 1.6rem var(--display);margin:0 0 4px}.wnlist{display:flex;flex-direction:column;gap:8px;margin:12px 0}.wnlist div{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:inset 0 0 0 1px var(--line)}.wnlist i{font-style:normal;font-size:1.5rem;line-height:1}.wnlist b{display:block;font-size:.9rem}.wnlist small{color:var(--muted);font-size:.78rem}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -1891,7 +1893,7 @@ function openHome(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
       <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
-      <div class="bankbtns"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button></div>
+      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button></div>
       ${dailyCard()}${missCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -1939,7 +1941,7 @@ function openCafe(){
 function openMall(){
   const draw=bk=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mall")}
-      <div class="bankbtns"><button class="bigbtn alt" id="mBq">Boutique<small>Hats, shades, chains, capes</small></button><button class="bigbtn alt" id="mPets2">Pet shop<small>${PETS.length} pets</small></button></div>
+      <div class="tiles"><button class="bigbtn alt" id="mBq">Boutique<small>Hats, shades, chains, capes</small></button><button class="bigbtn alt" id="mPets2">Pet shop<small>${PETS.length} pets</small></button></div>
       <button class="bigbtn alt" id="mPets" hidden>Pet shop<small>${PETS.length} pets · each one has a perk</small></button>
       <div class="perks">${UPGRADES.map(u=>{const l=S.up[u.k],mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic${bk===u.k?" bought":""}" data-u="${u.k}" ${mx||c>S.cash?"disabled":""}>
         <span class="t">${u.t}${u.max>1?`<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${u.d}</span><span class="c">${mx?"Owned":fmt(c)}</span></button>`}).join("")}</div>
@@ -2041,7 +2043,7 @@ function openBank(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
-      <div class="bankbtns"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button></div>
+      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button></div>
       ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
     $("leaveBtn").onclick=closeRoom;
@@ -4018,6 +4020,21 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   $("room").innerHTML=`<div class="room-in">${roomHead("Mission report")}<div class="shend"><b>${good?"🚀":"💥"}</b><span>${good?d.n+" reached!":"Mission failed"}</span></div><div class="note">${esc(msg)}</div><button class="bigbtn" id="lBack">Back to the Spaceport<small>&nbsp;</small></button></div>`;
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
+/* ================= what's new: shown once after an update ================= */
+const WN_VER=3,WN=[
+ ["🏝️","Islands 2.0","Build villas, tiki bars, pools and hotels on your islands. Go fishing, dive for treasure, throw beach parties."],
+ ["✈️","13 cities","Fly to Tokyo, Paris, Vegas, Dubai, Monaco and more. Every city has its own market and a Prestige House for $50M–$100M pieces."],
+ ["🏨","Businesses","Buy apartments, bars, restaurants, condos, hotels and resorts. Expand them, set prices, handle events and work shifts."],
+ ["🎰","Casino","Slots, roulette and blackjack in Las Vegas and Monte Carlo."],
+ ["🐶","Pets & fashion","Adopt a pet that follows you, and wear hats, shades, chains and wings from the Boutique (Mall)."],
+ ["📈","Stock exchange","Trade 10 companies and earn dividends in the Trading Centre."],
+ ["🚀","Spaceport","At level 30: build a rocket at the Airport and fly it to the Moon and Mars."],
+ ["🎡","Daily stuff","Free prize wheel, daily missions, home interior, collection book and scratch cards."],
+ ["🤝","With friends","Player market, room leaderboard, see each other inside buildings and arm wrestle."]];
+function whatsNew(){if(!S||(S.flags&&S.flags.wn>=WN_VER)||S.tut!==99&&S.tut!=null&&S.tut<6)return;S.flags.wn=WN_VER;dirty=true;
+  const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><span class="eyebrow">Update</span><h2>What's new</h2><div class="wnlist">${WN.map(([i,t,d])=>`<div><i>${i}</i><span><b>${t}</b><small>${d}</small></span></div>`).join("")}</div><button class="cta" id="wnGo"><span>Let's go</span>${ARROW}</button></div>`;
+  document.body.appendChild(ov);const close=()=>{ov.remove();audioOn()};ov.querySelector("#wnGo").onclick=close;ov.onclick=e=>{if(e.target===ov)close()}}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4438,7 +4455,7 @@ function titleMain(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else setTimeout(whatsNew,900);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
