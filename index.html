@@ -667,7 +667,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -2543,6 +2543,7 @@ function renderRvChip(){const el=$("rvChip"),r=S.rival;if(!r){el.hidden=true;ret
   const have=r.t==="earn"?Math.max(0,S.stats.earnedAll-r.base):r.have,s=Math.max(0,Math.ceil(r.left));
   el.innerHTML=`<span class="pk">Vince</span><span class="pt">${r.txt}</span><span class="pr">${r.t==="earn"?Math.round(have/r.goal*100)+"%":have+"/"+r.goal} · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`}
 $("crateChip").onclick=()=>{audioOn();openCrate()};
+$("bzChip").onclick=()=>{audioOn();if(!room)openBizEvent(null)};
 $("rvChip").onclick=()=>{const r=S.rival;if(r)rayTextFrom("Vince",r.txt+". Reward "+fmt(r.rw)+". Clock's ticking.")};
 
 /* ---------- level-up perk cards ---------- */
@@ -2829,7 +2830,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);bizTick(dt);petTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);bizTick(dt);bizEvTick(dt);petTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="storage")lotTick(dt);
@@ -2839,7 +2840,7 @@ function loop(now){
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();tutTick(dt);
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderLvlBtn();renderPillTog()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderBzChip();renderLvlBtn();renderPillTog()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room)drawWorld();
@@ -3167,7 +3168,7 @@ const bizCost=(t,c)=>Math.round(BIZ[t].cost*CTRY(c).bz);
 const bizExp=b=>Math.round(bizCost(b.t,b.c)*.55*Math.pow(1.6,b.lv-1));
 const bizMgrCost=b=>Math.round(bizCost(b.t,b.c)*.2);
 const bizRenoCost=b=>Math.round(bizCost(b.t,b.c)*.06*b.lv);
-const bizInc=b=>BIZ[b.t].inc*Math.pow(CTRY(b.c).bz,.85)*Math.pow(1.42,b.lv-1)*(.5+b.rep/100*.8)*PRICE_T[b.p][1]*(b.promo>Date.now()?1.6:1)*(b.mgr?.9:1)*moonK();
+const bizInc=b=>BIZ[b.t].inc*Math.pow(CTRY(b.c).bz,.85)*Math.pow(1.42,b.lv-1)*(.5+b.rep/100*.8)*PRICE_T[b.p][1]*(b.promo>Date.now()?1.6:1)*(b.strike>Date.now()?.5:1)*(b.closed>Date.now()?0:1)*(b.mgr?.9:1)*moonK();
 const bizCap=b=>bizInc(b)*180;
 function bizName(t,c){const P=BIZ_PRE[c]||BIZ_PRE.home,N=BIZ_NAMES[t];return pick(P)+" "+pick(N)}
 let bizT=0,bizPay=0,bizPayT=0;
@@ -3305,12 +3306,14 @@ function openRealty(k,back){const c=CTRY(k),mine=(S.biz||[]).filter(b=>b.c===k);
   $("room").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const t=b.dataset.buy,cost=bizCost(t,k);if(S.cash<cost)return;S.cash-=cost;S.biz=S.biz||[];const id=Math.random().toString(36).slice(2,9);
     S.biz.push({id,t,c:k,n:bizName(t,k),lv:1,rep:60,p:1,mgr:0,till:0,at:Date.now(),inv:cost,made:0});dirty=true;SFX.rebirth();confetti(160,null,null,[BIZ_COL[t],"#fff","#ffcc33"]);shake(6);banner(BIZ[t].n+" bought","g");openBiz(id,()=>openRealty(k,back))});
   $("room").querySelectorAll("[data-biz]").forEach(b=>b.onclick=()=>openBiz(b.dataset.biz,()=>openRealty(k,back)));updMini()}
-function openBiz(id,back){const b=(S.biz||[]).find(x=>x.id===id);if(!b)return back();BZV=b;room="biz";
+function openBiz(id,back){const b=(S.biz||[]).find(x=>x.id===id);if(!b)return back();BZV=b;room="biz";$("room").hidden=false;
   const draw=()=>{const c=CTRY(b.c),T=BIZ[b.t],ex=bizExp(b),mc=bizMgrCost(b),rc=bizRenoCost(b),pc=Math.round(bizInc(b)*30),promo=b.promo>Date.now();
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(b.n))}
       <div class="art">${bizSVG(b)}</div>
       <div class="kv"><div><span class="eyebrow">Income</span><b id="bzInc">${fmt(bizInc(b))}/min</b></div><div><span class="eyebrow">Reputation</span><b><span id="bzRep">${Math.round(b.rep)}</span>/100</b></div><div><span class="eyebrow">Till</span><b id="bzTill">${b.mgr?"Auto":fmt(b.till||0)}</b></div><div><span class="eyebrow">Earned so far</span><b>${fmt(b.made||0)}</b></div></div>
       <p class="fine">${T.n} in ${c.n}${c.cn&&c.k!=="home"?", "+c.cn:""} · level ${b.lv}/${bizMaxLv}${promo?" · promo running":""}</p>
+      ${S.bzEv&&S.bzEv.id===b.id?`<button class="bigbtn alt2" id="bzDec">Decision needed<small>${esc(BZEV.find(e=>e.k===S.bzEv.k).t.replace("{n}",b.n))}</small></button>`:""}
+      ${b.closed>Date.now()?`<div class="note">Closed for repairs: ${Math.ceil((b.closed-Date.now())/60000)} min left.</div>`:b.strike>Date.now()?`<div class="note">Staff on strike: half income for ${Math.ceil((b.strike-Date.now())/60000)} more min.</div>`:""}
       ${b.mgr?"":`<button class="bigbtn" id="bzCol" ${(b.till||0)<1?"disabled":""}>Collect ${fmt(b.till||0)}<small>The till holds up to ${fmt(bizCap(b))} (3 hours)</small></button>`}
       <div class="sechead"><h3>Prices</h3><span class="eyebrow">Higher prices earn more but hurt reputation</span></div>
       <div class="seg3">${PRICE_T.map((p,i)=>`<button class="${b.p===i?"on":""}" data-pr="${i}">${p[0]}<small>${p[1]===1?"normal":(p[1]>1?"+":"−")+Math.round(Math.abs(p[1]-1)*100)+"%"} · rep ${p[2]>0?"↑":p[2]<-.5?"↓↓":"↓"}</small></button>`).join("")}</div>
@@ -3323,6 +3326,7 @@ function openBiz(id,back){const b=(S.biz||[]).find(x=>x.id===id);if(!b)return ba
         <button class="perk nopic" data-act="sell"><span class="t">Sell the business</span><span class="d">Get back 70% of what you put in</span><span class="c">${fmt(Math.round(b.inv*.7))}</span></button>
       </div></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{BZV=null;back()};
+    const dec=$("bzDec");if(dec)dec.onclick=()=>openBizEvent(()=>openBiz(id,back));
     const col=$("bzCol");if(col)col.onclick=()=>{const v=Math.round(b.till||0);if(v<1)return;b.till=0;earn(v);dirty=true;SFX.sell();confetti(60);banner("+"+fmt(v),"g");draw();updMini()};
     $("room").querySelectorAll("[data-pr]").forEach(x=>x.onclick=()=>{b.p=+x.dataset.pr;dirty=true;SFX.tick(.5);draw()});
     $("room").querySelectorAll("[data-act]").forEach(x=>x.onclick=()=>{const a=x.dataset.act;
@@ -3594,6 +3598,37 @@ function openPets(back){S.pets=S.pets||{};
     $("room").querySelectorAll("[data-walk]").forEach(b=>b.onclick=()=>{S.pet=b.dataset.walk;PET=null;dirty=true;SFX.tick(.6);draw()});
     $("room").querySelectorAll("[data-pat]").forEach(b=>b.onclick=()=>{const pd=S.pets[b.dataset.pat];if(pd.day===S.day)return;pd.day=S.day;pd.bond=Math.min(10,(pd.bond||0)+1);dirty=true;SFX.hot();buzz(10);confetti(30,null,null,["#ff4fd8","#ff9ad5","#fff"]);banner("Bond "+pd.bond+"/10 ❤","u");draw()})};draw()}
 
+/* ================= business events: something happens, you decide ================= */
+const BZEV=[
+ {k:"critic",for:["rest","bar","hotel"],t:"A food critic is coming to {n}",o:[["Comp their meal",.5,"rep",22,"They loved it. Reputation +22"],["Treat them like anyone",0,"gamble",[[.5,"rep",14,"Glowing review! Reputation +14"],[.5,"rep",-18,"Brutal review. Reputation −18"]]]]},
+ {k:"inspect",for:["rest","bar","hotel","resort"],t:"Health inspector at {n}",o:[["Deep clean first",.6,"rep",5,"Spotless. Reputation +5"],["Wing it",0,"gamble",[[.4,"rep",0,"Passed, barely"],[.6,"rep",-25,"Failed inspection. Reputation −25"]]]]},
+ {k:"celeb",for:["hotel","resort","condo","bar"],t:"A celebrity wants to book out {n}",o:[["Roll out the red carpet",.3,"cash",120,"Huge booking: 2 hours of income paid now, reputation +10"],["Turn them down",0,"rep",-3,"They went elsewhere"]]},
+ {k:"raise",for:["rest","bar","hotel","apt","condo","resort"],t:"Staff at {n} want a raise",o:[["Pay them",.8,"rep",10,"Happy staff. Reputation +10"],["Refuse",0,"strike",10,"They're on strike: half income for 10 min, reputation −10"]]},
+ {k:"pipe",for:["apt","condo","hotel","rest"],t:"A pipe burst at {n}",o:[["Fix it now",.5,"rep",0,"Fixed, no harm done"],["Leave it",0,"closed",10,"Closed for 10 minutes while it dries out"]]},
+ {k:"viral",for:["rest","bar","hotel","resort","condo","apt"],t:"{n} is going viral online",o:[["Post about it",0,"viral",15,"Promo on for 10 min, reputation +15"],["Ignore it",0,"rep",6,"Still a nice bump. Reputation +6"]]},
+ {k:"noise",for:["bar","apt"],t:"Neighbours complain about noise at {n}",o:[["Soundproof it",.6,"rep",8,"Peace restored. Reputation +8"],["Turn it up",0,"gamble",[[.5,"rep",5,"Best party in town. Reputation +5"],[.5,"rep",-15,"Noise fine and bad press. Reputation −15"]]]]},
+ {k:"wedding",for:["hotel","resort","rest"],t:"A billionaire wants their wedding at {n}",o:[["Host it",1,"cash",300,"The wedding of the year: 5 hours of income paid now"],["Too much work",0,"rep",-2,"They booked a rival"]]}];
+let bzEvT=rnd(150,280);
+function bizEvTick(dt){if(!S||!(S.biz||[]).length)return;if(S.bzEv){if(Date.now()-S.bzEv.at>8*60000){S.bzEv=null;dirty=true}return}bzEvT-=dt;if(bzEvT>0)return;bzEvT=rnd(180,360);
+  const b=pick(S.biz),pool=BZEV.filter(e=>e.for.includes(b.t));if(!pool.length)return;const e=pick(pool);S.bzEv={id:b.id,k:e.k,at:Date.now()};dirty=true;SFX.news();banner("Business: "+e.t.replace("{n}",b.n),"a")}
+function renderBzChip(){const el=$("bzChip");if(!el)return;const ev=S&&S.bzEv,b=ev&&(S.biz||[]).find(x=>x.id===ev.id);if(!b){el.hidden=true;return}el.hidden=false;el.style.setProperty("--ec","#cf9a14");
+  const e=BZEV.find(x=>x.k===ev.k),left=Math.max(0,Math.ceil((8*60000-(Date.now()-ev.at))/1000));el.innerHTML=`<span class="pk">${esc(b.n.split(" ")[0])}</span><span class="pt">${e.t.replace("{n}","").replace(/ +$/,"").replace(/^ +/,"")}</span><span class="pr">${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}</span>`}
+function openBizEvent(back){const ev=S.bzEv,b=ev&&(S.biz||[]).find(x=>x.id===ev.id);if(!b){S.bzEv=null;return back&&back()}const e=BZEV.find(x=>x.k===ev.k),hr=bizInc(b)*60;
+  if(!room){room="bizev";$("room").hidden=false;$("room").style.setProperty("--pc","#cf9a14")}
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Decision")}<div class="art">${bizSVG(b)}</div>
+    <div class="note"><b>${esc(e.t.replace("{n}",b.n))}.</b> ${BIZ[b.t].n} in ${CTRY(b.c).n} · reputation ${Math.round(b.rep)}.</div>
+    <div class="perks">${e.o.map((o,i)=>{const cost=Math.round(hr*o[1]);return `<button class="perk nopic" data-eo="${i}" ${S.cash<cost?"disabled":""}><span class="t">${o[0]}</span><span class="d">${o[2]==="gamble"?"Could go either way":o[2]==="cash"?"Big payday":o[2]==="strike"?"Saves money now":o[2]==="closed"?"Saves money now":o[2]==="viral"?"Free":"Reputation "+(o[3]>=0?"+":"")+o[3]}</span><span class="c">${cost?fmt(cost):"Free"}</span></button>`}).join("")}</div></div>`;
+  const done=()=>{S.bzEv=null;bzEvT=rnd(200,380);dirty=true;if(back)back();else closeRoom()};
+  $("leaveBtn").innerHTML=ARROW+"Later";$("leaveBtn").onclick=()=>{if(back)back();else closeRoom()};
+  $("room").querySelectorAll("[data-eo]").forEach(x=>x.onclick=()=>{const o=e.o[+x.dataset.eo],cost=Math.round(hr*o[1]);if(S.cash<cost)return;S.cash-=cost;let kind=o[2],v=o[3],msg=o[4];
+    if(kind==="gamble"){let r=Math.random();for(const g of v){if(r<g[0]){[,kind,v,msg]=g;break}r-=g[0]}}
+    if(kind==="rep")b.rep=clamp(b.rep+v,0,100);
+    if(kind==="cash"){const amt=Math.round(bizInc(b)*v);earn(amt);b.rep=clamp(b.rep+10,0,100);msg+=" · +"+fmt(amt)}
+    if(kind==="strike"){b.rep=clamp(b.rep-10,0,100);b.strike=Date.now()+v*60000}
+    if(kind==="closed")b.closed=Date.now()+v*60000;
+    if(kind==="viral"){b.promo=Date.now()+600000;b.rep=clamp(b.rep+v,0,100)}
+    const good=/\+|Passed|Fixed|Spotless|Peace|Happy/.test(msg)&&!/−/.test(msg);SFX[good?"level":"nope"]();if(good)confetti(50);banner(msg,good?"g":"r");updMini();done()})}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -3616,7 +3651,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
