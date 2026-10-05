@@ -698,15 +698,19 @@ const CAFE=[
 
 /* ================= sound ================= */
 let ac=null,muted=store.get("fliprush_muted")==="1";
-// iOS suspends (or "interrupts") audio when the app goes to the background; wake it on the next touch
+// iOS can leave audio dead after the app goes to the background (it may even still report "running").
+// So after any trip to the background, throw the old audio context away and build a fresh one on the next touch.
+let audioStale=false;
 function audioOn(){try{
-  if(ac&&(ac.state==="closed"||ac.state==="interrupted")){try{ac.close()}catch(e){}ac=null}
+  if(ac&&(audioStale||ac.state==="closed"||ac.state==="interrupted")){try{ac.close()}catch(e){}ac=null}
+  audioStale=false;
   if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();
-  if(ac.state!=="running"){const r=ac.resume();if(r&&r.catch)r.catch(()=>{});const b=ac.createBuffer(1,1,22050),src=ac.createBufferSource();src.buffer=b;src.connect(ac.destination);src.start(0)}
+  if(ac.state!=="running"){const r=ac.resume();if(r&&r.catch)r.catch(()=>{})}
+  const b=ac.createBuffer(1,1,22050),src=ac.createBufferSource();src.buffer=b;src.connect(ac.destination);src.start(0);
 }catch(e){ac=null}}
-["pointerdown","touchend","keydown"].forEach(ev=>document.addEventListener(ev,()=>{if(ac&&ac.state!=="running")audioOn()},true));
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&ac&&ac.state!=="running"){const r=ac.resume();if(r&&r.catch)r.catch(()=>{})}});
-addEventListener("pageshow",()=>{if(ac&&ac.state!=="running"){const r=ac.resume();if(r&&r.catch)r.catch(()=>{})}});
+["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,()=>{if(audioStale||(ac&&ac.state!=="running"))audioOn()},true));
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&ac)audioStale=true});
+addEventListener("pagehide",()=>{if(ac)audioStale=true});
 function tone(f,d,{type="sine",vol=.07,to=0,at=0}={}){
   if(!ac||muted)return;const t=ac.currentTime+at,o=ac.createOscillator(),g=ac.createGain();
   o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);
@@ -2759,8 +2763,21 @@ const ago=t=>{const m=Math.round((Date.now()-(t||0))/6e4);return m<2?"just now":
 // Players from before accounts keep their save: it becomes their first account (the old save stays as a backup)
 function accMigrate(){let l=accList();if(!l.length&&store.get(SAVE0)){const id=newAccId();store.set(accKey(id),store.get(SAVE0));l=[{id,name:"Player 1",created:Date.now(),last:Date.now(),old:1}];accPut(l);store.set(CUR_KEY,id)}return l}
 function accUse(a){SAVE=accKey(a.id);store.set(CUR_KEY,a.id);const l=accList(),x=l.find(y=>y.id===a.id);if(x){x.last=Date.now();accPut(l)}}
-const encodeSave=(name,json)=>"FR1."+btoa(unescape(encodeURIComponent(JSON.stringify({n:name,s:json}))));
-function decodeSave(code){try{code=code.trim().replace(/\s+/g,"");if(!code.startsWith("FR1."))return null;const o=JSON.parse(decodeURIComponent(escape(atob(code.slice(4)))));const d=JSON.parse(o.s);return d&&d.v===1?{name:o.n||"Player",json:o.s,d}:null}catch(e){return null}}
+// Transfer codes: drop rebuildable data, round numbers, deflate, then base64url ("FR2.").
+const b64u=bytes=>{let s="";const B=new Uint8Array(bytes);for(let i=0;i<B.length;i+=8192)s+=String.fromCharCode.apply(null,B.subarray(i,i+8192));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")};
+const ub64u=t=>{t=t.replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";const s=atob(t),B=new Uint8Array(s.length);for(let i=0;i<s.length;i++)B[i]=s.charCodeAt(i);return B};
+function slimSave(json){const d=JSON.parse(json);delete d.hist;delete d.offer;delete d.daily;if(d.trades)d.trades=d.trades.slice(-5);
+  return JSON.stringify(d,(k,v)=>typeof v==="number"&&!Number.isInteger(v)?(Math.abs(v)>=100?Math.round(v):+v.toFixed(3)):v)}
+async function deflate(str){if(!window.CompressionStream)return null;const cs=new CompressionStream("deflate-raw"),w=cs.writable.getWriter();w.write(new TextEncoder().encode(str));w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer())}
+async function inflate(bytes){const ds=new DecompressionStream("deflate-raw"),w=ds.writable.getWriter();w.write(bytes);w.close();return new TextDecoder().decode(await new Response(ds.readable).arrayBuffer())}
+async function encodeSave(name,json){const z=await deflate(JSON.stringify({n:name,s:slimSave(json)})).catch(()=>null);
+  return z?"FR2."+b64u(z):"FR1."+btoa(unescape(encodeURIComponent(JSON.stringify({n:name,s:json}))))}
+async function decodeSave(code){try{code=code.trim().replace(/\s+/g,"");let o;
+    if(code.startsWith("FR2."))o=JSON.parse(await inflate(ub64u(code.slice(4))));
+    else if(code.startsWith("FR1."))o=JSON.parse(decodeURIComponent(escape(atob(code.slice(4)))));else return null;
+    const d=JSON.parse(o.s);if(!d||d.v!==1)return null;
+    if(!d.hist&&d.trend){d.hist={};for(const k in d.trend)d.hist[k]=Array(40).fill(d.trend[k])}
+    return{name:o.n||"Player",json:JSON.stringify(d),d}}catch(e){return null}}
 function accScreen(msg){
   const o=$("overlay"),l=accList();o.hidden=false;
   o.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1>
@@ -2797,11 +2814,11 @@ function accImport(){
     <label class="accf"><span>Transfer code</span><textarea id="aCode" rows="4" placeholder="FR1.…"></textarea></label><p class="accmsg" id="aErr"></p>
     <button class="cta" id="aGo"><span>Import account</span>${ARROW}</button><button class="cta ghost2" id="aBack">Back</button></div>`;
   $("aBack").onclick=()=>accScreen();
-  $("aGo").onclick=()=>{const r=decodeSave($("aCode").value);if(!r){$("aErr").textContent="That code doesn't look right. Copy the whole thing.";SFX.nope();return}
+  $("aGo").onclick=async()=>{const r=await decodeSave($("aCode").value);if(!r){$("aErr").textContent="That code doesn't look right. Copy the whole thing.";SFX.nope();return}
     const l=accList();let name=r.name,n=2;while(l.some(a=>a.name.toLowerCase()===name.toLowerCase()))name=r.name+" "+n++;
     const a={id:newAccId(),name,created:Date.now(),last:Date.now()};l.push(a);accPut(l);store.set(accKey(a.id),r.json);accUse(a);SFX.rebirth();title()};
 }
-function copyTransfer(btn){save();const a=accCur(),code=encodeSave(a?a.name:"Player",store.get(SAVE));
+async function copyTransfer(btn){save();const a=accCur(),code=await encodeSave(a?a.name:"Player",store.get(SAVE));
   const done=()=>{floatAt(btn,"Copied","var(--up)");banner("Transfer code copied","u")};
   const fallback=()=>{const o=$("overlay");o.hidden=false;o.innerHTML=`<div class="sheet"><h2 class="h2"><small>TRANSFER CODE</small>Copy this code.</h2><textarea class="acccode" id="aCode" rows="8" readonly>${code}</textarea><button class="cta" id="aBack"><span>Done</span>${ARROW}</button></div>`;const t=$("aCode");t.focus();t.select();$("aBack").onclick=()=>{o.hidden=true}};
   try{navigator.clipboard.writeText(code).then(done,fallback)}catch(e){fallback()}}
