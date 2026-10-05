@@ -43,6 +43,7 @@ function fresh(dir) {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   cpSync("app-src/fonts", `${dir}/fonts`, { recursive: true });
+  cpSync("app-src/vendor", `${dir}/vendor`, { recursive: true });
 }
 
 // Native app bundle
