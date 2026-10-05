@@ -1307,6 +1307,11 @@ function openRoom(k){
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
+// buying or claiming redraws the room; keep the scroll position when it's the same screen
+const roomSc={y:0,t:null};
+$("room").addEventListener("scroll",e=>{const t=e.target;if(t.classList&&t.classList.contains("scroll")&&t.parentNode===$("room"))roomSc.y=t.scrollTop},true);
+new MutationObserver(()=>{const r=$("room"),sc=r.querySelector(":scope>.scroll"),h=r.querySelector(".roomhead h2"),t=room+"|"+(h?h.textContent:"");
+  if(sc&&t===roomSc.t&&roomSc.y)sc.scrollTop=roomSc.y;else roomSc.y=0;roomSc.t=t}).observe($("room"),{childList:true});
 $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play in the Online Town. Reach level 10 to get a free raft at the Harbor on the beach, then sail over.":"Friends play in the Online Town. Go to the Harbor on the beach and sail over.");if(regionOpen("beach"))walkTo("harbor");return}const sh=$("mpSheet");if(!sh.hidden){sh.hidden=true;return}mpUI()};
 // The alert pills sit in one swipeable row; the first button folds them away
 let pillsMin=store.get("fliprush_pillsmin")==="1";
