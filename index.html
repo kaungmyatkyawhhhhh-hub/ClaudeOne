@@ -526,6 +526,23 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .feetag{margin-left:8px;font-family:var(--mono);font-size:.62rem;font-weight:700;padding:3px 7px;border-radius:99px;background:color-mix(in oklab,var(--down) 14%,transparent);color:var(--down)}
 .wquick button.lock{box-shadow:inset 0 0 0 3px #ffcc33,0 0 14px rgba(255,204,51,.6),var(--shadow)}
 .perk.emp:not(.own){box-shadow:inset 0 0 0 1px #cf9a14,var(--shadow)}
+.acclist{display:flex;flex-direction:column;gap:8px}
+.accbtn{display:grid;grid-template-columns:44px 1fr 22px;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);text-align:left}
+.accbtn svg{width:20px;height:20px;opacity:.5}
+.accav{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:900;font-size:1.15rem}
+.acct b{display:block;font-size:1rem}.acct small{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.cta.ghost2{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:.95rem;justify-content:center}
+.accf{display:flex;flex-direction:column;gap:6px;font-size:.78rem;font-weight:700;color:var(--muted)}
+.accf input,.accf textarea,.acccode{font:600 1.05rem var(--body);padding:14px;border-radius:14px;border:0;background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);outline:none;width:100%;box-sizing:border-box}
+.accf input:focus,.accf textarea:focus{box-shadow:inset 0 0 0 2px var(--accent)}
+.accf textarea,.acccode{font-family:var(--mono);font-size:.72rem;word-break:break-all;resize:none}
+.accmsg{margin:0;min-height:1.1em;font-size:.84rem;font-weight:600;color:var(--down)}
+.accbar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-size:.9rem}
+.accbar .accav{width:30px;height:30px;font-size:.9rem;border-radius:9px}
+.accbar span:nth-child(2){flex:1}
+.accbar button{padding:7px 12px;border-radius:10px;background:var(--sunk);font-size:.78rem;font-weight:700}
+.accrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.accrow .perk{grid-template-columns:1fr}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -597,7 +614,7 @@ const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);if(!isFinite(a))return s+"$∞"
   if(a>=1e5)return s+"$"+Math.round(a/1e3)+"K";if(a>=1e4)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+Math.round(a).toLocaleString("en-US")};
 const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
-const SAVE="fliprush_world_v1";
+const SAVE0="fliprush_world_v1";let SAVE=SAVE0;
 
 /* ================= data ================= */
 const CATS=[
@@ -1713,6 +1730,7 @@ function openHome(){
       <p class="fine">${OUTFITS[S.skin||0][0]}${(S.skin||0)>=5?" · crown included":""}. More outfits unlock as you level up.</p>
       ${S.perks&&Object.keys(S.perks).length?`<div class="sechead"><h3>Your perks</h3><span class="eyebrow">Level ${repLevel()}</span></div><div class="perkchips">${PERK_POOL().concat(CATS.map(c=>({k:"cat_"+c.k,t:c.n+" specialist"}))).filter((c,i,a)=>pk(c.k)&&a.findIndex(x=>x.k===c.k)===i).map(c=>`<span>${c.t} <b>×${pk(c.k)}</b></span>`).join("")}</div>`:""}
       ${S.trophies&&Object.keys(S.trophies).length?`<div class="sechead"><h3>Trophy shelf</h3><span class="eyebrow">${sponsor()?sponsor()[1]:""}</span></div><div class="trophies">${COMPS.map((c,i)=>S.trophies[i]?`<span><i style="background:${["","#ffcc33","#c0c6d0","#cd7f32"][S.trophies[i]]}"></i>${c.n}</span>`:"").join("")}</div>`:""}
+      ${accountCard()}
       <div class="sechead"><h3>Mirror</h3><span class="eyebrow">${S.pr} kg max</span></div>${physiqueCard()}
       <div class="sechead"><h3>Your hustle</h3></div>
       <div class="kv">
@@ -1723,7 +1741,7 @@ function openHome(){
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;
+    $("leaveBtn").onclick=closeRoom;bindAccount();
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
@@ -2717,12 +2735,78 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 
+/* ================= accounts (per device) + transfer codes ================= */
+const ACC_KEY="fliprush_accounts",CUR_KEY="fliprush_current";
+const accList=()=>{try{return JSON.parse(store.get(ACC_KEY))||[]}catch(e){return[]}};
+const accPut=l=>store.set(ACC_KEY,JSON.stringify(l));
+const accKey=id=>SAVE0+":"+id;
+const accCur=()=>accList().find(a=>a.id===store.get(CUR_KEY));
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+const pinHash=p=>{let h=5381;for(const ch of"flip$"+p)h=((h<<5)+h+ch.charCodeAt(0))|0;return(h>>>0).toString(36)};
+const newAccId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const ago=t=>{const m=Math.round((Date.now()-(t||0))/6e4);return m<2?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" days ago"};
+// Players from before accounts keep their save: it becomes their first account (the old save stays as a backup)
+function accMigrate(){let l=accList();if(!l.length&&store.get(SAVE0)){const id=newAccId();store.set(accKey(id),store.get(SAVE0));l=[{id,name:"Player 1",created:Date.now(),last:Date.now(),old:1}];accPut(l);store.set(CUR_KEY,id)}return l}
+function accUse(a){SAVE=accKey(a.id);store.set(CUR_KEY,a.id);const l=accList(),x=l.find(y=>y.id===a.id);if(x){x.last=Date.now();accPut(l)}}
+const encodeSave=(name,json)=>"FR1."+btoa(unescape(encodeURIComponent(JSON.stringify({n:name,s:json}))));
+function decodeSave(code){try{code=code.trim().replace(/\s+/g,"");if(!code.startsWith("FR1."))return null;const o=JSON.parse(decodeURIComponent(escape(atob(code.slice(4)))));const d=JSON.parse(o.s);return d&&d.v===1?{name:o.n||"Player",json:o.s,d}:null}catch(e){return null}}
+function accScreen(msg){
+  const o=$("overlay"),l=accList();o.hidden=false;
+  o.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1>
+    <p class="lede">${l.length?"Who's playing?":"Make an account to start. Your progress saves to it."}</p>${msg?`<p class="accmsg">${msg}</p>`:""}
+    ${l.length?`<div class="acclist">${l.map(a=>{let info="";try{const d=JSON.parse(store.get(accKey(a.id)));if(d)info=fmt(d.cash)+" · Day "+d.day}catch(e){}return `<button class="accbtn" data-acc="${a.id}"><span class="accav">${esc(a.name[0]||"?").toUpperCase()}</span><span class="acct"><b>${esc(a.name)}</b><small>${a.pin?"🔒 · ":""}${info||"New"} · ${ago(a.last)}</small></span>${ARROW}</button>`}).join("")}</div>`:""}
+    <button class="cta" id="accNew"><span>Create account</span>${ARROW}</button>
+    <button class="cta ghost2" id="accImp">Use a transfer code</button>
+    <p class="fine">Accounts live on this device. To play the same account on another phone or PC, copy its transfer code from Home and paste it there.</p></div>`;
+  o.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accList().find(x=>x.id===b.dataset.acc);if(!a)return;if(a.pin)accPin(a);else{accUse(a);title()}});
+  $("accNew").onclick=()=>accForm();$("accImp").onclick=()=>accImport();
+}
+function accForm(){
+  const o=$("overlay");o.innerHTML=`<div class="sheet"><h2 class="h2"><small>NEW ACCOUNT</small>Pick a name.</h2>
+    <label class="accf"><span>Name</span><input id="aName" maxlength="16" autocomplete="nickname" placeholder="e.g. FlipKing"></label>
+    <label class="accf"><span>PIN (optional, 4 digits)</span><input id="aPin" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="Leave empty for no PIN"></label>
+    <p class="accmsg" id="aErr"></p>
+    <button class="cta" id="aGo"><span>Create and play</span>${ARROW}</button><button class="cta ghost2" id="aBack">Back</button></div>`;
+  $("aName").focus();$("aBack").onclick=()=>accScreen();
+  $("aGo").onclick=()=>{const name=$("aName").value.trim(),pin=$("aPin").value.trim(),err=t=>{$("aErr").textContent=t;SFX.nope()};
+    if(!name)return err("Type a name first.");if(accList().some(a=>a.name.toLowerCase()===name.toLowerCase()))return err("That name is taken on this device.");if(pin&&!/^\d{4}$/.test(pin))return err("PIN must be 4 digits.");
+    const a={id:newAccId(),name,created:Date.now(),last:Date.now()};if(pin)a.pin=pinHash(pin);const l=accList();l.push(a);accPut(l);accUse(a);newGame();save();SFX.level();title()};
+}
+function accPin(a){
+  const o=$("overlay");o.innerHTML=`<div class="sheet"><h2 class="h2"><small>${esc(a.name).toUpperCase()}</small>Enter your PIN.</h2>
+    <label class="accf"><span>PIN</span><input id="aPin" maxlength="4" inputmode="numeric" pattern="[0-9]*" type="password"></label><p class="accmsg" id="aErr"></p>
+    <button class="cta" id="aGo"><span>Unlock</span>${ARROW}</button><button class="cta ghost2" id="aBack">Back</button></div>`;
+  $("aPin").focus();$("aBack").onclick=()=>accScreen();
+  const go=()=>{if(pinHash($("aPin").value.trim())===a.pin){accUse(a);title()}else{$("aErr").textContent="Wrong PIN.";SFX.nope();buzz(40);$("aPin").value=""}};
+  $("aGo").onclick=go;$("aPin").onkeydown=e=>{if(e.key==="Enter")go()};
+}
+function accImport(){
+  const o=$("overlay");o.innerHTML=`<div class="sheet"><h2 class="h2"><small>TRANSFER CODE</small>Bring your account here.</h2>
+    <p class="lede" style="font-size:.9rem">On your other device, open Home and tap <b>Copy transfer code</b>. Paste it below.</p>
+    <label class="accf"><span>Transfer code</span><textarea id="aCode" rows="4" placeholder="FR1.…"></textarea></label><p class="accmsg" id="aErr"></p>
+    <button class="cta" id="aGo"><span>Import account</span>${ARROW}</button><button class="cta ghost2" id="aBack">Back</button></div>`;
+  $("aBack").onclick=()=>accScreen();
+  $("aGo").onclick=()=>{const r=decodeSave($("aCode").value);if(!r){$("aErr").textContent="That code doesn't look right. Copy the whole thing.";SFX.nope();return}
+    const l=accList();let name=r.name,n=2;while(l.some(a=>a.name.toLowerCase()===name.toLowerCase()))name=r.name+" "+n++;
+    const a={id:newAccId(),name,created:Date.now(),last:Date.now()};l.push(a);accPut(l);store.set(accKey(a.id),r.json);accUse(a);SFX.rebirth();title()};
+}
+function copyTransfer(btn){save();const a=accCur(),code=encodeSave(a?a.name:"Player",store.get(SAVE));
+  const done=()=>{floatAt(btn,"Copied","var(--up)");banner("Transfer code copied","u")};
+  const fallback=()=>{const o=$("overlay");o.hidden=false;o.innerHTML=`<div class="sheet"><h2 class="h2"><small>TRANSFER CODE</small>Copy this code.</h2><textarea class="acccode" id="aCode" rows="8" readonly>${code}</textarea><button class="cta" id="aBack"><span>Done</span>${ARROW}</button></div>`;const t=$("aCode");t.focus();t.select();$("aBack").onclick=()=>{o.hidden=true}};
+  try{navigator.clipboard.writeText(code).then(done,fallback)}catch(e){fallback()}}
+function accountCard(){const a=accCur();return `<div class="sechead"><h3>Account</h3><span class="eyebrow">${a?esc(a.name):""}</span></div>
+  <div class="accrow"><button class="perk nopic" id="accCopy"><span class="t">Copy transfer code</span><span class="d">Paste it on another phone or PC to play this account there</span></button>
+  <button class="perk nopic" id="accSwitch"><span class="t">Switch account</span><span class="d">Your progress is saved first</span></button></div>`}
+function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>{save();store.set(CUR_KEY,"");location.reload()}}
+
 /* ================= title ================= */
 function title(){
+  accMigrate();const acc=accCur();if(!acc){accScreen();return}accUse(acc);newGame();
   const o=$("overlay"),has=load();o.hidden=false;let confirmNew=false;
   const draw=()=>{
     o.innerHTML=`<div class="sheet">
       <h1 class="wordmark">Flip<span>Rush</span></h1>
+      <div class="accbar"><span class="accav">${esc(acc.name[0]||"?").toUpperCase()}</span><span>Playing as <b>${esc(acc.name)}</b></span><button id="accSw">Switch</button></div>
       <p class="lede">Walk the town, flip everything at the market, hit the gym, trade live charts, and level up forever. Every level lets you pick a new perk.</p>
       <div class="how">
         <div><kbd>WALK</kbd><span>Tap the map to walk. Buttons at the bottom take you straight to a place.</span></div>
@@ -2738,6 +2822,7 @@ function title(){
         <button class="cta" id="bNew" style="background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:.95rem">${confirmNew?"Tap again to erase your save":"New game"}</button>`
        :`<button class="cta" id="bNew"><span>Start playing</span>${ARROW}</button>`}
       <p class="fine">Progress saves automatically.</p></div>`;
+    $("accSw").onclick=()=>{store.set(CUR_KEY,"");accScreen()};
     if(has)$("bCont").onclick=()=>start();
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
