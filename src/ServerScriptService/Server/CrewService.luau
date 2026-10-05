@@ -252,7 +252,7 @@ end
 local function levelSum(data)
 	local sum = 0
 	for _, group in ipairs(Muscles.Groups) do sum += Muscles.GetGroupLevel(data.muscles, group.id) end
-	return math.floor(sum + (data.growthSpurts - 1) * 100)
+	return math.floor(sum + data.growthSpurts * 100)
 end
 
 local function refreshScores()

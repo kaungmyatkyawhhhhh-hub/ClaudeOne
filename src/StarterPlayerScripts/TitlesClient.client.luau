@@ -144,6 +144,7 @@ local function open()
 	isOpen = true
 	menuButton:SetActive(true)
 	menuButton:SetDot(false)
+	UIBus.MenuPanelVisible:Fire(true)
 	refresh()
 	book.Enabled = true
 	Audio.PlayUI("Whoosh")
@@ -154,6 +155,7 @@ end
 local function close()
 	isOpen = false
 	menuButton:SetActive(false)
+	UIBus.MenuPanelVisible:Fire(false)
 	local tween = Theme.Fade(backdrop, false)
 	if tween then
 		tween.Completed:Connect(function()

@@ -58,6 +58,64 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## Playtest fixes 1: menu screen + tutorial (2026-10-05) ✅ (playtested in Studio)
+
+First real playtest of the overnight work, done in Studio with screenshots: menu as a returning player (your save)
+and the whole tutorial as a brand-new player, all 9 steps through to "You're all set. Go get big."
+
+**Fixed**
+- **New players started at Growth Spurt 1** (`DataTemplate`: `growthSpurts = 1`, coins 1, DNA tokens 1, leftovers
+  from test values). Every newcomer was 4'6" and got **Late Bloomer** the moment they joined. Now 0 / 0 / 0: 4'0",
+  no titles, one free reroll as the brief says. Crew score assumed spurts start at 1; fixed to `spurts × 100`.
+- **Gym-goers blocked the walk to the Flat Bench.** The three NPCs stood shoulder to shoulder across the middle of
+  the gym (the tutorial's first walk got stuck on them, and the camera got stuck behind their heads). Moved in front
+  of the dumbbell rack on the right wall, facing the room, clear of the stretch mat, arm wrestling table, dip
+  station and pro gym door.
+- **Visiting legends stood in front of the bench row**, inside the Flat Bench camera (body filling the screen,
+  giant name label). Now left of the entrance aisle (`Config/Legends` → `Visit.Spot` / `Facing`): seen from the door,
+  away from every machine.
+- **Spot prompt shown to the lifter.** On the Squat Rack / Flat Bench your own "Spot · Help them lift" prompt was
+  active (hidden behind the machine panel), so Stats faded 4 of the 6 labels. The lifter's client now keeps that
+  machine's prompts off; other players still see Spot.
+- **Machine camera:** getting on a machine now turns the camera once to a 3/4 view from the open-room side (you can
+  still rotate it). Before, it kept your walking angle, e.g. behind the squat rack's plates with the lifter hidden.
+- **Stats + tutorial + machine panel overlapped.** While Stats is open the coach line now sits right under the goal
+  panel, and the Stats labels stack below it and above the machine panel (they used to slide under both).
+- **Quest tracker during the tutorial** said "Talk to Coach Dex" from the first second while the coach line said
+  "Walk to the Flat Bench". New players now see the tracker from the tutorial's Coach step on.
+- **Legend arrival notes** no longer pop on the menu screen or during the tutorial.
+- **Genetics screen:** the quest tracker's empty panel peeked out behind the barbell (the right column now hides
+  while genetics is open); the body type bonus was clipped ("+15% Back, Legs, Traps, abs") and is now one full line
+  ("+15% Back, Legs, Traps · abs show later") with a gap before it.
+- **Menu:** camera framing scales with your height (a 4'0" newcomer and a 7'0" giant both fit) and centers you
+  between the player card and the panel; Titles/Settings opened from the menu now make the menu panel and card step
+  aside instead of stacking see-through panels.
+- **Machine panel:** at the lowest tier the hidden "−" button left a ghost outline (its shadow); gone.
+- **Studio (world):** the default gray spawn pad with the black Roblox logo showed on the entrance floor in the menu
+  shot. It's now invisible, non-colliding and flush with the floor (still the spawn). **Save the place** (Ctrl+S /
+  publish) to keep this, since it isn't in the repo.
+
+**New test helper**
+- Workspace attribute **`FreshPlayer`** (boolean, Studio only): play as a brand-new player on temporary data that is
+  never saved, so your real save stays untouched. (`ReplayTutorial` still replays the tutorial on your own save.)
+
+**How to test**
+1. `git pull` (Rojo syncs). Play → menu with your character centered, Titles/Settings → the menu steps aside.
+2. Workspace → Attributes → `FreshPlayer` = true → Play → simplified menu → genetics → follow all 9 coach lines.
+   Check: 4'0", no Late Bloomer, no quest tracker until "Find Coach Dex", straight walk to the bench, Squat Rack
+   camera faces you, Stats on a machine shows all 6 labels without overlaps. Remove the attribute afterwards.
+
+**Assumptions**
+- New saves start with 0 coins and 0 DNA tokens (the free reroll is separate), from the brief.
+- On keyboard, E picks the nearest prompt, so a loose plate near the front desk can be re-racked instead of talking
+  to the Coach (seen once). Left as is: on phones both buttons show.
+
+**Not verified**
+- Phone/tablet sizes in the Device Emulator (the screenshot tool can't switch devices). Default Roblox prompts don't
+  show in the tool's screenshots, so their look wasn't checked.
+
+---
+
 ## Winter sled pulls (2026-10-05) ✅
 
 - During **Winter Lifts** a **Sled Pull** machine appears on a strip of turf between the rack area and the
@@ -185,7 +243,7 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 1. `git pull`, Play. Find the door on the right wall of the starter gym → Enter → "opens at Growth Spurt 2".
 2. To try it now: in Studio's command bar during Play (server side), give yourself spurts:
    `require(game.ServerScriptService.Server.PlayerData).Get(game.Players:GetPlayers()[1]).growthSpurts = 2`
-   then use the door. (Studio only; it saves if you leave it, so set it back to your real value, usually 1.)
+   then use the door. (Studio only; it saves if you leave it, so set it back to your real value; or use the `FreshPlayer` attribute, which never saves.)
 3. In the pro gym, try every machine: pose, plates on the stack, HUD, reps.
 
 **Assumptions**

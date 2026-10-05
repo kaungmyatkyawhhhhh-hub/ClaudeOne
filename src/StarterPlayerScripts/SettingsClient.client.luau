@@ -102,6 +102,7 @@ local isOpen = false
 local function open()
 	isOpen = true
 	menuButton:SetActive(true)
+	UIBus.MenuPanelVisible:Fire(true)
 	for key, entry in pairs(sliders) do entry.show(values[key]) end
 	gui.Enabled = true
 	Audio.PlayUI("Whoosh")
@@ -113,6 +114,7 @@ local function close()
 	isOpen = false
 	dragging = nil
 	menuButton:SetActive(false)
+	UIBus.MenuPanelVisible:Fire(false)
 	local tween = Theme.Fade(panel, false)
 	if tween then
 		tween.Completed:Connect(function()

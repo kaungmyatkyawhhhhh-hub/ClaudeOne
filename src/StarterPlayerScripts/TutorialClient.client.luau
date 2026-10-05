@@ -68,11 +68,16 @@ New("Frame", { LayoutOrder = 1, Size = UDim2.fromOffset(Spacing.S, Spacing.S), B
 local lineText = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Body", AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), Parent = line })
 
 local statsOpen = false
+local onMachine = nil -- MachineId of the machine the player is on
 local function placeLine()
-	if statsOpen then
-		-- the Growth Spurt goal panel owns the top center while Stats is open
-		line.AnchorPoint = Vector2.new(0.5, 1)
-		line.Position = UDim2.new(0.5, 0, 1, -Spacing.XL)
+	local overlay = playerGui:FindFirstChild("StatsOverlay")
+	local goal = overlay and overlay:FindFirstChild("Goal", true)
+	if statsOpen and goal and goal:IsA("GuiObject") then
+		-- the Growth Spurt goal panel owns the top center while Stats is open: sit just under it (the Stats labels
+		-- keep below this line; the bottom of the screen is taken by the machine panel while lifting)
+		-- both are Theme.ScreenGuis (same inset), so the goal's AbsolutePosition is in this gui's space
+		line.AnchorPoint = Vector2.new(0.5, 0)
+		line.Position = UDim2.new(0.5, 0, 0, goal.AbsolutePosition.Y + goal.AbsoluteSize.Y + Spacing.S)
 	else
 		line.AnchorPoint = Vector2.new(0.5, 0)
 		line.Position = UDim2.new(0.5, 0, 0, GuiService.TopbarInset.Height + Spacing.S)
@@ -280,7 +285,6 @@ end)
 ------------------------------------------------------------------------
 -- What the player is doing
 ------------------------------------------------------------------------
-local onMachine = nil -- MachineId of the machine the player is on
 local statsOpenTime = 0 -- seconds Stats has been open during the current step
 local statsSeenThisStep = false
 local drankShake = false -- during the current step
@@ -402,6 +406,7 @@ UIBus.StatsVisible.Event:Connect(function(visible)
 	statsOpen = visible
 	if stepIndex >= Onboarding.Done then return end
 	placeLine()
+	task.delay(0.1, placeLine) -- again once the goal panel has its measured size
 	local step = stepDef()
 	if visible then statsSeenThisStep = true end
 	-- closing Stats after a look also finishes a "statsOpenFor" step

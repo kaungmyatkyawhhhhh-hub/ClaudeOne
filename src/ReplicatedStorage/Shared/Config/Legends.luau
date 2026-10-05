@@ -7,7 +7,10 @@ Legends.Visit = {
 	EveryMinutes = { 20, 30 }, -- random gap between visits
 	StayMinutes = 3,
 	FirstVisitSeconds = 120,   -- after a server starts (30 in Studio, for testing)
-	Spot = Vector3.new(0, 0.1, -34.5), -- in front of the bench row, facing the door
+	-- Left of the entrance aisle (between the shake machine and the Barbell Row), facing the aisle: seen from the door
+	-- and away from every machine (in front of the bench row he stood inside the Flat Bench camera).
+	Spot = Vector3.new(-10, 0.1, -12),
+	Facing = Vector3.new(1, 0, 0),
 }
 
 -- look: colors + scale (legends are big). quest: like Coach quests ("reps" or "machineReps").

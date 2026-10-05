@@ -5,11 +5,15 @@ local NpcService = require(script.Parent.NpcService)
 
 local GymGoerService = {}
 
--- Behind the three utility benches in the free-weight zone, facing the door aisle (+Z).
+-- In front of the dumbbell rack on the right wall (rack at x = 26, z -30..-20), facing into the room (-X). Kept
+-- 4 studs apart, clear of the stretching mat, the arm wrestling table, the dip station and the pro gym door, and out
+-- of the walkways (they used to stand shoulder to shoulder across the middle of the gym and blocked the tutorial
+-- walk to the Flat Bench).
+local FACING = Vector3.new(-1, 0, 0)
 local GOERS = {
-	{ spot = Vector3.new(3, 0.15, -28.6), skin = "#E0AC69", shirt = "#2B2B2B", pants = "#1E1E22", width = 1.15 },
-	{ spot = Vector3.new(-1, 0.15, -28.6), skin = "#8D5524", shirt = "#F4F1EA", pants = "#2B2B2B", width = 1.25 },
-	{ spot = Vector3.new(-5, 0.15, -28.6), skin = "#F1C27D", shirt = "#1F5FBF", pants = "#1E1E22", width = 1.1 },
+	{ spot = Vector3.new(23, 0.15, -21), skin = "#E0AC69", shirt = "#2B2B2B", pants = "#1E1E22", width = 1.15 },
+	{ spot = Vector3.new(23, 0.15, -25), skin = "#8D5524", shirt = "#F4F1EA", pants = "#2B2B2B", width = 1.25 },
+	{ spot = Vector3.new(23, 0.15, -29), skin = "#F1C27D", shirt = "#1F5FBF", pants = "#1E1E22", width = 1.1 },
 }
 
 local function dumbbell(hand)
@@ -44,7 +48,7 @@ function GymGoerService.Start()
 			scale = { height = 1, width = goer.width, depth = 1.1, head = 1 },
 			tag = "GymGoer", animated = true, noLabel = true,
 		}
-		local cframe = CFrame.lookAt(goer.spot, goer.spot + Vector3.new(0, 0, 1))
+		local cframe = CFrame.lookAt(goer.spot, goer.spot + FACING)
 		local ok, err = pcall(function()
 			local model = NpcService.Build(spec, cframe)
 			model:SetAttribute("Phase", index * 2.3) -- so they don't move in sync

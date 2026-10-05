@@ -424,7 +424,22 @@ local function step(dt)
 	end
 	-- stack each side with a minimum gap, kept between the goal panel and the bottom of the screen
 	-- (AbsolutePosition is measured below the top bar; viewport rows include it, so go through the full-screen layer)
-	local topPx = goal.AbsolutePosition.Y + goal.AbsoluteSize.Y - origin.Y + Spacing.S
+	-- the tutorial's coach line sits under the goal panel and the machine panel at the bottom: keep clear of both
+	-- (all of these are Theme.ScreenGuis, so their AbsolutePositions share the goal panel's origin)
+	local topEdge = goal.AbsolutePosition.Y + goal.AbsoluteSize.Y
+	local coachGui = playerGui:FindFirstChild("Tutorial")
+	local coachLine = coachGui and coachGui:FindFirstChild("CoachLine")
+	if coachGui and coachGui:IsA("ScreenGui") and coachGui.Enabled and coachLine and coachLine:IsA("GuiObject") and coachLine.Visible
+		and coachLine.AbsolutePosition.Y < viewport.Y / 2 then
+		topEdge = math.max(topEdge, coachLine.AbsolutePosition.Y + coachLine.AbsoluteSize.Y)
+	end
+	local topPx = topEdge - origin.Y + Spacing.S
+	local bottomPx = viewport.Y - OVERLAY.ScreenMargin
+	local machineHud = playerGui:FindFirstChild("MachineHud")
+	local machineStack = machineHud and machineHud:FindFirstChild("Stack", true)
+	if machineHud and machineHud:IsA("ScreenGui") and machineHud.Enabled and machineStack and machineStack:IsA("GuiObject") then
+		bottomPx = math.min(bottomPx, machineStack.AbsolutePosition.Y - origin.Y - Spacing.S)
+	end
 	local function screenY(entry, px) -- camera-space y of a screen row at the entry's depth
 		return (viewport.Y / 2 - px) / entry.pxPerStud
 	end
@@ -447,7 +462,7 @@ local function step(dt)
 		-- if the stack runs off the bottom (e.g. an expanded group), push labels up from the bottom only as needed
 		local last = list[#list]
 		if last then
-			local minY = screenY(last, viewport.Y - OVERLAY.ScreenMargin) + last.studSize.Y / 2
+			local minY = screenY(last, bottomPx) + last.studSize.Y / 2
 			if last.target.Y < minY then setY(last, minY) end
 			for i = #list - 1, 1, -1 do
 				local entry, below = list[i], list[i + 1]

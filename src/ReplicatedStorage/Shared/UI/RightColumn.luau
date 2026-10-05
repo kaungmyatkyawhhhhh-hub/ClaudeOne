@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
+local UIBus = require(script.Parent.UIBus)
 
 local RightColumn = {}
 
@@ -36,6 +37,9 @@ local function ensure()
 	}, { Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
 	always = container("Always", 1)
 	idle = container("Idle", 2)
+
+	-- the genetics screen is full-screen; the column would peek out behind its barbell
+	UIBus.GeneticsVisible.Event:Connect(function(visible) gui.Enabled = not visible end)
 
 	-- hide the idle-only panels while on a machine
 	task.spawn(function()

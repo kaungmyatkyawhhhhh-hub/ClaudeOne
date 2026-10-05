@@ -68,7 +68,7 @@ local function bodyBonus(body)
 	local parts = bonusText(body.bonus)
 	if body.detailLevelMult < 1 then table.insert(parts, "abs show earlier")
 	elseif body.detailLevelMult > 1 then table.insert(parts, "abs show later") end
-	return #parts > 0 and table.concat(parts, ", ") or "no bonus"
+	return #parts > 0 and table.concat(parts, " · ") or "no bonus"
 end
 local function percent(list, entry)
 	local total = 0
@@ -155,8 +155,8 @@ local function infoWithBonus(order)
 		Font = "Regular",
 		TextSize = "Small",
 		TextColor3 = Colors.Muted,
-		Size = UDim2.new(0, 160, 1, 0),
-		TextWrapped = true,
+		Size = UDim2.fromScale(0, 1),
+		AutomaticSize = Enum.AutomaticSize.X, -- one line, as wide as its text (a wrapped second line got clipped)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = infoRow,
 	})
@@ -165,7 +165,8 @@ local function infoWithBonus(order)
 	return text, bonus
 end
 local frameLabel, frameBonusLabel = infoWithBonus(1)
-local bodyLabel, bodyBonusLabel = infoWithBonus(3)
+New("Frame", { Name = "Gap", LayoutOrder = 3, Size = UDim2.new(0, Spacing.XL, 1, 0), BackgroundTransparency = 1, Parent = infoRow })
+local bodyLabel, bodyBonusLabel = infoWithBonus(4)
 
 -- Buttons row: "View odds" link (left), Reroll and Keep (right)
 local buttons = New("Frame", { Name = "Buttons", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = root },

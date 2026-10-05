@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = Shared:WaitForChild("Config")
 local Quests = require(Config.Quests)
+local Onboarding = require(Config.Onboarding)
 local Muscles = require(Config.Muscles)
 local MuscleOfTheDay = require(Config.MuscleOfTheDay)
 local ClientData = require(Shared.ClientData)
@@ -73,8 +74,28 @@ local function refresh()
 	footer.TextColor3 = active.ready and Colors.Text or Colors.Muted
 end
 
+-- New players see the tracker once the tutorial sends them to the Coach, so it never competes with the coach line.
+local COACH_STEP = Onboarding.Done
+for i, step in ipairs(Onboarding.Steps) do
+	if step.target == "Coach" then COACH_STEP = i break end
+end
+local playing = false -- after Play
+local function updateVisible()
+	local data = ClientData.Get()
+	local step = data.onboarding and data.onboarding.tutorialStep or Onboarding.Done
+	local show = playing and (step >= COACH_STEP or (data.quests and data.quests.active) ~= nil)
+	if show and not panel.Visible then
+		refresh()
+		panel.Visible = true
+		Theme.Fade(panel, true)
+	elseif not show then
+		panel.Visible = false
+	end
+end
+
 ClientData.Changed:Connect(function(path)
 	if path[1] == "quests" and panel.Visible then refresh() end
+	if path[1] == "onboarding" or path[1] == "quests" then updateVisible() end
 end)
 
 ------------------------------------------------------------------------
@@ -160,9 +181,8 @@ end)
 task.spawn(function()
 	ClientData.Get()
 	UIBus.WaitForMenu()
-	refresh()
-	panel.Visible = true
-	Theme.Fade(panel, true)
+	playing = true
+	updateVisible()
 	task.wait(2)
 	local group = Muscles.GroupById[MuscleOfTheDay.GroupId()]
 	Notify.Show("Muscle of the Day: " .. group.name .. " (" .. MuscleOfTheDay.Multiplier .. "x gains)")

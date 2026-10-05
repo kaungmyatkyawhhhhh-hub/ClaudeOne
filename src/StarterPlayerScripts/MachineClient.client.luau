@@ -827,6 +827,13 @@ local function setStepButton(button, shown)
 	for _, child in ipairs(button:GetChildren()) do
 		if child:IsA("Frame") then child.Visible = shown end
 	end
+	-- the soft shadow (Theme.AddDepth) too, or a ghost outline stays where the button was
+	local depth = button:FindFirstChild("Depth")
+	if depth then
+		for _, shadow in ipairs(depth:GetChildren()) do
+			if shadow:IsA("Frame") then shadow.Visible = shown end
+		end
+	end
 end
 
 local function refreshTier()
@@ -1089,10 +1096,59 @@ local function onLiftAction(_, state)
 	return Enum.ContextActionResult.Sink
 end
 
+-- Getting on a machine: turn the (normal, player-controlled) camera once to a 3/4 view from the open-room side, so
+-- the lift is in view instead of whatever angle you walked in with (e.g. behind the squat rack's plates).
+local CAMERA_VIEW = { Distance = 10, Height = 4, Angles = { 35, -35, 0, 60, -60 } }
+local function frameCamera(model)
+	local camera = Workspace.CurrentCamera
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root or camera.CameraType ~= Enum.CameraType.Custom then return end
+	-- the open side of the room: toward the middle of the machines around this one
+	local here = model:GetPivot().Position
+	local sum, count = Vector3.zero, 0
+	for _, other in ipairs(CollectionService:GetTagged("Machine")) do
+		if other:IsA("Model") and other ~= model and (other:GetPivot().Position - here).Magnitude < 60 then
+			sum += other:GetPivot().Position
+			count += 1
+		end
+	end
+	if count == 0 then return end
+	local toRoom = (sum / count - here) * Vector3.new(1, 0, 1)
+	if toRoom.Magnitude < 1 then return end
+	toRoom = toRoom.Unit
+	local focus = root.Position + Vector3.new(0, 1, 0)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character, model }
+	-- first angle with a clear line from the lifter to the camera (else the clearest one)
+	local best, bestClear = nil, -1
+	for _, angle in ipairs(CAMERA_VIEW.Angles) do
+		local dir = CFrame.Angles(0, math.rad(angle), 0):VectorToWorldSpace(toRoom)
+		local offset = dir * CAMERA_VIEW.Distance + Vector3.new(0, CAMERA_VIEW.Height, 0)
+		local hit = Workspace:Raycast(focus, offset, params)
+		local clear = hit and (hit.Position - focus).Magnitude or offset.Magnitude
+		if clear > bestClear then best, bestClear = focus + offset, clear end
+		if not hit then break end
+	end
+	-- the default camera keeps its own zoom; it only takes the direction from this
+	if best then camera.CFrame = CFrame.lookAt(best, focus) end
+end
+
 local function open(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	if not machine then return end
-	current = { model = model, machine = machine, reps = 0, setsSinceNote = 0 }
+	current = { model = model, machine = machine, reps = 0, setsSinceNote = 0, promptConnections = {} }
+	-- the lifter never sees this machine's prompts (e.g. "Spot · Help them lift" on their own machine), only on this
+	-- client, so other players still get them; the server's next change after Exit replaces this local value
+	for _, prompt in ipairs(model:GetDescendants()) do
+		if prompt:IsA("ProximityPrompt") then
+			prompt.Enabled = false
+			table.insert(current.promptConnections, prompt:GetPropertyChangedSignal("Enabled"):Connect(function()
+				if prompt.Enabled then prompt.Enabled = false end
+			end))
+		end
+	end
 	local unlockedNow, selected = progressFor(machine.id)
 	current.knownUnlocked = unlockedNow
 	viewTier = selected
@@ -1122,6 +1178,7 @@ local function open(model)
 	-- chalk up as you grab the bar (hands need a frame to reach it)
 	task.delay(0.15, function()
 		if current and player.Character then chalkPuff(player.Character, 12) end
+		if current and current.model == model then frameCamera(model) end
 	end)
 end
 
@@ -1131,6 +1188,7 @@ local function close()
 		local model = current.model
 		Audio.PlayAt("BarRattle", barOf(model))
 		if model:FindFirstChild("Platform") then Audio.PlayAt("FloorThud", barOf(model)) end
+		for _, connection in ipairs(current.promptConnections) do connection:Disconnect() end
 	end
 	current = nil
 	setSweat(false)

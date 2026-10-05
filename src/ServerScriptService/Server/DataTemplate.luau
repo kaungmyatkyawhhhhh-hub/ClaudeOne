@@ -17,11 +17,11 @@ function DataTemplate.new()
 		version = 1,
 		muscles = muscles,
 		stamina = Stamina.Max,
-		coins = 1,
+		coins = 0,
 		genetics = nil, -- rolled on first join
-		freeReroll = true,
-		dnaTokens = 1,
-		growthSpurts = 1, -- height and level cap come from Config.GrowthSpurts
+		freeReroll = true, -- the brief's one free reroll at start
+		dnaTokens = 0,
+		growthSpurts = 0, -- new players start at 4'0" (height and level cap come from Config.GrowthSpurts)
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest tier index, selected = tier index }
 		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0 },

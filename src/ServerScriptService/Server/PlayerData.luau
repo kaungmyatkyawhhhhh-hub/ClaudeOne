@@ -180,6 +180,14 @@ local function onPlayerAdded(player)
 		end
 	end
 
+	-- Studio testing: a "FreshPlayer" attribute (checked) on Workspace plays as a brand-new player (4'0", level 0,
+	-- tutorial) on temporary data that is never saved, so the real save stays untouched. Ignored on live servers.
+	if RunService:IsStudio() and workspace:GetAttribute("FreshPlayer") then
+		warn("[PlayerData] FreshPlayer: playing as a new player on temporary data. Progress will NOT save.")
+		data = DataTemplate.new()
+		canSave = false
+	end
+
 	-- Saves from before the tutorial existed: players who already lifted skip it.
 	local onboarding = data.onboarding
 	if onboarding and onboarding.tutorialStep == nil and data.stats and (data.stats.totalReps or 0) > 0 then

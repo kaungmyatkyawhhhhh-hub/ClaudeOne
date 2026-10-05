@@ -102,7 +102,7 @@ local function visit()
 	local pool = #unmet > 0 and unmet or Legends.List
 	local legend = pool[rng:NextInteger(1, #pool)]
 	local spot = Legends.Visit.Spot
-	local cframe = CFrame.lookAt(spot, spot + Vector3.new(0, 0, 1)) -- facing the door
+	local cframe = CFrame.lookAt(spot, spot + Legends.Visit.Facing)
 	local spec = {
 		name = legend.name, skin = legend.look.skin, shirt = legend.look.shirt, pants = legend.look.pants,
 		scale = legend.look.scale, tag = "Legend", prompt = { action = "Talk", object = legend.name, distance = 11 },

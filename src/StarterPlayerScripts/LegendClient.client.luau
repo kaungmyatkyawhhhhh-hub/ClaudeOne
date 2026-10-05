@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Legends = require(Shared.Config.Legends)
+local Onboarding = require(Shared.Config.Onboarding)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Notify = require(Shared.UI.Notify)
@@ -68,6 +69,9 @@ end
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
 	if kind == "LegendArrived" then
+		-- not on the menu or during the tutorial (the coach line is the only guide in the first minutes)
+		local step = ClientData.Get().onboarding.tutorialStep or Onboarding.Done
+		if UIBus.MenuOpen or step < Onboarding.Done then return end
 		Notify.Show(tostring(info.name) .. " is in the gym for " .. tostring(info.minutes) .. " minutes. Go say hi.")
 		Audio.PlayUI("SetComplete")
 	elseif kind == "LegendLeft" then

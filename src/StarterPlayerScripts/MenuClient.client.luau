@@ -28,11 +28,13 @@ local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical = Enum.FillDirection.Vertical
 
--- Camera framing (studs / degrees). The character sits left of center; the menu panel is on the right.
+-- Camera framing (studs / degrees) for a 5'0" character (height scale 1), scaled by the character's height so a
+-- 4'0" newcomer and a 7'0" giant both fill the shot. The character sits between the player card and the panel.
 local CAMERA = {
 	Distance = 8.5,     -- from the character's chest
-	Height = 1.4,       -- above the chest
-	AimOffset = 1.8,    -- aim this far to the camera's right of the character, so they sit left of center
+	Height = 1.0,       -- above the chest
+	ChestHeight = 0.9,  -- chest above the root part
+	AimOffset = 0.6,    -- aim this far to the camera's right of the character, so they sit a bit left of center
 	Sway = 18,          -- slow left/right drift
 	SwaySpeed = 0.12,   -- radians per second
 	Fov = 55,
@@ -166,10 +168,15 @@ local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
 local function cameraCFrame(time)
-	local chest = root.Position + Vector3.new(0, 1.2, 0)
+	-- height scale (BodyService sets it after the save loads, so read it every frame)
+	local humanoid = root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
+	local heightValue = humanoid and humanoid:FindFirstChild("BodyHeightScale")
+	local scale = if heightValue and heightValue:IsA("NumberValue") then heightValue.Value else 1
+	local zoom = scale ^ 0.6 -- a little less than linear, so tall characters still look big
+	local chest = root.Position + Vector3.new(0, CAMERA.ChestHeight * scale, 0)
 	local angle = math.rad(math.sin(time * CAMERA.SwaySpeed) * CAMERA.Sway)
 	local dir = CFrame.Angles(0, angle, 0):VectorToWorldSpace(facing)
-	local wanted = chest + dir * CAMERA.Distance + Vector3.new(0, CAMERA.Height, 0)
+	local wanted = chest + dir * CAMERA.Distance * zoom + Vector3.new(0, CAMERA.Height * zoom, 0)
 	-- stay in front of walls and equipment
 	local hit = Workspace:Raycast(chest, wanted - chest, rayParams)
 	if hit then
@@ -178,7 +185,7 @@ local function cameraCFrame(time)
 	local look = (chest - wanted).Unit
 	local right = look:Cross(Vector3.yAxis)
 	right = right.Magnitude > 0 and right.Unit or Vector3.xAxis
-	return CFrame.lookAt(wanted, chest + right * CAMERA.AimOffset)
+	return CFrame.lookAt(wanted, chest + right * CAMERA.AimOffset * zoom)
 end
 
 local function startCamera(character)
@@ -284,3 +291,24 @@ end
 playButton.Activated:Connect(play)
 titlesButton.Activated:Connect(function() UIBus.OpenTitles:Fire() end)
 settingsButton.Activated:Connect(function() UIBus.OpenSettings:Fire() end)
+
+-- Titles/Settings opened from the menu: the menu panel and card step aside so see-through panels never stack
+local subPanelOpen = false
+UIBus.MenuPanelVisible.Event:Connect(function(visible)
+	if not UIBus.MenuOpen or not playButton.Active or subPanelOpen == visible then return end
+	subPanelOpen = visible
+	for _, frame in ipairs({ panel, gui:FindFirstChild("PlayerCard") }) do
+		if visible then
+			local tween = Theme.Fade(frame, false)
+			if tween then
+				-- hidden (not just see-through) so its buttons can't be tapped
+				tween.Completed:Connect(function()
+					if subPanelOpen then frame.Visible = false end
+				end)
+			end
+		else
+			frame.Visible = true
+			Theme.Fade(frame, true)
+		end
+	end
+end)
