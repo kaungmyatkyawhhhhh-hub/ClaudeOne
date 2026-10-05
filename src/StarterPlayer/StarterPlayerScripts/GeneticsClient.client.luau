@@ -325,10 +325,21 @@ end
 local function layoutNames()
 	if barViewport.AbsoluteSize.Y < 1 then return end
 	placeBarCamera()
+	-- under the plate edge that faces the camera (same spot as its letter)
+	local points = {}
+	for index in ipairs(nameCells) do
+		points[index] = project(barViewport, barCamera, Vector3.new(restX(index), 0, PLATE.Diameter.B / 2)).X
+	end
+	-- plates close together (narrow screens): the names spread evenly across the row instead, still left to right,
+	-- so they never run into each other
+	local width = namesRow.AbsoluteSize.X
+	local tight = false
+	for index = 2, #points do
+		if points[index] - points[index - 1] < 76 then tight = true end
+	end
 	for index, entry in ipairs(nameCells) do
-		-- under the plate edge that faces the camera (same spot as its letter)
-		local point = project(barViewport, barCamera, Vector3.new(restX(index), 0, PLATE.Diameter.B / 2))
-		entry.cell.Position = UDim2.fromOffset(point.X, 0)
+		entry.cell.Position = UDim2.fromOffset(tight and width * (index - 0.5) / #nameCells or points[index], 0)
+		entry.cell.Size = UDim2.new(0, tight and math.floor(width / #nameCells) or 84, 1, 0)
 	end
 end
 barViewport:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutNames)
@@ -571,7 +582,9 @@ local function open()
 	if isOpen then return end
 	isOpen = true
 	if COMPACT then
-		local left = SideMenu.Right() + Spacing.M
+		-- phones: the side menu steps aside while this screen is up, so the barbell gets the whole width
+		SideMenu.SetHidden(true)
+		local left = Spacing.L
 		root.AnchorPoint = Vector2.new(0, 0.5)
 		root.Position = UDim2.new(0, left, 0.5, 0)
 		root.Size = UDim2.new(1, -(left + Spacing.L), 1, -Spacing.M * 2)
@@ -597,6 +610,7 @@ local function close()
 	if not isOpen then return end
 	isOpen = false
 	menuButton:SetActive(false)
+	if COMPACT then SideMenu.SetHidden(false) end
 	ContextActionService:UnbindAction("GeneticsFreeze")
 	UIBus.GeneticsVisible:Fire(false)
 	local fadingBlur = blur

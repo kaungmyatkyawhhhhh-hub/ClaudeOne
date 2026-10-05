@@ -26,7 +26,7 @@ local root = New("Frame", {
 	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromScale(0.86, 0.86),
 	BackgroundTransparency = 1,
-	Parent = backdrop,
+	Parent = Theme.SafeArea(backdrop),
 }, { Theme.Limit(Vector2.new(420, 280), Vector2.new(900, 620)), Theme.List(Vertical, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
 
 local header = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1, Parent = root })

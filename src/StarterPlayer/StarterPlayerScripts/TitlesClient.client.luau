@@ -45,7 +45,7 @@ local panel = Theme.Panel({
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromScale(0.72, 0.8),
-	Parent = backdrop,
+	Parent = Theme.SafeArea(backdrop),
 }, {
 	Theme.Limit(Vector2.new(440, 300), Vector2.new(720, 560)),
 	Theme.Pad("L"),

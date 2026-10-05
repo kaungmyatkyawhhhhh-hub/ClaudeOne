@@ -53,7 +53,7 @@ task.wait(0.8)
 ------------------------------------------------------------------------
 -- Coach line
 ------------------------------------------------------------------------
-local gui = Theme.ScreenGui({ Name = "Tutorial", DisplayOrder = 40, Parent = playerGui })
+local gui = Theme.ScreenGui({ Name = "Tutorial", DisplayOrder = 23, Parent = playerGui }) -- under open panels (24+)
 local line = Theme.Panel({
 	Name = "CoachLine",
 	AnchorPoint = Vector2.new(0.5, 0),

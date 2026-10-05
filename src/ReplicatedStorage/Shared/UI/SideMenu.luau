@@ -87,4 +87,20 @@ function SideMenu.Add(id, labelText, iconFactory, order)
 	return entry
 end
 
+-- SetHidden(true) hides the whole menu (a phone screen that needs the full width, like Genetics).
+function SideMenu.SetHidden(on)
+	ensure().Visible = not on
+end
+
+-- SetTraining(true) leaves only Stats while on a machine, moved up to the top-left corner: a clean HUD while
+-- training, and on phones the machine panel (low on the left) needs the room.
+function SideMenu.SetTraining(on)
+	local menu = ensure()
+	for _, button in ipairs(menu:GetChildren()) do
+		if button:IsA("GuiButton") and button.Name ~= "Stats" then button.Visible = not on end
+	end
+	local list = menu:FindFirstChildOfClass("UIListLayout")
+	if list then list.VerticalAlignment = on and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center end
+end
+
 return SideMenu

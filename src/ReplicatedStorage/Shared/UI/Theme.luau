@@ -132,6 +132,21 @@ function Theme.ScreenGui(props)
 	return Theme.New("ScreenGui", props)
 end
 
+-- The part of a full-screen gui (ScreenInsets.None, so its dim backdrop covers the top bar too) below the Roblox top
+-- bar. Panels go in here: centred on the whole screen, a short phone screen puts their header under the top bar.
+function Theme.SafeArea(parent)
+	local GuiService = game:GetService("GuiService")
+	local frame = Theme.New("Frame", { Name = "Safe", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = parent })
+	local function fit()
+		local inset = GuiService.TopbarInset.Height
+		frame.Position = UDim2.fromOffset(0, inset)
+		frame.Size = UDim2.new(1, 0, 1, -inset)
+	end
+	fit()
+	GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(fit)
+	return frame
+end
+
 function Theme.Round(kind)
 	return Theme.New("UICorner", { CornerRadius = Theme.Corner[kind] })
 end

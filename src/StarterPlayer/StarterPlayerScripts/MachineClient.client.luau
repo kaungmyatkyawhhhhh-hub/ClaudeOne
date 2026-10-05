@@ -23,6 +23,7 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
+local SideMenu = require(Shared.UI.SideMenu)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -1333,6 +1334,7 @@ local function open(model)
 	setNote(isMaxed(machine) and "maxed" or "firstSet")
 
 	gui.Enabled = true
+	SideMenu.SetTraining(true)
 	Audio.PlayAt("BarRattle", barOf(model))
 	stack.Position = HIDDEN_OFFSET
 	Theme.Tween(stack, { Position = UDim2.new() }) -- slides up
@@ -1356,6 +1358,7 @@ local function close()
 		for _, connection in ipairs(current.promptConnections) do connection:Disconnect() end
 	end
 	current = nil
+	SideMenu.SetTraining(false)
 	setSweat(false)
 	if baseFov then Workspace.CurrentCamera.FieldOfView = baseFov end
 	ContextActionService:UnbindAction("MachineLift")
