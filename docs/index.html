@@ -338,6 +338,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .setrow .tog{grid-row:1/3;grid-column:2;align-self:center;padding:0;width:46px;height:26px;border-radius:13px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line);position:relative;flex:none;transition:background .15s}.setrow .tog i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}.setrow .tog.on{background:#2fd28a}.setrow .tog.on i{left:23px}
 .djart{background:#0c0a14}.djpads{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.djpads button{height:74px;border:0;border-radius:18px;background:radial-gradient(circle,var(--pc) 0 30%,color-mix(in oklab,var(--pc) 35%,#141024) 31%);box-shadow:0 0 18px -4px var(--pc);touch-action:manipulation;cursor:pointer}.djpads button:active{transform:scale(.95);filter:brightness(1.3)}
 .kidgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px}.kidcard{border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);padding:10px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}.kidcard small{font:600 .7rem var(--mono);color:var(--muted)}.kidcard select{margin-top:6px;width:100%;border-radius:10px;padding:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 .74rem var(--body)}
+.reqbtn{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;border-radius:14px;padding:10px 14px;margin:8px 0 0;background:color-mix(in oklab,var(--accent) 12%,var(--surface));box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 35%,transparent);color:var(--ink);font:800 .85rem var(--body);cursor:pointer}.reqbtn b{font:700 .72rem var(--mono);color:var(--accent)}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -2115,7 +2116,20 @@ const GOALS=[
  {t:"Buy a scooter",d:"Treat yourself. The Dealership has electric scooters.",ok:()=>!!S.veh.scooter,rw:3000},
  {t:"Beat The Mountain",d:"The Mountain has never lost an arm wrestle. Change that.",ok:()=>(S.stats.beat||[]).includes(3),rw:6000},
  {t:"Buy the sports car",d:"You've earned it. The red one at the Dealership.",ok:()=>!!S.veh.car,rw:10000},
- {t:"Earn $1,000,000 in total",d:"One last thing. Make a million and you're a legend.",ok:()=>S.stats.earnedAll>=1e6,rw:50000}
+ {t:"Earn $1,000,000 in total",d:"Make a million and you're a legend. But there's a whole world out there…",ok:()=>S.stats.earnedAll>=1e6,rw:50000},
+ {t:"Sail to the Online Town",d:"Get a raft at the Harbor (level 10) and sail over. Bring your friends.",ok:()=>!!S.flags.sailed,rw:20000},
+ {t:"Buy your first island",d:"Every tycoon needs an island. The Harbor sells them.",ok:()=>Object.keys(S.isl||{}).length>0,rw:50000},
+ {t:"Build on your island",d:"An empty island is a sandbar. Build a bar, a villa, anything.",ok:()=>Object.values(S.islB||{}).some(v=>Object.keys(v.b||{}).length>0),rw:80000},
+ {t:"Fly abroad",d:"The Airport flies everywhere now. Pick a city.",ok:()=>Object.keys(S.visited||{}).length>0,rw:60000},
+ {t:"Buy a business",d:"Stop working for money. Make money work. Real estate, in any city.",ok:()=>(S.biz||[]).length>0,rw:150000},
+ {t:"Work a shift at your business",d:"Roll up your sleeves. Open your business and work a shift.",ok:()=>(S.stats.shifts||0)>0,rw:200000},
+ {t:"Get 5 passport stamps",d:"See the world. Five cities.",ok:()=>Object.keys(S.visited||{}).length>=5,rw:500000},
+ {t:"Get married",d:"Money isn't everything. Date someone from the club, then propose at the Café.",ok:()=>!!(S.partner&&S.partner.married),rw:500000},
+ {t:"Own a $50M+ piece",d:"Prestige Houses abroad only deal in the very top end. Buy one.",ok:()=>Object.keys(S.coll||{}).some(k=>k.startsWith("elite:")),rw:5e6},
+ {t:"Win the Monte Carlo Grand Prix",d:"Got a fast car? Monte Carlo has a race with your name on it.",ok:()=>(S.stats.gpWins||0)>=1,rw:5e6},
+ {t:"Reach space",d:"Level 30 unlocks the Spaceport at the Airport. Go up.",ok:()=>(S.stats.orbits||0)>=1,rw:1e7},
+ {t:"Bring something back from Mars",d:"The red planet. Upgrade your capsule all the way.",ok:()=>Object.keys(S.coll||{}).some(k=>k==="space:MC"||k==="space:MX"),rw:5e7},
+ {t:"Earn $1 billion in total",d:"The final boss: a billion dollars earned. Then you really are a legend.",ok:()=>S.stats.earnedAll>=1e9,rw:1e8}
 ];
 const rq=[];let rBusy=false;
 let rayEl=null,rayTo=null;
@@ -2720,6 +2734,7 @@ function openMarket(cfg){
   cfg=cfg||MKT.market;M={cfg,market:[null,null,null],restock:[.2,.6,1],ev:null,nextEv:4,auctionT:rnd(35,70),streak:0,streakT:-99,t:0,newsT:0,evKey:null};
   $("room").innerHTML=`<div class="room-in">${roomHead(cfg.n)}
     <div class="news"><span class="live">LIVE</span><span id="news"></span></div>
+    ${cfg.k==="market"?`<button class="reqbtn" id="mReq">📋 Buyer requests<b>${reqReady()?reqReady()+" ready to deliver":"3 new every day"}</b></button>`:""}
     <div id="event" class="collector"></div>
     <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
     <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
@@ -2730,6 +2745,7 @@ function openMarket(cfg){
   $("stash").addEventListener("click",e=>{const el=e.target.closest(".itm");if(!el)return;const i=+el.dataset.i,s=S.stash[i];if(!s)return;sellAt(i,sellValue(s),{hot:hotFor(s),el})});
   $("event").addEventListener("click",onEvent);
   setNews(summary());renderStash();renderEvent();updateMarket();
+  const rq=$("mReq");if(rq)rq.onclick=()=>{closeMarket();openRequests(()=>openRoom("market"))};
 }
 function closeMarket(){M=null;hold=null}
 const release=()=>{if(!hold||!M)return;const h=hold;hold=null;const l=M.market[h.i];if(l&&l.id===h.id&&!l.gone)tryBuy(h.i);updateMarket()};
@@ -3157,7 +3173,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild();return{n:mpName(),x:Math.round(S.px),y:Math.round(S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cm:S.cmod||0,ls:plistState(),ac:S.acc||0,pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild();return{n:mpName(),x:Math.round(S.px),y:Math.round(S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -3165,7 +3181,7 @@ function mpTick(dt){
   if(gone){renderMpChip();mpRefresh()}
   mpRoomTick()
 }
-function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cm)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cm);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
+function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
 function bubble(x,y,txt,col){ctx.font="700 12px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.textBaseline="middle";const w=Math.min(220,ctx.measureText(txt).width+18);ctx.fillStyle=col||"rgba(255,255,255,.96)";rr(x-w/2,y-13,w,26,11);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y+12);ctx.lineTo(x+5,y+12);ctx.lineTo(x,y+18);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(txt.length>34?txt.slice(0,33)+"…":txt,x,y+1)}
 function mpTags(){
   if(myBub)bubble(S.px,S.py-70*tallK(),myBub.txt);
@@ -3823,12 +3839,12 @@ const FURN=[
  {k:"piano",n:"Grand piano",cost:1.2e7,cf:12},{k:"chand",n:"Crystal chandelier",cost:5e7,cf:15},{k:"gold",n:"Gold everything",cost:5e8,cf:25,d:"Gilds the whole room"}];
 const comfort=()=>FURN.reduce((a,f)=>a+((S.furn||{})[f.k]?f.cf:0),0);
 const restK=()=>Math.min(.25,comfort()*.0025);
-function homeArt(){const n=night()>.5,F=S.furn||{},hm=S.home||0,G=!!F.gold;
+function homeArt(o){o=o||{};const n=night()>.5,F=o.furn||S.furn||{},hm=o.hm!=null?o.hm:(S.home||0),G=!!F.gold;
   const wall=G?"#e9d48a":["#f0e2cf","#dfe9f0","#2e3340","#f3ead6","#ece4f7","#e2f2f0","#f4e3e3"][hm]||"#f0e2cf",floor=G?"#c9a24a":["#b08660","#c9b39a","#3a3f4c","#a0764a","#8a6a8a","#b9a37a","#8a5a4a"][hm]||"#b08660",dark=hm===2&&!G;
   const view=hm>=4?`<rect x="250" y="26" width="120" height="84" fill="${n?"#0e1530":"#8fd8ff"}"/><path d="M250 92 Q300 70 370 90 V110 H250Z" fill="#3f9a4e"/><rect x="250" y="96" width="120" height="14" fill="#2fa6d9"/>`
     :hm>=2?`<rect x="250" y="26" width="120" height="84" fill="${n?"#0e1530":"#bfe0ff"}"/>${[0,1,2,3,4,5].map(i=>`<rect x="${254+i*20}" y="${56+(i*23)%30}" width="16" height="${54-(i*23)%30}" fill="${n?"#2a3050":"#9fb2c4"}"/>`).join("")}${n?[0,1,2,3,4,5].map(i=>`<rect x="${258+i*20}" y="${62+(i*23)%30}" width="3" height="3" fill="#ffd98a"/>`).join(""):""}`
     :`<rect x="250" y="26" width="120" height="84" fill="${n?"#141a33":"#bfe0ff"}"/>`;
-  const fishes=Object.keys(S.fish||{}).map(k=>FISH.find(f=>f.k===k)).filter(Boolean).slice(0,6);
+  const fishes=(o.fish||Object.keys(S.fish||{})).map(k=>FISH.find(f=>f.k===k)).filter(Boolean).slice(0,6);
   return `<svg viewBox="0 0 400 220" aria-hidden="true"><rect width="400" height="220" fill="${wall}"/>${G?Array.from({length:12},(_,i)=>`<rect x="${i*34}" y="0" width="2" height="150" fill="#f6e7a8" opacity=".6"/>`).join(""):""}<rect y="150" width="400" height="70" fill="${floor}"/>${Array.from({length:8},(_,i)=>`<rect x="${i*52}" y="150" width="1.5" height="70" fill="rgba(0,0,0,.08)"/>`).join("")}<rect y="146" width="400" height="5" fill="rgba(0,0,0,.12)"/>
     ${view}${n?'<circle cx="340" cy="44" r="8" fill="#f4f1d0"/>':'<circle cx="345" cy="46" r="9" fill="#ffd36b"/>'}<rect x="306" y="26" width="5" height="84" fill="${dark?"#4a5060":"#fff"}"/><rect x="250" y="64" width="120" height="4" fill="${dark?"#4a5060":"#fff"}"/><rect x="246" y="22" width="128" height="92" fill="none" stroke="${dark?"#4a5060":"#fff"}" stroke-width="5"/>
     ${F.chand?`<g><path d="M200 0 V18" stroke="#cf9a14"/><path d="M176 26 Q200 14 224 26" stroke="#cf9a14" fill="none" stroke-width="2"/>${[-20,-10,0,10,20].map(d=>`<path d="M${200+d} ${26} l-2 8 2 4 2 -4Z" fill="#dff4ff" opacity=".9"/><circle cx="${200+d}" cy="${24}" r="2" fill="#ffe08a"/>`).join("")}${n?'<circle cx="200" cy="30" r="40" fill="#ffe08a" opacity=".12"/>':""}</g>`:""}
@@ -3916,6 +3932,7 @@ const MISS=[
  {k:"finds",t:"Grab {n} shiny finds",st:"finds",n:[2,4,6]},
  {k:"gp",t:"Race {n} Grands Prix",st:"gpRaces",n:[1,2,3],need:()=>repLevel()>=25&&!!gpCar()},
  {k:"post",t:"Post {n} times on FlipGram",st:"posts",n:[1,3,5]},
+ {k:"req",t:"Fill {n} buyer requests",st:"reqs",n:[1,2,3]},
  {k:"flex",t:"Flex {n} times at the gym",st:"flexes",n:[1,2,3]},
  {k:"shift",t:"Work {n} shifts at your businesses",st:"shifts",n:[1,2,3],need:()=>(S.biz||[]).length>0}];
 function ensureMiss(){const d=dayKey();if(S.miss&&S.miss.d===d)return;let h=0;for(const ch of d+(ACC?ACC.user:""))h=(h*31+ch.charCodeAt(0))%99991;
@@ -4386,6 +4403,20 @@ function drawKid(ppl){if(room||!S.kids||!S.kids.length)return;const k=S.kids.fil
   const tx=S.px-20*Math.cos((S.hd||0)-.6),ty=S.py-10*Math.sin((S.hd||0)-.6)+12,dx=tx-KT.x,dy=ty-KT.y,d=Math.hypot(dx,dy),mv=d>5;if(d>500){KT.x=tx;KT.y=ty}else if(mv){const s=Math.min(d,walkSpeed()/60*1.06);KT.x+=dx/d*s;KT.y+=dy/d*s}KT.ph+=1/60;
   const sz=kidStage(k)==="Teen"?.85:.68;ppl.push([KT.y,()=>drawPerson(KT.x,KT.y,{shirt:k.c,skin:k.sk,hair:k.hr,size:sz,tall:sz,mv,ph:KT.ph})])}
 
+/* ================= buyer requests: NPCs pay a premium for what's in your stash ================= */
+const REQ_WHO=["A sneakerhead","A gym owner","A vintage dealer","A toy collector","A tech reseller","A card shop","A watch dealer","A celebrity stylist","A hedge fund guy","A museum"];
+function ensureReq(){const d=dayKey();if(S.req&&S.req.d===d)return;const cats=S.unlocked.slice(),L=[];
+  for(let i=0;i<3;i++){const cat=pick(cats);if(i<2)L.push({cat,code:null,m:+rnd(1.5,1.9).toFixed(2),who:REQ_WHO[CATS.findIndex(c=>c.k===cat)%REQ_WHO.length]});else{const pool=POOL.filter(p=>p.cat===cat&&p.base<=Math.max(400,(S.cash+stashVal())*1.2));const it=pick(pool.length?pool:POOL.filter(p=>p.cat===cat));L.push({cat,code:it.code,name:it.name,m:+rnd(2.2,2.8).toFixed(2),who:pick(REQ_WHO)})}}
+  S.req={d,list:L};dirty=true}
+const reqMatch=r=>S.stash.map((s,i)=>[s,i]).filter(([s])=>!s.fake&&s.cat===r.cat&&(!r.code||s.code===r.code)).sort((a,b)=>valueOf(b[0])-valueOf(a[0]))[0];
+const reqReady=()=>{if(!S)return 0;ensureReq();return S.req.list.filter(r=>!r.done&&reqMatch(r)).length};
+function openRequests(back){ensureReq();
+  const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Buyer requests")}
+    <div class="note">Buyers pay a premium for the right item. Three new requests every day. Fakes are always rejected.</div>
+    <div class="perks">${S.req.list.map((r,i)=>{const m=reqMatch(r),pay=m?Math.round(sellValue(m[0])*r.m):0;return `<button class="perk opp" data-rq="${i}" ${r.done||!m?"disabled":""}><span class="oav pmt">${tileFor(r.cat,r.code||CAT[r.cat].items[0][0],1)}</span><span class="t">${r.done?"✓ ":""}${r.code?esc(r.name):"Any "+CAT[r.cat].n.toLowerCase()+" item"}</span><span class="d">${r.who} pays ${r.m}× · ${r.done?"Delivered":m?"You have: "+esc(m[0].name):"Not in your stash"}</span><span class="c">${r.done?"Done":m?fmt(pay):"—"}</span></button>`}).join("")}</div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-rq]").forEach(b=>b.onclick=()=>{const r=S.req.list[+b.dataset.rq],m=reqMatch(r);if(r.done||!m)return;const pay=Math.round(sellValue(m[0])*r.m);S.stash.splice(m[1],1);r.done=1;earn(pay);S.stats.flips++;S.stats.reqs=(S.stats.reqs||0)+1;dirty=true;SFX.sell();confetti(80);banner("Delivered · +"+fmt(pay),"g");draw();updMini()})};draw()}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4550,7 +4581,8 @@ function openTownship(){
 function visitHouse(p,back){
   const peer=p.id&&MP?MP.peers[p.id]:null,gift=Math.round(S.cash*.05);
   const info=p.me?{n:mpName(),lv:repLevel(),c:S.cash,cm:S.height||170,f:S.fans||0,tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,is:Object.keys(S.isl||{}).length}:{n:p.n,lv:peer?peer.lv:p.lv,c:peer?peer.c:0,cm:peer?peer.cm:170,f:peer?peer.f||0:0,tw:peer?peer.tw||0:0,tr:peer?peer.tr||0:0,is:peer&&peer.is?peer.is.length:0};
-  $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(String(p.n).slice(0,14))+"'s house")}<div class="art houseart">${houseSVG(p.hm,(PROPS[p.hm]||PROPS[0]).c,1)}</div>
+  const fu={};((peer&&peer.fu)||[]).forEach(k=>fu[k]=1);
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(String(p.n).slice(0,14))+"'s house")}<div class="art homeart">${p.me?homeArt():homeArt({furn:fu,hm:p.hm||0,fish:(peer&&peer.fi)||[]})}</div>
     <div class="kv"><div><span class="eyebrow">Level</span><b>${info.lv}</b></div><div><span class="eyebrow">Cash</span><b>${fmt(info.c||0)}</b></div><div><span class="eyebrow">Height</span><b>${info.cm} cm</b></div><div><span class="eyebrow">Fans</span><b>${fmtN(info.f||0)}</b></div><div><span class="eyebrow">Tower floors</span><b>${info.tw}</b></div><div><span class="eyebrow">Trophies · islands</span><b>${info.tr} · ${info.is}</b></div></div>
     ${p.me?`<div class="note">This is your place. Upgrade it at Home to change how it looks on the street.</div>`:`<button class="bigbtn" id="hBell">Ring the doorbell<small>They'll get a notification</small></button><button class="bigbtn alt" id="hGift" ${gift<1?"disabled":""}>Leave a gift<small>${fmt(gift)}</small></button>`}
     <button class="bigbtn alt" id="hBack">Back to the street<small>&nbsp;</small></button></div>`;
