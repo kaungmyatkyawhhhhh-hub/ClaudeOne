@@ -4053,16 +4053,19 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=3,WN=[
- ["🏝️","Islands 2.0","Build villas, tiki bars, pools and hotels on your islands. Go fishing, dive for treasure, throw beach parties."],
- ["✈️","13 cities","Fly to Tokyo, Paris, Vegas, Dubai, Monaco and more. Every city has its own market and a Prestige House for $50M–$100M pieces."],
- ["🏨","Businesses","Buy apartments, bars, restaurants, condos, hotels and resorts. Expand them, set prices, handle events and work shifts."],
- ["🎰","Casino","Slots, roulette and blackjack in Las Vegas and Monte Carlo."],
- ["🐶","Pets & fashion","Adopt a pet that follows you, and wear hats, shades, chains and wings from the Boutique (Mall)."],
- ["📈","Stock exchange","Trade 10 companies and earn dividends in the Trading Centre."],
- ["🚀","Spaceport","At level 30: build a rocket at the Airport and fly it to the Moon and Mars."],
- ["🎡","Daily stuff","Free prize wheel, daily missions, home interior, collection book and scratch cards."],
- ["🤝","With friends","Player market, room leaderboard, see each other inside buildings and arm wrestle."]];
+const WN_VER=4,WN=[
+ ["🏝️","Islands 2.0","Build villas, bars, pools and hotels. Fish, dive for treasure, open washed-up chests, throw parties."],
+ ["✈️","13 cities","Tokyo to Vegas to Monaco: local markets, Prestige Houses ($50M+), daily local experiences and a passport."],
+ ["🏨","Businesses","Buy apartments, bars, restaurants, condos, hotels and resorts. Expand, set prices, handle events, work shifts."],
+ ["🎰","Casino & Grand Prix","Slots, roulette and blackjack in Vegas and Monte Carlo, plus a Grand Prix race in Monaco."],
+ ["🚀","Spaceport","Level 30+: build a rocket at the Airport and fly it to orbit, the Moon and Mars."],
+ ["🎧","DJ sets","Play a rhythm game at the Nightclub's DJ booth for fans and hype."],
+ ["💍","Weddings","Propose to your partner with a ring and pick a venue. Married couples get bigger bonuses."],
+ ["🐶","Style & pets","Pets that follow you, a Boutique, a Wardrobe for skin and hair, car mods in the Dealership garage."],
+ ["📈","Money moves","Stock exchange, scratch cards, a daily prize wheel and daily missions."],
+ ["📸","FlipGram","Post what you own, go viral, gain followers and sponsor cash."],
+ ["🌍","With friends","Golden chest races, player market, room and world leaderboards, arm wrestling, see each other everywhere."],
+ ["⚙️","Settings","Home > Settings to turn off effects, shake or vibration, or replay the tutorial."]];
 function whatsNew(){if(!S||(S.flags&&S.flags.wn>=WN_VER)||S.tut!==99&&S.tut!=null&&S.tut<6)return;S.flags.wn=WN_VER;dirty=true;
   const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><span class="eyebrow">Update</span><h2>What's new</h2><div class="wnlist">${WN.map(([i,t,d])=>`<div><i>${i}</i><span><b>${t}</b><small>${d}</small></span></div>`).join("")}</div><button class="cta" id="wnGo"><span>Let's go</span>${ARROW}</button></div>`;
   document.body.appendChild(ov);const close=()=>{ov.remove();audioOn()};ov.querySelector("#wnGo").onclick=close;ov.onclick=e=>{if(e.target===ov)close()}}
