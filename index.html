@@ -561,6 +561,25 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .mpemo{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .mpemo button{padding:9px 0;border-radius:12px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);font-size:1.1rem;font-weight:800}
 .mpemo button:active{transform:scale(.92)}
+.sailov{position:fixed;inset:0;z-index:56;overflow:hidden;background:linear-gradient(#9fd8f2 0 52%,#2f86c4 52%);animation:fadein .25s}
+.sailov.out{opacity:0;transition:opacity .3s}
+.sailsky{position:absolute;left:0;right:0;top:12%;height:10%;background:radial-gradient(circle at 80% 40%,#fff1b8 0 6%,transparent 7%)}
+.sailboat{position:absolute;left:50%;top:40%;width:min(60vw,260px);transform:translateX(-50%);animation:bob 1.1s ease-in-out infinite}
+.sailboat svg{width:100%;display:block}
+.sailwaves{position:absolute;left:-50%;right:-50%;top:52%;height:48%;background:repeating-linear-gradient(90deg,rgba(255,255,255,.25) 0 40px,transparent 40px 80px);animation:waves .8s linear infinite;opacity:.6}
+@keyframes bob{0%,100%{transform:translate(-50%,0) rotate(-3deg)}50%{transform:translate(-50%,-10px) rotate(3deg)}}
+@keyframes waves{to{transform:translateX(-80px)}}
+@keyframes fadein{from{opacity:0}}
+.saillab{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:min(80vw,340px);display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;text-align:center}
+.saillab>b{font-family:var(--display);font-variation-settings:"wdth" 120;font-weight:900;font-size:1.3rem;text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,.3)}
+.saillab i{display:block;width:100%;height:10px;border-radius:10px;background:rgba(255,255,255,.3);overflow:hidden}.saillab i b{display:block;height:100%;width:0;background:#fff}
+.saillab small{font-family:var(--mono);font-weight:700}
+.town{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.house{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 8px;border-radius:16px;background:linear-gradient(#cfe9f7 0 70%,#7fbf6a 70%);box-shadow:var(--shadow)}
+.house svg{width:100%;max-width:150px;display:block}
+.house b{font-size:.86rem;color:#141824}.house small{font-family:var(--mono);font-size:.64rem;color:#2b2f3a}
+.house.me{box-shadow:inset 0 0 0 3px var(--accent),var(--shadow)}
+.houseart{background:linear-gradient(#cfe9f7 0 75%,#7fbf6a 75%);padding:10px 0}.houseart svg{width:60%;margin:0 auto}
 .lotbid{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 .lotbid b{font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:2.5rem;line-height:1.1}
 .lotbid .who{font-weight:700;font-size:.88rem}
@@ -674,6 +693,8 @@ const PLACES=[
  {k:"mbeach",n:"Muscle Beach",c:"#14a3a8",x:1720,y:1450,w:220,h:120,door:[1830,1570],region:"beach",sub:"Outdoor gym, lifts cost half energy"},
  {k:"airport",n:"Airport",c:"#3b6fd8",x:2150,y:1430,w:380,h:150,door:[2340,1580],region:"beach",sub:"Fly to Tokyo or Paris markets"},
  {k:"docks",n:"Docks Car Meet",c:"#4a5568",x:40,y:1440,w:200,h:130,door:[140,1570],region:"beach",sub:"Show off your cars and street race"},
+ {k:"harbor",n:"Harbor",c:"#0f6fb3",x:860,y:1690,w:240,h:130,door:[980,1820],region:"beach",sub:"Boats, islands and the Online Town"},
+ {k:"township",n:"Township",c:"#e39a52",x:1260,y:1690,w:240,h:130,door:[1380,1820],region:"beach",sub:"Friends' houses in the Online Town"},
  {k:"club",n:"Nightclub",c:"#7a2fd6",x:1700,y:1250,w:200,h:120,door:[1800,1370],region:"downtown",sub:"VIP tables for a selling boost"},
  {k:"lux",n:"Luxury Exchange",c:"#2b2f3a",x:1600,y:300,w:300,h:220,door:[1750,520],region:"downtown",sub:"Diamonds, gold and fine art. Sales pay +30%"},
  {k:"tower",n:"Flip Tower",c:"#cf9a14",x:1700,y:880,w:150,h:200,door:[1775,1080],region:"downtown",sub:"Build your own skyscraper, floor by floor"},
@@ -850,6 +871,8 @@ const ACH=[
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
  ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
  ["tall190","Towering","Grow to 190 cm",()=>(S.height||170)>=190,10000],
+ ["sailor","Set sail","Sail to the Online Town",()=>!!S.flags.sailed,1000],
+ ["islands","Island hopper","Own every island",()=>ISLANDS.every(i=>ownIsl(i.k)),5e7],
  ["swole","Swole","Max out chest, back and legs",()=>{const b=myBuild();return b.c>=1.4&&b.l>=1.4&&b.b>=1.4},20000]
 ];
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
@@ -1032,6 +1055,9 @@ function drawBuilding(g,p,P){
   if(p.k==="airport"){g.fillStyle="rgba(0,0,0,.25)";rrp(g,p.x+20,cy-12,p.w-40,24,4);g.fill();g.fillStyle="#fff";for(let x=p.x+34;x<p.x+p.w-34;x+=30)g.fillRect(x,cy-2,16,4);g.fillStyle="#fff";g.beginPath();g.moveTo(cx-30,cy-26);g.lineTo(cx+30,cy-26);g.lineTo(cx+4,cy-34);g.closePath();g.fill()}
   if(p.k==="club"){for(let i=0;i<14;i++){g.fillStyle=["#ff4fd8","#4fe3ff","#ffe14f"][i%3];g.beginPath();g.arc(p.x+18+i*12.5,ry+rh-12,3,0,7);g.fill()}}
   if(p.k==="docks"){g.fillStyle="#ffcc33";for(let x=p.x+10;x<p.x+p.w-10;x+=22){g.save();g.translate(x,ry+8);g.rotate(.5);g.fillRect(0,0,8,22);g.restore()}g.fillStyle="#1b1f2a";g.fillRect(p.x+p.w-40,ry+10,6,rh-16);g.fillRect(p.x+p.w-70,ry+10,36,5)}
+  if(p.k==="harbor"){g.fillStyle="#a0764a";g.fillRect(p.door[0]-22,p.y+p.h+8,44,1950-(p.y+p.h+8));g.fillStyle="#7a5a36";for(let y=p.y+p.h+12;y<1950;y+=11)g.fillRect(p.door[0]-22,y,44,2);
+    g.strokeStyle="#ffffff";g.lineWidth=3;g.beginPath();g.arc(cx,cy-4,10,0,7);g.moveTo(cx,cy+6);g.lineTo(cx,cy+22);g.moveTo(cx-12,cy+16);g.quadraticCurveTo(cx,cy+28,cx+12,cy+16);g.stroke()}
+  if(p.k==="township"){[[p.x+24,"#e2364a"],[p.x+p.w/2-14,"#2a5bd7"],[p.x+p.w-52,"#2bb3a3"]].forEach(([x,c])=>{g.fillStyle=c;g.beginPath();g.moveTo(x,ry+30);g.lineTo(x+14,ry+12);g.lineTo(x+28,ry+30);g.fill();g.fillStyle="#f4ecd8";g.fillRect(x+3,ry+30,22,18)})}
   if(p.k==="storage"){g.fillStyle="rgba(0,0,0,.12)";for(let x=p.x+8;x<p.x+p.w-8;x+=9)g.fillRect(x,ry+8,3,rh-16);
     [p.x+14,p.x+p.w-62].forEach(x=>{g.fillStyle="#e8e2d8";rrp(g,x,fy+4,48,f-8,3);g.fill();g.fillStyle="rgba(0,0,0,.16)";for(let y=fy+9;y<fy+f-6;y+=6)g.fillRect(x+3,y,42,1.5)})}
   if(p.k==="depot"){g.fillStyle="#1b1f2a";g.fillRect(p.x,ry+rh-12,p.w,6);g.fillStyle="#ffcc33";for(let x=p.x;x<p.x+p.w;x+=16)g.fillRect(x,ry+rh-12,8,6);
@@ -1187,7 +1213,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);
+  drawFountain();drawTraffic(1/60);drawIslands();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   drawFinds();
@@ -1258,11 +1284,11 @@ function openRoom(k){
   if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
-  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
+  ({market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();G=null;GS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
-$("mpChip").onclick=()=>{audioOn();const sh=$("mpSheet");if(!sh.hidden){sh.hidden=true;return}mpUI()};
+$("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play in the Online Town. Reach level 10 to get a free raft at the Harbor on the beach, then sail over.":"Friends play in the Online Town. Go to the Harbor on the beach and sail over.");if(regionOpen("beach"))walkTo("harbor");return}const sh=$("mpSheet");if(!sh.hidden){sh.hidden=true;return}mpUI()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("phoneBtn").onclick=()=>{audioOn();openRoom("market")};
 
@@ -2758,7 +2784,7 @@ function loop(now){
       if(M)marketTick(dt,now);
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="storage")lotTick(dt);
       findsTick(dt);jobTick(dt);rivalTick(dt);
@@ -2885,6 +2911,7 @@ function mpSend(kind,obj,to){if(!MP||!MP.cl||!MP.cl.connected)return;try{MP.cl.p
 function mpOnMsg(topic,buf){
   if(!MP)return;const parts=topic.split("/"),kind=parts[3],id=parts[4];let d=null;try{d=JSON.parse(buf.toString())}catch(e){}
   if(kind==="g"){if(id===MP_ID&&d&&d.f!==MP_ID&&d.a>0){const a=Math.min(d.a,1e30);earn(a);SFX.grail();confetti(80);banner(esc(d.n||"A friend").slice(0,16)+" sent you "+fmt(a),"g");mpLog(d.n,"sent you "+fmt(a),1)}return}
+  if(kind==="d"){if(id===MP_ID&&d){const n=String(d.n||"A friend").slice(0,16);banner(n+" "+String(d.t||"").slice(0,40),"u");SFX.hot();buzz([20,40,20]);mpLog(n,String(d.t||"").slice(0,60),1);if(d.isl){S.islVis=S.islVis||{};S.islVis[d.isl]=(S.islVis[d.isl]||0)+1;dirty=true}}return}
   if(id===MP_ID)return;
   if(kind==="bye"){const p=MP.peers[id];if(p){mpLog(p.n,"left the room",1);delete MP.peers[id];renderMpChip();mpRefresh()}return}
   if(!d)return;
@@ -2892,7 +2919,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild();return{n:mpName(),x:Math.round(S.px),y:Math.round(S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170}}
+function mpState(){const b=myBuild();return{n:mpName(),x:Math.round(S.px),y:Math.round(S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0)}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -2908,7 +2935,7 @@ function mpTags(){
     ctx.fillStyle="rgba(10,14,22,.78)";rr(p.dx-w/2,top-10,w,20,9);ctx.fill();ctx.fillStyle="#2fd28a";ctx.fillText(lab,p.dx,top);
     if(p.bubT>0&&p.bub)bubble(p.dx,top-26,p.bub)}
 }
-function renderMpChip(){const el=$("mpChip");if(!el)return;if(!MP){el.innerHTML=`<span class="pk">Friends</span><span class="pt">Play together</span>`;el.classList.remove("on");return}
+function renderMpChip(){const el=$("mpChip");if(!el)return;if(!MPW){el.innerHTML=`<span class="pk">Online</span><span class="pt">Sail from the Harbor</span>`;el.classList.remove("on");return}if(!MP){el.innerHTML=`<span class="pk">Online Town</span><span class="pt">Join a room</span>`;el.classList.add("on");return}
   const n=Object.keys(MP.peers).length;el.classList.add("on");el.innerHTML=`<span class="pk">Room ${MP.code}</span><span class="pt">${n+1} online</span>`}
 function mpRefresh(){if(!$("mpSheet").hidden&&MP)mpUI(true)}
 const mpCode=()=>Array.from({length:5},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("");
@@ -2937,6 +2964,122 @@ function mpUI(keep){
   sh.querySelectorAll("[data-gift]").forEach(b=>b.onclick=()=>{const p=MP.peers[b.dataset.gift],a=Math.round(S.cash*.05);if(!p||a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},b.dataset.gift);mpLog(mpName(),"sent "+fmt(a)+" to "+p.n,1);SFX.sell();banner("Sent "+fmt(a)+" to "+String(p.n).slice(0,14),"u");mpUI()});
 }
 
+/* ================= the sea: boats, islands, the online town and the township ================= */
+const BOATS=[{k:"raft",n:"Raft",d:"Free at level 10",lv:10,cost:0,sec:5},{k:"speed",n:"Speedboat",d:"Sails in 3 seconds",lv:10,cost:250000,sec:3},{k:"yacht",n:"Superyacht",d:"Sails in 1.5 seconds",lv:10,cost:5e6,sec:1.5}];
+const ISLANDS=[
+ {k:"palm",n:"Palm Cay",cost:150000,x:520,y:2090,r:70,c:"#3f9a4e",d:"A tiny palm beach with a hammock"},
+ {k:"coral",n:"Coral Key",cost:2e6,x:1060,y:2110,r:85,c:"#2bb3a3",d:"Turquoise lagoon and a beach bar"},
+ {k:"volcano",n:"Volcano Isle",cost:25e6,x:1650,y:2095,r:95,c:"#8a3b2a",d:"A smoking volcano and a hot spring spa"},
+ {k:"crown",n:"Crown Atoll",cost:3e8,x:2050,y:2120,r:105,c:"#cf9a14",d:"A golden palace on a ring of reefs"}];
+const islRate=k=>{const i=ISLANDS.find(x=>x.k===k);return i?i.cost*.003*moonK():0};
+const hasBoat=k=>k==="yacht"?(hasToy("yacht")||!!(S.boats&&S.boats.yacht)):!!(S.boats&&S.boats[k]);
+const bestBoat=()=>[...BOATS].reverse().find(b=>hasBoat(b.k));
+const ownIsl=k=>!!(S.isl&&S.isl[k]);
+let MPW=false,islT=0;
+function islTick(dt){islT+=dt;if(islT<60)return;islT=0;let v=0;for(const k in S.isl||{})v+=islRate(k);if(v>0){earn(Math.round(v));if(!room)banner("Islands +"+fmt(v),"u")}}
+function drawIslands(){
+  ISLANDS.forEach(i=>{if(!ownIsl(i.k))return;if(i.x<cam.x-160||i.x>cam.x+vw+160||i.y<cam.y-140||i.y>cam.y+vh+140)return;
+    ctx.fillStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.ellipse(i.x,i.y,i.r+18,i.r*.42+10,0,0,7);ctx.fill();ctx.fillStyle="#efdcae";ctx.beginPath();ctx.ellipse(i.x,i.y,i.r,i.r*.42,0,0,7);ctx.fill();
+    ctx.fillStyle=i.k==="volcano"?"#6b4a3a":"#3f9a4e";ctx.beginPath();ctx.ellipse(i.x+6,i.y-4,i.r*.62,i.r*.24,0,0,7);ctx.fill();
+    if(i.k==="volcano"){ctx.fillStyle="#5a3a2a";ctx.beginPath();ctx.moveTo(i.x-34,i.y);ctx.lineTo(i.x,i.y-56);ctx.lineTo(i.x+34,i.y);ctx.fill();ctx.fillStyle=`rgba(220,220,220,${.5+.2*Math.sin(wt*2)})`;ctx.beginPath();ctx.arc(i.x+4,i.y-66-Math.sin(wt)*4,10,0,7);ctx.arc(i.x+14,i.y-80,8,0,7);ctx.fill()}
+    else if(i.k==="crown"){ctx.fillStyle="#f4f6fa";ctx.fillRect(i.x-30,i.y-40,60,32);ctx.fillStyle="#cf9a14";ctx.fillRect(i.x-34,i.y-46,68,7);[-22,0,22].forEach(dx=>{ctx.beginPath();ctx.moveTo(i.x+dx-6,i.y-46);ctx.lineTo(i.x+dx,i.y-58);ctx.lineTo(i.x+dx+6,i.y-46);ctx.fill()})}
+    else{ctx.fillStyle="#f4f6fa";ctx.fillRect(i.x-16,i.y-26,32,20);ctx.fillStyle=i.c;ctx.fillRect(i.x-19,i.y-31,38,6)}
+    [[-i.r*.55,-6],[i.r*.5,-2]].forEach(([dx,dy])=>{const px=i.x+dx,py=i.y+dy;ctx.strokeStyle="#9a7448";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(px,py);ctx.quadraticCurveTo(px+5,py-14,px+2,py-28);ctx.stroke();ctx.fillStyle="#3f9a4e";for(let a=0;a<5;a++){const an=a*1.26;ctx.beginPath();ctx.ellipse(px+2+Math.cos(an)*10,py-28+Math.sin(an)*5,11,4,an,0,7);ctx.fill()}});
+    ctx.font="800 12px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.textBaseline="middle";const w=ctx.measureText(i.n).width+16;ctx.fillStyle="rgba(10,14,22,.7)";rr(i.x-w/2,i.y+i.r*.42+6,w,20,9);ctx.fill();ctx.fillStyle="#fff";ctx.fillText(i.n,i.x,i.y+i.r*.42+16)});
+}
+/* sailing animation */
+function sail(label,sec,then){
+  const ov=document.createElement("div");ov.className="sailov";ov.innerHTML=`<div class="sailsky"></div><div class="sailboat">${boatSVG()}</div><div class="sailwaves"></div><div class="saillab"><b>${label}</b><i><b id="sailBar"></b></i><small id="sailSec">${sec.toFixed(1)}s</small></div>`;
+  document.body.appendChild(ov);SFX.door();buzz(15);const t0=performance.now();
+  const tick=()=>{const k=Math.min(1,(performance.now()-t0)/(sec*1000));const b=ov.querySelector("#sailBar");if(b){b.style.width=k*100+"%";ov.querySelector("#sailSec").textContent=Math.max(0,sec*(1-k)).toFixed(1)+"s"}if(k<1)requestAnimationFrame(tick);else{ov.classList.add("out");setTimeout(()=>ov.remove(),350);SFX.level();then()}};requestAnimationFrame(tick);
+}
+function boatSVG(){const b=bestBoat()||BOATS[0];
+  if(b.k==="raft")return `<svg viewBox="0 0 160 90"><rect x="30" y="56" width="100" height="14" rx="4" fill="#a0764a"/><g fill="#7a5a36">${[0,1,2,3,4].map(i=>`<rect x="${32+i*20}" y="56" width="3" height="14"/>`).join("")}</g><rect x="78" y="10" width="4" height="48" fill="#7a5a36"/><path d="M82 12 L118 40 L82 46 Z" fill="#f4ecd8"/></svg>`;
+  if(b.k==="speed")return `<svg viewBox="0 0 160 90"><path d="M20 54 L140 54 L128 72 L30 72 Z" fill="#f4f6fa"/><path d="M20 54 L140 54 L136 60 L24 60 Z" fill="#e2364a"/><path d="M70 54 L84 36 L104 36 L110 54 Z" fill="#1b2230"/><rect x="88" y="40" width="14" height="10" fill="#7fd6ff"/></svg>`;
+  return `<svg viewBox="0 0 160 90"><path d="M10 52 L150 52 L136 74 L22 74 Z" fill="#f4f6fa"/><rect x="34" y="36" width="86" height="16" fill="#1b2230"/><g fill="#7fd6ff">${[0,1,2,3,4].map(i=>`<rect x="${40+i*16}" y="40" width="11" height="8"/>`).join("")}</g><rect x="50" y="24" width="50" height="12" fill="#f4f6fa"/><rect x="22" y="68" width="120" height="3" fill="#cf9a14"/></svg>`}
+/* entering and leaving the online town */
+function enterMPW(){MPW=true;S.flags.sailed=1;S.px=980;S.py=1845;S.hd=0;target=null;moving=false;dirty=true;STATIC=null;banner("Online Town","u");confetti(60,null,null,["#2fd28a","#4fe3ff","#fff"]);renderMpChip();
+  if(S.mpRoom)mpJoin(S.mpRoom,true);else setTimeout(()=>mpUI(),400);rayText("Welcome to the Online Town. Make or join a room with friends, then visit their houses in the Township and their islands from the Harbor.")}
+function leaveMPW(){mpLeave(true);MPW=false;S.px=980;S.py=1845;dirty=true;STATIC=null;$("mpSheet").hidden=true;banner("Back home","a");renderMpChip()}
+/* harbor */
+function harborArt(){return `<svg viewBox="0 0 400 140" aria-hidden="true"><defs><linearGradient id="hsea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6cc4ea"/><stop offset="1" stop-color="#2f86c4"/></linearGradient></defs><rect width="400" height="140" fill="url(#hsea)"/>
+  ${[20,45,70,95,120].map((y,i)=>`<path d="M0 ${y} Q 25 ${y-5} 50 ${y} T 100 ${y} T 150 ${y} T 200 ${y} T 250 ${y} T 300 ${y} T 350 ${y} T 400 ${y}" stroke="rgba(255,255,255,.35)" stroke-width="2" fill="none"/>`).join("")}
+  <rect x="0" y="0" width="400" height="26" fill="#efdcae"/><rect x="170" y="20" width="60" height="110" fill="#a0764a"/>${Array.from({length:10},(_,i)=>`<rect x="170" y="${26+i*11}" width="60" height="2" fill="#7a5a36"/>`).join("")}
+  <g transform="translate(60,62) scale(.7)">${boatSVG()}</g><circle cx="320" cy="98" r="34" fill="#efdcae"/><circle cx="320" cy="92" r="20" fill="#3f9a4e"/></svg>`}
+function openHarbor(){
+  const draw=()=>{S.boats=S.boats||{};S.isl=S.isl||{};const L=repLevel(),bb=bestBoat(),peers=MP?Object.values(MP.peers):[];
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"Harbor · Online":"Harbor")}<div class="art">${harborArt()}</div>
+      <div class="note">${MPW?`You're in the <b>Online Town</b>. Visit friends' islands below, or sail home.`:`Sail to the <b>Online Town</b> to play with friends, or visit your islands. ${L<10?`You need level 10 for a raft (you're level ${L}).`:""}`}</div>
+      <button class="bigbtn" id="hSail" ${!bb?"disabled":""}>${MPW?"Sail home":"Sail to the Online Town"}<small>${bb?bb.n+" · "+bb.sec+"s":"Needs a boat"}</small></button>
+      <div class="sechead"><h3>Boats</h3><span class="eyebrow">Faster boats, faster trips</span></div>
+      <div class="perks">${BOATS.map(b=>{const own=hasBoat(b.k),lock=L<b.lv;return `<button class="perk nopic" data-boat="${b.k}" ${own||lock||S.cash<b.cost?"disabled":""}><span class="t">${b.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${lock?"Unlocks at level "+b.lv:b.d}</span><span class="c">${own?"Yours":b.cost?fmt(b.cost):"Free"}</span></button>`}).join("")}</div>
+      <div class="sechead"><h3>Your islands</h3><span class="eyebrow">${MPW?"Buy islands in your home town":"Earn every minute"}</span></div>
+      <div class="perks">${ISLANDS.map(i=>{const own=ownIsl(i.k);return `<button class="perk nopic" data-isl="${i.k}" ${(!own&&(MPW||S.cash<i.cost))||(own&&!bb)?"disabled":""}><span class="t">${i.n}${own?' <em class="beat">YOURS</em>':""}</span><span class="d">${i.d} · ${fmt(islRate(i.k))}/min</span><span class="c">${own?"Visit":fmt(i.cost)}</span></button>`}).join("")}</div>
+      ${MPW?`<div class="sechead"><h3>Friends' islands</h3><span class="eyebrow">Sail over and say hi</span></div><div class="perks">${peers.flatMap(p=>(p.is||[]).map(k=>{const i=ISLANDS.find(x=>x.k===k);return i?`<button class="perk nopic" data-fisl="${k}" data-fid="${Object.keys(MP.peers).find(id=>MP.peers[id]===p)}" ${!bb?"disabled":""}><span class="t">${esc(String(p.n).slice(0,16))}'s ${i.n}</span><span class="d">${i.d}</span><span class="c">Visit</span></button>`:""})).join("")||`<p class="fine">${MP?"None of your friends here own an island yet.":"Join a room to see your friends' islands."}</p>`}</div>`:""}
+      </div>`;
+    $("leaveBtn").onclick=closeRoom;
+    $("hSail").onclick=()=>{const b=bestBoat();if(!b)return;closeRoom();sail(MPW?"Sailing home":"Sailing to the Online Town",b.sec,()=>MPW?leaveMPW():enterMPW())};
+    $("room").querySelectorAll("[data-boat]").forEach(x=>x.onclick=()=>{const b=BOATS.find(y=>y.k===x.dataset.boat);if(hasBoat(b.k)||repLevel()<b.lv||S.cash<b.cost)return;S.cash-=b.cost;S.boats[b.k]=1;dirty=true;SFX.rebirth();confetti(90);banner(b.n+" ready","g");draw();updMini()});
+    $("room").querySelectorAll("[data-isl]").forEach(x=>x.onclick=()=>{const i=ISLANDS.find(y=>y.k===x.dataset.isl);
+      if(ownIsl(i.k)){const b=bestBoat();if(!b)return;sail("Sailing to "+i.n,Math.max(1,b.sec*.6),()=>openIsland(i.k,null));return}
+      if(MPW||S.cash<i.cost)return;S.cash-=i.cost;S.isl[i.k]=1;dirty=true;STATIC=null;SFX.rebirth();flash("#2bb3a3",.4);confetti(180);shake(8);banner(i.n+" is yours","g");draw();updMini()});
+    $("room").querySelectorAll("[data-fisl]").forEach(x=>x.onclick=()=>{const p=MP&&MP.peers[x.dataset.fid],b=bestBoat();if(!p||!b)return;const i=ISLANDS.find(y=>y.k===x.dataset.fisl);sail("Sailing to "+p.n+"'s "+i.n,Math.max(1,b.sec*.6),()=>openIsland(i.k,x.dataset.fid))});
+  };draw();
+}
+/* islands */
+function islandArt(i,owner){const sky=i.k==="volcano"?"#f2b48a":"#9fd8f2";return `<svg viewBox="0 0 400 170" aria-hidden="true"><rect width="400" height="170" fill="${sky}"/><circle cx="330" cy="40" r="22" fill="#fff1b8"/><rect y="96" width="400" height="74" fill="#2f86c4"/>
+  ${[110,128,146].map(y=>`<path d="M0 ${y} Q 30 ${y-4} 60 ${y} T 120 ${y} T 180 ${y} T 240 ${y} T 300 ${y} T 360 ${y} T 420 ${y}" stroke="rgba(255,255,255,.4)" stroke-width="2" fill="none"/>`).join("")}
+  <ellipse cx="200" cy="110" rx="170" ry="34" fill="#efdcae"/><ellipse cx="210" cy="100" rx="110" ry="22" fill="${i.k==="volcano"?"#6b4a3a":"#3f9a4e"}"/>
+  ${i.k==="volcano"?`<path d="M150 100 L205 30 L260 100 Z" fill="#5a3a2a"/><path d="M196 40 L205 30 L214 40 Z" fill="#ff7a3d"/><circle cx="210" cy="20" r="10" fill="#ddd" opacity=".7"/><circle cx="222" cy="8" r="8" fill="#ddd" opacity=".6"/><ellipse cx="120" cy="112" rx="26" ry="7" fill="#7fd6ff"/>`:
+    i.k==="crown"?`<rect x="160" y="52" width="90" height="46" fill="#f4f6fa"/><rect x="154" y="44" width="102" height="10" fill="#cf9a14"/>${[170,205,240].map(x=>`<path d="M${x-8} 44 L${x} 28 L${x+8} 44 Z" fill="#cf9a14"/>`).join("")}<rect x="196" y="72" width="16" height="26" fill="#8a6a4a"/>`:
+    i.k==="coral"?`<rect x="170" y="70" width="60" height="30" fill="#f4f6fa"/><path d="M164 70 L200 52 L236 70 Z" fill="#2bb3a3"/><rect x="250" y="84" width="40" height="14" fill="#a0764a"/><circle cx="262" cy="80" r="5" fill="#ff8fa3"/>`:
+    `<rect x="178" y="72" width="44" height="26" fill="#f4f6fa"/><path d="M172 72 L200 58 L228 72 Z" fill="#a0764a"/><path d="M110 96 Q 130 104 150 96" stroke="#e2364a" stroke-width="3" fill="none"/>`}
+  ${[70,320].map(x=>`<path d="M${x} 106 Q ${x+8} 80 ${x+4} 58" stroke="#9a7448" stroke-width="5" fill="none"/>${[0,1,2,3,4].map(a=>`<ellipse cx="${x+4+Math.cos(a*1.26)*14}" cy="${58+Math.sin(a*1.26)*6}" rx="15" ry="5" transform="rotate(${a*72} ${x+4+Math.cos(a*1.26)*14} ${58+Math.sin(a*1.26)*6})" fill="#3f9a4e"/>`).join("")}`).join("")}
+  <text x="200" y="158" text-anchor="middle" font-family="var(--mono)" font-size="12" font-weight="700" fill="#fff">${owner?esc(String(owner).toUpperCase())+"'S ":""}${i.n.toUpperCase()}</text></svg>`}
+function openIsland(k,fid){
+  const i=ISLANDS.find(x=>x.k===k),p=fid&&MP?MP.peers[fid]:null,mine=!fid;room="island";$("room").hidden=false;$("room").style.setProperty("--pc",i.c);
+  const draw=()=>{const relaxOk=!S.relaxT||Date.now()-S.relaxT>120000,gift=Math.round(S.cash*.05);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(i.n)}<div class="art">${islandArt(i,mine?null:p&&p.n)}</div>
+      ${mine?`<div class="kv"><div><span class="eyebrow">Earns</span><b>${fmt(islRate(k))}/min</b></div><div><span class="eyebrow">Visitors</span><b>${(S.islVis&&S.islVis[k])||0}</b></div></div>
+        <div class="note">${i.d}. Friends in the Online Town can sail here from their Harbor.</div>
+        <button class="bigbtn" id="iRelax" ${relaxOk?"":"disabled"}>Relax on the beach<small>${relaxOk?"Refill all your energy":"Come back in a couple of minutes"}</small></button>`
+      :`<div class="note">You're visiting <b>${esc(String(p?p.n:"a friend"))}'s</b> island. ${i.d}.</div>
+        <button class="bigbtn" id="iSign">Sign the guestbook<small>They'll see you came by</small></button>
+        <button class="bigbtn alt" id="iGift" ${gift<1?"disabled":""}>Message in a bottle<small>Send them ${fmt(gift)}</small></button>`}
+      <button class="bigbtn alt" id="iBack">Sail back to the Harbor<small>&nbsp;</small></button></div>`;
+    $("leaveBtn").onclick=()=>{closeRoom();S.px=980;S.py=1845};$("iBack").onclick=()=>{closeRoom();S.px=980;S.py=1845};
+    const r=$("iRelax");if(r)r.onclick=()=>{S.relaxT=Date.now();S.energy=maxEnergy();dirty=true;SFX.level();confetti(40);banner("Fully rested","u");draw();updMini()};
+    const sg=$("iSign");if(sg)sg.onclick=()=>{if(!p)return;mpSend("d",{n:mpName(),t:"visited your "+i.n,isl:k},fid);SFX.hot();banner("Guestbook signed","u");sg.disabled=true};
+    const gf=$("iGift");if(gf)gf.onclick=()=>{if(!p)return;const a=Math.round(S.cash*.05);if(a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},fid);SFX.sell();banner("Bottle sent: "+fmt(a),"u");draw();updMini()};
+  };draw();renderHud();
+}
+/* township: a street of houses, one per player in the room */
+function houseSVG(h,col,big){const w=big?120:96;
+  if(h>=3)return `<svg viewBox="0 0 140 110"><rect x="8" y="40" width="124" height="62" fill="${col}"/><path d="M0 44 L70 8 L140 44 Z" fill="#2b2f3a"/><rect x="58" y="70" width="24" height="32" fill="#3b2a20"/>${[22,98].map(x=>`<rect x="${x}" y="56" width="20" height="16" fill="#ffe08a"/>`).join("")}<rect x="0" y="100" width="140" height="10" fill="#7fd6ff"/></svg>`;
+  if(h===2)return `<svg viewBox="0 0 140 110"><rect x="36" y="6" width="68" height="98" fill="${col}"/>${[0,1,2,3].map(r=>[46,76].map(x=>`<rect x="${x}" y="${16+r*20}" width="18" height="12" fill="#ffe08a"/>`).join("")).join("")}<rect x="60" y="86" width="20" height="18" fill="#3b2a20"/></svg>`;
+  if(h===1)return `<svg viewBox="0 0 140 110"><rect x="22" y="38" width="96" height="66" fill="${col}"/><rect x="22" y="30" width="96" height="10" fill="#1b2230"/>${[34,90].map(x=>`<rect x="${x}" y="52" width="18" height="22" fill="#ffe08a"/>`).join("")}<rect x="60" y="76" width="20" height="28" fill="#3b2a20"/></svg>`;
+  return `<svg viewBox="0 0 140 110"><rect x="30" y="50" width="80" height="54" fill="${col}"/><path d="M22 54 L70 22 L118 54 Z" fill="#8a3e22"/><rect x="62" y="76" width="18" height="28" fill="#3b2a20"/><rect x="38" y="62" width="16" height="14" fill="#ffe08a"/><rect x="88" y="62" width="16" height="14" fill="#ffe08a"/></svg>`}
+function openTownship(){
+  const draw=()=>{const ppl=[{id:null,n:mpName(),s:OUTFITS[S.skin||0][1],hm:S.home||0,lv:repLevel(),me:1}].concat(MPW&&MP?Object.entries(MP.peers).map(([id,p])=>({id,n:p.n,s:p.s,hm:p.hm||0,lv:p.lv||0})):[]);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Township")}
+      <div class="town">${ppl.map((p,i)=>`<button class="house${p.me?" me":""}" data-h="${i}">${houseSVG(p.hm,p.s||"#2a3cff")}<b>${esc(String(p.n).slice(0,14))}${p.me?" (you)":""}</b><small>Lv ${p.lv} · ${PROPS[p.hm]?PROPS[p.hm].n:"Home"}</small></button>`).join("")}</div>
+      <p class="fine">${MPW?(MP?"When a friend joins your room, their house appears on this street. Tap a house to visit.":"Join a room from the Friends button to fill the street."):"This is the offline town. Sail to the Online Town from the Harbor to see your friends' houses."}</p></div>`;
+    $("leaveBtn").onclick=closeRoom;
+    $("room").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>visitHouse(ppl[+b.dataset.h],draw));
+  };draw();
+}
+function visitHouse(p,back){
+  const peer=p.id&&MP?MP.peers[p.id]:null,gift=Math.round(S.cash*.05);
+  const info=p.me?{n:mpName(),lv:repLevel(),c:S.cash,cm:S.height||170,f:S.fans||0,tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,is:Object.keys(S.isl||{}).length}:{n:p.n,lv:peer?peer.lv:p.lv,c:peer?peer.c:0,cm:peer?peer.cm:170,f:peer?peer.f||0:0,tw:peer?peer.tw||0:0,tr:peer?peer.tr||0:0,is:peer&&peer.is?peer.is.length:0};
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(String(p.n).slice(0,14))+"'s house")}<div class="art houseart">${houseSVG(p.hm,p.s||"#2a3cff",1)}</div>
+    <div class="kv"><div><span class="eyebrow">Level</span><b>${info.lv}</b></div><div><span class="eyebrow">Cash</span><b>${fmt(info.c||0)}</b></div><div><span class="eyebrow">Height</span><b>${info.cm} cm</b></div><div><span class="eyebrow">Fans</span><b>${fmtN(info.f||0)}</b></div><div><span class="eyebrow">Tower floors</span><b>${info.tw}</b></div><div><span class="eyebrow">Trophies · islands</span><b>${info.tr} · ${info.is}</b></div></div>
+    ${p.me?`<div class="note">This is your place. Upgrade it at Home to change how it looks on the street.</div>`:`<button class="bigbtn" id="hBell">Ring the doorbell<small>They'll get a notification</small></button><button class="bigbtn alt" id="hGift" ${gift<1?"disabled":""}>Leave a gift<small>${fmt(gift)}</small></button>`}
+    <button class="bigbtn alt" id="hBack">Back to the street<small>&nbsp;</small></button></div>`;
+  $("leaveBtn").onclick=closeRoom;$("hBack").onclick=back;
+  const bl=$("hBell");if(bl)bl.onclick=()=>{if(!peer)return;mpSend("d",{n:mpName(),t:"rang your doorbell 🔔"},p.id);SFX.hot();banner("Ding dong!","u");bl.disabled=true};
+  const gf=$("hGift");if(gf)gf.onclick=()=>{if(!peer)return;const a=Math.round(S.cash*.05);if(a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},p.id);SFX.sell();banner("Gift left: "+fmt(a),"u");visitHouse(p,back);updMini()};
+}
+
 /* ================= title ================= */
 function title(){
   accMigrate();const acc=accCur();if(!acc){accScreen();return}accUse(acc);newGame();
@@ -2954,6 +3097,7 @@ function title(){
         <div><kbd>EXPLORE</kbd><span>Finish Uncle Ray's goals to unlock the Beach and Downtown, and buy a bike, scooter and sports car. Watch for random town events.</span></div>
         <div><kbd>HUNT</kbd><span>Bid blind on storage units, race courier deliveries, grab shiny finds around town, and beat your rival Vince.</span></div>
         <div><kbd>EMPIRE</kbd><span>Rich already? Build Flip Tower floor by floor, buy a yacht, jet and island, and climb the rich list to #1.</span></div>
+        <div><kbd>ONLINE</kbd><span>Reach level 10 for a raft at the Harbor and sail to the Online Town to play with friends, visit their houses and islands.</span></div>
         <div><kbd>LEVEL</kbd><span>Everything you earn levels you up. Each level, pick 1 of 3 perk cards to shape your own build.</span></div>
       </div>
       ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · Level ${repLevel()} · Day ${S.day}</small></span>${ARROW}</button>
@@ -2965,7 +3109,7 @@ function title(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();if(S.mpRoom&&!MP)mpJoin(S.mpRoom,true);bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){shownCash=null;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
