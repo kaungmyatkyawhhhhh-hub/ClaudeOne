@@ -3456,7 +3456,7 @@ const FISH=[
  {k:"marlin",n:"Blue marlin",r:2,v:1800,c:"#1f4fa8"},{k:"sword",n:"Swordfish",r:2,v:2400,c:"#5f6b7e"},{k:"ray",n:"Manta ray",r:2,v:2000,c:"#2b2f3a"},
  {k:"koi",n:"Golden koi",r:3,v:15000,c:"#ffcc33"},{k:"shark",n:"Great white",r:3,v:22000,c:"#9fb2c4"},{k:"squid",n:"Giant squid",r:3,v:40000,c:"#d6384b"}];
 const FISH_R=["Common","Uncommon","Rare","Legendary"],FISH_RC=["#9aa3b3","#2fd28a","#4fe3ff","#ffcc33"];
-const fishMul=k=>[1,5,25,120][islTier(k)]*moonK();
+const fishMul=k=>(k==="harbor"?.6:[1,5,25,120][islTier(k)])*moonK();
 function rollFish(k){const pier=hasIB(k,"pier"),t=islTier(k),pg=petK("penguin"),w=[60,28-(pier?3:0),10+(pier?3:0)+t+4*pg,2+(pier?1.5:0)+t*.8+2*pg];let x=Math.random()*w.reduce((a,b)=>a+b,0),r=0;for(;r<3;r++){if(x<w[r])break;x-=w[r]}return pick(FISH.filter(f=>f.r===r))}
 function fishSVG(f,w=44){return `<svg viewBox="0 0 60 30" width="${w}" height="${w/2}" aria-hidden="true"><path d="M6 15 Q22 0 42 10 L54 3 L50 15 L54 27 L42 20 Q22 30 6 15Z" fill="${f.c}"/><path d="M6 15 Q22 22 42 19" stroke="rgba(0,0,0,.18)" fill="none"/><circle cx="14" cy="13" r="2" fill="#141824"/><path d="M24 6 Q28 2 34 6" stroke="${f.c}" stroke-width="3" fill="none"/></svg>`}
 /* the island scene */
@@ -3902,7 +3902,7 @@ function openPlayerMarket(back){room="pmarket";$("room").hidden=false;
 const MISS=[
  {k:"flips",t:"Make {n} sales",st:"flips",n:[6,12,20]},
  {k:"lifted",t:"Do {n} successful lifts",st:"lifted",n:[4,8,12]},
- {k:"fish",t:"Catch {n} fish",st:"fish",n:[3,6,10],need:()=>Object.keys(S.isl||{}).length>0},
+ {k:"fish",t:"Catch {n} fish",st:"fish",n:[3,6,10],need:()=>repLevel()>=3},
  {k:"relics",t:"Dive {n} times",st:"dives",n:[2,3,5],need:()=>Object.keys(S.isl||{}).length>0},
  {k:"arm",t:"Win {n} arm wrestles",st:"armWins",n:[1,2,4]},
  {k:"scratch",t:"Scratch {n} cards",st:"scratch",n:[2,4,6]},
@@ -4487,6 +4487,7 @@ function openHarbor(){
   const draw=()=>{S.boats=S.boats||{};S.isl=S.isl||{};const L=repLevel(),bb=bestBoat(),peers=MP?Object.values(MP.peers):[];
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"Harbor · Online":"Harbor")}<div class="art">${harborArt()}</div>
       <div class="note">${MPW?`You're in the <b>Online Town</b>. Visit friends' islands below, or sail home.`:`Sail to the <b>Online Town</b> to play with friends, or visit your islands. ${L<10?`You need level 10 for a raft (you're level ${L}).`:""}`}</div>
+      <button class="bigbtn alt" id="hFish">Fish off the pier<small>3 energy a cast · ${Object.keys(S.fish||{}).length}/${FISH.length} species found</small></button>
       <button class="bigbtn" id="hSail" ${!bb?"disabled":""}>${MPW?"Sail home":"Sail to the Online Town"}<small>${bb?bb.n+" · "+bb.sec+"s":"Needs a boat"}</small></button>
       <div class="sechead"><h3>Boats</h3><span class="eyebrow">Faster boats, faster trips</span></div>
       <div class="perks">${BOATS.map(b=>{const own=hasBoat(b.k),lock=L<b.lv;return `<button class="perk nopic" data-boat="${b.k}" ${own||lock||S.cash<b.cost?"disabled":""}><span class="t">${b.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${lock?"Unlocks at level "+b.lv:b.d}</span><span class="c">${own?"Yours":b.cost?fmt(b.cost):"Free"}</span></button>`}).join("")}</div>
@@ -4495,6 +4496,7 @@ function openHarbor(){
       ${MPW?`<div class="sechead"><h3>Friends' islands</h3><span class="eyebrow">Sail over and say hi</span></div><div class="perks">${peers.flatMap(p=>(p.is||[]).map(k=>{const i=ISLANDS.find(x=>x.k===k);return i?`<button class="perk nopic" data-fisl="${k}" data-fid="${Object.keys(MP.peers).find(id=>MP.peers[id]===p)}" ${!bb?"disabled":""}><span class="t">${esc(String(p.n).slice(0,16))}'s ${i.n}</span><span class="d">${i.d}</span><span class="c">Visit</span></button>`:""})).join("")||`<p class="fine">${MP?"None of your friends here own an island yet.":"Join a room to see your friends' islands."}</p>`}</div>`:""}
       </div>`;
     $("leaveBtn").onclick=closeRoom;
+    $("hFish").onclick=e=>{if(!spend(3,e.currentTarget))return;room="island";islFish("harbor",()=>{FI=null;room="harbor";draw()})};
     $("hSail").onclick=()=>{const b=bestBoat();if(!b)return;closeRoom();sail(MPW?"Sailing home":"Sailing to the Online Town",b.sec,()=>MPW?leaveMPW():enterMPW())};
     $("room").querySelectorAll("[data-boat]").forEach(x=>x.onclick=()=>{const b=BOATS.find(y=>y.k===x.dataset.boat);if(hasBoat(b.k)||repLevel()<b.lv||S.cash<b.cost)return;S.cash-=b.cost;S.boats[b.k]=1;dirty=true;SFX.rebirth();confetti(90);banner(b.n+" ready","g");draw();updMini()});
     $("room").querySelectorAll("[data-isl]").forEach(x=>x.onclick=()=>{const i=ISLANDS.find(y=>y.k===x.dataset.isl);
