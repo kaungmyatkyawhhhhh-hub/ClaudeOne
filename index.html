@@ -295,6 +295,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .homeart{padding:0;overflow:hidden}.homeart svg{display:block;width:100%;height:auto}
 .collgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.citem{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);text-align:center}.citem small{font-size:.68rem;font-weight:700;line-height:1.15}.citem i{font:600 .62rem var(--mono);font-style:normal;color:var(--muted)}.citem.lock small{color:var(--muted)}
 .oav.pmt{background:none;display:grid;place-items:center}.plrow{cursor:default}.pmbtns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.pmbtns button{border:0;border-radius:99px;padding:5px 8px;font:700 .68rem var(--mono);background:var(--ink);color:var(--bg);cursor:pointer}.pmbtns button:disabled{opacity:.4}
+.dcard.miss{display:flex;flex-direction:column;gap:8px}.mrow{display:flex;gap:10px;align-items:center}.mrow>span{flex:1;display:flex;flex-direction:column;gap:3px}.mrow b{font-size:.88rem}.mrow small{font:600 .68rem var(--mono);color:var(--muted)}.mrow button{border:0;border-radius:99px;padding:7px 12px;font:800 .75rem var(--body);background:var(--accent);color:#fff;cursor:pointer;min-width:58px}.mrow button:disabled{background:var(--sunk);color:var(--muted)}.mrow.done b{text-decoration:line-through;opacity:.6}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -930,7 +931,7 @@ const ACH=[
  ["partner","Power couple","Get a partner",()=>!!S.partner,3000],
  ["swole","Swole","Max out chest, back and legs",()=>{const b=myBuild();return b.c>=1.4&&b.l>=1.4&&b.b>=1.4},20000]
 ];
-const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length;
+const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+missReady();
 const maxEnergy=()=>maxEnergyFor(strLv());
 const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag+pk("slot")+((S&&S.spurts)||0)+(S&&S.acc&&S.acc.b==="pack"?1:0);
 const walkSpeed=()=>(1+.12*petK("husky"))*150*(1+.25*S.up.shoes)*(1+.004*cmOver())*(1+.1*pk("speed"))*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
@@ -1858,7 +1859,7 @@ function openHome(){
       <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
       <div class="bankbtns"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button></div>
-      ${dailyCard()}
+      ${dailyCard()}${missCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
       ${Object.keys(S.veh).length?`<div class="sechead"><h3>Garage</h3><span class="eyebrow">Tap to drive</span></div>
@@ -1880,7 +1881,7 @@ function openHome(){
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});bindMiss(draw);
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
@@ -3191,7 +3192,7 @@ function bizTick(dt){bizT+=dt;if(bizT<1)return;bizT=0;const now=Date.now();
   if(room==="biz"&&BZV){const t=$("bzTill"),i=$("bzInc"),r=$("bzRep");if(t)t.textContent=BZV.mgr?"Auto":fmt(BZV.till||0);if(i)i.textContent=fmt(bizInc(BZV))+"/min";if(r)r.textContent=Math.round(BZV.rep)}}
 const empireInc=()=>(S.biz||[]).reduce((a,b)=>a+bizInc(b),0);
 const tillAll=()=>(S.biz||[]).reduce((a,b)=>a+(b.mgr?0:b.till||0),0);
-function collectAll(){let v=0;(S.biz||[]).forEach(b=>{if(!b.mgr){v+=b.till||0;b.till=0}});v=Math.round(v);if(v<1)return 0;earn(v);dirty=true;SFX.sell();confetti(Math.min(160,40+Math.log10(v)*12));banner("Collected "+fmt(v),"g");return v}
+function collectAll(){let v=0;(S.biz||[]).forEach(b=>{if(!b.mgr){v+=b.till||0;b.till=0}});v=Math.round(v);if(v<1)return 0;S.stats.bizCollects=(S.stats.bizCollects||0)+1;earn(v);dirty=true;SFX.sell();confetti(Math.min(160,40+Math.log10(v)*12));banner("Collected "+fmt(v),"g");return v}
 /* art */
 function flagSVG(k,w=36){const h=Math.round(w*2/3),s=(b)=>`<svg class="flag" viewBox="0 0 30 20" width="${w}" height="${h}" aria-hidden="true">${b}</svg>`;
   const V=(a,b,c)=>`<rect width="10" height="20" fill="${a}"/><rect x="10" width="10" height="20" fill="${b}"/><rect x="20" width="10" height="20" fill="${c}"/>`;
@@ -3283,7 +3284,7 @@ function openAirport(){const L=repLevel();
     <div class="sechead"><h3>Destinations</h3><span class="eyebrow">${COUNTRIES.length} cities</span></div>
     <div class="perks">${COUNTRIES.map(c=>{const lock=L<c.lv&&!(c.k==="dubai"&&hasToy("jet")),f=cFare(c),n=(S.biz||[]).filter(b=>b.c===c.k).length;return `<button class="perk opp dest" data-fly="${c.k}" ${lock||S.cash<f?"disabled":""}><span class="oav fl">${flagSVG(c.k,34)}</span><span class="t">${c.n} <small style="opacity:.6;font-weight:600">${c.cn}</small>${n?` <em class="beat">${n} BIZ</em>`:""}</span><span class="d">${lock?"Unlocks at level "+c.lv:c.spec}</span><span class="c">${lock?"Locked":f?fmt(f):"Free"}</span></button>`}).join("")}</div></div>`;
   $("leaveBtn").onclick=closeRoom;const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);
-  $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{const c=CTRY(b.dataset.fly),f=cFare(c);if(S.cash<f)return;S.cash-=f;dirty=true;flyTo(c)})}
+  $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{const c=CTRY(b.dataset.fly),f=cFare(c);if(S.cash<f)return;S.cash-=f;S.stats.flights=(S.stats.flights||0)+1;dirty=true;flyTo(c)})}
 function openCity(k,arrive){const c=CTRY(k);CITY=k;if(M)closeMarket();room="abroad";$("room").hidden=false;$("room").style.setProperty("--pc",c.tone);
   const today=S.seen&&S.seen[k]===S.day,mine=(S.biz||[]).filter(b=>b.c===k);
   $("room").innerHTML=`<div class="room-in scroll">${roomHead(c.n)}
@@ -3339,7 +3340,7 @@ function openBiz(id,back){const b=(S.biz||[]).find(x=>x.id===id);if(!b)return ba
       </div></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{BZV=null;back()};
     const dec=$("bzDec");if(dec)dec.onclick=()=>openBizEvent(()=>openBiz(id,back));
-    const col=$("bzCol");if(col)col.onclick=()=>{const v=Math.round(b.till||0);if(v<1)return;b.till=0;earn(v);dirty=true;SFX.sell();confetti(60);banner("+"+fmt(v),"g");draw();updMini()};
+    const col=$("bzCol");if(col)col.onclick=()=>{const v=Math.round(b.till||0);if(v<1)return;b.till=0;S.stats.bizCollects=(S.stats.bizCollects||0)+1;earn(v);dirty=true;SFX.sell();confetti(60);banner("+"+fmt(v),"g");draw();updMini()};
     $("room").querySelectorAll("[data-pr]").forEach(x=>x.onclick=()=>{b.p=+x.dataset.pr;dirty=true;SFX.tick(.5);draw()});
     $("room").querySelectorAll("[data-act]").forEach(x=>x.onclick=()=>{const a=x.dataset.act;
       if(a==="exp"){if(b.lv>=bizMaxLv||S.cash<ex)return;S.cash-=ex;b.inv+=ex;b.lv++;SFX.rebirth();confetti(100);shake(5);banner(b.n+" → level "+b.lv,"g")}
@@ -3439,7 +3440,7 @@ function islDive(k,back){const d=islB(k).dive;if(d.day!==S.day){d.day=S.day;d.le
     <div class="divegrid">${d.loot.map((l,j)=>{const o=d.open[j];return `<button class="dspot${o?" open":""}" data-d="${j}" ${o||d.left<=0?"disabled":""}>${o?`<i style="background:${LOOT[l][2]}"></i><small>${LOOT[l][0].split("!")[0]}</small>`:`<span>?</span>`}</button>`}).join("")}</div>
     <p class="fine">${d.left>0?d.left+" dives left today · 5 energy each":"No dives left. Come back tomorrow."}</p></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-    $("room").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{const j=+b.dataset.d;if(d.open[j]||d.left<=0)return;if(!spend(5,b))return;d.left--;d.open[j]=1;const l=d.loot[j],L=LOOT[l];dirty=true;
+    $("room").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{const j=+b.dataset.d;if(d.open[j]||d.left<=0)return;if(!spend(5,b))return;d.left--;d.open[j]=1;S.stats.dives=(S.stats.dives||0)+1;const l=d.loot[j],L=LOOT[l];dirty=true;
       if(l==="jelly"){S.energy=Math.max(0,S.energy-10);SFX.nope();shake(5);banner("Ouch! Jellyfish","r")}
       else if(L[1]>0){const v=Math.round(base()*L[1]*rnd(.8,1.3));earn(v);S.stats.relics=(S.stats.relics||0)+(l==="relic"?1:0);SFX[l==="relic"?"grail":"sell"]();confetti(l==="relic"?150:40);if(l==="relic")shake(6);banner(L[0]+" +"+fmt(v),l==="relic"?"g":"u")}
       else{SFX.tick(.3);banner("Just sand","a")}
@@ -3497,7 +3498,7 @@ function casinoArt(c){const nt=true;return `<svg viewBox="0 0 400 150" aria-hidd
 const chipRow=()=>`<div class="chips">${CHIPS.map(v=>`<button class="cchip${CZ.bet===v?" on":""}" data-chip="${v}" ${S.cash<v?"disabled":""}>${fmt(v).replace(".00","")}</button>`).join("")}</div>`;
 const fixBet=()=>{if(S.cash<CZ.bet){const ok=CHIPS.filter(v=>v<=S.cash);CZ.bet=ok.length?ok[ok.length-1]:CHIPS[0]}};
 function bindChips(redraw){$("room").querySelectorAll("[data-chip]").forEach(b=>b.onclick=()=>{CZ.bet=+b.dataset.chip;SFX.tick(.4);redraw()})}
-function casinoWin(v,bet,txt){S.stats.casinoNet=(S.stats.casinoNet||0)+v-bet;if(v>0){S.cash+=v;S.stats.casinoBig=Math.max(S.stats.casinoBig||0,v-bet);if(v>=bet*10){confetti(200,null,null,["#ffcc33","#ff4fd8","#fff"]);shake(8);SFX.grail()}else{confetti(50);SFX.level()}banner(txt+" +"+fmt(v),"g")}else{SFX.loss();banner(txt,"r")}dirty=true;updMini()}
+function casinoWin(v,bet,txt){S.stats.casinoPlays=(S.stats.casinoPlays||0)+1;S.stats.casinoNet=(S.stats.casinoNet||0)+v-bet;if(v>0){S.cash+=v;S.stats.casinoBig=Math.max(S.stats.casinoBig||0,v-bet);if(v>=bet*10){confetti(200,null,null,["#ffcc33","#ff4fd8","#fff"]);shake(8);SFX.grail()}else{confetti(50);SFX.level()}banner(txt+" +"+fmt(v),"g")}else{SFX.loss();banner(txt,"r")}dirty=true;updMini()}
 function openCasino(k,back){const c=CTRY(k);CZ=CZ||{bet:1e4};fixBet();room="casino";
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Casino")}<div class="art cityart">${casinoArt(c)}</div>
     <div class="kv"><div><span class="eyebrow">Won/lost here</span><b style="color:${(S.stats.casinoNet||0)>=0?"var(--up)":"var(--down)"}">${(S.stats.casinoNet||0)>=0?"+":"−"}${fmt(Math.abs(S.stats.casinoNet||0))}</b></div><div><span class="eyebrow">Biggest win</span><b>${fmt(S.stats.casinoBig||0)}</b></div></div>
@@ -3808,6 +3809,30 @@ function openPlayerMarket(back){room="pmarket";$("room").hidden=false;
     $("room").querySelectorAll("[data-unl]").forEach(b=>b.onclick=()=>{S.plist=(S.plist||[]).filter(x=>x.id!==b.dataset.unl);dirty=true;draw()});
     $("room").querySelectorAll("[data-ls]").forEach(b=>b.onclick=()=>{const[i,p]=b.dataset.ls.split("|").map(Number),s=S.stash[i];if(!s||!MP)return;s.uid=s.uid||Math.random().toString(36).slice(2,10);S.plist=myListings().map(({i,...x})=>x);S.plist.push({id:Math.random().toString(36).slice(2,8),u:s.uid,p});dirty=true;SFX.tick(.6);banner("Listed "+s.name,"u");draw()})};
   PMV=draw;draw();renderHud()}
+
+/* ================= daily missions: three a day, progress from what you actually do ================= */
+const MISS=[
+ {k:"flips",t:"Make {n} sales",st:"flips",n:[6,12,20]},
+ {k:"lifted",t:"Do {n} successful lifts",st:"lifted",n:[4,8,12]},
+ {k:"fish",t:"Catch {n} fish",st:"fish",n:[3,6,10],need:()=>Object.keys(S.isl||{}).length>0},
+ {k:"relics",t:"Dive {n} times",st:"dives",n:[2,3,5],need:()=>Object.keys(S.isl||{}).length>0},
+ {k:"arm",t:"Win {n} arm wrestles",st:"armWins",n:[1,2,4]},
+ {k:"scratch",t:"Scratch {n} cards",st:"scratch",n:[2,4,6]},
+ {k:"hands",t:"Play {n} casino games",st:"casinoPlays",n:[3,6,10],need:()=>repLevel()>=10},
+ {k:"flights",t:"Take {n} flights abroad",st:"flights",n:[1,2,3],need:()=>repLevel()>=5},
+ {k:"collect",t:"Collect from your businesses {n} times",st:"bizCollects",n:[1,3,5],need:()=>(S.biz||[]).length>0},
+ {k:"deliv",t:"Deliver {n} packages",st:"delivOk",n:[1,2,3]},
+ {k:"finds",t:"Grab {n} shiny finds",st:"finds",n:[2,4,6]},
+ {k:"flex",t:"Flex {n} times at the gym",st:"flexes",n:[1,2,3]}];
+function ensureMiss(){const d=dayKey();if(S.miss&&S.miss.d===d)return;let h=0;for(const ch of d+(ACC?ACC.user:""))h=(h*31+ch.charCodeAt(0))%99991;
+  const pool=MISS.filter(m=>!m.need||m.need()),pickd=[];while(pickd.length<3&&pool.length){const i=h%pool.length;pickd.push(pool.splice(i,1)[0]);h=Math.floor(h/7)+13}
+  S.miss={d,list:pickd.map((m,i)=>({k:m.k,need:m.n[i],base:S.stats[m.st]||0,done:0}))};dirty=true}
+const missT=(t,n)=>{const r=t.replace("{n}",n);return n===1?r.replace(/(\b1 (?:\w+ )*?\w+)s\b/,"$1"):r};
+const missProg=x=>{const m=MISS.find(y=>y.k===x.k);return Math.min(x.need,(S.stats[m.st]||0)-x.base)};
+const missReady=()=>{if(!S||!S.miss)return 0;return S.miss.list.filter(x=>!x.done&&missProg(x)>=x.need).length};
+const missRw=i=>Math.round([1500,4000,10000][i]*(1+SC()*.8));
+function missCard(){ensureMiss();return `<div class="dcard miss"><span class="eyebrow">Daily missions · ${S.miss.list.filter(x=>x.done).length}/3</span>${S.miss.list.map((x,i)=>{const m=MISS.find(y=>y.k===x.k),p=missProg(x),ok=p>=x.need;return `<div class="mrow${x.done?" done":""}"><span><b>${missT(m.t,x.need)}</b><div class="bar xp"><i style="width:${p/x.need*100}%"></i></div><small>${p}/${x.need} · ${fmt(missRw(i))}${i===2?" + 2 crates":i===1?" + crate":""}</small></span><button data-mi="${i}" ${x.done||!ok?"disabled":""}>${x.done?"✓":ok?"Claim":"…"}</button></div>`}).join("")}</div>`}
+function bindMiss(redraw){$("room").querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>{const i=+b.dataset.mi,x=S.miss.list[i];if(x.done||missProg(x)<x.need)return;x.done=1;earn(missRw(i));if(i>=1)gainCrate(i);dirty=true;SFX.level();confetti(70);banner("Mission complete +"+fmt(missRw(i)),"g");redraw();updMini()})}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
