@@ -760,7 +760,7 @@ function newGame(){
   freshLife(false);
 }
 function save(){if(S)store.set(SAVE,JSON.stringify(S));dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};if(d.trend&&d.hist)CATS.forEach(c=>{if(d.trend[c.k]==null){d.trend[c.k]=1;d.hist[c.k]=Array(40).fill(1)}});for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};d.bestPr=Math.max(d.bestPr||0,d.pr||20,...Object.values(d.lifts||{}));d.bestLifts=d.bestLifts||{};for(const k in d.lifts||{})d.bestLifts[k]=Math.max(d.bestLifts[k]||0,d.lifts[k]);if(d.trend&&d.hist)CATS.forEach(c=>{if(d.trend[c.k]==null){d.trend[c.k]=1;d.hist[c.k]=Array(40).fill(1)}});for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 // Reputation level grows forever from everything you earn; no resets
 // Each level needs 30% more lifetime earnings than the last
@@ -1176,7 +1176,7 @@ function drawWorld(){
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:1+Math.min(.6,(S.pr-20)/300)})}]);
+  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   drawToys();drawBirds(1/60);
   [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
@@ -1268,9 +1268,12 @@ const cmOver=()=>Math.max(0,((S&&S.height)||170)-170);
 const liftOver=()=>10+10*((S&&S.spurts)||0);
 const spurtReq=()=>120+30*(S.spurts||0);
 const spurtGain=()=>Math.min(6,2+Math.floor(Math.max(0,S.pr-spurtReq())/40));
-const tallK=()=>((S&&S.height)||170)/170;
+// Height is exaggerated on screen so every cm shows: 180 cm looks ~13% taller, 200 cm ~39%
+const tallK=()=>1+Math.min(.8,(((S&&S.height)||170)-170)/170*2.2);
+// Body size comes from your best-ever lift, so a growth spurt never makes you smaller
+const bodyK=()=>1+Math.min(.6,(Math.max(S.pr,S.bestPr||0)-20)/300);
 const liftTotal=()=>S.lifts.bench+S.lifts.squat+S.lifts.dead;
-const syncPR=()=>{S.pr=Math.max(S.lifts.bench,S.lifts.squat,S.lifts.dead)};
+const syncPR=()=>{S.pr=Math.max(S.lifts.bench,S.lifts.squat,S.lifts.dead);S.bestPr=Math.max(S.bestPr||0,S.pr);const bl=S.bestLifts=S.bestLifts||{};for(const k in S.lifts)bl[k]=Math.max(bl[k]||0,S.lifts[k])};
 function liftPanel(l0){
   G0lift=l0;G={lift:l0,w:S.liftMax?S.lifts[l0]+liftOver():S.lifts[l0]+5,pos:0,dir:1,z:[.4,.6],busy:false,half:GS.half};newZone();const P=$("gPanel");P.hidden=false;
   const draw=()=>{
@@ -1372,7 +1375,7 @@ function drawFountain(){const x=700,y=700;if(x<cam.x-60||x>cam.x+vw+60||y<cam.y-
   ctx.fillStyle="rgba(255,255,255,.85)";ctx.beginPath();ctx.ellipse(x,y-10-Math.sin(wt*5)*2,2.4,9,0,0,7);ctx.fill()}
 
 /* ---------- physique: each lift builds a different body part ---------- */
-function myBuild(){const L=S.lifts||{bench:20,squat:20,dead:20};return{c:clamp((L.bench-20)/180,0,1.4),l:clamp((L.squat-20)/240,0,1.4),b:clamp((L.dead-20)/280,0,1.4)}}
+function myBuild(){const c=S.lifts||{bench:20,squat:20,dead:20},bl=S.bestLifts||{},L={};for(const k of["bench","squat","dead"])L[k]=Math.max(c[k]||20,(bl[k]||0)*.6);return{c:clamp((L.bench-20)/180,0,1.4),l:clamp((L.squat-20)/240,0,1.4),b:clamp((L.dead-20)/280,0,1.4)}}
 function physiqueSVG(B){
   const c=B.c,l=B.l,b=B.b,sw=40+20*b+12*c,sk="#e8b896",sh="#c98e62",def=Math.min(1,(c+l+b)/2.4),wa=24+3*l;
   const torso=`M${100-sw+8} 70 Q${100-sw} 72 ${100-sw+2} 84 L${100-wa} 150 L${100+wa} 150 L${100+sw-2} 84 Q${100+sw} 72 ${100+sw-8} 70 Z`;
@@ -1702,7 +1705,7 @@ function gymDraw(){
   const ppl=GS.npcs.map(n=>[n.y,()=>{const cheer=n.slot>=0&&!n.mv,work=!n.mv&&n.slot<0&&n.act==="work",bob=cheer?Math.abs(Math.sin(n.ph*9))*4:work?Math.abs(Math.sin(n.ph*3))*1.5:0;
     drawPerson(n.x,n.y,{g:c,build:n.build,shirt:n.shirt,skin:n.skin,hair:n.hair,size:n.size,mv:n.mv,ph:n.ph,bob,pose:cheer&&Math.sin(n.ph*2)>.3?"abs":null,legs:"#1b1d22"});
     if(work&&Math.sin(n.ph*.7)>0){const up=Math.abs(Math.sin(n.ph*3));c.fillStyle="#1b1d22";c.fillRect(n.x+10*n.size,n.y-22-up*10,8,3);c.fillStyle="#5b6272";c.fillRect(n.x+9*n.size,n.y-23-up*10,2,5);c.fillRect(n.x+16*n.size,n.y-23-up*10,2,5)}}]);
-  const sz=1+Math.min(.6,(S.pr-20)/300)+(pumped()?.06:0);
+  const sz=bodyK()+(pumped()?.06:0);
   ppl.push([GS.py,()=>{if(F){c.fillStyle="rgba(255,255,255,.08)";c.beginPath();c.ellipse(GS.px,GS.py+1,26,9,0,0,7);c.fill()}
     drawPerson(GS.px,GS.py,{g:c,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,shirt:OUTFITS[S.skin||0][1],skin:"#e8b896",hair:"#3b2a20",mv:GS.mv,ph:GS.ph,you:!F,size:sz,pose:GS.poseT>0?GS.pose:GS.curlT>0?(Math.sin(GS.ph*10)>0?"bi":null):null})}]);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
