@@ -322,6 +322,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .shgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.shbtn{aspect-ratio:1;border:0;border-radius:16px;background:var(--surface);box-shadow:0 4px 0 rgba(0,0,0,.12),inset 0 0 0 1px var(--line);font-size:2rem;cursor:pointer;touch-action:manipulation}.shbtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.12)}.shbtn.bad{background:#ffd9dd}
 .shend{text-align:center;padding:16px 0}.shend>b{display:block;font:900 3.4rem var(--display)}
 @keyframes pulse{50%{transform:scale(1.08)}}
+.spart,.lart{padding:0;overflow:hidden}.spart svg{display:block;width:100%;height:auto}.lart canvas{display:block;width:100%;height:auto;max-height:52vh;object-fit:cover}.lbar{display:flex;gap:8px;align-items:center;font:700 .72rem var(--mono);margin:10px 0}.lbar i{flex:1;height:10px;border-radius:5px;background:var(--sunk);overflow:hidden}.lbar b{display:block;height:100%;width:0}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -734,13 +735,15 @@ const CATS=[
  {k:"cards",n:"Cards",h:325,conds:[["PSA 10",1.4],["PSA 8",.8],["Raw",.5]],items:[["EM","Electric Mouse Promo",90],["RK","'03 Rookie Card",450],["FD","Fire Dragon Holo",900],["HL","'86 Hoops Legend",3800],["GR","1-of-1 Gold Rookie",16000]]},
  {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["SQ","Square Digital",110],["AD","Auto Diver",220],["HD","Heritage Diver",3200],["MC","Moon Chrono",5600],["PP","Platinum Perpetual",26000]]},
  {k:"lux",n:"Luxury",h:45,conds:[["Mint",1.1],["Excellent",.95],["Estate",.8]],items:[["DN","Diamond Tennis Bracelet",18000],["SA","Sapphire Brooch",28000],["RG","Gold Chronograph 'Regent'",42000],["CG","Couture Evening Gown",24000],["CB","Crocodile Top-Handle Bag",65000],["GN","Gilded Grand Piano",150000],["PK","Pink Diamond Ring",240000],["JE","Jeweled Imperial Egg",480000],["OM","Old Master Painting",900000],["YN","Yellow Diamond Necklace",1200000]]},
- {k:"elite",n:"Prestige",h:50,conds:[["Concours",1.1],["Pristine",1]],items:[["HC","Hypercar 1-of-1 Prototype",5e7],["RW","Royal Wristwatch 'Emperor'",5.2e7],["FE","Imperial Jeweled Egg Set",5.5e7],["PJ","Long-Range Private Jet",6.5e7],["GT","'62 Grand Tourer Berlinetta",7e7],["SC","Ancient Marble Sculpture",7.5e7],["BD","Blue Diamond 'Ocean Star'",8e7],["MP","Modern Masterpiece Canvas",9e7],["SY","Superyacht 'Aurora'",9.5e7],["PS","Penthouse Deed, Central Park",1e8]]}
+ {k:"elite",n:"Prestige",h:50,conds:[["Concours",1.1],["Pristine",1]],items:[["HC","Hypercar 1-of-1 Prototype",5e7],["RW","Royal Wristwatch 'Emperor'",5.2e7],["FE","Imperial Jeweled Egg Set",5.5e7],["PJ","Long-Range Private Jet",6.5e7],["GT","'62 Grand Tourer Berlinetta",7e7],["SC","Ancient Marble Sculpture",7.5e7],["BD","Blue Diamond 'Ocean Star'",8e7],["MP","Modern Masterpiece Canvas",9e7],["SY","Superyacht 'Aurora'",9.5e7],["PS","Penthouse Deed, Central Park",1e8]]},
+ {k:"space",n:"Space",h:230,conds:[["Pristine",1.1],["Weathered",.9]],items:[["MR","Moon rock",5e6],["ME","Lunar meteorite",2e7],["MC","Martian crystal",8e7],["MX","Martian fossil",2.5e8]]}
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
 const POOL=CATS.flatMap(c=>c.items.map(i=>({cat:c.k,code:i[0],name:i[1],base:i[2]})));
 const START_CATS=["kicks","gym","vint"];
 const UNLOCK={toys:1500,tech:5000,cards:15000,watch:40000};
 const NEWS={
+ space:[["A space agency wants samples","Collectors are buying anything from orbit"],["A rocket blew up on the pad","Too many rocks came back this year"]],
  elite:[["A sovereign fund is buying trophy assets","A record was set at a Geneva auction"],["Billionaires are cashing out","An auction house had a quiet night"]],
  lux:[["A royal wedding has everyone buying jewels","Billionaires are bidding wars at auction"],["A luxury tax just passed","Old money is quietly selling off"]],
  kicks:[["A rapper wore them courtside","A surprise collab sold out in 3 minutes"],["The brand restocked everything","Fakes are flooding the market"]],
@@ -951,6 +954,8 @@ const ACH=[
  ["collector","Collector","Complete 3 collection sets",()=>CATS.filter(c=>collDone(c.k)).length>=3,250000],
  ["wolf","Wolf of Flip Street","Make $1M profit on stocks",()=>(S.stats.stockPnl||0)>=1e6,500000],
  ["hustler","Hands-on owner","Serve 100 orders on shifts",()=>(S.stats.orders||0)>=100,1e6],
+ ["astronaut","Astronaut","Reach space",()=>(S.stats.orbits||0)>=1,5e6],
+ ["mars","Red planet","Bring back something from Mars",()=>Object.keys(S.coll||{}).some(k=>k==="space:MC"||k==="space:MX"),5e7],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -2647,7 +2652,7 @@ function newListing(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
   const b0={id:S.nextId++,disc:0,gone:0,fake:false};
   if(S.earned>600&&Math.random()<MC().grail){
-    const g=pick(POOL.filter(p=>p.base>=900&&p.base<=Math.max(5000,S.cash*3))),c=CAT[g.cat],cond=c.conds[0];
+    const g=pick(POOL.filter(p=>p.base>=900&&p.cat!=="space"&&p.base<=Math.max(5000,S.cash*3))),c=CAT[g.cat],cond=c.conds[0];
     const base=Math.round(g.base*cond[1]),ask=Math.round(base*S.trend[g.cat]*rnd(.5,.75));
     return {...b0,kind:"grail",cat:g.cat,code:g.code,name:g.name,cond:cond[0],base,ask,price:ask,life:3.4,left:3.4,rating:5};
   }
@@ -3309,10 +3314,11 @@ function flyTo(c){const ov=document.createElement("div");ov.className="sailov fl
 function openAirport(){const L=repLevel();
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
     <div class="note">Fly anywhere in the world. Every city has its own <b>market</b>, a <b>Prestige House</b> trading $50M–$100M pieces, and <b>real estate</b> you can buy and run. ${hasToy("jet")?"Your private jet flies free.":"Fares grow with distance."}</div>
+    <button class="bigbtn alt2" id="apSpace" ${L<30?"disabled":""}>Spaceport<small>${L<30?"Unlocks at level 30":"Build a rocket and launch it yourself"}</small></button>
     ${(S.biz||[]).length?`<button class="bigbtn" id="apEmp">Your businesses<small>${(S.biz||[]).length} owned · ${fmt(empireInc())}/min${tillAll()>=1?" · "+fmt(tillAll())+" to collect":""}</small></button>`:""}
     <div class="sechead"><h3>Destinations</h3><span class="eyebrow">${COUNTRIES.length} cities</span></div>
     <div class="perks">${COUNTRIES.map(c=>{const lock=L<c.lv&&!(c.k==="dubai"&&hasToy("jet")),f=cFare(c),n=(S.biz||[]).filter(b=>b.c===c.k).length;return `<button class="perk opp dest" data-fly="${c.k}" ${lock||S.cash<f?"disabled":""}><span class="oav fl">${flagSVG(c.k,34)}</span><span class="t">${c.n} <small style="opacity:.6;font-weight:600">${c.cn}</small>${n?` <em class="beat">${n} BIZ</em>`:""}</span><span class="d">${lock?"Unlocks at level "+c.lv:c.spec}</span><span class="c">${lock?"Locked":f?fmt(f):"Free"}</span></button>`}).join("")}</div></div>`;
-  $("leaveBtn").onclick=closeRoom;const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);
+  $("leaveBtn").onclick=closeRoom;const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);$("apSpace").onclick=()=>{if(repLevel()>=30)openSpaceport(()=>{room="airport";openAirport()})};
   $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{const c=CTRY(b.dataset.fly),f=cFare(c);if(S.cash<f)return;S.cash-=f;S.stats.flights=(S.stats.flights||0)+1;dirty=true;flyTo(c)})}
 function openCity(k,arrive){const c=CTRY(k);CITY=k;if(M)closeMarket();room="abroad";$("room").hidden=false;$("room").style.setProperty("--pc",c.tone);
   const today=S.seen&&S.seen[k]===S.day,mine=(S.biz||[]).filter(b=>b.c===k);
@@ -3942,6 +3948,76 @@ function shEnd(){if(!SH||SH.done)return;SH.done=true;const b=SH.b,rep=Math.min(2
   if(sh.score>=8){confetti(150);SFX.grail()}else{confetti(50);SFX.level()}banner("Shift over · +"+fmt(sh.tips),"g");
   const back=sh.back;SH=null;$("shBack").onclick=back;$("leaveBtn").onclick=back;updMini()}
 
+/* ================= spaceport: build a rocket, fly the launch, bring back space rocks ================= */
+const RKT=[
+ {k:"eng",n:"Engines",d:"More thrust, steadier climb",cost:l=>5e6*Math.pow(4,l),max:4},
+ {k:"tank",n:"Fuel tanks",d:"A longer burn: more time to correct",cost:l=>3e6*Math.pow(4,l),max:4},
+ {k:"shield",n:"Heat shield",d:"Overheats more slowly when going too fast",cost:l=>4e6*Math.pow(4,l),max:4},
+ {k:"cap",n:"Capsule",d:"Reach further: orbit, then the Moon, then Mars",cost:l=>2e7*Math.pow(6,l),max:3},
+ {k:"boost",n:"Side boosters",d:"A wider green band",cost:l=>8e6*Math.pow(5,l),max:3}];
+const DEST=[
+ {k:"orbit",n:"Low orbit",cap:1,fuel:2e6,d:"Space tourism flight",item:null,pay:3e7},
+ {k:"moon",n:"The Moon",cap:2,fuel:2e7,d:"Brings back moon rocks",item:["MR","ME"]},
+ {k:"mars",n:"Mars",cap:3,fuel:2e8,d:"Brings back Martian crystals",item:["MC","MX"]}];
+const rk=k=>((S.rkt||{})[k])||0;
+let RL=null;
+function openSpaceport(back){S.rkt=S.rkt||{};room="space";
+  const draw=()=>{const ready=rk("cap")>=1;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Spaceport")}<div class="art spart">${spaceArt()}</div>
+      <div class="kv"><div><span class="eyebrow">Launches</span><b>${S.stats.launches||0}</b></div><div><span class="eyebrow">Successful</span><b>${S.stats.orbits||0}</b></div></div>
+      <div class="note">Build a rocket, then fly it yourself: hold to throttle up and keep your speed in the <b>green band</b> through every layer of the sky. Too fast overheats, too slow stalls.</div>
+      <div class="sechead"><h3>Launch</h3></div>
+      <div class="perks">${DEST.map(d=>{const ok=rk("cap")>=d.cap,fuel=d.fuel;return `<button class="perk nopic" data-dest="${d.k}" ${!ok||S.cash<fuel||S.energy<20?"disabled":""}><span class="t">${d.n}</span><span class="d">${ok?d.d:"Needs capsule level "+d.cap}</span><span class="c">${fmt(fuel)}</span></button>`}).join("")}</div>
+      <div class="sechead"><h3>Rocket</h3><span class="eyebrow">Upgrades are kept forever</span></div>
+      <div class="perks">${RKT.map(u=>{const l=rk(u.k),mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic" data-rk="${u.k}" ${mx||S.cash<c?"disabled":""}><span class="t">${u.n}<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span></span><span class="d">${u.d}</span><span class="c">${mx?"Max":fmt(c)}</span></button>`}).join("")}</div>
+      ${ready?"":`<p class="fine">Buy a capsule to make your first launch.</p>`}</div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-rk]").forEach(b=>b.onclick=()=>{const u=RKT.find(x=>x.k===b.dataset.rk),l=rk(u.k);if(l>=u.max||S.cash<u.cost(l))return;S.cash-=u.cost(l);S.rkt[u.k]=l+1;dirty=true;SFX.rebirth();confetti(80);banner(u.n+" level "+(l+1),"g");draw();updMini()});
+    $("room").querySelectorAll("[data-dest]").forEach(b=>b.onclick=()=>{const d=DEST.find(x=>x.k===b.dataset.dest);if(rk("cap")<d.cap||S.cash<d.fuel||!spend(20,b))return;S.cash-=d.fuel;dirty=true;launch(d,draw)})};draw()}
+function spaceArt(){return `<svg viewBox="0 0 400 160" aria-hidden="true"><defs><linearGradient id="spsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1030"/><stop offset=".7" stop-color="#3a4a8a"/><stop offset="1" stop-color="#f2a65a"/></linearGradient></defs><rect width="400" height="160" fill="url(#spsk)"/>${Array.from({length:30},(_,i)=>`<circle cx="${(i*131)%400}" cy="${(i*47)%90}" r="${.6+(i%3)*.4}" fill="#fff" opacity=".8"/>`).join("")}<circle cx="330" cy="36" r="16" fill="#e9e6d8"/><circle cx="325" cy="32" r="3" fill="#cfcab4"/><circle cx="336" cy="40" r="2" fill="#cfcab4"/>
+  <rect y="138" width="400" height="22" fill="#4a4f5a"/><rect x="170" y="40" width="10" height="100" fill="#7f8a99"/>${[50,70,90,110].map(y=>`<rect x="160" y="${y}" width="30" height="3" fill="#9aa3b3"/>`).join("")}
+  <g transform="translate(200 ${30+Math.max(0,3-rk("cap"))*6})"><path d="M0 0 Q12 14 12 40 V92 H-12 V40 Q-12 14 0 0Z" fill="#f4f6fa"/><circle cy="34" r="5" fill="#4fe3ff" stroke="#2b2f3a" stroke-width="1.5"/><rect x="-12" y="60" width="24" height="5" fill="#d6384b"/>${rk("boost")?`<path d="M-12 70 L-20 76 V100 H-14Z M12 70 L20 76 V100 H14Z" fill="#d6384b"/>`:""}<path d="M-12 82 L-22 102 H-12Z M12 82 L22 102 H12Z" fill="#2a3cff"/><rect x="-8" y="92" width="16" height="6" fill="#2b2f3a"/></g></svg>`}
+function launch(d,back){S.stats.launches=(S.stats.launches||0)+1;
+  RL={d,back,alt:0,v:0,thr:0,stress:0,hold:false,t:0,dur:18+rk("tank")*3,band:.16+rk("boost")*.05,bc:.5,state:"go",parts:[],stars:Array.from({length:60},()=>[Math.random(),Math.random(),Math.random()])};
+  $("room").innerHTML=`<div class="room-in">${roomHead("Launch · "+d.n)}<div class="art lart"><canvas id="lCv" width="400" height="460"></canvas></div>
+    <div class="lbar"><span>Stress</span><i><b id="lStress"></b></i></div>
+    <button class="bigbtn tapbtn" id="lHold">HOLD TO THROTTLE<small>Keep the needle in the green</small></button></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Abort";$("leaveBtn").onclick=()=>{if(RL&&RL.state==="go"){RL.state="fail";RL.why="Aborted"}};
+  const h=$("lHold"),on=e=>{e.preventDefault();if(RL)RL.hold=true},off=()=>{if(RL)RL.hold=false};h.addEventListener("pointerdown",on);h.addEventListener("pointerup",off);h.addEventListener("pointerleave",off);h.addEventListener("pointercancel",off);
+  SFX.door();const loop=()=>{if(!RL||!$("lCv"))return;launchStep(1/60);launchDraw();if(RL.state==="go"||RL.fx>0)requestAnimationFrame(loop);else launchEnd()};requestAnimationFrame(loop)}
+function launchStep(dt){const L=RL;if(L.state!=="go"){L.fx=(L.fx||1.2)-dt;return}L.t+=dt;
+  const eng=1+rk("eng")*.15;L.thr=clamp(L.thr+(L.hold?1.4:-1.1)*dt*eng,0,1);
+  L.bc=.5+Math.sin(L.t*.7)*.18+Math.sin(L.t*1.9)*.08;const lo=L.bc-L.band/2,hi=L.bc+L.band/2;
+  if(L.thr>hi)L.stress+=dt*(28-rk("shield")*4.5)*(1+(L.thr-hi)*3);else if(L.thr<lo)L.stress+=dt*22*(1+(lo-L.thr)*3);else{L.stress=Math.max(0,L.stress-dt*8);L.alt+=dt*100/L.dur*eng*.95}
+  L.alt+=dt*L.thr*1.2;if(L.stress>=100){L.state="fail";L.why=L.thr>hi?"Overheated":"Stalled";SFX.loss();shake(12);flash("#ff7a3d",.5)}
+  if(L.alt>=100){L.state="win";SFX.grail();confetti(240,null,null,["#4fe3ff","#fff","#ffcc33"]);flash("#ffffff",.4)}
+  if(L.t>L.dur+8&&L.state==="go"){L.state="fail";L.why="Ran out of fuel"}
+  if(L.state==="go"&&L.thr>.05)for(let i=0;i<3;i++)L.parts.push({x:200+rnd(-6,6),y:330,vx:rnd(-30,30),vy:rnd(80,180)*L.thr,l:rnd(.3,.6)});
+  L.parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=dt});L.parts=L.parts.filter(p=>p.l>0);
+  const s=$("lStress");if(s){s.style.width=Math.min(100,L.stress)+"%";s.style.background=L.stress>70?"#e2364a":L.stress>40?"#ffcc33":"#2fd28a"}}
+function launchDraw(){const L=RL,cv=$("lCv");if(!cv)return;const g=cv.getContext("2d"),a=Math.min(1,L.alt/100);
+  const top=[[110,190,240],[40,80,170],[10,14,40]],bot=[[255,214,160],[80,120,200],[14,20,50]],mix=(A,B,t)=>A.map((v,i)=>Math.round(v+(B[i]-v)*t)),seg=a<.5?[0,a*2]:[1,(a-.5)*2],tc=mix(top[seg[0]],top[seg[0]+1],seg[1]),bc=mix(bot[seg[0]],bot[seg[0]+1],seg[1]);
+  const gr=g.createLinearGradient(0,0,0,460);gr.addColorStop(0,`rgb(${tc})`);gr.addColorStop(1,`rgb(${bc})`);g.fillStyle=gr;g.fillRect(0,0,400,460);
+  g.fillStyle="#fff";L.stars.forEach(([x,y,r])=>{g.globalAlpha=Math.max(0,a*1.4-.4)*(.5+r*.5);g.fillRect(x*400,((y*460+L.alt*8)%460),1+r,1+r)});g.globalAlpha=1;
+  if(a<.45){g.fillStyle="rgba(255,255,255,.8)";for(let i=0;i<6;i++){const y=((i*97+L.alt*22)%560)-60,x=(i*137)%400;g.beginPath();g.ellipse(x,y,46,12,0,0,7);g.ellipse(x+30,y-6,26,10,0,0,7);g.fill()}}
+  if(L.alt<8){g.fillStyle="#4a4f5a";g.fillRect(0,400+L.alt*14,400,80)}
+  if(L.d.k!=="orbit"&&a>.7){const R=40+(a-.7)*200;g.fillStyle=L.d.k==="moon"?"#e9e6d8":"#d0603a";g.beginPath();g.arc(320,70,R*.5,0,7);g.fill()}
+  L.parts.forEach(p=>{g.fillStyle=`rgba(255,${120+Math.round(p.l*200)},60,${p.l*1.6})`;g.beginPath();g.arc(p.x,p.y,4+p.l*6,0,7);g.fill()});
+  const sh=L.state==="go"&&L.stress>50?rnd(-2,2)*(L.stress/50):0;g.save();g.translate(200+sh,300);
+  if(L.state==="fail"&&L.why!=="Aborted"){g.fillStyle="#ff7a3d";for(let i=0;i<14;i++){g.globalAlpha=.7;g.beginPath();g.arc(rnd(-40,40),rnd(-40,40),rnd(8,22),0,7);g.fill()}g.globalAlpha=1}
+  else{g.fillStyle="#f4f6fa";g.beginPath();g.moveTo(0,-60);g.quadraticCurveTo(14,-44,14,-14);g.lineTo(14,30);g.lineTo(-14,30);g.lineTo(-14,-14);g.quadraticCurveTo(-14,-44,0,-60);g.fill();g.fillStyle="#4fe3ff";g.beginPath();g.arc(0,-24,6,0,7);g.fill();g.fillStyle="#d6384b";g.fillRect(-14,-2,28,6);g.fillStyle="#2a3cff";g.beginPath();g.moveTo(-14,14);g.lineTo(-26,36);g.lineTo(-14,30);g.moveTo(14,14);g.lineTo(26,36);g.lineTo(14,30);g.fill();if(rk("boost")){g.fillStyle="#d6384b";g.fillRect(-22,4,7,26);g.fillRect(15,4,7,26)}}
+  g.restore();
+  // speed gauge
+  const gx=30,gy=80,gh=300;g.fillStyle="rgba(0,0,0,.35)";rrp(g,gx-10,gy-10,40,gh+20,10);g.fill();g.fillStyle="rgba(47,210,138,.85)";g.fillRect(gx,gy+gh*(1-L.bc-L.band/2),20,gh*L.band);g.fillStyle="#fff";g.fillRect(gx-6,gy+gh*(1-L.thr)-2,32,4);
+  g.fillStyle="#fff";g.font="800 14px "+getComputedStyle(root).getPropertyValue("--mono");g.textAlign="right";g.fillText(Math.round(L.alt)+"%",385,30);g.textAlign="left";g.fillText(a<.33?"TROPOSPHERE":a<.66?"STRATOSPHERE":a<1?"THERMOSPHERE":"SPACE",14,30)}
+function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.state==="win";
+  if(good){S.stats.orbits=(S.stats.orbits||0)+1;if(d.pay){const v=Math.round(d.pay*(1+rk("cap")*.3)*moonK());earn(v);msg="Tourists loved it: +"+fmt(v)}
+    else{const n=1+Math.floor(Math.random()*2)+(Math.random()<.3?1:0),got=[];for(let i=0;i<n&&S.stash.length<maxSlots();i++){const code=Math.random()<.75?d.item[0]:d.item[1],it=POOL.find(p=>p.cat==="space"&&p.code===code),c=CAT.space.conds[0];S.stash.push({cat:"space",code,name:it.name,cond:c[0],base:Math.round(it.base*c[1]),noise:rnd(.95,1.05),fake:false,paid:0});got.push(it.name)}
+      msg=got.length?"Brought back: "+got.join(", "):"Stash full, nothing to bring back"}}
+  else msg=(L.why||"Mission failed")+". The fuel is gone, try again.";dirty=true;
+  $("room").innerHTML=`<div class="room-in">${roomHead("Mission report")}<div class="shend"><b>${good?"🚀":"💥"}</b><span>${good?d.n+" reached!":"Mission failed"}</span></div><div class="note">${esc(msg)}</div><button class="bigbtn" id="lBack">Back to the Spaceport<small>&nbsp;</small></button></div>`;
+  banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -3964,7 +4040,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
