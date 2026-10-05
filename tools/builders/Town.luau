@@ -40,7 +40,10 @@ end
 ------------------------------------------------------------------------
 local function buildGround()
 	-- one big grass plate under everything (hides the grey baseplate); the gyms' own floors sit above it
-	part(folder, "Grass", Vector3.new(700, 1, 700), CFrame.new(0, GROUND_TOP - 0.5, 30), COLORS.Grass, Enum.Material.Grass)
+	-- it ends at the shoreline (Town.Sea.MinZ): past it is the terrain sea
+	local grassMinZ = -320
+	local grassLength = Town.Sea.MinZ - grassMinZ
+	part(folder, "Grass", Vector3.new(700, 1, grassLength), CFrame.new(0, GROUND_TOP - 0.5, grassMinZ + grassLength / 2), COLORS.Grass, Enum.Material.Grass)
 	local street = Town.Street
 	local width = Town.Bounds.MaxX - Town.Bounds.MinX
 	local streetDepth = street.MaxZ - street.MinZ
@@ -279,14 +282,22 @@ local function buildBeach()
 	local spec = Town.Beach
 	local c, s = spec.Center, spec.Size
 	part(folder, "Sand", Vector3.new(s.X, 0.3, s.Z), CFrame.new(c.X, 0.15, c.Z), COLORS.Sand, Enum.Material.Sand)
-	-- the sea along the whole north edge: knee-deep terrain water over the ground
-	local sea = Town.Sea
-	local seaWidth = (Town.Bounds.MaxX - Town.Bounds.MinX) + 40
+	-- the sea along the whole north edge, out to the horizon. The Baseplate is cut at the shoreline (it would hide the
+	-- water); a shallow sand shelf by the beach (water ~1.5 studs deep, up to the boundary), then deep water.
+	local shore = Town.Sea.MinZ
+	local baseplate = Workspace:FindFirstChild("Baseplate")
+	if baseplate and baseplate:IsA("BasePart") and baseplate.Position.Z + baseplate.Size.Z / 2 > shore then
+		local minZ = baseplate.Position.Z - baseplate.Size.Z / 2
+		baseplate.Size = Vector3.new(baseplate.Size.X, baseplate.Size.Y, shore - minZ)
+		baseplate.CFrame = CFrame.new(baseplate.Position.X, baseplate.Position.Y, (minZ + shore) / 2)
+	end
 	pcall(function()
-		-- surface level with the ground (no wall of water at the shore); reaches far past the boundary so it reads as
-		-- open sea, not a pool. Clears older water first (FillBlock only adds).
-		Workspace.Terrain:FillBlock(CFrame.new(0, -1, sea.MinZ + 200), Vector3.new(seaWidth + 800, 8, 420), Enum.Material.Air)
-		Workspace.Terrain:FillBlock(CFrame.new(0, -1, sea.MinZ + 200), Vector3.new(seaWidth + 800, 2, 400), Enum.Material.Water)
+		local terrain, width = Workspace.Terrain, 2048
+		terrain:FillBlock(CFrame.new(0, 0, shore + 450), Vector3.new(width, 40, 900), Enum.Material.Air) -- clears older water
+		terrain:FillBlock(CFrame.new(0, -6, shore + 12), Vector3.new(width, 9, 24), Enum.Material.Sand)
+		terrain:FillBlock(CFrame.new(0, -12, shore + 462), Vector3.new(width, 8, 876), Enum.Material.Sand)
+		terrain:FillBlock(CFrame.new(0, -0.75, shore + 12), Vector3.new(width, 1.5, 24), Enum.Material.Water)
+		terrain:FillBlock(CFrame.new(0, -4, shore + 462), Vector3.new(width, 8, 876), Enum.Material.Water)
 	end)
 	for _, spot in ipairs({ Vector3.new(12, 0.3, 70), Vector3.new(68, 0.3, 72), Vector3.new(66, 0.3, 112), Vector3.new(14, 0.3, 116) }) do
 		palm(spot)

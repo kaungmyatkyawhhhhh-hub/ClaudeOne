@@ -1405,13 +1405,16 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 		return
 	end
 	local leveled, maxed = false, false
+	-- toasts only for the machine's main muscle and only every 5th level: early levels come every rep, and a toast per
+	-- muscle per rep floods the corner (secondary muscles already flash the HUD muscle list)
+	local mainId = current and current.machine.muscles[1].id
 	for muscleId, level in pairs(result.levels or {}) do
 		local name = Muscles.ById[muscleId].name
 		if result.maxed and result.maxed[muscleId] then
 			Notify.Show(name .. " maxed")
 			maxed = true
 		else
-			Notify.Show(name .. " level " .. level)
+			if muscleId == mainId and level % 5 == 0 then Notify.Show(name .. " level " .. level) end
 			leveled = true
 		end
 	end

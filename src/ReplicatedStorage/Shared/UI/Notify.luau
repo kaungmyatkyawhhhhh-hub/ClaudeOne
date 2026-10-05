@@ -1,7 +1,9 @@
 -- Small corner notifications that fade out. Notify.Show(text, color?, key?)
--- `key` throttles repeats of the same message.
+-- `key` throttles repeats of the same message. While the genetics screen is up (it owns the top right), toasts wait
+-- and show when it closes.
 local Players = game:GetService("Players")
 local Theme = require(script.Parent.Theme)
+local UIBus = require(script.Parent.UIBus)
 
 local Notify = {}
 
@@ -11,6 +13,7 @@ local MAX_VISIBLE = 4
 local list
 local order = 0
 local lastShown = {}
+local held = nil -- { {text, color} } while the genetics screen is up
 
 local function ensure()
 	if list then return end
@@ -34,11 +37,7 @@ local function ensure()
 	})
 end
 
-function Notify.Show(text, color, key)
-	if key then
-		if lastShown[key] and os.clock() - lastShown[key] < 2 then return end
-		lastShown[key] = os.clock()
-	end
+local function show(text, color)
 	ensure()
 
 	local toasts = {}
@@ -89,5 +88,29 @@ function Notify.Show(text, color, key)
 		end
 	end)
 end
+
+function Notify.Show(text, color, key)
+	if key then
+		if lastShown[key] and os.clock() - lastShown[key] < 2 then return end
+		lastShown[key] = os.clock()
+	end
+	if held then
+		table.insert(held, { text, color })
+		return
+	end
+	show(text, color)
+end
+
+UIBus.GeneticsVisible.Event:Connect(function(visible)
+	if visible then
+		held = held or {}
+		return
+	end
+	local waiting = held or {}
+	held = nil
+	for index, toast in ipairs(waiting) do
+		task.delay(0.4 + (index - 1) * 0.3, show, toast[1], toast[2])
+	end
+end)
 
 return Notify

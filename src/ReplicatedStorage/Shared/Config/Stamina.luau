@@ -2,7 +2,7 @@ local Stamina = {}
 
 Stamina.Max = 100
 Stamina.RegenPerSecond = 20
-Stamina.RegenDelay = 1.2 -- seconds after a rep before refilling starts
+Stamina.RegenDelay = 2 -- seconds after a rep before refilling starts (shorter = it refills between casual taps)
 
 -- Recovery stations: standing in a model with this Recovery attribute refills stamina faster.
 Stamina.Recovery = {
