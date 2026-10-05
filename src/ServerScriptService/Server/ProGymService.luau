@@ -157,8 +157,9 @@ end
 local SHADOW_EVERY = 3
 local builtCount = 0
 
-local function buildMachine(machine, pivot)
+local function buildMachine(machine, pivot, parent, withSpotlight)
 	builtCount += 1
+	parent = parent or folder
 	local model = Instance.new("Model")
 	model.Name = machine.id
 	part(model, "Base", Vector3.new(4.2, 0.1, 5.2), pivot * CFrame.new(0, 0.05, 0.5), COLORS.Rubber, Enum.Material.Rubber)
@@ -176,8 +177,12 @@ local function buildMachine(machine, pivot)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = model:FindFirstChild("Base")
 	model:SetAttribute("MachineId", machine.id)
-	model.Parent = folder
+	model.Parent = parent
 
+	if withSpotlight == false then
+		CollectionService:AddTag(model, "Machine")
+		return model
+	end
 	-- a spotlight pool over the machine
 	local fixture = part(folder, "Spot_" .. machine.id, Vector3.new(1.4, 0.3, 1.4), CFrame.new(pivot.Position + Vector3.new(0, SIZE.Y - 0.3, 0)) * pivot.Rotation * CFrame.new(0, 0, 1),
 		Color3.fromHex("#2B2B2B"), Enum.Material.Metal, { CanCollide = false })
@@ -189,6 +194,11 @@ local function buildMachine(machine, pivot)
 
 	CollectionService:AddTag(model, "Machine") -- MachineService sets up the prompt and plates from here
 	return model
+end
+
+-- Other areas (the beach gym) build their machines the same way: (machine config, pivot CFrame, parent). No spotlight.
+function ProGymService.BuildMachine(machine, pivot, parent)
+	return buildMachine(machine, pivot, parent, false)
 end
 
 local function buildMachines()

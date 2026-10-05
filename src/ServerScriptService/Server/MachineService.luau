@@ -153,7 +153,14 @@ local function enter(player, model)
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not machine or not humanoid or not root or humanoid.Health <= 0 or not PlayerData.Get(player) then return end
 	-- gyms open with Growth Spurts (the pro gym at 2)
-	if PlayerData.Get(player).growthSpurts < (Machines.GymUnlock[machine.gym] or 0) then return end
+	if PlayerData.Get(player).growthSpurts < (Machines.GymUnlock[machine.gym] or 0) then
+		Remotes.PlayerEvent:FireClient(player, "GymLocked", { gym = machine.gym, spurts = Machines.GymUnlock[machine.gym] })
+		return
+	end
+
+	-- off the skateboard first (it changes the hip height the pose is placed from)
+	local skateOk, SkateService = pcall(require, script.Parent.SkateService)
+	if skateOk then SkateService.Stop(player) end
 
 	local session = { model = model, machine = machine, lastRep = 0, connections = {} }
 	sessions[player] = session

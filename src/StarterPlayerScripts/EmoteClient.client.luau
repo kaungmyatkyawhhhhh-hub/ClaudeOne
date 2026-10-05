@@ -193,6 +193,8 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind == "HighFived" and type(info) == "table" then
 		Notify.Show("High five with " .. tostring(info.name) .. "!")
 		Audio.PlayUI("SetComplete")
+	elseif kind == "OpenEmotes" then -- the posing stage's Pose prompt
+		if not isOpen then open() end
 	end
 end)
 

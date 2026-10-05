@@ -72,6 +72,9 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 			Notify.Show("Bought a DNA token. Reroll on the Genetics screen.")
 			Audio.PlayUI("LevelUp")
 		end
+	elseif kind == "GymLocked" then
+		local names = { Beach = "The beach gym", Pro = "The pro gym" }
+		Notify.Show((names[info.gym] or "This gym") .. " opens at Growth Spurt " .. tostring(info.spurts) .. ".", nil, "gymlocked")
 	elseif kind == "ProGymLocked" then
 		Notify.Show("The pro gym opens at Growth Spurt " .. tostring(info.spurts) .. ".", nil, "progym")
 	elseif kind == "ProGymEntered" then

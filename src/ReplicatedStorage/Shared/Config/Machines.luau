@@ -142,6 +142,24 @@ for _, machine in ipairs(PRO) do
 	table.insert(Machines.List, machine)
 end
 
+-- Beach gym (town hub, opens at Growth Spurt 1): outdoor cable stacks under a canopy (TownService builds them with the
+-- pro gym's machine builder). They only train muscles the starter gym already trains, so the Growth Spurt goal
+-- never changes; they're a faster way to bring up arms, shoulders and traps after the first spurt.
+local BEACH = {
+	{ id = "BeachCurl", name = "Beach Curl", pose = "BicepCurl", tiers = "Cable", staminaCost = 4,
+		muscles = { { id = "Biceps", share = 1 }, { id = "Forearms", share = 0.4 } } },
+	{ id = "BeachRaise", name = "Beach Lateral Raise", pose = "LateralRaise", tiers = "Cable", staminaCost = 4,
+		muscles = { { id = "SideDelts", share = 1 } } },
+	{ id = "BeachShrug", name = "Beach Shrug", pose = "Shrug", tiers = "Barbell", staminaCost = 4,
+		muscles = { { id = "Traps", share = 1 }, { id = "Forearms", share = 0.4 } } },
+}
+for _, machine in ipairs(BEACH) do
+	machine.gym = "Beach"
+	machine.layout = "Center"
+	machine.tiers = Machines.TierSets[machine.tiers]
+	table.insert(Machines.List, machine)
+end
+
 -- Seasonal: only built while Winter Lifts runs (SeasonService). Trains muscles the starter gym already trains,
 -- so it never changes what counts toward a Growth Spurt.
 table.insert(Machines.List, {
@@ -156,7 +174,7 @@ for _, machine in ipairs(Machines.List) do
 end
 
 -- Gyms open by Growth Spurt count (the pro gym opens at Growth Spurt 2).
-Machines.GymUnlock = { Starter = 0, Pro = 2, Seasonal = 0 }
+Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 2, Seasonal = 0 }
 
 -- Set of muscle ids that some open machine trains (main or secondary).
 function Machines.TrainableMuscles(growthSpurts)

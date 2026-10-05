@@ -69,6 +69,7 @@ local function capture(player, character)
 		local part = character:FindFirstChild(partName)
 		if part and part:IsA("BasePart") then
 			body.parts[part] = part.Size
+			part:SetAttribute("OriginalSize", part.Size) -- before muscle thickening (the progress mirror's day-one body)
 			for _, child in ipairs(part:GetChildren()) do
 				if child:IsA("Attachment") then body.attachments[child] = child.CFrame end
 			end

@@ -227,6 +227,18 @@ function Icons.People(color)
 	return icon
 end
 
+-- Wardrobe: a clothes hanger (hook on top, sloped shoulders, bottom bar).
+function Icons.Hanger(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Hanger")
+	outline(icon, color, 0.18, 0.18, 0.5, 0.2, UDim.new(1, 0))
+	line(icon, color, 0.14, 0.5, 0.34, 90)
+	line(icon, color, 0.5, 0.29, 0.56, -32)
+	line(icon, color, 0.5, 0.71, 0.56, 32)
+	line(icon, color, 0.86, 0.5, 0.71)
+	return icon
+end
+
 function Icons.Tint(icon, color)
 	for _, part in ipairs(icon:GetDescendants()) do
 		if part:IsA("UIStroke") then
