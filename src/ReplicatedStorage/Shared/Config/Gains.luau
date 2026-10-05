@@ -6,7 +6,7 @@ local MuscleOfTheDay = require(script.Parent.MuscleOfTheDay)
 
 local Gains = {}
 
-Gains.BaseXp = 22         -- tuned with tests/pacing: a typical first Growth Spurt takes ~18-19 min (see PROGRESS.md)
+Gains.BaseXp = 27         -- tuned with tests/pacing to GrowthSpurts.Targets (first Growth Spurt ~18.5 min)
 Gains.MaxMultiplier = 5     -- cap on all stacked multipliers together
 Gains.DiminishLevel = 50    -- a muscle at this level grows at half speed
 Gains.BalancedBonus = 1.1   -- when all 6 groups are close together
