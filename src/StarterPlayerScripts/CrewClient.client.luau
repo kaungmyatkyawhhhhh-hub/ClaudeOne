@@ -26,10 +26,10 @@ local gui = Theme.ScreenGui({ Name = "Crew", Enabled = false, DisplayOrder = 24,
 local panel = Theme.Panel({
 	Name = "Panel",
 	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, Spacing.L + 64 + Spacing.M, 0.5, 0),
-	Size = UDim2.fromOffset(320, 420),
+	Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0),
+	Size = UDim2.new(0, 320, 1, -Spacing.L * 2), -- as tall as the screen allows (phones), up to 420
 	Parent = gui,
-}, { Theme.Pad("M") })
+}, { Theme.Pad("M"), New("UISizeConstraint", { MaxSize = Vector2.new(320, 420) }) })
 local scroll = New("ScrollingFrame", {
 	Size = UDim2.fromScale(1, 1),
 	BackgroundTransparency = 1,
@@ -176,6 +176,7 @@ local function close()
 end
 local function open()
 	isOpen = true
+	panel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0) -- beside the side menu (one or two columns)
 	menuButton:SetActive(true)
 	menuButton:SetDot(false)
 	clear()

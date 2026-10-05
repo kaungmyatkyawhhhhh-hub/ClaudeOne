@@ -13,6 +13,10 @@ Gains.BalancedBonus = 1.1   -- when all 6 groups are close together
 Gains.BalancedSpread = 10   -- "close" = within this many levels
 Gains.BalancedMinLevel = 5
 Gains.RepCooldown = 0.4     -- seconds; enforced on the server
+-- Sustained rep rate the server accepts (token bucket): a real rep takes at least 1.05 s on the client (0.6 lower +
+-- 0.35 press + 0.1 hold), so anything faster than this for long is a modified client. RepBurst absorbs lag bunching.
+Gains.MaxRepsPerSecond = 1.05
+Gains.RepBurst = 3
 
 function Gains.IsBalanced(data)
 	local low, high = math.huge, -math.huge

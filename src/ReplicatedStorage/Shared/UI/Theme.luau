@@ -81,6 +81,15 @@ Theme.Border = { Color = Theme.Colors.Border, Thickness = 1, Transparency = Them
 Theme.IconStroke = 2
 Theme.MinTouch = 44 -- px, smallest tappable button on mobile
 
+-- Short screens (phones in landscape, e.g. 667x375) get compact layouts: tighter spacing, 44px buttons, panels that
+-- fit the height. In Studio a "TestPhoneLayout" attribute on Workspace forces it, to check phone layouts on a PC.
+Theme.CompactHeight = 520
+function Theme.IsCompact()
+	local camera = workspace.CurrentCamera
+	if camera and camera.ViewportSize.Y > 1 and camera.ViewportSize.Y < Theme.CompactHeight then return true end
+	return game:GetService("RunService"):IsStudio() and workspace:GetAttribute("TestPhoneLayout") == true
+end
+
 Theme.Motion = {
 	Time = 0.25,
 	Style = Enum.EasingStyle.Quad,

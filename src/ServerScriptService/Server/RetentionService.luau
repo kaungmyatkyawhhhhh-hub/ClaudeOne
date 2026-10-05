@@ -8,6 +8,7 @@ local Config = ReplicatedStorage.Shared.Config
 local Economy = require(Config.Economy)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local BoostService = require(script.Parent.BoostService)
 
 local Remotes = ReplicatedStorage.Remotes
@@ -106,7 +107,7 @@ local function spawnPlate()
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = plate
 	local claimed = false
-	prompt.Triggered:Connect(function(player)
+	Guard.OnTriggered(prompt, function(player)
 		if claimed or not PlayerData.Get(player) then return end
 		claimed = true
 		PlayerData.AddCoins(player, Economy.Rerack.Coins)
@@ -139,7 +140,7 @@ local function setupFrontDesk()
 	prompt.RequiresLineOfSight = false
 	prompt.HoldDuration = 0.6 -- a short hold, so nobody buys one by accident
 	prompt.Parent = holder
-	prompt.Triggered:Connect(function(player)
+	Guard.OnTriggered(prompt, function(player)
 		local now = os.clock()
 		if now - (lastBuy[player] or 0) < 1 then return end
 		lastBuy[player] = now

@@ -58,6 +58,39 @@ Client: `src/StarterPlayerScripts`. UI look: `src/ReplicatedStorage/Shared/UI/Th
 
 ---
 
+## 2. Launch readiness, part 1 (2026-10-05) 🟡 (in progress; stopped at the usage limit)
+
+**Security (done)**: new `Server/Guard` module.
+- Every remote is rate-limited per player (token bucket): MachineAction 12/s, PlayerAction 8/s, Emote 4/s, ArmWrestle
+  20/s, Crew info 2/s and crew actions 1 per 2 s (DataStore and text-filter calls), GetData 0.5/s.
+- Reps: on top of the 0.4 s cooldown, a sustained cap of 1.05 reps/s (`Gains.MaxRepsPerSecond`, burst 3). A real rep
+  takes at least 1.05 s, so a spam script can no longer lift ~2.5x faster.
+- All 12 ProximityPrompts go through `Guard.OnTriggered`: the server checks the player is within the prompt's range
+  (+6 studs) and rate-limits it, so prompts can't be fired from across the map (machines, shake, cat, plates, DNA
+  token, coach, legends, spotting, arm wrestling, pro gym door).
+- Gains, coins, tokens and titles were already computed only on the server (checked every handler).
+- Purchases: a developer product is now saved to the DataStore before Roblox is told it's granted (a crash can't
+  lose a paid item); game-pass "purchase finished" is verified with `UserOwnsGamePassAsync`.
+
+**Data safety (done)**: session locking, UpdateAsync-only saves, kick-instead-of-overwrite and BindToClose were
+already right. Autosaves are now spread evenly over the minute (no burst) and wait while the UpdateAsync budget is
+below 10, so loads and leave-saves always get through with many players.
+
+**Performance (done)**: shadow-casting lights cut from 15 to 6 in the starter gym (the 6 over the machines; **Studio
+change, save the place**) and to every third spotlight in the pro gym (code); 32 small props no longer cast
+shadows (Studio); far-away gym-goers aren't posed every frame. Machines/NPCs stream as Persistent models (see 1).
+
+**Phone layout (partly done)**: side menu wraps into a second column on short screens (6 buttons didn't fit 375 px);
+Crew/Emotes/Settings panels open beside it (`SideMenu.Right()`); Crew panel fits the screen height; menu screen has a
+compact layout (`Theme.IsCompact()`, forced in Studio with a `TestPhoneLayout` Workspace attribute).
+**Not yet:** the genetics screen on phones (its side margin clashes with a two-column side menu, the Frame/Body line
+is too wide) and a screenshot pass of every screen (the screenshot tool hung).
+
+**Left to do from your list:** genetics/other screens at 667x375, Growth Spurt pacing simulation, AnalyticsService
+funnel events, and all of part 3 (progress mirror, town hub, clothing store + wardrobe, skate park, beach gym).
+
+---
+
 ## 1b. Stats labels never disappear (2026-10-05) ✅ (playtested in Studio)
 
 **Built** (`StatsClient`)

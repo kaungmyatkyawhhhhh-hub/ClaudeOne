@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Social = require(ReplicatedStorage.Shared.Config.Social)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local TitleService = require(script.Parent.TitleService)
 local NpcService = require(script.Parent.NpcService)
 
@@ -329,10 +330,11 @@ function ArmWrestleService.Start()
 	end
 	buildTable()
 	for index, seat in ipairs(seats) do
-		seat.prompt.Triggered:Connect(function(player) prompted(player, index) end)
+		Guard.OnTriggered(seat.prompt, function(player) prompted(player, index) end)
 		watchSeat(index)
 	end
-	remote.OnServerEvent:Connect(function(player, action)
+	-- taps are capped again inside tap() (MaxTapsPerSecond); this stops floods of anything else
+	Guard.Remote(remote, "ArmWrestle", Config.MaxTapsPerSecond + 6, 30, function(player, action)
 		if action == "Tap" then
 			tap(player)
 		elseif action == "Leave" then

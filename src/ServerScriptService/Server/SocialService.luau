@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Social = require(ReplicatedStorage.Shared.Config.Social)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local BoostService = require(script.Parent.BoostService)
 local TitleService = require(script.Parent.TitleService)
 
@@ -85,7 +86,7 @@ local function setupMachine(model)
 	prompt.Enabled = false
 	prompt.Parent = use.Parent
 	spotPrompts[model] = prompt
-	prompt.Triggered:Connect(function(player) startSpot(model, player) end)
+	Guard.OnTriggered(prompt, function(player) startSpot(model, player) end)
 	model:GetAttributeChangedSignal("UserId"):Connect(function()
 		if lifterOf(model) then
 			prompt.Enabled = spots[model] == nil

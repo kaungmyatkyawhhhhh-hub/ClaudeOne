@@ -129,8 +129,10 @@ end
 
 RunService.Stepped:Connect(function()
 	local now = os.clock()
+	local cameraAt = workspace.CurrentCamera.CFrame.Position
 	for _, goer in ipairs(CollectionService:GetTagged("GymGoer")) do
-		if goer:IsDescendantOf(workspace) then
+		-- (performance: nobody sees a curl from across the map, so far-away regulars aren't posed)
+		if goer:IsDescendantOf(workspace) and (goer:GetPivot().Position - cameraAt).Magnitude < 90 then
 			goerPose(goer, now + (goer:GetAttribute("Phase") or 0))
 		end
 	end
@@ -144,7 +146,7 @@ local gui = Theme.ScreenGui({ Name = "Emotes", Enabled = false, DisplayOrder = 2
 local panel = Theme.Panel({
 	Name = "Panel",
 	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, Spacing.L + 64 + Spacing.M, 0.5, 0),
+	Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0),
 	Size = UDim2.fromOffset(220, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Parent = gui,
@@ -167,6 +169,7 @@ local function close()
 end
 local function open()
 	isOpen = true
+	panel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0) -- beside the side menu (one or two columns)
 	menuButton:SetActive(true)
 	gui.Enabled = true
 	Audio.PlayUI("Whoosh")

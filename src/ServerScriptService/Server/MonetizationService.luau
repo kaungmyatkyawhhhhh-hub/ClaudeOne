@@ -94,7 +94,9 @@ local function processReceipt(receipt)
 	if not data then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	data.receipts = data.receipts or {}
 	if data.receipts[receipt.PurchaseId] then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- already given (Roblox retried)
+		-- already given (Roblox retried): only confirm once it's stored
+		return PlayerData.SaveNow(player) and Enum.ProductPurchaseDecision.PurchaseGranted
+			or Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local product = productById(receipt.ProductId)
 	if not product then
@@ -111,6 +113,9 @@ local function processReceipt(receipt)
 		if at < oldest then oldestId, oldest = id, at end
 	end
 	if count > 50 and oldestId then data.receipts[oldestId] = nil end
+	-- stored before Roblox is told it's granted: if the server crashed before the next autosave, a "granted" answer
+	-- would lose a paid item. If the save fails, Roblox retries later; the receipt id above stops a double grant.
+	if not PlayerData.SaveNow(player) then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	event(player, "Purchased", { name = product.name })
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
@@ -121,7 +126,10 @@ function MonetizationService.Start()
 	MarketplaceService.ProcessReceipt = processReceipt
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 		local pass = purchased and passById(passId)
-		if pass then
+		if not pass then return end
+		-- don't take the purchase flag on trust: ask Roblox who owns the pass
+		local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, passId)
+		if ok and owns then
 			applyPass(player, pass.key)
 			event(player, "Purchased", { name = pass.name })
 		end

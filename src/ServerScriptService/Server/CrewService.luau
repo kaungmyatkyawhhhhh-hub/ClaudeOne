@@ -14,6 +14,7 @@ local Social = require(Config.Social)
 local Muscles = require(Config.Muscles)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
 local CREW = Social.Crew
@@ -323,9 +324,13 @@ function CrewService.Start()
 		remote.Parent = Remotes
 	end
 	remote.OnServerEvent:Connect(function(player, action, a, b)
-		if action == "Info" then sendInfo(player) return end
+		if action == "Info" then
+			if Guard.Allow(player, "crew:info", 2, 4) then sendInfo(player) end
+			return
+		end
 		local handler = type(action) == "string" and actions[action]
-		if not handler or busy[player] then return end
+		-- create/invite/accept/leave hit the DataStore and the text filter: one every 2 s at most
+		if not handler or busy[player] or not Guard.Allow(player, "crew:action", 0.5, 3) then return end
 		busy[player] = true
 		local ok, err = pcall(handler, player, a, b)
 		busy[player] = nil

@@ -10,6 +10,7 @@ local Machines = require(Config.Machines)
 local Poses = require(Config.Poses)
 local Gains = require(Config.Gains)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local TitleService = require(script.Parent.TitleService)
 local QuestService = require(script.Parent.QuestService)
 local BoostService = require(script.Parent.BoostService)
@@ -179,6 +180,7 @@ local function lift(player)
 	if not session then return end
 	local now = os.clock()
 	if now - session.lastRep < Gains.RepCooldown then return end
+	if not Guard.Allow(player, "lift", Gains.MaxRepsPerSecond, Gains.RepBurst) then return end
 	local data = PlayerData.Get(player)
 	if not data then return end
 
@@ -263,7 +265,7 @@ local function setupMachine(model)
 	if prompt then
 		prompt.ActionText = "Use"
 		prompt.ObjectText = machine.name
-		prompt.Triggered:Connect(function(player)
+		Guard.OnTriggered(prompt, function(player)
 			enter(player, model)
 		end)
 	end
@@ -276,7 +278,8 @@ function MachineService.Start()
 	end
 	CollectionService:GetInstanceAddedSignal("Machine"):Connect(setupMachine)
 
-	Remotes.MachineAction.OnServerEvent:Connect(function(player, action, arg)
+	-- taps, tier buttons and Exit: far more than a real player can send, far less than a spam script
+	Guard.Remote(Remotes.MachineAction, "MachineAction", 12, 20, function(player, action, arg)
 		local handler = type(action) == "string" and actions[action]
 		if handler then
 			handler(player, arg)

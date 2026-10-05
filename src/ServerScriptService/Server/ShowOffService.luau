@@ -11,6 +11,7 @@ local ShowOff = require(Config.ShowOff)
 local Muscles = require(Config.Muscles)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
 
@@ -314,7 +315,7 @@ function ShowOffService.Start()
 		emoteRemote.Name = "Emote"
 		emoteRemote.Parent = Remotes
 	end
-	emoteRemote.OnServerEvent:Connect(onEmote)
+	Guard.Remote(emoteRemote, "Emote", 4, 6, onEmote)
 	Players.PlayerRemoving:Connect(function(player)
 		task.spawn(writeScores, player)
 		written[player], lastEmote[player], highFives[player] = nil, nil, nil

@@ -11,6 +11,7 @@ local Config = ReplicatedStorage.Shared.Config
 local Machines = require(Config.Machines)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
 
@@ -152,7 +153,12 @@ BUILDERS.CalfRaise = function(model, pivot)
 	stackFrame(model, pivot, 2.2)
 end
 
+-- Performance (phones): only every third spotlight casts shadows; the light pools are the same for all of them.
+local SHADOW_EVERY = 3
+local builtCount = 0
+
 local function buildMachine(machine, pivot)
+	builtCount += 1
 	local model = Instance.new("Model")
 	model.Name = machine.id
 	part(model, "Base", Vector3.new(4.2, 0.1, 5.2), pivot * CFrame.new(0, 0.05, 0.5), COLORS.Rubber, Enum.Material.Rubber)
@@ -177,7 +183,8 @@ local function buildMachine(machine, pivot)
 		Color3.fromHex("#2B2B2B"), Enum.Material.Metal, { CanCollide = false })
 	local light = Instance.new("SpotLight")
 	light.Face = Enum.NormalId.Bottom
-	light.Brightness, light.Range, light.Angle, light.Color, light.Shadows = 3, 22, 70, COLORS.Light, true
+	light.Brightness, light.Range, light.Angle, light.Color = 3, 22, 70, COLORS.Light
+	light.Shadows = builtCount % SHADOW_EVERY == 1
 	light.Parent = fixture
 
 	CollectionService:AddTag(model, "Machine") -- MachineService sets up the prompt and plates from here
@@ -232,7 +239,7 @@ local function door(parent, center, facing, title, subtitle, onUse)
 	prompt.MaxActivationDistance = 8
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = panel
-	prompt.Triggered:Connect(function(player)
+	Guard.OnTriggered(prompt, function(player)
 		local now = os.clock()
 		if now - (lastUse[player] or 0) < 1.5 then return end
 		lastUse[player] = now

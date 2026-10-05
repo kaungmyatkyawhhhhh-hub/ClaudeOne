@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Stamina = require(ReplicatedStorage.Shared.Config.Stamina)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local BoostService = require(script.Parent.BoostService)
 local ActionService = require(script.Parent.ActionService)
 local ShowOffService = require(script.Parent.ShowOffService)
@@ -85,7 +86,7 @@ local function setupShakeMachine()
 	prompt.MaxActivationDistance = 8
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = holder
-	prompt.Triggered:Connect(buy)
+	Guard.OnTriggered(prompt, buy)
 end
 
 ------------------------------------------------------------------------
@@ -142,7 +143,7 @@ local function buildCat()
 	npcs.Parent = Workspace
 	model.Parent = npcs
 
-	prompt.Triggered:Connect(function(player)
+	Guard.OnTriggered(prompt, function(player)
 		local now = os.clock()
 		local data = PlayerData.Get(player)
 		if not data then return end

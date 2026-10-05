@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local BodyService = require(script.Parent.BodyService)
 local TitleService = require(script.Parent.TitleService)
 local Titles = require(Config.Titles)
@@ -71,7 +72,8 @@ function ActionService.Register(action, handler)
 end
 
 function ActionService.Start()
-	Remotes.PlayerAction.OnServerEvent:Connect(function(player, action, arg)
+	-- menus, settings, tutorial steps, shakes: plenty for a real player, not for a spam script
+	Guard.Remote(Remotes.PlayerAction, "PlayerAction", 8, 15, function(player, action, arg)
 		local handler = type(action) == "string" and handlers[action]
 		if handler then handler(player, arg) end
 	end)

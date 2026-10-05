@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local Legends = require(Config.Legends)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local NpcService = require(script.Parent.NpcService)
 local TitleService = require(script.Parent.TitleService)
 
@@ -109,7 +110,7 @@ local function visit()
 	}
 	local model, prompt = NpcService.Build(spec, cframe)
 	present = { legend = legend, model = model }
-	if prompt then prompt.Triggered:Connect(function(player) talk(player, legend, model) end) end
+	if prompt then Guard.OnTriggered(prompt, function(player) talk(player, legend, model) end) end
 	eventAll("LegendArrived", { name = legend.name, minutes = Legends.Visit.StayMinutes })
 	task.wait(Legends.Visit.StayMinutes * 60)
 	eventAll("LegendLeft", { name = legend.name })

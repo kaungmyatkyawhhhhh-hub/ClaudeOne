@@ -41,7 +41,12 @@ local CAMERA = {
 	ExitTime = 0.7,     -- camera glides behind the character on Play
 	WallGap = 0.6,      -- keep the camera this far in front of walls
 }
-local PANEL_WIDTH = 300
+-- Phones in landscape (667x375 and similar) get a compact layout so the panel fits the height and the character
+-- still shows between the player card and the panel.
+local COMPACT = Theme.IsCompact()
+local PANEL_WIDTH = COMPACT and 250 or 300
+local MARGIN = COMPACT and Spacing.L or Spacing.XL * 2
+local BUTTON_HEIGHT = COMPACT and Theme.MinTouch or 52
 
 ------------------------------------------------------------------------
 -- UI
@@ -50,21 +55,21 @@ local gui = Theme.ScreenGui({ Name = "MenuScreen", DisplayOrder = 20, Parent = p
 local panel = Theme.Panel({
 	Name = "Panel",
 	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -Spacing.XL * 2, 0.5, 0),
+	Position = UDim2.new(1, -MARGIN, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Parent = gui,
 }, {
-	Theme.Pad("XL"),
-	Theme.List(Vertical, "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+	Theme.Pad(COMPACT and "L" or "XL"),
+	Theme.List(Vertical, COMPACT and "S" or "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
 
-Theme.Text({ LayoutOrder = 1, Text = "GYM ARC", Font = "SemiBold", TextSize = "Huge", Size = UDim2.new(1, 0, 0, 44), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+Theme.Text({ LayoutOrder = 1, Text = "GYM ARC", Font = "SemiBold", TextSize = COMPACT and "Large" or "Huge", Size = UDim2.new(1, 0, 0, COMPACT and 28 or 44), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 Theme.Text({ LayoutOrder = 2, Text = "Everyone starts tiny.", Font = "Regular", TextSize = "Body", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, Spacing.S), BackgroundTransparency = 1, Parent = panel })
+New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, COMPACT and 0 or Spacing.S), BackgroundTransparency = 1, Parent = panel })
 
 local function menuButton(order, style, text)
-	local button = Theme.Button(style, { Name = text, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 52), Parent = panel })
+	local button = Theme.Button(style, { Name = text, LayoutOrder = order, Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT), Parent = panel })
 	local label = Theme.Text({ Text = text, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), Parent = button })
 	return button, label
 end
@@ -77,7 +82,7 @@ titlesButton.Visible, settingsButton.Visible = false, false -- shown for returni
 local info = New("Frame", { LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Visible = false, Parent = panel },
 	{ Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top), New("UIPadding", { PaddingTop = UDim.new(0, Spacing.S) }) })
 local function infoLine(order, text)
-	return Theme.Text({ LayoutOrder = order, Text = text, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = info })
+	return Theme.Text({ LayoutOrder = order, Text = text, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = info })
 end
 
 playLabel.Text = "Loading..."
@@ -92,8 +97,8 @@ local function buildCard(data)
 	local card = Theme.Panel({
 		Name = "PlayerCard",
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, Spacing.XL * 2, 1, -Spacing.XL * 2),
-		Size = UDim2.fromOffset(280, 0),
+		Position = UDim2.new(0, MARGIN, 1, -MARGIN),
+		Size = UDim2.fromOffset(COMPACT and 230 or 280, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = gui,
 	}, {

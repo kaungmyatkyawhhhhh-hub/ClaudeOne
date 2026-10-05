@@ -10,6 +10,7 @@ local Muscles = require(Config.Muscles)
 local Machines = require(Config.Machines)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local PlayerData = require(script.Parent.PlayerData)
+local Guard = require(script.Parent.Guard)
 local NpcService = require(script.Parent.NpcService)
 
 local Remotes = ReplicatedStorage.Remotes
@@ -140,7 +141,7 @@ end
 function QuestService.Start()
 	local _, prompt = NpcService.Build(COACH_LOOK, COACH_SPOT)
 	if prompt then
-		prompt.Triggered:Connect(talk)
+		Guard.OnTriggered(prompt, talk)
 	end
 
 	-- state quests (levels, tiers, titles, Growth Spurts) can finish outside of reps too

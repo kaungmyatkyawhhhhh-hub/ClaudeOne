@@ -14,6 +14,7 @@ local Stamina = require(Config.Stamina)
 local Titles = require(Config.Titles)
 local Onboarding = require(Config.Onboarding)
 local DataTemplate = require(script.Parent.DataTemplate)
+local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
 
@@ -26,6 +27,7 @@ if RunService:IsStudio() then
 	LOCK_EXPIRY = 0
 end
 local AUTOSAVE_INTERVAL = 60
+local BUDGET_RESERVE = 10 -- UpdateAsync requests kept free for loads and leave-saves before an autosave goes out
 local LOAD_ATTEMPTS = 6 -- waits for another server to release the lock (e.g. quick rejoin)
 local LOAD_LOCK_WAIT = 5
 local CALL_ATTEMPTS = 5
@@ -230,6 +232,11 @@ local function onPlayerRemoving(player)
 	save(player, true)
 	profiles[player] = nil
 	lastStaminaUse[player] = nil
+end
+
+-- Saves right away (e.g. after a Robux purchase, before telling Roblox it was granted). True when it's stored.
+function PlayerData.SaveNow(player)
+	return save(player, false)
 end
 
 -- Reading -----------------------------------------------------------------
@@ -497,15 +504,29 @@ function PlayerData.Start()
 	end
 
 	Remotes.GetData.OnServerInvoke = function(player)
+		-- the client asks once per join (and retries while loading); a full copy of the save is not free
+		if not Guard.Allow(player, "getdata", 0.5, 5) then return nil end
 		local data = PlayerData.WaitFor(player)
 		return data and snapshot(data)
 	end
 
+	-- Autosave: each player once per AUTOSAVE_INTERVAL, spread evenly over it (no burst every minute), and only while
+	-- the server has UpdateAsync budget to spare, so joins and leaves (load/release) always get through.
 	task.spawn(function()
 		while true do
-			task.wait(AUTOSAVE_INTERVAL)
-			for player in pairs(profiles) do
-				task.spawn(save, player, false)
+			local list = {}
+			for player in pairs(profiles) do table.insert(list, player) end
+			if #list == 0 then
+				task.wait(AUTOSAVE_INTERVAL)
+			else
+				local gap = AUTOSAVE_INTERVAL / #list
+				for _, player in ipairs(list) do
+					task.wait(gap)
+					while DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync) < BUDGET_RESERVE do
+						task.wait(1)
+					end
+					if profiles[player] then task.spawn(save, player, false) end
+				end
 			end
 		end
 	end)

@@ -24,11 +24,11 @@ local KNOB = 18
 local menuButton = SideMenu.Add("Settings", "Settings", Icons.Gear, 9)
 
 local gui = Theme.ScreenGui({ Name = "Settings", Enabled = false, DisplayOrder = 24, Parent = player:WaitForChild("PlayerGui") })
--- next to the side menu (16px margin + 64px buttons + 12px gap)
+-- next to the side menu (SideMenu.Right() + 12px gap)
 local panel = Theme.Panel({
 	Name = "Panel",
 	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, Spacing.L + 64 + Spacing.M, 0.5, 0),
+	Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Active = true, -- taps on the panel never count as lifts
@@ -141,8 +141,8 @@ local function open()
 	for key, entry in pairs(sliders) do entry.show(values[key]) end
 	gui.Enabled = true
 	Audio.PlayUI("Whoosh")
-	panel.Position = UDim2.new(0, Spacing.L + 64 + Spacing.M - Spacing.L, 0.5, 0)
-	Theme.Tween(panel, { Position = UDim2.new(0, Spacing.L + 64 + Spacing.M, 0.5, 0) })
+	panel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M - Spacing.L, 0.5, 0)
+	Theme.Tween(panel, { Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0) })
 	Theme.Fade(panel, true)
 end
 local function close()

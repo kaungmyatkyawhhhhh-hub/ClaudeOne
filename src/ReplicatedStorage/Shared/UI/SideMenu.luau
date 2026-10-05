@@ -14,20 +14,31 @@ local column
 local function ensure()
 	if column then return column end
 	local gui = Theme.ScreenGui({ Name = "MainHud", DisplayOrder = 4, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
+	-- As tall as the screen allows: on short screens (a 667x375 phone fits 4 buttons) the buttons wrap into a second
+	-- column instead of running off the bottom. Panels that open beside the menu use SideMenu.Right().
+	local list = Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center)
+	list.Wraps = true
 	column = New("Frame", {
 		Name = "SideMenu",
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, Spacing.L, 0.5, 0),
-		Size = UDim2.fromOffset(BUTTON.X, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(0, BUTTON.X, 1, -Spacing.L * 2),
+		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
 		Parent = gui,
-	}, { Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	}, { list })
 	return column
 end
 
 function SideMenu.Column()
 	return ensure()
+end
+
+-- Pixel x of the menu's right edge (one or two columns), for panels that open beside it.
+function SideMenu.Right()
+	local menu = ensure()
+	local width = menu.AbsoluteSize.X > 0 and menu.AbsoluteSize.X or BUTTON.X
+	return Spacing.L + width
 end
 
 function SideMenu.Add(id, labelText, iconFactory, order)
