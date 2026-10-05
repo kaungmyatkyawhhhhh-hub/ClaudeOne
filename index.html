@@ -303,9 +303,10 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .shgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.shbtn{aspect-ratio:1;border:0;border-radius:16px;background:var(--surface);box-shadow:0 4px 0 rgba(0,0,0,.12),inset 0 0 0 1px var(--line);font-size:2rem;cursor:pointer;touch-action:manipulation}.shbtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.12)}.shbtn.bad{background:#ffd9dd}
 .shend{text-align:center;padding:16px 0}.shend>b{display:block;font:900 3.4rem var(--display)}
 @keyframes pulse{50%{transform:scale(1.08)}}
-.spart,.lart{padding:0;overflow:hidden}.spart svg{display:block;width:100%;height:auto}.lart canvas{display:block;width:100%;height:auto;max-height:52vh;object-fit:cover}.lbar{display:flex;gap:8px;align-items:center;font:700 .72rem var(--mono);margin:10px 0}.lbar i{flex:1;height:10px;border-radius:5px;background:var(--sunk);overflow:hidden}.lbar b{display:block;height:100%;width:0}
+.spart,.lart{padding:0;overflow:hidden}.spart svg{display:block;width:100%;height:auto}.lart{background:#141824;display:grid;place-items:center}.lart canvas{display:block;height:min(56vh,calc((100vw - 32px)*1.5));width:auto;max-width:100%}.lbar{display:flex;gap:8px;align-items:center;font:700 .72rem var(--mono);margin:10px 0}.lbar i{flex:1;height:10px;border-radius:5px;background:var(--sunk);overflow:hidden}.lbar b{display:block;height:100%;width:0}
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.tiles .bigbtn{padding:14px 8px;font-size:1.05rem;border-radius:16px}.tiles .bigbtn small{font-size:.66rem}
 .wnov{position:fixed;inset:0;z-index:58;background:rgba(10,12,20,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadein .25s}.wnsheet{width:min(100%,480px);max-height:86vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.3)}.wnsheet h2{font:900 1.6rem var(--display);margin:0 0 4px}.wnlist{display:flex;flex-direction:column;gap:8px;margin:12px 0}.wnlist div{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:inset 0 0 0 1px var(--line)}.wnlist i{font-style:normal;font-size:1.5rem;line-height:1}.wnlist b{display:block;font-size:.9rem}.wnlist small{color:var(--muted);font-size:.78rem}
+.gpctl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.gpctl button{border:0;border-radius:18px;padding:18px;font-size:2rem;background:var(--ink);color:var(--bg);touch-action:manipulation;cursor:pointer}.gpctl button:active{transform:scale(.96)}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -939,6 +940,7 @@ const ACH=[
  ["hustler","Hands-on owner","Serve 100 orders on shifts",()=>(S.stats.orders||0)>=100,1e6],
  ["astronaut","Astronaut","Reach space",()=>(S.stats.orbits||0)>=1,5e6],
  ["mars","Red planet","Bring back something from Mars",()=>Object.keys(S.coll||{}).some(k=>k==="space:MC"||k==="space:MX"),5e7],
+ ["gpwin","Champion","Win the Monte Carlo Grand Prix",()=>(S.stats.gpWins||0)>=1,2e6],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -3312,6 +3314,7 @@ function openCity(k,arrive){const c=CTRY(k);CITY=k;if(M)closeMarket();room="abro
       <button class="perk nopic" data-cg="mkt"><span class="t">${c.n} Market</span><span class="d">${c.spec}</span><span class="c">Enter</span></button>
       <button class="perk nopic prestige" data-cg="prestige"><span class="t">Prestige House</span><span class="d">Only $50M–$100M pieces. ${Object.keys(c.el).map(x=>(POOL.find(p=>p.code===x&&p.cat==="elite")||{}).name).filter(Boolean).slice(0,2).join(" and ")} sell for more here</span><span class="c">Enter</span></button>
       <button class="perk nopic" data-cg="realty"><span class="t">Real estate</span><span class="d">Buy apartments, bars, restaurants, condos, hotels${c.biz.includes("resort")?" and resorts":""}</span><span class="c">${mine.length?mine.length+" owned":"Browse"}</span></button>
+      ${c.k==="monaco"?`<button class="perk nopic" data-cg="gp"><span class="t">Grand Prix 🏁</span><span class="d">Race your car through Monte Carlo. Wins: ${S.stats.gpWins||0}</span><span class="c">Race</span></button>`:""}
       ${c.casino?`<button class="perk nopic prestige" data-cg="casino"><span class="t">Casino</span><span class="d">Slots, roulette and blackjack. Biggest win: ${fmt(S.stats.casinoBig||0)}</span><span class="c">Enter</span></button>`:""}
       <button class="perk nopic" data-cg="sight" ${today?"disabled":""}><span class="t">Visit the ${c.lm}</span><span class="d">${today?"Come back tomorrow":"Full energy, 90s of hype and new fans"}</span><span class="c">${today?"Seen":"Go"}</span></button>
     </div>
@@ -3321,6 +3324,7 @@ function openCity(k,arrive){const c=CTRY(k);CITY=k;if(M)closeMarket();room="abro
     else if(g==="prestige"){room="prestige";openMarket(prestigeMkt(c));backTo(()=>openCity(k))}
     else if(g==="realty")openRealty(k,()=>openCity(k));
     else if(g==="casino")openCasino(k,()=>openCity(k));
+    else if(g==="gp")openGP(()=>openCity(k));
     else if(g==="sight"){if(S.seen&&S.seen[k]===S.day)return banner("Already visited today","a");S.seen=S.seen||{};S.seen[k]=S.day;S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,90);const f=Math.round(50+(S.fans||0)*.02);S.fans=(S.fans||0)+f;dirty=true;SFX.rebirth();confetti(120,null,null,[c.tone,"#fff","#ffcc33"]);banner(c.lm+" · +"+fmtN(f)+" fans","u");openCity(k)}};
   $("room").querySelectorAll("[data-cg]").forEach(b=>b.onclick=()=>go(b.dataset.cg));
   $("room").querySelectorAll(".citysvg [data-go]").forEach(g=>g.addEventListener("click",()=>go(g.dataset.go)));
@@ -3843,6 +3847,7 @@ const MISS=[
  {k:"collect",t:"Collect from your businesses {n} times",st:"bizCollects",n:[1,3,5],need:()=>(S.biz||[]).length>0},
  {k:"deliv",t:"Deliver {n} packages",st:"delivOk",n:[1,2,3]},
  {k:"finds",t:"Grab {n} shiny finds",st:"finds",n:[2,4,6]},
+ {k:"gp",t:"Race {n} Grands Prix",st:"gpRaces",n:[1,2,3],need:()=>repLevel()>=25&&!!gpCar()},
  {k:"flex",t:"Flex {n} times at the gym",st:"flexes",n:[1,2,3]},
  {k:"shift",t:"Work {n} shifts at your businesses",st:"shifts",n:[1,2,3],need:()=>(S.biz||[]).length>0}];
 function ensureMiss(){const d=dayKey();if(S.miss&&S.miss.d===d)return;let h=0;for(const ch of d+(ACC?ACC.user:""))h=(h*31+ch.charCodeAt(0))%99991;
@@ -4016,6 +4021,64 @@ function whatsNew(){if(!S||(S.flags&&S.flags.wn>=WN_VER)||S.tut!==99&&S.tut!=nul
   const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><span class="eyebrow">Update</span><h2>What's new</h2><div class="wnlist">${WN.map(([i,t,d])=>`<div><i>${i}</i><span><b>${t}</b><small>${d}</small></span></div>`).join("")}</div><button class="cta" id="wnGo"><span>Let's go</span>${ARROW}</button></div>`;
   document.body.appendChild(ov);const close=()=>{ov.remove();audioOn()};ov.querySelector("#wnGo").onclick=close;ov.onclick=e=>{if(e.target===ov)close()}}
 
+/* ================= Monte Carlo Grand Prix: dodge, boost and overtake ================= */
+let GP=null;
+const gpCar=()=>{const own=VEH.filter(v=>S.veh&&S.veh[v.k]&&CARS.includes(v.k)).sort((a,b)=>b.sp-a.sp);return own[0]||null};
+const gpFee=()=>Math.round(Math.max(50000,(S.cash+(S.bank||0))*.01));
+const GP_PRIZE=[25,12,6,3,1.5];
+function openGP(back){const car=gpCar(),fee=gpFee();room="gp";
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Grand Prix")}<div class="art spart">${gpArt()}</div>
+    <div class="kv"><div><span class="eyebrow">Your car</span><b>${car?car.n:"None"}</b></div><div><span class="eyebrow">Best finish</span><b>${S.stats.gpBest?"P"+S.stats.gpBest:"—"}</b></div><div><span class="eyebrow">Wins</span><b>${S.stats.gpWins||0}</b></div></div>
+    <div class="note">Start 10th on the grid. Swipe or tap left and right to change lanes, overtake rivals, hit the <b>yellow boost pads</b> and avoid <b>oil</b>. Prizes: 1st ${GP_PRIZE[0]}× the entry, 2nd ${GP_PRIZE[1]}×, 3rd ${GP_PRIZE[2]}×.</div>
+    <button class="bigbtn" id="gpGo" ${!car||S.cash<fee||S.energy<15?"disabled":""}>${car?"Race":"You need a car"}<small>${car?"Entry "+fmt(fee)+" · 15 energy":"Buy one at the Dealership"}</small></button></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("gpGo").onclick=e=>{if(!car||S.cash<fee||!spend(15,e.currentTarget))return;S.cash-=fee;dirty=true;gpStart(car,fee,back)}}
+function gpArt(){return `<svg viewBox="0 0 400 140" aria-hidden="true"><rect width="400" height="140" fill="#8fd8ff"/><path d="M0 70 L80 50 L160 66 L240 44 L320 62 L400 52 V140 H0Z" fill="#8fae9a"/><rect y="96" width="400" height="44" fill="#3a3d46"/>${Array.from({length:20},(_,i)=>`<rect x="${i*20}" y="92" width="10" height="4" fill="${i%2?"#e2364a":"#fff"}"/>`).join("")}${Array.from({length:12},(_,i)=>`<rect x="${i*34+6}" y="116" width="18" height="3" fill="#fff" opacity=".7"/>`).join("")}${Array.from({length:8},(_,r)=>Array.from({length:2},(_,c)=>`<rect x="${340+c*7}" y="${100+r*5}" width="7" height="5" fill="${(r+c)%2?"#141824":"#fff"}"/>`).join("")).join("")}
+  ${[["#e2364a",60],["#2a5bd7",150],["#ffcc33",230]].map(([c,x])=>`<g transform="translate(${x} 104)"><rect width="46" height="14" rx="5" fill="${c}"/><rect x="30" y="-4" width="10" height="4" fill="#141824"/><circle cx="10" cy="14" r="5" fill="#141824"/><circle cx="36" cy="14" r="5" fill="#141824"/></g>`).join("")}<text x="200" y="30" text-anchor="middle" font-family="var(--display)" font-weight="900" font-size="20" fill="#e2364a">GRAND PRIX DE MONTE-CARLO</text></svg>`}
+function gpStart(car,fee,back){const W=360,H=540;
+  GP={car,fee,back,W,H,lane:1,x:W/2,spd:0,max:300+car.sp*45,dist:0,len:9000,pos:10,cars:[],pads:[],oil:[],t:0,boost:0,hit:0,state:"go",cd:2.4,line:0};
+  for(let i=0;i<9;i++)GP.cars.push({lane:i%3,y:H-180-Math.floor(i/3)*130-(i%3)*30,spd:GP.max*rnd(.55,.75),c:pick(["#e2364a","#2a5bd7","#ffcc33","#1f9d5b","#7a2fd6","#f2f2f2","#ff7a3d"])});
+  $("room").innerHTML=`<div class="room-in">${roomHead("Grand Prix")}<div class="art lart"><canvas id="gpCv" width="${W}" height="${H}"></canvas></div>
+    <div class="gpctl"><button id="gpL">◀</button><button id="gpR">▶</button></div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Quit";$("leaveBtn").onclick=()=>{if(GP)GP.state="quit"};
+  const mv=d=>{if(GP&&GP.state==="go"&&GP.cd<=0){GP.lane=clamp(GP.lane+d,0,2);SFX.tick(.4);buzz(5)}};
+  $("gpL").addEventListener("pointerdown",e=>{e.preventDefault();mv(-1)});$("gpR").addEventListener("pointerdown",e=>{e.preventDefault();mv(1)});
+  const cv=$("gpCv");let sx=null;cv.addEventListener("pointerdown",e=>{sx=e.clientX});cv.addEventListener("pointerup",e=>{if(sx==null)return;const dx=e.clientX-sx;if(Math.abs(dx)>24)mv(dx>0?1:-1);else{const r=cv.getBoundingClientRect();mv(e.clientX<r.left+r.width/2?-1:1)}sx=null});
+  SFX.door();let last=performance.now();const loop=now=>{if(!GP||!$("gpCv"))return;const dt=Math.min(.05,(now-last)/1000);last=now;gpStep(dt);gpDraw();if(GP.state==="go")requestAnimationFrame(loop);else gpEnd()};requestAnimationFrame(loop)}
+function gpStep(dt){const G=GP,laneX=l=>G.W/2+(l-1)*96;G.x+=(laneX(G.lane)-G.x)*Math.min(1,dt*12);
+  if(G.cd>0){G.cd-=dt;if(G.cd<=0)SFX.level();return}G.t+=dt;
+  const target=G.max*(G.boost>0?1.35:1)*(G.hit>0?.55:1);G.spd+=(target-G.spd)*Math.min(1,dt*1.5);G.boost-=dt;G.hit-=dt;
+  const d=G.spd*dt;G.dist+=d;G.line=(G.line+d)%60;
+  G.cars.forEach(c=>{const before=c.y;c.y+=d-c.spd*dt;if(before<G.H-110&&c.y>=G.H-110)G.pos=Math.max(1,G.pos-1);if(before>=G.H-110&&c.y<G.H-110)G.pos=Math.min(10,G.pos+1);
+    if(Math.random()<dt*.5){const nl=clamp(c.lane+(Math.random()<.5?-1:1),0,2);if(!G.cars.some(o=>o!==c&&o.lane===nl&&Math.abs(o.y-c.y)<90))c.lane=nl}
+    if(c.y>G.H+120){c.y=-rnd(120,400);c.spd=G.max*rnd(.55,.8);c.lane=Math.floor(Math.random()*3)}});
+  if(Math.random()<dt*.7)G.pads.push({lane:Math.floor(Math.random()*3),y:-40});if(Math.random()<dt*.45)G.oil.push({lane:Math.floor(Math.random()*3),y:-40});
+  [G.pads,G.oil].forEach(A=>A.forEach(o=>o.y+=d));G.pads=G.pads.filter(o=>o.y<G.H+40);G.oil=G.oil.filter(o=>o.y<G.H+40);
+  const py=G.H-110;G.pads.forEach(o=>{if(!o.used&&o.lane===G.lane&&Math.abs(o.y-py)<34){o.used=1;G.boost=1.6;SFX.hot();buzz(10)}});
+  G.oil.forEach(o=>{if(!o.used&&o.lane===G.lane&&Math.abs(o.y-py)<30){o.used=1;G.hit=1.1;SFX.nope();shake(4)}});
+  G.cars.forEach(c=>{if(c.lane===G.lane&&Math.abs(c.y-py)<54&&G.hit<=0){G.hit=1.3;c.y-=60;SFX.loss();shake(6);buzz([30,20,30])}});
+  if(G.dist>=G.len)G.state="done"}
+function gpDraw(){const G=GP,cv=$("gpCv");if(!cv)return;const g=cv.getContext("2d"),W=G.W,H=G.H,laneX=l=>W/2+(l-1)*96;
+  g.fillStyle="#3f8f4a";g.fillRect(0,0,W,H);g.fillStyle="#3a3d46";g.fillRect(W/2-150,0,300,H);
+  for(let y=-60+G.line;y<H;y+=60){g.fillStyle=(Math.floor((y-G.line)/60)%2)?"#e2364a":"#fff";g.fillRect(W/2-158,y,8,30);g.fillRect(W/2+150,y,8,30);g.fillStyle="rgba(255,255,255,.6)";g.fillRect(W/2-49,y,3,28);g.fillRect(W/2+47,y,3,28)}
+  for(let y=-60+G.line*.5;y<H;y+=120){g.fillStyle="#2f7a46";g.beginPath();g.arc(30,y,16,0,7);g.arc(W-30,y+60,16,0,7);g.fill()}
+  if(G.len-G.dist<H){const fy=H-110-(G.len-G.dist);for(let i=0;i<15;i++)for(let r=0;r<2;r++){g.fillStyle=(i+r)%2?"#141824":"#fff";g.fillRect(W/2-150+i*20,fy+r*10,20,10)}}
+  G.pads.forEach(o=>{if(o.used)return;g.fillStyle="#ffcc33";g.beginPath();const x=laneX(o.lane);g.moveTo(x,o.y-16);g.lineTo(x+16,o.y+10);g.lineTo(x-16,o.y+10);g.fill()});
+  G.oil.forEach(o=>{g.fillStyle="rgba(10,10,14,.75)";g.beginPath();g.ellipse(laneX(o.lane),o.y,22,12,0,0,7);g.fill()});
+  const car=(x,y,c,me)=>{g.fillStyle="rgba(0,0,0,.25)";rrp(g,x-17,y-26,36,58,8);g.fill();g.fillStyle=c;rrp(g,x-18,y-30,36,58,9);g.fill();g.fillStyle="#141824";rrp(g,x-12,y-14,24,16,4);g.fill();g.fillStyle="#141824";[[-21,-22],[15,-22],[-21,12],[15,12]].forEach(([dx,dy])=>g.fillRect(x+dx,y+dy,6,14));if(me){g.fillStyle="#fff";g.fillRect(x-2,y-30,4,58)}};
+  G.cars.forEach(c=>car(laneX(c.lane),c.y,c.c,false));
+  const py=H-110;if(G.boost>0){g.fillStyle="rgba(255,160,60,.7)";g.beginPath();g.moveTo(G.x-10,py+30);g.lineTo(G.x,py+60+Math.random()*20);g.lineTo(G.x+10,py+30);g.fill()}
+  car(G.x+(G.hit>0?Math.sin(G.t*60)*3:0),py,S.paint||"#e2364a",true);
+  g.fillStyle="rgba(10,14,22,.7)";rrp(g,10,10,W-20,44,12);g.fill();g.fillStyle="#fff";g.font="900 24px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="left";g.fillText("P"+G.pos,22,42);
+  g.font="700 12px "+getComputedStyle(root).getPropertyValue("--mono");g.textAlign="right";g.fillText(Math.round(G.spd/3)+" km/h",W-22,30);g.fillStyle="rgba(255,255,255,.25)";g.fillRect(90,38,W-200,6);g.fillStyle="#2fd28a";g.fillRect(90,38,(W-200)*Math.min(1,G.dist/G.len),6);
+  if(G.cd>0){g.fillStyle="rgba(0,0,0,.35)";g.fillRect(0,0,W,H);g.fillStyle=G.cd>1.6?"#e2364a":G.cd>.8?"#ffcc33":"#2fd28a";g.font="900 80px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.fillText(G.cd>1.6?"3":G.cd>.8?"2":"1",W/2,H/2)}}
+function gpEnd(){const G=GP;GP=null;if(!G)return;const quit=G.state==="quit",p=quit?10:G.pos,mult=GP_PRIZE[p-1]||0,win=Math.round(G.fee*mult);
+  if(!quit){S.stats.gpRaces=(S.stats.gpRaces||0)+1;S.stats.gpBest=Math.min(S.stats.gpBest||99,p);if(p===1)S.stats.gpWins=(S.stats.gpWins||0)+1;if(win>0)earn(win)}dirty=true;
+  $("room").innerHTML=`<div class="room-in">${roomHead("Results")}<div class="shend"><b>${quit?"—":"P"+p}</b><span>${quit?"You retired":p===1?"Winner! 🏆":p<=3?"Podium!":"Finished"}</span><div class="kv"><div><span class="eyebrow">Prize</span><b>${fmt(win)}</b></div><div><span class="eyebrow">Entry</span><b>${fmt(G.fee)}</b></div></div></div>
+    <button class="bigbtn" id="gpBack">Back<small>&nbsp;</small></button></div>`;
+  if(p===1){confetti(240,null,null,["#e2364a","#fff","#ffcc33"]);SFX.grail();shake(8)}else if(p<=3){confetti(80);SFX.level()}else SFX.nope();
+  banner(quit?"Retired":"Finished P"+p+(win?" · +"+fmt(win):""),p<=3?"g":"a");$("gpBack").onclick=$("leaveBtn").onclick=()=>openGP(G.back);updMini()}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4038,7 +4101,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
