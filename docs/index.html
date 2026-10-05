@@ -2811,10 +2811,11 @@ function spawnEvent(){
     const s=pick(S.stash),v=valueOf(s)*mult()*(1-WT),scam=Math.random()<(hasStr(50)?.09:.18)*secK();
     M.ev={id:S.nextId++,type:"offer",item:s,amt:Math.round(scam?Math.max(v,s.paid)*rnd(2.2,3):v*rnd(.85,1.45)),scam,left:5.5,dur:5.5,who:scam?"New account · gift card":`★${rnd(4.6,5).toFixed(1)} buyer`};SFX.news();buzz(15);return;
   }
-  M.ev={id:S.nextId++,type:"collector",cat:pick(S.unlocked),left:6,dur:6};SFX.hot();buzz(20);renderStash();
+  M.ev={id:S.nextId++,type:"collector",cat:mOnly()||pick(S.unlocked),left:6,dur:6};SFX.hot();buzz(20);renderStash();
 }
-function startAuction(){
-  const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=Math.max(320,(S.cash+stashVal())*2)&&(HEAVY[p.code]||0)<=S.pr),it=pick(pool),c=CAT[it.cat],cond=c.conds[0];
+const mOnly=()=>MC().only||(MC().k==="lux"?"lux":null);
+function startAuction(){const only=mOnly();
+  const pool=only?POOL.filter(p=>p.cat===only&&(only!=="lux"||p.base<=Math.max(30000,(S.cash+stashVal())*2))):POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=Math.max(320,(S.cash+stashVal())*2)&&(HEAVY[p.code]||0)<=S.pr),it=pick(pool.length?pool:POOL.filter(p=>p.cat===(only||"kicks"))),c=CAT[it.cat],cond=c.conds[0];
   const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
   M.ev={id:S.nextId++,type:"auction",cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,mv,bid:Math.max(5,Math.round(mv*.3/5)*5),leader:null,left:8,dur:8,rivalMax:mv*rnd(.68,1.02),nextRival:rnd(.8,1.4)};
   banner("Live auction","a");SFX.hot();buzz([15,30,15]);
