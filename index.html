@@ -719,6 +719,7 @@ PLACES.forEach(p=>p.region=p.region||"core");
 const REGION_NAME={beach:"The Beach",downtown:"Downtown"};
 const regionOf=(x,y)=>y>=1400?"beach":x>=1400?"downtown":"core";
 const regionOpen=r=>r==="core"||!!(S&&S.unl&&S.unl[r]);
+const shownPlaces=()=>PLACES.filter(p=>!(MPW&&p.k==="home"));
 const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop:"mall"},{k:"scooter",n:"Electric scooter",d:"2.2× speed. Silent and quick.",sp:2.2,cost:6000,shop:"dealer"},{k:"car",n:"Sports car",d:"3.2× speed. Red, loud, fast.",sp:3.2,cost:45000,shop:"dealer"}];
 VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:20000,shop:"dealer"},{k:"classic",n:"Classic coupe",d:"2.8× speed. Sells back for 130%.",sp:2.8,cost:80000,shop:"dealer",resale:1.3},{k:"supercar",n:"Hypercar",d:"4× speed. The fastest thing in town.",sp:4,cost:250000,shop:"dealer"});
 const CARS=["car","truck","classic","supercar"];
@@ -1023,7 +1024,7 @@ const ROADS=[[655,180,90,1420],[0,655,2600,90],[215,215,970,70],[215,1115,970,70
 const SKY=[[1450,60,160,200],[1650,30,130,220],[2100,60,200,250],[2350,90,200,220],[1450,820,180,240],[2470,790,110,250],[2150,1260,200,120],[1470,1250,160,130]];
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
-const inBld=(x,y,m=0)=>(x>1150-m&&x<1710+m&&y>1680-m&&y<1948+m)||PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
+const inBld=(x,y,m=0)=>(x>1120-m&&x<2320+m&&y>1672-m&&y<1948+m)||PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
 const inPond=(x,y,m=0)=>Math.hypot((x-1290)/1.3,y-1290)<80+m;
 const TREES=[];for(let i=0;i<500&&TREES.length<80;i++){const x=srnd()*1400,y=srnd()*1400;if(!onRoad(x,y,28)&&!inBld(x,y,30)&&!inPond(x,y,30))TREES.push([x,y,14+srnd()*10])}
 const LAMPS=[];for(let y=240;y<1560;y+=170)LAMPS.push([646,y],[754,y+85]);for(let x=60;x<2600;x+=170)if(Math.abs(x-700)>80&&Math.abs(x-2000)>70)LAMPS.push([x,646]);for(let y=80;y<1400;y+=170)if(Math.abs(y-700)>80)LAMPS.push([1946,y],[2054,y+85]);
@@ -1146,7 +1147,7 @@ function buildStatic(){
   TREES.forEach(([x,y,rr])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+6,y+rr*.75,rr*1.05,rr*.45,0,0,7);g.fill()});
   TREES.slice().sort((a,b)=>a[1]-b[1]).forEach(([x,y,rr])=>{g.fillStyle=P.trunk;g.fillRect(x-3,y-2,6,rr*.7);g.fillStyle=P.tree;g.beginPath();g.arc(x,y-rr*.25,rr,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-rr*.25,y-rr*.45,rr*.7,0,7);g.fill();g.fillStyle=P.tree3;g.beginPath();g.arc(x-rr*.38,y-rr*.62,rr*.32,0,7);g.fill()});
   // planters by every door
-  PLACES.forEach(p=>{if(p.k==="tower")return;const[dx,dy]=p.door;[[-46,0],[30,0]].forEach(([ox])=>{const x=dx+ox,y=dy+4;if(onRoad(x+8,y+6,0))return;g.fillStyle="rgba(0,0,0,.18)";g.fillRect(x+2,y+3,16,10);g.fillStyle="#8a6a4a";rrp(g,x,y,16,10,3);g.fill();
+  shownPlaces().forEach(p=>{if(p.k==="tower")return;const[dx,dy]=p.door;[[-46,0],[30,0]].forEach(([ox])=>{const x=dx+ox,y=dy+4;if(onRoad(x+8,y+6,0))return;g.fillStyle="rgba(0,0,0,.18)";g.fillRect(x+2,y+3,16,10);g.fillStyle="#8a6a4a";rrp(g,x,y,16,10,3);g.fill();
     ["#ff8fa3","#ffd166","#b8a1ff","#ffffff"].forEach((c,i)=>{g.fillStyle="#3f8f4a";g.beginPath();g.arc(x+3+i*3.5,y+1,3,0,7);g.fill();g.fillStyle=c;g.beginPath();g.arc(x+3+i*3.5,y-.5,1.7,0,7);g.fill()})})});
   // parked cars along the ring road
   [[300,206,0,"#e2364a"],[520,206,0,"#2a5bd7"],[980,206,0,"#f2f2f2"],[420,1194,0,"#ffcc33"],[860,1194,0,"#1b1f2a"],[1194,520,1,"#2bb3a3"],[1194,980,1,"#8f52d4"],[206,700,1,"#ff7a3d"]].forEach(([x,y,v,c])=>{g.save();g.translate(x,y);if(v)g.rotate(Math.PI/2);g.fillStyle="rgba(0,0,0,.22)";rrp(g,-16,-6,34,16,5);g.fill();g.fillStyle=c;rrp(g,-17,-8,34,16,5);g.fill();g.fillStyle="rgba(20,30,45,.75)";rrp(g,1,-6,7,12,2);g.fill();rrp(g,-11,-6,6,12,2);g.fill();g.restore()});
@@ -1155,7 +1156,7 @@ function buildStatic(){
   // hedges along the park edges
   [[300,560,160],[790,560,240],[300,1060,200],[800,1060,220]].forEach(([x,y,w])=>{g.fillStyle="#2f7a46";rrp(g,x,y,w,12,6);g.fill();g.fillStyle="#3f9a5a";for(let i=0;i<w;i+=10){g.beginPath();g.arc(x+5+i,y+3,5,0,7);g.fill()}});
   drawTownStatic(g,P);
-  PLACES.slice().sort((a,b)=>a.y-b.y).forEach(p=>drawBuilding(g,p,P));
+  shownPlaces().sort((a,b)=>a.y-b.y).forEach(p=>drawBuilding(g,p,P));
   STATIC=c;staticDark=isDark();
 }
 function drawPerson(x,y,o){
@@ -1219,7 +1220,7 @@ function drawWorld(){
   ctx.translate(-cam.x,-cam.y);
   const nightA=night(),near=nearPlace();
   // windows: glass by day, warm glow at night
-  PLACES.forEach(p=>{
+  shownPlaces().forEach(p=>{
     winRects(p).forEach(([x,y,w,h])=>{ctx.fillStyle=nightA>.35?"rgba(255,206,110,.95)":P.glass;rr(x,y,w,h,3);ctx.fill();if(nightA<=.35){ctx.fillStyle="rgba(255,255,255,.35)";ctx.fillRect(x+2,y+2,4,h-4)}});
     if(nightA>.35&&(p.k==="gym"||p.k==="mall")){ctx.fillStyle=`rgba(255,214,140,${.45*nightA})`;rr(p.x+14,p.y+p.h-fh(p)+7,p.w-28,fh(p)-16,6);ctx.fill()}
     if(near===p){ctx.strokeStyle=P.ink;ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.lineDashOffset=-wt*20;rr(p.x-5,p.y-5,p.w+10,p.h+10,18);ctx.stroke();ctx.setLineDash([])}
@@ -1254,13 +1255,13 @@ function drawWorld(){
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
     LAMPS.forEach(([x,y])=>{const sx=x-cam.x,sy=y-cam.y-19;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,54);g.addColorStop(0,`rgba(255,205,120,${.4*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-56,sy-56,112,112)});
-    PLACES.forEach(p=>winRects(p).forEach(([x,y,w,h])=>{const sx=x+w/2-cam.x,sy=y+h-cam.y+10;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,30);g.addColorStop(0,`rgba(255,200,110,${.22*nightA})`);g.addColorStop(1,"rgba(255,200,110,0)");ctx.fillStyle=g;ctx.fillRect(sx-30,sy-30,60,60)}));
+    shownPlaces().forEach(p=>winRects(p).forEach(([x,y,w,h])=>{const sx=x+w/2-cam.x,sy=y+h-cam.y+10;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,30);g.addColorStop(0,`rgba(255,200,110,${.22*nightA})`);g.addColorStop(1,"rgba(255,200,110,0)");ctx.fillStyle=g;ctx.fillRect(sx-30,sy-30,60,60)}));
     FLIES.forEach(f=>{f.a+=.016*f.s;const sx=f.x+Math.sin(f.a)*20-cam.x,sy=f.y+Math.cos(f.a*.8)*14-cam.y;if(sx<0||sy<0||sx>vw||sy>vh)return;const al=(.5+.5*Math.sin(f.a*3))*nightA;ctx.fillStyle=`rgba(220,255,140,${.8*al})`;ctx.beginPath();ctx.arc(sx,sy,1.8,0,7);ctx.fill();ctx.fillStyle=`rgba(220,255,140,${.15*al})`;ctx.beginPath();ctx.arc(sx,sy,6,0,7);ctx.fill()});
     ctx.globalCompositeOperation="source-over"}
   if(season().n==="Winter"){ctx.fillStyle=isDark()?"rgba(200,220,255,.05)":"rgba(255,255,255,.18)";ctx.fillRect(0,0,vw,vh);ctx.fillStyle="rgba(255,255,255,.85)";for(let i=0;i<70;i++){const sx=(i*137+wt*(18+i%5*6))%(vw+20)-10,sy=(i*71+wt*(40+i%7*8))%(vh+20)-10;ctx.beginPath();ctx.arc(sx,sy,1.2+(i%3)*.6,0,7);ctx.fill()}}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.18)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh);
 }
-function nearPlace(){NEARPLOT=nearPlot();if(NEARPLOT)return{k:"plot:"+NEARPLOT.id,n:NEARPLOT.me?"your house":String(NEARPLOT.n).slice(0,14)+"'s house",sub:"Township · Lv "+NEARPLOT.lv,plot:NEARPLOT,door:plotDoor(NEARPLOT.plot)};let best=null,bd=70;for(const p of PLACES){if(!regionOpen(p.region))continue;const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
+function nearPlace(){NEARPLOT=nearPlot();if(NEARPLOT)return{k:"plot:"+NEARPLOT.id,n:NEARPLOT.me?"your house":String(NEARPLOT.n).slice(0,14)+"'s house",sub:"Township · Lv "+NEARPLOT.lv,plot:NEARPLOT,door:plotDoor(NEARPLOT.plot)};let best=null,bd=70;for(const p of shownPlaces()){if(!regionOpen(p.region))continue;const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
 function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/Z;return[(e.clientX-r.left)*k+cam.x,(e.clientY-r.top)*k+cam.y]}
 let lockT=0;
 function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
@@ -1276,10 +1277,10 @@ function renderBottom(){
   let h="";
   if(near)h+=`<button class="enter" id="enterBtn"><span>Enter ${near.n}<small>${near.sub}</small></span>${ARROW}</button>`;
   else if(!S.stats.flips&&!moving)h+=`<span class="tip">Tap the map to walk, or pick a place below</span>`;
-  const ar=achReady();h+=`<div class="places">${PLACES.filter(p=>regionOpen(p.region)).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
+  const ar=achReady();h+=`<div class="places">${MPW?`<button class="place${near&&near.plot&&near.plot.me?" here":""}" data-go="myhouse"><i style="background:${OUTFITS[S.skin||0][1]}"></i>My house${ar?`<b class="dot">${ar}</b>`:""}</button>`:""}${shownPlaces().filter(p=>regionOpen(p.region)).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
   el.innerHTML=h;
   const eb=$("enterBtn");if(eb)eb.onclick=()=>near.plot?openPlot(near.plot):openRoom(near.k);
-  el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
+  el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(!me)return;const n=nearPlace();if(n&&n.plot&&n.plot.me)openPlot(me);else{const[dx,dy]=plotDoor(me.plot);target=[dx,dy+(me.plot.top?10:-10)];autoEnter="myhouse";moving=true}return}if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
 }
 let hudT=0;
 function renderHud(){
@@ -1803,8 +1804,8 @@ function homeArt(){const n=night()>.5;return `<svg viewBox="0 0 400 180" aria-hi
   <rect x="236" y="116" width="40" height="24" rx="3" fill="#8a6a4a"/><circle cx="256" cy="108" r="8" fill="#ffd36b"/></svg>`}
 function openHome(){
   const draw=()=>{
-    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Home")}
-      <div class="art">${homeArt()}</div>
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
+      <div class="art${MPW?" houseart":""}">${MPW?houseSVG(S.home||0,OUTFITS[S.skin||0][1],1):homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
       ${dailyCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
@@ -2428,7 +2429,7 @@ function settleLot(l,scrap){
 const PKG=[["Sneaker drop",1,1],["Hot pizza",.75,1.5],["Legal papers",1,1.1],["Wedding cake",1.1,1.4],["Mystery crate",1.2,1.9,60],["Vinyl collection",1,1.3,40]];
 let JOBS=null;
 function makeJob(){
-  const from=PL.depot,d=pick(PLACES.filter(p=>p.k!=="depot"&&regionOpen(p.region))),dist=Math.hypot(d.door[0]-from.door[0],d.door[1]-from.door[1]),p=pick(PKG);
+  const from=PL.depot,d=pick(shownPlaces().filter(p=>p.k!=="depot"&&regionOpen(p.region))),dist=Math.hypot(d.door[0]-from.door[0],d.door[1]-from.door[1]),p=pick(PKG);
   return{dest:d.k,name:p[0],kg:p[3]||0,dist,limit:Math.round(dist/150*1.15*p[1]+10),pay:Math.round((30+dist*.16)*p[2]*(1+repLevel()*.15)/5)*5};
 }
 function openDepot(){
@@ -2780,7 +2781,7 @@ function loop(now){
       for(const b in S.buffs)if(S.buffs[b]>0)S.buffs[b]=Math.max(0,S.buffs[b]-dt);
       if(S.lastSeason!==season().n){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
       if(target&&!room){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
-        if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;openRoom(k)}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
+        if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(me)openPlot(me)}else openRoom(k)}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
           if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(S.job)jobArrive();if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
       drift+=dt;
       if(drift>=.5){drift=0;
@@ -3340,8 +3341,10 @@ function drawPartner(ppl){if(!S.partner||room)return;if(!PT)PT={x:S.px-28,y:S.py
   ppl.push([PT.y,()=>{drawPerson(PT.x,PT.y,{shirt:p.s,skin:p.k,hair:p.h,mv,ph:PT.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(PT.x,PT.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore()}])}
 
 /* ================= township district: empty plots that fill with players' houses ================= */
-const TWN={x:1160,y:1690,w:540,h:248};
-const PLOTS=[[1172,1700],[1290,1700],[1462,1700],[1580,1700],[1172,1838],[1290,1838],[1462,1838],[1580,1838]].map(([x,y],i)=>({x,y,w:108,h:92,top:i<4}));
+const TWN={x:1120,y:1672,w:1200,h:276},TWN_ST=1796;
+const PLOT_X=[1140,1278,1416,1554,1766,1904,2042,2180];
+// lots fill from the entrance outward, alternating sides of the street
+const PLOTS=[3,4,2,5,1,6,0,7].flatMap(i=>[{x:PLOT_X[i],y:1684,w:124,h:104,top:true},{x:PLOT_X[i],y:1840,w:124,h:100,top:false}]);
 const inTown=(x,y,m=0)=>x>TWN.x-m&&x<TWN.x+TWN.w+m&&y>TWN.y-m&&y<TWN.y+TWN.h+m;
 // Everyone in the room sorts players by id the same way, so each player lands on the same plot for all
 function townPlayers(){if(!MPW)return[];const L=[{id:MP_ID,me:1,n:mpName(),s:OUTFITS[S.skin||0][1],hm:S.home||0,lv:repLevel()}];
@@ -3349,11 +3352,29 @@ function townPlayers(){if(!MPW)return[];const L=[{id:MP_ID,me:1,n:mpName(),s:OUT
   return L.sort((a,b)=>a.id<b.id?-1:1).slice(0,PLOTS.length).map((p,i)=>({...p,plot:PLOTS[i]}))}
 const plotDoor=pl=>[pl.x+pl.w/2,pl.top?pl.y+pl.h+4:pl.y-4];
 function drawTownStatic(g,P){
-  g.fillStyle="#7fbf6a";rrp(g,TWN.x,TWN.y,TWN.w,TWN.h,16);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<220;i++)g.fillRect(TWN.x+((i*53)%TWN.w),TWN.y+((i*97)%TWN.h),3,2);
-  g.fillStyle=P.road;g.fillRect(TWN.x+8,1798,TWN.w-16,34);g.fillRect(1418,1664,36,134);g.fillStyle=P.line;for(let x=TWN.x+20;x<TWN.x+TWN.w-20;x+=36)g.fillRect(x,1814,18,3);
-  PLOTS.forEach(pl=>{g.fillStyle="rgba(255,255,255,.12)";rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.fill();g.setLineDash([7,5]);g.strokeStyle="rgba(255,255,255,.7)";g.lineWidth=2;rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.stroke();g.setLineDash([]);
-    const[dx,dy]=plotDoor(pl);g.fillStyle=P.walk;g.fillRect(dx-6,pl.top?pl.y+pl.h:dy,12,pl.top?8:8)});
-  g.save();g.font="800 13px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.textBaseline="middle";g.fillStyle=P.sign;rrp(g,1436-56,1672,112,22,8);g.fill();g.fillStyle=P.ink;g.fillText("TOWNSHIP",1436,1684);g.restore();
+  const X=TWN.x,Y=TWN.y,EX=1722;
+  g.fillStyle="#2f7a46";rrp(g,X-6,Y-6,TWN.w+12,TWN.h+12,20);g.fill();
+  g.fillStyle="#7fbf6a";rrp(g,X,Y,TWN.w,TWN.h,16);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<600;i++)g.fillRect(X+((i*53)%TWN.w),Y+((i*97)%TWN.h),3,2);
+  // entrance road from the boardwalk, and the main street
+  g.fillStyle=P.walk;g.fillRect(EX-26,1660,52,TWN_ST-1660);g.fillRect(X+6,TWN_ST-6,TWN.w-12,46);
+  g.fillStyle=P.road;g.fillRect(EX-20,1660,40,TWN_ST-1660+4);g.fillRect(X+10,TWN_ST,TWN.w-20,34);
+  g.fillStyle=P.line;for(let x=X+24;x<X+TWN.w-24;x+=36)g.fillRect(x,TWN_ST+16,18,3);for(let y=1668;y<TWN_ST-8;y+=30)g.fillRect(EX-1.5,y,3,16);
+  // cul-de-sac circles at both ends
+  [X+18,X+TWN.w-18].forEach(cx=>{g.fillStyle=P.road;g.beginPath();g.arc(cx,TWN_ST+17,20,0,7);g.fill()});
+  // lots: lawn, dashed boundary, driveway and footpath to the street
+  PLOTS.forEach(pl=>{g.fillStyle="#8fcf78";rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.fill();
+    g.setLineDash([7,5]);g.strokeStyle="rgba(255,255,255,.75)";g.lineWidth=2;rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.stroke();g.setLineDash([]);
+    const[dx]=plotDoor(pl);g.fillStyle=P.walk;if(pl.top)g.fillRect(dx-6,pl.y+pl.h-16,12,TWN_ST-(pl.y+pl.h-16));else g.fillRect(dx-6,TWN_ST+34,12,pl.y+16-(TWN_ST+34));
+    g.fillStyle="#b9b2a6";if(pl.top)g.fillRect(pl.x+pl.w-30,pl.y+pl.h-12,22,TWN_ST-(pl.y+pl.h-12));else g.fillRect(pl.x+pl.w-30,TWN_ST+34,22,pl.y+12-(TWN_ST+34))});
+  // hedges between lots
+  for(let i=0;i<PLOT_X.length-1;i++){if(i===3)continue;const x=PLOT_X[i]+124+3;[[1684,104],[1840,100]].forEach(([y,h])=>{g.fillStyle="#2f7a46";rrp(g,x,y+4,8,h-8,4);g.fill()})}
+  // trees by the entrance and the corners
+  [[EX-44,1690],[EX+44,1690],[EX-44,1760],[EX+44,1760],[X+14,1690],[X+TWN.w-14,1690],[X+14,1930],[X+TWN.w-14,1930],[EX,1900]].forEach(([x,y])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+5,y+9,14,5,0,0,7);g.fill();g.fillStyle=P.trunk;g.fillRect(x-2,y,4,10);g.fillStyle=P.tree;g.beginPath();g.arc(x,y-4,13,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-3,y-7,8,0,7);g.fill()});
+  // street lamps
+  for(let x=X+70;x<X+TWN.w-40;x+=138){[TWN_ST-4,TWN_ST+40].forEach(y=>{g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x+2,y+1,5,2,0,0,7);g.fill();g.fillStyle="#5b6272";g.fillRect(x-1.5,y-18,3,18);g.fillStyle="#ffe08a";g.beginPath();g.arc(x,y-19,3,0,7);g.fill()})}
+  // welcome arch over the entrance
+  g.fillStyle="#7a5a36";g.fillRect(EX-34,1652,6,30);g.fillRect(EX+28,1652,6,30);
+  g.save();g.font="800 13px "+getComputedStyle(root).getPropertyValue("--display");g.textAlign="center";g.textBaseline="middle";g.fillStyle=P.sign;rrp(g,EX-62,1640,124,22,8);g.fill();g.fillStyle=P.ink;g.fillText("TOWNSHIP",EX,1652);g.restore();
 }
 function drawHouse(x,y,w,h,hm,col){
   const c=ctx,cx=x+w/2,b=y+h-6;c.fillStyle="rgba(0,0,0,.2)";c.fillRect(x+10,b-2,w-14,8);
@@ -3364,16 +3385,23 @@ function drawHouse(x,y,w,h,hm,col){
   c.fillStyle="#3b2a20";c.fillRect(cx-6,b-18,12,16);
 }
 function drawTown(){
-  if(!MPW){if(cam.y+vh>TWN.y&&cam.x+vw>TWN.x&&cam.x<TWN.x+TWN.w){ctx.save();ctx.font="700 12px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.fillStyle="rgba(10,14,22,.65)";rr(1436-92,1752,184,24,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText("Online only · sail from the Harbor",1436,1765);ctx.restore()}return}
-  townPlayers().forEach(p=>{const pl=p.plot;drawHouse(pl.x,pl.y,pl.w,pl.h,p.hm,p.s||"#2a3cff");
-    ctx.font="800 11px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.textBaseline="middle";const lab=String(p.n).slice(0,12)+(p.me?" (you)":""),w=ctx.measureText(lab).width+14,ly=pl.top?pl.y+8:pl.y+pl.h-8;
-    ctx.fillStyle=p.me?"rgba(42,60,255,.85)":"rgba(10,14,22,.75)";rr(pl.x+pl.w/2-w/2,ly-9,w,18,8);ctx.fill();ctx.fillStyle="#fff";ctx.fillText(lab,pl.x+pl.w/2,ly)});
+  if(cam.y+vh<TWN.y-40||cam.y>TWN.y+TWN.h||cam.x+vw<TWN.x||cam.x>TWN.x+TWN.w)return;
+  const F=getComputedStyle(root).getPropertyValue("--body");
+  if(!MPW){ctx.save();ctx.font="700 12px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="rgba(10,14,22,.65)";rr(1722-110,1734,220,24,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText("Player houses · Online Town only",1722,1747);ctx.restore();return}
+  const tp=townPlayers(),used=new Set(tp.map(p=>p.plot));
+  // empty lots get a little sign
+  PLOTS.forEach(pl=>{if(used.has(pl))return;const cx=pl.x+pl.w/2,cy=pl.y+pl.h/2;ctx.fillStyle="#7a5a36";ctx.fillRect(cx-1.5,cy-4,3,16);ctx.fillStyle="#f4ecd8";rr(cx-26,cy-18,52,16,4);ctx.fill();ctx.font="800 8px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#6b5a40";ctx.fillText("VACANT",cx,cy-10)});
+  tp.forEach(p=>{const pl=p.plot;drawHouse(pl.x+8,pl.y+(pl.top?2:14),pl.w-16,pl.h-18,p.hm,p.s||"#2a3cff");
+    // mailbox by the path
+    const[dx]=plotDoor(pl),my=pl.top?pl.y+pl.h-6:pl.y+8;ctx.fillStyle="#5b6272";ctx.fillRect(dx-20,my-6,2,10);ctx.fillStyle=p.s||"#2a3cff";rr(dx-25,my-12,12,8,3);ctx.fill();
+    ctx.font="800 11px "+F;ctx.textAlign="center";ctx.textBaseline="middle";const lab=String(p.n).slice(0,12)+(p.me?" (you)":""),w=ctx.measureText(lab).width+14,ly=pl.top?pl.y-2:pl.y+pl.h+2;
+    ctx.fillStyle=p.me?"rgba(42,60,255,.88)":"rgba(10,14,22,.78)";rr(pl.x+pl.w/2-w/2,ly-9,w,18,8);ctx.fill();ctx.fillStyle="#fff";ctx.fillText(lab,pl.x+pl.w/2,ly)});
   if(NEARPLOT){const pl=NEARPLOT.plot;ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.lineDashOffset=-wt*20;rr(pl.x-4,pl.y-4,pl.w+8,pl.h+8,10);ctx.stroke();ctx.setLineDash([])}
 }
 let NEARPLOT=null,townSeen={};
 function nearPlot(){if(!MPW)return null;let best=null,bd=60;townPlayers().forEach(p=>{const[dx,dy]=plotDoor(p.plot),d=Math.hypot(S.px-dx,S.py-dy);if(d<bd){bd=d;best=p}});return best}
 function townTick(){if(!MPW)return;const ids=townPlayers().map(p=>p.id);ids.forEach(id=>{if(!townSeen[id]&&id!==MP_ID){const p=MP&&MP.peers[id];if(p)banner(String(p.n).slice(0,14)+"'s house appeared","u")}townSeen[id]=1});for(const id in townSeen)if(!ids.includes(id))delete townSeen[id]}
-function openPlot(p){room="house";$("room").hidden=false;$("room").style.setProperty("--pc",p.s||"#2a3cff");SFX.door();visitHouse(p,()=>{closeRoom()});renderHud()}
+function openPlot(p){if(p.me){openRoom("home");return}room="house";$("room").hidden=false;$("room").style.setProperty("--pc",p.s||"#2a3cff");SFX.door();visitHouse(p,()=>{closeRoom()});renderHud()}
 
 /* ================= title ================= */
 function title(){accMigrate();if(!ACC){const c=cacheGet();if(c&&c.u&&c.k)return cloudResume();return cloudScreen("",localSaves().length?"new":"login")}titleMain()}
