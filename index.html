@@ -307,6 +307,9 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.tiles .bigbtn{padding:14px 8px;font-size:1.05rem;border-radius:16px}.tiles .bigbtn small{font-size:.66rem}
 .wnov{position:fixed;inset:0;z-index:58;background:rgba(10,12,20,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadein .25s}.wnsheet{width:min(100%,480px);max-height:86vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.3)}.wnsheet h2{font:900 1.6rem var(--display);margin:0 0 4px}.wnlist{display:flex;flex-direction:column;gap:8px;margin:12px 0}.wnlist div{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:inset 0 0 0 1px var(--line)}.wnlist i{font-style:normal;font-size:1.5rem;line-height:1}.wnlist b{display:block;font-size:.9rem}.wnlist small{color:var(--muted);font-size:.78rem}
 .gpctl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.gpctl button{border:0;border-radius:18px;padding:18px;font-size:2rem;background:var(--ink);color:var(--bg);touch-action:manipulation;cursor:pointer}.gpctl button:active{transform:scale(.96)}
+.wnsheet .cta{width:100%}
+.passcover{border-radius:18px;padding:18px;background:linear-gradient(135deg,#1b2a5a,#2a3cff);color:#ffe08a;text-align:center;margin-bottom:10px}.passcover b{display:block;font:900 1.6rem var(--display);letter-spacing:.2em}.passcover small{color:#cfd6ff;font:600 .75rem var(--mono)}
+.stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;border-radius:16px;background:repeating-linear-gradient(0deg,#fbf6ea 0 22px,#f1e9d6 22px 23px)}.stamp{aspect-ratio:1;display:grid;place-items:center}.stamp svg{width:100%;height:auto}.stamp.lock{border:2px dashed #cbbf9f;border-radius:50%;opacity:.6}.stamp.lock span{font:700 .62rem var(--mono);color:#9a8c6a;text-align:center}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -941,6 +944,7 @@ const ACH=[
  ["astronaut","Astronaut","Reach space",()=>(S.stats.orbits||0)>=1,5e6],
  ["mars","Red planet","Bring back something from Mars",()=>Object.keys(S.coll||{}).some(k=>k==="space:MC"||k==="space:MX"),5e7],
  ["gpwin","Champion","Win the Monte Carlo Grand Prix",()=>(S.stats.gpWins||0)>=1,2e6],
+ ["traveller","World traveller","Get every passport stamp",()=>COUNTRIES.every(c=>(S.visited||{})[c.k]),1e7],
  ["angler","Angler","Catch 50 fish",()=>(S.stats.fish||0)>=50,50000],
  ["fishdex","Marine biologist","Catch every species of fish",()=>Object.keys(S.fish||{}).length>=FISH.length,2e6],
  ["relics","Treasure hunter","Find 5 ancient relics diving",()=>(S.stats.relics||0)>=5,500000],
@@ -3300,12 +3304,13 @@ function openAirport(){const L=repLevel();
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
     <div class="note">Fly anywhere in the world. Every city has its own <b>market</b>, a <b>Prestige House</b> trading $50M–$100M pieces, and <b>real estate</b> you can buy and run. ${hasToy("jet")?"Your private jet flies free.":"Fares grow with distance."}</div>
     <button class="bigbtn alt2" id="apSpace" ${L<30?"disabled":""}>Spaceport<small>${L<30?"Unlocks at level 30":"Build a rocket and launch it yourself"}</small></button>
+    <button class="bigbtn alt" id="apPass">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length} stamps</small></button>
     ${(S.biz||[]).length?`<button class="bigbtn" id="apEmp">Your businesses<small>${(S.biz||[]).length} owned · ${fmt(empireInc())}/min${tillAll()>=1?" · "+fmt(tillAll())+" to collect":""}</small></button>`:""}
     <div class="sechead"><h3>Destinations</h3><span class="eyebrow">${COUNTRIES.length} cities</span></div>
     <div class="perks">${COUNTRIES.map(c=>{const lock=L<c.lv&&!(c.k==="dubai"&&hasToy("jet")),f=cFare(c),n=(S.biz||[]).filter(b=>b.c===c.k).length;return `<button class="perk opp dest" data-fly="${c.k}" ${lock||S.cash<f?"disabled":""}><span class="oav fl">${flagSVG(c.k,34)}</span><span class="t">${c.n} <small style="opacity:.6;font-weight:600">${c.cn}</small>${n?` <em class="beat">${n} BIZ</em>`:""}</span><span class="d">${lock?"Unlocks at level "+c.lv:c.spec}</span><span class="c">${lock?"Locked":f?fmt(f):"Free"}</span></button>`}).join("")}</div></div>`;
-  $("leaveBtn").onclick=closeRoom;const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);$("apSpace").onclick=()=>{if(repLevel()>=30)openSpaceport(()=>{room="airport";openAirport()})};
+  $("leaveBtn").onclick=closeRoom;const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);$("apPass").onclick=()=>openPassport(()=>{room="airport";openAirport()});$("apSpace").onclick=()=>{if(repLevel()>=30)openSpaceport(()=>{room="airport";openAirport()})};
   $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{const c=CTRY(b.dataset.fly),f=cFare(c);if(S.cash<f)return;S.cash-=f;S.stats.flights=(S.stats.flights||0)+1;dirty=true;flyTo(c)})}
-function openCity(k,arrive){const c=CTRY(k);CITY=k;if(M)closeMarket();room="abroad";$("room").hidden=false;$("room").style.setProperty("--pc",c.tone);
+function openCity(k,arrive){const c=CTRY(k);CITY=k;if(arrive)stampCity(k);if(M)closeMarket();room="abroad";$("room").hidden=false;$("room").style.setProperty("--pc",c.tone);
   const today=S.seen&&S.seen[k]===S.day,mine=(S.biz||[]).filter(b=>b.c===k);
   $("room").innerHTML=`<div class="room-in scroll">${roomHead(c.n)}
     <div class="art cityart">${citySVG(c)}</div>
@@ -4090,6 +4095,23 @@ function gpEnd(){const G=GP;GP=null;if(!G)return;const quit=G.state==="quit",p=q
   if(p===1){confetti(240,null,null,["#e2364a","#fff","#ffcc33"]);SFX.grail();shake(8)}else if(p<=3){confetti(80);SFX.level()}else SFX.nope();
   banner(quit?"Retired":"Finished P"+p+(win?" · +"+fmt(win):""),p<=3?"g":"a");$("gpBack").onclick=$("leaveBtn").onclick=()=>openGP(G.back);updMini()}
 
+/* ================= passport and the welcome-back summary ================= */
+function stampSVG(c){return `<svg viewBox="0 0 90 90" aria-hidden="true"><circle cx="45" cy="45" r="40" fill="none" stroke="${c.tone}" stroke-width="3" stroke-dasharray="4 3"/><circle cx="45" cy="45" r="33" fill="none" stroke="${c.tone}" stroke-width="1.5"/><text x="45" y="40" text-anchor="middle" font-family="var(--display)" font-weight="900" font-size="${c.n.length>11?7.5:c.n.length>7?9:12}" fill="${c.tone}">${c.n.toUpperCase()}</text><text x="45" y="56" text-anchor="middle" font-family="var(--mono)" font-size="7" fill="${c.tone}">${c.cn.toUpperCase()}</text><path d="M30 64 h30" stroke="${c.tone}"/></svg>`}
+function openPassport(back){const V=S.visited||{},n=COUNTRIES.filter(c=>V[c.k]).length;
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Passport")}<div class="passcover"><b>PASSPORT</b><small>${esc(mpName())} · ${n}/${COUNTRIES.length} cities</small></div>
+    <div class="note">Every city you visit stamps your passport. Visit ${COUNTRIES.length} to become a world traveller.${S.flags.pass5?"":" 5 stamps pays a bonus."}</div>
+    <div class="stamps">${COUNTRIES.map(c=>`<div class="stamp${V[c.k]?"":" lock"}" style="transform:rotate(${((c.k.charCodeAt(0)*7)%17)-8}deg)">${V[c.k]?stampSVG(c):`<span>${c.n}</span>`}</div>`).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back}
+function stampCity(k){S.visited=S.visited||{};if(S.visited[k])return;S.visited[k]=1;dirty=true;const n=COUNTRIES.filter(c=>S.visited[c.k]).length;banner("Passport stamped: "+CTRY(k).n,"a");
+  if(n>=5&&!S.flags.pass5){S.flags.pass5=1;const v=Math.round(250000*(1+SC()));earn(v);gainCrate(3);banner("5 stamps! +"+fmt(v)+" and 3 crates","g")}
+  if(n>=COUNTRIES.length&&!S.flags.passAll){S.flags.passAll=1;const v=Math.round(5e6*(1+SC()));earn(v);gainCrate(10);confetti(250);banner("World traveller! +"+fmt(v),"g")}}
+function welcomeBack(){if(!S||!S.savedAt)return;const away=Date.now()-S.savedAt;if(away<5*60000||!(S.biz||[]).length)return;
+  setTimeout(()=>{const till=Math.round(tillAll()),mg=Math.round(bizPay);if(till+mg<1)return;const h=Math.floor(away/3600000),m=Math.floor(away%3600000/60000);
+    const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><span class="eyebrow">Welcome back</span><h2>While you were away</h2><p class="fine">${h?h+"h ":""}${m}m away</p>
+      <div class="kv"><div><span class="eyebrow">Waiting in tills</span><b>${fmt(till)}</b></div><div><span class="eyebrow">Paid by managers</span><b>${fmt(mg)}</b></div></div>
+      <button class="cta" id="wbCol"><span>Collect all</span>${ARROW}</button><button class="cta ghost2" id="wbX" style="margin-top:8px">Later</button></div>`;
+    document.body.appendChild(ov);const close=()=>ov.remove();ov.querySelector("#wbCol").onclick=()=>{collectAll();updMini();close()};ov.querySelector("#wbX").onclick=close;ov.onclick=e=>{if(e.target===ov)close()}},1500)}
+
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4510,7 +4532,7 @@ function titleMain(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else setTimeout(whatsNew,900);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack()}const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
