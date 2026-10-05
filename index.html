@@ -316,6 +316,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .garprev{border-radius:16px;overflow:hidden;margin-bottom:8px}.garprev canvas{display:block;width:100%;height:auto}.garrow{cursor:default}.pmbtns .swc{width:26px;height:26px;padding:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.15)}.pmbtns .swc.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
 .expart{border-radius:20px;padding:20px;text-align:center;color:#fff;background:linear-gradient(135deg,var(--ec),color-mix(in oklab,var(--ec) 50%,#141824))}.expart span{font-size:3.4rem;display:block}.expart b{display:block;font:900 1.3rem var(--display)}.expart small{font:700 .8rem var(--mono);opacity:.9}
 .swrow{display:flex;flex-wrap:wrap;gap:8px}
+.setrow .tog{grid-row:1/3;grid-column:2;align-self:center;padding:0;width:46px;height:26px;border-radius:13px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line);position:relative;flex:none;transition:background .15s}.setrow .tog i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}.setrow .tog.on{background:#2fd28a}.setrow .tog.on i{left:23px}
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
@@ -714,7 +715,8 @@ const SUF=[[1e33,"Dc"],[1e30,"No"],[1e27,"Oc"],[1e24,"Sp"],[1e21,"Sx"],[1e18,"Qi
 const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);if(!isFinite(a))return s+"$∞";
   for(const[v,u]of SUF)if(a>=v){const x=a/v;return s+"$"+(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}
   if(a>=1e5)return s+"$"+Math.round(a/1e3)+"K";if(a>=1e4)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+Math.round(a).toLocaleString("en-US")};
-const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
+const SET=(()=>{try{return JSON.parse(localStorage.getItem("fliprush_set")||"{}")||{}}catch(e){return{}}})();const saveSet=()=>{try{localStorage.setItem("fliprush_set",JSON.stringify(SET))}catch(e){}};
+const buzz=ms=>{if(SET.nobuzz)return;try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const SAVE0="fliprush_world_v1";let SAVE=SAVE0;
 
@@ -999,12 +1001,12 @@ function coinsTo(v,from){fxSize();
   const n=clamp(Math.round(Math.log10(v+1)*4.5),3,30),tg=elC(cashTarget())||[60,40],[x0,y0]=from||fromPt();
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rnd(80,260);FXP.push({t:"coin",x:x0,y:y0,x0,y0,bx:x0+Math.cos(a)*sp*.55,by:y0+Math.sin(a)*sp*.45-40,tx:tg[0],ty:tg[1],p:-i*.022,dur:rnd(.55,.8),rot:Math.random()*6,r:rnd(5,7.5)})}
 }
-function confetti(n,x,y,cols,spread=1){fxSize();cols=cols||["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a","#ff5b6e","#ffffff"];
+function confetti(n,x,y,cols,spread=1){if(SET.lowfx)n=Math.ceil(n/4);fxSize();cols=cols||["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a","#ff5b6e","#ffffff"];
   for(let i=0;i<n;i++){const a=y==null?Math.PI/2+rnd(-.5,.5):Math.random()*Math.PI*2,sp=y==null?rnd(60,240):rnd(150,520)*spread;
     FXP.push({t:"conf",x:x==null?Math.random()*fxW:x,y:y==null?-20-Math.random()*fxH*.4:y,vx:Math.cos(a)*sp*(y==null?.4:1),vy:y==null?rnd(40,160):Math.sin(a)*sp-180,rot:Math.random()*6,vr:rnd(-12,12),c:pick(cols),w:rnd(5,9),h:rnd(8,14),life:rnd(1.8,3.2),age:0})}}
 function sparks(x,y,col,n=18,spd=1){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rnd(120,380)*spd;FXP.push({t:"spark",x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,c:col,life:rnd(.35,.7),age:0,r:rnd(1.5,3.5)})}
   FXP.push({t:"ring",x,y,c:col,life:.45,age:0,r0:8,r1:90*spd})}
-function shake(a,t=.35){shakeA=Math.max(shakeA,a);shakeT=Math.max(shakeT,t)}
+function shake(a,t=.35){if(SET.noshake)return;shakeA=Math.max(shakeA,a);shakeT=Math.max(shakeT,t)}
 function flash(col,op=.55){const d=document.createElement("div");d.className="fxflash";d.style.background=col;d.style.setProperty("--op",op);document.body.appendChild(d);setTimeout(()=>d.remove(),450)}
 function bump(el,col){if(!el)return;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump");if(col)el.style.setProperty("--bc",col)}
 function juiceGain(v){if(!(v>0))return;coinsTo(v);if(v>=Math.max(500,S.cash*.25))shake(3,.25)}
@@ -1896,7 +1898,7 @@ function openHome(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
       <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
-      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button><button class="bigbtn alt" id="lookBtn">Wardrobe<small>Skin and hair</small></button></div>
+      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button><button class="bigbtn alt" id="lookBtn">Wardrobe<small>Skin and hair</small></button><button class="bigbtn alt" id="setBtn">Settings<small>Effects, help</small></button></div>
       ${dailyCard()}${missCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -1919,7 +1921,7 @@ function openHome(){
       </div>
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="perks">${ACH.map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});bindMiss(draw);
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});$("setBtn").onclick=()=>openSettings(()=>{room="home";draw()});bindMiss(draw);
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
@@ -3702,7 +3704,7 @@ function openBizEvent(back){const ev=S.bzEv,b=ev&&(S.biz||[]).find(x=>x.id===ev.
     const good=/\+|Passed|Fixed|Spotless|Peace|Happy/.test(msg)&&!/−/.test(msg);SFX[good?"level":"nope"]();if(good)confetti(50);banner(msg,good?"g":"r");updMini();done()})}
 
 /* ================= seasonal ambience on the map ================= */
-function seasonFx(){const sn=season().n;if(S.settings&&S.settings.nofx)return;
+function seasonFx(){const sn=season().n;if(SET.nofx)return;
   if(sn==="Winter"){ctx.fillStyle="rgba(230,240,255,.07)";ctx.fillRect(0,0,vw,vh);ctx.fillStyle="rgba(255,255,255,.85)";for(let i=0;i<70;i++){const sp=18+(i%5)*7,x=(i*83+Math.sin(wt*.8+i)*22+wt*8)%(vw+20)-10,y=(i*47+wt*sp)%(vh+20)-10,r=1+(i%3)*.6;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}}
   else if(sn==="Autumn"){for(let i=0;i<16;i++){const x=(i*131+wt*(14+i%4*5)+Math.sin(wt+i)*30)%(vw+40)-20,y=(i*71+wt*(26+i%3*8))%(vh+40)-20;ctx.save();ctx.translate(x,y);ctx.rotate(wt*1.5+i);ctx.fillStyle=["#e2534a","#f2a33a","#c9762c","#d6a03d"][i%4];ctx.beginPath();ctx.ellipse(0,0,5,2.6,0,0,7);ctx.fill();ctx.restore()}}
   else if(sn==="Spring"){for(let i=0;i<20;i++){const x=(i*109+wt*(20+i%4*6)+Math.sin(wt*1.3+i)*24)%(vw+40)-20,y=(i*61+wt*(18+i%3*7))%(vh+40)-20;ctx.save();ctx.translate(x,y);ctx.rotate(wt+i);ctx.fillStyle=i%3?"rgba(255,183,197,.9)":"rgba(255,255,255,.9)";ctx.beginPath();ctx.ellipse(0,0,3.2,2,0,0,7);ctx.fill();ctx.restore()}}
@@ -4262,6 +4264,19 @@ function openWardrobe(back){S.look=S.look||{sk:1,hr:0};
     $("room").querySelectorAll("[data-sk]").forEach(b=>b.onclick=()=>{S.look.sk=+b.dataset.sk;dirty=true;SFX.tick(.5);draw()});
     $("room").querySelectorAll("[data-hr]").forEach(b=>b.onclick=()=>{S.look.hr=+b.dataset.hr;dirty=true;SFX.tick(.5);draw()});
     $("room").querySelectorAll("[data-hs]").forEach(b=>b.onclick=()=>{S.look.hs=+b.dataset.hs;dirty=true;SFX.tick(.5);draw()})};draw()}
+
+/* ================= settings (saved on this device) ================= */
+function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, petals and butterflies on the map",1],["lowfx","Lighter confetti","Less confetti for older phones",0],["noshake","Screen shake","Shake on big moments",1],["nobuzz","Vibration","Haptics on taps and wins",1]];
+  const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Settings")}
+    <div class="perks">${T.map(([k,n,d,inv])=>{const on=inv?!SET[k]:!!SET[k];return `<button class="perk nopic setrow" data-set="${k}"><span class="t">${n}</span><span class="d">${d}</span><span class="c tog${on?" on":""}"><i></i></span></button>`}).join("")}</div>
+    <div class="sechead"><h3>Help</h3></div>
+    <div class="perks"><button class="perk nopic" id="setTut"><span class="t">Replay the tutorial</span><span class="d">The short walkthrough for new players</span><span class="c">Start</span></button>
+      <button class="perk nopic" id="setWn"><span class="t">What's new</span><span class="d">See the latest features again</span><span class="c">Open</span></button></div>
+    <p class="fine">These settings are saved on this device.</p></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>{const k=b.dataset.set;SET[k]=!SET[k];saveSet();SFX.tick(.5);draw()});
+    $("setTut").onclick=()=>{S.tut=0;tutKey="";dirty=true;closeRoom();banner("Tutorial restarted","a")};
+    $("setWn").onclick=()=>{S.flags.wn=0;const t=S.tut;S.tut=99;whatsNew();S.tut=t}};draw()}
 
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
