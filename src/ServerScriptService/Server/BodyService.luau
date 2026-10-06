@@ -12,7 +12,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local MuscleBodies = require(Shared.Config.MuscleBodies)
-local Muscles = require(Shared.Config.Muscles)
 local BodyShape = require(Shared.BodyShape)
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -143,11 +142,6 @@ function BodyService.Start()
 	task.spawn(function()
 		while true do
 			task.wait(REFRESH_EVERY)
-			for _, player in ipairs(Players:GetPlayers()) do
-				-- total strength for the label over everyone's head (StatsLabelsClient)
-				local data = PlayerData.Get(player)
-				if data and data.muscles then player:SetAttribute("Strength", Muscles.TotalStrength(data.muscles)) end
-			end
 			for player in pairs(states) do
 				task.spawn(refresh, player)
 			end

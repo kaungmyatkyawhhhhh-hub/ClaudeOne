@@ -1,7 +1,6 @@
--- SettingsClient: the Settings side button and panel (Music and Effects volume, Gain numbers On/Minimal/Off, Stats
--- labels Always/Training/Off), and background music. Volumes apply instantly while dragging and are saved with the
--- player's data when the slider is released; the choices save on tap (MachineClient reads Gain numbers for every rep,
--- StatsLabelsClient reads Stats labels; until the player picks one it follows the device: phones Training, else Always).
+-- SettingsClient: the Settings side button and panel (Music and Effects volume, Gain numbers On/Minimal/Off) and
+-- background music. Volumes apply instantly while dragging and are saved with the player's data when the slider is
+-- released; the choice saves on tap (MachineClient reads Gain numbers for every rep).
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -37,8 +36,7 @@ local panel = Theme.Panel({
 }, { Theme.Pad("L"), Theme.List(Vertical, "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 Theme.Text({ LayoutOrder = 1, Text = "Settings", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 
-local values = { music = 1, effects = 1, gainNumbers = "On", statsLabels = "Always" }
-local picked = { statsLabels = false } -- saved only once the player picks it (else it follows the device)
+local values = { music = 1, effects = 1, gainNumbers = "On" }
 local dragging = nil -- the slider being dragged
 
 local function save()
@@ -46,7 +44,6 @@ local function save()
 		music = values.music,
 		effects = values.effects,
 		gainNumbers = values.gainNumbers,
-		statsLabels = picked.statsLabels and values.statsLabels or nil,
 	})
 end
 
@@ -105,7 +102,7 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
--- A row of choices (the chosen one lit): Gain numbers On / Minimal / Off, Stats labels Always / Training / Off.
+-- A row of choices (the chosen one lit): Gain numbers On / Minimal / Off.
 local choiceRows = {}
 local function choiceRow(order, key, title, modes, labels)
 	local row = New("Frame", { Name = key, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 20 + Spacing.S + Theme.MinTouch), BackgroundTransparency = 1, Parent = panel },
@@ -134,7 +131,6 @@ local function choiceRow(order, key, title, modes, labels)
 		button.Activated:Connect(function()
 			if values[key] == mode then return end
 			values[key] = mode
-			picked[key] = true
 			show()
 			Audio.PlayUI("Click")
 			save()
@@ -144,10 +140,8 @@ local function choiceRow(order, key, title, modes, labels)
 end
 -- Gain numbers: On (rep + set popups) / Minimal (set popups only) / Off
 choiceRow(4, "gainNumbers", "Gain numbers", { "On", "Minimal", "Off" })
--- Stats labels around your character: Always / Only while training / Off (phones default to training only)
-choiceRow(5, "statsLabels", "Stats labels", { "Always", "Training", "Off" })
 
-local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
+local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 5, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
@@ -189,8 +183,6 @@ task.spawn(function()
 	values.music = settings.music or 1
 	values.effects = settings.effects or 1
 	values.gainNumbers = settings.gainNumbers or "On"
-	values.statsLabels = settings.statsLabels or (Theme.IsCompact() and "Training" or "Always")
-	picked.statsLabels = settings.statsLabels ~= nil
 	for _, show in pairs(choiceRows) do show() end
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()

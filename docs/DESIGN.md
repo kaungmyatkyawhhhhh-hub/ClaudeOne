@@ -179,32 +179,21 @@ permanent gains bonus. Example: 1 → 4'6" lvl 50 1.25x; 2 → 5'0" lvl 100 1.5x
 4 → 6'0" lvl 275 2x; 5 → 6'6" lvl 400 2.5x. Height caps ~7'0"; later spurts still give bonuses.
 First Growth Spurt should be reachable in ~15-20 minutes.
 
-## 8. Stats: live overlay
-- A live overlay over normal play: the player keeps moving and using the camera. No camera takeover, no
-  movement freeze, no blur or dim.
-- All 6 group labels appear together (one 0.2s fade on open/close) and stay visible. Never hide labels based on
-  facing direction.
-- World-space labels: each group label is a BillboardGui floating next to its body part, sized in studs (with a
-  pixel floor so phones stay readable). Positioned every frame in camera space: Shoulders, Arms, Core always to
-  the camera's LEFT of the body; Chest, Back, Legs always to the RIGHT; a small lift above their anchor.
-  Each side is stacked top to bottom with a minimum gap so labels never overlap or cross, kept below the goal
-  panel and above the bottom edge of the screen (the stack slides up if it would run off the bottom).
-- Line anchors: arm groups use whichever arm is on the left of the screen, Legs whichever leg is on the right;
-  others anchor to the torso. Short thin white elbow lines run from the label to a small dot on the body.
-  Label and line positions lerp smoothly so animations don't cause jitter.
-- Label style: a faint dark see-through backing, group name with a small bumper-plate grade disc (disc on the
-  body side), the level number larger underneath. "Needs work" is small soft-red text under the weakest group
-  only, and only when there's no tie.
-- Stats labels NEVER disappear while Stats is open: all labels, lines and dots stay fully visible even when a wall,
-  machine, rack or any other object is between them and the camera. Label BillboardGuis are AlwaysOnTop (lines and
-  dots are a 2D screen layer). Labels never fade for prompts either: a label that would cover a shown
-  ProximityPrompt is nudged slightly up or down so the prompt stays readable. Labels are drawn part of the way
-  toward the camera (scaled to look identical).
-- Numbers update live while open (including while lifting).
-- Tapping a group label expands its sub-muscle labels around that body part (smaller, each with its own line);
-  tapping again collapses. One group open at a time.
-- Only update while open; must run smoothly on phones.
-- The Growth Spurt goal panel lives in this overlay (top center). Genetics is its own side menu button.
+## 8. Stats window (replaced the live world labels, "stats v5")
+- Nothing floats around the player in the world any more (no labels, lines or dots). Only the overhead title stays.
+- The Stats button opens one window with two panels side by side, on top of everything: the rest of the HUD (quest
+  panel, goal bar, notes, menu) is switched off behind it. Close with the X, Esc, or a tap outside the window.
+- LEFT, "Your muscles": the Growth Spurt goal (and its button when ready), then the six group cards with grade badge,
+  genetics multiplier, level and muscle bars. "Needs work" marks the weakest group only, and only when there's no tie.
+  Levels at the cap show "Max" in soft gold. The cards always fit their muscles; the area scrolls on short screens.
+- RIGHT, a body viewer ("Front" / "Back" title + toggle): a copy of the player's own character (their clothes, hair,
+  accessories) in a ViewportFrame + WorldModel, centered and lit, facing you. Labels with thin lines to a small dot on
+  the muscle, on both sides of the body, alternating down the body so lines never cross. Front: Chest, Shoulders,
+  Biceps, Forearms, Abs, Obliques, Quads, Calves. Back (smooth 180° turn): Traps, Lats, Rhomboids, Lower Back, Rear
+  Delts, Triceps, Glutes, Hamstrings, Calves. Each label: muscle name + level. Dragging turns the body a little and it
+  springs back. Hover (PC) or tap a label to light up its row on the left, and the other way around.
+- Phones and narrow screens: the two panels become two tabs ("Muscles" | "Body").
+- Dark minimal style, color only for grade badges and "Max". Numbers update live while open.
 
 ## 9. Titles
 Kept forever, one equipped above head, title book shows locked ones as "???" with rarity colors.

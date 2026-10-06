@@ -54,7 +54,7 @@ for where everything sits in Studio.
   plate visuals. Validates everything.
 - `Server/ActionService`: non-machine requests (Growth Spurt, equip title, reroll,
   settings). Other services can `Register` more actions.
-- `Server/BodyService`: Growth Spurt height, the muscle body tier (`Config/MuscleBodies`, applied through the HumanoidDescription; keeps head, face, hair, accessories, skin and clothes), the "Grew" event on a tier up, and the player attribute `Strength` (all muscle levels added up). NPC regulars use `ApplyTier`; the statue and the mirror rigs put the tier on their description first (`BodyTier`, `TierOf`).
+- `Server/BodyService`: Growth Spurt height, the muscle body tier (`Config/MuscleBodies`, applied through the HumanoidDescription; keeps head, face, hair, accessories, skin and clothes), the "Grew" event on a tier up. NPC regulars use `ApplyTier`; the statue and the mirror rigs put the tier on their description first (`BodyTier`, `TierOf`).
 - `Server/NightLightService`: outdoor lamps (tag `NightLight`) off by day, glowing at night.
 - `Server/TitleService`: stats, title unlocks, badges, overhead title tag.
 - `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt).
@@ -86,8 +86,7 @@ for where everything sits in Studio.
 - `ProgressClient`: the always-visible Growth Spurt bar (top center) with a "next goal" line, and the "you grew" moment.
 - `ProGymClient`: the glass door between the gyms (slides open from Growth Spurt 2, locked before).
 - `AreaSignsClient`: area signs show "Opens at Growth Spurt N" only while that area is locked for you.
-- `StatsClient`: the Stats menu button and the full stats screen (groups, muscles, grades, Growth Spurt goal and button).
-- `StatsLabelsClient`: your stats around your character (2D labels with lines to dots on the body; Settings > Stats labels Always / Training / Off) and the "Strength" line over other players.
+- `StatsClient`: the Stats menu button and the Stats window: left "Your muscles" (Growth Spurt goal + button, six group cards), right a body viewer (a clone of your character in a ViewportFrame + WorldModel, labels with lines to dots on the muscles, Front / Back toggle, drag to turn, hover/tap cross-highlight with the left panel); two tabs on phones. Hides the rest of the HUD while open. Nothing floats around the player in the world.
 - `GeneticsClient`: genetics reveal and reroll screen.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.

@@ -54,12 +54,13 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   outfit and the 18 muscle shapes/veins are all gone. Players and NPCs are their normal avatars with their own clothes
   again (`tools/meshes/` stays on disk only, ignored by git; `ServerStorage.BodyStages` deleted).
 - **Fix list 3, part 2:** muscle body tiers with Marketplace ids (see "Muscle bodies" above), empty for now.
-- **Fix list 3, part 3:** the body map panel and "Stats" chip are gone. Stats labels around your character (2D layer from
-  its projected position, so always on top, same size on screen, smoothed): Chest, Core, Calves left; Shoulders, Back,
-  Triceps, Biceps, Legs right; Strength (big) + Stamina above the head over your title. Thin white lines to small white
-  dots on the body, numbers with commas in light blue-white. Settings > Stats labels: Always / Training / Off (phones
-  default Training). Other players show only their title + "Strength 1,234". The Stats button still opens the full
-  stats screen (Growth Spurt goal + button, groups, muscles).
+- **Stats v5 (6 Oct):** the world stat labels (and their Settings row) are gone for good; nothing floats around the player.
+  The Stats button opens one window on top of everything (rest of the HUD switched off behind it; close with X, Esc or a
+  tap outside): LEFT "Your muscles" (goal + 6 group cards that always fit their muscles, scroll on short screens),
+  RIGHT a body viewer with a clone of YOUR character (own clothes), 8 front labels / 9 back labels with thin lines to
+  dots on the muscles (alternating sides so lines never cross), Front / Back toggle with a smooth 180° turn, drag to turn
+  a little (springs back), hover/tap a label or row to light up its partner. Phones and narrow screens (< 720px wide):
+  two tabs, Muscles | Body. Screenshots `stats_v5_*.png`. Brief section 8 and the CLAUDE.md rule were rewritten.
 - **Fix list 3, part 4:** new menu. PC: no toggle; 64px square buttons with a line icon and a small label (Stats,
   Titles, Genetics, Emotes, Crew, Wardrobe, Settings), 8px gaps, vertically centered on the left edge below the top
   bar; if they don't fit the height they wrap into 2 columns. Hover = slight grow + brighter; press = 0.95. Phones:
@@ -69,7 +70,7 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   the boardwalk. Stepping into any recovery station (sauna, stretching areas, cardio) shows one small note.
 - **Skateboard upgrades (6 Oct):** 5 deck designs and 3 sets of faster wheels (34 / 38 / 42 vs 30) sold at Gear & Fits
   next to the other gear (new cosmetic slots Board and Wheels), used from the Wardrobe; changing them while skating
-  rebuilds the board. Stats labels now also hide while the Wardrobe, Emotes, Crew, store, mirror or arm wrestling is open.
+  rebuilds the board.
 - **Map polish (6 Oct):** parking lot: cars scaled to 85% so they sit inside the stall lines with a gap, 5 removed so the
   rows aren't a full grid (14 cars). Skate park: the empty concrete got painted floor plates (mint, sunny, coral), a
   manual pad, a kicker, a flat bar and painted ledge stripes (`tools/builders/SkateParkExtras.luau`).
@@ -120,8 +121,10 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **DataStore:** near the end Studio got "InternalServerError" from UpdateAsync on `PlayerData_1` and the menu stayed
   on "Loading..." (a Roblox-side error, probably after many quick test sessions); the last tests ran with
   `FreshPlayer` (turned off again). If it happens to you, wait a minute and play again.
-- **Stats labels on a real phone** (Training default) and at 1080p; with 2 players check the "Strength" line over the
-  other player (only tested alone).
+- **Stats window on a real phone** (the two tabs) and with a layered-clothing avatar (the viewer clones your character).
+  Esc to close could not be tested here (Roblox reserves the key for its menu); X and tap-outside were. Window sizes I
+  could reach: 986x584 (the biggest the screen allows), 536x405 (phone landscape), 376x587 (portrait). Below ~320px wide
+  the whole HUD collides (known: the game is landscape-only on phones).
 - **Muscle body tiers** with the bodies you pick: tested with Roblox's "Man" torso + arms (clothes, hair and
   accessories stayed on, height kept). Check your bodies with layered clothing, emotes, the skateboard and lifting.
 - Phone **Menu button + grid**: open it, pick a few buttons, tap outside to close, on a real phone or the Device Emulator.
@@ -150,15 +153,12 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - Part 4: buttons are 64px, not 56: "Wardrobe" is 60px wide at the 14px minimum text size. "Phone" = touch screen
   without a keyboard (Studio: Workspace attribute `TestPhoneLayout`); a small PC window keeps the PC menu. While lifting
   the PC menu keeps only Stats; phones hide the Menu button.
-- Part 3: Strength = all 18 muscle levels added up (resets with a Growth Spurt like the muscles); group labels show the
-  group level, Triceps/Biceps/Calves the muscle level; Stamina = current stamina. The labels are a 2D overlay placed
-  from the 3D body (not BillboardGuis): that is what keeps them the same size, always visible and jitter-free. When
-  there is no room above the head (Growth Spurt bar, top of the screen) Strength and Stamina head the two columns. A
-  column steps off a shown ProximityPrompt, the Growth Spurt bar and the machine panel. Labels hide while a full
-  screen or a side panel is open (Stats screen, genetics, Settings, Titles, the phone menu grid) and in first person.
-  Screens under 700px tall use the smaller label size. While lifting, a column steps out beside the machine panel when
-  there is room (right of it, or between the menu and the panel), otherwise it fits above it; the coach line counts
-  like the Growth Spurt bar.
+- Stats v5: the viewer clones the local character each time the window opens (scripts, sounds, billboards, lights and
+  the skateboard are stripped, every joint reset, arms eased out 11° so biceps and forearms have room for their labels)
+  and places the dots on the clone's own parts, so they follow a different body shape or height. The window is above
+  notifications (DisplayOrder 60); the HUD is hidden by switching its ScreenGuis off and restored afterwards. Studio test
+  hook: Workspace attribute `TestOpenStats` (true/false) opens/closes it. The old "Strength" attribute and total, and
+  the Settings > Stats labels choice are gone (a leftover saved `statsLabels` is dropped on the next settings save).
 - Part 5: the nudge is 0.04 studs (invisible, but enough to stop flicker at any distance). Only anchored Parts
   (blocks and cylinders), never characters; same-color plain plastic is skipped (it can't flicker visibly).
 

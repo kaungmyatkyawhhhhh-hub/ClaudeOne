@@ -7,6 +7,7 @@ local function signal()
 end
 
 UIBus.OpenGenetics = signal()
+UIBus.OpenStats = signal()       -- any screen can ask for the Stats window
 UIBus.GeneticsVisible = signal() -- fired with true/false; other overlays hide while the genetics screen is up
 UIBus.StatsVisible = signal()    -- fired with true/false when the Stats overlay opens/closes
 UIBus.OpenTitles = signal()      -- the menu screen opens the Title Book
