@@ -63,9 +63,13 @@ POSES.DoubleBiceps = function(character, w)
 	setJoint(character, "Waist", Angles(rad(4) * w, 0, 0))
 end
 POSES.LatSpread = function(character, w)
-	-- fists at the waist, elbows flared forward and out
-	for _, side in ipairs(SIDES) do frontArm(character, side, rad(25) * w, rad(45) * w, rad(100) * w) end
-	setJoint(character, "Waist", Angles(rad(6) * w, 0, 0))
+	-- fists at the waist, elbows flared wide, chest out, a slight forward lean and a bent stance so the whole body reads
+	for _, side in ipairs(SIDES) do sideArm(character, side, rad(10) * w, rad(62) * w, rad(115) * w) end
+	setJoint(character, "Waist", Angles(rad(12) * w, 0, 0))
+	setJoint(character, "RHip", Angles(-rad(14) * w, 0, -rad(10) * w))
+	setJoint(character, "LHip", Angles(-rad(14) * w, 0, rad(10) * w))
+	setJoint(character, "RKnee", Angles(rad(18) * w, 0, 0))
+	setJoint(character, "LKnee", Angles(rad(18) * w, 0, 0))
 end
 POSES.AbsAndThighs = function(character, w)
 	-- hands behind the head, chest up, one leg forward and flexed
@@ -73,14 +77,17 @@ POSES.AbsAndThighs = function(character, w)
 	setJoint(character, "Waist", Angles(-rad(6) * w, 0, 0))
 	setJoint(character, "RHip", Angles(-rad(28) * w, 0, -rad(6) * w))
 	setJoint(character, "RKnee", Angles(rad(22) * w, 0, 0))
+	setJoint(character, "LKnee", Angles(rad(8) * w, 0, 0))
 	setJoint(character, "LHip", Angles(rad(4) * w, 0, rad(6) * w))
 end
 POSES.MostMuscular = function(character, w)
-	-- the crab: fists together in front, shoulders rolled in, leaning into it
-	for _, side in ipairs(SIDES) do frontArm(character, side, rad(55) * w, -rad(14) * w, rad(75) * w) end
-	setJoint(character, "Waist", Angles(rad(14) * w, 0, 0))
-	setJoint(character, "RHip", Angles(-rad(6) * w, 0, -rad(5) * w))
-	setJoint(character, "LHip", Angles(-rad(6) * w, 0, rad(5) * w))
+	-- the crab: fists together low in front, shoulders rolled in, leaning hard into it with bent knees
+	for _, side in ipairs(SIDES) do frontArm(character, side, rad(50) * w, -rad(22) * w, rad(80) * w) end
+	setJoint(character, "Waist", Angles(rad(24) * w, 0, 0))
+	setJoint(character, "RHip", Angles(-rad(34) * w, 0, -rad(8) * w))
+	setJoint(character, "LHip", Angles(-rad(34) * w, 0, rad(8) * w))
+	setJoint(character, "RKnee", Angles(rad(40) * w, 0, 0))
+	setJoint(character, "LKnee", Angles(rad(40) * w, 0, 0))
 end
 POSES.HighFive = function(character, w)
 	sideArm(character, SIDES[1], -rad(15) * w, rad(160) * w, rad(15) * w)
