@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;700;800&display=swap">
 <style>
-  /* Layout: spotlit arena stage on the left with Yoki on a podium, glassy upgrade rack on the right; stacks on phones. */
+  /* Layout: squad bar on top, spotlit arena with all three lifters on the left, upgrade rack + trophies on the right; stacks on phones. */
   :root {
     --night: #0c0d1d;
     --night-2: #15172e;
@@ -18,16 +18,18 @@
     --gold-ink: #2b1700;
     --ready: #5ee6a0;
     --crit: #ff5a6e;
+    --violet: #9b7bff;
     --font-display: "Bungee", "Arial Black", Impact, sans-serif;
     --font-body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
     margin: 0;
     background:
-      radial-gradient(ellipse 60% 55% at 30% 38%, rgba(255, 201, 74, .16), transparent 70%),
+      radial-gradient(ellipse 60% 55% at 30% 38%, rgba(255, 201, 74, .14), transparent 70%),
       radial-gradient(ellipse 50% 40% at 85% 0%, rgba(120, 110, 255, .18), transparent 70%),
       linear-gradient(180deg, var(--night-2), var(--night));
     background-attachment: fixed;
@@ -38,16 +40,17 @@
   }
   button { font: inherit; color: inherit; }
   .wrap {
-    max-width: 1080px; margin: 0 auto;
+    max-width: 1160px; margin: 0 auto;
     padding-inline: 16px; padding-block: 18px 40px;
-    display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px;
+    display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px;
   }
-  @media (max-width: 780px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 820px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
 
   header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .logo { font-family: var(--font-display); font-size: clamp(1.8rem, 5.5vw, 2.8rem); line-height: 1; margin: 0; letter-spacing: .01em;
+  .logo { font-family: var(--font-display); font-size: clamp(1.7rem, 5.5vw, 2.8rem); line-height: 1; margin: 0; letter-spacing: .01em;
     background: linear-gradient(180deg, #fff 0%, var(--gold) 55%, var(--gold-2) 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
     filter: drop-shadow(0 3px 0 rgba(0,0,0,.45)); }
+  .logo small { display: block; font-family: var(--font-body); font-weight: 800; font-size: .72rem; letter-spacing: .3em; color: var(--muted); -webkit-text-fill-color: var(--muted); margin-top: 4px; }
   .hud { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; background: var(--panel); border: 1px solid var(--panel-edge);
     font-weight: 700; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
@@ -55,67 +58,50 @@
   .icon-btn { cursor: pointer; }
   .icon-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
+  /* Squad bar */
+  .squad { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 560px) {
+    .squad { gap: 6px; }
+    .card { grid-template-columns: minmax(0, 1fr); padding: 7px 9px; }
+    .card .avatar, .card .card-perk { display: none; }
+    .card-top { flex-direction: column; gap: 0; }
+    .card .xp { grid-column: 1; }
+  }
+  .card { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 4px 10px; align-items: center; text-align: left; cursor: pointer; padding: 9px 12px; border-radius: 16px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--c) 14%, transparent), var(--panel)); border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+    transition: transform .12s; }
+  .card:hover { transform: translateY(-2px); }
+  .card:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  .avatar { grid-row: 1 / span 2; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-size: 1.1rem;
+    background: var(--c); color: #160d22; box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+  .card-name { font-weight: 800; }
+  .card-lv { font-family: var(--font-display); font-size: .85rem; color: var(--c); }
+  .card-perk { grid-column: 2; color: var(--muted); font-size: .75rem; }
+  .xp { grid-column: 2; height: 6px; border-radius: 99px; background: rgba(0,0,0,.35); overflow: hidden; }
+  .xp i { display: block; height: 100%; width: 0; background: var(--c); border-radius: 99px; transition: width .2s; }
+
   /* Stage */
-  .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 12px 0; border-radius: 24px;
-    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)); border: 1px solid var(--panel-edge); overflow: hidden; isolation: isolate; }
-  .stage::before { content: ""; position: absolute; inset: -20% 15% 30%; z-index: -1;
+  .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 12px 14px; border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)); border: 1px solid var(--panel-edge); overflow: hidden; isolation: isolate; min-width: 0; }
+  .stage::before { content: ""; position: absolute; inset: -20% 10% 30%; z-index: -1;
     -webkit-mask-image: radial-gradient(ellipse 60% 90% at 50% 20%, #000 35%, transparent 75%); mask-image: radial-gradient(ellipse 60% 90% at 50% 20%, #000 35%, transparent 75%);
     background: conic-gradient(from 180deg at 50% 0%, transparent 40%, rgba(255, 220, 140, .14) 47%, rgba(255, 220, 140, .2) 50%, rgba(255, 220, 140, .14) 53%, transparent 60%); }
   .gains { text-align: center; }
-  .gains .num { font-family: var(--font-display); font-size: clamp(2.4rem, 9vw, 3.8rem); line-height: 1; font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 24px rgba(255, 201, 74, .35), 0 4px 0 rgba(0,0,0,.4); }
+  .gains .num { display: inline-block; font-family: var(--font-display); font-size: clamp(2.4rem, 9vw, 3.8rem); line-height: 1; font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 24px rgba(255, 201, 74, .35), 0 4px 0 rgba(0,0,0,.4); transition: transform .08s; }
+  .gains .num.bump { transform: scale(1.08); }
   .gains .label { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; text-transform: uppercase; letter-spacing: .2em; font-size: .72rem; color: var(--muted); font-weight: 700; }
   .rates { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .rates .chip { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); }
   .rates .chip b { color: var(--text); font-weight: 800; }
+  .buffs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; min-height: 26px; }
+  .buff { font-size: .72rem; font-weight: 800; letter-spacing: .08em; padding: 4px 10px; border-radius: 99px; color: #160d22; animation: buffIn .3s cubic-bezier(.2,1.6,.4,1); }
+  .buff.fever { background: linear-gradient(90deg, var(--crit), var(--gold)); }
+  .buff.squadb { background: linear-gradient(90deg, #6ea8ff, var(--violet)); color: #fff; }
+  @keyframes buffIn { from { transform: scale(.4); opacity: 0; } }
 
-  .arena { position: relative; width: 100%; height: calc(min(var(--size, 300px), 64vw) * 1.22 + 74px); }
-  .walker { position: absolute; left: 0; bottom: 0; width: min(var(--size, 300px), 64vw); will-change: transform;
-    transition: width .6s cubic-bezier(.2,1.4,.4,1); }
-  #yoki { position: relative; display: block; background: none; border: 0; padding: 0; cursor: pointer; width: 100%;
-    aspect-ratio: 320 / 390; -webkit-tap-highlight-color: transparent; touch-action: manipulation; border-radius: 20px; }
-  #yoki.walking { animation: bob .42s ease-in-out infinite; }
-  #yoki.dancing { animation: dance .5s ease-in-out infinite; }
-  .fever #yoki.dancing { animation-duration: .3s; }
-  @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-9px) rotate(1.5deg); } }
-  @keyframes dance { 0%, 100% { transform: translateY(0) rotate(-4deg); } 25% { transform: translateY(-14px) rotate(0); } 50% { transform: translateY(0) rotate(4deg); } 75% { transform: translateY(-14px) rotate(0); } }
-  .arm { transition: transform .12s ease-out; }
-  #armL { transform-origin: 112px 146px; }
-  #armR { transform-origin: 208px 146px; }
-  #ysvg.curlL #armL { transform: rotate(16deg) scale(1.1); }
-  #ysvg.curlR #armR { transform: rotate(-16deg) scale(1.1); }
-  #ysvg.wave #armR { animation: wave .45s ease-in-out infinite; }
-  #ysvg.dance #armL { animation: wave .5s ease-in-out infinite reverse; }
-  #ysvg.dance #armR { animation: wave .5s ease-in-out infinite; }
-  @keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-28deg); } }
-  #eyes { transform-box: fill-box; transform-origin: center; }
-  #brows { transition: transform .15s; }
-  #ysvg.hype #brows { transform: translateY(-4px); }
-  .mouth { display: none; }
-  #ysvg:not([data-char="yoki"]) .c-yoki, #ysvg:not([data-char="ang"]) .c-ang, #ysvg:not([data-char="alton"]) .c-alton { display: none !important; }
-
-  .picker { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; }
-  .pick { flex: 1 1 180px; display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer; padding: 8px 12px; border-radius: 16px;
-    background: var(--panel); border: 1px solid var(--panel-edge); transition: transform .12s, border-color .2s, background .2s; }
-  .pick:hover { transform: translateY(-2px); }
-  .pick:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-  .pick[aria-checked="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); box-shadow: 0 0 22px color-mix(in srgb, var(--c) 35%, transparent); }
-  .avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-size: 1.1rem;
-    background: var(--c); color: #160d22; box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
-  .pick-name { font-weight: 800; display: block; }
-  .pick-perk { color: var(--muted); font-size: .8rem; display: block; }
-  .nameplate { margin-top: -30px; z-index: 2; font-family: var(--font-display); font-size: 1.1rem; letter-spacing: .08em; padding: 4px 14px; border-radius: 10px;
-    background: rgba(0,0,0,.45); border: 1px solid var(--panel-edge); color: var(--c, var(--gold)); }
-  #ysvg[data-mood="calm"] .m-calm, #ysvg[data-mood="smile"] .m-smile, #ysvg[data-mood="hype"] .m-hype, #ysvg[data-mood="ooh"] .m-ooh { display: inline; }
-
-  .bubble { position: absolute; left: 50%; top: -66px; transform: translateX(-50%); z-index: 6; max-width: 220px; width: max-content;
-    padding: 8px 14px; border-radius: 16px; background: #fff; color: #1b1630; font-weight: 800; font-size: .95rem; text-align: center;
-    box-shadow: 0 6px 20px rgba(0,0,0,.35); animation: bubbleIn .25s cubic-bezier(.2,1.6,.4,1); pointer-events: none; }
-  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: #fff; }
-  @keyframes bubbleIn { from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(.6); } }
-
-  .combo { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: baseline; gap: 2px 12px; min-height: 52px;
-    opacity: .35; transition: opacity .2s; }
+  .combo { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: baseline; gap: 2px 12px; min-height: 52px; opacity: .35; transition: opacity .2s; }
   .combo.on { opacity: 1; }
   .combo-num { font-weight: 800; text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; color: var(--muted); }
   .combo-num b { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: 0; color: var(--text); font-weight: 400; display: inline-block; }
@@ -125,70 +111,115 @@
   .cbar { grid-column: 1 / -1; width: 180px; height: 6px; border-radius: 99px; background: rgba(0,0,0,.35); overflow: hidden; }
   .cbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--crit)); }
 
-  .golden { position: absolute; z-index: 7; width: 72px; height: 90px; padding: 6px; border: 0; cursor: pointer; border-radius: 18px;
+  .arena { position: relative; width: 100%; height: calc(min(var(--size, 220px), 29vw) * 1.22 + 120px); }
+  .walker { position: absolute; left: 0; bottom: 0; width: min(var(--size, 220px), 29vw); will-change: transform; transition: width .6s cubic-bezier(.2,1.4,.4,1); }
+  .lifter { position: relative; display: block; background: none; border: 0; padding: 0; cursor: pointer; width: 100%;
+    aspect-ratio: 320 / 390; -webkit-tap-highlight-color: transparent; touch-action: manipulation; border-radius: 20px; }
+  .lifter:focus-visible { outline: 3px solid var(--c, var(--gold)); outline-offset: 4px; }
+  .lifter svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .ntag { display: block; width: max-content; margin: -4px auto 0; font-family: var(--font-display); font-size: .78rem; letter-spacing: .06em; padding: 2px 10px; border-radius: 8px;
+    background: rgba(0,0,0,.5); border: 1px solid var(--panel-edge); color: var(--c); white-space: nowrap; }
+  .fig { transform-origin: 160px 372px; animation: breathe 2.6s ease-in-out infinite; }
+  .flex { transform-origin: 160px 372px; transition: transform .09s ease-out; }
+  .lifter.pump .flex { transform: scale(1.07, .95); }
+  .lifter:hover .aura { opacity: .9; }
+  .aura { opacity: .45; transition: opacity .3s; }
+  @keyframes breathe { 50% { transform: scale(1.012, 1.008); } }
+  .lifter.walking { animation: bob .42s ease-in-out infinite; }
+  .lifter.dancing { animation: dance .5s ease-in-out infinite; }
+  .fever .lifter.dancing { animation-duration: .3s; }
+  @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-9px) rotate(1.5deg); } }
+  @keyframes dance { 0%, 100% { transform: translateY(0) rotate(-4deg); } 25% { transform: translateY(-14px) rotate(0); } 50% { transform: translateY(0) rotate(4deg); } 75% { transform: translateY(-14px) rotate(0); } }
+  .arm { transition: transform .12s ease-out; }
+  .armL { transform-origin: 112px 146px; }
+  .armR { transform-origin: 208px 146px; }
+  .ysvg.curlL .armL { transform: rotate(16deg) scale(1.1); }
+  .ysvg.curlR .armR { transform: rotate(-16deg) scale(1.1); }
+  .ysvg.wave .armR { animation: wave .45s ease-in-out infinite; }
+  .ysvg.dance .armL { animation: wave .5s ease-in-out infinite reverse; }
+  .ysvg.dance .armR { animation: wave .5s ease-in-out infinite; }
+  .ysvg.lift .armL { transform: rotate(-10deg) translateY(-14px); }
+  .ysvg.lift .armR { transform: rotate(10deg) translateY(-14px); }
+  @keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-28deg); } }
+  .eyes { transform-box: fill-box; transform-origin: center; }
+  .brows { transition: transform .15s; }
+  .ysvg.hype .brows { transform: translateY(-4px); }
+  .mouth { display: none; }
+  .ysvg[data-mood="calm"] .m-calm, .ysvg[data-mood="smile"] .m-smile, .ysvg[data-mood="hype"] .m-hype, .ysvg[data-mood="ooh"] .m-ooh { display: inline; }
+  .ysvg:not([data-char="yoki"]) .c-yoki, .ysvg:not([data-char="ang"]) .c-ang, .ysvg:not([data-char="alton"]) .c-alton { display: none !important; }
+
+  .bubble { position: absolute; left: 50%; top: -58px; transform: translateX(-50%); z-index: 6; max-width: 170px; width: max-content;
+    padding: 7px 12px; border-radius: 14px; background: #fff; color: #1b1630; font-weight: 800; font-size: .85rem; text-align: center; line-height: 1.25;
+    box-shadow: 0 6px 20px rgba(0,0,0,.35), 0 0 0 3px color-mix(in srgb, var(--c) 70%, transparent); animation: bubbleIn .25s cubic-bezier(.2,1.6,.4,1); pointer-events: none; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: #fff; }
+  @keyframes bubbleIn { from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(.6); } }
+
+  .golden { position: absolute; z-index: 1000; width: 64px; height: 80px; padding: 6px; border: 0; cursor: pointer; border-radius: 18px;
     background: radial-gradient(circle, rgba(255,212,92,.55), transparent 70%); animation: floaty 1.2s ease-in-out infinite; }
   .golden svg { width: 100%; height: 100%; filter: drop-shadow(0 0 10px #ffc94a); }
   .golden:focus-visible { outline: 2px solid var(--gold); }
   @keyframes floaty { 50% { transform: translateY(-12px) rotate(8deg); } }
 
-  .gains .num { display: inline-block; transition: transform .08s; }
-  .gains .num.bump { transform: scale(1.08); }
-  .up.bought { animation: bought .45s ease-out; }
-  @keyframes bought { 0% { box-shadow: 0 0 0 0 rgba(255,201,74,.8); background: rgba(255,201,74,.35); } 100% { box-shadow: 0 0 0 16px rgba(255,201,74,0); } }
+  .chal { position: relative; z-index: 1002; width: min(100%, 380px); padding: 8px 12px; border-radius: 14px; text-align: center;
+    background: rgba(10, 10, 25, .8); border: 1px solid rgba(255, 90, 110, .6); box-shadow: 0 0 30px rgba(255, 90, 110, .35); }
+  .chal-title { font-family: var(--font-display); font-size: .95rem; color: #fff; }
+  .chal-row { display: flex; justify-content: space-between; font-size: .78rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .chal .bar { height: 10px; margin-top: 6px; }
+  .barbell { position: absolute; left: 50%; top: 20px; width: min(80%, 420px); transform: translateX(-50%); z-index: 1; pointer-events: none; transition: transform .8s cubic-bezier(.3,1.6,.5,1), opacity .8s; }
+  .barbell.lifted { transform: translateX(-50%) translateY(-90px) scale(1.1); opacity: 0; }
 
-  #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
-  .fever-banner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 8; pointer-events: none; font-family: var(--font-display);
-    font-size: clamp(2.4rem, 10vw, 4rem); white-space: nowrap; color: #fff; text-shadow: 0 0 20px var(--crit), 0 0 40px var(--gold), 0 4px 0 #000;
+  .pop { position: absolute; pointer-events: none; font-family: var(--font-display); font-size: 1.4rem; white-space: nowrap; z-index: 2000;
+    background: linear-gradient(180deg, #fff, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,.6)); animation: rise .9s cubic-bezier(.2,.8,.3,1) forwards; }
+  .pop.crit { font-size: 2rem; background-image: linear-gradient(180deg, #fff, var(--crit)); }
+  .pop.squadp { background-image: linear-gradient(180deg, #fff, #6ea8ff); }
+  @keyframes rise { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.6); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -80px) scale(1); } }
+  .spark { position: absolute; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; z-index: 1999; background: var(--gold); box-shadow: 0 0 8px currentColor;
+    animation: spark .6s ease-out forwards; }
+  @keyframes spark { to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.3); } }
+  .podium { width: 100%; height: 30px; margin-top: -22px; background: radial-gradient(ellipse 50% 60% at 50% 30%, rgba(255,201,74,.3), transparent 70%); pointer-events: none; }
+  .hint { color: var(--muted); font-size: .8rem; margin: 0; text-align: center; line-height: 1.5; }
+  .shake { animation: shake .25s; }
+  @keyframes shake { 25% { transform: translate(4px, -2px); } 50% { transform: translate(-4px, 2px); } 75% { transform: translate(2px, 1px); } }
+  .banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 2001; pointer-events: none; font-family: var(--font-display);
+    font-size: clamp(2rem, 9vw, 3.6rem); white-space: nowrap; color: #fff; text-shadow: 0 0 20px var(--bc, var(--crit)), 0 0 40px var(--gold), 0 4px 0 #000;
     animation: banner 1.4s cubic-bezier(.2,1.4,.4,1) forwards; }
   @keyframes banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3) rotate(-8deg); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(-4deg); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -70%) scale(1) rotate(-4deg); } }
   body.fever .stage { border-color: transparent; box-shadow: 0 0 0 2px var(--crit), 0 0 50px rgba(255, 90, 110, .45); }
   body.fever .stage::before { background: conic-gradient(from 0deg at 50% 0%, transparent 30%, rgba(255,90,110,.25) 45%, rgba(255,201,74,.3) 50%, rgba(155,123,255,.25) 55%, transparent 70%); animation: hue 1.5s linear infinite; }
   @keyframes hue { to { filter: hue-rotate(360deg); } }
-  #yoki:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
-  #yoki svg { width: 100%; height: 100%; display: block; overflow: visible; }
-  #fig { transform-origin: 160px 372px; animation: breathe 2.6s ease-in-out infinite; }
-  #flex { transform-origin: 160px 372px; transition: transform .09s ease-out; }
-  #yoki.pump #flex { transform: scale(1.07, .95); }
-  #yoki:hover #aura { opacity: .9; }
-  #aura { opacity: .55; transition: opacity .3s; }
-  @keyframes breathe { 50% { transform: scale(1.012, 1.008); } }
-  .shake { animation: shake .25s; }
-  @keyframes shake { 25% { transform: translate(4px, -2px); } 50% { transform: translate(-4px, 2px); } 75% { transform: translate(2px, 1px); } }
-
-  .pop { position: absolute; pointer-events: none; font-family: var(--font-display); font-size: 1.5rem; white-space: nowrap; z-index: 5;
-    background: linear-gradient(180deg, #fff, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 2px 0 rgba(0,0,0,.6)); animation: rise .9s cubic-bezier(.2,.8,.3,1) forwards; }
-  .pop.crit { font-size: 2.1rem; background-image: linear-gradient(180deg, #fff, var(--crit)); }
-  @keyframes rise { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.6); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -80px) scale(1); } }
-  .spark { position: absolute; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; z-index: 4; background: var(--gold); box-shadow: 0 0 8px var(--gold);
-    animation: spark .6s ease-out forwards; }
-  @keyframes spark { to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.3); } }
-  .podium { width: 100%; height: 40px; margin-top: -26px; background: radial-gradient(ellipse 45% 60% at 50% 30%, rgba(255,201,74,.35), transparent 70%); pointer-events: none; }
-  .hint { color: var(--muted); font-size: .8rem; margin: -8px 0 14px; text-align: center; }
 
   /* Rack */
   .rack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-  .rack h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; letter-spacing: .04em; margin: 0; display: flex; align-items: center; justify-content: space-between; }
+  .rack h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; letter-spacing: .04em; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .rack h2 small { font-family: var(--font-body); font-size: .75rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(0,0,0,.3); border: 1px solid var(--panel-edge); }
+  .seg button { border: 0; background: none; cursor: pointer; padding: 4px 10px; border-radius: 99px; font-family: var(--font-body); font-size: .75rem; font-weight: 800; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--gold); color: var(--gold-ink); }
+  .seg button:focus-visible { outline: 2px solid var(--gold); }
   .list { display: flex; flex-direction: column; gap: 8px; }
-  .up { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
-    padding: 10px 12px; border-radius: 16px; background: var(--panel); border: 1px solid var(--panel-edge);
-    backdrop-filter: blur(6px); transition: transform .12s, border-color .2s, background .2s; position: relative; overflow: hidden; }
+  .up { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+    padding: 9px 12px; border-radius: 16px; background: var(--panel); border: 1px solid var(--panel-edge);
+    transition: transform .12s, border-color .2s, background .2s; position: relative; overflow: hidden; }
   .up:hover:not(:disabled) { transform: translateY(-2px); border-color: rgba(255, 201, 74, .6); background: rgba(255, 201, 74, .08); }
   .up:active:not(:disabled) { transform: translateY(0) scale(.98); }
   .up:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   .up:disabled { cursor: not-allowed; }
   .up:disabled .ico, .up:disabled .meta { opacity: .45; }
   .up.locked .name, .up.locked .desc { filter: blur(3px); }
-  .ico { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center;
+  .up.bought { animation: bought .45s ease-out; }
+  @keyframes bought { 0% { box-shadow: 0 0 0 0 rgba(255,201,74,.8); background: rgba(255,201,74,.35); } 100% { box-shadow: 0 0 0 16px rgba(255,201,74,0); } }
+  .ico { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
     background: linear-gradient(160deg, rgba(255,201,74,.25), rgba(255,154,31,.08)); border: 1px solid rgba(255, 201, 74, .3); }
-  .ico svg { width: 30px; height: 30px; }
+  .ico svg { width: 28px; height: 28px; }
   .meta { min-width: 0; }
-  .name { font-weight: 800; font-size: 1rem; display: flex; gap: 8px; align-items: center; }
+  .name { font-weight: 800; font-size: .98rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .lvl { font-size: .7rem; font-weight: 800; padding: 2px 7px; border-radius: 99px; background: rgba(255,255,255,.1); color: var(--muted); font-variant-numeric: tabular-nums; }
-  .desc { color: var(--muted); font-size: .82rem; margin-top: 2px; }
-  .price { font-weight: 800; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 5px; padding: 7px 10px; border-radius: 10px;
+  .desc { color: var(--muted); font-size: .8rem; margin-top: 2px; }
+  .price { font-weight: 800; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; padding: 6px 10px; border-radius: 10px;
     background: rgba(0,0,0,.25); color: var(--muted); }
+  .price .p { display: flex; align-items: center; gap: 5px; }
+  .price .n { font-size: .68rem; opacity: .8; }
   .up:not(:disabled) .price { background: linear-gradient(180deg, var(--gold), var(--gold-2)); color: var(--gold-ink); box-shadow: 0 3px 0 #a85e00; }
 
   .rebirth { padding: 16px; border-radius: 18px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;
@@ -196,7 +227,7 @@
   .rebirth p { margin: 0; color: var(--muted); line-height: 1.45; }
   .rebirth p b { color: var(--text); }
   .bar { height: 12px; background: rgba(0,0,0,.35); border-radius: 99px; overflow: hidden; }
-  .bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #9b7bff, var(--crit), var(--gold)); transition: width .25s; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--violet), var(--crit), var(--gold)); transition: width .25s; }
   .bar-row { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 700; }
   #rebirthBtn { font-family: var(--font-display); font-size: 1.1rem; letter-spacing: .04em; border: 0; border-radius: 14px; padding: 14px; cursor: pointer;
     background: linear-gradient(180deg, #b49bff, #7b5cff); color: #fff; box-shadow: 0 4px 0 #4a2fc2, 0 0 30px rgba(155, 123, 255, .45); }
@@ -207,14 +238,72 @@
   #rebirthBtn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   .reset { align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: .78rem; text-decoration: underline; cursor: pointer; padding: 0; }
 
+  .trophies { padding: 14px; border-radius: 18px; background: var(--panel); border: 1px solid var(--panel-edge); display: flex; flex-direction: column; gap: 10px; }
+  .ach-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ach { font-size: .74rem; font-weight: 700; padding: 5px 9px; border-radius: 10px; background: rgba(0,0,0,.3); color: var(--muted); border: 1px solid transparent; opacity: .55; }
+  .ach.got { opacity: 1; color: var(--gold); border-color: rgba(255,201,74,.45); background: rgba(255,201,74,.1); }
+  .ach.got::before { content: "★ "; }
+
+  #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 70; }
   .flash { position: fixed; inset: 0; pointer-events: none; z-index: 50; background: radial-gradient(circle, #fff, rgba(155,123,255,.6) 50%, transparent 80%); animation: flash 1s ease-out forwards; }
   @keyframes flash { from { opacity: 1; } to { opacity: 0; } }
-  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60;
-    padding: 12px 18px; border-radius: 14px; background: rgba(20, 20, 40, .92); border: 1px solid rgba(255, 201, 74, .5); font-weight: 700; animation: toast 2.4s ease forwards; white-space: nowrap; }
-  @keyframes toast { 0% { opacity: 0; transform: translate(-50%, 20px); } 12%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 10px); } }
+  .toasts { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
+  .toast { padding: 10px 16px; border-radius: 14px; background: rgba(20, 20, 40, .94); border: 1px solid rgba(255, 201, 74, .5); font-weight: 700; animation: toast 2.8s ease forwards; text-align: center; }
+  .toast.ach-t { border-color: var(--violet); box-shadow: 0 0 24px rgba(155,123,255,.4); }
+  .toast small { display: block; color: var(--muted); font-weight: 500; font-size: .78rem; }
+  @keyframes toast { 0% { opacity: 0; transform: translateY(20px) scale(.9); } 10%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(10px); } }
+
+  .modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(5, 5, 15, .7); backdrop-filter: blur(4px); }
+  .modal-card { width: min(100%, 360px); text-align: center; padding: 24px 20px; border-radius: 22px; background: linear-gradient(180deg, #23254a, #15172e);
+    border: 1px solid rgba(255, 201, 74, .45); box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(255,201,74,.2); animation: bubbleIn2 .35s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes bubbleIn2 { from { opacity: 0; transform: scale(.7); } }
+  .modal-card h3 { font-family: var(--font-display); font-weight: 400; margin: 0 0 6px; font-size: 1.4rem; }
+  .modal-card p { margin: 0 0 14px; color: var(--muted); }
+  .modal-card .big { font-family: var(--font-display); font-size: 2.2rem; color: var(--gold); margin-bottom: 16px; }
+  .modal-card button { font-family: var(--font-display); font-size: 1.05rem; border: 0; border-radius: 14px; padding: 12px 28px; cursor: pointer;
+    background: linear-gradient(180deg, var(--gold), var(--gold-2)); color: var(--gold-ink); box-shadow: 0 4px 0 #a85e00; }
+
+  /* Egg heist */
+  .eggs { padding: 14px; border-radius: 18px; display: flex; flex-direction: column; gap: 10px;
+    background: linear-gradient(160deg, rgba(94, 230, 160, .12), rgba(110, 168, 255, .08)); border: 1px solid rgba(94, 230, 160, .3); }
+  .rival { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .rival-egg { width: 54px; height: 66px; filter: drop-shadow(0 0 12px var(--ec)); animation: wobble 2s ease-in-out infinite; }
+  .rival-egg svg, .heist-egg svg, .slot svg { width: 100%; height: 100%; display: block; }
+  @keyframes wobble { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+  .rival-label { color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+  .rival-rarity { font-family: var(--font-display); font-size: 1.05rem; color: var(--ec); }
+  .mythic { animation: hue 2s linear infinite; }
+  #stealBtn { font-family: var(--font-display); font-size: .95rem; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer;
+    background: linear-gradient(180deg, #7ef2b6, #2fbf78); color: #062b18; box-shadow: 0 3px 0 #1b7a4a; white-space: nowrap; }
+  #stealBtn:disabled { background: rgba(255,255,255,.08); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+  #stealBtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .nest-label { font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .nest-label small { letter-spacing: 0; text-transform: none; font-weight: 500; }
+  .nest { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 12px; border: 1px dashed var(--panel-edge); min-height: 84px; justify-content: center;
+    font-size: .72rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .slot.full { border-style: solid; border-color: color-mix(in srgb, var(--ec) 50%, transparent); background: color-mix(in srgb, var(--ec) 10%, transparent); }
+  .slot .e { width: 32px; height: 40px; filter: drop-shadow(0 0 8px var(--ec)); animation: wobble 1.6s ease-in-out infinite; }
+  .slot.soon .e { animation-duration: .35s; }
+  .pets { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+  .pet { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; padding: 5px 10px; border-radius: 99px; background: rgba(0,0,0,.3); border: 1px solid color-mix(in srgb, var(--ec) 50%, transparent); }
+  .pet i { width: 10px; height: 10px; border-radius: 50%; background: var(--ec); box-shadow: 0 0 8px var(--ec); }
+  .pets .none { color: var(--muted); font-size: .8rem; }
+  .heist-egg { position: absolute; left: 50%; top: 0; width: 96px; height: 120px; margin-left: -48px; z-index: 1001; border: 0; padding: 0; background: none; cursor: pointer;
+    filter: drop-shadow(0 0 22px var(--ec)); animation: wobble .5s ease-in-out infinite; touch-action: manipulation; }
+  .heist-egg.hit { transform: scale(.9); }
+  .heist-egg:focus-visible { outline: 2px solid #fff; border-radius: 20px; }
+  .thief { position: absolute; bottom: 0; left: 0; z-index: 999; width: min(110px, 22vw); aspect-ratio: 100 / 150; border: 0; padding: 0; background: none; cursor: pointer;
+    animation: bob .35s ease-in-out infinite; touch-action: manipulation; }
+  .thief svg { width: 100%; height: 100%; display: block; }
+  .thief.hit svg { filter: brightness(1.8) saturate(.4); }
+  .thief.flip svg { transform: scaleX(-1); }
+  .thief-hp { position: absolute; left: 10%; right: 10%; top: -12px; height: 6px; border-radius: 99px; background: rgba(0,0,0,.5); overflow: hidden; }
+  .thief-hp i { display: block; height: 100%; width: 100%; background: var(--crit); }
 
   @media (prefers-reduced-motion: reduce) {
-    #fig, #rebirthBtn:not(:disabled), .stage.shake, #yoki.walking, #yoki.dancing, .golden, body.fever .stage, #ysvg .arm { animation: none !important; }
+    .rival-egg, .slot .e, .heist-egg, .thief, .mythic { animation: none !important; }
+    .fig, #rebirthBtn:not(:disabled), .stage.shake, .lifter.walking, .lifter.dancing, .golden, body.fever .stage::before, .ysvg .arm { animation: none !important; }
     .walker { transition: none; }
     .pop { animation-duration: .3s; }
     .spark { display: none; }
@@ -226,45 +315,7 @@
     <symbol id="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffb21f"/><circle cx="12" cy="12" r="7.5" fill="#ffd45c"/><path d="M8 13.5 10.5 9h1.2l-1 3h3.3l-2.5 4.5h-1.2l1-3z" fill="#b86a00"/></symbol>
   </defs>
 </svg>
-
-<canvas id="fx" aria-hidden="true"></canvas>
-<div class="wrap">
-  <header>
-    <h1 class="logo">YOKI CLICKER</h1>
-    <div class="hud">
-      <span class="chip" id="rebirthTag">Rebirth <b>0</b></span>
-      <span class="chip">Boost <b id="multTag">×1</b></span>
-      <button class="chip icon-btn" id="soundBtn" aria-pressed="true">Sound on</button>
-    </div>
-  </header>
-
-  <div class="picker" id="picker" role="radiogroup" aria-label="Choose your lifter"></div>
-
-  <section class="stage" id="stage">
-    <div class="gains">
-      <div class="num" id="gains">0</div>
-      <div class="label"><svg width="16" height="16"><use href="#coin"/></svg>Gains</div>
-    </div>
-    <div class="rates">
-      <span class="chip"><b id="perClick">1</b> per rep</span>
-      <span class="chip"><b id="perSec">0</b> per sec</span>
-      <span class="chip"><b id="reps">0</b> reps</span>
-    </div>
-
-    <div class="combo" id="combo" aria-live="off">
-      <span class="combo-num"><b id="comboNum">0</b> combo</span>
-      <span class="combo-mult" id="comboMult">×1.00</span>
-      <span class="cbar"><i id="cbar"></i></span>
-    </div>
-
-    <div class="arena" id="arena">
-      <button class="golden" id="golden" hidden aria-label="Grab the golden shake">
-        <svg viewBox="0 0 40 52" aria-hidden="true"><path d="M8 12h24l-3 36H11z" fill="#ffd45c"/><path d="M10 22h20l-2 24H12z" fill="#ffb21f"/><rect x="6" y="8" width="28" height="6" rx="2" fill="#fff4c9"/><path d="M24 8l5-7" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M14 26l3 4l-3 4" stroke="#fff4c9" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/></svg>
-      </button>
-      <div class="walker" id="walker">
-        <div class="bubble" id="bubble" hidden></div>
-    <button id="yoki" aria-label="Click your lifter to do a rep">
-      <svg viewBox="0 0 320 390" aria-hidden="true" id="ysvg">
+<template id="lifterTpl"><svg viewBox="0 0 320 390" class="ysvg" aria-hidden="true">
         <defs>
           <radialGradient id="skin" cx="45%" cy="35%" r="75%"><stop offset="0" style="stop-color:var(--s1,#d9a074)"/><stop offset=".6" style="stop-color:var(--s2,#bb7e52)"/><stop offset="1" style="stop-color:var(--s3,#94592f)"/></radialGradient>
           <linearGradient id="skinShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--s4,#a86a3f)"/><stop offset="1" style="stop-color:var(--s5,#7e4824)"/></linearGradient>
@@ -276,9 +327,9 @@
           <radialGradient id="auraG"><stop offset="0" stop-color="#ffc94a" stop-opacity=".55"/><stop offset="1" stop-color="#ffc94a" stop-opacity="0"/></radialGradient>
           <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".45"/></filter>
         </defs>
-        <ellipse id="aura" cx="160" cy="200" rx="150" ry="175" fill="url(#auraG)"/>
+        <ellipse class="aura" cx="160" cy="200" rx="150" ry="175" fill="url(#auraG)"/>
         <ellipse cx="160" cy="376" rx="115" ry="10" fill="#000" opacity=".45"/>
-        <g id="facing"><g id="fig"><g id="flex" filter="url(#soft)">
+        <g class="facing"><g class="fig"><g class="flex" filter="url(#soft)">
           <!-- legs + sneakers -->
           <path d="M126 296 C110 320 112 350 120 366 L150 366 C152 344 156 320 154 296 Z" fill="url(#skin)"/>
           <path d="M194 296 C210 320 208 350 200 366 L170 366 C168 344 164 320 166 296 Z" fill="url(#skin)"/>
@@ -289,7 +340,7 @@
           <rect x="106" y="370" width="54" height="4" rx="2" fill="#ffc94a"/><rect x="160" y="370" width="54" height="4" rx="2" fill="#ffc94a"/>
 
           <!-- left arm (right arm is mirrored) -->
-          <g id="armL" class="arm"><g id="armShape">
+          <g class="arm armL"><g id="armShape">
             <path d="M112 142 C88 136 60 138 46 152 C38 162 44 174 58 172 C76 170 96 168 116 172 Z" fill="url(#skin)"/>
             <path d="M44 156 C34 132 36 104 46 84 L70 86 C68 108 66 132 66 162 Z" fill="url(#skinShade)"/>
             <ellipse cx="78" cy="138" rx="34" ry="24" fill="url(#skin)"/>
@@ -299,7 +350,7 @@
             <path d="M46 70 h20 M45 77 h22" stroke="#8a522b" stroke-width="1.6" opacity=".45"/>
             <circle cx="112" cy="146" r="24" fill="url(#skin)"/>
           </g></g>
-          <g id="armR" class="arm"><use href="#armShape" transform="translate(320 0) scale(-1 1)"/></g>
+          <g class="arm armR"><use href="#armShape" transform="translate(320 0) scale(-1 1)"/></g>
 
           <!-- torso -->
           <path d="M100 140 L220 140 C218 184 202 240 192 290 L128 290 C118 240 102 184 100 140 Z" fill="url(#skin)"/>
@@ -367,11 +418,11 @@
             <path d="M140 30 q4 -4 8 0 M160 22 q4 -4 8 0 M178 30 q4 -4 8 0 M186 46 q4 -4 8 0 M128 42 q4 -4 8 0" stroke="#3a3a46" stroke-width="2" fill="none"/>
           </g>
           <!-- calm, half-lidded eyes -->
-          <g id="brows">
+          <g class="brows">
             <path d="M139 70 q8 -4 16 0" stroke="#1a1310" stroke-width="3.4" fill="none" stroke-linecap="round"/>
             <path d="M165 70 q8 -4 16 0" stroke="#1a1310" stroke-width="3.4" fill="none" stroke-linecap="round"/>
           </g>
-          <g id="eyes"><path d="M141 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/><path d="M167 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/></g>
+          <g class="eyes"><path d="M141 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/><path d="M167 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/></g>
           <path d="M140 77.5 q7 -3 14 0" stroke="#94592f" stroke-width="2" fill="none"/><path d="M166 77.5 q7 -3 14 0" stroke="#94592f" stroke-width="2" fill="none"/>
           <g class="c-ang" fill="rgba(255,255,255,.12)" stroke="#16161e" stroke-width="2.4">
             <rect x="134" y="71" width="23" height="16" rx="6"/><rect x="163" y="71" width="23" height="16" rx="6"/>
@@ -387,108 +438,282 @@
           <g class="mouth m-ooh"><ellipse cx="160" cy="102" rx="5" ry="6" fill="#3a1508"/></g>
           <ellipse cx="146" cy="62" rx="10" ry="4" fill="#fff" opacity=".08"/>
         </g></g></g>
-      </svg>
-    </button>
+      </svg></template>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<div class="wrap">
+  <header>
+    <h1 class="logo">YOKI CLICKER<small>FEATURING ANG &amp; ALTON · EGG HEIST</small></h1>
+    <div class="hud">
+      <span class="chip" id="rebirthTag">Rebirth <b>0</b></span>
+      <span class="chip">Boost <b id="multTag">×1</b></span>
+      <span class="chip">Trophies <b id="achTag">0/0</b></span>
+      <button class="chip icon-btn" id="soundBtn" aria-pressed="true">Sound on</button>
+    </div>
+  </header>
+
+  <div class="squad" id="squad"></div>
+
+  <section class="stage" id="stage">
+    <div class="gains">
+      <div class="num" id="gains">0</div>
+      <div class="label"><svg width="16" height="16"><use href="#coin"/></svg>Gains</div>
+    </div>
+    <div class="rates">
+      <span class="chip"><b id="perClick">1</b> per rep</span>
+      <span class="chip"><b id="perSec">0</b> per sec</span>
+      <span class="chip"><b id="reps">0</b> reps</span>
+      <span class="chip">trophy bonus <b id="achBonus">+0%</b></span>
+    </div>
+    <div class="buffs" id="buffs"></div>
+    <div class="combo" id="combo">
+      <span class="combo-num"><b id="comboNum">0</b> combo</span>
+      <span class="combo-mult" id="comboMult">×1.00</span>
+      <span class="cbar"><i id="cbar"></i></span>
+    </div>
+
+    <div class="chal" id="chal" hidden>
+        <div class="chal-title">BARBELL CHALLENGE</div>
+        <div class="bar"><i id="chalBar"></i></div>
+        <div class="chal-row"><span id="chalCount">0 / 60 reps</span><span id="chalTime">12.0s</span></div>
       </div>
+    <div class="arena" id="arena">
+      <svg class="barbell" id="barbell" hidden viewBox="0 0 400 60" aria-hidden="true">
+        <rect x="20" y="26" width="360" height="8" rx="4" fill="#c9ccd6"/>
+        <rect x="40" y="6" width="22" height="48" rx="5" fill="#2b2f45" stroke="#ffc94a" stroke-width="2"/><rect x="64" y="12" width="16" height="36" rx="4" fill="#3a3f5c"/>
+        <rect x="338" y="6" width="22" height="48" rx="5" fill="#2b2f45" stroke="#ffc94a" stroke-width="2"/><rect x="320" y="12" width="16" height="36" rx="4" fill="#3a3f5c"/>
+        <text x="200" y="22" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="14" fill="#ffc94a">500 KG</text>
+      </svg>
+      <button class="heist-egg" id="heistEgg" hidden aria-label="Tap the egg to steal it"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 2C32 2 38 22 38 32C38 44 30 50 20 50C10 50 2 44 2 32C2 22 8 2 20 2Z" fill="var(--ec)"/><circle cx="13" cy="22" r="3.5" fill="#fff" opacity=".45"/><circle cx="26" cy="32" r="4.5" fill="#fff" opacity=".35"/><circle cx="15" cy="38" r="2.5" fill="#fff" opacity=".4"/><path d="M10 14C12 9 15 6 18 5" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".6"/></svg></button>
+      <button class="thief" id="thief" hidden aria-label="Tap the thief to chase him off">
+        <svg viewBox="0 0 100 150" aria-hidden="true">
+          <ellipse cx="50" cy="146" rx="34" ry="4" fill="#000" opacity=".4"/>
+          <path d="M34 110 L30 142 L44 142 L48 112 Z M66 110 L70 142 L56 142 L52 112 Z" fill="#1a1b26"/>
+          <path d="M22 62 C22 48 78 48 78 62 L74 116 L26 116 Z" fill="#2a2b3d"/>
+          <circle cx="50" cy="36" r="24" fill="#2a2b3d"/>
+          <path d="M32 38 C32 28 68 28 68 38 C68 52 32 52 32 38 Z" fill="#c98f63"/>
+          <rect x="30" y="32" width="40" height="10" rx="5" fill="#0d0d14"/>
+          <circle cx="41" cy="37" r="3" fill="#fff"/><circle cx="59" cy="37" r="3" fill="#fff"/>
+          <path d="M44 48 q6 3 12 0" stroke="#5c2f16" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <path d="M74 70 L92 92" stroke="#2a2b3d" stroke-width="12" stroke-linecap="round"/>
+          <path d="M80 86 C80 80 100 80 100 86 L98 108 L82 108 Z" fill="#8a6b3c"/><text x="90" y="102" text-anchor="middle" font-size="12" font-family="Bungee, Impact, sans-serif" fill="#ffc94a">$</text>
+        </svg>
+        <span class="thief-hp"><i id="thiefHp"></i></span>
+      </button>
+      <button class="golden" id="golden" hidden aria-label="Grab the golden shake">
+        <svg viewBox="0 0 40 52" aria-hidden="true"><path d="M8 12h24l-3 36H11z" fill="#ffd45c"/><path d="M10 22h20l-2 24H12z" fill="#ffb21f"/><rect x="6" y="8" width="28" height="6" rx="2" fill="#fff4c9"/><path d="M24 8l5-7" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M14 26l3 4l-3 4" stroke="#fff4c9" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/></svg>
+      </button>
     </div>
     <div class="podium"></div>
-    <div class="nameplate" id="nameplate">YOKI</div>
-    <p class="hint">Tap fast to build a combo. Hit 50 for FEVER. Grab golden shakes when they show up.</p>
+    <p class="hint">Tap any lifter. Tap all three in a row for a <b>SQUAD ×2</b>. 50 combo = <b>FEVER ×3</b>. Watch for golden shakes, barbell challenges and egg thieves.</p>
   </section>
 
   <aside class="rack">
-    <h2>UPGRADES <small>costs rise 15% each</small></h2>
+    <h2>UPGRADES
+      <span class="seg" role="group" aria-label="Buy amount">
+        <button data-buy="1" aria-pressed="true">×1</button><button data-buy="10" aria-pressed="false">×10</button><button data-buy="max" aria-pressed="false">MAX</button>
+      </span>
+    </h2>
     <div class="list" id="list"></div>
+
+    <div class="eggs">
+      <h2>EGG HEIST <small id="petBonusTag">pets +0%</small></h2>
+      <div class="rival">
+        <div class="rival-egg" id="rivalEgg"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 2C32 2 38 22 38 32C38 44 30 50 20 50C10 50 2 44 2 32C2 22 8 2 20 2Z" fill="var(--ec)"/><circle cx="13" cy="22" r="3.5" fill="#fff" opacity=".45"/><circle cx="26" cy="32" r="4.5" fill="#fff" opacity=".35"/><circle cx="15" cy="38" r="2.5" fill="#fff" opacity=".4"/><path d="M10 14C12 9 15 6 18 5" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".6"/></svg></div>
+        <div class="rival-info">
+          <div class="rival-label">Rival gym's egg</div>
+          <div class="rival-rarity" id="rivalRarity">COMMON</div>
+          <div class="desc" id="rivalHint">Tap it 20 times in 6s</div>
+        </div>
+        <button id="stealBtn">STEAL IT</button>
+      </div>
+      <div class="nest-label">Your nest <small>eggs hatch into pets · thieves will try to take them</small></div>
+      <div class="nest" id="nest"></div>
+      <div class="nest-label">Pets</div>
+      <div class="pets" id="pets"></div>
+    </div>
 
     <div class="rebirth">
       <h2>REBIRTH <small id="nextMult">next: ×2 boost</small></h2>
-      <p>Reset gains and upgrades. Your lifter comes back <b>bigger</b> with a permanent gains boost.</p>
+      <p>Reset gains and upgrades. The squad comes back <b>bigger</b> with a permanent gains boost. Levels and trophies stay.</p>
       <div class="bar"><i id="bar"></i></div>
       <div class="bar-row"><span id="barNow">0</span><span id="barNeed">25K</span></div>
       <button id="rebirthBtn" disabled>REBIRTH</button>
+    </div>
+
+    <div class="trophies">
+      <h2>TROPHIES <small>each one +2% gains</small></h2>
+      <div class="ach-grid" id="achGrid"></div>
       <button class="reset" id="resetBtn">Wipe save</button>
     </div>
   </aside>
 </div>
 
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">WELCOME BACK!</h3>
+    <p id="modalText">While you were away, the squad kept training.</p>
+    <div class="big" id="modalBig">+0</div>
+    <button id="modalBtn">COLLECT</button>
+  </div>
+</div>
 <script>
+/* ================= Data ================= */
 const ICONS = {
   shake: '<svg viewBox="0 0 32 32"><path d="M9 9h14l-2 19H11z" fill="#fff"/><path d="M10 15h12l-1.2 12H11.2z" fill="#ffc94a"/><rect x="8" y="6" width="16" height="4" rx="1.5" fill="#ff9a1f"/><path d="M18 6l3-4" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
   bro: '<svg viewBox="0 0 32 32"><circle cx="16" cy="9" r="5" fill="#ffc94a"/><path d="M6 29c0-7 4-12 10-12s10 5 10 12z" fill="#fff"/><path d="M3 17h26" stroke="#ff9a1f" stroke-width="3" stroke-linecap="round"/></svg>',
   dumbbell: '<svg viewBox="0 0 32 32"><rect x="9" y="14.5" width="14" height="3" rx="1.5" fill="#fff"/><rect x="4" y="9" width="5" height="14" rx="2" fill="#ffc94a"/><rect x="23" y="9" width="5" height="14" rx="2" fill="#ffc94a"/><rect x="1.5" y="12" width="3" height="8" rx="1.5" fill="#ff9a1f"/><rect x="27.5" y="12" width="3" height="8" rx="1.5" fill="#ff9a1f"/></svg>',
   trainer: '<svg viewBox="0 0 32 32"><path d="M5 14a8 8 0 1 0 16 0z" fill="#fff"/><rect x="13" y="10" width="15" height="6" rx="3" fill="#ffc94a"/><circle cx="13" cy="18" r="3" fill="#ff9a1f"/><path d="M8 10C8 5 12 3 16 4" stroke="#fff" stroke-width="2" fill="none"/></svg>',
+  creatine: '<svg viewBox="0 0 32 32"><path d="M8 12h16v14a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="#fff"/><rect x="7" y="8" width="18" height="5" rx="2" fill="#ff9a1f"/><path d="M12 19h8M16 15v8" stroke="#ffc94a" stroke-width="3" stroke-linecap="round"/></svg>',
   coach: '<svg viewBox="0 0 32 32"><path d="M9 4h14v7a7 7 0 0 1-14 0z" fill="#ffc94a"/><path d="M9 7H4c0 5 3 7 6 7M23 7h5c0 5-3 7-6 7" stroke="#ff9a1f" stroke-width="2.4" fill="none"/><rect x="14" y="17" width="4" height="6" fill="#ff9a1f"/><rect x="9" y="23" width="14" height="5" rx="1.5" fill="#fff"/></svg>',
+  rack: '<svg viewBox="0 0 32 32"><path d="M7 4v25M25 4v25" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M3 12h26" stroke="#ffc94a" stroke-width="3" stroke-linecap="round"/><rect x="1" y="8" width="4" height="8" rx="1.5" fill="#ff9a1f"/><rect x="27" y="8" width="4" height="8" rx="1.5" fill="#ff9a1f"/></svg>',
+  olympia: '<svg viewBox="0 0 32 32"><path d="M16 3l3.5 7 7.5 1-5.5 5.3 1.4 7.6L16 20.3 9.1 23.9l1.4-7.6L5 11l7.5-1z" fill="#ffc94a"/><path d="M6 28h20" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
 };
 const UPGRADES = [
-  { id: 'shake',    name: 'Protein Shake',    type: 'click', amount: 1,   base: 15,    line: 'Gulp gulp gulp!' },
-  { id: 'bro',      name: 'Gym Bro Spotter',  type: 'auto',  amount: 2,   base: 60,    line: 'Spot me, bro!' },
-  { id: 'dumbbell', name: 'Heavy Dumbbells',  type: 'click', amount: 10,  base: 400,   line: 'Heavy is good.' },
-  { id: 'trainer',  name: 'Personal Trainer', type: 'auto',  amount: 25,  base: 1500,  line: 'Coach says more reps!' },
-  { id: 'coach',    name: 'Olympia Coach',    type: 'auto',  amount: 200, base: 20000, line: 'Olympia, here I come!' },
+  { id: 'shake',    name: 'Protein Shake',    type: 'click', amount: 1,     base: 15,      line: 'Gulp gulp gulp!' },
+  { id: 'bro',      name: 'Gym Bro Spotter',  type: 'auto',  amount: 2,     base: 60,      line: 'Spot me, bro!' },
+  { id: 'dumbbell', name: 'Heavy Dumbbells',  type: 'click', amount: 10,    base: 400,     line: 'Heavy is good.' },
+  { id: 'trainer',  name: 'Personal Trainer', type: 'auto',  amount: 25,    base: 1500,    line: 'Coach says more reps!' },
+  { id: 'creatine', name: 'Creatine Scoop',   type: 'click', amount: 80,    base: 12000,   line: 'Scoop it up!' },
+  { id: 'coach',    name: 'Olympia Coach',    type: 'auto',  amount: 200,   base: 20000,   line: 'Olympia, here we come!' },
+  { id: 'rack',     name: 'Squat Rack Empire', type: 'auto', amount: 1500,  base: 250000,  line: 'Our own gym!' },
+  { id: 'olympia',  name: 'Olympia Stage',    type: 'auto',  amount: 12000, base: 3000000, line: 'The big stage!' },
+];
+const CHARS = {
+  yoki:  { name: 'Yoki',  color: '#ffc94a', perk: 'Team perk: fever lasts 15s',
+           skin: ['#d9a074', '#bb7e52', '#94592f', '#a86a3f', '#7e4824'],
+           click: ['LIGHT WEIGHT!', 'YEAH BUDDY!', 'One more rep!', 'Feel the pump!', "Let's go!"],
+           cheer: ['Nice one, bro!', 'YEAH BUDDY!'], lvl: 'Getting HUGE!' },
+  ang:   { name: 'Ang',   color: '#6ea8ff', perk: 'Team perk: crits 15% of the time',
+           skin: ['#e6b48c', '#cc9468', '#a76d44', '#b27a50', '#8a5730'],
+           click: ['Calculated.', 'Big brain, big gains.', 'Science says: more reps.', 'As predicted.', 'Textbook form.'],
+           cheer: ['Statistically impressive.', 'Good form!'], lvl: 'Level up. As calculated.' },
+  alton: { name: 'Alton', color: '#ff6b7d', perk: 'Team perk: golden shakes 2× as often',
+           skin: ['#cf9166', '#ae7046', '#86502a', '#9c6038', '#74401f'],
+           click: ['AAAAHHH!', 'BLEHHH!', "Let's goooo!", 'WOOOO!', 'Hehehe!'],
+           cheer: ['BLEHHH! NICE!', 'WOOOO!'], lvl: 'LEVEL UP! BLEHHH!' },
+};
+const KEYS = Object.keys(CHARS);
+const BANTER = [
+  [['yoki', 'Bro, nice pump.'], ['alton', 'BLEHHH! Thanks bro!']],
+  [['ang', 'I calculated our max lift.'], ['yoki', 'And?'], ['ang', 'Infinite.']],
+  [['alton', 'Race you to the next shake!'], ['ang', 'Statistically, I win.']],
+  [['yoki', 'Who has the biggest arms?'], ['alton', 'ME!'], ['ang', 'Data says... tie.']],
+  [['ang', 'Did you stretch first?'], ['alton', 'Stretch? AAAAHHH!']],
+  [['alton', 'Yoki, teach me the flex.'], ['yoki', 'Step one: be huge.']],
+  [['yoki', 'Leg day tomorrow?'], ['ang', 'Never heard of it.'], ['alton', 'LEG WHAT?']],
+  [['ang', 'Our egg nest needs guarding.'], ['yoki', "I'll flex at the thieves."]],
+  [['alton', 'I want a Cosmic Phoenix pet!'], ['ang', '2% drop chance. Keep stealing.']],
 ];
 const LINES = {
-  click:    ['LIGHT WEIGHT!', 'YEAH BUDDY!', 'One more rep!', 'Feel the pump!', "Let's go!"],
   combo:    ["Don't stop now!", "We're cooking!", 'Faster, bro!', 'Unstoppable!', 'MORE!'],
   crit:     ['CRITICAL GAINS!', 'BOOM!', 'Did you see that?!'],
-  idle:     ['Bro... click me', "I'm getting cold here", 'Rest day already?', 'Watch this flex', 'Hello? Anyone?'],
+  idle:     ['Bro... click us', "I'm getting cold here", 'Rest day already?', 'Watch this flex', 'Hello? Anyone?'],
   hover:    ['You gonna click or what?', 'Go on, poke me', 'Ready when you are'],
-  spot:     ['A golden shake! Grab it!', 'Look! Over there!'],
+  spot:     ['Golden shake! MINE!', 'Look! Over there!'],
   golden:   ['GOLDEN SHAKE!!', 'Liquid gold, baby!'],
   melted:   ['Aww, it melted.', 'Too slow, bro.'],
   comboEnd: ['Nice set!', 'Good set, bro.', 'Catching my breath...'],
-  fever:    ['FEVER MODE!!', 'I CAN FEEL IT!'],
-  rebirth:  ["I'm BACK. And BIGGER.", 'Reborn. Re-swole.'],
+  fever:    ['FEVER MODE!!', 'I CAN FEEL IT!', 'PARTY!'],
+  rebirth:  ["We're BACK. And BIGGER.", 'Reborn. Re-swole.', 'BLEHHH! Round two!'],
+  lift:     ['WE LIFTED IT!', 'TEAMWORK!', 'LIGHT WEIGHT!'],
+  liftFail: ['So close...', 'Too heavy!', 'Next time, bro.'],
+  hi5:      ['Up top!', 'Yeah!', 'Boom!', 'BLEHHH!'],
+  thief:    ['THIEF! Get him!', 'Hey! That\'s our egg!', 'Stop right there!'],
+  busted:   ['And stay out!', 'Thief busted!', 'Not today!'],
+  robbed:   ['He got away with it...', 'NOOO our egg!'],
+  heist:    ['Sneaky mode...', 'Go go go!', 'Grab it!'],
+  heistWin: ['GOT IT!', 'Egg secured!', 'Heist complete!'],
+  heistFail:['Caught by the guard!', 'Abort! Abort!'],
 };
-const CHARS = {
-  yoki:  { name: 'Yoki',  color: '#ffc94a', perk: 'Fever lasts 15s',
-           skin: ['#d9a074', '#bb7e52', '#94592f', '#a86a3f', '#7e4824'],
-           hi: "Yo! I'm Yoki. Click me!", pickLine: 'Yoki is back on the stage!',
-           click: ['LIGHT WEIGHT!', 'YEAH BUDDY!', 'One more rep!', 'Feel the pump!', "Let's go!"] },
-  ang:   { name: 'Ang',   color: '#6ea8ff', perk: 'Crits 15% of the time',
-           skin: ['#e6b48c', '#cc9468', '#a76d44', '#b27a50', '#8a5730'],
-           hi: "Ang here. Let's be smart about this.", pickLine: 'Big brain. Bigger biceps.',
-           click: ['Calculated.', 'Big brain, big gains.', 'Science says: more reps.', 'As predicted.', 'Textbook form.'] },
-  alton: { name: 'Alton', color: '#ff6b7d', perk: 'Golden shakes 2× as often',
-           skin: ['#cf9166', '#ae7046', '#86502a', '#9c6038', '#74401f'],
-           hi: 'ALTON IN THE BUILDING!', pickLine: 'BLEHHH! Alton time!',
-           click: ['AAAAHHH!', 'BLEHHH!', "Let's goooo!", 'WOOOO!', 'Hehehe!'] },
-};
-const REP_MS  = [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
-const GAIN_MS = [100, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13];
+const RARITIES = [
+  { id: 'common',    name: 'COMMON',    color: '#cfd3dc', w: 50, need: 20, bonus: .05, pet: 'Gym Chick' },
+  { id: 'rare',      name: 'RARE',      color: '#5b8cff', w: 28, need: 25, bonus: .15, pet: 'Pump Pup' },
+  { id: 'epic',      name: 'EPIC',      color: '#b05bff', w: 14, need: 30, bonus: .40, pet: 'Swole Cat' },
+  { id: 'legendary', name: 'LEGENDARY', color: '#ffc94a', w: 6,  need: 36, bonus: 1.0, pet: 'Dragon Lifter' },
+  { id: 'mythic',    name: 'MYTHIC',    color: '#ff5a6e', w: 2,  need: 42, bonus: 2.5, pet: 'Cosmic Protein Phoenix' },
+];
+const RAR = Object.fromEntries(RARITIES.map(r => [r.id, r]));
+const HATCH_MS = 45000, NEST_SIZE = 3, HEIST_MS = 6000;
+const ACH = [
+  { id: 'rep1',    name: 'First Rep',     desc: 'Do 1 rep',                 test: () => state.reps >= 1 },
+  { id: 'rep100',  name: 'Warm Up',       desc: 'Do 100 reps',              test: () => state.reps >= 100 },
+  { id: 'rep1k',   name: 'Gym Rat',       desc: 'Do 1,000 reps',            test: () => state.reps >= 1000 },
+  { id: 'rep10k',  name: 'No Days Off',   desc: 'Do 10,000 reps',           test: () => state.reps >= 10000 },
+  { id: 'crit',    name: 'Critical',      desc: 'Land a crit',              test: () => state.stats.crits >= 1 },
+  { id: 'crit100', name: 'Crit Machine',  desc: 'Land 100 crits',           test: () => state.stats.crits >= 100 },
+  { id: 'fever',   name: 'Fever!',        desc: 'Enter fever mode',         test: () => state.stats.fevers >= 1 },
+  { id: 'squad',   name: 'Squad Goals',   desc: 'Tap all 3 lifters in a row', test: () => state.stats.squads >= 1 },
+  { id: 'hi5',     name: 'Up Top',        desc: 'See a high five',          test: () => state.stats.hi5 >= 1 },
+  { id: 'gold',    name: 'Liquid Gold',   desc: 'Grab a golden shake',      test: () => state.stats.golden >= 1 },
+  { id: 'gold10',  name: 'Shake Hoarder', desc: 'Grab 10 golden shakes',    test: () => state.stats.golden >= 10 },
+  { id: 'lift',    name: 'Team Lift',     desc: 'Win a barbell challenge',  test: () => state.stats.lifts >= 1 },
+  { id: 'lift5',   name: 'Powerlifters',  desc: 'Win 5 barbell challenges', test: () => state.stats.lifts >= 5 },
+  { id: 'heist',   name: 'Egg Thief',     desc: 'Steal an egg',             test: () => state.stats.heists >= 1 },
+  { id: 'heist10', name: 'Master Thief',  desc: 'Steal 10 eggs',            test: () => state.stats.heists >= 10 },
+  { id: 'hatch',   name: 'Pet Parent',    desc: 'Hatch a pet',              test: () => state.stats.hatched >= 1 },
+  { id: 'legend',  name: 'Legendary',     desc: 'Hatch a legendary pet',    test: () => state.pets.legendary + state.pets.mythic >= 1 },
+  { id: 'bust',    name: 'Security',      desc: 'Chase off a thief',        test: () => state.stats.busts >= 1 },
+  { id: 'm1',      name: 'Millionaire',   desc: 'Hold 1M gains',            test: () => state.gains >= 1e6 },
+  { id: 'b1',      name: 'Billionaire',   desc: 'Hold 1B gains',            test: () => state.gains >= 1e9 },
+  { id: 'reb1',    name: 'Reborn',        desc: 'Rebirth once',             test: () => state.rebirths >= 1 },
+  { id: 'reb5',    name: 'Phoenix',       desc: 'Rebirth 5 times',          test: () => state.rebirths >= 5 },
+  { id: 'lv10',    name: 'Level 10',      desc: 'Get a lifter to Lv 10',    test: () => KEYS.some(k => state.lv[k].lv >= 10) },
+  { id: 'allup',   name: 'Full Gym',      desc: 'Own every upgrade',        test: () => UPGRADES.every(u => state.owned[u.id] > 0) },
+];
+const REP_MS  = [10, 50, 250, 500, 2500, 5000, 25000, 50000, 100000];
 const SAVE_KEY = 'yoki-clicker-v1';
-const CRIT_MULT = 5, COMBO_WINDOW = 900, FEVER_EVERY = 50, FEVER_MULT = 3;
+const CRIT_CHANCE = 0.15, CRIT_MULT = 5, COMBO_WINDOW = 900, FEVER_EVERY = 50, FEVER_MS = 15000, FEVER_MULT = 3, SQUAD_MS = 6000;
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const fresh = () => ({ char: 'yoki', gains: 0, rebirths: 0, reps: 0, msReps: 0, msGains: 0, owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])) });
+const fresh = () => ({
+  gains: 0, rebirths: 0, reps: 0, msReps: 0, saved: Date.now(),
+  owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])),
+  lv: Object.fromEntries(KEYS.map(k => [k, { lv: 1, xp: 0 }])),
+  ach: [],
+  stats: { crits: 0, fevers: 0, squads: 0, hi5: 0, golden: 0, lifts: 0, heists: 0, hatched: 0, busts: 0 },
+  pets: Object.fromEntries(RARITIES.map(r => [r.id, 0])),
+  nest: [],
+  rival: null,
+  stealReadyAt: 0,
+});
 let state = fresh();
 let soundOn = true;
 
+/* ================= Helpers ================= */
 const $ = id => document.getElementById(id);
 const pick = a => a[Math.random() * a.length | 0];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = n => {
   n = Math.floor(n);
   if (n < 1000) return String(n);
-  const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx'];
+  const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
   let i = -1;
   while (n >= 1000 && i < units.length - 1) { n /= 1000; i++; }
   return (n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : n.toFixed(0)) + units[i];
 };
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const rollRarity = () => { let r = Math.random() * 100; for (const x of RARITIES) { if ((r -= x.w) < 0) return x.id; } return 'common'; };
 
-const ch = () => CHARS[state.char] || CHARS.yoki;
-const critChance = () => state.char === 'ang' ? 0.15 : 0.08;
-const feverMs = () => state.char === 'yoki' ? 15000 : 10000;
-const goldenGap = () => (25000 + Math.random() * 35000) * (state.char === 'alton' ? .5 : 1);
 const mult = () => 1 + state.rebirths;
-const cost = u => Math.floor(u.base * Math.pow(1.15, state.owned[u.id]));
-const perClick = () => (1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id], 0)) * mult();
-const perSec = () => UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) * mult();
+const achBonus = () => 1 + 0.02 * state.ach.length;
+const petBonus = () => 1 + RARITIES.reduce((s, r) => s + r.bonus * state.pets[r.id], 0);
+const gainMult = () => mult() * achBonus() * petBonus();
+const unitCost = (u, owned) => u.base * Math.pow(1.15, owned);
+const costN = (u, n) => Math.floor(unitCost(u, state.owned[u.id]) * (Math.pow(1.15, n) - 1) / 0.15);
+const maxN = u => Math.max(0, Math.floor(Math.log(state.gains * 0.15 / unitCost(u, state.owned[u.id]) + 1) / Math.log(1.15)));
+const baseClick = () => 1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id], 0);
+const perClick = () => baseClick() * gainMult();
+const perSec = () => UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) * gainMult();
 const rebirthNeed = () => 25000 * Math.pow(5, state.rebirths);
+const xpNeed = lv => Math.floor(25 * Math.pow(1.45, lv - 1));
+const lvMult = k => 1 + 0.1 * (state.lv[k].lv - 1);
 
-const yoki = $('yoki'), svg = $('ysvg'), stage = $('stage'), arena = $('arena'), walker = $('walker');
-const bubble = $('bubble'), golden = $('golden'), gainsEl = $('gains');
+const stage = $('stage'), arena = $('arena'), golden = $('golden'), gainsEl = $('gains');
 
-/* ---------- Sound ---------- */
+/* ================= Sound ================= */
 let ac;
 function tone(f1, f2, dur, type = 'sine', vol = .18, delay = 0) {
   if (!soundOn) return;
@@ -502,19 +727,21 @@ function tone(f1, f2, dur, type = 'sine', vol = .18, delay = 0) {
 }
 const fanfare = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f * 1.01, .22, 'triangle', .12, i * .09));
 const ding = () => { tone(880, 880, .18, 'triangle', .12); tone(1320, 1320, .3, 'triangle', .1, .1); };
+const clap = () => { tone(2400, 300, .08, 'square', .06); tone(1800, 200, .06, 'sawtooth', .05, .02); };
+const sad = () => [392, 330, 262].forEach((f, i) => tone(f, f * .98, .25, 'triangle', .1, i * .15));
 
-/* ---------- Confetti ---------- */
+/* ================= Confetti ================= */
 const fx = $('fx'), ctx = fx.getContext('2d');
 let parts = [];
-const COLORS = ['#ffc94a', '#ff9a1f', '#ff5a6e', '#9b7bff', '#5ee6a0', '#ffffff'];
+const COLORS = ['#ffc94a', '#ff9a1f', '#ff5a6e', '#9b7bff', '#5ee6a0', '#6ea8ff', '#ffffff'];
 function sizeFx() { const d = devicePixelRatio || 1; fx.width = innerWidth * d; fx.height = innerHeight * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
 addEventListener('resize', sizeFx); sizeFx();
-function burst(x, y, n = 40, power = 9) {
+function burst(x, y, n = 40, power = 9, colors = COLORS) {
   if (REDUCED) return;
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, v = power * (.4 + Math.random() * .8);
     parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 4, r: Math.random() * 6, vr: (Math.random() - .5) * .4,
-      w: 6 + Math.random() * 6, h: 3 + Math.random() * 4, c: pick(COLORS), life: 90 + Math.random() * 50 });
+      w: 6 + Math.random() * 6, h: 3 + Math.random() * 4, c: pick(colors), life: 90 + Math.random() * 50 });
   }
 }
 function rain(n = 140) {
@@ -533,215 +760,466 @@ function drawFx() {
   }
   if (!parts.length) ctx.clearRect(0, 0, innerWidth, innerHeight);
 }
+const centerOf = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
 
-/* ---------- Yoki's personality ---------- */
-let bubbleTimer;
-function say(text, ms = 1700) {
-  bubble.textContent = text;
-  bubble.hidden = false;
-  bubble.style.animation = 'none'; void bubble.offsetWidth; bubble.style.animation = '';
-  clearTimeout(bubbleTimer);
-  bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
-}
-let moodUntil = 0;
-function mood(m, ms = 1200) { svg.dataset.mood = m; moodUntil = performance.now() + ms; svg.classList.toggle('hype', m === 'hype'); }
-
-const ai = { x: null, target: 0, dir: 1, mode: 'stand', until: 0, engagedUntil: 0, speed: 70 };
-let lastInteract = performance.now(), nextIdleLine = 0, hoverStart = 0, hoverSaid = false;
-let pointer = null, nextBlink = performance.now() + 2500, blinkUntil = 0;
-
-function chooseAction(now, max) {
-  const r = Math.random();
-  if (r < .55) { ai.mode = 'walk'; ai.target = Math.random() * max; ai.speed = 55 + Math.random() * 45; }
-  else if (r < .72) { ai.mode = 'wave'; ai.until = now + 1800; }
-  else if (r < .87) { ai.mode = 'dance'; ai.until = now + 2400; }
-  else { ai.mode = 'stand'; ai.until = now + 1500 + Math.random() * 1500; }
-}
-
-/* ---------- Combo + fever ---------- */
-let combo = 0, lastHit = 0, feverUntil = 0;
-const comboMult = () => 1 + Math.min(combo, 100) * 0.02;
-const inFever = () => performance.now() < feverUntil;
-
-function startFever() {
-  feverUntil = performance.now() + feverMs();
-  document.body.classList.add('fever');
-  const b = document.createElement('div'); b.className = 'fever-banner'; b.textContent = 'FEVER ×3';
-  stage.appendChild(b); setTimeout(() => b.remove(), 1400);
-  rain(120); fanfare();
-  say(pick(LINES.fever), 2000); mood('hype', 2500);
-}
-
-/* ---------- Pops + sparks ---------- */
-function popAt(x, y, text, crit) {
+/* ================= Pops, toasts, banners ================= */
+function popAt(cx, cy, text, cls = '') {
+  const sr = stage.getBoundingClientRect(), x = cx - sr.left, y = cy - sr.top;
   const p = document.createElement('div');
-  p.className = 'pop' + (crit ? ' crit' : '');
+  p.className = 'pop ' + cls;
   p.textContent = text;
   p.style.left = x + 'px'; p.style.top = (y - 24) + 'px';
   stage.appendChild(p);
   setTimeout(() => p.remove(), 900);
   if (REDUCED) return;
-  for (let i = 0; i < (crit ? 14 : 6); i++) {
-    const s = document.createElement('div'), a = Math.random() * Math.PI * 2, d = 30 + Math.random() * (crit ? 70 : 40);
+  const n = cls === 'crit' ? 14 : 6;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('div'), a = Math.random() * Math.PI * 2, d = 30 + Math.random() * (n > 6 ? 70 : 40);
     s.className = 'spark';
     s.style.left = x + 'px'; s.style.top = y + 'px';
     s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d + 'px');
-    if (crit || inFever()) s.style.background = pick(COLORS);
+    if (cls || inFever()) s.style.background = pick(COLORS);
     stage.appendChild(s);
     setTimeout(() => s.remove(), 600);
   }
 }
-function toast(msg) {
+function toast(msg, sub = '', cls = '') {
   const t = document.createElement('div');
-  t.className = 'toast'; t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2400);
+  t.className = 'toast ' + cls;
+  t.textContent = msg;
+  if (sub) { const s = document.createElement('small'); s.textContent = sub; t.appendChild(s); }
+  $('toasts').appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+function banner(text, color) {
+  const b = document.createElement('div'); b.className = 'banner'; b.textContent = text;
+  if (color) b.style.setProperty('--bc', color);
+  stage.appendChild(b); setTimeout(() => b.remove(), 1400);
 }
 
-/* ---------- Clicking Yoki ---------- */
-let pumpTimer, curlSide = false, bumpTimer;
-yoki.addEventListener('click', e => {
+/* ================= Lifters ================= */
+const tpl = $('lifterTpl');
+const lifters = KEYS.map((key, i) => {
+  const c = CHARS[key], sfx = '-' + key;
+  const walker = document.createElement('div');
+  walker.className = 'walker';
+  walker.style.setProperty('--c', c.color);
+  walker.innerHTML = `<div class="bubble" hidden></div><button class="lifter" aria-label="Tap ${c.name} to do a rep"></button><span class="ntag"></span>`;
+  const svg = tpl.content.firstElementChild.cloneNode(true);
+  svg.querySelectorAll('[id]').forEach(el => { el.id += sfx; });
+  svg.querySelectorAll('*').forEach(el => {
+    for (const a of ['fill', 'stroke', 'filter']) { const v = el.getAttribute(a); if (v && v.startsWith('url(#')) el.setAttribute(a, v.replace(')', sfx + ')')); }
+    const h = el.getAttribute('href'); if (h && h.startsWith('#')) el.setAttribute('href', h + sfx);
+  });
+  svg.dataset.char = key; svg.dataset.mood = 'calm';
+  c.skin.forEach((v, j) => svg.style.setProperty('--s' + (j + 1), v));
+  const btn = walker.querySelector('.lifter');
+  btn.appendChild(svg);
+  arena.appendChild(walker);
+  const l = { key, c, i, walker, btn, svg, bubble: walker.querySelector('.bubble'), tag: walker.querySelector('.ntag'),
+    facing: svg.querySelector('.facing'), eyes: svg.querySelector('.eyes'),
+    x: null, target: 0, dir: i === 2 ? -1 : 1, mode: 'stand', until: 0, engagedUntil: 0, busyUntil: 0, partner: null, waveUntil: 0,
+    speed: 70, moodUntil: 0, nextBlink: performance.now() + 1000 + Math.random() * 3000, blinkUntil: 0, bubbleTimer: null,
+    hoverStart: 0, hoverSaid: false, curl: false, pumpTimer: null };
+  btn.addEventListener('click', e => hit(l, e));
+  btn.addEventListener('pointerenter', () => { l.hoverStart = performance.now(); l.hoverSaid = false; });
+  btn.addEventListener('pointerleave', () => { l.hoverStart = 0; });
+  return l;
+});
+const L = Object.fromEntries(lifters.map(l => [l.key, l]));
+let zTop = 2;
+
+function say(l, text, ms = 1700) {
+  l.bubble.textContent = text;
+  l.bubble.hidden = false;
+  l.bubble.style.animation = 'none'; void l.bubble.offsetWidth; l.bubble.style.animation = '';
+  l.walker.style.zIndex = ++zTop;
+  clearTimeout(l.bubbleTimer);
+  l.bubbleTimer = setTimeout(() => { l.bubble.hidden = true; }, ms);
+}
+function mood(l, m, ms = 1200) { l.svg.dataset.mood = m; l.moodUntil = performance.now() + ms; l.svg.classList.toggle('hype', m === 'hype'); }
+const all = fn => lifters.forEach(fn);
+const others = l => lifters.filter(o => o !== l);
+
+/* Squad cards */
+for (const l of lifters) {
+  const b = document.createElement('button');
+  b.className = 'card'; b.style.setProperty('--c', l.c.color);
+  b.innerHTML = `<span class="avatar">${l.c.name[0]}</span>
+    <span class="card-top"><span class="card-name">${l.c.name}</span><span class="card-lv" id="lv-${l.key}">Lv 1</span></span>
+    <span class="xp"><i id="xp-${l.key}"></i></span>
+    <span class="card-perk">${l.c.perk} · +10% reps per level</span>`;
+  b.addEventListener('click', () => {
+    l.engagedUntil = performance.now() + 1500; l.waveUntil = performance.now() + 1200;
+    say(l, pick(l.c.click), 1400); mood(l, 'hype', 1200);
+    const [x, y] = centerOf(l.btn); burst(x, y - 40, 20, 6, [l.c.color, '#fff']);
+    tone(500, 900, .12, 'triangle', .08);
+  });
+  $('squad').appendChild(b);
+}
+
+/* ================= Combo, fever, squad ================= */
+let combo = 0, lastHit = 0, feverUntil = 0, squadUntil = 0, chain = [], chainAt = 0;
+const comboMult = () => 1 + Math.min(combo, 100) * 0.02;
+const inFever = () => performance.now() < feverUntil;
+const inSquad = () => performance.now() < squadUntil;
+
+function startFever() {
+  feverUntil = performance.now() + FEVER_MS;
+  state.stats.fevers++;
+  document.body.classList.add('fever');
+  banner('FEVER ×3'); rain(120); fanfare();
+  all(l => { say(l, pick(LINES.fever), 2000); mood(l, 'hype', 2500); });
+}
+
+/* ================= Tapping a lifter ================= */
+let lastInteract = performance.now(), bumpTimer;
+function hit(l, e) {
   const now = performance.now();
   const wasIdle = now - lastInteract > 4000;
-  lastInteract = now; hoverSaid = true;
+  lastInteract = now; l.hoverSaid = true;
   combo = now - lastHit < COMBO_WINDOW * (inFever() ? 1.5 : 1) ? combo + 1 : 1;
   lastHit = now;
   if (combo % FEVER_EVERY === 0) startFever();
 
-  const crit = Math.random() < critChance();
-  const amt = perClick() * comboMult() * (inFever() ? FEVER_MULT : 1) * (crit ? CRIT_MULT : 1);
-  state.gains += amt;
-  state.reps = (state.reps || 0) + 1;
-  ai.engagedUntil = now + 1400;
+  // squad chain: three different lifters in a row
+  if (now - chainAt > 1500 || chain.includes(l.key)) chain = [];
+  chain.push(l.key); chainAt = now;
+  let squadNow = false;
+  if (chain.length === 3) {
+    chain = [];
+    if (!inSquad()) { banner('SQUAD ×2', '#6ea8ff'); tone(660, 990, .2, 'triangle', .1); state.stats.squads++; squadNow = true; }
+    squadUntil = now + SQUAD_MS;
+  }
 
-  yoki.classList.add('pump');
-  clearTimeout(pumpTimer);
-  curlSide = !curlSide;
-  svg.classList.remove('curlL', 'curlR');
-  svg.classList.add(curlSide ? 'curlL' : 'curlR');
-  pumpTimer = setTimeout(() => { yoki.classList.remove('pump'); svg.classList.remove('curlL', 'curlR'); }, 110);
+  const crit = Math.random() < CRIT_CHANCE;
+  const amt = perClick() * lvMult(l.key) * comboMult() * (inFever() ? FEVER_MULT : 1) * (inSquad() ? 2 : 1) * (crit ? CRIT_MULT : 1);
+  state.gains += amt;
+  state.reps++;
+  if (crit) state.stats.crits++;
+  addXp(l, crit ? 3 : 1);
+  l.engagedUntil = now + 1400;
+  if (event && event.type === 'lift') event.count++;
+
+  l.btn.classList.add('pump');
+  clearTimeout(l.pumpTimer);
+  l.curl = !l.curl;
+  l.svg.classList.remove('curlL', 'curlR');
+  l.svg.classList.add(l.curl ? 'curlL' : 'curlR');
+  l.pumpTimer = setTimeout(() => { l.btn.classList.remove('pump'); l.svg.classList.remove('curlL', 'curlR'); }, 110);
   gainsEl.classList.add('bump'); clearTimeout(bumpTimer); bumpTimer = setTimeout(() => gainsEl.classList.remove('bump'), 80);
   const cn = $('comboNum'); cn.classList.remove('tick'); void cn.offsetWidth; cn.classList.add('tick');
 
-  const sr = stage.getBoundingClientRect(), r = yoki.getBoundingClientRect();
+  const r = l.btn.getBoundingClientRect();
   const cx = e.clientX || r.left + r.width / 2, cy = e.clientY || r.top + r.height / 3;
-  popAt(cx - sr.left, cy - sr.top, (crit ? 'CRIT +' : '+') + fmt(amt), crit);
+  popAt(cx, cy, (crit ? 'CRIT +' : '+') + fmt(amt), crit ? 'crit' : squadNow ? 'squadp' : '');
 
   const pitch = Math.min(combo, 60) * 7;
   if (crit) {
     stage.classList.remove('shake'); void stage.offsetWidth; stage.classList.add('shake');
     tone(180, 60, .25, 'square', .1); tone(900, 1400, .15, 'triangle', .08);
     burst(cx, cy, 26, 7);
-    say(pick(LINES.crit), 1200); mood('hype', 900);
+    say(l, pick(LINES.crit), 1200); mood(l, 'hype', 900);
+    if (Math.random() < .35) { const o = pick(others(l)); setTimeout(() => { say(o, pick(o.c.cheer).replace('bro', l.c.name), 1300); mood(o, 'smile', 1000); }, 350); }
   } else {
     tone(150 + pitch, 55, .12, 'sine', .25);
     tone(500 + pitch * 2, 800 + pitch * 2, .05, 'triangle', .04);
-    if (wasIdle) { say(pick(ch().click), 1200); mood('smile', 1000); }
-    else if (combo % 10 === 0 && combo % FEVER_EVERY) { say(pick(LINES.combo), 1200); mood('smile', 1000); }
+    if (wasIdle) { say(l, pick(l.c.click), 1200); mood(l, 'smile', 1000); }
+    else if (combo % 10 === 0 && combo % FEVER_EVERY) { say(l, pick(LINES.combo), 1200); mood(l, 'smile', 1000); }
+    else if (Math.random() < .06) { say(l, pick(l.c.click), 1000); }
   }
-  render();
-});
-yoki.addEventListener('pointerenter', () => { hoverStart = performance.now(); hoverSaid = false; });
-yoki.addEventListener('pointerleave', () => { hoverStart = 0; });
-addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; });
+}
 
-/* ---------- Golden shake ---------- */
-let nextGolden = performance.now() + 12000, goldenUntil = 0, goldenX = 0;
-// Yoki runs over and stands next to the shake, pointing at it
-const besideGolden = (w, max) => clamp(goldenX + 76 + w <= arena.clientWidth ? goldenX + 76 : goldenX - w - 4, 0, max);
+function addXp(l, n) {
+  const d = state.lv[l.key];
+  d.xp += n;
+  while (d.xp >= xpNeed(d.lv)) {
+    d.xp -= xpNeed(d.lv); d.lv++;
+    const [x, y] = centerOf(l.btn);
+    burst(x, y - 30, 40, 9, [l.c.color, '#fff', '#ffc94a']);
+    ding();
+    say(l, `LEVEL ${d.lv}! ${l.c.lvl}`, 1800); mood(l, 'hype', 1500);
+  }
+}
+
+/* ================= Golden shake ================= */
+let nextGolden = performance.now() + 12000, goldenUntil = 0, goldenX = 0, goldenRunner = null;
+const goldenGap = () => (12500 + Math.random() * 17500);
+const besideGolden = (w, max) => clamp(goldenX + 70 + w <= arena.clientWidth ? goldenX + 70 : goldenX - w - 4, 0, max);
 function spawnGolden(now) {
   const w = arena.clientWidth, h = arena.clientHeight;
-  goldenX = 8 + Math.random() * Math.max(0, w - 88);
+  goldenX = 8 + Math.random() * Math.max(0, w - 80);
   golden.style.left = goldenX + 'px';
   golden.style.top = (6 + Math.random() * h * .25) + 'px';
   golden.hidden = false;
   goldenUntil = now + 9000;
-  say(pick(LINES.spot), 1800); mood('ooh', 1500);
+  const ww = lifters[0].walker.offsetWidth;
+  goldenRunner = lifters.slice().sort((a, b) => Math.abs(a.x + ww / 2 - goldenX) - Math.abs(b.x + ww / 2 - goldenX))[0];
+  say(goldenRunner, pick(LINES.spot), 1800); mood(goldenRunner, 'ooh', 1500);
   tone(1200, 1800, .2, 'triangle', .08);
 }
-golden.addEventListener('click', e => {
+golden.addEventListener('click', () => {
   const now = performance.now();
   const bonus = Math.max(perSec() * 45, perClick() * 30, 50) * (inFever() ? FEVER_MULT : 1);
   state.gains += bonus;
+  state.stats.golden++;
   golden.hidden = true;
   nextGolden = now + goldenGap();
-  const sr = stage.getBoundingClientRect(), r = golden.getBoundingClientRect();
-  popAt(r.left + r.width / 2 - sr.left, r.top - sr.top, '+' + fmt(bonus), true);
-  burst(r.left + r.width / 2, r.top + r.height / 2, 70, 11);
+  const [x, y] = centerOf(golden);
+  popAt(x, y - 30, '+' + fmt(bonus), 'crit');
+  burst(x, y, 70, 11);
   fanfare();
-  say(pick(LINES.golden), 1800); mood('hype', 1800);
+  all(l => mood(l, 'hype', 1500));
+  if (goldenRunner) say(goldenRunner, pick(LINES.golden), 1800);
   toast(`Golden shake: +${fmt(bonus)} gains`);
   lastInteract = now;
-  render();
 });
 
-/* ---------- Character picker ---------- */
-const picker = $('picker');
-for (const [id, c] of Object.entries(CHARS)) {
-  const b = document.createElement('button');
-  b.className = 'pick'; b.id = 'pick-' + id;
-  b.setAttribute('role', 'radio'); b.style.setProperty('--c', c.color);
-  b.innerHTML = `<span class="avatar">${c.name[0]}</span><span><span class="pick-name">${c.name}</span><span class="pick-perk">${c.perk}</span></span>`;
-  b.addEventListener('click', () => setChar(id, true));
-  picker.appendChild(b);
+/* ================= Events: barbell challenge + egg heist ================= */
+let event = null, nextLift = performance.now() + 60000;
+function startLift(now) {
+  event = { type: 'lift', until: now + 12000, count: 0, need: 60 };
+  $('chal').hidden = false; $('barbell').hidden = false; $('barbell').classList.remove('lifted');
+  document.querySelector('.chal-title').textContent = 'BARBELL CHALLENGE · TAP THE SQUAD';
+  banner('500 KG!', '#ff5a6e'); tone(110, 80, .5, 'sawtooth', .1);
+  say(pick(lifters), 'Barbell challenge! Everyone tap us!', 2200);
+  all(l => mood(l, 'ooh', 1500));
 }
-function setChar(id, announce) {
-  if (!CHARS[id]) id = 'yoki';
-  const c = CHARS[id];
-  state.char = id;
-  svg.dataset.char = id;
-  c.skin.forEach((v, i) => svg.style.setProperty('--s' + (i + 1), v));
-  for (const k of Object.keys(CHARS)) $('pick-' + k).setAttribute('aria-checked', k === id);
-  $('nameplate').textContent = c.name.toUpperCase();
-  $('nameplate').style.setProperty('--c', c.color);
-  yoki.setAttribute('aria-label', `Click ${c.name} to do a rep`);
-  if (announce) {
-    const r = yoki.getBoundingClientRect();
-    burst(r.left + r.width / 2, r.top + r.height / 2, 60, 10);
-    tone(400, 1200, .25, 'triangle', .1);
-    say(c.pickLine, 1800); mood('hype', 1500);
-    save();
+function startHeist(now) {
+  const r = RAR[state.rival];
+  event = { type: 'heist', until: now + HEIST_MS, count: 0, need: r.need, rarity: r.id };
+  state.stealReadyAt = Date.now() + 30000;
+  const egg = $('heistEgg');
+  egg.style.setProperty('--ec', r.color);
+  egg.classList.toggle('mythic', r.id === 'mythic');
+  egg.hidden = false;
+  $('chal').hidden = false;
+  document.querySelector('.chal-title').textContent = `EGG HEIST · TAP THE ${r.name} EGG`;
+  banner('HEIST!', '#5ee6a0'); tone(300, 600, .2, 'square', .06);
+  all(l => { say(l, pick(LINES.heist), 1500); mood(l, 'ooh', 1500); });
+}
+$('heistEgg').addEventListener('click', e => {
+  if (!event || event.type !== 'heist') return;
+  event.count++;
+  const egg = $('heistEgg');
+  egg.classList.add('hit'); setTimeout(() => egg.classList.remove('hit'), 60);
+  tone(700 + event.count * 12, 900 + event.count * 12, .05, 'triangle', .08);
+  popAt(e.clientX || centerOf(egg)[0], e.clientY || centerOf(egg)[1], '+1', '');
+});
+function endEvent(win) {
+  const ev = event; event = null;
+  $('chal').hidden = true;
+  const now = performance.now();
+  if (ev.type === 'lift') {
+    nextLift = now + 90000 + Math.random() * 60000;
+    if (win) {
+      const reward = Math.max(perSec() * 120, perClick() * 150, 500);
+      state.gains += reward; state.stats.lifts++;
+      $('barbell').classList.add('lifted'); setTimeout(() => { $('barbell').hidden = true; }, 800);
+      rain(200); fanfare();
+      all(l => { say(l, pick(LINES.lift), 2200); mood(l, 'hype', 2200); l.waveUntil = now + 1500; });
+      toast(`Barbell lifted! +${fmt(reward)} gains`);
+    } else {
+      $('barbell').hidden = true; sad();
+      all(l => { say(l, pick(LINES.liftFail), 1800); mood(l, 'ooh', 1500); });
+    }
+  } else {
+    const egg = $('heistEgg');
+    egg.hidden = true;
+    const r = RAR[ev.rarity];
+    if (win) {
+      state.stats.heists++;
+      state.nest.push({ rarity: r.id, hatchAt: Date.now() + HATCH_MS });
+      state.rival = rollRarity();
+      const [x, y] = centerOf(egg);
+      burst(x, y, 80, 11, [r.color, '#fff', '#5ee6a0']); fanfare();
+      all(l => { say(l, pick(LINES.heistWin), 2000); mood(l, 'hype', 2000); });
+      toast(`Stole a ${r.name} egg!`, 'It hatches in 45s. Guard it from thieves.');
+    } else {
+      sad();
+      all(l => { say(l, pick(LINES.heistFail), 1800); mood(l, 'ooh', 1500); });
+      toast('The rival guard caught you', 'Try again in 30s');
+    }
+    renderEggs();
+  }
+}
+$('stealBtn').addEventListener('click', () => {
+  if (event || state.nest.length >= NEST_SIZE || Date.now() < state.stealReadyAt) return;
+  startHeist(performance.now());
+});
+
+/* Thieves come for your nest */
+let thief = null, nextThief = performance.now() + 50000;
+const thiefEl = $('thief');
+function spawnThief(now) {
+  const fromLeft = Math.random() < .5;
+  thief = { x: fromLeft ? -120 : arena.clientWidth + 10, dir: fromLeft ? 1 : -1, hp: 12, until: now + 9000 };
+  thiefEl.hidden = false;
+  thiefEl.classList.toggle('flip', !fromLeft);
+  $('thiefHp').style.width = '100%';
+  banner('THIEF!', '#ff5a6e'); tone(400, 200, .3, 'sawtooth', .08);
+  all(l => { say(l, pick(LINES.thief), 1800); mood(l, 'ooh', 1800); });
+}
+thiefEl.addEventListener('click', () => {
+  if (!thief) return;
+  thief.hp--;
+  $('thiefHp').style.width = (thief.hp / 12 * 100) + '%';
+  thiefEl.classList.add('hit'); setTimeout(() => thiefEl.classList.remove('hit'), 80);
+  tone(220, 120, .08, 'square', .1);
+  const [x, y] = centerOf(thiefEl);
+  popAt(x, y - 40, 'BONK!', '');
+  if (thief.hp <= 0) {
+    const reward = Math.max(perSec() * 30, perClick() * 25, 100);
+    state.gains += reward; state.stats.busts++;
+    burst(x, y, 60, 10); fanfare();
+    thiefEl.hidden = true; thief = null;
+    nextThief = performance.now() + 70000 + Math.random() * 60000;
+    all(l => { say(l, pick(LINES.busted), 1800); mood(l, 'hype', 1800); });
+    toast(`Thief busted! +${fmt(reward)} gains`);
+  }
+});
+function thiefEscapes() {
+  thiefEl.hidden = true; thief = null;
+  nextThief = performance.now() + 70000 + Math.random() * 60000;
+  if (state.nest.length) {
+    const lost = state.nest.pop();
+    sad();
+    all(l => { say(l, pick(LINES.robbed), 1800); mood(l, 'ooh', 1800); });
+    toast(`A thief stole your ${RAR[lost.rarity].name} egg!`, 'Tap thieves to chase them off');
+    renderEggs();
   }
 }
 
-/* ---------- Upgrades ---------- */
+/* Hatching */
+function checkHatch() {
+  const ready = state.nest.filter(e => Date.now() >= e.hatchAt);
+  if (!ready.length) return;
+  state.nest = state.nest.filter(e => Date.now() < e.hatchAt);
+  for (const e of ready) {
+    const r = RAR[e.rarity];
+    state.pets[r.id]++; state.stats.hatched++;
+    showModal('YOUR EGG HATCHED!', `${r.name} pet: ${r.pet}`, `+${Math.round(r.bonus * 100)}% gains`, 'AWESOME', () => {});
+    $('modalBig').style.color = r.color;
+    rain(r.id === 'common' ? 60 : 180); fanfare();
+    all(l => { say(l, r.id === 'common' ? 'Aww, cute!' : `A ${r.name} ${r.pet}!!`, 2200); mood(l, 'hype', 2200); });
+  }
+  renderEggs();
+}
+
+const EGG_SVG = document.querySelector('#rivalEgg svg').outerHTML;
+function renderEggs() {
+  if (!state.rival) state.rival = rollRarity();
+  const r = RAR[state.rival];
+  const re = $('rivalEgg');
+  re.style.setProperty('--ec', r.color); re.classList.toggle('mythic', r.id === 'mythic');
+  $('rivalRarity').textContent = r.name; $('rivalRarity').style.setProperty('--ec', r.color);
+  $('rivalHint').textContent = `Tap it ${r.need} times in 6s · pet gives +${Math.round(r.bonus * 100)}%`;
+  const nest = $('nest');
+  nest.innerHTML = '';
+  for (let i = 0; i < NEST_SIZE; i++) {
+    const e = state.nest[i], s = document.createElement('div');
+    s.className = 'slot' + (e ? ' full' : '');
+    if (e) {
+      const er = RAR[e.rarity];
+      s.style.setProperty('--ec', er.color);
+      s.innerHTML = `<div class="e${er.id === 'mythic' ? ' mythic' : ''}">${EGG_SVG}</div><span class="t" data-at="${e.hatchAt}"></span>`;
+    } else s.textContent = 'Empty';
+    nest.appendChild(s);
+  }
+  const pets = $('pets');
+  pets.innerHTML = '';
+  let any = false;
+  for (const x of RARITIES) if (state.pets[x.id]) {
+    any = true;
+    const p = document.createElement('span');
+    p.className = 'pet'; p.style.setProperty('--ec', x.color);
+    p.innerHTML = `<i></i>${x.pet} ×${state.pets[x.id]}`;
+    pets.appendChild(p);
+  }
+  if (!any) pets.innerHTML = '<span class="none">No pets yet. Steal an egg!</span>';
+  $('petBonusTag').textContent = `pets +${Math.round((petBonus() - 1) * 100)}%`;
+}
+function tickEggs() {
+  document.querySelectorAll('#nest .t').forEach(t => {
+    const left = +t.dataset.at - Date.now();
+    t.textContent = left > 0 ? 'hatch ' + mmss(left) : 'hatching!';
+    t.parentElement.classList.toggle('soon', left < 5000);
+  });
+  const sb = $('stealBtn'), wait = state.stealReadyAt - Date.now();
+  sb.disabled = !!event || state.nest.length >= NEST_SIZE || wait > 0;
+  sb.textContent = state.nest.length >= NEST_SIZE ? 'NEST FULL' : wait > 0 ? 'WAIT ' + mmss(wait) : 'STEAL IT';
+}
+
+/* ================= Modal ================= */
+let modalCb = null;
+function showModal(title, text, big, btn, cb) {
+  $('modalTitle').textContent = title; $('modalText').textContent = text; $('modalBig').textContent = big;
+  $('modalBig').style.color = ''; $('modalBtn').textContent = btn;
+  modalCb = cb; $('modal').hidden = false; $('modalBtn').focus();
+}
+$('modalBtn').addEventListener('click', () => {
+  $('modal').hidden = true;
+  const [x, y] = centerOf($('modalBtn'));
+  burst(x, y, 50, 10); ding();
+  if (modalCb) modalCb();
+  modalCb = null;
+});
+
+/* ================= Upgrades ================= */
+let buyMode = '1';
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  buyMode = b.dataset.buy;
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  render();
+}));
+const buyCount = u => buyMode === 'max' ? Math.max(1, maxN(u)) : +buyMode;
 for (const u of UPGRADES) {
   const b = document.createElement('button');
   b.className = 'up'; b.id = 'up-' + u.id;
   b.innerHTML = `<span class="ico">${ICONS[u.id]}</span>
     <span class="meta"><span class="name">${u.name} <span class="lvl">Lv 0</span></span>
-    <span class="desc">+${u.amount} ${u.type === 'click' ? 'per rep' : 'per sec'}</span></span>
-    <span class="price"><svg width="14" height="14"><use href="#coin"/></svg><span class="c"></span></span>`;
+    <span class="desc">+${fmt(u.amount)} ${u.type === 'click' ? 'per rep' : 'per sec'}</span></span>
+    <span class="price"><span class="p"><svg width="14" height="14"><use href="#coin"/></svg><span class="c"></span></span><span class="n"></span></span>`;
   b.addEventListener('click', () => buy(u, b));
   $('list').appendChild(b);
 }
 function buy(u, b) {
-  const c = cost(u);
+  const n = buyCount(u), c = costN(u, n);
   if (state.gains < c) return;
   state.gains -= c;
-  state.owned[u.id]++;
+  state.owned[u.id] += n;
   lastInteract = performance.now();
   b.classList.remove('bought'); void b.offsetWidth; b.classList.add('bought');
   const r = b.getBoundingClientRect();
-  burst(r.left + 30, r.top + r.height / 2, 14, 5);
+  burst(r.left + 30, r.top + r.height / 2, 10 + Math.min(n, 30), 5);
   tone(520, 880, .12, 'triangle', .12);
-  say(u.line, 1500); mood('smile', 1200);
+  const l = pick(lifters);
+  say(l, u.line, 1500); mood(l, 'smile', 1200);
   render();
 }
 
-/* ---------- Render ---------- */
+/* ================= Render (10× a second) ================= */
+const achGrid = $('achGrid');
+for (const a of ACH) {
+  const s = document.createElement('span');
+  s.className = 'ach'; s.id = 'ach-' + a.id; s.title = a.desc; s.textContent = a.name;
+  achGrid.appendChild(s);
+}
 function render() {
   $('perClick').textContent = fmt(perClick());
   $('perSec').textContent = fmt(perSec());
-  $('reps').textContent = fmt(state.reps || 0);
+  $('reps').textContent = fmt(state.reps);
+  $('achBonus').textContent = '+' + Math.round((achBonus() * petBonus() - 1) * 100) + '%';
   $('rebirthTag').innerHTML = `Rebirth <b>${state.rebirths}</b>`;
   $('multTag').textContent = '×' + mult();
+  $('achTag').textContent = `${state.ach.length}/${ACH.length}`;
   UPGRADES.forEach((u, i) => {
-    const b = $('up-' + u.id), c = cost(u);
+    const b = $('up-' + u.id), n = buyCount(u), c = costN(u, n);
     b.disabled = state.gains < c;
     const prev = UPGRADES[i - 1];
     b.classList.toggle('locked', i > 1 && state.owned[u.id] === 0 && prev && state.owned[prev.id] === 0 && state.gains < c / 2);
     b.querySelector('.c').textContent = fmt(c);
+    b.querySelector('.n').textContent = '×' + n;
     b.querySelector('.lvl').textContent = 'Lv ' + state.owned[u.id];
   });
   const need = rebirthNeed();
@@ -752,21 +1230,39 @@ function render() {
   const rb = $('rebirthBtn');
   rb.disabled = state.gains < need;
   if (rb.disabled) { rb.classList.remove('confirm'); rb.textContent = 'REBIRTH'; }
-  stage.style.setProperty('--size', Math.min(300 + state.rebirths * 22, 440) + 'px');
+  stage.style.setProperty('--size', Math.min(220 + state.rebirths * 15, 320) + 'px');
+  for (const l of lifters) {
+    const d = state.lv[l.key];
+    $('lv-' + l.key).textContent = 'Lv ' + d.lv;
+    $('xp-' + l.key).style.width = (d.xp / xpNeed(d.lv) * 100) + '%';
+    l.tag.textContent = `${l.c.name.toUpperCase()} · LV ${d.lv}`;
+  }
+  // buffs
+  const buffs = [];
+  if (inFever()) buffs.push(['fever', `FEVER ×3 · ${Math.ceil((feverUntil - performance.now()) / 1000)}s`]);
+  if (inSquad()) buffs.push(['squadb', `SQUAD ×2 · ${Math.ceil((squadUntil - performance.now()) / 1000)}s`]);
+  const bEl = $('buffs');
+  if (bEl.children.length !== buffs.length) bEl.innerHTML = buffs.map(([c]) => `<span class="buff ${c}"></span>`).join('');
+  buffs.forEach(([, t], i) => { bEl.children[i].textContent = t; });
 
-  // milestones
-  if (state.reps >= REP_MS[state.msReps]) celebrate(`${fmt(REP_MS[state.msReps++])} reps!`);
-  else if (state.gains >= GAIN_MS[state.msGains]) celebrate(`${fmt(GAIN_MS[state.msGains++])} gains reached!`);
-}
-function celebrate(msg) {
-  toast('Milestone: ' + msg);
-  const r = yoki.getBoundingClientRect();
-  burst(r.left + r.width / 2, r.top + r.height * .2, 50, 10);
-  ding();
-  say(pick(['NEW RECORD!', 'Milestone, baby!', "We're getting huge!"]), 1600); mood('hype', 1500);
+  // trophies + milestones
+  for (const a of ACH) {
+    if (!state.ach.includes(a.id) && a.test()) {
+      state.ach.push(a.id);
+      toast('Trophy unlocked: ' + a.name, a.desc + ' · +2% gains forever', 'ach-t');
+      ding(); burst(innerWidth / 2, innerHeight - 80, 40, 9);
+    }
+    $('ach-' + a.id).classList.toggle('got', state.ach.includes(a.id));
+  }
+  if (state.reps >= REP_MS[state.msReps]) {
+    toast(`Milestone: ${fmt(REP_MS[state.msReps++])} reps!`);
+    const l = pick(lifters); say(l, pick(['NEW RECORD!', 'Milestone, baby!', "We're getting huge!"]), 1600); mood(l, 'hype', 1500);
+  }
+  tickEggs();
+  checkHatch();
 }
 
-/* ---------- Rebirth + wipe ---------- */
+/* ================= Rebirth + wipe ================= */
 let confirmTimer;
 $('rebirthBtn').addEventListener('click', () => {
   const rb = $('rebirthBtn');
@@ -777,13 +1273,14 @@ $('rebirthBtn').addEventListener('click', () => {
     return;
   }
   clearTimeout(confirmTimer);
-  const keep = { char: state.char, rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, msGains: state.msGains };
+  const keep = { rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, lv: state.lv, ach: state.ach, stats: state.stats,
+    pets: state.pets, nest: state.nest, rival: state.rival, stealReadyAt: state.stealReadyAt };
   state = { ...fresh(), ...keep };
   shown = 0; combo = 0;
   const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
   tone(200, 1200, .7, 'sawtooth', .08); fanfare(); rain(180);
-  toast(`Reborn! ${ch().name} is bigger. Gains ×${mult()}`);
-  say(pick(LINES.rebirth), 2400); mood('hype', 2500);
+  toast(`Reborn! The squad is bigger. Gains ×${mult()}`);
+  all(l => { say(l, pick(LINES.rebirth), 2400); mood(l, 'hype', 2500); });
   save(); render();
 });
 
@@ -796,7 +1293,7 @@ $('resetBtn').addEventListener('click', () => {
     return;
   }
   wipeArmed = false; b.textContent = 'Wipe save';
-  state = { ...fresh(), char: state.char }; shown = 0; save(); render();
+  state = fresh(); shown = 0; save(); renderEggs(); render();
 });
 
 $('soundBtn').addEventListener('click', () => {
@@ -806,14 +1303,30 @@ $('soundBtn').addEventListener('click', () => {
   try { localStorage.setItem(SAVE_KEY + '-sound', soundOn ? '1' : '0'); } catch (e) {}
 });
 
-/* ---------- Main loop ---------- */
-let shown = 0, last = performance.now();
+/* ================= Main loop ================= */
+let shown = 0, last = performance.now(), pointer = null, nextIdleLine = 0, nextBanter = performance.now() + 15000, hi5Cooldown = performance.now() + 8000;
+addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; });
+
+function chooseAction(l, now, max) {
+  const r = Math.random();
+  if (r < .55) { l.mode = 'walk'; l.target = Math.random() * max; l.speed = 55 + Math.random() * 50; }
+  else if (r < .7) { l.mode = 'wave'; l.until = now + 1800; }
+  else if (r < .85) { l.mode = 'dance'; l.until = now + 2400; }
+  else { l.mode = 'stand'; l.until = now + 1500 + Math.random() * 1500; }
+}
+
+function runBanter(now) {
+  const convo = pick(BANTER), keys = [...new Set(convo.map(([k]) => k))];
+  const end = now + convo.length * 1800 + 400;
+  keys.forEach(k => { L[k].busyUntil = end; L[k].partner = L[keys.find(o => o !== k)]; L[k].mode = 'stand'; });
+  convo.forEach(([k, text], i) => setTimeout(() => { say(L[k], text, 1700); mood(L[k], i % 2 ? 'smile' : 'calm', 1500); }, i * 1800));
+}
+
 function frame(now) {
-  const rawDt = (now - last) / 1000, dt = Math.min(rawDt, .05);
+  const rawDt = Math.max(0, (now - last) / 1000), dt = Math.min(rawDt, .05);
   last = now;
   state.gains += perSec() * (inFever() ? FEVER_MULT : 1) * rawDt;
 
-  // rolling number
   shown += (state.gains - shown) * Math.min(1, dt * 14);
   if (Math.abs(state.gains - shown) < 1) shown = state.gains;
   gainsEl.textContent = fmt(shown);
@@ -822,105 +1335,180 @@ function frame(now) {
   const windowMs = COMBO_WINDOW * (inFever() ? 1.5 : 1);
   const left = combo ? 1 - (now - lastHit) / windowMs : 0;
   if (combo && left <= 0) {
-    if (combo >= 15) { say(pick(LINES.comboEnd), 1400); mood('smile', 1000); }
+    if (combo >= 15) { const l = pick(lifters); say(l, pick(LINES.comboEnd), 1400); mood(l, 'smile', 1000); }
     combo = 0;
   }
   $('combo').classList.toggle('on', combo > 1);
   $('comboNum').textContent = combo;
   $('comboMult').textContent = '×' + comboMult().toFixed(2);
   $('cbar').style.width = Math.max(0, left) * 100 + '%';
-
-  // fever end
   if (!inFever() && document.body.classList.contains('fever')) document.body.classList.remove('fever');
 
+  const modalOpen = !$('modal').hidden;
   // golden shake
-  if (golden.hidden && now > nextGolden) spawnGolden(now);
+  if (golden.hidden && now > nextGolden && !event && !modalOpen) spawnGolden(now);
   if (!golden.hidden && now > goldenUntil) {
     golden.hidden = true; nextGolden = now + goldenGap();
-    say(pick(LINES.melted), 1500); mood('calm', 500);
+    if (goldenRunner) { say(goldenRunner, pick(LINES.melted), 1500); mood(goldenRunner, 'calm', 500); }
+  }
+  // events
+  if (!event && !thief && !modalOpen && now > nextLift) startLift(now);
+  if (event) {
+    $('chalBar').style.width = Math.min(100, event.count / event.need * 100) + '%';
+    $('chalCount').textContent = `${event.count} / ${event.need} taps`;
+    $('chalTime').textContent = Math.max(0, (event.until - now) / 1000).toFixed(1) + 's';
+    if (event.count >= event.need) endEvent(true);
+    else if (now > event.until) endEvent(false);
+  }
+  // thief
+  if (!thief && !event && !modalOpen && state.nest.length && now > nextThief) spawnThief(now);
+  if (thief) {
+    thief.x += thief.dir * 70 * dt;
+    thiefEl.style.transform = `translateX(${thief.x}px)`;
+    if (thief.x > arena.clientWidth + 20 || thief.x < -140 || now > thief.until) thiefEscapes();
   }
 
-  // movement
-  const w = walker.offsetWidth, max = Math.max(0, arena.clientWidth - w);
-  if (ai.x === null) ai.x = max / 2;
-  ai.x = clamp(ai.x, 0, max);
-  let walking = false, dancing = false, waving = false;
-  if (now < ai.engagedUntil) {
-    ai.until = Math.max(ai.until, now + 600);
-  } else if (inFever()) {
-    dancing = true;
-  } else if (!golden.hidden && Math.abs(besideGolden(w, max) - ai.x) > 6) {
-    ai.mode = 'walk'; ai.target = besideGolden(w, max); ai.speed = 150;
-  } else if (!golden.hidden) {
-    ai.mode = 'wave'; ai.until = now + 400;
-  } else if (now > ai.until && ai.mode !== 'walk') {
-    chooseAction(now, max);
-  }
-  if (now >= ai.engagedUntil && !inFever()) {
-    if (ai.mode === 'walk') {
-      const dx = ai.target - ai.x, step = ai.speed * dt;
-      if (Math.abs(dx) <= step) { ai.x = ai.target; ai.mode = 'stand'; ai.until = now + 700 + Math.random() * 1600; }
-      else { ai.x += Math.sign(dx) * step; ai.dir = Math.sign(dx); walking = true; }
+  // lifter movement
+  const w = lifters[0].walker.offsetWidth, W = arena.clientWidth, max = Math.max(0, W - w);
+  lifters.forEach((l, i) => {
+    if (l.x === null) l.x = max * [.08, .5, .92][i];
+    l.x = clamp(l.x, 0, max);
+    let walking = false, dancing = false, waving = now < l.waveUntil, lifting = false;
+    const busy = now < l.busyUntil;
+    if (now < l.engagedUntil || busy) {
+      if (busy && l.partner) l.dir = Math.sign(l.partner.x - l.x) || 1;
+      if (event && event.type === 'lift') lifting = true;
+      l.until = Math.max(l.until, now + 500);
+    } else if (inFever()) {
+      dancing = true;
+    } else if (event && event.type === 'lift') {
+      const gx = clamp(W / 2 - w * 1.5 + i * w, 0, max);
+      if (Math.abs(gx - l.x) > 4) { l.mode = 'walk'; l.target = gx; l.speed = 180; } else { l.mode = 'stand'; lifting = true; l.dir = i === 2 ? -1 : 1; }
+    } else if (thief) {
+      const tx = clamp(thief.x - w / 2 + (i - 1) * 40, 0, max);
+      if (Math.abs(tx - l.x) > 10) { l.mode = 'walk'; l.target = tx; l.speed = 120; } else { l.mode = 'stand'; waving = true; l.dir = Math.sign(thief.x - l.x) || 1; }
+    } else if (!golden.hidden && goldenRunner === l) {
+      const bx = besideGolden(w, max);
+      if (Math.abs(bx - l.x) > 6) { l.mode = 'walk'; l.target = bx; l.speed = 150; }
+      else { l.mode = 'stand'; waving = true; l.dir = Math.sign(goldenX + 32 - (l.x + w / 2)) || 1; }
+    } else if (now > l.until && l.mode !== 'walk') {
+      chooseAction(l, now, max);
     }
-    if (ai.mode === 'dance') dancing = true;
-    if (ai.mode === 'wave') waving = true;
-  }
-  if (REDUCED) walking = dancing = false;
-  walker.style.transform = `translateX(${ai.x}px)`;
-  $('facing').setAttribute('transform', ai.dir < 0 ? 'translate(320 0) scale(-1 1)' : '');
-  yoki.classList.toggle('walking', walking);
-  yoki.classList.toggle('dancing', dancing);
-  svg.classList.toggle('dance', dancing);
-  svg.classList.toggle('wave', waving);
+    if (!(now < l.engagedUntil || busy) && !inFever()) {
+      if (l.mode === 'walk') {
+        const dx = l.target - l.x, step = l.speed * dt;
+        if (Math.abs(dx) <= step) { l.x = l.target; l.mode = 'stand'; l.until = now + 600 + Math.random() * 1500; }
+        else { l.x += Math.sign(dx) * step; l.dir = Math.sign(dx); walking = true; }
+      }
+      if (l.mode === 'dance') dancing = true;
+      if (l.mode === 'wave') waving = true;
+    }
+    if (REDUCED) walking = dancing = false;
+    l.walker.style.transform = `translateX(${l.x}px)`;
+    l.facing.setAttribute('transform', l.dir < 0 ? 'translate(320 0) scale(-1 1)' : '');
+    l.btn.classList.toggle('walking', walking);
+    l.btn.classList.toggle('dancing', dancing);
+    l.svg.classList.toggle('dance', dancing);
+    l.svg.classList.toggle('wave', waving && !dancing);
+    l.svg.classList.toggle('lift', lifting);
+    l._walking = walking;
 
-  // idle chatter
-  if (now - lastInteract > 9000 && now > nextIdleLine) {
-    say(pick(LINES.idle), 2000); nextIdleLine = now + 10000;
-    if (!golden.hidden) {} else { ai.mode = 'wave'; ai.until = now + 1800; }
-  }
-  if (hoverStart && !hoverSaid && now - hoverStart > 2200) { hoverSaid = true; say(pick(LINES.hover), 1600); mood('smile', 1200); }
+    // face
+    if (now > l.moodUntil) {
+      const m = inFever() ? 'hype' : combo >= 10 ? 'smile' : 'calm';
+      l.svg.dataset.mood = m; l.svg.classList.toggle('hype', m === 'hype');
+    }
+    if (now > l.nextBlink) { l.blinkUntil = now + 130; l.nextBlink = now + 2200 + Math.random() * 3000; }
+    let ex = 0, ey = 0;
+    if (pointer) {
+      const r = l.btn.getBoundingClientRect();
+      ex = clamp((pointer.x - (r.left + r.width / 2)) / 80, -2.5, 2.5) * l.dir;
+      ey = clamp((pointer.y - (r.top + r.height * .2)) / 80, -1.5, 1.5);
+    }
+    l.eyes.style.transform = `translate(${ex}px, ${ey}px) scaleY(${now < l.blinkUntil ? .1 : 1})`;
+    if (l.hoverStart && !l.hoverSaid && now - l.hoverStart > 2200) { l.hoverSaid = true; say(l, pick(LINES.hover), 1600); mood(l, 'smile', 1200); }
+  });
 
-  // face: mood, eyes follow the pointer, blinking
-  if (now > moodUntil) {
-    const m = inFever() ? 'hype' : combo >= 10 ? 'smile' : 'calm';
-    svg.dataset.mood = m; svg.classList.toggle('hype', m === 'hype');
+  // lifters standing around drift apart so they don't stack on top of each other
+  for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) {
+    const A = lifters[a], B = lifters[b], gap = B.x - A.x;
+    if (Math.abs(gap) < w * .7 && !A._walking && !B._walking && !(event && event.type === 'lift')) {
+      const push = 45 * dt * (gap >= 0 ? 1 : -1);
+      A.x = clamp(A.x - push, 0, max); B.x = clamp(B.x + push, 0, max);
+    }
   }
-  if (now > nextBlink) { blinkUntil = now + 130; nextBlink = now + 2200 + Math.random() * 3000; }
-  let ex = 0, ey = 0;
-  if (pointer) {
-    const r = yoki.getBoundingClientRect();
-    ex = clamp((pointer.x - (r.left + r.width / 2)) / 80, -2.5, 2.5) * ai.dir;
-    ey = clamp((pointer.y - (r.top + r.height * .2)) / 80, -1.5, 1.5);
+
+  // high fives when two lifters cross paths
+  if (now > hi5Cooldown && !event && !thief && !inFever()) {
+    for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) {
+      const A = lifters[a], B = lifters[b];
+      const free = x => now > x.engagedUntil && now > x.busyUntil;
+      if (free(A) && free(B) && (A._walking || B._walking) && Math.abs(A.x - B.x) < w * .6 && now > hi5Cooldown) {
+        hi5Cooldown = now + 9000;
+        [A, B].forEach(x => { x.busyUntil = now + 1300; x.waveUntil = now + 900; x.mode = 'stand'; x.until = now + 1300; });
+        A.partner = B; B.partner = A;
+        say(A, pick(LINES.hi5), 1200); setTimeout(() => say(B, pick(LINES.hi5), 1200), 250);
+        mood(A, 'hype', 1000); mood(B, 'hype', 1000);
+        const ra = A.btn.getBoundingClientRect(), rb = B.btn.getBoundingClientRect();
+        burst((ra.left + rb.right) / 2, ra.top + ra.height * .2, 30, 7);
+        clap(); state.stats.hi5++;
+      }
+    }
   }
-  $('eyes').style.transform = `translate(${ex}px, ${ey}px) scaleY(${now < blinkUntil ? .1 : 1})`;
+
+  // banter + idle chatter
+  if (now > nextBanter && !event && !thief && golden.hidden && !inFever() && now - lastHit > 2000) {
+    runBanter(now); nextBanter = now + 16000 + Math.random() * 12000;
+  }
+  if (now - lastInteract > 10000 && now > nextIdleLine) {
+    const l = pick(lifters); say(l, pick(LINES.idle), 2000); l.waveUntil = now + 1800; nextIdleLine = now + 11000;
+  }
 
   drawFx();
   requestAnimationFrame(frame);
 }
 
-/* ---------- Save / boot ---------- */
-function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
+/* ================= Save / boot ================= */
+function save() { state.saved = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && typeof s.gains === 'number') return { ...fresh(), ...s, owned: { ...fresh().owned, ...s.owned } };
+    if (s && typeof s.gains === 'number') {
+      const f = fresh();
+      return { ...f, ...s, owned: { ...f.owned, ...s.owned }, lv: { ...f.lv, ...s.lv }, stats: { ...f.stats, ...s.stats },
+        pets: { ...f.pets, ...s.pets }, ach: Array.isArray(s.ach) ? s.ach : [], nest: Array.isArray(s.nest) ? s.nest : [] };
+    }
   } catch (e) {}
   return null;
 }
 function start(data) {
-  state = (data && data.state) || load() || fresh();
+  const fromHot = !!(data && data.state);
+  state = fromHot ? data.state : (load() || fresh());
   shown = state.gains;
   try { soundOn = localStorage.getItem(SAVE_KEY + '-sound') !== '0'; } catch (e) {}
   $('soundBtn').textContent = soundOn ? 'Sound on' : 'Sound off';
   $('soundBtn').setAttribute('aria-pressed', soundOn);
-  svg.dataset.mood = 'calm';
-  setChar(state.char, false);
   window.claude?.hot?.snapshot?.(() => ({ state }));
+  renderEggs();
   setInterval(render, 100);
   setInterval(save, 5000);
   addEventListener('beforeunload', save);
   render();
-  setTimeout(() => { say(state.reps ? 'Back for more gains?' : ch().hi, 2400); mood('smile', 2000); }, 600);
+
+  // offline earnings
+  const away = (Date.now() - (state.saved || Date.now())) / 1000;
+  const earned = fromHot ? 0 : perSec() * Math.min(away, 8 * 3600) * 0.5;
+  if (away > 30 && earned >= 1) {
+    showModal('WELCOME BACK!', `The squad trained for ${Math.floor(away / 60)} min while you were away.`, '+' + fmt(earned), 'COLLECT', () => {
+      state.gains += earned; rain(120); fanfare();
+    });
+  }
+  setTimeout(() => {
+    say(L.yoki, state.reps ? 'Back for more gains?' : "Yo! I'm Yoki.", 2200);
+    setTimeout(() => say(L.ang, state.reps ? 'Ang here. Ready.' : "Ang. Let's be smart about this.", 2200), 700);
+    setTimeout(() => say(L.alton, 'ALTON IN THE BUILDING!', 2200), 1400);
+    all(l => mood(l, 'smile', 2500));
+  }, 600);
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
