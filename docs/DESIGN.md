@@ -226,6 +226,11 @@ crews (up to 8, tags, crew leaderboard), emotes (flex poses, high five, shake ch
 wall leaderboards per muscle group (crown for #1), membership card (Bronze→Diamond), progress mirror,
 shareable before/after snapshot.
 
+## Bodies and muscles (v4)
+- Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all. Head, face, hair, accessories, skin color and animations stay theirs.
+- Muscles are smooth overlapping ellipsoid blobs welded to the body (2-4 per muscle), each growing with its own muscle level, gradual (every level), tweened, pump on every 10th level, a Growth Spurt shrinks them. Aesthetic: V-taper, round delts, peaked biceps, clear abs.
+- Default look: shirtless with game shorts; the Wardrobe has Top (Shirtless/Tank/Sports) and shorts colors.
+
 ## 14. Visuals and feel
 Pump effect (trained muscle temporarily bigger), body part scaling per group, veins/abs/delt detail at high levels,
 trendy gym fits, skateboard, area music, satisfying weight sounds. Gym cat, NPC gym-goers, re-racking plates.

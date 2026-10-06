@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
+local Body = require(ReplicatedStorage.Shared.Config.Body)
 
 local NpcService = {}
 
@@ -63,6 +64,7 @@ function NpcService.Build(spec, cframe)
 	local ok = pcall(function()
 		local desc = Instance.new("HumanoidDescription")
 		local skin = color(spec.skin or "#C69C6D")
+		Body.ApplyTo(desc, skin, nil) -- everyone has the Robloxian 2.0 body (then the NPC's own colors below)
 		desc.HeadColor, desc.LeftArmColor, desc.RightArmColor = skin, skin, skin
 		desc.LeftLegColor, desc.RightLegColor, desc.TorsoColor = color(spec.pants or "#1E1E22"), color(spec.pants or "#1E1E22"), color(spec.shirt or "#2B2B2B")
 		if spec.scale then
@@ -152,6 +154,41 @@ function NpcService.Build(spec, cframe)
 	if spec.tag then CollectionService:AddTag(model, spec.tag) end
 	model.Parent = npcFolder()
 	return model, prompt
+end
+
+-- NPCs baked into the place (gym regulars, the Coach) get the Robloxian 2.0 body at startup, keeping their own head, hair,
+-- clothes and painted colors. Re-anchors them the way Build does.
+function NpcService.ApplyBody(npc)
+	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	local torso = npc:FindFirstChild("UpperTorso")
+	local head = npc:FindFirstChild("Head")
+	local leg = npc:FindFirstChild("LeftUpperLeg")
+	if not (humanoid and torso and head and leg) then return false end
+	local shirt, pants, skin = torso.Color, leg.Color, head.Color
+	local animated = not torso.Anchored
+	local ok, desc = pcall(humanoid.GetAppliedDescription, humanoid)
+	if not ok or not desc then return false end
+	local shirtId, pantsId = desc.Shirt, desc.Pants
+	Body.ApplyTo(desc, skin, nil)
+	desc.Shirt, desc.Pants = shirtId, pantsId
+	if not pcall(humanoid.ApplyDescription, humanoid, desc) then return false end
+	if shirtId == 0 then
+		for _, name in ipairs({ "UpperTorso", "LowerTorso", "RightUpperArm", "LeftUpperArm" }) do
+			local part = npc:FindFirstChild(name)
+			if part and part:IsA("BasePart") then part.Color = shirt end
+		end
+	end
+	for _, name in ipairs({ "RightUpperLeg", "LeftUpperLeg", "RightLowerLeg", "LeftLowerLeg", "RightFoot", "LeftFoot" }) do
+		local part = npc:FindFirstChild(name)
+		if part and part:IsA("BasePart") then part.Color = pants end
+	end
+	for _, part in ipairs(npc:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = not animated or part.Name == "HumanoidRootPart"
+			part.CanCollide = part.Name == "HumanoidRootPart" or part.Name == "UpperTorso" or part.Name == "LowerTorso"
+		end
+	end
+	return true
 end
 
 return NpcService

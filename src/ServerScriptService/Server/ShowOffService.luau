@@ -11,8 +11,6 @@ local ShowOff = require(Config.ShowOff)
 local Muscles = require(Config.Muscles)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
-local MuscleBodies = require(Config.MuscleBodies)
-local BodyThickness = require(ReplicatedStorage.Shared.BodyThickness)
 local BodyService = require(script.Parent.BodyService)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
@@ -159,8 +157,8 @@ local function refreshStatue()
 		if ok then desc = result end
 	end
 	desc = desc or Instance.new("HumanoidDescription") -- default rig
-	-- the strongest lifter is shown with the top muscle body tier (made marble below)
-	MuscleBodies.ApplyTo(desc, BodyService.BodyTier(MuscleBodies.StatueTier), nil)
+	-- the strongest lifter: the Robloxian 2.0 body, fully grown muscle blobs (all made marble below)
+	BodyService.PrepareDescription(desc, nil, nil)
 	local okModel, model = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
 	if not okModel or not model then
 		warn("[ShowOffService] Could not build the statue:", model)
@@ -204,10 +202,7 @@ local function refreshStatue()
 	end
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model.Parent = Workspace
-	-- grow the muscles once it is in the Workspace (Humanoid rescales a rig when it enters it), then place the parts again
-	task.wait()
-	BodyThickness.Snap(model, BodyThickness.Uniform(MuscleBodies.StatueGrowth))
-	BodyShape.SolveJoints(model)
+	BodyService.BuildStatic(model, { share = 1, recolor = { color = cfg.Color, material = cfg.Material } })
 	if plaque then
 		plaque.Text = userId > 0 and ("Strongest lifter: " .. nameOf(userId)) or "Strongest lifter: could be you"
 	end

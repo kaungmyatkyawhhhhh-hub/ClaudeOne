@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local Muscles = require(Config.Muscles)
 local Genetics = require(Config.Genetics)
+local Body = require(Config.Body)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local Stamina = require(Config.Stamina)
 local Titles = require(Config.Titles)
@@ -194,6 +195,22 @@ local function onPlayerAdded(player)
 		-- optional "TestSpurts" (number) attribute: start after that many Growth Spurts (to test the pro gym)
 		local testSpurts = workspace:GetAttribute("TestSpurts")
 		if type(testSpurts) == "number" then data.growthSpurts = math.clamp(math.floor(testSpurts), 0, 20) end
+		-- optional "TestMuscleShare" (0-1) and "TestMuscleIds" ("Biceps,Triceps", default all): start with those muscles at that
+		-- share of the Growth Spurt goal (to test the muscle blobs). Changing TestMuscleShare while playing updates the muscles.
+		local function applyTestMuscles()
+			local share = workspace:GetAttribute("TestMuscleShare")
+			if type(share) ~= "number" then return end
+			local goal = GrowthSpurts.GetGoal(data.growthSpurts)
+			local only = workspace:GetAttribute("TestMuscleIds")
+			for id, entry in pairs(data.muscles) do
+				local wanted = type(only) ~= "string" or only == "" or string.find("," .. only .. ",", "," .. id .. ",", 1, true) ~= nil
+				entry.level = wanted and math.floor(math.clamp(share, 0, 1) * goal) or 0
+			end
+			if player.Parent then replicate(player, { "muscles" }, data.muscles) end
+		end
+		applyTestMuscles()
+		workspace:GetAttributeChangedSignal("TestMuscleShare"):Connect(applyTestMuscles)
+		workspace:GetAttributeChangedSignal("TestMuscleIds"):Connect(applyTestMuscles)
 	end
 
 	-- Saves from before the tutorial existed: players who already lifted skip it.
@@ -499,6 +516,12 @@ function PlayerData.SetSettings(player, settings)
 	new.effects = volume(settings.effects) or new.effects
 	if GAIN_NUMBERS[settings.gainNumbers] then new.gainNumbers = settings.gainNumbers end
 	new.statsLabels = nil -- the world stats labels are gone; drop the old saved choice
+	for _, entry in ipairs(Body.Tops) do -- wardrobe: Shirtless / Tank top / Sports top
+		if entry.id == settings.top then new.top = entry.id end
+	end
+	for _, entry in ipairs(Body.ShortsColors) do
+		if entry.id == settings.shorts then new.shorts = entry.id end
+	end
 	if settings.pumpHintSeen == true then new.pumpHintSeen = true end -- one-way: the "Tap to pump" hint never comes back
 	data.settings = new
 	replicate(player, { "settings" }, new)

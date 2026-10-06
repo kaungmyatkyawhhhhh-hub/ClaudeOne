@@ -12,29 +12,15 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 1. **File > Save to Roblox.** Fix list 3 changed scripts and map parts in the open place; none of it is saved yet.
 2. Fill in the muscle body ids when you've picked the bodies (guide below), then play once and check the tiers.
 
-## Muscle bodies (fill these in)
-Muscles show as 4 body tiers (`ReplicatedStorage.Shared.Config.MuscleBodies`). Tier 0 is the player's own body. Each
-tier swaps only the torso, arms and legs (through the HumanoidDescription); head, face, hair, accessories, skin color
-and clothes stay the player's own. While a tier's ids are 0 nothing changes, so the game can't break.
-- **Tier = total muscle progress:** the average of all 18 muscles toward the next Growth Spurt goal. Tier 1 at 25%,
-  2 at 50%, 3 at 75%, 4 when every muscle is at the goal (`Thresholds`). A Growth Spurt resets to tier 0.
-  If a tier is empty, the highest filled tier below it is shown.
-- NPC regulars: starter gym = tier 2, pro gym = tier 4 (`NpcTier`); the statue = tier 4 (`StatueTier`). The progress
-  mirror shows Day one = tier 0 and Now = your tier; the live reflection copies your character.
-- Moving up a tier = "You grew! Muscle tier N" (body glow, sound `Grew`, small FOV punch).
-
-**How to find the ids:**
-1. On roblox.com open the Marketplace (Avatar Shop), filter **Category: Bodies** (or search the body you want).
-2. Open the body bundle's page and click each body part listed under "Included items" (Torso, Left Arm, Right Arm,
-   Left Leg, Right Leg). Each part opens its own page: the id is the number in its URL,
-   `roblox.com/catalog/<THIS NUMBER>/Name`. (Use the part pages, not the bundle number.)
-3. In Studio open `ReplicatedStorage > Shared > Config > MuscleBodies` and paste them into the tier, e.g.
-   `[2] = { Torso = 123, LeftArm = 456, RightArm = 789, LeftLeg = 111, RightLeg = 222 },`
-   You can leave a part at 0 to keep the player's own one (e.g. only swap torso and arms).
-4. Pick bodies made by Roblox or trusted creators that look good with classic shirts and pants (clothes wrap the new
-   parts). Play, then check the tier on yourself (Workspace attribute `FreshPlayer` for tier 0), Maya/Theo (tier 2),
-   the pro regulars and the statue (tier 4).
-5. Save the place, then export (`tools/export`) so `src/` has the ids too.
+## Body + muscles v4 (6 Oct 2026)
+- **Reference rounds (muscle_reference/PROMPT.md):** 3 rounds of front/back/side screenshots `muscles_round1..3_*.png` against the references, then growth series `muscles_level0/25/50/75_front`, `level100_back`, `only_arms_front`. Round 1 was lean; round 2 made delts, arms, pecs and lats much bigger (reference-like), added SmoothPlastic sheen + a tiny tone change per blob (generated skin materials are not available in this Studio, so there is no real mottled texture yet); round 3 fixed the abs/waist. Growth uses a power curve (`GROWTH_POWER` 1.35) so small levels stay sunk in. Every blob has a `MuscleName` attribute. Known: at 25% a few small bumps (shoulder tops, lats edge) still show; the Studio test avatar's back guitar hides the back view.
+- **One body for everyone:** the Robloxian 2.0 body (bundle 311; part ids stored in `Config/Body`, looked up once at start with `AssetService:GetBundleDetailsAsync` and falling back to the stored ids). `BodyService` applies it through the HumanoidDescription on every spawn/respawn, resets BodyType/Proportion/Width/Depth/Head scales, keeps head, face, hair, accessories, skin color and animations, and puts it back if anything resets it (checked every second). NPCs (baked ones through `NpcService.ApplyBody`), legends, the statue and the mirror rigs use it too. No "use my own body" option.
+- **Muscles = blobs** (`Shared/MuscleBlobs`): ~70 welded ellipsoids per character (SpecialMesh Sphere on a Massless, no-collide Part), 2-4 per muscle, each growing with its OWN muscle's level (ease-out, tween 0.4s, +3% pump on every 10th level, PUMPED = +5%). Level 0 = specks sunk inside the body. A Growth Spurt shrinks them while the height goes up. Positions/sizes are fractions of the real part sizes, so they follow the height.
+- **Clothes:** default shirtless with the game's own shorts (thin welded cylinders, 5 colors); Wardrobe has Top (Shirtless / Tank top / Sports top) and Shorts color (`settings.top`, `settings.shorts`). Body parts are always plain skin. Covering catalog clothes are removed from the avatar.
+- Removed: `BodyThickness`, `Config/MuscleBodies` (tiers), `tools/meshes`.
+- **Test hooks (Studio, FreshPlayer):** Workspace attributes `TestMuscleShare` (0-1, changes live), `TestMuscleIds` ("Biceps,Triceps"), `TestOpenMirror` (any new value opens the progress mirror).
+- Screenshots `muscles_v4_*.png`: levels, tank top + shorts, lifting, emote (double biceps), progress mirror, statue, same body on different avatars.
+- **Not tested:** a real UGC-body or layered-clothing avatar (only classic hat avatars, a scaled "Rthro-like" description and the owner's own avatar), skating, 20 players on a phone (blob count per character ~75 parts, so test on a real phone), the blob skin texture (blobs and body are the same plain skin color/material; a texture asset still has to be picked), back/side views of every level. CastShadow is off for all blobs (own-character-only shadows not done).
 
 ## Done
 - Player data, saving, 18 muscles, stamina, coins, genetics, height, titles; one reusable machine system.
@@ -53,7 +39,7 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **Fix list 3, part 1:** the generated (Blender) muscle meshes, the stage-swap code, the base body, the gym look
   outfit and the 18 muscle shapes/veins are all gone. Players and NPCs are their normal avatars with their own clothes
   again (`tools/meshes/` stays on disk only, ignored by git; `ServerStorage.BodyStages` deleted).
-- **Fix list 3, part 2:** muscle body tiers with Marketplace ids (see "Muscle bodies" above), empty for now.
+- **Fix list 3, part 2:** muscle body tiers with Marketplace ids (replaced by the blob muscles in v4).
 - **Stats, final design (6 Oct):** replaces the body-viewer window (v5, still in git history) and the old world labels.
   (1) The Stats button toggles compact labels around your character in the world (off by default): Strength + Stamina
   above the head, Chest/Core/Legs left and Shoulders/Back/Arms right, "Max" in soft gold, lines to dots on the body, same
@@ -106,7 +92,7 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - Nothing half-built.
 
 ## Waiting on you
-- **Muscle body ids** for the 4 tiers (`Config/MuscleBodies`, guide at the top). Until then everyone keeps their own body.
+- (done in v4: everyone now has the Robloxian 2.0 body; the old tier ids are gone.)
 - **Sound ids** (you pick them; all in `Config/Sounds.luau`). New placeholders that reuse other clips: `PumpFull`,
   `BigRep`, `PersonalRecord`, `Grew`. Older placeholders: `LevelUp`, `Maxed`, `TitleUnlocked`, `TierUnlocked`,
   `GeneticsClank`, `OutOfStamina`, `GeneticsThudLow`, `RepTick`/`Click`. No sound yet: skateboard rolling, sliding
@@ -206,8 +192,3 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - `lune run tests/pacing tune` solves each goal level: **15, 47, 72, 103, 135, 157, then +18**. Result (median
   minutes): 7.9, 14.6, 24.6, 34.7, 44.2, 44.2, 43.3, 43.7. The test fails if a spurt is more than 10% off.
 
-## Muscle growth v3 (6 Oct)
-- New `Shared/BodyThickness`: every R15 part grows its thickness (never length) from its own muscles, ease-out, every level-up changes it a little (no tiers). Max: arms/legs +45%, hands +30%, upper torso +40% wide / +35% deep (side delts add width), waist <= +10%. Part.Size, attachments and joints are scaled together from stored originals (never compounds); the hips spread so thick thighs don't overlap; hats/hair/accessories follow their attachments.
-- `BodyService` applies it to every player on the server (others see it): tween 0.4s per level-up, a +3% pump on every 10th level, and on a Growth Spurt it eases back to normal before the height changes. Mirror, statue and NPCs use it too (NPC presets `MuscleBodies.NpcGrowth`: Starter 0.5, Pro 0.9; statue 1). `MuscleBodies` tiers stay but empty (no ids = no change); there was no whole-body width scaling to remove.
-- Gotchas: Roblox rescales a rig when it enters Workspace, so static rigs are snapped AFTER parenting; anchor a rig BEFORE `BodyShape.SolveJoints` (unanchored parts get pulled back by physics).
-- Tested (Studio, `growth_v3_*.png`): levels 0/25/50/75/max, arms only, chest only, blocky default avatar, hard-hat avatar, tween + pump timings, live character lifting. No gaps or clipping seen. NOT tested: layered-clothing/rounded avatars, a real Growth Spurt (only a forced height mismatch, which reconciled back to the exact original sizes), the mirror and statue visuals, NPC presets, and the Muscles-panel preview (there is no body model there). Posing stage: no rig exists to size.

@@ -1,34 +1,40 @@
 -- BodyService: everyone's body.
+--  * Every player wears the Robloxian 2.0 body (Config.Body): the five body parts are replaced through the
+--    HumanoidDescription on every spawn/respawn, whatever avatar they joined with (blocky, Rthro, UGC); the body shape
+--    scales are reset so everyone has the same proportions. Head, face, hair, accessories, skin color and animations stay
+--    the player's own. If anything resets the body (wardrobe, emotes, outfit changes) it is put back.
 --  * Height comes from Growth Spurts (Humanoid BodyHeightScale).
---  * Muscles are body tiers (Config.MuscleBodies): from total muscle progress the player gets tier 0-4, and a tier
---    with Marketplace body part ids swaps the torso, arms and legs through the HumanoidDescription. Head, face, hair,
---    accessories, skin color and clothes stay the player's own. Tiers without ids change nothing (tier 0 = own body).
---  * When the body moves up a tier, the owner gets a "Grew" event (the "you grew" pulse + sound, ProgressClient).
---  * A Growth Spurt resets the muscles, so the body goes back to tier 0 (the height stays).
---  * Muscle growth (Shared.BodyThickness): every R15 part grows its thickness a little with every level of its own
---    muscles (gradual, per part, no ids needed). Done here on the server so everyone sees it, batched once a second and
---    only when a level changed; every 10th level adds a small pump. A Growth Spurt eases the thickness back to normal
---    while the height goes up.
+--  * Muscles are blobs (Shared.MuscleBlobs): ellipsoids welded to the body that grow with each muscle's level. Built once
+--    per character, resized only when a level changes (tween 0.4s, a small pump on every 10th level, PUMPED = a bit
+--    bigger). A Growth Spurt resets the muscles, so they shrink back while the height goes up.
+--  * Default look: shirtless with game-provided shorts; the wardrobe can add a tank or sports top and pick the shorts
+--    color (settings.top / settings.shorts).
+--  * When the muscle progress passes 25/50/75/100%, the owner gets a "Grew" event (the "you grew" pulse + sound).
+local AssetService = game:GetService("AssetService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage.Shared
+local Body = require(Shared.Config.Body)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
-local MuscleBodies = require(Shared.Config.MuscleBodies)
 local BodyShape = require(Shared.BodyShape)
-local BodyThickness = require(Shared.BodyThickness)
+local MuscleBlobs = require(Shared.MuscleBlobs)
 local PlayerData = require(script.Parent.PlayerData)
 
 local Remotes = ReplicatedStorage.Remotes
 
 local BodyService = {}
 
-local REFRESH_EVERY = 1     -- seconds between muscle checks
+local REFRESH_EVERY = 1     -- seconds between checks
 local SETTLE_TIME = 0.35    -- wait for Roblox to finish rescaling after a height change
 local GROW_TIME = 0.4       -- seconds a level-up takes to show
-local MIN_CHANGE = 0.0005   -- smaller factor changes aren't worth an update
+local MIN_CHANGE = 0.002    -- smaller growth changes aren't worth an update
+local THRESHOLDS = { 0.25, 0.5, 0.75, 1 }
+local FALLBACK_SKIN = Color3.fromHex("#E0A878")
 
--- [player] = { character, original = the avatar's own HumanoidDescription, body = tier shown, busy }
+-- [player] = { character, original = the avatar's own HumanoidDescription, skin, blobs = MuscleBlobs controller,
+--              levels = muscle levels last seen, step = progress step reached, torsoMesh, busy }
 local states = {}
 
 local function targetHeight(data)
@@ -40,15 +46,6 @@ local function heightChanges(humanoid, data)
 	return value ~= nil and math.abs(value.Value - targetHeight(data)) > 0.001
 end
 
-local function setHeight(humanoid, data)
-	local value = humanoid:FindFirstChild("BodyHeightScale")
-	if value and heightChanges(humanoid, data) then
-		value.Value = targetHeight(data)
-		return true
-	end
-	return false
-end
-
 -- { [muscleId] = level } from the player's data.
 local function levelsOf(data)
 	local levels = {}
@@ -56,100 +53,185 @@ local function levelsOf(data)
 	return levels
 end
 
--- Per-part thickness factors for this data (BodyThickness.Targets).
-function BodyService.TargetsOf(data)
-	return BodyThickness.Targets(levelsOf(data), GrowthSpurts.GetGoal(data.growthSpurts or 0))
+local function goalOf(data)
+	return GrowthSpurts.GetGoal(data.growthSpurts or 0)
 end
 
-local function sameTargets(a, b)
-	if not a or not b then return false end
-	for name, factor in pairs(b) do
-		local old = a[name]
-		if not old or math.abs(old.x - factor.x) > MIN_CHANGE or math.abs(old.z - factor.z) > MIN_CHANGE then return false end
+-- Total muscle progress 0..1 (the average of all muscles' level toward the goal).
+local function progressOf(levels, goal)
+	local total, count = 0, 0
+	for _, level in pairs(levels) do
+		total += math.clamp(level / math.max(goal, 1), 0, 1)
+		count += 1
+	end
+	return count > 0 and total / count or 0
+end
+
+-- The clothes the player chose: skin, top color (nil = shirtless) and shorts color.
+function BodyService.StyleOf(data, skin)
+	local settings = data and data.settings or {}
+	return {
+		skin = skin or FALLBACK_SKIN,
+		top = Body.TopColor(settings.top),
+		topKind = settings.top == "Sports" and "sports" or "tank",
+		shorts = Body.ShortsColor(settings.shorts),
+	}
+end
+
+-- The body for a rig that is built from a HumanoidDescription (mirror rigs, NPCs, the statue).
+function BodyService.PrepareDescription(desc, skin, heightScale)
+	Body.ApplyTo(desc, skin, heightScale)
+	return desc
+end
+
+-- Muscle blobs for a rig that is anchored as a whole (mirror rigs, NPCs, the statue). Call after the rig is parented
+-- and its joints are solved. opts: share (0..1) or levels + goal; style (BodyService.StyleOf); recolor = { color, material }
+-- paints everything one color (marble statue).
+function BodyService.BuildStatic(model, opts)
+	local blobs = MuscleBlobs.Build(model, { static = opts.static ~= false, castShadow = true })
+	if opts.recolor then
+		blobs:Dress({ skin = opts.recolor.color, top = nil, shorts = opts.recolor.color })
+		local function marble(part) part.Material = opts.recolor.material part.Color = opts.recolor.color end
+		for _, entry in ipairs(blobs.entries) do marble(entry.blob) end
+		for _, g in ipairs(blobs.garments) do marble(g.blob) end
+	else
+		blobs:Dress(opts.style)
+	end
+	if opts.levels then
+		blobs:Set(opts.levels, opts.goal or 1, 0)
+	else
+		blobs:SetShare(opts.share or 0, 0)
+	end
+	return blobs
+end
+
+-- Ask Roblox for the body part ids once, and keep the stored ones if that fails.
+local function refreshBodyIds()
+	local ok, details = pcall(AssetService.GetBundleDetailsAsync, AssetService, Body.BundleId)
+	if not ok or type(details) ~= "table" or not details.Items then
+		warn("[BodyService] couldn't look up the Robloxian 2.0 bundle; using the stored body ids")
+		return
+	end
+	local found = {}
+	for _, item in ipairs(details.Items) do
+		if item.Type == "Asset" then
+			local name = string.lower(item.Name or "")
+			if string.find(name, "left arm", 1, true) then found.LeftArm = item.Id
+			elseif string.find(name, "right arm", 1, true) then found.RightArm = item.Id
+			elseif string.find(name, "left leg", 1, true) then found.LeftLeg = item.Id
+			elseif string.find(name, "right leg", 1, true) then found.RightLeg = item.Id
+			elseif string.find(name, "torso", 1, true) then found.Torso = item.Id end
+		end
+	end
+	for part, id in pairs(found) do
+		if Body.Parts[part] ~= id then
+			warn("[BodyService] bundle " .. Body.BundleId .. " " .. part .. " is " .. id .. " (stored " .. tostring(Body.Parts[part]) .. "); using the lookup")
+			Body.Parts[part] = id
+		end
+	end
+end
+
+-- Put the Robloxian body on a player's character (retries; never leaves the original body in place on purpose).
+local function applyBody(state, humanoid, data)
+	for attempt = 1, 4 do
+		local ok, desc = pcall(humanoid.GetAppliedDescription, humanoid)
+		if ok and desc then
+			Body.ApplyTo(desc, state.skin, targetHeight(data))
+			local applied = pcall(humanoid.ApplyDescription, humanoid, desc)
+			if applied then
+				local torso = state.character:FindFirstChild("UpperTorso")
+				state.torsoMesh = torso and torso:IsA("MeshPart") and torso.MeshId or nil
+				return true
+			end
+		end
+		task.wait(0.5 * attempt)
+	end
+	warn("[BodyService] couldn't apply the Robloxian body to " .. state.character.Name)
+	return false
+end
+
+-- Is the Robloxian body still on? (something may have applied another outfit)
+local function bodyIntact(state)
+	local torso = state.character:FindFirstChild("UpperTorso")
+	if not torso or not torso:IsA("MeshPart") then return false end
+	if state.torsoMesh and torso.MeshId ~= state.torsoMesh then return false end
+	local blobs = state.blobs
+	if blobs then
+		local first = blobs.entries[1]
+		if first and (not first.weld.Part0 or not first.weld.Part0:IsDescendantOf(state.character)) then return false end
 	end
 	return true
 end
 
--- Grow (or shrink) the body to the muscle levels. Every 10th level of a muscle pumps its parts.
-local function growBody(state, data, instant)
-	local thick = state.thick
-	if not thick then return end
+local function buildBlobs(state, data)
+	if state.blobs then state.blobs:Destroy() end
+	state.blobs = MuscleBlobs.Build(state.character, { castShadow = false })
+	state.blobs:Dress(BodyService.StyleOf(data, state.skin))
+	state.levels = nil
+	state.growth = nil
+end
+
+local function sameGrowth(a, b)
+	if not a or not b then return false end
+	for muscle, g in pairs(b) do
+		if math.abs((a[muscle] or 0) - g) > MIN_CHANGE then return false end
+	end
+	return true
+end
+
+-- Grow the blobs to the muscle levels. Every 10th level of a muscle pumps it; progress steps fire "Grew".
+local function growBody(player, state, data, instant)
+	local blobs = state.blobs
+	if not blobs then return end
 	local levels = levelsOf(data)
-	local targets = BodyService.TargetsOf(data)
-	if not sameTargets(state.targets, targets) then
-		thick:Set(targets, instant and 0 or GROW_TIME)
-		state.targets = targets
+	local goal = goalOf(data)
+	local growth = {}
+	for _, muscle in ipairs(MuscleBlobs.Muscles) do growth[muscle] = MuscleBlobs.Growth(levels[muscle] or 0, goal) end
+	if not sameGrowth(state.growth, growth) then
+		blobs:Set(levels, goal, instant and 0 or GROW_TIME)
+		state.growth = growth
 	end
 	if state.levels and not instant then
-		for id, level in pairs(levels) do
-			local before = state.levels[id] or 0
-			if level > before and math.floor(level / 10) > math.floor(before / 10) then
-				thick:Pulse(BodyThickness.PulseParts(id))
-			end
+		local pumped = {}
+		for muscle, level in pairs(levels) do
+			local before = state.levels[muscle] or 0
+			if level > before and math.floor(level / 10) > math.floor(before / 10) then table.insert(pumped, muscle) end
 		end
+		if #pumped > 0 then blobs:Pulse(pumped) end
 	end
 	state.levels = levels
-end
-
--- The tier the player has earned (0-4).
-function BodyService.TierOf(data)
-	return MuscleBodies.TierFor(data.muscles, GrowthSpurts.GetGoal(data.growthSpurts or 0))
-end
-
--- The tier whose body is shown: the highest tier up to `tier` that has ids (0 = own body).
-function BodyService.BodyTier(tier)
-	for t = tier, 1, -1 do
-		if MuscleBodies.HasIds(t) then return t end
+	-- the "you grew" moment when the overall progress passes a step
+	local progress = progressOf(levels, goal)
+	local step = 0
+	for index, threshold in ipairs(THRESHOLDS) do
+		if progress >= threshold - 1e-6 then step = index end
 	end
-	return 0
+	if state.step ~= nil and step > state.step then Remotes.PlayerEvent:FireClient(player, "Grew", { tier = step }) end
+	state.step = step
 end
 
--- Put a tier's body parts on any rig with a Humanoid (NPCs, statue). Returns true if it changed the rig.
-function BodyService.ApplyTier(humanoid, tier, heightScale)
-	local bodyTier = BodyService.BodyTier(tier)
-	if bodyTier == 0 then return false end
-	local ok, desc = pcall(humanoid.GetAppliedDescription, humanoid)
-	if not ok or not desc then return false end
-	MuscleBodies.ApplyTo(desc, bodyTier, nil)
-	if heightScale then desc.HeightScale = heightScale end
-	return (pcall(humanoid.ApplyDescription, humanoid, desc))
-end
-
-local function showTier(player, state, data, announce)
-	local character = state.character
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or not state.original then return end
-	local body = BodyService.BodyTier(BodyService.TierOf(data))
-	if body == state.body then return end
-	local desc = humanoid:GetAppliedDescription()
-	MuscleBodies.ApplyTo(desc, body, state.original)
-	desc.HeightScale = targetHeight(data) -- ApplyDescription sets the scales too
-	local ok, err = pcall(humanoid.ApplyDescription, humanoid, desc)
-	if not ok then
-		warn("[BodyService] couldn't apply body tier " .. body .. ": " .. tostring(err))
-		return
-	end
-	if player.Character ~= character then return end
-	local grew = body > state.body
-	state.body = body
-	character:SetAttribute("BodyTier", body)
-	character:SetAttribute("BodyVersion", (character:GetAttribute("BodyVersion") or 0) + 1) -- gear rebuilds on this
-	if announce and grew then Remotes.PlayerEvent:FireClient(player, "Grew", { tier = body }) end
+local function updatePumped(player, state)
+	if not state.blobs then return end
+	local untilTime = player:GetAttribute("PumpedUntil")
+	state.blobs:SetPumped(type(untilTime) == "number" and untilTime > Workspace:GetServerTimeNow())
 end
 
 local function setup(player, character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local data = PlayerData.WaitFor(player)
 	if not humanoid or not data then return end
-	local state = { character = character, body = 0, busy = true }
+	local state = { character = character, busy = true }
 	states[player] = state
 	local ok, original = pcall(humanoid.GetAppliedDescription, humanoid)
 	state.original = ok and original or nil
-	if setHeight(humanoid, data) then task.wait(SETTLE_TIME) end
+	state.skin = state.original and state.original.HeadColor or FALLBACK_SKIN
+	if player.Character == character then applyBody(state, humanoid, data) end
+	task.wait(SETTLE_TIME)
 	if player.Character == character then
-		showTier(player, state, data, false)
-		state.thick = BodyThickness.New(character)
-		growBody(state, data, true)
+		buildBlobs(state, data)
+		growBody(player, state, data, true)
+		updatePumped(player, state)
+		character:SetAttribute("BodyVersion", (character:GetAttribute("BodyVersion") or 0) + 1) -- gear rebuilds on this
 	end
 	state.busy = false
 end
@@ -162,26 +244,38 @@ local function refresh(player)
 	if player.Character ~= character or not character.Parent then return end
 	state.busy = true
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid and heightChanges(humanoid, data) then
-		-- a Growth Spurt: ease back to normal thickness, then grow taller (Roblox rescales parts from their own
-		-- original sizes), then capture the new normal
-		if state.thick then
-			state.thick:Set(nil, GROW_TIME)
-			task.wait(GROW_TIME + 0.1)
-			state.thick:Restore()
+	if humanoid then
+		local changed = false
+		if heightChanges(humanoid, data) then
+			-- a Growth Spurt: the muscles are already reset, so they shrink while the height goes up
+			if state.blobs then
+				state.blobs:Set({}, 1, GROW_TIME)
+				state.growth = nil
+				task.wait(GROW_TIME + 0.1)
+			end
+			local value = humanoid:FindFirstChild("BodyHeightScale")
+			if value then value.Value = targetHeight(data) end
+			task.wait(SETTLE_TIME)
+			if state.blobs then state.blobs:Refresh() end
 		end
-		setHeight(humanoid, data)
-		task.wait(SETTLE_TIME)
-		if state.thick then state.thick:Capture() end
-		state.targets = nil
-		state.levels = nil
+		if not bodyIntact(state) then
+			applyBody(state, humanoid, data)
+			task.wait(SETTLE_TIME)
+			buildBlobs(state, data)
+			changed = true
+		end
+		if changed then character:SetAttribute("BodyVersion", (character:GetAttribute("BodyVersion") or 0) + 1) end
 	end
-	showTier(player, state, data, true)
-	if player.Character == character then growBody(state, data, false) end
+	if state.blobs then
+		state.blobs:Dress(BodyService.StyleOf(data, state.skin))
+		growBody(player, state, data, false)
+		updatePumped(player, state)
+	end
 	state.busy = false
 end
 
--- A copy of the player's own avatar description (their real body parts, before any tier), or nil.
+-- A copy of the player's own avatar description (their real head, hair, colors and clothes, before the Robloxian body),
+-- or nil.
 function BodyService.OriginalDescription(player)
 	local state = states[player]
 	return state and state.original and state.original:Clone() or nil
@@ -190,6 +284,9 @@ end
 function BodyService.Rebuild(player)
 	task.spawn(refresh, player)
 end
+
+-- The player's muscle levels and goal (for rigs that show them: the progress mirror).
+function BodyService.LevelsOf(data) return levelsOf(data), goalOf(data) end
 
 local function onCharacter(player, character)
 	states[player] = nil
@@ -201,6 +298,7 @@ local function onCharacter(player, character)
 end
 
 function BodyService.Start()
+	task.spawn(refreshBodyIds)
 	local function hook(player)
 		player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)
 		if player.Character then task.spawn(onCharacter, player, player.Character) end

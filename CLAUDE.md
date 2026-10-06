@@ -55,6 +55,7 @@
   name and only wire them (prompts, doors, machines). New areas: write a builder in `tools/builders`, run it once in
   Studio to make the parts, save the place (see `tools/bake.md`). Small runtime-only visuals (gain popups, cosmetic
   gear on characters, the skateboard, visiting legends, plates on bars) are fine in code.
+- Bodies (see "Bodies and muscles" in the brief): everyone wears the Robloxian 2.0 body (`Config/Body`) and muscles are blobs (`MuscleBlobs`); never go back to per-player bodies, tiers or part scaling.
 - Studio testing: Workspace attribute `FreshPlayer` (boolean) = play as a new player on unsaved temporary data;
   `ReplayTutorial` = replay the tutorial on your own save.
 

@@ -1,5 +1,5 @@
 -- BodyShape: body helpers shared by BodyService (characters), MirrorService (the before/after rigs) and the statue.
--- The muscles themselves are body tiers (Config.MuscleBodies, BodyService); this module only holds the height base and
+-- The muscles themselves are blobs (MuscleBlobs, BodyService); this module only holds the height base and
 -- the joint helpers for rigs that are anchored as a whole (statue, preview rigs).
 local BodyShape = {}
 

@@ -14,9 +14,8 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
-local MuscleBodies = require(ReplicatedStorage.Shared.Config.MuscleBodies)
-local BodyThickness = require(ReplicatedStorage.Shared.BodyThickness)
 local BodyService = require(script.Parent.BodyService)
+local NpcService = require(script.Parent.NpcService)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
 local MachineService = require(script.Parent.MachineService)
 
@@ -316,14 +315,21 @@ local function lookAtPlayers(npc)
 	end)
 end
 
--- The regulars show what to aim for: they wear the muscle body tier of their gym (Config.MuscleBodies.NpcTier) and
--- keep their own clothes and hair. Nothing changes while the tiers have no body ids.
+-- The regulars show what to aim for: every NPC has the Robloxian 2.0 body (NpcService) and muscle blobs grown to a preset
+-- (pro gym big, starter gym medium), keeping their own clothes and hair.
+local NPC_GROWTH = { Starter = 0.5, Pro = 0.9 }
 local function dressNpc(npc, gym)
-	local humanoid = npc:FindFirstChildOfClass("Humanoid")
-	local growth = MuscleBodies.NpcGrowth[gym] or MuscleBodies.NpcGrowth.Starter
-	BodyThickness.Snap(npc, BodyThickness.Uniform(growth)) -- pro gym big, starter gym medium
-	local tier = MuscleBodies.NpcTier[gym] or MuscleBodies.NpcTier.Starter
-	if humanoid then BodyService.ApplyTier(humanoid, tier, nil) end
+	NpcService.ApplyBody(npc) -- the Robloxian 2.0 body first (the NPCs are baked into the place)
+	local torso = npc:FindFirstChild("UpperTorso")
+	local head = npc:FindFirstChild("Head")
+	local legs = npc:FindFirstChild("LeftUpperLeg")
+	if not (torso and head and legs) then return end
+	local color = head.Color
+	BodyService.BuildStatic(npc, {
+		share = NPC_GROWTH[gym] or NPC_GROWTH.Starter,
+		static = torso.Anchored,
+		style = { skin = color, top = torso.Color, shorts = legs.Color, keepParts = true },
+	})
 end
 
 function GymGoerService.Start()
@@ -344,7 +350,7 @@ function GymGoerService.Start()
 		end
 	end)
 	for _, state in ipairs(all) do task.spawn(loop, state, all) end
-	for _, coach in ipairs(CollectionService:GetTagged("Coach")) do lookAtPlayers(coach) end
+	for _, coach in ipairs(CollectionService:GetTagged("Coach")) do task.spawn(pcall, dressNpc, coach, "Pro"); lookAtPlayers(coach) end
 	CollectionService:GetInstanceAddedSignal("Legend"):Connect(lookAtPlayers)
 end
 

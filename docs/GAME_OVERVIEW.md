@@ -12,8 +12,7 @@ for where everything sits in Studio.
    costs stamina, gives muscle XP and coins (`MachineService`, `MachineClient`).
 3. **Go heavier**: each machine has 8 weight tiers. A tier unlocks when the
    machine's main muscle reaches a level and the player pays coins.
-4. **Grow**: total muscle progress moves the body up 4 muscle tiers (Marketplace body parts set in
-   `Config/MuscleBodies`; empty ids = no change) (`BodyService`).
+4. **Grow**: every muscle grows its own blobs on the Robloxian 2.0 body (`MuscleBlobs`, `BodyService`).
 5. **Growth Spurt** (prestige): once every group hits the required level, muscles
    reset to 0, the player gets taller (4'0" → up to 7'0"), gains a permanent XP
    bonus, a higher level cap and a DNA Token.
@@ -54,10 +53,10 @@ for where everything sits in Studio.
   plate visuals. Validates everything.
 - `Server/ActionService`: non-machine requests (Growth Spurt, equip title, reroll,
   settings). Other services can `Register` more actions.
-- `Server/BodyService`: Growth Spurt height, the muscle body tier (`Config/MuscleBodies`, applied through the HumanoidDescription; keeps head, face, hair, accessories, skin and clothes), the "Grew" event on a tier up. NPC regulars use `ApplyTier`; the statue and the mirror rigs put the tier on their description first (`BodyTier`, `TierOf`).
+- `Server/BodyService`: the Robloxian 2.0 body on every player (`Config/Body`, reapplied if anything resets it), Growth Spurt height, the muscle blobs (`Shared/MuscleBlobs`, grown per muscle level, pump, PUMPED), the shorts/top wardrobe look, and the "Grew" event. `BuildStatic` puts blobs on rigs that are anchored (mirror, statue, NPCs).
 - `Server/NightLightService`: outdoor lamps (tag `NightLight`) off by day, glowing at night.
 - `Server/TitleService`: stats, title unlocks, badges, overhead title tag.
-- `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt).
+- `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt). `ApplyBody` gives baked NPCs the Robloxian body.
 - `Server/QuestService`: Coach Dex, quest progress and rewards.
 - `Server/MuscleOfTheDayService`: writes today's group on the chalkboard.
 - `Server/BoostService`: every gains/coins/refill multiplier (shakes, events, passes) and recovery stations.

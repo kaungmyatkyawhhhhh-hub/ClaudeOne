@@ -3,7 +3,7 @@
 -- your body now, with height and level under each, made for screenshots. (The glass itself shows a live reflection,
 -- also MirrorClient.)
 -- Both bodies are real R15 rigs built from your avatar's HumanoidDescription (Players:CreateHumanoidModelFromDescription)
--- with the same muscle body tier as your character (Config.MuscleBodies: day one = tier 0), so nothing floats. The rigs
+-- with the Robloxian 2.0 body and muscle blobs (day one = none, now = your levels), so nothing floats. The rigs
 -- go to the player's own PlayerGui (only they receive them); the client copies them into its ViewportFrames.
 -- Day one is saved once per player (data.dayOne): the height and body scales from their first join. Saves from before
 -- the mirror existed get the starting height (4'0") and plain scales, which is what every player started with.
@@ -13,8 +13,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
-local MuscleBodies = require(Config.MuscleBodies)
-local BodyThickness = require(ReplicatedStorage.Shared.BodyThickness)
 local BodyService = require(script.Parent.BodyService)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
@@ -37,22 +35,24 @@ local function saveDayOne(player, data)
 	})
 end
 
--- The player's avatar description (clothes, hair, colors), or a plain default one.
+-- The player's own avatar description (head, hair, colors), or a plain default one. The body is always the Robloxian 2.0 body.
 local function avatarDescription(player)
-	local character = player.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	local ok, desc = false, nil
-	if humanoid then ok, desc = pcall(function() return humanoid:GetAppliedDescription() end) end
-	if not ok or not desc then desc = Instance.new("HumanoidDescription") end
-	return desc:Clone(), humanoid
+	local desc = BodyService.OriginalDescription(player)
+	if not desc then
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		local ok, applied = false, nil
+		if humanoid then ok, applied = pcall(function() return humanoid:GetAppliedDescription() end) end
+		desc = ok and applied and applied:Clone() or Instance.new("HumanoidDescription")
+	end
+	return desc
 end
 
--- One preview rig: heightScale = absolute height scale, tier = muscle body tier (day one: 0). Built from your avatar
--- (own clothes, hair, colors) with the same body tier as your character.
-local function buildRig(player, name, heightScale, tier)
+-- One preview rig: heightScale = absolute height scale. Built from your avatar (head, hair, skin color) with the Robloxian
+-- body; the muscles are blobs added after the rig is parented (see openFor).
+local function buildRig(player, name, heightScale)
 	local desc = avatarDescription(player)
-	MuscleBodies.ApplyTo(desc, BodyService.BodyTier(tier), BodyService.OriginalDescription(player) or desc)
-	desc.HeightScale = heightScale
+	BodyService.PrepareDescription(desc, nil, heightScale)
 	local ok, rig = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
 	desc:Destroy()
 	if not ok or not rig then
@@ -85,18 +85,23 @@ local function openFor(player)
 	local old = playerGui:FindFirstChild("MirrorRigs")
 	if old then old:Destroy() end
 	local dayOne = data.dayOne or {}
-	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight, 0)
-	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, BodyService.TierOf(data))
+	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight)
+	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight)
 	if not before or not after then return end
 	local folder = Instance.new("Folder")
 	folder.Name = "MirrorRigs"
 	before.Parent = folder
 	after.Parent = folder
 	folder.Parent = playerGui
-	-- same per-part muscle growth as the real character (day one = normal); after parenting, then place the parts again
+	-- the muscle blobs (day one = none, now = your levels) go on once the rigs are parented and their joints solved
 	task.wait()
-	BodyThickness.Snap(after, BodyService.TargetsOf(data))
-	BodyShape.SolveJoints(after)
+	local skin = Color3.fromHex("#E0A878")
+	local original = BodyService.OriginalDescription(player)
+	if original then skin = original.HeadColor end
+	local style = BodyService.StyleOf(data, skin)
+	local levels, goal = BodyService.LevelsOf(data)
+	BodyService.BuildStatic(before, { share = 0, style = style })
+	BodyService.BuildStatic(after, { levels = levels, goal = goal, style = style })
 	Remotes.PlayerEvent:FireClient(player, "OpenMirror", { before = before, after = after })
 end
 
@@ -108,6 +113,12 @@ local function wireMirror()
 		return
 	end
 	Guard.OnTriggered(prompt, openFor)
+	-- Studio testing: set the Workspace attribute "TestOpenMirror" (any new value) to open the mirror for everyone
+	if game:GetService("RunService"):IsStudio() then
+		workspace:GetAttributeChangedSignal("TestOpenMirror"):Connect(function()
+			for _, player in ipairs(Players:GetPlayers()) do task.spawn(openFor, player) end
+		end)
+	end
 end
 
 function MirrorService.Start()

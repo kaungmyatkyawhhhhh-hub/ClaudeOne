@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared.Config.Cosmetics)
+local Body = require(Shared.Config.Body)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Notify = require(Shared.UI.Notify)
@@ -202,6 +203,26 @@ local function refreshWardrobe()
 	local order = 0
 	local function nextOrder() order += 1 return order end
 	Theme.Text({ LayoutOrder = nextOrder(), Text = "Wardrobe", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, Parent = wardrobeList })
+	-- body: top and shorts color (the game's own gym look)
+	local settings = (ClientData.Get() or {}).settings or {}
+	local function choice(label, id, selected, color, onPick)
+		local button = Theme.Button(selected and "Primary" or "Secondary", { Name = label, LayoutOrder = nextOrder(), Size = UDim2.new(1, -8, 0, Theme.MinTouch), Parent = wardrobeList },
+			{ Theme.Pad("S"), Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
+		if color then swatch({ LayoutOrder = 1, Size = UDim2.fromOffset(22, 22) }, color).Parent = button end
+		Theme.Text({ LayoutOrder = 2, Text = label, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -40, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = button })
+		button.Activated:Connect(function()
+			onPick(id)
+			Audio.PlayUI("Click")
+		end)
+	end
+	Theme.Text({ LayoutOrder = nextOrder(), Text = "Top", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = wardrobeList })
+	for _, entry in ipairs(Body.Tops) do
+		choice(entry.name, entry.id, (settings.top or Body.DefaultTop) == entry.id, entry.color, function(id) Remotes.PlayerAction:FireServer("SetSettings", { top = id }) end)
+	end
+	Theme.Text({ LayoutOrder = nextOrder(), Text = "Shorts", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = wardrobeList })
+	for _, entry in ipairs(Body.ShortsColors) do
+		choice(entry.name, entry.id, (settings.shorts or Body.DefaultShorts) == entry.id, entry.color, function(id) Remotes.PlayerAction:FireServer("SetSettings", { shorts = id }) end)
+	end
 	local any = false
 	for _, slot in ipairs(Cosmetics.Slots) do
 		local items = {}
@@ -264,6 +285,7 @@ ClientData.Changed:Connect(function(path)
 		if storeOpen then refreshStore() end
 		if wardrobeOpen and path[1] == "cosmetics" then refreshWardrobe() end
 	end
+	if path[1] == "settings" and wardrobeOpen then refreshWardrobe() end
 end)
 
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
