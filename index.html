@@ -1239,7 +1239,7 @@ function crateSVG(){return `<svg viewBox="0 0 120 110"><ellipse cx="60" cy="104"
   <defs><linearGradient id="crg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.12)"/><stop offset="1" stop-color="rgba(0,0,0,.2)"/></linearGradient></defs></svg>`}
 
 /* ================= world ================= */
-const W=2600,H=3100,SEA=2850;
+const W=2600,H=2200,SEA=1950;
 const cv=$("world"),ctx=cv.getContext("2d");
 let vw=0,vh=0,dpr=1,Z=1;
 function resize(){dpr=Math.min(SET.perf?1.25:2,window.devicePixelRatio||1);const cw=cv.clientWidth,ch=cv.clientHeight;Z=cw<520?.72:1;vw=cw/Z;vh=ch/Z;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
@@ -1253,14 +1253,15 @@ const SKY=[[1450,60,160,200],[1650,30,130,220],[2100,60,200,250],[2350,90,200,22
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
 const HOUSES=[];
-const inBld=(x,y,m=0)=>HOUSES.some(h=>x>h[0]-m&&x<h[0]+h[2]+m&&y>h[1]-m&&y<h[1]+h[3]+m+18)||(x>1120-m&&x<2320+m&&y>1672-m&&y<2784+m)||PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
+const inBld=(x,y,m=0)=>HOUSES.some(h=>x>h[0]-m&&x<h[0]+h[2]+m&&y>h[1]-m&&y<h[1]+h[3]+m+18)||(x>1120-m&&x<2560+m&&y>1672-m&&y<1948+m)||PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
 const inPond=(x,y,m=0)=>Math.hypot((x-1290)/1.3,y-1290)<80+m;
 // a neighbourhood of little houses in the green part of town, placed before the trees
 {let sd=77;const rr=()=>(sd=(sd*16807)%2147483647)/2147483647;for(let gy=40;gy<1360;gy+=96)for(let gx=30;gx<1340;gx+=100){if(HOUSES.length>=30)break;const w=74,h=58,x=gx+rr()*20,y=gy+rr()*16,ok=[[0,0],[w,0],[0,h+20],[w,h+20],[w/2,h/2]].every(([a,b])=>!onRoad(x+a,y+b,26)&&!inBld(x+a,y+b,26)&&!inPond(x+a,y+b,30));if(ok&&rr()<.62)HOUSES.push([x,y,w,h,HOUSES.length])}}
 const TREES=[];for(let i=0;i<500&&TREES.length<80;i++){const x=srnd()*1400,y=srnd()*1400;if(!onRoad(x,y,28)&&!inBld(x,y,30)&&!inPond(x,y,30))TREES.push([x,y,14+srnd()*10])}
 const LAMPS=[];for(let y=240;y<1560;y+=170)LAMPS.push([646,y],[754,y+85]);for(let x=60;x<2600;x+=170)if(Math.abs(x-700)>80&&Math.abs(x-2000)>70)LAMPS.push([x,646]);for(let y=80;y<1400;y+=170)if(Math.abs(y-700)>80)LAMPS.push([1946,y],[2054,y+85]);
-const PALMS=[];for(let i=0;i<300&&PALMS.length<30;i++){const x=40+srnd()*2520,y=1690+srnd()*220;if(!inBld(x,y,30)&&Math.abs(x-700)>60)PALMS.push([x,y])}
-const UMBR=[];for(let i=0;i<200&&UMBR.length<14;i++){const x=60+srnd()*2480,y=1720+srnd()*190;if(!inBld(x,y,30)&&!PALMS.some(p=>Math.hypot(p[0]-x,p[1]-y)<50))UMBR.push([x,y,["#e2364a","#2a5bd7","#ffcc33","#2bb3a3"][UMBR.length%4]])}
+const HQ_SPOT=(x,y,m=0)=>x>600-m&&x<800+m&&y>1690-m&&y<1850+m;
+const PALMS=[];for(let i=0;i<300&&PALMS.length<30;i++){const x=40+srnd()*2520,y=1690+srnd()*220;if(!inBld(x,y,30)&&Math.abs(x-700)>60&&!HQ_SPOT(x,y,30))PALMS.push([x,y])}
+const UMBR=[];for(let i=0;i<200&&UMBR.length<14;i++){const x=60+srnd()*2480,y=1720+srnd()*190;if(!inBld(x,y,30)&&!HQ_SPOT(x,y,30)&&!PALMS.some(p=>Math.hypot(p[0]-x,p[1]-y)<50))UMBR.push([x,y,["#e2364a","#2a5bd7","#ffcc33","#2bb3a3"][UMBR.length%4]])}
 const NPCS=Array.from({length:10},()=>{const p=roadPoint();return{x:p[0],y:p[1],t:roadPoint(),sp:rnd(35,60),shirt:pick(["#ff7a3d","#2bb3a3","#46a35a","#e2364a","#a68bd8","#ffcc33","#3a3d45","#f2f2f2","#2a5bd7"]),skin:pick(["#f3d0b5","#e8b896","#d8a682","#b9825c","#8d5a3b","#6b4430"]),hair:pick(["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"]),ph:Math.random()*9}});
 const FLIES=Array.from({length:26},()=>({x:Math.random()*W,y:Math.random()*H,a:Math.random()*7,s:rnd(.6,1.4)}));
 function roadPoint(){const r=pick(ROADS.slice(0,6));return[r[0]+10+Math.random()*(r[2]-20),r[1]+10+Math.random()*(r[3]-20)]}
@@ -4402,7 +4403,7 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
 
 /* ================= what's new: shown once after an update ================= */
 const WN_VER=25,WN=[
- ["🏘️","A bigger Township","Two streets, 24 lots and much bigger houses. The beach grew to make room.","2026-10-06T16:30"],
+ ["🏘️","A bigger Township","The Township is wider with 12 roomy lots, one for every player in the room, and much wider houses. Crew HQs moved to the foot of the main road.","2026-10-06T16:30"],
  ["⚡","Faster sign-in","Logging in and creating an account now take about a second.","2026-10-06T16:30"],
  ["📰","Tidier What's new","Only the latest changes show, each with its date. Skip it from the top.","2026-10-06T16:30"],
  ["📏","Height without speed","Growing taller or bigger no longer changes how fast you walk, and height shows on screen more gradually.","2026-10-06T16:30"],
@@ -5181,7 +5182,7 @@ function openMega(back){S.mega=S.mega||{};
   room="mega";draw()}
 /* ================= Flip City decorations: plazas downtown, a park, and beach life ================= */
 function townDeco(g,P){TOWNFX.founts=[];TOWNFX.lamps=[];let sd=21;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
-  const used=[],free=(x,y,m)=>!onRoad(x,y,m)&&!inBld(x,y,m)&&!inPond(x,y,m)&&!TREES.some(t=>Math.hypot(t[0]-x,t[1]-y)<t[2]+m)&&!PALMS.some(t=>Math.hypot(t[0]-x,t[1]-y)<m+16)&&!UMBR.some(t=>Math.hypot(t[0]-x,t[1]-y)<m+20)&&!(x>1100-m&&x<2340+m&&y>1640-m)&&!used.some(u=>Math.hypot(u[0]-x,u[1]-y)<u[2]+m),
+  const used=[],free=(x,y,m)=>!onRoad(x,y,m)&&!inBld(x,y,m)&&!inPond(x,y,m)&&!TREES.some(t=>Math.hypot(t[0]-x,t[1]-y)<t[2]+m)&&!PALMS.some(t=>Math.hypot(t[0]-x,t[1]-y)<m+16)&&!UMBR.some(t=>Math.hypot(t[0]-x,t[1]-y)<m+20)&&!(x>1100-m&&x<2580+m&&y>1640-m)&&!HQ_SPOT(x,y,m)&&!used.some(u=>Math.hypot(u[0]-x,u[1]-y)<u[2]+m),
     put=(x0,x1,y0,y1,m,n,fn)=>{let k=0;for(let t=0;t<n*40&&k<n;t++){const x=x0+r()*(x1-x0),y=y0+r()*(y1-y0);if(free(x,y,m)){used.push([x,y,m]);fn(x,y,k);k++}}};
   const fl=["#ff4fd8","#ffcc33","#e2364a","#ffffff","#8f52d4"];
   // downtown: fountains, planters, benches, cafe tables, bike racks
@@ -5624,7 +5625,7 @@ function openCrew(back){room="crew";$("room").hidden=false;let LB=null,col=CREW_
     const lb=$("crLeave");if(lb)lb.onclick=()=>{if(lb.dataset.sure!=="1"){lb.dataset.sure="1";lb.innerHTML="Tap again to leave<small>&nbsp;</small>";return}crewLeave();draw()}};
   draw();if(S.crew)crewFetch(S.crew.id).then(c=>{if(c&&S.crew&&S.crew.id===c.id){S.crew.bank=c.bank;S.crew.size=c.size;dirty=true;if(room==="crew")draw()}})}
 // the crew HQ at the end of the Township street, in your crew's colour
-const CREWHQ={x:2360,y:1660,w:200,h:130};
+const CREWHQ={x:600,y:1690,w:200,h:130};
 function drawCrewHQ(){if(!MPW||!S.crew)return;const C=S.crew,{x,y,w,h}=CREWHQ,lv=crewLv(C.bank||0);if(x>cam.x+vw+60||x+w<cam.x-60||y>cam.y+vh+60||y+h<cam.y-140)return;
   drawBuilding(ctx,{k:"crewhq",n:String(C.n).slice(0,14)+" HQ",c:C.c,x,y,w,h,door:[x+w/2,y+h]},isDark()?PAL_D:PAL_L);
   ctx.strokeStyle="#3a3f4c";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+w-24,y+10);ctx.lineTo(x+w-24,y-46);ctx.stroke();const f=Math.sin(wt*4)*4;ctx.fillStyle=C.c;ctx.beginPath();ctx.moveTo(x+w-24,y-46);ctx.quadraticCurveTo(x+w+4,y-40+f,x+w+20,y-36);ctx.lineTo(x+w-24,y-22);ctx.closePath();ctx.fill();
@@ -6785,12 +6786,12 @@ function drawPartner(ppl){if(!S.partner||room)return;if(!PT)PT={x:S.px-28,y:S.py
   ppl.push([PT.y,()=>{drawPerson(PT.x,PT.y,{shirt:p.s,skin:p.k,hair:p.h,hs:FEM.has(String(p.n||"").split(" ")[0])?8:0,mv,ph:PT.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(PT.x,PT.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore()}])}
 
 /* ================= township district: empty plots that fill with players' houses ================= */
-// two streets, four rows of big lots; the entrance road runs down the middle and joins both streets
-const TWN={x:1120,y:1672,w:1200,h:1112},TWN_STS=[1916,2484],TWN_ST=TWN_STS[0],TWN_EX=1730,PLOT_W=176;
-const PLOT_X=[1140,1330,1520,1764,1954,2144];
-const PLOT_ROWS=[{y:1684,h:220,top:true,st:1916},{y:1962,h:220,top:false,st:1916},{y:2252,h:220,top:true,st:2484},{y:2530,h:220,top:false,st:2484}];
-// lots fill from the entrance outward, the first street first, alternating sides of the street
-const PLOTS=[[0,1],[2,3]].flatMap(rs=>[2,3,1,4,0,5].flatMap(i=>rs.map(r=>({x:PLOT_X[i],w:PLOT_W,...PLOT_ROWS[r]}))));
+// one street with six wide lots on each side, one for each of up to 12 players in the room; the entrance road comes down from the boardwalk
+const TWN={x:1120,y:1672,w:1440,h:276},TWN_STS=[1794],TWN_ST=TWN_STS[0],TWN_EX=1840,PLOT_W=214;
+const PLOT_X=[1136,1364,1592,1874,2102,2330];
+const PLOT_ROWS=[{y:1680,h:104,top:true,st:1794},{y:1838,h:104,top:false,st:1794}];
+// lots fill from the entrance outward, alternating sides of the street
+const PLOTS=[2,3,1,4,0,5].flatMap(i=>[0,1].map(r=>({x:PLOT_X[i],w:PLOT_W,...PLOT_ROWS[r]})));
 const inTown=(x,y,m=0)=>x>TWN.x-m&&x<TWN.x+TWN.w+m&&y>TWN.y-m&&y<TWN.y+TWN.h+m;
 // Everyone in the room sorts players by id the same way, so each player lands on the same plot for all
 function townPlayers(){if(!MPW)return[];const L=[{id:MP_ID,me:1,n:mpName(),s:myShirt(),hm:S.home||0,lv:repLevel()}];
@@ -6800,7 +6801,7 @@ const plotDoor=pl=>[pl.x+pl.w/2,pl.top?pl.y+pl.h+4:pl.y-4];
 function drawTownStatic(g,P){
   const X=TWN.x,Y=TWN.y,EX=TWN_EX,BOT=Y+TWN.h;
   g.fillStyle="#2f7a46";rrp(g,X-6,Y-6,TWN.w+12,TWN.h+12,20);g.fill();
-  g.fillStyle="#7fbf6a";rrp(g,X,Y,TWN.w,TWN.h,16);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<1600;i++)g.fillRect(X+((i*53)%TWN.w),Y+((i*97)%TWN.h),3,2);
+  g.fillStyle="#7fbf6a";rrp(g,X,Y,TWN.w,TWN.h,16);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<700;i++)g.fillRect(X+((i*53)%TWN.w),Y+((i*97)%TWN.h),3,2);
   // entrance road from the boardwalk down to the second street, and the two streets
   const ST2=TWN_STS[TWN_STS.length-1];g.fillStyle=P.walk;g.fillRect(EX-26,1660,52,ST2-1660);TWN_STS.forEach(st=>g.fillRect(X+6,st-6,TWN.w-12,46));
   g.fillStyle=P.road;g.fillRect(EX-20,1660,40,ST2-1660+4);TWN_STS.forEach(st=>g.fillRect(X+10,st,TWN.w-20,34));
@@ -6814,9 +6815,8 @@ function drawTownStatic(g,P){
     g.fillStyle="#b9b2a6";if(pl.top)g.fillRect(pl.x+pl.w-36,pl.y+pl.h-12,26,st-(pl.y+pl.h-12));else g.fillRect(pl.x+pl.w-36,st+34,26,pl.y+12-(st+34))});
   // hedges between lots, and between the back-to-back rows
   PLOT_ROWS.forEach(r=>{for(let i=0;i<PLOT_X.length-1;i++){if(i===2)continue;const x=PLOT_X[i]+PLOT_W+5;g.fillStyle="#2f7a46";rrp(g,x,r.y+6,8,r.h-12,4);g.fill()}});
-  [[X+10,EX-34],[EX+34,X+TWN.w-10]].forEach(([a,b])=>{g.fillStyle="#2f7a46";rrp(g,a,2192+2,b-a,10,5);g.fill();g.fillStyle="#3f9a5a";for(let x=a;x<b-6;x+=10){g.beginPath();g.arc(x+5,2196,5,0,7);g.fill()}});
   // trees by the entrance and the corners
-  [[EX-46,1690],[EX+46,1690],[EX-46,1780],[EX+46,1780],[EX-46,2230],[EX+46,2230],[X+16,1690],[X+TWN.w-16,1690],[X+16,BOT-14],[X+TWN.w-16,BOT-14],[EX-46,BOT-20],[EX+46,BOT-20]].forEach(([x,y])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+5,y+9,14,5,0,0,7);g.fill();g.fillStyle=P.trunk;g.fillRect(x-2,y,4,10);g.fillStyle=P.tree;g.beginPath();g.arc(x,y-4,13,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-3,y-7,8,0,7);g.fill()});
+  [[EX-46,1700],[EX+46,1700],[EX-46,1760],[EX+46,1760],[X+16,BOT-12],[X+TWN.w-16,BOT-12],[EX-46,BOT-14],[EX+46,BOT-14]].forEach(([x,y])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+5,y+9,14,5,0,0,7);g.fill();g.fillStyle=P.trunk;g.fillRect(x-2,y,4,10);g.fillStyle=P.tree;g.beginPath();g.arc(x,y-4,13,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-3,y-7,8,0,7);g.fill()});
   // street lamps
   TWN_STS.forEach(st=>{for(let x=X+70;x<X+TWN.w-40;x+=190){if(Math.abs(x-EX)<40)continue;[st-4,st+40].forEach(y=>{g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x+2,y+1,5,2,0,0,7);g.fill();g.fillStyle="#5b6272";g.fillRect(x-1.5,y-18,3,18);g.fillStyle="#ffe08a";g.beginPath();g.arc(x,y-19,3,0,7);g.fill()})}});
   // welcome arch over the entrance
@@ -6841,11 +6841,11 @@ function tierHouse(hm,w,h){const dk=isDark(),key=hm+"|"+w+"|"+h+"|"+dk;if(HCACHE
 function drawTown(){
   if(cam.y+vh<TWN.y-40||cam.y>TWN.y+TWN.h||cam.x+vw<TWN.x||cam.x>TWN.x+TWN.w)return;
   const F=FONTS.b;
-  if(!MPW){ctx.save();ctx.font="700 12px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="rgba(10,14,22,.65)";rr(TWN_EX-110,1800,220,24,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText("Player houses · Online Town only",TWN_EX,1813);ctx.restore();return}
+  if(!MPW){ctx.save();ctx.font="700 12px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="rgba(10,14,22,.65)";rr(TWN_EX-110,1734,220,24,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText("Player houses · Online Town only",TWN_EX,1747);ctx.restore();return}
   const tp=townPlayers(),used=new Set(tp.map(p=>p.plot));
   // empty lots get a little sign
   PLOTS.forEach(pl=>{if(used.has(pl))return;const cx=pl.x+pl.w/2,cy=pl.y+pl.h/2;ctx.fillStyle="#7a5a36";ctx.fillRect(cx-1.5,cy-4,3,16);ctx.fillStyle="#f4ecd8";rr(cx-26,cy-18,52,16,4);ctx.fill();ctx.font="800 8px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#6b5a40";ctx.fillText("VACANT",cx,cy-10)});
-  tp.forEach(p=>{const pl=p.plot;{const hw=pl.w-14,hh=pl.h-40,im=tierHouse(p.hm,hw,hh);ctx.drawImage(im,pl.x+7-24,pl.y+(pl.top?6:30)-24)}
+  tp.forEach(p=>{const pl=p.plot;{const hw=pl.w-14,hh=pl.h-18,im=tierHouse(p.hm,hw,hh);ctx.drawImage(im,pl.x+7-24,pl.y+(pl.top?2:16)-24)}
     // mailbox by the path
     const[dx]=plotDoor(pl),my=pl.top?pl.y+pl.h-6:pl.y+8;ctx.fillStyle="#5b6272";ctx.fillRect(dx-20,my-6,2,10);ctx.fillStyle=p.s||"#2a3cff";rr(dx-25,my-12,12,8,3);ctx.fill();
     ctx.font="800 11px "+F;ctx.textAlign="center";ctx.textBaseline="middle";const lab=String(p.n).slice(0,12)+(p.me?" (you)":""),w=ctx.measureText(lab).width+14,ly=pl.top?pl.y-2:pl.y+pl.h+2;
