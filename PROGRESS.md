@@ -215,3 +215,5 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - **Poses:** the Emotes menu is renamed Poses (tile + panel title); new poses Abs and thighs, Most muscular (crab) next to Double biceps, Lat spread, High five. Joint angles for the two new ones are a first guess: look at them in play and tell me what to adjust. Mirror reflection lighting made brighter (unverified by eye).
 
 - Statue: built at the strongest player's height (Growth Spurts) and now real size (Scale 1, was 1.35). Entrance door leaves got slim dark frames that slide with the glass (`tools/builders/DoorFrames.luau`, already run in the open place). Mirror screen uses golden posing lighting.
+
+- **NPCs:** regulars can't enter FallingDown/GettingUp/Ragdoll any more (they were getting stuck after the body swap). New **beach gym regulars** (Kai, Luna, Tomas, Zoe; Gym = "Beach") built by `tools/builders/BeachNPCs.luau` (already run in the open place) with NpcSpots under Town.BeachGym; GymGoerService walks them between the beach machines. Verified: they walk and use machines.

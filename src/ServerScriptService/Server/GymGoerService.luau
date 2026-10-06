@@ -81,7 +81,9 @@ local function gymMachines(gym)
 			local proGym = Workspace:FindFirstChild("ProGym")
 			local inPro = proGym ~= nil and model:IsDescendantOf(proGym)
 			local inStarter = model:IsDescendantOf(Workspace:FindFirstChild("Gym") or proGym or Workspace)
-			if (gym == "Pro" and inPro) or (gym == "Starter" and inStarter and not inPro) then
+			local beachGym = Workspace:FindFirstChild("Town") and Workspace.Town:FindFirstChild("BeachGym")
+			local inBeach = beachGym ~= nil and model:IsDescendantOf(beachGym)
+			if (gym == "Pro" and inPro) or (gym == "Starter" and inStarter and not inPro) or (gym == "Beach" and inBeach) then
 				table.insert(list, model)
 			end
 		end
@@ -91,9 +93,16 @@ end
 
 local function spots(kind, gym)
 	local list = {}
-	local folder = Workspace:FindFirstChild("Gym") and Workspace.Gym:FindFirstChild("NpcSpots")
-	for _, spot in ipairs(folder and folder:GetChildren() or {}) do
-		if spot:GetAttribute("Kind") == kind and spot:GetAttribute("Gym") == gym then table.insert(list, spot) end
+	local beach = Workspace:FindFirstChild("Town") and Workspace.Town:FindFirstChild("BeachGym")
+	local folders = {}
+	local starterSpots = Workspace:FindFirstChild("Gym") and Workspace.Gym:FindFirstChild("NpcSpots")
+	local beachSpots = beach and beach:FindFirstChild("NpcSpots")
+	if starterSpots then table.insert(folders, starterSpots) end
+	if beachSpots then table.insert(folders, beachSpots) end
+	for _, folder in ipairs(folders) do
+		for _, spot in ipairs(folder:GetChildren()) do
+			if spot:GetAttribute("Kind") == kind and spot:GetAttribute("Gym") == gym then table.insert(list, spot) end
+		end
 	end
 	return list
 end
@@ -295,9 +304,17 @@ end
 
 -- The regulars show what to aim for: every NPC has the Robloxian 2.0 body (NpcService) and muscle blobs grown to a preset
 -- (pro gym big, starter gym medium), keeping their own clothes and hair.
-local NPC_GROWTH = { Starter = 0.5, Pro = 0.9 }
+local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
 local function dressNpc(npc, gym)
 	NpcService.ApplyBody(npc) -- the Robloxian 2.0 body first (the NPCs are baked into the place)
+	-- regulars never fall over or ragdoll (they were getting stuck in FallingDown/GettingUp after the body swap)
+	local hum = npc:FindFirstChildOfClass("Humanoid")
+	if hum then
+		for _, state in ipairs({ Enum.HumanoidStateType.FallingDown, Enum.HumanoidStateType.Ragdoll, Enum.HumanoidStateType.GettingUp, Enum.HumanoidStateType.Physics }) do hum:SetStateEnabled(state, false) end
+		for _, part in ipairs(npc:GetDescendants()) do
+			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "UpperTorso" and part.Name ~= "LowerTorso" then part.CanCollide = false end
+		end
+	end
 	local torso = npc:FindFirstChild("UpperTorso")
 	local head = npc:FindFirstChild("Head")
 	local legs = npc:FindFirstChild("LeftUpperLeg")
