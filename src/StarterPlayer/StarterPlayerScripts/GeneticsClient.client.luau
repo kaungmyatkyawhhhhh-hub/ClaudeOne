@@ -216,7 +216,7 @@ Theme.Text({ LayoutOrder = 2, Text = "Grade (each group)", Font = "Regular", Tex
 local gradeRow = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = oddsPanel }, { Theme.List(Horizontal, "M", Enum.HorizontalAlignment.Left) })
 for index, grade in ipairs(Genetics.Grades) do
 	local cell = New("Frame", { LayoutOrder = index, Size = UDim2.fromOffset(56, 52), BackgroundTransparency = 1, Parent = gradeRow }, { Theme.List(Vertical, "XS") })
-	Theme.RankTag(grade.id, { LayoutOrder = 1, Size = UDim2.fromOffset(34, 28), Parent = cell })
+	Theme.RankTag(grade.id, { LayoutOrder = 1, Size = UDim2.fromOffset(26, 22), Parent = cell })
 	Theme.Text({ LayoutOrder = 2, Text = percent(Genetics.Grades, grade) .. "%", Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), Parent = cell })
 end
 local function oddsList(order, title, list)

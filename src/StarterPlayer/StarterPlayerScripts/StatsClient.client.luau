@@ -121,7 +121,7 @@ for index, group in ipairs(Muscles.Groups) do
 	local frame = New("Frame", { Name = group.id, LayoutOrder = index, BackgroundColor3 = Colors.Panel, BackgroundTransparency = 0.6, Parent = scroll },
 		{ Theme.Round("Panel"), Theme.Stroke(), Theme.Pad("S"), Theme.List(Vertical, "XS", Left, Top) })
 	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Parent = frame }, { Theme.List(Horizontal, "S", Left) })
-	local disc = Theme.RankTag("B", { LayoutOrder = 1, Size = UDim2.fromOffset(24, 20), Parent = top })
+	local disc = Theme.RankTag("B", { LayoutOrder = 1, Size = UDim2.fromOffset(20, 18), Parent = top })
 	local grade = disc
 	local nameCol = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, -78, 1, 0), BackgroundTransparency = 1, Parent = top })
 	Theme.Text({ Text = group.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = nameCol })

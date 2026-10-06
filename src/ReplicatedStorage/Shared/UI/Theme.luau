@@ -397,7 +397,7 @@ function Theme.PlateDisc(bumper, props)
 	return Theme.New("Frame", props, { Theme.Round("Round"), Theme.Stroke(bumper.Rim, 2, 0) })
 end
 
--- RankTag: the one reusable rank badge (genetics grades S/A/B/C/D): a small rounded rectangle, thin 1.5px border and the
+-- RankTag: the one reusable rank badge (genetics grades S/A/B/C/D): a small fully-rounded pill (20x18), thin border and the
 -- letter in the rank color, dark see-through fill, Montserrat Bold. S gets a very faint glow. Use it everywhere a grade shows.
 Theme.RankColors = {
 	S = Color3.fromHex("#FF7B6E"), -- soft red/coral
@@ -424,13 +424,13 @@ end
 function Theme.RankTag(grade, props)
 	props = props or {}
 	props.Name = props.Name or "RankTag"
-	props.Size = props.Size or UDim2.fromOffset(24, 20)
+	props.Size = props.Size or UDim2.fromOffset(20, 18)
 	props.BackgroundColor3 = Theme.Colors.Panel
 	props.BackgroundTransparency = Theme.Alpha.Panel
 	local tag = Theme.New("Frame", props, {
-		Theme.New("UICorner", { CornerRadius = UDim.new(0, 4) }),
+		Theme.New("UICorner", { CornerRadius = UDim.new(0, 9) }), -- (fully rounded pill)
 		Theme.New("UIStroke", { Name = "Glow", Thickness = 4, Transparency = 0.9, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Enabled = false }),
-		Theme.New("UIStroke", { Name = "Border", Thickness = 1.5, Transparency = 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		Theme.New("UIStroke", { Name = "Border", Thickness = 1.2, Transparency = 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	Theme.Text({ Name = "Letter", Font = "Bold", TextSize = "Small", Size = UDim2.fromScale(1, 1), Parent = tag })
 	Theme.SetRankTag(tag, grade)
