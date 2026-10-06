@@ -695,7 +695,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .accbar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-size:.9rem}
 .accbar .accav{width:30px;height:30px;font-size:.9rem;border-radius:9px}
 .accbar span:nth-child(2){flex:1}
-#admBtn{position:fixed;left:10px;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:60;padding:8px 12px;border-radius:12px;background:#1b1f2a;color:#ffcc33;font:800 .75rem var(--body);box-shadow:0 4px 14px rgba(0,0,0,.35)}#admBtn[hidden]{display:none}
+#admBtn[hidden]{display:none}
 .sheet.admin{max-height:92vh;overflow-y:auto}.admgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admgrid .accf span{font-size:.7rem}
 .admacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.admall{display:flex;flex-direction:column;gap:4px;max-height:42vh;overflow-y:auto;padding:4px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line)}
 .admrow{display:flex;align-items:center;gap:8px;font-size:.75rem}.admrow code{flex:1;min-width:0;overflow-wrap:anywhere;color:var(--muted)}.admrow input:not([type=checkbox]){width:44%;padding:6px 8px;border-radius:8px;border:0;background:var(--sunk);color:var(--ink);font:600 .78rem var(--mono)}
@@ -3273,8 +3273,8 @@ function adminPanel(q){if(!isAdmin())return;const o=$("overlay");o.hidden=false;
   o.querySelectorAll("[data-al]").forEach(e=>e.onchange=()=>{const[p,v]=shown[+e.dataset.al];if(admSet(p,e.type==="checkbox"?e.checked:e.value,v)){admDone();floatAt(e,"Saved","var(--up)")}else e.value=v});
   let qt;$("admQ").oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{adminPanel(e.target.value);const n=$("admQ");n.focus();n.setSelectionRange(n.value.length,n.value.length)},250)};
   $("admX").onclick=()=>{o.hidden=true}}
-// a small floating button while an admin is playing
-setInterval(()=>{let b=$("admBtn");const on=isAdmin()&&playing&&$("overlay").hidden;if(on&&!b){b=document.createElement("button");b.id="admBtn";b.textContent="🛠 Admin";b.onclick=()=>adminPanel();document.body.appendChild(b)}if(b)b.hidden=!on},700);
+// an admin gets a 🛠 button in the top bar's button column, out of the way of everything else
+setInterval(()=>{let b=$("admBtn");const on=isAdmin()&&playing;if(on&&!b){const col=document.querySelector(".hudbtns");if(!col)return;b=document.createElement("button");b.id="admBtn";b.className="iconbtn";b.setAttribute("aria-label","Admin panel");b.textContent="🛠";b.onclick=()=>adminPanel();col.insertBefore(b,$("hudMin"))}if(b)b.hidden=!on},700);
 function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout();const w=$("accSwap");if(w)w.onclick=()=>switchSheet();const ad=$("accAdm");if(ad)ad.onclick=()=>adminPanel()}
 
 /* ================= cloud accounts: username + password, one device at a time ================= */
