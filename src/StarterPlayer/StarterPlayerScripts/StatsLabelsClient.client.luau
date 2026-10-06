@@ -109,12 +109,15 @@ for _, spec in ipairs(GROUPS) do
 	local entry = box(spec.id, size.Width, size.Height, size.Number)
 	entry.spec = spec
 	entry.dot = New("Frame", { Name = spec.id .. "Dot", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(LAYOUT.Dot, LAYOUT.Dot), BackgroundColor3 = Colors.Text, ZIndex = 2, Parent = layer }, { Theme.Round("Round") })
-	entry.line = New("Frame", { Name = spec.id .. "Line", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
-	entry.tail = New("Frame", { Name = spec.id .. "Tail", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
+	entry.line = New("Frame", { Name = spec.id .. "Line", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
+	entry.tail = New("Frame", { Name = spec.id .. "Tail", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
 	table.insert(labels, entry)
 end
 local strength = box("Strength", size.TopWidth, size.TopHeight, size.Top)
 local stamina = box("Stamina", size.Width, size.TopHeight, size.Number)
+for _, top in ipairs({ strength, stamina }) do
+	top.tail = New("Frame", { Name = top.frame.Name .. "Tail", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
+end
 
 -- the backing hugs the text
 local function fitBacking(entry)
@@ -125,6 +128,14 @@ local function fitBacking(entry)
 end
 local function fitAll()
 	for _, entry in ipairs(labels) do fitBacking(entry) end
+	-- every group label is the same length (the longest one)
+	local widest = 0
+	for _, entry in ipairs(labels) do widest = math.max(widest, entry.backWidth or 0) end
+	for _, entry in ipairs(labels) do
+		entry.backWidth = widest
+		entry.back.Size = UDim2.fromOffset(widest, entry.back.Size.Y.Offset)
+		for _, sub in ipairs(entry.subs or {}) do sub.back.Size = UDim2.fromOffset(widest, sub.back.Size.Y.Offset) end
+	end
 	fitBacking(strength)
 	fitBacking(stamina)
 end
@@ -537,6 +548,13 @@ local function place(dt)
 	local at = spring(strength.frame, Vector2.new(rowX, rowY), dt, 7)
 	strength.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
 	stamina.frame.Position = UDim2.fromOffset(math.floor(at.X + size.TopWidth + LAYOUT.Gap + 0.5), math.floor(at.Y + 0.5))
+	for _, top in ipairs({ strength, stamina }) do
+		local w = top.backWidth or size.Width
+		local cx = top.frame.AbsolutePosition.X - layer.AbsolutePosition.X + size.Width / 2
+		if top == strength then cx = at.X + size.TopWidth / 2 else cx = at.X + size.TopWidth + LAYOUT.Gap + size.Width / 2 end
+		top.tail.Position = UDim2.fromOffset(math.floor(cx + 0.5), math.floor(at.Y + size.TopHeight + 1))
+		top.tail.Size = UDim2.fromOffset(w, 1)
+	end
 end
 
 ------------------------------------------------------------------------
