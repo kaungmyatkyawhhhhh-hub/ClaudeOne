@@ -90,7 +90,7 @@ end
 function BodyService.BuildStatic(model, opts)
 	local blobs = MuscleBlobs.Build(model, { static = opts.static ~= false, castShadow = true })
 	if opts.recolor then
-		blobs:Dress({ skin = opts.recolor.color, top = nil, shorts = opts.recolor.color })
+		blobs:Dress({ skin = opts.recolor.color, top = nil, shorts = opts.recolor.color, plain = true })
 		local function marble(part) part.Material = opts.recolor.material part.Color = opts.recolor.color end
 		for _, entry in ipairs(blobs.entries) do marble(entry.blob) end
 		for _, g in ipairs(blobs.garments) do marble(g.blob) end
