@@ -111,7 +111,7 @@ type Controller = {
 	lastStep: number,
 }
 
-local Controller = {}
+local Controller: any = {}
 Controller.__index = Controller
 
 type JointInstance = Motor6D | Weld
@@ -177,7 +177,7 @@ local function render(self: Controller)
 	local hipSpread = 1
 	do
 		local leg = self.cur.LeftUpperLeg
-		hipSpread = leg and (1 + (leg.x - 1) * 0.6) or 1
+		hipSpread = leg and leg.x or 1
 	end
 	for name, info in pairs(self.base) do
 		local factor = self.cur[name] or { x = 1, z = 1 }
@@ -193,8 +193,9 @@ local function render(self: Controller)
 		end
 	end
 	for _, item in ipairs(self.joints) do
-		item.joint.C0 = item.a0.CFrame
-		item.joint.C1 = item.a1.CFrame
+		local joint: any = item.joint
+		joint.C0 = item.a0.CFrame
+		joint.C1 = item.a1.CFrame
 	end
 end
 
@@ -275,7 +276,7 @@ function Controller.Destroy(self: Controller)
 	stop(self)
 end
 
-function BodyThickness.New(model: Model): Controller
+function BodyThickness.New(model: Model): any
 	local self = setmetatable({
 		model = model, base = {}, joints = {}, cur = {}, from = {}, to = {}, startTime = 0, duration = 0,
 		pulses = {}, conn = nil, lastStep = 0,
@@ -286,7 +287,7 @@ end
 
 -- One-shot for rigs that never change (mirror rigs, statue, NPC presets): capture and apply right away.
 function BodyThickness.Snap(model: Model, targets: { [string]: Factor }?)
-	local controller = BodyThickness.New(model)
+	local controller: any = BodyThickness.New(model)
 	controller:Set(targets, 0)
 	controller:Destroy()
 end
