@@ -57,6 +57,7 @@ Theme.Fonts = {
 	Light = Font.new(MONTSERRAT, Enum.FontWeight.Light),       -- big calm numbers
 	Regular = Font.new(MONTSERRAT, Enum.FontWeight.Regular),   -- normal text
 	SemiBold = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold), -- important numbers and button labels only
+	Bold = Font.new(MONTSERRAT, Enum.FontWeight.Bold),         -- rank tag letters
 }
 -- older names, kept so every screen reads the same three weights
 Theme.Fonts.Heading = Theme.Fonts.SemiBold
@@ -394,6 +395,46 @@ end
 function Theme.PlateDisc(bumper, props)
 	props.BackgroundColor3 = bumper.Fill
 	return Theme.New("Frame", props, { Theme.Round("Round"), Theme.Stroke(bumper.Rim, 2, 0) })
+end
+
+-- RankTag: the one reusable rank badge (genetics grades S/A/B/C/D): a small rounded rectangle, thin 1.5px border and the
+-- letter in the rank color, dark see-through fill, Montserrat Bold. S gets a very faint glow. Use it everywhere a grade shows.
+Theme.RankColors = {
+	S = Color3.fromHex("#FF7B6E"), -- soft red/coral
+	A = Color3.fromHex("#6FA8FF"), -- soft blue
+	B = Color3.fromHex("#F2CF66"), -- soft gold
+	C = Color3.fromHex("#6FD08C"), -- soft green
+	D = Color3.fromHex("#B8B8BE"), -- gray
+}
+function Theme.SetRankTag(tag, grade)
+	local color = Theme.RankColors[grade] or Theme.RankColors.D
+	local stroke = tag:FindFirstChild("Border")
+	if stroke then stroke.Color = color end
+	local glow = tag:FindFirstChild("Glow")
+	if glow then
+		glow.Color = color
+		glow.Enabled = grade == "S"
+	end
+	local label = tag:FindFirstChild("Letter")
+	if label then
+		label.Text = grade
+		label.TextColor3 = color
+	end
+end
+function Theme.RankTag(grade, props)
+	props = props or {}
+	props.Name = props.Name or "RankTag"
+	props.Size = props.Size or UDim2.fromOffset(24, 20)
+	props.BackgroundColor3 = Theme.Colors.Panel
+	props.BackgroundTransparency = Theme.Alpha.Panel
+	local tag = Theme.New("Frame", props, {
+		Theme.New("UICorner", { CornerRadius = UDim.new(0, 4) }),
+		Theme.New("UIStroke", { Name = "Glow", Thickness = 4, Transparency = 0.9, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Enabled = false }),
+		Theme.New("UIStroke", { Name = "Border", Thickness = 1.5, Transparency = 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	Theme.Text({ Name = "Letter", Font = "Bold", TextSize = "Small", Size = UDim2.fromScale(1, 1), Parent = tag })
+	Theme.SetRankTag(tag, grade)
+	return tag
 end
 
 -- Panels slide up and fade in / slide down and fade out. `frame` fills its layout slot.

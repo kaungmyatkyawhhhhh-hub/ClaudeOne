@@ -121,9 +121,8 @@ for index, group in ipairs(Muscles.Groups) do
 	local frame = New("Frame", { Name = group.id, LayoutOrder = index, BackgroundColor3 = Colors.Panel, BackgroundTransparency = 0.6, Parent = scroll },
 		{ Theme.Round("Panel"), Theme.Stroke(), Theme.Pad("S"), Theme.List(Vertical, "XS", Left, Top) })
 	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Parent = frame }, { Theme.List(Horizontal, "S", Left) })
-	local disc = Theme.PlateDisc(Theme.Grades.B, { LayoutOrder = 1, Size = UDim2.fromOffset(22, 22) })
-	disc.Parent = top
-	local grade = Theme.Text({ Text = "B", Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(1, 1), Parent = disc })
+	local disc = Theme.RankTag("B", { LayoutOrder = 1, Size = UDim2.fromOffset(24, 20), Parent = top })
+	local grade = disc
 	local nameCol = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, -78, 1, 0), BackgroundTransparency = 1, Parent = top })
 	Theme.Text({ Text = group.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = nameCol })
 	local level = Theme.Text({ LayoutOrder = 3, Font = "Light", TextSize = "Large", Size = UDim2.new(0, 46, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = top })
@@ -188,12 +187,7 @@ local function refreshScreen()
 	for _, group in ipairs(Muscles.Groups) do
 		local card = cards[group.id]
 		local gradeId = data.genetics and data.genetics.grades and data.genetics.grades[group.id] or "B"
-		local bumper = Theme.Grades[gradeId] or Theme.Grades.B
-		card.disc.BackgroundColor3 = bumper.Fill
-		local rim = card.disc:FindFirstChildOfClass("UIStroke")
-		if rim then rim.Color = bumper.Rim end
-		card.grade.Text = gradeId
-		card.grade.TextColor3 = bumper.Text or Colors.Text
+		Theme.SetRankTag(card.disc, gradeId)
 		card.mult.Text = string.format("Genetics x%.2f", Genetics.GetMultiplier(data.genetics, group.muscles[1].id))
 		local groupMaxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
 		card.level.Text = groupMaxed and "Max" or tostring(Muscles.Shown(levels[group.id]))

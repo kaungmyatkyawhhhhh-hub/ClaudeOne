@@ -112,8 +112,7 @@ local function buildCard(data)
 	Theme.Text({ Text = tier.id .. " member" .. (player:GetAttribute("Pass_VIP") and "  ·  VIP" or ""), Font = "Regular", TextSize = "Small", TextColor3 = tier.color, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -48, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
 	local overall = data.genetics and data.genetics.overall
 	if overall and Theme.Grades[overall] then
-		local disc = Theme.PlateDisc(Theme.Grades[overall], { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(38, 38), Parent = top })
-		Theme.Text({ Text = overall, Font = "SemiBold", TextSize = "Body", TextColor3 = Theme.Grades[overall].Text, Size = UDim2.fromScale(1, 1), Parent = disc })
+		Theme.RankTag(overall, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(36, 30), Parent = top })
 	end
 	local metCount, titleCount = 0, 0
 	for _ in pairs(data.legends and data.legends.met or {}) do metCount += 1 end

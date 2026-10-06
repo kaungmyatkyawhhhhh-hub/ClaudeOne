@@ -216,8 +216,7 @@ Theme.Text({ LayoutOrder = 2, Text = "Grade (each group)", Font = "Regular", Tex
 local gradeRow = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = oddsPanel }, { Theme.List(Horizontal, "M", Enum.HorizontalAlignment.Left) })
 for index, grade in ipairs(Genetics.Grades) do
 	local cell = New("Frame", { LayoutOrder = index, Size = UDim2.fromOffset(56, 52), BackgroundTransparency = 1, Parent = gradeRow }, { Theme.List(Vertical, "XS") })
-	local disc = Theme.PlateDisc(Theme.Grades[grade.id], { LayoutOrder = 1, Size = UDim2.fromOffset(30, 30), Parent = cell })
-	Theme.Text({ Text = grade.id, Font = "Heading", TextSize = "Small", TextColor3 = Theme.Grades[grade.id].Text, Size = UDim2.fromScale(1, 1), Parent = disc })
+	Theme.RankTag(grade.id, { LayoutOrder = 1, Size = UDim2.fromOffset(34, 28), Parent = cell })
 	Theme.Text({ LayoutOrder = 2, Text = percent(Genetics.Grades, grade) .. "%", Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), Parent = cell })
 end
 local function oddsList(order, title, list)
@@ -317,9 +316,12 @@ for index, group in ipairs(Muscles.Groups) do
 	local cell = New("Frame", { Name = group.id, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.new(0, 84, 1, 0), BackgroundTransparency = 1, Parent = namesRow },
 		{ Theme.List(Vertical, nil) })
 	local name = Theme.Text({ LayoutOrder = 1, Text = group.name, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), Parent = cell })
-	local mult = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), Parent = cell })
+	local multRow = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, Parent = cell },
+		{ Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	local tag = Theme.RankTag("D", { LayoutOrder = 1, Visible = false, Parent = multRow })
+	local mult = Theme.Text({ LayoutOrder = 2, Text = "", Font = "SemiBold", TextSize = "Small", Size = UDim2.new(0, 46, 1, 0), Parent = multRow })
 	for _, label in ipairs({ name, mult }) do Theme.TextShadow(label) end
-	nameCells[index] = { cell = cell, mult = mult }
+	nameCells[index] = { cell = cell, mult = mult, tag = tag }
 end
 
 local function layoutNames()
@@ -453,7 +455,7 @@ local function clearBoard()
 	if heroPlate then heroPlate:Destroy() heroPlate = nil end
 	heroLetter.Visible = false
 	reaction.TextTransparency = 1
-	for _, entry in ipairs(nameCells) do entry.mult.Text = "" end
+	for _, entry in ipairs(nameCells) do entry.mult.Text = "" entry.tag.Visible = false end
 	frameLabel.Text, frameBonusLabel.Text = "Frame: ?", ""
 	bodyLabel.Text, bodyBonusLabel.Text = "Body: ?", ""
 end
@@ -476,6 +478,8 @@ local function slamAll(genetics)
 			Audio.Play2D("GeneticsClank", { pitch = CLANK_PITCH[gradeId] })
 			shake(0.08)
 			nameCells[index].mult.Text = string.format("x%.2f", Genetics.GradeById[gradeId].mult)
+			Theme.SetRankTag(nameCells[index].tag, gradeId)
+			nameCells[index].tag.Visible = true
 			if gradeId == "S" then
 				local radius = PLATE.Diameter.S / 2
 				Audio.Play2D("ChalkPuff")
@@ -537,6 +541,7 @@ local function slideOff()
 				plate.letter.Visible = false
 			end)
 			nameCells[index].mult.Text = ""
+			nameCells[index].tag.Visible = false
 			task.wait(REVEAL.SlideOffGap)
 		end
 	end
