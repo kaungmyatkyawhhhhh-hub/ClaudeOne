@@ -23,6 +23,7 @@ the recipes that made the code-made areas into real parts, kept so an area can b
 | `Sauna` | `Workspace.Town.Sauna`: wooden beach sauna east of the beach gym (deck, path to the boardwalk with a gap cut in the edge rope, benches with seats, stove with steam) and the invisible `SaunaZone` (attribute `Recovery = "Sauna"`) | BoostService (recovery stations) |
 | `SkateParkExtras` | `Workspace.Town.SkatePark.Extras`: painted floor plates (mint, sunny, coral), a manual pad, a kicker, a flat bar, ledge stripes | (decoration, skateable) |
 | `BeachGymSails` | the two shade sails in `Workspace.Town.BeachGym` as smooth triangles tied to the 4 `SailPole` parts (replaces parts named `Sail`) | (decoration) |
+| `GymFrontPoster` | `Workspace.Town.GymFront.PosterBox`: framed, lit tagline poster with a planter on the starter gym's front wall | (decoration) |
 
 Visiting legends are still created by LegendService while they visit (they come and go).
 

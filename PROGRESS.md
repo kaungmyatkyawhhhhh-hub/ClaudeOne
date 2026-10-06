@@ -75,6 +75,9 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   manual pad, a kicker, a flat bar and painted ledge stripes (`tools/builders/SkateParkExtras.luau`).
   Beach gym shade sails rebuilt as two smooth triangles with tie ropes (the stepped strips read as a wire outline from
   far away; `tools/builders/BeachGymSails.luau`).
+- **Quality pass (6 Oct, 2nd hour):** removed 3 leftover test rigs (`_RS0`, `_RS3`, `_RS5`, white Blender bodies) that
+  stood in the road in front of the gym in the saved place. Gym front: a framed, lit tagline poster with a planter on
+  the bare brick wall right of the entrance (`tools/builders/GymFrontPoster.luau`).
 - **Glass entrance doors (6 Oct):** the starter gym's double doors (`Workspace.Gym.Entrance`, the two `DoorGlass`
   panels) are see-through glass now (Glass, Transparency 0.6, RGB 200/215/225, Reflectance 0.1, no shadow). Frame,
   divider and push bars unchanged; they still slide open (tag `SlidingDoor`, `SlideX`). It's the only door built from
