@@ -92,6 +92,20 @@
   #brows { transition: transform .15s; }
   #ysvg.hype #brows { transform: translateY(-4px); }
   .mouth { display: none; }
+  #ysvg:not([data-char="yoki"]) .c-yoki, #ysvg:not([data-char="ang"]) .c-ang, #ysvg:not([data-char="alton"]) .c-alton { display: none !important; }
+
+  .picker { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; }
+  .pick { flex: 1 1 180px; display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer; padding: 8px 12px; border-radius: 16px;
+    background: var(--panel); border: 1px solid var(--panel-edge); transition: transform .12s, border-color .2s, background .2s; }
+  .pick:hover { transform: translateY(-2px); }
+  .pick:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .pick[aria-checked="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); box-shadow: 0 0 22px color-mix(in srgb, var(--c) 35%, transparent); }
+  .avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-size: 1.1rem;
+    background: var(--c); color: #160d22; box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+  .pick-name { font-weight: 800; display: block; }
+  .pick-perk { color: var(--muted); font-size: .8rem; display: block; }
+  .nameplate { margin-top: -30px; z-index: 2; font-family: var(--font-display); font-size: 1.1rem; letter-spacing: .08em; padding: 4px 14px; border-radius: 10px;
+    background: rgba(0,0,0,.45); border: 1px solid var(--panel-edge); color: var(--c, var(--gold)); }
   #ysvg[data-mood="calm"] .m-calm, #ysvg[data-mood="smile"] .m-smile, #ysvg[data-mood="hype"] .m-hype, #ysvg[data-mood="ooh"] .m-ooh { display: inline; }
 
   .bubble { position: absolute; left: 50%; top: -66px; transform: translateX(-50%); z-index: 6; max-width: 220px; width: max-content;
@@ -224,6 +238,8 @@
     </div>
   </header>
 
+  <div class="picker" id="picker" role="radiogroup" aria-label="Choose your lifter"></div>
+
   <section class="stage" id="stage">
     <div class="gains">
       <div class="num" id="gains">0</div>
@@ -247,11 +263,12 @@
       </button>
       <div class="walker" id="walker">
         <div class="bubble" id="bubble" hidden></div>
-    <button id="yoki" aria-label="Click Yoki to do a rep">
+    <button id="yoki" aria-label="Click your lifter to do a rep">
       <svg viewBox="0 0 320 390" aria-hidden="true" id="ysvg">
         <defs>
-          <radialGradient id="skin" cx="45%" cy="35%" r="75%"><stop offset="0" stop-color="#d9a074"/><stop offset=".6" stop-color="#bb7e52"/><stop offset="1" stop-color="#94592f"/></radialGradient>
-          <linearGradient id="skinShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a86a3f"/><stop offset="1" stop-color="#7e4824"/></linearGradient>
+          <radialGradient id="skin" cx="45%" cy="35%" r="75%"><stop offset="0" style="stop-color:var(--s1,#d9a074)"/><stop offset=".6" style="stop-color:var(--s2,#bb7e52)"/><stop offset="1" style="stop-color:var(--s3,#94592f)"/></radialGradient>
+          <linearGradient id="skinShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--s4,#a86a3f)"/><stop offset="1" style="stop-color:var(--s5,#7e4824)"/></linearGradient>
+          <linearGradient id="sweater" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34364a"/><stop offset="1" stop-color="#101119"/></linearGradient>
           <linearGradient id="hoodie" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#e9ebef"/><stop offset="1" stop-color="#c7ccd6"/></linearGradient>
           <linearGradient id="hood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f5f8"/><stop offset="1" stop-color="#cfd3dc"/></linearGradient>
           <linearGradient id="shorts" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2f45"/><stop offset="1" stop-color="#15172a"/></linearGradient>
@@ -293,7 +310,8 @@
           </g>
           <path d="M160 228 V280" stroke="#8a522b" stroke-width="2" opacity=".35"/>
 
-          <!-- sleeveless cropped white hoodie -->
+          <!-- Yoki: sleeveless cropped white hoodie -->
+          <g class="c-yoki">
           <path d="M104 132 C120 122 200 122 216 132 C222 160 214 196 206 224 C186 232 134 232 114 224 C106 196 98 160 104 132 Z" fill="url(#hoodie)"/>
           <path d="M114 224 C134 232 186 232 206 224 L206 230 C186 238 134 238 114 230 Z" fill="#c7ccd6"/>
           <path d="M126 150 C134 176 136 200 134 222 M194 150 C186 176 184 200 186 222" stroke="#c9ced8" stroke-width="2" fill="none"/>
@@ -302,6 +320,23 @@
           <path d="M118 128 C118 104 138 98 160 98 C182 98 202 104 202 128 C196 146 178 152 160 152 C142 152 124 146 118 128 Z" fill="url(#hood)"/>
           <path d="M134 126 C140 140 180 140 186 126 C180 116 140 116 134 126 Z" fill="#b9bfcb"/>
           <path d="M150 140 v26 M170 140 v26" stroke="#d7dbe3" stroke-width="2.4" stroke-linecap="round"/>
+          </g>
+          <!-- Ang: cropped black sweater vest with school badge -->
+          <g class="c-ang">
+            <path d="M104 132 C120 122 200 122 216 132 C222 160 214 196 206 224 C186 232 134 232 114 224 C106 196 98 160 104 132 Z" fill="url(#sweater)"/>
+            <path d="M114 220 C134 228 186 228 206 220 L206 230 C186 238 134 238 114 230 Z" fill="#0b0c12"/>
+            <path d="M142 124 L160 160 L178 124" stroke="#4a4d63" stroke-width="3" fill="none"/>
+            <ellipse cx="188" cy="168" rx="10" ry="7" fill="#f4f5f8"/><ellipse cx="188" cy="168" rx="7" ry="4.5" fill="#e0505e"/><path d="M182 168 h12" stroke="#f4f5f8" stroke-width="1.6"/>
+          </g>
+          <!-- Alton: cropped white polo with sleeve caps -->
+          <g class="c-alton">
+            <path d="M104 132 C120 122 200 122 216 132 C222 160 214 196 206 224 C186 232 134 232 114 224 C106 196 98 160 104 132 Z" fill="url(#hoodie)"/>
+            <path d="M114 224 C134 232 186 232 206 224 L206 230 C186 238 134 238 114 230 Z" fill="#c7ccd6"/>
+            <g id="sleeve"><path d="M86 140 C94 122 120 118 134 130 L128 168 C114 172 98 168 86 160 Z" fill="url(#hoodie)"/><path d="M86 156 C98 164 114 168 128 164" stroke="#c7ccd6" stroke-width="3" fill="none"/></g>
+            <use href="#sleeve" transform="translate(320 0) scale(-1 1)"/>
+            <rect x="155" y="130" width="10" height="34" rx="3" fill="#e3e6ec"/><circle cx="160" cy="142" r="2" fill="#aab0bd"/><circle cx="160" cy="153" r="2" fill="#aab0bd"/>
+            <circle cx="190" cy="206" r="6" fill="#5b8cff"/><path d="M186 206 h8" stroke="#ffc94a" stroke-width="2"/>
+          </g>
           <!-- shorts -->
           <path d="M126 284 L194 284 L200 322 L166 322 L160 306 L154 322 L120 322 Z" fill="url(#shorts)"/>
           <rect x="126" y="282" width="68" height="7" rx="3" fill="#3a3f5c"/>
@@ -309,11 +344,28 @@
 
           <!-- neck + head -->
           <path d="M144 100 h32 v24 c-10 6 -22 6 -32 0z" fill="url(#skinShade)"/>
+          <g class="c-ang"><path d="M138 116 L160 132 L150 146 L132 126 Z M182 116 L160 132 L170 146 L188 126 Z" fill="#f4f5f8"/></g>
+          <g class="c-alton"><path d="M138 116 L160 130 L152 144 L132 126 Z M182 116 L160 130 L168 144 L188 126 Z" fill="#f7f8fb" stroke="#d3d7df" stroke-width="1.5"/></g>
           <ellipse cx="129" cy="74" rx="7" ry="10" fill="#b47448"/><ellipse cx="191" cy="74" rx="7" ry="10" fill="#b47448"/>
           <path d="M128 66 C128 38 192 38 192 66 C192 92 180 112 160 112 C140 112 128 92 128 66 Z" fill="url(#skin)"/>
-          <!-- short messy black hair -->
+          <!-- Yoki: short messy black hair -->
+          <g class="c-yoki">
           <path d="M124 70 C118 40 140 22 162 24 C186 24 202 40 196 70 C194 60 190 52 186 50 L180 56 L176 47 L168 54 L162 45 L156 54 L148 46 L143 55 L137 48 C130 54 127 62 124 70 Z" fill="url(#hair)"/>
           <path d="M150 32 l6 -6 l2 8 l6 -7 l2 8" stroke="#0b0b10" stroke-width="4" fill="none" stroke-linejoin="round"/>
+          </g>
+          <!-- Ang: neat short hair swept to the side -->
+          <g class="c-ang">
+            <path d="M125 70 C120 42 140 26 162 27 C186 27 201 42 195 70 C193 60 190 54 186 52 C172 46 150 46 136 54 C130 58 127 63 125 70 Z" fill="url(#hair)"/>
+            <path d="M134 56 C146 42 174 40 190 52 C176 52 158 54 140 62 Z" fill="url(#hair)"/>
+            <path d="M150 34 C162 30 176 33 184 40" stroke="#3a3a46" stroke-width="2" fill="none" opacity=".7"/>
+          </g>
+          <!-- Alton: big curly hair -->
+          <g class="c-alton" fill="url(#hair)">
+            <circle cx="128" cy="62" r="12"/><circle cx="134" cy="45" r="13"/><circle cx="148" cy="33" r="14"/><circle cx="165" cy="30" r="15"/>
+            <circle cx="181" cy="38" r="14"/><circle cx="191" cy="53" r="13"/><circle cx="193" cy="68" r="9"/><circle cx="126" cy="74" r="7"/>
+            <circle cx="146" cy="50" r="12"/><circle cx="162" cy="47" r="12"/><circle cx="178" cy="52" r="11"/>
+            <path d="M140 30 q4 -4 8 0 M160 22 q4 -4 8 0 M178 30 q4 -4 8 0 M186 46 q4 -4 8 0 M128 42 q4 -4 8 0" stroke="#3a3a46" stroke-width="2" fill="none"/>
+          </g>
           <!-- calm, half-lidded eyes -->
           <g id="brows">
             <path d="M139 70 q8 -4 16 0" stroke="#1a1310" stroke-width="3.4" fill="none" stroke-linecap="round"/>
@@ -321,9 +373,15 @@
           </g>
           <g id="eyes"><path d="M141 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/><path d="M167 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/></g>
           <path d="M140 77.5 q7 -3 14 0" stroke="#94592f" stroke-width="2" fill="none"/><path d="M166 77.5 q7 -3 14 0" stroke="#94592f" stroke-width="2" fill="none"/>
+          <g class="c-ang" fill="rgba(255,255,255,.12)" stroke="#16161e" stroke-width="2.4">
+            <rect x="134" y="71" width="23" height="16" rx="6"/><rect x="163" y="71" width="23" height="16" rx="6"/>
+            <path d="M157 78 h6 M134 77 h-5 M186 77 h5" fill="none"/>
+          </g>
           <!-- nose + mouth -->
           <path d="M156 92 q4 3 8 0" stroke="#7e4824" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-          <path class="mouth m-calm" d="M151 101 q9 -2 18 0" stroke="#5c2f16" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <path class="mouth m-calm c-yoki" d="M151 101 q9 -2 18 0" stroke="#5c2f16" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <path class="mouth m-calm c-ang" d="M150 100 q10 5 20 -1" stroke="#5c2f16" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <g class="mouth m-calm c-alton"><ellipse cx="160" cy="102" rx="8" ry="8" fill="#3a1508"/><path d="M154 104 q6 12 12 0 z" fill="#e8707e"/></g>
           <path class="mouth m-smile" d="M149 99 q11 9 22 0" stroke="#5c2f16" stroke-width="2.8" fill="none" stroke-linecap="round"/>
           <g class="mouth m-hype"><path d="M147 97 h26 q-2 14 -13 14 q-11 0 -13 -14z" fill="#3a1508"/><path d="M149 97.5 h22 v3.5 h-22z" fill="#fff"/><ellipse cx="160" cy="107" rx="6" ry="3" fill="#e0606e"/></g>
           <g class="mouth m-ooh"><ellipse cx="160" cy="102" rx="5" ry="6" fill="#3a1508"/></g>
@@ -334,6 +392,7 @@
       </div>
     </div>
     <div class="podium"></div>
+    <div class="nameplate" id="nameplate">YOKI</div>
     <p class="hint">Tap fast to build a combo. Hit 50 for FEVER. Grab golden shakes when they show up.</p>
   </section>
 
@@ -343,7 +402,7 @@
 
     <div class="rebirth">
       <h2>REBIRTH <small id="nextMult">next: ×2 boost</small></h2>
-      <p>Reset gains and upgrades. Yoki comes back <b>bigger</b> with a permanent gains boost.</p>
+      <p>Reset gains and upgrades. Your lifter comes back <b>bigger</b> with a permanent gains boost.</p>
       <div class="bar"><i id="bar"></i></div>
       <div class="bar-row"><span id="barNow">0</span><span id="barNeed">25K</span></div>
       <button id="rebirthBtn" disabled>REBIRTH</button>
@@ -380,13 +439,27 @@ const LINES = {
   fever:    ['FEVER MODE!!', 'I CAN FEEL IT!'],
   rebirth:  ["I'm BACK. And BIGGER.", 'Reborn. Re-swole.'],
 };
+const CHARS = {
+  yoki:  { name: 'Yoki',  color: '#ffc94a', perk: 'Fever lasts 15s',
+           skin: ['#d9a074', '#bb7e52', '#94592f', '#a86a3f', '#7e4824'],
+           hi: "Yo! I'm Yoki. Click me!", pickLine: 'Yoki is back on the stage!',
+           click: ['LIGHT WEIGHT!', 'YEAH BUDDY!', 'One more rep!', 'Feel the pump!', "Let's go!"] },
+  ang:   { name: 'Ang',   color: '#6ea8ff', perk: 'Crits 15% of the time',
+           skin: ['#e6b48c', '#cc9468', '#a76d44', '#b27a50', '#8a5730'],
+           hi: "Ang here. Let's be smart about this.", pickLine: 'Big brain. Bigger biceps.',
+           click: ['Calculated.', 'Big brain, big gains.', 'Science says: more reps.', 'As predicted.', 'Textbook form.'] },
+  alton: { name: 'Alton', color: '#ff6b7d', perk: 'Golden shakes 2× as often',
+           skin: ['#cf9166', '#ae7046', '#86502a', '#9c6038', '#74401f'],
+           hi: 'ALTON IN THE BUILDING!', pickLine: 'BLEHHH! Alton time!',
+           click: ['AAAAHHH!', 'BLEHHH!', "Let's goooo!", 'WOOOO!', 'Hehehe!'] },
+};
 const REP_MS  = [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
 const GAIN_MS = [100, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13];
 const SAVE_KEY = 'yoki-clicker-v1';
-const CRIT_CHANCE = 0.08, CRIT_MULT = 5, COMBO_WINDOW = 900, FEVER_EVERY = 50, FEVER_MS = 10000, FEVER_MULT = 3;
+const CRIT_MULT = 5, COMBO_WINDOW = 900, FEVER_EVERY = 50, FEVER_MULT = 3;
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const fresh = () => ({ gains: 0, rebirths: 0, reps: 0, msReps: 0, msGains: 0, owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])) });
+const fresh = () => ({ char: 'yoki', gains: 0, rebirths: 0, reps: 0, msReps: 0, msGains: 0, owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])) });
 let state = fresh();
 let soundOn = true;
 
@@ -402,6 +475,10 @@ const fmt = n => {
   return (n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : n.toFixed(0)) + units[i];
 };
 
+const ch = () => CHARS[state.char] || CHARS.yoki;
+const critChance = () => state.char === 'ang' ? 0.15 : 0.08;
+const feverMs = () => state.char === 'yoki' ? 15000 : 10000;
+const goldenGap = () => (25000 + Math.random() * 35000) * (state.char === 'alton' ? .5 : 1);
 const mult = () => 1 + state.rebirths;
 const cost = u => Math.floor(u.base * Math.pow(1.15, state.owned[u.id]));
 const perClick = () => (1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id], 0)) * mult();
@@ -487,7 +564,7 @@ const comboMult = () => 1 + Math.min(combo, 100) * 0.02;
 const inFever = () => performance.now() < feverUntil;
 
 function startFever() {
-  feverUntil = performance.now() + FEVER_MS;
+  feverUntil = performance.now() + feverMs();
   document.body.classList.add('fever');
   const b = document.createElement('div'); b.className = 'fever-banner'; b.textContent = 'FEVER ×3';
   stage.appendChild(b); setTimeout(() => b.remove(), 1400);
@@ -531,7 +608,7 @@ yoki.addEventListener('click', e => {
   lastHit = now;
   if (combo % FEVER_EVERY === 0) startFever();
 
-  const crit = Math.random() < CRIT_CHANCE;
+  const crit = Math.random() < critChance();
   const amt = perClick() * comboMult() * (inFever() ? FEVER_MULT : 1) * (crit ? CRIT_MULT : 1);
   state.gains += amt;
   state.reps = (state.reps || 0) + 1;
@@ -559,7 +636,7 @@ yoki.addEventListener('click', e => {
   } else {
     tone(150 + pitch, 55, .12, 'sine', .25);
     tone(500 + pitch * 2, 800 + pitch * 2, .05, 'triangle', .04);
-    if (wasIdle) { say(pick(LINES.click), 1200); mood('smile', 1000); }
+    if (wasIdle) { say(pick(ch().click), 1200); mood('smile', 1000); }
     else if (combo % 10 === 0 && combo % FEVER_EVERY) { say(pick(LINES.combo), 1200); mood('smile', 1000); }
   }
   render();
@@ -587,7 +664,7 @@ golden.addEventListener('click', e => {
   const bonus = Math.max(perSec() * 45, perClick() * 30, 50) * (inFever() ? FEVER_MULT : 1);
   state.gains += bonus;
   golden.hidden = true;
-  nextGolden = now + 25000 + Math.random() * 35000;
+  nextGolden = now + goldenGap();
   const sr = stage.getBoundingClientRect(), r = golden.getBoundingClientRect();
   popAt(r.left + r.width / 2 - sr.left, r.top - sr.top, '+' + fmt(bonus), true);
   burst(r.left + r.width / 2, r.top + r.height / 2, 70, 11);
@@ -597,6 +674,35 @@ golden.addEventListener('click', e => {
   lastInteract = now;
   render();
 });
+
+/* ---------- Character picker ---------- */
+const picker = $('picker');
+for (const [id, c] of Object.entries(CHARS)) {
+  const b = document.createElement('button');
+  b.className = 'pick'; b.id = 'pick-' + id;
+  b.setAttribute('role', 'radio'); b.style.setProperty('--c', c.color);
+  b.innerHTML = `<span class="avatar">${c.name[0]}</span><span><span class="pick-name">${c.name}</span><span class="pick-perk">${c.perk}</span></span>`;
+  b.addEventListener('click', () => setChar(id, true));
+  picker.appendChild(b);
+}
+function setChar(id, announce) {
+  if (!CHARS[id]) id = 'yoki';
+  const c = CHARS[id];
+  state.char = id;
+  svg.dataset.char = id;
+  c.skin.forEach((v, i) => svg.style.setProperty('--s' + (i + 1), v));
+  for (const k of Object.keys(CHARS)) $('pick-' + k).setAttribute('aria-checked', k === id);
+  $('nameplate').textContent = c.name.toUpperCase();
+  $('nameplate').style.setProperty('--c', c.color);
+  yoki.setAttribute('aria-label', `Click ${c.name} to do a rep`);
+  if (announce) {
+    const r = yoki.getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height / 2, 60, 10);
+    tone(400, 1200, .25, 'triangle', .1);
+    say(c.pickLine, 1800); mood('hype', 1500);
+    save();
+  }
+}
 
 /* ---------- Upgrades ---------- */
 for (const u of UPGRADES) {
@@ -671,12 +777,12 @@ $('rebirthBtn').addEventListener('click', () => {
     return;
   }
   clearTimeout(confirmTimer);
-  const keep = { rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, msGains: state.msGains };
+  const keep = { char: state.char, rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, msGains: state.msGains };
   state = { ...fresh(), ...keep };
   shown = 0; combo = 0;
   const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
   tone(200, 1200, .7, 'sawtooth', .08); fanfare(); rain(180);
-  toast(`Reborn! Yoki is bigger. Gains ×${mult()}`);
+  toast(`Reborn! ${ch().name} is bigger. Gains ×${mult()}`);
   say(pick(LINES.rebirth), 2400); mood('hype', 2500);
   save(); render();
 });
@@ -690,7 +796,7 @@ $('resetBtn').addEventListener('click', () => {
     return;
   }
   wipeArmed = false; b.textContent = 'Wipe save';
-  state = fresh(); shown = 0; save(); render();
+  state = { ...fresh(), char: state.char }; shown = 0; save(); render();
 });
 
 $('soundBtn').addEventListener('click', () => {
@@ -730,7 +836,7 @@ function frame(now) {
   // golden shake
   if (golden.hidden && now > nextGolden) spawnGolden(now);
   if (!golden.hidden && now > goldenUntil) {
-    golden.hidden = true; nextGolden = now + 25000 + Math.random() * 30000;
+    golden.hidden = true; nextGolden = now + goldenGap();
     say(pick(LINES.melted), 1500); mood('calm', 500);
   }
 
@@ -808,12 +914,13 @@ function start(data) {
   $('soundBtn').textContent = soundOn ? 'Sound on' : 'Sound off';
   $('soundBtn').setAttribute('aria-pressed', soundOn);
   svg.dataset.mood = 'calm';
+  setChar(state.char, false);
   window.claude?.hot?.snapshot?.(() => ({ state }));
   setInterval(render, 100);
   setInterval(save, 5000);
   addEventListener('beforeunload', save);
   render();
-  setTimeout(() => { say(state.reps ? 'Back for more gains?' : "Yo! I'm Yoki. Click me!", 2400); mood('smile', 2000); }, 600);
+  setTimeout(() => { say(state.reps ? 'Back for more gains?' : ch().hi, 2400); mood('smile', 2000); }, 600);
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
