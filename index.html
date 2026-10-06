@@ -383,6 +383,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .cal30{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:10px 0}.cal30>div{display:flex;flex-direction:column;align-items:center;border-radius:10px;padding:5px 2px;background:var(--sunk);font-size:.62rem}.cal30>div b{font-size:.9rem}.cal30>.past{opacity:.4}.cal30>.today{background:var(--accent);color:var(--accent-ink)}.cal30>.big{box-shadow:inset 0 0 0 2px var(--gold)}
 .rguide{flex:none;width:26px;height:26px;border-radius:50%;background:var(--sunk);font-weight:900;font-size:.85rem;display:grid;place-items:center;margin-left:-4px}
 .nextlist{display:flex;flex-direction:column;gap:8px;margin-top:8px}.nextrow{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border-radius:16px;padding:12px;box-shadow:var(--shadow)}.nextrow>span{font-size:1.6rem;line-height:1}.nextrow div{flex:1;min-width:0}.nextrow b{display:block;font-size:.9rem}.nextrow small{display:block;font-size:.74rem;color:var(--muted);margin:2px 0 6px}.nextrow .reqbar{display:block;height:7px}
+.bgcur{background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:8px;display:flex;flex-direction:column;gap:4px}.bgcur small{font-family:var(--mono);font-size:.74rem}.bgcur .reqbar{display:block;height:8px}.lbtabs button.done{opacity:.6}.gymown .perk{width:100%}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -1509,7 +1510,7 @@ function barbellSVG(w){
 }
 let G=null,G0lift=null;
 const liftCost=w=>Math.max(1,Math.ceil((2+w/40)*(G&&G.half?.5:1)));
-function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/(10*(1+mm()))*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;z*=(1+.1*pk("lift"))*(1+.06*mm());return clamp(z,.06,.5)}
+function zoneFor(w){const pr=S.lifts[G.lift];let z=w<=pr?clamp(.42-(w/pr)*.18,.2,.42):.15-(w-pr)/(10*(1+mm()))*.07;if(S.protein>0)z*=1.5;if(S.buffs&&S.buffs.fed>0)z*=1.25;if(S.awake>20)z*=.75;z*=(1+.1*pk("lift"))*(1+.06*mm())*(1+.06*gymLv())*coachK();return clamp(z,.06,.5)}
 function newZone(){const z=zoneFor(G.w);G.z=[rnd(.08,.92-z),0];G.z[1]=G.z[0]+z}
 const LIFTS=[["bench","Bench"],["squat","Squat"],["dead","Deadlift"]];
 // Height: growth spurts reset your lifts but make you taller, and taller means more confidence
@@ -1654,7 +1655,8 @@ function physiqueSVG(B){
     <ellipse cx="${100-15-3*c}" cy="92" rx="${14+7*c}" ry="${9+5*c}" fill="${sk}" stroke="${sh}" stroke-width="${1+c}"/><ellipse cx="${100+15+3*c}" cy="92" rx="${14+7*c}" ry="${9+5*c}" fill="${sk}" stroke="${sh}" stroke-width="${1+c}"/>
     ${abs}<rect x="92" y="48" width="16" height="14" fill="${sk}"/><circle cx="100" cy="36" r="17" fill="${sk}" stroke="${sh}" stroke-width="1"/><path d="M83 33 A17 17 0 0 1 117 33 Z" fill="#3b2a20"/></svg>`;
 }
-function physiqueCard(){const B=myBuild(),bar=(n,v,src)=>`<div><span>${n}<em>${src}</em></span><i><b style="width:${Math.min(100,v/1.4*100)}%"></b></i></div>`;
+function physiqueCard(){return physiqueCard0()+bgoalHTML()}
+function physiqueCard0(){const B=myBuild(),bar=(n,v,src)=>`<div><span>${n}<em>${src}</em></span><i><b style="width:${Math.min(100,v/1.4*100)}%"></b></i></div>`;
   return `<div class="phys"><div class="physfig">${physiqueSVG(B)}</div><div class="physbars">${bar("Chest & arms",B.c,"bench")}${bar("Back & traps",B.b,"deadlift")}${bar("Legs",B.l,"squat")}<p class="fine" style="text-align:left">Every PR makes that body part bigger, here and on the map.${frameK()>1?` At ${S.height||170} cm you need ×${frameK().toFixed(1)} the weight to fill out your frame.`:""}</p></div></div>`}
 
 /* ---------- Flip Tower: build a skyscraper floor by floor, forever ---------- */
@@ -1850,7 +1852,7 @@ function endFlex(){
   const F=GS.flex;F.done=true;GS.npcs.forEach(n=>{n.slot=-1;n.t=rnd(1,4)});S.stats.crowd=Math.max(S.stats.crowd||0,F.peak);S.stats.flexes=(S.stats.flexes||0)+1;
   const P=$("gPanel");P.hidden=false;const back=`<button class="bigbtn" id="gDone" style="text-align:center">Back to the floor</button>`;
   if(F.T){const T=F.T,pose=F.maxPts?F.pts/F.maxPts*20:0,phys=clamp(S.pr/T.kg,0,2)*5,me=+(pose+phys).toFixed(1);
-    const field=RIVAL_BB.slice().sort(()=>Math.random()-.5).slice(0,3).map(n=>({n,s:+(rnd(13,23.5)+T.diff*.8).toFixed(1)}));field.push({n:"You",s:me,you:1});field.sort((a,b)=>b.s-a.s);
+    const fr=MP?peersHere().slice(0,3).map(([,p])=>({n:String(p.n||"Friend").slice(0,14)+" (friend)",s:+(rnd(11,18)+clamp((p.pr||20)/T.kg,0,2)*5).toFixed(1)})):[],field=fr.concat(RIVAL_BB.slice().sort(()=>Math.random()-.5).slice(0,3-fr.length).map(n=>({n,s:+(rnd(13,23.5)+T.diff*.8).toFixed(1)})));field.push({n:"You",s:me,you:1});field.sort((a,b)=>b.s-a.s);
     const place=field.findIndex(x=>x.you)+1,cash=Math.round(T.prize*[1,.4,.15,0][place-1]),fans=Math.round(T.prize*.6*[1,.5,.25,.1][place-1]);
     S.comp=S.comp||{};S.comp[F.tier]=S.day;S.trophies=S.trophies||{};if(place<=3&&(!S.trophies[F.tier]||place<S.trophies[F.tier]))S.trophies[F.tier]=place;
     S.fans=(S.fans||0)+fans;if(cash)earn(cash);if(place===1){SFX.rebirth();buzz([30,50,30,50]);banner(T.n+" champion","g");confetti(260);flash("#ffcc33",.6);shake(12,.7)}if(place<=3)setTimeout(()=>gainCrate(4-place),1200);else if(place<=3){SFX.level();banner(["","","2nd place","3rd place"][place],"u")}else{SFX.loss();banner("4th place","r")}
@@ -1869,7 +1871,7 @@ function compPanel(){
   P.innerHTML=`<div class="gpanel-in"><button class="leave" id="gBack">${ARROW}Back to the floor</button>
     <div class="note">Hit the poses the judges call. <b>Posing is out of 20, physique out of 10</b>, and physique comes from your max lift. One entry per show each day. 20 energy.</div>
     <div class="perks">${COMPS.map((c,i)=>{const lock=S.pr<c.kg||(S.fans||0)<c.fans,done=S.comp[i]===S.day,tr=S.trophies[i];return `<button class="perk nopic" data-comp="${i}" ${lock||done?"disabled":""}><span class="t">${c.n}${tr?` <em class="beat">${["","GOLD","SILVER","BRONZE"][tr]}</em>`:""}</span><span class="d">${lock?`Needs ${c.kg} kg max lift${c.fans?" and "+fmtN(c.fans)+" fans":""}`:done?"Come back tomorrow":"1st place wins "+fmt(c.prize)}</span><span class="c">${done?"Done":lock?"Locked":"Enter"}</span></button>`}).join("")}</div>
-    <p class="fine">Fans: ${fmtN(S.fans||0)} · Max lift: ${S.pr} kg</p></div>`;
+    <p class="fine">Fans: ${fmtN(S.fans||0)} · Max lift: ${S.pr} kg${MP&&peersHere().length?" · friends here join your show":""}</p>${gymOwnHTML()}</div>`;
   $("gBack").onclick=closePanel;
   P.querySelectorAll("[data-comp]").forEach(b=>b.onclick=()=>startFlex(+b.dataset.comp,b));
 }
@@ -3004,7 +3006,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);copTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);aucTick(dt);crewTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);copTick(dt);gymOwnTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);aucTick(dt);crewTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3256,7 +3258,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild(),L=myLook();return{go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -5485,6 +5487,27 @@ function cityNight(){const n=night();if(n<.3||!SCN||SCN.kind!=="city")return;con
   if(k==="tokyo")SCN.places.forEach((p,i)=>{if(!p.bld)return;const c=["#ff4fd8","#4fe3ff","#ffe14f","#2fd28a"][i%4],fl=Math.random()<.02?.3:1;ctx.save();ctx.globalAlpha=n*fl;ctx.shadowColor=c;ctx.shadowBlur=14;ctx.strokeStyle=c;ctx.lineWidth=3;rr(p.x+8,p.y+8,46,20,5);ctx.stroke();ctx.fillStyle=c;ctx.font="900 11px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(["営業中","OPEN","24H","ラーメン"][i%4],p.x+31,p.y+18);ctx.restore()});
   if(k==="paris"&&(S.clock%1)<.25)for(let i=0;i<60;i++){const t=Math.random(),y=540-t*440,w=(136*Math.pow(1-t,2.3)+4)*(Math.random()*2-1);ctx.fillStyle=`rgba(255,255,255,${.6+.4*Math.random()})`;ctx.fillRect(900+w,y,2.4,2.4)}
   if(k==="dubai"){SCN.bfw=SCN.bfw||[];if(Math.random()<.03)SCN.bfw.push({x:900+rnd(-120,120),y:rnd(0,160),t:0,c:pick(["#ffcc33","#ff4fd8","#4fe3ff","#ffffff"])});SCN.bfw=SCN.bfw.filter(f=>{f.t+=1/60;if(f.t>1.4)return false;const k2=Math.min(1,f.t/1);ctx.globalAlpha=1-Math.max(0,f.t-.9)/.5;ctx.fillStyle=f.c;for(let j=0;j<14;j++){const a=j/14*Math.PI*2;ctx.beginPath();ctx.arc(f.x+Math.cos(a)*55*k2,f.y+Math.sin(a)*55*k2+f.t*f.t*10,2.2,0,7);ctx.fill()}ctx.globalAlpha=1;return true})}}
+/* ================= gym extras: own Iron House, body goals ================= */
+const GYMLV=[{c:1e6,n:"Buy Iron House",d:"Lifts get a bigger green zone. Members pay you every minute."},{c:1e7,n:"New racks and plates",d:"An even bigger zone and more members."},{c:1e8,n:"Pro equipment",d:"Competition-grade gear."},{c:1e9,n:"Celebrity coaches",d:"Famous trainers pull in rich members."},{c:1e10,n:"Gym empire",d:"Iron House franchises across the city."}];
+const gymLv=()=>(S&&S.gymOwn)||0;
+const gymIncome=()=>gymLv()?2000*Math.pow(8,gymLv()-1):0;
+// friends who own their gym coach you when you train in the same room online
+const coachK=()=>MP&&room==="gym"&&peersHere().some(([,p])=>(p.go|0)>0)?1.1:1;
+let gymPayT=0;function gymOwnTick(dt){if(!gymLv())return;gymPayT+=dt;if(gymPayT<60)return;gymPayT=0;const v=Math.round(gymIncome()*moonK());earn(v);if(room==="gym")banner("Iron House members +"+fmt(v),"u")}
+const BGOALS=[{k:"b100",n:"Bench 100 kg",v:()=>S.lifts.bench,t:100,u:"kg"},{k:"s150",n:"Squat 150 kg",v:()=>S.lifts.squat,t:150,u:"kg"},{k:"d200",n:"Deadlift 200 kg",v:()=>S.lifts.dead,t:200,u:"kg"},{k:"tot500",n:"500 kg total",v:()=>liftTotal(),t:500,u:"kg"},
+ {k:"b200",n:"Bench 200 kg",v:()=>S.lifts.bench,t:200,u:"kg"},{k:"h200",n:"Reach 200 cm",v:()=>S.height||170,t:200,u:"cm"},{k:"full",n:"Fill out your frame",v:()=>{const B=myBuild();return Math.round((B.c+B.l+B.b)/3*100)},t:100,u:"%"},{k:"tot1000",n:"1,000 kg total",v:()=>liftTotal(),t:1000,u:"kg"},{k:"d500",n:"Deadlift 500 kg",v:()=>S.lifts.dead,t:500,u:"kg"}];
+function bgoalHTML(){S.bgDone=S.bgDone||{};const g=BGOALS.find(x=>x.k===S.bgoal)||null,v=g?g.v():0,ok=g&&v>=g.t;
+  return `<div class="bgoal"><div class="sechead"><h3>Body goal</h3><span class="eyebrow">${Object.keys(S.bgDone).length}/${BGOALS.length} reached</span></div>
+    ${g?`<div class="bgcur"><b>${g.n}</b><small>${Math.round(v)}/${g.t} ${g.u}</small><i class="reqbar"><i style="width:${Math.min(100,v/g.t*100)}%"></i></i>${ok?`<button class="cta" data-bgclaim="1">Claim reward</button>`:""}</div>`:`<p class="fine">Pick a target and track it here.</p>`}
+    <div class="lbtabs wrap">${BGOALS.map(x=>`<button class="${S.bgoal===x.k?"on":""}${S.bgDone[x.k]?" done":""}" data-bgoal="${x.k}">${S.bgDone[x.k]?"✓ ":""}${x.n}</button>`).join("")}</div></div>`}
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-bgoal],[data-bgclaim],[data-gymup]");if(!t||!S)return;
+  if(t.dataset.bgoal){S.bgoal=t.dataset.bgoal;dirty=true;SFX.tick(.5)}
+  if(t.dataset.bgclaim){const g=BGOALS.find(x=>x.k===S.bgoal);if(!g||g.v()<g.t||S.bgDone[g.k])return;S.bgDone[g.k]=1;const v=Math.round(Math.max(2e4,netWorth()*.01));earn(v);gainCrate(3);dirty=true;SFX.grail();confetti(160);banner("Body goal reached! +"+fmt(v),"g");const nx=BGOALS.find(x=>!S.bgDone[x.k]);S.bgoal=nx?nx.k:null}
+  if(t.dataset.gymup){const L=GYMLV[gymLv()];if(!L||S.cash<L.c)return;S.cash-=L.c;S.gymOwn=gymLv()+1;dirty=true;SFX.rebirth();confetti(160);banner(gymLv()===1?"Iron House is yours!":"Iron House upgraded","g");updMini()}
+  const box=t.closest(".bgoal");if(box)box.outerHTML=bgoalHTML();const gb=t.closest(".gymown");if(gb)gb.outerHTML=gymOwnHTML()});
+function gymOwnHTML(){const L=gymLv(),N=GYMLV[L];return `<div class="gymown"><div class="sechead"><h3>Own Iron House</h3><span class="eyebrow">${L?"Level "+L+" · "+fmt(gymIncome())+"/min":"Not yours yet"}</span></div>
+  ${L?`<p class="fine">Owner perks: +${L*6}% bigger green zone on every lift, and friends training here online get coached.</p>`:""}
+  ${N?`<button class="perk nopic" data-gymup="1" ${S.cash<N.c?"disabled":""}><span class="t">${N.n}</span><span class="d">${N.d}</span><span class="c">${fmt(N.c)}</span></button>`:`<p class="fine">Fully upgraded. You run the biggest gym chain in town.</p>`}</div>`}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
