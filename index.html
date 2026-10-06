@@ -280,7 +280,33 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .perk.dest .oav.fl{background:none;display:grid;place-items:center}.perk.dest .flag{border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .perk.prestige{background:linear-gradient(135deg,#15161c,#2b2410);color:#f4e7c4}.perk.prestige .d{color:#cdbb8e}.perk.prestige .c{background:#cf9a14;color:#15161c}
 .seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.seg3 button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:9px 6px;font:800 .85rem var(--body);display:flex;flex-direction:column;gap:2px;cursor:pointer}.seg3 button small{font:600 .66rem var(--mono);color:var(--muted)}.seg3 button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.seg3 button.on small{color:inherit;opacity:.75}
-.flyov{background:linear-gradient(#7fc4f0,#d9efff)}.flyclouds{position:absolute;left:-50%;right:-50%;top:58%;height:30%;background:radial-gradient(ellipse 60px 22px at 50% 50%,#fff 60%,transparent 62%) 0 0/180px 80px;animation:waves 1.2s linear infinite;opacity:.9}
+.flyov{background:linear-gradient(#7fc4f0,#d9efff)}
+.rocketov{background:#05061a}.rocketov .saillab{bottom:auto;top:16%}
+.rksky{position:absolute;inset:0;background:linear-gradient(#05061a 0%,#120a3a 30%,#2a5bd7 62%,#9fd8f2 100%);background-size:100% 300%;background-position:0 100%;animation:rksky 2.6s ease-in forwards}
+@keyframes rksky{to{background-position:0 0}}
+.rkstars{position:absolute;inset:0;opacity:0;animation:rkstarsin 2.6s ease-in forwards}
+.rkstars i{position:absolute;width:2px;height:14px;border-radius:2px;background:#fff;animation:rkstreak .6s linear infinite}
+@keyframes rkstarsin{0%,35%{opacity:0}70%,100%{opacity:1}}
+@keyframes rkstreak{from{transform:translateY(-40vh)}to{transform:translateY(60vh)}}
+.rkground{position:absolute;left:-10%;right:-10%;bottom:0;height:22%;background:linear-gradient(#5f8a4a,#3b5a2e);border-radius:50% 50% 0 0/30% 30% 0 0;animation:rkground 2.6s ease-in forwards}
+@keyframes rkground{to{transform:translateY(120%)}}
+.rkship{position:absolute;left:50%;bottom:16%;width:min(22vw,92px);transform:translateX(-50%);animation:rkship 2.6s cubic-bezier(.5,0,.75,.4) forwards}
+.rkship svg{display:block;width:100%;animation:rkshake .08s linear infinite}
+@keyframes rkship{0%{bottom:16%}25%{bottom:20%}70%{bottom:46%}100%{bottom:120%}}
+@keyframes rkshake{0%,100%{transform:translateX(0)}50%{transform:translateX(1.5px)}}
+.rkflame{position:absolute;left:50%;top:94%;width:44%;height:70%;transform:translateX(-50%);border-radius:50% 50% 50% 50%/30% 30% 70% 70%;background:radial-gradient(ellipse at 50% 20%,#fff 0 18%,#ffe14f 30%,#ff7a3d 55%,rgba(255,60,40,0) 72%);transform-origin:50% 0;animation:rkflame .09s ease-in-out infinite alternate}
+@keyframes rkflame{from{transform:translateX(-50%) scaleY(.85)}to{transform:translateX(-50%) scaleY(1.25)}}
+.rksmoke{position:absolute;left:20%;right:20%;bottom:10%;height:14%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(220,225,235,.7) 60%,transparent);filter:blur(4px);animation:rksmoke 2.6s ease-out forwards}
+@keyframes rksmoke{0%{transform:scale(.2);opacity:0}20%{transform:scale(1);opacity:1}100%{transform:scale(2.4) translateY(40%);opacity:0}}
+.whirlov{background:#140a24}
+.wpool{position:absolute;left:50%;top:50%;width:190vmax;height:190vmax;margin:-95vmax 0 0 -95vmax;border-radius:50%;background:repeating-conic-gradient(from 0deg,#cf9a14 0 9deg,#7a2fd6 14deg 24deg,#14a3a8 30deg 36deg,#cf9a14 45deg);-webkit-mask:radial-gradient(circle,transparent 0 3%,#000 30%);mask:radial-gradient(circle,transparent 0 3%,#000 30%);animation:wspin 2.6s cubic-bezier(.4,0,.6,1) forwards;opacity:.85}
+.wpool.w2{background:repeating-conic-gradient(from 20deg,rgba(255,255,255,.55) 0 4deg,transparent 9deg 30deg);animation:wspin2 2.6s cubic-bezier(.4,0,.6,1) forwards;opacity:.6;mix-blend-mode:screen}
+.wpool.w3{background:radial-gradient(circle,transparent 0 20%,rgba(20,10,36,.85) 62%);-webkit-mask:none;mask:none;animation:none;opacity:1}
+.wcore{position:absolute;left:50%;top:50%;width:30vmin;height:30vmin;margin:-15vmin 0 0 -15vmin;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffe7a3 25%,rgba(207,154,20,.6) 50%,transparent 70%);animation:wcore 2.6s ease-in forwards}
+@keyframes wspin{0%{transform:rotate(0) scale(.6)}100%{transform:rotate(1440deg) scale(1.4)}}
+@keyframes wspin2{0%{transform:rotate(0) scale(1.3)}100%{transform:rotate(-1080deg) scale(.5)}}
+@keyframes wcore{0%{transform:scale(.3);opacity:.6}80%{transform:scale(1.2);opacity:1}100%{transform:scale(9);opacity:1}}
+.flyclouds{position:absolute;left:-50%;right:-50%;top:58%;height:30%;background:radial-gradient(ellipse 60px 22px at 50% 50%,#fff 60%,transparent 62%) 0 0/180px 80px;animation:waves 1.2s linear infinite;opacity:.9}
 .fishbar{position:relative;height:22px;border-radius:11px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line);margin:12px 0 6px;overflow:hidden}.fishbar i{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,#2fd28a,#4fe3a0);opacity:.85}.fishbar b{position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;background:var(--ink);border-radius:2px;left:0}
 .divegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;padding:12px;border-radius:18px;background:linear-gradient(#2fa6d9,#0f4f86)}.dspot{aspect-ratio:1;border:0;border-radius:14px;background:radial-gradient(circle at 50% 70%,#f5e2b0 0 45%,#e6cc8e 46%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:900 1.4rem var(--display);color:#a0764a;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.15)}.dspot:disabled{cursor:default}.dspot.open{background:rgba(255,255,255,.9)}.dspot i{width:26px;height:26px;border-radius:50%;box-shadow:inset -4px -4px 0 rgba(0,0,0,.15)}.dspot small{font:700 .66rem var(--body);color:var(--ink)}
 .album{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.fcard{border-radius:14px;padding:10px 6px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--rc);display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}.fcard b{font-size:.8rem}.fcard small{font:600 .66rem var(--mono);color:var(--muted)}.fcard.lock{opacity:.55;box-shadow:inset 0 0 0 1px var(--line)}
@@ -938,7 +964,7 @@ function newGame(){
   CATS.forEach(c=>{S.trend[c.k]=1;S.hist[c.k]=Array(40).fill(1)});
   freshLife(false);
 }
-function save(){if(ACC&&ACC.kicked)return;if(S){S.savedAt=Date.now();store.set(SAVE,JSON.stringify(SCN?Object.assign({},S,{px:SCN.tx,py:SCN.ty}):S))}dirty=false}
+function save(){if(ACC&&ACC.kicked)return;if(S){S.savedAt=Date.now();S.wl=SCN&&!MPW&&["space","planet","prehist"].includes(SCN.kind)?{k:SCN.kind,p:SCN.kind==="planet"?SCN.k:"",x:Math.round(S.px),y:Math.round(S.py)}:null;store.set(SAVE,JSON.stringify(SCN?Object.assign({},S,{px:SCN.tx,py:SCN.ty}):S))}dirty=false}
 function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){w2Migrate(d);{const MV={london:"paris",rome:"paris",geneva:"paris",seoul:"tokyo",bangkok:"tokyo",nyc:"dubai",vegas:"monaco",rio:"dubai",sydney:"dubai"};(d.biz||[]).forEach(b=>{if(MV[b.c])b.c=MV[b.c]});if(d.visited)for(const k in MV)delete d.visited[k]}if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};d.bestPr=Math.max(d.bestPr||0,d.pr||20,...Object.values(d.lifts||{}));d.bestLifts=d.bestLifts||{};for(const k in d.lifts||{})d.bestLifts[k]=Math.max(d.bestLifts[k]||0,d.lifts[k]);if(d.trend&&d.hist)CATS.forEach(c=>{if(d.trend[c.k]==null){d.trend[c.k]=1;d.hist[c.k]=Array(40).fill(1)}});for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;d.flags=d.flags||{};S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 // Reputation level grows forever from everything you earn; no resets
@@ -1344,6 +1370,7 @@ function drawPerson0(x,y,o){
     else if(hs===5){c.beginPath();c.moveTo(x-9.5,y-38+b);for(let i=0;i<=6;i++){const a=Math.PI+i/6*Math.PI;c.lineTo(x+Math.cos(a)*9.5,y-39+b+Math.sin(a)*9.5);c.lineTo(x+Math.cos(a+Math.PI/12)*14,y-39+b+Math.sin(a+Math.PI/12)*14)}c.lineTo(x+9.5,y-38+b);c.closePath();c.fill()}
     else if(hs===6){c.beginPath();c.arc(x,y-41+b,13.5,Math.PI*.9,Math.PI*2.1);c.fill();c.beginPath();c.arc(x-11,y-36+b,4,0,7);c.arc(x+11,y-36+b,4,0,7);c.fill()}
     else if(hs===7){c.beginPath();c.arc(x,y-39+b,9.6,Math.PI*1.02,Math.PI*1.98);c.fill();c.beginPath();c.ellipse(x+11,y-35+b,3.5,7,.4,0,7);c.fill();c.fillStyle="#e2364a";c.fillRect(x+8,y-41+b,3,3)}
+    else if(hs===8){c.beginPath();c.arc(x,y-39+b,10.2,Math.PI,Math.PI*2);c.fill();rrp(c,x-10.8,y-41+b,4.6,20,2.3);c.fill();rrp(c,x+6.2,y-41+b,4.6,20,2.3);c.fill()}
     else if(hs!==4){c.beginPath();c.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);c.fill()}}
   faceDraw(c,o,x,y-37+b);if(AC.g)accGlasses(c,AC.g,x,y-37+b);if(AC.h){accHat(c,AC.h,x,y-37+b);o={...o,crown:0}}
   if(o.crown){c.fillStyle="#ffcc33";c.beginPath();c.moveTo(x-8,y-45+b);c.lineTo(x-8,y-53+b);c.lineTo(x-4,y-48+b);c.lineTo(x,y-55+b);c.lineTo(x+4,y-48+b);c.lineTo(x+8,y-53+b);c.lineTo(x+8,y-45+b);c.closePath();c.fill()}
@@ -1409,7 +1436,7 @@ function drawWorld(){
   drawFinds();liveDraw();
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();drawHol();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
-  const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
+  const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,hs:n.f?8:0,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{...emoOpts(),acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
@@ -3031,7 +3058,7 @@ function loop(now){
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderBzChip();renderLvlBtn();renderPillTog()}
     }
-    NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
+    NPCS.forEach(n=>{if(!n.ok){n.ok=1;n.t=npcNext(n,roadPoint)}const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,roadPoint);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room){if(SCN)drawScene();else drawWorld()}
   }
   requestAnimationFrame(loop);
@@ -3445,8 +3472,8 @@ function bizStreet(b,nt){const id=b.id||"x";let h=0;for(const ch of id)h=(h*31+c
     ${b.t!=="resort"&&b.t!=="condo"?[130,256].map(x=>`<rect x="${x}" y="190" width="14" height="8" rx="2" fill="#8a6a4a"/>${[0,1,2].map(j=>`<circle cx="${x+3+j*4}" cy="189" r="2.6" fill="${["#ff8fa3","#ffd166","#b8a1ff"][j]}"/>`).join("")}`).join(""):""}`}
 /* screens */
 let CITY=null,BZV=null;
-function flyTo(c,then){const ov=document.createElement("div");ov.className="sailov flyov";ov.innerHTML=`<div class="sailsky"></div><div class="sailboat"><svg viewBox="0 0 160 90"><path d="M20 46h96c12 0 22 3 22 7s-10 7-22 7H36l-16-7Z" fill="#f4f6fa"/><path d="M70 47l-18-24h11l28 24Z" fill="${c.tone}"/><path d="M76 59l-14 16h10l20-16Z" fill="${c.tone}"/><path d="M26 47l-8-15h7l11 15Z" fill="${c.tone}"/>${[92,100,108,116].map(x=>`<circle cx="${x}" cy="52" r="2" fill="#1b1f2a"/>`).join("")}</svg></div><div class="flyclouds"></div><div class="saillab"><b>Flying to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`;
-  document.body.appendChild(ov);SFX.door();const t0=performance.now(),sec=1.6;const tick=()=>{const k=Math.min(1,(performance.now()-t0)/(sec*1000)),b=ov.querySelector("#sailBar");if(b)b.style.width=k*100+"%";if(k<1)requestAnimationFrame(tick);else{ov.classList.add("out");setTimeout(()=>ov.remove(),350);SFX.level();then?then():openCity(c.k,true)}};requestAnimationFrame(tick)}
+function flyTo(c,then){const ov=document.createElement("div");ov.className="sailov flyov"+(c.fx?" "+c.fx+"ov":"");ov.innerHTML=c.fx==="rocket"?rocketFx(c):c.fx==="whirl"?whirlFx(c):`<div class="sailsky"></div><div class="sailboat"><svg viewBox="0 0 160 90"><path d="M20 46h96c12 0 22 3 22 7s-10 7-22 7H36l-16-7Z" fill="#f4f6fa"/><path d="M70 47l-18-24h11l28 24Z" fill="${c.tone}"/><path d="M76 59l-14 16h10l20-16Z" fill="${c.tone}"/><path d="M26 47l-8-15h7l11 15Z" fill="${c.tone}"/>${[92,100,108,116].map(x=>`<circle cx="${x}" cy="52" r="2" fill="#1b1f2a"/>`).join("")}</svg></div><div class="flyclouds"></div><div class="saillab"><b>Flying to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`;
+  document.body.appendChild(ov);if(c.fx==="rocket"){tone(70,2.6,{type:"sawtooth",vol:.06,to:320});tone(140,2.6,{type:"square",vol:.015,to:60})}else if(c.fx==="whirl"){tone(180,2.6,{type:"sine",vol:.06,to:1100});tone(270,2.6,{type:"triangle",vol:.03,to:60})}else SFX.door();const t0=performance.now(),sec=c.fx?2.6:1.6;const tick=()=>{const k=Math.min(1,(performance.now()-t0)/(sec*1000)),b=ov.querySelector("#sailBar");if(b)b.style.width=k*100+"%";if(k<1)requestAnimationFrame(tick);else{ov.classList.add("out");setTimeout(()=>ov.remove(),350);SFX.level();then?then():openCity(c.k,true)}};requestAnimationFrame(tick)}
 function openAirport(){const L=repLevel();
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
     <div class="note">Fly anywhere in the world. Every city has its own <b>market</b>, a <b>Prestige House</b> trading $50M–$100M pieces, and <b>real estate</b> you can buy and run. ${hasToy("jet")?"Your private jet flies free.":"Fares grow with distance."}</div>
@@ -4197,7 +4224,12 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=11,WN=[
+const WN_VER=12,WN=[
+ ["🚀","Blast off to the Cosmos","The trip to World 2 is now a rocket launch, and the time machine to World 3 pulls you through a spinning time whirlpool."],
+ ["💾","Stay in your world","Closing the game in World 2 or World 3 no longer sends you back to Earth. You load right back in where you left off."],
+ ["🚶","Smarter townspeople","People walk on roads and grass and go around buildings instead of through them. Only your partner still cuts through to follow you. Women in town now have long hair."],
+ ["👑","10 new tiers","Celestial, Primordial, Eternal, Cosmic, Infinite, Omega, Transcendent, Omnipotent, Absolute and Beyond. Bigger money bonuses, harder rules."],
+ ["🦴","Easier to read in Deep Time","World 3 markets and labs have dark text on their light background, even when your phone is in dark mode."],
  ["🦖","World 3: Deep Time","The time machine on the space station sends you back to just after the Cambrian explosion. Grow life for Amber (◈1 = ✦1 quadrillion), dig fossils, and let the asteroid hit for Genes."],
  ["⚑","Crews","Team up with friends, fill the crew bank and climb the crew leaderboard. Your HQ stands on the Township street."],
  ["🔴","Live events","Every 10 minutes in the Online Town: money rain, flash sales, street races and The Titan."],
@@ -4720,7 +4752,8 @@ function buildIsland(){const k=SCN.k,G=islGeo(k),{cx,cy,rx,ry,w,h}=G,i=ISLANDS.f
 /* entering and leaving */
 function enterScene(o){const tx=SCN?SCN.tx:S.px,ty=SCN?SCN.ty:S.py;if(room)closeRoom();if(M)closeMarket();SCN=Object.assign(o,{tx,ty,sig:"",stSig:null,npc:[],cars:[]});SCN.places=SCN.mk();
   S.px=o.spawn[0];S.py=o.spawn[1];S.hd=-Math.PI/2;target=null;autoEnter=null;moving=false;PET=null;PT=null;KT=null;bKey="";dirty=true;
-  const n=o.kind==="city"?14:7;for(let j=0;j<n;j++){const p=SCN.pt();SCN.npc.push({x:p[0],y:p[1],t:SCN.pt(),sp:rnd(30,55),shirt:pick(o.shirts),skin:pick(["#f3d0b5","#e8b896","#d8a682","#b9825c","#8d5a3b","#6b4430"]),hair:pick(["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"]),ph:Math.random()*9})}
+  const n=o.kind==="city"?14:7;for(let j=0;j<n;j++){const p=SCN.pt();SCN.npc.push({x:p[0],y:p[1],t:SCN.pt(),sp:rnd(30,55),shirt:pick(o.shirts),skin:pick(["#f3d0b5","#e8b896","#d8a682","#b9825c","#8d5a3b","#6b4430"]),hair:pick(["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"]),f:Math.random()<.5,ph:Math.random()*9})}
+  SCN.npc.forEach(n=>{for(let t=0;t<20&&npcBlocked(n.x,n.y);t++){const p=SCN.pt();n.x=p[0];n.y=p[1]}n.t=npcNext(n,SCN.pt)});
   if(o.kind==="city")for(let j=0;j<5;j++)SCN.cars.push({lane:j%3,p:Math.random(),sp:rnd(.05,.09)*(j%2?1:-1),paint:pick(PAINTS),k:pick(["car","truck","classic","supercar"])});
   renderHud()}
 function enterCity(k){const c=CTRY(k),T=CTHEME[k]||CTHEME.paris;
@@ -4734,7 +4767,7 @@ function enterIsland(k,fid){const G=islGeo(k),i=ISLANDS.find(x=>x.k===k);
       if(hasPier(k,fid)){const px=G.cx+G.rx*.62,py=G.cy+G.ry*.36,dx=x-px,dy=y-py,u=dx*Math.cos(.62)+dy*Math.sin(.62),v=-dx*Math.sin(.62)+dy*Math.cos(.62);return u>-10&&u<300&&Math.abs(v)<22}return false}});
   banner(fid?"Visiting "+SCN.title:"Welcome to "+SCN.title,"a")}
 const hasPier=(k,fid)=>!!islBuilt(k,fid).pier;
-function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle",tone:"#7a2fd6"},enterCosmos);return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6"},enterCosmos);return}if(t.kind==="house"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
+function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle",tone:"#7a2fd6"},enterCosmos);return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6",fx:"whirl"},enterCosmos);return}if(t.kind==="house"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
   const done=()=>{SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner(city?"Back in Flip City":"Back at the Harbor","a")};
   if(city||t.kind==="space")flyTo({n:"Flip City",cn:t.kind==="space"?"World 1 · Earth":"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
 /* moving, tapping, drawing */
@@ -4745,7 +4778,7 @@ function sceneTick(dt){if(room)return;
   if(target){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
     if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;const p=SCN.places.find(x=>x.k===k);if(p)p.go()}}
     else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st;if(!SCN.ok(nx,ny)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true}}}
-  SCN.npc.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=SCN.pt();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
+  SCN.npc.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,SCN.pt);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
   SCN.cars.forEach(c=>{c.p=(c.p+c.sp*dt+1)%1})}
 function sceneSig(){if(SCN.kind==="prehist")return "ph|"+Math.floor(Math.log10(1+w3Rate()))+"|"+w3().disc.length;if(SCN.kind==="planet")return "pl|"+SCN.k+"|"+(S.flags["flag_"+SCN.k]?1:0);if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
 function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig()+"|"+isDark();
@@ -4771,7 +4804,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
     if(G.t===2){const vx=G.cx-G.rx*.42,vy=G.cy-G.ry*.3-160;ctx.fillStyle=`rgba(200,200,200,${.45+.15*Math.sin(wt)})`;for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(vx+j*10+Math.sin(wt+j)*4,vy-j*24-((wt*12)%24),12+j*4,0,7);ctx.fill()}}
     const ch=SCN.places.find(p=>p.k==="chest");if(ch){const x=ch.door[0],y=ch.door[1]-14+Math.sin(wt*3)*1.5;ctx.fillStyle="#9a5b28";rr(x-18,y-12,36,22,4);ctx.fill();ctx.fillStyle="#c07a3a";rr(x-20,y-18,40,10,4);ctx.fill();ctx.fillStyle="#ffcc33";ctx.fillRect(x-4,y-18,8,28);ctx.globalAlpha=.4+.3*Math.sin(wt*4);ctx.strokeStyle="#ffcc33";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-4,30,0,7);ctx.stroke();ctx.globalAlpha=1}
     const pf=SCN.places.find(p=>p.k==="party");if(pf){const x=pf.door[0],y=pf.door[1]-20;if(islB(SCN.k).party!==dayKey()||nightA>.3){for(let j=0;j<3;j++){ctx.fillStyle=["#ffcc33","#ff7a3d","#e2364a"][j];ctx.beginPath();ctx.moveTo(x-10+j*4,y);ctx.quadraticCurveTo(x-6+j*4,y-18-Math.sin(wt*9+j)*6,x+j*4,y-26-Math.sin(wt*7+j)*5);ctx.quadraticCurveTo(x+6+j*4,y-12,x+10-j*2,y);ctx.fill()}}}}
-  const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph,acc:n.astro?{h:"astro"}:null,bob:n.astro?5+Math.sin(wt*2+n.ph)*3:0})]);
+  const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,hs:n.f?8:0,mv:true,ph:n.ph,acc:n.astro?{h:"astro"}:null,bob:n.astro?5+Math.sin(wt*2+n.ph)*3:0})]);
   ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space"||SCN.kind==="planet",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,...emoOpts(),acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   decoUnder();drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
@@ -5120,8 +5153,8 @@ function enterCosmos(){const W=w2();
   enterScene({kind:"space",k:"cosmos",w:SW2,h:SH2,spawn:[1000,1460],bg:"#05061a",title:"The Cosmos",shirts:["#f2f2f2","#cfd6e4","#ff7a3d","#4fe3ff"],mk:spacePlaces,
     pt:()=>{for(let t=0;t<30;t++){const x=320+Math.random()*1360,y=540+Math.random()*740;if(onDeck(x,y))return[x,y]}return[1000,900]},ok:onDeck});
   SCN.npc.forEach(n=>{n.astro=1});if(!S.flags.w2seen){S.flags.w2seen=1;dirty=true;rayText("Welcome to the Cosmos. Build generators at the Radiant Reactor: each one makes Radiant every minute, even while you're away.")}else banner("The Cosmos","a")}
-function openStargate(back){const W=w2();if(W.open){closeRoom();flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6"},enterCosmos);return}
-  if(S.cash<W2_COST)return banner("The Stargate needs "+fmt(W2_COST),"r");S.cash-=W2_COST;W.open=1;dirty=true;SFX.rebirth();flash("#7a2fd6",.7);confetti(300,null,null,["#7a2fd6","#ff4fd8","#4fe3ff","#fff"]);shake(10,.8);banner("STARGATE OPEN","g");closeRoom();setTimeout(()=>flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6"},enterCosmos),900)}
+function openStargate(back){const W=w2();if(W.open){closeRoom();flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6",fx:"rocket"},enterCosmos);return}
+  if(S.cash<W2_COST)return banner("The Stargate needs "+fmt(W2_COST),"r");S.cash-=W2_COST;W.open=1;dirty=true;SFX.rebirth();flash("#7a2fd6",.7);confetti(300,null,null,["#7a2fd6","#ff4fd8","#4fe3ff","#fff"]);shake(10,.8);banner("STARGATE OPEN","g");closeRoom();setTimeout(()=>flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6",fx:"rocket"},enterCosmos),900)}
 /* ---------- rooms ---------- */
 function openReactor(back){room="reactor";let bulk=REACT_BULK;
   const draw=()=>{const r=w2Rate(),W=w2();
@@ -5477,7 +5510,7 @@ const GUIDE={market:"Tap a listing to buy, hold to lowball. Sell from your stash
  jbox:"Turn the soundtrack on and pick what plays at home.",next:"Everything you can unlock next, with how close you are.",cosmos:"Trade space rocks and alien relics.",deeds:"Buy buildings for income every minute, and a cut when friends shop there. Rename landmarks too.",pad:"Shuttles to the Moon and Mars. Free with an upgraded rocket capsule.",taxi:"Pick a place and the taxi drops you at the door.",nursery:"Grow life that makes Amber every minute, even offline. Owning 25, 50, 100… doubles it.",evo:"One-time breakthroughs that multiply your life.",fguide:"Expeditions discover prehistoric animals. Each adds +3% to all life.",extinct:"Reset World 3 life for Genes: +10% to all life, forever.",tmach:"Travel 500 million years back to World 3.",fossil:"Sell fossils you dig up in Deep Time."};
 /* ================= a living town: named locals, taxis, police, weather, city nights ================= */
 const TOWNIES=["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora","Mo","Ivy"];
-NPCS.forEach((n,i)=>{n.n=TOWNIES[i%TOWNIES.length]});
+NPCS.forEach((n,i)=>{n.n=TOWNIES[i%TOWNIES.length];n.f=["Jess","Lucy","Bea","Nora","Ivy"].includes(n.n)});
 function npcLine(n){S.npcMem=S.npcMem||{};const today=dayKey(),m=S.npcMem[n.n]=S.npcMem[n.n]&&S.npcMem[n.n].d===today?S.npcMem[n.n]:{d:today,c:0,ever:(S.npcMem[n.n]&&S.npcMem[n.n].ever)||0};m.c++;m.ever++;dirty=true;const you=mpName();
   if(m.ever===1)return"Hi, I'm "+n.n+"! You must be "+you+". Everyone's talking about you.";
   if(m.c>=5)return"Again? That's "+m.c+" chats today, "+you+". I like you.";
@@ -5691,12 +5724,12 @@ function prehistAnim(){
 function enterPrehist(){const W=w3();enterScene({kind:"prehist",k:"deep",w:DW,h:DH,spawn:[1200,1180],bg:"#f6c27a",title:"Deep Time",shirts:["#8a6a44","#c4945f","#5f8a4a","#f2ead2"],mk:prehistPlaces,pt:()=>{for(let t=0;t<30;t++){const x=600+Math.random()*1500,y=400+Math.random()*900;if(PH_OK(x,y))return[x,y]}return[1200,900]},ok:PH_OK});
   SCN.npc.forEach(n=>{n.hair="#5a3a24"});if(!S.flags.w3seen){S.flags.w3seen=1;dirty=true;rayText("You made it: about 500 million years ago, just after the Cambrian explosion. Grow life at the Tree of Life. Your money is Amber here: ◈1 Amber = ✦1 quadrillion Radiant.")}else banner("Deep Time","a")}
 function openTimeMachine(back){room="tmach";const W=w3(),has=genN("multi")>0;
-  if(W.open){closeRoom();flyTo({n:"Deep Time",cn:"World 3 · 500 million years ago",tone:"#cf9a14"},enterPrehist);return}
+  if(W.open){closeRoom();flyTo({n:"Deep Time",cn:"World 3 · 500 million years ago",tone:"#cf9a14",fx:"whirl"},enterPrehist);return}
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Time machine")}<div class="art bhart"><div class="bhdisk" style="background:conic-gradient(#ffcc33,#2fd28a,#4fe3ff,#ffcc33)"></div><div class="bhcore" style="background:#0b1a12"></div></div>
     <div class="note">The end of the Cosmos is the start of everything. The time machine sends you back <b>500 million years</b>, to just after the Cambrian explosion: World 3, run on <b>Amber</b> (◈1 Amber = ✦1 quadrillion Radiant).</div>
     <button class="bigbtn" id="tmGo" ${!has||S.cash<W3_COST?"disabled":""}>Power it up<small>${has?"Costs "+fmt(W3_COST):"Needs a Multiverse gate from the Radiant Reactor first"}</small></button></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-  $("tmGo").onclick=()=>{if(genN("multi")<1||S.cash<W3_COST)return;S.cash-=W3_COST;W.open=1;dirty=true;SFX.rebirth();flash("#cf9a14",.8);confetti(300,null,null,["#cf9a14","#2fd28a","#4fe3ff","#fff"]);shake(12,.9);banner("TIME MACHINE ONLINE","g");closeRoom();setTimeout(()=>flyTo({n:"Deep Time",cn:"World 3 · 500 million years ago",tone:"#cf9a14"},enterPrehist),900)}}
+  $("tmGo").onclick=()=>{if(genN("multi")<1||S.cash<W3_COST)return;S.cash-=W3_COST;W.open=1;dirty=true;SFX.rebirth();flash("#cf9a14",.8);confetti(300,null,null,["#cf9a14","#2fd28a","#4fe3ff","#fff"]);shake(12,.9);banner("TIME MACHINE ONLINE","g");closeRoom();setTimeout(()=>flyTo({n:"Deep Time",cn:"World 3 · 500 million years ago",tone:"#cf9a14",fx:"whirl"},enterPrehist),900)}}
 /* ---------- rooms ---------- */
 let LIFE_BULK=1;
 function openNursery(back){room="nursery";let bulk=LIFE_BULK;
@@ -5735,6 +5768,17 @@ function openExtinction(back){room="extinct";const draw=()=>{const W=w3(),g=gene
     W2.genes=(W2.genes||0)+gn;W2.ext=(W2.ext||0)+1;W2.gen={};W2.up={};W2.run=0;W2.genesRun=0;dirty=true;flash("#ff7a3d",.9);shake(16,1.2);SFX.rebirth();setTimeout(()=>SFX.grail(),500);confetti(260,null,null,["#ff7a3d","#ffcc33","#3a2a1a"]);banner("EXTINCTION","r");banner("+"+gn+" Genes · life ×"+(1+.1*W2.genes).toFixed(1),"g");draw();updMini()}};draw()}
 function fossilDig(){if(!coolOk("dig3",60000))return;if(S.stash.length>=maxSlots())return banner("Stash full","r");if(!spend(10))return;const r=Math.random(),code=r<.35?"TF":r<.6?"AM":r<.78?"AI":r<.9?"RC":r<.97?"DE":"TT",it=POOL.find(p=>p.cat==="fossil"&&p.code===code),c=CAT.fossil.conds[Math.random()<.4?0:1];
   S.stash.push({cat:"fossil",code,name:it.name,cond:c[0],base:Math.round(it.base*c[1]),noise:rnd(.9,1.1),fake:false,paid:0});S.coll=S.coll||{};S.coll["fossil:"+code]=1;dirty=true;SFX.grail();shake(5);confetti(80,null,null,["#c4945f","#f2ead2"]);banner("Dug up: "+it.name,"g")}
+/* ================= world travel: rocket launch to World 2, a time whirlpool to World 3, and reloads put you back where you were ================= */
+function rocketFx(c){let st="";for(let i=0;i<46;i++)st+=`<i style="left:${(Math.random()*100).toFixed(1)}%;top:${(Math.random()*100).toFixed(1)}%;animation-delay:-${(Math.random()*.6).toFixed(2)}s;opacity:${(.4+Math.random()*.6).toFixed(2)}"></i>`;
+  return `<div class="rksky"></div><div class="rkstars">${st}</div><div class="rkground"></div><div class="rkship"><svg viewBox="0 0 80 190"><path d="M40 4C58 24 64 56 62 104H18C16 56 22 24 40 4Z" fill="#f4f6fa"/><path d="M40 4C49 14 55 28 58 44H22C25 28 31 14 40 4Z" fill="${c.tone}"/><circle cx="40" cy="70" r="10" fill="#1b1f2a"/><circle cx="40" cy="70" r="6" fill="#4fe3ff"/><path d="M18 84 2 120 2 134 20 118Z" fill="${c.tone}"/><path d="M62 84 78 120 78 134 60 118Z" fill="${c.tone}"/><path d="M26 104h28l-4 12H30Z" fill="#3a3f4c"/><path d="M38 90h4v24h-4Z" fill="${c.tone}"/></svg><div class="rkflame"></div></div><div class="rksmoke"></div><div class="saillab"><b>Launching to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`}
+function whirlFx(c){return `<div class="wpool"></div><div class="wpool w2"></div><div class="wpool w3"></div><div class="wcore"></div><div class="saillab"><b>Through time to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`}
+function resumeWorld(){const L=S.wl;S.wl=null;if(!L||MPW||SCN)return;try{
+  if(L.k==="prehist"&&S.w3&&S.w3.open)enterPrehist();else if(L.k==="planet"&&PLANETS[L.p]&&S.w2&&S.w2.open)enterPlanet(L.p);else if(S.w2&&S.w2.open)enterCosmos();else return;
+  if(SCN&&isFinite(L.x)&&isFinite(L.y)&&SCN.ok(L.x,L.y)){S.px=L.x;S.py=L.y;target=null;moving=false}renderHud()}catch(e){console.warn(e)}}
+/* ================= townspeople walk on roads and grass, around buildings (only your partner cuts through) ================= */
+function npcBlocked(x,y){if(SCN)return!SCN.ok(x,y)||SCN.places.some(p=>p.bld&&p.w&&x>p.x-8&&x<p.x+p.w+8&&y>p.y-8&&y<p.y+p.h+4);return x<20||x>W-20||y<20||y>SEA-20||inBld(x,y,8)||inPond(x,y,6)}
+function npcPathOk(x0,y0,x1,y1){const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/12);for(let i=1;i<=n;i++){const k=i/n;if(npcBlocked(x0+(x1-x0)*k,y0+(y1-y0)*k))return false}return true}
+function npcNext(n,gen){for(let t=0;t<16;t++){let p;if(t%2){const a=Math.random()*7,r=rnd(60,320);p=[n.x+Math.cos(a)*r,n.y+Math.sin(a)*r]}else p=gen();if(!npcBlocked(p[0],p[1])&&npcPathOk(n.x,n.y,p[0],p[1]))return p}return[n.x+rnd(-1,1),n.y+rnd(-1,1)]}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -6168,7 +6212,7 @@ function titleMain(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline();w3Offline()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){shownCash=null;try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(!isNew)resumeWorld();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline();w3Offline()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
