@@ -1622,7 +1622,11 @@ $("hudMin").onclick=()=>{hudMin=!hudMin;store.set("fliprush_hudmin",hudMin?"1":"
 $("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("multTxt").addEventListener("click",e=>{if(!e.target.closest(".tierb")||!S)return;audioOn();if(room)closeRoom();room="tiers";openTiers(closeRoom)});
-$("phoneBtn").onclick=()=>{audioOn();openRoom("market")};
+// the reselling phone opens the best market you've unlocked: best sell price for what you pay, fewest fakes
+function bestMarket(){if(SCN&&(SCN.kind==="space"||SCN.kind==="planet"))return COSMOS_MKT;if(SCN&&SCN.kind==="prehist")return FOSSIL_MKT;
+  const L=[MKT.market];if(regionOpen("beach"))L.push(MKT.flea);if(regionOpen("downtown"))L.push(MKT.lux);COUNTRIES.forEach(c=>{if((S.visited||{})[c.k]&&MKT[c.k])L.push(cMkt(c))});
+  const score=m=>(m.sell||1)/(m.price||1)*(1-(m.fake||0));return L.reduce((a,b)=>score(b)>score(a)?b:a)}
+$("phoneBtn").onclick=()=>{audioOn();const m=bestMarket();room=m.k;$("room").hidden=false;openMarket(m);banner(m.n+" · best prices you've unlocked","u")};
 
 /* ---------- gym ---------- */
 // Plates per side for a given total on a 20 kg bar, heaviest first
@@ -4447,6 +4451,7 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
 /* ================= what's new: shown once after an update ================= */
 const WN_VER=26,WN=[
  ["➜","Follow your goal","Your goal is always first in the top row. Tap it and an arrow shows the way, even across worlds. Tap again for the full list.","2026-10-06T17:30"],
+ ["📱","Smarter phone","The reselling phone opens the best market you've unlocked: the Luxury Exchange once downtown opens, the Star Market in the Cosmos, the Fossil Market in Deep Time.","2026-10-06T17:45"],
  ["✈️","A bigger Airport","A glass terminal, a parked jet and a control tower.","2026-10-06T17:30"],
  ["🏘️","A bigger Township","The Township is wider with 12 roomy lots, one for every player in the room, and much wider houses. Crew HQs moved to the foot of the main road.","2026-10-06T16:30"],
  ["⚡","Faster sign-in","Logging in and creating an account now take about a second.","2026-10-06T16:30"],
