@@ -360,7 +360,8 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .reqbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:10px}
 /* premium pass */
 .banner{width:max-content;max-width:92vw;white-space:normal;text-align:center;line-height:.95;font-size:clamp(1.5rem,8vw,2.2rem)}
-.chip,.place,.hud .iconbtn,.tip{background:color-mix(in oklab,var(--surface) 74%,transparent);-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5);border:1px solid color-mix(in oklab,var(--surface) 55%,transparent)}
+.chip,.place,.hud .iconbtn,.tip{background:color-mix(in oklab,var(--surface) 74%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);border:1px solid color-mix(in oklab,var(--surface) 55%,transparent)}
+html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.perf .raytoast,html.perf .wnov,html.perf .overlay{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip{background:var(--surface)!important}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -744,6 +745,10 @@ const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);if(!isFinite(a))return s+"$∞"
   for(const[v,u]of SUF)if(a>=v*.9995){const x=a/v;return s+"$"+(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}
   if(a>=1e5)return s+"$"+Math.round(a/1e3)+"K";if(a>=1e4)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+Math.round(a).toLocaleString("en-US")};
 const SET=(()=>{try{return JSON.parse(localStorage.getItem("fliprush_set")||"{}")||{}}catch(e){return{}}})();const saveSet=()=>{try{localStorage.setItem("fliprush_set",JSON.stringify(SET))}catch(e){}};
+function applySet(){document.documentElement.classList.toggle("perf",!!SET.perf);if(typeof resize==="function"&&typeof cv!=="undefined")resize()}
+// watch the frame rate for the first seconds of play; slow phones get performance mode automatically
+const perfW={t:0,n:0,done:0};
+function perfWatch(dt){if(perfW.done||SET.perf!=null||!playing||document.hidden)return;perfW.t+=dt;perfW.n++;if(perfW.t<12)return;perfW.done=1;if(perfW.n/perfW.t<34){SET.perf=true;saveSet();applySet();banner("Performance mode on","a");rayText("The game switched to performance mode so it runs smoother. You can turn it off in Settings.")}}
 const buzz=ms=>{if(SET.nobuzz)return;try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const SAVE0="fliprush_world_v1";let SAVE=SAVE0;
@@ -1044,7 +1049,7 @@ function coinsTo(v,from){fxSize();
   const n=clamp(Math.round(Math.log10(v+1)*4.5),3,30),tg=elC(cashTarget())||[60,40],[x0,y0]=from||fromPt();
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rnd(80,260);FXP.push({t:"coin",x:x0,y:y0,x0,y0,bx:x0+Math.cos(a)*sp*.55,by:y0+Math.sin(a)*sp*.45-40,tx:tg[0],ty:tg[1],p:-i*.022,dur:rnd(.55,.8),rot:Math.random()*6,r:rnd(5,7.5)})}
 }
-function confetti(n,x,y,cols,spread=1){if(SET.lowfx)n=Math.ceil(n/4);fxSize();cols=cols||["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a","#ff5b6e","#ffffff"];
+function confetti(n,x,y,cols,spread=1){if(SET.lowfx||SET.perf)n=Math.ceil(n/(SET.perf?3:4));fxSize();cols=cols||["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a","#ff5b6e","#ffffff"];
   for(let i=0;i<n;i++){const a=y==null?Math.PI/2+rnd(-.5,.5):Math.random()*Math.PI*2,sp=y==null?rnd(60,240):rnd(150,520)*spread;
     FXP.push({t:"conf",x:x==null?Math.random()*fxW:x,y:y==null?-20-Math.random()*fxH*.4:y,vx:Math.cos(a)*sp*(y==null?.4:1),vy:y==null?rnd(40,160):Math.sin(a)*sp-180,rot:Math.random()*6,vr:rnd(-12,12),c:pick(cols),w:rnd(5,9),h:rnd(8,14),life:rnd(1.8,3.2),age:0})}}
 function sparks(x,y,col,n=18,spd=1){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rnd(120,380)*spd;FXP.push({t:"spark",x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,c:col,life:rnd(.35,.7),age:0,r:rnd(1.5,3.5)})}
@@ -1128,7 +1133,7 @@ function crateSVG(){return `<svg viewBox="0 0 120 110"><ellipse cx="60" cy="104"
 const W=2600,H=2200,SEA=1950;
 const cv=$("world"),ctx=cv.getContext("2d");
 let vw=0,vh=0,dpr=1,Z=1;
-function resize(){dpr=Math.min(2,window.devicePixelRatio||1);const cw=cv.clientWidth,ch=cv.clientHeight;Z=cw<520?.72:1;vw=cw/Z;vh=ch/Z;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
+function resize(){dpr=Math.min(SET.perf?1.25:2,window.devicePixelRatio||1);const cw=cv.clientWidth,ch=cv.clientHeight;Z=cw<520?.72:1;vw=cw/Z;vh=ch/Z;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
 addEventListener("resize",()=>{fitScreen();resize()});
 const darkMQ=matchMedia("(prefers-color-scheme: dark)");
 function isDark(){return root.dataset.theme==="dark"||(root.dataset.theme!=="light"&&darkMQ.matches)}
@@ -1271,7 +1276,7 @@ function buildStatic(){
   [[640,640],[740,640],[640,752],[740,752]].forEach(([x,y])=>{g.fillStyle="#8a6a4a";g.fillRect(x,y,22,6);g.fillStyle="rgba(0,0,0,.2)";g.fillRect(x,y+6,22,2)});
   // hedges along the park edges
   [[300,560,160],[790,560,240],[300,1060,200],[800,1060,220]].forEach(([x,y,w])=>{g.fillStyle="#2f7a46";rrp(g,x,y,w,12,6);g.fill();g.fillStyle="#3f9a5a";for(let i=0;i<w;i+=10){g.beginPath();g.arc(x+5+i,y+3,5,0,7);g.fill()}});
-  drawTownStatic(g,P);
+  townDeco(g,P);drawTownStatic(g,P);
   shownPlaces().sort((a,b)=>a.y-b.y).forEach(p=>drawBuilding(g,p,P));
   STATIC=c;staticDark=isDark();
 }
@@ -1366,7 +1371,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawSeasonDecor();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -2938,7 +2943,7 @@ function marketTick(dt,now){
 /* ================= main loop ================= */
 let last=0,drift=0,playing=false,achT=1;
 function loop(now){
-  const dt=last?Math.min(.1,(now-last)/1000):0;last=now;wt+=dt;fxTick(dt);
+  const dt=last?Math.min(.1,(now-last)/1000):0;last=now;wt+=dt;fxTick(dt);perfWatch(dt);
   if(S){
     if(playing){
       S.clock+=dt/10;if(S.clock>=24){S.clock-=24;S.day++}
@@ -4379,7 +4384,7 @@ function openWardrobe(back){S.look=S.look||{sk:1,hr:0};let tab=WDTAB;
 let WDTAB="body";
 
 /* ================= settings (saved on this device) ================= */
-function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, petals and butterflies on the map",1],["lowfx","Lighter confetti","Less confetti for older phones",0],["noshake","Screen shake","Shake on big moments",1],["nobuzz","Vibration","Haptics on taps and wins",1]];
+function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, petals and butterflies on the map",1],["perf","Performance mode","Smoother on older phones: lower resolution, no blur, less confetti",0],["lowfx","Lighter confetti","Less confetti for older phones",0],["noshake","Screen shake","Shake on big moments",1],["nobuzz","Vibration","Haptics on taps and wins",1]];
   const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Settings")}
     <div class="perks">${T.map(([k,n,d,inv])=>{const on=inv?!SET[k]:!!SET[k];return `<button class="perk nopic setrow" data-set="${k}"><span class="t">${n}</span><span class="d">${d}</span><span class="c tog${on?" on":""}"><i></i></span></button>`}).join("")}</div>
     <div class="sechead"><h3>Help</h3></div>
@@ -4387,7 +4392,7 @@ function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, pe
       <button class="perk nopic" id="setWn"><span class="t">What's new</span><span class="d">See the latest features again</span><span class="c">Open</span></button></div>
     <p class="fine">These settings are saved on this device.</p></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-    $("room").querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>{const k=b.dataset.set;SET[k]=!SET[k];saveSet();SFX.tick(.5);draw()});
+    $("room").querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>{const k=b.dataset.set;SET[k]=!SET[k];saveSet();applySet();SFX.tick(.5);draw()});
     $("setTut").onclick=()=>{S.tut=0;tutKey="";dirty=true;closeRoom();banner("Tutorial restarted","a")};
     $("setWn").onclick=()=>{S.flags.wn=0;const t=S.tut;S.tut=99;whatsNew();S.tut=t}};draw()}
 
@@ -4727,14 +4732,15 @@ function pubFetch(){return new Promise(async res=>{let cls=ACC&&ACC.cls&&ACC.cls
 function pubRows(bb){if(PUBL==null)return `<p class="fine">Looking for public towns…</p>`;if(!PUBL.length)return `<p class="fine">No public towns open right now. Open your own and others can join!</p>`;
   return PUBL.slice(0,30).map(d=>{const here=MP&&MP.code===d.c;return `<button class="perk nopic" data-pub="${esc(d.c)}" ${!bb&&!MPW?"disabled":""}><span class="t">${esc(String(d.n||"?").slice(0,16))}'s town${here?' <em class="beat">YOU\'RE HERE</em>':""}</span><span class="d">${Math.max(1,Math.min(99,d.p|0))} online · up to Lv ${Math.max(0,d.lv|0)}${Array.isArray(d.who)?" · "+esc(d.who.slice(0,4).map(x=>String(x).slice(0,12)).join(", ")):""}</span><span class="c">${here?"Here":!bb&&!MPW?"Needs a boat":"Join"}</span></button>`}).join("")}
 /* ================= decorations for every city and island ================= */
+const TOWNFX={lamps:[],founts:[],gulls:[]};
 function decoFree(x,y,m){if(!SCN)return true;return !SCN.places.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m-10&&y<p.y+p.h+m+34)}
 function dShadow(g,x,y,w,h){g.fillStyle="rgba(0,0,0,.14)";g.beginPath();g.ellipse(x,y,w,h,0,0,7);g.fill()}
-function dLamp(g,x,y,col){dShadow(g,x+3,y+2,7,3);g.fillStyle=col;g.fillRect(x-2,y-36,4,36);g.fillRect(x-7,y-38,14,4);SCN.lamps.push([x,y-42])}
+function dLamp(g,x,y,col){dShadow(g,x+3,y+2,7,3);g.fillStyle=col;g.fillRect(x-2,y-36,4,36);g.fillRect(x-7,y-38,14,4);(SCN||TOWNFX).lamps.push([x,y-42])}
 function dBench(g,x,y){dShadow(g,x+22,y+12,26,5);g.fillStyle=dkc("#8a6a44");g.fillRect(x,y,44,7);g.fillRect(x,y-8,44,4);g.fillStyle=dkc("#3a3f4c");g.fillRect(x+3,y+7,3,6);g.fillRect(x+38,y+7,3,6)}
 function dPlanter(g,x,y,fl){dShadow(g,x+14,y+14,18,5);g.fillStyle=dkc("#b7a07a");rrp(g,x,y,28,16,4);g.fill();g.fillStyle=dkc("#3f9a5a");g.beginPath();g.arc(x+8,y,8,0,7);g.arc(x+20,y-2,9,0,7);g.fill();g.fillStyle=fl;for(let i=0;i<5;i++){g.beginPath();g.arc(x+5+i*5,y-4+(i%2)*5,2.6,0,7);g.fill()}}
 function dCafe(g,x,y,col){dShadow(g,x,y+16,30,8);g.fillStyle=dkc("#f2f2f2");[[-20,6],[20,6],[0,20]].forEach(([dx,dy])=>{g.beginPath();g.arc(x+dx,y+dy,6,0,7);g.fill()});g.fillStyle=col;g.beginPath();g.arc(x,y,22,0,7);g.fill();g.fillStyle="rgba(255,255,255,.55)";for(let a=0;a<6;a+=2){g.beginPath();g.moveTo(x,y);g.arc(x,y,22,a*Math.PI/3,(a+1)*Math.PI/3);g.fill()}g.fillStyle="#3a3f4c";g.beginPath();g.arc(x,y,3,0,7);g.fill()}
 function dFlowerBed(g,x,y,w,h,cols,r){g.fillStyle=dkc("#3f8a4e");rrp(g,x,y,w,h,h/2);g.fill();for(let i=0;i<w*h/90;i++){g.fillStyle=cols[i%cols.length];g.beginPath();g.arc(x+6+r()*(w-12),y+5+r()*(h-10),2.8,0,7);g.fill()}}
-function dFountain(g,x,y,R,col){dShadow(g,x,y+R*.5+4,R+8,R*.35+4);g.fillStyle=dkc(col||"#d9d2c4");g.beginPath();g.ellipse(x,y,R+8,R*.6+6,0,0,7);g.fill();g.fillStyle=dkc("#5fbfe6");g.beginPath();g.ellipse(x,y,R,R*.6,0,0,7);g.fill();g.fillStyle=dkc(col||"#d9d2c4");g.beginPath();g.ellipse(x,y-4,R*.25,R*.16,0,0,7);g.fill();SCN.founts.push([x,y,R])}
+function dFountain(g,x,y,R,col){dShadow(g,x,y+R*.5+4,R+8,R*.35+4);g.fillStyle=dkc(col||"#d9d2c4");g.beginPath();g.ellipse(x,y,R+8,R*.6+6,0,0,7);g.fill();g.fillStyle=dkc("#5fbfe6");g.beginPath();g.ellipse(x,y,R,R*.6,0,0,7);g.fill();g.fillStyle=dkc(col||"#d9d2c4");g.beginPath();g.ellipse(x,y-4,R*.25,R*.16,0,0,7);g.fill();(SCN||TOWNFX).founts.push([x,y,R])}
 function dStoneLantern(g,x,y){dShadow(g,x,y+3,10,4);g.fillStyle=dkc("#a7a299");g.fillRect(x-4,y-18,8,18);g.fillRect(x-9,y-26,18,8);g.fillStyle="#ffcf7a";g.fillRect(x-5,y-24,10,4);g.fillStyle=dkc("#8f8a80");g.beginPath();g.moveTo(x-12,y-26);g.lineTo(x,y-36);g.lineTo(x+12,y-26);g.fill();SCN.lamps.push([x,y-24])}
 function dTorii(g,x,y){dShadow(g,x,y+4,46,7);g.fillStyle="#d63a2a";g.fillRect(x-34,y-70,8,70);g.fillRect(x+26,y-70,8,70);g.fillRect(x-40,y-58,80,7);g.fillStyle="#1b1f2a";g.beginPath();g.moveTo(x-50,y-78);g.quadraticCurveTo(x,y-70,x+50,y-78);g.lineTo(x+46,y-68);g.lineTo(x-46,y-68);g.closePath();g.fill()}
 function dVend(g,x,y,col){dShadow(g,x+9,y+2,12,4);g.fillStyle=col;g.fillRect(x,y-34,18,34);g.fillStyle="#eaf6ff";g.fillRect(x+3,y-30,12,14);g.fillStyle="#ffcc33";g.fillRect(x+3,y-12,12,3)}
@@ -4849,6 +4855,39 @@ function openMega(back){S.mega=S.mega||{};
     $("room").querySelectorAll("[data-mega]").forEach(x=>x.onclick=()=>{const m=MEGA.find(y=>y.k===x.dataset.mega),c=megaCost(m);if(megaLv(m.k)>=MEGA_MAX||S.cash<c)return;S.cash-=c;S.mega[m.k]=megaLv(m.k)+1;dirty=true;
       SFX.rebirth();flash("#ffcc33",.5);confetti(260,null,null,["#ffcc33","#ff4fd8","#4fe3ff","#ffffff"]);shake(9,.6);buzz([40,30,90]);banner(m.ic+" "+m.n+" · level "+S.mega[m.k],"g");draw();updMini();renderHud()})};
   room="mega";draw()}
+/* ================= Flip City decorations: plazas downtown, a park, and beach life ================= */
+function townDeco(g,P){TOWNFX.founts=[];TOWNFX.lamps=[];let sd=21;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  const used=[],free=(x,y,m)=>!onRoad(x,y,m)&&!inBld(x,y,m)&&!inPond(x,y,m)&&!TREES.some(t=>Math.hypot(t[0]-x,t[1]-y)<t[2]+m)&&!PALMS.some(t=>Math.hypot(t[0]-x,t[1]-y)<m+16)&&!UMBR.some(t=>Math.hypot(t[0]-x,t[1]-y)<m+20)&&!(x>1100-m&&x<2340+m&&y>1640-m)&&!used.some(u=>Math.hypot(u[0]-x,u[1]-y)<u[2]+m),
+    put=(x0,x1,y0,y1,m,n,fn)=>{let k=0;for(let t=0;t<n*40&&k<n;t++){const x=x0+r()*(x1-x0),y=y0+r()*(y1-y0);if(free(x,y,m)){used.push([x,y,m]);fn(x,y,k);k++}}};
+  const fl=["#ff4fd8","#ffcc33","#e2364a","#ffffff","#8f52d4"];
+  // downtown: fountains, planters, benches, cafe tables, bike racks
+  put(1480,2480,100,1340,70,2,(x,y)=>dFountain(g,x,y,40,"#cfd6e4"));
+  put(1440,2580,60,1380,24,30,(x,y,i)=>dPlanter(g,x-14,y,fl[i%fl.length]));
+  put(1440,2580,60,1380,30,14,(x,y)=>dBench(g,x-22,y));
+  put(1440,2580,60,1380,30,8,(x,y,i)=>dCafe(g,x,y,["#e2364a","#2a5bd7","#2fd28a","#ffcc33"][i%4]));
+  put(1440,2580,60,1380,22,6,(x,y)=>{g.strokeStyle=dkc("#6b7385");g.lineWidth=2;for(let j=0;j<4;j++){g.beginPath();g.arc(x-12+j*8,y,5,Math.PI,0);g.stroke()}});
+  // the green part of town: flowers, picnics, a hot dog cart and a playground
+  put(40,1380,40,1380,14,34,(x,y,i)=>{g.fillStyle=fl[i%fl.length];for(let j=0;j<5;j++){g.beginPath();g.arc(x+Math.cos(j*1.3)*7,y+Math.sin(j*2.1)*5,2.6,0,7);g.fill()}});
+  put(40,1380,40,1380,26,4,(x,y,i)=>{g.save();g.translate(x,y);g.rotate(r()-.5);g.fillStyle=["#e2364a","#2a5bd7","#ffcc33","#2bb3a3"][i%4];g.fillRect(-18,-12,36,24);g.fillStyle="rgba(255,255,255,.55)";for(let j=0;j<3;j++){g.fillRect(-18,-12+j*9,36,3)}g.fillStyle="#c4945f";g.fillRect(6,-6,10,8);g.restore()});
+  put(40,1380,40,1380,34,1,(x,y)=>{dShadow(g,x+20,y+8,26,6);g.fillStyle="#f2f2f2";g.fillRect(x,y-18,40,18);g.fillStyle="#e2364a";g.fillRect(x,y-24,40,6);g.fillStyle="#ffcc33";g.fillRect(x+4,y-12,18,4);g.fillStyle="#3a3f4c";g.beginPath();g.arc(x+8,y+2,4,0,7);g.arc(x+32,y+2,4,0,7);g.fill();g.fillStyle="#e2364a";g.beginPath();g.arc(x+20,y-30,10,Math.PI,0);g.fill()});
+  put(60,1340,60,1380,48,1,(x,y)=>{g.fillStyle=dkc("#e6cf98");rrp(g,x-60,y-36,120,72,18);g.fill();g.strokeStyle=dkc("#d6384b");g.lineWidth=3;g.beginPath();g.moveTo(x-46,y+20);g.lineTo(x-36,y-24);g.lineTo(x-26,y+20);g.moveTo(x-36,y-24);g.lineTo(x-6,y-24);g.moveTo(x-16,y+20);g.lineTo(x-6,y-24);g.stroke();g.fillStyle="#2a5bd7";g.fillRect(x-36,y,8,3);g.fillRect(x-20,y,8,3);
+    g.fillStyle="#ffcc33";g.beginPath();g.moveTo(x+10,y+20);g.lineTo(x+20,y-20);g.lineTo(x+30,y-20);g.lineTo(x+50,y+24);g.closePath();g.fill();g.fillStyle="#e2364a";g.fillRect(x+16,y-28,18,8);g.fillStyle="#2fd28a";g.beginPath();g.arc(x+44,y-14,8,0,7);g.fill()});
+  // the beach: lifeguard tower, volleyball net, sandcastles, surfboards, beach balls
+  const bx=[40,2580],by=[1640,1930];
+  put(bx[0],bx[1],by[0],by[1],40,1,(x,y)=>{dShadow(g,x,y+4,26,6);g.strokeStyle=dkc("#f2f2f2");g.lineWidth=3;g.beginPath();g.moveTo(x-16,y);g.lineTo(x-10,y-34);g.moveTo(x+16,y);g.lineTo(x+10,y-34);g.stroke();g.fillStyle="#e2364a";g.fillRect(x-16,y-48,32,16);g.fillStyle="#fff";g.fillRect(x-16,y-40,32,3);g.fillStyle="#e2364a";g.beginPath();g.moveTo(x-20,y-48);g.lineTo(x,y-60);g.lineTo(x+20,y-48);g.fill()});
+  put(bx[0],bx[1],by[0],by[1],50,1,(x,y)=>{g.strokeStyle=dkc("#7a5a3a");g.lineWidth=3;g.beginPath();g.moveTo(x-46,y);g.lineTo(x-46,y-30);g.moveTo(x+46,y);g.lineTo(x+46,y-30);g.stroke();g.strokeStyle="rgba(255,255,255,.9)";g.lineWidth=1;for(let j=0;j<4;j++){g.beginPath();g.moveTo(x-46,y-28+j*4);g.lineTo(x+46,y-28+j*4);g.stroke()}});
+  put(bx[0],bx[1],by[0],by[1],24,3,(x,y)=>{g.fillStyle=dkc("#e6cf98");g.fillRect(x-16,y-8,32,10);g.fillRect(x-10,y-16,20,8);g.fillRect(x-5,y-24,10,8);g.fillStyle="#e2364a";g.fillRect(x,y-34,1.6,10);g.beginPath();g.moveTo(x+1.6,y-34);g.lineTo(x+9,y-31);g.lineTo(x+1.6,y-28);g.fill()});
+  put(bx[0],bx[1],by[0],by[1],28,2,(x,y)=>{["#2fa6d9","#ff7a3d","#ffcc33"].forEach((c,i)=>{g.save();g.translate(x-12+i*12,y);g.rotate(-.12+i*.12);g.fillStyle=c;g.beginPath();g.ellipse(0,-18,5.5,19,0,0,7);g.fill();g.fillStyle="#fff";g.fillRect(-.8,-35,1.6,34);g.restore()})});
+  put(bx[0],bx[1],by[0],by[1],12,5,(x,y)=>{dShadow(g,x+2,y+6,8,3);["#e2364a","#ffffff","#2a5bd7","#ffcc33"].forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.moveTo(x,y);g.arc(x,y,7,i*Math.PI/2,(i+1)*Math.PI/2);g.fill()})});
+  if(!TOWNFX.gulls.length)TOWNFX.gulls=Array.from({length:6},(_,i)=>({x:r()*W,y:SEA+40+r()*180,s:rnd(40,70)*(i%2?1:-1),ph:r()*7}));
+  TOWNFX.kites=[[260,1700,"#e2364a"],[2480,1720,"#2a5bd7"],[760,1760,"#ffcc33"]]}
+function townDecoAnim(){
+  TOWNFX.founts.forEach(([x,y,R])=>{if(x<cam.x-80||x>cam.x+vw+80||y<cam.y-80||y>cam.y+vh+80)return;ctx.strokeStyle="rgba(255,255,255,.7)";ctx.lineWidth=1.5;for(let j=0;j<2;j++){const s2=((wt*.6+j*.5)%1);ctx.globalAlpha=1-s2;ctx.beginPath();ctx.ellipse(x,y,R*.3+R*.7*s2,(R*.3+R*.7*s2)*.6,0,0,7);ctx.stroke()}ctx.globalAlpha=1;
+    ctx.strokeStyle="rgba(220,245,255,.9)";ctx.lineWidth=2;for(let j=0;j<6;j++){const a=j/6*Math.PI*2+wt*.3,h=R*.9+Math.sin(wt*6+j)*3;ctx.beginPath();ctx.moveTo(x,y-6);ctx.quadraticCurveTo(x+Math.cos(a)*R*.3,y-6-h,x+Math.cos(a)*R*.6,y+Math.sin(a)*R*.3);ctx.stroke()}});
+  (TOWNFX.kites||[]).forEach(([x,y,c],i)=>{if(!regionOpen("beach"))return;const kx=x+Math.sin(wt*.7+i)*18,ky=y-150+Math.cos(wt*.9+i)*10;if(kx<cam.x-80||kx>cam.x+vw+80||ky<cam.y-80||ky>cam.y+vh+200)return;ctx.strokeStyle="rgba(60,60,70,.45)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+20,y-60,kx,ky+14);ctx.stroke();
+    ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(kx,ky-16);ctx.lineTo(kx+11,ky);ctx.lineTo(kx,ky+14);ctx.lineTo(kx-11,ky);ctx.closePath();ctx.fill();ctx.fillStyle="rgba(255,255,255,.4)";ctx.beginPath();ctx.moveTo(kx,ky-16);ctx.lineTo(kx+11,ky);ctx.lineTo(kx,ky);ctx.fill();
+    ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(kx,ky+14);for(let j=1;j<5;j++)ctx.lineTo(kx+Math.sin(wt*4+j)*5,ky+14+j*7);ctx.stroke()});
+  TOWNFX.gulls.forEach(b=>{b.x+=b.s/60;if(b.x>W+60)b.x=-60;if(b.x<-60)b.x=W+60;if(b.x<cam.x-30||b.x>cam.x+vw+30||b.y<cam.y-30||b.y>cam.y+vh+30)return;const f=Math.sin(wt*8+b.ph)*5;ctx.strokeStyle=isDark()?"#cfd6e0":"#ffffff";ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(b.x-10,b.y-f);ctx.quadraticCurveTo(b.x-4,b.y-6,b.x,b.y);ctx.quadraticCurveTo(b.x+4,b.y-6,b.x+10,b.y-f);ctx.stroke()})}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -5290,7 +5329,7 @@ function fitScreen(){
   if(!matchMedia("(pointer:coarse)").matches||!sw||innerWidth<=sw*1.15)return;
   const z=innerWidth/sw;root.style.zoom=z;root.style.height=(innerHeight/z)+"px";
 }
-fitScreen();resize();
+applySet();fitScreen();resize();
 newGame();
 title();
 window.__booted=1;
