@@ -96,7 +96,7 @@ local function box(name, width, height, numberSize)
 	-- (a holder without a list layout, so the backing and the click area never push the text around)
 	local holder = New("Frame", { Name = "Holder", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 3, Parent = frame })
 	holder.LayoutOrder = -1
-	local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(width, height), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 3, Parent = holder })
+	local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(width, height), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 3, Parent = holder }, { New("UICorner", { CornerRadius = UDim.new(0, 5) }) })
 	local title = Theme.Text({ Name = "Name", LayoutOrder = 1, Text = name, Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 15), ZIndex = 4, Parent = content })
 	local number = Theme.Text({ Name = "Number", LayoutOrder = 2, Text = "0", Font = "Regular", TextSize = numberSize, TextColor3 = Colors.StatNumber, Size = UDim2.new(1, 0, 0, Theme.TextSize[numberSize] + 2), ZIndex = 4, Parent = content })
 	Theme.TextShadow(title)
@@ -118,7 +118,7 @@ local stamina = box("Stamina", size.Width, size.TopHeight, size.Number)
 
 -- the backing hugs the text
 local function fitBacking(entry)
-	local w = math.max(entry.title.TextBounds.X, entry.number.TextBounds.X) + 12
+	local w = (math.max(entry.title.TextBounds.X, entry.number.TextBounds.X) + 12) * 1.5
 	local h = entry.title.AbsoluteSize.Y + entry.number.AbsoluteSize.Y + 2
 	entry.back.Size = UDim2.fromOffset(w, h)
 	entry.backWidth = w
@@ -244,7 +244,7 @@ for _, entry in ipairs(labels) do
 	end)
 	for _, muscle in ipairs(group.muscles) do
 		local sub = New("TextButton", { Name = muscle.id, Size = UDim2.fromOffset(size.Width, SUB_HEIGHT), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 5, Parent = layer })
-		local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(size.Width, SUB_HEIGHT - 2), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 5, Parent = sub })
+		local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(size.Width, SUB_HEIGHT - 2), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 5, Parent = sub }, { New("UICorner", { CornerRadius = UDim.new(0, 5) }) })
 		local text = Theme.Text({ Name = "Text", Text = muscle.name, Font = "Regular", TextSize = "Small", Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = sub })
 		Theme.TextShadow(text)
 		sub.MouseEnter:Connect(function() hover(muscle.id, { muscle.id }) end)
@@ -264,7 +264,7 @@ local function refreshSubs()
 			local maxed = level >= cap
 			sub.text.Text = sub.muscle.name .. "  " .. (maxed and "Max" or commas(Muscles.Shown(level)))
 			sub.text.TextColor3 = maxed and Colors.Gold or Colors.Text
-			sub.back.Size = UDim2.fromOffset(sub.text.TextBounds.X + 12, SUB_HEIGHT - 2)
+			sub.back.Size = UDim2.fromOffset((sub.text.TextBounds.X + 12) * 1.5, SUB_HEIGHT - 2)
 		end
 	end
 end

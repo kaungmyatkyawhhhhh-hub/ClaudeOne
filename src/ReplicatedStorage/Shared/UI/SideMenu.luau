@@ -100,6 +100,9 @@ local function makeButton(id, labelText, iconFactory, side, order)
 end
 
 -- PC: size and place the column so every button fits between the top bar and the bottom of the screen.
+local collapsed = false
+local arrow, arrowIcon = nil, nil
+
 local function layout()
 	if not bar then return end
 	local list = visibleEntries()
@@ -123,7 +126,13 @@ local function layout()
 	local height = rows * size + (rows - 1) * GAP
 	bar.Size = UDim2.fromOffset(columns * size + (columns - 1) * GAP, height)
 	bar.Position = UDim2.new(0, MARGIN, 0.5, 0)
-	bar.Visible = not phone and not hiddenAll
+	bar.Visible = not phone and not hiddenAll and not collapsed
+	if arrow then
+		arrow.Visible = not phone and not hiddenAll and not training
+		-- the arrow sits just above the buttons (or alone in the middle when they are folded away)
+		arrow.Position = collapsed and UDim2.new(0, MARGIN, 0.5, 0) or UDim2.new(0, MARGIN, 0.5, -(height / 2) - 30)
+		arrow.AnchorPoint = Vector2.new(0, collapsed and 0.5 or 0)
+	end
 	if toggle then toggle.Visible = phone and not training and not hiddenAll end
 	changed:Fire()
 end
@@ -152,6 +161,19 @@ local function ensure()
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 	gui = Theme.ScreenGui({ Name = "MainHud", DisplayOrder = 4, Parent = playerGui })
 	bar = New("Frame", { Name = "MenuBar", AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1, Parent = gui })
+	-- arrow: folds all the left buttons away and brings them back
+	arrow = New("TextButton", { Name = "MenuArrow", Size = UDim2.fromOffset(40, 26), Text = "", AutoButtonColor = false, BackgroundColor3 = Colors.Panel, BackgroundTransparency = Alpha.Panel, Visible = not phone, Parent = gui }, { Theme.Round("Button"), Theme.Stroke() })
+	arrowIcon = require(script.Parent.Icons).Chevron(1, Colors.Text)
+	arrowIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	arrowIcon.Position = UDim2.fromScale(0.5, 0.5)
+	arrowIcon.Size = UDim2.fromOffset(22, 22)
+	arrowIcon.Rotation = 180
+	arrowIcon.Parent = arrow
+	arrow.Activated:Connect(function()
+		collapsed = not collapsed
+		Theme.Tween(arrowIcon, { Rotation = collapsed and 0 or 180 }, 0.2)
+		layout()
+	end)
 
 	-- phones: one Menu button at the top left (the thumbstick is bottom left)
 	toggle = New("TextButton", {
