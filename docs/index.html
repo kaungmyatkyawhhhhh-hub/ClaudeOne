@@ -2816,11 +2816,12 @@ function levelCheck(){
 }
 function renderLvlBtn(){const b=$("lvlBtn");if(!b||!S)return;const on=S.picks>0&&$("perkSheet").hidden;b.hidden=!on;if(on)$("lvlN").textContent=S.picks}
 function closePerkSheet(){const sh=$("perkSheet");sh.hidden=true;sh.innerHTML="";S.pickNew=0;dirty=true;renderLvlBtn()}
-function makeOffer(){return PERK_POOL().filter(c=>pk(c.k)<pcap(c.k)).sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=[1,2,3,5][t],cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}})}
+const perkCash=()=>Math.round(Math.max(5000*(1+repLevel()),(S.cash+(S.bank||0))*.05));
+function makeOffer(){const av=PERK_POOL().filter(c=>pk(c.k)<pcap(c.k));if(!av.length)return[0,1,2].map(i=>({k:"cash",t:["Cash bonus","Big payday","Bonus check"][i],d:"Every perk is maxed. Take "+fmt(perkCash()*(i+1)),rt:i,m:1}));return av.sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=Math.min([1,2,3,5][t],pcap(c.k)-pk(c.k)),cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}})}
 // Use every waiting pick at once: each one takes a random card from its own set of 3
 function collectAllPerks(){
   const n=S.picks||0;if(n<=0)return;const got={};let best=0;S.perks=S.perks||{};
-  for(let i=0;i<n;i++){const offer=i===0&&S.offer&&S.offer.length?S.offer:makeOffer(),c=offer.length?pick(offer):null;if(!c){earn(Math.round(5000*(1+repLevel())));continue}S.perks[c.k]=Math.min(pcap(c.k),(S.perks[c.k]||0)+c.m);best=Math.max(best,c.rt);
+  for(let i=0;i<n;i++){const offer=i===0&&S.offer&&S.offer.length?S.offer:makeOffer(),c=offer.length?pick(offer):null;if(!c||c.k==="cash"){earn(perkCash()*((c&&c.rt||0)+1));const g=got.cash||(got.cash={t:"Cash bonus",m:0,rt:0});g.m++;continue}S.perks[c.k]=Math.min(pcap(c.k),(S.perks[c.k]||0)+c.m);best=Math.max(best,c.rt);
     const g=got[c.k]||(got[c.k]={t:c.t,m:0,rt:0});g.m+=c.m;g.rt=Math.max(g.rt,c.rt)}
   S.picks=0;S.offer=null;S.pickNew=0;dirty=true;
   const o=$("perkSheet"),list=Object.values(got).sort((a,b)=>b.rt-a.rt||b.m-a.m);
@@ -2831,12 +2832,12 @@ function collectAllPerks(){
   const c=elC(o)||[fxW/2,fxH*.7];SFX.crit(Math.max(1,best));buzz([30,30,60]);sparks(c[0],c[1],RAR[best].c,30+best*15,1.2+best*.3);confetti(60+best*60+Math.min(100,n*8));if(best>=2){flash(RAR[best].c,.35);shake(4*best,.4)}banner(n+" perks collected","a");renderLvlBtn();
 }
 function showPerkPick(){
-  const valid=S.offer&&S.offer.length>0&&S.offer.every(c=>PERK_POOL().some(x=>x.k===c.k));const pool=valid?S.offer:S.offer=makeOffer(),o=$("perkSheet");o.hidden=false;renderLvlBtn();if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
+  const valid=S.offer&&S.offer.length>0&&S.offer.every(c=>c.k==="cash"?PERK_POOL().every(x=>pk(x.k)>=pcap(x.k)):PERK_POOL().some(x=>x.k===c.k)&&pk(c.k)+c.m<=pcap(c.k));const pool=valid?S.offer:S.offer=makeOffer(),o=$("perkSheet");o.hidden=false;renderLvlBtn();if(pool.some(c=>c.rt>=2)){setTimeout(()=>{SFX.crit(pool.some(c=>c.rt===3)?3:2);buzz([20,30,40])},350)}
   o.innerHTML=`<div class="pshead"><div><small>LEVEL ${repLevel()} · PICK A PERK${S.picks>1?" · "+S.picks+" TO PICK":""}</small><b>Level up</b></div><button class="psx" id="psClose" aria-label="Later">✕</button></div>
-    <div class="pcards">${pool.map((c,i)=>`<button class="pcard r${c.rt}" data-pc="${i}"><span class="rl" style="color:${RAR[c.rt].c}">${RAR[c.rt].n}${c.m>1?" ×"+c.m:""}</span><b>${c.t}</b><span>${c.d}</span><span class="pn">${pk(c.k)?"Lv "+(pk(c.k)+c.m):"New"}</span></button>`).join("")}</div>
+    <div class="pcards">${pool.map((c,i)=>`<button class="pcard r${c.rt}" data-pc="${i}"><span class="rl" style="color:${RAR[c.rt].c}">${RAR[c.rt].n}${c.m>1?" ×"+c.m:""}</span><b>${c.t}</b><span>${c.d}</span><span class="pn">${c.k==="cash"?"Cash":pk(c.k)?"Lv "+(pk(c.k)+c.m)+"/"+pcap(c.k):"New"}</span></button>`).join("")}</div>
     ${S.picks>1?`<button class="cta ghost psall" id="psAll">Collect all ${S.picks} · random picks</button>`:""}<p class="fine">Close it to pick later. Tap the gold star any time.</p>`;
   $("psClose").onclick=closePerkSheet;const pa=$("psAll");if(pa)pa.onclick=collectAllPerks;
-  o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};S.perks[c.k]=Math.min(pcap(c.k),(S.perks[c.k]||0)+c.m);S.picks--;dirty=true;SFX.level();buzz(15);const bc=elC(b);if(bc)sparks(bc[0],bc[1],RAR[c.rt].c,20+c.rt*15,1+c.rt*.3);if(c.rt>=2){confetti(60*c.rt);shake(4*c.rt)}banner(c.rt?RAR[c.rt].n+" "+c.t:c.t,"a");S.offer=null;closePerkSheet();if(S.picks>0){S.pickNew=1;setTimeout(()=>{if(!room)showPerkPick()},450)}renderHud();bKey=""});
+  o.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const c=pool[+b.dataset.pc];S.perks=S.perks||{};if(c.k==="cash")earn(perkCash()*(c.rt+1));else S.perks[c.k]=Math.min(pcap(c.k),(S.perks[c.k]||0)+c.m);S.picks--;dirty=true;SFX.level();buzz(15);const bc=elC(b);if(bc)sparks(bc[0],bc[1],RAR[c.rt].c,20+c.rt*15,1+c.rt*.3);if(c.rt>=2){confetti(60*c.rt);shake(4*c.rt)}banner(c.rt?RAR[c.rt].n+" "+c.t:c.t,"a");S.offer=null;closePerkSheet();if(S.picks>0){S.pickNew=1;setTimeout(()=>{if(!room)showPerkPick()},450)}renderHud();bKey=""});
 }
 /* ---------- market (the reselling floor) ---------- */
 let M=null,hold=null;
