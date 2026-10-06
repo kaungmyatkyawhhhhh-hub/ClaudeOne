@@ -1471,6 +1471,7 @@ let room=null;
 function roomHead(title){const tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>13?"xlong":tl>8?"long":""}"><span class="pdot"></span>${title}</h2><div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
+  if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
   $("mpSheet").hidden=true;
   if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
@@ -3254,7 +3255,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild(),L=myLook();return{ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -4707,7 +4708,7 @@ function enterIsland(k,fid){const G=islGeo(k),i=ISLANDS.find(x=>x.k===k);
       if(hasPier(k,fid)){const px=G.cx+G.rx*.62,py=G.cy+G.ry*.36,dx=x-px,dy=y-py,u=dx*Math.cos(.62)+dy*Math.sin(.62),v=-dx*Math.sin(.62)+dy*Math.cos(.62);return u>-10&&u<300&&Math.abs(v)<22}return false}});
   banner(fid?"Visiting "+SCN.title:"Welcome to "+SCN.title,"a")}
 const hasPier=(k,fid)=>!!islBuilt(k,fid).pier;
-function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();
+function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="house"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
   const done=()=>{SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner(city?"Back in Flip City":"Back at the Harbor","a")};
   if(city||t.kind==="space")flyTo({n:"Flip City",cn:t.kind==="space"?"World 1 · Earth":"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
 /* moving, tapping, drawing */
@@ -4720,12 +4721,12 @@ function sceneTick(dt){if(room)return;
     else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st;if(!SCN.ok(nx,ny)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true}}}
   SCN.npc.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=SCN.pt();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
   SCN.cars.forEach(c=>{c.p=(c.p+c.sp*dt+1)%1})}
-function sceneSig(){if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
+function sceneSig(){if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
 function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig()+"|"+isDark();
-  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else buildIsland();SCN.stSig=sig;bKey=""}
+  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else if(SCN.kind==="house")buildHouse();else buildIsland();SCN.stSig=sig;bKey=""}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):SCN.kind==="space"?.55+.12*clamp((700-S.py)/300,0,1):.55),SCN.kind==="city"?-170:SCN.kind==="space"?-200:0,Ht-vh);
-  ctx.fillStyle=SCN.kind==="space"?"#05061a":dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
+  cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):SCN.kind==="space"?.55+.12*clamp((700-S.py)/300,0,1):SCN.kind==="house"?.66:.55),SCN.kind==="city"?-170:SCN.kind==="space"||SCN.kind==="house"?-200:0,Ht-vh);
+  ctx.fillStyle=SCN.kind==="house"?"#1b1d22":SCN.kind==="space"?"#05061a":dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
   ctx.drawImage(SCN_C,Math.max(0,cam.x),Math.max(0,cam.y),Math.min(Wd,vw),Math.min(Ht,vh),Math.max(0,-cam.x),Math.max(0,-cam.y),Math.min(Wd,vw),Math.min(Ht,vh));
   ctx.translate(-cam.x,-cam.y);const nightA=night(),near=sceneNear();
   SCN.places.forEach(p=>{if(p.bld)winRects(p).forEach(([x,y,w,h])=>{if(nightA>.35||SCN.kind==="space"){ctx.fillStyle="rgba(255,206,110,.95)";rr(x,y,w,h,3);ctx.fill()}});
@@ -4735,6 +4736,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
     SCN.cars.forEach(c=>{const L=[[640,0],[1015,0],[900,1]][c.lane],fwd=c.sp>0;let x,y,hd;if(L[1]){y=560+c.p*740;x=L[0]+(fwd?-18:18);hd=fwd?Math.PI/2:-Math.PI/2}else{x=c.p*CW;y=L[0]+(fwd?16:-16);hd=fwd?0:Math.PI}
       if(x<cam.x-80||x>cam.x+vw+80||y<cam.y-80||y>cam.y+vh+80)return;drawRideAt(x,y,hd,c.k,c.paint,{})})}
   else if(SCN.kind==="space")spaceAnim();
+  else if(SCN.kind==="house")houseAnim();
   else{const G=islGeo(SCN.k);ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=3;for(let k=0;k<2;k++){const s=1+((wt*.08+k*.5)%1)*.12;ctx.globalAlpha=1-((wt*.08+k*.5)%1);ctx.beginPath();ctx.ellipse(G.cx,G.cy,G.rx*s+6,G.ry*s+6,0,0,7);ctx.stroke()}ctx.globalAlpha=1;
     for(let j=0;j<4;j++){const a=1.2+j*1.3+Math.sin(wt*.2+j)*.1,x=G.cx+Math.cos(a)*(G.rx+60),y=G.cy+Math.sin(a)*(G.ry+50)+Math.sin(wt*2+j)*3;ctx.fillStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.ellipse(x,y+4,14,5,0,0,7);ctx.fill();ctx.fillStyle=["#e8b896","#8d5a3b","#f3d0b5","#b9825c"][j];ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill()}
     {const b=Math.sin(wt*1.6)*2,x=G.cx+60,y=G.cy+G.ry+60;ctx.fillStyle="#f4f6fa";ctx.beginPath();ctx.moveTo(x-40,y+b);ctx.lineTo(x+40,y+b);ctx.quadraticCurveTo(x+52,y+6+b,x+38,y+12+b);ctx.lineTo(x-34,y+12+b);ctx.closePath();ctx.fill();ctx.fillStyle="#2a3cff";ctx.fillRect(x-16,y-8+b,30,8)}
@@ -4746,13 +4748,13 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
   decoUnder();drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  const gr=SCN.kind==="space"?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
-  if(nightA>0&&SCN.kind!=="space"){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
+  const indoor=SCN.kind==="space"||SCN.kind==="house",gr=indoor?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
+  if(nightA>0&&!indoor){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
     decoGlow(nightA);SCN.places.forEach(p=>{const sx=p.door[0]-cam.x,sy=p.door[1]-cam.y;if(sx<-90||sy<-90||sx>vw+90||sy>vh+90)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,80);g.addColorStop(0,`rgba(255,205,120,${.3*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-80,sy-80,160,160)});
     ctx.globalCompositeOperation="source-over"}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.16)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh)}
 function renderSceneBottom(){const el=$("bottom"),near=sceneNear(),key="scn|"+SCN.k+"|"+(near?near.k:"")+"|"+SCN.stSig;if(key===bKey)return;bKey=key;
-  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:""}`;
+  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"?"Go outside":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:""}`;
   if(near)h+=`<button class="enter" id="enterBtn"><span>${near.verb||"Enter"} ${esc(near.n)}<small>${esc(String(near.sub||""))}</small></span>${ARROW}</button>`;
   h+=`<div class="places">${SCN.places.filter(p=>p.list!==0&&p.k!=="boat").map(p=>`<button class="place${near===p?" here":""}" data-sgo="${p.k}"><i style="background:${p.c}"></i>${esc(p.short||p.n)}</button>`).join("")}</div>`;
   el.innerHTML=h;const eb=$("enterBtn");if(eb)eb.onclick=()=>{audioOn();near.go()};
@@ -5132,6 +5134,73 @@ function openBlackHole(back){room="bhole";const draw=()=>{const W=w2(),dmNext=k=
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
   $("room").querySelectorAll("[data-feed]").forEach(b=>b.onclick=()=>{const W2=w2(),a=Math.floor(S.cash/RAD*+b.dataset.feed);if(a<1)return;if(b.dataset.sure!=="1"){b.dataset.sure="1";b.querySelector(".t").textContent="Tap again: it's gone forever";SFX.hot();return}
     S.cash-=a*RAD;W2.fed+=a;const before=W2.dm||0;W2.dm=dmFor(W2.fed);dirty=true;SFX.rebirth();flash("#000000",.6);shake(10,.8);if(W2.dm>before){confetti(200,null,null,["#ffcc33","#ff7a3d","#7a2fd6"]);banner("+"+(W2.dm-before)+" Dark Matter","g")}else banner("The black hole hungers","a");draw();updMini()})};draw()}
+/* ================= walk around your house (and your friends') ================= */
+const HW=1100,HH=820;
+const HSTYLE=[["#c9a074","#efe6d6"],["#b9b4ac","#dfe3e8"],["#7a5a3a","#2b2f3a"],["#e8e2d8","#f4ecd8"],["#d8d0f0","#efeaff"],["#d9c08a","#f4ead2"],["#efe2c4","#8a1d2a"],["#dfe9f2","#cfe6f5"],["#9fd6e0","#1f5f7a"],["#f2f4f8","#dfe8f6"],["#5a3a2a","#2a1a14"],["#9fc28a","#f2ead2"]];
+function doSleep(after){audioOn();const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="Zzz";document.body.appendChild(fx);
+  setTimeout(()=>{S.energy=maxEnergy();S.awake=0;if(S.clock>=7)S.day++;S.clock=7;if(comfort()>0)S.buffs.rested=180;dirty=true;if(after)after();updMini()},1300);setTimeout(()=>{fx.remove();banner(comfort()>0?"Good morning · well rested +"+Math.round(restK()*100)+"% sales":"Good morning","u")},2600)}
+const coolOk=(k,ms)=>{S.cool=S.cool||{};const t=S.cool[k]||0,left=ms-(Date.now()-t);if(left>0){banner("Again in "+Math.ceil(left/1000)+"s","a");return false}S.cool[k]=Date.now();dirty=true;return true};
+function housePlaces(){const o=SCN.owner,F=o?o.fu:(S.furn||{}),L=[],add=x=>{x.door=x.door||[x.x+x.w/2,x.y+x.h];x.bld=0;L.push(x)};
+  if(!o){add({k:"office",n:"Home office",sub:"Property, garage, missions, wheel and more",c:"#2a3cff",x:840,y:560,w:170,h:90,go:()=>openRoom("home")});
+    add({k:"bed",n:"Bed",verb:"Sleep in the",sub:"Refill energy · wake up next morning",c:"#e39a52",x:780,y:230,w:190,h:150,go:()=>doSleep()});
+    add({k:"ward",n:"Wardrobe",sub:"Change your look",c:"#8f52d4",x:990,y:200,w:80,h:120,go:()=>openWardrobe(closeRoom)});
+    add({k:"fridge",n:"Fridge",verb:"Raid the",sub:"A snack: +30 energy (every 3 min)",c:"#cfd6e4",x:560,y:190,w:70,h:110,go:()=>{if(!coolOk("fridge",180000))return;S.energy=Math.min(maxEnergy(),S.energy+30);SFX.buy();banner("+30 energy","u");updMini()}});
+    add({k:"sofa",n:"Sofa",verb:"Chill on the",sub:F.tv?"Watch TV: 45s of hype (every 5 min)":"Rest: 30s of hype (every 5 min)",c:"#2bb3a3",x:180,y:440,w:220,h:80,go:()=>{if(!coolOk("sofa",300000))return;S.buffs.hype=Math.max(S.buffs.hype||0,F.tv?45:30);SFX.level();banner("Hype on","u")}});
+    if(F.piano)add({k:"piano",n:"Grand piano",verb:"Play the",sub:"Fans love it (every 5 min)",c:"#1b1d22",x:90,y:620,w:150,h:100,go:()=>{if(!coolOk("piano",300000))return;const f=Math.round(30+(S.fans||0)*.01);S.fans=(S.fans||0)+f;SFX.grail();confetti(60);banner("+"+fmtN(f)+" fans","u")}});
+    if(F.aqua)add({k:"aqua",n:"Aquarium",verb:"Look at the",sub:"Your fish album",c:"#2fa6d9",x:470,y:620,w:150,h:70,go:()=>fishAlbum(closeRoom)});
+    if(F.shelf)add({k:"shelf",n:"Trophy shelf",sub:"Your collection",c:"#cf9a14",x:660,y:190,w:110,h:80,go:()=>openCollection(closeRoom)});
+    if(S.pet)add({k:"pet",n:"Pet bed",verb:"Visit the",sub:"Pets",c:"#ff8fa3",x:640,y:640,w:80,h:50,go:()=>openPets(closeRoom)})}
+  else add({k:"bell",n:"Guestbook",verb:"Sign the",sub:"Ring the doorbell or leave a gift",c:"#2fd28a",x:480,y:600,w:140,h:70,go:()=>{room="house";$("room").hidden=false;visitHouse(o.p,closeRoom)}});
+  add({k:"door",n:"Front door",verb:"Leave by the",sub:o?"Back to the street":"Back outside",c:"#7a5a3a",x:500,y:770,w:100,h:40,list:0,go:()=>leaveScene()});
+  return L}
+function buildHouse(){const g=SCN_C.getContext("2d");SCN_C.width=HW;SCN_C.height=HH;const o=SCN.owner,hm=o?o.hm:(S.home||0),F=o?o.fu:(S.furn||{}),st=HSTYLE[Math.min(hm,HSTYLE.length-1)],G=!!F.gold,dk=isDark();SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
+  let sd=5+hm;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  // floor
+  g.fillStyle=st[0];g.fillRect(0,0,HW,HH);g.strokeStyle="rgba(0,0,0,.07)";g.lineWidth=2;for(let y=200;y<HH;y+=40){g.beginPath();g.moveTo(0,y);g.lineTo(HW,y);g.stroke();for(let x=(y/40%2)*80;x<HW;x+=160){g.beginPath();g.moveTo(x,y);g.lineTo(x,y+40);g.stroke()}}
+  // back wall with windows
+  g.fillStyle=st[1];g.fillRect(0,0,HW,200);g.fillStyle="rgba(0,0,0,.12)";g.fillRect(0,192,HW,10);if(G){g.fillStyle="#cf9a14";g.fillRect(0,186,HW,6);g.fillRect(0,0,HW,6)}
+  const view=hm===8?["#2f86c4","#0f3a6a"]:hm===9?["#bfe3ff","#f2f8ff"]:hm===10?["#ff7a3d","#3a1a10"]:hm>=7?["#8fd0ff","#dff2ff"]:["#9fd0ff","#e8f4ff"];
+  [[60,40],[330,40],[1000-150,40]].forEach(([x,y],i)=>{if(i===2&&F.art)return;const vg=g.createLinearGradient(0,y,0,y+120);vg.addColorStop(0,view[0]);vg.addColorStop(1,view[1]);g.fillStyle=vg;g.fillRect(x,y,170,120);
+    if(hm===8){g.fillStyle="#ffcc33";for(let j=0;j<4;j++){g.beginPath();g.ellipse(x+30+j*35,y+40+(j%2)*30,8,4,0,0,7);g.fill()}}else if(hm===9){g.fillStyle="#fff";for(let j=0;j<3;j++){g.beginPath();g.arc(x+30+j*50,y+70,18,0,7);g.arc(x+50+j*50,y+62,14,0,7);g.fill()}}else{g.fillStyle="rgba(60,80,110,.55)";for(let j=0;j<6;j++){const bh=30+r()*60;g.fillRect(x+6+j*27,y+120-bh,20,bh)}}
+    g.strokeStyle=G?"#cf9a14":"#f2f2f2";g.lineWidth=6;g.strokeRect(x,y,170,120);g.lineWidth=3;g.beginPath();g.moveTo(x+85,y);g.lineTo(x+85,y+120);g.stroke()});
+  // a rug in the middle of the living area
+  if(F.rug){g.fillStyle="#8a1d2a";rrp(g,150,380,300,200,20);g.fill();g.strokeStyle="#cf9a14";g.lineWidth=5;rrp(g,165,395,270,170,14);g.stroke();g.fillStyle="#cf9a14";g.beginPath();g.ellipse(300,480,50,30,0,0,7);g.fill()}
+  const sh=(x,y,w,h)=>{g.fillStyle="rgba(0,0,0,.16)";g.beginPath();g.ellipse(x+w/2,y+h,w*.55,9,0,0,7);g.fill()};
+  // tv or wall art over the sofa
+  if(F.tv){g.fillStyle="#141824";rrp(g,210,60,180,110,6);g.fill();g.fillStyle="#2a5bd7";g.fillRect(218,68,164,94);g.fillStyle="rgba(255,255,255,.3)";g.fillRect(218,68,60,94)}
+  if(F.art){[[790,40,90,70,"#e2364a"],[890,50,70,90,"#2a5bd7"],[970,40,90,60,"#ffcc33"],[800,120,60,50,"#2fd28a"]].forEach(([x,y,w,h,c])=>{g.fillStyle=G?"#cf9a14":"#3a3f4c";g.fillRect(x-5,y-5,w+10,h+10);g.fillStyle=c;g.fillRect(x,y,w,h);g.fillStyle="rgba(255,255,255,.35)";g.beginPath();g.arc(x+w*.4,y+h*.5,Math.min(w,h)*.25,0,7);g.fill()})}
+  if(F.fire){g.fillStyle="#8a6a5a";rrp(g,440,90,100,110,6);g.fill();g.fillStyle="#1b1d22";rrp(g,458,120,64,70,4);g.fill();SCN.torches.push([490,190])}
+  // sofa
+  sh(180,440,220,80);g.fillStyle=G?"#cf9a14":"#2bb3a3";rrp(g,180,440,220,30,10);g.fill();rrp(g,180,460,220,60,12);g.fill();g.fillStyle="rgba(255,255,255,.18)";[[200,470],[260,470],[320,470]].forEach(([x,y])=>{rrp(g,x,y,56,36,8);g.fill()});
+  // kitchen corner: fridge and counter
+  sh(560,190,70,110);g.fillStyle="#f2f4f8";rrp(g,560,190,70,110,8);g.fill();g.fillStyle="#9aa3b3";g.fillRect(616,215,5,30);g.fillRect(616,260,5,30);g.fillRect(560,250,70,3);
+  g.fillStyle="#b7a07a";g.fillRect(640,230,120,60);g.fillStyle="#3a3f4c";g.fillRect(640,226,120,8);g.fillStyle="#e2364a";g.beginPath();g.arc(700,250,9,0,7);g.fill();
+  // bedroom
+  sh(780,230,190,150);g.fillStyle=G?"#cf9a14":"#7a5a3a";rrp(g,780,220,190,160,10);g.fill();g.fillStyle="#fff";rrp(g,790,250,170,120,8);g.fill();g.fillStyle=G?"#ffcc33":"#2a3cff";rrp(g,790,300,170,70,8);g.fill();g.fillStyle="#f2f2f2";rrp(g,805,258,60,32,8);g.fill();rrp(g,885,258,60,32,8);g.fill();
+  sh(990,200,80,120);g.fillStyle="#6b4a2f";rrp(g,990,200,80,120,6);g.fill();g.strokeStyle="rgba(0,0,0,.25)";g.beginPath();g.moveTo(1030,206);g.lineTo(1030,314);g.stroke();g.fillStyle="#cf9a14";g.fillRect(1022,250,4,14);g.fillRect(1034,250,4,14);
+  // office desk with a computer
+  if(!o){sh(840,560,170,90);g.fillStyle="#3a3f4c";rrp(g,840,590,170,60,6);g.fill();g.fillStyle="#1b1d22";rrp(g,885,548,80,50,4);g.fill();g.fillStyle="#4fe3ff";g.fillRect(890,553,70,40);g.fillStyle="#9aa3b3";g.fillRect(918,598,14,6)}
+  // extra furniture
+  if(F.plant)[[40,230],[700,700],[1050,700]].forEach(([x,y])=>{sh(x-14,y-20,28,26);g.fillStyle="#b7a07a";rrp(g,x-14,y-10,28,22,4);g.fill();g.fillStyle="#2f7a3e";for(let j=0;j<6;j++){g.beginPath();g.ellipse(x+Math.cos(j)*12,y-18+Math.sin(j*2)*6,10,5,j,0,7);g.fill()}});
+  if(F.lamp){g.fillStyle="#3a3f4c";g.fillRect(118,380,4,80);g.fillStyle="#ffcc33";g.beginPath();g.moveTo(104,380);g.lineTo(136,380);g.lineTo(128,360);g.lineTo(112,360);g.fill();SCN.lamps.push([120,372])}
+  if(F.games){sh(40,560,100,60);g.fillStyle="#1b1d22";rrp(g,40,560,100,50,6);g.fill();g.fillStyle="#ff4fd8";g.fillRect(48,566,84,4);g.fillStyle="#7a2fd6";rrp(g,70,600,40,40,10);g.fill()}
+  if(F.piano){sh(90,620,150,100);g.fillStyle="#141414";g.beginPath();g.moveTo(90,630);g.lineTo(220,630);g.quadraticCurveTo(250,680,220,720);g.lineTo(90,720);g.closePath();g.fill();g.fillStyle="#fff";g.fillRect(96,700,110,12);g.fillStyle="#141414";for(let x=100;x<205;x+=9)g.fillRect(x,700,4,7)}
+  if(F.aqua){sh(470,620,150,70);g.fillStyle="#3a3f4c";g.fillRect(470,670,150,20);const ag=g.createLinearGradient(0,620,0,670);ag.addColorStop(0,"#7fe0ff");ag.addColorStop(1,"#2f86c4");g.fillStyle=ag;g.fillRect(474,620,142,50);g.fillStyle="#3f9a5a";g.fillRect(490,650,6,20);g.fillRect(590,645,6,25)}
+  if(F.shelf){g.fillStyle="#7a5a3a";g.fillRect(660,190,110,80);g.fillStyle="#5a3a24";g.fillRect(660,225,110,4);[[675,212,"#ffcc33"],[700,212,"#c0c6d0"],[725,212,"#cd7f32"],[690,252,"#cf9a14"],[730,252,"#7fd6ff"]].forEach(([x,y,c])=>{g.fillStyle=c;g.beginPath();g.arc(x,y,8,0,7);g.fill()})}
+  if(F.chand)SCN.lamps.push([550,320]);
+  if(S.pet&&!o){g.fillStyle="#ff8fa3";g.beginPath();g.ellipse(680,670,40,20,0,0,7);g.fill();g.fillStyle="#ffd6df";g.beginPath();g.ellipse(680,668,30,13,0,0,7);g.fill()}
+  // welcome mat at the door
+  g.fillStyle="#7a5a3a";rrp(g,500,780,100,30,6);g.fill();g.fillStyle="rgba(255,255,255,.4)";g.font=`800 11px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";g.fillText(o?"WELCOME":"HOME",550,795);
+  // labels
+  SCN.places.forEach(p=>{if(p.k==="door")return;g.font=`800 12px ${FONTS.d}`;const tw=g.measureText(p.n).width+18,x=p.door[0],y=p.y-12;g.fillStyle="rgba(255,255,255,.88)";rrp(g,x-tw/2,y-10,tw,20,8);g.fill();g.fillStyle="#141824";g.fillText(p.n,x,y)})}
+function houseAnim(){const F=SCN.owner?SCN.owner.fu:(S.furn||{});
+  if(F.aqua)for(let i=0;i<4;i++){const x=480+((wt*20+i*40)%130),y=632+i*9+Math.sin(wt*2+i)*3;ctx.fillStyle=["#ff7a3d","#ffcc33","#ff4fd8","#fff"][i];ctx.beginPath();ctx.ellipse(x,y,6,3,0,0,7);ctx.fill()}
+  if(F.tv){ctx.fillStyle=`hsla(${(wt*40)%360},70%,60%,.35)`;ctx.fillRect(218,68,164,94)}
+  if(F.chand){const g=ctx.createRadialGradient(550,320,0,550,320,220);g.addColorStop(0,"rgba(255,230,160,.35)");g.addColorStop(1,"rgba(255,230,160,0)");ctx.fillStyle=g;ctx.fillRect(330,100,440,440);ctx.fillStyle="#ffe08a";for(let i=0;i<7;i++){ctx.beginPath();ctx.arc(520+i*10,300+Math.abs(i-3)*6,4,0,7);ctx.fill()}}}
+function enterHouse(p){const peer=p&&p.id&&MP?MP.peers[p.id]:null,fu={};((peer&&peer.fu)||[]).forEach(k=>fu[k]=1);
+  const owner=p&&!p.me?{p,hm:p.hm||0,fu,n:String(p.n||"?").slice(0,14)}:null;
+  enterScene({kind:"house",k:"house",owner,w:HW,h:HH,spawn:[550,690],bg:"#2b2f3a",title:owner?owner.n+"'s house":(MPW?"My house":PROPS[S.home||0].n),shirts:[],mk:housePlaces,pt:()=>[550,500],ok:(x,y)=>x>30&&x<HW-30&&y>215&&y<HH-14});
+  SCN.npc=[];SFX.door()}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -5532,7 +5601,7 @@ function drawTown(){
 let NEARPLOT=null,townSeen={};
 function nearPlot(){if(!MPW)return null;let best=null,bd=60;townPlayers().forEach(p=>{const[dx,dy]=plotDoor(p.plot),d=Math.hypot(S.px-dx,S.py-dy);if(d<bd){bd=d;best=p}});return best}
 function townTick(){if(!MPW)return;const ids=townPlayers().map(p=>p.id);ids.forEach(id=>{if(!townSeen[id]&&id!==MP_ID){const p=MP&&MP.peers[id];if(p)banner(String(p.n).slice(0,14)+"'s house appeared","u")}townSeen[id]=1});for(const id in townSeen)if(!ids.includes(id))delete townSeen[id]}
-function openPlot(p){if(p.me){openRoom("home");return}room="house";$("room").hidden=false;$("room").style.setProperty("--pc",p.s||"#2a3cff");SFX.door();visitHouse(p,()=>{closeRoom()});renderHud()}
+function openPlot(p){if(p.me){openRoom("home");return}enterHouse(p);renderHud()}
 
 /* ================= title ================= */
 function title(){accMigrate();if(!ACC){const c=cacheGet();if(c&&c.u&&c.k)return cloudResume();return cloudScreen("",localSaves().length?"new":"login")}titleMain()}
