@@ -1360,7 +1360,7 @@ function drawPerson0(x,y,o){
   const lw=5*s*(1+.65*bl),aw=5*s*(1+.75*bc),sw=20*s*(1+.24*bb+.14*bc)*(o.pose==="lat"?1.18:1),wa=Math.min(sw/2,9*s*(1+.12*bl)),hx=sw/2;
   c.fillStyle="rgba(0,0,0,.22)";c.beginPath();c.ellipse(x,y+1,(11+3*bb)*s,4.5,0,0,7);c.fill();
   if(o.you){c.strokeStyle="rgba(42,60,255,.55)";c.lineWidth=2;c.beginPath();c.ellipse(x,y+1,(15+3*bb)*s,6,0,0,7);c.stroke()}
-  y-=o.bob||0;const AC=o.acc||{},LX=o.pose?0:Math.round(12*Math.max(bl,bc*.85,bb*.85)*s),TK=1+.4*Math.max(bc,bb);if(AC.b)accBack(c,AC.b,x,y-LX,hx,o.mv?Math.sin(o.ph*14)*1.5:0,o.ph||0);c.fillStyle=o.legs||"#262b3a";rrp(c,x-1.5*s-lw,y-11-LX-l*.3,lw,11+LX,2);c.fill();rrp(c,x+1.5*s,y-11-LX+l*.3,lw,11+LX,2);c.fill();if(o.shoes){c.fillStyle=o.shoes;rrp(c,x-1.5*s-lw-.6,y-2.6-l*.3,lw+1.6,3.4,1.3);c.fill();rrp(c,x+1.5*s-.6,y-2.6+l*.3,lw+1.6,3.4,1.3);c.fill()}
+  y-=o.bob||0;const AC=o.acc||{},LX=o.pose?0:Math.round(7*Math.max(bl,bc*.85,bb*.85)*s/Math.max(1,o.tall||1)),TK=1+.22*Math.max(bc,bb)/Math.max(1,o.tall||1);if(AC.b)accBack(c,AC.b,x,y-LX,hx,o.mv?Math.sin(o.ph*14)*1.5:0,o.ph||0);c.fillStyle=o.legs||"#262b3a";rrp(c,x-1.5*s-lw,y-11-LX-l*.3,lw,11+LX,2);c.fill();rrp(c,x+1.5*s,y-11-LX+l*.3,lw,11+LX,2);c.fill();if(o.shoes){c.fillStyle=o.shoes;rrp(c,x-1.5*s-lw-.6,y-2.6-l*.3,lw+1.6,3.4,1.3);c.fill();rrp(c,x+1.5*s-.6,y-2.6+l*.3,lw+1.6,3.4,1.3);c.fill()}
   if(bl>.35){c.fillStyle="rgba(255,255,255,.12)";c.fillRect(x-1.5*s-lw+1,y-10-LX-l*.3,lw*.4,6+LX*.6);c.fillRect(x+1.5*s+1,y-10-LX+l*.3,lw*.4,6+LX*.6)}
   y-=LX;
   c.save();c.translate(x,y-9);c.scale(1,TK);c.translate(-x,-(y-9));
@@ -1829,10 +1829,10 @@ function sponsorTick(dt){const sp=sponsor();if(!sp)return;spT+=dt;if(spT<60)retu
 function newBro(i,guest){const b=GYM_BROS[i%GYM_BROS.length],sp=G_SPOTS[(i*5)%G_SPOTS.length];
   return{build:{c:rnd(.1,1),l:rnd(.1,1),b:rnd(.1,1)},n:b[0],shirt:b[1],skin:G_SKINS[i%5],hair:G_HAIRS[(i*3)%5],size:rnd(1.02,1.28),x:guest?200:sp[0],y:guest?598:sp[1],tx:sp[0],ty:sp[1],act:"work",t:rnd(3,10),ph:rnd(0,7),slot:-1,popT:rnd(.8,2.5),guest:!!guest,mv:false}}
 function gymPop(x,y,txt,col,o={}){if(GS)GS.pops.push({x,y,txt,col,t:0,life:o.life||1.2,heart:o.heart,bubble:o.bubble,flash:o.flash})}
-function openGym(half){
-  G=null;GS={half:!!half,px:200,py:572,tx:null,ty:null,mv:false,ph:0,npcs:[],pops:[],flex:null,near:null,pose:null,poseT:0,curlT:0,cw:0,ch:0,bg:null,guestT:0};
+function openGym(half,th){
+  G=null;GS={th:th||null,half:!!half,px:200,py:572,tx:null,ty:null,mv:false,ph:0,npcs:[],pops:[],flex:null,near:null,pose:null,poseT:0,curlT:0,cw:0,ch:0,bg:null,guestT:0};
   for(let i=0;i<(half?8:7);i++)GS.npcs.push(newBro(i));
-  $("room").innerHTML=`<div class="room-in gymroom">${roomHead(half?"Muscle Beach":"Iron House Gym")}
+  $("room").innerHTML=`<div class="room-in gymroom">${roomHead(th?th.n:half?"Muscle Beach":"Iron House Gym")}
     <div class="gstage" id="gWrap"><canvas id="gCv"></canvas><div class="gfans" id="gFans"></div></div>
     <div class="gact" id="gAct"></div><div class="gpanel" id="gPanel" hidden></div></div>`;
   $("leaveBtn").onclick=closeRoom;
@@ -1967,7 +1967,7 @@ function gymStatic(){
     g.fillStyle="rgba(255,255,255,.03)";for(let y=8;y<108;y+=12)for(let x=(y/12%2)*14;x<GSW;x+=28)g.fillRect(x,y,26,10);
     [[14,108],[278,108]].forEach(([x,w])=>{const mg=g.createLinearGradient(x,20,x+w,98);mg.addColorStop(0,"#4a566b");mg.addColorStop(.5,"#2c3442");mg.addColorStop(1,"#3a4558");g.fillStyle="#0e1015";g.fillRect(x-3,17,w+6,84);g.fillStyle=mg;g.fillRect(x,20,w,78);
       g.strokeStyle="rgba(255,255,255,.14)";g.lineWidth=6;g.beginPath();g.moveTo(x+18,98);g.lineTo(x+48,20);g.moveTo(x+40,98);g.lineTo(x+60,20);g.stroke()});
-    g.save();g.font="900 21px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.shadowColor="#ff4fd8";g.shadowBlur=16;g.fillStyle="#ffd6f5";g.fillText("IRON HOUSE",200,44);g.shadowBlur=8;g.fillText("IRON HOUSE",200,44);
+    g.save();g.font="900 21px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.shadowColor="#ff4fd8";g.shadowBlur=16;g.fillStyle="#ffd6f5";const sg=GS.th&&GS.th.sign||"IRON HOUSE";if(GS.th&&GS.th.neon){g.shadowColor=GS.th.neon;g.fillStyle="#e6fbff"}g.fillText(sg,200,44);g.shadowBlur=8;g.fillText(sg,200,44);
     g.font="700 10px "+FONTS.m;g.shadowColor="#4fe3ff";g.fillStyle="#d6faff";g.fillText("· NO EXCUSES ·",200,70);g.restore();
     g.save();g.shadowColor="#4fe3ff";g.shadowBlur=10;g.fillStyle="#7ff0ff";g.fillRect(0,110,GSW,2);g.restore();
     const bs=g.createLinearGradient(0,112,0,136);bs.addColorStop(0,"rgba(0,0,0,.45)");bs.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=bs;g.fillRect(0,112,GSW,24);
@@ -1977,7 +1977,7 @@ function gymStatic(){
     g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=2;for(let y=18;y<88;y+=18){g.beginPath();for(let x=-10;x<GSW+20;x+=30){g.moveTo(x+(y%36),y);g.quadraticCurveTo(x+7+(y%36),y-4,x+15+(y%36),y)}g.stroke()}
     g.fillStyle="#d8c48f";g.fillRect(0,88,GSW,10);g.fillStyle="#efdcae";g.fillRect(0,98,GSW,GSH-98);g.fillStyle="#e3cc97";for(let i=0;i<1400;i++)g.fillRect(r()*GSW,98+r()*(GSH-98),2,2);
     g.fillStyle="#f6e8c4";for(let i=0;i<500;i++)g.fillRect(r()*GSW,98+r()*(GSH-98),1.5,1.5);
-    g.save();g.fillStyle="#7a5a36";rrp(g,130,96,140,22,5);g.fill();g.font="900 13px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.fillStyle="#fff2d6";g.fillText("MUSCLE BEACH",200,107);g.restore();
+    g.save();g.fillStyle="#7a5a36";rrp(g,130,96,140,22,5);g.fill();g.font="900 13px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.fillStyle="#fff2d6";g.fillText(GS.th&&GS.th.sign||"MUSCLE BEACH",200,107);g.restore();
     [[26,150],[374,150],[22,580],[378,560]].forEach(([x,y])=>{g.fillStyle="rgba(0,0,0,.15)";g.beginPath();g.ellipse(x+12,y+4,20,6,0,0,7);g.fill();g.strokeStyle="#9a7448";g.lineWidth=5;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+6,y-18,x+3,y-36);g.stroke();
       g.fillStyle="#3f9a4e";for(let a=0;a<6;a++){const an=a*Math.PI/3;g.beginPath();g.ellipse(x+3+Math.cos(an)*13,y-36+Math.sin(an)*7,14,5,an,0,7);g.fill()}});
   }
@@ -4252,7 +4252,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=16,WN=[
+const WN_VER=17,WN=[
+ ["🏋️","A gym in every world","Train abroad at Shibuya Dojo, Club Musculation, Desert Iron and Riviera Fitness, in orbit at the Zero-G Gym, and back in Deep Time at the Stone Age Gym. Same lifts and PRs everywhere."],
  ["💪","Walk into the Arena","The Arena is a real hall now: walk up to an opponent's table to wrestle, with a crowd in the stands and a board for meets and friend challenges."],
  ["⚡","Challenges","Timed tasks pop up every minute or two. Win to build a streak worth +10% money each (up to +100%). Miss one and the streak is gone."],
  ["🦹","Thieves fight back","Thieves show up more often, and if one gets away he takes 3% of your cash."],
@@ -4703,6 +4704,7 @@ function cityPlaces(c){const k=c.k,T=CTHEME[k]||CTHEME.paris,L=[],add=o=>{o.door
   const mine=(S.biz||[]).filter(b=>b.c===k);LOTS.forEach((p,i)=>{const b=mine[i];
     if(b)add({k:"biz:"+b.id,n:b.n,sub:BIZ[b.t].n+" · Lv "+b.lv+((b.till||0)>=1&&!b.mgr?" · "+fmt(b.till)+" ready":""),c:BIZ_COL[b.t],x:p[0],y:p[1],w:200,h:130,go:()=>openBiz(b.id,closeRoom)});
     else add({k:"lot"+i,n:"Lot for sale",sub:"Buy a business on this street",c:"#9aa3b3",x:p[0],y:p[1],w:200,h:130,bld:0,lot:1,list:0,verb:"View",go:()=>openRealty(k,closeRoom)})});
+  sceneGym(L,(x,y)=>x>16&&x<CW-16&&y>40&&y<CH-80&&!CROADS.some(([rx,ry,rw,rh])=>x>rx-18&&x<rx+rw+18&&y>ry-18&&y<ry+rh+18),CW,CH,GYMT[c.k]||GYMT.tokyo);
   return L}
 const LOTS=[[100,1100],[340,1100],[580,1100],[1020,1100],[1260,1100],[1500,1100]];
 const cafeCost=()=>Math.round(400+S.cash*.0005);
@@ -5135,6 +5137,7 @@ function spacePlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.b
   add({k:"pad",n:"Landing pad",sub:"Shuttles to the Moon and Mars",c:"#4fe3ff",x:320,y:1150,w:170,h:110,go:()=>openPad(closeRoom)});
   add({k:"tmach",n:"Time machine",sub:w3().open?"Back 500 million years":"World 3: the age of the dinosaurs",c:"#cf9a14",x:1500,y:1150,w:170,h:110,go:()=>openTimeMachine(closeRoom)});
   add({k:"gate",n:"Stargate",sub:"Back to Earth",verb:"Leave through the",c:"#4fe3ff",x:930,y:1380,w:140,h:60,bld:0,list:0,go:()=>leaveScene()});
+  sceneGym(L,onDeck,SW2,SH2,GYMT.space);
   return L}
 const W2H=()=>(S&&S.w2&&S.w2.home!=null)?S.w2.home:-1;
 const COSMOS_MKT={k:"cosmos",n:"Star Market",only:"space",steal:.15,fake:.04,box:0,price:1,minBase:0,sell:1.1,grail:0};
@@ -5717,6 +5720,7 @@ function prehistPlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o
   add({k:"guide",n:"Field Guide",sub:w3().disc.length+"/"+GUIDE3.length+" species found",c:"#7a5a3a",x:1500,y:900,w:200,h:130,go:()=>openFieldGuide(closeRoom)});
   add({k:"rock",n:"The Asteroid",verb:"Watch",sub:"Trigger the extinction for Genes",c:"#e2364a",x:2050,y:260,w:150,h:120,bld:0,go:()=>openExtinction(closeRoom)});
   add({k:"tm",n:"Time machine",verb:"Step into the",sub:"Back to the Cosmos",c:"#4fe3ff",x:1140,y:1220,w:120,h:70,bld:0,list:0,go:()=>leaveScene()});
+  sceneGym(L,PH_OK,DW,DH,GYMT.prehist);
   return L}
 const FOSSIL_MKT={k:"fossil",n:"Fossil Market",only:"fossil",steal:.15,fake:.05,box:0,price:1,minBase:0,sell:1.15,grail:0};
 const PH_OK=(x,y)=>x>20&&x<DW-20&&y>180&&y<DH-20&&!(x<520&&y>1080)&&!((x-1900)*(x-1900)/(260*260)+(y-560)*(y-560)/(150*150)<1);
@@ -6057,6 +6061,14 @@ function arenaPeople(ppl){if(!SCN||SCN.kind!=="arena")return;OPPS.forEach((o,i)=
 let SAFE={t:0,top:0,bot:0};
 function camSafe(){const now=performance.now();if(now-SAFE.t>500){SAFE.t=now;const h=$("hud"),b=$("bottom");const k=cssScale()*(typeof Z==="number"&&Z>0?Z:1),cv=$("world"),ct=cv?cv.getBoundingClientRect().top:0;let bt=0;if(h&&!h.hidden)h.querySelectorAll("*").forEach(e=>{if(!e.offsetParent&&getComputedStyle(e).position!=="fixed")return;const r=e.getBoundingClientRect();if(r.height&&r.width)bt=Math.max(bt,r.bottom)});SAFE.top=Math.max(0,(bt-ct)/k);SAFE.bot=b&&!b.hidden&&b.offsetHeight?Math.max(0,((cv?cv.getBoundingClientRect().bottom:innerHeight)-b.getBoundingClientRect().top)/k):0}
   const head=78*(typeof tallK==="function"?Math.max(1,tallK()):1),lo=S.py-(vh-SAFE.bot-14),hi=S.py-(SAFE.top+head);if(hi>=lo)cam.y=clamp(cam.y,lo,hi)}
+/* ================= a gym in every world: each city, the Cosmos and Deep Time ================= */
+const GYMT={tokyo:{n:"Shibuya Dojo Gym",sign:"SHIBUYA DOJO",c:"#e2364a"},paris:{n:"Club Musculation",sign:"CLUB MUSCU",c:"#2a5bd7"},dubai:{n:"Desert Iron Gym",sign:"DESERT IRON",c:"#cf9a14"},monaco:{n:"Riviera Fitness",sign:"RIVIERA FIT",c:"#14a3a8"},
+  space:{n:"Zero-G Gym",sign:"ZERO-G GYM",neon:"#4fe3ff",c:"#2fd28a"},prehist:{n:"Stone Age Gym",sign:"STONE AGE GYM",half:1,c:"#8a6a44"}};
+// find a free walkable spot for the gym that clears every building and lot
+function sceneGym(L,ok,W,H,t){for(const[w,h,m]of[[220,140,46],[180,120,30],[160,104,18]])if(sceneGym1(L,ok,W,H,t,w,h,m))return}
+function sceneGym1(L,ok,W,H,t,w,h,m){const clear=(x,y)=>!L.some(p=>x<p.x+p.w+m&&x+w>p.x-m&&y<p.y+p.h+m+30&&y+h>p.y-m)&&[[0,0],[w,0],[0,h],[w,h],[w/2,h/2],[w/2,h+20]].every(([a,b])=>ok(x+a,y+b));
+  let best=null,bd=1e9;const cx=W/2,cy=H/2;for(let y=120;y<H-h-40;y+=20)for(let x=30;x<W-w-30;x+=20){if(!clear(x,y))continue;const d=Math.hypot(x+w/2-cx,y+h/2-cy);if(d<bd){bd=d;best=[x,y]}}
+  if(!best)return false;L.push({k:"sgym",n:t.n,sub:"Lift, flex and compete · same PRs as home",c:t.c,x:best[0],y:best[1],w,h,door:[best[0]+w/2,best[1]+h],bld:true,go:()=>{room="gym";$("room").hidden=false;openGym(!!t.half,t)}});return true}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
