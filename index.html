@@ -366,6 +366,9 @@ body.frz::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40
 @keyframes pulse{50%{transform:scale(1.08)}}
 .spart,.lart{padding:0;overflow:hidden}.spart svg{display:block;width:100%;height:auto}.lart{background:#141824;display:grid;place-items:center}.lart canvas{display:block;height:min(56vh,calc((100vw - 32px)*1.5));width:auto;max-width:100%}.lbar{display:flex;gap:8px;align-items:center;font:700 .72rem var(--mono);margin:10px 0}.lbar i{flex:1;height:10px;border-radius:5px;background:var(--sunk);overflow:hidden}.lbar b{display:block;height:100%;width:0}
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.tiles .bigbtn{padding:14px 8px;font-size:1.05rem;border-radius:16px}.tiles .bigbtn small{font-size:.66rem}
+.wnhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;position:sticky;top:-1px;background:var(--bg);z-index:1;padding-bottom:6px}.wnskip{padding:8px 12px;border-radius:10px;background:var(--sunk);font:700 .8rem var(--body);color:var(--ink);flex:none}
+.wndate{font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;padding-top:6px}
+.wnold summary{cursor:pointer;font-weight:700;font-size:.85rem;padding:10px 0;color:var(--muted)}.wnfoot{position:sticky;bottom:-1px;background:var(--bg);padding-top:8px}
 .wnov{position:fixed;inset:0;z-index:58;background:rgba(10,12,20,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadein .25s}.wnsheet{width:min(100%,480px);max-height:86vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.3)}.wnsheet h2{font:900 1.6rem var(--display);margin:0 0 4px}.wnlist{display:flex;flex-direction:column;gap:8px;margin:12px 0}.wnlist div{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:inset 0 0 0 1px var(--line)}.wnlist i{font-style:normal;font-size:1.5rem;line-height:1}.wnlist b{display:block;font-size:.9rem}.wnlist small{color:var(--muted);font-size:.78rem}
 .gpctl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.gpctl button{border:0;border-radius:18px;padding:18px;font-size:2rem;background:var(--ink);color:var(--bg);touch-action:manipulation;cursor:pointer}.gpctl button:active{transform:scale(.96)}
 .wnsheet .cta{width:100%}
@@ -436,6 +439,10 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
 .seahead{display:flex;gap:14px;align-items:center;background:linear-gradient(120deg,color-mix(in oklab,var(--sc) 30%,var(--surface)),var(--surface));border-radius:18px;padding:14px;margin:8px 0}.seahead>span{font-size:2.4rem}.seahead b{font-family:var(--display);font-size:1.3rem;color:var(--sc)}.seahead small{display:block;color:var(--muted)}
 .seatrack{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.sealv{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:14px;padding:10px 6px;background:var(--surface);box-shadow:var(--shadow);text-align:center;opacity:.55}.sealv.ok{opacity:1;box-shadow:inset 0 0 0 2px var(--up),var(--shadow);animation:seaglow 1.6s ease-in-out infinite}@keyframes seaglow{50%{box-shadow:inset 0 0 0 2px var(--up),0 0 16px rgba(47,210,138,.55)}}.sealv.got{opacity:.8}.sealv.big{background:linear-gradient(160deg,#2b2410,#5a4a14);color:#fff}.sealv b{font-family:var(--mono);font-size:.7rem}.sealv span{font-size:1.5rem}.sealv small{font-size:.66rem;font-weight:700;line-height:1.15}.sealv i{font-size:.58rem;font-style:normal;opacity:.75}.sealv em{font-style:normal;font-size:.6rem;font-weight:800;text-transform:uppercase;opacity:.8}
 /* collapsed top bar: cash, rank and level on one line, a slim energy bar, the buttons in a row, alerts below */
+/* the button column wraps into a second column after three, so extra buttons never stretch the cards; long rank names wrap instead of being cut */
+.hudbtns{display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(3,auto);align-content:center;gap:5px}
+.hrow{flex-wrap:wrap;row-gap:2px}.hrow .tierb{flex:none;overflow:visible}
+.hud.hudmin .hudbtns{grid-template-rows:none}.hud.hudmin .hrow{flex-wrap:wrap;row-gap:0;column-gap:6px}
 .hud.hudmin .hudtop{align-items:center}.hud.hudmin .cashchip{flex-direction:row;align-items:center;gap:8px;padding:6px 10px}
 .hud.hudmin #cashLab,.hud.hudmin .hypebar,.hud.hudmin .hlvbar,.hud.hudmin .hmul,.hud.hudmin .timechip{display:none}
 .hud.hudmin .cashchip .cash{font-size:1.15rem;white-space:nowrap}.hud.hudmin #multTxt{min-width:0;overflow:hidden}.hud.hudmin .hrow{white-space:nowrap}
@@ -1028,7 +1035,7 @@ const moonK=()=>emp("moon")?2:1;
 const mult=()=>capM(rawMult())*moonK()*rbK()*ovK()*megaK()*tierK()*crewK()*chK();
 let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
 const feeNow=()=>WT;
-const maxEnergyFor=str=>Math.round(15*petK("pug"))+100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy")+(S&&S.partner?(S.partner.married?40:20):0);
+const maxEnergyFor=str=>Math.round(15*petK("pug"))+100+(S&&S.pr>=160?20:0)+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy")+(S&&S.partner?(S.partner.married?40:20):0);
 // Strength comes from your max lift (PR): one level per 10 kg over the empty 20 kg bar
 const strLv=()=>Math.floor((S.pr-20)/10);
 const STR_TIERS=[[20,"Twig"],[40,"Average"],[60,"Fit"],[90,"Strong"],[130,"Beast"],[180,"Titan"],[250,"Legend"]];
@@ -1037,7 +1044,7 @@ const STR_PERKS=[
  [50,"Street smart","Half as many scam offers"],
  [80,"Intimidating","Sellers list 5% cheaper"],
  [120,"Respected","Every sale pays 10% more"],
- [160,"Long strides","Walk 20% faster"],
+ [160,"Iron lungs","+20 max energy"],
  [220,"Living legend","Collectors pay +0.5× more"]
 ];
 const hasStr=kg=>S.pr>=kg;
@@ -1114,7 +1121,7 @@ const isWeekend=()=>{const d=new Date().getDay();return d===0||d===6};
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+missReady();
 const maxEnergy=()=>maxEnergyFor(strLv());
 const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag+pk("slot")+((S&&S.spurts)||0)+(S&&S.acc&&S.acc.b==="pack"?1:0);
-const walkSpeed=()=>(1+.12*petK("husky"))*150*(1+.25*S.up.shoes)*(1+.004*cmOver())*(1+.1*pk("speed"))*(hasStr(160)?1.2:1)*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
+const walkSpeed=()=>(1+.12*petK("husky"))*150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]||1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
@@ -1232,7 +1239,7 @@ function crateSVG(){return `<svg viewBox="0 0 120 110"><ellipse cx="60" cy="104"
   <defs><linearGradient id="crg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.12)"/><stop offset="1" stop-color="rgba(0,0,0,.2)"/></linearGradient></defs></svg>`}
 
 /* ================= world ================= */
-const W=2600,H=2200,SEA=1950;
+const W=2600,H=3100,SEA=2850;
 const cv=$("world"),ctx=cv.getContext("2d");
 let vw=0,vh=0,dpr=1,Z=1;
 function resize(){dpr=Math.min(SET.perf?1.25:2,window.devicePixelRatio||1);const cw=cv.clientWidth,ch=cv.clientHeight;Z=cw<520?.72:1;vw=cw/Z;vh=ch/Z;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
@@ -1246,7 +1253,7 @@ const SKY=[[1450,60,160,200],[1650,30,130,220],[2100,60,200,250],[2350,90,200,22
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
 const HOUSES=[];
-const inBld=(x,y,m=0)=>HOUSES.some(h=>x>h[0]-m&&x<h[0]+h[2]+m&&y>h[1]-m&&y<h[1]+h[3]+m+18)||(x>1120-m&&x<2320+m&&y>1672-m&&y<1948+m)||PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
+const inBld=(x,y,m=0)=>HOUSES.some(h=>x>h[0]-m&&x<h[0]+h[2]+m&&y>h[1]-m&&y<h[1]+h[3]+m+18)||(x>1120-m&&x<2320+m&&y>1672-m&&y<2784+m)||PLACES.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||SKY.some(([sx,sy,sw,sh])=>x>sx-m&&x<sx+sw+m&&y>sy-m&&y<sy+sh+m+20);
 const inPond=(x,y,m=0)=>Math.hypot((x-1290)/1.3,y-1290)<80+m;
 // a neighbourhood of little houses in the green part of town, placed before the trees
 {let sd=77;const rr=()=>(sd=(sd*16807)%2147483647)/2147483647;for(let gy=40;gy<1360;gy+=96)for(let gx=30;gx<1340;gx+=100){if(HOUSES.length>=30)break;const w=74,h=58,x=gx+rr()*20,y=gy+rr()*16,ok=[[0,0],[w,0],[0,h+20],[w,h+20],[w/2,h/2]].every(([a,b])=>!onRoad(x+a,y+b,26)&&!inBld(x+a,y+b,26)&&!inPond(x+a,y+b,30));if(ok&&rr()<.62)HOUSES.push([x,y,w,h,HOUSES.length])}}
@@ -1299,7 +1306,7 @@ function drawBuilding(g,p,P){
   if(p.k==="airport"){g.fillStyle="rgba(0,0,0,.25)";rrp(g,p.x+20,cy-12,p.w-40,24,4);g.fill();g.fillStyle="#fff";for(let x=p.x+34;x<p.x+p.w-34;x+=30)g.fillRect(x,cy-2,16,4);g.fillStyle="#fff";g.beginPath();g.moveTo(cx-30,cy-26);g.lineTo(cx+30,cy-26);g.lineTo(cx+4,cy-34);g.closePath();g.fill()}
   if(p.k==="club"){for(let i=0;i<14;i++){g.fillStyle=["#ff4fd8","#4fe3ff","#ffe14f"][i%3];g.beginPath();g.arc(p.x+18+i*12.5,ry+rh-12,3,0,7);g.fill()}}
   if(p.k==="docks"){g.fillStyle="#ffcc33";for(let x=p.x+10;x<p.x+p.w-10;x+=22){g.save();g.translate(x,ry+8);g.rotate(.5);g.fillRect(0,0,8,22);g.restore()}g.fillStyle="#1b1f2a";g.fillRect(p.x+p.w-40,ry+10,6,rh-16);g.fillRect(p.x+p.w-70,ry+10,36,5)}
-  if(p.k==="harbor"){g.fillStyle="#a0764a";g.fillRect(p.door[0]-22,p.y+p.h+8,44,1950-(p.y+p.h+8));g.fillStyle="#7a5a36";for(let y=p.y+p.h+12;y<1950;y+=11)g.fillRect(p.door[0]-22,y,44,2);
+  if(p.k==="harbor"){g.fillStyle="#a0764a";g.fillRect(p.door[0]-22,p.y+p.h+8,44,SEA-(p.y+p.h+8));g.fillStyle="#7a5a36";for(let y=p.y+p.h+12;y<SEA;y+=11)g.fillRect(p.door[0]-22,y,44,2);
     g.strokeStyle="#ffffff";g.lineWidth=3;g.beginPath();g.arc(cx,cy-4,10,0,7);g.moveTo(cx,cy+6);g.lineTo(cx,cy+22);g.moveTo(cx-12,cy+16);g.quadraticCurveTo(cx,cy+28,cx+12,cy+16);g.stroke()}
   if(p.k==="township"){[[p.x+24,"#e2364a"],[p.x+p.w/2-14,"#2a5bd7"],[p.x+p.w-52,"#2bb3a3"]].forEach(([x,c])=>{g.fillStyle=c;g.beginPath();g.moveTo(x,ry+30);g.lineTo(x+14,ry+12);g.lineTo(x+28,ry+30);g.fill();g.fillStyle="#f4ecd8";g.fillRect(x+3,ry+30,22,18)})}
   if(p.k==="storage"){g.fillStyle="rgba(0,0,0,.12)";for(let x=p.x+8;x<p.x+p.w-8;x+=9)g.fillRect(x,ry+8,3,rh-16);
@@ -1626,9 +1633,9 @@ const rbReq=()=>5+2*rbN();
 function rbMulti(){let n=rbN(),left=(S&&S.spurts)||0,k=0;while(left>=(5+2*(n+k))*(k?2:1)){left-=(5+2*(n+k))*(k?2:1);k++}return k}
 const spurtReq=()=>{const n=S.spurts||0;return Math.max(80,120-10*rbN())+30*n+Math.round(2*n*n)};
 const spurtGain=()=>Math.min(6+rbN(),2+rbN()+Math.floor(Math.max(0,S.pr-spurtReq())/40));
-// Height is exaggerated on screen so every cm shows: 180 cm looks ~13% taller, 200 cm ~39%.
-// There's no cap: past ~230 cm each cm shows a little less (300 cm ≈ 2.3×, 400 cm ≈ 2.7×), but you never stop growing.
-const tallFor=cm=>{const d=Math.max(0,(cm-170)/170*2.2);return 1+(d<=.8?d:.8+.6*Math.log(1+(d-.8)/.6))};
+// Height is exaggerated on screen so every cm shows: 180 cm looks ~8% taller, 200 cm ~25%.
+// There's no cap: past ~270 cm each cm shows a little less (300 cm ≈ 2.0×, 400 cm ≈ 2.4×), but you never stop growing.
+const tallFor=cm=>{const d=Math.max(0,(cm-170)/170*1.4);return 1+(d<=.8?d:.8+.6*Math.log(1+(d-.8)/.6))};
 const tallK=()=>tallFor(((S&&S.height)||170));
 // Body size comes from your best-ever lift, so a growth spurt never makes you smaller
 // how much of your frame your muscles fill: tall players start as narrow as a beginner and widen as they fill out
@@ -1652,7 +1659,7 @@ function liftPanel(l0){
       <div class="sechead"><h3>Physique</h3><span class="eyebrow">Mirror check</span></div>${physiqueCard()}${musTier()}
       <div class="sechead"><h3>Growth spurt</h3><span class="eyebrow">${S.height||170} cm · ${S.spurts||0} spurts</span></div>
       <div class="note ovnote">${ovKg()>0?`<b>Overgrown: +${Math.round((ovK()-1)*100)}% money.</b> You're ${Math.round(ovKg())} kg past your next growth spurt. Every 10 kg over pays +1% (up to +50%), but a growth spurt resets your lifts.`:`Lift past ${spurtReq()} kg to get the <b>overgrown bonus</b>: +1% money for every 10 kg over your next growth spurt (up to +50%).`}</div>
-      <div class="note">Reset all three lifts to 20 kg and <b>grow taller</b>. Every cm over 170 gives confidence: +0.5% on sales, faster walking, safer lowballing, bigger flex crowds and more fans. Muscle memory makes each climb back faster: bigger green zone, bigger jumps, and more weight allowed over your PR. Your muscles still have to be rebuilt to look big again.</div>
+      <div class="note">Reset all three lifts to 20 kg and <b>grow taller</b>. Every cm over 170 gives confidence: +0.5% on sales, safer lowballing, bigger flex crowds and more fans. Muscle memory makes each climb back faster: bigger green zone, bigger jumps, and more weight allowed over your PR. Your muscles still have to be rebuilt to look big again.</div>
       <button class="bigbtn alt" id="gSpurt" ${S.pr<spurtReq()?"disabled":""}>Growth spurt +${spurtGain()} cm<small>${S.pr<spurtReq()?`Needs ${spurtReq()} kg max lift · you have ${S.pr} kg`:`Lifts go back to 20 kg · you'll be ${(S.height||170)+spurtGain()} cm`}</small></button>
       <div class="sechead"><h3>Rebirth</h3><span class="eyebrow">${rbN()?"Reborn ×"+rbN()+" · +"+Math.round(.3*rbN()*100)+"% money":"Not reborn yet"}</span></div>
       <div class="note">Give up <b>every growth spurt</b>: your height goes back to 170 cm, and you lose the muscle memory and bag slots that came with them. In return you keep, forever: <b>+30% money</b> per rebirth, growth spurts that need 10 kg less and give +1 cm more each. Lifts, cash and everything else stay.</div>
@@ -3295,16 +3302,20 @@ async function unseal(key,txt){const o=JSON.parse(txt),pt=new Uint8Array(await c
 const accTopic=(h,k)=>"fliprush/v1/acct/"+h+"/"+k;
 async function cloudConnect(){
   await loadMqtt();const list=(store.get("fliprush_broker")?[store.get("fliprush_broker")]:[]).concat(MP_BROKERS);
-  const cls=await Promise.all(list.map(url=>new Promise(res=>{let c;try{c=mqtt.connect(url,{clientId:"fra_"+DEV_ID+"_"+Math.random().toString(36).slice(2,6),clean:true,connectTimeout:6000,reconnectPeriod:5000,keepalive:30})}catch(e){return res(null)}
-    const t=setTimeout(()=>{try{c.end(true)}catch(e){}res(null)},7000);c.once("connect",()=>{clearTimeout(t);res(c)});c.on("error",()=>{})})));
-  return cls.filter(Boolean);
+  // go as soon as the fastest server answers (plus a moment for the others); slower ones join the same list when they connect
+  const out=[];return new Promise(done=>{let left=list.length,fin=false,grace=null;const finish=()=>{if(fin)return;fin=true;clearTimeout(grace);done(out)};
+    list.forEach(url=>{let c;const drop=()=>{if(--left<=0)finish()};try{c=mqtt.connect(url,{clientId:"fra_"+DEV_ID+"_"+Math.random().toString(36).slice(2,6),clean:true,connectTimeout:6000,reconnectPeriod:5000,keepalive:30})}catch(e){return drop()}
+      const t=setTimeout(()=>{try{c.end(true)}catch(e){}drop()},7000);c.on("error",()=>{});
+      c.once("connect",()=>{clearTimeout(t);out.push(c);if(fin){if(ACC&&ACC.cls===out&&ACC.sid)claimOn(c)}else if(out.length>=list.length)finish();else if(!grace)grace=setTimeout(finish,350);if(--left<=0)finish()})})});
 }
-function cloudGet(cls,topic,ms=3500){return new Promise(res=>{const out=[];let fin=false;const done=()=>{if(fin)return;fin=true;clearTimeout(t);cls.forEach(c=>{c.removeListener("message",c.__h);try{c.unsubscribe(topic)}catch(e){}});res(out)};const t=setTimeout(done,ms);
-  cls.forEach(c=>{c.__h=(tp,buf)=>{if(tp===topic){out.push(buf.toString());if(out.length>=cls.length)done()}};c.on("message",c.__h);c.subscribe(topic,{qos:1})})})}
+// read a retained message: servers send it right after confirming the subscription, so once every server has confirmed
+// and a short moment has passed there's nothing more coming (no more waiting the full timeout for a topic that's empty)
+function cloudGet(cls,topic,ms=3500){const C=cls.slice(),H=new Map();return new Promise(res=>{const out=[];let fin=false,acks=0,q=null;const done=()=>{if(fin)return;fin=true;clearTimeout(t);clearTimeout(q);C.forEach(c=>{c.removeListener("message",H.get(c));try{c.unsubscribe(topic)}catch(e){}});res(out)};const t=setTimeout(done,ms);
+  C.forEach(c=>{const h=(tp,buf)=>{if(tp===topic){out.push(buf.toString());if(out.length>=C.length)done()}};H.set(c,h);c.on("message",h);c.subscribe(topic,{qos:1},()=>{if(++acks>=C.length){clearTimeout(q);q=setTimeout(done,250)}})})})}
 function cloudPut(cls,topic,payload){cls.forEach(c=>{try{c.publish(topic,payload,{qos:1,retain:true})}catch(e){}})}
 async function newestSave(cls,h,key){const got=await cloudGet(cls,accTopic(h,"save"));let best=null,bad=0;
   for(const g of got){try{const o=await unseal(key,g);if(!best||o.t>best.t)best=o}catch(e){bad++}}return{best,found:got.length,bad}}
-async function sessionNow(cls,h){const got=await cloudGet(cls,accTopic(h,"sess"),2500);let s=null;const sids=[];got.forEach(g=>{try{const o=JSON.parse(g);sids.push(o.sid);if(!s||o.t>s.t)s=o}catch(e){}});if(ACC)ACC.prev=sids;return s}
+async function sessionNow(cls,h){const got=await cloudGet(cls,accTopic(h,"sess"),2500);let s=null;const sids=[];got.forEach(g=>{try{const o=JSON.parse(g);sids.push(o.sid);if(!s||o.t>s.t)s=o}catch(e){}});sessionNow.sids=sids;if(ACC)ACC.prev=sids;return s}
 function cacheGet(){try{return JSON.parse(store.get(CLOUD_KEY))}catch(e){return null}}
 async function cacheSet(user,h,key){const jwk=await crypto.subtle.exportKey("jwk",key),c={u:user,h,k:jwk};store.set(CLOUD_KEY,JSON.stringify(c));rememberAcc(c)}
 // accounts used on this device, so you can switch back without typing the password again
@@ -3330,10 +3341,12 @@ function switchSheet(back){const o=$("overlay"),cur=cacheGet();if(cur)rememberAc
   $("swBack").onclick=()=>{if(back)back();else o.hidden=true}}
 async function cacheKey(c){return crypto.subtle.importKey("jwk",c.k,{name:"AES-GCM"},true,["encrypt","decrypt"])}
 /* claim this device, watch for takeovers, keep the cloud copy fresh */
+function claimOn(c,old){if(!ACC||c.__claim)return;c.__claim=1;const h=ACC.h,tp0=accTopic(h,"sess");if(!old)cloudPut([c],tp0,JSON.stringify({sid:ACC.sid,dev:DEV_ID,dn:devName(),t:Date.now()}));
+  c.subscribe(tp0,{qos:1});c.on("message",(tp,buf)=>{if(tp!==tp0||!ACC||ACC.kicked)return;try{const o=JSON.parse(buf.toString());if(o.sid!==ACC.sid&&!(ACC.prev||[]).includes(o.sid))cloudKicked(o)}catch(e){}});
+  c.on("connect",()=>{if(ACC&&!ACC.kicked)c.subscribe(tp0,{qos:1})})}
 function cloudClaim(){if(!ACC||!ACC.cls.length)return;ACC.sid=Math.random().toString(36).slice(2,12);ACC.claimT=Date.now();ACC.kicked=false;
   const h=ACC.h,sess=()=>JSON.stringify({sid:ACC.sid,dev:DEV_ID,dn:devName(),t:Date.now()});cloudPut(ACC.cls,accTopic(h,"sess"),sess());
-  ACC.cls.forEach(c=>{c.subscribe(accTopic(h,"sess"),{qos:1});c.on("message",(tp,buf)=>{if(tp!==accTopic(h,"sess")||!ACC||ACC.kicked)return;try{const o=JSON.parse(buf.toString());if(o.sid!==ACC.sid&&!(ACC.prev||[]).includes(o.sid))cloudKicked(o)}catch(e){}});
-    c.on("connect",()=>{if(ACC&&!ACC.kicked)c.subscribe(accTopic(h,"sess"),{qos:1})})});
+  ACC.cls.forEach(c=>claimOn(c,true));
   clearInterval(ACC.beat);ACC.beat=setInterval(()=>{if(!ACC||ACC.kicked)return;cloudPut(ACC.cls,accTopic(h,"sess"),sess());cloudUpload()},30000);
 }
 let upBusy=false;
@@ -3370,28 +3383,28 @@ const userOk=u=>/^[A-Za-z0-9_]{3,16}$/.test(u);
 async function cloudCreate(){
   const u=$("cUser").value.trim(),p=$("cPass").value;if(!userOk(u))return cMsg("Username: 3 to 16 letters, numbers or _.");if(p.length<4)return cMsg("Password needs at least 4 characters.");
   const pickEl=document.querySelector("[name=lsave]:checked"),pick=pickEl?+pickEl.value:-1,L=localSaves();
-  $("cGo").disabled=true;cMsg("Connecting…");let cls=[];try{cls=await cloudConnect()}catch(e){}
+  $("cGo").disabled=true;cMsg("Connecting…");const kP=deriveKey(u,p),hP=sha256hex(u.toLowerCase());let cls=[];try{cls=await cloudConnect()}catch(e){}
   if(!cls.length){$("cGo").disabled=false;return cMsg("Can't reach the account server. Check your internet and try again.")}
-  const h=await sha256hex(u.toLowerCase());cMsg("Checking username…");const taken=await cloudGet(cls,accTopic(h,"save"),3000);
+  const h=await hP;cMsg("Checking username…");const taken=await cloudGet(cls,accTopic(h,"save"),3000);
   if(taken.length){$("cGo").disabled=false;cls.forEach(c=>c.end(true));return cMsg("That username is taken.")}
-  const key=await deriveKey(u,p);SAVE=SAVE0+":c:"+h;
+  const key=await kP;SAVE=SAVE0+":c:"+h;
   if(pick>=0&&L[pick])store.set(SAVE,store.get(L[pick].k));else{newGame();save()}
   ACC={user:u,h,key,cls};await cacheSet(u,h,key);cloudClaim();await cloudUpload();SFX.level();titleMain();
 }
 async function cloudLogin(){
   const u=$("cUser").value.trim(),p=$("cPass").value;if(!userOk(u)||p.length<4)return cMsg("Check your username and password.");
-  $("cGo").disabled=true;cMsg("Connecting…");const h=await sha256hex(u.toLowerCase()),key=await deriveKey(u,p);let cls=[];try{cls=await cloudConnect()}catch(e){}
+  $("cGo").disabled=true;cMsg("Connecting…");const kP=deriveKey(u,p),hP=sha256hex(u.toLowerCase());let cls=[];try{cls=await cloudConnect()}catch(e){}const h=await hP,key=await kP;
   if(!cls.length){const c=cacheGet();$("cGo").disabled=false;if(c&&c.h===h&&store.get(SAVE0+":c:"+h)){SAVE=SAVE0+":c:"+h;ACC={user:u,h,key,cls:[],offline:1};return titleMain()}return cMsg("Can't reach the account server. Check your internet and try again.")}
-  cMsg("Unlocking your save…");const r=await newestSave(cls,h,key);
+  cMsg("Unlocking your save…");const sessP=sessionNow(cls,h),r=await newestSave(cls,h,key);
   if(!r.found){$("cGo").disabled=false;cls.forEach(c=>c.end(true));return cMsg("No account with that username.")}
   if(!r.best){$("cGo").disabled=false;cls.forEach(c=>c.end(true));return cMsg("Wrong password.")}
-  await afterAuth({user:u,h,key,cls},r.best);
+  await afterAuth({user:u,h,key,cls,sessP},r.best);
 }
 async function afterAuth(acc,cloud){
   SAVE=SAVE0+":c:"+acc.h;const local=store.get(SAVE);let lt=0;try{lt=JSON.parse(local).savedAt||0}catch(e){}
   if(cloud&&cloud.s){let ct=0;try{ct=JSON.parse(cloud.s).savedAt||cloud.t}catch(e){}if(!local||ct>=lt)store.set(SAVE,cloud.s)}
   ACC=acc;await cacheSet(acc.user,acc.h,acc.key);
-  const sess=await sessionNow(acc.cls,acc.h);
+  const sess=await (acc.sessP||sessionNow(acc.cls,acc.h));ACC.prev=sessionNow.sids||[];
   if(sess&&sess.dev!==DEV_ID&&Date.now()-sess.t<120000){const o=$("overlay");o.hidden=false;
     o.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1><h2 class="h2"><small>${esc(acc.user).toUpperCase()}</small>Already playing on ${esc(sess.dn||"another device")}.</h2>
       <p class="lede">An account can only be played on one device at a time. Move it here? The other device will close and its progress comes with you.</p>
@@ -3405,7 +3418,7 @@ async function cloudResume(){
   let key;try{key=await cacheKey(c)}catch(e){store.del(CLOUD_KEY);return cloudScreen("")}
   let cls=[];try{cls=await cloudConnect()}catch(e){}
   if(!cls.length){SAVE=SAVE0+":c:"+c.h;ACC={user:c.u,h:c.h,key,cls:[],offline:1};return titleMain()}
-  const r=await newestSave(cls,c.h,key);await afterAuth({user:c.u,h:c.h,key,cls},r.best);
+  const sessP=sessionNow(cls,c.h),r=await newestSave(cls,c.h,key);await afterAuth({user:c.u,h:c.h,key,cls,sessP},r.best);
 }
 function cloudLogout(){cloudUpload().finally(()=>{setTimeout(()=>{store.del(CLOUD_KEY);location.reload()},600)})}
 /* ================= multiplayer: rooms over a public MQTT broker ================= */
@@ -4388,69 +4401,81 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=24,WN=[
- ["📏","No height cap","You can keep growing forever and it keeps showing on screen. Each growth spurt now needs a bit more lifting than the last."],
- ["🔽","Smaller top bar","Tap ▴ next to the camera to shrink the top bar to cash, rank, level and energy. Tap ▾ to bring it back."],
- ["🛠️","Admin panel","Admins can open a panel to change any stat on their account."],
- ["🛫","Bots travel like you","NPC players fly out through the Stargate, walk the Cosmos, take the Time Machine to Deep Time and come back the same way, instead of popping between worlds."],
- ["⭐","Bots have fans","NPC players now have fan counts that grow through the day, so they show up on the fan leaderboard like real players."],
- ["👥","Switch account","Hop between accounts on the same device from the title screen or the Account card, log in to another one, or make a new one."],
- ["🖱️","Fair play","Autoclickers no longer work: presses closer than 5 ms apart are ignored. Gifts are capped at 10% of the receiver's cash, with a 2 ms cooldown between gifts."],
- ["⏱️","Faster worlds","World 1 now takes about 35 minutes, World 2 about 30 and Deep Time about 30. Rare editions (Signed, Gold, Platinum…) appear as you get richer, space generators are cheaper, and prehistoric life pays back much faster."],
- ["🤖","NPC worlds","Three always-open online worlds full of bot players who walk around, chat and race you at the Car Meet. Join with friends from the Harbor."],
- ["📶","Snappier multiplayer","Players update 10 times a second and move smoother, and the public town list loads faster."],
- ["💪","Muscle past your frame","Muscles now grow up to 2.5× your frame. At 1.2× you get vascularity, at 1.5× boulder shoulders, at 1.8× godzilla traps."],
- ["🏁","Drag races at the Car Meet","Race up to three bots at once, or challenge friends in your online room to a live race. Hit GO on green for the best launch."],
- ["🏝️","Bigger islands","Islands are bigger and buildings never pile on top of each other."],
- ["🏯","Real architecture","Tokyo has pagoda roofs, Paris slate mansards, Dubai sandstone domes and Monte Carlo terracotta. The Cosmos is built from glowing metal modules, and Deep Time from thatched huts."],
- ["🌸","Decorated worlds","Vending machines, flower carts, lanterns, supercars, cargo crates, robots, ferns, egg nests and little dinosaurs everywhere."],
- ["🦴","Grow into your frame","Tall players start skinny with a big frame and fill it out with muscle as they lift."],
- ["🏋️","A gym in every world","Train abroad at Shibuya Dojo, Club Musculation, Desert Iron and Riviera Fitness, in orbit at the Zero-G Gym, and back in Deep Time at the Stone Age Gym. Same lifts and PRs everywhere."],
- ["💪","Walk into the Arena","The Arena is a real hall now: walk up to an opponent's table to wrestle, with a crowd in the stands and a board for meets and friend challenges."],
- ["⚡","Challenges","Timed tasks pop up every minute or two. Win to build a streak worth +10% money each (up to +100%). Miss one and the streak is gone."],
- ["🦹","Thieves fight back","Thieves show up more often, and if one gets away he takes 3% of your cash."],
- ["🏘️","A real town","A neighbourhood of houses, tree-lined downtown streets, and detailed buildings in every world."],
- ["🦵","Better proportions","Big builds get longer legs."],
- ["🔥","Hype & FRENZY","Every good flip, find and catch fills your Hype bar. Fill it to start a 30-second FRENZY: double money, no energy cost and instant restocks."],
- ["🦹","Thieves","Every few minutes a thief grabs a bag of cash. Tap him and chase him down on the map for a big reward."],
- ["💰","Street buyers","Locals stop and offer extra for something in your stash. Walk up to them to sell it on the spot, no menus."],
- ["✨","Golden items","Rare golden listings in the market sell for ×4."],
- ["⚡","Less waiting","Energy refills 2.5× faster, and shiny finds pop up all over town far more often (and are worth more as you get richer)."],
- ["🏙️","Flip Tower top floor","The Flip Tower now tops out at floor 500, the Star touch milestone."],
- ["🚀","Blast off to the Cosmos","The trip to World 2 is now a rocket launch, and the time machine to World 3 pulls you through a spinning time whirlpool."],
- ["💾","Stay in your world","Closing the game in World 2 or World 3 no longer sends you back to Earth. You load right back in where you left off."],
- ["🚶","Smarter townspeople","People walk on roads and grass and go around buildings instead of through them. Only your partner still cuts through to follow you. Women in town now have long hair."],
- ["👑","10 new tiers","Celestial, Primordial, Eternal, Cosmic, Infinite, Omega, Transcendent, Omnipotent, Absolute and Beyond. Bigger money bonuses, harder rules."],
- ["🦴","Easier to read in Deep Time","World 3 markets and labs have dark text on their light background, even when your phone is in dark mode."],
- ["🦖","World 3: Deep Time","The time machine on the space station sends you back to just after the Cambrian explosion. Grow life for Amber (◈1 = ✦1 quadrillion), dig fossils, and let the asteroid hit for Genes."],
- ["⚑","Crews","Team up with friends, fill the crew bank and climb the crew leaderboard. Your HQ stands on the Township street."],
- ["🔴","Live events","Every 10 minutes in the Online Town: money rain, flash sales, street races and The Titan."],
- ["🔨","Auctions","Live bidding wars with everyone in your room."],
- ["🏆","Seasons","A free 30-level reward track every 30 days. Tap the Season pill."],
- ["🏠","Walk around your house","Your furniture, pet and partner, a jukebox, and visits to friends' houses."],
- ["🪐","The Moon and Mars","Shuttles from the Cosmos landing pad."],
- ["🚕","A living town","Locals with names, taxis, police chases, storms, fog and rainbows."],
- ["😀","Emotes, photos and music","New buttons by the sound icon. Music plays everywhere; turn it off in Settings."],
- ["🌌","World 2: the Cosmos","Open the Stargate at the Airport (✦10). Build generators that make Radiant every minute, research upgrades, map the stars and feed the black hole."],
- ["🎨","Customize everything","Home → Look: shirt colour and style, pants, shoes, eyes, facial hair and 8 hairstyles. 30 new accessories, including things to hold."],
- ["🌌","Mega projects","At the Bank: buy a country, build an ocean city, ring the planet in orbit. Nine new homes up to a Multiverse Mansion."],
- ["📏","Grow into your frame","Tall players start skinny and fill out as they lift. Lift past your next growth spurt for up to +50% money."],
- ["🔁","Rebirth","At the gym's lift station: give up all your growth spurts and height for +30% money forever and bigger, cheaper spurts."],
- ["🗼","Walk around abroad","Tokyo, Paris, Dubai and Monte Carlo are real places now. Walk the streets, visit the landmark, and see your businesses on the street."],
- ["🏝️","Walk your islands","Stroll the beach to your villa, the fishing pier, the dive shack, the bonfire and washed-up chests."],
- ["🏨","Businesses","Buy apartments, bars, restaurants, condos, hotels and resorts. Expand, set prices, handle events, work shifts."],
- ["🎰","Casino & Grand Prix","Slots, roulette and blackjack in Monte Carlo, plus a Grand Prix race in Monaco."],
- ["🚀","Spaceport","Now in the Cosmos: build a rocket and fly it to orbit, the Moon and Mars."],
- ["🎧","DJ sets","Play a rhythm game at the Nightclub's DJ booth for fans and hype."],
- ["💍","Weddings","Propose to your partner with a ring and pick a venue. Married couples get bigger bonuses."],
- ["🐶","Style & pets","Pets that follow you, a Boutique, a Wardrobe for skin and hair, car mods in the Dealership garage."],
- ["📈","Money moves","Stock exchange, scratch cards, a daily prize wheel and daily missions."],
- ["📸","FlipGram","Post what you own, go viral, gain followers and sponsor cash."],
- ["🌍","With friends","Golden chest races, player market, room and world leaderboards, arm wrestling, see each other everywhere."],
+const WN_VER=25,WN=[
+ ["🏘️","A bigger Township","Two streets, 24 lots and much bigger houses. The beach grew to make room.","2026-10-06T16:30"],
+ ["⚡","Faster sign-in","Logging in and creating an account now take about a second.","2026-10-06T16:30"],
+ ["📰","Tidier What's new","Only the latest changes show, each with its date. Skip it from the top.","2026-10-06T16:30"],
+ ["📏","Height without speed","Growing taller or bigger no longer changes how fast you walk, and height shows on screen more gradually.","2026-10-06T16:30"],
+ ["📏","No height cap","You can keep growing forever and it keeps showing on screen. Each growth spurt now needs a bit more lifting than the last.","2026-10-06T15:45"],
+ ["🔽","Smaller top bar","Tap ▴ next to the camera to shrink the top bar to cash, rank, level and energy. Tap ▾ to bring it back.","2026-10-06T15:40"],
+ ["🛠️","Admin panel","Admins can open a panel to change any stat on their account.","2026-10-06T15:40"],
+ ["🛫","Bots travel like you","NPC players fly out through the Stargate, walk the Cosmos, take the Time Machine to Deep Time and come back the same way, instead of popping between worlds.","2026-10-06T15:34"],
+ ["⭐","Bots have fans","NPC players now have fan counts that grow through the day, so they show up on the fan leaderboard like real players.","2026-10-06T15:31"],
+ ["👥","Switch account","Hop between accounts on the same device from the title screen or the Account card, log in to another one, or make a new one.","2026-10-06T15:31"],
+ ["🖱️","Fair play","Autoclickers no longer work: presses closer than 5 ms apart are ignored. Gifts are capped at 10% of the receiver's cash, with a 2 ms cooldown between gifts.","2026-10-06T15:31"],
+ ["⏱️","Faster worlds","World 1 now takes about 35 minutes, World 2 about 30 and Deep Time about 30. Rare editions (Signed, Gold, Platinum…) appear as you get richer, space generators are cheaper, and prehistoric life pays back much faster.","2026-10-06T15:19"],
+ ["🤖","NPC worlds","Three always-open online worlds full of bot players who walk around, chat and race you at the Car Meet. Join with friends from the Harbor.","2026-10-06T12:42"],
+ ["📶","Snappier multiplayer","Players update 10 times a second and move smoother, and the public town list loads faster.","2026-10-06T12:42"],
+ ["💪","Muscle past your frame","Muscles now grow up to 2.5× your frame. At 1.2× you get vascularity, at 1.5× boulder shoulders, at 1.8× godzilla traps.","2026-10-06T12:00"],
+ ["🏁","Drag races at the Car Meet","Race up to three bots at once, or challenge friends in your online room to a live race. Hit GO on green for the best launch.","2026-10-06T11:34"],
+ ["🏝️","Bigger islands","Islands are bigger and buildings never pile on top of each other.","2026-10-06T11:34"],
+ ["🏯","Real architecture","Tokyo has pagoda roofs, Paris slate mansards, Dubai sandstone domes and Monte Carlo terracotta. The Cosmos is built from glowing metal modules, and Deep Time from thatched huts.","2026-10-06T10:58"],
+ ["🌸","Decorated worlds","Vending machines, flower carts, lanterns, supercars, cargo crates, robots, ferns, egg nests and little dinosaurs everywhere.","2026-10-06T10:58"],
+ ["🦴","Grow into your frame","Tall players start skinny with a big frame and fill it out with muscle as they lift.","2026-10-06T03:20"],
+ ["🏋️","A gym in every world","Train abroad at Shibuya Dojo, Club Musculation, Desert Iron and Riviera Fitness, in orbit at the Zero-G Gym, and back in Deep Time at the Stone Age Gym. Same lifts and PRs everywhere.","2026-10-06T10:24"],
+ ["💪","Walk into the Arena","The Arena is a real hall now: walk up to an opponent's table to wrestle, with a crowd in the stands and a board for meets and friend challenges.","2026-10-06T09:58"],
+ ["⚡","Challenges","Timed tasks pop up every minute or two. Win to build a streak worth +10% money each (up to +100%). Miss one and the streak is gone.","2026-10-06T09:53"],
+ ["🦹","Thieves fight back","Thieves show up more often, and if one gets away he takes 3% of your cash.","2026-10-06T09:53"],
+ ["🏘️","A real town","A neighbourhood of houses, tree-lined downtown streets, and detailed buildings in every world.","2026-10-06T09:53"],
+ ["🦵","Better proportions","Big builds get longer legs.","2026-10-06T09:53"],
+ ["🔥","Hype & FRENZY","Every good flip, find and catch fills your Hype bar. Fill it to start a 30-second FRENZY: double money, no energy cost and instant restocks.","2026-10-06T09:24"],
+ ["🦹","Thieves","Every few minutes a thief grabs a bag of cash. Tap him and chase him down on the map for a big reward.","2026-10-06T09:24"],
+ ["💰","Street buyers","Locals stop and offer extra for something in your stash. Walk up to them to sell it on the spot, no menus.","2026-10-06T09:24"],
+ ["✨","Golden items","Rare golden listings in the market sell for ×4.","2026-10-06T09:24"],
+ ["⚡","Less waiting","Energy refills 2.5× faster, and shiny finds pop up all over town far more often (and are worth more as you get richer).","2026-10-06T09:24"],
+ ["🏙️","Flip Tower top floor","The Flip Tower now tops out at floor 500, the Star touch milestone.","2026-10-06T07:52"],
+ ["🚀","Blast off to the Cosmos","The trip to World 2 is now a rocket launch, and the time machine to World 3 pulls you through a spinning time whirlpool.","2026-10-06T07:22"],
+ ["💾","Stay in your world","Closing the game in World 2 or World 3 no longer sends you back to Earth. You load right back in where you left off.","2026-10-06T07:22"],
+ ["🚶","Smarter townspeople","People walk on roads and grass and go around buildings instead of through them. Only your partner still cuts through to follow you. Women in town now have long hair.","2026-10-06T07:22"],
+ ["👑","10 new tiers","Celestial, Primordial, Eternal, Cosmic, Infinite, Omega, Transcendent, Omnipotent, Absolute and Beyond. Bigger money bonuses, harder rules.","2026-10-06T07:22"],
+ ["🦴","Easier to read in Deep Time","World 3 markets and labs have dark text on their light background, even when your phone is in dark mode.","2026-10-06T07:22"],
+ ["🦖","World 3: Deep Time","The time machine on the space station sends you back to just after the Cambrian explosion. Grow life for Amber (◈1 = ✦1 quadrillion), dig fossils, and let the asteroid hit for Genes.","2026-10-06T06:36"],
+ ["⚑","Crews","Team up with friends, fill the crew bank and climb the crew leaderboard. Your HQ stands on the Township street.","2026-10-06T05:58"],
+ ["🔴","Live events","Every 10 minutes in the Online Town: money rain, flash sales, street races and The Titan.","2026-10-06T05:58"],
+ ["🔨","Auctions","Live bidding wars with everyone in your room.","2026-10-06T05:58"],
+ ["🏆","Seasons","A free 30-level reward track every 30 days. Tap the Season pill.","2026-10-06T05:58"],
+ ["🏠","Walk around your house","Your furniture, pet and partner, a jukebox, and visits to friends' houses.","2026-10-06T05:58"],
+ ["🪐","The Moon and Mars","Shuttles from the Cosmos landing pad.","2026-10-06T05:58"],
+ ["🚕","A living town","Locals with names, taxis, police chases, storms, fog and rainbows.","2026-10-06T05:58"],
+ ["😀","Emotes, photos and music","New buttons by the sound icon. Music plays everywhere; turn it off in Settings.","2026-10-06T05:58"],
+ ["🌌","World 2: the Cosmos","Open the Stargate at the Airport (✦10). Build generators that make Radiant every minute, research upgrades, map the stars and feed the black hole.","2026-10-06T05:11"],
+ ["🎨","Customize everything","Home → Look: shirt colour and style, pants, shoes, eyes, facial hair and 8 hairstyles. 30 new accessories, including things to hold.","2026-10-06T03:41"],
+ ["🌌","Mega projects","At the Bank: buy a country, build an ocean city, ring the planet in orbit. Nine new homes up to a Multiverse Mansion.","2026-10-06T03:41"],
+ ["🔁","Rebirth","At the gym's lift station: give up all your growth spurts and height for +30% money forever and bigger, cheaper spurts.","2026-10-06T03:02"],
+ ["🗼","Walk around abroad","Tokyo, Paris, Dubai and Monte Carlo are real places now. Walk the streets, visit the landmark, and see your businesses on the street.","2026-10-06T02:40"],
+ ["🏝️","Walk your islands","Stroll the beach to your villa, the fishing pier, the dive shack, the bonfire and washed-up chests.","2026-10-06T02:40"],
+ ["🏨","Businesses","Buy apartments, bars, restaurants, condos, hotels and resorts. Expand, set prices, handle events, work shifts.","2026-10-05T19:27"],
+ ["🎰","Casino & Grand Prix","Slots, roulette and blackjack in Monte Carlo, plus a Grand Prix race in Monaco.","2026-10-05T20:17"],
+ ["🚀","Spaceport","Now in the Cosmos: build a rocket and fly it to orbit, the Moon and Mars.","2026-10-05T19:27"],
+ ["🎧","DJ sets","Play a rhythm game at the Nightclub's DJ booth for fans and hype.","2026-10-05T20:17"],
+ ["💍","Weddings","Propose to your partner with a ring and pick a venue. Married couples get bigger bonuses.","2026-10-05T20:17"],
+ ["🐶","Style & pets","Pets that follow you, a Boutique, a Wardrobe for skin and hair, car mods in the Dealership garage.","2026-10-05T20:17"],
+ ["📈","Money moves","Stock exchange, scratch cards, a daily prize wheel and daily missions.","2026-10-05T20:17"],
+ ["📸","FlipGram","Post what you own, go viral, gain followers and sponsor cash.","2026-10-05T20:17"],
+ ["🌍","With friends","Golden chest races, player market, room and world leaderboards, arm wrestling, see each other everywhere.","2026-10-05T19:27"],
  ["⚙️","Settings","Home > Settings to turn off effects, shake or vibration, or replay the tutorial."]];
 function whatsNew(){if(!S||(S.flags&&S.flags.wn>=WN_VER)||S.tut!==99&&S.tut!=null&&S.tut<6)return;S.flags.wn=WN_VER;dirty=true;
-  const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><span class="eyebrow">Update</span><h2>What's new</h2><div class="wnlist">${WN.map(([i,t,d])=>`<div><i>${i}</i><span><b>${t}</b><small>${d}</small></span></div>`).join("")}</div><button class="cta" id="wnGo"><span>Let's go</span>${ARROW}</button></div>`;
-  document.body.appendChild(ov);const close=()=>{ov.remove();audioOn()};ov.querySelector("#wnGo").onclick=close;ov.onclick=e=>{if(e.target===ov)close()}}
+  // newest few up front, everything older folded away, each update stamped with its date; skip from the top or the pinned button
+  const when=d=>{const t=new Date(d+"Z");return isNaN(t)?"":t.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})+" · "+t.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})},
+    groups=[];WN.forEach(e=>{const g=groups[groups.length-1];if(g&&g.d===e[3])g.e.push(e);else groups.push({d:e[3],e:[e]})}),
+    grp=g=>`<div class="wndate">${when(g.d)}</div>${g.e.map(([i,t,d])=>`<div><i>${i}</i><span><b>${t}</b><small>${d}</small></span></div>`).join("")}`;
+  let top=0,n=0;while(top<groups.length&&(n<4||top<1)){n+=groups[top].e.length;top++}
+  const old=groups.slice(top),oldN=old.reduce((a,g)=>a+g.e.length,0);
+  const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><div class="wnhead"><span><span class="eyebrow">Update</span><h2>What's new</h2></span><button class="wnskip" id="wnSkip" aria-label="Skip">Skip ✕</button></div>
+    <div class="wnlist">${groups.slice(0,top).map(grp).join("")}</div>
+    ${oldN?`<details class="wnold"><summary>Earlier updates (${oldN})</summary><div class="wnlist">${old.map(grp).join("")}</div></details>`:""}
+    <div class="wnfoot"><button class="cta" id="wnGo"><span>Let's go</span>${ARROW}</button></div></div>`;
+  document.body.appendChild(ov);const close=()=>{ov.remove();audioOn()};ov.querySelector("#wnGo").onclick=close;ov.querySelector("#wnSkip").onclick=close;ov.onclick=e=>{if(e.target===ov)close()}}
 
 /* ================= Monte Carlo Grand Prix: dodge, boost and overtake ================= */
 let GP=null;
@@ -5172,7 +5197,7 @@ function townDeco(g,P){TOWNFX.founts=[];TOWNFX.lamps=[];let sd=21;const r=()=>(s
   put(60,1340,60,1380,48,1,(x,y)=>{g.fillStyle=dkc("#e6cf98");rrp(g,x-60,y-36,120,72,18);g.fill();g.strokeStyle=dkc("#d6384b");g.lineWidth=3;g.beginPath();g.moveTo(x-46,y+20);g.lineTo(x-36,y-24);g.lineTo(x-26,y+20);g.moveTo(x-36,y-24);g.lineTo(x-6,y-24);g.moveTo(x-16,y+20);g.lineTo(x-6,y-24);g.stroke();g.fillStyle="#2a5bd7";g.fillRect(x-36,y,8,3);g.fillRect(x-20,y,8,3);
     g.fillStyle="#ffcc33";g.beginPath();g.moveTo(x+10,y+20);g.lineTo(x+20,y-20);g.lineTo(x+30,y-20);g.lineTo(x+50,y+24);g.closePath();g.fill();g.fillStyle="#e2364a";g.fillRect(x+16,y-28,18,8);g.fillStyle="#2fd28a";g.beginPath();g.arc(x+44,y-14,8,0,7);g.fill()});
   // the beach: lifeguard tower, volleyball net, sandcastles, surfboards, beach balls
-  const bx=[40,2580],by=[1640,1930];
+  const bx=[40,2580],by=[1640,SEA-20];
   put(bx[0],bx[1],by[0],by[1],40,1,(x,y)=>{dShadow(g,x,y+4,26,6);g.strokeStyle=dkc("#f2f2f2");g.lineWidth=3;g.beginPath();g.moveTo(x-16,y);g.lineTo(x-10,y-34);g.moveTo(x+16,y);g.lineTo(x+10,y-34);g.stroke();g.fillStyle="#e2364a";g.fillRect(x-16,y-48,32,16);g.fillStyle="#fff";g.fillRect(x-16,y-40,32,3);g.fillStyle="#e2364a";g.beginPath();g.moveTo(x-20,y-48);g.lineTo(x,y-60);g.lineTo(x+20,y-48);g.fill()});
   put(bx[0],bx[1],by[0],by[1],50,1,(x,y)=>{g.strokeStyle=dkc("#7a5a3a");g.lineWidth=3;g.beginPath();g.moveTo(x-46,y);g.lineTo(x-46,y-30);g.moveTo(x+46,y);g.lineTo(x+46,y-30);g.stroke();g.strokeStyle="rgba(255,255,255,.9)";g.lineWidth=1;for(let j=0;j<4;j++){g.beginPath();g.moveTo(x-46,y-28+j*4);g.lineTo(x+46,y-28+j*4);g.stroke()}});
   put(bx[0],bx[1],by[0],by[1],24,3,(x,y)=>{g.fillStyle=dkc("#e6cf98");g.fillRect(x-16,y-8,32,10);g.fillRect(x-10,y-16,20,8);g.fillRect(x-5,y-24,10,8);g.fillStyle="#e2364a";g.fillRect(x,y-34,1.6,10);g.beginPath();g.moveTo(x+1.6,y-34);g.lineTo(x+9,y-31);g.lineTo(x+1.6,y-28);g.fill()});
@@ -6760,10 +6785,12 @@ function drawPartner(ppl){if(!S.partner||room)return;if(!PT)PT={x:S.px-28,y:S.py
   ppl.push([PT.y,()=>{drawPerson(PT.x,PT.y,{shirt:p.s,skin:p.k,hair:p.h,hs:FEM.has(String(p.n||"").split(" ")[0])?8:0,mv,ph:PT.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(PT.x,PT.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore()}])}
 
 /* ================= township district: empty plots that fill with players' houses ================= */
-const TWN={x:1120,y:1672,w:1200,h:276},TWN_ST=1796;
-const PLOT_X=[1140,1278,1416,1554,1766,1904,2042,2180];
-// lots fill from the entrance outward, alternating sides of the street
-const PLOTS=[3,4,2,5,1,6,0,7].flatMap(i=>[{x:PLOT_X[i],y:1684,w:124,h:104,top:true},{x:PLOT_X[i],y:1840,w:124,h:100,top:false}]);
+// two streets, four rows of big lots; the entrance road runs down the middle and joins both streets
+const TWN={x:1120,y:1672,w:1200,h:1112},TWN_STS=[1916,2484],TWN_ST=TWN_STS[0],TWN_EX=1730,PLOT_W=176;
+const PLOT_X=[1140,1330,1520,1764,1954,2144];
+const PLOT_ROWS=[{y:1684,h:220,top:true,st:1916},{y:1962,h:220,top:false,st:1916},{y:2252,h:220,top:true,st:2484},{y:2530,h:220,top:false,st:2484}];
+// lots fill from the entrance outward, the first street first, alternating sides of the street
+const PLOTS=[[0,1],[2,3]].flatMap(rs=>[2,3,1,4,0,5].flatMap(i=>rs.map(r=>({x:PLOT_X[i],w:PLOT_W,...PLOT_ROWS[r]}))));
 const inTown=(x,y,m=0)=>x>TWN.x-m&&x<TWN.x+TWN.w+m&&y>TWN.y-m&&y<TWN.y+TWN.h+m;
 // Everyone in the room sorts players by id the same way, so each player lands on the same plot for all
 function townPlayers(){if(!MPW)return[];const L=[{id:MP_ID,me:1,n:mpName(),s:myShirt(),hm:S.home||0,lv:repLevel()}];
@@ -6771,26 +6798,27 @@ function townPlayers(){if(!MPW)return[];const L=[{id:MP_ID,me:1,n:mpName(),s:myS
   return L.sort((a,b)=>a.id<b.id?-1:1).slice(0,PLOTS.length).map((p,i)=>({...p,plot:PLOTS[i]}))}
 const plotDoor=pl=>[pl.x+pl.w/2,pl.top?pl.y+pl.h+4:pl.y-4];
 function drawTownStatic(g,P){
-  const X=TWN.x,Y=TWN.y,EX=1722;
+  const X=TWN.x,Y=TWN.y,EX=TWN_EX,BOT=Y+TWN.h;
   g.fillStyle="#2f7a46";rrp(g,X-6,Y-6,TWN.w+12,TWN.h+12,20);g.fill();
-  g.fillStyle="#7fbf6a";rrp(g,X,Y,TWN.w,TWN.h,16);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<600;i++)g.fillRect(X+((i*53)%TWN.w),Y+((i*97)%TWN.h),3,2);
-  // entrance road from the boardwalk, and the main street
-  g.fillStyle=P.walk;g.fillRect(EX-26,1660,52,TWN_ST-1660);g.fillRect(X+6,TWN_ST-6,TWN.w-12,46);
-  g.fillStyle=P.road;g.fillRect(EX-20,1660,40,TWN_ST-1660+4);g.fillRect(X+10,TWN_ST,TWN.w-20,34);
-  g.fillStyle=P.line;for(let x=X+24;x<X+TWN.w-24;x+=36)g.fillRect(x,TWN_ST+16,18,3);for(let y=1668;y<TWN_ST-8;y+=30)g.fillRect(EX-1.5,y,3,16);
-  // cul-de-sac circles at both ends
-  [X+18,X+TWN.w-18].forEach(cx=>{g.fillStyle=P.road;g.beginPath();g.arc(cx,TWN_ST+17,20,0,7);g.fill()});
+  g.fillStyle="#7fbf6a";rrp(g,X,Y,TWN.w,TWN.h,16);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<1600;i++)g.fillRect(X+((i*53)%TWN.w),Y+((i*97)%TWN.h),3,2);
+  // entrance road from the boardwalk down to the second street, and the two streets
+  const ST2=TWN_STS[TWN_STS.length-1];g.fillStyle=P.walk;g.fillRect(EX-26,1660,52,ST2-1660);TWN_STS.forEach(st=>g.fillRect(X+6,st-6,TWN.w-12,46));
+  g.fillStyle=P.road;g.fillRect(EX-20,1660,40,ST2-1660+4);TWN_STS.forEach(st=>g.fillRect(X+10,st,TWN.w-20,34));
+  g.fillStyle=P.line;TWN_STS.forEach(st=>{for(let x=X+24;x<X+TWN.w-24;x+=36)if(Math.abs(x-EX)>30)g.fillRect(x,st+16,18,3)});for(let y=1668;y<ST2-8;y+=30)if(!TWN_STS.some(st=>y>st-24&&y<st+40))g.fillRect(EX-1.5,y,3,16);
+  // cul-de-sac circles at both ends of each street
+  TWN_STS.forEach(st=>[X+18,X+TWN.w-18].forEach(cx=>{g.fillStyle=P.road;g.beginPath();g.arc(cx,st+17,20,0,7);g.fill()}));
   // lots: lawn, dashed boundary, driveway and footpath to the street
-  PLOTS.forEach(pl=>{g.fillStyle="#8fcf78";rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.fill();
-    g.setLineDash([7,5]);g.strokeStyle="rgba(255,255,255,.75)";g.lineWidth=2;rrp(g,pl.x,pl.y,pl.w,pl.h,8);g.stroke();g.setLineDash([]);
-    const[dx]=plotDoor(pl);g.fillStyle=P.walk;if(pl.top)g.fillRect(dx-6,pl.y+pl.h-16,12,TWN_ST-(pl.y+pl.h-16));else g.fillRect(dx-6,TWN_ST+34,12,pl.y+16-(TWN_ST+34));
-    g.fillStyle="#b9b2a6";if(pl.top)g.fillRect(pl.x+pl.w-30,pl.y+pl.h-12,22,TWN_ST-(pl.y+pl.h-12));else g.fillRect(pl.x+pl.w-30,TWN_ST+34,22,pl.y+12-(TWN_ST+34))});
-  // hedges between lots
-  for(let i=0;i<PLOT_X.length-1;i++){if(i===3)continue;const x=PLOT_X[i]+124+3;[[1684,104],[1840,100]].forEach(([y,h])=>{g.fillStyle="#2f7a46";rrp(g,x,y+4,8,h-8,4);g.fill()})}
+  PLOTS.forEach(pl=>{g.fillStyle="#8fcf78";rrp(g,pl.x,pl.y,pl.w,pl.h,10);g.fill();
+    g.setLineDash([7,5]);g.strokeStyle="rgba(255,255,255,.75)";g.lineWidth=2;rrp(g,pl.x,pl.y,pl.w,pl.h,10);g.stroke();g.setLineDash([]);
+    const[dx]=plotDoor(pl),st=pl.st;g.fillStyle=P.walk;if(pl.top)g.fillRect(dx-7,pl.y+pl.h-16,14,st-(pl.y+pl.h-16));else g.fillRect(dx-7,st+34,14,pl.y+16-(st+34));
+    g.fillStyle="#b9b2a6";if(pl.top)g.fillRect(pl.x+pl.w-36,pl.y+pl.h-12,26,st-(pl.y+pl.h-12));else g.fillRect(pl.x+pl.w-36,st+34,26,pl.y+12-(st+34))});
+  // hedges between lots, and between the back-to-back rows
+  PLOT_ROWS.forEach(r=>{for(let i=0;i<PLOT_X.length-1;i++){if(i===2)continue;const x=PLOT_X[i]+PLOT_W+5;g.fillStyle="#2f7a46";rrp(g,x,r.y+6,8,r.h-12,4);g.fill()}});
+  [[X+10,EX-34],[EX+34,X+TWN.w-10]].forEach(([a,b])=>{g.fillStyle="#2f7a46";rrp(g,a,2192+2,b-a,10,5);g.fill();g.fillStyle="#3f9a5a";for(let x=a;x<b-6;x+=10){g.beginPath();g.arc(x+5,2196,5,0,7);g.fill()}});
   // trees by the entrance and the corners
-  [[EX-44,1690],[EX+44,1690],[EX-44,1760],[EX+44,1760],[X+14,1690],[X+TWN.w-14,1690],[X+14,1930],[X+TWN.w-14,1930],[EX,1900]].forEach(([x,y])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+5,y+9,14,5,0,0,7);g.fill();g.fillStyle=P.trunk;g.fillRect(x-2,y,4,10);g.fillStyle=P.tree;g.beginPath();g.arc(x,y-4,13,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-3,y-7,8,0,7);g.fill()});
+  [[EX-46,1690],[EX+46,1690],[EX-46,1780],[EX+46,1780],[EX-46,2230],[EX+46,2230],[X+16,1690],[X+TWN.w-16,1690],[X+16,BOT-14],[X+TWN.w-16,BOT-14],[EX-46,BOT-20],[EX+46,BOT-20]].forEach(([x,y])=>{g.fillStyle=P.shadow;g.beginPath();g.ellipse(x+5,y+9,14,5,0,0,7);g.fill();g.fillStyle=P.trunk;g.fillRect(x-2,y,4,10);g.fillStyle=P.tree;g.beginPath();g.arc(x,y-4,13,0,7);g.fill();g.fillStyle=P.tree2;g.beginPath();g.arc(x-3,y-7,8,0,7);g.fill()});
   // street lamps
-  for(let x=X+70;x<X+TWN.w-40;x+=138){[TWN_ST-4,TWN_ST+40].forEach(y=>{g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x+2,y+1,5,2,0,0,7);g.fill();g.fillStyle="#5b6272";g.fillRect(x-1.5,y-18,3,18);g.fillStyle="#ffe08a";g.beginPath();g.arc(x,y-19,3,0,7);g.fill()})}
+  TWN_STS.forEach(st=>{for(let x=X+70;x<X+TWN.w-40;x+=190){if(Math.abs(x-EX)<40)continue;[st-4,st+40].forEach(y=>{g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x+2,y+1,5,2,0,0,7);g.fill();g.fillStyle="#5b6272";g.fillRect(x-1.5,y-18,3,18);g.fillStyle="#ffe08a";g.beginPath();g.arc(x,y-19,3,0,7);g.fill()})}});
   // welcome arch over the entrance
   g.fillStyle="#7a5a36";g.fillRect(EX-34,1652,6,30);g.fillRect(EX+28,1652,6,30);
   g.save();g.font="800 13px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.fillStyle=P.sign;rrp(g,EX-62,1640,124,22,8);g.fill();g.fillStyle=P.ink;g.fillText("TOWNSHIP",EX,1652);g.restore();
@@ -6813,11 +6841,11 @@ function tierHouse(hm,w,h){const dk=isDark(),key=hm+"|"+w+"|"+h+"|"+dk;if(HCACHE
 function drawTown(){
   if(cam.y+vh<TWN.y-40||cam.y>TWN.y+TWN.h||cam.x+vw<TWN.x||cam.x>TWN.x+TWN.w)return;
   const F=FONTS.b;
-  if(!MPW){ctx.save();ctx.font="700 12px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="rgba(10,14,22,.65)";rr(1722-110,1734,220,24,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText("Player houses · Online Town only",1722,1747);ctx.restore();return}
+  if(!MPW){ctx.save();ctx.font="700 12px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="rgba(10,14,22,.65)";rr(TWN_EX-110,1800,220,24,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText("Player houses · Online Town only",TWN_EX,1813);ctx.restore();return}
   const tp=townPlayers(),used=new Set(tp.map(p=>p.plot));
   // empty lots get a little sign
   PLOTS.forEach(pl=>{if(used.has(pl))return;const cx=pl.x+pl.w/2,cy=pl.y+pl.h/2;ctx.fillStyle="#7a5a36";ctx.fillRect(cx-1.5,cy-4,3,16);ctx.fillStyle="#f4ecd8";rr(cx-26,cy-18,52,16,4);ctx.fill();ctx.font="800 8px "+F;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#6b5a40";ctx.fillText("VACANT",cx,cy-10)});
-  tp.forEach(p=>{const pl=p.plot;{const hw=pl.w-12,hh=pl.h-22,im=tierHouse(p.hm,hw,hh);ctx.drawImage(im,pl.x+6-24,pl.y+(pl.top?4:14)-24)}
+  tp.forEach(p=>{const pl=p.plot;{const hw=pl.w-14,hh=pl.h-40,im=tierHouse(p.hm,hw,hh);ctx.drawImage(im,pl.x+7-24,pl.y+(pl.top?6:30)-24)}
     // mailbox by the path
     const[dx]=plotDoor(pl),my=pl.top?pl.y+pl.h-6:pl.y+8;ctx.fillStyle="#5b6272";ctx.fillRect(dx-20,my-6,2,10);ctx.fillStyle=p.s||"#2a3cff";rr(dx-25,my-12,12,8,3);ctx.fill();
     ctx.font="800 11px "+F;ctx.textAlign="center";ctx.textBaseline="middle";const lab=String(p.n).slice(0,12)+(p.me?" (you)":""),w=ctx.measureText(lab).width+14,ly=pl.top?pl.y-2:pl.y+pl.h+2;
@@ -6830,10 +6858,10 @@ function townTick(){if(!MPW)return;const ids=townPlayers().map(p=>p.id);ids.forE
 function openPlot(p){if(p.me){openRoom("home");return}enterHouse(p);renderHud()}
 
 /* ================= title ================= */
-function title(){accMigrate();if(!ACC){const c=cacheGet();if(c&&c.u&&c.k)return cloudResume();const m=store.get(AUTH_MODE);store.del(AUTH_MODE);return cloudScreen("",m||(localSaves().length?"new":"login"))}titleMain()}
+function title(){try{loadMqtt().catch(()=>{})}catch(e){}accMigrate();if(!ACC){const c=cacheGet();if(c&&c.u&&c.k)return cloudResume();const m=store.get(AUTH_MODE);store.del(AUTH_MODE);return cloudScreen("",m||(localSaves().length?"new":"login"))}titleMain()}
 function titleMain(){
   const acc={name:ACC.user};newGame();
-  const o=$("overlay"),has=load();o.hidden=false;let confirmNew=false;
+  const o=$("overlay"),has=load();o.hidden=false;
   const draw=()=>{
     o.innerHTML=`<div class="sheet">
       <h1 class="wordmark">Flip<span>Rush</span></h1>
@@ -6850,13 +6878,12 @@ function titleMain(){
         <div><kbd>ONLINE</kbd><span>Reach level 10 for a raft at the Harbor and sail to the Online Town to play with friends, visit their houses and islands.</span></div>
         <div><kbd>LEVEL</kbd><span>Everything you earn levels you up. Each level, pick 1 of 3 perk cards to shape your own build.</span></div>
       </div>
-      ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · Level ${repLevel()} · Day ${S.day}</small></span>${ARROW}</button>
-        <button class="cta" id="bNew" style="background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:.95rem">${confirmNew?"Tap again to erase your save":"New game"}</button>`
+      ${has?`<button class="cta" id="bCont"><span>Continue<small style="display:block;font-family:var(--mono);font-size:.7rem;font-weight:600;text-transform:none;opacity:.7">${fmt(S.cash)} · Level ${repLevel()} · Day ${S.day}</small></span>${ARROW}</button>`
        :`<button class="cta" id="bNew"><span>Start playing</span>${ARROW}</button>`}
       <p class="fine">${ACC.offline?"Offline: saving on this device. It syncs to your account when you're back online.":"Progress saves to your account automatically."}</p></div>`;
     $("accSw").onclick=()=>switchSheet(titleMain);
     if(has)$("bCont").onclick=()=>start();
-    $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
+    else $("bNew").onclick=()=>{newGame();save();start(true)};
   };draw();
 }
 function start(isNew){shownCash=null;try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(!isNew)resumeWorld();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline();w3Offline()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
