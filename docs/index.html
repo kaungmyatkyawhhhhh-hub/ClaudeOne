@@ -404,7 +404,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .nextlist{display:flex;flex-direction:column;gap:8px;margin-top:8px}.nextrow{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border-radius:16px;padding:12px;box-shadow:var(--shadow)}.nextrow>span{font-size:1.6rem;line-height:1}.nextrow div{flex:1;min-width:0}.nextrow b{display:block;font-size:.9rem}.nextrow small{display:block;font-size:.74rem;color:var(--muted);margin:2px 0 6px}.nextrow .reqbar{display:block;height:7px}
 .bgcur{background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:8px;display:flex;flex-direction:column;gap:4px}.bgcur small{font-family:var(--mono);font-size:.74rem}.bgcur .reqbar{display:block;height:8px}.lbtabs button.done{opacity:.6}.gymown .perk{width:100%}
 .cash.amb{background:linear-gradient(90deg,#b5552b,#ffcc33,#cf9a14,#ff7a3d,#b5552b);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:radsh 4s linear infinite}
-.room.jurassic{--bg:#f4ead2;--surface:#fffaf0;--sunk:#ece0c4;--ink:#2a1f14;--muted:#7a6a54;--line:#e0d0ae;--accent:#2f7a3e;background:radial-gradient(130% 42% at 50% -8%,#f6c27a 0%,#f4ead2 70%) #f4ead2}
+.room.jurassic{--bg:#f4ead2;--surface:#fffaf0;--sunk:#ece0c4;--ink:#2a1f14;--muted:#7a6a54;--line:#e0d0ae;--accent:#2f7a3e;--accent-ink:#ffffff;--up:#1f7a3a;--down:#c42a3c;--gold:#9a6400;--tl:.93;--tc:.05;--tt:.38;--shadow:0 1px 0 rgba(42,31,20,.05),0 8px 24px -12px rgba(42,31,20,.25);color:var(--ink);color-scheme:light;background:radial-gradient(130% 42% at 50% -8%,#f6c27a 0%,#f4ead2 70%) #f4ead2}
 .core.amber{background:radial-gradient(circle at 50% 38%,#ffcc33 0,#cf9a14 30%,#3a2a12 72%)}.gen.amber{background:linear-gradient(120deg,#2a1f12,#4a3418)}.gen.amber .gc{color:#ffcc33}.obsc.amber{background:#3a2a14}.obsnew.amber{background:linear-gradient(120deg,#3a2a14,#7a5a24)}.w2rate.amber{color:#ffcc33}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
@@ -2894,7 +2894,7 @@ function renderStash(newIdx=-1){
     const s=S.stash[i];if(!s){h+=`<div class="slot0">Empty slot</div>`;continue}
     const hot=hotFor(s),v=sellValue(s),pct=(v-s.paid)/Math.max(1,s.paid);
     h+=`<button class="itm ${pct>=0?"up":"down"}${hot?" hot":""}${i===newIdx?" new":""}" data-i="${i}" aria-label="Sell ${s.name} for ${fmt(v)}">${tileFor(s.cat,s.code,true)}
-      <div class="iv"><span class="bid">${fmt(v)}</span><span class="pl">${pct>=0?"+":"−"}${Math.abs(Math.round(pct*100))}% · paid ${fmt(s.paid)}</span></div>
+      <div class="iv"><span class="bid">${fmt(v)}</span><span class="pl">${s.paid>0?`${pct>=0?"+":"−"}${Math.abs(Math.round(pct*100))}% · paid ${fmt(s.paid)}`:"Free find"}</span></div>
       <div class="inm">${s.name} · ${s.cond}</div>${spark(S.hist[s.cat])}${s.fake?'<span class="fc">FAKE</span>':`<span class="hc">×${cmult().toFixed(1)}</span>`}</button>`;
   }
   $("stash").innerHTML=h;$("slots").textContent=S.stash.length+"/"+maxSlots();
@@ -4979,13 +4979,16 @@ function townDecoAnim(){
 const TIERS=[
  {n:"Bronze",i:"🥉",c:"#b07a4a",nw:0},{n:"Silver",i:"🥈",c:"#9aa3b3",nw:1e6},{n:"Gold",i:"🥇",c:"#cf9a14",nw:1e8},{n:"Platinum",i:"💠",c:"#2bb3a3",nw:1e10},
  {n:"Diamond",i:"💎",c:"#4fa8e8",nw:1e12},{n:"Master",i:"🔮",c:"#8f52d4",nw:1e15},{n:"Grandmaster",i:"👑",c:"#e2364a",nw:1e18},{n:"Legend",i:"🔥",c:"#ff7a3d",nw:1e21},
- {n:"Mythic",i:"🌸",c:"#ff4fd8",nw:1e24},{n:"Radiant God",i:"✦",c:"#ffcc33",nw:1e27}];
+ {n:"Mythic",i:"🌸",c:"#ff4fd8",nw:1e24},{n:"Radiant God",i:"✦",c:"#ffcc33",nw:1e27},
+ {n:"Celestial",i:"☄️",c:"#4fa8e8",nw:1e30},{n:"Primordial",i:"🌋",c:"#ff6a2b",nw:1e33},{n:"Eternal",i:"⏳",c:"#8a7a5a",nw:1e36},{n:"Cosmic",i:"🌌",c:"#7a2fd6",nw:1e39},
+ {n:"Infinite",i:"♾️",c:"#2fd28a",nw:1e42},{n:"Omega",i:"Ω",c:"#e2364a",nw:1e45},{n:"Transcendent",i:"🕊️",c:"#5f8ab5",nw:1e48},{n:"Omnipotent",i:"⚡",c:"#cf9a14",nw:1e51},
+ {n:"Absolute",i:"🔱",c:"#2a5bd7",nw:1e54},{n:"Beyond",i:"🌈",c:"#ff4fd8",nw:1e60}];
 const tierN=()=>(S&&S.tier)||0,TI=()=>TIERS[tierN()];
 // harder: pricier listings, more fakes, fewer steals, shorter listings, more energy per action
-const tAsk=()=>1+.06*tierN(),tFake=()=>1+.15*tierN(),tSteal=()=>Math.max(.55,1-.05*tierN()),tLife=()=>Math.max(.7,1-.035*tierN()),tEn=()=>1+.08*tierN();
+const tAsk=()=>1+.06*tierN(),tFake=()=>1+.15*tierN(),tSteal=()=>Math.max(.55,1-.05*tierN()),tLife=()=>Math.max(.7,1-.035*tierN()),tEn=()=>1+.08*Math.min(tierN(),10)+.04*Math.max(0,tierN()-10);
 // and better paid: +15% money per tier
 function tierK(){return 1+.15*tierN()}
-function tierEffects(t){return{ask:Math.round(6*t),fake:Math.round(15*t),steal:Math.round(Math.min(45,5*t)),life:Math.round(Math.min(30,3.5*t)),en:Math.round(8*t),money:Math.round(15*t)}}
+function tierEffects(t){return{ask:Math.round(6*t),fake:Math.round(15*t),steal:Math.round(Math.min(45,5*t)),life:Math.round(Math.min(30,3.5*t)),en:Math.round(8*Math.min(t,10)+4*Math.max(0,t-10)),money:Math.round(15*t)}}
 let tierT=0;
 function tierTick(dt){if(!S||!playing)return;tierT-=dt;if(tierT>0)return;tierT=2;const nw=netWorth();let t=tierN();while(t+1<TIERS.length&&nw>=TIERS[t+1].nw)t++;if(t<=tierN())return;
   const from=tierN();S.tier=t;dirty=true;let crates=0;for(let k=from+1;k<=t;k++)crates+=2+k;gainCrate(crates);
