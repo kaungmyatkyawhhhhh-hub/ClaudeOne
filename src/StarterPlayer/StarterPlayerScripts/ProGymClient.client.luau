@@ -1,7 +1,7 @@
 -- ProGymClient: the glass door between the starter gym and the pro gym (Workspace.ProGym.GlassWall.GlassDoor).
 -- Unlocked (Growth Spurt 2+): the door's invisible Blocker stops colliding for you, and the glass leaves slide open
 -- while you're near. Locked: the door stays shut (the lock and "Unlocks at Growth Spurt 2" sign show on it) and walking
--- up to it shows a small corner note. Everything here is local; ProGymService double-checks on the server.
+-- up to it shows a small corner note. (The sign itself is an AreaSign: AreaSignsClient shows its rule only while locked.) Everything here is local; ProGymService double-checks on the server.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -36,7 +36,6 @@ local locks = {}
 for _, lock in ipairs(door:GetChildren()) do
 	if lock.Name == "Lock" then table.insert(locks, lock) end
 end
-local sign = door:FindFirstChild("LockSign")
 local center = blocker.Position
 local slide = blocker.Size.Z / 2 - 0.2 -- each leaf slides this far into the wall
 
@@ -56,10 +55,6 @@ RunService.Heartbeat:Connect(function(dt)
 			for _, part in ipairs(lock:GetDescendants()) do
 				if part:IsA("BasePart") then part.LocalTransparencyModifier = open and 1 or 0 end
 			end
-		end
-		if sign then
-			local rule = sign:FindFirstChild("Rule", true)
-			if rule then rule.Text = open and "Unlocked: walk in" or "Unlocks at Growth Spurt 2" end
 		end
 	end
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")

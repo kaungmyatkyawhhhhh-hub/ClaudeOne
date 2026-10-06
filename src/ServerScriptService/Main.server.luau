@@ -17,7 +17,7 @@ TitleService.Start()
 local OPTIONAL_SERVICES = { "BoostService", "QuestService", "MuscleOfTheDayService", "StaminaService", "RetentionService",
 	"SocialService", "ArmWrestleService", "LegendService", "ShowOffService",
 	"MonetizationService", "ProGymService", "CrewService", "SeasonService",
-	"TownService", "CosmeticService", "SkateService", "MirrorService", "GymGoerService" }
+	"TownService", "CosmeticService", "SkateService", "MirrorService", "GymGoerService", "NightLightService" }
 for _, name in ipairs(OPTIONAL_SERVICES) do
 	task.spawn(function()
 		local ok, err = pcall(function()

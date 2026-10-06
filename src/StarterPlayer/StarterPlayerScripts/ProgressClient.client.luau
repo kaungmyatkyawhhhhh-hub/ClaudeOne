@@ -35,7 +35,7 @@ local panel = Theme.Button("Secondary", {
 	Name = "Panel",
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, Theme.Spacing.S),
-	Size = UDim2.fromOffset(compact and 250 or 300, 0),
+	Size = UDim2.fromOffset(compact and 260 or 320, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Parent = gui,
 }, { Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top), Theme.Pad("S") })
@@ -53,7 +53,9 @@ for i = 1, SEGMENTS do
 	fills[i] = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
 end
 
-local goalLabel = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextTruncate = Enum.TextTruncate.AtEnd, Parent = panel })
+-- the next goal: white (readable over any background) and wrapped onto a second line instead of being cut off
+local goalLabel = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Text, Size = UDim2.new(1, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, Parent = panel })
+Theme.TextShadow(goalLabel)
 
 ------------------------------------------------------------------------
 -- Progress + goals
@@ -125,8 +127,7 @@ local function setGoal(text)
 	if text == lastGoal then return end
 	lastGoal = text
 	goalLabel.Text = text
-	goalLabel.TextTransparency = 0.6
-	Theme.Tween(goalLabel, { TextTransparency = 0 })
+	goalLabel.TextTransparency = 0 -- always solid (a fade-in here could get stuck half-transparent)
 end
 
 local function refresh()
@@ -144,7 +145,7 @@ local function refresh()
 	end
 	ready = progress.ready
 	panel.Active = ready
-	goalLabel.TextColor3 = ready and Colors.Text or Colors.Muted
+	goalLabel.FontFace = ready and Theme.Fonts.SemiBold or Theme.Fonts.Regular
 	setGoal(goalText(data, progress))
 end
 
@@ -245,5 +246,5 @@ end)
 
 -- phones get a narrower bar (switches live with the screen size)
 Theme.OnCompactChanged(function(isCompact)
-	panel.Size = UDim2.fromOffset(isCompact and 230 or 300, 0)
+	panel.Size = UDim2.fromOffset(isCompact and 260 or 320, 0)
 end)

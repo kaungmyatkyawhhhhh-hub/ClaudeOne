@@ -41,6 +41,11 @@ local panel = Theme.Panel({
 RightColumn.Add(panel, 2, true) -- hidden while training
 local header = Theme.Text({ LayoutOrder = 1, Text = "Quest", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 local questText = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+-- phones: smaller quest text (two lines instead of three), so the column fits above the jump button
+Theme.OnCompactChanged(function(isCompact)
+	questText.TextSize = isCompact and Theme.TextSize.Small or Theme.TextSize.Body
+	header.Visible = not isCompact
+end)
 local bar = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = panel }, { Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Left) })
 local segments = {}
 for i = 1, SEGMENTS do

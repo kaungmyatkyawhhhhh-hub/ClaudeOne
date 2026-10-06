@@ -18,14 +18,15 @@ local Horizontal = Enum.FillDirection.Horizontal
 
 local button = Theme.Button("Secondary", {
 	Name = "Skate",
-	Size = UDim2.fromOffset(RightColumn.Width, Theme.MinTouch + 4),
+	Size = UDim2.fromOffset(132, Theme.MinTouch), -- a small button at the top of the column (not a full-width panel)
 	Visible = false,
 }, {
 	Theme.Pad("S"),
-	Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left),
+	Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center),
 })
-RightColumn.Add(button, 4)
-local label = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = button })
+button:SetAttribute("KeepWidth", true)
+RightColumn.Add(button, 0, true) -- top of the idle group: hidden while lifting
+local label = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 1, 0), Parent = button })
 
 local function skating()
 	return player:GetAttribute("Skating") == true

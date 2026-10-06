@@ -35,7 +35,8 @@ function DataTemplate.new()
 		legends = { met = {}, active = nil }, -- met: legendId -> true; active: { id, progress, goal } (Config.Legends)
 		welcome = { offlineCoins = 0, streakCoins = 0, streakToken = false }, -- what this join paid out (menu info)
 		onboarding = { geneticsRevealed = false, tutorialStep = 1, tutorialVersion = 2 }, -- Config.Onboarding (Done = finished)
-		settings = { music = 1, effects = 1, gainNumbers = "On" }, -- Settings menu: volumes, gain popups On/Minimal/Off
+		-- Settings menu: volumes, gain popups On/Minimal/Off, keep own avatar clothes (else the gym look); one-time hints
+		settings = { music = 1, effects = 1, gainNumbers = "On", keepClothes = false, pumpHintSeen = false },
 		meta = { firstJoin = 0, lastSeen = 0, sessions = 0 },
 	}
 end

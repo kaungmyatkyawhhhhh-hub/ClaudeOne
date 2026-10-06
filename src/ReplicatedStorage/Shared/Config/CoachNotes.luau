@@ -2,7 +2,7 @@
 -- Adding a line = adding a string.
 return {
 	firstSet = {
-		"Reps go on their own. Tap Lift fast to make that bar nervous.",
+		"Reps go on their own. Tap fast to make that bar nervous.",
 		"Tap fast to fill the Pump meter. Full meter = double gains.",
 		"Tapping makes reps faster. Breathe out on the push. Or just breathe.",
 	},

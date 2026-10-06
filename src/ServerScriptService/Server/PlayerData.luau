@@ -492,6 +492,8 @@ function PlayerData.SetSettings(player, settings)
 	new.music = volume(settings.music) or new.music
 	new.effects = volume(settings.effects) or new.effects
 	if GAIN_NUMBERS[settings.gainNumbers] then new.gainNumbers = settings.gainNumbers end
+	if type(settings.keepClothes) == "boolean" then new.keepClothes = settings.keepClothes end
+	if settings.pumpHintSeen == true then new.pumpHintSeen = true end -- one-way: the "Tap to pump" hint never comes back
 	data.settings = new
 	replicate(player, { "settings" }, new)
 end

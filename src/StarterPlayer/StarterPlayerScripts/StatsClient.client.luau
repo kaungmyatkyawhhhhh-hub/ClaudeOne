@@ -1,5 +1,5 @@
 -- StatsClient: the body map and the full stats screen.
---  * Body map (bottom left, always on): a small front + back body silhouette. Each of the 18 muscles is its own shape;
+--  * Body map (right side, under the quest panel; folds into a "Stats" chip): a small front + back body silhouette. Each of the 18 muscles is its own shape;
 --    how bright it is shows its level toward the next Growth Spurt goal (dim = untrained, bright = strong), and a gold
 --    outline means maxed. The muscles the current machine trains pulse on every rep. Under it: your level and a chunky
 --    bar to the next Growth Spurt. Tapping the map (or Stats in the menu) opens the full stats screen.
@@ -21,6 +21,7 @@ local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
+local RightColumn = require(Shared.UI.RightColumn)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -32,8 +33,8 @@ local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Hor
 
 local compact = Theme.IsCompact()
 local SIZES = { -- the panel width and the height of each silhouette (with its "Front"/"Back" caption)
-	Normal = { Width = 150, Figure = 156 },
-	Compact = { Width = 100, Figure = 84 },
+	Normal = { Width = 132, Figure = 124 },
+	Compact = { Width = 96, Figure = 84 },
 }
 local MAP = {
 	Width = SIZES.Normal.Width,
@@ -41,6 +42,7 @@ local MAP = {
 	Dim = 0.82,                         -- fill transparency of an untrained muscle
 	Bright = 0.05,                      -- ...of a muscle at the goal
 	Body = 0.9,                         -- the faint body behind the muscles
+	Training = 0.45,                    -- trained muscles are at least this bright while you are on the machine
 }
 
 ------------------------------------------------------------------------
@@ -49,53 +51,93 @@ local MAP = {
 local statsButton = SideMenu.Add("Stats", "Stats", Icons.Flex, 1)
 
 ------------------------------------------------------------------------
--- Body map
+-- Body map: right side, under the quest panel (RightColumn), so it never sits on a phone's thumbstick (bottom left)
+-- or jump button (bottom right). Tapping the figures opens the full stats screen; the small button in its header
+-- folds it into a "Stats" chip (and the chip unfolds it again).
 ------------------------------------------------------------------------
-local hud = Theme.ScreenGui({ Name = "BodyMap", DisplayOrder = 4, Enabled = false, Parent = playerGui })
-
 local mapPanel = Theme.Button("Secondary", {
-	Name = "Panel",
-	AnchorPoint = Vector2.new(0, 1),
+	Name = "BodyMap",
 	Size = UDim2.fromOffset(MAP.Width, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
-	Parent = hud,
+	Visible = false, -- shown after Play
 }, { Theme.Pad("S"), Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
 mapPanel:FindFirstChildOfClass("UIStroke").Transparency = Theme.Alpha.Border
+mapPanel:SetAttribute("KeepWidth", true)
+RightColumn.Add(mapPanel, 1, "bottom")
+
+local chip = Theme.Button("Secondary", {
+	Name = "StatsChip",
+	Size = UDim2.fromOffset(96, Theme.MinTouch),
+	Visible = false,
+}, { Theme.Pad("S"), Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+chip:SetAttribute("KeepWidth", true)
+RightColumn.Add(chip, 2, "bottom")
+local chipIcon = New("Frame", { LayoutOrder = 1, Size = UDim2.fromOffset(20, 20), BackgroundTransparency = 1, Parent = chip })
+Icons.Flex(Colors.Text).Parent = chipIcon
+Theme.Text({ LayoutOrder = 2, Text = "Stats", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(0, 46, 1, 0), Parent = chip })
+
+-- header: "Stats" on the left, the fold button on the right
+local header = New("Frame", { LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, Parent = mapPanel })
+Theme.Text({ Text = "Stats", Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(0.6, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
+local foldButton = New("TextButton", {
+	Name = "Fold",
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, Spacing.XS, 0.5, 0),
+	Size = UDim2.fromOffset(30, 30),
+	BackgroundTransparency = 1,
+	Text = "",
+	AutoButtonColor = false,
+	Parent = header,
+})
+-- a small "minus" line icon
+New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(12, 2), BackgroundColor3 = Colors.Text, Parent = foldButton }, { Theme.Round("Segment") })
 
 local figures = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, MAP.Figure), BackgroundTransparency = 1, Parent = mapPanel },
-	{ Theme.List(Horizontal, "S") })
+	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center) })
 
--- A silhouette is drawn on a 40 x 100 grid (x 0..40, y 0..100), mirrored left/right. Each muscle is a list of
--- rounded shapes { x, y, w, h, roundness } (one per side for paired muscles).
+-- A silhouette is drawn on a 40 x 100 grid (x 0..40, y 0..100), mirrored left/right. Real proportions: a head of
+-- ~12.5, a torso of 3 heads, legs of 3.5 heads, arms that end at mid-thigh. Each muscle is a list of rounded shapes
+-- { x, y, w, h, roundness } (one per side for paired muscles); shapes sit inside the body and never overlap.
 local function mirror(shape) return { 40 - shape[1] - shape[3], shape[2], shape[3], shape[4], shape[5] } end
 local function pair(shape) return { shape, mirror(shape) } end
+local function both(list)
+	local out = {}
+	for _, shape in ipairs(list) do table.insert(out, shape); table.insert(out, mirror(shape)) end
+	return out
+end
 
-local BODY = { -- the faint body: head, neck, torso, arms, legs
-	{ 15, 0, 10, 11, 1 }, { 18, 10, 4, 3, 0.3 }, { 10, 13, 20, 33, 0.25 },
-	{ 3, 14, 7, 18, 0.5 }, { 30, 14, 7, 18, 0.5 }, { 2, 31, 6, 17, 0.5 }, { 32, 31, 6, 17, 0.5 },
-	{ 11, 45, 8, 27, 0.4 }, { 21, 45, 8, 27, 0.4 }, { 12, 71, 7, 26, 0.4 }, { 21, 71, 7, 26, 0.4 },
-}
+local BODY = both({ -- the faint body: one side of every paired piece (mirrored), plus the middle pieces below
+	{ 3.8, 16, 5.4, 21.5, 0.5 },   -- upper arm
+	{ 3.4, 37, 4.9, 21.5, 0.5 },   -- forearm
+	{ 3.6, 57.8, 4.6, 5.5, 1 },    -- hand (ends at mid-thigh)
+	{ 12, 51, 7.6, 23.5, 0.4 },    -- thigh
+	{ 12.6, 73.5, 6.6, 21.5, 0.4 }, -- shin
+	{ 12.2, 94.2, 7.2, 3.6, 0.5 },  -- foot
+})
+table.insert(BODY, { 15, 0, 10, 12.5, 1 })       -- head
+table.insert(BODY, { 17.5, 11.5, 5, 4.5, 0.3 })  -- neck
+table.insert(BODY, { 9.5, 15, 21, 38, 0.22 })    -- torso (3 heads)
 local FRONT = {
-	UpperChest = pair({ 11.5, 14, 8, 5, 0.4 }),
-	MidChest = pair({ 11.5, 19.5, 8, 6, 0.4 }),
-	FrontDelts = pair({ 7, 13.5, 5, 6, 0.6 }),
-	SideDelts = pair({ 3, 14, 4, 6, 0.6 }),
-	Biceps = pair({ 3.5, 20.5, 5.5, 10, 0.6 }),
-	Forearms = pair({ 2.5, 32, 5, 14, 0.5 }),
-	Abs = { { 16.5, 27, 7, 17, 0.25 } },
-	Obliques = pair({ 11.5, 28, 4.5, 15, 0.5 }),
-	Quads = pair({ 11.5, 47, 7, 22, 0.5 }),
+	FrontDelts = pair({ 8.6, 16.2, 3.6, 6, 0.6 }),
+	SideDelts = pair({ 4.2, 16.4, 4.2, 6.2, 0.6 }),
+	UpperChest = pair({ 12.4, 17.4, 7.2, 5, 0.4 }),
+	MidChest = pair({ 12.4, 22.8, 7.2, 5.4, 0.4 }),
+	Biceps = pair({ 4.4, 23.4, 4.4, 11, 0.6 }),
+	Forearms = pair({ 3.8, 38, 4.2, 15, 0.5 }),
+	Abs = { { 16.6, 29.2, 6.8, 19, 0.25 } },
+	Obliques = pair({ 12.4, 30, 3.8, 15.5, 0.5 }),
+	Quads = pair({ 12.6, 54, 6.6, 18.5, 0.5 }),
 }
 local BACK = {
-	Traps = { { 14, 11, 12, 7, 0.5 } },
-	RearDelts = pair({ 4, 14, 6, 6, 0.6 }),
-	Rhomboids = { { 15.5, 18.5, 9, 7, 0.3 } },
-	Lats = pair({ 10.5, 19, 5.5, 15, 0.5 }),
-	LowerBack = { { 15, 34, 10, 10, 0.3 } },
-	Triceps = pair({ 3, 20.5, 6, 10, 0.6 }),
-	Glutes = pair({ 11.5, 45, 8, 10, 0.6 }),
-	Hamstrings = pair({ 11.5, 56, 7, 15, 0.5 }),
-	Calves = pair({ 12.5, 73, 6, 16, 0.6 }),
+	Traps = { { 14, 13, 12, 7, 0.5 } },
+	RearDelts = pair({ 4.4, 16.4, 5.2, 6.4, 0.6 }),
+	Rhomboids = { { 16, 21, 8, 8, 0.3 } },
+	Lats = pair({ 11.2, 21.6, 4.4, 17, 0.5 }),
+	LowerBack = { { 15.4, 40.5, 9.2, 10, 0.3 } },
+	Triceps = pair({ 4.4, 23.4, 4.4, 12, 0.6 }),
+	Glutes = pair({ 12.4, 50.4, 7.4, 9.6, 0.6 }),
+	Hamstrings = pair({ 12.6, 60.6, 6.6, 13.4, 0.5 }),
+	Calves = pair({ 13, 76.4, 5.8, 14, 0.6 }),
 }
 
 local shapes = {} -- [muscleId] = { frames }
@@ -142,23 +184,6 @@ for i = 1, BAR_SEGMENTS do
 	barFills[i] = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
 end
 
--- Placement: on PC bottom left, beside the menu bar. On phones the bottom left is the movement thumbstick, so the map
--- sits at the top left, under the Menu button (the menu folds into that one button there).
-local UserInputService = game:GetService("UserInputService")
-local function placeMap()
-	local touch = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-	if compact then
-		mapPanel.AnchorPoint = Vector2.new(0, 0)
-		mapPanel.Position = UDim2.fromOffset(Spacing.M, Spacing.S + 46 + Spacing.S)
-	elseif touch then
-		-- tablets: the thumbstick is bottom left, so the map sits at the top, beside the menu column
-		mapPanel.AnchorPoint = Vector2.new(0, 0)
-		mapPanel.Position = UDim2.fromOffset(SideMenu.Right() + Spacing.M, Spacing.S)
-	else
-		mapPanel.AnchorPoint = Vector2.new(0, 1)
-		mapPanel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 1, -Spacing.M)
-	end
-end
 local function applySize(isCompact)
 	compact = isCompact
 	local size = isCompact and SIZES.Compact or SIZES.Normal
@@ -166,10 +191,8 @@ local function applySize(isCompact)
 	mapPanel.Size = UDim2.fromOffset(MAP.Width, 0)
 	figures.Size = UDim2.new(1, 0, 0, MAP.Figure)
 	for _, holder in ipairs(holders) do holder.Size = UDim2.new(0, math.floor((MAP.Figure - 14) * 0.4), 1, 0) end
-	placeMap()
 end
 Theme.OnCompactChanged(applySize)
-SideMenu.Changed:Connect(placeMap)
 
 ------------------------------------------------------------------------
 -- Full stats screen
@@ -283,7 +306,7 @@ local function refreshMap()
 		local transparency = MAP.Dim + (MAP.Bright - MAP.Dim) * share
 		for _, frame in ipairs(frames) do
 			frame:SetAttribute("Rest", transparency)
-			Theme.Tween(frame, { BackgroundTransparency = transparency }, 0.4)
+			Theme.Tween(frame, { BackgroundTransparency = frame:GetAttribute("Training") and math.min(transparency, MAP.Training) or transparency }, 0.4)
 			frame.Maxed.Transparency = level >= cap and 0 or 1
 		end
 	end
@@ -356,14 +379,37 @@ local function refreshScreen()
 end
 
 ------------------------------------------------------------------------
--- Pulse: the muscles the current machine trains glow on every rep
+-- Training: the muscles the current machine trains get a thin outline while you're on it and flash on every rep.
+-- All of it is cleared when you leave the machine, switch machines, respawn or die (clearTraining).
 ------------------------------------------------------------------------
 local currentMachine = nil
--- phones while lifting: only the silhouettes (the machine panel needs the room under them)
+-- phones: only the silhouettes (no level row), so the map fits above the jump button
 local function updateCompactTraining()
-	local slim = compact and currentMachine ~= nil
+	local slim = compact
 	levelRow.Visible = not slim
 	barRow.Visible = not slim
+end
+local function clearTraining()
+	currentMachine = nil
+	for _, frames in pairs(shapes) do for _, frame in ipairs(frames) do frame:SetAttribute("Training", nil) end end
+	for _, frames in pairs(shapes) do
+		for _, frame in ipairs(frames) do
+			local rest = frame:GetAttribute("Rest") or MAP.Dim
+			Theme.Tween(frame, { BackgroundTransparency = rest }, 0.2)
+		end
+	end
+	updateCompactTraining()
+end
+local function startTraining(machine)
+	clearTraining()
+	currentMachine = machine
+	for _, entry in ipairs(machine.muscles) do
+		for _, frame in ipairs(shapes[entry.id] or {}) do
+			frame:SetAttribute("Training", true)
+			Theme.Tween(frame, { BackgroundTransparency = math.min(frame:GetAttribute("Rest") or MAP.Dim, MAP.Training) }, 0.2)
+		end
+	end
+	updateCompactTraining()
 end
 local function pulse()
 	if not currentMachine then return end
@@ -371,18 +417,25 @@ local function pulse()
 		for _, frame in ipairs(shapes[entry.id] or {}) do
 			local rest = frame:GetAttribute("Rest") or MAP.Dim
 			frame.BackgroundTransparency = index == 1 and 0 or math.min(rest, 0.3)
-			Theme.Tween(frame, { BackgroundTransparency = rest }, 0.6)
+			Theme.Tween(frame, { BackgroundTransparency = math.min(rest, MAP.Training) }, 0.6)
 		end
 	end
 end
 Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	if state == "Enter" and typeof(model) == "Instance" then
-		currentMachine = Machines.ById[model:GetAttribute("MachineId")]
+		local machine = Machines.ById[model:GetAttribute("MachineId")]
+		if machine then startTraining(machine) else clearTraining() end
 	elseif state == "Exit" then
-		currentMachine = nil
+		clearTraining()
 	end
-	updateCompactTraining()
 end)
+local function watchCharacter(character)
+	clearTraining() -- respawned: whatever was training is over
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if humanoid then humanoid.Died:Connect(clearTraining) end
+end
+player.CharacterAdded:Connect(watchCharacter)
+if player.Character then task.spawn(watchCharacter, player.Character) end
 Theme.OnCompactChanged(function() task.defer(updateCompactTraining) end)
 Remotes.RepResult.OnClientEvent:Connect(function(result)
 	if type(result) == "table" and not result.noStamina then pulse() end
@@ -433,15 +486,26 @@ spurtButton.Activated:Connect(function()
 	Remotes.PlayerAction:FireServer("GrowthSpurt")
 end)
 
--- The map shows after Play, hides behind the genetics screen and while the stats screen is open
-local hidden = { menu = true, genetics = false }
+-- The map shows after Play; folded, only the small "Stats" chip shows (the column hides behind the genetics screen)
+local hidden = { menu = true }
+local folded = false
 local function updateMap()
-	hud.Enabled = not hidden.menu and not hidden.genetics
+	mapPanel.Visible = not hidden.menu and not folded
+	chip.Visible = not hidden.menu and folded
 end
-UIBus.GeneticsVisible.Event:Connect(function(visible)
-	hidden.genetics = visible
-	if visible and isOpen then close() end
+foldButton.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	folded = true
 	updateMap()
+end)
+chip.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	folded = false
+	updateMap()
+	Theme.Fade(mapPanel, true)
+end)
+UIBus.GeneticsVisible.Event:Connect(function(visible)
+	if visible and isOpen then close() end
 end)
 task.spawn(function()
 	ClientData.Get()

@@ -63,7 +63,8 @@ handlers.TutorialStep = function(player, step)
 	end
 end
 
--- Settings menu: { music = 0-1, effects = 0-1, gainNumbers = "On" | "Minimal" | "Off" } (PlayerData validates)
+-- Settings menu: { music = 0-1, effects = 0-1, gainNumbers = "On" | "Minimal" | "Off", keepClothes = bool,
+-- pumpHintSeen = true } (PlayerData validates)
 handlers.SetSettings = function(player, settings)
 	if type(settings) == "table" then
 		PlayerData.SetSettings(player, settings)

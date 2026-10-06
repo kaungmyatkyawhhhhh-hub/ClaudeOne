@@ -17,7 +17,7 @@ TownKit.C = {
 	Leaf1 = hex("#4E7A3E"), Leaf2 = hex("#5E8C45"), Leaf3 = hex("#3F6B36"), Leaf4 = hex("#6E9A4E"),
 	Iron = hex("#2B2C2F"), Brass = hex("#B9935A"), Warm = hex("#FFD7A8"), Sand = hex("#E3D3A8"),
 	Wood = hex("#8A6A4A"), WoodDark = hex("#5E4632"), Glass = hex("#7F99A6"), Stone = hex("#8E8A82"),
-	White = hex("#F2EEE6"), Red = hex("#D7262E"),
+	White = hex("#F2EEE6"), Red = hex("#D7262E"), Chalk = hex("#F2F0EA"),
 }
 local C = TownKit.C
 
@@ -159,7 +159,7 @@ function TownKit.palm(parent, position, scale, seed)
 		local h = 1.7 * scale
 		cf = cf * CFrame.Angles(rad(bend), 0, 0)
 		cyl(m, "Trunk", h + 0.15, (0.9 - i * 0.05) * scale, cf * CFrame.new(0, h / 2, 0) * up, i % 2 == 0 and hex("#8C6E4F") or hex("#9B7C5A"), M.Wood, i == 1)
-		cyl(m, "Ring", 0.15, (1.0 - i * 0.05) * scale, cf * CFrame.new(0, h, 0) * up, hex("#6E553D"), M.Wood)
+		if i % 2 == 1 then cyl(m, "Ring", 0.15, (1.0 - i * 0.05) * scale, cf * CFrame.new(0, h, 0) * up, hex("#6E553D"), M.Wood) end
 		cf = cf * CFrame.new(0, h, 0)
 	end
 	for i = 0, 7 do
@@ -213,9 +213,27 @@ function TownKit.rock(parent, position, scale, seed)
 end
 
 ------------------------------------------------------------------------
+-- Night lights: a glowing part (lamp glass, bulb) tagged "NightLight". NightLightService turns its lights on and makes
+-- it glow (Neon) only at night; by day it's plain frosted glass and its lights are off. Built in the day look.
+------------------------------------------------------------------------
+local DAY_GLASS = hex("#F1E3C4")
+function TownKit.nightLight(part, nightColor)
+	part:SetAttribute("NightColor", nightColor or C.Warm)
+	part:SetAttribute("DayColor", DAY_GLASS)
+	part.Material = M.SmoothPlastic
+	part.Color = DAY_GLASS
+	part.Transparency = 0
+	for _, light in ipairs(part:GetChildren()) do
+		if light:IsA("Light") then light.Enabled = false end
+	end
+	game:GetService("CollectionService"):AddTag(part, "NightLight")
+	return part
+end
+
+------------------------------------------------------------------------
 -- Street furniture
 ------------------------------------------------------------------------
--- Street lamp: plinth, fluted pole, ring, curved arm, lantern head with a warm light.
+-- Street lamp: plinth, fluted pole, ring, curved arm, lantern head with a warm light (on at night only).
 function TownKit.lamp(parent, position, facing)
 	local base = CFrame.lookAt(position, position + (facing or Vector3.new(0, 0, 1)) * Vector3.new(1, 0, 1))
 	local m = model(parent, "StreetLamp", base)
@@ -234,6 +252,7 @@ function TownKit.lamp(parent, position, facing)
 	local light = Instance.new("PointLight")
 	light.Color, light.Brightness, light.Range, light.Shadows = hex("#FFD7A8"), 1.1, 20, false
 	light.Parent = glass
+	TownKit.nightLight(glass)
 	return m
 end
 
@@ -294,7 +313,7 @@ function TownKit.planter(parent, cframe, w, d, plant)
 	p(m, "Cap", Vector3.new(w + 0.3, 0.2, d + 0.3), cframe * CFrame.new(0, 1.5, 0), hex("#CFC6B6"), M.Concrete)
 	p(m, "Soil", Vector3.new(w - 0.4, 0.1, d - 0.4), cframe * CFrame.new(0, 1.45, 0), hex("#3B2A1E"), M.Ground)
 	if plant == "flowers" then
-		TownKit.flowers(m, (cframe * CFrame.new(0, 1.45, 0)).Position, math.min(w, d) / 2 - 0.4, math.floor(w * d * 1.5))
+		TownKit.flowers(m, (cframe * CFrame.new(0, 1.45, 0)).Position, math.min(w, d) / 2 - 0.4, math.floor(w * d * 0.8))
 	elseif plant == "bush" then
 		TownKit.bush(m, (cframe * CFrame.new(0, 1.4, 0)).Position, math.min(w, d) / 3.2)
 	end
@@ -373,6 +392,7 @@ function TownKit.stringLights(parent, a, b, bulbs)
 				light.Color, light.Brightness, light.Range, light.Shadows = C.Warm, 0.6, 9, false
 				light.Parent = bulb
 			end
+			TownKit.nightLight(bulb)
 		end
 		prev = point
 	end
@@ -387,12 +407,11 @@ end
 local FLOOR_H = 9
 
 local function window(m, cf, w, h, trim)
-	p(m, "Glass", Vector3.new(w, h, 0.1), cf * CFrame.new(0, 0, -0.02), hex("#5F7480"), M.Glass, false, { Reflectance = 0.15, Transparency = 0.05 })
-	p(m, "FrameTop", Vector3.new(w + 0.3, 0.18, 0.25), cf * CFrame.new(0, h / 2, -0.1), trim, M.SmoothPlastic)
-	p(m, "Sill", Vector3.new(w + 0.5, 0.2, 0.45), cf * CFrame.new(0, -h / 2, -0.2), trim, M.Concrete)
-	p(m, "FrameL", Vector3.new(0.18, h, 0.25), cf * CFrame.new(-w / 2, 0, -0.1), trim, M.SmoothPlastic)
-	p(m, "FrameR", Vector3.new(0.18, h, 0.25), cf * CFrame.new(w / 2, 0, -0.1), trim, M.SmoothPlastic)
-	p(m, "Mullion", Vector3.new(0.1, h, 0.15), cf * CFrame.new(0, 0, -0.07), trim, M.SmoothPlastic)
+	-- 4 parts: a trim plate (shows as the frame around the glass), the glass in front of it, a mullion and a sill
+	p(m, "Frame", Vector3.new(w + 0.36, h + 0.36, 0.12), cf * CFrame.new(0, 0, -0.04), trim, M.SmoothPlastic)
+	p(m, "Glass", Vector3.new(w, h, 0.1), cf * CFrame.new(0, 0, -0.1), hex("#5F7480"), M.Glass, false, { Reflectance = 0.15, Transparency = 0.05 })
+	p(m, "Mullion", Vector3.new(0.1, h, 0.1), cf * CFrame.new(0, 0, -0.16), trim, M.SmoothPlastic)
+	p(m, "Sill", Vector3.new(w + 0.5, 0.2, 0.45), cf * CFrame.new(0, -h / 2 - 0.1, -0.22), trim, M.Concrete)
 end
 
 local function awning(m, cf, w, depth, colors)
@@ -440,6 +459,7 @@ local function shopfront(m, cf, w, palette, shop)
 		local light = Instance.new("PointLight")
 		light.Color, light.Brightness, light.Range, light.Shadows = C.Warm, 0.7, 10, false
 		light.Parent = shade
+		TownKit.nightLight(shade)
 	end
 end
 
@@ -470,6 +490,28 @@ local function rooftop(m, cf, w, d, kind, rng)
 		for i = 0, 2 do TownKit.planter(m, cf * CFrame.new(-w / 2 + 2.2 + i * 3, 0, -d / 2 + 2.2), 2.2, 1.2, "flowers") end
 	end
 end
+
+-- A plain facade (back or side of a building): framed windows on every floor, floor bands, an optional door with a
+-- canopy and a wall lamp. faceCF sits on the ground at the middle of the wall, facing out along its local -Z.
+local function plainFacade(m, faceCF, w, floors, pal, door)
+	local cols = math.max(1, math.floor(w / 6))
+	for f = 1, floors do
+		local y = (f - 1) * FLOOR_H + 4.4
+		if f > 1 then p(m, "FloorBand", Vector3.new(w, 0.4, 0.3), faceCF * CFrame.new(0, (f - 1) * FLOOR_H + 0.6, -0.12), pal.trim, M.Concrete) end
+		for c = 1, cols do
+			local x = -w / 2 + (c - 0.5) * (w / cols)
+			if f == 1 and door and c == cols then
+				p(m, "BackDoor", Vector3.new(2.4, 5.6, 0.12), faceCF * CFrame.new(x, 3, -0.05), hex("#4A4C50"), M.Metal)
+				p(m, "BackDoorFrame", Vector3.new(2.8, 0.25, 0.25), faceCF * CFrame.new(x, 5.9, -0.1), pal.trim, M.Concrete)
+				p(m, "BackCanopy", Vector3.new(3.4, 0.2, 1.2), faceCF * CFrame.new(x, 6.5, -0.6), C.Iron, M.Metal)
+				p(m, "BackStep", Vector3.new(3, 0.3, 1), faceCF * CFrame.new(x, 0.15, -0.5), C.Stone, M.Concrete, true)
+			else
+				window(m, faceCF * CFrame.new(x, y, -0.05), 2.4, 3.4, pal.trim)
+			end
+		end
+	end
+end
+TownKit.plainFacade = plainFacade
 
 function TownKit.building(parent, name, cf, spec)
 	local rng = Random.new(spec.seed or math.floor(cf.X * 3 + cf.Z))
@@ -531,6 +573,10 @@ function TownKit.building(parent, name, cf, spec)
 	for _, side in ipairs({ -1, 1 }) do
 		p(m, "Pilaster", Vector3.new(0.7, h - 1.2, 0.5), cf * CFrame.new(side * (w / 2 - 0.35), h / 2 + 0.6, -0.15), pal.trim, M.Concrete)
 	end
+	-- back and end walls that can be seen get windows too (no blank walls)
+	if spec.back then plainFacade(m, cf * CFrame.new(0, 0, d) * CFrame.Angles(0, math.pi, 0), w - 1.4, floors, pal, true) end
+	if spec.left then plainFacade(m, cf * CFrame.new(-w / 2, 0, d / 2) * CFrame.Angles(0, math.pi / 2, 0), d - 2, floors, pal, false) end
+	if spec.right then plainFacade(m, cf * CFrame.new(w / 2, 0, d / 2) * CFrame.Angles(0, -math.pi / 2, 0), d - 2, floors, pal, false) end
 	rooftop(m, cf * CFrame.new(0, h + 0.15, d / 2), w, d, spec.roof or "ac", rng)
 	-- a drainpipe on one side
 	cyl(m, "Drainpipe", h, 0.3, cf * CFrame.new(w / 2 - 0.9, h / 2, -0.25) * up, C.Iron, M.Metal)
@@ -576,6 +622,228 @@ function TownKit.surfboard(parent, cframe, color)
 	p(m, "Stripe", Vector3.new(0.25, 5.6, 0.21), cframe * CFrame.new(0, 3, 0), C.White, M.SmoothPlastic)
 	ball(m, "Nose", Vector3.new(1.4, 1.4, 0.2), cframe * CFrame.new(0, 6, 0), color, M.SmoothPlastic)
 	return m, board
+end
+
+------------------------------------------------------------------------
+-- Park, plaza and parking pieces
+------------------------------------------------------------------------
+local WATER = hex("#6FB4C8")
+local STONE_LIGHT = hex("#CFC6B6")
+
+-- Three-tier fountain: round basin with a rim and water, a column, a middle bowl, a top bowl and a spray.
+function TownKit.fountain(parent, cframe, scale)
+	scale = scale or 1
+	local m = model(parent, "Fountain", cframe)
+	local f = cframe
+	cyl(m, "Basin", 1.6, 13 * scale, f * CFrame.new(0, 0.8, 0) * up, hex("#B5AA98"), M.Concrete, true)
+	cyl(m, "BasinRim", 0.3, 13.6 * scale, f * CFrame.new(0, 1.7, 0) * up, STONE_LIGHT, M.Concrete)
+	cyl(m, "Water", 0.1, 12 * scale, f * CFrame.new(0, 1.88, 0) * up, WATER, M.Glass) -- above the rim disc
+	cyl(m, "Column", 3.4, 1.6, f * CFrame.new(0, 3, 0) * up, STONE_LIGHT, M.Concrete, true)
+	cyl(m, "MidBowl", 0.6, 6, f * CFrame.new(0, 4.6, 0) * up, STONE_LIGHT, M.Concrete)
+	cyl(m, "MidWater", 0.1, 5.4, f * CFrame.new(0, 4.92, 0) * up, WATER, M.Glass)
+	cyl(m, "TopColumn", 2, 0.8, f * CFrame.new(0, 5.9, 0) * up, STONE_LIGHT, M.Concrete)
+	cyl(m, "TopBowl", 0.4, 2.6, f * CFrame.new(0, 7, 0) * up, STONE_LIGHT, M.Concrete)
+	local spray = p(m, "Spray", Vector3.new(0.4, 1.2, 0.4), f * CFrame.new(0, 7.8, 0), hex("#BFE3EE"), M.Glass, false, { Transparency = 0.4 })
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	emitter.Color = ColorSequence.new(hex("#DFF3F8"))
+	emitter.Size = NumberSequence.new(0.25)
+	emitter.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+	emitter.Lifetime = NumberRange.new(0.6, 0.9)
+	emitter.Speed = NumberRange.new(4, 6)
+	emitter.SpreadAngle = Vector2.new(25, 25)
+	emitter.Acceleration = Vector3.new(0, -18, 0)
+	emitter.Rate = 30
+	emitter.Parent = spray
+	-- four small jets from the basin rim toward the middle
+	for i = 0, 3 do
+		local a = i * math.pi / 2
+		cyl(m, "Jet", 0.5, 0.4, f * CFrame.new(math.cos(a) * 5.4 * scale, 2.1, math.sin(a) * 5.4 * scale) * up, hex("#9EA2A8"), M.Metal)
+	end
+	return m
+end
+
+-- A path made of straight pieces through a list of points (curves = many points). Lies on the ground (top at y + 0.15).
+function TownKit.path(parent, points, width, color, edgeColor)
+	local m = model(parent, "Path", CFrame.new(points[1]))
+	for i = 1, #points - 1 do
+		local a, b = points[i], points[i + 1]
+		local len = (b - a).Magnitude
+		local cf = CFrame.lookAt((a + b) / 2, b)
+		p(m, "PathStone", Vector3.new(width, 0.3, len + width * 0.35), cf, color or hex("#D8C9AE"), M.Pavement, true)
+		if edgeColor then
+			for _, side in ipairs({ -1, 1 }) do
+				p(m, "PathEdge", Vector3.new(0.3, 0.32, len + 0.3), cf * CFrame.new(side * (width / 2 + 0.1), 0, 0), edgeColor, M.Concrete)
+			end
+		end
+	end
+	return m
+end
+
+function TownKit.picnicTable(parent, cframe, color)
+	local m = model(parent, "PicnicTable", cframe)
+	color = color or C.Wood
+	for i = -1, 1 do p(m, "TopPlank", Vector3.new(5, 0.2, 0.75), cframe * CFrame.new(0, 2.6, i * 0.8), color, M.WoodPlanks, i == 0) end
+	for _, z in ipairs({ -2.1, 2.1 }) do
+		p(m, "SeatPlank", Vector3.new(5, 0.2, 0.8), cframe * CFrame.new(0, 1.5, z), color, M.WoodPlanks, true)
+	end
+	for _, x in ipairs({ -1.9, 1.9 }) do
+		p(m, "LegA", Vector3.new(0.25, 3, 0.3), cframe * CFrame.new(x, 1.3, -0.6) * CFrame.Angles(rad(-25), 0, 0), C.WoodDark, M.Wood)
+		p(m, "LegB", Vector3.new(0.25, 3, 0.3), cframe * CFrame.new(x, 1.3, 0.6) * CFrame.Angles(rad(25), 0, 0), C.WoodDark, M.Wood)
+		p(m, "SeatBeam", Vector3.new(0.25, 0.25, 5), cframe * CFrame.new(x, 1.3, 0), C.WoodDark, M.Wood)
+	end
+	return m
+end
+
+-- Playground pieces (bright, chunky, kid-friendly)
+function TownKit.slide(parent, cframe, color)
+	local m = model(parent, "Slide", cframe)
+	color = color or hex("#F2C14E")
+	local frame = hex("#2E6E8E")
+	for _, o in ipairs({ { -1.4, -1.4 }, { 1.4, -1.4 }, { -1.4, 1.4 }, { 1.4, 1.4 } }) do
+		cyl(m, "Post", 7, 0.35, cframe * CFrame.new(o[1], 3.5, o[2]) * up, frame, M.Metal, true)
+		ball(m, "PostCap", Vector3.new(0.5, 0.5, 0.5), cframe * CFrame.new(o[1], 7.05, o[2]), color, M.SmoothPlastic)
+	end
+	p(m, "Deck", Vector3.new(3.2, 0.3, 3.2), cframe * CFrame.new(0, 4, 0), hex("#C9B48A"), M.WoodPlanks, true)
+	p(m, "Roof", Vector3.new(3.6, 0.3, 3.6), cframe * CFrame.new(0, 7, 0), color, M.SmoothPlastic)
+	for _, x in ipairs({ -1.4, 1.4 }) do p(m, "Rail", Vector3.new(0.15, 0.15, 3), cframe * CFrame.new(x, 5.1, 0), frame, M.Metal) end
+	-- slide chute down the front (+Z), with side lips
+	local chute = cframe * CFrame.new(0, 2.15, 4.2) * CFrame.Angles(rad(-35), 0, 0)
+	p(m, "Chute", Vector3.new(1.8, 0.2, 6.2), chute, color, M.SmoothPlastic, true)
+	for _, x in ipairs({ -0.95, 0.95 }) do p(m, "ChuteLip", Vector3.new(0.15, 0.6, 6.2), chute * CFrame.new(x, 0.3, 0), color, M.SmoothPlastic) end
+	-- ladder at the back
+	for _, x in ipairs({ -0.7, 0.7 }) do p(m, "LadderSide", Vector3.new(0.15, 4.4, 0.15), cframe * CFrame.new(x, 2, -2.2) * CFrame.Angles(rad(-12), 0, 0), frame, M.Metal) end
+	for i = 0, 4 do p(m, "LadderRung", Vector3.new(1.4, 0.12, 0.12), cframe * CFrame.new(0, 0.5 + i * 0.8, -2.55 + i * 0.17), frame, M.Metal) end
+	return m
+end
+
+function TownKit.swings(parent, cframe)
+	local m = model(parent, "Swings", cframe)
+	local frame = hex("#E86A6A")
+	for _, x in ipairs({ -4, 4 }) do
+		p(m, "LegA", Vector3.new(0.3, 7.4, 0.3), cframe * CFrame.new(x, 3.5, -1.2) * CFrame.Angles(rad(18), 0, 0), frame, M.Metal, true)
+		p(m, "LegB", Vector3.new(0.3, 7.4, 0.3), cframe * CFrame.new(x, 3.5, 1.2) * CFrame.Angles(rad(-18), 0, 0), frame, M.Metal, true)
+	end
+	cyl(m, "TopBar", 8.4, 0.35, cframe * CFrame.new(0, 7, 0), frame, M.Metal)
+	for i, x in ipairs({ -2, 2 }) do
+		for _, dx in ipairs({ -0.6, 0.6 }) do p(m, "Chain", Vector3.new(0.06, 4.8, 0.06), cframe * CFrame.new(x + dx, 4.6, 0), hex("#9EA2A8"), M.Metal) end
+		p(m, "Seat", Vector3.new(1.5, 0.15, 0.6), cframe * CFrame.new(x, 2.2, 0), i == 1 and hex("#F2C14E") or hex("#6FA8DC"), M.Rubber)
+	end
+	return m
+end
+
+function TownKit.climber(parent, cframe)
+	local m = model(parent, "Climber", cframe)
+	local colors = { hex("#7CC6A5"), hex("#F2C14E"), hex("#6FA8DC"), hex("#E86A6A") }
+	-- a dome of arches
+	for i = 0, 3 do
+		local a = cframe * CFrame.Angles(0, rad(i * 45), 0)
+		for s = 0, 7 do
+			local t0, t1 = s / 8 * math.pi, (s + 1) / 8 * math.pi
+			local p0 = Vector3.new(math.cos(t0) * 3, math.sin(t0) * 3, 0)
+			local p1 = Vector3.new(math.cos(t1) * 3, math.sin(t1) * 3, 0)
+			local mid = (p0 + p1) / 2
+			p(m, "Arch", Vector3.new(0.18, 0.18, (p1 - p0).Magnitude + 0.1), a * CFrame.lookAt(mid, p1), colors[i + 1], M.Metal, s == 0 or s == 7)
+		end
+	end
+	return m
+end
+
+-- Original generic car (no brand): lower body, cabin with glass, wheels with rims, lights, bumpers, mirrors.
+function TownKit.car(parent, cframe, color)
+	local m = model(parent, "Car", cframe)
+	local glass = hex("#3E5260")
+	p(m, "Body", Vector3.new(5, 1.6, 10), cframe * CFrame.new(0, 1.6, 0), color, M.SmoothPlastic, true)
+	p(m, "Hood", Vector3.new(4.8, 0.3, 3), cframe * CFrame.new(0, 2.45, -3.3), color, M.SmoothPlastic)
+	p(m, "Trunk", Vector3.new(4.8, 0.3, 2), cframe * CFrame.new(0, 2.45, 3.8), color, M.SmoothPlastic)
+	p(m, "Cabin", Vector3.new(4.6, 1.8, 4.6), cframe * CFrame.new(0, 3.3, 0.6), color, M.SmoothPlastic)
+	p(m, "Roof", Vector3.new(4.3, 0.2, 4.0), cframe * CFrame.new(0, 4.25, 0.6), color, M.SmoothPlastic)
+	p(m, "Windshield", Vector3.new(4.3, 1.5, 0.12), cframe * CFrame.new(0, 3.3, -1.75), glass, M.Glass, false, { Reflectance = 0.2 })
+	p(m, "RearGlass", Vector3.new(4.3, 1.4, 0.12), cframe * CFrame.new(0, 3.3, 2.95), glass, M.Glass, false, { Reflectance = 0.2 })
+	for _, x in ipairs({ -2.32, 2.32 }) do
+		p(m, "SideGlass", Vector3.new(0.12, 1.3, 4.0), cframe * CFrame.new(x, 3.35, 0.6), glass, M.Glass, false, { Reflectance = 0.2 })
+		p(m, "Mirror", Vector3.new(0.5, 0.35, 0.3), cframe * CFrame.new(x * 1.12, 2.9, -1.5), color, M.SmoothPlastic)
+		p(m, "DoorLine", Vector3.new(0.05, 1.3, 0.06), cframe * CFrame.new(x * 1.08, 1.7, 0.5), hex("#1A1A1A"), M.SmoothPlastic)
+		p(m, "Handle", Vector3.new(0.06, 0.12, 0.5), cframe * CFrame.new(x * 1.085, 2.1, 1.1), hex("#C9CCD2"), M.Metal)
+		for _, z in ipairs({ -3.2, 3.2 }) do
+			cyl(m, "Tire", 0.9, 2.1, cframe * CFrame.new(x * 0.98, 1.05, z), hex("#1A1A1A"), M.Rubber)
+			cyl(m, "Rim", 0.92, 1.2, cframe * CFrame.new(x * 0.98, 1.05, z), hex("#C9CCD2"), M.Metal)
+			p(m, "Arch", Vector3.new(0.3, 0.3, 2.6), cframe * CFrame.new(x * 1.02, 2.15, z), hex("#1A1A1A"), M.SmoothPlastic)
+		end
+	end
+	p(m, "BumperFront", Vector3.new(5.1, 0.6, 0.5), cframe * CFrame.new(0, 1.1, -5.1), hex("#2B2B2B"), M.SmoothPlastic)
+	p(m, "BumperBack", Vector3.new(5.1, 0.6, 0.5), cframe * CFrame.new(0, 1.1, 5.1), hex("#2B2B2B"), M.SmoothPlastic)
+	p(m, "Grille", Vector3.new(2.4, 0.6, 0.1), cframe * CFrame.new(0, 1.9, -5.02), hex("#2B2B2B"), M.Metal)
+	for _, x in ipairs({ -1.8, 1.8 }) do
+		p(m, "Headlight", Vector3.new(0.9, 0.4, 0.1), cframe * CFrame.new(x, 2.0, -5.02), hex("#F2EEE6"), M.Glass)
+		p(m, "Taillight", Vector3.new(0.9, 0.4, 0.1), cframe * CFrame.new(x, 2.0, 5.02), hex("#C0392B"), M.Glass)
+	end
+	p(m, "Plate", Vector3.new(1.3, 0.45, 0.06), cframe * CFrame.new(0, 1.35, 5.38), hex("#F2EEE6"), M.SmoothPlastic)
+	return m
+end
+
+-- Basketball hoop on a padded pole: backboard with a square, a rim and a net, facing local -Z.
+function TownKit.hoop(parent, cframe)
+	local m = model(parent, "Hoop", cframe)
+	p(m, "Base", Vector3.new(2, 0.6, 2), cframe * CFrame.new(0, 0.3, 0), hex("#2B2B2B"), M.Concrete, true)
+	cyl(m, "Pole", 10, 0.5, cframe * CFrame.new(0, 5, 0) * up, hex("#2E6E8E"), M.Metal, true)
+	p(m, "PolePad", Vector3.new(0.9, 3, 0.9), cframe * CFrame.new(0, 2, 0), hex("#1F5FBF"), M.Fabric)
+	p(m, "Arm", Vector3.new(0.3, 0.3, 2.6), cframe * CFrame.new(0, 9.6, -1.2), hex("#2E6E8E"), M.Metal)
+	p(m, "Backboard", Vector3.new(6, 3.6, 0.2), cframe * CFrame.new(0, 10.4, -2.5), hex("#F2EEE6"), M.SmoothPlastic, true)
+	p(m, "BoardEdge", Vector3.new(6.2, 3.8, 0.12), cframe * CFrame.new(0, 10.4, -2.4), hex("#D7262E"), M.SmoothPlastic)
+	for _, e in ipairs({ { 0, 0.75, 2.4, 0.12 }, { 0, -0.75, 2.4, 0.12 }, { -1.15, 0, 0.12, 1.6 }, { 1.15, 0, 0.12, 1.6 } }) do
+		p(m, "Square", Vector3.new(e[3], e[4], 0.05), cframe * CFrame.new(e[1], 9.8 + e[2], -2.62), hex("#D7262E"), M.SmoothPlastic)
+	end
+	local rimCF = cframe * CFrame.new(0, 9.2, -3.5)
+	for i = 0, 11 do
+		local a0, a1 = i / 12 * math.pi * 2, (i + 1) / 12 * math.pi * 2
+		local p0, p1 = Vector3.new(math.cos(a0) * 0.9, 0, math.sin(a0) * 0.9), Vector3.new(math.cos(a1) * 0.9, 0, math.sin(a1) * 0.9)
+		p(m, "Rim", Vector3.new(0.1, 0.1, (p1 - p0).Magnitude + 0.05), rimCF * CFrame.lookAt((p0 + p1) / 2, p1), hex("#E8761C"), M.Metal)
+		if i % 2 == 0 then p(m, "Net", Vector3.new(0.05, 1.2, 0.05), rimCF * CFrame.new(math.cos(a0) * 0.75, -0.6, math.sin(a0) * 0.75), hex("#F2EEE6"), M.Fabric) end
+	end
+	return m
+end
+
+-- Clock post: a fluted pole with a four-sided clock head (numbers as tick marks, hands at a sunny afternoon time).
+function TownKit.clockPost(parent, position)
+	local base = CFrame.new(position)
+	local m = model(parent, "ClockPost", base)
+	cyl(m, "Plinth", 1.2, 1.6, base * CFrame.new(0, 0.6, 0) * up, C.Iron, M.Metal, true)
+	cyl(m, "Pole", 9, 0.5, base * CFrame.new(0, 5.5, 0) * up, C.Iron, M.Metal, true)
+	cyl(m, "Ring", 0.3, 0.8, base * CFrame.new(0, 3, 0) * up, C.Brass, M.Metal)
+	local head = base * CFrame.new(0, 11, 0)
+	p(m, "Head", Vector3.new(2.4, 2.4, 2.4), head, C.Iron, M.Metal)
+	p(m, "HeadCap", Vector3.new(2.7, 0.3, 2.7), head * CFrame.new(0, 1.35, 0), C.Iron, M.Metal)
+	ball(m, "Finial", Vector3.new(0.5, 0.5, 0.5), head * CFrame.new(0, 1.7, 0), C.Brass, M.Metal)
+	for i = 0, 3 do
+		local face = head * CFrame.Angles(0, i * math.pi / 2, 0) * CFrame.new(0, 0, -1.21)
+		cyl(m, "Dial", 0.06, 2, face * CFrame.Angles(0, rad(90), 0), C.White, M.SmoothPlastic)
+		cyl(m, "DialRim", 0.05, 2.2, face * CFrame.new(0, 0, 0.02) * CFrame.Angles(0, rad(90), 0), C.Brass, M.Metal)
+		for t = 0, 11 do
+			local a = t / 12 * math.pi * 2
+			p(m, "Tick", Vector3.new(0.08, t % 3 == 0 and 0.3 or 0.15, 0.03), face * CFrame.new(math.sin(a) * 0.8, math.cos(a) * 0.8, -0.04) * CFrame.Angles(0, 0, -a), C.Iron, M.SmoothPlastic)
+		end
+		p(m, "HourHand", Vector3.new(0.1, 0.5, 0.03), face * CFrame.Angles(0, 0, rad(-75)) * CFrame.new(0, 0.25, -0.06), C.Iron, M.SmoothPlastic)
+		p(m, "MinuteHand", Vector3.new(0.07, 0.75, 0.03), face * CFrame.Angles(0, 0, rad(-180)) * CFrame.new(0, 0.37, -0.07), C.Iron, M.SmoothPlastic)
+	end
+	return m
+end
+
+-- A smoothie/ice-pop cart with a striped umbrella (original, no brand)
+function TownKit.cart(parent, cframe, colorA, colorB)
+	local m = model(parent, "Cart", cframe)
+	p(m, "Box", Vector3.new(4, 2.6, 2.2), cframe * CFrame.new(0, 2.1, 0), colorA, M.SmoothPlastic, true)
+	p(m, "Top", Vector3.new(4.2, 0.2, 2.4), cframe * CFrame.new(0, 3.5, 0), C.White, M.SmoothPlastic)
+	p(m, "Stripe", Vector3.new(4.02, 0.4, 2.22), cframe * CFrame.new(0, 1.5, 0), colorB, M.SmoothPlastic)
+	for _, x in ipairs({ -1.5, 1.5 }) do
+		cyl(m, "Wheel", 0.3, 1.3, cframe * CFrame.new(x, 0.65, -1.2), hex("#2B2B2B"), M.Rubber)
+		cyl(m, "Wheel", 0.3, 1.3, cframe * CFrame.new(x, 0.65, 1.2), hex("#2B2B2B"), M.Rubber)
+	end
+	p(m, "PushBar", Vector3.new(0.15, 0.15, 2.4), cframe * CFrame.new(2.6, 3.2, 0), C.Iron, M.Metal)
+	for _, z in ipairs({ -1, 1 }) do p(m, "PushArm", Vector3.new(0.7, 0.12, 0.12), cframe * CFrame.new(2.25, 3.2, z), C.Iron, M.Metal) end
+	for i = 0, 3 do cyl(m, "Cup", 0.5, 0.45, cframe * CFrame.new(-1.4 + i * 0.6, 3.85, -0.5) * up, FLOWERS[i + 1], M.SmoothPlastic) end
+	TownKit.umbrella(m, cframe * CFrame.new(-1.2, 3.6, 0), colorB, C.White):ScaleTo(0.6)
+	return m
 end
 
 return TownKit

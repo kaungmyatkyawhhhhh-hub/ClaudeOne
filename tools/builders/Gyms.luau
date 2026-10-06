@@ -7,6 +7,7 @@
 --   Workspace.Gym.NpcSpots     points the gym-goer NPCs walk to (water, chat, rest)
 -- Starter gym inside: x -36..36, z -73.5..-4 (front wall with the entrance at z -3.5). Pro gym inside: x 37..93.
 -- Needs ReplicatedStorage.GymAssets (GymAssets builder) for the plates.
+local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -208,7 +209,10 @@ local function sharedWall(folder)
 	rule.Name = "Rule"
 	rule.Position = UDim2.fromScale(0, 0.52)
 	rule.Size = UDim2.fromScale(1, 0.36)
-	rule.Text = "Unlocks at Growth Spurt 2"
+	rule.Text = "Opens at Growth Spurt 2"
+	sign:SetAttribute("Gym", "Pro")
+	sign:SetAttribute("Title", "Pro gym")
+	CollectionService:AddTag(sign, "AreaSign") -- AreaSignsClient shows the rule only while locked
 	rule.TextColor3 = hex("#B8B8BE")
 	rule.FontFace = Theme.Fonts.Regular
 	rule.Parent = gui

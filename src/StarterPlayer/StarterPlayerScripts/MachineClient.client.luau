@@ -1,7 +1,7 @@
 -- MachineClient: lift input, machine HUD, and all lifting game feel (motion, sounds,
 -- gains, pump, particles). Effects play instantly on tap; the server validates and applies gains.
--- Reps run on their own at a slow pace; tapping (the Lift button, a click/tap anywhere, Space) makes them faster and
--- fills the PUMP meter (full = PUMPED: x2 gains, faster reps, a glow). About 1 in 12 reps is a BIG REP (x3, gold).
+-- Reps run on their own at a slow pace; tapping (a tap anywhere that isn't a button, a click, Space) makes them faster and
+-- fills the PUMP meter above the machine panel (full = PUMPED: x2 gains, faster reps, a glow). About 1 in 12 reps is a BIG REP (x3, gold).
 -- Nobody is ever punished for not tapping.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -738,6 +738,16 @@ local column = New("Frame", {
 	New("UIPadding", { PaddingBottom = UDim.new(0, Spacing.XS) }),
 })
 
+-- phones: the thumbstick and jump button are hidden while lifting, so the panel sits left and leaves the right side
+-- to the body map (top right)
+do
+	local columnList = column:FindFirstChildOfClass("UIListLayout")
+	local columnPad = column:FindFirstChildOfClass("UIPadding")
+	Theme.OnCompactChanged(function(isCompact)
+		columnList.HorizontalAlignment = isCompact and Enum.HorizontalAlignment.Left or Enum.HorizontalAlignment.Center
+		columnPad.PaddingLeft = UDim.new(0, isCompact and Spacing.M or 0)
+	end)
+end
 local function box(props, children)
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
 	return New("Frame", props, children)
@@ -1111,57 +1121,70 @@ local function fovPunch(amount)
 end
 
 ------------------------------------------------------------------------
--- Tap button + PUMP meter (bottom right, near the right thumb on phones)
+-- PUMP meter: a slim segmented bar above the machine panel (bottom center, right of the machine name), so it never
+-- sits on the phone thumbstick (bottom left) or the jump button (bottom right). There is no Lift button: tapping
+-- anywhere that isn't a button (phone), clicking or Space (PC) counts as a tap. Visible only on a machine.
 ------------------------------------------------------------------------
 local Pump = Gains.Pump
 local PUMP_SEGMENTS = 10
 local tryLift -- defined with the lifting code below
-local function tryLiftRef() if tryLift then tryLift() end end
-local compact = Theme.IsCompact()
-local TAP_SIZE = compact and 84 or 96
 
-local tapCluster = box({
-	Name = "TapCluster",
+local pumpBar = box({
+	Name = "PumpBar",
 	AnchorPoint = Vector2.new(1, 1),
-	Size = UDim2.fromOffset(TAP_SIZE + 40, TAP_SIZE + 44),
+	Position = UDim2.new(1, -Spacing.S, 1, 0),
+	Size = UDim2.fromScale(0.46, 1),
 	ZIndex = 3,
-	Parent = gui,
-}, { Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom) })
-local pumpLabel = Theme.Text({ LayoutOrder = 1, Text = "Pump", Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), Parent = tapCluster })
+	Parent = tapeRow,
+}, { Theme.List(Horizontal, "S", Right, Enum.VerticalAlignment.Center) })
+local pumpLabel = Theme.Text({
+	LayoutOrder = 1,
+	Text = "Pump",
+	Font = "SemiBold",
+	TextSize = "Small",
+	Size = UDim2.new(0.34, 0, 1, 0),
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Parent = pumpBar,
+})
 Theme.TextShadow(pumpLabel)
-local pumpRow = box({ LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 10), Parent = tapCluster }, { Theme.List(Horizontal, "XS") })
+-- a dark backing behind the segments; it gets a gold border that glows while PUMPED
+local pumpBack = box({
+	LayoutOrder = 2,
+	Size = UDim2.new(0.62, 0, 0, 14),
+	BackgroundTransparency = Theme.Alpha.Panel,
+	BackgroundColor3 = Colors.Panel,
+	Parent = pumpBar,
+}, { Theme.Round("Segment"), New("UIPadding", { PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }) })
+local pumpGlow = New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, Transparency = 1, Parent = pumpBack })
+local pumpRow = box({ Size = UDim2.fromScale(1, 1), Parent = pumpBack }, { Theme.List(Horizontal, "XS") })
 local pumpSegments = {}
 for i = 1, PUMP_SEGMENTS do
 	local back = box({ LayoutOrder = i, Size = UDim2.fromScale(0, 1), BackgroundTransparency = SEGMENT_BACK, BackgroundColor3 = Colors.Text, Parent = pumpRow },
 		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
 	pumpSegments[i] = box({ Size = UDim2.fromScale(0, 1), BackgroundTransparency = 0, BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
 end
-local tapButton = Theme.Button("Secondary", { Name = "Tap", LayoutOrder = 3, Size = UDim2.fromOffset(TAP_SIZE, TAP_SIZE), Parent = tapCluster })
-tapButton:FindFirstChildOfClass("UICorner").CornerRadius = Theme.Corner.Round
-local tapText = Theme.Text({ Text = "Lift", Font = "SemiBold", TextSize = "Large", Size = UDim2.fromScale(1, 0.5), Position = UDim2.fromScale(0, 0.18), Parent = tapButton })
-local tapHint = Theme.Text({ Text = "tap fast", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.25), Position = UDim2.fromScale(0, 0.58), Parent = tapButton })
-local tapStroke = tapButton:FindFirstChildOfClass("UIStroke")
--- a little smaller on phones (switches live with the screen size)
-Theme.OnCompactChanged(function(isCompact)
-	local size = isCompact and 84 or 96
-	tapCluster.Size = UDim2.fromOffset(size + 40, size + 44)
-	tapButton.Size = UDim2.fromOffset(size, size)
-end)
--- the button reacts on press (not release), and a held finger doesn't repeat
-tapButton.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-		tryLiftRef()
-	end
-end)
+titleLabel.Size = UDim2.fromScale(0.5, 1) -- the machine name keeps the left half
 
--- keep the cluster just above the machine panel's right end
-local function placeTapCluster()
-	local slot = stackSlot.AbsolutePosition + stackSlot.AbsoluteSize
-	local guiInset = gui.AbsolutePosition
-	tapCluster.Position = UDim2.fromOffset(slot.X - guiInset.X, stackSlot.AbsolutePosition.Y - guiInset.Y - Spacing.S)
+-- one-time hint for players who haven't pumped yet ("Tap to pump"), just above the bar; saved once seen
+local pumpHint = Theme.Text({
+	Text = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) and "Tap to pump" or "Tap to pump (click or Space)",
+	Font = "SemiBold",
+	TextSize = "Small",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -Spacing.S, 0, -Spacing.XS),
+	Size = UDim2.new(0.46, 0, 0, 18),
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Visible = false,
+	Parent = tapeRow,
+})
+Theme.TextShadow(pumpHint)
+local hintTaps = 0
+local function hidePumpHint(save)
+	if not pumpHint.Visible then return end
+	pumpHint.Visible = false
+	if save then Remotes.PlayerAction:FireServer("SetSettings", { pumpHintSeen = true }) end
 end
-stackSlot:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTapCluster)
-stackSlot:GetPropertyChangedSignal("AbsolutePosition"):Connect(placeTapCluster)
+
 
 -- Client prediction of the server's meter (MachineService): instant on tap, corrected by the player attributes.
 local pumpMeter, pumpLastTap, pumpSettled = 0, 0, os.clock()
@@ -1219,8 +1242,7 @@ local function refreshPump(now)
 		setPumpGlow(pumped)
 		pumpLabel.Text = pumped and "PUMPED  x2" or "Pump"
 		pumpLabel.TextColor3 = pumped and Colors.Gold or Colors.Text
-		tapStroke.Color = pumped and Colors.Gold or Colors.Border
-		tapStroke.Transparency = pumped and 0.2 or Theme.Alpha.ButtonBorder
+		pumpGlow.Transparency = pumped and 0.15 or 1
 	end
 	-- drain while not tapping (same rule as the server)
 	local from = math.max(pumpSettled, pumpLastTap + Pump.DrainDelay)
@@ -1236,6 +1258,8 @@ local function refreshPump(now)
 	end
 	if pumped then
 		local pulse = 0.75 + 0.1 * math.sin(now * 8)
+		pumpLabel.Text = "PUMPED " .. math.ceil(left) .. "s"
+		pumpGlow.Transparency = 0.1 + 0.25 * (0.5 + 0.5 * math.sin(now * 6))
 		for _, glow in ipairs(glows) do glow.FillTransparency = pulse end
 	end
 end
@@ -1254,8 +1278,12 @@ local function registerTap()
 	end
 	Remotes.MachineAction:FireServer("Tap")
 	-- the button breathes with every tap
-	tapText.TextSize = Theme.TextSize.Large + 4
-	Theme.Tween(tapText, { TextSize = Theme.TextSize.Large }, Theme.Motion.PressTime * 2)
+	pumpLabel.TextSize = Theme.TextSize.Small + 2
+	if pumpHint.Visible then
+		hintTaps += 1
+		if hintTaps >= 3 then hidePumpHint(true) end
+	end
+	Theme.Tween(pumpLabel, { TextSize = Theme.TextSize.Small }, Theme.Motion.PressTime * 2)
 end
 
 -- the server's meter wins when they drift (e.g. taps lost on a slow connection)
@@ -1269,10 +1297,11 @@ end)
 ------------------------------------------------------------------------
 local levelFlash = Theme.Text({
 	Name = "LevelFlash",
+	Text = "",
 	Font = "SemiBold",
 	TextSize = "Large",
 	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -Spacing.S, 0, 0),
+	Position = UDim2.new(1, -Spacing.S, 0, -24), -- above the pump hint
 	Size = UDim2.new(0.5, 0, 0, 28),
 	TextXAlignment = Enum.TextXAlignment.Right,
 	TextTransparency = 1,
@@ -1638,7 +1667,7 @@ local function open(model)
 	pumpMeter, pumpLastTap, pumpSettled = 0, 0, os.clock()
 	wasPumped = false
 	pumpLabel.Text, pumpLabel.TextColor3 = "Pump", Colors.Text
-	tapStroke.Color, tapStroke.Transparency = Colors.Border, Theme.Alpha.ButtonBorder
+	pumpGlow.Transparency = 1
 	barTravel[model] = nil -- measure this lift's bar path fresh
 	-- the lifter never sees this machine's prompts (e.g. "Spot · Help them lift" on their own machine), only on this
 	-- client, so other players still get them; the server's next change after Exit replaces this local value
@@ -1673,9 +1702,9 @@ local function open(model)
 	Audio.PlayAt("BarRattle", barOf(model))
 	stack.Position = HIDDEN_OFFSET
 	Theme.Tween(stack, { Position = UDim2.new() }) -- slides up
-	task.defer(placeTapCluster)
-	tapCluster.Visible = true
-	tapHint.Visible = (ClientData.Get().stats and ClientData.Get().stats.totalReps or 0) < 200 -- new players get the hint
+	local settings = ClientData.Get().settings
+	hintTaps = 0
+	pumpHint.Visible = not (settings and settings.pumpHintSeen) -- once per player, gone after a few taps
 
 	ContextActionService:BindActionAtPriority("MachineLift", onLiftAction, false,
 		Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space, Enum.KeyCode.ButtonA)
@@ -1706,7 +1735,7 @@ local function close()
 	current = nil
 	setPumpGlow(false)
 	prBanner.Visible = false
-	tapCluster.Visible = false
+	hidePumpHint(false)
 	SideMenu.SetTraining(false)
 	setSweat(false)
 	if baseFov then Workspace.CurrentCamera.FieldOfView = baseFov end

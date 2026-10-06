@@ -9,10 +9,10 @@ local UIBus = require(script.Parent.UIBus)
 
 local RightColumn = {}
 
--- narrower than before, and at the top right (under the Roblox top bar), so it never covers the body map (bottom
--- left), the Growth Spurt bar (top center) or the Lift button (bottom right)
+-- At the top right (under the Roblox top bar), top to bottom: small buttons (Skate, shake), the quest tracker, the body
+-- map. It never covers the Growth Spurt bar (top center), the thumbstick, the jump button or the machine panel.
 local WIDTH = 200 -- 176 on phones (set live in ensure)
-local column, always, idle
+local column, always, idle, bottom
 local changed = Instance.new("BindableEvent")
 RightColumn.Changed = changed.Event -- fires when the column's size changes (notifications stack below it)
 
@@ -40,22 +40,35 @@ local function ensure()
 		Parent = gui,
 	}, { Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top) })
 	column:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() changed:Fire() end)
+	always = container("Always", 1)
+	-- the idle panels and the "bottom" ones (the body map) share a middle block: stacked on big screens; side by side on
+	-- phones (bottom to the left), because a phone's right side has only ~200 px above the jump button
+	local middle = Theme.New("Frame", { Name = "Middle", LayoutOrder = 2, Size = UDim2.new(), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 1, Parent = column })
+	local middleList = Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top)
+	middleList.Parent = middle
+	idle = container("Idle", 2)
+	idle.Parent = middle
+	bottom = container("Bottom", 3) -- always shown (the body map)
+	bottom.Parent = middle
+	bottom.Size = UDim2.new()
+	bottom.AutomaticSize = Enum.AutomaticSize.XY
+	local bottomPad = Theme.New("UIPadding", { Parent = bottom }) -- phones: starts below the Growth Spurt bar
 	-- narrower on phones; every panel in it fills the column's width
 	Theme.OnCompactChanged(function(isCompact)
 		WIDTH = isCompact and 176 or 200
 		RightColumn.Width = WIDTH
 		column.Size = UDim2.fromOffset(WIDTH, 0)
-		for _, holder in ipairs({ always, idle }) do
-			if holder then
-				holder.Size = UDim2.fromOffset(WIDTH, 0)
-				for _, child in ipairs(holder:GetChildren()) do
-					if child:IsA("GuiObject") then child.Size = UDim2.new(0, WIDTH, child.Size.Y.Scale, child.Size.Y.Offset) end
-				end
+		middleList.FillDirection = isCompact and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
+		bottom.LayoutOrder = isCompact and 1 or 3
+		bottomPad.PaddingTop = UDim.new(0, isCompact and 88 or 0) -- under the Growth Spurt bar (even with a two-line goal)
+		for _, holder in ipairs({ always, idle, bottom }) do
+			if holder ~= bottom then holder.Size = UDim2.fromOffset(WIDTH, 0) end
+			for _, child in ipairs(holder:GetChildren()) do
+				-- full-width panels follow the column; small ones (KeepWidth: Skate, the body map, the Stats chip) keep theirs
+				if child:IsA("GuiObject") and not child:GetAttribute("KeepWidth") then child.Size = UDim2.new(0, WIDTH, child.Size.Y.Scale, child.Size.Y.Offset) end
 			end
 		end
 	end)
-	always = container("Always", 1)
-	idle = container("Idle", 2)
 
 	-- the genetics screen is full-screen; the column would peek out behind its barbell
 	UIBus.GeneticsVisible.Event:Connect(function(visible) gui.Enabled = not visible end)
@@ -85,11 +98,12 @@ function RightColumn.Bottom()
 	return column.AbsolutePosition.Y - column.Parent.AbsolutePosition.Y + column.AbsoluteSize.Y
 end
 
--- Parent `frame` into the column; lower `order` sits higher. `idleOnly` = hidden while on a machine.
+-- Parent `frame` into the column; lower `order` sits higher. `idleOnly` = true: hidden while on a machine;
+-- "bottom": always shown, under the idle panels.
 function RightColumn.Add(frame, order, idleOnly)
 	ensure()
 	frame.LayoutOrder = order or 1
-	frame.Parent = idleOnly and idle or always
+	frame.Parent = idleOnly == "bottom" and bottom or (idleOnly and idle or always)
 	return frame
 end
 

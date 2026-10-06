@@ -49,13 +49,6 @@ local function buildTerrain()
 	terrain:SetMaterialColor(M.Ground, hex("#8A7356"))
 	terrain:SetMaterialColor(M.Sand, hex("#E8D8AE"))
 	terrain:SetMaterialColor(M.Pavement, hex("#B2AB9F"))
-	-- a light, sunny haze at the horizon (the old gray-brown one made a dirty band over the sea)
-	local atmosphere = game:GetService("Lighting"):FindFirstChildOfClass("Atmosphere")
-	if atmosphere then
-		atmosphere.Color = hex("#D8E3EC")
-		atmosphere.Decay = hex("#9FB4C6")
-		atmosphere.Haze = 1.0
-	end
 	local shore = Town.Sea.MinZ
 	-- ground: grass to just under y = 0 everywhere south of the beach (paved parts sit on top at 0..0.4)
 	terrain:FillBlock(CFrame.new(0, -10.6, (shore - 1400) / 2 + 2), Vector3.new(7000, 16, 1400 + shore), M.Grass)
@@ -67,16 +60,26 @@ local function buildTerrain()
 		terrain:FillCylinder(CFrame.new(x, -3.2, z), 1.2, r, rng:NextNumber() < 0.65 and M.LeafyGrass or M.Ground)
 	end
 	-- under streets, paving and buildings: bare ground (grass blades would poke through thin paving)
-	for _, r in ipairs({
-		{ -152, 188, 16, 40 }, { -39, 96, -76, 20 }, { -50, 50, 36, 72 }, { -140, 178, 36, 58 },
-		{ -134, -40, 0, 20 }, { 94, 172, 0, 20 }, { -72, -18, 68, 116 },
-	}) do
-		terrain:FillBlock(CFrame.new((r[1] + r[2]) / 2, -4.2, (r[3] + r[4]) / 2), Vector3.new(r[2] - r[1], 4, r[4] - r[3]), M.Pavement)
-	end
 	local paved = {
-		{ -152, 188, 16, 40 }, { -39, 96, -76, 20 }, { -50, 50, 36, 72 }, { -140, 178, 36, 58 },
-		{ -134, -40, 0, 20 }, { 94, 172, 0, 20 }, { -72, -18, 68, 116 },
+		{ -194, 218, 16, 54 },     -- Main Street, sidewalks, the shop frontage
+		{ -40, 96, -76, 18 },      -- gyms + forecourt
+		{ -194, -40, 0, 18 },      -- building rows south of Main Street
+		{ 96, 218, 0, 18 },
+		{ -194, 218, 54, 94 },     -- north building rows + side streets
+		{ -54, -34, 50, 150 },     -- avenues
+		{ 34, 54, 50, 150 },
+		{ -34, 34, 50, 92 },       -- plaza
+		{ -152, -54, 92, 145 },    -- parking
+		{ 54, 218, 92, 116 },      -- sports court + east buildings
+		{ 54, 114, 116, 145 },
+		{ -194, 218, 145, 168 },   -- Beach Road
 	}
+	for _, r in ipairs(paved) do
+		terrain:FillBlock(CFrame.new((r[1] + r[2]) / 2, -7.2, (r[3] + r[4]) / 2), Vector3.new(r[2] - r[1], 10, r[4] - r[3]), M.Pavement)
+	end
+	-- the park: flat lawn level with the paths (surface ~0)
+	local park = Town.Park
+	terrain:FillBlock(CFrame.new((park.MinX + park.MaxX) / 2, -6.1, (park.MinZ + park.MaxZ) / 2), Vector3.new(park.MaxX - park.MinX, 8, park.MaxZ - park.MinZ), M.LeafyGrass)
 	-- gentle bumps on the lawns inside the town (never under roads or buildings: those spots are listed in Town.Lawns)
 	for _, lawn in ipairs(Town.Lawns) do
 		for _ = 1, lawn.bumps do
@@ -117,55 +120,245 @@ local function buildTerrain()
 	for _, r in ipairs(paved) do
 		local cx, cz, w, d = (r[1] + r[2]) / 2, (r[3] + r[4]) / 2, r[2] - r[1], r[4] - r[3]
 		terrain:FillBlock(CFrame.new(cx, 20, cz), Vector3.new(w, 44, d), M.Air)
-		terrain:FillBlock(CFrame.new(cx, -4.2, cz), Vector3.new(w, 4, d), M.Pavement)
+		terrain:FillBlock(CFrame.new(cx, -7.2, cz), Vector3.new(w, 10, d), M.Pavement)
+	end
+	-- the beach stays flat sand (nothing from the hills or patches may poke through the beach areas)
+	local bx0, bx1, bz0, bz1 = beach.MinX - 18, beach.MaxX + 18, beach.MinZ, shore - 14
+	terrain:FillBlock(CFrame.new((bx0 + bx1) / 2, 18, (bz0 + bz1) / 2), Vector3.new(bx1 - bx0, 44, bz1 - bz0), M.Air)
+	terrain:FillBlock(CFrame.new((bx0 + bx1) / 2, -6, (bz0 + bz1) / 2), Vector3.new(bx1 - bx0, 8, bz1 - bz0), M.Sand)
+	terrain:FillBlock(CFrame.new((park.MinX + park.MaxX) / 2, 20, (park.MinZ + park.MaxZ) / 2), Vector3.new(park.MaxX - park.MinX, 40, park.MaxZ - park.MinZ), M.Air)
+	terrain:FillBlock(CFrame.new((park.MinX + park.MaxX) / 2, -6.1, (park.MinZ + park.MaxZ) / 2), Vector3.new(park.MaxX - park.MinX, 8, park.MaxZ - park.MinZ), M.LeafyGrass)
+end
+
+local JOINT = hex("#A29B8F")
+local YELLOW = hex("#E3C35A")
+
+-- Sidewalk slab (top at 0.35) with paving joints across its long direction.
+local function sidewalk(parent, x0, x1, z0, z1)
+	if x1 - x0 < 0.5 or z1 - z0 < 0.5 then return end
+	local w, d, cx, cz = x1 - x0, z1 - z0, (x0 + x1) / 2, (z0 + z1) / 2
+	p(parent, "Sidewalk", Vector3.new(w, 0.6, d), CFrame.new(cx, 0.05, cz), C.Sidewalk, M.Concrete, true)
+	if w >= d then
+		for x = x0 + 6, x1 - 1, 6 do p(parent, "Joint", Vector3.new(0.06, 0.02, d), CFrame.new(x, 0.36, cz), JOINT) end
+	else
+		for z = z0 + 6, z1 - 1, 6 do p(parent, "Joint", Vector3.new(w, 0.02, 0.06), CFrame.new(cx, 0.36, z), JOINT) end
 	end
 end
 
-------------------------------------------------------------------------
--- Streets
-------------------------------------------------------------------------
+-- Road: asphalt (top at 0.05) with a curb strip on both long edges and lane markings. `lanes` = 2 or 4.
+-- `gaps` = list of positions along the road where markings stop (crosswalks, side roads).
+local function road(parent, x0, x1, z0, z1, lanes, gaps)
+	local w, d, cx, cz = x1 - x0, z1 - z0, (x0 + x1) / 2, (z0 + z1) / 2
+	local alongX = w >= d
+	p(parent, "Asphalt", Vector3.new(w, 0.4, d), CFrame.new(cx, -0.15, cz), C.Asphalt, M.Asphalt, true)
+	local length, width = alongX and w or d, alongX and d or w
+	local start = alongX and x0 or z0
+	local function at(along, across) -- along the road, across from its center line
+		if alongX then return CFrame.new(along, 0.06, cz + across) end
+		return CFrame.new(cx + across, 0.06, along) * CFrame.Angles(0, math.pi / 2, 0)
+	end
+	local function free(along)
+		for _, g in ipairs(gaps or {}) do if math.abs(along - g) < 7 then return false end end
+		return true
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		p(parent, "Curb", alongX and Vector3.new(length, 0.7, 0.4) or Vector3.new(0.4, 0.7, length), at(start + length / 2, side * (width / 2 - 0.2)) * CFrame.new(0, 0.04, 0) * (alongX and CFrame.new() or CFrame.Angles(0, -math.pi / 2, 0)), C.Curb, M.Concrete, true)
+	end
+	for along = start + 4, start + length - 4, 8 do
+		if free(along) then
+			if lanes == 4 then
+				-- double yellow center line + white lane dashes
+				for _, off in ipairs({ -0.25, 0.25 }) do p(parent, "CenterLine", Vector3.new(8, 0.02, 0.18), at(along, off), YELLOW) end
+				for _, side in ipairs({ -1, 1 }) do p(parent, "Dash", Vector3.new(4, 0.02, 0.25), at(along, side * width / 4), C.Stripe) end
+			else
+				p(parent, "Dash", Vector3.new(4, 0.02, 0.25), at(along, 0), C.Stripe)
+			end
+		end
+	end
+end
+
+-- Zebra crossing across a road (stripes run along the road direction).
+local function crosswalk(parent, cx, cz, length, alongX)
+	for i = -3, 3 do
+		if alongX then
+			p(parent, "Crosswalk", Vector3.new(0.9, 0.02, length - 1.2), CFrame.new(cx + i * 1.5, 0.06, cz), C.Stripe)
+		else
+			p(parent, "Crosswalk", Vector3.new(length - 1.2, 0.02, 0.9), CFrame.new(cx, 0.06, cz + i * 1.5), C.Stripe)
+		end
+	end
+end
+
+-- A small street tree in a pit with an iron grate.
+local function streetTree(parent, position, kind, seed)
+	p(parent, "TreeGrate", Vector3.new(2.6, 0.05, 2.6), CFrame.new(position + Vector3.new(0, 0.37, 0)), C.Iron, M.DiamondPlate)
+	p(parent, "TreeSoil", Vector3.new(2.2, 0.04, 2.2), CFrame.new(position + Vector3.new(0, 0.36, 0)), hex("#3B2A1E"), M.Ground)
+	if kind == "palm" then
+		TownKit.palm(parent, position + Vector3.new(0, 0.35, 0), 1, seed)
+	elseif kind == "cypress" then
+		TownKit.cypress(parent, position + Vector3.new(0, 0.35, 0), 1)
+	else
+		TownKit.roundTree(parent, position + Vector3.new(0, 0.35, 0), 0.95, seed)
+	end
+end
+
 local function buildStreets()
-	local s = Town.Street
-	local x0, x1 = s.MinX, s.MaxX
-	local len, mid = x1 - x0, (x0 + x1) / 2
 	local street = Instance.new("Folder")
 	street.Name = "Street"
 	street.Parent = folder
-	p(street, "Asphalt", Vector3.new(len, 0.4, s.MaxZ - s.MinZ), CFrame.new(mid, -0.15, (s.MinZ + s.MaxZ) / 2), C.Asphalt, M.Asphalt, true)
-	for _, edge in ipairs({ { s.MinZ - 4, s.MinZ }, { s.MaxZ, s.MaxZ + 4 } }) do
-		p(street, "Sidewalk", Vector3.new(len, 0.6, 4), CFrame.new(mid, 0.05, (edge[1] + edge[2]) / 2), C.Sidewalk, M.Concrete, true)
-		-- paving joints every 4 studs
-		for x = x0 + 4, x1 - 1, 4 do p(street, "Joint", Vector3.new(0.06, 0.02, 4), CFrame.new(x, 0.36, (edge[1] + edge[2]) / 2), hex("#A29B8F")) end
+	local s, br, sw = Town.Street, Town.BeachRoad, Town.SideSidewalk
+	local avenueX = {}
+	for _, a in ipairs(Town.Avenues) do table.insert(avenueX, { a.X - a.Width / 2, a.X + a.Width / 2 }) end
+	-- spans of x between the avenues (the north sidewalk of Main Street and the south one of Beach Road stop at them)
+	local function splitX(x0, x1)
+		local spans, cur = {}, x0
+		for _, a in ipairs(avenueX) do
+			table.insert(spans, { cur, a[1] })
+			cur = a[2]
+		end
+		table.insert(spans, { cur, x1 })
+		return spans
 	end
-	-- paving between the north sidewalk and the shop fronts (split around the plaza, which has its own)
-	local pz = Town.Plaza
-	for _, span in ipairs({ { x0, pz.MinX }, { pz.MaxX, x1 } }) do
-		p(street, "FrontPaving", Vector3.new(span[2] - span[1], 0.4, 6), CFrame.new((span[1] + span[2]) / 2, 0, s.MaxZ + 7), C.Paving, M.Pavement, true)
-	end
-	p(street, "Curb", Vector3.new(len, 0.7, 0.4), CFrame.new(mid, 0.1, s.MinZ + 0.2), C.Curb, M.Concrete, true)
-	p(street, "Curb", Vector3.new(len, 0.7, 0.4), CFrame.new(mid, 0.1, s.MaxZ - 0.2), C.Curb, M.Concrete, true)
-	-- lane markings (dashes), crosswalks
-	local cz = (s.MinZ + s.MaxZ) / 2
-	for x = x0 + 3, x1 - 3, 8 do
-		local onCrosswalk = false
-		for _, cx in ipairs(Town.Crosswalks) do if math.abs(x - cx) < 6 then onCrosswalk = true end end
-		if not onCrosswalk then p(street, "Dash", Vector3.new(4, 0.02, 0.3), CFrame.new(x, 0.06, cz), C.Stripe) end
-	end
-	for _, cx in ipairs(Town.Crosswalks) do
-		for i = -3, 3 do
-			p(street, "Crosswalk", Vector3.new(0.9, 0.02, s.MaxZ - s.MinZ - 1.2), CFrame.new(cx + i * 1.5, 0.06, cz), C.Stripe)
+
+	-- Main Street: 4 lanes, wide sidewalks, a paved frontage strip in front of the shops
+	road(street, s.MinX, s.MaxX, s.MinZ, s.MaxZ, 4, Town.Crosswalks)
+	sidewalk(street, s.MinX, s.MaxX, s.MinZ - s.Sidewalk, s.MinZ)
+	for _, span in ipairs(splitX(s.MinX, s.MaxX)) do
+		sidewalk(street, span[1], span[2], s.MaxZ, s.MaxZ + s.Sidewalk)
+		-- frontage paving up to the shop fronts (z 50..54), except in front of the plaza (it has its own)
+		local a, b = span[1], span[2]
+		if not (a < 0 and b > 0) then
+			p(street, "FrontPaving", Vector3.new(b - a - 8, 0.4, 4), CFrame.new((a + b) / 2, 0, s.MaxZ + s.Sidewalk + 2), C.Paving, M.Pavement, true)
 		end
 	end
-	-- street lamps along both sidewalks, evenly spaced, facing the road
-	for x = x0 + 8, x1 - 8, 16 do
-		TownKit.lamp(street, Vector3.new(x, 0.35, s.MinZ - 0.9), Vector3.new(0, 0, 1))
-		TownKit.lamp(street, Vector3.new(x + 8, 0.35, s.MaxZ + 0.9), Vector3.new(0, 0, -1))
+	for _, cx in ipairs(Town.Crosswalks) do crosswalk(street, cx, (s.MinZ + s.MaxZ) / 2, s.MaxZ - s.MinZ, true) end
+
+	-- Beach Road: 2 lanes along the beach, sidewalks both sides
+	road(street, br.MinX, br.MaxX, br.MinZ, br.MaxZ, 2, Town.BeachRoadCrosswalks)
+	sidewalk(street, br.MinX, br.MaxX, br.MaxZ, br.MaxZ + br.Sidewalk)
+	for _, span in ipairs(splitX(br.MinX, br.MaxX)) do sidewalk(street, span[1], span[2], br.MinZ - br.Sidewalk, br.MinZ) end
+	for _, cx in ipairs(Town.BeachRoadCrosswalks) do crosswalk(street, cx, (br.MinZ + br.MaxZ) / 2, br.MaxZ - br.MinZ, true) end
+
+	-- Avenues from Main Street to Beach Road; sidewalks open where a side street joins
+	for i, a in ipairs(avenueX) do
+		road(street, a[1], a[2], s.MaxZ, br.MinZ, 2, { s.MaxZ + 3, br.MinZ - 3, 83 })
+		local outer = i == 1 and -1 or 1 -- the side street joins on the outer side
+		for _, side in ipairs({ -1, 1 }) do
+			local x0 = side < 0 and a[1] - sw or a[2]
+			local x1 = x0 + sw
+			if side == outer then
+				sidewalk(street, x0, x1, s.MaxZ + s.Sidewalk, 74)
+				sidewalk(street, x0, x1, 92, br.MinZ - br.Sidewalk)
+			else
+				sidewalk(street, x0, x1, s.MaxZ + s.Sidewalk, br.MinZ - br.Sidewalk)
+			end
+		end
+		crosswalk(street, (a[1] + a[2]) / 2, s.MaxZ + s.Sidewalk + 4, a[2] - a[1], false)
+		crosswalk(street, (a[1] + a[2]) / 2, br.MinZ - br.Sidewalk - 4, a[2] - a[1], false)
 	end
-	-- the street ends in planted islands with trees at both ends (hills beyond)
-	for _, x in ipairs({ x0 + 3, x1 - 3 }) do
-		TownKit.planter(street, CFrame.new(x, 0, cz), 4, 10, "bush")
-		TownKit.oak(street, Vector3.new(x + (x < 0 and -10 or 10), 0, cz), 1.2)
+
+	-- side streets behind the shop rows
+	for i, ss in ipairs(Town.SideStreets) do
+		road(street, ss.MinX, ss.MaxX, ss.MinZ, ss.MaxZ, 2, { i == 1 and -60 or 60 })
+		local x0, x1 = i == 1 and ss.MinX or ss.MinX + sw, i == 1 and ss.MaxX - sw or ss.MaxX
+		sidewalk(street, x0, x1, ss.MinZ - sw, ss.MinZ)
+		sidewalk(street, x0, x1, ss.MaxZ, ss.MaxZ + sw)
+		crosswalk(street, i == 1 and -60 or 60, (ss.MinZ + ss.MaxZ) / 2, ss.MaxZ - ss.MinZ, true)
 	end
+
+	-- lamps and street trees: one every 12 studs along each sidewalk, alternating lamp / tree
+	local function nearAvenue(x, margin)
+		for _, a in ipairs(avenueX) do if x > a[1] - margin and x < a[2] + margin then return true end end
+		return false
+	end
+	local function nearCross(x, list)
+		for _, cx in ipairs(list) do if math.abs(x - cx) < 6 then return true end end
+		return false
+	end
+	local k = 0
+	for x = s.MinX + 10, s.MaxX - 10, 12 do
+		k += 1
+		if not nearCross(x, Town.Crosswalks) then
+			-- south sidewalk (gym side): lamps only (the gym fronts have their own planters)
+			if k % 2 == 0 then TownKit.lamp(street, Vector3.new(x, 0.35, s.MinZ - 1), Vector3.new(0, 0, 1)) end
+			if not nearAvenue(x, 4) then
+				if k % 2 == 1 then
+					TownKit.lamp(street, Vector3.new(x, 0.35, s.MaxZ + 1), Vector3.new(0, 0, -1))
+				elseif x < -36 or x > 36 then
+					streetTree(street, Vector3.new(x, 0, s.MaxZ + 3), "round", k)
+				end
+			end
+		end
+	end
+	k = 0
+	for x = br.MinX + 10, br.MaxX - 10, 12 do
+		k += 1
+		if not nearCross(x, Town.BeachRoadCrosswalks) then
+			-- beach side: lamps and palms; town side: lamps
+			if k % 2 == 0 then
+				TownKit.lamp(street, Vector3.new(x, 0.35, br.MaxZ + 1), Vector3.new(0, 0, -1))
+			else
+				streetTree(street, Vector3.new(x, 0, br.MaxZ + 3), "palm", k)
+			end
+			if k % 2 == 1 and not nearAvenue(x, 4) then TownKit.lamp(street, Vector3.new(x, 0.35, br.MinZ - 1), Vector3.new(0, 0, 1)) end
+		end
+	end
+	for _, a in ipairs(avenueX) do
+		k = 0
+		for z = s.MaxZ + 14, br.MinZ - 12, 12 do
+			k += 1
+			if z < 72 or z > 94 then
+				if k % 2 == 0 then
+					TownKit.lamp(street, Vector3.new(a[1] - 1, 0.35, z), Vector3.new(1, 0, 0))
+					TownKit.lamp(street, Vector3.new(a[2] + 1, 0.35, z + 6), Vector3.new(-1, 0, 0))
+				else
+					streetTree(street, Vector3.new(a[1] - 2.2, 0, z), "cypress", k)
+					streetTree(street, Vector3.new(a[2] + 2.2, 0, z + 6), "cypress", k)
+				end
+			end
+		end
+	end
+	for i, ss in ipairs(Town.SideStreets) do
+		k = 0
+		local x0, x1 = i == 1 and ss.MinX + 14 or ss.MinX + 16, i == 1 and ss.MaxX - 16 or ss.MaxX - 14
+		for x = x0, x1, 12 do
+			k += 1
+			if math.abs(x - (i == 1 and -60 or 60)) > 6 then
+				if k % 2 == 0 then
+					TownKit.lamp(street, Vector3.new(x, 0.35, ss.MaxZ + 1), Vector3.new(0, 0, -1))
+				else
+					TownKit.lamp(street, Vector3.new(x, 0.35, ss.MinZ - 1), Vector3.new(0, 0, 1))
+				end
+			end
+		end
+	end
+
+	-- the roads end in planted islands with trees at both ends of town (hills beyond)
+	for _, r in ipairs({ { s.MinX + 3, (s.MinZ + s.MaxZ) / 2, s.MaxZ - s.MinZ }, { s.MaxX - 3, (s.MinZ + s.MaxZ) / 2, s.MaxZ - s.MinZ },
+		{ br.MinX + 3, (br.MinZ + br.MaxZ) / 2, br.MaxZ - br.MinZ }, { br.MaxX - 3, (br.MinZ + br.MaxZ) / 2, br.MaxZ - br.MinZ } }) do
+		TownKit.planter(street, CFrame.new(r[1], 0, r[2]), 4, r[3] - 2, "bush")
+		TownKit.oak(street, Vector3.new(r[1] + (r[1] < 0 and -10 or 10), 0, r[2]), 1.2)
+	end
+	-- bus stops on Main Street and Beach Road, hydrants, bins, benches, bike racks along the sidewalks
+	TownKit.busStop(street, look(Vector3.new(-122, 0.35, s.MaxZ + 2.6), Vector3.new(-122, 0, 0)))
+	TownKit.busStop(street, look(Vector3.new(150, 0.35, s.MaxZ + 2.6), Vector3.new(150, 0, 0)))
+	TownKit.busStop(street, look(Vector3.new(-80, 0.35, br.MinZ - 2.4), Vector3.new(-80, 0, 300)))
+	for _, x in ipairs({ -150, -98, -64, 64, 104, 132, 186 }) do TownKit.bin(street, CFrame.new(x + 3, 0.35, s.MaxZ + 4.6)) end
+	for _, x in ipairs({ -140, -70, 70, 140 }) do TownKit.hydrant(street, CFrame.new(x, 0.35, s.MinZ - 4.6)) end
+	for _, x in ipairs({ -160, -100, 120, 176 }) do TownKit.bench(street, look(Vector3.new(x, 0.35, s.MaxZ + 4.6), Vector3.new(x, 0, 300))) end
+	for _, x in ipairs({ -30, 30, 150, -150 }) do TownKit.bench(street, look(Vector3.new(x, 0.35, br.MaxZ + 3.6), Vector3.new(x, 0, 0))) end
+	TownKit.bikeRack(street, CFrame.new(-140, 0.35, s.MaxZ + 3.6), 4)
+	TownKit.bike(street, CFrame.new(-140.6, 0.35, s.MaxZ + 3.6), hex("#E86A6A"))
+	TownKit.bikeRack(street, CFrame.new(90, 0.35, br.MinZ - 2.8), 4)
+	-- signposts at the main corners
+	TownKit.signpost(street, CFrame.new(-38 + 2, 0.35, s.MaxZ + 4), {
+		{ text = "Smoothies", yaw = 180 }, { text = "Parking", yaw = -140 }, { text = "Skate park", yaw = -115 }, { text = "Beach", yaw = -90 },
+	})
+	TownKit.signpost(street, CFrame.new(38 - 2, 0.35, s.MaxZ + 4), {
+		{ text = "Gear & Fits", yaw = 0 }, { text = "Sports court", yaw = -40 }, { text = "Posing stage", yaw = -65 }, { text = "Beach gym", yaw = -90 },
+	})
+	TownKit.signpost(street, CFrame.new(6, 0.35, br.MinZ - 3), {
+		{ text = "Beach gym", yaw = -90 }, { text = "Skate park", yaw = 180 }, { text = "Posing stage", yaw = 0 }, { text = "Gym", yaw = 90 },
+	})
 end
 
 ------------------------------------------------------------------------
@@ -203,6 +396,7 @@ local function buildGymFront()
 		light.Face = Enum.NormalId.Bottom
 		light.Color, light.Brightness, light.Range, light.Angle, light.Shadows = C.Warm, 1.2, 14, 90, false
 		light.Parent = downlight
+		TownKit.nightLight(downlight)
 	end
 	-- the lit GYM ARC sign on the hall front, in a framed backing box
 	local signCF = look(Vector3.new(door.X, 11.4, door.Z + 1.6), Vector3.new(door.X, 11.4, door.Z + 40))
@@ -258,6 +452,7 @@ local function buildGymFront()
 		light.Face = Enum.NormalId.Bottom
 		light.Color, light.Brightness, light.Range, light.Angle, light.Shadows = x > 37 and hex("#DCE6FF") or C.Warm, 1, 12, 80, false
 		light.Parent = shade
+		TownKit.nightLight(shade, x > 37 and C.Chalk or C.Warm)
 	end
 	-- planters by the entrance, a bike rack with a couple of bikes, benches, trees in planters along the front
 	for _, x in ipairs({ -8, 8 }) do TownKit.planter(front, CFrame.new(x, 0.2, 16.5), 3, 3, "bush") end
@@ -326,79 +521,259 @@ local function buildGymRoofs()
 end
 
 ------------------------------------------------------------------------
--- Plaza (across the street from the gym)
+-- Plaza (open square across from the gym), park, parking lot, sports court
 ------------------------------------------------------------------------
+local function hedge(parent, a, b)
+	-- a low trimmed hedge from a to b (on the ground), as a row of overlapping clumps on a soil strip
+	local len = (b - a).Magnitude
+	local cf = CFrame.lookAt((a + b) / 2, b)
+	p(parent, "HedgeSoil", Vector3.new(1.8, 0.4, len), cf * CFrame.new(0, 0.2, 0), hex("#3B2A1E"), M.Ground)
+	for t = 0, len, 1.6 do
+		ball(parent, "Hedge", Vector3.new(2.2, 1.8, 2.2), cf * CFrame.new(0, 1.0, -len / 2 + t), (math.floor(t) % 3 == 0) and C.Leaf3 or C.Leaf1, M.LeafyGrass)
+	end
+end
+
 local function buildPlaza()
 	local plaza = Instance.new("Folder")
 	plaza.Name = "Plaza"
 	plaza.Parent = folder
 	local pz = Town.Plaza
 	local cx, cz = (pz.MinX + pz.MaxX) / 2, (pz.MinZ + pz.MaxZ) / 2
-	p(plaza, "Paving", Vector3.new(pz.MaxX - pz.MinX, 0.4, pz.MaxZ - pz.MinZ), CFrame.new(cx, 0.0, cz), C.Paving, M.Pavement, true)
-	-- a ring pattern around the fountain, and a border band
-	for r = 9, 15, 6 do
+	local w, d = pz.MaxX - pz.MinX, pz.MaxZ - pz.MinZ
+	p(plaza, "Paving", Vector3.new(w, 0.4, d), CFrame.new(cx, 0.0, cz), C.Paving, M.Pavement, true)
+	-- border band, a grid of darker bands, and a big inlaid compass ring in the middle
+	for _, side in ipairs({ -1, 1 }) do
+		p(plaza, "Border", Vector3.new(w, 0.02, 1.2), CFrame.new(cx, 0.21, cz + side * (d / 2 - 0.8)), C.PavingDark, M.Pavement)
+		p(plaza, "Border", Vector3.new(1.2, 0.02, d), CFrame.new(cx + side * (w / 2 - 0.8), 0.21, cz), C.PavingDark, M.Pavement)
+	end
+	for x = pz.MinX + 8.5, pz.MaxX - 8, 8.5 do p(plaza, "Band", Vector3.new(0.4, 0.02, d - 2), CFrame.new(x, 0.205, cz), C.PavingDark, M.Pavement) end
+	for _, r in ipairs({ 13, 9 }) do
 		cyl(plaza, "Ring", 0.03, r * 2, CFrame.new(cx, 0.2, cz) * up, C.PavingDark, M.Pavement)
-		cyl(plaza, "RingInner", 0.035, r * 2 - 1, CFrame.new(cx, 0.2, cz) * up, C.Paving, M.Pavement)
+		cyl(plaza, "RingInner", 0.035, r * 2 - 1.2, CFrame.new(cx, 0.2, cz) * up, C.Paving, M.Pavement)
 	end
-	-- fountain: round basin with a rim, water, a middle tier and a top bowl
-	local f = CFrame.new(cx, 0.2, cz)
-	cyl(plaza, "Basin", 1.6, 13, f * CFrame.new(0, 0.8, 0) * up, hex("#B5AA98"), M.Concrete, true)
-	cyl(plaza, "BasinRim", 0.3, 13.6, f * CFrame.new(0, 1.7, 0) * up, hex("#CFC6B6"), M.Concrete)
-	cyl(plaza, "Water", 0.2, 12, f * CFrame.new(0, 1.45, 0) * up, hex("#6FB4C8"), M.Glass, false)
-	cyl(plaza, "Column", 3.4, 1.6, f * CFrame.new(0, 3, 0) * up, hex("#CFC6B6"), M.Concrete, true)
-	cyl(plaza, "MidBowl", 0.6, 6, f * CFrame.new(0, 4.6, 0) * up, hex("#CFC6B6"), M.Concrete)
-	cyl(plaza, "MidWater", 0.1, 5.4, f * CFrame.new(0, 4.92, 0) * up, hex("#6FB4C8"), M.Glass)
-	cyl(plaza, "TopColumn", 2, 0.8, f * CFrame.new(0, 5.9, 0) * up, hex("#CFC6B6"), M.Concrete)
-	cyl(plaza, "TopBowl", 0.4, 2.6, f * CFrame.new(0, 7, 0) * up, hex("#CFC6B6"), M.Concrete)
-	local spray = p(plaza, "Spray", Vector3.new(0.4, 1.2, 0.4), f * CFrame.new(0, 7.8, 0), hex("#BFE3EE"), M.Glass, false, { Transparency = 0.4 })
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	emitter.Color = ColorSequence.new(hex("#DFF3F8"))
-	emitter.Size = NumberSequence.new(0.25)
-	emitter.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
-	emitter.Lifetime = NumberRange.new(0.6, 0.9)
-	emitter.Speed = NumberRange.new(4, 6)
-	emitter.SpreadAngle = Vector2.new(25, 25)
-	emitter.Acceleration = Vector3.new(0, -18, 0)
-	emitter.Rate = 30
-	emitter.Parent = spray
-	-- benches facing the fountain, trees in planters at the corners, string lights over it all
-	for i = 0, 5 do
-		local a = rad(i * 60 + 30)
-		local pos = Vector3.new(cx + math.cos(a) * 11.5, 0.2, cz + math.sin(a) * 11.5)
-		TownKit.bench(plaza, look(pos, Vector3.new(cx + math.cos(a) * 30, 0, cz + math.sin(a) * 30)))
+	for i = 0, 7 do
+		local a = i * math.pi / 4
+		p(plaza, "CompassPoint", Vector3.new(0.6, 0.04, i % 2 == 0 and 8 or 5), CFrame.new(cx, 0.21, cz) * CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -(i % 2 == 0 and 4 or 2.5)), C.Brass, M.Metal)
 	end
-	local corners = { { pz.MinX + 3.5, pz.MinZ + 4 }, { pz.MaxX - 3.5, pz.MinZ + 4 }, { pz.MinX + 3.5, pz.MaxZ - 4 }, { pz.MaxX - 3.5, pz.MaxZ - 4 } }
+	TownKit.clockPost(plaza, Vector3.new(cx, 0.2, cz))
+	-- corner trees in planters, string lights between poles at the corners
+	local corners = { { pz.MinX + 4, pz.MinZ + 4.5 }, { pz.MaxX - 4, pz.MinZ + 4.5 }, { pz.MinX + 4, pz.MaxZ - 4.5 }, { pz.MaxX - 4, pz.MaxZ - 4.5 } }
+	local tops = {}
 	for i, c in ipairs(corners) do
 		TownKit.planter(plaza, CFrame.new(c[1], 0.2, c[2]), 4.5, 4.5, nil)
-		TownKit.roundTree(plaza, Vector3.new(c[1], 1.6, c[2]), 1.1, i)
-		-- string light poles
-		cyl(plaza, "LightPole", 10, 0.3, CFrame.new(c[1] + (c[1] < cx and 2.6 or -2.6), 5.2, c[2]) * up, C.Iron, M.Metal, true)
+		TownKit.roundTree(plaza, Vector3.new(c[1], 1.6, c[2]), 1.15, i)
+		local px = c[1] + (c[1] < cx and 3 or -3)
+		cyl(plaza, "LightPole", 11, 0.3, CFrame.new(px, 5.7, c[2]) * up, C.Iron, M.Metal, true)
+		ball(plaza, "PoleFinial", Vector3.new(0.45, 0.45, 0.45), CFrame.new(px, 11.3, c[2]), C.Brass, M.Metal)
+		tops[i] = Vector3.new(px, 10.8, c[2])
 	end
-	local tops = {}
-	for i, c in ipairs(corners) do tops[i] = Vector3.new(c[1] + (c[1] < cx and 2.6 or -2.6), 10, c[2]) end
-	TownKit.stringLights(plaza, tops[1], tops[4], 16)
-	TownKit.stringLights(plaza, tops[2], tops[3], 16)
-	TownKit.stringLights(plaza, tops[1], tops[2], 12)
-	TownKit.stringLights(plaza, tops[3], tops[4], 12)
-	-- flower beds along the sides, a signpost to everything
-	for _, x in ipairs({ pz.MinX + 1.5, pz.MaxX - 1.5 }) do
-		for z = pz.MinZ + 12, pz.MaxZ - 12, 8 do TownKit.planter(plaza, CFrame.new(x, 0.2, z), 2.4, 5, "flowers") end
+	TownKit.stringLights(plaza, tops[1], tops[4], 18)
+	TownKit.stringLights(plaza, tops[2], tops[3], 18)
+	TownKit.stringLights(plaza, tops[1], tops[2], 16)
+	TownKit.stringLights(plaza, tops[3], tops[4], 16)
+	-- benches along the sides facing in, flower planters between them, a cart or two, bins, a bike rack
+	for _, side in ipairs({ -1, 1 }) do
+		local x = cx + side * (w / 2 - 3)
+		for i, z in ipairs({ pz.MinZ + 13, pz.MinZ + 21, pz.MinZ + 29 }) do
+			TownKit.bench(plaza, look(Vector3.new(x, 0.2, z), Vector3.new(cx, 0, z)))
+			if i < 3 then TownKit.planter(plaza, CFrame.new(x - side * 0.4, 0.2, z + 4), 2.2, 3, "flowers") end
+		end
 	end
-	TownKit.signpost(plaza, CFrame.new(cx + 9, 0.2, pz.MinZ + 3), {
-		{ text = "Beach", yaw = -60 }, { text = "Skate park", yaw = -130 }, { text = "Gym", yaw = 90 }, { text = "Smoothies", yaw = 180 },
-	})
-	TownKit.busStop(plaza, look(Vector3.new(-62, 0.35, Town.Street.MaxZ + 2.6), Vector3.new(-62, 0, 0)))
-	TownKit.bin(plaza, CFrame.new(cx - 8, 0.2, pz.MinZ + 2.5))
-	-- a boardwalk from the plaza to the beach
-	local bw = Town.Boardwalk
-	for z = bw.MinZ, bw.MaxZ - 1, 1.2 do
-		p(plaza, "Plank", Vector3.new(bw.MaxX - bw.MinX, 0.25, 1.1), CFrame.new((bw.MinX + bw.MaxX) / 2, 0.3, z + 0.55), C.Wood, M.WoodPlanks, true)
+	TownKit.cart(plaza, look(Vector3.new(cx - 16, 0.2, pz.MinZ + 7), Vector3.new(cx - 16, 0, 0)), hex("#7CC6A5"), hex("#F29E6B"))
+	TownKit.cart(plaza, look(Vector3.new(cx + 17, 0.2, pz.MaxZ - 9), Vector3.new(cx, 0, cz)), hex("#6FA8DC"), hex("#F2C14E"))
+	TownKit.bin(plaza, CFrame.new(cx - 9, 0.2, pz.MinZ + 2.5))
+	TownKit.bin(plaza, CFrame.new(cx + 9, 0.2, pz.MaxZ - 2.5))
+	TownKit.bikeRack(plaza, CFrame.new(cx + 22, 0.2, pz.MinZ + 3), 5)
+	TownKit.bike(plaza, CFrame.new(cx + 21.4, 0.2, pz.MinZ + 3), hex("#2E6E8E"))
+end
+
+local function buildPark()
+	local park = Instance.new("Folder")
+	park.Name = "Park"
+	park.Parent = folder
+	local pk = Town.Park
+	local cx = (pk.MinX + pk.MaxX) / 2
+	local fz = 118 -- fountain center
+	local pathColor, edge = hex("#D8C9AE"), hex("#B5AA98")
+	-- paths: north-south through the middle, east-west to both avenues, a ring around the fountain
+	TownKit.path(park, { Vector3.new(cx, 0.05, pk.MinZ - 0.5), Vector3.new(cx, 0.05, fz - 14) }, 5, pathColor, edge)
+	TownKit.path(park, { Vector3.new(cx, 0.05, fz + 14), Vector3.new(cx, 0.05, pk.MaxZ + 0.5) }, 5, pathColor, edge)
+	TownKit.path(park, { Vector3.new(pk.MinX - 0.5, 0.05, fz), Vector3.new(cx - 14, 0.05, fz) }, 4.5, pathColor, edge)
+	TownKit.path(park, { Vector3.new(cx + 14, 0.05, fz), Vector3.new(pk.MaxX + 0.5, 0.05, fz) }, 4.5, pathColor, edge)
+	local ring = {}
+	for i = 0, 28 do
+		local a = i / 28 * math.pi * 2
+		table.insert(ring, Vector3.new(cx + math.cos(a) * 14, 0.05, fz + math.sin(a) * 14))
 	end
-	for _, x in ipairs({ bw.MinX, bw.MaxX }) do
-		for z = bw.MinZ, bw.MaxZ, 4 do p(plaza, "RopePost", Vector3.new(0.35, 2, 0.35), CFrame.new(x, 1, z), C.WoodDark, M.Wood, true) end
-		p(plaza, "Rope", Vector3.new(0.12, 0.12, bw.MaxZ - bw.MinZ), CFrame.new(x, 1.7, (bw.MinZ + bw.MaxZ) / 2), hex("#C9B48A"), M.Fabric)
+	TownKit.path(park, ring, 4.5, pathColor)
+	-- the fountain on a round paved pad
+	cyl(park, "FountainPad", 0.3, 19, CFrame.new(cx, 0.05, fz) * up, C.Paving, M.Pavement, true)
+	TownKit.fountain(park, CFrame.new(cx, 0.2, fz))
+	for i = 0, 3 do
+		local a = rad(45 + i * 90)
+		local pos = Vector3.new(cx + math.cos(a) * 17.5, 0.05, fz + math.sin(a) * 17.5)
+		TownKit.bench(park, look(pos, Vector3.new(cx, 0, fz)))
 	end
+	-- lamps by the paths
+	for _, spot in ipairs({ { cx - 3.6, 100 }, { cx + 3.6, 138 }, { -24, fz - 3.4 }, { 24, fz + 3.4 } }) do
+		TownKit.lamp(park, Vector3.new(spot[1], 0.05, spot[2]), Vector3.new(cx - spot[1], 0, fz - spot[2]).Unit)
+	end
+	-- playground (north-east): soft rubber ground with a border, slide, swings, climbing dome, benches for parents
+	local pg = CFrame.new(20, 0, 133)
+	p(park, "PlayGround", Vector3.new(24, 0.3, 18), pg * CFrame.new(0, 0.1, 0), hex("#C7643F"), M.Rubber, true)
+	p(park, "PlayGroundInlay", Vector3.new(10, 0.05, 6), pg * CFrame.new(-4, 0.27, -3), hex("#2E8A6E"), M.Rubber)
+	for _, side in ipairs({ -1, 1 }) do
+		p(park, "PlayBorder", Vector3.new(24.6, 0.5, 0.3), pg * CFrame.new(0, 0.25, side * 9.1), hex("#F2C14E"), M.Plastic)
+		p(park, "PlayBorder", Vector3.new(0.3, 0.5, 18.6), pg * CFrame.new(side * 12.15, 0.25, 0), hex("#F2C14E"), M.Plastic)
+	end
+	TownKit.slide(park, pg * CFrame.new(-6, 0.25, 2) * CFrame.Angles(0, math.pi, 0), hex("#F2C14E"))
+	TownKit.swings(park, pg * CFrame.new(5, 0.25, 4))
+	TownKit.climber(park, pg * CFrame.new(5, 0.25, -4))
+	TownKit.bench(park, look(Vector3.new(20, 0.05, 121.5), Vector3.new(20, 0, 140)))
+	-- picnic area (north-west): tables under trees
+	for i, spot in ipairs({ { -24, 128 }, { -14, 136 }, { -26, 139 } }) do
+		TownKit.picnicTable(park, CFrame.new(spot[1], 0.05, spot[2]) * CFrame.Angles(0, rad(i * 25), 0), i == 2 and hex("#7CC6A5") or nil)
+	end
+	TownKit.oak(park, Vector3.new(-18, 0, 131), 1.2, 41)
+	TownKit.oak(park, Vector3.new(-29, 0, 132), 1.0, 42)
+	-- south quarters: flower beds, trees, bushes, rocks
+	for _, q in ipairs({ { -20, 104 }, { 20, 104 } }) do
+		TownKit.flowers(park, Vector3.new(q[1], 0.05, q[2]), 3.5, 24, q[1] > 0 and 7 or 8)
+		cyl(park, "BedEdge", 0.35, 8, CFrame.new(q[1], 0.12, q[2]) * up, edge, M.Concrete)
+		cyl(park, "BedSoil", 0.37, 7.4, CFrame.new(q[1], 0.12, q[2]) * up, hex("#3B2A1E"), M.Ground)
+		TownKit.oak(park, Vector3.new(q[1] + (q[1] > 0 and 9 or -9), 0, q[2] + 5), 1.1, math.floor(q[1]))
+		TownKit.bush(park, Vector3.new(q[1] + (q[1] > 0 and -6 or 6), 0, q[2] - 6), 1.1)
+		TownKit.roundTree(park, Vector3.new(q[1] + (q[1] > 0 and 10 or -10), 0, q[2] - 7), 1.0)
+	end
+	TownKit.rock(park, Vector3.new(-30, -0.3, 110), 0.8)
+	TownKit.rock(park, Vector3.new(29, -0.3, 96), 0.7)
+	-- low hedges along the park edges, open where the paths come in
+	hedge(park, Vector3.new(pk.MinX + 1, 0, pk.MinZ + 1), Vector3.new(cx - 4, 0, pk.MinZ + 1))
+	hedge(park, Vector3.new(cx + 4, 0, pk.MinZ + 1), Vector3.new(pk.MaxX - 1, 0, pk.MinZ + 1))
+	hedge(park, Vector3.new(pk.MinX + 1, 0, pk.MaxZ - 1), Vector3.new(cx - 4, 0, pk.MaxZ - 1))
+	hedge(park, Vector3.new(cx + 4, 0, pk.MaxZ - 1), Vector3.new(pk.MaxX - 1, 0, pk.MaxZ - 1))
+	TownKit.bin(park, CFrame.new(cx + 4.5, 0.05, 96))
+	TownKit.bin(park, CFrame.new(-10, 0.05, fz + 4))
+end
+
+local CAR_COLORS = { hex("#D7262E"), hex("#2E6E8E"), hex("#F2EEE6"), hex("#3C5A48"), hex("#F2C14E"), hex("#2B2B2B"), hex("#9FB6C2"), hex("#E59A7A") }
+
+local function buildParking()
+	local lot = Instance.new("Folder")
+	lot.Name = "Parking"
+	lot.Parent = folder
+	local pk = Town.Parking
+	local x0, x1, z0, z1 = pk.MinX - 2, pk.MaxX + 4, pk.MinZ - 4, pk.MaxZ + 3 -- slab reaches the sidewalks
+	p(lot, "Asphalt", Vector3.new(x1 - x0, 0.4, z1 - z0), CFrame.new((x0 + x1) / 2, -0.15, (z0 + z1) / 2), hex("#34353A"), M.Asphalt, true)
+	-- two rows of stalls facing a middle aisle; white lines, wheel stops, parked cars in most stalls
+	local rng = Random.new(21)
+	local stallW = 6
+	local rows = { { z = pk.MinZ + 6.5, facing = 1 }, { z = pk.MaxZ - 6.5, facing = -1 } }
+	for _, row in ipairs(rows) do
+		for x = pk.MinX + 4, pk.MaxX - 4, stallW do
+			p(lot, "StallLine", Vector3.new(0.25, 0.02, 12), CFrame.new(x, 0.06, row.z), C.Stripe)
+			local stallX = x + stallW / 2
+			if stallX < pk.MaxX - 4 then
+				p(lot, "WheelStop", Vector3.new(3.4, 0.35, 0.5), CFrame.new(stallX, 0.2, row.z - row.facing * 5), hex("#B9B2A6"), M.Concrete, true)
+				if rng:NextNumber() < 0.6 then
+					local cf = CFrame.new(stallX, 0.05, row.z) * CFrame.Angles(0, row.facing > 0 and math.pi or 0, 0) * CFrame.Angles(0, rad(rng:NextNumber(-3, 3)), 0)
+					TownKit.car(lot, cf, CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)])
+				end
+			end
+		end
+	end
+	-- aisle arrows and a planted island with trees and a lamp at each end of the rows
+	for _, x in ipairs({ -130, -104, -78 }) do
+		p(lot, "Arrow", Vector3.new(4, 0.02, 0.5), CFrame.new(x, 0.06, (pk.MinZ + pk.MaxZ) / 2), C.Stripe)
+		Kit.wedge(lot, "ArrowHead", Vector3.new(0.02, 1.4, 1.4), CFrame.new(x + 2.6, 0.06, (pk.MinZ + pk.MaxZ) / 2) * CFrame.Angles(0, rad(90), rad(90)), C.Stripe, M.SmoothPlastic).CanCollide = false
+	end
+	for _, row in ipairs(rows) do
+		for _, x in ipairs({ pk.MinX + 1.5, pk.MaxX - 1 }) do
+			TownKit.planter(lot, CFrame.new(x, 0.05, row.z), 3, 11, nil)
+			TownKit.roundTree(lot, Vector3.new(x, 1.45, row.z), 0.9)
+		end
+		TownKit.lamp(lot, Vector3.new((pk.MinX + pk.MaxX) / 2, 0.05, row.z + row.facing * 6.6), Vector3.new(0, 0, row.facing))
+	end
+	-- curb + hedge around the lot (open at the entrance from the side street)
+	local entranceX = -104
+	hedge(lot, Vector3.new(x0 + 1, 0, z1 - 1), Vector3.new(x1 - 1, 0, z1 - 1))
+	hedge(lot, Vector3.new(x0 + 1, 0, z0 + 6), Vector3.new(x0 + 1, 0, z1 - 2))
+	hedge(lot, Vector3.new(x0 + 2, 0, z0 + 1), Vector3.new(entranceX - 7, 0, z0 + 1))
+	hedge(lot, Vector3.new(entranceX + 7, 0, z0 + 1), Vector3.new(x1 - 2, 0, z0 + 1))
+	-- driveway across the sidewalk, a pay station, a parking sign on a pole
+	p(lot, "Driveway", Vector3.new(12, 0.62, 5), CFrame.new(entranceX, 0.07, z0 - 2.5), hex("#34353A"), M.Asphalt, true)
+	local pay = CFrame.new(entranceX + 8, 0.05, z0 + 3)
+	p(lot, "PayStation", Vector3.new(1.4, 4, 1), pay * CFrame.new(0, 2, 0), hex("#3C5A48"), M.Metal, true)
+	p(lot, "PayScreen", Vector3.new(1, 0.7, 0.06), pay * CFrame.new(0, 3.2, -0.52), hex("#0E1114"), M.Glass)
+	p(lot, "PayHood", Vector3.new(1.6, 0.2, 1.4), pay * CFrame.new(0, 4.1, -0.1), hex("#2B2B2B"), M.Metal)
+	p(lot, "PaySlot", Vector3.new(0.6, 0.08, 0.06), pay * CFrame.new(0, 2.5, -0.52), hex("#C9CCD2"), M.Metal)
+	cyl(lot, "SignPole", 8, 0.3, CFrame.new(entranceX - 8, 4.05, z0 + 1) * up, C.Iron, M.Metal, true)
+	local signCF = look(Vector3.new(entranceX - 8, 7.4, z0 + 0.8), Vector3.new(entranceX - 8, 7.4, 0))
+	p(lot, "SignFrame", Vector3.new(2.6, 2.6, 0.2), signCF * CFrame.new(0, 0, 0.12), C.White, M.Metal)
+	local _, label = Kit.sign(lot, "ParkingSign", Vector3.new(2.3, 2.3, 0.1), signCF, "P", C.White, hex("#2E6E8E"), 60)
+	label.FontFace = Theme.Fonts.SemiBold
+end
+
+local function buildSportsCourt()
+	local court = Instance.new("Folder")
+	court.Name = "SportsCourt"
+	court.Parent = folder
+	local sc = Town.SportsCourt
+	local cx, cz = (sc.MinX + sc.MaxX) / 2, (sc.MinZ + sc.MaxZ) / 2
+	local w, d = sc.MaxX - sc.MinX, sc.MaxZ - sc.MinZ
+	-- surround paving, then the court: green apron, blue playing area, white lines
+	p(court, "Apron", Vector3.new(w + 10, 0.4, d + 8), CFrame.new(cx, 0, cz + 1), C.Paving, M.Pavement, true)
+	p(court, "CourtBase", Vector3.new(w, 0.42, d), CFrame.new(cx, 0.01, cz), hex("#3E7D5A"), M.SmoothPlastic, true)
+	local pw, pd = 26, d - 8
+	p(court, "CourtPlay", Vector3.new(pw, 0.02, pd), CFrame.new(cx, 0.225, cz), hex("#2E6E8E"), M.SmoothPlastic)
+	local function line(size, cf) p(court, "Line", size, cf, C.White, M.SmoothPlastic) end
+	for _, s in ipairs({ -1, 1 }) do
+		line(Vector3.new(pw, 0.03, 0.3), CFrame.new(cx, 0.23, cz + s * pd / 2))
+		line(Vector3.new(0.3, 0.03, pd), CFrame.new(cx + s * pw / 2, 0.23, cz))
+		-- key (painted box) under each hoop
+		p(court, "Key", Vector3.new(8, 0.025, 9), CFrame.new(cx, 0.232, cz + s * (pd / 2 - 4.5)), hex("#D7262E"), M.SmoothPlastic)
+		cyl(court, "FreeThrow", 0.03, 8, CFrame.new(cx, 0.234, cz + s * (pd / 2 - 9)) * up, C.White, M.SmoothPlastic)
+		cyl(court, "FreeThrowIn", 0.035, 7.4, CFrame.new(cx, 0.235, cz + s * (pd / 2 - 9)) * up, hex("#2E6E8E"), M.SmoothPlastic)
+		TownKit.hoop(court, look(Vector3.new(cx, 0.2, cz + s * (pd / 2 + 1.2)), Vector3.new(cx, 0.2, cz)))
+	end
+	line(Vector3.new(pw, 0.03, 0.3), CFrame.new(cx, 0.23, cz))
+	cyl(court, "CenterCircle", 0.03, 8, CFrame.new(cx, 0.234, cz) * up, C.White, M.SmoothPlastic)
+	cyl(court, "CenterIn", 0.035, 7.4, CFrame.new(cx, 0.235, cz) * up, hex("#2E6E8E"), M.SmoothPlastic)
+	ball(court, "Basketball", Vector3.new(1, 1, 1), CFrame.new(cx + 6, 0.73, cz - 3), hex("#E8761C"), M.SmoothPlastic)
+	-- see-through fence with a gate facing the side street
+	local function fence(a, b)
+		local len = (b - a).Magnitude
+		local cf = CFrame.lookAt((a + b) / 2, b) * CFrame.Angles(0, rad(90), 0)
+		p(court, "FenceMesh", Vector3.new(len, 7, 0.08), cf * CFrame.new(0, 3.7, 0), hex("#8A8E94"), M.DiamondPlate, true, { Transparency = 0.7 })
+		p(court, "FenceRail", Vector3.new(len, 0.15, 0.15), cf * CFrame.new(0, 7.2, 0), hex("#2E6E8E"), M.Metal)
+		for t = 0, len, 4 do p(court, "FencePost", Vector3.new(0.2, 7.4, 0.2), cf * CFrame.new(-len / 2 + t, 3.7, 0), hex("#2E6E8E"), M.Metal, true) end
+	end
+	local fx0, fx1, fz0, fz1 = sc.MinX - 1, sc.MaxX + 1, sc.MinZ - 1, sc.MaxZ + 1
+	fence(Vector3.new(fx0, 0.2, fz0), Vector3.new(cx - 3, 0.2, fz0))
+	fence(Vector3.new(cx + 3, 0.2, fz0), Vector3.new(fx1, 0.2, fz0))
+	fence(Vector3.new(fx0, 0.2, fz1), Vector3.new(fx1, 0.2, fz1))
+	fence(Vector3.new(fx0, 0.2, fz0), Vector3.new(fx0, 0.2, fz1))
+	fence(Vector3.new(fx1, 0.2, fz0), Vector3.new(fx1, 0.2, fz1))
+	-- bleachers on the west side (3 tiers of planks on a steel frame), a ball rack, a water fountain, a scoreboard
+	local bl = CFrame.new(sc.MinX + 5, 0.2, cz) * CFrame.Angles(0, rad(90), 0)
+	for tier = 0, 2 do
+		p(court, "BleacherSeat", Vector3.new(16, 0.3, 1.2), bl * CFrame.new(0, 1 + tier * 1.1, -tier * 1.3), C.Wood, M.WoodPlanks, true)
+		p(court, "BleacherStep", Vector3.new(16, 0.2, 1.0), bl * CFrame.new(0, 0.5 + tier * 1.1, -tier * 1.3 + 0.9), hex("#9EA2A8"), M.Metal)
+	end
+	for _, x in ipairs({ -7.5, 0, 7.5 }) do
+		p(court, "BleacherFrame", Vector3.new(0.3, 3.4, 0.3), bl * CFrame.new(x, 1.7, -2.6), hex("#9EA2A8"), M.Metal, true)
+		p(court, "BleacherBrace", Vector3.new(0.25, 0.25, 4), bl * CFrame.new(x, 0.4, -1.3), hex("#9EA2A8"), M.Metal)
+	end
+	local rack = CFrame.new(sc.MaxX - 3, 0.2, sc.MinZ + 4)
+	for _, z in ipairs({ -1, 1 }) do p(court, "RackRail", Vector3.new(3, 0.12, 0.12), rack * CFrame.new(0, 1.2, z * 0.5), C.Iron, M.Metal) end
+	for _, x in ipairs({ -1.4, 1.4 }) do p(court, "RackLeg", Vector3.new(0.12, 1.2, 1.2), rack * CFrame.new(x, 0.6, 0), C.Iron, M.Metal, true) end
+	for i = 0, 2 do ball(court, "Ball", Vector3.new(0.9, 0.9, 0.9), rack * CFrame.new(-1 + i, 1.65, 0), hex("#E8761C"), M.SmoothPlastic) end
+	GymKit.waterFountain(court, CFrame.new(sc.MaxX - 2.5, 0.2, cz + 10) * CFrame.Angles(0, rad(-90), 0))
+	local board = look(Vector3.new(cx, 0.2, sc.MaxZ - 0.5), Vector3.new(cx, 0.2, cz))
+	for _, x in ipairs({ -3.6, 3.6 }) do p(court, "BoardLeg", Vector3.new(0.3, 9, 0.3), board * CFrame.new(x, 4.5, 0.3), C.Iron, M.Metal, true) end
+	p(court, "BoardBack", Vector3.new(8.4, 3.4, 0.4), board * CFrame.new(0, 8.6, 0.2), hex("#1E1E22"), M.Metal)
+	local _, score = Kit.sign(court, "Scoreboard", Vector3.new(7.8, 2.8, 0.1), board * CFrame.new(0, 8.6, -0.05), "Home  0 : 0  Guest", hex("#F2C14E"), hex("#141416"), 40)
+	score.FontFace = Theme.Fonts.SemiBold
 end
 
 ------------------------------------------------------------------------
@@ -437,6 +812,12 @@ local function shopShell(m, cf, w, d, h, wall, wallMat, floorColor, floorMat)
 		p(m, "DoorFrame", Vector3.new(0.2, 8.2, 0.25), cf * CFrame.new(side * (doorW / 2 - 0.1), 4.35, 0.3), C.Iron, M.Metal)
 	end
 	p(m, "Threshold", Vector3.new(doorW + 1, 0.15, 1.6), cf * CFrame.new(0, 0.45, -0.3), C.Stone, M.Concrete)
+	-- the back faces the side street: windows, a service door with a canopy, a lamp, crates and bins
+	local back = cf * CFrame.new(0, 0, d) * CFrame.Angles(0, math.pi, 0)
+	TownKit.plainFacade(m, back, w - 2, 1, { trim = hex("#F7F2E8") }, true)
+	p(m, "BackBand", Vector3.new(w, 0.5, 0.3), back * CFrame.new(0, 8.4, -0.15), hex("#F7F2E8"), M.Concrete)
+	TownKit.crates(m, back * CFrame.new(-w / 2 + 3, 0, -1.6))
+	TownKit.bin(m, back * CFrame.new(-w / 2 + 6.5, 0, -1))
 end
 
 local function pendantLight(m, cf, color)
@@ -816,10 +1197,12 @@ local function buildSkatePark()
 	for _, corner in ipairs({ { x0 + 1, z0 + 1 }, { x1 - 1, z0 + 1 }, { x0 + 1, z1 - 1 }, { x1 - 1, z1 - 1 } }) do
 		cyl(m, "FloodPole", 12, 0.4, CFrame.new(corner[1], 6.3, corner[2]) * up, C.Iron, M.Metal, true)
 		local head = p(m, "Floodlight", Vector3.new(1.6, 0.6, 1), CFrame.lookAt(Vector3.new(corner[1], 12.4, corner[2]), c + Vector3.new(0, 0, 0)), hex("#2B2B2B"), M.Metal)
+		local lens = p(m, "FloodLens", Vector3.new(1.3, 0.4, 0.1), head.CFrame * CFrame.new(0, 0, -0.52), hex("#FFF2DD"), M.Glass)
 		local light = Instance.new("SpotLight")
 		light.Face = Enum.NormalId.Front
 		light.Color, light.Brightness, light.Range, light.Angle, light.Shadows = hex("#FFF2DD"), 1.6, 40, 70, false
-		light.Parent = head
+		light.Parent = lens
+		TownKit.nightLight(lens, hex("#FFF2DD"))
 	end
 	return m
 end
@@ -827,134 +1210,399 @@ end
 ------------------------------------------------------------------------
 -- Beach, beach gym, posing stage
 ------------------------------------------------------------------------
+-- A wooden boardwalk from a to b on the sand (planks across, rope posts along both edges).
+local function boardwalk(parent, a, b, width)
+	width = width or 6
+	local len = (b - a).Magnitude
+	local cf = CFrame.lookAt(Vector3.new(a.X, 0, a.Z), Vector3.new(b.X, 0, b.Z))
+	for t = 0.55, len - 0.5, 1.2 do
+		p(parent, "Plank", Vector3.new(width, 0.25, 1.1), cf * CFrame.new(0, 0.3, -t), C.Wood, M.WoodPlanks, true)
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		p(parent, "Stringer", Vector3.new(0.3, 0.3, len), cf * CFrame.new(side * (width / 2 - 0.4), 0.1, -len / 2), C.WoodDark, M.Wood)
+		if len > 12 then
+			for t = 2, len - 2, 5 do p(parent, "RopePost", Vector3.new(0.35, 2, 0.35), cf * CFrame.new(side * (width / 2 + 0.2), 1, -t), C.WoodDark, M.Wood, true) end
+			p(parent, "Rope", Vector3.new(0.12, 0.12, len - 4), cf * CFrame.new(side * (width / 2 + 0.2), 1.7, -len / 2), hex("#C9B48A"), M.Fabric)
+		end
+	end
+end
+
+local function lifeguardTower(parent, cf)
+	for _, o in ipairs({ { -1.6, -1.6 }, { 1.6, -1.6 }, { -1.6, 1.6 }, { 1.6, 1.6 } }) do
+		p(parent, "Stilt", Vector3.new(0.4, 6, 0.4), cf * CFrame.new(o[1], 3, o[2]) * CFrame.Angles(rad(o[2] * 2), 0, rad(-o[1] * 2)), C.White, M.Wood, true)
+	end
+	p(parent, "TowerDeck", Vector3.new(5, 0.4, 5), cf * CFrame.new(0, 6.2, 0), C.WoodDark, M.WoodPlanks, true)
+	p(parent, "Cabin", Vector3.new(3.6, 3.2, 3), cf * CFrame.new(0, 8, 0.6), hex("#E86A6A"), M.Wood, true)
+	p(parent, "CabinWindow", Vector3.new(2.8, 1.2, 0.1), cf * CFrame.new(0, 8.6, -0.92), hex("#A8C0CC"), M.Glass)
+	Kit.wedge(parent, "CabinRoof", Vector3.new(4.2, 1.2, 2), cf * CFrame.new(0, 10.2, -0.3) * CFrame.Angles(0, math.pi, 0), C.White, M.Wood)
+	Kit.wedge(parent, "CabinRoof", Vector3.new(4.2, 1.2, 2), cf * CFrame.new(0, 10.2, 1.7), C.White, M.Wood)
+	for x = -2.3, 2.3, 0.8 do p(parent, "DeckRail", Vector3.new(0.1, 1.2, 0.1), cf * CFrame.new(x, 7, -2.4), C.White, M.Wood) end
+	p(parent, "DeckRailTop", Vector3.new(5, 0.12, 0.12), cf * CFrame.new(0, 7.6, -2.4), C.White, M.Wood)
+	for i = 0, 6 do p(parent, "LadderRung", Vector3.new(1.2, 0.12, 0.12), cf * CFrame.new(0, 0.6 + i * 0.85, 3.4 - i * 0.3), C.White, M.Wood) end
+	cyl(parent, "FlagPole", 5, 0.12, cf * CFrame.new(2.2, 9.5, 2.2) * up, C.White, M.Metal)
+	p(parent, "Flag", Vector3.new(1.8, 1.1, 0.05), cf * CFrame.new(3.1, 11.4, 2.2), hex("#E86A6A"), M.Fabric)
+end
+
+local function beachShower(parent, cf)
+	p(parent, "ShowerBase", Vector3.new(3, 0.3, 3), cf * CFrame.new(0, 0.15, 0), C.Wood, M.WoodPlanks, true)
+	cyl(parent, "ShowerPole", 7, 0.3, cf * CFrame.new(0, 3.8, 0) * up, hex("#C9CCD2"), M.Metal, true)
+	p(parent, "ShowerArm", Vector3.new(0.15, 0.15, 1.4), cf * CFrame.new(0, 7.1, -0.7), hex("#C9CCD2"), M.Metal)
+	cyl(parent, "ShowerHead", 0.2, 0.7, cf * CFrame.new(0, 6.95, -1.3) * up, hex("#C9CCD2"), M.Metal)
+	p(parent, "ShowerTap", Vector3.new(0.3, 0.2, 0.3), cf * CFrame.new(0, 3.2, -0.25), hex("#2E6E8E"), M.Metal)
+end
+
 local function buildBeach()
 	local beach = Instance.new("Folder")
 	beach.Name = "Beach"
 	beach.Parent = folder
-	local b = Town.Beach
-	local shore = Town.Sea.MinZ
-	-- palms (different heights), umbrellas with towels and chairs, a lifeguard tower, a volleyball net, surfboards, rocks
-	local palms = { { 6, 70, 1 }, { 40, 72, 1.15 }, { 74, 76, 0.95 }, { 118, 72, 1.2 }, { 138, 96, 1.05 }, { 16, 116, 1.1 }, { 108, 118, 0.9 }, { 78, 96, 1.05 } }
+	-- boardwalks connect Beach Road, the skate park, the beach gym and the posing stage
+	for _, bw in ipairs(Town.Boardwalks) do boardwalk(beach, bw[1], bw[2], 6) end
+	-- palms in groups (never in a grid), different heights
+	local palms = {
+		{ -168, 178, 1.1 }, { -162, 196, 0.95 }, { -170, 222, 1.2 }, { -86, 178, 1.15 }, { -80, 192, 0.9 }, { -48, 186, 1.05 },
+		{ -64, 226, 1.2 }, { -44, 244, 0.95 }, { 74, 178, 1.1 }, { 82, 196, 1.0 }, { 96, 232, 1.15 }, { 128, 180, 1.05 },
+		{ 136, 214, 0.95 }, { 190, 182, 1.2 }, { 196, 206, 1.0 }, { 178, 236, 1.1 }, { -120, 240, 1.0 }, { -150, 246, 1.15 },
+	}
 	for i, palm in ipairs(palms) do TownKit.palm(beach, Vector3.new(palm[1], 0, palm[2]), palm[3], i) end
+	-- umbrellas with towels and beach chairs, in two relaxed groups near the water
 	local umbrellaColors = { { hex("#E86A6A"), hex("#F7F2E8") }, { hex("#6FA8DC"), hex("#F7F2E8") }, { hex("#F2C14E"), hex("#F7F2E8") }, { hex("#7CC6A5"), hex("#F7F2E8") } }
-	for i, spot in ipairs({ { 32, 112 }, { 44, 114 }, { 82, 112 }, { 96, 114 } }) do
-		local cf = CFrame.new(spot[1], 0, spot[2])
-		TownKit.umbrella(beach, cf, umbrellaColors[i][1], umbrellaColors[i][2])
-		TownKit.towel(beach, cf * CFrame.new(-2.2, 0, 1) * CFrame.Angles(0, rad(10 * i), 0), umbrellaColors[i][1], hex("#F7F2E8"))
+	for i, spot in ipairs({ { 132, 242 }, { 146, 248 }, { 160, 240 }, { 176, 250 }, { -82, 246 }, { -66, 252 }, { 78, 250 }, { -172, 244 } }) do
+		local cf = CFrame.new(spot[1], 0, spot[2]) * CFrame.Angles(0, rad(i * 17), 0)
+		local colors = umbrellaColors[(i - 1) % 4 + 1]
+		TownKit.umbrella(beach, cf, colors[1], colors[2])
+		TownKit.towel(beach, cf * CFrame.new(-2.2, 0, 1) * CFrame.Angles(0, rad(10 * i), 0), colors[1], hex("#F7F2E8"))
 		TownKit.beachChair(beach, cf * CFrame.new(2.4, 0, 0.5) * CFrame.Angles(0, rad(180 + 8 * i), 0), umbrellaColors[(i % 4) + 1][1])
 	end
-	-- lifeguard tower: four stilts, platform with a rail, a small cabin with a roof, a ladder, a flag
-	local lg = CFrame.new(124, 0, 108) * CFrame.Angles(0, rad(200), 0)
-	for _, o in ipairs({ { -1.6, -1.6 }, { 1.6, -1.6 }, { -1.6, 1.6 }, { 1.6, 1.6 } }) do
-		p(beach, "Stilt", Vector3.new(0.4, 6, 0.4), lg * CFrame.new(o[1], 3, o[2]) * CFrame.Angles(rad(o[2] * 2), 0, rad(-o[1] * 2)), C.White, M.Wood, true)
-	end
-	p(beach, "TowerDeck", Vector3.new(5, 0.4, 5), lg * CFrame.new(0, 6.2, 0), C.WoodDark, M.WoodPlanks, true)
-	p(beach, "Cabin", Vector3.new(3.6, 3.2, 3), lg * CFrame.new(0, 8, 0.6), hex("#E86A6A"), M.Wood, true)
-	p(beach, "CabinWindow", Vector3.new(2.8, 1.2, 0.1), lg * CFrame.new(0, 8.6, -0.92), hex("#A8C0CC"), M.Glass)
-	Kit.wedge(beach, "CabinRoof", Vector3.new(4.2, 1.2, 2), lg * CFrame.new(0, 10.2, -0.3) * CFrame.Angles(0, math.pi, 0), C.White, M.Wood)
-	Kit.wedge(beach, "CabinRoof", Vector3.new(4.2, 1.2, 2), lg * CFrame.new(0, 10.2, 1.7), C.White, M.Wood)
-	for x = -2.3, 2.3, 0.8 do p(beach, "DeckRail", Vector3.new(0.1, 1.2, 0.1), lg * CFrame.new(x, 7, -2.4), C.White, M.Wood) end
-	p(beach, "DeckRailTop", Vector3.new(5, 0.12, 0.12), lg * CFrame.new(0, 7.6, -2.4), C.White, M.Wood)
-	for i = 0, 6 do p(beach, "LadderRung", Vector3.new(1.2, 0.12, 0.12), lg * CFrame.new(0, 0.6 + i * 0.85, -3.4 + i * 0.3), C.White, M.Wood) end
-	cyl(beach, "FlagPole", 5, 0.12, lg * CFrame.new(2.2, 9.5, 2.2) * up, C.White, M.Metal)
-	p(beach, "Flag", Vector3.new(1.8, 1.1, 0.05), lg * CFrame.new(3.1, 11.4, 2.2), hex("#E86A6A"), M.Fabric)
+	lifeguardTower(beach, CFrame.new(154, 0, 230) * CFrame.Angles(0, math.pi, 0))
+	lifeguardTower(beach, CFrame.new(-74, 0, 236) * CFrame.Angles(0, math.pi + rad(10), 0))
 	-- volleyball: posts, a see-through net with a top band, a ball and court lines
-	local vb = CFrame.new(98, 0, 86)
-	for _, x in ipairs({ -8, 8 }) do
-		cyl(beach, "NetPost", 7, 0.3, vb * CFrame.new(x, 3.5, 0) * up, C.White, M.Metal, true)
-	end
+	local vb = CFrame.new(166, 0, 200)
+	for _, x in ipairs({ -8, 8 }) do cyl(beach, "NetPost", 7, 0.3, vb * CFrame.new(x, 3.5, 0) * up, C.White, M.Metal, true) end
 	p(beach, "Net", Vector3.new(16, 2.6, 0.06), vb * CFrame.new(0, 4.6, 0), C.White, M.Fabric, false, { Transparency = 0.6 })
 	p(beach, "NetBand", Vector3.new(16, 0.25, 0.08), vb * CFrame.new(0, 5.95, 0), C.White, M.Fabric)
 	ball(beach, "Volleyball", Vector3.new(0.9, 0.9, 0.9), vb * CFrame.new(3, 0.45, -4), hex("#F2C14E"), M.SmoothPlastic)
-	for _, z in ipairs({ -8, 8 }) do p(beach, "CourtLine", Vector3.new(16, 0.03, 0.15), vb * CFrame.new(0, 0.05, z), C.White, M.SmoothPlastic) end
-	for _, x in ipairs({ -8, 8 }) do p(beach, "CourtLine", Vector3.new(0.15, 0.03, 16), vb * CFrame.new(x, 0.05, 0), C.White, M.SmoothPlastic) end
-	-- surfboards in a rack and stuck in the sand
-	local rack = CFrame.new(112, 0, 78) * CFrame.Angles(0, rad(-20), 0)
+	for _, z in ipairs({ -10, 10 }) do p(beach, "CourtLine", Vector3.new(16, 0.03, 0.15), vb * CFrame.new(0, 0.05, z), C.White, M.SmoothPlastic) end
+	for _, x in ipairs({ -8, 8 }) do p(beach, "CourtLine", Vector3.new(0.15, 0.03, 20), vb * CFrame.new(x, 0.05, 0), C.White, M.SmoothPlastic) end
+	for _, x in ipairs({ -4, 4 }) do TownKit.bench(beach, look(Vector3.new(166 + x, 0, 186), Vector3.new(166 + x, 0, 200))) end
+	-- surfboards in a rack and stuck in the sand, beach showers by the road
+	local rack = CFrame.new(186, 0, 226) * CFrame.Angles(0, rad(-20), 0)
 	for _, x in ipairs({ -2, 2 }) do p(beach, "RackPost", Vector3.new(0.3, 3.2, 0.3), rack * CFrame.new(x, 1.6, 0), C.WoodDark, M.Wood, true) end
 	p(beach, "RackBar", Vector3.new(4.6, 0.25, 0.25), rack * CFrame.new(0, 3.1, 0), C.WoodDark, M.Wood)
 	local boardColors = { hex("#6FA8DC"), hex("#F2C14E"), hex("#E86A6A") }
 	for i = 0, 2 do TownKit.surfboard(beach, rack * CFrame.new(-1.4 + i * 1.4, 0, 0.5) * CFrame.Angles(rad(-12), 0, 0), boardColors[i + 1]) end
-	TownKit.surfboard(beach, CFrame.new(34, -0.8, 100) * CFrame.Angles(rad(6), rad(30), rad(-8)), hex("#7CC6A5"))
+	TownKit.surfboard(beach, CFrame.new(-58, -0.8, 240) * CFrame.Angles(rad(6), rad(30), rad(-8)), hex("#7CC6A5"))
+	TownKit.surfboard(beach, CFrame.new(140, -0.8, 232) * CFrame.Angles(rad(-5), rad(-20), rad(7)), hex("#E86A6A"))
+	beachShower(beach, CFrame.new(-30, 0, 170))
+	beachShower(beach, CFrame.new(140, 0, 170))
 	-- rocks and shoreline detail (driftwood, shells, a sand castle)
-	for i, r in ipairs({ { 140, 120, 1.4 }, { 146, 116, 1 }, { 4, 120, 1.2 }, { 8, 123, 0.8 }, { 64, 121, 0.9 } }) do
+	for i, r in ipairs({ { 192, 256, 1.4 }, { 197, 252, 1 }, { -166, 256, 1.2 }, { -160, 259, 0.8 }, { 60, 258, 0.9 }, { -100, 257, 1.1 } }) do
 		TownKit.rock(beach, Vector3.new(r[1], -0.4, r[2]), r[3], i)
 	end
-	cyl(beach, "Driftwood", 4.5, 0.5, CFrame.new(50, 0.1, 118) * CFrame.Angles(0, rad(25), 0), hex("#B9A587"), M.Wood)
-	for i = 0, 9 do ball(beach, "Shell", Vector3.new(0.35, 0.2, 0.35), CFrame.new(20 + i * 11, 0.05, 117 + (i % 3)), hex("#F2E4D6"), M.SmoothPlastic) end
-	local castle = CFrame.new(88, 0, 112)
+	cyl(beach, "Driftwood", 4.5, 0.5, CFrame.new(110, 0.1, 252) * CFrame.Angles(0, rad(25), 0), hex("#B9A587"), M.Wood)
+	cyl(beach, "Driftwood", 3.2, 0.4, CFrame.new(-136, 0.1, 250) * CFrame.Angles(0, rad(-40), 0), hex("#B9A587"), M.Wood)
+	for i = 0, 13 do ball(beach, "Shell", Vector3.new(0.35, 0.2, 0.35), CFrame.new(-150 + i * 25, 0.05, 254 + (i % 3)), hex("#F2E4D6"), M.SmoothPlastic) end
+	local castle = CFrame.new(88, 0, 246)
 	p(beach, "SandCastle", Vector3.new(2.4, 1.2, 2.4), castle * CFrame.new(0, 0.6, 0), C.Sand, M.Sand)
-	for _, o in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
-		cyl(beach, "Turret", 1.8, 0.7, castle * CFrame.new(o[1], 0.9, o[2]) * up, C.Sand, M.Sand)
+	for _, o in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do cyl(beach, "Turret", 1.8, 0.7, castle * CFrame.new(o[1], 0.9, o[2]) * up, C.Sand, M.Sand) end
+	p(beach, "Bucket", Vector3.new(0.8, 0.9, 0.8), castle * CFrame.new(2.4, 0.45, 1), hex("#E86A6A"), M.Plastic)
+end
+
+------------------------------------------------------------------------
+-- Beach gym: an open-air gym spread over the sand in four zones around two crossing walkways
+--   south-west: shaded machines (two slatted pergolas)      south-east: free weights on rubber mats
+--   north-west: shade sails over machines + tires/ropes/sled  north-east: calisthenics
+-- Shade roofs sit 15+ studs up and don't collide, so they never push the camera in.
+------------------------------------------------------------------------
+local BAMBOO, BAMBOO_DARK, LASHING = hex("#C9B27A"), hex("#9C8656"), hex("#7A6440")
+
+local function bambooPost(m, base, height)
+	cyl(m, "Post", height, 0.7, base * CFrame.new(0, height / 2, 0) * up, BAMBOO, M.Wood, true)
+	for y = 2.5, height - 1, 2.8 do cyl(m, "Node", 0.2, 0.8, base * CFrame.new(0, y, 0) * up, BAMBOO_DARK, M.Wood) end
+	cyl(m, "Lashing", 0.6, 0.82, base * CFrame.new(0, height - 0.6, 0) * up, LASHING, M.Fabric)
+	p(m, "Footing", Vector3.new(1.4, 0.5, 1.4), base * CFrame.new(0, 0.1, 0), hex("#B5AA98"), M.Concrete, true)
+end
+
+-- Slatted pergola, w (x) by d (z), roof at `height`
+local function pergola(m, center, w, d, height)
+	for _, dx in ipairs({ -w / 2, w / 2 }) do
+		for _, dz in ipairs({ -d / 2, d / 2 }) do bambooPost(m, center * CFrame.new(dx, 0, dz), height) end
+	end
+	for _, dz in ipairs({ -d / 2, d / 2 }) do cyl(m, "Beam", w + 1.4, 0.6, center * CFrame.new(0, height + 0.1, dz), BAMBOO, M.Wood) end
+	for x = -w / 2 + 0.6, w / 2 - 0.5, 1.5 do
+		cyl(m, "RoofSlat", d + 1.6, 0.35, center * CFrame.new(x, height + 0.55, 0) * CFrame.Angles(0, rad(90), 0), (math.floor(x) % 2 == 0) and BAMBOO or BAMBOO_DARK, M.Wood)
+	end
+	-- a light canvas strip over every other gap for shade, and lanterns hanging from the beams
+	for x = -w / 2 + 1.35, w / 2 - 1, 3 do
+		p(m, "Canvas", Vector3.new(1.2, 0.05, d), center * CFrame.new(x, height + 0.78, 0), hex("#F2EADB"), M.Fabric)
 	end
 end
 
-local function buildBeachGym()
-	local center = Town.BeachGym.Center
-	local m = model(folder, "BeachGym", CFrame.new(center))
-	local base = CFrame.new(center.X, 0, center.Z)
-	local bamboo, bambooDark = hex("#C9B27A"), hex("#9C8656")
-	-- rubber mats on the sand
-	p(m, "Mat", Vector3.new(26, 0.25, 14), base * CFrame.new(0, 0.1, 0), hex("#2A2A2E"), M.Rubber, true)
-	for x = -12, 12, 4 do p(m, "MatJoint", Vector3.new(0.06, 0.02, 14), base * CFrame.new(x, 0.24, 0), hex("#1A1A1C")) end
-	-- shade structure: bamboo posts with lashings, beams, a slatted roof
-	for _, dx in ipairs({ -12.5, -4.2, 4.2, 12.5 }) do
-		for _, dz in ipairs({ -6.5, 6.5 }) do
-			cyl(m, "Post", 10, 0.6, base * CFrame.new(dx, 5, dz) * up, bamboo, M.Wood, true)
-			for _, y in ipairs({ 2.5, 5, 7.5 }) do cyl(m, "Node", 0.2, 0.7, base * CFrame.new(dx, y, dz) * up, bambooDark, M.Wood) end
-			cyl(m, "Lashing", 0.5, 0.72, base * CFrame.new(dx, 9.4, dz) * up, hex("#7A6440"), M.Fabric)
+-- Two triangular shade sails between four tall poles (taut, slightly tilted)
+local function shadeSails(m, center, w, d, height)
+	local corners = {
+		center * CFrame.new(-w / 2, 0, -d / 2), center * CFrame.new(w / 2, 0, -d / 2),
+		center * CFrame.new(w / 2, 0, d / 2), center * CFrame.new(-w / 2, 0, d / 2),
+	}
+	local heights = { height + 2, height, height + 2, height }
+	for i, c in ipairs(corners) do
+		cyl(m, "SailPole", heights[i] + 0.5, 0.5, c * CFrame.new(0, (heights[i] + 0.5) / 2, 0) * up, hex("#E8E2D6"), M.Metal, true)
+		p(m, "PoleFoot", Vector3.new(1.2, 0.5, 1.2), c * CFrame.new(0, 0.1, 0), hex("#B5AA98"), M.Concrete, true)
+		ball(m, "PoleCap", Vector3.new(0.6, 0.6, 0.6), c * CFrame.new(0, heights[i] + 0.6, 0), C.White, M.Metal)
+	end
+	-- each sail is two wedges forming a triangle between three pole tops
+	local function sail(a, b, c, color)
+		-- right-angle split: triangle (a, b, c) drawn as one WedgePart pair is complex; use a thin fabric quad strip fan
+		for t = 0, 0.9, 0.1 do
+			local p0 = a:Lerp(b, t)
+			local p1 = a:Lerp(c, t)
+			local q0 = a:Lerp(b, t + 0.1)
+			local q1 = a:Lerp(c, t + 0.1)
+			local mid = (p0 + p1 + q0 + q1) / 4
+			local along = (q0 + q1) / 2 - (p0 + p1) / 2
+			local across = ((q0 - q1) + (p0 - p1)) / 2
+			local normal = along:Cross(across).Unit
+			local cf = CFrame.fromMatrix(mid, across.Unit, normal, along.Unit)
+			p(m, "Sail", Vector3.new(across.Magnitude, 0.05, along.Magnitude + 0.05), cf, color, M.Fabric)
 		end
 	end
-	for _, dz in ipairs({ -6.5, 6.5 }) do cyl(m, "Beam", 26.5, 0.5, base * CFrame.new(0, 9.8, dz), bamboo, M.Wood) end
-	for x = -13, 13, 1.2 do
-		cyl(m, "RoofSlat", 15, 0.32, base * CFrame.new(x, 10.2, 0) * CFrame.Angles(0, rad(90), 0) * CFrame.Angles(0, 0, rad(4)), x % 2.4 < 1.2 and bamboo or bambooDark, M.Wood)
+	local tops = {}
+	for i, c in ipairs(corners) do tops[i] = (c * CFrame.new(0, heights[i] - 0.2, 0)).Position end
+	sail(tops[2], tops[1], tops[3], hex("#F2EADB"))
+	sail(tops[4], tops[3], tops[1], hex("#E59A7A"))
+end
+
+-- an area sign with a title and a lock rule (AreaSignsClient shows the rule only while the area is locked)
+local function areaSign(m, cf, size, title, gym)
+	local board = p(m, "AreaSign", size, cf, hex("#5E4632"), M.Wood)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "SignGui"
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0.6
+	gui.Parent = board
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.Size = UDim2.fromScale(0.94, 0.9)
+	titleLabel.Position = UDim2.fromScale(0.03, 0.05)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = C.White
+	titleLabel.FontFace = Theme.Fonts.SemiBold
+	titleLabel.TextScaled = true
+	titleLabel.Parent = gui
+	local rule = titleLabel:Clone()
+	rule.Name = "Rule"
+	rule.Text = ""
+	rule.TextColor3 = hex("#E8DCC4")
+	rule.FontFace = Theme.Fonts.Regular
+	rule.Visible = false
+	rule.Parent = gui
+	board:SetAttribute("Gym", gym)
+	board:SetAttribute("Title", title)
+	CollectionService:AddTag(board, "AreaSign")
+	return board
+end
+
+local function tire(m, cf, size)
+	cyl(m, "Tire", 1.2 * size, 5 * size, cf * CFrame.new(0, 0.6 * size, 0) * up, hex("#1E1E20"), M.Rubber, true)
+	cyl(m, "TireTread", 1.0 * size, 5.15 * size, cf * CFrame.new(0, 0.6 * size, 0) * up, hex("#2A2A2D"), M.Rubber)
+	cyl(m, "TireHole", 1.25 * size, 2.4 * size, cf * CFrame.new(0, 0.6 * size, 0) * up, hex("#D9C79A"), M.Sand)
+end
+
+local function plyoBox(m, cf, h)
+	p(m, "PlyoBox", Vector3.new(2.4, h, 2), cf * CFrame.new(0, h / 2, 0), hex("#B8875A"), M.WoodPlanks, true)
+	for _, y in ipairs({ 0.06, h - 0.06 }) do p(m, "PlyoEdge", Vector3.new(2.45, 0.12, 2.05), cf * CFrame.new(0, y, 0), hex("#8A6A4A"), M.Wood) end
+	p(m, "PlyoHandle", Vector3.new(0.8, 0.3, 0.05), cf * CFrame.new(0, h * 0.7, -1.01), hex("#5E4632"), M.Wood)
+end
+
+local function buildBeachGym()
+	local spec = Town.BeachGym
+	local center, size = spec.Center, spec.Size
+	local m = model(folder, "BeachGym", CFrame.new(center))
+	local x0, x1, z0, z1 = center.X - size.X / 2, center.X + size.X / 2, center.Z - size.Z / 2, center.Z + size.Z / 2
+	local wx, wz = 0, center.Z -- the two walkways cross at (0, center.Z)
+
+	-- walkways: boardwalk north-south through the entrance and east-west between the skate park and the stage
+	boardwalk(m, Vector3.new(wx, 0, z0), Vector3.new(wx, 0, z1), 5)
+	boardwalk(m, Vector3.new(x0, 0, wz), Vector3.new(wx - 2.5, 0, wz), 5)
+	boardwalk(m, Vector3.new(wx + 2.5, 0, wz), Vector3.new(x1, 0, wz), 5)
+
+	-- entrance arch at the south end with the area sign
+	local gate = CFrame.new(wx, 0, z0 + 1)
+	for _, x in ipairs({ -4, 4 }) do bambooPost(m, gate * CFrame.new(x, 0, 0), 11) end
+	cyl(m, "ArchBeam", 10, 0.7, gate * CFrame.new(0, 11, 0), BAMBOO, M.Wood)
+	cyl(m, "ArchBeam", 10, 0.5, gate * CFrame.new(0, 10, 0), BAMBOO_DARK, M.Wood)
+	local signCF = look(Vector3.new(wx, 8.4, z0 + 0.7), Vector3.new(wx, 8.4, z0 - 30))
+	p(m, "SignFrame", Vector3.new(7.6, 2.2, 0.2), signCF * CFrame.new(0, 0, 0.12), BAMBOO_DARK, M.Wood)
+	for _, x in ipairs({ -2.5, 2.5 }) do p(m, "SignRope", Vector3.new(0.1, 1.3, 0.1), signCF * CFrame.new(x, 1.6, 0.1), LASHING, M.Fabric) end
+	areaSign(m, signCF, Vector3.new(7.2, 1.9, 0.15), "Beach gym", "Beach")
+
+	-- rope fence around the gym, open at the four walkway ends
+	local function ropeFence(a, b)
+		local len = (b - a).Magnitude
+		if len < 2 then return end
+		local cf = CFrame.lookAt(a, b)
+		for t = 0, len, 4 do p(m, "FencePost", Vector3.new(0.4, 2.4, 0.4), cf * CFrame.new(0, 1.2, -t), C.WoodDark, M.Wood, true) end
+		p(m, "FenceRope", Vector3.new(0.14, 0.14, len), cf * CFrame.new(0, 2.0, -len / 2), hex("#C9B48A"), M.Fabric)
+		p(m, "FenceRope", Vector3.new(0.14, 0.14, len), cf * CFrame.new(0, 1.1, -len / 2), hex("#C9B48A"), M.Fabric)
 	end
-	local sign, label = Kit.sign(m, "Sign", Vector3.new(12, 1.4, 0.3), look(Vector3.new(center.X, 8.6, center.Z - 6.7), Vector3.new(center.X, 8.6, center.Z - 40)),
-		"Beach gym · opens at Growth Spurt " .. Machines.GymUnlock.Beach, C.White, hex("#5E4632"), 40)
-	label.FontFace = Theme.Fonts.SemiBold
-	-- the three beach machines (cable stacks, like the pro gym's) facing the sea, plus a pull-up bar anyone can use
+	ropeFence(Vector3.new(x0, 0, z0), Vector3.new(wx - 5, 0, z0))
+	ropeFence(Vector3.new(wx + 5, 0, z0), Vector3.new(x1, 0, z0))
+	ropeFence(Vector3.new(x0, 0, z1), Vector3.new(wx - 4, 0, z1))
+	ropeFence(Vector3.new(wx + 4, 0, z1), Vector3.new(x1, 0, z1))
+	ropeFence(Vector3.new(x0, 0, z0), Vector3.new(x0, 0, wz - 4))
+	ropeFence(Vector3.new(x0, 0, wz + 4), Vector3.new(x0, 0, z1))
+	ropeFence(Vector3.new(x1, 0, z0), Vector3.new(x1, 0, wz - 4))
+	ropeFence(Vector3.new(x1, 0, wz + 4), Vector3.new(x1, 0, z1))
+	-- flags at the corners
+	for i, c in ipairs({ { x0 + 1, z0 + 1 }, { x1 - 1, z0 + 1 }, { x0 + 1, z1 - 1 }, { x1 - 1, z1 - 1 } }) do
+		cyl(m, "FlagPole", 16, 0.25, CFrame.new(c[1], 8, c[2]) * up, C.White, M.Metal, true)
+		local flag = p(m, "Flag", Vector3.new(3.6, 2.2, 0.05), CFrame.new(c[1] + 1.9, 14.8, c[2]), ({ hex("#1F5FBF"), hex("#D7262E"), hex("#E8C21C"), hex("#2E9E4F") })[i], M.Fabric)
+		local fgui = Instance.new("SurfaceGui")
+		fgui.Face = Enum.NormalId.Front
+		fgui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		fgui.PixelsPerStud = 40
+		fgui.Parent = flag
+		local ft = Instance.new("TextLabel")
+		ft.Size = UDim2.fromScale(1, 1)
+		ft.BackgroundTransparency = 1
+		ft.Text = "GYM ARC"
+		ft.TextColor3 = i == 3 and hex("#1E1E22") or C.White
+		ft.FontFace = Theme.Fonts.SemiBold
+		ft.TextScaled = true
+		ft.Parent = fgui
+	end
+
+	-- the beach machines: 3 of each, one of each kind under every shade, all facing the sea
 	local beachMachines = {}
 	for _, machine in ipairs(Machines.List) do
 		if machine.gym == "Beach" then table.insert(beachMachines, machine) end
 	end
 	local builders = {
-		BeachCurl = function(parent, pivot) return GymKit.Pro.BicepCurl(parent, pivot) end,
-		BeachRaise = function(parent, pivot) return GymKit.Pro.LateralRaise(parent, pivot) end,
-		BeachShrug = function(parent, pivot) return GymKit.Pro.Shrugs(parent, pivot) end,
+		BeachCurl = GymKit.Pro.BicepCurl, BeachRaise = GymKit.Pro.LateralRaise, BeachShrug = GymKit.Pro.Shrugs,
 	}
-	for index, machine in ipairs(beachMachines) do
-		local x = center.X - 9 + (index - 1) * 6.5
-		local built = builders[machine.id] and builders[machine.id](m, CFrame.new(x, 0.25, center.Z - 2))
-		if built then
-			-- the pro builder named it after the pro machine: make it the beach one
-			built.Name = machine.id
-			built:SetAttribute("MachineId", machine.id)
-			local prompt = built:FindFirstChildWhichIsA("ProximityPrompt", true)
-			if prompt then prompt.ObjectText = machine.name end
+	local function machineRow(rowCenter)
+		for index, machine in ipairs(beachMachines) do
+			local x = rowCenter.X + (index - 2) * 8
+			local built = builders[machine.id] and builders[machine.id](m, CFrame.new(x, 0.25, rowCenter.Z))
+			if built then
+				built.Name = machine.id
+				built:SetAttribute("MachineId", machine.id)
+				local prompt = built:FindFirstChildWhichIsA("ProximityPrompt", true)
+				if prompt then prompt.ObjectText = machine.name end
+			end
+		end
+		-- a rubber mat under the row
+		p(m, "Mat", Vector3.new(26, 0.2, 10), CFrame.new(rowCenter.X, 0.08, rowCenter.Z + 0.8), hex("#2A2A2E"), M.Rubber, true)
+	end
+	-- south-west: two slatted pergolas
+	local swX = (x0 + wx - 2.5) / 2
+	for _, z in ipairs({ z0 + 9, z0 + 23 }) do
+		pergola(m, CFrame.new(swX, 0, z + 0.8), 28, 11, 15)
+		machineRow(Vector3.new(swX, 0, z))
+	end
+	-- north-west: shade sails over the third row, then the tire / rope / sled area on open sand
+	local nwRow = wz + 9
+	shadeSails(m, CFrame.new(swX, 0, nwRow + 0.8), 28, 12, 15)
+	machineRow(Vector3.new(swX, 0, nwRow))
+	local sled = CFrame.new(swX, 0, z1 - 5)
+	p(m, "SledTurf", Vector3.new(26, 0.12, 3.6), sled * CFrame.new(0, 0.06, 0), hex("#3E7D5A"), M.Grass, true)
+	for x = -12, 12, 4 do p(m, "TurfLine", Vector3.new(0.15, 0.02, 3.6), sled * CFrame.new(x, 0.13, 0), C.White, M.SmoothPlastic) end
+	local s = sled * CFrame.new(-9, 0.12, 0)
+	p(m, "SledBase", Vector3.new(3, 0.3, 2.4), s * CFrame.new(0, 0.3, 0), hex("#2B2B2B"), M.Metal, true)
+	for _, z in ipairs({ -1, 1 }) do p(m, "SledRunner", Vector3.new(3.4, 0.2, 0.25), s * CFrame.new(0, 0.1, z), hex("#9EA2A8"), M.Metal) end
+	for _, x in ipairs({ -0.9, 0.9 }) do cyl(m, "SledHorn", 1.6, 0.3, s * CFrame.new(x, 1.2, 0) * up, hex("#9EA2A8"), M.Metal) end
+	GymKit.plate(m, 45, s * CFrame.new(-0.9, 0.95, 0) * CFrame.Angles(0, 0, rad(90)))
+	p(m, "SledStrap", Vector3.new(4, 0.08, 0.3), s * CFrame.new(3.4, 0.4, 0), hex("#1F5FBF"), M.Fabric)
+	-- tires, battle ropes, plyo boxes, a sledgehammer
+	tire(m, CFrame.new(-14, 0, z1 - 13), 1.1)
+	tire(m, CFrame.new(-8.5, 0, z1 - 10) * CFrame.Angles(0, 0, rad(4)), 0.9)
+
+	p(m, "HammerHandle", Vector3.new(0.2, 3.6, 0.2), CFrame.new(-5.2, 1.6, z1 - 14) * CFrame.Angles(0, 0, rad(-20)), hex("#8A6A4A"), M.Wood)
+	p(m, "HammerHead", Vector3.new(0.7, 0.6, 1.2), CFrame.new(-5.8, 3.3, z1 - 14) * CFrame.Angles(0, 0, rad(-20)), hex("#2B2B2B"), M.Metal)
+	for i, z in ipairs({ wz + 19, wz + 22 }) do
+		local anchor = CFrame.new(x0 + 3, 0, z)
+		cyl(m, "RopeAnchor", 1.4, 0.8, anchor * CFrame.new(0, 0.7, 0) * up, C.Iron, M.Metal, true)
+		for k = 0, 8 do
+			cyl(m, "Rope", 1.5, 0.35, anchor * CFrame.new(1.3 + k * 1.35, 0.3, math.sin(k * 1.2 + i) * 0.6) * CFrame.Angles(0, rad(math.cos(k + i) * 25), 0), hex("#C9B48A"), M.Fabric)
 		end
 	end
-	GymKit.PullUpBar(m, CFrame.new(center.X + 9.5, 0.25, center.Z - 1))
-	-- battle rope on an anchor, kettlebells, a flag
-	local anchor = base * CFrame.new(-10, 0.25, 5)
-	cyl(m, "RopeAnchor", 1.4, 0.8, anchor * CFrame.new(0, 0.7, 0) * up, C.Iron, M.Metal, true)
-	for i = 0, 6 do
-		cyl(m, "Rope", 1.4, 0.35, anchor * CFrame.new(1 + i * 1.2, 0.35, math.sin(i * 1.3) * 0.6) * CFrame.Angles(0, rad(math.cos(i) * 25), 0), hex("#C9B48A"), M.Fabric)
+	for i, h in ipairs({ 1.6, 2.2, 2.8 }) do plyoBox(m, CFrame.new(-33 + i * 3, 0, z1 - 1.8) * CFrame.Angles(0, rad(i * 7), 0), h) end
+
+	-- south-east: free weights on rubber mats (2 squat racks, 2 benches, dumbbells, kettlebells, plate trees)
+	local se = CFrame.new((wx + 2.5 + x1) / 2, 0, (z0 + wz - 2.5) / 2)
+	p(m, "FreeWeightMat", Vector3.new(56, 0.2, 26), se * CFrame.new(0, 0.08, 0), hex("#2A2A2E"), M.Rubber, true)
+	for x = -24, 24, 6 do p(m, "MatJoint", Vector3.new(0.06, 0.02, 26), se * CFrame.new(x, 0.19, 0), hex("#1A1A1C")) end
+	local racks, benches = {}, {}
+	for i, x in ipairs({ -20, -8 }) do racks[i] = GymKit.SquatRack(m, se * CFrame.new(x, 0.2, 4)) end
+	for i, x in ipairs({ 6, 16 }) do benches[i] = GymKit.FlatBench(m, se * CFrame.new(x, 0.2, 3)) end
+	GymKit.dumbbellRack(m, se * CFrame.new(10, 0.2, -9.5), 12)
+	GymKit.plateTree(m, se * CFrame.new(-14, 0.2, -8))
+	GymKit.plateTree(m, se * CFrame.new(24, 0.2, 8))
+	for i = 0, 5 do GymKit.kettlebell(m, se * CFrame.new(-4 + i * 1.3, 0.2, -10), 0.7 + (i % 3) * 0.15) end
+	GymKit.bench(m, se * CFrame.new(-24, 0.2, -9), 6)
+	-- north-east: calisthenics (2 pull-up bars you can use, plus dip bars, monkey bars, rings, parallettes)
+	local ne = CFrame.new((wx + 2.5 + x1) / 2, 0, (wz + 2.5 + z1) / 2)
+	p(m, "CaliMat", Vector3.new(56, 0.2, 26), ne * CFrame.new(0, 0.08, 0), hex("#3A2E26"), M.Rubber, true)
+	GymKit.PullUpBar(m, ne * CFrame.new(-20, 0.2, -4))
+	GymKit.PullUpBar(m, ne * CFrame.new(-10, 0.2, -4))
+	local steel = hex("#3A3C40")
+	-- dip bars
+	local dip = ne * CFrame.new(1, 0.2, -5)
+	for _, x in ipairs({ -1.1, 1.1 }) do
+		for _, z in ipairs({ -1.6, 1.6 }) do cyl(m, "DipPost", 4, 0.3, dip * CFrame.new(x, 2, z) * up, steel, M.Metal, true) end
+		cyl(m, "DipBar", 3.6, 0.25, dip * CFrame.new(x, 4, 0) * CFrame.Angles(0, rad(90), 0), C.Chrome or hex("#C9CCD2"), M.Metal)
 	end
-	for i = 0, 3 do GymKit.kettlebell(m, base * CFrame.new(10 + i * 1.2, 0.25, 5.4), 0.7 + i * 0.1) end
-	cyl(m, "FlagPole", 14, 0.25, base * CFrame.new(-14.5, 7, -7) * up, C.White, M.Metal, true)
-	local flag = p(m, "Flag", Vector3.new(3.6, 2.2, 0.05), base * CFrame.new(-12.6, 12.6, -7), hex("#1F5FBF"), M.Fabric)
-	local fgui = Instance.new("SurfaceGui")
-	fgui.Face = Enum.NormalId.Front
-	fgui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	fgui.PixelsPerStud = 40
-	fgui.Parent = flag
-	local ft = Instance.new("TextLabel")
-	ft.Size = UDim2.fromScale(1, 1)
-	ft.BackgroundTransparency = 1
-	ft.Text = "GYM ARC"
-	ft.TextColor3 = C.White
-	ft.FontFace = Theme.Fonts.SemiBold
-	ft.TextScaled = true
-	ft.Parent = fgui
+	-- monkey bars: two ladders' worth of posts and rungs across the top
+	local mb = ne * CFrame.new(14, 0.2, -4)
+	for _, x in ipairs({ -6, 6 }) do
+		for _, z in ipairs({ -1.2, 1.2 }) do cyl(m, "MonkeyPost", 8.4, 0.35, mb * CFrame.new(x, 4.2, z) * up, steel, M.Metal, true) end
+	end
+	for _, z in ipairs({ -1.2, 1.2 }) do cyl(m, "MonkeyRail", 12.6, 0.3, mb * CFrame.new(0, 8.3, z), steel, M.Metal) end
+	for x = -5.4, 5.4, 1.2 do cyl(m, "MonkeyRung", 2.4, 0.2, mb * CFrame.new(x, 8.3, 0) * CFrame.Angles(0, rad(90), 0), hex("#C9CCD2"), M.Metal) end
+	-- gymnastic rings on a frame
+	local rg = ne * CFrame.new(-4, 0.2, 7)
+	for _, x in ipairs({ -3, 3 }) do
+		p(m, "RingLeg", Vector3.new(0.35, 11, 0.35), rg * CFrame.new(x, 5.3, -1.6) * CFrame.Angles(rad(12), 0, 0), steel, M.Metal, true)
+		p(m, "RingLeg", Vector3.new(0.35, 11, 0.35), rg * CFrame.new(x, 5.3, 1.6) * CFrame.Angles(rad(-12), 0, 0), steel, M.Metal, true)
+	end
+	cyl(m, "RingBeam", 6.6, 0.4, rg * CFrame.new(0, 10.6, 0), steel, M.Metal)
+	for _, x in ipairs({ -0.9, 0.9 }) do
+		p(m, "RingStrap", Vector3.new(0.12, 4.4, 0.05), rg * CFrame.new(x, 8.3, 0), hex("#1E1E22"), M.Fabric)
+		for k = 0, 7 do
+			local a0, a1 = k / 8 * math.pi * 2, (k + 1) / 8 * math.pi * 2
+			local p0, p1 = Vector3.new(math.cos(a0) * 0.45, math.sin(a0) * 0.45, 0), Vector3.new(math.cos(a1) * 0.45, math.sin(a1) * 0.45, 0)
+			p(m, "Ring", Vector3.new(0.14, 0.14, (p1 - p0).Magnitude + 0.04), rg * CFrame.new(x, 5.6, 0) * CFrame.lookAt((p0 + p1) / 2, p1), hex("#C9A04B"), M.Wood)
+		end
+	end
+	-- parallettes and a low bar
+	for i = 0, 1 do
+		local pl = ne * CFrame.new(10 + i * 3, 0.2, 7)
+		for _, z in ipairs({ -0.8, 0.8 }) do p(m, "ParaFoot", Vector3.new(0.3, 0.6, 0.3), pl * CFrame.new(0, 0.3, z), steel, M.Metal) end
+		cyl(m, "ParaBar", 1.9, 0.22, pl * CFrame.new(0, 0.7, 0) * CFrame.Angles(0, rad(90), 0), hex("#B8875A"), M.Wood)
+	end
+	-- wall bars (a tall ladder frame) and an incline sit-up bench
+	local wb = ne * CFrame.new(-18, 0.2, 9)
+	for _, x in ipairs({ -2.6, 2.6 }) do p(m, "WallBarPost", Vector3.new(0.4, 9, 0.4), wb * CFrame.new(x, 4.5, 0), hex("#B8875A"), M.Wood, true) end
+	for y = 0.8, 8.4, 0.8 do cyl(m, "WallBarRung", 5.2, 0.22, wb * CFrame.new(0, y, 0), hex("#C9A04B"), M.Wood) end
+	p(m, "WallBarTop", Vector3.new(5.8, 0.4, 0.5), wb * CFrame.new(0, 9.1, 0), hex("#8A6A4A"), M.Wood)
+	local sit = ne * CFrame.new(-10, 0.2, 8) * CFrame.Angles(0, rad(90), 0)
+	p(m, "SitUpPad", Vector3.new(1.4, 0.35, 5), sit * CFrame.new(0, 1.4, 0) * CFrame.Angles(rad(-15), 0, 0), hex("#1E1E22"), M.Leather, true)
+	p(m, "SitUpFrame", Vector3.new(0.3, 0.3, 5.2), sit * CFrame.new(0, 0.9, 0) * CFrame.Angles(rad(-15), 0, 0), steel, M.Metal)
+	p(m, "SitUpLeg", Vector3.new(0.3, 2.2, 0.3), sit * CFrame.new(0, 1.1, -2.2), steel, M.Metal, true)
+	p(m, "SitUpLeg", Vector3.new(0.3, 0.9, 0.3), sit * CFrame.new(0, 0.45, 2.2), steel, M.Metal, true)
+	cyl(m, "FootRoller", 1.4, 0.45, sit * CFrame.new(0, 2.5, -2.4), hex("#1E1E22"), M.Rubber)
+	for _, x in ipairs({ 18, 24 }) do cyl(m, "LowBarPost", 4.2, 0.35, ne * CFrame.new(x, 2.3, 8) * up, steel, M.Metal, true) end
+	cyl(m, "LowBar", 6.4, 0.24, ne * CFrame.new(21, 4.2, 8), hex("#C9CCD2"), M.Metal)
+
+	-- around the zones: palms, a water cooler, towel racks, benches facing the sea
+	for i, spot in ipairs({ { 4.8, 186 }, { 4.8, 228 }, { 65.8, 186 }, { 65.8, 226 } }) do
+		TownKit.palm(m, Vector3.new(spot[1], 0, spot[2]), 0.9 + (i % 3) * 0.1, 60 + i)
+	end
+	GymKit.waterFountain(m, CFrame.new(wx + 5, 0, wz + 8) * CFrame.Angles(0, rad(-90), 0))
+	GymKit.towelRack(m, CFrame.new(wx + 4.8, 0, z0 + 23) * CFrame.Angles(0, rad(90), 0))
+	for _, x in ipairs({ x1 - 10, x1 - 22 }) do TownKit.bench(m, look(Vector3.new(x, 0, z1 - 2.5), Vector3.new(x, 0, z1 + 30))) end
 	return m
 end
 
@@ -1077,7 +1725,8 @@ local function buildBackground()
 		{ name = "Breeze Pharmacy", stripes = { hex("#7CC6A5"), hex("#F7F2E8") } },
 	}
 	local i = 0
-	local function row(list, z, facing)
+	-- each spec: x (center), w, floors, shop, and which side walls can be seen (left/right are the building's own sides)
+	local function row(list, z, facing, back)
 		for _, spec in ipairs(list) do
 			i += 1
 			local pos = Vector3.new(spec.x, 0, z)
@@ -1086,20 +1735,27 @@ local function buildBackground()
 				w = spec.w, d = 16, floors = spec.floors, palette = TownKit.Palette[(i % #TownKit.Palette) + 1],
 				shop = spec.shop and shops[(i % #shops) + 1] or nil, balconies = i % 2 == 0,
 				roof = ({ "ac", "tank", "rail" })[(i % 3) + 1], seed = i,
+				back = back, left = spec.left, right = spec.right,
 			})
 		end
 	end
-	local south = Town.Street.MinZ - 4 -- the building fronts sit at the back of the south sidewalk
-	local north = Town.Street.MaxZ + 4
-	row({ { x = -50, w = 14, floors = 3, shop = true }, { x = -66, w = 16, floors = 4, shop = true }, { x = -84, w = 18, floors = 2, shop = true },
-		{ x = -103, w = 16, floors = 5 }, { x = -122, w = 16, floors = 3, shop = true } }, south - 0.5, Vector3.new(0, 0, 1))
-	row({ { x = 104, w = 16, floors = 3, shop = true }, { x = 122, w = 18, floors = 4, shop = true }, { x = 141, w = 16, floors = 2, shop = true },
-		{ x = 159, w = 16, floors = 5 } }, south - 0.5, Vector3.new(0, 0, 1))
-	row({ { x = -56, w = 14, floors = 2, shop = true }, { x = -73, w = 16, floors = 3, shop = true }, { x = -92, w = 18, floors = 4 },
-		{ x = -111, w = 16, floors = 3, shop = true }, { x = -129, w = 16, floors = 2 } }, north + 0.5, Vector3.new(0, 0, -1))
-	row({ { x = 56, w = 14, floors = 3, shop = true }, { x = 73, w = 16, floors = 2, shop = true }, { x = 92, w = 18, floors = 4, shop = true },
-		{ x = 111, w = 16, floors = 3 }, { x = 129, w = 16, floors = 5, shop = true }, { x = 148, w = 18, floors = 3 }, { x = 166, w = 14, floors = 2 } },
-		north + 0.5, Vector3.new(0, 0, -1))
+	local s = Town.Street
+	local south = s.MinZ - s.Sidewalk - 0.5   -- fronts at the back of Main Street's south sidewalk, facing north
+	local north = s.MaxZ + s.Sidewalk + 4     -- fronts behind the shop frontage paving, facing south
+	row({ { x = -51, w = 16, floors = 3, shop = true, left = true }, { x = -69, w = 18, floors = 4, shop = true }, { x = -87.5, w = 17, floors = 2, shop = true },
+		{ x = -106.5, w = 19, floors = 5 }, { x = -124.5, w = 16, floors = 3, shop = true }, { x = -143, w = 19, floors = 2, shop = true },
+		{ x = -163, w = 19, floors = 4 }, { x = -184, w = 21, floors = 3 } }, south, Vector3.new(0, 0, 1), true)
+	row({ { x = 106, w = 16, floors = 3, shop = true, right = true }, { x = 124, w = 18, floors = 4, shop = true }, { x = 142.5, w = 17, floors = 2, shop = true },
+		{ x = 161, w = 18, floors = 5 }, { x = 180, w = 18, floors = 3, shop = true }, { x = 199, w = 18, floors = 2 } }, south, Vector3.new(0, 0, 1), true)
+	row({ { x = -62.5, w = 15, floors = 2, shop = true, right = true }, { x = -103.5, w = 19, floors = 3, shop = true }, { x = -123.5, w = 19, floors = 4 },
+		{ x = -143.5, w = 19, floors = 3, shop = true }, { x = -164, w = 20, floors = 2, shop = true }, { x = -185, w = 20, floors = 4 } },
+		north, Vector3.new(0, 0, -1), true)
+	row({ { x = 62.5, w = 15, floors = 3, shop = true, left = true }, { x = 103.5, w = 19, floors = 2, shop = true }, { x = 123.5, w = 19, floors = 4, shop = true },
+		{ x = 143.5, w = 19, floors = 3 }, { x = 164, w = 20, floors = 5, shop = true }, { x = 185, w = 20, floors = 3 }, { x = 206, w = 20, floors = 2 } },
+		north, Vector3.new(0, 0, -1), true)
+	-- a block north of the east side street, facing it (backs to the lawn)
+	row({ { x = 125, w = 19, floors = 3, shop = true, left = true }, { x = 144.5, w = 19, floors = 2, shop = true }, { x = 164, w = 19, floors = 4 },
+		{ x = 184, w = 19, floors = 3, shop = true }, { x = 204, w = 20, floors = 2 } }, 96, Vector3.new(0, 0, -1), true)
 	-- a distant skyline on the hills (simpler buildings, partly hidden by trees)
 	local rng = Random.new(3)
 	for k = 1, 22 do
@@ -1158,20 +1814,13 @@ local function buildGreenery()
 		end
 		for _ = 1, lawn.flowers do
 			local pos = Vector3.new(rng:NextNumber(lawn.MinX + 2, lawn.MaxX - 2), 0, rng:NextNumber(lawn.MinZ + 2, lawn.MaxZ - 2))
-			TownKit.flowers(green, Vector3.new(pos.X, ground(pos.X, pos.Z) - 0.05, pos.Z), 1.6, 9)
+			TownKit.flowers(green, Vector3.new(pos.X, ground(pos.X, pos.Z) - 0.05, pos.Z), 1.6, 6)
 		end
 		for _ = 1, lawn.rocks or 1 do
 			local pos = Vector3.new(rng:NextNumber(lawn.MinX + 2, lawn.MaxX - 2), -0.3, rng:NextNumber(lawn.MinZ + 2, lawn.MaxZ - 2))
 			TownKit.rock(green, pos, rng:NextNumber(0.6, 1.1))
 		end
 	end
-	-- street props
-	TownKit.crates(green, CFrame.new(-45, 0.35, Town.Street.MaxZ + 3.2))
-	TownKit.hydrant(green, CFrame.new(-40, 0.35, Town.Street.MinZ - 1.2))
-	TownKit.hydrant(green, CFrame.new(120, 0.35, Town.Street.MaxZ + 1.2))
-	TownKit.bikeRack(green, CFrame.new(28, 0.35, Town.Street.MaxZ + 3), 4)
-	for _, x in ipairs({ -95, -30, 30, 100, 140 }) do TownKit.bin(green, CFrame.new(x, 0.35, Town.Street.MaxZ + 3.2)) end
-	for _, x in ipairs({ -60, 96, 150 }) do TownKit.bench(green, look(Vector3.new(x, 0.35, Town.Street.MaxZ + 3), Vector3.new(x, 0, 0))) end
 end
 
 local function buildBoundary()
@@ -1195,6 +1844,9 @@ function Builder.Build()
 	buildGymFront()
 	buildGymRoofs()
 	buildPlaza()
+	buildPark()
+	buildParking()
+	buildSportsCourt()
 	buildSmoothieBar()
 	buildClothingStore()
 	buildSkatePark()

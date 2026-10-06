@@ -321,11 +321,12 @@ local function refreshStep()
 		local button = hud and hud:FindFirstChild("Stats", true)
 		local dot = button and button:FindFirstChild("Dot")
 		if dot then dot.Visible = true end
-		local map = playerGui:FindFirstChild("BodyMap")
-		local panel = map and map:FindFirstChild("Panel")
-		local stroke = panel and panel:FindFirstChildOfClass("UIStroke")
-		if stroke then stroke.Transparency = 0.2 end
 	end
+	-- the body map (right column) gets a brighter border only during this step
+	local column = playerGui:FindFirstChild("RightColumn")
+	local map = column and column:FindFirstChild("BodyMap", true)
+	local stroke = map and map:FindFirstChildOfClass("UIStroke")
+	if stroke then stroke.Transparency = step.done.type == "statsOpen" and 0.2 or Theme.Alpha.Border end
 end
 
 local function check()
