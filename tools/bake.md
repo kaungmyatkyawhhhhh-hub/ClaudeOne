@@ -20,6 +20,7 @@ the recipes that made the code-made areas into real parts, kept so an area can b
 | `Seasons` | `ServerStorage.SeasonDecor.<Halloween/Winter/Summer>` templates (Winter has the Sled Pull machine) | SeasonService clones the running season's folder |
 | `NPCs` | `Workspace.NPCs`: Coach Dex (`TalkPrompt`, tag `Coach`), eight gym regulars (tag `GymNpc`, attribute `Gym`), moves the gym cat | QuestService, GymGoerService |
 | `Fix3Overlaps` | one-off fixes for the saved place (fix list 3): park ring path merged into one `PathRing` part, solid umbrella canopies, path edges raised, coplanar faces nudged apart (`Run()`; `Scan()` / `Detail(prefix)` only report). Needs `Kit` + `TownKit` loaded next to it. Running it again only touches what still overlaps. | |
+| `Sauna` | `Workspace.Town.Sauna`: wooden beach sauna east of the beach gym (deck, path to the boardwalk with a gap cut in the edge rope, benches with seats, stove with steam) and the invisible `SaunaZone` (attribute `Recovery = "Sauna"`) | BoostService (recovery stations) |
 
 Visiting legends are still created by LegendService while they visit (they come and go).
 

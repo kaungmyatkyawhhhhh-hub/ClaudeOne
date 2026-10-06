@@ -142,6 +142,13 @@ local function nearStore(player)
 	return Guard.Near(player, Town.ClothingStore.Center, STORE_REACH)
 end
 
+-- Skateboard decks and wheels live on the board, not the body: if the player is skating, rebuild the board.
+local function refreshBoard(player, item)
+	if item.slot == "Board" or item.slot == "Wheels" then
+		require(script.Parent.SkateService).Refresh(player) -- (required here: SkateService loads after this module)
+	end
+end
+
 local function buy(player, itemId)
 	local item = type(itemId) == "string" and Cosmetics.ById[itemId]
 	local data = PlayerData.Get(player)
@@ -157,6 +164,7 @@ local function buy(player, itemId)
 	state.equipped[item.slot] = item.id -- wear it right away
 	PlayerData.SetTable(player, "cosmetics", state)
 	build(player)
+	refreshBoard(player, item)
 	event(player, "CosmeticBought", { id = item.id })
 end
 
@@ -170,6 +178,7 @@ local function equip(player, itemId)
 	state.equipped[item.slot] = state.equipped[item.slot] ~= item.id and item.id or nil
 	PlayerData.SetTable(player, "cosmetics", state)
 	build(player)
+	refreshBoard(player, item)
 end
 
 function CosmeticService.Start()

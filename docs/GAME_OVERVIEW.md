@@ -67,6 +67,8 @@ for where everything sits in Studio.
 - `Server/LegendService`: legend visits, challenges and rewards.
 - `Server/ProGymService`: the pro gym next to the starter gym (glass wall + door; keeps locked players out).
 - `Server/GymGoerService`: 8 NPC regulars walk to free machines, lift, rest, drink water, chat (never take a player's machine).
+- `Server/CosmeticService`: clothing store gear (`Config/Cosmetics`): buy at the counter, wear from the Wardrobe; belts, headbands, wraps, shakers are built on the body; the Board and Wheels slots are skateboard upgrades.
+- `Server/SkateService`: the town skateboard (Skate button); deck look and wheel speed come from the Board/Wheels cosmetics.
 - `Server/SeasonService`: seasonal decorations, bonus and rep counting.
 - `Server/CrewService`: crews (create, invite, join, leave, tags, top crews; creates the `Crew` remote).
 - `Server/MonetizationService`: pass ownership + effects, product receipts, server boost.

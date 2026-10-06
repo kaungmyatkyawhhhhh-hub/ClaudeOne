@@ -8,6 +8,13 @@ Stamina.RegenDelay = 2 -- seconds after a rep before refilling starts (shorter =
 Stamina.Recovery = {
 	StretchMat = 2.5, -- x the normal refill speed
 	Cardio = 1.6,     -- treadmills, bikes and rowers: an easy cool-down
+	Sauna = 3.5,      -- the beach sauna (Workspace.Town.Sauna, tools/builders/Sauna.luau)
+}
+-- the small note when you step into one (once per visit)
+Stamina.RecoveryNotes = {
+	StretchMat = "Stretching area. Stamina refills faster here.",
+	Cardio = "Easy cardio. Stamina refills a bit faster here.",
+	Sauna = "Sauna. Stamina refills super fast here.",
 }
 
 -- Energy Shakes: bought at the shake machine by the door (or earned), drunk from the button on the right.

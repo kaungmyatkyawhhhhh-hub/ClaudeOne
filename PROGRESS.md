@@ -64,6 +64,12 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   Titles, Genetics, Emotes, Crew, Wardrobe, Settings), 8px gaps, vertically centered on the left edge below the top
   bar; if they don't fit the height they wrap into 2 columns. Hover = slight grow + brighter; press = 0.95. Phones:
   one "Menu" button top left opens a centered grid of the same tiles (tap outside or pick one to close).
+- **Sauna (6 Oct):** a wooden beach sauna east of the beach gym (`Workspace.Town.Sauna`, builder `tools/builders/Sauna.luau`):
+  stamina refills 3.5x faster inside (`Stamina.Recovery.Sauna`). Seats on two bench tiers, a stove with steam, a path to
+  the boardwalk. Stepping into any recovery station (sauna, stretching areas, cardio) shows one small note.
+- **Skateboard upgrades (6 Oct):** 5 deck designs and 3 sets of faster wheels (34 / 38 / 42 vs 30) sold at Gear & Fits
+  next to the other gear (new cosmetic slots Board and Wheels), used from the Wardrobe; changing them while skating
+  rebuilds the board. Stats labels now also hide while the Wardrobe, Emotes, Crew, store, mirror or arm wrestling is open.
 - **Glass entrance doors (6 Oct):** the starter gym's double doors (`Workspace.Gym.Entrance`, the two `DoorGlass`
   panels) are see-through glass now (Glass, Transparency 0.6, RGB 200/215/225, Reflectance 0.1, no shadow). Frame,
   divider and push bars unchanged; they still slide open (tag `SlidingDoor`, `SlideX`). It's the only door built from
@@ -122,6 +128,9 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   equipped just ignore it (the item no longer exists).
 - Part 2: the "you grew" moment only plays when the body really changes (a tier with ids); with empty ids it stays
   quiet. A tier with no ids shows the highest filled tier below it. Tier progress counts each muscle up to the goal.
+- Sauna: on the sand east of the beach gym (not inside a gym) so every player can use it from the start. Skate wheels
+  are the only store gear with an effect, and only on skating speed (no gains). Prices: decks 80-150, wheels 150 / 400 / 900.
+- Studio test hook: with `FreshPlayer` on, a Workspace number attribute `TestCoins` sets the starting coins.
 - Part 4: buttons are 64px, not 56: "Wardrobe" is 60px wide at the 14px minimum text size. "Phone" = touch screen
   without a keyboard (Studio: Workspace attribute `TestPhoneLayout`); a small PC window keeps the PC menu. While lifting
   the PC menu keeps only Stats; phones hide the Menu button.

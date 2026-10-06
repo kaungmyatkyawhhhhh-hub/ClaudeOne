@@ -97,6 +97,17 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	end
 end)
 
+-- Recovery stations (sauna, stretching area, cardio): one small note when you step in (BoostService sets the
+-- player attribute Recovery to the station you stand in)
+local lastStation = nil
+player:GetAttributeChangedSignal("Recovery"):Connect(function()
+	local station = player:GetAttribute("Recovery")
+	if station and station ~= lastStation and Stamina.RecoveryNotes[station] then
+		Notify.Show(Stamina.RecoveryNotes[station], nil, "recovery")
+	end
+	lastStation = station
+end)
+
 ------------------------------------------------------------------------
 -- The cat's tail wags (local, so it costs no network)
 ------------------------------------------------------------------------

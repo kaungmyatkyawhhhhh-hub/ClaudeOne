@@ -461,11 +461,25 @@ end
 UIBus.GeneticsVisible.Event:Connect(function(visible) hidden.genetics = visible; update() end)
 UIBus.StatsVisible.Event:Connect(function(visible) hidden.stats = visible; update() end)
 UIBus.MenuPanelVisible.Event:Connect(function(visible) hidden.panel = visible; update() end) -- Titles / Settings
-task.spawn(function() -- the phone menu grid (SideMenu)
-	local grid = playerGui:WaitForChild("MenuGrid", 30)
-	if not grid then return end
-	grid:GetPropertyChangedSignal("Enabled"):Connect(function() hidden.grid = grid.Enabled; update() end)
-end)
+-- the phone menu grid (SideMenu) and the other panels and screens: labels hide while any of them is open
+local PANEL_GUIS = { "MenuGrid", "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle" }
+local function watchPanels()
+	local open = false
+	for _, name in ipairs(PANEL_GUIS) do
+		local gui = playerGui:FindFirstChild(name)
+		if gui and gui:IsA("ScreenGui") and gui.Enabled then open = true end
+	end
+	if hidden.grid ~= open then
+		hidden.grid = open
+		update()
+	end
+end
+for _, name in ipairs(PANEL_GUIS) do
+	task.spawn(function()
+		local gui = playerGui:WaitForChild(name, 60)
+		if gui and gui:IsA("ScreenGui") then gui:GetPropertyChangedSignal("Enabled"):Connect(watchPanels) end
+	end)
+end
 Remotes.MachineState.OnClientEvent:Connect(function(state)
 	if state == "Enter" then onMachine = true elseif state == "Exit" then onMachine = false end
 	update()

@@ -39,6 +39,7 @@ local function publish(player)
 	player:SetAttribute("CoinsBoost", product(player, "coins"))
 	local shake = playerSources[player] and playerSources[player].Shake
 	player:SetAttribute("ShakeEnds", alive(shake, now()) and shake.untilTime or nil)
+	player:SetAttribute("Recovery", BoostService.StationOf(player)) -- the station you stand in (a small note, ShakeClient)
 end
 
 function BoostService.SetPlayer(player, name, source)
@@ -90,7 +91,7 @@ local function scan()
 	for _, instance in ipairs(Workspace:GetDescendants()) do
 		local kind = instance:GetAttribute("Recovery")
 		if kind and Stamina.Recovery[kind] and (instance:IsA("Model") or instance:IsA("BasePart")) then
-			table.insert(stations, { instance = instance, multiplier = Stamina.Recovery[kind] })
+			table.insert(stations, { instance = instance, kind = kind, multiplier = Stamina.Recovery[kind] })
 		end
 	end
 end
@@ -107,20 +108,27 @@ local function inside(instance, position)
 	return math.abs(p.X) <= size.X / 2 and math.abs(p.Z) <= size.Z / 2 and p.Y > -size.Y / 2 - 1 and p.Y < size.Y / 2 + 7
 end
 
--- Stamina refill multiplier right now (stations x regen sources).
-function BoostService.Regen(player)
-	local multiplier = product(player, "regen")
+-- The recovery station the player stands in right now, or nil.
+local function stationAt(player)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if root then
-		for _, station in ipairs(stations) do
-			if station.instance.Parent and inside(station.instance, root.Position) then
-				multiplier *= station.multiplier
-				break
-			end
-		end
+	if not root then return nil end
+	for _, station in ipairs(stations) do
+		if station.instance.Parent and inside(station.instance, root.Position) then return station end
 	end
-	return multiplier
+	return nil
+end
+
+-- The kind of station ("Sauna", "StretchMat", "Cardio") the player stands in, or nil.
+function BoostService.StationOf(player)
+	local station = stationAt(player)
+	return station and station.kind or nil
+end
+
+-- Stamina refill multiplier right now (stations x regen sources).
+function BoostService.Regen(player)
+	local station = stationAt(player)
+	return product(player, "regen") * (station and station.multiplier or 1)
 end
 
 function BoostService.Start()

@@ -188,6 +188,9 @@ local function onPlayerAdded(player)
 		warn("[PlayerData] FreshPlayer: playing as a new player on temporary data. Progress will NOT save.")
 		data = DataTemplate.new()
 		canSave = false
+		-- optional "TestCoins" (number) attribute: start with that many coins (to test the stores)
+		local testCoins = workspace:GetAttribute("TestCoins")
+		if type(testCoins) == "number" then data.coins = math.max(0, math.floor(testCoins)) end
 	end
 
 	-- Saves from before the tutorial existed: players who already lifted skip it.

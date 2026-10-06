@@ -2,12 +2,16 @@
 -- in the hub (Config.Town) and not on a machine, welds a board under their feet and makes them faster. Normal movement
 -- controls steer (thumbstick on phones), so there's nothing new to learn. Leaving the outdoor area, getting on a
 -- machine or dying takes the board away. Everyone sees the board; the "Skating" attribute drives SkateClient.
+-- Upgrades come from the clothing store (Config.Cosmetics): a deck design (slot Board) and faster wheels (slot Wheels,
+-- item.speed); changing them while skating rebuilds the board (SkateService.Refresh, called by CosmeticService).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = ReplicatedStorage.Shared.Config
 local Town = require(Config.Town)
+local Cosmetics = require(Config.Cosmetics)
 local ActionService = require(script.Parent.ActionService)
+local PlayerData = require(script.Parent.PlayerData)
 
 local SkateService = {}
 
@@ -36,7 +40,27 @@ local function allowed(player)
 	return Town.IsOutdoors(root.Position)
 end
 
-local function makeBoard(root, hipHeight)
+-- The deck and wheels the player uses (Config.Cosmetics slots Board and Wheels, bought at the clothing store):
+-- { deck, stripe, wheel, speed }. Without them: the plain black board at the normal speed.
+local function lookOf(player)
+	local data = PlayerData.Get(player)
+	local equipped = data and data.cosmetics and data.cosmetics.equipped or {}
+	local owned = data and data.cosmetics and data.cosmetics.owned or {}
+	local function item(slot)
+		local id = equipped[slot]
+		local found = id and owned[id] and Cosmetics.ById[id]
+		return found and found.slot == slot and found or nil
+	end
+	local deck, wheels = item("Board"), item("Wheels")
+	return {
+		deck = deck and deck.color or SKATE.DeckColor,
+		stripe = deck and deck.color2 or nil,
+		wheel = wheels and wheels.color or SKATE.WheelColor,
+		speed = wheels and wheels.speed or SKATE.WalkSpeed,
+	}
+end
+
+local function makeBoard(root, hipHeight, look)
 	local board = Instance.new("Model")
 	board.Name = "Skateboard"
 	-- the deck sits right under the feet of the lifted character (hipHeight includes the lift), wheels on the ground
@@ -57,12 +81,15 @@ local function makeBoard(root, hipHeight)
 		p.Parent = board
 		return p
 	end
-	piece("Deck", Vector3.new(3.2, 0.12, 0.95), CFrame.new(), SKATE.DeckColor, Enum.Material.Wood)
+	piece("Deck", Vector3.new(3.2, 0.12, 0.95), CFrame.new(), look.deck, Enum.Material.Wood)
 	piece("Grip", Vector3.new(3.1, 0.02, 0.9), CFrame.new(0, 0.07, 0), SKATE.GripColor, Enum.Material.Sand)
+	if look.stripe then
+		piece("Stripe", Vector3.new(3.0, 0.02, 0.18), CFrame.new(0, 0.085, 0), look.stripe, Enum.Material.SmoothPlastic)
+	end
 	for _, x in ipairs({ -1.05, 1.05 }) do
 		piece("Truck", Vector3.new(0.18, 0.1, 0.8), CFrame.new(x, -0.11, 0), Color3.fromHex("#9EA2A8"), Enum.Material.Metal)
 		for _, z in ipairs({ -0.42, 0.42 }) do
-			piece("Wheel", Vector3.new(0.12, 0.26, 0.26), CFrame.new(x, -0.2, z) * CFrame.Angles(0, math.rad(90), 0), SKATE.WheelColor, Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+			piece("Wheel", Vector3.new(0.12, 0.26, 0.26), CFrame.new(x, -0.2, z) * CFrame.Angles(0, math.rad(90), 0), look.wheel, Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
 		end
 	end
 	return board
@@ -86,12 +113,25 @@ local function start(player)
 	local character, humanoid, root = parts(player)
 	local rider = { walkSpeed = humanoid.WalkSpeed, hipHeight = humanoid.HipHeight }
 	humanoid.HipHeight = rider.hipHeight + SKATE.Lift
-	local board = makeBoard(root, humanoid.HipHeight)
-	humanoid.WalkSpeed = SKATE.WalkSpeed
+	local look = lookOf(player)
+	local board = makeBoard(root, humanoid.HipHeight, look)
+	humanoid.WalkSpeed = look.speed
 	board.Parent = character
 	rider.board = board
 	riders[player] = rider
 	player:SetAttribute("Skating", true)
+end
+
+-- The player changed deck or wheels (CosmeticService): rebuild the board if they're on it.
+function SkateService.Refresh(player)
+	local rider = riders[player]
+	local character, humanoid, root = parts(player)
+	if not rider or not humanoid or not root then return end
+	if rider.board then rider.board:Destroy() end
+	local look = lookOf(player)
+	rider.board = makeBoard(root, humanoid.HipHeight, look)
+	rider.board.Parent = character
+	humanoid.WalkSpeed = look.speed
 end
 
 function SkateService.Start()

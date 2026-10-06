@@ -87,7 +87,8 @@ local function refreshStore()
 	for id, card in pairs(storeCards) do
 		local item = Cosmetics.ById[id]
 		if owned[id] then
-			card.status.Text = equipped[item.slot] == id and "Wearing · tap to take off" or "Owned · tap to wear"
+			local using = Cosmetics.SlotById[item.slot].verb == "Using"
+			card.status.Text = equipped[item.slot] == id and (using and "Using · tap to stop" or "Wearing · tap to take off") or (using and "Owned · tap to use" or "Owned · tap to wear")
 			card.status.TextColor3 = Colors.Text
 		elseif confirming == id then
 			card.status.Text = "Tap again to buy"
@@ -216,7 +217,7 @@ local function refreshWardrobe()
 					{ Theme.Pad("S"), Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
 				swatch({ LayoutOrder = 1, Size = UDim2.fromOffset(22, 22) }, item.color).Parent = button
 				Theme.Text({ LayoutOrder = 2, Text = item.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -110, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = button })
-				Theme.Text({ LayoutOrder = 3, Text = wearing and "Take off" or "Wear", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(0, 70, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = button })
+				Theme.Text({ LayoutOrder = 3, Text = (slot.verb == "Using") and (wearing and "Stop" or "Use") or (wearing and "Take off" or "Wear"), Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(0, 70, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = button })
 				button.Activated:Connect(function()
 					Remotes.PlayerAction:FireServer("EquipCosmetic", item.id)
 					Audio.PlayUI("Click")
