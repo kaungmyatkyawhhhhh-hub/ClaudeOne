@@ -281,6 +281,19 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .perk.prestige{background:linear-gradient(135deg,#15161c,#2b2410);color:#f4e7c4}.perk.prestige .d{color:#cdbb8e}.perk.prestige .c{background:#cf9a14;color:#15161c}
 .seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.seg3 button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:9px 6px;font:800 .85rem var(--body);display:flex;flex-direction:column;gap:2px;cursor:pointer}.seg3 button small{font:600 .66rem var(--mono);color:var(--muted)}.seg3 button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.seg3 button.on small{color:inherit;opacity:.75}
 .flyov{background:linear-gradient(#7fc4f0,#d9efff)}
+.hypebar{position:relative;margin-top:6px;height:15px;border-radius:8px;background:var(--sunk);overflow:hidden}
+.hypebar>i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#ff7a3d,#ffcc33);border-radius:8px;transition:width .3s}
+.hypebar>b{position:relative;display:block;font:800 9px/15px var(--mono);letter-spacing:.04em;text-transform:uppercase;padding-left:7px;color:var(--ink)}
+.hypebar.on{box-shadow:0 0 12px #ffb000;animation:hypeon .5s ease-in-out infinite alternate}.hypebar.on>i{background:linear-gradient(90deg,#e2364a,#ff7a3d,#ffcc33)}.hypebar.on>b{color:#1b1200}
+@keyframes hypeon{to{box-shadow:0 0 22px #ff7a3d}}
+body.frz::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;box-shadow:inset 0 0 70px 10px rgba(255,170,0,.55);animation:frzglow .6s ease-in-out infinite alternate}
+@keyframes frzglow{to{box-shadow:inset 0 0 110px 22px rgba(255,90,40,.6)}}
+.mhype{font:800 .68rem var(--mono);color:#ff7a3d;margin-left:8px}
+.lst.golden{box-shadow:inset 0 0 0 2px #ffcc33,0 0 16px rgba(255,204,51,.55),var(--shadow);background:linear-gradient(110deg,var(--surface) 30%,rgba(255,220,120,.35) 50%,var(--surface) 70%) var(--surface);background-size:250% 100%;animation:goldshine 2.2s linear infinite}
+.itm.golden{box-shadow:inset 0 0 0 2px #ffcc33,0 0 12px rgba(255,204,51,.45),var(--shadow)}
+@keyframes goldshine{from{background-position:150% 0}to{background-position:-100% 0}}
+.gtag{font:800 .6rem var(--mono);color:#1b1200;background:#ffcc33;border-radius:5px;padding:1px 5px}
+
 .rocketov{background:#05061a}.rocketov .saillab{bottom:auto;top:16%}
 .rksky{position:absolute;inset:0;background:linear-gradient(#05061a 0%,#120a3a 30%,#2a5bd7 62%,#9fd8f2 100%);background-size:100% 300%;background-position:0 100%;animation:rksky 2.6s ease-in forwards}
 @keyframes rksky{to{background-position:0 0}}
@@ -746,7 +759,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 <canvas id="world" aria-label="Town map. Tap to walk."></canvas>
 <div class="hud" id="hud">
   <div class="hudtop">
-    <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span></div>
+    <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span><div class="hypebar" id="hype"><i></i><b>🔥 Hype</b></div></div>
     <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span></div>
     <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button></div>
   </div>
@@ -1074,11 +1087,11 @@ const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
 function spend(e,el){
-  if(e>0)e=Math.ceil(e*tEn());
+  if(e>0&&FRZ>0)return true;if(e>0)e=Math.ceil(e*tEn());
   if(S.energy<e){if(el)floatAt(el,"Too tired. Sleep at home.","var(--down)");SFX.nope();buzz(30);if(!S.flags.tiredTip){S.flags.tiredTip=1;banner("Out of energy","r")}return false}
   S.energy-=e;dirty=true;return true;
 }
-function earn(v){S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true;juiceGain(v);if(S.daily&&S.daily.k==="earn")dailyProg("earn",v);
+function earn(v){if(FRZ>0&&v>0)v*=2;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true;juiceGain(v);if(S.daily&&S.daily.k==="earn")dailyProg("earn",v);
   for(const[k,need]of Object.entries(UNLOCK))if(!S.unlocked.includes(k)&&S.earned>=need){S.unlocked.push(k);banner(CAT[k].n+" unlocked","g");SFX.level()}}
 
 /* ================= FX ================= */
@@ -1438,9 +1451,9 @@ function drawWorld(){
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,hs:n.f?8:0,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{...emoOpts(),acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
-  mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
+  drawThief(ppl);mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
-  mpTags();drawTownies();drawCop();
+  mpTags();drawTownies();drawCop();funDraw();
   drawToys();drawBirds(1/60);
   [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
     ctx.fillStyle="#ffffff";ctx.font="900 26px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";
@@ -1450,7 +1463,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  funArrows();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -2706,16 +2719,16 @@ $("jobChip").onclick=()=>{if(S.job&&!room){audioOn();walkTo(S.job.dest)}};
 const FINDS=[];let findT=6;
 function spawnFind(gold){for(let i=0;i<80;i++){const x=rnd(60,W-60),y=rnd(90,SEA-60);if(!regionOpen(regionOf(x,y))||inBld(x,y,24)||inPond(x,y,20))continue;const d=Math.hypot(x-S.px,y-S.py);if(d<180||d>1300)continue;FINDS.push({x,y,gold:gold||Math.random()<.07,life:160,ph:Math.random()*7});return}}
 function findsTick(dt){
-  findT-=dt;if(findT<=0){findT=rnd(22,40);if(FINDS.length<4)spawnFind()}
+  findT-=dt;if(findT<=0){findT=rnd(7,14);if(FINDS.length<7)spawnFind()}
   for(let i=FINDS.length-1;i>=0;i--){const f=FINDS[i];f.life-=dt;f.ph+=dt;if(f.life<=0){FINDS.splice(i,1);continue}if(!room&&Math.hypot(S.px-f.x,S.py-f.y)<32){FINDS.splice(i,1);pickFind(f)}}
 }
 function pickFind(f){
-  S.stats.finds=(S.stats.finds||0)+1;rivalProg("finds",1);dirty=true;const r=Math.random(),room_=S.stash.length<maxSlots();
+  S.stats.finds=(S.stats.finds||0)+1;rivalProg("finds",1);dirty=true;hype(1);const r=Math.random(),room_=S.stash.length<maxSlots();
   const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(HEAVY[p.code]||0)<=S.pr);
   const give=it=>{const c=CAT[it.cat],cond=pick(c.conds);S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:rnd(.97,1.03),fake:false,paid:0});return it.name};
   if(f.gold){setTimeout(()=>gainCrate(),900);confetti(80);flash("#ffcc33",.3);const it=pick(pool.slice().sort((a,b)=>b.base-a.base).slice(0,5));SFX.grail();buzz([20,40,20,40]);banner("Golden find","g");
     if(room_)rayText("You found a "+give(it)+" just lying there. It's in your stash.");else{const v=Math.round(it.base*.6);earn(v);rayText("Golden find, but your stash is full. Sold it on the spot for "+fmt(v)+".")}return}
-  if(r<.4||!room_&&r<.75){const v=Math.round(rnd(15,45)*(1+repLevel()*.5));earn(v);SFX.sell();banner("Found "+fmt(v),"g")}
+  if(r<.4||!room_&&r<.75){const v=Math.round(Math.max(rnd(15,45)*(1+repLevel()*.5),(S.cash+stashVal())*rnd(.01,.03)));earn(v);SFX.sell();banner("Found "+fmt(v),"g")}
   else if(r<.75){const n=give(pick(pool.filter(p=>p.base<=Math.max(200,(S.cash+stashVal())*.3)).concat(pool.slice(0,1))));SFX.reveal();banner("Found: "+n,"g")}
   else{S.energy=Math.min(maxEnergy(),S.energy+30);SFX.level();banner("Free snack · +30 energy","u")}
 }
@@ -2814,9 +2827,10 @@ const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*collK(s.cat)*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(isWeekend()?1.15:1)*(1+.12*pk("cat_"+s.cat)));
+const sellValue=s=>(s.gold?4:1)*valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*collK(s.cat)*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(isWeekend()?1.15:1)*(1+.12*pk("cat_"+s.cat)));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
-function newListing(){
+function newListing(){const l=newListing0();if(l&&l.kind==="item"&&!l.fake&&S.earned>200&&Math.random()<.04)l.golden=1;return l}
+function newListing0(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts)*tLife();
   const b0={id:S.nextId++,disc:0,gone:0,fake:false};
   if(S.earned>600&&Math.random()<MC().grail){
@@ -2857,7 +2871,7 @@ function openMarket(cfg){
     ${cfg.k==="market"?`<button class="reqbtn" id="mReq">📋 Buyer requests<b>${reqReady()?reqReady()+" ready to deliver":"3 new every day"}</b></button>`:""}
     <div id="event" class="collector"></div>
     <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
-    <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
+    <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="mHype" class="mhype"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
   const m=$("market");slotEls.length=0;slotKeys=[];
   for(let i=0;i<3;i++){const el=document.createElement("div");el.className="lst";el.dataset.i=i;el.tabIndex=0;m.appendChild(el);slotEls.push(el)}
   m.addEventListener("pointerdown",e=>{const el=e.target.closest(".lst");if(!el)return;const i=+el.dataset.i,l=M.market[i];if(!l||l.gone)return;e.preventDefault();audioOn();hold={i,id:l.id,t0:performance.now(),active:false,acc:0};try{el.setPointerCapture(e.pointerId)}catch(_){}});
@@ -2877,9 +2891,9 @@ function drawSlot(i){
   if(!l){el.className="lst empty";el.innerHTML='<span class="shim"></span>';el.f=null;return}
   if(l.gone){el.className="lst walked";el.innerHTML="Seller walked";el.f=null;return}
   const box=l.kind==="mystery",bad=l.rating===0||l.rating<4.3;
-  el.className="lst fresh"+(l.kind==="grail"?" grail":"")+(box?" mys":"");
+  el.className="lst fresh"+(l.kind==="grail"?" grail":"")+(l.golden?" golden":"")+(box?" mys":"");
   el.innerHTML=`${tileFor(l.cat,l.code)}<div class="info"><div class="nm"><span class="nt">${l.name}</span><span class="sel${bad?" bad":""}">${l.rating===0?"New seller":"★"+l.rating.toFixed(1)}</span></div>
-   <div class="sub"><span class="cond">${l.cond}</span>${box?"<span>Could be anything</span>":'<span>Mkt <span class="mono" data-f="mv"></span></span><span class="disc" data-f="disc"></span>'}<span class="tag">${l.kind==="grail"?"GRAIL":"STEAL"}</span>${l.kg?`<span class="kg${S.pr<l.kg?" no":""}">${l.kg} KG</span>`:""}${S.up.legit&&l.fake?'<span class="fk">FAKE</span>':""}</div></div>
+   <div class="sub"><span class="cond">${l.cond}</span>${box?"<span>Could be anything</span>":'<span>Mkt <span class="mono" data-f="mv"></span></span><span class="disc" data-f="disc"></span>'}<span class="tag">${l.kind==="grail"?"GRAIL":"STEAL"}</span>${l.golden?'<span class="gtag">✨ GOLDEN ×4</span>':""}${l.kg?`<span class="kg${S.pr<l.kg?" no":""}">${l.kg} KG</span>`:""}${S.up.legit&&l.fake?'<span class="fk">FAKE</span>':""}</div></div>
    <div class="ask"><div class="pr" data-f="pr"></div><div class="act" data-f="act">${box?"Open":"Buy"}</div></div><div class="life"><i data-f="life"></i></div>`;
   el.f={};el.querySelectorAll("[data-f]").forEach(n=>el.f[n.dataset.f]=n);
   if(l.kind==="grail"){SFX.grail();buzz([20,30,20])}
@@ -2901,9 +2915,9 @@ function renderStash(newIdx=-1){
   for(let i=0;i<maxSlots();i++){
     const s=S.stash[i];if(!s){h+=`<div class="slot0">Empty slot</div>`;continue}
     const hot=hotFor(s),v=sellValue(s),pct=(v-s.paid)/Math.max(1,s.paid);
-    h+=`<button class="itm ${pct>=0?"up":"down"}${hot?" hot":""}${i===newIdx?" new":""}" data-i="${i}" aria-label="Sell ${s.name} for ${fmt(v)}">${tileFor(s.cat,s.code,true)}
+    h+=`<button class="itm ${pct>=0?"up":"down"}${hot?" hot":""}${s.gold?" golden":""}${i===newIdx?" new":""}" data-i="${i}" aria-label="Sell ${s.name} for ${fmt(v)}">${tileFor(s.cat,s.code,true)}
       <div class="iv"><span class="bid">${fmt(v)}</span><span class="pl">${s.paid>0?`${pct>=0?"+":"−"}${Math.abs(Math.round(pct*100))}% · paid ${fmt(s.paid)}`:"Free find"}</span></div>
-      <div class="inm">${s.name} · ${s.cond}</div>${spark(S.hist[s.cat])}${s.fake?'<span class="fc">FAKE</span>':`<span class="hc">×${cmult().toFixed(1)}</span>`}</button>`;
+      <div class="inm">${s.gold?"✨ ":""}${s.name} · ${s.cond}</div>${spark(S.hist[s.cat])}${s.fake?'<span class="fc">FAKE</span>':`<span class="hc">×${cmult().toFixed(1)}</span>`}</button>`;
   }
   $("stash").innerHTML=h;$("slots").textContent=S.stash.length+"/"+maxSlots();
 }
@@ -2933,13 +2947,14 @@ function tryBuy(i){
   if(l.kg&&S.pr<l.kg)return reject(el,`Too heavy. Lift ${l.kg} kg first`);
   if(!spend(3,el))return;
   S.cash-=l.price;
-  const item=l.kind==="mystery"?openBox(l.price):{cat:l.cat,code:l.code,name:l.name,cond:l.cond,base:l.base,noise:rnd(.95,1.05),fake:l.fake};
+  const item=l.kind==="mystery"?openBox(l.price):{cat:l.cat,code:l.code,name:l.name,cond:l.cond,base:l.base,noise:rnd(.95,1.05),fake:l.fake,gold:l.golden?1:0};
   item.paid=l.price;S.stash.push(item);dirty=true;deedBuyHook(M.cfg.k,l.price);if(M.cfg.k==="flea")S.flags.fleaBuy=1;
   floatAt(el,fmt(-l.price)+(l.disc>0?`<small>LOWBALLED ${Math.round(l.disc*100)}%</small>`:""),"var(--ink)");
   M.market[i]=null;M.restock[i]=rnd(.35,.9);buzz(8);renderStash(S.stash.length-1);updateMarket();updMini();
   if(l.kind==="mystery"){SFX.reveal();const v=valueOf(item);setNews(`Mystery box: <b class="${v>=l.price?"u":"d"}">${item.name}</b> · ${item.cond} · worth ${fmt(v)}`);M.newsT=5;banner(v>l.price*2.5?"Jackpot":"Box opened",v>l.price*2.5?"g":"a")}
   else if(item.fake){S.stats.fakes++;SFX.buy();setTimeout(()=>{SFX.scam();buzz([30,50,30])},250);banner("It's a fake","r")}
-  else if(l.kind==="grail"){S.stats.grails++;SFX.grail();banner("Grail secured","g")}
+  else if(l.kind==="grail"){S.stats.grails++;SFX.grail();banner("Grail secured","g");hype(2)}
+  else if(l.golden){SFX.grail();buzz([20,30,20]);const bc=elC(el);if(bc)sparks(bc[0],bc[1],"#ffcc33",40,1.2);banner("✨ Golden item! Sells for ×4","g");hype(2)}
   else SFX.buy();
 }
 function sellAt(i,v,{hot=false,el=null}={}){
@@ -2950,7 +2965,7 @@ function sellAt(i,v,{hot=false,el=null}={}){
   earn(v+bonus);S.stats.flips++;if(S.stats.flips%10===0||Math.random()<.06)setTimeout(()=>gainCrate(),350);dailyProg("sales");if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);
   S.stash.splice(i,1);
   if(el)floatAt(el,(gain>=0?"+":"−")+fmt(Math.abs(gain+bonus)).replace("−","")+(crit>1?`<small>CRIT ×${crit}</small>`:bonus?`<small>STREAK ×${(1+Math.min(.1*(M.streak-1),.5)).toFixed(1)}</small>`:hot?"<small>COLLECTOR</small>":""),gain>=0?"var(--up)":"var(--down)");
-  if(gain>0){SFX.sell(M.streak);buzz(12)}else{SFX.loss();buzz(35)}
+  if(gain>0){SFX.sell(M.streak);buzz(12);hype(crit>1?3:s.gold?3:1)}else{SFX.loss();buzz(35)}
   if(hot){M.ev=null;M.nextEv=rnd(2,4);SFX.hot();banner("Sold to collector","g")}
   else if(gain>=s.paid&&s.paid>0)banner("Doubled up","a");
   renderStash();renderEvent();updMini();
@@ -3025,7 +3040,7 @@ function loop(now){
     if(playing){
       S.clock+=dt/10;if(S.clock>=24){S.clock-=24;S.day++}
       if(S.protein>0)S.protein=Math.max(0,S.protein-dt);
-      S.energy=Math.min(maxEnergy(),S.energy+dt/8*(S.buffs&&S.buffs.fed>0?2:1));
+      S.energy=Math.min(maxEnergy(),S.energy+dt/3*(S.buffs&&S.buffs.fed>0?2:1));
       const wasT=S.awake>20;S.awake=(S.awake||0)+dt/10;if(!wasT&&S.awake>20){banner("You're tired","r");rayText("You've been up all day. Lifts are harder and you walk slower until you sleep at Home.")}
       for(const b in S.buffs)if(S.buffs[b]>0)S.buffs[b]=Math.max(0,S.buffs[b]-dt);
       if(S.lastSeason!==season().n){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
@@ -3050,7 +3065,7 @@ function loop(now){
       if(room==="biz")shiftTick(dt);
       if(room==="exp")expTick(dt);
       if(room==="storage")lotTick(dt);
-      if(!SCN)findsTick(dt);jobTick(dt);rivalTick(dt);
+      if(!SCN)findsTick(dt);funTick(dt);jobTick(dt);rivalTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else{nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
@@ -3058,7 +3073,7 @@ function loop(now){
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderBzChip();renderLvlBtn();renderPillTog()}
     }
-    NPCS.forEach(n=>{if(!n.ok){n.ok=1;n.t=npcNext(n,roadPoint)}const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,roadPoint);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
+    NPCS.forEach(n=>{if(BUY&&BUY.n===n){n.ph+=dt*.2;return}if(!n.ok){n.ok=1;n.t=npcNext(n,roadPoint)}const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,roadPoint);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room){if(SCN)drawScene();else drawWorld()}
   }
   requestAnimationFrame(loop);
@@ -4224,7 +4239,12 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=13,WN=[
+const WN_VER=14,WN=[
+ ["🔥","Hype & FRENZY","Every good flip, find and catch fills your Hype bar. Fill it to start a 30-second FRENZY: double money, no energy cost and instant restocks."],
+ ["🦹","Thieves","Every few minutes a thief grabs a bag of cash. Tap him and chase him down on the map for a big reward."],
+ ["💰","Street buyers","Locals stop and offer extra for something in your stash. Walk up to them to sell it on the spot, no menus."],
+ ["✨","Golden items","Rare golden listings in the market sell for ×4."],
+ ["⚡","Less waiting","Energy refills 2.5× faster, and shiny finds pop up all over town far more often (and are worth more as you get richer)."],
  ["🏙️","Flip Tower top floor","The Flip Tower now tops out at floor 500, the Star touch milestone."],
  ["🚀","Blast off to the Cosmos","The trip to World 2 is now a rocket launch, and the time machine to World 3 pulls you through a spinning time whirlpool."],
  ["💾","Stay in your world","Closing the game in World 2 or World 3 no longer sends you back to Earth. You load right back in where you left off."],
@@ -5780,6 +5800,46 @@ function resumeWorld(){const L=S.wl;S.wl=null;if(!L||MPW||SCN)return;try{
 function npcBlocked(x,y){if(SCN)return!SCN.ok(x,y)||SCN.places.some(p=>p.bld&&p.w&&x>p.x-8&&x<p.x+p.w+8&&y>p.y-8&&y<p.y+p.h+4);return x<20||x>W-20||y<20||y>SEA-20||inBld(x,y,8)||inPond(x,y,6)}
 function npcPathOk(x0,y0,x1,y1){const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/12);for(let i=1;i<=n;i++){const k=i/n;if(npcBlocked(x0+(x1-x0)*k,y0+(y1-y0)*k))return false}return true}
 function npcNext(n,gen){for(let t=0;t<16;t++){let p;if(t%2){const a=Math.random()*7,r=rnd(60,320);p=[n.x+Math.cos(a)*r,n.y+Math.sin(a)*r]}else p=gen();if(!npcBlocked(p[0],p[1])&&npcPathOk(n.x,n.y,p[0],p[1]))return p}return[n.x+rnd(-1,1),n.y+rnd(-1,1)]}
+/* ================= the fun update: hype & frenzy, a thief to chase, street buyers ================= */
+// Hype fills with every good thing you do. Full hype = FRENZY: double money, no energy cost, fast restocks.
+const HYPE_MAX=10;let FRZ=0,hypeR=0;
+function hype(n){if(!S||FRZ>0)return;S.hype=Math.min(HYPE_MAX,(S.hype||0)+n);S.hypeT=0;dirty=true;if(S.hype>=HYPE_MAX)frenzyStart();renderHype()}
+function frenzyStart(){FRZ=30;S.hype=0;S.stats.frenzies=(S.stats.frenzies||0)+1;dirty=true;document.body.classList.add("frz");SFX.rebirth();flash("#ffcc33",.5);confetti(220,null,null,["#ffcc33","#ff7a3d","#e2364a","#fff"]);shake(8,.5);buzz([30,40,30,40]);banner("🔥 FRENZY! Double money, free energy","g")}
+function renderHype(){const h=$("hype"),f=FRZ>0,k=f?FRZ/30:(S.hype||0)/HYPE_MAX;if(h){h.classList.toggle("on",f);h.firstChild.style.width=Math.round(k*100)+"%";h.lastChild.textContent=f?"🔥 FRENZY ×2 · "+Math.ceil(FRZ)+"s":"🔥 Hype "+(S.hype||0)+"/"+HYPE_MAX}
+  const m=$("mHype");if(m)m.textContent=f?"🔥 FRENZY "+Math.ceil(FRZ)+"s":(S.hype||0)?"🔥 "+(S.hype||0)+"/"+HYPE_MAX:""}
+function funTick(dt){
+  if(FRZ>0){FRZ-=dt;if(M)for(let i=0;i<3;i++)M.restock[i]=Math.min(M.restock[i],.12);if(FRZ<=0){FRZ=0;document.body.classList.remove("frz");banner("Frenzy over · build hype again","a")}}
+  else if(S.hype>0){S.hypeT=(S.hypeT||0)+dt;if(S.hypeT>30){S.hypeT=20;S.hype--;dirty=true}}
+  hypeR-=dt;if(hypeR<=0){hypeR=.2;renderHype()}
+  if(!SCN&&!MPW){thiefTick(dt);buyerTick(dt)}else{THIEF=null;BUY=null}}
+// a thief snatches a bag of cash; chase him down on the map
+let THIEF=null,thiefT=75;
+function thiefTick(dt){if(!playing||(S.tut!=null&&S.tut<6))return;
+  if(!THIEF){if(room)return;thiefT-=dt;if(thiefT>0)return;thiefT=rnd(110,200);
+    for(let t=0;t<40;t++){const a=Math.random()*7,r=rnd(170,260),x=S.px+Math.cos(a)*r,y=S.py+Math.sin(a)*r;if(!npcBlocked(x,y)){THIEF={x,y,t:25,ph:0};banner("🦹 Thief! Tap him to give chase","r");SFX.hot();buzz([40,30,40]);return}}return}
+  const T=THIEF;T.t-=dt;T.ph+=dt;const dx=T.x-S.px,dy=T.y-S.py,d=Math.hypot(dx,dy);
+  if(d<30&&!room){THIEF=null;const v=Math.round(Math.max(300,(S.cash+stashVal())*rnd(.06,.12)));earn(v);hype(4);gainCrate(3);S.stats.thieves=(S.stats.thieves||0)+1;dirty=true;SFX.grail();shake(8,.5);confetti(160);flash("#2fd28a",.35);buzz([30,30,60]);banner("Caught the thief! +"+fmt(v),"g");return}
+  if(T.t<=0){THIEF=null;banner("The thief got away","a");SFX.loss();return}
+  if(moving&&target&&Math.hypot(target[0]-T.x,target[1]-T.y)<110)target=[T.x,T.y];// keep chasing once you've tapped him
+  const sp=walkSpeed()*.8*dt,base=Math.atan2(dy,dx)+Math.sin(T.ph*3)*.6;
+  for(const o of[0,.6,-.6,1.2,-1.2,1.8,-1.8,2.4,-2.4]){const nx=T.x+Math.cos(base+o)*sp,ny=T.y+Math.sin(base+o)*sp;if(!npcBlocked(nx,ny)){T.x=nx;T.y=ny;T.hd=base+o;break}}}
+function drawThief(ppl){const T=THIEF;if(!T)return;ppl.push([T.y,()=>{drawPerson(T.x,T.y,{shirt:"#1b1f2a",skin:"#e8b896",hair:"#141414",legs:"#2a2f3c",mv:true,ph:T.ph*1.3});
+  ctx.fillStyle="#141414";ctx.fillRect(T.x-10,T.y-41,20,5);ctx.fillStyle="#fff";ctx.fillRect(T.x-6,T.y-40,3,2.5);ctx.fillRect(T.x+3,T.y-40,3,2.5);
+  const bx=T.x+(Math.cos(T.hd||0)>0?-13:13),by=T.y-22;ctx.fillStyle="#b88a4a";ctx.beginPath();ctx.arc(bx,by,9,0,7);ctx.fill();ctx.fillStyle="#7a5a2a";ctx.fillRect(bx-3,by-12,6,4);ctx.fillStyle="#1f7a3a";ctx.font="900 10px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("$",bx,by+1)}])}
+// a local wants something from your stash and pays extra; walk up to them to sell it on the spot
+let BUY=null,buyT=30;
+function buyerTick(dt){if(!playing)return;
+  if(BUY){BUY.t-=dt;const n=BUY.n,s=BUY.s;if(!S.stash.includes(s)||BUY.t<=0){BUY=null;return}
+    if(!room&&Math.hypot(S.px-n.x,S.py-n.y)<36){const v=BUY.v;S.stash.splice(S.stash.indexOf(s),1);earn(v);S.stats.flips++;S.stats.profit+=v-(s.paid||0);S.stats.street=(S.stats.street||0)+1;dirty=true;dailyProg("sales");hype(2);
+      SFX.sell(4);buzz([15,20,15]);confetti(70,null,null,["#2fd28a","#ffcc33","#fff"]);n.bub={txt:"Pleasure doing business!",until:wt+3};banner("Sold "+s.name+" to "+n.n+" · "+fmt(v),"g");BUY=null}return}
+  if(room||!S.stash.length||(S.tut!=null&&S.tut<6))return;buyT-=dt;if(buyT>0)return;buyT=rnd(30,55);
+  const s=pick(S.stash.filter(x=>!x.fake)||[]);if(!s)return;const n=pick(NPCS.filter(n=>Math.hypot(n.x-S.px,n.y-S.py)<900)),v=Math.round(sellValue(s)*rnd(1.4,1.8));if(!n)return;
+  BUY={n,s,v,t:45};SFX.news();banner(n.n+" wants your "+s.name+" · "+fmt(v),"a")}
+function funDraw(){const B=BUY;if(!B)return;const n=B.n,y=n.y-80+Math.sin(wt*4)*3,txt="💰 "+fmt(B.v)+" · "+Math.ceil(B.t)+"s";ctx.font="800 11px "+FONTS.m;ctx.textAlign="center";ctx.textBaseline="middle";const w=ctx.measureText(txt).width+18;
+  ctx.fillStyle="#1f9a55";rr(n.x-w/2,y-11,w,22,11);ctx.fill();ctx.beginPath();ctx.moveTo(n.x-6,y+10);ctx.lineTo(n.x+6,y+10);ctx.lineTo(n.x,y+17);ctx.closePath();ctx.fill();ctx.fillStyle="#fff";ctx.fillText(txt,n.x,y);
+  const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle="#2fd28a";ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(n.x,n.y+2,22+pu*6,9+pu*2,0,0,7);ctx.stroke();ctx.globalAlpha=1;
+  if(THIEF){const T=THIEF;ctx.font="800 11px "+FONTS.m;const tt="🦹 "+Math.ceil(T.t)+"s";ctx.fillStyle="rgba(226,54,74,.92)";const tw=ctx.measureText(tt).width+16;rr(T.x-tw/2,T.y-78,tw,20,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText(tt,T.x,T.y-68)}}
+function funArrows(){if(room)return;if(BUY)drawEdgeArrow(BUY.n.x,BUY.n.y,"#2fd28a");if(THIEF)drawEdgeArrow(THIEF.x,THIEF.y,"#e2364a")}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
