@@ -54,7 +54,8 @@ for where everything sits in Studio.
   plate visuals. Validates everything.
 - `Server/ActionService`: non-machine requests (Growth Spurt, equip title, reroll,
   settings). Other services can `Register` more actions.
-- `Server/BodyService`: avatar height and muscle size in clear steps (rules in `Shared/BodyShape`, also used by the mirror rigs and the statue).
+- `Server/BodyService`: the play body: one smooth Roblox-made base body for everyone, gym look (tank top + shorts) or the avatar's own clothes, Growth Spurt height, and the muscle attributes (`MuscleSteps`, `VeinStages`) that `MuscleClient` turns into muscle shapes.
+- `Server/NightLightService`: outdoor lamps (tag `NightLight`) off by day, glowing at night.
 - `Server/TitleService`: stats, title unlocks, badges, overhead title tag.
 - `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt).
 - `Server/QuestService`: Coach Dex, quest progress and rewards.
@@ -79,10 +80,12 @@ for where everything sits in Studio.
 `PlayerAction` (ActionService), `PlayerEvent` (server → client moments).
 
 **Client** (`StarterPlayerScripts`), all UI is built in code (StarterGui is empty)
-- `MachineClient`: auto reps + tapping (Lift button, PUMP meter, BIG REP), machine HUD, lifting effects and feel, NEW PR banner, level flash, next-weight text on machine prompts.
+- `MachineClient`: auto reps + tapping (tap anywhere / click / Space, pump bar above the panel, BIG REP), machine HUD, lifting effects and feel, NEW PR banner, level flash, next-weight text on machine prompts.
 - `ProgressClient`: the always-visible Growth Spurt bar (top center) with a "next goal" line, and the "you grew" moment.
 - `ProGymClient`: the glass door between the gyms (slides open from Growth Spurt 2, locked before).
-- `StatsClient`: the body map (front + back, 18 muscle shapes, bottom left) and the full stats screen (groups, muscles, grades, Growth Spurt goal and button).
+- `MuscleClient`: builds the visible muscles and veins (`Shared/MuscleBody`) on every body tagged `MuscleBody` (players, mirror rigs, statue, NPCs), only when they change.
+- `AreaSignsClient`: area signs show "Opens at Growth Spurt N" only while that area is locked for you.
+- `StatsClient`: the body map (front + back, 18 muscle shapes; right column under the quest panel, folds to a Stats chip) and the full stats screen (groups, muscles, grades, Growth Spurt goal and button).
 - `GeneticsClient`: genetics reveal and reroll screen.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.

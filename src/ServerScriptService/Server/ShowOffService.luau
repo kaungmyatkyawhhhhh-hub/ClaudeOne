@@ -11,6 +11,7 @@ local ShowOff = require(Config.ShowOff)
 local Muscles = require(Config.Muscles)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
+local MuscleBody = require(ReplicatedStorage.Shared.MuscleBody)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 
@@ -156,6 +157,7 @@ local function refreshStatue()
 		if ok then desc = result end
 	end
 	desc = desc or Instance.new("HumanoidDescription") -- default rig
+	MuscleBody.BaseDescription(desc, "Gym") -- the smooth base body (clothes are marble anyway)
 	local okModel, model = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
 	if not okModel or not model then
 		warn("[ShowOffService] Could not build the statue:", model)
@@ -197,6 +199,18 @@ local function refreshStatue()
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then part.Anchored = true end
 	end
+	-- marble muscles: the strongest lifter gets the top size step and full veins (drawn as carved lines)
+	local full, veins = {}, {}
+	for _, muscle in ipairs(Muscles.List) do
+		full[muscle.id] = MuscleBody.Steps
+		veins[muscle.id] = 3
+	end
+	model:SetAttribute("MuscleSteps", MuscleBody.Encode(full))
+	model:SetAttribute("VeinStages", MuscleBody.Encode(veins))
+	model:SetAttribute("BodyLook", "Marble")
+	model:SetAttribute("VeinSeed", userId > 0 and userId or 7)
+	CollectionService:AddTag(model, MuscleBody.Tag)
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- arrives whole, so its muscles build on all parts
 	model.Parent = Workspace
 	if plaque then
 		plaque.Text = userId > 0 and ("Strongest lifter: " .. nameOf(userId)) or "Strongest lifter: could be you"

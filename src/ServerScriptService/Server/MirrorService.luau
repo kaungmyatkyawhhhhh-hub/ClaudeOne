@@ -13,6 +13,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
+local MuscleBody = require(ReplicatedStorage.Shared.MuscleBody)
+local CollectionService = game:GetService("CollectionService")
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 
@@ -44,9 +46,14 @@ local function avatarDescription(player)
 	return desc:Clone(), humanoid
 end
 
--- One preview rig: heightScale = absolute height scale, steps = muscle steps (nil = no muscle growth).
-local function buildRig(player, name, heightScale, steps)
+-- One preview rig: heightScale = absolute height scale, steps = group steps (nil = no muscle growth). `data` given =
+-- today's muscles (shapes + veins), nil = day one (small muscles, no veins). Same base body and look as in game.
+local function buildRig(player, name, heightScale, steps, data)
 	local desc, humanoid = avatarDescription(player)
+	local character = player.Character
+	local look = character and character:GetAttribute("BodyLook") or "Gym"
+	local top, bottom = MuscleBody.GymColors(player.UserId)
+	MuscleBody.BaseDescription(desc, look, top)
 	-- the avatar's own width/depth (BodyService remembers them before muscle growth changes them)
 	local baseWidth = humanoid and humanoid:GetAttribute("BaseBodyWidthScale") or desc.WidthScale
 	local baseDepth = humanoid and humanoid:GetAttribute("BaseBodyDepthScale") or desc.DepthScale
@@ -76,6 +83,20 @@ local function buildRig(player, name, heightScale, steps)
 	end
 	local rigHumanoid = rig:FindFirstChildOfClass("Humanoid")
 	if rigHumanoid then rigHumanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+	-- the muscles (built by MuscleClient on the client's copy)
+	local muscleSteps, veins = {}, {}
+	if data then
+		muscleSteps = MuscleBody.StepsFrom(data.muscles, GrowthSpurts.GetGoal(data.growthSpurts))
+		veins = MuscleBody.VeinsFrom(data.muscles, GrowthSpurts.GetLevelCap(data.growthSpurts))
+	end
+	rig:SetAttribute("MuscleSteps", MuscleBody.Encode(muscleSteps))
+	rig:SetAttribute("VeinStages", MuscleBody.Encode(veins))
+	rig:SetAttribute("BodyLook", look)
+	rig:SetAttribute("SkinColor", humanoid and humanoid:GetAttribute("BaseSkinColor") or nil)
+	rig:SetAttribute("TopColor", look == "Gym" and top or nil)
+	rig:SetAttribute("BottomColor", look == "Gym" and bottom or nil)
+	rig:SetAttribute("VeinSeed", player.UserId)
+	CollectionService:AddTag(rig, MuscleBody.Tag)
 	return rig
 end
 
@@ -89,7 +110,7 @@ local function openFor(player)
 	if old then old:Destroy() end
 	local dayOne = data.dayOne or {}
 	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight, nil)
-	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, BodyShape.GroupSteps(data))
+	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, BodyShape.GroupSteps(data), data)
 	if not before or not after then return end
 	local folder = Instance.new("Folder")
 	folder.Name = "MirrorRigs"

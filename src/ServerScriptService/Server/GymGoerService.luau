@@ -14,6 +14,8 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
+local Muscles = require(ReplicatedStorage.Shared.Config.Muscles)
+local MuscleBody = require(ReplicatedStorage.Shared.MuscleBody)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
 local MachineService = require(script.Parent.MachineService)
 
@@ -313,13 +315,43 @@ local function lookAtPlayers(npc)
 	end)
 end
 
+-- The regulars show what to aim for: the same base body and gym look as players, pro gym regulars big with veins,
+-- starter gym regulars about halfway. Their muscles are built by MuscleClient like everyone else's.
+local NPC_BODY = { Pro = { steps = 6, veins = 2 }, Starter = { steps = 3, veins = 0 } }
+local function dressNpc(npc, humanoid, gym, index)
+	local spec = NPC_BODY[gym] or NPC_BODY.Starter
+	local seed = 9000 + index * 37
+	local ok, desc = pcall(function() return humanoid:GetAppliedDescription() end)
+	if ok and desc then
+		local top, bottom = MuscleBody.GymColors(seed)
+		MuscleBody.BaseDescription(desc, "Gym", top)
+		pcall(function() humanoid:ApplyDescription(desc) end)
+		MuscleBody.StripClothes(npc)
+		npc:SetAttribute("TopColor", top)
+		npc:SetAttribute("BottomColor", bottom)
+		npc:SetAttribute("SkinColor", desc.HeadColor)
+	end
+	local steps, veins = {}, {}
+	for _, muscle in ipairs(Muscles.List) do
+		steps[muscle.id] = spec.steps
+		-- veins only on the arms, shoulders and calves (the skin the gym look shows)
+		veins[muscle.id] = MuscleBody.Veined[muscle.id] and spec.veins or 0
+	end
+	npc:SetAttribute("MuscleSteps", MuscleBody.Encode(steps))
+	npc:SetAttribute("VeinStages", MuscleBody.Encode(veins))
+	npc:SetAttribute("BodyLook", "Gym")
+	npc:SetAttribute("VeinSeed", seed)
+	CollectionService:AddTag(npc, MuscleBody.Tag)
+end
+
 function GymGoerService.Start()
 	local npcs = Workspace:WaitForChild("NPCs", 10)
 	if not npcs then return end
 	local all = {}
-	for _, npc in ipairs(CollectionService:GetTagged("GymNpc")) do
+	for index, npc in ipairs(CollectionService:GetTagged("GymNpc")) do
 		local humanoid = npc:FindFirstChildOfClass("Humanoid")
 		if humanoid and npc:GetAttribute("Gym") then
+			pcall(dressNpc, npc, humanoid, npc:GetAttribute("Gym"), index)
 			local state = { npc = npc, humanoid = humanoid, gym = npc:GetAttribute("Gym"), tracks = loadTracks(npc), free = true }
 			table.insert(all, state)
 		end

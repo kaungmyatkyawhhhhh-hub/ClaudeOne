@@ -1,6 +1,6 @@
 # GYM ARC — Progress
 
-Short and current (7 Oct 2026, after the overnight run). Full history: `git log -p -- PROGRESS.md`.
+Short and current (7 Oct 2026, after the fixes + muscles run). Full history: `git log -p -- PROGRESS.md`.
 
 ## Workflow (no Rojo)
 - No Rojo. **Roblox Studio is the source of truth** (edit through the MCP connection); GitHub is a backup.
@@ -9,53 +9,38 @@ Short and current (7 Oct 2026, after the overnight run). Full history: `git log 
 - World areas are built once from recipes in `tools/builders` (see `tools/bake.md`), then edited as normal parts.
 
 ## First thing to do
-1. **File > Save to Roblox.** The overnight run changed scripts, the whole map (gyms, town, terrain) and lighting in the
-   open place; none of it is saved yet. (`src/` and `tools/builders` have everything if Studio crashed.)
-2. Remove the Rojo plugin: Plugins > Manage Plugins (two versions installed, 7.4.4 and 7.7.1).
-3. Play once on your own save, then once with Workspace `FreshPlayer` on. See "Check these" below.
+1. **File > Save to Roblox.** This run rebuilt the town, the beach gym, lighting and many scripts in the open place;
+   none of it is saved yet. (`src/` and `tools/builders` have everything if Studio crashed.)
+2. Play once on your own save (gym look, muscles), then Settings > Clothes > My avatar, then once with Workspace
+   `FreshPlayer` on (small body, beach sign says "Opens at Growth Spurt 1"). See "Check these" below.
 
 ## Done
 - Player data, saving, 18 muscles, stamina, coins, genetics, height, titles; one reusable machine system.
-- Clean minimal Theme UI; menu screen; tutorial; Coach Dex quests; Muscle of the Day; shakes; economy; social
-  (spotting, arm wrestling, crews, emotes); legends; seasons; leaderboard wall; membership card; wardrobe.
-- **Overnight, Session 1:** machines can be used again after Exit; mirror Day one/Now rigs fixed and the mirror glass
-  reflects you; marble statue fixed; reps run on their own, tapping speeds them up and fills a PUMP meter (PUMPED = x2,
-  8 s), BIG REP (x3, ~1 in 12), per-rep camera punch, level flash, NEW PR banner; always-visible Growth Spurt bar with a
-  "next goal" line; body grows in clear steps with a "you grew" moment; 12 weight tiers per machine; Growth Spurts
-  tuned to 8 / 15 / 25 / 35 / 45 minutes.
-- **Session 2:** starter gym ~2x with zones and 18 machines; pro gym rebuilt next to it with real machines (weight
-  stacks), lockers, podium, LEDs, behind a glass wall with a locked glass door (walk-in at Growth Spurt 2); real plate
-  templates (number on the face) everywhere; 8 NPC regulars that walk to machines, lift, rest, drink, chat and yield
-  to players; Coach Dex and legends idle and face players.
-- **Session 3:** terrain everywhere (no baseplate/void), hills and trees around, sea to the horizon; main street with
-  lamps and street props; plaza with fountain and string lights; ~20 detailed background buildings; gym exteriors
-  (canopy, lit signs, street windows, pro glass front, roofs); smoothie bar and Gear & Fits rebuilt inside and out;
-  beach, beach gym, posing stage, skate park (ramps work with the skateboard).
-- **Session 4:** body map stats (front + back, 18 muscle shapes, brightness = level, gold outline = maxed, trained
-  muscles pulse every rep, level + spurt bar under it, tap = full stats screen); compact icon menu (slim column on
-  PC with hover labels, one Menu button on phones); layout zones (menu top left, Growth Spurt bar top center,
-  quest + notifications top right, body map bottom left on PC / top left on touch screens, Lift button bottom
-  right); checked on a small phone, a tablet and 1080p.
+- Clean minimal Theme UI; menu; tutorial; Coach Dex quests; Muscle of the Day; shakes; economy; social; legends;
+  seasons; leaderboard wall; membership card; wardrobe; pump/BIG REP lifting; 12 weight tiers; Growth Spurt pacing.
+- Gyms: starter gym (2x, zones, 18 machines), pro gym behind a glass door (Growth Spurt 2), real plates, 8 NPC regulars.
+- **Town (7 Oct):** 4-lane Main Street, two avenues, Beach Road, side streets, open plaza with clock post, park
+  (fountain, paths, playground, picnic tables), parking lot with cars, sports court, ~30 detailed buildings, smoothie
+  bar, Gear & Fits, beach, skate park, posing stage, all linked by sidewalks and boardwalks. Calmer afternoon lighting;
+  outdoor lamps off by day, glowing at night (`NightLightService`).
+- **Beach gym (7 Oct):** ~3x bigger, open air: 2 pergolas + shade sails over 9 beach machines (3 of each), free weights,
+  calisthenics, tires/ropes/sled, entrance arch, rope fence, flags. Area signs show the lock line only while locked.
+- **HUD (7 Oct):** no Lift button (tap anywhere / click / Space), slim pump bar above the machine panel with PUMPED
+  timer and glow, one-time "Tap to pump" hint; body map with real proportions in the right column (folds to a
+  "Stats" chip), training highlight always clears; small Skate button; readable Growth Spurt "Next" line; phone,
+  tablet and 1080p layouts with nothing on the thumbstick or jump button.
+- **Visible muscles (7 Oct):** everyone plays on one smooth Roblox-made base body ("Roblox 2.0" parts) with their own
+  head, face, hair, accessories and skin color. Gym look (default): original tank top + shorts in one of 7 colors
+  (picked from the UserId). 18 muscles are rounded shapes on the body (pecs, 3 delt heads, biceps, triceps, forearms,
+  traps, lats, rhomboids, lower back, 2x3 abs, obliques, glutes, quads, hamstrings, calves), each sized by its own
+  level in 6 steps toward the Growth Spurt goal; width growth is now tiny (no more block). Veins in 3 stages on
+  forearms, biceps, triceps, front delts, calves (and abs/obliques when uncovered), stronger while PUMPED, pattern
+  from the UserId. Settings > Clothes > My avatar keeps the avatar's own clothes. Same system on the mirror (Day one
+  small, Now real), the live reflection, the marble statue (carved veins) and the NPCs (pro big + veins, starter
+  medium). Growth Spurt resets the muscles and veins (height stays).
 
-## In progress: fixes + muscles run (from GYM_ARC_fixes_muscles_prompt.md)
-- **Part 1 (playtest fixes): done**, committed as "Part 1: ...".
-  - Lighting: calmer afternoon (Brightness 2, Exposure -0.15, softer Bloom, warmer haze, ColorCorrection not washed
-    out). Street/wall/string/flood lights are tagged `NightLight`: frosted glass and off by day, glowing at night
-    (`NightLightService`, switches at 18:00 / 6:00 ClockTime; the place stays at 14:30).
-  - Town: Main Street 4 lanes (20 wide) with 6-stud sidewalks, two avenues to a new Beach Road, side streets behind the
-    shops, open plaza (clock post, carts), park (fountain, paths, playground, picnic area), parking lot with cars,
-    sports court, ~30 buildings with back/side windows, boardwalks linking the skate park, beach gym and stage.
-    ~16,100 parts in Workspace.Town (StreamingEnabled on).
-  - Beach gym ~3x: 3 shades (2 slatted pergolas + shade sails, roofs at 15 studs, non-colliding) over 9 beach
-    machines (3 of each), free weights (2 squat racks, 2 benches), calisthenics (2 pull-up bars + decor), tires/ropes/
-    sled on sand. Area signs (beach gym, pro gym door) show the lock line only while locked (`AreaSignsClient`).
-  - No Lift button: tap anywhere / click / Space. Slim pump bar above the machine panel, "PUMPED 6s" + glow,
-    one-time "Tap to pump" hint (saved in `settings.pumpHintSeen`).
-  - Body map: real proportions, right side under the quest panel (beside it on phones), folds into a "Stats" chip;
-    training highlight clears on exit / machine switch / respawn / death (all four tested).
-  - Top bars: Skate is a small button (hidden while lifting), quest panel fits, "Next" line readable and wraps;
-    phones: machine panel left-aligned while lifting, notes top-left. Checked on Galaxy A06, iPad 10th, 1080p.
-- **Part 2 (visible muscles): next.**
+## In progress
+- Nothing half-built.
 
 ## Waiting on you
 - **Sound ids** (you pick them; all in `Config/Sounds.luau`). New placeholders that reuse other clips: `PumpFull`,
@@ -68,35 +53,49 @@ Short and current (7 Oct 2026, after the overnight run). Full history: `git log 
 - **Portrait:** phones/tablets are locked to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`).
 
 ## Check these (things I couldn't fully verify)
-- Phone **Menu button** (top left on phones): the emulator's mouse tool couldn't click it at that screen size, so open
-  and close it once on a real phone or with your mouse in the Device Emulator.
-- Lifting on **pro gym machines** as a Growth Spurt 2+ player (weight stack moving, poses) and walking through the
-  unlocked glass door (my save is Growth Spurt 1; the locked door was tested).
+- **Muscles on a real phone with many players:** each body is ~45 parts at level 0 and ~110-140 maxed (veins only
+  build within 90 studs). Fine in Studio; check frame rate on a low-end phone in a full server.
+- **"My avatar" clothes with other avatars:** tested with your avatar (classic shirt + pants: the covered muscles stay
+  hidden under the clothes and the torso/limbs thicken instead). Layered-clothing jackets/sweaters may clip a little
+  over big shoulders; try a couple of avatars.
+- **Emotes and the skateboard with muscles on:** the shapes are welded, so they follow every pose (checked lifting);
+  give a flex emote and a skate a quick look.
+- Phone **Menu button**: open and close it once on a real phone (the emulator's mouse tool can't click it there).
+- Lifting on **pro gym machines** as a Growth Spurt 2+ player, and walking through the unlocked glass door.
 - 2-player features (spotting, high fives, crews, arm wrestling vs a player) weren't retested.
-- The new **XP numbers** (BaseXp 34, `20 + 2 × level`): play the first 8 minutes and see if it feels right.
 
 ## Known issues
 - Spurts after ~11 get a few minutes longer each (the permanent bonus hits the 5x cap); fine for now.
-- Big part count: town ~7,700 parts, gyms ~3,500. StreamingEnabled is on and small props don't collide or cast
-  shadows, but test on a low-end phone; turn trees/buildings into MeshPart templates if it's slow.
+- Part count: town ~16,100, gyms ~3,500, plus ~110 per strong player. StreamingEnabled is on; small props don't
+  collide or cast shadows. If phones struggle: MeshPart templates for windows/trees, or fewer vein strands.
+- Your avatar's shirt has no known main color, so with "My avatar" the chest/back/ab shapes are hidden (the torso
+  just gets thicker). Shirts don't expose a color in Roblox; the gym look shows the full muscles.
 - Cosmetic headbands can hide under big hair; ProximityPrompts only show when their part is on screen.
 - The live mirror reflection shows your character and the room, not other players.
 
 ## Decisions made (fixes + muscles run)
+- Base body: Roblox's own "Roblox 2.0" body parts (creator Roblox, checked with GetProductInfo), with classic
+  proportions (body type 0). No Creator Store models were inserted.
+- Gym look is the default for everyone (tank top + shorts colors picked from the UserId: 7 tops, 4 shorts). Shirts,
+  pants, t-shirt graphics and layered clothing are removed in the gym look; hair, hats, face and neck accessories stay.
+- Muscle size: 6 visible steps per muscle per Growth Spurt (step 0 = small/flat, mostly inside the body). Whole-body
+  width/depth growth went from +25/30% to +6%, part thickening from 42% to 10% (or 32% under "My avatar" clothes).
+- Veins: stages at 70% / 90% / 100% of the level cap (not the goal), so they only show on really strong muscles; thin
+  (0.026-0.036 studs), low contrast, max 9 parts per muscle side and 90 per body; PUMPED makes them 25% thicker and a
+  bit darker. Abs/obliques never show veins in the gym look (they're under the tank top).
+- "Keep my avatar clothes": shirts cover torso and arms, pants cover hips and legs (classic clothing paints whole limbs).
+- Statue: the strongest lifter is shown with every muscle maxed and full carved veins (their exact levels aren't
+  loaded while they're offline).
+- NPCs: pro regulars at the top step with stage-2 veins, starter regulars at step 3, no veins.
 - No day/night cycle exists, so the lamps are simply off now; they switch on automatically if the clock ever passes
   18:00 (a future night event or a day cycle needs no extra work).
-- Portrait: the game stays locked to landscape. In the emulator's portrait mode the screen stays 705x338 landscape,
-  so there is no portrait layout to break.
-- Phones have only ~200 px on the right above the jump button, so there the body map sits beside the quest panel
-  (left of it, under the Growth Spurt bar) instead of under it; PC and tablets have it under the quest panel.
-- Corner notes on phones go top left (narrow, wrapped, max 2; 1 while lifting) because the right side under the
-  column is the jump button and the bottom is the machine panel.
-- Skate button only shows when you're not lifting (you can't skate on a machine).
-- The beach gym's free-weight racks/benches and pull-up bars are the normal starter machines (open to everyone); the
-  9 cable machines are the beach machines (Growth Spurt 1). Dip bars, monkey bars, rings, tires, ropes and the sled
-  are decoration you can't use yet.
-- Town parts went from ~7,700 to ~16,100. Windows were slimmed (4 parts each) and flowers/palm rings reduced to keep it
-  down; if phones struggle, the next step is MeshPart templates for windows and trees.
+- Portrait: the game stays locked to landscape (in the emulator's portrait mode the screen stays landscape).
+- Phones: the body map sits beside the quest panel (only ~200 px above the jump button); corner notes go top left
+  (narrow, max 2, 1 while lifting); the machine panel is left-aligned while lifting.
+- Skate button only shows when you're not lifting.
+- Beach gym: racks, benches and pull-up bars there are normal starter machines (open to everyone); the 9 cable machines
+  are the beach machines (Growth Spurt 1). Dip bars, monkey bars, rings, tires, ropes and the sled are decoration.
+- Town parts went from ~7,700 to ~16,100; windows slimmed to 4 parts, fewer flowers/palm rings.
 
 ## Decisions made overnight
 - NEW PR banner: the design file lists "personal-record popups" as cut, but the overnight prompt asked for a NEW PR

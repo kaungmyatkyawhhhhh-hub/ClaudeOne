@@ -117,6 +117,8 @@ local function scheduleBuild(player)
 end
 
 local function watchCharacter(player, character)
+	-- BodyService swaps the body parts (base body, Growth Spurt height): rebuild the gear on the new parts
+	character:GetAttributeChangedSignal("BodyVersion"):Connect(function() scheduleBuild(player) end)
 	for _, name in ipairs({ "LowerTorso", "Head", "LeftLowerArm", "RightLowerArm" }) do
 		local bodyPart = character:WaitForChild(name, 10)
 		if bodyPart and bodyPart:IsA("BasePart") then

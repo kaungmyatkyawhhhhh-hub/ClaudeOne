@@ -1,4 +1,5 @@
--- SettingsClient: the Settings side button and panel (Music and Effects volume, Gain numbers On/Minimal/Off), and
+-- SettingsClient: the Settings side button and panel (Music and Effects volume, Gain numbers On/Minimal/Off, Clothes:
+-- gym look or keep my avatar clothes), and
 -- background music. Volumes apply instantly while dragging and are saved with the player's data when the slider is
 -- released; Gain numbers saves on tap (MachineClient reads it for every rep).
 local Players = game:GetService("Players")
@@ -36,7 +37,7 @@ local panel = Theme.Panel({
 }, { Theme.Pad("L"), Theme.List(Vertical, "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 Theme.Text({ LayoutOrder = 1, Text = "Settings", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 
-local values = { music = 1, effects = 1, gainNumbers = "On" }
+local values = { music = 1, effects = 1, gainNumbers = "On", keepClothes = false }
 local dragging = nil -- the slider being dragged
 
 local function save()
@@ -129,7 +130,40 @@ for index, mode in ipairs(GAIN_MODES) do
 	end)
 end
 
-local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 5, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
+-- Clothes: the gym look (tank top + shorts, muscles show everywhere) or "Keep my avatar clothes" (keepClothes).
+local clothesRow = New("Frame", { Name = "Clothes", LayoutOrder = 5, Size = UDim2.new(1, 0, 0, 20 + Spacing.S + Theme.MinTouch), BackgroundTransparency = 1, Parent = panel },
+	{ Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+Theme.Text({ LayoutOrder = 1, Text = "Clothes", Font = "Regular", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = clothesRow })
+local clothesChoices = New("Frame", { Name = "Choices", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = clothesRow },
+	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
+local clothesButtons = {}
+local function showClothes()
+	for keep, entry in pairs(clothesButtons) do
+		local chosen = values.keepClothes == keep
+		entry.button.BackgroundColor3 = chosen and Colors.Text or Colors.Panel
+		entry.button.BackgroundTransparency = chosen and Theme.Alpha.Primary or Theme.Alpha.Panel
+		entry.stroke.Transparency = chosen and 0.6 or Theme.Alpha.ButtonBorder
+		entry.label.TextColor3 = chosen and Colors.Text or Colors.Muted
+	end
+end
+for index, choice in ipairs({ { false, "Gym look" }, { true, "My avatar" } }) do
+	local label = Theme.Text({ Text = choice[2], Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) })
+	local button = Theme.Button("Secondary", { Name = choice[1] and "KeepClothes" or "GymLook", LayoutOrder = index, Size = UDim2.fromScale(0, 1) }, {
+		label,
+		New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
+	})
+	button.Parent = clothesChoices
+	clothesButtons[choice[1]] = { button = button, label = label, stroke = button:FindFirstChildOfClass("UIStroke") }
+	button.Activated:Connect(function()
+		if values.keepClothes == choice[1] then return end
+		values.keepClothes = choice[1]
+		showClothes()
+		Audio.PlayUI("Click")
+		Remotes.PlayerAction:FireServer("SetSettings", { keepClothes = values.keepClothes })
+	end)
+end
+
+local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
@@ -171,7 +205,9 @@ task.spawn(function()
 	values.music = settings.music or 1
 	values.effects = settings.effects or 1
 	values.gainNumbers = settings.gainNumbers or "On"
+	values.keepClothes = settings.keepClothes == true
 	showGainMode()
+	showClothes()
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()
 	-- area music: the pro gym is the room east of the starter gym (x 37..93, z -73.5..-4, see the Gyms builder)

@@ -2,7 +2,7 @@
 -- (the before/after rigs) and the "you grew" moment, so all three always agree.
 -- Growth comes in clear steps, not tiny invisible increments: each group grows one step every 1/Steps of the way to
 -- the next Growth Spurt goal. A Growth Spurt resets the muscles (and so the size) and keeps the height.
---   * whole body: wider and deeper (Humanoid width/depth scales) from the average step of all 6 groups
+--   * whole body: a little wider and deeper (Humanoid width/depth scales); the muscle shapes (MuscleBody) do the rest
 --   * per group: its own parts get thicker (chest/back = torso, arms, legs...), on top of that
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,9 +12,12 @@ local GrowthSpurts = require(Config.GrowthSpurts)
 
 local BodyShape = {}
 
+-- The real muscle growth is the muscle shapes (Shared.MuscleBody). The whole body only gets a little wider/deeper and
+-- the parts a little thicker, so a strong body never turns into a wide block.
 BodyShape.Steps = 5            -- visible size steps per Growth Spurt (step 0 .. Steps)
-BodyShape.MaxGrowth = 0.42     -- extra part thickness at the top step (times each part's weight below)
-BodyShape.Bulk = { Width = 0.25, Depth = 0.3 } -- whole-body width/depth added at the top average step
+BodyShape.MaxGrowth = 0.1      -- extra part thickness at the top step (times each part's weight below)
+BodyShape.OwnClothesGrowth = 0.32 -- with "Keep my avatar clothes", parts under the shirt/pants grow more (no shapes there)
+BodyShape.Bulk = { Width = 0.06, Depth = 0.06 } -- whole-body width/depth added at the top average step
 BodyShape.BaseHeight = 60      -- inches that equal a height scale of 1
 
 -- Which parts each group thickens, as (width X, depth Z) weights.
@@ -57,12 +60,14 @@ function BodyShape.BulkScales(steps)
 	return 1 + BodyShape.Bulk.Width * share, 1 + BodyShape.Bulk.Depth * share
 end
 
--- { [partName] = Vector2(width, depth) } thickness multipliers per body part.
-function BodyShape.PartScales(steps)
+-- { [partName] = Vector2(width, depth) } thickness multipliers per body part. `covered` = { [partName] = true } for parts
+-- under the avatar's own shirt/pants ("Keep my avatar clothes"), which grow more because no muscle shapes show there.
+function BodyShape.PartScales(steps, covered)
 	local scales = {}
 	for groupId, parts in pairs(BodyShape.GroupParts) do
-		local growth = BodyShape.MaxGrowth * (steps[groupId] or 0) / BodyShape.Steps
+		local share = (steps[groupId] or 0) / BodyShape.Steps
 		for partName, weight in pairs(parts) do
+			local growth = (covered and covered[partName] and BodyShape.OwnClothesGrowth or BodyShape.MaxGrowth) * share
 			scales[partName] = (scales[partName] or Vector2.new(1, 1)) + weight * growth
 		end
 	end
