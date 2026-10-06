@@ -273,16 +273,23 @@ function genBodyParts() {
       let d = ell(ax, y, z, 0, 5.78, -.07, .66 * P.chestW, .8, .47 * P.depth);              // ribcage
       d = smin(d, ell(ax, y, z, 0, 4.62, 0, .52 * P.waist, .6, .37 * P.depth), .3);          // abdomen / waist
       d = smin(d, ell(ax, y, z, 0, 4.14, -.03, .66 * Math.max(P.waist, .95), .42, .42), .26); // pelvis
-      d = smin(d, ell(ax, y, z, .54 * P.lat, 5.86, -.2, .3 * P.lat, .55, .27), .22);         // lats
+      d = smin(d, ell(ax, y, z, .54 * P.lat, 5.86, -.2, .3 * P.lat, .55, .27), .16);         // lats
       d = smin(d, ell(ax, y, z, .34, 6.62, -.1, .42 * P.trap, .3 * P.trap, .27 * P.trap), .3); // traps
       d = smin(d, cone(ax, y, z, 0, 6.2, -.03, 0, 7.06, .04, .34 * P.neck, .27 * P.neck), .22); // neck
       d = smin(d, ell(ax, y, z, .2, 6.2, .22 * P.depth, .5 * P.chest, .22, .2 * P.chest), .2); // upper chest
-      d = smin(d, ell(ax, y, z, .37 * P.chestW, 5.97, .27 * P.depth + .03 * (P.chest - 1), .46 * P.chest, .3 * P.chest, .19 * P.chest), .1); // pecs
+      d = smin(d, ell(ax, y, z, .37 * P.chestW, 5.97, .27 * P.depth + .03 * (P.chest - 1), .46 * P.chest, .3 * P.chest, .19 * P.chest), .06); // pecs
       d = smin(d, ell(ax, y, z, 0, 4.98, .06, .44 * P.waist, .78, .3 * P.depth), .2);         // abdominal wall
-      for (let i = 0; i < 4; i++) d = smin(d, ell(ax, y, z, .155 * P.abs, 5.33 - i * .285, .3 * P.depth, .14 * P.abs, .118, .08), P.absK); // 8-pack
-      d = smin(d, ell(ax, y, z, .46 * P.waist, 4.78, .06, .15 * P.waist, .36, .2), .16);      // obliques
+      for (let i = 0; i < 4; i++) d = smin(d, ell(ax, y, z, .155 * P.abs, 5.33 - i * .285, .3 * P.depth, .14 * P.abs, .118, .085), P.absK * .7); // 8-pack
+      d = smin(d, ell(ax, y, z, .46 * P.waist, 4.78, .06, .15 * P.waist, .36, .2), .1);       // obliques
       d = smin(d, ell(ax, y, z, .32, 4.12, -.3, .33, .36, .27), .15);                        // glutes
       d = smin(d, ell(ax, y, z, .98, 6.36, -.02, .28 * P.m, .28 * P.m, .28 * P.m), .2);       // shoulder joint
+      const zA = .3 * P.depth + .085;                                                         // front of the abs
+      let gr = cone(ax, y, z, 0, 5.5, zA, 0, 4.42, zA, .022, .022);                            // linea alba
+      for (let i = 0; i < 3; i++) gr = min(gr, cone(ax, y, z, 0, 5.19 - i * .285, zA - .01, .28 * P.abs, 5.2 - i * .285, zA - .03, .018, .014)); // ab lines
+      gr = min(gr, cone(ax, y, z, .04, 5.7, .27 * P.depth + .2 * P.chest, .62 * P.chestW, 5.76, .25 * P.depth + .08, .03, .02)); // lower pec line
+      gr = min(gr, cone(ax, y, z, .66 * P.chestW, 6.42, .3, .8 * P.chestW, 5.86, .22, .03, .025)); // delt / pec split
+      gr = min(gr, cone(ax, y, z, .02, 6.25, .27 * P.depth + .22, .02, 5.7, .27 * P.depth + .2 * P.chest, .022, .022)); // chest split
+      d = smax(d, -gr, .03);
       return d;
     };
   }
@@ -301,11 +308,11 @@ function genBodyParts() {
     const f = (x, y, z) => {
       let d = ell(x, y, z, 1.1 + (m - 1) * .25, 6.38, 0, .33 * m, .35 * m, .33 * m);                 // deltoid
       d = smin(d, ell(x, y, z, 1.04, 6.44, .16, .2 * m, .22 * m, .16 * m), .08);                       // front delt
-      d = smin(d, cone(x, y, z, S[0], S[1], S[2], E[0], E[1], E[2], .25 * m, .16 * m), .15);           // upper arm
-      d = smin(d, cone(x, y, z, b1[0], b1[1], b1[2], b2[0], b2[1], b2[2], .21 * m, .19 * m), .1);     // biceps
-      d = smin(d, cone(x, y, z, t1[0], t1[1], t1[2], t2[0], t2[1], t2[2], .19 * m, .15 * m), .1);     // triceps
-      d = smin(d, cone(x, y, z, E[0], E[1], E[2], W[0], W[1], W[2], .2 * m, .13 * m), .12);           // forearm
-      d = smin(d, cone(x, y, z, f1[0], f1[1], f1[2], f2[0], f2[1], f2[2], .19 * m, .14 * m), .1);     // forearm flexors
+      d = smin(d, cone(x, y, z, S[0], S[1], S[2], E[0], E[1], E[2], .25 * m, .125 * m), .12);          // upper arm
+      d = smin(d, cone(x, y, z, b1[0], b1[1], b1[2], b2[0], b2[1], b2[2], .22 * m, .17 * m), .07);    // biceps
+      d = smin(d, cone(x, y, z, t1[0], t1[1], t1[2], t2[0], t2[1], t2[2], .19 * m, .13 * m), .07);    // triceps
+      d = smin(d, cone(x, y, z, E[0], E[1], E[2], W[0], W[1], W[2], .15 * m, .1 * m), .1);            // forearm
+      d = smin(d, cone(x, y, z, f1[0], f1[1], f1[2], f2[0], f2[1], f2[2], .2 * m, .13 * m), .08);     // forearm flexors
       d = smin(d, ell(x, y, z, F[0], F[1], F[2], .18 * m, .2 * m, .17 * m), .08);                      // fist
       return d;
     };
@@ -405,7 +412,7 @@ function genBodyParts() {
       nor[q * 3] = gx; nor[q * 3 + 1] = gy; nor[q * 3 + 2] = gz;
       let occ = 0, sca = 1;
       for (let h = 1; h <= 5; h++) { const hd = .012 + .022 * h; occ += (hd - f(x + gx * hd, y + gy * hd, z + gz * hd)) * sca; sca *= .72; }
-      const ao = Math.max(0, Math.min(1, 1 - 3.2 * occ)), c = .3 + .7 * ao * ao;
+      const ao = Math.max(0, Math.min(1, 1 - 3.8 * occ)), c = .2 + .8 * ao * ao;
       col[q * 3] = col[q * 3 + 1] = col[q * 3 + 2] = c;
     }
     const tri = (a, b, c) => { // keep each triangle facing the same way as the surface normal
@@ -706,6 +713,38 @@ function buildWorld() {
 }
 
 /* ================= 3D: the lifters ================= */
+const NOISE_GLSL = `
+varying vec3 vObjPos;
+float hash3(vec3 p) { p = fract(p * .3183099 + .1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float vnoise(vec3 x) { vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash3(i), hash3(i + vec3(1,0,0)), f.x), mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x), mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y), f.z); }
+`;
+// detail = { fine: [freq, amp], mid: [freq, amp], tone, sss: [r,g,b] }
+function surfaceDetail(mat, det) {
+  mat.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vObjPos;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvObjPos = position;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + NOISE_GLSL)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          float h = vnoise(vObjPos * ${det.fine[0].toFixed(1)}) * ${det.fine[1].toFixed(4)} + vnoise(vObjPos * ${det.mid[0].toFixed(1)}) * ${det.mid[1].toFixed(4)};
+          vec3 sp = -vViewPosition, sx = dFdx(sp), sy = dFdy(sp);
+          vec3 r1 = cross(sy, normal), r2 = cross(normal, sx);
+          float det = dot(sx, r1);
+          vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
+          normal = normalize(abs(det) * normal - grad);
+        }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        diffuseColor.rgb *= mix(${(1 - det.tone).toFixed(3)}, ${(1 + det.tone * .5).toFixed(3)}, vnoise(vObjPos * 2.3) * .6 + vnoise(vObjPos * 7.0) * .4);`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        { float fr = pow(1.0 - clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0), 2.5);
+          totalEmissiveRadiance += vec3(${det.sss.map(v => v.toFixed(3)).join(',')}) * fr; }`);
+  };
+  mat.customProgramCacheKey = () => JSON.stringify(det);
+  return mat;
+}
+const SKIN_DETAIL = { fine: [95, .0011], mid: [13, .0045], tone: .09, sss: [.16, .05, .03] };
+const CLOTH_DETAIL = { fine: [160, .0016], mid: [6, .012], tone: .06, sss: [0, 0, 0] };
 let G = {};
 function geom(p) {
   const g = new THREE.BufferGeometry();
@@ -715,13 +754,13 @@ function geom(p) {
 const SHOULDER = [1.0, 6.4, 0], HIP = [.35, 4.2, 0], NECK = [0, 6.95, 0];
 function buildLifter(key, i) {
   const c = CHARS[key];
-  const skin = new THREE.MeshPhysicalMaterial({ color: c.skin, roughness: .44, metalness: 0, clearcoat: .35, clearcoatRoughness: .35, vertexColors: true });
+  const skin = surfaceDetail(new THREE.MeshPhysicalMaterial({ color: c.skin, roughness: .5, metalness: 0, clearcoat: .25, clearcoatRoughness: .45, vertexColors: true }), SKIN_DETAIL);
   const hairM = std(c.hair, { roughness: .75 }), white = std(0xf5f6fa, { roughness: .45 }), dark = std(0x15100c, { roughness: .3 }), mouthM = std(0x3a1206, { roughness: .5 });
   const root = new THREE.Group(); scene.add(root); root.scale.set(...c.scale);
   const body = new THREE.Group(); root.add(body);
   const meshes = [];
   const part = (g, m, parent, off = [0, 0, 0]) => { const o = mk(g, m, off, null, parent); meshes.push(o); return o; };
-  const B = G[c.build], cloth = std(c.pants, { roughness: .85, vertexColors: true }), clothBand = std(c.pband, { roughness: .8, vertexColors: true });
+  const B = G[c.build], cloth = surfaceDetail(std(c.pants, { roughness: .92, vertexColors: true }), CLOTH_DETAIL), clothBand = surfaceDetail(std(c.pband, { roughness: .85, vertexColors: true }), CLOTH_DETAIL);
   part(B.torso, skin, body);
   part(B.hips, cloth, body);
   part(B.waistband, clothBand, body);
@@ -1034,7 +1073,7 @@ function layoutCamera(W, H) {
   const sx = padR - padL, sy = padH - padT, fullW = W + Math.abs(sx); fullH = H + Math.abs(sy);
   camera.aspect = fullW / fullH;
   const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const fit = Math.max(4.6 * fullH / ((H - padH - padT) * t), (narrow ? 5.6 : 7.4) * fullH / ((W - padL - padR) * t));
+  const fit = Math.max(4.6 * fullH / ((H - padH - padT) * t), 7.8 * fullH / ((W - padL - padR) * t));
   cam.distT = cam.dist = clamp(fit, 9, 120);
   camera.setViewOffset(fullW, fullH, sx > 0 ? sx : 0, sy > 0 ? sy : 0, W, H);
   camera.updateProjectionMatrix();
@@ -1045,7 +1084,7 @@ let shown = 0, last = performance.now(), nextIdleLine = 0, nextBanter = performa
 const lerp = (a, b, k) => a + (b - a) * k;
 function chooseAction(l, now, half) {
   const r = Math.random();
-  if (r < .5) { l.mode = 'walk'; l.target = (Math.random() * 2 - 1) * half; l.speed = 1.1 + Math.random() * .8; }
+  if (r < .5) { const lane = 2 * half / 3, c0 = -half + lane * (l.i + .5); l.mode = 'walk'; l.target = c0 + (Math.random() - .5) * Math.max(0, lane - 3.6); l.speed = 1.1 + Math.random() * .8; }
   else if (r < .68) { l.mode = 'wave'; l.until = now + 1800; }
   else if (r < .8) { l.mode = 'dance'; l.until = now + 2200; }
   else { l.mode = 'stand'; l.until = now + 1600 + Math.random() * 1800; }
@@ -1083,7 +1122,7 @@ function frame(now) {
   scene.fog.near = cam.dist + 12; scene.fog.far = cam.dist + 50;
 
   // lifters: wander, face, animate
-  const half = clamp((W - padL - padR) * cam.dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / fullH - 2.2, 2.4, 5.4);
+  const half = clamp((W - padL - padR) * cam.dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / fullH - 2.0, 5.6, 7.2);
   lifters.forEach((l, i) => {
     let walking = false, dancing = false, waving = now < l.waveUntil;
     const busy = now < l.busyUntil, engaged = now < l.engagedUntil;
@@ -1096,7 +1135,8 @@ function frame(now) {
       if (l.mode === 'wave') waving = true;
     }
     if (REDUCED) dancing = false;
-    l.x = clamp(l.x, -half, half); l.walking = walking;
+    { const lane = 2 * half / 3, c0 = -half + lane * (l.i + .5), slack = Math.max(0, lane - 3.6) / 2; l.x = clamp(l.x, c0 - slack, c0 + slack); }
+    l.walking = walking;
     // facing: toward travel direction, toward partner when chatting, otherwise the camera
     let face = 0;
     if (walking) face = l.dir * 1.25; else if (busy && l.partner) face = Math.sign(l.partner.x - l.x) * .55;
@@ -1140,7 +1180,7 @@ function frame(now) {
     const A = lifters[a], B = lifters[b], gap = B.x - A.x;
     if (Math.abs(gap) < 3.8 && !A.walking && !B.walking) { const push = 1.2 * dt * (gap >= 0 ? 1 : -1); A.x -= push; B.x += push; }
     const free = x => now > x.engagedUntil && now > x.busyUntil;
-    if (now > hi5Cooldown && free(A) && free(B) && (A.walking || B.walking) && Math.abs(A.x - B.x) < 3.4) {
+    if (now > hi5Cooldown && free(A) && free(B) && (A.walking || B.walking) && b - a === 1 && Math.abs(A.x - B.x) < 4.2) {
       hi5Cooldown = now + 9000;
       [A, B].forEach(x => { x.busyUntil = now + 1300; x.waveUntil = now + 900; x.mode = 'stand'; x.until = now + 1300; }); A.partner = B; B.partner = A;
       say(A, pick(LINES.hi5), 1200); setTimeout(() => say(B, pick(LINES.hi5), 1200), 250); mood(A, 'hype', 1000); mood(B, 'hype', 1000);
