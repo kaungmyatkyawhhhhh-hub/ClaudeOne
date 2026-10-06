@@ -1714,10 +1714,10 @@ function physiqueCard0(){const B=myBuild(),bar=(n,v,src)=>`<div><span>${n}<em>${
 /* ---------- Flip Tower: build a skyscraper floor by floor, forever ---------- */
 const TENANTS=["Sneaker lounge","Card vault","Watch atelier","Rooftop gym","Trading floor","Sky café","Recording studio","VIP club","Art gallery","Penthouse suite","Toy museum","Vintage archive"];
 const TOWER_MS=[[10,"Helipad on the roof"],[25,"Glowing spire"],[50,"Sky beacon"],[100,"Gold crown"],[200,"Cloud piercer"],[300,"Orbit antenna"],[400,"Moon tether"],[500,"Star touch"]];
-const floorCost=i=>Math.round(50000*Math.pow(1.28,i));
+const TOWER_MAX=500,floorCost=i=>Math.round(50000*Math.pow(1.28,i));
 const towerRate=()=>{let r=0;for(let i=0;i<(S.tower||0);i++)r+=floorCost(i)*.005;return r*(S.toys&&S.toys.island?1.5:1)*(1+.5*emp("space"))*moonK()};
 let towerT=0;
-function towerTick(dt){if(!S.tower)return;towerT+=dt;if(towerT<30)return;towerT=0;const v=Math.round(towerRate()/2);if(v>0){earn(v);if(!room)banner("Flip Tower +"+fmt(v),"u")}}
+function towerTick(dt){if(!S.tower)return;if(S.tower>TOWER_MAX)S.tower=TOWER_MAX;towerT+=dt;if(towerT<30)return;towerT=0;const v=Math.round(towerRate()/2);if(v>0){earn(v);if(!room)banner("Flip Tower +"+fmt(v),"u")}}
 function towerArt(){const n=S.tower||0,show=Math.min(n,24),fh_=Math.max(5,Math.min(12,150/Math.max(1,show)));let fl="";
   for(let i=0;i<show;i++){const y=170-(i+1)*fh_;fl+=`<rect x="150" y="${y}" width="100" height="${fh_-1.5}" fill="${i%2?"#1f2633":"#232b3a"}"/>`+Array.from({length:6},(_,k)=>`<rect x="${156+k*15}" y="${y+1.5}" width="9" height="${Math.max(2,fh_-4.5)}" fill="${(i*7+k*3)%5?"#ffd27a":"#6c7a92"}" opacity=".9"/>`).join("")}
   const top=170-show*fh_;
@@ -1727,18 +1727,18 @@ function towerArt(){const n=S.tower||0,show=Math.min(n,24),fh_=Math.max(5,Math.m
      :`<rect x="140" y="160" width="120" height="10" fill="#5b4a33"/><path d="M170 160 V60 H290 M170 70 L200 60" stroke="#ffcc33" stroke-width="4" fill="none"/><rect x="284" y="60" width="4" height="40" fill="#cfd6e3"/><text x="200" y="150" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="700" fill="#ffcc33">YOUR LOT</text>`}
    <rect y="170" width="400" height="20" fill="#20242c"/></svg>`}
 function openTower(){
-  const draw=()=>{const n=S.tower||0,c=floorCost(n),next=TOWER_MS.find(m=>m[0]>n);
+  const draw=()=>{const n=S.tower||0,c=floorCost(n),next=TOWER_MS.find(m=>m[0]>n),top=n>=TOWER_MAX;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Flip Tower")}<div class="art">${towerArt()}</div>
       <div class="kv"><div><span class="eyebrow">Floors</span><b>${n}</b></div><div><span class="eyebrow">Tower income</span><b>${fmt(towerRate())}/min</b></div></div>
-      <div class="note">Your own skyscraper downtown. <b>Every floor pays you rent forever</b> and makes the tower taller on the map. There's no top floor.${next?` Next: ${next[1]} at floor ${next[0]}.`:""}</div>
-      <button class="bigbtn" id="tBuild" ${S.cash<c?"disabled":""}>Build floor ${n+1}<small>${fmt(c)} · ${TENANTS[n%TENANTS.length]} · +${fmt(c*.005)}/min</small></button>
-      <button class="bigbtn alt" id="tMax" style="text-align:center" ${S.cash<c?"disabled":""}>Build max</button>
+      <div class="note">Your own skyscraper downtown. <b>Every floor pays you rent forever</b> and makes the tower taller on the map. The top floor is ${TOWER_MAX}.${next?` Next: ${next[1]} at floor ${next[0]}.`:""}</div>
+      ${top?`<button class="bigbtn" id="tBuild" disabled>Max level reached<small>All ${TOWER_MAX} floors built</small></button>`:`<button class="bigbtn" id="tBuild" ${S.cash<c?"disabled":""}>Build floor ${n+1}<small>${fmt(c)} · ${TENANTS[n%TENANTS.length]} · +${fmt(c*.005)}/min</small></button>
+      <button class="bigbtn alt" id="tMax" style="text-align:center" ${S.cash<c?"disabled":""}>Build max</button>`}
       ${n?`<div class="sechead"><h3>Tenants</h3><span class="eyebrow">Top 6 floors</span></div><div class="perks">${Array.from({length:Math.min(6,n)},(_,k)=>{const i=n-1-k;return `<div class="perk nopic"><span class="t">Floor ${i+1} · ${TENANTS[i%TENANTS.length]}</span><span class="c">${fmt(floorCost(i)*.005)}/min</span></div>`}).join("")}</div>`:""}
       <p class="fine">Milestones: ${TOWER_MS.map(m=>(n>=m[0]?"✓ ":"")+m[0]+" "+m[1].toLowerCase()).join(" · ")}</p></div>`;
     $("leaveBtn").onclick=closeRoom;
-    const build=k=>{let built=0;while(built<k&&S.cash>=floorCost(S.tower||0)){S.cash-=floorCost(S.tower||0);S.tower=(S.tower||0)+1;built++;const m=TOWER_MS.find(x=>x[0]===S.tower);if(m){setTimeout(()=>{banner(m[1],"g");flash("#ffcc33",.5);confetti(220);shake(10,.6);gainCrate(3)},500)}}
+    const build=k=>{let built=0;while(built<k&&(S.tower||0)<TOWER_MAX&&S.cash>=floorCost(S.tower||0)){S.cash-=floorCost(S.tower||0);S.tower=(S.tower||0)+1;built++;const m=TOWER_MS.find(x=>x[0]===S.tower);if(m){setTimeout(()=>{banner(m[1],"g");flash("#ffcc33",.5);confetti(220);shake(10,.6);gainCrate(3)},500)}}
       if(!built)return;dirty=true;STATIC=null;S.stats.floors=Math.max(S.stats.floors||0,S.tower);SFX.rebirth();buzz([20,30,40]);const bt=elC($("tBuild"));if(bt)sparks(bt[0],bt[1],"#ffcc33",20+built*4,1.2);confetti(Math.min(160,30+built*12));shake(4+Math.min(8,built),.35);banner(built>1?"+"+built+" floors":"Floor "+S.tower,"a");draw();updMini()};
-    $("tBuild").onclick=()=>build(1);$("tMax").onclick=()=>build(999);
+    $("tBuild").onclick=()=>build(1);if($("tMax"))$("tMax").onclick=()=>build(999);
   };draw();
 }
 function drawTowerLot(g,p,P){
@@ -4243,7 +4243,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=12,WN=[
+const WN_VER=13,WN=[
+ ["🏙️","Flip Tower top floor","The Flip Tower now tops out at floor 500, the Star touch milestone."],
  ["🚀","Blast off to the Cosmos","The trip to World 2 is now a rocket launch, and the time machine to World 3 pulls you through a spinning time whirlpool."],
  ["💾","Stay in your world","Closing the game in World 2 or World 3 no longer sends you back to Earth. You load right back in where you left off."],
  ["🚶","Smarter townspeople","People walk on roads and grass and go around buildings instead of through them. Only your partner still cuts through to follow you. Women in town now have long hair."],
