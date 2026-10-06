@@ -391,6 +391,7 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
 .obsgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.obsc{display:flex;flex-direction:column;align-items:center;gap:2px;background:#16123a;color:#fff;border-radius:12px;padding:8px 2px}.obsc span{font-size:1.4rem}.obsc small{font-size:.55rem;text-align:center;opacity:.8;line-height:1.1}.obsc.lock{opacity:.35}.obsnew{display:flex;gap:12px;align-items:center;background:linear-gradient(120deg,#16123a,#3b2a8a);color:#fff;border-radius:16px;padding:12px;margin:8px 0}.obsnew>span{font-size:2.2rem}.obsnew small{display:block;opacity:.8;font-size:.75rem}
 .bhart{height:170px;background:#020208;position:relative;overflow:hidden}.bhdisk{position:absolute;left:50%;top:50%;width:260px;height:80px;margin:-40px 0 0 -130px;border-radius:50%;background:conic-gradient(#ffcc33,#ff7a3d,#7a2fd6,#ff7a3d,#ffcc33);filter:blur(6px);animation:spin 5s linear infinite;opacity:.85}.bhcore{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#000;box-shadow:0 0 0 3px rgba(255,210,140,.8),0 0 40px 10px rgba(255,150,60,.35)}
 .chip.live{box-shadow:inset 0 0 0 2px #ff4fd8,var(--shadow)}.chip.live .pk{color:#ff4fd8}
+.aucs{display:flex;flex-direction:column;gap:8px}.auc{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;background:var(--surface);border-radius:16px;padding:10px;box-shadow:var(--shadow)}.auc.lead{box-shadow:inset 0 0 0 2px var(--up),var(--shadow)}.auc.over{opacity:.55}.auc .tile{width:48px;height:48px}.aucb b{display:block;font-size:.9rem}.aucb small{display:block;font-size:.7rem;color:var(--muted)}.aucp{font-family:var(--mono);font-size:.74rem;font-weight:700}.auca{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.auct{font-family:var(--mono);font-weight:800}.auct.hot{color:var(--down);animation:pulse .6s infinite}.auca .cta{padding:8px 12px;font-size:.78rem}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -1469,7 +1470,7 @@ function renderHud(){
 
 /* ================= rooms ================= */
 let room=null;
-function roomHead(title){const tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>13?"xlong":tl>8?"long":""}"><span class="pdot"></span>${title}</h2><div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
+function roomHead(title){const tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>11?"xlong":tl>7?"long":""}"><span class="pdot"></span>${title}</h2><div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
@@ -3007,7 +3008,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);aucTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3249,6 +3250,7 @@ function mpOnMsg(topic,buf){
   if(kind==="d"){if(id===MP_ID&&d){const n=String(d.n||"A friend").slice(0,16);banner(n+" "+String(d.t||"").slice(0,40),"u");SFX.hot();buzz([20,40,20]);mpLog(n,String(d.t||"").slice(0,60),1);if(d.isl){S.islVis=S.islVis||{};S.islVis[d.isl]=(S.islVis[d.isl]||0)+1;dirty=true}}return}
   if(kind==="aw"){if(id===MP_ID&&d)pvpMsg(d);return}
   if(kind==="lv"){if(id!==MP_ID)liveMsg(d);return}
+  if(kind==="au"){const from=d&&d.f?String(d.f):id;if(from===MP_ID||(id!==from&&id!==MP_ID))return;aucMsg(d,from);return}
   if(kind==="pm"){if(id===MP_ID&&d)pmMsg(d);return}
   if(kind==="tr"){if(id!==MP_ID)huntMsg(id,d);return}
   if(id===MP_ID)return;
@@ -3296,10 +3298,11 @@ function mpUI(keep){
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
     <div class="mpjoin"><input id="mpIn" maxlength="80" placeholder="Message" autocomplete="off"><button class="cta" id="mpSendB">Send</button></div>
     <button class="cta" id="mpMkt" style="margin-bottom:8px"><span>Player market${Object.values(MP.peers).reduce((a,p)=>a+((p.ls||[]).length),0)?" · "+Object.values(MP.peers).reduce((a,p)=>a+((p.ls||[]).length),0)+" for sale":""}</span>${ARROW}</button>
+    <button class="cta" id="mpAuc" style="margin-bottom:8px"><span>Auction house${Object.values(AUC).filter(a=>Date.now()<a.ends).length?" · "+Object.values(AUC).filter(a=>Date.now()<a.ends).length+" live":""}</span>${ARROW}</button>
     <button class="cta ghost2" id="mpLeaveB">Leave room</button>`;
   const c=$("mpChat");c.scrollTop=c.scrollHeight;if(draft)$("mpIn").value=draft;
   const say=t=>{t=String(t||"").trim().slice(0,80);if(!t||!MP)return;const now=Date.now();if(now-MP.chatT<800)return;MP.chatT=now;mpSend("c",{n:mpName(),t});mpLog(mpName(),t);myBub={txt:t,t:4};SFX.tick(.5);mpUI()};
-  $("mpX").onclick=()=>{sh.hidden=true};$("mpLeaveB").onclick=()=>{mpLeave();mpUI()};$("mpMkt").onclick=()=>{sh.hidden=true;if(room)closeRoom();openPlayerMarket(closeRoom)};
+  $("mpX").onclick=()=>{sh.hidden=true};$("mpLeaveB").onclick=()=>{mpLeave();mpUI()};$("mpMkt").onclick=()=>{sh.hidden=true;if(room)closeRoom();openPlayerMarket(closeRoom)};$("mpAuc").onclick=()=>{sh.hidden=true;if(room)closeRoom();openAuctions(closeRoom)};
   $("mpCopy").onclick=()=>{try{navigator.clipboard.writeText(MP.code).then(()=>banner("Code copied","u"))}catch(e){}};
   $("mpSendB").onclick=()=>say($("mpIn").value);$("mpIn").onkeydown=e=>{if(e.key==="Enter")say($("mpIn").value)};
   sh.querySelectorAll("[data-lb]").forEach(b=>b.onclick=()=>{lbK=b.dataset.lb;mpUI(true)});
@@ -3990,7 +3993,7 @@ function pmMsg(d){if(!MP||!d||!d.f)return;
     S.stash.splice(L.i,1);S.plist=(S.plist||[]).filter(x=>x.id!==L.id);earn(d.p);dirty=true;mpSend("pm",{t:"sold",f:MP_ID,r:d.r,it:{cat:s.cat,code:s.code,name:s.name,cond:s.cond,base:s.base,noise:s.noise||1}},d.f);SFX.sell();confetti(60);banner(String(d.n||"A friend").slice(0,14)+" bought "+s.name+" +"+fmt(d.p),"g");mpLog(mpName(),"sold "+s.name+" to "+String(d.n||"a friend").slice(0,14),1);return}
   const P=PBUY[d.r];if(!P)return;delete PBUY[d.r];
   if(d.t==="nope"){S.cash+=P.l.p;dirty=true;banner("That item is gone, refunded","r");updMini();return}
-  if(d.t==="sold"&&d.it){const it=d.it;S.stash.push({cat:it.cat,code:it.code,name:String(it.name).slice(0,40),cond:it.cond,base:Math.min(+it.base||0,2e8),noise:+it.noise||1,fake:false,paid:P.l.p});dirty=true;SFX.buy();confetti(50);banner("Got "+it.name,"g");if(room==="pmarket"&&PMV)PMV()}}
+  if(d.t==="sold"&&d.it){const it=d.it;S.stash.push({cat:it.cat,code:it.code,name:String(it.name).slice(0,40),cond:it.cond,base:Math.min(+it.base||0,itemCap(it)),noise:+it.noise||1,fake:false,paid:P.l.p});dirty=true;SFX.buy();confetti(50);banner("Got "+it.name,"g");if(room==="pmarket"&&PMV)PMV()}}
 let PMV=null;
 function openPlayerMarket(back){room="pmarket";$("room").hidden=false;
   const draw=()=>{const peers=MP?Object.entries(MP.peers):[],mine=myListings(),offers=peers.flatMap(([id,p])=>(p.ls||[]).map(l=>({...l,fid:id,who:p.n})));
@@ -5242,6 +5245,49 @@ function liveDraw(){if(!LV||!MPW||LV.done&&LV.kind!=="rain")return;const e=liveN
   if(LV.kind==="race"){LV.cps.forEach(([x,y],k)=>{if(k<LV.cp)return;const on=k===LV.cp,p=.5+.5*Math.sin(wt*6);ctx.strokeStyle=on?"#2fd28a":"rgba(255,255,255,.4)";ctx.lineWidth=on?5:2;ctx.beginPath();ctx.ellipse(x,y,40+(on?p*6:0),16+(on?p*2:0),0,0,7);ctx.stroke();ctx.fillStyle=on?"#2fd28a":"rgba(255,255,255,.5)";ctx.font="900 14px "+FONTS.d;ctx.textAlign="center";ctx.fillText(String(k+1),x,y-24)});}
   if(LV.kind==="boss"){const[x,y]=LVBOSS,hp=Math.max(0,1-LV.hits/LV.hp),sh2=Math.sin(wt*20)*(LV.hits%3?1.5:0);ctx.save();ctx.translate(x+sh2,y);drawPerson(0,0,{size:2.6,tall:1.4,shirt:"#7a1d2a",skin:"#8fbf7a",hair:"#1b1d22",hs:2,build:{c:1.4,l:1.4,b:1.4},mv:false,ph:wt,acc:{h:"viking"}});ctx.restore();
     ctx.fillStyle="rgba(0,0,0,.6)";rr(x-70,y-190,140,14,7);ctx.fill();ctx.fillStyle="#e2364a";rr(x-68,y-188,136*hp,10,5);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 13px "+FONTS.d;ctx.textAlign="center";ctx.fillText("THE TITAN",x,y-200)}}
+/* ================= live auctions between players in a room ================= */
+// The seller's game is the referee: it holds the item, takes bids, and hands it to the winner once they've paid.
+const AUC={};let aucT=0;
+const itemCap=it=>{const P=POOL.find(p=>p.cat===it.cat&&p.code===it.code);return P?P.base*1.25:2e8};
+const safeItem=it=>({cat:String(it.cat),code:String(it.code),name:String(it.name).slice(0,40),cond:String(it.cond||"").slice(0,20),base:Math.min(+it.base||0,itemCap(it)),noise:Math.min(1.5,Math.max(.5,+it.noise||1)),fake:false});
+function aucReturnAll(){(S.auc||[]).forEach(a=>{if(a.it)S.stash.push(a.it)});if((S.auc||[]).length){S.auc=[];dirty=true}}
+function aucStart(i,startF){if(!MP)return;const s=S.stash[i];if(!s||s.fake)return;const v=valueOf(s),id=Math.random().toString(36).slice(2,9),min=Math.max(1,Math.round(v*startF)),ends=Date.now()+60000;
+  S.stash.splice(i,1);S.auc=S.auc||[];const a={id,it:s,min,ends,top:null,sn:mpName(),f:MP_ID};S.auc.push(a);AUC[id]={...a,it:safeItem(s)};dirty=true;
+  mpSend("au",{f:MP_ID,op:"new",id,it:safeItem(s),min,ends,sn:mpName()});SFX.hot();banner("Auction started","u");mpLog(mpName(),"is auctioning "+s.name,1)}
+function aucBid(id,amt){const a=AUC[id];if(!a||!MP||Date.now()>a.ends||a.f===MP_ID)return;const need=a.top?Math.ceil(a.top.amt*1.1):a.min;if(amt<need||S.cash<amt)return banner("Need "+fmt(Math.max(need,amt)),"r");
+  a.top={amt,by:MP_ID,bn:mpName()};mpSend("au",{f:MP_ID,op:"bid",id,amt,bn:mpName()},a.f);SFX.tick(.8);buzz(10)}
+function aucMsg(d,from){if(!d||!MP)return;const id=String(d.id||"");
+  if(d.op==="new"||d.op==="st"){if(!AUC[id]&&d.op==="st"&&!d.it)return;AUC[id]={...(AUC[id]||{}),id,it:d.it?safeItem(d.it):(AUC[id]||{}).it,min:+d.min||1,ends:Math.min(+d.ends||0,Date.now()+180000),top:d.top||null,sn:String(d.sn||"?").slice(0,16),f:from};if(d.op==="new")banner(String(d.sn||"Someone").slice(0,14)+" started an auction","a");return}
+  // only the seller handles bids
+  const mine=(S.auc||[]).find(a=>a.id===id);
+  if(d.op==="bid"&&mine){if(Date.now()>mine.ends)return;const need=mine.top?Math.ceil(mine.top.amt*1.1):mine.min,amt=+d.amt||0;if(amt<need)return;mine.top={amt,by:from,bn:String(d.bn||"?").slice(0,16)};if(mine.ends-Date.now()<10000)mine.ends=Date.now()+10000;AUC[id]={...AUC[id],top:mine.top,ends:mine.ends};aucBroadcast(mine);return}
+  if(d.op==="win"&&d.by===MP_ID){const a=AUC[id];if(!a)return;const amt=+d.amt||0;if(S.cash<amt||S.stash.length>=maxSlots()){mpSend("au",{f:MP_ID,op:"nopay",id},from);banner(S.cash<amt?"Couldn't pay for the auction":"Stash full, auction lost","r");return}
+    S.cash-=amt;S.stash.push({...a.it,paid:amt});dirty=true;mpSend("au",{f:MP_ID,op:"paid",id,amt},from);SFX.grail();confetti(120);banner("You won "+a.it.name+"!","g");return}
+  if(d.op==="win"){const a=AUC[id];if(a){a.ends=0;a.won=String(d.bn||"?").slice(0,16)}return}
+  if(d.op==="paid"&&mine&&mine.top&&from===mine.top.by&&!mine.done){mine.done=1;earn(mine.top.amt);S.auc=S.auc.filter(x=>x!==mine);dirty=true;SFX.sell();banner("Sold at auction +"+fmt(mine.top.amt),"g");return}
+  if(d.op==="nopay"&&mine&&!mine.done){mine.done=1;S.stash.push(mine.it);S.auc=S.auc.filter(x=>x!==mine);dirty=true;banner("The winner couldn't pay. Item returned","a")}}
+function aucBroadcast(a){mpSend("au",{f:MP_ID,op:"st",id:a.id,it:safeItem(a.it),min:a.min,ends:a.ends,top:a.top,sn:a.sn})}
+function aucTick(dt){if(!S)return;if(!MP){if((S.auc||[]).length)aucReturnAll();return}aucT+=dt;if(aucT<1)return;aucT=0;const now=Date.now();
+  (S.auc||[]).slice().forEach(a=>{if(a.done)return;if(now<a.ends){if(Math.floor(now/1000)%4===0)aucBroadcast(a);return}
+    if(!a.top){a.done=1;S.stash.push(a.it);S.auc=S.auc.filter(x=>x!==a);dirty=true;banner("No bids. "+a.it.name+" is back in your stash","a");return}
+    if(!a.sent){a.sent=now;mpSend("au",{f:MP_ID,op:"win",id:a.id,amt:a.top.amt,by:a.top.by,bn:a.top.bn});if(AUC[a.id])AUC[a.id].won=a.top.bn;return}
+    if(now-a.sent>15000){a.done=1;S.stash.push(a.it);S.auc=S.auc.filter(x=>x!==a);dirty=true;banner("The winner left. Item returned","a")}});
+  for(const id in AUC)if(now>AUC[id].ends+20000)delete AUC[id]}
+function openAuctions(back){room="auction";$("room").hidden=false;let pick=null;
+  const draw=()=>{const now=Date.now(),list=Object.values(AUC).filter(a=>a.it&&now<a.ends+8000).sort((a,b)=>a.ends-b.ends);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Auction House")}
+      <div class="note">Live bidding with everyone in room <b>${MP?MP.code:"—"}</b>. A bid in the last 10 seconds adds 10 seconds. The winner pays when the hammer falls.</div>
+      <div class="sechead"><h3>Live now</h3><span class="eyebrow">${list.length} auction${list.length===1?"":"s"}</span></div>
+      <div class="aucs">${list.map(a=>{const left=Math.max(0,Math.ceil((a.ends-now)/1000)),over=left<=0,mineA=a.f===MP_ID,lead=a.top&&a.top.by===MP_ID,cur=a.top?a.top.amt:a.min,next=a.top?Math.ceil(a.top.amt*1.1):a.min;
+        return `<div class="auc${over?" over":""}${lead?" lead":""}">${tileFor(a.it.cat,a.it.code,1)}<div class="aucb"><b>${esc(a.it.name)}</b><small>${esc(a.sn)}${mineA?" (you)":""} · worth ~${fmt(valueOf({...a.it,noise:a.it.noise||1}))}</small><span class="aucp">${a.top?"Top bid "+fmt(cur)+" · "+esc(a.top.bn):"Starts at "+fmt(cur)}</span></div>
+        <div class="auca"><span class="auct${left<=10&&!over?" hot":""}">${over?(a.won?"Sold":"Ended"):left+"s"}</span>${!over&&!mineA?`<button class="cta" data-bid="${a.id}" data-amt="${next}" ${S.cash<next?"disabled":""}>Bid ${fmt(next)}</button>`:""}</div></div>`}).join("")||`<p class="fine">No auctions running. Start one below and everyone in the room can bid.</p>`}</div>
+      <div class="sechead"><h3>Auction something</h3><span class="eyebrow">60 seconds</span></div>
+      ${MP?`<div class="perks">${S.stash.map((s,i)=>s.fake?"":`<button class="perk opp" data-sell="${i}"><span class="oav" style="background:transparent">${tileFor(s.cat,s.code,1)}</span><span class="t">${esc(s.name)}</span><span class="d">Worth ~${fmt(valueOf(s))}</span><span class="c">${pick===i?"Start at…":"Auction"}</span></button>${pick===i?`<div class="seg3">${[[.5,"50%"],[.75,"75%"],[1,"100%"]].map(([f,t])=>`<button data-start="${f}">Start ${t}<small>${fmt(valueOf(s)*f)}</small></button>`).join("")}</div>`:""}`).join("")||`<p class="fine">Your stash is empty.</p>`}</div>`:`<p class="fine">Join a room in the Online Town to run auctions.</p>`}</div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-bid]").forEach(b=>b.onclick=()=>{aucBid(b.dataset.bid,+b.dataset.amt);draw()});
+    $("room").querySelectorAll("[data-sell]").forEach(b=>b.onclick=()=>{pick=pick===+b.dataset.sell?null:+b.dataset.sell;draw()});
+    $("room").querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{if(pick==null)return;aucStart(pick,+b.dataset.start);pick=null;draw()})};
+  draw();const iv=setInterval(()=>{if(room!=="auction")return clearInterval(iv);if(pick==null)draw()},500)}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
