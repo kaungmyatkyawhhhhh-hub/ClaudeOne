@@ -32,6 +32,10 @@ local JOINTS = {
 	LShoulder = { "LeftUpperArm", "LeftShoulder" },
 	RElbow = { "RightLowerArm", "RightElbow" },
 	LElbow = { "LeftLowerArm", "LeftElbow" },
+	RHip = { "RightUpperLeg", "RightHip" },
+	LHip = { "LeftUpperLeg", "LeftHip" },
+	RKnee = { "RightLowerLeg", "RightKnee" },
+	LKnee = { "LeftLowerLeg", "LeftKnee" },
 }
 local SIDES = { { "R", 1 }, { "L", -1 } }
 
@@ -62,6 +66,21 @@ POSES.LatSpread = function(character, w)
 	-- fists at the waist, elbows flared forward and out
 	for _, side in ipairs(SIDES) do frontArm(character, side, rad(25) * w, rad(45) * w, rad(100) * w) end
 	setJoint(character, "Waist", Angles(rad(6) * w, 0, 0))
+end
+POSES.AbsAndThighs = function(character, w)
+	-- hands behind the head, chest up, one leg forward and flexed
+	for _, side in ipairs(SIDES) do sideArm(character, side, -rad(25) * w, rad(150) * w, rad(145) * w) end
+	setJoint(character, "Waist", Angles(-rad(6) * w, 0, 0))
+	setJoint(character, "RHip", Angles(-rad(28) * w, 0, -rad(6) * w))
+	setJoint(character, "RKnee", Angles(rad(22) * w, 0, 0))
+	setJoint(character, "LHip", Angles(rad(4) * w, 0, rad(6) * w))
+end
+POSES.MostMuscular = function(character, w)
+	-- the crab: fists together in front, shoulders rolled in, leaning into it
+	for _, side in ipairs(SIDES) do frontArm(character, side, rad(55) * w, -rad(14) * w, rad(75) * w) end
+	setJoint(character, "Waist", Angles(rad(14) * w, 0, 0))
+	setJoint(character, "RHip", Angles(-rad(6) * w, 0, -rad(5) * w))
+	setJoint(character, "LHip", Angles(-rad(6) * w, 0, rad(5) * w))
 end
 POSES.HighFive = function(character, w)
 	sideArm(character, SIDES[1], -rad(15) * w, rad(160) * w, rad(15) * w)
@@ -141,7 +160,7 @@ end)
 ------------------------------------------------------------------------
 -- Side button + panel
 ------------------------------------------------------------------------
-local menuButton = SideMenu.Add("Emotes", "Emotes", Icons.Pose, 4)
+local menuButton = SideMenu.Add("Emotes", "Poses", Icons.Pose, 4)
 local gui = Theme.ScreenGui({ Name = "Emotes", Enabled = false, DisplayOrder = 24, Parent = player:WaitForChild("PlayerGui") })
 local panel = Theme.Panel({
 	Name = "Panel",
@@ -154,7 +173,7 @@ local panel = Theme.Panel({
 	Theme.Pad("M"),
 	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
 })
-Theme.Text({ LayoutOrder = 0, Text = "Emotes", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+Theme.Text({ LayoutOrder = 0, Text = "Poses", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 
 local isOpen = false
 local function close()

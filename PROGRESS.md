@@ -211,3 +211,5 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - Stat label backings: 5px rounded corners, 1.5x wider. Left menu got a collapse arrow (folds all tiles away; arrow stays, panels beside the menu unaffected).
 
 - **Mirror reflection fix (verified by numbers):** copy parts are now paired with your real parts by name path (the old index pairing could leave it frozen), and the copy has no Humanoid/joints (the earlier edit that was meant to do this had never applied). Test showed copy limb heights tracking the real ones during an emote.
+
+- **Poses:** the Emotes menu is renamed Poses (tile + panel title); new poses Abs and thighs, Most muscular (crab) next to Double biceps, Lat spread, High five. Joint angles for the two new ones are a first guess: look at them in play and tell me what to adjust. Mirror reflection lighting made brighter (unverified by eye).

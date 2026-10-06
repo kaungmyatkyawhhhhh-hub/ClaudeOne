@@ -30,10 +30,12 @@ ShowOff.Statue = {
 	Color = Color3.fromHex("#C9C6BF"),
 }
 
--- Emotes: played for everyone to see. pose = a client pose function name (EmoteClient).
+-- Poses (the emote system): played for everyone to see. pose = a client pose function name (EmoteClient).
 ShowOff.Emotes = {
 	{ id = "DoubleBiceps", name = "Double biceps", pose = "DoubleBiceps", seconds = 3 },
 	{ id = "LatSpread", name = "Lat spread", pose = "LatSpread", seconds = 3 },
+	{ id = "AbsAndThighs", name = "Abs and thighs", pose = "AbsAndThighs", seconds = 3 },
+	{ id = "MostMuscular", name = "Most muscular", pose = "MostMuscular", seconds = 3 },
 	{ id = "HighFive", name = "High five", pose = "HighFive", seconds = 1.6 },
 }
 ShowOff.EmoteById = {}
