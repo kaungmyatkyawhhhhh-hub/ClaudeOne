@@ -2905,24 +2905,24 @@ function newListing0(){
     return {...b0,kind:"grail",cat:g.cat,code:g.code,name:g.name,cond:cond[0],base,ask,price:ask,life:3.4,left:3.4,rating:5};
   }
   if(Math.random()<MC().box){
-    const pool=affordable(),avg=pool.reduce((a,p)=>a+p.base,0)/pool.length;
+    const pool=affordable(),avg=pool.reduce((a,p)=>a+p.base,0)/pool.length*edK();
     const ask=Math.max(10,Math.round(avg*rnd(.45,.7)/5)*5);
     return {...b0,kind:"mystery",cat:null,code:"?",name:"Mystery Box",cond:"Sealed",base:0,ask,price:ask,life,left:life,rating:rnd(4.4,5)};
   }
   const only=MC().only||(MC().k==="lux"?"lux":null),luxP=only?(()=>{const lp=POOL.filter(p=>p.cat===only);if(only!=="lux")return lp;const cap=Math.max(30000,(S.cash+stashVal())*1.5),ok=lp.filter(p=>p.base<=cap);return ok.length?ok:lp.slice(0,3)})():null;
-  const it=pick(luxP||affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
-  const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
+  const it=pick(luxP||affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds),ek=only?1:edK()*(edK()>1?rnd(.6,1.4):1);
+  const base=Math.round(it.base*cond[1]*ek),mv=base*S.trend[it.cat];
   const steal=Math.random()<MC().steal*(1+.15*pk("steal"))*tSteal(),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
   const fake=steal&&Math.random()<Math.min(.9,MC().fake*secK()*(1+WT*.5)*tFake());
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
-  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk()*(liveSale()?.6:1))),price:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk()*(liveSale()?.6:1))),life,left:life,fake,rating};
+  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:edName(ek)+it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk()*(liveSale()?.6:1))),price:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk()*(liveSale()?.6:1))),life,left:life,fake,rating};
 }
 function openBox(price){
   const jackpot=Math.random()<.07;
   let pool=jackpot?POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=Math.max(400,price*3)):affordable(1.2);if(!pool.length)pool=affordable();
   const it=pick(pool),c=CAT[it.cat],cond=jackpot?c.conds[0]:pick(c.conds);
-  return {cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:rnd(.95,1.05),fake:false};
+  const ek=edK()*rnd(.6,1.6);return {cat:it.cat,code:it.code,name:edName(ek)+it.name,cond:cond[0],base:Math.round(it.base*cond[1]*ek),noise:rnd(.95,1.05),fake:false};
 }
 function spark(h){
   const w=100,ht=22,mn=Math.min(...h),mx=Math.max(...h),rg=Math.max(.08,mx-mn);
@@ -4306,7 +4306,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=21,WN=[
+const WN_VER=22,WN=[
+ ["⏱️","Faster worlds","World 1 now takes about 35 minutes, World 2 about 30 and Deep Time about 30. Rare editions (Signed, Gold, Platinum…) appear as you get richer, space generators are cheaper, and prehistoric life pays back much faster."],
  ["🤖","NPC worlds","Three always-open online worlds full of bot players who walk around, chat and race you at the Car Meet. Join with friends from the Harbor."],
  ["📶","Snappier multiplayer","Players update 10 times a second and move smoother, and the public town list loads faster."],
  ["💪","Muscle past your frame","Muscles now grow up to 2.5× your frame. At 1.2× you get vascularity, at 1.5× boulder shoulders, at 1.8× godzilla traps."],
@@ -5131,16 +5132,16 @@ function openTiers(back){const t=tierN(),nw=netWorth(),nx=TIERS[t+1];
 const W2_COST=10*RAD;
 const w2=()=>{S.w2=S.w2||{open:0,gen:{},up:{},home:-1,dm:0,fed:0,disc:[],tapT:0};return S.w2};
 const GEN=[
- {k:"solar",n:"Solar collector",ic:"🔆",c:100,r:1,d:"Panels drinking starlight."},
- {k:"moon",n:"Moon base",ic:"🌙",c:1500,r:12,d:"Domes and rovers on the Moon."},
- {k:"mars",n:"Mars colony",ic:"🔴",c:2e4,r:150,d:"A red planet suburb."},
- {k:"elev",n:"Space elevator",ic:"🛗",c:3e5,r:2000,d:"Cargo straight from orbit."},
- {k:"astro",n:"Asteroid mine",ic:"☄️",c:5e6,r:3e4,d:"Platinum the size of mountains."},
- {k:"dyson",n:"Dyson sphere",ic:"☀️",c:8e7,r:5e5,d:"A star wrapped in mirrors."},
- {k:"worm",n:"Wormhole network",ic:"🌀",c:1.5e9,r:8e6,d:"Shortcuts through spacetime."},
- {k:"forge",n:"Neutron star forge",ic:"💫",c:3e10,r:1.5e8,d:"Metal heavier than mountains."},
- {k:"pocket",n:"Pocket universe",ic:"🌌",c:7e11,r:3e9,d:"A universe in your jacket."},
- {k:"multi",n:"Multiverse gate",ic:"♾️",c:2e13,r:8e10,d:"Every version of you, working."}];
+ {k:"solar",n:"Solar collector",ic:"🔆",c:10,r:2,d:"Panels drinking starlight."},
+ {k:"moon",n:"Moon base",ic:"🌙",c:150,r:24,d:"Domes and rovers on the Moon."},
+ {k:"mars",n:"Mars colony",ic:"🔴",c:2000,r:300,d:"A red planet suburb."},
+ {k:"elev",n:"Space elevator",ic:"🛗",c:3e4,r:4000,d:"Cargo straight from orbit."},
+ {k:"astro",n:"Asteroid mine",ic:"☄️",c:5e5,r:6e4,d:"Platinum the size of mountains."},
+ {k:"dyson",n:"Dyson sphere",ic:"☀️",c:8e6,r:1e6,d:"A star wrapped in mirrors."},
+ {k:"worm",n:"Wormhole network",ic:"🌀",c:1.5e8,r:1.6e7,d:"Shortcuts through spacetime."},
+ {k:"forge",n:"Neutron star forge",ic:"💫",c:3e9,r:3e8,d:"Metal heavier than mountains."},
+ {k:"pocket",n:"Pocket universe",ic:"🌌",c:7e10,r:6e9,d:"A universe in your jacket."},
+ {k:"multi",n:"Multiverse gate",ic:"♾️",c:2e12,r:1.6e11,d:"Every version of you, working."}];
 const genN=k=>(w2().gen[k]||0);
 const genCost=(g,n=genN(g.k))=>g.c*Math.pow(1.15,n);
 const genBulk=(g,q)=>{let c=0,n=genN(g.k);for(let i=0;i<q;i++)c+=genCost(g,n+i);return c};
@@ -5747,24 +5748,24 @@ const w3=()=>{S.w3=S.w3||{open:0,gen:{},up:{},genes:0,ext:0,run:0,disc:[],digT:0
 const inW3=()=>typeof SCN!=="undefined"&&!!SCN&&SCN.kind==="prehist";
 const ambF=v=>"◈"+radF(v/AMB);
 const LIFE=[
- {k:"trilo",n:"Trilobite colony",ic:"🪳",c:1,r:.01,d:"Armoured bugs crawling the sea floor."},
- {k:"anom",n:"Anomalocaris reef",ic:"🦐",c:15,r:.12,d:"The first top predator, a metre long."},
- {k:"fish",n:"Armoured fish shoal",ic:"🐟",c:200,r:1.5,d:"Fish with bony plates for heads."},
- {k:"fern",n:"First forest",ic:"🌿",c:3e3,r:20,d:"Tree ferns taller than houses."},
- {k:"fly",n:"Giant dragonflies",ic:"🦋",c:5e4,r:300,d:"Wingspans like a hawk's."},
- {k:"amph",n:"Amphibian pond",ic:"🐸",c:8e5,r:5e3,d:"The first animals to crawl onto land."},
- {k:"dime",n:"Dimetrodon herd",ic:"🦎",c:1.5e7,r:8e4,d:"Sail-backed and older than any dinosaur."},
- {k:"nest",n:"Dinosaur nests",ic:"🥚",c:3e8,r:1.5e6,d:"Clutches of eggs in warm sand."},
- {k:"sauro",n:"Sauropod herd",ic:"🦕",c:7e9,r:3e7,d:"The ground shakes when they walk."},
- {k:"rex",n:"T. rex territory",ic:"🦖",c:2e11,r:8e8,d:"The king of the tyrant lizards."}];
+ {k:"trilo",n:"Trilobite colony",ic:"🪳",c:1,r:.2,d:"Armoured bugs crawling the sea floor."},
+ {k:"anom",n:"Anomalocaris reef",ic:"🦐",c:5,r:1,d:"The first top predator, a metre long."},
+ {k:"fish",n:"Armoured fish shoal",ic:"🐟",c:24,r:4.8,d:"Fish with bony plates for heads."},
+ {k:"fern",n:"First forest",ic:"🌿",c:120,r:24,d:"Tree ferns taller than houses."},
+ {k:"fly",n:"Giant dragonflies",ic:"🦋",c:660,r:130,d:"Wingspans like a hawk's."},
+ {k:"amph",n:"Amphibian pond",ic:"🐸",c:3500,r:700,d:"The first animals to crawl onto land."},
+ {k:"dime",n:"Dimetrodon herd",ic:"🦎",c:2e4,r:4000,d:"Sail-backed and older than any dinosaur."},
+ {k:"nest",n:"Dinosaur nests",ic:"🥚",c:1.2e5,r:2.4e4,d:"Clutches of eggs in warm sand."},
+ {k:"sauro",n:"Sauropod herd",ic:"🦕",c:8.1e5,r:1.6e5,d:"The ground shakes when they walk."},
+ {k:"rex",n:"T. rex territory",ic:"🦖",c:6e6,r:1.2e6,d:"The king of the tyrant lizards."}];
 const lifeN=k=>(w3().gen[k]||0);
 const lifeCost=(g,n=lifeN(g.k))=>g.c*Math.pow(1.15,n);
 const lifeBulk=(g,q)=>{let c=0,n=lifeN(g.k);for(let i=0;i<q;i++)c+=lifeCost(g,n+i);return c};
 const lifeMile=g=>[25,50,100,200,300,400,500].filter(m=>lifeN(g.k)>=m).length;
-const EVO=[{k:"u_trilo",n:"Compound eyes",d:"Trilobites ×3",c:8.0,g:"trilo"},{k:"u_anom",n:"Grasping claws",d:"Anomalocaris ×3",c:120.0,g:"anom"},{k:"all1",n:"Sexual selection",d:"All life ×2",c:500.0},{k:"u_fish",n:"Jaws",d:"Fish ×3",c:1600.0,g:"fish"},
- {k:"u_fern",n:"Seeds",d:"Forests ×3",c:24000.0,g:"fern"},{k:"all2",n:"Oxygen boom",d:"All life ×2",c:200000.0},{k:"u_fly",n:"Wing veins",d:"Dragonflies ×3",c:400000.0,g:"fly"},{k:"u_amph",n:"Lungs",d:"Amphibians ×3",c:6000000.0,g:"amph"},
- {k:"u_dime",n:"Warm blood",d:"Dimetrodons ×3",c:120000000.0,g:"dime"},{k:"all3",n:"Hollow bones",d:"All life ×2",c:500000000.0},{k:"u_nest",n:"Parental care",d:"Nests ×3",c:2400000000.0,g:"nest"},{k:"u_sauro",n:"Long necks",d:"Sauropods ×3",c:50000000000.0,g:"sauro"},
- {k:"all4",n:"Feathers",d:"All life ×3",c:100000000000.0},{k:"u_rex",n:"Bone-crushing bite",d:"T. rex ×3",c:1500000000000.0,g:"rex"}];
+const EVO=[{k:"u_trilo",n:"Compound eyes",d:"Trilobites ×3",c:5,g:"trilo"},{k:"u_anom",n:"Grasping claws",d:"Anomalocaris ×3",c:18,g:"anom"},{k:"all1",n:"Sexual selection",d:"All life ×2",c:42},{k:"u_fish",n:"Jaws",d:"Fish ×3",c:84,g:"fish"},
+ {k:"u_fern",n:"Seeds",d:"Forests ×3",c:420,g:"fern"},{k:"all2",n:"Oxygen boom",d:"All life ×2",c:1500},{k:"u_fly",n:"Wing veins",d:"Dragonflies ×3",c:2300,g:"fly"},{k:"u_amph",n:"Lungs",d:"Amphibians ×3",c:12000,g:"amph"},
+ {k:"u_dime",n:"Warm blood",d:"Dimetrodons ×3",c:70000,g:"dime"},{k:"all3",n:"Hollow bones",d:"All life ×2",c:170000},{k:"u_nest",n:"Parental care",d:"Nests ×3",c:420000,g:"nest"},{k:"u_sauro",n:"Long necks",d:"Sauropods ×3",c:2.6e6,g:"sauro"},
+ {k:"all4",n:"Feathers",d:"All life ×3",c:4e6},{k:"u_rex",n:"Bone-crushing bite",d:"T. rex ×3",c:2e7,g:"rex"}];
 const GUIDE3=[["🪳","Trilobite","Over 20,000 species. Their eyes were made of crystal."],["🦐","Anomalocaris","The Cambrian's top predator, with grabbing arms on its face."],["🖐️","Opabinia","Five eyes and a nozzle for a nose."],["🦔","Hallucigenia","So weird scientists first drew it upside down."],
  ["🦈","Dunkleosteus","A 6-metre fish with self-sharpening bone blades for teeth."],["🐊","Tiktaalik","A fish with wrists: halfway to walking on land."],["🦋","Meganeura","A dragonfly with a 70 cm wingspan."],["🐛","Arthropleura","A millipede as long as a car."],
  ["🦎","Dimetrodon","Not a dinosaur: closer to mammals than to lizards."],["🐷","Lystrosaurus","A tusked survivor of the worst extinction ever."],["🦖","Coelophysis","One of the earliest dinosaurs, fast and light."],["🦕","Plateosaurus","An early giant plant-eater from the Triassic."],
@@ -6317,6 +6318,12 @@ function botLook(p,W,i,lvl){const r=k=>hsh(W.c,i,k),bld=Math.min(2.4,lvl/110*(.6
   Object.assign(p,{lv:lvl,cm,t:+(1+Math.min(.8,(cm-170)/170*2.2)).toFixed(2),z:+(1+.6*Math.min(1,bld/1.4)).toFixed(2),b:[+bld.toFixed(2),+(bld*(.8+r("l")*.3)).toFixed(2),+bld.toFixed(2)],c:Math.round(cash),ti,pr:Math.round(20+lvl*14*(.6+r("p"))),k:lvl>200?5:lvl>90?3:0,
     ac:lvl<15?{}:{g:lvl>60?"dshades":lvl>25?"aviator":"shades",c:lvl>80?"diamond":lvl>30?"gold":"silver",...(lvl>50?{h:pick2(["top","cowboy","halo","cap"],i)}:{}),...(lvl>90?{b:i%2?"cape":"wings"}:{})},
     hm:Math.max(0,Math.min(PROPS.length-1,Math.floor(lvl/35*(.6+r("hm")*.8)))),rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
+/* ================= editions: once you outgrow the catalogue, the market brings you pricier editions of the same items ================= */
+let edTop=0,edTopN=-1;
+function edK(){if(!S)return 1;if(edTopN!==S.unlocked.length){edTopN=S.unlocked.length;edTop=Math.max(...POOL.filter(p=>S.unlocked.includes(p.cat)&&p.cat!=="lux").map(p=>p.base))}const w=Math.max(260,(S.cash+stashVal())*1.4);return Math.max(1,w*EDF/edTop)}
+const EDN=[[1e15,"Cosmic"],[1e12,"Diamond"],[1e9,"Platinum"],[1e6,"Gold"],[1e3,"Signed"],[10,"Limited"]];
+const edName=k=>{for(const[v,n]of EDN)if(k>=v)return n+" ";return ""};
+let EDF=.3;
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
