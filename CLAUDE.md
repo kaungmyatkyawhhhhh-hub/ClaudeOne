@@ -48,8 +48,9 @@
   muscle only, no name), never stacked (new replaces old); secondary muscles only flash the HUD muscle list; every
   10 reps one slightly bigger "Set done · +[total] Chest". Respect the player's "Gain numbers" setting
   (On / Minimal = set popups only / Off), stored in `settings.gainNumbers`. Code: `gainPopup` in `MachineClient`.
-- Stats is a window (see "Stats window" in the brief): nothing floats around the player in the world. The body viewer
-  shows a clone of the local character in a ViewportFrame; labels and dots are 2D, placed from the viewport camera.
+- Stats (see "Stats (final design)" in the brief): the Stats button toggles 2D labels around your character in the world
+  (always visible, same size on screen, off by default); a Muscles button opens the full panel; on a machine a small
+  body-map widget slides in. Never go back to a body-viewer window or a settings row for the labels.
 - World geometry is built in Studio, never by game scripts (owner's rule): services find Studio-built pieces by
   name and only wire them (prompts, doors, machines). New areas: write a builder in `tools/builders`, run it once in
   Studio to make the parts, save the place (see `tools/bake.md`). Small runtime-only visuals (gain popups, cosmetic

@@ -54,13 +54,15 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   outfit and the 18 muscle shapes/veins are all gone. Players and NPCs are their normal avatars with their own clothes
   again (`tools/meshes/` stays on disk only, ignored by git; `ServerStorage.BodyStages` deleted).
 - **Fix list 3, part 2:** muscle body tiers with Marketplace ids (see "Muscle bodies" above), empty for now.
-- **Stats v5 (6 Oct):** the world stat labels (and their Settings row) are gone for good; nothing floats around the player.
-  The Stats button opens one window on top of everything (rest of the HUD switched off behind it; close with X, Esc or a
-  tap outside): LEFT "Your muscles" (goal + 6 group cards that always fit their muscles, scroll on short screens),
-  RIGHT a body viewer with a clone of YOUR character (own clothes), 8 front labels / 9 back labels with thin lines to
-  dots on the muscles (alternating sides so lines never cross), Front / Back toggle with a smooth 180° turn, drag to turn
-  a little (springs back), hover/tap a label or row to light up its partner. Phones and narrow screens (< 720px wide):
-  two tabs, Muscles | Body. Screenshots `stats_v5_*.png`. Brief section 8 and the CLAUDE.md rule were rewritten.
+- **Stats, final design (6 Oct):** replaces the body-viewer window (v5, still in git history) and the old world labels.
+  (1) The Stats button toggles compact labels around your character in the world (off by default): Strength + Stamina
+  above the head, Chest/Core/Legs left and Shoulders/Back/Arms right, "Max" in soft gold, lines to dots on the body, same
+  size on screen, steps off the "E / Use" prompt. (2) While they show, a "Muscles" button sits at the bottom center and
+  opens the "Your muscles" panel (goal + six cards that fit, the rest of the HUD switched off, X / Esc / tap outside).
+  (3) On a machine a small body-map widget slides in at the right (front + back silhouettes with proper proportions,
+  muscles glow by level, trained ones pulse, "-" folds it to a chip) and slides away on exit; the highlight clears on
+  exit, machine switch, death and respawn (each tested). Screenshots `stats_final_*.png`. Brief section 8 and the
+  CLAUDE.md rule were rewritten again.
 - **Fix list 3, part 4:** new menu. PC: no toggle; 64px square buttons with a line icon and a small label (Stats,
   Titles, Genetics, Emotes, Crew, Wardrobe, Settings), 8px gaps, vertically centered on the left edge below the top
   bar; if they don't fit the height they wrap into 2 columns. Hover = slight grow + brighter; press = 0.95. Phones:
@@ -121,10 +123,9 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **DataStore:** near the end Studio got "InternalServerError" from UpdateAsync on `PlayerData_1` and the menu stayed
   on "Loading..." (a Roblox-side error, probably after many quick test sessions); the last tests ran with
   `FreshPlayer` (turned off again). If it happens to you, wait a minute and play again.
-- **Stats window on a real phone** (the two tabs) and with a layered-clothing avatar (the viewer clones your character).
-  Esc to close could not be tested here (Roblox reserves the key for its menu); X and tap-outside were. Window sizes I
-  could reach: 986x584 (the biggest the screen allows), 536x405 (phone landscape), 376x587 (portrait). Below ~320px wide
-  the whole HUD collides (known: the game is landscape-only on phones).
+- **Stats on a real phone**: tested in Studio at 667x374 (phone landscape) and 536x405 with the phone layout switched on. On
+  short screens (< 460px tall) the world labels step aside while you lift (the widget shows the stats instead). Check
+  tapping the labels' Muscles button and the widget with real fingers.
 - **Muscle body tiers** with the bodies you pick: tested with Roblox's "Man" torso + arms (clothes, hair and
   accessories stayed on, height kept). Check your bodies with layered clothing, emotes, the skateboard and lifting.
 - Phone **Menu button + grid**: open it, pick a few buttons, tap outside to close, on a real phone or the Device Emulator.
@@ -153,12 +154,12 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - Part 4: buttons are 64px, not 56: "Wardrobe" is 60px wide at the 14px minimum text size. "Phone" = touch screen
   without a keyboard (Studio: Workspace attribute `TestPhoneLayout`); a small PC window keeps the PC menu. While lifting
   the PC menu keeps only Stats; phones hide the Menu button.
-- Stats v5: the viewer clones the local character each time the window opens (scripts, sounds, billboards, lights and
-  the skateboard are stripped, every joint reset, arms eased out 11° so biceps and forearms have room for their labels)
-  and places the dots on the clone's own parts, so they follow a different body shape or height. The window is above
-  notifications (DisplayOrder 60); the HUD is hidden by switching its ScreenGuis off and restored afterwards. Studio test
-  hook: Workspace attribute `TestOpenStats` (true/false) opens/closes it. The old "Strength" attribute and total, and
-  the Settings > Stats labels choice are gone (a leftover saved `statsLabels` is dropped on the next settings save).
+- Stats final: the labels are a 2D layer (not BillboardGuis): that keeps them the same size, always visible and jitter-free.
+  Shared state: `UIBus.StatsLabels` (on/off), `UIBus.MusclesVisible`, `UIBus.OpenMuscles`, `UIBus.Training` (on a
+  machine), `UIBus.CoverOpen` (a full panel is open: labels and the Muscles button step aside). The tutorial's "open
+  Stats" step counts the labels turning on. A leftover saved `statsLabels` setting is dropped on the next settings save.
+  The widget's muscle shapes are named after their muscle (handy for tests). Mouse-free Studio tests: from the server
+  context fire `Remotes.MachineState:FireClient(player, "Enter", machineModel)` / `"Exit"`.
 - Part 5: the nudge is 0.04 studs (invisible, but enough to stop flicker at any distance). Only anchored Parts
   (blocks and cylinders), never characters; same-color plain plastic is skipped (it can't flicker visibly).
 

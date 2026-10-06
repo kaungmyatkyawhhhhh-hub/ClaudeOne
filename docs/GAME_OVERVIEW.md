@@ -86,7 +86,9 @@ for where everything sits in Studio.
 - `ProgressClient`: the always-visible Growth Spurt bar (top center) with a "next goal" line, and the "you grew" moment.
 - `ProGymClient`: the glass door between the gyms (slides open from Growth Spurt 2, locked before).
 - `AreaSignsClient`: area signs show "Opens at Growth Spurt N" only while that area is locked for you.
-- `StatsClient`: the Stats menu button and the Stats window: left "Your muscles" (Growth Spurt goal + button, six group cards), right a body viewer (a clone of your character in a ViewportFrame + WorldModel, labels with lines to dots on the muscles, Front / Back toggle, drag to turn, hover/tap cross-highlight with the left panel); two tabs on phones. Hides the rest of the HUD while open. Nothing floats around the player in the world.
+- `StatsClient`: the Stats menu button (toggles the world labels), the bottom-center Muscles button and the "Your muscles" panel (goal + six cards); hides the rest of the HUD while the panel is open.
+- `StatsLabelsClient`: your stats as compact 2D labels with lines to dots on your body (Strength + Stamina above the head, six groups on both sides); steps off prompts, the goal bar and the machine panel.
+- `BodyMapClient`: the small front/back body-map widget that slides in while you are on a machine (muscles glow by level, the trained ones pulse, fold chip, clears on exit/respawn/death).
 - `GeneticsClient`: genetics reveal and reroll screen.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.

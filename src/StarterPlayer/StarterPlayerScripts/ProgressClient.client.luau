@@ -178,7 +178,7 @@ local function updateVisible()
 end
 
 UIBus.GeneticsVisible.Event:Connect(function(visible) hidden.genetics = visible; updateVisible() end)
-UIBus.StatsVisible.Event:Connect(function(visible) hidden.stats = visible; updateVisible() end)
+UIBus.MusclesVisible.Event:Connect(function(visible) hidden.stats = visible; updateVisible() end)
 
 Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	if state == "Enter" and typeof(model) == "Instance" then

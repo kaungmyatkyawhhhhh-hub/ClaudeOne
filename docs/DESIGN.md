@@ -179,21 +179,25 @@ permanent gains bonus. Example: 1 → 4'6" lvl 50 1.25x; 2 → 5'0" lvl 100 1.5x
 4 → 6'0" lvl 275 2x; 5 → 6'6" lvl 400 2.5x. Height caps ~7'0"; later spurts still give bonuses.
 First Growth Spurt should be reachable in ~15-20 minutes.
 
-## 8. Stats window (replaced the live world labels, "stats v5")
-- Nothing floats around the player in the world any more (no labels, lines or dots). Only the overhead title stays.
-- The Stats button opens one window with two panels side by side, on top of everything: the rest of the HUD (quest
-  panel, goal bar, notes, menu) is switched off behind it. Close with the X, Esc, or a tap outside the window.
-- LEFT, "Your muscles": the Growth Spurt goal (and its button when ready), then the six group cards with grade badge,
-  genetics multiplier, level and muscle bars. "Needs work" marks the weakest group only, and only when there's no tie.
-  Levels at the cap show "Max" in soft gold. The cards always fit their muscles; the area scrolls on short screens.
-- RIGHT, a body viewer ("Front" / "Back" title + toggle): a copy of the player's own character (their clothes, hair,
-  accessories) in a ViewportFrame + WorldModel, centered and lit, facing you. Labels with thin lines to a small dot on
-  the muscle, on both sides of the body, alternating down the body so lines never cross. Front: Chest, Shoulders,
-  Biceps, Forearms, Abs, Obliques, Quads, Calves. Back (smooth 180° turn): Traps, Lats, Rhomboids, Lower Back, Rear
-  Delts, Triceps, Glutes, Hamstrings, Calves. Each label: muscle name + level. Dragging turns the body a little and it
-  springs back. Hover (PC) or tap a label to light up its row on the left, and the other way around.
-- Phones and narrow screens: the two panels become two tabs ("Muscles" | "Body").
-- Dark minimal style, color only for grade badges and "Max". Numbers update live while open.
+## 8. Stats (final design)
+- **Stats button = labels in the world.** Pressing it shows your stats as labels around your character (like the
+  reference game); pressing it again hides them. Hidden by default. Thin white lines from small white dots on the body to
+  each label; a label is a small dark see-through box with the name on top (white) and the number under it (light
+  blue-white, with commas). Strength (total of all muscle levels) and Stamina above the head; the six groups around the
+  body: Chest, Core, Legs on the camera's left, Shoulders, Back, Arms on its right. A maxed group shows "Max" in soft
+  gold. Compact (the whole set about 40% of the screen height), the same size on screen at any camera distance, stable
+  while walking/jumping, never hidden behind walls, never over a machine's "E / Use" prompt.
+- While the labels are shown, a small **Muscles** button sits at the bottom center (above the machine panel while
+  lifting). It opens the "Your muscles" panel.
+- **"Your muscles" panel:** title, Growth Spurt bar + height + "x/6 groups at level y · gains x1.50 after", six group
+  cards (grade badge, name, level or Max, "Genetics x1.20", each muscle with a bar and its level, "Needs work" in soft
+  red on the weakest group when there is no tie). On top of everything, the rest of the HUD is switched off behind it,
+  everything fits (the cards scroll on short screens; one or two columns on phones). Close: X, Esc or a tap outside.
+- **On a machine: a small body-map widget** slides in at the right (front and back silhouettes made of muscle shapes,
+  glowing by level, gold outline when maxed, the muscles the machine trains pulse; Level + a small Growth Spurt bar).
+  A "-" button folds it into a chip. It slides away when you leave. The highlight clears when you leave, switch machine,
+  respawn or die. Proportions: torso 3 heads, legs 3.5, arms end at mid-thigh. Tapping it opens the Muscles panel.
+- Phones: the labels step aside while lifting on short screens (the widget shows the stats then). Numbers update live.
 
 ## 9. Titles
 Kept forever, one equipped above head, title book shows locked ones as "???" with rarity colors.
