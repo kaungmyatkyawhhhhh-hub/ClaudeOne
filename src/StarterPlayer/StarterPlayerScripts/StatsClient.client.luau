@@ -166,7 +166,7 @@ local function refreshScreen()
 	for _, group in ipairs(Muscles.Groups) do
 		Theme.Tween(goalFills[group.id], { Size = UDim2.fromScale(math.clamp(progress.groups[group.id] / progress.required, 0, 1), 1) })
 	end
-	goalLabel.Text = string.format("%d/%d groups at level %d  ·  gains x%.2f after", progress.met, progress.total, progress.required, GrowthSpurts.GetBonus(nextSpurt))
+	goalLabel.Text = string.format("%d/%d groups at level %d  ·  gains x%.2f after", progress.met, progress.total, Muscles.Shown(progress.required), GrowthSpurts.GetBonus(nextSpurt))
 	goalLabel.Visible = not progress.ready
 	spurtButton.Visible = progress.ready
 	if progress.ready and wasReady == false then
@@ -196,13 +196,13 @@ local function refreshScreen()
 		card.grade.TextColor3 = bumper.Text or Colors.Text
 		card.mult.Text = string.format("Genetics x%.2f", Genetics.GetMultiplier(data.genetics, group.muscles[1].id))
 		local groupMaxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
-		card.level.Text = groupMaxed and "Max" or tostring(levels[group.id])
+		card.level.Text = groupMaxed and "Max" or tostring(Muscles.Shown(levels[group.id]))
 		card.level.TextColor3 = groupMaxed and Colors.Gold or Colors.Text
 		card.needs.Visible = group.id == weakest and ties == 1 and not groupMaxed
 		for _, muscle in ipairs(group.muscles) do
 			local row = card.muscles[muscle.id]
 			local level = data.muscles[muscle.id].level
-			row.level.Text = level >= cap and "Max" or tostring(level)
+			row.level.Text = level >= cap and "Max" or tostring(Muscles.Shown(level))
 			row.level.TextColor3 = level >= cap and Colors.Gold or Colors.Text
 			Theme.Tween(row.fill, { Size = UDim2.fromScale(math.clamp(level / progress.required, 0, 1), 1) })
 		end

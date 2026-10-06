@@ -1489,7 +1489,7 @@ local function localLockout(state)
 	local main = machine.muscles[1].id
 	local quality = (state.pumped and Gains.Pump.Multiplier or 1) * (state.big and Gains.BigRep.Multiplier or 1)
 	local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"), quality)
-	local shown = math.max(1, math.floor((xp[main] or 0) + 0.5))
+	local shown = math.max(1, Muscles.Shown(xp[main] or 0))
 	current.setGain = (current.setGain or 0) + shown
 	local mode = gainNumbersMode()
 	local showSet = mode ~= "Off" -- On and Minimal

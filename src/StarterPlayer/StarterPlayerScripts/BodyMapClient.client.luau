@@ -296,7 +296,7 @@ local function refreshMap()
 	for i, segment in ipairs(barFills) do
 		Theme.Tween(segment, { Size = UDim2.fromScale(math.clamp(fill * BAR_SEGMENTS - (i - 1), 0, 1), 1) }, 0.4)
 	end
-	levelText.Text = "Level " .. averageLevel(data)
+	levelText.Text = "Level " .. Muscles.Shown(averageLevel(data))
 	spurtText.Text = progress.ready and "Ready!" or ("Spurt " .. (data.growthSpurts + 1))
 	spurtText.TextColor3 = progress.ready and Colors.Text or Colors.Muted
 end

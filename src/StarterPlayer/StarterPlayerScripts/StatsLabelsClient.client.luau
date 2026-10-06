@@ -135,10 +135,10 @@ local function refreshNumbers()
 	for _, entry in ipairs(labels) do
 		local group = Muscles.GroupById[entry.spec.id]
 		local maxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
-		entry.number.Text = maxed and "Max" or commas(Muscles.GetGroupLevel(data.muscles, group.id))
+		entry.number.Text = maxed and "Max" or commas(Muscles.Shown(Muscles.GetGroupLevel(data.muscles, group.id)))
 		entry.number.TextColor3 = maxed and Colors.Gold or Colors.StatNumber
 	end
-	strength.number.Text = commas(Muscles.TotalStrength(data.muscles))
+	strength.number.Text = commas(Muscles.Shown(Muscles.TotalStrength(data.muscles)))
 	local max = player:GetAttribute("MaxStamina")
 	stamina.number.Text = commas(math.clamp(data.stamina or 0, 0, type(max) == "number" and max or Stamina.Max))
 end

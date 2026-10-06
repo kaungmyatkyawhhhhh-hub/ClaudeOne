@@ -193,3 +193,5 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - `lune run tests/pacing tune` solves each goal level: **15, 47, 72, 103, 135, 157, then +18**. Result (median
   minutes): 7.9, 14.6, 24.6, 34.7, 44.2, 44.2, 43.3, 43.7. The test fails if a spurt is more than 10% off.
 
+
+- **Big stat numbers:** `Muscles.DisplayScale = 20` / `Muscles.Shown()`: levels are SHOWN x20 (labels, Muscles panel, body-map widget, gain popups, goal text). Display only: goals, caps, saves and gains math are unchanged. Change the one number to tune.

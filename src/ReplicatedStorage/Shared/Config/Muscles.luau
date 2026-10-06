@@ -85,6 +85,12 @@ function Muscles.GetGroupLevel(muscleData, groupId)
 	return total / #group.muscles
 end
 
+-- Stat numbers are SHOWN bigger so progress feels big (levels stay small inside the game: goals, caps and saves are unchanged).
+Muscles.DisplayScale = 20
+function Muscles.Shown(value)
+	return math.floor(value * Muscles.DisplayScale + 0.5)
+end
+
 -- Total strength: every muscle level added up (shown above your head and over other players).
 function Muscles.TotalStrength(muscleData)
 	local total = 0
