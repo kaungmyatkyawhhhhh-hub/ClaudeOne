@@ -365,6 +365,134 @@
   .world.owned:not(.here) .wstate { color: var(--ready); }
   .portal-flash { background: radial-gradient(circle, #fff, rgba(var(--glow), .7) 45%, transparent 80%); }
 
+
+  /* Squad Arcade */
+  .arcade { padding: 16px; border-radius: 22px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
+    background: linear-gradient(160deg, rgba(110, 168, 255, .12), rgba(255, 201, 74, .07)); border: 1px solid rgba(110, 168, 255, .3); }
+  .muted-s { color: var(--muted) !important; font-weight: 600 !important; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .tabs button { flex: none; border: 1px solid var(--panel-edge); background: rgba(0,0,0,.25); color: var(--muted); font-weight: 800; font-size: .8rem;
+    padding: 7px 12px; border-radius: 99px; cursor: pointer; white-space: nowrap; }
+  .tabs button[aria-selected="true"] { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+  .tabs button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .tabs button.ping::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: var(--ready); box-shadow: 0 0 8px var(--ready); vertical-align: middle; }
+  .tp { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .tp-sub { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.45; }
+  .tp-sub b { color: var(--text); }
+  .big-btn { font-family: var(--font-display); font-size: 1rem; border: 0; border-radius: 12px; padding: 11px 18px; cursor: pointer; touch-action: manipulation;
+    background: linear-gradient(180deg, var(--gold), var(--gold-2)); color: var(--gold-ink); box-shadow: 0 3px 0 #a85e00; }
+  .big-btn.red { background: linear-gradient(180deg, #ff8a98, var(--crit)); color: #fff; box-shadow: 0 3px 0 #a3192c; }
+  .big-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+  .big-btn:disabled, .small-btn:disabled { background: rgba(255,255,255,.08); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+  .small-btn { border: 1px solid var(--panel-edge); border-radius: 10px; padding: 7px 10px; cursor: pointer; font-size: .75rem; font-weight: 800;
+    background: rgba(255,255,255,.08); color: var(--text); font-variant-numeric: tabular-nums; }
+  .small-btn:not(:disabled):hover { border-color: var(--gold); }
+  .big-btn:focus-visible, .small-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .stat-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: .85rem; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-row b { color: var(--text); }
+  .ctrl-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+  .big-name { font-family: var(--font-display); font-size: 1.05rem; }
+  .center { text-align: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chipbtn { border: 1px solid color-mix(in srgb, var(--fc) 50%, transparent); background: color-mix(in srgb, var(--fc) 10%, transparent); color: var(--text);
+    border-radius: 10px; padding: 6px 10px; font-size: .75rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .chipbtn i { width: 10px; height: 10px; border-radius: 50%; background: var(--fc); box-shadow: 0 0 6px var(--fc); }
+  .chipbtn[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--fc), 0 0 16px color-mix(in srgb, var(--fc) 50%, transparent); }
+  .chipbtn:disabled { opacity: .45; cursor: not-allowed; }
+  .chipbtn:focus-visible { outline: 2px solid #fff; }
+  .bar.hp i { background: linear-gradient(90deg, var(--crit), var(--gold)); transition: width .1s; }
+
+  /* Garden */
+  .seeds { display: flex; flex-wrap: wrap; gap: 6px; }
+  .plots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .plot { position: relative; height: 104px; border-radius: 12px; border: 0; cursor: pointer; overflow: hidden; padding: 0;
+    background: linear-gradient(180deg, transparent 55%, #4a2d17 55%), linear-gradient(180deg, #23314a, #1a2438);
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+  .plot:focus-visible { outline: 2px solid var(--gold); }
+  .plot svg { width: 64px; height: 70px; transform-origin: 50% 100%; transition: transform .4s; margin-bottom: 30px; }
+  .plot .pl { position: absolute; left: 0; right: 0; bottom: 6px; font-size: .68rem; font-weight: 800; color: #f2d9bd; text-align: center; font-variant-numeric: tabular-nums; }
+  .plot.ripe { box-shadow: 0 0 0 2px var(--ready), 0 0 18px rgba(94,230,160,.5); }
+  .plot.ripe svg { animation: wobble 1s ease-in-out infinite; }
+  .plot.mut-golden svg { filter: drop-shadow(0 0 8px #ffc94a) sepia(.6) saturate(3) hue-rotate(5deg); }
+  .plot.mut-rainbow svg { animation: hue 1.5s linear infinite, wobble 1s ease-in-out infinite; }
+
+  /* Shredder */
+  .shred-row, .fruit-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .shredder { width: 170px; flex: none; display: flex; flex-direction: column; align-items: center; }
+  .shredder > svg { width: 170px; height: 74px; }
+  .shred-item { height: 76px; display: grid; place-items: end center; }
+  .shred-item svg { width: 70px; height: 74px; transition: transform .08s; }
+  .shred-item.hit svg { transform: translateY(8px) scale(.92) rotate(-6deg); }
+  #blades.spin { animation: shake .2s; }
+
+  /* Fruits */
+  .fruit-show { width: 96px; height: 96px; flex: none; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.08), transparent 70%); }
+  .fruit-show svg { width: 84px; height: 84px; }
+  .fruit-show.spinning svg { animation: wobble .15s linear infinite; }
+
+  /* Diner */
+  .customers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-height: 120px; }
+  .cust { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border-radius: 12px; background: rgba(0,0,0,.25); border: 1px solid var(--panel-edge); animation: buffIn .3s; }
+  .cust .face { width: 40px; height: 40px; border-radius: 50%; background: var(--cc); display: grid; place-items: center; font-family: var(--font-display); color: #1b1630; }
+  .cust .order { font-size: .75rem; font-weight: 800; padding: 3px 8px; border-radius: 8px; background: #fff; color: #1b1630; }
+  .cust .pat { width: 100%; height: 5px; border-radius: 99px; background: rgba(0,0,0,.4); overflow: hidden; }
+  .cust .pat i { display: block; height: 100%; background: var(--ready); }
+  .cust.empty-c { justify-content: center; color: var(--muted); font-size: .75rem; font-weight: 700; border-style: dashed; animation: none; }
+  .dishes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .dish { border: 0; border-radius: 12px; padding: 10px 4px; cursor: pointer; font-weight: 800; font-size: .78rem; color: #1b1630; background: var(--dc); box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+  .dish:active { transform: translateY(2px); box-shadow: none; }
+  .dish:focus-visible { outline: 2px solid #fff; }
+
+  /* Car crusher */
+  .yard { position: relative; height: 130px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #232a3d, #161b29 70%, #3a3f5c 70%); }
+  .press { position: absolute; left: 50%; top: 0; width: 180px; height: 26px; margin-left: -90px; background: repeating-linear-gradient(45deg, #ffc94a 0 12px, #22232e 12px 24px); border-radius: 0 0 8px 8px; transition: transform .08s; }
+  .press::before { content: ""; position: absolute; left: 50%; bottom: 100%; width: 14px; height: 200px; margin-left: -7px; background: #6b7189; }
+  .press.slam { transform: translateY(var(--slam, 40px)); }
+  .car-wrap { position: absolute; left: 50%; bottom: 30%; width: 170px; margin-left: -85px; transform-origin: 50% 100%; transition: transform .12s; }
+  .car-wrap svg { width: 100%; display: block; }
+  .car-wrap .none { color: var(--muted); font-size: .8rem; font-weight: 700; text-align: center; padding-bottom: 20px; }
+  .cars { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+  .carbtn { display: flex; justify-content: space-between; align-items: center; gap: 6px; text-align: left; border: 1px solid var(--panel-edge); border-left: 4px solid var(--kc);
+    background: rgba(0,0,0,.25); border-radius: 10px; padding: 7px 10px; cursor: pointer; font-size: .75rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+  .carbtn small { color: var(--gold); }
+  .carbtn:disabled { opacity: .45; cursor: not-allowed; }
+  .carbtn:focus-visible { outline: 2px solid #fff; }
+
+  /* Gym league */
+  .rank { font-family: var(--font-display); color: var(--rk, var(--gold)); font-size: 1rem; }
+  .versus { display: flex; justify-content: center; align-items: center; gap: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .versus b { font-family: var(--font-display); color: var(--crit); }
+  .meter { position: relative; height: 34px; border-radius: 10px; background: linear-gradient(90deg, #ff5a6e, #ffc94a 30%, #ffc94a 70%, #ff5a6e); overflow: hidden; }
+  .zone { position: absolute; top: 0; bottom: 0; background: var(--ready); box-shadow: 0 0 14px var(--ready); }
+  .needle { position: absolute; top: -4px; bottom: -4px; width: 6px; margin-left: -3px; background: #fff; border-radius: 3px; box-shadow: 0 0 8px #000; left: 0; }
+
+  /* Bed wars */
+  .lane { position: relative; height: 120px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #1d2a1f, #142016); border: 1px solid rgba(94,230,160,.25); }
+  .bed { position: absolute; left: 8px; top: 50%; width: 46px; height: 30px; margin-top: -15px; border-radius: 6px; background: linear-gradient(90deg, #fff 0 30%, #5b8cff 30%); box-shadow: 0 0 0 3px #3a3f5c; }
+  .enemy { position: absolute; width: 38px; height: 46px; margin-top: -23px; border: 0; padding: 0; border-radius: 8px; cursor: pointer; touch-action: manipulation;
+    background: linear-gradient(180deg, #ffb3a1 0 32%, #e0404e 32%); box-shadow: 0 3px 0 #8a1622; }
+  .enemy::before { content: ""; position: absolute; left: 9px; right: 9px; top: 6px; height: 4px; background: #1b1630; border-radius: 2px; }
+  .enemy.hurt { filter: brightness(1.8); }
+  .enemy:focus-visible { outline: 2px solid #fff; }
+
+  /* One dropper */
+  .drop-yard { position: relative; height: 120px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #1c2033, #121522); }
+  .dropper { position: absolute; left: 14px; top: 8px; width: 64px; height: 46px; border-radius: 8px; background: linear-gradient(180deg, #8f9bb3, #5b6378); display: grid; place-items: center; }
+  .dropper span, .furnace span { font-size: .55rem; font-weight: 800; letter-spacing: .08em; color: #fff; }
+  .belt { position: absolute; left: 10px; right: 70px; bottom: 22px; height: 12px; border-radius: 6px; background: repeating-linear-gradient(90deg, #3a3f5c 0 10px, #2b2f45 10px 20px); animation: belt .5s linear infinite; }
+  @keyframes belt { to { background-position: 20px 0; } }
+  .upgrader { position: absolute; left: 55%; bottom: 34px; width: 8px; height: 50px; margin-left: -4px; border-radius: 4px; background: var(--violet); box-shadow: 0 0 12px var(--violet); display: none; }
+  .upgrader.on { display: block; }
+  .furnace { position: absolute; right: 8px; bottom: 10px; width: 58px; height: 62px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #ff9a1f, #ff5a6e); display: grid; place-items: center; box-shadow: 0 0 20px rgba(255,90,110,.5); }
+  .ore { position: absolute; width: 14px; height: 14px; border-radius: 3px; background: var(--oc, #c9ccd6); box-shadow: 0 0 8px var(--oc, #c9ccd6); }
+
+  @media (max-width: 560px) {
+    .plots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .dishes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .shredder { width: 140px; } .shredder > svg { width: 140px; }
+  }
+  .arcade { position: relative; }
   @media (prefers-reduced-motion: reduce) {
     .rot { animation-duration: 40s; }
     .rot svg, .rainbow { animation: none !important; }
@@ -511,7 +639,7 @@
 
 <div class="wrap">
   <header>
-    <h1 class="logo">YOKI CLICKER<small>FEATURING ANG &amp; ALTON · EGG HEIST · STEAL A BRAINROT · MULTIVERSE</small></h1>
+    <h1 class="logo">YOKI CLICKER<small>FEATURING ANG &amp; ALTON · EGG HEIST · BRAINROTS · MULTIVERSE · ARCADE</small></h1>
     <div class="hud">
       <span class="chip" id="rebirthTag">Rebirth <b>0</b></span>
       <span class="chip">Boost <b id="multTag">×1</b></span>
@@ -591,6 +719,96 @@
         <div class="nest-label">Rival base <small>· steal one for free</small></div>
         <div class="rival-base" id="rivalBase"></div>
       </div>
+    </div>
+  </section>
+
+  <section class="arcade" id="arcade">
+    <h2 class="sec-title">SQUAD ARCADE <small class="muted-s">8 mini-games inspired by Roblox hits · all pay out gains</small></h2>
+    <div class="tabs" role="tablist" id="tabs" aria-label="Arcade games">
+      <button role="tab" data-tab="garden" aria-selected="true">Garden</button>
+      <button role="tab" data-tab="shred" aria-selected="false">Shredder</button>
+      <button role="tab" data-tab="fruit" aria-selected="false">Fruits</button>
+      <button role="tab" data-tab="diner" aria-selected="false">Diner</button>
+      <button role="tab" data-tab="crush" aria-selected="false">Car Crusher</button>
+      <button role="tab" data-tab="league" aria-selected="false">Gym League</button>
+      <button role="tab" data-tab="bed" aria-selected="false">Bed Wars</button>
+      <button role="tab" data-tab="drop" aria-selected="false">One Dropper</button>
+    </div>
+
+    <div class="tp" id="tp-garden" role="tabpanel">
+      <p class="tp-sub"><b>Gains Garden</b> · inspired by Grow a Garden. Pick a seed, tap an empty plot to plant, tap ripe crops to harvest. Golden and Rainbow mutations pay extra.</p>
+      <div class="seeds" id="seeds"></div>
+      <div class="plots" id="plots"></div>
+    </div>
+
+    <div class="tp" id="tp-shred" role="tabpanel" hidden>
+      <p class="tp-sub"><b>Shred-a-Rot</b> · inspired by Shred the Brainrot. A free junk rot drops in every 20s, or feed one from your base for 3× its price.</p>
+      <div class="shred-row">
+        <div class="shredder">
+          <div class="shred-item" id="shredItem"></div>
+          <svg viewBox="0 0 160 70" aria-hidden="true"><rect x="10" y="4" width="140" height="14" rx="4" fill="#3a3f5c"/><g id="blades" fill="#c9ccd6"><path d="M24 18l8 14 8-14z"/><path d="M48 18l8 14 8-14z"/><path d="M72 18l8 14 8-14z"/><path d="M96 18l8 14 8-14z"/><path d="M120 18l8 14 8-14z"/></g><rect x="4" y="30" width="152" height="38" rx="8" fill="#ff5a6e"/><rect x="14" y="40" width="132" height="6" rx="3" fill="#a3192c"/><text x="80" y="62" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="11" fill="#fff">SHRED-A-ROT 3000</text></svg>
+        </div>
+        <div class="ctrl-col">
+          <div class="big-name" id="shredName">Waiting for junk...</div>
+          <div class="bar hp"><i id="shredHp"></i></div>
+          <button class="big-btn red" id="shredBtn">SHRED!</button>
+          <div class="btn-row"><button class="small-btn" id="feedBtn">Feed best base brainrot</button><button class="small-btn" id="bladeBtn">Upgrade blade</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tp" id="tp-fruit" role="tabpanel" hidden>
+      <p class="tp-sub"><b>Swole Fruits</b> · inspired by Blox Fruits. Spin for a fruit, then equip one power at a time.</p>
+      <div class="fruit-row">
+        <div class="fruit-show" id="fruitShow"></div>
+        <div class="ctrl-col">
+          <div class="big-name" id="fruitName">No fruit equipped</div>
+          <div class="desc" id="fruitDesc">Spin to find your first power.</div>
+          <button class="big-btn" id="spinBtn">SPIN</button>
+        </div>
+      </div>
+      <div class="chips" id="fruitBag"></div>
+    </div>
+
+    <div class="tp" id="tp-diner" role="tabpanel" hidden>
+      <p class="tp-sub"><b>Protein Diner</b> · inspired by Restaurant Tycoon 3. Serve each customer's order before their patience runs out. Better rating, bigger tips.</p>
+      <div class="stat-row"><span>Rating <b id="dinerRating">3.0</b> / 5</span><span>Served <b id="dinerServed">0</b></span><span>Waiters <b id="dinerWaiters">0</b></span><button class="small-btn" id="waiterBtn">Hire waiter</button></div>
+      <div class="customers" id="customers"></div>
+      <div class="dishes" id="dishes"></div>
+    </div>
+
+    <div class="tp" id="tp-crush" role="tabpanel" hidden>
+      <p class="tp-sub"><b>Car Crusher</b> · inspired by Car Crushers 2. Buy a car, crush it flat, sell the scrap for 3×.</p>
+      <div class="yard">
+        <div class="press" id="press"></div>
+        <div class="car-wrap" id="carWrap"></div>
+      </div>
+      <div class="bar hp"><i id="carHp"></i></div>
+      <div class="btn-row"><button class="big-btn red" id="crushBtn" disabled>CRUSH!</button><button class="small-btn" id="pressBtn">Upgrade press</button></div>
+      <div class="cars" id="cars"></div>
+    </div>
+
+    <div class="tp" id="tp-league" role="tabpanel" hidden>
+      <p class="tp-sub"><b>Gym League</b> · inspired by Gym League. Tap POSE when the needle is in the green zone. Win the match to climb the ranks.</p>
+      <div class="stat-row"><span class="rank" id="leagueRank">BRONZE</span><span><b id="leagueWins">0</b> wins</span><span id="leagueNext"></span></div>
+      <div class="versus"><span id="vsYou">SQUAD · 0</span><b>VS</b><span id="vsOpp">??? · 0</span></div>
+      <div class="meter" id="meter"><div class="zone" id="zone"></div><div class="needle" id="needle"></div></div>
+      <button class="big-btn" id="poseBtn">START MATCH</button>
+      <div class="desc center" id="leagueMsg">Three rounds. Highest total score wins.</div>
+    </div>
+
+    <div class="tp" id="tp-bed" role="tabpanel" hidden>
+      <p class="tp-sub"><b>Bed Wars</b> · inspired by BedWars. Tap the red team before they reach your bed. Spend iron on a sword and wool.</p>
+      <div class="stat-row"><span>Bed <b id="bedHp">3</b> HP</span><span>Iron <b id="iron">0</b></span><span>Waves won <b id="waves">0</b></span></div>
+      <div class="lane" id="lane"><div class="bed" aria-hidden="true"></div></div>
+      <div class="btn-row"><button class="big-btn" id="waveBtn">START WAVE</button><button class="small-btn" id="swordBtn">Sword · 15 iron</button><button class="small-btn" id="woolBtn">Wool +1 HP · 8 iron</button></div>
+    </div>
+
+    <div class="tp" id="tp-drop" role="tabpanel" hidden>
+      <p class="tp-sub"><b>One Dropper Tycoon</b> · inspired by Tycoon but one dropper. One dropper, endless upgrades. It keeps running when this tab is closed.</p>
+      <div class="drop-yard" id="dropYard"><div class="dropper"><span>DROPPER</span></div><div class="belt"></div><div class="upgrader" id="upgraderEl"></div><div class="furnace"><span>SELL</span></div></div>
+      <div class="stat-row"><span>Drops every <b id="dropEvery">2.5s</b></span><span>Ore worth <b id="dropVal">0</b></span></div>
+      <div class="btn-row"><button class="small-btn" id="dupSpeed"></button><button class="small-btn" id="dupValue"></button><button class="small-btn" id="dupUpg"></button></div>
     </div>
   </section>
   </div>
@@ -820,6 +1038,17 @@ const ACH = [
   { id: 'block',   name: 'Locked Down',   desc: 'Block a raider with the lock', test: () => state.stats.blocks >= 1 },
   { id: 'portal',  name: 'Multiverse',    desc: 'Travel to another world',  test: () => state.stats.portals >= 1 },
   { id: 'void',    name: 'Into the Void', desc: 'Unlock the Cosmic Void',   test: () => state.worlds.includes(5) },
+  { id: 'harvest', name: 'Green Thumb',   desc: 'Harvest a crop',           test: () => state.mini.st.harvests >= 1 },
+  { id: 'rainbow', name: 'Rainbow Crop',  desc: 'Harvest a Rainbow mutation', test: () => state.mini.st.rainbow >= 1 },
+  { id: 'shred',   name: 'Shredder',      desc: 'Shred something',          test: () => state.mini.st.shreds >= 1 },
+  { id: 'fruit',   name: 'Fruit Eater',   desc: 'Spin a fruit',             test: () => state.mini.st.spins >= 1 },
+  { id: 'dragon',  name: 'Dragon Power',  desc: 'Find the Dragon Fruit',    test: () => state.mini.fruits.includes('dragon') },
+  { id: 'diner',   name: 'Head Chef',     desc: 'Serve 50 customers',       test: () => state.mini.served >= 50 },
+  { id: 'crush',   name: 'Car Crusher',   desc: 'Crush 10 cars',            test: () => state.mini.st.crushed >= 10 },
+  { id: 'gold_lg', name: 'Gold League',   desc: 'Reach Gold league',        test: () => state.mini.league.rank >= 2 },
+  { id: 'champ',   name: 'Champion',      desc: 'Reach Champion league',    test: () => state.mini.league.rank >= 5 },
+  { id: 'bed',     name: 'Bed Defender',  desc: 'Survive a Bed Wars wave',  test: () => state.mini.bed.waves >= 1 },
+  { id: 'dropper', name: 'Tycoon',        desc: 'Buy 10 dropper upgrades',  test: () => state.mini.drop.speed + state.mini.drop.value + state.mini.drop.upg >= 10 },
   { id: 'm1',      name: 'Millionaire',   desc: 'Hold 1M gains',            test: () => state.gains >= 1e6 },
   { id: 'b1',      name: 'Billionaire',   desc: 'Hold 1B gains',            test: () => state.gains >= 1e9 },
   { id: 'reb1',    name: 'Reborn',        desc: 'Rebirth once',             test: () => state.rebirths >= 1 },
@@ -866,14 +1095,14 @@ const mult = () => 1 + state.rebirths;
 const achBonus = () => 1 + 0.02 * state.ach.length;
 const petBonus = () => 1 + RARITIES.reduce((s, r) => s + r.bonus * state.pets[r.id], 0);
 const worldMult = () => (WORLDS[state.world] || WORLDS[0]).mult;
-const gainMult = () => mult() * achBonus() * petBonus() * worldMult();
+const gainMult = () => mult() * achBonus() * petBonus() * worldMult() * ffx('all');
 const rotIncomeRaw = () => state.base.reduce((s, id) => s + rotRaw(id), 0);
 const unitCost = (u, owned) => u.base * Math.pow(1.15, owned);
 const costN = (u, n) => Math.floor(unitCost(u, state.owned[u.id]) * (Math.pow(1.15, n) - 1) / 0.15);
 const maxN = u => Math.max(0, Math.floor(Math.log(state.gains * 0.15 / unitCost(u, state.owned[u.id]) + 1) / Math.log(1.15)));
 const baseClick = () => 1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id], 0);
-const perClick = () => baseClick() * gainMult();
-const perSec = () => (UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) + rotIncomeRaw()) * gainMult();
+const perClick = () => baseClick() * gainMult() * ffx('click');
+const perSec = () => (UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) + rotIncomeRaw()) * gainMult() * ffx('sec');
 const rebirthNeed = () => 25000 * Math.pow(5, state.rebirths);
 const xpNeed = lv => Math.floor(25 * Math.pow(1.45, lv - 1));
 const lvMult = k => 1 + 0.1 * (state.lv[k].lv - 1);
@@ -1045,7 +1274,7 @@ function hit(l, e) {
   const now = performance.now();
   const wasIdle = now - lastInteract > 4000;
   lastInteract = now; l.hoverSaid = true;
-  combo = now - lastHit < COMBO_WINDOW * (inFever() ? 1.5 : 1) ? combo + 1 : 1;
+  combo = now - lastHit < COMBO_WINDOW * ffx('combo') * (inFever() ? 1.5 : 1) ? combo + 1 : 1;
   lastHit = now;
   if (combo % FEVER_EVERY === 0) startFever();
 
@@ -1060,7 +1289,7 @@ function hit(l, e) {
   }
 
   const crit = Math.random() < CRIT_CHANCE;
-  const amt = perClick() * lvMult(l.key) * comboMult() * (inFever() ? FEVER_MULT : 1) * (inSquad() ? 2 : 1) * (crit ? CRIT_MULT : 1);
+  const amt = perClick() * lvMult(l.key) * comboMult() * (inFever() ? FEVER_MULT : 1) * (inSquad() ? 2 : 1) * (crit ? (ffx('crit') > 1 ? ffx('crit') : CRIT_MULT) : 1);
   state.gains += amt;
   state.reps++;
   if (crit) state.stats.crits++;
@@ -1504,6 +1733,583 @@ function renderWorlds() {
   });
 }
 
+
+/* ================= Squad Arcade ================= */
+// Costs and rewards are measured in "units" (roughly one second of your best income) so every game stays worth playing.
+const unit = () => Math.max(perSec(), perClick() * 3, 10);
+const miniFresh = () => ({
+  garden: Array(6).fill(null), seed: 'bean',
+  blade: 1, shredItem: null,
+  fruit: null, fruits: [],
+  rating: 3, served: 0, waiters: 0,
+  press: 1, car: null,
+  league: { rank: 0, wins: 0 },
+  bed: { iron: 0, sword: false, wool: 0, waves: 0 },
+  drop: { speed: 0, value: 0, upg: 0 },
+  st: { harvests: 0, rainbow: 0, shreds: 0, crushed: 0, spins: 0 },
+});
+function mergeMini(m) {
+  const f = miniFresh();
+  if (!m) return f;
+  return { ...f, ...m, league: { ...f.league, ...m.league }, bed: { ...f.bed, ...m.bed }, drop: { ...f.drop, ...m.drop }, st: { ...f.st, ...m.st },
+    garden: Array.isArray(m.garden) && m.garden.length === 6 ? m.garden : f.garden, fruits: Array.isArray(m.fruits) ? m.fruits : [] };
+}
+const M = () => state.mini;
+const arcade = $('arcade');
+function miniPop(el, text, cls = '') {
+  const ar = arcade.getBoundingClientRect(), r = el.getBoundingClientRect();
+  const p = document.createElement('div');
+  p.className = 'pop ' + cls; p.textContent = text;
+  p.style.left = (r.left + r.width / 2 - ar.left) + 'px'; p.style.top = (r.top - ar.top) + 'px';
+  arcade.appendChild(p); setTimeout(() => p.remove(), 900);
+}
+function payout(amount, el, label) {
+  state.gains += amount;
+  if (el) { miniPop(el, '+' + fmt(amount), 'crit'); const [x, y] = centerOf(el); burst(x, y, 30, 8); }
+  if (label) toast(label, '+' + fmt(amount) + ' gains');
+}
+const cheer = (lines, mood_ = 'hype') => { const l = pick(lifters); say(l, pick(lines), 1600); mood(l, mood_, 1200); };
+
+/* Tabs */
+let activeTab = 'garden';
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => {
+  activeTab = b.dataset.tab;
+  document.querySelectorAll('#tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.tp').forEach(p => { p.hidden = p.id !== 'tp-' + activeTab; });
+  b.classList.remove('ping');
+  tone(600, 700, .05, 'triangle', .05);
+}));
+const ping = tab => { if (activeTab !== tab) document.querySelector(`#tabs [data-tab="${tab}"]`).classList.add('ping'); };
+
+/* ---------- Gains Garden ---------- */
+const SEEDS = [
+  { id: 'bean',   name: 'Protein Bean',     cost: 5,   grow: 20,  val: 15,  color: '#7bc47f' },
+  { id: 'carrot', name: 'Carb Carrot',      cost: 20,  grow: 45,  val: 70,  color: '#ff9a1f' },
+  { id: 'melon',  name: 'Muscle Melon',     cost: 60,  grow: 90,  val: 230, color: '#5ee6a0' },
+  { id: 'gain',   name: 'Golden Gainfruit', cost: 200, grow: 180, val: 900, color: '#ffc94a' },
+];
+const SEED = Object.fromEntries(SEEDS.map(s => [s.id, s]));
+function plantSVG(s, p) {
+  const stem = `<path d="M40 80 V${80 - 40 * Math.min(1, p * 1.4)}" stroke="#5aa55a" stroke-width="4"/>`;
+  const leaves = p > .25 ? `<ellipse cx="30" cy="62" rx="10" ry="5" fill="#7bc47f" transform="rotate(-25 30 62)"/><ellipse cx="50" cy="58" rx="10" ry="5" fill="#7bc47f" transform="rotate(25 50 58)"/>` : '';
+  const fruit = p > .6 ? `<circle cx="40" cy="${42 - p * 6}" r="${6 + p * 10}" fill="${s.color}"/><circle cx="${36 - p * 2}" cy="${38 - p * 6}" r="${2 + p * 2}" fill="#fff" opacity=".5"/>` : '';
+  return `<svg viewBox="0 0 80 82" aria-hidden="true">${stem}${leaves}${fruit}</svg>`;
+}
+const seedsEl = $('seeds');
+SEEDS.forEach(s => {
+  const b = document.createElement('button');
+  b.className = 'chipbtn'; b.style.setProperty('--fc', s.color); b.dataset.seed = s.id;
+  b.innerHTML = `<i></i>${s.name} <span class="sc"></span>`;
+  b.addEventListener('click', () => { M().seed = s.id; renderGarden(); });
+  seedsEl.appendChild(b);
+});
+const plotsEl = $('plots');
+for (let i = 0; i < 6; i++) {
+  const b = document.createElement('button');
+  b.className = 'plot'; b.dataset.i = i;
+  b.addEventListener('click', () => plotClick(i, b));
+  plotsEl.appendChild(b);
+}
+function plotClick(i, b) {
+  const g = M().garden, p = g[i];
+  if (!p) {
+    const s = SEED[M().seed], cost = s.cost * unit();
+    if (state.gains < cost) { toast(`Need ${fmt(cost)} gains for a ${s.name}`); return; }
+    state.gains -= cost;
+    g[i] = { seed: s.id, at: Date.now(), reward: s.val * unit() };
+    tone(400, 600, .1, 'triangle', .08);
+  } else if (Date.now() - p.at >= SEED[p.seed].grow * 1000) {
+    const r = Math.random();
+    const mut = r < .02 ? 'rainbow' : r < .10 ? 'golden' : '';
+    const amt = p.reward * (mut === 'rainbow' ? 10 : mut === 'golden' ? 3 : 1);
+    g[i] = null; M().st.harvests++;
+    if (mut === 'rainbow') M().st.rainbow++;
+    payout(amt, b, mut ? `${mut.toUpperCase()} ${SEED[p.seed].name}!` : null);
+    if (mut) { fanfare(); cheer([`${mut === 'rainbow' ? 'RAINBOW' : 'GOLDEN'} MUTATION!`, 'Look at that crop!']); } else tone(700, 1000, .1, 'triangle', .08);
+  } else {
+    miniPop(b, mmss(SEED[p.seed].grow * 1000 - (Date.now() - p.at)));
+  }
+  renderGarden();
+}
+function renderGarden() {
+  seedsEl.querySelectorAll('.chipbtn').forEach(b => {
+    const s = SEED[b.dataset.seed];
+    b.setAttribute('aria-pressed', M().seed === s.id);
+    b.querySelector('.sc').textContent = '· ' + fmt(s.cost * unit());
+  });
+  plotsEl.querySelectorAll('.plot').forEach(b => {
+    const p = M().garden[+b.dataset.i];
+    if (!p) { b.className = 'plot'; b.innerHTML = '<span class="pl">Tap to plant</span>'; b.dataset.k = ''; return; }
+    const s = SEED[p.seed], prog = Math.min(1, (Date.now() - p.at) / (s.grow * 1000)), ripe = prog >= 1;
+    const key = p.seed + Math.round(prog * 10);
+    if (b.dataset.k !== key) { b.innerHTML = plantSVG(s, prog) + '<span class="pl"></span>'; b.dataset.k = key; }
+    b.className = 'plot' + (ripe ? ' ripe' : '');
+    b.querySelector('.pl').textContent = ripe ? 'HARVEST · ' + fmt(p.reward) : s.name + ' · ' + mmss(s.grow * 1000 - (Date.now() - p.at));
+    b.setAttribute('aria-label', ripe ? `Harvest ${s.name}` : `${s.name} growing`);
+    if (ripe) ping('garden');
+  });
+}
+
+/* ---------- Shred-a-Rot ---------- */
+let nextJunk = Date.now() + 3000;
+function setShredItem(item) { M().shredItem = item; renderShred(); }
+$('shredBtn').addEventListener('click', () => {
+  const it = M().shredItem;
+  if (!it) return;
+  it.hp = Math.max(0, it.hp - M().blade);
+  const el = $('shredItem');
+  el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 80);
+  $('blades').classList.remove('spin'); void $('blades').getBoundingClientRect(); $('blades').classList.add('spin');
+  tone(160 + Math.random() * 80, 60, .07, 'sawtooth', .07);
+  const [x, y] = centerOf(el); burst(x, y + 30, 6, 4, [BR[it.id] ? BR[it.id].color : '#a8743f', '#fff']);
+  if (it.hp <= 0) {
+    M().st.shreds++;
+    payout(it.reward, el, `Shredded ${it.name}!`);
+    cheer(['SHREDDED!', 'Brainrot smoothie!', 'BLEHHH! Into bits!']);
+    M().shredItem = null; nextJunk = Date.now() + 20000;
+  }
+  renderShred();
+});
+$('feedBtn').addEventListener('click', () => {
+  if (M().shredItem || !state.base.length) return;
+  let best = 0;
+  state.base.forEach((id, i) => { if (rotRaw(id) > rotRaw(state.base[best])) best = i; });
+  const id = state.base.splice(best, 1)[0];
+  setShredItem({ id, name: BR[id].name, hp: 30, max: 30, reward: rotPrice(id) * 3 * gainMult() });
+  renderRots();
+});
+$('bladeBtn').addEventListener('click', () => {
+  const c = 40 * M().blade * unit();
+  if (state.gains < c) return;
+  state.gains -= c; M().blade++; ding(); renderShred();
+});
+function renderShred() {
+  const it = M().shredItem;
+  $('shredItem').innerHTML = it ? rotSVG(BR[it.id] ? it.id : 'tung') : '';
+  $('shredName').textContent = it ? it.name : `Junk rot arrives in ${mmss(nextJunk - Date.now())}`;
+  $('shredHp').style.width = it ? (it.hp / it.max * 100) + '%' : '0%';
+  $('shredBtn').disabled = !it;
+  $('feedBtn').disabled = !!it || !state.base.length;
+  const c = 40 * M().blade * unit();
+  $('bladeBtn').textContent = `Blade Lv ${M().blade} → ${M().blade + 1} · ${fmt(c)}`;
+  $('bladeBtn').disabled = state.gains < c;
+}
+function tickShred() {
+  if (!M().shredItem && Date.now() > nextJunk) {
+    setShredItem({ id: 'junk', name: 'Junk Rot', hp: 20, max: 20, reward: 15 * unit() });
+    ping('shred');
+  }
+}
+
+/* ---------- Swole Fruits ---------- */
+const FRUITS = [
+  { id: 'flex',   name: 'Flex Fruit',   w: 40, color: '#ff9a1f', desc: '+25% per rep',            fx: { click: 1.25 } },
+  { id: 'pump',   name: 'Pump Fruit',   w: 30, color: '#5b8cff', desc: '+25% per sec',            fx: { sec: 1.25 } },
+  { id: 'flame',  name: 'Flame Fruit',  w: 15, color: '#ff5a6e', desc: 'Crits hit ×8 instead of ×5', fx: { crit: 8 } },
+  { id: 'light',  name: 'Light Fruit',  w: 9,  color: '#fff2a8', desc: 'Combos last twice as long', fx: { combo: 2 } },
+  { id: 'quake',  name: 'Quake Fruit',  w: 5,  color: '#c9ccd6', desc: '+60% all gains',          fx: { all: 1.6 } },
+  { id: 'dragon', name: 'Dragon Fruit', w: 1,  color: '#5ee6a0', desc: '+200% all gains',         fx: { all: 3 } },
+];
+const FRUIT = Object.fromEntries(FRUITS.map(f => [f.id, f]));
+const ffx = k => { const f = state.mini && FRUIT[state.mini.fruit]; return (f && f.fx[k]) || 1; };
+const fruitSVG = f => `<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="44" r="30" fill="${f.color}"/><path d="M18 40c10-12 34-12 44 0M16 52c12-10 36-10 48 0M22 30c8-8 28-8 36 0" stroke="rgba(0,0,0,.25)" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M40 14c2-8 10-10 16-8-2 6-8 10-16 8z" fill="#5aa55a"/><circle cx="30" cy="36" r="6" fill="#fff" opacity=".35"/></svg>`;
+let spinning = false;
+$('spinBtn').addEventListener('click', () => {
+  const c = 30 * unit();
+  if (spinning || state.gains < c) return;
+  state.gains -= c; spinning = true; M().st.spins++;
+  let r = Math.random() * 100, got = FRUITS[0];
+  for (const f of FRUITS) { if ((r -= f.w) < 0) { got = f; break; } }
+  const show = $('fruitShow'); show.classList.add('spinning');
+  let n = 0;
+  const iv = setInterval(() => {
+    const f = FRUITS[n++ % FRUITS.length];
+    show.innerHTML = fruitSVG(f); $('fruitName').textContent = f.name; tone(500 + n * 20, 520 + n * 20, .04, 'square', .03);
+  }, 90);
+  setTimeout(() => {
+    clearInterval(iv); spinning = false; show.classList.remove('spinning');
+    if (!M().fruits.includes(got.id)) M().fruits.push(got.id);
+    M().fruit = got.id;
+    show.innerHTML = fruitSVG(got);
+    const [x, y] = centerOf(show); burst(x, y, got.w <= 5 ? 90 : 40, 10, [got.color, '#fff']);
+    got.w <= 5 ? (fanfare(), rain(140)) : ding();
+    toast(`You got the ${got.name}!`, got.desc + ' · equipped');
+    cheer([`${got.name.toUpperCase()}!`, 'I feel the power!', 'Eat it, eat it!']);
+    renderFruit();
+  }, 1500);
+});
+function renderFruit() {
+  const f = FRUIT[M().fruit];
+  if (!spinning) {
+    $('fruitShow').innerHTML = f ? fruitSVG(f) : fruitSVG({ color: '#3a3f5c' });
+    $('fruitName').textContent = f ? f.name + ' (equipped)' : 'No fruit equipped';
+  }
+  $('fruitDesc').textContent = f ? f.desc : 'Spin to find your first power. Dragon Fruit is a 1% pull.';
+  const c = 30 * unit();
+  $('spinBtn').textContent = `SPIN · ${fmt(c)}`;
+  $('spinBtn').disabled = spinning || state.gains < c;
+  const bag = $('fruitBag');
+  if (bag.dataset.k !== M().fruits.join() + M().fruit) {
+    bag.dataset.k = M().fruits.join() + M().fruit;
+    bag.innerHTML = '';
+    FRUITS.forEach(x => {
+      const b = document.createElement('button');
+      b.className = 'chipbtn'; b.style.setProperty('--fc', x.color);
+      const owned = M().fruits.includes(x.id);
+      b.disabled = !owned;
+      b.setAttribute('aria-pressed', M().fruit === x.id);
+      b.innerHTML = `<i></i>${owned ? x.name : '???'} <span>${x.w}%</span>`;
+      b.title = owned ? x.desc : 'Not found yet';
+      b.addEventListener('click', () => { M().fruit = x.id; tone(700, 900, .08, 'triangle', .08); renderFruit(); });
+      bag.appendChild(b);
+    });
+  }
+}
+
+/* ---------- Protein Diner ---------- */
+const DISHES = [
+  { id: 'shake', name: 'Shake', color: '#ff9ecf', val: 4 },
+  { id: 'steak', name: 'Steak', color: '#ff8a5c', val: 6 },
+  { id: 'salad', name: 'Salad', color: '#7bc47f', val: 3 },
+  { id: 'eggs',  name: 'Eggs',  color: '#ffe14d', val: 5 },
+];
+const CUST_NAMES = ['Brad', 'Mia', 'Kai', 'Zoe', 'Leo', 'Ivy', 'Max', 'Noa', 'Sam', 'Ana'];
+const CUST_COLORS = ['#ffc94a', '#6ea8ff', '#ff6b7d', '#5ee6a0', '#b05bff', '#ff9a1f'];
+let customers = [], nextCust = 0, nextWaiter = 0;
+const dishesEl = $('dishes');
+DISHES.forEach(d => {
+  const b = document.createElement('button');
+  b.className = 'dish'; b.style.setProperty('--dc', d.color); b.textContent = d.name;
+  b.addEventListener('click', () => serve(d.id, b));
+  dishesEl.appendChild(b);
+});
+function serve(dishId, el, auto = false) {
+  const i = customers.findIndex(c => c.dish === dishId);
+  if (i < 0) {
+    if (!auto) { M().rating = Math.max(1, M().rating - .2); tone(200, 150, .12, 'square', .05); miniPop(el, 'Nobody ordered that!'); }
+    return;
+  }
+  const c = customers.splice(i, 1)[0];
+  const tipMult = M().rating / 3 * (1 + c.left / c.max);
+  const amt = DISHES.find(d => d.id === dishId).val * unit() * tipMult;
+  M().served++; M().rating = Math.min(5, M().rating + .05);
+  payout(amt, el);
+  tone(900, 1200, .08, 'triangle', .08);
+  if (M().served % 25 === 0) cheer(['The diner is booming!', '5 star service!']);
+  renderDiner(true);
+}
+$('waiterBtn').addEventListener('click', () => {
+  const c = 100 * (M().waiters + 1) * unit();
+  if (M().waiters >= 3 || state.gains < c) return;
+  state.gains -= c; M().waiters++; ding(); toast('Waiter hired!', 'They serve customers for you'); renderDiner(true);
+});
+function tickDiner(dt) {
+  const now = Date.now();
+  if (activeTab === 'diner' && customers.length < 3 && now > nextCust) {
+    customers.push({ dish: pick(DISHES).id, name: pick(CUST_NAMES), color: pick(CUST_COLORS), max: 12 - Math.min(5, M().served / 40), left: 12 - Math.min(5, M().served / 40) });
+    nextCust = now + 2500 + Math.random() * 3000;
+    renderDiner(true);
+  }
+  customers.forEach(c => { c.left -= dt; });
+  const gone = customers.filter(c => c.left <= 0);
+  if (gone.length) {
+    customers = customers.filter(c => c.left > 0);
+    M().rating = Math.max(1, M().rating - .3 * gone.length);
+    tone(300, 200, .2, 'triangle', .06);
+    renderDiner(true);
+  }
+  if (M().waiters && customers.length && now > nextWaiter) {
+    nextWaiter = now + 6000 / M().waiters;
+    serve(customers[0].dish, dishesEl, true);
+  }
+}
+function renderDiner(full) {
+  $('dinerRating').textContent = M().rating.toFixed(1);
+  $('dinerServed').textContent = M().served;
+  $('dinerWaiters').textContent = M().waiters;
+  const c = 100 * (M().waiters + 1) * unit();
+  $('waiterBtn').textContent = M().waiters >= 3 ? 'Max waiters' : `Hire waiter · ${fmt(c)}`;
+  $('waiterBtn').disabled = M().waiters >= 3 || state.gains < c;
+  const el = $('customers');
+  if (full) {
+    el.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const c = customers[i], d = document.createElement('div');
+      if (c) {
+        d.className = 'cust'; d.style.setProperty('--cc', c.color);
+        d.innerHTML = `<span class="face">${c.name[0]}</span><span class="order">${DISHES.find(x => x.id === c.dish).name}</span><span class="pat"><i></i></span>`;
+      } else { d.className = 'cust empty-c'; d.textContent = activeTab === 'diner' ? 'Next customer...' : 'Open the diner tab'; }
+      el.appendChild(d);
+    }
+  }
+  el.querySelectorAll('.cust .pat i').forEach((bar, i) => {
+    const c = customers[i]; if (!c) return;
+    bar.style.width = (c.left / c.max * 100) + '%';
+    bar.style.background = c.left / c.max < .3 ? 'var(--crit)' : 'var(--ready)';
+  });
+}
+
+/* ---------- Car Crusher ---------- */
+const CARS = [
+  { name: 'Rusty Hatchback', cost: 5,    hp: 15, color: '#9aa3b5' },
+  { name: 'Family Van',      cost: 25,   hp: 25, color: '#6ea8ff' },
+  { name: 'Sports Coupe',    cost: 120,  hp: 35, color: '#ff5a6e' },
+  { name: 'Monster Truck',   cost: 600,  hp: 50, color: '#5ee6a0' },
+  { name: 'Rocket Car',      cost: 3000, hp: 70, color: '#9b7bff' },
+];
+const carSVG = k => `<svg viewBox="0 0 170 70" aria-hidden="true"><path d="M10 44 L24 24 Q30 16 44 16 L110 16 Q124 16 132 26 L150 36 Q162 38 162 48 L162 52 L10 52 Z" fill="${k.color}"/><path d="M40 22 L60 22 L60 36 L30 36 Z M66 22 L104 22 Q114 22 120 32 L120 36 L66 36 Z" fill="#cfe6ff" opacity=".8"/><circle cx="44" cy="54" r="12" fill="#1b1630"/><circle cx="44" cy="54" r="5" fill="#c9ccd6"/><circle cx="128" cy="54" r="12" fill="#1b1630"/><circle cx="128" cy="54" r="5" fill="#c9ccd6"/><rect x="152" y="40" width="10" height="5" rx="2" fill="#fff2a8"/></svg>`;
+const carsEl = $('cars');
+CARS.forEach((k, i) => {
+  const b = document.createElement('button');
+  b.className = 'carbtn'; b.style.setProperty('--kc', k.color); b.dataset.i = i;
+  b.innerHTML = `<span>${k.name}</span><small></small>`;
+  b.addEventListener('click', () => {
+    const c = k.cost * unit();
+    if (M().car || state.gains < c) return;
+    state.gains -= c;
+    M().car = { i, hp: k.hp, max: k.hp, reward: c * 3 };
+    tone(150, 300, .3, 'sawtooth', .06);
+    renderCrush();
+  });
+  carsEl.appendChild(b);
+});
+$('crushBtn').addEventListener('click', () => {
+  const car = M().car; if (!car) return;
+  car.hp = Math.max(0, car.hp - M().press);
+  const press = $('press'), wrap = $('carWrap');
+  const squish = .25 + .75 * car.hp / car.max;
+  press.style.setProperty('--slam', (60 - squish * 30) + 'px');
+  press.classList.add('slam'); setTimeout(() => press.classList.remove('slam'), 90);
+  tone(90, 50, .12, 'square', .1);
+  const [x, y] = centerOf(wrap); burst(x, y, 5, 4, ['#c9ccd6', CARS[car.i].color]);
+  if (car.hp <= 0) {
+    M().st.crushed++;
+    payout(car.reward, wrap, `Crushed the ${CARS[car.i].name}!`);
+    cheer(['FLATTENED!', 'Pancake car!', 'Scrap money!']);
+    M().car = null;
+  }
+  renderCrush();
+});
+$('pressBtn').addEventListener('click', () => {
+  const c = 50 * M().press * unit();
+  if (state.gains < c) return;
+  state.gains -= c; M().press++; ding(); renderCrush();
+});
+function renderCrush() {
+  const car = M().car, wrap = $('carWrap');
+  const key = car ? 'c' + car.i : 'none';
+  if (wrap.dataset.k !== key) { wrap.dataset.k = key; wrap.innerHTML = car ? carSVG(CARS[car.i]) : '<div class="none">Buy a car to crush</div>'; }
+  wrap.style.transform = car ? `scaleY(${.25 + .75 * car.hp / car.max}) scaleX(${1 + .2 * (1 - car.hp / car.max)})` : '';
+  $('carHp').style.width = car ? (car.hp / car.max * 100) + '%' : '0%';
+  $('crushBtn').disabled = !car;
+  const c = 50 * M().press * unit();
+  $('pressBtn').textContent = `Press Lv ${M().press} → ${M().press + 1} · ${fmt(c)}`;
+  $('pressBtn').disabled = state.gains < c;
+  carsEl.querySelectorAll('.carbtn').forEach(b => {
+    const k = CARS[+b.dataset.i], c2 = k.cost * unit();
+    b.querySelector('small').textContent = fmt(c2);
+    b.disabled = !!car || state.gains < c2;
+  });
+}
+
+/* ---------- Gym League ---------- */
+const RANKS = [
+  { name: 'BRONZE', color: '#d08a4e', zone: 26 }, { name: 'SILVER', color: '#c9ccd6', zone: 22 }, { name: 'GOLD', color: '#ffc94a', zone: 18 },
+  { name: 'PLATINUM', color: '#8ad4ff', zone: 15 }, { name: 'DIAMOND', color: '#b05bff', zone: 12 }, { name: 'CHAMPION', color: '#ff5a6e', zone: 10 },
+];
+const RIVALS = ['Chad Thunderflex', 'Big Benny', 'Iron Ivan', 'Swole Sam', 'Mega Mike', 'Bulky Bao', 'Tank Tomas'];
+let match = null;
+function startMatch() {
+  const rk = RANKS[M().league.rank];
+  match = { round: 0, you: 0, opp: 0, oppName: pick(RIVALS), zoneW: rk.zone, zoneX: 0, pos: 0, dir: 1, speed: 70 + M().league.rank * 18, done: false };
+  newRound();
+  $('poseBtn').textContent = 'POSE!';
+  $('leagueMsg').textContent = `Round 1 of 3 vs ${match.oppName}`;
+  tone(300, 500, .15, 'triangle', .08);
+}
+function newRound() { match.zoneX = 10 + Math.random() * (80 - match.zoneW); match.pos = 0; match.dir = 1; }
+$('poseBtn').addEventListener('click', () => {
+  if (!match || match.done) { startMatch(); renderLeague(); return; }
+  const center = match.zoneX + match.zoneW / 2, dist = Math.abs(match.pos - center);
+  const score = Math.max(0, Math.round(100 - dist * (dist <= match.zoneW / 2 ? 1 : 3)));
+  const opp = Math.round(55 + Math.random() * 30 + M().league.rank * 3);
+  match.you += score; match.opp += opp; match.round++;
+  miniPop($('meter'), score >= 90 ? `PERFECT ${score}` : String(score), score >= 90 ? 'crit' : '');
+  tone(score >= 90 ? 1200 : 500, score >= 90 ? 1600 : 400, .12, 'triangle', .1);
+  if (match.round >= 3) {
+    match.done = true;
+    const won = match.you > match.opp;
+    if (won) {
+      const lg = M().league; lg.wins++;
+      const reward = 40 * (lg.rank + 1) * unit();
+      payout(reward, $('meter'), `You beat ${match.oppName}!`);
+      if (lg.wins % 3 === 0 && lg.rank < RANKS.length - 1) {
+        lg.rank++; rain(160); fanfare();
+        toast(`Promoted to ${RANKS[lg.rank].name} league!`, 'Tougher rivals, bigger prizes');
+      }
+      cheer(['CHAMPION POSE!', 'Judges loved it!', 'Easy win, bro.']);
+      $('leagueMsg').textContent = `Won ${match.you} to ${match.opp}! Tap to play again.`;
+    } else {
+      sad(); cheer(['The judges were wrong!', 'Next time.'], 'ooh');
+      $('leagueMsg').textContent = `Lost ${match.you} to ${match.opp}. Tap to try again.`;
+    }
+    $('poseBtn').textContent = 'NEW MATCH';
+  } else {
+    newRound();
+    $('leagueMsg').textContent = `Round ${match.round + 1} of 3 vs ${match.oppName}`;
+  }
+  renderLeague();
+});
+function tickLeague(dt) {
+  if (!match || match.done) return;
+  match.pos += match.dir * match.speed * dt;
+  if (match.pos > 100) { match.pos = 100; match.dir = -1; }
+  if (match.pos < 0) { match.pos = 0; match.dir = 1; }
+  $('needle').style.left = match.pos + '%';
+}
+function renderLeague() {
+  const lg = M().league, rk = RANKS[lg.rank];
+  $('leagueRank').textContent = rk.name + ' LEAGUE'; $('leagueRank').style.setProperty('--rk', rk.color);
+  $('leagueWins').textContent = lg.wins;
+  $('leagueNext').textContent = lg.rank < RANKS.length - 1 ? `${3 - lg.wins % 3} more wins to ${RANKS[lg.rank + 1].name}` : 'Top rank!';
+  const zw = match ? match.zoneW : rk.zone, zx = match ? match.zoneX : 50 - rk.zone / 2;
+  $('zone').style.left = zx + '%'; $('zone').style.width = zw + '%';
+  $('vsYou').textContent = `SQUAD · ${match ? match.you : 0}`;
+  $('vsOpp').textContent = `${match ? match.oppName : '???'} · ${match ? match.opp : 0}`;
+}
+
+/* ---------- Bed Wars ---------- */
+let wave = null;
+const lane = $('lane');
+const bedMax = () => 3 + M().bed.wool;
+function startWave() {
+  const n = 5 + M().bed.waves;
+  wave = { left: n, alive: [], hp: bedMax(), next: 0, speed: 38 + M().bed.waves * 3 };
+  $('waveBtn').disabled = true;
+  tone(200, 400, .3, 'square', .06);
+  cheer(['Defend the bed!', 'Here they come!', 'BLEHHH! Red team!']);
+  renderBed();
+}
+$('waveBtn').addEventListener('click', () => { if (!wave) startWave(); });
+$('swordBtn').addEventListener('click', () => { const b = M().bed; if (b.sword || b.iron < 15) return; b.iron -= 15; b.sword = true; ding(); renderBed(); });
+$('woolBtn').addEventListener('click', () => { const b = M().bed; if (b.wool >= 5 || b.iron < 8) return; b.iron -= 8; b.wool++; if (wave) wave.hp++; ding(); renderBed(); });
+function tickBed(dt) {
+  if (!wave) return;
+  const now = performance.now(), W = lane.clientWidth;
+  if (wave.left > 0 && now > wave.next) {
+    wave.left--; wave.next = now + 900 + Math.random() * 900;
+    const e = document.createElement('button');
+    e.className = 'enemy'; e.setAttribute('aria-label', 'Red team attacker');
+    const en = { el: e, x: W - 40, y: 20 + Math.random() * 60, hp: 2 };
+    e.style.top = en.y + 'px';
+    e.addEventListener('click', () => {
+      en.hp -= M().bed.sword ? 2 : 1;
+      e.classList.add('hurt'); setTimeout(() => e.classList.remove('hurt'), 80);
+      tone(400, 200, .06, 'square', .06);
+      if (en.hp <= 0) {
+        e.remove(); wave && (wave.alive = wave.alive.filter(x => x !== en));
+        M().bed.iron += 2;
+        const [x, y] = centerOf(e); burst(x, y, 10, 5, ['#e0404e', '#fff']);
+        renderBed();
+      }
+    });
+    lane.appendChild(e); wave.alive.push(en);
+  }
+  wave.alive.forEach(en => {
+    en.x -= wave.speed * dt; en.el.style.left = en.x + 'px';
+    if (en.x < 56) { en.el.remove(); wave.hp--; tone(150, 80, .2, 'sawtooth', .08); en.dead = true; }
+  });
+  wave.alive = wave.alive.filter(en => !en.dead);
+  if (wave.hp <= 0) endWave(false);
+  else if (wave.left === 0 && !wave.alive.length) endWave(true);
+  renderBed();
+}
+function endWave(won) {
+  wave.alive.forEach(en => en.el.remove());
+  wave = null; $('waveBtn').disabled = false;
+  if (won) {
+    const b = M().bed; b.waves++;
+    payout(30 * unit() * (1 + b.waves * .2), lane, `Wave ${b.waves} survived!`);
+    fanfare(); cheer(['BED SAFE!', 'GG EZ!', 'Victory royale... wait wrong game.']);
+  } else {
+    sad(); toast('BED DESTROYED', 'Buy wool and a sword, then try again');
+    cheer(['Our bed!!', 'NOOOO!'], 'ooh');
+  }
+  renderBed();
+}
+function renderBed() {
+  const b = M().bed;
+  $('bedHp').textContent = wave ? `${wave.hp}/${bedMax()}` : bedMax();
+  $('iron').textContent = b.iron;
+  $('waves').textContent = b.waves;
+  $('swordBtn').textContent = b.sword ? 'Sword owned' : 'Sword · 15 iron';
+  $('swordBtn').disabled = b.sword || b.iron < 15;
+  $('woolBtn').textContent = b.wool >= 5 ? 'Wool maxed' : `Wool +1 HP · 8 iron`;
+  $('woolBtn').disabled = b.wool >= 5 || b.iron < 8;
+  $('waveBtn').textContent = wave ? 'DEFENDING...' : `START WAVE ${b.waves + 1}`;
+}
+
+/* ---------- One Dropper Tycoon ---------- */
+let dropTimer = 0;
+const yard = $('dropYard');
+const dropEvery = () => 2.5 * Math.pow(.85, M().drop.speed);
+const oreValue = () => .6 * unit() * Math.pow(1.35, M().drop.value) * (M().drop.upg ? 2 * M().drop.upg : 1);
+const dupCost = (k, base) => base * unit() * Math.pow(1.7, M().drop[k]);
+const DUPS = [['dupSpeed', 'speed', 'Faster dropper', 25, 15], ['dupValue', 'value', 'Richer ore', 20, 99], ['dupUpg', 'upg', 'Upgrader ×2', 150, 5]];
+DUPS.forEach(([id, k, label, base, max]) => $(id).addEventListener('click', () => {
+  const c = dupCost(k, base);
+  if (M().drop[k] >= max || state.gains < c) return;
+  state.gains -= c; M().drop[k]++; ding(); renderDrop();
+}));
+function tickDrop(dt) {
+  dropTimer += dt;
+  if (dropTimer < dropEvery()) return;
+  dropTimer = 0;
+  const v = oreValue();
+  if (activeTab !== 'drop' || REDUCED) { state.gains += v; return; }
+  const o = document.createElement('div');
+  o.className = 'ore';
+  o.style.setProperty('--oc', M().drop.upg ? '#b49bff' : M().drop.value > 5 ? '#ffc94a' : '#c9ccd6');
+  yard.appendChild(o);
+  const W = yard.clientWidth, start = performance.now(), dur = 2200;
+  const step = t => {
+    const p = (t - start) / dur;
+    if (p >= 1) { o.remove(); state.gains += v; miniPop(yard.querySelector('.furnace'), '+' + fmt(v)); return; }
+    const x = 40 + p * (W - 120), y = p < .15 ? 50 + p / .15 * 34 : 84;
+    o.style.left = x + 'px'; o.style.top = (y - 14) + 'px';
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function renderDrop() {
+  $('dropEvery').textContent = dropEvery().toFixed(2) + 's';
+  $('dropVal').textContent = fmt(oreValue());
+  $('upgraderEl').classList.toggle('on', M().drop.upg > 0);
+  DUPS.forEach(([id, k, label, base, max]) => {
+    const c = dupCost(k, base), b = $(id);
+    b.textContent = M().drop[k] >= max ? `${label} · MAX` : `${label} Lv ${M().drop[k]} · ${fmt(c)}`;
+    b.disabled = M().drop[k] >= max || state.gains < c;
+  });
+}
+
+/* Hooks into the main game */
+let miniLast = performance.now();
+function miniFrame(t) {
+  const dt = Math.min(.1, (t - miniLast) / 1000); miniLast = t;
+  if (state.mini) { tickLeague(dt); tickBed(dt); tickDrop(dt); tickDiner(dt); }
+  requestAnimationFrame(miniFrame);
+}
+function renderMini() {
+  tickShred();
+  renderGarden(); renderShred(); renderFruit(); renderDiner(false); renderCrush(); renderLeague(); renderBed(); renderDrop();
+}
+function initMini() {
+  state.mini = mergeMini(state.mini);
+  renderDiner(true);
+  renderMini();
+  requestAnimationFrame(t => { miniLast = t; miniFrame(t); });
+}
+
 /* ================= Modal ================= */
 let modalCb = null;
 function showModal(title, text, big, btn, cb) {
@@ -1616,6 +2422,7 @@ function render() {
   checkHatch();
   tickRots(performance.now());
   renderWorlds();
+  renderMini();
 }
 
 /* ================= Rebirth + wipe ================= */
@@ -1632,7 +2439,7 @@ $('rebirthBtn').addEventListener('click', () => {
   const keep = { rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, lv: state.lv, ach: state.ach, stats: state.stats,
     pets: state.pets, nest: state.nest, rival: state.rival, stealReadyAt: state.stealReadyAt,
     base: state.base, rivalRots: state.rivalRots, rotStealReadyAt: state.rotStealReadyAt, lockUntil: state.lockUntil, lockReadyAt: state.lockReadyAt,
-    world: state.world, worlds: state.worlds };
+    world: state.world, worlds: state.worlds, mini: state.mini };
   state = { ...fresh(), ...keep };
   shown = 0; combo = 0;
   const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
@@ -1651,7 +2458,7 @@ $('resetBtn').addEventListener('click', () => {
     return;
   }
   wipeArmed = false; b.textContent = 'Wipe save';
-  state = fresh(); shown = 0; save(); renderEggs(); renderRots(); applyWorld(); render();
+  state = fresh(); state.mini = mergeMini(null); shown = 0; save(); renderEggs(); renderRots(); applyWorld(); render();
 });
 
 $('soundBtn').addEventListener('click', () => {
@@ -1690,7 +2497,7 @@ function frame(now) {
   gainsEl.textContent = fmt(shown);
 
   // combo meter
-  const windowMs = COMBO_WINDOW * (inFever() ? 1.5 : 1);
+  const windowMs = COMBO_WINDOW * ffx('combo') * (inFever() ? 1.5 : 1);
   const left = combo ? 1 - (now - lastHit) / windowMs : 0;
   if (combo && left <= 0) {
     if (combo >= 15) { const l = pick(lifters); say(l, pick(LINES.comboEnd), 1400); mood(l, 'smile', 1000); }
@@ -1849,6 +2656,7 @@ function start(data) {
   $('soundBtn').textContent = soundOn ? 'Sound on' : 'Sound off';
   $('soundBtn').setAttribute('aria-pressed', soundOn);
   window.claude?.hot?.snapshot?.(() => ({ state }));
+  initMini();
   renderEggs();
   renderRots();
   applyWorld();
