@@ -494,7 +494,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .hudpills::-webkit-scrollbar{display:none}
 .hudpills>.pill{flex:none;padding:6px 10px;font-size:.7rem;max-width:78vw}
 .hudpills .pill .pt{max-width:44vw}
-.hudpills.min>.pill:not(.tog){display:none}
+.hudpills.min>.pill:not(.tog):not(#goalChip){display:none}#goalChip.nav{box-shadow:0 0 0 2px #ffcc33,var(--shadow)}
 .pill.tog{font-family:var(--mono);font-weight:800;font-size:.72rem;min-width:34px;justify-content:center}
 .hudpills .pill{pointer-events:auto}
 .pill{display:flex;align-items:center;gap:8px;max-width:100%;padding:7px 11px;border-radius:12px;font-size:.74rem;text-align:left}
@@ -805,7 +805,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -1523,7 +1523,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  funArrows();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  funArrows();drawGoalNav();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -1591,7 +1591,7 @@ new MutationObserver(()=>{const r=$("room");r.classList.toggle("cosmic",!!(SCN&&
 $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play in the Online Town. Reach level 10 to get a free raft at the Harbor on the beach, then sail over.":"Friends play in the Online Town. Go to the Harbor on the beach and sail over.");if(regionOpen("beach"))walkTo("harbor");return}const sh=$("mpSheet");if(!sh.hidden){sh.hidden=true;return}mpUI()};
 // The alert pills sit in one swipeable row; the first button folds them away
 let pillsMin=store.get("fliprush_pillsmin")==="1";
-function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
+function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&e.id!=="goalChip"&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
 $("seaChip").onclick=()=>{audioOn();if(room)closeRoom();openSeason(closeRoom)};
 $("room").addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#rGuide")){audioOn();rayText(GUIDE[room]||"")}});
 $("emoBtn").onclick=()=>{audioOn();emoMenu()};$("camBtn").onclick=()=>{audioOn();photoMode()};
@@ -2297,44 +2297,44 @@ function loginReward(then){
 }
 /* ---------- goals (story chain from Uncle Ray) ---------- */
 const GOALS=[
- {t:"Make your first sale",d:"Welcome to town, kid. Head to the Market, buy something cheap and sell it for more.",ok:()=>S.stats.flips>=1,rw:50},
- {t:"Lift 40 kg at the Gym",d:"Strong people carry more and haggle harder. Go hit the Gym.",ok:()=>(S.stats.heaviest||0)>=40,rw:100},
- {t:"Have $1,000 cash",d:"Stack up a thousand bucks. Then we talk wheels.",ok:()=>S.cash>=1000,rw:150},
- {t:"Buy a bike at the Mall",d:"Walking is for tourists. Grab a bike at the Mall.",ok:()=>!!S.veh.bike,rw:250},
- {t:"Earn $5,000 in total",d:"Keep flipping. Word is a flea market is opening on the boardwalk down south.",ok:()=>S.stats.earnedAll>=5000,rw:400,unlock:"beach"},
- {t:"Buy something at the Boardwalk Flea",d:"The Beach is open! The Boardwalk Flea has crazy steals. And crazy fakes. Watch the ratings.",ok:()=>!!S.flags.fleaBuy,rw:500},
- {t:"Beat Big Mike at the Arena",d:"Big Mike has been talking trash about you. Go shut him up.",ok:()=>(S.stats.beat||[]).includes(2),rw:900},
- {t:"Reach level 10",d:"Every dollar you earn levels you up, and every level lets you pick a perk card. Get to level 10.",ok:()=>repLevel()>=10,rw:1500},
- {t:"Earn $40,000 in total",d:"Downtown is where the real money is. Earn your way in.",ok:()=>S.stats.earnedAll>=40000,rw:2500,unlock:"downtown"},
- {t:"Sell at the Luxury Exchange",d:"Downtown is open. The Luxury Exchange pays top dollar for high-end pieces.",ok:()=>!!S.flags.luxSell,rw:3000},
- {t:"Buy a scooter",d:"Treat yourself. The Dealership has electric scooters.",ok:()=>!!S.veh.scooter,rw:3000},
- {t:"Beat The Mountain",d:"The Mountain has never lost an arm wrestle. Change that.",ok:()=>(S.stats.beat||[]).includes(3),rw:6000},
- {t:"Buy the sports car",d:"You've earned it. The red one at the Dealership.",ok:()=>!!S.veh.car,rw:10000},
- {t:"Earn $1,000,000 in total",d:"Make a million and you're a legend. But there's a whole world out there…",ok:()=>S.stats.earnedAll>=1e6,rw:50000},
- {t:"Sail to the Online Town",d:"Get a raft at the Harbor (level 10) and sail over. Bring your friends.",ok:()=>!!S.flags.sailed,rw:20000},
- {t:"Buy your first island",d:"Every tycoon needs an island. The Harbor sells them.",ok:()=>Object.keys(S.isl||{}).length>0,rw:50000},
- {t:"Build on your island",d:"An empty island is a sandbar. Build a bar, a villa, anything.",ok:()=>Object.values(S.islB||{}).some(v=>Object.keys(v.b||{}).length>0),rw:80000},
- {t:"Fly abroad",d:"The Airport flies everywhere now. Pick a city.",ok:()=>Object.keys(S.visited||{}).length>0,rw:60000},
- {t:"Buy a business",d:"Stop working for money. Make money work. Real estate, in any city.",ok:()=>(S.biz||[]).length>0,rw:150000},
- {t:"Work a shift at your business",d:"Roll up your sleeves. Open your business and work a shift.",ok:()=>(S.stats.shifts||0)>0,rw:200000},
- {t:"Get 3 passport stamps",d:"See the world. Three countries.",ok:()=>COUNTRIES.filter(c=>(S.visited||{})[c.k]).length>=3,rw:500000},
- {t:"Get married",d:"Money isn't everything. Date someone from the club, then propose at the Café.",ok:()=>!!(S.partner&&S.partner.married),rw:500000},
- {t:"Own a $50M+ piece",d:"Prestige Houses abroad only deal in the very top end. Buy one.",ok:()=>Object.keys(S.coll||{}).some(k=>k.startsWith("elite:")),rw:5e6},
- {t:"Win the Monte Carlo Grand Prix",d:"Got a fast car? Monte Carlo has a race with your name on it.",ok:()=>(S.stats.gpWins||0)>=1,rw:5e6},
- {t:"Build 50 Flip Tower floors",d:"Downtown has a lot with your name on it. Build up.",ok:()=>(S.tower||0)>=50,rw:1e7},
- {t:"Move into the Royal Palace",d:"Upgrade your home all the way to the palace.",ok:()=>(S.home||0)>=6,rw:5e7},
- {t:"Earn $1 billion in total",d:"A billion dollars earned. Then you really are a legend. But Earth isn't everything…",ok:()=>S.stats.earnedAll>=1e9,rw:1e8},
- {t:"Reach the Master tier",d:"Grow your net worth to ✦1 Radiant ($1 quadrillion).",ok:()=>tierN()>=5,rw:1e13},
- {t:"Open the Stargate",d:"The Airport has a gate to World 2. It costs ✦10.",ok:()=>!!(S.w2&&S.w2.open),rw:1e15},
- {t:"Make ✦1 a minute",d:"Build a solar collector at the Radiant Reactor in the Cosmos.",ok:()=>w2Rate()>=1,rw:5e15},
- {t:"Make ✦1,000 a minute",d:"Stack generators, research upgrades, feed the black hole.",ok:()=>w2Rate()>=1000,rw:5e17},
- {t:"Map 10 cosmic objects",d:"The Observatory in the Cosmos is waiting.",ok:()=>!!(S.w2&&S.w2.disc.length>=10),rw:1e19},
- {t:"Make ✦1M a minute",d:"Wormholes, neutron forges, pocket universes. Go big.",ok:()=>w2Rate()>=1e6,rw:1e22},
- {t:"Build a Multiverse gate",d:"The last generator in the Cosmos. It powers the time machine.",ok:()=>!!(S.w2&&genN("multi")>0),rw:1e27},
- {t:"Travel back in time",d:"Power up the time machine on the space station (◈1 Amber).",ok:()=>!!(S.w3&&S.w3.open),rw:1e29},
- {t:"Grow a trilobite colony",d:"Plant life at the Tree of Life in Deep Time.",ok:()=>!!(S.w3&&lifeN("trilo")>0),rw:5e29},
- {t:"Record 10 species",d:"Go on expeditions from the Field Guide.",ok:()=>!!(S.w3&&S.w3.disc.length>=10),rw:5e30},
- {t:"Raise a T. rex",d:"The king of the tyrant lizards, at the Tree of Life.",ok:()=>!!(S.w3&&lifeN("rex")>0),rw:1e33}
+ {t:"Make your first sale",d:"Welcome to town, kid. Head to the Market, buy something cheap and sell it for more.",ok:()=>S.stats.flips>=1,rw:50,go:"market"},
+ {t:"Lift 40 kg at the Gym",d:"Strong people carry more and haggle harder. Go hit the Gym.",ok:()=>(S.stats.heaviest||0)>=40,rw:100,go:"gym"},
+ {t:"Have $1,000 cash",d:"Stack up a thousand bucks. Then we talk wheels.",ok:()=>S.cash>=1000,rw:150,go:"market"},
+ {t:"Buy a bike at the Mall",d:"Walking is for tourists. Grab a bike at the Mall.",ok:()=>!!S.veh.bike,rw:250,go:"mall"},
+ {t:"Earn $5,000 in total",d:"Keep flipping. Word is a flea market is opening on the boardwalk down south.",ok:()=>S.stats.earnedAll>=5000,rw:400,unlock:"beach",go:"market"},
+ {t:"Buy something at the Boardwalk Flea",d:"The Beach is open! The Boardwalk Flea has crazy steals. And crazy fakes. Watch the ratings.",ok:()=>!!S.flags.fleaBuy,rw:500,go:"flea"},
+ {t:"Beat Big Mike at the Arena",d:"Big Mike has been talking trash about you. Go shut him up.",ok:()=>(S.stats.beat||[]).includes(2),rw:900,go:"arena"},
+ {t:"Reach level 10",d:"Every dollar you earn levels you up, and every level lets you pick a perk card. Get to level 10.",ok:()=>repLevel()>=10,rw:1500,go:"market"},
+ {t:"Earn $40,000 in total",d:"Downtown is where the real money is. Earn your way in.",ok:()=>S.stats.earnedAll>=40000,rw:2500,unlock:"downtown",go:"market"},
+ {t:"Sell at the Luxury Exchange",d:"Downtown is open. The Luxury Exchange pays top dollar for high-end pieces.",ok:()=>!!S.flags.luxSell,rw:3000,go:"lux"},
+ {t:"Buy a scooter",d:"Treat yourself. The Dealership has electric scooters.",ok:()=>!!S.veh.scooter,rw:3000,go:"dealer"},
+ {t:"Beat The Mountain",d:"The Mountain has never lost an arm wrestle. Change that.",ok:()=>(S.stats.beat||[]).includes(3),rw:6000,go:"arena"},
+ {t:"Buy the sports car",d:"You've earned it. The red one at the Dealership.",ok:()=>!!S.veh.car,rw:10000,go:"dealer"},
+ {t:"Earn $1,000,000 in total",d:"Make a million and you're a legend. But there's a whole world out there…",ok:()=>S.stats.earnedAll>=1e6,rw:50000,go:"market"},
+ {t:"Sail to the Online Town",d:"Get a raft at the Harbor (level 10) and sail over. Bring your friends.",ok:()=>!!S.flags.sailed,rw:20000,go:"harbor"},
+ {t:"Buy your first island",d:"Every tycoon needs an island. The Harbor sells them.",ok:()=>Object.keys(S.isl||{}).length>0,rw:50000,go:"harbor"},
+ {t:"Build on your island",d:"An empty island is a sandbar. Build a bar, a villa, anything.",ok:()=>Object.values(S.islB||{}).some(v=>Object.keys(v.b||{}).length>0),rw:80000,go:"harbor"},
+ {t:"Fly abroad",d:"The Airport flies everywhere now. Pick a city.",ok:()=>Object.keys(S.visited||{}).length>0,rw:60000,go:"airport"},
+ {t:"Buy a business",d:"Stop working for money. Make money work. Real estate, in any city.",ok:()=>(S.biz||[]).length>0,rw:150000,go:"airport"},
+ {t:"Work a shift at your business",d:"Roll up your sleeves. Open your business and work a shift.",ok:()=>(S.stats.shifts||0)>0,rw:200000,go:"airport"},
+ {t:"Get 3 passport stamps",d:"See the world. Three countries.",ok:()=>COUNTRIES.filter(c=>(S.visited||{})[c.k]).length>=3,rw:500000,go:"airport"},
+ {t:"Get married",d:"Money isn't everything. Date someone from the club, then propose at the Café.",ok:()=>!!(S.partner&&S.partner.married),rw:500000,go:()=>S.partner?"cafe":"club"},
+ {t:"Own a $50M+ piece",d:"Prestige Houses abroad only deal in the very top end. Buy one.",ok:()=>Object.keys(S.coll||{}).some(k=>k.startsWith("elite:")),rw:5e6,go:"airport"},
+ {t:"Win the Monte Carlo Grand Prix",d:"Got a fast car? Monte Carlo has a race with your name on it.",ok:()=>(S.stats.gpWins||0)>=1,rw:5e6,go:"airport"},
+ {t:"Build 50 Flip Tower floors",d:"Downtown has a lot with your name on it. Build up.",ok:()=>(S.tower||0)>=50,rw:1e7,go:"tower"},
+ {t:"Move into the Royal Palace",d:"Upgrade your home all the way to the palace.",ok:()=>(S.home||0)>=6,rw:5e7,go:"home"},
+ {t:"Earn $1 billion in total",d:"A billion dollars earned. Then you really are a legend. But Earth isn't everything…",ok:()=>S.stats.earnedAll>=1e9,rw:1e8,go:"market"},
+ {t:"Reach the Master tier",d:"Grow your net worth to ✦1 Radiant ($1 quadrillion).",ok:()=>tierN()>=5,rw:1e13,go:"market"},
+ {t:"Open the Stargate",d:"The Airport has a gate to World 2. It costs ✦10.",ok:()=>!!(S.w2&&S.w2.open),rw:1e15,go:"airport"},
+ {t:"Make ✦1 a minute",d:"Build a solar collector at the Radiant Reactor in the Cosmos.",ok:()=>w2Rate()>=1,rw:5e15,go:"c:reactor"},
+ {t:"Make ✦1,000 a minute",d:"Stack generators, research upgrades, feed the black hole.",ok:()=>w2Rate()>=1000,rw:5e17,go:"c:reactor"},
+ {t:"Map 10 cosmic objects",d:"The Observatory in the Cosmos is waiting.",ok:()=>!!(S.w2&&S.w2.disc.length>=10),rw:1e19,go:"c:obs"},
+ {t:"Make ✦1M a minute",d:"Wormholes, neutron forges, pocket universes. Go big.",ok:()=>w2Rate()>=1e6,rw:1e22,go:"c:reactor"},
+ {t:"Build a Multiverse gate",d:"The last generator in the Cosmos. It powers the time machine.",ok:()=>!!(S.w2&&genN("multi")>0),rw:1e27,go:"c:reactor"},
+ {t:"Travel back in time",d:"Power up the time machine on the space station (◈1 Amber).",ok:()=>!!(S.w3&&S.w3.open),rw:1e29,go:"c:tmach"},
+ {t:"Grow a trilobite colony",d:"Plant life at the Tree of Life in Deep Time.",ok:()=>!!(S.w3&&lifeN("trilo")>0),rw:5e29,go:"d:nursery"},
+ {t:"Record 10 species",d:"Go on expeditions from the Field Guide.",ok:()=>!!(S.w3&&S.w3.disc.length>=10),rw:5e30,go:"d:guide"},
+ {t:"Raise a T. rex",d:"The king of the tyrant lizards, at the Tree of Life.",ok:()=>!!(S.w3&&lifeN("rex")>0),rw:1e33,go:"d:nursery"}
 ];
 const rq=[];let rBusy=false;
 let rayEl=null,rayTo=null;
@@ -2342,15 +2342,33 @@ function rayText(msg){rq.length=0;rq.push(msg);if(rayEl){rayEl.remove();rayEl=nu
 function nextRay(){const m=rq.shift();if(!m){rBusy=false;return}rBusy=true;const t=document.createElement("div");t.className="raytoast"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav">R</span><span><b>Uncle Ray</b>${m}</span>`;document.body.appendChild(t);rayEl=t;t.onclick=()=>{t.remove();rayEl=null};rayTo=setTimeout(()=>{t.remove();rayEl=null;rBusy=false;nextRay()},6500)}
 function checkGoals(){
   const g=GOALS[S.goal];if(!g||!g.ok())return;
-  S.goal++;S.cash+=g.rw;dirty=true;SFX.level();buzz([20,40,20]);banner("Goal complete","u");banner("+"+fmt(g.rw),"g");
+  const guided=GNAV===S.goal;S.goal++;if(guided)GNAV=S.goal;S.cash+=g.rw;dirty=true;SFX.level();buzz([20,40,20]);banner("Goal complete","u");banner("+"+fmt(g.rw),"g");
   if(g.unlock){S.unl[g.unlock]=1;banner(REGION_NAME[g.unlock]+" unlocked","a")}
   const n=GOALS[S.goal];rayText(n?n.d:"That's every goal. You're a legend, kid. Keep flipping.");renderGoalChip();bKey="";
 }
 function renderGoalChip(){
   const g=GOALS[S.goal],el=$("goalChip");
-  el.hidden=!g;if(g)el.innerHTML=`<span class="pk">Goal ${S.goal+1}/${GOALS.length}</span><span class="pt">${g.t}</span><span class="pr">${fmt(g.rw)}</span>`;
+  el.hidden=!g;el.classList.toggle("nav",GNAV===S.goal);if(g)el.innerHTML=`<span class="pk">${GNAV===S.goal?"➜ ":""}Goal ${S.goal+1}/${GOALS.length}</span><span class="pt">${g.t}</span><span class="pr">${fmt(g.rw)}</span>`;
 }
-$("goalChip").onclick=()=>{audioOn();if(room)closeRoom();openNext(closeRoom)};
+// tap the goal: an arrow shows the way to where it's done (tap again for the full list of next steps)
+let GNAV=-1;
+$("goalChip").onclick=()=>{audioOn();const g=GOALS[S.goal];if(!g)return;if(GNAV===S.goal){GNAV=-1;renderGoalChip();if(room)closeRoom();openNext(closeRoom);return}
+  GNAV=S.goal;if(room)closeRoom();renderGoalChip();const d=goalDest();rayText(g.d+(d?" Follow the arrow.":""));buzz(8)};
+// where to point right now: the goal's place on this map, or the way out towards it
+function goalDest(){const g=GOALS[S.goal];if(!g||!g.go)return null;let k=typeof g.go==="function"?g.go():g.go,w="town";if(k.startsWith("c:")){w="cosmos";k=k.slice(2)}else if(k.startsWith("d:")){w="deep";k=k.slice(2)}
+  const here=SCN?(SCN.kind==="space"&&SCN.k==="cosmos"?"cosmos":SCN.kind==="prehist"?"deep":"other"):MPW?"other":"town";
+  const at=key=>{if(here==="town"){const p=PL[key];return p&&regionOpen(p.region||regionOf(p.door[0],p.door[1]))?{x:p.door[0],y:p.door[1]+14,n:p.n}:null}const p=SCN&&SCN.places.find(q=>q.k===key);return p?{x:p.door[0],y:p.door[1]+14,n:p.n}:null};
+  if(here===w)return at(k);
+  if(here==="town")return at("airport");            // the Stargate is at the Airport
+  if(here==="cosmos")return at(w==="deep"?"tmach":"gate");
+  if(here==="deep")return at("tm");
+  return null}
+function drawGoalNav(){if(GNAV!==S.goal||room)return;const d=goalDest();if(!d)return;const sx=d.x-cam.x,sy=d.y-cam.y,bob=Math.sin(wt*5)*6;
+  if(Math.hypot(S.px-d.x,S.py-d.y)<46)return;
+  if(sx>20&&sy>180&&sx<vw-20&&sy<vh-120){ctx.save();ctx.translate(sx,sy-74+bob);ctx.fillStyle="rgba(0,0,0,.25)";ctx.beginPath();ctx.moveTo(-15,-2);ctx.lineTo(15,-2);ctx.lineTo(0,20);ctx.closePath();ctx.fill();ctx.fillStyle="#ffcc33";ctx.strokeStyle="#1b1f2a";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-9,-26);ctx.lineTo(9,-26);ctx.lineTo(9,-6);ctx.lineTo(18,-6);ctx.lineTo(0,16);ctx.lineTo(-18,-6);ctx.lineTo(-9,-6);ctx.closePath();ctx.stroke();ctx.fill();ctx.restore()}
+  else drawEdgeArrow(d.x,d.y,"#ffcc33");
+  // a pointer by your feet so you always know which way to walk
+  const px=S.px-cam.x,py=S.py-cam.y,an=Math.atan2(d.y-S.py,d.x-S.px);ctx.save();ctx.translate(px+Math.cos(an)*44,py+Math.sin(an)*30);ctx.rotate(an);ctx.globalAlpha=.65+.35*Math.sin(wt*6);ctx.fillStyle="#ffcc33";ctx.strokeStyle="#1b1f2a";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-7,-9);ctx.lineTo(-3,0);ctx.lineTo(-7,9);ctx.closePath();ctx.stroke();ctx.fill();ctx.restore()}
 /* ---------- random town events ---------- */
 let nextEvT=30;
 function randSpot(){for(let i=0;i<80;i++){const x=rnd(60,W-60),y=rnd(90,SEA-60);if(regionOpen(regionOf(x,y))&&!inBld(x,y,24)&&Math.hypot(x-S.px,y-S.py)>260&&Math.hypot(x-S.px,y-S.py)<1100)return[x,y]}return[clamp(S.px+220,60,1340),S.py]}
@@ -4408,7 +4426,9 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=25,WN=[
+const WN_VER=26,WN=[
+ ["➜","Follow your goal","Your goal is always first in the top row. Tap it and an arrow shows the way, even across worlds. Tap again for the full list.","2026-10-06T17:30"],
+ ["✈️","A bigger Airport","A glass terminal, a parked jet and a control tower.","2026-10-06T17:30"],
  ["🏘️","A bigger Township","The Township is wider with 12 roomy lots, one for every player in the room, and much wider houses. Crew HQs moved to the foot of the main road.","2026-10-06T16:30"],
  ["⚡","Faster sign-in","Logging in and creating an account now take about a second.","2026-10-06T16:30"],
  ["📰","Tidier What's new","Only the latest changes show, each with its date. Skip it from the top.","2026-10-06T16:30"],
@@ -5039,6 +5059,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
   if(nightA>0&&!indoor){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
     decoGlow(nightA);SCN.places.forEach(p=>{const sx=p.door[0]-cam.x,sy=p.door[1]-cam.y;if(sx<-90||sy<-90||sx>vw+90||sy>vh+90)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,80);g.addColorStop(0,`rgba(255,205,120,${.3*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-80,sy-80,160,160)});
     ctx.globalCompositeOperation="source-over"}
+  drawGoalNav();
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.16)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh)}
 function renderSceneBottom(){const el=$("bottom"),near=sceneNear(),key="scn|"+SCN.k+"|"+(near?near.k:"")+"|"+SCN.stSig;if(key===bKey)return;bKey=key;
   let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"||SCN.kind==="arena"?"Go outside":SCN.kind==="planet"?"Back to the station":SCN.kind==="prehist"?"Back to the Cosmos":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:SCN.kind==="prehist"?`<div class="w2rate amber">${ambF(w3Rate()*AMB)}/min</div>`:""}`;
