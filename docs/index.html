@@ -390,6 +390,7 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
 .gens{display:flex;flex-direction:column;gap:8px;margin-top:8px}.gen{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;border:0;border-radius:16px;padding:10px 12px;background:linear-gradient(120deg,#16123a,#241a52);color:#fff;text-align:left;font:inherit;cursor:pointer}.gen:disabled{opacity:.55;cursor:default}.gen.lock{opacity:.45}.gi{font-size:1.7rem;text-align:center}.gt b{display:block;font-family:var(--display);font-size:.92rem}.gt b em{font-style:normal;font-family:var(--mono);color:#ffcc33;margin-left:4px}.gt small{font-size:.7rem;opacity:.75}.gc{font-family:var(--mono);font-weight:800;color:#ff4fd8;font-size:.82rem}
 .obsgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.obsc{display:flex;flex-direction:column;align-items:center;gap:2px;background:#16123a;color:#fff;border-radius:12px;padding:8px 2px}.obsc span{font-size:1.4rem}.obsc small{font-size:.55rem;text-align:center;opacity:.8;line-height:1.1}.obsc.lock{opacity:.35}.obsnew{display:flex;gap:12px;align-items:center;background:linear-gradient(120deg,#16123a,#3b2a8a);color:#fff;border-radius:16px;padding:12px;margin:8px 0}.obsnew>span{font-size:2.2rem}.obsnew small{display:block;opacity:.8;font-size:.75rem}
 .bhart{height:170px;background:#020208;position:relative;overflow:hidden}.bhdisk{position:absolute;left:50%;top:50%;width:260px;height:80px;margin:-40px 0 0 -130px;border-radius:50%;background:conic-gradient(#ffcc33,#ff7a3d,#7a2fd6,#ff7a3d,#ffcc33);filter:blur(6px);animation:spin 5s linear infinite;opacity:.85}.bhcore{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#000;box-shadow:0 0 0 3px rgba(255,210,140,.8),0 0 40px 10px rgba(255,150,60,.35)}
+.chip.live{box-shadow:inset 0 0 0 2px #ff4fd8,var(--shadow)}.chip.live .pk{color:#ff4fd8}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -731,7 +732,7 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -1405,7 +1406,7 @@ function drawWorld(){
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
     ctx.fillStyle="rgba(10,14,22,.88)";rr(x-w/2,y-19,w,38,19);ctx.fill();ctx.beginPath();ctx.moveTo(x-8,y+18);ctx.lineTo(x+8,y+18);ctx.lineTo(x,y+27);ctx.fill();ctx.fillStyle="#2fd28a";ctx.beginPath();ctx.arc(x-w/2+17,y,4.5+Math.sin(wt*4),0,7);ctx.fill();ctx.fillStyle="#ffffff";ctx.fillText(lab,x+7,y+1)}
-  drawFinds();
+  drawFinds();liveDraw();
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();drawHol();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
@@ -1421,7 +1422,7 @@ function drawWorld(){
   if(EV&&EV.type==="rain"){ctx.strokeStyle=isDark()?"rgba(170,190,230,.35)":"rgba(90,110,150,.35)";ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<90;i++){const rx=(i*97+wt*260)%(vw+40)-20,ry=(i*53+wt*620)%(vh+40)-20;ctx.moveTo(rx,ry);ctx.lineTo(rx-5,ry+14)}ctx.stroke();ctx.fillStyle="rgba(40,60,90,.12)";ctx.fillRect(0,0,vw,vh)}
   else if(!room)seasonFx();
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}
+  if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -1489,6 +1490,7 @@ $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play 
 // The alert pills sit in one swipeable row; the first button folds them away
 let pillsMin=store.get("fliprush_pillsmin")==="1";
 function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
+$("liveChip").onclick=()=>{audioOn();if(LV&&LV.kind==="boss"&&!LV.done&&!room)liveHit()};
 $("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("multTxt").addEventListener("click",e=>{if(!e.target.closest(".tierb")||!S)return;audioOn();if(room)closeRoom();room="tiers";openTiers(closeRoom)});
@@ -2797,7 +2799,7 @@ function newListing(){
   const fake=steal&&Math.random()<Math.min(.9,MC().fake*secK()*(1+WT*.5)*tFake());
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
-  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk())),price:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk())),life,left:life,fake,rating};
+  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk()*(liveSale()?.6:1))),price:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk()*(liveSale()?.6:1))),life,left:life,fake,rating};
 }
 function openBox(price){
   const jackpot=Math.random()<.07;
@@ -3005,7 +3007,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);tierTick(dt);w2Tick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3246,6 +3248,7 @@ function mpOnMsg(topic,buf){
   if(kind==="g"){if(id===MP_ID&&d&&d.f!==MP_ID&&d.a>0){const a=Math.min(d.a,Math.max(1e6,netWorth()*2));if(!isFinite(a))return;earn(a);SFX.grail();confetti(80);banner(esc(d.n||"A friend").slice(0,16)+" sent you "+fmt(a),"g");mpLog(d.n,"sent you "+fmt(a),1)}return}
   if(kind==="d"){if(id===MP_ID&&d){const n=String(d.n||"A friend").slice(0,16);banner(n+" "+String(d.t||"").slice(0,40),"u");SFX.hot();buzz([20,40,20]);mpLog(n,String(d.t||"").slice(0,60),1);if(d.isl){S.islVis=S.islVis||{};S.islVis[d.isl]=(S.islVis[d.isl]||0)+1;dirty=true}}return}
   if(kind==="aw"){if(id===MP_ID&&d)pvpMsg(d);return}
+  if(kind==="lv"){if(id!==MP_ID)liveMsg(d);return}
   if(kind==="pm"){if(id===MP_ID&&d)pmMsg(d);return}
   if(kind==="tr"){if(id!==MP_ID)huntMsg(id,d);return}
   if(id===MP_ID)return;
@@ -5201,6 +5204,44 @@ function enterHouse(p){const peer=p&&p.id&&MP?MP.peers[p.id]:null,fu={};((peer&&
   const owner=p&&!p.me?{p,hm:p.hm||0,fu,n:String(p.n||"?").slice(0,14)}:null;
   enterScene({kind:"house",k:"house",owner,w:HW,h:HH,spawn:[550,690],bg:"#2b2f3a",title:owner?owner.n+"'s house":(MPW?"My house":PROPS[S.home||0].n),shirts:[],mk:housePlaces,pt:()=>[550,500],ok:(x,y)=>x>30&&x<HW-30&&y>215&&y<HH-14});
   SCN.npc=[];SFX.door()}
+/* ================= live events in the Online Town: every 10 minutes, the same event for everyone in the room ================= */
+const LVP=600000,LVD=75000,LVKINDS=["rain","sale","race","boss"];
+const LVN={rain:["💰","Money rain","Grab the coins before your friends do"],sale:["🏷️","Flash sale","Market prices −40%"],race:["🏁","Street race","Hit all 6 checkpoints first"],boss:["👹","The Titan","Everyone hit him together"]};
+let LV=null,LV_FORCE=null;
+const lvHash=(i,code)=>{let h=i*2654435761%4294967296;for(const ch of String(code))h=(h*31+ch.charCodeAt(0))%4294967296;return h};
+const lvRng=seed=>{let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}};
+// what's on right now: {i,kind,start} while running, or {soon} in the 30 s before the next one
+function liveNow(){if(!MPW||!MP)return null;if(LV_FORCE){const t=Date.now()-LV_FORCE.start;if(t>=0&&t<LVD)return{i:-1,kind:LV_FORCE.kind,start:LV_FORCE.start};return null}
+  const now=Date.now(),i=Math.floor(now/LVP),start=i*LVP;if(now-start<LVD)return{i,kind:LVKINDS[lvHash(i,MP.code)%LVKINDS.length],start};if(now>start+LVP-30000){const j=i+1;return{soon:1,i:j,kind:LVKINDS[lvHash(j,MP.code)%LVKINDS.length],start:j*LVP}}return null}
+const liveSale=()=>{const e=liveNow();return !!(e&&!e.soon&&e.kind==="sale")};
+const lvBase=()=>Math.max(2e4,netWorth());
+function lvSetup(e){const r=lvRng(lvHash(e.i,(MP&&MP.code)||"x")),pt=()=>{const rd=ROADS[Math.floor(r()*6)];return[rd[0]+10+r()*(rd[2]-20),rd[1]+10+r()*(rd[3]-20)]};
+  LV={i:e.i,kind:e.kind,start:e.start,picked:{},coins:[],cps:[],cp:0,fin:[],done:0,hits:0,mine:0,hp:0,paid:0};
+  if(e.kind==="rain")LV.coins=Array.from({length:45},()=>pt());
+  if(e.kind==="race")LV.cps=Array.from({length:6},()=>pt());
+  if(e.kind==="boss")LV.hp=150*(1+Object.keys(MP.peers).length);
+  const N=LVN[e.kind];banner(N[0]+" "+N[1],"g");rayText(N[1]+": "+N[2]+".");SFX.hot();buzz([30,40,30])}
+let lvSoonSaid=-1;
+function liveTick(dt){const e=liveNow(),chip=$("liveChip");
+  if(!e){if(LV&&!LV.done)liveEnd();if(chip&&!chip.hidden)chip.hidden=true;return}
+  if(e.soon){if(lvSoonSaid!==e.i){lvSoonSaid=e.i;banner("Live event in 30s","a")}if(chip){chip.hidden=false;chip.innerHTML=`<span class="pk">Live soon</span><span class="pt">${LVN[e.kind][0]} ${LVN[e.kind][1]} · ${Math.ceil((e.start-Date.now())/1000)}s</span>`}return}
+  if(!LV||LV.i!==e.i||LV.start!==e.start)lvSetup(e);
+  const left=Math.max(0,Math.ceil((e.start+LVD-Date.now())/1000));
+  if(chip){chip.hidden=false;let t=LVN[LV.kind][1];if(LV.kind==="rain")t+=` · ${LV.coins.length-Object.keys(LV.picked).length} left`;if(LV.kind==="race")t+=LV.done?" · finished":` · checkpoint ${LV.cp+1}/6`;if(LV.kind==="boss")t+=LV.done?" · defeated!":` · ${Math.max(0,Math.ceil(100-LV.hits/LV.hp*100))}% HP · tap to hit`;chip.innerHTML=`<span class="pk">LIVE ${left}s</span><span class="pt">${LVN[LV.kind][0]} ${t}</span>`}
+  if(room||SCN||LV.done&&LV.kind!=="rain")return;
+  if(LV.kind==="rain")LV.coins.forEach(([x,y],k)=>{if(LV.picked[k])return;if(Math.hypot(S.px-x,S.py-y)<30){LV.picked[k]=1;const v=Math.round(lvBase()*.001);earn(v);SFX.sell();mpSend("lv",{op:"pick",i:LV.i,c:k})}});
+  if(LV.kind==="race"&&!LV.done){const c=LV.cps[LV.cp];if(Math.hypot(S.px-c[0],S.py-c[1])<46){LV.cp++;SFX.tick(.9);buzz(15);if(LV.cp>=6){LV.done=1;const place=LV.fin.length+1;LV.fin.push(mpName());mpSend("lv",{op:"fin",i:LV.i,n:mpName()});const v=Math.round(lvBase()*(place===1?.03:place===2?.02:.01));earn(v);confetti(160);SFX.grail();banner(["","1st","2nd","3rd"][place]||place+"th","g");banner("+"+fmt(v),"g")}}}}
+function liveHit(){if(!LV||LV.kind!=="boss"||LV.done)return;const B=LVBOSS;if(Math.hypot(S.px-B[0],S.py-B[1])>170){target=[B[0],B[1]+60];autoEnter=null;moving=true;return}
+  if(!spend(1))return;const d=1+Math.floor(S.pr/60);LV.hits+=d;LV.mine+=d;SFX.tick(.3+Math.random()*.4);shake(2);mpSend("lv",{op:"hit",i:LV.i,d});lvBossCheck()}
+const LVBOSS=[700,600];
+function lvBossCheck(){if(LV.done||LV.hits<LV.hp)return;LV.done=1;const share=LV.mine/Math.max(1,LV.hits),v=Math.round(lvBase()*(.01+.04*share));if(LV.mine>0){earn(v);banner("Titan defeated! +"+fmt(v),"g")}else banner("The Titan was defeated","a");confetti(220);SFX.grail();shake(10,.6)}
+function liveEnd(){if(LV&&LV.kind==="race"&&!LV.done)banner("Race over","a");LV.done=1}
+function liveMsg(d){if(!d||!LV||d.i!==LV.i)return;if(d.op==="pick")LV.picked[d.c|0]=1;if(d.op==="fin"&&!LV.fin.includes(String(d.n))){LV.fin.push(String(d.n).slice(0,16));if(!LV.done)banner(String(d.n).slice(0,14)+" finished the race","a")}if(d.op==="hit"){LV.hits+=Math.min(50,Math.max(0,d.d|0));lvBossCheck()}}
+function liveDraw(){if(!LV||!MPW||LV.done&&LV.kind!=="rain")return;const e=liveNow();if(!e||e.soon)return;
+  if(LV.kind==="rain")LV.coins.forEach(([x,y],k)=>{if(LV.picked[k])return;const b=Math.sin(wt*5+k)*3;ctx.fillStyle="rgba(255,204,51,.25)";ctx.beginPath();ctx.arc(x,y-6+b,14,0,7);ctx.fill();ctx.fillStyle="#ffcc33";ctx.beginPath();ctx.ellipse(x,y-6+b,8*Math.abs(Math.cos(wt*3+k)),8,0,0,7);ctx.fill();ctx.fillStyle="#cf9a14";ctx.font="900 9px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("$",x,y-6+b)});
+  if(LV.kind==="race"){LV.cps.forEach(([x,y],k)=>{if(k<LV.cp)return;const on=k===LV.cp,p=.5+.5*Math.sin(wt*6);ctx.strokeStyle=on?"#2fd28a":"rgba(255,255,255,.4)";ctx.lineWidth=on?5:2;ctx.beginPath();ctx.ellipse(x,y,40+(on?p*6:0),16+(on?p*2:0),0,0,7);ctx.stroke();ctx.fillStyle=on?"#2fd28a":"rgba(255,255,255,.5)";ctx.font="900 14px "+FONTS.d;ctx.textAlign="center";ctx.fillText(String(k+1),x,y-24)});}
+  if(LV.kind==="boss"){const[x,y]=LVBOSS,hp=Math.max(0,1-LV.hits/LV.hp),sh2=Math.sin(wt*20)*(LV.hits%3?1.5:0);ctx.save();ctx.translate(x+sh2,y);drawPerson(0,0,{size:2.6,tall:1.4,shirt:"#7a1d2a",skin:"#8fbf7a",hair:"#1b1d22",hs:2,build:{c:1.4,l:1.4,b:1.4},mv:false,ph:wt,acc:{h:"viking"}});ctx.restore();
+    ctx.fillStyle="rgba(0,0,0,.6)";rr(x-70,y-190,140,14,7);ctx.fill();ctx.fillStyle="#e2364a";rr(x-68,y-188,136*hp,10,5);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 13px "+FONTS.d;ctx.textAlign="center";ctx.fillText("THE TITAN",x,y-200)}}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
