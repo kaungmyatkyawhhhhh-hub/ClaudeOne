@@ -210,7 +210,7 @@ local function setHighlight(target, on)
 			local light = New("Highlight", {
 				Name = "StatsHighlight",
 				Adornee = part,
-				FillColor = Color3.fromRGB(255, 20, 20),
+				FillColor = Color3.fromRGB(255, 30, 60),
 				OutlineColor = Color3.fromRGB(255, 20, 20),
 				FillTransparency = 1,
 				OutlineTransparency = 1,
@@ -218,7 +218,7 @@ local function setHighlight(target, on)
 				Parent = part,
 			})
 			highlights[part] = light
-			Theme.Tween(light, { FillTransparency = 0.35, OutlineTransparency = 0 }, 0.15)
+			Theme.Tween(light, { FillTransparency = 0.05, OutlineTransparency = 0 }, 0.15)
 		end
 	end
 end
