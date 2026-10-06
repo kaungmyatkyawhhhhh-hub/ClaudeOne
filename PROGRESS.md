@@ -213,3 +213,5 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - **Mirror reflection fix (verified by numbers):** copy parts are now paired with your real parts by name path (the old index pairing could leave it frozen), and the copy has no Humanoid/joints (the earlier edit that was meant to do this had never applied). Test showed copy limb heights tracking the real ones during an emote.
 
 - **Poses:** the Emotes menu is renamed Poses (tile + panel title); new poses Abs and thighs, Most muscular (crab) next to Double biceps, Lat spread, High five. Joint angles for the two new ones are a first guess: look at them in play and tell me what to adjust. Mirror reflection lighting made brighter (unverified by eye).
+
+- Statue: built at the strongest player's height (Growth Spurts) and now real size (Scale 1, was 1.35). Entrance door leaves got slim dark frames that slide with the glass (`tools/builders/DoorFrames.luau`, already run in the open place). Mirror screen uses golden posing lighting.
