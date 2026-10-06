@@ -382,6 +382,9 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .chip,.place,.hud .iconbtn,.tip{background:color-mix(in oklab,var(--surface) 74%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);border:1px solid color-mix(in oklab,var(--surface) 55%,transparent)}
 html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.perf .raytoast,html.perf .wnov,html.perf .overlay{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip{background:var(--surface)!important}
 .cash.rad{background:linear-gradient(90deg,#7a2fd6,#ff4fd8,#ffcc33,#4fe3ff,#7a2fd6);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:radsh 4s linear infinite}@keyframes radsh{to{background-position:300% 0}}
+.tierb{font-style:normal;font-weight:800;color:var(--tc);background:color-mix(in oklab,var(--tc) 14%,transparent);border-radius:99px;padding:1px 7px;margin-right:4px;cursor:pointer;white-space:nowrap}
+.tiersheet{text-align:center}.tiersheet h2{color:var(--tc);font-size:2rem;margin:2px 0 10px}.tierbig{font-size:3.4rem;line-height:1;animation:pulse 1.2s ease-in-out infinite}.tiercols{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin-bottom:14px}.tiercols>div{background:var(--sunk);border-radius:14px;padding:10px 12px}.tiercols b{display:block;margin-bottom:4px}.tiercols p{margin:2px 0;font-size:.8rem}
+.tierlist{display:flex;flex-direction:column;gap:8px;margin-top:12px}.tierrow{display:grid;grid-template-columns:36px 1fr;grid-template-areas:"i n" "i e";gap:2px 10px;align-items:center;padding:10px 12px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);opacity:.6}.tierrow.done{opacity:.85}.tierrow.on{opacity:1;box-shadow:inset 0 0 0 2px var(--tc),var(--shadow)}.tierrow .ti{grid-area:i;font-size:1.6rem;text-align:center}.tierrow .tn{grid-area:n;display:flex;justify-content:space-between;gap:8px}.tierrow .tn b{color:var(--tc)}.tierrow .tn small{font-family:var(--mono);font-size:.7rem;opacity:.7}.tierrow .te{grid-area:e;font-size:.72rem;opacity:.8}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -950,7 +953,7 @@ const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S
 // Stacked bonuses have diminishing returns past x2, so money can't run away
 const capM=m=>m<=3?m:3+Math.log2(m/3)*2.6;
 const moonK=()=>emp("moon")?2:1;
-const mult=()=>capM(rawMult())*moonK()*rbK()*ovK()*megaK();
+const mult=()=>capM(rawMult())*moonK()*rbK()*ovK()*megaK()*tierK();
 let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
 const feeNow=()=>WT;
 const maxEnergyFor=str=>Math.round(15*petK("pug"))+100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy")+(S&&S.partner?(S.partner.married?40:20):0);
@@ -1044,6 +1047,7 @@ const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
 function spend(e,el){
+  if(e>0)e=Math.ceil(e*tEn());
   if(S.energy<e){if(el)floatAt(el,"Too tired. Sleep at home.","var(--down)");SFX.nope();buzz(30);if(!S.flags.tiredTip){S.flags.tiredTip=1;banner("Out of energy","r")}return false}
   S.energy-=e;dirty=true;return true;
 }
@@ -1452,7 +1456,7 @@ let hudT=0;
 function renderHud(){
   {const r=isRad(S.cash),cl=$("cashLab");if(cl&&cl.textContent!==(r?"Radiant ✦":"Cash")){cl.textContent=r?"Radiant ✦":"Cash";$("cash").classList.toggle("rad",r);if(r&&!S.flags.radSeen){S.flags.radSeen=1;dirty=true;banner("RADIANT","g");rayText("You passed $1 quadrillion. From now on your money is shown in Radiant: ✦1 = $1 quadrillion.")}}}
   if(shownCash==null)$("cash").textContent=fmt(S.cash);
-  $("multTxt").innerHTML=`Lv ${repLevel()} <i class="lvbar"><i style="width:${Math.round(lvlFrac()*100)}%"></i></i> ×${mult().toFixed(2)} money`;
+  $("multTxt").innerHTML=`<i class="tierb" style="--tc:${TI().c}">${TI().i} ${TI().n}</i> Lv ${repLevel()} <i class="lvbar"><i style="width:${Math.round(lvlFrac()*100)}%"></i></i> ×${mult().toFixed(2)} money`;
   const h=Math.floor(S.clock),m=Math.floor((S.clock%1)*60/15)*15;$("timeTxt").textContent=`${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
   $("dayTxt").textContent="Day "+S.day+" · "+season().n;
   const me=maxEnergy();$("enTxt").textContent=`${Math.floor(S.energy)}/${me}`;
@@ -1485,6 +1489,7 @@ let pillsMin=store.get("fliprush_pillsmin")==="1";
 function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
 $("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
+$("multTxt").addEventListener("click",e=>{if(!e.target.closest(".tierb")||!S)return;audioOn();if(room)closeRoom();room="tiers";openTiers(closeRoom)});
 $("phoneBtn").onclick=()=>{audioOn();openRoom("market")};
 
 /* ---------- gym ---------- */
@@ -2765,7 +2770,7 @@ const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
 const sellValue=s=>valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*collK(s.cat)*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(isWeekend()?1.15:1)*(1+.12*pk("cat_"+s.cat)));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 function newListing(){
-  const life=rnd(3.6,6.2)*(1+.3*S.up.alerts);
+  const life=rnd(3.6,6.2)*(1+.3*S.up.alerts)*tLife();
   const b0={id:S.nextId++,disc:0,gone:0,fake:false};
   if(S.earned>600&&Math.random()<MC().grail){
     const g=pick(POOL.filter(p=>p.base>=900&&p.cat!=="space"&&p.base<=Math.max(5000,S.cash*3))),c=CAT[g.cat],cond=c.conds[0];
@@ -2780,11 +2785,11 @@ function newListing(){
   const only=MC().only||(MC().k==="lux"?"lux":null),luxP=only?(()=>{const lp=POOL.filter(p=>p.cat===only);if(only!=="lux")return lp;const cap=Math.max(30000,(S.cash+stashVal())*1.5),ok=lp.filter(p=>p.base<=cap);return ok.length?ok:lp.slice(0,3)})():null;
   const it=pick(luxP||affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds);
   const base=Math.round(it.base*cond[1]),mv=base*S.trend[it.cat];
-  const steal=Math.random()<MC().steal*(1+.15*pk("steal")),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
-  const fake=steal&&Math.random()<MC().fake*secK()*(1+WT*.5);
+  const steal=Math.random()<MC().steal*(1+.15*pk("steal"))*tSteal(),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
+  const fake=steal&&Math.random()<Math.min(.9,MC().fake*secK()*(1+WT*.5)*tFake());
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
-  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.4))),price:Math.max(5,Math.round(mv*r*(1+WT*.4))),life,left:life,fake,rating};
+  return {...b0,kind:"item",kg:HEAVY[it.code]||0,cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,ask:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk())),price:Math.max(5,Math.round(mv*r*(1+WT*.4)*tAsk())),life,left:life,fake,rating};
 }
 function openBox(price){
   const jackpot=Math.random()<.07;
@@ -2992,7 +2997,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);tierTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3242,7 +3247,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild(),L=myLook();return{ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -3255,7 +3260,7 @@ function bubble(x,y,txt,col){ctx.font="700 12px "+FONTS.b;ctx.textAlign="center"
 function mpTags(){
   if(myBub)bubble(S.px,S.py-70*tallK(),myBub.txt);
   if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;const top=p.dy-58*(p.t||1)*(p.z||1);
-    ctx.font="800 11px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const lab=String(p.n||"?").slice(0,14)+"  Lv "+(p.lv||0),w=ctx.measureText(lab).width+16;
+    ctx.font="800 11px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const lab=(TIERS[p.ti|0]&&p.ti?TIERS[p.ti|0].i+" ":"")+String(p.n||"?").slice(0,14)+"  Lv "+(p.lv||0),w=ctx.measureText(lab).width+16;
     ctx.fillStyle="rgba(10,14,22,.78)";rr(p.dx-w/2,top-10,w,20,9);ctx.fill();ctx.fillStyle="#2fd28a";ctx.fillText(lab,p.dx,top);
     if(p.bubT>0&&p.bub)bubble(p.dx,top-26,p.bub)}
 }
@@ -4914,6 +4919,32 @@ function townDecoAnim(){
     ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(kx,ky-16);ctx.lineTo(kx+11,ky);ctx.lineTo(kx,ky+14);ctx.lineTo(kx-11,ky);ctx.closePath();ctx.fill();ctx.fillStyle="rgba(255,255,255,.4)";ctx.beginPath();ctx.moveTo(kx,ky-16);ctx.lineTo(kx+11,ky);ctx.lineTo(kx,ky);ctx.fill();
     ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(kx,ky+14);for(let j=1;j<5;j++)ctx.lineTo(kx+Math.sin(wt*4+j)*5,ky+14+j*7);ctx.stroke()});
   TOWNFX.gulls.forEach(b=>{b.x+=b.s/60;if(b.x>W+60)b.x=-60;if(b.x<-60)b.x=W+60;if(b.x<cam.x-30||b.x>cam.x+vw+30||b.y<cam.y-30||b.y>cam.y+vh+30)return;const f=Math.sin(wt*8+b.ph)*5;ctx.strokeStyle=isDark()?"#cfd6e0":"#ffffff";ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(b.x-10,b.y-f);ctx.quadraticCurveTo(b.x-4,b.y-6,b.x,b.y);ctx.quadraticCurveTo(b.x+4,b.y-6,b.x+10,b.y-f);ctx.stroke()})}
+/* ================= tiers: every tier you reach makes the game harder, and pays more ================= */
+const TIERS=[
+ {n:"Bronze",i:"🥉",c:"#b07a4a",nw:0},{n:"Silver",i:"🥈",c:"#9aa3b3",nw:1e6},{n:"Gold",i:"🥇",c:"#cf9a14",nw:1e8},{n:"Platinum",i:"💠",c:"#2bb3a3",nw:1e10},
+ {n:"Diamond",i:"💎",c:"#4fa8e8",nw:1e12},{n:"Master",i:"🔮",c:"#8f52d4",nw:1e15},{n:"Grandmaster",i:"👑",c:"#e2364a",nw:1e18},{n:"Legend",i:"🔥",c:"#ff7a3d",nw:1e21},
+ {n:"Mythic",i:"🌸",c:"#ff4fd8",nw:1e24},{n:"Radiant God",i:"✦",c:"#ffcc33",nw:1e27}];
+const tierN=()=>(S&&S.tier)||0,TI=()=>TIERS[tierN()];
+// harder: pricier listings, more fakes, fewer steals, shorter listings, more energy per action
+const tAsk=()=>1+.06*tierN(),tFake=()=>1+.15*tierN(),tSteal=()=>Math.max(.55,1-.05*tierN()),tLife=()=>Math.max(.7,1-.035*tierN()),tEn=()=>1+.08*tierN();
+// and better paid: +15% money per tier
+function tierK(){return 1+.15*tierN()}
+function tierEffects(t){return{ask:Math.round(6*t),fake:Math.round(15*t),steal:Math.round(Math.min(45,5*t)),life:Math.round(Math.min(30,3.5*t)),en:Math.round(8*t),money:Math.round(15*t)}}
+let tierT=0;
+function tierTick(dt){if(!S||!playing)return;tierT-=dt;if(tierT>0)return;tierT=2;const nw=netWorth();let t=tierN();while(t+1<TIERS.length&&nw>=TIERS[t+1].nw)t++;if(t<=tierN())return;
+  const from=tierN();S.tier=t;dirty=true;let crates=0;for(let k=from+1;k<=t;k++)crates+=2+k;gainCrate(crates);
+  SFX.rebirth();setTimeout(()=>SFX.grail(),350);flash(TIERS[t].c,.6);confetti(260,null,null,[TIERS[t].c,"#ffffff","#ffcc33"]);shake(8,.6);buzz([50,40,120]);
+  const e=tierEffects(t),ov=document.createElement("div");ov.className="wnov";
+  ov.innerHTML=`<div class="wnsheet tiersheet" style="--tc:${TIERS[t].c}"><div class="tierbig">${TIERS[t].i}</div><span class="eyebrow">Tier ${t+1} of ${TIERS.length}${t-from>1?" · jumped "+(t-from)+" tiers":""}</span><h2>${TIERS[t].n}</h2>
+    <div class="tiercols"><div><b>Harder</b><p>Listings cost +${e.ask}%</p><p>Fakes +${e.fake}%</p><p>Steals −${e.steal}%</p><p>Listings last −${e.life}%</p><p>Energy use +${e.en}%</p></div><div><b>Rewards</b><p>+${e.money}% money</p><p>${crates} crates now</p><p>${TIERS[t].i} badge online</p></div></div>
+    <button class="cta" id="tierOk"><span>Bring it on</span>${ARROW}</button></div>`;
+  document.body.appendChild(ov);ov.querySelector("#tierOk").onclick=()=>ov.remove();renderHud()}
+function openTiers(back){const t=tierN(),nw=netWorth(),nx=TIERS[t+1];
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Tiers")}
+    <div class="note">Your tier goes up as your net worth grows. Every tier makes the market tougher and every action cost more energy, but you earn <b>+15% money</b> per tier and get crates when you reach it. ${nx?`Next: <b>${nx.n}</b> at ${fmt(nx.nw)} net worth (you have ${fmt(nw)}).`:"You've reached the top."}</div>
+    ${nx?`<div class="reqbar"><i style="width:${Math.min(100,Math.max(2,(Math.log10(Math.max(1,nw))-Math.log10(Math.max(1,TIERS[t].nw)))/(Math.log10(nx.nw)-Math.log10(Math.max(1,TIERS[t].nw)))*100))}%"></i></div>`:""}
+    <div class="tierlist">${TIERS.map((T,i)=>{const e=tierEffects(i);return `<div class="tierrow${i===t?" on":i<t?" done":""}" style="--tc:${T.c}"><span class="ti">${T.i}</span><span class="tn"><b>${T.n}</b><small>${i?"From "+fmt(T.nw):"Where everyone starts"}</small></span><span class="te">${i?`+${e.money}% money · prices +${e.ask}% · energy +${e.en}%`:"Normal difficulty"}</span></div>`}).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
