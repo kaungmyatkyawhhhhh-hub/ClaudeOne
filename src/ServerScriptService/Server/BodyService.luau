@@ -94,6 +94,10 @@ function BodyService.BuildStatic(model, opts)
 		local function marble(part) part.Material = opts.recolor.material part.Color = opts.recolor.color end
 		for _, entry in ipairs(blobs.entries) do marble(entry.blob) end
 		for _, g in ipairs(blobs.garments) do marble(g.blob) end
+		-- the body parts too (Dress painted them skin-colored plastic)
+		for _, part in ipairs(model:GetDescendants()) do
+			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then marble(part) end
+		end
 	else
 		blobs:Dress(opts.style)
 	end
