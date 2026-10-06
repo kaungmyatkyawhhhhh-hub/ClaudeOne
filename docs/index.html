@@ -4770,7 +4770,7 @@ function buildCity(){const c=CTRY(SCN.k),T=CTHEME[c.k]||CTHEME.paris,P=isDark()?
   // airport extras: a parked plane
   g.save();g.translate(1240,1380);g.fillStyle="#f4f6fa";g.beginPath();g.ellipse(0,0,90,14,0,0,7);g.fill();g.fillStyle=c.tone;g.beginPath();g.moveTo(-10,0);g.lineTo(-40,-50);g.lineTo(-24,-50);g.lineTo(20,0);g.closePath();g.fill();g.beginPath();g.moveTo(-10,0);g.lineTo(-40,50);g.lineTo(-24,50);g.lineTo(20,0);g.closePath();g.fill();g.fillStyle="#2a3550";for(let x=-60;x<70;x+=14)g.fillRect(x,-4,7,5);g.restore()}
 /* islands */
-const ISX=[430,500,560,620];
+const ISX=[620,700,780,860];
 function islGeo(k){const t=islTier(k),rx=ISX[t]||500,ry=Math.round(rx*.62),w=rx*2+520,h=ry*2+520;return{t,rx,ry,w,h,cx:w/2,cy:h/2}}
 function islPlaces(k,fid){const G=islGeo(k),{cx,cy,rx,ry}=G,i=ISLANDS.find(x=>x.k===k),mine=!fid,p=fid&&MP?MP.peers[fid]:null,B=islBuilt(k,fid),L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=o.bld!==0;L.push(o)};
   const nm=mine?(islB(k).name||i.n):(p?String(p.n).slice(0,12)+"'s "+i.n:i.n);
@@ -4785,7 +4785,7 @@ function islPlaces(k,fid){const G=islGeo(k),{cx,cy,rx,ry}=G,i=ISLANDS.find(x=>x.
   if(B.hotel)add({k:"hotel",n:"Boutique Hotel",sub:"Guests all year round",c:"#cf9a14",x:cx+rx*.38,y:cy-ry*.72,w:230,h:150,go:()=>openIsland(k,fid)});
   if(B.pool)add({k:"pool",n:"Infinity Pool",sub:"Take a dip: full energy",verb:"Swim in the",c:"#2fa6d9",x:cx-rx*.36-80,y:cy+ry*.12,w:160,h:80,bld:0,go:()=>islRelax(k)});
   add({k:"boat",n:B.heli&&!bestBoat()?"helicopter":"your boat",sub:"Back to the Harbor",verb:"Leave by",c:"#3b6fd8",x:cx-50,y:cy+ry+20,w:100,h:40,door:[cx,cy+ry-14],bld:0,go:()=>leaveScene()});
-  SCN.title=nm;return L}
+  islResolve(L,G);SCN.title=nm;return L}
 const islBuilt=(k,fid)=>{if(!fid)return islB(k).b;const p=MP&&MP.peers[fid],o={};if(p&&p.ib&&p.ib[k])p.ib[k].forEach(x=>o[x]=1);return o};
 function islRelax(k){if(S.relaxT&&Date.now()-S.relaxT<120000)return banner("Relax again in "+Math.ceil((120000-(Date.now()-S.relaxT))/1000)+"s","a");S.relaxT=Date.now();S.energy=maxEnergy();if(hasIB(k,"villa"))S.buffs.hype=Math.max(S.buffs.hype||0,60);dirty=true;SFX.level();confetti(40);banner("Fully rested","u")}
 function islChest(k){if(islB(k).chest===dayKey())return;const i=ISLANDS.find(x=>x.k===k);islB(k).chest=dayKey();const r=Math.random(),base=Math.round(i.cost*.006*moonK());dirty=true;
@@ -4803,12 +4803,12 @@ function buildIsland(){const k=SCN.k,G=islGeo(k),{cx,cy,rx,ry,w,h}=G,i=ISLANDS.f
   if(G.t===2){const vx=cx-rx*.42,vy=cy-ry*.3;g.fillStyle=dkc("#5a3a2a");g.beginPath();g.moveTo(vx-140,vy+60);g.lineTo(vx-30,vy-150);g.lineTo(vx+30,vy-150);g.lineTo(vx+140,vy+60);g.closePath();g.fill();g.fillStyle="#ff6a2b";g.beginPath();g.ellipse(vx,vy-150,30,8,0,0,7);g.fill();g.strokeStyle="#ff6a2b";g.lineWidth=6;g.beginPath();g.moveTo(vx+6,vy-146);g.quadraticCurveTo(vx+30,vy-80,vx+20,vy-20);g.stroke();
     g.fillStyle=dkc("#9fd6e0");g.beginPath();g.ellipse(vx+150,vy+90,50,22,0,0,7);g.fill()}
   // palms round the shore, towels and umbrellas on the sand
-  SCN.used=[];if(B.heli)SCN.used.push([cx+rx*.6,cy+ry*.28,60]);if(B.pier)for(let i=0;i<6;i++)SCN.used.push([cx+rx*.62+Math.cos(.62)*i*50,cy+ry*.36+Math.sin(.62)*i*50,30]);if(B.light)SCN.used.push([cx-rx*.92,cy-60,50]);if(B.garden)for(let j=0;j<10;j+=2)SCN.used.push([cx-150+j*34,cy-ry*.62+190,24]);{const pf=SCN.places.find(q=>q.k==="party"),vx=cx-rx*.42,vy=cy-ry*.3;for(let j=0;j<60&&SCN.used.length<16;j++){const a=r()*7,d=.62+r()*.2,x=cx+Math.cos(a)*rx*d,y=cy+Math.sin(a)*ry*d;if(SCN.places.some(p=>x>p.x-40&&x<p.x+p.w+40&&y>p.y-50&&y<p.y+p.h+50))continue;if(Math.abs(x-cx)<75&&y>cy-30)continue;if(pf&&Math.hypot(x-pf.door[0],y-pf.door[1])<125)continue;if(G.t===2&&Math.hypot(x-vx,(y-vy)*1.3)<200)continue;if(SCN.used.some(u=>Math.hypot(u[0]-x,u[1]-y)<u[2]+30))continue;SCN.used.push([x,y,30]);sceneTree(g,x,y,"palm",1.1)}}
+  SCN.used=[];if(B.heli)SCN.used.push([cx+rx*.4,cy+ry*.66,60]);if(B.pier)for(let i=0;i<6;i++)SCN.used.push([cx+rx*.62+Math.cos(.62)*i*50,cy+ry*.36+Math.sin(.62)*i*50,30]);if(B.light)SCN.used.push([cx-rx*.92,cy-60,50]);if(B.garden)for(let j=0;j<10;j+=2)SCN.used.push([cx-150+j*34,cy-ry*.62+190,24]);{const pf=SCN.places.find(q=>q.k==="party"),vx=cx-rx*.42,vy=cy-ry*.3;for(let j=0;j<60&&SCN.used.length<16;j++){const a=r()*7,d=.62+r()*.2,x=cx+Math.cos(a)*rx*d,y=cy+Math.sin(a)*ry*d;if(SCN.places.some(p=>x>p.x-40&&x<p.x+p.w+40&&y>p.y-50&&y<p.y+p.h+50))continue;if(Math.abs(x-cx)<75&&y>cy-30)continue;if(pf&&Math.hypot(x-pf.door[0],y-pf.door[1])<125)continue;if(G.t===2&&Math.hypot(x-vx,(y-vy)*1.3)<200)continue;if(SCN.used.some(u=>Math.hypot(u[0]-x,u[1]-y)<u[2]+30))continue;SCN.used.push([x,y,30]);sceneTree(g,x,y,"palm",1.1)}}
   for(let j=0;j<8;j++){const a=Math.PI*.15+r()*Math.PI*.7,x=cx+Math.cos(a)*rx*.86,y=cy+Math.sin(a)*ry*.84;if(SCN.places.some(p=>Math.hypot(p.door[0]-x,p.door[1]-y)<90)||Math.abs(x-cx)<70||SCN.used.some(u=>Math.hypot(u[0]-x,u[1]-y)<u[2]+30))continue;SCN.used.push([x+10,y,32]);g.fillStyle=["#e2364a","#2a5bd7","#ffcc33","#2bb3a3"][j%4];g.fillRect(x-10,y-4,20,30);g.fillStyle="rgba(255,255,255,.5)";g.fillRect(x-10,y+4,20,4);
     g.fillStyle=["#ff7a3d","#ffffff","#2fd28a"][j%3];g.beginPath();g.arc(x+24,y-8,18,Math.PI,0);g.fill();g.fillStyle="#7a5a3a";g.fillRect(x+23,y-8,2,30)}
   if(B.garden)for(let j=0;j<10;j++){const x=cx-150+j*34,y=cy-ry*.62+190;g.fillStyle=dkc("#3f9a5a");g.beginPath();g.arc(x,y,12,0,7);g.fill();g.fillStyle=["#ff4fd8","#ffcc33","#e2364a","#fff"][j%4];g.beginPath();g.arc(x+3,y-3,4,0,7);g.fill()}
   if(B.light){const lx=cx-rx*.92,ly=cy+10;for(let s=0;s<6;s++){g.fillStyle=s%2?"#ffffff":"#e2364a";g.fillRect(lx-14+s,ly-30-s*22,28-s*2,22)}g.fillStyle="#2b2f3a";g.fillRect(lx-12,ly-180,24,22);g.fillStyle="#ffe08a";g.fillRect(lx-8,ly-176,16,14);g.fillStyle="#2b2f3a";g.beginPath();g.moveTo(lx-14,ly-180);g.lineTo(lx,ly-198);g.lineTo(lx+14,ly-180);g.fill()}
-  if(B.heli){const hx=cx+rx*.6,hy=cy+ry*.28;g.fillStyle=dkc("#3a3f4c");g.beginPath();g.arc(hx,hy,48,0,7);g.fill();g.strokeStyle="#ffcc33";g.lineWidth=4;g.beginPath();g.arc(hx,hy,40,0,7);g.stroke();g.fillStyle="#fff";g.font=`900 40px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";g.fillText("H",hx,hy+2)}
+  if(B.heli){const hx=cx+rx*.4,hy=cy+ry*.66;g.fillStyle=dkc("#3a3f4c");g.beginPath();g.arc(hx,hy,48,0,7);g.fill();g.strokeStyle="#ffcc33";g.lineWidth=4;g.beginPath();g.arc(hx,hy,40,0,7);g.stroke();g.fillStyle="#fff";g.font=`900 40px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";g.fillText("H",hx,hy+2)}
   if(B.pier){const px=cx+rx*.62,py=cy+ry*.36;g.save();g.translate(px,py);g.rotate(.62);g.fillStyle=dkc("#a0764a");g.fillRect(0,-20,300,40);g.fillStyle=dkc("#7a5a36");for(let x=6;x<300;x+=12)g.fillRect(x,-20,3,40);g.restore()}
   {g.fillStyle=dkc("#a0764a");g.fillRect(cx-22,cy+ry-30,44,110);g.fillStyle=dkc("#7a5a36");for(let y=cy+ry-26;y<cy+ry+80;y+=11)g.fillRect(cx-22,y,44,2)}
   islDeco(g,G,B,r,P);
@@ -6208,6 +6208,14 @@ function moreDeco(g,P){if(!SCN)return;let sd=101+String(SCN.k).length*7;const r=
     put(8,12,(x,y)=>{["#e2364a","#ff9a2b","#f2ead2"].forEach((c,j)=>{g.fillStyle="#f2ead2";g.fillRect(x-8+j*7,y-4,2,6);g.fillStyle=c;g.beginPath();g.arc(x-7+j*7,y-5,4,Math.PI,0);g.fill()})});
     put(4,20,(x,y,i)=>{const c=["#6fae4a","#c2410c","#3f8a8a","#b8875a"][i%4];sh(x,y+8,16);g.fillStyle=c;g.beginPath();g.ellipse(x,y-4,14,8,0,0,7);g.fill();g.beginPath();g.moveTo(x+10,y-6);g.quadraticCurveTo(x+20,y-20,x+22,y-24);g.lineTo(x+16,y-22);g.quadraticCurveTo(x+12,y-14,x+6,y-8);g.fill();g.beginPath();g.moveTo(x-12,y-4);g.lineTo(x-24,y-2);g.lineTo(x-12,y);g.fill();
       [-6,6].forEach(o=>g.fillRect(x+o-2,y+2,4,8));circ(x+20,y-24,1.4,"#141414")})}}
+/* ================= island layout: buildings never overlap, the dock path and volcano stay clear ================= */
+function islResolve(L,G){const{cx,cy,rx,ry}=G,vx=cx-rx*.42,vy=cy-ry*.3,M=36,placed=[];
+  const inside=(x,y)=>Math.pow((x-cx)/(rx*.88),2)+Math.pow((y-cy)/(ry*.86),2)<1;
+  const fits=(q,x,y)=>[[x,y],[x+q.w,y],[x,y+q.h+34],[x+q.w,y+q.h+34]].every(([a,b])=>inside(a,b))&&!(G.t===2&&Math.hypot(x+q.w/2-vx,(y+q.h/2-vy)*1.3)<230)&&!(x<cx+80&&x+q.w>cx-80&&y+q.h+34>cy+ry*.4)&&!placed.some(p=>x<p.x+p.w+M&&x+q.w>p.x-M&&y<p.y+p.h+M+34&&y+q.h+34>p.y-M);
+  L.forEach(q=>{if(q.k==="hq"||q.k==="party"||q.k==="chest")placed.push(q)});
+  L.forEach(q=>{if(!["bar","villa","hotel","pool","dive"].includes(q.k))return;let best=fits(q,q.x,q.y)?[q.x,q.y]:null;
+    for(let r=24;!best&&r<rx*1.6;r+=24)for(let a=0;a<16&&!best;a++){const an=a/16*Math.PI*2,x=q.x+Math.cos(an)*r,y=q.y+Math.sin(an)*r*.7;if(fits(q,x,y))best=[x,y]}
+    if(best){q.x=Math.round(best[0]);q.y=Math.round(best[1]);q.door=[q.x+q.w/2,q.y+q.h]}placed.push(q)})}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
