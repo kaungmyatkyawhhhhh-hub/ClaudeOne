@@ -1643,10 +1643,12 @@ function ovK(){return 1+Math.min(.5,ovKg()/1000)}
 const rbReq=()=>5+2*rbN();
 // extra rebirths in one go: spurts over the requirement count for half (each extra rebirth costs double)
 function rbMulti(){let n=rbN(),left=(S&&S.spurts)||0,k=0;while(left>=(5+2*(n+k))*(k?2:1)){left-=(5+2*(n+k))*(k?2:1);k++}return k}
-const spurtReq=()=>Math.max(80,120-10*rbN())+30*(S.spurts||0);
+const spurtReq=()=>{const n=S.spurts||0;return Math.max(80,120-10*rbN())+30*n+Math.round(2*n*n)};
 const spurtGain=()=>Math.min(6+rbN(),2+rbN()+Math.floor(Math.max(0,S.pr-spurtReq())/40));
-// Height is exaggerated on screen so every cm shows: 180 cm looks ~13% taller, 200 cm ~39%
-const tallK=()=>1+Math.min(.8,(((S&&S.height)||170)-170)/170*2.2);
+// Height is exaggerated on screen so every cm shows: 180 cm looks ~13% taller, 200 cm ~39%.
+// There's no cap: past ~230 cm each cm shows a little less (300 cm ≈ 2.3×, 400 cm ≈ 2.7×), but you never stop growing.
+const tallFor=cm=>{const d=Math.max(0,(cm-170)/170*2.2);return 1+(d<=.8?d:.8+.6*Math.log(1+(d-.8)/.6))};
+const tallK=()=>tallFor(((S&&S.height)||170));
 // Body size comes from your best-ever lift, so a growth spurt never makes you smaller
 // how much of your frame your muscles fill: tall players start as narrow as a beginner and widen as they fill out
 const fillK=()=>{const b=myBuild();return clamp((b.c+b.l+b.b)/3,0,1)};
@@ -4405,7 +4407,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=23,WN=[
+const WN_VER=24,WN=[
+ ["📏","No height cap","You can keep growing forever and it keeps showing on screen. Each growth spurt now needs a bit more lifting than the last."],
  ["🔽","Smaller top bar","Tap ▴ next to the camera to shrink the top bar to cash, rank, level and energy. Tap ▾ to bring it back."],
  ["🛠️","Admin panel","Admins can open a panel to change any stat on their account."],
  ["🛫","Bots travel like you","NPC players fly out through the Stargate, walk the Cosmos, take the Time Machine to Deep Time and come back the same way, instead of popping between worlds."],
@@ -6438,7 +6441,7 @@ function botRows(bb){return `<div class="sechead"><h3>NPC worlds</h3><span class
 const botRef=()=>Math.max(repLevel(),...Object.values(MP.peers).filter(p=>!p.bot).map(p=>p.lv||0));
 function botLook(p,W,i,lvl){const r=k=>hsh(W.c,i,k),bld=Math.min(2.4,lvl/110*(.6+r("b")*.9)),cm=Math.round(170+Math.min(140+120*r("h2"),lvl*(.5+r("t")))),cash=Math.max(1e3,lvT(lvl)*(.2+r("c")*.6));
   let ti=0;TIERS.forEach((T,j)=>{if(cash>=T.nw)ti=j});
-  Object.assign(p,{lv:lvl,cm,t:+(1+Math.min(.8,(cm-170)/170*2.2)).toFixed(2),z:+(1+.6*Math.min(1,bld/1.4)).toFixed(2),b:[+bld.toFixed(2),+(bld*(.8+r("l")*.3)).toFixed(2),+bld.toFixed(2)],c:Math.round(cash),ti,pr:Math.round(20+lvl*14*(.6+r("p"))),k:lvl>200?5:lvl>90?3:0,
+  Object.assign(p,{lv:lvl,cm,t:+tallFor(cm).toFixed(2),z:+(1+.6*Math.min(1,bld/1.4)).toFixed(2),b:[+bld.toFixed(2),+(bld*(.8+r("l")*.3)).toFixed(2),+bld.toFixed(2)],c:Math.round(cash),ti,pr:Math.round(20+lvl*14*(.6+r("p"))),k:lvl>200?5:lvl>90?3:0,
     ac:lvl<15?{}:{g:lvl>60?"dshades":lvl>25?"aviator":"shades",c:lvl>80?"diamond":lvl>30?"gold":"silver",...(lvl>50?{h:pick2(["top","cowboy","halo","cap"],i)}:{}),...(lvl>90?{b:i%2?"cape":"wings"}:{})},
     fb:Math.round(Math.pow(lvl,2.2)*3*(.25+r("f")*1.5)+lvl*20),hm:Math.max(0,Math.min(PROPS.length-1,Math.floor(lvl/35*(.6+r("hm")*.8)))),rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
 /* ================= editions: once you outgrow the catalogue, the market brings you pricier editions of the same items ================= */
