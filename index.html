@@ -4338,6 +4338,7 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
 
 /* ================= what's new: shown once after an update ================= */
 const WN_VER=23,WN=[
+ ["🛫","Bots travel like you","NPC players fly out through the Stargate, walk the Cosmos, take the Time Machine to Deep Time and come back the same way, instead of popping between worlds."],
  ["⭐","Bots have fans","NPC players now have fan counts that grow through the day, so they show up on the fan leaderboard like real players."],
  ["👥","Switch account","Hop between accounts on the same device from the title screen or the Account card, log in to another one, or make a new one."],
  ["🖱️","Fair play","Autoclickers no longer work: presses closer than 5 ms apart are ignored. Gifts are capped at 10% of the receiver's cash, with a 2 ms cooldown between gifts."],
@@ -6319,21 +6320,38 @@ const botWorld=()=>BOTW.find(b=>b.c===MP.code)||{c:MP.code,n:"",lv:15,mix:[.04,.
 const hsh=(...a)=>{let h=2166136261;for(const ch of a.join("|")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0)/4294967296};
 // some stretches of a bot's day are spent inside a building: they walk to its door, go in, and come back out
 const BOT_IN=["gym","club","market","cafe","mall","arena","market","gym"];
-const botIn=(code,i,seg)=>{if(hsh(code,i,seg,"in")>=.4)return"";const p=MP&&MP.peers["bot_"+code+"_"+i],c=p&&p.c||0,w=hsh(code,i,seg,"w");if(c>=W3_COST&&w<.3)return"w3";if(c>=W2_COST&&w<.55)return"w2";return BOT_IN[Math.floor(hsh(code,i,seg,"b")*BOT_IN.length)]};
+// trips to World 2 and 3 take a whole block of segments, like a real player's: fly out from the Airport, walk the Cosmos,
+// take the Time Machine to Deep Time, then come back the same way. The choice is remembered so a bot never flips worlds mid-trip.
+const TRIP=4,tripMemo={};
+function botTrip(code,i,seg){const blk=Math.floor(seg/TRIP),key=code+"|"+i+"|"+blk;if(key in tripMemo)return tripMemo[key];const p=MP&&MP.peers["bot_"+code+"_"+i];if(!p||p.lv==null)return"";
+  const w=hsh(code,i,blk,"trip");const r=p.c>=W3_COST&&w<.14?"w3":p.c>=W2_COST&&w<.28?"w2":"";tripMemo[key]=r;const ks=Object.keys(tripMemo);if(ks.length>400)delete tripMemo[ks[0]];return r}
+const botIn=(code,i,seg)=>{const t=botTrip(code,i,seg);if(t)return t;if(hsh(code,i,seg,"in")>=.4)return"";return BOT_IN[Math.floor(hsh(code,i,seg,"b")*BOT_IN.length)]};
+// walk a list of points over u = 0..1, spending time in proportion to distance
+function pathAt(pts,u){let L=0;const d=[];for(let j=1;j<pts.length;j++){d.push(Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]));L+=d[j-1]}let t=clamp(u,0,1)*L;
+  for(let j=0;j<d.length;j++){if(t<=d[j]||j===d.length-1){const v=d[j]?Math.min(1,t/d[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*v,pts[j][1]+(pts[j+1][1]-pts[j][1])*v,v<1?1:0]}t-=d[j]}return[pts[0][0],pts[0][1],0]}
+// where a bot is during a trip, k = 0..1: [scene key or "" while flying, x, y, moving]
+const C_GATE=[1000,1460],C_TM=[1570,1215],D_SP=[1200,1180];
+function botTripPos(code,i,blk,w3,k){const r=(n,a)=>hsh(code,i,blk,n,a),cP=n=>[380+r(n,"cx")*1240,560+r(n,"cy")*700],dP=n=>[620+r(n,"dx")*1250,640+r(n,"dy")*560],seg=(a,b)=>(k-a)/(b-a);
+  if(k<.05||k>=.95)return["",0,0,0];
+  if(!w3){const q=pathAt([C_GATE,cP(0),cP(1),cP(2),C_GATE],seg(.05,.95));return["space:cosmos",...q]}
+  if(k<.2)return["space:cosmos",...pathAt([C_GATE,cP(0),C_TM],seg(.05,.2))];
+  if(k<.24||(k>=.76&&k<.8))return["",0,0,0];
+  if(k<.76)return["prehist:deep",...pathAt([D_SP,dP(0),dP(1),dP(2),D_SP],seg(.24,.76))];
+  return["space:cosmos",...pathAt([C_GATE,cP(3),C_GATE],seg(.8,.95))]}
 function botWay(code,i,seg){const inb=botIn(code,i,seg);if(inb==="w2"||inb==="w3")return PL.airport?PL.airport.door.slice():PL.harbor.door.slice();if(inb&&PL[inb])return PL[inb].door.slice();const r=k=>hsh(code,i,seg,k),R=ROADS[Math.floor(r(1)*6)];return[R[0]+10+r(2)*(R[2]-20),R[1]+10+r(3)*(R[3]-20)]}
 let botChatSeg={};
 function botsTick(){if(!isBotW())return;const W=botWorld(),now=Date.now();
-  for(let i=0;i<(W.cnt||6);i++){const id="bot_"+W.c+"_"+i,per=14000+Math.floor(hsh(W.c,i,"p")*8000),t=now+i*1337,seg=Math.floor(t/per),f=(t%per)/per,A=botWay(W.c,i,seg),B=botWay(W.c,i,seg+1),inb=botIn(W.c,i,seg),walk=inb?(f<.6?0:Math.min(1,(f-.6)/.38)):(f<.25?0:Math.min(1,(f-.25)/.7)),x=A[0]+(B[0]-A[0])*walk,y=A[1]+(B[1]-A[1])*walk;
+  for(let i=0;i<(W.cnt||6);i++){const id="bot_"+W.c+"_"+i,per=14000+Math.floor(hsh(W.c,i,"p")*8000),t=now+i*1337,seg=Math.floor(t/per),f=(t%per)/per,A=botWay(W.c,i,seg),B=botWay(W.c,i,seg+1),inb=botIn(W.c,i,seg),trip=inb==="w2"||inb==="w3",tLast=trip&&((seg%TRIP+TRIP)%TRIP)===TRIP-1,stay=trip&&!tLast,walk=stay?0:inb?(f<.6?0:Math.min(1,(f-.6)/.38)):(f<.25?0:Math.min(1,(f-.25)/.7)),x=A[0]+(B[0]-A[0])*walk,y=A[1]+(B[1]-A[1])*walk;
     const nm=BOTN[(Math.floor(hsh(W.c,"n")*BOTN.length)+i*7)%BOTN.length],ref=Math.round(Math.max(W.lv,botRef())/5)*5,lvl=Math.max(2,Math.round(ref*W.mix[(i+Math.floor(hsh(W.c,"m")*6))%W.mix.length]*(.85+hsh(W.c,i,"l")*.3)));
     let p=MP.peers[id];if(!p){p=MP.peers[id]={dx:x,dy:y,ph:0,bot:1,n:nm,s:["#e2364a","#2a5bd7","#2fd28a","#ffcc33","#ff7a3d","#8f52d4","#1b1f2a"][i%7],sk:["#f3d0b5","#e8b896","#c98e62","#8d5a3b","#5c3a24"][Math.floor(hsh(W.c,i,"s")*5)],hr:["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"][Math.floor(hsh(W.c,i,"h")*5)],hs:FEM.has(nm)?8:0,w:"",k:0};renderMpChip();mpRefresh()}
     if(p.lv!==lvl)botLook(p,W,i,lvl);
     p.f=Math.round((p.fb||0)*(1+(now%864e5)/864e5*.25)+Math.floor(now/6e4)%97);
     p.x=x;p.y=y;p.m=walk>0&&walk<1?1:0;p.h=Math.atan2(B[1]-A[1],B[0]-A[0]);p.seen=now;
     // inside: the first 60% of an indoor stretch; the gym and club show them working out or dancing
-    const w0=inb&&f<.6?inb:"";if(p.w!==w0){p.w=w0;p.ix=null}
+    const w0=inb&&(stay||f<.6)?inb:"";if(p.w!==w0){p.w=w0;p.ix=null}
     if(w0==="gym"){const sp=G_SPOTS[Math.floor(hsh(W.c,i,seg,"s")*G_SPOTS.length)],fl=Math.floor(now/2500+i)%3===0;p.i=[sp[0],sp[1],0,fl?"bi":""]}
-    if(w0==="w2"||w0==="w3"){const sp=w0==="w2",k=(now%per)/per,P=n=>sp?[380+hsh(W.c,i,seg,n,"x")*1240,560+hsh(W.c,i,seg,n,"y")*700]:[620+hsh(W.c,i,seg,n,"x")*1250,640+hsh(W.c,i,seg,n,"y")*560],q=Math.floor(k*4),a=P(q),b2=P(q+1),u=Math.min(1,(k*4-q)*1.6);
-      p.sc=sp?"space:cosmos":"prehist:deep";p.sx=Math.round(a[0]+(b2[0]-a[0])*u);p.sy=Math.round(a[1]+(b2[1]-a[1])*u);p.m=u<1?1:0;p.w=sp?"@the Cosmos":"@Deep Time"}else
+    if(w0==="w2"||w0==="w3"){const sg=((seg%TRIP)+TRIP)%TRIP,k=(sg+(tLast?Math.min(1,f/.6):f))/TRIP,[sc,sx,sy,mv]=botTripPos(W.c,i,Math.floor(seg/TRIP),w0==="w3",k);
+      if(sc){p.sc=sc;p.sx=Math.round(sx);p.sy=Math.round(sy);p.m=mv;p.w=sc==="space:cosmos"?"@the Cosmos":"@Deep Time"}else{p.sc=null;p.w=k<.5?"@a flight out":"@a flight home"}}else
     if(w0==="arena"){p.sc="arena:arena";p.sx=Math.round(110+hsh(W.c,i,seg,"ax")*680);p.sy=Math.round(600+hsh(W.c,i,seg,"ay")*90);p.w="@the Arena"}else p.sc=null;
     if(w0==="club"){p.i=[Math.round(130+hsh(W.c,i,seg,"cx")*140+Math.sin(now/700+i)*12),Math.round(260+hsh(W.c,i,seg,"cy")*160),1,"d"]}else if(w0!=="gym")p.i=0;
     // a line of chat now and then, at the same moment for everyone in the room
