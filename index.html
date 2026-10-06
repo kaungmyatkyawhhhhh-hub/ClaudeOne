@@ -6281,14 +6281,21 @@ const BOT_LINES=["anyone wanna race at the docks?","market's popping today","jus
 const BOT_REPLY=["haha true","nice","same","let's gooo","fr","no way","ok bet","lol","respect","that's huge"];
 const isBotW=()=>!!(MP&&BOTW.some(b=>b.c===MP.code));
 const hsh=(...a)=>{let h=2166136261;for(const ch of a.join("|")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0)/4294967296};
-function botWay(code,i,seg){const r=k=>hsh(code,i,seg,k),R=ROADS[Math.floor(r(1)*6)];return[R[0]+10+r(2)*(R[2]-20),R[1]+10+r(3)*(R[3]-20)]}
+// some stretches of a bot's day are spent inside a building: they walk to its door, go in, and come back out
+const BOT_IN=["gym","club","market","cafe","mall","arena","market","gym"];
+const botIn=(code,i,seg)=>hsh(code,i,seg,"in")<.4?BOT_IN[Math.floor(hsh(code,i,seg,"b")*BOT_IN.length)]:"";
+function botWay(code,i,seg){const inb=botIn(code,i,seg);if(inb&&PL[inb])return PL[inb].door.slice();const r=k=>hsh(code,i,seg,k),R=ROADS[Math.floor(r(1)*6)];return[R[0]+10+r(2)*(R[2]-20),R[1]+10+r(3)*(R[3]-20)]}
 let botChatSeg={};
 function botsTick(){if(!isBotW())return;const W=BOTW.find(b=>b.c===MP.code),now=Date.now();
-  for(let i=0;i<6;i++){const id="bot_"+W.c+"_"+i,per=8000+Math.floor(hsh(W.c,i,"p")*5000),t=now+i*1337,seg=Math.floor(t/per),f=(t%per)/per,A=botWay(W.c,i,seg),B=botWay(W.c,i,seg+1),walk=f<.3?0:Math.min(1,(f-.3)/.6),x=A[0]+(B[0]-A[0])*walk,y=A[1]+(B[1]-A[1])*walk;
+  for(let i=0;i<6;i++){const id="bot_"+W.c+"_"+i,per=14000+Math.floor(hsh(W.c,i,"p")*8000),t=now+i*1337,seg=Math.floor(t/per),f=(t%per)/per,A=botWay(W.c,i,seg),B=botWay(W.c,i,seg+1),inb=botIn(W.c,i,seg),walk=inb?(f<.6?0:Math.min(1,(f-.6)/.38)):(f<.25?0:Math.min(1,(f-.25)/.7)),x=A[0]+(B[0]-A[0])*walk,y=A[1]+(B[1]-A[1])*walk;
     const nm=BOTN[(Math.floor(hsh(W.c,"n")*BOTN.length)+i*7)%BOTN.length],ref=Math.round(Math.max(W.lv,botRef())/5)*5,lvl=Math.max(2,Math.round(ref*W.mix[(i+Math.floor(hsh(W.c,"m")*6))%6]*(.85+hsh(W.c,i,"l")*.3)));
     let p=MP.peers[id];if(!p){p=MP.peers[id]={dx:x,dy:y,ph:0,bot:1,n:nm,s:["#e2364a","#2a5bd7","#2fd28a","#ffcc33","#ff7a3d","#8f52d4","#1b1f2a"][i%7],sk:["#f3d0b5","#e8b896","#c98e62","#8d5a3b","#5c3a24"][Math.floor(hsh(W.c,i,"s")*5)],hr:["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"][Math.floor(hsh(W.c,i,"h")*5)],hs:FEM.has(nm)?8:0,w:"",k:0};renderMpChip();mpRefresh()}
     if(p.lv!==lvl)botLook(p,W,i,lvl);
     p.x=x;p.y=y;p.m=walk>0&&walk<1?1:0;p.h=Math.atan2(B[1]-A[1],B[0]-A[0]);p.seen=now;
+    // inside: the first 60% of an indoor stretch; the gym and club show them working out or dancing
+    const w0=inb&&f<.6?inb:"";if(p.w!==w0){p.w=w0;p.ix=null}
+    if(w0==="gym"){const sp=G_SPOTS[Math.floor(hsh(W.c,i,seg,"s")*G_SPOTS.length)],fl=Math.floor(now/2500+i)%3===0;p.i=[sp[0],sp[1],0,fl?"bi":""]}
+    else if(w0==="club"){p.i=[Math.round(130+hsh(W.c,i,seg,"cx")*140+Math.sin(now/700+i)*12),Math.round(260+hsh(W.c,i,seg,"cy")*160),1,"d"]}else p.i=0;
     // a line of chat now and then, at the same moment for everyone in the room
     const cs=Math.floor(now/45000);if((cs+i)%6===0&&botChatSeg[id]!==cs&&now%45000<4000){botChatSeg[id]=cs;const line=BOT_LINES[Math.floor(hsh(W.c,i,cs)*BOT_LINES.length)];p.bub=line;p.bubT=4;mpLog(nm,line);mpRefresh()}}}
 // talking to a bot: they answer races, gifts and chat locally
