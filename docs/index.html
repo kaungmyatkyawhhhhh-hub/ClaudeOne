@@ -725,6 +725,25 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 <div id="room" class="room" hidden></div>
 <div id="overlay" class="overlay" hidden></div>
 <script>
+/* boot guard: if the game can't start, show why and a way out instead of a blank screen */
+(()=>{const errs=[];const add=m=>{if(errs.length<4)errs.push(String(m).slice(0,300))};
+addEventListener("error",e=>add((e.message||"Error")+(e.lineno?" (line "+e.lineno+")":"")));
+addEventListener("unhandledrejection",e=>add("Promise: "+((e.reason&&(e.reason.message||e.reason))||"rejected")));
+const show=why=>{if(window.__booted||document.getElementById("bootFail"))return;const d=document.createElement("div");d.id="bootFail";
+ d.style.cssText="position:fixed;inset:0;z-index:99999;background:#0b0d11;color:#fff;font:15px/1.45 system-ui,-apple-system,sans-serif;padding:max(40px,env(safe-area-inset-top)) 22px 30px;overflow:auto";
+ const esc=t=>t.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"})[c]);
+ d.innerHTML='<h2 style="margin:0 0 8px;font-size:22px">Flip Rush couldn\'t start</h2><p style="opacity:.75;margin:0 0 14px">'+why+' Your save is safe. Try reloading. If it keeps happening, send a screenshot of this screen.</p>'+
+  '<pre style="white-space:pre-wrap;word-break:break-word;background:#1a1d26;border-radius:12px;padding:12px;font-size:12px;margin:0 0 16px">'+esc(errs.join("\n")||"No error message")+"\n"+esc(navigator.userAgent)+'</pre>'+
+  '<button id="bfR" style="width:100%;padding:14px;border:0;border-radius:14px;background:#2a3cff;color:#fff;font:700 16px system-ui;margin-bottom:10px">Reload</button>'+
+  '<button id="bfC" style="width:100%;padding:14px;border:0;border-radius:14px;background:#262a36;color:#fff;font:600 15px system-ui">Clear app cache and reload</button>';
+ document.body.appendChild(d);
+ document.getElementById("bfR").onclick=()=>location.reload();
+ document.getElementById("bfC").onclick=async()=>{try{if(navigator.serviceWorker){const r=await navigator.serviceWorker.getRegistrations();await Promise.all(r.map(x=>x.unregister()))}if(window.caches){const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)))}}catch(e){}location.reload()};};
+window.__bootFail=show;
+addEventListener("DOMContentLoaded",()=>setTimeout(()=>{if(!window.__booted)show(errs.length?"Something went wrong while loading.":"Loading took too long.")},errs.length?50:8000));
+})();
+</script>
+<script>
 (()=>{
 /* ================= utils ================= */
 const $=id=>document.getElementById(id);
@@ -1198,8 +1217,10 @@ function drawTower(g,[x,y,w,h],P){
   g.fillStyle="rgba(255,255,255,.08)";rrp(g,x+10,ry+10,w-20,rh-20,6);g.fill();g.fillStyle=P.tower2;g.fillRect(x+w*.6,ry+16,w*.22,rh*.3);
   g.fillStyle=P.towerWin;for(let wx=x+10;wx<x+w-14;wx+=16)for(let wy=fy+8;wy<fy+f-10;wy+=16)g.fillRect(wx,wy,9,10);
 }
+let STATIC_C=null;
 function buildStatic(){
-  const P=isDark()?PAL_D:PAL_L,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+  // one big canvas reused for every redraw: iPhones don't free old canvases quickly and run out of canvas memory
+  const P=isDark()?PAL_D:PAL_L,c=STATIC_C||(STATIC_C=document.createElement("canvas"));c.width=W;c.height=H;const g=c.getContext("2d");g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
   let sd=11;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
   const C=1400;
   g.fillStyle=P.grass;g.fillRect(0,0,W,H);
@@ -4867,6 +4888,7 @@ function fitScreen(){
 fitScreen();resize();
 newGame();
 title();
+window.__booted=1;
 requestAnimationFrame(loop);
 })();
 </script>
