@@ -1565,7 +1565,7 @@ function roomHead(title){const gd=typeof GUIDE!=="undefined"&&GUIDE[room]?`<butt
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
-  if(k==="arena"&&!SCN&&S&&!MPW){$("mpSheet").hidden=true;enterArena();return}
+  if(k==="arena"&&!SCN&&S){$("mpSheet").hidden=true;enterArena();return}
   $("mpSheet").hidden=true;
   if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
@@ -3429,7 +3429,7 @@ function mpUI(keep){
       <p class="accmsg" id="mpMsg"></p><p class="fine">Share the room code with friends. Everyone keeps their own save, money and progress.</p>`;
     $("mpX").onclick=()=>{sh.hidden=true};$("mpNew").onclick=()=>mpJoin(mpCode());$("mpNewPub").onclick=()=>{MP_PUB_NEXT=true;mpJoin(mpCode())};$("mpJoinB").onclick=()=>mpJoin($("mpCodeIn").value);$("mpCodeIn").onkeydown=e=>{if(e.key==="Enter")mpJoin($("mpCodeIn").value)};return}
   const peers=Object.entries(MP.peers),gift=Math.max(0,Math.round(S.cash*.05));
-  sh.innerHTML=`<div class="pshead"><div><small>${isBotW()?"NPC WORLD":MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${isBotW()?BOTW.find(b=>b.c===MP.code).n:MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
+  sh.innerHTML=`<div class="pshead"><div><small>${isNpcW()?"NPC WORLD":MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${isNpcW()?BOTW.find(b=>b.c===MP.code).n:MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
     <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>${S.title?esc(S.title)+" · ":""}Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
       ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${gift<1?"disabled":""}>Gift ${fmt(gift)}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
     ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
@@ -6298,30 +6298,34 @@ const BOTW=[{c:"NPCW1",n:"Sunny Side",lv:15,mix:[.02,.06,.2,.45,.8,1.15]},{c:"NP
 const BOTN=["Kenji","Amara","Diego","Freya","Malik","Sienna","Theo","Yuki","Rafa","Zoe","Hugo","Priya","Nico","Mila","Jonas","Ava","Tariq","Lena"];
 const BOT_LINES=["anyone wanna race at the docks?","market's popping today","just hit a new PR","who's got a supercar","flip city never sleeps","this town is so good at night","gg","brb grabbing coffee","anyone selling sneakers?","my stash is full again","the thief got me lol","who's in a crew?","just opened a mystery box","I need more energy","going to the gym, then the beach"];
 const BOT_REPLY=["haha true","nice","same","let's gooo","fr","no way","ok bet","lol","respect","that's huge"];
-const isBotW=()=>!!(MP&&BOTW.some(b=>b.c===MP.code));
+const isNpcW=()=>!!(MP&&BOTW.some(b=>b.c===MP.code)),isBotW=()=>!!MP;
+const botWorld=()=>BOTW.find(b=>b.c===MP.code)||{c:MP.code,n:"",lv:15,mix:[.04,.3,.75,1.2],cnt:4};
 const hsh=(...a)=>{let h=2166136261;for(const ch of a.join("|")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0)/4294967296};
 // some stretches of a bot's day are spent inside a building: they walk to its door, go in, and come back out
 const BOT_IN=["gym","club","market","cafe","mall","arena","market","gym"];
-const botIn=(code,i,seg)=>hsh(code,i,seg,"in")<.4?BOT_IN[Math.floor(hsh(code,i,seg,"b")*BOT_IN.length)]:"";
-function botWay(code,i,seg){const inb=botIn(code,i,seg);if(inb&&PL[inb])return PL[inb].door.slice();const r=k=>hsh(code,i,seg,k),R=ROADS[Math.floor(r(1)*6)];return[R[0]+10+r(2)*(R[2]-20),R[1]+10+r(3)*(R[3]-20)]}
+const botIn=(code,i,seg)=>{if(hsh(code,i,seg,"in")>=.4)return"";const p=MP&&MP.peers["bot_"+code+"_"+i],c=p&&p.c||0,w=hsh(code,i,seg,"w");if(c>=W3_COST&&w<.3)return"w3";if(c>=W2_COST&&w<.55)return"w2";return BOT_IN[Math.floor(hsh(code,i,seg,"b")*BOT_IN.length)]};
+function botWay(code,i,seg){const inb=botIn(code,i,seg);if(inb==="w2"||inb==="w3")return PL.airport?PL.airport.door.slice():PL.harbor.door.slice();if(inb&&PL[inb])return PL[inb].door.slice();const r=k=>hsh(code,i,seg,k),R=ROADS[Math.floor(r(1)*6)];return[R[0]+10+r(2)*(R[2]-20),R[1]+10+r(3)*(R[3]-20)]}
 let botChatSeg={};
-function botsTick(){if(!isBotW())return;const W=BOTW.find(b=>b.c===MP.code),now=Date.now();
-  for(let i=0;i<6;i++){const id="bot_"+W.c+"_"+i,per=14000+Math.floor(hsh(W.c,i,"p")*8000),t=now+i*1337,seg=Math.floor(t/per),f=(t%per)/per,A=botWay(W.c,i,seg),B=botWay(W.c,i,seg+1),inb=botIn(W.c,i,seg),walk=inb?(f<.6?0:Math.min(1,(f-.6)/.38)):(f<.25?0:Math.min(1,(f-.25)/.7)),x=A[0]+(B[0]-A[0])*walk,y=A[1]+(B[1]-A[1])*walk;
-    const nm=BOTN[(Math.floor(hsh(W.c,"n")*BOTN.length)+i*7)%BOTN.length],ref=Math.round(Math.max(W.lv,botRef())/5)*5,lvl=Math.max(2,Math.round(ref*W.mix[(i+Math.floor(hsh(W.c,"m")*6))%6]*(.85+hsh(W.c,i,"l")*.3)));
+function botsTick(){if(!isBotW())return;const W=botWorld(),now=Date.now();
+  for(let i=0;i<(W.cnt||6);i++){const id="bot_"+W.c+"_"+i,per=14000+Math.floor(hsh(W.c,i,"p")*8000),t=now+i*1337,seg=Math.floor(t/per),f=(t%per)/per,A=botWay(W.c,i,seg),B=botWay(W.c,i,seg+1),inb=botIn(W.c,i,seg),walk=inb?(f<.6?0:Math.min(1,(f-.6)/.38)):(f<.25?0:Math.min(1,(f-.25)/.7)),x=A[0]+(B[0]-A[0])*walk,y=A[1]+(B[1]-A[1])*walk;
+    const nm=BOTN[(Math.floor(hsh(W.c,"n")*BOTN.length)+i*7)%BOTN.length],ref=Math.round(Math.max(W.lv,botRef())/5)*5,lvl=Math.max(2,Math.round(ref*W.mix[(i+Math.floor(hsh(W.c,"m")*6))%W.mix.length]*(.85+hsh(W.c,i,"l")*.3)));
     let p=MP.peers[id];if(!p){p=MP.peers[id]={dx:x,dy:y,ph:0,bot:1,n:nm,s:["#e2364a","#2a5bd7","#2fd28a","#ffcc33","#ff7a3d","#8f52d4","#1b1f2a"][i%7],sk:["#f3d0b5","#e8b896","#c98e62","#8d5a3b","#5c3a24"][Math.floor(hsh(W.c,i,"s")*5)],hr:["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"][Math.floor(hsh(W.c,i,"h")*5)],hs:FEM.has(nm)?8:0,w:"",k:0};renderMpChip();mpRefresh()}
     if(p.lv!==lvl)botLook(p,W,i,lvl);
     p.x=x;p.y=y;p.m=walk>0&&walk<1?1:0;p.h=Math.atan2(B[1]-A[1],B[0]-A[0]);p.seen=now;
     // inside: the first 60% of an indoor stretch; the gym and club show them working out or dancing
     const w0=inb&&f<.6?inb:"";if(p.w!==w0){p.w=w0;p.ix=null}
     if(w0==="gym"){const sp=G_SPOTS[Math.floor(hsh(W.c,i,seg,"s")*G_SPOTS.length)],fl=Math.floor(now/2500+i)%3===0;p.i=[sp[0],sp[1],0,fl?"bi":""]}
-    else if(w0==="club"){p.i=[Math.round(130+hsh(W.c,i,seg,"cx")*140+Math.sin(now/700+i)*12),Math.round(260+hsh(W.c,i,seg,"cy")*160),1,"d"]}else p.i=0;
+    if(w0==="w2"||w0==="w3"){const sp=w0==="w2",k=(now%per)/per,P=n=>sp?[380+hsh(W.c,i,seg,n,"x")*1240,560+hsh(W.c,i,seg,n,"y")*700]:[620+hsh(W.c,i,seg,n,"x")*1250,640+hsh(W.c,i,seg,n,"y")*560],q=Math.floor(k*4),a=P(q),b2=P(q+1),u=Math.min(1,(k*4-q)*1.6);
+      p.sc=sp?"space:cosmos":"prehist:deep";p.sx=Math.round(a[0]+(b2[0]-a[0])*u);p.sy=Math.round(a[1]+(b2[1]-a[1])*u);p.m=u<1?1:0;p.w=sp?"@the Cosmos":"@Deep Time"}else
+    if(w0==="arena"){p.sc="arena:arena";p.sx=Math.round(110+hsh(W.c,i,seg,"ax")*680);p.sy=Math.round(600+hsh(W.c,i,seg,"ay")*90);p.w="@the Arena"}else p.sc=null;
+    if(w0==="club"){p.i=[Math.round(130+hsh(W.c,i,seg,"cx")*140+Math.sin(now/700+i)*12),Math.round(260+hsh(W.c,i,seg,"cy")*160),1,"d"]}else if(w0!=="gym")p.i=0;
     // a line of chat now and then, at the same moment for everyone in the room
     const cs=Math.floor(now/45000);if((cs+i)%6===0&&botChatSeg[id]!==cs&&now%45000<4000){botChatSeg[id]=cs;const line=BOT_LINES[Math.floor(hsh(W.c,i,cs)*BOT_LINES.length)];p.bub=line;p.bubT=4;mpLog(nm,line);mpRefresh()}}}
 // talking to a bot: they answer races, gifts and chat locally
 function botReply(kind,obj,to){if(!MP)return;const p=MP.peers[to];if(!p)return;const n=p.n;
   if(kind==="cr"&&obj.t==="ask")setTimeout(()=>{if(MP&&MP.crOut===to)crMsg({t:"go",f:to,n,seed:Math.floor(Math.random()*1e6)})},600);
   if(kind==="cr"&&obj.t==="res")setTimeout(()=>{const sp=1.5+Math.min(4,p.lv/30);crMsg({t:"res",f:to,n,time:+(crTime(sp,rnd(-.5,.35))*rnd(.98,1.02)).toFixed(3),car:p.lv>60?"Supercar":p.lv>20?"Classic":"Car"})},300);
-  if(kind==="aw"&&obj.t==="ask")setTimeout(()=>pvpMsg({t:"no",f:to,n}),700);
+  if(kind==="aw"&&obj.t==="ask")setTimeout(()=>{if(!MP||MP.awOut!==to)return;pvpMsg({t:"go",f:to,n});if(A&&A.pvp&&A.peer===to){A.bot=1;A.botR=rnd(6,8.5)*.02*clamp(Math.sqrt((p.pr||20)/Math.max(20,S.pr)),.6,1.7)}},700);
   if(kind==="g"){p.bub="thank you!!";p.bubT=4;mpLog(n,"thanks for the gift!")}}
 function botChatReply(t){if(!isBotW())return;const bots=Object.values(MP.peers).filter(p=>p.bot);if(!bots.length)return;const named=bots.find(p=>t.toLowerCase().includes(String(p.n).toLowerCase()));if(!named&&Math.random()>.7)return;const p=named||pick(bots);setTimeout(()=>{if(!MP)return;const line=pick(BOT_REPLY);p.bub=line;p.bubT=4;mpLog(p.n,line);mpRefresh()},900+Math.random()*1400)}
 function botRows(bb){return `<div class="sechead"><h3>NPC worlds</h3><span class="eyebrow">Always open</span></div>`+BOTW.map(W=>{const here=MP&&MP.code===W.c;return `<button class="perk nopic" data-pub="${W.c}" ${!bb&&!MPW?"disabled":""}><span class="t">${W.n}${here?' <em class="beat">YOU\'RE HERE</em>':""}</span><span class="d">6 bot players · noobs to ${["pros","pros","legends"][BOTW.indexOf(W)]} · bring friends</span><span class="c">${here?"Here":!bb&&!MPW?"Needs a boat":"Join"}</span></button>`}).join("")+`<div class="sechead"><h3>Player towns</h3></div>`}
@@ -6331,7 +6335,7 @@ function botLook(p,W,i,lvl){const r=k=>hsh(W.c,i,k),bld=Math.min(2.4,lvl/110*(.6
   let ti=0;TIERS.forEach((T,j)=>{if(cash>=T.nw)ti=j});
   Object.assign(p,{lv:lvl,cm,t:+(1+Math.min(.8,(cm-170)/170*2.2)).toFixed(2),z:+(1+.6*Math.min(1,bld/1.4)).toFixed(2),b:[+bld.toFixed(2),+(bld*(.8+r("l")*.3)).toFixed(2),+bld.toFixed(2)],c:Math.round(cash),ti,pr:Math.round(20+lvl*14*(.6+r("p"))),k:lvl>200?5:lvl>90?3:0,
     ac:lvl<15?{}:{g:lvl>60?"dshades":lvl>25?"aviator":"shades",c:lvl>80?"diamond":lvl>30?"gold":"silver",...(lvl>50?{h:pick2(["top","cowboy","halo","cap"],i)}:{}),...(lvl>90?{b:i%2?"cape":"wings"}:{})},
-    rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
+    hm:Math.max(0,Math.min(PROPS.length-1,Math.floor(lvl/35*(.6+r("hm")*.8)))),rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -6354,7 +6358,7 @@ function tutTick(dt){let el=$("tut");const st=tutStep();
 
 /* ================= with friends: inside buildings, partners, arm wrestling ================= */
 function inPos(){if(GS)return[Math.round(GS.px),Math.round(GS.py),GS.mv?1:0,GS.poseT>0?GS.pose:GS.curlT>0?"bi":""];if(CS)return[Math.round(CS.px),Math.round(CS.py),CS.mv?1:0,CS.danceT>0?"d":""];return 0}
-const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram","worldlb","exp","dj"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room):[];
+const peersHere=()=>MP&&room&&!["home","house","island","abroad","biz","prestige","bank","casino","bizev","pmarket","stocks","space","gp","gram","worldlb","exp","dj"].includes(room)?Object.entries(MP.peers).filter(([id,p])=>p.w===room||room==="arena"&&p.sc==="arena:arena"):[];
 function friendsHere(){const L=peersHere();return L.length?L.map(([id,p])=>`<span><i style="background:${p.s||"#2a3cff"}"></i>${esc(String(p.n||"?").slice(0,14))} is here</span>`).join(""):""}
 let frKey="",ARENA_LIST=null,arenaKey="";
 function mpRoomTick(){const el=$("rFr");if(el){const k=peersHere().map(([id])=>id).join();if(k!==frKey){frKey=k;el.innerHTML=friendsHere()}}
@@ -6379,9 +6383,9 @@ function bindPvp(){const r=$("room");r.querySelectorAll("[data-pvp]").forEach(b=
   const y=$("pvpYes");if(y)y.onclick=()=>{const a=MP.awAsk;MP.awAsk=null;if(!a||!MP.peers[a.f])return;mpSend("aw",{t:"go",f:MP_ID,n:mpName()},a.f);pvpStart(a.f,false)};
   const n=$("pvpNo");if(n)n.onclick=()=>{const a=MP.awAsk;MP.awAsk=null;if(a)mpSend("aw",{t:"no",f:MP_ID,n:mpName()},a.f);ARENA_LIST&&ARENA_LIST()}}
 function pvpMsg(d){if(!MP||!d.f)return;const p=MP.peers[d.f],n=String(d.n||(p&&p.n)||"A friend").slice(0,16);
-  if(d.t==="ask"){if(A&&A.pvp&&A.state!=="done")return mpSend("aw",{t:"no",f:MP_ID,n:mpName()},d.f);MP.awAsk={f:d.f,n,t:Date.now()};SFX.hot();buzz([20,40,20]);banner(n+" wants to arm wrestle","u");if(room!=="arena")rayText(n+" challenged you to arm wrestle. Head to the Arena to accept.");return}
+  if(d.t==="ask"){if(A&&A.pvp&&A.state!=="done")return mpSend("aw",{t:"no",f:MP_ID,n:mpName()},d.f);MP.awAsk={f:d.f,n,t:Date.now()};SFX.hot();buzz([20,40,20]);banner(n+" wants to arm wrestle","u");if(SCN&&SCN.kind==="arena"&&!room){room="arena";$("room").hidden=false;openArena()}else if(room!=="arena")rayText(n+" challenged you to arm wrestle. Head to the Arena to accept.");return}
   if(d.t==="no"){if(MP.awOut===d.f){MP.awOut=null;banner(n+" said no","r")}return}
-  if(d.t==="go"){if(MP.awOut!==d.f||room!=="arena")return;MP.awOut=null;pvpStart(d.f,true);return}
+  if(d.t==="go"){if(MP.awOut!==d.f||room!=="arena"&&!(SCN&&SCN.kind==="arena"))return;MP.awOut=null;pvpStart(d.f,true);return}
   if(!A||!A.pvp||A.peer!==d.f)return;
   if(d.t==="f"){A.their=Math.max(A.their,+d.v||0);return}
   if(d.t==="end"&&A.state!=="done")pvpEnd(d.w,d.why)}
@@ -6398,7 +6402,7 @@ function pvpStart(id,host){const p=MP.peers[id];if(!p)return;if(M)closeMarket();
   SFX.door();updArms()}
 function pvpTick(dt){if(A.state==="done")return;const b=$("tapBtn");
   if(A.state==="cd"){A.cd-=dt;if(b)b.firstChild.textContent=A.cd>0?String(Math.ceil(A.cd)):"TAP";if(A.cd<=0){A.state="go";const m=$("tugMsg");if(m)m.textContent=A.o.n+" grabs your hand. Tap!"}return}
-  A.t-=dt;A.pos=clamp(.5+(A.my-A.their),0,1);A.sendT-=dt;if(A.sendT<=0){A.sendT=.1;mpSend("aw",{t:"f",f:MP_ID,v:+A.my.toFixed(3)},A.peer)}
+  if(A.bot)A.their+=A.botR*dt*(.8+.4*Math.random());A.t-=dt;A.pos=clamp(.5+(A.my-A.their),0,1);A.sendT-=dt;if(A.sendT<=0){A.sendT=.1;mpSend("aw",{t:"f",f:MP_ID,v:+A.my.toFixed(3)},A.peer)}
   if(A.host&&(A.pos>=1||A.pos<=0||A.t<=0)){const w=A.pos>.5?MP_ID:A.pos<.5?A.peer:(A.my>=A.their?MP_ID:A.peer);mpSend("aw",{t:"end",f:MP_ID,w},A.peer);pvpEnd(w)}
   else if(!A.host&&A.t<-6)pvpEnd(null,"lost");
   updArms()}
