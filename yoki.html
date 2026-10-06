@@ -19,6 +19,7 @@
     --ready: #5ee6a0;
     --crit: #ff5a6e;
     --violet: #9b7bff;
+    --glow: 255, 201, 74;
     --font-display: "Bungee", "Arial Black", Impact, sans-serif;
     --font-body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
     color-scheme: dark;
@@ -29,7 +30,7 @@
   body {
     margin: 0;
     background:
-      radial-gradient(ellipse 60% 55% at 30% 38%, rgba(255, 201, 74, .14), transparent 70%),
+      radial-gradient(ellipse 60% 55% at 30% 38%, rgba(var(--glow), .16), transparent 70%),
       radial-gradient(ellipse 50% 40% at 85% 0%, rgba(120, 110, 255, .18), transparent 70%),
       linear-gradient(180deg, var(--night-2), var(--night));
     background-attachment: fixed;
@@ -301,7 +302,72 @@
   .thief-hp { position: absolute; left: 10%; right: 10%; top: -12px; height: 6px; border-radius: 99px; background: rgba(0,0,0,.5); overflow: hidden; }
   .thief-hp i { display: block; height: 100%; width: 100%; background: var(--crit); }
 
+  .leftcol { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .sec-title { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; letter-spacing: .04em; margin: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .sec-title small { font-family: var(--font-body); font-size: .8rem; color: var(--ready); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+  /* Steal a Brainrot */
+  .rots { padding: 16px; border-radius: 22px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
+    background: linear-gradient(160deg, rgba(255, 90, 110, .12), rgba(155, 123, 255, .1)); border: 1px solid rgba(255, 90, 110, .3); }
+  .runway { position: relative; height: 128px; border-radius: 14px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(0,0,0,.25), transparent 30%), repeating-linear-gradient(90deg, #7a1d2c 0 36px, #86202f 36px 72px);
+    box-shadow: inset 0 0 0 2px #c9a24a, inset 0 6px 16px rgba(0,0,0,.45); }
+  .runway-label { position: absolute; left: 10px; top: 6px; font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.65); }
+  .rot { position: absolute; bottom: 6px; left: -100px; width: 96px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 0; border: 0; background: none; cursor: pointer;
+    animation: runway 20s linear forwards; }
+  @keyframes runway { from { left: -100px; } to { left: 100%; } }
+  .runway:hover .rot, .runway:focus-within .rot { animation-play-state: paused; }
+  .rot svg { width: 58px; height: 60px; animation: bob .5s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--rc)); }
+  .rot .rname { font-size: .62rem; font-weight: 800; color: #fff; text-shadow: 0 1px 2px #000; max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rot .tag { font-size: .66rem; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: rgba(0,0,0,.65); color: var(--rc); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rot:not(.cant) .tag { box-shadow: 0 0 0 1px var(--ready); color: var(--ready); }
+  .rot:focus-visible { outline: 2px solid #fff; border-radius: 10px; }
+  .rainbow { animation: hue 2s linear infinite; }
+  .rot-cols { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 560px) { .rot-cols { grid-template-columns: minmax(0, 1fr); } }
+  .rot-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .base { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .rival-base { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .bslot, .rcard { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; min-height: 104px; justify-content: center; min-width: 0;
+    border: 1px dashed var(--panel-edge); text-align: center; }
+  .bslot.full, .rcard { border-style: solid; border-color: color-mix(in srgb, var(--rc) 55%, transparent); background: color-mix(in srgb, var(--rc) 9%, transparent); }
+  .bslot svg, .rcard svg { width: 40px; height: 42px; }
+  .bname { font-size: .62rem; font-weight: 800; line-height: 1.15; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .binc { font-size: .66rem; font-weight: 800; color: var(--ready); font-variant-numeric: tabular-nums; }
+  .rtier { font-size: .6rem; font-weight: 800; letter-spacing: .06em; color: var(--rc); }
+  .empty { font-size: .72rem; color: var(--muted); font-weight: 700; }
+  .sell, .steal-rot { border: 0; border-radius: 7px; padding: 3px 8px; font-size: .64rem; font-weight: 800; cursor: pointer; }
+  .sell { background: rgba(255,255,255,.1); color: var(--muted); }
+  .steal-rot { background: linear-gradient(180deg, #ff8a98, var(--crit)); color: #fff; box-shadow: 0 2px 0 #a3192c; font-variant-numeric: tabular-nums; }
+  .steal-rot:disabled { background: rgba(255,255,255,.08); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+  #lockBtn { font-family: var(--font-display); font-size: .9rem; border: 0; border-radius: 12px; padding: 10px; cursor: pointer;
+    background: linear-gradient(180deg, #8fc0ff, #3d7bff); color: #fff; box-shadow: 0 3px 0 #2346a8; font-variant-numeric: tabular-nums; }
+  #lockBtn:disabled { background: rgba(255,255,255,.08); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+  #lockBtn.locked { background: rgba(110, 168, 255, .2); color: #bcd6ff; box-shadow: 0 0 0 1px #6ea8ff, 0 0 20px rgba(110,168,255,.4); }
+  .sell:focus-visible, .steal-rot:focus-visible, #lockBtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  /* Multiverse */
+  .multiverse { padding: 14px; border-radius: 18px; display: flex; flex-direction: column; gap: 10px;
+    background: linear-gradient(160deg, rgba(var(--glow), .14), rgba(0,0,0,.15)); border: 1px solid rgba(var(--glow), .35); }
+  .worlds { display: flex; flex-direction: column; gap: 6px; }
+  .world { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; text-align: left; cursor: pointer;
+    padding: 9px 12px; border-radius: 12px; background: rgba(0,0,0,.25); border: 1px solid var(--panel-edge); transition: transform .12s, border-color .2s; }
+  .world:hover:not(:disabled) { transform: translateX(3px); border-color: var(--wg); }
+  .world:disabled { cursor: default; }
+  .world:disabled:not(.here) { opacity: .5; }
+  .world:focus-visible { outline: 2px solid var(--wg); }
+  .wdot { width: 14px; height: 14px; border-radius: 50%; background: var(--wg); box-shadow: 0 0 10px var(--wg); }
+  .wname { font-weight: 800; }
+  .wmult { font-family: var(--font-display); font-size: .85rem; color: var(--wg); }
+  .wstate { font-size: .7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; text-align: right; }
+  .world.here { border-color: var(--wg); box-shadow: 0 0 18px color-mix(in srgb, var(--wg) 45%, transparent); }
+  .world.here .wstate { color: var(--wg); }
+  .world.owned:not(.here) .wstate { color: var(--ready); }
+  .portal-flash { background: radial-gradient(circle, #fff, rgba(var(--glow), .7) 45%, transparent 80%); }
+
   @media (prefers-reduced-motion: reduce) {
+    .rot { animation-duration: 40s; }
+    .rot svg, .rainbow { animation: none !important; }
     .rival-egg, .slot .e, .heist-egg, .thief, .mythic { animation: none !important; }
     .fig, #rebirthBtn:not(:disabled), .stage.shake, .lifter.walking, .lifter.dancing, .golden, body.fever .stage::before, .ysvg .arm { animation: none !important; }
     .walker { transition: none; }
@@ -445,10 +511,11 @@
 
 <div class="wrap">
   <header>
-    <h1 class="logo">YOKI CLICKER<small>FEATURING ANG &amp; ALTON · EGG HEIST</small></h1>
+    <h1 class="logo">YOKI CLICKER<small>FEATURING ANG &amp; ALTON · EGG HEIST · STEAL A BRAINROT · MULTIVERSE</small></h1>
     <div class="hud">
       <span class="chip" id="rebirthTag">Rebirth <b>0</b></span>
       <span class="chip">Boost <b id="multTag">×1</b></span>
+      <span class="chip">World <b id="worldTag">Earth Gym</b></span>
       <span class="chip">Trophies <b id="achTag">0/0</b></span>
       <button class="chip icon-btn" id="soundBtn" aria-pressed="true">Sound on</button>
     </div>
@@ -456,6 +523,7 @@
 
   <div class="squad" id="squad"></div>
 
+  <div class="leftcol">
   <section class="stage" id="stage">
     <div class="gains">
       <div class="num" id="gains">0</div>
@@ -510,6 +578,23 @@
     <p class="hint">Tap any lifter. Tap all three in a row for a <b>SQUAD ×2</b>. 50 combo = <b>FEVER ×3</b>. Watch for golden shakes, barbell challenges and egg thieves.</p>
   </section>
 
+  <section class="rots">
+    <h2 class="sec-title">STEAL A BRAINROT <small id="rotIncome">base +0/s</small></h2>
+    <div class="runway" id="runway"><span class="runway-label">Brainrot runway · tap one to buy · hover to pause</span></div>
+    <div class="rot-cols">
+      <div class="rot-col">
+        <div class="nest-label">Your base <small id="baseCount">0/8</small> <small>· brainrots make gains every second</small></div>
+        <div class="base" id="base"></div>
+        <button id="lockBtn">LOCK BASE (60s)</button>
+      </div>
+      <div class="rot-col">
+        <div class="nest-label">Rival base <small>· steal one for free</small></div>
+        <div class="rival-base" id="rivalBase"></div>
+      </div>
+    </div>
+  </section>
+  </div>
+
   <aside class="rack">
     <h2>UPGRADES
       <span class="seg" role="group" aria-label="Buy amount">
@@ -541,6 +626,11 @@
       <div class="bar"><i id="bar"></i></div>
       <div class="bar-row"><span id="barNow">0</span><span id="barNeed">25K</span></div>
       <button id="rebirthBtn" disabled>REBIRTH</button>
+    </div>
+
+    <div class="multiverse">
+      <h2>MULTIVERSE <small>portals to bigger gains</small></h2>
+      <div class="worlds" id="worlds"></div>
     </div>
 
     <div class="trophies">
@@ -627,6 +717,11 @@ const LINES = {
   heist:    ['Sneaky mode...', 'Go go go!', 'Grab it!'],
   heistWin: ['GOT IT!', 'Egg secured!', 'Heist complete!'],
   heistFail:['Caught by the guard!', 'Abort! Abort!'],
+  rotBuy:   ['Brainrot acquired!', "It's so ugly. I love it.", 'Welcome to the base!'],
+  rotSneak: ['Sneak in...', 'Tiptoe tiptoe...', 'Go go go!'],
+  rotWin:   ['BRAINROT STOLEN!', 'Run run run!', 'It\'s ours now!'],
+  blocked:  ['Base is locked, loser!', 'Lock says no!', 'Not getting in!'],
+  portal:   ['Where are we?!', 'New world, new gains!', 'BLEHHH! So cool!'],
 };
 const RARITIES = [
   { id: 'common',    name: 'COMMON',    color: '#cfd3dc', w: 50, need: 20, bonus: .05, pet: 'Gym Chick' },
@@ -637,6 +732,69 @@ const RARITIES = [
 ];
 const RAR = Object.fromEntries(RARITIES.map(r => [r.id, r]));
 const HATCH_MS = 45000, NEST_SIZE = 3, HEIST_MS = 6000;
+
+/* Steal a Brainrot: gym-themed parody brainrots */
+const BR_TIERS = [
+  { id: 'common',    name: 'COMMON',        color: '#cfd3dc', w: 50,  need: 14, price: 100 },
+  { id: 'rare',      name: 'RARE',          color: '#5b8cff', w: 25,  need: 18, price: 1000 },
+  { id: 'epic',      name: 'EPIC',          color: '#b05bff', w: 13,  need: 24, price: 1e4 },
+  { id: 'legendary', name: 'LEGENDARY',     color: '#ffc94a', w: 7,   need: 30, price: 1e5 },
+  { id: 'mythic',    name: 'MYTHIC',        color: '#ff5a6e', w: 3.5, need: 36, price: 1e6 },
+  { id: 'god',       name: 'BRAINROT GOD',  color: '#5ee6a0', w: 1.2, need: 44, price: 2e7 },
+  { id: 'secret',    name: 'SECRET',        color: '#ffffff', w: .3,  need: 52, price: 5e8 },
+];
+const BRT = Object.fromEntries(BR_TIERS.map(t => [t.id, t]));
+const BRAINROTS = [
+  { id: 'tung',   name: 'Tung Tung Tung Squatur',  tier: 'common',    type: 'log',       color: '#a8743f', pm: 1 },
+  { id: 'frulli', name: 'Frulli Flexulla',         tier: 'common',    type: 'blob',      color: '#ffd45c', pm: 1.4 },
+  { id: 'lirili', name: 'Lirili Lungerila',        tier: 'common',    type: 'banana',    color: '#7bc47f', pm: 1.8 },
+  { id: 'capp',   name: 'Cappuccino Curlino',      tier: 'rare',      type: 'cup',       color: '#c8a27a', pm: 1 },
+  { id: 'brr',    name: 'Brr Brr Benchpressini',   tier: 'rare',      type: 'blob',      color: '#8ad4ff', pm: 1.6 },
+  { id: 'tral',   name: 'Tralala Dumbbellino',     tier: 'epic',      type: 'shark',     color: '#8f9bb3', pm: 1 },
+  { id: 'chimp',  name: 'Chimpanzini Proteinini',  tier: 'epic',      type: 'banana',    color: '#ffe14d', pm: 1.5 },
+  { id: 'bomb',   name: 'Bombardiro Proteino',     tier: 'legendary', type: 'croc',      color: '#5aa55a', pm: 1 },
+  { id: 'balle',  name: 'Ballerina Bicepsina',     tier: 'legendary', type: 'ballerina', color: '#ff9ecf', pm: 1.5 },
+  { id: 'gym',    name: 'Gymnasio Gigantini',      tier: 'mythic',    type: 'blob',      color: '#9b7bff', pm: 1 },
+  { id: 'vacca',  name: 'La Vacca Swolurno',       tier: 'god',       type: 'cow',       color: '#f4f5f8', pm: 1 },
+  { id: 'six',    name: 'Il Sixpackini Supremo',   tier: 'secret',    type: 'blob',      color: '#ff5a6e', pm: 1 },
+];
+const BR = Object.fromEntries(BRAINROTS.map(b => [b.id, b]));
+const BASE_SIZE = 8;
+const rotPrice = id => BRT[BR[id].tier].price * BR[id].pm;
+const rotRaw = id => rotPrice(id) / 60;
+function rollRot(minTier = 0) {
+  const tiers = BR_TIERS.slice(minTier);
+  let r = Math.random() * tiers.reduce((s, t) => s + t.w, 0), tier = tiers[0];
+  for (const t of tiers) { if ((r -= t.w) < 0) { tier = t; break; } }
+  return pick(BRAINROTS.filter(b => b.tier === tier.id)).id;
+}
+function rotSVG(id) {
+  const d = BR[id], c = d.color;
+  let body = '', band = true;
+  switch (d.type) {
+    case 'log': body = `<rect x="22" y="14" width="36" height="62" rx="14" fill="${c}"/><ellipse cx="40" cy="16" rx="18" ry="6" fill="#d9a774"/><ellipse cx="40" cy="16" rx="9" ry="3" fill="none" stroke="#a8743f" stroke-width="1.5"/><path d="M60 44 L74 20" stroke="#7a5230" stroke-width="6" stroke-linecap="round"/>`; break;
+    case 'shark': body = `<path d="M40 2 L50 22 L30 22Z" fill="${c}"/><ellipse cx="40" cy="44" rx="26" ry="28" fill="${c}"/><ellipse cx="40" cy="54" rx="15" ry="16" fill="#eef2f7"/><rect x="18" y="70" width="18" height="9" rx="4" fill="#3b82f6"/><rect x="44" y="70" width="18" height="9" rx="4" fill="#3b82f6"/><path d="M20 74h16M44 74h16" stroke="#fff" stroke-width="1.5"/>`; break;
+    case 'croc': body = `<path d="M2 36 L28 26 L28 46Z" fill="#c9ccd6"/><path d="M78 36 L52 26 L52 46Z" fill="#c9ccd6"/><ellipse cx="40" cy="44" rx="22" ry="30" fill="${c}"/><ellipse cx="40" cy="64" rx="14" ry="9" fill="#7cc47c"/><path d="M30 64 l3 4 l3 -4 l3 4 l3 -4 l3 4 l3 -4" stroke="#fff" stroke-width="1.6" fill="none"/>`; break;
+    case 'cup': band = false; body = `<path d="M14 24h52l-7 54H21z" fill="${c}"/><ellipse cx="40" cy="24" rx="26" ry="6" fill="#6b3f1f"/><ellipse cx="40" cy="23" rx="11" ry="2.5" fill="#f4e1c8"/><path d="M64 36c13 0 13 22-3 22" stroke="${c}" stroke-width="5" fill="none"/>`; break;
+    case 'banana': body = `<rect x="22" y="10" width="36" height="68" rx="18" fill="${c}"/><rect x="36" y="3" width="8" height="10" rx="3" fill="#6b4a1f"/>`; break;
+    case 'ballerina': body = `<circle cx="40" cy="38" r="24" fill="${c}"/><path d="M12 58 Q40 44 68 58 Q40 72 12 58Z" fill="#fff0f7"/><path d="M34 66v14M46 66v14" stroke="${c}" stroke-width="4" stroke-linecap="round"/>`; break;
+    case 'cow': body = `<ellipse cx="40" cy="48" rx="38" ry="8" fill="none" stroke="#ffc94a" stroke-width="3"/><path d="M20 16 l-6 -10 M60 16 l6 -10" stroke="#e9d9b0" stroke-width="5" stroke-linecap="round"/><ellipse cx="40" cy="44" rx="27" ry="30" fill="${c}"/><circle cx="26" cy="60" r="7" fill="#22232e"/><circle cx="56" cy="30" r="5" fill="#22232e"/><ellipse cx="40" cy="60" rx="12" ry="8" fill="#ffb3c1"/><path d="M21 48a19 6 0 0 0 38 0" stroke="#ffc94a" stroke-width="3" fill="none"/>`; break;
+    default: body = `<ellipse cx="40" cy="46" rx="29" ry="31" fill="${c}"/><path d="M8 48h10M62 48h10" stroke="${c}" stroke-width="6" stroke-linecap="round"/><rect x="2" y="42" width="5" height="12" rx="2" fill="#3a3f5c"/><rect x="73" y="42" width="5" height="12" rx="2" fill="#3a3f5c"/>`;
+  }
+  const face = `<circle cx="32" cy="38" r="6.5" fill="#fff"/><circle cx="48" cy="38" r="6.5" fill="#fff"/><circle cx="33" cy="39" r="3.2" fill="#14141c"/><circle cx="49" cy="39" r="3.2" fill="#14141c"/><path d="M33 51q7 6 14 0" stroke="#14141c" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  const headband = band ? `<rect x="19" y="25" width="42" height="5" rx="2.5" fill="#ff5a6e"/>` : '';
+  return `<svg viewBox="0 0 80 84" class="${d.tier === 'secret' ? 'rainbow' : ''}" aria-hidden="true">${body}${headband}${face}</svg>`;
+}
+
+/* Multiverse: worlds with their own look and multiplier */
+const WORLDS = [
+  { name: 'Earth Gym',       mult: 1,   reb: 0,  cost: 0,    bg: ['#15172e', '#0c0d1d'], glow: '255, 201, 74' },
+  { name: 'Neon City',       mult: 3,   reb: 1,  cost: 1e5,  bg: ['#1d0f38', '#08041c'], glow: '255, 64, 200' },
+  { name: 'Lava Planet',     mult: 10,  reb: 3,  cost: 1e7,  bg: ['#33110a', '#150604'], glow: '255, 110, 40' },
+  { name: 'Candy Dimension', mult: 30,  reb: 5,  cost: 1e9,  bg: ['#3a1432', '#1a0717'], glow: '255, 150, 220' },
+  { name: 'Brainrot Realm',  mult: 100, reb: 8,  cost: 1e11, bg: ['#0e2c1d', '#04140c'], glow: '94, 230, 160' },
+  { name: 'Cosmic Void',     mult: 500, reb: 12, cost: 1e13, bg: ['#06071a', '#000003'], glow: '155, 123, 255' },
+];
 const ACH = [
   { id: 'rep1',    name: 'First Rep',     desc: 'Do 1 rep',                 test: () => state.reps >= 1 },
   { id: 'rep100',  name: 'Warm Up',       desc: 'Do 100 reps',              test: () => state.reps >= 100 },
@@ -656,6 +814,12 @@ const ACH = [
   { id: 'hatch',   name: 'Pet Parent',    desc: 'Hatch a pet',              test: () => state.stats.hatched >= 1 },
   { id: 'legend',  name: 'Legendary',     desc: 'Hatch a legendary pet',    test: () => state.pets.legendary + state.pets.mythic >= 1 },
   { id: 'bust',    name: 'Security',      desc: 'Chase off a thief',        test: () => state.stats.busts >= 1 },
+  { id: 'rot1',    name: 'Brainrotted',   desc: 'Get a brainrot',           test: () => state.stats.rotBuys + state.stats.rotSteals >= 1 },
+  { id: 'rotst',   name: 'Brainrot Thief', desc: 'Steal a brainrot',        test: () => state.stats.rotSteals >= 1 },
+  { id: 'rotgod',  name: 'Divine Rot',    desc: 'Own a God or Secret brainrot', test: () => state.base.some(id => ['god', 'secret'].includes(BR[id].tier)) },
+  { id: 'block',   name: 'Locked Down',   desc: 'Block a raider with the lock', test: () => state.stats.blocks >= 1 },
+  { id: 'portal',  name: 'Multiverse',    desc: 'Travel to another world',  test: () => state.stats.portals >= 1 },
+  { id: 'void',    name: 'Into the Void', desc: 'Unlock the Cosmic Void',   test: () => state.worlds.includes(5) },
   { id: 'm1',      name: 'Millionaire',   desc: 'Hold 1M gains',            test: () => state.gains >= 1e6 },
   { id: 'b1',      name: 'Billionaire',   desc: 'Hold 1B gains',            test: () => state.gains >= 1e9 },
   { id: 'reb1',    name: 'Reborn',        desc: 'Rebirth once',             test: () => state.rebirths >= 1 },
@@ -673,7 +837,8 @@ const fresh = () => ({
   owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])),
   lv: Object.fromEntries(KEYS.map(k => [k, { lv: 1, xp: 0 }])),
   ach: [],
-  stats: { crits: 0, fevers: 0, squads: 0, hi5: 0, golden: 0, lifts: 0, heists: 0, hatched: 0, busts: 0 },
+  stats: { crits: 0, fevers: 0, squads: 0, hi5: 0, golden: 0, lifts: 0, heists: 0, hatched: 0, busts: 0, rotBuys: 0, rotSteals: 0, blocks: 0, portals: 0 },
+  base: [], rivalRots: [], rotStealReadyAt: 0, lockUntil: 0, lockReadyAt: 0, world: 0, worlds: [0],
   pets: Object.fromEntries(RARITIES.map(r => [r.id, 0])),
   nest: [],
   rival: null,
@@ -700,13 +865,15 @@ const rollRarity = () => { let r = Math.random() * 100; for (const x of RARITIES
 const mult = () => 1 + state.rebirths;
 const achBonus = () => 1 + 0.02 * state.ach.length;
 const petBonus = () => 1 + RARITIES.reduce((s, r) => s + r.bonus * state.pets[r.id], 0);
-const gainMult = () => mult() * achBonus() * petBonus();
+const worldMult = () => (WORLDS[state.world] || WORLDS[0]).mult;
+const gainMult = () => mult() * achBonus() * petBonus() * worldMult();
+const rotIncomeRaw = () => state.base.reduce((s, id) => s + rotRaw(id), 0);
 const unitCost = (u, owned) => u.base * Math.pow(1.15, owned);
 const costN = (u, n) => Math.floor(unitCost(u, state.owned[u.id]) * (Math.pow(1.15, n) - 1) / 0.15);
 const maxN = u => Math.max(0, Math.floor(Math.log(state.gains * 0.15 / unitCost(u, state.owned[u.id]) + 1) / Math.log(1.15)));
 const baseClick = () => 1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id], 0);
 const perClick = () => baseClick() * gainMult();
-const perSec = () => UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) * gainMult();
+const perSec = () => (UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) + rotIncomeRaw()) * gainMult();
 const rebirthNeed = () => 25000 * Math.pow(5, state.rebirths);
 const xpNeed = lv => Math.floor(25 * Math.pow(1.45, lv - 1));
 const lvMult = k => 1 + 0.1 * (state.lv[k].lv - 1);
@@ -990,6 +1157,7 @@ function startHeist(now) {
   event = { type: 'heist', until: now + HEIST_MS, count: 0, need: r.need, rarity: r.id };
   state.stealReadyAt = Date.now() + 30000;
   const egg = $('heistEgg');
+  egg.innerHTML = EGG_SVG;
   egg.style.setProperty('--ec', r.color);
   egg.classList.toggle('mythic', r.id === 'mythic');
   egg.hidden = false;
@@ -999,7 +1167,7 @@ function startHeist(now) {
   all(l => { say(l, pick(LINES.heist), 1500); mood(l, 'ooh', 1500); });
 }
 $('heistEgg').addEventListener('click', e => {
-  if (!event || event.type !== 'heist') return;
+  if (!event || (event.type !== 'heist' && event.type !== 'rot')) return;
   event.count++;
   const egg = $('heistEgg');
   egg.classList.add('hit'); setTimeout(() => egg.classList.remove('hit'), 60);
@@ -1023,6 +1191,23 @@ function endEvent(win) {
       $('barbell').hidden = true; sad();
       all(l => { say(l, pick(LINES.liftFail), 1800); mood(l, 'ooh', 1500); });
     }
+  } else if (ev.type === 'rot') {
+    const egg = $('heistEgg');
+    egg.hidden = true;
+    const d = BR[ev.id], t = BRT[d.tier];
+    if (win && state.base.length < BASE_SIZE) {
+      state.base.push(d.id); state.stats.rotSteals++;
+      state.rivalRots[ev.slot] = rollRot(1);
+      const [x, y] = centerOf(egg);
+      burst(x, y, 90, 12, [t.color, '#fff', '#ff5a6e']); fanfare();
+      all(l => { say(l, pick(LINES.rotWin), 2000); mood(l, 'hype', 2000); });
+      toast(`Stole ${d.name}!`, `${t.name} · +${fmt(rotRaw(d.id) * gainMult())}/s for your base`);
+    } else {
+      sad();
+      all(l => { say(l, pick(LINES.heistFail), 1800); mood(l, 'ooh', 1500); });
+      toast('The rival base guard caught you', 'Try again in 45s');
+    }
+    renderRots();
   } else {
     const egg = $('heistEgg');
     egg.hidden = true;
@@ -1081,7 +1266,21 @@ thiefEl.addEventListener('click', () => {
 function thiefEscapes() {
   thiefEl.hidden = true; thief = null;
   nextThief = performance.now() + 70000 + Math.random() * 60000;
-  if (state.nest.length) {
+  if (Date.now() < state.lockUntil) {
+    state.stats.blocks++;
+    all(l => { say(l, pick(LINES.blocked), 1800); mood(l, 'hype', 1500); });
+    toast('The raider hit your lock and gave up', 'Your base and nest are safe');
+    return;
+  }
+  if (state.base.length && (!state.nest.length || Math.random() < .6)) {
+    let best = 0;
+    state.base.forEach((id, i) => { if (rotRaw(id) > rotRaw(state.base[best])) best = i; });
+    const lost = state.base.splice(best, 1)[0];
+    sad();
+    all(l => { say(l, pick(LINES.robbed), 1800); mood(l, 'ooh', 1800); });
+    toast(`A raider stole ${BR[lost].name}!`, 'Lock your base or tap raiders to stop them');
+    renderRots();
+  } else if (state.nest.length) {
     const lost = state.nest.pop();
     sad();
     all(l => { say(l, pick(LINES.robbed), 1800); mood(l, 'ooh', 1800); });
@@ -1148,6 +1347,161 @@ function tickEggs() {
   const sb = $('stealBtn'), wait = state.stealReadyAt - Date.now();
   sb.disabled = !!event || state.nest.length >= NEST_SIZE || wait > 0;
   sb.textContent = state.nest.length >= NEST_SIZE ? 'NEST FULL' : wait > 0 ? 'WAIT ' + mmss(wait) : 'STEAL IT';
+}
+
+/* ================= Steal a Brainrot ================= */
+const runway = $('runway');
+let nextRunway = 0;
+function spawnRunway() {
+  if (runway.querySelectorAll('.rot').length >= 6) return;
+  const id = rollRot(), d = BR[id], t = BRT[d.tier];
+  const b = document.createElement('button');
+  b.className = 'rot'; b.dataset.id = id; b.style.setProperty('--rc', t.color);
+  b.setAttribute('aria-label', `Buy ${d.name}, ${t.name}, for ${fmt(rotPrice(id))} gains`);
+  b.title = `${d.name} · ${t.name} · +${fmt(rotRaw(id) * gainMult())}/s`;
+  b.innerHTML = `${rotSVG(id)}<span class="rname">${d.name}</span><span class="tag">${t.name === 'COMMON' ? '' : t.name + ' · '}${fmt(rotPrice(id))}</span>`;
+  b.addEventListener('click', () => buyRot(b, id));
+  b.addEventListener('animationend', e => { if (e.target === b) b.remove(); });
+  runway.appendChild(b);
+}
+function buyRot(b, id) {
+  const price = rotPrice(id), d = BR[id];
+  if (state.base.length >= BASE_SIZE) { toast('Your base is full', 'Sell a brainrot to make room'); return; }
+  if (state.gains < price) { toast(`Need ${fmt(price)} gains for ${d.name}`, 'Or raid the rival base to steal one'); tone(200, 150, .12, 'square', .05); return; }
+  state.gains -= price;
+  state.base.push(id); state.stats.rotBuys++;
+  const [x, y] = centerOf(b);
+  burst(x, y, 50, 9, [BRT[d.tier].color, '#fff']);
+  tone(520, 1040, .18, 'triangle', .12);
+  b.remove();
+  const l = pick(lifters); say(l, pick(LINES.rotBuy), 1600); mood(l, 'hype', 1200);
+  toast(`Bought ${d.name}!`, `+${fmt(rotRaw(id) * gainMult())}/s`);
+  renderRots();
+}
+function sellRot(i, btn) {
+  if (btn.dataset.armed !== '1') {
+    btn.dataset.armed = '1'; btn.textContent = 'SURE?';
+    setTimeout(() => { if (btn.isConnected) { btn.dataset.armed = ''; btn.textContent = 'SELL'; } }, 2500);
+    return;
+  }
+  const id = state.base.splice(i, 1)[0];
+  const val = rotPrice(id) / 2;
+  state.gains += val;
+  tone(800, 500, .12, 'triangle', .1);
+  toast(`Sold ${BR[id].name}`, `+${fmt(val)} gains`);
+  renderRots();
+}
+function startRotHeist(slot) {
+  const id = state.rivalRots[slot], d = BR[id], t = BRT[d.tier];
+  event = { type: 'rot', until: performance.now() + HEIST_MS, count: 0, need: t.need, id, slot };
+  state.rotStealReadyAt = Date.now() + 45000;
+  const egg = $('heistEgg');
+  egg.innerHTML = rotSVG(id);
+  egg.style.setProperty('--ec', t.color);
+  egg.classList.remove('mythic');
+  egg.hidden = false;
+  $('chal').hidden = false;
+  document.querySelector('.chal-title').textContent = `STEAL ${d.name.toUpperCase()}!`;
+  banner('STEAL IT!', t.color); tone(300, 600, .2, 'square', .06);
+  all(l => { say(l, pick(LINES.rotSneak), 1500); mood(l, 'ooh', 1500); });
+  stage.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' });
+}
+function renderRots() {
+  while (state.rivalRots.length < 3) state.rivalRots.push(rollRot(1));
+  const base = $('base');
+  base.innerHTML = '';
+  for (let i = 0; i < BASE_SIZE; i++) {
+    const id = state.base[i], s = document.createElement('div');
+    s.className = 'bslot' + (id ? ' full' : '');
+    if (id) {
+      const d = BR[id], t = BRT[d.tier];
+      s.style.setProperty('--rc', t.color);
+      s.title = `${d.name} · ${t.name}`;
+      s.innerHTML = `${rotSVG(id)}<span class="bname">${d.name}</span><span class="binc" data-id="${id}"></span><button class="sell">SELL</button>`;
+      s.querySelector('.sell').addEventListener('click', e => sellRot(i, e.currentTarget));
+    } else s.innerHTML = '<span class="empty">Empty</span>';
+    base.appendChild(s);
+  }
+  const rb = $('rivalBase');
+  rb.innerHTML = '';
+  state.rivalRots.forEach((id, i) => {
+    const d = BR[id], t = BRT[d.tier], c = document.createElement('div');
+    c.className = 'rcard'; c.style.setProperty('--rc', t.color);
+    c.innerHTML = `${rotSVG(id)}<span class="bname">${d.name}</span><span class="rtier">${t.name}</span><span class="binc" data-id="${id}"></span><button class="steal-rot">STEAL</button>`;
+    c.querySelector('.steal-rot').addEventListener('click', () => {
+      if (event || state.base.length >= BASE_SIZE || Date.now() < state.rotStealReadyAt) return;
+      startRotHeist(i);
+    });
+    rb.appendChild(c);
+  });
+}
+function tickRots(now) {
+  if (now > nextRunway) { spawnRunway(); nextRunway = now + 2200 + Math.random() * 1800; }
+  runway.querySelectorAll('.rot').forEach(b => b.classList.toggle('cant', state.gains < rotPrice(b.dataset.id)));
+  document.querySelectorAll('.binc').forEach(el => { el.textContent = '+' + fmt(rotRaw(el.dataset.id) * gainMult()) + '/s'; });
+  $('baseCount').textContent = `${state.base.length}/${BASE_SIZE}`;
+  $('rotIncome').textContent = `base +${fmt(rotIncomeRaw() * gainMult())}/s`;
+  const wait = state.rotStealReadyAt - Date.now(), full = state.base.length >= BASE_SIZE;
+  document.querySelectorAll('.steal-rot').forEach(b => {
+    b.disabled = !!event || full || wait > 0;
+    b.textContent = full ? 'BASE FULL' : wait > 0 ? mmss(wait) : 'STEAL';
+  });
+  const lb = $('lockBtn'), lockLeft = state.lockUntil - Date.now(), lockWait = state.lockReadyAt - Date.now();
+  lb.disabled = lockLeft > 0 || lockWait > 0;
+  lb.classList.toggle('locked', lockLeft > 0);
+  lb.textContent = lockLeft > 0 ? `LOCKED · ${mmss(lockLeft)}` : lockWait > 0 ? `LOCK READY IN ${mmss(lockWait)}` : 'LOCK BASE (60s)';
+}
+$('lockBtn').addEventListener('click', () => {
+  if (Date.now() < state.lockReadyAt) return;
+  state.lockUntil = Date.now() + 60000;
+  state.lockReadyAt = Date.now() + 150000;
+  tone(300, 900, .2, 'square', .06); ding();
+  const [x, y] = centerOf($('lockBtn')); burst(x, y, 30, 7, ['#6ea8ff', '#fff']);
+  const l = pick(lifters); say(l, 'Base locked. Nobody gets in.', 1600);
+});
+
+/* ================= Multiverse ================= */
+function applyWorld() {
+  const w = WORLDS[state.world] || WORLDS[0], st = document.documentElement.style;
+  st.setProperty('--night-2', w.bg[0]); st.setProperty('--night', w.bg[1]); st.setProperty('--glow', w.glow);
+  $('worldTag').textContent = w.name + (w.mult > 1 ? ' ×' + w.mult : '');
+}
+const worldList = $('worlds');
+WORLDS.forEach((w, i) => {
+  const b = document.createElement('button');
+  b.className = 'world'; b.id = 'world-' + i;
+  b.style.setProperty('--wg', `rgb(${w.glow})`);
+  b.innerHTML = `<span class="wdot"></span><span class="wname">${w.name}</span><span class="wmult">×${w.mult}</span><span class="wstate"></span>`;
+  b.addEventListener('click', () => portal(i));
+  worldList.appendChild(b);
+});
+function portal(i) {
+  const w = WORLDS[i];
+  if (i === state.world) return;
+  if (!state.worlds.includes(i)) {
+    if (state.rebirths < w.reb || state.gains < w.cost) return;
+    state.gains -= w.cost;
+    state.worlds.push(i);
+    toast(`${w.name} unlocked!`, `×${w.mult} gains while you're there`);
+  }
+  state.world = i; state.stats.portals++;
+  const f = document.createElement('div'); f.className = 'flash portal-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
+  applyWorld();
+  banner(w.name.toUpperCase(), `rgb(${w.glow})`);
+  tone(200, 1600, .6, 'sine', .12); tone(1600, 200, .6, 'triangle', .06, .3); rain(160);
+  all(l => { say(l, pick(LINES.portal), 2200); mood(l, 'hype', 2000); });
+  render();
+}
+function renderWorlds() {
+  WORLDS.forEach((w, i) => {
+    const b = $('world-' + i), owned = state.worlds.includes(i), here = state.world === i;
+    const canUnlock = !owned && state.rebirths >= w.reb && state.gains >= w.cost;
+    b.classList.toggle('here', here);
+    b.classList.toggle('owned', owned);
+    b.disabled = here || (!owned && !canUnlock);
+    b.querySelector('.wstate').textContent = here ? 'YOU ARE HERE' : owned ? 'TRAVEL' :
+      state.rebirths < w.reb ? `needs ${w.reb} rebirth${w.reb > 1 ? 's' : ''}` : `unlock · ${fmt(w.cost)}`;
+  });
 }
 
 /* ================= Modal ================= */
@@ -1260,6 +1614,8 @@ function render() {
   }
   tickEggs();
   checkHatch();
+  tickRots(performance.now());
+  renderWorlds();
 }
 
 /* ================= Rebirth + wipe ================= */
@@ -1274,7 +1630,9 @@ $('rebirthBtn').addEventListener('click', () => {
   }
   clearTimeout(confirmTimer);
   const keep = { rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, lv: state.lv, ach: state.ach, stats: state.stats,
-    pets: state.pets, nest: state.nest, rival: state.rival, stealReadyAt: state.stealReadyAt };
+    pets: state.pets, nest: state.nest, rival: state.rival, stealReadyAt: state.stealReadyAt,
+    base: state.base, rivalRots: state.rivalRots, rotStealReadyAt: state.rotStealReadyAt, lockUntil: state.lockUntil, lockReadyAt: state.lockReadyAt,
+    world: state.world, worlds: state.worlds };
   state = { ...fresh(), ...keep };
   shown = 0; combo = 0;
   const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
@@ -1293,7 +1651,7 @@ $('resetBtn').addEventListener('click', () => {
     return;
   }
   wipeArmed = false; b.textContent = 'Wipe save';
-  state = fresh(); shown = 0; save(); renderEggs(); render();
+  state = fresh(); shown = 0; save(); renderEggs(); renderRots(); applyWorld(); render();
 });
 
 $('soundBtn').addEventListener('click', () => {
@@ -1361,7 +1719,7 @@ function frame(now) {
     else if (now > event.until) endEvent(false);
   }
   // thief
-  if (!thief && !event && !modalOpen && state.nest.length && now > nextThief) spawnThief(now);
+  if (!thief && !event && !modalOpen && (state.nest.length || state.base.length) && now > nextThief) spawnThief(now);
   if (thief) {
     thief.x += thief.dir * 70 * dt;
     thiefEl.style.transform = `translateX(${thief.x}px)`;
@@ -1476,7 +1834,9 @@ function load() {
     if (s && typeof s.gains === 'number') {
       const f = fresh();
       return { ...f, ...s, owned: { ...f.owned, ...s.owned }, lv: { ...f.lv, ...s.lv }, stats: { ...f.stats, ...s.stats },
-        pets: { ...f.pets, ...s.pets }, ach: Array.isArray(s.ach) ? s.ach : [], nest: Array.isArray(s.nest) ? s.nest : [] };
+        pets: { ...f.pets, ...s.pets }, ach: Array.isArray(s.ach) ? s.ach : [], nest: Array.isArray(s.nest) ? s.nest : [],
+        base: Array.isArray(s.base) ? s.base.filter(id => BR[id]) : [], rivalRots: Array.isArray(s.rivalRots) ? s.rivalRots.filter(id => BR[id]) : [],
+        worlds: Array.isArray(s.worlds) ? s.worlds : [0] };
     }
   } catch (e) {}
   return null;
@@ -1490,6 +1850,8 @@ function start(data) {
   $('soundBtn').setAttribute('aria-pressed', soundOn);
   window.claude?.hot?.snapshot?.(() => ({ state }));
   renderEggs();
+  renderRots();
+  applyWorld();
   setInterval(render, 100);
   setInterval(save, 5000);
   addEventListener('beforeunload', save);
