@@ -54,6 +54,12 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   outfit and the 18 muscle shapes/veins are all gone. Players and NPCs are their normal avatars with their own clothes
   again (`tools/meshes/` stays on disk only, ignored by git; `ServerStorage.BodyStages` deleted).
 - **Fix list 3, part 2:** muscle body tiers with Marketplace ids (see "Muscle bodies" above), empty for now.
+- **Fix list 3, part 3:** the body map panel and "Stats" chip are gone. Stats labels around your character (2D layer from
+  its projected position, so always on top, same size on screen, smoothed): Chest, Core, Calves left; Shoulders, Back,
+  Triceps, Biceps, Legs right; Strength (big) + Stamina above the head over your title. Thin white lines to small white
+  dots on the body, numbers with commas in light blue-white. Settings > Stats labels: Always / Training / Off (phones
+  default Training). Other players show only their title + "Strength 1,234". The Stats button still opens the full
+  stats screen (Growth Spurt goal + button, groups, muscles).
 
 ## In progress
 - Nothing half-built.
@@ -69,6 +75,8 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **Portrait:** phones/tablets are locked to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`).
 
 ## Check these (things I couldn't fully verify)
+- **Stats labels on a real phone** (Training default) and at 1080p; with 2 players check the "Strength" line over the
+  other player (only tested alone). In a short Studio window the lowest label can touch the pump bar while lifting.
 - **Muscle body tiers** with the bodies you pick: tested with Roblox's "Man" torso + arms (clothes, hair and
   accessories stayed on, height kept). Check your bodies with layered clothing, emotes, the skateboard and lifting.
 - Phone **Menu button**: open and close it once on a real phone (the emulator's mouse tool can't click it there).
@@ -88,6 +96,12 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   equipped just ignore it (the item no longer exists).
 - Part 2: the "you grew" moment only plays when the body really changes (a tier with ids); with empty ids it stays
   quiet. A tier with no ids shows the highest filled tier below it. Tier progress counts each muscle up to the goal.
+- Part 3: Strength = all 18 muscle levels added up (resets with a Growth Spurt like the muscles); group labels show the
+  group level, Triceps/Biceps/Calves the muscle level; Stamina = current stamina. The labels are a 2D overlay placed
+  from the 3D body (not BillboardGuis): that is what keeps them the same size, always visible and jitter-free. When
+  there is no room above the head (Growth Spurt bar, top of the screen) Strength and Stamina head the two columns. A
+  column steps off a shown ProximityPrompt, the Growth Spurt bar and the machine panel. Labels hide while a full
+  screen or a side panel is open (Stats screen, genetics, Settings, Titles, the phone menu grid) and in first person.
 
 ## Decisions made (fixes + muscles run)
 - No day/night cycle exists, so the lamps are simply off now; they switch on automatically if the clock ever passes

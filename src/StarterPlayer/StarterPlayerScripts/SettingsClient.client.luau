@@ -1,6 +1,7 @@
--- SettingsClient: the Settings side button and panel (Music and Effects volume, Gain numbers On/Minimal/Off), and
--- background music. Volumes apply instantly while dragging and are saved with the player's data when the slider is
--- released; Gain numbers saves on tap (MachineClient reads it for every rep).
+-- SettingsClient: the Settings side button and panel (Music and Effects volume, Gain numbers On/Minimal/Off, Stats
+-- labels Always/Training/Off), and background music. Volumes apply instantly while dragging and are saved with the
+-- player's data when the slider is released; the choices save on tap (MachineClient reads Gain numbers for every rep,
+-- StatsLabelsClient reads Stats labels; until the player picks one it follows the device: phones Training, else Always).
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,7 +19,7 @@ local player = Players.LocalPlayer
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
 
-local PANEL_WIDTH = 280
+local PANEL_WIDTH = 300
 local KNOB = 18
 
 local menuButton = SideMenu.Add("Settings", "Settings", Icons.Gear, 9)
@@ -36,17 +37,26 @@ local panel = Theme.Panel({
 }, { Theme.Pad("L"), Theme.List(Vertical, "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 Theme.Text({ LayoutOrder = 1, Text = "Settings", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 
-local values = { music = 1, effects = 1, gainNumbers = "On" }
+local values = { music = 1, effects = 1, gainNumbers = "On", statsLabels = "Always" }
+local picked = { statsLabels = false } -- saved only once the player picks it (else it follows the device)
 local dragging = nil -- the slider being dragged
 
 local function save()
-	Remotes.PlayerAction:FireServer("SetSettings", { music = values.music, effects = values.effects, gainNumbers = values.gainNumbers })
+	Remotes.PlayerAction:FireServer("SetSettings", {
+		music = values.music,
+		effects = values.effects,
+		gainNumbers = values.gainNumbers,
+		statsLabels = picked.statsLabels and values.statsLabels or nil,
+	})
 end
 
 -- A labeled slider: name and percent on top, a thin track with a white fill and a round knob.
 local sliders = {}
+-- Music and Effects side by side, so the whole panel fits a phone screen
+local volumes = New("Frame", { Name = "Volumes", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = panel },
+	{ Theme.List(Horizontal, "L", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 local function slider(order, key, labelText)
-	local row = New("Frame", { LayoutOrder = order, Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = panel },
+	local row = New("Frame", { LayoutOrder = order, Size = UDim2.new(0.5, -Spacing.L / 2, 0, 52), BackgroundTransparency = 1, Parent = volumes },
 		{ Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Parent = row })
 	Theme.Text({ Text = labelText, Font = "Regular", TextSize = "Body", Size = UDim2.fromScale(0.6, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
@@ -79,8 +89,8 @@ local function slider(order, key, labelText)
 	sliders[key] = entry
 	return entry
 end
-slider(2, "music", "Music")
-slider(3, "effects", "Effects")
+slider(1, "music", "Music")
+slider(2, "effects", "Effects")
 
 UserInputService.InputChanged:Connect(function(input)
 	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
@@ -95,41 +105,49 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
--- Gain numbers: On (rep + set popups) / Minimal (set popups only) / Off. Three buttons, the chosen one lit.
-local GAIN_MODES = { "On", "Minimal", "Off" }
-local gainRow = New("Frame", { Name = "GainNumbers", LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 20 + Spacing.S + Theme.MinTouch), BackgroundTransparency = 1, Parent = panel },
-	{ Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
-Theme.Text({ LayoutOrder = 1, Text = "Gain numbers", Font = "Regular", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = gainRow })
-local gainChoices = New("Frame", { Name = "Choices", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = gainRow },
-	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
-local gainButtons = {}
-local function showGainMode()
-	for mode, entry in pairs(gainButtons) do
-		local chosen = values.gainNumbers == mode
-		entry.button.BackgroundColor3 = chosen and Colors.Text or Colors.Panel
-		entry.button.BackgroundTransparency = chosen and Theme.Alpha.Primary or Theme.Alpha.Panel
-		entry.stroke.Transparency = chosen and 0.6 or Theme.Alpha.ButtonBorder
-		entry.label.TextColor3 = chosen and Colors.Text or Colors.Muted
+-- A row of choices (the chosen one lit): Gain numbers On / Minimal / Off, Stats labels Always / Training / Off.
+local choiceRows = {}
+local function choiceRow(order, key, title, modes, labels)
+	local row = New("Frame", { Name = key, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 20 + Spacing.S + Theme.MinTouch), BackgroundTransparency = 1, Parent = panel },
+		{ Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+	Theme.Text({ LayoutOrder = 1, Text = title, Font = "Regular", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
+	local choices = New("Frame", { Name = "Choices", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = row },
+		{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
+	local buttons = {}
+	local function show()
+		for mode, entry in pairs(buttons) do
+			local chosen = values[key] == mode
+			entry.button.BackgroundColor3 = chosen and Colors.Text or Colors.Panel
+			entry.button.BackgroundTransparency = chosen and Theme.Alpha.Primary or Theme.Alpha.Panel
+			entry.stroke.Transparency = chosen and 0.6 or Theme.Alpha.ButtonBorder
+			entry.label.TextColor3 = chosen and Colors.Text or Colors.Muted
+		end
 	end
+	for index, mode in ipairs(modes) do
+		local label = Theme.Text({ Text = labels and labels[index] or mode, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) })
+		local button = Theme.Button("Secondary", { Name = key .. mode, LayoutOrder = index, Size = UDim2.fromScale(0, 1) }, {
+			label,
+			New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
+		})
+		button.Parent = choices
+		buttons[mode] = { button = button, label = label, stroke = button:FindFirstChildOfClass("UIStroke") }
+		button.Activated:Connect(function()
+			if values[key] == mode then return end
+			values[key] = mode
+			picked[key] = true
+			show()
+			Audio.PlayUI("Click")
+			save()
+		end)
+	end
+	choiceRows[key] = show
 end
-for index, mode in ipairs(GAIN_MODES) do
-	local label = Theme.Text({ Text = mode, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) })
-	local button = Theme.Button("Secondary", { Name = "Gain" .. mode, LayoutOrder = index, Size = UDim2.fromScale(0, 1) }, {
-		label,
-		New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }),
-	})
-	button.Parent = gainChoices
-	gainButtons[mode] = { button = button, label = label, stroke = button:FindFirstChildOfClass("UIStroke") }
-	button.Activated:Connect(function()
-		if values.gainNumbers == mode then return end
-		values.gainNumbers = mode
-		showGainMode()
-		Audio.PlayUI("Click")
-		save()
-	end)
-end
+-- Gain numbers: On (rep + set popups) / Minimal (set popups only) / Off
+choiceRow(4, "gainNumbers", "Gain numbers", { "On", "Minimal", "Off" })
+-- Stats labels around your character: Always / Only while training / Off (phones default to training only)
+choiceRow(5, "statsLabels", "Stats labels", { "Always", "Training", "Off" })
 
-local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 5, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
+local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
@@ -171,7 +189,9 @@ task.spawn(function()
 	values.music = settings.music or 1
 	values.effects = settings.effects or 1
 	values.gainNumbers = settings.gainNumbers or "On"
-	showGainMode()
+	values.statsLabels = settings.statsLabels or (Theme.IsCompact() and "Training" or "Always")
+	picked.statsLabels = settings.statsLabels ~= nil
+	for _, show in pairs(choiceRows) do show() end
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()
 	-- area music: the pro gym is the room east of the starter gym (x 37..93, z -73.5..-4, see the Gyms builder)

@@ -24,7 +24,7 @@ Onboarding.Steps = {
 	{ id = "GoSquat", text = "Head to the Squat Rack.", onMachineText = "Tap Exit, then head to the Squat Rack.",
 		target = "SquatRack", done = { type = "onMachine" } },
 	{ id = "SquatLift", text = "Tap fast to fill the Pump meter. Legs need love too.", done = { type = "reps", count = 3, machine = "SquatRack" } },
-	{ id = "OpenStats", text = "Tap the body map (top right) to see your muscles.", done = { type = "statsOpen" } },
+	{ id = "OpenStats", text = "Open Stats in the menu to see your muscles.", done = { type = "statsOpen" } },
 	{ id = "Coach", text = "Find Coach Dex at the front desk and tap Talk.", onMachineText = "Tap Exit, then find Coach Dex at the front desk.",
 		target = "Coach", done = { type = "quest" } },
 	{ id = "Goal", text = "Open your muscles again. At the top: your Growth Spurt goal. Get every group there to grow taller.",

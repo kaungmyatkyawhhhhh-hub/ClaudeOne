@@ -85,4 +85,14 @@ function Muscles.GetGroupLevel(muscleData, groupId)
 	return total / #group.muscles
 end
 
+-- Total strength: every muscle level added up (shown above your head and over other players).
+function Muscles.TotalStrength(muscleData)
+	local total = 0
+	for _, muscle in ipairs(Muscles.List) do
+		local entry = muscleData[muscle.id]
+		total += entry and entry.level or 0
+	end
+	return total
+end
+
 return Muscles

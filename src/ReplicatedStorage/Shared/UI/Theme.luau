@@ -15,6 +15,7 @@ Theme.Colors = {
 	Shadow = Color3.fromHex("#000000"),
 	NeedsWork = Color3.fromHex("#FF8A8A"),  -- soft light red: "needs work", very low stamina
 	Gold = Color3.fromHex("#F2C14E"),       -- big moments only: BIG REP, NEW PR, PUMPED, maxed outline
+	StatNumber = Color3.fromHex("#DCEEFF"), -- light blue-white: the numbers on the world stats labels
 }
 
 -- Transparency levels (0 = solid, 1 = invisible)

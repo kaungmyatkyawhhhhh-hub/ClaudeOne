@@ -755,7 +755,7 @@ local column = New("Frame", {
 })
 
 -- phones: the thumbstick and jump button are hidden while lifting, so the panel sits left and leaves the right side
--- to the body map (top right)
+-- to the quest panel (top right)
 do
 	local columnList = column:FindFirstChildOfClass("UIListLayout")
 	local columnPad = column:FindFirstChildOfClass("UIPadding")

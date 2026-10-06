@@ -315,18 +315,13 @@ local function refreshStep()
 	else
 		hidePath()
 	end
-	-- point at the Stats button (the body map is the big target; its panel gets a brighter border)
+	-- point at the Stats button (a dot on it until stats is opened)
 	if step.done.type == "statsOpen" then
 		local hud = playerGui:FindFirstChild("MainHud")
 		local button = hud and hud:FindFirstChild("Stats", true)
 		local dot = button and button:FindFirstChild("Dot")
 		if dot then dot.Visible = true end
 	end
-	-- the body map (right column) gets a brighter border only during this step
-	local column = playerGui:FindFirstChild("RightColumn")
-	local map = column and column:FindFirstChild("BodyMap", true)
-	local stroke = map and map:FindFirstChildOfClass("UIStroke")
-	if stroke then stroke.Transparency = step.done.type == "statsOpen" and 0.2 or Theme.Alpha.Border end
 end
 
 local function check()

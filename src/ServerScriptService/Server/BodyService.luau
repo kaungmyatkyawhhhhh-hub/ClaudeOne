@@ -5,12 +5,14 @@
 --    accessories, skin color and clothes stay the player's own. Tiers without ids change nothing (tier 0 = own body).
 --  * When the body moves up a tier, the owner gets a "Grew" event (the "you grew" pulse + sound, ProgressClient).
 --  * A Growth Spurt resets the muscles, so the body goes back to tier 0 (the height stays).
+--  * Every second it also sets the player attribute Strength (all muscle levels added up) for the overhead label.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local MuscleBodies = require(Shared.Config.MuscleBodies)
+local Muscles = require(Shared.Config.Muscles)
 local BodyShape = require(Shared.BodyShape)
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -135,6 +137,11 @@ function BodyService.Start()
 	task.spawn(function()
 		while true do
 			task.wait(REFRESH_EVERY)
+			for _, player in ipairs(Players:GetPlayers()) do
+				-- total strength for the label over everyone's head (StatsLabelsClient)
+				local data = PlayerData.Get(player)
+				if data and data.muscles then player:SetAttribute("Strength", Muscles.TotalStrength(data.muscles)) end
+			end
 			for player in pairs(states) do
 				task.spawn(refresh, player)
 			end
