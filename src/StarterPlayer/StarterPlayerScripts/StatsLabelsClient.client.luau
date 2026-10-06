@@ -210,15 +210,15 @@ local function setHighlight(target, on)
 			local light = New("Highlight", {
 				Name = "StatsHighlight",
 				Adornee = part,
-				FillColor = Color3.fromRGB(255, 60, 60),
-				OutlineColor = Color3.fromRGB(255, 60, 60),
+				FillColor = Color3.fromRGB(255, 20, 20),
+				OutlineColor = Color3.fromRGB(255, 20, 20),
 				FillTransparency = 1,
 				OutlineTransparency = 1,
 				DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
 				Parent = part,
 			})
 			highlights[part] = light
-			Theme.Tween(light, { FillTransparency = 0.6, OutlineTransparency = 0 }, 0.15)
+			Theme.Tween(light, { FillTransparency = 0.35, OutlineTransparency = 0 }, 0.15)
 		end
 	end
 end
@@ -408,6 +408,9 @@ local current = {} -- [frame or dot] = Vector2 smoothed position
 
 -- Labels follow their rest spot on a soft spring (they drift when you walk, turn or jump, up to ~50px, then settle back)
 -- plus a tiny idle float of their own.
+-- which way each dot's body side faces (+1 = the chest side, -1 = the back side); side dots (shoulder, arm, leg) always show
+local FACING = { Chest = 1, Core = 1, Back = -1 }
+
 local SPRING = { Stiffness = 55, Damping = 9.5, MaxDrift = 50, Float = 3 }
 local springs = {}
 local function spring(key, target, dt, seed)
@@ -516,6 +519,15 @@ local function place(dt)
 				end
 			end
 			local world = anchorPoint(character, entry.spec.anchor)
+			-- dots on the front (Chest, Core) or the back (Back) only show when that side faces the camera (your body blocks them otherwise)
+			if world then
+				local facing = FACING[entry.spec.anchor]
+				local torsoPart = character:FindFirstChild("UpperTorso")
+				if facing and torsoPart then
+					local normal = torsoPart.CFrame.LookVector * facing
+					if (camera.CFrame.Position - world):Dot(normal) <= 0 then world = nil end
+				end
+			end
 			if world then
 				local dot = smooth(entry.dot, (project(world)), LAYOUT.DotSmooth, dt)
 				entry.dot.Visible = true
