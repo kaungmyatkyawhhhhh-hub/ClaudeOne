@@ -833,14 +833,15 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const rint=(a,b)=>Math.floor(rnd(a,b+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const SUF=[[1e63,"Vg"],[1e60,"Nod"],[1e57,"Ocd"],[1e54,"Spd"],[1e51,"Sxd"],[1e48,"Qid"],[1e45,"Qad"],[1e42,"Td"],[1e39,"Dd"],[1e36,"Ud"],[1e33,"Dc"],[1e30,"No"],[1e27,"Oc"],[1e24,"Sp"],[1e21,"Sx"],[1e18,"Qi"],[1e15,"Qa"],[1e12,"T"],[1e9,"B"],[1e6,"M"]];
+const SUF=[[1e99,"Dtg"],[1e96,"Utg"],[1e93,"Tg"],[1e90,"Novg"],[1e87,"Ocvg"],[1e84,"Spvg"],[1e81,"Sxvg"],[1e78,"Qivg"],[1e75,"Qavg"],[1e72,"Tvg"],[1e69,"Dvg"],[1e66,"Uvg"],[1e63,"Vg"],[1e60,"Nod"],[1e57,"Ocd"],[1e54,"Spd"],[1e51,"Sxd"],[1e48,"Qid"],[1e45,"Qad"],[1e42,"Td"],[1e39,"Dd"],[1e36,"Ud"],[1e33,"Dc"],[1e30,"No"],[1e27,"Oc"],[1e24,"Sp"],[1e21,"Sx"],[1e18,"Qi"],[1e15,"Qa"],[1e12,"T"],[1e9,"B"],[1e6,"M"]];
 // Radiant: past $1 quadrillion, money is shown in Radiant (✦1 = $1 quadrillion)
 const RAD=1e15;
-const radF=r=>{if(r>=1e66)return r.toExponential(2).replace("e+","e");for(const[v,u]of SUF)if(r>=v*.9995){const x=r/v;return(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}return r>=1e5?Math.round(r/1e3)+"K":r>=999.5?(r/1e3).toFixed(1)+"K":r>=99.95?String(Math.round(r)):r>=9.995?r.toFixed(1):r.toFixed(2)};
+const radF=r=>{if(r>=1e102)return r.toExponential(2).replace("e+","e");for(const[v,u]of SUF)if(r>=v*.9995){const x=r/v;return(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}return r>=1e5?Math.round(r/1e3)+"K":r>=999.5?(r/1e3).toFixed(1)+"K":r>=99.95?String(Math.round(r)):r>=9.995?r.toFixed(1):r.toFixed(2)};
 const isRad=n=>Math.abs(n)>=RAD*.9995;
 // World 1 shows dollars; World 2 (the Cosmos and its planets) shows Radiant
 const inW2=()=>typeof SCN!=="undefined"&&!!SCN&&(SCN.kind==="space"||SCN.kind==="planet");
 const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);if(!isFinite(a))return s+"$∞";if(typeof SCN!=="undefined"&&SCN&&SCN.kind==="prehist"&&a>=1e28)return s+"◈"+radF(a/1e30);if((inW2()||typeof SCN!=="undefined"&&SCN&&SCN.kind==="prehist")&&a>=RAD*.01)return s+"✦"+radF(a/RAD);
+  if(a>=1e102)return s+"$"+a.toExponential(2).replace("e+","e");
   for(const[v,u]of SUF)if(a>=v*.9995){const x=a/v;return s+"$"+(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}
   if(a>=1e5)return s+"$"+Math.round(a/1e3)+"K";if(a>=1e4)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+Math.round(a).toLocaleString("en-US")};
 const SET=(()=>{try{return JSON.parse(localStorage.getItem("fliprush_set")||"{}")||{}}catch(e){return{}}})();const saveSet=()=>{try{localStorage.setItem("fliprush_set",JSON.stringify(SET))}catch(e){}};
@@ -2867,7 +2868,7 @@ function levelCheck(){
 }
 function renderLvlBtn(){const b=$("lvlBtn");if(!b||!S)return;const on=S.picks>0&&$("perkSheet").hidden;b.hidden=!on;if(on)$("lvlN").textContent=S.picks}
 function closePerkSheet(){const sh=$("perkSheet");sh.hidden=true;sh.innerHTML="";S.pickNew=0;dirty=true;renderLvlBtn()}
-const perkCash=()=>Math.round(Math.max(5000*(1+repLevel()),(S.cash+(S.bank||0))*.05));
+const perkCash=()=>Math.round(Math.max(5000*(1+repLevel()),S.cash*.05));
 function makeOffer(){const av=PERK_POOL().filter(c=>pk(c.k)<pcap(c.k));if(!av.length)return[0,1,2].map(i=>({k:"cash",t:["Cash bonus","Big payday","Bonus check"][i],d:"Every perk is maxed. Take "+fmt(perkCash()*(i+1)),rt:i,m:1}));return av.sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=Math.min([1,2,3,5][t],pcap(c.k)-pk(c.k)),cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}})}
 // Use every waiting pick at once: each one takes a random card from its own set of 3
 function collectAllPerks(){
@@ -4007,7 +4008,7 @@ function openBoutique(back,cosmic){S.accOwn=S.accOwn||{};S.acc=S.acc||{};const i
       <div class="note">Wear one item per slot. Everything you wear adds a little <b>rizz</b> (now +${accRizz()}) and friends see it in the Online Town.</div>
       ${cosmic?`<div class="note">Cosmic gear, only sold in orbit. Things you already own from either shop can be worn anywhere.</div>`:""}${Object.entries(ACC_SLOT).map(([sl,nm])=>{const L=ACCS.filter(a=>a.s===sl&&(inShop(a)||(S.accOwn[a.k]&&!cosmic)));return L.length?`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${L.map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&(a.ev||S.cash<a.cost)?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.ev&&!own?a.ev:a.d||"+"+a.rz+" rizz"}</span><span class="c">${on?"Take off":own?"Wear":a.ev?"Event":fmt(a.cost)}</span></button>`}).join("")}</div>`:""}).join("")}</div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-    const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),...myLook(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
+    const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);{const pk_=previewK(tallK());g.scale(pk_,pk_)}drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),...myLook(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
     $("room").querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acc);if(!S.accOwn[a.k]){if(a.ev||S.cash<a.cost)return;S.cash-=a.cost;S.accOwn[a.k]=1;SFX.buy();confetti(40);banner(a.n+" bought","g")}
       if(S.acc[a.s]===a.k)delete S.acc[a.s];else S.acc[a.s]=a.k;dirty=true;SFX.tick(.6);draw();updMini()})};draw()}
 
@@ -4586,7 +4587,7 @@ function openWardrobe(back){S.look=S.look||{sk:1,hr:0};let tab=WDTAB;
     $("room").querySelectorAll("[data-wt]").forEach(b=>b.onclick=()=>{const k=b.dataset.wt;if(k==="rand"){const R=n=>Math.floor(Math.random()*n);Object.assign(S.look,{sk:R(SKINS.length),hr:R(HAIRS.length),hs:R(HSTY.length),shc:R(SHIRTC.length),ss:R(SSTY.length),pa:R(PANTS.length),so:R(SHOES.length),ey:R(EYES.length),fh:R(FHAIR.length)});dirty=true;SFX.hot();draw();return}tab=WDTAB=k;SFX.tick(.4);draw()});
     $("room").querySelectorAll("[data-lk]").forEach(b=>b.onclick=()=>{S.look[b.dataset.lk]=+b.dataset.v;dirty=true;SFX.tick(.5);draw()})};
   // the preview keeps moving so capes, jetpacks and halos animate
-  const paint=()=>{const cv=$("wdCv");if(!cv)return;const g=cv.getContext("2d");g.setTransform(1,0,0,1,0,0);g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.fillStyle=isDark()?"#252a38":"#e2e6ee";g.beginPath();g.ellipse(150,203,70,12,0,0,7);g.fill();g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:Math.min(1.25,tallK()),build:myBuild(),size:bodyK(),...myLook(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore()};
+  const paint=()=>{const cv=$("wdCv");if(!cv)return;const g=cv.getContext("2d");g.setTransform(1,0,0,1,0,0);g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.fillStyle=isDark()?"#252a38":"#e2e6ee";g.beginPath();g.ellipse(150,203,70,12,0,0,7);g.fill();g.save();g.translate(150,200);{const pk_=previewK(tallK());g.scale(pk_,pk_)}drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),...myLook(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore()};
   room="look";draw();const iv=setInterval(()=>{if(room!=="look")return clearInterval(iv);paint()},80)}
 let WDTAB="body";
 
@@ -6270,6 +6271,8 @@ const mxB=()=>{const b=myBuild();return Math.max(b.c,b.l,b.b)};
 function musTier(){const m=mxB();return `<div class="note">Muscle: <b>${m.toFixed(2)}× your frame</b> (max 2.5×). ${MUSTIERS.map(([t,k,n,d])=>m>=t?`✅ <b>${n}</b>`:`🔒 ${n} at ${t}×`).join(" · ")}</div>`}
 let musT=3;
 function musUnlockTick(dt){musT-=dt;if(musT>0||!S)return;musT=3;const m=mxB();S.flags=S.flags||{};for(const[t,k,n,d]of MUSTIERS)if(m>=t&&!S.flags["mu_"+k]){S.flags["mu_"+k]=1;dirty=true;SFX.rebirth();flash("#ffcc33",.4);confetti(160);shake(6,.4);banner(n.toUpperCase()+" UNLOCKED","g");setTimeout(()=>banner(d,"u"),900);break}}
+// zoom for the look previews so tall, huge or hatted characters always fit the 300x240 frame
+function previewK(T){const B=myBuild(),m=Math.min(1,Math.max(B.c,B.b)),hat=S.acc&&S.acc.h?16:0,traps=B.b>=1.8?6:0,H=(64+hat+traps+8*m+20*.22*m)*T+6,Wd=(34+46*Math.min(1.6,Math.max(B.c,B.b)))*bodyK()*(1+(T-1)*.45*fillK())+20;return Math.min(3,190/H,280/Wd)}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
