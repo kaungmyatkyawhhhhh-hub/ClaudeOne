@@ -1831,7 +1831,7 @@ const GYM_ST=[
  {k:"squat",x:304,y:318,n:"Squat rack",lift:"squat"},
  {k:"dead",x:200,y:470,n:"Deadlift platform",lift:"dead"},
  {k:"dumb",x:62,y:480,n:"Dumbbell rack"}];
-const FEM=new Set(["Ava","Mila","Zara","Luna","Ivy","Nina","Sofia","Maya","Priya","Lena","Kim","Rosa","Jess","Lucy","Bea","Nora"]);
+const FEM=new Set(["Mia","Zoe","Nia","Betty","Sasha","Tess","Ava","Mila","Zara","Luna","Ivy","Nina","Sofia","Maya","Priya","Lena","Kim","Rosa","Jess","Lucy","Bea","Nora"]);
 const GYM_BROS=[["Big Tony","#e2364a"],["Chad","#2a5bd7"],["Priya","#2bb3a3"],["Marcus","#3a3d45"],["Lena","#ff7a3d"],["Dmitri","#46a35a"],["Kim","#a68bd8"],["Jay","#ffcc33"],["Rosa","#f2f2f2"],["Big Mo","#0f8fb3"]];
 const G_SKINS=["#f3d0b5","#e8b896","#c98e62","#8d5a3b","#5c3a24"],G_HAIRS=["#3b2a20","#1b1d22","#a0522d","#e6c27a","#5a3a2a"];
 const G_SPOTS=[[66,300],[128,336],[272,336],[338,300],[160,500],[240,500],[78,440],[78,530],[342,450],[342,525],[300,568],[110,210],[300,210]];
@@ -4625,7 +4625,7 @@ function openFamily(back){const p=S.partner;S.kids=S.kids||[];
 let KT=null;
 function drawKid(ppl){if(room||!S.kids||!S.kids.length)return;const k=S.kids.filter(x=>kidAge(x)>=7).sort((a,b)=>a.born-b.born)[0];if(!k)return;if(!KT)KT={x:S.px-20,y:S.py+10,ph:0};
   const tx=S.px-20*Math.cos((S.hd||0)-.6),ty=S.py-10*Math.sin((S.hd||0)-.6)+12,dx=tx-KT.x,dy=ty-KT.y,d=Math.hypot(dx,dy),mv=d>5;if(d>500){KT.x=tx;KT.y=ty}else if(mv){const s=Math.min(d,walkSpeed()/60*1.06);KT.x+=dx/d*s;KT.y+=dy/d*s}KT.ph+=1/60;
-  const sz=kidStage(k)==="Teen"?.85:.68;ppl.push([KT.y,()=>drawPerson(KT.x,KT.y,{shirt:k.c,skin:k.sk,hair:k.hr,size:sz,tall:sz,mv,ph:KT.ph})])}
+  const sz=kidStage(k)==="Teen"?.85:.68;ppl.push([KT.y,()=>drawPerson(KT.x,KT.y,{shirt:k.c,skin:k.sk,hair:k.hr,hs:FEM.has(k.n)?8:0,size:sz,tall:sz,mv,ph:KT.ph})])}
 
 /* ================= buyer requests: NPCs pay a premium for what's in your stash ================= */
 const REQ_WHO=["A sneakerhead","A gym owner","A vintage dealer","A toy collector","A tech reseller","A card shop","A watch dealer","A celebrity stylist","A hedge fund guy","A museum"];
@@ -6110,7 +6110,7 @@ function peersIn(c,ppl){peersHere().forEach(([id,p])=>{if(!p.i||p.ix==null)retur
     c.fillStyle="rgba(10,14,22,.78)";rrp(c,p.ix-w/2,top-8,w,16,7);c.fill();c.fillStyle="#2fd28a";c.fillText(lab,p.ix,top);if(p.bubT>0&&p.bub){c.fillStyle="rgba(255,255,255,.95)";const bw=Math.min(180,c.measureText(p.bub).width+14);rrp(c,p.ix-bw/2,top-30,bw,18,8);c.fill();c.fillStyle="#141824";c.fillText(p.bub.slice(0,28),p.ix,top-21)}}])})}
 function peerPartner(p,ppl){if(!p.pa)return;if(!p.pt)p.pt={x:p.dx-28,y:p.dy+4,ph:0};const q=p.pt,h=p.h||0,tx=p.dx-30*Math.cos(h),ty=p.dy-30*Math.sin(h)*.5+6,dx=tx-q.x,dy=ty-q.y,d=Math.hypot(dx,dy),mv=d>6;
   if(d>400){q.x=tx;q.y=ty}else if(mv){const st=Math.min(d,Math.max(3,d*.08));q.x+=dx/d*st;q.y+=dy/d*st}q.ph+=1/60;const[n,sh,sk,hr]=p.pa;
-  ppl.push([q.y,()=>{drawPerson(q.x,q.y,{shirt:sh||"#ff4fd8",skin:sk||"#e8b896",hair:hr||"#3b2a20",mv,ph:q.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(q.x,q.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore();
+  ppl.push([q.y,()=>{drawPerson(q.x,q.y,{shirt:sh||"#ff4fd8",skin:sk||"#e8b896",hair:hr||"#3b2a20",hs:FEM.has(String(n||"").split(" ")[0])?8:0,mv,ph:q.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(q.x,q.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore();
     ctx.font="700 10px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const lab=String(n).slice(0,12)+" ❤ "+String(p.n||"").slice(0,10),w=ctx.measureText(lab).width+12;ctx.fillStyle="rgba(255,79,216,.82)";rr(q.x-w/2,q.y-78,w,16,7);ctx.fill();ctx.fillStyle="#fff";ctx.fillText(lab,q.x,q.y-70)}])}
 /* arm wrestling a friend: both tap, the stronger lifter gets more per tap; the challenger's game calls the winner */
 const PVP_T=12;
@@ -6402,7 +6402,7 @@ function bindDates(redraw){const pp=$("propose");if(pp)pp.onclick=()=>openPropos
 let PT=null;
 function drawPartner(ppl){if(!S.partner||room)return;if(!PT)PT={x:S.px-28,y:S.py+4,ph:0};const tx=S.px-30*Math.cos(S.hd||0),ty=S.py-30*Math.sin(S.hd||0)*.5+6,dx=tx-PT.x,dy=ty-PT.y,d=Math.hypot(dx,dy);
   const mv=d>6;if(mv){const s=Math.min(d,walkSpeed()/60*1.05);PT.x+=dx/d*s;PT.y+=dy/d*s}PT.ph+=1/60;const p=S.partner;
-  ppl.push([PT.y,()=>{drawPerson(PT.x,PT.y,{shirt:p.s,skin:p.k,hair:p.h,mv,ph:PT.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(PT.x,PT.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore()}])}
+  ppl.push([PT.y,()=>{drawPerson(PT.x,PT.y,{shirt:p.s,skin:p.k,hair:p.h,hs:FEM.has(String(p.n||"").split(" ")[0])?8:0,mv,ph:PT.ph});ctx.fillStyle="#ff4fd8";ctx.save();ctx.translate(PT.x,PT.y-56);ctx.beginPath();ctx.moveTo(0,4);ctx.bezierCurveTo(-7,-2,-4,-8,0,-4);ctx.bezierCurveTo(4,-8,7,-2,0,4);ctx.fill();ctx.restore()}])}
 
 /* ================= township district: empty plots that fill with players' houses ================= */
 const TWN={x:1120,y:1672,w:1200,h:276},TWN_ST=1796;
