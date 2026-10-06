@@ -14,6 +14,7 @@ local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 local MuscleBodies = require(Config.MuscleBodies)
+local BodyThickness = require(ReplicatedStorage.Shared.BodyThickness)
 local BodyService = require(script.Parent.BodyService)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
@@ -92,6 +93,10 @@ local function openFor(player)
 	before.Parent = folder
 	after.Parent = folder
 	folder.Parent = playerGui
+	-- same per-part muscle growth as the real character (day one = normal); after parenting, then place the parts again
+	task.wait()
+	BodyThickness.Snap(after, BodyService.TargetsOf(data))
+	BodyShape.SolveJoints(after)
 	Remotes.PlayerEvent:FireClient(player, "OpenMirror", { before = before, after = after })
 end
 

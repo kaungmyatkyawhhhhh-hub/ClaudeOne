@@ -205,3 +205,8 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   half of tapped reps end up PUMPED, so a tapped set gives ~1.5x an auto set; BIG REPs add ~17%.
 - `lune run tests/pacing tune` solves each goal level: **15, 47, 72, 103, 135, 157, then +18**. Result (median
   minutes): 7.9, 14.6, 24.6, 34.7, 44.2, 44.2, 43.3, 43.7. The test fails if a spurt is more than 10% off.
+
+## Muscle growth v3 (6 Oct, IN PROGRESS - not visually verified)
+- New `Shared/BodyThickness` (per-part thickness from each part's own muscles, ease-out, +45% arms/legs, +40%/+35% upper torso, <=+10% waist; Part.Size, attachments and Motor6D/accessory welds scaled together from stored originals). BodyService tweens it 0.4s per level-up, pumps every 10th level, eases back on a Growth Spurt before the height changes. Mirror, statue and NPCs (Starter 0.5, Pro 0.9 in `MuscleBodies.NpcGrowth`) use it too.
+- Humanoid rescales a rig when it enters Workspace, so static rigs are snapped AFTER parenting, then joints re-solved.
+- Numbers verified in Studio (test rigs: L0/25/50/75/max, arms only, chest only). Still to do: screenshots `growth_v3_*` (the PC locked, Studio capture stopped working), blocky vs rounded, hat/hair, while lifting, spurt shrink, mirror/statue look.

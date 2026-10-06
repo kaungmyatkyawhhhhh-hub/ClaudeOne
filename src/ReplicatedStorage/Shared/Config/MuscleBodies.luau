@@ -22,6 +22,10 @@ MuscleBodies.Tiers = {
 MuscleBodies.NpcTier = { Starter = 2, Pro = 4 }
 MuscleBodies.StatueTier = 4
 
+-- How big the gradual muscle growth (Shared.BodyThickness) looks on NPCs and the statue: 0 = normal, 1 = maxed.
+MuscleBodies.NpcGrowth = { Starter = 0.5, Pro = 0.9 }
+MuscleBodies.StatueGrowth = 1
+
 MuscleBodies.Parts = { "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" }
 
 -- Tier 0..4 from data.muscles ({ [muscleId] = { level } }) and the Growth Spurt goal level.

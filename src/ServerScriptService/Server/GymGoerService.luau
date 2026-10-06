@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
 local MuscleBodies = require(ReplicatedStorage.Shared.Config.MuscleBodies)
+local BodyThickness = require(ReplicatedStorage.Shared.BodyThickness)
 local BodyService = require(script.Parent.BodyService)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
 local MachineService = require(script.Parent.MachineService)
@@ -319,6 +320,8 @@ end
 -- keep their own clothes and hair. Nothing changes while the tiers have no body ids.
 local function dressNpc(npc, gym)
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	local growth = MuscleBodies.NpcGrowth[gym] or MuscleBodies.NpcGrowth.Starter
+	BodyThickness.Snap(npc, BodyThickness.Uniform(growth)) -- pro gym big, starter gym medium
 	local tier = MuscleBodies.NpcTier[gym] or MuscleBodies.NpcTier.Starter
 	if humanoid then BodyService.ApplyTier(humanoid, tier, nil) end
 end
