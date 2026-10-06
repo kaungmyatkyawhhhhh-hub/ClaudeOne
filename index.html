@@ -688,6 +688,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .accbar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-size:.9rem}
 .accbar .accav{width:30px;height:30px;font-size:.9rem;border-radius:9px}
 .accbar span:nth-child(2){flex:1}
+.acclist{display:flex;flex-direction:column;gap:8px}.acclist .accbar small{color:var(--muted);font-weight:600}.accbar button+button{padding:7px 10px}
 .accbar button{padding:7px 12px;border-radius:10px;background:var(--sunk);font-size:.78rem;font-weight:700}
 .accrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .accrow .perk{grid-template-columns:1fr}
@@ -1128,6 +1129,8 @@ function nextBanner(){const n=bq.shift();if(!n){bBusy=false;return}bBusy=true;co
 /* ================= juice: coins, confetti, shake, crits, crates ================= */
 const fxc=document.createElement("canvas");fxc.id="fx";document.body.appendChild(fxc);const fxg=fxc.getContext("2d");
 let FXP=[],shakeT=0,shakeA=0,lastPt=null,lastPtT=0,shownCash=null,fxW=0,fxH=0,fxD=1,coinN=0,coinNT=0,bumpT=0;
+// no autoclickers: every press must come at least 5 ms after the last one
+{const CLICK_GAP=5,lastAt={};for(const t of["pointerdown","mousedown","touchstart","click"])addEventListener(t,e=>{const n=performance.now();if(n-(lastAt[t]||-1e9)<CLICK_GAP){e.stopImmediatePropagation();if(e.cancelable)e.preventDefault();return}lastAt[t]=n},{capture:true,passive:false})}
 document.addEventListener("pointerdown",e=>{const k=cssScale();lastPt=[e.clientX/k,e.clientY/k];lastPtT=performance.now()},true);
 const RAR=[{n:"Common",c:"#9aa3b3"},{n:"Rare",c:"#3b82f6"},{n:"Epic",c:"#a855f7"},{n:"Legendary",c:"#f5b301"}];
 function elC(el){if(!el||!el.isConnected)return null;const r=el.getBoundingClientRect(),k=cssScale();if(!r.width)return null;return[(r.left+r.width/2)/k,(r.top+r.height/2)/k]}
@@ -3218,9 +3221,10 @@ async function copyTransfer(btn){save();const a=accCur(),code=await encodeSave(a
   const fallback=()=>{const o=$("overlay");o.hidden=false;o.innerHTML=`<div class="sheet"><h2 class="h2"><small>TRANSFER CODE</small>Copy this code.</h2><textarea class="acccode" id="aCode" rows="8" readonly>${code}</textarea><button class="cta" id="aBack"><span>Done</span>${ARROW}</button></div>`;const t=$("aCode");t.focus();t.select();$("aBack").onclick=()=>{o.hidden=true}};
   try{navigator.clipboard.writeText(code).then(done,fallback)}catch(e){fallback()}}
 function accountCard(){return `<div class="sechead"><h3>Account</h3><span class="eyebrow">${ACC?esc(ACC.user):""}</span></div>
-  <div class="accrow"><button class="perk nopic" id="accSwitch"><span class="t">Log out</span><span class="d">Your progress is saved to your account first. Log in on any device with your username and password</span></button>
+  <div class="accrow"><button class="perk nopic" id="accSwap"><span class="t">Switch account</span><span class="d">Sign back in to another account on this device, log in to a different one, or make a new one</span></button>
+  <button class="perk nopic" id="accSwitch"><span class="t">Log out</span><span class="d">Your progress is saved to your account first. Log in on any device with your username and password</span></button>
   <button class="perk nopic" id="accCopy"><span class="t">Copy backup code</span><span class="d">A spare copy of your save, just in case</span></button></div>`}
-function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout()}
+function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout();const w=$("accSwap");if(w)w.onclick=()=>switchSheet()}
 
 /* ================= cloud accounts: username + password, one device at a time ================= */
 // Saves are encrypted on the device with a key made from your password (PBKDF2 + AES-GCM),
@@ -3251,7 +3255,28 @@ async function newestSave(cls,h,key){const got=await cloudGet(cls,accTopic(h,"sa
   for(const g of got){try{const o=await unseal(key,g);if(!best||o.t>best.t)best=o}catch(e){bad++}}return{best,found:got.length,bad}}
 async function sessionNow(cls,h){const got=await cloudGet(cls,accTopic(h,"sess"),2500);let s=null;const sids=[];got.forEach(g=>{try{const o=JSON.parse(g);sids.push(o.sid);if(!s||o.t>s.t)s=o}catch(e){}});if(ACC)ACC.prev=sids;return s}
 function cacheGet(){try{return JSON.parse(store.get(CLOUD_KEY))}catch(e){return null}}
-async function cacheSet(user,h,key){const jwk=await crypto.subtle.exportKey("jwk",key);store.set(CLOUD_KEY,JSON.stringify({u:user,h,k:jwk}))}
+async function cacheSet(user,h,key){const jwk=await crypto.subtle.exportKey("jwk",key),c={u:user,h,k:jwk};store.set(CLOUD_KEY,JSON.stringify(c));rememberAcc(c)}
+// accounts used on this device, so you can switch back without typing the password again
+const ACC_LIST="fliprush_cloud_list",AUTH_MODE="fliprush_authmode";
+const knownAccs=()=>{try{const l=JSON.parse(store.get(ACC_LIST));return Array.isArray(l)?l.filter(a=>a&&a.u&&a.h&&a.k):[]}catch(e){return[]}};
+function rememberAcc(c){if(!c||!c.h||!c.k)return;const l=knownAccs().filter(a=>a.h!==c.h);l.unshift({u:c.u,h:c.h,k:c.k});store.set(ACC_LIST,JSON.stringify(l.slice(0,6)))}
+function forgetAcc(h){store.set(ACC_LIST,JSON.stringify(knownAccs().filter(a=>a.h!==h)))}
+// save to the cloud, then reload into whatever `then` set up
+function leaveAcc(then){const go=()=>setTimeout(()=>{then();location.reload()},600);if(ACC&&!ACC.kicked)cloudUpload().finally(go);else go()}
+function switchSheet(back){const o=$("overlay"),cur=cacheGet();if(cur)rememberAcc(cur);const L=knownAccs(),me=a=>ACC&&a.h===ACC.h;o.hidden=false;
+  o.innerHTML=`<div class="sheet"><h2 class="h2"><small>SWITCH ACCOUNT</small>Who's playing?</h2>
+    ${L.length?`<div class="acclist">${L.map((a,i)=>`<div class="accbar"><span class="accav">${esc(a.u[0]||"?").toUpperCase()}</span><span><b>${esc(a.u)}</b>${me(a)?" <small>· playing now</small>":""}</span>${me(a)?"":`<button data-acc="${i}">Sign in</button><button data-forget="${i}" aria-label="Forget ${esc(a.u)} on this device">✕</button>`}</div>`).join("")}</div>`:""}
+    <button class="cta" id="swLog"><span>Log in to another account</span>${ARROW}</button>
+    <button class="cta ghost2" id="swNew">Create a new account</button>
+    ${ACC?`<button class="cta ghost2" id="swOut">Log out</button>`:""}
+    <button class="cta ghost2" id="swBack">Cancel</button>
+    <p class="fine">Your progress is saved to your account before you switch. Accounts listed here sign in on this device without a password; tap ✕ to forget one.</p></div>`;
+  o.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=L[+b.dataset.acc];b.disabled=true;leaveAcc(()=>store.set(CLOUD_KEY,JSON.stringify(a)))});
+  o.querySelectorAll("[data-forget]").forEach(b=>b.onclick=()=>{forgetAcc(L[+b.dataset.forget].h);switchSheet(back)});
+  $("swLog").onclick=()=>leaveAcc(()=>{store.del(CLOUD_KEY);store.set(AUTH_MODE,"login")});
+  $("swNew").onclick=()=>leaveAcc(()=>{store.del(CLOUD_KEY);store.set(AUTH_MODE,"new")});
+  if($("swOut"))$("swOut").onclick=()=>cloudLogout();
+  $("swBack").onclick=()=>{if(back)back();else o.hidden=true}}
 async function cacheKey(c){return crypto.subtle.importKey("jwk",c.k,{name:"AES-GCM"},true,["encrypt","decrypt"])}
 /* claim this device, watch for takeovers, keep the cloud copy fresh */
 function cloudClaim(){if(!ACC||!ACC.cls.length)return;ACC.sid=Math.random().toString(36).slice(2,12);ACC.claimT=Date.now();ACC.kicked=false;
@@ -3273,6 +3298,7 @@ function cloudKicked(o){ACC.kicked=true;playing=false;try{mpLeave(true)}catch(e)
 function cloudScreen(msg,mode){
   const o=$("overlay");o.hidden=false;mode=mode||"login";
   o.innerHTML=`<div class="sheet"><h1 class="wordmark">Flip<span>Rush</span></h1>
+    ${knownAccs().length?`<div class="acclist"><span class="eyebrow">ON THIS DEVICE</span>${knownAccs().map((a,i)=>`<div class="accbar"><span class="accav">${esc(a.u[0]||"?").toUpperCase()}</span><span><b>${esc(a.u)}</b></span><button data-back="${i}">Sign in</button></div>`).join("")}</div>`:""}
     <div class="acctabs"><button class="${mode==="login"?"on":""}" id="tLog">Log in</button><button class="${mode==="new"?"on":""}" id="tNew">Create account</button></div>
     <label class="accf"><span>Username</span><input id="cUser" maxlength="16" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="3 to 16 letters, numbers or _"></label>
     <label class="accf"><span>Password</span><input id="cPass" type="password" maxlength="64" autocomplete="${mode==="new"?"new-password":"current-password"}" placeholder="At least 4 characters"></label>
@@ -3283,6 +3309,7 @@ function cloudScreen(msg,mode){
   $("tLog").onclick=()=>cloudScreen("","login");$("tNew").onclick=()=>cloudScreen("","new");
   const go=()=>mode==="new"?cloudCreate():cloudLogin();$("cGo").onclick=go;$("cPass").onkeydown=e=>{if(e.key==="Enter")go()};
   o.querySelectorAll("[name=lsave]").forEach(r=>r.onchange=()=>{});
+  const K=knownAccs();o.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>{store.set(CLOUD_KEY,JSON.stringify(K[+b.dataset.back]));cloudResume()});
 }
 function localSaves(){const out=[];accList().forEach(a=>{const raw=store.get(accKey(a.id));if(raw)try{const d=JSON.parse(raw);out.push({k:accKey(a.id),n:a.name,cash:d.cash,day:d.day})}catch(e){}});
   if(!out.length&&store.get(SAVE0))try{const d=JSON.parse(store.get(SAVE0));out.push({k:SAVE0,n:"Saved game",cash:d.cash,day:d.day})}catch(e){}return out.sort((a,b)=>b.cash-a.cash)}
@@ -3331,6 +3358,10 @@ async function cloudResume(){
 }
 function cloudLogout(){cloudUpload().finally(()=>{setTimeout(()=>{store.del(CLOUD_KEY);location.reload()},600)})}
 /* ================= multiplayer: rooms over a public MQTT broker ================= */
+// gifts: the receiver gets at most 10% of their own cash, and you can only send one every 2 ms
+const GIFT_CAP=.1,GIFT_CD=2;let giftAt=0;
+const giftAmt=to=>Math.round(Math.min(S.cash*.05,to&&isFinite(+to.c)?Math.max(0,+to.c)*GIFT_CAP:Infinity));
+function giftReady(){const n=performance.now();if(n-giftAt<GIFT_CD)return false;giftAt=n;return true}
 // Everyone in a room sees each other walk around town, chats, emotes and can send gifts.
 // Each player keeps their own save; the broker only relays small messages.
 const MP_BROKERS=["wss://broker.hivemq.com:8884/mqtt","wss://broker.emqx.io:8084/mqtt","wss://test.mosquitto.org:8081/mqtt"];
@@ -3363,7 +3394,7 @@ function mpOnMsg(topic,buf){
   if(!MP)return;const parts=topic.split("/"),kind=parts[3],id=parts[4];if(parts[2]!==MP.code)return;let d=null;try{d=JSON.parse(buf.toString())}catch(e){}
   // the same message can arrive from more than one server; handle it once
   if(d&&d._i){if(MP.seen[d._i])return;MP.seen[d._i]=1;MP.seenQ.push(d._i);if(MP.seenQ.length>400)delete MP.seen[MP.seenQ.shift()]}
-  if(kind==="g"){if(id===MP_ID&&d&&d.f!==MP_ID&&d.a>0){const a=Math.min(+d.a,1e300);if(!isFinite(a)||a<=0)return;S.cash+=a;dirty=true;juiceGain(a);SFX.grail();confetti(80);banner(esc(d.n||"A friend").slice(0,16)+" sent you "+fmt(a),"g");mpLog(d.n,"sent you "+fmt(a),1)}return}
+  if(kind==="g"){if(id===MP_ID&&d&&d.f!==MP_ID&&d.a>0){const a=Math.min(+d.a,1e300,Math.floor(S.cash*GIFT_CAP));if(!isFinite(a)||a<=0){mpLog(d.n,"tried to send you money, but gifts are capped at 10% of your cash",1);return}S.cash+=a;dirty=true;juiceGain(a);SFX.grail();confetti(80);banner(esc(d.n||"A friend").slice(0,16)+" sent you "+fmt(a),"g");mpLog(d.n,"sent you "+fmt(a),1)}return}
   if(kind==="d"){if(id===MP_ID&&d){const n=String(d.n||"A friend").slice(0,16);banner(n+" "+String(d.t||"").slice(0,40),"u");SFX.hot();buzz([20,40,20]);mpLog(n,String(d.t||"").slice(0,60),1);if(d.isl){S.islVis=S.islVis||{};S.islVis[d.isl]=(S.islVis[d.isl]||0)+1;dirty=true}}return}
   if(kind==="aw"){if(id===MP_ID&&d)pvpMsg(d);return}
   if(kind==="cr"){if(id===MP_ID&&d)crMsg(d);return}
@@ -3409,10 +3440,10 @@ function mpUI(keep){
       <div class="mpjoin"><input id="mpCodeIn" maxlength="6" placeholder="Room code" autocapitalize="characters" autocomplete="off"><button class="cta" id="mpJoinB">Join</button></div>
       <p class="accmsg" id="mpMsg"></p><p class="fine">Share the room code with friends. Everyone keeps their own save, money and progress.</p>`;
     $("mpX").onclick=()=>{sh.hidden=true};$("mpNew").onclick=()=>mpJoin(mpCode());$("mpNewPub").onclick=()=>{MP_PUB_NEXT=true;mpJoin(mpCode())};$("mpJoinB").onclick=()=>mpJoin($("mpCodeIn").value);$("mpCodeIn").onkeydown=e=>{if(e.key==="Enter")mpJoin($("mpCodeIn").value)};return}
-  const peers=Object.entries(MP.peers),gift=Math.max(0,Math.round(S.cash*.05));
+  const peers=Object.entries(MP.peers);
   sh.innerHTML=`<div class="pshead"><div><small>${isNpcW()?"NPC WORLD":MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${isNpcW()?BOTW.find(b=>b.c===MP.code).n:MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
     <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>${S.title?esc(S.title)+" · ":""}Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
-      ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${gift<1?"disabled":""}>Gift ${fmt(gift)}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
+      ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${fmtN(p.f||0)} fans · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${giftAmt(p)<1?"disabled":""}>Gift ${fmt(giftAmt(p))}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
     ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
     <div class="mpjoin"><input id="mpIn" maxlength="80" placeholder="Message" autocomplete="off"><button class="cta" id="mpSendB">Send</button></div>
@@ -3427,7 +3458,7 @@ function mpUI(keep){
   $("mpSendB").onclick=()=>say($("mpIn").value);$("mpIn").onkeydown=e=>{if(e.key==="Enter")say($("mpIn").value)};
   sh.querySelectorAll("[data-lb]").forEach(b=>b.onclick=()=>{lbK=b.dataset.lb;mpUI(true)});
   sh.querySelectorAll("[data-emo]").forEach(b=>b.onclick=()=>say(b.dataset.emo));
-  sh.querySelectorAll("[data-gift]").forEach(b=>b.onclick=()=>{const p=MP.peers[b.dataset.gift],a=Math.round(S.cash*.05);if(!p||a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},b.dataset.gift);mpLog(mpName(),"sent "+fmt(a)+" to "+p.n,1);SFX.sell();banner("Sent "+fmt(a)+" to "+String(p.n).slice(0,14),"u");mpUI()});
+  sh.querySelectorAll("[data-gift]").forEach(b=>b.onclick=()=>{const p=MP.peers[b.dataset.gift],a=giftAmt(p);if(!p||a<1||!giftReady())return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},b.dataset.gift);mpLog(mpName(),"sent "+fmt(a)+" to "+p.n,1);SFX.sell();banner("Sent "+fmt(a)+" to "+String(p.n).slice(0,14),"u");mpUI()});
 }
 
 /* ================= travel: countries, prestige houses and businesses abroad ================= */
@@ -3714,7 +3745,7 @@ function islParty(k,draw){const cost=Math.round(ISLANDS[islTier(k)].cost*.01),po
   SFX.rebirth();confetti(220,null,null,["#ff4fd8","#4fe3ff","#ffcc33","#fff"]);flash("#ff4fd8",.3);shake(6);banner("Beach party! +"+fmtN(f)+" fans","g");if(MP)mpSend("c",{n:mpName(),t:"is throwing a party on "+ISLANDS[islTier(k)].n+" 🎉",sys:1});draw()}
 function openIsland(k,fid){
   const i=ISLANDS.find(x=>x.k===k),p=fid&&MP?MP.peers[fid]:null,mine=!fid;room="island";$("room").hidden=false;$("room").style.setProperty("--pc",i.c);FI=null;
-  const draw=()=>{FI=null;room="island";const relaxOk=!S.relaxT||Date.now()-S.relaxT>120000,gift=Math.round(S.cash*.05),B=mine?{...islB(k).b,chest:islB(k).chest!==dayKey(),boat:!!bestBoat()}:{},pb={};if(!mine&&p&&p.ib&&p.ib[k])p.ib[k].forEach(x=>pb[x]=1);
+  const draw=()=>{FI=null;room="island";const relaxOk=!S.relaxT||Date.now()-S.relaxT>120000,gift=giftAmt(p),B=mine?{...islB(k).b,chest:islB(k).chest!==dayKey(),boat:!!bestBoat()}:{},pb={};if(!mine&&p&&p.ib&&p.ib[k])p.ib[k].forEach(x=>pb[x]=1);
     const built=ISB.filter(b=>B[b.k]).length,partyOk=mine&&islB(k).party!==dayKey(),pc=Math.round(i.cost*.01),caught=Object.keys(S.fish||{}).length;
     const nm=mine&&islB(k).name?islB(k).name:i.n;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(nm))}<div class="art islart" id="islArt">${islandArt({...i,n:nm},mine?null:p&&p.n,mine?B:pb)}</div>
@@ -3741,7 +3772,7 @@ function openIsland(k,fid){
       if(a==="name"){const v=prompt("Name your island",islB(k).name||i.n);if(v!=null){const t=String(v).replace(/[<>]/g,"").trim().slice(0,24);islB(k).name=t||"";dirty=true;draw()}}});
     $("room").querySelectorAll("[data-ib]").forEach(x=>x.onclick=()=>{const b=ISB.find(y=>y.k===x.dataset.ib),c=Math.round(i.cost*b.f);if(B[b.k]||S.cash<c)return;S.cash-=c;islB(k).b[b.k]=1;dirty=true;STATIC=null;SFX.rebirth();confetti(140,null,null,[i.c,"#fff","#ffcc33"]);shake(5);banner(b.n+" built","g");draw();updMini()});
     const sg=$("iSign");if(sg)sg.onclick=()=>{if(!p)return;mpSend("d",{n:mpName(),t:"visited your "+i.n,isl:k},fid);SFX.hot();banner("Guestbook signed","u");sg.disabled=true};
-    const gf=$("iGift");if(gf)gf.onclick=()=>{if(!p)return;const a=Math.round(S.cash*.05);if(a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},fid);SFX.sell();banner("Bottle sent: "+fmt(a),"u");draw();updMini()};
+    const gf=$("iGift");if(gf)gf.onclick=()=>{if(!p)return;const a=giftAmt(MP&&MP.peers[fid]||p);if(a<1||!giftReady())return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},fid);SFX.sell();banner("Bottle sent: "+fmt(a),"u");draw();updMini()};
   };draw();renderHud();
 }
 function fishAlbum(back){const F=S.fish||{};
@@ -4306,7 +4337,10 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=22,WN=[
+const WN_VER=23,WN=[
+ ["⭐","Bots have fans","NPC players now have fan counts that grow through the day, so they show up on the fan leaderboard like real players."],
+ ["👥","Switch account","Hop between accounts on the same device from the title screen or the Account card, log in to another one, or make a new one."],
+ ["🖱️","Fair play","Autoclickers no longer work: presses closer than 5 ms apart are ignored. Gifts are capped at 10% of the receiver's cash, with a 2 ms cooldown between gifts."],
  ["⏱️","Faster worlds","World 1 now takes about 35 minutes, World 2 about 30 and Deep Time about 30. Rare editions (Signed, Gold, Platinum…) appear as you get richer, space generators are cheaper, and prehistoric life pays back much faster."],
  ["🤖","NPC worlds","Three always-open online worlds full of bot players who walk around, chat and race you at the Car Meet. Join with friends from the Harbor."],
  ["📶","Snappier multiplayer","Players update 10 times a second and move smoother, and the public town list loads faster."],
@@ -6293,6 +6327,7 @@ function botsTick(){if(!isBotW())return;const W=botWorld(),now=Date.now();
     const nm=BOTN[(Math.floor(hsh(W.c,"n")*BOTN.length)+i*7)%BOTN.length],ref=Math.round(Math.max(W.lv,botRef())/5)*5,lvl=Math.max(2,Math.round(ref*W.mix[(i+Math.floor(hsh(W.c,"m")*6))%W.mix.length]*(.85+hsh(W.c,i,"l")*.3)));
     let p=MP.peers[id];if(!p){p=MP.peers[id]={dx:x,dy:y,ph:0,bot:1,n:nm,s:["#e2364a","#2a5bd7","#2fd28a","#ffcc33","#ff7a3d","#8f52d4","#1b1f2a"][i%7],sk:["#f3d0b5","#e8b896","#c98e62","#8d5a3b","#5c3a24"][Math.floor(hsh(W.c,i,"s")*5)],hr:["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"][Math.floor(hsh(W.c,i,"h")*5)],hs:FEM.has(nm)?8:0,w:"",k:0};renderMpChip();mpRefresh()}
     if(p.lv!==lvl)botLook(p,W,i,lvl);
+    p.f=Math.round((p.fb||0)*(1+(now%864e5)/864e5*.25)+Math.floor(now/6e4)%97);
     p.x=x;p.y=y;p.m=walk>0&&walk<1?1:0;p.h=Math.atan2(B[1]-A[1],B[0]-A[0]);p.seen=now;
     // inside: the first 60% of an indoor stretch; the gym and club show them working out or dancing
     const w0=inb&&f<.6?inb:"";if(p.w!==w0){p.w=w0;p.ix=null}
@@ -6317,7 +6352,7 @@ function botLook(p,W,i,lvl){const r=k=>hsh(W.c,i,k),bld=Math.min(2.4,lvl/110*(.6
   let ti=0;TIERS.forEach((T,j)=>{if(cash>=T.nw)ti=j});
   Object.assign(p,{lv:lvl,cm,t:+(1+Math.min(.8,(cm-170)/170*2.2)).toFixed(2),z:+(1+.6*Math.min(1,bld/1.4)).toFixed(2),b:[+bld.toFixed(2),+(bld*(.8+r("l")*.3)).toFixed(2),+bld.toFixed(2)],c:Math.round(cash),ti,pr:Math.round(20+lvl*14*(.6+r("p"))),k:lvl>200?5:lvl>90?3:0,
     ac:lvl<15?{}:{g:lvl>60?"dshades":lvl>25?"aviator":"shades",c:lvl>80?"diamond":lvl>30?"gold":"silver",...(lvl>50?{h:pick2(["top","cowboy","halo","cap"],i)}:{}),...(lvl>90?{b:i%2?"cape":"wings"}:{})},
-    hm:Math.max(0,Math.min(PROPS.length-1,Math.floor(lvl/35*(.6+r("hm")*.8)))),rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
+    fb:Math.round(Math.pow(lvl,2.2)*3*(.25+r("f")*1.5)+lvl*20),hm:Math.max(0,Math.min(PROPS.length-1,Math.floor(lvl/35*(.6+r("hm")*.8)))),rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
 /* ================= editions: once you outgrow the catalogue, the market brings you pricier editions of the same items ================= */
 let edTop=0,edTopN=-1;
 function edK(){if(!S)return 1;if(edTopN!==S.unlocked.length){edTopN=S.unlocked.length;edTop=Math.max(...POOL.filter(p=>S.unlocked.includes(p.cat)&&p.cat!=="lux").map(p=>p.base))}const w=Math.max(260,(S.cash+stashVal())*1.4);return Math.max(1,w*EDF/edTop)}
@@ -6495,7 +6530,7 @@ function openTownship(){
   };draw();
 }
 function visitHouse(p,back){
-  const peer=p.id&&MP?MP.peers[p.id]:null,gift=Math.round(S.cash*.05);
+  const peer=p.id&&MP?MP.peers[p.id]:null,gift=giftAmt(peer);
   const info=p.me?{n:mpName(),lv:repLevel(),c:S.cash,cm:S.height||170,f:S.fans||0,tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,is:Object.keys(S.isl||{}).length}:{n:p.n,lv:peer?peer.lv:p.lv,c:peer?peer.c:0,cm:peer?peer.cm:170,f:peer?peer.f||0:0,tw:peer?peer.tw||0:0,tr:peer?peer.tr||0:0,is:peer&&peer.is?peer.is.length:0};
   const fu={};((peer&&peer.fu)||[]).forEach(k=>fu[k]=1);
   $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(String(p.n).slice(0,14))+"'s house")}<div class="art homeart">${p.me?homeArt():homeArt({furn:fu,hm:p.hm||0,fish:(peer&&peer.fi)||[]})}</div>
@@ -6504,7 +6539,7 @@ function visitHouse(p,back){
     <button class="bigbtn alt" id="hBack">Back to the street<small>&nbsp;</small></button></div>`;
   $("leaveBtn").onclick=closeRoom;$("hBack").onclick=back;
   const bl=$("hBell");if(bl)bl.onclick=()=>{if(!peer)return;mpSend("d",{n:mpName(),t:"rang your doorbell 🔔"},p.id);SFX.hot();banner("Ding dong!","u");bl.disabled=true};
-  const gf=$("hGift");if(gf)gf.onclick=()=>{if(!peer)return;const a=Math.round(S.cash*.05);if(a<1)return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},p.id);SFX.sell();banner("Gift left: "+fmt(a),"u");visitHouse(p,back);updMini()};
+  const gf=$("hGift");if(gf)gf.onclick=()=>{if(!peer)return;const a=giftAmt(peer);if(a<1||!giftReady())return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},p.id);SFX.sell();banner("Gift left: "+fmt(a),"u");visitHouse(p,back);updMini()};
 }
 
 /* ================= nightclub floor: walk around, dance, rizz, VIP ================= */
@@ -6723,14 +6758,14 @@ function townTick(){if(!MPW)return;const ids=townPlayers().map(p=>p.id);ids.forE
 function openPlot(p){if(p.me){openRoom("home");return}enterHouse(p);renderHud()}
 
 /* ================= title ================= */
-function title(){accMigrate();if(!ACC){const c=cacheGet();if(c&&c.u&&c.k)return cloudResume();return cloudScreen("",localSaves().length?"new":"login")}titleMain()}
+function title(){accMigrate();if(!ACC){const c=cacheGet();if(c&&c.u&&c.k)return cloudResume();const m=store.get(AUTH_MODE);store.del(AUTH_MODE);return cloudScreen("",m||(localSaves().length?"new":"login"))}titleMain()}
 function titleMain(){
   const acc={name:ACC.user};newGame();
   const o=$("overlay"),has=load();o.hidden=false;let confirmNew=false;
   const draw=()=>{
     o.innerHTML=`<div class="sheet">
       <h1 class="wordmark">Flip<span>Rush</span></h1>
-      <div class="accbar"><span class="accav">${esc(acc.name[0]||"?").toUpperCase()}</span><span>Playing as <b>${esc(acc.name)}</b></span><button id="accSw">Log out</button></div>
+      <div class="accbar"><span class="accav">${esc(acc.name[0]||"?").toUpperCase()}</span><span>Playing as <b>${esc(acc.name)}</b></span><button id="accSw">Switch account</button></div>
       <p class="lede">Walk the town, flip everything at the market, hit the gym, trade live charts, and level up forever. Every level lets you pick a new perk.</p>
       <div class="how">
         <div><kbd>WALK</kbd><span>Tap the map to walk. Buttons at the bottom take you straight to a place.</span></div>
@@ -6747,7 +6782,7 @@ function titleMain(){
         <button class="cta" id="bNew" style="background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:.95rem">${confirmNew?"Tap again to erase your save":"New game"}</button>`
        :`<button class="cta" id="bNew"><span>Start playing</span>${ARROW}</button>`}
       <p class="fine">${ACC.offline?"Offline: saving on this device. It syncs to your account when you're back online.":"Progress saves to your account automatically."}</p></div>`;
-    $("accSw").onclick=()=>cloudLogout();
+    $("accSw").onclick=()=>switchSheet(titleMain);
     if(has)$("bCont").onclick=()=>start();
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
