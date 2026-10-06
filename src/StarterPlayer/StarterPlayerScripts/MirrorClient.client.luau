@@ -48,9 +48,10 @@ local function column(order)
 		Size = UDim2.fromScale(1, 0),
 		BackgroundColor3 = Colors.Panel,
 		BackgroundTransparency = Theme.Alpha.Panel,
-		Ambient = Color3.fromRGB(150, 140, 130),
-		LightColor = Color3.fromRGB(255, 236, 214),
-		LightDirection = Vector3.new(-0.4, -1, -0.6),
+		-- posing-stage lighting: a strong golden key from the side and front over a dim warm fill, so every muscle casts a shade
+		Ambient = Color3.fromRGB(110, 92, 70),
+		LightColor = Color3.fromRGB(255, 205, 120),
+		LightDirection = Vector3.new(-0.75, -0.45, -0.6),
 		Parent = col,
 	}, { New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }), Theme.Round("Panel"), Theme.Stroke(Colors.Border, 1, Theme.Alpha.Border) })
 	local name = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), Parent = col })
@@ -206,9 +207,9 @@ local function startReflection(mirrorModel, glass)
 	local clip = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(78, 66, 58), ClipsDescendants = true, Parent = surface })
 	local viewport = New("ViewportFrame", {
 		BackgroundTransparency = 1,
-		Ambient = Color3.fromRGB(205, 190, 175),
-		LightColor = Color3.fromRGB(255, 238, 210),
-		LightDirection = Vector3.new(-0.35, -0.8, 0.55), -- a soft key light from above and in front, so faces and chests are lit
+		Ambient = Color3.fromRGB(120, 98, 72), -- posing-stage lighting (golden key from the side, dim warm fill)
+		LightColor = Color3.fromRGB(255, 205, 120),
+		LightDirection = Vector3.new(-0.75, -0.45, 0.6),
 		Parent = clip,
 	})
 	-- a faint cool sheen on top so it reads as glass, not a screen
