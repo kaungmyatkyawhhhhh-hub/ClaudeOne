@@ -112,7 +112,6 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **Muscle body tiers** with the bodies you pick: tested with Roblox's "Man" torso + arms (clothes, hair and
   accessories stayed on, height kept). Check your bodies with layered clothing, emotes, the skateboard and lifting.
 - Phone **Menu button + grid**: open it, pick a few buttons, tap outside to close, on a real phone or the Device Emulator.
-- Lifting on **pro gym machines** as a Growth Spurt 2+ player, and walking through the unlocked glass door.
 - 2-player features (spotting, high fives, crews, arm wrestling vs a player) weren't retested.
 
 ## Known issues
@@ -130,7 +129,9 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   quiet. A tier with no ids shows the highest filled tier below it. Tier progress counts each muscle up to the goal.
 - Sauna: on the sand east of the beach gym (not inside a gym) so every player can use it from the start. Skate wheels
   are the only store gear with an effect, and only on skating speed (no gains). Prices: decks 80-150, wheels 150 / 400 / 900.
-- Studio test hook: with `FreshPlayer` on, a Workspace number attribute `TestCoins` sets the starting coins.
+- Studio test hooks: with `FreshPlayer` on, Workspace number attributes `TestCoins` (starting coins) and `TestSpurts`
+  (start after that many Growth Spurts). Tested with them: a Growth Spurt 2 player walks through the pro gym glass door
+  and lifts on the pro machines (Lateral Raise) with no errors.
 - Part 4: buttons are 64px, not 56: "Wardrobe" is 60px wide at the 14px minimum text size. "Phone" = touch screen
   without a keyboard (Studio: Workspace attribute `TestPhoneLayout`); a small PC window keeps the PC menu. While lifting
   the PC menu keeps only Stats; phones hide the Menu button.

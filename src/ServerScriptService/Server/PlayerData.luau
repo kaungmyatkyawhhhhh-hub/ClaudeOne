@@ -191,6 +191,9 @@ local function onPlayerAdded(player)
 		-- optional "TestCoins" (number) attribute: start with that many coins (to test the stores)
 		local testCoins = workspace:GetAttribute("TestCoins")
 		if type(testCoins) == "number" then data.coins = math.max(0, math.floor(testCoins)) end
+		-- optional "TestSpurts" (number) attribute: start after that many Growth Spurts (to test the pro gym)
+		local testSpurts = workspace:GetAttribute("TestSpurts")
+		if type(testSpurts) == "number" then data.growthSpurts = math.clamp(math.floor(testSpurts), 0, 20) end
 	end
 
 	-- Saves from before the tutorial existed: players who already lifted skip it.
