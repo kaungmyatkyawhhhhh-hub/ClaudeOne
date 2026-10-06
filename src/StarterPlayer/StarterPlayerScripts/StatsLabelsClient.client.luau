@@ -190,7 +190,7 @@ local function setHighlight(target, on)
 	local character = player.Character
 	local wanted = {}
 	if on and target and character then
-		local folder = character:FindFirstChild("MuscleBlobs")
+		local folder = character:FindFirstChild("MuscleMeshes")
 		if folder then
 			for _, blob in ipairs(folder:GetChildren()) do
 				local name = blob:GetAttribute("MuscleName")

@@ -18,3 +18,5 @@ tools/.dev/
 
 # Blender body meshes (not used in the game)
 tools/meshes/
+muscle_v7/
+tools/_list.txt

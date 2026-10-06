@@ -207,7 +207,9 @@ local function refreshStatue()
 	end
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model.Parent = Workspace
-	BodyService.BuildStatic(model, { share = 1, recolor = { color = cfg.Color, material = cfg.Material } })
+	-- the clients draw the full-grown marble muscles (muscle v7) from these attributes
+	model:SetAttribute("MuscleG", BodyService.EncodeShare(1))
+	model:SetAttribute("MuscleMarble", true)
 	if plaque then
 		plaque.Text = userId > 0 and ("Strongest lifter: " .. nameOf(userId)) or "Strongest lifter: could be you"
 	end

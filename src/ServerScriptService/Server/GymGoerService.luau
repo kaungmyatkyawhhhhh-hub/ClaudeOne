@@ -315,16 +315,8 @@ local function dressNpc(npc, gym)
 			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "UpperTorso" and part.Name ~= "LowerTorso" then part.CanCollide = false end
 		end
 	end
-	local torso = npc:FindFirstChild("UpperTorso")
-	local head = npc:FindFirstChild("Head")
-	local legs = npc:FindFirstChild("LeftUpperLeg")
-	if not (torso and head and legs) then return end
-	local color = head.Color
-	BodyService.BuildStatic(npc, {
-		share = NPC_GROWTH[gym] or NPC_GROWTH.Starter,
-		static = torso.Anchored,
-		style = { skin = color, top = torso.Color, shorts = legs.Color, keepParts = true },
-	})
+	-- the clients draw the muscles from this number (muscle v7), grown to the gym's preset
+	npc:SetAttribute("MuscleG", BodyService.EncodeShare(NPC_GROWTH[gym] or NPC_GROWTH.Starter))
 end
 
 function GymGoerService.Start()

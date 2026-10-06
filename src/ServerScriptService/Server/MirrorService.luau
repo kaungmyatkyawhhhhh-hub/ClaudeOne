@@ -93,15 +93,10 @@ local function openFor(player)
 	before.Parent = folder
 	after.Parent = folder
 	folder.Parent = playerGui
-	-- the muscle blobs (day one = none, now = your levels) go on once the rigs are parented and their joints solved
-	task.wait()
-	local skin = Color3.fromHex("#E0A878")
-	local original = BodyService.OriginalDescription(player)
-	if original then skin = original.HeadColor end
-	local style = BodyService.StyleOf(data, skin)
-	local levels, goal = BodyService.LevelsOf(data)
-	BodyService.BuildStatic(before, { share = 0, style = style })
-	BodyService.BuildStatic(after, { levels = levels, goal = goal, style = style })
+	-- the muscles are drawn by the client from these numbers (day one = none, now = your levels; MuscleClient / MirrorClient)
+	BodyService.PublishData(after, data)
+	BodyService.PublishData(before, data)
+	before:SetAttribute("MuscleG", BodyService.EncodeShare(0))
 	Remotes.PlayerEvent:FireClient(player, "OpenMirror", { before = before, after = after })
 end
 
