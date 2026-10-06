@@ -73,6 +73,8 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **Map polish (6 Oct):** parking lot: cars scaled to 85% so they sit inside the stall lines with a gap, 5 removed so the
   rows aren't a full grid (14 cars). Skate park: the empty concrete got painted floor plates (mint, sunny, coral), a
   manual pad, a kicker, a flat bar and painted ledge stripes (`tools/builders/SkateParkExtras.luau`).
+  Beach gym shade sails rebuilt as two smooth triangles with tie ropes (the stepped strips read as a wire outline from
+  far away; `tools/builders/BeachGymSails.luau`).
 - **Glass entrance doors (6 Oct):** the starter gym's double doors (`Workspace.Gym.Entrance`, the two `DoorGlass`
   panels) are see-through glass now (Glass, Transparency 0.6, RGB 200/215/225, Reflectance 0.1, no shadow). Frame,
   divider and push bars unchanged; they still slide open (tag `SlidingDoor`, `SlideX`). It's the only door built from
