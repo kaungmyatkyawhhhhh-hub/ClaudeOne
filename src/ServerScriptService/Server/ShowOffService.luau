@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local ShowOff = require(Config.ShowOff)
 local Muscles = require(Config.Muscles)
+local GrowthSpurts = require(Config.GrowthSpurts)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 local BodyService = require(script.Parent.BodyService)
@@ -24,6 +25,7 @@ local stores = {}  -- [groupId | "Total"] = OrderedDataStore
 local written = {} -- [player] = { [key] = score } last value written
 local names = {}   -- [userId] = name
 local statueUserId = nil
+local statueSpurts = nil
 
 ------------------------------------------------------------------------
 -- Leaderboard board (built in Studio: Workspace.LeaderboardWall, made with tools/builders/ShowOff.luau)
@@ -150,7 +152,9 @@ end
 local function refreshStatue()
 	local entry = top("Total", 1)[1]
 	local userId = entry and tonumber(entry.key) or 0
-	if userId == statueUserId and statue and statue.Parent then return end
+	-- the statue is as tall as that player is (their Growth Spurts; the Total score carries the count)
+	local spurts = entry and entry.value // 1000000 or 0
+	if userId == statueUserId and spurts == statueSpurts and statue and statue.Parent then return end
 	local desc = nil
 	if userId > 0 then
 		local ok, result = pcall(Players.GetHumanoidDescriptionFromUserId, Players, userId)
@@ -158,13 +162,14 @@ local function refreshStatue()
 	end
 	desc = desc or Instance.new("HumanoidDescription") -- default rig
 	-- the strongest lifter: the Robloxian 2.0 body, fully grown muscle blobs (all made marble below)
-	BodyService.PrepareDescription(desc, nil, nil)
+	BodyService.PrepareDescription(desc, nil, GrowthSpurts.GetHeight(spurts) / BodyShape.BaseHeight)
 	local okModel, model = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
 	if not okModel or not model then
 		warn("[ShowOffService] Could not build the statue:", model)
 		return
 	end
 	statueUserId = userId
+	statueSpurts = spurts
 	if statue then statue:Destroy() end
 	statue = model
 	model.Name = "Statue"
