@@ -562,6 +562,74 @@
   .buff.weather-b { background: linear-gradient(90deg, #6ea8ff, var(--ready)); }
   .buff.code-b { background: linear-gradient(90deg, var(--gold), #fff2a8); }
   @media (prefers-reduced-motion: reduce) { .weather.rain, .stage.quaking .arena, .petpal svg { animation: none !important; } .wheel { transition-duration: .3s; } }
+  /* Ranks */
+  .rankchip { --rk: #9c9bc2; position: relative; padding-bottom: 9px; }
+  .rankchip b { color: var(--rk); text-shadow: 0 0 10px var(--rk); }
+  .rbar { position: absolute; left: 12px; right: 12px; bottom: 4px; height: 3px; border-radius: 99px; background: rgba(0,0,0,.4); overflow: hidden; }
+  .rbar i { display: block; height: 100%; width: 0; background: var(--rk); }
+  /* Upgrade tiers */
+  .tierb { font-size: .62rem; font-weight: 800; letter-spacing: .08em; padding: 2px 6px; border-radius: 6px; color: #160d22; background: var(--tc); }
+  .tierb:empty { display: none; }
+  /* Cosmos */
+  .cosmos { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 14px; background: radial-gradient(ellipse at 20% 0%, rgba(176, 91, 255, .25), transparent 60%), rgba(0,0,0,.3); border: 1px solid rgba(176, 91, 255, .35); }
+  .cos-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .cos-dot { width: 12px; height: 12px; border-radius: 50%; background: #6ea8ff; box-shadow: 0 0 10px #6ea8ff; }
+  .cos-dot.m { background: #b05bff; box-shadow: 0 0 10px #b05bff; animation: hue 4s linear infinite; }
+  .cos-m { font-family: var(--font-display); font-size: .85rem; color: #d4b6ff; }
+  .cos-btn:not(:disabled) { background: linear-gradient(90deg, #6ea8ff, #b05bff); color: #fff; border-color: transparent; }
+  /* Evolve */
+  .evo-list { display: flex; flex-direction: column; gap: 8px; }
+  .evo-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border-radius: 14px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--ac) 18%, transparent), rgba(0,0,0,.2)); border: 1px solid color-mix(in srgb, var(--ac) 45%, transparent); }
+  .evo-row .avatar { background: var(--c); }
+  .evo-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: .85rem; }
+  .evo-cur { color: var(--ac); font-weight: 800; text-shadow: 0 0 8px var(--ac); }
+  .evo-info small { color: var(--muted); }
+  .evo-pips { display: flex; gap: 4px; }
+  .evo-pips i { width: 16px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); }
+  .evo-pips i.on { background: var(--pc); box-shadow: 0 0 6px var(--pc); }
+  .trans-btn { background: linear-gradient(90deg, #fff, #ffe9a3, #d4b6ff, #fff); background-size: 300% 100%; animation: shine 4s linear infinite; color: #2a1a4a; box-shadow: 0 3px 0 #8f7bc4, 0 0 26px rgba(255,255,255,.35); }
+  .tperk { background: rgba(255, 244, 209, .08); border-color: rgba(255, 244, 209, .35); }
+  body.transcending::after { content: ""; position: fixed; inset: 0; z-index: 90; pointer-events: none; background: radial-gradient(circle, #fff 0%, rgba(255,240,200,.8) 40%, transparent 80%); animation: flash 2.5s ease-out forwards; }
+
+  /* Evolution looks */
+  .veins, .sparkles, .stars, .halo-ring { display: none; }
+  .ysvg.t2 .veins { display: inline; }
+  .armIn { transition: transform .4s cubic-bezier(.2,1.6,.4,1); }
+  .armL .armIn { transform-origin: 112px 146px; }
+  .armR .armIn { transform-origin: 208px 146px; }
+  .ysvg.t3 .armIn { transform: scale(1.17); }
+  .ysvg.t4 .aura { opacity: .75; }
+  .ysvg.t5 .sparkles { display: inline; animation: twinkle 1.2s ease-in-out infinite; }
+  .ysvg.t6 .stars { display: inline; animation: twinkle 2s ease-in-out infinite reverse; }
+  .ysvg.t6 .eyes path { fill: #8ff7ff; }
+  .ysvg.t6 .eyes { filter: drop-shadow(0 0 3px #8ff7ff); }
+  .ysvg.t7 .halo-ring { display: inline; animation: twinkle 2.4s ease-in-out infinite; }
+  .ysvg.t7 .aura { opacity: 1; }
+  .ysvg.t7 .flex { filter: drop-shadow(0 0 10px rgba(255, 246, 214, .8)) !important; }
+  @keyframes twinkle { 50% { opacity: .25; } }
+
+  /* Decoration */
+  #bgfx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  .wrap { position: relative; z-index: 1; }
+  body::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,.55)); }
+  .backdrop { position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: 16px; overflow: hidden; opacity: .9;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 25%); mask-image: linear-gradient(180deg, transparent, #000 25%); }
+  .backdrop svg { width: 100%; height: 100%; display: block; }
+  .backdrop .neon { animation: neon 6s infinite; }
+  @keyframes neon { 0%, 18%, 22%, 62%, 64%, 100% { opacity: 1; } 20%, 63% { opacity: .35; } }
+  .stage, .rots, .arcade, .hub, .eggs, .rebirth, .multiverse, .trophies, .up, .card {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 32px rgba(0,0,0,.28); }
+  .logo { background-size: 200% 100%; background-image: linear-gradient(100deg, #fff 0%, var(--gold) 30%, var(--gold-2) 45%, #fff 50%, var(--gold) 55%, var(--gold-2) 100%); animation: shine 6s linear infinite; }
+  @keyframes shine { to { background-position: -200% 0; } }
+  .big-btn, #stealBtn, #lockBtn, #rebirthBtn, .modal-card button { position: relative; overflow: hidden; }
+  .big-btn::after, #stealBtn::after, #lockBtn::after, #rebirthBtn::after, .modal-card button::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; transform: skewX(-20deg); pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transition: left .6s; }
+  .big-btn:hover::after, #stealBtn:hover::after, #lockBtn:hover::after, #rebirthBtn:hover::after, .modal-card button:hover::after { left: 120%; }
+  .gains .num { background: linear-gradient(180deg, #fff 40%, #ffe9a3); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 18px rgba(var(--glow), .45)) drop-shadow(0 4px 0 rgba(0,0,0,.4)); text-shadow: none; }
+  .ntag { box-shadow: 0 0 12px color-mix(in srgb, var(--c) 35%, transparent); }
+  @media (prefers-reduced-motion: reduce) { .backdrop .neon, .logo, .trans-btn, .cos-dot.m, .ysvg .sparkles, .ysvg .stars, .ysvg .halo-ring { animation: none !important; } }
   @media (prefers-reduced-motion: reduce) {
     .rot { animation-duration: 40s; }
     .rot svg, .rainbow { animation: none !important; }
@@ -603,7 +671,7 @@
           <rect x="106" y="370" width="54" height="4" rx="2" fill="#ffc94a"/><rect x="160" y="370" width="54" height="4" rx="2" fill="#ffc94a"/>
 
           <!-- left arm (right arm is mirrored) -->
-          <g class="arm armL"><g id="armShape">
+          <g class="arm armL"><g class="armIn"><g id="armShape">
             <path d="M112 142 C88 136 60 138 46 152 C38 162 44 174 58 172 C76 170 96 168 116 172 Z" fill="url(#skin)"/>
             <path d="M44 156 C34 132 36 104 46 84 L70 86 C68 108 66 132 66 162 Z" fill="url(#skinShade)"/>
             <ellipse cx="78" cy="138" rx="34" ry="24" fill="url(#skin)"/>
@@ -612,8 +680,9 @@
             <circle cx="56" cy="76" r="17" fill="url(#skin)"/>
             <path d="M46 70 h20 M45 77 h22" stroke="#8a522b" stroke-width="1.6" opacity=".45"/>
             <circle cx="112" cy="146" r="24" fill="url(#skin)"/>
-          </g></g>
-          <g class="arm armR"><use href="#armShape" transform="translate(320 0) scale(-1 1)"/></g>
+            <g class="veins" fill="none" stroke="#6b3a1c" stroke-width="1.8" stroke-linecap="round" opacity=".55"><path d="M56 128 q10 -7 20 0 q8 6 18 -2"/><path d="M48 104 q5 18 3 38"/><path d="M62 146 q14 4 30 -2"/></g>
+          </g></g></g>
+          <g class="arm armR"><g class="armIn"><use href="#armShape" transform="translate(320 0) scale(-1 1)"/></g></g>
 
           <!-- torso -->
           <path d="M100 140 L220 140 C218 184 202 240 192 290 L128 290 C118 240 102 184 100 140 Z" fill="url(#skin)"/>
@@ -700,6 +769,12 @@
           <g class="mouth m-hype"><path d="M147 97 h26 q-2 14 -13 14 q-11 0 -13 -14z" fill="#3a1508"/><path d="M149 97.5 h22 v3.5 h-22z" fill="#fff"/><ellipse cx="160" cy="107" rx="6" ry="3" fill="#e0606e"/></g>
           <g class="mouth m-ooh"><ellipse cx="160" cy="102" rx="5" ry="6" fill="#3a1508"/></g>
           <ellipse cx="146" cy="62" rx="10" ry="4" fill="#fff" opacity=".08"/>
+          <g class="evo-fx">
+            <g class="veins torso-veins" fill="none" stroke="#6b3a1c" stroke-width="1.6" stroke-linecap="round" opacity=".45"><path d="M140 250 q-6 14 0 30"/><path d="M180 250 q6 14 0 30"/></g>
+            <g class="sparkles" fill="#fff"><path d="M70 110 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3z"/><path d="M250 96 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 l6 -2z"/><path d="M150 200 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 l6 -2z"/><path d="M200 300 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3z"/><path d="M110 330 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 l6 -2z"/></g>
+            <g class="stars" fill="#fff"><circle cx="140" cy="180" r="1.6"/><circle cx="175" cy="200" r="1.2"/><circle cx="160" cy="160" r="1"/><circle cx="130" cy="260" r="1.4"/><circle cx="190" cy="270" r="1.1"/><circle cx="80" cy="140" r="1.3"/><circle cx="240" cy="130" r="1.3"/><circle cx="150" cy="330" r="1.2"/></g>
+            <ellipse class="halo-ring" cx="160" cy="210" rx="150" ry="26" fill="none" stroke="#fff6d6" stroke-width="3" opacity=".55"/>
+          </g>
         </g></g></g>
       </svg></template>
 
@@ -708,8 +783,9 @@
 
 <div class="wrap">
   <header>
-    <h1 class="logo">YOKI CLICKER<small>FEATURING ANG &amp; ALTON · EGG HEIST · BRAINROTS · MULTIVERSE · ARCADE</small></h1>
+    <h1 class="logo">YOKI CLICKER<small>FEATURING ANG &amp; ALTON · EGG SNATCH · ROT RAIDERS · MULTIVERSE · ARCADE</small></h1>
     <div class="hud">
+      <span class="chip rankchip" id="rankChip">Rank <b id="rankName">Noob</b><span class="rbar"><i id="rankBar"></i></span></span>
       <span class="chip" id="rebirthTag">Rebirth <b>0</b></span>
       <span class="chip">Boost <b id="multTag">×1</b></span>
       <span class="chip">World <b id="worldTag">Earth Gym</b></span>
@@ -776,11 +852,11 @@
   </section>
 
   <section class="rots">
-    <h2 class="sec-title">STEAL A BRAINROT <small id="rotIncome">base +0/s</small></h2>
-    <div class="runway" id="runway"><span class="runway-label">Brainrot runway · tap one to buy · hover to pause</span></div>
+    <h2 class="sec-title">ROT RAIDERS <small id="rotIncome">base +0/s</small></h2>
+    <div class="runway" id="runway"><span class="runway-label">Rot runway · tap one to buy · hover to pause</span></div>
     <div class="rot-cols">
       <div class="rot-col">
-        <div class="nest-label">Your base <small id="baseCount">0/8</small> <small>· brainrots make gains every second</small></div>
+        <div class="nest-label">Your base <small id="baseCount">0/8</small> <small>· rots make gains every second</small></div>
         <div class="base" id="base"></div>
         <button id="lockBtn">LOCK BASE (60s)</button>
       </div>
@@ -792,42 +868,42 @@
   </section>
 
   <section class="arcade" id="arcade">
-    <h2 class="sec-title">SQUAD ARCADE <small class="muted-s">8 mini-games inspired by Roblox hits · all pay out gains</small></h2>
+    <h2 class="sec-title">SQUAD ARCADE <small class="muted-s">8 mini-games · all pay out gains</small></h2>
     <div class="tabs" role="tablist" id="tabs" aria-label="Arcade games">
       <button role="tab" data-tab="garden" aria-selected="true">Garden</button>
-      <button role="tab" data-tab="shred" aria-selected="false">Shredder</button>
+      <button role="tab" data-tab="shred" aria-selected="false">Rot Grinder</button>
       <button role="tab" data-tab="fruit" aria-selected="false">Fruits</button>
       <button role="tab" data-tab="diner" aria-selected="false">Diner</button>
-      <button role="tab" data-tab="crush" aria-selected="false">Car Crusher</button>
-      <button role="tab" data-tab="league" aria-selected="false">Gym League</button>
-      <button role="tab" data-tab="bed" aria-selected="false">Bed Wars</button>
-      <button role="tab" data-tab="drop" aria-selected="false">One Dropper</button>
+      <button role="tab" data-tab="crush" aria-selected="false">Scrap Smasher</button>
+      <button role="tab" data-tab="league" aria-selected="false">Flex Cup</button>
+      <button role="tab" data-tab="bed" aria-selected="false">Bunk Defense</button>
+      <button role="tab" data-tab="drop" aria-selected="false">Ore Drip</button>
     </div>
 
     <div class="tp" id="tp-garden" role="tabpanel">
-      <p class="tp-sub"><b>Gains Garden</b> · inspired by Grow a Garden. Pick a seed, tap an empty plot to plant, tap ripe crops to harvest. Golden and Rainbow mutations pay extra.</p>
+      <p class="tp-sub"><b>Gains Garden</b> · Pick a seed, tap an empty plot to plant, tap ripe crops to harvest. Golden and Rainbow mutations pay extra.</p>
       <div class="seeds" id="seeds"></div>
       <div class="plots" id="plots"></div>
     </div>
 
     <div class="tp" id="tp-shred" role="tabpanel" hidden>
-      <p class="tp-sub"><b>Shred-a-Rot</b> · inspired by Shred the Brainrot. A free junk rot drops in every 20s, or feed one from your base for 3× its price.</p>
+      <p class="tp-sub"><b>Rot Grinder</b> · A free junk rot drops in every 20s, or feed one from your base for 3× its price.</p>
       <div class="shred-row">
         <div class="shredder">
           <div class="shred-item" id="shredItem"></div>
-          <svg viewBox="0 0 160 70" aria-hidden="true"><rect x="10" y="4" width="140" height="14" rx="4" fill="#3a3f5c"/><g id="blades" fill="#c9ccd6"><path d="M24 18l8 14 8-14z"/><path d="M48 18l8 14 8-14z"/><path d="M72 18l8 14 8-14z"/><path d="M96 18l8 14 8-14z"/><path d="M120 18l8 14 8-14z"/></g><rect x="4" y="30" width="152" height="38" rx="8" fill="#ff5a6e"/><rect x="14" y="40" width="132" height="6" rx="3" fill="#a3192c"/><text x="80" y="62" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="11" fill="#fff">SHRED-A-ROT 3000</text></svg>
+          <svg viewBox="0 0 160 70" aria-hidden="true"><rect x="10" y="4" width="140" height="14" rx="4" fill="#3a3f5c"/><g id="blades" fill="#c9ccd6"><path d="M24 18l8 14 8-14z"/><path d="M48 18l8 14 8-14z"/><path d="M72 18l8 14 8-14z"/><path d="M96 18l8 14 8-14z"/><path d="M120 18l8 14 8-14z"/></g><rect x="4" y="30" width="152" height="38" rx="8" fill="#ff5a6e"/><rect x="14" y="40" width="132" height="6" rx="3" fill="#a3192c"/><text x="80" y="62" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="11" fill="#fff">ROT GRINDER 3000</text></svg>
         </div>
         <div class="ctrl-col">
           <div class="big-name" id="shredName">Waiting for junk...</div>
           <div class="bar hp"><i id="shredHp"></i></div>
           <button class="big-btn red" id="shredBtn">SHRED!</button>
-          <div class="btn-row"><button class="small-btn" id="feedBtn">Feed best base brainrot</button><button class="small-btn" id="bladeBtn">Upgrade blade</button></div>
+          <div class="btn-row"><button class="small-btn" id="feedBtn">Feed best base rot</button><button class="small-btn" id="bladeBtn">Upgrade blade</button></div>
         </div>
       </div>
     </div>
 
     <div class="tp" id="tp-fruit" role="tabpanel" hidden>
-      <p class="tp-sub"><b>Swole Fruits</b> · inspired by Blox Fruits. Spin for a fruit, then equip one power at a time.</p>
+      <p class="tp-sub"><b>Swole Fruits</b> · Spin for a fruit, then equip one power at a time.</p>
       <div class="fruit-row">
         <div class="fruit-show" id="fruitShow"></div>
         <div class="ctrl-col">
@@ -840,14 +916,14 @@
     </div>
 
     <div class="tp" id="tp-diner" role="tabpanel" hidden>
-      <p class="tp-sub"><b>Protein Diner</b> · inspired by Restaurant Tycoon 3. Serve each customer's order before their patience runs out. Better rating, bigger tips.</p>
+      <p class="tp-sub"><b>Protein Diner</b> · Serve each customer's order before their patience runs out. Better rating, bigger tips.</p>
       <div class="stat-row"><span>Rating <b id="dinerRating">3.0</b> / 5</span><span>Served <b id="dinerServed">0</b></span><span>Waiters <b id="dinerWaiters">0</b></span><button class="small-btn" id="waiterBtn">Hire waiter</button></div>
       <div class="customers" id="customers"></div>
       <div class="dishes" id="dishes"></div>
     </div>
 
     <div class="tp" id="tp-crush" role="tabpanel" hidden>
-      <p class="tp-sub"><b>Car Crusher</b> · inspired by Car Crushers 2. Buy a car, crush it flat, sell the scrap for 3×.</p>
+      <p class="tp-sub"><b>Scrap Smasher</b> · Buy a car, crush it flat, sell the scrap for 3×.</p>
       <div class="yard">
         <div class="press" id="press"></div>
         <div class="car-wrap" id="carWrap"></div>
@@ -858,7 +934,7 @@
     </div>
 
     <div class="tp" id="tp-league" role="tabpanel" hidden>
-      <p class="tp-sub"><b>Gym League</b> · inspired by Gym League. Tap POSE when the needle is in the green zone. Win the match to climb the ranks.</p>
+      <p class="tp-sub"><b>Flex Cup</b> · Tap POSE when the needle is in the green zone. Win the match to climb the ranks.</p>
       <div class="stat-row"><span class="rank" id="leagueRank">BRONZE</span><span><b id="leagueWins">0</b> wins</span><span id="leagueNext"></span></div>
       <div class="versus"><span id="vsYou">SQUAD · 0</span><b>VS</b><span id="vsOpp">??? · 0</span></div>
       <div class="meter" id="meter"><div class="zone" id="zone"></div><div class="needle" id="needle"></div></div>
@@ -867,14 +943,14 @@
     </div>
 
     <div class="tp" id="tp-bed" role="tabpanel" hidden>
-      <p class="tp-sub"><b>Bed Wars</b> · inspired by BedWars. Tap the red team before they reach your bed. Spend iron on a sword and wool.</p>
+      <p class="tp-sub"><b>Bunk Defense</b> · Tap the red team before they reach your bed. Spend iron on a sword and wool.</p>
       <div class="stat-row"><span>Bed <b id="bedHp">3</b> HP</span><span>Iron <b id="iron">0</b></span><span>Waves won <b id="waves">0</b></span></div>
       <div class="lane" id="lane"><div class="bed" aria-hidden="true"></div></div>
       <div class="btn-row"><button class="big-btn" id="waveBtn">START WAVE</button><button class="small-btn" id="swordBtn">Sword · 15 iron</button><button class="small-btn" id="woolBtn">Wool +1 HP · 8 iron</button></div>
     </div>
 
     <div class="tp" id="tp-drop" role="tabpanel" hidden>
-      <p class="tp-sub"><b>One Dropper Tycoon</b> · inspired by Tycoon but one dropper. One dropper, endless upgrades. It keeps running when this tab is closed.</p>
+      <p class="tp-sub"><b>Ore Drip Tycoon</b> · One dropper, endless upgrades. It keeps running when this tab is closed.</p>
       <div class="drop-yard" id="dropYard"><div class="dropper"><span>DROPPER</span></div><div class="belt"></div><div class="upgrader" id="upgraderEl"></div><div class="furnace"><span>SELL</span></div></div>
       <div class="stat-row"><span>Drops every <b id="dropEvery">2.5s</b></span><span>Ore worth <b id="dropVal">0</b></span></div>
       <div class="btn-row"><button class="small-btn" id="dupSpeed"></button><button class="small-btn" id="dupValue"></button><button class="small-btn" id="dupUpg"></button></div>
@@ -892,14 +968,16 @@
 
 
     <div class="hub" id="hub">
-      <h2>HUB <small id="hubNote">daily · quests · wheel · shop · codes</small></h2>
+      <h2>HUB <small id="hubNote">daily · quests · evolve · prestige</small></h2>
       <div class="tabs" role="tablist" id="hubTabs" aria-label="Hub">
         <button role="tab" data-hub="daily" aria-selected="true">Daily</button>
         <button role="tab" data-hub="quests" aria-selected="false">Quests</button>
         <button role="tab" data-hub="wheel" aria-selected="false">Wheel</button>
         <button role="tab" data-hub="shop" aria-selected="false">Shop</button>
         <button role="tab" data-hub="codes" aria-selected="false">Codes</button>
+        <button role="tab" data-hub="evolve" aria-selected="false">Evolve</button>
         <button role="tab" data-hub="ascend" aria-selected="false">Ascend</button>
+        <button role="tab" data-hub="trans" aria-selected="false">Transcend</button>
         <button role="tab" data-hub="leaders" aria-selected="false">Leaders</button>
         <button role="tab" data-hub="settings" aria-selected="false">Settings</button>
       </div>
@@ -942,6 +1020,18 @@
         <div class="perks" id="perks"></div>
       </div>
 
+      <div class="hp-panel" id="hp-evolve" hidden>
+        <p class="tp-sub">Evolve each lifter to change how they look and multiply their taps: Shredded, Mass Monster, Golden God, Diamond Body, Cosmic Form and Transcendent.</p>
+        <div class="evo-list" id="evoList"></div>
+      </div>
+
+      <div class="hp-panel" id="hp-trans" hidden>
+        <p class="tp-sub"><b>Transcendence</b> is the final layer. It resets rebirths, ascensions, shards, universes and multiverses, and gives Transcendence Points for the strongest perks. Levels, pets, rots, arcade, cosmetics and evolutions stay.</p>
+        <div class="stat-row"><span>TP <b id="tpCount">0</b></span><span>Transcended <b id="transCount">0</b></span><span id="transReq"></span></div>
+        <button class="big-btn trans-btn" id="transBtn">TRANSCEND</button>
+        <div class="perks" id="tperks"></div>
+      </div>
+
       <div class="hp-panel" id="hp-leaders" hidden>
         <p class="tp-sub">Lifetime gains vs the top lifters on the server. They keep grinding too.</p>
         <ol class="leaders" id="leaders"></ol>
@@ -959,7 +1049,7 @@
     </div>
 
     <div class="eggs">
-      <h2>EGG HEIST <small id="petBonusTag">pets +0%</small></h2>
+      <h2>EGG SNATCH <small id="petBonusTag">pets +0%</small></h2>
       <div class="rival">
         <div class="rival-egg" id="rivalEgg"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 2C32 2 38 22 38 32C38 44 30 50 20 50C10 50 2 44 2 32C2 22 8 2 20 2Z" fill="var(--ec)"/><circle cx="13" cy="22" r="3.5" fill="#fff" opacity=".45"/><circle cx="26" cy="32" r="4.5" fill="#fff" opacity=".35"/><circle cx="15" cy="38" r="2.5" fill="#fff" opacity=".4"/><path d="M10 14C12 9 15 6 18 5" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".6"/></svg></div>
         <div class="rival-info">
@@ -984,7 +1074,12 @@
     </div>
 
     <div class="multiverse">
-      <h2>MULTIVERSE <small>portals to bigger gains</small></h2>
+      <h2>MULTIVERSE <small>worlds · universes · multiverses</small></h2>
+      <div class="cosmos">
+        <div class="cos-row"><span class="cos-dot"></span><b id="uniName">Prime Universe</b><span class="cos-m" id="uniMult">×1</span></div>
+        <div class="cos-row"><span class="cos-dot m"></span><b id="multiName">Multiverse Alpha</b><span class="cos-m" id="multiMult">×1</span></div>
+        <button class="small-btn cos-btn" id="uniBtn">Unlock all 6 worlds to jump universes</button>
+      </div>
       <div class="worlds" id="worlds"></div>
     </div>
 
@@ -1072,9 +1167,9 @@ const LINES = {
   heist:    ['Sneaky mode...', 'Go go go!', 'Grab it!'],
   heistWin: ['GOT IT!', 'Egg secured!', 'Heist complete!'],
   heistFail:['Caught by the guard!', 'Abort! Abort!'],
-  rotBuy:   ['Brainrot acquired!', "It's so ugly. I love it.", 'Welcome to the base!'],
+  rotBuy:   ['Rot acquired!', "It's so ugly. I love it.", 'Welcome to the base!'],
   rotSneak: ['Sneak in...', 'Tiptoe tiptoe...', 'Go go go!'],
-  rotWin:   ['BRAINROT STOLEN!', 'Run run run!', 'It\'s ours now!'],
+  rotWin:   ['ROT STOLEN!', 'Run run run!', 'It\'s ours now!'],
   blocked:  ['Base is locked, loser!', 'Lock says no!', 'Not getting in!'],
   portal:   ['Where are we?!', 'New world, new gains!', 'BLEHHH! So cool!'],
 };
@@ -1088,30 +1183,30 @@ const RARITIES = [
 const RAR = Object.fromEntries(RARITIES.map(r => [r.id, r]));
 const HATCH_MS = 45000, NEST_SIZE = 3, HEIST_MS = 6000;
 
-/* Steal a Brainrot: gym-themed parody brainrots */
+/* Rot Raiders: original gym-themed rot creatures */
 const BR_TIERS = [
   { id: 'common',    name: 'COMMON',        color: '#cfd3dc', w: 50,  need: 14, price: 100 },
   { id: 'rare',      name: 'RARE',          color: '#5b8cff', w: 25,  need: 18, price: 1000 },
   { id: 'epic',      name: 'EPIC',          color: '#b05bff', w: 13,  need: 24, price: 1e4 },
   { id: 'legendary', name: 'LEGENDARY',     color: '#ffc94a', w: 7,   need: 30, price: 1e5 },
   { id: 'mythic',    name: 'MYTHIC',        color: '#ff5a6e', w: 3.5, need: 36, price: 1e6 },
-  { id: 'god',       name: 'BRAINROT GOD',  color: '#5ee6a0', w: 1.2, need: 44, price: 2e7 },
+  { id: 'god',       name: 'ROT GOD',  color: '#5ee6a0', w: 1.2, need: 44, price: 2e7 },
   { id: 'secret',    name: 'SECRET',        color: '#ffffff', w: .3,  need: 52, price: 5e8 },
 ];
 const BRT = Object.fromEntries(BR_TIERS.map(t => [t.id, t]));
 const BRAINROTS = [
-  { id: 'tung',   name: 'Tung Tung Tung Squatur',  tier: 'common',    type: 'log',       color: '#a8743f', pm: 1 },
-  { id: 'frulli', name: 'Frulli Flexulla',         tier: 'common',    type: 'blob',      color: '#ffd45c', pm: 1.4 },
-  { id: 'lirili', name: 'Lirili Lungerila',        tier: 'common',    type: 'banana',    color: '#7bc47f', pm: 1.8 },
-  { id: 'capp',   name: 'Cappuccino Curlino',      tier: 'rare',      type: 'cup',       color: '#c8a27a', pm: 1 },
-  { id: 'brr',    name: 'Brr Brr Benchpressini',   tier: 'rare',      type: 'blob',      color: '#8ad4ff', pm: 1.6 },
-  { id: 'tral',   name: 'Tralala Dumbbellino',     tier: 'epic',      type: 'shark',     color: '#8f9bb3', pm: 1 },
-  { id: 'chimp',  name: 'Chimpanzini Proteinini',  tier: 'epic',      type: 'banana',    color: '#ffe14d', pm: 1.5 },
-  { id: 'bomb',   name: 'Bombardiro Proteino',     tier: 'legendary', type: 'croc',      color: '#5aa55a', pm: 1 },
-  { id: 'balle',  name: 'Ballerina Bicepsina',     tier: 'legendary', type: 'ballerina', color: '#ff9ecf', pm: 1.5 },
-  { id: 'gym',    name: 'Gymnasio Gigantini',      tier: 'mythic',    type: 'blob',      color: '#9b7bff', pm: 1 },
-  { id: 'vacca',  name: 'La Vacca Swolurno',       tier: 'god',       type: 'cow',       color: '#f4f5f8', pm: 1 },
-  { id: 'six',    name: 'Il Sixpackini Supremo',   tier: 'secret',    type: 'blob',      color: '#ff5a6e', pm: 1 },
+  { id: 'tung',   name: 'Thonk Thonk Logbert',  tier: 'common',    type: 'log',       color: '#a8743f', pm: 1 },
+  { id: 'frulli', name: 'Flexi Birdo',         tier: 'common',    type: 'blob',      color: '#ffd45c', pm: 1.4 },
+  { id: 'lirili', name: 'Lunge Bananeer',        tier: 'common',    type: 'banana',    color: '#7bc47f', pm: 1.8 },
+  { id: 'capp',   name: 'Mocha Curlington',      tier: 'rare',      type: 'cup',       color: '#c8a27a', pm: 1 },
+  { id: 'brr',    name: 'Frosty Benchy',   tier: 'rare',      type: 'blob',      color: '#8ad4ff', pm: 1.6 },
+  { id: 'tral',   name: 'Finn Dumbbellshark',     tier: 'epic',      type: 'shark',     color: '#8f9bb3', pm: 1 },
+  { id: 'chimp',  name: 'Bananabolic Bob',  tier: 'epic',      type: 'banana',    color: '#ffe14d', pm: 1.5 },
+  { id: 'bomb',   name: 'Croco Protein Jet',     tier: 'legendary', type: 'croc',      color: '#5aa55a', pm: 1 },
+  { id: 'balle',  name: 'Twirlina Bicepa',     tier: 'legendary', type: 'ballerina', color: '#ff9ecf', pm: 1.5 },
+  { id: 'gym',    name: 'Gigantor Gymblob',      tier: 'mythic',    type: 'blob',      color: '#9b7bff', pm: 1 },
+  { id: 'vacca',  name: 'Cosmoo the Swole Cow',       tier: 'god',       type: 'cow',       color: '#f4f5f8', pm: 1 },
+  { id: 'six',    name: 'Sixpack Supremo',   tier: 'secret',    type: 'blob',      color: '#ff5a6e', pm: 1 },
 ];
 const BR = Object.fromEntries(BRAINROTS.map(b => [b.id, b]));
 const BASE_SIZE = 8;
@@ -1147,7 +1242,7 @@ const WORLDS = [
   { name: 'Neon City',       mult: 3,   reb: 1,  cost: 1e5,  bg: ['#1d0f38', '#08041c'], glow: '255, 64, 200' },
   { name: 'Lava Planet',     mult: 10,  reb: 3,  cost: 1e7,  bg: ['#33110a', '#150604'], glow: '255, 110, 40' },
   { name: 'Candy Dimension', mult: 30,  reb: 5,  cost: 1e9,  bg: ['#3a1432', '#1a0717'], glow: '255, 150, 220' },
-  { name: 'Brainrot Realm',  mult: 100, reb: 8,  cost: 1e11, bg: ['#0e2c1d', '#04140c'], glow: '94, 230, 160' },
+  { name: 'Rot Realm',  mult: 100, reb: 8,  cost: 1e11, bg: ['#0e2c1d', '#04140c'], glow: '94, 230, 160' },
   { name: 'Cosmic Void',     mult: 500, reb: 12, cost: 1e13, bg: ['#06071a', '#000003'], glow: '155, 123, 255' },
 ];
 const ACH = [
@@ -1169,9 +1264,9 @@ const ACH = [
   { id: 'hatch',   name: 'Pet Parent',    desc: 'Hatch a pet',              test: () => state.stats.hatched >= 1 },
   { id: 'legend',  name: 'Legendary',     desc: 'Hatch a legendary pet',    test: () => state.pets.legendary + state.pets.mythic >= 1 },
   { id: 'bust',    name: 'Security',      desc: 'Chase off a thief',        test: () => state.stats.busts >= 1 },
-  { id: 'rot1',    name: 'Brainrotted',   desc: 'Get a brainrot',           test: () => state.stats.rotBuys + state.stats.rotSteals >= 1 },
-  { id: 'rotst',   name: 'Brainrot Thief', desc: 'Steal a brainrot',        test: () => state.stats.rotSteals >= 1 },
-  { id: 'rotgod',  name: 'Divine Rot',    desc: 'Own a God or Secret brainrot', test: () => state.base.some(id => ['god', 'secret'].includes(BR[id].tier)) },
+  { id: 'rot1',    name: 'Rot Collector',   desc: 'Get a rot',           test: () => state.stats.rotBuys + state.stats.rotSteals >= 1 },
+  { id: 'rotst',   name: 'Rot Thief', desc: 'Steal a rot',        test: () => state.stats.rotSteals >= 1 },
+  { id: 'rotgod',  name: 'Divine Rot',    desc: 'Own a God or Secret rot', test: () => state.base.some(id => ['god', 'secret'].includes(BR[id].tier)) },
   { id: 'block',   name: 'Locked Down',   desc: 'Block a raider with the lock', test: () => state.stats.blocks >= 1 },
   { id: 'portal',  name: 'Multiverse',    desc: 'Travel to another world',  test: () => state.stats.portals >= 1 },
   { id: 'void',    name: 'Into the Void', desc: 'Unlock the Cosmic Void',   test: () => state.worlds.includes(5) },
@@ -1179,12 +1274,12 @@ const ACH = [
   { id: 'rainbow', name: 'Rainbow Crop',  desc: 'Harvest a Rainbow mutation', test: () => state.mini.st.rainbow >= 1 },
   { id: 'shred',   name: 'Shredder',      desc: 'Shred something',          test: () => state.mini.st.shreds >= 1 },
   { id: 'fruit',   name: 'Fruit Eater',   desc: 'Spin a fruit',             test: () => state.mini.st.spins >= 1 },
-  { id: 'dragon',  name: 'Dragon Power',  desc: 'Find the Dragon Fruit',    test: () => state.mini.fruits.includes('dragon') },
+  { id: 'dragon',  name: 'Titan Power',  desc: 'Find the Titan Fruit',    test: () => state.mini.fruits.includes('dragon') },
   { id: 'diner',   name: 'Head Chef',     desc: 'Serve 50 customers',       test: () => state.mini.served >= 50 },
-  { id: 'crush',   name: 'Car Crusher',   desc: 'Crush 10 cars',            test: () => state.mini.st.crushed >= 10 },
+  { id: 'crush',   name: 'Scrap Smasher',   desc: 'Crush 10 cars',            test: () => state.mini.st.crushed >= 10 },
   { id: 'gold_lg', name: 'Gold League',   desc: 'Reach Gold league',        test: () => state.mini.league.rank >= 2 },
   { id: 'champ',   name: 'Champion',      desc: 'Reach Champion league',    test: () => state.mini.league.rank >= 5 },
-  { id: 'bed',     name: 'Bed Defender',  desc: 'Survive a Bed Wars wave',  test: () => state.mini.bed.waves >= 1 },
+  { id: 'bed',     name: 'Bed Defender',  desc: 'Survive a Bunk Defense wave',  test: () => state.mini.bed.waves >= 1 },
   { id: 'dropper', name: 'Tycoon',        desc: 'Buy 10 dropper upgrades',  test: () => state.mini.drop.speed + state.mini.drop.value + state.mini.drop.upg >= 10 },
   { id: 'boss1',   name: 'Chad Slayer',   desc: 'Defeat the world boss',    test: () => state.x.bossKills >= 1 },
   { id: 'ascend',  name: 'Ascended',      desc: 'Ascend once',              test: () => state.x.ascends >= 1 },
@@ -1192,6 +1287,15 @@ const ACH = [
   { id: 'coder',   name: 'Code Hunter',   desc: 'Redeem 3 codes',           test: () => state.x.codes.length >= 3 },
   { id: 'streak',  name: 'Dedicated',     desc: 'Reach a 7-day streak',     test: () => state.x.daily.streak >= 7 },
   { id: 'number1', name: 'Number One',    desc: 'Top the server leaderboard', test: () => state.x.total > Math.pow(10, 30) * (1 + (Date.now() - state.x.lbStart) / 60000 * .03) },
+  { id: 'evo1',    name: 'Evolution',     desc: 'Evolve a lifter',          test: () => KEYS.some(k => evoOf(k) >= 1) },
+  { id: 'goldgod', name: 'Golden God',    desc: 'Evolve a lifter to Golden God', test: () => KEYS.some(k => evoOf(k) >= 3) },
+  { id: 'cosmicf', name: 'Cosmic Form',   desc: 'Evolve a lifter to Cosmic Form', test: () => KEYS.some(k => evoOf(k) >= 5) },
+  { id: 'allevo',  name: 'Squad Goals+',  desc: 'Evolve all three to Golden God', test: () => KEYS.every(k => evoOf(k) >= 3) },
+  { id: 'trans1',  name: 'Transcended',   desc: 'Transcend once',           test: () => (state.x.transcends || 0) >= 1 },
+  { id: 'uni1',    name: 'Universe Hopper', desc: 'Jump to a new universe', test: () => (state.uni || 0) >= 1 || (state.multi || 0) >= 1 },
+  { id: 'multi1',  name: 'Multiversal',   desc: 'Leap to a new multiverse', test: () => (state.multi || 0) >= 1 },
+  { id: 'titan',   name: 'Titan Rank',    desc: 'Reach Titan rank',         test: () => rankIdx() >= 5 },
+  { id: 'tierg',   name: 'Gold Tier',     desc: 'Get an upgrade to Gold tier (Lv 75)', test: () => UPGRADES.some(u => state.owned[u.id] >= 75) },
   { id: 'm1',      name: 'Millionaire',   desc: 'Hold 1M gains',            test: () => state.gains >= 1e6 },
   { id: 'b1',      name: 'Billionaire',   desc: 'Hold 1B gains',            test: () => state.gains >= 1e9 },
   { id: 'reb1',    name: 'Reborn',        desc: 'Rebirth once',             test: () => state.rebirths >= 1 },
@@ -1224,9 +1328,11 @@ const $ = id => document.getElementById(id);
 const pick = a => a[Math.random() * a.length | 0];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = n => {
+  if (!isFinite(n)) return '∞';
   n = Math.floor(n);
   if (n < 1000) return String(n);
-  const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+  const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc', 'SxDc', 'SpDc', 'OcDc', 'NoDc', 'Vg', 'UVg', 'DVg', 'TVg', 'QaVg', 'QiVg', 'SxVg', 'SpVg', 'OcVg', 'NoVg', 'Tg'];
+  if (n >= 1e96) { const e = Math.floor(Math.log10(n)); return (n / Math.pow(10, e)).toFixed(2) + 'e' + e; }
   let i = -1;
   while (n >= 1000 && i < units.length - 1) { n /= 1000; i++; }
   return (n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : n.toFixed(0)) + units[i];
@@ -1243,12 +1349,12 @@ const rotIncomeRaw = () => state.base.reduce((s, id) => s + rotRaw(id), 0);
 const unitCost = (u, owned) => u.base * Math.pow(1.15, owned);
 const costN = (u, n) => Math.floor(unitCost(u, state.owned[u.id]) * (Math.pow(1.15, n) - 1) / 0.15);
 const maxN = u => Math.max(0, Math.floor(Math.log(state.gains * 0.15 / unitCost(u, state.owned[u.id]) + 1) / Math.log(1.15)));
-const baseClick = () => 1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id], 0);
+const baseClick = () => 1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id] * upTier(u), 0);
 const perClick = () => baseClick() * gainMult() * ffx('click');
-const perSec = () => (UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) + rotIncomeRaw()) * gainMult() * ffx('sec');
+const perSec = () => (UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id] * upTier(u), 0) + rotIncomeRaw()) * gainMult() * ffx('sec');
 const rebirthNeed = () => 25000 * Math.pow(5, state.rebirths);
 const xpNeed = lv => Math.floor(25 * Math.pow(1.45, lv - 1));
-const lvMult = k => 1 + 0.1 * (state.lv[k].lv - 1);
+const lvMult = k => (1 + 0.1 * (state.lv[k].lv - 1)) * evoMult(k);
 
 const stage = $('stage'), arena = $('arena'), golden = $('golden'), gainsEl = $('gains');
 
@@ -1434,7 +1540,7 @@ function hit(l, e) {
   }
 
   const crit = Math.random() < critChance();
-  const amt = perClick() * lvMult(l.key) * comboMult() * (inFever() ? FEVER_MULT : 1) * (inSquad() ? 2 : 1) * (crit ? (ffx('crit') > 1 ? ffx('crit') : CRIT_MULT) : 1);
+  const amt = perClick() * lvMult(l.key) * comboMult() * (inFever() ? FEVER_MULT : 1) * (inSquad() ? 2 : 1) * (crit ? critMult() : 1);
   state.gains += amt;
   state.reps++;
   if (crit) state.stats.crits++;
@@ -1537,7 +1643,7 @@ function startHeist(now) {
   egg.classList.toggle('mythic', r.id === 'mythic');
   egg.hidden = false;
   $('chal').hidden = false;
-  document.querySelector('.chal-title').textContent = `EGG HEIST · TAP THE ${r.name} EGG`;
+  document.querySelector('.chal-title').textContent = `EGG SNATCH · TAP THE ${r.name} EGG`;
   banner('HEIST!', '#5ee6a0'); tone(300, 600, .2, 'square', .06);
   all(l => { say(l, pick(LINES.heist), 1500); mood(l, 'ooh', 1500); });
 }
@@ -1725,7 +1831,7 @@ function tickEggs() {
   sb.textContent = state.nest.length >= NEST_SIZE ? 'NEST FULL' : wait > 0 ? 'WAIT ' + mmss(wait) : 'STEAL IT';
 }
 
-/* ================= Steal a Brainrot ================= */
+/* ================= Rot Raiders ================= */
 const runway = $('runway');
 let nextRunway = 0;
 function spawnRunway() {
@@ -1742,7 +1848,7 @@ function spawnRunway() {
 }
 function buyRot(b, id) {
   const price = rotPrice(id), d = BR[id];
-  if (state.base.length >= BASE_SIZE) { toast('Your base is full', 'Sell a brainrot to make room'); return; }
+  if (state.base.length >= BASE_SIZE) { toast('Your base is full', 'Sell a rot to make room'); return; }
   if (state.gains < price) { toast(`Need ${fmt(price)} gains for ${d.name}`, 'Or raid the rival base to steal one'); tone(200, 150, .12, 'square', .05); return; }
   state.gains -= price;
   state.base.push(id); state.stats.rotBuys++;
@@ -1855,8 +1961,8 @@ function portal(i) {
   const w = WORLDS[i];
   if (i === state.world) return;
   if (!state.worlds.includes(i)) {
-    if (state.rebirths < w.reb || state.gains < w.cost) return;
-    state.gains -= w.cost;
+    if (state.rebirths < w.reb || state.gains < wcost(w)) return;
+    state.gains -= wcost(w);
     state.worlds.push(i);
     toast(`${w.name} unlocked!`, `×${w.mult} gains while you're there`);
   }
@@ -1871,12 +1977,12 @@ function portal(i) {
 function renderWorlds() {
   WORLDS.forEach((w, i) => {
     const b = $('world-' + i), owned = state.worlds.includes(i), here = state.world === i;
-    const canUnlock = !owned && state.rebirths >= w.reb && state.gains >= w.cost;
+    const canUnlock = !owned && state.rebirths >= w.reb && state.gains >= wcost(w);
     b.classList.toggle('here', here);
     b.classList.toggle('owned', owned);
     b.disabled = here || (!owned && !canUnlock);
     b.querySelector('.wstate').textContent = here ? 'YOU ARE HERE' : owned ? 'TRAVEL' :
-      state.rebirths < w.reb ? `needs ${w.reb} rebirth${w.reb > 1 ? 's' : ''}` : `unlock · ${fmt(w.cost)}`;
+      state.rebirths < w.reb ? `needs ${w.reb} rebirth${w.reb > 1 ? 's' : ''}` : `unlock · ${fmt(wcost(w))}`;
   });
 }
 
@@ -1997,7 +2103,7 @@ function renderGarden() {
   });
 }
 
-/* ---------- Shred-a-Rot ---------- */
+/* ---------- Rot Grinder ---------- */
 let nextJunk = Date.now() + 3000;
 function setShredItem(item) { M().shredItem = item; renderShred(); }
 $('shredBtn').addEventListener('click', () => {
@@ -2012,7 +2118,7 @@ $('shredBtn').addEventListener('click', () => {
   if (it.hp <= 0) {
     M().st.shreds++;
     payout(it.reward, el, `Shredded ${it.name}!`);
-    cheer(['SHREDDED!', 'Brainrot smoothie!', 'BLEHHH! Into bits!']);
+    cheer(['SHREDDED!', 'Rot smoothie!', 'BLEHHH! Into bits!']);
     M().shredItem = null; nextJunk = Date.now() + 20000;
   }
   renderShred();
@@ -2052,10 +2158,10 @@ function tickShred() {
 const FRUITS = [
   { id: 'flex',   name: 'Flex Fruit',   w: 40, color: '#ff9a1f', desc: '+25% per rep',            fx: { click: 1.25 } },
   { id: 'pump',   name: 'Pump Fruit',   w: 30, color: '#5b8cff', desc: '+25% per sec',            fx: { sec: 1.25 } },
-  { id: 'flame',  name: 'Flame Fruit',  w: 15, color: '#ff5a6e', desc: 'Crits hit ×8 instead of ×5', fx: { crit: 8 } },
-  { id: 'light',  name: 'Light Fruit',  w: 9,  color: '#fff2a8', desc: 'Combos last twice as long', fx: { combo: 2 } },
-  { id: 'quake',  name: 'Quake Fruit',  w: 5,  color: '#c9ccd6', desc: '+60% all gains',          fx: { all: 1.6 } },
-  { id: 'dragon', name: 'Dragon Fruit', w: 1,  color: '#5ee6a0', desc: '+200% all gains',         fx: { all: 3 } },
+  { id: 'flame',  name: 'Blaze Fruit',  w: 15, color: '#ff5a6e', desc: 'Crits hit ×8 instead of ×5', fx: { crit: 8 } },
+  { id: 'light',  name: 'Glow Fruit',  w: 9,  color: '#fff2a8', desc: 'Combos last twice as long', fx: { combo: 2 } },
+  { id: 'quake',  name: 'Tremor Fruit',  w: 5,  color: '#c9ccd6', desc: '+60% all gains',          fx: { all: 1.6 } },
+  { id: 'dragon', name: 'Titan Fruit', w: 1,  color: '#5ee6a0', desc: '+200% all gains',         fx: { all: 3 } },
 ];
 const FRUIT = Object.fromEntries(FRUITS.map(f => [f.id, f]));
 const ffx = k => { const f = state.mini && FRUIT[state.mini.fruit]; return (f && f.fx[k]) || 1; };
@@ -2091,7 +2197,7 @@ function renderFruit() {
     $('fruitShow').innerHTML = f ? fruitSVG(f) : fruitSVG({ color: '#3a3f5c' });
     $('fruitName').textContent = f ? f.name + ' (equipped)' : 'No fruit equipped';
   }
-  $('fruitDesc').textContent = f ? f.desc : 'Spin to find your first power. Dragon Fruit is a 1% pull.';
+  $('fruitDesc').textContent = f ? f.desc : 'Spin to find your first power. Titan Fruit is a 1% pull.';
   const c = 30 * unit();
   $('spinBtn').textContent = `SPIN · ${fmt(c)}`;
   $('spinBtn').disabled = spinning || state.gains < c;
@@ -2196,7 +2302,7 @@ function renderDiner(full) {
   });
 }
 
-/* ---------- Car Crusher ---------- */
+/* ---------- Scrap Smasher ---------- */
 const CARS = [
   { name: 'Rusty Hatchback', cost: 5,    hp: 15, color: '#9aa3b5' },
   { name: 'Family Van',      cost: 25,   hp: 25, color: '#6ea8ff' },
@@ -2259,7 +2365,7 @@ function renderCrush() {
   });
 }
 
-/* ---------- Gym League ---------- */
+/* ---------- Flex Cup ---------- */
 const RANKS = [
   { name: 'BRONZE', color: '#d08a4e', zone: 26 }, { name: 'SILVER', color: '#c9ccd6', zone: 22 }, { name: 'GOLD', color: '#ffc94a', zone: 18 },
   { name: 'PLATINUM', color: '#8ad4ff', zone: 15 }, { name: 'DIAMOND', color: '#b05bff', zone: 12 }, { name: 'CHAMPION', color: '#ff5a6e', zone: 10 },
@@ -2325,7 +2431,7 @@ function renderLeague() {
   $('vsOpp').textContent = `${match ? match.oppName : '???'} · ${match ? match.opp : 0}`;
 }
 
-/* ---------- Bed Wars ---------- */
+/* ---------- Bunk Defense ---------- */
 let wave = null;
 const lane = $('lane');
 const bedMax = () => 3 + M().bed.wool;
@@ -2396,7 +2502,7 @@ function renderBed() {
   $('waveBtn').textContent = wave ? 'DEFENDING...' : `START WAVE ${b.waves + 1}`;
 }
 
-/* ---------- One Dropper Tycoon ---------- */
+/* ---------- Ore Drip Tycoon ---------- */
 let dropTimer = 0;
 const yard = $('dropYard');
 const dropEvery = () => 2.5 * Math.pow(.85, M().drop.speed);
@@ -2470,7 +2576,7 @@ function mergeX(x) {
 const X = () => state.x;
 let weather = null, codeBuffUntil = 0;
 const weatherIs = id => !!weather && weather.id === id && performance.now() < weather.until;
-const extraMult = () => (state.x ? 1 + 0.5 * X().perks.might : 1) * (weatherIs('rain') ? 2 : 1) * (performance.now() < codeBuffUntil ? 2 : 1);
+const extraMult = () => proMult() * (state.x ? 1 + 0.5 * X().perks.might : 1) * (weatherIs('rain') ? 2 : 1) * (performance.now() < codeBuffUntil ? 2 : 1);
 const critChance = () => Math.min(.6, (CRIT_CHANCE + (state.x ? .03 * X().perks.luck : 0)) * (weatherIs('blood') ? 2 : 1));
 const comboFrozen = () => weatherIs('quake');
 const startGains = () => state.x && X().perks.start ? 1000 * Math.pow(10, X().perks.start - 1) : 0;
@@ -2528,9 +2634,9 @@ const QUESTS = [
   { id: 'shred',   d: n => `Shred ${n} thing${n > 1 ? 's' : ''}`, t: [1, 2, 3],      get: () => state.mini.st.shreds },
   { id: 'crush',   d: n => `Crush ${n} car${n > 1 ? 's' : ''}`,   t: [1, 3, 5],       get: () => state.mini.st.crushed },
   { id: 'serve',   d: n => `Serve ${n} diner customers`,         t: [5, 10, 20],     get: () => state.mini.served },
-  { id: 'league',  d: n => `Win ${n} Gym League match${n > 1 ? 'es' : ''}`, t: [1, 2, 3], get: () => state.mini.league.wins },
-  { id: 'bed',     d: n => `Survive ${n} Bed Wars wave${n > 1 ? 's' : ''}`, t: [1, 2, 3], get: () => state.mini.bed.waves },
-  { id: 'rot',     d: n => `Buy or steal ${n} brainrot${n > 1 ? 's' : ''}`, t: [1, 2, 3], get: () => state.stats.rotBuys + state.stats.rotSteals },
+  { id: 'league',  d: n => `Win ${n} Flex Cup match${n > 1 ? 'es' : ''}`, t: [1, 2, 3], get: () => state.mini.league.wins },
+  { id: 'bed',     d: n => `Survive ${n} Bunk Defense wave${n > 1 ? 's' : ''}`, t: [1, 2, 3], get: () => state.mini.bed.waves },
+  { id: 'rot',     d: n => `Buy or steal ${n} rot${n > 1 ? 's' : ''}`, t: [1, 2, 3], get: () => state.stats.rotBuys + state.stats.rotSteals },
   { id: 'boss',    d: n => `Defeat ${n} world boss${n > 1 ? 'es' : ''}`, t: [1, 1, 2], get: () => X().bossKills },
   { id: 'hi5',     d: n => `See ${n} high five${n > 1 ? 's' : ''}`, t: [1, 2, 3],   get: () => state.stats.hi5 },
   { id: 'egg',     d: n => `Steal ${n} egg${n > 1 ? 's' : ''}`,   t: [1, 2, 3],       get: () => state.stats.heists },
@@ -2574,7 +2680,7 @@ const WHEEL = [
   { label: 'GOLD',  color: '#ffc94a', fn: () => { nextGolden = 0; toast('Wheel: a golden shake appears!'); } },
   { label: '1 MIN', color: '#9b7bff', fn: () => give(60, 'Wheel: 1 minute of gains') },
   { label: 'EGG',   color: '#ff9ecf', fn: () => { if (state.nest.length < NEST_SIZE) { state.nest.push({ rarity: rollRarity(), hatchAt: Date.now() + HATCH_MS }); renderEggs(); toast('Wheel: a free egg is in your nest!'); } else give(90, 'Wheel: nest full, here are gains'); } },
-  { label: 'IRON',  color: '#c9ccd6', fn: () => { state.mini.bed.iron += 15; toast('Wheel: +15 Bed Wars iron'); } },
+  { label: 'IRON',  color: '#c9ccd6', fn: () => { state.mini.bed.iron += 15; toast('Wheel: +15 Bunk Defense iron'); } },
   { label: '10 MIN', color: '#ff9a1f', fn: () => { give(600, 'Wheel JACKPOT: 10 minutes of gains!'); rain(200); } },
 ];
 let wheelRot = 0, wheelSpinning = false;
@@ -2660,8 +2766,8 @@ const CODES = {
   ALTON:       ['Instant FEVER',          () => startFever()],
   BLEHHH:      ['Confetti + 200s of gains', () => { rain(220); give(200, 'Code BLEHHH'); }],
   LIGHTWEIGHT: ['×2 gains for 5 minutes',  () => { codeBuffUntil = performance.now() + 300000; }],
-  YEAHBUDDY:   ['15 Bed Wars iron',        () => { state.mini.bed.iron += 15; }],
-  BRAINROT:    ['A free brainrot',         () => { if (state.base.length < BASE_SIZE) { state.base.push(rollRot(1)); renderRots(); } else give(300, 'Base full, have gains instead'); }],
+  YEAHBUDDY:   ['15 Bunk Defense iron',        () => { state.mini.bed.iron += 15; }],
+  ROTRAID:     ['A free rot',         () => { if (state.base.length < BASE_SIZE) { state.base.push(rollRot(1)); renderRots(); } else give(300, 'Base full, have gains instead'); }],
   MULTIVERSE:  ['1 Ascension Shard',       () => { X().shards++; }],
 };
 $('codeForm').addEventListener('submit', e => {
@@ -2726,7 +2832,7 @@ function renderAscend() {
 }
 
 /* ---------- Leaderboard ---------- */
-const NPCS = [['NoodleArms', 2], ['GymRat_99', 4], ['xX_Swole_Xx', 6], ['ProteinPapi', 8], ['BenchBoss', 10], ['Mega Chad', 13], ['LiftLord', 16], ['BrainrotKing', 20], ['Sigma Squatter', 25], ['TheRealOlympian', 30]];
+const NPCS = [['NoodleArms', 2], ['GymRat_99', 4], ['xX_Swole_Xx', 6], ['ProteinPapi', 8], ['BenchBoss', 10], ['Mega Chad', 13], ['LiftLord', 16], ['RotKing', 20], ['Sigma Squatter', 25], ['TheRealOlympian', 30]];
 function renderLeaders() {
   const mins = (Date.now() - X().lbStart) / 60000;
   const rows = NPCS.map(([n, e]) => ({ n, v: Math.pow(10, e) * (1 + mins * .03) }));
@@ -2832,13 +2938,13 @@ function syncPets() {
 }
 
 /* ---------- Server chat ---------- */
-const NAMES = ['GymRat_99', 'xX_Swole_Xx', 'ProteinPapi', 'BenchBoss', 'NoodleArms', 'LiftLord', 'BrainrotKing', 'tiny_tim', 'Sigma Squatter', 'cookie_gamer', 'Bacon_Hair42', 'flexmaster'];
+const NAMES = ['GymRat_99', 'xX_Swole_Xx', 'ProteinPapi', 'BenchBoss', 'NoodleArms', 'LiftLord', 'RotKing', 'tiny_tim', 'Sigma Squatter', 'cookie_gamer', 'Bacon_Hair42', 'flexmaster'];
 const NAME_COLORS = ['#6ea8ff', '#ff6b7d', '#5ee6a0', '#ffc94a', '#b05bff', '#ff9a1f'];
 const CHAT = [
   () => `hatched a ${pick(['LEGENDARY Dragon Lifter', 'MYTHIC Cosmic Protein Phoenix', 'RARE Pump Pup', 'EPIC Swole Cat'])}!`,
   () => `stole ${pick(BRAINROTS).name} from ${pick(NAMES)}!`,
-  () => `: anyone trading ${pick(['Dragon Fruit', 'Quake Fruit', 'a Golden Gainfruit', 'La Vacca Swolurno'])}?`,
-  () => `reached ${pick(['GOLD', 'DIAMOND', 'CHAMPION'])} in Gym League`,
+  () => `: anyone trading ${pick(['Titan Fruit', 'Tremor Fruit', 'a Golden Gainfruit', 'Cosmoo the Swole Cow'])}?`,
+  () => `reached ${pick(['GOLD', 'DIAMOND', 'CHAMPION'])} in Flex Cup`,
   () => `: yoki is so buff lol`,
   () => `: how do i beat mega chad`,
   () => `: BLEHHH`,
@@ -2945,6 +3051,8 @@ function renderExtra(force) {
   if (hubTab === 'codes') renderCodes();
   if (hubTab === 'ascend') renderAscend();
   if (hubTab === 'leaders') renderLeaders();
+  if (force && hubTab === 'evolve') renderEvolve();
+  if (force && hubTab === 'trans') renderTrans();
 }
 function initExtra() {
   state.x = mergeX(state.x);
@@ -2956,6 +3064,282 @@ function initExtra() {
   for (let i = 0; i < 3; i++) chatNpc();
   renderExtra(true);
 }
+
+
+/* ================= Progression: ranks, upgrade tiers, universes, multiverses, transcendence, evolutions ================= */
+const P_RANKS = [
+  ['Noob', 0, '#9c9bc2'], ['Rookie', 1e3, '#c9ccd6'], ['Gym Bro', 1e5, '#7bc47f'], ['Swole', 1e7, '#5b8cff'], ['Beast', 1e9, '#b05bff'],
+  ['Titan', 1e12, '#ff9a1f'], ['Legend', 1e15, '#ffc94a'], ['Mythic', 1e18, '#ff5a6e'], ['Godlike', 1e21, '#5ee6a0'], ['Cosmic', 1e25, '#8f5bff'], ['Transcendent', 1e30, '#ffffff'],
+];
+const rankIdx = () => { const t = state.x ? X().total : 0; let i = 0; while (i < P_RANKS.length - 1 && t >= P_RANKS[i + 1][1]) i++; return i; };
+const UNIVERSES = ['Prime', 'Mirror', 'Pixel', 'Inverted', 'Dream', 'Omega'];
+const MULTIS = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Omega'];
+const multiName = i => MULTIS[i] || 'Ω-' + (i - MULTIS.length + 1);
+const upTier = u => Math.pow(2, Math.min(6, Math.floor((state.owned[u.id] || 0) / 25)));
+const UP_TIER_NAMES = ['', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'MYTHIC'];
+const UP_TIER_COLORS = ['', '#d08a4e', '#c9ccd6', '#ffc94a', '#8ad4ff', '#b05bff', '#ff5a6e'];
+const wcost = w => w.cost * Math.pow(100, (state.uni || 0) + 3 * (state.multi || 0));
+const tp = () => (state.x && X().tperks) || { eternal: 0, auto: 0, star: 0 };
+const proMult = () => (1 + .25 * rankIdx()) * Math.pow(10, state.uni || 0) * Math.pow(1e6, state.multi || 0) * Math.pow(3, tp().eternal || 0);
+const critMult = () => Math.max(ffx('crit'), CRIT_MULT) + 2 * (tp().star || 0);
+
+/* Evolutions change how each lifter looks */
+const EVOS = [
+  { name: 'Natural',      cost: 0,      mult: 1,    aura: '#ffc94a' },
+  { name: 'Shredded',     cost: 300,    mult: 1.25, aura: '#ff9a1f', note: 'veins pop out' },
+  { name: 'Mass Monster', cost: 2000,   mult: 1.5,  aura: '#ff5a6e', note: 'arms get huge' },
+  { name: 'Golden God',   cost: 12000,  mult: 2,    aura: '#ffd700', note: 'solid gold skin', skin: ['#ffe9a3', '#f5bf3a', '#c98a00', '#d99a1c', '#a86d00'] },
+  { name: 'Diamond Body', cost: 80000,  mult: 3,    aura: '#8ad4ff', note: 'icy diamond skin + sparkles', skin: ['#effaff', '#aee0ff', '#6aaee0', '#8cc4ee', '#4f8fc4'] },
+  { name: 'Cosmic Form',  cost: 5e5,    mult: 5,    aura: '#b05bff', note: 'galaxy skin + glowing eyes', skin: ['#d4b6ff', '#9563ff', '#5a2fc4', '#7a46e0', '#3e1f99'] },
+  { name: 'Transcendent', cost: 3e6,    mult: 10,   aura: '#ffffff', note: 'pure light + halo ring (needs 1 transcendence)', skin: ['#ffffff', '#fff4d1', '#ffd98a', '#ffe9b5', '#e6bd5c'] },
+];
+const evoOf = k => (state.x && X().evo && X().evo[k]) || 0;
+const evoMult = k => EVOS[evoOf(k)].mult;
+let evoKey = '';
+function applyEvo() {
+  const key = KEYS.map(evoOf).join();
+  if (key === evoKey) return;
+  evoKey = key;
+  for (const l of lifters) {
+    const t = evoOf(l.key), e = EVOS[t];
+    for (let i = 0; i < 7; i++) l.svg.classList.toggle('t' + (i + 1), t >= i);
+    const skin = [...EVOS.slice(0, t + 1)].reverse().find(x => x.skin)?.skin || l.c.skin;
+    skin.forEach((v, j) => l.svg.style.setProperty('--s' + (j + 1), v));
+    l.svg.querySelectorAll('[id^="auraG"] stop').forEach(s => s.setAttribute('stop-color', e.aura));
+  }
+}
+function evolve(k, btn) {
+  const t = evoOf(k) + 1, e = EVOS[t];
+  if (!e) return;
+  if (t === 6 && !(X().transcends > 0)) { toast('Transcend once to unlock this form'); return; }
+  const c = e.cost * unit();
+  if (state.gains < c) return;
+  state.gains -= c; X().evo[k] = t;
+  applyEvo();
+  const l = L[k];
+  const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 900);
+  const [x, y] = centerOf(l.btn); burst(x, y, 120, 13, [e.aura, '#fff', l.c.color]);
+  fanfare(); tone(150, 1800, .8, 'sawtooth', .07);
+  banner(e.name.toUpperCase(), e.aura);
+  say(l, pick([`${e.name.toUpperCase()}!!`, 'Look at me NOW!', 'POWER UP!']), 2400); mood(l, 'hype', 2400);
+  others(l).forEach(o => setTimeout(() => { say(o, pick(['WHOA!', `${l.c.name} evolved!`, 'No way!']), 1800); mood(o, 'ooh', 1600); }, 500));
+  toast(`${l.c.name} evolved into ${e.name}!`, `Taps ×${e.mult} for ${l.c.name}`);
+  renderEvolve();
+}
+function renderEvolve() {
+  const el = $('evoList'); if (!el) return;
+  el.innerHTML = '';
+  for (const l of lifters) {
+    const t = evoOf(l.key), cur = EVOS[t], nx = EVOS[t + 1], row = document.createElement('div');
+    row.className = 'evo-row'; row.style.setProperty('--c', l.c.color); row.style.setProperty('--ac', cur.aura);
+    const c = nx ? nx.cost * unit() : 0, locked = nx && t + 1 === 6 && !(X().transcends > 0);
+    row.innerHTML = `<span class="avatar">${l.c.name[0]}</span>
+      <span class="evo-info"><span><b>${l.c.name}</b> · <span class="evo-cur">${cur.name}</span> <small>×${cur.mult} taps</small></span>
+      <span class="evo-pips">${EVOS.map((x, i) => `<i class="${i <= t ? 'on' : ''}" style="--pc:${x.aura}"></i>`).join('')}</span>
+      <span class="desc">${nx ? `Next: <b>${nx.name}</b> · ${nx.note} · ×${nx.mult}` : 'Fully evolved!'}</span></span>
+      <button class="small-btn"${!nx || locked || state.gains < c ? ' disabled' : ''}>${!nx ? 'MAX' : locked ? 'Transcend first' : 'EVOLVE · ' + fmt(c)}</button>`;
+    row.querySelector('button').addEventListener('click', e => evolve(l.key, e.currentTarget));
+    el.appendChild(row);
+  }
+}
+
+/* Universes and multiverses */
+function cosmicJump() {
+  if (state.worlds.length < WORLDS.length) return;
+  const leap = (state.uni || 0) >= UNIVERSES.length - 1;
+  const cost = wcost(WORLDS[WORLDS.length - 1]) * 10;
+  if (state.gains < cost) return;
+  if (leap) { state.multi = (state.multi || 0) + 1; state.uni = 0; } else state.uni = (state.uni || 0) + 1;
+  state.gains = startGains(); shown = state.gains;
+  state.owned = fresh().owned; state.world = 0; state.worlds = [0];
+  applyWorld();
+  const f = document.createElement('div'); f.className = 'flash portal-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1200);
+  rain(300); fanfare(); tone(60, 2400, 1.2, 'sine', .12);
+  const label = leap ? `MULTIVERSE ${multiName(state.multi).toUpperCase()}` : `${UNIVERSES[state.uni].toUpperCase()} UNIVERSE`;
+  banner(label, '#b05bff');
+  all(l => { say(l, pick(leap ? ['A WHOLE NEW MULTIVERSE?!', 'Reality is breaking!', 'BLEHHH! Infinite gains!'] : ['New universe, who dis?', 'Everything is ×10!', 'Where are we now?!']), 2600); mood(l, 'hype', 2600); });
+  toast(leap ? `Leaped to Multiverse ${multiName(state.multi)}!` : `Jumped to the ${UNIVERSES[state.uni]} Universe!`, leap ? 'All gains ×1,000,000' : 'All gains ×10. Worlds cost more here.');
+  save(); render();
+}
+function renderCosmos() {
+  const u = state.uni || 0, m = state.multi || 0;
+  $('uniName').textContent = UNIVERSES[u] + ' Universe';
+  $('uniMult').textContent = '×' + fmt(Math.pow(10, u));
+  $('multiName').textContent = 'Multiverse ' + multiName(m);
+  $('multiMult').textContent = '×' + fmt(Math.pow(1e6, m));
+  const leap = u >= UNIVERSES.length - 1, cost = wcost(WORLDS[WORLDS.length - 1]) * 10, all6 = state.worlds.length >= WORLDS.length;
+  const b = $('uniBtn');
+  b.disabled = !all6 || state.gains < cost;
+  b.textContent = !all6 ? `Unlock all 6 worlds to ${leap ? 'leap multiverses' : 'jump universes'}`
+    : leap ? `LEAP TO MULTIVERSE ${multiName(m + 1).toUpperCase()} · ${fmt(cost)}` : `JUMP TO ${UNIVERSES[u + 1].toUpperCase()} UNIVERSE (×10) · ${fmt(cost)}`;
+}
+$('uniBtn').addEventListener('click', cosmicJump);
+
+/* Transcendence: the top prestige layer */
+const TPERKS = [
+  { id: 'eternal', name: 'Eternal Power', desc: lv => `×3 all gains per level (now ×${fmt(Math.pow(3, lv))})`, max: 50, cost: lv => lv + 1 },
+  { id: 'auto',    name: 'Auto Lifter',   desc: lv => `Each lifter auto-taps ${lv} time${lv === 1 ? '' : 's'} a second`, max: 10, cost: lv => 2 * (lv + 1) },
+  { id: 'star',    name: 'Star Crits',    desc: lv => `Crits hit +${lv * 2} harder`, max: 10, cost: lv => lv + 1 },
+];
+const tpGain = () => (X().ascends || 0) + 3 * (state.multi || 0) + 1;
+const canTranscend = () => (X().ascends || 0) >= 3 || (state.multi || 0) >= 1;
+let transArmed = false;
+$('transBtn').addEventListener('click', () => {
+  if (!canTranscend()) return;
+  const b = $('transBtn');
+  if (!transArmed) { transArmed = true; b.textContent = 'ARE YOU SURE? TAP AGAIN'; setTimeout(() => { transArmed = false; renderTrans(); }, 3000); return; }
+  transArmed = false;
+  const gain = tpGain();
+  X().tp += gain; X().transcends++;
+  X().shards = 0; X().ascends = 0; X().perks = { might: 0, luck: 0, start: 0 };
+  state.rebirths = 0; state.uni = 0; state.multi = 0; state.owned = fresh().owned; state.world = 0; state.worlds = [0];
+  state.gains = 0; shown = 0;
+  applyWorld();
+  document.body.classList.add('transcending'); setTimeout(() => document.body.classList.remove('transcending'), 2500);
+  rain(400); fanfare(); setTimeout(fanfare, 400); tone(40, 3000, 2, 'sine', .14);
+  banner('TRANSCENDED', '#ffffff');
+  all(l => { say(l, pick(['We are beyond gains now.', 'TRANSCENDENCE!', 'BLEHHH... I see everything.']), 3000); mood(l, 'hype', 3000); });
+  toast(`Transcended! +${gain} Transcendence Points`, 'Spend them on the strongest perks in the game');
+  save(); render();
+});
+function renderTrans() {
+  $('tpCount').textContent = X().tp;
+  $('transCount').textContent = X().transcends;
+  $('transReq').textContent = canTranscend() ? `Transcend now for +${tpGain()} TP` : `Needs 3 ascensions or a multiverse leap (${X().ascends || 0}/3 ascensions)`;
+  if (!transArmed) { $('transBtn').disabled = !canTranscend(); $('transBtn').textContent = 'TRANSCEND'; }
+  const el = $('tperks'); el.innerHTML = '';
+  TPERKS.forEach(p => {
+    const lv = X().tperks[p.id] || 0, c = p.cost(lv), max = lv >= p.max, row = document.createElement('div');
+    row.className = 'perk tperk';
+    row.innerHTML = `<span class="pn">${p.name} · Lv ${lv}</span><span class="pd">${p.desc(lv)}</span><button class="small-btn"${max || X().tp < c ? ' disabled' : ''}>${max ? 'MAX' : `${c} TP`}</button>`;
+    row.querySelector('button').addEventListener('click', e => {
+      if (max || X().tp < c) return;
+      X().tp -= c; X().tperks[p.id] = lv + 1; ding(); celebrateAt(e.currentTarget); renderTrans();
+    });
+    el.appendChild(row);
+  });
+}
+
+/* Auto Lifter taps */
+let autoAcc = 0, lastRank = -1;
+function tickPro(dt) {
+  const lv = tp().auto || 0;
+  if (lv) {
+    autoAcc += dt * lv;
+    while (autoAcc >= 1) {
+      autoAcc--;
+      for (const l of lifters) {
+        const amt = perClick() * lvMult(l.key) * comboMult() * (inFever() ? FEVER_MULT : 1);
+        state.gains += amt; state.reps++;
+        if (event && (event.type === 'lift' || event.type === 'boss')) event.count++;
+        if (Math.random() < .25) { const r = l.btn.getBoundingClientRect(); popAt(r.left + r.width / 2, r.top + r.height * .3, '+' + fmt(amt)); }
+      }
+    }
+  }
+  const ri = rankIdx();
+  if (lastRank >= 0 && ri > lastRank) {
+    const [n, , c] = P_RANKS[ri];
+    banner(n.toUpperCase() + ' RANK', c); rain(160); fanfare();
+    toast(`Rank up: ${n}!`, `+${ri * 25}% all gains`);
+    all(l => { say(l, pick([`We're ${n} now!`, 'RANK UP!', 'Respect the rank!']), 2000); mood(l, 'hype', 2000); });
+  }
+  lastRank = ri;
+}
+
+let proTick = 0, proLast = performance.now();
+function renderPro() {
+  if (!state.x) return;
+  const now = performance.now(); tickPro(Math.min(1, (now - proLast) / 1000)); proLast = now;
+  applyEvo();
+  const ri = rankIdx(), [n, lo, c] = P_RANKS[ri], next = P_RANKS[ri + 1];
+  $('rankName').textContent = n; $('rankChip').style.setProperty('--rk', c);
+  $('rankBar').style.width = next ? Math.min(100, Math.log10(Math.max(1, X().total) / Math.max(1, lo)) / Math.log10(next[1] / Math.max(1, lo)) * 100) + '%' : '100%';
+  $('rankChip').title = next ? `Next rank: ${next[0]} at ${fmt(next[1])} lifetime gains` : 'Highest rank!';
+  if (++proTick % 5) return;
+  renderCosmos();
+  if (hubTab === 'evolve') renderEvolve();
+  if (hubTab === 'trans') renderTrans();
+  hubPing('evolve', lifters.some(l => { const nx = EVOS[evoOf(l.key) + 1]; return nx && state.gains >= nx.cost * unit() && !(evoOf(l.key) + 1 === 6 && !(X().transcends > 0)); }));
+  hubPing('trans', canTranscend());
+}
+function initPro() {
+  X().evo = { yoki: 0, ang: 0, alton: 0, ...(X().evo || {}) };
+  X().tperks = { eternal: 0, auto: 0, star: 0, ...(X().tperks || {}) };
+  X().tp = X().tp || 0; X().transcends = X().transcends || 0;
+  state.uni = state.uni || 0; state.multi = state.multi || 0;
+  evoKey = ''; applyEvo();
+  lastRank = rankIdx();
+}
+
+/* ================= Decoration: ambient background ================= */
+const bgc = document.createElement('canvas'); bgc.id = 'bgfx'; bgc.setAttribute('aria-hidden', 'true');
+document.body.prepend(bgc);
+const bctx = bgc.getContext('2d');
+let motes = [], glowRGB = '255, 201, 74', glowCheck = 0;
+function sizeBg() {
+  const d = Math.min(2, devicePixelRatio || 1); bgc.width = innerWidth * d; bgc.height = innerHeight * d; bctx.setTransform(d, 0, 0, d, 0, 0);
+  motes = Array.from({ length: Math.round(innerWidth * innerHeight / 16000) }, () => ({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, r: .5 + Math.random() * 2.2, v: .1 + Math.random() * .4, p: Math.random() * 6.28 }));
+}
+addEventListener('resize', sizeBg); sizeBg();
+function drawBg(t) {
+  if (t > glowCheck) { glowRGB = getComputedStyle(document.documentElement).getPropertyValue('--glow').trim() || glowRGB; glowCheck = t + 1000; }
+  bctx.clearRect(0, 0, innerWidth, innerHeight);
+  for (let i = 0; i < 3; i++) {
+    const x = innerWidth * (.2 + .3 * i) + Math.sin(t / 9000 + i * 2) * 120, y = innerHeight * (.3 + .2 * (i % 2)) + Math.cos(t / 11000 + i) * 90;
+    const g = bctx.createRadialGradient(x, y, 0, x, y, 320);
+    g.addColorStop(0, `rgba(${glowRGB}, .07)`); g.addColorStop(1, `rgba(${glowRGB}, 0)`);
+    bctx.fillStyle = g; bctx.fillRect(0, 0, innerWidth, innerHeight);
+  }
+  for (const m of motes) {
+    if (!REDUCED) { m.y -= m.v; m.x += Math.sin(t / 2000 + m.p) * .2; if (m.y < -5) { m.y = innerHeight + 5; m.x = Math.random() * innerWidth; } }
+    bctx.globalAlpha = .25 + .35 * Math.abs(Math.sin(t / 1500 + m.p));
+    bctx.fillStyle = `rgb(${glowRGB})`;
+    bctx.beginPath(); bctx.arc(m.x, m.y, m.r, 0, 6.283); bctx.fill();
+  }
+  bctx.globalAlpha = 1;
+  if (!REDUCED) requestAnimationFrame(drawBg);
+}
+requestAnimationFrame(drawBg);
+
+/* Gym backdrop behind the squad */
+(function gymBackdrop() {
+  const d = document.createElement('div'); d.className = 'backdrop'; d.setAttribute('aria-hidden', 'true');
+  d.innerHTML = `<svg viewBox="0 0 800 320" preserveAspectRatio="xMidYMax slice">
+    <defs>
+      <linearGradient id="wallG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(var(--glow),.10)"/><stop offset="1" stop-color="rgba(0,0,0,.35)"/></linearGradient>
+      <linearGradient id="floorG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(var(--glow),.18)"/><stop offset="1" stop-color="rgba(0,0,0,.5)"/></linearGradient>
+      <filter id="neon" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect width="800" height="320" fill="url(#wallG)"/>
+    <g stroke="rgba(255,255,255,.04)" stroke-width="2">${Array.from({ length: 9 }, (_, i) => `<path d="M0 ${30 + i * 28} H800"/>`).join('')}${Array.from({ length: 16 }, (_, i) => `<path d="M${i * 52 + (i % 2) * 26} 0 V260"/>`).join('')}</g>
+    <g opacity=".55">
+      <rect x="40" y="40" width="120" height="80" rx="6" fill="rgba(0,0,0,.35)" stroke="rgba(var(--glow),.35)" stroke-width="3"/>
+      <path d="M100 40 V120 M40 80 H160" stroke="rgba(var(--glow),.25)" stroke-width="3"/>
+      ${Array.from({ length: 10 }, (_, i) => `<rect x="${50 + (i * 37) % 100}" y="${50 + (i * 23) % 60}" width="6" height="4" fill="rgba(255,230,150,.6)"/>`).join('')}
+      <rect x="640" y="40" width="120" height="80" rx="6" fill="rgba(0,0,0,.35)" stroke="rgba(var(--glow),.35)" stroke-width="3"/>
+      <path d="M700 40 V120 M640 80 H760" stroke="rgba(var(--glow),.25)" stroke-width="3"/>
+      ${Array.from({ length: 10 }, (_, i) => `<rect x="${650 + (i * 41) % 100}" y="${50 + (i * 19) % 60}" width="6" height="4" fill="rgba(255,230,150,.6)"/>`).join('')}
+    </g>
+    <g class="neon" filter="url(#neon)">
+      <rect x="290" y="22" width="220" height="62" rx="14" fill="none" stroke="rgb(var(--glow))" stroke-width="4"/>
+      <text x="400" y="66" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="32" fill="rgb(var(--glow))">YOKI GYM</text>
+    </g>
+    <g opacity=".8">
+      <rect x="30" y="200" width="150" height="10" rx="4" fill="#3a3f5c"/><rect x="30" y="236" width="150" height="10" rx="4" fill="#3a3f5c"/>
+      <path d="M40 210 V260 M170 210 V260" stroke="#2b2f45" stroke-width="8"/>
+      ${[0, 1, 2, 3, 4].map(i => `<g transform="translate(${48 + i * 28} 190)"><rect x="0" y="0" width="7" height="18" rx="2" fill="#5b6378"/><rect x="15" y="0" width="7" height="18" rx="2" fill="#5b6378"/><rect x="5" y="7" width="12" height="4" fill="#9aa3b5"/></g>`).join('')}
+      ${[0, 1, 2, 3].map(i => `<g transform="translate(${50 + i * 34} 220)"><circle cx="8" cy="10" r="9" fill="#22232e"/><path d="M2 2 q6 -8 12 0" stroke="#22232e" stroke-width="4" fill="none"/></g>`).join('')}
+      <path d="M640 150 V262 M760 150 V262" stroke="#5b6378" stroke-width="8"/><path d="M630 180 H770" stroke="#9aa3b5" stroke-width="5"/>
+      <rect x="616" y="166" width="14" height="30" rx="3" fill="#2b2f45" stroke="rgba(var(--glow),.6)" stroke-width="2"/><rect x="770" y="166" width="14" height="30" rx="3" fill="#2b2f45" stroke="rgba(var(--glow),.6)" stroke-width="2"/>
+      <path d="M560 262 C560 230 580 210 590 200 M590 262 C590 230 572 214 566 196" stroke="#5aa55a" stroke-width="5" fill="none"/><ellipse cx="572" cy="200" rx="18" ry="10" fill="#5aa55a"/><rect x="556" y="250" width="34" height="14" rx="3" fill="#8a5a3a"/>
+    </g>
+    <rect y="262" width="800" height="58" fill="url(#floorG)"/>
+    <path d="M0 262 H800" stroke="rgba(var(--glow),.45)" stroke-width="2"/>
+    <g stroke="rgba(255,255,255,.05)" stroke-width="2">${Array.from({ length: 12 }, (_, i) => `<path d="M${i * 70 - 40} 320 L${i * 70 + 20} 262"/>`).join('')}</g>
+  </svg>`;
+  d.innerHTML = d.innerHTML.replace(/(stroke|fill|stop-color)="([^"]*var\(--glow\)[^"]*)"/g, 'style="$1:$2"');
+  arena.prepend(d);
+})();
 
 /* ================= Modal ================= */
 let modalCb = null;
@@ -2984,7 +3368,7 @@ for (const u of UPGRADES) {
   const b = document.createElement('button');
   b.className = 'up'; b.id = 'up-' + u.id;
   b.innerHTML = `<span class="ico">${ICONS[u.id]}</span>
-    <span class="meta"><span class="name">${u.name} <span class="lvl">Lv 0</span></span>
+    <span class="meta"><span class="name">${u.name} <span class="lvl">Lv 0</span><span class="tierb"></span></span>
     <span class="desc">+${fmt(u.amount)} ${u.type === 'click' ? 'per rep' : 'per sec'}</span></span>
     <span class="price"><span class="p"><svg width="14" height="14"><use href="#coin"/></svg><span class="c"></span></span><span class="n"></span></span>`;
   b.addEventListener('click', () => buy(u, b));
@@ -3028,6 +3412,10 @@ function render() {
     b.querySelector('.c').textContent = fmt(c);
     b.querySelector('.n').textContent = '×' + n;
     b.querySelector('.lvl').textContent = 'Lv ' + state.owned[u.id];
+    const ti = Math.min(6, Math.floor(state.owned[u.id] / 25)), tb = b.querySelector('.tierb');
+    tb.textContent = ti ? UP_TIER_NAMES[ti] + ' ×' + Math.pow(2, ti) : ''; tb.style.setProperty('--tc', UP_TIER_COLORS[ti]);
+    tb.title = 'Every 25 levels doubles this upgrade';
+    b.querySelector('.desc').textContent = `+${fmt(u.amount * upTier(u))} ${u.type === 'click' ? 'per rep' : 'per sec'} · next tier at Lv ${(ti + 1) * 25}`;
   });
   const need = rebirthNeed();
   $('bar').style.width = Math.min(100, state.gains / need * 100) + '%';
@@ -3040,7 +3428,7 @@ function render() {
   stage.style.setProperty('--size', Math.min(220 + state.rebirths * 15, 320) + 'px');
   for (const l of lifters) {
     const d = state.lv[l.key];
-    $('lv-' + l.key).textContent = 'Lv ' + d.lv;
+    $('lv-' + l.key).textContent = 'Lv ' + d.lv + ' · ' + EVOS[evoOf(l.key)].name;
     $('xp-' + l.key).style.width = (d.xp / xpNeed(d.lv) * 100) + '%';
     l.tag.textContent = `${l.c.name.toUpperCase()} · LV ${d.lv}`;
   }
@@ -3072,6 +3460,7 @@ function render() {
   renderWorlds();
   renderMini();
   renderExtra();
+  renderPro();
 }
 
 /* ================= Rebirth + wipe ================= */
@@ -3088,7 +3477,7 @@ $('rebirthBtn').addEventListener('click', () => {
   const keep = { rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, lv: state.lv, ach: state.ach, stats: state.stats,
     pets: state.pets, nest: state.nest, rival: state.rival, stealReadyAt: state.stealReadyAt,
     base: state.base, rivalRots: state.rivalRots, rotStealReadyAt: state.rotStealReadyAt, lockUntil: state.lockUntil, lockReadyAt: state.lockReadyAt,
-    world: state.world, worlds: state.worlds, mini: state.mini, x: state.x };
+    world: state.world, worlds: state.worlds, mini: state.mini, x: state.x, uni: state.uni, multi: state.multi };
   state = { ...fresh(), ...keep };
   state.gains = startGains();
   shown = 0; combo = 0;
@@ -3308,6 +3697,7 @@ function start(data) {
   window.claude?.hot?.snapshot?.(() => ({ state }));
   initMini();
   initExtra();
+  initPro();
   renderEggs();
   renderRots();
   applyWorld();
