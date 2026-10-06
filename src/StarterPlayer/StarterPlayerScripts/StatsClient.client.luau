@@ -43,13 +43,14 @@ local ROW_HEIGHT = 16
 local statsButton = SideMenu.Add("Stats", "Stats", Icons.Flex, 1)
 local labelsOn = false
 local musclesOpen = false
+local musclesTile = nil -- (set below, with the left menu tile)
 
 ------------------------------------------------------------------------
 -- The "Your muscles" panel
 ------------------------------------------------------------------------
 local screen = Theme.ScreenGui({ Name = "MusclesScreen", DisplayOrder = 60, Enabled = false, Parent = playerGui }) -- above notifications (50)
 screen.ScreenInsets = Enum.ScreenInsets.None
-local backdrop = New("TextButton", { Name = "Backdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Colors.Background, BackgroundTransparency = 0.04, Text = "", AutoButtonColor = false, Parent = screen })
+local backdrop = New("TextButton", { Name = "Backdrop", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = screen }) -- (no dark backdrop: the world is blurred instead)
 local windowRoot = New("Frame", {
 	Name = "WindowRoot",
 	AnchorPoint = Vector2.new(0.5, 0.5),
@@ -64,6 +65,39 @@ local window = Theme.Panel({
 	Active = true, -- taps inside the window never reach the backdrop (which closes it)
 	Parent = windowRoot,
 }, { Theme.Pad("M"), Theme.List(Vertical, "S", Left, Top) })
+-- frosted glass: light and see-through with a thin white border
+window.BackgroundColor3 = Color3.new(1, 1, 1)
+window.BackgroundTransparency = 0.85
+local windowStroke = window:FindFirstChildOfClass("UIStroke")
+if windowStroke then
+	windowStroke.Color = Color3.new(1, 1, 1)
+	windowStroke.Transparency = 0.6
+end
+
+-- the world blurs behind the panel (tweened; always cleared when it closes)
+local Lighting = game:GetService("Lighting")
+local oldBlur = Lighting:FindFirstChild("MusclesBlur")
+if oldBlur then oldBlur:Destroy() end
+local blur = Instance.new("BlurEffect")
+blur.Name = "MusclesBlur"
+blur.Size = 0
+blur.Enabled = false
+blur.Parent = Lighting
+local blurToken = 0
+local function setBlur(on)
+	blurToken += 1
+	local token = blurToken
+	if on then blur.Enabled = true end
+	Theme.Tween(blur, { Size = on and 16 or 0 }, 0.25)
+	if not on then
+		task.delay(0.35, function()
+			if token == blurToken then
+				blur.Size = 0
+				blur.Enabled = false
+			end
+		end)
+	end
+end
 
 -- title row with the close button (the window has a list layout, so the button lives in this row)
 local header = New("Frame", { Name = "Header", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = window })
@@ -226,12 +260,14 @@ end
 local function openMuscles()
 	if musclesOpen or UIBus.MenuOpen then return end
 	musclesOpen = true
+	if musclesTile then musclesTile:SetActive(true) end
 	hideHud(true)
 	refreshScreen()
 	screen.Enabled = true
 	layoutGrid()
 	scroll.CanvasPosition = Vector2.zero
 	Audio.PlayUI("Whoosh")
+	setBlur(true)
 	Theme.Fade(windowRoot, true)
 	UIBus.MusclesVisible:Fire(true)
 end
@@ -240,6 +276,8 @@ local function closeMuscles()
 	if not musclesOpen then return end
 	musclesOpen = false
 	hideHud(false)
+	if musclesTile then musclesTile:SetActive(false) end
+	setBlur(false)
 	UIBus.MusclesVisible:Fire(false)
 	local tween = Theme.Fade(windowRoot, false)
 	if tween then
@@ -265,57 +303,15 @@ UIBus.GeneticsVisible.Event:Connect(function(visible)
 end)
 
 ------------------------------------------------------------------------
--- The Muscles button: bottom center, only while the labels are shown
+-- The Muscles tile (left menu) opens the panel; there is no floating button any more
 ------------------------------------------------------------------------
-local buttonGui = Theme.ScreenGui({ Name = "MusclesButton", DisplayOrder = 6, Enabled = false, Parent = playerGui })
-local musclesButton = Theme.Button("Secondary", {
-	Name = "Muscles",
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -Spacing.M),
-	Size = UDim2.fromOffset(132, Theme.MinTouch),
-	Parent = buttonGui,
-}, { Theme.Text({ Text = "Muscles", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }) })
-musclesButton.Activated:Connect(openMuscles)
-
-local buttonShown = false
-local function setButtonShown(on)
-	if on == buttonShown then return end
-	buttonShown = on
-	if on then
-		buttonGui.Enabled = true
-		Theme.Fade(musclesButton, true, 0.2)
-	else
-		local tween = Theme.Fade(musclesButton, false, 0.15)
-		if tween then
-			tween.Completed:Connect(function()
-				if not buttonShown then buttonGui.Enabled = false end
-			end)
-		else
-			buttonGui.Enabled = false
-		end
-	end
-end
-
--- keep clear of the machine panel while lifting: sit just above it
-local function placeButton()
-	local hud = playerGui:FindFirstChild("MachineHud")
-	local stack = hud and hud:IsA("ScreenGui") and hud.Enabled and hud:FindFirstChild("Stack", true)
-	if stack and stack:IsA("GuiObject") and stack.Visible and stack.AbsoluteSize.Y > 0 then
-		local y = stack.AbsolutePosition.Y - buttonGui.AbsolutePosition.Y - Spacing.S
-		musclesButton.Position = UDim2.new(0.5, 0, 0, math.max(y, Theme.MinTouch + Spacing.S))
-	else
-		musclesButton.Position = UDim2.new(0.5, 0, 1, -Spacing.M)
-	end
-end
-
+musclesTile = SideMenu.Add("Muscles", "Muscles", Icons.Stats, 2)
+musclesTile.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	if musclesOpen then closeMuscles() else openMuscles() end
+end)
 local menuDone = false
-local function updateButton()
-	local camera = workspace.CurrentCamera
-	local tight = UIBus.Training and camera ~= nil and camera.ViewportSize.Y < UIBus.ShortScreen -- (the labels step aside too)
-	local show = labelsOn and menuDone and not musclesOpen and not tight and not UIBus.CoverOpen(playerGui)
-	setButtonShown(show)
-	if show then placeButton() end
-end
+local function updateButton() end -- (kept so the code below reads the same)
 
 statsButton.Activated:Connect(function()
 	labelsOn = not labelsOn
