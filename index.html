@@ -326,7 +326,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .rfr{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;flex:none}.rfr:empty{display:none}.rfr span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(47,210,138,.14);color:var(--ink);font:700 .75rem var(--body)}.rfr i{width:18px;height:18px;border-radius:50%;display:inline-block}
 .leave{display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
 .leave svg{width:16px;height:16px;transform:rotate(180deg)}
-.roomhead h2{margin:0;flex:1;min-width:0;font-family:var(--display);font-variation-settings:"wdth" 120;font-weight:900;font-size:1.35rem;letter-spacing:-.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.roomhead h2{margin:0;flex:1;min-width:0;font-family:var(--display);font-variation-settings:"wdth" 120;font-weight:900;font-size:1.35rem;letter-spacing:-.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.roomhead h2.long{font-size:1.05rem;font-variation-settings:"wdth" 100}.roomhead h2.xlong{font-size:.88rem;font-variation-settings:"wdth" 90}
 .mini{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
 .mini b{font-family:var(--mono);font-size:1rem}
 .mini .bar{width:84px;height:5px}
@@ -366,6 +366,11 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
 .tierb{font-style:normal;font-weight:800;color:var(--tc);background:color-mix(in oklab,var(--tc) 14%,transparent);border-radius:99px;padding:1px 7px;margin-right:4px;cursor:pointer;white-space:nowrap}
 .tiersheet{text-align:center}.tiersheet h2{color:var(--tc);font-size:2rem;margin:2px 0 10px}.tierbig{font-size:3.4rem;line-height:1;animation:pulse 1.2s ease-in-out infinite}.tiercols{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin-bottom:14px}.tiercols>div{background:var(--sunk);border-radius:14px;padding:10px 12px}.tiercols b{display:block;margin-bottom:4px}.tiercols p{margin:2px 0;font-size:.8rem}
 .tierlist{display:flex;flex-direction:column;gap:8px;margin-top:12px}.tierrow{display:grid;grid-template-columns:36px 1fr;grid-template-areas:"i n" "i e";gap:2px 10px;align-items:center;padding:10px 12px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);opacity:.6}.tierrow.done{opacity:.85}.tierrow.on{opacity:1;box-shadow:inset 0 0 0 2px var(--tc),var(--shadow)}.tierrow .ti{grid-area:i;font-size:1.6rem;text-align:center}.tierrow .tn{grid-area:n;display:flex;justify-content:space-between;gap:8px}.tierrow .tn b{color:var(--tc)}.tierrow .tn small{font-family:var(--mono);font-size:.7rem;opacity:.7}.tierrow .te{grid-area:e;font-size:.72rem;opacity:.8}
+.room.cosmic{--bg:#0a0820;--surface:#18143c;--sunk:#110e2e;--ink:#f1eeff;--muted:#a49fd0;--line:#2c2658;--accent:#a06bff;--accent-ink:#0a0820;color:var(--ink);background:radial-gradient(130% 42% at 50% -8%,#3b1f7a 0%,#0a0820 70%) #0a0820;color-scheme:dark}.w2rate{align-self:flex-start;font-family:var(--mono);font-weight:800;font-size:.78rem;color:#ff4fd8;background:rgba(10,8,30,.75);border-radius:99px;padding:5px 11px}
+.core{position:relative;width:100%;border:0;border-radius:24px;padding:26px 16px 18px;margin:6px 0 10px;background:radial-gradient(circle at 50% 38%,#ff4fd8 0,#7a2fd6 30%,#140a33 70%);color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;overflow:hidden}.core b{font-family:var(--display);font-size:2rem;position:relative}.core b small{font-size:.8rem;opacity:.8}.core>small{opacity:.75;position:relative}.core:active{transform:scale(.98)}.corei{position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.18),transparent 30%);animation:spin 6s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.gens{display:flex;flex-direction:column;gap:8px;margin-top:8px}.gen{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;border:0;border-radius:16px;padding:10px 12px;background:linear-gradient(120deg,#16123a,#241a52);color:#fff;text-align:left;font:inherit;cursor:pointer}.gen:disabled{opacity:.55;cursor:default}.gen.lock{opacity:.45}.gi{font-size:1.7rem;text-align:center}.gt b{display:block;font-family:var(--display);font-size:.92rem}.gt b em{font-style:normal;font-family:var(--mono);color:#ffcc33;margin-left:4px}.gt small{font-size:.7rem;opacity:.75}.gc{font-family:var(--mono);font-weight:800;color:#ff4fd8;font-size:.82rem}
+.obsgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.obsc{display:flex;flex-direction:column;align-items:center;gap:2px;background:#16123a;color:#fff;border-radius:12px;padding:8px 2px}.obsc span{font-size:1.4rem}.obsc small{font-size:.55rem;text-align:center;opacity:.8;line-height:1.1}.obsc.lock{opacity:.35}.obsnew{display:flex;gap:12px;align-items:center;background:linear-gradient(120deg,#16123a,#3b2a8a);color:#fff;border-radius:16px;padding:12px;margin:8px 0}.obsnew>span{font-size:2.2rem}.obsnew small{display:block;opacity:.8;font-size:.75rem}
+.bhart{height:170px;background:#020208;position:relative;overflow:hidden}.bhdisk{position:absolute;left:50%;top:50%;width:260px;height:80px;margin:-40px 0 0 -130px;border-radius:50%;background:conic-gradient(#ffcc33,#ff7a3d,#7a2fd6,#ff7a3d,#ffcc33);filter:blur(6px);animation:spin 5s linear infinite;opacity:.85}.bhcore{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#000;box-shadow:0 0 0 3px rgba(255,210,140,.8),0 0 40px 10px rgba(255,150,60,.35)}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -772,7 +777,7 @@ const CATS=[
  {k:"watch",n:"Watches",h:165,conds:[["Full set",1.1],["Watch only",.85]],items:[["SQ","Square Digital",110],["AD","Auto Diver",220],["HD","Heritage Diver",3200],["MC","Moon Chrono",5600],["PP","Platinum Perpetual",26000]]},
  {k:"lux",n:"Luxury",h:45,conds:[["Mint",1.1],["Excellent",.95],["Estate",.8]],items:[["DN","Diamond Tennis Bracelet",18000],["SA","Sapphire Brooch",28000],["RG","Gold Chronograph 'Regent'",42000],["CG","Couture Evening Gown",24000],["CB","Crocodile Top-Handle Bag",65000],["GN","Gilded Grand Piano",150000],["PK","Pink Diamond Ring",240000],["JE","Jeweled Imperial Egg",480000],["OM","Old Master Painting",900000],["YN","Yellow Diamond Necklace",1200000]]},
  {k:"elite",n:"Prestige",h:50,conds:[["Concours",1.1],["Pristine",1]],items:[["HC","Hypercar 1-of-1 Prototype",5e7],["RW","Royal Wristwatch 'Emperor'",5.2e7],["FE","Imperial Jeweled Egg Set",5.5e7],["PJ","Long-Range Private Jet",6.5e7],["GT","'62 Grand Tourer Berlinetta",7e7],["SC","Ancient Marble Sculpture",7.5e7],["BD","Blue Diamond 'Ocean Star'",8e7],["MP","Modern Masterpiece Canvas",9e7],["SY","Superyacht 'Aurora'",9.5e7],["PS","Penthouse Deed, Central Park",1e8]]},
- {k:"space",n:"Space",h:230,conds:[["Pristine",1.1],["Weathered",.9]],items:[["MR","Moon rock",5e6],["ME","Lunar meteorite",2e7],["MC","Martian crystal",8e7],["MX","Martian fossil",2.5e8]]}
+ {k:"space",n:"Space",h:230,conds:[["Pristine",1.1],["Weathered",.9]],items:[["MR","Moon rock",5e15],["ME","Lunar meteorite",2e16],["MC","Martian crystal",8e16],["MX","Martian fossil",2.5e17],["CI","Comet ice",1e18],["SD","Jar of stardust",8e18],["NS","Neutron star shard",5e19],["AA","Alien artifact",3e20],["DV","Dark matter vial",2e21]]}
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
 const POOL=CATS.flatMap(c=>c.items.map(i=>({cat:c.k,code:i[0],name:i[1],base:i[2]})));
@@ -820,15 +825,11 @@ const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop
 VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:20000,shop:"dealer"},{k:"classic",n:"Classic coupe",d:"2.8× speed. Sells back for 130%.",sp:2.8,cost:80000,shop:"dealer",resale:1.3},{k:"supercar",n:"Hypercar",d:"4× speed. The fastest thing in town.",sp:4,cost:250000,shop:"dealer"});
 const CARS=["car","truck","classic","supercar"];
 const ride=()=>{if(!S||!S.veh)return null;if(S.cur==="walk")return null;if(S.cur&&S.veh[S.cur])return S.cur;const own=VEH.filter(v=>S.veh[v.k]).sort((a,b)=>b.sp-a.sp);return own.length?own[0].k:null};
-const PROPS=[{n:"Apartment",c:"#e39a52",cost:0,en:0,sell:0,d:"A cozy start."},{n:"Loft",c:"#14a3a8",cost:25000,en:20,sell:0,d:"+20 max energy."},{n:"Penthouse",c:"#2b2f3a",cost:150000,en:50,sell:.1,d:"+50 max energy, +10% on every sale."},{n:"Mansion",c:"#cf9a14",cost:1000000,en:100,sell:.25,d:"+100 max energy, +25% on every sale."},{n:"Sky Villa",c:"#7a2fd6",cost:1e7,en:150,sell:.32,d:"+150 max energy, +32% on every sale."},{n:"Island Estate",c:"#14a3a8",cost:1e8,en:220,sell:.4,d:"+220 max energy, +40% on every sale."},{n:"Royal Palace",c:"#8a1d2a",cost:1e9,en:300,sell:.5,d:"+300 max energy, +50% on every sale."},{n:"Space Station",c:"#5f6b7e",cost:1e12,en:380,sell:.56,d:"+380 max energy, +56% on every sale. Earth views from your bedroom."},
- {n:"Moon Base",c:"#9aa3b3",cost:1e15,en:460,sell:.62,d:"+460 max energy, +62% on every sale. Low gravity gym included."},
- {n:"Mars Colony",c:"#c2410c",cost:1e18,en:540,sell:.68,d:"+540 max energy, +68% on every sale. A whole red planet suburb."},
- {n:"Floating City",c:"#2fa6d9",cost:1e21,en:620,sell:.74,d:"+620 max energy, +74% on every sale. A city in the clouds, all yours."},
- {n:"Ring World",c:"#14a3a8",cost:1e24,en:700,sell:.8,d:"+700 max energy, +80% on every sale. A habitat ring around a star."},
- {n:"Dyson Sphere",c:"#cf9a14",cost:1e27,en:800,sell:.86,d:"+800 max energy, +86% on every sale. You live inside the sun's power plant."},
- {n:"Star System",c:"#7a2fd6",cost:1e30,en:900,sell:.92,d:"+900 max energy, +92% on every sale. Eight planets and a sun with your name."},
- {n:"Galaxy",c:"#ff4fd8",cost:1e33,en:1000,sell:1,d:"+1000 max energy, +100% on every sale. 200 billion stars of real estate."},
- {n:"Multiverse Mansion",c:"#1b1f2a",cost:1e36,en:1200,sell:1.1,d:"+1200 max energy, +110% on every sale. Every version of you lives here."}];
+const PROPS=[{n:"Apartment",c:"#e39a52",cost:0,en:0,sell:0,d:"A cozy start."},{n:"Loft",c:"#14a3a8",cost:25000,en:20,sell:0,d:"+20 max energy."},{n:"Penthouse",c:"#2b2f3a",cost:150000,en:50,sell:.1,d:"+50 max energy, +10% on every sale."},{n:"Mansion",c:"#cf9a14",cost:1000000,en:100,sell:.25,d:"+100 max energy, +25% on every sale."},{n:"Sky Villa",c:"#7a2fd6",cost:1e7,en:150,sell:.32,d:"+150 max energy, +32% on every sale."},{n:"Island Estate",c:"#14a3a8",cost:1e8,en:220,sell:.4,d:"+220 max energy, +40% on every sale."},{n:"Royal Palace",c:"#8a1d2a",cost:1e9,en:300,sell:.5,d:"+300 max energy, +50% on every sale."},{n:"Floating City",c:"#2fa6d9",cost:1e12,en:380,sell:.56,d:"+380 max energy, +56% on every sale. A city in the clouds, all yours."},
+ {n:"Underwater Palace",c:"#14a3a8",cost:1e15,en:480,sell:.64,d:"+480 max energy, +64% on every sale. Sharks in the hallway."},
+ {n:"Cloud Kingdom",c:"#9fb2c4",cost:1e18,en:600,sell:.74,d:"+600 max energy, +74% on every sale. Castles above the weather."},
+ {n:"Volcano Lair",c:"#c2410c",cost:1e21,en:750,sell:.86,d:"+750 max energy, +86% on every sale. Lava moat, obviously."},
+ {n:"Private Continent",c:"#3f9a4e",cost:1e24,en:900,sell:1,d:"+900 max energy, +100% on every sale. A whole landmass with your name on it."}];
 const OUTFITS=[["Classic blue","#2a3cff",0],["Crimson","#e2364a",5],["Gold","#cf9a14",10],["Midnight","#1b1f2a",15],["Neon","#2fd28a",20],["Royal","#8f52d4",30],["Diamond","#7fd6ff",40]];
 const PAINTS=["#e2364a","#2a5bd7","#1b1f2a","#f2f2f2","#cf9a14","#2fd28a","#ff7a3d","#8f52d4"];
 const SEASONS=[{n:"Spring",m:{kicks:1.15,watch:1.05}},{n:"Summer",m:{gym:1.2,vint:.9,tech:1.05}},{n:"Autumn",m:{vint:1.2,cards:1.1}},{n:"Winter",m:{vint:1.3,toys:1.25,gym:.9}}];
@@ -913,13 +914,13 @@ function freshLife(keep){
   const k=keep&&S.tok.keep;S.up={bag:k?S.up.bag:0,shoes:k?S.up.shoes:0,legit:0,coach:0,alerts:0,clout:0,phone:0};
 }
 function newGame(){
-  S={v:1,rebirths:0,tokens:0,tok:{profit:0,energy:0,start:0,keep:0},up:{},trend:{},hist:{},clock:8,day:1,px:390,py:500,
+  S={v:1,w2m:1,rebirths:0,tokens:0,tok:{profit:0,energy:0,start:0,keep:0},up:{},trend:{},hist:{},clock:8,day:1,px:390,py:500,
      stats:{flips:0,profit:0,best:0,fakes:0,grails:0,lifted:0,heaviest:20,earnedAll:0,armWins:0,beat:[]},flags:{},ach:{},unl:{},veh:{},goal:0,hd:0,home:0,skin:0,paint:"#e2364a",login:{d:"",streak:0},awake:0,buffs:{},trades:[],meetDay:3,trophies:0,shop:{open:0,worker:0},nextId:1};
   CATS.forEach(c=>{S.trend[c.k]=1;S.hist[c.k]=Array(40).fill(1)});
   freshLife(false);
 }
 function save(){if(ACC&&ACC.kicked)return;if(S){S.savedAt=Date.now();store.set(SAVE,JSON.stringify(SCN?Object.assign({},S,{px:SCN.tx,py:SCN.ty}):S))}dirty=false}
-function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){{const MV={london:"paris",rome:"paris",geneva:"paris",seoul:"tokyo",bangkok:"tokyo",nyc:"dubai",vegas:"monaco",rio:"dubai",sydney:"dubai"};(d.biz||[]).forEach(b=>{if(MV[b.c])b.c=MV[b.c]});if(d.visited)for(const k in MV)delete d.visited[k]}if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};d.bestPr=Math.max(d.bestPr||0,d.pr||20,...Object.values(d.lifts||{}));d.bestLifts=d.bestLifts||{};for(const k in d.lifts||{})d.bestLifts[k]=Math.max(d.bestLifts[k]||0,d.lifts[k]);if(d.trend&&d.hist)CATS.forEach(c=>{if(d.trend[c.k]==null){d.trend[c.k]=1;d.hist[c.k]=Array(40).fill(1)}});for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;d.flags=d.flags||{};S=d;return true}}catch(e){}return false}
+function load(){try{const d=JSON.parse(store.get(SAVE));if(d&&d.v===1){w2Migrate(d);{const MV={london:"paris",rome:"paris",geneva:"paris",seoul:"tokyo",bangkok:"tokyo",nyc:"dubai",vegas:"monaco",rio:"dubai",sydney:"dubai"};(d.biz||[]).forEach(b=>{if(MV[b.c])b.c=MV[b.c]});if(d.visited)for(const k in MV)delete d.visited[k]}if(d.pr==null){d.pr=20+10*(d.str||0);delete d.str;delete d.xp}d.ach=d.ach||{};d.perks=d.perks||{};d.bestPr=Math.max(d.bestPr||0,d.pr||20,...Object.values(d.lifts||{}));d.bestLifts=d.bestLifts||{};for(const k in d.lifts||{})d.bestLifts[k]=Math.max(d.bestLifts[k]||0,d.lifts[k]);if(d.trend&&d.hist)CATS.forEach(c=>{if(d.trend[c.k]==null){d.trend[c.k]=1;d.hist[c.k]=Array(40).fill(1)}});for(const k in d.perks)d.perks[k]=Math.min(d.perks[k],k.startsWith('cat_')?30:({sales:40,energy:40,slot:20,speed:20,lift:20,arena:30,fees:3,steal:20,cafe:3})[k]||30);d.picks=Math.min(d.picks||0,10);d.offer=null;d.emp=d.emp||{};if(d.rebirths>0){d.picks=(d.picks||0)+d.rebirths*2;d.rebirths=0}if(d.tokens>0){d.cash+=d.tokens*2000;d.tokens=0}d.home=d.home||0;d.skin=d.skin||0;d.paint=d.paint||"#e2364a";d.login=d.login||{d:"",streak:0};d.awake=d.awake||0;d.buffs=d.buffs||{};d.trades=d.trades||[];d.meetDay=d.meetDay||3;d.trophies=d.trophies||0;d.shop=d.shop||{open:0,worker:0};if(!d.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);d.lifts={bench:r(d.pr*.7),squat:r(d.pr*.9),dead:d.pr}}d.pos=d.pos||{};d.unl=d.unl||{};d.veh=d.veh||{};d.goal=d.goal||0;d.bank=d.bank||0;d.stats.beat=d.stats.beat||[];d.stats.armWins=d.stats.armWins||0;d.flags=d.flags||{};S=d;return true}}catch(e){}return false}
 setInterval(()=>{if(dirty)save()},2000);
 // Reputation level grows forever from everything you earn; no resets
 // Each level needs 30% more lifetime earnings than the last
@@ -1448,7 +1449,7 @@ function renderHud(){
 
 /* ================= rooms ================= */
 let room=null;
-function roomHead(title){return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2><span class="pdot"></span>${title}</h2><div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
+function roomHead(title){const tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>13?"xlong":tl>8?"long":""}"><span class="pdot"></span>${title}</h2><div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
   $("mpSheet").hidden=true;
@@ -1462,7 +1463,7 @@ function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;XP=null;DJ=nu
 // buying or claiming redraws the room; keep the scroll position when it's the same screen
 const roomSc={y:0,t:null};
 $("room").addEventListener("scroll",e=>{const t=e.target;if(t.classList&&t.classList.contains("scroll")&&t.parentNode===$("room"))roomSc.y=t.scrollTop},true);
-new MutationObserver(()=>{const r=$("room");if(r.hidden&&r.querySelector(".roomhead")){r.hidden=false;if(!room)room="menu";renderHud()}const sc=r.querySelector(":scope>.scroll"),h=r.querySelector(".roomhead h2"),t=room+"|"+(h?h.textContent:"");
+new MutationObserver(()=>{const r=$("room");r.classList.toggle("cosmic",!!(SCN&&SCN.kind==="space"));if(r.hidden&&r.querySelector(".roomhead")){r.hidden=false;if(!room)room="menu";renderHud()}const sc=r.querySelector(":scope>.scroll"),h=r.querySelector(".roomhead h2"),t=room+"|"+(h?h.textContent:"");
   if(sc&&t===roomSc.t&&roomSc.y)sc.scrollTop=roomSc.y;else roomSc.y=0;roomSc.t=t}).observe($("room"),{childList:true});
 $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play in the Online Town. Reach level 10 to get a free raft at the Harbor on the beach, then sail over.":"Friends play in the Online Town. Go to the Harbor on the beach and sail over.");if(regionOpen("beach"))walkTo("harbor");return}const sh=$("mpSheet");if(!sh.hidden){sh.hidden=true;return}mpUI()};
 // The alert pills sit in one swipeable row; the first button folds them away
@@ -2181,9 +2182,15 @@ const GOALS=[
  {t:"Get married",d:"Money isn't everything. Date someone from the club, then propose at the Café.",ok:()=>!!(S.partner&&S.partner.married),rw:500000},
  {t:"Own a $50M+ piece",d:"Prestige Houses abroad only deal in the very top end. Buy one.",ok:()=>Object.keys(S.coll||{}).some(k=>k.startsWith("elite:")),rw:5e6},
  {t:"Win the Monte Carlo Grand Prix",d:"Got a fast car? Monte Carlo has a race with your name on it.",ok:()=>(S.stats.gpWins||0)>=1,rw:5e6},
- {t:"Reach space",d:"Level 30 unlocks the Spaceport at the Airport. Go up.",ok:()=>(S.stats.orbits||0)>=1,rw:1e7},
- {t:"Bring something back from Mars",d:"The red planet. Upgrade your capsule all the way.",ok:()=>Object.keys(S.coll||{}).some(k=>k==="space:MC"||k==="space:MX"),rw:5e7},
- {t:"Earn $1 billion in total",d:"The final boss: a billion dollars earned. Then you really are a legend.",ok:()=>S.stats.earnedAll>=1e9,rw:1e8}
+ {t:"Build 50 Flip Tower floors",d:"Downtown has a lot with your name on it. Build up.",ok:()=>(S.tower||0)>=50,rw:1e7},
+ {t:"Move into the Royal Palace",d:"Upgrade your home all the way to the palace.",ok:()=>(S.home||0)>=6,rw:5e7},
+ {t:"Earn $1 billion in total",d:"A billion dollars earned. Then you really are a legend. But Earth isn't everything…",ok:()=>S.stats.earnedAll>=1e9,rw:1e8},
+ {t:"Reach the Master tier",d:"Grow your net worth to ✦1 Radiant ($1 quadrillion).",ok:()=>tierN()>=5,rw:1e13},
+ {t:"Open the Stargate",d:"The Airport has a gate to World 2. It costs ✦10.",ok:()=>!!(S.w2&&S.w2.open),rw:1e15},
+ {t:"Make ✦1 a minute",d:"Build a solar collector at the Radiant Reactor in the Cosmos.",ok:()=>w2Rate()>=1,rw:5e15},
+ {t:"Make ✦1,000 a minute",d:"Stack generators, research upgrades, feed the black hole.",ok:()=>w2Rate()>=1000,rw:5e17},
+ {t:"Map 10 cosmic objects",d:"The Observatory in the Cosmos is waiting.",ok:()=>!!(S.w2&&S.w2.disc.length>=10),rw:1e19},
+ {t:"Make ✦1M a minute",d:"Wormholes, neutron forges, pocket universes. Go big.",ok:()=>w2Rate()>=1e6,rw:1e22}
 ];
 const rq=[];let rBusy=false;
 let rayEl=null,rayTo=null;
@@ -2978,7 +2985,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);tierTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);tierTick(dt);w2Tick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3228,7 +3235,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild(),L=myLook();return{ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -3406,12 +3413,12 @@ function flyTo(c,then){const ov=document.createElement("div");ov.className="sail
 function openAirport(){const L=repLevel();
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
     <div class="note">Fly anywhere in the world. Every city has its own <b>market</b>, a <b>Prestige House</b> trading $50M–$100M pieces, and <b>real estate</b> you can buy and run. ${hasToy("jet")?"Your private jet flies free.":"Fares grow with distance."}</div>
-    ${SCN&&SCN.kind==="city"?`<button class="bigbtn" id="apHome">Fly home<small>${CTRY(SCN.k).n} → Flip City</small></button>`:""}<button class="bigbtn alt2" id="apSpace" ${L<30?"disabled":""}>Spaceport<small>${L<30?"Unlocks at level 30":"Build a rocket and launch it yourself"}</small></button>
+    ${SCN&&SCN.kind==="city"?`<button class="bigbtn" id="apHome">Fly home<small>${CTRY(SCN.k).n} → Flip City</small></button>`:""}${SCN?"":`<button class="bigbtn alt2" id="apSpace" ${!(S.w2&&S.w2.open)&&S.cash<W2_COST?"disabled":""}>Stargate · World 2<small>${S.w2&&S.w2.open?"Warp to the Cosmos":"Open it for "+fmt(W2_COST)+" · a whole incremental space world"}</small></button>`}
     <button class="bigbtn alt" id="apPass">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length} stamps</small></button>
     ${(S.biz||[]).length?`<button class="bigbtn" id="apEmp">Your businesses<small>${(S.biz||[]).length} owned · ${fmt(empireInc())}/min${tillAll()>=1?" · "+fmt(tillAll())+" to collect":""}</small></button>`:""}
     <div class="sechead"><h3>Destinations</h3><span class="eyebrow">${COUNTRIES.length} cities</span></div>
     <div class="perks">${COUNTRIES.map(c=>{const lock=L<c.lv&&!(c.k==="dubai"&&hasToy("jet")),f=cFare(c),n=(S.biz||[]).filter(b=>b.c===c.k).length;const here=SCN&&SCN.k===c.k;return `<button class="perk opp dest" data-fly="${c.k}" ${here||lock||S.cash<f?"disabled":""}><span class="oav fl">${flagSVG(c.k,34)}</span><span class="t">${c.n} <small style="opacity:.6;font-weight:600">${c.cn}</small>${n?` <em class="beat">${n} BIZ</em>`:""}</span><span class="d">${lock?"Unlocks at level "+c.lv:c.spec}</span><span class="c">${here?"You're here":lock?"Locked":f?fmt(f):"Free"}</span></button>`}).join("")}</div></div>`;
-  $("leaveBtn").onclick=closeRoom;const ah=$("apHome");if(ah)ah.onclick=()=>leaveScene();const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);$("apPass").onclick=()=>openPassport(()=>{room="airport";openAirport()});$("apSpace").onclick=()=>{if(SCN)return banner("The Spaceport is back home","a");if(repLevel()>=30)openSpaceport(()=>{room="airport";openAirport()})};
+  $("leaveBtn").onclick=closeRoom;const ah=$("apHome");if(ah)ah.onclick=()=>leaveScene();const e=$("apEmp");if(e)e.onclick=()=>openEmpire(openAirport);$("apPass").onclick=()=>openPassport(()=>{room="airport";openAirport()});{const sp=$("apSpace");if(sp)sp.onclick=()=>openStargate()}
   $("room").querySelectorAll("[data-fly]").forEach(b=>b.onclick=()=>{const c=CTRY(b.dataset.fly),f=cFare(c);if(S.cash<f)return;S.cash-=f;S.stats.flights=(S.stats.flights||0)+1;dirty=true;flyTo(c)})}
 function openCity(k,arrive){if(arrive||!SCN||SCN.k!==k){enterCity(k);if(arrive){stampCity(k);banner("Welcome to "+CTRY(k).n,"a")}return}closeRoom()}
 function backTo(fn){const l=$("leaveBtn");if(l){l.onclick=()=>{closeMarket();fn()};l.innerHTML=ARROW+"Back"}}
@@ -3766,11 +3773,11 @@ const ACCS=[
  {k:"shades",s:"g",n:"Shades",cost:300,rz:1},{k:"aviator",s:"g",n:"Aviators",cost:4000,rz:2},{k:"dshades",s:"g",n:"Diamond shades",cost:2e6,rz:5},
  {k:"silver",s:"c",n:"Silver chain",cost:2500,rz:1},{k:"gold",s:"c",n:"Gold chain",cost:50000,rz:3},{k:"diamond",s:"c",n:"Diamond chain",cost:8e6,rz:6},
  {k:"pack",s:"b",n:"Backpack",cost:1200,rz:0,d:"+1 stash slot"},{k:"cape",s:"b",n:"Superhero cape",cost:1.5e7,rz:4},{k:"wings",s:"b",n:"Angel wings",cost:5e8,rz:10},
- {k:"phones",s:"h",n:"Headphones",cost:1500,rz:1},{k:"bandana",s:"h",n:"Bandana",cost:2000,rz:1},{k:"party",s:"h",n:"Party hat",cost:3500,rz:2},{k:"chef",s:"h",n:"Chef's hat",cost:8000,rz:2},{k:"viking",s:"h",n:"Viking helmet",cost:250000,rz:3},{k:"wizard",s:"h",n:"Wizard hat",cost:4e6,rz:4},{k:"astro",s:"h",n:"Space helmet",cost:1e12,rz:9},{k:"jcrown",s:"h",n:"Cosmic crown",cost:1e30,rz:20},
- {k:"nerd",s:"g",n:"Round glasses",cost:700,rz:1},{k:"hearts",s:"g",n:"Heart shades",cost:6000,rz:2},{k:"monocle",s:"g",n:"Gold monocle",cost:900000,rz:3},{k:"vr",s:"g",n:"VR headset",cost:3e7,rz:4},{k:"visor",s:"g",n:"Laser visor",cost:1e18,rz:12},
- {k:"bowtie",s:"c",n:"Bow tie",cost:1800,rz:1},{k:"scarf",s:"c",n:"Scarf",cost:3000,rz:1},{k:"medal",s:"c",n:"Gold medal",cost:1e6,rz:3},{k:"bhole",s:"c",n:"Black hole pendant",cost:1e27,rz:18},
- {k:"guitar",s:"b",n:"Guitar",cost:9000,rz:2},{k:"surf",s:"b",n:"Surfboard",cost:20000,rz:2},{k:"jet",s:"b",n:"Jetpack",cost:1e10,rz:8},{k:"dwings",s:"b",n:"Dragon wings",cost:1e21,rz:15},{k:"gwings",s:"b",n:"Galaxy wings",cost:1e33,rz:25},
- {k:"phone",s:"x",n:"Phone",cost:800,rz:1},{k:"coffee",s:"x",n:"Iced coffee",cost:400,rz:1},{k:"rose",s:"x",n:"Red rose",cost:2500,rz:2},{k:"case",s:"x",n:"Briefcase",cost:50000,rz:2},{k:"cash",s:"x",n:"Stack of cash",cost:1e7,rz:4},{k:"trophy",s:"x",n:"Trophy",cost:5e8,rz:5},{k:"saber",s:"x",n:"Light sword",cost:1e15,rz:10},{k:"orb",s:"x",n:"Star orb",cost:1e36,rz:30}];
+ {k:"phones",s:"h",n:"Headphones",cost:1500,rz:1},{k:"bandana",s:"h",n:"Bandana",cost:2000,rz:1},{k:"party",s:"h",n:"Party hat",cost:3500,rz:2},{k:"chef",s:"h",n:"Chef's hat",cost:8000,rz:2},{k:"viking",s:"h",n:"Viking helmet",cost:250000,rz:3},{k:"wizard",s:"h",n:"Wizard hat",cost:4e6,rz:4},{k:"astro",w2:1,s:"h",n:"Space helmet",cost:1e16,rz:9},{k:"jcrown",w2:1,s:"h",n:"Cosmic crown",cost:1e30,rz:20},
+ {k:"nerd",s:"g",n:"Round glasses",cost:700,rz:1},{k:"hearts",s:"g",n:"Heart shades",cost:6000,rz:2},{k:"monocle",s:"g",n:"Gold monocle",cost:900000,rz:3},{k:"vr",s:"g",n:"VR headset",cost:3e7,rz:4},{k:"visor",w2:1,s:"g",n:"Laser visor",cost:1e18,rz:12},
+ {k:"bowtie",s:"c",n:"Bow tie",cost:1800,rz:1},{k:"scarf",s:"c",n:"Scarf",cost:3000,rz:1},{k:"medal",s:"c",n:"Gold medal",cost:1e6,rz:3},{k:"bhole",w2:1,s:"c",n:"Black hole pendant",cost:1e27,rz:18},
+ {k:"guitar",s:"b",n:"Guitar",cost:9000,rz:2},{k:"surf",s:"b",n:"Surfboard",cost:20000,rz:2},{k:"jet",s:"b",n:"Jetpack",cost:1e10,rz:8},{k:"dwings",w2:1,s:"b",n:"Dragon wings",cost:1e21,rz:15},{k:"gwings",w2:1,s:"b",n:"Galaxy wings",cost:1e33,rz:25},
+ {k:"phone",s:"x",n:"Phone",cost:800,rz:1},{k:"coffee",s:"x",n:"Iced coffee",cost:400,rz:1},{k:"rose",s:"x",n:"Red rose",cost:2500,rz:2},{k:"case",s:"x",n:"Briefcase",cost:50000,rz:2},{k:"cash",s:"x",n:"Stack of cash",cost:1e7,rz:4},{k:"trophy",s:"x",n:"Trophy",cost:5e8,rz:5},{k:"saber",w2:1,s:"x",n:"Light sword",cost:1e15,rz:10},{k:"orb",w2:1,s:"x",n:"Star orb",cost:1e36,rz:30}];
 const ACC_SLOT={h:"Hats",g:"Glasses",c:"Neck",b:"Back",x:"In hand"};
 const accOf=k=>ACCS.find(a=>a.k===k);
 const myAcc=()=>S&&S.acc||{};
@@ -3839,11 +3846,11 @@ function accHand(c,k,x,y){
   if(k==="rose"){c.strokeStyle="#3f8a4e";c.lineWidth=1;c.beginPath();c.moveTo(x,y+2);c.lineTo(x,y-8);c.stroke();c.fillStyle="#e2364a";c.beginPath();c.arc(x,y-9,2.6,0,7);c.fill()}
   if(k==="saber"){const col=["#4fe3ff","#ff4fd8","#2fd28a"][Math.floor(wt/3)%3];c.fillStyle="#9aa3b3";c.fillRect(x-1,y-2,2,5);c.save();c.globalAlpha=.35+.15*Math.sin(wt*20);c.strokeStyle=col;c.lineWidth=5;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke();c.restore();c.strokeStyle="#fff";c.lineWidth=1.4;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke()}
   if(k==="orb"){const g2=c.createRadialGradient(x,y-6,0,x,y-6,7);g2.addColorStop(0,"#fff");g2.addColorStop(.4,"#b388ff");g2.addColorStop(1,"rgba(122,47,214,0)");c.fillStyle=g2;c.beginPath();c.arc(x,y-6,7+Math.sin(wt*4),0,7);c.fill()}}
-function openBoutique(back){S.accOwn=S.accOwn||{};S.acc=S.acc||{};
+function openBoutique(back,cosmic){S.accOwn=S.accOwn||{};S.acc=S.acc||{};const inShop=a=>cosmic?!!a.w2:!a.w2;
   const draw=()=>{const prev=`<div class="art bqart"><canvas id="bqCv" width="300" height="240"></canvas></div>`;
-    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Boutique")}${prev}
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead(cosmic?"Cosmic Boutique":"Boutique")}${prev}
       <div class="note">Wear one item per slot. Everything you wear adds a little <b>rizz</b> (now +${accRizz()}) and friends see it in the Online Town.</div>
-      ${Object.entries(ACC_SLOT).map(([sl,nm])=>`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${ACCS.filter(a=>a.s===sl).map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&(a.ev||S.cash<a.cost)?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.ev&&!own?a.ev:a.d||"+"+a.rz+" rizz"}</span><span class="c">${on?"Take off":own?"Wear":a.ev?"Event":fmt(a.cost)}</span></button>`}).join("")}</div>`).join("")}</div>`;
+      ${cosmic?`<div class="note">Cosmic gear, only sold in orbit. Things you already own from either shop can be worn anywhere.</div>`:""}${Object.entries(ACC_SLOT).map(([sl,nm])=>{const L=ACCS.filter(a=>a.s===sl&&(inShop(a)||(S.accOwn[a.k]&&!cosmic)));return L.length?`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${L.map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&(a.ev||S.cash<a.cost)?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.ev&&!own?a.ev:a.d||"+"+a.rz+" rizz"}</span><span class="c">${on?"Take off":own?"Wear":a.ev?"Event":fmt(a.cost)}</span></button>`}).join("")}</div>`:""}).join("")}</div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);g.scale(3,3);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),...myLook(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
     $("room").querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acc);if(!S.accOwn[a.k]){if(a.ev||S.cash<a.cost)return;S.cash-=a.cost;S.accOwn[a.k]=1;SFX.buy();confetti(40);banner(a.n+" bought","g")}
@@ -4084,15 +4091,15 @@ function shEnd(){if(!SH||SH.done)return;SH.done=true;const b=SH.b,rep=Math.min(2
 
 /* ================= spaceport: build a rocket, fly the launch, bring back space rocks ================= */
 const RKT=[
- {k:"eng",n:"Engines",d:"More thrust, steadier climb",cost:l=>5e6*Math.pow(4,l),max:4},
- {k:"tank",n:"Fuel tanks",d:"A longer burn: more time to correct",cost:l=>3e6*Math.pow(4,l),max:4},
- {k:"shield",n:"Heat shield",d:"Overheats more slowly when going too fast",cost:l=>4e6*Math.pow(4,l),max:4},
- {k:"cap",n:"Capsule",d:"Reach further: orbit, then the Moon, then Mars",cost:l=>2e7*Math.pow(6,l),max:3},
- {k:"boost",n:"Side boosters",d:"A wider green band",cost:l=>8e6*Math.pow(5,l),max:3}];
+ {k:"eng",n:"Engines",d:"More thrust, steadier climb",cost:l=>5e15*Math.pow(4,l),max:4},
+ {k:"tank",n:"Fuel tanks",d:"A longer burn: more time to correct",cost:l=>3e15*Math.pow(4,l),max:4},
+ {k:"shield",n:"Heat shield",d:"Overheats more slowly when going too fast",cost:l=>4e15*Math.pow(4,l),max:4},
+ {k:"cap",n:"Capsule",d:"Reach further: orbit, then the Moon, then Mars",cost:l=>2e16*Math.pow(6,l),max:3},
+ {k:"boost",n:"Side boosters",d:"A wider green band",cost:l=>8e15*Math.pow(5,l),max:3}];
 const DEST=[
- {k:"orbit",n:"Low orbit",cap:1,fuel:2e6,d:"Space tourism flight",item:null,pay:1.2e7},
- {k:"moon",n:"The Moon",cap:2,fuel:2e7,d:"Brings back moon rocks",item:["MR","ME"]},
- {k:"mars",n:"Mars",cap:3,fuel:2e8,d:"Brings back Martian crystals",item:["MC","MX"]}];
+ {k:"orbit",n:"Low orbit",cap:1,fuel:2e15,d:"Space tourism flight",item:null,pay:1.2e16},
+ {k:"moon",n:"The Moon",cap:2,fuel:2e16,d:"Brings back moon rocks",item:["MR","ME"]},
+ {k:"mars",n:"Mars",cap:3,fuel:2e17,d:"Brings back Martian crystals",item:["MC","MX"]}];
 const rk=k=>((S.rkt||{})[k])||0;
 let RL=null;
 function openSpaceport(back){S.rkt=S.rkt||{};room="space";
@@ -4153,7 +4160,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=8,WN=[
+const WN_VER=9,WN=[
+ ["🌌","World 2: the Cosmos","Open the Stargate at the Airport (✦10). Build generators that make Radiant every minute, research upgrades, map the stars and feed the black hole."],
  ["🎨","Customize everything","Home → Look: shirt colour and style, pants, shoes, eyes, facial hair and 8 hairstyles. 30 new accessories, including things to hold."],
  ["🌌","Mega projects","At the Bank: buy a country, build a Dyson sphere, rewrite reality. Nine new homes up to a Multiverse Mansion."],
  ["📏","Grow into your frame","Tall players start skinny and fill out as they lift. Lift past your next growth spurt for up to +50% money."],
@@ -4162,7 +4170,7 @@ const WN_VER=8,WN=[
  ["🏝️","Walk your islands","Stroll the beach to your villa, the fishing pier, the dive shack, the bonfire and washed-up chests."],
  ["🏨","Businesses","Buy apartments, bars, restaurants, condos, hotels and resorts. Expand, set prices, handle events, work shifts."],
  ["🎰","Casino & Grand Prix","Slots, roulette and blackjack in Monte Carlo, plus a Grand Prix race in Monaco."],
- ["🚀","Spaceport","Level 30+: build a rocket at the Airport and fly it to orbit, the Moon and Mars."],
+ ["🚀","Spaceport","Now in the Cosmos: build a rocket and fly it to orbit, the Moon and Mars."],
  ["🎧","DJ sets","Play a rhythm game at the Nightclub's DJ booth for fans and hype."],
  ["💍","Weddings","Propose to your partner with a ring and pick a venue. Married couples get bigger bonuses."],
  ["🐶","Style & pets","Pets that follow you, a Boutique, a Wardrobe for skin and hair, car mods in the Dealership garage."],
@@ -4682,7 +4690,7 @@ function enterIsland(k,fid){const G=islGeo(k),i=ISLANDS.find(x=>x.k===k);
 const hasPier=(k,fid)=>!!islBuilt(k,fid).pier;
 function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();
   const done=()=>{SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner(city?"Back in Flip City":"Back at the Harbor","a")};
-  if(city)flyTo({n:"Flip City",cn:"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
+  if(city||t.kind==="space")flyTo({n:"Flip City",cn:t.kind==="space"?"World 1 · Earth":"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
 /* moving, tapping, drawing */
 function sceneTap(x,y){if(!SCN.ok(x,y)){const dx=x-S.px,dy=y-S.py;let lo=0,hi=1;for(let j=0;j<14;j++){const m=(lo+hi)/2;SCN.ok(S.px+dx*m,S.py+dy*m)?lo=m:hi=m}x=S.px+dx*lo;y=S.py+dy*lo}target=[x,y];autoEnter=null;moving=true}
 function sceneNear(){let best=null,bd=70;for(const p of SCN.places){const d=Math.hypot(S.px-p.door[0],S.py-p.door[1]-14);if(d<bd){bd=d;best=p}}return best}
@@ -4693,38 +4701,39 @@ function sceneTick(dt){if(room)return;
     else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st;if(!SCN.ok(nx,ny)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true}}}
   SCN.npc.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=SCN.pt();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
   SCN.cars.forEach(c=>{c.p=(c.p+c.sp*dt+1)%1})}
-function sceneSig(){return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
+function sceneSig(){if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
 function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig()+"|"+isDark();
-  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else buildIsland();SCN.stSig=sig;bKey=""}
+  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else buildIsland();SCN.stSig=sig;bKey=""}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):.55),SCN.kind==="city"?-170:0,Ht-vh);
-  ctx.fillStyle=dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
+  cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):SCN.kind==="space"?.55+.12*clamp((700-S.py)/300,0,1):.55),SCN.kind==="city"?-170:SCN.kind==="space"?-200:0,Ht-vh);
+  ctx.fillStyle=SCN.kind==="space"?"#05061a":dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
   ctx.drawImage(SCN_C,Math.max(0,cam.x),Math.max(0,cam.y),Math.min(Wd,vw),Math.min(Ht,vh),Math.max(0,-cam.x),Math.max(0,-cam.y),Math.min(Wd,vw),Math.min(Ht,vh));
   ctx.translate(-cam.x,-cam.y);const nightA=night(),near=sceneNear();
-  SCN.places.forEach(p=>{if(p.bld)winRects(p).forEach(([x,y,w,h])=>{if(nightA>.35){ctx.fillStyle="rgba(255,206,110,.95)";rr(x,y,w,h,3);ctx.fill()}});
+  SCN.places.forEach(p=>{if(p.bld)winRects(p).forEach(([x,y,w,h])=>{if(nightA>.35||SCN.kind==="space"){ctx.fillStyle="rgba(255,206,110,.95)";rr(x,y,w,h,3);ctx.fill()}});
     if(near===p){ctx.strokeStyle=P.ink;ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.lineDashOffset=-wt*20;rr(p.x-5,p.y-5,p.w+10,p.h+10,18);ctx.stroke();ctx.setLineDash([])}});
   if(SCN.kind==="city"){const T=CTHEME[SCN.k]||{};if(T.sea){ctx.strokeStyle="rgba(255,255,255,.5)";ctx.lineWidth=2.5;for(let k=0;k<3;k++){const yy=1560+k*24+Math.sin(wt*1.2+k)*4;ctx.beginPath();for(let x=Math.floor(cam.x/40)*40-40;x<cam.x+vw+40;x+=40){const o=(wt*14+k*13)%40;ctx.moveTo(x+o,yy);ctx.quadraticCurveTo(x+10+o,yy-5,x+20+o,yy)}ctx.stroke()}
       [[260,1590,"#ffffff"],[620,1600,"#1b1f2a"],[1300,1592,"#ffffff"],[1600,1602,"#cf9a14"]].forEach(([x,y,c],j)=>{const b=Math.sin(wt*1.5+j)*2;ctx.fillStyle="rgba(0,0,0,.15)";ctx.beginPath();ctx.ellipse(x,y+12+b,60,10,0,0,7);ctx.fill();ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x-60,y+b);ctx.lineTo(x+50,y+b);ctx.quadraticCurveTo(x+66,y+6+b,x+50,y+12+b);ctx.lineTo(x-52,y+12+b);ctx.closePath();ctx.fill();ctx.fillStyle="#cfe6f5";ctx.fillRect(x-30,y-10+b,50,10)})}
     SCN.cars.forEach(c=>{const L=[[640,0],[1015,0],[900,1]][c.lane],fwd=c.sp>0;let x,y,hd;if(L[1]){y=560+c.p*740;x=L[0]+(fwd?-18:18);hd=fwd?Math.PI/2:-Math.PI/2}else{x=c.p*CW;y=L[0]+(fwd?16:-16);hd=fwd?0:Math.PI}
       if(x<cam.x-80||x>cam.x+vw+80||y<cam.y-80||y>cam.y+vh+80)return;drawRideAt(x,y,hd,c.k,c.paint,{})})}
+  else if(SCN.kind==="space")spaceAnim();
   else{const G=islGeo(SCN.k);ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=3;for(let k=0;k<2;k++){const s=1+((wt*.08+k*.5)%1)*.12;ctx.globalAlpha=1-((wt*.08+k*.5)%1);ctx.beginPath();ctx.ellipse(G.cx,G.cy,G.rx*s+6,G.ry*s+6,0,0,7);ctx.stroke()}ctx.globalAlpha=1;
     for(let j=0;j<4;j++){const a=1.2+j*1.3+Math.sin(wt*.2+j)*.1,x=G.cx+Math.cos(a)*(G.rx+60),y=G.cy+Math.sin(a)*(G.ry+50)+Math.sin(wt*2+j)*3;ctx.fillStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.ellipse(x,y+4,14,5,0,0,7);ctx.fill();ctx.fillStyle=["#e8b896","#8d5a3b","#f3d0b5","#b9825c"][j];ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill()}
     {const b=Math.sin(wt*1.6)*2,x=G.cx+60,y=G.cy+G.ry+60;ctx.fillStyle="#f4f6fa";ctx.beginPath();ctx.moveTo(x-40,y+b);ctx.lineTo(x+40,y+b);ctx.quadraticCurveTo(x+52,y+6+b,x+38,y+12+b);ctx.lineTo(x-34,y+12+b);ctx.closePath();ctx.fill();ctx.fillStyle="#2a3cff";ctx.fillRect(x-16,y-8+b,30,8)}
     if(G.t===2){const vx=G.cx-G.rx*.42,vy=G.cy-G.ry*.3-160;ctx.fillStyle=`rgba(200,200,200,${.45+.15*Math.sin(wt)})`;for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(vx+j*10+Math.sin(wt+j)*4,vy-j*24-((wt*12)%24),12+j*4,0,7);ctx.fill()}}
     const ch=SCN.places.find(p=>p.k==="chest");if(ch){const x=ch.door[0],y=ch.door[1]-14+Math.sin(wt*3)*1.5;ctx.fillStyle="#9a5b28";rr(x-18,y-12,36,22,4);ctx.fill();ctx.fillStyle="#c07a3a";rr(x-20,y-18,40,10,4);ctx.fill();ctx.fillStyle="#ffcc33";ctx.fillRect(x-4,y-18,8,28);ctx.globalAlpha=.4+.3*Math.sin(wt*4);ctx.strokeStyle="#ffcc33";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-4,30,0,7);ctx.stroke();ctx.globalAlpha=1}
     const pf=SCN.places.find(p=>p.k==="party");if(pf){const x=pf.door[0],y=pf.door[1]-20;if(islB(SCN.k).party!==dayKey()||nightA>.3){for(let j=0;j<3;j++){ctx.fillStyle=["#ffcc33","#ff7a3d","#e2364a"][j];ctx.beginPath();ctx.moveTo(x-10+j*4,y);ctx.quadraticCurveTo(x-6+j*4,y-18-Math.sin(wt*9+j)*6,x+j*4,y-26-Math.sin(wt*7+j)*5);ctx.quadraticCurveTo(x+6+j*4,y-12,x+10-j*2,y);ctx.fill()}}}}
-  const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null;if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
+  const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph,acc:n.astro?{h:"astro"}:null,bob:n.astro?5+Math.sin(wt*2+n.ph)*3:0})]);
+  ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   decoUnder();drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
-  if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
+  const gr=SCN.kind==="space"?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
+  if(nightA>0&&SCN.kind!=="space"){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
     decoGlow(nightA);SCN.places.forEach(p=>{const sx=p.door[0]-cam.x,sy=p.door[1]-cam.y;if(sx<-90||sy<-90||sx>vw+90||sy>vh+90)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,80);g.addColorStop(0,`rgba(255,205,120,${.3*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-80,sy-80,160,160)});
     ctx.globalCompositeOperation="source-over"}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.16)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh)}
 function renderSceneBottom(){const el=$("bottom"),near=sceneNear(),key="scn|"+SCN.k+"|"+(near?near.k:"")+"|"+SCN.stSig;if(key===bKey)return;bKey=key;
-  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":"Sail back"}</button></div>`;
+  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:""}`;
   if(near)h+=`<button class="enter" id="enterBtn"><span>${near.verb||"Enter"} ${esc(near.n)}<small>${esc(String(near.sub||""))}</small></span>${ARROW}</button>`;
   h+=`<div class="places">${SCN.places.filter(p=>p.list!==0&&p.k!=="boat").map(p=>`<button class="place${near===p?" here":""}" data-sgo="${p.k}"><i style="background:${p.c}"></i>${esc(p.short||p.n)}</button>`).join("")}</div>`;
   el.innerHTML=h;const eb=$("enterBtn");if(eb)eb.onclick=()=>{audioOn();near.go()};
@@ -4842,15 +4851,13 @@ function decoHeads(nightA){(SCN.lamps||[]).forEach(([x,y])=>{if(x<cam.x-20||x>ca
 /* ================= mega projects: absurd things to spend absurd money on ================= */
 const MEGA=[
  {k:"country",n:"Buy a country",ic:"🏳️",c:1e15,d:"Your own flag, anthem and passport."},
- {k:"moon",n:"Moon base",ic:"🌙",c:1e18,d:"Domes, rovers and a crater pool."},
- {k:"mars",n:"Mars colony",ic:"🪐",c:1e21,d:"Terraform the red planet one dome at a time."},
- {k:"elev",n:"Space elevator",ic:"🛰️",c:1e24,d:"Ride from the beach straight to orbit."},
- {k:"dyson",n:"Dyson sphere",ic:"☀️",c:1e27,d:"Wrap a star and own its power."},
- {k:"worm",n:"Wormhole network",ic:"🌀",c:1e30,d:"Every city in the galaxy, one step away."},
- {k:"pocket",n:"Pocket universe",ic:"🌌",c:1e33,d:"A universe that fits in your jacket."},
- {k:"multi",n:"Multiverse gate",ic:"♾️",c:1e36,d:"Visit every version of Flip City at once."},
- {k:"time",n:"Time machine",ic:"⏳",c:1e39,d:"Buy low in the past, sell high in the future."},
- {k:"reality",n:"Rewrite reality",ic:"✨",c:1e42,d:"Edit the rules of the game itself."}];
+ {k:"ocean",n:"Ocean city",ic:"🌊",c:1e18,d:"A glass city on the sea floor."},
+ {k:"cont",n:"Private continent",ic:"🗺️",c:1e21,d:"Rename the oceans while you're at it."},
+ {k:"weather",n:"Weather machine",ic:"⛈️",c:1e24,d:"Sunny every weekend, everywhere."},
+ {k:"air",n:"Global airline",ic:"✈️",c:1e27,d:"Every plane on Earth flies your colours."},
+ {k:"under",n:"Underground megacity",ic:"🏙️",c:1e30,d:"A second world beneath the first."},
+ {k:"time",n:"Time machine",ic:"⏳",c:1e33,d:"Buy low in the past, sell high in the future."},
+ {k:"reality",n:"Rewrite reality",ic:"✨",c:1e36,d:"Edit the rules of the game itself."}];
 const MEGA_MAX=10;
 const megaLv=k=>(S.mega&&S.mega[k])||0;
 const megaCost=m=>m.c*Math.pow(8,megaLv(m.k));
@@ -4926,6 +4933,186 @@ function openTiers(back){const t=tierN(),nw=netWorth(),nx=TIERS[t+1];
     ${nx?`<div class="reqbar"><i style="width:${Math.min(100,Math.max(2,(Math.log10(Math.max(1,nw))-Math.log10(Math.max(1,TIERS[t].nw)))/(Math.log10(nx.nw)-Math.log10(Math.max(1,TIERS[t].nw)))*100))}%"></i></div>`:""}
     <div class="tierlist">${TIERS.map((T,i)=>{const e=tierEffects(i);return `<div class="tierrow${i===t?" on":i<t?" done":""}" style="--tc:${T.c}"><span class="ti">${T.i}</span><span class="tn"><b>${T.n}</b><small>${i?"From "+fmt(T.nw):"Where everyone starts"}</small></span><span class="te">${i?`+${e.money}% money · prices +${e.ask}% · energy +${e.en}%`:"Normal difficulty"}</span></div>`}).join("")}</div></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back}
+/* ================= World 2: the Cosmos, an incremental space station run on Radiant ================= */
+// ✦1 Radiant = $1 quadrillion of cash, so Radiant is simply your money at cosmic scale.
+const W2_COST=10*RAD;
+const w2=()=>{S.w2=S.w2||{open:0,gen:{},up:{},home:-1,dm:0,fed:0,disc:[],tapT:0};return S.w2};
+const GEN=[
+ {k:"solar",n:"Solar collector",ic:"🔆",c:100,r:1,d:"Panels drinking starlight."},
+ {k:"moon",n:"Moon base",ic:"🌙",c:1500,r:12,d:"Domes and rovers on the Moon."},
+ {k:"mars",n:"Mars colony",ic:"🔴",c:2e4,r:150,d:"A red planet suburb."},
+ {k:"elev",n:"Space elevator",ic:"🛗",c:3e5,r:2000,d:"Cargo straight from orbit."},
+ {k:"astro",n:"Asteroid mine",ic:"☄️",c:5e6,r:3e4,d:"Platinum the size of mountains."},
+ {k:"dyson",n:"Dyson sphere",ic:"☀️",c:8e7,r:5e5,d:"A star wrapped in mirrors."},
+ {k:"worm",n:"Wormhole network",ic:"🌀",c:1.5e9,r:8e6,d:"Shortcuts through spacetime."},
+ {k:"forge",n:"Neutron star forge",ic:"💫",c:3e10,r:1.5e8,d:"Metal heavier than mountains."},
+ {k:"pocket",n:"Pocket universe",ic:"🌌",c:7e11,r:3e9,d:"A universe in your jacket."},
+ {k:"multi",n:"Multiverse gate",ic:"♾️",c:2e13,r:8e10,d:"Every version of you, working."}];
+const genN=k=>(w2().gen[k]||0);
+const genCost=(g,n=genN(g.k))=>g.c*Math.pow(1.15,n);
+const genBulk=(g,q)=>{let c=0,n=genN(g.k);for(let i=0;i<q;i++)c+=genCost(g,n+i);return c};
+const genMile=g=>{const n=genN(g.k);return [25,50,100,200,300,400,500].filter(m=>n>=m).length};
+const LAB=[
+ {k:"tap",n:"Core overclock",d:"Pulsing the reactor pays 10× more",c:250},
+ {k:"u_solar",n:"Black silicon cells",d:"Solar collectors ×3",c:800,g:"solar"},
+ {k:"u_moon",n:"Regolith refinery",d:"Moon bases ×3",c:1.2e4,g:"moon"},
+ {k:"all1",n:"Quantum accounting",d:"Everything ×2",c:5e4},
+ {k:"u_mars",n:"Terraforming",d:"Mars colonies ×3",c:1.6e5,g:"mars"},
+ {k:"u_elev",n:"Carbon nanotubes",d:"Space elevators ×3",c:2.4e6,g:"elev"},
+ {k:"all2",n:"Hawking harvest",d:"Everything ×2",c:2e7},
+ {k:"u_astro",n:"Mining drones",d:"Asteroid mines ×3",c:4e7,g:"astro"},
+ {k:"u_dyson",n:"Stellar mirrors",d:"Dyson spheres ×3",c:6e8,g:"dyson"},
+ {k:"u_worm",n:"Exotic matter",d:"Wormholes ×3",c:1.2e10,g:"worm"},
+ {k:"all3",n:"Cosmic string theory",d:"Everything ×2",c:5e10},
+ {k:"u_forge",n:"Degenerate pressure",d:"Neutron forges ×3",c:2.4e11,g:"forge"},
+ {k:"u_pocket",n:"Inflation field",d:"Pocket universes ×3",c:5e12,g:"pocket"},
+ {k:"all4",n:"Big Bang economics",d:"Everything ×3",c:1e13},
+ {k:"u_multi",n:"Brane sync",d:"Multiverse gates ×3",c:1.5e14,g:"multi"},
+ {k:"all5",n:"Theory of everything",d:"Everything ×5",c:5e15}];
+const SPACE_HOMES=[{n:"Space Station",c:50},{n:"Moon Base",c:2000},{n:"Mars Colony",c:8e4},{n:"Ring World",c:4e6},{n:"Dyson Sphere",c:2e8},{n:"Star System",c:1e10},{n:"Galaxy",c:6e11},{n:"Multiverse Mansion",c:5e13}];
+const COSMOS=[
+ ["☿","Mercury","A year there lasts 88 days, a day lasts 176."],["♀","Venus","Hot enough to melt lead, and it spins backwards."],["🌍","Earth","The only place we know with life. So far."],["🌙","The Moon","Drifting away from Earth by 3.8 cm a year."],
+ ["🔴","Mars","Home of Olympus Mons, three times taller than Everest."],["🪐","Jupiter","Its Great Red Spot is a storm bigger than Earth."],["💍","Saturn","Light enough to float in a giant bathtub."],["🧊","Uranus","Rolls around the Sun on its side."],
+ ["🔵","Neptune","Winds over 2,000 km/h, the fastest in the Solar System."],["⚪","Pluto","Has a heart-shaped glacier of nitrogen ice."],["☄️","Halley's Comet","Comes back every 76 years. Next in 2061."],["⭐","Proxima Centauri","The nearest star to the Sun: 4.2 light years."],
+ ["✨","Sirius","The brightest star in our night sky."],["🟠","Betelgeuse","A red supergiant that could fit 700 Suns across."],["🌀","Andromeda","Our neighbour galaxy. It will merge with the Milky Way."],["🌫️","Orion Nebula","A stellar nursery where new stars are born."],
+ ["🦀","Crab Nebula","The leftovers of a supernova seen in 1054."],["🏛️","Pillars of Creation","Columns of gas light years tall."],["⚫","Sagittarius A*","The black hole at the centre of our galaxy."],["💥","Supernova","One star outshining a whole galaxy for weeks."],
+ ["📡","Pulsar","A dead star spinning hundreds of times a second."],["🧲","Magnetar","The strongest magnets in the universe."],["🔦","Quasar","A black hole feeding so fast it blazes across the cosmos."],["🕳️","Boötes Void","A giant empty bubble 330 million light years wide."],
+ ["🧭","The Great Attractor","Something pulling whole galaxies towards it."],["🌈","Cosmic microwave background","The afterglow of the Big Bang, still everywhere."],["🔭","Hubble Deep Field","Thousands of galaxies in a speck of sky."],["🌑","Dark matter","Five times more of it than ordinary matter."],
+ ["⚡","Dark energy","The mystery pushing the universe apart faster."],["🔁","The Multiverse","Maybe ours is one bubble among many."]];
+// everything that boosts generator output
+function genMult(g){const W=w2();let m=Math.pow(2,genMile(g));if(W.up["u_"+g.k])m*=3;return m}
+function w2Mult(){const W=w2();let m=1;if(W.up.all1)m*=2;if(W.up.all2)m*=2;if(W.up.all3)m*=2;if(W.up.all4)m*=3;if(W.up.all5)m*=5;m*=1+.05*(W.dm||0);m*=1+.03*W.disc.length;m*=1+.25*(W.home+1);return m}
+// Radiant per minute from every generator
+function w2Rate(){if(!S||!S.w2)return 0;const m=w2Mult();return GEN.reduce((a,g)=>a+genN(g.k)*g.r*genMult(g),0)*m}
+let w2T=0,w2Acc=0;
+function w2Tick(dt){if(!S||!S.w2||!S.w2.open)return;const r=w2Rate();if(r<=0)return;w2Acc+=r*RAD*dt/60;w2T+=dt;if(w2T<1)return;w2T=0;const v=w2Acc;w2Acc=0;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true}
+// generators keep running while you're away, up to 8 hours
+function w2Offline(){if(!S||!S.w2||!S.w2.open||!S.savedAt)return;const mins=Math.min(480,(Date.now()-S.savedAt)/60000);if(mins<1)return;const v=w2Rate()*mins*RAD;if(v<=0)return;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true;setTimeout(()=>banner("Cosmos while you were away +"+fmt(v),"g"),1800)}
+// moving space things out of World 1 for older saves
+function w2Migrate(d){if(d.w2m)return;d.w2m=1;const W=d.w2=d.w2||{open:0,gen:{},up:{},home:-1,dm:0,fed:0,disc:[],tapT:0};
+  const old=["Apartment","Loft","Penthouse","Mansion","Sky Villa","Island Estate","Royal Palace","Space Station","Moon Base","Mars Colony","Floating City","Ring World","Dyson Sphere","Star System","Galaxy","Multiverse Mansion"],h=d.home||0;
+  if(h>=7){const sp=[7,8,9,11,12,13,14,15].filter(i=>i<=h).length-1;W.home=Math.max(W.home,sp);d.home=h>=10?7:6;W.open=1}
+  const mv={moon:"moon",mars:"mars",elev:"elev",dyson:"dyson",worm:"worm",pocket:"pocket",multi:"multi"};
+  if(d.mega)for(const k in mv)if(d.mega[k]){W.gen[mv[k]]=(W.gen[mv[k]]||0)+d.mega[k]*5;W.open=1;delete d.mega[k]}}
+/* ---------- the station map ---------- */
+const SW2=2000,SH2=1600;
+const DECKS=[[280,500,1440,820,60],[820,250,360,300,40],[880,1270,240,210,30]];
+const onDeck=(x,y)=>DECKS.some(([dx,dy,w,h])=>x>dx+14&&x<dx+w-14&&y>dy+20&&y<dy+h-10);
+function spacePlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=o.bld!==0;L.push(o)};
+  add({k:"reactor",n:"Radiant Reactor",sub:"Generators · ✦"+radF(w2Rate())+"/min",c:"#7a2fd6",x:850,y:620,w:300,h:190,bld:0,go:()=>openReactor(closeRoom)});
+  add({k:"lab",n:"Upgrade Lab",sub:"Multiply your output",c:"#14a3a8",x:380,y:570,w:260,h:160,go:()=>openLab(closeRoom)});
+  add({k:"port",n:"Spaceport",sub:"Build a rocket, fly to the Moon and Mars",c:"#2a5bd7",x:1360,y:570,w:280,h:160,go:()=>openSpaceport(closeRoom)});
+  add({k:"smkt",n:"Star Market",sub:"Trade space rocks and alien relics",c:"#e2364a",x:380,y:960,w:270,h:150,go:()=>{room="cosmos";openMarket(COSMOS_MKT);backTo(closeRoom)}});
+  add({k:"homes",n:"Space Realty",sub:W2H()>=0?"Living in: "+SPACE_HOMES[W2H()].n:"Homes from ✦50",c:"#cf9a14",x:1350,y:960,w:270,h:150,go:()=>openSpaceHomes(closeRoom)});
+  add({k:"bq",n:"Cosmic Boutique",sub:"Wear the universe",c:"#ff4fd8",x:720,y:1020,w:220,h:140,go:()=>openBoutique(closeRoom,true)});
+  add({k:"obs",n:"Observatory",sub:w2().disc.length+"/"+COSMOS.length+" discovered",c:"#3b2a8a",x:1060,y:1020,w:220,h:140,go:()=>openObservatory(closeRoom)});
+  add({k:"bh",n:"The Black Hole",sub:"Feed it Radiant for Dark Matter",verb:"Approach",c:"#1b1d22",x:920,y:300,w:160,h:120,bld:0,go:()=>openBlackHole(closeRoom)});
+  add({k:"gate",n:"Stargate",sub:"Back to Earth",verb:"Leave through the",c:"#4fe3ff",x:930,y:1380,w:140,h:60,bld:0,list:0,go:()=>leaveScene()});
+  return L}
+const W2H=()=>(S&&S.w2&&S.w2.home!=null)?S.w2.home:-1;
+const COSMOS_MKT={k:"cosmos",n:"Star Market",only:"space",steal:.15,fake:.04,box:0,price:1,minBase:0,sell:1.1,grail:0};
+function buildSpace(){const g=SCN_C.getContext("2d");SCN_C.width=SW2;SCN_C.height=SH2;let sd=77;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
+  const bg=g.createLinearGradient(0,0,SW2,SH2);bg.addColorStop(0,"#05061a");bg.addColorStop(.5,"#0b0624");bg.addColorStop(1,"#020510");g.fillStyle=bg;g.fillRect(0,0,SW2,SH2);
+  // nebulae
+  [[300,250,420,"rgba(122,47,214,.32)"],[1700,300,380,"rgba(255,79,216,.22)"],[1600,1350,460,"rgba(43,179,163,.22)"],[250,1300,360,"rgba(79,168,232,.22)"],[1000,800,700,"rgba(60,40,140,.18)"]].forEach(([x,y,R,c])=>{const n=g.createRadialGradient(x,y,0,x,y,R);n.addColorStop(0,c);n.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=n;g.fillRect(x-R,y-R,R*2,R*2)});
+  // stars
+  for(let i=0;i<900;i++){const x=r()*SW2,y=r()*SH2,s=r();g.fillStyle=`rgba(255,255,255,${.25+s*.75})`;g.fillRect(x,y,s>.96?2.2:1.2,s>.96?2.2:1.2)}
+  // planets: Earth, a ringed giant, a red world, a moon, the sun's glow
+  const planet=(x,y,R,c1,c2,ring)=>{const pg=g.createRadialGradient(x-R*.35,y-R*.35,R*.1,x,y,R);pg.addColorStop(0,c1);pg.addColorStop(1,c2);g.fillStyle=pg;g.beginPath();g.arc(x,y,R,0,7);g.fill();
+    if(ring){g.save();g.translate(x,y);g.rotate(-.35);g.strokeStyle="rgba(230,210,170,.75)";g.lineWidth=R*.16;g.beginPath();g.ellipse(0,0,R*1.9,R*.5,0,Math.PI*1.02,Math.PI*1.98+Math.PI);g.stroke();g.restore()}};
+  {const sx=-120,sy=-120,sg=g.createRadialGradient(sx,sy,0,sx,sy,620);sg.addColorStop(0,"rgba(255,230,150,.9)");sg.addColorStop(.25,"rgba(255,170,60,.35)");sg.addColorStop(1,"rgba(255,140,40,0)");g.fillStyle=sg;g.fillRect(0,0,700,700)}
+  planet(160,1480,300,"#6fb6ff","#0f3a7a");g.fillStyle="rgba(80,170,90,.75)";[[90,1300,90,50],[230,1380,70,40],[120,1460,60,30]].forEach(([x,y,a,b])=>{g.beginPath();g.ellipse(x,y,a,b,.4,0,7);g.fill()});g.strokeStyle="rgba(140,200,255,.5)";g.lineWidth=10;g.beginPath();g.arc(160,1480,306,0,7);g.stroke();
+  planet(1780,230,120,"#f2d39a","#9a6a34",true);planet(1840,1180,60,"#ff8a5c","#8a2a1a");planet(140,330,34,"#dcdcdc","#6b6b6b");planet(1180,1460,26,"#9fe0ff","#2a6aa0");
+  // the station decks
+  DECKS.forEach(([x,y,w,h,rr])=>{g.save();g.shadowColor="rgba(79,227,255,.35)";g.shadowBlur=30;g.fillStyle="#2a2f45";rrp(g,x,y,w,h,rr);g.fill();g.restore();
+    const dg=g.createLinearGradient(0,y,0,y+h);dg.addColorStop(0,"#3a4160");dg.addColorStop(1,"#252a40");g.fillStyle=dg;rrp(g,x+8,y+8,w-16,h-16,rr-6);g.fill();
+    g.strokeStyle="rgba(255,255,255,.06)";g.lineWidth=1;for(let xx=x+40;xx<x+w-20;xx+=60){g.beginPath();g.moveTo(xx,y+12);g.lineTo(xx,y+h-12);g.stroke()}for(let yy=y+40;yy<y+h-20;yy+=60){g.beginPath();g.moveTo(x+12,yy);g.lineTo(x+w-12,yy);g.stroke()}
+    g.strokeStyle="rgba(79,227,255,.55)";g.lineWidth=2.5;rrp(g,x+4,y+4,w-8,h-8,rr-2);g.stroke()});
+  // walkways joining the decks
+  g.fillStyle="#323954";g.fillRect(940,540,120,40);g.fillRect(950,1280,100,30);
+  // pipes, crates, antennas and plants on deck
+  for(let i=0;i<14;i++){const x=320+r()*1360,y=530+r()*760;if(spPlaceHit(x,y,50))continue;g.fillStyle=["#4a5170","#5a4a7a","#3a5a6a"][i%3];rrp(g,x,y,26,20,4);g.fill();g.fillStyle="rgba(79,227,255,.6)";g.fillRect(x+4,y+8,18,2)}
+  for(let i=0;i<8;i++){const x=320+r()*1360,y=530+r()*760;if(spPlaceHit(x,y,40))continue;g.fillStyle="#3f9a5a";g.beginPath();g.arc(x,y,12,0,7);g.fill();g.fillStyle="#2b2f45";g.fillRect(x-9,y+6,18,10);g.fillStyle="#ff4fd8";g.beginPath();g.arc(x+3,y-4,3,0,7);g.fill()}
+  [[300,520],[1700,520],[300,1300],[1700,1300]].forEach(([x,y])=>{g.strokeStyle="#9aa3b3";g.lineWidth=3;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-60);g.stroke();g.fillStyle="#cfd6e4";g.beginPath();g.ellipse(x,y-60,18,8,-.3,0,7);g.fill();SCN.lamps.push([x,y-66])});
+  // buildings, with a sci-fi glow
+  SCN.places.forEach(p=>{if(!p.bld)return;drawBuilding(g,{...p,k:"x"+p.k},PAL_D);g.strokeStyle="rgba(79,227,255,.5)";g.lineWidth=2;rrp(g,p.x-2,p.y-2,p.w+4,p.h+4,15);g.stroke();
+    if(p.k==="port"){g.fillStyle="#f2f2f2";g.beginPath();g.moveTo(p.x+p.w-34,p.y-70);g.lineTo(p.x+p.w-22,p.y-40);g.lineTo(p.x+p.w-22,p.y+20);g.lineTo(p.x+p.w-46,p.y+20);g.lineTo(p.x+p.w-46,p.y-40);g.closePath();g.fill();g.fillStyle="#e2364a";g.fillRect(p.x+p.w-46,p.y+4,24,6)}
+    if(p.k==="obs"){g.fillStyle="#cfd6e4";g.beginPath();g.arc(p.x+p.w/2,p.y+30,40,Math.PI,0);g.fill();g.fillStyle="#1b1d22";g.fillRect(p.x+p.w/2-6,p.y-10,12,34)}});
+  // stargate ring
+  {const x=1000,y=1400;g.strokeStyle="#9aa3b3";g.lineWidth=12;g.beginPath();g.ellipse(x,y-30,70,58,0,0,7);g.stroke();g.strokeStyle="#4fe3ff";g.lineWidth=3;g.stroke();for(let i=0;i<9;i++){const a=i/9*Math.PI*2;g.fillStyle="#ffcc33";g.beginPath();g.arc(x+Math.cos(a)*70,y-30+Math.sin(a)*58,4,0,7);g.fill()}}
+  // reactor base
+  {const x=1000,y=715;g.fillStyle="#1b1d33";g.beginPath();g.ellipse(x,y+60,150,40,0,0,7);g.fill();g.strokeStyle="#7a2fd6";g.lineWidth=4;g.beginPath();g.ellipse(x,y+60,150,40,0,0,7);g.stroke();
+    g.font=`800 15px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";const tw=g.measureText("Radiant Reactor").width+26;g.fillStyle=PAL_D.sign;rrp(g,x-tw/2,y+86,tw,26,9);g.fill();g.fillStyle="#fff";g.fillText("Radiant Reactor",x,y+100)}
+  {const x=1000,y=420;g.font=`800 15px ${FONTS.d}`;const tw=g.measureText("The Black Hole").width+26;g.fillStyle=PAL_D.sign;rrp(g,x-tw/2,y+6,tw,26,9);g.fill();g.fillStyle="#fff";g.fillText("The Black Hole",x,y+20)}}
+const spPlaceHit=(x,y,m)=>SCN.places.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||Math.hypot(x-1000,y-760)<200||Math.hypot(x-1000,y-1380)<110;
+function spaceAnim(){const W=w2();
+  // the black hole, swirling
+  {const x=1000,y=170;ctx.save();ctx.translate(x,y);for(let i=0;i<3;i++){ctx.rotate(wt*.4+i*2);const gg=ctx.createRadialGradient(0,0,30,0,0,150-i*20);gg.addColorStop(0,"rgba(255,180,80,.0)");gg.addColorStop(.35,`rgba(255,${150+i*30},80,.55)`);gg.addColorStop(1,"rgba(255,80,40,0)");ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(0,0,150-i*16,44-i*6,0,0,7);ctx.fill()}ctx.restore();
+    ctx.fillStyle="#000";ctx.beginPath();ctx.arc(x,y,38,0,7);ctx.fill();ctx.strokeStyle="rgba(255,210,140,.8)";ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,40,0,7);ctx.stroke()}
+  // the reactor core pulses faster the more you earn
+  {const x=1000,y=715,sp=2+Math.min(8,Math.log10(1+w2Rate())),p=.5+.5*Math.sin(wt*sp);const gg=ctx.createRadialGradient(x,y,0,x,y,90+p*20);gg.addColorStop(0,"rgba(255,255,255,.95)");gg.addColorStop(.25,"rgba(255,79,216,.8)");gg.addColorStop(.6,"rgba(122,47,214,.35)");gg.addColorStop(1,"rgba(122,47,214,0)");ctx.fillStyle=gg;ctx.beginPath();ctx.arc(x,y,110+p*20,0,7);ctx.fill();
+    ctx.strokeStyle="rgba(255,204,51,.7)";ctx.lineWidth=2;for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(x,y,60+i*14,22+i*5,wt*(.6+i*.3),0,7);ctx.stroke()}
+    ctx.font=`900 22px ${FONTS.d}`;ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("✦",x,y)}
+  // stargate shimmer
+  {const x=1000,y=1370;ctx.fillStyle=`rgba(79,227,255,${.25+.15*Math.sin(wt*3)})`;ctx.beginPath();ctx.ellipse(x,y,62,50,0,0,7);ctx.fill()}
+  // comets, satellites, a drifting astronaut and the odd UFO
+  SCN.cm=SCN.cm||{t:0,x:0,y:0};SCN.cm.t-=1/60;if(SCN.cm.t<=0){SCN.cm={t:rnd(4,9),x:rnd(0,SW2),y:rnd(0,400),vx:rnd(500,800),vy:rnd(120,260),life:1.4}}if(SCN.cm.life>0){const c=SCN.cm;c.life-=1/60;c.x+=c.vx/60;c.y+=c.vy/60;const gg=ctx.createLinearGradient(c.x,c.y,c.x-c.vx*.25,c.y-c.vy*.25);gg.addColorStop(0,"rgba(255,255,255,.95)");gg.addColorStop(1,"rgba(120,200,255,0)");ctx.strokeStyle=gg;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x-c.vx*.25,c.y-c.vy*.25);ctx.stroke()}
+  {const a=wt*.15,x=1000+Math.cos(a)*880,y=820+Math.sin(a)*720;ctx.save();ctx.translate(x,y);ctx.rotate(a*3);ctx.fillStyle="#cfd6e4";ctx.fillRect(-8,-6,16,12);ctx.fillStyle="#2a5bd7";ctx.fillRect(-30,-4,18,8);ctx.fillRect(12,-4,18,8);ctx.restore()}
+  {const x=200+((wt*14)%1600),y=1150+Math.sin(wt*.7)*40;ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(wt*.5)*.6);drawPerson(0,0,{shirt:"#f2f2f2",skin:"#e8b896",hair:"#3b2a20",acc:{h:"astro",b:"jet"},ph:wt});ctx.restore()}
+  if(Math.sin(wt*.21)>.97){const x=((wt*120)%2400)-200,y=420+Math.sin(wt*2)*20;ctx.fillStyle="#9aa3b3";ctx.beginPath();ctx.ellipse(x,y,40,12,0,0,7);ctx.fill();ctx.fillStyle="rgba(127,224,255,.85)";ctx.beginPath();ctx.ellipse(x,y-8,18,12,0,Math.PI,0);ctx.fill();ctx.fillStyle="rgba(140,255,160,.25)";ctx.beginPath();ctx.moveTo(x-14,y+10);ctx.lineTo(x+14,y+10);ctx.lineTo(x+40,y+120);ctx.lineTo(x-40,y+120);ctx.fill()}
+  // twinkles
+  for(let i=0;i<40;i++){const x=(i*397)%SW2,y=(i*211)%SH2,a=.5+.5*Math.sin(wt*3+i);ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fillRect(x,y,2,2)}}
+function enterCosmos(){const W=w2();
+  enterScene({kind:"space",k:"cosmos",w:SW2,h:SH2,spawn:[1000,1460],bg:"#05061a",title:"The Cosmos",shirts:["#f2f2f2","#cfd6e4","#ff7a3d","#4fe3ff"],mk:spacePlaces,
+    pt:()=>{for(let t=0;t<30;t++){const x=320+Math.random()*1360,y=540+Math.random()*740;if(onDeck(x,y))return[x,y]}return[1000,900]},ok:onDeck});
+  SCN.npc.forEach(n=>{n.astro=1});if(!S.flags.w2seen){S.flags.w2seen=1;dirty=true;rayText("Welcome to the Cosmos. Build generators at the Radiant Reactor: each one makes Radiant every minute, even while you're away.")}else banner("The Cosmos","a")}
+function openStargate(back){const W=w2();if(W.open){closeRoom();flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6"},enterCosmos);return}
+  if(S.cash<W2_COST)return banner("The Stargate needs "+fmt(W2_COST),"r");S.cash-=W2_COST;W.open=1;dirty=true;SFX.rebirth();flash("#7a2fd6",.7);confetti(300,null,null,["#7a2fd6","#ff4fd8","#4fe3ff","#fff"]);shake(10,.8);banner("STARGATE OPEN","g");closeRoom();setTimeout(()=>flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6"},enterCosmos),900)}
+/* ---------- rooms ---------- */
+function openReactor(back){room="reactor";let bulk=REACT_BULK;
+  const draw=()=>{const r=w2Rate(),W=w2();
+    $("room").innerHTML=`<div class="room-in scroll w2room">${roomHead("Radiant Reactor")}
+      <button class="core" id="rCore"><span class="corei"></span><b>✦${radF(r)}<small>/min</small></b><small>Tap the core for a burst</small></button>
+      <div class="lbtabs">${[1,10,100].map(q=>`<button class="${bulk===q?"on":""}" data-bulk="${q}">Buy ×${q}</button>`).join("")}</div>
+      <div class="gens">${GEN.map((g,i)=>{const n=genN(g.k),unlocked=i===0||genN(GEN[i-1].k)>0||n>0,c=genBulk(g,bulk),each=g.r*genMult(g)*w2Mult(),next=[25,50,100,200,300,400,500].find(m=>m>n);
+        return unlocked?`<button class="gen" data-gen="${g.k}" ${S.cash<c*RAD?"disabled":""}><span class="gi">${g.ic}</span><span class="gt"><b>${g.n} <em>${n}</em></b><small>${g.d} ✦${radF(each)}/min each${next?` · ×2 at ${next}`:""}</small></span><span class="gc">✦${radF(c)}</span></button>`:`<div class="gen lock"><span class="gi">❔</span><span class="gt"><b>???</b><small>Buy a ${GEN[i-1].n.toLowerCase()} to reveal</small></span></div>`}).join("")}</div>
+      <p class="fine">Radiant is your money at cosmic scale: ✦1 = $1 quadrillion. Generators keep earning in World 1 and while you're offline (up to 8 hours).</p></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("rCore").onclick=e=>{const W2=w2(),now=Date.now();if(now-(W2.tapT||0)<120)return;W2.tapT=now;const v=Math.max(1,w2Rate()/60*2)*(W2.up.tap?10:1)*RAD;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true;SFX.tick(.8);sparks(e.clientX,e.clientY,"#ff4fd8",10,1);floatAt(e.currentTarget,"+"+fmt(v),"#ff4fd8");updMini()};
+    $("room").querySelectorAll("[data-bulk]").forEach(b=>b.onclick=()=>{bulk=REACT_BULK=+b.dataset.bulk;draw()});
+    $("room").querySelectorAll("[data-gen]").forEach(b=>b.onclick=()=>{const g=GEN.find(x=>x.k===b.dataset.gen),c=genBulk(g,bulk)*RAD;if(S.cash<c)return;const before=genMile(g);S.cash-=c;w2().gen[g.k]=genN(g.k)+bulk;dirty=true;SFX.buy();
+      if(genMile(g)>before){SFX.rebirth();confetti(120,null,null,["#7a2fd6","#ff4fd8","#fff"]);banner(g.n+" output ×2","g")}draw();updMini()})};
+  draw();const iv=setInterval(()=>{if(room!=="reactor")return clearInterval(iv);const b=$("room").querySelectorAll("[data-gen]");b.forEach(x=>{const g=GEN.find(y=>y.k===x.dataset.gen);x.disabled=S.cash<genBulk(g,bulk)*RAD})},500)}
+let REACT_BULK=1;
+function openLab(back){room="lab";const draw=()=>{const W=w2();
+  $("room").innerHTML=`<div class="room-in scroll w2room">${roomHead("Upgrade Lab")}<div class="note">One-time research. Each project multiplies a generator or your whole station.</div>
+    <div class="perks">${LAB.map(u=>{const own=W.up[u.k],lock=u.g&&!genN(u.g);return `<button class="perk nopic" data-lab="${u.k}" ${own||lock||S.cash<u.c*RAD?"disabled":""}><span class="t">${own?"✓ ":""}${u.n}</span><span class="d">${lock?"Needs a "+GEN.find(g=>g.k===u.g).n.toLowerCase():u.d}</span><span class="c">${own?"Done":"✦"+radF(u.c)}</span></button>`}).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("room").querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>{const u=LAB.find(x=>x.k===b.dataset.lab),W2=w2();if(W2.up[u.k]||S.cash<u.c*RAD)return;S.cash-=u.c*RAD;W2.up[u.k]=1;dirty=true;SFX.level();confetti(80,null,null,["#14a3a8","#4fe3ff","#fff"]);banner(u.n,"g");draw();updMini()})};draw()}
+function openSpaceHomes(back){room="shomes";const draw=()=>{const W=w2();
+  $("room").innerHTML=`<div class="room-in scroll w2room">${roomHead("Space Realty")}<div class="note">Each home you move up to adds <b>+25% to every generator</b>, on top of the last.</div>
+    <div class="perks">${SPACE_HOMES.map((h,i)=>{const own=W.home>=i;return `<button class="perk nopic" data-sh="${i}" ${own||i!==W.home+1||S.cash<h.c*RAD?"disabled":""}><span class="t">${W.home===i?"✓ ":""}${h.n}</span><span class="d">+${(i+1)*25}% generator output</span><span class="c">${own?(W.home===i?"Living here":"Owned"):"✦"+radF(h.c)}</span></button>`}).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("room").querySelectorAll("[data-sh]").forEach(b=>b.onclick=()=>{const i=+b.dataset.sh,h=SPACE_HOMES[i],W2=w2();if(i!==W2.home+1||S.cash<h.c*RAD)return;S.cash-=h.c*RAD;W2.home=i;dirty=true;SFX.rebirth();confetti(150);banner("Moved into the "+h.n,"g");draw();updMini()})};draw()}
+function openObservatory(back){room="obs";const draw=()=>{const W=w2(),n=W.disc.length,cost=10*Math.pow(3.2,n),done=n>=COSMOS.length,last=n?COSMOS[W.disc[n-1]]:null;
+  $("room").innerHTML=`<div class="room-in scroll w2room">${roomHead("Observatory")}
+    <div class="note">Point the telescope at the sky. Every discovery adds <b>+3% to all generators</b> and teaches you something about the universe.</div>
+    ${last?`<div class="obsnew"><span>${last[0]}</span><div><b>${last[1]}</b><small>${last[2]}</small></div></div>`:""}
+    <button class="bigbtn" id="obScan" ${done||S.cash<cost*RAD?"disabled":""}>${done?"Every object found":"Scan the sky"}<small>${done?"You've mapped the cosmos":"✦"+radF(cost)}</small></button>
+    <div class="sechead"><h3>Discoveries</h3><span class="eyebrow">${n}/${COSMOS.length} · +${n*3}%</span></div>
+    <div class="obsgrid">${COSMOS.map((c,i)=>{const f=W.disc.includes(i);return `<div class="obsc${f?"":" lock"}" title="${f?c[1]:"?"}"><span>${f?c[0]:"?"}</span><small>${f?c[1]:"???"}</small></div>`}).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("obScan").onclick=()=>{const W2=w2(),c=10*Math.pow(3.2,W2.disc.length);if(W2.disc.length>=COSMOS.length||S.cash<c*RAD)return;S.cash-=c*RAD;const left=COSMOS.map((_,i)=>i).filter(i=>!W2.disc.includes(i));W2.disc.push(pick(left));dirty=true;SFX.grail();confetti(120,null,null,["#4fe3ff","#ffffff","#7a2fd6"]);banner("Discovered: "+COSMOS[W2.disc[W2.disc.length-1]][1],"g");draw();updMini()}};draw()}
+// Dark Matter grows with every 10× more you feed it, so it stays meaningful at any wealth
+const dmFor=f=>f>=100?Math.floor(10*Math.log10(f/100))+1:0,dmNeed=d=>100*Math.pow(10,d/10);
+function openBlackHole(back){room="bhole";const draw=()=>{const W=w2(),dmNext=k=>dmFor(W.fed+k),opt=[.1,.5,1].map(f=>({f,a:Math.floor(S.cash/RAD*f)}));
+  $("room").innerHTML=`<div class="room-in scroll w2room">${roomHead("Black Hole")}<div class="art bhart"><div class="bhdisk"></div><div class="bhcore"></div></div>
+    <div class="kv"><div><span class="eyebrow">Dark Matter</span><b>${W.dm||0}</b></div><div><span class="eyebrow">Generator bonus</span><b>+${(W.dm||0)*5}%</b></div></div>
+    <div class="note">Whatever goes past the event horizon never comes back. Feed it Radiant and it gives you <b>Dark Matter</b>: each one is +5% to every generator, forever. ✦${radF(Math.max(0,dmNeed(W.dm||0)-W.fed))} more for the next one.</div>
+    <div class="perks">${opt.map(o=>`<button class="perk nopic" data-feed="${o.f}" ${o.a<1?"disabled":""}><span class="t">Feed ${Math.round(o.f*100)}%</span><span class="d">✦${radF(o.a)} → ${dmNext(o.a)-(W.dm||0)} Dark Matter</span><span class="c">Feed</span></button>`).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("room").querySelectorAll("[data-feed]").forEach(b=>b.onclick=()=>{const W2=w2(),a=Math.floor(S.cash/RAD*+b.dataset.feed);if(a<1)return;if(b.dataset.sure!=="1"){b.dataset.sure="1";b.querySelector(".t").textContent="Tap again: it's gone forever";SFX.hot();return}
+    S.cash-=a*RAD;W2.fed+=a;const before=W2.dm||0;W2.dm=dmFor(W2.fed);dirty=true;SFX.rebirth();flash("#000000",.6);shake(10,.8);if(W2.dm>before){confetti(200,null,null,["#ffcc33","#ff7a3d","#7a2fd6"]);banner("+"+(W2.dm-before)+" Dark Matter","g")}else banner("The black hole hungers","a");draw();updMini()})};draw()}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -5358,7 +5545,7 @@ function titleMain(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
