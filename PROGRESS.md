@@ -64,6 +64,10 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   Titles, Genetics, Emotes, Crew, Wardrobe, Settings), 8px gaps, vertically centered on the left edge below the top
   bar; if they don't fit the height they wrap into 2 columns. Hover = slight grow + brighter; press = 0.95. Phones:
   one "Menu" button top left opens a centered grid of the same tiles (tap outside or pick one to close).
+- **Glass entrance doors (6 Oct):** the starter gym's double doors (`Workspace.Gym.Entrance`, the two `DoorGlass`
+  panels) are see-through glass now (Glass, Transparency 0.6, RGB 200/215/225, Reflectance 0.1, no shadow). Frame,
+  divider and push bars unchanged; they still slide open (tag `SlidingDoor`, `SlideX`). It's the only door built from
+  this template (shop doors were already glass, town building doors are single decorative panels).
 - **Fix list 3, part 5 (map):** the park's fountain ring path (28 overlapping slabs) and its 4 straight paths are now one
   part (CSG) with one continuous paving texture; path edge strips stop at the ring and sit clearly above the paving.
   All 13 umbrellas (plaza carts, smoothie bar patio, beach) got a solid 8-panel canopy with a valance and ribs
