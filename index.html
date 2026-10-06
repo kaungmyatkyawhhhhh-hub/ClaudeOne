@@ -1520,6 +1520,7 @@ function roomHead(title){const gd=typeof GUIDE!=="undefined"&&GUIDE[room]?`<butt
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
+  if(k==="arena"&&!SCN&&S&&!MPW){$("mpSheet").hidden=true;enterArena();return}
   $("mpSheet").hidden=true;
   if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
@@ -2132,7 +2133,7 @@ function armsSVG(o){return `<svg viewBox="0 0 400 210" aria-hidden="true"><rect 
   <line id="armL" x1="150" y1="158" x2="200" y2="70" stroke="${mySkin()}" stroke-width="24" stroke-linecap="round"/><line id="armR" x1="250" y1="158" x2="200" y2="70" stroke="${o.look[0]}" stroke-width="24" stroke-linecap="round"/>
   <circle id="fist" cx="200" cy="70" r="17" fill="#d9a07a" stroke="rgba(0,0,0,.2)"/>
   <text x="70" y="200" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="13" fill="var(--ink)">YOU ${S.pr}KG</text><text x="330" y="200" text-anchor="middle" font-family="var(--mono)" font-weight="700" font-size="13" fill="var(--ink)">${o.kg}KG</text></svg>`}
-function openArena(){
+function openArena(opt){opt=opt||{};
   const list=()=>{A=null;ARENA_LIST=list;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Arena")}
       ${pvpCard()}${meetCard()}
@@ -2156,7 +2157,7 @@ function openArena(){
     $("tapBtn").addEventListener("pointerdown",e=>{e.preventDefault();if(!A||A.state!=="go")return;audioOn();A.pos+=.045*clamp(S.pr/o.kg,.35,3);SFX.tick(A.pos*.5);buzz(4)});
     updArms();
   };
-  list();
+  if(opt.opp!=null){const op=OPPS[opt.opp],bet=betOf(op);if(S.cash<bet){banner("You need "+fmt(bet)+" to bet","r");closeRoom();return}if(!spend(8)){closeRoom();return}S.cash-=bet;dirty=true;match(opt.opp,bet);A.list=()=>{A=null;closeRoom()}}else list();
 }
 function updArms(){
   if(!A)return;const th=(A.pos-.5)*1.5,hx=200+Math.sin(th)*92,hy=158-Math.cos(th)*92;
@@ -3056,7 +3057,7 @@ function loop(now){
       if(S.lastSeason!==season().n){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
       if(SCN)sceneTick(dt);else if(target&&!room){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
         if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(me)openPlot(me)}else if(k==="crewhq")openCrew(closeRoom);else openRoom(k)}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
-          if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(S.job)jobArrive();if(EV&&EV.x!=null&&Math.hypot(S.px-EV.x,S.py-EV.y)<34)eventArrive()}}}
+          if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true;dirty=true;if(S.job)jobArrive();if(EV&&EV.x!=null){const ed=Math.hypot(S.px-EV.x,S.py-EV.y);if(ed<34&&!EV.inside){EV.inside=1;eventArrive()}else if(ed>60)EV.inside=0}}}}
       drift+=dt;
       if(drift>=.5){drift=0;
         CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.06,.06)+(1-S.trend[c.k])*.035,.5,1.85)});
@@ -3322,7 +3323,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{ow:Object.keys(S.deeds||{}),sn:S.names&&S.names.street||0,go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="prehist"?"Deep Time":SCN.kind==="planet"?PLANETS[SCN.k].n:SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0,...(SCN&&!room?{sc:scKey(),sx:Math.round(S.px),sy:Math.round(S.py)}:{})}}
+function mpState(){const b=myBuild(),L=myLook();return{ow:Object.keys(S.deeds||{}),sn:S.names&&S.names.street||0,go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="prehist"?"Deep Time":SCN.kind==="planet"?PLANETS[SCN.k].n:SCN.kind==="house"?"a house":SCN.kind==="arena"?"the Arena":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0,...(SCN&&!room?{sc:scKey(),sx:Math.round(S.px),sy:Math.round(S.py)}:{})}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -4249,7 +4250,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=15,WN=[
+const WN_VER=16,WN=[
+ ["💪","Walk into the Arena","The Arena is a real hall now: walk up to an opponent's table to wrestle, with a crowd in the stands and a board for meets and friend challenges."],
  ["⚡","Challenges","Timed tasks pop up every minute or two. Win to build a streak worth +10% money each (up to +100%). Miss one and the streak is gone."],
  ["🦹","Thieves fight back","Thieves show up more often, and if one gets away he takes 3% of your cash."],
  ["🏘️","A real town","A neighbourhood of houses, tree-lined downtown streets, and detailed buildings in every world."],
@@ -4802,7 +4804,7 @@ function enterIsland(k,fid){const G=islGeo(k),i=ISLANDS.find(x=>x.k===k);
       if(hasPier(k,fid)){const px=G.cx+G.rx*.62,py=G.cy+G.ry*.36,dx=x-px,dy=y-py,u=dx*Math.cos(.62)+dy*Math.sin(.62),v=-dx*Math.sin(.62)+dy*Math.cos(.62);return u>-10&&u<300&&Math.abs(v)<22}return false}});
   banner(fid?"Visiting "+SCN.title:"Welcome to "+SCN.title,"a")}
 const hasPier=(k,fid)=>!!islBuilt(k,fid).pier;
-function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle",tone:"#7a2fd6"},enterCosmos);return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6",fx:"whirl"},enterCosmos);return}if(t.kind==="house"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
+function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle",tone:"#7a2fd6"},enterCosmos);return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6",fx:"whirl"},enterCosmos);return}if(t.kind==="house"||t.kind==="arena"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
   const done=()=>{SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner(city?"Back in Flip City":"Back at the Harbor","a")};
   if(city||t.kind==="space")flyTo({n:"Flip City",cn:t.kind==="space"?"World 1 · Earth":"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
 /* moving, tapping, drawing */
@@ -4815,9 +4817,9 @@ function sceneTick(dt){if(room)return;
     else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st;if(!SCN.ok(nx,ny)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true}}}
   SCN.npc.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,SCN.pt);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
   SCN.cars.forEach(c=>{c.p=(c.p+c.sp*dt+1)%1})}
-function sceneSig(){if(SCN.kind==="prehist")return "ph|"+Math.floor(Math.log10(1+w3Rate()))+"|"+w3().disc.length;if(SCN.kind==="planet")return "pl|"+SCN.k+"|"+(S.flags["flag_"+SCN.k]?1:0);if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
+function sceneSig(){if(SCN.kind==="prehist")return "ph|"+Math.floor(Math.log10(1+w3Rate()))+"|"+w3().disc.length;if(SCN.kind==="planet")return "pl|"+SCN.k+"|"+(S.flags["flag_"+SCN.k]?1:0);if(SCN.kind==="arena")return "ar|"+(S.stats.beat||[]).join(",")+"|"+Math.round(SC()*100);if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
 function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig()+"|"+isDark();
-  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else if(SCN.kind==="house")buildHouse();else if(SCN.kind==="planet")buildPlanet();else if(SCN.kind==="prehist")buildPrehist();else buildIsland();SCN.stSig=sig;bKey=""}
+  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else if(SCN.kind==="house")buildHouse();else if(SCN.kind==="arena")buildArena();else if(SCN.kind==="planet")buildPlanet();else if(SCN.kind==="prehist")buildPrehist();else buildIsland();SCN.stSig=sig;bKey=""}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
   cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):SCN.kind==="space"?.55+.12*clamp((700-S.py)/300,0,1):SCN.kind==="house"?.66:.55),SCN.kind==="city"?-170:SCN.kind==="space"||SCN.kind==="house"?-200:0,Ht-vh);
   ctx.fillStyle=SCN.kind==="prehist"?"#f6c27a":SCN.kind==="planet"?PLANETS[SCN.k].sky:SCN.kind==="house"?"#1b1d22":SCN.kind==="space"?"#05061a":dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
@@ -4831,6 +4833,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
       if(x<cam.x-80||x>cam.x+vw+80||y<cam.y-80||y>cam.y+vh+80)return;drawRideAt(x,y,hd,c.k,c.paint,{})})}
   else if(SCN.kind==="space")spaceAnim();
   else if(SCN.kind==="house")houseAnim();
+  else if(SCN.kind==="arena"){}
   else if(SCN.kind==="planet")planetAnim();
   else if(SCN.kind==="prehist")prehistAnim();
   else{const G=islGeo(SCN.k);ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=3;for(let k=0;k<2;k++){const s=1+((wt*.08+k*.5)%1)*.12;ctx.globalAlpha=1-((wt*.08+k*.5)%1);ctx.beginPath();ctx.ellipse(G.cx,G.cy,G.rx*s+6,G.ry*s+6,0,0,7);ctx.stroke()}ctx.globalAlpha=1;
@@ -4841,7 +4844,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
     const pf=SCN.places.find(p=>p.k==="party");if(pf){const x=pf.door[0],y=pf.door[1]-20;if(islB(SCN.k).party!==dayKey()||nightA>.3){for(let j=0;j<3;j++){ctx.fillStyle=["#ffcc33","#ff7a3d","#e2364a"][j];ctx.beginPath();ctx.moveTo(x-10+j*4,y);ctx.quadraticCurveTo(x-6+j*4,y-18-Math.sin(wt*9+j)*6,x+j*4,y-26-Math.sin(wt*7+j)*5);ctx.quadraticCurveTo(x+6+j*4,y-12,x+10-j*2,y);ctx.fill()}}}}
   const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,hs:n.f?8:0,mv:true,ph:n.ph,acc:n.astro?{h:"astro"}:null,bob:n.astro?5+Math.sin(wt*2+n.ph)*3:0})]);
   ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space"||SCN.kind==="planet",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,...emoOpts(),acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
-  decoUnder();mpPeopleScene(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
+  decoUnder();mpPeopleScene(ppl);arenaPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
   const indoor=SCN.kind==="space"||SCN.kind==="house"||SCN.kind==="planet",gr=indoor?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
@@ -4850,7 +4853,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
     ctx.globalCompositeOperation="source-over"}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.16)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh)}
 function renderSceneBottom(){const el=$("bottom"),near=sceneNear(),key="scn|"+SCN.k+"|"+(near?near.k:"")+"|"+SCN.stSig;if(key===bKey)return;bKey=key;
-  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"?"Go outside":SCN.kind==="planet"?"Back to the station":SCN.kind==="prehist"?"Back to the Cosmos":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:SCN.kind==="prehist"?`<div class="w2rate amber">${ambF(w3Rate()*AMB)}/min</div>`:""}`;
+  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"||SCN.kind==="arena"?"Go outside":SCN.kind==="planet"?"Back to the station":SCN.kind==="prehist"?"Back to the Cosmos":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:SCN.kind==="prehist"?`<div class="w2rate amber">${ambF(w3Rate()*AMB)}/min</div>`:""}`;
   if(near)h+=`<button class="enter" id="enterBtn"><span>${near.verb||"Enter"} ${esc(near.n)}<small>${esc(String(near.sub||""))}</small></span>${ARROW}</button>`;
   h+=`<div class="places">${SCN.places.filter(p=>p.list!==0&&p.k!=="boat").map(p=>`<button class="place${near===p?" here":""}" data-sgo="${p.k}"><i style="background:${p.c}"></i>${esc(p.short||p.n)}</button>`).join("")}</div>`;
   el.innerHTML=h;const eb=$("enterBtn");if(eb)eb.onclick=()=>{audioOn();near.go()};
@@ -6013,6 +6016,41 @@ function chTick(dt){if(!playing||(S.tut!=null&&S.tut<6))return;const C=S.ch;
 function renderChChip(){const el=$("chChip");if(!el)return;const C=S&&S.ch;if(!C){el.hidden=!(S&&S.chS);if(S&&S.chS){el.style.setProperty("--ec","#2fd28a");el.innerHTML=`<span class="pk">Streak</span><span class="pt">×${S.chS} · +${Math.round((chK()-1)*100)}% money</span>`}return}
   const c=CHAL.find(x=>x.k===C.k);if(!c)return;el.hidden=false;const have=Math.max(0,c.v()-C.b),s=Math.max(0,Math.ceil(C.left)),hot=C.left<15;el.style.setProperty("--ec",hot?"#e2364a":"#ffcc33");
   el.innerHTML=`<span class="pk">⚡${S.chS?" ×"+S.chS:""}</span><span class="pt">${c.t(C.n)}</span><span class="pr" style="${hot?"color:var(--down)":""}">${c.money?Math.min(100,Math.round(have/C.n*100))+"%":Math.min(have,C.n)+"/"+C.n} · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`}
+/* ================= the Arena hall: walk up to a table to arm wrestle, the board for meets and friend challenges ================= */
+const AW=900,AH=760;
+const ARN=i=>[[170,330],[450,330],[730,330],[170,520],[450,520],[730,520]][i]||[450,620];
+function arenaPlaces(){const L=[],add=x=>{x.door=x.door||[x.x+x.w/2,x.y+x.h];x.bld=0;L.push(x)};
+  OPPS.forEach((o,i)=>{const[cx,cy]=ARN(i),bet=betOf(o),r=S.pr/o.kg,beat=(S.stats.beat||[]).includes(i);add({k:"opp"+i,n:o.n+(beat?" ✓":""),verb:"Wrestle",sub:o.kg+" kg · "+(r>=1.3?"Easy":r>=.9?"Even":r>=.6?"Tough":"Brutal")+" · bet "+fmt(bet)+", win "+fmt(bet*2),c:o.look[2],x:cx-70,y:cy-50,w:140,h:90,door:[cx,cy+56],go:()=>{room="arena";$("room").hidden=false;openArena({opp:i})}})});
+  add({k:"board",n:"Meets & challenges",verb:"Check the",sub:"Powerlifting meets and arm wrestling with friends",c:"#ffcc33",x:350,y:170,w:200,h:60,door:[450,240],go:()=>{room="arena";$("room").hidden=false;openArena()}});
+  add({k:"door",n:"Exit",verb:"Leave by the",sub:"Back to town",c:"#7a5a3a",x:400,y:722,w:100,h:34,list:0,go:()=>leaveScene()});return L}
+function enterArena(){enterScene({kind:"arena",k:"arena",w:AW,h:AH,spawn:[450,680],bg:"#1a1014",title:"Arena",shirts:["#e2364a","#1b1f2a","#ffcc33","#2a5bd7","#f2f2f2"],mk:arenaPlaces,pt:()=>[rnd(60,140)+(Math.random()<.5?0:700),rnd(260,660)],ok:(x,y)=>x>40&&x<AW-40&&y>165&&y<AH-14});
+  SCN.npc.forEach(n=>{n.sp=rnd(20,35)});SFX.door();banner("The Arena","a")}
+function buildArena(){const g=SCN_C.getContext("2d");SCN_C.width=AW;SCN_C.height=AH;let sd=9;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
+  // rubber floor with a painted ring
+  g.fillStyle="#2a1c22";g.fillRect(0,0,AW,AH);for(let y=160;y<AH;y+=48)for(let x=0;x<AW;x+=48){g.fillStyle=((x+y)/48)%2?"#2e1f26":"#271a20";g.fillRect(x,y,48,48)}
+  g.strokeStyle="rgba(226,54,74,.35)";g.lineWidth=6;rrp(g,70,250,760,390,30);g.stroke();g.strokeStyle="rgba(255,204,51,.25)";g.lineWidth=2;rrp(g,84,264,732,362,22);g.stroke();
+  // back wall: brick, neon sign, spotlights
+  const wg=g.createLinearGradient(0,0,0,160);wg.addColorStop(0,"#3a1e26");wg.addColorStop(1,"#24141a");g.fillStyle=wg;g.fillRect(0,0,AW,160);g.fillStyle="rgba(255,255,255,.035)";for(let y=8;y<150;y+=14)for(let x=(y/14%2)*16;x<AW;x+=32)g.fillRect(x,y,30,12);
+  g.save();g.font="900 34px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.shadowColor="#ff4d5e";g.shadowBlur=18;g.fillStyle="#ffd6dc";g.fillText("IRON ARM ARENA",AW/2,58);g.font="700 12px "+FONTS.m;g.shadowColor="#ffcc33";g.fillStyle="#ffe9a8";g.fillText("· PIN OR BE PINNED ·",AW/2,96);g.restore();
+  g.save();g.shadowColor="#ff4d5e";g.shadowBlur=10;g.fillStyle="#ff7a88";g.fillRect(0,156,AW,3);g.restore();
+  [[40,40],[AW-80,40]].forEach(([x,y])=>{g.fillStyle="#0c0d11";rrp(g,x,y,40,56,6);g.fill();g.fillStyle="#2a2d36";g.beginPath();g.arc(x+20,y+34,12,0,7);g.fill();g.beginPath();g.arc(x+20,y+14,6,0,7);g.fill()});
+  // bleachers with a crowd down both sides
+  [[10,250],[AW-60,250]].forEach(([x,y])=>{for(let row=0;row<3;row++){g.fillStyle=row%2?"#4a2a32":"#3e242b";g.fillRect(x+row*16*(x<AW/2?1:-1)+(x<AW/2?0:0),y,50,400)}
+    for(let k=0;k<26;k++){const hx=x+8+r()*36,hy=y+10+k*15;g.fillStyle=["#e2364a","#2a5bd7","#ffcc33","#2fd28a","#f2f2f2","#ff7a3d"][k%6];g.beginPath();g.arc(hx,hy+6,6,Math.PI,0);g.fill();g.fillStyle=["#f3d0b5","#e8b896","#c98e62","#8d5a3b"][k%4];g.beginPath();g.arc(hx,hy,4.5,0,7);g.fill()}});
+  // wrestling tables, one per opponent, with their colours and a pad for each elbow
+  OPPS.forEach((o,i)=>{const[cx,cy]=ARN(i);g.fillStyle="rgba(0,0,0,.35)";g.beginPath();g.ellipse(cx+4,cy+30,70,16,0,0,7);g.fill();
+    g.fillStyle="#5a3a24";g.fillRect(cx-50,cy+6,8,22);g.fillRect(cx+42,cy+6,8,22);const tg=g.createLinearGradient(0,cy-20,0,cy+10);tg.addColorStop(0,"#a0764a");tg.addColorStop(1,"#7a5a36");g.fillStyle=tg;rrp(g,cx-60,cy-22,120,34,8);g.fill();
+    g.fillStyle=o.look[2];rrp(g,cx-16,cy-16,32,22,5);g.fill();g.fillStyle="rgba(255,255,255,.3)";rrp(g,cx-12,cy-13,24,6,3);g.fill();[cx-38,cx+38].forEach(px=>{g.fillStyle="#1b1f2a";g.beginPath();g.arc(px,cy-5,7,0,7);g.fill()});
+    g.fillStyle="#ffcc33";g.beginPath();g.moveTo(cx-6,cy+38);g.lineTo(cx+6,cy+38);g.lineTo(cx,cy+46);g.fill()});
+  // the board for meets and friend challenges
+  g.fillStyle="#1b1f2a";rrp(g,350,170,200,54,8);g.fill();g.strokeStyle="#ffcc33";g.lineWidth=2;g.stroke();g.fillStyle="#ffcc33";g.font="800 11px "+FONTS.m;g.textAlign="center";g.textBaseline="middle";g.fillText("MEETS · FRIENDS",450,190);g.fillStyle="#2fd28a";g.fillText("▲ "+(S.stats.armWins||0)+" WINS",450,208);
+  // exit mat
+  g.fillStyle="#7a5a3a";rrp(g,400,728,100,28,6);g.fill();g.fillStyle="rgba(255,255,255,.45)";g.font=`800 11px ${FONTS.d}`;g.fillText("EXIT",450,742);
+  // labels over each table
+  SCN.places.forEach(p=>{if(p.k==="door")return;g.font=`800 12px ${FONTS.d}`;const tw=g.measureText(p.n).width+18,x=p.x+p.w/2,y=p.k==="board"?p.y-12:p.y-46;g.fillStyle="rgba(255,255,255,.92)";rrp(g,x-tw/2,y-10,tw,20,8);g.fill();g.fillStyle="#141824";g.fillText(p.n,x,y)})}
+// each opponent waits behind their table, flexing now and then
+function arenaPeople(ppl){if(!SCN||SCN.kind!=="arena")return;OPPS.forEach((o,i)=>{const[cx,cy]=ARN(i),y=cy-26,sz=.95+Math.min(.5,o.kg/600),fl=Math.sin(wt*1.3+i*1.7)>.75;
+  ppl.push([y,()=>drawPerson(cx,y,{shirt:o.look[2],skin:o.look[0],hair:o.look[1],hs:o.n.startsWith("Titan Tess")?8:0,size:sz,build:{c:Math.min(1,o.kg/260),l:Math.min(1,o.kg/320),b:Math.min(1,o.kg/280)},pose:fl?"bi":null,ph:wt+i})])})}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
