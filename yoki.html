@@ -1,0 +1,337 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Yoki Clicker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700&display=swap">
+<style>
+  /* Layout: gym-floor stage on the left with Yoki front and center, upgrade rack on the right; stacks on phones. */
+  :root {
+    --mat: #1d1a24;        /* rubber gym mat */
+    --mat-2: #2a2533;
+    --chalk: #f2eee6;      /* chalk-white text */
+    --muted: #a59fb0;
+    --gold: #f2b134;       /* trophy gold accent */
+    --gold-ink: #2a1c00;
+    --plate: #3a3445;      /* weight-plate grey */
+    --skin: #d89a6a;
+    --skin-dark: #b47448;
+    --trunks: #c23b3b;
+    --good: #6fcf8a;
+    --font-display: "Anton", Impact, "Arial Narrow", sans-serif;
+    --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--mat);
+    background-image: radial-gradient(circle at 1px 1px, var(--mat-2) 1px, transparent 0);
+    background-size: 14px 14px;
+    color: var(--chalk);
+    font-family: var(--font-body);
+    font-size: 15px;
+  }
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 20px 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 760px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+  header { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(2.2rem, 6vw, 3.4rem); letter-spacing: .02em; margin: 0; line-height: 1; }
+  h1 span { color: var(--gold); }
+  .tag { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; font-weight: 700; }
+
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; }
+  .gains { text-align: center; }
+  .gains .num { font-family: var(--font-display); font-size: clamp(2.6rem, 9vw, 4rem); line-height: 1; font-variant-numeric: tabular-nums; }
+  .gains .label { text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; color: var(--muted); font-weight: 700; }
+  .rates { display: flex; gap: 18px; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; flex-wrap: wrap; justify-content: center; }
+  .rates b { color: var(--chalk); }
+
+  #yoki {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    width: min(100%, var(--size, 300px)); aspect-ratio: 300 / 340; max-width: 100%;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    border-radius: 16px;
+  }
+  #yoki:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+  #yoki svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  #body { transform-origin: 150px 330px; transition: transform .08s ease-out; }
+  #yoki.pump #body { transform: scale(1.06, .96); }
+  .floor { fill: var(--plate); }
+
+  .pop {
+    position: absolute; pointer-events: none; font-family: var(--font-display);
+    color: var(--gold); font-size: 1.5rem; text-shadow: 0 2px 0 var(--mat);
+    animation: rise .9s ease-out forwards; white-space: nowrap;
+  }
+  @keyframes rise { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -70px); } }
+
+  .rack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .rack h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; letter-spacing: .04em; margin: 0; }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .up {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+    width: 100%; text-align: left; font: inherit; color: inherit;
+    background: var(--mat-2); border: 2px solid var(--plate); border-radius: 10px; padding: 10px 12px; cursor: pointer;
+  }
+  .up:hover:not(:disabled) { border-color: var(--gold); }
+  .up:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .up:disabled { opacity: .45; cursor: not-allowed; }
+  .up .name { font-weight: 700; font-size: 1rem; }
+  .up .desc { color: var(--muted); font-size: .85rem; grid-column: 1; }
+  .up .cost { grid-row: 1 / span 2; grid-column: 2; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold); }
+  .up .owned { display: block; color: var(--muted); font-weight: 600; font-size: .78rem; }
+
+  .rebirth { background: var(--mat-2); border: 2px dashed var(--gold); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .rebirth p { margin: 0; color: var(--muted); line-height: 1.45; }
+  .rebirth p b { color: var(--chalk); }
+  .bar { height: 10px; background: var(--plate); border-radius: 99px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
+  #rebirthBtn {
+    font-family: var(--font-display); font-size: 1.2rem; letter-spacing: .06em; border: 0; border-radius: 10px;
+    padding: 12px; background: var(--gold); color: var(--gold-ink); cursor: pointer;
+  }
+  #rebirthBtn:disabled { background: var(--plate); color: var(--muted); cursor: not-allowed; }
+  #rebirthBtn.confirm { background: var(--trunks); color: var(--chalk); }
+  #rebirthBtn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+  .reset { align-self: flex-start; background: none; border: 0; color: var(--muted); font: inherit; font-size: .8rem; text-decoration: underline; cursor: pointer; padding: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #body { transition: none; }
+    .pop { animation-duration: .01s; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>PUMP <span>YOKI</span></h1>
+    <div class="tag" id="rebirthTag">Rebirth 0 · ×1 gains</div>
+  </header>
+
+  <section class="stage" id="stage">
+    <div class="gains">
+      <div class="num" id="gains">0</div>
+      <div class="label">Gains</div>
+    </div>
+    <div class="rates"><span><b id="perClick">1</b> per rep</span><span><b id="perSec">0</b> per sec</span></div>
+
+    <button id="yoki" aria-label="Click Yoki to do a rep">
+      <svg viewBox="0 0 300 340" aria-hidden="true">
+        <ellipse class="floor" cx="150" cy="332" rx="110" ry="8"/>
+        <g id="body">
+          <!-- legs -->
+          <path d="M122 268 C108 290 110 318 118 330 L144 330 C146 310 150 290 148 268 Z" fill="var(--skin)"/>
+          <path d="M178 268 C192 290 190 318 182 330 L156 330 C154 310 150 290 152 268 Z" fill="var(--skin)"/>
+          <!-- arms (left; right is mirrored) -->
+          <g id="armL">
+            <path d="M100 122 C80 118 56 120 44 132 C38 140 44 150 56 148 C70 146 88 144 104 146 Z" fill="var(--skin)"/>
+            <ellipse cx="72" cy="122" rx="28" ry="20" fill="var(--skin)"/>
+            <ellipse cx="68" cy="116" rx="12" ry="7" fill="var(--chalk)" opacity=".18"/>
+            <path d="M42 136 C34 116 36 92 44 74 L64 76 C62 96 60 116 60 140 Z" fill="var(--skin-dark)"/>
+            <circle cx="53" cy="68" r="15" fill="var(--skin)"/>
+          </g>
+          <use href="#armL" transform="translate(300 0) scale(-1 1)"/>
+          <!-- traps + torso -->
+          <path d="M122 96 L178 96 L206 124 L94 124 Z" fill="var(--skin-dark)"/>
+          <path d="M94 122 L206 122 C204 160 188 210 176 246 L124 246 C112 210 96 160 94 122 Z" fill="var(--skin)"/>
+          <!-- pecs -->
+          <path d="M104 130 C118 124 140 126 148 132 L148 158 C134 166 112 162 104 150 Z" fill="var(--skin-dark)" opacity=".55"/>
+          <path d="M196 130 C182 124 160 126 152 132 L152 158 C166 166 188 162 196 150 Z" fill="var(--skin-dark)" opacity=".55"/>
+          <!-- abs -->
+          <g fill="var(--skin-dark)" opacity=".5">
+            <rect x="130" y="170" width="17" height="14" rx="5"/><rect x="153" y="170" width="17" height="14" rx="5"/>
+            <rect x="131" y="189" width="16" height="14" rx="5"/><rect x="153" y="189" width="16" height="14" rx="5"/>
+            <rect x="133" y="208" width="14" height="14" rx="5"/><rect x="153" y="208" width="14" height="14" rx="5"/>
+          </g>
+          <!-- trunks -->
+          <path d="M122 240 L178 240 L184 278 L154 278 L150 266 L146 278 L116 278 Z" fill="var(--trunks)"/>
+          <text x="150" y="257" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="13" fill="var(--chalk)" letter-spacing="1">YOKI</text>
+          <!-- neck + head -->
+          <rect x="136" y="86" width="28" height="20" rx="6" fill="var(--skin-dark)"/>
+          <circle cx="150" cy="66" r="27" fill="var(--skin)"/>
+          <path d="M123 60 C124 36 176 36 177 60 C168 50 132 50 123 60 Z" fill="var(--mat)"/>
+          <rect x="122" y="56" width="56" height="7" rx="3" fill="var(--gold)"/>
+          <circle cx="140" cy="70" r="3" fill="var(--mat)"/><circle cx="160" cy="70" r="3" fill="var(--mat)"/>
+          <path d="M138 80 Q150 90 162 80" stroke="var(--mat)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </g>
+      </svg>
+    </button>
+  </section>
+
+  <aside class="rack">
+    <h2>UPGRADES</h2>
+    <div class="list" id="list"></div>
+
+    <div class="rebirth">
+      <h2>REBIRTH</h2>
+      <p>Reset your gains and upgrades. Yoki comes back bigger with <b id="nextMult">×2</b> gains forever.</p>
+      <div class="bar"><i id="bar"></i></div>
+      <p id="needText">Need <b>25K</b> gains</p>
+      <button id="rebirthBtn" disabled>REBIRTH</button>
+      <button class="reset" id="resetBtn">Wipe save</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+const UPGRADES = [
+  { id: 'shake',    name: 'Protein Shake',     type: 'click', amount: 1,   base: 15 },
+  { id: 'bro',      name: 'Gym Bro Spotter',   type: 'auto',  amount: 2,   base: 60 },
+  { id: 'dumbbell', name: 'Heavy Dumbbells',   type: 'click', amount: 10,  base: 400 },
+  { id: 'trainer',  name: 'Personal Trainer',  type: 'auto',  amount: 25,  base: 1500 },
+  { id: 'coach',    name: 'Olympia Coach',     type: 'auto',  amount: 200, base: 20000 },
+];
+const SAVE_KEY = 'yoki-clicker-v1';
+
+const fresh = () => ({ gains: 0, rebirths: 0, owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])) });
+let state = fresh();
+
+const $ = id => document.getElementById(id);
+const fmt = n => {
+  n = Math.floor(n);
+  if (n < 1000) return String(n);
+  const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi'];
+  let i = -1;
+  while (n >= 1000 && i < units.length - 1) { n /= 1000; i++; }
+  return (n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : n.toFixed(0)) + units[i];
+};
+
+const mult = () => 1 + state.rebirths;
+const cost = u => Math.floor(u.base * Math.pow(1.15, state.owned[u.id]));
+const perClick = () => (1 + UPGRADES.filter(u => u.type === 'click').reduce((s, u) => s + u.amount * state.owned[u.id], 0)) * mult();
+const perSec = () => UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) * mult();
+const rebirthNeed = () => 25000 * Math.pow(5, state.rebirths);
+
+// Build upgrade buttons once
+const list = $('list');
+for (const u of UPGRADES) {
+  const b = document.createElement('button');
+  b.className = 'up';
+  b.id = 'up-' + u.id;
+  b.innerHTML = `<span class="name">${u.name}</span>
+    <span class="desc">+${u.amount} ${u.type === 'click' ? 'per rep' : 'per sec'}</span>
+    <span class="cost"><span class="c"></span><span class="owned"></span></span>`;
+  b.addEventListener('click', () => buy(u));
+  list.appendChild(b);
+}
+
+function buy(u) {
+  const c = cost(u);
+  if (state.gains < c) return;
+  state.gains -= c;
+  state.owned[u.id]++;
+  render();
+}
+
+function render() {
+  $('gains').textContent = fmt(state.gains);
+  $('perClick').textContent = fmt(perClick());
+  $('perSec').textContent = fmt(perSec());
+  $('rebirthTag').textContent = `Rebirth ${state.rebirths} · ×${mult()} gains`;
+  for (const u of UPGRADES) {
+    const b = $('up-' + u.id);
+    const c = cost(u);
+    b.disabled = state.gains < c;
+    b.querySelector('.c').textContent = fmt(c);
+    b.querySelector('.owned').textContent = 'owned ' + state.owned[u.id];
+  }
+  const need = rebirthNeed();
+  $('bar').style.width = Math.min(100, state.gains / need * 100) + '%';
+  $('needText').innerHTML = `Need <b>${fmt(need)}</b> gains`;
+  $('nextMult').textContent = '×' + (mult() + 1);
+  const rb = $('rebirthBtn');
+  rb.disabled = state.gains < need;
+  if (rb.disabled) { rb.classList.remove('confirm'); rb.textContent = 'REBIRTH'; }
+  // Yoki gets bigger every rebirth
+  $('yoki').style.setProperty('--size', Math.min(300 + state.rebirths * 25, 460) + 'px');
+}
+
+// Clicking Yoki
+const yoki = $('yoki');
+let pumpTimer;
+yoki.addEventListener('click', e => {
+  const amt = perClick();
+  state.gains += amt;
+  yoki.classList.add('pump');
+  clearTimeout(pumpTimer);
+  pumpTimer = setTimeout(() => yoki.classList.remove('pump'), 90);
+
+  const stage = $('stage').getBoundingClientRect();
+  const r = yoki.getBoundingClientRect();
+  const x = e.clientX || r.left + r.width / 2;
+  const y = e.clientY || r.top + r.height / 3;
+  const pop = document.createElement('div');
+  pop.className = 'pop';
+  pop.textContent = '+' + fmt(amt);
+  pop.style.left = (x - stage.left) + 'px';
+  pop.style.top = (y - stage.top - 20) + 'px';
+  $('stage').appendChild(pop);
+  setTimeout(() => pop.remove(), 900);
+  render();
+});
+
+// Rebirth needs two clicks (no confirm() dialogs here)
+let confirmTimer;
+$('rebirthBtn').addEventListener('click', () => {
+  const rb = $('rebirthBtn');
+  if (!rb.classList.contains('confirm')) {
+    rb.classList.add('confirm');
+    rb.textContent = 'SURE? CLICK AGAIN';
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => { rb.classList.remove('confirm'); rb.textContent = 'REBIRTH'; }, 3000);
+    return;
+  }
+  clearTimeout(confirmTimer);
+  const r = state.rebirths + 1;
+  state = fresh();
+  state.rebirths = r;
+  save();
+  render();
+});
+
+let wipeArmed = false;
+$('resetBtn').addEventListener('click', () => {
+  const b = $('resetBtn');
+  if (!wipeArmed) {
+    wipeArmed = true; b.textContent = 'Click again to wipe everything';
+    setTimeout(() => { wipeArmed = false; b.textContent = 'Wipe save'; }, 3000);
+    return;
+  }
+  wipeArmed = false; b.textContent = 'Wipe save';
+  state = fresh(); save(); render();
+});
+
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (s && typeof s.gains === 'number') return { ...fresh(), ...s, owned: { ...fresh().owned, ...s.owned } };
+  } catch (e) {}
+  return null;
+}
+
+function start(data) {
+  state = (data && data.state) || load() || fresh();
+  window.claude?.hot?.snapshot?.(() => ({ state }));
+  let last = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    state.gains += perSec() * (now - last) / 1000;
+    last = now;
+    render();
+  }, 100);
+  setInterval(save, 5000);
+  addEventListener('beforeunload', save);
+  render();
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
