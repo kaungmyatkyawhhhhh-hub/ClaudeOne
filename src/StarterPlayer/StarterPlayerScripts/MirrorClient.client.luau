@@ -264,21 +264,37 @@ local function startReflection(mirrorModel, glass)
 		local copy = character:Clone()
 		character.Archivable = wasArchivable
 		if not copy then return end
-		-- Clone keeps the tree shape, so walking both trees side by side pairs every part with its copy
-		local sources, copies = character:GetDescendants(), copy:GetDescendants()
+		-- pair every part with its copy by its path inside the model (never by position in a list: that went wrong when children
+		-- were ordered differently, which left the copy frozen like a statue)
+		local function pathOf(item, root)
+			local names = {}
+			while item and item ~= root do
+				table.insert(names, 1, item.Name)
+				item = item.Parent
+			end
+			return names
+		end
 		local list = {}
-		for i, item in ipairs(copies) do
-			local source = sources[i]
-			if item:IsA("BaseScript") or item:IsA("Sound") or item:IsA("BillboardGui") or item:IsA("ParticleEmitter") then
-				item:Destroy()
-			elseif item:IsA("BasePart") and source and source:IsA("BasePart") and source.Name == item.Name then
-				item.Anchored = true
-				item.CanCollide = false
-				table.insert(list, { source, item })
+		for _, source in ipairs(character:GetDescendants()) do
+			if source:IsA("BasePart") then
+				local item = copy
+				for _, name in ipairs(pathOf(source, character)) do item = item and item:FindFirstChild(name) end
+				if item and item:IsA("BasePart") then
+					item.Anchored = true
+					item.CanCollide = false
+					table.insert(list, { source, item })
+				end
 			end
 		end
-		local humanoid = copy:FindFirstChildOfClass("Humanoid")
-		if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+		for _, item in ipairs(copy:GetDescendants()) do
+			if item:IsA("BaseScript") or item:IsA("Sound") or item:IsA("BillboardGui") or item:IsA("ParticleEmitter") then item:Destroy() end
+		end
+		local sources = character:GetDescendants()
+		-- the copy has NO Humanoid, Animator or joints: they could play a pose of their own. Every part is placed from your real
+		-- part each frame, so it can only ever show exactly what you do.
+		for _, item in ipairs(copy:GetDescendants()) do
+			if item:IsA("Humanoid") or item:IsA("Animator") or item:IsA("Motor6D") or item:IsA("AnimationConstraint") or item:IsA("BallSocketConstraint") or item:IsA("Weld") or item:IsA("WeldConstraint") or item:IsA("RigidConstraint") then item:Destroy() end
+		end
 		copy.Parent = world
 		mirrored = { model = copy, pairs = list, character = character, count = #sources, version = character:GetAttribute("BodyVersion") }
 	end

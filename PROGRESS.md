@@ -209,3 +209,5 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - **UI v7 part 3:** click a group label to expand its muscles (one open at a time, others glide down; click again collapses); hovering a group or a single muscle outlines/fills its blobs red (Highlight, 0.15s fade; tap on phones); clears when collapsed or Stats closes. Growth Spurt bar moved to the very top edge. STILL TODO: top-bar pills (coins, quests, daily reward, settings), tile restyle (bold outlined labels, 3D look, bounce), Shop tile (hidden anyway), an overlap push-apart pass, phone test of all of this.
 
 - Stat label backings: 5px rounded corners, 1.5x wider. Left menu got a collapse arrow (folds all tiles away; arrow stays, panels beside the menu unaffected).
+
+- **Mirror reflection fix (verified by numbers):** copy parts are now paired with your real parts by name path (the old index pairing could leave it frozen), and the copy has no Humanoid/joints (the earlier edit that was meant to do this had never applied). Test showed copy limb heights tracking the real ones during an emote.

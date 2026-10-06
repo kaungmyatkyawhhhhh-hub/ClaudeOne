@@ -542,7 +542,7 @@ local function addGarment(self: any, kind: string, partName: string, color: Colo
 	local part = self.model:FindFirstChild(partName)
 	if not part or not part:IsA("BasePart") then return end
 	local g = Instance.new("Part")
-	g.Name = "Garment_" .. kind
+	g.Name = "Garment_" .. kind .. "_" .. partName
 	g.Shape = Enum.PartType.Cylinder
 	g.Massless = true
 	g.CanCollide, g.CanQuery, g.CanTouch = false, false, false
