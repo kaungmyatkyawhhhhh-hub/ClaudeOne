@@ -19,6 +19,7 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local UIBus = require(Shared.UI.UIBus)
 local Notify = require(Shared.UI.Notify)
+local Icons = require(Shared.UI.Icons)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -43,7 +44,16 @@ panel.Active = false -- only tappable when the Growth Spurt is ready
 
 local titleRow = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = panel })
 local title = Theme.Text({ Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(0.7, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = titleRow })
-local heightLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.3, 1), TextXAlignment = Enum.TextXAlignment.Right, Parent = titleRow })
+local heightLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -26, 0, 0), Size = UDim2.new(0.3, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = titleRow })
+
+-- the arrow: collapses the panel to its title row and expands it again
+local arrow = New("TextButton", { Name = "Arrow", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = titleRow })
+local arrowIcon = Icons.Chevron(1, Colors.Text)
+arrowIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+arrowIcon.Position = UDim2.fromScale(0.5, 0.5)
+arrowIcon.Size = UDim2.fromScale(1, 1)
+arrowIcon.Rotation = -90
+arrowIcon.Parent = arrow
 
 local barRow = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = panel }, { Theme.List(Horizontal, "XS") })
 local fills = {}
@@ -56,6 +66,18 @@ end
 -- the next goal: white (readable over any background) and wrapped onto a second line instead of being cut off
 local goalLabel = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Text, Size = UDim2.new(1, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, Parent = panel })
 Theme.TextShadow(goalLabel)
+
+local collapsed = false
+local function setCollapsed(value)
+	collapsed = value
+	barRow.Visible = not collapsed
+	goalLabel.Visible = not collapsed
+	Theme.Tween(arrowIcon, { Rotation = collapsed and 90 or -90 }, 0.2)
+end
+arrow.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	setCollapsed(not collapsed)
+end)
 
 ------------------------------------------------------------------------
 -- Progress + goals

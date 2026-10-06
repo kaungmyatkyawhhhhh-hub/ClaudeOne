@@ -83,19 +83,21 @@ end
 local size = wantSmall() and SIZES.Compact or SIZES.Normal
 
 local function box(name, width, height, numberSize)
+	-- no box: just the text (name in white, the number under it in pale blue-white) on an almost invisible black rectangle
+	-- that is only as big as the text (square corners, no border)
 	local frame = New("Frame", {
 		Name = name,
 		Size = UDim2.fromOffset(width, height),
-		BackgroundColor3 = Colors.Panel,
-		BackgroundTransparency = Theme.Alpha.LabelBacking,
+		BackgroundTransparency = 1,
 		ZIndex = 3,
 		Parent = layer,
-	}, { Theme.Round("Button"), Theme.Stroke(), Theme.List(Enum.FillDirection.Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	}, { Theme.List(Enum.FillDirection.Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(width, height), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 3, Parent = frame })
 	local title = Theme.Text({ Name = "Name", LayoutOrder = 1, Text = name, Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 15), ZIndex = 4, Parent = frame })
-	local number = Theme.Text({ Name = "Number", LayoutOrder = 2, Text = "0", Font = "SemiBold", TextSize = numberSize, TextColor3 = Colors.StatNumber, Size = UDim2.new(1, 0, 0, Theme.TextSize[numberSize] + 2), ZIndex = 4, Parent = frame })
+	local number = Theme.Text({ Name = "Number", LayoutOrder = 2, Text = "0", Font = "Regular", TextSize = numberSize, TextColor3 = Colors.StatNumber, Size = UDim2.new(1, 0, 0, Theme.TextSize[numberSize] + 2), ZIndex = 4, Parent = frame })
 	Theme.TextShadow(title)
 	Theme.TextShadow(number)
-	return { frame = frame, title = title, number = number }
+	return { frame = frame, title = title, number = number, back = back }
 end
 
 local labels = {} -- the six group labels, in GROUPS order
@@ -103,11 +105,25 @@ for _, spec in ipairs(GROUPS) do
 	local entry = box(spec.id, size.Width, size.Height, size.Number)
 	entry.spec = spec
 	entry.dot = New("Frame", { Name = spec.id .. "Dot", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(LAYOUT.Dot, LAYOUT.Dot), BackgroundColor3 = Colors.Text, ZIndex = 2, Parent = layer }, { Theme.Round("Round") })
-	entry.line = New("Frame", { Name = spec.id .. "Line", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.25, ZIndex = 1, Parent = lineLayer })
+	entry.line = New("Frame", { Name = spec.id .. "Line", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
+	entry.tail = New("Frame", { Name = spec.id .. "Tail", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
 	table.insert(labels, entry)
 end
 local strength = box("Strength", size.TopWidth, size.TopHeight, size.Top)
 local stamina = box("Stamina", size.Width, size.TopHeight, size.Number)
+
+-- the backing hugs the text
+local function fitBacking(entry)
+	local w = math.max(entry.title.TextBounds.X, entry.number.TextBounds.X) + 12
+	local h = entry.title.AbsoluteSize.Y + entry.number.AbsoluteSize.Y + 2
+	entry.back.Size = UDim2.fromOffset(w, h)
+	entry.backWidth = w
+end
+local function fitAll()
+	for _, entry in ipairs(labels) do fitBacking(entry) end
+	fitBacking(strength)
+	fitBacking(stamina)
+end
 
 local function applySize(small)
 	size = small and SIZES.Compact or SIZES.Normal
@@ -121,6 +137,7 @@ local function applySize(small)
 	stamina.number.TextSize = Theme.TextSize[size.Number]
 	strength.number.TextSize = Theme.TextSize[size.Top]
 	strength.number.Size = UDim2.new(1, 0, 0, Theme.TextSize[size.Top] + 2)
+	task.defer(fitAll)
 end
 applySize(wantSmall())
 
@@ -141,6 +158,7 @@ local function refreshNumbers()
 	strength.number.Text = commas(Muscles.Shown(Muscles.TotalStrength(data.muscles)))
 	local max = player:GetAttribute("MaxStamina")
 	stamina.number.Text = commas(math.clamp(data.stamina or 0, 0, type(max) == "number" and max or Stamina.Max))
+	task.defer(fitAll)
 end
 
 ------------------------------------------------------------------------
@@ -268,6 +286,26 @@ local function clearOf(x1, y1, x2, y2, rects, minY, maxY)
 end
 
 local current = {} -- [frame or dot] = Vector2 smoothed position
+
+-- Labels follow their rest spot on a soft spring (they drift when you walk, turn or jump, up to ~50px, then settle back)
+-- plus a tiny idle float of their own.
+local SPRING = { Stiffness = 55, Damping = 9.5, MaxDrift = 50, Float = 3 }
+local springs = {}
+local function spring(key, target, dt, seed)
+	local s = springs[key]
+	if not s or (s.p - target).Magnitude > 700 then
+		s = { p = target, v = Vector2.zero }
+		springs[key] = s
+	end
+	dt = math.min(dt, 1 / 30)
+	local accel = (target - s.p) * SPRING.Stiffness - s.v * SPRING.Damping
+	s.v += accel * dt
+	s.p += s.v * dt
+	local off = s.p - target
+	if off.Magnitude > SPRING.MaxDrift then s.p = target + off.Unit * SPRING.MaxDrift end
+	local t = os.clock()
+	return s.p + Vector2.new(0, math.sin(t * (0.9 + (seed % 5) * 0.17) + seed * 1.7) * SPRING.Float)
+end
 local function smooth(key, target, rate, dt)
 	local last = current[key]
 	if not last or (last - target).Magnitude > 600 then
@@ -342,7 +380,7 @@ local function place(dt)
 		local y = columnTop + clearOf(x, columnTop, x + size.Width, columnTop + total, rects, topLimit, bottomLimit)
 		for index, entry in ipairs(column) do
 			local target = Vector2.new(x, y + (index - 1) * step)
-			local at = smooth(entry.frame, target, LAYOUT.Smooth, dt)
+			local at = spring(entry.frame, target, dt, index + (side == "Left" and 0 or 3))
 			entry.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
 			local world = anchorPoint(character, entry.spec.anchor)
 			if world then
@@ -350,11 +388,20 @@ local function place(dt)
 				entry.dot.Visible = true
 				entry.line.Visible = true
 				entry.dot.Position = UDim2.fromOffset(dot.X, dot.Y)
-				local edge = Vector2.new(side == "Left" and at.X + size.Width or at.X, at.Y + size.Height / 2)
-				setLine(entry.line, dot, edge)
+				-- the line meets a short horizontal segment under the label (like the reference)
+				local textW = entry.backWidth or size.Width
+				local x0 = at.X + (size.Width - textW) / 2
+				local x1 = x0 + textW
+				local baseY = at.Y + size.Height + 1
+				local near = side == "Left" and x1 or x0
+				entry.tail.Visible = true
+				entry.tail.Position = UDim2.fromOffset((x0 + x1) / 2, baseY)
+				entry.tail.Size = UDim2.fromOffset(textW, 1)
+				setLine(entry.line, dot, Vector2.new(near, baseY))
 			else
 				entry.dot.Visible = false
 				entry.line.Visible = false
+				entry.tail.Visible = false
 			end
 		end
 	end
@@ -365,7 +412,7 @@ local function place(dt)
 	local rowY = project(root.Position + up * (body.headUp + LAYOUT.TitleClear)).Y - size.TopHeight
 	rowY = math.max(rowY, topLimit)
 	rowY += clearOf(rowX, rowY, rowX + rowWidth, rowY + size.TopHeight, rects, topLimit, bottomLimit)
-	local at = smooth(strength.frame, Vector2.new(rowX, rowY), LAYOUT.Smooth, dt)
+	local at = spring(strength.frame, Vector2.new(rowX, rowY), dt, 7)
 	strength.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
 	stamina.frame.Position = UDim2.fromOffset(math.floor(at.X + size.TopWidth + LAYOUT.Gap + 0.5), math.floor(at.Y + 0.5))
 end
