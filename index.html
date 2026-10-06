@@ -374,6 +374,9 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
 .chip.live{box-shadow:inset 0 0 0 2px #ff4fd8,var(--shadow)}.chip.live .pk{color:#ff4fd8}
 .aucs{display:flex;flex-direction:column;gap:8px}.auc{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;background:var(--surface);border-radius:16px;padding:10px;box-shadow:var(--shadow)}.auc.lead{box-shadow:inset 0 0 0 2px var(--up),var(--shadow)}.auc.over{opacity:.55}.auc .tile{width:48px;height:48px}.aucb b{display:block;font-size:.9rem}.aucb small{display:block;font-size:.7rem;color:var(--muted)}.aucp{font-family:var(--mono);font-size:.74rem;font-weight:700}.auca{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.auct{font-family:var(--mono);font-weight:800}.auct.hot{color:var(--down);animation:pulse .6s infinite}.auca .cta{padding:8px 12px;font-size:.78rem}
 .crewrow{display:grid;grid-template-columns:auto 18px 1fr auto auto;gap:8px;align-items:center;background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow)}.crewrow.me{box-shadow:inset 0 0 0 2px var(--cc),var(--shadow)}.cflag{width:16px;height:12px;background:var(--cc);clip-path:polygon(0 0,100% 20%,70% 50%,100% 80%,0 100%)}.cflag.big{width:46px;height:36px}.crewrow .cn small{display:block;font-size:.68rem;color:var(--muted)}.crewrow .cb{font-family:var(--mono);font-weight:800;font-size:.8rem}.crewrow .cta{padding:6px 10px;font-size:.72rem}.crewhq{display:flex;gap:14px;align-items:center;background:color-mix(in oklab,var(--cc) 18%,var(--surface));border-radius:18px;padding:14px;margin:8px 0}.crewhq b{font-family:var(--display);font-size:1.2rem}.crewhq small{display:block;color:var(--muted)}
+.chip.sea .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px}
+.seahead{display:flex;gap:14px;align-items:center;background:linear-gradient(120deg,color-mix(in oklab,var(--sc) 30%,var(--surface)),var(--surface));border-radius:18px;padding:14px;margin:8px 0}.seahead>span{font-size:2.4rem}.seahead b{font-family:var(--display);font-size:1.3rem;color:var(--sc)}.seahead small{display:block;color:var(--muted)}
+.seatrack{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.sealv{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:14px;padding:10px 6px;background:var(--surface);box-shadow:var(--shadow);text-align:center;opacity:.55}.sealv.ok{opacity:1;box-shadow:inset 0 0 0 2px var(--up),var(--shadow);animation:seaglow 1.6s ease-in-out infinite}@keyframes seaglow{50%{box-shadow:inset 0 0 0 2px var(--up),0 0 16px rgba(47,210,138,.55)}}.sealv.got{opacity:.8}.sealv.big{background:linear-gradient(160deg,#2b2410,#5a4a14);color:#fff}.sealv b{font-family:var(--mono);font-size:.7rem}.sealv span{font-size:1.5rem}.sealv small{font-size:.66rem;font-weight:700;line-height:1.15}.sealv i{font-size:.58rem;font-style:normal;opacity:.75}.sealv em{font-style:normal;font-size:.6rem;font-weight:800;text-transform:uppercase;opacity:.8}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -715,7 +718,7 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -1473,6 +1476,7 @@ $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play 
 // The alert pills sit in one swipeable row; the first button folds them away
 let pillsMin=store.get("fliprush_pillsmin")==="1";
 function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
+$("seaChip").onclick=()=>{audioOn();if(room)closeRoom();openSeason(closeRoom)};
 $("liveChip").onclick=()=>{audioOn();if(LV&&LV.kind==="boss"&&!LV.done&&!room)liveHit()};
 $("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
@@ -3002,7 +3006,7 @@ function loop(now){
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();tutTick(dt);
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderBzChip();renderLvlBtn();renderPillTog()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderCrateChip();renderBzChip();renderLvlBtn();renderPillTog()}
     }
     NPCS.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=roadPoint();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room){if(SCN)drawScene();else drawWorld()}
@@ -3274,7 +3278,7 @@ function mpUI(keep){
     $("mpX").onclick=()=>{sh.hidden=true};$("mpNew").onclick=()=>mpJoin(mpCode());$("mpNewPub").onclick=()=>{MP_PUB_NEXT=true;mpJoin(mpCode())};$("mpJoinB").onclick=()=>mpJoin($("mpCodeIn").value);$("mpCodeIn").onkeydown=e=>{if(e.key==="Enter")mpJoin($("mpCodeIn").value)};return}
   const peers=Object.entries(MP.peers),gift=Math.max(0,Math.round(S.cash*.05));
   sh.innerHTML=`<div class="pshead"><div><small>${MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
-    <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
+    <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>${S.title?esc(S.title)+" · ":""}Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
       ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span><button class="mpgift" data-gift="${id}" ${gift<1?"disabled":""}>Gift ${fmt(gift)}</button></div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
     ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
@@ -5324,6 +5328,34 @@ function drawCrewHQ(){if(!MPW||!S.crew)return;const C=S.crew,{x,y,w,h}=CREWHQ,lv
   drawBuilding(ctx,{k:"crewhq",n:String(C.n).slice(0,14)+" HQ",c:C.c,x,y,w,h,door:[x+w/2,y+h]},isDark()?PAL_D:PAL_L);
   ctx.strokeStyle="#3a3f4c";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+w-24,y+10);ctx.lineTo(x+w-24,y-46);ctx.stroke();const f=Math.sin(wt*4)*4;ctx.fillStyle=C.c;ctx.beginPath();ctx.moveTo(x+w-24,y-46);ctx.quadraticCurveTo(x+w+4,y-40+f,x+w+20,y-36);ctx.lineTo(x+w-24,y-22);ctx.closePath();ctx.fill();
   ctx.fillStyle="#ffcc33";for(let i=0;i<Math.min(5,Math.ceil(lv/4));i++){ctx.beginPath();ctx.arc(x+20+i*14,y+14,5,0,7);ctx.fill()}}
+/* ================= seasons: a free 30-level reward track that resets every 30 days ================= */
+const SEA_EPOCH=Date.UTC(2026,0,1),SEA_LEN=30*864e5,SEA_XP=150,SEA_MAX=30;
+const SEA_THEMES=[["Neon Nights","#ff4fd8","🌃"],["Gold Rush","#cf9a14","🪙"],["Summer Splash","#2fa6d9","🏖️"],["Street Kings","#e2364a","👑"],["Cosmic Drift","#7a2fd6","🌌"],["Frost Bite","#7fd6ff","❄️"],["Jungle Fever","#2f9a4e","🌴"],["Royal Court","#8a1d2a","🏰"]];
+// season points come from things you already do
+const SEA_W={flips:3,lifted:1,armWins:10,shifts:15,fish:5,posts:15,deliv:20,finds:10,quests:12,reqs:25,bizCollects:8,grails:15,gpRaces:30,scratch:5,lots:10,tradeWins:8,chests:20,exps:25,dives:6,launches:40,pvpWins:20,rizzWins:15};
+const seaN=()=>Math.floor((Date.now()-SEA_EPOCH)/SEA_LEN),seaTheme=n=>SEA_THEMES[((n%SEA_THEMES.length)+SEA_THEMES.length)%SEA_THEMES.length];
+function seaState(){const n=seaN();if(!S.sea||S.sea.n!==n){const base={};for(const k in SEA_W)base[k]=S.stats[k]||0;S.sea={n,base,claimed:{}};dirty=true}return S.sea}
+function seaXP(){const s=seaState();let x=0;for(const k in SEA_W)x+=Math.max(0,(S.stats[k]||0)-(s.base[k]||0))*SEA_W[k];return x}
+const seaLv=()=>Math.min(SEA_MAX,Math.floor(seaXP()/SEA_XP));
+// what each level gives; cash scales with how rich you are so it always matters
+function seaReward(l){const nw=Math.max(5e4,netWorth()),n=seaN();
+  if(l===10||l===20||l===30){const pool=ACCS.filter(a=>!a.ev&&!a.w2&&!(S.accOwn||{})[a.k]&&(l===10?a.cost<1e6:l===20?a.s==="b"||a.s==="x":true));const pk2=pool.length?pool[(n*7+l)%pool.length]:null;
+    return {ic:l===30?"🏆":"🎁",t:pk2?pk2.n:"Big crate pack",d:l===30?"Plus the "+seaTheme(n)[0]+" Champion title":"Free accessory",go:()=>{if(pk2){S.accOwn=S.accOwn||{};S.accOwn[pk2.k]=1}else gainCrate(10);if(l===30){S.titles=S.titles||[];const t=seaTheme(n)[0]+" Champion";if(!S.titles.includes(t))S.titles.push(t);S.title=t}}}}
+  if(l%5===0)return {ic:"📦",t:(2+l/5)+" crates",go:()=>gainCrate(2+l/5)};
+  if(l%3===0)return {ic:"⚡",t:"Full energy + hype",go:()=>{S.energy=maxEnergy();S.buffs.hype=Math.max(S.buffs.hype||0,120)}};
+  const v=Math.round(nw*(.004+.0015*l));return {ic:"💵",t:fmt(v),go:()=>earn(v)}}
+const seaClaimable=()=>{const s=seaState(),L=seaLv();let c=0;for(let l=1;l<=L;l++)if(!s.claimed[l])c++;return c};
+function renderSeaChip(){const el=$("seaChip");if(!el||!S)return;const show=(S.stats.flips||0)>=3;el.hidden=!show;if(!show)return;const n=seaN(),T=seaTheme(n),L=seaLv(),c=seaClaimable(),h=`<span class="pk" style="color:${T[1]}">${T[2]} Season ${n+1}</span><span class="pt">Lv ${L}/${SEA_MAX}${c?` · <b class="dot">${c}</b>`:""}</span>`;if(el.innerHTML!==h)el.innerHTML=h}
+function openSeason(back){room="season";$("room").hidden=false;
+  const draw=()=>{const s=seaState(),n=s.n,T=seaTheme(n),xp=seaXP(),L=seaLv(),ends=SEA_EPOCH+(n+1)*SEA_LEN,days=Math.ceil((ends-Date.now())/864e5);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Season "+(n+1))}
+      <div class="seahead" style="--sc:${T[1]}"><span>${T[2]}</span><div><b>${T[0]}</b><small>Ends in ${days} day${days===1?"":"s"} · free for everyone</small></div></div>
+      <div class="kv"><div><span class="eyebrow">Season level</span><b>${L}/${SEA_MAX}</b></div><div><span class="eyebrow">Points</span><b>${fmtN(xp)}</b></div></div>
+      ${L<SEA_MAX?`<div class="reqbar"><i style="width:${(xp%SEA_XP)/SEA_XP*100}%"></i></div><p class="fine">${SEA_XP-xp%SEA_XP} points to level ${L+1}. Points come from sales (3), lifts (1), shifts (15), deliveries (20), fishing, posts, races, chests and more.</p>`:""}
+      ${S.title?`<p class="fine">Your title: <b>${esc(S.title)}</b></p>`:""}
+      <div class="seatrack">${Array.from({length:SEA_MAX},(_,i)=>{const l=i+1,R=seaReward(l),got=s.claimed[l],ok=l<=L;return `<button class="sealv${got?" got":ok?" ok":""}${l%10===0?" big":""}" data-sl="${l}" ${!ok||got?"disabled":""}><b>${l}</b><span>${R.ic}</span><small>${esc(R.t)}</small>${R.d&&!got?`<i>${esc(R.d)}</i>`:""}<em>${got?"Claimed":ok?"Claim":"Locked"}</em></button>`}).join("")}</div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-sl]").forEach(b=>b.onclick=()=>{const l=+b.dataset.sl,s2=seaState();if(s2.claimed[l]||l>seaLv())return;const R=seaReward(l);R.go();s2.claimed[l]=1;dirty=true;SFX.level();confetti(l%10?60:200,null,null,[T[1],"#fff","#ffcc33"]);banner("Season reward: "+R.t,"g");draw();updMini();renderSeaChip()})};draw()}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
