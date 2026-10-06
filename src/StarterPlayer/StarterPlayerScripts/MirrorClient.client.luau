@@ -279,8 +279,6 @@ local function startReflection(mirrorModel, glass)
 		end
 		local humanoid = copy:FindFirstChildOfClass("Humanoid")
 		if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
-		-- the copy already carries the character's muscle parts (paired above); MuscleClient must not rebuild them
-		game:GetService("CollectionService"):RemoveTag(copy, "MuscleBody")
 		copy.Parent = world
 		mirrored = { model = copy, pairs = list, character = character, count = #sources }
 	end

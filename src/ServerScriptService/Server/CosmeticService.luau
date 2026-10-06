@@ -61,9 +61,13 @@ local BUILD = {}
 BUILD.Belt = function(folder, character, item)
 	local waist = character:FindFirstChild("LowerTorso")
 	if not waist then return end
+	-- around the waist joint (the narrowest part of the body), as wide as the waist there
+	local joint = waist:FindFirstChild("WaistRigAttachment")
+	local y = joint and joint.Position.Y or 0
 	local s = waist.Size
-	band(folder, waist, "Belt", s.Y * 0.42, s.Y * 0.12, 0.14, item.color, Enum.Material.Leather)
-	piece(folder, waist, "Buckle", Vector3.new(s.X * 0.28, s.Y * 0.3, 0.08), CFrame.new(0, s.Y * 0.12, -(s.Z / 2 + 0.1)), Color3.fromHex("#C9CCD2"), Enum.Material.Metal)
+	local w, d, h = s.X * 0.9, s.Z * 0.9, math.min(0.36, s.Y * 0.3)
+	piece(folder, waist, "Belt", Vector3.new(w, h, d), CFrame.new(0, y, 0), item.color, Enum.Material.Leather)
+	piece(folder, waist, "Buckle", Vector3.new(w * 0.26, h * 0.8, 0.08), CFrame.new(0, y, -(d / 2 + 0.04)), Color3.fromHex("#C9CCD2"), Enum.Material.Metal)
 end
 BUILD.Headband = function(folder, character, item)
 	local head = character:FindFirstChild("Head")
@@ -94,7 +98,9 @@ local function build(player)
 	local data = PlayerData.Get(player)
 	if not character or not data then return end
 	local old = character:FindFirstChild(FOLDER)
-	if old then old:Destroy() end
+	if old then
+		old:Destroy()
+	end
 	local folder = Instance.new("Folder")
 	folder.Name = FOLDER
 	folder.Parent = character
@@ -117,7 +123,7 @@ local function scheduleBuild(player)
 end
 
 local function watchCharacter(player, character)
-	-- BodyService swaps the body parts (base body, Growth Spurt height): rebuild the gear on the new parts
+	-- BodyService swaps the body parts (muscle body tiers): rebuild the gear on the new parts
 	character:GetAttributeChangedSignal("BodyVersion"):Connect(function() scheduleBuild(player) end)
 	for _, name in ipairs({ "LowerTorso", "Head", "LeftLowerArm", "RightLowerArm" }) do
 		local bodyPart = character:WaitForChild(name, 10)

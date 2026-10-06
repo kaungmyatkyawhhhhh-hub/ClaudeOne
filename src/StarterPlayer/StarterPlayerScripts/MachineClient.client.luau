@@ -461,6 +461,22 @@ local function pump(character, machine)
 	end
 end
 
+-- PUMPED: one big swell + bounce on the trained parts (scale only, no extra parts)
+local function pumpBurst(character, machine)
+	for _, entry in ipairs(machine.muscles) do
+		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
+			local part = character:FindFirstChild(partName)
+			if part then
+				local state = pumped[part] or { base = part:GetAttribute("BaseSize") or part.Size, amount = 0, bounce = 0 }
+				state.amount = FEEL.PumpMax
+				state.bounce = FEEL.PumpBounce * 3
+				state.last = os.clock()
+				pumped[part] = state
+			end
+		end
+	end
+end
+
 RunService.Heartbeat:Connect(function(dt)
 	local now = os.clock()
 	for part, state in pairs(pumped) do
@@ -1237,7 +1253,10 @@ local function refreshPump(now)
 			pumpMeter = 0
 			Audio.Play2D("PumpFull")
 			fovPunch(FEEL.FovPunchBig)
-			if player.Character then chalkPuff(player.Character, 16) end
+			if player.Character then
+				chalkPuff(player.Character, 16)
+				if current then pumpBurst(player.Character, current.machine) end
+			end
 		end
 		setPumpGlow(pumped)
 		pumpLabel.Text = pumped and "PUMPED  x2" or "Pump"

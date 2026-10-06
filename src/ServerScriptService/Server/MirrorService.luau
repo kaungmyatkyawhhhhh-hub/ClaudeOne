@@ -3,7 +3,7 @@
 -- your body now, with height and level under each, made for screenshots. (The glass itself shows a live reflection,
 -- also MirrorClient.)
 -- Both bodies are real R15 rigs built from your avatar's HumanoidDescription (Players:CreateHumanoidModelFromDescription)
--- and scaled with the description's scales, then shaped with Shared.BodyShape, so nothing floats or detaches. The rigs
+-- with the same muscle body tier as your character (Config.MuscleBodies: day one = tier 0), so nothing floats. The rigs
 -- go to the player's own PlayerGui (only they receive them); the client copies them into its ViewportFrames.
 -- Day one is saved once per player (data.dayOne): the height and body scales from their first join. Saves from before
 -- the mirror existed get the starting height (4'0") and plain scales, which is what every player started with.
@@ -13,8 +13,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
-local MuscleBody = require(ReplicatedStorage.Shared.MuscleBody)
-local CollectionService = game:GetService("CollectionService")
+local MuscleBodies = require(Config.MuscleBodies)
+local BodyService = require(script.Parent.BodyService)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 
@@ -29,7 +29,7 @@ local function saveDayOne(player, data)
 	PlayerData.SetTable(player, "dayOne", {
 		height = height,                 -- inches
 		heightScale = height / BodyShape.BaseHeight,
-		muscleScale = 1,                 -- no muscle growth on day one
+		muscleScale = 1,                 -- day one = muscle body tier 0 (your own body)
 		level = 0,
 		at = os.time(),
 		estimated = not fresh,           -- saved later than the real first join
@@ -46,22 +46,12 @@ local function avatarDescription(player)
 	return desc:Clone(), humanoid
 end
 
--- One preview rig: heightScale = absolute height scale, steps = group steps (nil = no muscle growth). `data` given =
--- today's muscles (shapes + veins), nil = day one (small muscles, no veins). Same base body and look as in game.
-local function buildRig(player, name, heightScale, steps, data)
-	local desc, humanoid = avatarDescription(player)
-	local character = player.Character
-	local look = character and character:GetAttribute("BodyLook") or "Gym"
-	local top, bottom = MuscleBody.GymColors(player.UserId)
-	MuscleBody.BaseDescription(desc, look, top)
-	-- the avatar's own width/depth (BodyService remembers them before muscle growth changes them)
-	local baseWidth = humanoid and humanoid:GetAttribute("BaseBodyWidthScale") or desc.WidthScale
-	local baseDepth = humanoid and humanoid:GetAttribute("BaseBodyDepthScale") or desc.DepthScale
-	local width, depth = 1, 1
-	if steps then width, depth = BodyShape.BulkScales(steps) end
+-- One preview rig: heightScale = absolute height scale, tier = muscle body tier (day one: 0). Built from your avatar
+-- (own clothes, hair, colors) with the same body tier as your character.
+local function buildRig(player, name, heightScale, tier)
+	local desc = avatarDescription(player)
+	MuscleBodies.ApplyTo(desc, BodyService.BodyTier(tier), BodyService.OriginalDescription(player) or desc)
 	desc.HeightScale = heightScale
-	desc.WidthScale = baseWidth * width
-	desc.DepthScale = baseDepth * depth
 	local ok, rig = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
 	desc:Destroy()
 	if not ok or not rig then
@@ -73,7 +63,6 @@ local function buildRig(player, name, heightScale, steps, data)
 	for _, item in ipairs(rig:GetDescendants()) do
 		if item:IsA("BaseScript") then item:Destroy() end
 	end
-	if steps then BodyShape.Apply(BodyShape.Capture(rig), BodyShape.PartScales(steps)) end
 	BodyShape.SolveJoints(rig)
 	for _, part in ipairs(rig:GetDescendants()) do
 		if part:IsA("BasePart") then
@@ -83,20 +72,6 @@ local function buildRig(player, name, heightScale, steps, data)
 	end
 	local rigHumanoid = rig:FindFirstChildOfClass("Humanoid")
 	if rigHumanoid then rigHumanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
-	-- the muscles (built by MuscleClient on the client's copy)
-	local muscleSteps, veins = {}, {}
-	if data then
-		muscleSteps = MuscleBody.StepsFrom(data.muscles, GrowthSpurts.GetGoal(data.growthSpurts))
-		veins = MuscleBody.VeinsFrom(data.muscles, GrowthSpurts.GetLevelCap(data.growthSpurts))
-	end
-	rig:SetAttribute("MuscleSteps", MuscleBody.Encode(muscleSteps))
-	rig:SetAttribute("VeinStages", MuscleBody.Encode(veins))
-	rig:SetAttribute("BodyLook", look)
-	rig:SetAttribute("SkinColor", humanoid and humanoid:GetAttribute("BaseSkinColor") or nil)
-	rig:SetAttribute("TopColor", look == "Gym" and top or nil)
-	rig:SetAttribute("BottomColor", look == "Gym" and bottom or nil)
-	rig:SetAttribute("VeinSeed", player.UserId)
-	CollectionService:AddTag(rig, MuscleBody.Tag)
 	return rig
 end
 
@@ -109,8 +84,8 @@ local function openFor(player)
 	local old = playerGui:FindFirstChild("MirrorRigs")
 	if old then old:Destroy() end
 	local dayOne = data.dayOne or {}
-	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight, nil)
-	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, BodyShape.GroupSteps(data), data)
+	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight, 0)
+	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, BodyService.TierOf(data))
 	if not before or not after then return end
 	local folder = Instance.new("Folder")
 	folder.Name = "MirrorRigs"

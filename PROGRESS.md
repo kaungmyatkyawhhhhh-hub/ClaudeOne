@@ -1,6 +1,6 @@
 # GYM ARC — Progress
 
-Short and current (7 Oct 2026, after the fixes + muscles run). Full history: `git log -p -- PROGRESS.md`.
+Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- PROGRESS.md`.
 
 ## Workflow (no Rojo)
 - No Rojo. **Roblox Studio is the source of truth** (edit through the MCP connection); GitHub is a backup.
@@ -9,10 +9,32 @@ Short and current (7 Oct 2026, after the fixes + muscles run). Full history: `gi
 - World areas are built once from recipes in `tools/builders` (see `tools/bake.md`), then edited as normal parts.
 
 ## First thing to do
-1. **File > Save to Roblox.** This run rebuilt the town, the beach gym, lighting and many scripts in the open place;
-   none of it is saved yet. (`src/` and `tools/builders` have everything if Studio crashed.)
-2. Play once on your own save (gym look, muscles), then Settings > Clothes > My avatar, then once with Workspace
-   `FreshPlayer` on (small body, beach sign says "Opens at Growth Spurt 1"). See "Check these" below.
+1. **File > Save to Roblox.** Fix list 3 changed scripts and map parts in the open place; none of it is saved yet.
+2. Fill in the muscle body ids when you've picked the bodies (guide below), then play once and check the tiers.
+
+## Muscle bodies (fill these in)
+Muscles show as 4 body tiers (`ReplicatedStorage.Shared.Config.MuscleBodies`). Tier 0 is the player's own body. Each
+tier swaps only the torso, arms and legs (through the HumanoidDescription); head, face, hair, accessories, skin color
+and clothes stay the player's own. While a tier's ids are 0 nothing changes, so the game can't break.
+- **Tier = total muscle progress:** the average of all 18 muscles toward the next Growth Spurt goal. Tier 1 at 25%,
+  2 at 50%, 3 at 75%, 4 when every muscle is at the goal (`Thresholds`). A Growth Spurt resets to tier 0.
+  If a tier is empty, the highest filled tier below it is shown.
+- NPC regulars: starter gym = tier 2, pro gym = tier 4 (`NpcTier`); the statue = tier 4 (`StatueTier`). The progress
+  mirror shows Day one = tier 0 and Now = your tier; the live reflection copies your character.
+- Moving up a tier = "You grew! Muscle tier N" (body glow, sound `Grew`, small FOV punch).
+
+**How to find the ids:**
+1. On roblox.com open the Marketplace (Avatar Shop), filter **Category: Bodies** (or search the body you want).
+2. Open the body bundle's page and click each body part listed under "Included items" (Torso, Left Arm, Right Arm,
+   Left Leg, Right Leg). Each part opens its own page: the id is the number in its URL,
+   `roblox.com/catalog/<THIS NUMBER>/Name`. (Use the part pages, not the bundle number.)
+3. In Studio open `ReplicatedStorage > Shared > Config > MuscleBodies` and paste them into the tier, e.g.
+   `[2] = { Torso = 123, LeftArm = 456, RightArm = 789, LeftLeg = 111, RightLeg = 222 },`
+   You can leave a part at 0 to keep the player's own one (e.g. only swap torso and arms).
+4. Pick bodies made by Roblox or trusted creators that look good with classic shirts and pants (clothes wrap the new
+   parts). Play, then check the tier on yourself (Workspace attribute `FreshPlayer` for tier 0), Maya/Theo (tier 2),
+   the pro regulars and the statue (tier 4).
+5. Save the place, then export (`tools/export`) so `src/` has the ids too.
 
 ## Done
 - Player data, saving, 18 muscles, stamina, coins, genetics, height, titles; one reusable machine system.
@@ -26,18 +48,12 @@ Short and current (7 Oct 2026, after the fixes + muscles run). Full history: `gi
 - **Beach gym (7 Oct):** ~3x bigger, open air: 2 pergolas + shade sails over 9 beach machines (3 of each), free weights,
   calisthenics, tires/ropes/sled, entrance arch, rope fence, flags. Area signs show the lock line only while locked.
 - **HUD (7 Oct):** no Lift button (tap anywhere / click / Space), slim pump bar above the machine panel with PUMPED
-  timer and glow, one-time "Tap to pump" hint; body map with real proportions in the right column (folds to a
-  "Stats" chip), training highlight always clears; small Skate button; readable Growth Spurt "Next" line; phone,
-  tablet and 1080p layouts with nothing on the thumbstick or jump button.
-- **Visible muscles (7 Oct):** everyone plays on one smooth Roblox-made base body ("Roblox 2.0" parts) with their own
-  head, face, hair, accessories and skin color. Gym look (default): original tank top + shorts in one of 7 colors
-  (picked from the UserId). 18 muscles are rounded shapes on the body (pecs, 3 delt heads, biceps, triceps, forearms,
-  traps, lats, rhomboids, lower back, 2x3 abs, obliques, glutes, quads, hamstrings, calves), each sized by its own
-  level in 6 steps toward the Growth Spurt goal; width growth is now tiny (no more block). Veins in 3 stages on
-  forearms, biceps, triceps, front delts, calves (and abs/obliques when uncovered), stronger while PUMPED, pattern
-  from the UserId. Settings > Clothes > My avatar keeps the avatar's own clothes. Same system on the mirror (Day one
-  small, Now real), the live reflection, the marble statue (carved veins) and the NPCs (pro big + veins, starter
-  medium). Growth Spurt resets the muscles and veins (height stays).
+  timer and glow, one-time "Tap to pump" hint; small Skate button; readable Growth Spurt "Next" line; phone, tablet
+  and 1080p layouts with nothing on the thumbstick or jump button.
+- **Fix list 3, part 1:** the generated (Blender) muscle meshes, the stage-swap code, the base body, the gym look
+  outfit and the 18 muscle shapes/veins are all gone. Players and NPCs are their normal avatars with their own clothes
+  again (`tools/meshes/` stays on disk only, ignored by git; `ServerStorage.BodyStages` deleted).
+- **Fix list 3, part 2:** muscle body tiers with Marketplace ids (see "Muscle bodies" above), empty for now.
 
 ## In progress
 - Nothing half-built.
@@ -53,45 +69,31 @@ Short and current (7 Oct 2026, after the fixes + muscles run). Full history: `gi
 - **Portrait:** phones/tablets are locked to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`).
 
 ## Check these (things I couldn't fully verify)
-- **Muscles on a real phone with many players:** each body is ~45 parts at level 0 and ~110-140 maxed (veins only
-  build within 90 studs). Fine in Studio; check frame rate on a low-end phone in a full server.
-- **"My avatar" clothes with other avatars:** tested with your avatar (classic shirt + pants: the covered muscles stay
-  hidden under the clothes and the torso/limbs thicken instead). Layered-clothing jackets/sweaters may clip a little
-  over big shoulders; try a couple of avatars.
-- **Emotes and the skateboard with muscles on:** the shapes are welded, so they follow every pose (checked lifting);
-  give a flex emote and a skate a quick look.
+- **Muscle body tiers** with the bodies you pick: tested with Roblox's "Man" torso + arms (clothes, hair and
+  accessories stayed on, height kept). Check your bodies with layered clothing, emotes, the skateboard and lifting.
 - Phone **Menu button**: open and close it once on a real phone (the emulator's mouse tool can't click it there).
 - Lifting on **pro gym machines** as a Growth Spurt 2+ player, and walking through the unlocked glass door.
 - 2-player features (spotting, high fives, crews, arm wrestling vs a player) weren't retested.
 
 ## Known issues
 - Spurts after ~11 get a few minutes longer each (the permanent bonus hits the 5x cap); fine for now.
-- Part count: town ~16,100, gyms ~3,500, plus ~110 per strong player. StreamingEnabled is on; small props don't
-  collide or cast shadows. If phones struggle: MeshPart templates for windows/trees, or fewer vein strands.
-- Your avatar's shirt has no known main color, so with "My avatar" the chest/back/ab shapes are hidden (the torso
-  just gets thicker). Shirts don't expose a color in Roblox; the gym look shows the full muscles.
+- Part count: town ~16,100, gyms ~3,500. StreamingEnabled is on; small props don't collide or cast shadows. If phones
+  struggle: MeshPart templates for windows/trees.
 - Cosmetic headbands can hide under big hair; ProximityPrompts only show when their part is on screen.
 - The live mirror reflection shows your character and the room, not other players.
 
+## Decisions made (fix list 3)
+- Part 1 removed the whole generated-muscle system (base body, gym look, muscle shapes, veins, stage meshes), not just
+  the meshes, because you asked for normal avatars with their own clothes. Old saves that had a gym look outfit
+  equipped just ignore it (the item no longer exists).
+- Part 2: the "you grew" moment only plays when the body really changes (a tier with ids); with empty ids it stays
+  quiet. A tier with no ids shows the highest filled tier below it. Tier progress counts each muscle up to the goal.
+
 ## Decisions made (fixes + muscles run)
-- Base body: Roblox's own "Roblox 2.0" body parts (creator Roblox, checked with GetProductInfo), with classic
-  proportions (body type 0). No Creator Store models were inserted.
-- Gym look is the default for everyone (tank top + shorts colors picked from the UserId: 7 tops, 4 shorts). Shirts,
-  pants, t-shirt graphics and layered clothing are removed in the gym look; hair, hats, face and neck accessories stay.
-- Muscle size: 6 visible steps per muscle per Growth Spurt (step 0 = small/flat, mostly inside the body). Whole-body
-  width/depth growth went from +25/30% to +6%, part thickening from 42% to 10% (or 32% under "My avatar" clothes).
-- Veins: stages at 70% / 90% / 100% of the level cap (not the goal), so they only show on really strong muscles; thin
-  (0.026-0.036 studs), low contrast, max 9 parts per muscle side and 90 per body; PUMPED makes them 25% thicker and a
-  bit darker. Abs/obliques never show veins in the gym look (they're under the tank top).
-- "Keep my avatar clothes": shirts cover torso and arms, pants cover hips and legs (classic clothing paints whole limbs).
-- Statue: the strongest lifter is shown with every muscle maxed and full carved veins (their exact levels aren't
-  loaded while they're offline).
-- NPCs: pro regulars at the top step with stage-2 veins, starter regulars at step 3, no veins.
 - No day/night cycle exists, so the lamps are simply off now; they switch on automatically if the clock ever passes
   18:00 (a future night event or a day cycle needs no extra work).
 - Portrait: the game stays locked to landscape (in the emulator's portrait mode the screen stays landscape).
-- Phones: the body map sits beside the quest panel (only ~200 px above the jump button); corner notes go top left
-  (narrow, max 2, 1 while lifting); the machine panel is left-aligned while lifting.
+- Phones: corner notes go top left (narrow, max 2, 1 while lifting); the machine panel is left-aligned while lifting.
 - Skate button only shows when you're not lifting.
 - Beach gym: racks, benches and pull-up bars there are normal starter machines (open to everyone); the 9 cable machines
   are the beach machines (Growth Spurt 1). Dip bars, monkey bars, rings, tires, ropes and the sled are decoration.

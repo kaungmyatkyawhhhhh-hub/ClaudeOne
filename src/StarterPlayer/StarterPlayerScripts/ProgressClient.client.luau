@@ -1,5 +1,5 @@
 -- ProgressClient: the always-visible Growth Spurt bar (top center), the small "next goal" line under it, and the
--- short "you grew" moment when a muscle group grows a visible step (BodyService fires "Grew").
+-- short "you grew" moment when the body moves up a muscle tier (BodyService fires "Grew").
 --  * The bar fills smoothly with the average progress of the 6 groups toward the next Growth Spurt goal. When every
 --    group is there it says so and a tap does the Growth Spurt (same action as the Stats screen's button).
 --  * The goal line always shows the next small thing (a new weight a few reps away, coins for the next weight, which
@@ -192,7 +192,7 @@ end)
 ------------------------------------------------------------------------
 -- "You grew": a quick pulse on the body, a sound and a small corner note
 ------------------------------------------------------------------------
-local function grewMoment(groups)
+local function grewMoment(tier)
 	local character = player.Character
 	if not character then return end
 	Audio.Play2D("Grew")
@@ -211,17 +211,12 @@ local function grewMoment(groups)
 	local fov = camera.FieldOfView
 	camera.FieldOfView = fov + 3
 	Theme.Tween(camera, { FieldOfView = fov }, 0.35)
-	local names = {}
-	for _, groupId in ipairs(groups) do
-		local group = Muscles.GroupById[groupId]
-		if group then table.insert(names, group.name) end
-	end
-	if #names > 0 then Notify.Show("You grew! Bigger " .. table.concat(names, " and ")) end
+	Notify.Show("You grew! Muscle tier " .. tier)
 end
 
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, payload)
-	if kind == "Grew" and type(payload) == "table" and type(payload.groups) == "table" then
-		grewMoment(payload.groups)
+	if kind == "Grew" and type(payload) == "table" and type(payload.tier) == "number" then
+		grewMoment(payload.tier)
 	end
 end)
 

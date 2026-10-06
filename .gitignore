@@ -15,3 +15,6 @@ tools/.synclist
 # Overnight screenshots (local only)
 screenshots/
 tools/.dev/
+
+# Blender body meshes (not used in the game)
+tools/meshes/
