@@ -261,49 +261,104 @@ function genBodyParts() {
   function smin(a, b, k) { const h = max(k - abs(a - b), 0) / k; return min(a, b) - h * h * k * .25; }
   const smax = (a, b, k) => -smin(-a, -b, k);
 
-  // ---- Anatomy (right side, mirrored with |x|) ----
-  function torso(x, y, z) {
-    const ax = abs(x);
-    let d = ell(ax, y, z, 0, 5.78, -.07, .66, .8, .47);                   // ribcage (widest high, tapering down)
-    d = smin(d, ell(ax, y, z, 0, 4.62, 0, .52, .6, .37), .3);             // abdomen / narrow waist
-    d = smin(d, ell(ax, y, z, 0, 4.14, -.03, .66, .42, .42), .26);         // pelvis
-    d = smin(d, ell(ax, y, z, .54, 5.86, -.2, .3, .55, .27), .22);         // lats (V-taper)
-    d = smin(d, ell(ax, y, z, .34, 6.62, -.1, .42, .3, .27), .3);         // traps
-    d = smin(d, cone(ax, y, z, 0, 6.2, -.03, 0, 7.06, .04, .34, .27), .22); // neck
-    d = smin(d, ell(ax, y, z, .2, 6.2, .22, .5, .22, .2), .2);            // upper chest
-    d = smin(d, ell(ax, y, z, .37, 5.97, .27, .46, .3, .19), .1);          // pecs
-    d = smin(d, ell(ax, y, z, 0, 4.98, .06, .44, .78, .3), .2);          // abdominal wall
-    for (let i = 0; i < 4; i++) d = smin(d, ell(ax, y, z, .155, 5.33 - i * .285, .3, .14, .118, .08), .05); // 8-pack
-    d = smin(d, ell(ax, y, z, .46, 4.78, .06, .15, .36, .2), .16);         // obliques
-    d = smin(d, ell(ax, y, z, .32, 4.12, -.3, .33, .36, .27), .15);        // glutes
-    d = smin(d, ell(ax, y, z, .98, 6.36, -.02, .28, .28, .28), .2);        // shoulder joint (hidden under delts)
-    return d;
+  // ---- Three builds: raw mass (Yoki), classic physique (Ang), lean & shredded (Alton) ----
+  const BUILDS = {
+    mass:    { chestW: 1.08, depth: 1.14, waist: 1.13, lat: 1.08, trap: 1.3,  neck: 1.14, chest: 1.12, abs: 1.0,  absK: .07,  m: 1.16, armM: 1.2, quad: 1.08, pose: 'dbl',    pants: 'sweats' },
+    classic: { chestW: 1.1,  depth: 1.1,  waist: .98,  lat: 1.14, trap: 1.16, neck: 1.1,  chest: 1.2,  abs: 1.04, absK: .045, m: 1.12, armM: 1.3, quad: 1.16, pose: 'most',   pants: 'shorts' },
+    lean:    { chestW: .93,  depth: .9,   waist: .88,  lat: .94,  trap: .82,  neck: .94,  chest: .86,  abs: .96,  absK: .032, m: .86, armM: .92,  quad: .94,  pose: 'behind', pants: 'track' },
+  };
+  function torsoOf(P) {
+    return (x, y, z) => {
+      const ax = abs(x);
+      let d = ell(ax, y, z, 0, 5.78, -.07, .66 * P.chestW, .8, .47 * P.depth);              // ribcage
+      d = smin(d, ell(ax, y, z, 0, 4.62, 0, .52 * P.waist, .6, .37 * P.depth), .3);          // abdomen / waist
+      d = smin(d, ell(ax, y, z, 0, 4.14, -.03, .66 * Math.max(P.waist, .95), .42, .42), .26); // pelvis
+      d = smin(d, ell(ax, y, z, .54 * P.lat, 5.86, -.2, .3 * P.lat, .55, .27), .22);         // lats
+      d = smin(d, ell(ax, y, z, .34, 6.62, -.1, .42 * P.trap, .3 * P.trap, .27 * P.trap), .3); // traps
+      d = smin(d, cone(ax, y, z, 0, 6.2, -.03, 0, 7.06, .04, .34 * P.neck, .27 * P.neck), .22); // neck
+      d = smin(d, ell(ax, y, z, .2, 6.2, .22 * P.depth, .5 * P.chest, .22, .2 * P.chest), .2); // upper chest
+      d = smin(d, ell(ax, y, z, .37 * P.chestW, 5.97, .27 * P.depth + .03 * (P.chest - 1), .46 * P.chest, .3 * P.chest, .19 * P.chest), .1); // pecs
+      d = smin(d, ell(ax, y, z, 0, 4.98, .06, .44 * P.waist, .78, .3 * P.depth), .2);         // abdominal wall
+      for (let i = 0; i < 4; i++) d = smin(d, ell(ax, y, z, .155 * P.abs, 5.33 - i * .285, .3 * P.depth, .14 * P.abs, .118, .08), P.absK); // 8-pack
+      d = smin(d, ell(ax, y, z, .46 * P.waist, 4.78, .06, .15 * P.waist, .36, .2), .16);      // obliques
+      d = smin(d, ell(ax, y, z, .32, 4.12, -.3, .33, .36, .27), .15);                        // glutes
+      d = smin(d, ell(ax, y, z, .98, 6.36, -.02, .28 * P.m, .28 * P.m, .28 * P.m), .2);       // shoulder joint
+      return d;
+    };
   }
-  function arm(x, y, z) { // right arm, front double-biceps pose
-    let d = ell(x, y, z, 1.1, 6.38, 0, .33, .35, .33);                     // deltoid
-    d = smin(d, ell(x, y, z, 1.04, 6.44, .16, .2, .22, .16), .08);         // front delt head
-    d = smin(d, cone(x, y, z, 1.08, 6.42, 0, 1.9, 6.55, .04, .25, .16), .15); // upper arm
-    d = smin(d, ell(x, y, z, 1.52, 6.61, .09, .36, .245, .22), .085);      // biceps peak
-    d = smin(d, ell(x, y, z, 1.5, 6.35, -.08, .38, .19, .21), .09);        // triceps
-    d = smin(d, ell(x, y, z, 1.8, 6.5, .07, .14, .15, .15), .07);          // brachialis
-    d = smin(d, cone(x, y, z, 1.91, 6.55, .04, 1.95, 7.5, .05, .2, .13), .12); // forearm
-    d = smin(d, ell(x, y, z, 1.97, 6.86, .07, .23, .36, .21), .1);         // forearm flexors
-    d = smin(d, ell(x, y, z, 1.94, 7.72, .05, .19, .21, .18), .08);        // fist
-    for (let k = 0; k < 4; k++) d = smin(d, ell(x, y, z, 1.86, 7.86 - k * .07, .17 - k * .015, .06, .045, .05), .03); // knuckles
-    return d;
+  const L3 = (A, B, t, o) => [A[0] + (B[0] - A[0]) * t + o[0], A[1] + (B[1] - A[1]) * t + o[1], A[2] + (B[2] - A[2]) * t + o[2]];
+  const POSES = {
+    // front double biceps: elbows out at shoulder height, fists up by the head
+    dbl:    { S: [1.08, 6.42, 0], E: [1.92, 6.55, .04], W: [1.95, 7.5, .05], F: [1.94, 7.72, .05], bo: [0, .12, .09], to: [0, -.13, -.07], fo: [.02, 0, .05] },
+    // most-muscular crunch: elbows down and forward, fists together in front of the abs
+    most:   { S: [1.08, 6.42, 0], E: [1.34, 5.42, .44], W: [.52, 5.14, .74], F: [.27, 5.1, .8], bo: [-.08, .02, .13], to: [.1, 0, -.11], fo: [0, -.07, .02] },
+    // hands behind the head: elbows up and out, hands clasped behind the skull
+    behind: { S: [1.08, 6.42, 0], E: [1.42, 7.62, -.02], W: [.62, 8.0, -.36], F: [.38, 8.02, -.44], bo: [-.07, 0, .13], to: [.09, 0, -.12], fo: [0, .05, -.05] },
+  };
+  function armOf(P) {
+    const J = POSES[P.pose], m = P.armM, S = J.S, E = J.E, W = J.W, F = J.F;
+    const b1 = L3(S, E, .28, J.bo), b2 = L3(S, E, .72, J.bo), t1 = L3(S, E, .22, J.to), t2 = L3(S, E, .7, J.to), f1 = L3(E, W, .06, J.fo), f2 = L3(E, W, .45, J.fo);
+    const f = (x, y, z) => {
+      let d = ell(x, y, z, 1.1 + (m - 1) * .25, 6.38, 0, .33 * m, .35 * m, .33 * m);                 // deltoid
+      d = smin(d, ell(x, y, z, 1.04, 6.44, .16, .2 * m, .22 * m, .16 * m), .08);                       // front delt
+      d = smin(d, cone(x, y, z, S[0], S[1], S[2], E[0], E[1], E[2], .25 * m, .16 * m), .15);           // upper arm
+      d = smin(d, cone(x, y, z, b1[0], b1[1], b1[2], b2[0], b2[1], b2[2], .21 * m, .19 * m), .1);     // biceps
+      d = smin(d, cone(x, y, z, t1[0], t1[1], t1[2], t2[0], t2[1], t2[2], .19 * m, .15 * m), .1);     // triceps
+      d = smin(d, cone(x, y, z, E[0], E[1], E[2], W[0], W[1], W[2], .2 * m, .13 * m), .12);           // forearm
+      d = smin(d, cone(x, y, z, f1[0], f1[1], f1[2], f2[0], f2[1], f2[2], .19 * m, .14 * m), .1);     // forearm flexors
+      d = smin(d, ell(x, y, z, F[0], F[1], F[2], .18 * m, .2 * m, .17 * m), .08);                      // fist
+      return d;
+    };
+    const pts = [S, E, W, F], lo = [0, 1, 2].map(a => Math.min(...pts.map(p => p[a])) - .55), hi = [0, 1, 2].map(a => Math.max(...pts.map(p => p[a])) + .55);
+    lo[0] = Math.max(lo[0], .2);
+    return { f, lo, hi };
   }
-  function leg(x, y, z) { // right leg
-    let d = cone(x, y, z, .35, 4.3, 0, .32, 2.3, .05, .44, .24);           // thigh
-    d = smin(d, ell(x, y, z, .55, 3.34, .02, .21, .66, .27), .11);         // vastus lateralis (sweep)
-    d = smin(d, ell(x, y, z, .36, 3.26, .21, .2, .68, .17), .09);          // rectus femoris
-    d = smin(d, ell(x, y, z, .2, 2.62, .15, .17, .28, .16), .075);         // vastus medialis (teardrop)
-    d = smin(d, ell(x, y, z, .17, 3.56, -.02, .14, .42, .22), .11);        // adductors
-    d = smin(d, ell(x, y, z, .36, 3.2, -.21, .23, .6, .18), .11);          // hamstrings
-    d = smin(d, ell(x, y, z, .32, 2.22, .08, .14, .14, .14), .09);         // knee
-    d = smin(d, cone(x, y, z, .32, 2.2, .02, .3, .4, 0, .19, .12), .12);   // shin
-    d = smin(d, ell(x, y, z, .41, 1.58, -.09, .19, .5, .2), .07);          // gastrocnemius outer
-    d = smin(d, ell(x, y, z, .23, 1.62, -.09, .18, .48, .2), .07);         // gastrocnemius inner
-    return d;
+  function legOf(P) {
+    const q = P.quad;
+    return (x, y, z) => {
+      let d = cone(x, y, z, .35, 4.3, 0, .32, 2.3, .05, .44 * q, .24 * q);              // thigh
+      d = smin(d, ell(x, y, z, .55 + (q - 1) * .2, 3.34, .02, .21 * q, .66, .27 * q), .11); // vastus lateralis
+      d = smin(d, ell(x, y, z, .36, 3.26, .21 * q, .2 * q, .68, .17 * q), .09);          // rectus femoris
+      d = smin(d, ell(x, y, z, .2, 2.62, .15, .17 * q, .28, .16 * q), .075);             // teardrop
+      d = smin(d, ell(x, y, z, .17, 3.56, -.02, .14 * q, .42, .22 * q), .11);            // adductors
+      d = smin(d, ell(x, y, z, .36, 3.2, -.21 * q, .23 * q, .6, .18 * q), .11);          // hamstrings
+      d = smin(d, ell(x, y, z, .32, 2.22, .08, .14, .14, .14), .09);                     // knee
+      d = smin(d, cone(x, y, z, .32, 2.2, .02, .3, .4, 0, .19, .12), .12);               // shin
+      d = smin(d, ell(x, y, z, .41, 1.58, -.09, .19 * q, .5, .2 * q), .07);              // calves
+      d = smin(d, ell(x, y, z, .23, 1.62, -.09, .18 * q, .48, .2 * q), .07);
+      return d;
+    };
+  }
+  // clothes (right leg in leg space; hips in body space)
+  function pantsLegOf(P) {
+    if (P.pants === 'sweats') return (x, y, z) => {               // baggy joggers with a bunched cuff
+      let d = smin(cone(x, y, z, .37, 4.65, 0, .35, 2.3, .06, .56, .44), cone(x, y, z, .35, 2.3, .06, .32, .66, .02, .44, .36), .2);
+      d = smin(d, ell(x, y, z, .04, 4.2, .02, .34, .48, .5), .2);
+      d = smin(d, cone(x, y, z, .32, .66, .02, .31, .42, .02, .27, .25), .12);
+      d += .018 * Math.sin(y * 17) * Math.max(0, 1 - y / 1.8) + .01 * Math.sin(y * 9 + x * 6);
+      return max(max(d, y - 4.74), .38 - y);
+    };
+    if (P.pants === 'shorts') return (x, y, z) => {               // loose gym shorts above the knee
+      const d = smin(cone(x, y, z, .37, 4.65, 0, .37, 3.0, .04, .52 * P.quad, .46 * P.quad), ell(x, y, z, .04, 4.2, .02, .32, .46, .48), .2) + .006 * Math.sin(y * 20 + z * 10);
+      return max(max(d, y - 4.74), 3.0 - y);
+    };
+    return (x, y, z) => {                                          // slim track pants
+      let d = smin(cone(x, y, z, .37, 4.65, 0, .34, 2.3, .05, .48, .35), cone(x, y, z, .34, 2.3, .05, .31, .5, 0, .35, .26), .18);
+      d = smin(d, ell(x, y, z, .04, 4.2, .02, .3, .44, .46), .2);
+      d += .008 * Math.sin(y * 14);
+      return max(max(d, y - 4.74), .42 - y);
+    };
+  }
+  function stripeOf(P, pantsLeg) { // white side stripe on the track pants
+    return (x, y, z) => max(max(pantsLeg(x, y, z) - .012, abs(z - .1) - .07), .32 - x);
+  }
+  function hipsOf(P, torso) {
+    const pad = P.pants === 'sweats' ? .09 : P.pants === 'shorts' ? .07 : .05;
+    return (x, y, z) => max(max(torso(x, y, z) - pad, y - 4.78), 4.3 - y);
+  }
+  function waistbandOf(P, torso) {
+    const pad = P.pants === 'sweats' ? .11 : P.pants === 'shorts' ? .09 : .07;
+    return (x, y, z) => max(max(torso(x, y, z) - pad, y - 4.86), 4.7 - y);
   }
   function head(x, y, z) {
     const ax = abs(x);
@@ -316,17 +371,6 @@ function genBodyParts() {
     d = smin(d, ell(ax, y, z, .385, 7.45, -.03, .05, .115, .08), .04);     // ears
     d = smax(d, -ell(ax, y, z, .135, 7.5, .36, .085, .048, .06), .04);    // eye sockets
     return d;
-  }
-  function trunks(x, y, z) {
-    const ax = abs(x);
-    let d = min(torso(x, y, z), leg(ax, y, z)) - .035;
-    d = max(d, y - 4.6); d = max(d, 3.86 - y);
-    return max(d, (3.92 + .85 * max(ax - .1, 0)) - y);
-  }
-  function band(x, y, z) {
-    const ax = abs(x);
-    let d = torso(x, y, z) - .052;
-    return max(max(d, y - 4.64), 4.53 - y);
   }
 
   // ---- Surface nets ----
@@ -390,14 +434,29 @@ function genBodyParts() {
     }
     return { pos: P, nor: N, col: Cl, idx: new Uint32Array(I) };
   }
-  return {
-    torso:  mesh(torso, -.06, 3.6, -.72, 1.42, 7.15, .68, .032, true),
-    arm:    mesh(arm, .66, 5.95, -.38, 2.22, 8.0, .42, .028, false),
-    leg:    mesh(leg, -.08, .3, -.5, .82, 4.6, .52, .032, false),
-    head:   mesh(head, -.05, 6.95, -.52, .52, 8.08, .58, .022, true),
-    trunks: mesh(trunks, -.05, 3.78, -.68, .9, 4.68, .62, .026, true),
-    band:   mesh(band, -.05, 4.48, -.68, .82, 4.7, .55, .022, true),
-  };
+  function beard(x, y, z) { // trimmed beard that follows the jaw, with the mouth left open
+    const ax = abs(x);
+    let d = head(x, y, z) - .022;
+    d = max(d, y - (7.33 + .3 * max(0, ax - .26)));
+    d = max(d, -z - .02);
+    d = smax(d, -ell(ax, y, z, 0, 7.235, .4, .12, .05, .12), .025);
+    return d;
+  }
+  const out = { head: mesh(head, -.05, 6.95, -.52, .52, 8.08, .58, .022, true), beard: mesh(beard, -.05, 6.9, -.1, .5, 7.62, .56, .016, true) };
+  for (const [name, P] of Object.entries(BUILDS)) {
+    const torso = torsoOf(P), A = armOf(P), legF = legOf(P), pl = pantsLegOf(P);
+    const o = {
+      torso: mesh(torso, -.06, 3.6, -.78, 1.5, 7.2, .78, .032, true),
+      arm:   mesh(A.f, A.lo[0], A.lo[1], A.lo[2], A.hi[0], A.hi[1], A.hi[2], .028, false),
+      pantsLeg: mesh(pl, -.12, .32, -.66, .98, 4.78, .7, .03, false),
+      hips: mesh(hipsOf(P, torso), -.05, 3.85, -.8, 1.0, 4.82, .72, .03, true),
+      waistband: mesh(waistbandOf(P, torso), -.05, 4.62, -.8, 1.0, 4.9, .72, .024, true),
+    };
+    if (P.pants === 'shorts') o.leg = mesh(legF, -.08, .3, -.5, .86, 4.6, .55, .034, false);
+    if (P.pants === 'track') o.stripe = mesh(stripeOf(P, pl), .28, .4, -.2, .98, 4.78, .24, .02, false);
+    out[name] = o;
+  }
+  return out;
 }
 
 /* ================= Data ================= */
@@ -422,11 +481,11 @@ const UPGRADES = [
   { id: 'stagep',   name: 'Championship Stage', type: 'auto',  amount: 12000, base: 3000000, line: 'The big stage!' },
 ];
 const CHARS = {
-  yoki:  { name: 'Yoki',  color: '#ffc94a', skin: 0xa96d43, trunks: 0xf2f3f7, band: 0xffc94a, hair: 0x0e0e13, scale: [1, 1, 1],
+  yoki:  { name: 'Yoki',  color: '#ffc94a', skin: 0xa96d43, build: 'mass', pants: 0x8e9199, pband: 0x7a7d86, shoe: 0xf5f6fa, hair: 0x0e0e13, scale: [1.03, 1, 1.03], curl: .3,
            click: ['LIGHT WEIGHT!', 'YEAH BUDDY!', 'One more rep!', 'Feel the pump!', "Let's go!"], cheer: ['Nice one, bro!', 'YEAH BUDDY!'], hi: "Yo! I'm Yoki." },
-  ang:   { name: 'Ang',   color: '#6ea8ff', skin: 0xbb8257, trunks: 0x1c1d28, band: 0xe0505e, hair: 0x101016, scale: [.97, 1.01, .97],
+  ang:   { name: 'Ang',   color: '#6ea8ff', skin: 0xa36a42, build: 'classic', pants: 0x17171e, pband: 0x0f0f14, shoe: 0x1b1b22, hair: 0x1a120c, scale: [1, 1, 1], curl: .14,
            click: ['Calculated.', 'Big brain, big gains.', 'Science says: more reps.', 'As predicted.', 'Textbook form.'], cheer: ['Statistically impressive.', 'Good form!'], hi: "Ang. Let's be smart about this." },
-  alton: { name: 'Alton', color: '#ff6b7d', skin: 0x925e38, trunks: 0xf7f8fb, band: 0x5b8cff, hair: 0x0c0c11, scale: [1.03, .99, 1.03],
+  alton: { name: 'Alton', color: '#ff6b7d', skin: 0x925e38, build: 'lean', pants: 0x131318, pband: 0x0c0c10, shoe: 0xf5f6fa, hair: 0x0c0c11, scale: [.98, 1.03, .98], curl: .08,
            click: ['AAAAHHH!', 'BLEHHH!', "Let's goooo!", 'WOOOO!', 'Hehehe!'], cheer: ['BLEHHH! NICE!', 'WOOOO!'], hi: 'ALTON IN THE BUILDING!' },
 };
 const KEYS = Object.keys(CHARS);
@@ -515,7 +574,7 @@ function loadThree(i = 0) {
 function sculpt() {
   return new Promise(res => {
     try {
-      const src = `${genBodyParts.toString()}\nself.onmessage = () => { const r = genBodyParts(), tr = []; for (const k in r) tr.push(r[k].pos.buffer, r[k].nor.buffer, r[k].col.buffer, r[k].idx.buffer); self.postMessage(r, tr); };`;
+      const src = `${genBodyParts.toString()}\nself.onmessage = () => { const r = genBodyParts(), tr = []; const walk = o => { if (o.pos) tr.push(o.pos.buffer, o.nor.buffer, o.col.buffer, o.idx.buffer); else for (const k in o) walk(o[k]); }; walk(r); self.postMessage(r, tr); };`;
       const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
       w.onmessage = e => { res(e.data); w.terminate(); };
       w.onerror = () => { w.terminate(); res(genBodyParts()); };
@@ -662,26 +721,32 @@ function buildLifter(key, i) {
   const body = new THREE.Group(); root.add(body);
   const meshes = [];
   const part = (g, m, parent, off = [0, 0, 0]) => { const o = mk(g, m, off, null, parent); meshes.push(o); return o; };
-  part(G.torso, skin, body);
-  part(G.trunks, std(c.trunks, { roughness: .55, vertexColors: true }), body);
-  part(G.band, std(c.band, { roughness: .4, metalness: .2 }), body);
+  const B = G[c.build], cloth = std(c.pants, { roughness: .85, vertexColors: true }), clothBand = std(c.pband, { roughness: .8, vertexColors: true });
+  part(B.torso, skin, body);
+  part(B.hips, cloth, body);
+  part(B.waistband, clothBand, body);
+  if (c.build === 'mass') for (const s of [1, -1]) { const cord = mk(new THREE.CylinderGeometry(.012, .012, .42, 6), white, [s * .07, 4.55, .5], null, body); cord.rotation.z = s * .08; mk(new THREE.SphereGeometry(.025, 8, 6), white, [s * .085, 4.34, .5], null, body); }
   // arms pivot at the shoulders; the left side is the right arm mirrored
   const arms = [1, -1].map(s => {
     const pv = new THREE.Group(); pv.position.set(s * SHOULDER[0], SHOULDER[1], 0); pv.scale.x = s; body.add(pv);
-    const m = part(G.arm, skin, pv, [-SHOULDER[0], -SHOULDER[1], 0]);
-    const wb = mk(new THREE.TorusGeometry(.16, .055, 10, 24), std(c.band, { roughness: .5 }), [1.95, 7.42, .05], null, m); wb.rotation.x = Math.PI / 2;
+    part(B.arm, skin, pv, [-SHOULDER[0], -SHOULDER[1], 0]);
     return { pv, s };
   });
   const legs = [1, -1].map(s => {
     const pv = new THREE.Group(); pv.position.set(s * HIP[0], HIP[1], 0); pv.scale.x = s; body.add(pv);
-    const m = part(G.leg, skin, pv, [-HIP[0], -HIP[1], 0]);
-    mk(new THREE.SphereGeometry(.2, 18, 12), white, [.31, .16, .1], [1, .7, 1.75], m);
-    mk(new THREE.CylinderGeometry(.21, .23, .07, 18), std(c.band, { roughness: .4 }), [.31, .04, .1], [1, 1, 1.8], m);
+    const hold = new THREE.Group(); hold.position.set(-HIP[0], -HIP[1], 0); pv.add(hold);
+    if (B.leg) part(B.leg, skin, hold);
+    part(B.pantsLeg, cloth, hold);
+    if (B.stripe) part(B.stripe, std(0xf5f6fa, { roughness: .6, vertexColors: true }), hold);
+    const shoe = std(c.shoe, { roughness: .45 });
+    mk(new THREE.SphereGeometry(.21, 18, 12), shoe, [.31, .17, .12], [1.05, .72, 1.8], hold);
+    mk(new THREE.CylinderGeometry(.22, .24, .07, 18), std(c.build === 'classic' ? 0xf5f6fa : 0x2a2b33, { roughness: .5 }), [.31, .04, .12], [1, 1, 1.85], hold);
     return { pv, s };
   });
   // head
   const head = new THREE.Group(); head.position.set(...NECK); body.add(head);
   const hm = part(G.head, skin, head, [0, -NECK[1], 0]);
+  if (key === 'ang') part(G.beard, std(0x3a2617, { roughness: .95, vertexColors: true }), head, [0, -NECK[1], 0]);
   const F = new THREE.Group(); F.position.set(0, -NECK[1], 0); head.add(F);
   const eyes = [1, -1].map(s => {
     const e = new THREE.Group(); e.position.set(s * .135, 7.5, .335); F.add(e);
@@ -710,15 +775,18 @@ function buildLifter(key, i) {
   }
   // hair
   if (key === 'yoki') {
-    const cap = mk(new THREE.SphereGeometry(.4, 32, 16, 0, Math.PI * 2, 0, Math.PI * .5), hairM, [0, 7.6, -.05], [.99, 1.1, 1.12], F); cap.rotation.x = -.42;
-    for (let k = 0; k < 22; k++) { const th = k / 22 * Math.PI * 2, ph = .25 + (k % 3) * .22, R = .43;
-      const p = new THREE.Vector3(Math.sin(ph) * Math.cos(th) * R, Math.cos(ph) * R * 1.05, Math.sin(ph) * Math.sin(th) * R - .07);
-      const sp = mk(new THREE.ConeGeometry(.075, .22, 7), hairM, [p.x, 7.62 + p.y, p.z], null, F);
-      sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p.clone().normalize().add(new THREE.Vector3(0, .5, -.2)).normalize()); }
-    for (let k = 0; k < 6; k++) { const sp = mk(new THREE.ConeGeometry(.06, .2, 7), hairM, [-.22 + k * .09, 7.9, .3], null, F); sp.rotation.set(1.75, 0, (k - 2.5) * .18); }
+    const capM = std(0x15151c, { roughness: .7 });
+    const crown = mk(new THREE.SphereGeometry(.42, 32, 16, 0, Math.PI * 2, 0, Math.PI * .5), capM, [0, 7.66, -.04], [1.02, .95, 1.07], F); crown.rotation.x = .08;
+    mk(new THREE.TorusGeometry(.415, .025, 8, 40), capM, [0, 7.66, -.04], [1.02, 1.07, 1], F).rotation.x = Math.PI / 2;
+    const brim = mk(new THREE.CylinderGeometry(.3, .3, .03, 32, 1, false, Math.PI * .5, Math.PI), capM, [0, 7.69, -.43], [1.05, 1, 1.2], F); brim.rotation.x = -.22;
+    mk(new THREE.CircleGeometry(.06, 16), std(0xf5f6fa), [0, 7.86, -.43], null, F, false).rotation.set(Math.PI + .5, 0, 0);
+    mk(new THREE.BoxGeometry(.2, .05, .02), std(0xf5f6fa), [0, 7.74, .4], null, F, false);
+    for (const s of [1, -1]) for (let k = 0; k < 5; k++) mk(new THREE.SphereGeometry(.07, 10, 8), hairM, [s * (.36 - k * .015), 7.6 - k * .045, -.08 - k * .06], null, F);
+    for (let k = 0; k < 7; k++) mk(new THREE.SphereGeometry(.075, 10, 8), hairM, [-.27 + k * .09, 7.52 - Math.abs(k - 3) * .01, -.38], null, F);
+    for (const s of [1, -1]) { const st = mk(new THREE.SphereGeometry(.06, 12, 8), hairM, [s * .065, 7.325, .435], [1.35, .38, .55], F, false); st.rotation.z = s * -.18; }
   } else if (key === 'ang') {
-    const cap = mk(new THREE.SphereGeometry(.4, 32, 16, 0, Math.PI * 2, 0, Math.PI * .5), hairM, [0, 7.6, -.05], [.99, 1.08, 1.12], F); cap.rotation.x = -.24;
-    const fr = mk(new THREE.SphereGeometry(.3, 24, 12), hairM, [.07, 7.94, .2], [1.15, .3, .7], F); fr.rotation.set(-.35, 0, .3);
+    const cap = mk(new THREE.SphereGeometry(.4, 32, 16, 0, Math.PI * 2, 0, Math.PI * .45), hairM, [0, 7.62, -.04], [.98, 1.02, 1.08], F); cap.rotation.x = -.28;
+    const pomp = mk(new THREE.SphereGeometry(.2, 20, 12), hairM, [.02, 7.95, .18], [1.25, .3, .6], F); pomp.rotation.set(-.25, 0, .1);
     const frame = std(0x16161e, { metalness: .6, roughness: .25 }), lens = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: .18, roughness: .05, metalness: 0, clearcoat: 1 });
     for (const s of [1, -1]) { mk(new THREE.TorusGeometry(.085, .012, 8, 28), frame, [s * .135, 7.5, .425], [1.18, 1, 1], F, false); mk(new THREE.CircleGeometry(.085, 24), lens, [s * .135, 7.5, .42], [1.18, 1, 1], F, false);
       mk(new THREE.BoxGeometry(.012, .012, .34), frame, [s * .3, 7.51, .26], null, F, false); }
@@ -1048,9 +1116,9 @@ function frame(now) {
     l.legs[0].pv.rotation.x = lerp(l.legs[0].pv.rotation.x, stride, .3); l.legs[1].pv.rotation.x = lerp(l.legs[1].pv.rotation.x, -stride, .3);
     // arms: squeeze on taps, wave, dance pump
     l.curlL = Math.max(0, l.curlL - dt * 5); l.curlR = Math.max(0, l.curlR - dt * 5);
-    let aR = l.curlR * .3 + (walking ? Math.sin(t * 7.5) * .06 : 0), aL = l.curlL * .3 - (walking ? Math.sin(t * 7.5) * .06 : 0);
-    if (waving && !dancing) aR += .25 + Math.sin(t * 11) * .3;
-    if (dancing) { aR += Math.sin(t * 6) * .35; aL -= Math.sin(t * 6) * .35; }
+    const ca = l.c.curl; let aR = l.curlR * ca + (walking ? Math.sin(t * 7.5) * ca * .2 : 0), aL = l.curlL * ca - (walking ? Math.sin(t * 7.5) * ca * .2 : 0);
+    if (waving && !dancing) aR += (.25 + Math.sin(t * 11) * .3) * ca / .3;
+    if (dancing) { aR += Math.sin(t * 6) * ca; aL -= Math.sin(t * 6) * ca; }
     l.arms[0].pv.rotation.z = lerp(l.arms[0].pv.rotation.z, aR, .35);
     l.arms[1].pv.rotation.z = lerp(l.arms[1].pv.rotation.z, -aL, .35);
     // face: mood, blink, look at the pointer
@@ -1118,7 +1186,8 @@ async function boot(data) {
     buildWorld(); buildConfetti();
     $('loadText').textContent = 'Sculpting muscles…';
     const parts = await sculpt();
-    for (const k in parts) G[k] = geom(parts[k]);
+    const toGeo = o => o.pos ? geom(o) : Object.fromEntries(Object.entries(o).map(([k, v]) => [k, toGeo(v)]));
+    G = toGeo(parts);
     lifters = KEYS.map((k, i) => buildLifter(k, i)); L = Object.fromEntries(lifters.map(l => [l.key, l]));
     buildCards(); setupInput();
   } catch (e) {
