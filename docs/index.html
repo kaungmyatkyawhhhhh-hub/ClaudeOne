@@ -2349,7 +2349,7 @@ function worldEventEnd(){
 function eventArrive(){
   if(!EV)return;
   if(EV.type==="sale"){openRoom("sale");return}
-  if(EV.type==="wallet"){const v=Math.round(Math.max(80,S.cash*rnd(.03,.08)));S.cash+=v;dirty=true;SFX.sell();banner("Found "+fmt(v),"g");EV=null;nextEvT=rnd(45,90)}
+  if(EV.type==="wallet"){const v=Math.round(Math.max(80,rwBase()*rnd(.03,.08)));S.cash+=v;dirty=true;SFX.sell();banner("Found "+fmt(v),"g");EV=null;nextEvT=rnd(45,90)}
   else if(EV.type==="food"){S.energy=maxEnergy();dirty=true;SFX.level();banner("Energy refilled","u");EV=null;nextEvT=rnd(45,90)}
 }
 function renderEvChip(){
@@ -2631,7 +2631,7 @@ function crAnim(){const R=RACE;if(!R||!R.t0)return;const e=(performance.now()-R.
   if(!all&&RACE===R&&$("crTrack"))requestAnimationFrame(crAnim);else if(all)crFinish()}
 function crCheck(){const R=RACE;if(!R||!R.peer||R.myT==null)return;if(R.peerT!=null){R.lanes[1].T=R.peerT;if(R.peerCar)R.lanes[1].n=R.peer.n+" · "+R.peerCar}}
 function crFinish(){const R=RACE;if(!R||R.done)return;R.done=true;const order=R.lanes.slice().sort((a,b)=>a.T-b.T),place=order.findIndex(l=>l.me)+1;let msg="";
-  if(R.peer){const win=place===1;S.stats.crWins=(S.stats.crWins||0)+(win?1:0);if(win){const v=Math.round(Math.max(5000,wealth()*.02));earn(v);hype(3);confetti(160);shake(7);SFX.rebirth();banner("You beat "+R.peer.n,"g");msg="You won! +"+fmt(v)}else{SFX.loss();banner(R.peer.n+" wins","r");msg=R.peer.n+" took it."}}
+  if(R.peer){const win=place===1;S.stats.crWins=(S.stats.crWins||0)+(win?1:0);if(win){const v=Math.round(Math.max(5000,rwBase()*.02));earn(v);hype(3);confetti(160);shake(7);SFX.rebirth();banner("You beat "+R.peer.n,"g");msg="You won! +"+fmt(v)}else{SFX.loss();banner(R.peer.n+" wins","r");msg=R.peer.n+" took it."}}
   else{if(place===1){earn(R.prize1);hype(2);confetti(140);shake(6);SFX.rebirth();banner("1st place! +"+fmt(R.prize1),"g");msg="1st place!"}else if(place===2&&R.prize2){earn(R.prize2);SFX.level();banner("2nd place · bet back","a");msg="2nd place, bet back."}else{SFX.loss();banner(order[0].n+" wins","r");msg=["","","2nd","3rd","4th"][place]+" place."}}
   dirty=true;updMini();const m=$("rMsg");if(m)m.textContent=R.launchTxt+" "+msg+" Times: "+order.map(l=>l.n.split(" · ")[0]+" "+l.T.toFixed(2)+"s").join(" · ");
   const g=$("goBtn");if(g){g.disabled=false;g.innerHTML="Back<small>To the meet</small>";g.onclick=()=>{RACE=null;R.back&&R.back()}}}
@@ -2803,7 +2803,7 @@ function pickFind(f){
   const give=it=>{const c=CAT[it.cat],cond=pick(c.conds);S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:rnd(.97,1.03),fake:false,paid:0});return it.name};
   if(f.gold){setTimeout(()=>gainCrate(),900);confetti(80);flash("#ffcc33",.3);const it=pick(pool.slice().sort((a,b)=>b.base-a.base).slice(0,5));SFX.grail();buzz([20,40,20,40]);banner("Golden find","g");
     if(room_)rayText("You found a "+give(it)+" just lying there. It's in your stash.");else{const v=Math.round(it.base*.6);earn(v);rayText("Golden find, but your stash is full. Sold it on the spot for "+fmt(v)+".")}return}
-  if(r<.4||!room_&&r<.75){const v=Math.round(Math.max(rnd(15,45)*(1+repLevel()*.5),(S.cash+stashVal())*rnd(.01,.03)));earn(v);SFX.sell();banner("Found "+fmt(v),"g")}
+  if(r<.4||!room_&&r<.75){const v=Math.round(Math.max(rnd(15,45)*(1+repLevel()*.5),rwBase()*rnd(.01,.03)));earn(v);SFX.sell();banner("Found "+fmt(v),"g")}
   else if(r<.75){const n=give(pick(pool.filter(p=>p.base<=Math.max(200,(S.cash+stashVal())*.3)).concat(pool.slice(0,1))));SFX.reveal();banner("Found: "+n,"g")}
   else{S.energy=Math.min(maxEnergy(),S.energy+30);SFX.level();banner("Free snack · +30 energy","u")}
 }
@@ -2868,7 +2868,7 @@ function levelCheck(){
 }
 function renderLvlBtn(){const b=$("lvlBtn");if(!b||!S)return;const on=S.picks>0&&$("perkSheet").hidden;b.hidden=!on;if(on)$("lvlN").textContent=S.picks}
 function closePerkSheet(){const sh=$("perkSheet");sh.hidden=true;sh.innerHTML="";S.pickNew=0;dirty=true;renderLvlBtn()}
-const perkCash=()=>Math.round(Math.max(5000*(1+repLevel()),S.cash*.05));
+const perkCash=()=>Math.round(Math.max(5000*(1+repLevel()),rwBase()*.05));
 function makeOffer(){const av=PERK_POOL().filter(c=>pk(c.k)<pcap(c.k));if(!av.length)return[0,1,2].map(i=>({k:"cash",t:["Cash bonus","Big payday","Bonus check"][i],d:"Every perk is maxed. Take "+fmt(perkCash()*(i+1)),rt:i,m:1}));return av.sort(()=>Math.random()-.5).slice(0,3).map(c=>{const r=Math.random(),t=r<.025?3:r<.12?2:r<.36?1:0,m=Math.min([1,2,3,5][t],pcap(c.k)-pk(c.k)),cap=c.k==="fees"?75:c.k==="cafe"?60:1e9;return{...c,rt:t,m,d:c.d.replace(/\d+/,n=>Math.min(cap,+n*m)).replace(/slot$/,m>1?"slots":"slot")}})}
 // Use every waiting pick at once: each one takes a random card from its own set of 3
 function collectAllPerks(){
@@ -4014,14 +4014,14 @@ function openBoutique(back,cosmic){S.accOwn=S.accOwn||{};S.acc=S.acc||{};const i
 
 /* ================= luck: daily prize wheel, scratch cards, room leaderboard ================= */
 const WHEEL=[
- {t:"Cash",c:"#2fd28a",w:22,fx:()=>{const v=Math.max(500,Math.round((S.cash+(S.bank||0))*.02+1000*(1+SC())));earn(v);return "+"+fmt(v)}},
+ {t:"Cash",c:"#2fd28a",w:22,fx:()=>{const v=Math.max(500,Math.round(rwBase()*.02+1000*(1+SC())));earn(v);return "+"+fmt(v)}},
  {t:"Crate",c:"#ffcc33",w:18,fx:()=>{gainCrate(1);return "+1 crate"}},
  {t:"Energy",c:"#4fe3ff",w:16,fx:()=>{S.energy=maxEnergy();return "Full energy"}},
  {t:"Hype",c:"#ff4fd8",w:14,fx:()=>{S.buffs.hype=Math.max(S.buffs.hype||0,180);return "3 min of hype"}},
- {t:"Big cash",c:"#1f9d5b",w:10,fx:()=>{const v=Math.max(5000,Math.round((S.cash+(S.bank||0))*.08+5000*(1+SC())));earn(v);return "+"+fmt(v)}},
+ {t:"Big cash",c:"#1f9d5b",w:10,fx:()=>{const v=Math.max(5000,Math.round(rwBase()*.08+5000*(1+SC())));earn(v);return "+"+fmt(v)}},
  {t:"3 crates",c:"#cf9a14",w:8,fx:()=>{gainCrate(3);return "+3 crates"}},
  {t:"Fans",c:"#7a2fd6",w:9,fx:()=>{const f=Math.round(100+(S.fans||0)*.05);S.fans=(S.fans||0)+f;return "+"+fmtN(f)+" fans"}},
- {t:"JACKPOT",c:"#d6384b",w:3,fx:()=>{const v=Math.max(50000,Math.round((S.cash+(S.bank||0))*.25+50000*(1+SC())));earn(v);gainCrate(5);return "JACKPOT +"+fmt(v)+" and 5 crates"}}];
+ {t:"JACKPOT",c:"#d6384b",w:3,fx:()=>{const v=Math.max(50000,Math.round(rwBase()*.25+50000*(1+SC())));earn(v);gainCrate(5);return "JACKPOT +"+fmt(v)+" and 5 crates"}}];
 function wheelReady(){return !S.wheelD||S.wheelD!==dayKey()}
 function openWheel(back){let busy=false,rot=0;const n=WHEEL.length,seg=360/n;
   const svg=`<svg viewBox="-110 -110 220 220" class="rwheel"><g id="wh">${WHEEL.map((w,i)=>{const a0=(i*seg-90)*Math.PI/180,a1=((i+1)*seg-90)*Math.PI/180,R=100;const mid=(i+.5)*seg;return `<path d="M0 0 L${Math.cos(a0)*R} ${Math.sin(a0)*R} A${R} ${R} 0 0 1 ${Math.cos(a1)*R} ${Math.sin(a1)*R}Z" fill="${w.c}" stroke="#fff" stroke-width="2"/><text transform="rotate(${mid}) translate(0 -64) rotate(0)" text-anchor="middle" font-family="var(--display)" font-weight="900" font-size="${w.t.length>6?9:11}" fill="#fff">${w.t.toUpperCase()}</text>`}).join("")}${Array.from({length:n},(_,i)=>`<circle cx="${Math.cos((i*seg-90)*Math.PI/180)*100}" cy="${Math.sin((i*seg-90)*Math.PI/180)*100}" r="3" fill="#fff"/>`).join("")}<circle r="16" fill="#fff"/><circle r="10" fill="#2a3cff"/></g><path d="M0 -112 L-9 -96 H9Z" fill="#141824"/></svg>`;
@@ -5679,7 +5679,7 @@ function bgoalHTML(){S.bgDone=S.bgDone||{};const g=BGOALS.find(x=>x.k===S.bgoal)
     <div class="lbtabs wrap">${BGOALS.map(x=>`<button class="${S.bgoal===x.k?"on":""}${S.bgDone[x.k]?" done":""}" data-bgoal="${x.k}">${S.bgDone[x.k]?"✓ ":""}${x.n}</button>`).join("")}</div></div>`}
 document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-bgoal],[data-bgclaim],[data-gymup]");if(!t||!S)return;
   if(t.dataset.bgoal){S.bgoal=t.dataset.bgoal;dirty=true;SFX.tick(.5)}
-  if(t.dataset.bgclaim){const g=BGOALS.find(x=>x.k===S.bgoal);if(!g||g.v()<g.t||S.bgDone[g.k])return;S.bgDone[g.k]=1;const v=Math.round(Math.max(2e4,netWorth()*.01));earn(v);gainCrate(3);dirty=true;SFX.grail();confetti(160);banner("Body goal reached! +"+fmt(v),"g");const nx=BGOALS.find(x=>!S.bgDone[x.k]);S.bgoal=nx?nx.k:null}
+  if(t.dataset.bgclaim){const g=BGOALS.find(x=>x.k===S.bgoal);if(!g||g.v()<g.t||S.bgDone[g.k])return;S.bgDone[g.k]=1;const v=Math.round(Math.max(2e4,rwBase()*.01));earn(v);gainCrate(3);dirty=true;SFX.grail();confetti(160);banner("Body goal reached! +"+fmt(v),"g");const nx=BGOALS.find(x=>!S.bgDone[x.k]);S.bgoal=nx?nx.k:null}
   if(t.dataset.gymup){const L=GYMLV[gymLv()];if(!L||S.cash<L.c)return;S.cash-=L.c;S.gymOwn=gymLv()+1;dirty=true;SFX.rebirth();confetti(160);banner(gymLv()===1?"Iron House is yours!":"Iron House upgraded","g");updMini()}
   const box=t.closest(".bgoal");if(box)box.outerHTML=bgoalHTML();const gb=t.closest(".gymown");if(gb)gb.outerHTML=gymOwnHTML()});
 function gymOwnHTML(){const L=gymLv(),N=GYMLV[L];return `<div class="gymown"><div class="sechead"><h3>Own Iron House</h3><span class="eyebrow">${L?"Level "+L+" · "+fmt(gymIncome())+"/min":"Not yours yet"}</span></div>
@@ -5717,7 +5717,7 @@ function planetPlaces(){const k=SCN.k,P=PLANETS[k],L=[],add=o=>{o.door=o.door||[
   add({k:"pmkt",n:P.n+" Market",short:"Market",sub:"Space rocks sell for 25% more here",c:P.tone==="#cfd6e4"?"#5f6b7e":"#c2410c",x:260,y:360,w:260,h:150,go:()=>{room="cosmos";openMarket({...COSMOS_MKT,k:k+"mkt",n:P.n+" Market",sell:1.25});backTo(closeRoom)}});
   add({k:"mine",n:"Mining site",verb:"Work the",sub:"Dig for "+(k==="moon"?"moon rocks":"Martian crystals")+" · 10 energy",c:"#cf9a14",x:1060,y:380,w:200,h:120,bld:0,go:()=>planetMine(k)});
   add({k:"base",n:k==="moon"?"Lunar base":"Mars habitat",sub:"Rest inside: full energy (every 5 min)",c:"#2a5bd7",x:640,y:240,w:300,h:170,go:()=>{if(!coolOk("pbase",300000))return;S.energy=maxEnergy();SFX.level();banner("Rested in the "+(k==="moon"?"base":"habitat"),"u");updMini()}});
-  if(!(S.flags["flag_"+k]))add({k:"flag",n:"Plant your flag",verb:"",sub:"Claim this world for yourself",c:"#e2364a",x:760,y:760,w:80,h:40,bld:0,go:()=>{S.flags["flag_"+k]=1;const v=Math.round(Math.max(1e6,netWorth()*.02));earn(v);gainCrate(5);dirty=true;SFX.rebirth();confetti(220,null,null,["#e2364a","#fff","#ffcc33"]);banner("Flag planted on "+P.n+"! +"+fmt(v),"g");SCN.sig="";bKey=""}});
+  if(!(S.flags["flag_"+k]))add({k:"flag",n:"Plant your flag",verb:"",sub:"Claim this world for yourself",c:"#e2364a",x:760,y:760,w:80,h:40,bld:0,go:()=>{S.flags["flag_"+k]=1;const v=Math.round(Math.max(1e6,rwBase()*.02));earn(v);gainCrate(5);dirty=true;SFX.rebirth();confetti(220,null,null,["#e2364a","#fff","#ffcc33"]);banner("Flag planted on "+P.n+"! +"+fmt(v),"g");SCN.sig="";bKey=""}});
   add({k:"shuttle",n:"Shuttle",verb:"Board the",sub:"Back to the space station",c:"#4fe3ff",x:740,y:1010,w:120,h:60,bld:0,go:()=>leaveScene()});
   return L}
 function buildPlanet(){const k=SCN.k,P=PLANETS[k],g=SCN_C.getContext("2d");SCN_C.width=PW;SCN_C.height=PH;let sd=k.length*13+5;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
@@ -5913,7 +5913,7 @@ function thiefTick(dt){if(!playing||(S.tut!=null&&S.tut<6))return;
   if(!THIEF){if(room)return;thiefT-=dt;if(thiefT>0)return;thiefT=rnd(80,150);
     for(let t=0;t<40;t++){const a=Math.random()*7,r=rnd(170,260),x=S.px+Math.cos(a)*r,y=S.py+Math.sin(a)*r;if(!npcBlocked(x,y)){THIEF={x,y,t:25,ph:0};banner("🦹 Thief! Tap him to give chase","r");SFX.hot();buzz([40,30,40]);return}}return}
   const T=THIEF;T.t-=dt;T.ph+=dt;const dx=T.x-S.px,dy=T.y-S.py,d=Math.hypot(dx,dy);
-  if(d<30&&!room){THIEF=null;const v=Math.round(Math.max(300,(S.cash+stashVal())*rnd(.06,.12)));earn(v);hype(4);gainCrate(3);S.stats.thieves=(S.stats.thieves||0)+1;dirty=true;SFX.grail();shake(8,.5);confetti(160);flash("#2fd28a",.35);buzz([30,30,60]);banner("Caught the thief! +"+fmt(v),"g");return}
+  if(d<30&&!room){THIEF=null;const v=Math.round(Math.max(300,rwBase()*rnd(.06,.12)));earn(v);hype(4);gainCrate(3);S.stats.thieves=(S.stats.thieves||0)+1;dirty=true;SFX.grail();shake(8,.5);confetti(160);flash("#2fd28a",.35);buzz([30,30,60]);banner("Caught the thief! +"+fmt(v),"g");return}
   if(T.t<=0){THIEF=null;const lost=Math.round(S.cash*.03);S.cash-=lost;dirty=true;banner("The thief got away with "+fmt(lost),"r");SFX.loss();shake(5,.3);return}
   if(moving&&target&&Math.hypot(target[0]-T.x,target[1]-T.y)<110)target=[T.x,T.y];// keep chasing once you've tapped him
   const sp=walkSpeed()*.8*dt,base=Math.atan2(dy,dx)+Math.sin(T.ph*3)*.6;
@@ -6078,7 +6078,7 @@ function chK(){return S?1+.1*Math.min(10,S.chS||0):1}
 const wealth=()=>S.cash+stashVal()+(S.bank||0);
 const CHAL=[
  {k:"sell",n:()=>3+Math.floor(Math.random()*4),dur:90,t:n=>"Sell "+n+" items",v:()=>S.stats.flips},
- {k:"earn",n:()=>Math.round(Math.max(800,wealth()*rnd(.03,.06))),dur:80,t:n=>"Earn "+fmt(n),v:()=>S.stats.earnedAll,money:1},
+ {k:"earn",n:()=>Math.round(Math.max(800,rwBase()*rnd(.03,.06))),dur:80,t:n=>"Earn "+fmt(n),v:()=>S.stats.earnedAll,money:1},
  {k:"finds",n:()=>2+Math.floor(Math.random()*2),dur:100,t:n=>"Grab "+n+" street finds",v:()=>S.stats.finds||0,town:1},
  {k:"frenzy",n:()=>1,dur:150,t:()=>"Start a FRENZY",v:()=>S.stats.frenzies||0},
  {k:"street",n:()=>1,dur:90,t:()=>"Sell to a street buyer",v:()=>S.stats.street||0,town:1,need:()=>S.stash.length>0}];
@@ -6087,7 +6087,7 @@ function chStart(){const pool=CHAL.filter(c=>(!c.town||(!SCN&&!MPW))&&(!c.need||
 function chTick(dt){if(!playing||(S.tut!=null&&S.tut<6))return;const C=S.ch;
   if(!C){if(room&&room!=="market")return;chT-=dt;if(chT<=0){chT=rnd(50,100);chStart()}return}
   const c=CHAL.find(x=>x.k===C.k);if(!c){S.ch=null;return}C.left-=dt;const have=c.v()-C.b;
-  if(have>=C.n){S.ch=null;S.chS=(S.chS||0)+1;S.stats.chWins=(S.stats.chWins||0)+1;const rw=Math.round(Math.max(1500,wealth()*.04)*(1+.15*Math.min(10,S.chS)));earn(rw);hype(3);if(S.chS%3===0)setTimeout(()=>gainCrate(),700);dirty=true;
+  if(have>=C.n){S.ch=null;S.chS=(S.chS||0)+1;S.stats.chWins=(S.stats.chWins||0)+1;const rw=Math.round(Math.max(1500,rwBase()*.04)*(1+.15*Math.min(10,S.chS)));earn(rw);hype(3);if(S.chS%3===0)setTimeout(()=>gainCrate(),700);dirty=true;
     SFX.grail();confetti(120);flash("#2fd28a",.3);shake(5,.3);banner("CHALLENGE WON","g");banner("+"+fmt(rw)+" · streak ×"+S.chS,"g");return}
   if(C.left<=0){const lost=S.chS||0;S.ch=null;S.chS=0;dirty=true;SFX.loss();buzz([40,40,40]);shake(4,.3);banner("CHALLENGE FAILED","r");if(lost)banner("Lost your ×"+lost+" streak","r")}}
 function renderChChip(){const el=$("chChip");if(!el)return;const C=S&&S.ch;if(!C){el.hidden=!(S&&S.chS);if(S&&S.chS){el.style.setProperty("--ec","#2fd28a");el.innerHTML=`<span class="pk">Streak</span><span class="pt">×${S.chS} · +${Math.round((chK()-1)*100)}% money</span>`}return}
@@ -6273,6 +6273,9 @@ let musT=3;
 function musUnlockTick(dt){musT-=dt;if(musT>0||!S)return;musT=3;const m=mxB();S.flags=S.flags||{};for(const[t,k,n,d]of MUSTIERS)if(m>=t&&!S.flags["mu_"+k]){S.flags["mu_"+k]=1;dirty=true;SFX.rebirth();flash("#ffcc33",.4);confetti(160);shake(6,.4);banner(n.toUpperCase()+" UNLOCKED","g");setTimeout(()=>banner(d,"u"),900);break}}
 // zoom for the look previews so tall, huge or hatted characters always fit the 300x240 frame
 function previewK(T){const B=myBuild(),m=Math.min(1,Math.max(B.c,B.b)),hat=S.acc&&S.acc.h?16:0,traps=B.b>=1.8?6:0,H=(64+hat+traps+8*m+20*.22*m)*T+6,Wd=(34+46*Math.min(1.6,Math.max(B.c,B.b)))*bodyK()*(1+(T-1)*.45*fillK())+20;return Math.min(3,190/H,280/Wd)}
+// rewards that scale with how rich you are use this base: your wealth, but never more than a figure that grows slower than lifetime earnings,
+// so percentage rewards can't compound into runaway money
+function rwBase(){const e=Math.max(1e3,(S&&S.stats&&S.stats.earnedAll)||0);return Math.max(0,Math.min(S.cash+stashVal()+(S.bank||0),1e3*Math.pow(e/1e3,.9)))}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -6497,7 +6500,7 @@ function clubAct(){
   const d=$("cDJ");if(d)d.onclick=()=>{const c=Math.max(50,Math.round(S.cash*.004));if(S.cash<c)return;S.cash-=c;CS.beat=12;S.buffs.hype=Math.max(S.buffs.hype||0,45);dirty=true;SFX.rebirth();flash("#ff4fd8",.25);confetti(60);clubPop(200,90,"BANGER","#ff4fd8");CS.npcs.forEach(n=>{if(!n.single){n.tx=rnd(130,270);n.ty=rnd(230,400)}});updMini();clubAct()};
   const v=$("cVip");if(v)v.onclick=()=>{const c=vipCost();if(S.cash<c||S.buffs.hype>0)return;S.cash-=c;S.buffs.hype=180;dirty=true;SFX.rebirth();confetti(90);banner("VIP · +30% sales","g");updMini();clubAct()};
   const dn=$("cDance");if(dn)dn.onclick=e=>{if(!spend(15,e.currentTarget))return;CS.danceT=2.5;SFX.hot();const r=Math.random();
-    if(r<.35){const t=Math.round(Math.max(60,S.cash*.02));earn(t);clubPop(CS.px,CS.py-80,"TIP "+fmt(t),"#ffcc33")}else if(r<.5){S.buffs.hype=Math.max(S.buffs.hype||0,60);clubPop(CS.px,CS.py-80,"HYPED","#ff4fd8")}else clubPop(CS.px,CS.py-80,pick(["NICE MOVES","SMOOTH","ICONIC"]),"#4fe3ff");dirty=true;updMini()};
+    if(r<.35){const t=Math.round(Math.max(60,rwBase()*.02));earn(t);clubPop(CS.px,CS.py-80,"TIP "+fmt(t),"#ffcc33")}else if(r<.5){S.buffs.hype=Math.max(S.buffs.hype||0,60);clubPop(CS.px,CS.py-80,"HYPED","#ff4fd8")}else clubPop(CS.px,CS.py-80,pick(["NICE MOVES","SMOOTH","ICONIC"]),"#4fe3ff");dirty=true;updMini()};
 }
 /* rizz: three rounds of lines; charisma scales how well they land */
 function rizzStart(n){
