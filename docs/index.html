@@ -396,6 +396,12 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
 .chip.sea .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px}
 .seahead{display:flex;gap:14px;align-items:center;background:linear-gradient(120deg,color-mix(in oklab,var(--sc) 30%,var(--surface)),var(--surface));border-radius:18px;padding:14px;margin:8px 0}.seahead>span{font-size:2.4rem}.seahead b{font-family:var(--display);font-size:1.3rem;color:var(--sc)}.seahead small{display:block;color:var(--muted)}
 .seatrack{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.sealv{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:14px;padding:10px 6px;background:var(--surface);box-shadow:var(--shadow);text-align:center;opacity:.55}.sealv.ok{opacity:1;box-shadow:inset 0 0 0 2px var(--up),var(--shadow);animation:seaglow 1.6s ease-in-out infinite}@keyframes seaglow{50%{box-shadow:inset 0 0 0 2px var(--up),0 0 16px rgba(47,210,138,.55)}}.sealv.got{opacity:.8}.sealv.big{background:linear-gradient(160deg,#2b2410,#5a4a14);color:#fff}.sealv b{font-family:var(--mono);font-size:.7rem}.sealv span{font-size:1.5rem}.sealv small{font-size:.66rem;font-weight:700;line-height:1.15}.sealv i{font-size:.58rem;font-style:normal;opacity:.75}.sealv em{font-style:normal;font-size:.6rem;font-weight:800;text-transform:uppercase;opacity:.8}
+.hudbtns{display:flex;flex-direction:column;gap:5px;justify-content:center}.hudbtns .iconbtn{width:30px;height:30px;font-size:.95rem}
+.emopop{position:fixed;z-index:60;right:12px;top:calc(110px + env(safe-area-inset-top,0px));display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface);border-radius:18px;padding:10px;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);animation:up .2s}.emopop button{display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:12px;background:var(--sunk)}.emopop span{font-size:1.5rem}.emopop small{font-size:.62rem;font-weight:700}
+body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.photo .perksheet{display:none!important}.photobar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;gap:10px}.photoimg{width:100%;border-radius:12px;margin:8px 0;box-shadow:var(--shadow);-webkit-user-select:auto;-webkit-touch-callout:default}
+.cal30{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:10px 0}.cal30>div{display:flex;flex-direction:column;align-items:center;border-radius:10px;padding:5px 2px;background:var(--sunk);font-size:.62rem}.cal30>div b{font-size:.9rem}.cal30>.past{opacity:.4}.cal30>.today{background:var(--accent);color:var(--accent-ink)}.cal30>.big{box-shadow:inset 0 0 0 2px var(--gold)}
+.rguide{flex:none;width:26px;height:26px;border-radius:50%;background:var(--sunk);font-weight:900;font-size:.85rem;display:grid;place-items:center;margin-left:-4px}
+.nextlist{display:flex;flex-direction:column;gap:8px;margin-top:8px}.nextrow{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border-radius:16px;padding:12px;box-shadow:var(--shadow)}.nextrow>span{font-size:1.6rem;line-height:1}.nextrow div{flex:1;min-width:0}.nextrow b{display:block;font-size:.9rem}.nextrow small{display:block;font-size:.74rem;color:var(--muted);margin:2px 0 6px}.nextrow .reqbar{display:block;height:7px}
 .place .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px}
 .enter{box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
 .room{background:radial-gradient(130% 42% at 50% -8%,color-mix(in oklab,var(--pc,var(--accent)) 26%,var(--bg)) 0%,var(--bg) 70%) var(--bg)}
@@ -731,7 +737,7 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
   <div class="hudtop">
     <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span></div>
     <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span></div>
-    <button class="iconbtn" id="mute" aria-label="Toggle sound" style="align-self:center"></button>
+    <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button></div>
   </div>
   <div class="chip stats">
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
@@ -1353,6 +1359,7 @@ function drawPerson0(x,y,o){
     else if(hs!==4){c.beginPath();c.arc(x,y-39+b,9.5,Math.PI*1.02,Math.PI*1.98);c.fill()}}
   faceDraw(c,o,x,y-37+b);if(AC.g)accGlasses(c,AC.g,x,y-37+b);if(AC.h){accHat(c,AC.h,x,y-37+b);o={...o,crown:0}}
   if(o.crown){c.fillStyle="#ffcc33";c.beginPath();c.moveTo(x-8,y-45+b);c.lineTo(x-8,y-53+b);c.lineTo(x-4,y-48+b);c.lineTo(x,y-55+b);c.lineTo(x+4,y-48+b);c.lineTo(x+8,y-53+b);c.lineTo(x+8,y-45+b);c.closePath();c.fill()}
+  if(o.emo)emoExtra(c,x,y+b,o);
   if(o.you){c.fillStyle="#2a3cff";c.beginPath();c.moveTo(x-6,y-60+b);c.lineTo(x+6,y-60+b);c.lineTo(x,y-52+b);c.closePath();c.fill()}
 }
 function drawPose(c,x,y,s,o){
@@ -1415,7 +1422,7 @@ function drawWorld(){
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();drawHol();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph})]);
-  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
+  ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{...emoOpts(),acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   mpTags();
@@ -1474,7 +1481,7 @@ function renderHud(){
 
 /* ================= rooms ================= */
 let room=null;
-function roomHead(title){const tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>11?"xlong":tl>7?"long":""}"><span class="pdot"></span>${title}</h2><div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
+function roomHead(title){const gd=typeof GUIDE!=="undefined"&&GUIDE[room]?`<button class="rguide" id="rGuide" aria-label="What is this?">?</button>`:"",tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>(gd?8:11)?"xlong":tl>(gd?5:7)?"long":""}"><span class="pdot"></span>${title}</h2>${gd}<div class="mini"><b id="rCash">${fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
@@ -1496,6 +1503,8 @@ $("mpChip").onclick=()=>{audioOn();if(!MPW){rayText(repLevel()<10?"Friends play 
 let pillsMin=store.get("fliprush_pillsmin")==="1";
 function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
 $("seaChip").onclick=()=>{audioOn();if(room)closeRoom();openSeason(closeRoom)};
+$("room").addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#rGuide")){audioOn();rayText(GUIDE[room]||"")}});
+$("emoBtn").onclick=()=>{audioOn();emoMenu()};$("camBtn").onclick=()=>{audioOn();photoMode()};
 $("liveChip").onclick=()=>{audioOn();if(LV&&LV.kind==="boss"&&!LV.done&&!room)liveHit()};
 $("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
@@ -2176,13 +2185,13 @@ const LOGIN_RW=[200,300,500,800,1200,2000,5000];
 function loginReward(then){
   const today=dayKey();if(S.login.d===today)return then();
   S.login.streak=S.login.d===dayKey(-1)?S.login.streak+1:1;S.login.d=today;
-  const day=((S.login.streak-1)%7),rw=Math.round(LOGIN_RW[day]*(1+SC()*.5));
+  const day=((S.login.streak-1)%30)+1,R=loginRw(day);
   const o=$("overlay");o.hidden=false;
   o.innerHTML=`<div class="sheet"><h2 class="h2"><small>DAILY LOGIN · ${S.login.streak} DAY STREAK</small>Welcome back.</h2>
-    <div class="cal">${LOGIN_RW.map((v,i)=>`<div class="${i<day?"past":i===day?"today":""}"><span>Day ${i+1}</span><b>${fmt(Math.round(v*(1+SC()*.5)))}</b></div>`).join("")}</div>
-    <p class="lede">Come back tomorrow to keep the streak going. Day 7 pays the most.</p>
-    <button class="cta" id="lrClaim"><span>Claim ${fmt(rw)}</span>${ARROW}</button></div>`;
-  $("lrClaim").onclick=()=>{S.cash+=rw;dirty=true;save();SFX.level();banner("+"+fmt(rw),"g");o.hidden=true;then()};
+    <div class="cal30">${Array.from({length:30},(_,i)=>{const d=i+1,r=loginRw(d);return `<div class="${d<day?"past":d===day?"today":""}${r.big?" big":""}"><span>${d}</span><b>${r.big?(d===30?"🏆":d===14?"🎁":"📦"):"$"}</b></div>`}).join("")}</div>
+    <p class="lede">Day ${day}: <b>${fmt(R.c)}</b>${R.cr?` + ${R.cr} crates`:""}${R.t?` + ${R.t}`:""}. Big rewards on days 7, 14, 21 and 30. Miss a day and the streak restarts.</p>
+    <button class="cta" id="lrClaim"><span>Claim day ${day}</span>${ARROW}</button></div>`;
+  $("lrClaim").onclick=()=>{S.cash+=R.c;if(R.cr)gainCrate(R.cr);if(R.acc){const L=ACCS.filter(a=>!a.ev&&!a.w2&&!(S.accOwn||{})[a.k]&&a.cost<1e7);if(L.length){S.accOwn=S.accOwn||{};const a=L[Math.floor(Math.random()*L.length)];S.accOwn[a.k]=1;banner("Free "+a.n,"g")}}if(day===30){S.titles=S.titles||[];if(!S.titles.includes("Loyal Legend"))S.titles.push("Loyal Legend");S.title="Loyal Legend"}dirty=true;save();SFX.level();banner("+"+fmt(R.c),"g");if(R.big)confetti(200);o.hidden=true;then()};
 }
 /* ---------- goals (story chain from Uncle Ray) ---------- */
 const GOALS=[
@@ -2234,7 +2243,7 @@ function renderGoalChip(){
   const g=GOALS[S.goal],el=$("goalChip");
   el.hidden=!g;if(g)el.innerHTML=`<span class="pk">Goal ${S.goal+1}/${GOALS.length}</span><span class="pt">${g.t}</span><span class="pr">${fmt(g.rw)}</span>`;
 }
-$("goalChip").onclick=()=>{const g=GOALS[S.goal];if(g)rayText(g.d)};
+$("goalChip").onclick=()=>{audioOn();if(room)closeRoom();openNext(closeRoom)};
 /* ---------- random town events ---------- */
 let nextEvT=30;
 function randSpot(){for(let i=0;i<80;i++){const x=rnd(60,W-60),y=rnd(90,SEA-60);if(regionOpen(regionOf(x,y))&&!inBld(x,y,24)&&Math.hypot(x-S.px,y-S.py)>260&&Math.hypot(x-S.px,y-S.py)<1100)return[x,y]}return[clamp(S.px+220,60,1340),S.py]}
@@ -3265,7 +3274,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild(),L=myLook();return{em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -3273,7 +3282,7 @@ function mpTick(dt){
   if(gone){renderMpChip();mpRefresh()}
   pubTick(dt);mpRoomTick()
 }
-function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,...peerLook(p),mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
+function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,...peerLook(p),...peerEmo(p),mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
 function bubble(x,y,txt,col){ctx.font="700 12px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const w=Math.min(220,ctx.measureText(txt).width+18);ctx.fillStyle=col||"rgba(255,255,255,.96)";rr(x-w/2,y-13,w,26,11);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y+12);ctx.lineTo(x+5,y+12);ctx.lineTo(x,y+18);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(txt.length>34?txt.slice(0,33)+"…":txt,x,y+1)}
 function mpTags(){
   if(myBub)bubble(S.px,S.py-70*tallK(),myBub.txt);
@@ -4436,7 +4445,7 @@ function openWardrobe(back){S.look=S.look||{sk:1,hr:0};let tab=WDTAB;
 let WDTAB="body";
 
 /* ================= settings (saved on this device) ================= */
-function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, petals and butterflies on the map",1],["perf","Performance mode","Smoother on older phones: lower resolution, no blur, less confetti",0],["lowfx","Lighter confetti","Less confetti for older phones",0],["noshake","Screen shake","Shake on big moments",1],["nobuzz","Vibration","Haptics on taps and wins",1]];
+function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, petals and butterflies on the map",1],["music","Music","A soft soundtrack that changes in every place",0],["perf","Performance mode","Smoother on older phones: lower resolution, no blur, less confetti",0],["lowfx","Lighter confetti","Less confetti for older phones",0],["noshake","Screen shake","Shake on big moments",1],["nobuzz","Vibration","Haptics on taps and wins",1]];
   const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Settings")}
     <div class="perks">${T.map(([k,n,d,inv])=>{const on=inv?!SET[k]:!!SET[k];return `<button class="perk nopic setrow" data-set="${k}"><span class="t">${n}</span><span class="d">${d}</span><span class="c tog${on?" on":""}"><i></i></span></button>`}).join("")}</div>
     <div class="sechead"><h3>Help</h3></div>
@@ -4756,7 +4765,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
     const ch=SCN.places.find(p=>p.k==="chest");if(ch){const x=ch.door[0],y=ch.door[1]-14+Math.sin(wt*3)*1.5;ctx.fillStyle="#9a5b28";rr(x-18,y-12,36,22,4);ctx.fill();ctx.fillStyle="#c07a3a";rr(x-20,y-18,40,10,4);ctx.fill();ctx.fillStyle="#ffcc33";ctx.fillRect(x-4,y-18,8,28);ctx.globalAlpha=.4+.3*Math.sin(wt*4);ctx.strokeStyle="#ffcc33";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-4,30,0,7);ctx.stroke();ctx.globalAlpha=1}
     const pf=SCN.places.find(p=>p.k==="party");if(pf){const x=pf.door[0],y=pf.door[1]-20;if(islB(SCN.k).party!==dayKey()||nightA>.3){for(let j=0;j<3;j++){ctx.fillStyle=["#ffcc33","#ff7a3d","#e2364a"][j];ctx.beginPath();ctx.moveTo(x-10+j*4,y);ctx.quadraticCurveTo(x-6+j*4,y-18-Math.sin(wt*9+j)*6,x+j*4,y-26-Math.sin(wt*7+j)*5);ctx.quadraticCurveTo(x+6+j*4,y-12,x+10-j*2,y);ctx.fill()}}}}
   const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph,acc:n.astro?{h:"astro"}:null,bob:n.astro?5+Math.sin(wt*2+n.ph)*3:0})]);
-  ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
+  ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,...emoOpts(),acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   decoUnder();drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
@@ -5161,6 +5170,7 @@ function housePlaces(){const o=SCN.owner,F=o?o.fu:(S.furn||{}),L=[],add=x=>{x.do
     if(F.piano)add({k:"piano",n:"Grand piano",verb:"Play the",sub:"Fans love it (every 5 min)",c:"#1b1d22",x:90,y:620,w:150,h:100,go:()=>{if(!coolOk("piano",300000))return;const f=Math.round(30+(S.fans||0)*.01);S.fans=(S.fans||0)+f;SFX.grail();confetti(60);banner("+"+fmtN(f)+" fans","u")}});
     if(F.aqua)add({k:"aqua",n:"Aquarium",verb:"Look at the",sub:"Your fish album",c:"#2fa6d9",x:470,y:620,w:150,h:70,go:()=>fishAlbum(closeRoom)});
     if(F.shelf)add({k:"shelf",n:"Trophy shelf",sub:"Your collection",c:"#cf9a14",x:660,y:190,w:110,h:80,go:()=>openCollection(closeRoom)});
+    add({k:"jbox",n:"Jukebox",sub:SET.music?"Music on · pick a track":"Turn the music on",c:"#ff4fd8",x:370,y:205,w:56,h:80,go:()=>openJukebox(closeRoom)});
     if(S.pet)add({k:"pet",n:"Pet bed",verb:"Visit the",sub:"Pets",c:"#ff8fa3",x:640,y:640,w:80,h:50,go:()=>openPets(closeRoom)})}
   else add({k:"bell",n:"Guestbook",verb:"Sign the",sub:"Ring the doorbell or leave a gift",c:"#2fd28a",x:480,y:600,w:140,h:70,go:()=>{room="house";$("room").hidden=false;visitHouse(o.p,closeRoom)}});
   add({k:"door",n:"Front door",verb:"Leave by the",sub:o?"Back to the street":"Back outside",c:"#7a5a3a",x:500,y:770,w:100,h:40,list:0,go:()=>leaveScene()});
@@ -5201,6 +5211,7 @@ function buildHouse(){const g=SCN_C.getContext("2d");SCN_C.width=HW;SCN_C.height
   if(F.shelf){g.fillStyle="#7a5a3a";g.fillRect(660,190,110,80);g.fillStyle="#5a3a24";g.fillRect(660,225,110,4);[[675,212,"#ffcc33"],[700,212,"#c0c6d0"],[725,212,"#cd7f32"],[690,252,"#cf9a14"],[730,252,"#7fd6ff"]].forEach(([x,y,c])=>{g.fillStyle=c;g.beginPath();g.arc(x,y,8,0,7);g.fill()})}
   if(F.chand)SCN.lamps.push([550,320]);
   if(S.pet&&!o){g.fillStyle="#ff8fa3";g.beginPath();g.ellipse(680,670,40,20,0,0,7);g.fill();g.fillStyle="#ffd6df";g.beginPath();g.ellipse(680,668,30,13,0,0,7);g.fill()}
+  if(!o){g.fillStyle="rgba(0,0,0,.16)";g.beginPath();g.ellipse(398,288,32,8,0,0,7);g.fill();g.fillStyle="#7a2fd6";rrp(g,372,205,52,80,18);g.fill();g.fillStyle="#ffcc33";rrp(g,380,215,36,24,10);g.fill();g.fillStyle="#ff4fd8";for(let i=0;i<4;i++)g.fillRect(380,248+i*7,36,3)}
   // welcome mat at the door
   g.fillStyle="#7a5a3a";rrp(g,500,780,100,30,6);g.fill();g.fillStyle="rgba(255,255,255,.4)";g.font=`800 11px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";g.fillText(o?"WELCOME":"HOME",550,795);
   // labels
@@ -5375,6 +5386,82 @@ function openSeason(back){room="season";$("room").hidden=false;
       <div class="seatrack">${Array.from({length:SEA_MAX},(_,i)=>{const l=i+1,R=seaReward(l),got=s.claimed[l],ok=l<=L;return `<button class="sealv${got?" got":ok?" ok":""}${l%10===0?" big":""}" data-sl="${l}" ${!ok||got?"disabled":""}><b>${l}</b><span>${R.ic}</span><small>${esc(R.t)}</small>${R.d&&!got?`<i>${esc(R.d)}</i>`:""}<em>${got?"Claimed":ok?"Claim":"Locked"}</em></button>`}).join("")}</div></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-sl]").forEach(b=>b.onclick=()=>{const l=+b.dataset.sl,s2=seaState();if(s2.claimed[l]||l>seaLv())return;const R=seaReward(l);R.go();s2.claimed[l]=1;dirty=true;SFX.level();confetti(l%10?60:200,null,null,[T[1],"#fff","#ffcc33"]);banner("Season reward: "+R.t,"g");draw();updMini();renderSeaChip()})};draw()}
+/* ================= 30-day login calendar ================= */
+function loginRw(d){const nw=Math.max(2000,netWorth()),c=Math.round(Math.max(LOGIN_RW[(d-1)%7]*(1+SC()*.5),nw*.003*(1+d*.06)));
+  if(d===30)return{c:c*15,cr:25,t:"Loyal Legend title",big:1};if(d===21)return{c:c*4,cr:10,big:1};if(d===14)return{c:c*3,cr:5,acc:1,t:"Free accessory",big:1};if(d===7)return{c:c*5,cr:5,big:1};return{c,cr:d%5===0?2:0}}
+/* ================= emotes your character acts out ================= */
+const EMOS=[["wave","👋","Wave"],["dance","💃","Dance"],["flex","💪","Flex"],["laugh","😂","Laugh"],["cheer","🎉","Cheer"],["sit","🪑","Sit"]];
+let EMO=null;
+function emoFor(k,t){if(!k)return{};if(k==="dance")return{emo:k,pose:Math.floor(t*2.4)%2?"bi":"abs",bob:Math.abs(Math.sin(t*8))*5};if(k==="flex")return{emo:k,pose:["bi","mm","lat"][Math.floor(t/1.1)%3]};if(k==="cheer")return{emo:k,bob:Math.abs(Math.sin(t*6))*12};if(k==="laugh")return{emo:k,bob:Math.abs(Math.sin(t*14))*2};if(k==="sit")return{emo:k,bob:-5};return{emo:k}}
+const emoOpts=()=>EMO&&wt<EMO.until&&!moving?emoFor(EMO.k,wt-EMO.t0):{};
+const peerEmo=p=>p.em&&EMOS.some(e=>e[0]===p.em)?emoFor(p.em,wt):{};
+function emoExtra(c,x,y,o){const s=o.size||1;if(o.emo==="wave"){const a=Math.sin(wt*10)*.5;c.save();c.translate(x+11*s,y-34);c.rotate(-.9+a);c.fillStyle=o.skin;rrp(c,-2.5,-16,5,16,2.5);c.fill();c.beginPath();c.arc(0,-17,3,0,7);c.fill();c.restore()}
+  const em=(EMOS.find(e=>e[0]===o.emo)||[])[1];if(em&&o.emo!=="flex"&&o.emo!=="dance"){c.font="18px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(em,x+14,y-62+Math.sin(wt*4)*2)}}
+function emoMenu(){const old=$("emoPop");if(old){old.remove();return}const d=document.createElement("div");d.id="emoPop";d.className="emopop";d.innerHTML=EMOS.map(([k,e,n])=>`<button data-emo2="${k}" title="${n}"><span>${e}</span><small>${n}</small></button>`).join("");document.body.appendChild(d);
+  d.querySelectorAll("[data-emo2]").forEach(b=>b.onclick=()=>{EMO={k:b.dataset.emo2,t0:wt,until:wt+5};d.remove();SFX.tick(.6);buzz(8)});setTimeout(()=>document.addEventListener("pointerdown",function f(e){if(!d.contains(e.target)&&e.target.id!=="emoBtn"){d.remove();document.removeEventListener("pointerdown",f,true)}},true),0)}
+/* ================= photo mode ================= */
+function photoMode(){if(room)return;document.body.classList.add("photo");const bar=document.createElement("div");bar.className="photobar";bar.innerHTML=`<button class="cta" id="phSnap"><span>📸 Snap</span></button><button class="cta ghost2" id="phX">Done</button>`;document.body.appendChild(bar);
+  const end=()=>{document.body.classList.remove("photo");bar.remove()};$("phX").onclick=end;
+  $("phSnap").onclick=()=>{const w=cv.width,h=cv.height,k=dpr,o=document.createElement("canvas"),pad=Math.round(14*k),cap=Math.round(70*k);o.width=w+pad*2;o.height=h+pad*2+cap;const g=o.getContext("2d");
+    g.fillStyle="#fbfaf6";g.fillRect(0,0,o.width,o.height);g.drawImage(cv,pad,pad);g.strokeStyle="rgba(0,0,0,.1)";g.lineWidth=k;g.strokeRect(pad,pad,w,h);
+    const where=SCN?SCN.title:MPW?"Online Town":"Flip City",d=new Date();g.fillStyle="#141824";g.textAlign="left";g.textBaseline="middle";g.font=`800 ${Math.round(20*k)}px ${FONTS.d}`;g.fillText(where,pad*1.5,h+pad+cap*.38);
+    g.font=`600 ${Math.round(12*k)}px ${FONTS.b}`;g.fillStyle="#6b7385";g.fillText(mpName()+" · "+d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+" · Flip Rush",pad*1.5,h+pad+cap*.72);
+    flash("#ffffff",.8);SFX.tick(1);let url="";try{url=o.toDataURL("image/jpeg",.9)}catch(e){}if(!url)return banner("Couldn't take the photo","r");
+    const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><span class="eyebrow">Photo</span><img class="photoimg" src="${url}" alt="Your photo"><p class="fine">Press and hold the photo to save it.</p><div class="tiles"><button class="bigbtn" id="phShare">Share<small>Send it anywhere</small></button><a class="bigbtn alt" id="phDl" download="fliprush.jpg" href="${url}">Download<small>Save a copy</small></a></div><button class="cta ghost2" id="phOk">Back</button></div>`;document.body.appendChild(ov);
+    $("phOk").onclick=()=>ov.remove();$("phShare").onclick=async()=>{try{const b=await (await fetch(url)).blob(),f=new File([b],"fliprush.jpg",{type:"image/jpeg"});if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:"Flip Rush"});else banner("Press and hold the photo to save","a")}catch(e){}}}}
+/* ================= music: a soft generated soundtrack for every place ================= */
+const TRACKS={town:{n:"Flip City Lo-fi",bpm:84,root:57,sc:[0,3,5,7,10],ch:[[0,3,7],[5,8,12],[3,7,10],[7,10,14]],w:"triangle"},online:{n:"Online Town Bounce",bpm:116,root:60,sc:[0,2,4,7,9],ch:[[0,4,7],[9,12,16],[5,9,12],[7,11,14]],w:"square"},
+ tokyo:{n:"Tokyo Neon",bpm:108,root:62,sc:[0,2,3,7,9],ch:[[0,3,7],[8,12,15],[5,8,12],[7,10,14]],w:"square"},paris:{n:"Paris Café",bpm:96,root:60,sc:[0,2,4,7,9,11],ch:[[0,4,7,11],[9,12,16],[2,5,9],[7,11,14]],w:"triangle"},
+ dubai:{n:"Desert Gold",bpm:90,root:58,sc:[0,1,4,5,7,8,11],ch:[[0,4,7],[1,5,8],[0,4,7],[5,8,12]],w:"sawtooth"},monaco:{n:"Riviera Jazz",bpm:100,root:55,sc:[0,2,4,5,7,9,10],ch:[[0,4,7,10],[5,9,12,15],[2,5,9,12],[7,11,14,17]],w:"triangle"},
+ isle:{n:"Island Breeze",bpm:88,root:64,sc:[0,2,4,7,9],ch:[[0,4,7],[5,9,12],[7,11,14],[0,4,7]],w:"sine"},space:{n:"Cosmic Drift",bpm:66,root:50,sc:[0,2,3,7,8],ch:[[0,3,7],[8,12,15],[3,7,10],[5,8,12]],w:"sine"},
+ home:{n:"Sunday Morning",bpm:76,root:59,sc:[0,2,4,7,9],ch:[[0,4,7,11],[5,9,12,16],[9,12,16],[7,11,14]],w:"sine"}};
+let MUS={on:false,k:null,step:0,next:0,iv:null,g:null};
+const midiF=m=>440*Math.pow(2,(m-69)/12);
+function musTrack(){if(SCN){if(SCN.kind==="city")return TRACKS[SCN.k]?SCN.k:"town";if(SCN.kind==="isle")return"isle";if(SCN.kind==="space")return"space";if(SCN.kind==="house")return S.jbox&&TRACKS[S.jbox]?S.jbox:"home"}return MPW?"online":"town"}
+function mnote(m,t,d,w,v){if(!ac||!MUS.g)return;const o=ac.createOscillator(),g=ac.createGain();o.type=w;o.frequency.setValueAtTime(midiF(m),t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(MUS.g);o.start(t);o.stop(t+d+.05)}
+function musTick(){const want=SET.music&&!muted&&ac&&ac.state==="running"&&!document.hidden;if(!want){if(MUS.g){try{MUS.g.disconnect()}catch(e){}MUS.g=null}return}
+  if(!MUS.g){MUS.g=ac.createGain();MUS.g.gain.value=.5;MUS.g.connect(ac.destination);MUS.next=ac.currentTime+.1}
+  const k=musTrack();if(k!==MUS.k){MUS.k=k;MUS.step=0}const T=TRACKS[k],dt=60/T.bpm/2;
+  while(MUS.next<ac.currentTime+.25){const st=MUS.step,bar=Math.floor(st/8)%T.ch.length,ch=T.ch[bar],t=MUS.next,b=st%8;
+    if(b===0)ch.forEach(n=>mnote(T.root+n,t,dt*7.5,T.w==="square"?"triangle":T.w,.018));
+    if(b===0||b===4)mnote(T.root-12+ch[0],t,dt*3.5,"sine",.05);
+    const r=((st*9301+bar*49297)%233280)/233280;if(r<.42){const n=T.sc[Math.floor(r*997)%T.sc.length]+(r<.12?12:0);mnote(T.root+12+n,t,dt*1.6,T.w,.022)}
+    if(b%2===1)mnote(T.root+36,t,.03,"square",.004);
+    MUS.step++;MUS.next+=dt}}
+setInterval(()=>{try{musTick()}catch(e){}},100);
+function openJukebox(back){room="jbox";$("room").hidden=false;const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Jukebox")}
+  <button class="bigbtn${SET.music?" alt":""}" id="jbOn">${SET.music?"Music is on":"Turn music on"}<small>${SET.music?"Tap to turn it off":"A soft soundtrack that changes in every place"}</small></button>
+  <div class="sechead"><h3>Play at home</h3></div><div class="perks">${Object.entries(TRACKS).map(([k,t])=>`<button class="perk nopic${(S.jbox||"home")===k?" bought":""}" data-jb="${k}"><span class="t">${(S.jbox||"home")===k?"♪ ":""}${t.n}</span><span class="d">${t.bpm} bpm</span><span class="c">${(S.jbox||"home")===k?"Playing":"Play"}</span></button>`).join("")}</div>
+  <p class="fine">Outside, every city, island and world has its own track.</p></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("jbOn").onclick=()=>{SET.music=!SET.music;saveSet();audioOn();draw()};
+  $("room").querySelectorAll("[data-jb]").forEach(b=>b.onclick=()=>{S.jbox=b.dataset.jb;dirty=true;SET.music=true;saveSet();audioOn();MUS.k=null;draw()})};draw()}
+/* ================= what's next: everything left to unlock ================= */
+function openNext(back){room="next";$("room").hidden=false;const L=repLevel(),nw=netWorth(),rows=[];
+  const add=(ic,t,d,p)=>rows.push({ic,t,d,p});
+  const g=GOALS[S.goal];if(g)add("🎯","Goal "+(S.goal+1)+": "+g.t,g.d+" Reward "+fmt(g.rw)+".");
+  ["beach","downtown"].forEach(r=>{if(!regionOpen(r))add(r==="beach"?"🏖️":"🏙️",REGION_NAME[r],lockHint(r))});
+  if(L<10)add("🛶","A raft to the Online Town","Reach level 10 (you're "+L+").",L/10);
+  COUNTRIES.filter(c=>L<c.lv).forEach(c=>add("✈️",c.n+", "+c.cn,"Unlocks at level "+c.lv+".",L/c.lv));
+  const ph=PROPS[(S.home||0)+1];if(ph)add("🏠","Next home: "+ph.n,"Costs "+fmt(ph.cost)+".",Math.min(1,S.cash/ph.cost));
+  const nt=TIERS[tierN()+1];if(nt)add(nt.i,"Tier: "+nt.n,"Reach "+fmt(nt.nw)+" net worth.",Math.min(1,Math.log10(Math.max(1,nw))/Math.log10(nt.nw)));
+  if(!(S.w2&&S.w2.open))add("🌌","World 2: the Cosmos","Open the Stargate at the Airport for "+fmt(W2_COST)+".",Math.min(1,S.cash/W2_COST));
+  else{const ng=GEN.find((x,i)=>!genN(x.k)&&(i===0||genN(GEN[i-1].k)));if(ng)add(ng.ic,"Generator: "+ng.n,"Costs ✦"+radF(ng.c)+" at the Radiant Reactor.",Math.min(1,S.cash/RAD/ng.c))}
+  if((S.spurts||0)<rbReq())add("🔁","Rebirth "+(rbN()+1),"Needs "+rbReq()+" growth spurts (you have "+(S.spurts||0)+").",(S.spurts||0)/rbReq());
+  if(seaLv()<SEA_MAX)add(seaTheme(seaN())[2],"Season level "+(seaLv()+1),(SEA_XP-seaXP()%SEA_XP)+" more season points.",(seaXP()%SEA_XP)/SEA_XP);
+  if(!S.crew)add("⚑","Join a crew","From the Harbor or the room menu, team up for +3% money per crew level.");
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("What's next")}<div class="nextlist">${rows.map(r=>`<div class="nextrow"><span>${r.ic}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small>${r.p!=null?`<i class="reqbar"><i style="width:${Math.max(3,Math.min(100,r.p*100))}%"></i></i>`:""}</div></div>`).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back}
+/* ================= a two-line guide for every room ================= */
+const GUIDE={market:"Tap a listing to buy, hold to lowball. Sell from your stash when the trend arrow is up.",flea:"Cheap steals and mystery boxes, but check the star rating: low ratings are often fakes.",lux:"High-end pieces only, and everything you sell here pays 30% more.",
+ gym:"Walk to a station and lift in the green zone. Heavier lifts make you stronger and bigger.",mbeach:"An outdoor gym where lifts cost half the energy.",home:"Your home office: property, garage, missions, wheel, pets and more.",tower:"Build your skyscraper floor by floor. Every floor pays income and milestones add perks.",
+ harbor:"Boats, islands and the way to the Online Town. Public towns are listed here.",storage:"Bid blind on abandoned storage units. Sometimes there's treasure inside.",depot:"Deliver packages before the timer runs out. Faster vehicles help.",cafe:"Food and drinks give energy and buffs.",mall:"Upgrades, the Boutique and the Pet Shop.",
+ arena:"Arm wrestle for cash. Tap fast in the green to win.",bank:"Money in the bank earns interest every minute. Mega projects and the world leaderboard live here.",dealer:"Faster vehicles and a garage to mod your car.",trade:"Trade live charts with leverage. Long if you think it goes up, short if down.",
+ airport:"Fly to other countries, or open the Stargate to World 2.",club:"VIP tables, dates and the DJ booth.",docks:"Show off your car and street race.",island:"Run your island: build, rename and see what it earns.",biz:"Collect the till, set prices, expand and hire a manager to run it for you.",
+ casino:"Slots, roulette and blackjack. The house usually wins.",gp:"Race through Monte Carlo. Brake into corners, boost on the straights.",prestige:"Only $50M to $100M pieces. Some sell for more in certain cities.",reactor:"Buy generators that make Radiant every minute, even offline. Owning 25, 50, 100… doubles them.",
+ lab:"One-time research that multiplies your generators.",obs:"Scan the sky to discover cosmic objects. Each adds +3% to generators.",bhole:"Feed Radiant in for Dark Matter: +5% to every generator, forever.",shomes:"Each space home adds +25% to every generator.",auction:"Live bidding with everyone in your room. Bids at the end add time.",
+ crew:"Pool money into your crew bank. Every crew level gives every member +3% money.",season:"Earn season points by playing. Claim rewards on the track before the season ends.",mega:"Absurd projects for the very rich. Every level gives +3% money forever.",tiers:"Your tier grows with net worth. Harder game, bigger rewards.",
+ space:"Upgrade your rocket and fly it. Keep the needle in the green band.",pmarket:"Buy items your friends have listed.",stocks:"Buy shares and sell when the price is higher.",gram:"Post about your life. Cooler posts get more likes, fans and sponsor money.",look:"Change your clothes, face and hair. Free, any time.",
+ jbox:"Turn the soundtrack on and pick what plays at home.",next:"Everything you can unlock next, with how close you are.",cosmos:"Trade space rocks and alien relics."};
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
