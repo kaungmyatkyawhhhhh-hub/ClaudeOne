@@ -1395,7 +1395,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawCrewHQ();drawSeasonDecor();townDecoAnim();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -2152,12 +2152,12 @@ function openBank(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
-      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
+      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt" id="bkDeeds">Property & names<small>${Object.keys(S.deeds||{}).length?Object.keys(S.deeds).length+" owned · "+fmt(deedInc())+"/min":"Own the town, from "+fmt(1e9)}</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
       ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
     $("leaveBtn").onclick=closeRoom;
     const dep=a=>{a=Math.floor(a);if(a<=0)return;S.cash-=a;S.bank=(S.bank||0)+a;SFX.buy();dirty=true;draw();updMini()};
-    $("bkRe").onclick=()=>openRealty("home",()=>{room="bank";openBank()});$("bkEmp").onclick=()=>openEmpire(()=>{room="bank";openBank()});$("bkLb").onclick=()=>openWorldLB(()=>{room="bank";openBank()});$("bkMega").onclick=()=>openMega(()=>{room="bank";openBank()});
+    $("bkRe").onclick=()=>openRealty("home",()=>{room="bank";openBank()});$("bkEmp").onclick=()=>openEmpire(()=>{room="bank";openBank()});$("bkLb").onclick=()=>openWorldLB(()=>{room="bank";openBank()});$("bkMega").onclick=()=>openMega(()=>{room="bank";openBank()});$("bkDeeds").onclick=()=>openDeeds(()=>{room="bank";openBank()});
     $("dAll").onclick=()=>dep(S.cash);$("dHalf").onclick=()=>dep(S.cash/2);
     $("wAll").onclick=()=>{const a=Math.floor(S.bank||0);if(a<=0)return;S.bank-=a;S.cash+=a;SFX.sell();dirty=true;draw();updMini()};
   };draw();
@@ -2896,7 +2896,7 @@ function tryBuy(i){
   if(!spend(3,el))return;
   S.cash-=l.price;
   const item=l.kind==="mystery"?openBox(l.price):{cat:l.cat,code:l.code,name:l.name,cond:l.cond,base:l.base,noise:rnd(.95,1.05),fake:l.fake};
-  item.paid=l.price;S.stash.push(item);dirty=true;if(M.cfg.k==="flea")S.flags.fleaBuy=1;
+  item.paid=l.price;S.stash.push(item);dirty=true;deedBuyHook(M.cfg.k,l.price);if(M.cfg.k==="flea")S.flags.fleaBuy=1;
   floatAt(el,fmt(-l.price)+(l.disc>0?`<small>LOWBALLED ${Math.round(l.disc*100)}%</small>`:""),"var(--ink)");
   M.market[i]=null;M.restock[i]=rnd(.35,.9);buzz(8);renderStash(S.stash.length-1);updateMarket();updMini();
   if(l.kind==="mystery"){SFX.reveal();const v=valueOf(item);setNews(`Mystery box: <b class="${v>=l.price?"u":"d"}">${item.name}</b> · ${item.cond} · worth ${fmt(v)}`);M.newsT=5;banner(v>l.price*2.5?"Jackpot":"Box opened",v>l.price*2.5?"g":"a")}
@@ -3006,7 +3006,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);copTick(dt);gymOwnTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);aucTick(dt);crewTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);copTick(dt);gymOwnTick(dt);deedTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);aucTick(dt);crewTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -3248,6 +3248,7 @@ function mpOnMsg(topic,buf){
   if(kind==="d"){if(id===MP_ID&&d){const n=String(d.n||"A friend").slice(0,16);banner(n+" "+String(d.t||"").slice(0,40),"u");SFX.hot();buzz([20,40,20]);mpLog(n,String(d.t||"").slice(0,60),1);if(d.isl){S.islVis=S.islVis||{};S.islVis[d.isl]=(S.islVis[d.isl]||0)+1;dirty=true}}return}
   if(kind==="aw"){if(id===MP_ID&&d)pvpMsg(d);return}
   if(kind==="lv"){if(id!==MP_ID)liveMsg(d);return}
+  if(kind==="ry"){if(id===MP_ID&&d&&d.f!==MP_ID)deedMsg(d);return}
   if(kind==="au"){const from=d&&d.f?String(d.f):id;if(from===MP_ID||(id!==from&&id!==MP_ID))return;aucMsg(d,from);return}
   if(kind==="pm"){if(id===MP_ID&&d)pmMsg(d);return}
   if(kind==="tr"){if(id!==MP_ID)huntMsg(id,d);return}
@@ -3258,7 +3259,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild(),L=myLook();return{ow:Object.keys(S.deeds||{}),sn:S.names&&S.names.street||0,go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="planet"?PLANETS[SCN.k].n:SCN.kind==="house"?"a house":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
@@ -4713,7 +4714,7 @@ function enterIsland(k,fid){const G=islGeo(k),i=ISLANDS.find(x=>x.k===k);
       if(hasPier(k,fid)){const px=G.cx+G.rx*.62,py=G.cy+G.ry*.36,dx=x-px,dy=y-py,u=dx*Math.cos(.62)+dy*Math.sin(.62),v=-dx*Math.sin(.62)+dy*Math.cos(.62);return u>-10&&u<300&&Math.abs(v)<22}return false}});
   banner(fid?"Visiting "+SCN.title:"Welcome to "+SCN.title,"a")}
 const hasPier=(k,fid)=>!!islBuilt(k,fid).pier;
-function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="house"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
+function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle",tone:"#7a2fd6"},enterCosmos);return}if(t.kind==="house"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
   const done=()=>{SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner(city?"Back in Flip City":"Back at the Harbor","a")};
   if(city||t.kind==="space")flyTo({n:"Flip City",cn:t.kind==="space"?"World 1 · Earth":"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
 /* moving, tapping, drawing */
@@ -4726,12 +4727,12 @@ function sceneTick(dt){if(room)return;
     else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st;if(!SCN.ok(nx,ny)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true}}}
   SCN.npc.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=SCN.pt();else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
   SCN.cars.forEach(c=>{c.p=(c.p+c.sp*dt+1)%1})}
-function sceneSig(){if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
+function sceneSig(){if(SCN.kind==="planet")return "pl|"+SCN.k+"|"+(S.flags["flag_"+SCN.k]?1:0);if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
 function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig()+"|"+isDark();
-  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else if(SCN.kind==="house")buildHouse();else buildIsland();SCN.stSig=sig;bKey=""}
+  if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else if(SCN.kind==="house")buildHouse();else if(SCN.kind==="planet")buildPlanet();else buildIsland();SCN.stSig=sig;bKey=""}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
   cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):SCN.kind==="space"?.55+.12*clamp((700-S.py)/300,0,1):SCN.kind==="house"?.66:.55),SCN.kind==="city"?-170:SCN.kind==="space"||SCN.kind==="house"?-200:0,Ht-vh);
-  ctx.fillStyle=SCN.kind==="house"?"#1b1d22":SCN.kind==="space"?"#05061a":dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
+  ctx.fillStyle=SCN.kind==="planet"?PLANETS[SCN.k].sky:SCN.kind==="house"?"#1b1d22":SCN.kind==="space"?"#05061a":dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
   ctx.drawImage(SCN_C,Math.max(0,cam.x),Math.max(0,cam.y),Math.min(Wd,vw),Math.min(Ht,vh),Math.max(0,-cam.x),Math.max(0,-cam.y),Math.min(Wd,vw),Math.min(Ht,vh));
   ctx.translate(-cam.x,-cam.y);const nightA=night(),near=sceneNear();
   SCN.places.forEach(p=>{if(p.bld)winRects(p).forEach(([x,y,w,h])=>{if(nightA>.35||SCN.kind==="space"){ctx.fillStyle="rgba(255,206,110,.95)";rr(x,y,w,h,3);ctx.fill()}});
@@ -4742,6 +4743,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
       if(x<cam.x-80||x>cam.x+vw+80||y<cam.y-80||y>cam.y+vh+80)return;drawRideAt(x,y,hd,c.k,c.paint,{})})}
   else if(SCN.kind==="space")spaceAnim();
   else if(SCN.kind==="house")houseAnim();
+  else if(SCN.kind==="planet")planetAnim();
   else{const G=islGeo(SCN.k);ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=3;for(let k=0;k<2;k++){const s=1+((wt*.08+k*.5)%1)*.12;ctx.globalAlpha=1-((wt*.08+k*.5)%1);ctx.beginPath();ctx.ellipse(G.cx,G.cy,G.rx*s+6,G.ry*s+6,0,0,7);ctx.stroke()}ctx.globalAlpha=1;
     for(let j=0;j<4;j++){const a=1.2+j*1.3+Math.sin(wt*.2+j)*.1,x=G.cx+Math.cos(a)*(G.rx+60),y=G.cy+Math.sin(a)*(G.ry+50)+Math.sin(wt*2+j)*3;ctx.fillStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.ellipse(x,y+4,14,5,0,0,7);ctx.fill();ctx.fillStyle=["#e8b896","#8d5a3b","#f3d0b5","#b9825c"][j];ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill()}
     {const b=Math.sin(wt*1.6)*2,x=G.cx+60,y=G.cy+G.ry+60;ctx.fillStyle="#f4f6fa";ctx.beginPath();ctx.moveTo(x-40,y+b);ctx.lineTo(x+40,y+b);ctx.quadraticCurveTo(x+52,y+6+b,x+38,y+12+b);ctx.lineTo(x-34,y+12+b);ctx.closePath();ctx.fill();ctx.fillStyle="#2a3cff";ctx.fillRect(x-16,y-8+b,30,8)}
@@ -4749,17 +4751,17 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
     const ch=SCN.places.find(p=>p.k==="chest");if(ch){const x=ch.door[0],y=ch.door[1]-14+Math.sin(wt*3)*1.5;ctx.fillStyle="#9a5b28";rr(x-18,y-12,36,22,4);ctx.fill();ctx.fillStyle="#c07a3a";rr(x-20,y-18,40,10,4);ctx.fill();ctx.fillStyle="#ffcc33";ctx.fillRect(x-4,y-18,8,28);ctx.globalAlpha=.4+.3*Math.sin(wt*4);ctx.strokeStyle="#ffcc33";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-4,30,0,7);ctx.stroke();ctx.globalAlpha=1}
     const pf=SCN.places.find(p=>p.k==="party");if(pf){const x=pf.door[0],y=pf.door[1]-20;if(islB(SCN.k).party!==dayKey()||nightA>.3){for(let j=0;j<3;j++){ctx.fillStyle=["#ffcc33","#ff7a3d","#e2364a"][j];ctx.beginPath();ctx.moveTo(x-10+j*4,y);ctx.quadraticCurveTo(x-6+j*4,y-18-Math.sin(wt*9+j)*6,x+j*4,y-26-Math.sin(wt*7+j)*5);ctx.quadraticCurveTo(x+6+j*4,y-12,x+10-j*2,y);ctx.fill()}}}}
   const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,mv:true,ph:n.ph,acc:n.astro?{h:"astro"}:null,bob:n.astro?5+Math.sin(wt*2+n.ph)*3:0})]);
-  ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,...emoOpts(),acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
+  ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space"||SCN.kind==="planet",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,...emoOpts(),acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   decoUnder();drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  const indoor=SCN.kind==="space"||SCN.kind==="house",gr=indoor?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
+  const indoor=SCN.kind==="space"||SCN.kind==="house"||SCN.kind==="planet",gr=indoor?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0&&!indoor){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
     decoGlow(nightA);SCN.places.forEach(p=>{const sx=p.door[0]-cam.x,sy=p.door[1]-cam.y;if(sx<-90||sy<-90||sx>vw+90||sy>vh+90)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,80);g.addColorStop(0,`rgba(255,205,120,${.3*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-80,sy-80,160,160)});
     ctx.globalCompositeOperation="source-over"}
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.16)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh)}
 function renderSceneBottom(){const el=$("bottom"),near=sceneNear(),key="scn|"+SCN.k+"|"+(near?near.k:"")+"|"+SCN.stSig;if(key===bKey)return;bKey=key;
-  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"?"Go outside":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:""}`;
+  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"?"Go outside":SCN.kind==="planet"?"Back to the station":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:""}`;
   if(near)h+=`<button class="enter" id="enterBtn"><span>${near.verb||"Enter"} ${esc(near.n)}<small>${esc(String(near.sub||""))}</small></span>${ARROW}</button>`;
   h+=`<div class="places">${SCN.places.filter(p=>p.list!==0&&p.k!=="boat").map(p=>`<button class="place${near===p?" here":""}" data-sgo="${p.k}"><i style="background:${p.c}"></i>${esc(p.short||p.n)}</button>`).join("")}</div>`;
   el.innerHTML=h;const eb=$("enterBtn");if(eb)eb.onclick=()=>{audioOn();near.go()};
@@ -5033,6 +5035,7 @@ function spacePlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.b
   add({k:"bq",n:"Cosmic Boutique",sub:"Wear the universe",c:"#ff4fd8",x:720,y:1020,w:220,h:140,go:()=>openBoutique(closeRoom,true)});
   add({k:"obs",n:"Observatory",sub:w2().disc.length+"/"+COSMOS.length+" discovered",c:"#3b2a8a",x:1060,y:1020,w:220,h:140,go:()=>openObservatory(closeRoom)});
   add({k:"bh",n:"The Black Hole",sub:"Feed it Radiant for Dark Matter",verb:"Approach",c:"#1b1d22",x:920,y:300,w:160,h:120,bld:0,go:()=>openBlackHole(closeRoom)});
+  add({k:"pad",n:"Landing pad",sub:"Shuttles to the Moon and Mars",c:"#4fe3ff",x:320,y:1150,w:170,h:110,go:()=>openPad(closeRoom)});
   add({k:"gate",n:"Stargate",sub:"Back to Earth",verb:"Leave through the",c:"#4fe3ff",x:930,y:1380,w:140,h:60,bld:0,list:0,go:()=>leaveScene()});
   return L}
 const W2H=()=>(S&&S.w2&&S.w2.home!=null)?S.w2.home:-1;
@@ -5445,7 +5448,7 @@ const GUIDE={market:"Tap a listing to buy, hold to lowball. Sell from your stash
  lab:"One-time research that multiplies your generators.",obs:"Scan the sky to discover cosmic objects. Each adds +3% to generators.",bhole:"Feed Radiant in for Dark Matter: +5% to every generator, forever.",shomes:"Each space home adds +25% to every generator.",auction:"Live bidding with everyone in your room. Bids at the end add time.",
  crew:"Pool money into your crew bank. Every crew level gives every member +3% money.",season:"Earn season points by playing. Claim rewards on the track before the season ends.",mega:"Absurd projects for the very rich. Every level gives +3% money forever.",tiers:"Your tier grows with net worth. Harder game, bigger rewards.",
  space:"Upgrade your rocket and fly it. Keep the needle in the green band.",pmarket:"Buy items your friends have listed.",stocks:"Buy shares and sell when the price is higher.",gram:"Post about your life. Cooler posts get more likes, fans and sponsor money.",look:"Change your clothes, face and hair. Free, any time.",
- jbox:"Turn the soundtrack on and pick what plays at home.",next:"Everything you can unlock next, with how close you are.",cosmos:"Trade space rocks and alien relics."};
+ jbox:"Turn the soundtrack on and pick what plays at home.",next:"Everything you can unlock next, with how close you are.",cosmos:"Trade space rocks and alien relics.",deeds:"Buy buildings for income every minute, and a cut when friends shop there. Rename landmarks too.",pad:"Shuttles to the Moon and Mars. Free with an upgraded rocket capsule.",taxi:"Pick a place and the taxi drops you at the door."};
 /* ================= a living town: named locals, taxis, police, weather, city nights ================= */
 const TOWNIES=["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora","Mo","Ivy"];
 NPCS.forEach((n,i)=>{n.n=TOWNIES[i%TOWNIES.length]});
@@ -5508,6 +5511,65 @@ document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest
 function gymOwnHTML(){const L=gymLv(),N=GYMLV[L];return `<div class="gymown"><div class="sechead"><h3>Own Iron House</h3><span class="eyebrow">${L?"Level "+L+" · "+fmt(gymIncome())+"/min":"Not yours yet"}</span></div>
   ${L?`<p class="fine">Owner perks: +${L*6}% bigger green zone on every lift, and friends training here online get coached.</p>`:""}
   ${N?`<button class="perk nopic" data-gymup="1" ${S.cash<N.c?"disabled":""}><span class="t">${N.n}</span><span class="d">${N.d}</span><span class="c">${fmt(N.c)}</span></button>`:`<p class="fine">Fully upgraded. You run the biggest gym chain in town.</p>`}</div>`}
+/* ================= for the very rich: property deeds, naming rights, walkable planets ================= */
+const DEEDS=[{k:"cafe",c:1e9},{k:"flea",c:1e10},{k:"mall",c:5e10},{k:"market",c:1e11},{k:"dealer",c:5e11},{k:"lux",c:2e12},{k:"bank",c:1e13}];
+const ownsDeed=k=>!!(S&&S.deeds&&S.deeds[k]);
+const deedInc=()=>DEEDS.reduce((a,d)=>a+(ownsDeed(d.k)?d.c*.0006:0),0)*moonK();
+let deedT=0;function deedTick(dt){if(!S||!S.deeds)return;deedT+=dt;if(deedT<60)return;deedT=0;const v=Math.round(deedInc());if(v>0){earn(v);if(!room)banner("Property income +"+fmt(v),"u")}}
+// when a friend in your room buys at a place you own, you get a 5% cut
+function deedBuyHook(k,price){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(Array.isArray(p.ow)&&p.ow.includes(k))mpSend("ry",{f:MP_ID,k,a:Math.round(price*.05),n:mpName()},id)}}
+function deedMsg(d){if(!d||!ownsDeed(d.k))return;const a=Math.min(+d.a||0,Math.max(1e4,netWorth()*.002));if(a<1)return;earn(a);banner(String(d.n||"A friend").slice(0,14)+" shopped at your "+PL[d.k].n+" +"+fmt(a),"g")}
+function drawDeedFlags(){if(!S||!S.deeds)return;for(const k in S.deeds){const p=PL[k];if(!p)continue;const x=p.x+p.w-16,y=p.y+4;if(x<cam.x-40||x>cam.x+vw+40||y<cam.y-80||y>cam.y+vh+40)continue;ctx.strokeStyle="#3a3f4c";ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-40);ctx.stroke();const f=Math.sin(wt*4+x)*3;ctx.fillStyle="#ffcc33";ctx.beginPath();ctx.moveTo(x,y-40);ctx.quadraticCurveTo(x+14,y-36+f,x+24,y-32);ctx.lineTo(x,y-24);ctx.closePath();ctx.fill();ctx.fillStyle=myShirt();ctx.beginPath();ctx.arc(x+9,y-32,3,0,7);ctx.fill()}}
+/* naming rights */
+const NAMEC={tower:1e9,street:1e10,lm:1e12};
+function applyNames(){const N=(S&&S.names)||{};if(PL.tower){PL.tower.n0=PL.tower.n0||PL.tower.n;PL.tower.n=N.tower||PL.tower.n0}COUNTRIES.forEach(c=>{c.lm0=c.lm0||c.lm;c.lm=N["lm_"+c.k]||c.lm0});STATIC=null}
+const streetName=()=>{let best=null,bw=-1;if(S&&S.names&&S.names.street){best=S.names.street;bw=netWorth()}if(MPW&&MP)for(const id in MP.peers){const p=MP.peers[id];if(p.sn&&(p.c||0)>bw){bw=p.c||0;best=String(p.sn).slice(0,20)}}return best};
+function drawStreetSign(){const n=streetName();if(!n)return;const x=1720,y=1652;if(x<cam.x-200||x>cam.x+vw+200||y<cam.y-60||y>cam.y+vh+60)return;ctx.font="900 13px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const w=ctx.measureText(n.toUpperCase()).width+24;ctx.fillStyle="#1f7a46";rr(x-w/2,y-12,w,24,6);ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2;rr(x-w/2+3,y-9,w-6,18,4);ctx.stroke();ctx.fillStyle="#fff";ctx.fillText(n.toUpperCase(),x,y+1)}
+function openDeeds(back){room="deeds";const draw=()=>{S.deeds=S.deeds||{};S.names=S.names||{};
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Property & names")}
+    <div class="note">Own the buildings in town. Each one pays you every minute and flies your gold flag. When friends in your online room buy at a place you own, you get a <b>5% cut</b>. Earning ${fmt(deedInc())}/min now.</div>
+    <div class="perks">${DEEDS.map(d=>{const own=ownsDeed(d.k),p=PL[d.k];return `<button class="perk nopic" data-deed="${d.k}" ${own||S.cash<d.c?"disabled":""}><span class="t">${own?"✓ ":""}${p.n}</span><span class="d">${fmt(d.c*.0006)}/min${["market","lux","flea"].includes(d.k)?" · cut of friends' buys":""}</span><span class="c">${own?"Yours":fmt(d.c)}</span></button>`}).join("")}</div>
+    <div class="sechead"><h3>Naming rights</h3><span class="eyebrow">Your name on the map</span></div>
+    <div class="perks"><button class="perk nopic" data-nm="tower" ${S.cash<NAMEC.tower?"disabled":""}><span class="t">Rename Flip Tower</span><span class="d">${esc(S.names.tower||"Flip Tower")}</span><span class="c">${fmt(NAMEC.tower)}</span></button>
+      <button class="perk nopic" data-nm="street" ${S.cash<NAMEC.street?"disabled":""}><span class="t">Name the Township street</span><span class="d">${S.names.street?esc(S.names.street):"Everyone in your online room sees the richest player's street name"}</span><span class="c">${fmt(NAMEC.street)}</span></button>
+      ${COUNTRIES.map(c=>`<button class="perk nopic" data-nm="lm_${c.k}" ${S.cash<NAMEC.lm?"disabled":""}><span class="t">Rename the ${esc(c.lm0||c.lm)}</span><span class="d">${c.n}${S.names["lm_"+c.k]?" · now "+esc(S.names["lm_"+c.k]):""}</span><span class="c">${fmt(NAMEC.lm)}</span></button>`).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("room").querySelectorAll("[data-deed]").forEach(b=>b.onclick=()=>{const d=DEEDS.find(x=>x.k===b.dataset.deed);if(ownsDeed(d.k)||S.cash<d.c)return;S.cash-=d.c;S.deeds[d.k]=1;dirty=true;SFX.rebirth();confetti(160,null,null,["#ffcc33","#fff"]);banner("You own the "+PL[d.k].n,"g");draw();updMini()});
+  $("room").querySelectorAll("[data-nm]").forEach(b=>b.onclick=()=>{const k=b.dataset.nm,c=k.startsWith("lm_")?NAMEC.lm:NAMEC[k];if(S.cash<c)return;const v=prompt("New name (3 to 20 characters)","");if(v==null)return;const t=String(v).replace(/[<>]/g,"").trim().slice(0,20);if(t.length<3)return banner("Too short","r");S.cash-=c;S.names[k]=t;dirty=true;applyNames();SFX.level();banner("Renamed to "+t,"g");draw();updMini()})};draw()}
+/* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
+const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
+const PW=1600,PH=1200;
+function planetPlaces(){const k=SCN.k,P=PLANETS[k],L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=o.bld!==0;L.push(o)};
+  add({k:"pmkt",n:P.n+" Market",short:"Market",sub:"Space rocks sell for 25% more here",c:P.tone==="#cfd6e4"?"#5f6b7e":"#c2410c",x:260,y:360,w:260,h:150,go:()=>{room="cosmos";openMarket({...COSMOS_MKT,k:k+"mkt",n:P.n+" Market",sell:1.25});backTo(closeRoom)}});
+  add({k:"mine",n:"Mining site",verb:"Work the",sub:"Dig for "+(k==="moon"?"moon rocks":"Martian crystals")+" · 10 energy",c:"#cf9a14",x:1060,y:380,w:200,h:120,bld:0,go:()=>planetMine(k)});
+  add({k:"base",n:k==="moon"?"Lunar base":"Mars habitat",sub:"Rest inside: full energy (every 5 min)",c:"#2a5bd7",x:640,y:240,w:300,h:170,go:()=>{if(!coolOk("pbase",300000))return;S.energy=maxEnergy();SFX.level();banner("Rested in the "+(k==="moon"?"base":"habitat"),"u");updMini()}});
+  if(!(S.flags["flag_"+k]))add({k:"flag",n:"Plant your flag",verb:"",sub:"Claim this world for yourself",c:"#e2364a",x:760,y:760,w:80,h:40,bld:0,go:()=>{S.flags["flag_"+k]=1;const v=Math.round(Math.max(1e6,netWorth()*.02));earn(v);gainCrate(5);dirty=true;SFX.rebirth();confetti(220,null,null,["#e2364a","#fff","#ffcc33"]);banner("Flag planted on "+P.n+"! +"+fmt(v),"g");SCN.sig="";bKey=""}});
+  add({k:"shuttle",n:"Shuttle",verb:"Board the",sub:"Back to the space station",c:"#4fe3ff",x:740,y:1010,w:120,h:60,bld:0,go:()=>leaveScene()});
+  return L}
+function buildPlanet(){const k=SCN.k,P=PLANETS[k],g=SCN_C.getContext("2d");SCN_C.width=PW;SCN_C.height=PH;let sd=k.length*13+5;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
+  // black sky with stars at the top, the ground below
+  g.fillStyle=P.sky;g.fillRect(0,0,PW,PH);for(let i=0;i<300;i++){g.fillStyle=`rgba(255,255,255,${.3+r()*.7})`;g.fillRect(r()*PW,r()*200,1.4,1.4)}
+  if(k==="moon"){const eg=g.createRadialGradient(1300,90,10,1300,110,70);eg.addColorStop(0,"#9fd6ff");eg.addColorStop(1,"#1f5f9a");g.fillStyle=eg;g.beginPath();g.arc(1300,110,70,0,7);g.fill();g.fillStyle="rgba(80,170,90,.8)";g.beginPath();g.ellipse(1280,95,24,16,.4,0,7);g.fill()}
+  else{g.fillStyle="#ffe8c0";g.beginPath();g.arc(300,90,26,0,7);g.fill();g.fillStyle="#d8c0b0";g.beginPath();g.arc(1200,70,12,0,7);g.fill()}
+  const gg=g.createLinearGradient(0,180,0,PH);gg.addColorStop(0,P.ground[0]);gg.addColorStop(1,P.ground[1]);g.fillStyle=gg;g.beginPath();g.moveTo(0,200);for(let x=0;x<=PW;x+=80)g.lineTo(x,180+Math.sin(x*.01)*20+r()*12);g.lineTo(PW,PH);g.lineTo(0,PH);g.closePath();g.fill();
+  // craters, rocks and rover tracks
+  for(let i=0;i<26;i++){const x=r()*PW,y=260+r()*(PH-300),R=10+r()*50;if(SCN.places.some(p=>x>p.x-60&&x<p.x+p.w+60&&y>p.y-60&&y<p.y+p.h+80))continue;g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x,y,R,R*.45,0,0,7);g.fill();g.fillStyle="rgba(255,255,255,.14)";g.beginPath();g.ellipse(x+R*.15,y+R*.1,R*.8,R*.32,0,Math.PI*.1,Math.PI*.9);g.fill()}
+  for(let i=0;i<40;i++){const x=r()*PW,y=240+r()*(PH-260);g.fillStyle=k==="moon"?"#6b7078":"#7a3a22";g.beginPath();g.ellipse(x,y,3+r()*7,2+r()*4,r(),0,7);g.fill()}
+  g.strokeStyle="rgba(0,0,0,.12)";g.lineWidth=6;g.setLineDash([4,6]);g.beginPath();g.moveTo(100,900);g.bezierCurveTo(500,700,900,1000,1500,700);g.stroke();g.setLineDash([]);
+  // the base domes and the landing pad
+  SCN.places.forEach(p=>{if(p.k==="base"){[[p.x+70,p.y+120,70],[p.x+200,p.y+130,55]].forEach(([x,y,R])=>{g.fillStyle="rgba(200,230,255,.55)";g.beginPath();g.arc(x,y,R,Math.PI,0);g.fill();g.strokeStyle="#cfd6e4";g.lineWidth=3;g.stroke()});g.fillStyle="#9aa3b3";g.fillRect(p.x+20,p.y+120,260,30);g.fillStyle="#1b1d22";g.fillRect(p.x+140,p.y+128,20,22);return}
+    if(p.k==="shuttle"){g.fillStyle="#3a3f4c";g.beginPath();g.ellipse(p.door[0],p.door[1]-20,90,30,0,0,7);g.fill();g.strokeStyle="#ffcc33";g.lineWidth=3;g.beginPath();g.ellipse(p.door[0],p.door[1]-20,70,22,0,0,7);g.stroke();g.fillStyle="#f2f2f2";g.beginPath();g.moveTo(p.door[0]-20,p.door[1]-30);g.lineTo(p.door[0],p.door[1]-110);g.lineTo(p.door[0]+20,p.door[1]-30);g.closePath();g.fill();g.fillStyle="#e2364a";g.fillRect(p.door[0]-20,p.door[1]-40,40,8);return}
+    if(p.k==="mine"){g.fillStyle="rgba(0,0,0,.25)";g.beginPath();g.ellipse(p.door[0],p.door[1]-40,90,40,0,0,7);g.fill();g.fillStyle=k==="moon"?"#c8ccd2":"#ff9a6b";for(let j=0;j<6;j++){g.beginPath();g.arc(p.door[0]-50+j*20,p.door[1]-50+(j%2)*14,8,0,7);g.fill()}g.strokeStyle="#8a6a44";g.lineWidth=4;g.beginPath();g.moveTo(p.door[0]+60,p.door[1]-20);g.lineTo(p.door[0]+80,p.door[1]-70);g.stroke();return}
+    if(p.k==="flag")return;if(p.bld)drawBuilding(g,{...p,k:"x"+p.k},PAL_D)});
+  if(S.flags["flag_"+k]){g.strokeStyle="#cfd6e4";g.lineWidth=3;g.beginPath();g.moveTo(800,800);g.lineTo(800,720);g.stroke();g.fillStyle=myShirt();g.fillRect(800,720,46,30);g.fillStyle="#fff";g.font=`900 11px ${FONTS.d}`;g.textAlign="center";g.fillText(mpName().slice(0,6).toUpperCase(),823,736)}}
+function planetAnim(){const k=SCN.k;{const t=wt*.05%1,x=200+t*1200,y=880-Math.sin(t*Math.PI)*120;ctx.fillStyle="#cfd6e4";rr(x-22,y-14,44,22,5);ctx.fill();ctx.fillStyle="#3a3f4c";[[x-16,y+10],[x,y+10],[x+16,y+10]].forEach(([a,b])=>{ctx.beginPath();ctx.arc(a,b,6,0,7);ctx.fill()});ctx.strokeStyle="#9aa3b3";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+10,y-14);ctx.lineTo(x+18,y-34);ctx.stroke()}
+  if(k==="mars"){ctx.fillStyle=`rgba(230,140,90,${.08+.05*Math.sin(wt*.5)})`;ctx.fillRect(cam.x,cam.y,vw,vh)}}
+function enterPlanet(k){const P=PLANETS[k];enterScene({kind:"planet",k,w:PW,h:PH,spawn:[800,960],bg:P.sky,title:P.n,shirts:["#f2f2f2","#cfd6e4"],mk:planetPlaces,pt:()=>[200+Math.random()*1200,300+Math.random()*800],ok:(x,y)=>x>20&&x<PW-20&&y>240&&y<PH-20});SCN.npc.forEach(n=>n.astro=1);banner("Welcome to "+P.n,"a")}
+function openPad(back){room="pad";const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Landing pad")}<div class="note">Shuttles to the surface. With a capsule upgraded at the Spaceport, the ride is free.</div>
+  <div class="perks">${Object.entries(PLANETS).map(([k,P])=>{const free=rk("cap")>=P.cap,c=P.tick*RAD;return `<button class="perk nopic" data-pl="${k}" ${!free&&S.cash<c?"disabled":""}><span class="t">${P.n}</span><span class="d">${k==="moon"?"Craters, a lunar base, moon rocks":"Red dust, a habitat, Martian crystals"}${S.flags["flag_"+k]?" · your flag is there":""}</span><span class="c">${free?"Free":fmt(c)}</span></button>`}).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("room").querySelectorAll("[data-pl]").forEach(b=>b.onclick=()=>{const k=b.dataset.pl,P=PLANETS[k],free=rk("cap")>=P.cap,c=P.tick*RAD;if(!free){if(S.cash<c)return;S.cash-=c;dirty=true}closeRoom();flyTo({n:P.n,cn:"Shuttle",tone:P.tone},()=>enterPlanet(k))})};draw()}
+function planetMine(k){if(!coolOk("mine_"+k,90000))return;if(S.stash.length>=maxSlots())return banner("Stash full","r");if(!spend(10))return;const P=PLANETS[k],code=Math.random()<.75?P.item[0]:P.item[1],it=POOL.find(p=>p.cat==="space"&&p.code===code),c=CAT.space.conds[Math.random()<.5?0:1];
+  S.stash.push({cat:"space",code,name:it.name,cond:c[0],base:Math.round(it.base*c[1]),noise:rnd(.9,1.1),fake:false,paid:0});S.coll=S.coll||{};S.coll["space:"+code]=1;dirty=true;SFX.grail();shake(5);confetti(80,null,null,[P.tone,"#fff"]);banner("Dug up: "+it.name,"g")}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -5941,7 +6003,7 @@ function titleMain(){
     $("bNew").onclick=()=>{if(has&&!confirmNew){confirmNew=true;draw();return}store.del(SAVE);newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){shownCash=null;try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline()}if(HOLI())setTimeout(()=>banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
