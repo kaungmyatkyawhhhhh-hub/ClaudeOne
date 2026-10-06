@@ -1360,9 +1360,10 @@ function drawPerson0(x,y,o){
   const lw=5*s*(1+.65*bl),aw=5*s*(1+.75*bc),sw=20*s*(1+.24*bb+.14*bc)*(o.pose==="lat"?1.18:1),wa=Math.min(sw/2,9*s*(1+.12*bl)),hx=sw/2;
   c.fillStyle="rgba(0,0,0,.22)";c.beginPath();c.ellipse(x,y+1,(11+3*bb)*s,4.5,0,0,7);c.fill();
   if(o.you){c.strokeStyle="rgba(42,60,255,.55)";c.lineWidth=2;c.beginPath();c.ellipse(x,y+1,(15+3*bb)*s,6,0,0,7);c.stroke()}
-  y-=o.bob||0;const AC=o.acc||{},LX=o.pose?0:Math.round(9*Math.max(bl,bc*.85,bb*.85)*s);if(AC.b)accBack(c,AC.b,x,y-LX,hx,o.mv?Math.sin(o.ph*14)*1.5:0,o.ph||0);c.fillStyle=o.legs||"#262b3a";rrp(c,x-1.5*s-lw,y-11-LX-l*.3,lw,11+LX,2);c.fill();rrp(c,x+1.5*s,y-11-LX+l*.3,lw,11+LX,2);c.fill();if(o.shoes){c.fillStyle=o.shoes;rrp(c,x-1.5*s-lw-.6,y-2.6-l*.3,lw+1.6,3.4,1.3);c.fill();rrp(c,x+1.5*s-.6,y-2.6+l*.3,lw+1.6,3.4,1.3);c.fill()}
+  y-=o.bob||0;const AC=o.acc||{},LX=o.pose?0:Math.round(12*Math.max(bl,bc*.85,bb*.85)*s),TK=1+.4*Math.max(bc,bb);if(AC.b)accBack(c,AC.b,x,y-LX,hx,o.mv?Math.sin(o.ph*14)*1.5:0,o.ph||0);c.fillStyle=o.legs||"#262b3a";rrp(c,x-1.5*s-lw,y-11-LX-l*.3,lw,11+LX,2);c.fill();rrp(c,x+1.5*s,y-11-LX+l*.3,lw,11+LX,2);c.fill();if(o.shoes){c.fillStyle=o.shoes;rrp(c,x-1.5*s-lw-.6,y-2.6-l*.3,lw+1.6,3.4,1.3);c.fill();rrp(c,x+1.5*s-.6,y-2.6+l*.3,lw+1.6,3.4,1.3);c.fill()}
   if(bl>.35){c.fillStyle="rgba(255,255,255,.12)";c.fillRect(x-1.5*s-lw+1,y-10-LX-l*.3,lw*.4,6+LX*.6);c.fillRect(x+1.5*s+1,y-10-LX+l*.3,lw*.4,6+LX*.6)}
   y-=LX;
+  c.save();c.translate(x,y-9);c.scale(1,TK);c.translate(-x,-(y-9));
   if(!o.pose&&B&&(bc+bb)>.12){const am=5*s*(1+.45*bc);[-1,1].forEach(d=>{const ax=x+d*(hx+am*.42-1),t=y-27+b-d*l*.4,ua=am*.56;c.fillStyle=o.skin;
       c.beginPath();c.moveTo(ax-am*.36,t+9);c.quadraticCurveTo(ax-am*.42,t+13,ax-am*.26,t+15.5);c.lineTo(ax+am*.26,t+15.5);c.quadraticCurveTo(ax+am*.42,t+13,ax+am*.36,t+9);c.closePath();c.fill();
       c.beginPath();c.arc(ax,t+16,1.9*s+am*.08,0,7);c.fill();
@@ -1382,6 +1383,7 @@ function drawPerson0(x,y,o){
   if(bb>.2){c.fillStyle=o.skin;const th=3+5*bb;[-1,1].forEach(d=>{c.beginPath();c.moveTo(x+d*3,y-33+b);c.lineTo(x+d*(hx*.8),y-29+b);c.lineTo(x+d*3,y-29+b+th*.2);c.closePath();c.fill()})}
   if(AC.c||AC.b==="pack")accChest(c,AC.c,AC.b,x,y+b,hx);if(AC.x&&!o.pose)accHand(c,AC.x,x+hx+aw*.5,y-12+b-l*.4);
   if(o.pose){drawPose(c,x,y+b,s,o);c.strokeStyle="rgba(0,0,0,.18)";c.lineWidth=1;c.lineCap="butt"}
+  c.restore();y-=20*(TK-1);
   c.fillStyle=o.skin;c.beginPath();c.arc(x,y-37+b,9.5,0,7);c.fill();c.stroke();
   {const hs=o.hs||0;c.fillStyle=o.hair;if(hs===1){c.beginPath();c.arc(x,y-39+b,9.8,Math.PI*1.02,Math.PI*1.98);c.fill();c.fillRect(x-9.8,y-40+b,3.4,12);c.fillRect(x+6.4,y-40+b,3.4,12)}
     else if(hs===2){c.beginPath();c.moveTo(x-3,y-46+b);[-2,0,2].forEach((d,i)=>{c.lineTo(x+d*1.6-1,y-53+b-(i===1?2:0));c.lineTo(x+d*1.6+1,y-46+b)});c.lineTo(x+3,y-46+b);c.closePath();c.fill();c.fillRect(x-3,y-47+b,6,3)}
@@ -1429,7 +1431,7 @@ function drawWorld(){
   const P=isDark()?PAL_D:PAL_L;
   if(!STATIC||staticDark!==isDark())buildStatic();
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  cam.x=vw>=W?(W-vw)/2:clamp(S.px-vw/2,0,W-vw);cam.y=vh>=H?(H-vh)/2:clamp(S.py-vh*.55,0,H-vh);
+  cam.x=vw>=W?(W-vw)/2:clamp(S.px-vw/2,0,W-vw);cam.y=vh>=H?(H-vh)/2:clamp(S.py-vh*.55,0,H-vh);camSafe();
   ctx.fillStyle=P.grass;ctx.fillRect(0,0,vw,vh);
   ctx.drawImage(STATIC,Math.max(0,cam.x),Math.max(0,cam.y),Math.min(W,vw),Math.min(H,vh),Math.max(0,-cam.x),Math.max(0,-cam.y),Math.min(W,vw),Math.min(H,vh));
   ctx.translate(-cam.x,-cam.y);
@@ -1620,8 +1622,8 @@ function liftPanel(l0){
     $("gBack").onclick=closePanel;
     const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+liftOver());newZone();draw()};
     P.querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+(S.liftMax?liftOver():5);newZone();draw()});
-    $("wDown").onclick=()=>{S.liftMax=0;setW(G.w-2.5)};$("wUp").onclick=()=>{S.liftMax=0;setW(G.w+2.5)};{let armed=false;const rb=$("gReb");rb.onclick=()=>{if((S.spurts||0)<rbReq())return;if(rb.dataset.sure!=="1"){rb.dataset.sure="1";rb.innerHTML="Tap again to be reborn<small>Your height and growth spurts reset</small>";SFX.hot();return}
-      const rbk=Math.max(1,rbMulti());S.reborn=rbN()+rbk;S.spurts=0;S.height=170;dirty=true;SFX.rebirth();setTimeout(()=>SFX.grail(),400);flash("#ffcc33",.7);confetti(320,null,null,["#ffcc33","#ffffff","#ff4fd8","#4fe3ff"]);shake(12,.8);buzz([60,40,60,40,200]);
+    $("wDown").onclick=()=>{S.liftMax=0;setW(G.w-2.5)};$("wUp").onclick=()=>{S.liftMax=0;setW(G.w+2.5)};{let armed=false;const rb=$("gReb");rb.onclick=()=>{if((S.spurts||0)<rbReq())return;if(rb.dataset.sure!=="1"){rb.dataset.sure="1";rb.innerHTML="Tap again to be reborn<small>Your height, growth spurts and lifts reset</small>";SFX.hot();return}
+      const rbk=Math.max(1,rbMulti());S.reborn=rbN()+rbk;S.spurts=0;S.height=170;S.lifts={bench:20,squat:20,dead:20};syncPR();S.liftMax=0;if(G){G.w=25;newZone()}dirty=true;SFX.rebirth();setTimeout(()=>SFX.grail(),400);flash("#ffcc33",.7);confetti(320,null,null,["#ffcc33","#ffffff","#ff4fd8","#4fe3ff"]);shake(12,.8);buzz([60,40,60,40,200]);
       banner(rbk>1?"REBORN ×"+rbk:"REBORN","g");banner("Money ×"+rbK().toFixed(1)+" forever","g");if(GS)gymPop(GS.px,GS.py-90,"REBORN","#ffcc33",{life:2.4});draw();updMini();renderHud()};const sb=$("gSpurt");sb.onclick=()=>{if(S.pr<spurtReq())return;if(!armed){armed=true;sb.innerHTML="Tap again to grow<small>All lifts reset to 20 kg</small>";SFX.hot();return}
       const g=spurtGain();S.height=(S.height||170)+g;S.spurts=(S.spurts||0)+1;S.lifts={bench:20,squat:20,dead:20};syncPR();G.w=25;newZone();dirty=true;
       SFX.rebirth();flash("#4fe3ff",.55);confetti(220,null,null,["#4fe3ff","#ffffff","#ffcc33","#2fd28a"]);shake(10,.6);buzz([40,40,80,40,160]);banner("GROWTH SPURT","u");banner("+"+g+" cm · "+S.height+" cm","g");if(GS)gymPop(GS.px,GS.py-90,"+"+g+" CM","#4fe3ff",{life:2.2});draw();updMini();renderHud()}}
@@ -4821,7 +4823,7 @@ function sceneSig(){if(SCN.kind==="prehist")return "ph|"+Math.floor(Math.log10(1
 function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig()+"|"+isDark();
   if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else if(SCN.kind==="house")buildHouse();else if(SCN.kind==="arena")buildArena();else if(SCN.kind==="planet")buildPlanet();else if(SCN.kind==="prehist")buildPrehist();else buildIsland();SCN.stSig=sig;bKey=""}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):SCN.kind==="space"?.55+.12*clamp((700-S.py)/300,0,1):SCN.kind==="house"?.66:.55),SCN.kind==="city"?-170:SCN.kind==="space"||SCN.kind==="house"?-200:0,Ht-vh);
+  cam.x=vw>=Wd?(Wd-vw)/2:clamp(S.px-vw/2,0,Wd-vw);cam.y=vh>=Ht?(Ht-vh)/2:clamp(S.py-vh*(SCN.kind==="city"?.55+.15*clamp((900-S.py)/400,0,1):SCN.kind==="space"?.55+.12*clamp((700-S.py)/300,0,1):SCN.kind==="house"?.66:.55),SCN.kind==="city"?-170:SCN.kind==="space"||SCN.kind==="house"?-200:0,Ht-vh);camSafe();
   ctx.fillStyle=SCN.kind==="prehist"?"#f6c27a":SCN.kind==="planet"?PLANETS[SCN.k].sky:SCN.kind==="house"?"#1b1d22":SCN.kind==="space"?"#05061a":dkc(SCN.kind==="city"?SCN.bg:"#0f5f9a");ctx.fillRect(0,0,vw,vh);
   ctx.drawImage(SCN_C,Math.max(0,cam.x),Math.max(0,cam.y),Math.min(Wd,vw),Math.min(Ht,vh),Math.max(0,-cam.x),Math.max(0,-cam.y),Math.min(Wd,vw),Math.min(Ht,vh));
   ctx.translate(-cam.x,-cam.y);const nightA=night(),near=sceneNear();
@@ -6051,6 +6053,10 @@ function buildArena(){const g=SCN_C.getContext("2d");SCN_C.width=AW;SCN_C.height
 // each opponent waits behind their table, flexing now and then
 function arenaPeople(ppl){if(!SCN||SCN.kind!=="arena")return;OPPS.forEach((o,i)=>{const[cx,cy]=ARN(i),y=cy-26,sz=.95+Math.min(.5,o.kg/600),fl=Math.sin(wt*1.3+i*1.7)>.75;
   ppl.push([y,()=>drawPerson(cx,y,{shirt:o.look[2],skin:o.look[0],hair:o.look[1],hs:o.n.startsWith("Titan Tess")?8:0,size:sz,build:{c:Math.min(1,o.kg/260),l:Math.min(1,o.kg/320),b:Math.min(1,o.kg/280)},pose:fl?"bi":null,ph:wt+i})])})}
+/* ================= camera: never let the HUD or the bottom buttons cover you near the edge of a map ================= */
+let SAFE={t:0,top:0,bot:0};
+function camSafe(){const now=performance.now();if(now-SAFE.t>500){SAFE.t=now;const h=$("hud"),b=$("bottom");const k=cssScale()*(typeof Z==="number"&&Z>0?Z:1),cv=$("world"),ct=cv?cv.getBoundingClientRect().top:0;let bt=0;if(h&&!h.hidden)h.querySelectorAll("*").forEach(e=>{if(!e.offsetParent&&getComputedStyle(e).position!=="fixed")return;const r=e.getBoundingClientRect();if(r.height&&r.width)bt=Math.max(bt,r.bottom)});SAFE.top=Math.max(0,(bt-ct)/k);SAFE.bot=b&&!b.hidden&&b.offsetHeight?Math.max(0,((cv?cv.getBoundingClientRect().bottom:innerHeight)-b.getBoundingClientRect().top)/k):0}
+  const head=78*(typeof tallK==="function"?Math.max(1,tallK()):1),lo=S.py-(vh-SAFE.bot-14),hi=S.py-(SAFE.top+head);if(hi>=lo)cam.y=clamp(cam.y,lo,hi)}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
