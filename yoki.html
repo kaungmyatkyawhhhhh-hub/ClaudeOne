@@ -59,6 +59,7 @@
   .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 12px 0; border-radius: 24px;
     background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)); border: 1px solid var(--panel-edge); overflow: hidden; isolation: isolate; }
   .stage::before { content: ""; position: absolute; inset: -20% 15% 30%; z-index: -1;
+    -webkit-mask-image: radial-gradient(ellipse 60% 90% at 50% 20%, #000 35%, transparent 75%); mask-image: radial-gradient(ellipse 60% 90% at 50% 20%, #000 35%, transparent 75%);
     background: conic-gradient(from 180deg at 50% 0%, transparent 40%, rgba(255, 220, 140, .14) 47%, rgba(255, 220, 140, .2) 50%, rgba(255, 220, 140, .14) 53%, transparent 60%); }
   .gains { text-align: center; }
   .gains .num { font-family: var(--font-display); font-size: clamp(2.4rem, 9vw, 3.8rem); line-height: 1; font-variant-numeric: tabular-nums;
@@ -68,8 +69,67 @@
   .rates .chip { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); }
   .rates .chip b { color: var(--text); font-weight: 800; }
 
-  #yoki { position: relative; background: none; border: 0; padding: 0; cursor: pointer; width: min(100%, var(--size, 330px)); max-width: 100%;
-    aspect-ratio: 320 / 390; -webkit-tap-highlight-color: transparent; touch-action: manipulation; border-radius: 20px; transition: width .6s cubic-bezier(.2,1.4,.4,1); }
+  .arena { position: relative; width: 100%; height: calc(min(var(--size, 300px), 64vw) * 1.22 + 74px); }
+  .walker { position: absolute; left: 0; bottom: 0; width: min(var(--size, 300px), 64vw); will-change: transform;
+    transition: width .6s cubic-bezier(.2,1.4,.4,1); }
+  #yoki { position: relative; display: block; background: none; border: 0; padding: 0; cursor: pointer; width: 100%;
+    aspect-ratio: 320 / 390; -webkit-tap-highlight-color: transparent; touch-action: manipulation; border-radius: 20px; }
+  #yoki.walking { animation: bob .42s ease-in-out infinite; }
+  #yoki.dancing { animation: dance .5s ease-in-out infinite; }
+  .fever #yoki.dancing { animation-duration: .3s; }
+  @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-9px) rotate(1.5deg); } }
+  @keyframes dance { 0%, 100% { transform: translateY(0) rotate(-4deg); } 25% { transform: translateY(-14px) rotate(0); } 50% { transform: translateY(0) rotate(4deg); } 75% { transform: translateY(-14px) rotate(0); } }
+  .arm { transition: transform .12s ease-out; }
+  #armL { transform-origin: 112px 146px; }
+  #armR { transform-origin: 208px 146px; }
+  #ysvg.curlL #armL { transform: rotate(16deg) scale(1.1); }
+  #ysvg.curlR #armR { transform: rotate(-16deg) scale(1.1); }
+  #ysvg.wave #armR { animation: wave .45s ease-in-out infinite; }
+  #ysvg.dance #armL { animation: wave .5s ease-in-out infinite reverse; }
+  #ysvg.dance #armR { animation: wave .5s ease-in-out infinite; }
+  @keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-28deg); } }
+  #eyes { transform-box: fill-box; transform-origin: center; }
+  #brows { transition: transform .15s; }
+  #ysvg.hype #brows { transform: translateY(-4px); }
+  .mouth { display: none; }
+  #ysvg[data-mood="calm"] .m-calm, #ysvg[data-mood="smile"] .m-smile, #ysvg[data-mood="hype"] .m-hype, #ysvg[data-mood="ooh"] .m-ooh { display: inline; }
+
+  .bubble { position: absolute; left: 50%; top: -66px; transform: translateX(-50%); z-index: 6; max-width: 220px; width: max-content;
+    padding: 8px 14px; border-radius: 16px; background: #fff; color: #1b1630; font-weight: 800; font-size: .95rem; text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,.35); animation: bubbleIn .25s cubic-bezier(.2,1.6,.4,1); pointer-events: none; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: #fff; }
+  @keyframes bubbleIn { from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(.6); } }
+
+  .combo { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: baseline; gap: 2px 12px; min-height: 52px;
+    opacity: .35; transition: opacity .2s; }
+  .combo.on { opacity: 1; }
+  .combo-num { font-weight: 800; text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; color: var(--muted); }
+  .combo-num b { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: 0; color: var(--text); font-weight: 400; display: inline-block; }
+  .combo-num b.tick { animation: tick .15s; }
+  @keyframes tick { 50% { transform: scale(1.35); } }
+  .combo-mult { font-family: var(--font-display); font-size: 1.3rem; color: var(--gold); }
+  .cbar { grid-column: 1 / -1; width: 180px; height: 6px; border-radius: 99px; background: rgba(0,0,0,.35); overflow: hidden; }
+  .cbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--crit)); }
+
+  .golden { position: absolute; z-index: 7; width: 72px; height: 90px; padding: 6px; border: 0; cursor: pointer; border-radius: 18px;
+    background: radial-gradient(circle, rgba(255,212,92,.55), transparent 70%); animation: floaty 1.2s ease-in-out infinite; }
+  .golden svg { width: 100%; height: 100%; filter: drop-shadow(0 0 10px #ffc94a); }
+  .golden:focus-visible { outline: 2px solid var(--gold); }
+  @keyframes floaty { 50% { transform: translateY(-12px) rotate(8deg); } }
+
+  .gains .num { display: inline-block; transition: transform .08s; }
+  .gains .num.bump { transform: scale(1.08); }
+  .up.bought { animation: bought .45s ease-out; }
+  @keyframes bought { 0% { box-shadow: 0 0 0 0 rgba(255,201,74,.8); background: rgba(255,201,74,.35); } 100% { box-shadow: 0 0 0 16px rgba(255,201,74,0); } }
+
+  #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+  .fever-banner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 8; pointer-events: none; font-family: var(--font-display);
+    font-size: clamp(2.4rem, 10vw, 4rem); white-space: nowrap; color: #fff; text-shadow: 0 0 20px var(--crit), 0 0 40px var(--gold), 0 4px 0 #000;
+    animation: banner 1.4s cubic-bezier(.2,1.4,.4,1) forwards; }
+  @keyframes banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3) rotate(-8deg); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(-4deg); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -70%) scale(1) rotate(-4deg); } }
+  body.fever .stage { border-color: transparent; box-shadow: 0 0 0 2px var(--crit), 0 0 50px rgba(255, 90, 110, .45); }
+  body.fever .stage::before { background: conic-gradient(from 0deg at 50% 0%, transparent 30%, rgba(255,90,110,.25) 45%, rgba(255,201,74,.3) 50%, rgba(155,123,255,.25) 55%, transparent 70%); animation: hue 1.5s linear infinite; }
+  @keyframes hue { to { filter: hue-rotate(360deg); } }
   #yoki:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
   #yoki svg { width: 100%; height: 100%; display: block; overflow: visible; }
   #fig { transform-origin: 160px 372px; animation: breathe 2.6s ease-in-out infinite; }
@@ -140,7 +200,8 @@
   @keyframes toast { 0% { opacity: 0; transform: translate(-50%, 20px); } 12%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 10px); } }
 
   @media (prefers-reduced-motion: reduce) {
-    #fig, #rebirthBtn:not(:disabled), .stage.shake { animation: none; }
+    #fig, #rebirthBtn:not(:disabled), .stage.shake, #yoki.walking, #yoki.dancing, .golden, body.fever .stage, #ysvg .arm { animation: none !important; }
+    .walker { transition: none; }
     .pop { animation-duration: .3s; }
     .spark { display: none; }
   }
@@ -152,6 +213,7 @@
   </defs>
 </svg>
 
+<canvas id="fx" aria-hidden="true"></canvas>
 <div class="wrap">
   <header>
     <h1 class="logo">YOKI CLICKER</h1>
@@ -173,8 +235,20 @@
       <span class="chip"><b id="reps">0</b> reps</span>
     </div>
 
+    <div class="combo" id="combo" aria-live="off">
+      <span class="combo-num"><b id="comboNum">0</b> combo</span>
+      <span class="combo-mult" id="comboMult">×1.00</span>
+      <span class="cbar"><i id="cbar"></i></span>
+    </div>
+
+    <div class="arena" id="arena">
+      <button class="golden" id="golden" hidden aria-label="Grab the golden shake">
+        <svg viewBox="0 0 40 52" aria-hidden="true"><path d="M8 12h24l-3 36H11z" fill="#ffd45c"/><path d="M10 22h20l-2 24H12z" fill="#ffb21f"/><rect x="6" y="8" width="28" height="6" rx="2" fill="#fff4c9"/><path d="M24 8l5-7" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M14 26l3 4l-3 4" stroke="#fff4c9" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/></svg>
+      </button>
+      <div class="walker" id="walker">
+        <div class="bubble" id="bubble" hidden></div>
     <button id="yoki" aria-label="Click Yoki to do a rep">
-      <svg viewBox="0 0 320 390" aria-hidden="true">
+      <svg viewBox="0 0 320 390" aria-hidden="true" id="ysvg">
         <defs>
           <radialGradient id="skin" cx="45%" cy="35%" r="75%"><stop offset="0" stop-color="#d9a074"/><stop offset=".6" stop-color="#bb7e52"/><stop offset="1" stop-color="#94592f"/></radialGradient>
           <linearGradient id="skinShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a86a3f"/><stop offset="1" stop-color="#7e4824"/></linearGradient>
@@ -187,7 +261,7 @@
         </defs>
         <ellipse id="aura" cx="160" cy="200" rx="150" ry="175" fill="url(#auraG)"/>
         <ellipse cx="160" cy="376" rx="115" ry="10" fill="#000" opacity=".45"/>
-        <g id="fig"><g id="flex" filter="url(#soft)">
+        <g id="facing"><g id="fig"><g id="flex" filter="url(#soft)">
           <!-- legs + sneakers -->
           <path d="M126 296 C110 320 112 350 120 366 L150 366 C152 344 156 320 154 296 Z" fill="url(#skin)"/>
           <path d="M194 296 C210 320 208 350 200 366 L170 366 C168 344 164 320 166 296 Z" fill="url(#skin)"/>
@@ -198,7 +272,7 @@
           <rect x="106" y="370" width="54" height="4" rx="2" fill="#ffc94a"/><rect x="160" y="370" width="54" height="4" rx="2" fill="#ffc94a"/>
 
           <!-- left arm (right arm is mirrored) -->
-          <g id="armL">
+          <g id="armL" class="arm"><g id="armShape">
             <path d="M112 142 C88 136 60 138 46 152 C38 162 44 174 58 172 C76 170 96 168 116 172 Z" fill="url(#skin)"/>
             <path d="M44 156 C34 132 36 104 46 84 L70 86 C68 108 66 132 66 162 Z" fill="url(#skinShade)"/>
             <ellipse cx="78" cy="138" rx="34" ry="24" fill="url(#skin)"/>
@@ -207,8 +281,8 @@
             <circle cx="56" cy="76" r="17" fill="url(#skin)"/>
             <path d="M46 70 h20 M45 77 h22" stroke="#8a522b" stroke-width="1.6" opacity=".45"/>
             <circle cx="112" cy="146" r="24" fill="url(#skin)"/>
-          </g>
-          <use href="#armL" transform="translate(320 0) scale(-1 1)"/>
+          </g></g>
+          <g id="armR" class="arm"><use href="#armShape" transform="translate(320 0) scale(-1 1)"/></g>
 
           <!-- torso -->
           <path d="M100 140 L220 140 C218 184 202 240 192 290 L128 290 C118 240 102 184 100 140 Z" fill="url(#skin)"/>
@@ -241,19 +315,26 @@
           <path d="M124 70 C118 40 140 22 162 24 C186 24 202 40 196 70 C194 60 190 52 186 50 L180 56 L176 47 L168 54 L162 45 L156 54 L148 46 L143 55 L137 48 C130 54 127 62 124 70 Z" fill="url(#hair)"/>
           <path d="M150 32 l6 -6 l2 8 l6 -7 l2 8" stroke="#0b0b10" stroke-width="4" fill="none" stroke-linejoin="round"/>
           <!-- calm, half-lidded eyes -->
-          <path d="M139 70 q8 -4 16 0" stroke="#1a1310" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-          <path d="M165 70 q8 -4 16 0" stroke="#1a1310" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-          <path d="M141 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/><path d="M167 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/>
+          <g id="brows">
+            <path d="M139 70 q8 -4 16 0" stroke="#1a1310" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+            <path d="M165 70 q8 -4 16 0" stroke="#1a1310" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+          </g>
+          <g id="eyes"><path d="M141 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/><path d="M167 79 q6 -4 12 0 q-6 4 -12 0z" fill="#1a1310"/></g>
           <path d="M140 77.5 q7 -3 14 0" stroke="#94592f" stroke-width="2" fill="none"/><path d="M166 77.5 q7 -3 14 0" stroke="#94592f" stroke-width="2" fill="none"/>
           <!-- nose + mouth -->
           <path d="M156 92 q4 3 8 0" stroke="#7e4824" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-          <path d="M151 101 q9 -2 18 0" stroke="#5c2f16" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <path class="mouth m-calm" d="M151 101 q9 -2 18 0" stroke="#5c2f16" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <path class="mouth m-smile" d="M149 99 q11 9 22 0" stroke="#5c2f16" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+          <g class="mouth m-hype"><path d="M147 97 h26 q-2 14 -13 14 q-11 0 -13 -14z" fill="#3a1508"/><path d="M149 97.5 h22 v3.5 h-22z" fill="#fff"/><ellipse cx="160" cy="107" rx="6" ry="3" fill="#e0606e"/></g>
+          <g class="mouth m-ooh"><ellipse cx="160" cy="102" rx="5" ry="6" fill="#3a1508"/></g>
           <ellipse cx="146" cy="62" rx="10" ry="4" fill="#fff" opacity=".08"/>
-        </g></g>
+        </g></g></g>
       </svg>
     </button>
+      </div>
+    </div>
     <div class="podium"></div>
-    <p class="hint">Tap Yoki. Critical reps hit for ×5.</p>
+    <p class="hint">Tap fast to build a combo. Hit 50 for FEVER. Grab golden shakes when they show up.</p>
   </section>
 
   <aside class="rack">
@@ -280,20 +361,38 @@ const ICONS = {
   coach: '<svg viewBox="0 0 32 32"><path d="M9 4h14v7a7 7 0 0 1-14 0z" fill="#ffc94a"/><path d="M9 7H4c0 5 3 7 6 7M23 7h5c0 5-3 7-6 7" stroke="#ff9a1f" stroke-width="2.4" fill="none"/><rect x="14" y="17" width="4" height="6" fill="#ff9a1f"/><rect x="9" y="23" width="14" height="5" rx="1.5" fill="#fff"/></svg>',
 };
 const UPGRADES = [
-  { id: 'shake',    name: 'Protein Shake',    type: 'click', amount: 1,   base: 15 },
-  { id: 'bro',      name: 'Gym Bro Spotter',  type: 'auto',  amount: 2,   base: 60 },
-  { id: 'dumbbell', name: 'Heavy Dumbbells',  type: 'click', amount: 10,  base: 400 },
-  { id: 'trainer',  name: 'Personal Trainer', type: 'auto',  amount: 25,  base: 1500 },
-  { id: 'coach',    name: 'Olympia Coach',    type: 'auto',  amount: 200, base: 20000 },
+  { id: 'shake',    name: 'Protein Shake',    type: 'click', amount: 1,   base: 15,    line: 'Gulp gulp gulp!' },
+  { id: 'bro',      name: 'Gym Bro Spotter',  type: 'auto',  amount: 2,   base: 60,    line: 'Spot me, bro!' },
+  { id: 'dumbbell', name: 'Heavy Dumbbells',  type: 'click', amount: 10,  base: 400,   line: 'Heavy is good.' },
+  { id: 'trainer',  name: 'Personal Trainer', type: 'auto',  amount: 25,  base: 1500,  line: 'Coach says more reps!' },
+  { id: 'coach',    name: 'Olympia Coach',    type: 'auto',  amount: 200, base: 20000, line: 'Olympia, here I come!' },
 ];
+const LINES = {
+  click:    ['LIGHT WEIGHT!', 'YEAH BUDDY!', 'One more rep!', 'Feel the pump!', "Let's go!"],
+  combo:    ["Don't stop now!", "We're cooking!", 'Faster, bro!', 'Unstoppable!', 'MORE!'],
+  crit:     ['CRITICAL GAINS!', 'BOOM!', 'Did you see that?!'],
+  idle:     ['Bro... click me', "I'm getting cold here", 'Rest day already?', 'Watch this flex', 'Hello? Anyone?'],
+  hover:    ['You gonna click or what?', 'Go on, poke me', 'Ready when you are'],
+  spot:     ['A golden shake! Grab it!', 'Look! Over there!'],
+  golden:   ['GOLDEN SHAKE!!', 'Liquid gold, baby!'],
+  melted:   ['Aww, it melted.', 'Too slow, bro.'],
+  comboEnd: ['Nice set!', 'Good set, bro.', 'Catching my breath...'],
+  fever:    ['FEVER MODE!!', 'I CAN FEEL IT!'],
+  rebirth:  ["I'm BACK. And BIGGER.", 'Reborn. Re-swole.'],
+};
+const REP_MS  = [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+const GAIN_MS = [100, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13];
 const SAVE_KEY = 'yoki-clicker-v1';
-const CRIT_CHANCE = 0.08, CRIT_MULT = 5;
+const CRIT_CHANCE = 0.08, CRIT_MULT = 5, COMBO_WINDOW = 900, FEVER_EVERY = 50, FEVER_MS = 10000, FEVER_MULT = 3;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const fresh = () => ({ gains: 0, rebirths: 0, reps: 0, owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])) });
+const fresh = () => ({ gains: 0, rebirths: 0, reps: 0, msReps: 0, msGains: 0, owned: Object.fromEntries(UPGRADES.map(u => [u.id, 0])) });
 let state = fresh();
 let soundOn = true;
 
 const $ = id => document.getElementById(id);
+const pick = a => a[Math.random() * a.length | 0];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = n => {
   n = Math.floor(n);
   if (n < 1000) return String(n);
@@ -309,20 +408,197 @@ const perClick = () => (1 + UPGRADES.filter(u => u.type === 'click').reduce((s, 
 const perSec = () => UPGRADES.filter(u => u.type === 'auto').reduce((s, u) => s + u.amount * state.owned[u.id], 0) * mult();
 const rebirthNeed = () => 25000 * Math.pow(5, state.rebirths);
 
-/* Sound: tiny synth, starts after the first click */
+const yoki = $('yoki'), svg = $('ysvg'), stage = $('stage'), arena = $('arena'), walker = $('walker');
+const bubble = $('bubble'), golden = $('golden'), gainsEl = $('gains');
+
+/* ---------- Sound ---------- */
 let ac;
-function tone(f1, f2, dur, type = 'sine', vol = .18) {
+function tone(f1, f2, dur, type = 'sine', vol = .18, delay = 0) {
   if (!soundOn) return;
   try {
     ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + delay;
     o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
     o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
   } catch (e) {}
 }
+const fanfare = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f * 1.01, .22, 'triangle', .12, i * .09));
+const ding = () => { tone(880, 880, .18, 'triangle', .12); tone(1320, 1320, .3, 'triangle', .1, .1); };
 
-/* Upgrade buttons */
+/* ---------- Confetti ---------- */
+const fx = $('fx'), ctx = fx.getContext('2d');
+let parts = [];
+const COLORS = ['#ffc94a', '#ff9a1f', '#ff5a6e', '#9b7bff', '#5ee6a0', '#ffffff'];
+function sizeFx() { const d = devicePixelRatio || 1; fx.width = innerWidth * d; fx.height = innerHeight * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
+addEventListener('resize', sizeFx); sizeFx();
+function burst(x, y, n = 40, power = 9) {
+  if (REDUCED) return;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, v = power * (.4 + Math.random() * .8);
+    parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 4, r: Math.random() * 6, vr: (Math.random() - .5) * .4,
+      w: 6 + Math.random() * 6, h: 3 + Math.random() * 4, c: pick(COLORS), life: 90 + Math.random() * 50 });
+  }
+}
+function rain(n = 140) {
+  if (REDUCED) return;
+  for (let i = 0; i < n; i++) parts.push({ x: Math.random() * innerWidth, y: -20 - Math.random() * 200, vx: (Math.random() - .5) * 3, vy: 2 + Math.random() * 3,
+    r: Math.random() * 6, vr: (Math.random() - .5) * .3, w: 7 + Math.random() * 6, h: 3 + Math.random() * 4, c: pick(COLORS), life: 220 });
+}
+function drawFx() {
+  if (!parts.length) return;
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+  parts = parts.filter(p => (p.life -= 1) > 0 && p.y < innerHeight + 30);
+  for (const p of parts) {
+    p.vy += .22; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.globalAlpha = Math.min(1, p.life / 30);
+    ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+  }
+  if (!parts.length) ctx.clearRect(0, 0, innerWidth, innerHeight);
+}
+
+/* ---------- Yoki's personality ---------- */
+let bubbleTimer;
+function say(text, ms = 1700) {
+  bubble.textContent = text;
+  bubble.hidden = false;
+  bubble.style.animation = 'none'; void bubble.offsetWidth; bubble.style.animation = '';
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
+}
+let moodUntil = 0;
+function mood(m, ms = 1200) { svg.dataset.mood = m; moodUntil = performance.now() + ms; svg.classList.toggle('hype', m === 'hype'); }
+
+const ai = { x: null, target: 0, dir: 1, mode: 'stand', until: 0, engagedUntil: 0, speed: 70 };
+let lastInteract = performance.now(), nextIdleLine = 0, hoverStart = 0, hoverSaid = false;
+let pointer = null, nextBlink = performance.now() + 2500, blinkUntil = 0;
+
+function chooseAction(now, max) {
+  const r = Math.random();
+  if (r < .55) { ai.mode = 'walk'; ai.target = Math.random() * max; ai.speed = 55 + Math.random() * 45; }
+  else if (r < .72) { ai.mode = 'wave'; ai.until = now + 1800; }
+  else if (r < .87) { ai.mode = 'dance'; ai.until = now + 2400; }
+  else { ai.mode = 'stand'; ai.until = now + 1500 + Math.random() * 1500; }
+}
+
+/* ---------- Combo + fever ---------- */
+let combo = 0, lastHit = 0, feverUntil = 0;
+const comboMult = () => 1 + Math.min(combo, 100) * 0.02;
+const inFever = () => performance.now() < feverUntil;
+
+function startFever() {
+  feverUntil = performance.now() + FEVER_MS;
+  document.body.classList.add('fever');
+  const b = document.createElement('div'); b.className = 'fever-banner'; b.textContent = 'FEVER ×3';
+  stage.appendChild(b); setTimeout(() => b.remove(), 1400);
+  rain(120); fanfare();
+  say(pick(LINES.fever), 2000); mood('hype', 2500);
+}
+
+/* ---------- Pops + sparks ---------- */
+function popAt(x, y, text, crit) {
+  const p = document.createElement('div');
+  p.className = 'pop' + (crit ? ' crit' : '');
+  p.textContent = text;
+  p.style.left = x + 'px'; p.style.top = (y - 24) + 'px';
+  stage.appendChild(p);
+  setTimeout(() => p.remove(), 900);
+  if (REDUCED) return;
+  for (let i = 0; i < (crit ? 14 : 6); i++) {
+    const s = document.createElement('div'), a = Math.random() * Math.PI * 2, d = 30 + Math.random() * (crit ? 70 : 40);
+    s.className = 'spark';
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+    if (crit || inFever()) s.style.background = pick(COLORS);
+    stage.appendChild(s);
+    setTimeout(() => s.remove(), 600);
+  }
+}
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+
+/* ---------- Clicking Yoki ---------- */
+let pumpTimer, curlSide = false, bumpTimer;
+yoki.addEventListener('click', e => {
+  const now = performance.now();
+  const wasIdle = now - lastInteract > 4000;
+  lastInteract = now; hoverSaid = true;
+  combo = now - lastHit < COMBO_WINDOW * (inFever() ? 1.5 : 1) ? combo + 1 : 1;
+  lastHit = now;
+  if (combo % FEVER_EVERY === 0) startFever();
+
+  const crit = Math.random() < CRIT_CHANCE;
+  const amt = perClick() * comboMult() * (inFever() ? FEVER_MULT : 1) * (crit ? CRIT_MULT : 1);
+  state.gains += amt;
+  state.reps = (state.reps || 0) + 1;
+  ai.engagedUntil = now + 1400;
+
+  yoki.classList.add('pump');
+  clearTimeout(pumpTimer);
+  curlSide = !curlSide;
+  svg.classList.remove('curlL', 'curlR');
+  svg.classList.add(curlSide ? 'curlL' : 'curlR');
+  pumpTimer = setTimeout(() => { yoki.classList.remove('pump'); svg.classList.remove('curlL', 'curlR'); }, 110);
+  gainsEl.classList.add('bump'); clearTimeout(bumpTimer); bumpTimer = setTimeout(() => gainsEl.classList.remove('bump'), 80);
+  const cn = $('comboNum'); cn.classList.remove('tick'); void cn.offsetWidth; cn.classList.add('tick');
+
+  const sr = stage.getBoundingClientRect(), r = yoki.getBoundingClientRect();
+  const cx = e.clientX || r.left + r.width / 2, cy = e.clientY || r.top + r.height / 3;
+  popAt(cx - sr.left, cy - sr.top, (crit ? 'CRIT +' : '+') + fmt(amt), crit);
+
+  const pitch = Math.min(combo, 60) * 7;
+  if (crit) {
+    stage.classList.remove('shake'); void stage.offsetWidth; stage.classList.add('shake');
+    tone(180, 60, .25, 'square', .1); tone(900, 1400, .15, 'triangle', .08);
+    burst(cx, cy, 26, 7);
+    say(pick(LINES.crit), 1200); mood('hype', 900);
+  } else {
+    tone(150 + pitch, 55, .12, 'sine', .25);
+    tone(500 + pitch * 2, 800 + pitch * 2, .05, 'triangle', .04);
+    if (wasIdle) { say(pick(LINES.click), 1200); mood('smile', 1000); }
+    else if (combo % 10 === 0 && combo % FEVER_EVERY) { say(pick(LINES.combo), 1200); mood('smile', 1000); }
+  }
+  render();
+});
+yoki.addEventListener('pointerenter', () => { hoverStart = performance.now(); hoverSaid = false; });
+yoki.addEventListener('pointerleave', () => { hoverStart = 0; });
+addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; });
+
+/* ---------- Golden shake ---------- */
+let nextGolden = performance.now() + 12000, goldenUntil = 0, goldenX = 0;
+// Yoki runs over and stands next to the shake, pointing at it
+const besideGolden = (w, max) => clamp(goldenX + 76 + w <= arena.clientWidth ? goldenX + 76 : goldenX - w - 4, 0, max);
+function spawnGolden(now) {
+  const w = arena.clientWidth, h = arena.clientHeight;
+  goldenX = 8 + Math.random() * Math.max(0, w - 88);
+  golden.style.left = goldenX + 'px';
+  golden.style.top = (6 + Math.random() * h * .25) + 'px';
+  golden.hidden = false;
+  goldenUntil = now + 9000;
+  say(pick(LINES.spot), 1800); mood('ooh', 1500);
+  tone(1200, 1800, .2, 'triangle', .08);
+}
+golden.addEventListener('click', e => {
+  const now = performance.now();
+  const bonus = Math.max(perSec() * 45, perClick() * 30, 50) * (inFever() ? FEVER_MULT : 1);
+  state.gains += bonus;
+  golden.hidden = true;
+  nextGolden = now + 25000 + Math.random() * 35000;
+  const sr = stage.getBoundingClientRect(), r = golden.getBoundingClientRect();
+  popAt(r.left + r.width / 2 - sr.left, r.top - sr.top, '+' + fmt(bonus), true);
+  burst(r.left + r.width / 2, r.top + r.height / 2, 70, 11);
+  fanfare();
+  say(pick(LINES.golden), 1800); mood('hype', 1800);
+  toast(`Golden shake: +${fmt(bonus)} gains`);
+  lastInteract = now;
+  render();
+});
+
+/* ---------- Upgrades ---------- */
 for (const u of UPGRADES) {
   const b = document.createElement('button');
   b.className = 'up'; b.id = 'up-' + u.id;
@@ -330,21 +606,25 @@ for (const u of UPGRADES) {
     <span class="meta"><span class="name">${u.name} <span class="lvl">Lv 0</span></span>
     <span class="desc">+${u.amount} ${u.type === 'click' ? 'per rep' : 'per sec'}</span></span>
     <span class="price"><svg width="14" height="14"><use href="#coin"/></svg><span class="c"></span></span>`;
-  b.addEventListener('click', () => buy(u));
+  b.addEventListener('click', () => buy(u, b));
   $('list').appendChild(b);
 }
-
-function buy(u) {
+function buy(u, b) {
   const c = cost(u);
   if (state.gains < c) return;
   state.gains -= c;
   state.owned[u.id]++;
+  lastInteract = performance.now();
+  b.classList.remove('bought'); void b.offsetWidth; b.classList.add('bought');
+  const r = b.getBoundingClientRect();
+  burst(r.left + 30, r.top + r.height / 2, 14, 5);
   tone(520, 880, .12, 'triangle', .12);
+  say(u.line, 1500); mood('smile', 1200);
   render();
 }
 
+/* ---------- Render ---------- */
 function render() {
-  $('gains').textContent = fmt(state.gains);
   $('perClick').textContent = fmt(perClick());
   $('perSec').textContent = fmt(perSec());
   $('reps').textContent = fmt(state.reps || 0);
@@ -353,7 +633,6 @@ function render() {
   UPGRADES.forEach((u, i) => {
     const b = $('up-' + u.id), c = cost(u);
     b.disabled = state.gains < c;
-    // hide upgrades far out of reach until you get close
     const prev = UPGRADES[i - 1];
     b.classList.toggle('locked', i > 1 && state.owned[u.id] === 0 && prev && state.owned[prev.id] === 0 && state.gains < c / 2);
     b.querySelector('.c').textContent = fmt(c);
@@ -367,58 +646,21 @@ function render() {
   const rb = $('rebirthBtn');
   rb.disabled = state.gains < need;
   if (rb.disabled) { rb.classList.remove('confirm'); rb.textContent = 'REBIRTH'; }
-  $('yoki').style.setProperty('--size', Math.min(330 + state.rebirths * 25, 480) + 'px');
+  stage.style.setProperty('--size', Math.min(300 + state.rebirths * 22, 440) + 'px');
+
+  // milestones
+  if (state.reps >= REP_MS[state.msReps]) celebrate(`${fmt(REP_MS[state.msReps++])} reps!`);
+  else if (state.gains >= GAIN_MS[state.msGains]) celebrate(`${fmt(GAIN_MS[state.msGains++])} gains reached!`);
+}
+function celebrate(msg) {
+  toast('Milestone: ' + msg);
+  const r = yoki.getBoundingClientRect();
+  burst(r.left + r.width / 2, r.top + r.height * .2, 50, 10);
+  ding();
+  say(pick(['NEW RECORD!', 'Milestone, baby!', "We're getting huge!"]), 1600); mood('hype', 1500);
 }
 
-/* Clicking Yoki */
-const yoki = $('yoki'), stage = $('stage');
-let pumpTimer;
-function popAt(x, y, text, crit) {
-  const p = document.createElement('div');
-  p.className = 'pop' + (crit ? ' crit' : '');
-  p.textContent = text;
-  p.style.left = x + 'px'; p.style.top = (y - 24) + 'px';
-  stage.appendChild(p);
-  setTimeout(() => p.remove(), 900);
-  for (let i = 0; i < (crit ? 14 : 6); i++) {
-    const s = document.createElement('div'), a = Math.random() * Math.PI * 2, d = 30 + Math.random() * (crit ? 70 : 40);
-    s.className = 'spark';
-    s.style.left = x + 'px'; s.style.top = y + 'px';
-    s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d + 'px');
-    if (crit) s.style.background = i % 2 ? 'var(--crit)' : 'var(--gold)';
-    stage.appendChild(s);
-    setTimeout(() => s.remove(), 600);
-  }
-}
-yoki.addEventListener('click', e => {
-  const crit = Math.random() < CRIT_CHANCE;
-  const amt = perClick() * (crit ? CRIT_MULT : 1);
-  state.gains += amt;
-  state.reps = (state.reps || 0) + 1;
-  yoki.classList.add('pump');
-  clearTimeout(pumpTimer);
-  pumpTimer = setTimeout(() => yoki.classList.remove('pump'), 90);
-  const sr = stage.getBoundingClientRect(), r = yoki.getBoundingClientRect();
-  const x = (e.clientX || r.left + r.width / 2) - sr.left;
-  const y = (e.clientY || r.top + r.height / 3) - sr.top;
-  popAt(x, y, (crit ? 'CRIT +' : '+') + fmt(amt), crit);
-  if (crit) {
-    stage.classList.remove('shake'); void stage.offsetWidth; stage.classList.add('shake');
-    tone(180, 60, .25, 'square', .1); tone(900, 1400, .15, 'triangle', .08);
-  } else {
-    tone(150, 55, .12, 'sine', .25);
-  }
-  render();
-});
-
-function toast(msg) {
-  const t = document.createElement('div');
-  t.className = 'toast'; t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2400);
-}
-
-/* Rebirth: two clicks to confirm (no browser dialogs here) */
+/* ---------- Rebirth + wipe ---------- */
 let confirmTimer;
 $('rebirthBtn').addEventListener('click', () => {
   const rb = $('rebirthBtn');
@@ -429,11 +671,13 @@ $('rebirthBtn').addEventListener('click', () => {
     return;
   }
   clearTimeout(confirmTimer);
-  const r = state.rebirths + 1, reps = state.reps;
-  state = fresh(); state.rebirths = r; state.reps = reps;
+  const keep = { rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, msGains: state.msGains };
+  state = { ...fresh(), ...keep };
+  shown = 0; combo = 0;
   const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
-  tone(200, 1200, .7, 'sawtooth', .08);
+  tone(200, 1200, .7, 'sawtooth', .08); fanfare(); rain(180);
   toast(`Reborn! Yoki is bigger. Gains ×${mult()}`);
+  say(pick(LINES.rebirth), 2400); mood('hype', 2500);
   save(); render();
 });
 
@@ -446,7 +690,7 @@ $('resetBtn').addEventListener('click', () => {
     return;
   }
   wipeArmed = false; b.textContent = 'Wipe save';
-  state = fresh(); save(); render();
+  state = fresh(); shown = 0; save(); render();
 });
 
 $('soundBtn').addEventListener('click', () => {
@@ -456,6 +700,99 @@ $('soundBtn').addEventListener('click', () => {
   try { localStorage.setItem(SAVE_KEY + '-sound', soundOn ? '1' : '0'); } catch (e) {}
 });
 
+/* ---------- Main loop ---------- */
+let shown = 0, last = performance.now();
+function frame(now) {
+  const rawDt = (now - last) / 1000, dt = Math.min(rawDt, .05);
+  last = now;
+  state.gains += perSec() * (inFever() ? FEVER_MULT : 1) * rawDt;
+
+  // rolling number
+  shown += (state.gains - shown) * Math.min(1, dt * 14);
+  if (Math.abs(state.gains - shown) < 1) shown = state.gains;
+  gainsEl.textContent = fmt(shown);
+
+  // combo meter
+  const windowMs = COMBO_WINDOW * (inFever() ? 1.5 : 1);
+  const left = combo ? 1 - (now - lastHit) / windowMs : 0;
+  if (combo && left <= 0) {
+    if (combo >= 15) { say(pick(LINES.comboEnd), 1400); mood('smile', 1000); }
+    combo = 0;
+  }
+  $('combo').classList.toggle('on', combo > 1);
+  $('comboNum').textContent = combo;
+  $('comboMult').textContent = '×' + comboMult().toFixed(2);
+  $('cbar').style.width = Math.max(0, left) * 100 + '%';
+
+  // fever end
+  if (!inFever() && document.body.classList.contains('fever')) document.body.classList.remove('fever');
+
+  // golden shake
+  if (golden.hidden && now > nextGolden) spawnGolden(now);
+  if (!golden.hidden && now > goldenUntil) {
+    golden.hidden = true; nextGolden = now + 25000 + Math.random() * 30000;
+    say(pick(LINES.melted), 1500); mood('calm', 500);
+  }
+
+  // movement
+  const w = walker.offsetWidth, max = Math.max(0, arena.clientWidth - w);
+  if (ai.x === null) ai.x = max / 2;
+  ai.x = clamp(ai.x, 0, max);
+  let walking = false, dancing = false, waving = false;
+  if (now < ai.engagedUntil) {
+    ai.until = Math.max(ai.until, now + 600);
+  } else if (inFever()) {
+    dancing = true;
+  } else if (!golden.hidden && Math.abs(besideGolden(w, max) - ai.x) > 6) {
+    ai.mode = 'walk'; ai.target = besideGolden(w, max); ai.speed = 150;
+  } else if (!golden.hidden) {
+    ai.mode = 'wave'; ai.until = now + 400;
+  } else if (now > ai.until && ai.mode !== 'walk') {
+    chooseAction(now, max);
+  }
+  if (now >= ai.engagedUntil && !inFever()) {
+    if (ai.mode === 'walk') {
+      const dx = ai.target - ai.x, step = ai.speed * dt;
+      if (Math.abs(dx) <= step) { ai.x = ai.target; ai.mode = 'stand'; ai.until = now + 700 + Math.random() * 1600; }
+      else { ai.x += Math.sign(dx) * step; ai.dir = Math.sign(dx); walking = true; }
+    }
+    if (ai.mode === 'dance') dancing = true;
+    if (ai.mode === 'wave') waving = true;
+  }
+  if (REDUCED) walking = dancing = false;
+  walker.style.transform = `translateX(${ai.x}px)`;
+  $('facing').setAttribute('transform', ai.dir < 0 ? 'translate(320 0) scale(-1 1)' : '');
+  yoki.classList.toggle('walking', walking);
+  yoki.classList.toggle('dancing', dancing);
+  svg.classList.toggle('dance', dancing);
+  svg.classList.toggle('wave', waving);
+
+  // idle chatter
+  if (now - lastInteract > 9000 && now > nextIdleLine) {
+    say(pick(LINES.idle), 2000); nextIdleLine = now + 10000;
+    if (!golden.hidden) {} else { ai.mode = 'wave'; ai.until = now + 1800; }
+  }
+  if (hoverStart && !hoverSaid && now - hoverStart > 2200) { hoverSaid = true; say(pick(LINES.hover), 1600); mood('smile', 1200); }
+
+  // face: mood, eyes follow the pointer, blinking
+  if (now > moodUntil) {
+    const m = inFever() ? 'hype' : combo >= 10 ? 'smile' : 'calm';
+    svg.dataset.mood = m; svg.classList.toggle('hype', m === 'hype');
+  }
+  if (now > nextBlink) { blinkUntil = now + 130; nextBlink = now + 2200 + Math.random() * 3000; }
+  let ex = 0, ey = 0;
+  if (pointer) {
+    const r = yoki.getBoundingClientRect();
+    ex = clamp((pointer.x - (r.left + r.width / 2)) / 80, -2.5, 2.5) * ai.dir;
+    ey = clamp((pointer.y - (r.top + r.height * .2)) / 80, -1.5, 1.5);
+  }
+  $('eyes').style.transform = `translate(${ex}px, ${ey}px) scaleY(${now < blinkUntil ? .1 : 1})`;
+
+  drawFx();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Save / boot ---------- */
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
 function load() {
   try {
@@ -464,23 +801,20 @@ function load() {
   } catch (e) {}
   return null;
 }
-
 function start(data) {
   state = (data && data.state) || load() || fresh();
+  shown = state.gains;
   try { soundOn = localStorage.getItem(SAVE_KEY + '-sound') !== '0'; } catch (e) {}
   $('soundBtn').textContent = soundOn ? 'Sound on' : 'Sound off';
   $('soundBtn').setAttribute('aria-pressed', soundOn);
+  svg.dataset.mood = 'calm';
   window.claude?.hot?.snapshot?.(() => ({ state }));
-  let last = performance.now();
-  setInterval(() => {
-    const now = performance.now();
-    state.gains += perSec() * (now - last) / 1000;
-    last = now;
-    render();
-  }, 100);
+  setInterval(render, 100);
   setInterval(save, 5000);
   addEventListener('beforeunload', save);
   render();
+  setTimeout(() => { say(state.reps ? 'Back for more gains?' : "Yo! I'm Yoki. Click me!", 2400); mood('smile', 2000); }, 600);
+  requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>
