@@ -908,7 +908,7 @@ const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S
 // Stacked bonuses have diminishing returns past x2, so money can't run away
 const capM=m=>m<=3?m:3+Math.log2(m/3)*2.6;
 const moonK=()=>emp("moon")?2:1;
-const mult=()=>capM(rawMult())*moonK();
+const mult=()=>capM(rawMult())*moonK()*rbK();
 let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
 const feeNow=()=>WT;
 const maxEnergyFor=str=>Math.round(15*petK("pug"))+100+20*S.tok.energy+2*str+PROPS[S.home||0].en+15*pk("energy")+(S&&S.partner?(S.partner.married?40:20):0);
@@ -976,6 +976,8 @@ const ACH=[
  ["mars","Red planet","Bring back something from Mars",()=>Object.keys(S.coll||{}).some(k=>k==="space:MC"||k==="space:MX"),5e7],
  ["gpwin","Champion","Win the Monte Carlo Grand Prix",()=>(S.stats.gpWins||0)>=1,2e6],
  ["traveller","World traveller","Get every passport stamp",()=>COUNTRIES.every(c=>(S.visited||{})[c.k]),1e7],
+ ["reborn","Born again","Rebirth once",()=>rbN()>=1,5e6],
+ ["reborn3","Third life","Rebirth 3 times",()=>rbN()>=3,5e8],
  ["influencer","Influencer","Get 1M likes on FlipGram",()=>((S.gram||{}).likes||0)>=1e6,3e6],
  ["married","Just married","Marry your partner",()=>(S.stats.weddings||0)>=1,500000],
  ["tourist","Tourist","Try 10 local experiences",()=>(S.stats.exps||0)>=10,2e6],
@@ -1461,8 +1463,12 @@ const cmOver=()=>Math.max(0,((S&&S.height)||170)-170);
 // muscle memory: each growth spurt makes the climb back faster (but not your looks)
 const mm=()=>((S&&S.spurts)||0)/1.4;
 const liftOver=()=>10+2.5*Math.round(mm()*4);
-const spurtReq=()=>120+30*(S.spurts||0);
-const spurtGain=()=>Math.min(6,2+Math.floor(Math.max(0,S.pr-spurtReq())/40));
+// rebirth: trade every growth spurt (and the height) for a permanent boost; each rebirth also makes spurts cheaper and bigger
+const rbN=()=>(S&&S.reborn)||0;
+function rbK(){return 1+.3*rbN()}
+const rbReq=()=>5+2*rbN();
+const spurtReq=()=>Math.max(80,120-10*rbN())+30*(S.spurts||0);
+const spurtGain=()=>Math.min(6+rbN(),2+rbN()+Math.floor(Math.max(0,S.pr-spurtReq())/40));
 // Height is exaggerated on screen so every cm shows: 180 cm looks ~13% taller, 200 cm ~39%
 const tallK=()=>1+Math.min(.8,(((S&&S.height)||170)-170)/170*2.2);
 // Body size comes from your best-ever lift, so a growth spurt never makes you smaller
@@ -1486,6 +1492,9 @@ function liftPanel(l0){
       <div class="sechead"><h3>Growth spurt</h3><span class="eyebrow">${S.height||170} cm · ${S.spurts||0} spurts</span></div>
       <div class="note">Reset all three lifts to 20 kg and <b>grow taller</b>. Every cm over 170 gives confidence: +0.5% on sales, faster walking, safer lowballing, bigger flex crowds and more fans. Muscle memory makes each climb back faster: bigger green zone, bigger jumps, and more weight allowed over your PR. Your muscles still have to be rebuilt to look big again.</div>
       <button class="bigbtn alt" id="gSpurt" ${S.pr<spurtReq()?"disabled":""}>Growth spurt +${spurtGain()} cm<small>${S.pr<spurtReq()?`Needs ${spurtReq()} kg max lift · you have ${S.pr} kg`:`Lifts go back to 20 kg · you'll be ${(S.height||170)+spurtGain()} cm`}</small></button>
+      <div class="sechead"><h3>Rebirth</h3><span class="eyebrow">${rbN()?"Reborn ×"+rbN()+" · +"+Math.round(.3*rbN()*100)+"% money":"Not reborn yet"}</span></div>
+      <div class="note">Give up <b>every growth spurt</b>: your height goes back to 170 cm, and you lose the muscle memory and bag slots that came with them. In return you keep, forever: <b>+30% money</b> per rebirth, growth spurts that need 10 kg less and give +1 cm more each. Lifts, cash and everything else stay.</div>
+      <button class="bigbtn alt2" id="gReb" ${(S.spurts||0)<rbReq()?"disabled":""}>Rebirth ${rbN()+1}<small>${(S.spurts||0)<rbReq()?`Needs ${rbReq()} growth spurts · you have ${S.spurts||0}`:`Reset ${S.spurts} spurts and ${S.height} cm · money ×${rbK().toFixed(1)} → ×${(rbK()+.3).toFixed(1)}`}</small></button>
       <div class="sechead"><h3>Strength perks</h3><span class="eyebrow">${strTier()} · ${S.pr} kg</span></div>
       <div class="sperks">
         <div class="on"><b>Every 10 kg</b><span>+1 stash slot (up to 12), +2 max energy, more patient sellers</span></div>
@@ -1497,7 +1506,9 @@ function liftPanel(l0){
     $("gBack").onclick=closePanel;
     const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+liftOver());newZone();draw()};
     P.querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+(S.liftMax?liftOver():5);newZone();draw()});
-    $("wDown").onclick=()=>{S.liftMax=0;setW(G.w-2.5)};$("wUp").onclick=()=>{S.liftMax=0;setW(G.w+2.5)};{let armed=false;const sb=$("gSpurt");sb.onclick=()=>{if(S.pr<spurtReq())return;if(!armed){armed=true;sb.innerHTML="Tap again to grow<small>All lifts reset to 20 kg</small>";SFX.hot();return}
+    $("wDown").onclick=()=>{S.liftMax=0;setW(G.w-2.5)};$("wUp").onclick=()=>{S.liftMax=0;setW(G.w+2.5)};{let armed=false;const rb=$("gReb");rb.onclick=()=>{if((S.spurts||0)<rbReq())return;if(rb.dataset.sure!=="1"){rb.dataset.sure="1";rb.innerHTML="Tap again to be reborn<small>Your height and growth spurts reset</small>";SFX.hot();return}
+      S.reborn=rbN()+1;S.spurts=0;S.height=170;dirty=true;SFX.rebirth();setTimeout(()=>SFX.grail(),400);flash("#ffcc33",.7);confetti(320,null,null,["#ffcc33","#ffffff","#ff4fd8","#4fe3ff"]);shake(12,.8);buzz([60,40,60,40,200]);
+      banner("REBORN","g");banner("Money ×"+rbK().toFixed(1)+" forever","g");if(GS)gymPop(GS.px,GS.py-90,"REBORN","#ffcc33",{life:2.4});draw();updMini();renderHud()};const sb=$("gSpurt");sb.onclick=()=>{if(S.pr<spurtReq())return;if(!armed){armed=true;sb.innerHTML="Tap again to grow<small>All lifts reset to 20 kg</small>";SFX.hot();return}
       const g=spurtGain();S.height=(S.height||170)+g;S.spurts=(S.spurts||0)+1;S.lifts={bench:20,squat:20,dead:20};syncPR();G.w=25;newZone();dirty=true;
       SFX.rebirth();flash("#4fe3ff",.55);confetti(220,null,null,["#4fe3ff","#ffffff","#ffcc33","#2fd28a"]);shake(10,.6);buzz([40,40,80,40,160]);banner("GROWTH SPURT","u");banner("+"+g+" cm · "+S.height+" cm","g");if(GS)gymPop(GS.px,GS.py-90,"+"+g+" CM","#4fe3ff",{life:2.2});draw();updMini();renderHud()}}
     $("wMax").onclick=()=>{S.liftMax=S.liftMax?0:1;dirty=true;setW(S.liftMax?S.lifts[G.lift]+liftOver():S.lifts[G.lift])};$("wPR").onclick=()=>{S.liftMax=0;setW(S.lifts[G.lift])};
@@ -4045,7 +4056,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=5,WN=[
+const WN_VER=6,WN=[
+ ["🔁","Rebirth","At the gym's lift station: give up all your growth spurts and height for +30% money forever and bigger, cheaper spurts."],
  ["🗼","Walk around abroad","Tokyo, Paris, Dubai and Monte Carlo are real places now. Walk the streets, visit the landmark, and see your businesses on the street."],
  ["🏝️","Walk your islands","Stroll the beach to your villa, the fishing pier, the dive shack, the bonfire and washed-up chests."],
  ["🏨","Businesses","Buy apartments, bars, restaurants, condos, hotels and resorts. Expand, set prices, handle events, work shifts."],
