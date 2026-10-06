@@ -493,6 +493,75 @@
     .shredder { width: 140px; } .shredder > svg { width: 140px; }
   }
   .arcade { position: relative; }
+
+  /* Hub */
+  .hub { padding: 14px; border-radius: 18px; display: flex; flex-direction: column; gap: 10px; position: relative;
+    background: linear-gradient(160deg, rgba(255, 201, 74, .12), rgba(110, 168, 255, .08)); border: 1px solid rgba(255, 201, 74, .35); }
+  .hp-panel { display: flex; flex-direction: column; gap: 10px; }
+  .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+  .day { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid var(--panel-edge);
+    font-size: .62rem; font-weight: 800; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+  .day b { font-family: var(--font-display); font-size: .85rem; color: var(--text); font-weight: 400; }
+  .day.done { background: rgba(94,230,160,.14); border-color: rgba(94,230,160,.5); color: var(--ready); }
+  .day.today { border-color: var(--gold); box-shadow: 0 0 14px rgba(255,201,74,.45); color: var(--gold); }
+  .quests { display: flex; flex-direction: column; gap: 6px; }
+  .quest { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 9px 11px; border-radius: 12px; background: rgba(0,0,0,.25); border: 1px solid var(--panel-edge); }
+  .quest .qd { font-weight: 700; font-size: .85rem; }
+  .quest .qr { font-size: .72rem; color: var(--gold); font-weight: 800; }
+  .quest .bar { grid-column: 1; height: 7px; }
+  .quest .bar i { background: linear-gradient(90deg, var(--ready), #6ea8ff); }
+  .quest button { grid-row: 1 / span 3; grid-column: 2; }
+  .quest.ready { border-color: var(--ready); box-shadow: 0 0 14px rgba(94,230,160,.3); }
+  .wheel-wrap { position: relative; width: min(100%, 230px); aspect-ratio: 1; margin: 0 auto; }
+  .wheel { width: 100%; height: 100%; transition: transform 4s cubic-bezier(.15,.9,.2,1); }
+  .wheel-pointer { position: absolute; left: 50%; top: -6px; margin-left: -10px; z-index: 2; border: 10px solid transparent; border-top: 18px solid #fff; filter: drop-shadow(0 2px 2px #000); }
+  .shop-who { display: flex; gap: 6px; flex-wrap: wrap; }
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border-radius: 12px; border: 1px solid var(--panel-edge); background: rgba(0,0,0,.25); cursor: pointer; color: var(--text); font-size: .72rem; font-weight: 800; }
+  .item svg { width: 54px; height: 40px; }
+  .item small { color: var(--gold); font-variant-numeric: tabular-nums; }
+  .item.on { border-color: var(--ready); box-shadow: 0 0 12px rgba(94,230,160,.35); }
+  .item:disabled { opacity: .45; cursor: not-allowed; }
+  .item:focus-visible { outline: 2px solid #fff; }
+  .code-row { display: flex; gap: 8px; }
+  .code-row input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--panel-edge); background: rgba(0,0,0,.35); color: var(--text); font: inherit; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .code-row input:focus-visible { outline: 2px solid var(--gold); }
+  .perks { display: flex; flex-direction: column; gap: 6px; }
+  .perk { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 9px 11px; border-radius: 12px; background: rgba(155,123,255,.1); border: 1px solid rgba(155,123,255,.35); }
+  .perk .pn { font-weight: 800; }
+  .perk .pd { font-size: .75rem; color: var(--muted); grid-column: 1; }
+  .perk button { grid-row: 1 / span 2; grid-column: 2; }
+  .leaders { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; counter-reset: lb; }
+  .leaders li { counter-increment: lb; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 10px; background: rgba(0,0,0,.25); font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .leaders li::before { content: counter(lb); font-family: var(--font-display); color: var(--muted); }
+  .leaders li:nth-child(1)::before { color: #ffc94a; } .leaders li:nth-child(2)::before { color: #c9ccd6; } .leaders li:nth-child(3)::before { color: #d08a4e; }
+  .leaders li.me { background: rgba(255,201,74,.16); border: 1px solid var(--gold); }
+  .leaders li span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hub textarea { width: 100%; resize: vertical; border-radius: 10px; border: 1px solid var(--panel-edge); background: rgba(0,0,0,.35); color: var(--text); font: .72rem/1.4 ui-monospace, Menlo, monospace; padding: 8px; }
+  .hub textarea:focus-visible { outline: 2px solid var(--gold); }
+
+  /* Stage extras: chat, boss, pets, weather */
+  .chat { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 12px; background: rgba(0,0,0,.35); border: 1px solid var(--panel-edge); min-height: 92px; }
+  .chat-t { font-size: .62rem; font-weight: 800; letter-spacing: .14em; color: var(--muted); }
+  .chat p { margin: 0; font-size: .76rem; line-height: 1.35; color: #d9d7f0; animation: buffIn .3s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chat p b { color: var(--nc, #6ea8ff); }
+  .chat p.sys { color: var(--gold); }
+  .boss { position: absolute; left: 50%; top: 0; width: 118px; margin-left: -59px; z-index: 900; pointer-events: none; animation: bossIn .6s cubic-bezier(.2,1.5,.4,1); }
+  .boss svg { width: 100%; display: block; filter: drop-shadow(0 0 20px rgba(255,90,110,.6)); }
+  .boss.hurt svg { filter: brightness(1.6) drop-shadow(0 0 20px #fff); }
+  @keyframes bossIn { from { transform: translateY(-60px) scale(.6); opacity: 0; } }
+  .petpal { position: absolute; bottom: 2px; width: 34px; height: 30px; z-index: 3; pointer-events: none; transition: left .6s ease-out; }
+  .petpal svg { width: 100%; height: 100%; animation: bob .5s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--ec)); }
+  .weather { position: absolute; inset: 0; pointer-events: none; z-index: 0; border-radius: 24px; }
+  .weather.rain { background: repeating-linear-gradient(100deg, transparent 0 14px, rgba(140, 200, 255, .12) 14px 15px); background-size: 200% 200%; animation: rainfall .5s linear infinite; }
+  @keyframes rainfall { to { background-position: -30px 60px; } }
+  .weather.blood { background: radial-gradient(circle at 80% 10%, rgba(255, 60, 80, .45), transparent 40%), rgba(120, 0, 20, .18); }
+  .weather.goldenh { background: radial-gradient(ellipse at 50% 0%, rgba(255, 201, 74, .35), transparent 60%); }
+  .weather.quake { background: rgba(160, 110, 60, .1); }
+  .stage.quaking .arena { animation: shake .3s infinite; }
+  .buff.weather-b { background: linear-gradient(90deg, #6ea8ff, var(--ready)); }
+  .buff.code-b { background: linear-gradient(90deg, var(--gold), #fff2a8); }
+  @media (prefers-reduced-motion: reduce) { .weather.rain, .stage.quaking .arena, .petpal svg { animation: none !important; } .wheel { transition-duration: .3s; } }
   @media (prefers-reduced-motion: reduce) {
     .rot { animation-duration: 40s; }
     .rot svg, .rainbow { animation: none !important; }
@@ -821,6 +890,74 @@
     </h2>
     <div class="list" id="list"></div>
 
+
+    <div class="hub" id="hub">
+      <h2>HUB <small id="hubNote">daily · quests · wheel · shop · codes</small></h2>
+      <div class="tabs" role="tablist" id="hubTabs" aria-label="Hub">
+        <button role="tab" data-hub="daily" aria-selected="true">Daily</button>
+        <button role="tab" data-hub="quests" aria-selected="false">Quests</button>
+        <button role="tab" data-hub="wheel" aria-selected="false">Wheel</button>
+        <button role="tab" data-hub="shop" aria-selected="false">Shop</button>
+        <button role="tab" data-hub="codes" aria-selected="false">Codes</button>
+        <button role="tab" data-hub="ascend" aria-selected="false">Ascend</button>
+        <button role="tab" data-hub="leaders" aria-selected="false">Leaders</button>
+        <button role="tab" data-hub="settings" aria-selected="false">Settings</button>
+      </div>
+
+      <div class="hp-panel" id="hp-daily">
+        <p class="tp-sub">Come back every day. Miss a day and the streak starts over. Day 7 adds a free Legendary egg.</p>
+        <div class="days" id="days"></div>
+        <button class="big-btn" id="dailyBtn">CLAIM</button>
+      </div>
+
+      <div class="hp-panel" id="hp-quests" hidden>
+        <p class="tp-sub">Finish quests for big rewards. A new quest replaces each one you claim.</p>
+        <div class="quests" id="quests"></div>
+        <button class="small-btn" id="rerollBtn">Reroll all quests</button>
+      </div>
+
+      <div class="hp-panel" id="hp-wheel" hidden>
+        <p class="tp-sub">One free spin every 10 minutes.</p>
+        <div class="wheel-wrap"><div class="wheel-pointer"></div><svg class="wheel" id="wheel" viewBox="-110 -110 220 220" aria-hidden="true"></svg></div>
+        <button class="big-btn" id="wheelBtn">SPIN</button>
+      </div>
+
+      <div class="hp-panel" id="hp-shop" hidden>
+        <p class="tp-sub">Buy a cosmetic once, then put it on any lifter. One item each.</p>
+        <div class="shop-who" id="shopWho"></div>
+        <div class="shop-grid" id="shopGrid"></div>
+      </div>
+
+      <div class="hp-panel" id="hp-codes" hidden>
+        <p class="tp-sub">Enter a code for free rewards. Each code works once. Hint: try the squad's names and their catchphrases.</p>
+        <form class="code-row" id="codeForm"><input id="codeInput" type="text" placeholder="Enter code" autocomplete="off" maxlength="20" aria-label="Code"><button class="big-btn" type="submit">REDEEM</button></form>
+        <div class="desc" id="codeMsg"></div>
+        <div class="chips" id="codeList"></div>
+      </div>
+
+      <div class="hp-panel" id="hp-ascend" hidden>
+        <p class="tp-sub">At 10 rebirths you can <b>Ascend</b>: rebirths, gains, upgrades and your current world reset, but you earn Shards for permanent perks. Everything else stays.</p>
+        <div class="stat-row"><span>Shards <b id="shards">0</b></span><span>Ascensions <b id="ascends">0</b></span><span id="ascendGain"></span></div>
+        <button class="big-btn red" id="ascendBtn">ASCEND</button>
+        <div class="perks" id="perks"></div>
+      </div>
+
+      <div class="hp-panel" id="hp-leaders" hidden>
+        <p class="tp-sub">Lifetime gains vs the top lifters on the server. They keep grinding too.</p>
+        <ol class="leaders" id="leaders"></ol>
+      </div>
+
+      <div class="hp-panel" id="hp-settings" hidden>
+        <div class="btn-row"><button class="small-btn" id="musicBtn">Music: off</button><span class="desc">Keys: Space or J taps a lifter · 1 2 3 tap Yoki, Ang, Alton</span></div>
+        <label class="desc" for="saveCode">Save code (copy it to move your progress)</label>
+        <textarea id="saveCode" rows="3" readonly></textarea>
+        <div class="btn-row"><button class="small-btn" id="exportBtn">Make save code</button><button class="small-btn" id="copyBtn">Copy</button></div>
+        <label class="desc" for="importCode">Load a save code</label>
+        <textarea id="importCode" rows="2" placeholder="Paste a save code here"></textarea>
+        <div class="btn-row"><button class="small-btn" id="importBtn">Load save</button><span class="desc" id="importMsg"></span></div>
+      </div>
+    </div>
+
     <div class="eggs">
       <h2>EGG HEIST <small id="petBonusTag">pets +0%</small></h2>
       <div class="rival">
@@ -1049,6 +1186,12 @@ const ACH = [
   { id: 'champ',   name: 'Champion',      desc: 'Reach Champion league',    test: () => state.mini.league.rank >= 5 },
   { id: 'bed',     name: 'Bed Defender',  desc: 'Survive a Bed Wars wave',  test: () => state.mini.bed.waves >= 1 },
   { id: 'dropper', name: 'Tycoon',        desc: 'Buy 10 dropper upgrades',  test: () => state.mini.drop.speed + state.mini.drop.value + state.mini.drop.upg >= 10 },
+  { id: 'boss1',   name: 'Chad Slayer',   desc: 'Defeat the world boss',    test: () => state.x.bossKills >= 1 },
+  { id: 'ascend',  name: 'Ascended',      desc: 'Ascend once',              test: () => state.x.ascends >= 1 },
+  { id: 'drip',    name: 'Drip',          desc: 'Buy a cosmetic',           test: () => state.x.ownedHats.length >= 1 },
+  { id: 'coder',   name: 'Code Hunter',   desc: 'Redeem 3 codes',           test: () => state.x.codes.length >= 3 },
+  { id: 'streak',  name: 'Dedicated',     desc: 'Reach a 7-day streak',     test: () => state.x.daily.streak >= 7 },
+  { id: 'number1', name: 'Number One',    desc: 'Top the server leaderboard', test: () => state.x.total > Math.pow(10, 30) * (1 + (Date.now() - state.x.lbStart) / 60000 * .03) },
   { id: 'm1',      name: 'Millionaire',   desc: 'Hold 1M gains',            test: () => state.gains >= 1e6 },
   { id: 'b1',      name: 'Billionaire',   desc: 'Hold 1B gains',            test: () => state.gains >= 1e9 },
   { id: 'reb1',    name: 'Reborn',        desc: 'Rebirth once',             test: () => state.rebirths >= 1 },
@@ -1095,7 +1238,7 @@ const mult = () => 1 + state.rebirths;
 const achBonus = () => 1 + 0.02 * state.ach.length;
 const petBonus = () => 1 + RARITIES.reduce((s, r) => s + r.bonus * state.pets[r.id], 0);
 const worldMult = () => (WORLDS[state.world] || WORLDS[0]).mult;
-const gainMult = () => mult() * achBonus() * petBonus() * worldMult() * ffx('all');
+const gainMult = () => mult() * achBonus() * petBonus() * worldMult() * ffx('all') * extraMult();
 const rotIncomeRaw = () => state.base.reduce((s, id) => s + rotRaw(id), 0);
 const unitCost = (u, owned) => u.base * Math.pow(1.15, owned);
 const costN = (u, n) => Math.floor(unitCost(u, state.owned[u.id]) * (Math.pow(1.15, n) - 1) / 0.15);
@@ -1185,6 +1328,8 @@ function toast(msg, sub = '', cls = '') {
   t.textContent = msg;
   if (sub) { const s = document.createElement('small'); s.textContent = sub; t.appendChild(s); }
   $('toasts').appendChild(t);
+  const ts = $('toasts').children;
+  while (ts.length > 3) ts[0].remove();
   setTimeout(() => t.remove(), 2800);
 }
 function banner(text, color) {
@@ -1274,7 +1419,7 @@ function hit(l, e) {
   const now = performance.now();
   const wasIdle = now - lastInteract > 4000;
   lastInteract = now; l.hoverSaid = true;
-  combo = now - lastHit < COMBO_WINDOW * ffx('combo') * (inFever() ? 1.5 : 1) ? combo + 1 : 1;
+  combo = (combo && comboFrozen()) || now - lastHit < COMBO_WINDOW * ffx('combo') * (inFever() ? 1.5 : 1) ? combo + 1 : 1;
   lastHit = now;
   if (combo % FEVER_EVERY === 0) startFever();
 
@@ -1288,7 +1433,7 @@ function hit(l, e) {
     squadUntil = now + SQUAD_MS;
   }
 
-  const crit = Math.random() < CRIT_CHANCE;
+  const crit = Math.random() < critChance();
   const amt = perClick() * lvMult(l.key) * comboMult() * (inFever() ? FEVER_MULT : 1) * (inSquad() ? 2 : 1) * (crit ? (ffx('crit') > 1 ? ffx('crit') : CRIT_MULT) : 1);
   state.gains += amt;
   state.reps++;
@@ -1296,6 +1441,7 @@ function hit(l, e) {
   addXp(l, crit ? 3 : 1);
   l.engagedUntil = now + 1400;
   if (event && event.type === 'lift') event.count++;
+  if (event && event.type === 'boss') { event.count += crit ? 5 : 1; bossHit(); }
 
   l.btn.classList.add('pump');
   clearTimeout(l.pumpTimer);
@@ -1407,6 +1553,7 @@ function endEvent(win) {
   const ev = event; event = null;
   $('chal').hidden = true;
   const now = performance.now();
+  if (ev.type === 'boss') return endBoss(win, now);
   if (ev.type === 'lift') {
     nextLift = now + 90000 + Math.random() * 60000;
     if (win) {
@@ -2310,6 +2457,506 @@ function initMini() {
   requestAnimationFrame(t => { miniLast = t; miniFrame(t); });
 }
 
+
+/* ================= Extras: hub, boss, weather, pets, chat, music, keys ================= */
+const xFresh = () => ({ daily: { last: '', streak: 0 }, quests: [], wheelAt: 0, hats: { yoki: null, ang: null, alton: null }, ownedHats: [], codes: [],
+  shards: 0, ascends: 0, perks: { might: 0, luck: 0, start: 0 }, total: 0, bossKills: 0, music: false, lbStart: Date.now() });
+function mergeX(x) {
+  const f = xFresh();
+  if (!x) return f;
+  return { ...f, ...x, daily: { ...f.daily, ...x.daily }, hats: { ...f.hats, ...x.hats }, perks: { ...f.perks, ...x.perks },
+    quests: Array.isArray(x.quests) ? x.quests : [], ownedHats: Array.isArray(x.ownedHats) ? x.ownedHats : [], codes: Array.isArray(x.codes) ? x.codes : [] };
+}
+const X = () => state.x;
+let weather = null, codeBuffUntil = 0;
+const weatherIs = id => !!weather && weather.id === id && performance.now() < weather.until;
+const extraMult = () => (state.x ? 1 + 0.5 * X().perks.might : 1) * (weatherIs('rain') ? 2 : 1) * (performance.now() < codeBuffUntil ? 2 : 1);
+const critChance = () => Math.min(.6, (CRIT_CHANCE + (state.x ? .03 * X().perks.luck : 0)) * (weatherIs('blood') ? 2 : 1));
+const comboFrozen = () => weatherIs('quake');
+const startGains = () => state.x && X().perks.start ? 1000 * Math.pow(10, X().perks.start - 1) : 0;
+const give = (sec, why) => { const a = sec * unit(); state.gains += a; toast(why || 'Reward!', '+' + fmt(a) + ' gains'); return a; };
+const celebrateAt = el => { const [x, y] = centerOf(el); burst(x, y, 60, 10); };
+
+/* ---------- Hub tabs ---------- */
+let hubTab = 'daily';
+document.querySelectorAll('#hubTabs button').forEach(b => b.addEventListener('click', () => {
+  hubTab = b.dataset.hub;
+  document.querySelectorAll('#hubTabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.hp-panel').forEach(p => { p.hidden = p.id !== 'hp-' + hubTab; });
+  b.classList.remove('ping');
+  tone(600, 700, .05, 'triangle', .05);
+  renderExtra(true);
+}));
+const hubPing = (tab, on) => { const b = document.querySelector(`#hubTabs [data-hub="${tab}"]`); b.classList.toggle('ping', on && hubTab !== tab); };
+
+/* ---------- Daily rewards ---------- */
+const dayStr = t => new Date(t).toDateString();
+const canDaily = () => X().daily.last !== dayStr(Date.now());
+const nextStreak = () => X().daily.last === dayStr(Date.now() - 864e5) ? X().daily.streak % 7 + 1 : 1;
+$('dailyBtn').addEventListener('click', () => {
+  if (!canDaily()) return;
+  const d = X().daily; d.streak = nextStreak(); d.last = dayStr(Date.now());
+  give(60 * d.streak, `Day ${d.streak} reward claimed!`);
+  if (d.streak === 7) {
+    if (state.nest.length < NEST_SIZE) { state.nest.push({ rarity: 'legendary', hatchAt: Date.now() + HATCH_MS }); renderEggs(); toast('Bonus: a Legendary egg is in your nest!'); }
+    else give(600, 'Bonus: nest full, so here are extra gains');
+    rain(200);
+  }
+  celebrateAt($('dailyBtn')); fanfare();
+  renderExtra(true);
+});
+function renderDaily() {
+  const claimed = !canDaily(), streak = X().daily.streak, next = claimed ? 0 : nextStreak();
+  const days = $('days'); days.innerHTML = '';
+  for (let i = 1; i <= 7; i++) {
+    const done = claimed ? i <= streak : i < next;
+    const el = document.createElement('div');
+    el.className = 'day' + (done ? ' done' : '') + (i === next ? ' today' : '');
+    el.innerHTML = `<span>DAY</span><b>${i}</b><span>${fmt(60 * i * unit())}${i === 7 ? '+egg' : ''}</span>`;
+    days.appendChild(el);
+  }
+  $('dailyBtn').disabled = claimed;
+  $('dailyBtn').textContent = claimed ? 'Come back tomorrow' : `CLAIM DAY ${next}`;
+}
+
+/* ---------- Quests ---------- */
+const QUESTS = [
+  { id: 'reps',    d: n => `Do ${n} reps`,                       t: [100, 250, 500], get: () => state.reps },
+  { id: 'crits',   d: n => `Land ${n} crits`,                    t: [10, 25, 50],    get: () => state.stats.crits },
+  { id: 'golden',  d: n => `Grab ${n} golden shake${n > 1 ? 's' : ''}`, t: [1, 2, 3], get: () => state.stats.golden },
+  { id: 'harvest', d: n => `Harvest ${n} crops`,                 t: [2, 4, 6],       get: () => state.mini.st.harvests },
+  { id: 'shred',   d: n => `Shred ${n} thing${n > 1 ? 's' : ''}`, t: [1, 2, 3],      get: () => state.mini.st.shreds },
+  { id: 'crush',   d: n => `Crush ${n} car${n > 1 ? 's' : ''}`,   t: [1, 3, 5],       get: () => state.mini.st.crushed },
+  { id: 'serve',   d: n => `Serve ${n} diner customers`,         t: [5, 10, 20],     get: () => state.mini.served },
+  { id: 'league',  d: n => `Win ${n} Gym League match${n > 1 ? 'es' : ''}`, t: [1, 2, 3], get: () => state.mini.league.wins },
+  { id: 'bed',     d: n => `Survive ${n} Bed Wars wave${n > 1 ? 's' : ''}`, t: [1, 2, 3], get: () => state.mini.bed.waves },
+  { id: 'rot',     d: n => `Buy or steal ${n} brainrot${n > 1 ? 's' : ''}`, t: [1, 2, 3], get: () => state.stats.rotBuys + state.stats.rotSteals },
+  { id: 'boss',    d: n => `Defeat ${n} world boss${n > 1 ? 'es' : ''}`, t: [1, 1, 2], get: () => X().bossKills },
+  { id: 'hi5',     d: n => `See ${n} high five${n > 1 ? 's' : ''}`, t: [1, 2, 3],   get: () => state.stats.hi5 },
+  { id: 'egg',     d: n => `Steal ${n} egg${n > 1 ? 's' : ''}`,   t: [1, 2, 3],       get: () => state.stats.heists },
+];
+const QD = Object.fromEntries(QUESTS.map(q => [q.id, q]));
+function newQuest() {
+  const used = X().quests.map(q => q.id), q = pick(QUESTS.filter(x => !used.includes(x.id))), tier = Math.random() * 3 | 0;
+  return { id: q.id, n: q.t[tier], tier, start: q.get() };
+}
+const qProg = q => Math.max(0, QD[q.id].get() - q.start);
+const qReward = q => (q.tier + 1) * 150;
+function renderQuests() {
+  const el = $('quests'); el.innerHTML = '';
+  X().quests.forEach((q, i) => {
+    const p = Math.min(q.n, qProg(q)), ready = p >= q.n, row = document.createElement('div');
+    row.className = 'quest' + (ready ? ' ready' : '');
+    row.innerHTML = `<span class="qd">${QD[q.id].d(q.n)}</span><span class="qr">${p} / ${q.n} · reward ${fmt(qReward(q) * unit())}</span><span class="bar"><i style="width:${p / q.n * 100}%"></i></span><button class="small-btn"${ready ? '' : ' disabled'}>${ready ? 'CLAIM' : 'In progress'}</button>`;
+    row.querySelector('button').addEventListener('click', e => {
+      if (qProg(q) < q.n) return;
+      give(qReward(q), 'Quest complete!'); celebrateAt(e.currentTarget); fanfare();
+      X().quests.splice(i, 1, null); X().quests[i] = newQuest();
+      cheer(['Quest done!', 'Another one!', 'EZ quest.']);
+      renderQuests();
+    });
+    el.appendChild(row);
+  });
+  const c = 20 * unit();
+  $('rerollBtn').textContent = `Reroll all quests · ${fmt(c)}`;
+  $('rerollBtn').disabled = state.gains < c;
+}
+$('rerollBtn').addEventListener('click', () => {
+  const c = 20 * unit(); if (state.gains < c) return;
+  state.gains -= c; X().quests = []; for (let i = 0; i < 3; i++) X().quests.push(newQuest()); tone(500, 800, .1, 'triangle', .08); renderQuests();
+});
+
+/* ---------- Lucky wheel ---------- */
+const WHEEL = [
+  { label: '30s',   color: '#5b8cff', fn: () => give(30, 'Wheel: 30 seconds of gains') },
+  { label: 'FEVER', color: '#ff5a6e', fn: () => startFever() },
+  { label: '2 MIN', color: '#5ee6a0', fn: () => give(120, 'Wheel: 2 minutes of gains') },
+  { label: 'GOLD',  color: '#ffc94a', fn: () => { nextGolden = 0; toast('Wheel: a golden shake appears!'); } },
+  { label: '1 MIN', color: '#9b7bff', fn: () => give(60, 'Wheel: 1 minute of gains') },
+  { label: 'EGG',   color: '#ff9ecf', fn: () => { if (state.nest.length < NEST_SIZE) { state.nest.push({ rarity: rollRarity(), hatchAt: Date.now() + HATCH_MS }); renderEggs(); toast('Wheel: a free egg is in your nest!'); } else give(90, 'Wheel: nest full, here are gains'); } },
+  { label: 'IRON',  color: '#c9ccd6', fn: () => { state.mini.bed.iron += 15; toast('Wheel: +15 Bed Wars iron'); } },
+  { label: '10 MIN', color: '#ff9a1f', fn: () => { give(600, 'Wheel JACKPOT: 10 minutes of gains!'); rain(200); } },
+];
+let wheelRot = 0, wheelSpinning = false;
+(function buildWheel() {
+  const svg = $('wheel'); let html = '';
+  WHEEL.forEach((w, i) => {
+    const a1 = (i * 45 - 90) * Math.PI / 180, a2 = ((i + 1) * 45 - 90) * Math.PI / 180, am = (i * 45 + 22.5 - 90);
+    html += `<path d="M0 0 L${100 * Math.cos(a1)} ${100 * Math.sin(a1)} A100 100 0 0 1 ${100 * Math.cos(a2)} ${100 * Math.sin(a2)} Z" fill="${w.color}" stroke="#15172e" stroke-width="2"/>`;
+    html += `<text transform="rotate(${am}) translate(62 0) rotate(90)" text-anchor="middle" dominant-baseline="middle" font-family="Bungee, Impact, sans-serif" font-size="13" fill="#15172e">${w.label}</text>`;
+  });
+  html += '<circle r="16" fill="#15172e" stroke="#ffc94a" stroke-width="3"/>';
+  svg.innerHTML = html;
+})();
+$('wheelBtn').addEventListener('click', () => {
+  if (wheelSpinning || Date.now() < X().wheelAt) return;
+  wheelSpinning = true; X().wheelAt = Date.now() + 600000;
+  const i = Math.random() * WHEEL.length | 0;
+  wheelRot = Math.ceil(wheelRot / 360) * 360 + 1800 - (i * 45 + 22.5);
+  $('wheel').style.transform = `rotate(${wheelRot}deg)`;
+  let ticks = 0; const iv = setInterval(() => { tone(900, 900, .02, 'square', .03); if (++ticks > 30) clearInterval(iv); }, 120);
+  setTimeout(() => { wheelSpinning = false; WHEEL[i].fn(); celebrateAt($('wheel')); ding(); renderExtra(true); }, REDUCED ? 400 : 4100);
+});
+function renderWheel() {
+  const wait = X().wheelAt - Date.now();
+  $('wheelBtn').disabled = wheelSpinning || wait > 0;
+  $('wheelBtn').textContent = wheelSpinning ? 'SPINNING...' : wait > 0 ? `Free spin in ${mmss(wait)}` : 'SPIN (FREE)';
+}
+
+/* ---------- Cosmetics shop ---------- */
+const HATS = [
+  { id: 'cap',    name: 'Snapback',    cost: 20,  svg: '<path d="M126 46 C126 18 194 18 194 46 Z" fill="#e0404e"/><rect x="150" y="40" width="60" height="9" rx="4" fill="#a3192c"/><circle cx="160" cy="22" r="4" fill="#a3192c"/>' },
+  { id: 'party',  name: 'Party Hat',   cost: 30,  svg: '<path d="M144 38 L160 -6 L176 38 Z" fill="#9b7bff"/><path d="M150 22 l20 -6 M147 31 l26 -6" stroke="#ffc94a" stroke-width="3"/><circle cx="160" cy="-8" r="6" fill="#ffc94a"/>' },
+  { id: 'shades', name: 'Shades',      cost: 40,  svg: '<rect x="134" y="71" width="24" height="12" rx="5" fill="#111"/><rect x="162" y="71" width="24" height="12" rx="5" fill="#111"/><path d="M158 75 h4 M134 75 h-6 M186 75 h6" stroke="#111" stroke-width="3"/><path d="M138 74 l6 0" stroke="#fff" stroke-width="2" opacity=".6"/>' },
+  { id: 'chain',  name: 'Gold Chain',  cost: 80,  svg: '<path d="M136 116 Q160 146 184 116" stroke="#ffc94a" stroke-width="5" fill="none" stroke-dasharray="4 2"/><circle cx="160" cy="138" r="8" fill="#ffc94a"/><text x="160" y="142" text-anchor="middle" font-size="10" font-family="Bungee, Impact" fill="#7a4a00">$</text>' },
+  { id: 'viking', name: 'Viking Helm', cost: 150, svg: '<path d="M126 48 C126 14 194 14 194 48 Z" fill="#9aa3b5"/><rect x="124" y="42" width="72" height="8" rx="3" fill="#6b7189"/><path d="M128 36 C110 30 106 14 110 4 C116 18 124 22 134 26 Z M192 36 C210 30 214 14 210 4 C204 18 196 22 186 26 Z" fill="#f4ecd8"/>' },
+  { id: 'crown',  name: 'Crown',       cost: 200, svg: '<path d="M132 34 L136 8 L148 24 L160 2 L172 24 L184 8 L188 34 Z" fill="#ffc94a" stroke="#c98a00" stroke-width="2"/><circle cx="160" cy="24" r="4" fill="#ff5a6e"/><circle cx="144" cy="28" r="3" fill="#5b8cff"/><circle cx="176" cy="28" r="3" fill="#5ee6a0"/>' },
+  { id: 'halo',   name: 'Halo',        cost: 400, svg: '<ellipse cx="160" cy="10" rx="28" ry="7" fill="none" stroke="#fff2a8" stroke-width="5"/><ellipse cx="160" cy="10" rx="28" ry="7" fill="none" stroke="#ffc94a" stroke-width="2"/>' },
+];
+const HAT = Object.fromEntries(HATS.map(h => [h.id, h]));
+let shopWho = 'yoki';
+function applyHats() {
+  for (const l of lifters) {
+    l.svg.querySelectorAll('.hat').forEach(g => g.remove());
+    const h = HAT[X().hats[l.key]];
+    if (h) l.svg.querySelector('.flex').insertAdjacentHTML('beforeend', `<g class="hat">${h.svg}</g>`);
+  }
+}
+function renderShop() {
+  const who = $('shopWho'); who.innerHTML = '';
+  for (const l of lifters) {
+    const b = document.createElement('button');
+    b.className = 'chipbtn'; b.style.setProperty('--fc', l.c.color); b.setAttribute('aria-pressed', shopWho === l.key);
+    b.innerHTML = `<i></i>${l.c.name}`;
+    b.addEventListener('click', () => { shopWho = l.key; renderShop(); });
+    who.appendChild(b);
+  }
+  const grid = $('shopGrid'); grid.innerHTML = '';
+  HATS.forEach(h => {
+    const owned = X().ownedHats.includes(h.id), on = X().hats[shopWho] === h.id, c = h.cost * unit();
+    const b = document.createElement('button');
+    b.className = 'item' + (on ? ' on' : '');
+    b.disabled = !owned && state.gains < c;
+    b.innerHTML = `<svg viewBox="112 -12 96 160" aria-hidden="true"><circle cx="160" cy="72" r="32" fill="#bb7e52"/>${h.svg}</svg>${h.name}<small>${on ? 'WEARING' : owned ? 'Put on' : fmt(c)}</small>`;
+    b.addEventListener('click', () => {
+      if (!X().ownedHats.includes(h.id)) {
+        if (state.gains < c) return;
+        state.gains -= c; X().ownedHats.push(h.id); ding();
+      }
+      X().hats[shopWho] = X().hats[shopWho] === h.id ? null : h.id;
+      applyHats();
+      const l = L[shopWho]; say(l, X().hats[shopWho] ? `Fresh ${h.name.toLowerCase()}!` : 'Back to basics.', 1500); mood(l, 'hype', 1200);
+      celebrateAt(l.btn);
+      renderShop();
+    });
+    grid.appendChild(b);
+  });
+}
+
+/* ---------- Codes ---------- */
+const CODES = {
+  YOKI:        ['500 seconds of gains',   () => give(500, 'Code YOKI')],
+  ANG:         ['A free fruit spin',       () => { state.gains += 30 * unit(); $('spinBtn').click(); }],
+  ALTON:       ['Instant FEVER',          () => startFever()],
+  BLEHHH:      ['Confetti + 200s of gains', () => { rain(220); give(200, 'Code BLEHHH'); }],
+  LIGHTWEIGHT: ['×2 gains for 5 minutes',  () => { codeBuffUntil = performance.now() + 300000; }],
+  YEAHBUDDY:   ['15 Bed Wars iron',        () => { state.mini.bed.iron += 15; }],
+  BRAINROT:    ['A free brainrot',         () => { if (state.base.length < BASE_SIZE) { state.base.push(rollRot(1)); renderRots(); } else give(300, 'Base full, have gains instead'); }],
+  MULTIVERSE:  ['1 Ascension Shard',       () => { X().shards++; }],
+};
+$('codeForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const code = $('codeInput').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const msg = $('codeMsg');
+  if (!CODES[code]) { msg.textContent = `"${code || '?'}" isn't a code. Check the spelling.`; tone(200, 150, .15, 'square', .05); return; }
+  if (X().codes.includes(code)) { msg.textContent = `You already redeemed ${code}.`; return; }
+  X().codes.push(code); CODES[code][1]();
+  msg.textContent = `Redeemed ${code}: ${CODES[code][0]}!`;
+  $('codeInput').value = '';
+  celebrateAt($('codeForm')); fanfare();
+  cheer(['FREE STUFF!', 'Codes are the best!', 'BLEHHH! Thanks!']);
+  renderExtra(true);
+});
+function renderCodes() {
+  $('codeList').innerHTML = X().codes.map(c => `<span class="chipbtn" style="--fc:#5ee6a0"><i></i>${c}</span>`).join('');
+}
+
+/* ---------- Ascension ---------- */
+const PERKS = [
+  { id: 'might', name: 'Might',      desc: lv => `+50% all gains per level (now +${lv * 50}%)`, max: 99, cost: lv => lv + 1 },
+  { id: 'luck',  name: 'Luck',       desc: lv => `+3% crit chance per level (now +${lv * 3}%)`, max: 5,  cost: lv => 2 * (lv + 1) },
+  { id: 'start', name: 'Head Start', desc: lv => `Start each rebirth with ${lv ? fmt(1000 * Math.pow(10, lv - 1)) : '0'} gains`, max: 8, cost: lv => lv + 1 },
+];
+const ascendGain = () => Math.floor(state.rebirths / 5);
+let ascendArmed = false;
+$('ascendBtn').addEventListener('click', () => {
+  if (state.rebirths < 10) return;
+  const b = $('ascendBtn');
+  if (!ascendArmed) { ascendArmed = true; b.textContent = 'SURE? TAP AGAIN'; setTimeout(() => { ascendArmed = false; renderAscend(); }, 3000); return; }
+  ascendArmed = false;
+  const gain = ascendGain();
+  X().shards += gain; X().ascends++;
+  state.rebirths = 0; state.owned = fresh().owned; state.world = 0; state.worlds = [0];
+  state.gains = startGains(); shown = state.gains;
+  applyWorld();
+  const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
+  rain(260); fanfare(); tone(100, 2000, 1, 'sawtooth', .08);
+  banner('ASCENDED', '#9b7bff');
+  all(l => { say(l, pick(['We are LEGENDS now.', 'ASCENDED!', 'BLEHHH! Infinite power!']), 2400); mood(l, 'hype', 2400); });
+  toast(`Ascended! +${gain} Shards`, 'Spend them on permanent perks');
+  save(); render();
+});
+function renderAscend() {
+  $('shards').textContent = X().shards;
+  $('ascends').textContent = X().ascends;
+  $('ascendGain').textContent = state.rebirths >= 10 ? `Ascend now for +${ascendGain()} Shards` : `${10 - state.rebirths} more rebirths to unlock`;
+  if (!ascendArmed) { $('ascendBtn').disabled = state.rebirths < 10; $('ascendBtn').textContent = 'ASCEND'; }
+  const el = $('perks');
+  el.innerHTML = '';
+  PERKS.forEach(p => {
+    const lv = X().perks[p.id], c = p.cost(lv), max = lv >= p.max, row = document.createElement('div');
+    row.className = 'perk';
+    row.innerHTML = `<span class="pn">${p.name} · Lv ${lv}</span><span class="pd">${p.desc(lv)}</span><button class="small-btn"${max || X().shards < c ? ' disabled' : ''}>${max ? 'MAX' : `${c} Shard${c > 1 ? 's' : ''}`}</button>`;
+    row.querySelector('button').addEventListener('click', e => {
+      if (max || X().shards < c) return;
+      X().shards -= c; X().perks[p.id]++; ding(); celebrateAt(e.currentTarget); renderAscend();
+    });
+    el.appendChild(row);
+  });
+}
+
+/* ---------- Leaderboard ---------- */
+const NPCS = [['NoodleArms', 2], ['GymRat_99', 4], ['xX_Swole_Xx', 6], ['ProteinPapi', 8], ['BenchBoss', 10], ['Mega Chad', 13], ['LiftLord', 16], ['BrainrotKing', 20], ['Sigma Squatter', 25], ['TheRealOlympian', 30]];
+function renderLeaders() {
+  const mins = (Date.now() - X().lbStart) / 60000;
+  const rows = NPCS.map(([n, e]) => ({ n, v: Math.pow(10, e) * (1 + mins * .03) }));
+  rows.push({ n: 'You (Squad)', v: X().total, me: true });
+  rows.sort((a, b) => b.v - a.v);
+  $('leaders').innerHTML = rows.map(r => `<li class="${r.me ? 'me' : ''}"><span>${r.n}</span><span></span><b>${fmt(r.v)}</b></li>`).join('');
+}
+
+/* ---------- World boss ---------- */
+let nextBoss = performance.now() + 150000;
+const BOSS_SVG = `<svg viewBox="0 0 200 190" aria-hidden="true">
+  <path d="M30 120 C10 100 14 70 40 66 L70 80 Z M170 120 C190 100 186 70 160 66 L130 80 Z" fill="#8a4a3a"/>
+  <circle cx="34" cy="62" r="20" fill="#9a5544"/><circle cx="166" cy="62" r="20" fill="#9a5544"/>
+  <path d="M56 70 L144 70 C142 120 128 160 120 186 L80 186 C72 160 58 120 56 70 Z" fill="#9a5544"/>
+  <path d="M70 70 L130 70 L136 120 C120 128 80 128 64 120 Z" fill="#2b2f45"/>
+  <text x="100" y="104" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="13" fill="#ff5a6e">MEGA</text>
+  <rect x="84" y="40" width="32" height="30" rx="8" fill="#7a3e30"/>
+  <ellipse cx="100" cy="30" rx="30" ry="32" fill="#9a5544"/>
+  <path d="M70 18 C76 -2 124 -2 130 18 C118 10 82 10 70 18 Z" fill="#1b1630"/>
+  <rect x="74" y="24" width="52" height="12" rx="5" fill="#111"/><path d="M78 27h10" stroke="#fff" stroke-width="2" opacity=".6"/>
+  <path d="M74 20 l20 6 M126 20 l-20 6" stroke="#1b1630" stroke-width="4" stroke-linecap="round"/>
+  <path d="M86 48 q14 -8 28 0" stroke="#3a1508" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>`;
+function startBoss(now) {
+  event = { type: 'boss', until: now + 30000, count: 0, need: 150 + 75 * X().bossKills };
+  const b = document.createElement('div'); b.className = 'boss'; b.id = 'boss'; b.innerHTML = BOSS_SVG;
+  arena.appendChild(b);
+  $('chal').hidden = false;
+  document.querySelector('.chal-title').textContent = 'WORLD BOSS · MEGA CHAD · TAP THE SQUAD';
+  banner('BOSS FIGHT!', '#ff5a6e'); tone(80, 60, .8, 'sawtooth', .12);
+  all(l => { say(l, pick(['MEGA CHAD?!', 'Everyone tap us!', 'He looks strong...']), 2000); mood(l, 'ooh', 2000); });
+  chatSys('A world boss appeared: MEGA CHAD');
+}
+function bossHit() {
+  const b = $('boss'); if (!b) return;
+  b.classList.add('hurt'); setTimeout(() => b.classList.remove('hurt'), 70);
+}
+function endBoss(win, now) {
+  const b = $('boss'); if (b) b.remove();
+  nextBoss = now + 240000 + Math.random() * 120000;
+  if (win) {
+    X().bossKills++;
+    const reward = 300 * unit() * (1 + X().bossKills * .1);
+    state.gains += reward;
+    rain(240); fanfare(); banner('BOSS DOWN!', '#5ee6a0');
+    all(l => { say(l, pick(['WE BEAT MEGA CHAD!', 'Too easy!', 'BLEHHH! GG!']), 2400); mood(l, 'hype', 2400); });
+    toast(`Mega Chad defeated! +${fmt(reward)} gains`);
+  } else {
+    sad();
+    all(l => { say(l, pick(['He got away...', 'Next time, Chad.']), 2000); mood(l, 'ooh', 1600); });
+    toast('Mega Chad escaped', 'Tap faster next time');
+  }
+}
+
+/* ---------- Weather ---------- */
+const WEATHER = [
+  { id: 'rain',    name: 'PROTEIN RAIN', desc: '×2 gains',            ms: 30000 },
+  { id: 'blood',   name: 'BLOOD MOON',   desc: '2× crit chance',      ms: 30000 },
+  { id: 'goldenh', name: 'GOLDEN HOUR',  desc: 'golden shakes everywhere', ms: 25000 },
+  { id: 'quake',   name: 'EARTHQUAKE',   desc: 'combos never drop',   ms: 20000 },
+];
+let nextWeather = performance.now() + 90000;
+const weatherEl = document.createElement('div'); weatherEl.className = 'weather'; stage.prepend(weatherEl);
+function startWeather(now) {
+  const w = pick(WEATHER);
+  weather = { id: w.id, name: w.name, until: now + w.ms };
+  weatherEl.className = 'weather ' + w.id;
+  stage.classList.toggle('quaking', w.id === 'quake' && !REDUCED);
+  banner(w.name, '#6ea8ff'); tone(300, 900, .5, 'sine', .08);
+  toast(w.name + '!', w.desc + ` for ${w.ms / 1000}s`);
+  const l = pick(lifters); say(l, { rain: 'It is raining PROTEIN!', blood: 'The moon... it is RED.', goldenh: 'Gold everywhere!', quake: 'The ground is shaking!' }[w.id], 2200); mood(l, 'ooh', 1800);
+}
+function tickWeather(now) {
+  if (weather && now > weather.until) { weather = null; weatherEl.className = 'weather'; stage.classList.remove('quaking'); }
+  if (!weather && now > nextWeather) { startWeather(now); nextWeather = now + 120000 + Math.random() * 90000; }
+  if (weatherIs('goldenh') && golden.hidden && !event) nextGolden = 0;
+}
+function extraBuffs(buffs) {
+  const now = performance.now();
+  if (weather && now < weather.until) buffs.push(['weather-b', `${weather.name} · ${Math.ceil((weather.until - now) / 1000)}s`]);
+  if (now < codeBuffUntil) buffs.push(['code-b', `CODE ×2 · ${mmss(codeBuffUntil - now)}`]);
+}
+
+/* ---------- Pets on stage ---------- */
+let petEls = [];
+function syncPets() {
+  const kinds = RARITIES.filter(r => state.pets[r.id] > 0);
+  if (petEls.length !== kinds.length || petEls.some((p, i) => p.id !== kinds[i].id)) {
+    petEls.forEach(p => p.el.remove());
+    petEls = kinds.map((r, i) => {
+      const el = document.createElement('div');
+      el.className = 'petpal'; el.style.setProperty('--ec', r.color); el.title = r.pet;
+      el.innerHTML = `<svg viewBox="0 0 34 30" aria-hidden="true"><path d="M8 9 l3 5 M26 9 l-3 5" stroke="${r.color}" stroke-width="3" stroke-linecap="round"/><ellipse cx="17" cy="18" rx="14" ry="11" fill="${r.color}"/><circle cx="12" cy="16" r="3" fill="#fff"/><circle cx="22" cy="16" r="3" fill="#fff"/><circle cx="12.5" cy="16.5" r="1.5" fill="#111"/><circle cx="22.5" cy="16.5" r="1.5" fill="#111"/><path d="M14 22 q3 2 6 0" stroke="#111" stroke-width="1.5" fill="none"/></svg>`;
+      arena.appendChild(el);
+      return { id: r.id, el, off: (i % 2 ? 1 : -1) * (20 + i * 8) };
+    });
+  }
+  const w = lifters[0].walker.offsetWidth;
+  petEls.forEach((p, i) => {
+    const l = lifters[i % 3];
+    p.el.style.left = clamp(l.x + w / 2 + p.off - 17, 0, arena.clientWidth - 34) + 'px';
+  });
+}
+
+/* ---------- Server chat ---------- */
+const NAMES = ['GymRat_99', 'xX_Swole_Xx', 'ProteinPapi', 'BenchBoss', 'NoodleArms', 'LiftLord', 'BrainrotKing', 'tiny_tim', 'Sigma Squatter', 'cookie_gamer', 'Bacon_Hair42', 'flexmaster'];
+const NAME_COLORS = ['#6ea8ff', '#ff6b7d', '#5ee6a0', '#ffc94a', '#b05bff', '#ff9a1f'];
+const CHAT = [
+  () => `hatched a ${pick(['LEGENDARY Dragon Lifter', 'MYTHIC Cosmic Protein Phoenix', 'RARE Pump Pup', 'EPIC Swole Cat'])}!`,
+  () => `stole ${pick(BRAINROTS).name} from ${pick(NAMES)}!`,
+  () => `: anyone trading ${pick(['Dragon Fruit', 'Quake Fruit', 'a Golden Gainfruit', 'La Vacca Swolurno'])}?`,
+  () => `reached ${pick(['GOLD', 'DIAMOND', 'CHAMPION'])} in Gym League`,
+  () => `: yoki is so buff lol`,
+  () => `: how do i beat mega chad`,
+  () => `: BLEHHH`,
+  () => `crushed a Rocket Car!`,
+  () => `harvested a RAINBOW Muscle Melon!`,
+  () => `: ang's glasses are so cool`,
+  () => `: alton tongue out again lmao`,
+  () => `: lock ur base, raiders everywhere`,
+  () => `just ascended!`,
+];
+const chatEl = document.createElement('div');
+chatEl.className = 'chat'; chatEl.innerHTML = '<span class="chat-t">SERVER CHAT</span>';
+stage.appendChild(chatEl);
+function pushChat(node) {
+  chatEl.appendChild(node);
+  const lines = chatEl.querySelectorAll('p');
+  if (lines.length > 4) lines[0].remove();
+}
+function chatNpc() {
+  const p = document.createElement('p'), n = pick(NAMES), msg = pick(CHAT)();
+  const b = document.createElement('b'); b.textContent = n; b.style.setProperty('--nc', pick(NAME_COLORS));
+  p.appendChild(b); p.appendChild(document.createTextNode(msg.startsWith(':') ? msg : ' ' + msg));
+  pushChat(p);
+}
+function chatSys(text) {
+  const p = document.createElement('p'); p.className = 'sys';
+  p.textContent = '[You] ' + text;
+  pushChat(p);
+}
+const _toast = toast;
+toast = (msg, sub, cls) => { _toast(msg, sub, cls); chatSys(msg); };
+let nextChat = 0;
+
+/* ---------- Music ---------- */
+let musicIv = null, beat = 0;
+const BASS = [55, 55, 65.4, 73.4, 55, 55, 82.4, 73.4];
+function setMusic(on) {
+  X().music = on;
+  $('musicBtn').textContent = 'Music: ' + (on ? 'on' : 'off');
+  clearInterval(musicIv); musicIv = null;
+  if (!on) return;
+  musicIv = setInterval(() => {
+    if (!soundOn) return;
+    if (beat % 2 === 0) tone(BASS[(beat / 2) % 8], BASS[(beat / 2) % 8] * .98, .22, 'triangle', .09);
+    tone(6000, 5000, .02, 'square', .015);
+    if (beat % 4 === 2) tone(180, 60, .1, 'sine', .12);
+    beat++;
+  }, inFever() ? 150 : 220);
+}
+$('musicBtn').addEventListener('click', () => setMusic(!X().music));
+
+/* ---------- Save codes ---------- */
+$('exportBtn').addEventListener('click', () => {
+  try { $('saveCode').value = btoa(unescape(encodeURIComponent(JSON.stringify(state)))); $('saveCode').select(); }
+  catch (e) { $('saveCode').value = 'Could not make a save code.'; }
+});
+$('copyBtn').addEventListener('click', () => {
+  const t = $('saveCode');
+  if (!t.value) $('exportBtn').click();
+  navigator.clipboard?.writeText(t.value).then(() => toast('Save code copied')).catch(() => { t.select(); toast('Press Ctrl+C or Cmd+C to copy'); });
+});
+$('importBtn').addEventListener('click', () => {
+  try {
+    const s = JSON.parse(decodeURIComponent(escape(atob($('importCode').value.trim()))));
+    if (typeof s.gains !== 'number') throw new Error();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    window.__noSave = true;
+    location.reload();
+  } catch (e) { $('importMsg').textContent = "That save code didn't work. Check you pasted all of it."; }
+});
+
+/* ---------- Keyboard ---------- */
+addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.repeat || e.metaKey || e.ctrlKey) return;
+  let l = null;
+  if (e.code === 'Space' || e.key === 'j' || e.key === 'J') { l = lifters[(state.reps + 1) % 3]; if (e.code === 'Space') e.preventDefault(); }
+  if (e.key === '1') l = L.yoki; if (e.key === '2') l = L.ang; if (e.key === '3') l = L.alton;
+  if (l) hit(l, { clientX: 0, clientY: 0 });
+});
+
+/* ---------- Hooks ---------- */
+let prevGains = null;
+function tickExtra(now) {
+  if (prevGains !== null && state.gains > prevGains) X().total += state.gains - prevGains;
+  prevGains = state.gains;
+  if (!event && !thief && $('modal').hidden && now > nextBoss) startBoss(now);
+  tickWeather(now);
+  syncPets();
+  if (now > nextChat) { chatNpc(); nextChat = now + 5000 + Math.random() * 7000; }
+}
+let extraTick = 0;
+function renderExtra(force) {
+  if (!state.x) return;
+  tickExtra(performance.now());
+  if (!force && ++extraTick % 5) return;
+  hubPing('daily', canDaily());
+  hubPing('quests', X().quests.some(q => qProg(q) >= q.n));
+  hubPing('wheel', Date.now() >= X().wheelAt);
+  hubPing('ascend', state.rebirths >= 10);
+  if (hubTab === 'daily') renderDaily();
+  if (hubTab === 'quests') renderQuests();
+  if (hubTab === 'wheel') renderWheel();
+  if (hubTab === 'shop' && force) renderShop();
+  if (hubTab === 'codes') renderCodes();
+  if (hubTab === 'ascend') renderAscend();
+  if (hubTab === 'leaders') renderLeaders();
+}
+function initExtra() {
+  state.x = mergeX(state.x);
+  while (X().quests.length < 3) X().quests.push(newQuest());
+  X().quests = X().quests.filter(q => q && QD[q.id]);
+  while (X().quests.length < 3) X().quests.push(newQuest());
+  applyHats();
+  if (X().music) setMusic(true);
+  for (let i = 0; i < 3; i++) chatNpc();
+  renderExtra(true);
+}
+
 /* ================= Modal ================= */
 let modalCb = null;
 function showModal(title, text, big, btn, cb) {
@@ -2401,6 +3048,7 @@ function render() {
   const buffs = [];
   if (inFever()) buffs.push(['fever', `FEVER ×3 · ${Math.ceil((feverUntil - performance.now()) / 1000)}s`]);
   if (inSquad()) buffs.push(['squadb', `SQUAD ×2 · ${Math.ceil((squadUntil - performance.now()) / 1000)}s`]);
+  extraBuffs(buffs);
   const bEl = $('buffs');
   if (bEl.children.length !== buffs.length) bEl.innerHTML = buffs.map(([c]) => `<span class="buff ${c}"></span>`).join('');
   buffs.forEach(([, t], i) => { bEl.children[i].textContent = t; });
@@ -2423,6 +3071,7 @@ function render() {
   tickRots(performance.now());
   renderWorlds();
   renderMini();
+  renderExtra();
 }
 
 /* ================= Rebirth + wipe ================= */
@@ -2439,8 +3088,9 @@ $('rebirthBtn').addEventListener('click', () => {
   const keep = { rebirths: state.rebirths + 1, reps: state.reps, msReps: state.msReps, lv: state.lv, ach: state.ach, stats: state.stats,
     pets: state.pets, nest: state.nest, rival: state.rival, stealReadyAt: state.stealReadyAt,
     base: state.base, rivalRots: state.rivalRots, rotStealReadyAt: state.rotStealReadyAt, lockUntil: state.lockUntil, lockReadyAt: state.lockReadyAt,
-    world: state.world, worlds: state.worlds, mini: state.mini };
+    world: state.world, worlds: state.worlds, mini: state.mini, x: state.x };
   state = { ...fresh(), ...keep };
+  state.gains = startGains();
   shown = 0; combo = 0;
   const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
   tone(200, 1200, .7, 'sawtooth', .08); fanfare(); rain(180);
@@ -2458,7 +3108,7 @@ $('resetBtn').addEventListener('click', () => {
     return;
   }
   wipeArmed = false; b.textContent = 'Wipe save';
-  state = fresh(); state.mini = mergeMini(null); shown = 0; save(); renderEggs(); renderRots(); applyWorld(); render();
+  state = fresh(); state.mini = mergeMini(null); state.x = xFresh(); applyHats(); shown = 0; save(); renderEggs(); renderRots(); applyWorld(); render();
 });
 
 $('soundBtn').addEventListener('click', () => {
@@ -2498,7 +3148,7 @@ function frame(now) {
 
   // combo meter
   const windowMs = COMBO_WINDOW * ffx('combo') * (inFever() ? 1.5 : 1);
-  const left = combo ? 1 - (now - lastHit) / windowMs : 0;
+  const left = combo ? (comboFrozen() ? 1 : 1 - (now - lastHit) / windowMs) : 0;
   if (combo && left <= 0) {
     if (combo >= 15) { const l = pick(lifters); say(l, pick(LINES.comboEnd), 1400); mood(l, 'smile', 1000); }
     combo = 0;
@@ -2542,11 +3192,11 @@ function frame(now) {
     const busy = now < l.busyUntil;
     if (now < l.engagedUntil || busy) {
       if (busy && l.partner) l.dir = Math.sign(l.partner.x - l.x) || 1;
-      if (event && event.type === 'lift') lifting = true;
+      if (event && (event.type === 'lift' || event.type === 'boss')) lifting = true;
       l.until = Math.max(l.until, now + 500);
     } else if (inFever()) {
       dancing = true;
-    } else if (event && event.type === 'lift') {
+    } else if (event && (event.type === 'lift' || event.type === 'boss')) {
       const gx = clamp(W / 2 - w * 1.5 + i * w, 0, max);
       if (Math.abs(gx - l.x) > 4) { l.mode = 'walk'; l.target = gx; l.speed = 180; } else { l.mode = 'stand'; lifting = true; l.dir = i === 2 ? -1 : 1; }
     } else if (thief) {
@@ -2597,7 +3247,7 @@ function frame(now) {
   // lifters standing around drift apart so they don't stack on top of each other
   for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) {
     const A = lifters[a], B = lifters[b], gap = B.x - A.x;
-    if (Math.abs(gap) < w * .7 && !A._walking && !B._walking && !(event && event.type === 'lift')) {
+    if (Math.abs(gap) < w * .7 && !A._walking && !B._walking && !(event && (event.type === 'lift' || event.type === 'boss'))) {
       const push = 45 * dt * (gap >= 0 ? 1 : -1);
       A.x = clamp(A.x - push, 0, max); B.x = clamp(B.x + push, 0, max);
     }
@@ -2634,7 +3284,7 @@ function frame(now) {
 }
 
 /* ================= Save / boot ================= */
-function save() { state.saved = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
+function save() { if (window.__noSave) return; state.saved = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -2657,6 +3307,7 @@ function start(data) {
   $('soundBtn').setAttribute('aria-pressed', soundOn);
   window.claude?.hot?.snapshot?.(() => ({ state }));
   initMini();
+  initExtra();
   renderEggs();
   renderRots();
   applyWorld();
