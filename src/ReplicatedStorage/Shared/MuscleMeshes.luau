@@ -121,7 +121,7 @@ function MuscleMeshes.LoadGroup(group: any): any
 	for _, name in ipairs(group.records) do
 		local data = MuscleMeshes.Load(name)
 		local record = data.record
-		table.insert(ranges, { id = record.id, shorts = record.shorts == true, first = vertexCount + 1, count = data.verts })
+		table.insert(ranges, { id = record.id, shorts = record.shorts == true, first = vertexCount + 1, count = data.verts, triFirst = triCount + 1, triCount = #data.tris / 3 })
 		for i = 1, data.verts do
 			local b = data.base[i]
 			base[vertexCount + i] = b

@@ -41,9 +41,11 @@ local PUMP_STEP = 0.03     -- the small pulse
 local PULSE_TIME = 0.55
 local MIN_CHANGE = 0.0015
 local MARBLE = Color3.fromHex("#C9C6BF")
+local HIGHLIGHT = Color3.fromRGB(255, 30, 70) -- the stats hover highlight (neon red)
 local REALLOCATE_EVERY = 0.4
 
 local active: { [any]: boolean } = {}
+local meshOf = setmetatable({}, { __mode = "k" }) -- [muscle MeshPart] = its EditableMesh (so a mirror can show the same live mesh)
 
 -- Allocator state: how many EditableMeshes are alive, and the most this client allows (learned when a create fails).
 local alive = 0
@@ -161,9 +163,11 @@ local function updateGarments(self, visible: boolean)
 		g.Color = shorts
 		g.Transparency = visible and 0 or 1
 		local size = leg.Size
-		local length = size.Y * 0.62
-		g.Size = Vector3.new(length, size.X * 1.1, size.Z * 1.1)
-		garment.weld.C0 = CFrame.new(0, size.Y * 0.19, 0) * CFrame.Angles(0, 0, math.pi / 2)
+		-- the gym shorts cover the top of the thigh down to the shorts line (UpperLeg local Y = +0.088 of 1.3175 tall)
+		local length = size.Y * 0.435
+		local diameter = math.max(size.X, size.Z) * 1.1 -- a true circle a little wider than the thigh, so the rim is clean
+		g.Size = Vector3.new(length, diameter, diameter)
+		garment.weld.C0 = CFrame.new(0, size.Y * 0.29, 0) * CFrame.Angles(0, 0, math.pi / 2)
 		if self.static then g.CFrame = leg.CFrame * garment.weld.C0 end
 	end
 end
@@ -277,7 +281,10 @@ local function buildGroup(self, state, group): boolean
 	end
 	local ok, err = pcall(function()
 		local skinId, shortsId, topId = mesh:AddColor(Color3.new(1, 1, 1), 1), mesh:AddColor(Color3.new(1, 1, 1), 1), mesh:AddColor(Color3.new(1, 1, 1), 1)
+		local glowId = mesh:AddColor(HIGHLIGHT, 1)
 		group.colors = { skinId, shortsId, topId }
+		group.glowId = glowId
+		group.faceIds = table.create(data.triCount)
 		local vertexIds = table.create(data.verts)
 		for i = 1, data.verts do
 			-- built in the MAX shape (the biggest bounds); the real growth is applied below
@@ -289,6 +296,7 @@ local function buildGroup(self, state, group): boolean
 		for f = 1, data.triCount do
 			local a, b, c = tris[f * 3 - 2] + 1, tris[f * 3 - 1] + 1, tris[f * 3] + 1
 			local face = mesh:AddTriangle(vertexIds[a], vertexIds[b], vertexIds[c])
+			group.faceIds[f] = face
 			local color = kindColor[kinds[f]]
 			mesh:SetFaceColors(face, { color, color, color })
 			tick()
@@ -329,6 +337,7 @@ local function buildGroup(self, state, group): boolean
 	local ids = {}
 	for _, range in ipairs(data.ranges) do table.insert(ids, range.id) end
 	part:SetAttribute("MuscleName", table.concat(ids, ","))
+	meshOf[part] = mesh
 	part.Parent = self.folder
 	recolor(self, group)
 	-- start every muscle at its current growth
@@ -403,7 +412,7 @@ local function step(self, dt: number, budget: number): number
 		end
 	end
 	-- simple shorts unless the leg meshes are there
-	if not self.keepBody and not self.marble then updateGarments(self, not legsBuilt) end
+	if not self.keepBody and not self.marble then updateGarments(self, true) end
 	return used
 end
 
@@ -417,7 +426,19 @@ local function allocate()
 		if not rig.destroyed and rig.model.Parent then
 			for index, state in ipairs(rig.units) do
 				if state.wanted or state.built then
-					table.insert(jobs, { rig = rig, state = state, order = rig.priority * 100 - index })
+					-- my own character gets its torso, arms, legs and back first; then every nearby character's chest/abs unit (so a crowd
+				-- shows something instead of one body hogging the budget), then the rest by distance
+				local order
+				if rig.priority >= 200 then
+					order = 200000 - index
+				elseif rig.priority >= 100 and index <= 4 then
+					order = 100000 - index
+				elseif index == 1 then
+					order = 50000 + rig.priority
+				else
+					order = rig.priority * 10 - index * 500
+				end
+				table.insert(jobs, { rig = rig, state = state, order = order })
 				end
 			end
 		end
@@ -470,6 +491,43 @@ function MuscleRig.Destroy(self)
 	active[self] = nil
 	for _, state in ipairs(self.units) do destroyUnit(state) end
 	if self.folder then self.folder:Destroy() end
+end
+
+-- The stats hover highlight: every muscle id in `set` (a table { [id] = true }, or nil to clear) is painted neon red on the
+-- character `model` (only the meshes that are built). Cheap enough to do on hover.
+function MuscleRig.SetHighlight(model: Model, set: { [string]: boolean }?)
+	for rig in pairs(active) do
+		if rig.model == model then
+			for _, state in ipairs(rig.units) do
+				for _, group in ipairs(state.groups) do
+					if group.mesh and group.faceIds then
+						local skin, shorts, top = colorsOf(rig)
+						pcall(function()
+							for _, range in ipairs(group.data.ranges) do
+								local lit = set ~= nil and set[range.id] == true
+								if lit ~= (group.lit and group.lit[range] or false) then
+									group.lit = group.lit or {}
+									group.lit[range] = lit
+									local normal = if range.shorts then group.colors[2] elseif range.id and group.def.part == "UpperTorso" then group.colors[3] else group.colors[1]
+									local color = lit and group.glowId or normal
+									for f = range.triFirst, range.triFirst + range.triCount - 1 do
+										group.mesh:SetFaceColors(group.faceIds[f], { color, color, color })
+									end
+								end
+							end
+						end)
+					end
+				end
+			end
+		end
+	end
+end
+
+-- The live EditableMesh behind a muscle MeshPart (nil if it is not one). A second MeshPart made with
+-- AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) shows the same, always up-to-date shape without using another
+-- of the client's few EditableMeshes (the glass reflection does this).
+function MuscleRig.MeshOf(part: Instance): any
+	return meshOf[part]
 end
 
 -- how many EditableMeshes this client holds / may hold (for tests and the PROGRESS notes)

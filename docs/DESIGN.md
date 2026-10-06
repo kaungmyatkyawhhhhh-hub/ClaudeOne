@@ -228,7 +228,7 @@ shareable before/after snapshot.
 
 ## Bodies and muscles (v4)
 - Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all. Head, face, hair, accessories, skin color and animations stay theirs.
-- Muscles are smooth overlapping ellipsoid blobs welded to the body (2-4 per muscle), each growing with its own muscle level, gradual (every level), tweened, pump on every 10th level, a Growth Spurt shrinks them. Aesthetic: V-taper, round delts, peaked biceps, clear abs.
+- Muscles are real EditableMesh muscles (muscle v7): each muscle's outline stays on the skin and only the bulge rises with its level (continuous, tweened, small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
 - Default look: shirtless with game shorts; the Wardrobe has Top (Shirtless/Tank/Sports) and shorts colors.
 
 ## 14. Visuals and feel

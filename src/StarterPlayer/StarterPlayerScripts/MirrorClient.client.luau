@@ -5,6 +5,7 @@
 --  * Live reflection: the glass shows a mirrored copy of you while you're near it (client only, see the bottom).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local AssetService = game:GetService("AssetService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -14,6 +15,7 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
+local MuscleRig = require(Shared.MuscleRig)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
@@ -77,6 +79,19 @@ local function prepare(rig)
 	return copy, size
 end
 
+-- the muscle meshes (muscle v7) of the two viewport bodies; built by the client from the numbers the server put on the rigs
+local muscleRigs = {}
+local function addMuscles(copy)
+	local source = copy
+	local rig = MuscleRig.new(copy, { static = true, priority = 200, style = MuscleRig.StyleFrom(source, copy) })
+	rig:Snap(MuscleRig.Decode(source:GetAttribute("MuscleG")))
+	table.insert(muscleRigs, rig)
+end
+local function clearMuscles()
+	for _, rig in ipairs(muscleRigs) do rig:Destroy() end
+	table.clear(muscleRigs)
+end
+
 local function show(viewport, copy, tallest)
 	for _, child in ipairs(viewport:GetChildren()) do
 		if child:IsA("WorldModel") or child:IsA("Camera") then child:Destroy() end
@@ -110,6 +125,9 @@ local function open(rigs)
 	local tallest = math.max(beforeSize.Y, afterSize.Y)
 	show(beforeView, before, tallest)
 	show(afterView, after, tallest)
+	clearMuscles()
+	addMuscles(before)
+	addMuscles(after)
 	title.Text = player.DisplayName .. " · GYM ARC"
 	beforeName.Text = "Day one"
 	beforeInfo.Text = GrowthSpurts.FormatHeight(dayOne.height or GrowthSpurts.StartHeight) .. "  ·  Level " .. (dayOne.level or 0)
@@ -130,6 +148,7 @@ local function close()
 		tween.Completed:Connect(function()
 			if not isOpen then
 				gui.Enabled = false
+				clearMuscles()
 				for _, view in ipairs({ beforeView, afterView }) do
 					for _, child in ipairs(view:GetChildren()) do
 						if child:IsA("WorldModel") or child:IsA("Camera") then child:Destroy() end
@@ -296,8 +315,33 @@ local function startReflection(mirrorModel, glass)
 		for _, item in ipairs(copy:GetDescendants()) do
 			if item:IsA("Humanoid") or item:IsA("Animator") or item:IsA("Motor6D") or item:IsA("AnimationConstraint") or item:IsA("BallSocketConstraint") or item:IsA("Weld") or item:IsA("WeldConstraint") or item:IsA("RigidConstraint") then item:Destroy() end
 		end
+		-- the muscles: the cloned muscle MeshParts have no shape, so they are replaced by parts that show the SAME live meshes
+		local sourceFolder, copyFolder = character:FindFirstChild("MuscleMeshes"), copy:FindFirstChild("MuscleMeshes")
+		if copyFolder then
+			for index = #list, 1, -1 do
+				local pair = list[index]
+				if pair[2]:IsDescendantOf(copyFolder) and MuscleRig.MeshOf(pair[1]) then table.remove(list, index) pair[2]:Destroy() end
+			end
+		end
 		copy.Parent = world
 		mirrored = { model = copy, pairs = list, character = character, count = #sources, version = character:GetAttribute("BodyVersion") }
+		if sourceFolder and copyFolder then
+			local pairsList = list
+			task.spawn(function()
+				for _, source in ipairs(sourceFolder:GetChildren()) do
+					local mesh = source:IsA("MeshPart") and MuscleRig.MeshOf(source)
+					if mesh then
+						local ok, part = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) end)
+						if ok and part and copyFolder.Parent then
+							part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
+							part.Color, part.Material = source.Color, source.Material
+							part.Parent = copyFolder
+							table.insert(pairsList, { source, part })
+						end
+					end
+				end
+			end)
+		end
 	end
 
 	local active = false

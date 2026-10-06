@@ -15,15 +15,7 @@ Body.Parts = {
 }
 
 -- The same shape for everyone: no Rthro/slender proportions, no width/depth tricks. Height comes from Growth Spurts.
--- Skin texture (uploaded images, used by MuscleBlobs through one SurfaceAppearance template tinted to the skin color) and
--- the sphere mesh the blobs are cloned from.
-Body.SkinColorMap = "rbxassetid://108408427047777"
-Body.SkinRoughnessMap = "rbxassetid://93442915229739"
-Body.SphereMesh = "rbxassetid://9756362"
--- Textured blobs need a sphere MeshPart built from an EditableMesh, and server-made EditableMesh geometry does not replicate to
--- clients (they see a box). So blobs stay plain SpecialMesh spheres until muscles can be built on each client.
-Body.TexturedBlobs = false
-
+-- (The uploaded skin images skin_color / skin_roughness are not used: muscle meshes are colored with vertex colors.)
 Body.Scales = { BodyType = 0, Proportion = 0, Width = 1, Depth = 1, Head = 1 }
 
 -- Accessory types that cover the body (removed: the gym look is shirtless with the game's own shorts).

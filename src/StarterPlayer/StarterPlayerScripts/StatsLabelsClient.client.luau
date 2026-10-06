@@ -26,6 +26,7 @@ local Stamina = require(Config.Stamina)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local UIBus = require(Shared.UI.UIBus)
+local MuscleRig = require(Shared.MuscleRig)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -182,45 +183,13 @@ end
 ------------------------------------------------------------------------
 local SUB_HEIGHT = 18
 local openGroup = nil -- the expanded group id
-local highlights = {} -- [blob or part] = Highlight
 local hoverKey = nil
 
+-- the hovered group / muscle is painted neon red on your character (the muscle meshes' own face colors, so a single muscle
+-- lights up on its own); target = a set { [muscleId] = true } or nil to clear
 local function setHighlight(target, on)
-	-- red fill (0.6) + red outline, fading 0.15s; target = a set { [muscleId] = true } or nil to clear
 	local character = player.Character
-	local wanted = {}
-	if on and target and character then
-		local folder = character:FindFirstChild("MuscleMeshes")
-		if folder then
-			for _, blob in ipairs(folder:GetChildren()) do
-				local name = blob:GetAttribute("MuscleName")
-				if name and target[name] then wanted[blob] = true end
-			end
-		end
-	end
-	for part, light in pairs(highlights) do
-		if not wanted[part] then
-			highlights[part] = nil
-			local tween = Theme.Tween(light, { FillTransparency = 1, OutlineTransparency = 1 }, 0.15)
-			task.delay(0.2, function() light:Destroy() end)
-		end
-	end
-	for part in pairs(wanted) do
-		if not highlights[part] then
-			local light = New("Highlight", {
-				Name = "StatsHighlight",
-				Adornee = part,
-				FillColor = Color3.fromRGB(255, 30, 60),
-				OutlineColor = Color3.fromRGB(255, 20, 20),
-				FillTransparency = 1,
-				OutlineTransparency = 1,
-				DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
-				Parent = part,
-			})
-			highlights[part] = light
-			Theme.Tween(light, { FillTransparency = 0.05, OutlineTransparency = 0 }, 0.15)
-		end
-	end
+	if character then MuscleRig.SetHighlight(character, on and target or nil) end
 end
 
 local function hover(key, ids)
