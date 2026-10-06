@@ -28,8 +28,8 @@ local PATH = {
 	Spacing = 2.5,       -- studs between dots
 	SkipNear = 3,        -- no dots this close to the player
 	MaxDots = 40,
-	Refresh = 0.75,      -- seconds between path updates (only if the player moved)
-	MoveThreshold = 2,   -- studs the player must move before the path is recomputed
+	Refresh = 0.25,      -- seconds between path recomputes (only if the player moved); the dots themselves move every frame
+	MoveThreshold = 1,   -- studs the player must move before the path is recomputed
 	Approach = 2.5,      -- the path ends this far outside the machine, on the side facing the room
 	DotSize = 0.7,
 	WaveSpeed = 4,       -- the pulse runs along the path toward the machine
@@ -198,20 +198,54 @@ local highlight = New("Highlight", {
 local agent = PathfindingService:CreatePath({ AgentRadius = 1.5, AgentHeight = 5, AgentCanJump = false, WaypointSpacing = 2 })
 local FLAT = CFrame.Angles(0, 0, math.rad(90)) -- cylinder axis up: a flat disc on the floor
 
+-- The dots live on the last computed path (a polyline) and are re-placed EVERY frame from the player's current spot: they
+-- sit at fixed distances measured back from the target (so they do not swim when the path is recomputed) and only the ones
+-- ahead of the player show, so they never lag behind a running player.
+local polyline, cumulative, pathLength = nil, nil, 0
 local function placeDots(points)
-	-- walk the polyline, dropping a dot every PATH.Spacing studs
-	local count, carry = 0, PATH.Spacing
-	for i = 1, #points - 1 do
-		local a, b = points[i], points[i + 1]
-		local segment = b - a
-		local length = segment.Magnitude
-		local t = carry
-		while t <= length and count < PATH.MaxDots do
-			count += 1
-			dots[count].CFrame = CFrame.new(a + segment * (t / length) + Vector3.new(0, 0.07, 0)) * FLAT
-			t += PATH.Spacing
+	polyline = points
+	cumulative = { 0 }
+	for i = 2, #points do cumulative[i] = cumulative[i - 1] + (points[i] - points[i - 1]).Magnitude end
+	pathLength = cumulative[#points] or 0
+end
+
+local function pointAt(s)
+	for i = 1, #polyline - 1 do
+		if s <= cumulative[i + 1] then
+			local seg = cumulative[i + 1] - cumulative[i]
+			local t = seg > 0 and (s - cumulative[i]) / seg or 0
+			return polyline[i]:Lerp(polyline[i + 1], t)
 		end
-		carry = t - length
+	end
+	return polyline[#polyline]
+end
+
+local function renderDots(feet)
+	if not polyline or #polyline < 2 then
+		activeDots = 0
+		for i = 1, PATH.MaxDots do dots[i].Transparency = 1 end
+		return
+	end
+	-- where along the path the player is (closest point on any segment)
+	local playerS, best = 0, math.huge
+	for i = 1, #polyline - 1 do
+		local a, b = polyline[i], polyline[i + 1]
+		local ab = b - a
+		local len2 = ab:Dot(ab)
+		local t = len2 > 0 and math.clamp((feet - a):Dot(ab) / len2, 0, 1) or 0
+		local d = (feet - (a + ab * t)).Magnitude
+		if d < best then
+			best = d
+			playerS = cumulative[i] + t * math.sqrt(len2)
+		end
+	end
+	local count, k = 0, 0
+	while count < PATH.MaxDots do
+		local s = pathLength - k * PATH.Spacing
+		if s <= playerS + PATH.SkipNear then break end
+		count += 1
+		dots[count].CFrame = CFrame.new(pointAt(s) + Vector3.new(0, 0.07, 0)) * FLAT
+		k += 1
 	end
 	for i = count + 1, PATH.MaxDots do dots[i].Transparency = 1 end
 	activeDots = count
@@ -243,12 +277,6 @@ local function refreshPath(force)
 		else
 			points = { Vector3.new(from.X, targetPoint.Y, from.Z), targetPoint } -- straight line fallback
 		end
-		-- start the dots a little ahead of the player
-		while #points >= 2 and (points[2] - feet).Magnitude < PATH.SkipNear do table.remove(points, 1) end
-		if #points >= 1 and (points[1] - feet).Magnitude < PATH.SkipNear and #points >= 2 then
-			local dir = (points[2] - points[1]).Unit
-			points[1] = points[1] + dir * (PATH.SkipNear - (points[1] - feet).Magnitude)
-		end
 		computing = false
 		if targetPoint then placeDots(points) end
 	end)
@@ -268,6 +296,7 @@ end
 
 local function hidePath()
 	targetModel, targetPoint = nil, nil
+	polyline = nil
 	highlight.Enabled = false
 	highlight.Parent = nil
 	dotFolder.Parent = nil
@@ -278,6 +307,8 @@ local refreshClock = 0
 RunService.Heartbeat:Connect(function(dt)
 	if not targetPoint then return end
 	refreshClock += dt
+	local rootNow = rootPart()
+	if rootNow then renderDots(rootNow.Position - Vector3.new(0, 2.5, 0)) end
 	if refreshClock >= PATH.Refresh then
 		refreshClock = 0
 		refreshPath(false)

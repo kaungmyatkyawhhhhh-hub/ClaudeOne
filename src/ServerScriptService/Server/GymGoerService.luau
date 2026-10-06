@@ -287,32 +287,10 @@ end
 -- Coach and legends: idle animation + turn toward the nearest player
 ------------------------------------------------------------------------
 local function lookAtPlayers(npc)
+	-- only the idle animation runs here; the turn toward the player is done on each client every frame (NpcLookClient),
+	-- because a server-side turn only updates a few times a second and looks laggy
 	local tracks = loadTracks(npc)
 	if tracks.Idle then tracks.Idle:Play() end
-	local root = npc:FindFirstChild("HumanoidRootPart")
-	if not root then return end
-	local home = root.CFrame
-	task.spawn(function()
-		while npc.Parent do
-			task.wait(0.25)
-			local nearest, best = nil, LOOK_RANGE
-			for _, player in ipairs(Players:GetPlayers()) do
-				local other = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				if other then
-					local d = (other.Position - root.Position).Magnitude
-					if d < best then nearest, best = other, d end
-				end
-			end
-			local goal = home
-			if nearest then
-				local flat = Vector3.new(nearest.Position.X, root.Position.Y, nearest.Position.Z)
-				goal = CFrame.lookAt(root.Position, flat)
-				-- never turn more than 70 degrees from where they normally face (e.g. not toward the wall)
-				if goal.LookVector:Dot(home.LookVector) < math.cos(math.rad(70)) then goal = home end
-			end
-			npc:PivotTo(npc:GetPivot():Lerp(goal * (root.CFrame:Inverse() * npc:GetPivot()), 0.3))
-		end
-	end)
 end
 
 -- The regulars show what to aim for: every NPC has the Robloxian 2.0 body (NpcService) and muscle blobs grown to a preset
