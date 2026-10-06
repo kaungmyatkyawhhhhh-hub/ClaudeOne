@@ -47,7 +47,7 @@ local function ensure()
 	local function follow()
 		if Theme.IsCompact() then
 			list.AnchorPoint = Vector2.new(0, 0)
-			list.Position = UDim2.new(0, 66, 0, 8)
+			list.Position = UDim2.new(0, 84, 0, 8) -- right of the 64px Menu button (12px margin + 8px gap)
 			layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		else
 			list.AnchorPoint = Vector2.new(1, 0)

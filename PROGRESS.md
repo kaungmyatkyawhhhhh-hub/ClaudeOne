@@ -60,6 +60,10 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   dots on the body, numbers with commas in light blue-white. Settings > Stats labels: Always / Training / Off (phones
   default Training). Other players show only their title + "Strength 1,234". The Stats button still opens the full
   stats screen (Growth Spurt goal + button, groups, muscles).
+- **Fix list 3, part 4:** new menu. PC: no toggle; 64px square buttons with a line icon and a small label (Stats,
+  Titles, Genetics, Emotes, Crew, Wardrobe, Settings), 8px gaps, vertically centered on the left edge below the top
+  bar; if they don't fit the height they wrap into 2 columns. Hover = slight grow + brighter; press = 0.95. Phones:
+  one "Menu" button top left opens a centered grid of the same tiles (tap outside or pick one to close).
 
 ## In progress
 - Nothing half-built.
@@ -79,7 +83,7 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   other player (only tested alone). In a short Studio window the lowest label can touch the pump bar while lifting.
 - **Muscle body tiers** with the bodies you pick: tested with Roblox's "Man" torso + arms (clothes, hair and
   accessories stayed on, height kept). Check your bodies with layered clothing, emotes, the skateboard and lifting.
-- Phone **Menu button**: open and close it once on a real phone (the emulator's mouse tool can't click it there).
+- Phone **Menu button + grid**: open it, pick a few buttons, tap outside to close, on a real phone or the Device Emulator.
 - Lifting on **pro gym machines** as a Growth Spurt 2+ player, and walking through the unlocked glass door.
 - 2-player features (spotting, high fives, crews, arm wrestling vs a player) weren't retested.
 
@@ -96,6 +100,9 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   equipped just ignore it (the item no longer exists).
 - Part 2: the "you grew" moment only plays when the body really changes (a tier with ids); with empty ids it stays
   quiet. A tier with no ids shows the highest filled tier below it. Tier progress counts each muscle up to the goal.
+- Part 4: buttons are 64px, not 56: "Wardrobe" is 60px wide at the 14px minimum text size. "Phone" = touch screen
+  without a keyboard (Studio: Workspace attribute `TestPhoneLayout`); a small PC window keeps the PC menu. While lifting
+  the PC menu keeps only Stats; phones hide the Menu button.
 - Part 3: Strength = all 18 muscle levels added up (resets with a Growth Spurt like the muscles); group labels show the
   group level, Triceps/Biceps/Calves the muscle level; Stamina = current stamina. The labels are a 2D overlay placed
   from the 3D body (not BillboardGuis): that is what keeps them the same size, always visible and jitter-free. When
