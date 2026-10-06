@@ -1425,7 +1425,7 @@ function drawWorld(){
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{...emoOpts(),acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
-  mpTags();
+  mpTags();drawTownies();drawCop();
   drawToys();drawBirds(1/60);
   [["downtown",1400,0,W-1400,1400],["beach",0,1400,W,H-1400]].forEach(([r,x,y,w,h])=>{if(regionOpen(r))return;ctx.fillStyle=isDark()?"rgba(5,7,12,.62)":"rgba(30,36,48,.45)";ctx.fillRect(x,y,w,h);
     ctx.fillStyle="#ffffff";ctx.font="900 26px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";
@@ -1433,6 +1433,7 @@ function drawWorld(){
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
   if(EV&&EV.type==="rain"){ctx.strokeStyle=isDark()?"rgba(170,190,230,.35)":"rgba(90,110,150,.35)";ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<90;i++){const rx=(i*97+wt*260)%(vw+40)-20,ry=(i*53+wt*620)%(vh+40)-20;ctx.moveTo(rx,ry);ctx.lineTo(rx-5,ry+14)}ctx.stroke();ctx.fillStyle="rgba(40,60,90,.12)";ctx.fillRect(0,0,vw,vh)}
   else if(!room)seasonFx();
+  if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
   if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
@@ -1450,7 +1451,7 @@ function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/
 let lockT=0;
 function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
 function lockedNotice(r){if(wt-lockT<2)return;lockT=wt;banner(REGION_NAME[r]+" is locked","r");SFX.nope()}
-cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){questFromNPC(np);return}const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
+cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}const tx=taxiAt(x,y);if(tx){const[cx2,cy2]=trafficPos(tx);if(Math.hypot(cx2-S.px,cy2-S.py)<520){openTaxi();return}}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){npcTalk(np);return}const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
 function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;moving=true}
 
 /* bottom bar */
@@ -1642,8 +1643,8 @@ function drawTraffic(dt){
     if(x<cam.x-60||x>cam.x+vw+60||y<cam.y-60||y>cam.y+vh+60)return;const ang=v.k==="ring"&&v.dir<0?a+Math.PI:a;
     ctx.save();ctx.translate(x,y);ctx.rotate(ang);
     if(nA>.35){const g=ctx.createRadialGradient(40,0,0,40,0,46);g.addColorStop(0,`rgba(255,230,150,${.35*nA})`);g.addColorStop(1,"rgba(255,230,150,0)");ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(14,-6);ctx.lineTo(80,-26);ctx.lineTo(80,26);ctx.lineTo(14,6);ctx.fill()}
-    ctx.fillStyle="rgba(0,0,0,.25)";rr(-17,-8,36,19,6);ctx.fill();ctx.fillStyle=v.c;rr(-18,-9,36,18,6);ctx.fill();ctx.fillStyle="rgba(20,30,45,.8)";rr(2,-7,8,14,2);ctx.fill();rr(-12,-7,6,14,2);ctx.fill();
-    ctx.fillStyle="rgba(255,255,255,.35)";ctx.fillRect(-6,-7,7,2);ctx.fillStyle="#ffe08a";ctx.fillRect(16,-7,2,4);ctx.fillRect(16,3,2,4);ctx.fillStyle="#e2364a";ctx.fillRect(-18,-7,2,3);ctx.fillRect(-18,4,2,3);ctx.restore()});
+    ctx.fillStyle="rgba(0,0,0,.25)";rr(-17,-8,36,19,6);ctx.fill();ctx.fillStyle=isTaxi(v)?"#ffcc33":v.c;rr(-18,-9,36,18,6);ctx.fill();ctx.fillStyle="rgba(20,30,45,.8)";rr(2,-7,8,14,2);ctx.fill();rr(-12,-7,6,14,2);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.35)";ctx.fillRect(-6,-7,7,2);ctx.fillStyle="#ffe08a";ctx.fillRect(16,-7,2,4);ctx.fillRect(16,3,2,4);ctx.fillStyle="#e2364a";ctx.fillRect(-18,-7,2,3);ctx.fillRect(-18,4,2,3);if(isTaxi(v)){ctx.fillStyle="#1b1d22";ctx.fillRect(-5,-4,9,8);ctx.fillStyle="#ffcc33";ctx.fillRect(-4,-3,7,6)}ctx.restore()});
 }
 let birdT=12,BIRDS=null;
 function drawBirds(dt){
@@ -2538,7 +2539,7 @@ const Q_LINES=["My kid wants","I'm hunting for","I need","Help me find"];
 function questFromNPC(n){
   if(S.quest){rayText("You already promised to help someone. Tap the quest pill to deliver.");return}
   const cat=pick(S.unlocked),minV=Math.max(60,Math.round(Math.min(5000,S.cash*.15+80)/10)*10),m=+rnd(1.5,1.9).toFixed(2);
-  const name=pick(["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora"]);S.quest={name,cat,minV,m,left:240};dirty=true;SFX.hot();
+  const name=n&&n.n?n.n:pick(["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora"]);S.quest={name,cat,minV,m,left:240};dirty=true;SFX.hot();
   rayTextFrom(name,`${pick(Q_LINES)} some ${CAT[cat].n.toLowerCase()} worth at least ${fmt(minV)}. Bring it within 4 minutes and I'll pay ×${m}.`);
 }
 function rayTextFrom(name,msg){document.querySelectorAll(".raytoast.npc").forEach(x=>x.remove());const t=document.createElement("div");t.className="raytoast npc"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav" style="background:${name==="Vince"?"#e2364a":"var(--gold)"}">${name[0]}</span><span><b>${name}</b>${msg}</span>`;document.body.appendChild(t);t.onclick=()=>t.remove();setTimeout(()=>t.remove(),7000)}
@@ -3022,7 +3023,7 @@ function loop(now){
       if(G)gymTick(dt);
       if(GS)gymSceneTick(dt);
       if(CS)clubTick(dt);
-      sponsorTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);aucTick(dt);crewTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
+      sponsorTick(dt);copTick(dt);tierTick(dt);w2Tick(dt);liveTick(dt);aucTick(dt);crewTick(dt);towerTick(dt);empTick(dt);islTick(dt);stkTick(dt);lbTick(dt);if(!SCN){huntTick(dt);holTick(dt)}bizTick(dt);bizEvTick(dt);if(!SCN)petTick(dt);collTick(dt);toyTick(dt);richTick(dt);
       if(room==="arena")arenaTick(dt);
       if(room==="island")fishTick(dt);
       if(room==="biz")shiftTick(dt);
@@ -4878,7 +4879,7 @@ function decoUnder(){const nightA=night();
     SCN.dolT-=1/60;if(!SCN.dol&&SCN.dolT<=0){const a=Math.random()*7;SCN.dol={x:G.cx+Math.cos(a)*(G.rx+150),y:G.cy+Math.sin(a)*(G.ry+120),t:0,dir:Math.random()<.5?1:-1}}
     if(SCN.dol){const d=SCN.dol;d.t+=1/60;const k=d.t/1.4;if(k>=1){SCN.dol=null;SCN.dolT=rnd(5,10)}else{const x=d.x+d.dir*(k-.5)*120,y=d.y-Math.sin(k*Math.PI)*40;ctx.save();ctx.translate(x,y);ctx.rotate(d.dir*(k-.5)*2.2);ctx.fillStyle="#7d93a8";ctx.beginPath();ctx.ellipse(0,0,22,8,0,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(-2,-6);ctx.lineTo(4,-16);ctx.lineTo(8,-5);ctx.fill();ctx.fillStyle="#c7d4e0";ctx.beginPath();ctx.ellipse(0,3,16,4,0,0,7);ctx.fill();ctx.restore();if(k<.12||k>.88){ctx.fillStyle="rgba(255,255,255,.8)";for(let j=0;j<5;j++){ctx.beginPath();ctx.arc(d.x+d.dir*((k<.5?-.5:.5)*120)+(j-2)*5,d.y-Math.random()*10,2,0,7);ctx.fill()}}}}}
   (SCN.torches||[]).forEach(([x,y],i)=>{for(let j=0;j<2;j++){ctx.fillStyle=j?"#ffcc33":"#ff7a3d";ctx.beginPath();ctx.moveTo(x-4+j*2,y-34);ctx.quadraticCurveTo(x-3,y-44-Math.sin(wt*9+i)*4,x,y-50+j*6-Math.sin(wt*7+i)*3);ctx.quadraticCurveTo(x+4,y-42,x+4-j*2,y-34);ctx.fill()}})}
-function decoOver(){const dk=isDark(),k=SCN.k;
+function decoOver(){const dk=isDark(),k=SCN.k;cityNight();
   if(SCN.kind==="city"){// strings of lanterns, lights or flags across the avenue
     const cols=k==="tokyo"?["#e2364a","#ffffff"]:k==="paris"?["#ffe08a"]:k==="dubai"?["#cf9a14","#ffcc33"]:["#e2364a","#ffffff"];
     [800,1180].forEach(y=>{const x0=830,x1=970;ctx.strokeStyle="rgba(30,30,40,.6)";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x0,y);ctx.quadraticCurveTo(900,y+26,x1,y);ctx.stroke();
@@ -5462,6 +5463,47 @@ const GUIDE={market:"Tap a listing to buy, hold to lowball. Sell from your stash
  crew:"Pool money into your crew bank. Every crew level gives every member +3% money.",season:"Earn season points by playing. Claim rewards on the track before the season ends.",mega:"Absurd projects for the very rich. Every level gives +3% money forever.",tiers:"Your tier grows with net worth. Harder game, bigger rewards.",
  space:"Upgrade your rocket and fly it. Keep the needle in the green band.",pmarket:"Buy items your friends have listed.",stocks:"Buy shares and sell when the price is higher.",gram:"Post about your life. Cooler posts get more likes, fans and sponsor money.",look:"Change your clothes, face and hair. Free, any time.",
  jbox:"Turn the soundtrack on and pick what plays at home.",next:"Everything you can unlock next, with how close you are.",cosmos:"Trade space rocks and alien relics."};
+/* ================= a living town: named locals, taxis, police, weather, city nights ================= */
+const TOWNIES=["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora","Mo","Ivy"];
+NPCS.forEach((n,i)=>{n.n=TOWNIES[i%TOWNIES.length]});
+function npcLine(n){S.npcMem=S.npcMem||{};const today=dayKey(),m=S.npcMem[n.n]=S.npcMem[n.n]&&S.npcMem[n.n].d===today?S.npcMem[n.n]:{d:today,c:0,ever:(S.npcMem[n.n]&&S.npcMem[n.n].ever)||0};m.c++;m.ever++;dirty=true;const you=mpName();
+  if(m.ever===1)return"Hi, I'm "+n.n+"! You must be "+you+". Everyone's talking about you.";
+  if(m.c>=5)return"Again? That's "+m.c+" chats today, "+you+". I like you.";
+  const o=[];if(isRad(S.cash))o.push("Is that… Radiant? You're richer than the sun!");else if(S.cash>=1e9)o.push("A billionaire in my town? Lunch is on you.");else if(S.cash>=1e6)o.push("Look at you, a millionaire already.");else o.push("Saving up? Buy low, sell high, "+you+".");
+  if(S.pr>=200)o.push("Those arms! Do you lift cars for fun?");if((S.height||170)>=200)o.push("How's the weather up there?");if((S.fans||0)>=1e4)o.push("OMG, it's you! Can I get a selfie?");if(S.partner&&S.partner.married)o.push("Say hi to "+String(S.partner.n||"your partner")+" for me!");if(S.pet)o.push("Your "+(petOf(S.pet)||{n:"pet"}).n.toLowerCase()+" is adorable.");if(S.crew)o.push("You're in "+S.crew.n+"? Nice flag.");
+  if(m.ever>10)o.push("Good to see you again, "+you+". The usual?");return pick(o)}
+function npcTalk(n){const t=npcLine(n);n.bub={txt:t,until:wt+4};SFX.tick(.7);if((S.fans||0)>=1e4&&t.startsWith("OMG")){S.fans+=5;dirty=true}
+  if(!S.quest&&Math.random()<.35)setTimeout(()=>{if(!S.quest)questFromNPC(n)},1600)}
+function bubble2(x,y,txt){ctx.font="700 11px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const words=String(txt).split(" "),lines=[""];words.forEach(w=>{const t=(lines[lines.length-1]+" "+w).trim();if(ctx.measureText(t).width>190&&lines[lines.length-1])lines.push(w);else lines[lines.length-1]=t});const L=lines.slice(0,3),w=Math.min(210,Math.max(...L.map(l=>ctx.measureText(l).width))+18),h=L.length*14+10;
+  ctx.fillStyle="rgba(255,255,255,.97)";rr(x-w/2,y-h,w,h,10);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y-1);ctx.lineTo(x+5,y-1);ctx.lineTo(x,y+6);ctx.fill();ctx.fillStyle="#141824";L.forEach((l,i)=>ctx.fillText(l,x,y-h+12+i*14))}
+function drawTownies(){const tx=S.px,ty=S.py;NPCS.forEach(n=>{const d=Math.hypot(n.x-tx,n.y-ty);if(n.bub&&wt<n.bub.until)bubble2(n.x,n.y-56,n.bub.txt);else if(d<140){ctx.font="700 10px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const w=ctx.measureText(n.n).width+12;ctx.fillStyle="rgba(255,255,255,.85)";rr(n.x-w/2,n.y-58,w,16,8);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(n.n,n.x,n.y-50)}})}
+/* taxis: two of the cars are cabs you can hail */
+const isTaxi=v=>TRAFFIC.indexOf(v)%4===1;
+function taxiAt(x,y){for(const v of TRAFFIC){if(!isTaxi(v))continue;if(v.k!=="ring"&&!regionOpen("downtown"))continue;const[tx,ty]=trafficPos(v);if(Math.hypot(tx-x,ty-y)<34)return v}return null}
+function openTaxi(){room="taxi";$("room").hidden=false;const fare=p=>Math.max(20,Math.round(Math.hypot(p.door[0]-S.px,p.door[1]-S.py)*.12*(1+repLevel()*.05)));
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Taxi")}<div class="note">Hop in. The driver takes you straight to the door.</div>
+    <div class="perks">${shownPlaces().filter(p=>regionOpen(p.region)).map(p=>`<button class="perk nopic" data-taxi="${p.k}" ${S.cash<fare(p)?"disabled":""}><span class="t">${p.n}</span><span class="d">${p.sub||""}</span><span class="c">${fmt(fare(p))}</span></button>`).join("")}</div></div>`;
+  $("leaveBtn").onclick=closeRoom;$("room").querySelectorAll("[data-taxi]").forEach(b=>b.onclick=()=>{const p=PL[b.dataset.taxi],f=fare(p);if(S.cash<f)return;S.cash-=f;dirty=true;closeRoom();
+    const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="🚕";document.body.appendChild(fx);SFX.door();setTimeout(()=>{S.px=p.door[0];S.py=p.door[1]+16;target=null;moving=false;bKey="";PET=null;PT=null;KT=null},600);setTimeout(()=>{fx.remove();banner("Arrived at "+p.n,"u")},1300)})}
+/* police: drive too fast in a car and you might get chased */
+let COP=null,copT=30;
+function copTick(dt){if(MPW||SCN||room||repLevel()<5||!playing){if(COP&&(room||SCN))COP=null;return}const rd=ride(),fast=rd&&CARS.includes(rd)&&moving;
+  if(!COP){copT-=dt*(fast?1:0);if(copT<=0){copT=rnd(60,120);if(Math.random()<.5){const a=S.hd+Math.PI;COP={x:S.px+Math.cos(a)*320,y:S.py+Math.sin(a)*320,t:12,hd:0};banner("🚓 Police! Pull over… or don't","r");SFX.hot()}}return}
+  COP.t-=dt;const dx=S.px-COP.x,dy=S.py-COP.y,d=Math.hypot(dx,dy),sp=walkSpeed()*(moving?.92:1.3);COP.hd=Math.atan2(dy,dx);if(d>2){COP.x+=dx/d*Math.min(d,sp*dt);COP.y+=dy/d*Math.min(d,sp*dt)}
+  if(d<26){const f=Math.max(500,Math.round(S.cash*.03));S.cash=Math.max(0,S.cash-f);dirty=true;COP=null;SFX.loss();shake(6);banner("Busted! Speeding fine −"+fmt(f),"r");return}
+  if(COP.t<=0){COP=null;const fans=Math.round(20+(S.fans||0)*.01);S.fans=(S.fans||0)+fans;dirty=true;SFX.level();banner("You lost the cops · +"+fmtN(fans)+" fans","g")}}
+function drawCop(){if(!COP)return;drawRideAt(COP.x,COP.y,COP.hd,"car","#f2f2f2",{});const on=Math.floor(wt*8)%2;ctx.fillStyle=on?"#ff3344":"#3366ff";ctx.beginPath();ctx.arc(COP.x,COP.y-8,4,0,7);ctx.fill();ctx.fillStyle=on?"rgba(255,50,70,.25)":"rgba(50,100,255,.25)";ctx.beginPath();ctx.arc(COP.x,COP.y-8,22,0,7);ctx.fill();if(Math.floor(wt*4)!==Math.floor((wt-1/60)*4))tone(on?960:720,.12,{type:"square",vol:.015})}
+/* weather you can see: lightning in storms, morning fog, a rainbow after the rain */
+let BOLT=0,boltT=8,RAINBOW=0;
+function weatherFx(dt){const rain=EV&&EV.type==="rain";if(rain){boltT-=dt;if(boltT<=0){boltT=rnd(5,12);BOLT=1;setTimeout(()=>{tone(60,1.2,{type:"sawtooth",vol:.05,to:30})},rnd(200,900))}}else if(window.__wasRain){RAINBOW=wt+45}window.__wasRain=rain;
+  if(BOLT>0){ctx.fillStyle=`rgba(255,255,255,${BOLT*.55})`;ctx.fillRect(0,0,vw,vh);BOLT=Math.max(0,BOLT-dt*3)}
+  const h=S.clock;if(h>=5&&h<8.5&&!SET.nofx){const a=h<6?(h-5):h>7.5?(8.5-h):1;for(let i=0;i<5;i++){const x=((i*311+wt*12)%(vw+400))-200,y=vh*.2+i*vh*.15,g=ctx.createRadialGradient(x,y,0,x,y,260);g.addColorStop(0,`rgba(255,255,255,${.28*a})`);g.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=g;ctx.fillRect(x-260,y-260,520,520)}}
+  if(wt<RAINBOW&&night()<.3){const a=Math.min(1,(RAINBOW-wt)/10)*.45,cx=vw*.5,cy=vh*.95,R=vw*.75;["#ff3b3b","#ff9f1a","#ffe11a","#3ddc6a","#3aa0ff","#8b5cf6"].forEach((c,i)=>{ctx.strokeStyle=c;ctx.globalAlpha=a;ctx.lineWidth=10;ctx.beginPath();ctx.arc(cx,cy,R-i*10,Math.PI*1.08,Math.PI*1.92);ctx.stroke()});ctx.globalAlpha=1}}
+/* city nights: neon in Tokyo, the Eiffel Tower sparkling on the hour, fireworks over the Burj */
+function cityNight(){const n=night();if(n<.3||!SCN||SCN.kind!=="city")return;const k=SCN.k;
+  if(k==="tokyo")SCN.places.forEach((p,i)=>{if(!p.bld)return;const c=["#ff4fd8","#4fe3ff","#ffe14f","#2fd28a"][i%4],fl=Math.random()<.02?.3:1;ctx.save();ctx.globalAlpha=n*fl;ctx.shadowColor=c;ctx.shadowBlur=14;ctx.strokeStyle=c;ctx.lineWidth=3;rr(p.x+8,p.y+8,46,20,5);ctx.stroke();ctx.fillStyle=c;ctx.font="900 11px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(["営業中","OPEN","24H","ラーメン"][i%4],p.x+31,p.y+18);ctx.restore()});
+  if(k==="paris"&&(S.clock%1)<.25)for(let i=0;i<60;i++){const t=Math.random(),y=540-t*440,w=(136*Math.pow(1-t,2.3)+4)*(Math.random()*2-1);ctx.fillStyle=`rgba(255,255,255,${.6+.4*Math.random()})`;ctx.fillRect(900+w,y,2.4,2.4)}
+  if(k==="dubai"){SCN.bfw=SCN.bfw||[];if(Math.random()<.03)SCN.bfw.push({x:900+rnd(-120,120),y:rnd(0,160),t:0,c:pick(["#ffcc33","#ff4fd8","#4fe3ff","#ffffff"])});SCN.bfw=SCN.bfw.filter(f=>{f.t+=1/60;if(f.t>1.4)return false;const k2=Math.min(1,f.t/1);ctx.globalAlpha=1-Math.max(0,f.t-.9)/.5;ctx.fillStyle=f.c;for(let j=0;j<14;j++){const a=j/14*Math.PI*2;ctx.beginPath();ctx.arc(f.x+Math.cos(a)*55*k2,f.y+Math.sin(a)*55*k2+f.t*f.t*10,2.2,0,7);ctx.fill()}ctx.globalAlpha=1;return true})}}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
