@@ -31,11 +31,12 @@ local SEGMENTS = 20
 local compact = Theme.IsCompact()
 
 local gui = Theme.ScreenGui({ Name = "SpurtBar", DisplayOrder = 4, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
+gui.ScreenInsets = Enum.ScreenInsets.None -- (sits right at the top edge of the screen)
 
 local panel = Theme.Button("Secondary", {
 	Name = "Panel",
 	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, Theme.Spacing.S),
+	Position = UDim2.new(0.5, 0, 0, 4),
 	Size = UDim2.fromOffset(compact and 260 or 320, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Parent = gui,

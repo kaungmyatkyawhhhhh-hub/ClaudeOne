@@ -91,13 +91,17 @@ local function box(name, width, height, numberSize)
 		BackgroundTransparency = 1,
 		ZIndex = 3,
 		Parent = layer,
-	}, { Theme.List(Enum.FillDirection.Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
-	local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(width, height), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 3, Parent = frame })
-	local title = Theme.Text({ Name = "Name", LayoutOrder = 1, Text = name, Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 15), ZIndex = 4, Parent = frame })
-	local number = Theme.Text({ Name = "Number", LayoutOrder = 2, Text = "0", Font = "Regular", TextSize = numberSize, TextColor3 = Colors.StatNumber, Size = UDim2.new(1, 0, 0, Theme.TextSize[numberSize] + 2), ZIndex = 4, Parent = frame })
+	})
+	local content = New("Frame", { Name = "Content", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 4, Parent = frame }, { Theme.List(Enum.FillDirection.Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	-- (a holder without a list layout, so the backing and the click area never push the text around)
+	local holder = New("Frame", { Name = "Holder", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 3, Parent = frame })
+	holder.LayoutOrder = -1
+	local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(width, height), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 3, Parent = holder })
+	local title = Theme.Text({ Name = "Name", LayoutOrder = 1, Text = name, Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 15), ZIndex = 4, Parent = content })
+	local number = Theme.Text({ Name = "Number", LayoutOrder = 2, Text = "0", Font = "Regular", TextSize = numberSize, TextColor3 = Colors.StatNumber, Size = UDim2.new(1, 0, 0, Theme.TextSize[numberSize] + 2), ZIndex = 4, Parent = content })
 	Theme.TextShadow(title)
 	Theme.TextShadow(number)
-	return { frame = frame, title = title, number = number, back = back }
+	return { frame = frame, title = title, number = number, back = back, holder = holder }
 end
 
 local labels = {} -- the six group labels, in GROUPS order
@@ -159,6 +163,110 @@ local function refreshNumbers()
 	local max = player:GetAttribute("MaxStamina")
 	stamina.number.Text = commas(math.clamp(data.stamina or 0, 0, type(max) == "number" and max or Stamina.Max))
 	task.defer(fitAll)
+end
+
+
+------------------------------------------------------------------------
+-- Click to expand (one group open at a time) and hover highlights on the real character
+------------------------------------------------------------------------
+local SUB_HEIGHT = 18
+local openGroup = nil -- the expanded group id
+local highlights = {} -- [blob or part] = Highlight
+local hoverKey = nil
+
+local function setHighlight(target, on)
+	-- red fill (0.6) + red outline, fading 0.15s; target = a set { [muscleId] = true } or nil to clear
+	local character = player.Character
+	local wanted = {}
+	if on and target and character then
+		local folder = character:FindFirstChild("MuscleBlobs")
+		if folder then
+			for _, blob in ipairs(folder:GetChildren()) do
+				local name = blob:GetAttribute("MuscleName")
+				if name and target[name] then wanted[blob] = true end
+			end
+		end
+	end
+	for part, light in pairs(highlights) do
+		if not wanted[part] then
+			highlights[part] = nil
+			local tween = Theme.Tween(light, { FillTransparency = 1, OutlineTransparency = 1 }, 0.15)
+			task.delay(0.2, function() light:Destroy() end)
+		end
+	end
+	for part in pairs(wanted) do
+		if not highlights[part] then
+			local light = New("Highlight", {
+				Name = "StatsHighlight",
+				Adornee = part,
+				FillColor = Color3.fromRGB(255, 60, 60),
+				OutlineColor = Color3.fromRGB(255, 60, 60),
+				FillTransparency = 1,
+				OutlineTransparency = 1,
+				DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
+				Parent = part,
+			})
+			highlights[part] = light
+			Theme.Tween(light, { FillTransparency = 0.6, OutlineTransparency = 0 }, 0.15)
+		end
+	end
+end
+
+local function hover(key, ids)
+	if ids then
+		hoverKey = key
+		local set = {}
+		for _, id in ipairs(ids) do set[id] = true end
+		setHighlight(set, true)
+	elseif hoverKey == key then
+		hoverKey = nil
+		setHighlight(nil, false)
+	end
+end
+
+for _, entry in ipairs(labels) do
+	local group = Muscles.GroupById[entry.spec.id]
+	local groupIds = {}
+	for _, muscle in ipairs(group.muscles) do table.insert(groupIds, muscle.id) end
+	entry.extra = 0
+	entry.subs = {}
+	local hit = New("TextButton", { Name = "Hit", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 6, Parent = entry.holder })
+	hit.MouseEnter:Connect(function() hover(group.id, groupIds) end)
+	hit.MouseLeave:Connect(function() hover(group.id, nil) end)
+	hit.Activated:Connect(function()
+		if openGroup == group.id then
+			openGroup = nil
+			hover(group.id, nil)
+		else
+			openGroup = group.id
+			hover(group.id, groupIds) -- (phones: a tap highlights and expands)
+		end
+	end)
+	for _, muscle in ipairs(group.muscles) do
+		local sub = New("TextButton", { Name = muscle.id, Size = UDim2.fromOffset(size.Width, SUB_HEIGHT), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 5, Parent = layer })
+		local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(size.Width, SUB_HEIGHT - 2), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 5, Parent = sub })
+		local text = Theme.Text({ Name = "Text", Text = muscle.name, Font = "Regular", TextSize = "Small", Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = sub })
+		Theme.TextShadow(text)
+		sub.MouseEnter:Connect(function() hover(muscle.id, { muscle.id }) end)
+		sub.MouseLeave:Connect(function() hover(muscle.id, nil) end)
+		sub.Activated:Connect(function() hover(muscle.id, { muscle.id }) end)
+		table.insert(entry.subs, { frame = sub, back = back, text = text, muscle = muscle })
+	end
+end
+
+local function refreshSubs()
+	local data = ClientData.Get()
+	if not data or not data.muscles then return end
+	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
+	for _, entry in ipairs(labels) do
+		for _, sub in ipairs(entry.subs) do
+			local level = data.muscles[sub.muscle.id].level
+			local maxed = level >= cap
+			sub.text.Text = sub.muscle.name .. "  " .. (maxed and "Max" or commas(Muscles.Shown(level)))
+			sub.text.TextColor3 = maxed and Colors.Gold or Colors.Text
+			sub.back.Size = UDim2.fromOffset(sub.text.TextBounds.X + 12, SUB_HEIGHT - 2)
+		end
+	end
 end
 
 ------------------------------------------------------------------------
@@ -378,10 +486,24 @@ local function place(dt)
 		local x = side == "Left" and center.X - halfWidth - gap - size.Width or center.X + halfWidth + gap
 		x = math.clamp(x, LAYOUT.Margin, view.X - LAYOUT.Margin - size.Width)
 		local y = columnTop + clearOf(x, columnTop, x + size.Width, columnTop + total, rects, topLimit, bottomLimit)
+		local cursor = y
 		for index, entry in ipairs(column) do
-			local target = Vector2.new(x, y + (index - 1) * step)
+			-- an open group pushes the labels under it down (they glide out of the way)
+			local wantExtra = (openGroup == entry.spec.id) and #entry.subs * SUB_HEIGHT or 0
+			entry.extra += (wantExtra - entry.extra) * (1 - math.exp(-14 * dt))
+			if math.abs(wantExtra - entry.extra) < 0.3 then entry.extra = wantExtra end
+			local target = Vector2.new(x, cursor)
+			cursor += step + entry.extra
 			local at = spring(entry.frame, target, dt, index + (side == "Left" and 0 or 3))
 			entry.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
+			for subIndex, sub in ipairs(entry.subs) do
+				local show = entry.extra > subIndex * SUB_HEIGHT * 0.5
+				sub.frame.Visible = show
+				if show then
+					sub.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + size.Height + 4 + (subIndex - 1) * SUB_HEIGHT + 0.5))
+					sub.frame.Size = UDim2.fromOffset(size.Width, SUB_HEIGHT)
+				end
+			end
 			local world = anchorPoint(character, entry.spec.anchor)
 			if world then
 				local dot = smooth(entry.dot, (project(world)), LAYOUT.DotSmooth, dt)
@@ -431,6 +553,7 @@ local function update()
 	shown = want
 	if want then
 		refreshNumbers()
+		refreshSubs()
 		if player.Character then measure(player.Character) end
 		table.clear(current)
 		gui.Enabled = true
@@ -438,6 +561,9 @@ local function update()
 		place(0)
 		Theme.Fade(layer, true, 0.2)
 	else
+		openGroup = nil -- stats closing: collapse and clear any highlight
+		hoverKey = nil
+		setHighlight(nil, false)
 		local tween = Theme.Fade(layer, false, 0.2)
 		local function stop()
 			if shown then return end
@@ -463,7 +589,7 @@ end)
 
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
-	if (key == "muscles" or key == "stamina" or key == "growthSpurts") and shown then refreshNumbers() end
+	if (key == "muscles" or key == "stamina" or key == "growthSpurts") and shown then refreshNumbers() refreshSubs() end
 end)
 player:GetAttributeChangedSignal("MaxStamina"):Connect(function() if shown then refreshNumbers() end end)
 
