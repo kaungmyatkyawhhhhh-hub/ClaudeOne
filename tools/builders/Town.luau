@@ -673,9 +673,10 @@ local function buildParking()
 			local stallX = x + stallW / 2
 			if stallX < pk.MaxX - 4 then
 				p(lot, "WheelStop", Vector3.new(3.4, 0.35, 0.5), CFrame.new(stallX, 0.2, row.z - row.facing * 5), hex("#B9B2A6"), M.Concrete, true)
-				if rng:NextNumber() < 0.6 then
-					local cf = CFrame.new(stallX, 0.05, row.z) * CFrame.Angles(0, row.facing > 0 and math.pi or 0, 0) * CFrame.Angles(0, rad(rng:NextNumber(-3, 3)), 0)
-					TownKit.car(lot, cf, CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)])
+				-- about half the stalls taken, cars a bit smaller than the stall (a clear gap to the lines and their neighbours)
+				if rng:NextNumber() < 0.45 then
+					local cf = CFrame.new(stallX + rng:NextNumber(-0.3, 0.3), 0.05, row.z + rng:NextNumber(-0.4, 0.4)) * CFrame.Angles(0, row.facing > 0 and math.pi or 0, 0) * CFrame.Angles(0, rad(rng:NextNumber(-3, 3)), 0)
+					TownKit.car(lot, cf, CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)]):ScaleTo(0.85)
 				end
 			end
 		end

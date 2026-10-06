@@ -70,6 +70,9 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **Skateboard upgrades (6 Oct):** 5 deck designs and 3 sets of faster wheels (34 / 38 / 42 vs 30) sold at Gear & Fits
   next to the other gear (new cosmetic slots Board and Wheels), used from the Wardrobe; changing them while skating
   rebuilds the board. Stats labels now also hide while the Wardrobe, Emotes, Crew, store, mirror or arm wrestling is open.
+- **Map polish (6 Oct):** parking lot: cars scaled to 85% so they sit inside the stall lines with a gap, 5 removed so the
+  rows aren't a full grid (14 cars). Skate park: the empty concrete got painted floor plates (mint, sunny, coral), a
+  manual pad, a kicker, a flat bar and painted ledge stripes (`tools/builders/SkateParkExtras.luau`).
 - **Glass entrance doors (6 Oct):** the starter gym's double doors (`Workspace.Gym.Entrance`, the two `DoorGlass`
   panels) are see-through glass now (Glass, Transparency 0.6, RGB 200/215/225, Reflectance 0.1, no shadow). Frame,
   divider and push bars unchanged; they still slide open (tag `SlidingDoor`, `SlideX`). It's the only door built from
