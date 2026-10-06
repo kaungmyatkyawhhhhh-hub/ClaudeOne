@@ -454,6 +454,13 @@ html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.per
 .chip.sea .dot{font-family:var(--mono);font-size:.6rem;font-weight:700;background:var(--down);color:#fff;border-radius:99px;padding:1px 6px}
 .seahead{display:flex;gap:14px;align-items:center;background:linear-gradient(120deg,color-mix(in oklab,var(--sc) 30%,var(--surface)),var(--surface));border-radius:18px;padding:14px;margin:8px 0}.seahead>span{font-size:2.4rem}.seahead b{font-family:var(--display);font-size:1.3rem;color:var(--sc)}.seahead small{display:block;color:var(--muted)}
 .seatrack{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.sealv{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:14px;padding:10px 6px;background:var(--surface);box-shadow:var(--shadow);text-align:center;opacity:.55}.sealv.ok{opacity:1;box-shadow:inset 0 0 0 2px var(--up),var(--shadow);animation:seaglow 1.6s ease-in-out infinite}@keyframes seaglow{50%{box-shadow:inset 0 0 0 2px var(--up),0 0 16px rgba(47,210,138,.55)}}.sealv.got{opacity:.8}.sealv.big{background:linear-gradient(160deg,#2b2410,#5a4a14);color:#fff}.sealv b{font-family:var(--mono);font-size:.7rem}.sealv span{font-size:1.5rem}.sealv small{font-size:.66rem;font-weight:700;line-height:1.15}.sealv i{font-size:.58rem;font-style:normal;opacity:.75}.sealv em{font-style:normal;font-size:.6rem;font-weight:800;text-transform:uppercase;opacity:.8}
+/* collapsed top bar: cash, rank and level on one line, a slim energy bar, the buttons in a row, alerts below */
+.hud.hudmin .hudtop{align-items:center}.hud.hudmin .cashchip{flex-direction:row;align-items:center;gap:8px;padding:6px 10px}
+.hud.hudmin #cashLab,.hud.hudmin .hypebar,.hud.hudmin .hlvbar,.hud.hudmin .hmul,.hud.hudmin .timechip{display:none}
+.hud.hudmin .cashchip .cash{font-size:1.15rem;white-space:nowrap}.hud.hudmin #multTxt{min-width:0;overflow:hidden}.hud.hudmin .hrow{white-space:nowrap}
+.hud.hudmin .hudbtns{flex-direction:row;gap:4px}.hud.hudmin .hudbtns .iconbtn{width:28px;height:28px;font-size:.85rem}
+.hud.hudmin .chip.stats{display:block;padding:5px 10px}.hud.hudmin .stats .stat:nth-child(2){display:none}.hud.hudmin .stats .stat{flex-direction:row;align-items:center;gap:8px}.hud.hudmin .stats .stat small{white-space:nowrap;display:flex;gap:6px}.hud.hudmin .stats .bar{flex:1;height:5px}
+#hudMin{font-size:.8rem;font-weight:800}
 .hudbtns{display:flex;flex-direction:column;gap:5px;justify-content:center}.hudbtns .iconbtn{width:30px;height:30px;font-size:.95rem}
 .emopop{position:fixed;z-index:60;right:12px;top:calc(110px + env(safe-area-inset-top,0px));display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface);border-radius:18px;padding:10px;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);animation:up .2s}.emopop button{display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:12px;background:var(--sunk)}.emopop span{font-size:1.5rem}.emopop small{font-size:.62rem;font-weight:700}
 body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.photo .perksheet{display:none!important}.photobar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;gap:10px}.photoimg{width:100%;border-radius:12px;margin:8px 0;box-shadow:var(--shadow);-webkit-user-select:auto;-webkit-touch-callout:default}
@@ -707,6 +714,10 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .accbar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-size:.9rem}
 .accbar .accav{width:30px;height:30px;font-size:.9rem;border-radius:9px}
 .accbar span:nth-child(2){flex:1}
+#admBtn{position:fixed;left:10px;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:60;padding:8px 12px;border-radius:12px;background:#1b1f2a;color:#ffcc33;font:800 .75rem var(--body);box-shadow:0 4px 14px rgba(0,0,0,.35)}#admBtn[hidden]{display:none}
+.sheet.admin{max-height:92vh;overflow-y:auto}.admgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admgrid .accf span{font-size:.7rem}
+.admacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.admall{display:flex;flex-direction:column;gap:4px;max-height:42vh;overflow-y:auto;padding:4px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line)}
+.admrow{display:flex;align-items:center;gap:8px;font-size:.75rem}.admrow code{flex:1;min-width:0;overflow-wrap:anywhere;color:var(--muted)}.admrow input:not([type=checkbox]){width:44%;padding:6px 8px;border-radius:8px;border:0;background:var(--sunk);color:var(--ink);font:600 .78rem var(--mono)}
 .acclist{display:flex;flex-direction:column;gap:8px}.acclist .accbar small{color:var(--muted);font-weight:600}.accbar button+button{padding:7px 10px}
 .accbar button{padding:7px 12px;border-radius:10px;background:var(--sunk);font-size:.78rem;font-weight:700}
 .accrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -800,7 +811,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
   <div class="hudtop">
     <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span><div class="hypebar" id="hype"><b>HYPE</b><span class="hseg"></span><em></em></div></div>
     <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span></div>
-    <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button></div>
+    <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button><button class="iconbtn" id="hudMin" aria-label="Collapse the top bar"></button></div>
   </div>
   <div class="chip stats">
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
@@ -1590,6 +1601,10 @@ $("seaChip").onclick=()=>{audioOn();if(room)closeRoom();openSeason(closeRoom)};
 $("room").addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#rGuide")){audioOn();rayText(GUIDE[room]||"")}});
 $("emoBtn").onclick=()=>{audioOn();emoMenu()};$("camBtn").onclick=()=>{audioOn();photoMode()};
 $("liveChip").onclick=()=>{audioOn();if(LV&&LV.kind==="boss"&&!LV.done&&!room)liveHit()};
+let hudMin=store.get("fliprush_hudmin")==="1";
+function renderHudMin(){const h=$("hud"),b=$("hudMin");if(!h||!b)return;h.classList.toggle("hudmin",hudMin);b.textContent=hudMin?"▾":"▴";b.setAttribute("aria-label",hudMin?"Expand the top bar":"Collapse the top bar");try{SAFE.t=0}catch(e){}}
+renderHudMin();
+$("hudMin").onclick=()=>{hudMin=!hudMin;store.set("fliprush_hudmin",hudMin?"1":"0");renderHudMin();buzz(6)};
 $("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("multTxt").addEventListener("click",e=>{if(!e.target.closest(".tierb")||!S)return;audioOn();if(room)closeRoom();room="tiers";openTiers(closeRoom)});
@@ -3242,8 +3257,42 @@ async function copyTransfer(btn){save();const a=accCur(),code=await encodeSave(a
 function accountCard(){return `<div class="sechead"><h3>Account</h3><span class="eyebrow">${ACC?esc(ACC.user):""}</span></div>
   <div class="accrow"><button class="perk nopic" id="accSwap"><span class="t">Switch account</span><span class="d">Sign back in to another account on this device, log in to a different one, or make a new one</span></button>
   <button class="perk nopic" id="accSwitch"><span class="t">Log out</span><span class="d">Your progress is saved to your account first. Log in on any device with your username and password</span></button>
+  ${isAdmin()?`<button class="perk nopic" id="accAdm"><span class="t">🛠 Admin panel</span><span class="d">Change any stat on this account</span></button>`:""}
   <button class="perk nopic" id="accCopy"><span class="t">Copy backup code</span><span class="d">A spare copy of your save, just in case</span></button></div>`}
-function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout();const w=$("accSwap");if(w)w.onclick=()=>switchSheet()}
+/* ================= admin panel: only for the account named Rong ================= */
+const ADMIN_USERS=["rong"];
+const isAdmin=()=>!!(ACC&&!ACC.kicked&&ADMIN_USERS.includes(String(ACC.user).toLowerCase()));
+const ADM_Q=[["Cash",()=>S.cash,v=>{S.cash=v}],["Bank",()=>S.bank||0,v=>{S.bank=v}],["Level",()=>repLevel(),v=>{S.stats.earnedAll=Math.max(0,lvT(Math.max(0,Math.floor(v))))+1;S.earned=Math.max(S.earned||0,S.stats.earnedAll)}],
+  ["Energy",()=>Math.round(S.energy),v=>{S.energy=v}],["Height (cm)",()=>S.height||170,v=>{S.height=Math.max(100,Math.round(v))}],["Fans",()=>Math.round(S.fans||0),v=>{S.fans=v}],
+  ["Bench (kg)",()=>S.lifts.bench,v=>{S.lifts.bench=v}],["Squat (kg)",()=>S.lifts.squat,v=>{S.lifts.squat=v}],["Deadlift (kg)",()=>S.lifts.dead,v=>{S.lifts.dead=v}],
+  ["Muscle (× frame, max 2.5)",()=>+Math.max(...Object.values(myBuild())).toFixed(2),v=>{const m=clamp(v,0,2.5),f=frameK();S.lifts.bench=Math.round(20+m*180*f);S.lifts.squat=Math.round(20+m*240*f);S.lifts.dead=Math.round(20+m*280*f)}],
+  ["Perk picks",()=>S.picks||0,v=>{S.picks=Math.max(0,Math.floor(v))}],["Genes",()=>w3().genes||0,v=>{w3().genes=Math.max(0,Math.floor(v))}]];
+const ADM_ACT=[["Full energy",()=>{S.energy=maxEnergy()}],["Unlock every category",()=>{S.unlocked=CATS.map(c=>c.k)}],["Open World 2",()=>{w2().open=1}],["Open World 3",()=>{w2().open=1;w3().open=1}],["×10 cash",()=>{S.cash*=10}],["Lifts back to best",()=>{for(const k in S.bestLifts||{})S.lifts[k]=Math.max(S.lifts[k]||20,S.bestLifts[k])}]];
+// every number, switch and word in the save, by path; long histories are skipped
+function admLeaves(){const out=[];const walk=(o,path,d)=>{for(const k of Object.keys(o)){const v=o[k],pth=path?path+"."+k:k;if(v==null)continue;const t=typeof v;
+  if(t==="number"||t==="boolean"||t==="string")out.push([pth,v]);else if(t==="object"&&d<4&&!(k==="hist"||k==="trades"||k==="market")&&(!Array.isArray(v)||v.length<=24))walk(v,pth,d+1)}};walk(S,"",0);return out}
+function admSet(path,raw,old){const ks=path.split(".");let o=S;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];const k=ks[ks.length-1];
+  const v=typeof old==="number"?Number(String(raw).replace(/[, _]/g,"")):typeof old==="boolean"?!!raw:String(raw);if(typeof old==="number"&&!isFinite(v))return false;o[k]=v;return true}
+function admDone(){S.pr=Math.max(S.pr||20,...Object.values(S.lifts||{}));S.bestPr=Math.max(S.bestPr||0,S.pr);dirty=true;save();try{renderHud()}catch(e){}try{updMini()}catch(e){}}
+// refresh the boxes in place after a change (re-rendering inside a change event breaks the focus)
+function admSync(o){o.querySelectorAll("[data-aq]").forEach(x=>{if(x!==document.activeElement)x.value=ADM_Q[+x.dataset.aq][1]()})}
+function adminPanel(q){if(!isAdmin())return;const o=$("overlay");o.hidden=false;q=q||"";const L=admLeaves().filter(([p])=>!q||p.toLowerCase().includes(q.toLowerCase())),shown=L.slice(0,200);
+  o.innerHTML=`<div class="sheet admin"><h2 class="h2"><small>ADMIN · ${esc(ACC.user)}</small>Change any stat</h2>
+    <div class="admgrid">${ADM_Q.map(([n,g],i)=>`<label class="accf"><span>${n}</span><input data-aq="${i}" inputmode="decimal" value="${g()}"></label>`).join("")}</div>
+    <div class="admacts">${ADM_ACT.map(([n],i)=>`<button class="perk nopic" data-aa="${i}"><span class="t">${n}</span></button>`).join("")}</div>
+    <div class="sechead"><h3>Every stat</h3><span class="eyebrow">${L.length} found</span></div>
+    <label class="accf"><span>Search</span><input id="admQ" value="${esc(q)}" placeholder="e.g. cash, w3.genes, perks" autocapitalize="none" spellcheck="false"></label>
+    <div class="admall">${shown.map(([p,v],i)=>`<label class="admrow"><code>${esc(p)}</code>${typeof v==="boolean"?`<input type="checkbox" data-al="${i}" ${v?"checked":""}>`:`<input data-al="${i}" value="${esc(String(v))}" ${typeof v==="number"?'inputmode="decimal"':""}>`}</label>`).join("")}${L.length>shown.length?`<p class="fine">Showing 200 of ${L.length}. Search to narrow it down.</p>`:""}</div>
+    <p class="fine">Numbers take plain digits or 1e30 style. Changes save the moment you leave a box.</p>
+    <button class="cta" id="admX"><span>Done</span>${ARROW}</button></div>`;
+  o.querySelectorAll("[data-aq]").forEach(e=>e.onchange=()=>{const v=Number(e.value.replace(/[, _]/g,""));if(!isFinite(v)){e.value=ADM_Q[+e.dataset.aq][1]();return}ADM_Q[+e.dataset.aq][2](v);admDone();banner(ADM_Q[+e.dataset.aq][0]+" set","u");admSync(o)});
+  o.querySelectorAll("[data-aa]").forEach(b=>b.onclick=()=>{ADM_ACT[+b.dataset.aa][1]();admDone();banner(ADM_ACT[+b.dataset.aa][0],"g");adminPanel($("admQ").value)});
+  o.querySelectorAll("[data-al]").forEach(e=>e.onchange=()=>{const[p,v]=shown[+e.dataset.al];if(admSet(p,e.type==="checkbox"?e.checked:e.value,v)){admDone();floatAt(e,"Saved","var(--up)")}else e.value=v});
+  let qt;$("admQ").oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{adminPanel(e.target.value);const n=$("admQ");n.focus();n.setSelectionRange(n.value.length,n.value.length)},250)};
+  $("admX").onclick=()=>{o.hidden=true}}
+// a small floating button while an admin is playing
+setInterval(()=>{let b=$("admBtn");const on=isAdmin()&&playing&&$("overlay").hidden;if(on&&!b){b=document.createElement("button");b.id="admBtn";b.textContent="🛠 Admin";b.onclick=()=>adminPanel();document.body.appendChild(b)}if(b)b.hidden=!on},700);
+function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout();const w=$("accSwap");if(w)w.onclick=()=>switchSheet();const ad=$("accAdm");if(ad)ad.onclick=()=>adminPanel()}
 
 /* ================= cloud accounts: username + password, one device at a time ================= */
 // Saves are encrypted on the device with a key made from your password (PBKDF2 + AES-GCM),
@@ -4357,6 +4406,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
 
 /* ================= what's new: shown once after an update ================= */
 const WN_VER=23,WN=[
+ ["🔽","Smaller top bar","Tap ▴ next to the camera to shrink the top bar to cash, rank, level and energy. Tap ▾ to bring it back."],
+ ["🛠️","Admin panel","Admins can open a panel to change any stat on their account."],
  ["🛫","Bots travel like you","NPC players fly out through the Stargate, walk the Cosmos, take the Time Machine to Deep Time and come back the same way, instead of popping between worlds."],
  ["⭐","Bots have fans","NPC players now have fan counts that grow through the day, so they show up on the fan leaderboard like real players."],
  ["👥","Switch account","Hop between accounts on the same device from the title screen or the Account card, log in to another one, or make a new one."],
