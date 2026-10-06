@@ -60,6 +60,24 @@ local function lookOf(player)
 	}
 end
 
+-- builds speed up gradually (a push, then rolling) instead of jumping from 16 to 30 at once
+local function ramp(player, target)
+	local rider = riders[player]
+	if not rider then return end
+	rider.token = (rider.token or 0) + 1
+	local token = rider.token
+	task.spawn(function()
+		local _, humanoid = parts(player)
+		if not humanoid then return end
+		local from = humanoid.WalkSpeed
+		for i = 1, 12 do
+			task.wait(0.1)
+			if riders[player] ~= rider or rider.token ~= token or humanoid.Parent == nil then return end
+			humanoid.WalkSpeed = from + (target - from) * (i / 12)
+		end
+	end)
+end
+
 local function makeBoard(root, hipHeight, look)
 	local board = Instance.new("Model")
 	board.Name = "Skateboard"
@@ -115,10 +133,10 @@ local function start(player)
 	humanoid.HipHeight = rider.hipHeight + SKATE.Lift
 	local look = lookOf(player)
 	local board = makeBoard(root, humanoid.HipHeight, look)
-	humanoid.WalkSpeed = look.speed
 	board.Parent = character
 	rider.board = board
 	riders[player] = rider
+	ramp(player, look.speed)
 	player:SetAttribute("Skating", true)
 end
 
@@ -131,7 +149,7 @@ function SkateService.Refresh(player)
 	local look = lookOf(player)
 	rider.board = makeBoard(root, humanoid.HipHeight, look)
 	rider.board.Parent = character
-	humanoid.WalkSpeed = look.speed
+	ramp(player, look.speed)
 end
 
 function SkateService.Start()
