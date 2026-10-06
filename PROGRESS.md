@@ -129,6 +129,8 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   quiet. A tier with no ids shows the highest filled tier below it. Tier progress counts each muscle up to the goal.
 - Sauna: on the sand east of the beach gym (not inside a gym) so every player can use it from the start. Skate wheels
   are the only store gear with an effect, and only on skating speed (no gains). Prices: decks 80-150, wheels 150 / 400 / 900.
+- Bug fixed: the progress mirror errored when opened (a helper from the muscle tiers work was missing). It opens
+  again (Day one / Now).
 - Studio test hooks: with `FreshPlayer` on, Workspace number attributes `TestCoins` (starting coins) and `TestSpurts`
   (start after that many Growth Spurts). Tested with them: a Growth Spurt 2 player walks through the pro gym glass door
   and lifts on the pro machines (Lateral Raise) with no errors.

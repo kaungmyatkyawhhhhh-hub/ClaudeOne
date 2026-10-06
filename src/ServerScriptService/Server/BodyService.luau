@@ -112,6 +112,12 @@ local function refresh(player)
 	state.busy = false
 end
 
+-- A copy of the player's own avatar description (their real body parts, before any tier), or nil.
+function BodyService.OriginalDescription(player)
+	local state = states[player]
+	return state and state.original and state.original:Clone() or nil
+end
+
 function BodyService.Rebuild(player)
 	task.spawn(refresh, player)
 end
