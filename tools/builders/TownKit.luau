@@ -586,15 +586,53 @@ end
 ------------------------------------------------------------------------
 -- Beach
 ------------------------------------------------------------------------
+-- A flat triangle a-b-c, `thickness` thick, from two wedges (no overlapping faces, so nothing flickers).
+function TownKit.triangle(parent, name, a, b, c, thickness, color, material)
+	local ab, ac, bc = b - a, c - a, c - b
+	local abd, acd, bcd = ab:Dot(ab), ac:Dot(ac), bc:Dot(bc)
+	if abd > acd and abd > bcd then
+		c, a = a, c
+	elseif acd > bcd and acd > abd then
+		a, b = b, a
+	end
+	ab, ac, bc = b - a, c - a, c - b
+	local right = ac:Cross(ab).Unit
+	local upward = bc:Cross(right).Unit
+	local back = bc.Unit
+	local height = math.abs(ab:Dot(upward))
+	local w1 = wedge(parent, name, Vector3.new(thickness, height, math.abs(ab:Dot(back))), CFrame.fromMatrix((a + b) / 2, right, upward, back), color, material)
+	local w2 = wedge(parent, name, Vector3.new(thickness, height, math.abs(ac:Dot(back))), CFrame.fromMatrix((a + c) / 2, -right, upward, -back), color, material)
+	w1.CanCollide, w2.CanCollide = false, false
+	return w1, w2
+end
+
+-- Patio/beach umbrella: a solid 8-panel canopy (triangles meeting at the top, alternating colors) with a short
+-- valance around the rim, 8 thin ribs under it, a pole and a tip. `cframe` is the foot of the pole.
 function TownKit.umbrella(parent, cframe, colorA, colorB)
 	local m = model(parent, "Umbrella", cframe)
-	cyl(m, "Pole", 6, 0.18, cframe * CFrame.new(0, 3, 0) * up, C.White, M.Metal, true)
+	cyl(m, "Pole", 6.2, 0.18, cframe * CFrame.new(0, 3.1, 0) * up, C.White, M.Metal, true)
 	local top = cframe * CFrame.new(0, 6, 0)
+	local apex = (top * CFrame.new(0, 0.3, 0)).Position
+	local hub = (top * CFrame.new(0, -0.75, 0)).Position
+	local rim = {}
 	for i = 0, 7 do
-		local panel = top * CFrame.Angles(0, rad(i * 45), 0) * CFrame.Angles(rad(-18), 0, 0)
-		p(m, "Canopy", Vector3.new(2.1, 0.08, 3.4), panel * CFrame.new(0, -0.55, -1.6), i % 2 == 0 and colorA or colorB, M.Fabric)
+		local a = rad(i * 45 + 22.5)
+		rim[i] = (top * CFrame.new(math.cos(a) * 3.3, -1, math.sin(a) * 3.3)).Position
 	end
-	ball(m, "Tip", Vector3.new(0.35, 0.35, 0.35), top * CFrame.new(0, 0.25, 0), C.White, M.Metal)
+	for i = 0, 7 do
+		local a, b = rim[i], rim[(i + 1) % 8]
+		local color = i % 2 == 0 and colorA or colorB
+		TownKit.triangle(m, "Canopy", apex, a, b, 0.08, color, M.Fabric)
+		local mid = (a + b) / 2
+		local along = (b - a).Unit
+		local outward = along:Cross(Vector3.yAxis).Unit
+		if outward:Dot(mid - apex) < 0 then outward = -outward end
+		p(m, "Valance", Vector3.new((b - a).Magnitude, 0.32, 0.05), CFrame.fromMatrix(mid - Vector3.yAxis * 0.18 + outward * 0.02, along, Vector3.yAxis), color, M.Fabric)
+		-- rib: from the hub on the pole to just under the rim corner
+		local tip = a - Vector3.yAxis * 0.1
+		p(m, "Rib", Vector3.new(0.06, 0.06, (tip - hub).Magnitude), CFrame.lookAt((hub + tip) / 2, tip), C.White, M.Metal)
+	end
+	ball(m, "Tip", Vector3.new(0.32, 0.32, 0.32), CFrame.new(apex + Vector3.yAxis * 0.1), C.White, M.Metal)
 	return m
 end
 
@@ -673,11 +711,87 @@ function TownKit.path(parent, points, width, color, edgeColor)
 		p(m, "PathStone", Vector3.new(width, 0.3, len + width * 0.35), cf, color or hex("#D8C9AE"), M.Pavement, true)
 		if edgeColor then
 			for _, side in ipairs({ -1, 1 }) do
-				p(m, "PathEdge", Vector3.new(0.3, 0.32, len + 0.3), cf * CFrame.new(side * (width / 2 + 0.1), 0, 0), edgeColor, M.Concrete)
+				-- a bit taller than the stone (its top would sit almost level with it and flicker)
+				p(m, "PathEdge", Vector3.new(0.3, 0.4, len + 0.3), cf * CFrame.new(side * (width / 2 + 0.1), 0.05, 0), edgeColor, M.Concrete)
 			end
 		end
 	end
 	return m
+end
+
+-- A round path (ring) merged with the straight paths that run into it, as ONE part (CSG): no overlapping slabs, so
+-- nothing flickers and the paving texture runs on without seams. `center` is the ring center at the paths' height,
+-- `radius` the middle of the ring. `paths` = Path models (TownKit.path) whose stones run into the ring: their stones
+-- are merged in, their edge strips are cut back to the ring's outside. Returns the new part (or nil if CSG failed).
+function TownKit.pathRing(parent, center, radius, width, color, paths)
+	local outerR, innerR = radius + width / 2, radius - width / 2
+	local thickness = 0.3
+	local function disc(d, h)
+		local part = Instance.new("Part")
+		part.Shape = Enum.PartType.Cylinder
+		part.Size = Vector3.new(h, d, d)
+		part.CFrame = CFrame.new(center) * up
+		part.Anchored = true
+		part.Material = M.Pavement
+		part.Color = color
+		part.Parent = workspace
+		return part
+	end
+	local outer, inner = disc(outerR * 2, thickness), disc(innerR * 2, thickness + 0.2)
+	local ok, ring = pcall(function() return outer:SubtractAsync({ inner }) end)
+	inner:Destroy()
+	if not ok or not ring then
+		outer:Destroy()
+		warn("[TownKit.pathRing] CSG failed: " .. tostring(ring))
+		return nil
+	end
+	outer:Destroy()
+	local stones = {}
+	for _, path in ipairs(paths or {}) do
+		for _, piece in ipairs(path:GetChildren()) do
+			if piece.Name == "PathStone" then
+				table.insert(stones, piece)
+			elseif piece.Name == "PathEdge" and piece:IsA("BasePart") then
+				-- cut the edge strip back to where it meets the ring's outside
+				local axis = piece.CFrame.LookVector
+				local half = piece.Size.Z / 2
+				local a, b = piece.Position - axis * half, piece.Position + axis * half
+				local function inside(point) return Vector2.new(point.X - center.X, point.Z - center.Z).Magnitude < outerR end
+				if inside(a) ~= inside(b) then
+					local lo, hi = 0, 1 -- binary search the crossing along a -> b
+					for _ = 1, 24 do
+						local mid = (lo + hi) / 2
+						if inside(a:Lerp(b, mid)) == inside(a) then lo = mid else hi = mid end
+					end
+					local cross = a:Lerp(b, lo)
+					local keepFrom = inside(a) and cross or a
+					local keepTo = inside(a) and b or cross
+					local length = (keepTo - keepFrom).Magnitude
+					piece.Size = Vector3.new(piece.Size.X, piece.Size.Y, length)
+					piece.CFrame = CFrame.lookAt((keepFrom + keepTo) / 2, keepTo)
+				end
+			end
+		end
+	end
+	local merged = ring
+	if #stones > 0 then
+		local okUnion, union = pcall(function() return ring:UnionAsync(stones) end)
+		if okUnion and union then
+			ring:Destroy()
+			for _, stone in ipairs(stones) do stone:Destroy() end
+			merged = union
+		else
+			warn("[TownKit.pathRing] merging the straight paths failed: " .. tostring(union))
+		end
+	end
+	merged.Name = "PathRing"
+	merged.UsePartColor = true
+	merged.Color = color
+	merged.Material = M.Pavement
+	merged.Anchored = true
+	merged.CastShadow = false
+	merged.Parent = parent
+	return merged
 end
 
 function TownKit.picnicTable(parent, cframe, color)

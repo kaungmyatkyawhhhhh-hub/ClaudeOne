@@ -64,11 +64,23 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   Titles, Genetics, Emotes, Crew, Wardrobe, Settings), 8px gaps, vertically centered on the left edge below the top
   bar; if they don't fit the height they wrap into 2 columns. Hover = slight grow + brighter; press = 0.95. Phones:
   one "Menu" button top left opens a centered grid of the same tiles (tap outside or pick one to close).
+- **Fix list 3, part 5 (map):** the park's fountain ring path (28 overlapping slabs) and its 4 straight paths are now one
+  part (CSG) with one continuous paving texture; path edge strips stop at the ring and sit clearly above the paving.
+  All 13 umbrellas (plaza carts, smoothie bar patio, beach) got a solid 8-panel canopy with a valance and ribs
+  (the old one was 8 flat slats that overlapped in the middle and looked like spokes from below). A whole-map scan
+  found 10,761 pairs of parts showing a face on the same plane in the same spot; 4 passes nudged ~10,500 parts apart
+  by 0.04 studs (grown by 0.04 on both sides where both faces were shared). Biggest groups: building facades (rails,
+  cornices, planters), street (curbs/asphalt/paving, lamps), skate park (fence, ramps), starter gym shell (slabs,
+  walls, seams), squat racks and platforms, posing stage, parked cars, plaza (compass inlay, benches, bike racks),
+  beach gym, clothing store, pro gym shell and glass wall, posters and mirror frames. 1,325 pairs are left, all hidden
+  or the same color: plates pressed together on bars and plate trees, the compass points crossing under the clock
+  plinth, skate ramp slice sides, rack post caps. Recipe: `tools/builders/Fix3Overlaps.luau` (Town/TownKit updated).
 
 ## In progress
 - Nothing half-built.
 
 ## Waiting on you
+- **Muscle body ids** for the 4 tiers (`Config/MuscleBodies`, guide at the top). Until then everyone keeps their own body.
 - **Sound ids** (you pick them; all in `Config/Sounds.luau`). New placeholders that reuse other clips: `PumpFull`,
   `BigRep`, `PersonalRecord`, `Grew`. Older placeholders: `LevelUp`, `Maxed`, `TitleUnlocked`, `TierUnlocked`,
   `GeneticsClank`, `OutOfStamina`, `GeneticsThudLow`, `RepTick`/`Click`. No sound yet: skateboard rolling, sliding
@@ -79,8 +91,14 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **Portrait:** phones/tablets are locked to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`).
 
 ## Check these (things I couldn't fully verify)
+- **Map after the overlap fix:** ~10,500 parts moved by 0.04 studs. I checked the park, plaza, smoothie bar, street,
+  buildings, gym interior and a poster close up (no gaps, nothing looks shifted); give doors, machines and the skate
+  park a quick look while playing.
+- **DataStore:** near the end Studio got "InternalServerError" from UpdateAsync on `PlayerData_1` and the menu stayed
+  on "Loading..." (a Roblox-side error, probably after many quick test sessions); the last tests ran with
+  `FreshPlayer` (turned off again). If it happens to you, wait a minute and play again.
 - **Stats labels on a real phone** (Training default) and at 1080p; with 2 players check the "Strength" line over the
-  other player (only tested alone). In a short Studio window the lowest label can touch the pump bar while lifting.
+  other player (only tested alone).
 - **Muscle body tiers** with the bodies you pick: tested with Roblox's "Man" torso + arms (clothes, hair and
   accessories stayed on, height kept). Check your bodies with layered clothing, emotes, the skateboard and lifting.
 - Phone **Menu button + grid**: open it, pick a few buttons, tap outside to close, on a real phone or the Device Emulator.
@@ -109,6 +127,11 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
   there is no room above the head (Growth Spurt bar, top of the screen) Strength and Stamina head the two columns. A
   column steps off a shown ProximityPrompt, the Growth Spurt bar and the machine panel. Labels hide while a full
   screen or a side panel is open (Stats screen, genetics, Settings, Titles, the phone menu grid) and in first person.
+  Screens under 700px tall use the smaller label size. While lifting, a column steps out beside the machine panel when
+  there is room (right of it, or between the menu and the panel), otherwise it fits above it; the coach line counts
+  like the Growth Spurt bar.
+- Part 5: the nudge is 0.04 studs (invisible, but enough to stop flicker at any distance). Only anchored Parts
+  (blocks and cylinders), never characters; same-color plain plastic is skipped (it can't flicker visibly).
 
 ## Decisions made (fixes + muscles run)
 - No day/night cycle exists, so the lamps are simply off now; they switch on automatically if the clock ever passes

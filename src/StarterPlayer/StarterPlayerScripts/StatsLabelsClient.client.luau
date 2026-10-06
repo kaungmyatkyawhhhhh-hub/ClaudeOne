@@ -26,6 +26,7 @@ local Stamina = require(Config.Stamina)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local UIBus = require(Shared.UI.UIBus)
+local SideMenu = require(Shared.UI.SideMenu)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
@@ -77,7 +78,13 @@ gui.ScreenInsets = Enum.ScreenInsets.None -- positions are viewport pixels (Came
 local layer = New("Frame", { Name = "Layer", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = gui })
 local lineLayer = New("Frame", { Name = "Lines", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = layer })
 
-local compact = Theme.IsCompact()
+-- small labels on phones and on any screen under SMALL_SCREEN px tall (so both columns fit beside the machine panel)
+local SMALL_SCREEN = 700
+local function wantSmall()
+	local camera = Workspace.CurrentCamera
+	return Theme.IsCompact() or (camera ~= nil and camera.ViewportSize.Y > 1 and camera.ViewportSize.Y < SMALL_SCREEN)
+end
+local compact = wantSmall()
 local size = compact and SIZES.Compact or SIZES.Normal
 
 local function box(name, width, height, numberSize)
@@ -121,7 +128,7 @@ local function applySize(isCompact)
 	strength.number.TextSize = Theme.TextSize[size.Top]
 	strength.number.Size = UDim2.new(1, 0, 0, Theme.TextSize[size.Top] + 2)
 end
-Theme.OnCompactChanged(applySize)
+Theme.OnCompactChanged(function() applySize(wantSmall()) end)
 
 ------------------------------------------------------------------------
 -- Numbers
@@ -233,11 +240,14 @@ local function obstacles()
 			end
 		end
 	end
+	local prompts = #rects
 	addGui("SpurtBar")
+	addGui("Tutorial", "CoachLine")
+	local topBar = { table.unpack(rects, prompts + 1) } -- only the bar decides where a column may start
 	local before = #rects
 	addGui("MachineHud", "Stack")
 	local panel = #rects > before and rects[#rects] or nil -- columns beside it may use the full height, others fit above it
-	return rects, panel
+	return rects, panel, topBar
 end
 
 -- How far to move a block (x1..x2, y1..y2) up or down to clear every rect it overlaps, staying between minY and maxY
@@ -318,14 +328,16 @@ local function place(dt)
 	end
 	layer.Visible = true
 	local view = camera.ViewportSize
+	if wantSmall() ~= compact then applySize(not compact) end
 	local up = Vector3.yAxis
 	local top = project(root.Position + up * body.top)
 	local bottom = project(root.Position - up * body.bottom)
 	local height = math.max(bottom.Y - top.Y, 1)
 	local halfWidth = math.abs(project(root.Position + camera.CFrame.RightVector * body.half).X - center.X)
 	local spread = halfWidth + math.max(LAYOUT.MinSpread, height * LAYOUT.Spread)
-	local rects, panel = obstacles()
+	local rects, panel, topBar = obstacles()
 	local screenBottom = view.Y - LAYOUT.Margin
+	local leftLimit = (SideMenu.IsCompact() and 0 or SideMenu.Right()) + LAYOUT.Gap -- PC: the menu column on the left
 	local topLimit = GuiService:GetGuiInset().Y + LAYOUT.Margin
 
 	-- Strength (big) and Stamina above the head, over the title. When there's no room up there (the Growth Spurt bar
@@ -354,13 +366,21 @@ local function place(dt)
 		local headSpace = cap and size.TopHeight + LAYOUT.Gap or 0
 		local count = #column
 		local x = side == "Left" and center.X - spread - size.Width or center.X + spread
-		x = math.clamp(x, LAYOUT.Margin, view.X - LAYOUT.Margin - size.Width)
-		local besidePanel = not panel or x >= panel[3] or x + math.max(size.Width, headWidth) <= panel[1]
+		x = math.clamp(x, side == "Left" and leftLimit + (cap and headWidth or size.Width) - size.Width or LAYOUT.Margin, view.X - LAYOUT.Margin - size.Width)
+		-- lifting: step out beside the machine panel when there is room (right of it; left of it, clear of the menu)
+		if panel then
+			if side == "Right" and x < panel[3] and panel[3] + LAYOUT.Gap + size.Width <= view.X - LAYOUT.Margin then
+				x = panel[3] + LAYOUT.Gap
+			elseif side == "Left" and x + size.Width > panel[1] and panel[1] - LAYOUT.Gap - (cap and headWidth or size.Width) >= leftLimit then
+				x = panel[1] - LAYOUT.Gap - size.Width
+			end
+		end
+		local besidePanel = not panel or x >= panel[3] or x + size.Width <= panel[1]
 		local bottomLimit = besidePanel and screenBottom or math.min(screenBottom, panel[2])
 		-- under the Growth Spurt bar (or anything else up top) the column starts below it
 		local columnTop = topLimit
-		for _, r in ipairs(rects) do
-			if r[2] < view.Y * 0.35 and x < r[3] and x + size.Width > r[1] then columnTop = math.max(columnTop, r[4]) end
+		for _, r in ipairs(topBar) do
+			if x < r[3] and x + size.Width > r[1] then columnTop = math.max(columnTop, r[4]) end
 		end
 		local step = math.max(size.Height + LAYOUT.Gap, (height * 0.82 - size.Height) / math.max(count - 1, 1))
 		-- short screens / the machine panel: squeeze the column to fit (labels still never overlap)
@@ -369,10 +389,10 @@ local function place(dt)
 		local total = step * (count - 1) + size.Height
 		local y = top.Y + height * 0.1
 		y = math.clamp(y, columnTop + headSpace, math.max(columnTop + headSpace, bottomLimit - total))
-		y += clearOf(x, y - headSpace, x + size.Width, y + total, rects, columnTop, bottomLimit)
+			y += clearOf(x, y - headSpace, x + size.Width, y + total, rects, columnTop, bottomLimit)
 		if cap then
 			local headX = side == "Left" and x + size.Width - headWidth or x
-			local at = smooth(cap.frame, Vector2.new(math.max(headX, LAYOUT.Margin), y - headSpace), LAYOUT.Smooth, dt)
+			local at = smooth(cap.frame, Vector2.new(math.max(headX, leftLimit), y - headSpace), LAYOUT.Smooth, dt)
 			cap.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
 		end
 		for index, entry in ipairs(column) do
@@ -405,7 +425,7 @@ local renderConnection = nil
 
 local function mode()
 	local settings = ClientData.Get().settings or {}
-	return settings.statsLabels or (compact and "Training" or "Always")
+	return settings.statsLabels or (Theme.IsCompact() and "Training" or "Always")
 end
 
 local function update()

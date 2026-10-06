@@ -595,17 +595,15 @@ local function buildPark()
 	local cx = (pk.MinX + pk.MaxX) / 2
 	local fz = 118 -- fountain center
 	local pathColor, edge = hex("#D8C9AE"), hex("#B5AA98")
-	-- paths: north-south through the middle, east-west to both avenues, a ring around the fountain
-	TownKit.path(park, { Vector3.new(cx, 0.05, pk.MinZ - 0.5), Vector3.new(cx, 0.05, fz - 14) }, 5, pathColor, edge)
-	TownKit.path(park, { Vector3.new(cx, 0.05, fz + 14), Vector3.new(cx, 0.05, pk.MaxZ + 0.5) }, 5, pathColor, edge)
-	TownKit.path(park, { Vector3.new(pk.MinX - 0.5, 0.05, fz), Vector3.new(cx - 14, 0.05, fz) }, 4.5, pathColor, edge)
-	TownKit.path(park, { Vector3.new(cx + 14, 0.05, fz), Vector3.new(pk.MaxX + 0.5, 0.05, fz) }, 4.5, pathColor, edge)
-	local ring = {}
-	for i = 0, 28 do
-		local a = i / 28 * math.pi * 2
-		table.insert(ring, Vector3.new(cx + math.cos(a) * 14, 0.05, fz + math.sin(a) * 14))
-	end
-	TownKit.path(park, ring, 4.5, pathColor)
+	-- paths: north-south through the middle, east-west to both avenues, a ring around the fountain (the ring and the
+	-- four straights are merged into one part so no slabs overlap)
+	local straights = {
+		TownKit.path(park, { Vector3.new(cx, 0.05, pk.MinZ - 0.5), Vector3.new(cx, 0.05, fz - 14) }, 5, pathColor, edge),
+		TownKit.path(park, { Vector3.new(cx, 0.05, fz + 14), Vector3.new(cx, 0.05, pk.MaxZ + 0.5) }, 5, pathColor, edge),
+		TownKit.path(park, { Vector3.new(pk.MinX - 0.5, 0.05, fz), Vector3.new(cx - 14, 0.05, fz) }, 4.5, pathColor, edge),
+		TownKit.path(park, { Vector3.new(cx + 14, 0.05, fz), Vector3.new(pk.MaxX + 0.5, 0.05, fz) }, 4.5, pathColor, edge),
+	}
+	TownKit.pathRing(park, Vector3.new(cx, 0.05, fz), 14, 4.5, pathColor, straights)
 	-- the fountain on a round paved pad
 	cyl(park, "FountainPad", 0.3, 19, CFrame.new(cx, 0.05, fz) * up, C.Paving, M.Pavement, true)
 	TownKit.fountain(park, CFrame.new(cx, 0.2, fz))

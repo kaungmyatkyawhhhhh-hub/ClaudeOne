@@ -19,6 +19,7 @@ the recipes that made the code-made areas into real parts, kept so an area can b
 | `ShowOff` | `Workspace.LeaderboardWall` (rows by group id / `Rank1..5` / `Name`, `Level`), `Workspace.StatuePedestal` (`Plaque`) | ShowOffService |
 | `Seasons` | `ServerStorage.SeasonDecor.<Halloween/Winter/Summer>` templates (Winter has the Sled Pull machine) | SeasonService clones the running season's folder |
 | `NPCs` | `Workspace.NPCs`: Coach Dex (`TalkPrompt`, tag `Coach`), eight gym regulars (tag `GymNpc`, attribute `Gym`), moves the gym cat | QuestService, GymGoerService |
+| `Fix3Overlaps` | one-off fixes for the saved place (fix list 3): park ring path merged into one `PathRing` part, solid umbrella canopies, path edges raised, coplanar faces nudged apart (`Run()`; `Scan()` / `Detail(prefix)` only report). Needs `Kit` + `TownKit` loaded next to it. Running it again only touches what still overlaps. | |
 
 Visiting legends are still created by LegendService while they visit (they come and go).
 

@@ -12,8 +12,8 @@ for where everything sits in Studio.
    costs stamina, gives muscle XP and coins (`MachineService`, `MachineClient`).
 3. **Go heavier**: each machine has 8 weight tiers. A tier unlocks when the
    machine's main muscle reaches a level and the player pays coins.
-4. **Grow**: muscle groups thicken the avatar's body parts as they level
-   (`BodyService`).
+4. **Grow**: total muscle progress moves the body up 4 muscle tiers (Marketplace body parts set in
+   `Config/MuscleBodies`; empty ids = no change) (`BodyService`).
 5. **Growth Spurt** (prestige): once every group hits the required level, muscles
    reset to 0, the player gets taller (4'0" → up to 7'0"), gains a permanent XP
    bonus, a higher level cap and a DNA Token.
@@ -54,7 +54,7 @@ for where everything sits in Studio.
   plate visuals. Validates everything.
 - `Server/ActionService`: non-machine requests (Growth Spurt, equip title, reroll,
   settings). Other services can `Register` more actions.
-- `Server/BodyService`: the play body: one smooth Roblox-made base body for everyone, gym look (tank top + shorts) or the avatar's own clothes, Growth Spurt height, and the muscle attributes (`MuscleSteps`, `VeinStages`) that `MuscleClient` turns into muscle shapes.
+- `Server/BodyService`: Growth Spurt height, the muscle body tier (`Config/MuscleBodies`, applied through the HumanoidDescription; keeps head, face, hair, accessories, skin and clothes), the "Grew" event on a tier up, and the player attribute `Strength` (all muscle levels added up). NPC regulars use `ApplyTier`; the statue and the mirror rigs put the tier on their description first (`BodyTier`, `TierOf`).
 - `Server/NightLightService`: outdoor lamps (tag `NightLight`) off by day, glowing at night.
 - `Server/TitleService`: stats, title unlocks, badges, overhead title tag.
 - `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt).
@@ -83,9 +83,9 @@ for where everything sits in Studio.
 - `MachineClient`: auto reps + tapping (tap anywhere / click / Space, pump bar above the panel, BIG REP), machine HUD, lifting effects and feel, NEW PR banner, level flash, next-weight text on machine prompts.
 - `ProgressClient`: the always-visible Growth Spurt bar (top center) with a "next goal" line, and the "you grew" moment.
 - `ProGymClient`: the glass door between the gyms (slides open from Growth Spurt 2, locked before).
-- `MuscleClient`: builds the visible muscles and veins (`Shared/MuscleBody`) on every body tagged `MuscleBody` (players, mirror rigs, statue, NPCs), only when they change.
 - `AreaSignsClient`: area signs show "Opens at Growth Spurt N" only while that area is locked for you.
-- `StatsClient`: the body map (front + back, 18 muscle shapes; right column under the quest panel, folds to a Stats chip) and the full stats screen (groups, muscles, grades, Growth Spurt goal and button).
+- `StatsClient`: the Stats menu button and the full stats screen (groups, muscles, grades, Growth Spurt goal and button).
+- `StatsLabelsClient`: your stats around your character (2D labels with lines to dots on the body; Settings > Stats labels Always / Training / Off) and the "Strength" line over other players.
 - `GeneticsClient`: genetics reveal and reroll screen.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.
@@ -106,7 +106,7 @@ for where everything sits in Studio.
 - `Audio`: plays sounds from `Config/Sounds` through SoundGroups.
 - `UI/Theme`: the "clean minimal" design system (colors, fonts, spacing,
   `Theme.New`, panels, buttons). **All UI should use it.**
-- `UI/RightColumn` (top-right stack: quest tracker, shake button; notifications stack under it), `UI/SideMenu` (compact icon menu; folds into one Menu button on phones), `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
+- `UI/RightColumn` (top-right stack: quest tracker, shake button; notifications stack under it), `UI/SideMenu` (PC: 64px labeled square buttons centered on the left, wrapping to 2 columns on short screens; phones: one Menu button that opens a grid), `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
   stats/genetics visible, open titles/settings).
 
 ## Open tasks (from the owner's task list, 4 Oct 2026)
