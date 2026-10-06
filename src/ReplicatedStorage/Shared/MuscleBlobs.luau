@@ -12,6 +12,7 @@
 local RunService = game:GetService("RunService")
 local AssetService = game:GetService("AssetService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Body = require(script.Parent.Config.Body)
 
 local MuscleBlobs = {}
 
@@ -34,7 +35,7 @@ local DEPTH_RATIO = 0.55
 local SINK = 0.17 -- the centre is this share of a blob's depth inside the body surface (so 1/3 of it shows at most)
 -- the Robloxian limbs are slimmer than their part boxes: blobs are narrower there and taller (so neighbours overlap by half)
 local WIDTH_FACTOR = { UpperArm = 0.95, LowerArm = 0.92, UpperLeg = 0.95, LowerLeg = 1.0 }
-local HEIGHT_FACTOR = { UpperArm = 1.6, LowerArm = 1.5, UpperLeg = 1.3, LowerLeg = 1.3 }
+local HEIGHT_FACTOR = { UpperArm = 2.0, LowerArm = 1.9, UpperLeg = 1.5, LowerLeg = 1.5 }
 local MUSCLE_WIDTH = { UpperChest = 1.2, MidChest = 1.2, Lats = 1.2, FrontDelts = 1.2, RearDelts = 1.2 }
 local MUSCLE_HEIGHT = { UpperChest = 1.25, MidChest = 1.25, Lats = 1.1, Rhomboids = 1.2, FrontDelts = 1.3, SideDelts = 1.35, RearDelts = 1.3 }
 local function add(kind: string, muscle: string, part: string, face: string, u: number, v: number, w: number, h: number, rot: number?, cover: string?, ratio: number?)
@@ -54,7 +55,7 @@ P("MidChest", "UpperTorso", "F", 0.37, 0.1, 0.28, 0.2, -12)
 P("MidChest", "UpperTorso", "F", 0.28, -0.02, 0.34, 0.15, -6)
 -- Abs: small rounded blobs in two columns with gaps (sizes and offsets vary a little)
 for row = 0, 3 do
-	P("Abs", "UpperTorso", "F", 0.1 + 0.004 * (row % 2), -0.1 - 0.1 * row, 0.17 - 0.006 * row, 0.098, 0, nil, 0.65)
+	P("Abs", "UpperTorso", "F", 0.1 + 0.004 * (row % 2), -0.1 - 0.092 * row, 0.17 - 0.006 * row, 0.108, 0, nil, 0.65)
 end
 -- Obliques: at the sides
 P("Obliques", "UpperTorso", "F", 0.43, -0.28, 0.13, 0.26, 10)
@@ -70,14 +71,14 @@ P("Lats", "UpperTorso", "B", 0.4, -0.28, 0.2, 0.3, -8)
 P("Rhomboids", "UpperTorso", "B", 0.13, 0.3, 0.24, 0.18, 0)
 P("Rhomboids", "UpperTorso", "B", 0.12, 0.12, 0.22, 0.2, 4)
 -- Lower back: two smooth long ridges along the spine (2 stretched blobs each)
-P("LowerBack", "UpperTorso", "B", 0.09, -0.22, 0.12, 0.3, 0)
-P("LowerBack", "UpperTorso", "B", 0.1, -0.44, 0.12, 0.28, 0)
+P("LowerBack", "UpperTorso", "B", 0.09, -0.2, 0.14, 0.5, 0)
+P("LowerBack", "UpperTorso", "B", 0.1, -0.42, 0.14, 0.4, 0)
 -- Glutes (stay inside the shorts)
-P("Glutes", "LowerTorso", "B", 0.2, -0.15, 0.36, 1.1, 0, "shorts")
-P("Glutes", "LowerTorso", "B", 0.2, -0.45, 0.3, 0.9, 0, "shorts")
+P("Glutes", "LowerTorso", "B", 0.2, -0.12, 0.32, 0.9, 0, "shorts", 0.22)
+P("Glutes", "LowerTorso", "B", 0.2, -0.4, 0.26, 0.7, 0, "shorts", 0.22)
 -- Delts: three flat round blobs cap the shoulder (on the upper arm)
 L("FrontDelts", "UpperArm", "F", 0.08, 0.36, 0.9, 0.34)
-L("SideDelts", "UpperArm", "S", 0.0, 0.38, 0.8, 0.36, 0, nil, 0.6)
+L("SideDelts", "UpperArm", "S", 0.0, 0.38, 0.7, 0.34, 0, nil, 0.5)
 L("RearDelts", "UpperArm", "B", 0.08, 0.36, 0.9, 0.32)
 -- Biceps: stacked, overlapping, with a peak
 L("Biceps", "UpperArm", "F", 0.0, 0.17, 0.74, 0.38)
@@ -93,7 +94,7 @@ L("Forearms", "LowerArm", "F", 0.0, -0.1, 0.76, 0.44)
 L("Forearms", "LowerArm", "B", 0.0, 0.16, 0.74, 0.42)
 L("Forearms", "LowerArm", "B", 0.0, -0.12, 0.64, 0.4)
 -- Quads: a teardrop above the knee, the middle and the sweep on the outside (under the shorts color)
-L("Quads", "UpperLeg", "F", 0.0, -0.28, 0.7, 0.3, 0, "shorts")
+L("Quads", "UpperLeg", "F", 0.0, -0.3, 0.7, 0.3, 0, "skin")
 L("Quads", "UpperLeg", "F", 0.03, 0.04, 0.76, 0.5, 0, "shorts")
 L("Quads", "UpperLeg", "F", 0.26, 0.0, 0.44, 0.62, 6, "shorts")
 -- Hamstrings
@@ -257,6 +258,7 @@ end
 local sphereTemplate: MeshPart? = nil
 local sphereChecked = false
 local function sphere(): MeshPart?
+	if not Body.TexturedBlobs then return nil end
 	if sphereChecked then return sphereTemplate end
 	sphereChecked = true
 	local ok, result = pcall(function()

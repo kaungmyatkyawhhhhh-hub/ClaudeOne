@@ -20,6 +20,9 @@ Body.Parts = {
 Body.SkinColorMap = "rbxassetid://108408427047777"
 Body.SkinRoughnessMap = "rbxassetid://93442915229739"
 Body.SphereMesh = "rbxassetid://9756362"
+-- Textured blobs need a sphere MeshPart built from an EditableMesh, and server-made EditableMesh geometry does not replicate to
+-- clients (they see a box). So blobs stay plain SpecialMesh spheres until muscles can be built on each client.
+Body.TexturedBlobs = false
 
 Body.Scales = { BodyType = 0, Proportion = 0, Width = 1, Depth = 1, Head = 1 }
 
