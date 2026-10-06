@@ -56,7 +56,10 @@ function Builder.Build(Workspace)
 	coach.pantsId = Builder.Coach.pants
 	coach.animated = true
 	local _, prompt = NpcService.Build(coach, Quests.CoachSpot)
-	if prompt then prompt.Name = "TalkPrompt" end
+	if prompt then
+		prompt.Name = "TalkPrompt"
+		prompt.MaxActivationDistance = 8 -- the gym cat (E: Pet) sleeps nearby; keep the two from competing
+	end
 
 	for _, goer in ipairs(Builder.Goers) do
 		local spec = {

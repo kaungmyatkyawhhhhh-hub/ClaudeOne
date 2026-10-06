@@ -130,6 +130,10 @@ local function setupFrontDesk()
 	prompt.MaxActivationDistance = 8
 	prompt.RequiresLineOfSight = false
 	prompt.HoldDuration = 0.6 -- a short hold, so nobody buys one by accident
+	-- Coach Dex stands right behind the desk: a different key, so both prompts show and E always talks to him
+	prompt.KeyboardKeyCode = Enum.KeyCode.F
+	prompt.GamepadKeyCode = Enum.KeyCode.ButtonY
+	prompt.UIOffset = Vector2.new(0, -70) -- shown a little above Dex's prompt, never on top of it
 	prompt.Parent = holder
 	Guard.OnTriggered(prompt, function(player)
 		local now = os.clock()

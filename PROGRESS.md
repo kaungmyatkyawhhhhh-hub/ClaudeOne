@@ -78,6 +78,11 @@ and clothes stay the player's own. While a tier's ids are 0 nothing changes, so 
 - **Quality pass (6 Oct, 2nd hour):** removed 3 leftover test rigs (`_RS0`, `_RS3`, `_RS5`, white Blender bodies) that
   stood in the road in front of the gym in the saved place. Gym front: a framed, lit tagline poster with a planter on
   the bare brick wall right of the entrance (`tools/builders/GymFrontPoster.luau`).
+  Tutorial bug fixed: at Coach Dex's desk, E picked the desk's "Buy DNA token" prompt or the arm wrestling stool
+  instead of "Talk", so the "find Coach Dex" step couldn't be done with E. The DNA token prompt is now F (gamepad Y),
+  the arm wrestling prompts reach 4.5 studs (were 7) and Dex's 8 (was 10, the gym cat's Pet prompt is near). A
+  whole-map scan finds no other spots where two different same-key prompts compete. Full new-player run checked:
+  genetics, bench, stamina, shake, squat rack, stats, Coach Dex quest, no errors.
 - **Glass entrance doors (6 Oct):** the starter gym's double doors (`Workspace.Gym.Entrance`, the two `DoorGlass`
   panels) are see-through glass now (Glass, Transparency 0.6, RGB 200/215/225, Reflectance 0.1, no shadow). Frame,
   divider and push bars unchanged; they still slide open (tag `SlidingDoor`, `SlideX`). It's the only door built from

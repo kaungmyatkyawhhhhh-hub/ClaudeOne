@@ -40,7 +40,7 @@ function ArmWrestleTable.Build(Workspace)
 		stool.Anchored = true
 		stool.TopSurface, stool.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 		stool.Parent = model
-		Kit.prompt(stool, "ArmWrestlePrompt", "Arm wrestle", "Sit down", 7)
+		Kit.prompt(stool, "ArmWrestlePrompt", "Arm wrestle", "Sit down", 4.5) -- short: Coach Dex (E) stands close by
 		local cushion = Kit.prop(model, "Cushion", Vector3.new(0.3, 1.4, 1.4), CFrame.new(seatPosition) * CFrame.Angles(0, 0, math.rad(90)), pad, Enum.Material.Leather)
 		cushion.Shape = Enum.PartType.Cylinder
 		local floor = Config.TableSpot + Vector3.new(side * 2.2, 0, 0)
