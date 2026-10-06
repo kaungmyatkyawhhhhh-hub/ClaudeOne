@@ -194,4 +194,6 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
   minutes): 7.9, 14.6, 24.6, 34.7, 44.2, 44.2, 43.3, 43.7. The test fails if a spurt is more than 10% off.
 
 
-- **Big stat numbers:** `Muscles.DisplayScale = 20` / `Muscles.Shown()`: levels are SHOWN x20 (labels, Muscles panel, body-map widget, gain popups, goal text). Display only: goals, caps, saves and gains math are unchanged. Change the one number to tune.
+- **Big stat numbers:** `Muscles.DisplayScale = 150` / `Muscles.Shown()`: levels are SHOWN x150 (a rep gives about +1,000 at higher levels) (labels, Muscles panel, body-map widget, gain popups, goal text). Display only: goals, caps, saves and gains math are unchanged. Change the one number to tune.
+
+- **Mirror live reflection (unverified visually):** MirrorClient's copy now has no Humanoid/Animator/joints at all, so it can't play its own pose; every part is placed from your real part every frame (RenderStepped) and it rebuilds when BodyVersion changes. I could not get a view of the glass in the test to confirm the 'frozen running pose' is gone: please test idle, walk, jump, emote near the mirror.

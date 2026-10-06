@@ -280,7 +280,7 @@ local function startReflection(mirrorModel, glass)
 		local humanoid = copy:FindFirstChildOfClass("Humanoid")
 		if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
 		copy.Parent = world
-		mirrored = { model = copy, pairs = list, character = character, count = #sources }
+		mirrored = { model = copy, pairs = list, character = character, count = #sources, version = character:GetAttribute("BodyVersion") }
 	end
 
 	local active = false
@@ -301,7 +301,7 @@ local function startReflection(mirrorModel, glass)
 		if not near then return end
 		if not roomBuilt then buildRoom() end
 		-- rebuild the copy when the character changes (respawn, new gear)
-		if not mirrored or mirrored.character ~= character or mirrored.count ~= #character:GetDescendants() then
+		if not mirrored or mirrored.character ~= character or mirrored.count ~= #character:GetDescendants() or mirrored.version ~= character:GetAttribute("BodyVersion") then
 			buildCharacter(character)
 		end
 		if not mirrored then return end

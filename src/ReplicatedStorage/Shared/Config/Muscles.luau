@@ -86,7 +86,7 @@ function Muscles.GetGroupLevel(muscleData, groupId)
 end
 
 -- Stat numbers are SHOWN bigger so progress feels big (levels stay small inside the game: goals, caps and saves are unchanged).
-Muscles.DisplayScale = 20
+Muscles.DisplayScale = 150
 function Muscles.Shown(value)
 	return math.floor(value * Muscles.DisplayScale + 0.5)
 end
