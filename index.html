@@ -4194,7 +4194,7 @@ const WN_VER=10,WN=[
  ["🏠","Walk around your house","Your furniture, pet and partner, a jukebox, and visits to friends' houses."],
  ["🪐","The Moon and Mars","Shuttles from the Cosmos landing pad."],
  ["🚕","A living town","Locals with names, taxis, police chases, storms, fog and rainbows."],
- ["😀","Emotes, photos and music","New buttons by the sound icon. Music is in Settings."],
+ ["😀","Emotes, photos and music","New buttons by the sound icon. Music plays everywhere; turn it off in Settings."],
  ["🌌","World 2: the Cosmos","Open the Stargate at the Airport (✦10). Build generators that make Radiant every minute, research upgrades, map the stars and feed the black hole."],
  ["🎨","Customize everything","Home → Look: shirt colour and style, pants, shoes, eyes, facial hair and 8 hairstyles. 30 new accessories, including things to hold."],
  ["🌌","Mega projects","At the Bank: buy a country, build a Dyson sphere, rewrite reality. Nine new homes up to a Multiverse Mansion."],
@@ -4438,7 +4438,7 @@ function openWardrobe(back){S.look=S.look||{sk:1,hr:0};let tab=WDTAB;
 let WDTAB="body";
 
 /* ================= settings (saved on this device) ================= */
-function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, petals and butterflies on the map",1],["music","Music","A soft soundtrack that changes in every place",0],["perf","Performance mode","Smoother on older phones: lower resolution, no blur, less confetti",0],["lowfx","Lighter confetti","Less confetti for older phones",0],["noshake","Screen shake","Shake on big moments",1],["nobuzz","Vibration","Haptics on taps and wins",1]];
+function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, petals and butterflies on the map",1],["nomusic","Music","A soft soundtrack that changes in every place",1],["perf","Performance mode","Smoother on older phones: lower resolution, no blur, less confetti",0],["lowfx","Lighter confetti","Less confetti for older phones",0],["noshake","Screen shake","Shake on big moments",1],["nobuzz","Vibration","Haptics on taps and wins",1]];
   const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Settings")}
     <div class="perks">${T.map(([k,n,d,inv])=>{const on=inv?!SET[k]:!!SET[k];return `<button class="perk nopic setrow" data-set="${k}"><span class="t">${n}</span><span class="d">${d}</span><span class="c tog${on?" on":""}"><i></i></span></button>`}).join("")}</div>
     <div class="sechead"><h3>Help</h3></div>
@@ -5165,7 +5165,7 @@ function housePlaces(){const o=SCN.owner,F=o?o.fu:(S.furn||{}),L=[],add=x=>{x.do
     if(F.piano)add({k:"piano",n:"Grand piano",verb:"Play the",sub:"Fans love it (every 5 min)",c:"#1b1d22",x:90,y:620,w:150,h:100,go:()=>{if(!coolOk("piano",300000))return;const f=Math.round(30+(S.fans||0)*.01);S.fans=(S.fans||0)+f;SFX.grail();confetti(60);banner("+"+fmtN(f)+" fans","u")}});
     if(F.aqua)add({k:"aqua",n:"Aquarium",verb:"Look at the",sub:"Your fish album",c:"#2fa6d9",x:470,y:620,w:150,h:70,go:()=>fishAlbum(closeRoom)});
     if(F.shelf)add({k:"shelf",n:"Trophy shelf",sub:"Your collection",c:"#cf9a14",x:660,y:190,w:110,h:80,go:()=>openCollection(closeRoom)});
-    add({k:"jbox",n:"Jukebox",sub:SET.music?"Music on · pick a track":"Turn the music on",c:"#ff4fd8",x:370,y:205,w:56,h:80,go:()=>openJukebox(closeRoom)});
+    add({k:"jbox",n:"Jukebox",sub:!SET.nomusic?"Music on · pick a track":"Turn the music on",c:"#ff4fd8",x:370,y:205,w:56,h:80,go:()=>openJukebox(closeRoom)});
     if(S.pet)add({k:"pet",n:"Pet bed",verb:"Visit the",sub:"Pets",c:"#ff8fa3",x:640,y:640,w:80,h:50,go:()=>openPets(closeRoom)})}
   else add({k:"bell",n:"Guestbook",verb:"Sign the",sub:"Ring the doorbell or leave a gift",c:"#2fd28a",x:480,y:600,w:140,h:70,go:()=>{room="house";$("room").hidden=false;visitHouse(o.p,closeRoom)}});
   add({k:"door",n:"Front door",verb:"Leave by the",sub:o?"Back to the street":"Back outside",c:"#7a5a3a",x:500,y:770,w:100,h:40,list:0,go:()=>leaveScene()});
@@ -5414,7 +5414,7 @@ let MUS={on:false,k:null,step:0,next:0,iv:null,g:null};
 const midiF=m=>440*Math.pow(2,(m-69)/12);
 function musTrack(){if(SCN){if(SCN.kind==="city")return TRACKS[SCN.k]?SCN.k:"town";if(SCN.kind==="isle")return"isle";if(SCN.kind==="space")return"space";if(SCN.kind==="house")return S.jbox&&TRACKS[S.jbox]?S.jbox:"home"}return MPW?"online":"town"}
 function mnote(m,t,d,w,v){if(!ac||!MUS.g)return;const o=ac.createOscillator(),g=ac.createGain();o.type=w;o.frequency.setValueAtTime(midiF(m),t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(MUS.g);o.start(t);o.stop(t+d+.05)}
-function musTick(){const want=SET.music&&!muted&&ac&&ac.state==="running"&&!document.hidden;if(!want){if(MUS.g){try{MUS.g.disconnect()}catch(e){}MUS.g=null}return}
+function musTick(){const want=!SET.nomusic&&!muted&&ac&&ac.state==="running"&&!document.hidden;if(!want){if(MUS.g){try{MUS.g.disconnect()}catch(e){}MUS.g=null}return}
   if(!MUS.g){MUS.g=ac.createGain();MUS.g.gain.value=.5;MUS.g.connect(ac.destination);MUS.next=ac.currentTime+.1}
   const k=musTrack();if(k!==MUS.k){MUS.k=k;MUS.step=0}const T=TRACKS[k],dt=60/T.bpm/2;
   while(MUS.next<ac.currentTime+.25){const st=MUS.step,bar=Math.floor(st/8)%T.ch.length,ch=T.ch[bar],t=MUS.next,b=st%8;
@@ -5425,11 +5425,11 @@ function musTick(){const want=SET.music&&!muted&&ac&&ac.state==="running"&&!docu
     MUS.step++;MUS.next+=dt}}
 setInterval(()=>{try{musTick()}catch(e){}},100);
 function openJukebox(back){room="jbox";$("room").hidden=false;const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Jukebox")}
-  <button class="bigbtn${SET.music?" alt":""}" id="jbOn">${SET.music?"Music is on":"Turn music on"}<small>${SET.music?"Tap to turn it off":"A soft soundtrack that changes in every place"}</small></button>
+  <button class="bigbtn${!SET.nomusic?" alt":""}" id="jbOn">${!SET.nomusic?"Music is on":"Turn music on"}<small>${!SET.nomusic?"Tap to turn it off":"A soft soundtrack that changes in every place"}</small></button>
   <div class="sechead"><h3>Play at home</h3></div><div class="perks">${Object.entries(TRACKS).map(([k,t])=>`<button class="perk nopic${(S.jbox||"home")===k?" bought":""}" data-jb="${k}"><span class="t">${(S.jbox||"home")===k?"♪ ":""}${t.n}</span><span class="d">${t.bpm} bpm</span><span class="c">${(S.jbox||"home")===k?"Playing":"Play"}</span></button>`).join("")}</div>
   <p class="fine">Outside, every city, island and world has its own track.</p></div>`;
-  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("jbOn").onclick=()=>{SET.music=!SET.music;saveSet();audioOn();draw()};
-  $("room").querySelectorAll("[data-jb]").forEach(b=>b.onclick=()=>{S.jbox=b.dataset.jb;dirty=true;SET.music=true;saveSet();audioOn();MUS.k=null;draw()})};draw()}
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("jbOn").onclick=()=>{SET.nomusic=!SET.nomusic;saveSet();audioOn();draw()};
+  $("room").querySelectorAll("[data-jb]").forEach(b=>b.onclick=()=>{S.jbox=b.dataset.jb;dirty=true;SET.nomusic=false;saveSet();audioOn();MUS.k=null;draw()})};draw()}
 /* ================= what's next: everything left to unlock ================= */
 function openNext(back){room="next";$("room").hidden=false;const L=repLevel(),nw=netWorth(),rows=[];
   const add=(ic,t,d,p)=>rows.push({ic,t,d,p});
