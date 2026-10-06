@@ -274,6 +274,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .place{flex:none;display:flex;align-items:center;gap:6px;font-size:.74rem;font-weight:700;padding:8px 11px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);white-space:nowrap}
 .place i{width:9px;height:9px;border-radius:50%;flex:none}
 .place.here{box-shadow:inset 0 0 0 2px var(--ink),var(--shadow)}
+.mphead h3{font-size:1.15rem;letter-spacing:.06em}.refbtn{border:0;border-radius:99px;padding:7px 13px;font-weight:800;font-size:.78rem;background:var(--ink);color:var(--bg);cursor:pointer}
 .scnbar{display:flex;align-items:center;justify-content:space-between;gap:8px}.scnbar b{font-family:var(--display);font-weight:800;font-size:.9rem;padding:7px 12px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .enter{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--ink);color:var(--bg);font-family:var(--display);font-variation-settings:"wdth" 118;font-weight:800;font-size:1.05rem;text-transform:uppercase;padding:15px 18px;border-radius:14px;animation:up .25s cubic-bezier(.2,.8,.2,1)}
 .enter small{display:block;font-family:var(--body);font-variation-settings:normal;font-weight:500;font-size:.72rem;text-transform:none;opacity:.7;margin-top:2px}
@@ -1372,6 +1373,8 @@ function drawWorld(){
   drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawSeasonDecor();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
+  {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+getComputedStyle(root).getPropertyValue("--display");ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
+    ctx.fillStyle="rgba(10,14,22,.88)";rr(x-w/2,y-19,w,38,19);ctx.fill();ctx.beginPath();ctx.moveTo(x-8,y+18);ctx.lineTo(x+8,y+18);ctx.lineTo(x,y+27);ctx.fill();ctx.fillStyle="#2fd28a";ctx.beginPath();ctx.arc(x-w/2+17,y,4.5+Math.sin(wt*4),0,7);ctx.fill();ctx.fillStyle="#ffffff";ctx.fillText(lab,x+7,y+1)}
   drawFinds();
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();drawHol();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
@@ -3168,7 +3171,7 @@ function cloudLogout(){cloudUpload().finally(()=>{setTimeout(()=>{store.del(CLOU
 const MP_BROKERS=["wss://broker.hivemq.com:8884/mqtt","wss://broker.emqx.io:8084/mqtt","wss://test.mosquitto.org:8081/mqtt"];
 const MP_ID=(()=>{let id=store.get("fliprush_mpid");if(!id){id=Math.random().toString(36).slice(2,10);store.set("fliprush_mpid",id)}return id})();
 const EMOTES=["👋","💪","🔥","😂","💰","GG"];
-let MP=null,myBub=null;
+let MP=null,myBub=null,MP_PUB_NEXT=false;
 const mpT=c=>"fliprush/v1/"+c;
 const mpName=()=>ACC?ACC.user:"Player";
 function loadMqtt(){if(window.mqtt)return Promise.resolve();return new Promise((res,rej)=>{const go=l=>{if(!l.length)return rej();const sc=document.createElement("script");sc.src=l[0];sc.onload=()=>window.mqtt?res():go(l.slice(1));sc.onerror=()=>go(l.slice(1));document.head.appendChild(sc)};go(["vendor/mqtt.min.js","https://unpkg.com/mqtt@5/dist/mqtt.min.js"])})}
@@ -3182,7 +3185,7 @@ async function mpJoin(code,quiet){
     const cl=await new Promise(res=>{let c;try{c=mqtt.connect(url,{clientId:"fr_"+MP_ID+"_"+Math.random().toString(36).slice(2,6),clean:true,connectTimeout:6000,reconnectPeriod:3000,keepalive:30,will:{topic:mpT(code)+"/bye/"+MP_ID,payload:"1",qos:0,retain:false}})}catch(e){return res(null)}
       const t=setTimeout(()=>{try{c.end(true)}catch(e){}res(null)},7000);c.once("connect",()=>{clearTimeout(t);res(c)});c.on("error",()=>{})});
     if(!cl)continue;
-    MP={code,cl,peers:{},chat:[],sendT:0,beatT:0,last:"",chatT:0};S.mpRoom=code;dirty=true;
+    const pub=MP_PUB_NEXT||S.mpPub===code;MP_PUB_NEXT=false;MP={code,cl,peers:{},chat:[],sendT:0,beatT:0,last:"",chatT:0,pub,pubT:2};S.mpRoom=code;if(pub)S.mpPub=code;dirty=true;
     const sub=()=>{cl.subscribe(mpT(code)+"/#",{qos:0});MP.last="";};sub();cl.on("connect",sub);
     cl.on("message",(topic,buf)=>mpOnMsg(topic,buf));
     mpSend("c",{n:mpName(),t:"joined the room",sys:1});
@@ -3190,7 +3193,7 @@ async function mpJoin(code,quiet){
   }
   mpStatus("Couldn't reach the multiplayer server. Try again in a moment.");
 }
-function mpLeave(silent){if(!MP)return;try{mpSend("bye",1);MP.cl.end(true)}catch(e){}MP=null;if(!silent){S.mpRoom=null;dirty=true;banner("Left the room","r")}renderMpChip()}
+function mpLeave(silent){if(!MP)return;if(MP.pub&&!Object.keys(MP.peers).length)pubPut(MP.code,null);try{mpSend("bye",1);MP.cl.end(true)}catch(e){}MP=null;if(!silent){S.mpRoom=null;dirty=true;banner("Left the room","r")}renderMpChip()}
 function mpSend(kind,obj,to){if(!MP||!MP.cl||!MP.cl.connected)return;try{MP.cl.publish(mpT(MP.code)+"/"+kind+"/"+(to||MP_ID),typeof obj==="string"?obj:JSON.stringify(obj),{qos:0})}catch(e){}}
 function mpOnMsg(topic,buf){
   if(!MP)return;const parts=topic.split("/"),kind=parts[3],id=parts[4];let d=null;try{d=JSON.parse(buf.toString())}catch(e){}
@@ -3206,13 +3209,13 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild();return{n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
+function mpState(){const b=myBuild();return{pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:OUTFITS[S.skin||0][1],k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||"",pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0}}
 function mpTick(dt){
   if(!MP)return;MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.25;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=2;mpSend("p",j)}}
   const now=Date.now();let gone=false;for(const id in MP.peers){const p=MP.peers[id];if(now-p.seen>10000){delete MP.peers[id];gone=true}else{p.dx+=(p.x-p.dx)*Math.min(1,dt*8);p.dy+=(p.y-p.dy)*Math.min(1,dt*8);if(p.i){if(p.ix==null||p.iw!==p.w){p.ix=p.i[0];p.iy=p.i[1];p.iw=p.w}p.ix+=(p.i[0]-p.ix)*Math.min(1,dt*8);p.iy+=(p.i[1]-p.iy)*Math.min(1,dt*8)}else p.ix=null;p.ph+=dt;if(p.bubT>0)p.bubT-=dt}}
   if(gone){renderMpChip();mpRefresh()}
-  mpRoomTick()
+  pubTick(dt);mpRoomTick()
 }
 function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
 function bubble(x,y,txt,col){ctx.font="700 12px "+getComputedStyle(root).getPropertyValue("--body");ctx.textAlign="center";ctx.textBaseline="middle";const w=Math.min(220,ctx.measureText(txt).width+18);ctx.fillStyle=col||"rgba(255,255,255,.96)";rr(x-w/2,y-13,w,26,11);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y+12);ctx.lineTo(x+5,y+12);ctx.lineTo(x,y+18);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(txt.length>34?txt.slice(0,33)+"…":txt,x,y+1)}
@@ -3231,12 +3234,13 @@ const PLACE_N=k=>k?((PL[k]&&PL[k].n)||k[0].toUpperCase()+k.slice(1)):"In town";
 function mpUI(keep){
   const sh=$("mpSheet");sh.hidden=false;const draft=keep&&$("mpIn")?$("mpIn").value:"";
   if(!MP){sh.innerHTML=`<div class="pshead"><div><small>MULTIPLAYER</small><b>Play with friends</b></div><button class="psx" id="mpX">✕</button></div>
-      <button class="cta" id="mpNew"><span>Create a room</span>${ARROW}</button>
+      <button class="cta" id="mpNew"><span>Create a private room</span>${ARROW}</button>
+      <button class="cta ghost2" id="mpNewPub" style="margin-top:8px"><span>Create a public town</span>${ARROW}</button>
       <div class="mpjoin"><input id="mpCodeIn" maxlength="6" placeholder="Room code" autocapitalize="characters" autocomplete="off"><button class="cta" id="mpJoinB">Join</button></div>
       <p class="accmsg" id="mpMsg"></p><p class="fine">Share the room code with friends. Everyone keeps their own save, money and progress.</p>`;
-    $("mpX").onclick=()=>{sh.hidden=true};$("mpNew").onclick=()=>mpJoin(mpCode());$("mpJoinB").onclick=()=>mpJoin($("mpCodeIn").value);$("mpCodeIn").onkeydown=e=>{if(e.key==="Enter")mpJoin($("mpCodeIn").value)};return}
+    $("mpX").onclick=()=>{sh.hidden=true};$("mpNew").onclick=()=>mpJoin(mpCode());$("mpNewPub").onclick=()=>{MP_PUB_NEXT=true;mpJoin(mpCode())};$("mpJoinB").onclick=()=>mpJoin($("mpCodeIn").value);$("mpCodeIn").onkeydown=e=>{if(e.key==="Enter")mpJoin($("mpCodeIn").value)};return}
   const peers=Object.entries(MP.peers),gift=Math.max(0,Math.round(S.cash*.05));
-  sh.innerHTML=`<div class="pshead"><div><small>ROOM · ${peers.length+1} ONLINE</small><b>${MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
+  sh.innerHTML=`<div class="pshead"><div><small>${MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
     <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
       ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span><button class="mpgift" data-gift="${id}" ${gift<1?"disabled":""}>Gift ${fmt(gift)}</button></div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
     ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
@@ -4631,6 +4635,20 @@ function renderSceneBottom(){const el=$("bottom"),near=sceneNear(),key="scn|"+SC
   h+=`<div class="places">${SCN.places.filter(p=>p.list!==0&&p.k!=="boat").map(p=>`<button class="place${near===p?" here":""}" data-sgo="${p.k}"><i style="background:${p.c}"></i>${esc(p.short||p.n)}</button>`).join("")}</div>`;
   el.innerHTML=h;const eb=$("enterBtn");if(eb)eb.onclick=()=>{audioOn();near.go()};
   el.querySelectorAll("[data-sgo]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.sgo;if(k==="__leave")return leaveScene();const p=SCN.places.find(x=>x.k===k);if(!p)return;if(sceneNear()===p)p.go();else sceneWalkTo(p)})}
+/* ================= public towns: listed at the Harbor so anyone can join ================= */
+// The oldest player in a public room keeps a retained note on the server; the Harbor reads them all.
+const PUBT="fliprush/v1/pub/";let PUBL=null,PUBT_AT=0;
+function pubPut(code,obj){const cls=ACC&&ACC.cls;if(!cls||!cls.length||!code)return;try{cloudPut(cls,PUBT+code,obj?JSON.stringify(obj):"")}catch(e){}}
+function pubTick(dt){if(!MP)return;if(!MP.pub&&Object.values(MP.peers).some(p=>p.pu)){MP.pub=true;S.mpPub=MP.code}if(!MP.pub)return;MP.pubT-=dt;const cnt=Object.keys(MP.peers).length;if(MP.pubT>0&&cnt===MP.pubN)return;MP.pubT=20;MP.pubN=cnt;
+  const ids=[MP_ID].concat(Object.keys(MP.peers)).sort();if(ids[0]!==MP_ID)return;const P=Object.values(MP.peers);
+  pubPut(MP.code,{c:MP.code,n:mpName(),p:P.length+1,lv:Math.max(repLevel(),...P.map(p=>p.lv||0)),who:[mpName()].concat(P.map(p=>String(p.n||"?").slice(0,14))).slice(0,4),t:Date.now()})}
+function pubFetch(){return new Promise(async res=>{let cls=ACC&&ACC.cls&&ACC.cls.length?ACC.cls:null,own=false;if(!cls){try{cls=await cloudConnect();own=true}catch(e){cls=[]}}if(!cls.length)return res(null);
+  const seen={};const h=(tp,buf)=>{if(!tp.startsWith(PUBT))return;const code=tp.slice(PUBT.length);let d=null;try{d=JSON.parse(buf.toString())}catch(e){}if(!d||typeof d.c!=="string"||typeof d.t!=="number")return;
+    if(Date.now()-d.t>6*3600e3){cloudPut(cls,tp,"");return}if(!seen[code]||seen[code].t<d.t)seen[code]=d};
+  cls.forEach(c=>{c.on("message",h);c.subscribe(PUBT+"+",{qos:0})});setTimeout(()=>{cls.forEach(c=>{c.removeListener("message",h);try{c.unsubscribe(PUBT+"+")}catch(e){}if(own)try{c.end(true)}catch(e){}});
+    res(Object.values(seen).filter(d=>Math.abs(Date.now()-d.t)<90000&&/^[A-Z0-9]{4,6}$/.test(d.c)).sort((a,b)=>(b.p||0)-(a.p||0)||b.t-a.t))},2600)})}
+function pubRows(bb){if(PUBL==null)return `<p class="fine">Looking for public towns…</p>`;if(!PUBL.length)return `<p class="fine">No public towns open right now. Open your own and others can join!</p>`;
+  return PUBL.slice(0,30).map(d=>{const here=MP&&MP.code===d.c;return `<button class="perk nopic" data-pub="${esc(d.c)}" ${!bb&&!MPW?"disabled":""}><span class="t">${esc(String(d.n||"?").slice(0,16))}'s town${here?' <em class="beat">YOU\'RE HERE</em>':""}</span><span class="d">${Math.max(1,Math.min(99,d.p|0))} online · up to Lv ${Math.max(0,d.lv|0)}${Array.isArray(d.who)?" · "+esc(d.who.slice(0,4).map(x=>String(x).slice(0,12)).join(", ")):""}</span><span class="c">${here?"Here":!bb&&!MPW?"Needs a boat":"Join"}</span></button>`}).join("")}
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const TUT=[
  {t:"Walk to the <b>Market</b>. Tap the map to walk, or tap <b>Market</b> at the bottom.",go:"market",ok:()=>room==="market"||S.stats.flips>0},
@@ -4759,8 +4777,12 @@ function openHarbor(){
   const draw=()=>{S.boats=S.boats||{};S.isl=S.isl||{};const L=repLevel(),bb=bestBoat(),peers=MP?Object.values(MP.peers):[];
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"Harbor · Online":"Harbor")}<div class="art">${harborArt()}</div>
       <div class="note">${MPW?`You're in the <b>Online Town</b>. Visit friends' islands below, or sail home.`:`Sail to the <b>Online Town</b> to play with friends, or visit your islands. ${L<10?`You need level 10 for a raft (you're level ${L}).`:""}`}</div>
-      <button class="bigbtn alt" id="hFish">Fish off the pier<small>3 energy a cast · ${Object.keys(S.fish||{}).length}/${FISH.length} species found</small></button>
+      <div class="sechead mphead"><h3>Multiplayer</h3><button class="refbtn" id="hRef">↻ Refresh</button></div>
       <button class="bigbtn" id="hSail" ${!bb?"disabled":""}>${MPW?"Sail home":"Sail to the Online Town"}<small>${bb?bb.n+" · "+bb.sec+"s":"Needs a boat"}</small></button>
+      <div class="sechead"><h3>Public towns</h3><span class="eyebrow" id="hPubN">${PUBL?PUBL.length+" open":"Looking…"}</span></div>
+      <div class="perks" id="hTowns">${pubRows(bb)}</div>
+      <button class="bigbtn alt" id="hPubNew" ${!bb&&!MPW?"disabled":""}>Open your own public town<small>Anyone can find it here and join</small></button>
+      <button class="bigbtn alt" id="hFish">Fish off the pier<small>3 energy a cast · ${Object.keys(S.fish||{}).length}/${FISH.length} species found</small></button>
       <div class="sechead"><h3>Boats</h3><span class="eyebrow">Faster boats, faster trips</span></div>
       <div class="perks">${BOATS.map(b=>{const own=hasBoat(b.k),lock=L<b.lv;return `<button class="perk nopic" data-boat="${b.k}" ${own||lock||S.cash<b.cost?"disabled":""}><span class="t">${b.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${lock?"Unlocks at level "+b.lv:b.d}</span><span class="c">${own?"Yours":b.cost?fmt(b.cost):"Free"}</span></button>`}).join("")}</div>
       <div class="sechead"><h3>Your islands</h3><span class="eyebrow">${MPW?"Buy islands in your home town":"Earn every minute"}</span></div>
@@ -4769,6 +4791,10 @@ function openHarbor(){
       </div>`;
     $("leaveBtn").onclick=closeRoom;
     $("hFish").onclick=e=>{if(!spend(3,e.currentTarget))return;room="island";islFish("harbor",()=>{FI=null;room="harbor";draw()})};
+    const refresh=()=>{const e=$("hPubN");if(e)e.textContent="Looking…";pubFetch().then(L=>{PUBL=L||[];PUBT_AT=Date.now();if(room!=="harbor")return;const t=$("hTowns"),n=$("hPubN");if(t){t.innerHTML=pubRows(bestBoat());bindPub()}if(n)n.textContent=PUBL.length+" open"})};
+    const go=(code,pub)=>{if(MPW){MP_PUB_NEXT=pub;mpJoin(code);closeRoom();return}const b=bestBoat();if(!b)return;S.mpRoom=code;MP_PUB_NEXT=pub;closeRoom();sail("Sailing to the Online Town",b.sec,()=>enterMPW())};
+    const bindPub=()=>$("room").querySelectorAll("[data-pub]").forEach(x=>x.onclick=()=>{if(MP&&MP.code===x.dataset.pub)return banner("You're already in this town","a");go(x.dataset.pub,true)});
+    $("hRef").onclick=()=>{SFX.tick(.5);refresh()};$("hPubNew").onclick=()=>go(mpCode(),true);bindPub();if(!PUBL||Date.now()-PUBT_AT>30000)refresh();
     $("hSail").onclick=()=>{const b=bestBoat();if(!b)return;closeRoom();sail(MPW?"Sailing home":"Sailing to the Online Town",b.sec,()=>MPW?leaveMPW():enterMPW())};
     $("room").querySelectorAll("[data-boat]").forEach(x=>x.onclick=()=>{const b=BOATS.find(y=>y.k===x.dataset.boat);if(hasBoat(b.k)||repLevel()<b.lv||S.cash<b.cost)return;S.cash-=b.cost;S.boats[b.k]=1;dirty=true;SFX.rebirth();confetti(90);banner(b.n+" ready","g");draw();updMini()});
     $("room").querySelectorAll("[data-isl]").forEach(x=>x.onclick=()=>{const i=ISLANDS.find(y=>y.k===x.dataset.isl);
