@@ -281,6 +281,19 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .perk.prestige{background:linear-gradient(135deg,#15161c,#2b2410);color:#f4e7c4}.perk.prestige .d{color:#cdbb8e}.perk.prestige .c{background:#cf9a14;color:#15161c}
 .seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.seg3 button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:9px 6px;font:800 .85rem var(--body);display:flex;flex-direction:column;gap:2px;cursor:pointer}.seg3 button small{font:600 .66rem var(--mono);color:var(--muted)}.seg3 button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.seg3 button.on small{color:inherit;opacity:.75}
 .flyov{background:linear-gradient(#7fc4f0,#d9efff)}
+.cashchip .mult{display:flex;flex-direction:column;gap:4px;margin-top:3px;font-family:var(--body);font-size:.7rem;color:var(--muted)}
+.hrow{display:flex;align-items:baseline;gap:8px;white-space:nowrap;min-width:0}
+.hrow .tierb{background:none;padding:0;margin:0;color:var(--tc);font-family:var(--display);font-variation-settings:"wdth" 112;font-weight:800;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis}
+.hlv{font-family:var(--display);font-weight:800;font-size:.7rem;letter-spacing:.06em;color:var(--ink);opacity:.75}
+.hmul{margin-left:auto;font-family:var(--display);font-variation-settings:"wdth" 112;font-weight:900;font-size:.95rem;color:var(--gold);letter-spacing:-.01em}
+.hlvbar{display:block;height:3px;border-radius:3px;background:var(--sunk);overflow:hidden}.hlvbar i{display:block;height:100%;background:var(--tc,var(--gold));background:var(--gold)}
+.hypebar{display:flex;align-items:center;gap:7px;height:auto;margin-top:6px;background:none;overflow:visible}
+.hypebar>b{font:800 .58rem var(--display);letter-spacing:.12em;color:var(--muted);padding:0;width:auto}
+.hypebar>em{font:700 .62rem var(--mono);font-style:normal;color:var(--muted);margin-left:auto}
+.hseg{display:flex;gap:3px;flex:1}.hseg i{flex:1;height:6px;border-radius:2px;background:var(--sunk)}.hseg i.f{background:#ff8a3d}
+.hypebar.on{box-shadow:none;animation:none}.hypebar.on .hseg i{background:#ff5a2b;animation:hseg .5s ease-in-out infinite alternate}.hypebar.on>b,.hypebar.on>em{color:#ff7a3d}
+@keyframes hseg{to{background:#ffcc33}}
+
 .crtrack{position:relative;display:flex;flex-direction:column;gap:6px;padding:10px 14px 10px 10px;margin:12px 0;border-radius:14px;background:repeating-linear-gradient(90deg,#2b2f3a 0 40px,#30343f 40px 80px)}
 .crlane{position:relative;height:38px;border-bottom:2px dashed rgba(255,255,255,.18)}
 .crn{position:absolute;left:4px;top:-1px;font:700 .62rem var(--mono);color:rgba(255,255,255,.7);z-index:1}
@@ -291,10 +304,6 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .crfin{position:absolute;right:6px;top:6px;bottom:6px;width:8px;background:repeating-linear-gradient(0deg,#fff 0 8px,#141414 8px 16px)}
 .crask{padding:12px;border-radius:14px;background:color-mix(in oklab,var(--accent) 14%,var(--surface));margin-bottom:10px}
 
-.hypebar{position:relative;margin-top:6px;height:15px;border-radius:8px;background:var(--sunk);overflow:hidden}
-.hypebar>i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#ff7a3d,#ffcc33);border-radius:8px;transition:width .3s}
-.hypebar>b{position:relative;display:block;font:800 9px/15px var(--mono);letter-spacing:.04em;text-transform:uppercase;padding-left:7px;color:var(--ink)}
-.hypebar.on{box-shadow:0 0 12px #ffb000;animation:hypeon .5s ease-in-out infinite alternate}.hypebar.on>i{background:linear-gradient(90deg,#e2364a,#ff7a3d,#ffcc33)}.hypebar.on>b{color:#1b1200}
 @keyframes hypeon{to{box-shadow:0 0 22px #ff7a3d}}
 body.frz::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;box-shadow:inset 0 0 70px 10px rgba(255,170,0,.55);animation:frzglow .6s ease-in-out infinite alternate}
 @keyframes frzglow{to{box-shadow:inset 0 0 110px 22px rgba(255,90,40,.6)}}
@@ -769,7 +778,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 <canvas id="world" aria-label="Town map. Tap to walk."></canvas>
 <div class="hud" id="hud">
   <div class="hudtop">
-    <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span><div class="hypebar" id="hype"><i></i><b>Hype</b></div></div>
+    <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span><div class="hypebar" id="hype"><b>HYPE</b><span class="hseg"></span><em></em></div></div>
     <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span></div>
     <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button></div>
   </div>
@@ -1522,7 +1531,7 @@ let hudT=0;
 function renderHud(){
   {const a3=inW3(),r=inW2(),lab=a3?"Amber ◈":r?"Radiant ✦":"Cash",cl=$("cashLab");if(cl&&cl.textContent!==lab){cl.textContent=lab;$("cash").classList.toggle("rad",r);$("cash").classList.toggle("amb",a3);shownCash=null;$("cash").textContent=fmt(S.cash);if(r&&!S.flags.radSeen){S.flags.radSeen=1;dirty=true;rayText("In the Cosmos your money is shown in Radiant: ✦1 = $1 quadrillion. Back on Earth it shows in dollars.")}}}
   if(shownCash==null)$("cash").textContent=fmt(S.cash);
-  $("multTxt").innerHTML=`<i class="tierb" style="--tc:${TI().c}">${TI().i} ${TI().n}</i> Lv ${repLevel()} <i class="lvbar"><i style="width:${Math.round(lvlFrac()*100)}%"></i></i> ×${mult().toFixed(2)} money`;
+  {const mu=mult(),mt=mu<10?mu.toFixed(2):mu<100?mu.toFixed(1):mu<1e4?Math.round(mu):fmtN(mu);$("multTxt").innerHTML=`<span class="hrow"><b class="tierb" style="--tc:${TI().c}">${TI().n}</b><span class="hlv">LV ${repLevel()}</span><span class="hmul" title="Money multiplier">×${mt}</span></span><i class="hlvbar"><i style="width:${Math.round(lvlFrac()*100)}%"></i></i>`}
   const h=Math.floor(S.clock),m=Math.floor((S.clock%1)*60/15)*15;$("timeTxt").textContent=`${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
   $("dayTxt").textContent="Day "+S.day+" · "+season().n;
   const me=maxEnergy();$("enTxt").textContent=`${Math.floor(S.energy)}/${me}`;
@@ -5887,7 +5896,7 @@ function npcNext(n,gen){for(let t=0;t<16;t++){let p;if(t%2){const a=Math.random(
 const HYPE_MAX=10;let FRZ=0,hypeR=0;
 function hype(n){if(!S||FRZ>0)return;S.hype=Math.min(HYPE_MAX,(S.hype||0)+n);S.hypeT=0;dirty=true;if(S.hype>=HYPE_MAX)frenzyStart();renderHype()}
 function frenzyStart(){FRZ=30;S.hype=0;S.stats.frenzies=(S.stats.frenzies||0)+1;dirty=true;document.body.classList.add("frz");SFX.rebirth();flash("#ffcc33",.5);confetti(220,null,null,["#ffcc33","#ff7a3d","#e2364a","#fff"]);shake(8,.5);buzz([30,40,30,40]);banner("FRENZY · double money, free energy","g")}
-function renderHype(){const h=$("hype"),f=FRZ>0,k=f?FRZ/30:(S.hype||0)/HYPE_MAX;if(h){h.classList.toggle("on",f);h.firstChild.style.width=Math.round(k*100)+"%";h.lastChild.textContent=f?"FRENZY ×2 · "+Math.ceil(FRZ)+"s":"Hype "+(S.hype||0)+"/"+HYPE_MAX}
+function renderHype(){const h=$("hype"),f=FRZ>0,k=f?FRZ/30:(S.hype||0)/HYPE_MAX;if(h){h.classList.toggle("on",f);const sg=h.querySelector(".hseg"),n=Math.round(k*10),key=n+"|"+f;if(sg&&sg.dataset.k!==key){sg.dataset.k=key;sg.innerHTML=Array.from({length:10},(_,i)=>`<i class="${i<n?"f":""}"></i>`).join("")}h.firstChild.textContent=f?"FRENZY":"HYPE";h.lastChild.textContent=f?"×2 · "+Math.ceil(FRZ)+"s":(S.hype||0)+"/"+HYPE_MAX}
   const m=$("mHype");if(m)m.textContent=f?"FRENZY "+Math.ceil(FRZ)+"s":(S.hype||0)?"HYPE "+(S.hype||0)+"/"+HYPE_MAX:""}
 function funTick(dt){chTick(dt);musUnlockTick(dt);
   if(FRZ>0){FRZ-=dt;if(M)for(let i=0;i<3;i++)M.restock[i]=Math.min(M.restock[i],.12);if(FRZ<=0){FRZ=0;document.body.classList.remove("frz");banner("Frenzy over · build hype again","a")}}
