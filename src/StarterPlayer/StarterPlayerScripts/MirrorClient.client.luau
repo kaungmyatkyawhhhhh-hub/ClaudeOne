@@ -196,23 +196,23 @@ local function startReflection(mirrorModel, glass)
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
 		PixelsPerStud = PPS,
 		LightInfluence = 0,
-		Brightness = 1.3,
+		Brightness = 2.2,
 		ClipsDescendants = true,
 		Enabled = false,
 		ResetOnSpawn = false,
 		Adornee = glass,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
-	local clip = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(46, 38, 33), ClipsDescendants = true, Parent = surface })
+	local clip = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(78, 66, 58), ClipsDescendants = true, Parent = surface })
 	local viewport = New("ViewportFrame", {
 		BackgroundTransparency = 1,
-		Ambient = Color3.fromRGB(170, 150, 130),
-		LightColor = Color3.fromRGB(255, 226, 190),
-		LightDirection = Vector3.new(-0.3, -1, 0.4),
+		Ambient = Color3.fromRGB(205, 190, 175),
+		LightColor = Color3.fromRGB(255, 238, 210),
+		LightDirection = Vector3.new(-0.35, -0.8, 0.55), -- a soft key light from above and in front, so faces and chests are lit
 		Parent = clip,
 	})
 	-- a faint cool sheen on top so it reads as glass, not a screen
-	New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(220, 235, 245), BackgroundTransparency = 0.92, ZIndex = 2, Parent = clip })
+	New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(235, 245, 255), BackgroundTransparency = 0.94, ZIndex = 2, Parent = clip })
 	local world = New("WorldModel", { Parent = viewport })
 	local camera = New("Camera", { Parent = viewport })
 	viewport.CurrentCamera = camera
