@@ -289,7 +289,7 @@ function genBodyParts(which) {
       let d = ell(ax, y, z, 0, 5.8, -.08, .64 * P.cw, .78, .45 * P.dp);                       // ribcage
       { const far = min(d, ell(ax, y, z, 0, 4.4, -.02, .62, .75, .45), cone(ax, y, z, 0, 6.2, 0, 0, 7.06, 0, .34, .27), ell(ax, y, z, .6, 6.4, 0, .5, .4, .4)); if (far > .4) return far - .3; }
       d = smin(d, ell(ax, y, z, 0, 4.62, 0, .5 * P.waist, .6, .35 * P.dp), .3);                // waist
-      d = smin(d, ell(ax, y, z, 0, 4.14, -.03, .64 * Math.max(P.waist, .95), .42, .41), .26);  // pelvis
+      d = smin(d, ell(ax, y, z, 0, 4.18, -.03, .55 * Math.min(Math.max(P.waist, .9), 1.02), .4, .4), .24);  // pelvis, narrow for the V-taper
       d = smin(d, ell(ax, y, z, 0, 4.98, .05, .42 * P.waist, .76, .29 * P.dp), .2);            // abdominal wall
       // lats: two fans from the armpit down to the waist (V-taper)
       d = smin(d, seg(ax, y, z, [.66 * P.lat, 6.12, -.12], [.42, 4.95, -.16], .2 * P.lat, .07), .1);
@@ -299,22 +299,22 @@ function genBodyParts(which) {
       d = smin(d, ell(ax, y, z, .3, 6.6, -.16, .36 * P.trap, .26 * P.trap, .22 * P.trap), .2);
       d = smin(d, cone(ax, y, z, 0, 6.2, -.03, 0, 7.06, .04, .33 * P.neck, .26 * P.neck), .2);  // neck
       // pecs: a flat plate plus fibres fanning from sternum and collarbone to the armpit (striations)
-      d = smin(d, ell(ax, y, z, .34 * P.cw, 6.08, zc - .02, .44 * P.ch, .3, .14 * P.ch), .1);
+      d = smin(d, ell(ax, y, z, .36 * P.cw, 6.1, zc, .46 * P.ch, .34, .21 * P.ch), .1);
       const ins = [.76 * P.cw, 6.3, zc - .02];
       for (let k = 0; k < 7; k++) {
         const s = k < 2 ? [.12 + k * .2, 6.5, zc - .02] : [.035, 6.36 - (k - 2) * .13, zc + .02];
-        d = smin(d, seg(ax, y, z, s, [ins[0], ins[1] - k * .025, ins[2]], .085 * P.ch, .06 * P.ch), .022);
+        d = smin(d, seg(ax, y, z, [s[0], s[1], s[2] + .05 * P.ch], [ins[0], ins[1] - k * .025, ins[2]], .11 * P.ch, .07 * P.ch), .022);
       }
-      d = smax(d, -seg(ax, y, z, [.02, 5.74, zc + .14 * P.ch], [.7 * P.cw, 5.98, zc + .02], .03, .02), .02);  // crisp lower pec edge, rising outward
-      d = smax(d, -seg(ax, y, z, [0, 6.42, zc + .16], [0, 5.74, zc + .18], .022, .022), .02);              // sternum split
+      d = smax(d, -seg(ax, y, z, [.02, 5.72, zc + .2 * P.ch], [.72 * P.cw, 5.96, zc + .04], .035, .02), .02);  // crisp lower pec edge, rising outward
+      d = smax(d, -seg(ax, y, z, [0, 6.42, zc + .2], [0, 5.74, zc + .24], .026, .026), .02);              // sternum split
       d = smax(d, -seg(ax, y, z, [.68 * P.cw, 6.48, zc + .04], [.82 * P.cw, 5.95, zc - .02], .03, .025), .03); // delt / pec tie-in
       // abs: squared blocks with deep cuts
       const zA = .29 * P.dp;
-      for (let i = 0; i < 4; i++) d = smin(d, rbox(ax, y, z, .135 * P.abs, 5.33 - i * .285, zA, .1 * P.abs, .105, .06, .045), .02);
+      for (let i = 0; i < 4; i++) d = smin(d, rbox(ax, y, z, .135 * P.abs, 5.33 - i * .285, zA - .01, .1 * P.abs, .105, .06, .055), .045);
       d = smax(d, -seg(ax, y, z, [0, 5.5, zA + .07], [0, 4.4, zA + .06], .02, .02), .015);
       // obliques + serratus + adonis V-lines
       d = smin(d, seg(ax, y, z, [.47 * P.waist, 5.25, .12], [.38 * P.waist, 4.45, .16], .14 * P.waist, .1), .06);
-      for (let i = 0; i < 3; i++) d = smin(d, seg(ax, y, z, [.62 * P.cw, 5.78 - i * .15, .12], [.48 * P.cw, 5.66 - i * .15, .24], .045, .035), .025);
+      for (let i = 0; i < 3; i++) d = smin(d, seg(ax, y, z, [.6 * P.cw, 5.76 - i * .14, .1], [.52 * P.cw, 5.69 - i * .14, .17], .04, .03), .05); // serratus
       d = smax(d, -seg(ax, y, z, [.38 * P.waist, 4.66, .3], [.12, 4.2, .38], .025, .02), .02);
       d = smin(d, ell(ax, y, z, .32, 4.12, -.3, .33, .36, .27), .15);                          // glutes
       d = smin(d, ell(ax, y, z, .98, 6.36, -.02, .27 * P.arm, .27 * P.arm, .27 * P.arm), .18);  // shoulder joint
@@ -323,9 +323,9 @@ function genBodyParts(which) {
   }
   const L3 = (A, B, t, o) => [A[0] + (B[0] - A[0]) * t + o[0], A[1] + (B[1] - A[1]) * t + o[1], A[2] + (B[2] - A[2]) * t + o[2]];
   const POSES = {
-    dbl:    { S: [1.08, 6.42, 0], E: [1.92, 6.55, .04], W: [1.95, 7.5, .05], F: [1.94, 7.72, .05], bo: [0, .12, .09], to: [0, -.13, -.07], fo: [.02, 0, .05], side: [0, 0, 1] },
-    most:   { S: [1.08, 6.42, 0], E: [1.34, 5.42, .44], W: [.52, 5.14, .74], F: [.27, 5.1, .8], bo: [-.08, .02, .13], to: [.1, 0, -.11], fo: [0, -.07, .02], side: [1, 0, 0] },
-    behind: { S: [1.08, 6.42, 0], E: [1.42, 7.62, -.02], W: [.62, 8.0, -.36], F: [.38, 8.02, -.44], bo: [-.07, 0, .13], to: [.09, 0, -.12], fo: [0, .05, -.05], side: [1, 0, 0] },
+    dbl:    { S: [1.08, 6.42, 0], E: [1.92, 6.55, .04], W: [1.95, 7.5, .05], F: [1.94, 7.72, .05], bo: [0, .12, .09], to: [0, -.13, -.07], fo: [.02, 0, .05], side: [0, 0, 1], palm: [-.55, 0, .85] },
+    most:   { S: [1.08, 6.42, 0], E: [1.34, 5.42, .44], W: [.52, 5.14, .74], F: [.27, 5.1, .8], bo: [-.08, .02, .13], to: [.1, 0, -.11], fo: [0, -.07, .02], side: [1, 0, 0], palm: [0, .3, -1] },
+    behind: { S: [1.08, 6.42, 0], E: [1.42, 7.62, -.02], W: [.62, 8.0, -.36], F: [.38, 8.02, -.44], bo: [-.07, 0, .13], to: [.09, 0, -.12], fo: [0, .05, -.05], side: [1, 0, 0], palm: [0, 0, 1] },
   };
   function armOf(P) {
     const J = POSES[P.pose], m = P.arm, S = J.S, E = J.E, W = J.W, F = J.F, sd = J.side;
@@ -334,6 +334,14 @@ function genBodyParts(which) {
     const bA1 = L3(S, E, .26, sideOff(J.bo, .06)), bA2 = L3(S, E, .74, sideOff(J.bo, .05)); // biceps long head
     const bB1 = L3(S, E, .3, sideOff(J.bo, -.06)), bB2 = L3(S, E, .76, sideOff(J.bo, -.05)); // biceps short head
     const t1 = L3(S, E, .2, J.to), t2 = L3(S, E, .72, J.to), f1 = L3(E, W, .05, J.fo), f2 = L3(E, W, .5, J.fo);
+    const bP = L3(S, E, .55, [J.bo[0] * 1.5, J.bo[1] * 1.5, J.bo[2] * 1.5]);
+    // hand frame: u along the fist, n toward the palm, v across the knuckles
+    const nrm = a => { const l = Math.hypot(...a); return a.map(c => c / l); }, dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const u = nrm([F[0] - W[0], F[1] - W[1], F[2] - W[2]]), pd = dot(J.palm, u), n = nrm(J.palm.map((c, k) => c - u[k] * pd));
+    const v = [u[1] * n[2] - u[2] * n[1], u[2] * n[0] - u[0] * n[2], u[0] * n[1] - u[1] * n[0]];
+    const at = (a, b, c) => [F[0] + u[0] * a + n[0] * b + v[0] * c, F[1] + u[1] * a + n[1] * b + v[1] * c, F[2] + u[2] * a + n[2] * b + v[2] * c];
+    const fingers = [-1.5, -.5, .5, 1.5].map(k => [at(.05, -.05, k * .058 * m), at(.08, .05, k * .055 * m), at(-.01, .1, k * .05 * m)]);
+    const thumb = [at(-.06, .06, 1.8 * .058 * m), at(.0, .12, 1.0 * .058 * m)];
     const br1 = L3(S, E, .82, [J.bo[0] * .3, J.bo[1] * .3 + .06, J.bo[2] * .3]), br2 = L3(E, W, .45, [J.fo[1] * .5, -J.fo[0], .06]);
     const f = (x, y, z) => {
       const far = min(seg(x, y, z, S, E, .4 * m, .3 * m), seg(x, y, z, E, F, .32 * m, .28 * m)); if (far > .3) return far - .1;
@@ -341,26 +349,28 @@ function genBodyParts(which) {
       for (const o of [[.86, 6.6, .2], [1.04, 6.68, 0], [.88, 6.6, -.2]])                                // three delt heads
         d = smin(d, seg(x, y, z, [o[0] + (m - 1) * .2, o[1], o[2] * m], D, .17 * m, .09 * m), .035);
       d = smin(d, seg(x, y, z, S, E, .2 * m, .12 * m), .1);                                              // humerus core
-      d = smin(d, seg(x, y, z, bA1, bA2, .15 * m, .12 * m), .03);                                        // biceps long head
-      d = smin(d, seg(x, y, z, bB1, bB2, .14 * m, .11 * m), .03);                                        // biceps short head
+      d = smin(d, seg(x, y, z, bA1, bA2, .19 * m, .14 * m), .03);                                        // biceps long head
+      d = smin(d, seg(x, y, z, bB1, bB2, .18 * m, .13 * m), .03);                                        // biceps short head
+      d = smin(d, ell(x, y, z, bP[0], bP[1], bP[2], .2 * m, .2 * m, .2 * m), .06);                      // biceps peak
       d = smin(d, seg(x, y, z, t1, t2, .18 * m, .12 * m), .05);                                          // triceps
       d = smin(d, seg(x, y, z, br1, br2, .1 * m, .08 * m), .04);                                         // brachioradialis
       d = smin(d, seg(x, y, z, E, W, .17 * m, .1 * m), .1);                                              // forearm, thick at the elbow
       d = smin(d, seg(x, y, z, f1, f2, .2 * m, .13 * m), .07);                                           // flexors
-      d = smin(d, seg(x, y, z, W, F, .1 * m, .125 * m), .06);                                            // fist
-      d = smin(d, rbox(x, y, z, F[0], F[1], F[2], .1 * m, .1 * m, .1 * m, .05), .05);
+      d = smin(d, seg(x, y, z, W, at(-.02, -.02, 0), .1 * m, .11 * m), .05);                              // back of the hand
+      for (const [a, b, c] of fingers) d = smin(d, min(seg(x, y, z, a, b, .036 * m, .034 * m), seg(x, y, z, b, c, .034 * m, .03 * m)), .012); // curled fingers
+      d = smin(d, seg(x, y, z, thumb[0], thumb[1], .038 * m, .032 * m), .02);                            // thumb
       return d;
     };
     const pts = [S, E, W, F], lo = [0, 1, 2].map(a => Math.min(...pts.map(p => p[a])) - .55), hi = [0, 1, 2].map(a => Math.max(...pts.map(p => p[a])) + .55);
-    lo[0] = Math.max(lo[0], .2);
+    lo[0] = Math.max(lo[0], .0);
     return { f, lo, hi };
   }
   function legOf(P) {
     const q = P.quad;
     return (x, y, z) => {
       const far = cone(x, y, z, .35, 4.3, 0, .3, .5, 0, .6, .35); if (far > .3) return far - .1;
-      let d = cone(x, y, z, .35, 4.3, 0, .32, 2.3, .05, .42 * q, .22 * q);
-      d = smin(d, seg(x, y, z, [.58, 4.0, .02], [.45, 2.55, .06], .2 * q, .12 * q), .05);   // vastus lateralis sweep
+      let d = smin(cone(x, y, z, .35, 4.3, 0, .34, 3.6, .03, .36 * q, .42 * q), cone(x, y, z, .34, 3.6, .03, .32, 2.3, .05, .42 * q, .22 * q), .15);
+      d = smin(d, seg(x, y, z, [.54, 3.75, .04], [.45, 2.55, .06], .2 * q, .12 * q), .08);   // vastus lateralis sweep
       d = smin(d, seg(x, y, z, [.38, 4.1, .2], [.34, 2.45, .16], .17 * q, .1 * q), .04);     // rectus femoris
       d = smin(d, ell(x, y, z, .2, 2.62, .15, .16 * q, .27, .15 * q), .05);                 // teardrop
       d = smin(d, seg(x, y, z, [.12, 4.0, .05], [.26, 2.9, .05], .15 * q, .08), .07);        // adductors
@@ -383,10 +393,12 @@ function genBodyParts(which) {
     };
     const baggy = P.pants === 'sweats';
     return (x, y, z) => {
-      const r1 = baggy ? .52 : .45, r2 = baggy ? .43 : .36, r3 = baggy ? .4 : .31;
+      const r0 = baggy ? .36 : .33, r1 = baggy ? .47 : .41, r2 = baggy ? .44 : .36, r3 = baggy ? .4 : .31;
       const far = cone(x, y, z, .3, 4.6, 0, .33, .4, 0, r1 + .25, r3 + .2); if (far > .25) return far - .1;
-      let d = smin(cone(x, y, z, .42, 4.6, 0, .45, 2.3, .07, r1, r2), cone(x, y, z, .45, 2.3, .07, .38, .75, .03, r2, r3), .25);
-      d = smin(d, ell(x, y, z, .1, 4.12, .02, .32, .5, .5), .15);    // dropped crotch
+      // narrow at the hip, widest round the thigh, then hanging straight and loose to the ankle
+      let d = smin(cone(x, y, z, .36, 4.65, 0, .42, 3.5, .04, r0, r1), cone(x, y, z, .42, 3.5, .04, .44, 2.3, .07, r1, r2), .2);
+      d = smin(d, cone(x, y, z, .44, 2.3, .07, .38, .75, .03, r2, r3), .25);
+      d = smin(d, ell(x, y, z, .08, 4.15, .02, .26, .45, .44), .12);  // dropped crotch
       d = smax(d, .03 + Math.max(0, 3.75 - y) * .05 - x, .04);        // keep a gap between the legs
       // drape: big soft folds + creases at the knee and stacked fabric over the ankle
       const knee = Math.exp(-((y - 2.25) ** 2) * 6), ankle = Math.max(0, 1 - (y - .4) / .9);
@@ -399,11 +411,11 @@ function genBodyParts(which) {
   }
   function stripeOf(P, pantsLeg) { return (x, y, z) => max(max(pantsLeg(x, y, z) - .012, abs(z - .1) - .07), .32 - x); }
   function hipsOf(P, torso) {
-    const pad = P.pants === 'sweats' ? .1 : P.pants === 'shorts' ? .05 : .06;
+    const pad = P.pants === 'sweats' ? .065 : P.pants === 'shorts' ? .04 : .05;
     return (x, y, z) => max(max(torso(x, y, z) - pad - .008 * Math.sin(abs(x) * 30 + y * 4), y - 4.78), 4.3 - y);
   }
   function waistbandOf(P, torso) {
-    const pad = P.pants === 'sweats' ? .12 : P.pants === 'shorts' ? .07 : .08;
+    const pad = P.pants === 'sweats' ? .085 : P.pants === 'shorts' ? .06 : .07;
     return (x, y, z) => max(max(torso(x, y, z) - pad - (P.pants === 'sweats' ? .01 * Math.sin(abs(x) * 60) : 0), y - 4.88), 4.7 - y);
   }
   function head(x, y, z) {
@@ -782,14 +794,15 @@ function surfaceDetail(mat, det) {
         float a = atan(op.y - 6.0, op.x - 1.35);
         h += m * .0007 * sin(a * 50.0);
       }` : ''}
-      ${det.veins ? `h += veinOf(op) * .004;` : ''}
+      ${det.veins ? `h += veinOf(op) * .003;` : ''}
       return h;
     }
     float veinOf(vec3 op) {
-      ${det.veins ? `float n = vnoise(op * 3.2) * .65 + vnoise(op * 7.5) * .35;
+      ${det.veins ? `float n = vnoise(op * vec3(2.4, 1.1, 2.4)) * .8 + vnoise(op * 6.0) * .2;
       float r = 1.0 - abs(2.0 * n - 1.0);
+      r = smoothstep(.93, 1.0, r); r = r * r * (3.0 - 2.0 * r); // rounded cross-section, no hard outline
       float mask = ${det.veinMask || '1.0'};
-      return smoothstep(.95, .99, r) * mask * ${det.veins.toFixed(2)};` : 'return 0.0;'}
+      return r * mask * ${det.veins.toFixed(2)};` : 'return 0.0;'}
     }`;
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform mat3 normalMatrix;\n' + NOISE_GLSL + '\nfloat veinOf(vec3 op);\n' + H)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
