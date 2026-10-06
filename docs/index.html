@@ -786,7 +786,9 @@ const SUF=[[1e63,"Vg"],[1e60,"Nod"],[1e57,"Ocd"],[1e54,"Spd"],[1e51,"Sxd"],[1e48
 const RAD=1e15;
 const radF=r=>{if(r>=1e66)return r.toExponential(2).replace("e+","e");for(const[v,u]of SUF)if(r>=v*.9995){const x=r/v;return(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}return r>=1e5?Math.round(r/1e3)+"K":r>=999.5?(r/1e3).toFixed(1)+"K":r>=99.95?String(Math.round(r)):r>=9.995?r.toFixed(1):r.toFixed(2)};
 const isRad=n=>Math.abs(n)>=RAD*.9995;
-const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);if(!isFinite(a))return s+"$∞";if(a>=RAD*.9995)return s+"✦"+radF(a/RAD);
+// World 1 shows dollars; World 2 (the Cosmos and its planets) shows Radiant
+const inW2=()=>typeof SCN!=="undefined"&&!!SCN&&(SCN.kind==="space"||SCN.kind==="planet");
+const fmt=n=>{const s=n<0?"−":"",a=Math.abs(n);if(!isFinite(a))return s+"$∞";if(inW2()&&a>=RAD*.01)return s+"✦"+radF(a/RAD);
   for(const[v,u]of SUF)if(a>=v*.9995){const x=a/v;return s+"$"+(x>=100?Math.round(x):x>=10?x.toFixed(1):x.toFixed(2))+u}
   if(a>=1e5)return s+"$"+Math.round(a/1e3)+"K";if(a>=1e4)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+Math.round(a).toLocaleString("en-US")};
 const SET=(()=>{try{return JSON.parse(localStorage.getItem("fliprush_set")||"{}")||{}}catch(e){return{}}})();const saveSet=()=>{try{localStorage.setItem("fliprush_set",JSON.stringify(SET))}catch(e){}};
@@ -1470,7 +1472,7 @@ function renderBottom(){
 }
 let hudT=0;
 function renderHud(){
-  {const r=isRad(S.cash),cl=$("cashLab");if(cl&&cl.textContent!==(r?"Radiant ✦":"Cash")){cl.textContent=r?"Radiant ✦":"Cash";$("cash").classList.toggle("rad",r);if(r&&!S.flags.radSeen){S.flags.radSeen=1;dirty=true;banner("RADIANT","g");rayText("You passed $1 quadrillion. From now on your money is shown in Radiant: ✦1 = $1 quadrillion.")}}}
+  {const r=inW2(),cl=$("cashLab");if(cl&&cl.textContent!==(r?"Radiant ✦":"Cash")){cl.textContent=r?"Radiant ✦":"Cash";$("cash").classList.toggle("rad",r);shownCash=null;$("cash").textContent=fmt(S.cash);if(r&&!S.flags.radSeen){S.flags.radSeen=1;dirty=true;rayText("In the Cosmos your money is shown in Radiant: ✦1 = $1 quadrillion. Back on Earth it shows in dollars.")}}}
   if(shownCash==null)$("cash").textContent=fmt(S.cash);
   $("multTxt").innerHTML=`<i class="tierb" style="--tc:${TI().c}">${TI().i} ${TI().n}</i> Lv ${repLevel()} <i class="lvbar"><i style="width:${Math.round(lvlFrac()*100)}%"></i></i> ×${mult().toFixed(2)} money`;
   const h=Math.floor(S.clock),m=Math.floor((S.clock%1)*60/15)*15;$("timeTxt").textContent=`${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
@@ -5482,7 +5484,7 @@ NPCS.forEach((n,i)=>{n.n=TOWNIES[i%TOWNIES.length]});
 function npcLine(n){S.npcMem=S.npcMem||{};const today=dayKey(),m=S.npcMem[n.n]=S.npcMem[n.n]&&S.npcMem[n.n].d===today?S.npcMem[n.n]:{d:today,c:0,ever:(S.npcMem[n.n]&&S.npcMem[n.n].ever)||0};m.c++;m.ever++;dirty=true;const you=mpName();
   if(m.ever===1)return"Hi, I'm "+n.n+"! You must be "+you+". Everyone's talking about you.";
   if(m.c>=5)return"Again? That's "+m.c+" chats today, "+you+". I like you.";
-  const o=[];if(isRad(S.cash))o.push("Is that… Radiant? You're richer than the sun!");else if(S.cash>=1e9)o.push("A billionaire in my town? Lunch is on you.");else if(S.cash>=1e6)o.push("Look at you, a millionaire already.");else o.push("Saving up? Buy low, sell high, "+you+".");
+  const o=[];if(isRad(S.cash))o.push("Over a quadrillion?! You're richer than the sun!");else if(S.cash>=1e9)o.push("A billionaire in my town? Lunch is on you.");else if(S.cash>=1e6)o.push("Look at you, a millionaire already.");else o.push("Saving up? Buy low, sell high, "+you+".");
   if(S.pr>=200)o.push("Those arms! Do you lift cars for fun?");if((S.height||170)>=200)o.push("How's the weather up there?");if((S.fans||0)>=1e4)o.push("OMG, it's you! Can I get a selfie?");if(S.partner&&S.partner.married)o.push("Say hi to "+String(S.partner.n||"your partner")+" for me!");if(S.pet)o.push("Your "+(petOf(S.pet)||{n:"pet"}).n.toLowerCase()+" is adorable.");if(S.crew)o.push("You're in "+S.crew.n+"? Nice flag.");
   if(m.ever>10)o.push("Good to see you again, "+you+". The usual?");return pick(o)}
 function npcTalk(n){const t=npcLine(n);n.bub={txt:t,until:wt+4};SFX.tick(.7);if((S.fans||0)>=1e4&&t.startsWith("OMG")){S.fans+=5;dirty=true}
