@@ -12,6 +12,10 @@ H.check(t.id == "Gold" and n.id == "Platinum", "2500 = Gold, next Platinum")
 t, n = S.Tier(99999)
 H.check(t.id == "Diamond" and n == nil, "Diamond is top")
 print("Emotes")
-for _, e in S.Emotes do H.check(S.EmoteById[e.id] == e and e.seconds > 0, e.id .. " ok") end
+for _, e in S.Emotes do
+	-- held poses name a PoseData pose and the muscles they show off; timed gestures have a duration
+	local valid = if e.poseData then type(e.poseData) == "string" and #e.muscles > 0 else (e.seconds or 0) > 0
+	H.check(S.EmoteById[e.id] == e and valid, e.id .. " ok")
+end
 H.check(S.EmoteById.Chug ~= nil, "chug exists")
 H.done()
