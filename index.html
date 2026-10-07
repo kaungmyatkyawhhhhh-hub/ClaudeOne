@@ -4829,7 +4829,8 @@ function accHand(c,k,x,y){
   if(k==="saber"){const col=["#4fe3ff","#ff4fd8","#2fd28a"][Math.floor(wt/3)%3];c.fillStyle="#9aa3b3";c.fillRect(x-1,y-2,2,5);c.save();c.globalAlpha=.35+.15*Math.sin(wt*20);c.strokeStyle=col;c.lineWidth=5;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke();c.restore();c.strokeStyle="#fff";c.lineWidth=1.4;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke()}
   if(k==="orb"){const g2=c.createRadialGradient(x,y-6,0,x,y-6,7);g2.addColorStop(0,"#fff");g2.addColorStop(.4,"#b388ff");g2.addColorStop(1,"rgba(122,47,214,0)");c.fillStyle=g2;c.beginPath();c.arc(x,y-6,7+Math.sin(wt*4),0,7);c.fill()}}
 /* ================= Arcade: quick skill games for tickets, and a prize counter ================= */
-const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."},golf:{n:"Mini golf",ic:"⛳",d:"Three holes. Drag back from the ball to aim, let go to putt. Beat par for big tickets."},bowl:{n:"Bowling",ic:"🎳",d:"Five frames. Tap to lock the aim, tap again for power. Strikes pay big."},hilo:{n:"Higher or lower",ic:"📈",d:"Is the next item worth more or less? Keep the streak alive."}};
+const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."},golf:{n:"Mini golf",ic:"⛳",d:"Three holes. Drag back from the ball to aim, let go to putt. Beat par for big tickets."},bowl:{n:"Bowling",ic:"🎳",d:"Five frames. Tap to lock the aim, tap again for power. Strikes pay big."},hilo:{n:"Higher or lower",ic:"📈",d:"Is the next item worth more or less? Keep the streak alive."},
+ wb:{n:"Water balloons",ic:"🎈",d:"Tap a kid to throw, tap the grass below to move. Dodge the shadows. 3 splashes and you're out."}};
 const ARC_PRIZE=[{k:"crate",n:"Mystery crate",ic:"📦",t:100,f:()=>gainCrate(1)},{k:"energy",n:"Energy drink",ic:"🥤",t:60,f:()=>{S.energy=Math.min(maxEnergy()*1.5,S.energy+60)}},{k:"hype",n:"Hype rush",ic:"🔥",t:80,f:()=>hype(10)},
   {k:"cash",n:"Bag of cash",ic:"💰",t:150,f:()=>earn(Math.round(Math.max(1000,rwBase()*.03)))},{k:"map",n:"Treasure map",ic:"🗺️",t:120,f:()=>{S.maps=(S.maps||0)+1}},{k:"nshade",n:"Neon shades",ic:"🕶️",t:250,acc:1},{k:"acrown",n:"Neon crown",ic:"👑",t:400,acc:1},{k:"joy",n:"Golden joystick",ic:"🕹️",t:700,acc:1}];
 const capPool=()=>ACCS.filter(a=>!a.arc&&!a.w2&&!a.ev&&a.cost>0&&a.cost<=1e6&&a.s!=="o");
@@ -4877,6 +4878,24 @@ function arcPlay(k,back){const G=ARC_G[k];room="arcade";
     $("leaveBtn").onclick=closeRoom;$("arBack").onclick=back;$("arAgain").onclick=e=>{if(!spend(5,e.currentTarget))return;arcPlay(k,back)};updMini()};
   $("room").innerHTML=`<div class="room-in">${roomHead(G.n)}<div class="kv"><div><span class="eyebrow">Score</span><b id="arS">0</b></div><div><span class="eyebrow" id="arL">Time</span><b id="arT">—</b></div></div><div class="arcbox" id="arBox"></div><p class="fine">${G.d}</p></div>`;
   $("leaveBtn").onclick=()=>{AR=null;back()};const box=$("arBox");let AR={k};
+  if(k==="wb"){$("arL").textContent="Splashes left";box.innerHTML=`<canvas id="wbCv" width="300" height="380" style="width:min(86vw,300px);height:auto;border-radius:18px;touch-action:none"></canvas>`;const cv=$("wbCv"),g=cv.getContext("2d");
+    let sc=0,lives=3,t0=performance.now(),lt=t0,me={x:150,tx:150},inv=0;const kids=[0,1,2].map(i=>({x:60+i*90,tx:60+i*90,y:70+(i%2)*30,cool:rnd(1.2,2.5),wet:0,sh:["#e2364a","#2fd28a","#7a2fd6"][i]})),B=[],SPL=[];$("arT").textContent="❤❤❤";
+    cv.addEventListener("pointerdown",e=>{e.preventDefault();const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*300/r.width,y=(e.clientY-r.top)*380/r.height;if(!AR)return;
+      if(y<200){if(B.some(b=>b.mine&&b.t<b.d))return;B.push({mine:1,x0:me.x,y0:330,x1:x,y1:y,t:0,d:.45});SFX.tick(.5)}else me.tx=clamp(x,20,280)});
+    const loop=now=>{if(!AR||room!=="arcade")return;const dt=Math.min(.05,(now-lt)/1000),T=(now-t0)/1000;lt=now;
+      me.x+=(me.tx-me.x)*Math.min(1,dt*9);inv=Math.max(0,inv-dt);
+      kids.forEach(kd=>{if(Math.abs(kd.tx-kd.x)<4)kd.tx=rnd(25,275);kd.x+=Math.sign(kd.tx-kd.x)*dt*(40+T*1.5);kd.wet=Math.max(0,kd.wet-dt);kd.cool-=dt;if(kd.cool<=0&&!kd.wet){kd.cool=Math.max(.7,rnd(1.6,2.8)-T*.03);const lead=(me.tx-me.x)*.4;B.push({x0:kd.x,y0:kd.y,x1:clamp(me.x+lead+rnd(-25,25),20,280),y1:330,t:0,d:Math.max(.7,1.05-T*.008)})}});
+      for(let i=B.length-1;i>=0;i--){const b=B[i];b.t+=dt;if(b.t>=b.d){B.splice(i,1);SPL.push({x:b.x1,y:b.y1,t:0});
+        if(b.mine){const h=kids.find(kd=>!kd.wet&&Math.abs(kd.x-b.x1)<20&&Math.abs(kd.y-b.y1)<26);if(h){h.wet=1.5;sc++;$("arS").textContent=sc;SFX.crit(.6);buzz(10)}else SFX.tick(.2)}
+        else if(Math.abs(me.x-b.x1)<18&&!inv){lives--;inv=1;SFX.loss();buzz(40);$("arT").textContent="❤".repeat(Math.max(0,lives))||"—"}}}
+      for(let i=SPL.length-1;i>=0;i--){SPL[i].t+=dt;if(SPL[i].t>.5)SPL.splice(i,1)}
+      g.fillStyle="#5fbf6a";g.fillRect(0,0,300,380);g.fillStyle="#4fa95a";for(let i=0;i<12;i++)g.fillRect((i*67)%300,(i*41)%380,30,6);g.fillStyle="#3f8a4e";[30,150,270].forEach((x,i)=>{g.beginPath();g.arc(x,150+(i%2)*10,22,0,7);g.fill()});
+      g.strokeStyle="rgba(255,255,255,.5)";g.setLineDash([6,6]);g.beginPath();g.moveTo(0,200);g.lineTo(300,200);g.stroke();g.setLineDash([]);
+      kids.forEach(kd=>{drawPerson(kd.x,kd.y,{g,size:.8,shirt:kd.wet?"#2fa6d9":kd.sh,skin:"#e8b896",hair:"#3b2a20",legs:"#262b3a",mv:true,ph:T*1.3+kd.x*.01})});
+      B.forEach(b=>{const p=b.t/b.d,x=b.x0+(b.x1-b.x0)*p,y=b.y0+(b.y1-b.y0)*p-Math.sin(p*Math.PI)*60;if(!b.mine){g.fillStyle=`rgba(0,0,0,${.15+.3*p})`;g.beginPath();g.ellipse(b.x1,b.y1+4,10*(.5+p*.5),4*(.5+p*.5),0,0,7);g.fill()}g.fillStyle=b.mine?"#ff4fd8":"#4fe3ff";g.beginPath();g.arc(x,y,6,0,7);g.fill();g.fillStyle="rgba(255,255,255,.6)";g.beginPath();g.arc(x-2,y-2,1.8,0,7);g.fill()});
+      SPL.forEach(sp=>{g.strokeStyle=`rgba(79,227,255,${1-sp.t*2})`;g.lineWidth=3;g.beginPath();g.arc(sp.x,sp.y,6+sp.t*40,0,7);g.stroke()});
+      g.save();if(inv>0&&Math.floor(inv*10)%2)g.globalAlpha=.4;drawPerson(me.x,340,{g,size:.9,...myLook(),acc:S.acc,build:myBuild(),mv:Math.abs(me.tx-me.x)>2,ph:T});g.restore();
+      if(lives<=0||T>=45){AR=null;end(sc,sc*2+(lives>0?10:0));return}requestAnimationFrame(loop)};requestAnimationFrame(loop)}
   if(k==="mole"){box.innerHTML=`<div class="molegrid">${Array.from({length:9},(_,i)=>`<button data-m="${i}"><i></i></button>`).join("")}</div>`;
     let sc=0,t0=performance.now(),up=-1,gold=false,upT=0,next=.6;const cells=[...box.querySelectorAll("[data-m]")];
     cells.forEach((c,i)=>c.addEventListener("pointerdown",e=>{e.preventDefault();if(i===up){sc+=gold?3:1;c.classList.add("hit");SFX.tick(.8);buzz(8);up=-1;setTimeout(()=>c.className="",120);$("arS").textContent=sc}else{buzz(20)}}));
@@ -5319,7 +5338,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=62,WN=[
+const WN_VER=63,WN=[
+ ["🎈","Water balloons","A new Arcade game: tap kids to soak them with water balloons and dodge their shadows.","2026-10-07T06:08"],
  ["🍋","Lemonade stand","At the Boardwalk Flea, run a lemonade stand: choose lemons, sugar and ice, set your price and see if 24 beachgoers bite. Hot days love ice; rain keeps people away.","2026-10-07T06:05"],
  ["🦋","Bug catching","Butterflies, bees, ladybugs and night-time fireflies now flutter around town. Walk into them to catch them and fill the Bug book on the Pets screen. A Bug net at the Boutique helps. Rumour has it there's a golden one…","2026-10-07T06:00"],
  ["🚕","Ride share & daily trivia","Got a car? Start a ride share shift at the Docks: pick up 3 passengers and drop them off fast for tips. And the Arcade has a free daily trivia quiz with 5 questions.","2026-10-07T05:58"],
