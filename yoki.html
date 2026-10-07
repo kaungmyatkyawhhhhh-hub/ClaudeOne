@@ -294,6 +294,8 @@ function genBodyParts(which) {
       // lats: two fans from the armpit down to the waist (V-taper)
       d = smin(d, seg(ax, y, z, [.66 * P.lat, 6.12, -.12], [.42, 4.95, -.16], .2 * P.lat, .07), .1);
       d = smin(d, seg(ax, y, z, [.58 * P.lat, 6.2, -.28], [.28, 5.15, -.3], .18 * P.lat, .07), .1);
+      d = smin(d, seg(ax, y, z, [.8 * P.lat, 5.95, -.12], [.5 * P.waist, 5.0, -.1], .25 * P.lat, .08), .12); // lat flare under the armpit
+      d = smin(d, ell(ax, y, z, .62 * P.lat, 5.75, -.2, .3 * P.lat, .45, .22), .12);
       // traps: neck to shoulder
       d = smin(d, seg(ax, y, z, [.14, 6.95, -.06], [.74, 6.56, -.08], .15 * P.trap, .1 * P.trap), .16);
       d = smin(d, ell(ax, y, z, .3, 6.6, -.16, .36 * P.trap, .26 * P.trap, .22 * P.trap), .2);
@@ -327,6 +329,7 @@ function genBodyParts(which) {
     most:   { S: [1.08, 6.42, 0], E: [1.34, 5.42, .44], W: [.52, 5.14, .74], F: [.27, 5.1, .8], bo: [-.08, .02, .13], to: [.1, 0, -.11], fo: [0, -.07, .02], side: [1, 0, 0], palm: [0, .3, -1] },
     behind: { S: [1.08, 6.42, 0], E: [1.42, 7.62, -.02], W: [.62, 8.0, -.36], F: [.38, 8.02, -.44], bo: [-.07, 0, .13], to: [.09, 0, -.12], fo: [0, .05, -.05], side: [1, 0, 0], palm: [0, 0, 1] },
   };
+  if (which === 'joints') return { POSES, BUILDS };
   function armOf(P) {
     const J = POSES[P.pose], m = P.arm, S = J.S, E = J.E, W = J.W, F = J.F, sd = J.side;
     const D = L3(S, E, .42, [0, 0, 0]);                                   // deltoid insertion
@@ -356,9 +359,7 @@ function genBodyParts(which) {
       d = smin(d, seg(x, y, z, br1, br2, .1 * m, .08 * m), .04);                                         // brachioradialis
       d = smin(d, seg(x, y, z, E, W, .17 * m, .1 * m), .1);                                              // forearm, thick at the elbow
       d = smin(d, seg(x, y, z, f1, f2, .2 * m, .13 * m), .07);                                           // flexors
-      d = smin(d, seg(x, y, z, W, at(-.02, -.02, 0), .1 * m, .11 * m), .05);                              // back of the hand
-      for (const [a, b, c] of fingers) d = smin(d, min(seg(x, y, z, a, b, .036 * m, .034 * m), seg(x, y, z, b, c, .034 * m, .03 * m)), .012); // curled fingers
-      d = smin(d, seg(x, y, z, thumb[0], thumb[1], .038 * m, .032 * m), .02);                            // thumb
+      d = smin(d, ell(x, y, z, W[0], W[1], W[2], .075 * m, .075 * m, .065 * m), .06);                          // wrist (hands are separate, jointed)
       return d;
     };
     const pts = [S, E, W, F], lo = [0, 1, 2].map(a => Math.min(...pts.map(p => p[a])) - .55), hi = [0, 1, 2].map(a => Math.max(...pts.map(p => p[a])) + .55);
@@ -837,9 +838,88 @@ function geom(p) {
   g.setIndex(new THREE.BufferAttribute(p.idx, 1)); g.computeBoundingSphere(); return g;
 }
 const SHOULDER = [1.0, 6.4, 0], HIP = [.35, 4.2, 0], NECK = [0, 6.95, 0];
+// ---- skinning helpers: bodies are sculpted in their signature pose and bent at real joints by bones
+const CHEST_Y = 5.15;
+let JOINTS = null;
+const smooth01 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+let _ds1, _ds2;
+function distSeg(p, a, b) {
+  if (!_ds1) { _ds1 = new THREE.Vector3(); _ds2 = new THREE.Vector3(); }
+  _ds1.subVectors(b, a); const t = Math.min(1, Math.max(0, _ds2.subVectors(p, a).dot(_ds1) / _ds1.lengthSq()));
+  return _ds2.copy(a).addScaledVector(_ds1, t).distanceTo(p);
+}
+// inverse-distance weights: each vertex follows its nearest bone, blending smoothly across joints
+function boneWeights(ds) {
+  const w = ds.map(d => 1 / Math.pow(d + .03, 8)), sum = w.reduce((a, b) => a + b, 0);
+  return w.map((x, i) => [i, x / sum]);
+}
+function skinWeights(g, weigh) {
+  if (g.userData.skinned) return; g.userData.skinned = true;
+  const pos = g.attributes.position, n = pos.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), p = [0, 0, 0];
+  for (let i = 0; i < n; i++) {
+    p[0] = pos.getX(i); p[1] = pos.getY(i); p[2] = pos.getZ(i);
+    const ws = weigh(p).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    ws.forEach(([b, w], k) => { si[i * 4 + k] = b; sw[i * 4 + k] = w; });
+  }
+  g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+}
+// arm rig: rest bones have identity rotation (the sculpted pose); poses are quaternions for shoulder, elbow, wrist
+function rigArm(S, E, W, F, palm) {
+  const u1 = E.clone().sub(S).normalize(), u2 = W.clone().sub(E).normalize(), uh = F.clone().sub(W).normalize();
+  const h = u1.clone().cross(u2).normalize(), bend0 = u1.angleTo(u2);
+  const n = palm.clone().normalize(); n.addScaledVector(uh, -n.dot(uh)).normalize();
+  const v = uh.clone().cross(n);
+  const handBasis = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(v, uh, n));
+  const twistTo = (a, t, axis) => {
+    const ap = a.clone().addScaledVector(axis, -a.dot(axis)), tp = t.clone().addScaledVector(axis, -t.dot(axis));
+    return Math.atan2(ap.clone().cross(tp).dot(axis), ap.dot(tp));
+  };
+  // aim the upper arm along dir, bend the elbow to `bend`, orient the hinge and the palm
+  const pose = (dir, bend, hingeT, palmT) => {
+    dir = new THREE.Vector3(...dir).normalize();
+    const q1 = new THREE.Quaternion().setFromUnitVectors(u1, dir);
+    const s = new THREE.Quaternion().setFromAxisAngle(dir, twistTo(h.clone().applyQuaternion(q1), new THREE.Vector3(...hingeT), dir)).multiply(q1);
+    const e = new THREE.Quaternion().setFromAxisAngle(h, -(bend0 - bend));
+    const R = s.clone().multiply(e), f = u2.clone().applyQuaternion(R), nw = n.clone().applyQuaternion(R);
+    const w = new THREE.Quaternion().setFromAxisAngle(u2, twistTo(nw, new THREE.Vector3(...palmT).normalize(), f));
+    return { s, e, w };
+  };
+  return {
+    h, handBasis,
+    flex: { s: new THREE.Quaternion(), e: new THREE.Quaternion(), w: new THREE.Quaternion() },
+    relax: pose([.2, -1, .1], .3, [-1, 0, 0], [-1, 0, .2]),
+    up: pose([.22, 1, .05], .35, [0, 0, 1], [0, 0, 1]),
+    wave: pose([1, .3, .15], 1.45, [0, 0, 1], [0, 0, 1]),
+  };
+}
+const capsule = (r, len) => THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(r, Math.max(.001, len - r), 4, 10) : new THREE.SphereGeometry(r, 10, 8).scale(1, len / r * .55, 1);
+// hand with jointed fingers: curl 0 = open, 1 = fist
+function buildHand(mat, m, basis) {
+  const g = new THREE.Group(); g.quaternion.copy(basis); const k = 1.25 * m;
+  mk(new THREE.SphereGeometry(1, 16, 12), mat, [0, .1 * k, 0], [.1 * k, .125 * k, .062 * k], g);
+  mk(new THREE.SphereGeometry(1, 12, 10), mat, [0, -.01 * k, 0], [.07 * k, .075 * k, .056 * k], g);
+  const fingers = [1.5, .5, -.5, -1.5].map((o, i) => {
+    const L = [.08, .088, .082, .066][i] * k;
+    const a = new THREE.Group(); a.position.set(o * .05 * k, .205 * k, 0); a.rotation.z = -o * .05; g.add(a);
+    mk(capsule(.029 * k, L), mat, [0, L / 2, 0], null, a);
+    const b = new THREE.Group(); b.position.y = L; a.add(b);
+    mk(capsule(.026 * k, L * .9), mat, [0, L * .45, 0], null, b);
+    return { a, b };
+  });
+  const th = new THREE.Group(); th.position.set(.085 * k, .06 * k, .025 * k); th.rotation.set(.45, 0, -.75); g.add(th);
+  mk(capsule(.034 * k, .085 * k), mat, [0, .0425 * k, 0], null, th);
+  const th2 = new THREE.Group(); th2.position.y = .085 * k; th.add(th2);
+  mk(capsule(.029 * k, .07 * k), mat, [0, .035 * k, 0], null, th2);
+  return { g, fingers, th, th2 };
+}
+function curlHand(hd, c) {
+  for (const f of hd.fingers) { f.a.rotation.x = c * 1.45; f.b.rotation.x = c * 1.65; }
+  hd.th.rotation.x = .45 + c * .7; hd.th2.rotation.x = c * .9;
+}
 function buildLifter(key, i) {
-  const c = CHARS[key];
+  const c = CHARS[key]; JOINTS = JOINTS || genBodyParts('joints');
   const skinMat = det => surfaceDetail(new THREE.MeshPhysicalMaterial({ color: c.skin, roughness: .56, metalness: 0, clearcoat: .14, clearcoatRoughness: .5, vertexColors: true }), det);
+  const skinHand = surfaceDetail(new THREE.MeshPhysicalMaterial({ color: c.skin, roughness: .56, metalness: 0, clearcoat: .14, clearcoatRoughness: .5 }), SKIN_DETAIL);
   const skin = skinMat(SKIN_DETAIL), skinTorso = skinMat(TORSO_DETAIL), skinArm = skinMat(ARM_DETAIL), skinLeg = skinMat(LEG_DETAIL);
   const hairM = std(c.hair, { roughness: .75 }), white = std(0xf5f6fa, { roughness: .45 }), dark = std(0x15100c, { roughness: .3 }), mouthM = std(0x3a1206, { roughness: .5 });
   const root = new THREE.Group(); scene.add(root); root.scale.set(...c.scale);
@@ -847,29 +927,56 @@ function buildLifter(key, i) {
   const meshes = [];
   const part = (g, m, parent, off = [0, 0, 0]) => { const o = mk(g, m, off, null, parent); meshes.push(o); return o; };
   const B = G[c.build], cloth = surfaceDetail(std(c.pants, { roughness: .92, vertexColors: true }), CLOTH_DETAIL), clothBand = surfaceDetail(std(c.pband, { roughness: .85, vertexColors: true }), CLOTH_DETAIL);
-  part(B.torso, skinTorso, body);
+  // ---- skeleton: pelvis -> chest (spine) -> shoulders -> elbows -> wrists -> fingers; pelvis -> hips -> knees -> ankles
+  const binds = [];
+  const skinned = (g, m, parent, off, bones, weigh) => {
+    skinWeights(g, weigh);
+    const o = new THREE.SkinnedMesh(g, m); o.position.set(...off); o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
+    parent.add(o); meshes.push(o); binds.push(() => o.bind(new THREE.Skeleton(bones), o.matrixWorld)); return o;
+  };
+  const pelvis = new THREE.Bone(); body.add(pelvis);
+  const chest = new THREE.Bone(); chest.position.set(0, CHEST_Y, 0); pelvis.add(chest);
+  skinned(B.torso, skinTorso, body, [0, 0, 0], [pelvis, chest], p => { const w = smooth01(4.8, 5.8, p[1]); return [[0, 1 - w], [1, w]]; });
   part(B.hips, cloth, body);
   part(B.waistband, clothBand, body);
   if (c.build === 'mass') for (const s of [1, -1]) { const cord = mk(new THREE.CylinderGeometry(.012, .012, .42, 6), white, [s * .07, 4.55, .5], null, body); cord.rotation.z = s * .08; mk(new THREE.SphereGeometry(.025, 8, 6), white, [s * .085, 4.34, .5], null, body); }
-  // arms pivot at the shoulders; the left side is the right arm mirrored
+  // arms: shoulder / elbow / wrist bones under the chest; the left arm is the right one mirrored
+  const J = JOINTS.POSES[JOINTS.BUILDS[c.build].pose], m = JOINTS.BUILDS[c.build].arm;
+  const V = a => new THREE.Vector3(...a), Sv = V(SHOULDER), Ev = V(J.E), Wv = V(J.W), Fv = V(J.F);
+  const armRig = rigArm(Sv, Ev, Wv, Fv, V(J.palm));
+  const ROOT = V([.78, 6.3, 0]), Sj = V(J.S);
   const arms = [1, -1].map(s => {
-    const pv = new THREE.Group(); pv.position.set(s * SHOULDER[0], SHOULDER[1], 0); pv.scale.x = s; body.add(pv);
-    part(B.arm, skinArm, pv, [-SHOULDER[0], -SHOULDER[1], 0]);
-    return { pv, s };
+    const pv = new THREE.Group(); pv.position.set(s * SHOULDER[0], SHOULDER[1] - CHEST_Y, 0); pv.scale.x = s; chest.add(pv);
+    const base = new THREE.Bone(); pv.add(base);
+    const sh = new THREE.Bone(); base.add(sh);
+    const el = new THREE.Bone(); el.position.copy(Ev).sub(Sv); sh.add(el);
+    const wr = new THREE.Bone(); wr.position.copy(Wv).sub(Ev); el.add(wr);
+    skinned(B.arm, skinArm, pv, [-SHOULDER[0], -SHOULDER[1], 0], [base, sh, el], p => {
+      const v = _v.set(...p);
+      return boneWeights([v.distanceTo(ROOT) * 1.7 + .05, distSeg(v, Sj, Ev), distSeg(v, Ev, Wv)]);
+    });
+    const hand = buildHand(skinHand, m, armRig.handBasis); wr.add(hand.g);
+    return { pv, s, sh, el, wr, hand };
   });
+  // legs: hip / knee / ankle; pants and bare legs share the bones
+  const K = [.32, 2.25, .04], A = [.31, .45, .03];
   const legs = [1, -1].map(s => {
-    const pv = new THREE.Group(); pv.position.set(s * HIP[0], HIP[1], 0); pv.scale.x = s; body.add(pv);
-    const hold = new THREE.Group(); hold.position.set(-HIP[0], -HIP[1], 0); pv.add(hold);
-    if (B.leg) part(B.leg, skinLeg, hold);
-    part(B.pantsLeg, cloth, hold);
-    if (B.stripe) part(B.stripe, std(0xf5f6fa, { roughness: .6, vertexColors: true }), hold);
+    const pv = new THREE.Group(); pv.position.set(s * HIP[0], HIP[1], 0); pv.scale.x = s; pelvis.add(pv);
+    const hip = new THREE.Bone(); pv.add(hip);
+    const knee = new THREE.Bone(); knee.position.set(K[0] - HIP[0], K[1] - HIP[1], K[2]); hip.add(knee);
+    const ankle = new THREE.Bone(); ankle.position.set(A[0] - K[0], A[1] - K[1], A[2] - K[2]); knee.add(ankle);
+    const off = [-HIP[0], -HIP[1], 0], Hv = V(HIP), Kv = V(K), Av = V(A);
+    const legW = p => { const v = _v.set(...p); return boneWeights([distSeg(v, Hv, Kv), distSeg(v, Kv, Av)]); };
+    if (B.leg) skinned(B.leg, skinLeg, pv, off, [hip, knee], legW);
+    skinned(B.pantsLeg, cloth, pv, off, [hip, knee], legW);
+    if (B.stripe) skinned(B.stripe, std(0xf5f6fa, { roughness: .6, vertexColors: true }), pv, off, [hip, knee], legW);
     const shoe = std(c.shoe, { roughness: .45 });
-    mk(new THREE.SphereGeometry(.21, 18, 12), shoe, [.31, .17, .12], [1.05, .72, 1.8], hold);
-    mk(new THREE.CylinderGeometry(.22, .24, .07, 18), std(c.build === 'classic' ? 0xf5f6fa : 0x2a2b33, { roughness: .5 }), [.31, .04, .12], [1, 1, 1.85], hold);
-    return { pv, s };
+    mk(new THREE.SphereGeometry(.21, 18, 12), shoe, [.31 - A[0], .17 - A[1], .12 - A[2]], [1.05, .72, 1.8], ankle);
+    mk(new THREE.CylinderGeometry(.22, .24, .07, 18), std(c.build === 'classic' ? 0xf5f6fa : 0x2a2b33, { roughness: .5 }), [.31 - A[0], .04 - A[1], .12 - A[2]], [1, 1, 1.85], ankle);
+    return { pv, s, knee, ankle };
   });
   // head
-  const head = new THREE.Group(); head.position.set(...NECK); body.add(head);
+  const head = new THREE.Group(); head.position.set(NECK[0], NECK[1] - CHEST_Y, NECK[2]); chest.add(head);
   const hm = part(G.head, skin, head, [0, -NECK[1], 0]);
   if (key === 'ang') part(G.beard, std(0x3a2617, { roughness: .95, vertexColors: true }), head, [0, -NECK[1], 0]);
   const F = new THREE.Group(); F.position.set(0, -NECK[1], 0); head.add(F);
@@ -879,7 +986,7 @@ function buildLifter(key, i) {
     mk(new THREE.SphereGeometry(.027, 14, 10), std(0x2a180c, { roughness: .15 }), [0, -.002, .02], [1, 1, .6], e, false);
     mk(new THREE.SphereGeometry(.012, 10, 8), dark, [0, -.002, .034], null, e, false);
     mk(new THREE.SphereGeometry(.005, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), [.009, .008, .04], null, e, false);
-    const lid = mk(new THREE.SphereGeometry(.056, 16, 8, 0, Math.PI * 2, 0, Math.PI * .5), skin, [0, .006, -.004], [1.08, .55, .66], e, false); lid.rotation.x = .25;
+    const lid = mk(new THREE.SphereGeometry(.056, 16, 8, 0, Math.PI * 2, 0, Math.PI * .5), skin, [0, .006, -.004], [1.08, .55, .66], e, false); lid.material = skinHand; lid.rotation.x = .25;
     mk(new THREE.TorusGeometry(.05, .006, 6, 18, Math.PI), std(0x2a1a10), [0, .006, .012], [1.05, .62, 1], e, false);
     return e;
   });
@@ -931,7 +1038,8 @@ function buildLifter(key, i) {
   const tagEl = document.createElement('span'); tagEl.className = 'tag'; tagEl.style.setProperty('--c', c.color); $('labels').appendChild(tagEl);
   const bubbleEl = document.createElement('div'); bubbleEl.className = 'bubble'; bubbleEl.hidden = true; bubbleEl.style.setProperty('--c', c.color); $('labels').appendChild(bubbleEl);
   root.traverse(o => { o.userData.lifter = key; });
-  return { key, c, i, root, body, head, arms, legs, eyes, brows, mouths, skin, skins: [skin, skinTorso, skinArm, skinLeg], meshes, tagEl, bubbleEl,
+  root.updateMatrixWorld(true); binds.forEach(b => b());
+  return { key, c, i, root, body, pelvis, chest, armRig, head, arms, legs, eyes, brows, mouths, skin, skins: [skin, skinTorso, skinArm, skinLeg, skinHand], meshes, tagEl, bubbleEl,
     x: (i - 1) * 4.2, target: 0, dir: 0, mode: 'stand', until: 0, engagedUntil: 0, busyUntil: 0, partner: null, waveUntil: 0, speed: 1.4,
     mood: 'calm', moodUntil: 0, nextBlink: performance.now() + 1000 + Math.random() * 3000, blinkUntil: 0, bubbleTimer: null,
     curlL: 0, curlR: 0, curlTurn: false, pump: 0, flash: 0, walking: false, yaw: 0 };
@@ -1025,7 +1133,7 @@ function hit(l, point) {
   const amt = perClick() * lvMult(l.key) * comboMult() * (crit ? CRIT_MULT : 1);
   state.gains += amt; state.reps++;
   addXp(l, crit ? 3 : 1);
-  l.engagedUntil = now + 1400; l.pump = 1; l.lastTap = now; l.relax = Math.min(l.relax || 0, .4);
+  l.engagedUntil = now + 1400; l.pump = 1; l.lastTap = now;
   l.curlTurn = !l.curlTurn; if (l.curlTurn) l.curlL = 1; else l.curlR = 1;
   if (crit) l.flash = 1;
   $('gains').classList.add('bump'); clearTimeout(bumpTimer); bumpTimer = setTimeout(() => $('gains').classList.remove('bump'), 80);
@@ -1234,66 +1342,95 @@ function frame(now) {
     if (walking) face = l.dir * 1.25; else if (busy && l.partner) face = Math.sign(l.partner.x - l.x) * .55;
     if (hoverKey === l.key) face = 0;
     l.yaw = lerp(l.yaw, face, .1);
-    const breathe = Math.sin(t * 1.7 + i) * .012;
     let bob = 0, hop = 0, sway = 0;
     if (walking) bob = Math.abs(Math.sin(t * 7.5)) * .14;
     if (dancing) { hop = Math.abs(Math.sin(t * 6)) * .35; sway = Math.sin(t * 6) * .08; }
-    // idle life: weight shifts hip to hip, slight twist, relaxing between flexes, fidgets
+    // ---- body language: weight on one leg, real joints, springy poses, fidgets
     const ph = i * 2.1, still = !walking && !dancing;
+    const A = l.anim || (l.anim = { st: 0, stV: 0, stT: Math.random() < .5 ? 1 : -1, nextStance: now + 1500 + Math.random() * 3000, arm: [{ w: 0, v: 0, alt: 'flex' }, { w: 0, v: 0, alt: 'flex' }], cx: 0 });
+    if (now > A.nextStance) { A.stT = -A.stT; A.nextStance = now + 2500 + Math.random() * 4500; }
+    A.stV += (A.stT - A.st) * 30 * dt - A.stV * 8 * dt; A.st += A.stV * dt;
     if (now > (l.nextIdle || 0)) {
-      const r = Math.random();
-      l.idleAct = r < .35 ? 'relax' : r < .6 ? 'pose' : r < .75 ? 'shake' : r < .88 ? 'look' : 'bounce';
-      l.idleUntil = now + (l.idleAct === 'shake' ? 700 : l.idleAct === 'bounce' ? 900 : 1600 + Math.random() * 2400);
-      l.nextIdle = l.idleUntil + 300 + Math.random() * 900;
-      if (l.idleAct === 'look') { l.lookT = (Math.random() - .5) * 1.1; l.lookP = (Math.random() - .5) * .3; }
-      if (l.idleAct === 'pose' && Math.random() < .3) { l.pump = 1; l.curlL = l.curlR = 1; }
+      l.idleAct = pick(['look', 'look', 'shake', 'bounce', 'pose', 'flexcheck', 'flexcheck', 'neck', 'stretch', 'shoulders']);
+      const dur = { shake: 900, bounce: 1200, pose: 2600, flexcheck: 2300, neck: 1900, stretch: 2300, shoulders: 1500, look: 1900 }[l.idleAct];
+      l.idleUntil = now + dur * (.8 + Math.random() * .5); l.nextIdle = l.idleUntil + 700 + Math.random() * 2000;
+      l.lookT = (Math.random() - .5) * 1.3; l.lookP = (Math.random() - .5) * .35; l.flexSide = Math.random() < .5 ? 0 : 1;
+      if (l.idleAct === 'pose' || l.idleAct === 'flexcheck') l.pump = 1;
     }
-    const act = now < (l.idleUntil || 0) ? l.idleAct : '';
-    const tapped = now - (l.lastTap || 0) < 2600;
-    // relaxed by default; snap into the pose when tapped or when showing off
-    const relaxT = (tapped || act === 'pose' || dancing) ? 0 : 1;
-    l.relax = (l.relax || 0) + (relaxT - (l.relax || 0)) * Math.min(1, dt * (relaxT ? 2.2 : 12));
-    const shift = still ? Math.sin(t * .9 + ph) + .35 * Math.sin(t * 2.3 + ph * 1.7) : 0;
-    if (act === 'bounce') hop += Math.abs(Math.sin(t * 9)) * .12;
+    const act = now < (l.idleUntil || 0) && still ? l.idleAct : '';
+    const tapped = now - (l.lastTap || 0) < 1800;
+    if (act === 'bounce') hop += Math.abs(Math.sin(t * 10)) * .1;
+    const wt = still ? A.st : 0;                                     // +1: weight on the right leg
     l.root.position.set(l.x, PLATFORM_Y + bob + hop, 0);
     l.root.rotation.y = l.yaw + (dancing ? Math.sin(t * 3) * .35 : 0);
-    l.body.position.x = lerp(l.body.position.x, shift * .12, .1);
-    l.body.rotation.z = lerp(l.body.rotation.z, sway - shift * .035, .15);
-    l.body.rotation.y = lerp(l.body.rotation.y, still ? Math.sin(t * .55 + ph) * .1 : 0, .05);
-    l.body.rotation.x = lerp(l.body.rotation.x, (act === 'pose' || tapped ? -.04 : .03 * l.relax), .08);
-    l.pump = Math.max(0, l.pump - dt * 6);
-    l.body.scale.set(1 + l.pump * .04 + breathe * .5, 1 - l.pump * .03 + breathe, 1 + l.pump * .04);
-    // legs: stride when walking, weight on one leg when standing
-    const stride = walking ? Math.sin(t * 7.5) * .42 : 0;
-    l.legs[0].pv.rotation.x = lerp(l.legs[0].pv.rotation.x, stride + (still ? Math.max(0, shift) * .06 : 0), .3);
-    l.legs[1].pv.rotation.x = lerp(l.legs[1].pv.rotation.x, -stride + (still ? Math.max(0, -shift) * .06 : 0), .3);
-    l.legs[0].pv.rotation.z = lerp(l.legs[0].pv.rotation.z, still ? -shift * .03 : 0, .1);
-    l.legs[1].pv.rotation.z = lerp(l.legs[1].pv.rotation.z, still ? -shift * .03 : 0, .1);
-    // arms: squeeze on taps, wave, dance pump
-    l.curlL = Math.max(0, l.curlL - dt * 5); l.curlR = Math.max(0, l.curlR - dt * 5);
-    const ca = l.c.curl; let aR = l.curlR * ca + (walking ? Math.sin(t * 7.5) * ca * .2 : 0), aL = l.curlL * ca - (walking ? Math.sin(t * 7.5) * ca * .2 : 0);
-    if (waving && !dancing) aR += (.25 + Math.sin(t * 11) * .3) * ca / .3;
-    if (dancing) { aR += Math.sin(t * 6) * ca; aL -= Math.sin(t * 6) * ca; }
-    // relaxed arms drop out of the pose; shaking out the arms between sets
-    const RELAX = { mass: -1.05, classic: .28, lean: -.35 }[l.c.build] || 0;
-    aR += RELAX * l.relax + Math.sin(t * 1.3 + ph) * .03; aL += RELAX * l.relax + Math.sin(t * 1.3 + ph + 1) * .03;
-    if (act === 'shake') { aR += Math.sin(t * 28) * .12; aL += Math.sin(t * 28 + 1) * .12; }
-    l.arms[0].pv.rotation.z = lerp(l.arms[0].pv.rotation.z, aR, .25);
-    l.arms[1].pv.rotation.z = lerp(l.arms[1].pv.rotation.z, -aL, .25);
-    l.arms[0].pv.rotation.x = lerp(l.arms[0].pv.rotation.x, walking ? Math.sin(t * 7.5) * .25 : 0, .2);
-    l.arms[1].pv.rotation.x = lerp(l.arms[1].pv.rotation.x, walking ? -Math.sin(t * 7.5) * .25 : 0, .2);
+    l.body.position.x = lerp(l.body.position.x, wt * .13, .15);
+    l.body.rotation.z = lerp(l.body.rotation.z, sway - wt * .05, .2);   // the hip drops on the relaxed side
+    l.pump = Math.max(0, l.pump - dt * 5);
+    l.body.scale.set(1 + l.pump * .035, 1 - l.pump * .02, 1 + l.pump * .035);
+    // legs: hip / knee / ankle, feet stay flat
+    const LEG = 3.75;
+    let drop = 9;
+    l.legs.forEach((lg, k) => {
+      const swing = Math.sin(t * 7.5 + k * Math.PI);
+      let bend = walking ? Math.max(0, -Math.cos(t * 7.5 + k * Math.PI)) * .95 : .34 * Math.max(0, k ? wt : -wt);
+      if (act === 'bounce') bend += (.5 + .5 * Math.sin(t * 10)) * .32;
+      if (dancing) bend += Math.abs(Math.sin(t * 6)) * .35;
+      if (tapped) bend *= .3;
+      lg.bend = lerp(lg.bend || 0, bend, walking ? .5 : .15);
+      lg.pv.rotation.x = (walking ? swing * .42 : 0) - lg.bend * .5;
+      lg.pv.rotation.z = -l.body.rotation.z * lg.s;
+      lg.knee.rotation.x = lg.bend; lg.ankle.rotation.x = -lg.bend * .5;
+      drop = Math.min(drop, LEG * (1 - Math.cos(lg.bend * .5)));
+    });
+    l.body.position.y = lerp(l.body.position.y, -drop, .3);
+    // spine: twist, contrapposto, crunch into the most-muscular, chest up for the double biceps
+    const flexAvg = (A.arm[0].w + A.arm[1].w) / 2, CRUNCH = { mass: -.08, classic: .22, lean: -.05 }[l.c.build];
+    let twist = still ? Math.sin(t * .5 + ph) * .08 : 0;
+    if (act === 'flexcheck') twist += l.flexSide ? .3 : -.3;
+    if (walking) twist += Math.sin(t * 7.5) * .08;
+    l.chest.rotation.y = lerp(l.chest.rotation.y, twist, .08);
+    l.chest.rotation.z = lerp(l.chest.rotation.z, wt * .08 + (dancing ? Math.sin(t * 6) * .1 : 0), .1);
+    l.chest.rotation.x = lerp(l.chest.rotation.x, flexAvg * CRUNCH + (act === 'stretch' ? -.12 : 0) + Math.sin(t * 1.7 + i) * .02, .2);
+    l.chest.position.y = CHEST_Y + Math.sin(t * 1.7 + i) * .012;
+    // arms: spring between relaxed and the flex (or stretch / wave), elbows curl on taps
+    l.curlL = Math.max(0, l.curlL - dt * 4); l.curlR = Math.max(0, l.curlR - dt * 4);
+    const rig = l.armRig;
+    l.arms.forEach((ar, k) => {
+      const st = A.arm[k];
+      let tgt = 0, alt = 'flex';
+      if (tapped || act === 'pose') tgt = 1;
+      if (act === 'flexcheck' && k === l.flexSide) tgt = 1;
+      if (act === 'stretch') { tgt = 1; alt = 'up'; }
+      if (waving && k === 0 && !tapped) { tgt = 1; alt = 'wave'; }
+      if (dancing) { tgt = Math.sin(t * 6 + k * Math.PI) > 0 ? 1 : .15; alt = 'flex'; }
+      if (st.alt !== alt) { if (st.w < .08) st.alt = alt; else tgt = 0; }   // pass through relaxed when switching
+      st.v += (tgt - st.w) * 170 * dt - st.v * 15 * dt; st.w = clamp(st.w + st.v * dt, -.06, 1.12);
+      const P = rig[st.alt], R = rig.relax;
+      const swing = walking ? -Math.sin(t * 7.5 + k * Math.PI) * .55 * (1 - st.w) : 0;
+      const fidget = Math.sin(t * 1.3 + ph + k) * .04 + (act === 'shake' ? Math.sin(t * 31 + k) * .2 : 0) + (act === 'shoulders' ? Math.sin(t * 8 + k) * .22 : 0);
+      ar.sh.quaternion.copy(R.s).slerp(P.s, st.w).premultiply(_q.setFromAxisAngle(_v.set(1, 0, 0), (swing + fidget) * (1 - st.w * .8)));
+      const curl = (k ? l.curlL : l.curlR) * .5 + (act === 'shake' ? Math.sin(t * 27 + k) * .15 : 0) + (walking ? .15 + .15 * Math.sin(t * 7.5 + k * Math.PI) : 0) * (1 - st.w);
+      ar.el.quaternion.copy(R.e).slerp(P.e, st.w).multiply(_q.setFromAxisAngle(rig.h, curl));
+      ar.wr.quaternion.copy(R.w).slerp(P.w, st.w);
+      if (waving && k === 0 && st.alt === 'wave') ar.el.rotateOnAxis(rig.h, Math.sin(t * 11) * .3);
+      if (act === 'shake') ar.wr.rotateX(Math.sin(t * 33 + k) * .4);
+      curlHand(ar.hand, clamp(.18 + (st.alt === 'flex' ? st.w : st.w * .1) * .85 + (k ? l.curlL : l.curlR) * .2 + (act === 'shake' ? -.15 : 0), 0, 1));
+    });
     // face: mood, blink, look at the pointer
     if (now > l.moodUntil) l.mood = combo >= 10 ? 'smile' : 'calm';
     for (const [m, o] of Object.entries(l.mouths)) o.visible = m === l.mood;
     l.brows.position.y = lerp(l.brows.position.y, l.mood === 'hype' ? .03 : 0, .3);
     if (now > l.nextBlink) { l.blinkUntil = now + 130; l.nextBlink = now + 2200 + Math.random() * 3000; }
     const bl = now < l.blinkUntil ? .1 : 1; l.eyes.forEach(e => { e.scale.y = bl; });
-    let lookY = clamp(pointerNDC.x * .7 - l.root.rotation.y * .6 - (l.x / 12), -.6, .6), lookX = clamp(-pointerNDC.y * .25, -.2, .25);
+    let lookY = clamp(pointerNDC.x * .7 - l.root.rotation.y * .6 - (l.x / 12), -.6, .6), lookX = clamp(-pointerNDC.y * .25, -.2, .25), roll = -wt * .04;
     if (act === 'look' && hoverKey !== l.key) { lookY = l.lookT; lookX = l.lookP; }
+    if (act === 'flexcheck') { lookY = l.flexSide ? -.85 : .85; lookX = { mass: -.3, classic: .35, lean: .05 }[l.c.build]; }
+    if (act === 'neck') { lookY = Math.sin(t * 4) * .3; lookX = Math.cos(t * 4) * .2; roll = Math.sin(t * 4) * .25; }
+    if (act === 'stretch') lookX = -.25;
     if (busy && l.partner) lookY = Math.sign(l.partner.x - l.x) * .5;
-    l.head.rotation.y = lerp(l.head.rotation.y, lookY + Math.sin(t * .8 + ph) * .05, .07);
-    l.head.rotation.x = lerp(l.head.rotation.x, lookX + Math.sin(t * 1.1 + ph) * .03, .07);
-    l.head.rotation.z = lerp(l.head.rotation.z, shift * .03, .08);
+    l.head.rotation.y = lerp(l.head.rotation.y, lookY - l.chest.rotation.y + Math.sin(t * .8 + ph) * .05, .09);
+    l.head.rotation.x = lerp(l.head.rotation.x, lookX - l.chest.rotation.x * .7 + Math.sin(t * 1.1 + ph) * .03, .09);
+    l.head.rotation.z = lerp(l.head.rotation.z, roll - l.chest.rotation.z * .6, .1);
     // crit flash
     l.flash = Math.max(0, l.flash - dt * 3);
     for (const sm of l.skins) sm.emissive.setRGB(l.flash * .5, l.flash * .35, l.flash * .1);
