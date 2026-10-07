@@ -1145,6 +1145,7 @@ const ACH=[
  ["champ","Champion","Reach the Champion duel rank",()=>(S.elo||0)>=1700,1e6],
  ["petadv10","Explorer's best friend","Send pets on 10 adventures",()=>(S.stats.petAdv||0)>=10,25000],
  ["harvest25","Green thumb","Harvest 25 crops",()=>(S.stats.harvests||0)>=25,30000],
+ ["balloon10","Pop star","Pop 10 mystery balloons",()=>(S.stats.balloons||0)>=10,20000],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
  ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
  ["tall190","Towering","Grow to 190 cm",()=>(S.height||170)>=190,10000],
@@ -1572,7 +1573,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -1610,7 +1611,7 @@ function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/
 let lockT=0;
 function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
 function lockedNotice(r){if(wt-lockT<2)return;lockT=wt;banner(REGION_NAME[r]+" is locked","r");SFX.nope()}
-cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}const tx=taxiAt(x,y);if(tx){const[cx2,cy2]=trafficPos(tx);if(Math.hypot(cx2-S.px,cy2-S.py)<520){openTaxi();return}}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){npcTalk(np);return}const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
+cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}if(balloonTap(x,y))return;const tx=taxiAt(x,y);if(tx){const[cx2,cy2]=trafficPos(tx);if(Math.hypot(cx2-S.px,cy2-S.py)<520){openTaxi();return}}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){npcTalk(np);return}const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
 function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;moving=true}
 
 /* bottom bar */
@@ -3090,6 +3091,20 @@ function renderRvChip(){const el=$("rvChip"),r=S.rival;if(!r){el.hidden=true;ret
   const have=r.t==="earn"?Math.max(0,S.stats.earnedAll-r.base):r.have,s=Math.max(0,Math.ceil(r.left));
   el.innerHTML=`<span class="pk">Vince</span><span class="pt">${r.txt}</span><span class="pr">${r.t==="earn"?Math.round(have/r.goal*100)+"%":have+"/"+r.goal} · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`}
 $("crateChip").onclick=()=>{audioOn();openCrate()};
+/* ---------- mystery balloon: drifts across town every few minutes; tap it for a gift ---------- */
+let BAL=null,balT=90;
+function balloonTick(dt){if(!S||SCN||MPW||room||(S.stats.flips||0)<3)return;if(BAL){BAL.t+=dt;BAL.x+=BAL.vx*dt;BAL.y+=Math.sin(BAL.t*1.3)*8*dt-4*dt;if(BAL.pop!=null){BAL.pop+=dt;if(BAL.pop>1.2)BAL=null}else if(BAL.t>BAL.life)BAL=null;return}
+  balT-=dt;if(balT>0)return;balT=rnd(150,300);const left=Math.random()<.5,y=clamp(S.py+rnd(-260,-120),120,SEA-200);BAL={x:S.px+(left?-1:1)*(vw/2+60),y,vx:(left?1:-1)*rnd(55,80),t:0,life:22,c:pick(["#e2364a","#ffcc33","#2fd28a","#4fe3ff","#ff4fd8"])};SFX.hot();banner("🎈 A mystery balloon is drifting by · tap it!","a")}
+function drawBalloon(){if(!BAL)return;const b=BAL,c=ctx;c.save();c.translate(b.x,b.y);
+  if(b.pop!=null){const k=b.pop;c.globalAlpha=Math.max(0,1-k);c.fillStyle="#ffcc33";for(let i=0;i<10;i++){const a=i*.63;c.beginPath();c.arc(Math.cos(a)*40*k,Math.sin(a)*40*k+40*k*k,5,0,7);c.fill()}c.restore();return}
+  c.strokeStyle="rgba(60,60,60,.7)";c.lineWidth=1.5;c.beginPath();c.moveTo(0,22);c.quadraticCurveTo(6,36,0,52);c.stroke();
+  c.fillStyle="#c99a62";rrp(c,-9,50,18,12,3);c.fill();c.fillStyle="#e2364a";c.fillRect(-1.5,50,3,12);
+  const g=c.createRadialGradient(-8,-10,2,0,0,28);g.addColorStop(0,"#ffffff");g.addColorStop(.25,b.c);g.addColorStop(1,shade(b.c,.6));c.fillStyle=g;c.beginPath();c.ellipse(0,0,22,26,0,0,7);c.fill();c.beginPath();c.moveTo(-4,24);c.lineTo(4,24);c.lineTo(0,29);c.fill();
+  c.fillStyle="#fff";c.font="900 16px "+FONTS.d;c.textAlign="center";c.textBaseline="middle";c.fillText("?",0,0);c.restore()}
+function balloonTap(x,y){if(!BAL||BAL.pop!=null)return false;if(Math.hypot(x-BAL.x,y-(BAL.y+15))>48)return false;BAL.pop=0;S.stats.balloons=(S.stats.balloons||0)+1;dirty=true;
+  const r=Math.random();let msg;if(r<.35){const v=Math.round(Math.max(300,rwBase()*.03));earn(v);msg="+"+fmt(v)}else if(r<.6){gainCrate(1);msg="A crate"}else if(r<.75){S.maps=(S.maps||0)+1;msg="A treasure map"}else if(r<.9){S.tix=(S.tix||0)+40;msg="40 arcade tickets"}else{hype(10);msg="A rush of hype"}
+  SFX.crit(1);buzz([20,30,20]);confetti(120,null,null,[BAL.c,"#fff","#ffcc33"]);banner("🎈 Pop! "+msg,"g");return true}
+setInterval(()=>{try{balloonTick(.1)}catch(e){}},100);
 /* ---------- weekly quests: five a week from a bigger pool, they point you at things to try ---------- */
 const WKQ=[{k:"flips",n:"Make 40 sales",ic:"💰",need:40},{k:"arcade",n:"Play 8 arcade games",ic:"🕹️",need:8},{k:"treasure",n:"Dig up 2 treasures",ic:"🗺️",need:2},{k:"heists",n:"Crack the bank vault",ic:"🔐",need:1},{k:"harvests",n:"Harvest 6 crops",ic:"🌱",need:6},
   {k:"barista",n:"Work 2 barista shifts",ic:"☕",need:2},{k:"duelWins",n:"Win 3 duels",ic:"⚔️",need:3},{k:"petAdv",n:"Send pets on 3 adventures",ic:"🧭",need:3},{k:"lifted",n:"Do 30 lifts",ic:"🏋️",need:30},{k:"fish",n:"Catch 10 fish",ic:"🐟",need:10},{k:"crits",n:"Land 5 critical sales",ic:"💥",need:5}];
@@ -4816,7 +4831,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=43,WN=[
+const WN_VER=44,WN=[
+ ["🎈","Mystery balloons","Every few minutes a balloon drifts across town. Tap it before it floats away for cash, a crate, a treasure map, tickets or hype.","2026-10-07T04:15"],
  ["📅","Weekly quests","Five new quests every Monday from the 📅 chip, each paying a crate and arcade tickets. Finish all five for a legendary chest.","2026-10-07T04:10"],
  ["☕","Barista shift","Work a daily 60-second shift at the Café: tap each drink's ingredients in order before the customer leaves. Streaks tip more.","2026-10-07T04:05"],
  ["🌱","Home garden","Plant seeds in four plots at Home and harvest them later: a 2-minute sprout up to a 2-hour golden apple tree. Water once to speed it up.","2026-10-07T04:00"],
