@@ -1179,6 +1179,7 @@ const ACH=[
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
  ["w4open","Tycoon","Open the rift to World 4",()=>!!(S.w4&&S.w4.open),0],
  ["w4all","Frontier mogul","Unlock all five World 4 zones",()=>!!(S.w4&&Object.keys(S.w4.unl).length>=5),0],
+ ["franchise1","Franchise king","Franchise your World 4 empire",()=>(S.stats.franchises||0)>=1,0],
  ["rides10","Thrill seeker","Ride your own Theme Park rides 10 times",()=>(S.stats.rides||0)>=10,0],
  ["dragon5","Dragon slayer","Drive off 5 dragon attacks in the Kingdom",()=>(S.stats.dragons||0)>=5,0],
  ["wish10","Wishful thinking","Catch 10 shooting stars",()=>(S.stats.wishes||0)>=10,50000],
@@ -5379,7 +5380,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=67,WN=[
+const WN_VER=68,WN=[
+ ["⭐","Franchise your empire","At the World 4 Gem Exchange, franchise your zones for Tycoon Stars: each one adds +10% to all Gem income forever.","2026-10-07T06:28"],
  ["🎡","Ride your own park","Tap a ride in your World 4 Theme Park and hit Ride it for a bonus every 10 minutes. And there's a new Tycoon tab on the world leaderboard.","2026-10-07T06:25"],
  ["💎","World 4: Tycoon Frontier","A rift portal in Deep Time (after 10 Ziggurat tiers) opens World 4, run on Gems. Build five zones from scratch: Sky Islands (storms and shields), a Theme Park (rides and happiness), an Underwater City (oxygen), a Robot Factory (production chains) and a Kingdom (villagers and dragons). Zones keep earning while you're away.","2026-10-07T06:20"],
  ["🌠","Shooting stars","Look up at night: shooting stars streak across the sky. Tap one before it fades to make a wish.","2026-10-07T06:15"],
@@ -7075,13 +7077,14 @@ function w4Calc(zk){const z=W4ZK(zk),Z=w4().z[zk],T=Z.t,st=T.map(()=>""),out=T.m
     let v=b.r*t.l*m;if(zk==="park")v*=fun;if(zk==="sea"){v*=air;if(air<1)st[i]="🫧"}if(zk==="king"){v*=staff;if(staff<1)st[i]="👷"}if(m>1&&!st[i])st[i]="⚡";out[i]=v});
   return{rate:out.reduce((a,v)=>a+v,0),st,out,o2,use,pop,work,def,fun,storm}}
 const w4Rate=()=>W4Z.filter(z=>w4().unl[z.k]).reduce((a,z)=>a+w4Calc(z.k).rate,0)*w4Mult();
-const w4Mult=()=>1+.1*Object.keys(w4().unl).length-.1;
-function w4Tick(){if(!S||!S.w4||!S.w4.open)return;const W=w4(),now=Date.now();let dt=(now-(W.last||now))/1000;W.last=now;if(dt<=0)return;const away=dt>120;dt=Math.min(dt,8*3600);const g=w4Rate()*dt;W.gems+=g;W.tot+=g;
+const w4Mult=()=>(1+.1*Object.keys(w4().unl).length-.1)*(1+.1*(w4().stars||0));
+const w4StarGain=()=>{const W=w4();return Math.max(0,Math.floor(Math.sqrt((W.run==null?W.tot:W.run)/1e8)))};
+function w4Tick(){if(!S||!S.w4||!S.w4.open)return;const W=w4(),now=Date.now();let dt=(now-(W.last||now))/1000;W.last=now;if(dt<=0)return;const away=dt>120;dt=Math.min(dt,8*3600);const g=w4Rate()*dt;W.gems+=g;W.tot+=g;W.run=(W.run||0)+g;
   if(away&&g>0)setTimeout(()=>banner(GEM+" Your World 4 zones made "+gemF(g)+" while you were away","g"),1500);
   // storms over the Sky Islands
   const sky=W.z.sky,skyN=sky.t.filter(Boolean).length;if(skyN>=4&&(!sky.storm||sky.storm.until<now)&&now>(sky.ev||0)){if(sky.ev){const prod=sky.t.map((t,i)=>t&&W4B(W4ZK("sky"),t.k).r?i:-1).filter(i=>i>=0).sort(()=>Math.random()-.5).slice(0,3);sky.storm={until:now+90000,hit:prod};if(inW4())banner("⛈️ A storm hit the Sky Islands! Unshielded buildings stop for 90 s","r")}sky.ev=now+rnd(6,10)*60000}
   // dragons over the Kingdom
-  const K=W.z.king,kn=K.t.filter(Boolean).length;if(W.unl.king&&kn>=3&&now>(K.ev||0)){if(K.ev){const c=w4Calc("king"),need=Math.ceil(kn/4);if(c.def>=need){const v=c.rate*w4Mult()*180;W.gems+=v;W.tot+=v;S.stats.dragons=(S.stats.dragons||0)+1;if(inW4())banner("🐉 A dragon attacked, and your towers drove it off! Treasure: "+gemF(v),"g")}else{const v=W.gems*.04;W.gems-=v;if(inW4())banner("🐉 A dragon stole "+gemF(v)+"! Build guard towers ("+c.def+"/"+need+" defence)","r")}}K.ev=now+rnd(10,15)*60000}
+  const K=W.z.king,kn=K.t.filter(Boolean).length;if(W.unl.king&&kn>=3&&now>(K.ev||0)){if(K.ev){const c=w4Calc("king"),need=Math.ceil(kn/4);if(c.def>=need){const v=c.rate*w4Mult()*180;W.gems+=v;W.tot+=v;W.run=(W.run||0)+v;S.stats.dragons=(S.stats.dragons||0)+1;if(inW4())banner("🐉 A dragon attacked, and your towers drove it off! Treasure: "+gemF(v),"g")}else{const v=W.gems*.04;W.gems-=v;if(inW4())banner("🐉 A dragon stole "+gemF(v)+"! Build guard towers ("+c.def+"/"+need+" defence)","r")}}K.ev=now+rnd(10,15)*60000}
   dirty=true}
 setInterval(()=>{try{w4Tick();if(room==="w4z")w4Live()}catch(e){}},1000);
 function w4Live(){const g=$("w4G"),r=$("w4R");if(g)g.textContent=gemF(w4().gems);if(r&&W4Z_CUR)r.textContent=gemF(w4Calc(W4Z_CUR).rate*w4Mult())+"/s";const rc=$("rCash");if(rc)rc.textContent=gemF(w4().gems)}
@@ -7108,7 +7111,7 @@ function openW4Zone(zk,back){const z=W4ZK(zk),W=w4();room="w4z";W4Z_CUR=zk;$("ro
       ${c.st[W4SEL]&&c.st[W4SEL]!=="⚡"?`<div class="note">${{"🔌":"Not connected: build a "+(b.need&&W4B(z,b.need).n)+" next to it.","⛈️":"Knocked out by the storm. A Storm shield next to it would have protected it.","🫧":"Short of oxygen. Build or upgrade Air pumps.","👷":"Not enough villagers. Build or upgrade Cottages."}[c.st[W4SEL]]}</div>`:""}
       ${b.ride?`<button class="bigbtn alt2" id="w4Ride" ${Date.now()-((W.rideT||{})[b.k]||0)<600000?"disabled":""}>${b.ic} Ride it<small>${Date.now()-((W.rideT||{})[b.k]||0)<600000?"Ride again in "+Math.ceil((600000-(Date.now()-((W.rideT||{})[b.k]||0)))/60000)+" min":"Free · visitors cheer, bonus Gems"}</small></button>`:""}
       <div class="seg3"><button class="cta" id="w4Up" ${mx||W.gems<uc?"disabled":""}>${mx?"Max level":"Upgrade · "+gemF(uc)}</button><button class="cta ghost" id="w4Sell">Sell · ${gemF(refund)}</button></div></div>`;
-      {const rb=$("w4Ride");if(rb)rb.onclick=()=>{W.rideT=W.rideT||{};W.rideT[b.k]=Date.now();dirty=true;w4RideFx(b,t.l,()=>{const v=Math.max(50,w4Calc(zk).rate*w4Mult()*60*(1+t.l*.1));W.gems+=v;W.tot+=v;S.stats.rides=(S.stats.rides||0)+1;dirty=true;SFX.rebirth();confetti(180);banner(b.ic+" What a ride! +"+gemF(v),"g");draw()})}}
+      {const rb=$("w4Ride");if(rb)rb.onclick=()=>{W.rideT=W.rideT||{};W.rideT[b.k]=Date.now();dirty=true;w4RideFx(b,t.l,()=>{const v=Math.max(50,w4Calc(zk).rate*w4Mult()*60*(1+t.l*.1));W.gems+=v;W.tot+=v;W.run=(W.run||0)+v;S.stats.rides=(S.stats.rides||0)+1;dirty=true;SFX.rebirth();confetti(180);banner(b.ic+" What a ride! +"+gemF(v),"g");draw()})}}
       $("w4Up").onclick=()=>{if(mx||W.gems<uc)return;W.gems-=uc;t.l++;dirty=true;SFX.level();draw()};$("w4Sell").onclick=()=>{W.gems+=refund;Z.t[W4SEL]=null;W4SEL=-1;dirty=true;SFX.sell();draw()}}};
   W4SEL=-1;draw()}
 function w4RideFx(b,L,done){const ov=document.createElement("div");ov.className="crateov";ov.innerHTML=`<canvas width="320" height="420" style="width:min(90vw,340px);height:auto;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)"></canvas><p class="crhint">${b.n}!</p>`;document.body.appendChild(ov);const cv=ov.querySelector("canvas"),g=cv.getContext("2d"),t0=performance.now(),D=5200;SFX.hot();
@@ -7124,8 +7127,12 @@ function openGemEx(back){const W=w4(),today=dayKey(),done=W.ex===today,give=Math
     <div class="note">World 4 runs on <b>Gems ${GEM}</b>. Your old money can't buy much here: once a day the exchange swaps <b>10% of your cash</b> for a bag of Gems worth 15 minutes of your zones' output.</div>
     <div class="kv"><div><span class="eyebrow">Gems</span><b>${gemF(W.gems)}</b></div><div><span class="eyebrow">All zones</span><b>${gemF(w4Rate())}/s</b></div><div><span class="eyebrow">Lifetime</span><b>${gemF(W.tot)}</b></div></div>
     <button class="bigbtn" id="gxGo" ${done?"disabled":""}>${done?"Exchanged today":"Swap for "+gemF(give)}<small>${done?"Come back tomorrow":"Costs "+fmt(cost)}</small></button>
+    <div class="sechead"><h3>⭐ Franchise your empire</h3><span class="eyebrow">${W.stars||0} stars · +${(W.stars||0)*10}% Gems forever</span></div>
+    <div class="note">Sell everything to investors: all zones, buildings and Gems reset, and you keep <b>Tycoon Stars</b>. Each star adds +10% to all Gem income, forever. Stars come from Gems earned since your last franchise.</div>
+    <button class="bigbtn alt2" id="gxFr" ${w4StarGain()<1?"disabled":""}>Franchise for ${w4StarGain()} ⭐<small>${w4StarGain()<1?"Earn "+gemF(1e8)+" this run for your first star":"Resets World 4 zones and Gems"}</small></button>
     <div class="sechead"><h3>Your zones</h3></div><div class="perks">${W4Z.map(z=>{const u=W.unl[z.k],c=u?w4Calc(z.k):null;return `<div class="perk nopic"><span class="t">${z.ic} ${z.n}</span><span class="d">${u?c.st.length&&W.z[z.k].t.filter(Boolean).length+" buildings · "+gemF(c.rate*w4Mult())+"/s":"Locked · "+gemF(z.unl)}</span><span class="c">${u?"Open":"🔒"}</span></div>`}).join("")}</div></div>`;
-  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("gxGo").onclick=()=>{if(W.ex===today)return;S.cash-=cost;W.ex=today;W.gems+=give;W.tot+=give;dirty=true;SFX.rebirth();confetti(160,null,null,["#4fe3ff","#ff4fd8","#fff"]);banner("+"+gemF(give),"g");openGemEx(back)}}
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("gxFr").onclick=()=>{const n=w4StarGain();if(n<1)return;const fb=$("gxFr");if(!fb.dataset.sure){fb.dataset.sure=1;fb.innerHTML="Tap again to franchise<small>Zones and Gems reset · you keep "+n+" new ⭐</small>";SFX.tick(.5);return}W.stars=(W.stars||0)+n;W.gems=50;W.run=0;W.unl={sky:1};W.z={};w4();S.stats.franchises=(S.stats.franchises||0)+1;dirty=true;SFX.rebirth();flash("#ffcc33",.7);confetti(320,null,null,["#ffcc33","#fff","#ff4fd8"]);shake(10,.8);banner("⭐ Franchised! "+W.stars+" Tycoon Stars · +"+W.stars*10+"% Gems forever","g");if(SCN)SCN.stSig=null;openGemEx(back)};
+    $("gxGo").onclick=()=>{if(W.ex===today)return;S.cash-=cost;W.ex=today;W.gems+=give;W.tot+=give;W.run=(W.run||0)+give;dirty=true;SFX.rebirth();confetti(160,null,null,["#4fe3ff","#ff4fd8","#fff"]);banner("+"+gemF(give),"g");openGemEx(back)}}
 function w4Places(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=!!o.bld;L.push(o)},W=w4();
   const pos={sky:[160,420],park:[1380,420],sea:[160,960],fac:[1380,960],king:[720,180]};
   W4Z.forEach(z=>{const[x,y]=pos[z.k];add({k:"z_"+z.k,n:z.n,sub:W.unl[z.k]?gemF(w4Calc(z.k).rate*w4Mult())+"/s":"🔒 "+gemF(z.unl),verb:"Build in",c:z.c,x,y,w:z.k==="king"?360:260,h:z.k==="king"?210:180,go:()=>openW4Zone(z.k,closeRoom)})});
