@@ -158,8 +158,8 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .float{position:fixed;pointer-events:none;z-index:40;font-family:var(--mono);font-weight:700;font-size:1.15rem;animation:rise .9s cubic-bezier(.2,.7,.3,1) forwards;white-space:nowrap}
 .float small{display:block;font-size:.62rem;letter-spacing:.08em;text-align:center}
 @keyframes rise{0%{transform:translate(-50%,0) scale(.8);opacity:0}15%{transform:translate(-50%,-8px) scale(1.1);opacity:1}100%{transform:translate(-50%,-64px) scale(1);opacity:0}}
-.banner{position:fixed;left:50%;top:38%;z-index:41;pointer-events:none;font-family:var(--display);font-variation-settings:"wdth" 125;font-weight:900;font-size:2.4rem;letter-spacing:-.03em;text-transform:uppercase;color:var(--ink);white-space:nowrap;animation:ban 1.1s cubic-bezier(.2,.8,.2,1) forwards}
-.banner.g{color:var(--gold)} .banner.a{color:var(--accent)}
+.banner.big{position:fixed;left:50%;top:38%;z-index:41;pointer-events:none;font-family:var(--display);font-variation-settings:"wdth" 125;font-weight:900;font-size:2.4rem;letter-spacing:-.03em;text-transform:uppercase;color:var(--ink);white-space:nowrap;animation:ban 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+.banner.big.g{color:var(--gold)} .banner.big.a{color:var(--accent)}
 @keyframes ban{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0;filter:blur(6px)}18%{transform:translate(-50%,-50%) scale(1);opacity:1;filter:none}75%{opacity:1}100%{transform:translate(-50%,-60%);opacity:0}}
 
 /* Overlay screens */
@@ -231,7 +231,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .who{color:var(--muted)} .who.bad{color:var(--down);font-weight:700}
 .lead-you{color:var(--up);font-weight:700} .lead-rival{color:var(--down);font-weight:700}
 .itm .fc{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:.62rem;font-weight:700;color:#fff;background:var(--down);padding:2px 6px;border-radius:99px}
-.banner.r{color:var(--down)}
+.banner.big.r{color:var(--down)}
 .modchip{font-family:var(--mono);font-size:.64rem;font-weight:700;color:var(--accent);padding:3px 8px;border-radius:99px;box-shadow:inset 0 0 0 1px var(--accent);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
 .mods{display:grid;gap:8px}
 .modcard{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow),inset 0 0 0 1px var(--line);transition:transform .1s}
@@ -504,8 +504,11 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .reqbar{height:10px;border-radius:10px;background:var(--sunk);overflow:hidden}
 .reqbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:10px}
 /* premium pass */
-.banner{width:max-content;max-width:92vw;white-space:normal;text-align:center;line-height:.95;font-size:clamp(1.5rem,8vw,2.2rem)}
-.chip,.place,.hud .iconbtn,.tip{background:color-mix(in oklab,var(--surface) 74%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);border:1px solid color-mix(in oklab,var(--surface) 55%,transparent)}
+.banner.big{width:max-content;max-width:92vw;white-space:normal;text-align:center;line-height:.95;font-size:clamp(1.5rem,8vw,2.2rem)}
+.banner.tst{position:fixed;left:50%;top:31%;z-index:41;pointer-events:none;max-width:min(86vw,400px);width:max-content;padding:9px 14px 9px 12px;border-radius:10px;background:var(--ink);color:var(--bg);font:650 .86rem/1.3 var(--body);text-align:left;border-left:4px solid var(--muted);box-shadow:0 8px 20px -10px rgba(0,0,0,.45);animation:tst var(--d,2s) cubic-bezier(.2,.8,.2,1) forwards}
+.banner.tst.g{border-left-color:var(--up)}.banner.tst.r{border-left-color:var(--down)}.banner.tst.a{border-left-color:var(--gold)}.banner.tst.u{border-left-color:var(--accent)}
+@keyframes tst{0%{transform:translate(-50%,6px);opacity:0}9%{transform:translate(-50%,0);opacity:1}88%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-4px);opacity:0}}
+.chip,.place,.hud .iconbtn,.tip{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 0 color-mix(in oklab,var(--ink) 9%,transparent)}
 html.tablet .chip,html.tablet .place,html.tablet .hud .iconbtn,html.tablet .tip,html.tablet .raytoast,html.tablet .wnov,html.tablet .overlay,html.tablet .sailov,html.tablet .crateov{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}html.tablet .chip,html.tablet .place,html.tablet .hud .iconbtn{background:var(--surface)!important}
 html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.perf .raytoast,html.perf .wnov,html.perf .overlay{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip{background:var(--surface)!important}
 .cash.rad{background:linear-gradient(90deg,#7a2fd6,#ff4fd8,#ffcc33,#4fe3ff,#7a2fd6);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:radsh 4s linear infinite}@keyframes radsh{to{background-position:300% 0}}
@@ -589,7 +592,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .pill.ev .pk{color:var(--ec,var(--accent))}
 .pill.ev{box-shadow:inset 0 0 0 2px var(--ec,var(--accent)),var(--shadow);animation:evp 1s infinite alternate}
 @keyframes evp{to{transform:translateY(-1px)}}
-.raytoast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:45;width:min(92vw,440px);display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:color-mix(in oklab,var(--surface) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 14px 34px -14px rgba(0,0,0,.45);font-size:.86rem;line-height:1.35;animation:rtin .35s cubic-bezier(.2,.8,.2,1)}
+.raytoast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:45;width:min(92vw,440px);display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 0 color-mix(in oklab,var(--ink) 9%,transparent),0 12px 28px -16px rgba(0,0,0,.4);font-size:.86rem;line-height:1.35;animation:rtin .35s cubic-bezier(.2,.8,.2,1)}
 .raytoast b{display:block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
 .rayav{flex:none;width:34px;height:34px;border-radius:50%;background:#4b5563;color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:900}
 .raytoast.low{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -1302,8 +1305,10 @@ function floatAt(el,html,color){
   document.body.appendChild(f);setTimeout(()=>f.remove(),900);
 }
 const bq=[];let bBusy=false;
-function banner(t,cls=""){bq.push([t,cls]);if(!bBusy)nextBanner()}
-function nextBanner(){const n=bq.shift();if(!n){bBusy=false;return}bBusy=true;const b=document.createElement("div");b.className="banner "+n[1];b.textContent=n[0];document.body.appendChild(b);setTimeout(()=>b.remove(),1100);setTimeout(nextBanner,750)}
+// one message at a time. Only milestones get the big headline; everything else is a small toast, without emoji clutter
+const BIG_RE=/^(level \d|achievement:|frenzy ·|richest on earth|welcome to the frontier|you beat vince|👑)/i,EMO_LEAD=/^(?:\p{Extended_Pictographic}|\uFE0F|\u200D|\s)+/u;
+function banner(t,cls=""){t=String(t);const big=BIG_RE.test(t);if(!big)t=t.replace(EMO_LEAD,"");if(!t||bq.some(q=>q[0]===t))return;if(bq.length>=4)bq.shift();bq.push([t,cls,big]);if(!bBusy)nextBanner()}
+function nextBanner(){if(bq.length&&document.querySelector(".goalpop")){bBusy=true;setTimeout(nextBanner,400);return}const n=bq.shift();if(!n){bBusy=false;return}bBusy=true;const b=document.createElement("div"),d=n[2]?1100:Math.min(3000,1300+n[0].length*28);b.className="banner "+n[1]+(n[2]?" big":" tst");b.style.setProperty("--d",d+"ms");b.textContent=n[0];document.body.appendChild(b);setTimeout(()=>b.remove(),d);setTimeout(nextBanner,n[2]?750:Math.max(600,d-250))}
 
 /* ================= juice: coins, confetti, shake, crits, crates ================= */
 const TABLET=matchMedia("(pointer:coarse)").matches&&Math.min(screen.width,screen.height)>=600;if(TABLET)document.documentElement.classList.add("tablet");
@@ -1320,7 +1325,8 @@ function coinsTo(v,from){fxSize();
   const n=clamp(Math.round(Math.log10(v+1)*4.5),3,30),tg=elC(cashTarget())||[60,40],[x0,y0]=from||fromPt();
   for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rnd(80,260);FXP.push({t:"coin",x:x0,y:y0,x0,y0,bx:x0+Math.cos(a)*sp*.55,by:y0+Math.sin(a)*sp*.45-40,tx:tg[0],ty:tg[1],p:-i*.022,dur:rnd(.55,.8),rot:Math.random()*6,r:rnd(5,7.5)})}
 }
-function confetti(n,x,y,cols,spread=1){if(SET.lowfx||SET.perf)n=Math.ceil(n/(SET.perf?3:4));fxSize();cols=cols||["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a","#ff5b6e","#ffffff"];
+function confetti(n,x,y,cols,spread=1){const now=performance.now();if(now-(confetti.t||0)<1500||FXP.length>300)return;confetti.t=now;n=Math.ceil(n*.5);
+  if(n<75&&y==null){[x,y]=fromPt();spread=.6}if(SET.lowfx||SET.perf)n=Math.ceil(n/(SET.perf?3:4));fxSize();cols=cols||["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a","#ff5b6e","#ffffff"];
   for(let i=0;i<n;i++){const a=y==null?Math.PI/2+rnd(-.5,.5):Math.random()*Math.PI*2,sp=y==null?rnd(60,240):rnd(150,520)*spread;
     FXP.push({t:"conf",x:x==null?Math.random()*fxW:x,y:y==null?-20-Math.random()*fxH*.4:y,vx:Math.cos(a)*sp*(y==null?.4:1),vy:y==null?rnd(40,160):Math.sin(a)*sp-180,rot:Math.random()*6,vr:rnd(-12,12),c:pick(cols),w:rnd(5,9),h:rnd(8,14),life:rnd(1.8,3.2),age:0})}}
 function sparks(x,y,col,n=18,spd=1){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rnd(120,380)*spd;FXP.push({t:"spark",x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,c:col,life:rnd(.35,.7),age:0,r:rnd(1.5,3.5)})}
@@ -2652,7 +2658,7 @@ GOALS.slice(0,10).forEach(g=>g.rw*=3);
 const rq=[];let rBusy=false;
 let rayEl=null,rayTo=null;
 function rayText(msg){rq.length=0;rq.push(msg);if(rayEl){rayEl.remove();rayEl=null;clearTimeout(rayTo);rBusy=false}if(!rBusy)nextRay()}
-function nextRay(){const m=rq.shift();if(!m){rBusy=false;return}rBusy=true;const t=document.createElement("div");t.className="raytoast"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav">R</span><span><b>Uncle Ray</b>${m}</span>`;document.body.appendChild(t);rayEl=t;t.onclick=()=>{t.remove();rayEl=null};rayTo=setTimeout(()=>{t.remove();rayEl=null;rBusy=false;nextRay()},6500)}
+function nextRay(){const m=rq.shift();if(!m){rBusy=false;return}rBusy=true;const t=document.createElement("div"),who=typeof m==="object"?m:{n:"Uncle Ray",m,a:"R"};t.className="raytoast"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav"${who.c?` style="background:${who.c}"`:""}>${who.a||who.n[0]}</span><span><b>${who.n}</b>${who.m}</span>`;document.body.appendChild(t);rayEl=t;t.onclick=()=>{t.remove();rayEl=null};rayTo=setTimeout(()=>{t.remove();rayEl=null;rBusy=false;nextRay()},6500)}
 function checkGoals(){
   const g=GOALS[S.goal];if(!g||!g.ok())return;
   const guided=GNAV===S.goal;S.goal++;if(guided)GNAV=S.goal;S.cash+=g.rw;dirty=true;SFX.level();buzz([20,40,20]);
@@ -3064,7 +3070,7 @@ function questFromNPC(n){
   const name=n&&n.n?n.n:pick(["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora"]);S.quest={name,cat,minV,m,left:240};dirty=true;SFX.hot();
   rayTextFrom(name,`${pick(Q_LINES)} some ${CAT[cat].n.toLowerCase()} worth at least ${fmt(minV)}. Bring it within 4 minutes and I'll pay ×${m}.`);
 }
-function rayTextFrom(name,msg){document.querySelectorAll(".raytoast.npc").forEach(x=>x.remove());const t=document.createElement("div");t.className="raytoast npc"+($("room").hidden?"":" low");t.innerHTML=`<span class="rayav" style="background:${name==="Vince"?"#e2364a":"var(--gold)"}">${name[0]}</span><span><b>${name}</b>${msg}</span>`;document.body.appendChild(t);t.onclick=()=>t.remove();setTimeout(()=>t.remove(),7000)}
+function rayTextFrom(name,msg){msg=String(msg).replace(EMO_LEAD,"");if(rq.some(q=>q&&q.m===msg))return;if(rq.length>=3)rq.shift();rq.push({n:name,m:msg,c:name==="Vince"?"#5b2a86":"var(--gold)"});if(!rBusy)nextRay()}
 function renderQChip(){const el=$("qChip"),q=S.quest;if(!q){el.hidden=true;return}el.hidden=false;const ok=questItem()>=0;
   el.innerHTML=`<span class="pk">Quest</span><span class="pt">${q.name}: ${CAT[q.cat].n} ≥ ${fmt(q.minV)}</span><span class="pr" style="color:${ok?"var(--up)":"var(--muted)"}">${ok?"Deliver":Math.ceil(q.left)+"s"}</span>`}
 const questItem=()=>{const q=S.quest;if(!q)return-1;let bi=-1,bv=0;S.stash.forEach((x,i)=>{if(x.cat===q.cat&&!x.fake){const v=valueOf(x);if(v>=q.minV&&(bi<0||v<bv)){bi=i;bv=v}}});return bi};
@@ -5459,7 +5465,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=86,WN=[
+const WN_VER=87,WN=[
+ ["🎨","A calmer, cleaner look","Messages are now small notes instead of giant headlines (the big ones are saved for level ups, achievements and other milestones), confetti is saved for moments that earn it, characters wait their turn to talk, and the HUD panels are solid and crisp.","2026-10-07T12:00"],
  ["🕴️","The Vince Saga","Vince wants every world for himself. A new ten-chapter story takes you from your first sale to the Frontier: beat his challenges, outsell him, open each world before he buys it, race his ghost down the Frontier Road and win the final flip. Each chapter pays out, and finishing it earns the Mogul medal. Tap the purple Story pill to follow it.","2026-10-07T11:00"],
  ["🛣️","Life on the Frontier Road","The road to World 4 is busy now: give hitchhikers a lift, fix broken-down trucks, walk lost dogs to Rusty's, answer the toll troll's riddles, catch golden tumbleweeds, snack at the Farm Stand, and race the road for medals at the Race Office (friends show up on the leaderboard).","2026-10-07T10:30"],
  ["🗺️","Minimap","A little map now sits in the corner. Tap it to see the whole map, with you, your friends, your goal and every place on it. Tap a place to walk there or grab a taxi.","2026-10-07T10:00"],
