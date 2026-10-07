@@ -18,6 +18,7 @@ local CosmeticService = {}
 
 local STORE_REACH = 22 -- studs from the clothing store's middle where buying is allowed
 local FOLDER = "Cosmetics"
+local FIT_SHIRT = "GymArcFit" -- the classic Shirt a worn gym fit puts on the character
 
 local function event(player, kind, info)
 	if player.Parent then Remotes.PlayerEvent:FireClient(player, kind, info or {}) end
@@ -104,6 +105,20 @@ local function build(player)
 	local folder = Instance.new("Folder")
 	folder.Name = FOLDER
 	folder.Parent = character
+	-- the gym fit: a classic Shirt on the character itself (the body swap strips clothing, so it is put back on every build)
+	local fit = Cosmetics.ById[stateOf(data).equipped.Fit or ""]
+	local shirt = character:FindFirstChild(FIT_SHIRT)
+	if fit and fit.shirt and fit.shirt ~= "" then
+		if not (shirt and shirt:IsA("Shirt")) then
+			if shirt then shirt:Destroy() end
+			shirt = Instance.new("Shirt")
+			shirt.Name = FIT_SHIRT
+		end
+		shirt.ShirtTemplate = fit.shirt
+		shirt.Parent = character
+	elseif shirt then
+		shirt:Destroy()
+	end
 	for _, itemId in pairs(stateOf(data).equipped) do
 		local item = Cosmetics.ById[itemId]
 		local builder = item and BUILD[item.style]

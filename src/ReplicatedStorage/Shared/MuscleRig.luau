@@ -1149,7 +1149,7 @@ function MuscleRig.StyleFrom(source: Instance, model: Model): any
 	return {
 		skin = skin,
 		shorts = Body.ShortsColor(source:GetAttribute("Shorts")),
-		top = Body.TopColor(source:GetAttribute("Top")),
+		top = if shirt and shirt.ShirtTemplate ~= "" then nil else Body.TopColor(source:GetAttribute("Top")), -- (a worn Shirt: skin under it)
 		shirt = if shirt and shirt.ShirtTemplate ~= "" then shirt.ShirtTemplate else nil,
 		pants = if pants and pants.PantsTemplate ~= "" then pants.PantsTemplate else nil,
 	}

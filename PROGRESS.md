@@ -44,6 +44,11 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
   Persistent Models (were Folders; the builders make Models too).
 
+- **Gym fits (8 Oct, overnight):** 6 classic-Shirt tops x 4 colors in the Gear and Fits store (new cosmetics slot "Fit",
+  `Config/Cosmetics` Fits + FitTemplates, prices 150-400 coins), worn from the Wardrobe; `CosmeticService` puts a Shirt
+  "GymArcFit" on the character, the muscles wear it. Images drawn by `tools/clothing_templates.ps1` into
+  `clothing_templates/` and uploaded (ids in Config). Known issue: at mass monster size the skin under-layer pokes
+  through on overhanging delts / biceps (the inner-part + cloth-part trick, any classic shirt).
 - **Shoulders widen with muscle (8 Oct):** tall skinny players start with narrow shoulders (k 0.4 -> 1.15 -> 1.4), the frame
   on top, always wider than the hips (`Body.Widths.ShouldersOverHips`).
 - **Look balance cap (8 Oct, reworked overnight):** only inside each group, in bulge studs (`Config/LookBalance` MaxGap 0.15 /
