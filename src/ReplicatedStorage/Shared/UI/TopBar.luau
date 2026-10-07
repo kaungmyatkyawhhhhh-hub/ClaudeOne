@@ -22,6 +22,7 @@ local NARROW_WIDTH = 1400 -- px: under this the right pills drop their text
 local ACTIVE_FILL = 0.8
 local HOVER_FILL = 0.4
 
+local geneticsOpen = false -- the Genetics screen needs the whole top of the screen
 local gui, left, right, coinsText
 local pills = {}
 local compact = false -- a phone (short screen): the coins pill goes right of the Menu button
@@ -105,9 +106,21 @@ local function applyMode()
 	end
 end
 
+-- full-width screens the pills step aside for (Settings is not one: it opens from a pill)
+local COVERS = { "MusclesScreen", "TitleBook", "ProgressMirror", "GeneticsScreen", "ClothingStore", "ArmWrestle", "Store", "Wardrobe", "Crew" }
+local function coverOpen()
+	local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
+	if not playerGui then return false end
+	for _, name in ipairs(COVERS) do
+		local screen = playerGui:FindFirstChild(name)
+		if screen and screen:IsA("ScreenGui") and screen.Enabled then return true end
+	end
+	return false
+end
+
 local function refreshVisible()
 	if not gui then return end
-	local show = not SideMenu.IsTraining() and not SideMenu.IsHidden() and not UIBus.MenuOpen
+	local show = not SideMenu.IsTraining() and not SideMenu.IsHidden() and not UIBus.MenuOpen and not geneticsOpen and not coverOpen()
 	left.Visible = show
 	right.Visible = show
 end
@@ -162,6 +175,10 @@ local function ensure()
 		applyMode()
 	end)
 	UIBus.MenuClosed.Event:Connect(refreshVisible)
+	UIBus.GeneticsVisible.Event:Connect(function(open)
+		geneticsOpen = open
+		refreshVisible()
+	end)
 	task.spawn(function() -- (MenuClient raises UIBus.MenuOpen when it starts, which can be after this runs)
 		while true do
 			task.wait(0.4)

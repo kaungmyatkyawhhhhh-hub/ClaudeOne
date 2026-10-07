@@ -89,6 +89,8 @@ local function setLine(text)
 	local first = shownText == nil
 	shownText = text
 	lineText.Text = text
+	-- long lines use the smaller text so they stay clear of the pills and buttons at the top right
+	lineText.TextSize = if #text > 60 then Theme.TextSize.Small else Theme.TextSize.Body
 	if first then
 		placeLine()
 		Theme.Fade(line, true)

@@ -145,6 +145,9 @@ local function open()
 	menuButton:SetActive(true)
 	menuButton:SetDot(false)
 	UIBus.MenuPanelVisible:Fire(true)
+	-- keep clear of the tile menu on the left (centered, with the menu's width on both sides)
+	local clear = SideMenu.Right() + Spacing.L
+	panel.Size = UDim2.new(1, -clear * 2, 0.8, 0)
 	refresh()
 	book.Enabled = true
 	Audio.PlayUI("Whoosh")

@@ -264,3 +264,9 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - Layered (3D) clothing: a fake jacket (Accessory type Jacket with a WrapLayer) hides the torso and arm muscles and leaves the legs; removing it brings them back. (No real layered item tested.)
 - Progress mirror: "Now" holds the front double biceps with muscles; live glass mirror copies a held pose.
 - Still unchecked: a real phone, the judges with low muscles (formula only), skate feel beyond the earlier ride.
+
+## Full test pass (7 Oct 2026)
+- Logic tests 10/10 pass (new `tests/exp`), all 121 scripts compile, no new lint errors, console clean (only the known "EditableMesh memory budget" engine message).
+- Played through in Studio on a fresh player: menu, Play, genetics reveal + reroll + keep, Muscles/Titles/Poses/Crew/Wardrobe/Settings panels, lifting the bench (EXP popups, widget, coins), the town, skating (ramp up, carve, wall stop), a full Growth Spurt (celebration, "Late Bloomer", 4'6", spurt 2), the locked pro gym.
+- Fixed from this pass: the Genetics screen and the Title Book sat under the wider tile menu (now start to its right); the top-bar pills now hide behind full-width panels (Muscles, Titles, Genetics, mirror, store, wardrobe, crew); long coach lines use the smaller text so they clear the top-right buttons.
+- Not re-checked: the Quests pill toggle (the tracker only appears after the tutorial reaches the Coach), pro gym machines (needs spurt 2 done), beach gym, arm wrestling, spotting, legends, shakes, store (monetization off).

@@ -594,6 +594,12 @@ local function open()
 		root.AnchorPoint = Vector2.new(0, 0.5)
 		root.Position = UDim2.new(0, left, 0.5, 0)
 		root.Size = UDim2.new(1, -(left + Spacing.L), 1, -Spacing.M * 2)
+	else
+		-- PC: the content starts right of the (two-column) tile menu, measured on open
+		local left = SideMenu.Right() + Spacing.L
+		root.AnchorPoint = Vector2.new(0, 0.5)
+		root.Position = UDim2.new(0, left, 0.5, 0)
+		root.Size = UDim2.new(1, -(left + Spacing.L), 0.94, 0)
 	end
 	menuButton:SetActive(true)
 	oddsPanel.Visible = false
