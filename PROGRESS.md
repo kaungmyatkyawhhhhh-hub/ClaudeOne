@@ -235,9 +235,11 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - Pose for every skater: side-on regular stance, bent knees (deeper at speed), feet flat on the deck, back-foot push cycle, toe/heel lean in carves, tuck + arms up in the air; the board tilts with carves and pops on ollies (BoardJoint Motor6D).
 - `SkateService`: new board (maple deck with kicktails, grip, trucks, wheels, bearings), wheels on the ground and the deck top under the feet.
 
-## Poses package (7 Oct 2026): IN PROGRESS, code written, NOT yet synced or tested in Studio (Studio disconnected)
+## Poses package (7 Oct 2026): done and tested in Studio
 - `ReplicatedStorage/PoseData` (copied exactly) + `PoseController` LocalScript (package copy; only change: also accepts AnimationConstraint joints, which HumanoidDescription rigs use). Server sets character attribute `Pose`; NPCs tagged `Poser`.
 - `ShowOffService.SetPose/ReleasePose`: held poses from the Poses panel (6 poses + high five), walk speed/jump frozen, released on move/jump (`PoseClient`), machine, skate, death or after 45s. Judges score a pose held on the posing stage (1-10 from the shown muscles' levels).
 - `PoseClient`: pose name on screen, face the camera, pose hit (+4% muscle pulse via `MuscleRig.PulseModel`, camera punch, flash, CrowdOoh placeholder sound in Config/Sounds).
 - Statue = FrontDoubleBiceps (`Shared/PoseApply` + SolveJoints); progress mirror "Now" rig = FrontDoubleBiceps; live mirror copies the real pose; NPC regulars strike a random pose now and then (GymGoerService).
 - Old procedural LatSpread/AbsAndThighs/MostMuscular removed from EmoteClient (high five, shake chug and the regulars' curl/flex stay).
+- Tested: all 7 poses on a player with a shirt at max muscles (and side chest at level 0), an NPC posing, blend in ~0.35s (shoulder 4 to 95 deg), walking and jumping cancel and restore movement, judges score on the posing stage (10/10 at max), statue in front double biceps. Screenshots `poses_*.png`. No joint needed a sign flip.
+- Not checked: the posing-stage judges with low muscles, the pose hit sound (CrowdOoh is a placeholder id, pick a real one in Config/Sounds), phone.

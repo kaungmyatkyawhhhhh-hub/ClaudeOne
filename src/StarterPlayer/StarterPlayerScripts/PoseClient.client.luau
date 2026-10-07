@@ -43,7 +43,7 @@ local gui = Theme.ScreenGui({ Name = "PoseName", Enabled = false, DisplayOrder =
 local panel = Theme.Panel({
 	Name = "Panel",
 	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -150),
+	Position = UDim2.new(0.5, 0, 1, -24), -- low, under the character (nothing else sits at the bottom centre while posing)
 	Size = UDim2.fromOffset(260, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Parent = gui,
