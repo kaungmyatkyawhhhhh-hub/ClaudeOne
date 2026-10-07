@@ -2403,7 +2403,7 @@ function openHeist(){room="heist";$("room").hidden=false;const pay=Math.round(Ma
     g.fillStyle="#5b6272";g.beginPath();g.arc(0,0,40,0,7);g.fill();g.fillStyle="#8a93a5";g.beginPath();g.arc(0,0,22,0,7);g.fill();g.restore();requestAnimationFrame(loop)};requestAnimationFrame(loop)}
 /* ---------- Night Market: open 8 PM to 5 AM on the boardwalk ---------- */
 const NIGHT_GEAR=[{k:"lantern",n:"Lantern hat",ic:"🏮",f:.004},{k:"glow",n:"Glow sticks",ic:"🪄",f:.002}];
-const nightOpen=()=>S.clock>=20||S.clock<5;
+const nightOpen=()=>S.clock>=(isDay("fri")?18:20)||S.clock<5;
 function openNightMkt(){room="night";$("room").hidden=false;const draw=()=>{const open=nightOpen(),tonight=S.day+(S.clock<5?-1:0),ft=Math.round(Math.max(200,rwBase()*.004)),told=S.fortuneN===tonight,sold=S.nightSell===tonight;
   const hh=Math.floor(S.clock),mm=Math.floor((S.clock%1)*60),tm=((hh+11)%12+1)+":"+String(mm).padStart(2,"0")+(hh<12?" AM":" PM");
   $("room").innerHTML=`<div class="room-in scroll nightroom">${roomHead("Night Market")}<div class="nmart">${"🏮".repeat(7)}</div>
@@ -2413,11 +2413,11 @@ function openNightMkt(){room="night";$("room").hidden=false;const draw=()=>{cons
     <div class="sechead"><h3>🌙 Midnight collector</h3><span class="eyebrow">Pays +40% · one item a night</span></div>
     <div class="perks">${sold?`<div class="note">The collector has gone home with tonight's treasure.</div>`:S.stash.length?S.stash.map((it,i)=>`<button class="perk nopic" data-nm="${i}"><span class="t">${esc(it.name)}</span><span class="d">${it.cond}${it.fake?" · they can spot fakes":""}</span><span class="c">${fmt(Math.round(sellValue(it)*(it.fake?.2:1.4)))}</span></button>`).join(""):`<div class="note">Bring something in your stash and the collector will make an offer.</div>`}</div>
     <div class="sechead"><h3>🎆 Fireworks</h3><span class="eyebrow">Light up the night sky</span></div>
-    <button class="bigbtn alt2" id="nmFire" ${S.cash<Math.round(Math.max(1500,rwBase()*.006))?"disabled":""}>Put on a fireworks show<small>${fmt(Math.round(Math.max(1500,rwBase()*.006)))} · 20 seconds · every tap launches a rocket for fans</small></button>
+    <button class="bigbtn alt2" id="nmFire" ${S.cash<Math.round(Math.max(1500,rwBase()*.006)*(isDay("fri")?.5:1))?"disabled":""}>Put on a fireworks show<small>${fmt(Math.round(Math.max(1500,rwBase()*.006)*(isDay("fri")?.5:1)))} · 20 seconds · every tap launches a rocket for fans</small></button>
     <div class="sechead"><h3>✨ Night-only gear</h3><span class="eyebrow">Only sold after dark</span></div>
     <div class="perks">${NIGHT_GEAR.map(gx=>{const own=(S.accOwn||{})[gx.k],c=Math.round(Math.max(2000,rwBase()*gx.f));return `<button class="perk nopic" data-ng="${gx.k}" ${own||S.cash<c?"disabled":""}><span class="t">${gx.ic} ${gx.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">Glows in the dark</span><span class="c">${own?"Owned":fmt(c)}</span></button>`}).join("")}</div>`}</div>`;
   $("leaveBtn").onclick=closeRoom;
-  const fr=$("nmFire");if(fr)fr.onclick=()=>{const c=Math.round(Math.max(1500,rwBase()*.006));if(S.cash<c||FWS)return;S.cash-=c;dirty=true;startFireworks()};
+  const fr=$("nmFire");if(fr)fr.onclick=()=>{const c=Math.round(Math.max(1500,rwBase()*.006)*(isDay("fri")?.5:1));if(S.cash<c||FWS)return;S.cash-=c;dirty=true;startFireworks()};
   const fb=$("nmFort");if(fb)fb.onclick=()=>{if(S.fortuneN===tonight||S.cash<ft)return;S.cash-=ft;S.fortuneN=tonight;dirty=true;const r=Math.random();let msg;
     if(r<.4){S.buffs.fortune=240;msg="Lucky hands: every sale pays +30% for 4 minutes"}else if(r<.6){S.maps=(S.maps||0)+1;msg="A vision of buried gold: you got a treasure map"}else if(r<.8){const f=Math.round(Math.max(200,(S.fans||0)*.05));S.fans=(S.fans||0)+f;msg="Fame is coming: +"+fmtN(f)+" fans"}else{S.nextGold=1;msg="A golden find awaits: the next market item you see is golden"}
     SFX.hot();confetti(100,null,null,["#8f52d4","#ffcc33","#fff"]);rayTextFrom("Madame Luna",msg);draw();updMini()};
@@ -3120,6 +3120,12 @@ function drawTT(){if(!TT||SCN||MPW||room)return;TT.cps.forEach((c,k)=>{if(k<TT.i
   ctx.save();ctx.translate(sx,sy);ctx.globalAlpha=cur?1:.35;ctx.strokeStyle=cur?"#ffcc33":"#fff";ctx.lineWidth=cur?6:3;const r=cur?26+Math.sin(wt*6)*3:18;ctx.beginPath();ctx.ellipse(0,0,r,r*.45,0,0,7);ctx.stroke();
   ctx.fillStyle=cur?"#ffcc33":"#fff";ctx.font="900 13px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(k+1),0,-r*.45-12);ctx.restore()})}
 setInterval(()=>{try{ttTick()}catch(e){}},80);
+/* ---------- daily town events: every weekday has its own bonus ---------- */
+const DAYEV=[["sun","☀️","Lazy Sunday","Energy refills twice as fast"],["mon","🛍️","Market Madness Monday","Shops have 50% more steals"],["tue","💪","Gains Tuesday","Every lift can drop a crate"],["wed","🕹️","Arcade Wednesday","Double arcade tickets"],["thu","🗺️","Treasure Thursday","Sales can turn up treasure maps"],["fri","🎆","Fireworks Friday","Half-price fireworks, Night Market opens at 6 PM"],["sat","🌱","Green Saturday","Crops grow twice as fast"]];
+const dayEv=()=>DAYEV[new Date().getDay()],isDay=k=>dayEv()[0]===k;
+let devSnap=null;
+setInterval(()=>{if(!S||!S.stats)return;const now={l:S.stats.lifted||0,f:S.stats.flips||0};if(devSnap){if(isDay("tue")&&now.l>devSnap.l&&Math.random()<.12)gainCrate(1);if(isDay("thu")&&now.f>devSnap.f&&Math.random()<.08){S.maps=(S.maps||0)+1;dirty=true;banner("Treasure Thursday · a map was hidden in that sale!","g")}}devSnap=now;
+  const dk=dayKey();if(S.devSeen!==dk&&(S.stats.flips||0)>=3&&!room&&$("overlay").hidden){S.devSeen=dk;dirty=true;const d=dayEv();setTimeout(()=>{banner(d[1]+" "+d[2],"g");rayText("Today is "+d[2]+": "+d[3].toLowerCase()+".")},800)}},1200);
 /* ---------- fireworks show: 20 seconds of rockets over town; your taps launch extra ones ---------- */
 let FWS=null;const FW=[];
 function fwLaunch(tx,ty,mine){const col=pick(["#ff6fe0","#6ff0ff","#ffd84f","#4ff0a0","#ff5a6e","#ffffff","#b47cff"]);FW.push({x:tx+rnd(-20,20),y:vh+10,tx,ty:Math.max(60,ty),vy:-rnd(520,680),col,boom:false,p:[]});if(mine&&FWS){FWS.taps++;S.fans=(S.fans||0)+FWS.per;dirty=true}tone(300,.25,{type:"triangle",vol:.03,to:900})}
@@ -3309,7 +3315,7 @@ function newListing0(){
   const only=MC().only||(MC().k==="lux"?"lux":null),luxP=only?(()=>{const lp=POOL.filter(p=>p.cat===only);if(only!=="lux")return lp;const cap=Math.max(30000,(S.cash+stashVal())*1.5),ok=lp.filter(p=>p.base<=cap);return ok.length?ok:lp.slice(0,3)})():null;
   const it=pick(luxP||affordable(Math.random()<.12?3:1)),c=CAT[it.cat],cond=pick(c.conds),ek=only?1:edK()*(edK()>1?rnd(.6,1.4):1);
   const base=Math.round(it.base*cond[1]*ek),mv=base*S.trend[it.cat];
-  const forced=FORCE_STEAL>0&&!only&&(FORCE_STEAL--,true),steal=forced||Math.random()<MC().steal*(1+.15*pk("steal"))*tSteal()*(rookieLeft()?2.5:1),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
+  const forced=FORCE_STEAL>0&&!only&&(FORCE_STEAL--,true),steal=forced||Math.random()<MC().steal*(1+.15*pk("steal"))*tSteal()*(rookieLeft()?2.5:1)*(isDay("mon")?1.5:1),r=(steal?rnd(.36,.6):rnd(.6,1.12))*(hasStr(80)?.95:1)*MC().price*(EV&&EV.type==="rain"?.85:1);
   const fake=steal&&!forced&&(S.stats.flips||0)>=8&&Math.random()<Math.min(.9,MC().fake*secK()*(1+WT*.5)*tFake()*(rookieLeft()?.5:1));
   let rating=rnd(4.5,5);
   if(fake&&Math.random()<.8)rating=Math.random()<.4?0:rnd(2.9,4.1);else if(!fake&&Math.random()<.08)rating=rnd(3.6,4.3);
@@ -3507,7 +3513,7 @@ function loop(now){
     if(playing){
       S.clock+=dt/10;if(S.clock>=24){S.clock-=24;S.day++}
       if(S.protein>0)S.protein=Math.max(0,S.protein-dt);
-      S.energy=Math.min(maxEnergy(),S.energy+dt/3*(S.buffs&&S.buffs.fed>0?2:1));
+      S.energy=Math.min(maxEnergy(),S.energy+dt/3*(S.buffs&&S.buffs.fed>0?2:1)*(isDay("sun")?2:1));
       const wasT=S.awake>20;S.awake=(S.awake||0)+dt/10;if(!wasT&&S.awake>20){banner("You're tired","r");rayText("You've been up all day. Lifts are harder and you walk slower until you sleep at Home.")}
       for(const b in S.buffs)if(S.buffs[b]>0)S.buffs[b]=Math.max(0,S.buffs[b]-dt);
       if(S.lastSeason!==season().n){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
@@ -4384,7 +4390,7 @@ function openGarden(back){room="garden";$("room").hidden=false;const draw=()=>{c
     <div class="sechead"><h3>Seeds</h3><span class="eyebrow">${P.filter(x=>!x).length} empty plot${P.filter(x=>!x).length===1?"":"s"}</span></div>
     <div class="perks">${SEEDS.map(sd=>`<button class="perk nopic" data-sd="${sd.k}" ${!P.some(x=>!x)||S.cash<seedCost(sd)?"disabled":""}><span class="t">${sd.ic} ${sd.n}</span><span class="d">Ready in ${sd.m<60?sd.m+" min":sd.m/60+" h"} · harvest about ${fmt(seedPay(sd))}</span><span class="c">${fmt(seedCost(sd))}</span></button>`).join("")}</div></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-  $("room").querySelectorAll("[data-sd]").forEach(b=>b.onclick=()=>{const sd=seedOf(b.dataset.sd),P=gardenPlots(),i=P.findIndex(x=>!x),c=seedCost(sd);if(i<0||S.cash<c)return;S.cash-=c;P[i]={k:sd.k,m:sd.m,t0:Date.now(),base:rwBase()};dirty=true;SFX.tick(.6);buzz(8);banner(sd.n+" planted","a");draw();updMini()});
+  $("room").querySelectorAll("[data-sd]").forEach(b=>b.onclick=()=>{const sd=seedOf(b.dataset.sd),P=gardenPlots(),i=P.findIndex(x=>!x),c=seedCost(sd);if(i<0||S.cash<c)return;S.cash-=c;P[i]={k:sd.k,m:isDay("sat")?sd.m/2:sd.m,t0:Date.now(),base:rwBase()};dirty=true;SFX.tick(.6);buzz(8);banner(sd.n+" planted","a");draw();updMini()});
   $("room").querySelectorAll("[data-wt]").forEach(b=>b.onclick=()=>{const pl=gardenPlots()[+b.dataset.wt];if(!pl||pl.w)return;pl.w=1;pl.t0-=Math.max(0,plotLeft(pl))*.2;dirty=true;SFX.hot();confetti(30,null,null,["#4fe3ff","#bfe6ff","#fff"]);draw()});
   $("room").querySelectorAll("[data-hv]").forEach(b=>b.onclick=()=>{const P=gardenPlots(),i=+b.dataset.hv,pl=P[i];if(!pl||plotLeft(pl)>0)return;const sd=seedOf(pl.k),v=seedPay(sd,pl);earn(v);P[i]=null;S.stats.harvests=(S.stats.harvests||0)+1;dirty=true;
     if(sd.m>=60&&Math.random()<.35){gainCrate(1);banner("A crate was buried in the roots!","g")}SFX.sell(3);confetti(90,null,null,["#2fd28a","#ffcc33","#fff"]);banner(sd.n+" harvested · +"+fmt(v),"g");draw();updMini()})};
@@ -4546,7 +4552,7 @@ function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||
   $("room").querySelectorAll("[data-ag]").forEach(b=>b.onclick=()=>{if(!spend(5,b))return;arcPlay(b.dataset.ag,draw)});
   $("room").querySelectorAll("[data-ap]").forEach(b=>b.onclick=()=>{const z=ARC_PRIZE[+b.dataset.ap];if((S.tix||0)<z.t)return;if(z.acc){S.accOwn=S.accOwn||{};if(S.accOwn[z.k])return;S.accOwn[z.k]=1;S.acc=S.acc||{};S.acc[accOf(z.k).s]=z.k}else z.f();S.tix-=z.t;dirty=true;SFX.rebirth();confetti(140,null,null,["#ff4fd8","#4fe3ff","#ffcc33"]);banner(z.n+(z.acc?" · equipped":""),"g");draw();updMini()})};draw()}
 function arcPlay(k,back){const G=ARC_G[k];room="arcade";
-  const end=(score,tix)=>{S.arcBest=S.arcBest||{};const best=score>(S.arcBest[k]||0);if(best)S.arcBest[k]=score;S.tix=(S.tix||0)+tix;S.stats.arcade=(S.stats.arcade||0)+1;dirty=true;
+  const end=(score,tix)=>{if(isDay("wed"))tix*=2;S.arcBest=S.arcBest||{};const best=score>(S.arcBest[k]||0);if(best)S.arcBest[k]=score;S.tix=(S.tix||0)+tix;S.stats.arcade=(S.stats.arcade||0)+1;dirty=true;
     SFX[tix>=20?"rebirth":"sell"]();if(tix>=20)confetti(120,null,null,["#ff4fd8","#4fe3ff","#ffcc33"]);
     $("room").innerHTML=`<div class="room-in">${roomHead(G.n)}<div class="shend"><b>${G.ic}</b><span>${best?"New best! ":""}Score ${score}</span><div class="kv"><div><span class="eyebrow">Tickets won</span><b>🎟️ +${tix}</b></div><div><span class="eyebrow">You have</span><b>🎟️ ${fmtN(S.tix)}</b></div></div></div>
       <button class="bigbtn" id="arAgain" ${S.energy<5?"disabled":""}>Play again<small>5 energy</small></button><button class="bigbtn alt" id="arBack">Back to the Arcade<small>&nbsp;</small></button></div>`;
@@ -4945,7 +4951,9 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=48,WN=[
+const WN_VER=49,WN=[
+ ["📆","A different town every day","Each weekday has a bonus: Market Madness Monday, Gains Tuesday, Arcade Wednesday, Treasure Thursday, Fireworks Friday, Green Saturday and Lazy Sunday.","2026-10-07T05:05"],
+ ["🎳","Bowling & Higher or lower","Two more Arcade games.","2026-10-07T05:00"],
  ["🎆","Fireworks","Buy a fireworks show at the Night Market: 20 seconds of rockets over town, and every tap on the sky launches your own for extra fans.","2026-10-07T04:55"],
  ["🧙","Wandering merchant","Every few minutes a merchant appears somewhere in town for 90 seconds. Reach him for a rare item at 60% off, a mystery potion or a sticker pack.","2026-10-07T04:45"],
  ["⏱️","Street time trial","Start a time trial at the Docks Car Meet and race through six glowing rings across town. Beat par for tickets and set a personal best.","2026-10-07T04:35"],
@@ -6297,6 +6305,7 @@ function openJukebox(back){room="jbox";$("room").hidden=false;const draw=()=>{$(
 /* ================= what's next: everything left to unlock ================= */
 function openNext(back){room="next";$("room").hidden=false;const L=repLevel(),nw=netWorth(),rows=[];
   const add=(ic,t,d,p)=>rows.push({ic,t,d,p});
+  {const d=dayEv();add(d[1],"Today: "+d[2],d[3]+".")}
   const g=GOALS[S.goal];if(g)add("🎯","Goal "+(S.goal+1)+": "+g.t,g.d+" Reward "+fmt(g.rw)+".");
   // things you can do today
   if(gardenReady())add("🌱","Your garden is ready",gardenReady()+" crop"+(gardenReady()>1?"s":"")+" to harvest at Home.");
