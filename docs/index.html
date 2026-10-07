@@ -406,6 +406,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .gardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gplot{border-radius:16px;padding:12px;background:#6b4a2a;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.2)}.gplot b{font-size:2.6rem;line-height:1;transition:transform .3s}.gplot small{font-weight:700}.gplot span{font:700 .72rem var(--mono);opacity:.85}.gplot.empty{background:#8a6a4a;opacity:.7}.gplot.ripe{background:#3f7a3a;box-shadow:0 0 0 3px #ffcc33,inset 0 -6px 0 rgba(0,0,0,.2)}.gplot .cta{width:100%;padding:8px;justify-content:center;font-size:.78rem}
 .fobtn{background:linear-gradient(90deg,#1b1f2a,#3a2266)!important;color:#ffcc33!important}.fobtn b{color:#fff!important}
 .fobar{margin:8px 0;padding:10px 12px;border-radius:14px;background:#1b1f2a;color:#fff}.foh{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;margin-bottom:6px}.foh span{font:900 1rem var(--mono);color:#ffcc33}.fotrack{height:10px;border-radius:5px;background:#e2364a;overflow:hidden}.fotrack i{display:block;height:100%;background:#2fd28a;transition:width .25s}
+.bxwrap{display:flex;justify-content:center;margin:10px 0}.bxwrap canvas{width:min(80vw,300px);height:auto;border-radius:18px;touch-action:manipulation}
 .hlrow{display:flex;align-items:center;gap:8px;width:min(92vw,360px)}.hlrow em{font-style:normal;font-weight:900;color:var(--muted)}.hlcard{flex:1;border-radius:18px;padding:14px 8px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}.hlcard b{font-size:.82rem;min-height:2.2em}.hlcard span{font:900 1.3rem var(--mono)}
 .hlbtns{display:flex;gap:10px;width:min(92vw,360px);margin-top:12px}.hlbtns .bigbtn{flex:1;text-align:center}
 .brorder{margin:12px 0;padding:14px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow);text-align:center;display:flex;flex-direction:column;gap:6px}.brorder small{color:var(--muted);font-weight:700}.brorder b{font-family:var(--display);font-size:1.4rem}.brorder span{display:flex;gap:10px;justify-content:center;font-size:2rem}.brorder i{font-style:normal;opacity:.35}.brorder i.done{opacity:1;transform:scale(1.15)}
@@ -1176,6 +1177,7 @@ const ACH=[
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
+ ["box20","Float like a butterfly","Reach a ×20 combo on the boxing bag",()=>(S.boxBest||0)>=20,30000],
  ["vinny10","Vinny's nightmare","Win 10 flip-offs",()=>(S.stats.foWins||0)>=10,500000],
  ["stk48","Complete book","Collect every sticker",()=>stkCount()>=48,5e6],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
@@ -2045,6 +2047,7 @@ function renderGymAct(){
   if(st&&st.lift)h+=`<button class="gbtn main" id="gLift">${st.n}<small>PR ${S.lifts[st.lift]} kg · tap to lift</small></button>`;
   else if(st&&st.k==="dumb")h+=`<button class="gbtn main" id="gCurl">Pump curls<small>3 energy · flex rewards +30% for 90s</small></button>`;
   else if(st&&st.k==="stage")h+=`<button class="gbtn main" id="gComp">Compete<small>Bodybuilding shows</small></button>`;
+  h+=`<button class="gbtn" id="gBox">🥊 Boxing bag<small>5 energy · rhythm, not muscle${S.boxBest?" · best ×"+S.boxBest:""}</small></button>`;
   h+=`<button class="gbtn flex" id="gFlex">${st&&st.k==="stage"?"Flex on stage":"Flex here"}<small>10 energy${st&&st.k==="stage"?" · ×1.5 fans":" · draw a crowd"}</small></button>`;
   if(!st)h=`<span class="gtip">Tap the floor to walk to a station.</span>`+h;
   el.innerHTML=h;
@@ -2052,7 +2055,32 @@ function renderGymAct(){
   const c=$("gCurl");if(c)c.onclick=e=>{if(!spend(3,e.currentTarget))return;S.buffs.pump=90;GS.curlT=1.4;SFX.lift();buzz(10);gymPop(GS.px,GS.py-72,"PUMPED","#ff4fd8");dirty=true;updMini()};
   const cp=$("gComp");if(cp)cp.onclick=compPanel;
   $("gFlex").onclick=e=>startFlex(null,e.currentTarget);
+  const bx=$("gBox");if(bx)bx.onclick=e=>{if(!spend(5,e.currentTarget))return;boxBag()};
 }
+/* ---------- boxing bag: punch as the ring closes on the target, 30 seconds, combos make fans ---------- */
+function boxBag(){const back=()=>{room="gym";openGym(false)};room="boxing";$("room").hidden=false;
+  $("room").innerHTML=`<div class="room-in">${roomHead("Boxing bag")}<div class="kv"><div><span class="eyebrow">Combo</span><b id="bxC">×0</b></div><div><span class="eyebrow">Fans</span><b id="bxF">0</b></div><div><span class="eyebrow">Time</span><b id="bxT">30</b></div></div>
+    <div class="bxwrap"><canvas id="bxCv" width="300" height="300"></canvas></div><button class="bigbtn" id="bxHit" style="touch-action:manipulation">PUNCH</button><p class="fine">Punch when the shrinking ring meets the gold circle. Perfect hits build your combo.</p></div>`;
+  $("leaveBtn").onclick=()=>{B.live=false;back()};const cv=$("bxCv"),g=cv.getContext("2d");
+  const B={live:true,t0:performance.now(),beat:0,ring:1,period:1.1,combo:0,best:0,fans:0,hits:0,swing:0,shake:0,txt:"",txtT:0};
+  const hit=e=>{if(e)e.preventDefault();if(!B.live)return;const d=Math.abs(B.ring-.3);B.swing=.25;
+    if(d<.06){B.combo++;B.best=Math.max(B.best,B.combo);const f=Math.max(1,Math.round((2+B.combo)*(1+(S.fans||0)/20000)));B.fans+=f;B.txt="PERFECT";SFX.crit(Math.min(3,B.combo/5));buzz(25);B.shake=10}
+    else if(d<.14){B.combo++;B.best=Math.max(B.best,B.combo);B.fans+=1;B.txt="GOOD";SFX.tick(.8);buzz(12);B.shake=5}
+    else{B.combo=0;B.txt="MISS";SFX.loss();buzz(30)}B.txtT=.6;B.hits++;B.ring=1;$("bxC").textContent="×"+B.combo;$("bxF").textContent=B.fans};
+  $("bxHit").addEventListener("pointerdown",hit);cv.addEventListener("pointerdown",hit);let lt=performance.now();
+  const loop=now=>{if(!B.live||room!=="boxing")return;const dt=Math.min(.05,(now-lt)/1000);lt=now;const T=30-(now-B.t0)/1000;$("bxT").textContent=Math.max(0,Math.ceil(T));
+    B.period=Math.max(.55,1.1-B.combo*.025);B.ring-=dt/B.period*.7;if(B.ring<.1){B.ring=1;if(B.combo){B.combo=0;$("bxC").textContent="×0"}B.txt="TOO SLOW";B.txtT=.5}
+    B.swing=Math.max(0,B.swing-dt);B.shake=Math.max(0,B.shake-dt*40);B.txtT=Math.max(0,B.txtT-dt);
+    g.clearRect(0,0,300,300);g.fillStyle="#1b1f2a";g.fillRect(0,0,300,300);g.save();g.translate(150,150);
+    const sw=Math.sin(now/120)*B.shake;g.save();g.rotate(sw*.01);g.fillStyle="#5b6272";g.fillRect(-2,-150,4,40);g.fillStyle="#b3302a";rrp(g,-34,-112,68,150,26);g.fill();g.fillStyle="rgba(255,255,255,.15)";rrp(g,-28,-104,14,130,8);g.fill();g.fillStyle="#7a1d2a";g.fillRect(-34,-80,68,6);g.fillRect(-34,10,68,6);g.restore();
+    g.strokeStyle="#ffcc33";g.lineWidth=5;g.beginPath();g.arc(0,-40,.3*120,0,7);g.stroke();
+    g.strokeStyle=Math.abs(B.ring-.3)<.06?"#2fd28a":"#fff";g.lineWidth=4;g.globalAlpha=.9;g.beginPath();g.arc(0,-40,B.ring*120,0,7);g.stroke();g.globalAlpha=1;
+    if(B.swing>0){g.fillStyle="#e2364a";g.beginPath();g.arc(-60+(1-B.swing/.25)*40,-30,22,0,7);g.fill();g.fillStyle="#fff";g.fillRect(-82+(1-B.swing/.25)*40,-36,10,12)}
+    if(B.txtT>0){g.globalAlpha=Math.min(1,B.txtT*2);g.fillStyle=B.txt==="PERFECT"?"#ffcc33":B.txt==="GOOD"?"#2fd28a":"#e2364a";g.font="900 30px "+FONTS.d;g.textAlign="center";g.fillText(B.txt,0,110);g.globalAlpha=1}
+    g.restore();
+    if(T<=0){B.live=false;S.fans=(S.fans||0)+B.fans;S.boxBest=Math.max(S.boxBest||0,B.best);S.stats.boxing=(S.stats.boxing||0)+1;S.stats.lifted=(S.stats.lifted||0)+Math.floor(B.hits/6);dirty=true;SFX.rebirth();if(B.best>=10)confetti(160);
+      $("room").innerHTML=`<div class="room-in">${roomHead("Boxing bag")}<div class="shend"><b>🥊</b><span>Best combo ×${B.best}</span><div class="kv"><div><span class="eyebrow">New fans</span><b>+${fmtN(B.fans)}</b></div><div><span class="eyebrow">Punches</span><b>${B.hits}</b></div></div></div><button class="bigbtn alt" id="bxBack">Back to the gym<small>&nbsp;</small></button></div>`;$("leaveBtn").onclick=back;$("bxBack").onclick=back;updMini();return}
+    requestAnimationFrame(loop)};requestAnimationFrame(loop)}
 function poseIcon(k){const a={bi:"M10 13 L5 13 L5 7 M18 13 L23 13 L23 7",lat:"M10 13 L5 17 L9 21 M18 13 L23 17 L19 21",abs:"M10 13 L6 8 L11 5 M18 13 L22 8 L17 5",mm:"M10 13 L7 19 L13 21 M18 13 L21 19 L15 21"}[k];
   return `<svg viewBox="0 0 28 28"><circle cx="14" cy="7" r="3"/><path d="M10 12 h8 v9 h-8z M12 21 L10 27 M16 21 L18 27 ${a}"/></svg>`}
 function startFlex(tier,btn){
@@ -5004,7 +5032,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=51,WN=[
+const WN_VER=52,WN=[
+ ["🥊","Boxing bag","A rhythm boxing bag at the Gym: punch as the ring meets the gold circle. Combos earn fans, no muscles needed.","2026-10-07T05:20"],
  ["🐾","Lost pets","Townspeople sometimes lose a pet. Search the pink circle on the map, then walk it back to its owner for cash, fans and sometimes a crate.","2026-10-07T05:15"],
  ["⚔️","Flip-off vs Slick Vinny","Once a day in any market, race the rival trader Vinny: whoever makes more profit in 3 minutes wins cash and crates.","2026-10-07T05:10"],
  ["📆","A different town every day","Each weekday has a bonus: Market Madness Monday, Gains Tuesday, Arcade Wednesday, Treasure Thursday, Fireworks Friday, Green Saturday and Lazy Sunday.","2026-10-07T05:05"],
