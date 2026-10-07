@@ -498,6 +498,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 /* premium pass */
 .banner{width:max-content;max-width:92vw;white-space:normal;text-align:center;line-height:.95;font-size:clamp(1.5rem,8vw,2.2rem)}
 .chip,.place,.hud .iconbtn,.tip{background:color-mix(in oklab,var(--surface) 74%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);border:1px solid color-mix(in oklab,var(--surface) 55%,transparent)}
+html.tablet .chip,html.tablet .place,html.tablet .hud .iconbtn,html.tablet .tip,html.tablet .raytoast,html.tablet .wnov,html.tablet .overlay,html.tablet .sailov,html.tablet .crateov{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}html.tablet .chip,html.tablet .place,html.tablet .hud .iconbtn{background:var(--surface)!important}
 html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip,html.perf .raytoast,html.perf .wnov,html.perf .overlay{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}html.perf .chip,html.perf .place,html.perf .hud .iconbtn,html.perf .tip{background:var(--surface)!important}
 .cash.rad{background:linear-gradient(90deg,#7a2fd6,#ff4fd8,#ffcc33,#4fe3ff,#7a2fd6);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:radsh 4s linear infinite}@keyframes radsh{to{background-position:300% 0}}
 .tierb{font-style:normal;font-weight:800;color:var(--tc);background:color-mix(in oklab,var(--tc) 14%,transparent);border-radius:99px;padding:1px 7px;margin-right:4px;cursor:pointer;white-space:nowrap}
@@ -1244,6 +1245,7 @@ function banner(t,cls=""){bq.push([t,cls]);if(!bBusy)nextBanner()}
 function nextBanner(){const n=bq.shift();if(!n){bBusy=false;return}bBusy=true;const b=document.createElement("div");b.className="banner "+n[1];b.textContent=n[0];document.body.appendChild(b);setTimeout(()=>b.remove(),1100);setTimeout(nextBanner,750)}
 
 /* ================= juice: coins, confetti, shake, crits, crates ================= */
+const TABLET=matchMedia("(pointer:coarse)").matches&&Math.min(screen.width,screen.height)>=600;if(TABLET)document.documentElement.classList.add("tablet");
 const fxc=document.createElement("canvas");fxc.id="fx";document.body.appendChild(fxc);const fxg=fxc.getContext("2d");
 let FXP=[],shakeT=0,shakeA=0,lastPt=null,lastPtT=0,shownCash=null,fxW=0,fxH=0,fxD=1,coinN=0,coinNT=0,bumpT=0;
 // no autoclickers: every press must come at least 5 ms after the last one
@@ -1263,10 +1265,10 @@ function confetti(n,x,y,cols,spread=1){if(SET.lowfx||SET.perf)n=Math.ceil(n/(SET
 function sparks(x,y,col,n=18,spd=1){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rnd(120,380)*spd;FXP.push({t:"spark",x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,c:col,life:rnd(.35,.7),age:0,r:rnd(1.5,3.5)})}
   FXP.push({t:"ring",x,y,c:col,life:.45,age:0,r0:8,r1:90*spd})}
 function shake(a,t=.35){if(SET.noshake)return;shakeA=Math.max(shakeA,a);shakeT=Math.max(shakeT,t)}
-function flash(col,op=.55){const d=document.createElement("div");d.className="fxflash";d.style.background=col;d.style.setProperty("--op",op);document.body.appendChild(d);setTimeout(()=>d.remove(),450)}
+let flashAt=0;function flash(col,op=.55){const n=performance.now();if(n-flashAt<700)return;flashAt=n;if(TABLET||matchMedia("(prefers-reduced-motion: reduce)").matches)op*=.4;const d=document.createElement("div");d.className="fxflash";d.style.background=col;d.style.setProperty("--op",op);document.body.appendChild(d);setTimeout(()=>d.remove(),450)}
 function bump(el,col){if(!el)return;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump");if(col)el.style.setProperty("--bc",col)}
 function juiceGain(v){if(!(v>0))return;coinsTo(v);if(v>=Math.max(500,S.cash*.25))shake(3,.25)}
-function fxSize(){const w=fxc.clientWidth,h=fxc.clientHeight,d=Math.min(2,devicePixelRatio||1);if(w!==fxW||h!==fxH||d!==fxD){fxW=w;fxH=h;fxD=d;fxc.width=Math.round(w*d);fxc.height=Math.round(h*d)}}
+function fxSize(){const w=fxc.clientWidth,h=fxc.clientHeight,d=budgetDpr(w,h,TABLET?1:2);if(w!==fxW||h!==fxH||d!==fxD){fxW=w;fxH=h;fxD=d;fxc.width=Math.round(w*d);fxc.height=Math.round(h*d)}}
 function fxTick(dt){
   if(S){if(shownCash==null)shownCash=S.cash;const df=S.cash-shownCash;if(Math.abs(df)>.5){shownCash+=df*Math.min(1,dt*(df>0?3.2:9));if(Math.abs(S.cash-shownCash)<1)shownCash=S.cash;const t=fmt(Math.round(shownCash)),c=$("cash"),rc=$("rCash");if(c&&c.textContent!==t)c.textContent=t;if(rc&&rc.textContent!==t)rc.textContent=t}}
   if(shakeT>0){shakeT-=dt;const a=shakeA*Math.max(0,shakeT)/.35;const tr=shakeT>0?`translate(${rnd(-a,a).toFixed(1)}px,${rnd(-a,a).toFixed(1)}px)`:"";["world","hud","room","bottom"].forEach(id=>{const e=$(id);if(e)e.style.transform=tr});if(shakeT<=0)shakeA=0}
@@ -1342,8 +1344,11 @@ function crateSVG(){return `<svg viewBox="0 0 120 110"><ellipse cx="60" cy="104"
 const W=2600,H=2200,SEA=1950;
 const cv=$("world"),ctx=cv.getContext("2d");
 let vw=0,vh=0,dpr=1,Z=1;
-function resize(){dpr=Math.min(SET.perf?1.25:2,window.devicePixelRatio||1);const cw=cv.clientWidth,ch=cv.clientHeight;Z=cw<520?.72:1;vw=cw/Z;vh=ch/Z;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
-addEventListener("resize",()=>{fitScreen();resize()});
+// keep each full-screen canvas under ~3.2M pixels: big tablets at 2x otherwise blow Safari's canvas memory limit and canvases flash blank
+const PX_BUDGET=3.2e6,budgetDpr=(w,h,cap)=>Math.max(1,Math.min(cap,window.devicePixelRatio||1,Math.sqrt(PX_BUDGET/Math.max(1,w*h))));
+let lastRS="";
+function resize(){const cw=cv.clientWidth,ch=cv.clientHeight;dpr=budgetDpr(cw,ch,SET.perf?1.25:2);const key=cw+"x"+ch+"@"+dpr;if(key===lastRS)return;lastRS=key;Z=cw<520?.72:1;vw=cw/Z;vh=ch/Z;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
+let rsT=0;addEventListener("resize",()=>{clearTimeout(rsT);rsT=setTimeout(()=>{fitScreen();resize()},120)});
 const darkMQ=matchMedia("(prefers-color-scheme: dark)");
 function isDark(){return root.dataset.theme==="dark"||(root.dataset.theme!=="light"&&darkMQ.matches)}
 const PAL_L={pave:"#dfe2e7",paveLine:"rgba(0,0,0,.05)",sand:"#efdcae",sand2:"#e6cf98",sand3:"#f6e8c4",wet:"#d8c48f",sea:"#6cbfe6",sea2:"#4aa6d6",board:"#c4945f",board2:"#9c7244",towel:"#ffffff",tower:"#7b8496",tower1:"#9aa3b3",tower2:"#4e5667",towerWin:"rgba(210,230,255,.55)",grass:"#b9d69c",grass2:"#aecd8f",tuft:"#a3c585",tuft2:"#c8e0ae",road:"#cdd2db",line:"#fbfcfd",walk:"#e6e9ee",curb:"#c3c8d1",tree:"#5a9650",tree2:"#78b16a",tree3:"#93c784",trunk:"#8a6a4a",shadow:"rgba(25,40,25,.22)",sign:"#ffffff",ink:"#0d1015",water:"#8ec3e8",glass:"rgba(255,255,255,.6)",glassD:"rgba(200,225,255,.75)"};
@@ -2031,7 +2036,7 @@ function openGym(half,th){
   gymSize();renderGymAct();
 }
 function gymSize(){const w=$("gWrap");if(!w)return false;const cw=w.clientWidth,ch=w.clientHeight;if(cw===GS.cw&&ch===GS.ch)return true;
-  GS.cw=cw;GS.ch=ch;GS.dpr=Math.min(2,devicePixelRatio||1);const cv=$("gCv");cv.width=Math.round(cw*GS.dpr);cv.height=Math.round(ch*GS.dpr);
+  GS.cw=cw;GS.ch=ch;GS.dpr=Math.min(TABLET?1.5:2,devicePixelRatio||1);const cv=$("gCv");cv.width=Math.round(cw*GS.dpr);cv.height=Math.round(ch*GS.dpr);
   GS.k=Math.min(cw/GSW,ch/GSH);GS.ox=(cw-GSW*GS.k)/2;GS.oy=(ch-GSH*GS.k)/2;GS.bg=null;return true}
 function gymTap(e){
   if(!GS||(GS.flex&&!GS.flex.done))return;audioOn();
@@ -2235,7 +2240,7 @@ function gymStatic(){
 }
 function gymDraw(){
   const cv=$("gCv");if(!cv)return;const c=cv.getContext("2d"),d=GS.dpr,k=GS.k,F=GS.flex&&!GS.flex.done?GS.flex:null,B=GS.half;
-  if(!GS.bg)GS.bg=gymStatic();
+  if(!GS.bg)GS.bg&&(GS.bg.width=GS.bg.height=0),GS.bg=gymStatic();
   c.setTransform(1,0,0,1,0,0);c.fillStyle=B?"#efdcae":"#101217";c.fillRect(0,0,cv.width,cv.height);c.drawImage(GS.bg,Math.round(GS.ox*d),Math.round(GS.oy*d));
   c.setTransform(k*d,0,0,k*d,GS.ox*d,GS.oy*d);c.save();c.beginPath();c.rect(0,0,GSW,GSH);c.clip();
   const beat=.5+.5*Math.sin(wt*7.5);
@@ -7442,7 +7447,7 @@ function openClub(){
     <div class="gact" id="cAct"></div><div class="gpanel" id="cPanel" hidden></div></div>`;
   $("leaveBtn").onclick=closeRoom;$("cCv").addEventListener("pointerdown",clubTap);clubSize();clubAct();
 }
-function clubSize(){const w=$("cWrap");if(!w)return false;const cw=w.clientWidth,ch=w.clientHeight;if(cw===CS.cw&&ch===CS.ch)return true;CS.cw=cw;CS.ch=ch;CS.dpr=Math.min(2,devicePixelRatio||1);const cv=$("cCv");cv.width=Math.round(cw*CS.dpr);cv.height=Math.round(ch*CS.dpr);CS.k=Math.min(cw/CSW,ch/CSH);CS.ox=(cw-CSW*CS.k)/2;CS.oy=(ch-CSH*CS.k)/2;CS.bg=null;return true}
+function clubSize(){const w=$("cWrap");if(!w)return false;const cw=w.clientWidth,ch=w.clientHeight;if(cw===CS.cw&&ch===CS.ch)return true;CS.cw=cw;CS.ch=ch;CS.dpr=Math.min(TABLET?1.5:2,devicePixelRatio||1);const cv=$("cCv");cv.width=Math.round(cw*CS.dpr);cv.height=Math.round(ch*CS.dpr);CS.k=Math.min(cw/CSW,ch/CSH);CS.ox=(cw-CSW*CS.k)/2;CS.oy=(ch-CSH*CS.k)/2;CS.bg=null;return true}
 function clubTap(e){if(!CS||!$("cPanel").hidden)return;audioOn();const cv=$("cCv"),r=cv.getBoundingClientRect(),f=cv.clientWidth/r.width,x=((e.clientX-r.left)*f-CS.ox)/CS.k,y=((e.clientY-r.top)*f-CS.oy)/CS.k;
   const n=CS.npcs.find(n=>Math.hypot(n.x-x,n.y-24-y)<24);
   if(n){if(n.single&&!n.done){if(Math.hypot(n.x-CS.px,n.y-CS.py)>80){CS.tx=n.x+26;CS.ty=n.y;CS.walkTo=n}else rizzStart(n)}else clubPop(n.x,n.y-64,pick(["Love this song!","Woo!","The DJ is on fire","Great outfit","*dancing*"]),"#fff",{bubble:1,life:2})}
@@ -7523,7 +7528,7 @@ function clubStatic(){
   return c;
 }
 function clubDraw(){
-  const cv=$("cCv");if(!cv)return;const c=cv.getContext("2d"),d=CS.dpr,k=CS.k;if(!CS.bg)CS.bg=clubStatic();
+  const cv=$("cCv");if(!cv)return;const c=cv.getContext("2d"),d=CS.dpr,k=CS.k;if(!CS.bg)CS.bg&&(CS.bg.width=CS.bg.height=0),CS.bg=clubStatic();
   c.setTransform(1,0,0,1,0,0);c.fillStyle="#0c0a14";c.fillRect(0,0,cv.width,cv.height);c.drawImage(CS.bg,Math.round(CS.ox*d),Math.round(CS.oy*d));
   c.setTransform(k*d,0,0,k*d,CS.ox*d,CS.oy*d);c.save();c.beginPath();c.rect(0,0,CSW,CSH);c.clip();
   const bt=wt*(CS.beat>0?4:2.2);
@@ -7613,7 +7618,7 @@ function drawHouse(x,y,w,h,hm,col){
 }
 // township houses use the same building art as your home on the map, one look per property tier
 const HCACHE={};
-function tierHouse(hm,w,h){const dk=isDark(),key=hm+"|"+w+"|"+h+"|"+dk;if(HCACHE[key])return HCACHE[key];
+function tierHouse(hm,w,h){const dk=isDark(),key=hm+"|"+w+"|"+h+"|"+dk;if(HCACHE[key])return HCACHE[key];{const ks=Object.keys(HCACHE);if(ks.length>24)ks.forEach(k=>{HCACHE[k].width=HCACHE[k].height=0;delete HCACHE[k]})}
   const pad=24,c=document.createElement("canvas");c.width=w+pad*2;c.height=h+pad*2;const g=c.getContext("2d"),P=dk?PAL_D:PAL_L,pr=PROPS[hm]||PROPS[0];
   const p={k:"home",hm,n:pr.n,c:pr.c,x:pad,y:pad,w,h,door:[pad+w/2,pad+h]};
   drawBuilding(g,p,P);
