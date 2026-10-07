@@ -792,6 +792,10 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .karma{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:10px 14px;margin:10px 0}.krow{display:flex;justify-content:space-between;align-items:baseline;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.krow b{font:900 .95rem var(--display);text-transform:none;letter-spacing:0}.ktrack{position:relative;height:8px;border-radius:4px;margin:6px 0 2px;background:linear-gradient(90deg,#d6384b,#ff7a3d 30%,#c9ced6 50%,#2fbf71 70%,#2a9df4)}.ktrack i{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;border:2px solid #fff;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.35)}.karma .fine{text-align:left;margin:6px 0 0}
 .bookpg{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:12px;margin:10px 0}.bookpg.done{box-shadow:inset 0 0 0 2px var(--gold),var(--shadow)}.bph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.bph b{font:800 1rem var(--display)}.bph span{font:700 .8rem var(--mono);color:var(--muted)}.bpgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stamp{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:10px;border:1.5px dashed var(--line);text-align:center}.stamp i{font-style:normal;font:900 1rem var(--display);color:var(--muted)}.stamp small{font-size:.62rem;line-height:1.15;color:var(--muted)}.stamp.got{border-style:solid;border-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,transparent)}.stamp.got i{color:var(--gold)}.stamp.got small{color:var(--ink)}.bookpg .fine{text-align:left;margin:8px 0 0}
 .lbdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}.chtabs{margin:0 0 10px}.chtabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pcard{width:64px;height:90px;border-radius:9px;background:#fffaf0;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#1b1d22;font-family:var(--display)}.pcard b{font-size:1.6rem;font-weight:900}.pcard i{font-style:normal;font-size:1.3rem}.pcard.red{color:#e2364a}
+.crtable{background:radial-gradient(circle at 50% 40%,#2b8a5a,#174f33);border-radius:18px;padding:18px;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:inset 0 0 0 3px #cf9a14}.crcards{display:flex;gap:8px}.crcards .pcard:first-child:not(:last-child){opacity:.55;transform:scale(.85)}.crpot{color:#fff;text-align:right;display:flex;flex-direction:column}.crpot .eyebrow{color:#cfe8d8}.crpot b{font:900 1.5rem var(--display)}.crpot small{opacity:.8;font-size:.72rem}
+.partgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.pbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;gap:2px;font:inherit}.pbtn b{font-size:.82rem}.pbtn small{font-size:.68rem;color:var(--muted)}.pbtn.ok{border-color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}.pbtn.no{opacity:.45}
+.anlot{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin:0 0 10px;display:flex;flex-direction:column;gap:4px}.anlot>b{font:800 1.1rem var(--display)}.anlot>small{color:var(--muted)}.antop{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--bg);font-size:.85rem}.antop.lead{background:color-mix(in srgb,var(--up) 15%,transparent)}
 .cutov{position:fixed;inset:0;z-index:9800;background:#0b0d11;touch-action:none;user-select:none;-webkit-user-select:none}.cutov canvas{display:block}.cutbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}.cutbar i{display:block;height:100%;width:0;background:#e2364a}
 .roadov{position:fixed;inset:0;z-index:9500;background:#8fd3ff;transition:opacity .45s}.roadov.out{opacity:0}.roadov canvas{display:block}.roadlab{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 28px);text-align:center;color:#fff;font:800 1.1rem var(--display);text-shadow:0 2px 8px rgba(0,0,0,.35)}.roadskip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font:700 .75rem var(--mono)}
 .w5gate{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#1b0b2a,#3a2266);color:#fff;margin:8px 0}.w5gate>span{font-size:.8rem;opacity:.85}.w5gate>i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}.w5gate>i>i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff4fd8)}.w5gate small{font:700 .7rem var(--mono);opacity:.7}
@@ -1020,6 +1024,9 @@ const PLACES=[
  {k:"stand",n:"Farm Stand",c:"#7aa84a",x:W_+330,y:290+200,w:170,h:100,door:[W_+415,600],region:"downtown",sub:"Fresh snacks for the road · changes every hour"},
  {k:"raceoff",n:"Road Race Office",c:"#1b2230",x:W_+560,y:290+200,w:150,h:100,door:[W_+635,600],region:"downtown",sub:"Race the road · medals and a leaderboard"},
  {k:"diner",n:"Rusty's Roadside Diner",c:"#e2364a",x:W_+1250,y:250+200,w:220,h:140,door:[W_+1360,600],region:"downtown",sub:"Pie and coffee on the Frontier Road · +60 energy"},
+ {k:"garage",n:"Mo's Garage",c:"#c8553d",x:1450,y:880,w:180,h:140,door:[1540,1020],region:"downtown",sub:"Repairs, servicing and a parts market"},
+ {k:"alley",n:"Back Alley",c:"#4a3f52",x:1470,y:1260,w:160,h:110,door:[1550,1370],region:"downtown",sub:"Half-price goods, no questions · 8 PM to 5 AM"},
+ {k:"cards",n:"Lucky Lou's",c:"#1f6b45",x:2150,y:1260,w:200,h:110,door:[2250,1370],region:"downtown",sub:"Higher or lower card table · 8 PM to 5 AM"},
  {k:"cityhall",n:"City Hall",c:"#d9cfb4",x:2100,y:90,w:200,h:170,door:[2200,260],region:"downtown",sub:"Mayor race, bounties and the city goal"},
  {k:"dealer",n:"Dealership",c:"#0f8fb3",x:2150,y:820,w:300,h:180,door:[2300,1000],region:"downtown",sub:"Scooters and sports cars"}
 ];
@@ -1031,7 +1038,7 @@ const shownPlaces=()=>{const L=PLACES.filter(p=>!(MPW&&p.k==="home"));return typ
 const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop:"mall"},{k:"scooter",n:"Electric scooter",d:"2.2× speed. Silent and quick.",sp:2.2,cost:6000,shop:"dealer"},{k:"car",n:"Sports car",d:"3.2× speed. Red, loud, fast.",sp:3.2,cost:45000,shop:"dealer"}];
 VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:20000,shop:"dealer"},{k:"classic",n:"Classic coupe",d:"2.8× speed. Sells back for 130%.",sp:2.8,cost:80000,shop:"dealer",resale:1.3},{k:"supercar",n:"Hypercar",d:"4× speed. The fastest thing in town.",sp:4,cost:250000,shop:"dealer"});
 const CARS=["car","truck","classic","supercar"];
-const ride=()=>{if(!S||!S.veh)return null;if(S.cur==="walk")return null;if(S.cur&&S.veh[S.cur])return S.cur;const own=VEH.filter(v=>S.veh[v.k]).sort((a,b)=>b.sp-a.sp);return own.length?own[0].k:null};
+const ride=()=>{if(!S||!S.veh)return null;if(S.cur==="walk")return null;if(S.cur&&S.veh[S.cur])return S.broke&&S.broke.k===S.cur?null:S.cur;const own=VEH.filter(v=>S.veh[v.k]&&!(S.broke&&S.broke.k===v.k)).sort((a,b)=>b.sp-a.sp);return own.length?own[0].k:null};
 const PROPS=[{n:"Apartment",c:"#e39a52",cost:0,en:0,sell:0,d:"A cozy start."},{n:"Loft",c:"#14a3a8",cost:25000,en:20,sell:0,d:"+20 max energy."},{n:"Penthouse",c:"#2b2f3a",cost:150000,en:50,sell:.1,d:"+50 max energy, +10% on every sale."},{n:"Mansion",c:"#cf9a14",cost:1000000,en:100,sell:.25,d:"+100 max energy, +25% on every sale."},{n:"Sky Villa",c:"#7a2fd6",cost:1e7,en:150,sell:.32,d:"+150 max energy, +32% on every sale."},{n:"Island Estate",c:"#14a3a8",cost:1e8,en:220,sell:.4,d:"+220 max energy, +40% on every sale."},{n:"Royal Palace",c:"#8a1d2a",cost:1e9,en:300,sell:.5,d:"+300 max energy, +50% on every sale."},{n:"Floating City",c:"#2fa6d9",cost:1e12,en:380,sell:.56,d:"+380 max energy, +56% on every sale. A city in the clouds, all yours."},
  {n:"Underwater Palace",c:"#14a3a8",cost:1e15,en:480,sell:.64,d:"+480 max energy, +64% on every sale. Sharks in the hallway."},
  {n:"Cloud Kingdom",c:"#9fb2c4",cost:1e18,en:600,sell:.74,d:"+600 max energy, +74% on every sale. Castles above the weather."},
@@ -1272,7 +1279,7 @@ const isWeekend=()=>{const d=new Date().getDay();return d===0||d===6};
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+missReady();
 const maxEnergy=()=>goalEnK(maxEnergyFor(strLv()));
 const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag+pk("slot")+((S&&S.spurts)||0)+(S&&S.acc&&S.acc.b==="pack"?1:0);
-const walkSpeed=()=>(S&&S.buffs&&S.buffs.zoom>0?1.5:1)*(1+.12*petK("husky"))*(1+accFx("speed"))*(S&&S.gup&&S.gup.boots?1.2:1)*150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1);
+const walkSpeed=()=>(S&&S.buffs&&S.buffs.zoom>0?1.5:1)*(1+.12*petK("husky"))*(1+accFx("speed"))*(S&&S.gup&&S.gup.boots?1.2:1)*150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1)*wxSlow();
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]||1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
@@ -1408,7 +1415,7 @@ function isDark(){return root.dataset.theme==="dark"||(root.dataset.theme!=="lig
 const PAL_L={pave:"#dfe2e7",paveLine:"rgba(0,0,0,.05)",sand:"#efdcae",sand2:"#e6cf98",sand3:"#f6e8c4",wet:"#d8c48f",sea:"#6cbfe6",sea2:"#4aa6d6",board:"#c4945f",board2:"#9c7244",towel:"#ffffff",tower:"#7b8496",tower1:"#9aa3b3",tower2:"#4e5667",towerWin:"rgba(210,230,255,.55)",grass:"#b9d69c",grass2:"#aecd8f",tuft:"#a3c585",tuft2:"#c8e0ae",road:"#cdd2db",line:"#fbfcfd",walk:"#e6e9ee",curb:"#c3c8d1",tree:"#5a9650",tree2:"#78b16a",tree3:"#93c784",trunk:"#8a6a4a",shadow:"rgba(25,40,25,.22)",sign:"#ffffff",ink:"#0d1015",water:"#8ec3e8",glass:"rgba(255,255,255,.6)",glassD:"rgba(200,225,255,.75)"};
 const PAL_D={pave:"#20242c",paveLine:"rgba(255,255,255,.03)",sand:"#4a4231",sand2:"#41392a",sand3:"#544a37",wet:"#3a3426",sea:"#143049",sea2:"#0f263b",board:"#5e4630",board2:"#46331f",towel:"#cfcfcf",tower:"#2c3240",tower1:"#363d4d",tower2:"#1b1f29",towerWin:"rgba(120,150,200,.18)",grass:"#17241a",grass2:"#1b2a1e",tuft:"#203223",tuft2:"#142016",road:"#262b35",line:"#4b5264",walk:"#2f3542",curb:"#3a4150",tree:"#21402a",tree2:"#2b5135",tree3:"#356140",trunk:"#46372a",shadow:"rgba(0,0,0,.45)",sign:"#14171d",ink:"#eff2f6",water:"#1c3754",glass:"rgba(120,150,200,.22)",glassD:"rgba(120,150,200,.3)"};
 const ROADS=[[655,180,90,1420],[0,655,2600,90],[215,215,970,70],[215,1115,970,70],[215,215,70,970],[1115,215,70,970],[1955,40,90,1360],[1400,1150,1200,80]];
-const SKY=[[1450,60,160,200],[1650,30,130,220],[2350,90,200,220],[1450,820,180,240],[2470,790,110,250],[2150,1260,200,120],[1470,1250,160,130]];
+const SKY=[[1450,60,160,200],[1650,30,130,220],[2350,90,200,220],[2470,790,110,250]];
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
 const HOUSES=[];
@@ -1463,6 +1470,12 @@ function drawBuilding(g,p,P){
     g.strokeStyle="#5a5040";g.lineWidth=2;g.beginPath();g.moveTo(cx,cy-24);g.lineTo(cx,cy-46);g.stroke();g.fillStyle="#2a5bd7";g.beginPath();g.moveTo(cx,cy-46);g.lineTo(cx+18,cy-41);g.lineTo(cx,cy-36);g.fill();
     for(let i=0;i<6;i++){const x=p.x+18+i*(p.w-36)/5;g.fillStyle="#fbf7ec";g.fillRect(x-5,fy+2,10,f-10);g.fillStyle="rgba(0,0,0,.12)";g.fillRect(x+2,fy+2,3,f-10);g.fillStyle="#efe7d2";g.fillRect(x-7,fy,14,4)}
     g.fillStyle="#efe7d2";g.beginPath();g.moveTo(p.x+6,fy+2);g.lineTo(cx,fy-22);g.lineTo(p.x+p.w-6,fy+2);g.closePath();g.fill();g.fillStyle="#8a7a58";g.font="800 8px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.fillText("CITY HALL",cx,fy-5)}
+  if(p.k==="garage"){for(let i=0;i<5;i++){g.fillStyle=i%2?"#3a3f4c":"#ffcc33";g.beginPath();g.moveTo(p.x+10+i*32,ry+8);g.lineTo(p.x+26+i*32,ry+8);g.lineTo(p.x+14+i*32,ry+rh-8);g.lineTo(p.x-2+i*32,ry+rh-8);g.closePath();g.fill()}g.fillStyle="rgba(0,0,0,.25)";rrp(g,cx-44,cy-10,88,20,4);g.fill();g.fillStyle="#fff";g.font="900 13px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.fillText("MO'S",cx,cy+1);
+    g.fillStyle="#9aa3b3";rrp(g,p.x+18,fy+6,p.w*.5,f-12,4);g.fill();g.fillStyle="rgba(0,0,0,.18)";for(let y=fy+10;y<fy+f-8;y+=6)g.fillRect(p.x+20,y,p.w*.5-4,1.5);[[p.x+p.w+10,p.y+p.h-10],[p.x+p.w+10,p.y+p.h-24],[p.x+p.w+24,p.y+p.h-10]].forEach(([x,y])=>{g.fillStyle="#1b1d22";g.beginPath();g.arc(x,y,8,0,7);g.fill();g.fillStyle="#555b66";g.beginPath();g.arc(x,y,3,0,7);g.fill()})}
+  if(p.k==="alley"){g.fillStyle="rgba(0,0,0,.18)";for(let y=ry+6;y<ry+rh-4;y+=8)for(let x=p.x+6+((y/8)%2)*8;x<p.x+p.w-10;x+=16)g.fillRect(x,y,13,5);g.fillStyle="#2fd28a";g.font="italic 900 14px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.fillText("no questions",cx,cy);
+    g.fillStyle="#3c6e47";rrp(g,p.x+p.w+6,p.y+p.h-28,30,22,3);g.fill();g.fillStyle="#2b5236";g.fillRect(p.x+p.w+6,p.y+p.h-28,30,5);g.fillStyle="#ffe08a";g.beginPath();g.arc(p.x+p.w/2+30,fy+4,3,0,7);g.fill()}
+  if(p.k==="cards"){g.fillStyle="#174f33";rrp(g,p.x+14,ry+10,p.w-28,rh-20,rh/2);g.fill();g.strokeStyle="#cf9a14";g.lineWidth=2;rrp(g,p.x+14,ry+10,p.w-28,rh-20,rh/2);g.stroke();g.font="900 16px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";["♠","♥","♦","♣"].forEach((c,i)=>{g.fillStyle=i===1||i===2?"#e2364a":"#fff";g.fillText(c,cx-36+i*24,cy)});
+    g.fillStyle="#cf9a14";g.font="800 8px "+FONTS.d;g.fillText("LUCKY LOU'S",cx,fy+8)}
   if(p.k==="market"){const n=10,sw=p.w/n;for(let i=0;i<n;i++){g.fillStyle=i%2?"#ffffff":p.c;rrp(g,p.x+i*sw,ry,sw+.5,rh,i===0?14:i===n-1?14:0);g.fill()}g.fillStyle="rgba(0,0,0,.08)";g.fillRect(p.x,ry+rh-10,p.w,10);
     [[p.x+14,p.y+p.h+8],[p.x+44,p.y+p.h+12],[p.x+p.w-60,p.y+p.h+8],[p.x+p.w-32,p.y+p.h+14]].forEach(([x,y])=>{g.fillStyle="#c99a62";g.fillRect(x,y,22,16);g.fillStyle="rgba(0,0,0,.18)";g.fillRect(x,y+7,22,2)})}
   if(p.k==="cafe"){const n=7,sw=p.w/n;for(let i=0;i<n;i++){g.fillStyle=i%2?"#fff6ea":"#8a3e22";g.beginPath();g.moveTo(p.x+i*sw,fy);g.lineTo(p.x+(i+1)*sw,fy);g.lineTo(p.x+(i+1)*sw,fy+14);g.arc(p.x+(i+.5)*sw,fy+14,sw/2,0,Math.PI);g.closePath();g.fill()}
@@ -1699,7 +1712,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawLostWorld();drawGoldStatues();drawFrontierEdge();drawRideShare();drawBugs();drawGhosts();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawLostWorld();drawGoldStatues();drawFrontierEdge();drawRideShare();drawBugs();drawGhosts();drawCrewHQ();drawDeedFlags();worldPeople();drawStreetSign();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -1763,7 +1776,7 @@ function renderHud(){hudReveal();
   if(shownCash==null)$("cash").textContent=inW4()?gemF(w4().gems):fmt(S.cash);
   {const mu=mult(),mt=mu<10?mu.toFixed(2):mu<100?mu.toFixed(1):mu<1e4?Math.round(mu):fmtN(mu);$("multTxt").innerHTML=`<span class="hrow"><b class="tierb" style="--tc:${TI().c}">${TI().n}</b><span class="hlv">LV ${repLevel()}</span><span class="hmul" title="Money multiplier">×${mt}</span></span><i class="hlvbar"><i style="width:${Math.round(lvlFrac()*100)}%"></i></i>`}
   const h=Math.floor(S.clock),m=Math.floor((S.clock%1)*60/15)*15;$("timeTxt").textContent=`${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
-  $("dayTxt").textContent="Day "+S.day+" · "+season().n;
+  {const w=wxNow(),t="Day "+S.day+" · "+season().n+(w?" · "+WX_FX[w].n:"");if($("dayTxt").textContent!==t)$("dayTxt").textContent=t}
   const me=maxEnergy();$("enTxt").textContent=`${Math.floor(S.energy)}/${me}`;
   const eb=$("enBar");eb.firstChild.style.width=(S.energy/me*100)+"%";eb.classList.toggle("low",S.energy<me*.2);
   $("strTxt").textContent=S.pr+" kg · "+strTier();$("xpBar").firstChild.style.width=(((S.pr-20)%10)/10*100)+"%";
@@ -1775,13 +1788,14 @@ let room=null;
 function roomHead(title){const gd=typeof GUIDE!=="undefined"&&GUIDE[room]?`<button class="rguide" id="rGuide" aria-label="What is this?">?</button>`:"",tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>(gd?8:11)?"xlong":tl>(gd?5:7)?"long":""}"><span class="pdot"></span>${title}</h2>${gd}<div class="mini"><b id="rCash">${inW4()?gemF(w4().gems):fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
 function openRoom(k){
+  {const cl=placeClosed(k);if(cl){banner(cl,"a");SFX.nope();autoEnter=null;return}}
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
   if(k==="arena"&&!SCN&&S){$("mpSheet").hidden=true;enterArena();return}
   $("mpSheet").hidden=true;
   if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
-  ({night:()=>openNightMkt(),arcade:()=>openArcade(),market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,frontier:openFrontier,diner:openDiner,stand:openStand,raceoff:openRaceOffice,cityhall:()=>openCityHall(),club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
+  ({night:()=>openNightMkt(),arcade:()=>openArcade(),market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,frontier:openFrontier,diner:openDiner,stand:openStand,raceoff:openRaceOffice,cityhall:()=>openCityHall(),alley:openAlley,cards:openCards,garage:openGarage,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;XP=null;DJ=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
@@ -3100,11 +3114,11 @@ const lotArt=(open,lit)=>`<div class="art"><svg viewBox="0 0 400 130" aria-hidde
   <rect x="50" y="10" width="10" height="110" fill="#5b6272"/><rect x="340" y="10" width="10" height="110" fill="#5b6272"/></svg></div>`;
 let L=null;
 function openStorage(){
-  const units=lotsToday();
+  const units=lotsToday();setTimeout(()=>{const b=$("stAN");if(b)b.onclick=()=>openAucNight(()=>{room="storage";openStorage()})},0);
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Storage Lots")}${lotArt(62)}
     <div class="note">Three abandoned units go up every day. You only get a peek through the door. <b>Win the bid and everything inside is yours</b>, treasure or trash.</div>
     <div class="perks">${units.map((u,i)=>`<button class="perk nopic" data-unit="${i}" ${u.state?"disabled":""}><span class="t">${u.sz}</span><span class="d">${u.state===1?"Won for "+fmt(u.paid)+" · worth "+fmt(u.worth):u.state===2?u.to+" paid "+fmt(u.paid)+" · it was worth "+fmt(u.worth):"You spot "+u.peek.join(" and ")+" · est. "+fmt(u.est*.6)+" to "+fmt(u.est*1.4)}</span><span class="c">${u.state===1?"Yours":u.state===2?"Gone":"Bid"}</span></button>`).join("")}</div>
-    <p class="fine">New units every morning. Stash ${S.stash.length}/${maxSlots()}</p></div>`;
+    <p class="fine">New units every morning. Stash ${S.stash.length}/${maxSlots()}</p><button class="bigbtn alt" id="stAN">Auction Night<small>${anNow().live?"Live now!":"Mystery lots twice an hour · next in "+Math.ceil(anNow().next/6e4)+" min"}</small></button></div>`;
   $("leaveBtn").onclick=closeRoom;
   $("room").querySelectorAll("[data-unit]").forEach(b=>b.onclick=()=>startLot(+b.dataset.unit));
 }
@@ -3282,16 +3296,16 @@ const WX={rain:0,on:false,t:0,next:rnd(240,480),bow:null,drops:Array.from({lengt
 function wxTick(dt){if(!S||(S.stats.flips||0)<5)return;
   if(WX.on&&SCN){WX.on=false;WX.ut=0;WX.rain=0;WX.next=rnd(420,840)}
   if(WX.on){WX.t-=dt;WX.rain=Math.min(1,WX.rain+dt/6);
-    if(S.acc&&S.acc.x==="umbrella"&&!SCN){WX.umb+=dt;if(WX.umb>=12){WX.umb=0;const f=Math.round(Math.max(5,(S.fans||0)*.002));S.fans=(S.fans||0)+f;WX.ut=(WX.ut||0)+f;dirty=true;SFX.tick(.5)}}
-    if(WX.t<=0){WX.on=false;if(WX.ut){banner("☂️ Dry and stylish · +"+fmtN(WX.ut)+" fans from the rain","g");WX.ut=0}WX.next=rnd(420,840);if(!SCN){const sp=lfSpot(S.px,S.py,260,520);if(sp){WX.bow={x:sp[0],y:sp[1],until:Date.now()+100000};SFX.hot();banner("🌈 A rainbow! Find the pot of gold at its end","g")}}}}
-  else{WX.rain=Math.max(0,WX.rain-dt/5);if(room||SCN)return;WX.next-=dt;if(WX.next<=0){WX.on=true;WX.t=rnd(80,140);WX.umb=0;banner("🌧️ Rain shower! Carrying an umbrella earns fans","u")}}
+    if(WX.kind!=="snow"&&WX.kind!=="heat"&&S.acc&&S.acc.x==="umbrella"&&!SCN){WX.umb+=dt;if(WX.umb>=12){WX.umb=0;const f=Math.round(Math.max(5,(S.fans||0)*.002));S.fans=(S.fans||0)+f;WX.ut=(WX.ut||0)+f;dirty=true;SFX.tick(.5)}}
+    if(WX.t<=0){WX.on=false;if(WX.ut){banner("☂️ Dry and stylish · +"+fmtN(WX.ut)+" fans from the rain","g");WX.ut=0}WX.next=rnd(420,840);if(WX.kind==="snow"||WX.kind==="heat")banner(wxEndMsg(),"a");else if(!SCN){const sp=lfSpot(S.px,S.py,260,520);if(sp){WX.bow={x:sp[0],y:sp[1],until:Date.now()+100000};SFX.hot();banner("🌈 A rainbow! Find the pot of gold at its end","g")}}}}
+  else{WX.rain=Math.max(0,WX.rain-dt/5);if(room||SCN)return;WX.next-=dt;if(WX.next<=0)wxStart()}
   const B=WX.bow;if(B){if(Date.now()>B.until){WX.bow=null;if(!SCN)banner("The rainbow faded away","a")}else if(!SCN&&Math.hypot(S.px-B.x,S.py-B.y)<40){WX.bow=null;const v=Math.round(Math.max(1500,rwBase()*.06));earn(v);S.stats.pots=(S.stats.pots||0)+1;if(Math.random()<.6)gainCrate(1);dirty=true;SFX.rebirth();confetti(220,null,null,["#ffcc33","#fff","#2fd28a"]);flash("#ffcc33",.35);banner("🍀 Pot of gold! +"+fmt(v),"g")}}}
 setInterval(()=>{try{wxTick(.25)}catch(e){}},250);
 function drawWeather(){if(SCN)return;const c=ctx,B=WX.bow;
   if(B&&!room){const sx=B.x-cam.x,sy=B.y-cam.y,R=Math.min(vw*.9,520),fade=Math.min(1,(B.until-Date.now())/8000);c.save();c.globalAlpha=.32*fade;c.lineWidth=R*.018;["#e2364a","#ff7a3d","#ffcc33","#2fd28a","#2fa6d9","#2a3cff","#7a2fd6"].forEach((col,i)=>{c.strokeStyle=col;c.beginPath();c.arc(sx-R,sy,R-i*c.lineWidth,Math.PI,0);c.stroke()});c.restore();
     if(sx>-30&&sy>-30&&sx<vw+30&&sy<vh+30){c.save();c.translate(sx,sy);c.fillStyle="#1b1d22";c.beginPath();c.ellipse(0,0,13,10,0,0,Math.PI);c.lineTo(-13,-4);c.lineTo(13,-4);c.fill();c.fillRect(-15,-6,30,3);c.fillStyle="#ffcc33";for(let i=0;i<5;i++){c.beginPath();c.arc(-8+i*4,-8-(i%2)*2,3,0,7);c.fill()}c.fillStyle="#fff";c.globalAlpha=.5+.5*Math.sin(wt*6);c.fillRect(-2,-14,2,2);c.fillRect(6,-11,2,2);c.restore()}
     else if(!room)drawEdgeArrow(B.x,B.y,"#ffcc33")}
-  if(WX.rain<=0)return;const a=WX.rain;c.save();c.fillStyle=`rgba(40,55,80,${.16*a})`;c.fillRect(0,0,vw,vh);c.strokeStyle=`rgba(215,230,255,${.75*a})`;c.lineWidth=1.6;c.beginPath();
+  if(WX.rain<=0)return;if(WX.kind==="snow"||WX.kind==="heat")return wxDrawAlt();const a=WX.rain;c.save();c.fillStyle=`rgba(40,55,80,${.16*a})`;c.fillRect(0,0,vw,vh);c.strokeStyle=`rgba(215,230,255,${.75*a})`;c.lineWidth=1.6;c.beginPath();
   const n=Math.round(WX.drops.length*a),t=performance.now()/1000;for(let i=0;i<n;i++){const d=WX.drops[i],x=((d[0]*vw+t*60*d[2])%(vw+40))-20,y=((d[1]*vh+t*700*d[2])%(vh+40))-20;c.moveTo(x,y);c.lineTo(x-3*d[2],y+12*d[2])}c.stroke();c.restore()}
 /* ---------- hidden golden statues: 12 tucked around town, glinting only when you're close ---------- */
 const GOLD_N=12;
@@ -3563,7 +3577,7 @@ const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>(s.gold?4:1)*valueOf(s)*(1-WT)*moonK()*(S.buffs&&S.buffs.fortune>0?1.3:1)*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*collK(s.cat)*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(isWeekend()?1.15:1)*(1+.12*pk("cat_"+s.cat))*goalSellK());
+const sellValue=s=>(s.gold?4:1)*valueOf(s)*(1-WT)*moonK()*(S.buffs&&S.buffs.fortune>0?1.3:1)*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*collK(s.cat)*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(isWeekend()?1.15:1)*(1+.12*pk("cat_"+s.cat))*goalSellK()*wxSellK(s));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 // rookie luck: a new player's first 25 sales find far more steals, no fakes for the first 8, and shelves restock twice as fast
 const ROOKIE_N=25,rookieLeft=()=>S?Math.max(0,ROOKIE_N-(S.stats.flips||0)):0;let FORCE_STEAL=0;
@@ -5479,7 +5493,11 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=92,WN=[
+const WN_VER=93,WN=[
+ ["🌨️","Real weather","Rain is joined by snow in winter and heatwaves in summer. Weather changes what sells, closes some places (look for the CLOSED sign) and makes the Frontier Road slippery.","2026-10-07T20:30"],
+ ["🌙","After dark","Two new places downtown open only from 8 PM to 5 AM: the Back Alley, for half-price goods nobody asks about, and Lucky Lou's card table.","2026-10-07T20:30"],
+ ["🔧","Breakdowns and Mo's Garage","Cars sometimes break down now. Tow it to Mo's Garage downtown, work out what's broken from the symptoms, and flip the old parts on Mo's parts market.","2026-10-07T20:30"],
+ ["🔨","Auction Night","Twice an hour, on the hour and at half past, five mystery lots go up for one minute each. Bid against everyone online and the regulars. Find it at the Storage Lots or tap the pill when it's live.","2026-10-07T20:30"],
  ["🏛️","City Hall and the mayor race","A new City Hall downtown. Every week Flip City votes for a mayor: sales, deeds, gifts and helping people earn votes. The winner gets a gold statue in Town Square and picks a perk for everyone.","2026-10-07T19:00"],
  ["📜","Buy the whole town","Every building in Flip City now has a deed, starting at $5,000. Each one pays you every minute, flies your flag and shows your colour on the map. Own them all for the key to the city.","2026-10-07T19:00"],
  ["⚖️","Saint or Shark","Your reputation now matters. Honest flips and helping people make you a Saint: buyers pay more and Sister Mae appears. Fakes and lowballs make you a Shark: sellers drop prices and Knuckles shows up. It also changes how the Vince Saga ends.","2026-10-07T19:00"],
@@ -7397,6 +7415,131 @@ function freeTaxi(){try{return mayorK("taxi")||bookDone("hitch")}catch(e){return
 function goalMarks(){const L=[];try{if(maeHere())L.push([MAE.x,MAE.y,"#2a9df4","🙏"]);if(knkHere())L.push([KNK.x,KNK.y,"#d6384b","🦈"])}catch(e){}return L}
 function storyEnd(){const t=karmaTier();return t>=3?"saint":t<=1?"shark":"fair"}
 const STORY_END={saint:["The Saint","You never cheated anyone. Not once. I don't get it... but the whole town loves you. I'm giving half my fortune to Sister Mae's shelter, and I'll work for you. Boss."],shark:["The Shark","You're colder than me, kid. Fakes, lowballs, back-alley deals... I taught you nothing, you were born like this. Take my empire. I'm leaving town, and I'm taking the top hat."],fair:["The Mogul","...I don't leave. I work for you now. Boss. My challenges pay double from now on."]};
+/* ================= weather you can feel: rain, snow and heatwaves change prices, close shops and slow the road ================= */
+const WX_FX={rain:{n:"Rain",cat:{tech:1.15,cards:1.15,kicks:.9},close:["flea"],slow:.9,msg:"Rain shower. Tech and cards sell 15% higher while everyone stays in, and the Boardwalk Flea has packed up. An umbrella earns fans"},
+ snow:{n:"Snow",cat:{vint:1.2,toys:1.15,kicks:.85},close:["flea","mbeach","stand"],slow:.7,msg:"Snow! Vintage coats sell 20% higher and toys 15%. The Flea, Muscle Beach and the Farm Stand are shut, and the Frontier Road is slippery"},
+ heat:{n:"Heatwave",cat:{kicks:1.2,gym:1.15,vint:.85},close:["gym","docks"],slow:.85,msg:"Heatwave! Sneakers and gym gear sell higher. The Gym's air conditioning broke and the Docks car meet is cancelled"}};
+const wxNow=()=>WX.on||WX.rain>.25?WX.kind||"rain":null;
+function wxStart(){const sn=season().n,r=Math.random();WX.kind=sn==="Winter"?(r<.6?"snow":"rain"):sn==="Summer"?(r<.6?"heat":"rain"):sn==="Autumn"?(r<.2?"snow":"rain"):(r<.2?"heat":"rain");
+  WX.on=true;WX.t=WX.kind==="rain"?rnd(80,140):rnd(120,200);WX.umb=0;banner(WX_FX[WX.kind].msg,"u");if(room&&placeClosed(room))setTimeout(()=>{if(room&&placeClosed(room)){banner(placeClosed(room),"a");closeRoom()}},800)}
+const wxEndMsg=()=>WX.kind==="snow"?"The snow has stopped. Everything's open again":"The heatwave broke. Everything's open again";
+function wxSellK(s){try{const w=wxNow();return w&&!SCN?(WX_FX[w].cat[s.cat]||1):1}catch(e){return 1}}
+function wxSlow(){try{const w=wxNow();return w&&!SCN&&S.px>W-40&&S.px<X4+40?WX_FX[w].slow:1}catch(e){return 1}}
+const WX_FLAKES=Array.from({length:90},()=>[Math.random(),Math.random(),.5+Math.random()*.9,Math.random()*6]);
+function wxDrawAlt(){const c=ctx,a=WX.rain,t=performance.now()/1000;c.save();
+  if(WX.kind==="snow"){c.fillStyle=`rgba(225,235,250,${.18*a})`;c.fillRect(0,0,vw,vh);c.fillStyle=`rgba(255,255,255,${.9*a})`;const n=Math.round(WX_FLAKES.length*a);for(let i=0;i<n;i++){const d=WX_FLAKES[i],x=((d[0]*vw+Math.sin(t*.8+d[3])*24+t*12)%(vw+20))-10,y=((d[1]*vh+t*60*d[2])%(vh+20))-10;c.beginPath();c.arc(x,y,1.2+d[2]*1.4,0,7);c.fill()}}
+  else{c.fillStyle=`rgba(255,150,60,${.1*a})`;c.fillRect(0,0,vw,vh);const g=c.createLinearGradient(0,0,0,vh*.35);g.addColorStop(0,`rgba(255,200,90,${.22*a})`);g.addColorStop(1,"rgba(255,200,90,0)");c.fillStyle=g;c.fillRect(0,0,vw,vh*.35);
+    c.strokeStyle=`rgba(255,255,255,${.07*a})`;c.lineWidth=2;for(let i=0;i<6;i++){const y=vh*(.25+i*.13)+Math.sin(t*2+i)*6;c.beginPath();for(let x=0;x<=vw;x+=24)c.lineTo(x,y+Math.sin(x*.03+t*3+i)*3);c.stroke()}}
+  c.restore()}
+// places that close: weather, and the two that only open after dark
+const NIGHT_ONLY=["alley","cards"];
+function placeClosed(k){if(!S||!PL[k]||SCN)return null;const w=wxNow(),F=w&&WX_FX[w];if(F&&F.close.includes(k))return PL[k].n+" is closed for the "+F.n.toLowerCase()+". Come back when it clears";if(NIGHT_ONLY.includes(k)&&!nightOpen())return PL[k].n+" only opens after dark, 8 PM to 5 AM";return null}
+function drawClosedSigns(){if(SCN||!S)return;const w=wxNow(),F=w&&WX_FX[w],L=(F?F.close:[]).concat(nightOpen()?[]:NIGHT_ONLY);for(const k of L){const p=PL[k];if(!p)continue;const x=p.door[0],y=p.door[1]-34;if(x<cam.x-60||x>cam.x+vw+60||y<cam.y-40||y>cam.y+vh+40)continue;
+  ctx.save();ctx.translate(x,y);ctx.rotate(-.06);ctx.fillStyle="#fffaf0";rr(-26,-9,52,18,4);ctx.fill();ctx.strokeStyle="#d6384b";ctx.lineWidth=2;rr(-26,-9,52,18,4);ctx.stroke();ctx.fillStyle="#d6384b";ctx.font="900 10px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("CLOSED",0,1);ctx.restore()}}
+// an item worth roughly v, from a category you've unlocked
+function itemOfValue(v,cat){let pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(!cat||p.cat===cat));if(!pool.length)pool=POOL.filter(p=>S.unlocked.includes(p.cat));const it=pick(pool),c=CAT[it.cat],cond=pick(c.conds),k=(S.trend[it.cat]||1)*(season().m[it.cat]||1);
+  return {cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.max(1,Math.round(v/k)),noise:1,fake:false}}
+/* ================= the Back Alley: stolen goods, cheap, after dark ================= */
+function alleyStock(){const night=S.day+(S.clock<5?-1:0);if(!S.alley||S.alley.n!==night){const B=Math.max(300,rwBase()*.04);S.alley={n:night,it:Array.from({length:4},()=>{const it=itemOfValue(B*rnd(.6,2.2)),price=Math.round(valueOf(it)*rnd(.42,.6));it.fake=Math.random()<.2;return{it,price}})};dirty=true}return S.alley}
+function openAlley(){room="alley";$("room").hidden=false;const draw=()=>{const A=alleyStock();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Back Alley")}<div class="note">A man in a long coat opens a suitcase under a flickering bulb. "Everything's half price. Don't ask where it came from." About one in five is fake, and cops sometimes walk past. Every deal here costs you some reputation.</div>
+    <div class="perks">${A.it.map((o,i)=>o?`<button class="perk opp" data-al="${i}" ${S.cash<o.price?"disabled":""}><span class="oav" style="background:transparent">${tileFor(o.it.cat,o.it.code,1)}</span><span class="t">${esc(o.it.name)}</span><span class="d">${esc(o.it.cond)} · usually ~${fmt(valueOf({...o.it,fake:0}))}</span><span class="c">${fmt(o.price)}</span></button>`:"").join("")||`<p class="fine">"Sold out. Come back tomorrow night."</p>`}</div></div>`;
+  $("leaveBtn").onclick=closeRoom;$("room").querySelectorAll("[data-al]").forEach(b=>b.onclick=()=>{const i=+b.dataset.al,o=A.it[i];if(!o||S.cash<o.price)return;if(S.stash.length>=maxSlots())return banner("Stash full","r");
+    S.cash-=o.price;A.it[i]=null;karmaAdd(-2);dirty=true;
+    if(Math.random()<.1){SFX.loss();shake(5);banner("Cops! You dropped it and ran. −"+fmt(o.price),"r")}
+    else{S.stash.push({...o.it,paid:o.price});if(o.it.fake){S.stats.fakes++;SFX.scam();banner("You got it home and... it's a fake","r")}else{SFX.buy();banner("Got it for "+fmt(o.price)+". Nobody saw","g")}}
+    draw();updMini()})};draw()}
+/* ================= Lucky Lou's card room: higher or lower, after dark ================= */
+const CARD_N=["","A","2","3","4","5","6","7","8","9","10","J","Q","K"],CARD_S=["♠","♥","♦","♣"];
+let CR=null;
+function crOdds(v,hi){const n=hi?13-v:v-1;return n/13}
+function openCards(){room="cards";$("room").hidden=false;const draw=()=>{const c=CR,bets=[.01,.05,.1].map(f=>Math.max(10,Math.round(S.cash*f)));
+  const card=x=>`<div class="pcard${x.s===1||x.s===2?" red":""}"><b>${CARD_N[x.v]}</b><i>${CARD_S[x.s]}</i></div>`;
+  let body;if(!c)body=`<div class="note">Lucky Lou deals one card. Guess if the next is higher or lower. Every right guess grows the pot, and you can cash out whenever you like. A tie goes to the house.</div><div class="sechead"><h3>Place a bet</h3></div><div class="seg3">${bets.map((b,i)=>`<button data-bet="${b}" ${S.cash<b?"disabled":""}>${["Small","Medium","Big"][i]}<small>${fmt(b)}</small></button>`).join("")}</div>`;
+  else{const ph=crOdds(c.card.v,1),pl=crOdds(c.card.v,0),mh=ph?.95/ph:0,ml=pl?.95/pl:0;
+    body=`<div class="crtable"><div class="crcards">${c.prev?card(c.prev):""}${card(c.card)}</div><div class="crpot"><span class="eyebrow">Pot</span><b>${fmt(c.pot)}</b><small>${c.n} right in a row · bet ${fmt(c.bet)}</small></div></div>
+    ${c.lost?`<div class="note" style="border-color:var(--down)">${c.lost}</div><button class="bigbtn" id="crAgain">Deal again</button>`:`<div class="seg3"><button data-hl="1" ${!ph?"disabled":""}>Higher<small>×${mh.toFixed(2)}</small></button><button data-hl="0" ${!pl?"disabled":""}>Lower<small>×${ml.toFixed(2)}</small></button><button id="crOut" ${c.n?"":"disabled"}>Cash out<small>${fmt(c.pot)}</small></button></div>`}`}
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Lucky Lou's")}${body}</div>`;
+  $("leaveBtn").onclick=()=>{if(CR&&!CR.lost&&CR.n){earn(CR.pot);banner("Lou pays out "+fmt(CR.pot),"g")}CR=null;closeRoom()};
+  $("room").querySelectorAll("[data-bet]").forEach(b=>b.onclick=()=>{const bet=+b.dataset.bet;if(S.cash<bet)return;S.cash-=bet;dirty=true;CR={bet,pot:bet,n:0,card:{v:1+Math.floor(Math.random()*13),s:Math.floor(Math.random()*4)}};SFX.tick(.5);draw();updMini()});
+  $("room").querySelectorAll("[data-hl]").forEach(b=>b.onclick=()=>{const hi=b.dataset.hl==="1",p=crOdds(CR.card.v,hi),nx={v:1+Math.floor(Math.random()*13),s:Math.floor(Math.random()*4)},ok=hi?nx.v>CR.card.v:nx.v<CR.card.v;CR.prev=CR.card;CR.card=nx;
+    if(ok){CR.pot=Math.round(CR.pot*.95/p);CR.n++;SFX.coin(CR.n*2);if(CR.n>=6){earn(CR.pot);S.stats.cards=(S.stats.cards||0)+1;dirty=true;SFX.grail();confetti(120);CR.lost="Six in a row! Lou slides you "+fmt(CR.pot)+" and closes the table.";CR.pot=0}}
+    else{SFX.loss();CR.lost=(nx.v===CR.prev.v?"A tie. The house wins ties.":"Wrong call.")+" You lose the "+fmt(CR.pot)+" pot.";CR.pot=0}dirty=true;draw();updMini()});
+  const o=$("crOut");if(o)o.onclick=()=>{earn(CR.pot);S.stats.cards=(S.stats.cards||0)+1;SFX.sell();banner("Cashed out "+fmt(CR.pot),"g");CR=null;dirty=true;draw();updMini()};
+  const a=$("crAgain");if(a)a.onclick=()=>{CR=null;draw()}};draw()}
+/* ================= breakdowns: cars break, Mo fixes them, and old parts are worth flipping ================= */
+const PARTS=[["bat","Battery","The lights flicker and the radio keeps cutting out"],["plug","Spark plugs","The engine coughs and splutters"],["rad","Radiator","Steam is pouring out of the hood"],["belt","Fan belt","There's a loud squeal every time you speed up"],["tyre","Tyre","The car pulls hard to one side"],["oil","Oil pump","There's a horrible grinding noise"]];
+let brkT=rnd(300,600),BRK_FX=null;
+function brkTick(dt){if(!S||!playing||SCN||room||RRUN||(S.stats.flips||0)<10||S.broke)return;const rd=ride();if(!rd||!CARS.includes(rd)||!moving)return;if(S.svc===dayKey())return;brkT-=dt;if(brkT>0)return;brkT=rnd(360,720);if(Math.random()<.5)return;
+  const bad=PARTS.map(p=>p[0]).sort(()=>Math.random()-.5).slice(0,1+Math.floor(Math.random()*3));S.broke={k:rd,bad,found:[],wrong:[]};S.cur="walk";dirty=true;BRK_FX={x:S.px,y:S.py,t:performance.now()};target=null;moving=false;
+  SFX.crit(0);shake(6);setTimeout(openBreakdown,500)}
+setInterval(()=>{try{brkTick(1)}catch(e){}},1000);
+const vehName=k=>(VEH.find(v=>v.k===k)||{n:"car"}).n;
+const towCost=()=>Math.max(80,Math.round(rwBase()*.004));
+function openBreakdown(){if(!S.broke)return;room="brk";$("room").hidden=false;const k=S.broke.k;
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Broken down")}<div class="note">Your ${esc(vehName(k))} died in the middle of the road. ${esc(PARTS.find(p=>p[0]===S.broke.bad[0])[2])}. You'll have to walk until it's fixed.</div>
+   <button class="bigbtn" id="bkTow" ${S.cash<towCost()?"disabled":""}>Call a tow truck<small>${fmt(towCost())} · Mo picks you up and takes you to the garage</small></button><button class="bigbtn alt" id="bkWalk">Walk to Mo's Garage<small>Downtown, next to Flip Tower</small></button></div>`;
+  $("leaveBtn").onclick=closeRoom;$("bkTow").onclick=()=>{if(S.cash<towCost())return;S.cash-=towCost();dirty=true;closeRoom();const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="🛻";document.body.appendChild(fx);SFX.door();setTimeout(()=>{S.px=PL.garage.door[0];S.py=PL.garage.door[1]+16;target=null;moving=false;bKey="";PET=null;PT=null;KT=null},600);setTimeout(()=>{fx.remove();openRoom("garage")},1300)};
+  $("bkWalk").onclick=()=>{closeRoom();if(regionOpen("downtown"))walkTo("garage");else banner("Mo's Garage is downtown. Unlock Downtown first, or call a tow","a")}}
+// parts prices move every hour; buy low, sell high, and sell the old parts Mo pulls out of your car
+const partP=(k,h)=>{const i=PARTS.findIndex(p=>p[0]===k),hh=h==null?Math.floor(Date.now()/36e5):h,w=Math.sin(hh*.9+i*1.7)*.5+Math.sin(hh*.37+i*3.1)*.3;return Math.max(20,Math.round(Math.max(40,rwBase()*.004)*(1+i*.35)*(1+.55*w)))};
+const laborC=()=>Math.max(30,Math.round(rwBase()*.002));
+function openGarage(){room="garage";$("room").hidden=false;S.parts=S.parts||{};const draw=()=>{const B=S.broke,hh=Math.floor(Date.now()/36e5),svcC=Math.max(200,Math.round(rwBase()*.01));
+  let rep="";if(B){const sym=B.bad.filter(x=>!B.found.includes(x)).map(x=>PARTS.find(p=>p[0]===x)[2]);rep=`<div class="dcard" style="border-left:4px solid #e2364a"><span class="eyebrow">Your ${esc(vehName(B.k))} · ${B.bad.length-B.found.length} problem${B.bad.length-B.found.length===1?"":"s"} left</span><b>Find what's broken</b><p class="fine" style="text-align:left;margin:6px 0">${sym.map(s=>"• "+esc(s)).join("<br>")}</p><p class="fine" style="text-align:left;margin:0 0 8px">Mo charges ${fmt(laborC())} to open up each part. Pick the right ones and the old parts are yours to sell.</p>
+    <div class="partgrid">${PARTS.map(([k,n])=>{const f=B.found.includes(k),w=B.wrong.includes(k);return `<button class="pbtn${f?" ok":w?" no":""}" data-fix="${k}" ${f||w||S.cash<laborC()?"disabled":""}><b>${n}</b><small>${f?"Replaced":w?"That's fine":"Check"}</small></button>`}).join("")}</div></div>`}
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mo's Garage")}<div class="note">"If it's got wheels, I can fix it." Mo wipes his hands on a rag that's dirtier than they are.</div>${rep}
+    ${!B?`<button class="bigbtn alt" id="gSvc" ${S.svc===dayKey()||S.cash<svcC?"disabled":""}>Full service<small>${S.svc===dayKey()?"Serviced today · no breakdowns until tomorrow":"No breakdowns for the rest of today · "+fmt(svcC)}</small></button>`:""}
+    <div class="sechead"><h3>Parts market</h3><span class="eyebrow">Prices change every hour</span></div>
+    <div class="perks">${PARTS.map(([k,n])=>{const p=partP(k),pv=partP(k,hh-1),have=S.parts[k]||0,up=p>=pv;return `<div class="perk opp plrow"><span class="t">${n}</span><span class="d">You have ${have} · <b class="${up?"u":"d"}">${up?"▲":"▼"} ${fmt(p)}</b></span><span class="pmbtns"><button data-pbuy="${k}" ${S.cash<p||have>=20?"disabled":""}>Buy</button><button data-psell="${k}" ${have?"":"disabled"}>Sell</button></span></div>`}).join("")}</div></div>`;
+  $("leaveBtn").onclick=closeRoom;
+  $("room").querySelectorAll("[data-fix]").forEach(b=>b.onclick=()=>{const k=b.dataset.fix,c=laborC();if(!S.broke||S.cash<c)return;S.cash-=c;dirty=true;
+    if(S.broke.bad.includes(k)){S.broke.found.push(k);S.parts[k]=(S.parts[k]||0)+1;SFX.lift();banner("Mo: \"There's your problem.\" Old "+PARTS.find(p=>p[0]===k)[1].toLowerCase()+" added to your parts","g");
+      if(S.broke.found.length>=S.broke.bad.length){const v=S.broke.k;S.broke=null;S.cur=v;BRK_FX=null;SFX.rebirth();confetti(120);setTimeout(()=>banner("Your "+vehName(v)+" is fixed and running","g"),900)}}
+    else{S.broke.wrong.push(k);SFX.nope();banner("Mo: \"Nothing wrong with that one.\"","a")}draw();updMini()});
+  const sv=$("gSvc");if(sv)sv.onclick=()=>{if(S.cash<svcC)return;S.cash-=svcC;S.svc=dayKey();dirty=true;SFX.buy();banner("Serviced. No breakdowns today","g");draw();updMini()};
+  $("room").querySelectorAll("[data-pbuy]").forEach(b=>b.onclick=()=>{const k=b.dataset.pbuy,p=partP(k);if(S.cash<p||(S.parts[k]||0)>=20)return;S.cash-=p;S.parts[k]=(S.parts[k]||0)+1;dirty=true;SFX.buy();draw();updMini()});
+  $("room").querySelectorAll("[data-psell]").forEach(b=>b.onclick=()=>{const k=b.dataset.psell;if(!S.parts[k])return;const p=Math.round(partP(k)*.97);S.parts[k]--;earn(p);S.stats.flips++;dirty=true;SFX.sell();draw();updMini()})};draw()}
+function drawBreakdown(){if(!BRK_FX||SCN)return;const e=(performance.now()-BRK_FX.t)/1000;if(e>25||!S.broke){BRK_FX=null;return}for(let i=0;i<6;i++){const p=((e*.6+i/6)%1),x=BRK_FX.x+Math.sin(i*2+e)*8,y=BRK_FX.y-10-p*60;ctx.fillStyle=`rgba(90,90,100,${(1-p)*.45})`;ctx.beginPath();ctx.arc(x,y,6+p*14,0,7);ctx.fill()}}
+/* ================= Auction Night: live mystery lots twice an hour, against other players and the regulars ================= */
+const AN_EVERY=30*6e4,AN_LOT=60e3,AN_LOTS=5;
+const srand=n=>{const x=Math.sin(n*12.9898+78.233)*43758.5453;return x-Math.floor(x)};
+const AN_DESC=["A locked steamer trunk from an old hotel","Estate sale box, top floor, Paris","An unopened shipping crate","A safe nobody could open","Grandma's attic, box 3","A sealed lot from a police auction","A rich collector's storage unit","A suitcase found on the night train","A crate marked FRAGILE in six languages","Somebody's lost luggage, still taped up"];
+const AN_NPC=["Old Man Pemberton","Duchess Vane","Big Sal","Mrs. Kimura","The Collector","Lefty Ortiz","Professor Hale","Auntie Bo"];
+function anNow(t=Date.now()){const slot=Math.floor(t/AN_EVERY),e=t-slot*AN_EVERY;if(e>=AN_LOT*AN_LOTS)return{slot,live:false,next:(slot+1)*AN_EVERY-t};const i=Math.floor(e/AN_LOT);return{slot,live:true,i,el:(e-i*AN_LOT)/1000}}
+function anLot(slot,i){const s=slot*10+i,r=srand(s),v=+(r<.15?rnd0(s+1,.3,.7):r<.85?rnd0(s+2,.8,1.8):rnd0(s+3,2,3.6)).toFixed(2),lo=+(Math.max(.4,v*rnd0(s+4,.6,1.1))).toFixed(1),hi=+(lo+rnd0(s+5,.4,1)).toFixed(1);
+  return{d:AN_DESC[Math.floor(srand(s+6)*AN_DESC.length)],v,lo,hi,npc:[0,1,2].map(j=>({n:AN_NPC[(Math.floor(srand(s+10)*AN_NPC.length)+j*3)%AN_NPC.length],max:+(rnd0(s+20+j,.5,1)*hi*1.25).toFixed(1),d:rnd0(s+30+j,1.5,6)}))}}
+function rnd0(s,a,b){return a+srand(s)*(b-a)}
+let AN=null;const anB=()=>Math.max(300,rwBase()*.03);
+function anTick(){if(!S||!playing)return;const n=anNow();
+  if(!n.live){if(AN){anFinish(AN.i);anStop()}return}
+  if(!AN||AN.slot!==n.slot){anStop();AN={slot:n.slot,i:n.i,lots:{},seen:Date.now(),cls:null};anJoin();if(S.anSeen!==n.slot&&!SCN){S.anSeen=n.slot;dirty=true;banner("Auction Night is live. 5 mystery lots, one minute each","u")}}
+  if(n.i!==AN.i){anFinish(AN.i);AN.i=n.i}
+  const L=AN.lots[n.i]=AN.lots[n.i]||{top:{m:0,who:"",id:""},chg:0,lot:anLot(n.slot,n.i)};
+  if(n.el<56)L.lot.npc.forEach(p=>{if(L.top.who!==p.n&&L.top.m<p.max&&n.el-L.chg>p.d){const m=+(Math.max(.5,L.top.m+.1)).toFixed(1);if(m<=p.max){L.top={m,who:p.n,id:"npc"};L.chg=n.el}}});
+  renderAnChip(n);if(room==="aucn"&&openAucNight.draw)openAucNight.draw()}
+setInterval(()=>{try{anTick()}catch(e){console.warn(e)}},500);
+function anTopic(){return NET+"aucn/"+AN.slot}
+function anJoin(){const cl=crewCls();if(!cl||!AN)return;const tp=anTopic(),h=(t,buf)=>{if(!AN||t!==tp)return;let d;try{d=JSON.parse(buf.toString())}catch(e){return}if(!d||d.id===netMe()||!isFinite(d.m)||d.m>50)return;const L=AN.lots[d.i];if(!L)return;const m=+(+d.m).toFixed(1);if(m>L.top.m){L.top={m,who:String(d.n||"?").slice(0,16),id:String(d.id)};const n=anNow();L.chg=n.el||0}};
+  AN.cls=cl;AN.h=h;cl.forEach(c=>{c.on("message",h);c.subscribe(tp,{qos:0})})}
+function anStop(){if(AN&&AN.cls){const tp=anTopic();AN.cls.forEach(c=>{c.removeListener("message",AN.h);try{c.unsubscribe(tp)}catch(e){}})}AN=null;renderAnChip(null)}
+function anBid(m){const n=anNow();if(!AN||!n.live||n.el>=58)return;const L=AN.lots[n.i];if(!L||m<=L.top.m)return;const cost=Math.round(anB()*m);if(S.cash<cost)return banner("You need "+fmt(cost)+" to bid that","r");
+  L.top={m,who:mpName(),id:netMe()};L.chg=n.el;L.mine=1;SFX.bid();if(AN.cls)AN.cls.forEach(c=>{try{c.publish(anTopic(),JSON.stringify({i:n.i,m,n:mpName(),id:netMe()}),{qos:0})}catch(e){}})}
+function anFinish(i){const L=AN&&AN.lots[i];if(!L||L.done)return;L.done=1;if(L.top.id!==netMe())return void(L.mine&&banner(L.top.who+" won lot "+(i+1)+" for "+L.top.m.toFixed(1)+"×","a"));
+  const cost=Math.round(anB()*L.top.m);if(S.cash<cost)return banner("You couldn't pay for lot "+(i+1)+", so it went back on the shelf","r");S.cash-=cost;const val=anB()*L.lot.v,it=itemOfValue(val);it.paid=cost;
+  if(S.stash.length<maxSlots())S.stash.push(it);else earn(Math.round(valueOf(it)*.8));S.stats.aucWins=(S.stats.aucWins||0)+1;vote(2);dirty=true;
+  const good=val>cost;(good?SFX.grail:SFX.loss)();if(good)confetti(140);banner("Lot "+(i+1)+": "+it.name+", worth "+fmt(valueOf(it))+" · you paid "+fmt(cost),good?"g":"r");updMini()}
+function renderAnChip(n){let el=$("anChip");if(!n||!n.live||SCN){if(el)el.hidden=true;return}if(!el){el=document.createElement("button");el.className="chip pill ev";el.id="anChip";el.style.setProperty("--ec","#cf9a14");el.onclick=()=>{audioOn();if(room)closeRoom();openAucNight(closeRoom)};const box=$("hudpills");box.insertBefore(el,$("goalChip"))}
+  el.hidden=false;const t="🔨 Auction · lot "+(n.i+1)+"/"+AN_LOTS+" · "+Math.max(0,Math.ceil(60-n.el))+"s";if(el.textContent!==t)el.textContent=t}
+function openAucNight(back){room="aucn";$("room").hidden=false;const draw=()=>{const n=anNow(),B=anB();let body;
+  if(!n.live){const m=Math.ceil(n.next/6e4);body=`<div class="note">Auction Night runs twice an hour, on the hour and at half past. Five mystery lots, one minute each. Everybody online bids against each other and against the regulars. Bids are in multiples of your lot size, ${fmt(B)}, so rich and new players bid on equal terms. The next one starts in <b>${m} minute${m===1?"":"s"}</b>.</div>`}
+  else{const L=AN&&AN.lots[n.i];if(!L){body=`<p class="fine">Setting up…</p>`}else{const lot=L.lot,nx=+(Math.max(.5,L.top.m+.1)).toFixed(1),nx2=+(Math.max(.5,L.top.m+.5)).toFixed(1),lead=L.top.id===netMe();
+    body=`<div class="anlot"><span class="eyebrow">Lot ${n.i+1} of ${AN_LOTS} · ${Math.max(0,Math.ceil(60-n.el))}s left</span><b>${esc(lot.d)}</b><small>Estimate ${fmt(B*lot.lo)} to ${fmt(B*lot.hi)} · could be anything</small>
+      <div class="antop${lead?" lead":""}">${L.top.m?`Top bid <b>${L.top.m.toFixed(1)}× · ${fmt(B*L.top.m)}</b> · ${esc(L.top.who)}${lead?" (you)":""}`:"No bids yet"}</div></div>
+      <div class="seg3"><button data-anb="${nx}" ${lead||S.cash<B*nx||n.el>=58?"disabled":""}>Bid ${nx}×<small>${fmt(B*nx)}</small></button><button data-anb="${nx2}" ${lead||S.cash<B*nx2||n.el>=58?"disabled":""}>Jump ${nx2}×<small>${fmt(B*nx2)}</small></button><button disabled>${crewCls()?"Live":"Offline"}<small>${crewCls()?"Players + regulars":"Regulars only"}</small></button></div>
+      <p class="fine">You only pay if you win when the minute is up. The regulars tonight: ${lot.npc.map(p=>esc(p.n)).join(", ")}.</p>`}}
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Auction Night")}${body}</div>`;$("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{openAucNight.draw=null;back()};
+  $("room").querySelectorAll("[data-anb]").forEach(b=>b.onclick=()=>{anBid(+b.dataset.anb);draw()})};openAucNight.draw=draw;draw()}
+function worldPeople(){drawClosedSigns();drawBreakdown()}
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
