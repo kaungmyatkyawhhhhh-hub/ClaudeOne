@@ -1186,6 +1186,7 @@ const ACH=[
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
+ ["pots3","Over the rainbow","Find 3 pots of gold at the end of rainbows",()=>(S.stats.pots||0)>=3,40000],
  ["set1","Fully suited","Wear a complete outfit set",()=>(S.stats.sets||0)>=1,15000],
  ["runway27","Showstopper","Score 27 or more on the Runway",()=>(S.rwBest||0)>=27,80000],
  ["box20","Float like a butterfly","Reach a ×20 combo on the boxing bag",()=>(S.boxBest||0)>=20,30000],
@@ -1662,7 +1663,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  drawFireworks();funArrows();drawLostArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  drawWeather();drawFireworks();funArrows();drawLostArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -3212,6 +3213,21 @@ const dayEv=()=>DAYEV[new Date().getDay()],isDay=k=>dayEv()[0]===k;
 let devSnap=null;
 setInterval(()=>{if(!S||!S.stats)return;const now={l:S.stats.lifted||0,f:S.stats.flips||0};if(devSnap){if(isDay("tue")&&now.l>devSnap.l&&Math.random()<.12)gainCrate(1);if(isDay("thu")&&now.f>devSnap.f&&Math.random()<.08){S.maps=(S.maps||0)+1;dirty=true;banner("Treasure Thursday · a map was hidden in that sale!","g")}}devSnap=now;
   const dk=dayKey();if(S.devSeen!==dk&&(S.stats.flips||0)>=3&&!room&&$("overlay").hidden){S.devSeen=dk;dirty=true;const d=dayEv();setTimeout(()=>{banner(d[1]+" "+d[2],"g");rayText("Today is "+d[2]+": "+d[3].toLowerCase()+".")},800)}},1200);
+/* ---------- weather: passing rain showers, then a rainbow with a pot of gold at its end ---------- */
+const WX={rain:0,on:false,t:0,next:rnd(240,480),bow:null,drops:Array.from({length:110},()=>[Math.random(),Math.random(),.6+Math.random()*.6]),umb:0};
+function wxTick(dt){if(!S||(S.stats.flips||0)<5)return;
+  if(WX.on){WX.t-=dt;WX.rain=Math.min(1,WX.rain+dt/6);
+    if(S.acc&&S.acc.x==="umbrella"&&!SCN&&!MPW){WX.umb+=dt;if(WX.umb>=12){WX.umb=0;const f=Math.round(Math.max(5,(S.fans||0)*.002));S.fans=(S.fans||0)+f;WX.ut=(WX.ut||0)+f;dirty=true;SFX.tick(.5)}}
+    if(WX.t<=0){WX.on=false;if(WX.ut){banner("☂️ Dry and stylish · +"+fmtN(WX.ut)+" fans from the rain","g");WX.ut=0}WX.next=rnd(420,840);if(!SCN&&!MPW){const sp=lfSpot(S.px,S.py,260,520);if(sp){WX.bow={x:sp[0],y:sp[1],until:Date.now()+100000};SFX.hot();banner("🌈 A rainbow! Find the pot of gold at its end","g")}}}}
+  else{WX.rain=Math.max(0,WX.rain-dt/5);if(room||SCN||MPW)return;WX.next-=dt;if(WX.next<=0){WX.on=true;WX.t=rnd(80,140);WX.umb=0;banner("🌧️ Rain shower! Carrying an umbrella earns fans","u")}}
+  const B=WX.bow;if(B){if(Date.now()>B.until){WX.bow=null;banner("The rainbow faded away","a")}else if(!SCN&&!MPW&&Math.hypot(S.px-B.x,S.py-B.y)<40){WX.bow=null;const v=Math.round(Math.max(1500,rwBase()*.06));earn(v);S.stats.pots=(S.stats.pots||0)+1;if(Math.random()<.6)gainCrate(1);dirty=true;SFX.rebirth();confetti(220,null,null,["#ffcc33","#fff","#2fd28a"]);flash("#ffcc33",.35);banner("🍀 Pot of gold! +"+fmt(v),"g")}}}
+setInterval(()=>{try{wxTick(.25)}catch(e){}},250);
+function drawWeather(){if(SCN||MPW)return;const c=ctx,B=WX.bow;
+  if(B&&!room){const sx=B.x-cam.x,sy=B.y-cam.y,R=Math.min(vw*.9,520),fade=Math.min(1,(B.until-Date.now())/8000);c.save();c.globalAlpha=.32*fade;c.lineWidth=R*.018;["#e2364a","#ff7a3d","#ffcc33","#2fd28a","#2fa6d9","#2a3cff","#7a2fd6"].forEach((col,i)=>{c.strokeStyle=col;c.beginPath();c.arc(sx-R,sy,R-i*c.lineWidth,Math.PI,0);c.stroke()});c.restore();
+    if(sx>-30&&sy>-30&&sx<vw+30&&sy<vh+30){c.save();c.translate(sx,sy);c.fillStyle="#1b1d22";c.beginPath();c.ellipse(0,0,13,10,0,0,Math.PI);c.lineTo(-13,-4);c.lineTo(13,-4);c.fill();c.fillRect(-15,-6,30,3);c.fillStyle="#ffcc33";for(let i=0;i<5;i++){c.beginPath();c.arc(-8+i*4,-8-(i%2)*2,3,0,7);c.fill()}c.fillStyle="#fff";c.globalAlpha=.5+.5*Math.sin(wt*6);c.fillRect(-2,-14,2,2);c.fillRect(6,-11,2,2);c.restore()}
+    else if(!room)drawEdgeArrow(B.x,B.y,"#ffcc33")}
+  if(WX.rain<=0)return;const a=WX.rain;c.save();c.fillStyle=`rgba(40,55,80,${.16*a})`;c.fillRect(0,0,vw,vh);c.strokeStyle=`rgba(215,230,255,${.75*a})`;c.lineWidth=1.6;c.beginPath();
+  const n=Math.round(WX.drops.length*a),t=performance.now()/1000;for(let i=0;i<n;i++){const d=WX.drops[i],x=((d[0]*vw+t*60*d[2])%(vw+40))-20,y=((d[1]*vh+t*700*d[2])%(vh+40))-20;c.moveTo(x,y);c.lineTo(x-3*d[2],y+12*d[2])}c.stroke();c.restore()}
 /* ---------- lost pets: a townsperson loses a pet; search the circled area, then walk it home ---------- */
 let LF=null,lfT=360;
 const LF_KINDS=[["cat","🐱","their cat"],["dog","🐶","their dog"],["parrot","🦜","their parrot"],["bunny","🐰","their bunny"],["turtle","🐢","their turtle"]];
@@ -5179,7 +5195,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=56,WN=[
+const WN_VER=57,WN=[
+ ["🌈","Weather","Rain showers now roll through town. Carry an umbrella to earn fans while it pours, and when the rain stops, chase the rainbow to a pot of gold.","2026-10-07T05:50"],
  ["👠","Runway & outfit sets","A daily fashion show at the Mall: dress for the theme, walk the runway and get scored by three judges. Wear full sets (Archmage, Captain, Astronaut, Gentleman and 8 more) for bonus rizz. Plus a photo booth in the Boutique to save your look.","2026-10-07T05:45"],
  ["🎨","Recolour your gear","Caps, beanies, bandanas, capes, scarves, ties and more now come in 14 colours. Pick them in the Boutique under Colours. Friends see your colours online.","2026-10-07T05:40"],
  ["🥷","9 new outfits & 25 new accessories","Ninja suit, Dino onesie, Knight armour, Tuxedo, Hero suit, Pirate coat, Lab coat, Chef whites and a Space suit. Plus bucket hats, berets, cat ears, propeller caps, balloons, umbrellas, a magic wand and more. New shirt styles too: Hawaiian, Polo, Flannel, Varsity, Overalls and Turtleneck.","2026-10-07T05:40"],
