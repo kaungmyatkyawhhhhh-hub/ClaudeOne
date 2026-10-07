@@ -5424,7 +5424,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=80,WN=[
+const WN_VER=81,WN=[
+ ["🚀","Roomier worlds","The Cosmos and Deep Time are now about as big as Flip City, with far more people about (and a few aliens). New things to do there: a Space Arcade, Galactic Diner, Zero-G Club and Alien Pet Shop in orbit, and a Cave Arcade, Mammoth Grill and Dino Pet Pen in Deep Time. The Frontier got lamp posts and glowing zone gates at night.","2026-10-07T08:20"],
  ["🛤️","A real road","The Frontier Road is now a place you walk: Flip City's asphalt crumbles into a dirt track past fields, a farmhouse, Rusty's Roadside Diner and billboards of your old worlds, all the way to the Frontier's welcome arch.","2026-10-07T08:05"],
  ["🛣️","Just keep walking east","World 4 sits on the same land as Flip City, further east. Once it's open, follow the main road off the east edge of town and walk all the way to the Tycoon Frontier; walk back off its west road to come home.","2026-10-07T07:55"],
  ["🪞","Transmog, powers and the Gem Shop","Wear one item and make it look like another in the Boutique's new Transmog section (transmogged items don't count toward sets). Lots of accessories now have special powers like faster walking, more energy or more money. And World 4 has a Gem Shop with gear you can wear anywhere and upgrades for every world, up to Tycoon's touch for 💎10 Qi. World 5 now needs 1 Qa stars.","2026-10-07T07:40"],
@@ -6056,7 +6057,7 @@ function buildIsland(){const k=SCN.k,G=islGeo(k),{cx,cy,rx,ry,w,h}=G,i=ISLANDS.f
 /* entering and leaving */
 function enterScene(o){const tx=SCN?SCN.tx:S.px,ty=SCN?SCN.ty:S.py;if(room)closeRoom();if(M)closeMarket();SCN=Object.assign(o,{tx,ty,sig:"",stSig:null,npc:[],cars:[]});SCN.places=SCN.mk();
   S.px=o.spawn[0];S.py=o.spawn[1];S.hd=-Math.PI/2;target=null;autoEnter=null;moving=false;PET=null;PT=null;KT=null;bKey="";dirty=true;
-  const n=o.kind==="city"?14:7;for(let j=0;j<n;j++){const p=SCN.pt();SCN.npc.push({x:p[0],y:p[1],t:SCN.pt(),sp:rnd(30,55),shirt:pick(o.shirts),skin:pick(["#f3d0b5","#e8b896","#d8a682","#b9825c","#8d5a3b","#6b4430"]),hair:pick(["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"]),f:Math.random()<.5,ph:Math.random()*9})}
+  const n=o.kind==="city"?14:o.kind==="space"||o.kind==="prehist"?20:7;for(let j=0;j<n;j++){const p=SCN.pt();SCN.npc.push({x:p[0],y:p[1],t:SCN.pt(),sp:rnd(30,55),shirt:pick(o.shirts),skin:pick(["#f3d0b5","#e8b896","#d8a682","#b9825c","#8d5a3b","#6b4430"]),hair:pick(["#141414","#3b2a20","#b5552b","#d9b26b","#6e4a2f"]),f:Math.random()<.5,ph:Math.random()*9})}
   SCN.npc.forEach(n=>{for(let t=0;t<20&&npcBlocked(n.x,n.y);t++){const p=SCN.pt();n.x=p[0];n.y=p[1]}n.t=npcNext(n,SCN.pt)});
   if(o.kind==="city")for(let j=0;j<5;j++)SCN.cars.push({lane:j%3,p:Math.random(),sp:rnd(.05,.09)*(j%2?1:-1),paint:pick(PAINTS),k:pick(["car","truck","classic","supercar"])});
   renderHud()}
@@ -6114,9 +6115,9 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
   decoUnder();w4People(ppl);mpPeopleScene(ppl);arenaPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
-  const indoor=SCN.kind==="space"||SCN.kind==="house"||SCN.kind==="planet",gr=indoor?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
+  const indoor=SCN.kind==="space"||SCN.kind==="house"||SCN.kind==="planet"||SCN.kind==="castle",gr=indoor?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0&&!indoor){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
-    decoGlow(nightA);SCN.places.forEach(p=>{const sx=p.door[0]-cam.x,sy=p.door[1]-cam.y;if(sx<-90||sy<-90||sx>vw+90||sy>vh+90)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,80);g.addColorStop(0,`rgba(255,205,120,${.3*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-80,sy-80,160,160)});
+    decoGlow(nightA);if(SCN.kind==="w4")w4Glow(nightA);SCN.places.forEach(p=>{const sx=p.door[0]-cam.x,sy=p.door[1]-cam.y;if(sx<-90||sy<-90||sx>vw+90||sy>vh+90)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,80);g.addColorStop(0,`rgba(255,205,120,${.3*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-80,sy-80,160,160)});
     ctx.globalCompositeOperation="source-over"}
   drawGoalNav();
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.16)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh)}
@@ -6403,9 +6404,9 @@ function w2Migrate(d){if(d.w2m)return;d.w2m=1;const W=d.w2=d.w2||{open:0,gen:{},
   const mv={moon:"moon",mars:"mars",elev:"elev",dyson:"dyson",worm:"worm",pocket:"pocket",multi:"multi"};
   if(d.mega)for(const k in mv)if(d.mega[k]){W.gen[mv[k]]=(W.gen[mv[k]]||0)+d.mega[k]*5;W.open=1;delete d.mega[k]}}
 /* ---------- the station map ---------- */
-const SW2=2000,SH2=1600;
+const SK2=1.3,SW2=Math.round(2000*SK2),SH2=Math.round(1600*SK2);   // the Cosmos, laid out at 2000x1600 and spread 1.3x
 const DECKS=[[280,500,1440,820,60],[820,250,360,300,40],[880,1270,240,210,30]];
-const onDeck=(x,y)=>DECKS.some(([dx,dy,w,h])=>x>dx+14&&x<dx+w-14&&y>dy+20&&y<dy+h-10);
+const onDeck=(x,y)=>{x/=SK2;y/=SK2;return DECKS.some(([dx,dy,w,h])=>x>dx+14&&x<dx+w-14&&y>dy+20&&y<dy+h-10)};
 function spacePlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=o.bld!==0;L.push(o)};
   add({k:"reactor",n:"Radiant Reactor",sub:"Generators · ✦"+radF(w2Rate())+"/min",c:"#7a2fd6",x:850,y:620,w:300,h:190,bld:0,go:()=>openReactor(closeRoom)});
   add({k:"lab",n:"Upgrade Lab",sub:"Multiply your output",c:"#14a3a8",x:380,y:570,w:260,h:160,go:()=>openLab(closeRoom)});
@@ -6418,16 +6419,26 @@ function spacePlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.b
   add({k:"pad",n:"Landing pad",sub:"Shuttles to the Moon and Mars",c:"#4fe3ff",x:320,y:1150,w:170,h:110,go:()=>openPad(closeRoom)});
   add({k:"tmach",n:"Time machine",sub:w3().open?"Back 500 million years":"World 3: the age of the dinosaurs",c:"#cf9a14",x:1500,y:1150,w:170,h:110,go:()=>openTimeMachine(closeRoom)});
   add({k:"gate",n:"Stargate",sub:"Back to Earth",verb:"Leave through the",c:"#4fe3ff",x:930,y:1380,w:140,h:60,bld:0,list:0,go:()=>leaveScene()});
+  // things to do on the station, like back in Flip City
+  add({k:"sarc",n:"Space Arcade",sub:"Zero-G games for tickets",c:"#d63fb8",x:560,y:790,w:170,h:110,go:()=>openArcade()});
+  add({k:"sdin",n:"Galactic Diner",sub:"Moon pie and comet coffee · +60 energy",c:"#ff8a5c",x:1180,y:800,w:160,h:110,go:()=>sceneSnack("🥧 A slice of moon pie hits the spot")});
+  add({k:"sclub",n:"Zero-G Club",sub:"Dance in low gravity",c:"#7a2fd6",x:1560,y:790,w:140,h:110,go:()=>{room="club";$("room").hidden=false;openClub()}});
+  add({k:"spet",n:"Alien Pet Shop",sub:"Pets, tricks and races",c:"#2fd28a",x:540,y:1180,w:150,h:100,go:()=>{room="pets";$("room").hidden=false;openPets(closeRoom)}});
+  spreadPlaces(L,SK2);
   sceneGym(L,onDeck,SW2,SH2,GYMT.space);
   return L}
+// spread a layout drawn in "design" coordinates over a map K times bigger: places move apart, buildings keep their size
+function sceneSnack(msg){const c=Math.max(50,Math.round(S.cash*.002));if(S.cash<c)return banner("That's "+fmt(c),"r");S.cash-=c;S.energy=Math.min(maxEnergy()*1.2,S.energy+60);dirty=true;SFX.buy();banner(msg+" · +60 energy","g");updMini()}
+function spreadPlaces(L,K){L.forEach(p=>{const ox=p.door[0]-(p.x+p.w/2),oy=p.door[1]-(p.y+p.h),cx=(p.x+p.w/2)*K,by=(p.y+p.h)*K;p.x=cx-p.w/2;p.y=by-p.h;p.door=[cx+ox,by+oy]});return L}
 const W2H=()=>(S&&S.w2&&S.w2.home!=null)?S.w2.home:-1;
 const COSMOS_MKT={k:"cosmos",n:"Star Market",only:"space",steal:.15,fake:.04,box:0,price:1,minBase:0,sell:1.1,grail:0};
 function buildSpace(){const g=SCN_C.getContext("2d");SCN_C.width=SW2;SCN_C.height=SH2;let sd=77;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
+  g.save();g.scale(SK2,SK2);   // the backdrop and decks are drawn in the original 2000x1600 layout
   const bg=g.createLinearGradient(0,0,SW2,SH2);bg.addColorStop(0,"#05061a");bg.addColorStop(.5,"#0b0624");bg.addColorStop(1,"#020510");g.fillStyle=bg;g.fillRect(0,0,SW2,SH2);
   // nebulae
   [[300,250,420,"rgba(122,47,214,.32)"],[1700,300,380,"rgba(255,79,216,.22)"],[1600,1350,460,"rgba(43,179,163,.22)"],[250,1300,360,"rgba(79,168,232,.22)"],[1000,800,700,"rgba(60,40,140,.18)"]].forEach(([x,y,R,c])=>{const n=g.createRadialGradient(x,y,0,x,y,R);n.addColorStop(0,c);n.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=n;g.fillRect(x-R,y-R,R*2,R*2)});
   // stars
-  for(let i=0;i<900;i++){const x=r()*SW2,y=r()*SH2,s=r();g.fillStyle=`rgba(255,255,255,${.25+s*.75})`;g.fillRect(x,y,s>.96?2.2:1.2,s>.96?2.2:1.2)}
+  for(let i=0;i<1400;i++){const x=r()*2000,y=r()*1600,s=r();g.fillStyle=`rgba(255,255,255,${.25+s*.75})`;g.fillRect(x,y,s>.96?2.2:1.2,s>.96?2.2:1.2)}
   // planets: Earth, a ringed giant, a red world, a moon, the sun's glow
   const planet=(x,y,R,c1,c2,ring)=>{const pg=g.createRadialGradient(x-R*.35,y-R*.35,R*.1,x,y,R);pg.addColorStop(0,c1);pg.addColorStop(1,c2);g.fillStyle=pg;g.beginPath();g.arc(x,y,R,0,7);g.fill();
     if(ring){g.save();g.translate(x,y);g.rotate(-.35);g.strokeStyle="rgba(230,210,170,.75)";g.lineWidth=R*.16;g.beginPath();g.ellipse(0,0,R*1.9,R*.5,0,Math.PI*1.02,Math.PI*1.98+Math.PI);g.stroke();g.restore()}};
@@ -6444,20 +6455,22 @@ function buildSpace(){const g=SCN_C.getContext("2d");SCN_C.width=SW2;SCN_C.heigh
   // pipes, crates, antennas and plants on deck
   for(let i=0;i<14;i++){const x=320+r()*1360,y=530+r()*760;if(spPlaceHit(x,y,50))continue;g.fillStyle=["#4a5170","#5a4a7a","#3a5a6a"][i%3];rrp(g,x,y,26,20,4);g.fill();g.fillStyle="rgba(79,227,255,.6)";g.fillRect(x+4,y+8,18,2)}
   for(let i=0;i<8;i++){const x=320+r()*1360,y=530+r()*760;if(spPlaceHit(x,y,40))continue;g.fillStyle="#3f9a5a";g.beginPath();g.arc(x,y,12,0,7);g.fill();g.fillStyle="#2b2f45";g.fillRect(x-9,y+6,18,10);g.fillStyle="#ff4fd8";g.beginPath();g.arc(x+3,y-4,3,0,7);g.fill()}
-  [[300,520],[1700,520],[300,1300],[1700,1300]].forEach(([x,y])=>{g.strokeStyle="#9aa3b3";g.lineWidth=3;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-60);g.stroke();g.fillStyle="#cfd6e4";g.beginPath();g.ellipse(x,y-60,18,8,-.3,0,7);g.fill();SCN.lamps.push([x,y-66])});
-  moreDeco(g,PAL_D);
+  [[300,520],[1700,520],[300,1300],[1700,1300],[1000,540],[300,900],[1700,900]].forEach(([x,y])=>{g.strokeStyle="#9aa3b3";g.lineWidth=3;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-60);g.stroke();g.fillStyle="#cfd6e4";g.beginPath();g.ellipse(x,y-60,18,8,-.3,0,7);g.fill();SCN.lamps.push([x*SK2,(y-66)*SK2])});
+  g.restore();moreDeco(g,PAL_D);
   // buildings, with a sci-fi glow
   SCN.places.forEach(p=>{if(!p.bld)return;drawBuilding(g,{...p,k:"x"+p.k},PAL_D);g.strokeStyle="rgba(79,227,255,.5)";g.lineWidth=2;rrp(g,p.x-2,p.y-2,p.w+4,p.h+4,15);g.stroke();
     if(p.k==="port"){g.fillStyle="#f2f2f2";g.beginPath();g.moveTo(p.x+p.w-34,p.y-70);g.lineTo(p.x+p.w-22,p.y-40);g.lineTo(p.x+p.w-22,p.y+20);g.lineTo(p.x+p.w-46,p.y+20);g.lineTo(p.x+p.w-46,p.y-40);g.closePath();g.fill();g.fillStyle="#e2364a";g.fillRect(p.x+p.w-46,p.y+4,24,6)}
     if(p.k==="obs"){g.fillStyle="#cfd6e4";g.beginPath();g.arc(p.x+p.w/2,p.y+30,40,Math.PI,0);g.fill();g.fillStyle="#1b1d22";g.fillRect(p.x+p.w/2-6,p.y-10,12,34)}});
+  g.save();g.scale(SK2,SK2);
   // stargate ring
   {const x=1000,y=1400;g.strokeStyle="#9aa3b3";g.lineWidth=12;g.beginPath();g.ellipse(x,y-30,70,58,0,0,7);g.stroke();g.strokeStyle="#4fe3ff";g.lineWidth=3;g.stroke();for(let i=0;i<9;i++){const a=i/9*Math.PI*2;g.fillStyle="#ffcc33";g.beginPath();g.arc(x+Math.cos(a)*70,y-30+Math.sin(a)*58,4,0,7);g.fill()}}
   // reactor base
   {const x=1000,y=715;g.fillStyle="#1b1d33";g.beginPath();g.ellipse(x,y+60,150,40,0,0,7);g.fill();g.strokeStyle="#7a2fd6";g.lineWidth=4;g.beginPath();g.ellipse(x,y+60,150,40,0,0,7);g.stroke();
     g.font=`800 15px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";const tw=g.measureText("Radiant Reactor").width+26;g.fillStyle=PAL_D.sign;rrp(g,x-tw/2,y+86,tw,26,9);g.fill();g.fillStyle="#fff";g.fillText("Radiant Reactor",x,y+100)}
-  {const x=1000,y=420;g.font=`800 15px ${FONTS.d}`;const tw=g.measureText("The Black Hole").width+26;g.fillStyle=PAL_D.sign;rrp(g,x-tw/2,y+6,tw,26,9);g.fill();g.fillStyle="#fff";g.fillText("The Black Hole",x,y+20)}}
-const spPlaceHit=(x,y,m)=>SCN.places.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||Math.hypot(x-1000,y-760)<200||Math.hypot(x-1000,y-1380)<110;
-function spaceAnim(){const W=w2();
+  {const x=1000,y=420;g.font=`800 15px ${FONTS.d}`;const tw=g.measureText("The Black Hole").width+26;g.fillStyle=PAL_D.sign;rrp(g,x-tw/2,y+6,tw,26,9);g.fill();g.fillStyle="#fff";g.fillText("The Black Hole",x,y+20)}g.restore()}
+const spPlaceHit=(x,y,m)=>{x*=SK2;y*=SK2;return SCN.places.some(p=>x>p.x-m&&x<p.x+p.w+m&&y>p.y-m&&y<p.y+p.h+m+30)||Math.hypot(x-1000*SK2,y-760*SK2)<200*SK2||Math.hypot(x-1000*SK2,y-1380*SK2)<110*SK2};
+function spaceAnim(){ctx.save();ctx.scale(SK2,SK2);spaceAnim0();ctx.restore()}
+function spaceAnim0(){const W=w2();
   // the black hole, swirling
   {const x=1000,y=170;ctx.save();ctx.translate(x,y);for(let i=0;i<3;i++){ctx.rotate(wt*.4+i*2);const gg=ctx.createRadialGradient(0,0,30,0,0,150-i*20);gg.addColorStop(0,"rgba(255,180,80,.0)");gg.addColorStop(.35,`rgba(255,${150+i*30},80,.55)`);gg.addColorStop(1,"rgba(255,80,40,0)");ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(0,0,150-i*16,44-i*6,0,0,7);ctx.fill()}ctx.restore();
     ctx.fillStyle="#000";ctx.beginPath();ctx.arc(x,y,38,0,7);ctx.fill();ctx.strokeStyle="rgba(255,210,140,.8)";ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,40,0,7);ctx.stroke()}
@@ -6468,16 +6481,17 @@ function spaceAnim(){const W=w2();
   // stargate shimmer
   {const x=1000,y=1370;ctx.fillStyle=`rgba(79,227,255,${.25+.15*Math.sin(wt*3)})`;ctx.beginPath();ctx.ellipse(x,y,62,50,0,0,7);ctx.fill()}
   // comets, satellites, a drifting astronaut and the odd UFO
-  SCN.cm=SCN.cm||{t:0,x:0,y:0};SCN.cm.t-=1/60;if(SCN.cm.t<=0){SCN.cm={t:rnd(4,9),x:rnd(0,SW2),y:rnd(0,400),vx:rnd(500,800),vy:rnd(120,260),life:1.4}}if(SCN.cm.life>0){const c=SCN.cm;c.life-=1/60;c.x+=c.vx/60;c.y+=c.vy/60;const gg=ctx.createLinearGradient(c.x,c.y,c.x-c.vx*.25,c.y-c.vy*.25);gg.addColorStop(0,"rgba(255,255,255,.95)");gg.addColorStop(1,"rgba(120,200,255,0)");ctx.strokeStyle=gg;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x-c.vx*.25,c.y-c.vy*.25);ctx.stroke()}
+  SCN.cm=SCN.cm||{t:0,x:0,y:0};SCN.cm.t-=1/60;if(SCN.cm.t<=0){SCN.cm={t:rnd(4,9),x:rnd(0,2000),y:rnd(0,400),vx:rnd(500,800),vy:rnd(120,260),life:1.4}}if(SCN.cm.life>0){const c=SCN.cm;c.life-=1/60;c.x+=c.vx/60;c.y+=c.vy/60;const gg=ctx.createLinearGradient(c.x,c.y,c.x-c.vx*.25,c.y-c.vy*.25);gg.addColorStop(0,"rgba(255,255,255,.95)");gg.addColorStop(1,"rgba(120,200,255,0)");ctx.strokeStyle=gg;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x-c.vx*.25,c.y-c.vy*.25);ctx.stroke()}
   {const a=wt*.15,x=1000+Math.cos(a)*880,y=820+Math.sin(a)*720;ctx.save();ctx.translate(x,y);ctx.rotate(a*3);ctx.fillStyle="#cfd6e4";ctx.fillRect(-8,-6,16,12);ctx.fillStyle="#2a5bd7";ctx.fillRect(-30,-4,18,8);ctx.fillRect(12,-4,18,8);ctx.restore()}
   {const x=200+((wt*14)%1600),y=1150+Math.sin(wt*.7)*40;ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(wt*.5)*.6);drawPerson(0,0,{shirt:"#f2f2f2",skin:"#e8b896",hair:"#3b2a20",acc:{h:"astro",b:"jet"},ph:wt});ctx.restore()}
   if(Math.sin(wt*.21)>.97){const x=((wt*120)%2400)-200,y=420+Math.sin(wt*2)*20;ctx.fillStyle="#9aa3b3";ctx.beginPath();ctx.ellipse(x,y,40,12,0,0,7);ctx.fill();ctx.fillStyle="rgba(127,224,255,.85)";ctx.beginPath();ctx.ellipse(x,y-8,18,12,0,Math.PI,0);ctx.fill();ctx.fillStyle="rgba(140,255,160,.25)";ctx.beginPath();ctx.moveTo(x-14,y+10);ctx.lineTo(x+14,y+10);ctx.lineTo(x+40,y+120);ctx.lineTo(x-40,y+120);ctx.fill()}
   // twinkles
-  for(let i=0;i<40;i++){const x=(i*397)%SW2,y=(i*211)%SH2,a=.5+.5*Math.sin(wt*3+i);ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fillRect(x,y,2,2)}}
+  for(let i=0;i<40;i++){const x=(i*397)%2000,y=(i*211)%1600,a=.5+.5*Math.sin(wt*3+i);ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fillRect(x,y,2,2)}}
 function enterCosmos(){const W=w2();
-  enterScene({kind:"space",k:"cosmos",w:SW2,h:SH2,spawn:[1000,1460],bg:"#05061a",title:"The Cosmos",shirts:["#f2f2f2","#cfd6e4","#ff7a3d","#4fe3ff"],mk:spacePlaces,
-    pt:()=>{for(let t=0;t<30;t++){const x=320+Math.random()*1360,y=540+Math.random()*740;if(onDeck(x,y))return[x,y]}return[1000,900]},ok:onDeck});
-  SCN.npc.forEach(n=>{n.astro=1});if(!S.flags.w2seen){S.flags.w2seen=1;dirty=true;rayText("Welcome to the Cosmos. Build generators at the Radiant Reactor: each one makes Radiant every minute, even while you're away.")}else banner("The Cosmos","a")}
+  enterScene({kind:"space",k:"cosmos",w:SW2,h:SH2,spawn:[1000*SK2,1460*SK2],bg:"#05061a",title:"The Cosmos",shirts:["#f2f2f2","#cfd6e4","#ff7a3d","#4fe3ff"],mk:spacePlaces,
+    pt:()=>{for(let t=0;t<30;t++){const x=(320+Math.random()*1360)*SK2,y=(540+Math.random()*740)*SK2;if(onDeck(x,y))return[x,y]}return[1000*SK2,900*SK2]},ok:onDeck});
+  // a busier station: astronauts, plus a few green visitors from further out
+  SCN.npc.forEach((n,i)=>{if(i%3===2){n.skin=pick(["#8fe07a","#7ad0e0","#c79bf0"]);n.hair=n.skin;n.shirt=pick(["#2b2f45","#5a1fa6","#1f4fa8"])}else n.astro=1});if(!S.flags.w2seen){S.flags.w2seen=1;dirty=true;rayText("Welcome to the Cosmos. Build generators at the Radiant Reactor: each one makes Radiant every minute, even while you're away.")}else banner("The Cosmos","a")}
 function openStargate(back){const W=w2();if(W.open){closeRoom();flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6",fx:"rocket"},enterCosmos);return}
   if(S.cash<W2_COST)return banner("The Stargate needs "+fmt(W2_COST),"r");S.cash-=W2_COST;W.open=1;dirty=true;SFX.rebirth();flash("#7a2fd6",.7);confetti(300,null,null,["#7a2fd6","#ff4fd8","#4fe3ff","#fff"]);shake(10,.8);banner("STARGATE OPEN","g");closeRoom();setTimeout(()=>flyTo({n:"The Cosmos",cn:"World 2",tone:"#7a2fd6",fx:"rocket"},enterCosmos),900)}
 /* ---------- rooms ---------- */
@@ -7037,7 +7051,7 @@ let w3T=0,w3Acc=0;
 function w3Tick(dt){if(!S||!S.w3||!S.w3.open)return;const r=w3Rate();if(r<=0)return;w3Acc+=r*AMB*dt/60;w3T+=dt;if(w3T<1)return;w3T=0;const v=w3Acc;w3Acc=0;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;S.w3.run=(S.w3.run||0)+v/AMB;dirty=true}
 function w3Offline(){if(!S||!S.w3||!S.w3.open||!S.savedAt)return;const mins=Math.min(480,(Date.now()-S.savedAt)/60000);if(mins<1)return;const v=w3Rate()*mins*AMB;if(v<=0)return;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;S.w3.run=(S.w3.run||0)+v/AMB;dirty=true;setTimeout(()=>banner("Deep Time while you were away +"+fmt(v),"g"),2600)}
 /* ---------- the prehistoric map ---------- */
-const DW=2400,DH=1500;
+const SK3=1.25,DW=Math.round(2400*SK3),DH=Math.round(1500*SK3);   // Deep Time, laid out at 2400x1500 and spread 1.25x
 function prehistPlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=o.bld!==0;L.push(o)};
   add({k:"nursery",n:"Tree of Life",sub:"Life generators · "+ambF(w3Rate()*AMB)+"/min",c:"#2f9a4e",x:1080,y:520,w:240,h:200,bld:0,go:()=>openNursery(closeRoom)});
   add({k:"evo",n:"Evolution Lab",sub:"Multiply your life",c:"#14a3a8",x:1420,y:600,w:230,h:150,go:()=>openEvo(closeRoom)});
@@ -7047,11 +7061,16 @@ function prehistPlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o
   add({k:"rock",n:"The Asteroid",verb:"Watch",sub:"Trigger the extinction for Genes",c:"#e2364a",x:2050,y:260,w:150,h:120,bld:0,go:()=>openExtinction(closeRoom)});
   add({k:"tm",n:"Time machine",verb:"Step into the",sub:"Back to the Cosmos",c:"#4fe3ff",x:1140,y:1220,w:120,h:70,bld:0,list:0,go:()=>leaveScene()});
   add({k:"zig",n:"Amber Ziggurat",verb:"Climb the",sub:zigN()?zigN()+" tiers · "+ambF(zigRate()*AMB)+"/min":"Build a temple that pays forever",c:"#d99a2b",x:1840,y:860,w:240,h:200,go:()=>openZig(closeRoom)});
-  sceneGym(L,(x,y)=>PH_OK(x,y)&&Math.hypot(x-1200,y-640)>360,DW,DH,GYMT.prehist);   // keep the gym out from under the Tree of Life
+  add({k:"carc",n:"Cave Arcade",sub:"Games painted on the cave wall",c:"#d63fb8",x:620,y:330,w:190,h:120,go:()=>openArcade()});
+  add({k:"grill",n:"Mammoth Grill",sub:"Roast on a stick · +60 energy",c:"#b5552b",x:1700,y:1180,w:200,h:120,go:()=>sceneSnack("🍖 The biggest drumstick you've ever seen")});
+  add({k:"dpet",n:"Dino Pet Pen",sub:"Pets, tricks and races",c:"#5f8a4a",x:560,y:1100,w:170,h:110,go:()=>{room="pets";$("room").hidden=false;openPets(closeRoom)}});
+  spreadPlaces(L,SK3);
+  sceneGym(L,(x,y)=>PH_OK(x,y)&&Math.hypot(x-1200*SK3,y-640*SK3)>360,DW,DH,GYMT.prehist);   // keep the gym out from under the Tree of Life
   return L}
 const FOSSIL_MKT={k:"fossil",n:"Fossil Market",only:"fossil",steal:.15,fake:.05,box:0,price:1,minBase:0,sell:1.15,grail:0};
-const PH_OK=(x,y)=>x>20&&x<DW-20&&y>180&&y<DH-20&&!(x<520&&y>1080)&&!((x-1900)*(x-1900)/(260*260)+(y-560)*(y-560)/(150*150)<1);
+const PH_OK0=(x,y)=>x>20&&x<2380&&y>180&&y<1480&&!(x<520&&y>1080)&&!((x-1900)*(x-1900)/(260*260)+(y-560)*(y-560)/(150*150)<1),PH_OK=(x,y)=>PH_OK0(x/SK3,y/SK3);
 function buildPrehist(){const g=SCN_C.getContext("2d");SCN_C.width=DW;SCN_C.height=DH;let sd=543;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
+  g.save();g.scale(SK3,SK3);   // terrain in the original 2400x1500 layout
   // sky with a smoking volcano far away
   const sky=g.createLinearGradient(0,0,0,240);sky.addColorStop(0,"#f6c27a");sky.addColorStop(1,"#f9e3b0");g.fillStyle=sky;g.fillRect(0,0,DW,240);
   g.fillStyle="#8a5a4a";g.beginPath();g.moveTo(1500,230);g.lineTo(1700,60);g.lineTo(1780,60);g.lineTo(2000,230);g.fill();g.fillStyle="#ff6a2b";g.beginPath();g.ellipse(1740,62,40,10,0,0,7);g.fill();
@@ -7065,11 +7084,12 @@ function buildPrehist(){const g=SCN_C.getContext("2d");SCN_C.width=DW;SCN_C.heig
   g.fillStyle="#3f6a4a";g.beginPath();g.ellipse(900,1260,200,90,0,0,7);g.fill();g.fillStyle="#4f8aa0";g.beginPath();g.ellipse(1900,560,250,140,0,0,7);g.fill();g.strokeStyle="rgba(255,255,255,.35)";g.lineWidth=3;g.beginPath();g.ellipse(1900,560,230,125,0,0,7);g.stroke();
   // giant ferns and cycads
   const fern=(x,y,s)=>{g.fillStyle="rgba(0,0,0,.15)";g.beginPath();g.ellipse(x+5,y+6,24*s,7*s,0,0,7);g.fill();g.strokeStyle="#5a4a2a";g.lineWidth=5*s;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-40*s);g.stroke();g.fillStyle="#2f7a3e";for(let a=0;a<8;a++){const an=a/8*Math.PI*2;g.beginPath();g.ellipse(x+Math.cos(an)*24*s,y-40*s+Math.sin(an)*10*s,26*s,6*s,an,0,7);g.fill()}g.fillStyle="#3f9a4e";g.beginPath();g.arc(x,y-40*s,7*s,0,7);g.fill()};
-  for(let i=0;i<70;i++){const x=480+r()*1900,y=260+r()*1200;if(SCN.places.some(p=>x>p.x-50&&x<p.x+p.w+50&&y>p.y-60&&y<p.y+p.h+60)||!PH_OK(x,y))continue;fern(x,y,.7+r()*.8)}
+  for(let i=0;i<110;i++){const x=480+r()*1900,y=260+r()*1200,X=x*SK3,Y=y*SK3;if(SCN.places.some(p=>X>p.x-50&&X<p.x+p.w+50&&Y>p.y-60&&Y<p.y+p.h+60)||!PH_OK0(x,y))continue;fern(x,y,.7+r()*.8)}
   // horsetails and mushrooms in the swamp, bones on the plains, shells on the shore
-  for(let i=0;i<40;i++){const x=600+r()*700,y=900+r()*500;if(!PH_OK(x,y))continue;g.strokeStyle="#4f7a3a";g.lineWidth=3;g.beginPath();g.moveTo(x,y);g.lineTo(x+r()*4-2,y-24);g.stroke()}
+  for(let i=0;i<40;i++){const x=600+r()*700,y=900+r()*500;if(!PH_OK0(x,y))continue;g.strokeStyle="#4f7a3a";g.lineWidth=3;g.beginPath();g.moveTo(x,y);g.lineTo(x+r()*4-2,y-24);g.stroke()}
   for(let i=0;i<14;i++){const x=1700+r()*600,y=900+r()*500;g.fillStyle="#f2ead2";g.fillRect(x,y,26,5);g.beginPath();g.arc(x,y+2,4,0,7);g.arc(x+26,y+2,4,0,7);g.fill()}
-  for(let i=0;i<30;i++){const x=320+r()*220,y=300+r()*1100;if(!PH_OK(x,y))continue;g.strokeStyle="#c9a074";g.lineWidth=2;g.beginPath();g.arc(x,y,5,0,Math.PI*1.6);g.stroke()}
+  for(let i=0;i<30;i++){const x=320+r()*220,y=300+r()*1100;if(!PH_OK0(x,y))continue;g.strokeStyle="#c9a074";g.lineWidth=2;g.beginPath();g.arc(x,y,5,0,Math.PI*1.6);g.stroke()}
+  g.restore();
   // the tree of life, the dig pit, the asteroid lookout, the time machine pod
   moreDeco(g,PAL_L);
   SCN.places.forEach(p=>{if(p.k==="nursery"){const x=p.door[0],y=p.door[1]-20;g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x,y+10,110,26,0,0,7);g.fill();g.fillStyle="#6b4a2f";g.fillRect(x-16,y-120,32,130);for(let i=0;i<5;i++){g.fillStyle=["#2f7a3e","#3f9a4e","#4fb35e"][i%3];g.beginPath();g.arc(x+Math.cos(i*1.3)*60,y-150+Math.sin(i*2)*30,60,0,7);g.fill()}return}
@@ -7077,9 +7097,10 @@ function buildPrehist(){const g=SCN_C.getContext("2d");SCN_C.width=DW;SCN_C.heig
     if(p.k==="rock"){g.fillStyle="#7a5a3a";rrp(g,p.x,p.y+60,p.w,60,10);g.fill();g.fillStyle="#f2ead2";g.font=`800 12px ${FONTS.d}`;g.textAlign="center";g.fillText("LOOKOUT",p.door[0],p.y+95);return}
     if(p.k==="tm"){const x=p.door[0],y=p.door[1]-30;g.fillStyle="#3a3f4c";g.beginPath();g.ellipse(x,y+20,70,20,0,0,7);g.fill();g.fillStyle="#cfd6e4";rrp(g,x-36,y-60,72,80,30);g.fill();g.fillStyle="#4fe3ff";rrp(g,x-22,y-46,44,36,14);g.fill();g.fillStyle="#cf9a14";g.fillRect(x-36,y-6,72,6);return}
     if(p.bld)drawBuilding(g,{...p,k:"x"+p.k},PAL_L);});
-  g.font=`800 15px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";[["CAMBRIAN SHORE",200,280],["CARBONIFEROUS SWAMP",900,300],["JURASSIC PLAINS",1800,300],["Tree of Life",1200,760]].forEach(([t,x,y])=>{const w=g.measureText(t).width+24;g.fillStyle="rgba(255,255,255,.85)";rrp(g,x-w/2,y-13,w,26,9);g.fill();g.fillStyle="#3a2a1a";g.fillText(t,x,y+1)})}
+  g.save();g.scale(SK3,SK3);g.font=`800 15px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";[["CAMBRIAN SHORE",200,280],["CARBONIFEROUS SWAMP",900,300],["JURASSIC PLAINS",1800,300],["Tree of Life",1200,760]].forEach(([t,x,y])=>{const w=g.measureText(t).width+24;g.fillStyle="rgba(255,255,255,.85)";rrp(g,x-w/2,y-13,w,26,9);g.fill();g.fillStyle="#3a2a1a";g.fillText(t,x,y+1)});g.restore()}
 // moving life: trilobites, a sea monster, dragonflies, dinosaurs, pterosaurs, the asteroid at the end
-function prehistAnim(){
+function prehistAnim(){ctx.save();ctx.scale(SK3,SK3);prehistAnim0();ctx.restore()}
+function prehistAnim0(){
   for(let i=0;i<8;i++){const x=80+((wt*6+i*37)%220),y=380+i*120+Math.sin(wt+i)*6;ctx.fillStyle="#8a6a4a";ctx.beginPath();ctx.ellipse(x,y,9,6,0,0,7);ctx.fill();ctx.strokeStyle="rgba(0,0,0,.3)";ctx.lineWidth=1;for(let j=-1;j<=1;j++){ctx.beginPath();ctx.moveTo(x-7,y+j*2.5);ctx.lineTo(x+7,y+j*2.5);ctx.stroke()}}
   {const x=150+Math.sin(wt*.4)*90,y=760+Math.cos(wt*.3)*120;ctx.save();ctx.translate(x,y);ctx.rotate(Math.cos(wt*.4)*.4);ctx.fillStyle="#c96a4a";ctx.beginPath();ctx.ellipse(0,0,34,12,0,0,7);ctx.fill();for(let j=0;j<6;j++){ctx.beginPath();ctx.ellipse(-20+j*8,0,4,16+Math.sin(wt*8+j)*3,0,0,7);ctx.fill()}ctx.fillStyle="#e2a07a";ctx.beginPath();ctx.ellipse(34,4,8,3,.6,0,7);ctx.ellipse(34,-4,8,3,-.6,0,7);ctx.fill();ctx.restore()}
   for(let i=0;i<5;i++){const a=wt*.6+i*1.2,x=900+Math.cos(a)*(260+i*30),y=1050+Math.sin(a*1.3)*160,f=Math.sin(wt*30+i)*.6;ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.fillStyle="#1f6f8a";ctx.fillRect(-1.5,-14,3,28);ctx.fillStyle=`rgba(200,240,255,${.5+.3*f})`;[[-1,-8],[1,-8],[-1,0],[1,0]].forEach(([s,dy])=>{ctx.beginPath();ctx.ellipse(s*14,dy,14,3.5,s*.1,0,7);ctx.fill()});ctx.restore()}
@@ -7093,7 +7114,7 @@ function prehistAnim(){
   {const x=1740,y=40-((wt*14)%40);ctx.fillStyle=`rgba(90,80,80,${.35})`;for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(x+j*14+Math.sin(wt+j)*5,y-j*20,16+j*6,0,7);ctx.fill()}}
   {const k=(wt*.02)%1,x=2400-k*400,y=40+k*120;const gg=ctx.createLinearGradient(x,y,x+120,y-60);gg.addColorStop(0,"rgba(255,200,120,.95)");gg.addColorStop(1,"rgba(255,120,60,0)");ctx.strokeStyle=gg;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+120,y-60);ctx.stroke();ctx.fillStyle="#5a4a3a";ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.fill()}
   {const x=1200,y=1190,p=.5+.5*Math.sin(wt*3);ctx.fillStyle=`rgba(79,227,255,${.25+.2*p})`;ctx.beginPath();ctx.ellipse(x,y,60,26,0,0,7);ctx.fill()}}
-function enterPrehist(){const W=w3();enterScene({kind:"prehist",k:"deep",w:DW,h:DH,spawn:[1200,1180],bg:"#f6c27a",title:"Deep Time",shirts:["#8a6a44","#c4945f","#5f8a4a","#f2ead2"],mk:prehistPlaces,pt:()=>{for(let t=0;t<30;t++){const x=600+Math.random()*1500,y=400+Math.random()*900;if(PH_OK(x,y))return[x,y]}return[1200,900]},ok:PH_OK});
+function enterPrehist(){const W=w3();setTimeout(()=>{if(SCN&&SCN.kind==="prehist")SCN.npc.forEach(n=>{n.shirt=pick(["#8a6a44","#c4945f","#5f8a4a","#a8743a"]);n.hair=pick(["#3b2a20","#6e4a2f","#141414"])})},0);enterScene({kind:"prehist",k:"deep",w:DW,h:DH,spawn:[1200*SK3,1180*SK3],bg:"#f6c27a",title:"Deep Time",shirts:["#8a6a44","#c4945f","#5f8a4a","#f2ead2"],mk:prehistPlaces,pt:()=>{for(let t=0;t<30;t++){const x=(600+Math.random()*1500)*SK3,y=(400+Math.random()*900)*SK3;if(PH_OK(x,y))return[x,y]}return[1200*SK3,900*SK3]},ok:PH_OK});
   SCN.npc.forEach(n=>{n.hair="#5a3a24"});if(!S.flags.w3seen){S.flags.w3seen=1;dirty=true;rayText("You made it: about 500 million years ago, just after the Cambrian explosion. Grow life at the Tree of Life. Your money is Amber here: ◈1 Amber = ✦1 quadrillion Radiant.")}else banner("Deep Time","a")}
 function openTimeMachine(back){room="tmach";const W=w3(),has=genN("multi")>0;
   if(W.open){closeRoom();flyTo({n:"Deep Time",cn:"World 3 · 500 million years ago",tone:"#cf9a14",fx:"whirl"},enterPrehist);return}
@@ -7361,7 +7382,9 @@ function buildW4(){const g=SCN_C.getContext("2d");SCN_C.width=W4W;SCN_C.height=W
   g.fillStyle="#e8d8b0";g.beginPath();g.arc(900,780,150,0,7);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<80;i++){g.beginPath();g.arc(r()*W4W,170+r()*(W4H-170),4+r()*10,0,7);g.fill()}
   const tree=(x,y)=>{g.fillStyle="rgba(0,0,0,.15)";g.beginPath();g.ellipse(x,y+4,18,6,0,0,7);g.fill();g.fillStyle="#6b4a2f";g.fillRect(x-3,y-14,6,16);g.fillStyle=pick(["#3f9a4e","#2f7a3e","#4fb35e"]);g.beginPath();g.arc(x,y-22,16,0,7);g.fill()};
   for(let i=0;i<70;i++){const x=40+r()*(W4W-80),y=200+r()*(W4H-240);if(SCN.places.some(p=>x>p.x-60&&x<p.x+p.w+60&&y>p.y-60&&y<p.y+p.h+70)||Math.hypot(x-900,y-780)<200)continue;tree(x,y)}
-  const W=w4();SCN.places.forEach(p=>{const zk=p.k.startsWith("z_")?p.k.slice(2):null,x=p.x,y=p.y,w=p.w,h=p.h;g.save();
+  // lamp posts along the paths so the Frontier glows at night
+  W4_PATHS.forEach(([px,py])=>{for(let t=.32;t<.95;t+=.3){const x=900+(px-900)*t+((py-780)?28:0),y=780+(py-780)*t+((py-780)?0:-48);if(x<30||x>W4W-30)continue;g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x+4,y+3,8,3,0,0,7);g.fill();g.fillStyle="#3a3f4c";g.fillRect(x-2,y-46,4,46);g.fillStyle="#5b6272";rrp(g,x-7,y-54,14,10,3);g.fill();SCN.lamps.push([x,y-49])}});
+  const W=w4();SCN.places.forEach(p=>{const zk=p.k.startsWith("z_")?p.k.slice(2):null,x=p.x,y=p.y,w=p.w,h=p.h;if(zk){g.fillStyle="rgba(30,20,40,.16)";rrp(g,x+10,y+14,w,h,24);g.fill()}g.save();
     if(zk==="sky"){g.fillStyle="#bfe6ff";rrp(g,x,y,w,h,24);g.fill();g.fillStyle="#fff";[[.25,.3,40],[.5,.22,50],[.75,.3,40]].forEach(([a,b,rr2])=>{g.beginPath();g.arc(x+w*a,y+h*b,rr2,0,7);g.fill()});g.fillStyle="#7fc46a";g.beginPath();g.ellipse(x+w/2,y+h*.62,w*.38,22,0,0,7);g.fill();g.fillStyle="#8a6a44";g.beginPath();g.moveTo(x+w*.14,y+h*.64);g.lineTo(x+w/2,y+h*.95);g.lineTo(x+w*.86,y+h*.64);g.fill();g.fillStyle="#bfefff";for(let i=0;i<3;i++){g.beginPath();g.moveTo(x+w*.35+i*30,y+h*.6);g.lineTo(x+w*.35+i*30+8,y+h*.42);g.lineTo(x+w*.35+i*30+16,y+h*.6);g.fill()}}
     else if(zk==="park"){g.fillStyle="#ffe6f6";rrp(g,x,y,w,h,24);g.fill();g.strokeStyle="#7a2fd6";g.lineWidth=5;g.beginPath();g.arc(x+w*.32,y+h*.45,55,0,7);g.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4;g.beginPath();g.moveTo(x+w*.32,y+h*.45);g.lineTo(x+w*.32+Math.cos(a)*55,y+h*.45+Math.sin(a)*55);g.stroke()}g.fillStyle="#e2364a";g.beginPath();g.moveTo(x+w*.6,y+h*.85);g.lineTo(x+w*.75,y+h*.3);g.lineTo(x+w*.9,y+h*.85);g.fill();g.fillStyle="#fff";g.beginPath();g.moveTo(x+w*.69,y+h*.85);g.lineTo(x+w*.75,y+h*.3);g.lineTo(x+w*.81,y+h*.85);g.fill()}
     else if(zk==="sea"){g.fillStyle="#1f6f8a";rrp(g,x,y,w,h,24);g.fill();g.fillStyle="rgba(191,239,255,.35)";g.beginPath();g.arc(x+w/2,y+h*.85,w*.36,Math.PI,0);g.fill();g.strokeStyle="rgba(255,255,255,.7)";g.lineWidth=3;g.stroke();g.fillStyle="#ff7a3d";for(let i=0;i<4;i++){g.beginPath();g.ellipse(x+40+i*55,y+30+(i%2)*25,10,6,0,0,7);g.fill()}g.fillStyle="#ff8fa3";for(let i=0;i<5;i++)g.fillRect(x+30+i*48,y+h-30,8,22)}
@@ -7374,6 +7397,8 @@ function buildW4(){const g=SCN_C.getContext("2d");SCN_C.width=W4W;SCN_C.height=W
     if(zk){const z=W4ZK(zk),t=z.ic+" "+z.n;g.font=`800 15px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";const tw=g.measureText(t).width+26;g.fillStyle="rgba(0,0,0,.18)";rrp(g,x+w/2-tw/2,y-16,tw,30,12);g.fill();g.fillStyle="#fff";rrp(g,x+w/2-tw/2,y-19,tw,30,12);g.fill();g.fillStyle=z.c;g.fillRect(x+w/2-tw/2+8,y-6,4,4);g.fillStyle="#141824";g.fillText(t,x+w/2,y-3)}
     g.restore()});
   g.font=`800 16px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";[["THE FRONTIER · est. today",900,620]].forEach(([t,x,y])=>{const w=g.measureText(t).width+24;g.fillStyle="rgba(255,255,255,.9)";rrp(g,x-w/2,y-14,w,28,9);g.fill();g.fillStyle="#3a2266";g.fillText(t,x,y+1)})}
+// at night every zone gate lights up in its own colour
+function w4Glow(nA){const W=w4();W4Z.forEach(z=>{if(!W.unl[z.k])return;const p=SCN.places.find(q=>q.k==="z_"+z.k);if(!p)return;const sx=p.x+p.w/2-cam.x,sy=p.y+p.h/2-cam.y,R=Math.max(p.w,p.h)*.9;if(sx<-R||sy<-R||sx>vw+R||sy>vh+R)return;const g=ctx.createRadialGradient(sx,sy,10,sx,sy,R);const c=z.c.replace("#","");const rgb=[0,2,4].map(i=>parseInt(c.slice(i,i+2),16)).join(",");g.addColorStop(0,`rgba(${rgb},${.38*nA})`);g.addColorStop(1,`rgba(${rgb},0)`);ctx.fillStyle=g;ctx.fillRect(sx-R,sy-R,R*2,R*2)})}
 function w4Anim(){const W=w4();
   {const p=SCN.places.find(q=>q.k==="rift");if(p){const cx=p.door[0],cy=p.door[1]-40;ctx.save();for(let i=0;i<3;i++){ctx.strokeStyle=["#ff4fd8","#4fe3ff","#ffcc33"][i];ctx.lineWidth=3;ctx.globalAlpha=.7;ctx.beginPath();ctx.ellipse(cx,cy,40-i*10,52-i*12,wt*(1+i*.5),0,5);ctx.stroke()}ctx.restore()}}
   {const p=SCN.places.find(q=>q.k==="z_park");if(p&&W.unl.park){const cx=p.x+p.w*.32,cy=p.y+p.h*.45;ctx.fillStyle="#ffcc33";for(let i=0;i<8;i++){const a=i*Math.PI/4+wt*.6;ctx.beginPath();ctx.arc(cx+Math.cos(a)*55,cy+Math.sin(a)*55,6,0,7);ctx.fill()}}}
