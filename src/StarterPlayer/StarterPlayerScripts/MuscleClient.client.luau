@@ -1,4 +1,6 @@
--- MuscleClient: draws the muscles (muscle v7, Shared.MuscleRig) on every character this client can see.
+-- MuscleClient: draws the muscles (muscle v8, Shared.MuscleRig) on every character this client can see. The muscles wear the
+-- character's own Shirt / Pants (re-read every scan, so a wardrobe change or respawn shows at once) and everyone gets the
+-- snatched-waist torso.
 --  * Players: the growth numbers come from the player attribute MuscleG (BodyService publishes level / goal for the 18
 --    muscles); for YOUR character they come straight from ClientData, so a level-up shows at once. PUMPED comes from the
 --    PumpedUntil attribute. Top / Shorts / SkinColor attributes give the look.
@@ -95,7 +97,7 @@ local function refreshInfo(model, info, distance)
 	if info.kind == "player" then
 		local style = MuscleRig.StyleFrom(info.source, model)
 		local old = info.style
-		if not old or old.skin ~= style.skin or old.shorts ~= style.shorts or old.top ~= style.top then
+		if not old or old.skin ~= style.skin or old.shorts ~= style.shorts or old.top ~= style.top or old.shirt ~= style.shirt or old.pants ~= style.pants then
 			info.style = style
 			rig:SetStyle(style)
 		end

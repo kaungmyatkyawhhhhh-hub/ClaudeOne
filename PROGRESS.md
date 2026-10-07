@@ -9,17 +9,24 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - World areas are built once from recipes in `tools/builders` (see `tools/bake.md`), then edited as normal parts.
 
 ## First thing to do
-1. **File > Save to Roblox.** Fix list 3 changed scripts and map parts in the open place; none of it is saved yet.
-2. Fill in the muscle body ids when you've picked the bodies (guide below), then play once and check the tiers.
+1. **File > Save to Roblox.** The muscle v8 scripts and data (MuscleRig, MuscleMeshes, MirrorClient, MuscleClient, the Snatched torso modules) were synced into the open place after its last save.
+2. Test muscle v8 with your own avatar (with and without a shirt), and the new skateboard.
 
-## Muscle v7 (7 Oct 2026): REAL growth, replaces blobs/pieces/tiers/thickness (all removed)
-- **Bodies:** everyone wears the Robloxian 2.0 body (`Config/Body`, bundle 311) as before. Skin is a plain color (the uploaded skin_color/skin_roughness images are NOT used: see limits).
-- **Muscles:** `muscle_v7/` (kept locally, git-ignored; 23 MB) -> `tools/gen_muscle_data.luau` -> `ReplicatedStorage/MuscleData` (137 ModuleScripts, 3.7 MB of numbers) -> `Shared/MuscleMeshes` (loads/merges) -> `Shared/MuscleRig` (builds EditableMesh MeshParts welded to the body parts, vertex = base + (max-base)*g, tween 0.4s, pump on every 10th level, PUMPED +4%, hidden under 2%) -> `StarterPlayerScripts/MuscleClient` (every client builds the muscles of the characters it sees, within ~100 studs). `BodyService` only publishes numbers as attributes (`MuscleG`, `Top`, `Shorts`, `SkinColor`). NPCs get a preset `MuscleG`, the statue a full-grown marble one. Progress mirror screen and the live glass reflection show the muscles too.
-- **Limits found in Studio (important):** (1) a client may hold only **8 live EditableMeshes**, and a MeshPart renders nothing once its EditableMesh is destroyed, so each visible muscle mesh costs one of the 8. The muscles of a body part are merged into one mesh (max 20,000 triangles each), so a full body needs ~10. `MuscleRig` has an allocator: your own torso, arms, legs, back (6 meshes) first, then the rest to nearby characters/the statue; calves and forearms are skipped when the budget is short. If a published game allows more meshes everything is built automatically. (2) EditableMesh geometry made on the server does not replicate (clients see boxes), so it is built on each client. (3) SurfaceAppearance (skin texture) can't be used with vertex colors, so the muscles are plain skin color with vertex colors.
-- **Not done:** snatched-waist torso meshes (they would cost 2 more EditableMeshes), the rock "mass monster" skin (levels never exceed the goal, and rock textures need uploading), a fallback with imported meshes (needs you to upload meshes_base / meshes_max; ask if you want it), phone test with 10+ players.
-- Hover highlight in Stats now paints the hovered muscle's faces neon red (per muscle). Test hooks: Workspace attributes `TestMuscleShare`, `TestMuscleIds`, `TestOpenMirror` (FreshPlayer).
-- Screenshots `muscles_v7_*.png`: level 0/15/35/70/max (front/back/side), only arms, only chest, statue, progress mirror, live mirror, lifting, highlight.
-- Other work this session: beach gym NPCs, NPC fall-state fix, pro gym floor/lighting polish (`tools/builders/ProGymPolish.luau`), skating pose, statue marble body.
+## Muscle v8 (7 Oct 2026): real growth + muscles wear your own Shirt/Pants (replaces v7 and everything older)
+- **Pipeline:** `muscle_v8/` (kept locally, git-ignored) -> `tools/gen_muscle_data.luau` -> `ReplicatedStorage/MuscleData` (shapes, clothing-template UVs, plus `SnatchedUpperTorso` / `SnatchedLowerTorso`) -> `Shared/MuscleMeshes` -> `Shared/MuscleRig` -> `StarterPlayerScripts/MuscleClient`. Growth: vertex = base + (max - base) * g, g = level / goal, 0.4s tween, pump every 10th level, PUMPED +4%, hidden under 2%, up to 1.12 above max.
+- **Clothing:** each muscle mesh is two MeshParts from the same EditableMesh: an inner "bare body" part (the body part's own color) and an outer part with your Shirt/Pants image as TextureID at 2% transparency, so the clothing's see-through areas show skin, like on the real body. No Shirt/Pants: skin, gym shorts and top colors. Under layered (3D) clothing the muscles of that body part hide. Outfit changes show within half a second.
+- **Snatched torso:** everyone's UpperTorso/LowerTorso are hidden on each client and replaced by the snatched-waist meshes, dressed the same way. The OBJs came without UVs, so the generator gives them clothing UVs with the package's own box projection (uvmap.py rects and bands).
+- **Limits found in Studio (important):**
+  1. A client can hold only **8 live EditableMeshes**. A MeshPart goes blank when its EditableMesh is destroyed, so each visible mesh costs one.
+  2. One mesh holds at most 20,000 triangles, so the torso muscles need two meshes.
+  3. Your character uses all 8: snatched torso 2, front torso 1, back 1, upper arms 2, upper legs 2. Forearms and calves don't fit; other players, NPCs and the statue get muscles only if the budget allows (usually not).
+  4. A game script can't set a SurfaceAppearance image (ColorMap/ColorMapContent are plugin-only).
+  5. Other people's clothing images can't be loaded into an EditableImage.
+  6. MeshPart:ApplyMesh onto the real torso loses its clothing.
+
+  These are why it's built the way it is. If a live server allows more meshes, everything is built automatically.
+- **Not done:** rock "mass monster" skin (levels never go above the goal, so it can't happen in play, and its textures would need uploading); the imported-mesh fallback (not needed, EditableMesh works); phone test with 10+ players; T-shirt graphics (ShirtGraphic) don't show on the snatched torso.
+- Test hooks: Workspace `TestMuscleShare` (0..1.12), `TestMuscleIds`, `TestOpenMirror` (with FreshPlayer). Screenshots `v8_*.png`.
 
 ## Done
 - Player data, saving, 18 muscles, stamina, coins, genetics, height, titles; one reusable machine system.

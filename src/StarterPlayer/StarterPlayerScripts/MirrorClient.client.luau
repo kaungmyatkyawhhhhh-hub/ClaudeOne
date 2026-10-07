@@ -83,7 +83,7 @@ end
 local muscleRigs = {}
 local function addMuscles(copy)
 	local source = copy
-	local rig = MuscleRig.new(copy, { static = true, priority = 200, style = MuscleRig.StyleFrom(source, copy) })
+	local rig = MuscleRig.new(copy, { static = true, priority = 200, noSnatch = true, style = MuscleRig.StyleFrom(source, copy) })
 	rig:Snap(MuscleRig.Decode(source:GetAttribute("MuscleG")))
 	table.insert(muscleRigs, rig)
 end
@@ -334,7 +334,8 @@ local function startReflection(mirrorModel, glass)
 						local ok, part = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) end)
 						if ok and part and copyFolder.Parent then
 							part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
-							part.Color, part.Material = source.Color, source.Material
+							part.Color, part.Material, part.Size = source.Color, source.Material, source.Size
+							part.TextureID, part.Transparency = source.TextureID, source.Transparency
 							part.Parent = copyFolder
 							table.insert(pairsList, { source, part })
 						end

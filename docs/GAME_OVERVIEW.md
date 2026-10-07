@@ -12,7 +12,7 @@ for where everything sits in Studio.
    costs stamina, gives muscle XP and coins (`MachineService`, `MachineClient`).
 3. **Go heavier**: each machine has 8 weight tiers. A tier unlocks when the
    machine's main muscle reaches a level and the player pays coins.
-4. **Grow**: every muscle grows on the Robloxian 2.0 body as a real EditableMesh (muscle v7: `MuscleRig` + `MuscleMeshes` + `ReplicatedStorage.MuscleData`, drawn by `MuscleClient`; `BodyService` publishes the numbers).
+4. **Grow**: every muscle grows on the Robloxian 2.0 body as a real EditableMesh wearing the character's own Shirt/Pants (muscle v8: `MuscleRig` + `MuscleMeshes` + `ReplicatedStorage.MuscleData`, drawn by `MuscleClient`; `BodyService` publishes the numbers).
 5. **Growth Spurt** (prestige): once every group hits the required level, muscles
    reset to 0, the player gets taller (4'0" → up to 7'0"), gains a permanent XP
    bonus, a higher level cap and a DNA Token.
@@ -54,7 +54,7 @@ for where everything sits in Studio.
 - `Server/ActionService`: non-machine requests (Growth Spurt, equip title, reroll,
   settings). Other services can `Register` more actions.
 - `Server/BodyService`: the Robloxian 2.0 body on every player (`Config/Body`, reapplied if anything resets it), Growth Spurt height, and the muscle NUMBERS published as attributes (`MuscleG` = level / goal for the 18 muscles, `Top`, `Shorts`, `SkinColor`), plus the "Grew" event.
-- `Shared/MuscleRig`, `Shared/MuscleMeshes`, `ReplicatedStorage/MuscleData`, `StarterPlayerScripts/MuscleClient`: muscle v7 (see PROGRESS "Muscle v7"). `tools/gen_muscle_data.luau` rebuilds MuscleData from the `muscle_v7/` package.
+- `Shared/MuscleRig`, `Shared/MuscleMeshes`, `ReplicatedStorage/MuscleData`, `StarterPlayerScripts/MuscleClient`: muscle v8 (see PROGRESS "Muscle v8"). `tools/gen_muscle_data.luau` rebuilds MuscleData (and the snatched torso modules) from the `muscle_v8/` package.
 - `Server/NightLightService`: outdoor lamps (tag `NightLight`) off by day, glowing at night.
 - `Server/TitleService`: stats, title unlocks, badges, overhead title tag.
 - `Server/NpcService`: builds NPCs (R15 from a HumanoidDescription, name label, prompt). `ApplyBody` gives baked NPCs the Robloxian body.
