@@ -253,7 +253,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 #world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .hud{position:fixed;left:0;right:0;top:0;z-index:10;max-width:480px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 0;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .hud>*{pointer-events:auto}
-.minimap{align-self:flex-end;width:104px;height:104px;border-radius:16px;box-shadow:var(--shadow);border:2px solid color-mix(in oklab,var(--surface) 75%,transparent);cursor:pointer;background:#79b866;touch-action:manipulation}
+.minimap{position:absolute;left:7px;top:46px;width:calc(100% - 14px);height:calc(100% - 53px);border-radius:9px;border:1px solid var(--line);cursor:pointer;background:#79b866;touch-action:manipulation;display:block}
 .mmbig{position:fixed;left:0;right:0;top:calc(14vh + env(safe-area-inset-top,0px));z-index:40;max-width:480px;margin:0 auto;padding:0 12px;pointer-events:none}
 .mmbig .mmin{pointer-events:auto;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:10px 10px 12px;display:flex;flex-direction:column;gap:8px}
 .mmhead{display:flex;align-items:center;justify-content:space-between;padding:0 4px}.mmhead b{font:800 1rem var(--fd,inherit)}
@@ -266,7 +266,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .cashchip{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .cashchip .cash{font-size:1.75rem}
 .cashchip .mult{font-family:var(--mono);font-size:.66rem;font-weight:700;color:var(--gold)}
-.timechip{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:2px;font-family:var(--mono);font-size:.72rem;font-weight:600}
+.timechip{position:relative;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-end;gap:2px;font-family:var(--mono);font-size:.72rem;font-weight:600}
 .timechip span{color:var(--muted);font-size:.64rem}
 .stats{display:grid;grid-template-columns:1.5fr 1fr;gap:8px}
 .stat{display:flex;flex-direction:column;gap:5px;min-width:0}
@@ -913,7 +913,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 <div class="hud" id="hud">
   <div class="hudtop">
     <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span><div class="hypebar" id="hype"><b>HYPE</b><span class="hseg"></span><em></em></div></div>
-    <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span></div>
+    <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span><canvas class="minimap" id="miniMap" aria-label="Minimap. Tap for the full map."></canvas></div>
     <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button><button class="iconbtn" id="hudMin" aria-label="Collapse the top bar"></button></div>
   </div>
   <div class="chip stats">
@@ -921,7 +921,6 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
   <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev story" id="storyChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button><button class="chip pill wk" id="wkChip" hidden></button></div>
-  <canvas class="minimap" id="miniMap" hidden aria-label="Minimap. Tap for the full map."></canvas>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -1521,7 +1520,7 @@ function drawTower(g,[x,y,w,h],P){
   g.fillStyle=P.towerWin;for(let wx=x+10;wx<x+w-14;wx+=16)for(let wy=fy+8;wy<fy+f-10;wy+=16)g.fillRect(wx,wy,9,10);
 }
 let STATIC_C=null;
-function buildStatic(){
+let STATICV=0;function buildStatic(){STATICV++;
   // one big canvas reused for every redraw: iPhones don't free old canvases quickly and run out of canvas memory
   const P=isDark()?PAL_D:PAL_L,c=STATIC_C||(STATIC_C=document.createElement("canvas"));c.width=W;c.height=H;const g=c.getContext("2d");g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
   let sd=11;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
@@ -7047,7 +7046,7 @@ setInterval(()=>{try{storyTick()}catch(e){console.warn(e)}},500);
 const MMK=.075,MMS=104;let MMI=null,MMKEY="",MMT=0,MMB=null;
 function mmMap(){if(SCN){const w=SCN_C.width>1?SCN_C.width:(SCN.w||W),h=SCN_C.height>1?SCN_C.height:(SCN.h||H);return{key:"s:"+scKey()+":"+w,w,h,parts:[[SCN_C,0,0]],places:SCN.places.filter(p=>p.door),bg:SCN.bg||"#4a4f5c",title:SCN.title||"Map"}}
   const tw=townW(),parts=[[STATIC_C,0,0]];if(hubOpen())parts.push([roadLand(),W,ROAD_OFF],[hubLand(),X4,Y4]);
-  return{key:"t:"+tw+":"+isDark()+":"+MPW,w:tw,h:H,parts,places:shownPlaces().filter(p=>regionOpen(p.region)&&p.door),bg:isDark()?PAL_D.grass:PAL_L.grass,town:1,title:MPW?"Online Town":hubOpen()?"Flip City & the Frontier":"Flip City"}}
+  return{key:"t:"+tw+":"+isDark()+":"+MPW+":"+STATICV+":"+HUBK,w:tw,h:H,parts,places:shownPlaces().filter(p=>regionOpen(p.region)&&p.door),bg:isDark()?PAL_D.grass:PAL_L.grass,town:1,title:MPW?"Online Town":hubOpen()?"Flip City & the Frontier":"Flip City"}}
 function mmPaint(g,M,k){g.fillStyle=M.bg;g.fillRect(0,0,M.w*k,M.h*k);
   if(M.town&&M.w>W){const gg=g.createLinearGradient(W*k,0,(X4+300)*k,0);gg.addColorStop(0,M.bg);gg.addColorStop(1,EDGE4);g.fillStyle=gg;g.fillRect(W*k,0,(M.w-W)*k,M.h*k)}
   M.parts.forEach(([c,x,y])=>{if(c&&c.width>1)g.drawImage(c,x*k,y*k,c.width*k,c.height*k)});
@@ -7066,11 +7065,17 @@ function mmMarks(g,M,k,ox,oy,big){const P=(x,y)=>[x*k-ox,y*k-oy];g.textAlign="ce
   let gd=null;try{gd=goalDest()}catch(e){}if(gd){const[a,b]=P(gd.x,gd.y);g.font=(big?16:12)+"px sans-serif";g.fillText("⭐",a,b-(big?8:5))}
   const[x,y]=P(S.px,S.py);g.save();g.translate(x,y);g.rotate(S.hd||0);const r=big?8:6;g.fillStyle="#fff";g.strokeStyle="#1b2230";g.lineWidth=1.6;g.beginPath();g.moveTo(r,0);g.lineTo(-r*.7,r*.7);g.lineTo(-r*.3,0);g.lineTo(-r*.7,-r*.7);g.closePath();g.fill();g.stroke();g.restore()}
 function rr2(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();g.fill()}
-function mmDraw(){const cv=$("miniMap");if(!cv||!S)return;const M=mmMap();if(MMB&&(M.key!==MMB.M.key||!$("room").hidden||!$("overlay").hidden))mmClose();
-  const show=playing&&$("room").hidden&&$("overlay").hidden&&!MMB&&!(S.flags&&S.flags.mmOff)&&!document.body.classList.contains("photo");if(cv.hidden===show)cv.hidden=!show;if(!show)return;
-  const now=performance.now();if(!MMI||M.key!==MMKEY||now-MMT>4000){MMKEY=M.key;MMT=now;MMI=MMI||document.createElement("canvas");MMI.width=Math.ceil(M.w*MMK);MMI.height=Math.ceil(M.h*MMK);mmPaint(MMI.getContext("2d"),M,MMK)}
-  const D=Math.min(2,devicePixelRatio||1);if(cv.width!==MMS*D){cv.width=cv.height=MMS*D}const g=cv.getContext("2d");g.setTransform(D,0,0,D,0,0);g.fillStyle=M.bg;g.fillRect(0,0,MMS,MMS);
-  const ox=clamp(S.px*MMK-MMS/2,Math.min(0,M.w*MMK-MMS),Math.max(0,M.w*MMK-MMS)),oy=clamp(S.py*MMK-MMS/2,Math.min(0,M.h*MMK-MMS),Math.max(0,M.h*MMK-MMS));g.drawImage(MMI,-ox,-oy);mmMarks(g,M,MMK,ox,oy,false)}
+// the minimap lives in the clock panel. The map image is only rebuilt when the map itself changes, and the view only redraws when something on it moved
+let MMSIG="";
+function mmDraw(){const cv=$("miniMap");if(!cv||!S||!playing)return;const M=mmMap();if(MMB&&(M.key!==MMB.M.key||!$("room").hidden||!$("overlay").hidden))mmClose();
+  if(!$("room").hidden||!$("overlay").hidden||document.hidden)return;const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+  if(!MMI||M.key!==MMKEY){MMKEY=M.key;MMI=MMI||document.createElement("canvas");MMI.width=Math.ceil(M.w*MMK);MMI.height=Math.ceil(M.h*MMK);mmPaint(MMI.getContext("2d"),M,MMK);MMSIG=""}
+  const D=Math.min(2,devicePixelRatio||1),cw=Math.round(w*D),ch=Math.round(h*D);if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;MMSIG=""}
+  let sig=M.key+"|"+Math.round(S.px/6)+","+Math.round(S.py/6)+","+(S.hd||0).toFixed(1)+"|"+mmExtra().map(e=>Math.round(e[0]/10)+","+Math.round(e[1]/10)).join(";");
+  if(MP)for(const id in MP.peers){const q=MP.peers[id];sig+="|"+Math.round((SCN?q.sx:q.dx)/10)+","+Math.round((SCN?q.sy:q.dy)/10)}
+  try{const gd=goalDest();if(gd)sig+="|g"+Math.round(gd.x)+","+Math.round(gd.y)}catch(e){}if(sig===MMSIG)return;MMSIG=sig;
+  const g=cv.getContext("2d");g.setTransform(D,0,0,D,0,0);g.fillStyle=M.bg;g.fillRect(0,0,w,h);
+  const ox=clamp(S.px*MMK-w/2,Math.min(0,M.w*MMK-w),Math.max(0,M.w*MMK-w)),oy=clamp(S.py*MMK-h/2,Math.min(0,M.h*MMK-h),Math.max(0,M.h*MMK-h));g.drawImage(MMI,-ox,-oy);mmMarks(g,M,MMK,ox,oy,false)}
 function mmOpen(){if(!S||!$("room").hidden)return;try{audioOn()}catch(e){}const M=mmMap(),el=$("mmBig"),pw=Math.min(innerWidth-24,456)-20,hh=Math.min(330,innerHeight*.42);let k=hh/M.h;if(M.w*k<pw)k=Math.min(pw/M.w,innerHeight*.5/M.h);
   const D=Math.min(2,devicePixelRatio||1),img=document.createElement("canvas");img.width=Math.ceil(M.w*k*D);img.height=Math.ceil(M.h*k*D);const ig=img.getContext("2d");ig.scale(D,D);mmPaint(ig,M,k);
   MMB={M,k,img,D,sel:null};SFX.tick(.4);
@@ -7085,7 +7090,7 @@ function mmSel(){const el=$("mmSel");if(!el||!MMB)return;const p=MMB.sel;if(!p){
   const t=$("mmTaxi");if(t)t.onclick=()=>{if(S.cash<f)return;S.cash-=f;dirty=true;mmClose();const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="🚕";document.body.appendChild(fx);SFX.door();
     setTimeout(()=>{S.px=p.door[0];S.py=p.door[1]+16;target=null;moving=false;bKey="";PET=null;PT=null;KT=null;hubOpen.was=null},600);setTimeout(()=>{fx.remove();banner("Arrived at "+p.n,"u");renderHud()},1300)}}
 function mmBigDraw(){if(!MMB)return;const{M,k,img,D}=MMB,cv=$("mmCv");if(!cv)return;const g=cv.getContext("2d");g.setTransform(1,0,0,1,0,0);g.drawImage(img,0,0);g.setTransform(D,0,0,D,0,0);mmMarks(g,M,k,0,0,true)}
-setInterval(()=>{try{mmDraw();mmBigDraw()}catch(e){console.warn(e)}},200);
+setInterval(()=>{try{mmDraw();if(MMB)mmBigDraw()}catch(e){console.warn(e)}},250);
 $("miniMap").onclick=mmOpen;
 /* police: drive too fast in a car and you might get chased */
 let COP=null,copT=30;
@@ -7729,7 +7734,7 @@ function roadTrip(dir,done){ROADTRIP=true;const ov=document.createElement("div")
     // you, walking (or driving) down the middle of the road
     g.save();g.translate(w/2,road+6);g.scale(1.8,1.8);drawPerson(0,0,{g,...myLook(),acc:myAcc(),tall:tallK(),build:myBuild(),size:bodyK(),mv:true,ph:now/1000,crown:(S.skin||0)>=5});g.restore();
     if(k>=1){finish();return}requestAnimationFrame(frame)};requestAnimationFrame(frame)}
-function openDiner(){$("room").innerHTML=`<div class="room-in scroll">${roomHead("Rusty's Roadside Diner")}<div class="note">Halfway to the Frontier, Rusty's been serving the same cherry pie for forty years. Nobody's complained.</div><button class="bigbtn" id="dnGo">A slice and a coffee<small>${fmt(Math.max(50,Math.round(S.cash*.002)))} · +60 energy</small></button></div>`;$("dnGo").onclick=()=>{sceneSnack("🥧 Best pie on the road");openDiner()}}
+function openDiner(){$("room").innerHTML=`<div class="room-in scroll">${roomHead("Rusty's Roadside Diner")}<div class="note">Halfway to the Frontier, Rusty's been serving the same cherry pie for forty years. Nobody's complained.</div><button class="bigbtn" id="dnGo">A slice and a coffee<small>${fmt(Math.max(50,Math.round(S.cash*.002)))} · +60 energy</small></button></div>`;$("leaveBtn").onclick=closeRoom;$("dnGo").onclick=()=>{sceneSnack("🥧 Best pie on the road");openDiner()}}
 function openFrontier(){const W=S.w4,open=!!(W&&W.open),n=zigN();
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Frontier Road")}<div class="art bhart"><div class="bhdisk" style="background:conic-gradient(#ff4fd8,#ffcc33,#2fd28a,#4fe3ff,#ff4fd8)"></div><div class="bhcore" style="background:#2b1a3a"></div></div>
     ${open?`<div class="note">The road runs east out of Flip City, past the last streetlight and on to the <b>Tycoon Frontier</b>: five zones you build yourself, all paid for in <b>Gems ${GEM}</b>.</div><button class="bigbtn" id="frGo">Take the road<small>World 4 · ${gemF(W.gems||0)}${W.stars?" · "+starF(W.stars)+" ⭐":""}</small></button>`
