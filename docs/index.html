@@ -6183,6 +6183,14 @@ function openJukebox(back){room="jbox";$("room").hidden=false;const draw=()=>{$(
 function openNext(back){room="next";$("room").hidden=false;const L=repLevel(),nw=netWorth(),rows=[];
   const add=(ic,t,d,p)=>rows.push({ic,t,d,p});
   const g=GOALS[S.goal];if(g)add("🎯","Goal "+(S.goal+1)+": "+g.t,g.d+" Reward "+fmt(g.rw)+".");
+  // things you can do today
+  if(gardenReady())add("🌱","Your garden is ready",gardenReady()+" crop"+(gardenReady()>1?"s":"")+" to harvest at Home.");
+  if(S.pets&&Object.values(S.pets).some(pd=>pd.adv&&advLeft(pd.adv)<=0))add("🧭","A pet is back from an adventure","Open Pets at Home to see what it found.");
+  if(S.tmap)add("🗺️","Treasure map in progress","Follow the red X and dig.");else if(S.maps>0)add("🗺️","You have a treasure map","Tap the Map chip to read it.");
+  if(regionOpen("downtown")&&S.heistDay!==dayKey())add("🔐","Crack the bank vault","Once a day at the Bank, for "+fmt(Math.round(Math.max(5000,rwBase()*.08)))+".");
+  if(S.baristaDay!==dayKey())add("☕","Work a barista shift","60 seconds at the Café for tips.");
+  if(regionOpen("beach")&&nightOpen()&&S.fortuneN!==S.day+(S.clock<5?-1:0))add("🏮","The Night Market is open","A fortune, a midnight collector and glowing gear until 5 AM.");
+  if(regionOpen("downtown")&&(S.stats.arcade||0)<3)add("🕹️","Try the Arcade","Skill games downtown win tickets for prizes.");
   ["beach","downtown"].forEach(r=>{if(!regionOpen(r))add(r==="beach"?"🏖️":"🏙️",REGION_NAME[r],lockHint(r))});
   if(L<10)add("🛶","A raft to the Online Town","Reach level 10 (you're "+L+").",L/10);
   COUNTRIES.filter(c=>L<c.lv).forEach(c=>add("✈️",c.n+", "+c.cn,"Unlocks at level "+c.lv+".",L/c.lv));
