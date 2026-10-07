@@ -17,6 +17,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Cars = require(Shared:WaitForChild("Cars"))
 local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local Theme = Config.Theme
 local player = Players.LocalPlayer
@@ -737,6 +738,7 @@ function UI.openGarage(data: GarageData, callbacks: GarageCallbacks)
 			previewModel:Destroy()
 		end
 		local m = CarBuilder.build(spec, { anchored = true, interior = true })
+		CarSkin.apply(m, true)
 		m:PivotTo(CFrame.new(0, (m:GetAttribute("Height") :: number) / 2, 0))
 		local floor = new("Part", { Anchored = true, Size = Vector3.new(60, 0.2, 60), CFrame = CFrame.new(0, -0.1, 0), Color = Color3.fromRGB(26, 26, 34), Material = Enum.Material.SmoothPlastic, Reflectance = 0.2 })
 		floor.Parent = m

@@ -70,7 +70,8 @@ local function startLod(scale: number)
 			table.insert(lights, l)
 		end
 	end
-	local lightRange = 420 * scale
+	-- wide enough that lights never visibly pop on/off block by block
+	local lightRange = 900 * scale
 	local camera = workspace.CurrentCamera
 
 	local cursor, lightCursor = 1, 1

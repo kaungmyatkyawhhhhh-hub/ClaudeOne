@@ -320,7 +320,7 @@ function Driving.attach(model: Model)
 		if d:IsA("BasePart") then
 			if d.Name == "DriverHead" or d.Name == "DriverHair" or d.Name == "DriverNeck" then
 				table.insert(hidden, d)
-			elseif d.Name == "Windshield" or d.Name == "SideGlassL" or d.Name == "SideGlassR" then
+			elseif d.Name == "SkinGlass" or (not model:GetAttribute("Skinned") and (d.Name == "Windshield" or d.Name == "SideGlassL" or d.Name == "SideGlassR")) then
 				table.insert(glass, d)
 			end
 		end

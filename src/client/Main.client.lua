@@ -16,6 +16,7 @@ local Traffic = require(script.Parent:WaitForChild("Traffic"))
 local Driving = require(script.Parent:WaitForChild("Driving"))
 local Cutscene = require(script.Parent:WaitForChild("Cutscene"))
 local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -35,6 +36,8 @@ local city = workspace:WaitForChild("City", 120)
 while city and not city:GetAttribute("Ready") do
 	task.wait(0.2)
 end
+UI.showLoading("Shaping the cars...")
+CarSkin.preload()
 UI.showLoading("Starting engines...")
 task.wait(1) -- let the world finish replicating
 
@@ -125,10 +128,29 @@ UI.hideLoading()
 local pendingAttach = false
 local playerCars = workspace:WaitForChild("PlayerCars")
 
+-- every player's car gets the smooth body locally
+local function skinPlayerCar(model: Instance)
+	if model:IsA("Model") then
+		model:WaitForChild("Chassis", 5)
+		task.wait() -- let the whole car replicate
+		CarSkin.apply(model, false)
+	end
+end
+for _, existing in playerCars:GetChildren() do
+	task.spawn(skinPlayerCar, existing)
+end
+playerCars.ChildAdded:Connect(function(model)
+	if not (model:GetAttribute("Owner") == player.UserId and pendingAttach) then
+		skinPlayerCar(model)
+	end
+end)
+
 local function tryAttach(model: Instance)
 	if model:IsA("Model") and model:GetAttribute("Owner") == player.UserId and pendingAttach then
 		pendingAttach = false
-		task.wait() -- let constraints replicate
+		model:WaitForChild("Chassis", 5)
+		task.wait() -- let the car + its constraints replicate
+		CarSkin.apply(model, false)
 		stopOrbit()
 		Traffic.clearAround(model:GetPivot().Position, 35)
 		Driving.attach(model)

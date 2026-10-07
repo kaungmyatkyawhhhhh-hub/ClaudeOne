@@ -3,20 +3,20 @@
     <Properties>
       <string name="Name">Lighting</string>
       <Color3 name="Ambient">
-        <R>0.09</R>
-        <G>0.09</G>
-        <B>0.16</B>
+        <R>0.133</R>
+        <G>0.141</G>
+        <B>0.204</B>
       </Color3>
-      <float name="Brightness">1.2</float>
-      <float name="ClockTime">0.3</float>
-      <float name="EnvironmentDiffuseScale">0.6</float>
-      <float name="EnvironmentSpecularScale">1</float>
-      <float name="ExposureCompensation">0.25</float>
+      <float name="Brightness">2</float>
+      <float name="ClockTime">0</float>
+      <float name="EnvironmentDiffuseScale">0.45</float>
+      <float name="EnvironmentSpecularScale">0.9</float>
+      <float name="ExposureCompensation">0</float>
       <bool name="GlobalShadows">true</bool>
       <Color3 name="OutdoorAmbient">
-        <R>0.16</R>
-        <G>0.16</G>
-        <B>0.27</B>
+        <R>0.306</R>
+        <G>0.329</G>
+        <B>0.463</B>
       </Color3>
       <token name="Technology">4</token>
     </Properties>
@@ -36,6 +36,306 @@
         <string name="Name">Shared</string>
       </Properties>
       <Item class="ModuleScript" referent="4">
+        <Properties>
+          <string name="Name">BodyMesh</string>
+          <string name="Source"><![CDATA[--[[
+	BodyMesh
+	Pure-geometry generator for smooth car bodies (no Roblox APIs here, so it
+	can be tested anywhere). Produces triangle meshes in the same space as
+	CarBuilder (origin at ground centre, -Z forward, +Y up):
+
+	  body  : lofted super-ellipse cross sections along the car. The bottom
+	          edge arcs over every wheel (real wheel arches), the top follows a
+	          curved hood -> belt line -> rear deck, ends are rounded, and on
+	          super/hypercars the fenders bulge up over the wheels.
+	  glass : the greenhouse - curved windscreen, side glass with tumblehome,
+	          fastback / hatch / boxy rear depending on the class.
+	  roof  : a painted roof panel laid over the top of the greenhouse.
+
+	Each mesh is { verts = {Vector3}, tris = {{a, b, c}} } with outward winding.
+]]
+
+local BodyMesh = {}
+
+export type Mesh = { verts: { Vector3 }, tris: { { number } } }
+
+type Profile = {
+	L: number,
+	W: number,
+	H: number,
+	clr: number,
+	belt: number,
+	wheelR: number,
+	wb: number,
+	hood: number,
+	ws: number,
+	roof: number,
+	rear: number,
+	inset: number,
+	slope: number,
+	nose: number,
+}
+
+-- per-class styling on top of the CarBuilder dimensions
+local STYLE = {
+	Sedan = { n = 3.4, gn = 3.0, tumble = 0.16, hoodCurve = 2.4, fender = 0, rearExp = 1.2, endRound = 0.55 },
+	Coupe = { n = 3.0, gn = 2.6, tumble = 0.2, hoodCurve = 2.0, fender = 0.06, rearExp = 0.85, endRound = 0.6 },
+	SUV = { n = 4.2, gn = 3.8, tumble = 0.1, hoodCurve = 3.0, fender = 0, rearExp = 2.6, endRound = 0.5 },
+	Supercar = { n = 2.7, gn = 2.4, tumble = 0.24, hoodCurve = 1.3, fender = 0.22, rearExp = 0.75, endRound = 0.7 },
+	Hypercar = { n = 2.5, gn = 2.3, tumble = 0.26, hoodCurve = 1.15, fender = 0.26, rearExp = 0.7, endRound = 0.75 },
+}
+
+local function spow(v: number, e: number): number
+	local s = if v < 0 then -1 else 1
+	return s * math.abs(v) ^ e
+end
+
+local function smoothstep(x: number): number
+	x = math.clamp(x, 0, 1)
+	return x * x * (3 - 2 * x)
+end
+
+-- Stations along the car: denser near the ends and around the wheels
+local function stations(p: Profile, count: number): { number }
+	local list = {}
+	for k = 0, count do
+		local u = k / count
+		-- cosine spacing puts more stations at the nose and tail
+		local s = 0.5 - 0.5 * math.cos(u * math.pi)
+		table.insert(list, -p.L / 2 + s * p.L)
+	end
+	return list
+end
+
+local function loft(sections: { { Vector3 } }, capStart: boolean, capEnd: boolean, closed: boolean): Mesh
+	local verts: { Vector3 } = {}
+	local tris: { { number } } = {}
+	local ring = #sections[1]
+	for _, sec in sections do
+		for _, v in sec do
+			table.insert(verts, v)
+		end
+	end
+	local segs = if closed then ring else ring - 1
+	for s = 1, #sections - 1 do
+		local a0 = (s - 1) * ring
+		local b0 = s * ring
+		for i = 1, segs do
+			local i2 = if i == ring then 1 else i + 1
+			local a, b = a0 + i, a0 + i2
+			local c, d = b0 + i, b0 + i2
+			-- sections run front (-Z) to back (+Z) and the ring runs counter-clockwise
+			-- in XY, so (b - a) x (c - a) points outwards
+			table.insert(tris, { a, b, c })
+			table.insert(tris, { b, d, c })
+		end
+	end
+	local function cap(secIndex: number, flip: boolean)
+		local sec = sections[secIndex]
+		local center = Vector3.zero
+		for _, v in sec do
+			center += v
+		end
+		center /= #sec
+		table.insert(verts, center)
+		local ci = #verts
+		local base = (secIndex - 1) * ring
+		for i = 1, segs do
+			local i2 = if i == ring then 1 else i + 1
+			if flip then
+				table.insert(tris, { ci, base + i2, base + i })
+			else
+				table.insert(tris, { ci, base + i, base + i2 })
+			end
+		end
+	end
+	if capStart then
+		cap(1, true) -- front cap faces -Z
+	end
+	if capEnd then
+		cap(#sections, false) -- rear cap faces +Z
+	end
+	return { verts = verts, tris = tris }
+end
+
+function BodyMesh.generate(class: string, p: Profile): { body: Mesh, glass: Mesh, roof: Mesh }
+	local st = STYLE[class] or STYLE.Sedan
+	local zFront = -p.L / 2
+	local zBack = p.L / 2
+	local zWs = zFront + p.hood
+	local zWsTop = zWs + p.ws
+	local zRoofEnd = zWsTop + p.roof
+	local zRearEnd = zRoofEnd + p.rear
+	local hw = p.W / 2
+	local noseTop = p.clr + (p.belt - p.clr) * p.nose
+	local wheelZs = { -p.wb / 2, p.wb / 2 }
+	local archR = p.wheelR * 1.14
+
+	local function archBottom(z: number): number
+		local y = p.clr + 0.08
+		for _, wz in wheelZs do
+			local d = math.abs(z - wz)
+			if d < archR then
+				y = math.max(y, p.wheelR + math.sqrt(archR * archR - d * d) * 0.97)
+			end
+		end
+		return y
+	end
+
+	local function fenderBulge(z: number): number
+		local b = 0
+		for _, wz in wheelZs do
+			local d = math.abs(z - wz) / (archR * 1.9)
+			if d < 1 then
+				b = math.max(b, (math.cos(d * math.pi) + 1) / 2)
+			end
+		end
+		return b
+	end
+
+	local function topLine(z: number): number
+		local y
+		if z <= zWs then
+			local u = (z - zFront) / (zWs - zFront)
+			y = noseTop + (p.belt + 0.04 - noseTop) * (1 - (1 - u) ^ st.hoodCurve)
+		elseif z <= zRearEnd then
+			-- belt line kicks up slightly towards the rear ("hips")
+			local u = (z - zWs) / (zRearEnd - zWs)
+			y = p.belt + 0.04 + 0.08 * u
+		else
+			local u = (z - zRearEnd) / (zBack - zRearEnd)
+			y = p.belt + 0.12 - 0.12 * u
+		end
+		-- fenders rise over the wheels on low cars so the arches have meat
+		local archTop = 0
+		for _, wz in wheelZs do
+			if math.abs(z - wz) < archR then
+				archTop = math.max(archTop, p.wheelR + archR + 0.22)
+			end
+		end
+		y += st.fender * fenderBulge(z)
+		return math.max(y, archTop * fenderBulge(z) + y * (1 - fenderBulge(z)), archBottom(z) + 0.28)
+	end
+
+	-- rounding factor at the two ends (0 at the very tip, 1 inside)
+	local function endRound(z: number): number
+		local d = math.min(z - zFront, zBack - z)
+		local r = st.endRound
+		if d >= r then
+			return 1
+		end
+		local u = d / r
+		return math.sqrt(math.max(0, 1 - (1 - u) * (1 - u)))
+	end
+
+	-----------------------------------------------------------------
+	-- Body
+	-----------------------------------------------------------------
+	local ringN = 30
+	local zs = stations(p, 64)
+	local bodySections = {}
+	for _, z in zs do
+		local e = endRound(z)
+		local plan = 0.9 + 0.1 * smoothstep((math.min(z - zFront, zBack - z)) / 1.6)
+		local w = hw * plan * (0.25 + 0.75 * e) + st.fender * 0.25 * fenderBulge(z)
+		local top = topLine(z)
+		local bottom = archBottom(z)
+		local yc = (top + bottom) / 2
+		local hh = (top - bottom) / 2 * (0.35 + 0.65 * e)
+		-- lift the rounded tip towards the bumper line
+		local tipY = if z < 0 then (p.clr + noseTop) / 2 else (p.clr + p.belt) / 2
+		yc = yc * e + tipY * (1 - e)
+		local sec = {}
+		for i = 0, ringN - 1 do
+			local th = (i / ringN) * math.pi * 2
+			local c, s = math.cos(th), math.sin(th)
+			local x = w * spow(c, 2 / st.n)
+			local y = yc + hh * spow(s, 2 / st.n)
+			-- flatter underside, more rounded shoulder
+			if s < 0 then
+				y = yc + hh * spow(s, 2 / (st.n + 2))
+			end
+			table.insert(sec, Vector3.new(x, y, z))
+		end
+		table.insert(bodySections, sec)
+	end
+	local body = loft(bodySections, true, true, true)
+
+	-----------------------------------------------------------------
+	-- Greenhouse (glass) + roof panel
+	-----------------------------------------------------------------
+	local gTop = p.H - 0.02
+	local function roofLine(z: number): number
+		if z <= zWsTop then
+			local u = (z - zWs) / p.ws
+			return p.belt + (gTop - p.belt) * (1 - (1 - u) ^ 1.5)
+		elseif z <= zRoofEnd then
+			local mid = (zWsTop + zRoofEnd) / 2
+			local half = math.max(0.01, (zRoofEnd - zWsTop) / 2)
+			return gTop - 0.07 * ((z - mid) / half) ^ 2
+		end
+		local u = (z - zRoofEnd) / math.max(0.01, p.rear)
+		return gTop - (gTop - p.belt) * u ^ st.rearExp
+	end
+	local glassN = 18
+	local gz = {}
+	local gCount = 40
+	for k = 0, gCount do
+		table.insert(gz, zWs + 0.05 + (zRearEnd - 0.05 - zWs - 0.05) * k / gCount)
+	end
+	local baseW = hw - p.inset + 0.12
+	local glassSections = {}
+	local roofSections = {}
+	for _, z in gz do
+		local top = roofLine(z)
+		local hgt = math.max(0.02, top - p.belt)
+		-- greenhouse narrows slightly at its ends
+		local endK = math.min(z - zWs, zRearEnd - z)
+		local wz = baseW * (0.94 + 0.06 * smoothstep(endK / 1.2))
+		local sec = {}
+		local rsec = {}
+		for i = 0, glassN do
+			local th = (i / glassN) * math.pi -- 0 = right side, pi = left side
+			local c, s = math.cos(th), math.sin(th)
+			local yy = p.belt - 0.02 + hgt * spow(s, 2 / st.gn)
+			local frac = (yy - p.belt) / hgt
+			local x = wz * spow(c, 2 / st.gn) * (1 - st.tumble * frac)
+			table.insert(sec, Vector3.new(x, yy, z))
+			if th > 0.62 and th < math.pi - 0.62 then
+				table.insert(rsec, Vector3.new(x * 1.012, yy + 0.03, z))
+			end
+		end
+		table.insert(glassSections, sec)
+		if z >= zWsTop - 0.15 and z <= zRoofEnd + 0.25 then
+			table.insert(roofSections, rsec)
+		end
+	end
+	local glass = loft(glassSections, false, false, false)
+	local roof = loft(roofSections, false, false, false)
+	return { body = body, glass = glass, roof = roof }
+end
+
+-- Smooth vertex normals (area weighted)
+function BodyMesh.normals(mesh: Mesh): { Vector3 }
+	local n = table.create(#mesh.verts, Vector3.zero)
+	for _, t in mesh.tris do
+		local a, b, c = mesh.verts[t[1]], mesh.verts[t[2]], mesh.verts[t[3]]
+		local fn = (b - a):Cross(c - a)
+		n[t[1]] += fn
+		n[t[2]] += fn
+		n[t[3]] += fn
+	end
+	for i, v in n do
+		n[i] = if v.Magnitude > 1e-6 then v.Unit else Vector3.yAxis
+	end
+	return n
+end
+
+return BodyMesh
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="5">
         <Properties>
           <string name="Name">CarBuilder</string>
           <string name="Source"><![CDATA[--[[
@@ -836,7 +1136,7 @@ return CarBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="6">
         <Properties>
           <string name="Name">Cars</string>
           <string name="Source"><![CDATA[--[[
@@ -932,7 +1232,7 @@ return Cars
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="6">
+      <Item class="ModuleScript" referent="7">
         <Properties>
           <string name="Name">CityLayout</string>
           <string name="Source"><![CDATA[--[[
@@ -1262,7 +1562,7 @@ return CityLayout
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="7">
+      <Item class="ModuleScript" referent="8">
         <Properties>
           <string name="Name">Config</string>
           <string name="Source"><![CDATA[--[[
@@ -1424,15 +1724,15 @@ return Config
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="8">
+  <Item class="ServerScriptService" referent="9">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="9">
+    <Item class="Folder" referent="10">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="ModuleScript" referent="10">
+      <Item class="ModuleScript" referent="11">
         <Properties>
           <string name="Name">CityBuilder</string>
           <string name="Source"><![CDATA[--[[
@@ -1591,7 +1891,7 @@ local function surfaceText(part: BasePart, face: Enum.NormalId, text: string, te
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face
 	gui.LightInfluence = 0
-	gui.Brightness = 2.2
+	gui.Brightness = 1.25
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	gui.CanvasSize = canvas or Vector2.new(600, 200)
 	gui.MaxDistance = 650
@@ -1626,21 +1926,21 @@ local WET = Config.Graphics.WetRoads
 -- wet roads: dark, smooth and slightly reflective so street lights leave glossy highlights
 local ASPHALT = if WET then Color3.fromRGB(20, 20, 24) else Color3.fromRGB(30, 30, 34)
 local ROAD_MAT = if WET then Enum.Material.SmoothPlastic else Enum.Material.Asphalt
-local ROAD_OPTS = { reflectance = if WET then 0.12 else 0 }
+local ROAD_OPTS = { reflectance = if WET then 0.05 else 0 }
 local SIDEWALK = Color3.fromRGB(78, 78, 84)
 local CURB_COLOR = Color3.fromRGB(110, 110, 116)
 local LINE_WHITE = Color3.fromRGB(205, 205, 200)
 local LINE_YELLOW = Color3.fromRGB(230, 170, 30)
-local STREETLIGHT = Color3.fromRGB(255, 196, 130)
+local STREETLIGHT = Color3.fromRGB(255, 214, 172)
 local METAL = Color3.fromRGB(38, 40, 44)
 
 local WINDOW_COLORS = {
-	Color3.fromRGB(255, 214, 160),
-	Color3.fromRGB(255, 196, 120),
-	Color3.fromRGB(255, 230, 190),
-	Color3.fromRGB(190, 220, 255),
-	Color3.fromRGB(160, 200, 255),
-	Color3.fromRGB(230, 240, 255),
+	Color3.fromRGB(158, 126, 88),
+	Color3.fromRGB(150, 110, 70),
+	Color3.fromRGB(165, 142, 110),
+	Color3.fromRGB(112, 128, 150),
+	Color3.fromRGB(96, 116, 146),
+	Color3.fromRGB(134, 140, 152),
 }
 local NEON_COLORS = {
 	Color3.fromRGB(255, 40, 140),
@@ -1669,19 +1969,29 @@ end
 -- Lighting / atmosphere
 ---------------------------------------------------------------------
 function CityBuilder.setupLighting()
+	-- Moonlit night with an even base level across the whole map. Local lights
+	-- are accents on top of this, not the only thing you can see by.
+	-- newer lighting properties may not exist on every engine version
 	pcall(function()
 		(Lighting :: any).Technology = Enum.Technology.Future
 	end)
-	Lighting.ClockTime = 0.3
-	Lighting.Brightness = 1.2
+	pcall(function()
+		(Lighting :: any).LightingStyle = (Enum :: any).LightingStyle.Realistic
+	end)
+	pcall(function()
+		(Lighting :: any).PrioritizeLightingQuality = true
+	end)
+	Lighting.ClockTime = 0
+	Lighting.Brightness = 2
 	Lighting.GlobalShadows = true
-	Lighting.Ambient = Color3.fromRGB(22, 22, 40)
-	Lighting.OutdoorAmbient = Color3.fromRGB(40, 40, 70)
-	Lighting.EnvironmentDiffuseScale = 0.6
-	Lighting.EnvironmentSpecularScale = 1
-	Lighting.ExposureCompensation = 0.25
-	Lighting.ColorShift_Top = Color3.fromRGB(90, 70, 160)
-	Lighting.ColorShift_Bottom = Color3.fromRGB(20, 20, 40)
+	Lighting.ShadowSoftness = 0.25
+	Lighting.Ambient = Color3.fromRGB(34, 36, 52)
+	Lighting.OutdoorAmbient = Color3.fromRGB(78, 84, 118)
+	Lighting.EnvironmentDiffuseScale = 0.45
+	Lighting.EnvironmentSpecularScale = 0.9
+	Lighting.ExposureCompensation = 0
+	Lighting.ColorShift_Top = Color3.fromRGB(110, 120, 170)
+	Lighting.ColorShift_Bottom = Color3.fromRGB(10, 10, 20)
 
 	for _, child in Lighting:GetChildren() do
 		if child:IsA("PostEffect") or child:IsA("Atmosphere") or child:IsA("Sky") then
@@ -1690,37 +2000,34 @@ function CityBuilder.setupLighting()
 	end
 
 	local sky = Instance.new("Sky")
-	sky.StarCount = 5000
+	sky.StarCount = 3000
 	sky.CelestialBodiesShown = true
-	sky.MoonAngularSize = 14
+	sky.MoonAngularSize = 11
 	sky.Parent = Lighting
 
+	-- light, even city haze (no purple glow soup)
 	local atmo = Instance.new("Atmosphere")
-	atmo.Density = 0.32
-	atmo.Offset = 0.15
-	atmo.Color = Color3.fromRGB(70, 60, 120)
-	atmo.Decay = Color3.fromRGB(30, 20, 60)
-	atmo.Glare = 0.4
-	atmo.Haze = 1.6
+	atmo.Density = 0.26
+	atmo.Offset = 0.05
+	atmo.Color = Color3.fromRGB(96, 104, 140)
+	atmo.Decay = Color3.fromRGB(52, 56, 90)
+	atmo.Glare = 0
+	atmo.Haze = 0.9
 	atmo.Parent = Lighting
 
+	-- only genuinely bright things (neon, lamps) bloom
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.9
-	bloom.Size = 30
-	bloom.Threshold = 0.85
+	bloom.Intensity = 0.7
+	bloom.Size = 24
+	bloom.Threshold = 1.15
 	bloom.Parent = Lighting
 
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Brightness = 0.02
-	cc.Contrast = 0.18
-	cc.Saturation = 0.2
-	cc.TintColor = Color3.fromRGB(235, 232, 255)
+	cc.Brightness = 0
+	cc.Contrast = 0.1
+	cc.Saturation = 0.06
+	cc.TintColor = Color3.fromRGB(242, 244, 255)
 	cc.Parent = Lighting
-
-	local rays = Instance.new("SunRaysEffect")
-	rays.Intensity = 0.04
-	rays.Spread = 0.6
-	rays.Parent = Lighting
 end
 
 ---------------------------------------------------------------------
@@ -1800,7 +2107,7 @@ local function streetLight(parent: Instance, base: Vector3, armDir: Vector3)
 	deco(parent, Vector3.new(0.4, 0.4, 7), CFrame.lookAt((base + Vector3.new(0, height, 0) + armEnd) / 2, armEnd), METAL, Enum.Material.Metal)
 	local head = deco(parent, Vector3.new(2.6, 0.5, 1.2), CFrame.lookAt(armEnd - Vector3.new(0, 0.3, 0), armEnd - Vector3.new(0, 0.3, 0) + armDir), METAL, Enum.Material.Metal)
 	local lamp = deco(parent, Vector3.new(2.2, 0.15, 1), head.CFrame * CFrame.new(0, -0.3, 0), STREETLIGHT, Enum.Material.Neon)
-	addLight("SpotLight", lamp, STREETLIGHT, 46, 2.4, Enum.NormalId.Bottom, 115)
+	addLight("SpotLight", lamp, STREETLIGHT, 54, 1.15, Enum.NormalId.Bottom, 125)
 end
 
 local function trafficSignal(parent: Instance, i: number, j: number, k: number)
@@ -1861,26 +2168,31 @@ type Palette = {
 	refl: number,
 	fin: Color3,
 	finMat: Enum.Material,
+	finW: number, -- mullion / pier width
+	module: number, -- window module (centre-to-centre spacing)
+	winH: number, -- window height within an 11 stud floor
 	warm: boolean,
 	lit: number,
 	ledges: boolean,
-	fins: boolean,
-	segs: number,
+	punched: boolean, -- solid wall with punched windows (needs dark panes)
 }
 
 local function randomPalette(kind: string): Palette
 	local warm = rng:NextNumber() < 0.55
-	local lit = rng:NextNumber(0.4, 0.75)
+	local lit = rng:NextNumber(0.3, 0.6)
 	if kind == "glass" then
-		local tints = { Color3.fromRGB(18, 26, 40), Color3.fromRGB(14, 20, 28), Color3.fromRGB(24, 30, 44), Color3.fromRGB(16, 30, 34) }
-		return { body = pick(tints), mat = Enum.Material.Glass, refl = 0.3, fin = Color3.fromRGB(70, 74, 82), finMat = Enum.Material.Metal, warm = warm, lit = lit, ledges = false, fins = true, segs = 1 }
+		local tints = { Color3.fromRGB(20, 30, 46), Color3.fromRGB(16, 24, 32), Color3.fromRGB(30, 36, 50), Color3.fromRGB(18, 34, 38), Color3.fromRGB(42, 36, 30) }
+		return { body = pick(tints), mat = Enum.Material.Glass, refl = 0.35, fin = Color3.fromRGB(96, 100, 108), finMat = Enum.Material.Metal, finW = 0.5, module = 6.5, winH = 7.5, warm = warm, lit = lit, ledges = false, punched = false }
 	elseif kind == "stone" then
-		local stones = { Color3.fromRGB(78, 72, 64), Color3.fromRGB(60, 58, 56), Color3.fromRGB(92, 84, 72) }
-		return { body = pick(stones), mat = Enum.Material.Limestone, refl = 0, fin = Color3.fromRGB(40, 38, 36), finMat = Enum.Material.Concrete, warm = true, lit = lit, ledges = true, fins = true, segs = 2 }
+		local stones = { Color3.fromRGB(118, 110, 98), Color3.fromRGB(92, 90, 88), Color3.fromRGB(130, 120, 104) }
+		local c = pick(stones)
+		return { body = c, mat = Enum.Material.Limestone, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.15), finMat = Enum.Material.Limestone, finW = 1.8, module = 7.5, winH = 6, warm = true, lit = lit, ledges = true, punched = true }
 	elseif kind == "brick" then
-		return { body = Color3.fromRGB(78, 46, 36), mat = Enum.Material.Brick, refl = 0, fin = Color3.fromRGB(50, 34, 28), finMat = Enum.Material.Concrete, warm = true, lit = lit, ledges = true, fins = false, segs = 3 }
+		local c = pick({ Color3.fromRGB(104, 58, 44), Color3.fromRGB(86, 52, 42), Color3.fromRGB(120, 76, 58) })
+		return { body = c, mat = Enum.Material.Brick, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.1), finMat = Enum.Material.Brick, finW = 2, module = 7, winH = 5.5, warm = true, lit = lit, ledges = true, punched = true }
 	end
-	return { body = Color3.fromRGB(36, 36, 42), mat = Enum.Material.SmoothPlastic, refl = 0.1, fin = Color3.fromRGB(20, 20, 24), finMat = Enum.Material.Metal, warm = warm, lit = lit, ledges = false, fins = true, segs = 1 }
+	-- dark metal panel office block
+	return { body = Color3.fromRGB(44, 46, 54), mat = Enum.Material.SmoothPlastic, refl = 0.12, fin = Color3.fromRGB(28, 28, 32), finMat = Enum.Material.Metal, finW = 0.9, module = 7, winH = 6.5, warm = warm, lit = lit, ledges = false, punched = true }
 end
 
 local FACE_DEFS = {
@@ -1890,13 +2202,21 @@ local FACE_DEFS = {
 	{ n = Vector3.new(1, 0, 0), axis = "Z" },
 }
 
--- One block-shaped section of a building with lit floors, fins and ledges
-local function facadeTier(model: Instance, cx: number, cz: number, w: number, dpt: number, y0: number, y1: number, pal: Palette, premium: boolean, skipFace: Vector3?)
+local PANE = Color3.fromRGB(16, 20, 28)
+
+--[[
+	One block-shaped section of a building. Every face is laid out on a window
+	grid: lit windows come in runs of whole modules (rooms with the lights on),
+	mullions / stone piers sit on the module lines, punched-window walls get
+	dark glass panes on every floor, and stone/brick gets floor ledges.
+	Fine facade parts go into `fine` (a LOD group) when given.
+]]
+local function facadeTier(model: Instance, cx: number, cz: number, w: number, dpt: number, y0: number, y1: number, pal: Palette, premium: boolean, skipFace: Vector3?, fine: Instance?)
 	local h = y1 - y0
+	local fineParent = fine or model
 	mk(model, Vector3.new(w, h, dpt), CFrame.new(cx, y0 + h / 2, cz), pal.body, pal.mat, { reflectance = pal.refl, name = "Tower" })
 	local floorH = 11
 	local floors = math.floor((h - 3) / floorH)
-	local allOnFloor = rng:NextNumber() < 0.5 and rng:NextInteger(1, math.max(1, floors)) or -1
 	for _, face in FACE_DEFS do
 		if skipFace and face.n:Dot(skipFace) > 0.9 then
 			continue -- nobody ever sees this side
@@ -1904,38 +2224,73 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 		local len = if face.axis == "X" then w else dpt
 		local off = if face.axis == "X" then dpt / 2 else w / 2
 		local tangent = face.n:Cross(Vector3.yAxis)
-		-- lit floors
+		-- window grid for this face (cap the column count to keep part counts sane)
+		local cols = math.max(2, math.floor((len - 2) / pal.module))
+		local maxCols = if skipFace then 8 else 12 -- skyline ring buildings get a coarser grid
+		if cols > maxCols then
+			cols = maxCols
+		end
+		local module = (len - 2) / cols
+		local function colX(c: number): number
+			return -((len - 2) / 2) + (c - 0.5) * module
+		end
 		for f = 1, floors do
 			local y = y0 + 1.5 + (f - 0.5) * floorH
-			local fullFloor = f == allOnFloor or (f % 7 == 3 and rng:NextNumber() < 0.3)
-			if fullFloor or rng:NextNumber() < pal.lit then
-				local segs = if fullFloor then 1 else pal.segs
-				for _ = 1, segs do
-					local bandLen = if fullFloor then len - 2 else len * rng:NextNumber(0.2, 0.85) / segs
-					local slack = math.max(0, len - 2 - bandLen)
-					local along = rng:NextNumber(-slack / 2, slack / 2)
+			-- dark panes across the floor for punched-window walls
+			if premium and pal.punched then
+				local pc = Vector3.new(cx, y, cz) + face.n * (off + 0.04)
+				deco(fineParent, Vector3.new(len - 2, pal.winH, 0.12), CFrame.lookAt(pc, pc + face.n), PANE, Enum.Material.Glass, { reflectance = 0.3 })
+			end
+			-- runs of lit rooms; neighbouring lit runs merge into one part (the
+			-- mullions drawn on top still show the individual windows)
+			local litStart: number? = nil
+			local function flush(lastCol: number)
+				if litStart then
+					local first = litStart :: number
+					local mid = (colX(first) + colX(lastCol)) / 2
+					local width = (lastCol - first + 1) * module - pal.finW
 					local color = if pal.warm then WINDOW_COLORS[rng:NextInteger(1, 3)] else WINDOW_COLORS[rng:NextInteger(3, 6)]
-					local center = Vector3.new(cx, y, cz) + face.n * (off + 0.05) + tangent * along
-					deco(model, Vector3.new(bandLen, 5.2, 0.2), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.12, 0.4) })
+					local center = Vector3.new(cx, y, cz) + face.n * (off + 0.08) + tangent * mid
+					deco(model, Vector3.new(width, pal.winH - 0.4, 0.14), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.2, 0.42) })
+					litStart = nil
 				end
 			end
+			local c = 1
+			while c <= cols do
+				local run = math.min(cols - c + 1, rng:NextInteger(1, 4))
+				if rng:NextNumber() < pal.lit then
+					litStart = litStart or c
+				else
+					flush(c - 1)
+				end
+				c += run
+			end
+			flush(cols)
 		end
-		-- vertical fins split the lit floors into window cells
-		if premium and pal.fins then
-			local count = math.clamp(math.floor(len / 9), 2, 9)
-			for k = 1, count do
-				local t = (k / (count + 1) - 0.5) * len
-				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.4) + tangent * t
-				deco(model, Vector3.new(0.9, h, 0.8), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = 0.15 })
+		-- mullions / piers on every module line
+		if premium then
+			for k = 1, cols - 1 do
+				local t = colX(k) + module / 2
+				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.3) + tangent * t
+				deco(fineParent, Vector3.new(pal.finW, h, 0.6), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = if pal.finMat == Enum.Material.Metal then 0.2 else 0 })
+			end
+			-- corner piers frame the facade
+			for _, sgn in { -1, 1 } do
+				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.3) + tangent * (sgn * (len / 2 - 0.6))
+				deco(fineParent, Vector3.new(1.4, h, 0.7), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat)
 			end
 		end
 	end
-	-- floor ledges (stone / brick buildings)
+	-- floor ledges (stone / brick)
 	if premium and pal.ledges then
-		for f = 2, floors, 2 do
-			local y = y0 + 1.5 + f * floorH - 0.2
-			deco(model, Vector3.new(w + 1.2, 0.7, dpt + 1.2), CFrame.new(cx, y, cz), pal.fin, pal.finMat)
+		for f = 1, floors do
+			local y = y0 + 1.5 + f * floorH - floorH / 2 - pal.winH / 2 - 0.4
+			deco(fineParent, Vector3.new(w + 1, 0.6, dpt + 1), CFrame.new(cx, y, cz), pal.fin, pal.finMat)
 		end
+	end
+	-- dark granite plinth where the building meets the street
+	if y0 <= CURB + 0.01 then
+		mk(model, Vector3.new(w + 0.8, 3, dpt + 0.8), CFrame.new(cx, y0 + 1.5, cz), Color3.fromRGB(32, 32, 36), Enum.Material.Granite, { name = "Plinth" })
 	end
 end
 
@@ -1970,7 +2325,7 @@ local function lobby(model: Instance, cx: number, cz: number, w: number, dpt: nu
 	local frontOff = if math.abs(front.X) > 0.5 then w / 2 else dpt / 2
 	-- double height glowing lobby glass
 	local glassPos = Vector3.new(cx, base + 7, cz) + front * (frontOff + 0.1)
-	deco(model, Vector3.new(frontLen * 0.9, 12, 0.2), CFrame.lookAt(glassPos, glassPos + front), Color3.fromRGB(255, 222, 175), Enum.Material.Neon, { transparency = 0.5 })
+	deco(model, Vector3.new(frontLen * 0.9, 12, 0.2), CFrame.lookAt(glassPos, glassPos + front), Color3.fromRGB(140, 116, 86), Enum.Material.Neon, { transparency = 0.3 })
 	-- mullions
 	for k = -3, 3 do
 		local p = glassPos + front * 0.2 + tangent * (k * frontLen * 0.13)
@@ -1980,10 +2335,7 @@ local function lobby(model: Instance, cx: number, cz: number, w: number, dpt: nu
 	local canopyW = math.min(frontLen * 0.55, 34)
 	local cpos = Vector3.new(cx, base + 13.5, cz) + front * (frontOff + 3)
 	local canopy = deco(model, Vector3.new(canopyW, 0.9, 6), CFrame.lookAt(cpos, cpos + front), Color3.fromRGB(16, 16, 18), Enum.Material.Metal, { shadow = true })
-	local strip = deco(model, Vector3.new(canopyW - 1, 0.15, 0.6), canopy.CFrame * CFrame.new(0, -0.5, -2.2), Color3.fromRGB(255, 230, 200), Enum.Material.Neon)
-	if rng:NextNumber() < 0.35 then
-		addLight("SpotLight", strip, Color3.fromRGB(255, 214, 170), 22, 1.4, Enum.NormalId.Bottom, 120)
-	end
+	deco(model, Vector3.new(canopyW - 1, 0.15, 0.6), canopy.CFrame * CFrame.new(0, -0.5, -2.2), Color3.fromRGB(255, 230, 200), Enum.Material.Neon)
 	if tower then
 		local nameplate = deco(model, Vector3.new(canopyW - 2, 2.2, 0.3), canopy.CFrame * CFrame.new(0, 1.6, -2.8), Color3.fromRGB(10, 10, 12), Enum.Material.SmoothPlastic)
 		surfaceText(nameplate, Enum.NormalId.Front, pick(CORP_NAMES), Color3.fromRGB(240, 240, 250), nil, nil, Enum.Font.GothamMedium, Vector2.new(700, 70))
@@ -1999,9 +2351,7 @@ local function shopSign(model: Instance, cx: number, cz: number, w: number, dpt:
 	local sign = deco(model, Vector3.new(math.min(30, frontLen * 0.6), 5, 0.6), CFrame.lookAt(signPos, signPos + front), Color3.fromRGB(10, 10, 12), Enum.Material.SmoothPlastic)
 	surfaceText(sign, Enum.NormalId.Front, pick(SHOP_NAMES), neon, nil, nil, Enum.Font.GothamBlack, Vector2.new(600, 100))
 	local signGlow = deco(model, Vector3.new(sign.Size.X + 0.6, 0.25, 0.25), sign.CFrame * CFrame.new(0, -2.8, -0.2), neon, Enum.Material.Neon)
-	if rng:NextNumber() < 0.4 then
-		addLight("PointLight", signGlow, neon, 26, 1.6)
-	end
+
 	if rng:NextNumber() < 0.15 then
 		CollectionService:AddTag(signGlow, "Flicker")
 	end
@@ -2058,6 +2408,8 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 	-- street-level + rooftop clutter lives in a LOD group; the silhouette, windows
 	-- and crown stay visible from anywhere
 	local detail = lodGroup(model, "Detail", Vector3.new(cx, base + math.min(h, 60) / 2, cz), 460)
+	-- window panes, mullions and ledges: invisible detail from far away
+	local fine = lodGroup(model, "Facade", Vector3.new(cx, base + h / 2, cz), 620 + h * 0.6)
 	local crown = pick(CROWN_COLORS)
 
 	if h >= 250 then
@@ -2071,7 +2423,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		for t = 1, tiers do
 			tw, td = w * scales[t], dpt * scales[t]
 			local y1 = y + h * fractions[t]
-			facadeTier(model, cx, cz, tw, td, y, y1, pal, premium, skip)
+			facadeTier(model, cx, cz, tw, td, y, y1, pal, premium, skip, fine)
 			-- setback terrace: slab + glowing edge
 			mk(model, Vector3.new(tw + 1, 1.4, td + 1), CFrame.new(cx, y1 + 0.7, cz), Color3.fromRGB(22, 22, 26), Enum.Material.Concrete, { name = "Terrace" })
 			if premium then
@@ -2084,8 +2436,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 			-- glowing glass crown lantern
 			local lw, ld = tw * 0.72, td * 0.72
 			deco(model, Vector3.new(lw, 16, ld), CFrame.new(cx, top + 8, cz), Color3.fromRGB(20, 26, 36), Enum.Material.Glass, { transparency = 0.25, reflectance = 0.25 })
-			local core = deco(model, Vector3.new(lw - 1.5, 14.5, ld - 1.5), CFrame.new(cx, top + 8, cz), crown, Enum.Material.Neon, { transparency = 0.55 })
-			addLight("PointLight", core, crown, 45, 1.4)
+			deco(model, Vector3.new(lw - 1.5, 14.5, ld - 1.5), CFrame.new(cx, top + 8, cz), crown:Lerp(Color3.new(0, 0, 0), 0.45), Enum.Material.Neon, { transparency = 0.6 })
 			neonOutline(model, cx, cz, lw, ld, top + 16.2, crown, 0.5)
 			mk(model, Vector3.new(lw * 0.6, 3, ld * 0.6), CFrame.new(cx, top + 17.5, cz), Color3.fromRGB(26, 26, 30), Enum.Material.Metal)
 			spire(model, cx, cz, top + 19, if h > 400 then 1.5 else 1)
@@ -2098,13 +2449,13 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		local pal = randomPalette(pick({ "glass", "glass", "stone", "plastic" }))
 		local twoTier = premium and rng:NextNumber() < 0.45
 		local y1 = if twoTier then base + h * 0.75 else base + h
-		facadeTier(model, cx, cz, w, dpt, base, y1, pal, premium, skip)
+		facadeTier(model, cx, cz, w, dpt, base, y1, pal, premium, skip, fine)
 		local top = y1
 		local tw, td = w, dpt
 		if twoTier then
 			mk(model, Vector3.new(w + 1, 1.2, dpt + 1), CFrame.new(cx, y1 + 0.6, cz), Color3.fromRGB(22, 22, 26), Enum.Material.Concrete)
 			tw, td = w * 0.7, dpt * 0.7
-			facadeTier(model, cx, cz, tw, td, y1 + 1.2, base + h, pal, premium, skip)
+			facadeTier(model, cx, cz, tw, td, y1 + 1.2, base + h, pal, premium, skip, fine)
 			top = base + h
 		end
 		mk(model, Vector3.new(tw + 1, 2, td + 1), CFrame.new(cx, top + 1, cz), Color3.fromRGB(25, 25, 28), Enum.Material.Concrete, { name = "Parapet" })
@@ -2124,7 +2475,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 	else
 		-------------------------------------------------- mid-rise
 		local pal = randomPalette(pick({ "brick", "stone", "plastic" }))
-		facadeTier(model, cx, cz, w, dpt, base, base + h, pal, premium, skip)
+		facadeTier(model, cx, cz, w, dpt, base, base + h, pal, premium, skip, fine)
 		local top = base + h
 		mk(model, Vector3.new(w + 1.4, 2.2, dpt + 1.4), CFrame.new(cx, top + 1.1, cz), Color3.fromRGB(30, 28, 26), Enum.Material.Concrete, { name = "Cornice" })
 		if premium then
@@ -2141,7 +2492,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		local tangent = frontNormal:Cross(Vector3.yAxis)
 		local frontLen = if math.abs(frontNormal.X) > 0.5 then dpt else w
 		local shopPos = Vector3.new(cx, base + 5, cz) + frontNormal * (frontOff + 0.1)
-		deco(detail, Vector3.new(frontLen * 0.85, 8, 0.2), CFrame.lookAt(shopPos, shopPos + frontNormal), Color3.fromRGB(255, 225, 180), Enum.Material.Neon, { transparency = 0.55 })
+		deco(detail, Vector3.new(frontLen * 0.85, 8, 0.2), CFrame.lookAt(shopPos, shopPos + frontNormal), Color3.fromRGB(150, 122, 90), Enum.Material.Neon, { transparency = 0.35 })
 		-- striped awning
 		local awnPos = Vector3.new(cx, base + 10, cz) + frontNormal * (frontOff + 2.2) + tangent * 0
 		deco(detail, Vector3.new(frontLen * 0.6, 0.5, 4.5), CFrame.lookAt(awnPos, awnPos + frontNormal) * CFrame.Angles(math.rad(-14), 0, 0), pick(NEON_COLORS):Lerp(Color3.new(0, 0, 0), 0.55), Enum.Material.Fabric, { shadow = true })
@@ -2167,7 +2518,7 @@ local function park(parent: Instance, cx: number, cz: number, size: number)
 	-- fountain
 	mk(parent, Vector3.new(1.5, 30, 30), CFrame.new(cx, top + 0.9, cz) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(90, 90, 95), Enum.Material.Marble, { shape = Enum.PartType.Cylinder })
 	local water = deco(parent, Vector3.new(0.4, 26, 26), CFrame.new(cx, top + 1.5, cz) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(40, 140, 255), Enum.Material.Neon, { shape = Enum.PartType.Cylinder, transparency = 0.45 })
-	addLight("PointLight", water, Color3.fromRGB(60, 150, 255), 35, 2)
+	addLight("PointLight", water, Color3.fromRGB(60, 150, 255), 22, 0.8)
 	deco(parent, Vector3.new(10, 2, 2), CFrame.new(cx, top + 6, cz) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(150, 210, 255), Enum.Material.Neon, { shape = Enum.PartType.Cylinder, transparency = 0.3 })
 	for _ = 1, 14 do
 		local px = cx + rng:NextNumber(-size / 2 + 20, size / 2 - 20)
@@ -2181,7 +2532,7 @@ local function park(parent: Instance, cx: number, cz: number, size: number)
 		local p = Vector3.new(cx + off[1] * size * 0.22, top, cz + off[2] * 7)
 		deco(parent, Vector3.new(0.4, 8, 0.4), CFrame.new(p + Vector3.new(0, 4, 0)), METAL, Enum.Material.Metal)
 		local bulb = deco(parent, Vector3.new(1.2, 1.2, 1.2), CFrame.new(p + Vector3.new(0, 8.4, 0)), STREETLIGHT, Enum.Material.Neon, { shape = Enum.PartType.Ball })
-		addLight("PointLight", bulb, STREETLIGHT, 22, 1.2)
+		addLight("PointLight", bulb, STREETLIGHT, 18, 0.6)
 	end
 end
 
@@ -2518,7 +2869,7 @@ local function buildHighway(parent: Instance)
 		deco(plaza, Vector3.new(0.4, 66, 0.4), CFrame.new(PLAZA_X + s * 3.1, 35, 3.1), Config.Theme.Accent, Enum.Material.Neon)
 		deco(plaza, Vector3.new(0.4, 66, 0.4), CFrame.new(PLAZA_X + s * 3.1, 35, -3.1), Config.Theme.Accent2, Enum.Material.Neon)
 	end
-	addLight("PointLight", obelisk, Config.Theme.Accent, 60, 2)
+	addLight("PointLight", obelisk, Config.Theme.Accent, 30, 0.9)
 	local segs = 32
 	for k = 0, segs - 1 do
 		local a0 = k / segs * math.pi * 2
@@ -2600,7 +2951,7 @@ return CityBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="11">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">CityPremium</string>
           <string name="Source"><![CDATA[--[[
@@ -2634,8 +2985,8 @@ local RING = C.OuterRingDepth
 local HW = C.HighwayWidth / 2
 
 local GLASS_DARK = Color3.fromRGB(16, 22, 34)
-local WARM = Color3.fromRGB(255, 220, 170)
-local COOL = Color3.fromRGB(190, 220, 255)
+local WARM = Color3.fromRGB(165, 138, 104)
+local COOL = Color3.fromRGB(116, 134, 160)
 
 ---------------------------------------------------------------------
 -- Searchlights (beams are swept by the client, see WorldFx)
@@ -2739,10 +3090,7 @@ local function legendsTower(kit: any, parent: Instance, cx: number, cz: number, 
 	for k, cw in { 46, 32, 18 } do
 		local h = 16
 		kit.deco(model, Vector3.new(cw, h, cw), CFrame.new(cx, cy + h / 2, cz), GLASS_DARK, Enum.Material.Glass, { transparency = 0.2, reflectance = 0.3 })
-		local core = kit.deco(model, Vector3.new(cw - 2, h - 1, cw - 2), CFrame.new(cx, cy + h / 2, cz), if k == 2 then Config.Theme.Accent2 else Config.Theme.Accent, Enum.Material.Neon, { transparency = 0.5 })
-		if k == 1 then
-			kit.addLight("PointLight", core, Config.Theme.Accent, 60, 2)
-		end
+		kit.deco(model, Vector3.new(cw - 2, h - 1, cw - 2), CFrame.new(cx, cy + h / 2, cz), (if k == 2 then Config.Theme.Accent2 else Config.Theme.Accent):Lerp(Color3.new(0, 0, 0), 0.4), Enum.Material.Neon, { transparency = 0.55 })
 		kit.neonOutline(model, cx, cz, cw, cw, cy + h, Color3.fromRGB(235, 245, 255), 0.5)
 		cy += h
 	end
@@ -2818,7 +3166,7 @@ local function needle(kit: any, parent: Instance, cx: number, cz: number, lot: n
 	vcyl(0.6, 65.5, py - 0.3, Config.Theme.Accent, Enum.Material.Neon)
 	vcyl(14, 60, py + 6, GLASS_DARK, Enum.Material.Glass, { transparency = 0.25, reflectance = 0.3 })
 	local core = vcyl(12, 56, py + 7, WARM, Enum.Material.Neon, { transparency = 0.45, collide = false })
-	kit.addLight("PointLight", core, WARM, 60, 1.5)
+	kit.addLight("PointLight", core, WARM, 30, 0.8)
 	vcyl(3, 70, py + 20, Color3.fromRGB(40, 40, 46), Enum.Material.Metal)
 	vcyl(0.6, 71.5, py + 23, Config.Theme.Accent2, Enum.Material.Neon)
 	vcyl(6, 50, py + 23, Color3.fromRGB(32, 32, 36), Enum.Material.Metal)
@@ -2875,9 +3223,6 @@ local function busStop(kit: any, parent: Instance, pos: Vector3, outward: Vector
 	-- ad panel faces sideways along the street: rotate so Front/Back look along the tangent
 	ad.CFrame = CFrame.lookAt(ad.CFrame.Position, ad.CFrame.Position + tangent)
 	deco(parent, Vector3.new(7, 0.5, 1.6), cf * CFrame.new(1, 2, 1.4), Color3.fromRGB(40, 40, 46), Enum.Material.Metal)
-	if kit.rng:NextNumber() < 0.5 then
-		kit.addLight("PointLight", ad, c, 16, 1.2)
-	end
 end
 
 function CityPremium.streetscape(kit: any, parent: Instance, cx: number, cz: number, inner: number)
@@ -2968,17 +3313,12 @@ local function water(kit: any, parent: Instance)
 	local quay = Instance.new("Folder")
 	quay.Name = "Waterfront"
 	quay.Parent = parent
-	local lights = 0
 	for _, side in { { Vector3.new(0, 0, -1), "x" }, { Vector3.new(0, 0, 1), "x" }, { Vector3.new(-1, 0, 0), "z" } } do
 		local n = side[1] :: Vector3
 		for t = -o + 40, o - 40, 80 do
 			local p = n * (o - 2) + (if side[2] == "x" then Vector3.new(t, 0, 0) else Vector3.new(0, 0, t))
-			local bulb = kit.deco(quay, Vector3.new(1.2, 1.2, 1.2), CFrame.new(p + Vector3.new(0, CURB + 7, 0)), WARM, Enum.Material.Neon, { shape = Enum.PartType.Ball })
+			kit.deco(quay, Vector3.new(1.2, 1.2, 1.2), CFrame.new(p + Vector3.new(0, CURB + 7, 0)), WARM, Enum.Material.Neon, { shape = Enum.PartType.Ball })
 			kit.deco(quay, Vector3.new(0.4, 7, 0.4), CFrame.new(p + Vector3.new(0, CURB + 3.5, 0)), kit.METAL, Enum.Material.Metal)
-			lights += 1
-			if lights % 3 == 0 then
-				kit.addLight("PointLight", bulb, WARM, 20, 1)
-			end
 		end
 	end
 end
@@ -3073,7 +3413,7 @@ return CityPremium
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Script" referent="12">
+      <Item class="Script" referent="13">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -3427,7 +3767,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">PlayerData</string>
           <string name="Source"><![CDATA[--[[
@@ -3579,24 +3919,194 @@ return PlayerData
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="14">
+  <Item class="SoundService" referent="15">
     <Properties>
       <string name="Name">SoundService</string>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="15">
+  <Item class="StarterPlayer" referent="16">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="16">
+    <Item class="StarterPlayerScripts" referent="17">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="17">
+      <Item class="Folder" referent="18">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="18">
+        <Item class="ModuleScript" referent="19">
+          <Properties>
+            <string name="Name">CarSkin</string>
+            <string name="Source"><![CDATA[--[[
+	CarSkin (client)
+	Swaps the blocky part shell of a car for smooth generated meshes
+	(BodyMesh -> EditableMesh -> MeshPart). Lights, wheels, mirrors, spoilers,
+	grilles and the whole interior stay as detail parts.
+
+	Meshes are generated once per body style and cloned for every car, so a
+	city full of traffic costs only five meshes. If the engine refuses runtime
+	meshes (e.g. the place hasn't allowed Mesh APIs) every call simply returns
+	false and the cars keep their part bodies.
+]]
+
+local AssetService = game:GetService("AssetService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local BodyMesh = require(Shared:WaitForChild("BodyMesh"))
+local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
+
+local CarSkin = {}
+
+-- part-shell pieces the meshes replace
+local REPLACED = {
+	FrontBumper = true, HoodSlope = true, Hood = true, DoorL = true, DoorR = true, Tail = true,
+	Ducktail = true, Windshield = true, SideGlassL = true, SideGlassR = true, RearGlass = true,
+	Roof = true, SillL = true, SillR = true, APillar = true, CPillar = true, DPillar = true,
+	BPillar = true, BeltTrim = true, Arch = true, Seam = true,
+}
+
+type Template = { part: MeshPart, center: Vector3 }
+type ClassMeshes = { body: Template, glass: Template, roof: Template }
+
+local cache: { [string]: ClassMeshes | false } = {}
+local keepAlive: { any } = {} -- EditableMeshes must stay alive while their MeshParts render
+local warned = false
+
+local function build(mesh: BodyMesh.Mesh): Template
+	local minV = Vector3.one * math.huge
+	local maxV = -Vector3.one * math.huge
+	for _, v in mesh.verts do
+		minV = minV:Min(v)
+		maxV = maxV:Max(v)
+	end
+	local center = (minV + maxV) / 2
+	local normals = BodyMesh.normals(mesh)
+	local em = AssetService:CreateEditableMesh()
+	local vids = table.create(#mesh.verts, 0)
+	local nids = table.create(#mesh.verts, 0)
+	for i, v in mesh.verts do
+		vids[i] = em:AddVertex(v - center)
+		nids[i] = em:AddNormal(normals[i])
+	end
+	for _, t in mesh.tris do
+		local face = em:AddTriangle(vids[t[1]], vids[t[2]], vids[t[3]])
+		em:SetFaceNormals(face, { nids[t[1]], nids[t[2]], nids[t[3]] })
+	end
+	local part = AssetService:CreateMeshPartAsync(Content.fromObject(em))
+	part.Size = maxV - minV
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Massless = true
+	part.CastShadow = true
+	table.insert(keepAlive, em)
+	return { part = part, center = center }
+end
+
+local function templatesFor(class: string): ClassMeshes?
+	local cached = cache[class]
+	if cached ~= nil then
+		return if cached then cached else nil
+	end
+	local ok, result = pcall(function()
+		local geo = BodyMesh.generate(class, CarBuilder.getDims(class) :: any)
+		return { body = build(geo.body), glass = build(geo.glass), roof = build(geo.roof) }
+	end)
+	if ok then
+		cache[class] = result
+		return result
+	end
+	cache[class] = false
+	if not warned then
+		warned = true
+		warn("[CityLegends] Smooth car bodies unavailable, using part bodies instead:", result)
+	end
+	return nil
+end
+
+-- Generate every body style up front (call during the loading screen)
+function CarSkin.preload()
+	for _, class in { "Sedan", "Coupe", "SUV", "Supercar", "Hypercar" } do
+		templatesFor(class)
+	end
+end
+
+function CarSkin.isSupported(): boolean
+	for _, v in cache do
+		if v then
+			return true
+		end
+	end
+	return false
+end
+
+--[[
+	destroyReplaced: true for local-only models (traffic, cutscene, garage
+	preview) - the old shell is deleted. For replicated player cars it is
+	hidden with LocalTransparencyModifier instead.
+]]
+function CarSkin.apply(model: Model, destroyReplaced: boolean?): boolean
+	if model:GetAttribute("Skinned") then
+		return true
+	end
+	local class = model:GetAttribute("Class")
+	local root = model.PrimaryPart
+	if type(class) ~= "string" or not root then
+		return false
+	end
+	local templates = templatesFor(class)
+	if not templates then
+		return false
+	end
+	local height = (model:GetAttribute("Height") :: number?) or 4
+	local groundCF = root.CFrame * CFrame.new(0, -height / 2, 0)
+
+	local paint = model:FindFirstChild("DoorL") or model:FindFirstChild("Tail")
+	local roofSrc = model:FindFirstChild("Roof")
+	local paintColor = if paint and paint:IsA("BasePart") then paint.Color else Color3.fromRGB(180, 180, 185)
+	local roofColor = if roofSrc and roofSrc:IsA("BasePart") then roofSrc.Color else paintColor
+
+	local function place(t: Template, name: string, color: Color3, material: Enum.Material, reflectance: number, transparency: number)
+		local p = t.part:Clone()
+		p.Name = name
+		p.Color = color
+		p.Material = material
+		p.Reflectance = reflectance
+		p.Transparency = transparency
+		p.CFrame = groundCF * CFrame.new(t.center)
+		p.Parent = model
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = root
+		w.Part1 = p
+		w.Parent = p
+		return p
+	end
+	place(templates.body, "SkinBody", paintColor, Enum.Material.SmoothPlastic, 0.16, 0)
+	place(templates.glass, "SkinGlass", Color3.fromRGB(14, 18, 24), Enum.Material.Glass, 0.3, 0.2)
+	place(templates.roof, "SkinRoof", roofColor, Enum.Material.SmoothPlastic, 0.16, 0)
+
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and REPLACED[d.Name] then
+			if destroyReplaced then
+				d:Destroy()
+			else
+				d.LocalTransparencyModifier = 1
+			end
+		end
+	end
+	model:SetAttribute("Skinned", true)
+	return true
+end
+
+return CarSkin
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="20">
           <Properties>
             <string name="Name">Cutscene</string>
             <string name="Source"><![CDATA[--[[
@@ -3636,6 +4146,7 @@ local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
 local CityLayout = require(Shared:WaitForChild("CityLayout"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local Cutscene = {}
 
@@ -3744,6 +4255,7 @@ function Cutscene.play()
 	-----------------------------------------------------------------
 	local heroSpec = Cars.get(Cars.CutsceneId)
 	local hero = CarBuilder.build(heroSpec, { anchored = true, lights = true, interior = true, underglow = Config.Theme.Accent2 })
+	CarSkin.apply(hero, true)
 	hero.Parent = folder
 	local heroRoot = hero.PrimaryPart :: BasePart
 	local heroH = hero:GetAttribute("Height") :: number
@@ -3773,7 +4285,7 @@ function Cutscene.play()
 	end
 	local upperLen = (hero:GetAttribute("UpperLen") :: number?) or 1.1
 	local foreLen = (hero:GetAttribute("ForeLen") :: number?) or 1.05
-	local windshield = hero:FindFirstChild("Windshield")
+	local windshield = hero:FindFirstChild("SkinGlass") or hero:FindFirstChild("Windshield")
 
 	-- light trails: two tail lights + a wide underglow ribbon + headlight streaks
 	local halfH = heroH / 2
@@ -3822,6 +4334,7 @@ function Cutscene.play()
 		local spec = CarBuilder.randomTrafficSpec(rng)
 		local color = Cars.TrafficColors[rng:NextInteger(1, #Cars.TrafficColors)]
 		local m = CarBuilder.build(spec, { anchored = true, driver = true, simpleWheels = true, lite = true, color = color })
+		CarSkin.apply(m, true)
 		local root = m.PrimaryPart :: BasePart
 		local h = m:GetAttribute("Height") :: number
 		local l = m:GetAttribute("Length") :: number
@@ -4209,7 +4722,7 @@ return Cutscene
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="19">
+        <Item class="ModuleScript" referent="21">
           <Properties>
             <string name="Name">Driving</string>
             <string name="Source"><![CDATA[--[[
@@ -4534,7 +5047,7 @@ function Driving.attach(model: Model)
 		if d:IsA("BasePart") then
 			if d.Name == "DriverHead" or d.Name == "DriverHair" or d.Name == "DriverNeck" then
 				table.insert(hidden, d)
-			elseif d.Name == "Windshield" or d.Name == "SideGlassL" or d.Name == "SideGlassR" then
+			elseif d.Name == "SkinGlass" or (not model:GetAttribute("Skinned") and (d.Name == "Windshield" or d.Name == "SideGlassL" or d.Name == "SideGlassR")) then
 				table.insert(glass, d)
 			end
 		end
@@ -4980,7 +5493,7 @@ return Driving
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="20">
+        <Item class="LocalScript" referent="22">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--[[
@@ -5001,6 +5514,7 @@ local Traffic = require(script.Parent:WaitForChild("Traffic"))
 local Driving = require(script.Parent:WaitForChild("Driving"))
 local Cutscene = require(script.Parent:WaitForChild("Cutscene"))
 local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -5020,6 +5534,8 @@ local city = workspace:WaitForChild("City", 120)
 while city and not city:GetAttribute("Ready") do
 	task.wait(0.2)
 end
+UI.showLoading("Shaping the cars...")
+CarSkin.preload()
 UI.showLoading("Starting engines...")
 task.wait(1) -- let the world finish replicating
 
@@ -5110,10 +5626,29 @@ UI.hideLoading()
 local pendingAttach = false
 local playerCars = workspace:WaitForChild("PlayerCars")
 
+-- every player's car gets the smooth body locally
+local function skinPlayerCar(model: Instance)
+	if model:IsA("Model") then
+		model:WaitForChild("Chassis", 5)
+		task.wait() -- let the whole car replicate
+		CarSkin.apply(model, false)
+	end
+end
+for _, existing in playerCars:GetChildren() do
+	task.spawn(skinPlayerCar, existing)
+end
+playerCars.ChildAdded:Connect(function(model)
+	if not (model:GetAttribute("Owner") == player.UserId and pendingAttach) then
+		skinPlayerCar(model)
+	end
+end)
+
 local function tryAttach(model: Instance)
 	if model:IsA("Model") and model:GetAttribute("Owner") == player.UserId and pendingAttach then
 		pendingAttach = false
-		task.wait() -- let constraints replicate
+		model:WaitForChild("Chassis", 5)
+		task.wait() -- let the car + its constraints replicate
+		CarSkin.apply(model, false)
 		stopOrbit()
 		Traffic.clearAround(model:GetPivot().Position, 35)
 		Driving.attach(model)
@@ -5208,7 +5743,7 @@ showMenu()
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">Traffic</string>
             <string name="Source"><![CDATA[--[[
@@ -5232,6 +5767,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Cars = require(Shared:WaitForChild("Cars"))
 local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
 local CityLayout = require(Shared:WaitForChild("CityLayout"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local T = Config.Traffic
 local TURN_SPEED = Config.mphToSps(T.TurnSpeedMph)
@@ -5360,6 +5896,7 @@ local function spawnNpc(center: Vector3?): Npc?
 	local spec = CarBuilder.randomTrafficSpec(rng)
 	local color = Cars.TrafficColors[rng:NextInteger(1, #Cars.TrafficColors)]
 	local model = CarBuilder.build(spec, { anchored = true, driver = true, simpleWheels = true, lite = true, color = color })
+	CarSkin.apply(model, true)
 	local tails = {}
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") and d:GetAttribute("TailLight") then
@@ -5710,7 +6247,7 @@ return Traffic
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="22">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">UI</string>
             <string name="Source"><![CDATA[--[[
@@ -5732,6 +6269,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Cars = require(Shared:WaitForChild("Cars"))
 local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local Theme = Config.Theme
 local player = Players.LocalPlayer
@@ -6452,6 +6990,7 @@ function UI.openGarage(data: GarageData, callbacks: GarageCallbacks)
 			previewModel:Destroy()
 		end
 		local m = CarBuilder.build(spec, { anchored = true, interior = true })
+		CarSkin.apply(m, true)
 		m:PivotTo(CFrame.new(0, (m:GetAttribute("Height") :: number) / 2, 0))
 		local floor = new("Part", { Anchored = true, Size = Vector3.new(60, 0.2, 60), CFrame = CFrame.new(0, -0.1, 0), Color = Color3.fromRGB(26, 26, 34), Material = Enum.Material.SmoothPlastic, Reflectance = 0.2 })
 		floor.Parent = m
@@ -6793,7 +7332,7 @@ return UI
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="23">
+        <Item class="ModuleScript" referent="25">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--[[
@@ -6868,7 +7407,8 @@ local function startLod(scale: number)
 			table.insert(lights, l)
 		end
 	end
-	local lightRange = 420 * scale
+	-- wide enough that lights never visibly pop on/off block by block
+	local lightRange = 900 * scale
 	local camera = workspace.CurrentCamera
 
 	local cursor, lightCursor = 1, 1
@@ -7105,7 +7645,7 @@ return WorldFx
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="24">
+  <Item class="Workspace" referent="26">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

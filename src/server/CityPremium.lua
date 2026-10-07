@@ -29,8 +29,8 @@ local RING = C.OuterRingDepth
 local HW = C.HighwayWidth / 2
 
 local GLASS_DARK = Color3.fromRGB(16, 22, 34)
-local WARM = Color3.fromRGB(255, 220, 170)
-local COOL = Color3.fromRGB(190, 220, 255)
+local WARM = Color3.fromRGB(165, 138, 104)
+local COOL = Color3.fromRGB(116, 134, 160)
 
 ---------------------------------------------------------------------
 -- Searchlights (beams are swept by the client, see WorldFx)
@@ -134,10 +134,7 @@ local function legendsTower(kit: any, parent: Instance, cx: number, cz: number, 
 	for k, cw in { 46, 32, 18 } do
 		local h = 16
 		kit.deco(model, Vector3.new(cw, h, cw), CFrame.new(cx, cy + h / 2, cz), GLASS_DARK, Enum.Material.Glass, { transparency = 0.2, reflectance = 0.3 })
-		local core = kit.deco(model, Vector3.new(cw - 2, h - 1, cw - 2), CFrame.new(cx, cy + h / 2, cz), if k == 2 then Config.Theme.Accent2 else Config.Theme.Accent, Enum.Material.Neon, { transparency = 0.5 })
-		if k == 1 then
-			kit.addLight("PointLight", core, Config.Theme.Accent, 60, 2)
-		end
+		kit.deco(model, Vector3.new(cw - 2, h - 1, cw - 2), CFrame.new(cx, cy + h / 2, cz), (if k == 2 then Config.Theme.Accent2 else Config.Theme.Accent):Lerp(Color3.new(0, 0, 0), 0.4), Enum.Material.Neon, { transparency = 0.55 })
 		kit.neonOutline(model, cx, cz, cw, cw, cy + h, Color3.fromRGB(235, 245, 255), 0.5)
 		cy += h
 	end
@@ -213,7 +210,7 @@ local function needle(kit: any, parent: Instance, cx: number, cz: number, lot: n
 	vcyl(0.6, 65.5, py - 0.3, Config.Theme.Accent, Enum.Material.Neon)
 	vcyl(14, 60, py + 6, GLASS_DARK, Enum.Material.Glass, { transparency = 0.25, reflectance = 0.3 })
 	local core = vcyl(12, 56, py + 7, WARM, Enum.Material.Neon, { transparency = 0.45, collide = false })
-	kit.addLight("PointLight", core, WARM, 60, 1.5)
+	kit.addLight("PointLight", core, WARM, 30, 0.8)
 	vcyl(3, 70, py + 20, Color3.fromRGB(40, 40, 46), Enum.Material.Metal)
 	vcyl(0.6, 71.5, py + 23, Config.Theme.Accent2, Enum.Material.Neon)
 	vcyl(6, 50, py + 23, Color3.fromRGB(32, 32, 36), Enum.Material.Metal)
@@ -270,9 +267,6 @@ local function busStop(kit: any, parent: Instance, pos: Vector3, outward: Vector
 	-- ad panel faces sideways along the street: rotate so Front/Back look along the tangent
 	ad.CFrame = CFrame.lookAt(ad.CFrame.Position, ad.CFrame.Position + tangent)
 	deco(parent, Vector3.new(7, 0.5, 1.6), cf * CFrame.new(1, 2, 1.4), Color3.fromRGB(40, 40, 46), Enum.Material.Metal)
-	if kit.rng:NextNumber() < 0.5 then
-		kit.addLight("PointLight", ad, c, 16, 1.2)
-	end
 end
 
 function CityPremium.streetscape(kit: any, parent: Instance, cx: number, cz: number, inner: number)
@@ -363,17 +357,12 @@ local function water(kit: any, parent: Instance)
 	local quay = Instance.new("Folder")
 	quay.Name = "Waterfront"
 	quay.Parent = parent
-	local lights = 0
 	for _, side in { { Vector3.new(0, 0, -1), "x" }, { Vector3.new(0, 0, 1), "x" }, { Vector3.new(-1, 0, 0), "z" } } do
 		local n = side[1] :: Vector3
 		for t = -o + 40, o - 40, 80 do
 			local p = n * (o - 2) + (if side[2] == "x" then Vector3.new(t, 0, 0) else Vector3.new(0, 0, t))
-			local bulb = kit.deco(quay, Vector3.new(1.2, 1.2, 1.2), CFrame.new(p + Vector3.new(0, CURB + 7, 0)), WARM, Enum.Material.Neon, { shape = Enum.PartType.Ball })
+			kit.deco(quay, Vector3.new(1.2, 1.2, 1.2), CFrame.new(p + Vector3.new(0, CURB + 7, 0)), WARM, Enum.Material.Neon, { shape = Enum.PartType.Ball })
 			kit.deco(quay, Vector3.new(0.4, 7, 0.4), CFrame.new(p + Vector3.new(0, CURB + 3.5, 0)), kit.METAL, Enum.Material.Metal)
-			lights += 1
-			if lights % 3 == 0 then
-				kit.addLight("PointLight", bulb, WARM, 20, 1)
-			end
 		end
 	end
 end

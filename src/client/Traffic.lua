@@ -19,6 +19,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Cars = require(Shared:WaitForChild("Cars"))
 local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
 local CityLayout = require(Shared:WaitForChild("CityLayout"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local T = Config.Traffic
 local TURN_SPEED = Config.mphToSps(T.TurnSpeedMph)
@@ -147,6 +148,7 @@ local function spawnNpc(center: Vector3?): Npc?
 	local spec = CarBuilder.randomTrafficSpec(rng)
 	local color = Cars.TrafficColors[rng:NextInteger(1, #Cars.TrafficColors)]
 	local model = CarBuilder.build(spec, { anchored = true, driver = true, simpleWheels = true, lite = true, color = color })
+	CarSkin.apply(model, true)
 	local tails = {}
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") and d:GetAttribute("TailLight") then

@@ -154,7 +154,7 @@ local function surfaceText(part: BasePart, face: Enum.NormalId, text: string, te
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face
 	gui.LightInfluence = 0
-	gui.Brightness = 2.2
+	gui.Brightness = 1.25
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	gui.CanvasSize = canvas or Vector2.new(600, 200)
 	gui.MaxDistance = 650
@@ -189,21 +189,21 @@ local WET = Config.Graphics.WetRoads
 -- wet roads: dark, smooth and slightly reflective so street lights leave glossy highlights
 local ASPHALT = if WET then Color3.fromRGB(20, 20, 24) else Color3.fromRGB(30, 30, 34)
 local ROAD_MAT = if WET then Enum.Material.SmoothPlastic else Enum.Material.Asphalt
-local ROAD_OPTS = { reflectance = if WET then 0.12 else 0 }
+local ROAD_OPTS = { reflectance = if WET then 0.05 else 0 }
 local SIDEWALK = Color3.fromRGB(78, 78, 84)
 local CURB_COLOR = Color3.fromRGB(110, 110, 116)
 local LINE_WHITE = Color3.fromRGB(205, 205, 200)
 local LINE_YELLOW = Color3.fromRGB(230, 170, 30)
-local STREETLIGHT = Color3.fromRGB(255, 196, 130)
+local STREETLIGHT = Color3.fromRGB(255, 214, 172)
 local METAL = Color3.fromRGB(38, 40, 44)
 
 local WINDOW_COLORS = {
-	Color3.fromRGB(255, 214, 160),
-	Color3.fromRGB(255, 196, 120),
-	Color3.fromRGB(255, 230, 190),
-	Color3.fromRGB(190, 220, 255),
-	Color3.fromRGB(160, 200, 255),
-	Color3.fromRGB(230, 240, 255),
+	Color3.fromRGB(158, 126, 88),
+	Color3.fromRGB(150, 110, 70),
+	Color3.fromRGB(165, 142, 110),
+	Color3.fromRGB(112, 128, 150),
+	Color3.fromRGB(96, 116, 146),
+	Color3.fromRGB(134, 140, 152),
 }
 local NEON_COLORS = {
 	Color3.fromRGB(255, 40, 140),
@@ -232,19 +232,29 @@ end
 -- Lighting / atmosphere
 ---------------------------------------------------------------------
 function CityBuilder.setupLighting()
+	-- Moonlit night with an even base level across the whole map. Local lights
+	-- are accents on top of this, not the only thing you can see by.
+	-- newer lighting properties may not exist on every engine version
 	pcall(function()
 		(Lighting :: any).Technology = Enum.Technology.Future
 	end)
-	Lighting.ClockTime = 0.3
-	Lighting.Brightness = 1.2
+	pcall(function()
+		(Lighting :: any).LightingStyle = (Enum :: any).LightingStyle.Realistic
+	end)
+	pcall(function()
+		(Lighting :: any).PrioritizeLightingQuality = true
+	end)
+	Lighting.ClockTime = 0
+	Lighting.Brightness = 2
 	Lighting.GlobalShadows = true
-	Lighting.Ambient = Color3.fromRGB(22, 22, 40)
-	Lighting.OutdoorAmbient = Color3.fromRGB(40, 40, 70)
-	Lighting.EnvironmentDiffuseScale = 0.6
-	Lighting.EnvironmentSpecularScale = 1
-	Lighting.ExposureCompensation = 0.25
-	Lighting.ColorShift_Top = Color3.fromRGB(90, 70, 160)
-	Lighting.ColorShift_Bottom = Color3.fromRGB(20, 20, 40)
+	Lighting.ShadowSoftness = 0.25
+	Lighting.Ambient = Color3.fromRGB(34, 36, 52)
+	Lighting.OutdoorAmbient = Color3.fromRGB(78, 84, 118)
+	Lighting.EnvironmentDiffuseScale = 0.45
+	Lighting.EnvironmentSpecularScale = 0.9
+	Lighting.ExposureCompensation = 0
+	Lighting.ColorShift_Top = Color3.fromRGB(110, 120, 170)
+	Lighting.ColorShift_Bottom = Color3.fromRGB(10, 10, 20)
 
 	for _, child in Lighting:GetChildren() do
 		if child:IsA("PostEffect") or child:IsA("Atmosphere") or child:IsA("Sky") then
@@ -253,37 +263,34 @@ function CityBuilder.setupLighting()
 	end
 
 	local sky = Instance.new("Sky")
-	sky.StarCount = 5000
+	sky.StarCount = 3000
 	sky.CelestialBodiesShown = true
-	sky.MoonAngularSize = 14
+	sky.MoonAngularSize = 11
 	sky.Parent = Lighting
 
+	-- light, even city haze (no purple glow soup)
 	local atmo = Instance.new("Atmosphere")
-	atmo.Density = 0.32
-	atmo.Offset = 0.15
-	atmo.Color = Color3.fromRGB(70, 60, 120)
-	atmo.Decay = Color3.fromRGB(30, 20, 60)
-	atmo.Glare = 0.4
-	atmo.Haze = 1.6
+	atmo.Density = 0.26
+	atmo.Offset = 0.05
+	atmo.Color = Color3.fromRGB(96, 104, 140)
+	atmo.Decay = Color3.fromRGB(52, 56, 90)
+	atmo.Glare = 0
+	atmo.Haze = 0.9
 	atmo.Parent = Lighting
 
+	-- only genuinely bright things (neon, lamps) bloom
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.9
-	bloom.Size = 30
-	bloom.Threshold = 0.85
+	bloom.Intensity = 0.7
+	bloom.Size = 24
+	bloom.Threshold = 1.15
 	bloom.Parent = Lighting
 
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Brightness = 0.02
-	cc.Contrast = 0.18
-	cc.Saturation = 0.2
-	cc.TintColor = Color3.fromRGB(235, 232, 255)
+	cc.Brightness = 0
+	cc.Contrast = 0.1
+	cc.Saturation = 0.06
+	cc.TintColor = Color3.fromRGB(242, 244, 255)
 	cc.Parent = Lighting
-
-	local rays = Instance.new("SunRaysEffect")
-	rays.Intensity = 0.04
-	rays.Spread = 0.6
-	rays.Parent = Lighting
 end
 
 ---------------------------------------------------------------------
@@ -363,7 +370,7 @@ local function streetLight(parent: Instance, base: Vector3, armDir: Vector3)
 	deco(parent, Vector3.new(0.4, 0.4, 7), CFrame.lookAt((base + Vector3.new(0, height, 0) + armEnd) / 2, armEnd), METAL, Enum.Material.Metal)
 	local head = deco(parent, Vector3.new(2.6, 0.5, 1.2), CFrame.lookAt(armEnd - Vector3.new(0, 0.3, 0), armEnd - Vector3.new(0, 0.3, 0) + armDir), METAL, Enum.Material.Metal)
 	local lamp = deco(parent, Vector3.new(2.2, 0.15, 1), head.CFrame * CFrame.new(0, -0.3, 0), STREETLIGHT, Enum.Material.Neon)
-	addLight("SpotLight", lamp, STREETLIGHT, 46, 2.4, Enum.NormalId.Bottom, 115)
+	addLight("SpotLight", lamp, STREETLIGHT, 54, 1.15, Enum.NormalId.Bottom, 125)
 end
 
 local function trafficSignal(parent: Instance, i: number, j: number, k: number)
@@ -424,26 +431,31 @@ type Palette = {
 	refl: number,
 	fin: Color3,
 	finMat: Enum.Material,
+	finW: number, -- mullion / pier width
+	module: number, -- window module (centre-to-centre spacing)
+	winH: number, -- window height within an 11 stud floor
 	warm: boolean,
 	lit: number,
 	ledges: boolean,
-	fins: boolean,
-	segs: number,
+	punched: boolean, -- solid wall with punched windows (needs dark panes)
 }
 
 local function randomPalette(kind: string): Palette
 	local warm = rng:NextNumber() < 0.55
-	local lit = rng:NextNumber(0.4, 0.75)
+	local lit = rng:NextNumber(0.3, 0.6)
 	if kind == "glass" then
-		local tints = { Color3.fromRGB(18, 26, 40), Color3.fromRGB(14, 20, 28), Color3.fromRGB(24, 30, 44), Color3.fromRGB(16, 30, 34) }
-		return { body = pick(tints), mat = Enum.Material.Glass, refl = 0.3, fin = Color3.fromRGB(70, 74, 82), finMat = Enum.Material.Metal, warm = warm, lit = lit, ledges = false, fins = true, segs = 1 }
+		local tints = { Color3.fromRGB(20, 30, 46), Color3.fromRGB(16, 24, 32), Color3.fromRGB(30, 36, 50), Color3.fromRGB(18, 34, 38), Color3.fromRGB(42, 36, 30) }
+		return { body = pick(tints), mat = Enum.Material.Glass, refl = 0.35, fin = Color3.fromRGB(96, 100, 108), finMat = Enum.Material.Metal, finW = 0.5, module = 6.5, winH = 7.5, warm = warm, lit = lit, ledges = false, punched = false }
 	elseif kind == "stone" then
-		local stones = { Color3.fromRGB(78, 72, 64), Color3.fromRGB(60, 58, 56), Color3.fromRGB(92, 84, 72) }
-		return { body = pick(stones), mat = Enum.Material.Limestone, refl = 0, fin = Color3.fromRGB(40, 38, 36), finMat = Enum.Material.Concrete, warm = true, lit = lit, ledges = true, fins = true, segs = 2 }
+		local stones = { Color3.fromRGB(118, 110, 98), Color3.fromRGB(92, 90, 88), Color3.fromRGB(130, 120, 104) }
+		local c = pick(stones)
+		return { body = c, mat = Enum.Material.Limestone, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.15), finMat = Enum.Material.Limestone, finW = 1.8, module = 7.5, winH = 6, warm = true, lit = lit, ledges = true, punched = true }
 	elseif kind == "brick" then
-		return { body = Color3.fromRGB(78, 46, 36), mat = Enum.Material.Brick, refl = 0, fin = Color3.fromRGB(50, 34, 28), finMat = Enum.Material.Concrete, warm = true, lit = lit, ledges = true, fins = false, segs = 3 }
+		local c = pick({ Color3.fromRGB(104, 58, 44), Color3.fromRGB(86, 52, 42), Color3.fromRGB(120, 76, 58) })
+		return { body = c, mat = Enum.Material.Brick, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.1), finMat = Enum.Material.Brick, finW = 2, module = 7, winH = 5.5, warm = true, lit = lit, ledges = true, punched = true }
 	end
-	return { body = Color3.fromRGB(36, 36, 42), mat = Enum.Material.SmoothPlastic, refl = 0.1, fin = Color3.fromRGB(20, 20, 24), finMat = Enum.Material.Metal, warm = warm, lit = lit, ledges = false, fins = true, segs = 1 }
+	-- dark metal panel office block
+	return { body = Color3.fromRGB(44, 46, 54), mat = Enum.Material.SmoothPlastic, refl = 0.12, fin = Color3.fromRGB(28, 28, 32), finMat = Enum.Material.Metal, finW = 0.9, module = 7, winH = 6.5, warm = warm, lit = lit, ledges = false, punched = true }
 end
 
 local FACE_DEFS = {
@@ -453,13 +465,21 @@ local FACE_DEFS = {
 	{ n = Vector3.new(1, 0, 0), axis = "Z" },
 }
 
--- One block-shaped section of a building with lit floors, fins and ledges
-local function facadeTier(model: Instance, cx: number, cz: number, w: number, dpt: number, y0: number, y1: number, pal: Palette, premium: boolean, skipFace: Vector3?)
+local PANE = Color3.fromRGB(16, 20, 28)
+
+--[[
+	One block-shaped section of a building. Every face is laid out on a window
+	grid: lit windows come in runs of whole modules (rooms with the lights on),
+	mullions / stone piers sit on the module lines, punched-window walls get
+	dark glass panes on every floor, and stone/brick gets floor ledges.
+	Fine facade parts go into `fine` (a LOD group) when given.
+]]
+local function facadeTier(model: Instance, cx: number, cz: number, w: number, dpt: number, y0: number, y1: number, pal: Palette, premium: boolean, skipFace: Vector3?, fine: Instance?)
 	local h = y1 - y0
+	local fineParent = fine or model
 	mk(model, Vector3.new(w, h, dpt), CFrame.new(cx, y0 + h / 2, cz), pal.body, pal.mat, { reflectance = pal.refl, name = "Tower" })
 	local floorH = 11
 	local floors = math.floor((h - 3) / floorH)
-	local allOnFloor = rng:NextNumber() < 0.5 and rng:NextInteger(1, math.max(1, floors)) or -1
 	for _, face in FACE_DEFS do
 		if skipFace and face.n:Dot(skipFace) > 0.9 then
 			continue -- nobody ever sees this side
@@ -467,38 +487,73 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 		local len = if face.axis == "X" then w else dpt
 		local off = if face.axis == "X" then dpt / 2 else w / 2
 		local tangent = face.n:Cross(Vector3.yAxis)
-		-- lit floors
+		-- window grid for this face (cap the column count to keep part counts sane)
+		local cols = math.max(2, math.floor((len - 2) / pal.module))
+		local maxCols = if skipFace then 8 else 12 -- skyline ring buildings get a coarser grid
+		if cols > maxCols then
+			cols = maxCols
+		end
+		local module = (len - 2) / cols
+		local function colX(c: number): number
+			return -((len - 2) / 2) + (c - 0.5) * module
+		end
 		for f = 1, floors do
 			local y = y0 + 1.5 + (f - 0.5) * floorH
-			local fullFloor = f == allOnFloor or (f % 7 == 3 and rng:NextNumber() < 0.3)
-			if fullFloor or rng:NextNumber() < pal.lit then
-				local segs = if fullFloor then 1 else pal.segs
-				for _ = 1, segs do
-					local bandLen = if fullFloor then len - 2 else len * rng:NextNumber(0.2, 0.85) / segs
-					local slack = math.max(0, len - 2 - bandLen)
-					local along = rng:NextNumber(-slack / 2, slack / 2)
+			-- dark panes across the floor for punched-window walls
+			if premium and pal.punched then
+				local pc = Vector3.new(cx, y, cz) + face.n * (off + 0.04)
+				deco(fineParent, Vector3.new(len - 2, pal.winH, 0.12), CFrame.lookAt(pc, pc + face.n), PANE, Enum.Material.Glass, { reflectance = 0.3 })
+			end
+			-- runs of lit rooms; neighbouring lit runs merge into one part (the
+			-- mullions drawn on top still show the individual windows)
+			local litStart: number? = nil
+			local function flush(lastCol: number)
+				if litStart then
+					local first = litStart :: number
+					local mid = (colX(first) + colX(lastCol)) / 2
+					local width = (lastCol - first + 1) * module - pal.finW
 					local color = if pal.warm then WINDOW_COLORS[rng:NextInteger(1, 3)] else WINDOW_COLORS[rng:NextInteger(3, 6)]
-					local center = Vector3.new(cx, y, cz) + face.n * (off + 0.05) + tangent * along
-					deco(model, Vector3.new(bandLen, 5.2, 0.2), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.12, 0.4) })
+					local center = Vector3.new(cx, y, cz) + face.n * (off + 0.08) + tangent * mid
+					deco(model, Vector3.new(width, pal.winH - 0.4, 0.14), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.2, 0.42) })
+					litStart = nil
 				end
 			end
+			local c = 1
+			while c <= cols do
+				local run = math.min(cols - c + 1, rng:NextInteger(1, 4))
+				if rng:NextNumber() < pal.lit then
+					litStart = litStart or c
+				else
+					flush(c - 1)
+				end
+				c += run
+			end
+			flush(cols)
 		end
-		-- vertical fins split the lit floors into window cells
-		if premium and pal.fins then
-			local count = math.clamp(math.floor(len / 9), 2, 9)
-			for k = 1, count do
-				local t = (k / (count + 1) - 0.5) * len
-				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.4) + tangent * t
-				deco(model, Vector3.new(0.9, h, 0.8), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = 0.15 })
+		-- mullions / piers on every module line
+		if premium then
+			for k = 1, cols - 1 do
+				local t = colX(k) + module / 2
+				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.3) + tangent * t
+				deco(fineParent, Vector3.new(pal.finW, h, 0.6), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = if pal.finMat == Enum.Material.Metal then 0.2 else 0 })
+			end
+			-- corner piers frame the facade
+			for _, sgn in { -1, 1 } do
+				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.3) + tangent * (sgn * (len / 2 - 0.6))
+				deco(fineParent, Vector3.new(1.4, h, 0.7), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat)
 			end
 		end
 	end
-	-- floor ledges (stone / brick buildings)
+	-- floor ledges (stone / brick)
 	if premium and pal.ledges then
-		for f = 2, floors, 2 do
-			local y = y0 + 1.5 + f * floorH - 0.2
-			deco(model, Vector3.new(w + 1.2, 0.7, dpt + 1.2), CFrame.new(cx, y, cz), pal.fin, pal.finMat)
+		for f = 1, floors do
+			local y = y0 + 1.5 + f * floorH - floorH / 2 - pal.winH / 2 - 0.4
+			deco(fineParent, Vector3.new(w + 1, 0.6, dpt + 1), CFrame.new(cx, y, cz), pal.fin, pal.finMat)
 		end
+	end
+	-- dark granite plinth where the building meets the street
+	if y0 <= CURB + 0.01 then
+		mk(model, Vector3.new(w + 0.8, 3, dpt + 0.8), CFrame.new(cx, y0 + 1.5, cz), Color3.fromRGB(32, 32, 36), Enum.Material.Granite, { name = "Plinth" })
 	end
 end
 
@@ -533,7 +588,7 @@ local function lobby(model: Instance, cx: number, cz: number, w: number, dpt: nu
 	local frontOff = if math.abs(front.X) > 0.5 then w / 2 else dpt / 2
 	-- double height glowing lobby glass
 	local glassPos = Vector3.new(cx, base + 7, cz) + front * (frontOff + 0.1)
-	deco(model, Vector3.new(frontLen * 0.9, 12, 0.2), CFrame.lookAt(glassPos, glassPos + front), Color3.fromRGB(255, 222, 175), Enum.Material.Neon, { transparency = 0.5 })
+	deco(model, Vector3.new(frontLen * 0.9, 12, 0.2), CFrame.lookAt(glassPos, glassPos + front), Color3.fromRGB(140, 116, 86), Enum.Material.Neon, { transparency = 0.3 })
 	-- mullions
 	for k = -3, 3 do
 		local p = glassPos + front * 0.2 + tangent * (k * frontLen * 0.13)
@@ -543,10 +598,7 @@ local function lobby(model: Instance, cx: number, cz: number, w: number, dpt: nu
 	local canopyW = math.min(frontLen * 0.55, 34)
 	local cpos = Vector3.new(cx, base + 13.5, cz) + front * (frontOff + 3)
 	local canopy = deco(model, Vector3.new(canopyW, 0.9, 6), CFrame.lookAt(cpos, cpos + front), Color3.fromRGB(16, 16, 18), Enum.Material.Metal, { shadow = true })
-	local strip = deco(model, Vector3.new(canopyW - 1, 0.15, 0.6), canopy.CFrame * CFrame.new(0, -0.5, -2.2), Color3.fromRGB(255, 230, 200), Enum.Material.Neon)
-	if rng:NextNumber() < 0.35 then
-		addLight("SpotLight", strip, Color3.fromRGB(255, 214, 170), 22, 1.4, Enum.NormalId.Bottom, 120)
-	end
+	deco(model, Vector3.new(canopyW - 1, 0.15, 0.6), canopy.CFrame * CFrame.new(0, -0.5, -2.2), Color3.fromRGB(255, 230, 200), Enum.Material.Neon)
 	if tower then
 		local nameplate = deco(model, Vector3.new(canopyW - 2, 2.2, 0.3), canopy.CFrame * CFrame.new(0, 1.6, -2.8), Color3.fromRGB(10, 10, 12), Enum.Material.SmoothPlastic)
 		surfaceText(nameplate, Enum.NormalId.Front, pick(CORP_NAMES), Color3.fromRGB(240, 240, 250), nil, nil, Enum.Font.GothamMedium, Vector2.new(700, 70))
@@ -562,9 +614,7 @@ local function shopSign(model: Instance, cx: number, cz: number, w: number, dpt:
 	local sign = deco(model, Vector3.new(math.min(30, frontLen * 0.6), 5, 0.6), CFrame.lookAt(signPos, signPos + front), Color3.fromRGB(10, 10, 12), Enum.Material.SmoothPlastic)
 	surfaceText(sign, Enum.NormalId.Front, pick(SHOP_NAMES), neon, nil, nil, Enum.Font.GothamBlack, Vector2.new(600, 100))
 	local signGlow = deco(model, Vector3.new(sign.Size.X + 0.6, 0.25, 0.25), sign.CFrame * CFrame.new(0, -2.8, -0.2), neon, Enum.Material.Neon)
-	if rng:NextNumber() < 0.4 then
-		addLight("PointLight", signGlow, neon, 26, 1.6)
-	end
+
 	if rng:NextNumber() < 0.15 then
 		CollectionService:AddTag(signGlow, "Flicker")
 	end
@@ -621,6 +671,8 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 	-- street-level + rooftop clutter lives in a LOD group; the silhouette, windows
 	-- and crown stay visible from anywhere
 	local detail = lodGroup(model, "Detail", Vector3.new(cx, base + math.min(h, 60) / 2, cz), 460)
+	-- window panes, mullions and ledges: invisible detail from far away
+	local fine = lodGroup(model, "Facade", Vector3.new(cx, base + h / 2, cz), 620 + h * 0.6)
 	local crown = pick(CROWN_COLORS)
 
 	if h >= 250 then
@@ -634,7 +686,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		for t = 1, tiers do
 			tw, td = w * scales[t], dpt * scales[t]
 			local y1 = y + h * fractions[t]
-			facadeTier(model, cx, cz, tw, td, y, y1, pal, premium, skip)
+			facadeTier(model, cx, cz, tw, td, y, y1, pal, premium, skip, fine)
 			-- setback terrace: slab + glowing edge
 			mk(model, Vector3.new(tw + 1, 1.4, td + 1), CFrame.new(cx, y1 + 0.7, cz), Color3.fromRGB(22, 22, 26), Enum.Material.Concrete, { name = "Terrace" })
 			if premium then
@@ -647,8 +699,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 			-- glowing glass crown lantern
 			local lw, ld = tw * 0.72, td * 0.72
 			deco(model, Vector3.new(lw, 16, ld), CFrame.new(cx, top + 8, cz), Color3.fromRGB(20, 26, 36), Enum.Material.Glass, { transparency = 0.25, reflectance = 0.25 })
-			local core = deco(model, Vector3.new(lw - 1.5, 14.5, ld - 1.5), CFrame.new(cx, top + 8, cz), crown, Enum.Material.Neon, { transparency = 0.55 })
-			addLight("PointLight", core, crown, 45, 1.4)
+			deco(model, Vector3.new(lw - 1.5, 14.5, ld - 1.5), CFrame.new(cx, top + 8, cz), crown:Lerp(Color3.new(0, 0, 0), 0.45), Enum.Material.Neon, { transparency = 0.6 })
 			neonOutline(model, cx, cz, lw, ld, top + 16.2, crown, 0.5)
 			mk(model, Vector3.new(lw * 0.6, 3, ld * 0.6), CFrame.new(cx, top + 17.5, cz), Color3.fromRGB(26, 26, 30), Enum.Material.Metal)
 			spire(model, cx, cz, top + 19, if h > 400 then 1.5 else 1)
@@ -661,13 +712,13 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		local pal = randomPalette(pick({ "glass", "glass", "stone", "plastic" }))
 		local twoTier = premium and rng:NextNumber() < 0.45
 		local y1 = if twoTier then base + h * 0.75 else base + h
-		facadeTier(model, cx, cz, w, dpt, base, y1, pal, premium, skip)
+		facadeTier(model, cx, cz, w, dpt, base, y1, pal, premium, skip, fine)
 		local top = y1
 		local tw, td = w, dpt
 		if twoTier then
 			mk(model, Vector3.new(w + 1, 1.2, dpt + 1), CFrame.new(cx, y1 + 0.6, cz), Color3.fromRGB(22, 22, 26), Enum.Material.Concrete)
 			tw, td = w * 0.7, dpt * 0.7
-			facadeTier(model, cx, cz, tw, td, y1 + 1.2, base + h, pal, premium, skip)
+			facadeTier(model, cx, cz, tw, td, y1 + 1.2, base + h, pal, premium, skip, fine)
 			top = base + h
 		end
 		mk(model, Vector3.new(tw + 1, 2, td + 1), CFrame.new(cx, top + 1, cz), Color3.fromRGB(25, 25, 28), Enum.Material.Concrete, { name = "Parapet" })
@@ -687,7 +738,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 	else
 		-------------------------------------------------- mid-rise
 		local pal = randomPalette(pick({ "brick", "stone", "plastic" }))
-		facadeTier(model, cx, cz, w, dpt, base, base + h, pal, premium, skip)
+		facadeTier(model, cx, cz, w, dpt, base, base + h, pal, premium, skip, fine)
 		local top = base + h
 		mk(model, Vector3.new(w + 1.4, 2.2, dpt + 1.4), CFrame.new(cx, top + 1.1, cz), Color3.fromRGB(30, 28, 26), Enum.Material.Concrete, { name = "Cornice" })
 		if premium then
@@ -704,7 +755,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		local tangent = frontNormal:Cross(Vector3.yAxis)
 		local frontLen = if math.abs(frontNormal.X) > 0.5 then dpt else w
 		local shopPos = Vector3.new(cx, base + 5, cz) + frontNormal * (frontOff + 0.1)
-		deco(detail, Vector3.new(frontLen * 0.85, 8, 0.2), CFrame.lookAt(shopPos, shopPos + frontNormal), Color3.fromRGB(255, 225, 180), Enum.Material.Neon, { transparency = 0.55 })
+		deco(detail, Vector3.new(frontLen * 0.85, 8, 0.2), CFrame.lookAt(shopPos, shopPos + frontNormal), Color3.fromRGB(150, 122, 90), Enum.Material.Neon, { transparency = 0.35 })
 		-- striped awning
 		local awnPos = Vector3.new(cx, base + 10, cz) + frontNormal * (frontOff + 2.2) + tangent * 0
 		deco(detail, Vector3.new(frontLen * 0.6, 0.5, 4.5), CFrame.lookAt(awnPos, awnPos + frontNormal) * CFrame.Angles(math.rad(-14), 0, 0), pick(NEON_COLORS):Lerp(Color3.new(0, 0, 0), 0.55), Enum.Material.Fabric, { shadow = true })
@@ -730,7 +781,7 @@ local function park(parent: Instance, cx: number, cz: number, size: number)
 	-- fountain
 	mk(parent, Vector3.new(1.5, 30, 30), CFrame.new(cx, top + 0.9, cz) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(90, 90, 95), Enum.Material.Marble, { shape = Enum.PartType.Cylinder })
 	local water = deco(parent, Vector3.new(0.4, 26, 26), CFrame.new(cx, top + 1.5, cz) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(40, 140, 255), Enum.Material.Neon, { shape = Enum.PartType.Cylinder, transparency = 0.45 })
-	addLight("PointLight", water, Color3.fromRGB(60, 150, 255), 35, 2)
+	addLight("PointLight", water, Color3.fromRGB(60, 150, 255), 22, 0.8)
 	deco(parent, Vector3.new(10, 2, 2), CFrame.new(cx, top + 6, cz) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(150, 210, 255), Enum.Material.Neon, { shape = Enum.PartType.Cylinder, transparency = 0.3 })
 	for _ = 1, 14 do
 		local px = cx + rng:NextNumber(-size / 2 + 20, size / 2 - 20)
@@ -744,7 +795,7 @@ local function park(parent: Instance, cx: number, cz: number, size: number)
 		local p = Vector3.new(cx + off[1] * size * 0.22, top, cz + off[2] * 7)
 		deco(parent, Vector3.new(0.4, 8, 0.4), CFrame.new(p + Vector3.new(0, 4, 0)), METAL, Enum.Material.Metal)
 		local bulb = deco(parent, Vector3.new(1.2, 1.2, 1.2), CFrame.new(p + Vector3.new(0, 8.4, 0)), STREETLIGHT, Enum.Material.Neon, { shape = Enum.PartType.Ball })
-		addLight("PointLight", bulb, STREETLIGHT, 22, 1.2)
+		addLight("PointLight", bulb, STREETLIGHT, 18, 0.6)
 	end
 end
 
@@ -1081,7 +1132,7 @@ local function buildHighway(parent: Instance)
 		deco(plaza, Vector3.new(0.4, 66, 0.4), CFrame.new(PLAZA_X + s * 3.1, 35, 3.1), Config.Theme.Accent, Enum.Material.Neon)
 		deco(plaza, Vector3.new(0.4, 66, 0.4), CFrame.new(PLAZA_X + s * 3.1, 35, -3.1), Config.Theme.Accent2, Enum.Material.Neon)
 	end
-	addLight("PointLight", obelisk, Config.Theme.Accent, 60, 2)
+	addLight("PointLight", obelisk, Config.Theme.Accent, 30, 0.9)
 	local segs = 32
 	for k = 0, segs - 1 do
 		local a0 = k / segs * math.pi * 2

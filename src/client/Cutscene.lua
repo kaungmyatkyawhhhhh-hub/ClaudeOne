@@ -35,6 +35,7 @@ local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
 local CityLayout = require(Shared:WaitForChild("CityLayout"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
+local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 
 local Cutscene = {}
 
@@ -143,6 +144,7 @@ function Cutscene.play()
 	-----------------------------------------------------------------
 	local heroSpec = Cars.get(Cars.CutsceneId)
 	local hero = CarBuilder.build(heroSpec, { anchored = true, lights = true, interior = true, underglow = Config.Theme.Accent2 })
+	CarSkin.apply(hero, true)
 	hero.Parent = folder
 	local heroRoot = hero.PrimaryPart :: BasePart
 	local heroH = hero:GetAttribute("Height") :: number
@@ -172,7 +174,7 @@ function Cutscene.play()
 	end
 	local upperLen = (hero:GetAttribute("UpperLen") :: number?) or 1.1
 	local foreLen = (hero:GetAttribute("ForeLen") :: number?) or 1.05
-	local windshield = hero:FindFirstChild("Windshield")
+	local windshield = hero:FindFirstChild("SkinGlass") or hero:FindFirstChild("Windshield")
 
 	-- light trails: two tail lights + a wide underglow ribbon + headlight streaks
 	local halfH = heroH / 2
@@ -221,6 +223,7 @@ function Cutscene.play()
 		local spec = CarBuilder.randomTrafficSpec(rng)
 		local color = Cars.TrafficColors[rng:NextInteger(1, #Cars.TrafficColors)]
 		local m = CarBuilder.build(spec, { anchored = true, driver = true, simpleWheels = true, lite = true, color = color })
+		CarSkin.apply(m, true)
 		local root = m.PrimaryPart :: BasePart
 		local h = m:GetAttribute("Height") :: number
 		local l = m:GetAttribute("Length") :: number

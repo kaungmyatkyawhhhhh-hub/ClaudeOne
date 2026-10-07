@@ -44,6 +44,12 @@ To save progress, publish the place and turn on **Game Settings → Security →
 
 Mobile players get on-screen buttons.
 
+## Smooth car bodies
+
+Car bodies are generated at runtime as real meshes (`src/shared/BodyMesh.lua` builds the geometry and `src/client/CarSkin.lua` turns it into MeshParts with `EditableMesh`). Each body has curved panels, wheel arches, a sloped hood, a rounded nose and tail, fender humps on super/hypercars, and a tinted glass cabin. Lights, wheels, mirrors, spoilers and the interior stay as detail parts.
+
+If the Output shows *"Smooth car bodies unavailable"*, turn on **Game Settings → Security → Allow Mesh / Image APIs**. The cars fall back to their part bodies until you do.
+
 ## Performance
 
 - **Detail LOD:** shop fronts, lobbies, rooftop clutter, street furniture, road markings and traffic signals are grouped. The client removes these groups from the scene when the camera is far away, which is roughly 30% of the city's parts at any moment. The work is spread over frames, so it never stutters.
