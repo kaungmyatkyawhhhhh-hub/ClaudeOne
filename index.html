@@ -5381,7 +5381,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=69,WN=[
+const WN_VER=70,WN=[
+ ["🛸","Airship expeditions","Got an Airship dock in the Sky Islands? Send it on 10-minute, 1-hour or 4-hour trips for Gems and rare Sky relics that boost the islands forever.","2026-10-07T06:36"],
  ["🐉","Fight the dragon","When a dragon approaches your Kingdom, you can fight it yourself: tap it 12 times in 12 seconds for a big treasure.","2026-10-07T06:32"],
  ["⭐","Franchise your empire","At the World 4 Gem Exchange, franchise your zones for Tycoon Stars: each one adds +10% to all Gem income forever.","2026-10-07T06:28"],
  ["🎡","Ride your own park","Tap a ride in your World 4 Theme Park and hit Ride it for a bonus every 10 minutes. And there's a new Tycoon tab on the world leaderboard.","2026-10-07T06:25"],
@@ -7069,7 +7070,7 @@ const w4Nb=i=>{const x=i%W4_COLS,y=Math.floor(i/W4_COLS),o=[];if(x>0)o.push(i-1)
 const w4Count=(zk,bk)=>w4().z[zk].t.filter(t=>t&&t.k===bk).length;
 const w4Cost=(z,b)=>Math.round(b.c*Math.pow(1.12,w4Count(z.k,b.k)));
 const w4UpCost=(b,L)=>Math.round(b.c*Math.pow(1.7,L));
-const W4_MAXL=10;
+const W4_MAXL=10,W4_EXP=[{n:"Cloud hop",m:10,k:.6,relic:.05},{n:"Storm run",m:60,k:.8,relic:.25},{n:"Edge of the sky",m:240,k:1,relic:.7}];
 function w4Calc(zk){const z=W4ZK(zk),Z=w4().z[zk],T=Z.t,st=T.map(()=>""),out=T.map(()=>0);let o2=0,use=0,pop=0,work=0,def=0,happy=0;
   T.forEach((t,i)=>{if(!t)return;const b=W4B(z,t.k);if(!b)return;if(b.o2)o2+=b.o2*t.l;if(b.use)use+=b.use;if(b.pop)pop+=b.pop*t.l;if(b.work)work+=b.work;if(b.def)def+=b.def*t.l;if(b.happy)happy+=b.happy*t.l});
   const now=Date.now(),storm=Z.storm&&Z.storm.until>now?Z.storm:null,shielded=i=>[i,...w4Nb(i)].some(j=>T[j]&&W4B(z,T[j].k)&&W4B(z,T[j].k).shield);
@@ -7077,7 +7078,7 @@ function w4Calc(zk){const z=W4ZK(zk),Z=w4().z[zk],T=Z.t,st=T.map(()=>""),out=T.m
   T.forEach((t,i)=>{if(!t)return;const b=W4B(z,t.k);if(!b||!b.r)return;let m=1;w4Nb(i).forEach(j=>{const n=T[j]&&W4B(z,T[j].k);if(n&&n.boost&&(!n.rideOnly||b.ride))m+=n.boost*(1+(T[j].l-1)*.25)});
     if(b.need&&!w4Nb(i).some(j=>T[j]&&T[j].k===b.need)){st[i]="🔌";return}
     if(storm&&storm.hit.includes(i)&&!shielded(i)){st[i]="⛈️";return}
-    let v=b.r*t.l*m;if(zk==="park")v*=fun;if(zk==="sea"){v*=air;if(air<1)st[i]="🫧"}if(zk==="king"){v*=staff;if(staff<1)st[i]="👷"}if(m>1&&!st[i])st[i]="⚡";out[i]=v});
+    let v=b.r*t.l*m;if(zk==="sky")v*=1+.05*(w4().relics||0);if(zk==="park")v*=fun;if(zk==="sea"){v*=air;if(air<1)st[i]="🫧"}if(zk==="king"){v*=staff;if(staff<1)st[i]="👷"}if(m>1&&!st[i])st[i]="⚡";out[i]=v});
   return{rate:out.reduce((a,v)=>a+v,0),st,out,o2,use,pop,work,def,fun,storm}}
 const w4Rate=()=>W4Z.filter(z=>w4().unl[z.k]).reduce((a,z)=>a+w4Calc(z.k).rate,0)*w4Mult();
 const w4Mult=()=>(1+.1*Object.keys(w4().unl).length-.1)*(1+.1*(w4().stars||0));
@@ -7104,9 +7105,12 @@ function openW4Zone(zk,back){const z=W4ZK(zk),W=w4();room="w4z";W4Z_CUR=zk;$("ro
     $("room").innerHTML=`<div class="room-in scroll w4room">${roomHead(z.ic+" "+z.n)}
       <div class="kv"><div><span class="eyebrow">Gems</span><b id="w4G">${gemF(W.gems)}</b></div><div><span class="eyebrow">This zone</span><b id="w4R">${gemF(c.rate*w4Mult())}/s</b></div><div><span class="eyebrow">Status</span><b class="w4inf">${info}</b></div></div>
       <div class="w4grid" style="background:${z.bg}">${Z.t.map((t,i)=>{const b=t&&W4B(z,t.k);return `<button class="w4t${t?" on":""}${W4SEL===i?" sel":""}" data-w4="${i}" style="--tc:${z.tile}">${b?`<b>${b.ic}</b><i>L${t.l}</i>${c.st[i]?`<em>${c.st[i]}</em>`:""}`:`<span>+</span>`}</button>`}).join("")}</div>
+      ${zk==="sky"&&w4Count("sky","ship")?(()=>{const X=W.exp;if(!X)return `<div class="sechead"><h3>🛸 Airship expeditions</h3><span class="eyebrow">${W.relics||0} sky relics · +${(W.relics||0)*5}% sky output</span></div><div class="seg3">${W4_EXP.map((e,i)=>`<button class="cta${i?" ghost":""}" data-w4x="${i}">${e.n}<br><small>${e.m<60?e.m+" min":e.m/60+" h"}</small></button>`).join("")}</div>`;const L=X.end-Date.now();return L>0?`<div class="note">🛸 Your airship is away on the ${W4_EXP[X.i].n} · back in ${L>=3600000?Math.ceil(L/3600000)+" h":Math.ceil(L/60000)+" min"}</div>`:`<button class="bigbtn" id="w4XL">🛸 The airship is back! Unload<small>Gems and maybe a sky relic</small></button>`})():""}
       ${zk==="king"&&Z.t.filter(Boolean).length>=3&&Z.ev&&Z.ev-Date.now()<180000?`<button class="bigbtn" id="w4Drag" style="background:linear-gradient(90deg,#e2364a,#7a1d2a)">🐉 A dragon is coming! Fight it<small>Attacks in ${Math.max(0,Math.ceil((Z.ev-Date.now())/1000))}s · beat it for treasure</small></button>`:""}
       <div id="w4Sheet"></div><p class="fine">${z.d}</p></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{W4SEL=-1;W4Z_CUR=null;back()};
+    $("room").querySelectorAll("[data-w4x]").forEach(bt=>bt.onclick=()=>{if(W.exp)return;const i=+bt.dataset.w4x;W.exp={i,end:Date.now()+W4_EXP[i].m*60000,rate:w4Calc("sky").rate*w4Mult()};dirty=true;SFX.hot();banner("🛸 The airship set off on the "+W4_EXP[i].n,"g");draw()});
+    {const xl=$("w4XL");if(xl)xl.onclick=()=>{const X=W.exp,e=W4_EXP[X.i],v=Math.max(500,X.rate*e.m*60*e.k);W.gems+=v;W.tot+=v;W.run=(W.run||0)+v;let ex="";if(Math.random()<e.relic){W.relics=(W.relics||0)+1;ex=" and a Sky relic (+5% sky output forever)!"}W.exp=null;S.stats.expeditions=(S.stats.expeditions||0)+1;dirty=true;SFX.rebirth();confetti(ex?260:140);banner("🛸 +"+gemF(v)+ex,"g");draw()}}
     {const db=$("w4Drag");if(db)db.onclick=()=>dragonFight(ok=>{if(ok){const v=Math.max(1e6,w4Calc("king").rate*w4Mult()*240);W.gems+=v;W.tot+=v;W.run=(W.run||0)+v;Z.ev=Date.now()+rnd(10,15)*60000;S.stats.dragons=(S.stats.dragons||0)+1;dirty=true;SFX.rebirth();confetti(260);banner("🐉 You slew the dragon! Treasure: "+gemF(v),"g")}else banner("The dragon shrugged it off. Towers will have to hold","r");draw()})}
     $("room").querySelectorAll("[data-w4]").forEach(bt=>bt.onclick=()=>{W4SEL=W4SEL===+bt.dataset.w4?-1:+bt.dataset.w4;SFX.tick(.4);draw();const sh=$("w4Sheet");if(sh&&W4SEL>=0)sh.scrollIntoView({behavior:"smooth",block:"nearest"})});
     const sh=$("w4Sheet");if(W4SEL<0)return;const t=Z.t[W4SEL];
