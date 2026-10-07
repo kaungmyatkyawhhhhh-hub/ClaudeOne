@@ -387,6 +387,8 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .gardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gplot{border-radius:16px;padding:12px;background:#6b4a2a;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.2)}.gplot b{font-size:2.6rem;line-height:1;transition:transform .3s}.gplot small{font-weight:700}.gplot span{font:700 .72rem var(--mono);opacity:.85}.gplot.empty{background:#8a6a4a;opacity:.7}.gplot.ripe{background:#3f7a3a;box-shadow:0 0 0 3px #ffcc33,inset 0 -6px 0 rgba(0,0,0,.2)}.gplot .cta{width:100%;padding:8px;justify-content:center;font-size:.78rem}
 .fobtn{background:linear-gradient(90deg,#1b1f2a,#3a2266)!important;color:#ffcc33!important}.fobtn b{color:#fff!important}
 .fobar{margin:8px 0;padding:10px 12px;border-radius:14px;background:#1b1f2a;color:#fff}.foh{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;margin-bottom:6px}.foh span{font:900 1rem var(--mono);color:#ffcc33}.fotrack{height:10px;border-radius:5px;background:#e2364a;overflow:hidden}.fotrack i{display:block;height:100%;background:#2fd28a;transition:width .25s}
+.capsule{width:150px;height:150px;border-radius:50%;position:relative;cursor:pointer;animation:capDrop .6s cubic-bezier(.3,1.6,.5,1);z-index:1;touch-action:manipulation}.capsule i,.capsule b{position:absolute;left:0;right:0;height:50%;transition:transform .45s cubic-bezier(.3,1.4,.5,1)}.capsule i{top:0;border-radius:75px 75px 0 0;background:var(--cc);box-shadow:inset -10px 10px 0 rgba(255,255,255,.3)}.capsule b{bottom:0;border-radius:0 0 75px 75px;background:#f4f6fa;box-shadow:inset -10px -8px 0 rgba(0,0,0,.08)}
+.capsule.open i{transform:translateY(-60px) rotate(-25deg)}.capsule.open b{transform:translateY(40px) rotate(10deg)}@keyframes capDrop{from{transform:translateY(-60vh)}}
 .simon{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(80vw,320px);margin:16px auto}.simon button{aspect-ratio:1;border-radius:24px;font-size:3rem;display:grid;place-items:center;background:color-mix(in oklab,var(--pc) 35%,var(--surface));box-shadow:var(--shadow);transition:transform .1s,background .1s;touch-action:manipulation}.simon button.lit{background:var(--pc);transform:scale(1.06);box-shadow:0 0 30px var(--pc)}
 .bxwrap{display:flex;justify-content:center;margin:10px 0}.bxwrap canvas{width:min(80vw,300px);height:auto;border-radius:18px;touch-action:manipulation}
 .hlrow{display:flex;align-items:center;gap:8px;width:min(92vw,360px)}.hlrow em{font-style:normal;font-weight:900;color:var(--muted)}.hlcard{flex:1;border-radius:18px;padding:14px 8px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}.hlcard b{font-size:.82rem;min-height:2.2em}.hlcard span{font:900 1.3rem var(--mono)}
@@ -1161,6 +1163,7 @@ const ACH=[
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
  ["box20","Float like a butterfly","Reach a ×20 combo on the boxing bag",()=>(S.boxBest||0)>=20,30000],
  ["tricks5","Circus star","Teach a pet all five tricks",()=>Object.values(S.pets||{}).some(pd=>(pd.tr||[]).length>=5),50000],
+ ["cap10","Capsule collector","Win 10 new items from the capsule machine",()=>(S.stats.capsules||0)>=10,25000],
  ["vinny10","Vinny's nightmare","Win 10 flip-offs",()=>(S.stats.foWins||0)>=10,500000],
  ["stk48","Complete book","Collect every sticker",()=>stkCount()>=48,5e6],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
@@ -4619,15 +4622,25 @@ function accHand(c,k,x,y){
 const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."},golf:{n:"Mini golf",ic:"⛳",d:"Three holes. Drag back from the ball to aim, let go to putt. Beat par for big tickets."},bowl:{n:"Bowling",ic:"🎳",d:"Five frames. Tap to lock the aim, tap again for power. Strikes pay big."},hilo:{n:"Higher or lower",ic:"📈",d:"Is the next item worth more or less? Keep the streak alive."}};
 const ARC_PRIZE=[{k:"crate",n:"Mystery crate",ic:"📦",t:100,f:()=>gainCrate(1)},{k:"energy",n:"Energy drink",ic:"🥤",t:60,f:()=>{S.energy=Math.min(maxEnergy()*1.5,S.energy+60)}},{k:"hype",n:"Hype rush",ic:"🔥",t:80,f:()=>hype(10)},
   {k:"cash",n:"Bag of cash",ic:"💰",t:150,f:()=>earn(Math.round(Math.max(1000,rwBase()*.03)))},{k:"map",n:"Treasure map",ic:"🗺️",t:120,f:()=>{S.maps=(S.maps||0)+1}},{k:"nshade",n:"Neon shades",ic:"🕶️",t:250,acc:1},{k:"acrown",n:"Neon crown",ic:"👑",t:400,acc:1},{k:"joy",n:"Golden joystick",ic:"🕹️",t:700,acc:1}];
+const capPool=()=>ACCS.filter(a=>!a.arc&&!a.w2&&!a.ev&&a.cost>0&&a.cost<=1e6&&a.s!=="o");
+function capsule(back){const L=capPool(),a=pick(L),own=(S.accOwn||{})[a.k],col=pick(["#ff4fd8","#4fe3ff","#ffcc33","#2fd28a","#e2364a"]);
+  const ov=document.createElement("div");ov.className="crateov";ov.innerHTML=`<div class="crrays" id="cpRays"></div><div class="capsule" id="cpBall" style="--cc:${col}"><i></i><b></b></div><p class="crhint" id="cpHint">Tap to open!</p><div class="crres" id="cpRes"></div>`;document.body.appendChild(ov);SFX.crate(1);
+  const ball=ov.querySelector("#cpBall");let done=false;ball.onpointerdown=e=>{e.preventDefault();if(done)return;done=true;ball.classList.add("open");ov.querySelector("#cpRays").classList.add("on");ov.querySelector("#cpHint").textContent="";SFX.crit(own?0:2);confetti(own?60:180,null,null,[col,"#fff","#ffcc33"]);
+    if(own){S.tix=(S.tix||0)+15}else{S.accOwn=S.accOwn||{};S.accOwn[a.k]=1;S.stats.capsules=(S.stats.capsules||0)+1}dirty=true;
+    ov.querySelector("#cpRes").innerHTML=`<b>${esc(a.n)}</b><span>${own?"Duplicate · +15 tickets":"New! Wear it from the Mall's accessory shop"}</span><button class="cta" id="cpOk">${own?"OK":"Equip it"}</button>`;
+    ov.querySelector("#cpOk").onclick=()=>{if(!own){S.acc=S.acc||{};S.acc[a.s]=a.k;dirty=true;banner(a.n+" equipped","g")}ov.remove();back()}}}
 function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||{};const draw=()=>{const T=S.tix||0;
   $("room").innerHTML=`<div class="room-in scroll arcroom">${roomHead("Arcade")}<div class="arcmarq">★ INSERT COIN ★ HIGH SCORES ★ PRIZES ★</div>
     <div class="kv"><div><span class="eyebrow">Tickets</span><b>🎟️ ${fmtN(T)}</b></div><div><span class="eyebrow">Games</span><b>5 energy each</b></div></div>
     <div class="sechead"><h3>Games</h3><span class="eyebrow">No muscles needed</span></div>
     <div class="perks">${Object.entries(ARC_G).map(([k,g])=>`<button class="perk nopic" data-ag="${k}" ${S.energy<5?"disabled":""}><span class="t">${g.ic} ${g.n}</span><span class="d">${g.d}${S.arcBest[k]?" · best "+S.arcBest[k]:""}</span><span class="c">Play</span></button>`).join("")}</div>
+    <div class="sechead"><h3>Capsule machine</h3><span class="eyebrow">🎟️ 30 a spin · ${capPool().filter(a=>(S.accOwn||{})[a.k]).length}/${capPool().length} collected</span></div>
+    <button class="bigbtn alt2" id="capGo" ${T<30?"disabled":""}>🔮 Turn the crank<small>A random hat, glasses, chain or gadget · duplicates give 15 tickets back</small></button>
     <div class="sechead"><h3>Prize counter</h3><span class="eyebrow">Neon gear is arcade-only</span></div>
     <div class="perks">${ARC_PRIZE.map((z,i)=>{const own=z.acc&&(S.accOwn||{})[z.k];return `<button class="perk nopic" data-ap="${i}" ${own||T<z.t?"disabled":""}><span class="t">${z.ic} ${z.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${z.acc?"Wear it from the Mall's accessory shop":"Instant"}</span><span class="c">${own?"Owned":"🎟️ "+z.t}</span></button>`}).join("")}</div></div>`;
   $("leaveBtn").onclick=closeRoom;
   $("room").querySelectorAll("[data-ag]").forEach(b=>b.onclick=()=>{if(!spend(5,b))return;arcPlay(b.dataset.ag,draw)});
+  {const cg=$("capGo");if(cg)cg.onclick=()=>{if((S.tix||0)<30)return;S.tix-=30;dirty=true;capsule(draw)}}
   $("room").querySelectorAll("[data-ap]").forEach(b=>b.onclick=()=>{const z=ARC_PRIZE[+b.dataset.ap];if((S.tix||0)<z.t)return;if(z.acc){S.accOwn=S.accOwn||{};if(S.accOwn[z.k])return;S.accOwn[z.k]=1;S.acc=S.acc||{};S.acc[accOf(z.k).s]=z.k}else z.f();S.tix-=z.t;dirty=true;SFX.rebirth();confetti(140,null,null,["#ff4fd8","#4fe3ff","#ffcc33"]);banner(z.n+(z.acc?" · equipped":""),"g");draw();updMini()})};draw()}
 function arcPlay(k,back){const G=ARC_G[k];room="arcade";
   const end=(score,tix)=>{if(isDay("wed"))tix*=2;S.arcBest=S.arcBest||{};const best=score>(S.arcBest[k]||0);if(best)S.arcBest[k]=score;S.tix=(S.tix||0)+tix;S.stats.arcade=(S.stats.arcade||0)+1;dirty=true;
@@ -5029,7 +5042,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=53,WN=[
+const WN_VER=54,WN=[
+ ["🔮","Capsule machine","Spend 30 arcade tickets at the Arcade for a random accessory. Collect them all; duplicates give tickets back.","2026-10-07T05:35"],
  ["🎓","Pet tricks","Teach your pets Sit, Spin, High five, Dance and Backflip with a memory game, then show them off once an hour for fans.","2026-10-07T05:25"],
  ["🥊","Boxing bag","A rhythm boxing bag at the Gym: punch as the ring meets the gold circle. Combos earn fans, no muscles needed.","2026-10-07T05:20"],
  ["🐾","Lost pets","Townspeople sometimes lose a pet. Search the pink circle on the map, then walk it back to its owner for cash, fans and sometimes a crate.","2026-10-07T05:15"],
