@@ -44,6 +44,22 @@ To save progress, publish the place and turn on **Game Settings → Security →
 
 Mobile players get on-screen buttons.
 
+## Sound
+
+Everything is in `src/client/Audio.lua`. It uses only files that ship inside every Roblox client (`rbxasset://sounds/...`), so no asset can fail to load or be blocked:
+
+| Sound | How it's made |
+|---|---|
+| Engine | Roblox's wind recording pitched down through distortion, EQ and tremolo. Pitch follows RPM, idle is lumpy and smooths out at high revs, and a throttle "growl" layer, rev dips on gear changes and backfire pops on hard upshifts sit on top. Each car class has its own pitch. |
+| Wind / tyres | Wind rush that grows with speed, and tyre hiss while sliding or using the handbrake |
+| Cut-ups | A swoosh plus a chime that climbs with your combo (an extra note for thread-the-needle) |
+| Crashes | A heavy impact plus a body thud, scaled by how hard you hit |
+| Cutscene | 3D engine pass-bys, whip-pan whooshes, everything slowing down in bullet time, backfire, and bass hits under the title |
+| World | Low city night hum, monorail rumble overhead, and the reverb switches to tunnel echo inside the tunnel |
+| UI | Button clicks |
+
+**Your own sounds:** paste Creator Store audio IDs into `Config.Sounds` (`Engine`, `CutUp`, `Crash`, `Music`). Each ID is test-loaded at startup and only replaces the built-in sound if it loads. Otherwise you'll see a warning in Output.
+
 ## Smooth car bodies
 
 Car bodies are generated at runtime as real meshes (`src/shared/BodyMesh.lua` builds the geometry and `src/client/CarSkin.lua` turns it into MeshParts with `EditableMesh`). Each body has curved panels, wheel arches, a sloped hood, a rounded nose and tail, fender humps on super/hypercars, and a tinted glass cabin. Lights, wheels, mirrors, spoilers and the interior stay as detail parts.
@@ -70,7 +86,7 @@ PremiumBuildings, Landmarks, StreetDetail, WetRoads, Water, Monorail, Searchligh
 
 Every number is in `src/shared/Config.lua`: city size, traffic density and speeds, light timings, payouts, combo rules, camera FOV and UI colours. Cars and prices are in `src/shared/Cars.lua`.
 
-**Sounds:** Roblox audio has to be uploaded or chosen from the Creator Store. To add engine, wind, cut-up, crash or music sounds, paste the asset ids into `Config.Sounds`. Any slot left blank is skipped.
+**Sounds:** the game already has a full soundscape built from audio that ships inside the Roblox client, so it always loads (see below). You can still paste your own Creator Store IDs into `Config.Sounds`.
 
 ## Architecture
 

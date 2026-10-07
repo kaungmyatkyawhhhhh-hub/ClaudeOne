@@ -1690,15 +1690,18 @@ Config.Camera = {
 }
 
 ---------------------------------------------------------------------
--- Optional sounds. Paste your own Roblox audio asset ids here
--- (e.g. "rbxassetid://123456") - left blank they are simply skipped.
+-- Sounds
+-- The game ships with a full built-in soundscape (engine, wind, tyres,
+-- cut-ups, crashes, backfires, UI, ambience) made from audio inside the
+-- Roblox client, so it always works. To use your own recordings, paste an
+-- audio asset id from the Creator Store here, e.g. "rbxassetid://1234567".
+-- Each id is test-loaded at startup and only used if it loads.
 ---------------------------------------------------------------------
 Config.Sounds = {
-	Engine = "",
-	Wind = "",
-	CutUp = "",
+	Engine = "", -- a seamless engine loop (pitch follows RPM)
+	CutUp = "", -- reward sting when you cut up a car
 	Crash = "",
-	Music = "",
+	Music = "", -- looping background music
 }
 
 ---------------------------------------------------------------------
@@ -3938,6 +3941,306 @@ return PlayerData
         </Properties>
         <Item class="ModuleScript" referent="19">
           <Properties>
+            <string name="Name">Audio</string>
+            <string name="Source"><![CDATA[--[[
+	Audio (client)
+	All sound in the game. Built entirely from sound files that ship inside
+	every Roblox client (rbxasset://sounds/...), so nothing can fail to load
+	or be blocked by asset permissions:
+
+	  engine    : Roblox's wind recording pitched way down, run through
+	              distortion + EQ + tremolo. Pitch follows RPM, the tremolo gives
+	              a lumpy idle that smooths out as revs rise, and a second
+	              throttle-driven "growl" layer adds bite under load.
+	  wind      : rushing air that grows with speed
+	  tyres     : a high, filtered hiss/squeal while sliding
+	  cut-ups   : swoosh + rising chime with the combo
+	  crashes   : heavy impact + body thud, scaled by severity
+	  backfire  : exhaust pops on high-rpm upshifts
+	  UI        : button clicks
+	  ambience  : low city night hum; reverb switches to "tunnel" inside the tunnel
+
+	Any asset id put in Config.Sounds is checked at startup and replaces the
+	built-in layer only if it actually loads.
+]]
+
+local ContentProvider = game:GetService("ContentProvider")
+local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local CityLayout = require(Shared:WaitForChild("CityLayout"))
+
+local Audio = {}
+
+local BUILTIN = {
+	wind = "rbxasset://sounds/action_falling.ogg",
+	boom = "rbxasset://sounds/impact_explosion_03.mp3",
+	thud = "rbxasset://sounds/action_jump_land.mp3",
+	swoosh = "rbxasset://sounds/action_get_up.mp3",
+	tick = "rbxasset://sounds/volume_slider.ogg",
+}
+
+-- custom ids from Config.Sounds that passed the load check
+local custom: { [string]: string } = {}
+
+local function newSound(id: string, parent: Instance, volume: number, looped: boolean?): Sound
+	local s = Instance.new("Sound")
+	s.SoundId = id
+	s.Volume = volume
+	s.Looped = looped == true
+	s.Parent = parent
+	return s
+end
+
+local function effect(className: string, parent: Instance, props: { [string]: any }): Instance
+	local e = Instance.new(className)
+	for k, v in props do
+		(e :: any)[k] = v
+	end
+	e.Parent = parent
+	return e
+end
+
+---------------------------------------------------------------------
+-- Startup: verify custom ids, set reverb, ambience
+---------------------------------------------------------------------
+function Audio.init()
+	SoundService.AmbientReverb = Enum.ReverbType.City
+	SoundService.DistanceFactor = 3.33 -- 1 stud ~= 0.3 m
+	SoundService.RolloffScale = 0.6
+
+	-- check any user-supplied ids in the background
+	task.spawn(function()
+		for key, id in Config.Sounds do
+			if type(id) == "string" and id ~= "" then
+				local ok = false
+				local probe = Instance.new("Sound")
+				probe.SoundId = id
+				pcall(function()
+					ContentProvider:PreloadAsync({ probe }, function(_, status)
+						ok = status == Enum.AssetFetchStatus.Success
+					end)
+				end)
+				if ok then
+					custom[key] = id
+				else
+					warn(`[CityLegends] Config.Sounds.{key} ({id}) did not load, using the built-in sound`)
+				end
+				probe:Destroy()
+			end
+		end
+		if custom.Music then
+			local music = newSound(custom.Music, SoundService, 0.25, true)
+			music.Name = "Music"
+			music:Play()
+		end
+	end)
+
+	-- night city ambience: distant traffic / wind hum
+	local amb = newSound(BUILTIN.wind, SoundService, 0.06, true)
+	amb.Name = "Ambience"
+	amb.PlaybackSpeed = 0.42
+	effect("EqualizerSoundEffect", amb, { LowGain = 4, MidGain = -6, HighGain = -30 })
+	amb:Play()
+
+	-- tunnel reverb when the camera is inside the tunnel
+	local C = Config.City
+	local tx0 = CityLayout.HighwayStartX + C.TunnelStart
+	local tx1 = tx0 + C.TunnelLength
+	local inTunnel = false
+	RunService.Heartbeat:Connect(function()
+		local cam = workspace.CurrentCamera
+		if not cam then
+			return
+		end
+		local p = cam.CFrame.Position
+		local now = p.X > tx0 and p.X < tx1 and math.abs(p.Z) < C.HighwayWidth / 2 + 2 and p.Y < 22
+		if now ~= inTunnel then
+			inTunnel = now
+			SoundService.AmbientReverb = if now then Enum.ReverbType.StoneCorridor else Enum.ReverbType.City
+		end
+	end)
+end
+
+---------------------------------------------------------------------
+-- One-shots
+---------------------------------------------------------------------
+function Audio.play(key: string, volume: number, speed: number?, parent: Instance?): Sound
+	local id = custom[key] or BUILTIN[key] or key
+	local s = newSound(id, parent or SoundService, volume)
+	s.PlaybackSpeed = speed or 1
+	s:Play()
+	Debris:AddItem(s, 4)
+	return s
+end
+
+function Audio.click()
+	Audio.play("tick", 0.35, 1.6)
+end
+
+-- cut-up reward: swoosh + a chime that climbs with the combo
+function Audio.cutUp(combo: number, label: string?)
+	if custom.CutUp then
+		Audio.play("CutUp", 0.6, 1)
+		return
+	end
+	Audio.play("swoosh", 0.55, 1.35 + math.random() * 0.15)
+	local pitch = 1.4 + math.min(combo, 12) * 0.08
+	Audio.play("tick", 0.5, pitch)
+	task.delay(0.07, function()
+		Audio.play("tick", 0.35, pitch * 1.26)
+	end)
+	if label and string.find(label, "THREAD") then
+		task.delay(0.14, function()
+			Audio.play("tick", 0.35, pitch * 1.5)
+		end)
+	end
+end
+
+function Audio.crash(severity: number)
+	local k = math.clamp(severity / 120, 0.15, 1)
+	if custom.Crash then
+		Audio.play("Crash", 0.4 + 0.6 * k, 1)
+		return
+	end
+	local boom = Audio.play("boom", 0.25 + 0.55 * k, 0.75 + math.random() * 0.1)
+	effect("EqualizerSoundEffect", boom, { LowGain = 6, MidGain = 0, HighGain = -12 })
+	Audio.play("thud", 0.6 + 0.4 * k, 0.8)
+end
+
+function Audio.backfire(parent: Instance?)
+	local s = Audio.play("boom", 0.18, 2.3 + math.random() * 0.4, parent)
+	effect("EqualizerSoundEffect", s, { LowGain = -4, MidGain = 4, HighGain = -6 })
+	if parent then
+		s.RollOffMaxDistance = 300
+	end
+end
+
+-- big low "hit" for titles / cuts
+function Audio.boom(volume: number?)
+	local s = Audio.play("boom", volume or 0.55, 0.55)
+	effect("EqualizerSoundEffect", s, { LowGain = 8, MidGain = -4, HighGain = -20 })
+	effect("ReverbSoundEffect", s, { DecayTime = 2.5, Density = 1, Diffusion = 1, DryLevel = 0, WetLevel = -4 })
+end
+
+function Audio.whoosh(volume: number?, speed: number?)
+	local s = Audio.play("wind", volume or 0.5, speed or 1.8)
+	effect("EqualizerSoundEffect", s, { LowGain = -6, MidGain = 3, HighGain = 0 })
+	task.delay(0.6, function()
+		if s.Parent then
+			s:Stop()
+		end
+	end)
+end
+
+---------------------------------------------------------------------
+-- Engine
+---------------------------------------------------------------------
+export type Engine = {
+	update: (self: Engine, rpm: number, throttle: number, speedFrac: number, slip: number, timeScale: number?) -> (),
+	shift: (self: Engine, up: boolean) -> (),
+	destroy: (self: Engine) -> (),
+}
+
+local CLASS_PITCH = { Sedan = 0.9, SUV = 0.82, Coupe = 1.0, Supercar = 1.08, Hypercar = 1.15 }
+
+--[[
+	parent: a BasePart for positional (3D) sound, or nil for 2D (the local
+	player's own car always plays 2D so it sounds the same in every camera).
+]]
+function Audio.engine(class: string, parent: Instance?): Engine
+	local holder = parent or SoundService
+	local base = CLASS_PITCH[class] or 1
+	local positional = parent ~= nil and parent:IsA("BasePart")
+
+	local rumble = newSound(custom.Engine or BUILTIN.wind, holder, 0, true)
+	rumble.Name = "EngineRumble"
+	local growl = newSound(BUILTIN.wind, holder, 0, true)
+	growl.Name = "EngineGrowl"
+	local wind = newSound(BUILTIN.wind, holder, 0, true)
+	wind.Name = "SpeedWind"
+	local tyres = newSound(BUILTIN.wind, holder, 0, true)
+	tyres.Name = "TyreHiss"
+
+	local usingCustom = custom.Engine ~= nil
+	local tremolo: TremoloSoundEffect? = nil
+	if not usingCustom then
+		effect("DistortionSoundEffect", rumble, { Level = 0.5 })
+		effect("EqualizerSoundEffect", rumble, { LowGain = 9, MidGain = -2, HighGain = -28 })
+		tremolo = effect("TremoloSoundEffect", rumble, { Depth = 0.45, Duty = 0.55, Frequency = 6 }) :: TremoloSoundEffect
+	end
+	effect("DistortionSoundEffect", growl, { Level = 0.72 })
+	effect("EqualizerSoundEffect", growl, { LowGain = -4, MidGain = 7, HighGain = -18 })
+	effect("EqualizerSoundEffect", wind, { LowGain = -2, MidGain = 0, HighGain = -4 })
+	effect("EqualizerSoundEffect", tyres, { LowGain = -30, MidGain = -6, HighGain = 6 })
+
+	for _, s in { rumble, growl, wind, tyres } do
+		if positional then
+			s.RollOffMode = Enum.RollOffMode.InverseTapered
+			s.RollOffMinDistance = 12
+			s.RollOffMaxDistance = 420
+		end
+		s:Play()
+	end
+
+	local dip = 0
+	local smoothRpm = 0.1
+	local self = {} :: any
+
+	function self.update(_, rpm: number, throttle: number, speedFrac: number, slip: number, timeScale: number?)
+		local ts = timeScale or 1
+		smoothRpm += (rpm - smoothRpm) * 0.25
+		local r = math.clamp(smoothRpm - dip, 0.05, 1.1)
+		dip = math.max(0, dip - 0.04)
+		if usingCustom then
+			rumble.PlaybackSpeed = (0.6 + r * 1.0) * ts
+			rumble.Volume = 0.45 + 0.25 * throttle
+		else
+			rumble.PlaybackSpeed = (0.26 + r * 0.6) * base * ts
+			rumble.Volume = 0.5 + 0.2 * throttle
+			if tremolo then
+				-- lumpy idle, smooth at high revs
+				tremolo.Frequency = 5 + r * 18
+				tremolo.Depth = math.clamp(0.55 - r * 0.45, 0.08, 0.55)
+			end
+		end
+		growl.PlaybackSpeed = (0.5 + r * 0.95) * base * ts
+		growl.Volume = (0.08 + 0.42 * throttle) * math.clamp(r * 1.3, 0.2, 1)
+		wind.PlaybackSpeed = (0.85 + speedFrac * 0.6) * ts
+		wind.Volume = 0.55 * speedFrac ^ 1.8
+		local squeal = math.clamp((slip - 8) / 40, 0, 1)
+		tyres.PlaybackSpeed = (2.4 + squeal * 0.4) * ts
+		tyres.Volume = 0.3 * squeal
+	end
+
+	function self.shift(_, up: boolean)
+		if up then
+			dip = 0.22
+			if smoothRpm > 0.8 and math.random() < 0.6 then
+				Audio.backfire(if positional then parent else nil)
+			end
+		end
+	end
+
+	function self.destroy(_)
+		for _, s in { rumble, growl, wind, tyres } do
+			s:Destroy()
+		end
+	end
+
+	return self :: Engine
+end
+
+return Audio
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="20">
+          <Properties>
             <string name="Name">CarSkin</string>
             <string name="Source"><![CDATA[--[[
 	CarSkin (client)
@@ -4106,7 +4409,7 @@ return CarSkin
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="20">
+        <Item class="ModuleScript" referent="21">
           <Properties>
             <string name="Name">Cutscene</string>
             <string name="Source"><![CDATA[--[[
@@ -4147,6 +4450,7 @@ local CityLayout = require(Shared:WaitForChild("CityLayout"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local Cutscene = {}
 
@@ -4318,7 +4622,9 @@ function Cutscene.play()
 	flameLight.Brightness = 0
 	flameLight.Shadows = false
 	flameLight.Parent = exhaustAtt
+	local heroEngine = Audio.engine(heroSpec.Class, heroRoot)
 	local function backfire()
+		Audio.backfire(heroRoot)
 		flames:Emit(26)
 		flameLight.Brightness = 6
 		task.delay(0.12, function()
@@ -4518,6 +4824,9 @@ function Cutscene.play()
 				m.Transform = CFrame.Angles(wheelSpin, 0, 0)
 			end
 		end
+		-- engine: pinned near the top of 6th, pitch follows the story clock so
+		-- bullet time drops the whole soundscape down
+		heroEngine:update(0.82 + 0.08 * math.sin(t * 1.3), 1, 0.92, math.abs(heroZVel) * 0.6, ts)
 		local rot = -steer * maxRot
 		if steerMotor then
 			steerMotor.Transform = CFrame.Angles(0, 0, rot)
@@ -4582,7 +4891,8 @@ function Cutscene.play()
 			local flatDir = Vector3.new(heroDir.X, 0, heroDir.Z).Unit
 			local side = flatDir:Cross(Vector3.yAxis)
 			local offset = (flatDir * math.cos(a) + side * math.sin(a)) * 13.5
-			pos = heroCenter + offset + Vector3.new(0, 1.6 + math.sin(k * math.pi) * 1.4, 0)
+			-- high enough to clear the roofs of the cars being threaded (SUVs are ~6 tall)
+			pos = heroCenter + offset + Vector3.new(0, 4.8 + math.sin(k * math.pi) * 1.6, 0)
 			look = heroCenter + Vector3.new(0, 0.3, 0)
 			fov = 46
 		elseif shot == 6 then
@@ -4614,6 +4924,7 @@ function Cutscene.play()
 			if not titleShownAt and heroX > SIGN_POS.X - 40 then
 				titleShownAt = t
 				UI.whiteFlash(0.35, 0.6)
+				Audio.boom(0.75)
 				UI.cinematicTitle("CITY LEGENDS", "CUT UP  ·  GET PAID  ·  BECOME A LEGEND")
 			end
 		end
@@ -4624,9 +4935,11 @@ function Cutscene.play()
 			-- cut events
 			if shot == 2 or shot == 3 or shot == 7 or shot == 8 then
 				whip.Size = 22
+				Audio.whoosh(0.35, 2.1)
 			end
 			if shot == 5 then
 				UI.whiteFlash(0.25, 0.35)
+				Audio.boom(0.35)
 			elseif shot == 6 then
 				UI.whiteFlash(0.55, 0.5)
 				backfire()
@@ -4687,6 +5000,13 @@ function Cutscene.play()
 			UI.hideCaption()
 		end
 
+		-- the car screaming past the crane camera and the tunnel camera
+		if shot == 2 and heroX > 470 and once("passA") then
+			Audio.whoosh(0.9, 1.5)
+		end
+		if shot == 8 and heroX > TUNNEL_MID - 190 and once("passB") then
+			Audio.whoosh(0.8, 1.4)
+		end
 		if titleShownAt and t - titleShownAt > 4 then
 			finished = true
 		end
@@ -4712,6 +5032,7 @@ function Cutscene.play()
 	UI.hideCaption()
 	UI.letterbox(false)
 	UI.vignette(false)
+	heroEngine:destroy()
 	dof:Destroy()
 	grade:Destroy()
 	whip:Destroy()
@@ -4722,7 +5043,7 @@ return Cutscene
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="22">
           <Properties>
             <string name="Name">Driving</string>
             <string name="Source"><![CDATA[--[[
@@ -4745,7 +5066,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local SoundService = game:GetService("SoundService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
@@ -4755,6 +5075,7 @@ local CityLayout = require(Shared:WaitForChild("CityLayout"))
 
 local Traffic = require(script.Parent:WaitForChild("Traffic"))
 local UI = require(script.Parent:WaitForChild("UI"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local camera = workspace.CurrentCamera
 
@@ -4807,7 +5128,9 @@ type State = {
 	gear: string,
 	rpm: number,
 	cabinLight: PointLight?,
-	sounds: { [string]: Sound },
+	engine: Audio.Engine,
+	throttle: number,
+	slip: number,
 }
 
 local state: State? = nil
@@ -4879,21 +5202,6 @@ local function forwardFromYaw(yaw: number): Vector3
 	return Vector3.new(-math.sin(yaw), 0, -math.cos(yaw))
 end
 
-local function makeSound(id: string, parent: Instance, looped: boolean, volume: number): Sound?
-	if id == "" then
-		return nil
-	end
-	local s = Instance.new("Sound")
-	s.SoundId = id
-	s.Looped = looped
-	s.Volume = volume
-	s.Parent = parent
-	if looped then
-		s:Play()
-	end
-	return s
-end
-
 local function buildGauges(model: Model): (TextLabel?, TextLabel?, Frame?)
 	local cluster = model:FindFirstChild("Cluster", true)
 	local gui = cluster and cluster:FindFirstChild("Gauges")
@@ -4957,9 +5265,7 @@ function Driving.detach()
 	for _, c in s.connections do
 		c:Disconnect()
 	end
-	for _, snd in s.sounds do
-		snd:Destroy()
-	end
+	s.engine:destroy()
 	if s.cabinLight then
 		s.cabinLight:Destroy()
 	end
@@ -5063,15 +5369,6 @@ function Driving.attach(model: Model)
 
 	local gSpeed, gGear, gBar = buildGauges(model)
 
-	local sounds = {}
-	local engine = makeSound(Config.Sounds.Engine, root, true, 0.6)
-	if engine then
-		sounds.Engine = engine
-	end
-	local wind = makeSound(Config.Sounds.Wind, root, true, 0)
-	if wind then
-		sounds.Wind = wind
-	end
 
 	local s: State = {
 		model = model,
@@ -5116,7 +5413,9 @@ function Driving.attach(model: Model)
 		gear = "N",
 		rpm = 0,
 		cabinLight = cabinLight,
-		sounds = sounds,
+		engine = Audio.engine(spec.Class, nil),
+		throttle = 0,
+		slip = 0,
 	}
 	state = s
 	camera.CameraType = Enum.CameraType.Scriptable
@@ -5154,13 +5453,7 @@ local function reportCrash(s: State, severity: number)
 	UI.flash(Config.Theme.Danger)
 	UI.setCombo(0)
 	remote("Crash"):FireServer()
-	if Config.Sounds.Crash ~= "" then
-		local snd = makeSound(Config.Sounds.Crash, s.root, false, 0.8)
-		if snd then
-			snd:Play()
-			game:GetService("Debris"):AddItem(snd, 3)
-		end
-	end
+	Audio.crash(severity)
 end
 
 local function detectCuts(s: State, fwd: Vector3, speedMph: number)
@@ -5205,6 +5498,7 @@ function Driving.step(dt: number)
 	dt = math.min(dt, 1 / 20)
 	local root = s.root
 	local throttle, brake, steerIn, handbrake = readInput()
+	s.throttle += (throttle - s.throttle) * math.min(1, dt * 10)
 
 	-- ground check
 	rayParams.FilterDescendantsInstances = { s.model, workspace:FindFirstChild("Traffic") :: Instance }
@@ -5277,6 +5571,7 @@ function Driving.step(dt: number)
 		-- lateral grip (low with handbrake -> drift)
 		local grip = if handbrake then 1.4 else 7 + 7 * handling
 		latSpeed *= math.exp(-grip * dt)
+		s.slip = math.abs(latSpeed) + (if handbrake and math.abs(fwdSpeed) > 20 then 25 else 0)
 
 		local newFwd = forwardFromYaw(s.yaw)
 		local newRight = Vector3.new(math.cos(s.yaw), 0, -math.sin(s.yaw))
@@ -5300,6 +5595,7 @@ function Driving.step(dt: number)
 	-- gears / rpm (cosmetic)
 	local fs = s.vel:Dot(forwardFromYaw(s.yaw))
 	local frac = math.clamp(math.abs(fs) / s.topSpeed, 0, 1)
+	local prevGear = s.gear
 	if fs < -1 then
 		s.gear = "R"
 		s.rpm = math.clamp(-fs / (s.topSpeed * 0.22), 0, 1)
@@ -5313,6 +5609,12 @@ function Driving.step(dt: number)
 		local lo = ((g - 1) / gears) ^ (1 / 0.8)
 		local hi = (g / gears) ^ (1 / 0.8)
 		s.rpm = math.clamp((frac - lo) / (hi - lo), 0, 1) * 0.75 + 0.2
+	end
+
+	-- shift sounds (dip in revs, pops on hard upshifts)
+	local pg, ng = tonumber(prevGear), tonumber(s.gear)
+	if pg and ng and ng ~= pg then
+		s.engine:shift(ng > pg)
 	end
 
 	local mph = Config.spsToMph(math.abs(fs))
@@ -5371,13 +5673,8 @@ function Driving.render(dt: number)
 	end
 	UI.setSpeed(mph, speedFrac, s.gear, s.rpm)
 
-	-- sounds
-	if s.sounds.Engine then
-		s.sounds.Engine.PlaybackSpeed = 0.6 + s.rpm * 0.9
-	end
-	if s.sounds.Wind then
-		s.sounds.Wind.Volume = speedFrac * 0.8
-	end
+	-- engine / wind / tyre audio
+	s.engine:update(s.rpm, s.throttle, speedFrac, s.slip)
 
 	-- camera
 	local C = Config.Camera
@@ -5479,13 +5776,7 @@ function Driving.init()
 		if s then
 			s.shake = math.max(s.shake, 0.15)
 		end
-		if Config.Sounds.CutUp ~= "" then
-			local snd = makeSound(Config.Sounds.CutUp, SoundService, false, 0.6)
-			if snd then
-				snd:Play()
-				game:GetService("Debris"):AddItem(snd, 2)
-			end
-		end
+		Audio.cutUp(combo, text)
 	end)
 end
 
@@ -5493,7 +5784,7 @@ return Driving
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="22">
+        <Item class="LocalScript" referent="23">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--[[
@@ -5515,11 +5806,13 @@ local Driving = require(script.Parent:WaitForChild("Driving"))
 local Cutscene = require(script.Parent:WaitForChild("Cutscene"))
 local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 UI.init()
+Audio.init()
 UI.showLoading("Building the city...")
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -5743,7 +6036,7 @@ showMenu()
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="23">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">Traffic</string>
             <string name="Source"><![CDATA[--[[
@@ -6247,7 +6540,7 @@ return Traffic
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="24">
+        <Item class="ModuleScript" referent="25">
           <Properties>
             <string name="Name">UI</string>
             <string name="Source"><![CDATA[--[[
@@ -6270,6 +6563,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Cars = require(Shared:WaitForChild("Cars"))
 local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local Theme = Config.Theme
 local player = Players.LocalPlayer
@@ -6362,6 +6656,7 @@ local function button(text: string, color: Color3, props: { [string]: any }?): T
 		end
 	end
 	local b: TextButton = new("TextButton", base, { corner(8), stroke(color, 1.5, 0.2) })
+	b.Activated:Connect(Audio.click)
 	b.MouseEnter:Connect(function()
 		tween(b, 0.12, { BackgroundColor3 = color:Lerp(Theme.PanelLight, 0.55) })
 	end)
@@ -7102,6 +7397,7 @@ function UI.openGarage(data: GarageData, callbacks: GarageCallbacks)
 					Parent = row,
 				})
 				row.Activated:Connect(function()
+					Audio.click()
 					showDetail(spec.Id)
 				end)
 				rows[spec.Id] = row
@@ -7140,6 +7436,7 @@ function UI.openGarage(data: GarageData, callbacks: GarageCallbacks)
 			Parent = tabs,
 		}, { corner(6), new("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }) })
 		b.Activated:Connect(function()
+			Audio.click()
 			setTab(n)
 		end)
 		tabButtons[n] = b
@@ -7332,7 +7629,7 @@ return UI
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="25">
+        <Item class="ModuleScript" referent="26">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--[[
@@ -7494,6 +7791,24 @@ local function buildTrain(folder: Instance): { TrainCar }
 		-- straddle skirt wrapping the beam
 		add(list, Vector3.new(5.2, 2.2, L - 3), CFrame.new(0, 1.0, 0), Color3.fromRGB(30, 32, 36), Enum.Material.Metal)
 		local inside = add(list, Vector3.new(0.5, 0.5, 0.5), CFrame.new(0, 4.5, 0), Color3.new(1, 1, 1), Enum.Material.SmoothPlastic, 1)
+		if k == 2 then
+			-- low electric rumble you hear as the train passes overhead
+			local hum = Instance.new("Sound")
+			hum.SoundId = "rbxasset://sounds/action_falling.ogg"
+			hum.Looped = true
+			hum.Volume = 0.6
+			hum.PlaybackSpeed = 0.5
+			hum.RollOffMode = Enum.RollOffMode.InverseTapered
+			hum.RollOffMinDistance = 20
+			hum.RollOffMaxDistance = 260
+			local eq = Instance.new("EqualizerSoundEffect")
+			eq.LowGain = 6
+			eq.MidGain = -4
+			eq.HighGain = -24
+			eq.Parent = hum
+			hum.Parent = inside
+			hum:Play()
+		end
 		local glow = Instance.new("PointLight")
 		glow.Color = Color3.fromRGB(255, 220, 180)
 		glow.Range = 16
@@ -7645,7 +7960,7 @@ return WorldFx
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="26">
+  <Item class="Workspace" referent="27">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

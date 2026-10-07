@@ -36,6 +36,7 @@ local CityLayout = require(Shared:WaitForChild("CityLayout"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local Cutscene = {}
 
@@ -207,7 +208,9 @@ function Cutscene.play()
 	flameLight.Brightness = 0
 	flameLight.Shadows = false
 	flameLight.Parent = exhaustAtt
+	local heroEngine = Audio.engine(heroSpec.Class, heroRoot)
 	local function backfire()
+		Audio.backfire(heroRoot)
 		flames:Emit(26)
 		flameLight.Brightness = 6
 		task.delay(0.12, function()
@@ -407,6 +410,9 @@ function Cutscene.play()
 				m.Transform = CFrame.Angles(wheelSpin, 0, 0)
 			end
 		end
+		-- engine: pinned near the top of 6th, pitch follows the story clock so
+		-- bullet time drops the whole soundscape down
+		heroEngine:update(0.82 + 0.08 * math.sin(t * 1.3), 1, 0.92, math.abs(heroZVel) * 0.6, ts)
 		local rot = -steer * maxRot
 		if steerMotor then
 			steerMotor.Transform = CFrame.Angles(0, 0, rot)
@@ -471,7 +477,8 @@ function Cutscene.play()
 			local flatDir = Vector3.new(heroDir.X, 0, heroDir.Z).Unit
 			local side = flatDir:Cross(Vector3.yAxis)
 			local offset = (flatDir * math.cos(a) + side * math.sin(a)) * 13.5
-			pos = heroCenter + offset + Vector3.new(0, 1.6 + math.sin(k * math.pi) * 1.4, 0)
+			-- high enough to clear the roofs of the cars being threaded (SUVs are ~6 tall)
+			pos = heroCenter + offset + Vector3.new(0, 4.8 + math.sin(k * math.pi) * 1.6, 0)
 			look = heroCenter + Vector3.new(0, 0.3, 0)
 			fov = 46
 		elseif shot == 6 then
@@ -503,6 +510,7 @@ function Cutscene.play()
 			if not titleShownAt and heroX > SIGN_POS.X - 40 then
 				titleShownAt = t
 				UI.whiteFlash(0.35, 0.6)
+				Audio.boom(0.75)
 				UI.cinematicTitle("CITY LEGENDS", "CUT UP  ·  GET PAID  ·  BECOME A LEGEND")
 			end
 		end
@@ -513,9 +521,11 @@ function Cutscene.play()
 			-- cut events
 			if shot == 2 or shot == 3 or shot == 7 or shot == 8 then
 				whip.Size = 22
+				Audio.whoosh(0.35, 2.1)
 			end
 			if shot == 5 then
 				UI.whiteFlash(0.25, 0.35)
+				Audio.boom(0.35)
 			elseif shot == 6 then
 				UI.whiteFlash(0.55, 0.5)
 				backfire()
@@ -576,6 +586,13 @@ function Cutscene.play()
 			UI.hideCaption()
 		end
 
+		-- the car screaming past the crane camera and the tunnel camera
+		if shot == 2 and heroX > 470 and once("passA") then
+			Audio.whoosh(0.9, 1.5)
+		end
+		if shot == 8 and heroX > TUNNEL_MID - 190 and once("passB") then
+			Audio.whoosh(0.8, 1.4)
+		end
 		if titleShownAt and t - titleShownAt > 4 then
 			finished = true
 		end
@@ -601,6 +618,7 @@ function Cutscene.play()
 	UI.hideCaption()
 	UI.letterbox(false)
 	UI.vignette(false)
+	heroEngine:destroy()
 	dof:Destroy()
 	grade:Destroy()
 	whip:Destroy()

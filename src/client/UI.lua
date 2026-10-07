@@ -18,6 +18,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Cars = require(Shared:WaitForChild("Cars"))
 local CarBuilder = require(Shared:WaitForChild("CarBuilder"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local Theme = Config.Theme
 local player = Players.LocalPlayer
@@ -110,6 +111,7 @@ local function button(text: string, color: Color3, props: { [string]: any }?): T
 		end
 	end
 	local b: TextButton = new("TextButton", base, { corner(8), stroke(color, 1.5, 0.2) })
+	b.Activated:Connect(Audio.click)
 	b.MouseEnter:Connect(function()
 		tween(b, 0.12, { BackgroundColor3 = color:Lerp(Theme.PanelLight, 0.55) })
 	end)
@@ -850,6 +852,7 @@ function UI.openGarage(data: GarageData, callbacks: GarageCallbacks)
 					Parent = row,
 				})
 				row.Activated:Connect(function()
+					Audio.click()
 					showDetail(spec.Id)
 				end)
 				rows[spec.Id] = row
@@ -888,6 +891,7 @@ function UI.openGarage(data: GarageData, callbacks: GarageCallbacks)
 			Parent = tabs,
 		}, { corner(6), new("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }) })
 		b.Activated:Connect(function()
+			Audio.click()
 			setTab(n)
 		end)
 		tabButtons[n] = b

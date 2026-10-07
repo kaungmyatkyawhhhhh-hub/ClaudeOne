@@ -17,11 +17,13 @@ local Driving = require(script.Parent:WaitForChild("Driving"))
 local Cutscene = require(script.Parent:WaitForChild("Cutscene"))
 local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 UI.init()
+Audio.init()
 UI.showLoading("Building the city...")
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")

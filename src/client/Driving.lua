@@ -18,7 +18,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local SoundService = game:GetService("SoundService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
@@ -28,6 +27,7 @@ local CityLayout = require(Shared:WaitForChild("CityLayout"))
 
 local Traffic = require(script.Parent:WaitForChild("Traffic"))
 local UI = require(script.Parent:WaitForChild("UI"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local camera = workspace.CurrentCamera
 
@@ -80,7 +80,9 @@ type State = {
 	gear: string,
 	rpm: number,
 	cabinLight: PointLight?,
-	sounds: { [string]: Sound },
+	engine: Audio.Engine,
+	throttle: number,
+	slip: number,
 }
 
 local state: State? = nil
@@ -152,21 +154,6 @@ local function forwardFromYaw(yaw: number): Vector3
 	return Vector3.new(-math.sin(yaw), 0, -math.cos(yaw))
 end
 
-local function makeSound(id: string, parent: Instance, looped: boolean, volume: number): Sound?
-	if id == "" then
-		return nil
-	end
-	local s = Instance.new("Sound")
-	s.SoundId = id
-	s.Looped = looped
-	s.Volume = volume
-	s.Parent = parent
-	if looped then
-		s:Play()
-	end
-	return s
-end
-
 local function buildGauges(model: Model): (TextLabel?, TextLabel?, Frame?)
 	local cluster = model:FindFirstChild("Cluster", true)
 	local gui = cluster and cluster:FindFirstChild("Gauges")
@@ -230,9 +217,7 @@ function Driving.detach()
 	for _, c in s.connections do
 		c:Disconnect()
 	end
-	for _, snd in s.sounds do
-		snd:Destroy()
-	end
+	s.engine:destroy()
 	if s.cabinLight then
 		s.cabinLight:Destroy()
 	end
@@ -336,15 +321,6 @@ function Driving.attach(model: Model)
 
 	local gSpeed, gGear, gBar = buildGauges(model)
 
-	local sounds = {}
-	local engine = makeSound(Config.Sounds.Engine, root, true, 0.6)
-	if engine then
-		sounds.Engine = engine
-	end
-	local wind = makeSound(Config.Sounds.Wind, root, true, 0)
-	if wind then
-		sounds.Wind = wind
-	end
 
 	local s: State = {
 		model = model,
@@ -389,7 +365,9 @@ function Driving.attach(model: Model)
 		gear = "N",
 		rpm = 0,
 		cabinLight = cabinLight,
-		sounds = sounds,
+		engine = Audio.engine(spec.Class, nil),
+		throttle = 0,
+		slip = 0,
 	}
 	state = s
 	camera.CameraType = Enum.CameraType.Scriptable
@@ -427,13 +405,7 @@ local function reportCrash(s: State, severity: number)
 	UI.flash(Config.Theme.Danger)
 	UI.setCombo(0)
 	remote("Crash"):FireServer()
-	if Config.Sounds.Crash ~= "" then
-		local snd = makeSound(Config.Sounds.Crash, s.root, false, 0.8)
-		if snd then
-			snd:Play()
-			game:GetService("Debris"):AddItem(snd, 3)
-		end
-	end
+	Audio.crash(severity)
 end
 
 local function detectCuts(s: State, fwd: Vector3, speedMph: number)
@@ -478,6 +450,7 @@ function Driving.step(dt: number)
 	dt = math.min(dt, 1 / 20)
 	local root = s.root
 	local throttle, brake, steerIn, handbrake = readInput()
+	s.throttle += (throttle - s.throttle) * math.min(1, dt * 10)
 
 	-- ground check
 	rayParams.FilterDescendantsInstances = { s.model, workspace:FindFirstChild("Traffic") :: Instance }
@@ -550,6 +523,7 @@ function Driving.step(dt: number)
 		-- lateral grip (low with handbrake -> drift)
 		local grip = if handbrake then 1.4 else 7 + 7 * handling
 		latSpeed *= math.exp(-grip * dt)
+		s.slip = math.abs(latSpeed) + (if handbrake and math.abs(fwdSpeed) > 20 then 25 else 0)
 
 		local newFwd = forwardFromYaw(s.yaw)
 		local newRight = Vector3.new(math.cos(s.yaw), 0, -math.sin(s.yaw))
@@ -573,6 +547,7 @@ function Driving.step(dt: number)
 	-- gears / rpm (cosmetic)
 	local fs = s.vel:Dot(forwardFromYaw(s.yaw))
 	local frac = math.clamp(math.abs(fs) / s.topSpeed, 0, 1)
+	local prevGear = s.gear
 	if fs < -1 then
 		s.gear = "R"
 		s.rpm = math.clamp(-fs / (s.topSpeed * 0.22), 0, 1)
@@ -586,6 +561,12 @@ function Driving.step(dt: number)
 		local lo = ((g - 1) / gears) ^ (1 / 0.8)
 		local hi = (g / gears) ^ (1 / 0.8)
 		s.rpm = math.clamp((frac - lo) / (hi - lo), 0, 1) * 0.75 + 0.2
+	end
+
+	-- shift sounds (dip in revs, pops on hard upshifts)
+	local pg, ng = tonumber(prevGear), tonumber(s.gear)
+	if pg and ng and ng ~= pg then
+		s.engine:shift(ng > pg)
 	end
 
 	local mph = Config.spsToMph(math.abs(fs))
@@ -644,13 +625,8 @@ function Driving.render(dt: number)
 	end
 	UI.setSpeed(mph, speedFrac, s.gear, s.rpm)
 
-	-- sounds
-	if s.sounds.Engine then
-		s.sounds.Engine.PlaybackSpeed = 0.6 + s.rpm * 0.9
-	end
-	if s.sounds.Wind then
-		s.sounds.Wind.Volume = speedFrac * 0.8
-	end
+	-- engine / wind / tyre audio
+	s.engine:update(s.rpm, s.throttle, speedFrac, s.slip)
 
 	-- camera
 	local C = Config.Camera
@@ -752,13 +728,7 @@ function Driving.init()
 		if s then
 			s.shake = math.max(s.shake, 0.15)
 		end
-		if Config.Sounds.CutUp ~= "" then
-			local snd = makeSound(Config.Sounds.CutUp, SoundService, false, 0.6)
-			if snd then
-				snd:Play()
-				game:GetService("Debris"):AddItem(snd, 2)
-			end
-		end
+		Audio.cutUp(combo, text)
 	end)
 end
 

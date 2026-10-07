@@ -157,6 +157,24 @@ local function buildTrain(folder: Instance): { TrainCar }
 		-- straddle skirt wrapping the beam
 		add(list, Vector3.new(5.2, 2.2, L - 3), CFrame.new(0, 1.0, 0), Color3.fromRGB(30, 32, 36), Enum.Material.Metal)
 		local inside = add(list, Vector3.new(0.5, 0.5, 0.5), CFrame.new(0, 4.5, 0), Color3.new(1, 1, 1), Enum.Material.SmoothPlastic, 1)
+		if k == 2 then
+			-- low electric rumble you hear as the train passes overhead
+			local hum = Instance.new("Sound")
+			hum.SoundId = "rbxasset://sounds/action_falling.ogg"
+			hum.Looped = true
+			hum.Volume = 0.6
+			hum.PlaybackSpeed = 0.5
+			hum.RollOffMode = Enum.RollOffMode.InverseTapered
+			hum.RollOffMinDistance = 20
+			hum.RollOffMaxDistance = 260
+			local eq = Instance.new("EqualizerSoundEffect")
+			eq.LowGain = 6
+			eq.MidGain = -4
+			eq.HighGain = -24
+			eq.Parent = hum
+			hum.Parent = inside
+			hum:Play()
+		end
 		local glow = Instance.new("PointLight")
 		glow.Color = Color3.fromRGB(255, 220, 180)
 		glow.Range = 16

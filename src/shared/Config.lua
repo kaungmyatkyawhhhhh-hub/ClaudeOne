@@ -123,15 +123,18 @@ Config.Camera = {
 }
 
 ---------------------------------------------------------------------
--- Optional sounds. Paste your own Roblox audio asset ids here
--- (e.g. "rbxassetid://123456") - left blank they are simply skipped.
+-- Sounds
+-- The game ships with a full built-in soundscape (engine, wind, tyres,
+-- cut-ups, crashes, backfires, UI, ambience) made from audio inside the
+-- Roblox client, so it always works. To use your own recordings, paste an
+-- audio asset id from the Creator Store here, e.g. "rbxassetid://1234567".
+-- Each id is test-loaded at startup and only used if it loads.
 ---------------------------------------------------------------------
 Config.Sounds = {
-	Engine = "",
-	Wind = "",
-	CutUp = "",
+	Engine = "", -- a seamless engine loop (pitch follows RPM)
+	CutUp = "", -- reward sting when you cut up a car
 	Crash = "",
-	Music = "",
+	Music = "", -- looping background music
 }
 
 ---------------------------------------------------------------------
