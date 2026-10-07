@@ -44,6 +44,14 @@ To save progress, publish the place and turn on **Game Settings → Security →
 
 Mobile players get on-screen buttons.
 
+## Graphics quality
+
+The full city is about 30k parts and 600 lights. That is fine on PC, but heavy for phones. Turn features off in `Config.Graphics`:
+
+```lua
+PremiumBuildings, Landmarks, StreetDetail, WetRoads, Water, Monorail, Searchlights
+```
+
 ## Tuning
 
 Every number is in `src/shared/Config.lua`: city size, traffic density and speeds, light timings, payouts, combo rules, camera FOV and UI colours. Cars and prices are in `src/shared/Cars.lua`.
@@ -54,8 +62,8 @@ Every number is in `src/shared/Config.lua`: city size, traffic density and speed
 
 ```
 src/shared   Config, Cars, CarBuilder (procedural cars + IK), CityLayout (grid, lane graph, light phases)
-src/server   Main.server (spawning, economy, remotes), CityBuilder, PlayerData (DataStore)
-src/client   Main.client (flow), Driving, Traffic, Cutscene, UI
+src/server   Main.server (spawning, economy, remotes), CityBuilder, CityPremium, PlayerData (DataStore)
+src/client   Main.client (flow), Driving, Traffic, Cutscene, UI, WorldFx (lights, searchlights, billboards, monorail)
 ```
 
 - **Player car:** the client owns the physics. It drives a `LinearVelocity` set to plane mode, so gravity still applies, and an `AlignOrientation`. A crash is detected when the physics engine refuses the velocity the car asked for.

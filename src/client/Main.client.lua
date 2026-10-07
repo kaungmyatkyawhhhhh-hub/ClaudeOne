@@ -3,20 +3,19 @@
 	loading -> intro cutscene -> main menu (orbiting city camera) -> garage -> drive
 ]]
 
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local CityLayout = require(Shared:WaitForChild("CityLayout"))
 local Config = require(Shared:WaitForChild("Config"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
 local Traffic = require(script.Parent:WaitForChild("Traffic"))
 local Driving = require(script.Parent:WaitForChild("Driving"))
 local Cutscene = require(script.Parent:WaitForChild("Cutscene"))
+local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -40,47 +39,9 @@ UI.showLoading("Starting engines...")
 task.wait(1) -- let the world finish replicating
 
 ---------------------------------------------------------------------
--- World effects: traffic lamps + blinking aviation lights
+-- World effects: lights, searchlights, billboards, monorail
 ---------------------------------------------------------------------
-local LAMP_ON = {
-	R = Color3.fromRGB(255, 35, 35),
-	Y = Color3.fromRGB(255, 176, 0),
-	G = Color3.fromRGB(40, 255, 120),
-}
-local LAMP_OFF = Color3.fromRGB(26, 26, 28)
-local lampCache: { [Instance]: boolean } = {}
-
-task.spawn(function()
-	local blinkOn = true
-	local blinkTimer = 0
-	while true do
-		local now = workspace:GetServerTimeNow()
-		for _, lamp in CollectionService:GetTagged("TrafficLamp") do
-			if lamp:IsA("BasePart") then
-				local i = lamp:GetAttribute("I") :: number
-				local j = lamp:GetAttribute("J") :: number
-				local axis = lamp:GetAttribute("Axis") :: string
-				local mine = lamp:GetAttribute("State") :: string
-				local on = CityLayout.lightState(i, j, axis, now) == mine
-				if lampCache[lamp] ~= on then
-					lampCache[lamp] = on
-					lamp.Color = if on then LAMP_ON[mine] else LAMP_OFF
-				end
-			end
-		end
-		blinkTimer += 1
-		if blinkTimer >= 4 then
-			blinkTimer = 0
-			blinkOn = not blinkOn
-			for _, b in CollectionService:GetTagged("Blink") do
-				if b:IsA("BasePart") then
-					b.Transparency = if blinkOn then 0 else 0.9
-				end
-			end
-		end
-		task.wait(0.2)
-	end
-end)
+WorldFx.start()
 
 ---------------------------------------------------------------------
 -- Data

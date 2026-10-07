@@ -50,6 +50,49 @@ CityLayout.HighwayJ = math.floor(N / 2)
 CityLayout.HighwayStartX = CityLayout.roadCoord(N) + HALF_ROAD
 
 ---------------------------------------------------------------------
+-- Monorail loop (rounded square around the city, shared by server + client)
+---------------------------------------------------------------------
+local function monorailDims(): (number, number, number)
+	local R = C.HalfExtent + HALF_ROAD + Config.Monorail.Offset
+	local rc = Config.Monorail.CornerRadius
+	local side = 2 * (R - rc)
+	return R, rc, side
+end
+
+function CityLayout.monorailLength(): number
+	local _, rc, side = monorailDims()
+	return 4 * side + 2 * math.pi * rc
+end
+
+-- Position (at track height) and travel direction at distance s along the loop
+function CityLayout.monorailSample(s: number): (Vector3, Vector3)
+	local R, rc, side = monorailDims()
+	local arc = math.pi / 2 * rc
+	local h = Config.Monorail.Height
+	local c = R - rc
+	s = s % CityLayout.monorailLength()
+	-- side starts / directions, then the corner after each side
+	local sides = {
+		{ Vector3.new(R, h, -c), Vector3.new(0, 0, 1), Vector3.new(c, h, c), 0 },
+		{ Vector3.new(c, h, R), Vector3.new(-1, 0, 0), Vector3.new(-c, h, c), math.pi / 2 },
+		{ Vector3.new(-R, h, c), Vector3.new(0, 0, -1), Vector3.new(-c, h, -c), math.pi },
+		{ Vector3.new(-c, h, -R), Vector3.new(1, 0, 0), Vector3.new(c, h, -c), math.pi * 1.5 },
+	}
+	for _, sd in sides do
+		if s <= side then
+			return sd[1] + sd[2] * s, sd[2]
+		end
+		s -= side
+		if s <= arc then
+			local a = sd[4] + s / rc
+			return sd[3] + Vector3.new(math.cos(a), 0, math.sin(a)) * rc, Vector3.new(-math.sin(a), 0, math.cos(a))
+		end
+		s -= arc
+	end
+	return sides[1][1], sides[1][2]
+end
+
+---------------------------------------------------------------------
 -- Traffic lights
 ---------------------------------------------------------------------
 -- axis: "X" for traffic moving along X (east/west), "Z" otherwise

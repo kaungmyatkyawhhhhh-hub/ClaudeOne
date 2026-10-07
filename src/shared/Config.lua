@@ -41,6 +41,28 @@ Config.City.HalfExtent = Config.City.Blocks * Config.City.BlockSize / 2
 Config.City.HighwayWidth = Config.City.LaneWidth * Config.City.HighwayLanesPerSide * 2
 
 ---------------------------------------------------------------------
+-- Graphics / city detail. Turn things off here for low-end devices.
+---------------------------------------------------------------------
+Config.Graphics = {
+	PremiumBuildings = true, -- setback towers, fins, lit crowns, lobbies
+	Landmarks = true, -- Legends Tower, Twist Tower, Needle
+	StreetDetail = true, -- trees, benches, bus stops, hydrants, steam vents
+	WetRoads = true, -- glossy rain-soaked asphalt
+	Water = true, -- harbour around the city (terrain water) + clouds
+	Monorail = true, -- elevated train looping the skyline
+	Searchlights = true, -- sweeping sky beams on the landmarks
+}
+
+Config.Monorail = {
+	Offset = 9, -- distance outside the perimeter road edge
+	Height = 48,
+	CornerRadius = 40,
+	Speed = 95,
+	Cars = 4,
+	CarLength = 26,
+}
+
+---------------------------------------------------------------------
 -- Traffic lights (seconds)
 ---------------------------------------------------------------------
 Config.Lights = {
