@@ -30,6 +30,7 @@ return {
 	BigRep = { ids = { 9116750726, 9116751108 }, volume = 0.35, pitch = 0.03, basePitch = 0.8, group = "Gameplay", maxLength = 1.0 }, -- PLACEHOLDER (Metal Plate Impact, deep): a BIG REP
 	PersonalRecord = { ids = { 9113421788 }, volume = 0.2, pitch = 0, basePitch = 1.2, group = "Gameplay", maxLength = 1.8 },       -- PLACEHOLDER (Bell Rings): NEW PR banner
 	Grew = { ids = { 9119388384 }, volume = 0.35, pitch = 0.03, basePitch = 1.15, group = "Gameplay", maxLength = 1.2 },            -- PLACEHOLDER (Distant Metal Booms): "you grew" moment
+	CrowdOoh = { ids = { 9119388384 }, volume = 0.3, pitch = 0.04, basePitch = 1.3, group = "Gameplay", range = { 16, 80 }, maxLength = 1.4 }, -- PLACEHOLDER (Distant Metal Booms, higher): the crowd "ooh" when a pose hits; owner picks the real id
 
 	-- Interface (2D, quieter than gameplay)
 	Click = { ids = { 9114212934 }, volume = 0.1, pitch = 0.05, group = "UI" },                  -- Button click: every button press

@@ -234,3 +234,10 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - `SkateClient` rides the board: momentum (push up to the top speed, coast, brake by holding back), carving (turn rate falls with speed), hills speed you up/slow you down, walls stop you, Jump = ollie. Input = Humanoid.MoveDirection (works with keys, phone thumbstick, gamepad; the new Roblox PlayerModule has no GetControls), movement = a LinearVelocity on the root with WalkSpeed 0.
 - Pose for every skater: side-on regular stance, bent knees (deeper at speed), feet flat on the deck, back-foot push cycle, toe/heel lean in carves, tuck + arms up in the air; the board tilts with carves and pops on ollies (BoardJoint Motor6D).
 - `SkateService`: new board (maple deck with kicktails, grip, trucks, wheels, bearings), wheels on the ground and the deck top under the feet.
+
+## Poses package (7 Oct 2026): IN PROGRESS, code written, NOT yet synced or tested in Studio (Studio disconnected)
+- `ReplicatedStorage/PoseData` (copied exactly) + `PoseController` LocalScript (package copy; only change: also accepts AnimationConstraint joints, which HumanoidDescription rigs use). Server sets character attribute `Pose`; NPCs tagged `Poser`.
+- `ShowOffService.SetPose/ReleasePose`: held poses from the Poses panel (6 poses + high five), walk speed/jump frozen, released on move/jump (`PoseClient`), machine, skate, death or after 45s. Judges score a pose held on the posing stage (1-10 from the shown muscles' levels).
+- `PoseClient`: pose name on screen, face the camera, pose hit (+4% muscle pulse via `MuscleRig.PulseModel`, camera punch, flash, CrowdOoh placeholder sound in Config/Sounds).
+- Statue = FrontDoubleBiceps (`Shared/PoseApply` + SolveJoints); progress mirror "Now" rig = FrontDoubleBiceps; live mirror copies the real pose; NPC regulars strike a random pose now and then (GymGoerService).
+- Old procedural LatSpread/AbsAndThighs/MostMuscular removed from EmoteClient (high five, shake chug and the regulars' curl/flex stay).

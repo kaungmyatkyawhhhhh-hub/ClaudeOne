@@ -1,5 +1,6 @@
 -- Showing off (Config.ShowOff): the leaderboard wall above the front desk (top 5 per muscle group, crown for #1),
--- the marble statue of the strongest player in the entrance hall, and emotes everyone can see (incl. high fives).
+-- the marble statue of the strongest player in the entrance hall, and emotes everyone can see: held bodybuilding poses
+-- (PoseData + the "Pose" attribute, judged on the posing stage) and high fives.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local DataStoreService = game:GetService("DataStoreService")
@@ -12,6 +13,9 @@ local Muscles = require(Config.Muscles)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
+local PoseApply = require(ReplicatedStorage.Shared.PoseApply)
+local PoseData = require(ReplicatedStorage:WaitForChild("PoseData"))
+local Town = require(Config.Town)
 local BodyService = require(script.Parent.BodyService)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
@@ -129,21 +133,9 @@ end
 
 local plaque = nil
 
--- Double biceps, frozen (same angle conventions as the machine and emote poses).
-local TWIST = math.rad(-90)
+-- The statue strikes the front double biceps (PoseData), set once on the joints; every part is then placed from them.
 local function flexPose(model)
-	local function joint(partName, motorName, cframe)
-		local part = model:FindFirstChild(partName)
-		local motor = part and part:FindFirstChild(motorName)
-		if motor and (motor:IsA("Motor6D") or motor:IsA("AnimationConstraint")) then motor.Transform = cframe end
-	end
-	for _, side in ipairs({ { "Right", 1 }, { "Left", -1 } }) do
-		joint(side[1] .. "UpperArm", side[1] .. "Shoulder",
-			CFrame.Angles(-math.rad(5), 0, 0) * CFrame.Angles(0, 0, side[2] * math.rad(88)) * CFrame.Angles(0, side[2] * TWIST, 0))
-		joint(side[1] .. "LowerArm", side[1] .. "Elbow", CFrame.Angles(math.rad(125), 0, 0))
-		joint(side[1] .. "UpperLeg", side[1] .. "Hip", CFrame.Angles(0, 0, side[2] * math.rad(6)))
-	end
-	joint("UpperTorso", "Waist", CFrame.Angles(math.rad(4), 0, 0))
+	PoseApply.Apply(model, PoseData.FrontDoubleBiceps, 1)
 end
 
 -- Rebuilds the statue from the strongest player's avatar (or a plain default body while there's no leader yet):
@@ -229,14 +221,88 @@ local function busy(player)
 	return humanoid == nil or humanoid.Sit or humanoid.Health <= 0
 end
 
+------------------------------------------------------------------------
+-- Held poses (PoseData): the character attribute "Pose" makes every client pose that character (PoseController). While
+-- posing the player can't walk or jump; the client asks to let go when they try to move (PoseClient), and machines,
+-- skating, death and the time limit let go too.
+------------------------------------------------------------------------
+local posed = {} -- [player] = { walkSpeed, jumpPower, jumpHeight, token }
+
+function ShowOffService.ReleasePose(player)
+	local state = posed[player]
+	posed[player] = nil
+	local character = player.Character
+	if character and character:GetAttribute("Pose") ~= nil and character:GetAttribute("Pose") ~= "" then
+		character:SetAttribute("Pose", "")
+	end
+	if state and character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health > 0 then
+			humanoid.WalkSpeed, humanoid.JumpPower, humanoid.JumpHeight = state.walkSpeed, state.jumpPower, state.jumpHeight
+		end
+	end
+end
+
+-- The judges on the posing stage score a pose that is held there: how developed the muscles it shows off are (0 to 10).
+local function onStage(root)
+	local stage = Town.Stage
+	local half = stage.Size / 2 + Vector3.new(ShowOff.PoseJudge.Margin, 0, ShowOff.PoseJudge.Margin)
+	local offset = root.Position - stage.Center
+	return math.abs(offset.X) <= half.X and math.abs(offset.Z) <= half.Z and offset.Y < 14
+end
+
+local function judge(player, emote, token)
+	local state = posed[player]
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local data = PlayerData.Get(player)
+	if not state or state.token ~= token or not root or not data or not onStage(root) then return end
+	local goal = math.max(GrowthSpurts.GetGoal(data.growthSpurts or 0), 1)
+	local total = 0
+	for _, id in ipairs(emote.muscles) do
+		local entry = data.muscles and data.muscles[id]
+		total += math.clamp((entry and entry.level or 0) / goal, 0, 1)
+	end
+	local share = total / #emote.muscles
+	local score = math.floor((1 + 9 * share) * 2 + 0.5) / 2 -- 1 to 10 in halves
+	Remotes.PlayerEvent:FireClient(player, "PoseScore", { name = emote.name, score = score })
+end
+
+function ShowOffService.SetPose(player, emote)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not emote or not emote.poseData or not PoseData[emote.poseData] or not humanoid or busy(player) then return false end
+	if player:GetAttribute("Skating") == true then return false end
+	local state = posed[player]
+	if not state then
+		state = { walkSpeed = humanoid.WalkSpeed, jumpPower = humanoid.JumpPower, jumpHeight = humanoid.JumpHeight }
+		posed[player] = state
+	end
+	state.token = (state.token or 0) + 1
+	local token = state.token
+	humanoid.WalkSpeed, humanoid.JumpPower, humanoid.JumpHeight = 0, 0, 0
+	character:SetAttribute("Pose", emote.poseData)
+	task.delay(ShowOff.PoseJudge.Delay, judge, player, emote, token)
+	task.delay(ShowOff.PoseMaxSeconds, function()
+		if posed[player] and posed[player].token == token then ShowOffService.ReleasePose(player) end
+	end)
+	return true
+end
+
 function ShowOffService.PlayEmote(player, emoteId)
 	local emote = ShowOff.EmoteById[emoteId]
 	if not emote or not emoteRemote or busy(player) then return false end
+	if emote.poseData then return ShowOffService.SetPose(player, emote) end
+	ShowOffService.ReleasePose(player)
 	emoteRemote:FireAllClients(player, emote.id, emote.seconds)
 	return true
 end
 
 local function onEmote(player, emoteId)
+	if emoteId == "" then -- the player moved or jumped: let go of the pose
+		ShowOffService.ReleasePose(player)
+		return
+	end
 	if type(emoteId) ~= "string" or emoteId == "Chug" then return end
 	local now = os.clock()
 	if now - (lastEmote[player] or 0) < 1 then return end
@@ -266,9 +332,15 @@ function ShowOffService.Start()
 		emoteRemote.Parent = Remotes
 	end
 	Guard.Remote(emoteRemote, "Emote", 4, 6, onEmote)
+	Players.PlayerAdded:Connect(function(player)
+		player.CharacterRemoving:Connect(function() posed[player] = nil end)
+	end)
+	for _, player in ipairs(Players:GetPlayers()) do
+		player.CharacterRemoving:Connect(function() posed[player] = nil end)
+	end
 	Players.PlayerRemoving:Connect(function(player)
 		task.spawn(writeScores, player)
-		written[player], lastEmote[player], highFives[player] = nil, nil, nil
+		written[player], lastEmote[player], highFives[player], posed[player] = nil, nil, nil, nil
 	end)
 
 	if not findBoard() then

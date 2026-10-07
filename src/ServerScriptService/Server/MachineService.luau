@@ -269,6 +269,9 @@ local function enter(player, model)
 	-- off the skateboard first (it changes the hip height the pose is placed from)
 	local skateOk, SkateService = pcall(require, script.Parent.SkateService)
 	if skateOk then SkateService.Stop(player) end
+	-- and out of a held pose (it would keep the arms posed on the bar)
+	local poseOk, ShowOffService = pcall(require, script.Parent.ShowOffService)
+	if poseOk and ShowOffService.ReleasePose then ShowOffService.ReleasePose(player) end
 
 	local session = { model = model, machine = machine, lastRep = 0, connections = {},
 		pump = { meter = 0, lastTap = 0, pumpedUntil = 0 }, nextBig = false }

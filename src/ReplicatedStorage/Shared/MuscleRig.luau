@@ -94,6 +94,7 @@ function MuscleRig.new(model: Model, opts: any?)
 		current = {},  -- [muscleId] = g now (after the tween)
 		pumped = false,
 		pulses = {},
+		pulseAmounts = {},
 		destroyed = false,
 		units = {},
 		garments = {},
@@ -332,9 +333,13 @@ function MuscleRig.Snap(self, targets: { [string]: number })
 	end
 end
 
-function MuscleRig.Pulse(self, ids: { string })
+-- amount = how much bigger the muscle gets at the peak of the pulse (default 3%; the pose hit uses 4%)
+function MuscleRig.Pulse(self, ids: { string }, amount: number?)
 	local now = os.clock()
-	for _, id in ipairs(ids) do self.pulses[id] = now end
+	for _, id in ipairs(ids) do
+		self.pulses[id] = now
+		self.pulseAmounts[id] = amount
+	end
 end
 
 function MuscleRig.SetPumped(self, pumped: boolean)
@@ -350,7 +355,7 @@ local function currentShown(self, id: string): number
 	local pulse = 1
 	if pulseStart then
 		local t = (os.clock() - pulseStart) / PULSE_TIME
-		if t < 1 then pulse = 1 + PUMP_STEP * math.sin(t * math.pi) end
+		if t < 1 then pulse = 1 + (self.pulseAmounts[id] or PUMP_STEP) * math.sin(t * math.pi) end
 	end
 	return math.min(g * (self.pumped and PUMPED or 1) * pulse, 1.12)
 end
@@ -721,6 +726,13 @@ function MuscleRig.SetHighlight(model: Model, set: { [string]: boolean }?)
 				end
 			end
 		end
+	end
+end
+
+-- The small pump on a character's muscles (e.g. the pose hit): ids = muscle ids, amount = +4% is 0.04.
+function MuscleRig.PulseModel(model: Model, ids: { string }, amount: number?)
+	for rig in pairs(active) do
+		if rig.model == model then rig:Pulse(ids, amount) end
 	end
 end
 

@@ -13,6 +13,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
+local PoseApply = require(ReplicatedStorage.Shared.PoseApply)
+local PoseData = require(ReplicatedStorage:WaitForChild("PoseData"))
 local BodyService = require(script.Parent.BodyService)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
@@ -50,7 +52,7 @@ end
 
 -- One preview rig: heightScale = absolute height scale. Built from your avatar (head, hair, skin color) with the Robloxian
 -- body; the muscles are blobs added after the rig is parented (see openFor).
-local function buildRig(player, name, heightScale)
+local function buildRig(player, name, heightScale, poseName)
 	local desc = avatarDescription(player)
 	BodyService.PrepareDescription(desc, nil, heightScale)
 	local ok, rig = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
@@ -64,6 +66,8 @@ local function buildRig(player, name, heightScale)
 	for _, item in ipairs(rig:GetDescendants()) do
 		if item:IsA("BaseScript") then item:Destroy() end
 	end
+	-- the pose (PoseData), set once on the joints; SolveJoints then places every part from them
+	if poseName and PoseData[poseName] then PoseApply.Apply(rig, PoseData[poseName], 1) end
 	BodyShape.SolveJoints(rig)
 	for _, part in ipairs(rig:GetDescendants()) do
 		if part:IsA("BasePart") then
@@ -86,7 +90,7 @@ local function openFor(player)
 	if old then old:Destroy() end
 	local dayOne = data.dayOne or {}
 	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight)
-	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight)
+	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, "FrontDoubleBiceps")
 	if not before or not after then return end
 	local folder = Instance.new("Folder")
 	folder.Name = "MirrorRigs"

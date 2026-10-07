@@ -30,14 +30,24 @@ ShowOff.Statue = {
 	Color = Color3.fromHex("#C9C6BF"),
 }
 
--- Poses (the emote system): played for everyone to see. pose = a client pose function name (EmoteClient).
+-- Poses (the emote system). The bodybuilding poses are PoseData entries (ReplicatedStorage.PoseData): the server sets the
+-- character attribute "Pose" and every client poses that character (PoseController); it is held until the player moves or
+-- jumps. muscles = what the pose shows off (the PUMPED pulse on the pose hit, and the judges' score on the posing stage).
+-- The two timed gestures (high five, shake chug) are small client-side poses (EmoteClient): pose = its function name.
 ShowOff.Emotes = {
-	{ id = "DoubleBiceps", name = "Double biceps", pose = "DoubleBiceps", seconds = 3 },
-	{ id = "LatSpread", name = "Lat spread", pose = "LatSpread", seconds = 3 },
-	{ id = "AbsAndThighs", name = "Abs and thighs", pose = "AbsAndThighs", seconds = 3 },
-	{ id = "MostMuscular", name = "Most muscular", pose = "MostMuscular", seconds = 3 },
+	{ id = "FrontDoubleBiceps", name = "Front double biceps", poseData = "FrontDoubleBiceps", muscles = { "Biceps", "Triceps", "FrontDelts", "SideDelts" } },
+	{ id = "FrontLatSpread", name = "Front lat spread", poseData = "FrontLatSpread", muscles = { "Lats", "Obliques", "SideDelts", "Traps" } },
+	{ id = "SideChest", name = "Side chest", poseData = "SideChest", muscles = { "MidChest", "UpperChest", "Biceps", "Quads" } },
+	{ id = "AbsAndThigh", name = "Abs and thigh", poseData = "AbsAndThigh", muscles = { "Abs", "Obliques", "Quads", "Forearms" } },
+	{ id = "MostMuscular", name = "Most muscular", poseData = "MostMuscular", muscles = { "Traps", "UpperChest", "MidChest", "FrontDelts" } },
+	{ id = "BackDoubleBiceps", name = "Back double biceps", poseData = "BackDoubleBiceps", muscles = { "Lats", "Rhomboids", "Traps", "LowerBack", "RearDelts" } },
 	{ id = "HighFive", name = "High five", pose = "HighFive", seconds = 1.6 },
 }
+ShowOff.PoseMaxSeconds = 45 -- a held pose lets go by itself after this long
+-- the judges on the posing stage score a pose held for Delay seconds; Margin = studs around the stage that still count
+ShowOff.PoseJudge = { Delay = 0.9, Margin = 3 }
+-- the pose NPC regulars strike now and then (names from PoseData)
+ShowOff.NpcPoses = { "FrontDoubleBiceps", "FrontLatSpread", "SideChest", "AbsAndThigh", "MostMuscular", "BackDoubleBiceps" }
 ShowOff.EmoteById = {}
 for _, emote in ipairs(ShowOff.Emotes) do ShowOff.EmoteById[emote.id] = emote end
 -- not in the menu: played automatically when drinking a shake

@@ -18,6 +18,7 @@ local BodyService = require(script.Parent.BodyService)
 local Body = require(ReplicatedStorage.Shared.Config.Body)
 local NpcService = require(script.Parent.NpcService)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
+local ShowOff = require(ReplicatedStorage.Shared.Config.ShowOff)
 local MachineService = require(script.Parent.MachineService)
 
 local GymGoerService = {}
@@ -269,6 +270,19 @@ local function chat(state, all)
 	return true
 end
 
+-- A regular strikes a bodybuilding pose (PoseData; PoseController poses any character with the "Pose" attribute) for a few
+-- seconds, standing still, then lets go.
+local function poseNow(state)
+	local list = ShowOff.NpcPoses
+	local humanoid = state.humanoid
+	humanoid:Move(Vector3.zero)
+	state.npc:SetAttribute("Pose", list[rng:NextInteger(1, #list)])
+	task.wait(rng:NextNumber(3.5, 6))
+	state.npc:SetAttribute("Pose", "")
+	task.wait(0.6) -- let the pose blend out before walking
+	return true
+end
+
 local function loop(state, all)
 	task.wait(rng:NextNumber(0.5, 4)) -- don't all start at once
 	while state.npc.Parent do
@@ -283,12 +297,14 @@ local function loop(state, all)
 			state.free = false
 			local roll = rng:NextNumber()
 			local done
-			if roll < 0.62 then
+			if roll < 0.58 then
 				done = train(state)
-			elseif roll < 0.78 then
+			elseif roll < 0.72 then
 				done = goToSpot(state, "Water")
-			elseif roll < 0.92 then
+			elseif roll < 0.84 then
 				done = chat(state, all)
+			elseif roll < 0.92 then
+				done = poseNow(state)
 			else
 				done = goToSpot(state, "Rest")
 			end
@@ -329,6 +345,8 @@ local function dressNpc(npc, gym)
 			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "UpperTorso" and part.Name ~= "LowerTorso" then part.CanCollide = false end
 		end
 	end
+	-- PoseController poses every character tagged "Poser" that gets the "Pose" attribute (regulars strike poses now and then)
+	CollectionService:AddTag(npc, "Poser")
 	-- the clients draw the muscles from this number (muscle v7), grown to the gym's preset
 	npc:SetAttribute("MuscleG", BodyService.EncodeShare(NPC_GROWTH[gym] or NPC_GROWTH.Starter))
 end
