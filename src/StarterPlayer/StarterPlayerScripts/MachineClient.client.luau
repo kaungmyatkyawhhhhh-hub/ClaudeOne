@@ -28,6 +28,7 @@ local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local Audio = require(Shared.Audio)
+local MuscleRig = require(Shared.MuscleRig)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
@@ -571,6 +572,19 @@ local POPUP = {
 	ScreenMargin = 8, -- px from the screen edges
 }
 local activePopup = nil -- { billboard, attachment }
+
+-- The rep flash (Settings "Rep flash", default On): the muscles a rep trained glow warm for a moment, the main one
+-- strongest (each muscle's machine share, secondaries at least FLASH_MIN_WEIGHT); BIG REP / PUMPED flash harder.
+local FLASH_MIN_WEIGHT = 0.35
+local function repFlash(character, machine, strong: boolean)
+	local settings = ClientData.Get().settings
+	if settings and settings.repFlash == "Off" then return end
+	local weights = {}
+	for _, muscle in ipairs(machine.muscles) do
+		weights[muscle.id] = math.max(muscle.share or 1, FLASH_MIN_WEIGHT)
+	end
+	MuscleRig.Flash(character, weights, strong)
+end
 
 local function gainNumbersMode(): string -- "On" | "Minimal" | "Off"
 	local settings = ClientData.Get().settings
@@ -1502,6 +1516,7 @@ local function localLockout(state)
 	end
 	if setDone then current.setGain = 0 end
 	flashMuscles() -- the secondary muscles get a flash of the HUD's muscle list instead of popups
+	if character then repFlash(character, machine, state.big or state.pumped) end
 
 	-- every rep a small camera punch; heavy tiers and BIG REPs hit harder
 	fovPunch(state.big and FEEL.FovPunchBig or (state.tier >= FEEL.HeavyTier and FEEL.FovPunchHeavy or FEEL.FovPunch))

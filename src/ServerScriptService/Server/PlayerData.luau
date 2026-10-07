@@ -529,8 +529,10 @@ end
 
 -- Sound volume settings (0-1 each), clamped here so the client can't store anything odd.
 local GAIN_NUMBERS = { On = true, Minimal = true, Off = true }
+local REP_FLASH = { On = true, Off = true }
 
--- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off.
+-- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
+-- repFlash On/Off.
 function PlayerData.SetSettings(player, settings)
 	local data = PlayerData.Get(player)
 	if not data or type(settings) ~= "table" then return end
@@ -542,6 +544,7 @@ function PlayerData.SetSettings(player, settings)
 	new.music = volume(settings.music) or new.music
 	new.effects = volume(settings.effects) or new.effects
 	if GAIN_NUMBERS[settings.gainNumbers] then new.gainNumbers = settings.gainNumbers end
+	if REP_FLASH[settings.repFlash] then new.repFlash = settings.repFlash end
 	new.statsLabels = nil -- the world stats labels are gone; drop the old saved choice
 	for _, entry in ipairs(Body.Tops) do -- wardrobe: Shirtless / Tank top / Sports top
 		if entry.id == settings.top then new.top = entry.id end

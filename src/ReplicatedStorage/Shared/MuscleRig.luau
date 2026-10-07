@@ -22,6 +22,8 @@
 --   rig:Pulse({ "Biceps" })                -- the small pump on every 10th level
 --   rig:SetPumped(true)                    -- PUMPED: a little bigger
 --   rig:SetStyle(style)
+--   MuscleRig.SetHighlight(model, { Biceps = true })        -- the red hover tint (only on muscles facing the camera)
+--   MuscleRig.Flash(model, { MidChest = 1, Triceps = 0.5 }, big) -- the warm rep flash + a tiny pump
 --   rig:Destroy()
 local AssetService = game:GetService("AssetService")
 local RunService = game:GetService("RunService")
@@ -46,7 +48,20 @@ local PUMP_STEP = 0.03     -- the small pulse
 local PULSE_TIME = 0.55
 local MIN_CHANGE = 0.0015
 local MARBLE = Color3.fromHex("#C9C6BF")
-local HIGHLIGHT = Color3.fromRGB(255, 45, 95) -- the stats hover highlight (neon red-pink)
+-- Tints on the muscles: the stats hover highlight (red) and the rep flash (warm). Only muscles facing the camera show them
+-- (each muscle's average outward normal vs the direction to the camera: full above Facing.Full, gone below Facing.None).
+-- A tint is a vertex color on the normal lit material: no Neon, no glow light.
+local TINT = {
+	Highlight = Color3.fromRGB(178, 14, 18), -- deep red (blended into the skin / clothing color; warm lights push it orange)
+	HighlightStrength = 0.8,
+	HighlightIn = 0.15, HighlightOut = 0.2,  -- seconds to fade in / out
+	Flash = Color3.fromRGB(255, 118, 46),    -- warm orange-red
+	FlashIn = 0.15, FlashOut = 0.35,
+	FlashStrength = 0.6,                     -- main muscle (secondaries get their weight of it)
+	BigStrength = 0.85, BigOut = 0.55,       -- BIG REP / PUMPED: stronger, a little longer
+	FacingFull = 0.1, FacingNone = -0.1,
+	Pump = 0.02, PumpTime = 0.2,             -- the tiny pump with each flash (g * 1.02 for 0.2s)
+}
 local REALLOCATE_EVERY = 0.4
 
 -- The snatched-waist torso is a unit of its own (two meshes) applied to the real UpperTorso / LowerTorso (MeshPart:ApplyMesh),
@@ -101,6 +116,12 @@ function MuscleRig.new(model: Model, opts: any?)
 		pumped = false,
 		pulses = {},
 		pulseAmounts = {},
+		pulseTimes = {},        -- [muscleId] = pulse duration (default PULSE_TIME)
+		highlightSet = nil,     -- { [muscleId] = true } being highlighted
+		highlightAmount = {},   -- [muscleId] = 0..1 (eased in / out)
+		flashes = {},           -- [muscleId] = { start, strength, inTime, outTime }
+		flashAmount = {},       -- [muscleId] = 0..1 this frame
+		tintWasLive = false,
 		destroyed = false,
 		units = {},
 		garments = {},
@@ -300,14 +321,19 @@ local function recolor(self, group)
 	local kind = if group.snatched then (if group.def.part == "LowerTorso" then "Pants" else "Shirt") else (group.data and group.data.clothing)
 	local template = templateFor(self, kind)
 	if self.covered and self.covered[body.Name] then template = nil end
-	if group.colors then
+	if group.rangeColors then
 		local skin, shorts, top = colorsOf(self)
 		local white = Color3.new(1, 1, 1)
+		-- under clothing the vertex colors stay white (they would tint the clothing image); the inner part's Color is the skin
+		group.kindBase = { if template then white else skin, if template then white else shorts, if template then white else top }
+		group.shownColors = {}
 		pcall(function()
-			-- under clothing the vertex colors stay white (they would tint the clothing image); the inner part's Color is the skin
-			mesh:SetColor(group.colors[1], if template then white else skin)
-			mesh:SetColor(group.colors[2], if template then white else shorts)
-			mesh:SetColor(group.colors[3], if template then white else top)
+			for _, range in ipairs(group.data.ranges) do
+				local kind = group.rangeKinds[range]
+				local color = group.kindBase[kind]
+				mesh:SetColor(group.rangeColors[range], color)
+				group.shownColors[range] = color
+			end
 		end)
 	end
 	if self.marble then
@@ -352,12 +378,14 @@ function MuscleRig.Snap(self, targets: { [string]: number })
 	end
 end
 
--- amount = how much bigger the muscle gets at the peak of the pulse (default 3%; the pose hit uses 4%)
-function MuscleRig.Pulse(self, ids: { string }, amount: number?)
+-- amount = how much bigger the muscle gets at the peak of the pulse (default 3%; the pose hit uses 4%); duration in seconds
+-- (default PULSE_TIME)
+function MuscleRig.Pulse(self, ids: { string }, amount: number?, duration: number?)
 	local now = os.clock()
 	for _, id in ipairs(ids) do
 		self.pulses[id] = now
 		self.pulseAmounts[id] = amount
+		self.pulseTimes[id] = duration
 	end
 end
 
@@ -373,7 +401,7 @@ local function currentShown(self, id: string): number
 	local pulseStart = self.pulses[id]
 	local pulse = 1
 	if pulseStart then
-		local t = (os.clock() - pulseStart) / PULSE_TIME
+		local t = (os.clock() - pulseStart) / (self.pulseTimes[id] or PULSE_TIME)
 		if t < 1 then pulse = 1 + (self.pulseAmounts[id] or PUMP_STEP) * math.sin(t * math.pi) end
 	end
 	return math.min(g * (self.pumped and PUMPED or 1) * pulse, 1.12)
@@ -463,10 +491,17 @@ local function buildGroup(self, state, group): boolean
 		end
 	end
 	local ok, err = pcall(function()
+		-- one vertex color per muscle (so a single muscle can be tinted with one SetColor); its kind picks the base color:
+		-- 1 skin, 2 gym shorts, 3 top (the UpperTorso muscles)
 		local white = Color3.new(1, 1, 1)
-		local skinId, shortsId, topId = mesh:AddColor(white, 1), mesh:AddColor(white, 1), mesh:AddColor(white, 1)
-		group.glowId = mesh:AddColor(HIGHLIGHT, 1)
-		group.colors = { skinId, shortsId, topId }
+		group.rangeColors, group.rangeKinds = {}, {}
+		local faceColor = table.create(data.triCount)
+		for _, range in ipairs(data.ranges) do
+			local id = mesh:AddColor(white, 1)
+			group.rangeColors[range] = id
+			group.rangeKinds[range] = if range.shorts then 2 elseif group.def.part == "UpperTorso" then 3 else 1
+			for f = range.triFirst, range.triFirst + range.triCount - 1 do faceColor[f] = id end
+		end
 		group.faceIds = table.create(data.triCount)
 		local vertexIds = table.create(data.verts)
 		local uvIds = table.create(data.verts)
@@ -480,15 +515,14 @@ local function buildGroup(self, state, group): boolean
 			tick()
 		end
 		group.normalIds = normalIds
-		local tris, kinds = data.tris, data.faceKind
-		local kindColor = { skinId, shortsId, topId }
+		local tris = data.tris
 		for f = 1, data.triCount do
 			local a, b, c = tris[f * 3 - 2] + 1, tris[f * 3 - 1] + 1, tris[f * 3] + 1
 			local face = mesh:AddTriangle(vertexIds[a], vertexIds[b], vertexIds[c])
 			group.faceIds[f] = face
 			mesh:SetFaceUVs(face, { uvIds[a], uvIds[b], uvIds[c] })
 			if normalIds then mesh:SetFaceNormals(face, { normalIds[a], normalIds[b], normalIds[c] }) end
-			local color = kindColor[kinds[f]]
+			local color = faceColor[f]
 			mesh:SetFaceColors(face, { color, color, color })
 			tick()
 		end
@@ -582,11 +616,10 @@ local function destroyGroup(group)
 		meshOf[group.part] = nil
 		group.part:Destroy()
 	end
-	group.mesh, group.part, group.cloth, group.template, group.data, group.vertexIds, group.colors, group.body = nil, nil, nil, nil, nil, nil, nil, nil
+	group.mesh, group.part, group.cloth, group.template, group.data, group.vertexIds, group.body = nil, nil, nil, nil, nil, nil, nil
 	group.normalIds = nil
 	group.applied, group.appliedOthers, group.appliedVein = {}, {}, {}
-	group.lit = nil
-	group.glowOn, group.glowShades = nil, nil
+	group.rangeColors, group.rangeKinds, group.kindBase, group.shownColors = nil, nil, nil, nil
 end
 
 local function destroyUnit(state)
@@ -606,6 +639,76 @@ local function wantedUnit(self, state): boolean
 	return false
 end
 
+-- Eases the highlight amounts and runs the flash envelopes; true while any tint shows.
+local function updateTintState(self, dt: number): boolean
+	local live = false
+	local set, amounts = self.highlightSet, self.highlightAmount
+	if set then
+		for id in pairs(set) do
+			if amounts[id] == nil then amounts[id] = 0 end
+		end
+	end
+	for id, amount in pairs(amounts) do
+		local want = if set and set[id] then 1 else 0
+		if want > amount then
+			amount = math.min(1, amount + dt / TINT.HighlightIn)
+		else
+			amount = math.max(0, amount - dt / TINT.HighlightOut)
+		end
+		if amount <= 0 and want == 0 then
+			amounts[id] = nil
+		else
+			amounts[id] = amount
+			live = true
+		end
+	end
+	local now = os.clock()
+	table.clear(self.flashAmount)
+	for id, flash in pairs(self.flashes) do
+		local t = now - flash.start
+		local v = nil
+		if t < flash.inTime then
+			v = t / flash.inTime
+		elseif t < flash.inTime + flash.outTime then
+			v = 1 - (t - flash.inTime) / flash.outTime
+		end
+		if v then
+			self.flashAmount[id] = v * flash.strength
+			live = true
+		else
+			self.flashes[id] = nil
+		end
+	end
+	return live
+end
+
+-- Sets each muscle's color: its base, tinted by the highlight / flash in proportion to how much it faces the camera.
+local function tintGroup(self, group, cameraPosition: Vector3)
+	local part, mesh = group.part, group.mesh
+	if not (group.rangeColors and group.kindBase and part and mesh) then return end
+	local cf = part.CFrame
+	local meshSize = part.MeshSize
+	local scale = if meshSize.Magnitude > 0 then part.Size / meshSize else Vector3.one
+	for _, range in ipairs(group.data.ranges) do
+		local kind = group.rangeKinds[range]
+				local color = group.kindBase[kind]
+		local h = self.highlightAmount[range.id] or 0
+		local f = self.flashAmount[range.id] or 0
+		if (h > 0 or f > 0) and range.normal then
+			local center = cf:PointToWorldSpace(range.center * scale)
+			local toCamera = cameraPosition - center
+			local dot = if toCamera.Magnitude > 1e-4 then cf:VectorToWorldSpace(range.normal):Dot(toCamera.Unit) else 1
+			local facing = math.clamp((dot - TINT.FacingNone) / (TINT.FacingFull - TINT.FacingNone), 0, 1)
+			if h > 0 then color = color:Lerp(TINT.Highlight, h * TINT.HighlightStrength * facing) end
+			if f > 0 then color = color:Lerp(TINT.Flash, math.min(f, 1) * facing) end
+		end
+		if group.shownColors[range] ~= color then
+			group.shownColors[range] = color
+			pcall(function() mesh:SetColor(group.rangeColors[range], color) end)
+		end
+	end
+end
+
 local function step(self, dt: number, budget: number): number
 	local now = os.clock()
 	local used = 0
@@ -619,7 +722,7 @@ local function step(self, dt: number, budget: number): number
 		end
 	end
 	for id, started in pairs(self.pulses) do
-		if now - started > PULSE_TIME then self.pulses[id] = nil end
+		if now - started > (self.pulseTimes[id] or PULSE_TIME) then self.pulses[id] = nil end
 	end
 	-- layered (3D) clothing: hide the muscles under it (checked about once a second)
 	if now - (self.coveredAt or 0) > 1 then
@@ -671,6 +774,20 @@ local function step(self, dt: number, budget: number): number
 			end
 		end
 	end
+	-- tints (hover highlight, rep flash): while one shows, and once more after the last one to put the colors back
+	local tintLive = updateTintState(self, dt)
+	if tintLive or self.tintWasLive then
+		local camera = workspace.CurrentCamera
+		local cameraPosition = if camera then camera.CFrame.Position else Vector3.zero
+		for _, state in ipairs(self.units) do
+			if state.built then
+				for _, group in ipairs(state.groups) do
+					if not group.snatched then tintGroup(self, group, cameraPosition) end
+				end
+			end
+		end
+	end
+	self.tintWasLive = tintLive
 	-- the game's gym shorts on the thighs, unless the character wears its own Pants (or layered clothing on the legs)
 	if not self.keepBody and not self.marble then
 		local legsCovered = self.covered and self.covered.RightUpperLeg
@@ -772,109 +889,40 @@ function MuscleRig.Destroy(self)
 	if self.folder then self.folder:Destroy() end
 end
 
--- The stats hover highlight: every muscle id in `set` (a table { [id] = true }, or nil to clear) is painted neon red on the
--- character `model` (only the meshes that are built). Cheap enough to do on hover.
--- The neon glow keeps its shape: Neon material is emissive and flat, so the shading is baked into the lit faces. Each face gets
--- the neon color scaled by how much it faces a fixed light (front, a little from above), in  steps, so the
--- muscle reads as a glowing 3D shape and not a solid slab.
-local GLOW_SHADES = 12
-local GLOW_LIGHT = Vector3.new(-0.2, 0.7, -0.7).Unit
-local function glowFaces(group, range)
-	local mesh, data = group.mesh, group.data
-	if not group.glowShades then
-		group.glowShades = {}
-		for step = 1, GLOW_SHADES do
-			local k = 0.38 + 0.62 * (step - 1) / (GLOW_SHADES - 1)
-			group.glowShades[step] = mesh:AddColor(Color3.new(math.min(HIGHLIGHT.R * k * 1.0, 1), HIGHLIGHT.G * k, HIGHLIGHT.B * k), 1)
-		end
-	end
-	local g = group.applied[range] or 1
-	local base, delta, tris = data.base, data.delta, data.tris
-	for f = range.triFirst, range.triFirst + range.triCount - 1 do
-		local a, b, c = tris[f * 3 - 2] + 1, tris[f * 3 - 1] + 1, tris[f * 3] + 1
-		local pa, pb, pc = base[a] + delta[a] * g, base[b] + delta[b] * g, base[c] + delta[c] * g
-		local normal = (pb - pa):Cross(pc - pa)
-		local shade = 0.5
-		if normal.Magnitude > 1e-9 then
-			normal = normal.Unit
-			-- outward = away from the part centre
-			if normal:Dot((pa + pb + pc) / 3) < 0 then normal = -normal end
-			shade = math.clamp(0.5 + 0.5 * normal:Dot(GLOW_LIGHT), 0, 1)
-		end
-		local id = group.glowShades[1 + math.floor(shade * (GLOW_SHADES - 1) + 0.5)]
-		mesh:SetFaceColors(group.faceIds[f], { id, id, id })
+-- The stats hover highlight: every muscle id in `set` (a table { [id] = true }, or nil to clear) turns red on the
+-- character `model` (only on the muscles facing the camera; it fades in / out). Cheap: one color per muscle.
+function MuscleRig.SetHighlight(model: Model, set: { [string]: boolean }?)
+	for rig in pairs(active) do
+		if rig.model == model then rig.highlightSet = set end
 	end
 end
 
-function MuscleRig.SetHighlight(model: Model, set: { [string]: boolean }?)
+-- The rep flash: a quick warm glow on the muscles a rep trained (`weights` = { [muscleId] = 0..1 }, the main muscle 1,
+-- secondaries less) with a tiny pump; `big` (BIG REP / PUMPED) makes it stronger and a little longer.
+function MuscleRig.Flash(model: Model, weights: { [string]: number }, big: boolean?)
 	for rig in pairs(active) do
 		if rig.model == model then
-			for _, state in ipairs(rig.units) do
-				for _, group in ipairs(state.groups) do
-					if group.mesh and group.faceIds and group.part then
-						-- which muscles of this mesh are lit now
-						local anyLit = false
-						for _, range in ipairs(group.data.ranges) do
-							if set ~= nil and set[range.id] == true then anyLit = true end
-						end
-						if anyLit then
-							-- the lit muscles glow: the part turns Neon (emissive, so the vertex colors show at full strength and the
-							-- scene's bloom picks them up), the lit faces get the neon color, every other muscle on the part is dimmed so
-							-- the glow stands out, the clothing layer steps aside and a pulsing light spills the glow around
-							pcall(function()
-								local dim = Color3.new(0.34, 0.31, 0.31)
-								for _, id in ipairs(group.colors) do group.mesh:SetColor(id, dim) end
-								for _, range in ipairs(group.data.ranges) do
-									local lit = set[range.id] == true
-									if lit ~= (group.lit and group.lit[range] or false) or not group.glowOn then
-										group.lit = group.lit or {}
-										group.lit[range] = lit
-										local normal = if range.shorts then group.colors[2] elseif group.def.part == "UpperTorso" then group.colors[3] else group.colors[1]
-										if lit then
-											glowFaces(group, range)
-										else
-											for f = range.triFirst, range.triFirst + range.triCount - 1 do
-												group.mesh:SetFaceColors(group.faceIds[f], { normal, normal, normal })
-											end
-										end
-									end
-								end
-							end)
-							if not group.glowOn then
-								group.glowOn = true
-								group.part.Material = Enum.Material.Neon
-								group.part.Color = Color3.new(1, 1, 1)
-								if group.cloth then group.cloth.Transparency = 1 end
-								local light = Instance.new("PointLight")
-								light.Name = "HighlightGlow"
-								light.Color = HIGHLIGHT
-								light.Range = 5
-								light.Brightness = 0.8
-								light.Shadows = false
-								light.Parent = group.part
-								TweenService:Create(light, TweenInfo.new(0.55, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Brightness = 1.6, Range = 7 }):Play()
-							end
-						elseif group.glowOn then
-							-- back to normal: faces, colors, material, clothing
-							group.glowOn = false
-							local light = group.part:FindFirstChild("HighlightGlow")
-							if light then light:Destroy() end
-							pcall(function()
-								for _, range in ipairs(group.data.ranges) do
-									if group.lit and group.lit[range] then
-										local normal = if range.shorts then group.colors[2] elseif group.def.part == "UpperTorso" then group.colors[3] else group.colors[1]
-										for f = range.triFirst, range.triFirst + range.triCount - 1 do
-											group.mesh:SetFaceColors(group.faceIds[f], { normal, normal, normal })
-										end
-									end
-								end
-							end)
-							group.lit = nil
-							recolor(rig, group)
-							if group.cloth then group.cloth.Transparency = CLOTH_TRANSPARENCY end
-						end
-					end
+			local now = os.clock()
+			-- Studio test hook: Workspace attribute "TestFlashSlow" = n makes the flash n times slower (for screenshots)
+			local slow = if RunService:IsStudio() then workspace:GetAttribute("TestFlashSlow") else nil
+			slow = if type(slow) == "number" and slow > 0 then slow else 1
+			for id, weight in pairs(weights) do
+				-- a muscle still glowing from the last rep rises again from where it is (no dip back to dark)
+				local start = now
+				local inTime = TINT.FlashIn * slow
+				local last = rig.flashes[id]
+				if last then
+					local t = now - last.start
+					local level = if t < last.inTime then t / last.inTime else math.max(0, 1 - (t - last.inTime) / last.outTime)
+					start = now - inTime * level
 				end
+				rig.flashes[id] = {
+					start = start,
+					strength = weight * (if big then TINT.BigStrength else TINT.FlashStrength),
+					inTime = inTime,
+					outTime = (if big then TINT.BigOut else TINT.FlashOut) * slow,
+				}
+				rig:Pulse({ id }, TINT.Pump * weight * (if big then 1.5 else 1), TINT.PumpTime)
 			end
 		end
 	end

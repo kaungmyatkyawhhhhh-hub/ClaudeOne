@@ -10,7 +10,7 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 
 ## First thing to do
 1. **File > Save to Roblox** (the muscle v8 data/scripts, poses, EXP, UI v7, skate and many fixes live only in the open place until saved).
-2. Look at the new things yourself: skateboard, poses on the posing stage, the tiles/pills, EXP numbers, the neon stat highlight.
+2. Look at the new things yourself: skateboard, poses on the posing stage, the tiles/pills, EXP numbers, the red stat highlight and the rep flash.
 
 ## What exists (all built and tested in Studio unless noted)
 - **Core:** player data + saving, 18 muscles, stamina, coins, genetics (reveal + reroll), height/Growth Spurts, titles, one
@@ -21,7 +21,7 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 - **EXP:** every number shown is EXP (total xp earned x `Muscles.ExpPerXp`); the first Growth Spurt needs exactly 50,000 per
   group. Levels still exist inside (saves/caps/machines). `tests/exp` checks it.
 - **Muscles (v8):** real EditableMesh muscles that grow from the skin, wear the character's own Shirt/Pants, snatched-waist
-  torso for everyone, neon glow when hovered in Stats. Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
+  torso for everyone, red tint when hovered in Stats and a warm flash on each rep (only muscles facing the camera; `MuscleRig.SetHighlight` / `MuscleRig.Flash`, one vertex color per muscle). Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
   -> `ReplicatedStorage/MuscleData` -> `Shared/MuscleMeshes` -> `Shared/MuscleRig` -> `MuscleClient`. Keep `muscle_v8/`
   unzipped before running the generator (it empties MuscleData first).
 - **Muscle v8-1 (7 Oct, "smooth, no seams" + spikes fix v2 + more definition):** border vertices grow with the average g of
@@ -100,4 +100,4 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
 `TestCoins`, `TestSpurts`, `TestMuscleShare` (0..3 x the goal, live), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D": six grades in group order for the first roll / the
-next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate). Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.
+next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots). Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.

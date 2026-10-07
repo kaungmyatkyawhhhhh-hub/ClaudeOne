@@ -178,6 +178,16 @@ function MuscleMeshes.LoadGroup(group: any): any
 		table.insert(ranges, { id = record.id, shorts = record.shorts == true, first = vertexCount + 1, count = data.verts, triFirst = triCount + 1, triCount = #data.tris / 3, shareIds = data.shareIds })
 		hasNormals = hasNormals and data.nbase ~= nil
 		hasVeins = hasVeins and data.vein ~= nil
+		-- the muscle's centre and average outward direction (half grown), for "is it facing the camera"
+		local centerSum, normalSum = Vector3.zero, Vector3.zero
+		for i = 1, data.verts do
+			local p = data.base[i] + data.delta[i] * 0.5
+			centerSum += p
+			normalSum += if data.nbase then data.nbase[i] + data.ndelta[i] * 0.5 else p
+		end
+		local range = ranges[#ranges]
+		range.center = centerSum / math.max(data.verts, 1)
+		range.normal = if normalSum.Magnitude > 1e-6 then normalSum.Unit else Vector3.zAxis * -1
 		for i = 1, data.verts do
 			local at = vertexCount + i
 			base[at] = if data.nbase and data.nbase[i].Magnitude > 1e-6 then data.base[i] + data.nbase[i].Unit * SKIN_LIFT else data.base[i]

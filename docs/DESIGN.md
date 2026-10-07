@@ -116,6 +116,11 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   the rep popup. No big pop-up window.
 - Setting "Gain numbers: On / Minimal / Off" in Settings: On = rep + set popups, Minimal = set popups only,
   Off = no gain popups (the chime, chalk and HUD flash stay). Default On, saved per player.
+- Rep flash: each rep the muscles it trained glow warm for a moment (~0.15s in, ~0.35s out) with a tiny pump (2%);
+  the main muscle strongest, secondaries weaker; BIG REP / PUMPED stronger and a little longer. Only the muscles facing
+  the camera show it. Setting "Rep flash: On / Off" (default On, saved per player).
+- Muscle highlight (hovering a stat label): the muscles turn red (a tint on the normal material, no neon glow), only
+  the ones facing the camera (fades out as a muscle turns away), so hovering Back from the front lights nothing.
 - Chalk puff from the hands when getting on a machine; sweat drop particles under 25% stamina.
 - The machine panel stays compact and low so it never covers the lift.
 
