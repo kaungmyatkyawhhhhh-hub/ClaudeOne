@@ -156,6 +156,7 @@ local function open()
 	Theme.Tween(panel, { Position = UDim2.fromScale(0.5, 0.5) })
 end
 local function close()
+	if not isOpen then return end
 	isOpen = false
 	menuButton:SetActive(false)
 	UIBus.MenuPanelVisible:Fire(false)
@@ -166,12 +167,13 @@ local function close()
 		end)
 	end
 end
+UIBus.RegisterPanel("Titles", close)
 button.Activated:Connect(function()
-	if isOpen then close() else open() end
+	if isOpen then close() else UIBus.PanelOpened("Titles") open() end
 end)
 exitButton.Activated:Connect(close)
 UIBus.OpenTitles.Event:Connect(function()
-	if not isOpen then open() end
+	if not isOpen then UIBus.PanelOpened("Titles") open() end
 end)
 
 ClientData.Changed:Connect(function(path)

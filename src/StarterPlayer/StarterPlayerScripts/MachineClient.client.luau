@@ -985,7 +985,7 @@ local function staminaRatio()
 end
 
 local function refreshCoins()
-	coinLabel.Text = tostring(ClientData.Get().coins)
+	coinLabel.Text = Muscles.FormatExp(ClientData.Get().coins)
 end
 
 local function staminaColor(ratio)
@@ -1092,7 +1092,7 @@ local function refreshTier()
 	needsLabel.Visible = not levelOk
 	if locked and levelOk then
 		-- Can't afford yet: faded button with gray text.
-		costLabel.Text = tostring(tier.cost)
+		costLabel.Text = Muscles.FormatExp(tier.cost)
 		local affordable = canUnlock(machine, tier)
 		local ink = affordable and Colors.Text or Colors.Muted
 		unlockButton.BackgroundTransparency = affordable and Theme.Alpha.Primary or 0.92
@@ -1100,7 +1100,7 @@ local function refreshTier()
 		costLabel.TextColor3 = ink
 		tintIcon(unlockIcon, ink)
 	elseif not levelOk then
-		needsLabel.Text = "Needs " .. main.name .. " level " .. tier.unlockLevel
+		needsLabel.Text = "Needs " .. main.name .. " " .. Muscles.FormatExp(Muscles.Shown(tier.unlockLevel)) .. " exp"
 	end
 end
 
@@ -1494,15 +1494,17 @@ local function localLockout(state)
 	local mode = gainNumbersMode()
 	local showSet = mode ~= "Off" -- On and Minimal
 	local showRep = mode == "On"
-	if character and state.big and showSet then
-		-- BIG REP: gold and bigger; Minimal still shows it
-		gainPopup(character, "BIG REP +" .. shown, POPUP.SetScale * 1.1, machineModel, Colors.Gold)
-		Audio.Play2D("BigRep")
-	elseif character and setDone and showSet then
+	-- (a BIG REP on the last rep of a set still ends in the "Set done" popup: its total already includes the big rep)
+	if character and setDone and showSet then
 		local group = Muscles.GroupById[Muscles.ById[main].group]
-		gainPopup(character, "Set done · +" .. current.setGain .. " " .. group.name, POPUP.SetScale, machineModel)
+		gainPopup(character, "Set done · +" .. Muscles.FormatExp(current.setGain) .. " " .. group.name, POPUP.SetScale, machineModel)
+		if state.big then Audio.Play2D("BigRep") end
+	elseif character and state.big and showSet then
+		-- BIG REP: gold and bigger; Minimal still shows it
+		gainPopup(character, "BIG REP +" .. Muscles.FormatExp(shown), POPUP.SetScale * 1.1, machineModel, Colors.Gold)
+		Audio.Play2D("BigRep")
 	elseif character and not setDone and showRep then
-		gainPopup(character, "+" .. shown, 1, machineModel, state.pumped and Colors.Gold or nil)
+		gainPopup(character, "+" .. Muscles.FormatExp(shown), 1, machineModel, state.pumped and Colors.Gold or nil)
 	end
 	if setDone then current.setGain = 0 end
 	flashMuscles() -- the secondary muscles get a flash of the HUD's muscle list instead of popups
@@ -1846,7 +1848,7 @@ local function promptText(machine)
 		return machine.name .. " · " .. Machines.WeightText(nextTier)
 			.. (bought and " is ready" or (" unlocks for " .. nextTier.cost .. " coins"))
 	end
-	return machine.name .. " · next " .. Machines.WeightText(nextTier) .. " at " .. main.name .. " " .. nextTier.unlockLevel
+	return machine.name .. " · next " .. Machines.WeightText(nextTier) .. " at " .. main.name .. " " .. Muscles.FormatExp(Muscles.Shown(nextTier.unlockLevel)) .. " exp"
 end
 
 local function refreshPrompts()

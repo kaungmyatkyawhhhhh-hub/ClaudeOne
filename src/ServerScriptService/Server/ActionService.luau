@@ -53,11 +53,13 @@ end
 
 -- Tutorial: the client reports the step it reached (validated in PlayerData).
 handlers.TutorialStep = function(player, step)
+	local before = PlayerData.Get(player) and PlayerData.Get(player).onboarding.tutorialStep
 	if PlayerData.SetTutorialStep(player, step) then
 		Analytics.TutorialStep(player, step)
-		-- a step's gift (e.g. the free shake) is given once, when the step is reached
+		-- a step's gift (e.g. the free shake) is given once, when the step is reached the normal way (one step after the last):
+		-- a client that jumps straight to a gift step does not get it
 		local def = Onboarding.Steps[step]
-		if def and def.gift and def.gift.shakes then
+		if def and def.gift and def.gift.shakes and step == before + 1 then
 			PlayerData.AddShakes(player, def.gift.shakes)
 		end
 	end

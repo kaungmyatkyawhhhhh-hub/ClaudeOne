@@ -41,7 +41,8 @@ local function styleTag(tag)
 	if tag:GetAttribute("Owner") == player.UserId then
 		tag.Size = UDim2.fromScale(tag.Size.X.Scale * OWN.Scale, tag.Size.Y.Scale * OWN.Scale)
 		label.TextTransparency = OWN.Transparency
-		label:FindFirstChildOfClass("UIStroke").Transparency = 0.75
+		local stroke = label:FindFirstChildOfClass("UIStroke")
+		if stroke then stroke.Transparency = 0.75 end
 		if disc then
 			disc.BackgroundTransparency = OWN.Transparency
 			local rim = disc:FindFirstChildOfClass("UIStroke")

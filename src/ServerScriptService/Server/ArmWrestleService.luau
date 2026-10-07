@@ -161,6 +161,9 @@ local function finish(winnerIndex, reason)
 end
 
 local function startMatch()
+	-- this match only: if a player leaves, `match` is replaced by a new waiting table and this thread must stop
+	local started = match
+	if not started then return end
 	match.state = "countdown"
 	match.meter = 0
 	match.lastTap = {}
@@ -178,11 +181,11 @@ local function startMatch()
 		match.rookieRate = rng:NextNumber(Config.RookieTapsPerSecond[1], Config.RookieTapsPerSecond[2])
 	end
 	for count = Config.Countdown, 1, -1 do
-		if not match then return end
+		if match ~= started then return end
 		broadcast({ countdown = count })
 		task.wait(1)
 	end
-	if not match then return end
+	if match ~= started or match.state ~= "countdown" then return end
 	match.state = "live"
 	match.startedAt = os.clock()
 	broadcast({ countdown = 0 })
@@ -227,6 +230,12 @@ local function seatRookie(index)
 	local spec = Config.Rookies[rng:NextInteger(1, #Config.Rookies)]
 	local rookieSpec = { name = spec.name, skin = spec.skin, shirt = spec.shirt, pants = spec.pants }
 	local model = NpcService.Build(rookieSpec, seats[index].cframe)
+	-- the player may have left while the rookie was being built
+	if not model then return end
+	if not match or not (seats[1].player or seats[2].player) then
+		model:Destroy()
+		return
+	end
 	seats[index].rookie = model
 	match.rookie = model
 	refreshPrompts()

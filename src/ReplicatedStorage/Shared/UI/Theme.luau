@@ -68,7 +68,18 @@ Theme.Fonts.Small = Theme.Fonts.Regular
 -- everything else stays Montserrat.
 Theme.TileFont = Font.fromEnum(Enum.Font.FredokaOne)
 Theme.TileStroke = Color3.fromHex("#1A1320") -- the dark outline around tile labels
-Theme.PillHeight = 36 -- the top-bar pills (coins, quests, daily reward, settings)
+Theme.PillHeight = 44 -- the top-bar pills (44 = the smallest tap target) (coins, quests, daily reward, settings)
+-- Tile look (SideMenu): the 3D face fades from white to this gray from top to bottom, the active tile's border is white, and
+-- the label is 14px (17px on the bigger PC tiles).
+Theme.Tile = {
+	ShadeBottom = Color3.fromRGB(140, 140, 150),
+	ActiveBorder = Color3.new(1, 1, 1),
+	LabelSmall = 14,
+	LabelBig = 17,
+	BigFrom = 80, -- tiles at least this many px wide use the big label
+	LipDarken = 0.66, -- how dark the bottom edge is (0 = the accent, 1 = black)
+	FaceDarken = 0.5,
+}
 
 Theme.TextSize = {
 	Huge = 40,  -- big numbers

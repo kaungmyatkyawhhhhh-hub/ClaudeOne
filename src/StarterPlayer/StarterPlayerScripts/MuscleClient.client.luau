@@ -51,6 +51,8 @@ local function targetsFor(source: Instance, mine: boolean)
 	return MuscleRig.Decode(source:GetAttribute("MuscleG"))
 end
 
+local untrack -- (defined below)
+
 local function track(model: Model, source: Instance, mine: boolean, kind: string)
 	if tracked[model] then return end
 	local style = MuscleRig.StyleFrom(source, model)
@@ -69,9 +71,17 @@ local function track(model: Model, source: Instance, mine: boolean, kind: string
 	})
 	rig:Snap(targetsFor(source, mine))
 	tracked[model] = { rig = rig, source = source, mine = mine, kind = kind, levels = nil }
+	-- a character that dies has its joints broken (the muscle welds with them): take the muscles off at once so no part falls
+	-- through the floor and the hidden real torso is shown again; they come back on the new character
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.Died:Once(function()
+			untrack(model)
+		end)
+	end
 end
 
-local function untrack(model)
+function untrack(model)
 	local info = tracked[model]
 	if not info then return end
 	tracked[model] = nil
@@ -133,7 +143,9 @@ local function candidates()
 	local list = {}
 	for _, other in ipairs(Players:GetPlayers()) do
 		local character = other.Character
-		if character and character:FindFirstChild("UpperTorso") and character:GetAttribute("BodyVersion") then
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		local alive = humanoid == nil or humanoid.Health > 0 -- (no muscles on a dead body)
+		if character and alive and character:FindFirstChild("UpperTorso") and character:GetAttribute("BodyVersion") then
 			table.insert(list, { model = character, source = other, mine = other == player, kind = "player" })
 		end
 	end
@@ -179,7 +191,9 @@ end
 task.spawn(function()
 	ClientData.Get()
 	while true do
-		scan()
+		-- (one bad model must not stop the muscles for the rest of the session)
+		local ok, err = pcall(scan)
+		if not ok then warn("[MuscleClient] scan failed:", err) end
 		task.wait(SCAN_EVERY)
 	end
 end)

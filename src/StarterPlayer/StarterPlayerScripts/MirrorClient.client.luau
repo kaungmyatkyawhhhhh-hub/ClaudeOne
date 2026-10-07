@@ -345,6 +345,14 @@ local function startReflection(mirrorModel, glass)
 		end
 	end
 
+	local lastSignatureCheck = 0
+	-- what changes the look of the copy: the body version (outfit, Growth Spurt), what is worn or carried (direct children) and
+	-- which muscle parts exist
+	local function signatureOf(character)
+		local folder = character:FindFirstChild("MuscleMeshes")
+		return tostring(character:GetAttribute("BodyVersion")) .. ":" .. #character:GetChildren() .. ":" .. (folder and #folder:GetChildren() or 0)
+	end
+
 	local active = false
 	RunService:BindToRenderStep("MirrorReflection", Enum.RenderPriority.Camera.Value + 1, function()
 		local character = player.Character
@@ -363,8 +371,15 @@ local function startReflection(mirrorModel, glass)
 		if not near then return end
 		if not roomBuilt then buildRoom() end
 		-- rebuild the copy when the character changes (respawn, new gear)
-		if not mirrored or mirrored.character ~= character or mirrored.count ~= #character:GetDescendants() or mirrored.version ~= character:GetAttribute("BodyVersion") then
+		-- (checked a few times a second on a cheap signature: gain popups, chalk and lights come and go all the time and must
+		-- not rebuild the whole copy)
+		local now = os.clock()
+		if not mirrored or mirrored.character ~= character or (now - lastSignatureCheck > 0.25 and mirrored.signature ~= signatureOf(character)) then
+			lastSignatureCheck = now
 			buildCharacter(character)
+			if mirrored then mirrored.signature = signatureOf(character) end
+		elseif now - lastSignatureCheck > 0.25 then
+			lastSignatureCheck = now
 		end
 		if not mirrored then return end
 		for _, pair in ipairs(mirrored.pairs) do

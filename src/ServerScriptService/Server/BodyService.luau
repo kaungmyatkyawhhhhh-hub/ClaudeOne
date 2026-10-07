@@ -146,7 +146,9 @@ end
 local function bodyIntact(state)
 	local torso = state.character:FindFirstChild("UpperTorso")
 	if not torso or not torso:IsA("MeshPart") then return false end
-	if state.torsoMesh and torso.MeshId ~= state.torsoMesh then return false end
+	-- no remembered body means the swap never succeeded: try again (refresh runs every second)
+	if not state.torsoMesh then return false end
+	if torso.MeshId ~= state.torsoMesh then return false end
 	return true
 end
 

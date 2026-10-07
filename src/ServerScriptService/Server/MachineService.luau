@@ -171,19 +171,23 @@ local function leave(player)
 	player:SetAttribute("PumpedUntil", nil)
 	local model = session.model
 	model:SetAttribute("UserId", nil)
+	local modelAlive = model.Parent ~= nil -- (a seasonal machine can be destroyed under the lifter)
 	local prompt = getPrompt(model)
 	if prompt then prompt.Enabled = true end
-	updatePlates(model, displayTier(session.machine))
 
+	-- free the character first, so nothing after this can leave them anchored
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if humanoid and root and humanoid.Health > 0 then
 		humanoid.PlatformStand = false
 		root.Anchored = false
-		local exit = model:GetPivot() * CFrame.new(Poses[session.machine.pose].exit)
-		character:PivotTo(exit + Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0))
+		if modelAlive then
+			local exit = model:GetPivot() * CFrame.new(Poses[session.machine.pose].exit)
+			character:PivotTo(exit + Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0))
+		end
 	end
+	if modelAlive then pcall(updatePlates, model, displayTier(session.machine)) end
 
 	if player.Parent then
 		Remotes.MachineState:FireClient(player, "Exit")
@@ -198,6 +202,12 @@ local npcEvicted = nil -- callback(npc, model) set by GymGoerService
 
 local function isNpc(occupant)
 	return occupant ~= nil and not occupant:IsA("Player")
+end
+
+-- Gets whoever is lifting on this machine off it (a machine that is about to be destroyed, e.g. a season's Sled Pull).
+function MachineService.LeaveModel(model)
+	local occupant = occupants[model]
+	if occupant and typeof(occupant) == "Instance" and occupant:IsA("Player") then leave(occupant) end
 end
 
 function MachineService.IsFree(model)
@@ -259,7 +269,7 @@ local function enter(player, model)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if not machine or not humanoid or not root or humanoid.Health <= 0 or not PlayerData.Get(player) then return end
+	if not machine or not humanoid or not root or humanoid.Health <= 0 or humanoid.Sit or not PlayerData.Get(player) then return end
 	-- gyms open with Growth Spurts (the pro gym at 2)
 	if PlayerData.Get(player).growthSpurts < (Machines.GymUnlock[machine.gym] or 0) then
 		Remotes.PlayerEvent:FireClient(player, "GymLocked", { gym = machine.gym, spurts = Machines.GymUnlock[machine.gym] })

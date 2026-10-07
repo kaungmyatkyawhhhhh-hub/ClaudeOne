@@ -7,6 +7,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
 local Seasons = require(Shared.Config.Seasons)
+local Muscles = require(Shared.Config.Muscles)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
@@ -35,6 +36,7 @@ RightColumn.Add(pill, 0)
 local iconSlot = Theme.New("Frame", { LayoutOrder = 1, Size = UDim2.fromScale(0, 1), BackgroundTransparency = 1, Parent = pill }, { Theme.Aspect(1, Enum.DominantAxis.Height) })
 Icons.Timer(Colors.Text).Parent = iconSlot
 local pillText = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, -30, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = pill })
+pillText.TextTruncate = Enum.TextTruncate.AtEnd
 
 local started = false
 local function rushLeft()
@@ -47,7 +49,7 @@ local function refreshPill()
 	local left = rushLeft()
 	pill.Visible = started and left > 0
 	if left > 0 then
-		pillText.Text = string.format("Rush hour %d:%02d  ·  %dx coins", left // 60, math.floor(left % 60), Economy.RushHour.Coins)
+		pillText.Text = string.format("Rush %d:%02d · %dx coins", left // 60, math.floor(left % 60), Economy.RushHour.Coins)
 	end
 end
 
@@ -104,10 +106,10 @@ task.spawn(function()
 	local welcome = data.welcome or {}
 	if (welcome.streakCoins or 0) > 0 then
 		local streak = data.daily and data.daily.streak or 1
-		Notify.Show("Day " .. streak .. " streak: +" .. welcome.streakCoins .. " coins" .. (welcome.streakToken and ", +1 DNA token" or "") .. ".")
+		Notify.Show("Day " .. streak .. " streak: +" .. Muscles.FormatExp(welcome.streakCoins) .. " coins" .. (welcome.streakToken and ", +1 DNA token" or "") .. ".")
 	end
 	if (welcome.offlineCoins or 0) > 0 then
-		Notify.Show("While you were away: +" .. welcome.offlineCoins .. " coins.")
+		Notify.Show("While you were away: +" .. Muscles.FormatExp(welcome.offlineCoins) .. " coins.")
 	end
 end)
 
@@ -153,6 +155,7 @@ end
 
 local dailyOpen = false
 local function setDaily(open)
+	if open == dailyOpen then return end
 	dailyOpen = open
 	dailyPill:SetActive(open)
 	if open then
@@ -170,7 +173,11 @@ local function setDaily(open)
 		end
 	end
 end
-dailyPill.Activated:Connect(function() setDaily(not dailyOpen) end)
+UIBus.RegisterPanel("Daily", function() setDaily(false) end)
+dailyPill.Activated:Connect(function()
+	if not dailyOpen then UIBus.PanelOpened("Daily") end
+	setDaily(not dailyOpen)
+end)
 ClientData.Changed:Connect(function(path)
 	if path[1] == "daily" or path[1] == "welcome" then refreshDaily() end
 end)

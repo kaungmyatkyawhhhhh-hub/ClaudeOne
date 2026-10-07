@@ -158,6 +158,7 @@ local function open()
 	Theme.Fade(panel, true)
 end
 local function close()
+	if not isOpen then return end
 	isOpen = false
 	dragging = nil
 	menuButton:SetActive(false)
@@ -169,12 +170,13 @@ local function close()
 		end)
 	end
 end
+UIBus.RegisterPanel("Settings", close)
 menuButton.Activated:Connect(function()
-	if isOpen then close() else open() end
+	if isOpen then close() else UIBus.PanelOpened("Settings") open() end
 end)
 closeButton.Activated:Connect(close)
 UIBus.OpenSettings.Event:Connect(function()
-	if not isOpen then open() end
+	if not isOpen then UIBus.PanelOpened("Settings") open() end
 end)
 
 -- saved volumes, then music

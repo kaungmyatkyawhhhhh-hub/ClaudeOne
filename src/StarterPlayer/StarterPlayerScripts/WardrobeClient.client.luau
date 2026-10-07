@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared.Config.Cosmetics)
+local Muscles = require(Shared.Config.Muscles)
 local Body = require(Shared.Config.Body)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
@@ -84,7 +85,7 @@ local confirming = nil -- itemId waiting for its second tap
 
 local function refreshStore()
 	local owned, equipped, coins = state()
-	coinsLabel.Text = coins .. " coins"
+	coinsLabel.Text = Muscles.FormatExp(coins) .. " coins"
 	for id, card in pairs(storeCards) do
 		local item = Cosmetics.ById[id]
 		if owned[id] then
@@ -273,8 +274,9 @@ local function openWardrobe()
 	Audio.PlayUI("Whoosh")
 	Theme.Fade(wardrobePanel, true)
 end
+UIBus.RegisterPanel("Wardrobe", closeWardrobe)
 menuButton.Activated:Connect(function()
-	if wardrobeOpen then closeWardrobe() else openWardrobe() end
+	if wardrobeOpen then closeWardrobe() else UIBus.PanelOpened("Wardrobe") openWardrobe() end
 end)
 
 ------------------------------------------------------------------------

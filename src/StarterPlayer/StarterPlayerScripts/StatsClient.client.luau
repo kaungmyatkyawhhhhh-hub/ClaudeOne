@@ -208,6 +208,9 @@ local function refreshScreen()
 	end
 	wasReady = progress.ready
 
+	-- the six cards (about 40 tweens) only need updating while the window is open; opening it refreshes everything
+	if not musclesOpen then return end
+
 	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
 	local levels, weakest, ties = {}, nil, 0
 	for _, group in ipairs(Muscles.Groups) do
@@ -261,6 +264,7 @@ end
 local function openMuscles()
 	if musclesOpen or UIBus.MenuOpen then return end
 	musclesOpen = true
+	UIBus.PanelOpened("Muscles") -- (side panels close behind the big window)
 	if musclesTile then musclesTile:SetActive(true) end
 	hideHud(true)
 	refreshScreen()
@@ -298,6 +302,7 @@ end)
 spurtButton.Activated:Connect(function()
 	Remotes.PlayerAction:FireServer("GrowthSpurt")
 end)
+UIBus.RegisterPanel("Muscles", closeMuscles)
 UIBus.OpenMuscles.Event:Connect(openMuscles)
 UIBus.GeneticsVisible.Event:Connect(function(visible)
 	if visible and musclesOpen then closeMuscles() end
@@ -312,7 +317,6 @@ musclesTile.Activated:Connect(function()
 	if musclesOpen then closeMuscles() else openMuscles() end
 end)
 local menuDone = false
-local function updateButton() end -- (kept so the code below reads the same)
 
 statsButton.Activated:Connect(function()
 	labelsOn = not labelsOn
@@ -321,7 +325,6 @@ statsButton.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	UIBus.StatsLabels:Fire(labelsOn)
 	UIBus.StatsVisible:Fire(labelsOn) -- (the tutorial's "open Stats" step)
-	updateButton()
 end)
 
 task.spawn(function()
@@ -329,10 +332,6 @@ task.spawn(function()
 	UIBus.WaitForMenu()
 	menuDone = true
 	refreshScreen()
-	while true do
-		task.wait(0.2)
-		updateButton()
-	end
 end)
 
 ClientData.Changed:Connect(function(path)

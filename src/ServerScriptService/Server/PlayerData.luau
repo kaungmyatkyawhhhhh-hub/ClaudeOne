@@ -119,11 +119,14 @@ local function load(player)
 	return nil, "locked"
 end
 
+local savesInFlight = 0 -- saves currently talking to the DataStore (the shutdown handler waits for them)
+
 -- Saves through UpdateAsync, refusing to overwrite a session another server now owns.
 local function save(player, release)
 	local profile = profiles[player]
 	if not profile or not profile.canSave or profile.released then return false end
 	if release then profile.released = true end
+	savesInFlight += 1
 
 	local data = profile.data
 	data.meta.lastSeen = os.time()
@@ -154,6 +157,7 @@ local function save(player, release)
 			player:Kick("You joined from another server. Please rejoin!")
 		end
 	end
+	savesInFlight -= 1
 	return ok and not lostLock
 end
 
@@ -265,6 +269,13 @@ end
 -- Reading -----------------------------------------------------------------
 
 -- Returns the live data table, or nil if not loaded. Treat as read-only outside this module.
+-- True when this player's progress is really saved (false for Studio FreshPlayer sessions, failed loads and lost locks).
+-- Anything that writes shared DataStores on the player's behalf (leaderboards, crews) must check it first.
+function PlayerData.IsPersistent(player)
+	local profile = profiles[player]
+	return profile ~= nil and profile.canSave == true
+end
+
 function PlayerData.Get(player)
 	local profile = profiles[player]
 	return profile and profile.data
@@ -574,7 +585,8 @@ function PlayerData.Start()
 			end)
 		end
 		local deadline = os.clock() + 25
-		while pending > 0 and os.clock() < deadline do
+		-- (also waits for saves that started earlier, e.g. a player who left a moment ago)
+		while (pending > 0 or savesInFlight > 0) and os.clock() < deadline do
 			task.wait(0.1)
 		end
 	end)

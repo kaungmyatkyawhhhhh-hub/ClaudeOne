@@ -1,7 +1,7 @@
 -- Crews (Config.Social.Crew): up to 8 players with a name and a short tag above their heads, saved across
 -- servers. Create one, invite players in your server, accept invites, leave. Every name and tag goes through
 -- Roblox's text filter before anyone else sees it. A crew's score (its members' muscle levels) feeds the top
--- crews list shown in the Crew panel.
+-- crews list shown in the Crew panel. Scores are EXP (Muscles.TotalExp), like every number the player sees.
 -- Records: DataStore "Crews", key = crew id -> { name, tag, owner, members = { [userId] = { score } } }.
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -166,6 +166,7 @@ local actions = {}
 
 actions.Create = function(player, name, tag)
 	if crewIdOf(player) then result(player, "You're already in a crew.") return end
+	if not PlayerData.IsPersistent(player) then result(player, "Crews can't be made in a test session (progress isn't saved).") return end
 	if type(name) ~= "string" or type(tag) ~= "string" then return end
 	name = name:gsub("^%s+", ""):gsub("%s+$", "")
 	tag = tag:upper()
@@ -183,7 +184,11 @@ actions.Create = function(player, name, tag)
 	local crewId = HttpService:GenerateGUID(false)
 	local record = { name = cleanName, tag = cleanTag, owner = player.UserId, members = { [tostring(player.UserId)] = { score = 0 } }, created = os.time() }
 	local ok = pcall(crewStore.SetAsync, crewStore, crewId, record)
-	if not ok then result(player, "Couldn't save the crew right now. Try again in a minute.") return end
+	if not ok then
+		if CREW.CreateCost > 0 then PlayerData.AddCoins(player, CREW.CreateCost) end -- (the coins were taken above)
+		result(player, "Couldn't save the crew right now. Try again in a minute.")
+		return
+	end
 	cache[crewId] = record
 	setCrew(player, crewId)
 	updateTag(player)
@@ -205,6 +210,7 @@ end
 
 actions.Accept = function(player, crewId)
 	if type(crewId) ~= "string" or not (invites[player] and invites[player][crewId]) then return end
+	if not PlayerData.IsPersistent(player) then result(player, "Crews can't be joined in a test session (progress isn't saved).") return end
 	if crewIdOf(player) then result(player, "Leave your crew first.") return end
 	local full = false
 	local ok, record = updateCrew(crewId, function(stored)
@@ -233,7 +239,7 @@ end
 actions.Leave = function(player)
 	local crewId = crewIdOf(player)
 	if not crewId then return end
-	updateCrew(crewId, function(stored)
+	local left = updateCrew(crewId, function(stored)
 		if not stored then return nil end
 		stored.members[tostring(player.UserId)] = nil
 		if tostring(stored.owner) == tostring(player.UserId) then
@@ -242,6 +248,8 @@ actions.Leave = function(player)
 		end
 		return stored
 	end)
+	-- (a failed write must not leave the player gone on their side but still listed in the crew)
+	if not left then result(player, "Couldn't leave right now. Try again in a minute.") return end
 	setCrew(player, nil)
 	updateTag(player)
 	result(player, "You left the crew.")
@@ -251,9 +259,8 @@ end
 -- Scores + top crews
 ------------------------------------------------------------------------
 local function levelSum(data)
-	local sum = 0
-	for _, group in ipairs(Muscles.Groups) do sum += Muscles.GetGroupLevel(data.muscles, group.id) end
-	return math.floor(sum + data.growthSpurts * 100)
+	-- EXP: all muscles together, plus a big step per Growth Spurt (a spurt resets the muscles, so it must still count)
+	return Muscles.TotalExp(data.muscles) + data.growthSpurts * 1000000
 end
 
 local function refreshScores()
@@ -261,7 +268,7 @@ local function refreshScores()
 	for _, player in ipairs(Players:GetPlayers()) do
 		local data = PlayerData.Get(player)
 		local crewId = data and data.crew and data.crew.id
-		if crewId then
+		if crewId and PlayerData.IsPersistent(player) then
 			byCrew[crewId] = byCrew[crewId] or {}
 			byCrew[crewId][tostring(player.UserId)] = levelSum(data)
 		end

@@ -20,7 +20,16 @@ local ServerStorage = game:GetService("ServerStorage")
 local CollectionService = game:GetService("CollectionService")
 
 local function clearDecor()
-	if decor then decor:Destroy() end
+	if decor then
+		-- anyone lifting on a seasonal machine gets off it first (otherwise they stay anchored with the machine HUD up)
+		local ok, MachineService = pcall(require, script.Parent.MachineService)
+		if ok and MachineService.LeaveModel then
+			for _, model in ipairs(decor:GetChildren()) do
+				if model:IsA("Model") then MachineService.LeaveModel(model) end
+			end
+		end
+		decor:Destroy()
+	end
 	decor = nil
 end
 

@@ -77,7 +77,7 @@ local function refresh()
 		Theme.Tween(fill, { Size = UDim2.fromScale(math.clamp(filled - (i - 1), 0, 1), 1) }, Theme.Motion.Time)
 	end
 	footer.Visible = true
-	footer.Text = active.ready and ("Done. Talk to " .. Quests.CoachName) or (active.progress .. " / " .. active.goal)
+	footer.Text = active.ready and ("Done. Talk to " .. Quests.CoachName) or (Muscles.FormatExp(active.progress) .. " / " .. Muscles.FormatExp(active.goal))
 	footer.TextColor3 = active.ready and Colors.Text or Colors.Muted
 end
 

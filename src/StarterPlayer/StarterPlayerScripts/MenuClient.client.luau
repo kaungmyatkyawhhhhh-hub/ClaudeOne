@@ -119,7 +119,7 @@ local function buildCard(data)
 	for _ in pairs(data.titles and data.titles.owned or {}) do titleCount += 1 end
 	local lines = {
 		"Height " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts)) .. "  ·  Growth Spurt " .. data.growthSpurts,
-		(data.stats and data.stats.totalReps or 0) .. " reps  ·  " .. titleCount .. " titles  ·  " .. metCount .. "/" .. #Legends.List .. " legends",
+		Muscles.FormatExp(data.stats and data.stats.totalReps or 0) .. " reps  ·  " .. titleCount .. " titles  ·  " .. metCount .. "/" .. #Legends.List .. " legends",
 		nextTier and (nextTier.id .. " at " .. nextTier.reps .. " reps") or "Top tier",
 	}
 	for i, text in ipairs(lines) do
@@ -235,7 +235,7 @@ task.spawn(function()
 			local coins = data.welcome and data.welcome.offlineCoins or 0
 			if coins > 0 and not shownOffline then
 				shownOffline = true
-				infoLine(2, "While you were away: +" .. coins .. " coins")
+				infoLine(2, "While you were away: +" .. Muscles.FormatExp(coins) .. " coins")
 			end
 		end
 		offlineLine()

@@ -109,6 +109,7 @@ local function visit()
 		scale = legend.look.scale, tag = "Legend", animated = true, prompt = { action = "Talk", object = legend.name, distance = 11 },
 	}
 	local model, prompt = NpcService.Build(spec, cframe)
+	if not model then return end -- (couldn't build this visit; the loop tries again next time)
 	present = { legend = legend, model = model }
 	if prompt then Guard.OnTriggered(prompt, function(player) talk(player, legend, model) end) end
 	eventAll("LegendArrived", { name = legend.name, minutes = Legends.Visit.StayMinutes })
@@ -123,7 +124,11 @@ function LegendService.Start()
 	task.spawn(function()
 		task.wait(RunService:IsStudio() and 30 or Legends.Visit.FirstVisitSeconds)
 		while true do
-			visit()
+			local ok, err = pcall(visit) -- (one failed visit must not end the legends for the whole server)
+			if not ok then
+				warn("[LegendService] visit failed:", err)
+				present = nil
+			end
 			local gap = rng:NextNumber(Legends.Visit.EveryMinutes[1], Legends.Visit.EveryMinutes[2]) * 60
 			task.wait(gap)
 		end

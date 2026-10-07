@@ -44,7 +44,10 @@ local function visibleEntries()
 	for _, entry in ipairs(entries) do
 		if not training or entry.id == "Stats" then table.insert(list, entry) end
 	end
-	table.sort(list, function(a, b) return a.order < b.order end)
+	table.sort(list, function(a, b)
+		if a.order ~= b.order then return a.order < b.order end
+		return a.id < b.id -- (same order: a fixed order, not a shuffle)
+	end)
 	return list
 end
 
@@ -52,7 +55,7 @@ end
 -- a slight 3D look (lighter top, darker bottom edge that the face sinks into when pressed) and a bounce on hover/press.
 -- Returns the button and its parts.
 local function darker(color, amount)
-	return color:Lerp(Color3.new(0, 0, 0), amount)
+	return color:Lerp(Colors.Shadow, amount)
 end
 
 local function makeButton(id, labelText, iconFactory, side, order)
@@ -67,18 +70,18 @@ local function makeButton(id, labelText, iconFactory, side, order)
 		BackgroundTransparency = 1,
 	})
 	-- the dark bottom edge (full size) and the face on top of it (a little shorter, so the edge shows underneath)
-	local lip = New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = darker(accent, 0.66), Parent = button }, { Theme.Round("Button") })
+	local lip = New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = darker(accent, Theme.Tile.LipDarken), Parent = button }, { Theme.Round("Button") })
 	local border = New("UIStroke", { Color = accent, Thickness = 2, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local face = New("Frame", {
 		Name = "Face",
 		Size = UDim2.new(1, 0, 1, -5),
-		BackgroundColor3 = darker(accent, 0.5),
+		BackgroundColor3 = darker(accent, Theme.Tile.FaceDarken),
 		ZIndex = 2,
 		Parent = button,
 	}, {
 		Theme.Round("Button"),
 		border,
-		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(140, 140, 150)) }),
+		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Colors.Text, Theme.Tile.ShadeBottom) }),
 	})
 	Theme.BindPress(button)
 	-- the bounce: press squashes the tile and the face sinks onto its edge; letting go springs back past 1 and settles
@@ -109,7 +112,7 @@ local function makeButton(id, labelText, iconFactory, side, order)
 		Name = "Label",
 		Text = labelText,
 		FontFace = Theme.TileFont,
-		TextSize = 14,
+		TextSize = Theme.Tile.LabelSmall,
 		TextColor3 = Colors.Text,
 		TextStrokeColor3 = Theme.TileStroke,
 		TextStrokeTransparency = 0,
@@ -134,14 +137,14 @@ local function makeButton(id, labelText, iconFactory, side, order)
 		local iconSize = math.floor(side2 * 0.5)
 		iconSlot.Size = UDim2.fromOffset(iconSize, iconSize)
 		iconSlot.Position = UDim2.new(0.5, 0, 0, math.floor(side2 * 0.1))
-		label.TextSize = side2 >= 80 and 17 or 14
+		label.TextSize = side2 >= Theme.Tile.BigFrom and Theme.Tile.LabelBig or Theme.Tile.LabelSmall
 		label.Size = UDim2.new(1, -2, 0, label.TextSize + 4)
 		label.Position = UDim2.new(0.5, 0, 1, -math.floor(side2 * 0.05))
 	end
 	function parts.paint()
-		local color = parts.active and accent or (parts.hover and darker(accent, 0.28) or darker(accent, 0.5))
+		local color = parts.active and accent or (parts.hover and darker(accent, 0.28) or darker(accent, Theme.Tile.FaceDarken))
 		Theme.Tween(face, { BackgroundColor3 = color }, 0.15)
-		Theme.Tween(border, { Color = parts.active and Color3.new(1, 1, 1) or accent, Transparency = (parts.active or parts.hover) and 0 or 0.1 }, 0.15)
+		Theme.Tween(border, { Color = parts.active and Theme.Tile.ActiveBorder or accent, Transparency = (parts.active or parts.hover) and 0 or 0.1 }, 0.15)
 		Theme.Tween(grow, { Scale = parts.hover and 1.1 or 1 }, 0.22, Theme.Motion.Bounce)
 	end
 	button.MouseEnter:Connect(function() parts.hover = true; parts.paint() end)
@@ -230,7 +233,7 @@ local function ensure()
 	toggle = New("TextButton", {
 		Name = "MenuToggle",
 		Position = UDim2.fromOffset(MARGIN, Spacing.S),
-		Size = UDim2.fromOffset(SIZE.Max, SIZE.Max),
+		Size = UDim2.fromOffset(SIZE.Min, SIZE.Min), -- (64: the phone menu button stays small and clear of the thumbstick)
 		Text = "",
 		AutoButtonColor = false,
 		BackgroundColor3 = Colors.Panel,
@@ -294,7 +297,7 @@ end
 -- Pixel x of the menu's right edge, for panels that open beside it (phones: the Menu button's).
 function SideMenu.Right()
 	ensure()
-	if phone then return MARGIN + SIZE.Max end
+	if phone then return MARGIN + SIZE.Min end
 	return MARGIN + columns * size + (columns - 1) * GAP
 end
 
@@ -355,6 +358,7 @@ end
 function SideMenu.SetTraining(on)
 	ensure()
 	training = on
+	if on then require(script.Parent.UIBus).CloseAllPanels() end
 	if on then setGrid(false) end
 	layout()
 end

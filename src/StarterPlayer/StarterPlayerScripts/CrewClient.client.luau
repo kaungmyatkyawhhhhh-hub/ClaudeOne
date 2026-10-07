@@ -6,10 +6,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Social = require(Shared.Config.Social)
+local Muscles = require(Shared.Config.Muscles)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
+local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -110,7 +112,7 @@ local function render(info)
 		heading(crew.name .. "  [" .. crew.tag .. "]")
 		line(#crew.members .. " / " .. crew.max .. " members")
 		for _, member in ipairs(crew.members) do
-			line(member.name .. (member.owner and "  · leader" or "") .. (member.here and "  · here" or "") .. "   " .. member.score, member.here and Colors.Text or Colors.Muted)
+			line(member.name .. (member.owner and "  · leader" or "") .. (member.here and "  · here" or "") .. "   " .. Muscles.FormatExp(member.score) .. " exp", member.here and Colors.Text or Colors.Muted)
 		end
 		if #crew.members < crew.max then
 			heading("Invite")
@@ -140,7 +142,7 @@ local function render(info)
 	if info.top and #info.top > 0 then
 		heading("Top crews")
 		for rank, crew in ipairs(info.top) do
-			line(rank .. ".  " .. crew.name .. " [" .. crew.tag .. "]  ·  " .. crew.members .. " members  ·  " .. crew.score)
+			line(rank .. ".  " .. crew.name .. " [" .. crew.tag .. "]  ·  " .. crew.members .. " members  ·  " .. Muscles.FormatExp(crew.score) .. " exp")
 		end
 	end
 end
@@ -169,6 +171,7 @@ end)
 ------------------------------------------------------------------------
 local isOpen = false
 local function close()
+	if not isOpen then return end
 	isOpen = false
 	menuButton:SetActive(false)
 	local tween = Theme.Fade(panel, false)
@@ -186,7 +189,8 @@ local function open()
 	Theme.Fade(panel, true)
 	remote:FireServer("Info")
 end
+UIBus.RegisterPanel("Crew", close)
 menuButton.Activated:Connect(function()
-	if isOpen then close() else open() end
+	if isOpen then close() else UIBus.PanelOpened("Crew") open() end
 end)
 

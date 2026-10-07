@@ -77,6 +77,8 @@ end
 local function writeScores(player)
 	local data = PlayerData.Get(player)
 	if not data then return end
+	-- a Studio test (FreshPlayer) or failed-load session must never overwrite the real leaderboards
+	if not PlayerData.IsPersistent(player) then return end
 	-- a local reference: the player can leave (and their entry be cleared) while a SetAsync below is in flight
 	local mine = written[player] or {}
 	written[player] = mine
@@ -227,6 +229,7 @@ end
 -- skating, death and the time limit let go too.
 ------------------------------------------------------------------------
 local posed = {} -- [player] = { walkSpeed, jumpPower, jumpHeight, token }
+local poseCounter = 0
 
 function ShowOffService.ReleasePose(player)
 	local state = posed[player]
@@ -278,7 +281,8 @@ function ShowOffService.SetPose(player, emote)
 		state = { walkSpeed = humanoid.WalkSpeed, jumpPower = humanoid.JumpPower, jumpHeight = humanoid.JumpHeight }
 		posed[player] = state
 	end
-	state.token = (state.token or 0) + 1
+	poseCounter += 1 -- (one counter for the whole server: timers from an earlier pose or character can never match a new one)
+	state.token = poseCounter
 	local token = state.token
 	humanoid.WalkSpeed, humanoid.JumpPower, humanoid.JumpHeight = 0, 0, 0
 	character:SetAttribute("Pose", emote.poseData)
@@ -292,6 +296,7 @@ end
 function ShowOffService.PlayEmote(player, emoteId)
 	local emote = ShowOff.EmoteById[emoteId]
 	if not emote or not emoteRemote or busy(player) then return false end
+	if player:GetAttribute("Skating") == true then return false end -- (a skater's joints belong to the skate pose)
 	if emote.poseData then return ShowOffService.SetPose(player, emote) end
 	ShowOffService.ReleasePose(player)
 	emoteRemote:FireAllClients(player, emote.id, emote.seconds)
@@ -350,9 +355,15 @@ function ShowOffService.Start()
 	task.spawn(function()
 		task.wait(10)
 		while true do
-			for _, player in ipairs(Players:GetPlayers()) do writeScores(player) end
-			refreshBoard()
-			refreshStatue()
+			-- (each step protected: one error must not stop the leaderboard and statue for the rest of the server's life)
+			for _, player in ipairs(Players:GetPlayers()) do
+				local ok, err = pcall(writeScores, player)
+				if not ok then warn("[ShowOffService] writeScores:", err) end
+			end
+			local okBoard, errBoard = pcall(refreshBoard)
+			if not okBoard then warn("[ShowOffService] refreshBoard:", errBoard) end
+			local okStatue, errStatue = pcall(refreshStatue)
+			if not okStatue then warn("[ShowOffService] refreshStatue:", errStatue) end
 			task.wait(ShowOff.Leaderboard.Refresh)
 		end
 	end)

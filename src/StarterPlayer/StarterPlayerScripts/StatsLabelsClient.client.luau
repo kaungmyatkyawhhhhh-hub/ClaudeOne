@@ -241,6 +241,7 @@ local function refreshSubs()
 	for _, entry in ipairs(labels) do
 		for _, sub in ipairs(entry.subs) do
 			local entry = data.muscles[sub.muscle.id]
+			if not entry then continue end
 			local maxed = entry.level >= cap
 			sub.text.Text = sub.muscle.name .. "  " .. (maxed and "Max" or commas(Muscles.MuscleExp(entry)))
 			sub.text.TextColor3 = maxed and Colors.Gold or Colors.Text
@@ -460,7 +461,12 @@ local function place(dt)
 	local span = math.min(height * 0.9, view.Y * LAYOUT.MaxSpan)
 	local step = math.max(size.Height + LAYOUT.Gap, (span - size.Height) / 2)
 	local total = step * 2 + size.Height
-	local columnTop = math.clamp(center.Y - total / 2, topLimit + size.TopHeight + LAYOUT.Gap, math.max(topLimit, bottomLimit - total))
+	-- an open group pushes the labels under it down: keep room for its muscle rows so they never run off the bottom
+	local openExtra = 0
+	for _, entry in ipairs(labels) do
+		if openGroup == entry.spec.id then openExtra = #entry.subs * SUB_HEIGHT end
+	end
+	local columnTop = math.clamp(center.Y - total / 2, topLimit + size.TopHeight + LAYOUT.Gap, math.max(topLimit, bottomLimit - total - openExtra))
 	for _, side in ipairs({ "Left", "Right" }) do
 		local column = {}
 		for _, entry in ipairs(labels) do

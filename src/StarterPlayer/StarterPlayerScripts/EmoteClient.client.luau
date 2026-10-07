@@ -13,6 +13,7 @@ local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
+local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -62,10 +63,6 @@ end
 -- w = 0..1 (ease in/out)
 local POSES = {}
 
-POSES.DoubleBiceps = function(character, w)
-	for _, side in ipairs(SIDES) do sideArm(character, side, -rad(5) * w, rad(88) * w, rad(125) * w) end
-	setJoint(character, "Waist", Angles(rad(4) * w, 0, 0)) -- chest up
-end
 POSES.HighFive = function(character, w)
 	sideArm(character, SIDES[1], -rad(15) * w, rad(160) * w, rad(15) * w)
 end
@@ -75,8 +72,11 @@ POSES.Chug = function(character, w)
 	setJoint(character, "Waist", Angles(rad(8) * w, 0, 0))
 end
 
-local function resetPose(character)
-	for key in pairs(JOINTS) do setJoint(character, key, CFrame.identity) end
+-- the joints each small pose writes (only those are reset when it ends, so it never wipes a machine or skate pose)
+local POSE_JOINTS = { HighFive = { "RShoulder", "RElbow" }, Chug = { "RShoulder", "RElbow", "Waist" } }
+
+local function resetPose(character, keys)
+	for _, key in ipairs(keys) do setJoint(character, key, CFrame.identity) end
 end
 
 local active = {} -- [character] = { pose, start, seconds }
@@ -86,7 +86,7 @@ remote.OnClientEvent:Connect(function(who, emoteId, seconds)
 	local emote = ShowOff.EmoteById[emoteId]
 	local character = typeof(who) == "Instance" and who:IsA("Player") and who.Character
 	if not emote or not character or not POSES[emote.pose] then return end
-	active[character] = { pose = POSES[emote.pose], start = os.clock(), seconds = tonumber(seconds) or emote.seconds }
+	active[character] = { pose = POSES[emote.pose], joints = POSE_JOINTS[emote.pose] or {}, start = os.clock(), seconds = tonumber(seconds) or emote.seconds }
 end)
 
 -- before physics, so the pose wins over the walk/idle animation (same as MachineClient)
@@ -94,49 +94,17 @@ RunService.Stepped:Connect(function()
 	local now = os.clock()
 	for character, state in pairs(active) do
 		local t = now - state.start
-		if not character.Parent or t >= state.seconds then
+		-- a character that got on a machine or a skateboard meanwhile belongs to that pose now: let this one go
+		local root = character.Parent and character:FindFirstChild("HumanoidRootPart")
+		local who = Players:GetPlayerFromCharacter(character)
+		local taken = root ~= nil and (root.Anchored or (who ~= nil and who:GetAttribute("Skating") == true))
+		if not character.Parent or t >= state.seconds or taken then
 			active[character] = nil
-			if character.Parent then resetPose(character) end
+			if character.Parent and not taken then resetPose(character, state.joints) end
 		else
 			local w = math.min(1, t / EASE, (state.seconds - t) / EASE)
 			w = w * w * (3 - 2 * w) -- smoothstep
 			state.pose(character, w)
-		end
-	end
-end)
-
-------------------------------------------------------------------------
--- NPC gym-goers (GymGoerService): a loop of alternating curls, a double-biceps flex, then a short rest
-------------------------------------------------------------------------
-local CollectionService = game:GetService("CollectionService")
-local GOER_CYCLE = { curl = 9, flex = 3, rest = 4 } -- seconds
-local CURL_PERIOD = 2.4
-
-local function goerPose(character, t)
-	local cycle = GOER_CYCLE.curl + GOER_CYCLE.flex + GOER_CYCLE.rest
-	local c = t % cycle
-	if c < GOER_CYCLE.curl then
-		local wave = (t % CURL_PERIOD) / CURL_PERIOD * math.pi * 2
-		frontArm(character, SIDES[1], rad(5), rad(10), rad(25 + 115 * (0.5 + 0.5 * math.sin(wave))))
-		frontArm(character, SIDES[2], rad(5), rad(10), rad(25 + 115 * (0.5 + 0.5 * math.sin(wave + math.pi))))
-	elseif c < GOER_CYCLE.curl + GOER_CYCLE.flex then
-		local into = c - GOER_CYCLE.curl
-		local w = math.min(1, into / EASE, (GOER_CYCLE.flex - into) / EASE)
-		POSES.DoubleBiceps(character, w * w * (3 - 2 * w))
-	else
-		frontArm(character, SIDES[1], rad(3), rad(8), rad(15))
-		frontArm(character, SIDES[2], rad(3), rad(8), rad(15))
-		setJoint(character, "Waist", CFrame.identity)
-	end
-end
-
-RunService.Stepped:Connect(function()
-	local now = os.clock()
-	local cameraAt = workspace.CurrentCamera.CFrame.Position
-	for _, goer in ipairs(CollectionService:GetTagged("GymGoer")) do
-		-- (performance: nobody sees a curl from across the map, so far-away regulars aren't posed)
-		if goer:IsDescendantOf(workspace) and (goer:GetPivot().Position - cameraAt).Magnitude < 90 then
-			goerPose(goer, now + (goer:GetAttribute("Phase") or 0))
 		end
 	end
 end)
@@ -161,6 +129,7 @@ Theme.Text({ LayoutOrder = 0, Text = "Poses", Font = "SemiBold", TextSize = "Bod
 
 local isOpen = false
 local function close()
+	if not isOpen then return end
 	isOpen = false
 	menuButton:SetActive(false)
 	local tween = Theme.Fade(panel, false)
@@ -178,8 +147,9 @@ local function open()
 	Audio.PlayUI("Whoosh")
 	Theme.Fade(panel, true)
 end
+UIBus.RegisterPanel("Poses", close)
 menuButton.Activated:Connect(function()
-	if isOpen then close() else open() end
+	if isOpen then close() else UIBus.PanelOpened("Poses") open() end
 end)
 
 for order, emote in ipairs(ShowOff.Emotes) do

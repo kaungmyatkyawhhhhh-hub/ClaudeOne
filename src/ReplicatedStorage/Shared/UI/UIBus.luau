@@ -31,6 +31,21 @@ end
 UIBus.Training = false
 UIBus.ShortScreen = 460 -- screens shorter than this (phones in landscape) are "short"
 
+-- Side panels (Settings, Daily, Wardrobe, Crew, Poses, Titles, Muscles) register a close function. Opening one closes the others,
+-- and getting on a machine closes all of them (so nothing floats over the lift or stays open with no way to close it).
+local panels = {}
+function UIBus.RegisterPanel(name, close)
+	panels[name] = close
+end
+function UIBus.PanelOpened(name)
+	for other, close in pairs(panels) do
+		if other ~= name then close() end
+	end
+end
+function UIBus.CloseAllPanels()
+	for _, close in pairs(panels) do close() end
+end
+
 -- True while the menu screen is up (MenuClient sets it as soon as it starts).
 UIBus.MenuOpen = false
 

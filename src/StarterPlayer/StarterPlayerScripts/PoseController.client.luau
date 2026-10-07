@@ -39,7 +39,7 @@ local function refresh(char)
 	local name = char:GetAttribute("Pose")
 	local st = active[char]
 	if name and name ~= "" and PoseData[name] then
-		if not st then st = {motors = findMotors(char), w = 0}; active[char] = st end
+		if not st then st = {motors = findMotors(char), w = 0, version = char:GetAttribute("BodyVersion")}; active[char] = st end
 		st.pose = PoseData[name]; st.target = 1
 		stopTracks(char)
 	elseif st then
@@ -67,6 +67,13 @@ CollectionService:GetInstanceAddedSignal("Poser"):Connect(watch)
 -- write Transforms after the Animator each frame
 RunService.PreSimulation:Connect(function(dt)
 	for char, st in pairs(active) do
+		-- the body was swapped (outfit change, Growth Spurt rebuild): the joints we cached are gone, find the new ones
+		local version = char:GetAttribute("BodyVersion")
+		local root = st.motors.Root
+		if version ~= st.version or (root and root.Parent == nil) then
+			st.motors = findMotors(char)
+			st.version = version
+		end
 		local speed = st.target == 1 and (1 / BLEND_IN) or (1 / BLEND_OUT)
 		st.w = math.clamp(st.w + (st.target == 1 and 1 or -1) * dt * speed, 0, 1)
 		local a = st.w * st.w * (3 - 2 * st.w) -- smoothstep

@@ -69,6 +69,7 @@ local meshOf = setmetatable({}, { __mode = "k" }) -- [muscle MeshPart] = its Edi
 -- Allocator state: how many EditableMeshes are alive, and the most this client allows (learned when a create fails).
 local alive = 0
 local limit = math.huge
+local limitResetAt = 0
 local building = false
 local lastAllocate = 0
 
@@ -184,6 +185,13 @@ local function ensureGarments(self)
 end
 
 local function updateGarments(self, visible: boolean)
+	-- an outfit or body swap replaces the legs: drop shorts that belong to a leg that is gone (ensureGarments makes new ones)
+	for side, garment in pairs(self.garments) do
+		if garment.leg.Parent ~= self.model then
+			garment.part:Destroy()
+			self.garments[side] = nil
+		end
+	end
 	ensureGarments(self)
 	local _, shorts = colorsOf(self)
 	for _, garment in pairs(self.garments) do
@@ -379,7 +387,9 @@ local function newMesh(): any
 	local okCreate, mesh = pcall(function() return AssetService:CreateEditableMesh() end)
 	if not okCreate or not mesh then
 		-- the client's budget is used up: remember how many fit and let the allocator rearrange
-		limit = math.max(alive, 0)
+		limit = alive
+		-- (a failure with nothing built is probably temporary: look again in a while instead of giving up for the whole session)
+		if alive == 0 then limitResetAt = os.clock() + 15 end
 		return nil
 	end
 	alive += 1
@@ -616,6 +626,7 @@ end
 -- The allocator: which units get a mesh, most important first
 ------------------------------------------------------------------------
 local function allocate()
+	if limit == 0 and os.clock() >= limitResetAt then limit = math.huge end
 	-- every wanted unit of every rig, most important first
 	local jobs = {}
 	for rig in pairs(active) do
@@ -645,7 +656,9 @@ local function allocate()
 	local budget = limit
 	for _, job in ipairs(jobs) do
 		local state = job.state
-		local want = state.wanted and budget >= state.unit.cost
+		-- a unit that just failed to build waits out its backoff without holding budget the others could use
+		local backoff = not state.built and (state.failedAt or 0) > os.clock()
+		local want = state.wanted and not backoff and budget >= state.unit.cost
 		if want then budget -= state.unit.cost end
 		job.keep = want
 	end

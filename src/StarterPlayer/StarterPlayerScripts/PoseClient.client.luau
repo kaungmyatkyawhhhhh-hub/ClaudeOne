@@ -30,6 +30,7 @@ if not remote then return end -- the show-off service didn't start
 local BLEND_IN = 0.35  -- PoseController's blend; the hit lands when the pose has settled
 local GRACE = 0.6      -- seconds after the pose starts before moving cancels it (so the button press itself doesn't)
 local PUMP = 0.04      -- the muscles shown off get this much bigger at the peak of the hit
+local punchBase, punchToken = nil, 0 -- field of view before the current camera punch
 
 local emoteByPose = {}
 for _, emote in ipairs(ShowOff.Emotes) do
@@ -77,10 +78,16 @@ local function hit(character: Model, emote)
 		-- a tiny camera punch (field of view in and back out) and a soft flash
 		local camera = workspace.CurrentCamera
 		if camera then
-			local base = camera.FieldOfView
-			Theme.Tween(camera, { FieldOfView = base - 4 }, 0.08)
+			-- (the field of view to return to is remembered while a punch is running, so quick back-to-back hits can't ratchet it down)
+			punchToken += 1
+			local token = punchToken
+			punchBase = punchBase or camera.FieldOfView
+			Theme.Tween(camera, { FieldOfView = punchBase - 4 }, 0.08)
 			task.delay(0.09, function()
-				if camera.Parent then Theme.Tween(camera, { FieldOfView = base }, 0.3) end
+				if camera.Parent then Theme.Tween(camera, { FieldOfView = punchBase }, 0.3) end
+			end)
+			task.delay(0.5, function()
+				if token == punchToken then punchBase = nil end
 			end)
 		end
 		flash.BackgroundTransparency = 0.82

@@ -230,7 +230,7 @@ local function boardJoint(character)
 	return deck and deck:FindFirstChild("BoardJoint")
 end
 
-local poses = {} -- [character] = smoothed values
+local poses = setmetatable({}, { __mode = "k" }) -- [character] = smoothed values (weak: a character that is gone must not be kept alive)
 local function follow(value, target, rate, dt)
 	return value + (target - value) * math.min(1, dt * rate)
 end
@@ -321,7 +321,9 @@ local function clearPose(character)
 	for key in pairs(JOINTS) do set(character, key, CFrame.identity) end
 end
 
-local FOV_BASE = nil
+-- The speed zoom is an OFFSET we add to whatever field of view the camera has (menus, pose punches, machines change it too):
+-- we only ever add or take back our own part, and never pull the camera to a remembered value.
+local fovOffset = 0
 RunService.Stepped:Connect(function(_, dt)
 	for _, other in ipairs(Players:GetPlayers()) do
 		local character = other.Character
@@ -335,12 +337,16 @@ RunService.Stepped:Connect(function(_, dt)
 	-- a little more field of view at speed for me
 	local camera = workspace.CurrentCamera
 	local mine = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if camera and mine then
-		FOV_BASE = FOV_BASE or camera.FieldOfView
-		local speed = (mine.AssemblyLinearVelocity * Vector3.new(1, 0, 1)).Magnitude
-		local want = if skating() then FOV_BASE + math.clamp((speed - 16) * 0.4, 0, 8) else FOV_BASE
-		if math.abs(camera.FieldOfView - want) > 0.05 and (skating() or camera.FieldOfView ~= FOV_BASE) then
-			camera.FieldOfView += (want - camera.FieldOfView) * math.min(1, dt * 4)
+	if camera then
+		local want = 0
+		if mine and skating() then
+			local speed = (mine.AssemblyLinearVelocity * Vector3.new(1, 0, 1)).Magnitude
+			want = math.clamp((speed - 16) * 0.4, 0, 8)
+		end
+		local nextOffset = fovOffset + (want - fovOffset) * math.min(1, dt * 4)
+		if math.abs(nextOffset - fovOffset) > 0.001 then
+			camera.FieldOfView += nextOffset - fovOffset
+			fovOffset = nextOffset
 		end
 	end
 end)

@@ -135,6 +135,9 @@ end
 
 local function start(player)
 	if riders[player] or not allowed(player) then return end
+	-- out of a held pose first (it freezes walking and owns the joints)
+	local poseOk, ShowOffService = pcall(require, script.Parent.ShowOffService)
+	if poseOk and ShowOffService.ReleasePose then ShowOffService.ReleasePose(player) end
 	local character, humanoid, root = parts(player)
 	local rider = { hipHeight = humanoid.HipHeight }
 	humanoid.HipHeight = rider.hipHeight + SKATE.Lift
