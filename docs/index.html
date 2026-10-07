@@ -785,6 +785,10 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .admrow{display:flex;align-items:center;gap:8px;font-size:.75rem}.admrow code{flex:1;min-width:0;overflow-wrap:anywhere;color:var(--muted)}.admrow input:not([type=checkbox]){width:44%;padding:6px 8px;border-radius:8px;border:0;background:var(--sunk);color:var(--ink);font:600 .78rem var(--mono)}
 .acclist{display:flex;flex-direction:column;gap:8px}.acclist .accbar small{color:var(--muted);font-weight:600}.accbar button+button{padding:7px 10px}
 .accbar button{padding:7px 12px;border-radius:10px;background:var(--sunk);font-size:.78rem;font-weight:700}
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.setc{padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:3px;font-size:.78rem}.setc.on{background:linear-gradient(135deg,#fff3c4,#ffd6f0);color:#141824}.setc span{display:flex;flex-wrap:wrap;gap:3px}.setc i{font-style:normal;font-size:.66rem;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.07);opacity:.55}.setc i.o{opacity:.9}.setc i.w{opacity:1;background:#2fd28a;color:#fff}.setc em{font-style:normal;font-weight:800;font-size:.7rem;color:#7a2fd6}
+.photoov{display:flex;align-items:center;justify-content:center}.photocard{background:var(--surface);border-radius:22px;padding:14px;width:min(92vw,380px);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.4)}.photocard img{width:100%;border-radius:14px;display:block}.pbrow{display:flex;gap:8px}.pbrow>*{flex:1;text-align:center;text-decoration:none}
+.rwbtn{background:linear-gradient(90deg,#ff4fd8,#7a2fd6)!important;color:#fff!important}.rwbtn b{color:#fff!important;opacity:.85}
+.rwcards{display:flex;justify-content:center;gap:10px;min-height:76px;margin:6px 0}.rwcard{background:#fff;color:#141824;border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;box-shadow:var(--shadow);animation:rwpop .35s cubic-bezier(.3,1.6,.5,1)}.rwcard span{font-size:.62rem;font-weight:800;opacity:.6}.rwcard b{font:900 2rem var(--display)}@keyframes rwpop{from{transform:scale(.2) rotate(-20deg);opacity:0}}
 .acolrow{display:flex;flex-direction:column;gap:4px;margin:6px 0 10px}.acolrow>span{font-weight:800;font-size:.8rem}.acolrow .swrow{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 2px;scrollbar-width:none}.acolrow .sw{flex:0 0 26px;width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.15);padding:0}.acolrow .sw.on{outline:3px solid var(--ink,#141824);outline-offset:2px}
 .accrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .accrow .perk{grid-template-columns:1fr}
@@ -1182,6 +1186,8 @@ const ACH=[
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
+ ["set1","Fully suited","Wear a complete outfit set",()=>(S.stats.sets||0)>=1,15000],
+ ["runway27","Showstopper","Score 27 or more on the Runway",()=>(S.rwBest||0)>=27,80000],
  ["box20","Float like a butterfly","Reach a ×20 combo on the boxing bag",()=>(S.boxBest||0)>=20,30000],
  ["tricks5","Circus star","Teach a pet all five tricks",()=>Object.values(S.pets||{}).some(pd=>(pd.tr||[]).length>=5),50000],
  ["cap10","Capsule collector","Win 10 new items from the capsule machine",()=>(S.stats.capsules||0)>=10,25000],
@@ -2368,6 +2374,7 @@ function openMall(){
   const draw=bk=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mall")}
       <div class="tiles"><button class="bigbtn alt" id="mBq">Boutique<small>${ACCS.length} hats, glasses, wings and more</small></button><button class="bigbtn alt" id="mPets2">Pet shop<small>${PETS.length} pets</small></button></div>
+      <button class="reqbtn rwbtn" id="mRunway">${rwTheme().ic} Runway · ${rwTheme().n} night<b>${S.rwDay===dayKey()?"Walked today · "+(S.rwBest||0)+"/30 best":"Daily fashion show · free"}</b></button>
       <div class="perks">${UPGRADES.map(u=>{const l=S.up[u.k],mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic${bk===u.k?" bought":""}" data-u="${u.k}" ${mx||c>S.cash?"disabled":""}>
         <span class="t">${u.t}${u.max>1?`<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${u.d}</span><span class="c">${mx?"Owned":fmt(c)}</span></button>`}).join("")}</div>
       <div class="sechead"><h3>Empire upgrades</h3><span class="eyebrow">$1M to $1Qa</span></div><div class="perks">${empireList()}</div>
@@ -2377,7 +2384,7 @@ function openMall(){
       <div class="sechead"><h3>Vehicles</h3><span class="eyebrow">Kept forever</span></div><div class="perks">${vehList("mall")}</div>
       <p class="fine">Everything you buy here is yours to keep.</p></div>`;
     $("leaveBtn").onclick=closeRoom;
-    bindVeh(()=>draw());bindEmpire(()=>draw());$("mPets2").onclick=()=>openPets(()=>draw());$("mBq").onclick=()=>openBoutique(()=>draw());
+    bindVeh(()=>draw());bindEmpire(()=>draw());$("mPets2").onclick=()=>openPets(()=>draw());$("mBq").onclick=()=>openBoutique(()=>draw());$("mRunway").onclick=()=>openRunway(()=>{room="mall";openMall()});
     $("shopRent").onclick=()=>{if(S.shop.open||S.cash<SHOP_RENT)return;S.cash-=SHOP_RENT;S.shop.open=1;dirty=true;SFX.level();banner("Your shop is open","g");draw();updMini()};
     $("shopWorker").onclick=()=>{if(!S.shop.open||S.shop.worker||S.cash<SHOP_WORKER)return;S.cash-=SHOP_WORKER;S.shop.worker=1;dirty=true;SFX.level();banner("Worker hired","g");draw();updMini()};
     $("room").querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const u=UPGRADES.find(x=>x.k===b.dataset.u),l=S.up[u.k];if(l>=u.max||S.cash<u.cost(l))return;S.cash-=u.cost(l);S.up[u.k]++;SFX.level();dirty=true;const y=$("room").firstChild.scrollTop;draw(u.k);$("room").firstChild.scrollTop=y;updMini()});
@@ -4594,7 +4601,9 @@ const ACC_PAL=["#e2364a","#ff7a3d","#ffcc33","#2fd28a","#2fa6d9","#2a5bd7","#7a2
 const ACC_SLOT={h:"Hats",o:"Outfit",g:"Glasses",c:"Neck",b:"Back",x:"In hand"};
 const accOf=k=>ACCS.find(a=>a.k===k);
 const myAcc=()=>S&&S.acc||{};
-const accRizz=()=>Object.values(myAcc()).reduce((a,k)=>a+((accOf(k)||{}).rz||0),0);
+const ACC_SETS=[{n:"Archmage",ic:"🧙",k:["wizard","robe","wand"],rz:6},{n:"Captain",ic:"🏴‍☠️",k:["pirhat","pirate"],rz:4},{n:"Head chef",ic:"👨‍🍳",k:["chef","chefw"],rz:3},{n:"Astronaut",ic:"🧑‍🚀",k:["astro","space"],rz:8},{n:"Superhero",ic:"🦸",k:["hero","cape"],rz:5},{n:"Shadow archer",ic:"🥷",k:["ninja","quiver"],rz:4},{n:"Mad scientist",ic:"🧪",k:["lab","goggles"],rz:3},{n:"Gentleman",ic:"🎩",k:["tux","top","monocle"],rz:5},{n:"Champion knight",ic:"🛡️",k:["knight","medal"],rz:4},{n:"Beach day",ic:"🏖️",k:["surf","lei","shades"],rz:3},{n:"Dino party",ic:"🦖",k:["dino","balloon"],rz:2},{n:"Graduate",ic:"🎓",k:["grad","tie","case"],rz:3}];
+const setsOn=A=>{const W=Object.values(A||{});return ACC_SETS.filter(t=>t.k.every(k=>W.includes(k)))};
+const accRizz=()=>Object.values(myAcc()).reduce((a,k)=>a+((accOf(k)||{}).rz||0),0)+setsOn(myAcc()).reduce((a,t)=>a+t.rz,0);
 function accBack(c,k,x,y,hx,b,ph){
   if(k==="skate"){c.save();c.translate(x-hx-1,y-19+b);c.rotate(-.3);c.fillStyle=CC(k,"#e2364a");rrp(c,-4,-16,8,32,4);c.fill();c.fillStyle="#1b1d22";[-11,11].forEach(d=>{c.fillRect(-5.5,d-1,11,2);c.fillStyle="#f2f2f2";c.beginPath();c.arc(-5.5,d,1.6,0,7);c.arc(5.5,d,1.6,0,7);c.fill();c.fillStyle="#1b1d22"});c.restore()}
   if(k==="bwings"){const f=Math.abs(Math.sin(ph*5+wt*3))*.5+.5,col=CC(k,"#ff4fd8");[-1,1].forEach(d=>{c.save();c.translate(x+d*3,y-24+b);c.scale(d*f,1);c.fillStyle=col;c.globalAlpha=.9;c.beginPath();c.ellipse(9,-6,9,7,-.4,0,7);c.fill();c.beginPath();c.ellipse(7,5,6,5,.4,0,7);c.fill();c.globalAlpha=1;c.fillStyle="rgba(255,255,255,.6)";c.beginPath();c.arc(10,-7,2.2,0,7);c.arc(7,5,1.6,0,7);c.fill();c.restore()})}
@@ -4810,13 +4819,61 @@ function openBoutique(back,cosmic){S.accOwn=S.accOwn||{};S.acc=S.acc||{};const i
   const draw=()=>{const prev=`<div class="art bqart"><canvas id="bqCv" width="300" height="240"></canvas></div>`;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(cosmic?"Cosmic Boutique":"Boutique")}${prev}
       <div class="note">Wear one item per slot. Everything you wear adds a little <b>rizz</b> (now +${accRizz()}) and friends see it in the Online Town.</div>
+      <div class="btrow"><button class="reqbtn" id="bqPhoto">📸 Photo booth<b>Save a picture of your look</b></button></div>
+      <div class="sechead"><h3>✨ Sets</h3><span class="eyebrow">wear all pieces for bonus rizz</span></div><div class="setgrid">${ACC_SETS.map(t=>{const on=t.k.every(k=>Object.values(S.acc).includes(k));return `<div class="setc${on?" on":""}"><b>${t.ic} ${t.n}</b><span>${t.k.map(k=>{const a=accOf(k);return `<i class="${Object.values(S.acc).includes(k)?"w":S.accOwn[k]?"o":""}">${esc(a?a.n:k)}</i>`}).join("")}</span><em>+${t.rz} rizz</em></div>`}).join("")}</div>
       ${(()=>{const W=Object.values(S.acc).map(accOf).filter(a=>a&&a.cc);if(!W.length)return "";S.accCol=S.accCol||{};return `<div class="sechead"><h3>🎨 Colours</h3><span class="eyebrow">for what you're wearing</span></div>${W.map(a=>{const cur=S.accCol[a.k]||a.cc;return `<div class="acolrow"><span>${esc(a.n)}</span><div class="swrow">${[a.cc,...ACC_PAL.filter(c=>c!==a.cc)].map(c=>`<button class="sw${c===cur?" on":""}" style="background:${c}" data-acol="${a.k}" data-c="${c}" aria-label="colour"></button>`).join("")}</div></div>`}).join("")}`})()}
       ${cosmic?`<div class="note">Cosmic gear, only sold in orbit. Things you already own from either shop can be worn anywhere.</div>`:""}${Object.entries(ACC_SLOT).map(([sl,nm])=>{const L=ACCS.filter(a=>a.s===sl&&(inShop(a)||(S.accOwn[a.k]&&!cosmic)));return L.length?`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${L.map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&(a.ev||S.cash<a.cost)?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.ev&&!own?a.ev:a.d||"+"+a.rz+" rizz"}</span><span class="c">${on?"Take off":own?"Wear":a.ev?"Event":fmt(a.cost)}</span></button>`}).join("")}</div>`:""}).join("")}</div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     const cv=$("bqCv"),g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#eef1f6";g.fillRect(0,0,300,240);g.save();g.translate(150,200);{const pk_=previewK(tallK());g.scale(pk_,pk_)}drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),...myLook(),ph:wt,acc:S.acc,crown:(S.skin||0)>=5});g.restore();
     $("room").querySelectorAll("[data-acol]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acol);S.accCol=S.accCol||{};if(b.dataset.c===a.cc)delete S.accCol[a.k];else S.accCol[a.k]=b.dataset.c;S.stats.recolors=(S.stats.recolors||0)+1;dirty=true;SFX.tick(.5);const y=$("room").querySelector(".scroll").scrollTop;draw();$("room").querySelector(".scroll").scrollTop=y});
     $("room").querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const a=accOf(b.dataset.acc);if(!S.accOwn[a.k]){if(a.ev||S.cash<a.cost)return;S.cash-=a.cost;S.accOwn[a.k]=1;SFX.buy();confetti(40);banner(a.n+" bought","g")}
-      if(S.acc[a.s]===a.k)delete S.acc[a.s];else S.acc[a.s]=a.k;dirty=true;SFX.tick(.6);draw();updMini()})};draw()}
+      const before=setsOn(S.acc).map(t=>t.n);if(S.acc[a.s]===a.k)delete S.acc[a.s];else S.acc[a.s]=a.k;dirty=true;SFX.tick(.6);
+      const nw=setsOn(S.acc).filter(t=>!before.includes(t.n));if(nw.length){S.stats.sets=Math.max(S.stats.sets||0,setsOn(S.acc).length);SFX.rebirth();confetti(160);banner(nw[0].ic+" Set complete: "+nw[0].n+" · +"+nw[0].rz+" rizz","g")}draw();updMini()});
+    $("bqPhoto").onclick=()=>photoBooth();};draw()}
+/* ---------- photo booth: a framed picture of your look you can save ---------- */
+function photoBooth(){const W=600,H=800,cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d"),bgs=[["#ff8fa3","#7a2fd6"],["#4fe3ff","#2a3cff"],["#ffcc33","#ff4fd8"],["#2fd28a","#1b6b8a"],["#1b1f2a","#3a2266"]];let bi=Math.floor(Math.random()*bgs.length),pose=0;
+  const paint=()=>{const [a,b]=bgs[bi],gr=g.createLinearGradient(0,0,W,H);gr.addColorStop(0,a);gr.addColorStop(1,b);g.fillStyle=gr;g.fillRect(0,0,W,H);
+    g.save();g.globalAlpha=.14;g.fillStyle="#fff";for(let i=0;i<14;i++){g.beginPath();g.arc((i*137)%W,(i*251)%H,20+(i*37)%60,0,7);g.fill()}g.restore();
+    g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(W/2,600,150,26,0,0,7);g.fill();
+    g.save();g.translate(W/2,600);const k=5.2/Math.max(1,Math.sqrt(tallK()));g.scale(k,k);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),...myLook(),ph:1.3,acc:S.acc,crown:(S.skin||0)>=5,pose:["","bi","lat","abs"][pose]||null});g.restore();
+    g.fillStyle="#fff";g.textAlign="center";g.font="900 46px "+FONTS.d;g.fillText(mpName(),W/2,690);g.font="700 22px "+FONTS.b;g.globalAlpha=.85;const st=setsOn(S.acc);g.fillText((st.length?st.map(t=>t.ic+" "+t.n).join(" · ")+" · ":"")+"+"+accRizz()+" rizz",W/2,728);g.globalAlpha=.6;g.font="700 18px "+FONTS.b;g.fillText("FLIP RUSH · "+new Date().toLocaleDateString(),W/2,770);g.globalAlpha=1;
+    g.strokeStyle="rgba(255,255,255,.85)";g.lineWidth=14;g.strokeRect(7,7,W-14,H-14)};
+  paint();const ov=document.createElement("div");ov.className="wnov photoov";ov.innerHTML=`<div class="photocard"><img id="pbImg" alt="Your photo"><div class="pbrow"><button class="cta alt" id="pbBg">🎨 Background</button><button class="cta alt" id="pbPose">💪 Pose</button></div><div class="pbrow"><a class="cta" id="pbSave" download="flip-rush-look.png">⬇ Save</a><button class="cta alt" id="pbClose">Close</button></div></div>`;document.body.appendChild(ov);
+  const upd=()=>{paint();const u=cv.toDataURL("image/png");ov.querySelector("#pbImg").src=u;ov.querySelector("#pbSave").href=u};upd();SFX.tick(1);flash("#fff",.5);S.stats.photos=(S.stats.photos||0)+1;dirty=true;
+  ov.querySelector("#pbBg").onclick=()=>{bi=(bi+1)%bgs.length;upd()};ov.querySelector("#pbPose").onclick=()=>{pose=(pose+1)%4;upd();SFX.tick(.6)};ov.querySelector("#pbClose").onclick=()=>{cv.width=cv.height=0;ov.remove()}}
+/* ---------- runway: a daily fashion show. Today's theme, three judges, scores out of 30 ---------- */
+const RW_THEMES=[{n:"Royalty",ic:"👑",k:["halo","jcrown","acrown","top","robe","cape","gold","diamond","monocle","tux","knight","rose","wings"],ss:[4]},
+ {n:"Sporty",ic:"🏅",k:["cap","bball","whistle","skate","surf","goggles","phones","bandana","medal","coffee"],ss:[5,2,3]},
+ {n:"Beach party",ic:"🏝️",k:["sombrero","lei","surf","shades","bucket","icecream","starg","coffee","party"],ss:[8,3]},
+ {n:"Spooky",ic:"👻",k:["pumpkinhat","wizard","robe","wand","ninja","bhole","catears","dwings","lantern","cape"],ss:[2]},
+ {n:"Super cute",ic:"🧸",k:["catears","flowers","balloon","bwings","party","icecream","hearts","prop","dino","beret","rose"],ss:[6,13]},
+ {n:"Business",ic:"💼",k:["tie","case","tux","phone","coffee","aviator","monocle","lab","cash","grad"],ss:[4,9,13]},
+ {n:"Adventure",ic:"🧭",k:["cowboy","pack","quiver","pirhat","pirate","knight","viking","goggles","bucket","umbrella","guitar"],ss:[10,12]}];
+const rwTheme=()=>RW_THEMES[(Math.floor(Date.now()/864e5)+3)%RW_THEMES.length];
+function rwScore(){const A=S.acc||{},W=Object.values(A),T=rwTheme(),L=LK(),slots=W.length,match=W.filter(k=>T.k.includes(k)).length+(T.ss.includes(L.ss|0)?1:0),sets=setsOn(A).length,cols=W.filter(k=>(S.accCol||{})[k]).length;
+  const base=2+Math.min(6,slots)*.55+match*1.25+sets*1.1+Math.min(3,cols)*.35;return [0,1,2].map(j=>Math.max(1,Math.min(10,Math.round(base+rnd(-1.2,1.2)+(j===0?match*.3:j===1?sets*.4:Math.min(2,accRizz()/20))))))}
+function openRunway(back){room="runway";$("room").hidden=false;const T=rwTheme(),done=S.rwDay===dayKey();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Runway")}<div class="note">Today's theme: <b>${T.ic} ${T.n}</b>. Three judges score your look out of 10 each. Matching the theme, wearing full sets and custom colours all help. One walk per day.</div>
+    <div class="bxwrap"><canvas id="rwCv" width="300" height="340"></canvas></div><div class="rwcards" id="rwCards"></div>
+    <button class="bigbtn" id="rwGo" ${done?"disabled":""}>${done?"You walked today ("+(S.rwBest||0)+"/30 best)":"Walk the runway"}<small>${done?"New theme tomorrow":"Free · once a day"}</small></button>
+    <button class="bigbtn alt" id="rwDress">Change outfit first<small>Boutique</small></button></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("rwDress").onclick=()=>openBoutique(()=>openRunway(back));
+  const cv=$("rwCv"),g=cv.getContext("2d");let t0=0,live=true,phase=0,sc=null;
+  const frame=now=>{if(!live||room!=="runway")return;const t=t0?(now-t0)/1000:0,dark=isDark();g.fillStyle="#1b1f2a";g.fillRect(0,0,300,340);
+    // spotlights + runway
+    g.fillStyle="#2b3040";g.beginPath();g.moveTo(120,60);g.lineTo(180,60);g.lineTo(250,340);g.lineTo(50,340);g.closePath();g.fill();g.strokeStyle="#ffcc33";g.lineWidth=2;g.setLineDash([8,8]);g.beginPath();g.moveTo(150,62);g.lineTo(150,340);g.stroke();g.setLineDash([]);
+    for(let i=0;i<2;i++){const sx=i?240:60,a=Math.sin(now/700+i*2)*.25;g.save();g.translate(sx,0);g.rotate(a+(i?.35:-.35));const lg=g.createLinearGradient(0,0,0,300);lg.addColorStop(0,"rgba(255,240,180,.35)");lg.addColorStop(1,"rgba(255,240,180,0)");g.fillStyle=lg;g.beginPath();g.moveTo(-6,0);g.lineTo(6,0);g.lineTo(60,300);g.lineTo(-60,300);g.closePath();g.fill();g.restore()}
+    // crowd
+    for(let i=0;i<14;i++){const cx=10+i*21,cy=330+Math.sin(now/200+i)*(t0?2:0);g.fillStyle=["#e2364a","#2a5bd7","#ffcc33","#2fd28a","#ff4fd8"][i%5];g.beginPath();g.arc(cx,cy,9,Math.PI,0);g.fill();g.fillStyle="#e8b896";g.beginPath();g.arc(cx,cy-13,5,0,7);g.fill()}
+    if(t0&&Math.random()<.08){g.fillStyle="#fff";g.globalAlpha=.9;g.beginPath();g.arc(rnd(20,280),rnd(240,320),rnd(6,12),0,7);g.fill();g.globalAlpha=1}
+    const p=Math.min(1,t/3.2),y=90+p*170,k=.9+p*1.4;g.save();g.translate(150,y);g.scale(k,k);drawPerson(0,0,{g,tall:tallK(),build:myBuild(),size:bodyK(),...myLook(),ph:t,mv:t0&&p<1,acc:S.acc,crown:(S.skin||0)>=5,pose:p>=1&&t<6?(Math.floor(t)%2?"bi":"lat"):null});g.restore();
+    if(t0&&phase===0&&t>3.4){phase=1;sc=rwScore();sc.forEach((v,j)=>setTimeout(()=>{if(room!=="runway")return;const el=document.createElement("div");el.className="rwcard";el.innerHTML=`<span>${["Coco","Jean-Luc","Mama Bling"][j]}</span><b>${v}</b>`;$("rwCards").appendChild(el);v>=8?SFX.crit(1):SFX.tick(.8);buzz(15)},700+j*900));setTimeout(()=>finish(),700+3*900+300)}
+    requestAnimationFrame(frame)};requestAnimationFrame(frame);
+  const finish=()=>{if(room!=="runway")return;const tot=sc.reduce((a,b)=>a+b,0),v=Math.round(Math.max(800,rwBase()*.004*tot)),f=Math.round(Math.max(20,(S.fans||0)*.0012*tot)),tix=tot*2;earn(v);S.fans=(S.fans||0)+f;S.tix=(S.tix||0)+tix;S.rwBest=Math.max(S.rwBest||0,tot);S.stats.runway=(S.stats.runway||0)+1;if(tot>=27)gainCrate(3);else if(tot>=22)gainCrate(1);dirty=true;
+    SFX.rebirth();confetti(tot>=24?260:120);banner((tot>=27?"🏆 Showstopper! ":tot>=22?"✨ Fierce! ":"")+tot+"/30 · +"+fmt(v)+", +"+fmtN(f)+" fans, +"+tix+" tickets","g");
+    const bt=$("rwGo");if(bt){bt.disabled=true;bt.innerHTML=`${tot}/30${tot>=27?" 🏆":""}<small>New theme tomorrow</small>`}updMini()};
+  $("rwGo").onclick=()=>{if(S.rwDay===dayKey())return;S.rwDay=dayKey();dirty=true;$("rwGo").disabled=true;$("rwDress").hidden=true;t0=performance.now();SFX.hot();banner(T.ic+" "+T.n+" night! Strut!","a")};
+  const oldLeave=$("leaveBtn").onclick;$("leaveBtn").onclick=()=>{live=false;oldLeave()}}
 
 /* ================= luck: daily prize wheel, scratch cards, room leaderboard ================= */
 const WHEEL=[
@@ -5122,7 +5179,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=55,WN=[
+const WN_VER=56,WN=[
+ ["👠","Runway & outfit sets","A daily fashion show at the Mall: dress for the theme, walk the runway and get scored by three judges. Wear full sets (Archmage, Captain, Astronaut, Gentleman and 8 more) for bonus rizz. Plus a photo booth in the Boutique to save your look.","2026-10-07T05:45"],
  ["🎨","Recolour your gear","Caps, beanies, bandanas, capes, scarves, ties and more now come in 14 colours. Pick them in the Boutique under Colours. Friends see your colours online.","2026-10-07T05:40"],
  ["🥷","9 new outfits & 25 new accessories","Ninja suit, Dino onesie, Knight armour, Tuxedo, Hero suit, Pirate coat, Lab coat, Chef whites and a Space suit. Plus bucket hats, berets, cat ears, propeller caps, balloons, umbrellas, a magic wand and more. New shirt styles too: Hawaiian, Polo, Flannel, Varsity, Overalls and Turtleneck.","2026-10-07T05:40"],
  ["📱","Smoother on tablets","Fixed colour flashing on big tablets and made drawing lighter.","2026-10-07T05:35"],
