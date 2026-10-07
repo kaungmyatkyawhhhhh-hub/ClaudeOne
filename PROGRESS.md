@@ -68,8 +68,13 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   quests "Do 15 leg presses / hack squats", exercises line on the Muscles cards.
 
 ## Limits (found in Studio, not fixable here)
-- A client can hold only **8 live EditableMeshes**; your character uses all 8 (snatched torso 2, front torso, back, upper
-  arms 2, upper legs 2). Forearms, calves, other players, NPCs and the statue get little or no muscle unless a live server allows more.
+- A client can hold only **8 live EditableMeshes** (in Studio the 8th already fails with "memory budget"). Since 8 Oct your
+  character uses **7** (was 8): torso front + snatched upper torso in ONE mesh, torso back, LowerTorso, upper arms 2, upper
+  legs 2. Merging the whole UpperTorso into one mesh is impossible: front muscles 9,570 + back 17,908 triangles > the 20,000
+  per-mesh limit. Forearms and calves move to STATIC stage meshes (`Shared/LimbStages`, `Config/LimbStages`): no EditableMesh
+  at all, on every character, NPCs and the statue too. They need the 28 stage meshes uploaded (see the morning report); until
+  then the old EditableMesh forearms / calves stay (and don't fit on your character).
+- A script can't upload meshes yet ("CreateAssetAsync ... not available yet"), so the stage meshes must be imported by hand.
 - A game script can't set a SurfaceAppearance image, and other people's clothing images can't be read into an EditableImage,
   so muscles wear clothing through a second textured part at 2% transparency. T-shirt graphics don't show on the snatched torso.
 - Loading (7 Oct): `CreateMeshPartAsync` takes 0.3-1s per mesh, so `MuscleRig` builds 3 units side by side (`MAX_BUILDS`) on a

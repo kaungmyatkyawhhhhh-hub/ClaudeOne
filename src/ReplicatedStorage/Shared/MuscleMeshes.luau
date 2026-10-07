@@ -16,6 +16,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Data = ReplicatedStorage:WaitForChild("MuscleData")
 local Index = require(Data:WaitForChild("Index") :: ModuleScript) :: any
 
+local LimbStages = require(script.Parent.LimbStages)
+
 local MuscleMeshes = {}
 MuscleMeshes.Index = Index
 MuscleMeshes.Parts = Index.parts :: { [string]: { size: Vector3 } }
@@ -147,6 +149,10 @@ end
 -- Merged meshes: the client can only hold a few EditableMeshes at once (8 in Studio; each also holds at most 20,000
 -- triangles), so the muscles of one body part are merged into as few meshes as possible. A UNIT is a set of such meshes that
 -- grows together (both sides of a pair); units are built in this order of importance.
+-- The UpperTorso: the front muscles carry the snatched upper torso in the same mesh (snatched = true: it replaces the body
+-- part, morphs with the waist and never grows), so the torso costs 2 meshes (front + torso, back) instead of 3 (the front
+-- and back muscles together are over the 20,000 triangle limit). With the forearm / calf stage meshes (Shared.LimbStages)
+-- your character holds 7 EditableMeshes: torso front, torso back, the LowerTorso, two upper arms, two upper legs.
 ------------------------------------------------------------------------
 local function names(part: string, list: { string }): { string }
 	local out = {}
@@ -160,13 +166,20 @@ local function pair(list: { string }, a: string, b: string)
 	}
 end
 MuscleMeshes.Units = {
-	{ id = "TorsoFront", groups = { { part = "UpperTorso", records = names("UpperTorso", { "MidChest", "UpperChest", "Abs", "Obliques" }) } } },
+	{ id = "TorsoFront", alwaysWanted = true, groups = { { part = "UpperTorso", snatched = true, records = names("UpperTorso", { "MidChest", "UpperChest", "Abs", "Obliques" }) } } },
 	{ id = "UpperArms", groups = pair({ "FrontDelts", "SideDelts", "RearDelts", "DeltCap", "Biceps", "Triceps" }, "RightUpperArm", "LeftUpperArm") },
 	{ id = "UpperLegs", groups = pair({ "Quads", "Quads_Shorts", "Hamstrings", "Hamstrings_Shorts", "Glutes", "Glutes_Shorts" }, "RightUpperLeg", "LeftUpperLeg") },
 	{ id = "TorsoBack", groups = { { part = "UpperTorso", records = names("UpperTorso", { "Lats", "UpperTraps", "Traps", "Rhomboids", "LowerBack" }) } } },
 	{ id = "Forearms", groups = pair({ "Forearms" }, "RightLowerArm", "LeftLowerArm") },
 	{ id = "Calves", groups = pair({ "Calves" }, "RightLowerLeg", "LeftLowerLeg") },
 }
+-- with the stage meshes in (ReplicatedStorage.LimbStages), forearms and calves need no EditableMesh
+if LimbStages.IsOn() then
+	for index = #MuscleMeshes.Units, 1, -1 do
+		local unit = MuscleMeshes.Units[index]
+		if unit.id == "Forearms" or unit.id == "Calves" then table.remove(MuscleMeshes.Units, index) end
+	end
+end
 for _, unit in ipairs(MuscleMeshes.Units) do
 	unit.cost = #unit.groups
 	unit.muscles = {}
@@ -187,8 +200,9 @@ local SKIN_LIFT = 0.02
 
 -- The merged data of one group { part, records }: one set of arrays for all its muscles. Each range (one mesh) knows its
 -- muscle id, its mesh key and the neighbouring mesh keys it blends with (range.blendKeys); blends[vertex] lists them.
-function MuscleMeshes.LoadGroup(group: any): any
-	local key = table.concat(group.records, "+")
+function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
+	local snatched = if group.snatched and withSnatched then MuscleMeshes.LoadSnatched(group.part) else nil
+	local key = table.concat(group.records, "+") .. (if snatched then "+Snatched" else "")
 	local found = partCache[key]
 	if found then return found end
 	local base, delta, uv, tris, faceKind, ranges = {}, {}, {}, {}, {}, {}
@@ -231,8 +245,36 @@ function MuscleMeshes.LoadGroup(group: any): any
 		end
 		vertexCount += data.verts
 	end
+	-- the snatched torso as one more range: its shape (the snatched max) in base, the wide start in morphStart, no growth
+	local morphStart = nil
+	if snatched then
+		morphStart = {}
+		local count = #snatched.verts
+		local range = { id = "Snatched", key = "Snatched", snatched = true, shorts = false, first = vertexCount + 1, count = count,
+			triFirst = triCount + 1, triCount = #snatched.tris / 3, blendKeys = {} }
+		table.insert(ranges, range)
+		for i = 1, count do
+			local at = vertexCount + i
+			base[at] = snatched.verts[i]
+			morphStart[at] = if snatched.start then snatched.start[i] else snatched.verts[i]
+			delta[at] = Vector3.zero
+			uv[at] = snatched.uv[i]
+			local normal = if snatched.normals then snatched.normals[i] else Vector3.yAxis
+			nbase[at], ndelta[at] = normal, Vector3.zero
+			vein[at] = Vector3.zero
+		end
+		local t = snatched.tris
+		for k = 1, #t, 3 do
+			triCount += 1
+			tris[triCount * 3 - 2] = t[k] + vertexCount
+			tris[triCount * 3 - 1] = t[k + 1] + vertexCount
+			tris[triCount * 3] = t[k + 2] + vertexCount
+			faceKind[triCount] = 3
+		end
+		vertexCount += count
+	end
 	assert(triCount <= 20000, "group " .. key .. " has more than 20,000 triangles")
-	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends,
+	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, morphStart = morphStart,
 		nbase = hasNormals and nbase or nil, ndelta = hasNormals and ndelta or nil, vein = hasVeins and vein or nil,
 		clothing = MuscleMeshes.ByName[group.records[1]].clothing or "Shirt", faceKind = faceKind, ranges = ranges, triCount = triCount }
 	partCache[key] = merged

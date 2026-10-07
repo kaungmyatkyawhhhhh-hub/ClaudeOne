@@ -30,6 +30,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local MuscleMeshes = require(script.Parent.MuscleMeshes)
+local LimbStages = require(script.Parent.LimbStages)
 local Muscles = require(script.Parent.Config.Muscles)
 local Body = require(script.Parent.Config.Body)
 
@@ -64,11 +65,11 @@ local TINT = {
 }
 local REALLOCATE_EVERY = 0.4
 
--- The snatched-waist torso is a unit of its own (two meshes) applied to the real UpperTorso / LowerTorso (MeshPart:ApplyMesh),
--- so the character keeps its own clothing on it. Units are built in this order of importance: for your own character the
--- waist first, then the muscles; for everyone else the chest/abs unit first (so a crowd shows something).
-local SNATCHED_UNIT = { id = "Snatched", cost = 2, muscles = {}, groups = { { part = "UpperTorso" }, { part = "LowerTorso" } } }
-local OWN_ORDER = { Snatched = 1, TorsoFront = 2, UpperArms = 3, UpperLegs = 4, TorsoBack = 5, Forearms = 6, Calves = 7 }
+-- The snatched-waist torso: the upper half rides in the torso-front mesh (MuscleMeshes: one mesh for the front muscles and
+-- the torso), the LowerTorso is a unit of its own. Units are built in this order of importance: for your own character the
+-- torso first, then the muscles; for everyone else the torso-front unit first (so a crowd shows something).
+local SNATCHED_UNIT = { id = "Snatched", cost = 1, muscles = {}, groups = { { part = "LowerTorso" } } }
+local OWN_ORDER = { TorsoFront = 1, Snatched = 2, UpperArms = 3, UpperLegs = 4, TorsoBack = 5, Forearms = 6, Calves = 7 }
 local OTHER_ORDER = { TorsoFront = 1, Snatched = 2, UpperArms = 3, UpperLegs = 4, TorsoBack = 5, Forearms = 6, Calves = 7 }
 
 -- Layered (3D) clothing can't be painted onto muscles: the muscles of the body parts it covers are hidden under it.
@@ -107,6 +108,7 @@ function MuscleRig.new(model: Model, opts: any?)
 		static = opts.static == true,
 		marble = opts.marble == true,
 		keepBody = opts.keepBody == true,
+		noSnatch = opts.noSnatch == true,
 		priority = opts.priority or 0,
 		style = opts.style or {},
 		target = {},   -- [muscleId] = g the muscle is heading to
@@ -148,6 +150,8 @@ function MuscleRig.new(model: Model, opts: any?)
 		end
 		table.insert(self.units, state)
 	end
+	-- forearms and calves as static stage meshes (when their templates are in the place)
+	self.limbs = LimbStages.new(model, folder, self.static)
 	active[self] = true
 	self:DressBody()
 	return self
@@ -463,6 +467,19 @@ end
 
 local function applyRange(self, group, range)
 	local data, mesh, ids, normalIds = group.data, group.mesh, group.vertexIds, group.normalIds
+	if range.snatched then
+		-- the snatched torso in the torso-front mesh: the waist morph (start -> snatched) and the taper, no growth; scaled from
+		-- the muscle data's reference to the body's own mesh size (it replaces the body part)
+		local w = waistProgress(self)
+		local taper, start, scale = group.taper, data.morphStart, group.snatchScale or Vector3.one
+		for i = range.first, range.first + range.count - 1 do
+			local position = (start[i] + (data.base[i] - start[i]) * w) * scale
+			if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
+			mesh:SetPosition(ids[i], position)
+		end
+		group.applied[range] = w
+		return
+	end
 	local base, delta, blends, nbase, ndelta, vein = data.base, data.delta, data.blends, data.nbase, data.ndelta, data.vein
 	local taper = group.taper
 	local g = meshShown(self, range.key, range.id)
@@ -497,6 +514,7 @@ end
 -- true when the mesh, a mesh it blends with, or its vein amount changed since it was last applied
 local function rangeChanged(self, group, range): boolean
 	local last = group.applied[range]
+	if range.snatched then return last == nil or math.abs(waistProgress(self) - last) > 0.004 end
 	if last == nil or math.abs(meshShown(self, range.key, range.id) - last) > MIN_CHANGE then return true end
 	local others = group.appliedOthers[range]
 	for _, key in ipairs(range.blendKeys) do
@@ -528,7 +546,7 @@ end
 local function buildGroup(self, state, group): boolean
 	local body = self.model:FindFirstChild(group.def.part)
 	if not body or not body:IsA("BasePart") then return false end
-	local data = MuscleMeshes.LoadGroup(group.def)
+	local data = MuscleMeshes.LoadGroup(group.def, not self.noSnatch)
 	local mesh = newMesh()
 	if not mesh then return false end
 	local calls = 0
@@ -601,9 +619,17 @@ local function buildGroup(self, state, group): boolean
 	group.mesh, group.data, group.body, group.part = mesh, data, body, part
 	group.refSize = MuscleMeshes.Parts[group.def.part].size
 	group.bodySize = body.Size
+	-- the snatched torso rides in this mesh: it is shown instead of the real body part
+	if data.morphStart then
+		group.snatchScale = if body:IsA("MeshPart") and body.MeshSize.Magnitude > 0 then body.MeshSize / group.refSize else Vector3.one
+		group.hiddenBody = body
+		body.Transparency = 1
+	end
 	-- the muscle ids this merged mesh holds (the stats highlight lights them up)
 	local ids = {}
-	for _, range in ipairs(data.ranges) do table.insert(ids, range.id) end
+	for _, range in ipairs(data.ranges) do
+		if not range.snatched then table.insert(ids, range.id) end
+	end
 	part:SetAttribute("MuscleName", table.concat(ids, ","))
 	attach(self, part, body, group.def.part .. "Muscles")
 	meshOf[part] = mesh
@@ -716,6 +742,7 @@ end
 ------------------------------------------------------------------------
 local function wantedUnit(self, state): boolean
 	if state.snatched then return true end
+	if state.unit.alwaysWanted and not self.noSnatch then return true end -- (the torso-front unit carries the snatched torso)
 	for id in pairs(state.unit.muscles) do
 		if (self.target[id] or 0) >= MIN_SHOW or (self.current[id] or 0) >= MIN_SHOW then return true end
 	end
@@ -853,11 +880,13 @@ local function step(self, dt: number, budget: number): number
 			for _, group in ipairs(state.groups) do
 				local body = group.body
 				if not (group.part and group.part.Parent and body and body.Parent) then continue end
-				-- under layered clothing the muscles hide (the snatched torso stays)
+				-- under layered clothing the muscles hide (the snatched torso stays; when it rides in the torso-front mesh, the real
+				-- body part shows again instead)
 				local hidden = not group.snatched and self.covered and self.covered[body.Name] == true or false
 				if group.part.Transparency ~= (hidden and 1 or 0) then
 					group.part.Transparency = hidden and 1 or 0
 					if group.cloth then group.cloth.Transparency = hidden and 1 or CLOTH_TRANSPARENCY end
+					if group.hiddenBody and group.data and group.data.morphStart then body.Transparency = hidden and 0 or 1 end
 				end
 				-- the waist morph follows the growth
 				if group.snatched and group.mesh and (group.morphW == nil or math.abs(waistProgress(self) - group.morphW) > 0.004) then
@@ -883,6 +912,19 @@ local function step(self, dt: number, budget: number): number
 	end
 	-- tints (hover highlight, rep flash): while one shows, and once more after the last one to put the colors back
 	local tintLive = updateTintState(self, dt)
+	-- forearms and calves (static stage meshes): the stage nearest to the shown look, the clothing, the tints
+	if self.limbs then
+		local highlight, flash = self.highlightAmount, self.flashAmount
+		self.limbs:Update(function(id, key) return meshShown(self, key, id) end, {
+			skin = (self.style and self.style.skin) or nil, shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
+		}, function(id, base)
+			local color = base
+			local h, f = highlight[id] or 0, flash[id] or 0
+			if h > 0 then color = color:Lerp(TINT.Highlight, h * TINT.HighlightStrength) end
+			if f > 0 then color = color:Lerp(TINT.Flash, math.min(f, 1)) end
+			return color
+		end, self.covered, self.marble)
+	end
 	if tintLive or self.tintWasLive then
 		local camera = workspace.CurrentCamera
 		local cameraPosition = if camera then camera.CFrame.Position else Vector3.zero
@@ -993,6 +1035,7 @@ function MuscleRig.Destroy(self)
 	self.destroyed = true
 	active[self] = nil
 	for _, state in ipairs(self.units) do destroyUnit(state) end
+	if self.limbs then self.limbs:Destroy() end
 	if self.folder then self.folder:Destroy() end
 end
 
