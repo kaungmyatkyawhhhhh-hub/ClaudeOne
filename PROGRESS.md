@@ -36,6 +36,10 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   arms 2, upper legs 2). Forearms, calves, other players, NPCs and the statue get little or no muscle unless a live server allows more.
 - A game script can't set a SurfaceAppearance image, and other people's clothing images can't be read into an EditableImage,
   so muscles wear clothing through a second textured part at 2% transparency. T-shirt graphics don't show on the snatched torso.
+- Loading (7 Oct): `CreateMeshPartAsync` takes 0.3-1s per mesh, so `MuscleRig` builds 3 units side by side (`MAX_BUILDS`) on a
+  time slice (`BUILD_MS`); NPCs/statue only get meshes once your own muscles are built (`MuscleClient` `OTHERS_WAIT`). Your
+  muscles finish ~1-1.5s after the body swap (was ~4-5s). The progress mirror's "Now" body shows copies of your LIVE muscle
+  meshes (a new rig there took your character's 8 meshes and your muscles vanished).
 - Not built: rock "mass monster" skin (can't trigger: levels never pass the goal; textures would need uploading).
 
 ## Waiting on you
