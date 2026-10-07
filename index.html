@@ -2363,9 +2363,9 @@ const GOALS=[
  {t:"Reach the Master tier",d:"Grow your net worth to ✦1 Radiant ($1 quadrillion).",ok:()=>tierN()>=5,rw:1e13,go:"market"},
  {t:"Open the Stargate",d:"The Airport has a gate to World 2. It costs ✦10.",ok:()=>!!(S.w2&&S.w2.open),rw:1e15,go:"airport"},
  {t:"Make ✦1 a minute",d:"Build a solar collector at the Radiant Reactor in the Cosmos.",ok:()=>w2Rate()>=1,rw:5e15,go:"c:reactor"},
- {t:"Make ✦1,000 a minute",d:"Stack generators, research upgrades, feed the black hole.",ok:()=>w2Rate()>=1000,rw:5e17,go:"c:reactor"},
+ {t:"Make ✦1,000 a minute",d:"Stack generators, research upgrades, and sail home to build space tech on your islands. They earn Radiant too.",ok:()=>w2Rate()>=1000,rw:5e17,go:"c:reactor"},
  {t:"Map 10 cosmic objects",d:"The Observatory in the Cosmos is waiting.",ok:()=>!!(S.w2&&S.w2.disc.length>=10),rw:1e19,go:"c:obs"},
- {t:"Make ✦1M a minute",d:"Wormholes, neutron forges, pocket universes. Go big.",ok:()=>w2Rate()>=1e6,rw:1e22,go:"c:reactor"},
+ {t:"Make ✦1M a minute",d:"Wormholes, neutron forges, pocket universes, and a Wormhole beacon on every island. Go big.",ok:()=>w2Rate()>=1e6,rw:1e22,go:"c:reactor"},
  {t:"Build a Multiverse gate",d:"The last generator in the Cosmos. It powers the time machine.",ok:()=>!!(S.w2&&genN("multi")>0),rw:1e27,go:"c:reactor"},
  {t:"Travel back in time",d:"Power up the time machine on the space station (◈1 Amber).",ok:()=>!!(S.w3&&S.w3.open),rw:1e29,go:"c:tmach"},
  {t:"Grow a trilobite colony",d:"Plant life at the Tree of Life in Deep Time.",ok:()=>!!(S.w3&&lifeN("trilo")>0),rw:5e29,go:"d:nursery"},
@@ -3795,6 +3795,15 @@ const ISB=[
  {k:"pool",n:"Infinity pool",f:.35,inc:.15,d:"Parties pull a bigger crowd. +15% income"},
  {k:"heli",n:"Helipad",f:.5,inc:.1,d:"Fly in without a boat. +10% income"},
  {k:"hotel",n:"Boutique hotel",f:1,inc:.5,d:"Guests all year round. +50% income"}];
+/* ---------- space-age island tech: once the Stargate is open, your islands become World 2's big earners ---------- */
+// four one-off builds per island, priced in Radiant; bigger islands host bigger tech. Each pays 20% of its cost in Radiant a minute,
+// boosted by your Upgrade Lab like any generator, and a finished island multiplies all generators ×1.25
+const ISP=[{k:"solar",n:"Radiant solar field",ic:"🔆",d:"Mirrors drinking starlight across the sand"},{k:"pad",n:"Launch pad",ic:"🚀",d:"Rockets haul cargo to orbit every hour"},{k:"ref",n:"Star refinery",ic:"⚗️",d:"Turns stardust into pure Radiant"},{k:"gate",n:"Wormhole beacon",ic:"🌀",d:"A doorway to the far side of the galaxy"}];
+const ispCost=(t,j)=>50*Math.pow(10,(t*4+j)*.75),ispRate0=(t,j)=>ispCost(t,j)*.2;
+const hasISP=(k,j)=>!!(S.islB&&S.islB[k]&&S.islB[k].sp&&S.islB[k].sp[ISP[j].k]);
+const ispDone=k=>ISP.every((_,j)=>hasISP(k,j));
+function islSpaceRate(){if(!S||!S.isl)return 0;let r=0;ISLANDS.forEach((i,t)=>{if(!S.isl[i.k])return;ISP.forEach((_,j)=>{if(hasISP(i.k,j))r+=ispRate0(t,j)})});return r}
+const islSpaceMult=()=>Math.pow(1.25,ISLANDS.filter(i=>S&&S.isl&&S.isl[i.k]&&ispDone(i.k)).length);
 const islB=k=>{S.islB=S.islB||{};return S.islB[k]=S.islB[k]||{b:{},dive:{}}};
 const hasIB=(k,b)=>!!(S.islB&&S.islB[k]&&S.islB[k].b[b]);
 const islBonus=k=>ISB.reduce((a,b)=>a+(hasIB(k,b.k)?b.inc:0),0);
@@ -3878,6 +3887,10 @@ function islDive(k,back){const d=islB(k).dive;if(d.day!==dayKey()){d.day=dayKey(
       draw();updMini()})};draw()}
 function islParty(k,draw){const cost=Math.round(ISLANDS[islTier(k)].cost*.01),pool=hasIB(k,"pool");if(S.cash<cost)return;S.cash-=cost;const f=Math.round((60+(S.fans||0)*.03)*(pool?1.6:1)*(1+islTier(k)*.5));S.fans=(S.fans||0)+f;S.buffs.hype=Math.max(S.buffs.hype||0,120);islB(k).party=dayKey();dirty=true;
   SFX.rebirth();confetti(220,null,null,["#ff4fd8","#4fe3ff","#ffcc33","#fff"]);flash("#ff4fd8",.3);shake(6);banner("Beach party! +"+fmtN(f)+" fans","g");if(MP)mpSend("c",{n:mpName(),t:"is throwing a party on "+ISLANDS[islTier(k)].n+" 🎉",sys:1});draw()}
+function islSpaceHTML(k){const t=islTier(k),open=!!(S.w2&&S.w2.open);
+  if(!open)return `<div class="sechead"><h3>Space age</h3><span class="eyebrow">World 2</span></div><div class="note">Open the <b>Stargate</b> at the Airport and this island can host space tech that earns <b>Radiant</b> every minute.</div>`;
+  const done=ispDone(k);return `<div class="sechead"><h3>Space age</h3><span class="eyebrow">${done?"Complete · generators ×1.25":"Earns Radiant · finish all 4 for ×1.25"}</span></div>
+  <div class="perks">${ISP.map((b,j)=>{const own=hasISP(k,j),c=ispCost(t,j);return `<button class="perk nopic" data-isp="${j}" ${own||S.cash<c*RAD?"disabled":""}><span class="t">${b.ic} ${b.n}${own?' <em class="beat">ONLINE</em>':""}</span><span class="d">${b.d} · +✦${radF(ispRate0(t,j))}/min before upgrades</span><span class="c">${own?"Online":"✦"+radF(c)}</span></button>`}).join("")}</div>`}
 function openIsland(k,fid){
   const i=ISLANDS.find(x=>x.k===k),p=fid&&MP?MP.peers[fid]:null,mine=!fid;room="island";$("room").hidden=false;$("room").style.setProperty("--pc",i.c);FI=null;
   const draw=()=>{FI=null;room="island";const relaxOk=!S.relaxT||Date.now()-S.relaxT>120000,gift=giftAmt(p),B=mine?{...islB(k).b,chest:islB(k).chest!==dayKey(),boat:!!bestBoat()}:{},pb={};if(!mine&&p&&p.ib&&p.ib[k])p.ib[k].forEach(x=>pb[x]=1);
@@ -3891,7 +3904,8 @@ function openIsland(k,fid){
           <button class="perk nopic" data-ia="album"><span class="t">Fish album</span><span class="d">Every species you've caught</span><span class="c">Open</span></button>
         </div>
         <div class="sechead"><h3>Build</h3><span class="eyebrow">Each one shows on your island</span></div>
-        <div class="perks">${ISB.map(b=>{const c=Math.round(i.cost*b.f),own=B[b.k];return `<button class="perk nopic" data-ib="${b.k}" ${own||S.cash<c?"disabled":""}><span class="t">${b.n}${own?' <em class="beat">BUILT</em>':""}</span><span class="d">${b.d}</span><span class="c">${own?"Built":fmt(c)}</span></button>`}).join("")}</div>`
+        <div class="perks">${ISB.map(b=>{const c=Math.round(i.cost*b.f),own=B[b.k];return `<button class="perk nopic" data-ib="${b.k}" ${own||S.cash<c?"disabled":""}><span class="t">${b.n}${own?' <em class="beat">BUILT</em>':""}</span><span class="d">${b.d}</span><span class="c">${own?"Built":fmt(c)}</span></button>`}).join("")}</div>
+        ${islSpaceHTML(k)}`
       :`<div class="note">You're visiting <b>${esc(String(p?p.n:"a friend"))}'s</b> island. ${i.d}.</div>
         <button class="bigbtn" id="iSign">Sign the guestbook<small>They'll see you came by</small></button>
         <button class="bigbtn alt" id="iGift" ${gift<1?"disabled":""}>Message in a bottle<small>Send them ${fmt(gift)}</small></button>
@@ -3905,6 +3919,8 @@ function openIsland(k,fid){
       if(a==="party")islParty(k,draw);
       if(a==="album")fishAlbum(draw);
       if(a==="name"){const v=prompt("Name your island",islB(k).name||i.n);if(v!=null){const t=String(v).replace(/[<>]/g,"").trim().slice(0,24);islB(k).name=t||"";dirty=true;draw()}}});
+    $("room").querySelectorAll("[data-isp]").forEach(x=>x.onclick=()=>{const j=+x.dataset.isp,t=islTier(k),c=ispCost(t,j)*RAD;if(!(S.w2&&S.w2.open)||hasISP(k,j)||S.cash<c)return;S.cash-=c;const b=islB(k);b.sp=b.sp||{};b.sp[ISP[j].k]=1;dirty=true;STATIC=null;
+      SFX.rebirth();confetti(180,null,null,["#4fe3ff","#7a2fd6","#fff","#ffcc33"]);shake(6);flash("#4fe3ff",.3);banner(ISP[j].n+" online · +✦"+radF(ispRate0(t,j))+"/min","g");if(ispDone(k)){setTimeout(()=>{banner(i.n+" complete · all generators ×1.25","g");confetti(240);gainCrate(3)},600)}draw();updMini()});
     $("room").querySelectorAll("[data-ib]").forEach(x=>x.onclick=()=>{const b=ISB.find(y=>y.k===x.dataset.ib),c=Math.round(i.cost*b.f);if(B[b.k]||S.cash<c)return;S.cash-=c;islB(k).b[b.k]=1;dirty=true;STATIC=null;SFX.rebirth();confetti(140,null,null,[i.c,"#fff","#ffcc33"]);shake(5);banner(b.n+" built","g");draw();updMini()});
     const sg=$("iSign");if(sg)sg.onclick=()=>{if(!p)return;mpSend("d",{n:mpName(),t:"visited your "+i.n,isl:k},fid);SFX.hot();banner("Guestbook signed","u");sg.disabled=true};
     const gf=$("iGift");if(gf)gf.onclick=()=>{if(!p)return;const a=giftAmt(MP&&MP.peers[fid]||p);if(a<1||!giftReady())return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},fid);SFX.sell();banner("Bottle sent: "+fmt(a),"u");draw();updMini()};
@@ -4472,7 +4488,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=29,WN=[
+const WN_VER=30,WN=[
+ ["🏝️","Space-age islands","Once the Stargate is open, each island you own can host four space buildings that earn Radiant every minute. Bigger islands host bigger tech, and finishing an island gives all generators ×1.25.","2026-10-07T10:00"],
  ["🛕","The Amber Ziggurat","Deep Time's own Flip Tower. Stack amber tiers that pay Amber every minute forever, and every milestone blesses all your life ×1.25.","2026-10-07T09:00"],
  ["👆","Easier to learn","New players get a quick how-to-play, a pointing hand on exactly what to tap, and plain ✓ DEAL / TOO PRICEY tags in the shops.","2026-10-06T19:00"],
  ["🍀","A better start","New players get rookie luck: far more steals and no fakes in their first sales. Early goals pay triple, guide you with an arrow, and celebrate when you finish them. The top bar starts simple and fills in as you go.","2026-10-06T18:30"],
@@ -5369,7 +5386,7 @@ const COSMOS=[
 function genMult(g){const W=w2();let m=Math.pow(2,genMile(g));if(W.up["u_"+g.k])m*=3;return m}
 function w2Mult(){const W=w2();let m=1;if(W.up.all1)m*=2;if(W.up.all2)m*=2;if(W.up.all3)m*=2;if(W.up.all4)m*=3;if(W.up.all5)m*=5;m*=1+.05*(W.dm||0);m*=1+.03*W.disc.length;m*=1+.25*(W.home+1);return m}
 // Radiant per minute from every generator
-function w2Rate(){if(!S||!S.w2)return 0;const m=w2Mult();return GEN.reduce((a,g)=>a+genN(g.k)*g.r*genMult(g),0)*m}
+function w2Rate(){if(!S||!S.w2)return 0;const m=w2Mult();return (GEN.reduce((a,g)=>a+genN(g.k)*g.r*genMult(g),0)*islSpaceMult()+islSpaceRate())*m}
 let w2T=0,w2Acc=0;
 function w2Tick(dt){if(!S||!S.w2||!S.w2.open)return;const r=w2Rate();if(r<=0)return;w2Acc+=r*RAD*dt/60;w2T+=dt;if(w2T<1)return;w2T=0;const v=w2Acc;w2Acc=0;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true}
 // generators keep running while you're away, up to 8 hours
@@ -6676,6 +6693,10 @@ function drawIslands(){
     else{ctx.fillStyle="#f4f6fa";ctx.fillRect(i.x-16,i.y-26,32,20);ctx.fillStyle=i.c;ctx.fillRect(i.x-19,i.y-31,38,6)}
     if(hasIB(i.k,"light")){ctx.fillStyle="#fff";ctx.fillRect(i.x-i.r*.75,i.y-34,7,26);ctx.fillStyle="#e2364a";ctx.fillRect(i.x-i.r*.75,i.y-28,7,4);ctx.fillRect(i.x-i.r*.75,i.y-19,7,4);ctx.fillStyle=night()>.3?"#ffe08a":"#2b2f3a";ctx.fillRect(i.x-i.r*.75,i.y-38,7,4)}
     if(hasIB(i.k,"hotel")){ctx.fillStyle="#f4ecd8";ctx.fillRect(i.x+i.r*.25,i.y-36,30,26);ctx.fillStyle=i.c;ctx.fillRect(i.x+i.r*.25-2,i.y-39,34,4);ctx.fillStyle="#bfe0ff";for(let r=0;r<3;r++)for(let c=0;c<3;c++)ctx.fillRect(i.x+i.r*.25+4+c*9,i.y-32+r*7,5,4)}
+    if(hasISP(i.k,0)){ctx.fillStyle="#2a5bd7";for(let a=0;a<3;a++){ctx.fillRect(i.x-i.r*.62+a*11,i.y+i.r*.18,9,6)}ctx.fillStyle="#9fd8ff";for(let a=0;a<3;a++)ctx.fillRect(i.x-i.r*.62+a*11,i.y+i.r*.18,9,2)}
+    if(hasISP(i.k,1)){const rx=i.x+i.r*.05,ry=i.y-10;ctx.fillStyle="#5b6272";ctx.fillRect(rx-9,ry+12,18,4);ctx.fillStyle="#f4f6fa";rr(rx-4,ry-14,8,26,4);ctx.fill();ctx.fillStyle="#e2364a";ctx.beginPath();ctx.moveTo(rx-4,ry-10);ctx.lineTo(rx,ry-20);ctx.lineTo(rx+4,ry-10);ctx.fill()}
+    if(hasISP(i.k,2)){const tx=i.x+i.r*.5,ty=i.y+2;ctx.fillStyle="#cfd6e3";rr(tx-8,ty-16,16,18,5);ctx.fill();ctx.fillStyle="#7a2fd6";ctx.fillRect(tx-8,ty-8,16,3)}
+    if(hasISP(i.k,3)){const gx=i.x,gy=i.y-i.r*.5-10,a=.55+.35*Math.sin(wt*3);ctx.strokeStyle=`rgba(143,82,212,${a})`;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(gx,gy,14,9,0,0,7);ctx.stroke();ctx.fillStyle=`rgba(79,227,255,${a*.5})`;ctx.beginPath();ctx.ellipse(gx,gy,9,5,0,0,7);ctx.fill()}
     if(hasIB(i.k,"pool")){ctx.fillStyle="#7fd6ff";rr(i.x-14,i.y+4,28,8,4);ctx.fill()}
     if(hasIB(i.k,"dock")){ctx.fillStyle="#a0764a";ctx.fillRect(i.x+i.r*.6,i.y+i.r*.2,40,5);ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(i.x+i.r*.6+14,i.y+i.r*.2+9);ctx.lineTo(i.x+i.r*.6+40,i.y+i.r*.2+9);ctx.lineTo(i.x+i.r*.6+36,i.y+i.r*.2+15);ctx.lineTo(i.x+i.r*.6+18,i.y+i.r*.2+15);ctx.fill()}
     if(hasIB(i.k,"heli")){ctx.fillStyle="#5b6272";ctx.beginPath();ctx.arc(i.x-i.r*.35,i.y+6,9,0,7);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 9px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("H",i.x-i.r*.35,i.y+6)}
