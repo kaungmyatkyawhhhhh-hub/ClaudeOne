@@ -789,6 +789,9 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .tvbtn{background:linear-gradient(90deg,#2a3cff,#7a2fd6)!important;color:#fff!important;margin:8px 0}.tvbtn b{color:#fff!important;opacity:.85}
 .tvq{font:800 1.25rem/1.3 var(--display);text-align:center;margin:18px 6px}.tvopts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tvo{padding:16px 10px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-weight:800;font-size:1rem;transition:background .15s,transform .1s}.tvo:active{transform:scale(.97)}.tvo.ok{background:#2fd28a;color:#fff}.tvo.bad{background:#e2364a;color:#fff}
 .bugbook{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}.bugc{background:var(--surface);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:var(--shadow)}.bugc canvas{width:60px;height:44px}.bugc b{font-size:.62rem;line-height:1.1}.bugc small{font-size:.6rem;opacity:.6}.bugc.un b{opacity:.5}
+.lmbtn{background:linear-gradient(90deg,#ffcc33,#ff7a3d)!important;color:#141824!important;margin:6px 0}.lmbtn b{color:#141824!important;opacity:.8}
+.lmgrid{display:flex;flex-direction:column;gap:6px;margin:8px 0}.lmrow{display:grid;grid-template-columns:1fr 40px 90px 40px;align-items:center;gap:6px;background:var(--surface);border-radius:14px;padding:6px 10px;box-shadow:var(--shadow)}.lmrow span{font-weight:800}.lmrow b{text-align:center;letter-spacing:2px;color:#cf9a14}.lmprice{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0}.lmprice button{padding:8px 12px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);font:800 .8rem var(--mono)}.lmprice button.on{background:#ffcc33;color:#141824}
+.lmrow button{height:36px;border-radius:12px;background:var(--bg,#eef1f6);font:900 1.2rem var(--display)}
 .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.setc{padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:3px;font-size:.78rem}.setc.on{background:linear-gradient(135deg,#fff3c4,#ffd6f0);color:#141824}.setc span{display:flex;flex-wrap:wrap;gap:3px}.setc i{font-style:normal;font-size:.66rem;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.07);opacity:.55}.setc i.o{opacity:.9}.setc i.w{opacity:1;background:#2fd28a;color:#fff}.setc em{font-style:normal;font-weight:800;font-size:.7rem;color:#7a2fd6}
 .photoov{display:flex;align-items:center;justify-content:center}.photocard{background:var(--surface);border-radius:22px;padding:14px;width:min(92vw,380px);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.4)}.photocard img{width:100%;border-radius:14px;display:block}.pbrow{display:flex;gap:8px}.pbrow>*{flex:1;text-align:center;text-decoration:none}
 .rwbtn{background:linear-gradient(90deg,#ff4fd8,#7a2fd6)!important;color:#fff!important}.rwbtn b{color:#fff!important;opacity:.85}
@@ -1190,6 +1193,7 @@ const ACH=[
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
+ ["cups200","Lemonade tycoon","Sell 200 cups of lemonade",()=>(S.stats.cups||0)>=200,50000],
  ["bugs12","Entomologist","Complete the bug book",()=>Object.keys(S.bugs||{}).length>=12,150000],
  ["fares10","Five stars","Complete 10 ride share fares",()=>(S.stats.fares||0)>=10,40000],
  ["trivia5","Big brain","Get a perfect 5/5 in daily trivia",()=>(S.stats.trivia5||0)>=1,20000],
@@ -3524,17 +3528,53 @@ function foTick(){if(!FO)return;const el=$("foBar"),t=(Date.now()-FO.t0)/FO.dur;
   if(t>=1){const win=me>FO.rival;S.stats.foWins=(S.stats.foWins||0)+(win?1:0);if(win){const v=Math.round(Math.max(1000,FO.rival*1.5));earn(v);gainCrate(2);SFX.rebirth();confetti(260);flash("#ffcc33",.4);banner("You beat Vinny! +"+fmt(v)+" and 2 crates","g");rayTextFrom("Slick Vinny","Beginner's luck. Same time tomorrow.")}
     else{SFX.loss();banner("Vinny wins this round","r");rayTextFrom("Slick Vinny","Ha! Better luck tomorrow, kid.")}FO=null;if(M&&room)openMarket(M.cfg)}}
 setInterval(()=>{try{foTick()}catch(e){}},250);
+/* ---------- lemonade stand: recipe + price vs today's weather, 24 customers walk by ---------- */
+let LEM={l:2,s:2,i:2,p:2};
+function openLemon(back){room="lemon";$("room").hidden=false;const K=Math.max(4,Math.round(rwBase()*.0004)),P=[.5,1,1.5,2,3,4,5],temp=Math.round(LEM.temp||(LEM.temp=rnd(14,36))),rain=WX.on,sky=rain?"🌧️ Rain":temp>=30?"☀️ Scorching":temp>=22?"🌤️ Warm":"☁️ Cool";
+  const draw=()=>{const cost=(LEM.l*.15+LEM.s*.05+LEM.i*.03);$("room").innerHTML=`<div class="room-in scroll">${roomHead("Lemonade stand")}
+    <div class="note">Today: <b>${sky}, ${temp}°C</b>. Hot days want more ice and pay more. Rain keeps people away. Most people like it not too sour, not too sweet.</div>
+    <div class="lmgrid">${[["l","🍋 Lemons"],["s","🍬 Sugar"],["i","🧊 Ice"]].map(([k,n])=>`<div class="lmrow"><span>${n}</span><button data-lm="${k}|-1">−</button><b>${"●".repeat(LEM[k])}${"○".repeat(4-LEM[k])}</b><button data-lm="${k}|1">+</button></div>`).join("")}</div>
+    <div class="sechead"><h3>Price per cup</h3><span class="eyebrow">costs you ${fmt(Math.round(cost*K))} a cup</span></div>
+    <div class="lmprice">${P.map((v,i)=>`<button class="${LEM.p===i?"on":""}" data-lp="${i}">${fmt(Math.round(v*K))}</button>`).join("")}</div>
+    <div class="bxwrap"><canvas id="lmCv" width="320" height="200"></canvas></div>
+    <button class="bigbtn" id="lmGo">Open the stand<small>8 energy · 24 customers${S.lemBest?" · best "+fmt(S.lemBest):""}</small></button></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{live=false;back()};
+    $("room").querySelectorAll("[data-lm]").forEach(b=>b.onclick=()=>{const[k,d]=b.dataset.lm.split("|");LEM[k]=clamp(LEM[k]+(+d),k==="i"?0:1,4);SFX.tick(.4);draw()});
+    $("room").querySelectorAll("[data-lp]").forEach(b=>b.onclick=()=>{LEM.p=+b.dataset.lp;SFX.tick(.4);draw()});
+    paint(0,[]);$("lmGo").onclick=e=>{if(!spend(8,e.currentTarget))return;run()}};
+  let live=true;
+  const paint=(t,C)=>{const cv=$("lmCv");if(!cv)return;const g=cv.getContext("2d");const sk=g.createLinearGradient(0,0,0,120);sk.addColorStop(0,rain?"#7a8aa3":"#8fd3ff");sk.addColorStop(1,rain?"#b6c2d4":"#d9f2ff");g.fillStyle=sk;g.fillRect(0,0,320,200);
+    if(!rain){g.fillStyle="#ffcc33";g.beginPath();g.arc(270,34,temp/1.6,0,7);g.fill()}g.fillStyle="#e8d8b0";g.fillRect(0,120,320,80);g.fillStyle="#c9a26b";g.fillRect(0,150,320,4);
+    g.fillStyle="#8a5a2c";g.fillRect(124,62,4,70);g.fillRect(192,62,4,70);drawPerson(160,124,{g,size:.75,...myLook(),acc:S.acc,ph:t,build:myBuild(),tall:1});
+    g.fillStyle="#ffe08a";g.fillRect(122,96,76,36);g.strokeStyle="#cf9a14";g.lineWidth=2;g.strokeRect(122,96,76,36);for(let i=0;i<5;i++){g.fillStyle=i%2?"#fff":"#ffcc33";g.fillRect(118+i*17,48,17,16)}g.fillStyle="#3b2a20";g.font="900 11px "+FONTS.d;g.textAlign="center";g.fillText("LEMONADE",160,118);
+    C.forEach(c=>{if(c.x<-20||c.x>340)return;drawPerson(c.x,170,{g,size:.8,shirt:c.sh,skin:c.sk,hair:c.hr,legs:"#262b3a",mv:c.st!=="buy",ph:t+c.ph});if(c.msg&&c.mt>0){g.globalAlpha=Math.min(1,c.mt);g.font="800 10px "+FONTS.b;const w=g.measureText(c.msg).width+10;g.fillStyle=c.ok?"#2fd28a":"#fff";const by=136-(c.i%2)*20;rrp(g,c.x-w/2,by,w,16,7);g.fill();g.fillStyle=c.ok?"#fff":"#141824";g.fillText(c.msg,c.x,by+12);g.globalAlpha=1}});
+    if(rain){g.strokeStyle="rgba(255,255,255,.6)";g.beginPath();for(let i=0;i<40;i++){const x=(i*53+t*80)%320,y=(i*31+t*400)%200;g.moveTo(x,y);g.lineTo(x-2,y+8)}g.stroke()}};
+  const run=()=>{const btn=$("lmGo");btn.disabled=true;$("room").querySelectorAll("[data-lm],[data-lp]").forEach(b=>b.disabled=true);const price=P[LEM.p],cost=LEM.l*.15+LEM.s*.05+LEM.i*.03,idealIce=clamp((temp-14)/5,0,4);
+    const C=Array.from({length:24},(_,i)=>{const tl=rnd(1.8,3.2),ts=rnd(1.6,3.2),q=Math.max(0,1-Math.abs(LEM.l-tl)*.18-Math.abs(LEM.s-ts)*.16-Math.abs(LEM.i-idealIce)*.12),will=(.9+temp/18)*rnd(.7,1.35)*(rain?.55:1)*(.4+q),walk=Math.random()<(rain?.45:.15);
+      let ok=false,msg;if(walk)msg=null;else if(price>will*1.4)msg=pick(["Too pricey!","For that?!","No thanks"]);else if(q<.45)msg=LEM.l-tl>1?"Too sour!":tl-LEM.l>1?"Too watery":LEM.s-ts>1?"Way too sweet":LEM.i<idealIce-1?"Needs ice!":"Meh…";else{ok=true;msg=q>.8?pick(["Perfect!","Yum!","So fresh!","10/10"]):pick(["Nice","Not bad","Refreshing"])}
+      return{i,x:-30-i*55,st:"walk",ok,msg,mt:0,q,sh:pick(["#e2364a","#2fd28a","#ffcc33","#7a2fd6","#2fa6d9","#ff8fa3"]),sk:pick(["#e8b896","#c98e62","#8d5a3a","#f2d0b0"]),hr:pick(["#3b2a20","#1b1d22","#d9a066"]),ph:Math.random()*5,wait:0}});
+    let sold=0,happy=0,t0=performance.now(),lt=t0;
+    const loop=now=>{if(!live||room!=="lemon")return;const dt=Math.min(.05,(now-lt)/1000),t=(now-t0)/1000;lt=now;
+      C.forEach(c=>{if(c.st==="walk"){c.x+=dt*150;if(c.x>=160&&c.msg){c.st="buy";c.wait=.7;c.mt=1.3;if(c.ok){sold++;if(c.q>.8)happy++;SFX.buy()}else SFX.tick(.3)}}else if(c.st==="buy"){c.wait-=dt;if(c.wait<=0)c.st="go"}else c.x+=dt*150;c.mt=Math.max(0,c.mt-dt)});
+      paint(t,C);if(C.every(c=>c.x>340)){finish(sold,happy);return}requestAnimationFrame(loop)};requestAnimationFrame(loop);
+    const finish=(sold,happy)=>{const prof=Math.round(sold*(price-cost)*K),fans=happy*Math.max(1,Math.round((S.fans||0)*.0005));if(prof>0)earn(prof);else{S.cash=Math.max(0,S.cash+prof)}S.fans=(S.fans||0)+fans;S.stats.cups=(S.stats.cups||0)+sold;S.lemBest=Math.max(S.lemBest||0,prof);LEM.temp=null;dirty=true;
+      const stars=Math.round(clamp(sold/24*3+happy/24*2,0,5));(prof>0?SFX.rebirth:SFX.loss)();if(stars>=4)confetti(150);
+      $("room").innerHTML=`<div class="room-in">${roomHead("Lemonade stand")}<div class="shend"><b>🍋</b><span>${"★".repeat(stars)}${"☆".repeat(5-stars)}</span><div class="kv"><div><span class="eyebrow">Cups sold</span><b>${sold}/24</b></div><div><span class="eyebrow">Profit</span><b>${prof>=0?"+":""}${fmt(prof)}</b></div><div><span class="eyebrow">Fans</span><b>+${fmtN(fans)}</b></div></div>
+        <p class="fine">${sold<6?"Hardly anyone bought. Try a lower price, or a better recipe for the weather.":happy<sold/3?"People bought it, but few loved it. Tune the lemons, sugar and ice.":"The beach loved it!"}</p></div><button class="bigbtn" id="lmAgain">New day<small>Weather changes</small></button><button class="bigbtn alt" id="lmBack">Back to the Flea<small>&nbsp;</small></button></div>`;
+      $("lmBack").onclick=back;$("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("lmAgain").onclick=()=>openLemon(back);updMini()}};
+  draw()}
 function openMarket(cfg){
   cfg=cfg||MKT.market;if(!(S.stats.flips||0)&&!S.stash.length)FORCE_STEAL=1;if(rookieLeft()&&!cfg.only&&cfg.k!=="lux")setTimeout(()=>banner("Rookie luck · "+rookieLeft()+" lucky sales left","g"),S.tut<6?2600:500);
   M={cfg,market:[null,null,null],restock:[.2,.6,1],ev:null,nextEv:4,auctionT:rnd(35,70),streak:0,streakT:-99,t:0,newsT:0,evKey:null};
   $("room").innerHTML=`<div class="room-in">${roomHead(cfg.n)}
     <div class="news"><span class="live">LIVE</span><span id="news"></span></div>
     ${cfg.k==="market"?`<button class="reqbtn" id="mReq">📋 Buyer requests<b>${reqReady()?reqReady()+" ready to deliver":"3 new every day"}</b></button>`:""}
+    ${cfg.k==="flea"?`<button class="reqbtn lmbtn" id="mLem">🍋 Lemonade stand<b>Mix a recipe, set a price, read the weather · 8 energy</b></button>`:""}
     ${!cfg.only&&(S.stats.flips||0)>=10?(FO?`<div class="fobar" id="foBar"></div>`:`<button class="reqbtn fobtn" id="mFO" ${S.foDay===dayKey()?"disabled":""}>⚔️ Flip-off vs Slick Vinny<b>${S.foDay===dayKey()?"Rematch tomorrow":"3 minutes · most profit wins"}</b></button>`):""}
     <div id="event" class="collector"></div>
     <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
     <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="mHype" class="mhype"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
-  {const fb=$("mFO");if(fb)fb.onclick=()=>foStart()}
+  {const fb=$("mFO");if(fb)fb.onclick=()=>foStart()}{const lb=$("mLem");if(lb)lb.onclick=()=>{const cf=M.cfg;closeMarket();openLemon(()=>{room="flea";openMarket(cf)})}}
   const m=$("market");slotEls.length=0;slotKeys=[];
   for(let i=0;i<3;i++){const el=document.createElement("div");el.className="lst";el.dataset.i=i;el.tabIndex=0;m.appendChild(el);slotEls.push(el)}
   m.addEventListener("pointerdown",e=>{const el=e.target.closest(".lst");if(!el)return;const i=+el.dataset.i,l=M.market[i];if(!l||l.gone)return;e.preventDefault();audioOn();hold={i,id:l.id,t0:performance.now(),active:false,acc:0};try{el.setPointerCapture(e.pointerId)}catch(_){}});
@@ -5298,7 +5338,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=61,WN=[
+const WN_VER=62,WN=[
+ ["🍋","Lemonade stand","At the Boardwalk Flea, run a lemonade stand: choose lemons, sugar and ice, set your price and see if 24 beachgoers bite. Hot days love ice; rain keeps people away.","2026-10-07T06:05"],
  ["🦋","Bug catching","Butterflies, bees, ladybugs and night-time fireflies now flutter around town. Walk into them to catch them and fill the Bug book on the Pets screen. A Bug net at the Boutique helps. Rumour has it there's a golden one…","2026-10-07T06:00"],
  ["🚕","Ride share & daily trivia","Got a car? Start a ride share shift at the Docks: pick up 3 passengers and drop them off fast for tips. And the Arcade has a free daily trivia quiz with 5 questions.","2026-10-07T05:58"],
  ["🏁","Pet races","From the Pets screen, race your pet against three rivals. Tap CHEER to keep it sprinting. Winners get crates, tickets and a daily bond boost.","2026-10-07T05:55"],
