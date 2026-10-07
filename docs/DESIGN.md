@@ -281,6 +281,16 @@ shareable before/after snapshot.
   base x0.893; feet, head and arm length stay (they ride on the joints). Applied to every Robloxian rig on top of the
   Growth Spurt height (`Config/Body.Proportions`, `BodyShape.ApplyProportions`); muscles and the snatched torso follow
   their part's size, HipHeight grows with the legs, no gaps.
+- Smooth borders at uneven levels: a border vertex follows its neighbouring muscles by the data's blend weights
+  (g_v = (1 - sum w) * g_own + sum(w * g_other)), so a maxed muscle next to a flat one is a smooth slope.
+- Round shoulders: a DeltCap ball on each shoulder grows with Side Delts. The waist tightens: the snatched torso morphs
+  from a wide straight waist at level 0 to the snatched V with the average growth.
+- Max = a lean aesthetic V-taper (fitness model, not a bodybuilder); the mass monster sizes come from the manifest
+  (mass_monster.g per mesh) plus 12% extra thickness.
+- Widths by Growth Spurt (`Config/Body.Widths`, manifest growth_spurt_width): factor = 1 + k * (height / 4'0" - 1) per
+  region (shoulders with the genetics frame on top, hips, arms, legs, torso depth); k goes from skinny (wide clavicles
+  and hips, thin arms and legs) to the maxed V-taper with the muscle progress and on to the mass monster. Lying poses are
+  lifted by the extra torso depth so the back stays on the pad.
 - Muscles are real EditableMesh muscles (muscle v8): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), everyone gets the snatched-waist torso, each muscle's outline stays on the skin and only the bulge rises with its level (continuous, tweened, small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
   look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass

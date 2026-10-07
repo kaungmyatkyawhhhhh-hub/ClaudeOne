@@ -45,10 +45,13 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   Persistent Models (were Folders; the builders make Models too).
 
 - **Golden ratio body (8 Oct):** longer legs, shorter torso, same height, on players, NPCs, mirror rigs and the statue
-  (`BodyShape.ApplyProportions`, re-applied after every rescale). Not yet applied from the new `muscle_v8` package: the
-  "uneven levels" blend, round DeltCap shoulders + the waist that tightens, the aesthetic max data and
-  `growth_spurt_width` (the repo's MuscleData is still the v8-1 data; `tools/gen_muscle_data` expects "share", the new
-  growdata has "blend").
+  (`BodyShape.ApplyProportions`, re-applied after every rescale).
+- **Muscle data v8 final (8 Oct):** MuscleData regenerated from the latest `muscle_v8` (37 meshes): border "blend" weights
+  (the old "share" averaging is gone), DeltCap shoulder balls (in the UpperArms meshes), the waist morph (start -> snatched),
+  the aesthetic max data, per-mesh mass monster sizes and Growth Spurt widths (`BodyService.WidthFactors`,
+  `BodyShape.ApplyWidths`; attributes FrameWidth / WaistWidth drive the torso taper). Studio hook `TestMachine` = a
+  machine name puts you on it. Open: at mass monster the traps and triceps grow pointed tips (the manifest sizes 2.6 / 2.1
+  plus the +12% push the max shape far out); lower `Muscles.Look.MonsterG` for them if they look too sharp.
 
 - **Genetics scene (7 Oct):** a real gym around the reveal (`ReplicatedStorage.GeneticsSet`, from
   `tools/builders/GeneticsSet`): platform, J-hooks, plate tree, dim back wall with racks, soft depth of field. Camera

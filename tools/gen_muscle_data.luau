@@ -1,6 +1,7 @@
 -- Converts muscle_v8/ (growdata JSON: base, max, tris, the clothing-template UVs and, when present, nbase / nmax normals,
--- vein offsets and the shared border vertices) into ModuleScripts under
--- src/ReplicatedStorage/MuscleData (strings of comma separated numbers, chunked so no script is huge) plus an Index module.
+-- vein offsets and the border "blend" weights) into ModuleScripts under
+-- src/ReplicatedStorage/MuscleData (strings of comma separated numbers, chunked so no script is huge) plus an Index module
+-- (meshes, body part sizes, the per-mesh mass monster g), the snatched torso modules and the waist morph.
 -- Run from the repo root:  lune run tools/gen_muscle_data
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
@@ -52,8 +53,8 @@ for _, entry in ipairs(manifest.meshes) do
 	local uv = data.uv -- one u,v per vertex on the classic 585x559 clothing template
 	assert(#uv / 2 == #data.base / 3, name .. ": uv count does not match vertex count")
 	local fields = { base = join(data.base, 4), max = join(data.max, 4), tris = join(data.tris), uv = join(uv, 4) }
-	-- smooth, no seams (muscle_v8 update): per-vertex normals for base / max, the vein offsets, and "share" = the border
-	-- vertices (0-based) other muscles touch too, as "Name:1,2,3|Name2:4,5"
+	-- smooth, no seams (muscle_v8 updates): per-vertex normals for base / max, the vein offsets, and "blend" = how much a
+	-- border vertex (0-based) follows a neighbouring muscle's growth, as "Name:vertex,weight,vertex,weight|Name2:..."
 	local extra = {}
 	if data.nbase and data.nmax then
 		fields.nbase, fields.nmax = join(data.nbase, 3), join(data.nmax, 3)
@@ -64,20 +65,31 @@ for _, entry in ipairs(manifest.meshes) do
 		fields.vein = join(data.vein, 4)
 		table.insert(extra, "vein")
 	end
-	if data.share and next(data.share) then
+	if data.blend and next(data.blend) then
 		local parts = {}
 		local others = {}
-		for other in pairs(data.share) do table.insert(others, other) end
+		for other, list in pairs(data.blend) do
+			if #list > 0 then table.insert(others, other) end
+		end
 		table.sort(others)
-		for _, other in ipairs(others) do table.insert(parts, other .. ":" .. table.concat(join(data.share[other]), ",")) end
-		fields.share = { table.concat(parts, "|") }
-		table.insert(extra, "share")
+		for _, other in ipairs(others) do
+			local flat = {}
+			for _, pair in ipairs(data.blend[other]) do
+				table.insert(flat, tostring(pair[1]))
+				table.insert(flat, (join({ pair[2] }, 3))[1])
+			end
+			table.insert(parts, other .. ":" .. table.concat(flat, ","))
+		end
+		if #parts > 0 then
+			fields.blend = chunks({ table.concat(parts, "|") })
+			table.insert(extra, "blend")
+		end
 	end
 	local record = { name = name, part = entry.part, muscle = entry.muscle, shorts = entry.shorts or string.find(name, "_Shorts$") ~= nil, clothing = entry.clothing_template or "Shirt", verts = #data.base / 3, chunks = {} }
 	local fieldNames = { "base", "max", "tris", "uv" }
 	for _, field in ipairs(extra) do table.insert(fieldNames, field) end
 	for _, field in ipairs(fieldNames) do
-		local list = if field == "share" then fields.share else chunks(fields[field])
+		local list = if field == "blend" then fields.blend else chunks(fields[field])
 		record.chunks[field] = #list
 		for k, text in ipairs(list) do
 			local source = "return \"" .. text .. "\"\n"
@@ -98,13 +110,21 @@ table.insert(lines, "\t},")
 table.insert(lines, "\tmeshes = {")
 for _, r in ipairs(index.meshes) do
 	local chunkList = {}
-	for _, field in ipairs({ "base", "max", "tris", "uv", "nbase", "nmax", "vein", "share" }) do
+	for _, field in ipairs({ "base", "max", "tris", "uv", "nbase", "nmax", "vein", "blend" }) do
 		if r.chunks[field] then table.insert(chunkList, field .. " = " .. r.chunks[field]) end
 	end
 	table.insert(lines, string.format("\t\t{ name = %q, part = %q, muscle = %q, shorts = %s, clothing = %q, verts = %d, chunks = { %s } },",
 		r.name, r.part, r.muscle, tostring(r.shorts), r.clothing, r.verts, table.concat(chunkList, ", ")))
 end
 table.insert(lines, "\t},")
+-- the mass monster size of each mesh's muscle (manifest mass_monster.g, by the mesh's own name: DeltCap, UpperTraps too)
+table.insert(lines, "\tmonsterG = {")
+local monsterNames = {}
+for name in pairs(manifest.mass_monster.g) do table.insert(monsterNames, name) end
+table.sort(monsterNames)
+for _, name in ipairs(monsterNames) do table.insert(lines, string.format("\t\t%s = %s,", name, tostring(manifest.mass_monster.g[name]))) end
+table.insert(lines, "\t},")
+table.insert(lines, string.format("\tmonsterDefaultG = %s,", tostring(manifest.mass_monster.default_g)))
 table.insert(lines, "}")
 fs.writeFile(OUT .. "/Index.luau", table.concat(lines, "\n") .. "\n")
 print(string.format("wrote %d mesh records, %.2f MB of data modules", #index.meshes, totalBytes / 1048576))
@@ -175,11 +195,24 @@ for _, part in ipairs({ "UpperTorso", "LowerTorso" }) do
 			uvs[i * 2] = (r[2] + v * r[4]) / TH
 		end
 	end
+	-- the waist that tightens (body/torso_waist_morph.json): "start" (level 0, a wide straight waist) and "max" (the snatched
+	-- V) per vertex, same order as the OBJ
+	local morph = serde.decode("json", fs.readFile(SRC .. "/body/torso_waist_morph.json"))[part]
+	local startList = nil
+	if morph and morph.start and #morph.start == #verts then
+		startList = morph.start
+		-- (the morph's max is the newest snatched shape: it replaces the OBJ's positions; same vertices and triangles, so the
+		-- OBJ's normals and the UVs made above still fit)
+		assert(#morph.tris == #tris, part .. " waist morph: its triangles do not match the snatched OBJ")
+		for i, value in ipairs(morph.tris) do assert(value == tris[i], part .. " waist morph: triangle order differs") end
+		for i, value in ipairs(morph.max) do verts[i] = value end
+	end
 	local source = "-- GENERATED by tools/gen_muscle_data.luau from " .. SRC .. "/body: the snatched-waist " .. part .. ".\nreturn {\n"
 		.. "\tverts = { " .. table.concat(join(verts, 4), ", ") .. " },\n"
 		.. "\tuv = { " .. table.concat(join(uvs, 4), ", ") .. " },\n"
 		.. "\ttris = { " .. table.concat(join(tris), ", ") .. " },\n"
 		.. (if #vns == #verts then "\tnormals = { " .. table.concat(join(vns, 4), ", ") .. " },\n" else "")
+		.. (if startList then "\tstart = { " .. table.concat(join(startList, 4), ", ") .. " },\n" else "")
 		.. "}\n"
 	fs.writeFile(OUT .. "/Snatched" .. part .. ".luau", source)
 end

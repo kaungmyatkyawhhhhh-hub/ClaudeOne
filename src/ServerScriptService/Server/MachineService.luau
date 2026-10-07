@@ -3,6 +3,7 @@
 -- Clients only send intent (Lift / Leave / SelectTier / UnlockTier); all checks happen here.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = ReplicatedStorage.Shared.Config
@@ -157,7 +158,16 @@ end
 local function bodyCFrame(character, humanoid, root, model, pose)
 	local pivot = model:GetPivot()
 	if pose.kind == "Lie" then
-		return pivot * pose.body
+		-- a deeper torso (Growth Spurt widths: BodyShape.ApplyWidths) lies higher, so the back stays on the pad: lifted off
+		-- the pad (the upward side of the body's facing) by half of what the torso gained in depth
+		local cf = pivot * pose.body
+		local torso = character:FindFirstChild("UpperTorso")
+		local base = torso and torso:GetAttribute("WidZBase")
+		if torso and type(base) == "number" and torso.Size.Z > base then
+			local away = if cf.LookVector.Y >= 0 then cf.LookVector else -cf.LookVector
+			cf += away * ((torso.Size.Z - base) / 2)
+		end
+		return cf
 	end
 	local facing = CFrame.Angles(0, math.rad(pose.yaw or 0), 0)
 	local height = humanoid.HipHeight + root.Size.Y / 2
@@ -501,6 +511,27 @@ function MachineService.Start()
 		end)
 	end
 	Players.PlayerRemoving:Connect(leave)
+
+	-- Studio testing: Workspace attribute "TestMachine" = a machine model's name (or its MachineId) puts the first player on
+	-- it (to check every pose); "" gets them off.
+	if RunService:IsStudio() then
+		workspace:GetAttributeChangedSignal("TestMachine"):Connect(function()
+			local player = Players:GetPlayers()[1]
+			if not player then return end
+			leave(player)
+			local wanted = workspace:GetAttribute("TestMachine")
+			if type(wanted) ~= "string" or wanted == "" then return end
+			for _, model in ipairs(CollectionService:GetTagged("Machine")) do
+				if model.Name == wanted or model:GetAttribute("MachineId") == wanted then
+					local data = PlayerData.Get(player)
+					if data and data.growthSpurts < 2 then data.growthSpurts = 2 end -- (the pro gym too)
+					enter(player, model)
+					return
+				end
+			end
+			warn("[MachineService] TestMachine: no machine named " .. wanted)
+		end)
+	end
 end
 
 return MachineService

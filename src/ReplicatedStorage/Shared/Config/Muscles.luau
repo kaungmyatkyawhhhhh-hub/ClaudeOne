@@ -151,13 +151,15 @@ Muscles.Look = {
 	MonsterAt = 5,
 	Ease = 1.6,
 	DefaultMonsterG = 1.35,
+	-- muscle_v8 manifest mass_monster.g (the aesthetic max update raised them so the monster stays bulky); the meshes that
+	-- grow with another muscle (DeltCap with Side Delts, UpperTraps with Traps) have their own size in MuscleData.Index
 	MonsterG = {
-		UpperChest = 1.4, MidChest = 1.4, FrontDelts = 1.45, SideDelts = 1.5, RearDelts = 1.45, Lats = 1.45, Traps = 1.7,
-		Rhomboids = 1.45, LowerBack = 1.4, Biceps = 1.4, Triceps = 1.45, Forearms = 1.4, Quads = 1.45, Hamstrings = 1.4,
-		Glutes = 1.35, Calves = 1.35, Abs = 1.25, Obliques = 1.6,
+		UpperChest = 1.522, MidChest = 1.522, FrontDelts = 1.526, SideDelts = 1.5, RearDelts = 1.45, Lats = 1.318,
+		Traps = 2.625, Rhomboids = 1.7, LowerBack = 1.647, Biceps = 2.083, Triceps = 2.083, Forearms = 2, Quads = 2.132,
+		Hamstrings = 2, Glutes = 1.8, Calves = 1.875, Abs = 1.316, Obliques = 2.909,
 	},
 }
-Muscles.MaxLookG = 1.7 -- the biggest MonsterG
+Muscles.MaxLookG = 2.909 -- the biggest MonsterG
 
 function Muscles.MonsterG(muscleId: string): number
 	return Muscles.Look.MonsterG[muscleId] or Muscles.Look.DefaultMonsterG

@@ -1,6 +1,7 @@
 -- BodyShape: body helpers shared by BodyService (characters), MirrorService (the before/after rigs) and the statue.
 -- The muscles are EditableMesh muscles (MuscleRig, MuscleClient); this module only holds the height base and
--- the joint helpers for rigs that are anchored as a whole (statue, preview rigs), and the golden ratio proportions.
+-- the joint helpers for rigs that are anchored as a whole (statue, preview rigs), the golden ratio proportions and the
+-- body widths.
 local Body = require(script.Parent.Config.Body)
 
 local BodyShape = {}
@@ -181,6 +182,71 @@ function BodyShape.ApplyProportions(model: Model, solve: boolean?): number
 	end
 	if solve then BodyShape.SolveJoints(model) end
 	return delta
+end
+
+-- One X or Z value scaled by a factor that can change over time: the original is remembered (<key>Base) with the value we
+-- set (<key>). If the current value is no longer ours, Roblox rebuilt it and it is the new original. Returns the new value,
+-- or nil when nothing changes.
+local function scaleAxis(target: Instance, key: string, current: number, factor: number): number?
+	local base, set = target:GetAttribute(key .. "Base"), target:GetAttribute(key)
+	local ours = type(base) == "number" and type(set) == "number" and math.abs(current - set) < 1e-4
+	if not ours then base = current end
+	local new = (base :: number) * factor
+	if ours and math.abs(new - current) < 1e-5 then return nil end
+	target:SetAttribute(key .. "Base", base)
+	target:SetAttribute(key, new)
+	return new
+end
+
+-- Widen one body part and every attachment on it (X and Z).
+local function widenPart(part: BasePart, fx: number, fz: number): boolean
+	local changed = false
+	local x = scaleAxis(part, "WidX", part.Size.X, fx)
+	local z = scaleAxis(part, "WidZ", part.Size.Z, fz)
+	if x or z then
+		part.Size = Vector3.new(x or part.Size.X, part.Size.Y, z or part.Size.Z)
+		changed = true
+	end
+	for _, attachment in ipairs(part:GetChildren()) do
+		if attachment:IsA("Attachment") then
+			local p = attachment.Position
+			local ax = scaleAxis(attachment, "WidX", p.X, fx)
+			local az = scaleAxis(attachment, "WidZ", p.Z, fz)
+			if ax or az then
+				attachment.Position = Vector3.new(ax or p.X, p.Y, az or p.Z)
+				changed = true
+			end
+		end
+	end
+	return changed
+end
+
+-- Body widths (Config.Body.Widths, computed by BodyService.WidthFactors): factors = { shoulders (the UpperTorso width, frame
+-- included), hips (LowerTorso), arms, legs (limb width and thickness), depth (the torso front to back) }. Safe to call every
+-- second: only what changed (or Roblox rebuilt) is touched; Motor6D rigs get their joints synced.
+function BodyShape.ApplyWidths(model: Model, factors: { [string]: number })
+	local changed = false
+	local function widen(name: string, fx: number, fz: number)
+		local part = model:FindFirstChild(name)
+		if part and part:IsA("BasePart") and widenPart(part, fx, fz) then changed = true end
+	end
+	widen("UpperTorso", factors.shoulders, factors.depth)
+	widen("LowerTorso", factors.hips, factors.depth)
+	for _, side in ipairs({ "Right", "Left" }) do
+		widen(side .. "UpperArm", factors.arms, factors.arms)
+		widen(side .. "LowerArm", factors.arms, factors.arms)
+		widen(side .. "UpperLeg", factors.legs, factors.legs)
+		widen(side .. "LowerLeg", factors.legs, factors.legs)
+	end
+	if not changed then return end
+	for _, joint in ipairs(model:GetDescendants()) do
+		if joint:IsA("Motor6D") and joint.Part0 and joint.Part1 then
+			local a0 = joint.Part0:FindFirstChild(joint.Name .. "RigAttachment")
+			local a1 = joint.Part1:FindFirstChild(joint.Name .. "RigAttachment")
+			if a0 and a0:IsA("Attachment") then joint.C0 = a0.CFrame end
+			if a1 and a1:IsA("Attachment") then joint.C1 = a1.CFrame end
+		end
+	end
 end
 
 return BodyShape

@@ -4,10 +4,12 @@
 --    scales are reset so everyone has the same proportions. Head, face, hair, accessories, skin color and animations stay
 --    the player's own. If anything resets the body (wardrobe, emotes, outfit changes) it is put back.
 --  * Height comes from Growth Spurts (Humanoid BodyHeightScale).
---  * Shoulder width comes from the genetics Frame (Genetics.ShoulderWidth: Narrow 0.9 ... V-Taper 1.2): the UpperTorso is
---    widened and every attachment on it (the shoulder joints, so the arms move out) moved out by that factor; re-applied
---    whenever Roblox rescales the body (a Growth Spurt resets sizes). The character attribute FrameWidth tells the clients,
---    whose muscle meshes taper the torso back to the normal waist (a V, not a wider box).
+--  * Widths (Config.Body.Widths, muscle_v8 growth_spurt_width): Roblox's height scale only makes the body taller, so each
+--    region gets its own width factor from the height (1 + k * (s - 1)), with k blending from skinny to the maxed V-taper
+--    as the muscles grow and on to the mass monster. The shoulders also carry the genetics Frame (Genetics.ShoulderWidth:
+--    Narrow 0.9 ... V-Taper 1.2). Parts and their attachments are widened (the arms move out with the shoulders, the legs
+--    with the hips); re-applied whenever they change or Roblox rescales the body. The character attributes FrameWidth (the
+--    shoulders) and WaistWidth (the hips) tell the clients, whose torso meshes taper from one to the other (a V).
 --  * Golden ratio proportions (Config.Body.Proportions, BodyShape.ApplyProportions): longer legs, shorter torso, same
 --    height; re-applied with the frame whenever Roblox rebuilds the body.
 --  * Muscles (muscle v7) are drawn on every client (Shared.MuscleRig / MuscleClient): this service only PUBLISHES the numbers as
@@ -150,39 +152,41 @@ local function applyBody(state, humanoid, data)
 	return false
 end
 
--- The frame's shoulder width on a character. Each changed size / position remembers its base (FrameBaseX) and the factor
--- applied (FrameApplied); if they no longer match, Roblox reset it (a rescale) and the current value is the new base.
-local function widen(target, current: number, factor: number): number?
-	local base, applied = target:GetAttribute("FrameBaseX"), target:GetAttribute("FrameApplied")
-	if type(base) ~= "number" or type(applied) ~= "number" or math.abs(current - base * applied) > 1e-3 then
-		base, applied = current, nil
+local function smoothstep(t: number): number
+	t = math.clamp(t, 0, 1)
+	return t * t * (3 - 2 * t)
+end
+
+-- The width factors for a player's data: { shoulders, hips, arms, legs, depth } (Config.Body.Widths). s = the height over
+-- the starting height; k goes from Skinny to Maxed with the muscle progress (the average look g up to the full aesthetic
+-- size, eased) and on to MassMonster with the average monster progress. The shoulders get the genetics frame on top.
+function BodyService.WidthFactors(data)
+	local W = Body.Widths
+	local s = targetHeight(data) / (GrowthSpurts.GetHeight(0) / BodyShape.BaseHeight)
+	local levels, goal = levelsOf(data), goalOf(data)
+	local grown, monster = 0, 0
+	for _, muscle in ipairs(Muscles.List) do
+		local g = Muscles.LookG(muscle.id, levels[muscle.id] or 0, goal)
+		grown += math.min(g, 1)
+		monster += math.clamp((g - 1) / math.max(Muscles.MonsterG(muscle.id) - 1, 0.01), 0, 1)
 	end
-	if applied ~= nil and math.abs(applied - factor) < 1e-4 then return nil end
-	target:SetAttribute("FrameBaseX", base)
-	target:SetAttribute("FrameApplied", factor)
-	return base * factor
+	local p, m = smoothstep(grown / #Muscles.List), monster / #Muscles.List
+	local factors = {}
+	for _, region in ipairs({ "shoulders", "hips", "arms", "legs", "depth" }) do
+		local k = W.Skinny[region] + (W.Maxed[region] - W.Skinny[region]) * p
+		k += (W.MassMonster[region] - k) * m
+		local f = 1 + k * (s - 1)
+		factors[region] = math.floor(f / W.Step + 0.5) * W.Step
+	end
+	factors.shoulders *= Genetics.ShoulderWidth(data.genetics and data.genetics.frame)
+	return factors
 end
 
 local function applyFrame(character: Model, data)
-	local factor = Genetics.ShoulderWidth(data.genetics and data.genetics.frame)
-	local torso = character:FindFirstChild("UpperTorso")
-	if not torso or not torso:IsA("BasePart") then return end
-	local width = widen(torso, torso.Size.X, factor)
-	if width then torso.Size = Vector3.new(width, torso.Size.Y, torso.Size.Z) end
-	for _, attachment in ipairs(torso:GetChildren()) do
-		if attachment:IsA("Attachment") then
-			local x = widen(attachment, attachment.Position.X, factor)
-			if x then attachment.Position = Vector3.new(x, attachment.Position.Y, attachment.Position.Z) end
-		end
-	end
-	-- rigs with Motor6D shoulders follow their C0, not the attachment
-	for _, side in ipairs({ "Right", "Left" }) do
-		local arm = character:FindFirstChild(side .. "UpperArm")
-		local joint = arm and arm:FindFirstChild(side .. "Shoulder")
-		local attachment = torso:FindFirstChild(side .. "ShoulderRigAttachment")
-		if joint and joint:IsA("Motor6D") and attachment then joint.C0 = attachment.CFrame end
-	end
-	if character:GetAttribute("FrameWidth") ~= factor then character:SetAttribute("FrameWidth", factor) end
+	local factors = BodyService.WidthFactors(data)
+	BodyShape.ApplyWidths(character, factors)
+	if character:GetAttribute("FrameWidth") ~= factors.shoulders then character:SetAttribute("FrameWidth", factors.shoulders) end
+	if character:GetAttribute("WaistWidth") ~= factors.hips then character:SetAttribute("WaistWidth", factors.hips) end
 end
 BodyService.ApplyFrame = applyFrame
 

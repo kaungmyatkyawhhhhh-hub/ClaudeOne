@@ -1,8 +1,8 @@
 -- MuscleRig: muscle v7 on one character / rig (client side; every client builds the muscles of every character it can see).
 --
 -- Each muscle's outline stays on the skin and only the bulge rises (EditableMesh, SetPosition: vertex = base + (max - base) * g,
--- g = the muscle's level over its max level). Smooth, no seams: border vertices grow with the average g of every muscle
--- that shares them, and the normals come from the data (nbase / nmax), so the body reads as one surface. The mesh data is in part-local studs (origin = the body part's position), so a
+-- g = the muscle's level over its max level). Smooth borders at uneven levels: a border vertex follows its neighbours by
+-- the data's blend weights, and the normals come from the data (nbase / nmax), so the body reads as one surface. The mesh data is in part-local studs (origin = the body part's position), so a
 -- muscle mesh is welded to its body part at CFrame.new().
 --
 -- LIMITS the code works around (measured in Studio: a client may hold only 8 EditableMeshes at once, a mesh holds at most 20,000
@@ -407,51 +407,78 @@ local function currentShown(self, id: string): number
 	return math.min(g * (self.pumped and PUMPED or 1) * pulse, Muscles.MaxLookG * 1.06)
 end
 
+-- How far a muscle is into its mass monster stage (0 at the full aesthetic size, 1 at its monster size).
+local function monsterT(id: string, g: number): number
+	return math.clamp((g - 1) / math.max(Muscles.MonsterG(id) - 1, 0.01), 0, 1)
+end
+local MONSTER_EXTRA = Body.Widths.MassMonster.muscle_extra -- the monster's extra thickness on top of its size
+
+-- The growth one MESH is drawn at: its muscle's g up to the full aesthetic size; past it the mesh grows toward its own monster
+-- size (manifest mass_monster.g by mesh: the round shoulder caps and the upper traps have their own) and gets the monster's
+-- extra thickness.
+local function meshShown(self, key: string, id: string): number
+	local g = currentShown(self, id)
+	if g <= 1 then return g end
+	local t = math.clamp((g - 1) / math.max(Muscles.MonsterG(id) - 1, 0.01), 0, 1.1)
+	return (1 + t * (MuscleMeshes.MonsterG(key) - 1)) * (1 + MONSTER_EXTRA * math.min(t, 1))
+end
+
 -- the vein amount for a muscle: they come in with the mass monster stage (g past 1 toward the muscle's monster size), and
 -- briefly while PUMPED at the full aesthetic size
 local function veinFor(self, id: string): number
 	local g = self.current[id] or 0
-	local monster = math.clamp((g - 1) / math.max(Muscles.MonsterG(id) - 1, 0.01), 0, 1)
+	local monster = monsterT(id, g)
 	local pumped = if self.pumped and g >= 1 then VEIN_PUMPED else 0
 	return math.max(monster, pumped)
 end
 
--- Smooth, no seams (muscle_v8): every vertex grows with g_v = the average of its own muscle's growth and the growth of
--- each muscle it is shared with (border vertices), so neighbouring meshes always meet exactly, even at different
--- levels; position = base + (max - base) * g_v + vein * v, normal = unit(nbase + (nmax - nbase) * g_v). A muscle at 0
--- lies flat on the skin (no tucking inside), so a 0 next to a max is a smooth slope.
--- The genetics frame (character attribute FrameWidth, set by BodyService): the server widens the UpperTorso part by the
--- factor, so every mesh on it is drawn that much wider; on the torso meshes each vertex's X is scaled back toward the
--- normal width from the shoulders down (full factor at the shoulders, none at the waist), so a V-Taper is a V.
+-- Smooth borders at uneven levels (muscle_v8 blend): a border vertex follows its neighbouring meshes by the data's
+-- weights: g_v = (1 - sum of weights) * g_own + sum(weight * g_other); position = base + (max - base) * g_v + vein * v,
+-- normal = unit(nbase + (nmax - nbase) * g_v). A muscle at 0 lies flat on the skin, so a 0 next to a max is a smooth slope.
+-- The torso width (character attributes set by BodyService): the server widens the UpperTorso part to FrameWidth (the
+-- genetics frame times the Growth Spurt shoulder width) and the LowerTorso to WaistWidth (the hips), so every mesh on the
+-- UpperTorso is drawn FrameWidth wider; each vertex's X is scaled from the shoulders (full width) down to the waist
+-- (WaistWidth, meeting the LowerTorso), so a V-Taper is a V.
 local FRAME_TAPER = { From = -0.3, To = 0.3 } -- share of the torso height (centre = 0): the waist .. the shoulders
 local function frameTaper(self, group, positions: { Vector3 }): { number }?
-	local f = self.frameWidth or 1
-	if math.abs(f - 1) < 1e-3 or group.def.part ~= "UpperTorso" then return nil end
+	local top, waist = self.taperTop or 1, self.taperWaist or 1
+	if math.abs(top - waist) < 1e-3 or group.def.part ~= "UpperTorso" then return nil end
 	local height = MuscleMeshes.Parts.UpperTorso.size.Y
 	local taper = table.create(#positions)
 	for i, position in ipairs(positions) do
 		local t = math.clamp((position.Y / height - FRAME_TAPER.From) / (FRAME_TAPER.To - FRAME_TAPER.From), 0, 1)
 		t = t * t * (3 - 2 * t)
-		taper[i] = (1 + (f - 1) * t) / f
+		taper[i] = (waist + (top - waist) * t) / top
 	end
 	return taper
 end
 
+-- The waist that tightens (muscle_v8 waist morph): 0 = the wide straight waist of a beginner, 1 = the snatched V; the
+-- average growth of all muscles (up to the full aesthetic size), eased.
+local function waistProgress(self): number
+	local total = 0
+	for _, muscle in ipairs(Muscles.List) do total += math.min(self.current[muscle.id] or 0, 1) end
+	return smooth(total / #Muscles.List)
+end
+
 local function applyRange(self, group, range)
 	local data, mesh, ids, normalIds = group.data, group.mesh, group.vertexIds, group.normalIds
-	local base, delta, shares, nbase, ndelta, vein = data.base, data.delta, data.shares, data.nbase, data.ndelta, data.vein
+	local base, delta, blends, nbase, ndelta, vein = data.base, data.delta, data.blends, data.nbase, data.ndelta, data.vein
 	local taper = group.taper
-	local g = currentShown(self, range.id)
+	local g = meshShown(self, range.key, range.id)
 	local others = {}
-	for _, id in ipairs(range.shareIds) do others[id] = currentShown(self, id) end
+	for _, key in ipairs(range.blendKeys) do others[key] = meshShown(self, key, MuscleMeshes.MuscleId(key)) end
 	local v = if vein then veinFor(self, range.id) else 0
 	for i = range.first, range.first + range.count - 1 do
 		local gv = g
-		local shared = shares[i]
-		if shared then
-			local sum = g
-			for _, id in ipairs(shared) do sum += others[id] end
-			gv = sum / (#shared + 1)
+		local list = blends[i]
+		if list then
+			local weights, sum = 0, 0
+			for _, pair in ipairs(list) do
+				weights += pair[2]
+				sum += pair[2] * (others[pair[1]] or g)
+			end
+			gv = (1 - weights) * g + sum
 		end
 		local position = base[i] + delta[i] * gv
 		if v > 0 then position += vein[i] * v end
@@ -467,13 +494,13 @@ local function applyRange(self, group, range)
 	group.appliedVein[range] = v
 end
 
--- true when the muscle, a muscle it shares border vertices with, or its vein amount changed since it was last applied
+-- true when the mesh, a mesh it blends with, or its vein amount changed since it was last applied
 local function rangeChanged(self, group, range): boolean
 	local last = group.applied[range]
-	if last == nil or math.abs(currentShown(self, range.id) - last) > MIN_CHANGE then return true end
+	if last == nil or math.abs(meshShown(self, range.key, range.id) - last) > MIN_CHANGE then return true end
 	local others = group.appliedOthers[range]
-	for _, id in ipairs(range.shareIds) do
-		if not others or math.abs(currentShown(self, id) - (others[id] or 0)) > MIN_CHANGE then return true end
+	for _, key in ipairs(range.blendKeys) do
+		if not others or math.abs(meshShown(self, key, MuscleMeshes.MuscleId(key)) - (others[key] or 0)) > MIN_CHANGE then return true end
 	end
 	return group.data.vein ~= nil and veinFor(self, range.id) ~= group.appliedVein[range]
 end
@@ -534,7 +561,7 @@ local function buildGroup(self, state, group): boolean
 		local taper = group.taper
 		local buildG = table.create(data.verts)
 		for _, range in ipairs(data.ranges) do
-			local monster = Muscles.MonsterG(range.id)
+			local monster = MuscleMeshes.MonsterG(range.key) * (1 + MONSTER_EXTRA)
 			for i = range.first, range.first + range.count - 1 do buildG[i] = monster end
 		end
 		for i = 1, data.verts do
@@ -589,8 +616,25 @@ local function buildGroup(self, state, group): boolean
 end
 
 -- The snatched-waist torso (muscle v8 body/): shown INSTEAD of the real UpperTorso / LowerTorso (they are hidden on this
--- client only), dressed like the muscles in the character's own Shirt / Pants. It never changes shape, so after it is built
--- it only follows the body. (MeshPart:ApplyMesh onto the real part was tried: the part then loses its clothing.)
+-- client only), dressed like the muscles in the character's own Shirt / Pants. Its waist morphs from the wide start to
+-- the snatched V as the body grows (applySnatched). (MeshPart:ApplyMesh onto the real part was tried: the part then loses
+-- its clothing.)
+local function snatchedPosition(data, i: number, w: number): Vector3
+	local max = data.verts[i]
+	return if data.start then data.start[i] + (max - data.start[i]) * w else max
+end
+local function applySnatched(self, group)
+	local data, mesh, ids = group.snatchedData, group.mesh, group.vertexIds
+	if not (data and mesh and ids) then return end
+	local w = waistProgress(self)
+	local taper = group.taper
+	for i = 1, #data.verts do
+		local position = snatchedPosition(data, i, w)
+		if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
+		mesh:SetPosition(ids[i], position)
+	end
+	group.morphW = w
+end
 local function buildSnatched(self, state, group): boolean
 	local body = self.model:FindFirstChild(group.def.part)
 	if not body or not body:IsA("BasePart") then return false end
@@ -601,7 +645,10 @@ local function buildSnatched(self, state, group): boolean
 	local ok, err = pcall(function()
 		local ids, uvs, normals = {}, {}, {}
 		local taper = frameTaper(self, group, data.verts)
-		for i, position in ipairs(data.verts) do
+		group.taper = taper
+		local w = waistProgress(self)
+		for i = 1, #data.verts do
+			local position = snatchedPosition(data, i, w)
 			if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
 			ids[i] = mesh:AddVertex(position)
 			uvs[i] = mesh:AddUV(data.uv[i])
@@ -615,6 +662,7 @@ local function buildSnatched(self, state, group): boolean
 			mesh:SetFaceUVs(face, { uvs[a], uvs[b], uvs[c] })
 			if data.normals then mesh:SetFaceNormals(face, { normals[a], normals[b], normals[c] }) end
 		end
+		group.vertexIds, group.morphW = ids, w
 	end)
 	local okPart, part = false, nil
 	if ok then okPart, part = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) end) end
@@ -625,6 +673,7 @@ local function buildSnatched(self, state, group): boolean
 		return false
 	end
 	group.mesh, group.body, group.part = mesh, body, part
+	group.snatchedData = data
 	group.refSize = MuscleMeshes.Parts[group.def.part].size
 	group.bodySize = body.Size
 	attach(self, part, body, group.def.part .. "Snatched")
@@ -758,16 +807,22 @@ local function step(self, dt: number, budget: number): number
 	for id, started in pairs(self.pulses) do
 		if now - started > (self.pulseTimes[id] or PULSE_TIME) then self.pulses[id] = nil end
 	end
-	-- the genetics frame changed (first roll, a reroll): the torso meshes are built again with the new taper
-	local frameWidth = self.model:GetAttribute("FrameWidth")
-	frameWidth = if type(frameWidth) == "number" then frameWidth else 1
-	if frameWidth ~= (self.frameWidth or 1) then
-		self.frameWidth = frameWidth
+	-- the torso width changed (the frame, a Growth Spurt, the body growing): every UpperTorso mesh gets the new taper, in place
+	local top, waist = self.model:GetAttribute("FrameWidth"), self.model:GetAttribute("WaistWidth")
+	top = if type(top) == "number" then top else 1
+	waist = if type(waist) == "number" then waist else 1
+	if top ~= (self.taperTop or 1) or waist ~= (self.taperWaist or 1) then
+		self.taperTop, self.taperWaist = top, waist
 		for _, state in ipairs(self.units) do
+			if not state.built then continue end
 			for _, group in ipairs(state.groups) do
-				if group.def.part == "UpperTorso" and state.built then
-					destroyUnit(state)
-					break
+				if group.def.part ~= "UpperTorso" or not group.mesh then continue end
+				if group.snatched then
+					group.taper = frameTaper(self, group, group.snatchedData.verts)
+					group.morphW = nil -- (applied below)
+				elseif group.data then
+					group.taper = frameTaper(self, group, group.data.base)
+					table.clear(group.applied) -- (every range is applied again, within the budget)
 				end
 			end
 		end
@@ -803,6 +858,10 @@ local function step(self, dt: number, budget: number): number
 				if group.part.Transparency ~= (hidden and 1 or 0) then
 					group.part.Transparency = hidden and 1 or 0
 					if group.cloth then group.cloth.Transparency = hidden and 1 or CLOTH_TRANSPARENCY end
+				end
+				-- the waist morph follows the growth
+				if group.snatched and group.mesh and (group.morphW == nil or math.abs(waistProgress(self) - group.morphW) > 0.004) then
+					applySnatched(self, group)
 				end
 				-- apply the muscles that changed (within the frame budget)
 				for _, range in ipairs(if group.data then group.data.ranges else {}) do

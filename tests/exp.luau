@@ -39,6 +39,6 @@ H.check(M.GroupShown("Chest", goal) == M.GroupExp(dataAt(goal, 0), "Chest"), "th
 H.check(math.abs(M.LookG("Biceps", goal, goal) - 0.67) < 0.02, "the goal is not the full look")
 local function levelAtExp(times) return M.LevelFromXp(times * M.CumXp(goal)) end
 H.check(math.abs(M.LookG("Biceps", levelAtExp(2), goal) - 1) < 1e-6, "2x the goal's EXP = the full aesthetic look")
-H.check(math.abs(M.LookG("Traps", levelAtExp(5), goal) - 1.7) < 1e-6 and M.LookG("Traps", levelAtExp(9), goal) == M.LookG("Traps", levelAtExp(5), goal), "5x the EXP = the mass monster look, then it stays")
+H.check(math.abs(M.LookG("Traps", levelAtExp(5), goal) - M.MonsterG("Traps")) < 1e-6 and M.LookG("Traps", levelAtExp(9), goal) == M.LookG("Traps", levelAtExp(5), goal), "5x the EXP = the mass monster look, then it stays")
 H.check(M.FormatExp(50000) == "50,000" and M.FormatExp(999) == "999" and M.FormatExp(1234567) == "1,234,567", "EXP gets thousands separators")
 H.done()
