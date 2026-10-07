@@ -239,6 +239,30 @@ function Icons.Hanger(color)
 	return icon
 end
 
+-- A clipboard with three lines (quests).
+function Icons.Quest(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Quest")
+	outline(icon, color, 0.62, 0.8, 0.5, 0.54, Theme.Corner.Segment)
+	outline(icon, color, 0.3, 0.14, 0.5, 0.16, Theme.Corner.Segment)
+	line(icon, color, 0.3, 0.5, 0.4, 0)
+	line(icon, color, 0.3, 0.5, 0.56, 0)
+	line(icon, color, 0.2, 0.44, 0.72, 0)
+	return icon
+end
+
+-- A gift box with a ribbon (daily reward).
+function Icons.Gift(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Gift")
+	outline(icon, color, 0.7, 0.46, 0.5, 0.66, Theme.Corner.Segment)
+	outline(icon, color, 0.8, 0.18, 0.5, 0.36, Theme.Corner.Segment)
+	New("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.28), Size = UDim2.fromScale(THICKNESS, 0.62), BackgroundColor3 = color, Parent = icon })
+	line(icon, color, 0.26, 0.38, 0.24, -35)
+	line(icon, color, 0.26, 0.62, 0.24, 35)
+	return icon
+end
+
 function Icons.Tint(icon, color)
 	for _, part in ipairs(icon:GetDescendants()) do
 		if part:IsA("UIStroke") then

@@ -1,7 +1,7 @@
 -- Menu (client).
---  * PC: a column of 64px square buttons (white line icon + small label under it) on the left edge, vertically
---    centered below the Roblox top bar, even 8px gaps. If they don't all fit the screen's height they wrap into a
---    second column, so every button is always on screen. Hover: slight grow + brighter; press: shrink to 0.95.
+--  * PC: a 2-column grid of about 90px square tiles on the left edge, vertically centered below the Roblox top bar, even
+--    8px gaps (smaller only if the screen is short, so every tile is always on screen). Big icon, bold outlined label,
+--    colored border per tile, slight 3D look, bounce on hover and press (Config.HudIcons has the colors and icons).
 --  * Phones (touch without a keyboard): one Menu button at the top left (clear of the thumbstick); it opens the full
 --    menu as a clean grid of the same buttons in the middle of the screen. Picking one (or tapping outside) closes it.
 -- SideMenu.Add returns { button, SetActive(on), SetDot(on), Activated } (same as before, so screens didn't change).
@@ -10,11 +10,12 @@ local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Theme = require(script.Parent.Theme)
+local HudIcons = require(script.Parent.Parent.Config.HudIcons)
 local New, Colors, Spacing, Alpha = Theme.New, Theme.Colors, Theme.Spacing, Theme.Alpha
 
 local SideMenu = {}
 
-local SIZE = { Max = 64, Min = 64, Grid = 76 } -- px: PC button (64 fits "Wardrobe" at the 14px minimum), phone tile
+local SIZE = { Max = 90, Min = 64, Grid = 76 } -- px: PC tile (about 90, smaller only if the screen is short), phone grid tile
 local GAP = Spacing.S
 local MARGIN = Spacing.M  -- from the left edge (and top/bottom of the free space)
 local ACTIVE_FILL = 0.8   -- white fill transparency of the open menu's button
@@ -47,51 +48,101 @@ local function visibleEntries()
 	return list
 end
 
--- One square button: icon on top, small label under it. Returns the button and its parts.
+-- One square tile (owner's UI v7 look): a big icon on top, a bold outlined label at the bottom, a colored border per tile,
+-- a slight 3D look (lighter top, darker bottom edge that the face sinks into when pressed) and a bounce on hover/press.
+-- Returns the button and its parts.
+local function darker(color, amount)
+	return color:Lerp(Color3.new(0, 0, 0), amount)
+end
+
 local function makeButton(id, labelText, iconFactory, side, order)
-	local border = Theme.Stroke(Colors.Border, 1, Alpha.Border)
+	local cfg = HudIcons.Tiles[id]
+	local accent = cfg and cfg.accent or HudIcons.DefaultAccent
 	local button = New("TextButton", {
 		Name = id,
 		LayoutOrder = order,
 		Size = UDim2.fromOffset(side, side),
 		Text = "",
 		AutoButtonColor = false,
-		BackgroundColor3 = Colors.Panel,
-		BackgroundTransparency = Alpha.Panel,
-	}, { Theme.Round("Button"), border })
+		BackgroundTransparency = 1,
+	})
+	-- the dark bottom edge (full size) and the face on top of it (a little shorter, so the edge shows underneath)
+	local lip = New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = darker(accent, 0.66), Parent = button }, { Theme.Round("Button") })
+	local border = New("UIStroke", { Color = accent, Thickness = 2, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local face = New("Frame", {
+		Name = "Face",
+		Size = UDim2.new(1, 0, 1, -5),
+		BackgroundColor3 = darker(accent, 0.5),
+		ZIndex = 2,
+		Parent = button,
+	}, {
+		Theme.Round("Button"),
+		border,
+		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(140, 140, 150)) }),
+	})
 	Theme.BindPress(button)
+	-- the bounce: press squashes the tile and the face sinks onto its edge; letting go springs back past 1 and settles
+	local scale = button:FindFirstChildOfClass("UIScale")
+	button.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			Theme.Tween(face, { Position = UDim2.fromOffset(0, 3) }, 0.06)
+		end
+	end)
+	button.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			Theme.Tween(face, { Position = UDim2.fromOffset(0, 0) }, 0.2, Theme.Motion.Bounce)
+			if scale then Theme.Tween(scale, { Scale = 1 }, 0.28, Theme.Motion.Bounce) end
+		end
+	end)
 	Theme.AddDepth(button, "Button")
-	-- the content grows a little on hover (its own UIScale; the press shrink is on the button)
-	local content = New("Frame", { Name = "Content", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = button })
+	-- the content grows a little on hover (its own UIScale; the press squash is on the button)
+	local content = New("Frame", { Name = "Content", Size = UDim2.new(1, 0, 1, -5), BackgroundTransparency = 1, ZIndex = 3, Parent = button })
 	local grow = New("UIScale", { Parent = content })
-	local iconSlot = New("Frame", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = content })
-	iconFactory(Colors.Text).Parent = iconSlot
-	local label = Theme.Text({ Name = "Label", Text = labelText, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1), Parent = content })
+	local iconSlot = New("Frame", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 3, Parent = content })
+	if cfg and cfg.image and cfg.image ~= "" then
+		New("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Image = cfg.image, ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Parent = iconSlot })
+	else
+		iconFactory(Colors.Text).Parent = iconSlot
+	end
+	-- bold label with a dark outline (the one place that isn't Montserrat, see Theme.TileFont)
+	local label = New("TextLabel", {
+		Name = "Label",
+		Text = labelText,
+		FontFace = Theme.TileFont,
+		TextSize = 14,
+		TextColor3 = Colors.Text,
+		TextStrokeColor3 = Theme.TileStroke,
+		TextStrokeTransparency = 0,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 1),
+		ZIndex = 3,
+		Parent = content,
+	})
 	local dot = New("Frame", {
 		Name = "Dot",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(1, -Spacing.XS - 2, 0, Spacing.XS + 2),
-		Size = UDim2.fromOffset(Spacing.S, Spacing.S),
+		Size = UDim2.fromOffset(Spacing.S + 2, Spacing.S + 2),
 		BackgroundColor3 = Colors.Text,
 		Visible = false,
-		ZIndex = 3,
+		ZIndex = 5,
 		Parent = button,
-	}, { Theme.Round("Round") })
-	local parts = { button = button, border = border, label = label, icon = iconSlot, grow = grow, dot = dot, active = false, hover = false }
+	}, { Theme.Round("Round"), New("UIStroke", { Color = Theme.TileStroke, Thickness = 1.5 }) })
+	local parts = { button = button, border = border, label = label, icon = iconSlot, grow = grow, dot = dot, face = face, lip = lip, active = false, hover = false }
 	function parts.resize(side2)
 		button.Size = UDim2.fromOffset(side2, side2)
-		local iconSize = math.floor(side2 * 0.4)
+		local iconSize = math.floor(side2 * 0.5)
 		iconSlot.Size = UDim2.fromOffset(iconSize, iconSize)
-		iconSlot.Position = UDim2.new(0.5, 0, 0, math.floor(side2 * 0.14))
-		label.Size = UDim2.new(1, -2, 0, Theme.TextSize.Small + 2)
-		label.Position = UDim2.new(0.5, 0, 1, -math.floor(side2 * 0.08))
+		iconSlot.Position = UDim2.new(0.5, 0, 0, math.floor(side2 * 0.1))
+		label.TextSize = side2 >= 80 and 17 or 14
+		label.Size = UDim2.new(1, -2, 0, label.TextSize + 4)
+		label.Position = UDim2.new(0.5, 0, 1, -math.floor(side2 * 0.05))
 	end
 	function parts.paint()
-		local fill = parts.active and ACTIVE_FILL or (parts.hover and HOVER_FILL or Alpha.Panel)
-		Theme.Tween(button, { BackgroundColor3 = parts.active and Colors.Text or Colors.Panel, BackgroundTransparency = fill }, 0.15)
-		Theme.Tween(border, { Transparency = (parts.active or parts.hover) and 0.5 or Alpha.Border }, 0.15)
-		Theme.Tween(label, { TextColor3 = (parts.active or parts.hover) and Colors.Text or Colors.Muted }, 0.15)
-		Theme.Tween(grow, { Scale = parts.hover and HOVER_SCALE or 1 }, 0.15)
+		local color = parts.active and accent or (parts.hover and darker(accent, 0.28) or darker(accent, 0.5))
+		Theme.Tween(face, { BackgroundColor3 = color }, 0.15)
+		Theme.Tween(border, { Color = parts.active and Color3.new(1, 1, 1) or accent, Transparency = (parts.active or parts.hover) and 0 or 0.1 }, 0.15)
+		Theme.Tween(grow, { Scale = parts.hover and 1.1 or 1 }, 0.22, Theme.Motion.Bounce)
 	end
 	button.MouseEnter:Connect(function() parts.hover = true; parts.paint() end)
 	button.MouseLeave:Connect(function() parts.hover = false; parts.paint() end)
@@ -99,7 +150,7 @@ local function makeButton(id, labelText, iconFactory, side, order)
 	return parts
 end
 
--- PC: size and place the column so every button fits between the top bar and the bottom of the screen.
+-- PC: a 2-column grid of tiles (about 90px), sized so every tile fits between the top bar and the bottom of the screen.
 local collapsed = false
 local arrow, arrowIcon = nil, nil
 
@@ -109,14 +160,14 @@ local function layout()
 	local screenSize = gui.AbsoluteSize -- inside the safe area (below the top bar)
 	local room = screenSize.Y - MARGIN * 2
 	local count = math.max(#list, 1)
-	size = math.clamp(math.floor((room - (count - 1) * GAP) / count), SIZE.Min, SIZE.Max)
-	columns = (count * size + (count - 1) * GAP > room) and 2 or 1
+	columns = count > 1 and 2 or 1
 	local rows = math.ceil(count / columns)
+	size = math.clamp(math.floor((room - (rows - 1) * GAP) / rows), SIZE.Min, SIZE.Max)
 	for index, entry in ipairs(list) do
 		local parts = entry.pc
 		parts.resize(size)
-		local column = (index - 1) // rows
-		local row = (index - 1) % rows
+		local row = (index - 1) // columns
+		local column = (index - 1) % columns
 		parts.button.Position = UDim2.fromOffset(column * (size + GAP), row * (size + GAP))
 		parts.button.Visible = true
 	end
@@ -310,6 +361,11 @@ end
 
 function SideMenu.IsTraining()
 	return training
+end
+
+-- true while a screen has hidden the whole menu (SetHidden), e.g. Genetics on phones
+function SideMenu.IsHidden()
+	return hiddenAll
 end
 
 -- true on phones (the menu is the Menu button + grid)

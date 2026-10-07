@@ -9,7 +9,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
-local SideMenu = require(Shared.UI.SideMenu)
+local TopBar = require(Shared.UI.TopBar)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -21,14 +21,14 @@ local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Hor
 local PANEL_WIDTH = 300
 local KNOB = 18
 
-local menuButton = SideMenu.Add("Settings", "Settings", Icons.Gear, 9)
+local menuButton = TopBar.AddPill("Settings", "Settings", Icons.Gear, 3) -- a pill at the top right (UI v7)
 
 local gui = Theme.ScreenGui({ Name = "Settings", Enabled = false, DisplayOrder = 24, Parent = player:WaitForChild("PlayerGui") })
--- next to the side menu (SideMenu.Right() + 12px gap)
+-- right side, vertically centered, under the Settings pill
 local panel = Theme.Panel({
 	Name = "Panel",
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0),
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -TopBar.Edge(), 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Active = true, -- taps on the panel never count as lifts
@@ -153,8 +153,8 @@ local function open()
 	for key, entry in pairs(sliders) do entry.show(values[key]) end
 	gui.Enabled = true
 	Audio.PlayUI("Whoosh")
-	panel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M - Spacing.L, 0.5, 0)
-	Theme.Tween(panel, { Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0) })
+	panel.Position = UDim2.new(1, -TopBar.Edge() + Spacing.L, 0.5, 0)
+	Theme.Tween(panel, { Position = UDim2.new(1, -TopBar.Edge(), 0.5, 0) })
 	Theme.Fade(panel, true)
 end
 local function close()

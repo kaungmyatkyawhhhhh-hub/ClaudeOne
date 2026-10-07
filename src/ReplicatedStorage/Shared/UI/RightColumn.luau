@@ -33,7 +33,7 @@ local function ensure()
 	column = Theme.New("Frame", {
 		Name = "Column",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -Theme.Spacing.M, 0, Theme.Spacing.S), -- top right, just under the top bar
+		Position = UDim2.new(1, -Theme.Spacing.M, 0, Theme.Spacing.S + Theme.PillHeight + Theme.Spacing.S), -- top right, under the top-bar pills
 		Size = UDim2.fromOffset(WIDTH, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,

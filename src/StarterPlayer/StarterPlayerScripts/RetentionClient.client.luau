@@ -13,6 +13,7 @@ local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local UIBus = require(Shared.UI.UIBus)
 local RightColumn = require(Shared.UI.RightColumn)
+local TopBar = require(Shared.UI.TopBar)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -108,4 +109,75 @@ task.spawn(function()
 	if (welcome.offlineCoins or 0) > 0 then
 		Notify.Show("While you were away: +" .. welcome.offlineCoins .. " coins.")
 	end
+end)
+
+------------------------------------------------------------------------
+-- Daily reward: the pill at the top right and its small panel (the streak is paid out automatically on the first join of
+-- each day; this just shows where you are: today's coins, tomorrow's, and when the next DNA token comes)
+------------------------------------------------------------------------
+local Spacing = Theme.Spacing
+local Vertical = Enum.FillDirection.Vertical
+local dailyPill = TopBar.AddPill("Daily", "Daily", Icons.Gift, 2)
+local dailyGui = Theme.ScreenGui({ Name = "DailyReward", Enabled = false, DisplayOrder = 24, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
+local dailyPanel = Theme.Panel({
+	Name = "Panel",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -TopBar.Edge(), 0, TopBar.Bottom() + Spacing.S),
+	Size = UDim2.fromOffset(250, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Active = true,
+	Parent = dailyGui,
+}, { Theme.Pad("M"), Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+local function dailyLine(order, font, size, color)
+	return Theme.Text({ LayoutOrder = order, Font = font, TextSize = size, TextColor3 = color or Colors.Text, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = dailyPanel })
+end
+dailyLine(1, "SemiBold", "Body").Text = "Daily reward"
+local streakLine = dailyLine(2, "Regular", "Body")
+local todayLine = dailyLine(3, "Regular", "Small", Colors.Muted)
+local tomorrowLine = dailyLine(4, "Regular", "Small", Colors.Muted)
+local tokenLine = dailyLine(5, "Regular", "Small", Colors.Muted)
+dailyLine(6, "Regular", "Small", Colors.Muted).Text = "Missing a day only takes a few days off your streak."
+
+local function refreshDaily()
+	local data = ClientData.Get()
+	local streak = data.daily and data.daily.streak or 0
+	local every = Economy.Daily.TokenEvery
+	dailyPill:SetText(streak > 0 and ("Day " .. streak) or "Daily")
+	streakLine.Text = streak > 0 and ("Day " .. streak .. " streak") or "Start your streak today"
+	local today = data.welcome and data.welcome.streakCoins or 0
+	todayLine.Text = today > 0 and ("Today: +" .. today .. " coins" .. ((data.welcome and data.welcome.streakToken) and " and a DNA token" or "")) or "Today's reward is already in."
+	tomorrowLine.Text = "Tomorrow: +" .. Economy.StreakCoins(streak + 1) .. " coins"
+	local toToken = every - (streak % every)
+	tokenLine.Text = "A DNA token on every " .. every .. "th day (" .. (toToken == 1 and "tomorrow" or ("in " .. toToken .. " days")) .. ")."
+end
+
+local dailyOpen = false
+local function setDaily(open)
+	dailyOpen = open
+	dailyPill:SetActive(open)
+	if open then
+		refreshDaily()
+		dailyPill:SetDot(false)
+		dailyGui.Enabled = true
+		Audio.PlayUI("Whoosh")
+		Theme.Fade(dailyPanel, true)
+	else
+		local tween = Theme.Fade(dailyPanel, false)
+		if tween then
+			tween.Completed:Connect(function() if not dailyOpen then dailyGui.Enabled = false end end)
+		else
+			dailyGui.Enabled = false
+		end
+	end
+end
+dailyPill.Activated:Connect(function() setDaily(not dailyOpen) end)
+ClientData.Changed:Connect(function(path)
+	if path[1] == "daily" or path[1] == "welcome" then refreshDaily() end
+end)
+refreshDaily()
+-- a dot on the pill after Play when today's streak paid out
+task.spawn(function()
+	UIBus.WaitForMenu()
+	local welcome = ClientData.Get().welcome or {}
+	if (welcome.streakCoins or 0) > 0 and not dailyOpen then dailyPill:SetDot(true) end
 end)

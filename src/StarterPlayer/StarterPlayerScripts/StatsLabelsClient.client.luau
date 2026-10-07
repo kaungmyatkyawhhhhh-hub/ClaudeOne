@@ -470,6 +470,7 @@ local function place(dt)
 		x = math.clamp(x, LAYOUT.Margin, view.X - LAYOUT.Margin - size.Width)
 		local y = columnTop + clearOf(x, columnTop, x + size.Width, columnTop + total, rects, topLimit, bottomLimit)
 		local cursor = y
+		local lastBottom = -math.huge -- bottom edge of the label above (push-apart)
 		for index, entry in ipairs(column) do
 			-- an open group pushes the labels under it down (they glide out of the way)
 			local wantExtra = (openGroup == entry.spec.id) and #entry.subs * SUB_HEIGHT or 0
@@ -478,6 +479,12 @@ local function place(dt)
 			local target = Vector2.new(x, cursor)
 			cursor += step + entry.extra
 			local at = spring(entry.frame, target, dt, index + (side == "Left" and 0 or 3))
+			-- never overlap: a label that drifted into the one above (or into your body) is pushed out of the way
+			if at.Y < lastBottom + LAYOUT.Gap then at = Vector2.new(at.X, lastBottom + LAYOUT.Gap) end
+			local bodyEdge = (side == "Left") and (center.X - halfWidth - 6 - size.Width) or (center.X + halfWidth + 6)
+			if side == "Left" then at = Vector2.new(math.min(at.X, bodyEdge), at.Y) else at = Vector2.new(math.max(at.X, bodyEdge), at.Y) end
+			at = Vector2.new(math.clamp(at.X, LAYOUT.Margin, math.max(LAYOUT.Margin, view.X - LAYOUT.Margin - size.Width)), at.Y) -- (and always on screen)
+			lastBottom = at.Y + size.Height + entry.extra
 			entry.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
 			for subIndex, sub in ipairs(entry.subs) do
 				local show = entry.extra > subIndex * SUB_HEIGHT * 0.5

@@ -64,6 +64,12 @@ Theme.Fonts.Heading = Theme.Fonts.SemiBold
 Theme.Fonts.Label = Theme.Fonts.Regular
 Theme.Fonts.Small = Theme.Fonts.Regular
 
+-- The left menu tiles (owner's UI v7 brief) use a bold rounded display face for their labels, with a dark outline;
+-- everything else stays Montserrat.
+Theme.TileFont = Font.fromEnum(Enum.Font.FredokaOne)
+Theme.TileStroke = Color3.fromHex("#1A1320") -- the dark outline around tile labels
+Theme.PillHeight = 36 -- the top-bar pills (coins, quests, daily reward, settings)
+
 Theme.TextSize = {
 	Huge = 40,  -- big numbers
 	Large = 22, -- screen titles

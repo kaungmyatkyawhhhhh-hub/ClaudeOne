@@ -15,6 +15,8 @@ local Theme = require(Shared.UI.Theme)
 local Notify = require(Shared.UI.Notify)
 local UIBus = require(Shared.UI.UIBus)
 local RightColumn = require(Shared.UI.RightColumn)
+local TopBar = require(Shared.UI.TopBar)
+local Icons = require(Shared.UI.Icons)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -84,11 +86,19 @@ local COACH_STEP = Onboarding.Done
 for i, step in ipairs(Onboarding.Steps) do
 	if step.target == "Coach" then COACH_STEP = i break end
 end
+-- the Quests pill at the top right shows or hides the tracker (a dot on it = a quest is done and ready to hand in)
+local questPill = TopBar.AddPill("Quests", "Quests", Icons.Quest, 1)
+questPill:SetActive(true)
+local trackerHidden = false
+local function updateDot()
+	local active = ClientData.Get().quests and ClientData.Get().quests.active
+	questPill:SetDot(active ~= nil and active.ready == true)
+end
 local playing = false -- after Play
 local function updateVisible()
 	local data = ClientData.Get()
 	local step = data.onboarding and data.onboarding.tutorialStep or Onboarding.Done
-	local show = playing and (step >= COACH_STEP or (data.quests and data.quests.active) ~= nil)
+	local show = playing and not trackerHidden and (step >= COACH_STEP or (data.quests and data.quests.active) ~= nil)
 	if show and not panel.Visible then
 		refresh()
 		panel.Visible = true
@@ -100,6 +110,7 @@ end
 
 ClientData.Changed:Connect(function(path)
 	if path[1] == "quests" and panel.Visible then refresh() end
+	if path[1] == "quests" then updateDot() end
 	if path[1] == "onboarding" or path[1] == "quests" then updateVisible() end
 end)
 
@@ -192,3 +203,10 @@ task.spawn(function()
 	local group = Muscles.GroupById[MuscleOfTheDay.GroupId()]
 	Notify.Show("Muscle of the Day: " .. group.name .. " (" .. MuscleOfTheDay.Multiplier .. "x gains)")
 end)
+
+questPill.Activated:Connect(function()
+	trackerHidden = not trackerHidden
+	questPill:SetActive(not trackerHidden)
+	updateVisible()
+end)
+updateDot()
