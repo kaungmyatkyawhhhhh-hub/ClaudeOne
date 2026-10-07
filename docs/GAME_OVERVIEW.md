@@ -53,6 +53,9 @@ for where everything sits in Studio.
   plate visuals. Validates everything.
 - `Server/ActionService`: non-machine requests (Growth Spurt, equip title, reroll,
   settings). Other services can `Register` more actions.
+- `Shared/UI/SideMenu` (the tile grid), `Shared/UI/TopBar` (coins, Quests, Daily, Settings pills), `Shared/Config/HudIcons` (tile colors, icons, optional image ids).
+- `PoseData` + `PoseController` + `PoseClient` + `Shared/PoseApply`: the bodybuilding poses (server sets the character attribute `Pose`; `ShowOffService.SetPose/ReleasePose` hold, judge and release them).
+- `SkateClient` (riding: momentum, carve, brake, ollie, pose) + `Server/SkateService` (the board model and the rules).
 - `Server/BodyService`: the Robloxian 2.0 body on every player (`Config/Body`, reapplied if anything resets it), Growth Spurt height, and the muscle NUMBERS published as attributes (`MuscleG` = level / goal for the 18 muscles, `Top`, `Shorts`, `SkinColor`), plus the "Grew" event.
 - `Shared/MuscleRig`, `Shared/MuscleMeshes`, `ReplicatedStorage/MuscleData`, `StarterPlayerScripts/MuscleClient`: muscle v8 (see PROGRESS "Muscle v8"). `tools/gen_muscle_data.luau` rebuilds MuscleData (and the snatched torso modules) from the `muscle_v8/` package.
 - `Server/NightLightService`: outdoor lamps (tag `NightLight`) off by day, glowing at night.

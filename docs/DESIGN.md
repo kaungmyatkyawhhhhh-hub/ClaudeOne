@@ -55,14 +55,16 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - Don't fade screens with CanvasGroups (they rasterize and blur text). Fade by tweening each element's
   transparency (Theme.Fade).
 
-## Side menu buttons (left middle)
-- 64x68, 10px corners, dark see-through panel style with the thin light border and soft shadow.
-- White line icon (same style for all) above a small gray Montserrat label: Stats = flexing figure,
-  Titles = trophy, Genetics = DNA strand, Settings = gear, Bag = gym bag, Crew = two people. No emojis.
-- Active: the open menu's button gets a faint white fill, a brighter border and a white label.
-- Small white dot top-right when something is new; clears when opened.
-- Press = shrink to 0.95. Stacked vertically on the left middle, 8px gaps.
-- Only show a button once its feature exists (Bag and Crew come later).
+## Side menu tiles (left middle) and top bar (UI v7, replaces the old 64x68 buttons)
+- A 2-column grid of about 90px square tiles on the left edge, vertically centered, 8px gaps (smaller only on short screens
+  so all fit). Each tile: a big white icon, a bold label at the bottom with a dark outline (Fredoka One: the one place that
+  is not Montserrat), 10px corners, a colored border per tile, a slight 3D look (lighter top, darker bottom edge) and a
+  bounce on hover and press. Tiles: Stats, Muscles, Titles, Genetics, Poses, Crew, Wardrobe (Store when monetization is on).
+- Active tile: brighter face and a white border. Small white dot top-right when something is new; clears when opened.
+- Phones: one Menu button top left opens the same tiles as a grid in the middle of the screen.
+- Top bar (under the Roblox top bar): rounded pills with an icon and text. Coins on the left; Quests, Daily Reward and
+  Settings on the right (icon only on narrow screens and phones). Hidden on the main menu, while training and behind full-width panels.
+- Colors, icons and optional image ids for all of these live in `Config/HudIcons`; look tokens in `Theme.Tile`.
 
 ## Overhead title
 - BillboardGui sized in studs (scales with distance), just above the head and the player's name, MaxDistance ~60.
