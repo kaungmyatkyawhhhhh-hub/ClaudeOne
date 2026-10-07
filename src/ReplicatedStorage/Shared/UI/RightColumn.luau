@@ -70,8 +70,26 @@ local function ensure()
 		end
 	end)
 
-	-- the genetics screen is full-screen; the column would peek out behind its barbell
-	UIBus.GeneticsVisible.Event:Connect(function(visible) gui.Enabled = not visible end)
+	-- the genetics screen is full-screen (the column would peek out behind its barbell), and the other big screens (Title
+	-- Book, Wardrobe, Crew, ...) are see-through: the quest tracker showed through them, over their Close buttons. The
+	-- column steps aside while any of them is open (UIBus.CoverGuis).
+	local playerGui = gui.Parent
+	local geneticsUp = false
+	local function refreshCovered()
+		gui.Enabled = not geneticsUp and not UIBus.CoverOpen(playerGui)
+	end
+	UIBus.GeneticsVisible.Event:Connect(function(visible)
+		geneticsUp = visible
+		refreshCovered()
+	end)
+	local function watchCover(child)
+		if child:IsA("ScreenGui") and table.find(UIBus.CoverGuis, child.Name) then
+			child:GetPropertyChangedSignal("Enabled"):Connect(refreshCovered)
+			refreshCovered()
+		end
+	end
+	for _, child in ipairs(playerGui:GetChildren()) do watchCover(child) end
+	playerGui.ChildAdded:Connect(watchCover)
 
 	-- hide the idle-only panels while on a machine
 	task.spawn(function()

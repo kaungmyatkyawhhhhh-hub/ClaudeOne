@@ -112,7 +112,7 @@ for where everything sits in Studio.
 - `Audio`: plays sounds from `Config/Sounds` through SoundGroups.
 - `UI/Theme`: the "clean minimal" design system (colors, fonts, spacing,
   `Theme.New`, panels, buttons). **All UI should use it.**
-- `UI/RightColumn` (top-right stack: quest tracker, shake button; notifications stack under it), `UI/SideMenu` (PC: 64px labeled square buttons centered on the left, wrapping to 2 columns on short screens; phones: one Menu button that opens a grid), `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
+- `UI/RightColumn` (top-right stack: quest tracker, shake button; notifications stack under it), `UI/SideMenu` (2-column colored tiles on the left with a fold arrow above them; phones: smaller tiles hanging from the arrow at the top left, folded by default; use the entry's `Activated`, not `button.Activated`), `UI/Notify`, `UI/Icons`, `UI/UIBus` (signals between screens: menu open/closed,
   stats/genetics visible, open titles/settings).
 
 ## Open tasks (from the owner's task list, 4 Oct 2026)

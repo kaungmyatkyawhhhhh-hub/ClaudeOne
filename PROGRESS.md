@@ -27,7 +27,8 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 - **Poses:** `PoseData` + `PoseController` (from the poses package), `PoseClient` (name, facing, hit, release),
   `ShowOffService.SetPose` (server sets attribute `Pose`; judges score on the stage); statue + mirrors use `Shared/PoseApply`.
 - **Skate:** `SkateClient` (momentum, carve, brake, ollie, side-on stance) + `SkateService` (board model).
-- **UI v7:** 2-column colored 3D tiles on the left (`SideMenu`), top-bar pills (`TopBar`: coins; Quests, Daily, Settings),
+- **UI v7:** 2-column colored 3D tiles on the left (`SideMenu`) with a fold arrow (phones: the tiles hang from the arrow
+  at the top left, folded by default; no centre grid any more), top-bar pills (`TopBar`: coins; Quests, Daily, Settings),
   world stat labels with click-to-expand, hover glow, spring float and push-apart. Icons/colors in `Config/HudIcons`
   (set `image = "rbxassetid://..."` to use your own art). Look tokens in `Theme` (`Theme.Tile`, `Theme.TileFont`).
 
@@ -64,6 +65,11 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 - Rep and set popups are big numbers now (about 3,000+ EXP at the start): easy to scale in `Muscles.ExpPerXp` if too loud.
 
 ## Decisions (still in force)
+- World pass (7 Oct, place only): small props cast no shadow (outside machines/NPCs), static parts have CanTouch off (no
+  script uses touch), signs render within 120-400 studs by size, big town models use LevelOfDetail = StreamingMesh, test
+  leftovers moved to `ServerStorage._Leftovers`. Grass under/around walk-in buildings is LeafyGrass (blades grew through
+  the gym's back wall). Statue + pedestal in the hall's back-left corner (`ShowOff.Statue.Spot`), out of the spawn camera.
+- NPCs are not solid on each client (`NpcLookClient`): the camera zoomed into your arm when one stood behind your bench.
 - Gold (#F2C14E) only for big moments (BIG REP, NEW PR, PUMPED, maxed). PUMPED and BIG REP multiply outside the 5x cap.
 - **No cap on stats** (owner's call): muscles keep growing past the Growth Spurt goal (`GrowthSpurts.GetLevelCap` is infinite); the diminishing factor is the only brake. "Defied Genetics" uses a 130% mark (`GetMasteryLevel`). Side effect: one strong muscle can lift its group's average, so a group can reach the goal with one muscle far ahead. XP per level = `20 + 2 x level`, BaseXp 34.
 - NEW PR banner stays (small banner, not a window) although the design file lists PR popups as cut.

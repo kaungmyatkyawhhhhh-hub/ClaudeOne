@@ -18,13 +18,13 @@ local player = Players.LocalPlayer
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
 
-local CARD = Vector2.new(200, 74)
+local CARD = Vector2.new(200, 91) -- room for a 3-line description ("Equipped · " + the longest ones were cut off at 2)
+local INFO_LINES = 3
 
 ------------------------------------------------------------------------
 -- Side button under Stats
 ------------------------------------------------------------------------
 local menuButton = SideMenu.Add("Titles", "Titles", Icons.Trophy, 2)
-local button = menuButton.button
 
 ------------------------------------------------------------------------
 -- Title Book
@@ -107,7 +107,7 @@ for index, title in ipairs(ordered) do
 	local disc = Theme.PlateDisc(Theme.Rarity[title.rarity], { LayoutOrder = 1, Size = UDim2.fromScale(1, 0.6), Parent = row })
 	Theme.Aspect(1, Enum.DominantAxis.Height).Parent = disc
 	local name = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -24, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-	local info = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 34), TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = card })
+	local info = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, INFO_LINES * 17), TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = card })
 	cards[title.id] = { card = card, name = name, info = info, outline = outline, rarity = title.rarity }
 	card.Activated:Connect(function()
 		local data = ClientData.Get()
@@ -168,7 +168,8 @@ local function close()
 	end
 end
 UIBus.RegisterPanel("Titles", close)
-button.Activated:Connect(function()
+-- (menuButton.Activated fires for the PC tile AND the phone grid tile; the PC button alone missed every phone tap)
+menuButton.Activated:Connect(function()
 	if isOpen then close() else UIBus.PanelOpened("Titles") open() end
 end)
 exitButton.Activated:Connect(close)

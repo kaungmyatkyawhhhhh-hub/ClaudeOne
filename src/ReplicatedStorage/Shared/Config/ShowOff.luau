@@ -24,7 +24,7 @@ end
 
 -- The statue of the strongest player (highest total score), in the entrance hall.
 ShowOff.Statue = {
-	Spot = Vector3.new(-7, 0.1, 8.5),
+	Spot = Vector3.new(-7, 0.1, 3), -- the back-left corner (by the gym doorway): in full view as you come in, never in the camera's face
 	Scale = 1, -- same size as the player it shows (height comes from their Growth Spurts)
 	Material = Enum.Material.Marble,
 	Color = Color3.fromHex("#C9C6BF"),

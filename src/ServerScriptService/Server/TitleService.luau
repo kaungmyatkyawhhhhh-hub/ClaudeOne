@@ -53,20 +53,34 @@ local function textRatio(text)
 	return #text * 0.5
 end
 
+-- (measuring the text yields: on join the spawn and the data load both update the tag at once, and each made its own, so
+-- two tags sat on top of each other. Only the newest update builds a tag, and every old one goes first.)
+local tagUpdates = setmetatable({}, { __mode = "k" }) -- [player] = number of the newest update
+local function clearTags(head)
+	for _, child in ipairs(head:GetChildren()) do
+		if child.Name == "TitleTag" then child:Destroy() end
+	end
+end
+
 local function updateTag(player)
+	local update = (tagUpdates[player] or 0) + 1
+	tagUpdates[player] = update
 	local data = PlayerData.Get(player)
 	local character = player.Character
 	local head = character and character:FindFirstChild("Head")
 	if not data or not head then return end
-	local old = head:FindFirstChild("TitleTag")
-	if old then old:Destroy() end
 	local title = data.titles.equipped and Titles.ById[data.titles.equipped]
-	if not title then return end
+	if not title then
+		clearTags(head)
+		return
+	end
 
 	local New = Theme.New
 	local text = title.name
 	local rarity = Theme.Rarity[title.rarity]
 	local textWidth = textRatio(text) * TAG.Height
+	if tagUpdates[player] ~= update or not head.Parent then return end -- a newer update is building it
+	clearTags(head)
 	local discWidth = TAG.Height * TAG.DiscScale
 	local width = discWidth + TAG.Gap + textWidth
 	local tag = New("BillboardGui", {

@@ -1,9 +1,11 @@
 -- OverheadTitleClient: local touches on the server-built TitleTag billboards.
--- Legendary titles get a slow shine every few seconds; the local player's own title is smaller and faded.
+-- Legendary titles get a slow shine every few seconds; the local player's own title is smaller and faded, and hidden on
+-- the menu screen (its camera is close: the title hung huge across the top of the screen).
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("Theme"))
+local UIBus = require(ReplicatedStorage.Shared.UI.UIBus)
 
 local player = Players.LocalPlayer
 local SHINE = { Every = 4, Time = 0.9, Light = Color3.fromRGB(255, 196, 196) }
@@ -39,6 +41,7 @@ local function styleTag(tag)
 	if not label then return end
 	if tag:GetAttribute("Rarity") == "Legendary" then shine(tag, label) end
 	if tag:GetAttribute("Owner") == player.UserId then
+		tag.Enabled = not UIBus.MenuOpen
 		tag.Size = UDim2.fromScale(tag.Size.X.Scale * OWN.Scale, tag.Size.Y.Scale * OWN.Scale)
 		label.TextTransparency = OWN.Transparency
 		local stroke = label:FindFirstChildOfClass("UIStroke")
@@ -61,3 +64,12 @@ local function watchPlayer(other)
 end
 Players.PlayerAdded:Connect(watchPlayer)
 for _, other in ipairs(Players:GetPlayers()) do watchPlayer(other) end
+
+-- Play: my title comes back
+UIBus.MenuClosed.Event:Connect(function()
+	local head = player.Character and player.Character:FindFirstChild("Head")
+	if not head then return end
+	for _, tag in ipairs(head:GetChildren()) do
+		if tag.Name == "TitleTag" and tag:IsA("BillboardGui") then tag.Enabled = true end
+	end
+end)

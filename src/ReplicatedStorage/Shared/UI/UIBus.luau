@@ -18,7 +18,7 @@ UIBus.MenuPanelVisible = signal() -- fired with true/false when Titles/Settings 
 UIBus.MenuClosed = signal()      -- the player pressed Play on the menu screen
 
 -- Screens that cover the middle of the view: the Stats labels and the Muscles button step aside while any is open.
-UIBus.CoverGuis = { "MenuGrid", "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle", "Settings", "TitleBook", "Store", "GeneticsScreen", "MusclesScreen" }
+UIBus.CoverGuis = { "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle", "Settings", "TitleBook", "Store", "GeneticsScreen", "MusclesScreen" }
 function UIBus.CoverOpen(playerGui)
 	for _, name in ipairs(UIBus.CoverGuis) do
 		local gui = playerGui:FindFirstChild(name)

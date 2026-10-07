@@ -47,12 +47,13 @@ local titleRow = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 18), 
 local title = Theme.Text({ Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(0.7, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = titleRow })
 local heightLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -26, 0, 0), Size = UDim2.new(0.3, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = titleRow })
 
--- the arrow: collapses the panel to its title row and expands it again
-local arrow = New("TextButton", { Name = "Arrow", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = titleRow })
+-- the arrow: collapses the panel to its title row and expands it again (a 24px icon in a 44px touch area, centered where
+-- the icon sits, so it is easy to hit on phones)
+local arrow = New("TextButton", { Name = "Arrow", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 10, 0.5, 0), Size = UDim2.fromOffset(Theme.MinTouch, Theme.MinTouch), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 2, Parent = titleRow })
 local arrowIcon = Icons.Chevron(1, Colors.Text)
 arrowIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 arrowIcon.Position = UDim2.fromScale(0.5, 0.5)
-arrowIcon.Size = UDim2.fromScale(1, 1)
+arrowIcon.Size = UDim2.fromOffset(24, 24)
 arrowIcon.Rotation = -90
 arrowIcon.Parent = arrow
 

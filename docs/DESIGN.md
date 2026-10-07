@@ -61,7 +61,10 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   is not Montserrat), 10px corners, a colored border per tile, a slight 3D look (lighter top, darker bottom edge) and a
   bounce on hover and press. Tiles: Stats, Muscles, Titles, Genetics, Poses, Crew, Wardrobe (Store when monetization is on).
 - Active tile: brighter face and a white border. Small white dot top-right when something is new; clears when opened.
-- Phones: one Menu button top left opens the same tiles as a grid in the middle of the screen.
+- An arrow above the tiles folds them all away and brings them back, like the Growth Spurt bar's arrow (it stays put;
+  up = open, down = folded; a small dot on it while folded when a tile has something new).
+- Phones: no grid. The same tiles (smaller) hang from the arrow at the top left, clear of the thumbstick; they start
+  folded, fold again after picking one, and never share the screen with a side panel.
 - Top bar (under the Roblox top bar): rounded pills with an icon and text. Coins on the left; Quests, Daily Reward and
   Settings on the right (icon only on narrow screens and phones). Hidden on the main menu, while training and behind full-width panels.
 - Colors, icons and optional image ids for all of these live in `Config/HudIcons`; look tokens in `Theme.Tile`.
