@@ -63,6 +63,7 @@ Theme.Fonts = {
 	Bold = UIFonts.Heading,                                                             -- rank tag letters
 }
 -- older names, kept so every screen reads the same three weights
+Theme.Fonts.Medium = UIFonts.Number -- Oswald SemiBold in sentence case (genetics plate labels)
 Theme.Fonts.Heading = Theme.Fonts.SemiBold
 Theme.Fonts.Label = Theme.Fonts.Regular
 Theme.Fonts.Small = Theme.Fonts.Regular

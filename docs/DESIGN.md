@@ -179,12 +179,15 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
 - Look: plates are wide and thin (all the same thickness; better grade a little wider), stepped bevel edge, raised
   rim, inset ring, chrome hub. Printed like a competition bumper plate on both faces, bold white: "M WEIGHTS" curved
   tight across the band above the hub (filling it) and upside down below it, the grade letter at 9 o'clock (upright)
-  and 3 o'clock (turned 180). No group name on the face (the label under the plate names it). Colors are the rank-tag colors
+  and 3 o'clock (turned 180), as big as the brand's letters and centred on the hole's height. No group name on the face (the label under the plate names it). Colors are the rank-tag colors
   made deeper (`Theme.GradePlates`). Loaded tight in grade order (best on the inside), a collar closes the sleeve.
-- Shadows: a warm key light from the top left with Shadows on, everything on the bar casts shadows; the bar lies low
-  over a dark matte floor (the biggest plates almost touch it) and soft contact shadows under the plates and the
-  overall plate ground them even on low graphics. No stands, no pedestal: the overall plate (bigger, matching) stands
-  on its rim on the floor on the left.
+- Scene (a real gym, not sci-fi): the bar rests on two black J-hook stands over a wooden olympic lifting platform (light
+  wood centre, black rubber sides, steel edge) on dark rubber floor tiles with faint seams; the overall plate stands on
+  its rim on a short black plate tree (scaled to it). Behind, out of focus (depth of field, far intensity 0.6): a dim
+  brick wall with a squat rack, a dumbbell rack and plates leaning on the wall (`ReplicatedStorage.GeneticsSet`, baked
+  by `tools/builders/GeneticsSet`). No particles, sparkles, neon signs or floating shapes.
+- Light and shadows: one warm overhead spotlight on the platform is the only light with shadows; a faint fill, a cool
+  rim and a dim warm glow on the back wall; the rest stays dark. Contact shadows replace the real ones on low graphics.
 - Layout: the overall plate stands on the floor in the left part of the screen, placed and sized from the camera (about
   42% of the screen height, less where it doesn't fit), "Overall" and its word about 1.4x bigger under it. The bar group
   (bar ~28 degrees from straight-on; the camera looks down only ~8 degrees so the plates show a little top edge, tunable
@@ -200,8 +203,9 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
 - Reveal (under 3 s): plates slide onto the sleeve about 0.2 s apart, best grade first, each with a clank (pitch by
   grade, small camera punch); S plates get one shine sweep. Then the collar, then the overall plate drops in with a
   thud and its word fades in. Tap / click (or Space) skips to the end.
-- Meaning: one clean row of labels under the bar: group name (gray, small), the grade letter tag (the only color) and
-  the multiplier ("x1.50", white); nothing cut off at the edges. Tap / hover a plate for a small card ("Chest genetics
+- Meaning: one clean row of labels under the bar, each column on a soft dark rounded backing (black, 55% see-through):
+  group name (white Oswald), the grade letter circle (2px ring in the grade color, dark fill) and the multiplier
+  ("x1.50", white), all with a soft dark outline; "Overall" white too; nothing cut off at the edges. Tap / hover a plate for a small card ("Chest genetics
   A" / "Your chest grows 20% faster" + frame / body bonuses on that group). Frame and body type are two cards
   ("Frame: Narrow · +10% Arms"), centered, wrapping to two rows on phones. Overall word under the overall plate,
   capitalized, no "!": S "Genetic Freak", A "Blessed", B "Gifted", C "Average", D "Hardgainer".

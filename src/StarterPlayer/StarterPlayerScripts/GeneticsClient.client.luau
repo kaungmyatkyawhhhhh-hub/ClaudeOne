@@ -59,7 +59,7 @@ local MICRO = { Thickness = 0.24, Diameter = 1.95, Color = Color3.fromHex("#D3D7
 local BAR_SIZE = { Grip = 0.38, Core = 0.12, Sleeve = 0.72, InnerCollar = 1.05, Collar = 1.0 }
 -- Along the bar's own X axis: grip on the left, the inner collar at 0, plates from SlotStart outward, sleeve end.
 -- the plates sit Gap apart on the sleeve, so every face shows (the sleeve is long enough for six plates and the collar)
-local BAR = { GripStart = -2.2, SlotStart = 0.2, Gap = MICRO.Thickness, SleeveEnd = 6.5, Yaw = math.rad(-28) }
+local BAR = { GripStart = -2.2, SlotStart = 0.2, Gap = MICRO.Thickness, SleeveEnd = 6.9, Yaw = math.rad(-28) }
 local BAR_CF = STAGE_CF * CFrame.new(-0.4, 0, 0) * CFrame.Angles(0, BAR.Yaw, 0) -- ~28 degrees from straight-on, the sleeve end toward the camera
 -- where plate `slot` (1 = innermost) sits along the bar
 local function slotX(slot)
@@ -92,8 +92,20 @@ local HELIX = {
 -- the slow spin: plates with the bar, the overall plate on its centre (radians per second), eased in after the reveal
 local SPIN = { Bar = 2 * math.pi / 20, Hero = 2 * math.pi / 25, EaseIn = 1 }
 local CHROME = Color3.fromHex("#D6D8DE")
-local KEY_LIGHT = { Brightness = 3.4, Range = 32, Angle = 55, Color = Color3.fromHex("#FFE2C2") }
+local KEY_LIGHT = { Brightness = 3.4, Range = 32, Angle = 80, Color = Color3.fromHex("#FFE2C2") }
 local ROOM = Color3.fromHex("#050507")
+-- The dim gym around the stage (ReplicatedStorage.GeneticsSet, baked by tools/builders/GeneticsSet): the gym floor lies
+-- Ground below the platform top (FLOOR_Y); J-hooks under the grip and the sleeve end; the overall plate's plate tree
+-- (built for a TreeD-stud plate, scaled to it). Also holds the tree while the stage is up.
+local SET = { Ground = 0.12, HookGrip = BAR.GripStart + 0.3, HookSleeve = BAR.SleeveEnd - 0.2, HelixStart = BAR.GripStart + 0.55, TreeD = 4, tree = nil,
+	Platform = { -6.5, 9.5, 5 } } -- (the platform's extent along the bar and to either side of it, from GeneticsSet)
+-- how far below the platform top the floor is at a point (0 on the platform)
+function SET.DropAt(position: Vector3): number
+	if not SET.tree then return 0 end
+	local rel = BAR_CF:PointToObjectSpace(position)
+	local on = rel.X > SET.Platform[1] and rel.X < SET.Platform[2] and math.abs(rel.Z) < SET.Platform[3]
+	return if on then 0 else SET.Ground
+end
 local WORDS = { S = "Genetic Freak", A = "Blessed", B = "Gifted", C = "Average", D = "Hardgainer" }
 local FLIP_PITCH = { S = 0.85, A = 0.92, B = 1, C = 1.06, D = 1.12 }
 local PLURAL = { Shoulders = true, Arms = true, Legs = true }
@@ -302,7 +314,7 @@ oddsList(6, "Body type", Genetics.BodyTypes)
 -- Under the overall plate: "Overall" and its word
 local heroLabels = New("Frame", { Name = "Overall", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(420, 100), BackgroundTransparency = 1, Visible = false, Parent = labelLayer },
 	{ Theme.List(Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
-local overallLabel = Theme.Text({ LayoutOrder = 1, Text = "Overall", Font = "Regular", TextSize = "Big", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 38), Parent = heroLabels })
+local overallLabel = Theme.Text({ LayoutOrder = 1, Text = "Overall", Font = "Medium", TextSize = "Big", TextColor3 = Colors.Text, Size = UDim2.new(1, 0, 0, 38), Parent = heroLabels })
 local wordLabel = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Hero", Upper = false, Size = UDim2.new(1, 0, 0, 60), Parent = heroLabels })
 Theme.TextShadow(overallLabel)
 Theme.TextShadow(wordLabel)
@@ -362,11 +374,11 @@ local BRAND_SPACE = 0.2 -- the small gap between "M" and "WEIGHTS" (font-size un
 
 -- Each brand letter's box at font size 1 ({ch, x, y}), measured once in the plate font so the curved letters can sit
 -- close together.
-local brandCache = nil
-local function brandWidths()
-	if brandCache then return brandCache end
+local brandCache = {}
+local function brandWidths(text: string)
+	if brandCache[text] then return brandCache[text] end
 	local list = {}
-	for ch in string.gmatch(Machines.Brand, ".") do
+	for ch in string.gmatch(text, ".") do
 		local x, y = 0.55, 1.25
 		local ok, bounds = pcall(function()
 			local params = Instance.new("GetTextBoundsParams")
@@ -379,7 +391,7 @@ local function brandWidths()
 		if ok and bounds then x, y = bounds.X / 100, bounds.Y / 100 end
 		table.insert(list, { ch = ch, x = if ch == " " then BRAND_SPACE else x, y = y })
 	end
-	brandCache = list
+	brandCache[text] = list
 	return list
 end
 local RIM_SEGMENTS = 36
@@ -443,7 +455,7 @@ local function makePlate(grade, diameter, thickness, hub, parent)
 		end
 		-- the brand follows the band's curve, one letter at a time, filling the band from the hub to the groove ring and
 		-- set tight (each letter advances by its own width): over the top (upright) and, turned 180, under the hub
-		local widths = brandWidths()
+		local widths = brandWidths(Machines.Brand)
 		local size = band * BRAND_SIZE -- the font size, as a share of the face
 		local total = 0
 		for _, w in ipairs(widths) do total += w.x * BRAND_TRACK end
@@ -457,8 +469,10 @@ local function makePlate(grade, diameter, thickness, hub, parent)
 				if w.ch ~= " " then printText("Brand", w.ch, 0.5 + math.sin(angle) * mid, 0.5 - math.cos(angle) * mid, w.x * size, w.y * size, math.deg(angle)) end
 			end
 		end
-		printText("GradeLeft", grade, 0.5 - mid, 0.5, band * 0.9, band * 0.72, 0)
-		printText("GradeRight", grade, 0.5 + mid, 0.5, band * 0.9, band * 0.72, 180)
+		-- the grade letter as big as the brand's letters (a touch bigger), centred on the hole's height
+		local letter, letterSize = brandWidths(grade)[1], size * 1.1
+		printText("GradeLeft", grade, 0.5 - mid, 0.5, letter.x * letterSize, letter.y * letterSize, 0)
+		printText("GradeRight", grade, 0.5 + mid, 0.5, letter.x * letterSize, letter.y * letterSize, 180)
 	end
 	-- S: a shine band that can sweep across the face once (clipped to the round face by a CanvasGroup)
 	local shine = nil
@@ -593,10 +607,10 @@ local useContactShadows = false -- decided when the stage is built (one shadow s
 -- A soft contact shadow on the floor: a dark blurred pill made of stacked see-through rounded frames on a SurfaceGui
 -- (no image needed), centred under the given point, its length along the yaw's X axis.
 local SHADOW_LAYERS = 7
-local function contactShadow(name, center, yaw, length, width)
+local function contactShadow(name, center, yaw, length, width, drop)
 	if not useContactShadows then return nil end
 	local holder = part({ Name = name, Size = Vector3.new(length, 0.02, width), Transparency = 1,
-		CFrame = CFrame.new(center.X, STAGE_CF.Position.Y + FLOOR_Y + 0.012, center.Z) * yaw, Parent = stage })
+		CFrame = CFrame.new(center.X, STAGE_CF.Position.Y + FLOOR_Y + 0.012 - (drop or 0), center.Z) * yaw, Parent = stage })
 	local surface = New("SurfaceGui", { Face = Enum.NormalId.Top, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = 40, LightInfluence = 0, Parent = holder })
 	for i = 1, SHADOW_LAYERS do
 		local k = 1 - (i - 1) / SHADOW_LAYERS * 0.75
@@ -617,14 +631,35 @@ local function buildStage()
 		{ Vector3.new(-55, 0, 0), Vector3.new(1, roomSize.Y, roomSize.Z) }, { Vector3.new(55, 0, 0), Vector3.new(1, roomSize.Y, roomSize.Z) } }) do
 		part({ Name = "Room", Size = face[2], CFrame = STAGE_CF * CFrame.new(face[1]), Color = ROOM, Parent = stage })
 	end
-	-- a dark rubber floor under the bar and the overall plate (the key light pools on it; big enough that its edges lie
-	-- in the dark, never a visible horizon)
-	part({ Name = "Floor", Size = Vector3.new(100, 1, 96), CFrame = STAGE_CF * CFrame.new(-0.5, FLOOR_Y - 0.5, 0.5), Color = Color3.fromHex("#141417"), Material = Enum.Material.Rubber, Parent = stage })
-	-- lights: a warm key from the top left (with shadows), a soft fill from the right, a cool rim from behind that catches
-	-- the plate edges
-	addLight("SpotLight", CFrame.lookAt((STAGE_CF * CFrame.new(-7, 9, 6)).Position, (STAGE_CF * CFrame.new(0.5, 0, 0)).Position),
+	-- the dim gym: rubber tiles, the back wall with a squat rack, a dumbbell rack and plates; the lifting platform under
+	-- the bar, J-hooks holding it, the plate tree for the overall plate (placed with it). Without the baked set: a plain floor.
+	local set = ReplicatedStorage:FindFirstChild("GeneticsSet")
+	SET.tree = nil
+	if set then
+		local room = set.Room:Clone()
+		room:PivotTo(STAGE_CF * CFrame.new(0, FLOOR_Y, 0))
+		room.Parent = stage
+		local platform = set.Platform:Clone()
+		platform:PivotTo(BAR_CF * CFrame.new(0, FLOOR_Y, 0))
+		platform.Parent = stage
+		for _, spec in ipairs({ { "HookGrip", SET.HookGrip }, { "HookSleeve", SET.HookSleeve } }) do
+			local hook = set[spec[1]]:Clone()
+			hook:PivotTo(BAR_CF * CFrame.new(spec[2], 0, 0))
+			castShadows(hook)
+			hook.Parent = stage
+		end
+		SET.tree = set.PlateTree:Clone()
+		castShadows(SET.tree)
+		SET.tree.Parent = stage
+	else
+		part({ Name = "Floor", Size = Vector3.new(100, 1, 96), CFrame = STAGE_CF * CFrame.new(-0.5, FLOOR_Y - 0.5, 0.5), Color = Color3.fromHex("#141417"), Material = Enum.Material.Rubber, Parent = stage })
+	end
+	-- lights: one warm overhead spot on the platform (the only one with shadows), a faint fill from the right, a cool rim
+	-- from behind that catches the plate edges, and a dim warm glow on the back wall so the gym reads in the dark
+	addLight("SpotLight", CFrame.lookAt((STAGE_CF * CFrame.new(-2.5, 13, 3)).Position, (STAGE_CF * CFrame.new(-1.8, FLOOR_Y, 0)).Position),
 		{ Face = Enum.NormalId.Front, Brightness = KEY_LIGHT.Brightness, Range = KEY_LIGHT.Range, Angle = KEY_LIGHT.Angle, Color = KEY_LIGHT.Color, Shadows = not useContactShadows }, stage)
-	addLight("PointLight", STAGE_CF * CFrame.new(9, 2, 6), { Brightness = 0.55, Range = 20, Color = Color3.fromHex("#DCE6FF"), Shadows = false }, stage)
+	addLight("PointLight", STAGE_CF * CFrame.new(9, 2, 6), { Brightness = 0.3, Range = 20, Color = Color3.fromHex("#DCE6FF"), Shadows = false }, stage)
+	addLight("PointLight", STAGE_CF * CFrame.new(0, 7, -24), { Brightness = 0.3, Range = 24, Color = Color3.fromHex("#FFC98A"), Shadows = false }, stage)
 	addLight("SpotLight", CFrame.lookAt((STAGE_CF * CFrame.new(2, 5, -8)).Position, (STAGE_CF * CFrame.new(1, 0, 0)).Position),
 		{ Face = Enum.NormalId.Front, Brightness = 3, Range = 18, Angle = 60, Color = Color3.fromHex("#9CC2FF"), Shadows = false }, stage)
 
@@ -641,7 +676,7 @@ local function buildStage()
 	cylinder("EndCap", 0.1, BAR_SIZE.Sleeve + 0.08, CHROME:Lerp(Color3.new(0, 0, 0), 0.15), Enum.Material.Metal, BAR_CF * CFrame.new(BAR.SleeveEnd, 0, 0), barModel)
 	castShadows(barModel)
 	-- the DNA helix along the whole bar (thin, soft, slow)
-	helix = makeHelix(BAR_CF, HELIX.Points, HELIX.Radius, BAR.GripStart, BAR.SleeveEnd, HELIX.Turns, HELIX.Width, HELIX.Strands, HELIX.Transparency, stage)
+	helix = makeHelix(BAR_CF, HELIX.Points, HELIX.Radius, SET.HelixStart, BAR.SleeveEnd, HELIX.Turns, HELIX.Width, HELIX.Strands, HELIX.Transparency, stage)
 	for i, x in ipairs(HELIX.Lights) do
 		addLight("PointLight", BAR_CF * CFrame.new(x, 0, 0), { Brightness = 1.5, Range = 6, Color = HELIX.Strands[(i - 1) % 2 + 1], Shadows = false }, stage)
 	end
@@ -662,7 +697,8 @@ local savedCamera = nil
 local cameraBase = nil
 local fovPunch, shakeUntil, shakeStrength = 0, 0, 0
 -- The plate labels at full size (scale 1); they shrink together (labelScale) when neighbours would touch.
-local LABEL = { Name = 27, Circle = 48, Mult = 33, Gap = 4, Space = 8, MinText = 14, MinScale = 0.4 }
+local LABEL = { Name = 27, Circle = 48, Mult = 33, Gap = 4, Space = 8, MinText = 14, MinScale = 0.4, Backing = 0.55, CircleFill = 0.25,
+	Pad = 6 + Theme.Spacing.S * 2 } -- (each column's extra width: the text margin and the backing's side padding)
 local ARROW_H = 18    -- the upgrade arrow row after a reroll
 local labelScale = 1
 local function rowHeight(s)
@@ -795,7 +831,7 @@ local function estimateLabelScale(): number
 	for slot = 2, 6 do
 		local a = camera:WorldToViewportPoint(slotCF(slot - 1).Position)
 		local b = camera:WorldToViewportPoint(slotCF(slot).Position)
-		scale = math.min(scale, math.abs(b.X - a.X) / (width + LABEL.Space))
+		scale = math.min(scale, (math.abs(b.X - a.X) - LABEL.Pad) / (width + LABEL.Space))
 	end
 	return math.clamp(scale, LABEL.MinScale, 1)
 end
@@ -812,6 +848,13 @@ local function frameCamera()
 	end
 	fitCamera()
 	layoutHero()
+	if dof and heroLayout and cameraBase then
+		local focus = (cameraBase.Position - BAR_CF.Position).Magnitude
+		local heroDepth = (cameraBase.Position - heroLayout.cf.Position).Magnitude
+		dof.FocusDistance = focus
+		dof.InFocusRadius = math.max(4, math.abs(heroDepth - focus) + 2.5)
+	end
+	SET.SyncTree()
 end
 
 local function punch(amount)
@@ -836,6 +879,21 @@ local function moveHero()
 		hero.cf = CFrame.new(heroLayout.cf.Position + Vector3.new(0, (hero.d - heroLayout.d) / 2, 0)) * heroLayout.cf.Rotation
 		hero.parts.model:PivotTo(hero.cf)
 	end
+	SET.SyncTree()
+end
+-- the plate tree: at the overall plate's rest spot (or where it will land), scaled to it, its feet on the gym floor
+function SET.SyncTree()
+	local tree = SET.tree
+	local cf = if hero then hero.cf else heroLayout and heroLayout.cf
+	local d = if hero then hero.d else heroLayout and heroLayout.d
+	if not tree or not cf or not d then return end
+	tree:ScaleTo(d / SET.TreeD)
+	tree:PivotTo(cf)
+	local lowest = math.huge
+	for _, item in ipairs(tree:GetChildren()) do
+		if item.Name == "Foot" and item:IsA("BasePart") then lowest = math.min(lowest, item.Position.Y - item.Size.Y / 2) end
+	end
+	if lowest < math.huge then tree:PivotTo(cf + Vector3.new(0, STAGE_CF.Position.Y + FLOOR_Y - SET.DropAt(cf.Position) - lowest, 0)) end
 end
 local barShadow, heroShadow = nil, nil -- the contact shadows on the floor
 local landed = 0     -- plates on the bar so far (the bar shadow grows with them)
@@ -905,14 +963,21 @@ end
 ------------------------------------------------------------------------
 local function makeColumn(entry)
 	local height = rowHeight(labelScale)
-	local col = New("Frame", { Name = entry.group, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(120, height + ARROW_H), BackgroundTransparency = 1, Parent = labelLayer },
-		{ Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
+	-- (a soft dark rounded backing behind the whole column so it reads over the gym)
+	local col = New("Frame", { Name = entry.group, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(120, height + ARROW_H),
+		BackgroundColor3 = Colors.Shadow, BackgroundTransparency = LABEL.Backing, Parent = labelLayer }, {
+		Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		New("UIPadding", { PaddingTop = UDim.new(0, Spacing.XS), PaddingBottom = UDim.new(0, Spacing.XS), PaddingLeft = UDim.new(0, Spacing.S), PaddingRight = UDim.new(0, Spacing.S) }),
+	})
 	-- stacked: the group name, the grade letter in a circle (the plate's color), the multiplier
-	local name = Theme.Text({ LayoutOrder = 1, Text = Muscles.GroupById[entry.group].name, Font = "Regular", TextSize = "Medium", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 22), Parent = col })
+	local name = Theme.Text({ LayoutOrder = 1, Text = Muscles.GroupById[entry.group].name, Font = "Medium", TextSize = "Medium", TextColor3 = Colors.Text, Size = UDim2.new(1, 0, 0, 22), Parent = col })
 	Theme.TextShadow(name)
 	local tag = Theme.RankTag(entry.grade, { LayoutOrder = 2, Size = UDim2.fromOffset(LABEL.Circle, LABEL.Circle), Parent = col })
 	tag:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0.5, 0)
 	tag.Letter.TextSize = Theme.TextSize.Medium
+	tag.Border.Thickness = 2
+	tag.BackgroundTransparency = LABEL.CircleFill -- (darker than a panel, so the letter pops)
 	local mult = Theme.Text({ LayoutOrder = 3, Text = string.format("x%.2f", multOf(entry.grade)), Font = "SemiBold", TextSize = "Large", Upper = false, Size = UDim2.new(1, 0, 0, 26), Parent = col })
 	Theme.TextShadow(mult)
 	entry.label = { name = name, tag = tag, mult = mult, scale = nil }
@@ -977,7 +1042,7 @@ local function updateLabels()
 		for k = 2, #order do
 			local a, b = order[k - 1], order[k]
 			local need = (widths[a] + widths[b]) / 2 + LABEL.Space
-			scale = math.min(scale, (bottoms[b].X - bottoms[a].X) / need)
+			scale = math.min(scale, (bottoms[b].X - bottoms[a].X - LABEL.Pad) / need)
 		end
 		labelScale = math.clamp(scale, LABEL.MinScale, 1)
 		local height, nameSize, circleSize, multSize = rowHeight(labelScale)
@@ -997,7 +1062,7 @@ local function updateLabels()
 			local width = math.ceil((widths[i] or 80) * labelScale) + 6
 			local x = math.clamp(bottoms[i].X, Spacing.S + width / 2, size.X - Spacing.S - width / 2)
 			local y = rowY
-			entry.column.Size = UDim2.fromOffset(width, height + ARROW_H)
+			entry.column.Size = UDim2.fromOffset(width + Spacing.S * 2, height + (if entry.arrow then ARROW_H else 0) + Spacing.XS * 2)
 			entry.column.Position = UDim2.fromOffset(x, y)
 			-- tap / hover area: the label and the plate above it
 			local half = math.max(width / 2, 22)
@@ -1111,8 +1176,9 @@ local function dropHero(grade)
 	local from = rest + Vector3.new(0, 6, 0)
 	animate(TIME.Drop, function(t) place(hero, from:Lerp(rest, easeIn(t))) end)
 	place(hero, rest)
+	SET.SyncTree()
 	if heroShadow then heroShadow:Destroy() end
-	heroShadow = contactShadow("HeroShadow", rest.Position, rest.Rotation, HERO.Thickness * 2.2, layout.d * 0.6)
+	heroShadow = contactShadow("HeroShadow", rest.Position, rest.Rotation, HERO.Thickness * 2.2, layout.d * 0.6, SET.DropAt(rest.Position))
 	play("GeneticsThud")
 	play("GeneticsThudLow")
 	play("GeneticsClank", { pitch = 0.7, volume = 0.7 })
@@ -1355,8 +1421,8 @@ local function open()
 	tokensLabel.Text = "DNA tokens: " .. ClientData.Get().dnaTokens
 	setBottom(false)
 	task.wait() -- (one frame, so the header and bottom have their sizes)
+	dof = New("DepthOfFieldEffect", { Name = "GeneticsDOF", FarIntensity = 0.6, NearIntensity = 0, InFocusRadius = 5, FocusDistance = 30, Parent = Lighting })
 	frameCamera()
-	dof = New("DepthOfFieldEffect", { Name = "GeneticsDOF", FarIntensity = 0.6, NearIntensity = 0, InFocusRadius = 5, FocusDistance = (cameraBase.Position - BAR_CF.Position).Magnitude, Parent = Lighting })
 	RunService:BindToRenderStep("GeneticsStage", Enum.RenderPriority.Camera.Value + 2, renderStep)
 	labelLayer.Visible = true
 	Theme.Tween(fader, { BackgroundTransparency = 1 }, 0.3)
