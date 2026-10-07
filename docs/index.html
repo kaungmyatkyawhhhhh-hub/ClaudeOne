@@ -403,6 +403,13 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .tts{font-family:var(--mono);font-size:.62rem;color:var(--up);letter-spacing:.04em}.tts.wait{color:var(--muted)}
 .htp .wnsheet{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}.htpic{font-size:4rem;line-height:1;margin-top:6px;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}
 .htpdots{display:flex;gap:6px}.htpdots i{width:8px;height:8px;border-radius:50%;background:var(--sunk)}.htpdots i.on{background:var(--ink)}.htp .cta{width:100%}
+.duelb{background:#1b1f2a!important;color:#ffcc33!important}
+.dlask{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:66;width:min(92vw,420px);padding:14px;border-radius:18px;background:var(--bg);box-shadow:0 0 0 2px #ffcc33,0 16px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.dlask small{color:var(--muted)}.dlask span{display:flex;gap:8px}.dlask .cta{flex:1;padding:10px;justify-content:center}
+.dlvs{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:8px 4px}.dlvs b{font-family:var(--display);color:#e2364a}
+.dlarena{height:46vh;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--surface);box-shadow:var(--shadow);user-select:none;touch-action:manipulation;transition:background .15s}
+.dlarena b{font-family:var(--display);font-size:3.2rem}.dlarena small{color:var(--muted)}.dlarena.wait{background:#3a2a1a;color:#fff}.dlarena.go{background:#2fd28a;color:#06281a}.dlarena.foul{background:#e2364a;color:#fff}
+.dltrack{height:14px;border-radius:7px;background:var(--sunk);margin:12px 0;overflow:hidden}.dltrack i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffcc33,#ff7a3d)}
+.dlpads{display:flex;gap:10px}.dlpads button{flex:1;height:110px;display:grid;place-items:center;text-align:center;border-radius:20px;background:#1b1f2a;color:#fff;font:900 1.3rem var(--display);touch-action:manipulation}.dlpads button:active{background:#2a3cff}
 .goalpop{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);z-index:70;min-width:260px;max-width:86vw;padding:18px 22px;border-radius:22px;background:var(--bg);box-shadow:0 0 0 3px #ffcc33,0 20px 60px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:4px;pointer-events:none;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1) forwards}
 .goalpop b{font-family:var(--display);font-size:1.15rem}.goalpop em{font-style:normal;font-family:var(--display);font-weight:900;font-size:2rem;color:var(--up)}.goalpop small{color:var(--muted);font-size:.8rem}.goalpop.out{animation:gpOut .45s ease forwards}
 @keyframes gpIn{to{transform:translate(-50%,-50%) scale(1)}}@keyframes gpOut{to{transform:translate(-50%,-80%) scale(.9);opacity:0}}
@@ -2725,6 +2732,53 @@ function openDocks(){room="docks";
 let RACE=null,DOCKS_DRAW=null;
 const CRBOTS=()=>{const k=1+SC()*.5;return[{n:"Tuner Tim",sp:2.6,bet:Math.round(1000*k),c:"#2a5bd7"},{n:"Drift Queen",sp:3.2,bet:Math.round(6000*k),c:"#ff4fd8"},{n:"Midnight Max",sp:4.2,bet:Math.round(30000*k),c:"#1b1f2a"}]};
 const crTime=(sp,launch)=>9/Math.sqrt(Math.max(.5,sp))+launch;
+/* ================= duels: quick 1v1 games anyone can win, no muscles needed ================= */
+const DLG={draw:{n:"Quick draw",ic:"🤠",d:"Wait for DRAW!, then tap first. Tap early and you foul.",lo:1,unit:"ms"},taps:{n:"Tap frenzy",ic:"👆",d:"Most taps in 5 seconds wins.",lo:0,unit:"taps"},sprint:{n:"100 m sprint",ic:"🏃",d:"Tap LEFT and RIGHT in turn to run. Fastest time wins.",lo:1,unit:"s"}};
+let DL=null,DLOUT=null;
+function openDuel(id){if(!MP||!MP.peers[id])return;const P=MP.peers[id];room="duel";$("room").hidden=false;
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Duel")}<div class="note">Challenge <b>${esc(String(P.n).slice(0,16))}</b>. These games are all about speed and timing, not muscles. Winner gets fans.</div>
+    <div class="perks">${Object.entries(DLG).map(([k,g])=>`<button class="perk nopic" data-dg="${k}"><span class="t">${g.ic} ${g.n}</span><span class="d">${g.d}</span><span class="c">Challenge</span></button>`).join("")}
+    <button class="perk nopic" data-dg="race"><span class="t">🏎️ Drag race</span><span class="d">Race cars at the Docks Car Meet</span><span class="c">Go</span></button>
+    <button class="perk nopic" data-dg="arm"><span class="t">💪 Arm wrestle</span><span class="d">The strength duel, at the Arena</span><span class="c">Go</span></button></div>
+    <p class="fine" id="dlWait"></p></div>`;
+  $("leaveBtn").onclick=()=>{DLOUT=null;closeRoom()};
+  $("room").querySelectorAll("[data-dg]").forEach(b=>b.onclick=()=>{const g=b.dataset.dg;if(g==="race"){closeRoom();walkTo("docks");return}if(g==="arm"){closeRoom();walkTo("arena");return}
+    DLOUT={id,g,t:Date.now()};mpSend("dl",{t:"ask",f:MP_ID,n:mpName(),g},id);SFX.hot();$("dlWait").textContent="Waiting for "+String(P.n).slice(0,16)+" to accept…";
+    setTimeout(()=>{if(DLOUT&&DLOUT.id===id&&DLOUT.g===g){DLOUT=null;const w=$("dlWait");if(w)w.textContent="No answer. Try someone else."}},15000)})}
+function dlMsg(d){if(!d||d.f===MP_ID||!MP)return;const n=esc(String(d.n||"A friend").slice(0,16));
+  if(d.t==="ask"){if(DL&&!DL.done)return mpSend("dl",{t:"no",f:MP_ID,n:mpName()},d.f);const g=DLG[d.g];if(!g)return;SFX.hot();buzz([20,40,20]);
+    document.querySelectorAll(".dlask").forEach(x=>x.remove());const el=document.createElement("div");el.className="dlask";el.innerHTML=`<b>${g.ic} ${n} challenges you</b><small>${g.n} · ${g.d}</small><span><button class="cta" id="dlYes">Accept</button><button class="cta ghost2" id="dlNo">Decline</button></span>`;document.body.appendChild(el);
+    const t=setTimeout(()=>el.remove(),15000);el.querySelector("#dlYes").onclick=()=>{clearTimeout(t);el.remove();if(!MP||!MP.peers[d.f])return;const seed=Math.floor(Math.random()*1e6);mpSend("dl",{t:"go",f:MP_ID,n:mpName(),g:d.g,seed},d.f);dlRun(d.g,seed,{id:d.f,n})};
+    el.querySelector("#dlNo").onclick=()=>{clearTimeout(t);el.remove();mpSend("dl",{t:"no",f:MP_ID,n:mpName()},d.f)};return}
+  if(d.t==="no"){if(DLOUT&&DLOUT.id===d.f){DLOUT=null;const w=$("dlWait");if(w)w.textContent=n+" said no this time."}return}
+  if(d.t==="go"){if(!DLOUT||DLOUT.id!==d.f)return;DLOUT=null;dlRun(d.g,d.seed,{id:d.f,n});return}
+  if(d.t==="res"){if(DL&&DL.peer.id===d.f){DL.peerScore=+d.score;dlCheck()}}}
+function dlRun(g,seed,peer){const G=DLG[g];room="duel";$("room").hidden=false;let sd=seed||1;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  DL={g,peer,seed,phase:"count",t0:performance.now()+2400,score:null,peerScore:null,done:false,taps:0,dist:0,last:0,drawAt:1.2+r()*2.6};
+  $("room").innerHTML=`<div class="room-in">${roomHead(G.n)}<div class="dlvs"><span>You</span><b>VS</b><span>${peer.n}</span></div><div class="dlarena" id="dlA"><b id="dlBig">3</b><small id="dlSub">${G.d}</small></div>
+    ${g==="sprint"?`<div class="dltrack"><i id="dlRun"></i></div><div class="dlpads"><button id="dlL">LEFT</button><button id="dlR">RIGHT</button></div>`:""}<p class="fine" id="dlInfo"></p></div>`;
+  $("leaveBtn").onclick=()=>{if(DL&&!DL.done&&DL.score==null)dlFinish(G.lo?99999:0);DL=null;closeRoom()};
+  const A=$("dlA"),now=()=>(performance.now()-DL.t0)/1000;
+  const tap=e=>{e.preventDefault();if(!DL||DL.score!=null)return;const t=now();
+    if(g==="draw"){if(t<0)return;if(t<DL.drawAt){A.classList.add("foul");$("dlBig").textContent="FOUL";SFX.loss();dlFinish(99999)}else{const ms=Math.round((t-DL.drawAt)*1000);$("dlBig").textContent=ms+" ms";SFX.sell(3);dlFinish(ms)}}
+    else if(g==="taps"){if(t<0||t>5)return;DL.taps++;$("dlBig").textContent=DL.taps;SFX.tick(.4+Math.min(.6,DL.taps/60));buzz(4)}};
+  if(g==="sprint"){const step=side=>e=>{e.preventDefault();if(!DL||DL.score!=null||now()<0)return;if(DL.last===side)return;DL.last=side;DL.dist=Math.min(100,DL.dist+2.5);$("dlRun").style.width=DL.dist+"%";$("dlBig").textContent=Math.round(DL.dist)+" m";SFX.tick(.5);buzz(4);if(DL.dist>=100){const tt=+now().toFixed(2);$("dlBig").textContent=tt+" s";SFX.sell(3);dlFinish(tt)}};
+    $("dlL").addEventListener("pointerdown",step("L"));$("dlR").addEventListener("pointerdown",step("R"))}
+  else A.addEventListener("pointerdown",tap);
+  const loop=()=>{if(!DL||room!=="duel")return;const t=now();
+    if(t<0){$("dlBig").textContent=Math.ceil(-t);if(DL.phase!=="go"){}}
+    else if(DL.score==null){if(g==="draw"){if(t<DL.drawAt){$("dlBig").textContent="Wait…";A.className="dlarena wait"}else{$("dlBig").textContent="DRAW!";A.className="dlarena go";if(!DL.cue){DL.cue=1;SFX.hot();buzz(30)}}if(t>DL.drawAt+3)dlFinish(3000)}
+      else if(g==="taps"){if(DL.phase!=="tap"){DL.phase="tap";$("dlBig").textContent="TAP!";A.className="dlarena go"}$("dlSub").textContent=Math.max(0,5-t).toFixed(1)+" s left";if(t>=5)dlFinish(DL.taps)}
+      else if(g==="sprint"){$("dlSub").textContent=t.toFixed(1)+" s";if(t>25)dlFinish(25)}}
+    requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+function dlFinish(sc){if(!DL||DL.score!=null)return;DL.score=sc;mpSend("dl",{t:"res",f:MP_ID,n:mpName(),score:sc,g:DL.g},DL.peer.id);const i=$("dlInfo");if(i)i.textContent="Waiting for "+DL.peer.n+"…";
+  const D=DL;setTimeout(()=>{if(DL===D&&D.peerScore==null){D.peerScore=DLG[D.g].lo?99999:-1;dlCheck()}},15000);dlCheck()}
+function dlCheck(){const D=DL;if(!D||D.done||D.score==null||D.peerScore==null)return;D.done=true;const G=DLG[D.g],fmtS=v=>v>=99999?"foul":v<0?"no show":v+" "+G.unit;
+  const win=G.lo?D.score<D.peerScore:D.score>D.peerScore,tie=D.score===D.peerScore;S.stats.duels=(S.stats.duels||0)+1;let txt="";
+  if(win){S.stats.duelWins=(S.stats.duelWins||0)+1;const f=Math.round(Math.max(50,(S.fans||0)*.01));S.fans=(S.fans||0)+f;dirty=true;SFX.rebirth();confetti(200);shake(6);txt=`You win! +${fmtN(f)} fans`;if(MP)mpSend("c",{n:mpName(),t:"beat "+D.peer.n+" at "+G.n.toLowerCase()+" ("+fmtS(D.score)+")",sys:1})}
+  else if(tie){txt="A tie!";SFX.hot()}else{txt=D.peer.n+" wins this one";SFX.loss()}
+  const a=$("dlA");if(a){a.className="dlarena "+(win?"go":tie?"wait":"foul");$("dlBig").textContent=win?"WIN":tie?"TIE":"LOSS";$("dlSub").textContent="You "+fmtS(D.score)+" · "+D.peer.n+" "+fmtS(D.peerScore)}
+  const i=$("dlInfo");if(i)i.innerHTML=txt+` · <button class="mpgift" id="dlAgain">Rematch</button>`;const ag=$("dlAgain");if(ag)ag.onclick=()=>{const id=D.peer.id;DL=null;openDuel(id)}}
 function crMsg(d){if(!d||d.f===MP_ID)return;const n=esc(String(d.n||"A friend").slice(0,16));
   if(d.t==="ask"){if(RACE&&!RACE.done)return mpSend("cr",{t:"no",f:MP_ID,n:mpName()},d.f);MP.crAsk={f:d.f,n,t:Date.now()};SFX.hot();buzz([20,40,20]);banner(n+" wants to race","u");if(room==="docks"&&DOCKS_DRAW)DOCKS_DRAW();else rayTextFrom(n,"Race me at the Docks Car Meet! Head there to accept.");return}
   if(d.t==="no"){if(MP.crOut===d.f){MP.crOut=null;banner(n+" said no","a");if(room==="docks"&&DOCKS_DRAW)DOCKS_DRAW()}return}
@@ -3570,6 +3624,7 @@ function mpOnMsg(topic,buf){
   if(kind==="d"){if(id===MP_ID&&d){const n=String(d.n||"A friend").slice(0,16);banner(n+" "+String(d.t||"").slice(0,40),"u");SFX.hot();buzz([20,40,20]);mpLog(n,String(d.t||"").slice(0,60),1);if(d.isl){S.islVis=S.islVis||{};S.islVis[d.isl]=(S.islVis[d.isl]||0)+1;dirty=true}}return}
   if(kind==="aw"){if(id===MP_ID&&d)pvpMsg(d);return}
   if(kind==="cr"){if(id===MP_ID&&d)crMsg(d);return}
+  if(kind==="dl"){if(id===MP_ID&&d)dlMsg(d);return}
   if(kind==="lv"){if(id!==MP_ID)liveMsg(d);return}
   if(kind==="ry"){if(id===MP_ID&&d&&d.f!==MP_ID)deedMsg(d);return}
   if(kind==="au"){const from=d&&d.f?String(d.f):id;if(from===MP_ID||(id!==from&&id!==MP_ID))return;aucMsg(d,from);return}
@@ -3615,7 +3670,7 @@ function mpUI(keep){
   const peers=Object.entries(MP.peers);
   sh.innerHTML=`<div class="pshead"><div><small>${isNpcW()?"NPC WORLD":MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${isNpcW()?BOTW.find(b=>b.c===MP.code).n:MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
     <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>${S.title?esc(S.title)+" · ":""}Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
-      ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${fmtN(p.f||0)} fans · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${giftAmt(p)<1?"disabled":""}>Gift ${fmt(giftAmt(p))}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
+      ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${fmtN(p.f||0)} fans · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span><button class="mpgift duelb" data-duel="${id}">⚔ Duel</button>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${giftAmt(p)<1?"disabled":""}>Gift ${fmt(giftAmt(p))}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
     ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
     <div class="mpjoin"><input id="mpIn" maxlength="80" placeholder="Message" autocomplete="off"><button class="cta" id="mpSendB">Send</button></div>
@@ -3630,6 +3685,7 @@ function mpUI(keep){
   $("mpSendB").onclick=()=>say($("mpIn").value);$("mpIn").onkeydown=e=>{if(e.key==="Enter")say($("mpIn").value)};
   sh.querySelectorAll("[data-lb]").forEach(b=>b.onclick=()=>{lbK=b.dataset.lb;mpUI(true)});
   sh.querySelectorAll("[data-emo]").forEach(b=>b.onclick=()=>say(b.dataset.emo));
+  sh.querySelectorAll("[data-duel]").forEach(b=>b.onclick=()=>{sh.hidden=true;openDuel(b.dataset.duel)});
   sh.querySelectorAll("[data-gift]").forEach(b=>b.onclick=()=>{const p=MP.peers[b.dataset.gift],a=giftAmt(p);if(!p||a<1||!giftReady())return;S.cash-=a;dirty=true;mpSend("g",{f:MP_ID,n:mpName(),a},b.dataset.gift);mpLog(mpName(),"sent "+fmt(a)+" to "+p.n,1);SFX.sell();banner("Sent "+fmt(a)+" to "+String(p.n).slice(0,14),"u");mpUI()});
 }
 
@@ -4540,7 +4596,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=33,WN=[
+const WN_VER=34,WN=[
+ ["⚔️","Duels","Challenge anyone in your room, bots too, from the Friends list: Quick draw, Tap frenzy or a 100 m sprint. No muscles needed. Winners get fans.","2026-10-07T14:00"],
  ["🚀","Moon & Mars matter","Rocket to a little grey Moon or a big red Mars. Plant your flag to unlock Space elevators (Moon) and Dyson spheres (Mars), and build each planet's Colony HQ for huge generator boosts.","2026-10-07T13:00"],
  ["🧙","Wizard robe","A long starry robe to match the wizard hat, in the new Outfit slot at the Mall.","2026-10-07T12:00"],
  ["🧥","Sweaters & long sleeves","New Sweater and Long sleeve styles, and hoodies now cover your arms. Pick Sleeves: Long to hide your arms under any outfit.","2026-10-07T12:00"],
@@ -6643,6 +6700,8 @@ function botsTick(){if(!isBotW())return;const W=botWorld(),now=Date.now();
     const cs=Math.floor(now/45000);if((cs+i)%6===0&&botChatSeg[id]!==cs&&now%45000<4000){botChatSeg[id]=cs;const line=BOT_LINES[Math.floor(hsh(W.c,i,cs)*BOT_LINES.length)];p.bub=line;p.bubT=4;mpLog(nm,line);mpRefresh()}}}
 // talking to a bot: they answer races, gifts and chat locally
 function botReply(kind,obj,to){if(!MP)return;const p=MP.peers[to];if(!p)return;const n=p.n;
+  if(kind==="dl"&&obj.t==="ask")setTimeout(()=>{if(MP&&DLOUT&&DLOUT.id===to)dlMsg({t:"go",f:to,n,g:obj.g,seed:Math.floor(Math.random()*1e6)})},700);
+  if(kind==="dl"&&obj.t==="res")setTimeout(()=>{const sk=clamp((p.lv||10)/150,0,1),G=obj.g;const sc=G==="draw"?Math.round(rnd(190,420)-sk*60):G==="taps"?Math.round(rnd(24,40)+sk*8):+(rnd(8.5,13)-sk*1.5).toFixed(2);dlMsg({t:"res",f:to,n,score:sc})},400+Math.random()*900);
   if(kind==="cr"&&obj.t==="ask")setTimeout(()=>{if(MP&&MP.crOut===to)crMsg({t:"go",f:to,n,seed:Math.floor(Math.random()*1e6)})},600);
   if(kind==="cr"&&obj.t==="res")setTimeout(()=>{const sp=1.5+Math.min(4,p.lv/30);crMsg({t:"res",f:to,n,time:+(crTime(sp,rnd(-.5,.35))*rnd(.98,1.02)).toFixed(3),car:p.lv>60?"Supercar":p.lv>20?"Classic":"Car"})},300);
   if(kind==="aw"&&obj.t==="ask")setTimeout(()=>{if(!MP||MP.awOut!==to)return;pvpMsg({t:"go",f:to,n});if(A&&A.pvp&&A.peer===to){A.bot=1;A.botR=rnd(6,8.5)*.02*clamp(Math.sqrt((p.pr||20)/Math.max(20,S.pr)),.6,1.7)}},700);
