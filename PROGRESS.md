@@ -27,6 +27,7 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
   These are why it's built the way it is. If a live server allows more meshes, everything is built automatically.
 - **Not done:** rock "mass monster" skin (levels never go above the goal, so it can't happen in play, and its textures would need uploading); the imported-mesh fallback (not needed, EditableMesh works); phone test with 10+ players; T-shirt graphics (ShirtGraphic) don't show on the snatched torso.
 - Test hooks: Workspace `TestMuscleShare` (0..1.12), `TestMuscleIds`, `TestOpenMirror` (with FreshPlayer). Screenshots `v8_*.png`.
+- **Calves updated (7 Oct, new muscle_v8 zip):** both calf meshes now have 5,158 vertices / 9,968 triangles (were 3,949); MuscleData regenerated, only the calf modules and Index changed. Verified in Studio (screenshots `v8_calves_*.png`). Note: `tools/gen_muscle_data` deletes MuscleData first, so keep `muscle_v8/` unzipped before running it.
 
 ## Done
 - Player data, saving, 18 muscles, stamina, coins, genetics, height, titles; one reusable machine system.

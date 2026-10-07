@@ -43,8 +43,8 @@ return {
 		{ name = "LeftUpperLeg__Hamstrings", part = "LeftUpperLeg", muscle = "Hamstrings", shorts = false, clothing = "Pants", verts = 1387, chunks = { base = 1, max = 1, tris = 1, uv = 1 } },
 		{ name = "LeftUpperLeg__Glutes", part = "LeftUpperLeg", muscle = "Glutes", shorts = false, clothing = "Pants", verts = 127, chunks = { base = 1, max = 1, tris = 1, uv = 1 } },
 		{ name = "LeftUpperLeg__Glutes_Shorts", part = "LeftUpperLeg", muscle = "Glutes", shorts = true, clothing = "Pants", verts = 893, chunks = { base = 1, max = 1, tris = 1, uv = 1 } },
-		{ name = "RightLowerLeg__Calves", part = "RightLowerLeg", muscle = "Calves", shorts = false, clothing = "Pants", verts = 3949, chunks = { base = 1, max = 1, tris = 2, uv = 1 } },
-		{ name = "LeftLowerLeg__Calves", part = "LeftLowerLeg", muscle = "Calves", shorts = false, clothing = "Pants", verts = 3949, chunks = { base = 1, max = 1, tris = 2, uv = 1 } },
+		{ name = "RightLowerLeg__Calves", part = "RightLowerLeg", muscle = "Calves", shorts = false, clothing = "Pants", verts = 5158, chunks = { base = 2, max = 2, tris = 2, uv = 1 } },
+		{ name = "LeftLowerLeg__Calves", part = "LeftLowerLeg", muscle = "Calves", shorts = false, clothing = "Pants", verts = 5158, chunks = { base = 2, max = 2, tris = 2, uv = 1 } },
 		{ name = "UpperTorso__UpperTraps", part = "UpperTorso", muscle = "Traps", shorts = false, clothing = "Shirt", verts = 3136, chunks = { base = 1, max = 1, tris = 1, uv = 1 } },
 	},
 }
