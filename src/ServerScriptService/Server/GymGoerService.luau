@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
 local BodyService = require(script.Parent.BodyService)
+local Body = require(ReplicatedStorage.Shared.Config.Body)
 local NpcService = require(script.Parent.NpcService)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
 local MachineService = require(script.Parent.MachineService)
@@ -271,6 +272,11 @@ end
 local function loop(state, all)
 	task.wait(rng:NextNumber(0.5, 4)) -- don't all start at once
 	while state.npc.Parent do
+		-- never stay on the floor: stand back up
+		local humState = state.humanoid:GetState()
+		if humState == Enum.HumanoidStateType.FallingDown or humState == Enum.HumanoidStateType.Ragdoll or humState == Enum.HumanoidStateType.Physics then
+			state.humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
 		if os.clock() < (state.busyUntil or 0) then
 			task.wait(1)
 		else
@@ -306,11 +312,19 @@ end
 -- (pro gym big, starter gym medium), keeping their own clothes and hair.
 local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
 local function dressNpc(npc, gym)
-	NpcService.ApplyBody(npc) -- the Robloxian 2.0 body first (the NPCs are baked into the place)
-	-- regulars never fall over or ragdoll (they were getting stuck in FallingDown/GettingUp after the body swap)
 	local hum = npc:FindFirstChildOfClass("Humanoid")
+	-- regulars never fall over or ragdoll (falling over froze them on the floor). Getting up stays ON, so one that does tip
+	-- over can always stand up again.
 	if hum then
-		for _, state in ipairs({ Enum.HumanoidStateType.FallingDown, Enum.HumanoidStateType.Ragdoll, Enum.HumanoidStateType.GettingUp, Enum.HumanoidStateType.Physics }) do hum:SetStateEnabled(state, false) end
+		hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+		hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+		hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
+	end
+	-- the Robloxian 2.0 body, only if the place doesn't already have it (re-applying a body knocks a standing NPC over)
+	local ok, desc = false, nil
+	if hum then ok, desc = pcall(hum.GetAppliedDescription, hum) end
+	if not ok or not desc or desc.Torso ~= Body.Parts.Torso then NpcService.ApplyBody(npc) end
+	if hum then
 		for _, part in ipairs(npc:GetDescendants()) do
 			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "UpperTorso" and part.Name ~= "LowerTorso" then part.CanCollide = false end
 		end
@@ -326,7 +340,6 @@ function GymGoerService.Start()
 	for _, npc in ipairs(CollectionService:GetTagged("GymNpc")) do
 		local humanoid = npc:FindFirstChildOfClass("Humanoid")
 		if humanoid and npc:GetAttribute("Gym") then
-			task.spawn(pcall, dressNpc, npc, npc:GetAttribute("Gym"))
 			local state = { npc = npc, humanoid = humanoid, gym = npc:GetAttribute("Gym"), tracks = loadTracks(npc), free = true }
 			table.insert(all, state)
 		end
@@ -336,7 +349,13 @@ function GymGoerService.Start()
 			if state.npc == npc then state.machine = nil end
 		end
 	end)
-	for _, state in ipairs(all) do task.spawn(loop, state, all) end
+	-- dress first (body, muscles, no falling), then start walking
+	for _, state in ipairs(all) do
+		task.spawn(function()
+			pcall(dressNpc, state.npc, state.gym)
+			loop(state, all)
+		end)
+	end
 	for _, coach in ipairs(CollectionService:GetTagged("Coach")) do task.spawn(pcall, dressNpc, coach, "Pro"); lookAtPlayers(coach) end
 	CollectionService:GetInstanceAddedSignal("Legend"):Connect(lookAtPlayers)
 end
