@@ -404,6 +404,8 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .htp .wnsheet{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}.htpic{font-size:4rem;line-height:1;margin-top:6px;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}
 .htpdots{display:flex;gap:6px}.htpdots i{width:8px;height:8px;border-radius:50%;background:var(--sunk)}.htpdots i.on{background:var(--ink)}.htp .cta{width:100%}
 .gardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gplot{border-radius:16px;padding:12px;background:#6b4a2a;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.2)}.gplot b{font-size:2.6rem;line-height:1;transition:transform .3s}.gplot small{font-weight:700}.gplot span{font:700 .72rem var(--mono);opacity:.85}.gplot.empty{background:#8a6a4a;opacity:.7}.gplot.ripe{background:#3f7a3a;box-shadow:0 0 0 3px #ffcc33,inset 0 -6px 0 rgba(0,0,0,.2)}.gplot .cta{width:100%;padding:8px;justify-content:center;font-size:.78rem}
+.fobtn{background:linear-gradient(90deg,#1b1f2a,#3a2266)!important;color:#ffcc33!important}.fobtn b{color:#fff!important}
+.fobar{margin:8px 0;padding:10px 12px;border-radius:14px;background:#1b1f2a;color:#fff}.foh{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;margin-bottom:6px}.foh span{font:900 1rem var(--mono);color:#ffcc33}.fotrack{height:10px;border-radius:5px;background:#e2364a;overflow:hidden}.fotrack i{display:block;height:100%;background:#2fd28a;transition:width .25s}
 .hlrow{display:flex;align-items:center;gap:8px;width:min(92vw,360px)}.hlrow em{font-style:normal;font-weight:900;color:var(--muted)}.hlcard{flex:1;border-radius:18px;padding:14px 8px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}.hlcard b{font-size:.82rem;min-height:2.2em}.hlcard span{font:900 1.3rem var(--mono)}
 .hlbtns{display:flex;gap:10px;width:min(92vw,360px);margin-top:12px}.hlbtns .bigbtn{flex:1;text-align:center}
 .brorder{margin:12px 0;padding:14px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow);text-align:center;display:flex;flex-direction:column;gap:6px}.brorder small{color:var(--muted);font-weight:700}.brorder b{font-family:var(--display);font-size:1.4rem}.brorder span{display:flex;gap:10px;justify-content:center;font-size:2rem}.brorder i{font-style:normal;opacity:.35}.brorder i.done{opacity:1;transform:scale(1.15)}
@@ -1172,6 +1174,8 @@ const ACH=[
  ["balloon10","Pop star","Pop 10 mystery balloons",()=>(S.stats.balloons||0)>=10,20000],
  ["stk24","Sticker collector","Collect 24 stickers",()=>stkCount()>=24,100000],
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
+ ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
+ ["vinny10","Vinny's nightmare","Win 10 flip-offs",()=>(S.stats.foWins||0)>=10,500000],
  ["stk48","Complete book","Collect every sticker",()=>stkCount()>=48,5e6],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
  ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
@@ -3352,15 +3356,25 @@ function spark(h){
   return `<svg class="spark" viewBox="0 0 ${w} ${ht}" preserveAspectRatio="none" aria-hidden="true"><path class="a" d="${d}L${w} ${ht}L0 ${ht}Z"/><path class="l" d="${d}" vector-effect="non-scaling-stroke"/></svg>`;
 }
 const slotEls=[];let slotKeys=[];
+/* ---------- flip-off: a 3-minute profit race against a rival trader, once a day ---------- */
+let FO=null;
+function foStart(){if(S.foDay===dayKey())return;S.foDay=dayKey();dirty=true;const pace=Math.max(40,rwBase()*.012);FO={t0:Date.now(),dur:180000,start:S.stats.profit||0,rival:0,pace,skill:rnd(.85,1.25)};SFX.hot();banner("⚔️ FLIP-OFF! Make more profit than Vinny in 3 minutes","g");if(M)openMarket(M.cfg)}
+function foTick(){if(!FO)return;const el=$("foBar"),t=(Date.now()-FO.t0)/FO.dur;FO.rival=FO.pace*FO.skill*Math.pow(Math.min(1,t),1.1)*14*(1+Math.sin(t*20)*.06);const me=Math.max(0,(S.stats.profit||0)-FO.start);
+  if(el){const tot=Math.max(1,me+FO.rival),left=Math.max(0,Math.ceil((FO.dur-(Date.now()-FO.t0))/1000));el.innerHTML=`<div class="foh"><b>You ${fmt(me)}</b><span>${left}s</span><b>Vinny ${fmt(FO.rival)}</b></div><div class="fotrack"><i style="width:${(me/tot*100).toFixed(1)}%"></i></div>`}
+  if(t>=1){const win=me>FO.rival;S.stats.foWins=(S.stats.foWins||0)+(win?1:0);if(win){const v=Math.round(Math.max(1000,FO.rival*1.5));earn(v);gainCrate(2);SFX.rebirth();confetti(260);flash("#ffcc33",.4);banner("You beat Vinny! +"+fmt(v)+" and 2 crates","g");rayTextFrom("Slick Vinny","Beginner's luck. Same time tomorrow.")}
+    else{SFX.loss();banner("Vinny wins this round","r");rayTextFrom("Slick Vinny","Ha! Better luck tomorrow, kid.")}FO=null;if(M&&room)openMarket(M.cfg)}}
+setInterval(()=>{try{foTick()}catch(e){}},250);
 function openMarket(cfg){
   cfg=cfg||MKT.market;if(!(S.stats.flips||0)&&!S.stash.length)FORCE_STEAL=1;if(rookieLeft()&&!cfg.only&&cfg.k!=="lux")setTimeout(()=>banner("Rookie luck · "+rookieLeft()+" lucky sales left","g"),S.tut<6?2600:500);
   M={cfg,market:[null,null,null],restock:[.2,.6,1],ev:null,nextEv:4,auctionT:rnd(35,70),streak:0,streakT:-99,t:0,newsT:0,evKey:null};
   $("room").innerHTML=`<div class="room-in">${roomHead(cfg.n)}
     <div class="news"><span class="live">LIVE</span><span id="news"></span></div>
     ${cfg.k==="market"?`<button class="reqbtn" id="mReq">📋 Buyer requests<b>${reqReady()?reqReady()+" ready to deliver":"3 new every day"}</b></button>`:""}
+    ${!cfg.only&&(S.stats.flips||0)>=10?(FO?`<div class="fobar" id="foBar"></div>`:`<button class="reqbtn fobtn" id="mFO" ${S.foDay===dayKey()?"disabled":""}>⚔️ Flip-off vs Slick Vinny<b>${S.foDay===dayKey()?"Rematch tomorrow":"3 minutes · most profit wins"}</b></button>`):""}
     <div id="event" class="collector"></div>
     <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
     <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="mHype" class="mhype"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
+  {const fb=$("mFO");if(fb)fb.onclick=()=>foStart()}
   const m=$("market");slotEls.length=0;slotKeys=[];
   for(let i=0;i<3;i++){const el=document.createElement("div");el.className="lst";el.dataset.i=i;el.tabIndex=0;m.appendChild(el);slotEls.push(el)}
   m.addEventListener("pointerdown",e=>{const el=e.target.closest(".lst");if(!el)return;const i=+el.dataset.i,l=M.market[i];if(!l||l.gone)return;e.preventDefault();audioOn();hold={i,id:l.id,t0:performance.now(),active:false,acc:0};try{el.setPointerCapture(e.pointerId)}catch(_){}});
@@ -4970,7 +4984,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=49,WN=[
+const WN_VER=50,WN=[
+ ["⚔️","Flip-off vs Slick Vinny","Once a day in any market, race the rival trader Vinny: whoever makes more profit in 3 minutes wins cash and crates.","2026-10-07T05:10"],
  ["📆","A different town every day","Each weekday has a bonus: Market Madness Monday, Gains Tuesday, Arcade Wednesday, Treasure Thursday, Fireworks Friday, Green Saturday and Lazy Sunday.","2026-10-07T05:05"],
  ["🎳","Bowling & Higher or lower","Two more Arcade games.","2026-10-07T05:00"],
  ["🎆","Fireworks","Buy a fireworks show at the Night Market: 20 seconds of rockets over town, and every tap on the sky launches your own for extra fans.","2026-10-07T04:55"],
