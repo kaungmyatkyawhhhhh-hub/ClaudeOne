@@ -766,6 +766,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .admrow{display:flex;align-items:center;gap:8px;font-size:.75rem}.admrow code{flex:1;min-width:0;overflow-wrap:anywhere;color:var(--muted)}.admrow input:not([type=checkbox]){width:44%;padding:6px 8px;border-radius:8px;border:0;background:var(--sunk);color:var(--ink);font:600 .78rem var(--mono)}
 .acclist{display:flex;flex-direction:column;gap:8px}.acclist .accbar small{color:var(--muted);font-weight:600}.accbar button+button{padding:7px 10px}
 .accbar button{padding:7px 12px;border-radius:10px;background:var(--sunk);font-size:.78rem;font-weight:700}
+.prbtn{background:linear-gradient(90deg,#2fd28a,#1b6b8a)!important;color:#fff!important;margin-bottom:8px}.prbtn b{color:#fff!important;opacity:.85}
 .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.setc{padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:3px;font-size:.78rem}.setc.on{background:linear-gradient(135deg,#fff3c4,#ffd6f0);color:#141824}.setc span{display:flex;flex-wrap:wrap;gap:3px}.setc i{font-style:normal;font-size:.66rem;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.07);opacity:.55}.setc i.o{opacity:.9}.setc i.w{opacity:1;background:#2fd28a;color:#fff}.setc em{font-style:normal;font-weight:800;font-size:.7rem;color:#7a2fd6}
 .photoov{display:flex;align-items:center;justify-content:center}.photocard{background:var(--surface);border-radius:22px;padding:14px;width:min(92vw,380px);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.4)}.photocard img{width:100%;border-radius:14px;display:block}.pbrow{display:flex;gap:8px}.pbrow>*{flex:1;text-align:center;text-decoration:none}
 .rwbtn{background:linear-gradient(90deg,#ff4fd8,#7a2fd6)!important;color:#fff!important}.rwbtn b{color:#fff!important;opacity:.85}
@@ -1167,6 +1168,8 @@ const ACH=[
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
+ ["petwin10","Speed demon","Win 10 pet races",()=>(S.stats.petWins||0)>=10,60000],
+ ["gold12","Treasure hunter","Find all 12 hidden golden statues",()=>((S.gold||{}).got||0)>=12,250000],
  ["pots3","Over the rainbow","Find 3 pots of gold at the end of rainbows",()=>(S.stats.pots||0)>=3,40000],
  ["set1","Fully suited","Wear a complete outfit set",()=>(S.stats.sets||0)>=1,15000],
  ["runway27","Showstopper","Score 27 or more on the Runway",()=>(S.rwBest||0)>=27,80000],
@@ -1622,7 +1625,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawLostWorld();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawLostWorld();drawGoldStatues();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -3209,6 +3212,20 @@ function drawWeather(){if(SCN||MPW)return;const c=ctx,B=WX.bow;
     else if(!room)drawEdgeArrow(B.x,B.y,"#ffcc33")}
   if(WX.rain<=0)return;const a=WX.rain;c.save();c.fillStyle=`rgba(40,55,80,${.16*a})`;c.fillRect(0,0,vw,vh);c.strokeStyle=`rgba(215,230,255,${.75*a})`;c.lineWidth=1.6;c.beginPath();
   const n=Math.round(WX.drops.length*a),t=performance.now()/1000;for(let i=0;i<n;i++){const d=WX.drops[i],x=((d[0]*vw+t*60*d[2])%(vw+40))-20,y=((d[1]*vh+t*700*d[2])%(vh+40))-20;c.moveTo(x,y);c.lineTo(x-3*d[2],y+12*d[2])}c.stroke();c.restore()}
+/* ---------- hidden golden statues: 12 tucked around town, glinting only when you're close ---------- */
+const GOLD_N=12;
+function goldTick(){if(!S||SCN||MPW||(S.stats.flips||0)<3)return;const G=S.gold=S.gold||{sp:[],got:0};
+  if(G.sp.length+G.got<GOLD_N){const p=lfSpot(rnd(200,W-200),rnd(260,SEA-160),0,200);if(p&&G.sp.every(q=>Math.hypot(q[0]-p[0],q[1]-p[1])>400)&&Math.hypot(p[0]-S.px,p[1]-S.py)>300){G.sp.push(p);dirty=true}}
+  for(let i=G.sp.length-1;i>=0;i--){const q=G.sp[i];if(Math.hypot(S.px-q[0],S.py-q[1])<30){G.sp.splice(i,1);G.got++;const v=Math.round(Math.max(800,rwBase()*.03*G.got));earn(v);dirty=true;SFX.crit(2);buzz([20,40,20]);confetti(140,null,null,["#ffcc33","#fff7d0"]);
+    if(G.got>=GOLD_N){S.accOwn=S.accOwn||{};S.accOwn.gstat=1;gainCrate(5);SFX.rebirth();flash("#ffcc33",.4);banner("🗿 All "+GOLD_N+" golden statues! You won the Golden statue to carry, and 5 crates","g")}
+    else banner("🗿 Golden statue "+G.got+"/"+GOLD_N+" · +"+fmt(v),"g")}}}
+setInterval(()=>{try{goldTick()}catch(e){}},300);
+function drawGoldStatues(){const G=S&&S.gold;if(!G||SCN||MPW)return;const c=ctx;for(const q of G.sp){const d=Math.hypot(S.px-q[0],S.py-q[1]);if(d>340)continue;
+  if(d>150){const a=.5+.5*Math.sin(wt*5+q[0]);c.save();c.globalAlpha=a*(1-(d-150)/190);c.fillStyle="#fff7d0";c.translate(q[0],q[1]-10);c.rotate(wt);c.fillRect(-1,-5,2,10);c.fillRect(-5,-1,10,2);c.restore();continue}
+  c.save();c.translate(q[0],q[1]);c.fillStyle="rgba(0,0,0,.2)";c.beginPath();c.ellipse(0,1,8,3,0,0,7);c.fill();goldStatue(c,0,0,1);c.restore()}}
+function goldStatue(c,x,y,k){c.fillStyle="#a8781c";c.fillRect(x-6*k,y-4*k,12*k,4*k);const g=c.createLinearGradient(x-6*k,0,x+6*k,0);g.addColorStop(0,"#c9921c");g.addColorStop(.5,"#ffe08a");g.addColorStop(1,"#cf9a14");c.fillStyle=g;
+  c.beginPath();c.arc(x,y-17*k,3.4*k,0,7);c.fill();rrp(c,x-3.6*k,y-14*k,7.2*k,10*k,2*k);c.fill();c.fillRect(x-6.5*k,y-21*k,2.2*k,9*k);c.fillRect(x+4.3*k,y-21*k,2.2*k,9*k);
+  c.fillStyle="#fff";c.globalAlpha=.5+.5*Math.sin((typeof wt==="number"?wt:0)*4);c.fillRect(x-1.5*k,y-19*k,1.2*k,1.2*k);c.globalAlpha=1}
 /* ---------- lost pets: a townsperson loses a pet; search the circled area, then walk it home ---------- */
 let LF=null,lfT=360;
 const LF_KINDS=[["cat","🐱","their cat"],["dog","🐶","their dog"],["parrot","🦜","their parrot"],["bunny","🐰","their bunny"],["turtle","🐢","their turtle"]];
@@ -4519,10 +4536,29 @@ function trainTrick(k,back){const pd=S.pets[k],T=(pd.tr||[]).length;if(T>=TRICKS
     else{fails++;SFX.loss();buzz(30);if(fails>=2){banner(petOf(k).n+" got bored. Try again later","r");setTimeout(back,700)}else{$("smMsg").textContent="Oops! Watch again";setTimeout(play,600)}}}));play()}
 function performTricks(k){const pd=S.pets[k],T=pd.tr||[];if(!T.length||Date.now()-(pd.pf||0)<3600000)return;pd.pf=Date.now();const f=Math.round(Math.max(20,(S.fans||0)*.004)*T.length*(1+petBond(k)*.1));S.fans=(S.fans||0)+f;S.stats.petShows=(S.stats.petShows||0)+1;dirty=true;
   SFX.hot();confetti(120,null,null,["#ff8fa3","#ffcc33","#fff"]);banner(petOf(k).n+" did "+T.map(t=>TRICKS.find(x=>x[0]===t)[1]).join(" ")+" · +"+fmtN(f)+" fans","g")}
+/* ---------- pet races: tap CHEER to push your pet down the track against three rivals ---------- */
+function petRace(back){const mine=S.pet&&S.pets[S.pet]?S.pet:PETS.find(p=>S.pets[p.k]).k,others=PETS.filter(p=>p.k!==mine).sort(()=>Math.random()-.5).slice(0,3),names=["Zoomie","Biscuit","Captain Fluff","Noodle","Turbo","Princess","Mr. Wiggles","Pickles"].sort(()=>Math.random()-.5);
+  const top=1+petBond(mine)*.03,R=[{k:mine,n:petOf(mine).n,me:1,x:0,v:0,top},...others.map((p,i)=>({k:p.k,n:names[i],x:0,v:0,top:rnd(.9,1.08),rh:rnd(0,6)}))].sort(()=>Math.random()-.5);
+  room="petrace";$("room").hidden=false;$("room").innerHTML=`<div class="room-in">${roomHead("Pet race")}<div class="bxwrap"><canvas id="prCv" width="320" height="280"></canvas></div><button class="bigbtn" id="prGo" style="touch-action:manipulation">CHEER!<small>Tap fast, keep the rhythm</small></button><p class="fine">Bond makes your pet a little faster. Win for crates and tickets.</p></div>`;
+  let live=true,go=false,t0=performance.now(),last=t0,fin=[];const cv=$("prCv"),g=cv.getContext("2d");$("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{live=false;back()};
+  const me=R.find(r=>r.me),cheer=e=>{if(e)e.preventDefault();if(!go||me.done)return;me.v=Math.min(me.top*1.15,me.v+.16);SFX.tick(.3+me.v*.4);buzz(6)};$("prGo").addEventListener("pointerdown",cheer);cv.addEventListener("pointerdown",cheer);
+  const loop=now=>{if(!live||room!=="petrace")return;const dt=Math.min(.05,(now-last)/1000);last=now;const t=(now-t0)/1000;if(!go&&t>=3){go=true;SFX.hot()}
+    if(go)R.forEach(r=>{if(r.done)return;if(r.me)r.v=Math.max(0,r.v-dt*.55);else r.v=r.top*(.86+.14*Math.sin(t*1.7+r.rh))*Math.min(1,(t-3)/1.2);r.x+=r.v*dt*11.5;if(r.x>=100){r.x=100;r.done=true;fin.push(r)}});
+    g.fillStyle="#3f8a4e";g.fillRect(0,0,320,280);g.fillStyle="#c9a26b";for(let i=0;i<4;i++){g.fillRect(0,30+i*62,320,46)}g.fillStyle="rgba(255,255,255,.5)";for(let i=0;i<4;i++)for(let j=0;j<16;j++)g.fillRect(j*20+((i%2)*10),74+i*62,8,2);
+    g.fillStyle="#fff";for(let r=0;r<12;r++){g.fillStyle=(r%2)?"#fff":"#1b1d22";g.fillRect(286,30+r*20,8,10);g.fillStyle=(r%2)?"#1b1d22":"#fff";g.fillRect(294,30+r*20,8,10)}
+    R.forEach((r,i)=>{const x=24+r.x*2.6,y=70+i*62;g.save();g.translate(x,y);g.scale(1.9,1.9);drawPetAt(0,0,r.k,go&&!r.done&&r.v>.05,t*(.6+r.v),g);g.restore();g.font="800 10px "+FONTS.b;g.textAlign="left";g.fillStyle=r.me?"#ffcc33":"#fff";g.fillText((r.me?"★ ":"")+r.n+(r.done?" · #"+(fin.indexOf(r)+1):""),6,40+i*62);if(r.me){g.fillStyle="rgba(0,0,0,.35)";g.fillRect(200,33+i*62,80,6);g.fillStyle="#ffcc33";g.fillRect(200,33+i*62,80*Math.min(1,r.v/(r.top*1.15)),6)}});
+    if(!go){g.fillStyle="rgba(0,0,0,.5)";g.fillRect(0,0,320,280);g.fillStyle="#fff";g.font="900 64px "+FONTS.d;g.textAlign="center";g.fillText(String(3-Math.floor(t)),160,160)}
+    if(me.done&&fin.length>=1){live=false;const pos=fin.indexOf(me)+1;finish(pos);return}
+    requestAnimationFrame(loop)};requestAnimationFrame(loop);
+  const finish=pos=>{const pd=S.pets[mine],tix=[0,40,20,10,5][pos];S.tix=(S.tix||0)+tix;S.stats.petRaces=(S.stats.petRaces||0)+1;let ex="";
+    if(pos===1){S.stats.petWins=(S.stats.petWins||0)+1;gainCrate(1);ex=" + a crate";if(pd.rd!==dayKey()){pd.rd=dayKey();pd.bond=Math.min(10,(pd.bond||0)+1);ex+=" · bond +1"}SFX.rebirth();confetti(200)}else SFX[pos===2?"hot":"loss"]();dirty=true;
+    setTimeout(()=>{if(room!=="petrace")return;$("room").innerHTML=`<div class="room-in">${roomHead("Pet race")}<div class="shend"><b>${["","🥇","🥈","🥉","🏅"][pos]}</b><span>${esc(petOf(mine).n)} finished #${pos}</span><div class="kv"><div><span class="eyebrow">Tickets</span><b>+${tix}</b></div><div><span class="eyebrow">Race wins</span><b>${S.stats.petWins||0}</b></div></div>${ex?`<p class="fine">${ex.slice(3)}</p>`:""}</div><button class="bigbtn" id="prAgain">Race again<small>5 energy</small></button><button class="bigbtn alt" id="prBack">Back to pets<small>&nbsp;</small></button></div>`;
+      $("prBack").onclick=back;$("leaveBtn").onclick=back;$("prAgain").onclick=e=>{if(!spend(5,e.currentTarget))return;petRace(back)}},700)}}
 function openPets(back){S.pets=S.pets||{};
   const draw=()=>{const own=PETS.filter(p=>S.pets[p.k]);
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Pets")}
       <div class="note">Your pet follows you around town and gives you its perk. Pet it once a day to grow your bond (up to 10): every level makes its perk 10% stronger.</div>
+      ${own.length?`<button class="reqbtn prbtn" id="pRace">🏁 Pet races<b>Cheer your pet to the finish · 5 energy</b></button>`:""}
       ${own.length?`<div class="sechead"><h3>Your pets</h3></div><div class="petgrid">${own.map(p=>{const pd=S.pets[p.k],today=pd.day===dayKey();return `<div class="petcard${S.pet===p.k?" on":""}">${petArt(p.k)}<b>${p.n}</b><small>Bond ${petBond(p.k)}/10</small><div class="bondbar"><i style="width:${petBond(p.k)*10}%"></i></div>
         ${(()=>{const a=petAdv(p.k);if(!a)return `<div class="petbtns"><button data-walk="${p.k}" ${S.pet===p.k?"disabled":""}>${S.pet===p.k?"Walking":"Walk"}</button><button data-pat="${p.k}" ${today?"disabled":""}>${today?"Petted ❤":"Pet"}</button></div><div class="petbtns">${PADV.map(T=>`<button data-adv="${p.k}|${T.k}" title="${T.n}">🧭 ${T.m<60?T.m+"m":T.m/60+"h"}</button>`).join("")}</div>`;
           return null})()||""}${(()=>{const a=petAdv(p.k);if(a)return "";const T=(S.pets[p.k].tr||[]).length;return `<div class="petbtns"><button data-trn="${p.k}" ${T>=TRICKS.length?"disabled":""}>🎓 ${T>=TRICKS.length?"All tricks":"Teach "+TRICKS[T][0]}</button><button data-prf="${p.k}" ${!T||Date.now()-(S.pets[p.k].pf||0)<3600000?"disabled":""}>🎪 Show</button></div>`})()}${(()=>{const a=petAdv(p.k);if(!a)return "";
@@ -4532,6 +4568,7 @@ function openPets(back){S.pets=S.pets||{};
       <div class="perks">${PETS.map(p=>{const o=!!S.pets[p.k];return `<button class="perk opp" data-pet="${p.k}" ${o||S.cash<p.cost?"disabled":""}><span class="oav petav">${petArt(p.k)}</span><span class="t">${p.n}${o?' <em class="beat">YOURS</em>':""}</span><span class="d">${p.d}</span><span class="c">${o?"Owned":fmt(p.cost)}</span></button>`}).join("")}</div></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-pet]").forEach(b=>b.onclick=()=>{const p=petOf(b.dataset.pet);if(S.pets[p.k]||S.cash<p.cost)return;S.cash-=p.cost;S.pets[p.k]={bond:0,day:-1};S.pet=p.k;PET=null;dirty=true;SFX.rebirth();confetti(90);banner(p.n+" adopted","g");draw();updMini()});
+    {const pr=$("pRace");if(pr)pr.onclick=e=>{if(!spend(5,e.currentTarget))return;petRace(()=>openPets(back))}}
     $("room").querySelectorAll("[data-trn]").forEach(b=>b.onclick=()=>trainTrick(b.dataset.trn,()=>openPets(back)));
     $("room").querySelectorAll("[data-prf]").forEach(b=>b.onclick=()=>{performTricks(b.dataset.prf);draw()});
     $("room").querySelectorAll("[data-adv]").forEach(b=>b.onclick=()=>{const[k,t]=b.dataset.adv.split("|"),T=PADV.find(x=>x.k===t);if(!T||petAdv(k))return;S.pets[k].adv={k:t,m:T.m,t0:Date.now()};if(S.pet===k){S.pet=null;PET=null}dirty=true;SFX.hot();banner(petOf(k).n+" set off: "+T.n,"a");draw()});
@@ -4592,7 +4629,7 @@ const ACCS=[
  {k:"starg",cc:"#ffcc33",s:"g",n:"Star shades",cost:2200,rz:1},{k:"goggles",cc:"#2fa6d9",s:"g",n:"Ski goggles",cost:9000,rz:2},{k:"g3d",s:"g",n:"3D glasses",cost:1500,rz:1},
  {k:"tie",cc:"#2a5bd7",s:"c",n:"Necktie",cost:1400,rz:1},{k:"lei",s:"c",n:"Flower lei",cost:5000,rz:2},{k:"whistle",cc:"#e2364a",s:"c",n:"Coach whistle",cost:900,rz:1},
  {k:"skate",cc:"#e2364a",s:"b",n:"Skateboard",cost:6500,rz:2},{k:"quiver",cc:"#7a5a36",s:"b",n:"Arrow quiver",cost:120000,rz:3},{k:"bwings",cc:"#ff4fd8",s:"b",n:"Butterfly wings",cost:5e6,rz:5},
- {k:"icecream",cc:"#ff8fa3",s:"x",n:"Ice cream",cost:350,rz:1},{k:"balloon",cc:"#e2364a",s:"x",n:"Balloon",cost:600,rz:1},{k:"pizza",s:"x",n:"Pizza slice",cost:450,rz:1},{k:"mic",cc:"#9aa3b3",s:"x",n:"Microphone",cost:12000,rz:2},{k:"bball",s:"x",n:"Basketball",cost:3000,rz:1},{k:"umbrella",cc:"#2a5bd7",s:"x",n:"Umbrella",cost:20000,rz:2},{k:"wand",cc:"#ffcc33",s:"x",n:"Magic wand",cost:4e6,rz:4,d:"Goes with the robe"},
+ {k:"icecream",cc:"#ff8fa3",s:"x",n:"Ice cream",cost:350,rz:1},{k:"balloon",cc:"#e2364a",s:"x",n:"Balloon",cost:600,rz:1},{k:"pizza",s:"x",n:"Pizza slice",cost:450,rz:1},{k:"mic",cc:"#9aa3b3",s:"x",n:"Microphone",cost:12000,rz:2},{k:"bball",s:"x",n:"Basketball",cost:3000,rz:1},{k:"umbrella",cc:"#2a5bd7",s:"x",n:"Umbrella",cost:20000,rz:2},{k:"gstat",s:"x",n:"Golden statue",cost:0,rz:8,arc:1,d:"Find all 12 hidden statues"},{k:"wand",cc:"#ffcc33",s:"x",n:"Magic wand",cost:4e6,rz:4,d:"Goes with the robe"},
  {k:"ninja",cc:"#1b1d22",s:"o",n:"Ninja suit",cost:25000,rz:2},{k:"chefw",cc:"#f4f4f4",s:"o",n:"Chef whites",cost:12000,rz:1,d:"Goes with the chef's hat"},{k:"lab",cc:"#f4f4f4",s:"o",n:"Lab coat",cost:40000,rz:2},{k:"pirate",cc:"#7a1d2a",s:"o",n:"Pirate coat",cost:400000,rz:3,d:"Goes with the pirate hat"},{k:"dino",cc:"#3f8a4e",s:"o",n:"Dino onesie",cost:150000,rz:3},{k:"tux",cc:"#141824",s:"o",n:"Tuxedo",cost:1e6,rz:3},{k:"knight",cc:"#9aa3b3",s:"o",n:"Knight armour",cost:2e6,rz:4},{k:"hero",cc:"#2a5bd7",s:"o",n:"Hero suit",cost:3e6,rz:4,d:"Goes with the cape"},{k:"space",cc:"#f2f2f2",s:"o",n:"Space suit",cost:1e8,rz:5,d:"Goes with the space helmet"}];
 const ACC_PAL=["#e2364a","#ff7a3d","#ffcc33","#2fd28a","#2fa6d9","#2a5bd7","#7a2fd6","#ff4fd8","#ff8fa3","#f2f2f2","#9aa3b3","#1b1d22","#8a5a2c","#3f8a4e"];
 const ACC_SLOT={h:"Hats",o:"Outfit",g:"Glasses",c:"Neck",b:"Back",x:"In hand"};
@@ -4685,6 +4722,7 @@ function shirtStyle(c,k,x,y,hx,o){
   if(k===7){c.fillStyle="rgba(255,255,255,.35)";c.beginPath();c.ellipse(x,y-29.5,hx*.38,1.8,0,0,7);c.fill();c.fillStyle="rgba(0,0,0,.12)";c.fillRect(x-hx+2,y-14,2*hx-4,1.4)}
   if(k===5){c.fillStyle="#fff";c.font="900 8px "+FONTS.d;c.textAlign="center";c.textBaseline="middle";c.fillText("10",x,y-20);c.fillStyle="rgba(255,255,255,.5)";c.fillRect(x-hx+1,y-29,2*hx-2,1.4)}}
 function accHand(c,k,x,y){
+  if(k==="gstat"){goldStatue(c,x,y+2,.6);return}
   if(k==="icecream"){c.fillStyle="#d9a066";c.beginPath();c.moveTo(x-2.6,y-5);c.lineTo(x+2.6,y-5);c.lineTo(x,y+2);c.closePath();c.fill();c.fillStyle=CC(k,"#ff8fa3");c.beginPath();c.arc(x,y-6.5,3,0,7);c.fill();c.fillStyle="#e2364a";c.beginPath();c.arc(x+.5,y-9.6,.9,0,7);c.fill();return}
   if(k==="balloon"){const bx=x+3+Math.sin(wt*1.6)*2,by=y-34+Math.sin(wt*2.1)*1.5;c.strokeStyle="rgba(0,0,0,.4)";c.lineWidth=.7;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+4,y-14,bx,by+7);c.stroke();c.fillStyle=CC(k,"#e2364a");c.beginPath();c.ellipse(bx,by,5.5,7,0,0,7);c.fill();c.fillStyle="rgba(255,255,255,.4)";c.beginPath();c.ellipse(bx-2,by-2.5,1.4,2.2,-.4,0,7);c.fill();return}
   if(k==="umbrella"){c.strokeStyle="#3b2a20";c.lineWidth=1.2;c.beginPath();c.moveTo(x,y+1);c.lineTo(x,y-28);c.stroke();c.beginPath();c.arc(x-1.5,y+1,1.5,0,Math.PI);c.stroke();const col=CC(k,"#2a5bd7");c.fillStyle=col;c.beginPath();c.arc(x,y-26,15,Math.PI,0);[1,.5,0,-.5,-1].forEach((f,i)=>c.quadraticCurveTo(x+f*15+3.75,y-23,x+(f-.5)*15,y-26));c.closePath();c.fill();c.fillStyle="rgba(255,255,255,.22)";c.beginPath();c.moveTo(x,y-41);c.quadraticCurveTo(x-4,y-34,x-7.5,y-26);c.lineTo(x,y-26);c.closePath();c.fill();return}
@@ -5176,7 +5214,9 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=57,WN=[
+const WN_VER=59,WN=[
+ ["🏁","Pet races","From the Pets screen, race your pet against three rivals. Tap CHEER to keep it sprinting. Winners get crates, tickets and a daily bond boost.","2026-10-07T05:55"],
+ ["🗿","Something shiny…","Rumour says 12 golden statues are hidden around town. They only glint when you get close. Find them all for a special prize.","2026-10-07T05:52"],
  ["🌈","Weather","Rain showers now roll through town. Carry an umbrella to earn fans while it pours, and when the rain stops, chase the rainbow to a pot of gold.","2026-10-07T05:50"],
  ["👠","Runway & outfit sets","A daily fashion show at the Mall: dress for the theme, walk the runway and get scored by three judges. Wear full sets (Archmage, Captain, Astronaut, Gentleman and 8 more) for bonus rizz. Plus a photo booth in the Boutique to save your look.","2026-10-07T05:45"],
  ["🎨","Recolour your gear","Caps, beanies, bandanas, capes, scarves, ties and more now come in 14 colours. Pick them in the Boutique under Colours. Friends see your colours online.","2026-10-07T05:40"],
