@@ -1198,6 +1198,7 @@ const ACH=[
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
  ["w4open","Tycoon","Open the rift to World 4",()=>!!(S.w4&&S.w4.open),0],
  ["w4all","Frontier mogul","Unlock all five World 4 zones",()=>!!(S.w4&&Object.keys(S.w4.unl).length>=5),0],
+ ["rides10","Thrill seeker","Ride your own Theme Park rides 10 times",()=>(S.stats.rides||0)>=10,0],
  ["dragon5","Dragon slayer","Drive off 5 dragon attacks in the Kingdom",()=>(S.stats.dragons||0)>=5,0],
  ["wish10","Wishful thinking","Catch 10 shooting stars",()=>(S.stats.wishes||0)>=10,50000],
  ["ghost25","Ghostbuster","Catch 25 ghosts",()=>(S.stats.ghosts||0)>=25,60000],
@@ -5397,7 +5398,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=66,WN=[
+const WN_VER=67,WN=[
+ ["🎡","Ride your own park","Tap a ride in your World 4 Theme Park and hit Ride it for a bonus every 10 minutes. And there's a new Tycoon tab on the world leaderboard.","2026-10-07T06:25"],
  ["💎","World 4: Tycoon Frontier","A rift portal in Deep Time (after 10 Ziggurat tiers) opens World 4, run on Gems. Build five zones from scratch: Sky Islands (storms and shields), a Theme Park (rides and happiness), an Underwater City (oxygen), a Robot Factory (production chains) and a Kingdom (villagers and dragons). Zones keep earning while you're away.","2026-10-07T06:20"],
  ["🌠","Shooting stars","Look up at night: shooting stars streak across the sky. Tap one before it fades to make a wish.","2026-10-07T06:15"],
  ["👻","Spooky nights","Ghosts drift around town after dark, and lots of them in October! Catch them for candy and trade it at the Night Market's Candy corner for a Ghost sheet, Witch hat, Vampire cape and Candy bucket.","2026-10-07T06:12"],
@@ -5646,12 +5648,12 @@ function bindGarage(redraw){const cv=$("garCv");if(cv){const g=cv.getContext("2d
 
 /* ================= world leaderboard: every player's best, kept on the broker ================= */
 const LBT="fliprush/v1/lb/";let lbPushT=20,GLB=null,glbK="nw";
-function lbMine(){return{n:mpName(),nw:Math.round(netWorth()),lv:repLevel(),pr:S.pr,f:Math.round(S.fans||0),cm:S.height||170,el:Math.round(S.elo||1000),ar:Object.values(S.arcBest||{}).reduce((a,b)=>a+(+b||0),0),t:Date.now()}}
+function lbMine(){return{n:mpName(),nw:Math.round(netWorth()),lv:repLevel(),pr:S.pr,f:Math.round(S.fans||0),cm:S.height||170,el:Math.round(S.elo||1000),ar:Object.values(S.arcBest||{}).reduce((a,b)=>a+(+b||0),0),ty:S.w4&&S.w4.open?Math.round(w4Rate()):0,t:Date.now()}}
 function lbTick(dt){if(!ACC||!ACC.cls||!ACC.cls.length||ACC.kicked)return;lbPushT-=dt;if(lbPushT>0)return;lbPushT=300;try{cloudPut(ACC.cls,LBT+ACC.h,JSON.stringify(lbMine()))}catch(e){}}
 function lbFetch(){return new Promise(async res=>{let cls=ACC&&ACC.cls&&ACC.cls.length?ACC.cls:null,own=false;if(!cls){try{cls=await cloudConnect();own=true}catch(e){cls=[]}}if(!cls.length)return res(null);
   const seen={};const h=(tp,buf)=>{if(!tp.startsWith(LBT))return;try{const d=JSON.parse(buf.toString());const id=tp.slice(LBT.length);if(d&&typeof d.n==="string"&&d.nw>=0&&isFinite(d.nw)&&(!seen[id]||seen[id].t<d.t))seen[id]={...d,id}}catch(e){}};
   cls.forEach(c=>{c.on("message",h);c.subscribe(LBT+"#",{qos:0})});setTimeout(()=>{cls.forEach(c=>{c.removeListener("message",h);try{c.unsubscribe(LBT+"#")}catch(e){}if(own)try{c.end(true)}catch(e){}});res(Object.values(seen).filter(d=>Date.now()-d.t<60*864e5))},3200)})}
-const GLBM=[["nw","Net worth",d=>d.nw,fmt],["lv","Level",d=>d.lv||0,v=>"Lv "+v],["pr","Max lift",d=>d.pr||20,v=>v+" kg"],["f","Fans",d=>d.f||0,fmtN],["cm","Height",d=>d.cm||170,v=>v+" cm"],["el","Duel rating",d=>d.el||1000,v=>dlTier(v)[2]+" "+v],["ar","Arcade",d=>d.ar||0,v=>fmtN(v)+" pts"]];
+const GLBM=[["nw","Net worth",d=>d.nw,fmt],["lv","Level",d=>d.lv||0,v=>"Lv "+v],["pr","Max lift",d=>d.pr||20,v=>v+" kg"],["f","Fans",d=>d.f||0,fmtN],["cm","Height",d=>d.cm||170,v=>v+" cm"],["el","Duel rating",d=>d.el||1000,v=>dlTier(v)[2]+" "+v],["ar","Arcade",d=>d.ar||0,v=>fmtN(v)+" pts"],["ty","Tycoon",d=>d.ty||0,v=>gemF(v)+"/s"]];
 function openWorldLB(back){room="worldlb";
   const draw=()=>{const M_=GLBM.find(x=>x[0]===glbK),me=ACC&&ACC.h;let rows=GLB?GLB.slice():null;if(rows){const mine=lbMine();rows=rows.filter(r=>r.id!==me);rows.push({...mine,id:me,me:1});rows.sort((a,b)=>M_[2](b)-M_[2](a))}
     const myRank=rows?rows.findIndex(r=>r.me)+1:0;
@@ -7123,9 +7125,19 @@ function openW4Zone(zk,back){const z=W4ZK(zk),W=w4();room="w4z";W4Z_CUR=zk;$("ro
       sh.querySelectorAll("[data-w4b]").forEach(bt=>bt.onclick=()=>{const b=W4B(z,bt.dataset.w4b),cost=w4Cost(z,b);if(W.gems<cost||(b.max&&w4Count(zk,b.k)>=b.max))return;W.gems-=cost;Z.t[W4SEL]={k:b.k,l:1};S.stats.w4built=(S.stats.w4built||0)+1;W4SEL=-1;dirty=true;SFX.buy();confetti(50,null,null,[z.c,"#fff"]);draw()})}
     else{const b=W4B(z,t.k),uc=w4UpCost(b,t.l),mx=t.l>=W4_MAXL,refund=Math.round(b.c*t.l*.4);sh.innerHTML=`<div class="w4sh"><div class="sechead"><h3>${b.ic} ${b.n} · level ${t.l}</h3><span class="eyebrow">${c.out[W4SEL]?gemF(c.out[W4SEL]*w4Mult())+"/s":b.d||"No output"}</span></div>
       ${c.st[W4SEL]&&c.st[W4SEL]!=="⚡"?`<div class="note">${{"🔌":"Not connected: build a "+(b.need&&W4B(z,b.need).n)+" next to it.","⛈️":"Knocked out by the storm. A Storm shield next to it would have protected it.","🫧":"Short of oxygen. Build or upgrade Air pumps.","👷":"Not enough villagers. Build or upgrade Cottages."}[c.st[W4SEL]]}</div>`:""}
+      ${b.ride?`<button class="bigbtn alt2" id="w4Ride" ${Date.now()-((W.rideT||{})[b.k]||0)<600000?"disabled":""}>${b.ic} Ride it<small>${Date.now()-((W.rideT||{})[b.k]||0)<600000?"Ride again in "+Math.ceil((600000-(Date.now()-((W.rideT||{})[b.k]||0)))/60000)+" min":"Free · visitors cheer, bonus Gems"}</small></button>`:""}
       <div class="seg3"><button class="cta" id="w4Up" ${mx||W.gems<uc?"disabled":""}>${mx?"Max level":"Upgrade · "+gemF(uc)}</button><button class="cta ghost" id="w4Sell">Sell · ${gemF(refund)}</button></div></div>`;
+      {const rb=$("w4Ride");if(rb)rb.onclick=()=>{W.rideT=W.rideT||{};W.rideT[b.k]=Date.now();dirty=true;w4RideFx(b,t.l,()=>{const v=Math.max(50,w4Calc(zk).rate*w4Mult()*60*(1+t.l*.1));W.gems+=v;W.tot+=v;S.stats.rides=(S.stats.rides||0)+1;dirty=true;SFX.rebirth();confetti(180);banner(b.ic+" What a ride! +"+gemF(v),"g");draw()})}}
       $("w4Up").onclick=()=>{if(mx||W.gems<uc)return;W.gems-=uc;t.l++;dirty=true;SFX.level();draw()};$("w4Sell").onclick=()=>{W.gems+=refund;Z.t[W4SEL]=null;W4SEL=-1;dirty=true;SFX.sell();draw()}}};
   W4SEL=-1;draw()}
+function w4RideFx(b,L,done){const ov=document.createElement("div");ov.className="crateov";ov.innerHTML=`<canvas width="320" height="420" style="width:min(90vw,340px);height:auto;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)"></canvas><p class="crhint">${b.n}!</p>`;document.body.appendChild(ov);const cv=ov.querySelector("canvas"),g=cv.getContext("2d"),t0=performance.now(),D=5200;SFX.hot();
+  const fr=now=>{const t=(now-t0)/1000,k=Math.min(1,(now-t0)/D);g.fillStyle="#8fd3ff";g.fillRect(0,0,320,420);g.fillStyle="#fff";for(let i=0;i<4;i++){const x=((i*110-t*30)%440+440)%440-60;g.beginPath();g.arc(x,60+i*20,22,0,7);g.arc(x+24,52+i*20,26,0,7);g.arc(x+50,60+i*20,20,0,7);g.fill()}
+    g.fillStyle="#7fc46a";g.fillRect(0,360,320,60);
+    if(b.k==="ferris"){const cx=160,cy=200,R=130;g.strokeStyle="#7a2fd6";g.lineWidth=6;g.beginPath();g.arc(cx,cy,R,0,7);g.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4+t*.8;g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);g.stroke();g.fillStyle=["#e2364a","#ffcc33","#2fd28a","#2fa6d9"][i%4];g.fillRect(cx+Math.cos(a)*R-14,cy+Math.sin(a)*R,28,20)}g.fillStyle="#3a2266";g.fillRect(cx-8,cy,16,170)}
+    else{const track=x=>230+Math.sin(x*.025)*90*Math.min(1,.4+L*.06)+Math.sin(x*.07)*20;g.strokeStyle="#e2364a";g.lineWidth=6;g.beginPath();for(let x=0;x<=320;x+=4){const y=track(x+t*140);x?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();g.strokeStyle="rgba(122,47,214,.6)";g.lineWidth=3;for(let x=10;x<320;x+=26){g.beginPath();g.moveTo(x,track(x+t*140));g.lineTo(x,360);g.stroke()}
+      const cy=track(160+t*140),sl=(track(162+t*140)-track(158+t*140))/4;g.save();g.translate(160,cy-14);g.rotate(Math.atan(sl));g.fillStyle=b.k==="bump"?"#2fa6d9":b.k==="caro"?"#ffcc33":"#ffcc33";rrp(g,-30,-14,60,24,8);g.fill();drawPerson(-10,-8,{g,size:.6,...myLook(),acc:S.acc,ph:t,pose:Math.sin(t*6)>0?"bi":null});drawPerson(12,-8,{g,size:.6,shirt:"#ff4fd8",skin:"#e8b896",hair:"#3b2a20",ph:t,pose:"bi"});g.restore();
+      if(Math.abs(sl)>.6){g.font="900 26px "+FONTS.d;g.textAlign="center";g.fillStyle="#fff";g.fillText(pick(["AAAH!","WHEEE!","WOOO!"]),160,110)}}
+    if(k<1)requestAnimationFrame(fr);else{ov.remove();done()}};requestAnimationFrame(fr)}
 function openGemEx(back){const W=w4(),today=dayKey(),done=W.ex===today,give=Math.max(100,Math.round(w4Rate()*900)),cost=Math.round(S.cash*.1);room="gemex";$("room").hidden=false;
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Gem Exchange")}<div class="art bhart"><div class="bhdisk" style="background:conic-gradient(#4fe3ff,#ff4fd8,#ffcc33,#4fe3ff)"></div><div class="bhcore" style="background:#0b1a2a"></div></div>
     <div class="note">World 4 runs on <b>Gems ${GEM}</b>. Your old money can't buy much here: once a day the exchange swaps <b>10% of your cash</b> for a bag of Gems worth 15 minutes of your zones' output.</div>
