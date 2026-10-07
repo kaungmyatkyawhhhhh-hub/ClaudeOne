@@ -304,7 +304,9 @@ local function neonSign(parent, cframe, text, color, w, h)
 end
 
 local function starterRoom(gym)
-	local room = Kit.fresh(gym, "Folder", "StarterGym")
+	-- a Persistent model (not a Folder): the menu shot looks at the gym, so it must always be streamed in
+	local room = Kit.fresh(gym, "Model", "StarterGym")
+	room.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
 	starterShell(room)
 	local S = Gyms.Starter
 	local props = Instance.new("Folder")

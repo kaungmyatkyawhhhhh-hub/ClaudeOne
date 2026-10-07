@@ -282,7 +282,13 @@ Starter gym: warm, old-school, brick walls.
 
 ## 15. World, menu, onboarding
 Town hub: starter gym, pro gym, beach gym + posing stage, skate park, smoothie bar, clothing store.
-Menu: gym camera pan, player character, Play, Titles, Wardrobe, Crew, Settings, offline gains/streak/Muscle of the Day info.
+Start: a loading screen from the first frame (ReplicatedFirst: dark, GYM ARC title, segmented bar) until the area behind
+the menu has streamed in (RequestStreamAroundAsync at the shot, ~8s max; the gym building, front and entrance are
+Persistent models). Menu: a fixed eye-height shot of the starter gym entrance with a very slow drift (the MenuCamera
+part in Gym.Entrance; never sky or baseplate), a dark see-through card on the right (big GYM ARC title in Oswald,
+"Everyone starts tiny." in Nunito, a solid white PLAY button with a hover/press bounce), Titles, Settings,
+offline gains/streak/Muscle of the Day info. Play: the camera glides in through the door to behind the character,
+then the HUD fades in.
 NO shop on menu. New players get a simplified menu.
 First 5 minutes: genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack
 → stats (inspect mode) → first quest → Growth Spurt goal shown. Taught with glowing paths and one-line coach messages.

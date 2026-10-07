@@ -98,7 +98,9 @@ for where everything sits in Studio.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.
 - `OverheadTitleClient`: local effects on overhead title tags.
-- `MenuClient`: menu screen on join (covers data loading; Play, plus Titles/Settings for returning players).
+- `LoadingScreen` (ReplicatedFirst): replaces the default loading screen until MenuClient sets the LocalPlayer attribute `MenuReady` (`MenuLoad` 0..1 drives its bar).
+- `MenuClient`: menu screen on join: fixed entrance shot from the `Workspace.Gym.Entrance.MenuCamera` part (streams that area in first), card with Play (+ Titles/Settings for returning players), glide in through the door on Play, then the HUD fades in.
+- `Shared/UI/UIFonts`: the UI fonts (Oswald Heading/Number, Nunito Body/BodyBold).
 - `QuestClient`: quest tracker, Coach speech, Muscle of the Day note.
 - `ShakeClient`: Drink shake button + boost countdown, shake/cat notes, cat tail wag.
 - `RetentionClient`: rush hour pill, streak/offline/re-rack/DNA token notes.

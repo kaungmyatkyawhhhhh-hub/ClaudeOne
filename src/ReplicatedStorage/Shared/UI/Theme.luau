@@ -83,6 +83,8 @@ Theme.Tile = {
 
 Theme.TextSize = {
 	Slam = 72,  -- one-off slams of a big moment (the genetics "S!")
+	Hero = 56,  -- the GYM ARC title on the menu card (HeroCompact on phones)
+	HeroCompact = 38,
 	Huge = 40,  -- big numbers
 	Large = 22, -- screen titles
 	Popup = 26, -- 3D gain popups

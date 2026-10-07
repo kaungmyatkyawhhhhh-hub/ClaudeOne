@@ -365,8 +365,10 @@ end
 -- Gym forecourt + exteriors
 ------------------------------------------------------------------------
 local function buildGymFront()
-	local front = Instance.new("Folder")
+	-- a Persistent model (not a Folder): the menu shot looks at the gym front, so it must always be streamed in
+	local front = Instance.new("Model")
 	front.Name = "GymFront"
+	front.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
 	front.Parent = folder
 	local f = Town.Forecourt
 	-- paving (light stone with darker bands) around the entrance hall, never inside it

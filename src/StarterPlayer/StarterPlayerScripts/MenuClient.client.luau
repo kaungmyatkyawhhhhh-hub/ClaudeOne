@@ -1,12 +1,18 @@
--- MenuClient: the menu screen shown on join. It covers data loading, frames the player's character with a slow
--- camera drift (the character faces the camera, the gym shows through the doorway behind them), and holds Play
--- (+ Titles, Settings and a few info lines for returning players: streak, offline coins, Muscle of the Day; new
--- players get a simplified menu with Play only). Movement is frozen and the side menu is hidden until Play.
+-- MenuClient: the menu screen shown on join. A fixed shot of the GYM ARC entrance (eye height, very slow drift) is behind
+-- a dark see-through card with the title, "Everyone starts tiny." and a bold Play button (+ Titles, Settings and a few
+-- info lines for returning players: streak, offline coins, Muscle of the Day; new players get Play only).
+-- Start: ReplicatedFirst's LoadingScreen covers everything until this script has streamed in the area around the shot
+-- (Player:RequestStreamAroundAsync) and set the LocalPlayer attribute "MenuReady"; "MenuLoad" (0..1) feeds its bar.
+-- The shot is the "MenuCamera" part in Workspace.Gym.Entrance (a Persistent model, so it and the entrance are always
+-- there): move that part in Studio to reframe; its FocusDistance attribute is how far ahead it looks.
+-- Play: the card fades, the camera glides in through the door to behind the character, then the HUD fades in.
+-- Movement is frozen and the side menu is hidden until then.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -21,6 +27,7 @@ local ShowOff = require(Shared.Config.ShowOff)
 local Legends = require(Shared.Config.Legends)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
+local UIFonts = require(Shared.UI.UIFonts)
 local Audio = require(Shared.Audio)
 
 local player = Players.LocalPlayer
@@ -28,25 +35,28 @@ local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical = Enum.FillDirection.Vertical
 
--- Camera framing (studs / degrees) for a 5'0" character (height scale 1), scaled by the character's height so a
--- 4'0" newcomer and a 7'0" giant both fill the shot. The character sits between the player card and the panel.
-local CAMERA = {
-	Distance = 8.5,     -- from the character's chest
-	Height = 1.0,       -- above the chest
-	ChestHeight = 0.9,  -- chest above the root part
-	AimOffset = 0.6,    -- aim this far to the camera's right of the character, so they sit a bit left of center
-	Sway = 18,          -- slow left/right drift
-	SwaySpeed = 0.12,   -- radians per second
+local SHOT = {
+	-- used when the MenuCamera part is missing: left of the entrance looking along the gym front, the door left of center
+	-- (the card is on the right, over the long brick front and the Pro gym; the entrance block hides the wall poster)
+	Eye = Vector3.new(-8, 5.4, 38),
+	Focus = Vector3.new(10.5, 7.2, 8),
 	Fov = 55,
-	ExitTime = 0.7,     -- camera glides behind the character on Play
-	WallGap = 0.6,      -- keep the camera this far in front of walls
+	Drift = 0.7,        -- studs side to side
+	DriftUp = 0.15,     -- studs up and down
+	DriftSpeed = 0.14,  -- radians per second (one sway takes ~45 s)
+	StreamTimeout = 8,  -- seconds to wait for the area around the shot
+	ExitTime = 1.6,     -- camera glide from the shot to behind the character
+	HudFade = 0.35,
 }
--- Phones in landscape (667x375 and similar) get a compact layout so the panel fits the height and the character
--- still shows between the player card and the panel.
+-- Phones in landscape (667x375 and similar) get a compact card.
 local COMPACT = Theme.IsCompact()
-local PANEL_WIDTH = COMPACT and 250 or 300
+local PANEL_WIDTH = COMPACT and 250 or 320
 local MARGIN = COMPACT and Spacing.L or Spacing.XL * 2
-local BUTTON_HEIGHT = COMPACT and Theme.MinTouch or 52
+local PLAY_HEIGHT = COMPACT and 48 or 58
+local BUTTON_HEIGHT = COMPACT and Theme.MinTouch or 48
+local HOVER_SCALE = 1.04
+-- full-screen and menu UIs that are not part of the HUD fade-in after Play
+local NOT_HUD = { MenuScreen = true, LoadingScreen = true, GeneticsScreen = true }
 
 ------------------------------------------------------------------------
 -- UI
@@ -64,30 +74,88 @@ local panel = Theme.Panel({
 	Theme.List(Vertical, COMPACT and "S" or "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
 
-Theme.Text({ LayoutOrder = 1, Text = "GYM ARC", Font = "SemiBold", TextSize = COMPACT and "Large" or "Huge", Size = UDim2.new(1, 0, 0, COMPACT and 28 or 44), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-Theme.Text({ LayoutOrder = 2, Text = "Everyone starts tiny.", Font = "Regular", TextSize = "Body", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, COMPACT and 0 or Spacing.S), BackgroundTransparency = 1, Parent = panel })
+local title = Theme.Text({ LayoutOrder = 1, Text = "GYM ARC", TextSize = COMPACT and "HeroCompact" or "Hero", Size = UDim2.new(1, 0, 0, COMPACT and 44 or 64), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+title.FontFace = UIFonts.Heading
+local tagline = Theme.Text({ LayoutOrder = 2, Text = "Everyone starts tiny.", TextSize = "Body", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+tagline.FontFace = UIFonts.Body
+New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, COMPACT and Spacing.XS or Spacing.M), BackgroundTransparency = 1, Parent = panel })
 
-local function menuButton(order, style, text)
-	local button = Theme.Button(style, { Name = text, LayoutOrder = order, Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT), Parent = panel })
-	local label = Theme.Text({ Text = text, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), Parent = button })
-	return button, label
+-- Hover grows the button a little with a springy Back ease, press shrinks it, release springs back (one button's
+-- UIScale only, never a whole screen).
+local function bounce(button: GuiButton)
+	local scale = New("UIScale", { Parent = button })
+	local hovering, pressing = false, false
+	local function settle()
+		local goal = if pressing then Theme.Motion.PressScale elseif hovering then HOVER_SCALE else 1
+		local info = if pressing
+			then TweenInfo.new(Theme.Motion.PressTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			else TweenInfo.new(0.3, Theme.Motion.Bounce, Enum.EasingDirection.Out)
+		TweenService:Create(scale, info, { Scale = goal }):Play()
+	end
+	local function isPress(input: InputObject)
+		return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+	end
+	button.MouseEnter:Connect(function()
+		hovering = true
+		settle()
+	end)
+	button.MouseLeave:Connect(function()
+		hovering, pressing = false, false
+		settle()
+	end)
+	button.InputBegan:Connect(function(input)
+		if isPress(input) and button.Active then
+			pressing = true
+			settle()
+		end
+	end)
+	button.InputEnded:Connect(function(input)
+		if isPress(input) then
+			pressing = false
+			-- a tap on a touch screen has no hover to return to
+			if input.UserInputType == Enum.UserInputType.Touch then hovering = false end
+			settle()
+		end
+	end)
+	button.Activated:Connect(function()
+		if button.Active then Audio.PlayUI("Click") end
+	end)
 end
-local playButton, playLabel = menuButton(4, "Primary", "Play")
-local titlesButton = menuButton(5, "Secondary", "Titles")
-local settingsButton = menuButton(6, "Secondary", "Settings")
+
+-- Play: a solid white button with dark text (the one bold call to action), no shadow rings under it.
+local playButton = New("TextButton", {
+	Name = "Play",
+	LayoutOrder = 4,
+	Text = "",
+	AutoButtonColor = false,
+	BackgroundColor3 = Colors.Text,
+	BackgroundTransparency = 0.7,
+	Size = UDim2.new(1, 0, 0, PLAY_HEIGHT),
+	Active = false,
+	Parent = panel,
+}, { Theme.Round("Button") })
+local playLabel = Theme.Text({ Text = "LOADING", TextSize = "Large", TextColor3 = Colors.Ink, TextTransparency = 0.5, Size = UDim2.fromScale(1, 1), Parent = playButton })
+playLabel.FontFace = UIFonts.Heading
+bounce(playButton)
+
+local function menuButton(order, text)
+	local button = Theme.Button("Secondary", { Name = text, LayoutOrder = order, Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT), Parent = panel })
+	local label = Theme.Text({ Text = string.upper(text), TextSize = "Body", Size = UDim2.fromScale(1, 1), Parent = button })
+	label.FontFace = UIFonts.Heading
+	return button
+end
+local titlesButton = menuButton(5, "Titles")
+local settingsButton = menuButton(6, "Settings")
 titlesButton.Visible, settingsButton.Visible = false, false -- shown for returning players once data loads
 
 -- info lines (returning players): streak, offline coins, Muscle of the Day
 local info = New("Frame", { LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Visible = false, Parent = panel },
 	{ Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top), New("UIPadding", { PaddingTop = UDim.new(0, Spacing.S) }) })
 local function infoLine(order, text)
-	return Theme.Text({ LayoutOrder = order, Text = text, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = info })
+	local line = Theme.Text({ LayoutOrder = order, Text = text, TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = info })
+	line.FontFace = UIFonts.Body
+	return line
 end
-
-playLabel.Text = "Loading..."
-playLabel.TextColor3 = Colors.Muted
-playButton.Active = false
 
 ------------------------------------------------------------------------
 -- Player card (returning players): membership tier, overall genetics grade, height and a few numbers
@@ -108,8 +176,10 @@ local function buildCard(data)
 	-- the tier color is a thin line along the top of the card
 	New("Frame", { Name = "TierLine", Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = tier.color, LayoutOrder = 0, Parent = card }, { Theme.Round("Segment") })
 	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = card })
-	Theme.Text({ Text = player.DisplayName, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -48, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
-	Theme.Text({ Text = tier.id .. " member" .. (player:GetAttribute("Pass_VIP") and "  ·  VIP" or ""), Font = "Regular", TextSize = "Small", TextColor3 = tier.color, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -48, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+	local name = Theme.Text({ Text = player.DisplayName, TextSize = "Body", Size = UDim2.new(1, -48, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+	name.FontFace = UIFonts.BodyBold
+	local member = Theme.Text({ Text = tier.id .. " member" .. (player:GetAttribute("Pass_VIP") and "  ·  VIP" or ""), TextSize = "Small", TextColor3 = tier.color, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -48, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+	member.FontFace = UIFonts.Body
 	local overall = data.genetics and data.genetics.overall
 	if overall and Theme.Grades[overall] then
 		Theme.RankTag(overall, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(28, 24), Parent = top })
@@ -123,7 +193,8 @@ local function buildCard(data)
 		nextTier and (nextTier.id .. " at " .. nextTier.reps .. " reps") or "Top tier",
 	}
 	for i, text in ipairs(lines) do
-		Theme.Text({ LayoutOrder = 1 + i, Text = text, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
+		local line = Theme.Text({ LayoutOrder = 1 + i, Text = text, TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
+		line.FontFace = UIFonts.Body
 	end
 	Theme.Fade(card, true)
 	return card
@@ -146,15 +217,55 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- Camera: a slow drift in front of the character, looking at them with the gym behind them
+-- Camera: the fixed entrance shot with a very slow drift
 ------------------------------------------------------------------------
 local camera = Workspace.CurrentCamera
 local baseFov = camera.FieldOfView
-local facing = nil   -- horizontal direction from the character toward the camera (away from the gym)
-local root = nil
+local shot = CFrame.lookAt(SHOT.Eye, SHOT.Focus)
+local focus = SHOT.Focus
+local started = os.clock()
 
--- Horizontal direction from a point toward the gym (the middle of all machines), if there are any.
-local function gymDirection(fromPosition)
+local function shotCFrame(): CFrame
+	local t = os.clock() - started
+	local eye = shot.Position + shot.RightVector * math.sin(t * SHOT.DriftSpeed) * SHOT.Drift
+		+ Vector3.yAxis * math.sin(t * SHOT.DriftSpeed * 0.7) * SHOT.DriftUp
+	return CFrame.lookAt(eye, focus)
+end
+
+camera.CameraType = Enum.CameraType.Scriptable
+camera.FieldOfView = SHOT.Fov
+camera.CFrame = shotCFrame()
+RunService:BindToRenderStep("MenuCamera", Enum.RenderPriority.Camera.Value + 1, function()
+	-- the default camera scripts may switch back when the character spawns
+	if camera.CameraType ~= Enum.CameraType.Scriptable then camera.CameraType = Enum.CameraType.Scriptable end
+	camera.CFrame = shotCFrame()
+end)
+
+-- Find the shot marker, stream in the area around it, then let the loading screen go.
+task.spawn(function()
+	player:SetAttribute("MenuLoad", 0.1)
+	local gym = Workspace:WaitForChild("Gym", 10)
+	local entrance = gym and gym:WaitForChild("Entrance", 10)
+	local marker = entrance and entrance:WaitForChild("MenuCamera", 5)
+	if marker and marker:IsA("BasePart") then
+		local distance = marker:GetAttribute("FocusDistance")
+		distance = if type(distance) == "number" and distance > 0 then distance else (SHOT.Focus - SHOT.Eye).Magnitude
+		shot = marker.CFrame
+		focus = marker.Position + marker.CFrame.LookVector * distance
+	else
+		warn("[MenuClient] Workspace.Gym.Entrance.MenuCamera is missing: using the built-in menu shot")
+	end
+	player:SetAttribute("MenuLoad", 0.3)
+	local ok, err = pcall(function()
+		player:RequestStreamAroundAsync(focus, SHOT.StreamTimeout)
+	end)
+	if not ok then warn("[MenuClient] streaming the menu scene: " .. tostring(err)) end
+	player:SetAttribute("MenuLoad", 1)
+	player:SetAttribute("MenuReady", true)
+end)
+
+-- Horizontal direction from a point toward the gym (the middle of the machines near it), if there are any.
+local function gymDirection(fromPosition: Vector3): Vector3?
 	local sum, count = Vector3.zero, 0
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 		-- only the gym next to the spawn (the pro gym is built far away)
@@ -165,55 +276,8 @@ local function gymDirection(fromPosition)
 	end
 	if count == 0 then return nil end
 	local flat = (sum / count - fromPosition) * Vector3.new(1, 0, 1)
-	return flat.Magnitude > 1 and flat.Unit or nil
+	return if flat.Magnitude > 1 then flat.Unit else nil
 end
-
-local rayParams = RaycastParams.new()
-rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-local function cameraCFrame(time)
-	-- height scale (BodyService sets it after the save loads, so read it every frame)
-	local humanoid = root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
-	local heightValue = humanoid and humanoid:FindFirstChild("BodyHeightScale")
-	local scale = if heightValue and heightValue:IsA("NumberValue") then heightValue.Value else 1
-	local zoom = scale ^ 0.6 -- a little less than linear, so tall characters still look big
-	local chest = root.Position + Vector3.new(0, CAMERA.ChestHeight * scale, 0)
-	local angle = math.rad(math.sin(time * CAMERA.SwaySpeed) * CAMERA.Sway)
-	local dir = CFrame.Angles(0, angle, 0):VectorToWorldSpace(facing)
-	local wanted = chest + dir * CAMERA.Distance * zoom + Vector3.new(0, CAMERA.Height * zoom, 0)
-	-- stay in front of walls and equipment
-	local hit = Workspace:Raycast(chest, wanted - chest, rayParams)
-	if hit then
-		wanted = hit.Position - (wanted - chest).Unit * CAMERA.WallGap
-	end
-	local look = (chest - wanted).Unit
-	local right = look:Cross(Vector3.yAxis)
-	right = right.Magnitude > 0 and right.Unit or Vector3.xAxis
-	return CFrame.lookAt(wanted, chest + right * CAMERA.AimOffset * zoom)
-end
-
-local function startCamera(character)
-	root = character:WaitForChild("HumanoidRootPart", 10)
-	if not root or not UIBus.MenuOpen then return end
-	rayParams.FilterDescendantsInstances = { character }
-	-- the camera stands on the far side of the character from the gym, so the gym is the background
-	local toGym = gymDirection(root.Position)
-	facing = toGym and -toGym or root.CFrame.LookVector * Vector3.new(1, 0, 1)
-	if facing.Magnitude < 0.1 then facing = Vector3.new(0, 0, 1) end
-	facing = facing.Unit
-	-- turn the character to face the camera
-	root.CFrame = CFrame.lookAt(root.Position, root.Position + facing)
-	camera.CameraType = Enum.CameraType.Scriptable
-	camera.FieldOfView = CAMERA.Fov
-	local start = os.clock()
-	RunService:BindToRenderStep("MenuCamera", Enum.RenderPriority.Camera.Value + 1, function()
-		if root.Parent then camera.CFrame = cameraCFrame(os.clock() - start) end
-	end)
-end
-
-task.spawn(function()
-	startCamera(player.Character or player.CharacterAdded:Wait())
-end)
 
 ------------------------------------------------------------------------
 -- Ready: data loaded
@@ -249,14 +313,28 @@ task.spawn(function()
 			end
 		end)
 	end
-	playLabel.Text = "Play"
-	playLabel.TextColor3 = Colors.Text
+	playLabel.Text = "PLAY"
+	Theme.Tween(playButton, { BackgroundTransparency = 0.04 })
+	Theme.Tween(playLabel, { TextTransparency = 0 })
 	playButton.Active = true
 end)
 
 ------------------------------------------------------------------------
 -- Play
 ------------------------------------------------------------------------
+-- The HUD fades in: every HUD screen's top-level pieces that are showing (a frame after MenuClosed, once the scripts
+-- waiting for the menu have shown theirs).
+local function fadeInHud()
+	RunService.Heartbeat:Wait()
+	for _, screen in ipairs(playerGui:GetChildren()) do
+		if screen:IsA("ScreenGui") and screen.Enabled and not NOT_HUD[screen.Name] then
+			for _, piece in ipairs(screen:GetChildren()) do
+				if piece:IsA("GuiObject") and piece.Visible then Theme.Fade(piece, true, SHOT.HudFade) end
+			end
+		end
+	end
+end
+
 local function play()
 	if not UIBus.MenuOpen or not playButton.Active then return end
 	playButton.Active = false
@@ -272,22 +350,28 @@ local function play()
 		if mainHud then mainHud.Enabled = true end
 		UIBus.MenuOpen = false
 		UIBus.MenuClosed:Fire()
+		task.spawn(fadeInHud)
 	end
 
-	Theme.Tween(camera, { FieldOfView = baseFov }, CAMERA.ExitTime)
 	local tween = Theme.Fade(panel, false)
 	local card = gui:FindFirstChild("PlayerCard")
 	if card then Theme.Fade(card, false) end
 	if tween then
 		tween.Completed:Connect(function() gui.Enabled = false end)
 	end
-	if root and root.Parent then
-		-- turn toward the gym, glide to a normal view behind the character, then hand control back
-		if facing then root.CFrame = CFrame.lookAt(root.Position, root.Position - facing) end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		-- face into the gym, then glide from the shot (in through the door) to a normal view behind the character
+		local toGym = gymDirection(root.Position)
+		if toGym then root.CFrame = CFrame.lookAt(root.Position, root.Position + toGym) end
 		local behind = root.CFrame * CFrame.new(0, 3, 11)
 		local goal = CFrame.lookAt(behind.Position, root.Position + Vector3.new(0, 1.5, 0))
-		Theme.Tween(camera, { CFrame = goal }, CAMERA.ExitTime).Completed:Connect(finish)
+		local info = TweenInfo.new(SHOT.ExitTime, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+		TweenService:Create(camera, info, { CFrame = goal, FieldOfView = baseFov }):Play()
+		task.delay(SHOT.ExitTime, finish)
 	else
+		camera.FieldOfView = baseFov
 		finish()
 	end
 end
@@ -303,10 +387,10 @@ UIBus.MenuPanelVisible.Event:Connect(function(visible)
 	subPanelOpen = visible
 	for _, frame in ipairs({ panel, gui:FindFirstChild("PlayerCard") }) do
 		if visible then
-			local tween = Theme.Fade(frame, false)
-			if tween then
+			local fadeOut = Theme.Fade(frame, false)
+			if fadeOut then
 				-- hidden (not just see-through) so its buttons can't be tapped
-				tween.Completed:Connect(function()
+				fadeOut.Completed:Connect(function()
 					if subPanelOpen then frame.Visible = false end
 				end)
 			end

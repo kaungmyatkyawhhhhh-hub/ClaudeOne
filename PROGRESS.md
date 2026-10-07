@@ -40,6 +40,10 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   world stat labels with click-to-expand, hover glow, spring float and push-apart. Icons/colors in `Config/HudIcons`
   (set `image = "rbxassetid://..."` to use your own art). Look tokens in `Theme` (`Theme.Tile`, `Theme.TileFont`).
 
+- **Start + menu (7 Oct):** `LoadingScreen` (ReplicatedFirst) until the menu scene has streamed in; menu shot = the
+  `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
+  Persistent Models (were Folders; the builders make Models too).
+
 ## Limits (found in Studio, not fixable here)
 - A client can hold only **8 live EditableMeshes**; your character uses all 8 (snatched torso 2, front torso, back, upper
   arms 2, upper legs 2). Forearms, calves, other players, NPCs and the statue get little or no muscle unless a live server allows more.
