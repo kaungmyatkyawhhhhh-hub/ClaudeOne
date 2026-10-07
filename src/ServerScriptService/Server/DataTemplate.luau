@@ -21,7 +21,7 @@ function DataTemplate.new()
 		genetics = nil, -- rolled on first join
 		freeReroll = true, -- the brief's one free reroll at start
 		dnaTokens = 0,
-		growthSpurts = 0, -- new players start at 4'0" (height and level cap come from Config.GrowthSpurts)
+		growthSpurts = 6, -- (owner, 8 Oct) new players start at the max height, 7'0" (the last Growth Spurt in Config.GrowthSpurts; 0 = 4'0")
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest bought tier, selected = tier index, best = heaviest tier lifted }
 		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0 },
