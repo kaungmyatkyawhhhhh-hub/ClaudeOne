@@ -253,6 +253,14 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 #world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .hud{position:fixed;left:0;right:0;top:0;z-index:10;max-width:480px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 0;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .hud>*{pointer-events:auto}
+.minimap{align-self:flex-end;width:104px;height:104px;border-radius:16px;box-shadow:var(--shadow);border:2px solid color-mix(in oklab,var(--surface) 75%,transparent);cursor:pointer;background:#79b866;touch-action:manipulation}
+.mmbig{position:fixed;left:0;right:0;top:calc(14vh + env(safe-area-inset-top,0px));z-index:40;max-width:480px;margin:0 auto;padding:0 12px;pointer-events:none}
+.mmbig .mmin{pointer-events:auto;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:10px 10px 12px;display:flex;flex-direction:column;gap:8px}
+.mmhead{display:flex;align-items:center;justify-content:space-between;padding:0 4px}.mmhead b{font:800 1rem var(--fd,inherit)}
+.mmx{border:0;background:color-mix(in oklab,var(--ink,#141824) 10%,transparent);color:inherit;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer}
+.mmsc{overflow:auto;border-radius:12px;max-height:46vh;overscroll-behavior:contain;background:#79b866}.mmsc canvas{display:block;cursor:pointer}
+.mmsel{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 4px}.mmsel .nm{flex:1;min-width:0;line-height:1.2}.mmsel .nm b{display:block;font-size:.92rem}.mmsel .nm small{color:var(--muted);font-size:.72rem}
+.mmsel button{border:0;border-radius:12px;padding:9px 12px;font:800 .8rem inherit;cursor:pointer;background:#2a5bd7;color:#fff;white-space:nowrap}.mmsel button.alt{background:#ffcc33;color:#141824}.mmsel button:disabled{opacity:.45}
 .chip{background:var(--surface);box-shadow:var(--shadow);border-radius:14px;padding:9px 12px}
 .hudtop{display:flex;align-items:stretch;gap:8px}
 .cashchip{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -910,9 +918,11 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
   <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button><button class="chip pill wk" id="wkChip" hidden></button></div>
+  <canvas class="minimap" id="miniMap" hidden aria-label="Minimap. Tap for the full map."></canvas>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
+<div class="mmbig" id="mmBig" hidden></div>
 <div id="room" class="room" hidden></div>
 <div id="overlay" class="overlay" hidden></div>
 <script>
@@ -1025,7 +1035,7 @@ PLACES.forEach(p=>p.region=p.region||"core");
 const REGION_NAME={beach:"The Beach",downtown:"Downtown"};
 const regionOf=(x,y)=>y>=1400?"beach":x>=1400?"downtown":"core";
 const regionOpen=r=>r==="core"||!!(S&&S.unl&&S.unl[r]);
-const shownPlaces=()=>{const L=PLACES.filter(p=>!(MPW&&p.k==="home"));return typeof hubPlaces==="function"&&S&&S.w4&&S.w4.open&&!MPW?L.concat(hubPlaces()):L};
+const shownPlaces=()=>{const L=PLACES.filter(p=>!(MPW&&p.k==="home"));return typeof hubPlaces==="function"&&S&&S.w4&&S.w4.open?L.concat(hubPlaces()):L};
 const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop:"mall"},{k:"scooter",n:"Electric scooter",d:"2.2× speed. Silent and quick.",sp:2.2,cost:6000,shop:"dealer"},{k:"car",n:"Sports car",d:"3.2× speed. Red, loud, fast.",sp:3.2,cost:45000,shop:"dealer"}];
 VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:20000,shop:"dealer"},{k:"classic",n:"Classic coupe",d:"2.8× speed. Sells back for 130%.",sp:2.8,cost:80000,shop:"dealer",resale:1.3},{k:"supercar",n:"Hypercar",d:"4× speed. The fastest thing in town.",sp:4,cost:250000,shop:"dealer"});
 const CARS=["car","truck","classic","supercar"];
@@ -2658,7 +2668,7 @@ $("goalChip").onclick=()=>{audioOn();const g=GOALS[S.goal];if(!g)return;if(GNAV=
   GNAV=S.goal;S.flags.gnavOff=0;if(room)closeRoom();renderGoalChip();const d=goalDest();rayText(g.d+(d?" Follow the arrow.":""));buzz(8)};
 // where to point right now: the goal's place on this map, or the way out towards it
 function goalDest(){const g=GOALS[S.goal];if(!g||!g.go)return null;let k=typeof g.go==="function"?g.go():g.go,w="town";if(k.startsWith("c:")){w="cosmos";k=k.slice(2)}else if(k.startsWith("d:")){w="deep";k=k.slice(2)}
-  const here=SCN?(SCN.kind==="space"&&SCN.k==="cosmos"?"cosmos":SCN.kind==="prehist"?"deep":"other"):MPW?"other":"town";
+  const here=SCN?(SCN.kind==="space"&&SCN.k==="cosmos"?"cosmos":SCN.kind==="prehist"?"deep":"other"):"town";
   const at=key=>{if(here==="town"){const p=PL[key];return p&&regionOpen(p.region||regionOf(p.door[0],p.door[1]))?{x:p.door[0],y:p.door[1]+14,n:p.n}:null}const p=SCN&&SCN.places.find(q=>q.k===key);return p?{x:p.door[0],y:p.door[1]+14,n:p.n}:null};
   if(here===w)return at(k);
   if(here==="town")return at("airport");            // the Stargate is at the Airport
@@ -2685,7 +2695,7 @@ function worldEventStart(){
   if(t==="rain")Object.assign(e,{dur:50,title:"Rainstorm",desc:"Walking is slower, but listings are 15% cheaper."});
   EV=e;banner(e.title,"a");SFX.news();buzz(15);rayText(e.desc);
 }
-function worldEventEnd(){if(SCN||MPW){EV=null;nextEvT=rnd(45,90);return}
+function worldEventEnd(){if(SCN){EV=null;nextEvT=rnd(45,90);return}
   if(EV.type==="raid"){const n=S.stash.filter(x=>x.fake).length;if(n){S.stash=S.stash.filter(x=>!x.fake);dirty=true;banner(n+" fake"+(n>1?"s":"")+" confiscated","r");SFX.scam();if(M)renderStash()}else banner("Raid over. You're clean.","u")}
   if(EV.type==="sale"&&room==="sale")banner("The garage sale packed up","r");
   EV=null;nextEvT=rnd(45,90);
@@ -3245,18 +3255,18 @@ function renderRvChip(){const el=$("rvChip"),r=S.rival;if(!r){el.hidden=true;ret
 $("crateChip").onclick=()=>{audioOn();openCrate()};
 /* ---------- street time trial: race through six checkpoints around town ---------- */
 let TT=null;
-function ttStart(){if(SCN||MPW)return;const cps=[];let px=S.px,py=S.py;for(let k=0;k<6;k++){for(let i=0;i<200;i++){const a=Math.random()*7,d=rnd(260,520),x=px+Math.cos(a)*d,y=py+Math.sin(a)*d;
+function ttStart(){if(SCN)return;const cps=[];let px=S.px,py=S.py;for(let k=0;k<6;k++){for(let i=0;i<200;i++){const a=Math.random()*7,d=rnd(260,520),x=px+Math.cos(a)*d,y=py+Math.sin(a)*d;
     if(x<80||x>W-80||y<120||y>SEA-60||!regionOpen(regionOf(x,y))||inBld(x,y,30)||inPond(x,y,30))continue;cps.push([Math.round(x),Math.round(y)]);px=x;py=y;break}}
   if(cps.length<6)return banner("No room for a race here","r");let dist=Math.hypot(cps[0][0]-S.px,cps[0][1]-S.py);for(let k=1;k<6;k++)dist+=Math.hypot(cps[k][0]-cps[k-1][0],cps[k][1]-cps[k-1][1]);
   TT={cps,i:0,t0:performance.now()+3000,par:+(dist/walkSpeed()*1.25+2).toFixed(1),go:false};SFX.hot();banner("3… 2… 1… GO! Hit the glowing rings in order","a");renderTTChip()}
-function ttTick(){if(!TT||SCN||MPW)return;const t=(performance.now()-TT.t0)/1000;if(t<0)return;if(!TT.go){TT.go=true;SFX.level();buzz(30)}
+function ttTick(){if(!TT||SCN)return;const t=(performance.now()-TT.t0)/1000;if(t<0)return;if(!TT.go){TT.go=true;SFX.level();buzz(30)}
   const c=TT.cps[TT.i];if(Math.hypot(S.px-c[0],S.py-c[1])<48){TT.i++;SFX.tick(1);buzz(12);sparks(fxW/2,fxH/2,"#ffcc33",16,.7);if(TT.i>=TT.cps.length){const tt=+t.toFixed(1),best=!S.ttBest||tt<S.ttBest,under=tt<=TT.par;
     if(best)S.ttBest=tt;S.stats.trials=(S.stats.trials||0)+1;const v=Math.round(Math.max(300,rwBase()*(under?.04:.015)));earn(v);if(under)S.tix=(S.tix||0)+30;dirty=true;SFX.rebirth();confetti(best?240:120);
     banner((best?"New best! ":"")+tt+" s"+(under?" · under par "+TT.par+" s":" · par "+TT.par+" s")+" · +"+fmt(v)+(under?" +30 tickets":""),under?"g":"a");TT=null}}
   else if(t>TT.par*2.5){banner("Time trial timed out","r");TT=null}renderTTChip()}
 function renderTTChip(){let el=$("ttChip");if(!TT){if(el)el.hidden=true;return}if(!el){el=document.createElement("div");el.id="ttChip";document.body.appendChild(el)}el.hidden=false;const t=(performance.now()-TT.t0)/1000;
   el.innerHTML=t<0?`<b>${Math.ceil(-t)}</b>`:`<b>${t.toFixed(1)} s</b><small>Ring ${TT.i+1}/6 · par ${TT.par} s</small>`}
-function drawTT(){if(!TT||SCN||MPW||room)return;TT.cps.forEach((c,k)=>{if(k<TT.i)return;const sx=c[0]-cam.x,sy=c[1]-cam.y,cur=k===TT.i;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60){if(cur)drawEdgeArrow(c[0],c[1],"#ffcc33");return}
+function drawTT(){if(!TT||SCN||room)return;TT.cps.forEach((c,k)=>{if(k<TT.i)return;const sx=c[0]-cam.x,sy=c[1]-cam.y,cur=k===TT.i;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60){if(cur)drawEdgeArrow(c[0],c[1],"#ffcc33");return}
   ctx.save();ctx.translate(sx,sy);ctx.globalAlpha=cur?1:.35;ctx.strokeStyle=cur?"#ffcc33":"#fff";ctx.lineWidth=cur?6:3;const r=cur?26+Math.sin(wt*6)*3:18;ctx.beginPath();ctx.ellipse(0,0,r,r*.45,0,0,7);ctx.stroke();
   ctx.fillStyle=cur?"#ffcc33":"#fff";ctx.font="900 13px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(k+1),0,-r*.45-12);ctx.restore()})}
 setInterval(()=>{try{ttTick()}catch(e){}},80);
@@ -3265,18 +3275,18 @@ const DAYEV=[["sun","☀️","Lazy Sunday","Energy refills twice as fast"],["mon
 const dayEv=()=>DAYEV[new Date().getDay()],isDay=k=>dayEv()[0]===k;
 let devSnap=null;
 setInterval(()=>{if(!S||!S.stats)return;const now={l:S.stats.lifted||0,f:S.stats.flips||0};if(devSnap){if(isDay("tue")&&now.l>devSnap.l&&Math.random()<.12)gainCrate(1);if(isDay("thu")&&now.f>devSnap.f&&Math.random()<.08){S.maps=(S.maps||0)+1;dirty=true;banner("Treasure Thursday · a map was hidden in that sale!","g")}}devSnap=now;
-  const dk=dayKey();if(S.devSeen!==dk&&!SCN&&!MPW&&(S.stats.flips||0)>=3&&!room&&$("overlay").hidden){S.devSeen=dk;dirty=true;const d=dayEv();setTimeout(()=>{banner(d[1]+" "+d[2],"g");rayText("Today is "+d[2]+": "+d[3].toLowerCase()+".")},800)}},1200);
+  const dk=dayKey();if(S.devSeen!==dk&&!SCN&&(S.stats.flips||0)>=3&&!room&&$("overlay").hidden){S.devSeen=dk;dirty=true;const d=dayEv();setTimeout(()=>{banner(d[1]+" "+d[2],"g");rayText("Today is "+d[2]+": "+d[3].toLowerCase()+".")},800)}},1200);
 /* ---------- weather: passing rain showers, then a rainbow with a pot of gold at its end ---------- */
 const WX={rain:0,on:false,t:0,next:rnd(240,480),bow:null,drops:Array.from({length:110},()=>[Math.random(),Math.random(),.6+Math.random()*.6]),umb:0};
 function wxTick(dt){if(!S||(S.stats.flips||0)<5)return;
-  if(WX.on&&(SCN||MPW)){WX.on=false;WX.ut=0;WX.rain=0;WX.next=rnd(420,840)}
+  if(WX.on&&SCN){WX.on=false;WX.ut=0;WX.rain=0;WX.next=rnd(420,840)}
   if(WX.on){WX.t-=dt;WX.rain=Math.min(1,WX.rain+dt/6);
-    if(S.acc&&S.acc.x==="umbrella"&&!SCN&&!MPW){WX.umb+=dt;if(WX.umb>=12){WX.umb=0;const f=Math.round(Math.max(5,(S.fans||0)*.002));S.fans=(S.fans||0)+f;WX.ut=(WX.ut||0)+f;dirty=true;SFX.tick(.5)}}
-    if(WX.t<=0){WX.on=false;if(WX.ut){banner("☂️ Dry and stylish · +"+fmtN(WX.ut)+" fans from the rain","g");WX.ut=0}WX.next=rnd(420,840);if(!SCN&&!MPW){const sp=lfSpot(S.px,S.py,260,520);if(sp){WX.bow={x:sp[0],y:sp[1],until:Date.now()+100000};SFX.hot();banner("🌈 A rainbow! Find the pot of gold at its end","g")}}}}
-  else{WX.rain=Math.max(0,WX.rain-dt/5);if(room||SCN||MPW)return;WX.next-=dt;if(WX.next<=0){WX.on=true;WX.t=rnd(80,140);WX.umb=0;banner("🌧️ Rain shower! Carrying an umbrella earns fans","u")}}
-  const B=WX.bow;if(B){if(Date.now()>B.until){WX.bow=null;if(!SCN&&!MPW)banner("The rainbow faded away","a")}else if(!SCN&&!MPW&&Math.hypot(S.px-B.x,S.py-B.y)<40){WX.bow=null;const v=Math.round(Math.max(1500,rwBase()*.06));earn(v);S.stats.pots=(S.stats.pots||0)+1;if(Math.random()<.6)gainCrate(1);dirty=true;SFX.rebirth();confetti(220,null,null,["#ffcc33","#fff","#2fd28a"]);flash("#ffcc33",.35);banner("🍀 Pot of gold! +"+fmt(v),"g")}}}
+    if(S.acc&&S.acc.x==="umbrella"&&!SCN){WX.umb+=dt;if(WX.umb>=12){WX.umb=0;const f=Math.round(Math.max(5,(S.fans||0)*.002));S.fans=(S.fans||0)+f;WX.ut=(WX.ut||0)+f;dirty=true;SFX.tick(.5)}}
+    if(WX.t<=0){WX.on=false;if(WX.ut){banner("☂️ Dry and stylish · +"+fmtN(WX.ut)+" fans from the rain","g");WX.ut=0}WX.next=rnd(420,840);if(!SCN){const sp=lfSpot(S.px,S.py,260,520);if(sp){WX.bow={x:sp[0],y:sp[1],until:Date.now()+100000};SFX.hot();banner("🌈 A rainbow! Find the pot of gold at its end","g")}}}}
+  else{WX.rain=Math.max(0,WX.rain-dt/5);if(room||SCN)return;WX.next-=dt;if(WX.next<=0){WX.on=true;WX.t=rnd(80,140);WX.umb=0;banner("🌧️ Rain shower! Carrying an umbrella earns fans","u")}}
+  const B=WX.bow;if(B){if(Date.now()>B.until){WX.bow=null;if(!SCN)banner("The rainbow faded away","a")}else if(!SCN&&Math.hypot(S.px-B.x,S.py-B.y)<40){WX.bow=null;const v=Math.round(Math.max(1500,rwBase()*.06));earn(v);S.stats.pots=(S.stats.pots||0)+1;if(Math.random()<.6)gainCrate(1);dirty=true;SFX.rebirth();confetti(220,null,null,["#ffcc33","#fff","#2fd28a"]);flash("#ffcc33",.35);banner("🍀 Pot of gold! +"+fmt(v),"g")}}}
 setInterval(()=>{try{wxTick(.25)}catch(e){}},250);
-function drawWeather(){if(SCN||MPW)return;const c=ctx,B=WX.bow;
+function drawWeather(){if(SCN)return;const c=ctx,B=WX.bow;
   if(B&&!room){const sx=B.x-cam.x,sy=B.y-cam.y,R=Math.min(vw*.9,520),fade=Math.min(1,(B.until-Date.now())/8000);c.save();c.globalAlpha=.32*fade;c.lineWidth=R*.018;["#e2364a","#ff7a3d","#ffcc33","#2fd28a","#2fa6d9","#2a3cff","#7a2fd6"].forEach((col,i)=>{c.strokeStyle=col;c.beginPath();c.arc(sx-R,sy,R-i*c.lineWidth,Math.PI,0);c.stroke()});c.restore();
     if(sx>-30&&sy>-30&&sx<vw+30&&sy<vh+30){c.save();c.translate(sx,sy);c.fillStyle="#1b1d22";c.beginPath();c.ellipse(0,0,13,10,0,0,Math.PI);c.lineTo(-13,-4);c.lineTo(13,-4);c.fill();c.fillRect(-15,-6,30,3);c.fillStyle="#ffcc33";for(let i=0;i<5;i++){c.beginPath();c.arc(-8+i*4,-8-(i%2)*2,3,0,7);c.fill()}c.fillStyle="#fff";c.globalAlpha=.5+.5*Math.sin(wt*6);c.fillRect(-2,-14,2,2);c.fillRect(6,-11,2,2);c.restore()}
     else if(!room)drawEdgeArrow(B.x,B.y,"#ffcc33")}
@@ -3284,13 +3294,13 @@ function drawWeather(){if(SCN||MPW)return;const c=ctx,B=WX.bow;
   const n=Math.round(WX.drops.length*a),t=performance.now()/1000;for(let i=0;i<n;i++){const d=WX.drops[i],x=((d[0]*vw+t*60*d[2])%(vw+40))-20,y=((d[1]*vh+t*700*d[2])%(vh+40))-20;c.moveTo(x,y);c.lineTo(x-3*d[2],y+12*d[2])}c.stroke();c.restore()}
 /* ---------- hidden golden statues: 12 tucked around town, glinting only when you're close ---------- */
 const GOLD_N=12;
-function goldTick(){if(!S||SCN||MPW||(S.stats.flips||0)<3)return;const G=S.gold=S.gold||{sp:[],got:0};
+function goldTick(){if(!S||SCN||(S.stats.flips||0)<3)return;const G=S.gold=S.gold||{sp:[],got:0};
   if(G.sp.length+G.got<GOLD_N){const p=lfSpot(rnd(200,W-200),rnd(260,SEA-160),0,200);if(p&&G.sp.every(q=>Math.hypot(q[0]-p[0],q[1]-p[1])>400)&&Math.hypot(p[0]-S.px,p[1]-S.py)>300){G.sp.push(p);dirty=true}}
   for(let i=G.sp.length-1;i>=0;i--){const q=G.sp[i];if(Math.hypot(S.px-q[0],S.py-q[1])<30){G.sp.splice(i,1);G.got++;const v=Math.round(Math.max(800,rwBase()*.03*G.got));earn(v);dirty=true;SFX.crit(2);buzz([20,40,20]);confetti(140,null,null,["#ffcc33","#fff7d0"]);
     if(G.got>=GOLD_N){S.accOwn=S.accOwn||{};S.accOwn.gstat=1;gainCrate(5);SFX.rebirth();flash("#ffcc33",.4);banner("🗿 All "+GOLD_N+" golden statues! You won the Golden statue to carry, and 5 crates","g")}
     else banner("🗿 Golden statue "+G.got+"/"+GOLD_N+" · +"+fmt(v),"g")}}}
 setInterval(()=>{try{goldTick()}catch(e){}},300);
-function drawGoldStatues(){const G=S&&S.gold;if(!G||SCN||MPW)return;const c=ctx;for(const q of G.sp){const d=Math.hypot(S.px-q[0],S.py-q[1]);if(d>340)continue;
+function drawGoldStatues(){const G=S&&S.gold;if(!G||SCN)return;const c=ctx;for(const q of G.sp){const d=Math.hypot(S.px-q[0],S.py-q[1]);if(d>340)continue;
   if(d>150){const a=.5+.5*Math.sin(wt*5+q[0]);c.save();c.globalAlpha=a*(1-(d-150)/190);c.fillStyle="#fff7d0";c.translate(q[0],q[1]-10);c.rotate(wt);c.fillRect(-1,-5,2,10);c.fillRect(-5,-1,10,2);c.restore();continue}
   c.save();c.translate(q[0],q[1]);c.fillStyle="rgba(0,0,0,.2)";c.beginPath();c.ellipse(0,1,8,3,0,0,7);c.fill();goldStatue(c,0,0,1);c.restore()}}
 function goldStatue(c,x,y,k){c.fillStyle="#a8781c";c.fillRect(x-6*k,y-4*k,12*k,4*k);const g=c.createLinearGradient(x-6*k,0,x+6*k,0);g.addColorStop(0,"#c9921c");g.addColorStop(.5,"#ffe08a");g.addColorStop(1,"#cf9a14");c.fillStyle=g;
@@ -3298,10 +3308,10 @@ function goldStatue(c,x,y,k){c.fillStyle="#a8781c";c.fillRect(x-6*k,y-4*k,12*k,4
   c.fillStyle="#fff";c.globalAlpha=.5+.5*Math.sin((typeof wt==="number"?wt:0)*4);c.fillRect(x-1.5*k,y-19*k,1.2*k,1.2*k);c.globalAlpha=1}
 /* ---------- ride share: pick up three passengers in your car and drop them at their stop ---------- */
 let RS=null;
-function rsStart(){if(SCN||MPW||RS)return;RS={i:0,n:3,earned:0,tips:0};rsNext();SFX.hot();banner("🚕 Ride share shift: 3 fares. Drive to the waving passenger","g")}
+function rsStart(){if(SCN||RS)return;RS={i:0,n:3,earned:0,tips:0};rsNext();SFX.hot();banner("🚕 Ride share shift: 3 fares. Drive to the waving passenger","g")}
 function rsNext(){const sp=lfSpot(S.px,S.py,180,420);if(!sp){RS=null;return}const L=PLACES.filter(p=>p.door&&regionOpen(regionOf(p.door[0],p.door[1]))&&Math.hypot(p.door[0]-sp[0],p.door[1]-sp[1])>420);if(!L.length){RS=null;return}const d=pick(L),dist=Math.hypot(d.door[0]-sp[0],d.door[1]-sp[1]);
   Object.assign(RS,{stage:"pick",p:sp,d,dist,t:45,lim:0,look:{shirt:pick(["#e2364a","#2fd28a","#ffcc33","#7a2fd6","#2fa6d9"]),skin:pick(["#e8b896","#c98e62","#8d5a3a","#f2d0b0"]),hair:pick(["#3b2a20","#1b1d22","#d9a066","#9aa3b3"])},n2:pick(["Sam","Lena","Omar","Yuki","Ben","Zoe","Raj","Mia"])})}
-function rsTick(dt){if(!RS)return;if(SCN||MPW){RS=null;return}if(room)return;const car=CARS.includes(ride());RS.t-=dt;
+function rsTick(dt){if(!RS)return;if(SCN){RS=null;return}if(room)return;const car=CARS.includes(ride());RS.t-=dt;
   if(RS.stage==="pick"){if(RS.t<=0){banner(RS.n2+" took another ride","r");SFX.loss();rsAfter(false);return}
     if(Math.hypot(S.px-RS.p[0],S.py-RS.p[1])<46){if(!car){if(!RS.warn){RS.warn=1;banner("Hop in a car first! (Garage on the HUD)","a")}return}RS.stage="drop";RS.lim=Math.round(RS.dist/40+12);RS.t=RS.lim;SFX.door();banner("🚕 "+RS.n2+": to the "+RS.d.n+", please!","u")}}
   else{if(RS.t<=-20){banner(RS.n2+" got out and walked","r");SFX.loss();rsAfter(false);return}
@@ -3310,20 +3320,20 @@ function rsAfter(ok){RS.i++;if(ok)S.stats.fares=(S.stats.fares||0)+1;dirty=true;
 setInterval(()=>{try{rsTick(.25)}catch(e){}},250);
 let EDGE_DIRT=null;function edgeDirt(){if(EDGE_DIRT)return EDGE_DIRT;const cv=document.createElement("canvas");cv.width=320;cv.height=90;const g=cv.getContext("2d");let sd=99;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
   for(let x=0;x<320;x+=6)for(let y=0;y<90;y+=6){const k=x/320;if(r()<k*k*1.4){g.fillStyle=r()<.5?"#c9a26b":"#b58c58";g.fillRect(x,y,7,7)}}g.fillStyle="rgba(120,90,50,.35)";for(let i=0;i<40;i++){const x=160+r()*160;g.fillRect(x,r()*90,3,2)}return EDGE_DIRT=cv}
-function drawFrontierEdge(){if(SCN||MPW)return;const c=ctx,open=!!(S.w4&&S.w4.open),x=W-150;if(x<cam.x-400||x>cam.x+vw+200)return;
+function drawFrontierEdge(){if(SCN)return;const c=ctx,open=!!(S.w4&&S.w4.open),x=W-150;if(x<cam.x-400||x>cam.x+vw+200)return;
   c.drawImage(edgeDirt(),W-320,655,320,90);
   c.save();c.fillStyle="#8a5a2c";c.fillRect(x-4,600,8,52);c.fillStyle="#a8743a";rr(x-70,578,140,30,7);c.fill();c.strokeStyle="#5a3a1e";c.lineWidth=2;rr(x-70,578,140,30,7);c.stroke();c.fillStyle="#fff7e0";c.font=`900 12px ${FONTS.d}`;c.textAlign="center";c.textBaseline="middle";c.fillText(open?"THE FRONTIER →":"FRONTIER · CLOSED",x,593);
   if(!open){const bx=W-60;c.fillStyle="#f2f2f2";c.fillRect(bx-6,652,12,98);for(let i=0;i<5;i++){c.fillStyle=i%2?"#f2f2f2":"#e2364a";c.fillRect(bx-6,652+i*20,12,20)}c.fillStyle="#ffcc33";c.beginPath();c.arc(bx,646,6,0,7);c.fill()}
   else{c.globalAlpha=.5+.3*Math.sin(wt*3);c.fillStyle="#ff4fd8";c.beginPath();c.moveTo(W-40,ROAD_Y-14);c.lineTo(W-14,ROAD_Y);c.lineTo(W-40,ROAD_Y+14);c.fill();c.globalAlpha=1}c.restore()}
-function drawRideShare(){if(!RS||SCN||MPW)return;const c=ctx;
+function drawRideShare(){if(!RS||SCN)return;const c=ctx;
   if(RS.stage==="pick"){drawPerson(RS.p[0],RS.p[1],{...RS.look,legs:"#262b3a",mv:false,ph:wt,pose:Math.sin(wt*5)>0?"bi":null});c.save();c.font="800 11px "+FONTS.b;c.textAlign="center";const lab="🚕 "+RS.n2+" · "+Math.max(0,Math.ceil(RS.t))+"s",w=c.measureText(lab).width+14;c.fillStyle="rgba(255,204,51,.95)";rr(RS.p[0]-w/2,RS.p[1]-86,w,18,8);c.fill();c.fillStyle="#141824";c.textBaseline="middle";c.fillText(lab,RS.p[0],RS.p[1]-77);c.restore()}
   else{const D=RS.d.door;c.save();c.strokeStyle="#ffcc33";c.lineWidth=4;c.setLineDash([10,8]);c.lineDashOffset=-wt*30;c.beginPath();c.arc(D[0],D[1]+14,34+Math.sin(wt*4)*4,0,7);c.stroke();c.restore();
     c.save();c.font="800 12px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const lab=RS.t>0?"⏱ "+Math.ceil(RS.t)+"s for a tip":"No tip now, just get there",w=c.measureText(lab).width+14;c.fillStyle=RS.t>0?"rgba(20,24,36,.85)":"rgba(226,54,74,.9)";rr(S.px-w/2,S.py-96,w,20,9);c.fill();c.fillStyle="#fff";c.fillText(lab,S.px,S.py-86);c.restore()}}
-function drawRideArrow(){if(!RS||SCN||MPW||room)return;const T=RS.stage==="pick"?RS.p:[RS.d.door[0],RS.d.door[1]+14],sx=T[0]-cam.x,sy=T[1]-cam.y;if(sx<20||sy<200||sx>vw-20||sy>vh-140)drawEdgeArrow(T[0],T[1],"#ffcc33")}
+function drawRideArrow(){if(!RS||SCN||room)return;const T=RS.stage==="pick"?RS.p:[RS.d.door[0],RS.d.door[1]+14],sx=T[0]-cam.x,sy=T[1]-cam.y;if(sx<20||sy<200||sx>vw-20||sy>vh-140)drawEdgeArrow(T[0],T[1],"#ffcc33")}
 /* ---------- bug catching: critters flutter around town; walk into them to catch, fill the bug book ---------- */
 const BUGS=[{k:"wht",n:"Cabbage white",c:"#f4f4f4",r:1},{k:"yel",n:"Lemon butterfly",c:"#ffd84d",r:1},{k:"lady",n:"Ladybug",c:"#e2364a",r:1.5,t:"lady"},{k:"blu",n:"Common blue",c:"#2fa6d9",r:2},{k:"bee",n:"Bumblebee",c:"#ffcc33",r:2,t:"bee"},{k:"mon",n:"Monarch",c:"#ff7a3d",r:2.5},{k:"pink",n:"Rose swallowtail",c:"#ff8fa3",r:3},{k:"emer",n:"Emerald moth",c:"#2fd28a",r:3.5},{k:"fire",n:"Firefly",c:"#fff7a0",r:3,t:"fire",night:1},{k:"purp",n:"Purple emperor",c:"#7a2fd6",r:4.5},{k:"rain",n:"Rainbow morpho",c:"rainbow",r:6},{k:"gold",n:"Golden butterfly",c:"#ffd34d",r:8,t:"gold"}];
 let BG=[],bgT=8;
-function bugTick(dt){if(!S||SCN||MPW||(S.stats.flips||0)<4){BG=[];return}const night=S.clock>=19||S.clock<5,net=(S.acc||{}).x==="net";
+function bugTick(dt){if(!S||SCN||(S.stats.flips||0)<4){BG=[];return}const night=S.clock>=19||S.clock<5,net=(S.acc||{}).x==="net";
   bgT-=dt;if(bgT<=0&&BG.length<3&&!room){bgT=rnd(14,30);const L=BUGS.filter(b=>night||!b.night),tot=L.reduce((a,b)=>a+1/Math.pow(b.r,1.5),0);let r=Math.random()*tot,sp=L[0];for(const b of L){r-=1/Math.pow(b.r,1.5);if(r<=0){sp=b;break}}const p=lfSpot(S.px,S.py,140,360);if(p)BG.push({b:sp,x:p[0],y:p[1],vx:0,vy:0,life:70,ph:Math.random()*7})}
   for(let i=BG.length-1;i>=0;i--){const g=BG[i];g.life-=dt;if(g.life<=0){BG.splice(i,1);continue}const d=Math.hypot(S.px-g.x,S.py-g.y);
     if(d<(net?40:24)){BG.splice(i,1);bugCatch(g.b);continue}
@@ -3340,49 +3350,49 @@ function bugArt(c,b,x,y,ph,k=1){const f=Math.abs(Math.sin(ph*16));c.save();c.tra
   else{const col=b.c==="rainbow"?(()=>{const g2=c.createLinearGradient(-7,0,7,0);["#e2364a","#ffcc33","#2fd28a","#2fa6d9","#7a2fd6"].forEach((q,i)=>g2.addColorStop(i/4,q));return g2})():b.c;if(b.t==="gold"){c.shadowColor="#ffcc33";c.shadowBlur=8}
     c.fillStyle=col;[-1,1].forEach(d=>{c.save();c.scale(d*(.25+.75*f),1);c.beginPath();c.ellipse(3.6,-2,4,3.2,-.4,0,7);c.fill();c.beginPath();c.ellipse(3,2.4,2.8,2.2,.4,0,7);c.fill();c.restore()});c.shadowBlur=0;c.fillStyle="#1b1d22";c.fillRect(-.6,-3.5,1.2,7)}
   c.restore()}
-function drawBugs(){if(SCN||MPW||!BG.length)return;for(const g of BG){const a=Math.min(1,g.life/3);ctx.save();ctx.globalAlpha=a;ctx.fillStyle="rgba(0,0,0,.12)";ctx.beginPath();ctx.ellipse(g.x,g.y+12,3,1.2,0,0,7);ctx.fill();bugArt(ctx,g.b,g.x,g.y+Math.sin(wt*3+g.ph)*3,wt+g.ph,1.5);ctx.restore()}}
+function drawBugs(){if(SCN||!BG.length)return;for(const g of BG){const a=Math.min(1,g.life/3);ctx.save();ctx.globalAlpha=a;ctx.fillStyle="rgba(0,0,0,.12)";ctx.beginPath();ctx.ellipse(g.x,g.y+12,3,1.2,0,0,7);ctx.fill();bugArt(ctx,g.b,g.x,g.y+Math.sin(wt*3+g.ph)*3,wt+g.ph,1.5);ctx.restore()}}
 /* ---------- spooky nights: ghosts drift around town after dark (lots in October); catch them for candy ---------- */
 let GH=[],ghT=6;const spooky=()=>new Date().getMonth()===9;
-function ghostTick(dt){if(!S||SCN||MPW||(S.stats.flips||0)<4){GH=[];return}const night=S.clock>=20||S.clock<5;if(!night){if(GH.length)GH=[];return}
+function ghostTick(dt){if(!S||SCN||(S.stats.flips||0)<4){GH=[];return}const night=S.clock>=20||S.clock<5;if(!night){if(GH.length)GH=[];return}
   ghT-=dt;if(ghT<=0&&GH.length<(spooky()?4:1)&&!room){ghT=spooky()?rnd(8,18):rnd(40,90);const p=lfSpot(S.px,S.py,160,380);if(p){GH.push({x:p[0],y:p[1],ph:Math.random()*7,life:60,boo:0});if(!S.ghSeen){S.ghSeen=1;dirty=true;banner("👻 Something spooky is floating around town…","u")}}}
   for(let i=GH.length-1;i>=0;i--){const g=GH[i];g.life-=dt;g.boo=Math.max(0,g.boo-dt);if(g.life<=0){GH.splice(i,1);continue}const dx=S.px-g.x,dy=S.py-g.y,d=Math.hypot(dx,dy);
     if(d<26){GH.splice(i,1);const n=1+Math.floor(Math.random()*3)+(Math.random()<.08?7:0);S.candy=(S.candy||0)+n;S.stats.ghosts=(S.stats.ghosts||0)+1;dirty=true;SFX.crit(1);buzz([10,20,10]);confetti(50,null,null,["#fff","#ff7a3d","#7a2fd6"]);rayText("👻 Got it! +"+n+" candy 🍬 ("+S.candy+") · trade candy at the Night Market");continue}
     if(d<90&&!g.boo&&Math.random()<dt*.6){g.boo=1;SFX.tick(.2)}const a=Math.atan2(dy,dx)+(d<110?Math.PI+Math.sin(g.ph)*.8:Math.sin(wt+g.ph)*2);g.x=clamp(g.x+Math.cos(a)*dt*(d<110?52:18),60,W-60);g.y=clamp(g.y+Math.sin(a)*dt*(d<110?52:18),100,SEA-40)}}
 setInterval(()=>{try{ghostTick(.05)}catch(e){}},50);
-function drawGhosts(){if(SCN||MPW||!GH.length)return;const c=ctx;for(const g of GH){const y=g.y-20+Math.sin(wt*2+g.ph)*5,a=Math.min(1,g.life/3)*(.72+.2*Math.sin(wt*3+g.ph));c.save();c.globalAlpha=a*.25;c.fillStyle="#000";c.beginPath();c.ellipse(g.x,g.y+4,9,3,0,0,7);c.fill();c.globalAlpha=a;c.translate(g.x,y);
+function drawGhosts(){if(SCN||!GH.length)return;const c=ctx;for(const g of GH){const y=g.y-20+Math.sin(wt*2+g.ph)*5,a=Math.min(1,g.life/3)*(.72+.2*Math.sin(wt*3+g.ph));c.save();c.globalAlpha=a*.25;c.fillStyle="#000";c.beginPath();c.ellipse(g.x,g.y+4,9,3,0,0,7);c.fill();c.globalAlpha=a;c.translate(g.x,y);
   c.fillStyle="#f4f6ff";c.shadowColor="#bfd0ff";c.shadowBlur=12;c.beginPath();c.arc(0,-6,11,Math.PI,0);c.lineTo(11,8);for(let k=0;k<4;k++){c.quadraticCurveTo(11-k*5.5-2.75,4+(k%2?6:-1)+Math.sin(wt*6+k)*1.5,11-(k+1)*5.5,8)}c.closePath();c.fill();c.shadowBlur=0;
   c.fillStyle="#1b1d22";c.beginPath();c.ellipse(-4,-7,1.8,2.6,0,0,7);c.ellipse(4,-7,1.8,2.6,0,0,7);c.fill();if(g.boo){c.beginPath();c.ellipse(0,-1,2.4,3,0,0,7);c.fill();c.font="900 10px "+FONTS.d;c.textAlign="center";c.fillStyle="#7a2fd6";c.fillText("BOO!",0,-22)}c.restore()}}
 const CANDY_SHOP=[{k:"ghostsuit",n:"Ghost sheet",ic:"👻",c:30,acc:1},{k:"witch",n:"Witch hat",ic:"🧙‍♀️",c:20,acc:1},{k:"vamp",n:"Vampire cape",ic:"🧛",c:40,acc:1},{k:"cbucket",n:"Candy bucket",ic:"🎃",c:10,acc:1},{k:"crate",n:"Mystery crate",ic:"📦",c:15,f:()=>gainCrate(1)},{k:"hype",n:"Sugar rush",ic:"⚡",c:5,f:()=>{S.energy=Math.min(maxEnergy()*1.5,S.energy+50);hype(5)}}];
 /* ---------- shooting stars: at night one streaks across the sky now and then; tap it to make a wish ---------- */
 let STAR=null,starT=40;
-function starTick(dt){if(!S||SCN||MPW||room||(S.stats.flips||0)<4)return;const night=S.clock>=20||S.clock<5;if(!night||STAR)return;starT-=dt;if(starT>0)return;starT=rnd(70,160);
+function starTick(dt){if(!S||SCN||room||(S.stats.flips||0)<4)return;const night=S.clock>=20||S.clock<5;if(!night||STAR)return;starT-=dt;if(starT>0)return;starT=rnd(70,160);
   const dir=Math.random()<.5?1:-1,x0=dir>0?rnd(-40,vw*.4):rnd(vw*.6,vw+40),y0=rnd(vh*.3,vh*.5);STAR={x0,y0,vx:dir*rnd(420,560),vy:rnd(120,200),t:0,dur:1.7};if(!S.starHint){S.starHint=1;dirty=true;banner("🌠 Tap shooting stars to make a wish!","u")}}
 setInterval(()=>{try{starTick(.25)}catch(e){}},250);
 function starTap(sx,sy){if(!STAR||STAR.t>STAR.dur+.5)return false;const t=Math.min(STAR.t,STAR.dur),hx=STAR.x0+STAR.vx*t,hy=STAR.y0+STAR.vy*t,tx=STAR.x0+STAR.vx*Math.max(0,t-.35),ty=STAR.y0+STAR.vy*Math.max(0,t-.35);
   const L=Math.hypot(hx-tx,hy-ty)||1,u=clamp(((sx-tx)*(hx-tx)+(sy-ty)*(hy-ty))/(L*L),0,1),d=Math.hypot(sx-(tx+(hx-tx)*u),sy-(ty+(hy-ty)*u));if(d>48)return false;STAR=null;
   const W2=[[30,"cash",()=>{const v=Math.round(Math.max(800,rwBase()*.05));earn(v);return "+"+fmt(v)}],[22,"crate",()=>{gainCrate(1);return "a mystery crate"}],[16,"fans",()=>{const f=Math.round(Math.max(50,(S.fans||0)*.02));S.fans=(S.fans||0)+f;return "+"+fmtN(f)+" fans"}],[14,"energy",()=>{S.energy=Math.max(S.energy,maxEnergy());return "full energy"}],[10,"tix",()=>{S.tix=(S.tix||0)+40;return "40 arcade tickets"}],[5,"jack",()=>{gainCrate(3);const v=Math.round(Math.max(5000,rwBase()*.15));earn(v);return "a JACKPOT: "+fmt(v)+" and 3 crates"}],[3,"map",()=>{S.maps=(S.maps||0)+1;return "a treasure map"}]];
   let r=Math.random()*W2.reduce((a,w)=>a+w[0],0),w=W2[0];for(const q of W2){r-=q[0];if(r<=0){w=q;break}}const msg=w[2]();S.stats.wishes=(S.stats.wishes||0)+1;dirty=true;SFX.rebirth();confetti(160,sx,sy,["#fff7d0","#ffcc33","#bfd0ff"]);buzz([20,40,20]);banner("🌠 Wish granted: "+msg,"g");updMini();return true}
-function drawStar(){if(!STAR||SCN||MPW||room)return;const dt=1/60;STAR.t+=dt;if(STAR.t>STAR.dur+.6){STAR=null;return}const c=ctx,t=Math.min(STAR.t,STAR.dur),hx=STAR.x0+STAR.vx*t,hy=STAR.y0+STAR.vy*t,tx=STAR.x0+STAR.vx*Math.max(0,t-.35),ty=STAR.y0+STAR.vy*Math.max(0,t-.35),a=STAR.t>STAR.dur?1-(STAR.t-STAR.dur)/.6:1;
+function drawStar(){if(!STAR||SCN||room)return;const dt=1/60;STAR.t+=dt;if(STAR.t>STAR.dur+.6){STAR=null;return}const c=ctx,t=Math.min(STAR.t,STAR.dur),hx=STAR.x0+STAR.vx*t,hy=STAR.y0+STAR.vy*t,tx=STAR.x0+STAR.vx*Math.max(0,t-.35),ty=STAR.y0+STAR.vy*Math.max(0,t-.35),a=STAR.t>STAR.dur?1-(STAR.t-STAR.dur)/.6:1;
   c.save();c.globalAlpha=a;const gr=c.createLinearGradient(tx,ty,hx,hy);gr.addColorStop(0,"rgba(255,247,208,0)");gr.addColorStop(1,"rgba(255,247,208,.95)");c.strokeStyle=gr;c.lineWidth=4.5;c.lineCap="round";c.shadowColor="#fff7d0";c.shadowBlur=10;c.beginPath();c.moveTo(tx,ty);c.lineTo(hx,hy);c.stroke();
   if(STAR.t<=STAR.dur){c.shadowColor="#fff7d0";c.shadowBlur=20;c.fillStyle="#fff";c.beginPath();c.arc(hx,hy,4.6,0,7);c.fill()}c.restore()}
 /* ---------- lost pets: a townsperson loses a pet; search the circled area, then walk it home ---------- */
 let LF=null,lfT=360;
 const LF_KINDS=[["cat","🐱","their cat"],["dog","🐶","their dog"],["parrot","🦜","their parrot"],["bunny","🐰","their bunny"],["turtle","🐢","their turtle"]];
 function lfSpot(nearX,nearY,dmin,dmax){for(let i=0;i<160;i++){const a=Math.random()*7,d=rnd(dmin,dmax),x=nearX+Math.cos(a)*d,y=nearY+Math.sin(a)*d;if(x<80||x>W-80||y<120||y>SEA-60||!regionOpen(regionOf(x,y))||inBld(x,y,24)||inPond(x,y,24)||onRoad(x,y,0))continue;return[Math.round(x),Math.round(y)]}return null}
-function lfTick(dt){if(!S||SCN||MPW||(S.stats.flips||0)<8)return;if(!LF){if(room)return;lfT-=dt;if(lfT>0)return;lfT=rnd(420,720);const o=lfSpot(S.px,S.py,140,320);if(!o)return;const p=lfSpot(o[0],o[1],350,650);if(!p)return;
+function lfTick(dt){if(!S||SCN||(S.stats.flips||0)<8)return;if(!LF){if(room)return;lfT-=dt;if(lfT>0)return;lfT=rnd(420,720);const o=lfSpot(S.px,S.py,140,320);if(!o)return;const p=lfSpot(o[0],o[1],350,650);if(!p)return;
     const k=pick(LF_KINDS),n=pick(["Mrs. Lee","Old Tom","Priya","Mo","Grandpa Joe","Ava","Kenji"]);LF={stage:"find",kind:k,n,ox:o[0],oy:o[1],px:p[0],py:p[1],cx:p[0]+rnd(-90,90),cy:p[1]+rnd(-90,90),t:0};SFX.hot();banner(k[1]+" "+n+" lost "+k[2]+"! Search the circled area","a");rayTextFrom(n,"Please, have you seen "+k[2]+"? Last time I saw it was somewhere around there…");return}
   LF.t+=dt;if(LF.t>420){banner(LF.n+" found "+LF.kind[2]+" on their own","a");LF=null;return}
   if(LF.stage==="find"&&Math.hypot(S.px-LF.px,S.py-LF.py)<40){LF.stage="return";SFX.tick(1);buzz([20,30,20]);banner("Found "+LF.kind[1]+"! Walk it back to "+LF.n,"g")}
   else if(LF.stage==="return"&&Math.hypot(S.px-LF.ox,S.py-LF.oy)<44){const v=Math.round(Math.max(400,rwBase()*.05)),f=Math.round(Math.max(30,(S.fans||0)*.01));earn(v);S.fans=(S.fans||0)+f;S.stats.rescues=(S.stats.rescues||0)+1;if(Math.random()<.5)gainCrate(1);dirty=true;
     SFX.rebirth();confetti(180,null,null,["#ff8fa3","#ffcc33","#fff"]);banner(LF.n+": thank you! +"+fmt(v)+" and +"+fmtN(f)+" fans","g");LF=null}}
-function drawLostWorld(){if(!LF||SCN||MPW)return;const c=ctx;
+function drawLostWorld(){if(!LF||SCN)return;const c=ctx;
   // the owner, waving
   drawPerson(LF.ox,LF.oy,{shirt:"#e39a52",skin:"#e8b896",hair:"#9aa3b3",legs:"#262b3a",mv:false,ph:wt,pose:Math.sin(wt*4)>0?"bi":null});
   c.save();c.translate(LF.ox,LF.oy);c.font="800 11px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const lab=LF.stage==="return"?"Bring it here!":LF.n+" · lost "+LF.kind[1],w=c.measureText(lab).width+14;c.fillStyle="rgba(10,14,22,.78)";rr(-w/2,-86,w,18,8);c.fill();c.fillStyle="#fff";c.fillText(lab,0,-77);c.restore();
   if(LF.stage==="find"){c.save();c.strokeStyle="rgba(255,143,163,.8)";c.lineWidth=3;c.setLineDash([10,8]);c.lineDashOffset=-wt*20;c.beginPath();c.ellipse(LF.cx,LF.cy,150,75,0,0,7);c.stroke();c.restore();
     if(Math.hypot(S.px-LF.px,S.py-LF.py)<220){c.save();c.font="22px sans-serif";c.textAlign="center";c.textBaseline="middle";c.globalAlpha=.85+.15*Math.sin(wt*6);c.fillText(LF.kind[1],LF.px,LF.py-8+Math.sin(wt*5)*2);c.restore()}}
   else{c.save();c.font="18px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(LF.kind[1],S.px+18,S.py-6+Math.sin(wt*8)*2);c.restore()}}
-function drawLostArrow(){if(!LF||SCN||MPW||room)return;const tx=LF.stage==="find"?LF.cx:LF.ox,ty=LF.stage==="find"?LF.cy:LF.oy,sx=tx-cam.x,sy=ty-cam.y;if(sx<20||sy<200||sx>vw-20||sy>vh-140)drawEdgeArrow(tx,ty,"#ff8fa3")}
+function drawLostArrow(){if(!LF||SCN||room)return;const tx=LF.stage==="find"?LF.cx:LF.ox,ty=LF.stage==="find"?LF.cy:LF.oy,sx=tx-cam.x,sy=ty-cam.y;if(sx<20||sy<200||sx>vw-20||sy>vh-140)drawEdgeArrow(tx,ty,"#ff8fa3")}
 setInterval(()=>{try{lfTick(.25)}catch(e){}},250);
 /* ---------- fireworks show: 20 seconds of rockets over town; your taps launch extra ones ---------- */
 let FWS=null;const FW=[];
@@ -3396,11 +3406,11 @@ function drawFireworks(){if(!FWS&&!FW.length)return;const dt=1/60;if(FWS){FWS.t+
   ctx.restore();ctx.globalAlpha=1}
 /* ---------- wandering merchant: shows up somewhere in town for 90 seconds with odd deals ---------- */
 let WM=null,wmT=200,wmOpen=false;
-function wmTick(dt){if(!S||SCN||MPW||(S.stats.flips||0)<5)return;if(WM){WM.left-=dt;if(WM.left<=0&&!wmOpen){WM=null;banner("The wandering merchant moved on","a")}else if(!wmOpen&&!room&&$("overlay").hidden&&Math.hypot(S.px-WM.x,S.py-WM.y)<44)openMerchant();return}
+function wmTick(dt){if(!S||SCN||(S.stats.flips||0)<5)return;if(WM){WM.left-=dt;if(WM.left<=0&&!wmOpen){WM=null;banner("The wandering merchant moved on","a")}else if(!wmOpen&&!room&&$("overlay").hidden&&Math.hypot(S.px-WM.x,S.py-WM.y)<44)openMerchant();return}
   if(room)return;wmT-=dt;if(wmT>0)return;wmT=rnd(300,540);for(let i=0;i<120;i++){const a=Math.random()*7,d=rnd(250,600),x=S.px+Math.cos(a)*d,y=S.py+Math.sin(a)*d;if(x<80||x>W-80||y<120||y>SEA-60||!regionOpen(regionOf(x,y))||inBld(x,y,30)||inPond(x,y,30))continue;
     const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(HEAVY[p.code]||0)<=S.pr).sort((a,b)=>b.base-a.base),it=pick(pool.slice(0,6)),c=CAT[it.cat],cond=c.conds[0],base=Math.round(it.base*cond[1]*edK());
     WM={x:Math.round(x),y:Math.round(y),left:90,item:{cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,noise:1,fake:false},bought:{}};SFX.hot();banner("🧙 A wandering merchant appeared · follow the purple arrow","a");return}}
-function drawMerchant(){if(!WM||SCN||MPW)return;const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-120||sx>vw+40||sy>vh+40)return;
+function drawMerchant(){if(!WM||SCN)return;const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-120||sx>vw+40||sy>vh+40)return;
   drawPerson(WM.x,WM.y,{shirt:"#5a2a8a",skin:"#c98e62",hair:"#d9d9d9",acc:{h:"wizard",o:"robe"},legs:"#2a1c66",build:{c:.3,l:.2,b:.3},mv:false,ph:wt});
   const c=ctx;c.save();c.translate(WM.x,WM.y);for(let i=0;i<5;i++){const a=wt*2+i*1.26;c.fillStyle=`rgba(255,215,90,${.5+.5*Math.sin(wt*5+i)})`;c.beginPath();c.arc(Math.cos(a)*26,-40+Math.sin(a)*16,2.2,0,7);c.fill()}
   c.font="800 11px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const lab="Merchant · "+Math.ceil(WM.left)+"s",w=c.measureText(lab).width+14;c.fillStyle="rgba(58,34,102,.9)";rr(-w/2,-96,w,18,8);c.fill();c.fillStyle="#fff";c.fillText(lab,0,-87);c.restore()}
@@ -3439,7 +3449,7 @@ function openStickers(back){room="stickers";$("room").hidden=false;const draw=()
   const t=$("stkTrade");if(t)t.onclick=()=>{if((S.stkDup||0)<5)return;const miss=STK_ALL.filter(k=>!S.stk[k]);if(!miss.length)return banner("Your book is complete!","g");S.stkDup-=5;const k=pick(miss),[pi,j]=k.split(":").map(Number);stkGive(pi,j);draw()}};draw()}
 /* ---------- mystery balloon: drifts across town every few minutes; tap it for a gift ---------- */
 let BAL=null,balT=90;
-function balloonTick(dt){if(!S||SCN||MPW||room||(S.stats.flips||0)<3)return;if(BAL){BAL.t+=dt;BAL.x+=BAL.vx*dt;BAL.y+=Math.sin(BAL.t*1.3)*8*dt-4*dt;if(BAL.pop!=null){BAL.pop+=dt;if(BAL.pop>1.2)BAL=null}else if(BAL.t>BAL.life)BAL=null;return}
+function balloonTick(dt){if(!S||SCN||room||(S.stats.flips||0)<3)return;if(BAL){BAL.t+=dt;BAL.x+=BAL.vx*dt;BAL.y+=Math.sin(BAL.t*1.3)*8*dt-4*dt;if(BAL.pop!=null){BAL.pop+=dt;if(BAL.pop>1.2)BAL=null}else if(BAL.t>BAL.life)BAL=null;return}
   balT-=dt;if(balT>0)return;balT=rnd(150,300);const left=Math.random()<.5,y=clamp(S.py+rnd(-260,-120),120,SEA-200);BAL={x:S.px+(left?-1:1)*(vw/2+60),y,vx:(left?1:-1)*rnd(55,80),t:0,life:22,c:pick(["#e2364a","#ffcc33","#2fd28a","#4fe3ff","#ff4fd8"])};SFX.hot();banner("🎈 A mystery balloon is drifting by · tap it!","a")}
 function drawBalloon(){if(!BAL)return;const b=BAL,c=ctx;c.save();c.translate(b.x,b.y);
   if(b.pop!=null){const k=b.pop;c.globalAlpha=Math.max(0,1-k);c.fillStyle="#ffcc33";for(let i=0;i<10;i++){const a=i*.63;c.beginPath();c.arc(Math.cos(a)*40*k,Math.sin(a)*40*k+40*k*k,5,0,7);c.fill()}c.restore();return}
@@ -3473,16 +3483,16 @@ $("wkChip").onclick=()=>{audioOn();if(room)closeRoom();openWeekly()};
 /* ---------- treasure maps: read one and an X appears somewhere in town; walk there and dig ---------- */
 function renderMapChip(){const el=$("mapChip");if(!el||!S)return;const n=S.maps||0,on=!!S.tmap;el.hidden=!n&&!on;if(el.hidden)return;
   const h=on?`<span class="pk">🗺️ Map</span><span class="pt">Follow the X</span><span class="pr">${Math.round(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)/10)} m</span>`:`<span class="pk">🗺️ Map</span><span class="pt">Tap to read</span><span class="pr">×${n}</span>`;if(el.innerHTML!==h)el.innerHTML=h}
-function readMap(){if(S.tmap||!(S.maps>0)||SCN||MPW)return SCN||MPW?banner("Read your map back in Flip City","a"):null;
+function readMap(){if(S.tmap||!(S.maps>0)||SCN)return SCN?banner("Read your map back in Flip City","a"):null;
   for(let i=0;i<200;i++){const x=rnd(80,W-80),y=rnd(140,SEA-60);if(!regionOpen(regionOf(x,y))||inBld(x,y,30)||inPond(x,y,30)||onRoad(x,y,0))continue;if(Math.hypot(x-S.px,y-S.py)<300)continue;
     S.maps--;S.tmap={x:Math.round(x),y:Math.round(y)};dirty=true;SFX.hot();banner("X marks the spot · follow the arrow","g");rayText("An old map! Somewhere in town there's an X. Walk to it and dig.");renderMapChip();return}}
 $("mapChip").onclick=()=>{audioOn();if(room)closeRoom();if(!S.tmap)readMap();else banner(Math.round(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)/10)+" m to the X","a")};
-function drawMapX(){if(!S||!S.tmap||SCN||MPW||room)return;const T=S.tmap,sx=T.x-cam.x,sy=T.y-cam.y;
+function drawMapX(){if(!S||!S.tmap||SCN||room)return;const T=S.tmap,sx=T.x-cam.x,sy=T.y-cam.y;
   if(sx>-30&&sy>-30&&sx<vw+30&&sy<vh+30){ctx.save();ctx.translate(sx,sy);ctx.strokeStyle="rgba(122,58,20,.35)";ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.lineDashOffset=-wt*14;ctx.beginPath();ctx.ellipse(0,0,26,12,0,0,7);ctx.stroke();ctx.setLineDash([]);
     ctx.strokeStyle="#e2364a";ctx.lineWidth=6;ctx.lineCap="round";const k=10+Math.sin(wt*4)*1.5;ctx.beginPath();ctx.moveTo(-k,-k*.55);ctx.lineTo(k,k*.55);ctx.moveTo(k,-k*.55);ctx.lineTo(-k,k*.55);ctx.stroke();ctx.restore()}
   else drawEdgeArrow(T.x,T.y,"#e2364a")}
 let digOpen=false;
-setInterval(()=>{if(!S||!S.tmap||SCN||MPW||room||digOpen||!$("overlay").hidden)return;if(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)<40)openDig()},300);
+setInterval(()=>{if(!S||!S.tmap||SCN||room||digOpen||!$("overlay").hidden)return;if(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)<40)openDig()},300);
 function openDig(){digOpen=true;let taps=0;const need=7;const ov=document.createElement("div");ov.className="crateov digov";ov.innerHTML=`<div class="crrays" id="dgRays"></div><div class="digpit" id="dgPit"><b>⛏️</b></div><p class="crhint" id="dgHint">Tap to dig!</p><div class="crres" id="dgRes"></div>`;document.body.appendChild(ov);
   const pit=ov.querySelector("#dgPit");pit.onpointerdown=e=>{e.preventDefault();if(taps>=need)return;taps++;pit.classList.remove("hit");void pit.offsetWidth;pit.classList.add("hit");const c=elC(pit);sparks(c[0],c[1],"#a8743a",14,.8);shake(2+taps,.2);SFX.crate(Math.min(3,taps/2));buzz(12);
     ov.querySelector("#dgHint").textContent=taps<need?["","Keep going","Deeper…","Something hard!","Almost…","Clunk!",""][taps]||"Dig!":"";if(taps<need)return;
@@ -3821,7 +3831,7 @@ function loop(now){
       S.energy=Math.min(maxEnergy(),S.energy+dt/3*(S.buffs&&S.buffs.fed>0?2:1)*(isDay("sun")?2:1)*(1+accFx("regen")));
       const wasT=S.awake>20;S.awake=(S.awake||0)+dt/10;if(!wasT&&S.awake>20){banner("You're tired","r");rayText("You've been up all day. Lifts are harder and you walk slower until you sleep at Home.")}
       for(const b in S.buffs)if(S.buffs[b]>0)S.buffs[b]=Math.max(0,S.buffs[b]-dt);
-      if(S.lastSeason!==season().n&&!SCN&&!MPW){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
+      if(S.lastSeason!==season().n&&!SCN){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
       if(SCN)sceneTick(dt);else if(target&&!room){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
         if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(me)openPlot(me)}else if(k==="crewhq")openCrew(closeRoom);else{const hp=!PL[k]&&hubPlaces().find(q=>q.k===k);if(hp)hp.go();else openRoom(k)}}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
           if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{if(nx>=X4+30&&!W4_OK(nx-X4,ny-Y4)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=nx>W-30&&nx<X4+30?clamp(ny,ROAD_Y-95,ROAD_Y+95):ny;moving=true;dirty=true;if(S.px>W-40&&S.py>600&&S.py<800)roadEastEdge();{const ih=S.px>=X4;if(ih!==hubOpen.was){hubOpen.was=ih;shownCash=null;renderHud();if(ih&&!S.flags.w4Seen){S.flags.w4Seen=1;{const W4=w4();if(!W4.gift){W4.gift=1;W4.gems+=50}W4.last=W4.last||Date.now()}banner("Welcome to the Frontier "+GEM,"g");rayText("Here's 50 Gems to get you going. Head to the Sky Islands and dig a couple of crystal mines. They keep digging even while you're gone.")}}}}if(S.job)jobArrive();if(EV&&EV.x!=null){const ed=Math.hypot(S.px-EV.x,S.py-EV.y);if(ed<34&&!EV.inside){EV.inside=1;eventArrive()}else if(ed>60)EV.inside=0}}}}
@@ -3845,7 +3855,7 @@ function loop(now){
       if(room==="storage")lotTick(dt);
       if(!SCN)findsTick(dt);funTick(dt);jobTick(dt);rivalTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
-      if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else if(!SCN&&!MPW){nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
+      if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else if(!SCN){nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();tutTick(dt);
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
@@ -4168,7 +4178,7 @@ function mpTick(dt){
   if(gone){renderMpChip();mpRefresh()}
   pubTick(dt);mpRoomTick()
 }
-function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,...peerLook(p),...peerEmo(p),mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
+function mpPeople(ppl){if(!MP)return;for(const id in MP.peers){const p=MP.peers[id];if(p.w||p.dx==null)continue;if(p.dx>W-20&&!hubOpen())continue;peerPartner(p,ppl);peerPet(p,ppl);const prd=p.rd&&VEH.some(v=>v.k===p.rd)?p.rd:null;if(prd&&CARS.includes(prd)){ppl.push([p.dy,()=>drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo)]);continue}ppl.push([p.dy,()=>{if(prd)drawRideAt(p.dx,p.dy,p.h||0,prd,p.pt,p.cmo);drawPerson(p.dx,p.dy,{acc:p.ac||null,shirt:p.s||"#2a3cff",skin:p.sk||"#e8b896",hair:p.hr||"#3b2a20",hs:p.hs||0,...peerLook(p),...peerEmo(p),mv:!!p.m,ph:p.ph,crown:(p.k||0)>=5,tall:p.t||1,size:p.z||1,build:p.b?{c:p.b[0],l:p.b[1],b:p.b[2]}:null});ctx.strokeStyle="rgba(47,210,138,.8)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.dx,p.dy+1,16*(p.z||1),6,0,0,7);ctx.stroke()}])}}
 function bubble(x,y,txt,col){ctx.font="700 12px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const w=Math.min(220,ctx.measureText(txt).width+18);ctx.fillStyle=col||"rgba(255,255,255,.96)";rr(x-w/2,y-13,w,26,11);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y+12);ctx.lineTo(x+5,y+12);ctx.lineTo(x,y+18);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(txt.length>34?txt.slice(0,33)+"…":txt,x,y+1)}
 function mpTags(){
   if(myBub)bubble(S.px,S.py-70*tallK(),myBub.txt);
@@ -5446,7 +5456,9 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=83,WN=[
+const WN_VER=84,WN=[
+ ["🗺️","Minimap","A little map now sits in the corner. Tap it to see the whole map, with you, your friends, your goal and every place on it. Tap a place to walk there or grab a taxi.","2026-10-07T10:00"],
+ ["🌐","Everything is online","The Online Town now has everything your home town has: the road to the Frontier, World 4, weather, ride share, treasure maps, the wandering merchant, bugs, ghosts, shooting stars and more.","2026-10-07T09:59"],
  ["🗺️","One big map","World 4 is now part of Flip City's map: walk east past the old edge of town, down the road, and straight into the Tycoon Frontier without ever loading a new area. The grass slowly changes colour along the way.","2026-10-07T08:45"],
  ["🛣️","The road is part of town","The Frontier Road is now simply part of Flip City's map: keep walking east past the old edge of town, past Rusty's diner, and you reach World 4. The rift portal between Deep Time and World 4 is back too. Also fixed: you can leave a shop you opened from the phone.","2026-10-07T08:30"],
  ["🚀","Roomier worlds","The Cosmos and Deep Time are now about as big as Flip City, with far more people about (and a few aliens). New things to do there: a Space Arcade, Galactic Diner, Zero-G Club and Alien Pet Shop in orbit, and a Cave Arcade, Mammoth Grill and Dino Pet Pen in Deep Time. The Frontier got lamp posts and glowing zone gates at night.","2026-10-07T08:20"],
@@ -6905,9 +6917,53 @@ function openTaxi(){room="taxi";$("room").hidden=false;const fare=p=>Math.max(20
     <div class="perks">${shownPlaces().filter(p=>regionOpen(p.region)&&!p.hub).map(p=>`<button class="perk nopic" data-taxi="${p.k}" ${S.cash<fare(p)?"disabled":""}><span class="t">${p.n}</span><span class="d">${p.sub||""}</span><span class="c">${fmt(fare(p))}</span></button>`).join("")}</div></div>`;
   $("leaveBtn").onclick=closeRoom;$("room").querySelectorAll("[data-taxi]").forEach(b=>b.onclick=()=>{const p=PL[b.dataset.taxi],f=fare(p);if(S.cash<f)return;S.cash-=f;dirty=true;closeRoom();
     const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="🚕";document.body.appendChild(fx);SFX.door();setTimeout(()=>{S.px=p.door[0];S.py=p.door[1]+16;target=null;moving=false;bKey="";PET=null;PT=null;KT=null},600);setTimeout(()=>{fx.remove();banner("Arrived at "+p.n,"u")},1300)})}
+/* ---------- minimap: a little map in the corner; tap it for the whole map, then tap a place to walk or take a taxi there ---------- */
+const MMK=.075,MMS=104;let MMI=null,MMKEY="",MMT=0,MMB=null;
+function mmMap(){if(SCN){const w=SCN_C.width>1?SCN_C.width:(SCN.w||W),h=SCN_C.height>1?SCN_C.height:(SCN.h||H);return{key:"s:"+scKey()+":"+w,w,h,parts:[[SCN_C,0,0]],places:SCN.places.filter(p=>p.door),bg:SCN.bg||"#4a4f5c",title:SCN.title||"Map"}}
+  const tw=townW(),parts=[[STATIC_C,0,0]];if(hubOpen())parts.push([roadLand(),W,ROAD_OFF],[hubLand(),X4,Y4]);
+  return{key:"t:"+tw+":"+isDark()+":"+MPW,w:tw,h:H,parts,places:shownPlaces().filter(p=>regionOpen(p.region)&&p.door),bg:isDark()?PAL_D.grass:PAL_L.grass,town:1,title:MPW?"Online Town":hubOpen()?"Flip City & the Frontier":"Flip City"}}
+function mmPaint(g,M,k){g.fillStyle=M.bg;g.fillRect(0,0,M.w*k,M.h*k);
+  if(M.town&&M.w>W){const gg=g.createLinearGradient(W*k,0,(X4+300)*k,0);gg.addColorStop(0,M.bg);gg.addColorStop(1,EDGE4);g.fillStyle=gg;g.fillRect(W*k,0,(M.w-W)*k,M.h*k)}
+  M.parts.forEach(([c,x,y])=>{if(c&&c.width>1)g.drawImage(c,x*k,y*k,c.width*k,c.height*k)});
+  if(M.town){g.fillStyle="#4a90c8";g.fillRect(0,SEA*k,W*k,(H-SEA)*k)}}
+function mmExtra(){const L=[];if(SCN)return L;
+  if(RS){const T=RS.stage==="pick"?RS.p:RS.d.door;L.push([T[0],T[1],"#ffcc33","🚕"])}
+  if(LF)L.push([LF.stage==="find"?LF.cx:LF.ox,LF.stage==="find"?LF.cy:LF.oy,"#ff8fa3","🐾"]);
+  if(WM)L.push([WM.x,WM.y,"#8f52d4","🧳"]);
+  if(typeof roadMarks==="function")roadMarks().forEach(m=>L.push(m));return L}
+function mmMarks(g,M,k,ox,oy,big){const P=(x,y)=>[x*k-ox,y*k-oy];g.textAlign="center";g.textBaseline="middle";
+  if(big&&M.town&&hubOpen()){g.font="800 11px "+FONTS.b;[["Flip City",W/2,90],["Frontier Road",W+RDW/2,ROAD_Y-170],["Tycoon Frontier",X4+W4W/2,Y4+230]].forEach(([t,x,y])=>{const[a,b]=P(x,y),w=g.measureText(t).width+14;g.fillStyle="rgba(20,16,30,.62)";rr2(g,a-w/2,b-9,w,18,9);g.fillStyle="#fff";g.fillText(t,a,b+.5)})}
+  M.places.forEach(p=>{const[x,y]=P(p.door[0],p.door[1]);if(x<-6||y<-6||x>M.w*k+6&&!big)return;const sel=big&&MMB&&MMB.sel===p;g.fillStyle=p.c||"#fff";g.strokeStyle=sel?"#fff":"rgba(0,0,0,.55)";g.lineWidth=sel?2.5:1;g.beginPath();g.arc(x,y,big?(sel?7:4.5):2.6,0,7);g.fill();g.stroke()});
+  mmExtra().forEach(([x,y,c,ic])=>{const[a,b]=P(x,y);if(big){g.font="13px sans-serif";g.fillText(ic,a,b)}else{g.fillStyle=c;g.strokeStyle="#fff";g.lineWidth=1.2;g.beginPath();g.arc(a,b,3.4,0,7);g.fill();g.stroke()}});
+  if(MP)for(const id in MP.peers){const q=MP.peers[id];let x,y;if(SCN){if(q.sc!==scKey()||q.sx==null)continue;x=q.sx;y=q.sy}else{if(q.w||q.dx==null||q.dx>W-20&&!hubOpen())continue;x=q.dx;y=q.dy}
+    const[a,b]=P(x,y);g.fillStyle="#2fd28a";g.strokeStyle="#fff";g.lineWidth=1.5;g.beginPath();g.arc(a,b,big?5.5:3.6,0,7);g.fill();g.stroke();if(big){g.font="800 10px "+FONTS.b;g.fillStyle="#fff";g.strokeStyle="rgba(10,14,22,.8)";g.lineWidth=3;const n=String(q.n||"?").slice(0,12);g.strokeText(n,a,b-12);g.fillText(n,a,b-12)}}
+  let gd=null;try{gd=goalDest()}catch(e){}if(gd){const[a,b]=P(gd.x,gd.y);g.font=(big?16:12)+"px sans-serif";g.fillText("⭐",a,b-(big?8:5))}
+  const[x,y]=P(S.px,S.py);g.save();g.translate(x,y);g.rotate(S.hd||0);const r=big?8:6;g.fillStyle="#fff";g.strokeStyle="#1b2230";g.lineWidth=1.6;g.beginPath();g.moveTo(r,0);g.lineTo(-r*.7,r*.7);g.lineTo(-r*.3,0);g.lineTo(-r*.7,-r*.7);g.closePath();g.fill();g.stroke();g.restore()}
+function rr2(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();g.fill()}
+function mmDraw(){const cv=$("miniMap");if(!cv||!S)return;const M=mmMap();if(MMB&&(M.key!==MMB.M.key||!$("room").hidden||!$("overlay").hidden))mmClose();
+  const show=playing&&$("room").hidden&&$("overlay").hidden&&!MMB&&!(S.flags&&S.flags.mmOff)&&!document.body.classList.contains("photo");if(cv.hidden===show)cv.hidden=!show;if(!show)return;
+  const now=performance.now();if(!MMI||M.key!==MMKEY||now-MMT>4000){MMKEY=M.key;MMT=now;MMI=MMI||document.createElement("canvas");MMI.width=Math.ceil(M.w*MMK);MMI.height=Math.ceil(M.h*MMK);mmPaint(MMI.getContext("2d"),M,MMK)}
+  const D=Math.min(2,devicePixelRatio||1);if(cv.width!==MMS*D){cv.width=cv.height=MMS*D}const g=cv.getContext("2d");g.setTransform(D,0,0,D,0,0);g.fillStyle=M.bg;g.fillRect(0,0,MMS,MMS);
+  const ox=clamp(S.px*MMK-MMS/2,Math.min(0,M.w*MMK-MMS),Math.max(0,M.w*MMK-MMS)),oy=clamp(S.py*MMK-MMS/2,Math.min(0,M.h*MMK-MMS),Math.max(0,M.h*MMK-MMS));g.drawImage(MMI,-ox,-oy);mmMarks(g,M,MMK,ox,oy,false)}
+function mmOpen(){if(!S||!$("room").hidden)return;try{audioOn()}catch(e){}const M=mmMap(),el=$("mmBig"),pw=Math.min(innerWidth-24,456)-20,hh=Math.min(330,innerHeight*.42);let k=hh/M.h;if(M.w*k<pw)k=Math.min(pw/M.w,innerHeight*.5/M.h);
+  const D=Math.min(2,devicePixelRatio||1),img=document.createElement("canvas");img.width=Math.ceil(M.w*k*D);img.height=Math.ceil(M.h*k*D);const ig=img.getContext("2d");ig.scale(D,D);mmPaint(ig,M,k);
+  MMB={M,k,img,D,sel:null};SFX.tick(.4);
+  el.innerHTML=`<div class="mmin"><div class="mmhead"><b>🗺️ ${esc(M.title)}</b><button class="mmx" id="mmX" aria-label="Close the map">✕</button></div><div class="mmsc" id="mmSc"><canvas id="mmCv"></canvas></div><div class="mmsel" id="mmSel"></div></div>`;el.hidden=false;
+  const cv=$("mmCv");cv.width=img.width;cv.height=img.height;cv.style.width=Math.round(M.w*k)+"px";cv.style.height=Math.round(M.h*k)+"px";const sc=$("mmSc");sc.scrollLeft=S.px*k-sc.clientWidth/2;sc.scrollTop=S.py*k-sc.clientHeight/2;
+  $("mmX").onclick=mmClose;cv.onclick=e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/k,y=(e.clientY-r.top)/k;let best=null,bd=30/k;M.places.forEach(p=>{const d=Math.hypot(p.door[0]-x,p.door[1]-y);if(d<bd){bd=d;best=p}});MMB.sel=best;SFX.tick(.3);mmSel();mmBigDraw()};mmSel();mmBigDraw()}
+function mmClose(){MMB=null;const el=$("mmBig");if(el){el.hidden=true;el.innerHTML=""}}
+const mmFare=p=>Math.max(20,Math.round(Math.hypot(p.door[0]-S.px,p.door[1]-S.py)*.12*(1+repLevel()*.05)));
+function mmSel(){const el=$("mmSel");if(!el||!MMB)return;const p=MMB.sel;if(!p){el.innerHTML=`<span class="fine" style="flex:1">Tap a place on the map to walk there${MMB.M.town?" or take a taxi":""}. You're the white arrow${MP?", friends are green":""}.</span>`;return}
+  const f=MMB.M.town?mmFare(p):0;el.innerHTML=`<span class="nm"><b>${esc(p.n)}</b><small>${esc(String(p.sub||"").replace(/<[^>]*>/g,""))}</small></span><button id="mmWalk">🚶 Walk</button>${MMB.M.town?`<button class="alt" id="mmTaxi" ${S.cash<f?"disabled":""}>🚕 ${fmt(f)}</button>`:""}`;
+  $("mmWalk").onclick=()=>{mmClose();target=[p.door[0],p.door[1]+16];moving=true;if(!SCN)autoEnter=p.k};
+  const t=$("mmTaxi");if(t)t.onclick=()=>{if(S.cash<f)return;S.cash-=f;dirty=true;mmClose();const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="🚕";document.body.appendChild(fx);SFX.door();
+    setTimeout(()=>{S.px=p.door[0];S.py=p.door[1]+16;target=null;moving=false;bKey="";PET=null;PT=null;KT=null;hubOpen.was=null},600);setTimeout(()=>{fx.remove();banner("Arrived at "+p.n,"u");renderHud()},1300)}}
+function mmBigDraw(){if(!MMB)return;const{M,k,img,D}=MMB,cv=$("mmCv");if(!cv)return;const g=cv.getContext("2d");g.setTransform(1,0,0,1,0,0);g.drawImage(img,0,0);g.setTransform(D,0,0,D,0,0);mmMarks(g,M,k,0,0,true)}
+setInterval(()=>{try{mmDraw();mmBigDraw()}catch(e){console.warn(e)}},200);
+$("miniMap").onclick=mmOpen;
 /* police: drive too fast in a car and you might get chased */
 let COP=null,copT=30;
-function copTick(dt){if(MPW||SCN||room||repLevel()<5||!playing){if(COP&&(room||SCN))COP=null;return}const rd=ride(),fast=rd&&CARS.includes(rd)&&moving;
+function copTick(dt){if(SCN||room||repLevel()<5||!playing){if(COP&&(room||SCN))COP=null;return}const rd=ride(),fast=rd&&CARS.includes(rd)&&moving;
   if(!COP){copT-=dt*(fast?1:0);if(copT<=0){copT=rnd(60,120);if(Math.random()<.5){const a=S.hd+Math.PI;COP={x:S.px+Math.cos(a)*320,y:S.py+Math.sin(a)*320,t:12,hd:0};banner("🚓 Police! Pull over… or don't","r");SFX.hot()}}return}
   COP.t-=dt;const dx=S.px-COP.x,dy=S.py-COP.y,d=Math.hypot(dx,dy),sp=walkSpeed()*(moving?.92:1.3);COP.hd=Math.atan2(dy,dx);if(d>2){COP.x+=dx/d*Math.min(d,sp*dt);COP.y+=dy/d*Math.min(d,sp*dt)}
   if(d<26){const f=Math.max(500,Math.round(S.cash*.03));S.cash=Math.max(0,S.cash-f);dirty=true;COP=null;SFX.loss();shake(6);banner("Busted! Speeding fine −"+fmt(f),"r");return}
@@ -7196,7 +7252,7 @@ const W4ART={
 const w4Art=(k,sz=40)=>`<svg viewBox="0 0 40 40" width="${sz}" height="${sz}" aria-hidden="true">${W4ART[k]||""}</svg>`;
 const W4ZK=k=>W4Z.find(z=>z.k===k),W4B=(z,k)=>z.B.find(b=>b.k===k);
 const w4=()=>{S.w4=S.w4||{open:0,gems:0,tot:0,last:Date.now(),unl:{sky:1},z:{},ex:"",gift:0};W4Z.forEach(z=>{if(!S.w4.z[z.k])S.w4.z[z.k]={t:Array(W4_COLS*W4_ROWS).fill(null),storm:null,ev:0}});return S.w4};
-const inW4=()=>typeof SCN!=="undefined"&&(SCN?SCN.kind==="w4"||SCN.kind==="castle":!!(S&&!MPW&&S.px>=X4));
+const inW4=()=>typeof SCN!=="undefined"&&(SCN?SCN.kind==="w4"||SCN.kind==="castle":!!(S&&S.px>=X4));
 const w4Nb=i=>{const x=i%W4_COLS,y=Math.floor(i/W4_COLS),o=[];if(x>0)o.push(i-1);if(x<W4_COLS-1)o.push(i+1);if(y>0)o.push(i-W4_COLS);if(y<W4_ROWS-1)o.push(i+W4_COLS);return o};
 const w4Count=(zk,bk)=>w4().z[zk].t.filter(t=>t&&t.k===bk).length;
 const w4Cost=(z,b)=>Math.round(b.c*Math.pow(1.12,w4Count(z.k,b.k)));
@@ -7438,7 +7494,7 @@ function w4Anim(){const W=w4();
 const ROAD_Y=700;let ROADTRIP=false;
 // Flip City runs on past its old east edge (W) for another RDW pixels of dirt road; only the road band is walkable out there
 const ROAD_OFF=200,X4=2600+2800,Y4=ROAD_Y-780,EDGE4="#79b866";   // World 4's hub sits at the end of the road: its west road (y=780) lines up with Flip City's (y=700)
-const hubOpen=()=>!!(S&&S.w4&&S.w4.open&&!MPW),townW=()=>hubOpen()?X4+W4W:W;   // the road land is drawn RDH tall, starting ROAD_OFF px down the map
+const hubOpen=()=>!!(S&&S.w4&&S.w4.open),townW=()=>hubOpen()?X4+W4W:W;   // the road land is drawn RDH tall, starting ROAD_OFF px down the map
 let HUBC=null,HUBS=null,HUBK="",HUBT=0;
 function hubKey(){const W=w4();return Object.keys(W.unl).join(",")+"|"+hasCastle()+"|"+isDark()}
 function hubLand(){const now=performance.now();if(HUBC&&now-HUBT<1000)return HUBC;HUBT=now;const k=hubKey();if(HUBC&&k===HUBK)return HUBC;HUBK=k;
@@ -7457,7 +7513,7 @@ function drawRoadLand(){if(!hubOpen()||cam.x+vw<W)return;
   if(cam.x>X4)return;const R2=roadLand(),sx=Math.max(0,cam.x-W),dx=Math.max(W,cam.x);const w=Math.min(RDW-sx,cam.x+vw-dx);if(w<=0)return;ctx.drawImage(R2,sx,0,w,RDH,dx,ROAD_OFF,w,RDH);
   ctx.save();ctx.translate(W,ROAD_OFF);const c=ctx,x=933,y=90;c.save();c.translate(x,y);c.rotate(wt*1.2);c.fillStyle="#f2f2f2";for(let i=0;i<4;i++){c.rotate(Math.PI/2);c.fillRect(-4,0,8,60)}c.restore();c.fillStyle="#2b2233";c.beginPath();c.arc(x,y,6,0,7);c.fill();
   c.strokeStyle="#2b2233";c.lineWidth=2;for(let i=0;i<4;i++){const bx=((wt*40+i*700)%(RDW+200))-100,by=160+i*60+Math.sin(wt*2+i)*10,f=Math.sin(wt*8+i)*4;c.beginPath();c.moveTo(bx-8,by-f);c.quadraticCurveTo(bx-3,by-4,bx,by);c.quadraticCurveTo(bx+3,by-4,bx+8,by-f);c.stroke()}ctx.restore()}
-function roadEastEdge(){if(ROADTRIP||SCN||MPW||room)return;if(S.w4&&S.w4.open)return;{S.px=W-70;target=null;moving=false;if(!roadEastEdge.t||Date.now()-roadEastEdge.t>4000){roadEastEdge.t=Date.now();banner("🚧 Road closed. Build the Amber Ziggurat in Deep Time to 10 tiers ("+zigN()+"/"+W4_ZIG+")","a")}return}
+function roadEastEdge(){if(ROADTRIP||SCN||room)return;if(S.w4&&S.w4.open)return;{S.px=W-70;target=null;moving=false;if(!roadEastEdge.t||Date.now()-roadEastEdge.t>4000){roadEastEdge.t=Date.now();banner("🚧 Road closed. Build the Amber Ziggurat in Deep Time to 10 tiers ("+zigN()+"/"+W4_ZIG+")","a")}return}
 }
 function roadWestEdge(){if(!SCN||SCN.kind!=="w4"||room)return;target=null;moving=false;SCN=null;S.px=W+RDW-90;S.py=ROAD_Y;S.hd=Math.PI;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner("On the Frontier Road · Flip City is west","a")}
 // a little side-on walk down the road: city blocks give way to fields, then the Frontier's sky islands and ferris wheel
@@ -7563,7 +7619,7 @@ function openRift(back){room="rift";const W=w4();
     <button class="bigbtn" id="rfGo" disabled>The rift is still closed<small>It opens when the Ziggurat reaches ${W4_ZIG} tiers (${zigN()}/${W4_ZIG}). The road east of Flip City opens then too.</small></button></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
   $("rfGo").onclick=()=>{if(zigN()<W4_ZIG||S.cash<W4_COST)return;S.cash-=W4_COST;W.open=1;W.last=Date.now();if(!W.gift){W.gift=1;W.gems+=50}dirty=true;SFX.rebirth();flash("#ff4fd8",.8);confetti(320,null,null,["#ff4fd8","#4fe3ff","#ffcc33","#fff"]);shake(12,.9);banner("THE RIFT IS OPEN","g");closeRoom();setTimeout(()=>flyTo({n:"Tycoon Frontier",cn:"World 4 · build anything",tone:"#ff4fd8",fx:"whirl"},enterW4),900)}}
-function enterW4(fromRoad){const W=w4();W.open=1;if(!W.gift){W.gift=1;W.gems+=50}W.last=W.last||Date.now();if(room)closeRoom();if(MPW)return;SCN=null;S.px=X4+(fromRoad?110:900);S.py=Y4+(fromRoad?780:1250);S.hd=-Math.PI/2;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;hubOpen.was=null;shownCash=null;renderHud();return;enterScene({kind:"w4",k:"frontier",w:W4W,h:W4H,spawn:fromRoad?[110,780]:[900,1250],bg:"#5fa86a",title:"Tycoon Frontier",shirts:["#ff4fd8","#4fe3ff","#ffcc33","#7a2fd6","#2fd28a"],mk:w4Places,pt:()=>{for(let t=0;t<30;t++){const x=200+Math.random()*1400,y=300+Math.random()*1000;if(W4_OK(x,y)&&!SCN.places.some(p=>x>p.x-10&&x<p.x+p.w+10&&y>p.y-10&&y<p.y+p.h+10))return[x,y]}return[900,900]},ok:W4_OK});
+function enterW4(fromRoad){const W=w4();W.open=1;if(!W.gift){W.gift=1;W.gems+=50}W.last=W.last||Date.now();if(room)closeRoom();SCN=null;S.px=X4+(fromRoad?110:900);S.py=Y4+(fromRoad?780:1250);S.hd=-Math.PI/2;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;hubOpen.was=null;shownCash=null;renderHud();return;enterScene({kind:"w4",k:"frontier",w:W4W,h:W4H,spawn:fromRoad?[110,780]:[900,1250],bg:"#5fa86a",title:"Tycoon Frontier",shirts:["#ff4fd8","#4fe3ff","#ffcc33","#7a2fd6","#2fd28a"],mk:w4Places,pt:()=>{for(let t=0;t<30;t++){const x=200+Math.random()*1400,y=300+Math.random()*1000;if(W4_OK(x,y)&&!SCN.places.some(p=>x>p.x-10&&x<p.x+p.w+10&&y>p.y-10&&y<p.y+p.h+10))return[x,y]}return[900,900]},ok:W4_OK});
   SCN.npc=[];if(fromRoad){S.hd=0;SCN.tx=W-90;SCN.ty=ROAD_Y}
   if(!S.flags.w4Seen){S.flags.w4Seen=1;dirty=true;setTimeout(()=>{banner("Welcome to the Frontier "+GEM,"g");rayText("Here's 50 Gems to get you going. Head to the Sky Islands and dig a couple of crystal mines. They keep digging even while you're gone.")},1200)}}
 /* ---------- rooms ---------- */
@@ -7633,7 +7689,7 @@ function funTick(dt){chTick(dt);musUnlockTick(dt);
   if(FRZ>0){FRZ-=dt;if(M)for(let i=0;i<3;i++)M.restock[i]=Math.min(M.restock[i],.12);if(FRZ<=0){FRZ=0;document.body.classList.remove("frz");banner("Frenzy over · build hype again","a")}}
   else if(S.hype>0){S.hypeT=(S.hypeT||0)+dt;if(S.hypeT>30){S.hypeT=20;S.hype--;dirty=true}}
   hypeR-=dt;if(hypeR<=0){hypeR=.2;renderHype()}
-  if(!SCN&&!MPW){thiefTick(dt);buyerTick(dt)}else{THIEF=null;BUY=null}}
+  if(!SCN){thiefTick(dt);buyerTick(dt)}else{THIEF=null;BUY=null}}
 // a thief snatches a bag of cash; chase him down on the map
 let THIEF=null,thiefT=75;
 function thiefTick(dt){if(!playing||(S.tut!=null&&S.tut<6))return;
@@ -7810,7 +7866,7 @@ const CHAL=[
  {k:"frenzy",n:()=>1,dur:150,t:()=>"Start a FRENZY",v:()=>S.stats.frenzies||0},
  {k:"street",n:()=>1,dur:90,t:()=>"Sell to a street buyer",v:()=>S.stats.street||0,town:1,need:()=>S.stash.length>0}];
 let chT=45;
-function chStart(){const pool=CHAL.filter(c=>(!c.town||(!SCN&&!MPW))&&(!c.need||c.need())),c=pick(pool),n=c.n();S.ch={k:c.k,n,b:c.v(),left:c.dur,dur:c.dur};dirty=true;SFX.news();buzz([20,20]);banner("Challenge: "+c.t(n)+" in "+c.dur+"s","a")}
+function chStart(){const pool=CHAL.filter(c=>(!c.town||(!SCN))&&(!c.need||c.need())),c=pick(pool),n=c.n();S.ch={k:c.k,n,b:c.v(),left:c.dur,dur:c.dur};dirty=true;SFX.news();buzz([20,20]);banner("Challenge: "+c.t(n)+" in "+c.dur+"s","a")}
 function chTick(dt){if(!playing||(S.tut!=null&&S.tut<6))return;const C=S.ch;
   if(!C){if(room&&room!=="market")return;chT-=dt;if(chT<=0){chT=rnd(50,100);chStart()}return}
   const c=CHAL.find(x=>x.k===C.k);if(!c){S.ch=null;return}C.left-=dt;const have=c.v()-C.b;
@@ -8232,8 +8288,8 @@ function openHarbor(){
       <button class="bigbtn alt" id="hFish">Fish off the pier<small>3 energy a cast · ${Object.keys(S.fish||{}).length}/${FISH.length} species found</small></button>
       <div class="sechead"><h3>Boats</h3><span class="eyebrow">Faster boats, faster trips</span></div>
       <div class="perks">${BOATS.map(b=>{const own=hasBoat(b.k),lock=L<b.lv;return `<button class="perk nopic" data-boat="${b.k}" ${own||lock||S.cash<b.cost?"disabled":""}><span class="t">${b.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${lock?"Unlocks at level "+b.lv:b.d}</span><span class="c">${own?"Yours":b.cost?fmt(b.cost):"Free"}</span></button>`}).join("")}</div>
-      <div class="sechead"><h3>Your islands</h3><span class="eyebrow">${MPW?"Buy islands in your home town":islOpen()?"Earn every minute":"For sale once you reach World 3 (Deep Time)"}</span></div>
-      <div class="perks">${ISLANDS.map(i=>{const own=ownIsl(i.k);return `<button class="perk nopic" data-isl="${i.k}" ${(!own&&(MPW||!islOpen()||S.cash<i.cost))||(own&&!bb&&!hasIB(i.k,"heli"))?"disabled":""}><span class="t">${i.n}${own?' <em class="beat">YOURS</em>':""}</span><span class="d">${i.d} · ${islF(islRate(i.k))}/min</span><span class="c">${own?"Visit":islOpen()?islF(i.cost):"🔒 World 2"}</span></button>`}).join("")}</div>
+      <div class="sechead"><h3>Your islands</h3><span class="eyebrow">${islOpen()?"Earn every minute":"For sale once you reach World 3 (Deep Time)"}</span></div>
+      <div class="perks">${ISLANDS.map(i=>{const own=ownIsl(i.k);return `<button class="perk nopic" data-isl="${i.k}" ${(!own&&(!islOpen()||S.cash<i.cost))||(own&&!bb&&!hasIB(i.k,"heli"))?"disabled":""}><span class="t">${i.n}${own?' <em class="beat">YOURS</em>':""}</span><span class="d">${i.d} · ${islF(islRate(i.k))}/min</span><span class="c">${own?"Visit":islOpen()?islF(i.cost):"🔒 World 2"}</span></button>`}).join("")}</div>
       ${MPW?`<div class="sechead"><h3>Friends' islands</h3><span class="eyebrow">Sail over and say hi</span></div><div class="perks">${peers.flatMap(p=>(p.is||[]).map(k=>{const i=ISLANDS.find(x=>x.k===k);return i?`<button class="perk nopic" data-fisl="${k}" data-fid="${Object.keys(MP.peers).find(id=>MP.peers[id]===p)}" ${!bb?"disabled":""}><span class="t">${esc(String(p.n).slice(0,16))}'s ${i.n}</span><span class="d">${i.d}</span><span class="c">Visit</span></button>`:""})).join("")||`<p class="fine">${MP?"None of your friends here own an island yet.":"Join a room to see your friends' islands."}</p>`}</div>`:""}
       </div>`;
     $("leaveBtn").onclick=closeRoom;
@@ -8246,7 +8302,7 @@ function openHarbor(){
     $("room").querySelectorAll("[data-boat]").forEach(x=>x.onclick=()=>{const b=BOATS.find(y=>y.k===x.dataset.boat);if(hasBoat(b.k)||repLevel()<b.lv||S.cash<b.cost)return;S.cash-=b.cost;S.boats[b.k]=1;dirty=true;SFX.rebirth();confetti(90);banner(b.n+" ready","g");draw();updMini()});
     $("room").querySelectorAll("[data-isl]").forEach(x=>x.onclick=()=>{const i=ISLANDS.find(y=>y.k===x.dataset.isl);
       if(ownIsl(i.k)){const b=bestBoat(),h=hasIB(i.k,"heli");if(!b&&!h)return;const sec=h?1:Math.max(.8,b.sec*.6*(hasIB(i.k,"dock")?.5:1));sail((h&&!b?"Flying to ":"Sailing to ")+i.n,sec,()=>enterIsland(i.k,null));return}
-      if(MPW||!islOpen()||S.cash<i.cost)return;S.cash-=i.cost;S.isl[i.k]=1;dirty=true;STATIC=null;SFX.rebirth();flash("#2bb3a3",.4);confetti(180);shake(8);banner(i.n+" is yours","g");draw();updMini()});
+      if(!islOpen()||S.cash<i.cost)return;S.cash-=i.cost;S.isl[i.k]=1;dirty=true;STATIC=null;SFX.rebirth();flash("#2bb3a3",.4);confetti(180);shake(8);banner(i.n+" is yours","g");draw();updMini()});
     $("room").querySelectorAll("[data-fisl]").forEach(x=>x.onclick=()=>{const p=MP&&MP.peers[x.dataset.fid],b=bestBoat();if(!p||!b)return;const i=ISLANDS.find(y=>y.k===x.dataset.fisl);sail("Sailing to "+p.n+"'s "+i.n,Math.max(1,b.sec*.6),()=>enterIsland(i.k,x.dataset.fid))});
   };draw();
 }
