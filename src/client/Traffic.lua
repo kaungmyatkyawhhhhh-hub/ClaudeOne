@@ -299,6 +299,8 @@ local function mustYieldLeft(npc: Npc, seg: CityLayout.Segment): boolean
 end
 
 local obstacleList: { Obstacle } = {}
+local npcObstacle: { [Npc]: Obstacle } = setmetatable({}, { __mode = "k" }) :: any
+local frameCount = 0
 local movedParts: { BasePart } = {}
 local movedCFrames: { CFrame } = {}
 
@@ -310,9 +312,18 @@ function Traffic.update(dt: number)
 	refreshPlayerCars()
 	local now = workspace:GetServerTimeNow()
 
+	-- reuse one obstacle record per NPC instead of allocating every frame
 	table.clear(obstacleList)
 	for _, npc in Traffic.cars do
-		table.insert(obstacleList, { pos = npc.pos, fwd = npc.fwd, speed = npc.speed, halfLen = npc.halfLen, width = npc.width, self = npc })
+		local o = npcObstacle[npc]
+		if not o then
+			o = { pos = npc.pos, fwd = npc.fwd, speed = 0, halfLen = npc.halfLen, width = npc.width, self = npc }
+			npcObstacle[npc] = o
+		end
+		o.pos = npc.pos
+		o.fwd = npc.fwd
+		o.speed = npc.speed
+		table.insert(obstacleList, o)
 	end
 	for _, pc in playerCarCache do
 		table.insert(obstacleList, pc)
@@ -320,8 +331,10 @@ function Traffic.update(dt: number)
 
 	table.clear(movedParts)
 	table.clear(movedCFrames)
+	frameCount += 1
+	local camPos = if workspace.CurrentCamera then workspace.CurrentCamera.CFrame.Position else Vector3.zero
 
-	for _, npc in Traffic.cars do
+	for _idx, npc in Traffic.cars do
 		local seg = npc.seg
 		local target = npc.maxSpeed
 		local remaining = seg.length - npc.s
@@ -419,8 +432,13 @@ function Traffic.update(dt: number)
 		local pos, fwd = CityLayout.sample(npc.seg, npc.s)
 		npc.pos = pos
 		npc.fwd = fwd
-		table.insert(movedParts, npc.root)
-		table.insert(movedCFrames, CFrame.lookAt(pos + Vector3.new(0, npc.height / 2, 0), pos + Vector3.new(0, npc.height / 2, 0) + fwd))
+		-- far-away cars only need their transform pushed every 3rd frame
+		local far = (pos - camPos).Magnitude > 380
+		if not far or (frameCount + _idx) % 3 == 0 then
+			local up = Vector3.new(0, npc.height / 2, 0)
+			table.insert(movedParts, npc.root)
+			table.insert(movedCFrames, CFrame.lookAt(pos + up, pos + up + fwd))
+		end
 	end
 
 	workspace:BulkMoveTo(movedParts, movedCFrames, Enum.BulkMoveMode.FireCFrameChanged)

@@ -116,7 +116,7 @@ end
 startOrbit()
 UI.showLoading("Filling the streets with traffic...")
 UI.fade(false, 0.01)
-Traffic.start(nil, focusPoint)
+Traffic.start(math.floor(Config.Traffic.CarCount * math.clamp(WorldFx.qualityScale(), 0.6, 1)), focusPoint)
 UI.hideLoading()
 
 ---------------------------------------------------------------------

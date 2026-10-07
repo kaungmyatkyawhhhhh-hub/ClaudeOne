@@ -21,7 +21,7 @@ To save progress, publish the place and turn on **Game Settings → Security →
 
 | Feature | Where |
 |---|---|
-| Intro cutscene: a hypercar cuts up through traffic, then drives into a mountain tunnel under a glowing **CITY LEGENDS** sign while the title card appears | `src/client/Cutscene.lua` |
+| Cinematic intro (~21 s, 8 shots): an aerial shot past the Legends Tower, a crane dive to road level, a low bumper rig, a side dolly under the monorail, a **bullet-time** slow-motion orbit as the car threads between two cars, a cockpit shot over the driver's shoulder with the hands turning the wheel, a drone shot to the mountain, then the tunnel and the **CITY LEGENDS** title. It uses depth of field, a colour grade, vignette, whip-pan blur, light trails, exhaust backfire and typewriter location captions | `src/client/Cutscene.lua` |
 | Working interior: dashboard, live gauge cluster, infotainment screen, seats, console, pedals, ambient LED lighting | `src/shared/CarBuilder.lua` |
 | Hands on the steering wheel: the gloves are welded to the wheel rim, and two-bone IK makes the arms follow as you steer | `CarBuilder.solveArm`, `Driving.render` |
 | FOV widens with speed, plus speed shake and motion blur in both chase and cockpit cameras | `Driving.render` |
@@ -43,6 +43,14 @@ To save progress, publish the place and turn on **Game Settings → Security →
 | Garage | G | — |
 
 Mobile players get on-screen buttons.
+
+## Performance
+
+- **Detail LOD:** shop fronts, lobbies, rooftop clutter, street furniture, road markings and traffic signals are grouped. The client removes these groups from the scene when the camera is far away, which is roughly 30% of the city's parts at any moment. The work is spread over frames, so it never stutters.
+- **Light LOD:** lights beyond about 420 studs switch off.
+- **Signs:** they stop drawing beyond 650 studs, using `SurfaceGui.MaxDistance`.
+- **Automatic quality:** LOD distances and traffic density shrink with the player's Roblox graphics level, and a bit further on phones.
+- **Traffic:** reuses its data each frame instead of creating new tables, and updates distant cars every 3rd frame.
 
 ## Graphics quality
 

@@ -133,7 +133,21 @@ local function addLight(className: string, parent: Instance, color: Color3, rang
 		l.Angle = angle or 90
 	end
 	l.Parent = parent
+	CollectionService:AddTag(l, "LODLight")
 	return l
+end
+
+-- A group of small details the client hides when the camera is far away
+-- (see WorldFx LOD). Engine-wise this removes thousands of parts from the
+-- scene at any one time.
+local function lodGroup(parent: Instance, name: string, center: Vector3, range: number): Model
+	local m = Instance.new("Model")
+	m.Name = name
+	m:SetAttribute("Center", center)
+	m:SetAttribute("Range", range)
+	CollectionService:AddTag(m, "LOD")
+	m.Parent = parent
+	return m
 end
 
 local function surfaceText(part: BasePart, face: Enum.NormalId, text: string, textColor: Color3, bg: Color3?, bgTransparency: number?, font: Enum.Font?, canvas: Vector2?)
@@ -143,6 +157,7 @@ local function surfaceText(part: BasePart, face: Enum.NormalId, text: string, te
 	gui.Brightness = 2.2
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	gui.CanvasSize = canvas or Vector2.new(600, 200)
+	gui.MaxDistance = 650
 	gui.Parent = part
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.fromScale(1, 1)
@@ -294,11 +309,12 @@ local function solidLine(parent: Instance, a: Vector3, b: Vector3, width: number
 end
 
 local function buildRoadMarkings(parent: Instance)
-	local marks = folder("Markings", parent)
+	local root = folder("Markings", parent)
 	-- segments between adjacent intersections
 	for i = 0, N do
 		for j = 0, N do
 			local a = CityLayout.intersectionPos(i, j)
+			local marks = lodGroup(root, `Cell_{i}_{j}`, a + Vector3.new(B / 4, 0, B / 4), 420)
 			for k = 1, 2 do -- east and south neighbours only (each road once)
 				local ni, nj = i + (if k == 1 then 1 else 0), j + (if k == 2 then 1 else 0)
 				if CityLayout.inGrid(ni, nj) then
@@ -602,6 +618,9 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 	model.Parent = parent
 	local premium = Config.Graphics.PremiumBuildings
 	local frontOff = if math.abs(frontNormal.X) > 0.5 then w / 2 else dpt / 2
+	-- street-level + rooftop clutter lives in a LOD group; the silhouette, windows
+	-- and crown stay visible from anywhere
+	local detail = lodGroup(model, "Detail", Vector3.new(cx, base + math.min(h, 60) / 2, cz), 460)
 	local crown = pick(CROWN_COLORS)
 
 	if h >= 250 then
@@ -636,7 +655,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		else
 			spire(model, cx, cz, top, 1)
 		end
-		lobby(model, cx, cz, w, dpt, base, frontNormal, true)
+		lobby(detail, cx, cz, w, dpt, base, frontNormal, true)
 	elseif h >= 120 then
 		-------------------------------------------------- tower
 		local pal = randomPalette(pick({ "glass", "glass", "stone", "plastic" }))
@@ -659,9 +678,9 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 			spire(model, cx, cz, top + 2, 0.7)
 		end
 		if premium then
-			rooftopKit(model, cx, cz, tw, td, top + 2, false)
+			rooftopKit(detail, cx, cz, tw, td, top + 2, false)
 		end
-		lobby(model, cx, cz, w, dpt, base, frontNormal, rng:NextNumber() < 0.5)
+		lobby(detail, cx, cz, w, dpt, base, frontNormal, rng:NextNumber() < 0.5)
 		if h > 90 and rng:NextNumber() < 0.25 then
 			rooftopBillboard(model, cx, cz, top, frontNormal, frontOff * (tw / w), tw)
 		end
@@ -672,7 +691,7 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 		local top = base + h
 		mk(model, Vector3.new(w + 1.4, 2.2, dpt + 1.4), CFrame.new(cx, top + 1.1, cz), Color3.fromRGB(30, 28, 26), Enum.Material.Concrete, { name = "Cornice" })
 		if premium then
-			rooftopKit(model, cx, cz, w, dpt, top + 2.2, true)
+			rooftopKit(detail, cx, cz, w, dpt, top + 2.2, true)
 		end
 		if h > 70 and rng:NextNumber() < 0.3 then
 			rooftopBillboard(model, cx, cz, top, frontNormal, frontOff, w)
@@ -680,15 +699,15 @@ local function building(parent: Instance, cx: number, cz: number, w: number, dpt
 	end
 
 	-- every building gets street-level life
-	shopSign(model, cx, cz, w, dpt, base, frontNormal)
+	shopSign(detail, cx, cz, w, dpt, base, frontNormal)
 	if h < 120 then
 		local tangent = frontNormal:Cross(Vector3.yAxis)
 		local frontLen = if math.abs(frontNormal.X) > 0.5 then dpt else w
 		local shopPos = Vector3.new(cx, base + 5, cz) + frontNormal * (frontOff + 0.1)
-		deco(model, Vector3.new(frontLen * 0.85, 8, 0.2), CFrame.lookAt(shopPos, shopPos + frontNormal), Color3.fromRGB(255, 225, 180), Enum.Material.Neon, { transparency = 0.55 })
+		deco(detail, Vector3.new(frontLen * 0.85, 8, 0.2), CFrame.lookAt(shopPos, shopPos + frontNormal), Color3.fromRGB(255, 225, 180), Enum.Material.Neon, { transparency = 0.55 })
 		-- striped awning
 		local awnPos = Vector3.new(cx, base + 10, cz) + frontNormal * (frontOff + 2.2) + tangent * 0
-		deco(model, Vector3.new(frontLen * 0.6, 0.5, 4.5), CFrame.lookAt(awnPos, awnPos + frontNormal) * CFrame.Angles(math.rad(-14), 0, 0), pick(NEON_COLORS):Lerp(Color3.new(0, 0, 0), 0.55), Enum.Material.Fabric, { shadow = true })
+		deco(detail, Vector3.new(frontLen * 0.6, 0.5, 4.5), CFrame.lookAt(awnPos, awnPos + frontNormal) * CFrame.Angles(math.rad(-14), 0, 0), pick(NEON_COLORS):Lerp(Color3.new(0, 0, 0), 0.55), Enum.Material.Fabric, { shadow = true })
 	end
 	return model
 end
@@ -814,9 +833,10 @@ local function buildBlocks(parent: Instance)
 end
 
 local function buildSignals(parent: Instance)
-	local signals = folder("TrafficLights", parent)
+	local root = folder("TrafficLights", parent)
 	for i = 0, N do
 		for j = 0, N do
+			local signals = lodGroup(root, `Signal_{i}_{j}`, CityLayout.intersectionPos(i, j), 520)
 			for k = 1, 4 do
 				local dir = CityLayout.Dirs[k]
 				-- approach exists if the previous intersection is in the grid
@@ -1089,6 +1109,7 @@ CityBuilder.kit = {
 	folder = folder,
 	addLight = addLight,
 	surfaceText = surfaceText,
+	lodGroup = lodGroup,
 	pick = pick,
 	rng = rng,
 	building = building,

@@ -280,9 +280,7 @@ function CityPremium.streetscape(kit: any, parent: Instance, cx: number, cz: num
 		return
 	end
 	local deco, rng = kit.deco, kit.rng
-	local folder = Instance.new("Folder")
-	folder.Name = "Streetscape"
-	folder.Parent = parent
+	local folder = kit.lodGroup(parent, "Streetscape", Vector3.new(cx, CURB, cz), 380 + inner / 2)
 	for _, edge in { Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0), Vector3.new(0, 0, 1), Vector3.new(0, 0, -1) } do
 		local tangent = edge:Cross(Vector3.yAxis)
 		local base = Vector3.new(cx, CURB, cz) + edge * (inner / 2 - 4.5)

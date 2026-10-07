@@ -17,6 +17,97 @@ local CityLayout = require(Shared:WaitForChild("CityLayout"))
 
 local WorldFx = {}
 
+---------------------------------------------------------------------
+-- Quality: scales LOD distances + traffic density from the player's
+-- Roblox graphics setting (and a little lower on phones/tablets)
+---------------------------------------------------------------------
+function WorldFx.qualityScale(): number
+	local scale = 1
+	local ok, level = pcall(function()
+		return UserSettings():GetService("UserGameSettings").SavedQualityLevel
+	end)
+	if ok and level and level ~= Enum.SavedQualitySetting.Automatic then
+		local n = tonumber(string.match(level.Name, "%d+")) or 10
+		scale = 0.55 + 0.05 * n -- level 1 -> 0.6, level 10 -> 1.05
+	end
+	local UserInputService = game:GetService("UserInputService")
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		scale *= 0.8
+	end
+	return scale
+end
+
+---------------------------------------------------------------------
+-- LOD: groups of small details (tag "LOD") are removed from the scene when
+-- the camera is far away, and lights (tag "LODLight") are switched off.
+-- Work is spread over frames so it never causes a hitch.
+---------------------------------------------------------------------
+type LodEntry = { inst: Instance, parent: Instance?, center: Vector3, range: number, shown: boolean }
+
+local function startLod(scale: number)
+	local entries: { LodEntry } = {}
+	local known: { [Instance]: boolean } = {}
+	local function register(inst: Instance)
+		if known[inst] then
+			return
+		end
+		local center = inst:GetAttribute("Center")
+		local range = inst:GetAttribute("Range")
+		if typeof(center) ~= "Vector3" or type(range) ~= "number" then
+			return
+		end
+		known[inst] = true
+		table.insert(entries, { inst = inst, parent = inst.Parent, center = center, range = range * scale, shown = true })
+	end
+	for _, inst in CollectionService:GetTagged("LOD") do
+		register(inst)
+	end
+	CollectionService:GetInstanceAddedSignal("LOD"):Connect(register)
+
+	local lights: { Light } = {}
+	for _, l in CollectionService:GetTagged("LODLight") do
+		if l:IsA("Light") then
+			table.insert(lights, l)
+		end
+	end
+	local lightRange = 420 * scale
+	local camera = workspace.CurrentCamera
+
+	local cursor, lightCursor = 1, 1
+	RunService.Heartbeat:Connect(function()
+		local camPos = camera.CFrame.Position
+		-- ~1/8 of the groups per frame -> full sweep every few frames
+		local budget = math.max(60, math.ceil(#entries / 8))
+		for _ = 1, math.min(budget, #entries) do
+			if cursor > #entries then
+				cursor = 1
+			end
+			local e = entries[cursor]
+			cursor += 1
+			local want = (e.center - camPos).Magnitude < e.range
+			if want ~= e.shown then
+				e.shown = want
+				e.inst.Parent = if want then e.parent else nil
+			end
+		end
+		local lbudget = math.max(40, math.ceil(#lights / 10))
+		for _ = 1, math.min(lbudget, #lights) do
+			if lightCursor > #lights then
+				lightCursor = 1
+			end
+			local l = lights[lightCursor]
+			lightCursor += 1
+			local part = l.Parent
+			if part and part:IsA("BasePart") then
+				local on = (part.Position - camPos).Magnitude < lightRange
+				if l.Enabled ~= on then
+					l.Enabled = on
+				end
+			end
+		end
+	end)
+end
+
 local LAMP_ON = {
 	R = Color3.fromRGB(255, 35, 35),
 	Y = Color3.fromRGB(255, 176, 0),
@@ -96,6 +187,7 @@ end
 ---------------------------------------------------------------------
 function WorldFx.start()
 	local lampCache: { [Instance]: boolean } = {}
+	startLod(WorldFx.qualityScale())
 
 	-- lamps + beacons (5 Hz is plenty)
 	task.spawn(function()
@@ -148,12 +240,22 @@ function WorldFx.start()
 	local trainCFrames: { CFrame } = {}
 	local loopLen = CityLayout.monorailLength()
 
+	local function tracked(tag: string): { Instance }
+		local list = CollectionService:GetTagged(tag)
+		CollectionService:GetInstanceAddedSignal(tag):Connect(function(inst)
+			table.insert(list, inst)
+		end)
+		return list
+	end
+	local searchTargets = tracked("SearchTarget")
+	local boards = tracked("AnimatedBoard")
+
 	local boardTimer = 0
 	RunService.Heartbeat:Connect(function(dt)
 		local now = workspace:GetServerTimeNow()
 
 		-- searchlights sweep in slow figure-eights
-		for _, target in CollectionService:GetTagged("SearchTarget") do
+		for _, target in searchTargets do
 			if target:IsA("BasePart") then
 				local base = target:GetAttribute("Base") :: Vector3?
 				local phase = (target:GetAttribute("Phase") :: number?) or 0
@@ -169,7 +271,7 @@ function WorldFx.start()
 		boardTimer += dt
 		if boardTimer > 0.1 then
 			boardTimer = 0
-			for _, g in CollectionService:GetTagged("AnimatedBoard") do
+			for _, g in boards do
 				if g:IsA("UIGradient") then
 					g.Rotation = (g.Rotation + 4) % 360
 					g.Offset = Vector2.new(math.sin(now * 0.8 + g.Rotation * 0.01) * 0.25, 0)

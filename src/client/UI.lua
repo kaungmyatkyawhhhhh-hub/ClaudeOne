@@ -403,6 +403,147 @@ function UI.hideTitle()
 	end
 end
 
+---------------------------------------------------------------------
+-- Cinematic extras (used by the intro)
+---------------------------------------------------------------------
+local vignetteFrame: Frame? = nil
+function UI.vignette(visible: boolean)
+	if not vignetteFrame then
+		local f = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 25, Parent = overlay })
+		-- four soft edges built from gradients (no image assets needed)
+		for _, spec in { { 0, UDim2.fromScale(1, 0.35), UDim2.fromScale(0, 0), 90 }, { 1, UDim2.fromScale(1, 0.35), UDim2.fromScale(0, 0.65), -90 }, { 2, UDim2.fromScale(0.3, 1), UDim2.fromScale(0, 0), 0 }, { 3, UDim2.fromScale(0.3, 1), UDim2.fromScale(0.7, 0), 180 } } do
+			local edge = new("Frame", { BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = spec[2], Position = spec[3], ZIndex = 25, Parent = f })
+			new("UIGradient", {
+				Rotation = spec[4],
+				Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 1) }),
+				Parent = edge,
+			})
+		end
+		vignetteFrame = f
+	end
+	local vf = vignetteFrame :: Frame
+	vf.Visible = visible
+end
+
+local whiteFrame: Frame? = nil
+function UI.whiteFlash(strength: number, duration: number?)
+	if not whiteFrame then
+		whiteFrame = new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 85, Parent = gui })
+	end
+	local f = whiteFrame :: Frame
+	f.BackgroundTransparency = 1 - math.clamp(strength, 0, 1)
+	tween(f, duration or 0.45, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quad)
+end
+
+local captionFrame: Frame? = nil
+-- Lower-left location card that types itself out
+function UI.caption(title: string, sub: string)
+	UI.hideCaption()
+	local f = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 60, 0.86, -10), Size = UDim2.fromOffset(600, 80), ZIndex = 42, Parent = overlay })
+	captionFrame = f
+	local bar = new("Frame", { BackgroundColor3 = Theme.Accent, BorderSizePixel = 0, Size = UDim2.new(0, 3, 0, 0), ZIndex = 42, Parent = f })
+	local t1 = label({ Text = title, Font = Enum.Font.GothamBlack, TextSize = 30, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(16, 4), Size = UDim2.new(1, -16, 0, 34), MaxVisibleGraphemes = 0, ZIndex = 42, Parent = f })
+	local t2 = label({ Text = sub, Font = Enum.Font.GothamMedium, TextSize = 15, TextColor3 = Theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(16, 42), Size = UDim2.new(1, -16, 0, 20), MaxVisibleGraphemes = 0, ZIndex = 42, Parent = f })
+	tween(bar, 0.35, { Size = UDim2.new(0, 3, 0, 64) }, Enum.EasingStyle.Quint)
+	task.spawn(function()
+		for i = 1, #title do
+			if not t1.Parent then
+				return
+			end
+			t1.MaxVisibleGraphemes = i
+			task.wait(0.045)
+		end
+		for i = 1, #sub do
+			if not t2.Parent then
+				return
+			end
+			t2.MaxVisibleGraphemes = i
+			task.wait(0.022)
+		end
+	end)
+end
+
+function UI.hideCaption()
+	if captionFrame then
+		local f = captionFrame
+		captionFrame = nil
+		for _, d in f:GetDescendants() do
+			if d:IsA("TextLabel") then
+				tween(d, 0.35, { TextTransparency = 1 })
+			elseif d:IsA("Frame") then
+				tween(d, 0.35, { BackgroundTransparency = 1 })
+			end
+		end
+		task.delay(0.4, function()
+			f:Destroy()
+		end)
+	end
+end
+
+-- Big title: chromatic split layers converge, letters reveal one by one,
+-- then a glow pulse and the subtitle slides in.
+function UI.cinematicTitle(text: string, subtitle: string)
+	if titleFrame then
+		titleFrame:Destroy()
+	end
+	local f = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 40, Parent = overlay })
+	titleFrame = f
+	local function layer(color: Color3, z: number, offset: number): TextLabel
+		local l = label({
+			Text = text,
+			Font = Enum.Font.GothamBlack,
+			TextScaled = true,
+			TextColor3 = color,
+			TextTransparency = if z == 43 then 0 else 0.35,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, offset, 0.46, 0),
+			Size = UDim2.fromScale(0.9, 0.17),
+			MaxVisibleGraphemes = 0,
+			ZIndex = z,
+			Parent = f,
+		})
+		new("UITextSizeConstraint", { MaxTextSize = 130, Parent = l })
+		return l
+	end
+	local cyan = layer(Theme.Accent, 41, -14)
+	local pink = layer(Theme.Accent2, 42, 14)
+	local main = layer(Color3.new(1, 1, 1), 43, 0)
+	new("UIGradient", {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 250, 255)),
+			ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 230)),
+		}),
+		Parent = main,
+	})
+	local glow = new("UIStroke", { Color = Theme.Accent2, Thickness = 4, Transparency = 1, Parent = main })
+	local line = new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.565), Size = UDim2.new(0, 0, 0, 2), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 41, Parent = f })
+	new("UIGradient", { Color = ColorSequence.new(Theme.Accent, Theme.Accent2), Parent = line })
+	local sub = label({ Text = subtitle, Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = Color3.fromRGB(200, 204, 220), TextTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.62), Size = UDim2.fromScale(1, 0.05), ZIndex = 41, Parent = f })
+
+	task.spawn(function()
+		local n = utf8.len(text) or #text
+		for i = 1, n do
+			if not f.Parent then
+				return
+			end
+			cyan.MaxVisibleGraphemes = i
+			pink.MaxVisibleGraphemes = i
+			main.MaxVisibleGraphemes = i
+			task.wait(0.055)
+		end
+		-- converge the colour split into the white title
+		tween(cyan, 0.7, { Position = UDim2.fromScale(0.5, 0.46), TextTransparency = 0.75 }, Enum.EasingStyle.Quint)
+		tween(pink, 0.7, { Position = UDim2.fromScale(0.5, 0.46), TextTransparency = 0.75 }, Enum.EasingStyle.Quint)
+		tween(glow, 0.25, { Transparency = 0.2 })
+		task.wait(0.25)
+		tween(glow, 1.2, { Transparency = 0.65 })
+		tween(line, 0.9, { Size = UDim2.new(0.36, 0, 0, 2) }, Enum.EasingStyle.Quint)
+		sub.Position = UDim2.fromScale(0.5, 0.65)
+		tween(sub, 0.9, { TextTransparency = 0, Position = UDim2.fromScale(0.5, 0.62) }, Enum.EasingStyle.Quint)
+	end)
+end
+
 local skipBtn: TextButton? = nil
 function UI.showSkip(onSkip: () -> ())
 	local b = button("SKIP  ▸", Theme.Accent, {
