@@ -97,10 +97,10 @@ end
 
 local function applyMode()
 	if not gui then return end
-	-- phones: the Menu button sits at the top left, so the coins pill goes right of it; the right pills show only icons
+	-- phones: the right pills show only icons (the coins pill keeps the top left corner)
 	local phone = SideMenu.IsCompact() or compact -- the same "phone" as the menu (a short screen, or touch without a keyboard)
 	local iconsOnly = narrow or phone
-	left.Position = UDim2.fromOffset(phone and (EDGE + Theme.MinTouch + Spacing.S) or EDGE, TOP) -- phones: right of the menu arrow
+	left.Position = UDim2.fromOffset(EDGE, TOP) -- (the menu arrow sits beside the tiles now, never in this corner)
 	for _, entry in pairs(pills) do
 		entry.api.label.Visible = not iconsOnly or entry.keepText == true
 	end

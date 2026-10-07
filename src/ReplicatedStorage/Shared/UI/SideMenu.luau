@@ -2,10 +2,11 @@
 --  * PC: a 2-column grid of about 90px square tiles on the left edge, vertically centered below the Roblox top bar, even
 --    8px gaps (smaller only if the screen is short, so every tile is always on screen). Big icon, bold outlined label,
 --    colored border per tile, slight 3D look, bounce on hover and press (Config.HudIcons has the colors and icons).
---  * An arrow above the tiles folds them all away and brings them back (like the Growth Spurt bar's arrow: it stays put
---    and points up when open, down when folded; a dot on it while folded when a tile has something new).
---  * Phones (touch without a keyboard): the same tiles, smaller, hanging from the arrow at the top left and clear of the
---    thumbstick. They start folded, fold again after picking one, and never share the screen with a side panel.
+--  * An arrow tab on the tiles' right edge (level with Genetics) slides them all out to the left and back, like a drawer:
+--    it points right while they are folded away (waiting at the screen edge) and left while they are open; a dot on it
+--    while folded when a tile has something new.
+--  * Phones (touch without a keyboard): the same, under the coins pill and clear of the thumbstick. The tiles start
+--    folded, fold again after picking one, and never share the screen with a side panel.
 -- SideMenu.Add returns { button, SetActive(on), SetDot(on), Activated } (Activated: use it, not button.Activated).
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
@@ -18,13 +19,14 @@ local New, Colors, Spacing, Alpha = Theme.New, Theme.Colors, Theme.Spacing, Them
 
 local SideMenu = {}
 
-local SIZE = { Max = 90, Min = 64, PhoneMax = 64, PhoneMin = 48 } -- px: PC tile (about 90, smaller only if the screen is short), phone tile
+-- px: PC tile (about 68 = 0.75x the old 90, smaller only if the screen is short); phone tile: 60, the smallest the longest
+-- label fits on ("Wardrobe" is 57px wide at the 14px minimum text size)
+local SIZE = { Max = 68, Min = 48, PhoneMax = 60, PhoneMin = 60 }
 local THUMB_ROOM = 120 -- px at the bottom of a phone screen the tiles leave free (the thumbstick)
 local GAP = Spacing.S
 local MARGIN = Spacing.M  -- from the left edge (and top/bottom of the free space)
 local TOP_RESERVE = Spacing.S + Theme.MinTouch + Spacing.S -- the top bar's pills (coins) live above this line
-local ARROW_HEIGHT = 26
-local ARROW_GAP = 4      -- between the arrow and the first row of tiles
+local ARROW_PC = Vector2.new(26, 48) -- the arrow tab beside the tiles (phones: 44x44)
 
 local changed = Instance.new("BindableEvent")
 SideMenu.Changed = changed.Event -- fires when the bar's size or position changes (panels follow it)
@@ -156,9 +158,10 @@ local function makeButton(id, labelText, iconFactory, side, order)
 	return parts
 end
 
--- The tiles and the arrow above them. PC: a 2-column grid of tiles (about 90px), vertically centered, sized so every
--- tile fits between the top bar and the bottom of the screen. Phones: the same tiles, smaller (48-64px, up to 3
--- columns), hanging from the arrow at the top left and clear of the thumbstick.
+-- The tiles and their arrow. PC: a 2-column grid of tiles (about 68px), vertically centered, sized so every tile fits
+-- between the top bar and the bottom of the screen. Phones: under the coins pill at the top left, up to 3 columns, clear
+-- of the thumbstick. The arrow is a tab on the tiles' right edge, level with the Genetics tile: it slides the tiles out
+-- to the left (and then waits at the screen edge, pointing right) and back in, like a drawer.
 local collapsed = false
 local arrow, arrowIcon, arrowDot = nil, nil, nil
 
@@ -174,7 +177,10 @@ local function fit(count, room, minSize, maxSize, maxColumns)
 end
 
 local function arrowSize()
-	return if phone then Vector2.new(Theme.MinTouch, Theme.MinTouch) else Vector2.new(40, ARROW_HEIGHT)
+	return if phone then Vector2.new(Theme.MinTouch, Theme.MinTouch) else ARROW_PC
+end
+local function gridWidth()
+	return columns * size + (columns - 1) * GAP
 end
 
 -- while folded, the arrow carries the dot of any tile that has something new (the tutorial lights the Stats dot too)
@@ -187,7 +193,7 @@ local function refreshArrowDot()
 	arrowDot.Visible = collapsed and any
 end
 
-local function layout()
+local function layout(animate: boolean?)
 	if not bar then return end
 	local list = visibleEntries()
 	local screenSize = gui.AbsoluteSize -- inside the safe area (below the top bar)
@@ -195,15 +201,14 @@ local function layout()
 	local arrowBox = arrowSize()
 	local rows, tilesTop
 	if phone then
-		-- under the arrow at the top left; the bottom of the screen stays free for the thumbstick
-		tilesTop = Spacing.S + arrowBox.Y + GAP
+		-- under the coins pill at the top left; the bottom of the screen stays free for the thumbstick
+		tilesTop = TOP_RESERVE
 		columns, rows, size = fit(count, screenSize.Y - tilesTop - THUMB_ROOM, SIZE.PhoneMin, SIZE.PhoneMax, 3)
 	else
-		-- the tiles (and the arrow above them) stay below the coins pill and above the bottom margin
-		local top = TOP_RESERVE + ARROW_HEIGHT + ARROW_GAP
-		columns, rows, size = fit(count, screenSize.Y - top - MARGIN, SIZE.Min, SIZE.Max, 2)
+		-- below the coins pill and above the bottom margin
+		columns, rows, size = fit(count, screenSize.Y - TOP_RESERVE - MARGIN, SIZE.Min, SIZE.Max, 2)
 		-- vertically centered, but never up under the top bar
-		tilesTop = math.max(top, math.floor((screenSize.Y - (rows * size + (rows - 1) * GAP)) / 2))
+		tilesTop = math.max(TOP_RESERVE, math.floor((screenSize.Y - (rows * size + (rows - 1) * GAP)) / 2))
 	end
 	for index, entry in ipairs(list) do
 		local parts = entry.pc
@@ -216,30 +221,45 @@ local function layout()
 	for _, entry in ipairs(entries) do
 		if not table.find(list, entry) then entry.pc.button.Visible = false end
 	end
-	bar.Size = UDim2.fromOffset(columns * size + (columns - 1) * GAP, rows * size + (rows - 1) * GAP)
+	local gridW, gridH = gridWidth(), rows * size + (rows - 1) * GAP
+	bar.Size = UDim2.fromOffset(gridW, gridH)
 	bar.AnchorPoint = Vector2.new(0, 0)
-	bar.Position = UDim2.fromOffset(MARGIN, tilesTop)
-	bar.Visible = not hiddenAll and not collapsed and not (phone and training)
-	-- the arrow stays put (like the Growth Spurt bar's): just above the tiles on PC, at the top left on phones
+	-- the arrow rides on the tiles' right edge, level with the Genetics tile (the middle of the grid if it isn't shown)
+	local arrowY = tilesTop + gridH / 2
+	for index, entry in ipairs(list) do
+		if entry.id == "Genetics" then arrowY = tilesTop + ((index - 1) // columns) * (size + GAP) + size / 2 end
+	end
 	arrow.Size = UDim2.fromOffset(arrowBox.X, arrowBox.Y)
-	arrow.Position = if phone then UDim2.fromOffset(MARGIN, Spacing.S) else UDim2.fromOffset(MARGIN, tilesTop - ARROW_HEIGHT - ARROW_GAP)
+	-- open: tiles at the left edge, the arrow beside them; folded: tiles slid out to the left, the arrow at the edge
+	local barPosition = UDim2.fromOffset(if collapsed then -gridW - MARGIN else MARGIN, tilesTop)
+	local arrowPosition = UDim2.fromOffset(if collapsed then MARGIN else MARGIN + gridW + GAP, math.floor(arrowY - arrowBox.Y / 2))
+	local shown = not hiddenAll and not (phone and training)
+	if animate then
+		bar.Visible = shown
+		local tween = Theme.Tween(bar, { Position = barPosition }, 0.25)
+		tween.Completed:Connect(function()
+			if collapsed then bar.Visible = false end
+		end)
+		Theme.Tween(arrow, { Position = arrowPosition }, 0.25)
+	else
+		bar.Position = barPosition
+		arrow.Position = arrowPosition
+		bar.Visible = shown and not collapsed
+	end
 	arrow.Visible = not hiddenAll and not training
 	refreshArrowDot()
 	changed:Fire()
 end
 
--- Fold the tiles away (true) or bring them back, with a short fade. Phones: the open menu and a side panel never share
--- the screen (opening the menu closes the panel; a panel opening folds the menu, see ensure()).
+-- Slide the tiles out to the left (true) or back in. The arrow points right while they are folded away (tap: out they
+-- come) and left while they are open. Phones: the open menu and a side panel never share the screen (opening the menu
+-- closes the panel; a panel opening folds the menu, see ensure()).
 local function setCollapsed(value)
 	if collapsed == value then return end
 	collapsed = value
-	Theme.Tween(arrowIcon, { Rotation = collapsed and 90 or -90 }, 0.2)
-	if not collapsed then
-		if phone then UIBus.PanelOpened("Menu") end
-		layout()
-		Theme.Fade(bar, true, 0.2)
-	else
-		refreshArrowDot()
+	Theme.Tween(arrowIcon, { Rotation = collapsed and 0 or 180 }, 0.25)
+	if not collapsed and phone then UIBus.PanelOpened("Menu") end
+	if collapsed then
 		-- a tile folded away under the pointer (or a finger) never gets MouseLeave: drop its hover look now
 		for _, entry in ipairs(entries) do
 			if entry.pc.hover then
@@ -247,15 +267,8 @@ local function setCollapsed(value)
 				entry.pc.paint()
 			end
 		end
-		local tween = Theme.Fade(bar, false, 0.2)
-		if tween then
-			tween.Completed:Connect(function()
-				if collapsed then layout() end
-			end)
-		else
-			layout()
-		end
 	end
+	layout(true)
 end
 
 local function ensure()
@@ -265,7 +278,7 @@ local function ensure()
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 	gui = Theme.ScreenGui({ Name = "MainHud", DisplayOrder = 4, Parent = playerGui })
 	bar = New("Frame", { Name = "MenuBar", AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1, Parent = gui })
-	-- the arrow: folds all the tiles away and brings them back (up = open, down = folded, like the Growth Spurt bar)
+	-- the arrow: slides all the tiles away and brings them back (points right while they are folded, left while open)
 	arrow = New("TextButton", { Name = "MenuArrow", Text = "", AutoButtonColor = false, BackgroundColor3 = Colors.Panel, BackgroundTransparency = Alpha.Panel, Parent = gui }, { Theme.Round("Button"), Theme.Stroke() })
 	Theme.BindPress(arrow)
 	Theme.AddDepth(arrow, "Button")
@@ -273,7 +286,7 @@ local function ensure()
 	arrowIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 	arrowIcon.Position = UDim2.fromScale(0.5, 0.5)
 	arrowIcon.Size = UDim2.fromOffset(22, 22)
-	arrowIcon.Rotation = collapsed and 90 or -90
+	arrowIcon.Rotation = collapsed and 0 or 180
 	arrowIcon.Parent = arrow
 	arrowDot = New("Frame", { Name = "Dot", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -Spacing.XS, 0, Spacing.XS), Size = UDim2.fromOffset(Spacing.S, Spacing.S), BackgroundColor3 = Colors.Text, Visible = false, ZIndex = 3, Parent = arrow }, { Theme.Round("Round") })
 	arrow.Activated:Connect(function() setCollapsed(not collapsed) end)
@@ -291,9 +304,8 @@ local function ensure()
 		phone = now
 		-- each mode starts the way it starts on join (phones folded, PC open)
 		collapsed = phone
-		arrowIcon.Rotation = collapsed and 90 or -90
+		arrowIcon.Rotation = collapsed and 0 or 180
 		layout()
-		if not collapsed then Theme.Fade(bar, true, 0.2) end
 	end
 	UserInputService:GetPropertyChangedSignal("TouchEnabled"):Connect(modeChanged)
 	UserInputService:GetPropertyChangedSignal("KeyboardEnabled"):Connect(modeChanged)
@@ -305,19 +317,19 @@ function SideMenu.Column()
 	return ensure()
 end
 
--- Pixel x of the menu's right edge, for panels that open beside it. Phones: the arrow's (the tiles fold away there when
--- a panel opens).
+-- Pixel x of the menu's right edge (the arrow beside the tiles included), for panels that open beside it. Phones: the
+-- folded arrow's (the tiles slide away there when a panel opens).
 function SideMenu.Right()
 	ensure()
 	if phone then return MARGIN + Theme.MinTouch end
-	return MARGIN + columns * size + (columns - 1) * GAP
+	return MARGIN + gridWidth() + GAP + arrowSize().X
 end
 
 -- Pixel x of the right edge of what the menu shows right now (the arrow alone while folded; 0 when hidden), for small
 -- things that sit beside it (the phone notifications).
 function SideMenu.VisibleRight()
 	ensure()
-	if bar.Visible then return MARGIN + columns * size + (columns - 1) * GAP end
+	if bar.Visible and not collapsed then return MARGIN + gridWidth() + GAP + arrowSize().X end
 	if arrow.Visible then return MARGIN + arrowSize().X end
 	return 0
 end
