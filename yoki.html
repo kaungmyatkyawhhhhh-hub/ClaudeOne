@@ -300,23 +300,24 @@ function genBodyParts(which) {
       d = smin(d, seg(ax, y, z, [.14, 6.95, -.06], [.74, 6.56, -.08], .15 * P.trap, .1 * P.trap), .16);
       d = smin(d, ell(ax, y, z, .3, 6.6, -.16, .36 * P.trap, .26 * P.trap, .22 * P.trap), .2);
       d = smin(d, cone(ax, y, z, 0, 6.2, -.03, 0, 7.06, .04, .33 * P.neck, .26 * P.neck), .2);  // neck
-      // pecs: a flat plate plus fibres fanning from sternum and collarbone to the armpit (striations)
-      d = smin(d, ell(ax, y, z, .36 * P.cw, 6.1, zc, .46 * P.ch, .34, .21 * P.ch), .1);
-      const ins = [.76 * P.cw, 6.3, zc - .02];
-      for (let k = 0; k < 7; k++) {
-        const s = k < 2 ? [.12 + k * .2, 6.5, zc - .02] : [.035, 6.36 - (k - 2) * .13, zc + .02];
-        d = smin(d, seg(ax, y, z, [s[0], s[1], s[2] + .05 * P.ch], [ins[0], ins[1] - k * .025, ins[2]], .11 * P.ch, .07 * P.ch), .022);
+      // pecs: one full, squarish mound per side — fullest low, an upper-chest shelf under the collarbone,
+      // a clean lower edge rising toward the armpit, and a shallow valley at the sternum
+      {
+        const pz = zc - .03;
+        let pec = ell(ax, y, z, .36 * P.cw, 5.99, pz + .03, .41 * P.ch, .33, .25 * P.ch);
+        pec = smin(pec, ell(ax, y, z, .37 * P.cw, 6.33, pz - .02, .38 * P.ch, .21, .18 * P.ch), .12);       // upper chest
+        pec = smin(pec, seg(ax, y, z, [.42 * P.cw, 6.1, pz + .02], [.82 * P.cw, 6.3, zc - .14], .16 * P.ch, .09), .1); // into the armpit
+        pec = smax(pec, 5.7 + .3 * ax - y, .08);                                                     // lower edge
+        d = smin(d, pec, .07);
       }
-      d = smax(d, -seg(ax, y, z, [.02, 5.72, zc + .2 * P.ch], [.72 * P.cw, 5.96, zc + .04], .035, .02), .02);  // crisp lower pec edge, rising outward
-      d = smax(d, -seg(ax, y, z, [0, 6.42, zc + .2], [0, 5.74, zc + .24], .026, .026), .02);              // sternum split
-      d = smax(d, -seg(ax, y, z, [.68 * P.cw, 6.48, zc + .04], [.82 * P.cw, 5.95, zc - .02], .03, .025), .03); // delt / pec tie-in
-      // abs: squared blocks with deep cuts
-      const zA = .29 * P.dp;
-      for (let i = 0; i < 4; i++) d = smin(d, rbox(ax, y, z, .135 * P.abs, 5.33 - i * .285, zA - .01, .1 * P.abs, .105, .06, .055), .045);
-      d = smax(d, -seg(ax, y, z, [0, 5.5, zA + .07], [0, 4.4, zA + .06], .02, .02), .015);
-      // obliques + serratus + adonis V-lines
-      d = smin(d, seg(ax, y, z, [.47 * P.waist, 5.25, .12], [.38 * P.waist, 4.45, .16], .14 * P.waist, .1), .06);
-      for (let i = 0; i < 3; i++) d = smin(d, seg(ax, y, z, [.6 * P.cw, 5.76 - i * .14, .1], [.52 * P.cw, 5.69 - i * .14, .17], .04, .03), .05); // serratus
+      d = smin(d, ell(ax, y, z, 0, 5.45, 0, .38 * P.cw, .3, .27 * P.dp), .15);                           // lower ribs under the pecs
+      d = smax(d, -seg(ax, y, z, [0, 6.45, zc + .2], [0, 5.72, zc + .22], .02, .02), .045);             // sternum valley
+      // abs: soft blocks with shallow cuts
+      const zA = .3 * P.dp;
+      for (let i = 0; i < 4; i++) d = smin(d, rbox(ax, y, z, .13 * P.abs, 5.3 - i * .28, zA - .01, .1 * P.abs, .11, .06, .06), .06);
+      d = smax(d, -seg(ax, y, z, [0, 5.45, zA + .085], [0, 4.4, zA + .07], .022, .022), .035);
+      // obliques + adonis V-lines
+      d = smin(d, seg(ax, y, z, [.47 * P.waist, 5.25, .12], [.38 * P.waist, 4.45, .16], .14 * P.waist, .1), .08);
       d = smax(d, -seg(ax, y, z, [.38 * P.waist, 4.66, .3], [.12, 4.2, .38], .025, .02), .02);
       d = smin(d, ell(ax, y, z, .32, 4.12, -.3, .33, .36, .27), .15);                          // glutes
       d = smin(d, ell(ax, y, z, .98, 6.36, -.02, .27 * P.arm, .27 * P.arm, .27 * P.arm), .18);  // shoulder joint
@@ -350,7 +351,7 @@ function genBodyParts(which) {
       const far = min(seg(x, y, z, S, E, .4 * m, .3 * m), seg(x, y, z, E, F, .32 * m, .28 * m)); if (far > .3) return far - .1;
       let d = ell(x, y, z, 1.1 + (m - 1) * .25, 6.36, 0, .3 * m, .32 * m, .3 * m);                      // deltoid mass
       for (const o of [[.86, 6.6, .2], [1.04, 6.68, 0], [.88, 6.6, -.2]])                                // three delt heads
-        d = smin(d, seg(x, y, z, [o[0] + (m - 1) * .2, o[1], o[2] * m], D, .17 * m, .09 * m), .035);
+        d = smin(d, seg(x, y, z, [o[0] + (m - 1) * .2, o[1], o[2] * m], D, .16 * m, .09 * m), .09);
       d = smin(d, seg(x, y, z, S, E, .2 * m, .12 * m), .1);                                              // humerus core
       d = smin(d, seg(x, y, z, bA1, bA2, .19 * m, .14 * m), .03);                                        // biceps long head
       d = smin(d, seg(x, y, z, bB1, bB2, .18 * m, .13 * m), .03);                                        // biceps short head
@@ -827,8 +828,8 @@ function surfaceDetail(mat, det) {
   return mat;
 }
 const SKIN_DETAIL = { fine: [42, .0008], mid: [13, .0045], tone: .09, sss: [.14, .045, .03] };
-const TORSO_DETAIL = { ...SKIN_DETAIL, stri: 1, veins: .7, veinMask: 'smoothstep(5.0, 4.85, op.y) * smoothstep(.15, .3, op.x)' }; // lower-belly veins
-const ARM_DETAIL = { ...SKIN_DETAIL, delt: 1, veins: 1, veinMask: 'smoothstep(.4, .6, length(op - vec3(1.08, 6.42, 0.0)))' }; // biceps and forearms, not the delts
+const TORSO_DETAIL = { ...SKIN_DETAIL, veins: .7, veinMask: 'smoothstep(5.0, 4.85, op.y) * smoothstep(.15, .3, op.x)' }; // lower-belly veins
+const ARM_DETAIL = { ...SKIN_DETAIL, veins: 1, veinMask: 'smoothstep(.4, .6, length(op - vec3(1.08, 6.42, 0.0)))' }; // biceps and forearms, not the delts
 const LEG_DETAIL = { ...SKIN_DETAIL, veins: .6, veinMask: 'smoothstep(2.4, 2.0, op.y)' }; // calves
 const CLOTH_DETAIL = { fine: [160, .0016], mid: [6, .012], tone: .06, sss: [0, 0, 0] };
 let G = {};
@@ -919,7 +920,7 @@ function curlHand(hd, c) {
 function buildLifter(key, i) {
   const c = CHARS[key]; JOINTS = JOINTS || genBodyParts('joints');
   const skinMat = det => surfaceDetail(new THREE.MeshPhysicalMaterial({ color: c.skin, roughness: .56, metalness: 0, clearcoat: .14, clearcoatRoughness: .5, vertexColors: true }), det);
-  const skinHand = surfaceDetail(new THREE.MeshPhysicalMaterial({ color: c.skin, roughness: .56, metalness: 0, clearcoat: .14, clearcoatRoughness: .5 }), SKIN_DETAIL);
+  const skinHand = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(c.skin).multiplyScalar(.9), roughness: .56, metalness: 0, clearcoat: .14, clearcoatRoughness: .5 });
   const skin = skinMat(SKIN_DETAIL), skinTorso = skinMat(TORSO_DETAIL), skinArm = skinMat(ARM_DETAIL), skinLeg = skinMat(LEG_DETAIL);
   const hairM = std(c.hair, { roughness: .75 }), white = std(0xf5f6fa, { roughness: .45 }), dark = std(0x15100c, { roughness: .3 }), mouthM = std(0x3a1206, { roughness: .5 });
   const root = new THREE.Group(); scene.add(root); root.scale.set(...c.scale);
