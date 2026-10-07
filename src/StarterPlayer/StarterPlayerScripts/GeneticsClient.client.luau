@@ -1018,6 +1018,26 @@ local function updateLabels()
 			rowY = math.max(rowY, b.Y)
 		end
 		rowY += Spacing.M
+		-- each label goes under the part of its plate you can SEE: the plates are packed tight, so the next plate (nearer
+		-- the camera, to the right) hides everything right of its own left edge. Span = the plate's left edge on screen to
+		-- the next plate's left edge (or its own right edge for the last one).
+		local lefts, rights = {}, {}
+		for i, entry in ipairs(plates) do
+			local r = entry.parts.diameter / 2
+			local minX, maxX = math.huge, -math.huge
+			for _, dx in ipairs({ -PLATE.Thickness / 2, PLATE.Thickness / 2 }) do
+				for k = 0, 15 do
+					local a = k / 16 * math.pi * 2
+					local s = camera:WorldToViewportPoint((entry.cf * CFrame.new(dx, math.cos(a) * r, math.sin(a) * r)).Position)
+					minX, maxX = math.min(minX, s.X), math.max(maxX, s.X)
+				end
+			end
+			lefts[i], rights[i] = minX, maxX
+		end
+		for i in ipairs(plates) do
+			local right = if lefts[i + 1] then math.clamp(lefts[i + 1], lefts[i] + 1, rights[i]) else rights[i]
+			bottoms[i] = Vector3.new((lefts[i] + right) / 2, bottoms[i].Y, bottoms[i].Z)
+		end
 		-- one row: each label right under its own plate, at one shared y; all scaled down together when neighbours would
 		-- touch (widths measured at full size)
 		local widths = {}
