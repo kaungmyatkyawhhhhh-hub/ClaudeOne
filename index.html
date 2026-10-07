@@ -767,6 +767,8 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .acclist{display:flex;flex-direction:column;gap:8px}.acclist .accbar small{color:var(--muted);font-weight:600}.accbar button+button{padding:7px 10px}
 .accbar button{padding:7px 12px;border-radius:10px;background:var(--sunk);font-size:.78rem;font-weight:700}
 .prbtn{background:linear-gradient(90deg,#2fd28a,#1b6b8a)!important;color:#fff!important;margin-bottom:8px}.prbtn b{color:#fff!important;opacity:.85}
+.tvbtn{background:linear-gradient(90deg,#2a3cff,#7a2fd6)!important;color:#fff!important;margin:8px 0}.tvbtn b{color:#fff!important;opacity:.85}
+.tvq{font:800 1.25rem/1.3 var(--display);text-align:center;margin:18px 6px}.tvopts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tvo{padding:16px 10px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-weight:800;font-size:1rem;transition:background .15s,transform .1s}.tvo:active{transform:scale(.97)}.tvo.ok{background:#2fd28a;color:#fff}.tvo.bad{background:#e2364a;color:#fff}
 .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.setc{padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:3px;font-size:.78rem}.setc.on{background:linear-gradient(135deg,#fff3c4,#ffd6f0);color:#141824}.setc span{display:flex;flex-wrap:wrap;gap:3px}.setc i{font-style:normal;font-size:.66rem;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.07);opacity:.55}.setc i.o{opacity:.9}.setc i.w{opacity:1;background:#2fd28a;color:#fff}.setc em{font-style:normal;font-weight:800;font-size:.7rem;color:#7a2fd6}
 .photoov{display:flex;align-items:center;justify-content:center}.photocard{background:var(--surface);border-radius:22px;padding:14px;width:min(92vw,380px);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.4)}.photocard img{width:100%;border-radius:14px;display:block}.pbrow{display:flex;gap:8px}.pbrow>*{flex:1;text-align:center;text-decoration:none}
 .rwbtn{background:linear-gradient(90deg,#ff4fd8,#7a2fd6)!important;color:#fff!important}.rwbtn b{color:#fff!important;opacity:.85}
@@ -1168,6 +1170,8 @@ const ACH=[
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
+ ["fares10","Five stars","Complete 10 ride share fares",()=>(S.stats.fares||0)>=10,40000],
+ ["trivia5","Big brain","Get a perfect 5/5 in daily trivia",()=>(S.stats.trivia5||0)>=1,20000],
  ["petwin10","Speed demon","Win 10 pet races",()=>(S.stats.petWins||0)>=10,60000],
  ["gold12","Treasure hunter","Find all 12 hidden golden statues",()=>((S.gold||{}).got||0)>=12,250000],
  ["pots3","Over the rainbow","Find 3 pots of gold at the end of rainbows",()=>(S.stats.pots||0)>=3,40000],
@@ -1625,7 +1629,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawLostWorld();drawGoldStatues();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawLostWorld();drawGoldStatues();drawRideShare();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -1647,7 +1651,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  drawWeather();drawFireworks();funArrows();drawLostArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  drawWeather();drawFireworks();funArrows();drawLostArrow();drawRideArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -2860,6 +2864,7 @@ const vipCost=()=>Math.max(500,Math.round(S.cash*.03));
 function openDocks(){room="docks";
   const draw=()=>{if(room!=="docks"||(RACE&&!RACE.done))return;const cars=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)),best=cars.sort((a,b)=>b.sp-a.sp)[0],shown=S.flags.showDay===S.day,ask=MP&&MP.crAsk&&MP.peers[MP.crAsk.f]?MP.crAsk:null,fr=MP?Object.entries(MP.peers).filter(([id,p])=>p.n):[];
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Docks Car Meet")}
+      <button class="bigbtn alt2" id="rsBtn" ${!VEH.some(v=>S.veh[v.k]&&CARS.includes(v.k))||RS?"disabled":""}>🚕 Ride share shift<small>${RS?"Shift in progress":VEH.some(v=>S.veh[v.k]&&CARS.includes(v.k))?"Three passengers · fares plus tips for fast drops":"Needs a car"}</small></button>
       <button class="bigbtn alt2" id="ttBtn">⏱️ Street time trial<small>Six checkpoints across town, on foot or on wheels${S.ttBest?" · best "+S.ttBest.toFixed(1)+" s":""}</small></button>
       ${!best?`<div class="note">Bring a car to join the meet. Trucks, coupes and hypercars are at the Dealership downtown, and the sports car too.</div>`:`
       <div class="note">You're rolling up in your <b>${best.n}</b> (${best.sp}× speed). Hit <b>GO</b> the moment the lights turn green for a faster launch.</div>
@@ -2870,7 +2875,7 @@ function openDocks(){room="docks";
       <div class="sechead"><h3>Race the bots</h3><span class="eyebrow">Up to 3 at once</span></div>
       <div class="perks">${CRBOTS().map((o,i)=>`<button class="perk nopic" data-race="${i}" ${S.cash<o.bet?"disabled":""}><span class="t">${o.n}</span><span class="d">${o.sp}× car · bet ${fmt(o.bet)} · 1st pays ${fmt(o.bet*3)}</span><span class="c">Race</span></button>`).join("")}
         <button class="perk nopic" data-race="all" ${S.cash<CRBOTS()[2].bet?"disabled":""}><span class="t">All three at once</span><span class="d">Bet ${fmt(CRBOTS()[2].bet)} · 1st pays ${fmt(CRBOTS()[2].bet*4)}, 2nd gets it back</span><span class="c">Race</span></button></div>`}</div>`;
-    {const tb=$("ttBtn");if(tb)tb.onclick=()=>{closeRoom();ttStart()}}$("leaveBtn").onclick=()=>{RACE=null;closeRoom()};
+    {const tb=$("ttBtn");if(tb)tb.onclick=()=>{closeRoom();ttStart()}}{const rb=$("rsBtn");if(rb)rb.onclick=()=>{const cr=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)).sort((a,b)=>b.sp-a.sp)[0];if(!cr)return;if(!CARS.includes(ride()))S.cur=cr.k;closeRoom();rsStart()}}$("leaveBtn").onclick=()=>{RACE=null;closeRoom()};
     const sb=$("showBtn");if(sb)sb.onclick=()=>{if(S.flags.showDay===S.day)return;S.flags.showDay=S.day;const v=Math.round(VEH.filter(x=>S.veh[x.k]&&CARS.includes(x.k)).reduce((a,x)=>a+x.cost*.03,0));earn(v);SFX.level();banner("Car show +"+fmt(v),"g");draw();updMini()};
     $("room").querySelectorAll("[data-race]").forEach(b=>b.onclick=()=>{const B=CRBOTS(),all=b.dataset.race==="all",ops=all?B:[B[+b.dataset.race]],bet=all?B[2].bet:ops[0].bet;if(S.cash<bet)return;S.cash-=bet;dirty=true;
       raceRun({me:best,bots:ops,bet,prize1:bet*(all?4:3),prize2:all?bet:0,back:draw})});
@@ -3226,6 +3231,23 @@ function drawGoldStatues(){const G=S&&S.gold;if(!G||SCN||MPW)return;const c=ctx;
 function goldStatue(c,x,y,k){c.fillStyle="#a8781c";c.fillRect(x-6*k,y-4*k,12*k,4*k);const g=c.createLinearGradient(x-6*k,0,x+6*k,0);g.addColorStop(0,"#c9921c");g.addColorStop(.5,"#ffe08a");g.addColorStop(1,"#cf9a14");c.fillStyle=g;
   c.beginPath();c.arc(x,y-17*k,3.4*k,0,7);c.fill();rrp(c,x-3.6*k,y-14*k,7.2*k,10*k,2*k);c.fill();c.fillRect(x-6.5*k,y-21*k,2.2*k,9*k);c.fillRect(x+4.3*k,y-21*k,2.2*k,9*k);
   c.fillStyle="#fff";c.globalAlpha=.5+.5*Math.sin((typeof wt==="number"?wt:0)*4);c.fillRect(x-1.5*k,y-19*k,1.2*k,1.2*k);c.globalAlpha=1}
+/* ---------- ride share: pick up three passengers in your car and drop them at their stop ---------- */
+let RS=null;
+function rsStart(){if(SCN||MPW||RS)return;RS={i:0,n:3,earned:0,tips:0};rsNext();SFX.hot();banner("🚕 Ride share shift: 3 fares. Drive to the waving passenger","g")}
+function rsNext(){const sp=lfSpot(S.px,S.py,180,420);if(!sp){RS=null;return}const L=PLACES.filter(p=>p.door&&regionOpen(regionOf(p.door[0],p.door[1]))&&Math.hypot(p.door[0]-sp[0],p.door[1]-sp[1])>420);if(!L.length){RS=null;return}const d=pick(L),dist=Math.hypot(d.door[0]-sp[0],d.door[1]-sp[1]);
+  Object.assign(RS,{stage:"pick",p:sp,d,dist,t:45,lim:0,look:{shirt:pick(["#e2364a","#2fd28a","#ffcc33","#7a2fd6","#2fa6d9"]),skin:pick(["#e8b896","#c98e62","#8d5a3a","#f2d0b0"]),hair:pick(["#3b2a20","#1b1d22","#d9a066","#9aa3b3"])},n2:pick(["Sam","Lena","Omar","Yuki","Ben","Zoe","Raj","Mia"])})}
+function rsTick(dt){if(!RS)return;if(SCN||MPW){RS=null;return}if(room)return;const car=CARS.includes(ride());RS.t-=dt;
+  if(RS.stage==="pick"){if(RS.t<=0){banner(RS.n2+" took another ride","r");SFX.loss();rsAfter(false);return}
+    if(Math.hypot(S.px-RS.p[0],S.py-RS.p[1])<46){if(!car){if(!RS.warn){RS.warn=1;banner("Hop in a car first! (Garage on the HUD)","a")}return}RS.stage="drop";RS.lim=Math.round(RS.dist/40+12);RS.t=RS.lim;SFX.door();banner("🚕 "+RS.n2+": to the "+RS.d.n+", please!","u")}}
+  else{if(RS.t<=-20){banner(RS.n2+" got out and walked","r");SFX.loss();rsAfter(false);return}
+    const D=RS.d.door;if(Math.hypot(S.px-D[0],S.py-D[1+0]-14)<60){const fare=Math.round(Math.max(150,rwBase()*.006)*(RS.dist/400)),tip=RS.t>0?Math.round(fare*Math.min(1,RS.t/RS.lim)*1.2):0;earn(fare+tip);RS.earned+=fare+tip;RS.tips+=tip;SFX.buy();if(tip)confetti(60);banner("🚕 +"+fmt(fare)+(tip?" and a "+fmt(tip)+" tip":"")+" from "+RS.n2,"g");rsAfter(true)}}}
+function rsAfter(ok){RS.i++;if(ok)S.stats.fares=(S.stats.fares||0)+1;dirty=true;if(RS.i>=RS.n){const e=RS.earned;RS=null;if(e){SFX.rebirth();confetti(140);banner("Shift over · earned "+fmt(e),"g")}return}rsNext()}
+setInterval(()=>{try{rsTick(.25)}catch(e){}},250);
+function drawRideShare(){if(!RS||SCN||MPW)return;const c=ctx;
+  if(RS.stage==="pick"){drawPerson(RS.p[0],RS.p[1],{...RS.look,legs:"#262b3a",mv:false,ph:wt,pose:Math.sin(wt*5)>0?"bi":null});c.save();c.font="800 11px "+FONTS.b;c.textAlign="center";const lab="🚕 "+RS.n2+" · "+Math.max(0,Math.ceil(RS.t))+"s",w=c.measureText(lab).width+14;c.fillStyle="rgba(255,204,51,.95)";rr(RS.p[0]-w/2,RS.p[1]-86,w,18,8);c.fill();c.fillStyle="#141824";c.textBaseline="middle";c.fillText(lab,RS.p[0],RS.p[1]-77);c.restore()}
+  else{const D=RS.d.door;c.save();c.strokeStyle="#ffcc33";c.lineWidth=4;c.setLineDash([10,8]);c.lineDashOffset=-wt*30;c.beginPath();c.arc(D[0],D[1]+14,34+Math.sin(wt*4)*4,0,7);c.stroke();c.restore();
+    c.save();c.font="800 12px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const lab=RS.t>0?"⏱ "+Math.ceil(RS.t)+"s for a tip":"No tip now, just get there",w=c.measureText(lab).width+14;c.fillStyle=RS.t>0?"rgba(20,24,36,.85)":"rgba(226,54,74,.9)";rr(S.px-w/2,S.py-96,w,20,9);c.fill();c.fillStyle="#fff";c.fillText(lab,S.px,S.py-86);c.restore()}}
+function drawRideArrow(){if(!RS||SCN||MPW||room)return;const T=RS.stage==="pick"?RS.p:[RS.d.door[0],RS.d.door[1]+14],sx=T[0]-cam.x,sy=T[1]-cam.y;if(sx<20||sy<200||sx>vw-20||sy>vh-140)drawEdgeArrow(T[0],T[1],"#ffcc33")}
 /* ---------- lost pets: a townsperson loses a pet; search the circled area, then walk it home ---------- */
 let LF=null,lfT=360;
 const LF_KINDS=[["cat","🐱","their cat"],["dog","🐶","their dog"],["parrot","🦜","their parrot"],["bunny","🐰","their bunny"],["turtle","🐢","their turtle"]];
@@ -4751,9 +4773,25 @@ function capsule(back){const L=capPool(),a=pick(L),own=(S.accOwn||{})[a.k],col=p
     if(own){S.tix=(S.tix||0)+15}else{S.accOwn=S.accOwn||{};S.accOwn[a.k]=1;S.stats.capsules=(S.stats.capsules||0)+1}dirty=true;
     ov.querySelector("#cpRes").innerHTML=`<b>${esc(a.n)}</b><span>${own?"Duplicate · +15 tickets":"New! Wear it from the Mall's accessory shop"}</span><button class="cta" id="cpOk">${own?"OK":"Equip it"}</button>`;
     ov.querySelector("#cpOk").onclick=()=>{if(!own){S.acc=S.acc||{};S.acc[a.s]=a.k;dirty=true;banner(a.n+" equipped","g")}ov.remove();back()}}}
+/* ---------- daily trivia: five quick questions at the Arcade ---------- */
+const TRIV=[["Which planet is known as the Red Planet?","Mars","Venus","Jupiter","Mercury"],["How many legs does a spider have?","8","6","10","12"],["What is the largest ocean on Earth?","Pacific","Atlantic","Indian","Arctic"],["What gas do plants breathe in?","Carbon dioxide","Oxygen","Helium","Nitrogen"],["How many continents are there?","7","5","6","8"],["What is 12 × 12?","144","124","132","154"],["Which animal is the tallest?","Giraffe","Elephant","Camel","Horse"],["What is the capital of France?","Paris","Rome","Madrid","Berlin"],["Which is the fastest land animal?","Cheetah","Lion","Horse","Greyhound"],["What do bees make?","Honey","Milk","Silk","Wax only"],
+ ["How many sides does a hexagon have?","6","5","7","8"],["Which country is home to the kangaroo?","Australia","Brazil","India","Kenya"],["What is frozen water called?","Ice","Steam","Fog","Dew"],["Which is the biggest planet?","Jupiter","Saturn","Earth","Neptune"],["How many minutes are in an hour?","60","100","30","90"],["What colour do you get mixing blue and yellow?","Green","Purple","Orange","Brown"],["Which bird is a symbol of peace?","Dove","Eagle","Crow","Parrot"],["What is the closest star to Earth?","The Sun","Polaris","Sirius","Vega"],["How many days are in a leap year?","366","365","364","367"],["What is 15 + 27?","42","32","52","41"],
+ ["Which instrument has 88 keys?","Piano","Guitar","Violin","Drum"],["Where do penguins mostly live?","Southern Hemisphere","The Arctic","Deserts","Rainforests"],["What is the boiling point of water at sea level?","100 °C","50 °C","80 °C","120 °C"],["Which is the longest river in Africa?","Nile","Congo","Niger","Zambezi"],["Which shape has three sides?","Triangle","Square","Circle","Pentagon"],["What do caterpillars turn into?","Butterflies","Bees","Beetles","Spiders"],["Which metal is liquid at room temperature?","Mercury","Iron","Gold","Copper"],["How many players are on a soccer team on the field?","11","9","10","12"],["Which country built the Great Wall?","China","Japan","India","Mongolia"],["What is the hardest natural material?","Diamond","Gold","Iron","Granite"],
+ ["How many hearts does an octopus have?","3","1","2","8"],["Which month has the fewest days?","February","April","June","November"],["What is half of 250?","125","150","120","105"],["Which planet has famous rings?","Saturn","Mars","Venus","Mercury"],["What is the capital of Japan?","Tokyo","Kyoto","Osaka","Seoul"],["Which is a mammal?","Dolphin","Shark","Salmon","Octopus"],["What do you call a baby cat?","Kitten","Puppy","Cub","Foal"],["How many colours are in a rainbow?","7","5","6","9"],["What is 9 × 7?","63","56","72","81"],["Which sense uses your nose?","Smell","Taste","Touch","Hearing"]];
+function openTrivia(back){if(S.trivDay===dayKey())return;S.trivDay=dayKey();dirty=true;const day=Math.floor(Date.now()/864e5),Q=[...TRIV].sort((a,b)=>((TRIV.indexOf(a)*7919+day*31)%97)-((TRIV.indexOf(b)*7919+day*31)%97)).slice(0,5);let i=0,right=0,streak=0,lock=false,tmr=0;
+  const show=()=>{if(i>=Q.length)return end();const q=Q[i],opts=q.slice(1).sort(()=>Math.random()-.5);let left=12;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Daily trivia")}<div class="kv"><div><span class="eyebrow">Question</span><b>${i+1}/5</b></div><div><span class="eyebrow">Correct</span><b>${right}</b></div><div><span class="eyebrow">Time</span><b id="tvT">12</b></div></div>
+      <div class="tvq">${esc(q[0])}</div><div class="tvopts">${opts.map(o=>`<button class="tvo" data-tv="${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{clearInterval(tmr);back()};lock=false;clearInterval(tmr);tmr=setInterval(()=>{if(room!=="arcade"||!$("tvT")){clearInterval(tmr);return}left--;$("tvT").textContent=Math.max(0,left);if(left<=0){clearInterval(tmr);pickA(null)}},1000);
+    const pickA=v=>{if(lock)return;lock=true;clearInterval(tmr);const ok=v===q[1];$("room").querySelectorAll(".tvo").forEach(b=>{if(b.dataset.tv===q[1])b.classList.add("ok");else if(b.dataset.tv===v)b.classList.add("bad")});if(ok){right++;streak++;SFX.crit(Math.min(2,streak/2));buzz(15)}else{streak=0;SFX.loss();buzz(30)}setTimeout(()=>{i++;show()},900)};
+    $("room").querySelectorAll(".tvo").forEach(b=>b.onclick=()=>pickA(b.dataset.tv))};
+  const end=()=>{const tix=right*10+(right===5?30:0);S.tix=(S.tix||0)+tix;S.stats.trivia=(S.stats.trivia||0)+1;if(right===5){S.stats.trivia5=(S.stats.trivia5||0)+1;gainCrate(1);confetti(200);SFX.rebirth()}else SFX.hot();dirty=true;
+    $("room").innerHTML=`<div class="room-in">${roomHead("Daily trivia")}<div class="shend"><b>${right===5?"🧠":"📚"}</b><span>${right}/5 correct${right===5?" · perfect!":""}</span><div class="kv"><div><span class="eyebrow">Tickets</span><b>+${tix}</b></div>${right===5?`<div><span class="eyebrow">Bonus</span><b>+1 crate</b></div>`:""}</div></div><button class="bigbtn alt" id="tvBack">Back to the Arcade<small>New questions tomorrow</small></button></div>`;$("tvBack").onclick=back;$("leaveBtn").onclick=back};
+  room="arcade";show()}
 function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||{};const draw=()=>{const T=S.tix||0;
   $("room").innerHTML=`<div class="room-in scroll arcroom">${roomHead("Arcade")}<div class="arcmarq">★ INSERT COIN ★ HIGH SCORES ★ PRIZES ★</div>
     <div class="kv"><div><span class="eyebrow">Tickets</span><b>🎟️ ${fmtN(T)}</b></div><div><span class="eyebrow">Games</span><b>5 energy each</b></div></div>
+    <button class="reqbtn tvbtn" id="tvGo" ${S.trivDay===dayKey()?"disabled":""}>🧠 Daily trivia<b>${S.trivDay===dayKey()?"Done today · new questions tomorrow":"5 questions · free · tickets for each right answer"}</b></button>
     <div class="sechead"><h3>Games</h3><span class="eyebrow">No muscles needed</span></div>
     <div class="perks">${Object.entries(ARC_G).map(([k,g])=>`<button class="perk nopic" data-ag="${k}" ${S.energy<5?"disabled":""}><span class="t">${g.ic} ${g.n}</span><span class="d">${g.d}${S.arcBest[k]?" · best "+S.arcBest[k]:""}</span><span class="c">Play</span></button>`).join("")}</div>
     <div class="sechead"><h3>Capsule machine</h3><span class="eyebrow">🎟️ 30 a spin · ${capPool().filter(a=>(S.accOwn||{})[a.k]).length}/${capPool().length} collected</span></div>
@@ -4762,6 +4800,7 @@ function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||
     <div class="perks">${ARC_PRIZE.map((z,i)=>{const own=z.acc&&(S.accOwn||{})[z.k];return `<button class="perk nopic" data-ap="${i}" ${own||T<z.t?"disabled":""}><span class="t">${z.ic} ${z.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${z.acc?"Wear it from the Mall's accessory shop":"Instant"}</span><span class="c">${own?"Owned":"🎟️ "+z.t}</span></button>`}).join("")}</div></div>`;
   $("leaveBtn").onclick=closeRoom;
   $("room").querySelectorAll("[data-ag]").forEach(b=>b.onclick=()=>{if(!spend(5,b))return;arcPlay(b.dataset.ag,draw)});
+  {const tv=$("tvGo");if(tv)tv.onclick=()=>openTrivia(draw)}
   {const cg=$("capGo");if(cg)cg.onclick=()=>{if((S.tix||0)<30)return;S.tix-=30;dirty=true;capsule(draw)}}
   $("room").querySelectorAll("[data-ap]").forEach(b=>b.onclick=()=>{const z=ARC_PRIZE[+b.dataset.ap];if((S.tix||0)<z.t)return;if(z.acc){S.accOwn=S.accOwn||{};if(S.accOwn[z.k])return;S.accOwn[z.k]=1;S.acc=S.acc||{};S.acc[accOf(z.k).s]=z.k}else z.f();S.tix-=z.t;dirty=true;SFX.rebirth();confetti(140,null,null,["#ff4fd8","#4fe3ff","#ffcc33"]);banner(z.n+(z.acc?" · equipped":""),"g");draw();updMini()})};draw()}
 function arcPlay(k,back){const G=ARC_G[k];room="arcade";
@@ -5214,7 +5253,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=59,WN=[
+const WN_VER=60,WN=[
+ ["🚕","Ride share & daily trivia","Got a car? Start a ride share shift at the Docks: pick up 3 passengers and drop them off fast for tips. And the Arcade has a free daily trivia quiz with 5 questions.","2026-10-07T05:58"],
  ["🏁","Pet races","From the Pets screen, race your pet against three rivals. Tap CHEER to keep it sprinting. Winners get crates, tickets and a daily bond boost.","2026-10-07T05:55"],
  ["🗿","Something shiny…","Rumour says 12 golden statues are hidden around town. They only glint when you get close. Find them all for a special prize.","2026-10-07T05:52"],
  ["🌈","Weather","Rain showers now roll through town. Carry an umbrella to earn fans while it pours, and when the rain stops, chase the rainbow to a pot of gold.","2026-10-07T05:50"],
