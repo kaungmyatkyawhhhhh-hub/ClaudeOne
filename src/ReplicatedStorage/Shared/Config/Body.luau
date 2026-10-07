@@ -27,15 +27,18 @@ Body.Proportions = { Stretch = 1.08, Shrink = 0.893, Navel = 0.4, LowerTorsoRef 
 
 -- Widths by Growth Spurt (muscle_v8 manifest "growth_spurt_width"). Roblox's height scale only makes the body taller, so
 -- each region gets its own width factor: factor = 1 + k * (s - 1), s = the height over the starting height (4'0"). k blends
--- from Skinny (a beginner: wide clavicles, narrow hips, thin arms and legs) to Maxed (the full aesthetic V-taper) with the
+-- from Skinny (a beginner: narrow shoulders and hips, thin arms and legs) to Maxed (the full aesthetic V-taper) with the
 -- muscle progress, then to MassMonster (wider, plus muscle_extra = +12% muscle thickness) during the monster stage.
 -- shoulders = the UpperTorso width (with the genetics frame on top), hips = the LowerTorso width, arms / legs = the limb
 -- widths and thickness, depth = the torso's front-to-back depth. (BodyShape.ApplyWidths, BodyService.WidthFactors)
 Body.Widths = {
-	Skinny = { shoulders = 1, hips = 0.2, arms = 0.08, legs = 0.06, depth = 0.35 },
+	Skinny = { shoulders = 0.4, hips = 0.2, arms = 0.08, legs = 0.06, depth = 0.35 },
 	Maxed = { shoulders = 1.15, hips = 0.7, arms = 0.5, legs = 0.5, depth = 0.45 },
-	MassMonster = { shoulders = 1.15, hips = 1.2, arms = 0.9, legs = 0.9, depth = 0.9, muscle_extra = 0.12 },
+	MassMonster = { shoulders = 1.4, hips = 1.2, arms = 0.9, legs = 0.9, depth = 0.9, muscle_extra = 0.12 },
 	Step = 0.002, -- factors are rounded to this (fine enough that the hips widen smoothly, no visible jumps)
+	-- the shoulders always stay wider than the hips: the UpperTorso (1.9966 studs at factor 1) at least this much wider than
+	-- the LowerTorso (1.3752): shoulders factor >= hips factor * 1.3752 / 1.9966 * ShouldersOverHips
+	ShouldersOverHips = 1.1,
 }
 
 -- Accessory types that cover the body (removed: the gym look is shirtless with the game's own shorts).

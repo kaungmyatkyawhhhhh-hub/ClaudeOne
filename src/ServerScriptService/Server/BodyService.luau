@@ -184,6 +184,8 @@ function BodyService.WidthFactors(data)
 		factors[region] = math.floor(f / W.Step + 0.5) * W.Step
 	end
 	factors.shoulders *= Genetics.ShoulderWidth(data.genetics and data.genetics.frame)
+	-- the shoulders always stay wider than the hips (whatever the frame and the blend)
+	factors.shoulders = math.max(factors.shoulders, factors.hips * 1.3752 / 1.9966 * W.ShouldersOverHips)
 	return factors
 end
 

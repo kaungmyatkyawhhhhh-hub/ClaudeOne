@@ -44,6 +44,8 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
   Persistent Models (were Folders; the builders make Models too).
 
+- **Shoulders widen with muscle (8 Oct):** tall skinny players start with narrow shoulders (k 0.4 -> 1.15 -> 1.4), the frame
+  on top, always wider than the hips (`Body.Widths.ShouldersOverHips`).
 - **Look balance cap (8 Oct):** `Config/LookBalance` (rules + ALLOW values to tune), applied in `BodyService.EncodeLevels`
   / `WidthFactors` and `MuscleClient` (your own muscles); lock + held-back bar + hint in the Muscles panel, one-time toast
   (`settings.lookCapHintSeen`), rep flash when a cap lifts. `tests/lookbalance`. Note: the whole-body rule (upper vs legs

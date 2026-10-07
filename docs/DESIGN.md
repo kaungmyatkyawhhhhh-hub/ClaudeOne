@@ -288,8 +288,8 @@ shareable before/after snapshot.
 - Max = a lean aesthetic V-taper (fitness model, not a bodybuilder); the mass monster sizes come from the manifest
   (mass_monster.g per mesh) plus 12% extra thickness.
 - Widths by Growth Spurt (`Config/Body.Widths`, manifest growth_spurt_width): factor = 1 + k * (height / 4'0" - 1) per
-  region (shoulders with the genetics frame on top, hips, arms, legs, torso depth); k goes from skinny (wide clavicles,
-  narrow hips, thin arms and legs) to the maxed V-taper smoothly with the muscle progress and on to the mass monster;
+  region (shoulders with the genetics frame on top, hips, arms, legs, torso depth); k goes from skinny (narrow
+  shoulders and hips, thin arms and legs; shoulders k 0.4 -> 1.15 -> 1.4, always wider than the hips) to the maxed V-taper smoothly with the muscle progress and on to the mass monster;
   the hips (k 0.2 -> 0.7 -> 1.2) widen the LowerTorso, the shorts and the leg positions together, and the waist meets
   the LowerTorso at the same width. Lying poses are
   lifted by the extra torso depth so the back stays on the pad.
