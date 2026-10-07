@@ -8,6 +8,8 @@
 --    widened and every attachment on it (the shoulder joints, so the arms move out) moved out by that factor; re-applied
 --    whenever Roblox rescales the body (a Growth Spurt resets sizes). The character attribute FrameWidth tells the clients,
 --    whose muscle meshes taper the torso back to the normal waist (a V, not a wider box).
+--  * Golden ratio proportions (Config.Body.Proportions, BodyShape.ApplyProportions): longer legs, shorter torso, same
+--    height; re-applied with the frame whenever Roblox rebuilds the body.
 --  * Muscles (muscle v7) are drawn on every client (Shared.MuscleRig / MuscleClient): this service only PUBLISHES the numbers as
 --    player attributes: MuscleG (18 look values in Config.Muscles order, Muscles.LookG of level / Growth Spurt goal), Top and
 --    Shorts (the wardrobe choices; ids from Config.Body). A Growth Spurt resets the muscles, so they shrink back on their own.
@@ -221,6 +223,7 @@ local function setup(player, character)
 	task.wait(SETTLE_TIME)
 	if player.Character == character then
 		applyFrame(character, data)
+		BodyShape.ApplyProportions(character)
 		publish(player, state, data)
 		character:SetAttribute("BodyVersion", (character:GetAttribute("BodyVersion") or 0) + 1) -- gear rebuilds on this
 	end
@@ -251,6 +254,7 @@ local function refresh(player)
 		end
 		if changed then character:SetAttribute("BodyVersion", (character:GetAttribute("BodyVersion") or 0) + 1) end
 		applyFrame(character, data) -- (also after a reroll, and after a rescale reset the widths)
+		BodyShape.ApplyProportions(character) -- (only re-applies what a rescale / new body reset)
 	end
 	publish(player, state, data)
 	state.busy = false

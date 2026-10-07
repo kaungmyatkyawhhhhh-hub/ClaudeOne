@@ -1,6 +1,8 @@
 -- BodyShape: body helpers shared by BodyService (characters), MirrorService (the before/after rigs) and the statue.
 -- The muscles are EditableMesh muscles (MuscleRig, MuscleClient); this module only holds the height base and
--- the joint helpers for rigs that are anchored as a whole (statue, preview rigs).
+-- the joint helpers for rigs that are anchored as a whole (statue, preview rigs), and the golden ratio proportions.
+local Body = require(script.Parent.Config.Body)
+
 local BodyShape = {}
 
 BodyShape.BaseHeight = 60      -- inches that equal a height scale of 1
@@ -80,6 +82,105 @@ function BodyShape.SolveJoints(model)
 			end
 		end
 	end
+end
+
+-- One Y value of an instance remapped once: the value we set is remembered (attribute <key>Y, the original in <key>BaseY).
+-- If the current value is no longer the one we set, Roblox rebuilt it (a rescale / a new description): it is the new base.
+-- Returns base, new when it was (re)applied now; nil when it is already done.
+local function remapY(target: Instance, key: string, current: number, map: (number) -> number): (number?, number?)
+	local done = target:GetAttribute(key .. "Y")
+	if type(done) == "number" and math.abs(current - done) < 1e-4 then return nil, nil end
+	local new = map(current)
+	target:SetAttribute(key .. "BaseY", current)
+	target:SetAttribute(key .. "Y", new)
+	return current, new
+end
+
+-- The Y an attachment had before the proportions (its base, or the current value if not applied yet).
+local function baseY(attachment: Instance?): number
+	if not attachment or not attachment:IsA("Attachment") then return 0 end
+	local base = attachment:GetAttribute("PropBaseY")
+	local done = attachment:GetAttribute("PropY")
+	if type(base) == "number" and type(done) == "number" and math.abs(attachment.Position.Y - done) < 1e-4 then return base end
+	return attachment.Position.Y
+end
+
+-- Reshape one body part in height: its size and every attachment on it (rig joints and accessories) through `map`
+-- (part-local Y -> new Y). Returns whether its size was (re)applied now, and whether anything was.
+local function reshape(part: BasePart, sizeMap: (number) -> number, map: (number) -> number): (boolean, boolean)
+	local base = remapY(part, "Prop", part.Size.Y, sizeMap)
+	if base then part.Size = Vector3.new(part.Size.X, part:GetAttribute("PropY"), part.Size.Z) end
+	local any = base ~= nil
+	for _, attachment in ipairs(part:GetChildren()) do
+		if attachment:IsA("Attachment") then
+			local _, y = remapY(attachment, "Prop", attachment.Position.Y, map)
+			if y then
+				attachment.Position = Vector3.new(attachment.Position.X, y, attachment.Position.Z)
+				any = true
+			end
+		end
+	end
+	return base ~= nil, any
+end
+
+-- Golden ratio proportions (Config.Body.Proportions) on an R15 Robloxian rig: legs and the LowerTorso below the navel
+-- taller, the rest of the torso up to the neck shorter, the same total height. Safe to call again (only re-applies what
+-- Roblox rebuilt). Joints follow the moved attachments (Motor6D C0/C1 are synced too); when the legs were reshaped now, the
+-- Humanoid's HipHeight grows by what the legs gained, so the feet stay on the floor. solve = place every part from its
+-- joints afterwards (rigs that aren't simulated: anchored NPCs, statue, preview rigs). Returns the HipHeight change.
+function BodyShape.ApplyProportions(model: Model, solve: boolean?): number
+	local P = Body.Proportions
+	local lower, upper = model:FindFirstChild("LowerTorso"), model:FindFirstChild("UpperTorso")
+	if not (lower and lower:IsA("BasePart") and upper and upper:IsA("BasePart")) then return 0 end
+	local function times(k: number) return function(y: number) return y * k end end
+
+	-- the LowerTorso: below the navel stretched, above it shrunk (its mesh takes the overall new height)
+	local lowerDone = lower:GetAttribute("PropY")
+	local h = if type(lowerDone) == "number" and math.abs(lower.Size.Y - lowerDone) < 1e-4 then lower:GetAttribute("PropBaseY") else lower.Size.Y
+	local bottom = -h / 2
+	local navel = math.min(bottom + P.Navel * h / P.LowerTorsoRef, h / 2)
+	local newH = (navel - bottom) * P.Stretch + (h / 2 - navel) * P.Shrink
+	local function lowerMap(y: number): number
+		local up = if y <= navel then (y - bottom) * P.Stretch else (navel - bottom) * P.Stretch + (y - navel) * P.Shrink
+		return -newH / 2 + up
+	end
+	-- (the leg chain below the root, before: for the HipHeight change)
+	local rightUpper, rightLower = model:FindFirstChild("RightUpperLeg"), model:FindFirstChild("RightLowerLeg")
+	local rootY, hipY = baseY(lower:FindFirstChild("RootRigAttachment")), baseY(lower:FindFirstChild("RightHipRigAttachment"))
+	local thigh = rightUpper and (baseY(rightUpper:FindFirstChild("RightHipRigAttachment")) - baseY(rightUpper:FindFirstChild("RightKneeRigAttachment"))) or 0
+	local shin = rightLower and (baseY(rightLower:FindFirstChild("RightKneeRigAttachment")) - baseY(rightLower:FindFirstChild("RightAnkleRigAttachment"))) or 0
+
+	local _, lowerAny = reshape(lower, function() return newH end, lowerMap)
+	local _, upperAny = reshape(upper, times(P.Shrink), times(P.Shrink))
+	local changed, legsNow = lowerAny or upperAny, false
+	for _, name in ipairs({ "RightUpperLeg", "LeftUpperLeg", "RightLowerLeg", "LeftLowerLeg" }) do
+		local part = model:FindFirstChild(name)
+		if part and part:IsA("BasePart") then
+			local sizeNow, any = reshape(part, times(P.Stretch), times(P.Stretch))
+			changed = changed or any
+			if sizeNow and name == "RightUpperLeg" then legsNow = true end
+		end
+	end
+	if not changed then return 0 end
+
+	-- Motor6D rigs place parts from C0/C1, not the attachments
+	for _, joint in ipairs(model:GetDescendants()) do
+		if joint:IsA("Motor6D") and joint.Part0 and joint.Part1 then
+			local a0 = joint.Part0:FindFirstChild(joint.Name .. "RigAttachment")
+			local a1 = joint.Part1:FindFirstChild(joint.Name .. "RigAttachment")
+			if a0 and a0:IsA("Attachment") then joint.C0 = a0.CFrame end
+			if a1 and a1:IsA("Attachment") then joint.C1 = a1.CFrame end
+		end
+	end
+
+	local delta = 0
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if legsNow then
+		delta = (lowerMap(rootY) - lowerMap(hipY)) - (rootY - hipY) + (thigh + shin) * (P.Stretch - 1)
+		if humanoid then humanoid.HipHeight += delta end
+	end
+	if solve then BodyShape.SolveJoints(model) end
+	return delta
 end
 
 return BodyShape

@@ -168,6 +168,7 @@ local function refreshStatue()
 	statue = model
 	model.Name = "Statue"
 	BodyShape.EnsureJoints(model)
+	BodyShape.ApplyProportions(model, true)
 	local cfg = ShowOff.Statue
 	for _, item in ipairs(model:GetDescendants()) do
 		if item:IsA("BaseScript") then

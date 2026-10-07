@@ -44,6 +44,12 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
   Persistent Models (were Folders; the builders make Models too).
 
+- **Golden ratio body (8 Oct):** longer legs, shorter torso, same height, on players, NPCs, mirror rigs and the statue
+  (`BodyShape.ApplyProportions`, re-applied after every rescale). Not yet applied from the new `muscle_v8` package: the
+  "uneven levels" blend, round DeltCap shoulders + the waist that tightens, the aesthetic max data and
+  `growth_spurt_width` (the repo's MuscleData is still the v8-1 data; `tools/gen_muscle_data` expects "share", the new
+  growdata has "blend").
+
 - **Genetics scene (7 Oct):** a real gym around the reveal (`ReplicatedStorage.GeneticsSet`, from
   `tools/builders/GeneticsSet`): platform, J-hooks, plate tree, dim back wall with racks, soft depth of field. Camera
   tuning: `ReplicatedStorage.GeneticsCameraRig` (CamPitch / CamHeight attributes).

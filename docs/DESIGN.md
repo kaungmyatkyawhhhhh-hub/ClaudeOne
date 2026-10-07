@@ -276,6 +276,11 @@ shareable before/after snapshot.
 
 ## Bodies and muscles (v4)
 - Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all except the shoulder width from the genetics Frame (Narrow 0.9x, Average 1x, Wide 1.1x, V-Taper 1.2x: UpperTorso width + arms moved out, the muscle meshes taper back to the normal waist so it reads as a V). Head, face, hair, accessories, skin color and animations stay theirs.
+- Golden ratio proportions (muscle_v8 manifest "proportions"): torso (neck base -> navel) : legs (navel -> ankle) =
+  1 : 1.618 at the same total height. Everything from the ankle to the navel is x1.08 taller, from the navel to the neck
+  base x0.893; feet, head and arm length stay (they ride on the joints). Applied to every Robloxian rig on top of the
+  Growth Spurt height (`Config/Body.Proportions`, `BodyShape.ApplyProportions`); muscles and the snatched torso follow
+  their part's size, HipHeight grows with the legs, no gaps.
 - Muscles are real EditableMesh muscles (muscle v8): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), everyone gets the snatched-waist torso, each muscle's outline stays on the skin and only the bulge rises with its level (continuous, tweened, small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
   look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass

@@ -63,6 +63,7 @@ local function buildRig(player, name, heightScale, poseName)
 	end
 	rig.Name = name
 	BodyShape.EnsureJoints(rig)
+	BodyShape.ApplyProportions(rig)
 	for _, item in ipairs(rig:GetDescendants()) do
 		if item:IsA("BaseScript") then item:Destroy() end
 	end

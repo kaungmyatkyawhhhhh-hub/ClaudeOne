@@ -8,6 +8,7 @@ local Workspace = game:GetService("Workspace")
 
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local Body = require(ReplicatedStorage.Shared.Config.Body)
+local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 
 local NpcService = {}
 
@@ -86,6 +87,7 @@ function NpcService.Build(spec, cframe)
 		model = fallbackModel(spec)
 	end
 	model.Name = spec.name
+	BodyShape.ApplyProportions(model, true) -- the golden ratio body (longer legs, shorter torso)
 
 	-- without catalog clothing, the "shirt" is the torso and upper arms painted in the shirt color (short sleeves)
 	if not spec.shirtId then
@@ -172,6 +174,9 @@ function NpcService.ApplyBody(npc)
 	Body.ApplyTo(desc, skin, nil)
 	desc.Shirt, desc.Pants = shirtId, pantsId
 	if not pcall(humanoid.ApplyDescription, humanoid, desc) then return false end
+	-- the golden ratio body; it stands taller on its longer legs, so lift it by what the hips gained
+	local lift = BodyShape.ApplyProportions(npc, true)
+	if lift ~= 0 then npc:PivotTo(npc:GetPivot() + Vector3.new(0, lift, 0)) end
 	if shirtId == 0 then
 		for _, name in ipairs({ "UpperTorso", "LowerTorso", "RightUpperArm", "LeftUpperArm" }) do
 			local part = npc:FindFirstChild(name)

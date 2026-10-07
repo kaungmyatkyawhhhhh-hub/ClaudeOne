@@ -18,6 +18,13 @@ Body.Parts = {
 -- (The uploaded skin images skin_color / skin_roughness are not used: muscle meshes are colored with vertex colors.)
 Body.Scales = { BodyType = 0, Proportion = 0, Width = 1, Depth = 1, Head = 1 }
 
+-- Golden ratio proportions (muscle_v8 manifest "proportions"): torso (neck base -> navel) : legs (navel -> ankle) =
+-- 1 : 1.618 at the same total height. Everything between the ankle and the navel is stretched x1.080 in height, everything
+-- between the navel and the neck base shrunk x0.893; feet, head and arm length stay (head and arms ride on the neck and
+-- shoulder joints). The navel is 0.4 studs above the bottom of the LowerTorso on the reference body (LowerTorso 0.5001
+-- tall), so the LowerTorso takes both. Applied by BodyShape.ApplyProportions on top of the Growth Spurt height scale.
+Body.Proportions = { Stretch = 1.08, Shrink = 0.893, Navel = 0.4, LowerTorsoRef = 0.5001 }
+
 -- Accessory types that cover the body (removed: the gym look is shirtless with the game's own shorts).
 Body.CoveringAccessories = { "TShirt", "Shirt", "Pants", "Jacket", "Sweater", "Shorts", "DressSkirt" }
 
