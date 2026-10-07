@@ -6777,6 +6777,7 @@ function openJukebox(back){room="jbox";$("room").hidden=false;const draw=()=>{$(
 function openNext(back){room="next";$("room").hidden=false;const L=repLevel(),nw=netWorth(),rows=[];
   const add=(ic,t,d,p)=>rows.push({ic,t,d,p});
   {const d=dayEv();add(d[1],"Today: "+d[2],d[3]+".")}
+  w4Hints().slice(0,3).forEach(h=>add(h[0],h[1],h[2]));
   const g=GOALS[S.goal];if(g)add("🎯","Goal "+(S.goal+1)+": "+g.t,g.d+" Reward "+fmt(g.rw)+".");
   // things you can do today
   if(gardenReady())add("🌱","Your garden is ready",gardenReady()+" crop"+(gardenReady()>1?"s":"")+" to harvest at Home.");
@@ -7154,6 +7155,18 @@ function dragonFight(done){const ov=document.createElement("div");ov.className="
     hits=hits.filter(h=>(h.t+=dt)<.5);hits.forEach(h=>{g.font="900 20px "+FONTS.d;g.fillStyle="#ffcc33";g.globalAlpha=1-h.t*2;g.fillText("POW!",h.x,h.y-h.t*40);g.globalAlpha=1});
     const left=Math.max(0,12-t);ov.querySelector("#dfT").textContent=left.toFixed(1);
     if(hp<=0||left<=0){over=true;setTimeout(()=>{ov.remove();done(hp<=0)},400);return}requestAnimationFrame(fr)};requestAnimationFrame(fr)}
+function w4Hints(){const H=[];if(!S.w3||!S.w3.open)return H;const W=w4();
+  if(!W.open){H.push(["💎","World 4: Tycoon Frontier",zigN()>=W4_ZIG?"Open the Rift portal in Deep Time for "+fmt(W4_COST)+".":"Build "+W4_ZIG+" Ziggurat tiers in Deep Time ("+zigN()+"/"+W4_ZIG+"), then open the Rift portal."]);return H}
+  const n=zk=>W.z[zk].t.filter(Boolean).length,nx=W4Z.find(z=>!W.unl[z.k]);
+  if(n("sky")<3)H.push(["⛏️","Build Crystal mines","In the Sky Islands, every mine makes Gems even while you're away."]);
+  if(W.ex!==dayKey())H.push(["🔁","Daily Gem swap","The Gem Exchange swaps 10% of your cash for a bag of Gems today."]);
+  if(nx)H.push([nx.ic,W.gems>=nx.unl?"Unlock "+nx.n+" now!":"Next zone: "+nx.n,W.gems>=nx.unl?"You have the "+gemF(nx.unl)+" it costs.":"Save up "+gemF(nx.unl)+" ("+Math.floor(W.gems/nx.unl*100)+"%)."]);
+  if(n("sky")>=4&&!W.z.sky.t.some(t=>t&&t.k==="shield"))H.push(["🛡️","Build a Storm shield","Storms knock out sky buildings that aren't next to a shield."]);
+  if(W.unl.sea){const c=w4Calc("sea");if(c.use>c.o2)H.push(["🫧","More oxygen","Your Underwater City uses "+c.use+" oxygen but makes "+c.o2+". Build or upgrade Air pumps."])}
+  if(W.unl.fac&&w4Calc("fac").st.includes("🔌"))H.push(["🔌","Connect the factory","Smelters need an Ore mine beside them, Assemblers a Smelter, Robot bays an Assembler."]);
+  if(W.unl.king){const c=w4Calc("king"),need=Math.ceil(n("king")/4);if(c.work>c.pop)H.push(["🏡","More villagers","Build or upgrade Cottages: you have "+c.pop+" villagers for "+c.work+" jobs."]);if(n("king")>=3&&c.def<need)H.push(["🗼","Guard towers","Dragons will win: defence "+c.def+"/"+need+"."])}
+  if(w4StarGain()>=Math.max(3,(W.stars||0)))H.push(["⭐","Franchise for "+w4StarGain()+" stars","At the Gem Exchange: reset World 4 for permanent +10% per star."]);
+  return H}
 function openGemEx(back){const W=w4(),today=dayKey(),done=W.ex===today,give=Math.max(100,Math.round(w4Rate()*900)),cost=Math.round(S.cash*.1);room="gemex";$("room").hidden=false;
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Gem Exchange")}<div class="art bhart"><div class="bhdisk" style="background:conic-gradient(#4fe3ff,#ff4fd8,#ffcc33,#4fe3ff)"></div><div class="bhcore" style="background:#0b1a2a"></div></div>
     <div class="note">World 4 runs on <b>Gems ${GEM}</b>. Your old money can't buy much here: once a day the exchange swaps <b>10% of your cash</b> for a bag of Gems worth 15 minutes of your zones' output.</div>
