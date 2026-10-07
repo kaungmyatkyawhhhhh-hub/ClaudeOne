@@ -257,3 +257,10 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - **Icons:** all HUD icons and tile colors live in `Config/HudIcons`; set `image = "rbxassetid://..."` on a tile or pill to use your own art instead. Built-in glyphs to replace later: Stats, Muscles, Titles, Genetics, Wardrobe, Poses, Crew, Store, Coins, Quests, Daily, Settings.
 - **Stat labels:** a push-apart pass keeps the labels from overlapping each other (even with the spring drift and an expanded group) and out of your body, always on screen.
 - Screenshots `ui_v7_*.png`. Phone layout checked with `TestPhoneLayout` only (no real device).
+
+## Checked in Studio (7 Oct 2026, after UI v7)
+- Phone layout (forced with `TestPhoneLayout`): Menu button, coins pill beside it, right pills icon-only, tile grid opens from Menu. The coins/Menu overlap is fixed.
+- Neon highlight on arms and legs with a shirt and pants on: lights up and restores cleanly when you switch group.
+- Layered (3D) clothing: a fake jacket (Accessory type Jacket with a WrapLayer) hides the torso and arm muscles and leaves the legs; removing it brings them back. (No real layered item tested.)
+- Progress mirror: "Now" holds the front double biceps with muscles; live glass mirror copies a held pose.
+- Still unchecked: a real phone, the judges with low muscles (formula only), skate feel beyond the earlier ride.
