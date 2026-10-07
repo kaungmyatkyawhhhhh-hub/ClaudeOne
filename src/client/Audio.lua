@@ -25,6 +25,7 @@ local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
@@ -40,8 +41,17 @@ local BUILTIN = {
 	tick = "rbxasset://sounds/volume_slider.ogg",
 }
 
--- custom ids from Config.Sounds that passed the load check
-local custom: { [string]: string } = {}
+-- ids from Config.Sounds that passed the load check (each slot may be a list)
+local custom: { [string]: { string } } = {}
+
+local function pickCustom(key: string): string?
+	local list = custom[key]
+	if list and #list > 0 then
+		return list[math.random(1, #list)]
+	end
+	return nil
+end
+Audio.pickCustom = pickCustom
 
 local function newSound(id: string, parent: Instance, volume: number, looped: boolean?): Sound
 	local s = Instance.new("Sound")
@@ -69,32 +79,41 @@ function Audio.init()
 	SoundService.DistanceFactor = 3.33 -- 1 stud ~= 0.3 m
 	SoundService.RolloffScale = 0.6
 
-	-- check any user-supplied ids in the background
-	task.spawn(function()
-		for key, id in Config.Sounds do
+	-- test-load every configured id (in parallel, during the loading screen)
+	local probes: { [Sound]: string } = {}
+	local list = {}
+	for key, value in Config.Sounds do
+		local ids = if type(value) == "table" then value elseif type(value) == "string" then { value } else {}
+		for _, id in ids do
 			if type(id) == "string" and id ~= "" then
-				local ok = false
 				local probe = Instance.new("Sound")
 				probe.SoundId = id
-				pcall(function()
-					ContentProvider:PreloadAsync({ probe }, function(_, status)
-						ok = status == Enum.AssetFetchStatus.Success
-					end)
-				end)
-				if ok then
-					custom[key] = id
-				else
-					warn(`[CityLegends] Config.Sounds.{key} ({id}) did not load, using the built-in sound`)
-				end
-				probe:Destroy()
+				probes[probe] = key
+				table.insert(list, probe)
 			end
 		end
-		if custom.Music then
-			local music = newSound(custom.Music, SoundService, 0.25, true)
-			music.Name = "Music"
-			music:Play()
-		end
+	end
+	local ok = pcall(function()
+		ContentProvider:PreloadAsync(list, function(contentId, status)
+			for probe, key in probes do
+				if probe.SoundId == contentId then
+					if status == Enum.AssetFetchStatus.Success then
+						custom[key] = custom[key] or {}
+						table.insert(custom[key], contentId)
+					else
+						warn(`[CityLegends] sound {key} ({contentId}) did not load ({status.Name}); using the built-in sound`)
+					end
+				end
+			end
+		end)
 	end)
+	if not ok then
+		warn("[CityLegends] could not preload sounds; using built-in audio")
+	end
+	for probe in probes do
+		probe:Destroy()
+	end
+	Audio.startMusic()
 
 	-- night city ambience: distant traffic / wind hum
 	local amb = newSound(BUILTIN.wind, SoundService, 0.06, true)
@@ -125,8 +144,48 @@ end
 ---------------------------------------------------------------------
 -- One-shots
 ---------------------------------------------------------------------
+---------------------------------------------------------------------
+-- Music: shuffled night-drive playlist, M to mute
+---------------------------------------------------------------------
+local musicSound: Sound? = nil
+local musicMuted = false
+function Audio.startMusic()
+	local tracks = custom.Music
+	if not tracks or #tracks == 0 or musicSound then
+		return
+	end
+	local order = table.clone(tracks)
+	for i = #order, 2, -1 do
+		local j = math.random(1, i)
+		order[i], order[j] = order[j], order[i]
+	end
+	local index = 1
+	local m = newSound(order[1], SoundService, Config.Sounds.MusicVolume or 0.22)
+	m.Name = "Music"
+	musicSound = m
+	m.Ended:Connect(function()
+		index = index % #order + 1
+		m.SoundId = order[index]
+		m.TimePosition = 0
+		m:Play()
+	end)
+	m:Play()
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.KeyCode == Enum.KeyCode.M then
+			Audio.toggleMusic()
+		end
+	end)
+end
+
+function Audio.toggleMusic()
+	musicMuted = not musicMuted
+	if musicSound then
+		musicSound.Volume = if musicMuted then 0 else (Config.Sounds.MusicVolume or 0.22)
+	end
+end
+
 function Audio.play(key: string, volume: number, speed: number?, parent: Instance?): Sound
-	local id = custom[key] or BUILTIN[key] or key
+	local id = pickCustom(key) or BUILTIN[key] or key
 	local s = newSound(id, parent or SoundService, volume)
 	s.PlaybackSpeed = speed or 1
 	s:Play()
@@ -141,10 +200,10 @@ end
 -- cut-up reward: swoosh + a chime that climbs with the combo
 function Audio.cutUp(combo: number, label: string?)
 	if custom.CutUp then
-		Audio.play("CutUp", 0.6, 1)
-		return
+		Audio.play("CutUp", 0.55, 0.95 + math.random() * 0.2)
+	else
+		Audio.play("swoosh", 0.55, 1.35 + math.random() * 0.15)
 	end
-	Audio.play("swoosh", 0.55, 1.35 + math.random() * 0.15)
 	local pitch = 1.4 + math.min(combo, 12) * 0.08
 	Audio.play("tick", 0.5, pitch)
 	task.delay(0.07, function()
@@ -160,7 +219,8 @@ end
 function Audio.crash(severity: number)
 	local k = math.clamp(severity / 120, 0.15, 1)
 	if custom.Crash then
-		Audio.play("Crash", 0.4 + 0.6 * k, 1)
+		Audio.play("Crash", 0.35 + 0.65 * k, 0.95 + math.random() * 0.1)
+		Audio.play("thud", 0.4 + 0.4 * k, 0.8)
 		return
 	end
 	local boom = Audio.play("boom", 0.25 + 0.55 * k, 0.75 + math.random() * 0.1)
@@ -178,9 +238,28 @@ end
 
 -- big low "hit" for titles / cuts
 function Audio.boom(volume: number?)
+	if custom.Impact then
+		Audio.play("Impact", volume or 0.55, 1)
+		return
+	end
 	local s = Audio.play("boom", volume or 0.55, 0.55)
 	effect("EqualizerSoundEffect", s, { LowGain = 8, MidGain = -4, HighGain = -20 })
 	effect("ReverbSoundEffect", s, { DecayTime = 2.5, Density = 1, Diffusion = 1, DryLevel = 0, WetLevel = -4 })
+end
+
+-- a real car screaming past (falls back to a whoosh)
+function Audio.passBy(volume: number?)
+	if custom.PassBy then
+		Audio.play("PassBy", volume or 0.8, 1)
+	else
+		Audio.whoosh(volume, 1.5)
+	end
+end
+
+function Audio.engineStart(parent: Instance?)
+	if custom.EngineStart then
+		Audio.play("EngineStart", 0.6, 1, parent)
+	end
 end
 
 function Audio.whoosh(volume: number?, speed: number?)
@@ -213,16 +292,18 @@ function Audio.engine(class: string, parent: Instance?): Engine
 	local base = CLASS_PITCH[class] or 1
 	local positional = parent ~= nil and parent:IsA("BasePart")
 
-	local rumble = newSound(custom.Engine or BUILTIN.wind, holder, 0, true)
+	local engineId = pickCustom("Engine")
+	local squealId = pickCustom("TyreSqueal")
+	local rumble = newSound(engineId or BUILTIN.wind, holder, 0, true)
 	rumble.Name = "EngineRumble"
 	local growl = newSound(BUILTIN.wind, holder, 0, true)
 	growl.Name = "EngineGrowl"
 	local wind = newSound(BUILTIN.wind, holder, 0, true)
 	wind.Name = "SpeedWind"
-	local tyres = newSound(BUILTIN.wind, holder, 0, true)
+	local tyres = newSound(squealId or BUILTIN.wind, holder, 0, true)
 	tyres.Name = "TyreHiss"
 
-	local usingCustom = custom.Engine ~= nil
+	local usingCustom = engineId ~= nil
 	local tremolo: TremoloSoundEffect? = nil
 	if not usingCustom then
 		effect("DistortionSoundEffect", rumble, { Level = 0.5 })
@@ -232,7 +313,9 @@ function Audio.engine(class: string, parent: Instance?): Engine
 	effect("DistortionSoundEffect", growl, { Level = 0.72 })
 	effect("EqualizerSoundEffect", growl, { LowGain = -4, MidGain = 7, HighGain = -18 })
 	effect("EqualizerSoundEffect", wind, { LowGain = -2, MidGain = 0, HighGain = -4 })
-	effect("EqualizerSoundEffect", tyres, { LowGain = -30, MidGain = -6, HighGain = 6 })
+	if not squealId then
+		effect("EqualizerSoundEffect", tyres, { LowGain = -30, MidGain = -6, HighGain = 6 })
+	end
 
 	for _, s in { rumble, growl, wind, tyres } do
 		if positional then
@@ -253,8 +336,9 @@ function Audio.engine(class: string, parent: Instance?): Engine
 		local r = math.clamp(smoothRpm - dip, 0.05, 1.1)
 		dip = math.max(0, dip - 0.04)
 		if usingCustom then
-			rumble.PlaybackSpeed = (0.6 + r * 1.0) * ts
-			rumble.Volume = 0.45 + 0.25 * throttle
+			-- recorded engine loop: pitch follows rpm, per-class character
+			rumble.PlaybackSpeed = (0.62 + r * 1.05) * base * ts
+			rumble.Volume = 0.5 + 0.3 * throttle
 		else
 			rumble.PlaybackSpeed = (0.26 + r * 0.6) * base * ts
 			rumble.Volume = 0.5 + 0.2 * throttle
@@ -265,12 +349,17 @@ function Audio.engine(class: string, parent: Instance?): Engine
 			end
 		end
 		growl.PlaybackSpeed = (0.5 + r * 0.95) * base * ts
-		growl.Volume = (0.08 + 0.42 * throttle) * math.clamp(r * 1.3, 0.2, 1)
+		growl.Volume = (0.08 + 0.42 * throttle) * math.clamp(r * 1.3, 0.2, 1) * (if usingCustom then 0.35 else 1)
 		wind.PlaybackSpeed = (0.85 + speedFrac * 0.6) * ts
 		wind.Volume = 0.55 * speedFrac ^ 1.8
 		local squeal = math.clamp((slip - 8) / 40, 0, 1)
-		tyres.PlaybackSpeed = (2.4 + squeal * 0.4) * ts
-		tyres.Volume = 0.3 * squeal
+		if squealId then
+			tyres.PlaybackSpeed = (0.95 + squeal * 0.1) * ts
+			tyres.Volume = 0.55 * squeal
+		else
+			tyres.PlaybackSpeed = (2.4 + squeal * 0.4) * ts
+			tyres.Volume = 0.3 * squeal
+		end
 	end
 
 	function self.shift(_, up: boolean)

@@ -126,15 +126,30 @@ Config.Camera = {
 -- Sounds
 -- The game ships with a full built-in soundscape (engine, wind, tyres,
 -- cut-ups, crashes, backfires, UI, ambience) made from audio inside the
--- Roblox client, so it always works. To use your own recordings, paste an
--- audio asset id from the Creator Store here, e.g. "rbxassetid://1234567".
--- Each id is test-loaded at startup and only used if it loads.
+-- Roblox client, so it always works. On top of that the ids below are real
+-- recordings from the Creator Store (all checked: audio + public domain).
+-- Every id is test-loaded at startup and only used if it loads; anything that
+-- fails falls back to the built-in sound. Swap in your own ids any time.
 ---------------------------------------------------------------------
 Config.Sounds = {
-	Engine = "", -- a seamless engine loop (pitch follows RPM)
-	CutUp = "", -- reward sting when you cut up a car
-	Crash = "",
-	Music = "", -- looping background music
+	-- engine set by the verified "Roblox Resources" group (public domain)
+	Engine = "rbxassetid://80317022777602", -- Car-Engine-Loop (pitch follows RPM)
+	EngineStart = "rbxassetid://78270463799678", -- Engine-Start
+	-- ProSoundEffects (Roblox's official SFX partner, public domain)
+	Crash = { "rbxassetid://9116546593", "rbxassetid://9116546326" }, -- Metal Crash 4 / 2
+	TyreSqueal = "rbxassetid://9120399077", -- Vehicle Skids Long Heavy Tire Squeal 3
+	CutUp = "rbxassetid://9126229255", -- Whoosh By Fast Airy Swooshing
+	PassBy = "rbxassetid://9113003539", -- Race Car Pass By (cutscene)
+	Impact = "rbxassetid://9120769331", -- Sonic Boom Low End Impact (title hit)
+	-- night-drive playlist from Roblox's licensed music partners (public domain)
+	Music = {
+		"rbxassetid://140215257631273", -- Eclipse Drift (DistroKid)
+		"rbxassetid://139904111224548", -- Urban Mirage - Night Drive Edit (DistroKid)
+		"rbxassetid://140486290054589", -- Insert Coin (DistroKid)
+		"rbxassetid://138826080188438", -- Escape the Night (DistroKid)
+		"rbxassetid://1842960025", -- Infinite Void (APM)
+	},
+	MusicVolume = 0.22,
 }
 
 ---------------------------------------------------------------------

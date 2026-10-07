@@ -58,7 +58,19 @@ Everything is in `src/client/Audio.lua`. It uses only files that ship inside eve
 | World | Low city night hum, monorail rumble overhead, and the reverb switches to tunnel echo inside the tunnel |
 | UI | Button clicks |
 
-**Your own sounds:** paste Creator Store audio IDs into `Config.Sounds` (`Engine`, `CutUp`, `Crash`, `Music`). Each ID is test-loaded at startup and only replaces the built-in sound if it loads. Otherwise you'll see a warning in Output.
+**Real recordings (on by default):** `Config.Sounds` uses Creator Store audio. I checked each one through Roblox's API: it is an audio asset and it is marked public domain, which means any experience can use it:
+
+| Slot | Sound | Uploader |
+|---|---|---|
+| Engine / EngineStart | Car-Engine-Loop, Engine-Start | Roblox Resources (verified Roblox group) |
+| Crash | Metal Crash 4, Metal Crash 2 | ProSoundEffects (Roblox's SFX partner) |
+| TyreSqueal | Vehicle Skids Long Heavy Tire Squeal 3 | ProSoundEffects |
+| CutUp | Whoosh By Fast Airy Swooshing | ProSoundEffects |
+| PassBy (cutscene) | Race Car Pass By | ProSoundEffects |
+| Impact (title) | Sonic Boom Low End Impact | ProSoundEffects |
+| Music (shuffled, **M** mutes) | Eclipse Drift, Urban Mirage – Night Drive Edit, Insert Coin, Escape the Night, Infinite Void | DistroKid / APM (Roblox's licensed music partners) |
+
+Every ID is test-loaded on the loading screen. If one doesn't load in your game, Output shows a warning and that slot uses the built-in sound instead. You can swap in any IDs you like.
 
 ## Smooth car bodies
 

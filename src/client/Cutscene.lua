@@ -587,11 +587,11 @@ function Cutscene.play()
 		end
 
 		-- the car screaming past the crane camera and the tunnel camera
-		if shot == 2 and heroX > 470 and once("passA") then
-			Audio.whoosh(0.9, 1.5)
+		if shot == 2 and heroX > 455 and once("passA") then
+			Audio.passBy(0.9)
 		end
-		if shot == 8 and heroX > TUNNEL_MID - 190 and once("passB") then
-			Audio.whoosh(0.8, 1.4)
+		if shot == 8 and heroX > TUNNEL_MID - 205 and once("passB") then
+			Audio.passBy(0.8)
 		end
 		if titleShownAt and t - titleShownAt > 4 then
 			finished = true

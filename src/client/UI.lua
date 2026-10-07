@@ -237,7 +237,7 @@ function UI.init()
 	-- controls hint
 	if not UI.isTouch then
 		label({
-			Text = "W/S  throttle · brake      A/D  steer      SPACE  handbrake      C  camera      R  reset      G  garage",
+			Text = "W/S  throttle · brake      A/D  steer      SPACE  handbrake      C  camera      R  reset      G  garage      M  music",
 			TextColor3 = Theme.SubText,
 			TextSize = 13,
 			Font = Enum.Font.GothamMedium,

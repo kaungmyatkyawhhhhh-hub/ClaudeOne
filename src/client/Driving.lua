@@ -370,6 +370,7 @@ function Driving.attach(model: Model)
 		slip = 0,
 	}
 	state = s
+	Audio.engineStart()
 	camera.CameraType = Enum.CameraType.Scriptable
 
 	-- apply current camera mode visibility

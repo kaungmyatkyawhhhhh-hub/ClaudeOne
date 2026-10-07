@@ -23,7 +23,8 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 UI.init()
-Audio.init()
+UI.showLoading("Loading sounds...")
+Audio.init() -- test-loads the Creator Store sounds (falls back to built-in ones)
 UI.showLoading("Building the city...")
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
