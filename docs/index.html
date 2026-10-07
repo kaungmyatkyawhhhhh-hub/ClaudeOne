@@ -404,6 +404,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .htp .wnsheet{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}.htpic{font-size:4rem;line-height:1;margin-top:6px;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}
 .htpdots{display:flex;gap:6px}.htpdots i{width:8px;height:8px;border-radius:50%;background:var(--sunk)}.htpdots i.on{background:var(--ink)}.htp .cta{width:100%}
 .petaway{font-size:.75rem;font-weight:700;color:var(--muted);padding:6px 0;text-align:center}.petcard .cta{width:100%;padding:8px;justify-content:center;font-size:.8rem}
+.vaultwrap{display:flex;justify-content:center;margin:12px 0}.vaultwrap canvas{width:min(80vw,300px);height:auto}.vsteps{display:flex;gap:10px;justify-content:center;margin-bottom:12px}.vsteps i{width:18px;height:18px;border-radius:50%;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--line)}.vsteps i.on{background:#2fd28a}
 .dlbadge{font-style:normal;font-family:var(--mono);font-weight:800;font-size:.72rem;padding:2px 7px;border-radius:8px;background:color-mix(in oklab,var(--tc) 20%,transparent);color:var(--tc);white-space:nowrap}
 .duelb{background:#1b1f2a!important;color:#ffcc33!important}
 .dlask{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:66;width:min(92vw,420px);padding:14px;border-radius:18px;background:var(--bg);box-shadow:0 0 0 2px #ffcc33,0 16px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.dlask small{color:var(--muted)}.dlask span{display:flex;gap:8px}.dlask .cta{flex:1;padding:10px;justify-content:center}
@@ -2356,15 +2357,32 @@ function runMeet(back){
 }
 /* ---------- bank ---------- */
 const BANK_RATE=.005; // per minute of play
+/* ---------- vault heist: once a day, crack a 3-number combination on a spinning dial ---------- */
+let HEIST=null;
+function openHeist(){room="heist";$("room").hidden=false;const pay=Math.round(Math.max(5000,rwBase()*.08));const H=HEIST={step:0,ang:0,dir:1,sp:2.2,target:Math.random()*Math.PI*2,busy:false,live:true,lt:performance.now()};
+  $("room").innerHTML=`<div class="room-in">${roomHead("The vault")}<div class="note">Stop the dial when the red pointer is on the <b>gold notch</b>. Three numbers and the vault opens. One miss and the alarm goes off until tomorrow.</div>
+    <div class="vaultwrap"><canvas id="vCv" width="300" height="300"></canvas></div><div class="vsteps">${[0,1,2].map(i=>`<i id="vs${i}"></i>`).join("")}</div><button class="bigbtn" id="vStop">Stop the dial<small>Inside: ${fmt(pay)}</small></button></div>`;
+  $("leaveBtn").onclick=()=>{H.live=false;closeRoom()};const cv=$("vCv"),g=cv.getContext("2d");
+  const hit=()=>{if(H.busy||!H.live)return;const d=Math.abs(((H.ang-H.target)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);H.busy=true;
+    if(d<.2){$("vs"+H.step).className="on";H.step++;SFX.tick(1);buzz([20,30,20]);if(H.step>=3){H.live=false;S.heistDay=dayKey();earn(pay);S.stats.heists=(S.stats.heists||0)+1;dirty=true;SFX.rebirth();confetti(260,null,null,["#ffcc33","#2fd28a","#fff"]);flash("#ffcc33",.5);shake(10,.6);banner("VAULT CRACKED · +"+fmt(pay),"g");setTimeout(()=>{if(room==="heist")openBank()},2200);return}
+      H.dir=-H.dir;H.sp+=1.1;H.target=Math.random()*Math.PI*2;setTimeout(()=>H.busy=false,250)}
+    else{H.live=false;S.heistDay=dayKey();dirty=true;SFX.loss();buzz([80,40,80]);flash("#e2364a",.6);shake(8,.5);banner("ALARM! The guards are coming","r");$("vStop").disabled=true;setTimeout(()=>{if(room==="heist")openBank()},1800)}};
+  $("vStop").addEventListener("pointerdown",e=>{e.preventDefault();hit()});
+  const loop=now=>{if(room!=="heist"||HEIST!==H)return;const dt=Math.min(.05,(now-H.lt)/1000);H.lt=now;if(H.live&&!H.busy)H.ang+=H.dir*H.sp*dt;
+    g.clearRect(0,0,300,300);g.save();g.translate(150,150);g.fillStyle="#2b2f3a";g.beginPath();g.arc(0,0,140,0,7);g.fill();g.fillStyle="#cfd6e3";g.beginPath();g.arc(0,0,118,0,7);g.fill();
+    g.save();g.rotate(H.ang);for(let i=0;i<40;i++){g.save();g.rotate(i*Math.PI/20);g.fillStyle="#2b2f3a";g.fillRect(-1.5,-116,3,i%5?10:18);g.restore()}g.restore();
+    g.save();g.rotate(H.target);g.fillStyle="#ffcc33";g.beginPath();g.moveTo(-10,-140);g.lineTo(10,-140);g.lineTo(0,-118);g.closePath();g.fill();g.restore();
+    g.save();g.rotate(H.ang);g.fillStyle="#e2364a";g.beginPath();g.moveTo(-6,-112);g.lineTo(6,-112);g.lineTo(0,-78);g.closePath();g.fill();g.restore();
+    g.fillStyle="#5b6272";g.beginPath();g.arc(0,0,40,0,7);g.fill();g.fillStyle="#8a93a5";g.beginPath();g.arc(0,0,22,0,7);g.fill();g.restore();requestAnimationFrame(loop)};requestAnimationFrame(loop)}
 function openBank(){
   const draw=()=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
-      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt" id="bkDeeds">Property & names<small>${Object.keys(S.deeds||{}).length?Object.keys(S.deeds).length+" owned · "+fmt(deedInc())+"/min":"Own the town, from "+fmt(1e9)}</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
+      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt2" id="bkHeist">🔐 Crack the vault<small>${S.heistDay===dayKey()?"Alarm still ringing · try tomorrow":"Once a day · big payout"}</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt" id="bkDeeds">Property & names<small>${Object.keys(S.deeds||{}).length?Object.keys(S.deeds).length+" owned · "+fmt(deedInc())+"/min":"Own the town, from "+fmt(1e9)}</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
       ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
-    $("leaveBtn").onclick=closeRoom;
+    {const hb=$("bkHeist");if(hb)hb.onclick=()=>{if(S.heistDay===dayKey())return banner("Security is on alert. Come back tomorrow","r");openHeist()}}$("leaveBtn").onclick=closeRoom;
     const dep=a=>{a=Math.floor(a);if(a<=0)return;S.cash-=a;S.bank=(S.bank||0)+a;SFX.buy();dirty=true;draw();updMini()};
     $("bkRe").onclick=()=>openRealty("home",()=>{room="bank";openBank()});$("bkEmp").onclick=()=>openEmpire(()=>{room="bank";openBank()});$("bkLb").onclick=()=>openWorldLB(()=>{room="bank";openBank()});$("bkMega").onclick=()=>openMega(()=>{room="bank";openBank()});$("bkDeeds").onclick=()=>openDeeds(()=>{room="bank";openBank()});
     $("dAll").onclick=()=>dep(S.cash);$("dHalf").onclick=()=>dep(S.cash/2);
@@ -4698,7 +4716,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=38,WN=[
+const WN_VER=39,WN=[
+ ["🔐","Crack the vault","Once a day at the Bank, try to crack the vault: stop the spinning dial on the gold notch three times for a big payout. Miss and the alarm rings until tomorrow.","2026-10-07T03:40"],
  ["🧭","Pet adventures","Send a pet on a park run, into the woods or on a wild expedition from the Pets screen. It comes back with cash, crates, treasure maps or even golden items.","2026-10-07T03:30"],
  ["🏅","Duel ranks","Duels now have a rating, from Bronze to Champion. Beat stronger players to climb faster. Ranks show in the Friends list and the duel menu.","2026-10-07T03:20"],
  ["🗺️","Treasure maps","Crates and the Arcade can give you treasure maps. Read one and a red X appears somewhere in town. Walk there and dig for cash, golden items and more.","2026-10-07T03:15"],
