@@ -177,7 +177,11 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
   over a dark matte floor (the biggest plates almost touch it) and soft contact shadows under the plates and the
   overall plate ground them even on low graphics. No stands, no pedestal: the overall plate (bigger, matching) stands
   on its rim on the floor on the left.
-- DNA: a thin, soft helix of light turns slowly around the bar. Plain dark background (no lines, dust or ghost text).
+- Layout: the bar faces the camera about 28 degrees from straight-on (slightly above), plates a little apart so every
+  face shows; each label sits right under its own plate (name 18px, grade letter in a 32px circle, multiplier 22px),
+  staggered in two rows when they would touch. One shadow source: real key-light shadows, or contact shadows on low
+  graphics instead. The frame card has a small silhouette of the shoulder width.
+- DNA: a helix of two thin strands (opposite phase) with short rungs every ~0.3 studs, alternating soft blue / white, slow spin. Plain dark background (no lines, dust or ghost text).
   Title "YOUR GENETICS" ("NEW GENETICS" after a reroll), DNA tokens top right (owner's call: caps here).
 - Reveal (under 3 s): plates slide onto the sleeve about 0.2 s apart, best grade first, each with a clank (pitch by
   grade, small camera punch); S plates get one shine sweep. Then the collar, then the overall plate drops in with a
@@ -219,7 +223,9 @@ First Growth Spurt should be reachable in ~15-20 minutes.
 - **On a machine: a small body-map widget** slides in at the right (front and back silhouettes made of muscle shapes,
   glowing by level, gold outline when maxed, the muscles the machine trains pulse; Level + a small Growth Spurt bar).
   A "-" button folds it into a chip. It slides away when you leave. The highlight clears when you leave, switch machine,
-  respawn or die. Proportions: torso 3 heads, legs 3.5, arms end at mid-thigh. Tapping it opens the Muscles panel.
+  respawn or die. Proportions: torso 3 heads, legs 3.5, arms end at mid-thigh, about 1.4x wider than the old figures, a
+  V from the shoulders (the player's frame width) to the waist. Each rep flashes the trained muscles warm on it too (main
+  stronger, ~0.15s in / 0.35s out). Tapping it opens the Muscles panel.
 - Phones: the labels step aside while lifting on short screens (the widget shows the stats then). Numbers update live.
 
 ## 9. Titles
@@ -250,7 +256,7 @@ wall leaderboards per muscle group (crown for #1), membership card (Bronze→Dia
 shareable before/after snapshot.
 
 ## Bodies and muscles (v4)
-- Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all. Head, face, hair, accessories, skin color and animations stay theirs.
+- Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all except the shoulder width from the genetics Frame (Narrow 0.9x, Average 1x, Wide 1.1x, V-Taper 1.2x: UpperTorso width + arms moved out, the muscle meshes taper back to the normal waist so it reads as a V). Head, face, hair, accessories, skin color and animations stay theirs.
 - Muscles are real EditableMesh muscles (muscle v8): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), everyone gets the snatched-waist torso, each muscle's outline stays on the skin and only the bulge rises with its level (continuous, tweened, small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
   look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass

@@ -102,5 +102,5 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
 `TestCoins`, `TestSpurts`, `TestMuscleShare` (0..6 x the goal, live; 2 = full look, 5 = mass monster), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
-`ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D": six grades in group order for the first roll / the
+`ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D" or "C,B,A,S,S,D,VTaper": six grades in group order, optional frame, for the first roll / the
 next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots), `PoseDebug` (PoseController prints joints found/missing and playing tracks). Without FreshPlayer: `TestMuscleExp` (e.g. 2000000) = every muscle at that EXP on your own save, saving off for the session. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.

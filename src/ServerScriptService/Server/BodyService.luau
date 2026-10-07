@@ -4,6 +4,10 @@
 --    scales are reset so everyone has the same proportions. Head, face, hair, accessories, skin color and animations stay
 --    the player's own. If anything resets the body (wardrobe, emotes, outfit changes) it is put back.
 --  * Height comes from Growth Spurts (Humanoid BodyHeightScale).
+--  * Shoulder width comes from the genetics Frame (Genetics.ShoulderWidth: Narrow 0.9 ... V-Taper 1.2): the UpperTorso is
+--    widened and every attachment on it (the shoulder joints, so the arms move out) moved out by that factor; re-applied
+--    whenever Roblox rescales the body (a Growth Spurt resets sizes). The character attribute FrameWidth tells the clients,
+--    whose muscle meshes taper the torso back to the normal waist (a V, not a wider box).
 --  * Muscles (muscle v7) are drawn on every client (Shared.MuscleRig / MuscleClient): this service only PUBLISHES the numbers as
 --    player attributes: MuscleG (18 look values in Config.Muscles order, Muscles.LookG of level / Growth Spurt goal), Top and
 --    Shorts (the wardrobe choices; ids from Config.Body). A Growth Spurt resets the muscles, so they shrink back on their own.
@@ -16,6 +20,7 @@ local Shared = ReplicatedStorage.Shared
 local Body = require(Shared.Config.Body)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local Muscles = require(Shared.Config.Muscles)
+local Genetics = require(Shared.Config.Genetics)
 local BodyShape = require(Shared.BodyShape)
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -143,6 +148,42 @@ local function applyBody(state, humanoid, data)
 	return false
 end
 
+-- The frame's shoulder width on a character. Each changed size / position remembers its base (FrameBaseX) and the factor
+-- applied (FrameApplied); if they no longer match, Roblox reset it (a rescale) and the current value is the new base.
+local function widen(target, current: number, factor: number): number?
+	local base, applied = target:GetAttribute("FrameBaseX"), target:GetAttribute("FrameApplied")
+	if type(base) ~= "number" or type(applied) ~= "number" or math.abs(current - base * applied) > 1e-3 then
+		base, applied = current, nil
+	end
+	if applied ~= nil and math.abs(applied - factor) < 1e-4 then return nil end
+	target:SetAttribute("FrameBaseX", base)
+	target:SetAttribute("FrameApplied", factor)
+	return base * factor
+end
+
+local function applyFrame(character: Model, data)
+	local factor = Genetics.ShoulderWidth(data.genetics and data.genetics.frame)
+	local torso = character:FindFirstChild("UpperTorso")
+	if not torso or not torso:IsA("BasePart") then return end
+	local width = widen(torso, torso.Size.X, factor)
+	if width then torso.Size = Vector3.new(width, torso.Size.Y, torso.Size.Z) end
+	for _, attachment in ipairs(torso:GetChildren()) do
+		if attachment:IsA("Attachment") then
+			local x = widen(attachment, attachment.Position.X, factor)
+			if x then attachment.Position = Vector3.new(x, attachment.Position.Y, attachment.Position.Z) end
+		end
+	end
+	-- rigs with Motor6D shoulders follow their C0, not the attachment
+	for _, side in ipairs({ "Right", "Left" }) do
+		local arm = character:FindFirstChild(side .. "UpperArm")
+		local joint = arm and arm:FindFirstChild(side .. "Shoulder")
+		local attachment = torso:FindFirstChild(side .. "ShoulderRigAttachment")
+		if joint and joint:IsA("Motor6D") and attachment then joint.C0 = attachment.CFrame end
+	end
+	if character:GetAttribute("FrameWidth") ~= factor then character:SetAttribute("FrameWidth", factor) end
+end
+BodyService.ApplyFrame = applyFrame
+
 -- Is the Robloxian body still on? (something may have applied another outfit)
 local function bodyIntact(state)
 	local torso = state.character:FindFirstChild("UpperTorso")
@@ -179,6 +220,7 @@ local function setup(player, character)
 	if player.Character == character then applyBody(state, humanoid, data) end
 	task.wait(SETTLE_TIME)
 	if player.Character == character then
+		applyFrame(character, data)
 		publish(player, state, data)
 		character:SetAttribute("BodyVersion", (character:GetAttribute("BodyVersion") or 0) + 1) -- gear rebuilds on this
 	end
@@ -208,6 +250,7 @@ local function refresh(player)
 			changed = true
 		end
 		if changed then character:SetAttribute("BodyVersion", (character:GetAttribute("BodyVersion") or 0) + 1) end
+		applyFrame(character, data) -- (also after a reroll, and after a rescale reset the widths)
 	end
 	publish(player, state, data)
 	state.busy = false

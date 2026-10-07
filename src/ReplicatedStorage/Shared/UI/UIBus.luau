@@ -16,6 +16,7 @@ UIBus.OpenTitles = signal()      -- the menu screen opens the Title Book
 UIBus.OpenSettings = signal()    -- the menu screen opens Settings
 UIBus.MenuPanelVisible = signal() -- fired with true/false when Titles/Settings open/close (the menu steps aside)
 UIBus.MenuClosed = signal()      -- the player pressed Play on the menu screen
+UIBus.RepFlash = signal()        -- a rep landed: (weights { [muscleId] = 0..1 }, strong) for the body-map widget's flash
 
 -- Screens that cover the middle of the view: the Stats labels and the Muscles button step aside while any is open.
 UIBus.CoverGuis = { "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle", "Settings", "TitleBook", "Store", "GeneticsScreen", "MusclesScreen" }

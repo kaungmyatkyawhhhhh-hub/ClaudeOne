@@ -420,9 +420,27 @@ end
 -- each muscle it is shared with (border vertices), so neighbouring meshes always meet exactly, even at different
 -- levels; position = base + (max - base) * g_v + vein * v, normal = unit(nbase + (nmax - nbase) * g_v). A muscle at 0
 -- lies flat on the skin (no tucking inside), so a 0 next to a max is a smooth slope.
+-- The genetics frame (character attribute FrameWidth, set by BodyService): the server widens the UpperTorso part by the
+-- factor, so every mesh on it is drawn that much wider; on the torso meshes each vertex's X is scaled back toward the
+-- normal width from the shoulders down (full factor at the shoulders, none at the waist), so a V-Taper is a V.
+local FRAME_TAPER = { From = -0.3, To = 0.3 } -- share of the torso height (centre = 0): the waist .. the shoulders
+local function frameTaper(self, group, positions: { Vector3 }): { number }?
+	local f = self.frameWidth or 1
+	if math.abs(f - 1) < 1e-3 or group.def.part ~= "UpperTorso" then return nil end
+	local height = MuscleMeshes.Parts.UpperTorso.size.Y
+	local taper = table.create(#positions)
+	for i, position in ipairs(positions) do
+		local t = math.clamp((position.Y / height - FRAME_TAPER.From) / (FRAME_TAPER.To - FRAME_TAPER.From), 0, 1)
+		t = t * t * (3 - 2 * t)
+		taper[i] = (1 + (f - 1) * t) / f
+	end
+	return taper
+end
+
 local function applyRange(self, group, range)
 	local data, mesh, ids, normalIds = group.data, group.mesh, group.vertexIds, group.normalIds
 	local base, delta, shares, nbase, ndelta, vein = data.base, data.delta, data.shares, data.nbase, data.ndelta, data.vein
+	local taper = group.taper
 	local g = currentShown(self, range.id)
 	local others = {}
 	for _, id in ipairs(range.shareIds) do others[id] = currentShown(self, id) end
@@ -437,6 +455,7 @@ local function applyRange(self, group, range)
 		end
 		local position = base[i] + delta[i] * gv
 		if v > 0 then position += vein[i] * v end
+		if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
 		mesh:SetPosition(ids[i], position)
 		if normalIds then
 			local normal = nbase[i] + ndelta[i] * gv
@@ -511,6 +530,8 @@ local function buildGroup(self, state, group): boolean
 		local uvIds = table.create(data.verts)
 		-- the package's own normals (set, never auto-computed: auto normals make every muscle look like a separate piece)
 		local normalIds = if data.nbase then table.create(data.verts) else nil
+		group.taper = frameTaper(self, group, data.base)
+		local taper = group.taper
 		local buildG = table.create(data.verts)
 		for _, range in ipairs(data.ranges) do
 			local monster = Muscles.MonsterG(range.id)
@@ -518,7 +539,9 @@ local function buildGroup(self, state, group): boolean
 		end
 		for i = 1, data.verts do
 			-- built in the biggest shape (the mass monster size, so its bounds hold every growth); the real growth is applied below
-			vertexIds[i] = mesh:AddVertex(data.base[i] + data.delta[i] * buildG[i])
+			local built = data.base[i] + data.delta[i] * buildG[i]
+			if taper then built = Vector3.new(built.X * taper[i], built.Y, built.Z) end
+			vertexIds[i] = mesh:AddVertex(built)
 			uvIds[i] = mesh:AddUV(data.uv[i]) -- the clothing template coordinates (Shirt / Pants)
 			if normalIds then normalIds[i] = mesh:AddNormal((data.nbase[i] + data.ndelta[i]).Unit) end
 			tick()
@@ -577,7 +600,9 @@ local function buildSnatched(self, state, group): boolean
 	if not mesh then return false end
 	local ok, err = pcall(function()
 		local ids, uvs, normals = {}, {}, {}
+		local taper = frameTaper(self, group, data.verts)
 		for i, position in ipairs(data.verts) do
+			if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
 			ids[i] = mesh:AddVertex(position)
 			uvs[i] = mesh:AddUV(data.uv[i])
 			-- the OBJ's own normals (auto normals on this low-poly torso shade differently from the muscle edges on it)
@@ -732,6 +757,20 @@ local function step(self, dt: number, budget: number): number
 	end
 	for id, started in pairs(self.pulses) do
 		if now - started > (self.pulseTimes[id] or PULSE_TIME) then self.pulses[id] = nil end
+	end
+	-- the genetics frame changed (first roll, a reroll): the torso meshes are built again with the new taper
+	local frameWidth = self.model:GetAttribute("FrameWidth")
+	frameWidth = if type(frameWidth) == "number" then frameWidth else 1
+	if frameWidth ~= (self.frameWidth or 1) then
+		self.frameWidth = frameWidth
+		for _, state in ipairs(self.units) do
+			for _, group in ipairs(state.groups) do
+				if group.def.part == "UpperTorso" and state.built then
+					destroyUnit(state)
+					break
+				end
+			end
+		end
 	end
 	-- layered (3D) clothing: hide the muscles under it (checked about once a second)
 	if now - (self.coveredAt or 0) > 1 then

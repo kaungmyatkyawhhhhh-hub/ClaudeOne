@@ -29,6 +29,7 @@ local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local Audio = require(Shared.Audio)
 local MuscleRig = require(Shared.MuscleRig)
+local UIBus = require(Shared.UI.UIBus)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
@@ -577,12 +578,13 @@ local activePopup = nil -- { billboard, attachment }
 -- strongest (each muscle's machine share, secondaries at least FLASH_MIN_WEIGHT); BIG REP / PUMPED flash harder.
 local FLASH_MIN_WEIGHT = 0.35
 local function repFlash(character, machine, strong: boolean)
-	local settings = ClientData.Get().settings
-	if settings and settings.repFlash == "Off" then return end
 	local weights = {}
 	for _, muscle in ipairs(machine.muscles) do
 		weights[muscle.id] = math.max(muscle.share or 1, FLASH_MIN_WEIGHT)
 	end
+	UIBus.RepFlash:Fire(weights, strong) -- the body-map widget flashes the same muscles
+	local settings = ClientData.Get().settings
+	if settings and settings.repFlash == "Off" then return end
 	MuscleRig.Flash(character, weights, strong)
 end
 

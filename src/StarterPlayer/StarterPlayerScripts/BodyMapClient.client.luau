@@ -1,13 +1,15 @@
 -- BodyMapClient: the small body-map widget that slides in while you're on a machine (and out when you leave).
---  * Front and back silhouettes made of muscle shapes. Each muscle glows by its level toward the next Growth Spurt goal
---    (dim -> bright; no cap, they keep brightening up to the goal). The muscles the machine trains pulse on every rep.
+--  * Front and back silhouettes made of muscle shapes, shaped like the real body (wide shoulders, a V down to the waist,
+--    the player's genetics frame widening the shoulders and moving the arms out). Each muscle glows by its level toward
+--    the next Growth Spurt goal. On every rep the muscles the machine trains flash warm (~0.15s in, ~0.35s out; the main
+--    muscle strongest), like the rep flash on the character (UIBus.RepFlash from MachineClient).
 --  * Under the figures: your level, the Growth Spurt (next / ready) and a small segmented bar. Tapping the widget opens
 --    the "Your muscles" panel. The "-" button folds it into a small "Stats" chip (and the chip unfolds it again).
 --  * It lives in the right column (under the quest panel's place, so it never sits on a phone's thumbstick at the bottom
 --    left or on the jump / tap area at the bottom right).
 --  * The training highlight is cleared when you leave the machine, switch machines, respawn or die.
--- Proportions (a 40 x 100 grid, head = 12.8): torso 3 heads, legs 3.5 heads, arms end at mid-thigh, shapes inside the
--- body never overlap each other.
+-- Proportions: drawn on a 40 x 100 grid (head = 12.8: torso 3 heads, legs 3.5 heads, arms end at mid-thigh), then
+-- widened 1.4x onto a 56 x 100 canvas, with the shoulders, chest and arms spread by the frame's shoulder width.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -15,6 +17,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = Shared:WaitForChild("Config")
 local Muscles = require(Config.Muscles)
+local Genetics = require(Config.Genetics)
 local Machines = require(Config.Machines)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local ClientData = require(Shared.ClientData)
@@ -30,9 +33,11 @@ local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
 
 local SIZES = {
-	Normal = { Width = 140, Figure = 124 }, -- panel width, height of each silhouette (the caption comes under it)
-	Compact = { Width = 116, Figure = 88 },
+	Normal = { Width = 170, Figure = 124 }, -- panel width, height of each silhouette (the caption comes under it)
+	Compact = { Width = 132, Figure = 88 },
 }
+local GRID = { Width = 56, Widen = 1.4 } -- the canvas is 56 x 100 (the 40-wide drawing widened 1.4x)
+local FLASH = { Color = Color3.fromRGB(255, 150, 90), In = 0.15, Out = 0.35, Main = 0, Helper = 0.35 }
 local MAP = {
 	Dim = 0.82,      -- fill transparency of an untrained muscle
 	Bright = 0.05,   -- ...of a muscle at the goal
@@ -63,7 +68,8 @@ local BODY = both({ -- one side of every paired piece (mirrored) + the middle pi
 })
 table.insert(BODY, { 14.6, 0, 10.8, 12.8, 1 })     -- head (1 head = 12.8)
 table.insert(BODY, { 17.6, 12.2, 4.8, 3.6, 0.3 })  -- neck
-table.insert(BODY, { 9.5, 15.3, 21, 38.7, 0.2 })   -- torso (3 heads)
+table.insert(BODY, { 9.5, 15.3, 21, 22, 0.25 })    -- chest and shoulders (the top of the V)
+table.insert(BODY, { 11.4, 35, 17.2, 19, 0.25 })   -- waist (narrower: the bottom of the V)
 
 local FRONT = {
 	FrontDelts = pair({ 8.9, 16.4, 3.4, 6, 0.6 }),
@@ -135,19 +141,34 @@ New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0
 local figures = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, dims.Figure + 18), BackgroundTransparency = 1, Parent = panel },
 	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
 
+-- A shape of the 40-wide drawing on the 56-wide canvas, for a frame shoulder width f: everything widens 1.4x, and the
+-- upper body (shoulders, chest, arms; not the head) spreads out by f more; the torso pieces of the upper body get that
+-- much wider too (the arms keep their width).
+local function place(spec, f: number)
+	local cx, cy = spec[1] + spec[3] / 2, spec[2] + spec[4] / 2
+	local arm = math.abs(cx - 20) >= 11 and spec[2] < 66
+	local upper = spec[2] >= 12.5 and (cy < 34 or arm)
+	local k = upper and f or 1
+	local width = spec[3] * GRID.Widen * ((upper and not arm) and f or 1)
+	local x = GRID.Width / 2 + (cx - 20) * GRID.Widen * k - width / 2
+	return { x, spec[2], width, spec[4], spec[5] }
+end
+local frameWidth = 1
+
 local shapes = {}   -- [muscleId] = { frames }
 local rest = {}     -- [frame] = the resting transparency (its level)
 local training = {} -- [frame] = true while the machine trains it
 local holders = {}
 local function figure(order, title, muscles)
-	-- the canvas keeps the grid's 40:100 shape, so the body is never stretched
-	local column = New("Frame", { LayoutOrder = order, Size = UDim2.new(0, math.floor(dims.Figure * 0.4), 1, 0), BackgroundTransparency = 1, Parent = figures })
+	-- the canvas keeps the grid's 56:100 shape, so the body is never stretched
+	local column = New("Frame", { LayoutOrder = order, Size = UDim2.new(0, math.floor(dims.Figure * GRID.Width / 100), 1, 0), BackgroundTransparency = 1, Parent = figures })
 	table.insert(holders, column)
 	local canvas = New("Frame", { Size = UDim2.new(1, 0, 1, -18), BackgroundTransparency = 1, Parent = column })
-	local function draw(spec, transparency, z)
+	local function draw(raw, transparency, z)
+		local spec = place(raw, frameWidth)
 		return New("Frame", {
-			Position = UDim2.fromScale(spec[1] / 40, spec[2] / 100),
-			Size = UDim2.fromScale(spec[3] / 40, spec[4] / 100),
+			Position = UDim2.fromScale(spec[1] / GRID.Width, spec[2] / 100),
+			Size = UDim2.fromScale(spec[3] / GRID.Width, spec[4] / 100),
 			BackgroundColor3 = Colors.Text,
 			BackgroundTransparency = transparency,
 			ZIndex = z,
@@ -166,8 +187,18 @@ local function figure(order, title, muscles)
 	end
 	Theme.Text({ Text = title, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.new(1, 0, 0, 16), Parent = column })
 end
-figure(1, "Front", FRONT)
-figure(2, "Back", BACK)
+-- (built again when the frame changes: a reroll)
+local function buildFigures(f: number)
+	frameWidth = f
+	for _, column in ipairs(holders) do column:Destroy() end
+	table.clear(holders)
+	table.clear(shapes)
+	table.clear(rest)
+	table.clear(training)
+	figure(1, "Front", FRONT)
+	figure(2, "Back", BACK)
+end
+buildFigures(1)
 
 local levelRow = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = panel })
 local levelText = Theme.Text({ Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = levelRow })
@@ -193,7 +224,7 @@ local function applySize()
 	holder.Size = UDim2.fromOffset(dims.Width, holder.Size.Y.Offset)
 	panel.Size = UDim2.fromOffset(dims.Width, 0)
 	figures.Size = UDim2.new(1, 0, 0, dims.Figure + 18)
-	for _, column in ipairs(holders) do column.Size = UDim2.new(0, math.floor(dims.Figure * 0.4), 1, 0) end
+	for _, column in ipairs(holders) do column.Size = UDim2.new(0, math.floor(dims.Figure * GRID.Width / 100), 1, 0) end
 	-- phones (and very short screens): only the silhouettes while you lift, so the panel stays small beside the machine panel
 	local short = Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize.Y < 400
 	levelRow.Visible = not (short or compact)
@@ -326,13 +357,21 @@ local function startTraining(machine)
 	end
 end
 
-local function pulse()
-	if not currentMachine then return end
-	for index, entry in ipairs(currentMachine.muscles) do
-		for _, frame in ipairs(shapes[entry.id] or {}) do
-			-- the main muscle flashes fully, the helpers a little
-			frame.BackgroundTransparency = index == 1 and 0 or math.min(restFor(frame), 0.3)
-			Theme.Tween(frame, { BackgroundTransparency = shownTransparency(frame) }, 0.6)
+-- the rep flash: warm and bright quickly, then back to its own glow (the main muscle fully, helpers less)
+local flashToken = {}
+local function flash(weights: { [string]: number }, strong: boolean?)
+	if not onMachine then return end
+	for muscleId, weight in pairs(weights) do
+		for _, frame in ipairs(shapes[muscleId] or {}) do
+			local token = (flashToken[frame] or 0) + 1
+			flashToken[frame] = token
+			local peak = FLASH.Helper + (FLASH.Main - FLASH.Helper) * math.clamp(weight, 0, 1)
+			if strong then peak = math.max(peak - 0.15, 0) end
+			Theme.Tween(frame, { BackgroundTransparency = math.min(peak, shownTransparency(frame)), BackgroundColor3 = FLASH.Color }, FLASH.In)
+			task.delay(FLASH.In, function()
+				if flashToken[frame] ~= token or not frame.Parent then return end
+				Theme.Tween(frame, { BackgroundTransparency = shownTransparency(frame), BackgroundColor3 = Colors.Text }, strong and FLASH.Out * 1.5 or FLASH.Out)
+			end)
 		end
 	end
 end
@@ -364,9 +403,7 @@ Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	end
 end)
 
-Remotes.RepResult.OnClientEvent:Connect(function(result)
-	if type(result) == "table" and not result.noStamina then pulse() end
-end)
+UIBus.RepFlash.Event:Connect(flash)
 
 local function watchCharacter(character)
 	leaveMachine() -- respawned: whatever was training is over
@@ -378,10 +415,20 @@ if player.Character then task.spawn(watchCharacter, player.Character) end
 
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
+	if key == "genetics" then
+		local data = ClientData.Get()
+		local f = Genetics.ShoulderWidth(data and data.genetics and data.genetics.frame)
+		if f ~= frameWidth then
+			buildFigures(f)
+			applySize()
+			if currentMachine then startTraining(currentMachine) end
+		end
+	end
 	if key == "muscles" or key == "growthSpurts" or key == "genetics" then refreshMap() end
 end)
 task.spawn(function()
-	ClientData.Get()
+	local data = ClientData.Get()
+	buildFigures(Genetics.ShoulderWidth(data and data.genetics and data.genetics.frame))
 	UIBus.WaitForMenu()
 	applySize()
 	refreshMap()

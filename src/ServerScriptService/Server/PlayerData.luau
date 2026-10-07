@@ -423,6 +423,9 @@ function PlayerData.TestGenetics(attribute)
 		local grade = list[index] and string.upper((string.gsub(list[index], "%s", "")))
 		if grade and Genetics.GradeById[grade] then rolled.grades[group.id] = grade end
 	end
+	-- an optional 7th entry picks the frame (e.g. "C,B,A,S,S,D,VTaper")
+	local frame = list[#Muscles.Groups + 1] and (string.gsub(list[#Muscles.Groups + 1], "%s", ""))
+	if frame and Genetics.FrameById[frame] then rolled.frame = frame end
 	rolled.overall = Genetics.GetOverallGrade(rolled.grades)
 	return rolled
 end

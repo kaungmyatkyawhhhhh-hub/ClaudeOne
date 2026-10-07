@@ -13,11 +13,13 @@ Genetics.Grades = {
 
 -- bonus.all applies to every muscle; groups/muscles are per-target. A muscle
 -- matched by both its group and its own id only gets the larger bonus once.
+-- shoulders = the starting shoulder width (permanent; BodyService widens the UpperTorso and moves the arms out, the
+-- muscle meshes taper it back to the normal waist so the frame reads as a V).
 Genetics.Frames = {
-	{ id = "Narrow", name = "Narrow", weight = 25, bonus = { groups = { Arms = 0.10 } } },
-	{ id = "Average", name = "Average", weight = 35, bonus = { all = 0.05 } },
-	{ id = "Wide", name = "Wide", weight = 25, bonus = { groups = { Back = 0.10, Legs = 0.10 } } },
-	{ id = "VTaper", name = "V-Taper", weight = 15, bonus = { groups = { Shoulders = 0.10 }, muscles = { Lats = 0.10 } } },
+	{ id = "Narrow", name = "Narrow", weight = 25, shoulders = 0.9, bonus = { groups = { Arms = 0.10 } } },
+	{ id = "Average", name = "Average", weight = 35, shoulders = 1.0, bonus = { all = 0.05 } },
+	{ id = "Wide", name = "Wide", weight = 25, shoulders = 1.1, bonus = { groups = { Back = 0.10, Legs = 0.10 } } },
+	{ id = "VTaper", name = "V-Taper", weight = 15, shoulders = 1.2, bonus = { groups = { Shoulders = 0.10 }, muscles = { Lats = 0.10 } } },
 }
 
 -- detailLevelMult scales the level at which abs/detail start showing (lower = earlier).
@@ -34,6 +36,12 @@ local function index(list)
 end
 Genetics.GradeById = index(Genetics.Grades)
 Genetics.FrameById = index(Genetics.Frames)
+
+-- The shoulder width factor of a frame id (1 for anything unknown).
+function Genetics.ShoulderWidth(frameId: string?): number
+	local frame = frameId and Genetics.FrameById[frameId]
+	return frame and frame.shoulders or 1
+end
 Genetics.BodyTypeById = index(Genetics.BodyTypes)
 
 local function pick(list, rng)
