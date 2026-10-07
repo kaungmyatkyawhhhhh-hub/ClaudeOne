@@ -787,6 +787,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .w4grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px;border-radius:20px;margin:8px 0;box-shadow:var(--shadow)}.w4t{aspect-ratio:1;border-radius:14px;background:color-mix(in oklab,var(--tc) 55%,transparent);border:2px dashed rgba(255,255,255,.55);position:relative;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}.w4t.on{background:var(--tc);border:2px solid rgba(0,0,0,.12);box-shadow:0 3px 0 rgba(0,0,0,.18)}.w4t.sel{outline:3px solid #ffcc33;outline-offset:1px}.w4t b{font-size:1.7rem;line-height:1}.w4t span{font:900 1.3rem var(--display);color:rgba(255,255,255,.8)}.w4t i{position:absolute;right:3px;bottom:2px;font:800 .58rem var(--mono);font-style:normal;background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:0 4px}.w4t em{position:absolute;left:2px;top:1px;font-size:.8rem;font-style:normal}
 .dfhud{display:flex;gap:16px;align-items:center;color:#fff;font:900 1.1rem var(--display);margin-bottom:8px}.dfhud span{font-family:var(--mono);color:#ffcc33}
 .w4vis{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.9rem;z-index:2;animation:w4sw 1.6s ease-in-out infinite;filter:drop-shadow(0 0 6px #4fe3ff)}@keyframes w4sw{50%{transform:translate(4px,-3px) rotate(-8deg)}}
+.cutov{position:fixed;inset:0;z-index:9800;background:#0b0d11;touch-action:none;user-select:none;-webkit-user-select:none}.cutov canvas{display:block}.cutbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}.cutbar i{display:block;height:100%;width:0;background:#e2364a}
 .roadov{position:fixed;inset:0;z-index:9500;background:#8fd3ff;transition:opacity .45s}.roadov.out{opacity:0}.roadov canvas{display:block}.roadlab{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 28px);text-align:center;color:#fff;font:800 1.1rem var(--display);text-shadow:0 2px 8px rgba(0,0,0,.35)}.roadskip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font:700 .75rem var(--mono)}
 .w5gate{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#1b0b2a,#3a2266);color:#fff;margin:8px 0}.w5gate>span{font-size:.8rem;opacity:.85}.w5gate>i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}.w5gate>i>i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff4fd8)}.w5gate small{font:700 .7rem var(--mono);opacity:.7}
 .w4t b.w4art{display:flex;width:84%;height:84%;align-items:center;justify-content:center}.w4t b.w4art svg{width:100%;height:100%;filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.12))}
@@ -5468,7 +5469,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=88,WN=[
+const WN_VER=89,WN=[
+ ["🎬","An opening scene","New players now get an 18 second intro: you arrive in Flip City and meet Vince. Everyone sees it once, and you can watch it again from Settings.","2026-10-07T15:00"],
  ["🪪","New username, same you","You can now change your username once a week from the Account section in your Apartment. Gifts to friends now have a 15 second cooldown.","2026-10-07T13:00"],
  ["🎨","A calmer, cleaner look","Messages are now small notes instead of giant headlines (the big ones are saved for level ups, achievements and other milestones), confetti is saved for moments that earn it, characters wait their turn to talk, and the HUD panels are solid and crisp.","2026-10-07T12:00"],
  ["🕴️","The Vince Saga","Vince wants every world for himself. A new ten-chapter story takes you from your first sale to the Frontier: beat his challenges, outsell him, open each world before he buys it, race his ghost down the Frontier Road and win the final flip. Each chapter pays out, and finishing it earns the Mogul medal. Tap the purple Story pill to follow it.","2026-10-07T11:00"],
@@ -5842,11 +5844,12 @@ function openSettings(back){const T=[["nofx","Weather effects","Snow, leaves, pe
   const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Settings")}
     <div class="perks">${T.map(([k,n,d,inv])=>{const on=inv?!SET[k]:!!SET[k];return `<button class="perk nopic setrow" data-set="${k}"><span class="t">${n}</span><span class="d">${d}</span><span class="c tog${on?" on":""}"><i></i></span></button>`}).join("")}</div>
     <div class="sechead"><h3>Help</h3></div>
-    <div class="perks"><button class="perk nopic" id="setTut"><span class="t">Replay the tutorial</span><span class="d">The short walkthrough for new players</span><span class="c">Start</span></button>
+    <div class="perks"><button class="perk nopic" id="setCut"><span class="t">Watch the intro</span><span class="d">The 18 second opening scene</span><span class="c">Play</span></button><button class="perk nopic" id="setTut"><span class="t">Replay the tutorial</span><span class="d">The short walkthrough for new players</span><span class="c">Start</span></button>
       <button class="perk nopic" id="setWn"><span class="t">What's new</span><span class="d">See the latest features again</span><span class="c">Open</span></button></div>
     <p class="fine">These settings are saved on this device.</p></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>{const k=b.dataset.set;SET[k]=!SET[k];saveSet();applySet();SFX.tick(.5);draw()});
+    $("setCut").onclick=()=>{closeRoom();playing=false;playCut(()=>{playing=true})};
     $("setTut").onclick=()=>{S.tut=0;tutKey="";dirty=true;closeRoom();banner("Tutorial restarted","a")};
     $("setWn").onclick=()=>{S.flags.wn=0;const t=S.tut;S.tut=99;whatsNew();S.tut=t}};draw()}
 
@@ -7046,6 +7049,91 @@ function openStory(){room="story";$("room").hidden=false;const draw=()=>{const s
   $("leaveBtn").onclick=closeRoom;const b=$("stClaim");if(b)b.onclick=()=>{storyClaim();draw()}};draw()}
 function storyPeople(ppl){if(!VNC||SCN)return;const v=VNC,now=performance.now()/1000;ppl.push([v.y,()=>{drawPerson(v.x,v.y,{...VINCE_LOOK,ph:now*2});const c=ctx;c.save();c.font="800 11px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const t="Vince",w=c.measureText(t).width+16;c.fillStyle="rgba(122,47,214,.9)";rr(v.x-w/2,v.y-92,w,18,8);c.fill();c.fillStyle="#fff";c.fillText(t,v.x,v.y-83);c.font="16px sans-serif";c.fillText("💬",v.x+18,v.y-64+Math.sin(now*3)*2);c.restore()}])}
 $("storyChip").onclick=()=>{audioOn();if(!room)openStory()};
+/* ---------- intro cutscene: 18 seconds, plays once, can't be skipped (Settings can replay it) ---------- */
+const CUT_LEN=18;
+function playCut(done){const ov=document.createElement("div");ov.className="cutov";ov.innerHTML=`<canvas></canvas><div class="cutbar"><i></i></div>`;document.body.appendChild(ov);
+  ["click","touchstart","touchend","pointerdown","wheel"].forEach(e=>ov.addEventListener(e,ev=>{ev.stopPropagation()},{passive:true}));
+  const cvs=ov.querySelector("canvas"),g=cvs.getContext("2d"),bar=ov.querySelector(".cutbar i");let W0=0,H0=0;
+  const fit=()=>{const d=Math.min(2,devicePixelRatio||1);W0=innerWidth;H0=innerHeight;cvs.width=W0*d;cvs.height=H0*d;cvs.style.width=W0+"px";cvs.style.height=H0+"px";g.setTransform(d,0,0,d,0,0)};fit();addEventListener("resize",fit);
+  audioOn();const me={...myLook(),acc:myAcc(),build:myBuild(),tall:tallK()},cash=fmt(Math.round(S.cash)),t0=performance.now(),fired={};
+  const once=(k,at,t,f)=>{if(t>=at&&!fired[k]){fired[k]=1;try{f()}catch(e){}}};
+  const L=(a,b,p)=>a+(b-a)*p,E=p=>{p=clamp(p,0,1);return p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2},seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+  // the town, built once so every frame draws the same buildings
+  let sd=11;const R=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  const FAR=[],NEAR=[];for(let x=-200;x<2400;x+=40+R()*50)FAR.push([x,60+R()*170,34+R()*44]);
+  for(let x=-300,i=0;x<2600;i++){const w=110+R()*80;NEAR.push([x,w,90+R()*120,["#c95b4a","#d9a441","#5a7fb8","#7f9a5a","#b8708f","#e0c9a0"][i%6],R()]);x+=w+6}
+  const SIGNS=["MARKET","PAWN","DINER","GYM","BANK","FLEA"];
+  function sky(t,dusk){const s=g.createLinearGradient(0,0,0,H0);s.addColorStop(0,dusk?"#2b1d4a":"#7cc2f0");s.addColorStop(.62,dusk?"#e0705a":"#cfe9f7");s.addColorStop(1,dusk?"#f5b25e":"#f4e7c8");g.fillStyle=s;g.fillRect(0,0,W0,H0)}
+  function skyline(t){const p=seg(t,0,4.4),pan=L(0,160,E(p));sky(t,1);
+    g.fillStyle="#ffd27a";g.beginPath();g.arc(W0*.72,H0*.62-p*30,Math.min(W0,H0)*.12,0,7);g.fill();
+    const base=H0*.78;g.fillStyle="#3b2752";FAR.forEach(([x,h,w])=>{const X=x-pan*.4;if(X>-60&&X<W0+60)g.fillRect(X,base-h*H0/700,w,h*H0/700+4)});
+    g.fillStyle="#1d1530";NEAR.forEach(([x,w,h],i)=>{const X=x*.7-pan,Hh=(h+90)*H0/700;if(X<-w||X>W0+10)return;g.fillRect(X,base-Hh+30,w*.7,Hh);
+      for(let r=0;r<Hh/22-1;r++)for(let c=0;c<3;c++){const on=((i*7+r*3+c*5)%10)/10<seg(t,.6,3.6)*.85;g.fillStyle=on?"#ffcf6b":"#2c2342";g.fillRect(X+8+c*w*.2,base-Hh+44+r*22,w*.1,10)}g.fillStyle="#1d1530"});
+    g.fillStyle="#161022";g.fillRect(0,base+28,W0,H0);
+    const a=seg(t,.5,1.3)*(1-seg(t,3.7,4.3));g.save();g.globalAlpha=a;g.textAlign="center";g.fillStyle="#fff";g.font="900 "+Math.min(64,W0*.13)+"px "+FONTS.d;g.fillText("FLIP CITY",W0/2,H0*.33+(1-a)*10);g.restore()}
+  // street: the bus drops you off, then Vince's limo pulls up
+  function street(t){sky(t,0);const k=Math.min(W0/380,H0/560),gy=H0*.6,zoom=1+.18*E(seg(t,9.6,12)),cx=W0/2;
+    g.save();g.translate(cx,gy);g.scale(zoom,zoom);g.translate(-cx,-gy);
+    g.fillStyle="#b9d7c8";for(let i=0;i<9;i++){const x=i*W0/7-30,h=(60+((i*37)%50))*k;g.fillRect(x,gy-150*k-h,W0/7-10,h)}
+    NEAR.slice(3,11).forEach(([_,w,h,col],i)=>{const x=-40*k+i*112*k,ww=104*k,hh=(110+h*.35)*k,y=gy-26*k-hh;g.fillStyle=col;g.fillRect(x,y,ww,hh);g.fillStyle="rgba(0,0,0,.12)";g.fillRect(x,y,ww,6*k);
+      g.fillStyle="#2b2f3a";g.fillRect(x+ww*.36,gy-26*k-40*k,ww*.28,40*k);g.fillStyle="#cfe6f5";g.fillRect(x+8*k,gy-26*k-46*k,ww*.24,26*k);g.fillRect(x+ww*.7,gy-26*k-46*k,ww*.24,26*k);
+      g.fillStyle="#fffaf0";g.fillRect(x+10*k,y+12*k,ww-20*k,18*k);g.fillStyle="#2b2f3a";g.font="800 "+11*k+"px "+FONTS.d;g.textAlign="center";g.textBaseline="middle";g.fillText(SIGNS[i%6],x+ww/2,y+21.5*k)});
+    g.fillStyle="#d8d2c4";g.fillRect(0,gy-26*k,W0,30*k);g.fillStyle="#bdb6a6";for(let x=0;x<W0;x+=34*k)g.fillRect(x,gy-26*k,1.5,30*k);
+    g.fillStyle="#3d4250";g.fillRect(0,gy+4*k,W0,H0);g.fillStyle="#d8d2c4";g.fillRect(0,gy+96*k,W0,H0);g.fillStyle="#7fb069";g.fillRect(0,gy+110*k,W0,H0);g.fillStyle="#f3f0e6";for(let x=-((t*0)%60);x<W0;x+=60*k)g.fillRect(x,gy+44*k,30*k,4*k);
+    // bus
+    const bs=W0*.55,bx=t<5.4?L(-260*k,bs,E(seg(t,4.2,5.4))):t<7.4?bs:L(bs,W0+300*k,E(seg(t,7.4,8.6)));
+    // you: step off at 5.8, walk to the left third
+    const youOut=t>=5.8,px=youOut?L(bs-86*k,W0*.34,E(seg(t,5.8,7))):0,pmv=t>5.8&&t<7;
+    if(bx>-300*k&&bx<W0+300*k)bus(bx,gy+2*k,k,t>5.6&&t<7.2);
+    if(youOut){g.save();g.translate(px,gy-4*k);g.scale(k*1.6,k*1.6);drawPerson(0,0,{...me,mv:pmv,ph:t,g});g.restore()}
+    // limo + Vince
+    const lx=t<8.6?W0+400*k:t<9.7?L(W0+300*k,W0*.72,E(seg(t,8.6,9.7))):W0*.72;
+    if(t>=8.6)limo(lx,gy+14*k,k);
+    if(t>=10){const vx=L(W0*.72,W0*.62,E(seg(t,10,10.9)));g.save();g.translate(vx,gy-4*k);g.scale(k*1.6,k*1.6);drawPerson(0,0,{...VINCE_LOOK,mv:t<10.9,ph:t,g});g.restore();
+      if(t>10.9&&t<12.3)bubble(vx,gy-118*k,k,"New kid flipping junk on MY streets? Cute.",Math.min(seg(t,10.9,11.2),1-seg(t,12.1,12.3)),1)}
+    if(t>12.35&&youOut)bubble(px,gy-118*k,k,"Watch me.",seg(t,12.35,12.6),0);
+    g.restore()}
+  function bus(x,y,k,open){g.save();g.translate(x,y);const w=230*k,h=92*k;g.fillStyle="rgba(0,0,0,.18)";g.fillRect(-w/2+6*k,-4*k,w-12*k,8*k);
+    g.fillStyle="#f2b632";rrp(g,-w/2,-h,w,h-10*k,12*k);g.fill();g.fillStyle="#e09a1c";g.fillRect(-w/2,-34*k,w,8*k);
+    g.fillStyle="#9fd3ef";for(let i=0;i<4;i++)g.fillRect(-w/2+60*k+i*40*k,-h+12*k,32*k,28*k);g.fillRect(w/2-28*k,-h+12*k,22*k,34*k);
+    g.fillStyle=open?"#2b2f3a":"#9fd3ef";g.fillRect(-w/2+14*k,-h+12*k,30*k,h-26*k);g.strokeStyle="#c48a18";g.lineWidth=2;g.strokeRect(-w/2+14*k,-h+12*k,30*k,h-26*k);
+    g.fillStyle="#2b2f3a";g.font="800 "+10*k+"px "+FONTS.d;g.textAlign="center";g.fillText("FLIP CITY · 7",20*k,-22*k);
+    [-w/2+48*k,w/2-48*k].forEach(cx=>{g.fillStyle="#1b1d22";g.beginPath();g.arc(cx,-10*k,15*k,0,7);g.fill();g.fillStyle="#8a8f99";g.beginPath();g.arc(cx,-10*k,6*k,0,7);g.fill()});g.restore()}
+  function limo(x,y,k){g.save();g.translate(x,y);const w=250*k;g.fillStyle="rgba(0,0,0,.2)";g.fillRect(-w/2,-4*k,w,8*k);
+    g.fillStyle="#17131f";rrp(g,-w/2,-44*k,w,32*k,10*k);g.fill();rrp(g,-w/2+50*k,-64*k,w-110*k,26*k,10*k);g.fill();
+    g.fillStyle="#3a3150";for(let i=0;i<4;i++)g.fillRect(-w/2+60*k+i*30*k,-60*k,24*k,16*k);g.fillStyle="#d9b24a";g.fillRect(-w/2,-28*k,w,2.5*k);
+    g.fillStyle="#ffe7a0";g.fillRect(-w/2,-38*k,6*k,6*k);[-w/2+40*k,w/2-44*k].forEach(cx=>{g.fillStyle="#0b0a0f";g.beginPath();g.arc(cx,-12*k,13*k,0,7);g.fill();g.fillStyle="#c9a43c";g.beginPath();g.arc(cx,-12*k,5*k,0,7);g.fill()});g.restore()}
+  function bubble(x,y,k,txt,p,vince){g.save();g.globalAlpha=p;const fs=Math.max(12,13*k);g.font="800 "+fs+"px "+FONTS.b;const lines=wrapTxt(txt,Math.min(W0*.62,230*k)),w=Math.max(...lines.map(l=>g.measureText(l).width))+24,h=lines.length*fs*1.25+16;
+    let bx=clamp(x-w/2,10,W0-w-10);const by=y-h-(1-p)*8;g.fillStyle=vince?"#5b2a86":"#fffaf0";rrp(g,bx,by,w,h,12);g.fill();g.beginPath();g.moveTo(x-8,by+h-1);g.lineTo(x+8,by+h-1);g.lineTo(x,by+h+10);g.fill();
+    g.fillStyle=vince?"#fff":"#1b1d22";g.textAlign="left";g.textBaseline="top";lines.forEach((l,i)=>g.fillText(l,bx+12,by+8+i*fs*1.25));g.restore()}
+  function wrapTxt(s,mw){const out=[];let cur="";s.split(" ").forEach(w=>{const n=cur?cur+" "+w:w;if(g.measureText(n).width>mw&&cur){out.push(cur);cur=w}else cur=n});if(cur)out.push(cur);return out}
+  // the first flip: a price tag gets bought, then sold for more
+  function flip(t){g.fillStyle="#f4ecd8";g.fillRect(0,0,W0,H0);g.fillStyle="rgba(0,0,0,.04)";for(let y=0;y<H0;y+=26)g.fillRect(0,y,W0,1);
+    const k=Math.min(W0/360,H0/600),cx=W0/2,cy=H0*.46,sold=t>=14.7,sp=seg(t,14.55,14.85),sc=sold?1+.12*Math.sin(sp*Math.PI):1;
+    guitar(cx,cy,k);g.save();g.translate(cx,cy);g.rotate(-.06+.05*Math.sin(t*1.4));g.scale(sc*k,sc*k);
+    g.fillStyle="rgba(0,0,0,.12)";rrp(g,-86,-46,180,104,14);g.fill();g.fillStyle=sold?"#2fbf71":"#fffaf0";rrp(g,-90,-52,180,104,14);g.fill();g.strokeStyle=sold?"#1f8f52":"#c9bfa8";g.lineWidth=3;g.stroke();
+    g.fillStyle=sold?"#1f8f52":"#c9bfa8";g.beginPath();g.arc(-66,0,7,0,7);g.fill();
+    g.fillStyle=sold?"#fff":"#1b1d22";g.textAlign="center";g.textBaseline="middle";g.font="900 46px "+FONTS.d;g.fillText(sold?"$55":"$20",14,-6);g.font="800 11px "+FONTS.b;g.fillText(sold?"SOLD · +$35":"OLD GUITAR · BOUGHT",10,30);g.restore();
+    if(sold){for(let i=0;i<14;i++){const a=i/14*Math.PI*2,r=(t-14.7)*260*k;g.fillStyle=i%2?"#ffcc33":"#2fbf71";g.globalAlpha=Math.max(0,1-(t-14.7)*.9);g.beginPath();g.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r*.7,6*k,0,7);g.fill()}g.globalAlpha=1}
+    const c1=seg(t,13.4,13.8)*(1-seg(t,14.4,14.6)),c2=seg(t,14.8,15.1);g.textAlign="center";g.fillStyle="#1b1d22";g.font="900 "+Math.min(34,W0*.08)+"px "+FONTS.d;
+    g.globalAlpha=c1;g.fillText("Buy low.",cx,H0*.7);g.globalAlpha=c2;g.fillText("Sell high.",cx,H0*.7);g.globalAlpha=seg(t,15.6,16);g.font="800 "+Math.min(20,W0*.05)+"px "+FONTS.b;g.fillStyle="#5b2a86";g.fillText("Beat Vince. Own the city.",cx,H0*.7+40);g.globalAlpha=1}
+  function guitar(cx,cy,k){g.save();g.translate(cx-70*k,cy-150*k);g.rotate(-.5);g.scale(k,k);g.fillStyle="#8a4b24";g.beginPath();g.ellipse(0,40,40,46,0,0,7);g.fill();g.beginPath();g.ellipse(0,-14,31,34,0,0,7);g.fill();
+    g.fillStyle="#2b1a10";g.beginPath();g.arc(0,8,13,0,7);g.fill();g.fillStyle="#5a3a22";g.fillRect(-6,-130,12,120);g.fillStyle="#2b1a10";g.fillRect(-9,-152,18,26);g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=1;[-3,0,3].forEach(d=>{g.beginPath();g.moveTo(d,-128);g.lineTo(d,62);g.stroke()});g.fillStyle="#2b1a10";g.fillRect(-14,58,28,6);g.restore();
+    g.strokeStyle="#7a6a50";g.lineWidth=1.5;g.beginPath();g.moveTo(cx-48*k,cy-120*k);g.quadraticCurveTo(cx-80*k,cy-50*k,cx-66*k*1,cy);g.stroke()}
+  function title(t){const p=seg(t,16.5,16.9);g.fillStyle="#141824";g.fillRect(0,0,W0,H0);g.save();g.translate(W0/2,H0*.46);const s=L(1.6,1,E(p));g.scale(s,s);g.globalAlpha=p;g.textAlign="center";g.textBaseline="middle";
+    g.fillStyle="#e2364a";g.font="900 "+Math.min(72,W0*.14)+"px "+FONTS.d;g.fillText("FLIP RUSH",0,0);g.fillStyle="#fff";g.font="700 "+Math.min(16,W0*.042)+"px "+FONTS.b;g.globalAlpha=seg(t,17,17.3);g.fillText("Your first deal is waiting.",0,Math.min(56,W0*.12));g.restore()}
+  function caption(t){const C=[[.9,4,"Everything in this town is for sale."],[5.9,8.4,"You step off the bus with "+cash+" and big plans."],[8.8,10.6,"Not everyone is happy to see you."]].find(c=>t>=c[0]&&t<c[1]);if(!C)return;
+    const a=Math.min(seg(t,C[0],C[0]+.3),1-seg(t,C[1]-.3,C[1])),bh=H0*.1;g.save();g.globalAlpha=a;g.fillStyle="#fff";g.textAlign="center";g.textBaseline="middle";g.font="700 "+Math.min(17,W0*.044)+"px "+FONTS.b;g.fillText(C[2],W0/2,H0-bh/2);g.restore()}
+  function frame(){const t=(performance.now()-t0)/1000;
+    if(t<4.4)skyline(t);else if(t<13.3)street(t);else if(t<16.5)flip(t);else title(t);
+    if(t>=4.2&&t<4.6){g.fillStyle="rgba(20,24,36,"+(1-Math.abs(t-4.4)/.2)+")";g.fillRect(0,0,W0,H0)}
+    if(t>=13.1&&t<13.5){g.fillStyle="rgba(244,236,216,"+(1-Math.abs(t-13.3)/.2)+")";g.fillRect(0,0,W0,H0)}
+    if(t<16.5){const bh=H0*.1;g.fillStyle="#0b0d11";g.fillRect(0,0,W0,bh);g.fillRect(0,H0-bh,W0,bh)}
+    caption(t);if(t>CUT_LEN-.5){g.fillStyle="rgba(11,13,17,"+seg(t,CUT_LEN-.5,CUT_LEN)+")";g.fillRect(0,0,W0,H0)}
+    bar.style.width=Math.min(100,t/CUT_LEN*100)+"%";
+    once("door",5.6,t,()=>SFX.door());once("horn",9.3,t,()=>{tone(330,.18,{type:"square",vol:.04});tone(330,.25,{type:"square",vol:.04,at:.24})});once("v",10.9,t,()=>SFX.news());once("me",12.35,t,()=>SFX.tick(.5));once("sold",14.7,t,()=>SFX.sell(4));once("ttl",16.6,t,()=>SFX.level());
+    if(t>=CUT_LEN){removeEventListener("resize",fit);ov.remove();done&&done();return}requestAnimationFrame(frame)}
+  requestAnimationFrame(frame)}
 setInterval(()=>{try{storyTick()}catch(e){console.warn(e)}},500);
 /* ---------- minimap: a little map in the corner; tap it for the whole map, then tap a place to walk or take a taxi there ---------- */
 const MMK=.075,MMS=104;let MMI=null,MMKEY="",MMT=0,MMB=null;
@@ -8717,7 +8805,7 @@ function titleMain(){
     else $("bNew").onclick=()=>{newGame();save();start(true)};
   };draw();
 }
-function start(isNew){shownCash=null;setTimeout(()=>{if(S&&S.tut===0&&!(S.stats.flips||0))howToPlay()},400);try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(!isNew)resumeWorld();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline();w3Offline()}if(HOLI())setTimeout(()=>!SCN&&!MPW&&banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){if(!S.flags.cut){$("overlay").hidden=true;return playCut(()=>{S.flags.cut=1;dirty=true;start(isNew)})}shownCash=null;setTimeout(()=>{if(S&&S.tut===0&&!(S.stats.flips||0))howToPlay()},400);try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(!isNew)resumeWorld();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline();w3Offline()}if(HOLI())setTimeout(()=>!SCN&&!MPW&&banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
