@@ -417,6 +417,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .molegrid i{position:absolute;left:18%;right:18%;bottom:-70%;height:70%;border-radius:50% 50% 20% 20%;background:#8a5a3a;transition:bottom .08s}.molegrid i::after{content:"• •";position:absolute;top:22%;left:0;right:0;text-align:center;font-weight:900;color:#1b1d22}
 .molegrid .up i{bottom:6%}.molegrid .gold i{background:#ffcc33}.molegrid .hit i{background:#e2364a}
 .hoopbox{width:min(92vw,340px);display:flex;flex-direction:column;gap:14px;align-items:center}.hoopnet{font-size:4rem}.hoopnet.pop{animation:gpIn .35s}.hmeter{position:relative;width:100%;height:26px;border-radius:13px;background:#e2364a}.hz{position:absolute;top:0;bottom:0;left:35%;width:30%;background:#2fd28a;border-radius:13px}.hmeter b{position:absolute;top:-4px;width:6px;height:34px;margin-left:-3px;border-radius:3px;background:#fff;box-shadow:0 0 6px #000}.hoopbox .bigbtn{width:100%}
+.digpit{width:170px;height:170px;border-radius:50%;background:radial-gradient(#5a3a1a 40%,#a8743a 41%,#c99a62 70%,transparent 71%);display:grid;place-items:center;font-size:4rem;cursor:pointer;touch-action:manipulation;position:relative;z-index:1}.digpit.hit{animation:digHit .18s}.digpit.open b{animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}@keyframes digHit{50%{transform:scale(.92) rotate(-6deg)}}
 .goalpop{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);z-index:70;min-width:260px;max-width:86vw;padding:18px 22px;border-radius:22px;background:var(--bg);box-shadow:0 0 0 3px #ffcc33,0 20px 60px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:4px;pointer-events:none;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1) forwards}
 .goalpop b{font-family:var(--display);font-size:1.15rem}.goalpop em{font-style:normal;font-family:var(--display);font-weight:900;font-size:2rem;color:var(--up)}.goalpop small{color:var(--muted);font-size:.8rem}.goalpop.out{animation:gpOut .45s ease forwards}
 @keyframes gpIn{to{transform:translate(-50%,-50%) scale(1)}}@keyframes gpOut{to{transform:translate(-50%,-80%) scale(.9);opacity:0}}
@@ -859,7 +860,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -1255,6 +1256,7 @@ function rollRarity(){const r=Math.random();return r<.04?3:r<.18?2:r<.48?1:0}
 function crateReward(t,defer){
   const L=repLevel(),base=200*(1+L*.6),out=[];let cash=0;
   const item=top=>{if(S.stash.length>=maxSlots())return false;const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(HEAVY[p.code]||0)<=S.pr).sort((a,b)=>b.base-a.base),it=top?pick(pool.slice(0,4)):pick(pool.slice(0,Math.max(4,Math.floor(pool.length/2)))),c=CAT[it.cat],cond=c.conds[0];S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:1,fake:false,paid:0});out.push(it.name);return true};
+  if(Math.random()<.12+t*.06){S.maps=(S.maps||0)+1;out.push("Treasure map")}
   if(t===0){if(Math.random()<.3){S.energy=maxEnergy();out.push("Full energy")}else cash=base*rnd(1,2)}
   if(t===1){if(Math.random()<.4&&item(false)){}else cash=base*rnd(3,5)}
   if(t===2){cash=base*rnd(8,14);if(Math.random()<.5){S.picks=(S.picks||0)+1;out.push("Free perk pick")}}
@@ -1590,7 +1592,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  funArrows();drawGoalNav();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  funArrows();drawGoalNav();drawMapX();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -3023,6 +3025,27 @@ function renderRvChip(){const el=$("rvChip"),r=S.rival;if(!r){el.hidden=true;ret
   const have=r.t==="earn"?Math.max(0,S.stats.earnedAll-r.base):r.have,s=Math.max(0,Math.ceil(r.left));
   el.innerHTML=`<span class="pk">Vince</span><span class="pt">${r.txt}</span><span class="pr">${r.t==="earn"?Math.round(have/r.goal*100)+"%":have+"/"+r.goal} · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`}
 $("crateChip").onclick=()=>{audioOn();openCrate()};
+/* ---------- treasure maps: read one and an X appears somewhere in town; walk there and dig ---------- */
+function renderMapChip(){const el=$("mapChip");if(!el||!S)return;const n=S.maps||0,on=!!S.tmap;el.hidden=!n&&!on;if(el.hidden)return;
+  const h=on?`<span class="pk">🗺️ Map</span><span class="pt">Follow the X</span><span class="pr">${Math.round(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)/10)} m</span>`:`<span class="pk">🗺️ Map</span><span class="pt">Tap to read</span><span class="pr">×${n}</span>`;if(el.innerHTML!==h)el.innerHTML=h}
+function readMap(){if(S.tmap||!(S.maps>0)||SCN||MPW)return SCN||MPW?banner("Read your map back in Flip City","a"):null;
+  for(let i=0;i<200;i++){const x=rnd(80,W-80),y=rnd(140,SEA-60);if(!regionOpen(regionOf(x,y))||inBld(x,y,30)||inPond(x,y,30)||onRoad(x,y,0))continue;if(Math.hypot(x-S.px,y-S.py)<300)continue;
+    S.maps--;S.tmap={x:Math.round(x),y:Math.round(y)};dirty=true;SFX.hot();banner("X marks the spot · follow the arrow","g");rayText("An old map! Somewhere in town there's an X. Walk to it and dig.");renderMapChip();return}}
+$("mapChip").onclick=()=>{audioOn();if(room)closeRoom();if(!S.tmap)readMap();else banner(Math.round(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)/10)+" m to the X","a")};
+function drawMapX(){if(!S||!S.tmap||SCN||MPW||room)return;const T=S.tmap,sx=T.x-cam.x,sy=T.y-cam.y;
+  if(sx>-30&&sy>-30&&sx<vw+30&&sy<vh+30){ctx.save();ctx.translate(sx,sy);ctx.strokeStyle="rgba(122,58,20,.35)";ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.lineDashOffset=-wt*14;ctx.beginPath();ctx.ellipse(0,0,26,12,0,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle="#e2364a";ctx.lineWidth=6;ctx.lineCap="round";const k=10+Math.sin(wt*4)*1.5;ctx.beginPath();ctx.moveTo(-k,-k*.55);ctx.lineTo(k,k*.55);ctx.moveTo(k,-k*.55);ctx.lineTo(-k,k*.55);ctx.stroke();ctx.restore()}
+  else drawEdgeArrow(T.x,T.y,"#e2364a")}
+let digOpen=false;
+setInterval(()=>{if(!S||!S.tmap||SCN||MPW||room||digOpen||!$("overlay").hidden)return;if(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)<40)openDig()},300);
+function openDig(){digOpen=true;let taps=0;const need=7;const ov=document.createElement("div");ov.className="crateov digov";ov.innerHTML=`<div class="crrays" id="dgRays"></div><div class="digpit" id="dgPit"><b>⛏️</b></div><p class="crhint" id="dgHint">Tap to dig!</p><div class="crres" id="dgRes"></div>`;document.body.appendChild(ov);
+  const pit=ov.querySelector("#dgPit");pit.onpointerdown=e=>{e.preventDefault();if(taps>=need)return;taps++;pit.classList.remove("hit");void pit.offsetWidth;pit.classList.add("hit");const c=elC(pit);sparks(c[0],c[1],"#a8743a",14,.8);shake(2+taps,.2);SFX.crate(Math.min(3,taps/2));buzz(12);
+    ov.querySelector("#dgHint").textContent=taps<need?["","Keep going","Deeper…","Something hard!","Almost…","Clunk!",""][taps]||"Dig!":"";if(taps<need)return;
+    const out=[],cash=Math.round(Math.max(500,rwBase()*rnd(.04,.12)));earn(cash);out.push("+"+fmt(cash));
+    if(Math.random()<.45&&S.stash.length<maxSlots()){const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(HEAVY[p.code]||0)<=S.pr).sort((a,b)=>b.base-a.base),it=pick(pool.slice(0,5)),cc=CAT[it.cat],cond=cc.conds[0];S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:1,fake:false,paid:0,gold:1});out.push("Golden "+it.name)}
+    if(Math.random()<.25){gainCrate(1);out.push("A crate")}if(Math.random()<.12){S.maps=(S.maps||0)+1;out.push("Another map!")}
+    S.tmap=null;S.stats.treasure=(S.stats.treasure||0)+1;dirty=true;pit.innerHTML="<b>🪙</b>";pit.classList.add("open");ov.querySelector("#dgRays").classList.add("on");confetti(160,c[0],c[1],["#ffcc33","#fff","#cf9a14"]);flash("#ffcc33",.35);SFX.crit(2);
+    ov.querySelector("#dgRes").innerHTML=`<b>Buried treasure!</b>${out.map(o=>`<span>${esc(o)}</span>`).join("")}<button class="cta" id="dgOk">Nice</button>`;ov.querySelector("#dgOk").onclick=()=>{ov.remove();digOpen=false;renderMapChip();updMini()}}}
 $("bzChip").onclick=()=>{audioOn();if(!room)openBizEvent(null)};
 $("rvChip").onclick=()=>{const r=S.rival;if(r)rayTextFrom("Vince",r.txt+". Reward "+fmt(r.rw)+". Clock's ticking.")};
 
@@ -3334,7 +3357,7 @@ function loop(now){
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();tutTick(dt);
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderChChip();renderCrateChip();renderBzChip();renderLvlBtn();renderPillTog()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderChChip();renderCrateChip();renderMapChip();renderBzChip();renderLvlBtn();renderPillTog()}
     }
     NPCS.forEach(n=>{if(BUY&&BUY.n===n){n.ph+=dt*.2;return}if(!n.ok){n.ok=1;n.t=npcNext(n,roadPoint)}const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,roadPoint);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room){if(SCN)drawScene();else drawWorld()}
@@ -4296,7 +4319,7 @@ function accHand(c,k,x,y){
 /* ================= Arcade: quick skill games for tickets, and a prize counter ================= */
 const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."}};
 const ARC_PRIZE=[{k:"crate",n:"Mystery crate",ic:"📦",t:100,f:()=>gainCrate(1)},{k:"energy",n:"Energy drink",ic:"🥤",t:60,f:()=>{S.energy=Math.min(maxEnergy()*1.5,S.energy+60)}},{k:"hype",n:"Hype rush",ic:"🔥",t:80,f:()=>hype(10)},
-  {k:"cash",n:"Bag of cash",ic:"💰",t:150,f:()=>earn(Math.round(Math.max(1000,rwBase()*.03)))},{k:"nshade",n:"Neon shades",ic:"🕶️",t:250,acc:1},{k:"acrown",n:"Neon crown",ic:"👑",t:400,acc:1},{k:"joy",n:"Golden joystick",ic:"🕹️",t:700,acc:1}];
+  {k:"cash",n:"Bag of cash",ic:"💰",t:150,f:()=>earn(Math.round(Math.max(1000,rwBase()*.03)))},{k:"map",n:"Treasure map",ic:"🗺️",t:120,f:()=>{S.maps=(S.maps||0)+1}},{k:"nshade",n:"Neon shades",ic:"🕶️",t:250,acc:1},{k:"acrown",n:"Neon crown",ic:"👑",t:400,acc:1},{k:"joy",n:"Golden joystick",ic:"🕹️",t:700,acc:1}];
 function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||{};const draw=()=>{const T=S.tix||0;
   $("room").innerHTML=`<div class="room-in scroll arcroom">${roomHead("Arcade")}<div class="arcmarq">★ INSERT COIN ★ HIGH SCORES ★ PRIZES ★</div>
     <div class="kv"><div><span class="eyebrow">Tickets</span><b>🎟️ ${fmtN(T)}</b></div><div><span class="eyebrow">Games</span><b>5 energy each</b></div></div>
@@ -4653,7 +4676,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=35,WN=[
+const WN_VER=36,WN=[
+ ["🗺️","Treasure maps","Crates and the Arcade can give you treasure maps. Read one and a red X appears somewhere in town. Walk there and dig for cash, golden items and more.","2026-10-07T03:15"],
  ["🕹️","The Arcade","A neon arcade downtown: Mole mash, Tower stack and Hoop shot. Win tickets and trade them at the prize counter for crates, cash, energy and arcade-only neon gear.","2026-10-07T03:30"],
  ["⚔️","Duels","Challenge anyone in your room, bots too, from the Friends list: Quick draw, Tap frenzy or a 100 m sprint. No muscles needed. Winners get fans.","2026-10-07T14:00"],
  ["🚀","Moon & Mars matter","Rocket to a little grey Moon or a big red Mars. Plant your flag to unlock Space elevators (Moon) and Dyson spheres (Mars), and build each planet's Colony HQ for huge generator boosts.","2026-10-07T13:00"],
