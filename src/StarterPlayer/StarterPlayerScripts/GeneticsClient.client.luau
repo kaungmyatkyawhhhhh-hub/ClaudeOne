@@ -698,7 +698,8 @@ local cameraBase = nil
 local fovPunch, shakeUntil, shakeStrength = 0, 0, 0
 -- The plate labels at full size (scale 1); they shrink together (labelScale) when neighbours would touch.
 local LABEL = { Name = 27, Circle = 48, Mult = 33, Gap = 4, Space = 8, MinText = 14, MinScale = 0.4, Backing = 0.55, CircleFill = 0.25,
-	Pad = 6 + Theme.Spacing.S * 2 } -- (each column's extra width: the text margin and the backing's side padding)
+	Pad = 6, PanelPad = 12, DividerAlpha = 0.88, Panel = nil :: Frame?, Dividers = {} :: { Frame } } -- (Pad: each column's text margin; the
+	-- shared backing panel behind the whole row is made with the label layer)
 local ARROW_H = 18    -- the upgrade arrow row after a reroll
 local labelScale = 1
 local function rowHeight(s)
@@ -708,7 +709,7 @@ local function rowHeight(s)
 	return name + 4 + circle + mult + 4 + LABEL.Gap * 2, name, circle, mult
 end
 local reserveScale = 1 -- the label scale the framing leaves room for (estimated in frameCamera)
-local function labelBand() return (rowHeight(reserveScale)) + ARROW_H end
+local function labelBand() return (rowHeight(reserveScale)) + ARROW_H + LABEL.PanelPad end -- (+ the shared panel's bottom padding)
 -- the overall plate, placed from the camera: { cf = rest CFrame, d = diameter }
 local heroLayout = nil
 
@@ -963,13 +964,8 @@ end
 ------------------------------------------------------------------------
 local function makeColumn(entry)
 	local height = rowHeight(labelScale)
-	-- (a soft dark rounded backing behind the whole column so it reads over the gym)
-	local col = New("Frame", { Name = entry.group, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(120, height + ARROW_H),
-		BackgroundColor3 = Colors.Shadow, BackgroundTransparency = LABEL.Backing, Parent = labelLayer }, {
-		Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
-		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-		New("UIPadding", { PaddingTop = UDim.new(0, Spacing.XS), PaddingBottom = UDim.new(0, Spacing.XS), PaddingLeft = UDim.new(0, Spacing.S), PaddingRight = UDim.new(0, Spacing.S) }),
-	})
+	local col = New("Frame", { Name = entry.group, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(120, height + ARROW_H), BackgroundTransparency = 1, Parent = labelLayer },
+		{ Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
 	-- stacked: the group name, the grade letter in a circle (the plate's color), the multiplier
 	local name = Theme.Text({ LayoutOrder = 1, Text = Muscles.GroupById[entry.group].name, Font = "Medium", TextSize = "Medium", TextColor3 = Colors.Text, Size = UDim2.new(1, 0, 0, 22), Parent = col })
 	Theme.TextShadow(name)
@@ -1048,7 +1044,7 @@ local function updateLabels()
 		local height, nameSize, circleSize, multSize = rowHeight(labelScale)
 		for i, entry in ipairs(plates) do
 			-- (a plate joins the bar a moment before its label exists)
-			if not entry.column then continue end
+			if not entry.column or not entry.column.Parent then continue end -- (destroyed while its plate slides off)
 			local label = entry.label
 			if label.scale ~= labelScale then
 				label.scale = labelScale
@@ -1062,8 +1058,10 @@ local function updateLabels()
 			local width = math.ceil((widths[i] or 80) * labelScale) + 6
 			local x = math.clamp(bottoms[i].X, Spacing.S + width / 2, size.X - Spacing.S - width / 2)
 			local y = rowY
-			entry.column.Size = UDim2.fromOffset(width + Spacing.S * 2, height + (if entry.arrow then ARROW_H else 0) + Spacing.XS * 2)
+			local columnHeight = height + (if entry.arrow then ARROW_H else 0)
+			entry.column.Size = UDim2.fromOffset(width, columnHeight)
 			entry.column.Position = UDim2.fromOffset(x, y)
+			entry.span = { x - width / 2, x + width / 2, y + columnHeight, y }
 			-- tap / hover area: the label and the plate above it
 			local half = math.max(width / 2, 22)
 			local left = math.min(x - width / 2, bottoms[i].X - half / 2)
@@ -1071,6 +1069,53 @@ local function updateLabels()
 			entry.hit.Position = UDim2.fromOffset(left, tops[i].Y)
 			entry.hit.Size = UDim2.fromOffset(rightEdge - left, y + height - tops[i].Y)
 			entry.top = tops[i]
+		end
+	end
+	-- one shared dark backing behind the whole row: from the first label's left edge to the last one's right edge, from
+	-- just above the names to just below the multipliers; thin dividers between neighbours
+	if not LABEL.Panel then
+		LABEL.Panel = New("Frame", { Name = "LabelPanel", BackgroundColor3 = Colors.Shadow, BackgroundTransparency = LABEL.Backing, ZIndex = 0, Visible = false, Parent = labelLayer },
+			{ New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+	end
+	local panel = LABEL.Panel
+	if panel then
+		local spans = {}
+		for _, entry in ipairs(plates) do
+			if entry.column and entry.column.Parent and entry.span then table.insert(spans, entry.span) end
+		end
+		if #spans == 0 then
+			panel.Visible = false
+		else
+			table.sort(spans, function(a, b) return a[1] < b[1] end)
+			local pad = LABEL.PanelPad
+			local left, right, top, bottomY = math.huge, -math.huge, math.huge, 0
+			for _, span in ipairs(spans) do
+				left, right = math.min(left, span[1]), math.max(right, span[2])
+				top, bottomY = math.min(top, span[4]), math.max(bottomY, span[3])
+			end
+			panel.Position = UDim2.fromOffset(left - pad, top - pad)
+			panel.Size = UDim2.fromOffset(right - left + pad * 2, bottomY - top + pad * 2)
+			for k = 1, 5 do
+				local divider = LABEL.Dividers[k]
+				if not divider then
+					divider = New("Frame", { Name = "Divider", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 1, 0.6, 0), BorderSizePixel = 0,
+						BackgroundColor3 = Colors.Text, BackgroundTransparency = LABEL.DividerAlpha, Parent = panel })
+					LABEL.Dividers[k] = divider
+				end
+				local a, b = spans[k], spans[k + 1]
+				divider.Visible = b ~= nil
+				if b then divider.Position = UDim2.new(0, (a[2] + b[1]) / 2 - left + pad, 0.5, 0) end
+			end
+			if not panel.Visible then
+				panel.Visible = true
+				-- (fades in with the first label)
+				panel.BackgroundTransparency = 1
+				Theme.Tween(panel, { BackgroundTransparency = LABEL.Backing }, if skipping then 0 else 0.25)
+				for _, divider in ipairs(LABEL.Dividers) do
+					divider.BackgroundTransparency = 1
+					Theme.Tween(divider, { BackgroundTransparency = LABEL.DividerAlpha }, if skipping then 0 else 0.25)
+				end
+			end
 		end
 	end
 	if hero and heroLabels.Visible then

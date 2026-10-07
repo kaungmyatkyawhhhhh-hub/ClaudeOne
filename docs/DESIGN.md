@@ -203,7 +203,8 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
 - Reveal (under 3 s): plates slide onto the sleeve about 0.2 s apart, best grade first, each with a clank (pitch by
   grade, small camera punch); S plates get one shine sweep. Then the collar, then the overall plate drops in with a
   thud and its word fades in. Tap / click (or Space) skips to the end.
-- Meaning: one clean row of labels under the bar, each column on a soft dark rounded backing (black, 55% see-through):
+- Meaning: one clean row of labels under the bar on ONE shared soft dark rounded panel (black, 55% see-through, 12px
+  corners and padding, re-wrapped around the row every frame, faint dividers between labels):
   group name (white Oswald), the grade letter circle (2px ring in the grade color, dark fill) and the multiplier
   ("x1.50", white), all with a soft dark outline; "Overall" white too; nothing cut off at the edges. Tap / hover a plate for a small card ("Chest genetics
   A" / "Your chest grows 20% faster" + frame / body bonuses on that group). Frame and body type are two cards
