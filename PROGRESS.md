@@ -44,6 +44,11 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
   Persistent Models (were Folders; the builders make Models too).
 
+- **Look balance cap (8 Oct):** `Config/LookBalance` (rules + ALLOW values to tune), applied in `BodyService.EncodeLevels`
+  / `WidthFactors` and `MuscleClient` (your own muscles); lock + held-back bar + hint in the Muscles panel, one-time toast
+  (`settings.lookCapHintSeen`), rep flash when a cap lifts. `tests/lookbalance`. Note: the whole-body rule (upper vs legs
+  +0.30) holds everything until the legs are trained too.
+
 - **Golden ratio body (8 Oct):** longer legs, shorter torso, same height, on players, NPCs, mirror rigs and the statue
   (`BodyShape.ApplyProportions`, re-applied after every rescale).
 - **Muscle data v8 final (8 Oct):** MuscleData regenerated from the latest `muscle_v8` (37 meshes): border "blend" weights
