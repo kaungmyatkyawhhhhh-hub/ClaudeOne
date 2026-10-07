@@ -1118,6 +1118,7 @@ const ACH=[
  ["olympia","Olympian","Win Mr. Olympia",()=>!!S.trophies&&S.trophies[3]===1,100000],
  ["tower10","Skyline","Build 10 floors of Flip Tower",()=>(S.tower||0)>=10,50000],
  ["tower100","Cloud piercer","Build 100 floors of Flip Tower",()=>(S.tower||0)>=100,5e6],
+ ["zig25","Temple builder","Build 25 tiers of the Amber Ziggurat",()=>zigN()>=25,1e9],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
  ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
  ["tall190","Towering","Grow to 190 cm",()=>(S.height||170)>=190,10000],
@@ -1312,6 +1313,7 @@ function winRects(p){
 }
 function drawBuilding(g,p,P){
   if(p.k==="tower"){drawTowerLot(g,p,P);return}
+  if(p.k==="xzig"){drawZigLot(g,p);return}
   if(sceneArt(g,p,P))return;
   if(p.k==="home"&&!p.mp){homeBld(g,p,P,p.hm!=null?p.hm:(S&&S.home)||0);return}
   const f=fh(p),ry=p.y,rh=p.h-f,fy=p.y+p.h-f;
@@ -1848,6 +1850,16 @@ function openTower(){
     $("tBuild").onclick=()=>build(1);if($("tMax"))$("tMax").onclick=()=>build(999);
   };draw();
 }
+function drawZigLot(g,p){const n=zigN(),cx=p.x+p.w/2,bot=p.y+p.h-6,steps=n?Math.min(12,2+Math.ceil(n/25)):0,sh=n?Math.min(22,10+n/30):0;
+  g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(cx+8,bot+4,p.w*.55,16,0,0,7);g.fill();
+  g.fillStyle="#b88a52";rrp(g,p.x,bot-10,p.w,16,6);g.fill();
+  if(!n){g.strokeStyle="#7a5a3a";g.setLineDash([8,6]);g.lineWidth=3;rrp(g,p.x+20,p.y+60,p.w-40,p.h-70,10);g.stroke();g.setLineDash([]);
+    [[p.x+40,bot-28],[p.x+p.w-60,bot-22],[cx,bot-40]].forEach(([x,y])=>{g.fillStyle="#d99a2b";g.fillRect(x,y,22,14);g.fillStyle="#ffd27a";g.fillRect(x,y,22,3)});return}
+  for(let i=0;i<steps;i++){const w=p.w*(1-i/(steps+1.5)),y=bot-10-(i+1)*sh;g.fillStyle=i%2?"#c98a2a":"#e2a63a";g.fillRect(cx-w/2,y,w,sh);g.fillStyle="#ffd27a";g.fillRect(cx-w/2,y,w,3);g.fillStyle="rgba(0,0,0,.15)";g.fillRect(cx+w/2-6,y,6,sh)}
+  const top=bot-10-steps*sh;g.fillStyle="#8a5a1a";g.fillRect(cx-9,top+sh,18,bot-10-top-sh);
+  if(n>=25)[cx-26,cx+26].forEach(x=>{g.fillStyle="#5a3a12";g.fillRect(x-4,top-6,8,6);g.fillStyle="#ff7a3d";g.beginPath();g.arc(x,top-9,5,0,7);g.fill();g.fillStyle="#ffd27a";g.beginPath();g.arc(x,top-10,2.5,0,7);g.fill()});
+  if(n>=50){g.strokeStyle="#ffcc33";g.lineWidth=4;g.beginPath();g.arc(cx,top-22,12,0,7);g.stroke()}
+  if(n>=100){g.fillStyle="#ffcc33";g.beginPath();g.moveTo(cx-12,top);g.lineTo(cx,top-14);g.lineTo(cx+12,top);g.closePath();g.fill()}}
 function drawTowerLot(g,p,P){
   const n=S.tower||0,bot=p.y+p.h,H=n?Math.min(520,150+n*7):0;
   if(!n){g.fillStyle="#6b5a40";rrp(g,p.x,p.y+40,p.w,p.h-40,8);g.fill();g.fillStyle="rgba(0,0,0,.15)";for(let i=0;i<30;i++)g.fillRect(p.x+10+(i*37)%(p.w-20),p.y+50+(i*53)%(p.h-60),6,3);
@@ -2377,7 +2389,8 @@ const GOALS=[
  {t:"Travel back in time",d:"Power up the time machine on the space station (◈1 Amber).",ok:()=>!!(S.w3&&S.w3.open),rw:1e29,go:"c:tmach"},
  {t:"Grow a trilobite colony",d:"Plant life at the Tree of Life in Deep Time.",ok:()=>!!(S.w3&&lifeN("trilo")>0),rw:5e29,go:"d:nursery"},
  {t:"Record 10 species",d:"Go on expeditions from the Field Guide.",ok:()=>!!(S.w3&&S.w3.disc.length>=10),rw:5e30,go:"d:guide"},
- {t:"Raise a T. rex",d:"The king of the tyrant lizards, at the Tree of Life.",ok:()=>!!(S.w3&&lifeN("rex")>0),rw:1e33,go:"d:nursery"}
+ {t:"Raise a T. rex",d:"The king of the tyrant lizards, at the Tree of Life.",ok:()=>!!(S.w3&&lifeN("rex")>0),rw:1e33,go:"d:nursery"},
+ {t:"Build 25 Ziggurat tiers",d:"Stack amber into a temple that pays forever. Its fire bowls bless all your life.",ok:()=>zigN()>=25,rw:5e33,go:"d:zig"}
 ];
 // the first ten goals pay triple so the opening minutes feel rewarding
 GOALS.slice(0,10).forEach(g=>g.rw*=3);
@@ -4478,7 +4491,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=28,WN=[
+const WN_VER=29,WN=[
+ ["🛕","The Amber Ziggurat","Deep Time's own Flip Tower. Stack amber tiers that pay Amber every minute forever, and every milestone blesses all your life ×1.25.","2026-10-07T09:00"],
  ["👆","Easier to learn","New players get a quick how-to-play, a pointing hand on exactly what to tap, and plain ✓ DEAL / TOO PRICEY tags in the shops.","2026-10-06T19:00"],
  ["🍀","A better start","New players get rookie luck: far more steals and no fakes in their first sales. Early goals pay triple, guide you with an arrow, and celebrate when you finish them. The top bar starts simple and fills in as you go.","2026-10-06T18:30"],
  ["➜","Follow your goal","Your goal is always first in the top row. Tap it and an arrow shows the way, even across worlds. Tap again for the full list.","2026-10-06T17:30"],
@@ -5080,7 +5094,7 @@ function sceneTick(dt){if(room)return;
     else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st;if(!SCN.ok(nx,ny)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=ny;moving=true}}}
   SCN.npc.forEach(n=>{const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,SCN.pt);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
   SCN.cars.forEach(c=>{c.p=(c.p+c.sp*dt+1)%1})}
-function sceneSig(){if(SCN.kind==="prehist")return "ph|"+Math.floor(Math.log10(1+w3Rate()))+"|"+w3().disc.length;if(SCN.kind==="planet")return "pl|"+SCN.k+"|"+(S.flags["flag_"+SCN.k]?1:0);if(SCN.kind==="arena")return "ar|"+(S.stats.beat||[]).join(",")+"|"+Math.round(SC()*100);if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
+function sceneSig(){if(SCN.kind==="prehist")return "ph|"+Math.floor(Math.log10(1+w3Rate()))+"|"+w3().disc.length+"|"+Math.ceil(zigN()/10);if(SCN.kind==="planet")return "pl|"+SCN.k+"|"+(S.flags["flag_"+SCN.k]?1:0);if(SCN.kind==="arena")return "ar|"+(S.stats.beat||[]).join(",")+"|"+Math.round(SC()*100);if(SCN.kind==="house"){const o=SCN.owner;return "h|"+(o?o.hm+"|"+Object.keys(o.fu).join(","):(S.home||0)+"|"+Object.keys(S.furn||{}).join(",")+"|"+(S.pet||""))}if(SCN.kind==="space"){const W=w2();return "sp|"+W.home+"|"+W.disc.length+"|"+Math.floor(Math.log10(1+w2Rate()))}return SCN.kind==="city"?(S.biz||[]).filter(b=>b.c===SCN.k).map(b=>b.id+b.lv+b.t).join(",")+"|"+((S.seen||{})[SCN.k]===dayKey()):JSON.stringify(islBuilt(SCN.k,SCN.fid))+"|"+islB(SCN.k).chest+islB(SCN.k).party+(islB(SCN.k).name||"")}
 function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig()+"|"+isDark();
   if(SCN.stSig!==sig){SCN.places=SCN.mk();if(SCN.kind==="city")buildCity();else if(SCN.kind==="space")buildSpace();else if(SCN.kind==="house")buildHouse();else if(SCN.kind==="arena")buildArena();else if(SCN.kind==="planet")buildPlanet();else if(SCN.kind==="prehist")buildPrehist();else buildIsland();SCN.stSig=sig;bKey=""}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
@@ -5969,9 +5983,40 @@ const GUIDE3=[["🪳","Trilobite","Over 20,000 species. Their eyes were made of 
  ["🦒","Brachiosaurus","Front legs longer than back, head 13 metres up."],["🦔","Stegosaurus","A brain the size of a walnut, plates on its back."],["🦷","Allosaurus","The top hunter of the Jurassic."],["🐦","Archaeopteryx","Half bird, half dinosaur, all feathers."],
  ["🪽","Pteranodon","A flying reptile with a 7-metre wingspan, and no teeth."],["🐋","Mosasaurus","A sea lizard as long as a bus."],["🦏","Triceratops","Three horns and a frill as big as a door."],["👑","Tyrannosaurus rex","The strongest bite of any land animal ever."],
  ["🐓","Velociraptor","Really the size of a turkey, and covered in feathers."],["🛡️","Ankylosaurus","Armoured like a tank, with a club for a tail."],["🐟","Spinosaurus","A swimming dinosaur that hunted fish."],["🦅","Quetzalcoatlus","As tall as a giraffe and it could fly."]];
+/* ---------- Amber Ziggurat: Deep Time's Flip Tower. Stack tiers of amber, each pays Amber every minute forever ---------- */
+const ZIG_MAX=300,ZIG_G=1.25,zigCost=i=>5*Math.pow(ZIG_G,i);   // in Amber
+const ZIG_MS=[[10,"Amber steps"],[25,"Fire bowls"],[50,"Sun disc"],[100,"Gold capstone"],[200,"Sky altar"],[300,"Eternal flame"]];
+const ZIG_ROOMS=["Resin vault","Fern garden","Egg chamber","Bone hall","Fire pit","Star shrine","Amber well","Feather loft","Moss bath","Fossil gallery"];
+const zigN=()=>Math.min(ZIG_MAX,(S&&S.w3&&S.w3.zig)||0);
+// every tier pays 5% of what it cost each minute (pays itself back in 20 min); the sum of all tiers is 1.25^n - 1
+const zigRate=()=>Math.pow(ZIG_G,zigN())-1;
+// each milestone blesses all your life: ×1.25 per milestone reached
+const zigBless=()=>Math.pow(1.25,ZIG_MS.filter(m=>zigN()>=m[0]).length);
+function zigArt(){const n=zigN(),steps=n?Math.min(14,1+Math.floor(Math.log2(n+1)*2)):0,sh=Math.min(11,130/Math.max(1,steps));let st="";
+  for(let i=0;i<steps;i++){const w=260-i*(220/14),y=168-(i+1)*sh;st+=`<rect x="${200-w/2}" y="${y}" width="${w}" height="${sh-1}" fill="${i%2?"#d99a2b":"#e8ae3f"}"/><rect x="${200-w/2}" y="${y}" width="${w}" height="2" fill="#ffd27a" opacity=".7"/>`}
+  const top=168-steps*sh,ms=k=>n>=k;
+  return `<svg viewBox="0 0 400 190" aria-hidden="true"><defs><linearGradient id="zs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6a35c"/><stop offset="1" stop-color="#ffd9a0"/></linearGradient></defs><rect width="400" height="190" fill="url(#zs)"/>
+   <circle cx="320" cy="50" r="24" fill="#fff3c4" opacity=".8"/><path d="M0 150 L60 110 L110 140 L170 100 L230 150 Z" fill="#c98a5a" opacity=".5"/><path d="M250 150 L310 105 L360 130 L400 115 V150 Z" fill="#b5734a" opacity=".5"/>
+   ${n?st+`<rect x="188" y="${top+2}" width="24" height="${168-top-2}" fill="#8a5a1a" opacity=".35"/>${ms(25)?`<circle cx="${200-60}" cy="${top-4}" r="5" fill="#ff7a3d"><animate attributeName="r" values="4;6;4" dur=".8s" repeatCount="indefinite"/></circle><circle cx="${200+60}" cy="${top-4}" r="5" fill="#ff7a3d"><animate attributeName="r" values="5;3;5" dur=".8s" repeatCount="indefinite"/></circle>`:""}${ms(50)?`<circle cx="200" cy="${top-22}" r="14" fill="none" stroke="#ffcc33" stroke-width="4"/>`:""}${ms(100)?`<path d="M186 ${top} L200 ${top-14} L214 ${top}Z" fill="#ffcc33"/>`:""}${ms(300)?`<path d="M200 ${top-40} q8 12 0 22 q-8 -10 0 -22" fill="#ff4f1f"><animate attributeName="opacity" values="1;.5;1" dur=".6s" repeatCount="indefinite"/></path>`:""}`
+     :`<rect x="110" y="156" width="180" height="12" fill="#a8743a"/><text x="200" y="140" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="700" fill="#5a3a12">LAY THE FIRST STONE</text>`}
+   <rect y="168" width="400" height="22" fill="#9a6a3a"/></svg>`}
+function openZig(back){room="zig";$("room").hidden=false;
+  const draw=()=>{const n=zigN(),c=zigCost(n),next=ZIG_MS.find(m=>m[0]>n),top=n>=ZIG_MAX,can=S.cash>=c*AMB;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Amber Ziggurat")}<div class="art">${zigArt()}</div>
+      <div class="kv"><div><span class="eyebrow">Tiers</span><b>${n}</b></div><div><span class="eyebrow">Temple income</span><b>${ambF(zigRate()*AMB)}/min</b></div><div><span class="eyebrow">Life blessing</span><b>×${zigBless().toFixed(2)}</b></div></div>
+      <div class="note">A stepped temple of amber in the heart of Deep Time. <b>Every tier pays Amber every minute, forever</b>, even after an extinction, and makes the temple taller on the map. Each milestone blesses <b>all your life ×1.25</b>. The top is tier ${ZIG_MAX}.${next?` Next: ${next[1]} at tier ${next[0]}.`:""}</div>
+      ${top?`<button class="bigbtn" id="zBuild" disabled>Temple complete<small>All ${ZIG_MAX} tiers built</small></button>`:`<button class="bigbtn" id="zBuild" ${can?"":"disabled"}>Build tier ${n+1}<small>${ambF(c*AMB)} · ${ZIG_ROOMS[n%ZIG_ROOMS.length]} · +${ambF(c*.05*AMB)}/min</small></button>
+      <button class="bigbtn alt" id="zMax" style="text-align:center" ${can?"":"disabled"}>Build max</button>`}
+      ${n?`<div class="sechead"><h3>Chambers</h3><span class="eyebrow">Top 6 tiers</span></div><div class="perks">${Array.from({length:Math.min(6,n)},(_,k)=>{const i=n-1-k;return `<div class="perk nopic"><span class="t">Tier ${i+1} · ${ZIG_ROOMS[i%ZIG_ROOMS.length]}</span><span class="c">${ambF(zigCost(i)*.05*AMB)}/min</span></div>`}).join("")}</div>`:""}
+      <p class="fine">Milestones: ${ZIG_MS.map(m=>(n>=m[0]?"✓ ":"")+m[0]+" "+m[1].toLowerCase()).join(" · ")}</p></div>`;
+    $("leaveBtn").onclick=back||closeRoom;
+    const build=k=>{const W=w3();let built=0;while(built<k&&zigN()<ZIG_MAX&&S.cash>=zigCost(zigN())*AMB){S.cash-=zigCost(zigN())*AMB;W.zig=zigN()+1;built++;const m=ZIG_MS.find(x=>x[0]===W.zig);if(m){setTimeout(()=>{banner(m[1]+" · all life ×1.25","g");flash("#ffcc33",.5);confetti(220);shake(10,.6);gainCrate(3)},500)}}
+      if(!built)return;dirty=true;S.stats.zig=Math.max(S.stats.zig||0,W.zig);SFX.rebirth();buzz([20,30,40]);const bt=elC($("zBuild"));if(bt)sparks(bt[0],bt[1],"#ffb000",20+built*4,1.2);confetti(Math.min(160,30+built*12),null,null,["#ffb000","#ffd27a","#ff7a3d","#fff"]);shake(4+Math.min(8,built),.35);banner(built>1?"+"+built+" tiers":"Tier "+W.zig,"a");draw();updMini()};
+    $("zBuild").onclick=()=>build(1);if($("zMax"))$("zMax").onclick=()=>build(999)};
+  draw()}
 function lifeMult(g){let m=Math.pow(2,lifeMile(g));if(w3().up["u_"+g.k])m*=3;return m}
 function w3Mult(){const W=w3();let m=1;if(W.up.all1)m*=2;if(W.up.all2)m*=2;if(W.up.all3)m*=2;if(W.up.all4)m*=3;m*=1+.1*(W.genes||0);m*=1+.03*W.disc.length;return m}
-function w3Rate(){if(!S||!S.w3)return 0;const m=w3Mult();return LIFE.reduce((a,g)=>a+lifeN(g.k)*g.r*lifeMult(g),0)*m}
+function w3Rate(){if(!S||!S.w3)return 0;const m=w3Mult()*zigBless();return LIFE.reduce((a,g)=>a+lifeN(g.k)*g.r*lifeMult(g),0)*m+zigRate()}
 let w3T=0,w3Acc=0;
 function w3Tick(dt){if(!S||!S.w3||!S.w3.open)return;const r=w3Rate();if(r<=0)return;w3Acc+=r*AMB*dt/60;w3T+=dt;if(w3T<1)return;w3T=0;const v=w3Acc;w3Acc=0;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;S.w3.run=(S.w3.run||0)+v/AMB;dirty=true}
 function w3Offline(){if(!S||!S.w3||!S.w3.open||!S.savedAt)return;const mins=Math.min(480,(Date.now()-S.savedAt)/60000);if(mins<1)return;const v=w3Rate()*mins*AMB;if(v<=0)return;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;S.w3.run=(S.w3.run||0)+v/AMB;dirty=true;setTimeout(()=>banner("Deep Time while you were away +"+fmt(v),"g"),2600)}
@@ -5985,6 +6030,7 @@ function prehistPlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o
   add({k:"guide",n:"Field Guide",sub:w3().disc.length+"/"+GUIDE3.length+" species found",c:"#7a5a3a",x:1500,y:900,w:200,h:130,go:()=>openFieldGuide(closeRoom)});
   add({k:"rock",n:"The Asteroid",verb:"Watch",sub:"Trigger the extinction for Genes",c:"#e2364a",x:2050,y:260,w:150,h:120,bld:0,go:()=>openExtinction(closeRoom)});
   add({k:"tm",n:"Time machine",verb:"Step into the",sub:"Back to the Cosmos",c:"#4fe3ff",x:1140,y:1220,w:120,h:70,bld:0,list:0,go:()=>leaveScene()});
+  add({k:"zig",n:"Amber Ziggurat",verb:"Climb the",sub:zigN()?zigN()+" tiers · "+ambF(zigRate()*AMB)+"/min":"Build a temple that pays forever",c:"#d99a2b",x:1840,y:860,w:240,h:200,go:()=>openZig(closeRoom)});
   sceneGym(L,PH_OK,DW,DH,GYMT.prehist);
   return L}
 const FOSSIL_MKT={k:"fossil",n:"Fossil Market",only:"fossil",steal:.15,fake:.05,box:0,price:1,minBase:0,sell:1.15,grail:0};
