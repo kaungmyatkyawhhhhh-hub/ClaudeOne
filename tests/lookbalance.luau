@@ -1,8 +1,9 @@
 local H = require("./harness")
 local M = H.module("ReplicatedStorage/Shared/Config/Muscles")
 local LB = H.module("ReplicatedStorage/Shared/Config/LookBalance")
+local Bulge = H.module("ReplicatedStorage/Shared/Config/MuscleBulge")
 
-print("Look balance cap")
+print("Look balance cap (inside each group, in studs)")
 local function all(value)
 	local raw = {}
 	for _, muscle in ipairs(M.List) do raw[muscle.id] = value end
@@ -10,68 +11,64 @@ local function all(value)
 end
 local function near(a, b, eps) return math.abs(a - b) <= (eps or 1e-6) end
 
--- level 0 and a balanced body are never capped
+-- level 0 and a balanced body are never capped (whatever each muscle's natural size)
 local shown, info = LB.Apply(all(0))
-local zero = true
-for _, muscle in ipairs(M.List) do zero = zero and shown[muscle.id] == 0 and not info[muscle.id].capped end
-H.check(zero, "level 0: every muscle looks flat, nothing capped")
-
-shown, info = LB.Apply(all(0.6))
-local same = true
-for _, muscle in ipairs(M.List) do same = same and near(shown[muscle.id], 0.6) and not info[muscle.id].capped end
-H.check(same, "a balanced body looks exactly as trained")
-
--- a balanced mass monster isn't capped either (progress, not raw g: every muscle has its own monster size)
-local monster = {}
-for _, muscle in ipairs(M.List) do monster[muscle.id] = M.MonsterG(muscle.id) end
-shown, info = LB.Apply(monster)
-same = true
-for _, muscle in ipairs(M.List) do same = same and near(shown[muscle.id], monster[muscle.id], 1e-4) and not info[muscle.id].capped end
-H.check(same, "a balanced mass monster is not capped")
-
--- only Chest trained: held at Back + 0.20, the hint names Back
-local chestOnly = all(0)
-chestOnly.UpperChest, chestOnly.MidChest = 1, 1
-shown, info = LB.Apply(chestOnly)
-H.check(near(shown.MidChest, 0.2, 1e-3) and near(shown.UpperChest, 0.2, 1e-3), "only Chest maxed: its look is held at Back + 0.20")
-H.check(info.MidChest.capped and info.MidChest.rule.name == "Back", "it shows as capped by Back")
-H.check(not info.Lats.capped and shown.Lats == 0, "the untrained partners stay as they are")
-
--- train Back: Chest's look rises with it (until the next partner, the legs, holds it)
-local last, smooth = LB.Apply(chestOnly).MidChest, true
-for step = 1, 20 do
-	local raw = table.clone(chestOnly)
-	raw.Lats, raw.Rhomboids = step / 40, step / 40 -- Back 0 .. 0.5
-	shown = LB.Apply(raw)
-	if shown.MidChest < last - 1e-9 or shown.MidChest - last > 0.04 then smooth = false end
-	last = shown.MidChest
+local ok = true
+for _, muscle in ipairs(M.List) do ok = ok and shown[muscle.id] == 0 and not info[muscle.id].capped end
+H.check(ok, "level 0: every muscle flat, nothing capped")
+for _, level in ipairs({ 0.3, 1, 1.6 }) do
+	shown, info = LB.Apply(all(level))
+	ok = true
+	for _, muscle in ipairs(M.List) do ok = ok and near(shown[muscle.id], level) and not info[muscle.id].capped end
+	H.check(ok, "a balanced body at look " .. level .. " looks exactly as trained (Lats are not held by Lower Back)")
 end
-H.check(smooth, "as Back is trained, Chest's look rises smoothly (never jumps, never drops)")
-local withBack = table.clone(chestOnly)
-withBack.Lats, withBack.Rhomboids = 1, 1
-shown, info = LB.Apply(withBack)
-H.check(near(shown.MidChest, 0.3, 1e-3) and info.MidChest.rule.name == "Legs", "with Back trained the whole-body rule holds Chest at the legs + 0.30")
 
--- the lowest cap wins, and the rule order doesn't matter (caps come from RAW values)
-local mixed = all(0.3)
-mixed.Biceps, mixed.Forearms, mixed.Quads, mixed.UpperChest = 1, 1, 0.9, 0.8
-local a = LB.Apply(mixed)
-local reversed = {}
-for i = #LB.Rules, 1, -1 do table.insert(reversed, LB.Rules[i]) end
-local saved = LB.Rules
-LB.Rules = reversed
-local b = LB.Apply(mixed)
-LB.Rules = saved
-same = true
-for _, muscle in ipairs(M.List) do same = same and near(a[muscle.id], b[muscle.id]) end
-H.check(same, "the result doesn't depend on the rule order")
--- forearms: arms rule avg(Biceps 1, Triceps 0.3) + 0.25 = 0.9, whole body: legs avg 0.45 + 0.30 = 0.75 -> the lower one
-H.check(near(a.Forearms, 0.75, 1e-3) and near(a.Biceps, 0.5, 1e-3), "each muscle takes the lowest of its caps (Forearms 0.75 by the legs, Biceps 0.5 by Triceps)")
+-- only Upper Chest maxed: held at Mid Chest (0) + 0.15 studs, the hint names Mid Chest
+local upper = all(0)
+upper.UpperChest = 1
+shown, info = LB.Apply(upper)
+local studs = LB.Studs("UpperChest", shown.UpperChest)
+H.check(studs > 0.15 - 1e-6 and studs < 0.15 + LB.Smooth * Bulge.UpperChest + 1e-6, "only Upper Chest maxed: it sticks out about Mid Chest + 0.15 studs")
+H.check(info.UpperChest.capped and info.UpperChest.rule.name == "Mid Chest", "it shows as capped by Mid Chest")
+H.check(not info.MidChest.capped and shown.MidChest == 0, "Mid Chest stays as trained")
 
--- the displayed look is never above the raw look, and the smooth min never snaps
-local never = true
-for _, muscle in ipairs(M.List) do never = never and a[muscle.id] <= mixed[muscle.id] + 1e-9 end
-H.check(never, "the displayed look is never above the trained look")
-H.check(near(LB.SmoothMin(0.1, 0.9, 0.05), 0.1) and near(LB.SmoothMin(0.9, 0.1, 0.05), 0.1)
-	and LB.SmoothMin(0.5, 0.5, 0.05) < 0.5 and LB.SmoothMin(0.5, 0.5, 0.05) > 0.48, "smooth min: the smaller value, blended where they meet")
+-- both chest muscles maxed: no cap; other groups don't matter (Back untrained)
+local chest = all(0)
+chest.UpperChest, chest.MidChest = 1, 1
+shown, info = LB.Apply(chest)
+H.check(near(shown.UpperChest, 1) and near(shown.MidChest, 1) and not info.UpperChest.capped, "both chest muscles maxed: the chest looks full, Back doesn't hold it")
+
+-- only Biceps maxed: held by its smallest groupmate (Triceps / Forearms at 0) + 0.15 studs
+local biceps = all(0)
+biceps.Biceps = 1
+shown, info = LB.Apply(biceps)
+H.check(near(LB.Studs("Biceps", shown.Biceps), 0.15, LB.Smooth * Bulge.Biceps) and info.Biceps.capped, "only Biceps maxed: held at its smallest groupmate + 0.15 studs")
+
+-- big muscles: the ratio rule (x1.5) takes over once the groupmate is big
+local delts = all(0)
+delts.FrontDelts, delts.SideDelts, delts.RearDelts = 1.6, 0.9, 0.9
+shown = LB.Apply(delts)
+local mate = math.min(LB.Studs("SideDelts", 0.9), LB.Studs("RearDelts", 0.9))
+H.check(near(LB.Studs("FrontDelts", shown.FrontDelts), math.max(mate + 0.15, mate * 1.5), LB.Smooth * Bulge.FrontDelts + 1e-6), "Front Delts far ahead: held at max(groupmate + 0.15, groupmate x 1.5) studs")
+
+-- as Mid Chest grows, Upper Chest's held look rises smoothly (never jumps, never drops)
+local last, smooth = LB.Apply(upper).UpperChest, true
+for step = 1, 40 do
+	local raw = table.clone(upper)
+	raw.MidChest = step / 40
+	shown = LB.Apply(raw)
+	if shown.UpperChest < last - 1e-9 or shown.UpperChest - last > 0.08 then smooth = false end
+	last = shown.UpperChest
+end
+H.check(smooth and near(last, 1), "training Mid Chest lifts Upper Chest smoothly to its full look")
+
+-- never above the trained look, and the soft cap is continuous at the cap
+local mixed = all(0.4)
+mixed.Quads, mixed.Lats, mixed.Abs = 1.4, 1.2, 1.1
+shown = LB.Apply(mixed)
+ok = true
+for _, muscle in ipairs(M.List) do ok = ok and shown[muscle.id] <= mixed[muscle.id] + 1e-9 end
+H.check(ok, "the displayed look is never above the trained look")
+H.check(LB.SoftCap(0.5, 0.6, 0.05) == 0.5 and near(LB.SoftCap(0.6, 0.6, 0.05), 0.6) and LB.SoftCap(5, 0.6, 0.05) < 0.65 + 1e-9
+	and LB.SoftCap(0.601, 0.6, 0.05) > 0.6, "soft cap: exact below the cap, eases into it above (no snap)")
 H.done()

@@ -70,8 +70,8 @@ local function checkCaps()
 		local held = heldAt[id]
 		if held and targets[id] > held + 0.03 then lifted[id] = 1 end
 		heldAt[id] = if info[id].capped then targets[id] else nil
-		local by = info[id].raw - info[id].shown
-		if info[id].capped and by > worstBy then worst, worstBy = id, by end
+		local by = info[id].held -- (studs held back)
+		if by > LookBalance.ToastStuds and by > worstBy then worst, worstBy = id, by end
 	end
 	local settings = data.settings or {}
 	if next(lifted) and settings.repFlash ~= "Off" and player.Character then MuscleRig.Flash(player.Character, lifted, false) end

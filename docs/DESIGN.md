@@ -297,12 +297,12 @@ shareable before/after snapshot.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
   look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass
   monster size (muscle_v8 manifest `mass_monster.g`, veins come in with it); past 5x the look stays, the stats keep going.
-- Look balance cap (`Config/LookBalance`; looks only, stats/EXP/leaderboards untouched): a muscle can't look far ahead of
-  its partners (push vs pull, front vs rear delts, biceps vs triceps, core, quads vs hamstrings + glutes, calves, traps,
-  upper vs lower body): its shown look = smooth min(trained look, partners' average + ALLOW), the lowest cap wins, caps
-  from the raw values, compared as progress (so a balanced mass monster is never capped). It drives the meshes, the waist,
-  the widths and the monster stage. The Muscles panel shows a drawn lock and a faint held-back bar segment; hover / tap:
-  "Look capped - train Back to unlock". One toast the first time ever; the rep flash when a cap lifts.
+- Look balance cap (`Config/LookBalance`; looks only, stats/EXP/leaderboards untouched): only INSIDE each muscle group
+  (no cross-group rules). In real bulge studs (`Config/MuscleBulge`): a muscle sticks out at most max(smallest groupmate
+  + 0.15, smallest groupmate x 1.5) studs (MaxGap / MaxRatio), never held below its groupmate's own look level (so a
+  balanced body is never capped), soft-capped so it never snaps. It drives the meshes, the waist, the widths and the
+  monster stage. Muscles panel: a drawn lock, a faint held-back bar segment, hover / tap "Look capped - train Mid Chest to
+  unlock". One toast the first time a muscle is held back by over 0.05 studs; the rep flash when a cap lifts.
 - Default look: shirtless with game shorts; the Wardrobe has Top (Shirtless/Tank/Sports) and shorts colors.
 
 ## 14. Visuals and feel
