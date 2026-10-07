@@ -3950,6 +3950,7 @@ async function copyTransfer(btn){save();const a=accCur(),code=await encodeSave(a
   try{navigator.clipboard.writeText(code).then(done,fallback)}catch(e){fallback()}}
 function accountCard(){return `<div class="sechead"><h3>Account</h3><span class="eyebrow">${ACC?esc(ACC.user):""}</span></div>
   <div class="accrow"><button class="perk nopic" id="accSwap"><span class="t">Switch account</span><span class="d">Sign back in to another account on this device, log in to a different one, or make a new one</span></button>
+  ${ACC&&!ACC.offline?`<button class="perk nopic" id="accRename"><span class="t">Change username</span><span class="d">${unameLeft()>0?"Next change in "+unameWait():"Once a week. You'll log in with the new name"}</span></button>`:""}
   <button class="perk nopic" id="accSwitch"><span class="t">Log out</span><span class="d">Your progress is saved to your account first. Log in on any device with your username and password</span></button>
   ${isAdmin()?`<button class="perk nopic" id="accAdm"><span class="t">🛠 Admin panel</span><span class="d">Change any stat on this account</span></button>`:""}
   <button class="perk nopic" id="accCopy"><span class="t">Copy backup code</span><span class="d">A spare copy of your save, just in case</span></button></div>`}
@@ -3986,7 +3987,7 @@ function adminPanel(q){if(!isAdmin())return;const o=$("overlay");o.hidden=false;
   $("admX").onclick=()=>{o.hidden=true}}
 // an admin gets a 🛠 button in the top bar's button column, out of the way of everything else
 setInterval(()=>{let b=$("admBtn");const on=isAdmin()&&playing;if(on&&!b){const col=document.querySelector(".hudbtns");if(!col)return;b=document.createElement("button");b.id="admBtn";b.className="iconbtn";b.setAttribute("aria-label","Admin panel");b.textContent="🛠";b.onclick=()=>adminPanel();col.insertBefore(b,$("hudMin"))}if(b)b.hidden=!on},700);
-function bindAccount(){const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout();const w=$("accSwap");if(w)w.onclick=()=>switchSheet();const ad=$("accAdm");if(ad)ad.onclick=()=>adminPanel()}
+function bindAccount(){const rn=$("accRename");if(rn)rn.onclick=()=>renameSheet();const c=$("accCopy");if(c)c.onclick=()=>copyTransfer(c);const s=$("accSwitch");if(s)s.onclick=()=>cloudLogout();const w=$("accSwap");if(w)w.onclick=()=>switchSheet();const ad=$("accAdm");if(ad)ad.onclick=()=>adminPanel()}
 
 /* ================= cloud accounts: username + password, one device at a time ================= */
 // Saves are encrypted on the device with a key made from your password (PBKDF2 + AES-GCM),
@@ -4124,12 +4125,32 @@ async function cloudResume(){
   if(!cls.length){SAVE=SAVE0+":c:"+c.h;ACC={user:c.u,h:c.h,key,cls:[],offline:1};return titleMain()}
   const sessP=sessionNow(cls,c.h),r=await newestSave(cls,c.h,key);await afterAuth({user:c.u,h:c.h,key,cls,sessP},r.best);
 }
+// changing your username: the save is stored under a hash of the name and locked with a key made from name + password,
+// so the save is re-locked under the new name and the old name's copy is wiped (no logging into the old name for a duplicate)
+const UNAME_CD=7*864e5,unameLeft=()=>S?(S.unameAt||0)+UNAME_CD-Date.now():0,unameWait=()=>{const l=unameLeft(),d=Math.floor(l/864e5),h=Math.ceil(l%864e5/36e5);return d?d+"d "+h+"h":h+"h"};
+function renameSheet(){if(!ACC||ACC.offline||!ACC.cls.length)return banner("Connect to the internet to change your username","r");if(unameLeft()>0)return banner("You can change your username again in "+unameWait(),"a");
+  const o=$("overlay");o.hidden=false;o.innerHTML=`<div class="sheet"><h2 class="h2"><small>CHANGE USERNAME · ONCE A WEEK</small>Pick a new name.</h2><p class="lede">You're <b>${esc(ACC.user)}</b> now. After the change you log in with the new name and the same password.</p>
+    <label class="accf"><span>New username</span><input id="rnUser" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="3 to 16 letters, numbers or _"></label>
+    <label class="accf"><span>Your password</span><input id="rnPass" type="password" placeholder="To confirm it's you"></label>
+    <p class="fine" id="rnMsg"></p><button class="cta" id="rnGo"><span>Change username</span>${ARROW}</button><button class="cta ghost2" id="rnNo">Cancel</button></div>`;
+  const msg=t=>{$("rnMsg").textContent=t};$("rnNo").onclick=()=>{o.hidden=true;o.innerHTML=""};
+  $("rnGo").onclick=async()=>{const n=$("rnUser").value.trim(),pw=$("rnPass").value,old=ACC.user;
+    if(!userOk(n))return msg("Username: 3 to 16 letters, numbers or _.");if(n.toLowerCase()===old.toLowerCase())return msg("That's already your name.");if(ADMIN_USERS.includes(n.toLowerCase()))return msg("That username is taken.");if(pw.length<4)return msg("Enter your password.");
+    const b=$("rnGo");b.disabled=true;msg("Checking…");try{await cloudUpload();
+      const kOld=await deriveKey(old,pw),r=await newestSave(ACC.cls,ACC.h,kOld);if(r.found&&!r.best){b.disabled=false;return msg("Wrong password.")}
+      const hN=await sha256hex(n.toLowerCase()),taken=await cloudGet(ACC.cls,accTopic(hN,"save"),3000);if(taken.length){b.disabled=false;return msg("That username is taken.")}
+      msg("Moving your save…");const kN=await deriveKey(n,pw),oldH=ACC.h;S.unameAt=Date.now();save();const raw=store.get(SAVE);
+      cloudPut(ACC.cls,accTopic(hN,"save"),await seal(kN,{u:n,t:Date.now(),s:raw}));
+      cloudPut(ACC.cls,accTopic(oldH,"save"),"");cloudPut(ACC.cls,accTopic(oldH,"sess"),"");ACC.cls.forEach(c=>{try{c.unsubscribe(accTopic(oldH,"sess"))}catch(e){}c.__claim=0});
+      const oldKey=SAVE;SAVE=SAVE0+":c:"+hN;store.set(SAVE,raw);store.del(oldKey);try{store.set(ACC_LIST,JSON.stringify(knownAccs().filter(a=>a.h!==oldH)))}catch(e){}
+      ACC.user=n;ACC.h=hN;ACC.key=kN;await cacheSet(n,hN,kN);cloudClaim();o.hidden=true;o.innerHTML="";SFX.level();banner("You're now "+n,"g");try{if(MP)mpSend("p",JSON.stringify(mpState()))}catch(e){}if(room==="home")openRoom("home")}
+    catch(e){console.warn(e);b.disabled=false;msg("Couldn't change it right now. Try again in a moment.")}}}
 function cloudLogout(){cloudUpload().finally(()=>{setTimeout(()=>{store.del(CLOUD_KEY);location.reload()},600)})}
 /* ================= multiplayer: rooms over a public MQTT broker ================= */
-// gifts: the receiver gets at most 10% of their own cash, and you can only send one every 2 ms
-const GIFT_CAP=.1,GIFT_CD=2;let giftAt=0;
+// gifts: the receiver gets at most 10% of their own cash, and you can only send one every 15 seconds (kept in the save, so reloading doesn't reset it)
+const GIFT_CAP=.1,GIFT_CD=15000;
 const giftAmt=to=>Math.round(Math.min(S.cash*.05,to&&isFinite(+to.c)?Math.max(0,+to.c)*GIFT_CAP:Infinity));
-function giftReady(){const n=performance.now();if(n-giftAt<GIFT_CD)return false;giftAt=n;return true}
+function giftReady(){const n=Date.now(),left=(S.giftAt||0)+GIFT_CD-n;if(left>0&&left<=GIFT_CD){banner("You can send another gift in "+Math.ceil(left/1000)+"s","a");return false}S.giftAt=n;dirty=true;return true}
 // Everyone in a room sees each other walk around town, chats, emotes and can send gifts.
 // Each player keeps their own save; the broker only relays small messages.
 const MP_BROKERS=["wss://broker.hivemq.com:8884/mqtt","wss://broker.emqx.io:8084/mqtt","wss://test.mosquitto.org:8081/mqtt"];
@@ -5466,7 +5487,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=87,WN=[
+const WN_VER=88,WN=[
+ ["🪪","New username, same you","You can now change your username once a week from the Account section in your Apartment. Gifts to friends now have a 15 second cooldown.","2026-10-07T13:00"],
  ["🎨","A calmer, cleaner look","Messages are now small notes instead of giant headlines (the big ones are saved for level ups, achievements and other milestones), confetti is saved for moments that earn it, characters wait their turn to talk, and the HUD panels are solid and crisp.","2026-10-07T12:00"],
  ["🕴️","The Vince Saga","Vince wants every world for himself. A new ten-chapter story takes you from your first sale to the Frontier: beat his challenges, outsell him, open each world before he buys it, race his ghost down the Frontier Road and win the final flip. Each chapter pays out, and finishing it earns the Mogul medal. Tap the purple Story pill to follow it.","2026-10-07T11:00"],
  ["🛣️","Life on the Frontier Road","The road to World 4 is busy now: give hitchhikers a lift, fix broken-down trucks, walk lost dogs to Rusty's, answer the toll troll's riddles, catch golden tumbleweeds, snack at the Farm Stand, and race the road for medals at the Race Office (friends show up on the leaderboard).","2026-10-07T10:30"],
