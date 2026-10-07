@@ -206,6 +206,9 @@ First Growth Spurt should be reachable in ~15-20 minutes.
   body: Chest, Core, Legs on the camera's left, Shoulders, Back, Arms on its right. A maxed group shows its EXP like any
   other (no "Max" text). Compact (the whole set about 40% of the screen height), the same size on screen at any camera distance, stable
   while walking/jumping, never hidden behind walls, never over a machine's "E / Use" prompt.
+  The labels lean a little with the camera's turn speed (yaw up to ~12 degrees, pitch ~8, half on phones, none with
+  Reduced Motion) on a spring that settles flat; faked in 2D (the backing narrows and shades, box and text shift) so the
+  text never rotates or blurs. Left and right columns lean opposite ways.
 - While the labels are shown, a small **Muscles** button sits at the bottom center (above the machine panel while
   lifting). It opens the "Your muscles" panel.
 - **"Your muscles" panel:** title, Growth Spurt bar + height + "x/6 groups at level y · gains x1.50 after", six group

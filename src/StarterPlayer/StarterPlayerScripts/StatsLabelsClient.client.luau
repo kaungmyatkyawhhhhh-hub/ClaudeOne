@@ -10,6 +10,7 @@
 --    step off a shown ProximityPrompt ("E / Use"), the Growth Spurt bar and the machine panel.
 --  * Steps aside (keeps its on/off state) while the menu, genetics, the Muscles panel or any other full panel is open,
 --    and in first person.
+--  * 3D tilt: each label leans a little with the camera's turn speed (see TILT), faked in 2D so the text stays sharp.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
@@ -98,11 +99,13 @@ local function box(name, width, height, numberSize)
 	local holder = New("Frame", { Name = "Holder", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 3, Parent = frame })
 	holder.LayoutOrder = -1
 	local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(width, height), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 3, Parent = holder }, { New("UICorner", { CornerRadius = UDim.new(0, 5) }) })
+	-- (the tilt shades the backing lighter toward one edge; a transparency-only gradient, no color)
+	local shade = New("UIGradient", { Name = "TiltShade", Enabled = false, Parent = back })
 	local title = Theme.Text({ Name = "Name", LayoutOrder = 1, Text = name, Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 15), ZIndex = 4, Parent = content })
 	local number = Theme.Text({ Name = "Number", LayoutOrder = 2, Text = "0", Font = "Regular", TextSize = numberSize, TextColor3 = Colors.StatNumber, Size = UDim2.new(1, 0, 0, Theme.TextSize[numberSize] + 2), ZIndex = 4, Parent = content })
 	Theme.TextShadow(title)
 	Theme.TextShadow(number)
-	return { frame = frame, title = title, number = number, back = back, holder = holder }
+	return { frame = frame, title = title, number = number, back = back, holder = holder, content = content, shade = shade }
 end
 
 local labels = {} -- the six group labels, in GROUPS order
@@ -125,7 +128,7 @@ local function fitBacking(entry)
 	local w = (math.max(entry.title.TextBounds.X, entry.number.TextBounds.X) + 12) * 1.5
 	local h = entry.title.AbsoluteSize.Y + entry.number.AbsoluteSize.Y + 2
 	entry.back.Size = UDim2.fromOffset(w, h)
-	entry.backWidth = w
+	entry.backWidth, entry.backHeight = w, h
 end
 local function fitAll()
 	for _, entry in ipairs(labels) do fitBacking(entry) end
@@ -412,6 +415,74 @@ local function setLine(line, a, b)
 	line.Rotation = math.deg(math.atan2(delta.Y, delta.X))
 end
 
+------------------------------------------------------------------------
+-- 3D tilt: each label leans a little with the camera's turn speed (turning left/right: up to Yaw degrees on the vertical
+-- axis; tilting up/down: up to Pitch degrees on the horizontal axis; half on phones, none with Reduced Motion), on a spring
+-- that lags behind, overshoots a touch and settles flat when the camera stops. Left and right columns lean opposite ways,
+-- like panels on a curve around you. Faked in 2D so the text stays pixel-sharp (text is never rotated or scaled): the
+-- backing narrows on the tilt axis and shades lighter toward one edge, and the box and its text shift a few px (parallax).
+------------------------------------------------------------------------
+local TILT = {
+	Yaw = 12, Pitch = 8,                -- max degrees
+	YawGain = 0.09, PitchGain = 0.08,   -- degrees of tilt per degree/second of camera turn
+	Stiffness = 70, Damping = 8.5,      -- the spring (under-damped: a small overshoot)
+	Squeeze = 0.45,                     -- how much the backing narrows (x sin of the angle)
+	Shade = 1.4,                        -- how strongly one edge fades (x sin of the angle)
+	Parallax = 14, TextParallax = 5,    -- px the box / its text shift at sin = 1
+}
+local cameraLast = nil
+local turn = { yaw = 0, pitch = 0 } -- the camera's turn speed this frame, degrees per second
+local function updateTurn(dt)
+	local look = camera.CFrame.LookVector
+	local yaw = math.deg(math.atan2(-look.X, -look.Z))
+	local pitch = math.deg(math.asin(math.clamp(look.Y, -1, 1)))
+	if cameraLast and dt > 0 then
+		turn.yaw = ((yaw - cameraLast.yaw + 540) % 360 - 180) / dt
+		turn.pitch = (pitch - cameraLast.pitch) / dt
+	else
+		turn.yaw, turn.pitch = 0, 0
+	end
+	cameraLast = { yaw = yaw, pitch = pitch }
+end
+
+local tilts = {}
+-- the spring-driven tilt of one label; side = +1 (left column) / -1 (right column)
+local function tiltFor(key, side, dt)
+	local s = tilts[key]
+	if not s then
+		s = { yaw = 0, pitch = 0, vYaw = 0, vPitch = 0 }
+		tilts[key] = s
+	end
+	local amount = if GuiService.ReducedMotionEnabled then 0 elseif wantSmall() then 0.5 else 1
+	dt = math.min(dt, 1 / 30)
+	local wantYaw = math.clamp(-turn.yaw * TILT.YawGain * side, -TILT.Yaw, TILT.Yaw) * amount
+	local wantPitch = math.clamp(turn.pitch * TILT.PitchGain, -TILT.Pitch, TILT.Pitch) * amount
+	s.vYaw += ((wantYaw - s.yaw) * TILT.Stiffness - s.vYaw * TILT.Damping) * dt
+	s.yaw += s.vYaw * dt
+	s.vPitch += ((wantPitch - s.pitch) * TILT.Stiffness - s.vPitch * TILT.Damping) * dt
+	s.pitch += s.vPitch * dt
+	return s.yaw, s.pitch
+end
+
+-- shows a tilt on a label's backing and text; returns the parallax offset for the whole label (px)
+local function applyTilt(entry, yaw: number, pitch: number): Vector2
+	local sy, sp = math.sin(math.rad(yaw)), math.sin(math.rad(pitch))
+	local w, h = entry.backWidth, entry.backHeight
+	if w and h then
+		entry.back.Size = UDim2.fromOffset(math.floor(w * (1 - math.abs(sy) * TILT.Squeeze) + 0.5), math.floor(h * (1 - math.abs(sp) * TILT.Squeeze) + 0.5))
+	end
+	local k = math.clamp(math.sqrt(sy * sy + sp * sp) * TILT.Shade, 0, 0.6)
+	if k > 0.01 then
+		entry.shade.Enabled = true
+		entry.shade.Rotation = math.deg(math.atan2(sp, sy))
+		entry.shade.Transparency = NumberSequence.new(0, k)
+	elseif entry.shade.Enabled then
+		entry.shade.Enabled = false
+	end
+	entry.content.Position = UDim2.fromOffset(math.floor(sy * TILT.TextParallax + 0.5), math.floor(-sp * TILT.TextParallax + 0.5))
+	return Vector2.new(sy * TILT.Parallax, -sp * TILT.Parallax)
+end
+
 local body = { top = 2.6, bottom = 3, half = 1.6, headUp = 2.2 } -- studs from the root part, refreshed every second
 local function measure(character)
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -427,6 +498,7 @@ local function measure(character)
 end
 
 local function place(dt)
+	updateTurn(dt)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local head = character and character:FindFirstChild("Head")
@@ -488,6 +560,8 @@ local function place(dt)
 			if side == "Left" then at = Vector2.new(math.min(at.X, bodyEdge), at.Y) else at = Vector2.new(math.max(at.X, bodyEdge), at.Y) end
 			at = Vector2.new(math.clamp(at.X, LAYOUT.Margin, math.max(LAYOUT.Margin, view.X - LAYOUT.Margin - size.Width)), at.Y) -- (and always on screen)
 			lastBottom = at.Y + size.Height + entry.extra
+			local tiltYaw, tiltPitch = tiltFor(entry, side == "Left" and 1 or -1, dt)
+			at += applyTilt(entry, tiltYaw, tiltPitch)
 			entry.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
 			for subIndex, sub in ipairs(entry.subs) do
 				local show = entry.extra > subIndex * SUB_HEIGHT * 0.5
@@ -513,7 +587,7 @@ local function place(dt)
 				entry.line.Visible = true
 				entry.dot.Position = UDim2.fromOffset(dot.X, dot.Y)
 				-- the line meets a short horizontal segment under the label (like the reference)
-				local textW = entry.backWidth or size.Width
+				local textW = entry.back.Size.X.Offset > 0 and entry.back.Size.X.Offset or (entry.backWidth or size.Width)
 				local x0 = at.X + (size.Width - textW) / 2
 				local x1 = x0 + textW
 				local baseY = at.Y + size.Height + 1
@@ -537,13 +611,18 @@ local function place(dt)
 	rowY = math.max(rowY, topLimit)
 	rowY += clearOf(rowX, rowY, rowX + rowWidth, rowY + size.TopHeight, rects, topLimit, bottomLimit)
 	local at = spring(strength.frame, Vector2.new(rowX, rowY), dt, 7)
-	strength.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
-	stamina.frame.Position = UDim2.fromOffset(math.floor(at.X + size.TopWidth + LAYOUT.Gap + 0.5), math.floor(at.Y + 0.5))
+	local strengthYaw, strengthPitch = tiltFor(strength, 1, dt)
+	local staminaYaw, staminaPitch = tiltFor(stamina, -1, dt)
+	local strengthAt = at + applyTilt(strength, strengthYaw, strengthPitch)
+	local staminaAt = at + applyTilt(stamina, staminaYaw, staminaPitch)
+	strength.frame.Position = UDim2.fromOffset(math.floor(strengthAt.X + 0.5), math.floor(strengthAt.Y + 0.5))
+	stamina.frame.Position = UDim2.fromOffset(math.floor(staminaAt.X + size.TopWidth + LAYOUT.Gap + 0.5), math.floor(staminaAt.Y + 0.5))
 	for _, top in ipairs({ strength, stamina }) do
-		local w = top.backWidth or size.Width
+		local w = top.back.Size.X.Offset > 0 and top.back.Size.X.Offset or (top.backWidth or size.Width)
 		local cx = top.frame.AbsolutePosition.X - layer.AbsolutePosition.X + size.Width / 2
-		if top == strength then cx = at.X + size.TopWidth / 2 else cx = at.X + size.TopWidth + LAYOUT.Gap + size.Width / 2 end
-		top.tail.Position = UDim2.fromOffset(math.floor(cx + 0.5), math.floor(at.Y + size.TopHeight + 1))
+		local shownAt = if top == strength then strengthAt else staminaAt
+		if top == strength then cx = shownAt.X + size.TopWidth / 2 else cx = shownAt.X + size.TopWidth + LAYOUT.Gap + size.Width / 2 end
+		top.tail.Position = UDim2.fromOffset(math.floor(cx + 0.5), math.floor(shownAt.Y + size.TopHeight + 1))
 		top.tail.Size = UDim2.fromOffset(w, 1)
 	end
 end
@@ -565,6 +644,8 @@ local function update()
 		refreshSubs()
 		if player.Character then measure(player.Character) end
 		table.clear(current)
+		table.clear(tilts)
+		cameraLast = nil
 		gui.Enabled = true
 		if not renderConnection then renderConnection = RunService.RenderStepped:Connect(place) end
 		place(0)
