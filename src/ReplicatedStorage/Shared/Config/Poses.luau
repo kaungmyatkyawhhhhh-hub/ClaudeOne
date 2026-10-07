@@ -63,6 +63,8 @@ local Poses = {
 		body = CFrame.lookAt(Vector3.new(0, 2.1, 0), Vector3.new(0, 3.1, 0), Vector3.new(0, 0, 1)),
 		exit = Vector3.new(3, 0, 0), follow = "None",
 	},
+	-- Treadmill: on the belt (its top 0.69 above the floor), facing the console (local -Z); off behind it.
+	Run = { kind = "Stand", position = Vector3.new(0, 0.69, 0.3), yaw = 0, exit = Vector3.new(0, 0, 4.5), follow = "None" },
 	SledPush = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	LegRaise = { kind = "Hang", position = Vector3.new(0, 0, 0), barHeight = 9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 }

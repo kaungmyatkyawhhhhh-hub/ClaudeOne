@@ -76,6 +76,14 @@ Machines.TierSets = {
 		{ 35, { 35 }, "+35" }, { 45, { 45 }, "+45" }, { 55, { 55 }, "+55" }, { 70, { 55, 10, 5 }, "+70" },
 		{ 80, { 55, 25 }, "+80" }, { 90, { 55, 35 }, "+90" }, { 100, { 55, 45 }, "+100" },
 	}, "Bodyweight"),
+	-- Treadmill: speeds instead of weights (weight = mph, unit shown instead of "lb").
+	Treadmill = (function()
+		local rows = {}
+		for i = 1, 12 do rows[i] = { i + 1, {} } end
+		local set = tierSet(rows, "Walk")
+		for _, tier in ipairs(set) do tier.unit = "mph" end
+		return set
+	end)(),
 	-- Cable stacks and dumbbell-style moves: lighter numbers, same progression.
 	Cable = tierSet({
 		{ 10, {} }, { 20, { 10 } }, { 30, { 25, 5 } }, { 40, { 35, 5 } }, { 50, { 45, 5 } }, { 60, { 55, 5 } },
@@ -98,8 +106,9 @@ function Machines.LiftTier(machine, progress, mainLevel)
 	return math.min(progress and progress.selected or 1, Machines.UsableTier(machine, progress, mainLevel))
 end
 
--- Text for a weight ("135 lb", "BW", "+25 lb").
+-- Text for a weight ("135 lb", "BW", "+25 lb", "6 mph").
 function Machines.WeightText(tier)
+	if tier.unit then return tier.weight .. " " .. tier.unit end
 	if tier.label then return tier.label == "BW" and "Bodyweight" or (tier.label .. " lb") end
 	return tier.weight .. " lb"
 end
@@ -164,7 +173,18 @@ Machines.List = {
 		muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.2 }, { id = "Calves", share = 0.13 } },
 		tiers = Machines.TierSets.Sled, staminaCost = 6,
 	},
+	-- Treadmill (2 in the starter gym's cardio corner): running uses no stamina (it keeps refilling, so it's something to do
+	-- between sets), a little leg EXP (gainScale: well below a real leg machine, so it never beats lifting), normal coins,
+	-- and the distance counts toward the Cardio King title (Machines.Cardio). load = the belt (no plates).
+	{
+		id = "Treadmill", name = "Treadmill", gym = "Starter", pose = "Run", load = "Belt", layout = "Center",
+		muscles = { { id = "Quads", share = 1 }, { id = "Hamstrings", share = 0.3 }, { id = "Calves", share = 0.13 } },
+		tiers = Machines.TierSets.Treadmill, staminaCost = 0, gainScale = 0.35,
+	},
 }
+
+-- Cardio: the in-game distance per treadmill rep is the speed (mph) x MetersPerMph; Cardio King needs KingMeters in total.
+Machines.Cardio = { MetersPerMph = 2, KingMeters = 10000, BeltScroll = 1.2 } -- BeltScroll: belt texture studs/s per mph
 
 -- Pro gym (opens at Growth Spurt 2). Built from code by ProGymService; every one carries its plates on a
 -- weight stack ("Bar" part, centered layout) and the lifter's hands stay free (pose follow = "None").

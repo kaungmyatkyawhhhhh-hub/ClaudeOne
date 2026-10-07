@@ -424,6 +424,42 @@ POSE_ANIMS.Woodchop = function(character, d, jitter)
 end
 
 -- Sled push (winter): leaning into the sled's handles, legs driving in a lunge that switches each rep.
+-- Treadmill belts: while someone runs on one (the machine's UserId attribute), its slats slide back along the belt at the
+-- tier's speed and wrap around (client only, looks only).
+task.spawn(function()
+	local CollectionService = game:GetService("CollectionService")
+	local offsets = {} -- [model] = studs travelled
+	RunService.Heartbeat:Connect(function(dt)
+		for _, model in ipairs(CollectionService:GetTagged("Machine")) do
+			if model:GetAttribute("MachineId") ~= "Treadmill" or not model:GetAttribute("UserId") then continue end
+			local belt, slats = model:FindFirstChild("Belt"), model:FindFirstChild("Slats")
+			local tier = Machines.ById.Treadmill.tiers[model:GetAttribute("Tier") or 1]
+			if not (belt and slats and tier) then continue end
+			local length = belt.Size.Z
+			offsets[model] = ((offsets[model] or 0) + dt * tier.weight * Machines.Cardio.BeltScroll) % length
+			for i, slat in ipairs(slats:GetChildren()) do
+				local z = ((i - 1) * length / #slats:GetChildren() + offsets[model]) % length - length / 2
+				slat.CFrame = belt.CFrame * CFrame.new(0, belt.Size.Y / 2 + slat.Size.Y / 2, z)
+			end
+		end
+	end)
+end)
+
+-- Treadmill run: one stride per rep (d 0 -> 1 -> 0), legs and arms swinging in opposite pairs, a small bounce. The body
+-- stays on the belt (only the joints move; the root bobs up and down).
+POSE_ANIMS.Run = function(character, d, jitter)
+	local s = d * 2 - 1 -- -1 .. 1: which leg is forward
+	setJoint(character, "Root", CFrame.new(0, 0.12 * math.abs(s), 0) * Angles(-rad(6), 0, 0))
+	for _, side in ipairs(SIDES) do
+		local swing = s * side[2]
+		setJoint(character, side[1] .. "Hip", Angles(rad(38) * swing + rad(10), 0, 0))
+		setJoint(character, side[1] .. "Knee", Angles(-rad(20 + 45 * math.max(-swing, 0)), 0, 0))
+		setJoint(character, side[1] .. "Ankle", Angles(rad(10) * swing, 0, 0))
+		setJoint(character, side[1] .. "Shoulder", Angles(-rad(35) * swing + jitter, 0, -side[2] * rad(6)))
+		setJoint(character, side[1] .. "Elbow", Angles(rad(85), 0, 0))
+	end
+end
+
 POSE_ANIMS.SledPush = function(character, d, jitter)
 	setJoint(character, "Root", CFrame.new(0, -0.3, 0) * Angles(-rad(35), 0, 0))
 	frontArms(character, rad(80) + jitter, rad(10), rad(20 + 25 * d), 0)
@@ -1136,7 +1172,7 @@ local function refreshTier()
 	local locked = viewTier > unlocked or not levelOk
 	weightNumber.Text = tier.label or tostring(tier.weight)
 	weightNumber.TextColor3 = locked and Colors.Muted or Colors.Text
-	tierLabel.Text = (tier.weight > 0 and "lb · " or "") .. "tier " .. viewTier .. " of " .. #machine.tiers
+	tierLabel.Text = (if tier.unit then tier.unit .. " · " elseif tier.weight > 0 then "lb · " else "") .. "tier " .. viewTier .. " of " .. #machine.tiers
 	setStepButton(minusButton, viewTier > 1)
 	setStepButton(plusButton, viewTier < maxView)
 	drawBarbell(tier)

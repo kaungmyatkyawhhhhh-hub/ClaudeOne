@@ -21,7 +21,7 @@ local SeasonService = require(script.Parent.SeasonService)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme) -- bumper plate colors
 
 -- Bars sit loaded when nobody is using them (a mix, so the gym shows every plate color).
-local DISPLAY_TIERS = { FlatBench = 7, InclineBench = 5, OverheadPress = 4, SquatRack = 9, Deadlift = 8, BarbellRow = 6, PullUpBar = 3, CrunchBench = 3 }
+local DISPLAY_TIERS = { Treadmill = 1, FlatBench = 7, InclineBench = 5, OverheadPress = 4, SquatRack = 9, Deadlift = 8, BarbellRow = 6, PullUpBar = 3, CrunchBench = 3 }
 local function displayTier(machine)
 	return machine.tiers[math.min(DISPLAY_TIERS[machine.id] or 5, #machine.tiers)]
 end
@@ -384,7 +384,8 @@ local function lift(player)
 	if not data then return end
 
 	local machine = session.machine
-	if not PlayerData.UseStamina(player, machine.staminaCost) then
+	-- (cardio costs nothing and doesn't pause the refill: UseStamina would reset its delay)
+	if machine.staminaCost > 0 and not PlayerData.UseStamina(player, machine.staminaCost) then
 		Remotes.RepResult:FireClient(player, { noStamina = true })
 		return
 	end
@@ -409,6 +410,9 @@ local function lift(player)
 	end
 	local coins = math.max(1, math.floor(tier.coins * BoostService.Coins(player) + 0.5))
 	PlayerData.AddCoins(player, coins)
+	if tier.unit == "mph" then -- the treadmill: the distance run (Cardio King)
+		PlayerData.SetStat(player, "cardioMeters", (data.stats.cardioMeters or 0) + tier.weight * Machines.Cardio.MetersPerMph)
+	end
 	TitleService.OnRep(player)
 	QuestService.OnRep(player, machine.id)
 	SocialService.OnRep(player, machine.id)

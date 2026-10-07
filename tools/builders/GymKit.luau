@@ -732,6 +732,24 @@ function GymKit.treadmill(parent, cframe, pro)
 	return m
 end
 
+-- The treadmill MACHINE (Config.Machines Treadmill): the cardio treadmill, tagged as a machine, with the Use prompt on the
+-- console and thin slats on the belt ("Slats" folder) that MachineClient slides along while someone runs.
+function GymKit.Treadmill(parent, pivot)
+	local shell, machine = machineShell(parent, "Treadmill", pivot)
+	local m = GymKit.treadmill(shell, pivot)
+	for _, part in ipairs(m:GetChildren()) do part.Parent = shell end
+	m:Destroy()
+	local belt = shell:FindFirstChild("Belt")
+	local slats = Instance.new("Folder")
+	slats.Name = "Slats"
+	slats.Parent = shell
+	for i = 0, 6 do
+		p(slats, "Slat", Vector3.new(1.86, 0.012, 0.1), belt.CFrame * CFrame.new(0, 0.031, -2.8 + i * 0.8), hex("#2E2E33"), M.Rubber)
+	end
+	promptOn(shell:FindFirstChild("Console"), machine)
+	return shell
+end
+
 function GymKit.bike(parent, cframe)
 	local m = model(parent, "Bike", cframe)
 	p(m, "BaseFront", Vector3.new(1.8, 0.2, 0.35), cframe * CFrame.new(0, 0.1, -1.5), C.Frame, M.Metal, true)

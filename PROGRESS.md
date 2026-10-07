@@ -44,6 +44,11 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
   Persistent Models (were Folders; the builders make Models too).
 
+- **Treadmill (8 Oct, overnight):** 2 of the 3 cardio-corner treadmills in the starter gym are machines (`Config/Machines`
+  Treadmill: speeds 2-13 mph as tiers, no stamina cost, gainScale 0.35, Quads + Hamstrings + a light touch of Calves under
+  GoalShare); belt slats slide while running (MachineClient), run animation `POSE_ANIMS.Run`, distance in
+  `stats.cardioMeters` (speed x `Machines.Cardio.MetersPerMph` per rep), title "Cardio King" at `Cardio.KingMeters` (10 km).
+  Built with `GymKit.Treadmill` (Gyms builder updated).
 - **Gym fits (8 Oct, overnight):** 6 classic-Shirt tops x 4 colors in the Gear and Fits store (new cosmetics slot "Fit",
   `Config/Cosmetics` Fits + FitTemplates, prices 150-400 coins), worn from the Wardrobe; `CosmeticService` puts a Shirt
   "GymArcFit" on the character, the muscles wear it. Images drawn by `tools/clothing_templates.ps1` into

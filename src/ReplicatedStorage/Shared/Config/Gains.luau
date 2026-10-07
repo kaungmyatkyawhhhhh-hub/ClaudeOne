@@ -60,7 +60,7 @@ function Gains.PerRep(data, machine, tierIndex, boost, quality)
 	for _, entry in ipairs(machine.muscles) do
 		local multiplier = math.min(Genetics.GetMultiplier(data.genetics, entry.id) * shared * MuscleOfTheDay.MultiplierFor(entry.id), Gains.MaxMultiplier)
 		local diminish = 1 / (1 + data.muscles[entry.id].level / Gains.DiminishLevel)
-		result[entry.id] = Gains.BaseXp * tier.gains * entry.share * multiplier * diminish * (quality or 1)
+		result[entry.id] = Gains.BaseXp * tier.gains * entry.share * multiplier * diminish * (quality or 1) * (machine.gainScale or 1)
 	end
 	return result
 end
