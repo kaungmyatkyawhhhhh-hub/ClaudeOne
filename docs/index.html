@@ -5282,12 +5282,12 @@ function bindGarage(redraw){const cv=$("garCv");if(cv){const g=cv.getContext("2d
 
 /* ================= world leaderboard: every player's best, kept on the broker ================= */
 const LBT="fliprush/v1/lb/";let lbPushT=20,GLB=null,glbK="nw";
-function lbMine(){return{n:mpName(),nw:Math.round(netWorth()),lv:repLevel(),pr:S.pr,f:Math.round(S.fans||0),cm:S.height||170,t:Date.now()}}
+function lbMine(){return{n:mpName(),nw:Math.round(netWorth()),lv:repLevel(),pr:S.pr,f:Math.round(S.fans||0),cm:S.height||170,el:Math.round(S.elo||1000),ar:Object.values(S.arcBest||{}).reduce((a,b)=>a+(+b||0),0),t:Date.now()}}
 function lbTick(dt){if(!ACC||!ACC.cls||!ACC.cls.length||ACC.kicked)return;lbPushT-=dt;if(lbPushT>0)return;lbPushT=300;try{cloudPut(ACC.cls,LBT+ACC.h,JSON.stringify(lbMine()))}catch(e){}}
 function lbFetch(){return new Promise(async res=>{let cls=ACC&&ACC.cls&&ACC.cls.length?ACC.cls:null,own=false;if(!cls){try{cls=await cloudConnect();own=true}catch(e){cls=[]}}if(!cls.length)return res(null);
   const seen={};const h=(tp,buf)=>{if(!tp.startsWith(LBT))return;try{const d=JSON.parse(buf.toString());const id=tp.slice(LBT.length);if(d&&typeof d.n==="string"&&d.nw>=0&&isFinite(d.nw)&&(!seen[id]||seen[id].t<d.t))seen[id]={...d,id}}catch(e){}};
   cls.forEach(c=>{c.on("message",h);c.subscribe(LBT+"#",{qos:0})});setTimeout(()=>{cls.forEach(c=>{c.removeListener("message",h);try{c.unsubscribe(LBT+"#")}catch(e){}if(own)try{c.end(true)}catch(e){}});res(Object.values(seen).filter(d=>Date.now()-d.t<60*864e5))},3200)})}
-const GLBM=[["nw","Net worth",d=>d.nw,fmt],["lv","Level",d=>d.lv||0,v=>"Lv "+v],["pr","Max lift",d=>d.pr||20,v=>v+" kg"],["f","Fans",d=>d.f||0,fmtN],["cm","Height",d=>d.cm||170,v=>v+" cm"]];
+const GLBM=[["nw","Net worth",d=>d.nw,fmt],["lv","Level",d=>d.lv||0,v=>"Lv "+v],["pr","Max lift",d=>d.pr||20,v=>v+" kg"],["f","Fans",d=>d.f||0,fmtN],["cm","Height",d=>d.cm||170,v=>v+" cm"],["el","Duel rating",d=>d.el||1000,v=>dlTier(v)[2]+" "+v],["ar","Arcade",d=>d.ar||0,v=>fmtN(v)+" pts"]];
 function openWorldLB(back){room="worldlb";
   const draw=()=>{const M_=GLBM.find(x=>x[0]===glbK),me=ACC&&ACC.h;let rows=GLB?GLB.slice():null;if(rows){const mine=lbMine();rows=rows.filter(r=>r.id!==me);rows.push({...mine,id:me,me:1});rows.sort((a,b)=>M_[2](b)-M_[2](a))}
     const myRank=rows?rows.findIndex(r=>r.me)+1:0;
