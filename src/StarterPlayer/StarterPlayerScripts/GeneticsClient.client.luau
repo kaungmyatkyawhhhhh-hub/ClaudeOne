@@ -1,22 +1,22 @@
 -- GeneticsClient: the genetics reveal (first join) and reroll screen.
 -- A small dark 3D stage of its own, far above the town (this client only), seen by the real camera (Scriptable, restored
--- on close), so the plates are truly 3D: real lights (a warm key from the top left with shadows, a soft fill from the
--- right, a cool rim from behind on the plate edges), SurfaceGui letters on the faces, the bar on a stand on a dark floor.
+-- on close), so the plates are truly 3D and cast real shadows: a warm key light from the top left (Shadows on; the bar,
+-- plates, collar and overall plate cast shadows), a soft fill from the right, a cool rim from behind on the plate edges.
+-- The bar lies low over a dark matte floor (the biggest plates almost touch it) and soft contact shadows under the plates
+-- and the overall plate keep them grounded even where the device renders no real shadows. No stands, no pedestal.
 -- The camera looks from a 3/4 angle (about 35 degrees off the bar's side, slightly above) and drifts a little.
---  * The bar carries a thin, soft DNA helix of light, slowly turning; faint DNA dust and soft helix shapes drift behind.
+--  * The bar carries a thin, soft DNA helix of light, slowly turning. The background is plain dark.
 --  * Plates are rubber bumper plates (stepped bevel edge, raised rim, inset ring, chrome hub, the grade letter printed on
 --    the face). They slide onto the sleeve about 0.2s apart, best grade first (so it ends up innermost), each with a
---    clank; S plates get a quick shine sweep. A collar closes the sleeve, two or more S show a short BLESSED slam, and
---    the overall grade drops in as a bigger matching plate on a stand next to the bar. The whole reveal is under 3s;
---    a tap (or Space) skips to the end.
---  * Under each plate its multiplier ("x1.50 gains") in the grade color; tap / hover one for what it means. Frame and
---    body type are two cards. Reroll (shows its cost) replays the reveal: plates that got better show a green arrow,
---    worse ones a gray one; a good roll asks before it is replaced.
+--    clank; S plates get a quick shine sweep. A collar closes the sleeve and the overall grade drops in as a bigger
+--    matching plate standing on the floor next to the bar. The whole reveal is under 3s; a tap (or Space) skips.
+--  * One clean row of labels under the bar: group name (gray), grade letter tag (the only color) and multiplier
+--    ("x1.50", white); tap / hover one for what it means. Frame and body type are two cards. Reroll (shows its cost)
+--    replays the reveal: plates that got better show a green arrow, worse ones a gray one; a good roll asks first.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ContextActionService = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
-local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -47,13 +47,14 @@ local HERO = { Thickness = 0.9, Diameter = 3.2, Hub = 0.9 }
 -- Along the bar's own X axis: grip on the left, the inner collar at 0, plates from SlotStart outward, sleeve end.
 local BAR = { GripStart = -3.8, SlotStart = 0.15, SleeveEnd = 4.5, Yaw = math.rad(-35) }
 local BAR_CF = STAGE_CF * CFrame.new(0.6, 0, 0) * CFrame.Angles(0, BAR.Yaw, 0) -- sleeve end turned toward the camera
-local HERO_CF = STAGE_CF * CFrame.new(-5.4, 0.15, 0.6) * CFrame.Angles(0, math.rad(-70), 0) -- face toward the camera
+local FLOOR_Y = -PLATE.Diameter.S / 2 - 0.04 -- the floor's top: an S plate (the biggest) almost touches it
+local HERO_CF = STAGE_CF * CFrame.new(-5.4, FLOOR_Y + HERO.Diameter / 2, 0.6) * CFrame.Angles(0, math.rad(-70), 0) -- on its rim on the floor, facing the camera
 -- a 3/4 view: about 35 degrees off the bar's side (BAR.Yaw), slightly from above, drifting a little so the light moves
 local CAMERA = { Fov = 30, Pitch = math.rad(12), Drift = math.rad(2.5), DriftSpeed = 0.35 }
 local HELIX = { Color = Color3.fromHex("#BFE3FF"), Radius = 0.3, Turns = 2.4, Points = 60, Speed = 0.55, Width = 0.045, Transparency = 0.35 }
 local CHROME = Color3.fromHex("#D6D8DE")
+local KEY_LIGHT = { Brightness = 3.4, Range = 32, Angle = 55, Color = Color3.fromHex("#FFE2C2") }
 local ROOM = Color3.fromHex("#050507")
-local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 local WORDS = { S = "Genetic Freak", A = "Blessed", B = "Gifted", C = "Average", D = "Hardgainer" }
 local FLIP_PITCH = { S = 0.85, A = 0.92, B = 1, C = 1.06, D = 1.12 }
 local PLURAL = { Shoulders = true, Arms = true, Legs = true }
@@ -241,14 +242,6 @@ local wordLabel = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "L
 Theme.TextShadow(overallLabel)
 Theme.TextShadow(wordLabel)
 
--- Big moments: the "S!" slam and the BLESSED banner (text over the stage, never a window)
-local function slamText(text, size, color)
-	local label = Theme.Text({ Text = text, Font = "SemiBold", TextSize = size, TextColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(600, Theme.TextSize[size] + 20), ZIndex = 6, Parent = labelLayer })
-	Theme.TextShadow(label, 0.3)
-	local scale = New("UIScale", { Scale = 2, Parent = label })
-	return label, scale
-end
-
 -- The small card when a plate is hovered / tapped
 local card = Theme.Panel({ Name = "PlateCard", AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.fromOffset(0, 0), AutomaticSize = Enum.AutomaticSize.XY, Visible = false, ZIndex = 7, Parent = labelLayer },
 	{ Theme.Pad("M"), Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
@@ -267,7 +260,6 @@ local menuButton = SideMenu.Add("Genetics", "Genetics", Icons.DNA, 3)
 local stage = nil   -- Model (client only) while the screen is open
 local lights = {}   -- { light, base brightness }
 local helix = nil   -- { strands = { { attachments, beams } }, phase, pulse }
-local backHelices = {}
 local dof = nil
 
 local function part(props)
@@ -277,6 +269,12 @@ local function part(props)
 end
 local function cylinder(name, length, diameter, color, material, cf, parent)
 	return part({ Name = name, Shape = Enum.PartType.Cylinder, Size = Vector3.new(length, diameter, diameter), Color = color, Material = material or Enum.Material.SmoothPlastic, CFrame = cf or CFrame.new(), Parent = parent })
+end
+
+local function castShadows(model)
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("BasePart") and item.Transparency < 1 then item.CastShadow = true end
+	end
 end
 
 -- A circle drawn on a SurfaceGui (rings on the plate faces)
@@ -373,6 +371,7 @@ local function makePlate(grade, diameter, thickness, hub, groupName, parent)
 			Parent = clip,
 		}, { New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.2), NumberSequenceKeypoint.new(1, 1) }) }) })
 	end
+	castShadows(model)
 	model.Parent = parent
 	return { model = model, body = body, shine = shine, diameter = diameter }
 end
@@ -448,17 +447,20 @@ local function updateHelix(h, dt, speed, pulse)
 	end
 end
 
--- shadows on the key light, unless the player runs low graphics (phones): then plain light
-local function lowGraphics()
-	local ok, level = pcall(function() return UserSettings().GameSettings.SavedQualityLevel end)
-	if not ok or level == Enum.SavedQualitySetting.Automatic then
-		local okRender, render = pcall(function() return settings().Rendering.QualityLevel end)
-		return okRender and render.Value > 0 and render.Value <= 4
+-- A soft contact shadow on the floor: a dark blurred pill made of stacked see-through rounded frames on a SurfaceGui
+-- (no image needed), centred under the given point, its length along the yaw's X axis.
+local SHADOW_LAYERS = 7
+local function contactShadow(name, center, yaw, length, width)
+	local holder = part({ Name = name, Size = Vector3.new(length, 0.02, width), Transparency = 1,
+		CFrame = CFrame.new(center.X, STAGE_CF.Position.Y + FLOOR_Y + 0.012, center.Z) * yaw, Parent = stage })
+	local surface = New("SurfaceGui", { Face = Enum.NormalId.Top, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = 40, LightInfluence = 0, Parent = holder })
+	for i = 1, SHADOW_LAYERS do
+		local k = 1 - (i - 1) / SHADOW_LAYERS * 0.75
+		New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(k, k),
+			BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.86, Parent = surface }, { New("UICorner", { CornerRadius = UDim.new(0.5, 0) }) })
 	end
-	return level.Value <= 4
+	return holder
 end
-
-local FLOOR_Y = -1.77 -- the top of the dark platform everything stands on
 
 local function buildStage()
 	stage = New("Model", { Name = "GeneticsStage" })
@@ -475,14 +477,13 @@ local function buildStage()
 	part({ Name = "Floor", Size = Vector3.new(100, 1, 96), CFrame = STAGE_CF * CFrame.new(-0.5, FLOOR_Y - 0.5, 0.5), Color = Color3.fromHex("#141417"), Material = Enum.Material.Rubber, Parent = stage })
 	-- lights: a warm key from the top left (with shadows), a soft fill from the right, a cool rim from behind that catches
 	-- the plate edges
-	local shadows = not lowGraphics()
 	addLight("SpotLight", CFrame.lookAt((STAGE_CF * CFrame.new(-7, 9, 6)).Position, (STAGE_CF * CFrame.new(0.5, 0, 0)).Position),
-		{ Face = Enum.NormalId.Front, Brightness = 2.2, Range = 30, Angle = 55, Color = Color3.fromHex("#FFE2C2"), Shadows = shadows }, stage)
+		{ Face = Enum.NormalId.Front, Brightness = KEY_LIGHT.Brightness, Range = KEY_LIGHT.Range, Angle = KEY_LIGHT.Angle, Color = KEY_LIGHT.Color, Shadows = true }, stage)
 	addLight("PointLight", STAGE_CF * CFrame.new(9, 2, 6), { Brightness = 0.55, Range = 20, Color = Color3.fromHex("#DCE6FF"), Shadows = false }, stage)
 	addLight("SpotLight", CFrame.lookAt((STAGE_CF * CFrame.new(2, 5, -8)).Position, (STAGE_CF * CFrame.new(1, 0, 0)).Position),
 		{ Face = Enum.NormalId.Front, Brightness = 3, Range = 18, Angle = 60, Color = Color3.fromHex("#9CC2FF"), Shadows = false }, stage)
 
-	-- the bar on its stand: a glassy grip with a soft glowing core, the inner collar, the chrome sleeve
+	-- the bar: a glassy grip with a soft glowing core, the inner collar, the chrome sleeve
 	local barModel = New("Model", { Name = "Bar", Parent = stage })
 	local gripLength = 0 - BAR.GripStart - 0.15
 	local grip = cylinder("Grip", gripLength, 0.28, Color3.fromHex("#9FB4C8"), Enum.Material.Glass, BAR_CF * CFrame.new(BAR.GripStart + gripLength / 2, 0, 0), barModel)
@@ -493,42 +494,9 @@ local function buildStage()
 	local sleeveLength = BAR.SleeveEnd - 0.15
 	cylinder("Sleeve", sleeveLength, 0.5, CHROME, Enum.Material.Metal, BAR_CF * CFrame.new(0.15 + sleeveLength / 2, 0, 0), barModel)
 	cylinder("EndCap", 0.08, 0.56, CHROME:Lerp(Color3.new(0, 0, 0), 0.15), Enum.Material.Metal, BAR_CF * CFrame.new(BAR.SleeveEnd, 0, 0), barModel)
-	-- the stand: two dark uprights with chrome J-cups under the grip, on base plates
-	local standColor = Color3.fromHex("#1E1F24")
-	for _, x in ipairs({ BAR.GripStart + 0.6, -0.7 }) do
-		local at = BAR_CF * CFrame.new(x, 0, 0)
-		local base = at.Position.Y - (STAGE_CF.Position.Y + FLOOR_Y)
-		part({ Name = "Upright", Size = Vector3.new(0.22, base + 0.05, 0.22), CFrame = CFrame.new(at.Position - Vector3.new(0, (base + 0.05) / 2 + 0.12, 0)) * at.Rotation, Color = standColor, Material = Enum.Material.Metal, Parent = barModel })
-		part({ Name = "Cup", Size = Vector3.new(0.3, 0.1, 0.42), CFrame = at * CFrame.new(0, -0.17, 0), Color = CHROME, Material = Enum.Material.Metal, Parent = barModel })
-		part({ Name = "Foot", Size = Vector3.new(0.9, 0.08, 0.9), CFrame = CFrame.new(at.Position.X, STAGE_CF.Position.Y + FLOOR_Y + 0.04, at.Position.Z) * at.Rotation, Color = standColor, Material = Enum.Material.Metal, Parent = barModel })
-	end
+	castShadows(barModel)
 	-- the DNA helix along the whole bar (thin, soft, slow)
 	helix = makeHelix(BAR_CF, HELIX.Points, HELIX.Radius, BAR.GripStart, BAR.SleeveEnd, HELIX.Turns, HELIX.Width, HELIX.Color, HELIX.Transparency, stage)
-
-	-- behind: two soft helix shapes and floating DNA dust, faint (and blurred by the depth of field where the device
-	-- renders it)
-	table.clear(backHelices)
-	for i, spec in ipairs({ { Vector3.new(-9, 3, -22), 18, 1.6, math.rad(10) }, { Vector3.new(10, 1, -26), 22, 2, math.rad(-7) } }) do
-		local cf = STAGE_CF * CFrame.new(spec[1]) * CFrame.Angles(0, 0, spec[4])
-		local h = makeHelix(cf, 26, spec[3], -spec[2] / 2, spec[2] / 2, spec[2] / 8, 0.08, HELIX.Color, 0.93, stage)
-		h.speed = (i % 2 == 0 and -1 or 1) * 0.18
-		table.insert(backHelices, h)
-	end
-	local dust = part({ Name = "Dust", Size = Vector3.new(40, 18, 10), CFrame = STAGE_CF * CFrame.new(0, 4, -12), Transparency = 1, Parent = stage })
-	New("ParticleEmitter", {
-		Shape = Enum.ParticleEmitterShape.Box,
-		Rate = 10,
-		Lifetime = NumberRange.new(7, 11),
-		Speed = NumberRange.new(0.1, 0.35),
-		SpreadAngle = Vector2.new(180, 180),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.2, 0.14), NumberSequenceKeypoint.new(1, 0.08) }),
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.55), NumberSequenceKeypoint.new(1, 1) }),
-		Color = ColorSequence.new(HELIX.Color),
-		LightEmission = 1,
-		LightInfluence = 0,
-		Texture = SPARKLE,
-		Parent = dust,
-	}):Emit(40)
 
 	stage.Parent = Workspace
 end
@@ -537,7 +505,6 @@ local function destroyStage()
 	if stage then stage:Destroy() end
 	stage, helix = nil, nil
 	table.clear(lights)
-	table.clear(backHelices)
 end
 
 ------------------------------------------------------------------------
@@ -546,7 +513,7 @@ end
 local savedCamera = nil
 local cameraBase = nil
 local fovPunch, shakeUntil, shakeStrength = 0, 0, 0
-local LABEL_ROW = 64 -- px under the bar for the plate labels
+local LABEL_ROW = 68 -- px under the bar for the plate labels
 
 local function framePoints()
 	local points = {}
@@ -556,7 +523,7 @@ local function framePoints()
 		table.insert(points, (BAR_CF * CFrame.new(x, -r, 0)).Position)
 	end
 	local hr = HERO.Diameter / 2 + 0.1
-	for _, offset in ipairs({ Vector3.new(0, hr, hr), Vector3.new(0, hr, -hr), Vector3.new(0, -hr - 0.35, hr), Vector3.new(0, -hr - 0.35, -hr) }) do
+	for _, offset in ipairs({ Vector3.new(0, hr, hr), Vector3.new(0, hr, -hr), Vector3.new(0, -hr, hr), Vector3.new(0, -hr, -hr) }) do
 		table.insert(points, (HERO_CF * CFrame.new(offset)).Position)
 	end
 	return points
@@ -621,6 +588,8 @@ local skipping = false
 local plates = {}   -- on the bar, inner to outer: { group, grade, prev, parts, cf, slot, column, line, hit, arrow }
 local collar = nil
 local hero = nil    -- { parts, cf }
+local barShadow, heroShadow = nil, nil -- the contact shadows on the floor
+local landed = 0     -- plates on the bar so far (the bar shadow grows with them)
 local hoverPlate = nil
 local pinnedPlate = nil
 local current = nil -- the genetics on screen
@@ -649,7 +618,7 @@ local function play(name, opts)
 end
 
 -- Studio test hook: Workspace attribute "TestGeneticsHold" = n holds the reveal for screenshots: 6 = all plates on the
--- bar, 7 = the overall plate landed, 8 = the BLESSED banner. Tweens started meanwhile pause while held.
+-- bar, 7 = the overall plate landed. Tweens started meanwhile pause while held.
 local held = false
 local activeTweens = {}
 local function track(tween)
@@ -688,13 +657,17 @@ end
 ------------------------------------------------------------------------
 -- Labels under the plates (projected every frame) and the card
 ------------------------------------------------------------------------
-local COLUMN_W = 100
+local COLUMN_W = 92
 local function makeColumn(entry)
 	local col = New("Frame", { Name = entry.group, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(COLUMN_W, LABEL_ROW), BackgroundTransparency = 1, Parent = labelLayer },
-		{ Theme.List(Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
+		{ Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
 	local name = Theme.Text({ LayoutOrder = 1, Text = Muscles.GroupById[entry.group].name, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), Parent = col })
-	local mult = Theme.Text({ LayoutOrder = 2, Text = string.format("x%.2f gains", multOf(entry.grade)), Font = "SemiBold", TextSize = "Body", TextColor3 = Theme.RankColors[entry.grade], Size = UDim2.new(1, 0, 0, 22), Parent = col })
 	Theme.TextShadow(name)
+	-- the grade letter tag (the only color in the row) and the multiplier in white
+	local row = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, Parent = col },
+		{ Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	Theme.RankTag(entry.grade, { LayoutOrder = 1, Size = UDim2.fromOffset(22, 20), Parent = row })
+	local mult = Theme.Text({ LayoutOrder = 2, Text = string.format("x%.2f", multOf(entry.grade)), Font = "SemiBold", TextSize = "Body", Size = UDim2.fromOffset(0, 22), AutomaticSize = Enum.AutomaticSize.X, Parent = row })
 	Theme.TextShadow(mult)
 	-- after a reroll: a green arrow for a better grade, a small gray one for a worse grade
 	if entry.prev and entry.prev ~= entry.grade then
@@ -711,7 +684,6 @@ local function makeColumn(entry)
 		end
 		entry.arrow = row
 	end
-	local line = New("Frame", { Name = "Line", AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.75, Size = UDim2.fromOffset(0, 1), Parent = labelLayer })
 	local hit = New("TextButton", { Name = "Hit", Text = "", BackgroundTransparency = 1, AutoButtonColor = false, ZIndex = 3, Parent = labelLayer })
 	hit.MouseEnter:Connect(function() hoverPlate = entry end)
 	hit.MouseLeave:Connect(function() if hoverPlate == entry then hoverPlate = nil end end)
@@ -719,7 +691,7 @@ local function makeColumn(entry)
 		if revealing then return end
 		pinnedPlate = pinnedPlate ~= entry and entry or nil
 	end)
-	entry.column, entry.line, entry.hit = col, line, hit
+	entry.column, entry.hit = col, hit
 	if not skipping then Theme.Fade(col, true, 0.25) end
 end
 
@@ -739,7 +711,7 @@ local function updateLabels()
 		end
 		rowY += Spacing.L
 		-- evenly spaced columns, in the plates' left-to-right order, centred under them and kept on screen
-		local width = COMPACT and 88 or COLUMN_W
+		local width = COMPACT and 84 or COLUMN_W
 		local center = (bottoms[1].X + bottoms[n].X) / 2
 		local first = center - width * (n - 1) / 2
 		first = math.clamp(first, Spacing.S + width / 2, size.X - Spacing.S - width / 2 - width * (n - 1))
@@ -749,12 +721,6 @@ local function updateLabels()
 			local x = first + width * (i - 1)
 			entry.column.Size = UDim2.fromOffset(width, LABEL_ROW)
 			entry.column.Position = UDim2.fromOffset(x, rowY)
-			-- a thin line from the plate's bottom to its label
-			local from, to = Vector2.new(bottoms[i].X, bottoms[i].Y + 2), Vector2.new(x, rowY - 2)
-			local delta = to - from
-			entry.line.Position = UDim2.fromOffset((from.X + to.X) / 2, (from.Y + to.Y) / 2)
-			entry.line.Size = UDim2.fromOffset(delta.Magnitude, 1)
-			entry.line.Rotation = math.deg(math.atan2(delta.Y, delta.X))
 			-- tap / hover area: the label and the plate above it
 			local half = math.max(width / 2, 22)
 			local left = math.min(x - width / 2, bottoms[i].X - half / 2)
@@ -789,6 +755,15 @@ end
 ------------------------------------------------------------------------
 -- The moments
 ------------------------------------------------------------------------
+-- The bar's contact shadow covers the plates on it so far.
+local function setBarShadow(count)
+	if barShadow then barShadow:Destroy() end
+	barShadow = nil
+	if count < 1 or not stage then return end
+	local center = BAR_CF * CFrame.new(BAR.SlotStart + PLATE.Thickness * count / 2, 0, 0)
+	barShadow = contactShadow("BarShadow", center.Position, BAR_CF.Rotation, PLATE.Thickness * count + 0.6, PLATE.Diameter.S * 0.75)
+end
+
 -- A plate slides onto the sleeve from its end into its slot (best grade first, so it ends up innermost) and lands with
 -- a clank (pitch by grade); S plates get a quick shine sweep.
 local function slideOn(entry, slot)
@@ -797,6 +772,8 @@ local function slideOn(entry, slot)
 	place(entry, from)
 	animate(TIME.Slide, function(t) place(entry, from:Lerp(target, easeIn(t))) end)
 	place(entry, target)
+	landed += 1
+	setBarShadow(landed)
 	play("GeneticsClank", { pitch = FLIP_PITCH[entry.grade] })
 	punch(0.4)
 	shake(0.04)
@@ -813,6 +790,7 @@ local function closeCollar(count)
 	local ringPart = cylinder("Ring", 0.28, 0.74, CHROME, Enum.Material.Metal, nil, model)
 	cylinder("Lever", 0.14, 0.18, CHROME:Lerp(Color3.new(0, 0, 0), 0.2), Enum.Material.Metal, CFrame.new(0, 0.42, 0), model)
 	model.PrimaryPart = ringPart
+	castShadows(model)
 	model.Parent = stage
 	local rest = BAR_CF * CFrame.new(BAR.SlotStart + PLATE.Thickness * count + 0.004 * (count - 1) + 0.15, 0, 0)
 	local start = BAR_CF * CFrame.new(BAR.SleeveEnd + 1.2, 0, 0)
@@ -821,32 +799,15 @@ local function closeCollar(count)
 	play("Click", { pitch = 0.8 })
 end
 
--- Two or more S: a short BLESSED slam over the bar (doesn't hold the reveal up)
-local function blessedBanner()
-	if skipping then return end
-	play("GeneticsBlessed")
-	local _, top = bandRect()
-	local label, scale = slamText("BLESSED", "Huge", Colors.Gold)
-	label.Position = UDim2.fromOffset(camera.ViewportSize.X / 2, top + 30)
-	Theme.Tween(scale, { Scale = 1 }, 0.25, Theme.Motion.Bounce)
-	task.delay(0.35, function()
-		testHold(8)
-		task.wait(0.6)
-		Theme.Tween(label, { TextTransparency = 1 }, 0.3)
-		Debris:AddItem(label, 0.35)
-	end)
-end
-
--- The overall plate drops onto its stand next to the bar with a thud, then its word fades in.
+-- The overall plate drops onto the floor next to the bar (standing on its rim) with a thud, then its word fades in.
 local function dropHero(grade)
 	hero = { parts = makePlate(grade, HERO.Diameter, HERO.Thickness, HERO.Hub, nil, stage) }
-	-- its stand: a low dark block with a chrome trim (built where the plate is now, at the origin; it moves with it)
-	local stand = part({ Name = "Stand", Size = Vector3.new(1.5, 0.32, 1.7), CFrame = hero.parts.body.CFrame * CFrame.new(0, -HERO.Diameter / 2 - 0.16, 0), Color = Color3.fromHex("#1C1C20"), Material = Enum.Material.Rubber, Parent = hero.parts.model })
-	part({ Name = "Trim", Size = Vector3.new(1.54, 0.05, 1.74), CFrame = stand.CFrame * CFrame.new(0, 0.16, 0), Color = CHROME, Material = Enum.Material.Metal, Parent = hero.parts.model })
 	local rest = HERO_CF
 	local from = rest + Vector3.new(0, 6, 0)
 	animate(TIME.Drop, function(t) place(hero, from:Lerp(rest, easeIn(t))) end)
 	place(hero, rest)
+	if heroShadow then heroShadow:Destroy() end
+	heroShadow = contactShadow("HeroShadow", rest.Position, rest.Rotation, HERO.Thickness * 2.2, HERO.Diameter * 0.6)
 	play("GeneticsThud")
 	play("GeneticsThudLow")
 	play("GeneticsClank", { pitch = 0.7, volume = 0.7 })
@@ -864,11 +825,14 @@ end
 local function clearBoard()
 	for _, entry in ipairs(plates) do
 		entry.parts.model:Destroy()
-		for _, item in ipairs({ entry.column, entry.line, entry.hit }) do
+		for _, item in ipairs({ entry.column, entry.hit }) do
 			if item then item:Destroy() end
 		end
 	end
 	table.clear(plates)
+	landed = 0
+	setBarShadow(0)
+	if heroShadow then heroShadow:Destroy() heroShadow = nil end
 	if collar then collar.parts.model:Destroy() collar = nil end
 	if hero then hero.parts.model:Destroy() hero = nil end
 	heroLabels.Visible = false
@@ -948,9 +912,6 @@ local function runReveal(genetics, previous)
 	if not isOpen then return end
 	testHold(6)
 	closeCollar(#plates)
-	local sCount = 0
-	for _, grade in pairs(genetics.grades) do if grade == "S" then sCount += 1 end end
-	if sCount >= 2 then blessedBanner() end
 	dropHero(genetics.overall)
 	revealing = false
 	skipHint.Visible = false
@@ -968,9 +929,11 @@ local function slideOff()
 		collar = nil
 	end
 	Audio.Play2D("PlateSlide")
+	landed = 0
+	setBarShadow(0)
 	for i = #plates, 1, -1 do
 		local entry = plates[i]
-		for _, item in ipairs({ entry.column, entry.line, entry.hit }) do item:Destroy() end
+		for _, item in ipairs({ entry.column, entry.hit }) do if item then item:Destroy() end end
 		local from = entry.cf
 		local to = BAR_CF * CFrame.new(BAR.SleeveEnd + 2.5, 0, 0)
 		task.spawn(function()
@@ -981,6 +944,7 @@ local function slideOff()
 	end
 	table.clear(plates)
 	card.Visible = false
+	if heroShadow then heroShadow:Destroy() heroShadow = nil end
 	if hero then
 		local h = hero
 		local from = h.cf
@@ -998,7 +962,6 @@ end
 local function renderStep(dt)
 	if not stage then return end
 	if helix then updateHelix(helix, dt, HELIX.Speed, nil) end
-	for _, h in ipairs(backHelices) do updateHelix(h, dt, h.speed, nil) end
 	if cameraBase then
 		fovPunch *= math.exp(-dt * 9)
 		camera.FieldOfView = CAMERA.Fov - fovPunch

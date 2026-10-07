@@ -161,31 +161,30 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
 - Overall grade D-S shown on player card. One free reroll at start; +1 DNA Token per Growth Spurt.
 - Reroll changes everything at once. Odds must be reachable on the reroll screen ("VIEW ODDS" panel).
 - Opened from the Genetics side menu button (and automatically on first join). Its own dark 3D stage (client only,
-  far above the town) seen by the real camera, so plates carry SurfaceGui letters, real lights, Neon glow and
-  particles; movement is frozen and the side menu, top bar and right column step aside while it's open.
-- Look: plates are wide and thin (diameter about 3x thickness, all the same thickness; better grade a little wider),
-  raised rim, inset ring, chrome hub, the grade letter on the FLAT FACE (group name under it). Colors are the rank-tag
-  colors made deeper / less saturated (`Theme.GradePlates`: S coral, A blue, B gold, C green, D gray) with a slight
-  metallic sheen. Loaded tight in grade order (best on the inside), a collar closes the sleeve. The overall grade is a
-  bigger matching plate standing on a stand on the left.
-- DNA: the bar is a glowing DNA bar (two thin strands of light spiral along it, slowly turning); each plate locks on
-  with a flash running down the helix. Dark background with faint floating DNA dust and soft helix shapes.
+  far above the town) seen by the real camera, so plates are real 3D parts with SurfaceGui letters and real shadows;
+  movement is frozen and the side menu, top bar and right column step aside while it's open.
+- Look: plates are wide and thin (all the same thickness; better grade a little wider), stepped bevel edge, raised
+  rim, inset ring, chrome hub, the grade letter on the FLAT FACE (group name under it). Colors are the rank-tag colors
+  made deeper (`Theme.GradePlates`). Loaded tight in grade order (best on the inside), a collar closes the sleeve.
+- Shadows: a warm key light from the top left with Shadows on, everything on the bar casts shadows; the bar lies low
+  over a dark matte floor (the biggest plates almost touch it) and soft contact shadows under the plates and the
+  overall plate ground them even on low graphics. No stands, no pedestal: the overall plate (bigger, matching) stands
+  on its rim on the floor on the left.
+- DNA: a thin, soft helix of light turns slowly around the bar. Plain dark background (no lines, dust or ghost text).
   Title "YOUR GENETICS" ("NEW GENETICS" after a reroll), DNA tokens top right (owner's call: caps here).
-- Reveal, one plate at a time (Chest, Shoulders, Back, Arms, Legs, Core): spins in face-down, pauses, flips to show
-  the grade (flash + sound + small camera punch), then goes onto the bar. The higher the grade, the bigger the
-  moment: C/D small pop, B gold shimmer, A blue burst, S = stage dims, drum roll, plate glows and shakes, then
-  explodes with coral light, particles and an "S!" slam. Two or more S: a "BLESSED" banner. After all six the
-  overall plate drops in with its own moment. Tap / click (or Space) skips to the end.
-- Meaning: under each plate its group name and multiplier ("x1.50 gains") in the grade color. Tap / hover a plate for
-  a small card ("Chest genetics A" / "Your chest grows 20% faster" + frame / body bonuses on that group). Frame and
-  body type are two cards ("Frame: Narrow · +10% Arms"), centered, wrapping to two rows on phones. Overall word,
-  capitalized: S "Genetic Freak", A "Blessed", B "Gifted", C "Average", D "Hardgainer".
+- Reveal (under 3 s): plates slide onto the sleeve about 0.2 s apart, best grade first, each with a clank (pitch by
+  grade, small camera punch); S plates get one shine sweep. Then the collar, then the overall plate drops in with a
+  thud and its word fades in. Tap / click (or Space) skips to the end.
+- Meaning: one clean row of labels under the bar: group name (gray, small), the grade letter tag (the only color) and
+  the multiplier ("x1.50", white); nothing cut off at the edges. Tap / hover a plate for a small card ("Chest genetics
+  A" / "Your chest grows 20% faster" + frame / body bonuses on that group). Frame and body type are two cards
+  ("Frame: Narrow · +10% Arms"), centered, wrapping to two rows on phones. Overall word under the overall plate,
+  capitalized, no "!": S "Genetic Freak", A "Blessed", B "Gifted", C "Average", D "Hardgainer".
 - Reroll (secondary button, shows its cost: "Reroll · free" / "Reroll · 1 DNA token"; dimmed "No DNA tokens" when
   there is none) replays the reveal: plates that got better show a green up arrow + "upgrade", worse ones a small
   gray down arrow. A good roll (overall A or S, or any S plate) asks first, inline: "Replace your A genetics? You
   can't get them back." Keep = primary. A small underlined "View odds" link opens the odds panel.
-- Sounds (placeholders until the owner picks ids): GeneticsSpin, GeneticsFlip, GeneticsPop, GeneticsShimmer,
-  GeneticsBurst, GeneticsDrumRoll, GeneticsExplode, GeneticsBlessed (+ GeneticsClank, GeneticsThud, GeneticsThudLow).
+- Sounds (placeholders until the owner picks ids): GeneticsClank, GeneticsShimmer, GeneticsThud, GeneticsThudLow.
 
 ## 7. Growth Spurts (rebirth system — never call it "sacrifice")
 Players start short (~4'0"). When all 6 groups hit the goal, Growth Spurt: muscles reset to 0, character gets taller,

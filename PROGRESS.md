@@ -100,4 +100,4 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
 `TestCoins`, `TestSpurts`, `TestMuscleShare` (0..3 x the goal, live), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D": six grades in group order for the first roll / the
-next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate, 8 = BLESSED). Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.
+next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate). Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.
