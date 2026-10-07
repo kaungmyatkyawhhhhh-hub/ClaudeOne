@@ -49,11 +49,11 @@ type Dims = {
 }
 
 local DIMS: { [string]: Dims } = {
-	Sedan = { L = 14, W = 6.0, H = 4.7, clr = 0.65, belt = 2.65, wheelR = 1.08, wheelW = 0.85, wb = 8.6, hood = 4.0, ws = 2.3, roof = 3.8, rear = 2.1, inset = 0.45, slope = 0.4, nose = 0.55, doors = 4 },
-	Coupe = { L = 13.6, W = 6.1, H = 4.25, clr = 0.55, belt = 2.45, wheelR = 1.08, wheelW = 0.9, wb = 8.3, hood = 4.2, ws = 2.6, roof = 2.4, rear = 3.0, inset = 0.5, slope = 0.5, nose = 0.5, doors = 2 },
-	SUV = { L = 15.2, W = 6.5, H = 5.9, clr = 0.95, belt = 3.4, wheelR = 1.35, wheelW = 1.0, wb = 9.2, hood = 3.8, ws = 1.8, roof = 7.6, rear = 0.8, inset = 0.35, slope = 0.3, nose = 0.6, doors = 4 },
-	Supercar = { L = 14.2, W = 6.5, H = 3.65, clr = 0.4, belt = 2.0, wheelR = 1.12, wheelW = 1.05, wb = 8.6, hood = 3.7, ws = 2.9, roof = 2.0, rear = 3.4, inset = 0.7, slope = 0.85, nose = 0.42, doors = 2 },
-	Hypercar = { L = 14.8, W = 6.7, H = 3.45, clr = 0.35, belt = 1.85, wheelR = 1.12, wheelW = 1.1, wb = 8.9, hood = 3.4, ws = 3.1, roof = 1.8, rear = 3.8, inset = 0.75, slope = 0.95, nose = 0.4, doors = 2 },
+	Sedan = { L = 14, W = 6.0, H = 4.5, clr = 0.65, belt = 2.72, wheelR = 1.08, wheelW = 0.85, wb = 8.6, hood = 4.0, ws = 2.3, roof = 3.8, rear = 2.1, inset = 0.45, slope = 0.4, nose = 0.55, doors = 4 },
+	Coupe = { L = 13.6, W = 6.1, H = 4.15, clr = 0.55, belt = 2.5, wheelR = 1.08, wheelW = 0.9, wb = 8.3, hood = 4.2, ws = 2.6, roof = 2.4, rear = 3.0, inset = 0.5, slope = 0.5, nose = 0.5, doors = 2 },
+	SUV = { L = 15.2, W = 6.5, H = 5.9, clr = 0.95, belt = 3.7, wheelR = 1.35, wheelW = 1.0, wb = 9.2, hood = 3.8, ws = 1.8, roof = 7.6, rear = 0.8, inset = 0.35, slope = 0.3, nose = 0.6, doors = 4 },
+	Supercar = { L = 14.2, W = 6.5, H = 3.65, clr = 0.4, belt = 2.15, wheelR = 1.12, wheelW = 1.05, wb = 8.6, hood = 3.7, ws = 2.9, roof = 2.0, rear = 3.4, inset = 0.7, slope = 0.85, nose = 0.42, doors = 2 },
+	Hypercar = { L = 14.8, W = 6.7, H = 3.45, clr = 0.35, belt = 2.0, wheelR = 1.12, wheelW = 1.1, wb = 8.9, hood = 3.4, ws = 3.1, roof = 1.8, rear = 3.8, inset = 0.75, slope = 0.95, nose = 0.4, doors = 2 },
 }
 
 function CarBuilder.getDims(class: string): Dims
@@ -163,8 +163,13 @@ function CarBuilder.build(spec: Cars.CarSpec, options: BuildOptions?): Model
 	root.Parent = model
 	model.PrimaryPart = root
 
+	-- parts built while this is true are bodywork that the smooth mesh skin replaces
+	local exterior = true
 	local function finishPart(p: BasePart, name: string, styleName: string, cf: CFrame, size: Vector3, weldTo: any)
 		local st = styles[styleName] or styles.Body
+		if exterior then
+			p:SetAttribute("Ext", true)
+		end
 		p.Name = name
 		p.Size = size
 		p.CFrame = cf
@@ -449,7 +454,7 @@ function CarBuilder.build(spec: Cars.CarSpec, options: BuildOptions?): Model
 		local wname, sx, isFront = info[1] :: string, info[2] :: number, info[3] :: boolean
 		local rr = if isSuper and not isFront then R * 1.04 else R
 		local wz = if isFront then -d.wb / 2 else d.wb / 2
-		local wx = sx * (hw - d.wheelW / 2 + 0.12)
+		local wx = sx * (hw - d.wheelW / 2 - 0.06)
 		local tireCF = CFrame.new(wx, rr, wz)
 		local tire = cyl("Wheel" .. wname, Vector3.new(d.wheelW, rr * 2, rr * 2), tireCF, "Rubber", false)
 		-- the tyre is attached with a Motor6D so the client can spin & steer it
@@ -488,8 +493,9 @@ function CarBuilder.build(spec: Cars.CarSpec, options: BuildOptions?): Model
 	-----------------------------------------------------------------
 	-- Driver / interior
 	-----------------------------------------------------------------
+	exterior = false
 	local driverX = -W * 0.21
-	local eyeY = math.min(H - 0.55, belt + 0.95)
+	local eyeY = math.min(H - 0.7, belt + 0.95)
 	local eyeZ = zWsTop + 0.75
 	local seatY = math.max(clr + 0.4, eyeY - 2.25)
 
@@ -510,8 +516,10 @@ function CarBuilder.build(spec: Cars.CarSpec, options: BuildOptions?): Model
 		local dashTop = belt + 0.22
 
 		-- Dashboard
-		box("Dashboard", -innerX, belt - 0.95, zWs + 0.3, innerX, dashTop, dashRear, "Interior")
-		box("DashTop", -innerX, dashTop - 0.02, zWs + 0.3, innerX, dashTop + 0.04, dashRear + 0.08, "Interior2")
+		-- the dash top sits above the belt, so keep it inside the glass
+		local dashX = math.min(innerX, Wc / 2 - 0.2)
+		box("Dashboard", -dashX, belt - 0.95, zWs + 0.3, dashX, dashTop, dashRear, "Interior")
+		box("DashTop", -dashX, dashTop - 0.02, zWs + 0.3, dashX, dashTop + 0.04, dashRear + 0.08, "Interior2")
 		block("AmbientDash", Vector3.new(innerX * 2 - 0.2, 0.05, 0.04), CFrame.new(0, belt - 0.3, dashRear + 0.02), "Ambient")
 		-- Instrument cluster: the client renders live gauges on the "Cluster" screen
 		local clusterCF = CFrame.new(driverX, dashTop + 0.2, dashRear - 0.15) * CFrame.Angles(math.rad(-12), 0, 0)
@@ -585,7 +593,10 @@ function CarBuilder.build(spec: Cars.CarSpec, options: BuildOptions?): Model
 		end
 
 		-- Headliner + rear view mirror
+		-- the part headliner only suits the part body (the mesh cabin has its own)
+		exterior = true
 		box("Headliner", -Wc / 2 + 0.12, glassTop - 0.06, zWsTop, Wc / 2 - 0.12, glassTop, zRoofEnd, "Interior2")
+		exterior = false
 		block("RearViewMirror", Vector3.new(0.85, 0.22, 0.08), CFrame.new(0, glassTop - 0.3, zWsTop - 0.15), "Trim")
 		block("RearViewGlass", Vector3.new(0.78, 0.16, 0.02), CFrame.new(0, glassTop - 0.3, zWsTop - 0.1), "Chrome")
 

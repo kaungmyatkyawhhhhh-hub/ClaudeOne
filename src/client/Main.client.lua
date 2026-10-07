@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local Cars = require(Shared:WaitForChild("Cars"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
 local Traffic = require(script.Parent:WaitForChild("Traffic"))
@@ -41,7 +42,7 @@ while city and not city:GetAttribute("Ready") do
 	task.wait(0.2)
 end
 UI.showLoading("Shaping the cars...")
-CarSkin.preload()
+CarSkin.preload({ Cars.CutsceneId })
 UI.showLoading("Starting engines...")
 task.wait(1) -- let the world finish replicating
 

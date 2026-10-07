@@ -593,6 +593,11 @@ function Driving.render(dt: number)
 	for _, m in s.wheels do
 		if m:GetAttribute("Front") then
 			m.Transform = CFrame.Angles(0, wheelAngle, 0) * CFrame.Angles(s.wheelSpin, 0, 0)
+			-- brake caliper rides on a knuckle that steers but doesn't spin
+			local knuckle = s.root:FindFirstChild("Knuckle" .. m.Name:sub(6))
+			if knuckle and knuckle:IsA("Motor6D") then
+				knuckle.Transform = CFrame.Angles(0, wheelAngle, 0)
+			end
 		else
 			m.Transform = CFrame.Angles(s.wheelSpin, 0, 0)
 		end

@@ -43,6 +43,8 @@ export type Npc = {
 	ghost: number,
 	braking: boolean,
 	tails: { BasePart },
+	wheels: { Motor6D },
+	spin: number,
 }
 
 type Obstacle = { pos: Vector3, fwd: Vector3, speed: number, halfLen: number, width: number, self: Npc? }
@@ -148,8 +150,14 @@ local function spawnNpc(center: Vector3?): Npc?
 	local spec = CarBuilder.randomTrafficSpec(rng)
 	local color = Cars.TrafficColors[rng:NextInteger(1, #Cars.TrafficColors)]
 	local model = CarBuilder.build(spec, { anchored = true, driver = true, simpleWheels = true, lite = true, color = color })
-	CarSkin.apply(model, true)
+	CarSkin.apply(model, true, true)
 	local tails = {}
+	local wheels: { Motor6D } = {}
+	for _, j in (model.PrimaryPart :: BasePart):GetChildren() do
+		if j:IsA("Motor6D") and j.Name:sub(1, 6) == "Wheel_" then
+			table.insert(wheels, j)
+		end
+	end
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") and d:GetAttribute("TailLight") then
 			table.insert(tails, d)
@@ -172,6 +180,8 @@ local function spawnNpc(center: Vector3?): Npc?
 		ghost = 0,
 		braking = false,
 		tails = tails,
+		wheels = wheels,
+		spin = 0,
 	}
 	placeNpc(npc, seg, s)
 	npc.speed = npc.maxSpeed * 0.7
@@ -435,7 +445,16 @@ function Traffic.update(dt: number)
 		npc.pos = pos
 		npc.fwd = fwd
 		-- far-away cars only need their transform pushed every 3rd frame
-		local far = (pos - camPos).Magnitude > 380
+		local dist = (pos - camPos).Magnitude
+		local far = dist > 380
+		-- spin the wheels of cars close enough to notice
+		npc.spin = (npc.spin - npc.speed * dt / 1.1) % (math.pi * 2)
+		if dist < 160 then
+			local spinCF = CFrame.Angles(npc.spin, 0, 0)
+			for _, w in npc.wheels do
+				w.Transform = spinCF
+			end
+		end
 		if not far or (frameCount + _idx) % 3 == 0 then
 			local up = Vector3.new(0, npc.height / 2, 0)
 			table.insert(movedParts, npc.root)

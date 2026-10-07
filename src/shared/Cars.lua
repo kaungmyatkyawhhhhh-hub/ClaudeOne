@@ -40,8 +40,8 @@ local list: { CarSpec } = {
 	{ Id = "kensho_m5", Name = "Kensho M-Sport", Class = "Sedan", TopSpeed = 165, ZeroToSixty = 3.9, Handling = 0.72, Price = 65000, Color = Color3.fromRGB(28, 58, 120), Order = 3 },
 
 	-- Coupes
-	{ Id = "strada_c2", Name = "Strada C2", Class = "Coupe", TopSpeed = 150, ZeroToSixty = 5.0, Handling = 0.7, Price = 32000, Color = Color3.fromRGB(180, 24, 30), Order = 4 },
-	{ Id = "kaizen_rz", Name = "Kaizen RZ", Class = "Coupe", TopSpeed = 172, ZeroToSixty = 4.1, Handling = 0.8, Price = 78000, Color = Color3.fromRGB(240, 240, 242), Accent = Color3.fromRGB(20, 20, 20), Order = 5 },
+	{ Id = "strada_c2", Name = "Strada C2", Class = "Coupe", TopSpeed = 150, ZeroToSixty = 5.0, Handling = 0.7, Price = 32000, Color = Color3.fromRGB(188, 192, 200), Accent = Color3.fromRGB(24, 60, 210), Order = 4 },
+	{ Id = "kaizen_rz", Name = "Kaizen RZ", Class = "Coupe", TopSpeed = 172, ZeroToSixty = 4.1, Handling = 0.8, Price = 78000, Color = Color3.fromRGB(160, 12, 22), Accent = Color3.fromRGB(18, 18, 20), Order = 5 },
 
 	-- SUVs
 	{ Id = "atlas_x7", Name = "Atlas X7", Class = "SUV", TopSpeed = 135, ZeroToSixty = 6.1, Handling = 0.5, Price = 40000, Color = Color3.fromRGB(40, 44, 50), Order = 6 },

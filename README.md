@@ -78,9 +78,15 @@ Every ID is test-loaded on the loading screen. If one doesn't load in your game,
 
 This needs the same **Allow Mesh / Image APIs** setting as the car bodies. Without it, buildings keep their part facades.
 
-## Smooth car bodies
+## Car bodies
 
-Car bodies are generated at runtime as real meshes (`src/shared/BodyMesh.lua` builds the geometry and `src/client/CarSkin.lua` turns it into MeshParts with `EditableMesh`). Each body has curved panels, wheel arches, a sloped hood, a rounded nose and tail, fender humps on super/hypercars, and a tinted glass cabin. Lights, wheels, mirrors, spoilers and the interior stay as detail parts.
+Every car has its own design, built at runtime as real meshes. `src/shared/CarMesh.lua` builds the geometry and `src/client/CarSkin.lua` turns it into MeshParts with `EditableMesh`.
+
+- **Body:** hard-edged cross sections lofted along the car. That gives crisp character lines, a shoulder crease, a sharp hood edge and flat panels. On top of that: wedge or upright noses, fender haunches, widebody flares, cut wheel arches, a cabin with raked glass and tumblehome, and a dark interior you can see through the glass.
+- **Details:** laid exactly onto the bodywork: grilles, headlight housings with LED signatures (Y-shaped, eye, quad, angel rings, round JDM lamps), tail lamps (light bars, Y-shapes, round quads), intakes, side scoops, hood vents, engine louvres, shut lines, door handles, plates, badges and liveries. Splitters, diffusers, wings, mirrors and exhausts are real geometry.
+- **Wheels:** tyres with a sidewall and tread grooves, spoked rims (5-spoke, twin-spoke, Y-spoke, 6-spoke, multi-spoke, turbine) and brake discs, all spinning. Calipers sit on a steering knuckle, so they steer but don't spin.
+- **Inspired-by designs:** the Spectre 720 is a V12 wedge with Y lamps, side scoops and a wing. The Kaizen RZ is a widebody GT with a carbon hood and round quad tail lamps. The Strada C2 is a late-90s JDM coupe with blue livery. All names and badges are fictional.
+- **Two levels of detail:** about 24k triangles for your car and the cutscene car, and about 8.5k for traffic. Each design is generated once and cloned.
 
 If the Output shows *"Smooth car bodies unavailable"*, turn on **Game Settings → Security → Allow Mesh / Image APIs**. The cars fall back to their part bodies until you do.
 
