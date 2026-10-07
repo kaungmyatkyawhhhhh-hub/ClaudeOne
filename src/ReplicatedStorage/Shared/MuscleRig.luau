@@ -1,7 +1,8 @@
 -- MuscleRig: muscle v7 on one character / rig (client side; every client builds the muscles of every character it can see).
 --
 -- Each muscle's outline stays on the skin and only the bulge rises (EditableMesh, SetPosition: vertex = base + (max - base) * g,
--- g = the muscle's level over its max level). The mesh data is in part-local studs (origin = the body part's position), so a
+-- g = the muscle's level over its max level). Smooth, no seams: border vertices grow with the average g of every muscle
+-- that shares them, and the normals come from the data (nbase / nmax), so the body reads as one surface. The mesh data is in part-local studs (origin = the body part's position), so a
 -- muscle mesh is welded to its body part at CFrame.new().
 --
 -- LIMITS the code works around (measured in Studio: a client may hold only 8 EditableMeshes at once, a mesh holds at most 20,000
@@ -37,7 +38,8 @@ local VERTEX_BUDGET = 6000 -- vertex updates per frame, for all rigs together
 local BUILD_MS = 0.004     -- seconds of mesh building per frame per build (time, not a call count: fast PCs build quicker)
 local MAX_BUILDS = 3       -- units built at once (CreateMeshPartAsync waits 0.3-1s on the engine; side by side the waits overlap)
 local BUILD_CHECK = 250    -- API calls between clock checks
-local MIN_SHOW = 0.02      -- below this growth a muscle is hidden inside the body
+local MIN_SHOW = 0.02      -- a unit is only built once one of its muscles has at least this much growth
+local VEIN_PUMPED = 0.4    -- veins (muscle_v8 vein offsets) while PUMPED at max
 local TWEEN = 0.4          -- seconds a growth change takes
 local PUMPED = 1.04
 local PUMP_STEP = 0.03     -- the small pulse
@@ -147,6 +149,12 @@ local function colorsOf(self)
 	if self.marble then return Color3.new(1, 1, 1), Color3.new(1, 1, 1), Color3.new(1, 1, 1) end
 	local skin = style.skin or Color3.fromHex("#E0A878")
 	return skin, style.shorts or Color3.fromHex("#1E1E22"), style.top or skin
+end
+
+-- Muscle meshes use SmoothPlastic where the body is Plastic: Plastic's grain texture follows the mesh UVs, and the muscles'
+-- UVs are clothing-template coordinates, so on them the grain shows as a coarse speckle.
+local function smoothMaterial(material: Enum.Material): Enum.Material
+	return if material == Enum.Material.Plastic then Enum.Material.SmoothPlastic else material
 end
 
 -- The body itself in plain skin color (the muscle meshes use the same color, so they blend in), gym shorts on the hips.
@@ -306,9 +314,9 @@ local function recolor(self, group)
 		part.Color, part.Material = MARBLE, Enum.Material.Marble
 		template = nil
 	elseif group.snatched or template then
-		part.Color, part.Material = body.Color, body.Material
+		part.Color, part.Material = body.Color, smoothMaterial(body.Material)
 	else
-		part.Color, part.Material = Color3.new(1, 1, 1), Enum.Material.Plastic
+		part.Color, part.Material = Color3.new(1, 1, 1), Enum.Material.SmoothPlastic
 	end
 	task.spawn(setCloth, self, group, template)
 end
@@ -371,17 +379,52 @@ local function currentShown(self, id: string): number
 	return math.min(g * (self.pumped and PUMPED or 1) * pulse, 1.12)
 end
 
-local function applyRange(group, range, g: number)
-	local data, mesh, ids = group.data, group.mesh, group.vertexIds
-	local base, delta, hide, hideDelta = data.base, data.delta, data.hide, data.hideDelta
-	local first, last = range.first, range.first + range.count - 1
-	if range.shorts then
-		for i = first, last do mesh:SetPosition(ids[i], base[i] + delta[i] * g) end
-	else
-		local s = math.clamp(g / MIN_SHOW, 0, 1)
-		for i = first, last do mesh:SetPosition(ids[i], hide[i] + hideDelta[i] * s + delta[i] * g) end
+-- the vein amount for a muscle: only while PUMPED at max
+local function veinFor(self, id: string): number
+	return if self.pumped and (self.current[id] or 0) >= 1 then VEIN_PUMPED else 0
+end
+
+-- Smooth, no seams (muscle_v8): every vertex grows with g_v = the average of its own muscle's growth and the growth of
+-- each muscle it is shared with (border vertices), so neighbouring meshes always meet exactly, even at different
+-- levels; position = base + (max - base) * g_v + vein * v, normal = unit(nbase + (nmax - nbase) * g_v). A muscle at 0
+-- lies flat on the skin (no tucking inside), so a 0 next to a max is a smooth slope.
+local function applyRange(self, group, range)
+	local data, mesh, ids, normalIds = group.data, group.mesh, group.vertexIds, group.normalIds
+	local base, delta, shares, nbase, ndelta, vein = data.base, data.delta, data.shares, data.nbase, data.ndelta, data.vein
+	local g = currentShown(self, range.id)
+	local others = {}
+	for _, id in ipairs(range.shareIds) do others[id] = currentShown(self, id) end
+	local v = if vein then veinFor(self, range.id) else 0
+	for i = range.first, range.first + range.count - 1 do
+		local gv = g
+		local shared = shares[i]
+		if shared then
+			local sum = g
+			for _, id in ipairs(shared) do sum += others[id] end
+			gv = sum / (#shared + 1)
+		end
+		local position = base[i] + delta[i] * gv
+		if v > 0 then position += vein[i] * v end
+		mesh:SetPosition(ids[i], position)
+		if normalIds then
+			local normal = nbase[i] + ndelta[i] * gv
+			if normal.Magnitude > 1e-6 then mesh:SetNormal(normalIds[i], normal.Unit) end
+		end
 	end
 	group.applied[range] = g
+	group.appliedOthers[range] = others
+	group.appliedVein[range] = v
+end
+
+-- true when the muscle, a muscle it shares border vertices with, or its vein amount changed since it was last applied
+local function rangeChanged(self, group, range): boolean
+	local last = group.applied[range]
+	if last == nil or math.abs(currentShown(self, range.id) - last) > MIN_CHANGE then return true end
+	local others = group.appliedOthers[range]
+	for _, id in ipairs(range.shareIds) do
+		if not others or math.abs(currentShown(self, id) - (others[id] or 0)) > MIN_CHANGE then return true end
+	end
+	return group.data.vein ~= nil and veinFor(self, range.id) ~= group.appliedVein[range]
 end
 
 local function newMesh(): any
@@ -427,12 +470,16 @@ local function buildGroup(self, state, group): boolean
 		group.faceIds = table.create(data.triCount)
 		local vertexIds = table.create(data.verts)
 		local uvIds = table.create(data.verts)
+		-- the package's own normals (set, never auto-computed: auto normals make every muscle look like a separate piece)
+		local normalIds = if data.nbase then table.create(data.verts) else nil
 		for i = 1, data.verts do
 			-- built in the MAX shape (the biggest bounds); the real growth is applied below
 			vertexIds[i] = mesh:AddVertex(data.base[i] + data.delta[i])
 			uvIds[i] = mesh:AddUV(data.uv[i]) -- the clothing template coordinates (Shirt / Pants)
+			if normalIds then normalIds[i] = mesh:AddNormal((data.nbase[i] + data.ndelta[i]).Unit) end
 			tick()
 		end
+		group.normalIds = normalIds
 		local tris, kinds = data.tris, data.faceKind
 		local kindColor = { skinId, shortsId, topId }
 		for f = 1, data.triCount do
@@ -440,6 +487,7 @@ local function buildGroup(self, state, group): boolean
 			local face = mesh:AddTriangle(vertexIds[a], vertexIds[b], vertexIds[c])
 			group.faceIds[f] = face
 			mesh:SetFaceUVs(face, { uvIds[a], uvIds[b], uvIds[c] })
+			if normalIds then mesh:SetFaceNormals(face, { normalIds[a], normalIds[b], normalIds[c] }) end
 			local color = kindColor[kinds[f]]
 			mesh:SetFaceColors(face, { color, color, color })
 			tick()
@@ -469,7 +517,8 @@ local function buildGroup(self, state, group): boolean
 	sizeParts(group)
 	recolor(self, group)
 	-- start every muscle at its current growth
-	for _, range in ipairs(data.ranges) do applyRange(group, range, currentShown(self, range.id)) end
+	group.appliedOthers, group.appliedVein = {}, {}
+	for _, range in ipairs(data.ranges) do applyRange(self, group, range) end
 	return true
 end
 
@@ -484,16 +533,19 @@ local function buildSnatched(self, state, group): boolean
 	local mesh = newMesh()
 	if not mesh then return false end
 	local ok, err = pcall(function()
-		local ids, uvs = {}, {}
+		local ids, uvs, normals = {}, {}, {}
 		for i, position in ipairs(data.verts) do
 			ids[i] = mesh:AddVertex(position)
 			uvs[i] = mesh:AddUV(data.uv[i])
+			-- the OBJ's own normals (auto normals on this low-poly torso shade differently from the muscle edges on it)
+			if data.normals then normals[i] = mesh:AddNormal(data.normals[i]) end
 		end
 		local tris = data.tris
 		for k = 1, #tris, 3 do
 			local a, b, c = tris[k] + 1, tris[k + 1] + 1, tris[k + 2] + 1
 			local face = mesh:AddTriangle(ids[a], ids[b], ids[c])
 			mesh:SetFaceUVs(face, { uvs[a], uvs[b], uvs[c] })
+			if data.normals then mesh:SetFaceNormals(face, { normals[a], normals[b], normals[c] }) end
 		end
 	end)
 	local okPart, part = false, nil
@@ -531,7 +583,8 @@ local function destroyGroup(group)
 		group.part:Destroy()
 	end
 	group.mesh, group.part, group.cloth, group.template, group.data, group.vertexIds, group.colors, group.body = nil, nil, nil, nil, nil, nil, nil, nil
-	group.applied = {}
+	group.normalIds = nil
+	group.applied, group.appliedOthers, group.appliedVein = {}, {}, {}
 	group.lit = nil
 	group.glowOn, group.glowShades = nil, nil
 end
@@ -602,10 +655,8 @@ local function step(self, dt: number, budget: number): number
 				end
 				-- apply the muscles that changed (within the frame budget)
 				for _, range in ipairs(if group.data then group.data.ranges else {}) do
-					local shown = currentShown(self, range.id)
-					local last = group.applied[range]
-					if (last == nil or math.abs(shown - last) > MIN_CHANGE) and (budget - used > 0 or used == 0) then
-						applyRange(group, range, shown)
+					if (budget - used > 0 or used == 0) and rangeChanged(self, group, range) then
+						applyRange(self, group, range)
 						used += range.count
 					end
 				end

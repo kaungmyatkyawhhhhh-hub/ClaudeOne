@@ -6,6 +6,10 @@
 --   uv    = texture coordinates on the classic 585x559 clothing template (Vector2 per vertex, image space: v counts
 --           down from the top, like Roblox), so a muscle can wear the character's own Shirt (torso, arms) or Pants (legs)
 --   tris  = triangle corners, 0-based vertex indices (flat list, three per triangle)
+--   nbase / ndelta = the vertex normal at growth 0 and its change to max (normal = unit(nbase + ndelta * g))
+--   vein  = the raised vein offset per vertex (vertex + vein * v)
+--   shares[i] = the muscle ids whose border vertex i also is (smooth, no seams: vertex i grows with the average of its own
+--           muscle and those, so two neighbouring meshes always meet exactly)
 -- Part-local studs: origin = the body part's position, +X = the character's right, +Y up, -Z front.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -69,6 +73,49 @@ function MuscleMeshes.Load(name: string): any
 		uv[i] = Vector2.new(uvList[(i - 1) * 2 + 1], uvList[(i - 1) * 2 + 2])
 	end
 	local data = { base = basePositions, max = maxPositions, delta = delta, uv = uv, tris = tris, verts = count, record = record }
+	-- normals (base / max) and veins, when the data has them
+	if record.chunks.nbase and record.chunks.nmax then
+		local nb, nm = numbers(record, "nbase"), numbers(record, "nmax")
+		local nbase, ndelta = table.create(count), table.create(count)
+		for i = 1, count do
+			local o = (i - 1) * 3
+			local b = Vector3.new(nb[o + 1], nb[o + 2], nb[o + 3])
+			nbase[i], ndelta[i] = b, Vector3.new(nm[o + 1], nm[o + 2], nm[o + 3]) - b
+		end
+		data.nbase, data.ndelta = nbase, ndelta
+	end
+	if record.chunks.vein then
+		local v = numbers(record, "vein")
+		local vein = table.create(count)
+		for i = 1, count do
+			local o = (i - 1) * 3
+			vein[i] = Vector3.new(v[o + 1], v[o + 2], v[o + 3])
+		end
+		data.vein = vein
+	end
+	-- shared border vertices: "Name:1,2|Name2:3" (0-based) -> shares[vertex] = { muscle ids }
+	data.shares = {}
+	data.shareIds = {}
+	if record.chunks.share then
+		local module = Data:FindFirstChild(record.name .. "__share1")
+		local textShare = module and (require(module :: ModuleScript) :: any) or ""
+		for block in string.gmatch(textShare, "[^|]+") do
+			local other, list = string.match(block, "^([^:]+):(.*)$")
+			if other then
+				local id = MuscleMeshes.MuscleId(other)
+				if not table.find(data.shareIds, id) then table.insert(data.shareIds, id) end
+				for value in string.gmatch(list, "[^,]+") do
+					local i = (tonumber(value) :: number) + 1
+					local slot = data.shares[i]
+					if not slot then
+						slot = {}
+						data.shares[i] = slot
+					end
+					table.insert(slot, id)
+				end
+			end
+		end
+	end
 	cache[name] = data
 	return data
 end
@@ -92,7 +139,7 @@ end
 MuscleMeshes.Units = {
 	{ id = "TorsoFront", groups = { { part = "UpperTorso", records = names("UpperTorso", { "MidChest", "UpperChest", "Abs", "Obliques" }) } } },
 	{ id = "UpperArms", groups = pair({ "FrontDelts", "SideDelts", "RearDelts", "Biceps", "Triceps" }, "RightUpperArm", "LeftUpperArm") },
-	{ id = "UpperLegs", groups = pair({ "Quads", "Quads_Shorts", "Hamstrings", "Glutes", "Glutes_Shorts" }, "RightUpperLeg", "LeftUpperLeg") },
+	{ id = "UpperLegs", groups = pair({ "Quads", "Quads_Shorts", "Hamstrings", "Hamstrings_Shorts", "Glutes", "Glutes_Shorts" }, "RightUpperLeg", "LeftUpperLeg") },
 	{ id = "TorsoBack", groups = { { part = "UpperTorso", records = names("UpperTorso", { "Lats", "UpperTraps", "Traps", "Rhomboids", "LowerBack" }) } } },
 	{ id = "Forearms", groups = pair({ "Forearms" }, "RightLowerArm", "LeftLowerArm") },
 	{ id = "Calves", groups = pair({ "Calves" }, "RightLowerLeg", "LeftLowerLeg") },
@@ -109,28 +156,36 @@ for _, unit in ipairs(MuscleMeshes.Units) do
 	end
 end
 
-local HIDE = 0.82 -- a hidden muscle sits this far inside the body (scaled toward the part centre)
 local partCache: { [string]: any } = {}
+-- Muscles sit this far off the skin (studs, along the vertex's base normal). The muscle data lies exactly on the body, so
+-- without it the muscle and the snatched torso fight for depth and their borders show as stair-steps; the skirts on outer
+-- edges tuck 0.16 into the body, so the lift never opens a gap.
+local SKIN_LIFT = 0.02
 
--- The merged data of one group { part, records }: one set of arrays for all its muscles.
+-- The merged data of one group { part, records }: one set of arrays for all its muscles. Each range (one muscle) knows
+-- the other muscles its border vertices are shared with (range.shareIds); shares[vertex] lists them per vertex.
 function MuscleMeshes.LoadGroup(group: any): any
 	local key = table.concat(group.records, "+")
 	local found = partCache[key]
 	if found then return found end
-	local base, delta, hide, hideDelta, uv, tris, faceKind, ranges = {}, {}, {}, {}, {}, {}, {}, {}
+	local base, delta, uv, tris, faceKind, ranges = {}, {}, {}, {}, {}, {}
+	local nbase, ndelta, vein, shares = {}, {}, {}, {}
+	local hasNormals, hasVeins = true, true
 	local vertexCount, triCount = 0, 0
 	for _, name in ipairs(group.records) do
 		local data = MuscleMeshes.Load(name)
 		local record = data.record
-		table.insert(ranges, { id = record.id, shorts = record.shorts == true, first = vertexCount + 1, count = data.verts, triFirst = triCount + 1, triCount = #data.tris / 3 })
+		table.insert(ranges, { id = record.id, shorts = record.shorts == true, first = vertexCount + 1, count = data.verts, triFirst = triCount + 1, triCount = #data.tris / 3, shareIds = data.shareIds })
+		hasNormals = hasNormals and data.nbase ~= nil
+		hasVeins = hasVeins and data.vein ~= nil
 		for i = 1, data.verts do
-			local b = data.base[i]
-			base[vertexCount + i] = b
-			delta[vertexCount + i] = data.delta[i]
-			local h = b * HIDE
-			hide[vertexCount + i] = h
-			hideDelta[vertexCount + i] = b - h
-			uv[vertexCount + i] = data.uv[i]
+			local at = vertexCount + i
+			base[at] = if data.nbase and data.nbase[i].Magnitude > 1e-6 then data.base[i] + data.nbase[i].Unit * SKIN_LIFT else data.base[i]
+			delta[at] = data.delta[i]
+			uv[at] = data.uv[i]
+			if data.nbase then nbase[at], ndelta[at] = data.nbase[i], data.ndelta[i] end
+			if data.vein then vein[at] = data.vein[i] end
+			shares[at] = data.shares[i]
 		end
 		local kind = if record.shorts then 2 elseif record.part == "UpperTorso" then 3 else 1
 		local t = data.tris
@@ -144,7 +199,8 @@ function MuscleMeshes.LoadGroup(group: any): any
 		vertexCount += data.verts
 	end
 	assert(triCount <= 20000, "group " .. key .. " has more than 20,000 triangles")
-	local merged = { verts = vertexCount, base = base, delta = delta, hide = hide, hideDelta = hideDelta, uv = uv, tris = tris,
+	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, shares = shares,
+		nbase = hasNormals and nbase or nil, ndelta = hasNormals and ndelta or nil, vein = hasVeins and vein or nil,
 		clothing = MuscleMeshes.ByName[group.records[1]].clothing or "Shirt", faceKind = faceKind, ranges = ranges, triCount = triCount }
 	partCache[key] = merged
 	return merged
@@ -152,7 +208,7 @@ end
 
 ------------------------------------------------------------------------
 -- The snatched-waist torso (muscle v8 body/): replaces the look of UpperTorso and LowerTorso for everyone.
--- { verts = { Vector3 }, uv = { Vector2 }, tris = { 0-based } } in part-local studs (cached).
+-- { verts = { Vector3 }, uv = { Vector2 }, tris = { 0-based }, normals = { Vector3 }? } in part-local studs (cached).
 ------------------------------------------------------------------------
 local snatchedCache: { [string]: any } = {}
 function MuscleMeshes.LoadSnatched(part: string): any
@@ -166,7 +222,15 @@ function MuscleMeshes.LoadSnatched(part: string): any
 		verts[i] = Vector3.new(raw.verts[i * 3 - 2], raw.verts[i * 3 - 1], raw.verts[i * 3])
 		uv[i] = Vector2.new(raw.uv[i * 2 - 1], raw.uv[i * 2])
 	end
-	local data = { verts = verts, uv = uv, tris = raw.tris }
+	local data = { verts = verts, uv = uv, tris = raw.tris, normals = nil :: { Vector3 }? }
+	if raw.normals and #raw.normals == #raw.verts then
+		local normals = {}
+		for i = 1, #raw.normals // 3 do
+			local n = Vector3.new(raw.normals[i * 3 - 2], raw.normals[i * 3 - 1], raw.normals[i * 3])
+			normals[i] = if n.Magnitude > 1e-6 then n.Unit else Vector3.yAxis
+		end
+		data.normals = normals
+	end
 	snatchedCache[part] = data
 	return data
 end

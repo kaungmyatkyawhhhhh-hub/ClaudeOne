@@ -24,6 +24,11 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   torso for everyone, neon glow when hovered in Stats. Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
   -> `ReplicatedStorage/MuscleData` -> `Shared/MuscleMeshes` -> `Shared/MuscleRig` -> `MuscleClient`. Keep `muscle_v8/`
   unzipped before running the generator (it empties MuscleData first).
+- **Muscle v8-1 (7 Oct, "smooth, no seams" + spikes fix v2 + more definition):** border vertices grow with the average g of
+  every muscle that shares them (`share`), normals come from the data (`nbase`/`nmax`, also the snatched torso's OBJ normals),
+  muscles at 0 lie flat on the skin (no more tucking inside). New mesh Hamstrings_Shorts (UpperLegs unit). Muscle parts are
+  SmoothPlastic (Plastic's grain followed the clothing UVs as a speckle) and sit 0.02 studs off the skin (`SKIN_LIFT`).
+  Veins (`vein`) are wired at 0.4 while PUMPED at max; the full mass monster stage is still not built.
 - **Obliques/serratus (7 Oct):** the serratus slips are part of the Obliques mesh (`muscle_v8/source/parts.py`), driven
   by the Obliques stat, which only Cable Woodchop trains (pro gym, Growth Spurt 2). Before that Obliques stay at 0, so the
   mesh is hidden inside the body. Mesh, data (new muscle_v8 UpperTorso growdata imported) and the snatched torso are fine.
