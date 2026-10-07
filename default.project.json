@@ -1,0 +1,57 @@
+{
+  "name": "CityLegends",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    },
+    "Players": {
+      "$className": "Players",
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": false,
+        "Gravity": 196.2
+      }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": "Future",
+        "ClockTime": 0.3,
+        "Brightness": 1.2,
+        "GlobalShadows": true,
+        "Ambient": [0.09, 0.09, 0.16],
+        "OutdoorAmbient": [0.16, 0.16, 0.27],
+        "EnvironmentDiffuseScale": 0.6,
+        "EnvironmentSpecularScale": 1,
+        "ExposureCompensation": 0.25
+      }
+    },
+    "SoundService": {
+      "$className": "SoundService"
+    }
+  }
+}
