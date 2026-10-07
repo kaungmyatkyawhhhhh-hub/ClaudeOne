@@ -4,7 +4,7 @@
 --                               outer rim, an inset ring, a metal hub with a hole, and the weight number on both faces
 --                               (SurfaceGuis "LabelRight"/"LabelLeft", off by default: whoever places the plate turns
 --                               on the face people see). The plate's axis is the model's X axis, centered at the pivot.
---                               Both faces also carry the gym brand (Machines.Brand, "MM BC") above the hub, always on,
+--                               Both faces also carry the gym brand (Machines.Brand, "M WEIGHTS") above the hub, always on,
 --                               on their own thin parts "BrandRight"/"BrandLeft" (Builder.Brand adds it to older plates).
 --   BarSleeve                   chrome sleeve + collar for one end of a barbell (MachineService puts them on bars)
 -- Uses CSG (GeometryService), so it must run in Studio. Re-running replaces the folder.
@@ -116,8 +116,8 @@ local function brand(model, weight)
 		local text = Instance.new("TextLabel")
 		text.Name = "Brand"
 		text.AnchorPoint = Vector2.new(0.5, 0.5)
-		text.Position = UDim2.fromScale(0.5, 0.29)
-		text.Size = UDim2.fromScale(0.46, 0.085)
+		text.Position = UDim2.fromScale(0.5, 0.285)
+		text.Size = UDim2.fromScale(0.66, 0.1)
 		text.BackgroundTransparency = 1
 		text.Text = Machines.Brand
 		text.TextColor3 = color

@@ -25,6 +25,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ContextActionService = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
+local TextService = game:GetService("TextService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -58,7 +59,7 @@ local MICRO = { Thickness = 0.24, Diameter = 1.95, Color = Color3.fromHex("#D3D7
 local BAR_SIZE = { Grip = 0.38, Core = 0.12, Sleeve = 0.72, InnerCollar = 1.05, Collar = 1.0 }
 -- Along the bar's own X axis: grip on the left, the inner collar at 0, plates from SlotStart outward, sleeve end.
 -- the plates sit Gap apart on the sleeve, so every face shows (the sleeve is long enough for six plates and the collar)
-local BAR = { GripStart = -3.0, SlotStart = 0.2, Gap = MICRO.Thickness, SleeveEnd = 6.5, Yaw = math.rad(-28) }
+local BAR = { GripStart = -2.2, SlotStart = 0.2, Gap = MICRO.Thickness, SleeveEnd = 6.5, Yaw = math.rad(-28) }
 local BAR_CF = STAGE_CF * CFrame.new(-0.4, 0, 0) * CFrame.Angles(0, BAR.Yaw, 0) -- ~28 degrees from straight-on, the sleeve end toward the camera
 -- where plate `slot` (1 = innermost) sits along the bar
 local function slotX(slot)
@@ -78,7 +79,7 @@ local HELIX = {
 	RungStep = 0.3, RungWidth = 0.028, RungTransparency = 0.25,
 	-- base pairs A, T, G, C, repeating
 	RungColors = { Color3.fromRGB(255, 80, 80), Color3.fromRGB(255, 210, 60), Color3.fromRGB(80, 230, 120), Color3.fromRGB(80, 140, 255) },
-	Lights = { -1.8, 1.2, 4.4 }, -- soft colored lights along the bar (bar-local x), alternating cyan / magenta
+	Lights = { -1.4, 1.4, 4.4 }, -- soft colored lights along the bar (bar-local x), alternating cyan / magenta
 }
 -- the slow spin: plates with the bar, the overall plate on its centre (radians per second), eased in after the reveal
 local SPIN = { Bar = 2 * math.pi / 20, Hero = 2 * math.pi / 25, EaseIn = 1 }
@@ -291,10 +292,10 @@ oddsList(4, "Frame", Genetics.Frames)
 oddsList(6, "Body type", Genetics.BodyTypes)
 
 -- Under the overall plate: "Overall" and its word
-local heroLabels = New("Frame", { Name = "Overall", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(340, 80), BackgroundTransparency = 1, Visible = false, Parent = labelLayer },
+local heroLabels = New("Frame", { Name = "Overall", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(420, 100), BackgroundTransparency = 1, Visible = false, Parent = labelLayer },
 	{ Theme.List(Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
-local overallLabel = Theme.Text({ LayoutOrder = 1, Text = "Overall", Font = "Regular", TextSize = "Popup", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 30), Parent = heroLabels })
-local wordLabel = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Display", Upper = false, Size = UDim2.new(1, 0, 0, 48), Parent = heroLabels })
+local overallLabel = Theme.Text({ LayoutOrder = 1, Text = "Overall", Font = "Regular", TextSize = "Big", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 38), Parent = heroLabels })
+local wordLabel = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Hero", Upper = false, Size = UDim2.new(1, 0, 0, 60), Parent = heroLabels })
 Theme.TextShadow(overallLabel)
 Theme.TextShadow(wordLabel)
 
@@ -343,12 +344,38 @@ end
 
 -- One plate (axis = X, front face = +X), built like a real rubber bumper plate: a slightly smaller core over a wider,
 -- thinner edge band (a stepped bevel all round), a raised rim on the front face (a ring of short segments), a chrome
--- hub with a flange, and the grade letter printed on the face (embossed: a dark shadow under it, a light edge over it)
--- with the group name under the hub, plus an inset ring. Rubber finish, no glow. S plates get a shine layer that can
+-- hub with a flange, a groove ring, and on both faces the competition-plate printing (M WEIGHTS above and upside down below
+-- the hub, the grade letter at 9 and 3 o'clock). Rubber finish, no glow. S plates get a shine layer that can
 -- sweep across the face once.
 local PPS = 100 -- SurfaceGui pixels per stud on the faces
+local BRAND_SIZE = 1.05 -- the brand's font size vs the band between hub and groove ring (its capitals fill most of it)
+local BRAND_TRACK = 0.9 -- letter advance vs the letter's own width (under 1 = tighter than normal)
+local BRAND_SPACE = 0.2 -- the small gap between "M" and "WEIGHTS" (font-size units)
+
+-- Each brand letter's box at font size 1 ({ch, x, y}), measured once in the plate font so the curved letters can sit
+-- close together.
+local brandCache = nil
+local function brandWidths()
+	if brandCache then return brandCache end
+	local list = {}
+	for ch in string.gmatch(Machines.Brand, ".") do
+		local x, y = 0.55, 1.25
+		local ok, bounds = pcall(function()
+			local params = Instance.new("GetTextBoundsParams")
+			params.Text = ch
+			params.Font = Theme.Fonts.Bold
+			params.Size = 100
+			params.Width = 1000
+			return TextService:GetTextBoundsAsync(params)
+		end)
+		if ok and bounds then x, y = bounds.X / 100, bounds.Y / 100 end
+		table.insert(list, { ch = ch, x = if ch == " " then BRAND_SPACE else x, y = y })
+	end
+	brandCache = list
+	return list
+end
 local RIM_SEGMENTS = 36
-local function makePlate(grade, diameter, thickness, hub, groupName, parent)
+local function makePlate(grade, diameter, thickness, hub, parent)
 	local style = Theme.GradePlates[grade]
 	local fill = style.Fill:Lerp(Color3.new(0, 0, 0), 0.08) -- (a touch deeper than the label colors)
 	local model = New("Model", { Name = "Plate" })
@@ -372,59 +399,59 @@ local function makePlate(grade, diameter, thickness, hub, groupName, parent)
 	cylinder("Flange", thickness + 0.03, hub * 1.45, CHROME:Lerp(Color3.new(0, 0, 0), 0.12), Enum.Material.Metal, nil, model)
 	cylinder("Hub", thickness + 0.08, hub, CHROME, Enum.Material.Metal, nil, model)
 	cylinder("Hole", thickness + 0.1, hub * 0.6, Color3.fromRGB(20, 20, 24), nil, nil, model)
-	local px = (diameter - 0.08) * PPS
-	local surface = New("SurfaceGui", { Name = "Face", Face = Enum.NormalId.Right, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = PPS, LightInfluence = 1, Parent = body })
-	local canvas = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = surface })
-	ring(canvas, 0.72, style.Rim, math.max(px * 0.016, 3), 0.1)                              -- inset ring (dark groove)
-	ring(canvas, 0.74, fill:Lerp(Color3.new(1, 1, 1), 0.25), math.max(px * 0.006, 1), 0.4) -- its lit edge
-	local function letterLabel(name, offset, color, transparency, z)
-		return New("TextLabel", {
-			Name = name,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, offset, 0.22, offset),
-			Size = UDim2.fromScale(0.5, 0.26),
-			BackgroundTransparency = 1,
-			Text = grade,
-			FontFace = Theme.Fonts.Bold,
-			TextSize = math.floor(px * 0.24),
-			TextColor3 = color,
-			TextTransparency = transparency,
-			ZIndex = z,
-			Parent = canvas,
-		})
+	-- printed like a competition bumper plate, on both faces: "M WEIGHTS" big across the band above the hub and upside down
+	-- below it, the grade letter at 9 o'clock (upright) and at 3 o'clock (turned 180), all bold white in the colored band
+	-- between the hub and the groove ring
+	local face = diameter - 0.08
+	local px = face * PPS
+	local hubR = hub * 1.45 / 2 / face -- the flange's edge, as a share of the face
+	local ringR = 0.43                 -- the groove ring
+	local BRAND_ARC = 128              -- the most of the band the brand may span (clear of the letters at 9 and 3 o'clock)
+	local mid, band = (hubR + ringR) / 2, ringR - hubR
+	local canvas = nil
+	for _, side in ipairs({ Enum.NormalId.Right, Enum.NormalId.Left }) do
+		local surface = New("SurfaceGui", { Name = "Face" .. side.Name, Face = side, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = PPS, LightInfluence = 1, Parent = body })
+		local c = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = surface })
+		canvas = canvas or c
+		ring(c, ringR * 2, style.Rim, math.max(px * 0.014, 3), 0.1)                                 -- the groove ring
+		ring(c, ringR * 2 + 0.02, fill:Lerp(Color3.new(1, 1, 1), 0.25), math.max(px * 0.005, 1), 0.4) -- its lit edge
+		local function printText(name, text, x, y, w, h, rotation)
+			New("TextLabel", {
+				Name = name,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(x, y),
+				Size = UDim2.fromScale(w, h),
+				Rotation = rotation,
+				BackgroundTransparency = 1,
+				Text = text,
+				FontFace = Theme.Fonts.Bold,
+				TextScaled = true, -- world-space text on a plate face
+				TextColor3 = Color3.new(1, 1, 1),
+				TextStrokeColor3 = Color3.new(0, 0, 0),
+				TextStrokeTransparency = 0.8,
+				ZIndex = 3,
+				Parent = c,
+			})
+		end
+		-- the brand follows the band's curve, one letter at a time, filling the band from the hub to the groove ring and
+		-- set tight (each letter advances by its own width): over the top (upright) and, turned 180, under the hub
+		local widths = brandWidths()
+		local size = band * BRAND_SIZE -- the font size, as a share of the face
+		local total = 0
+		for _, w in ipairs(widths) do total += w.x * BRAND_TRACK end
+		size = math.min(size, math.rad(BRAND_ARC) * mid / total) -- (shrinks only if the word would reach the grade letters)
+		for _, base in ipairs({ 0, math.pi }) do
+			local along = -total * size / 2
+			for _, w in ipairs(widths) do
+				local advance = w.x * BRAND_TRACK * size
+				local angle = base + (along + advance / 2) / mid
+				along += advance
+				if w.ch ~= " " then printText("Brand", w.ch, 0.5 + math.sin(angle) * mid, 0.5 - math.cos(angle) * mid, w.x * size, w.y * size, math.deg(angle)) end
+			end
+		end
+		printText("GradeLeft", grade, 0.5 - mid, 0.5, band * 0.9, band * 0.72, 0)
+		printText("GradeRight", grade, 0.5 + mid, 0.5, band * 0.9, band * 0.72, 180)
 	end
-	letterLabel("LetterShadow", math.max(px * 0.008, 2), Color3.new(0, 0, 0), 0.45, 1)
-	letterLabel("LetterLight", -math.max(px * 0.004, 1), Color3.new(1, 1, 1), 0.55, 2)
-	letterLabel("Letter", 0, style.Text, 0.04, 3)
-	if groupName then
-		New("TextLabel", {
-			Name = "Group",
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.79),
-			Size = UDim2.fromScale(0.6, 0.1),
-			BackgroundTransparency = 1,
-			Text = string.upper(groupName),
-			FontFace = Theme.Fonts.SemiBold,
-			TextSize = math.floor(px * 0.075),
-			TextColor3 = style.Text,
-			TextTransparency = 0.3,
-			Parent = canvas,
-		})
-	end
-	-- the gym brand, small near the rim (like every plate in the gym)
-	New("TextLabel", {
-		Name = "Brand",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, if groupName then 0.885 else 0.8),
-		Size = UDim2.fromScale(0.34, 0.07),
-		BackgroundTransparency = 1,
-		Text = Machines.Brand,
-		FontFace = Theme.Fonts.Bold,
-		TextSize = math.floor(px * 0.06),
-		TextColor3 = style.Text,
-		TextTransparency = 0.45,
-		Parent = canvas,
-	})
 	-- S: a shine band that can sweep across the face once (clipped to the round face by a CanvasGroup)
 	local shine = nil
 	if grade == "S" then
@@ -627,7 +654,7 @@ local savedCamera = nil
 local cameraBase = nil
 local fovPunch, shakeUntil, shakeStrength = 0, 0, 0
 -- The plate labels at full size (scale 1); they shrink together (labelScale) when neighbours would touch.
-local LABEL = { Name = 18, Circle = 32, Mult = 22, Gap = 4, Space = 8, MinText = 14, MinScale = 0.55 }
+local LABEL = { Name = 27, Circle = 48, Mult = 33, Gap = 4, Space = 8, MinText = 14, MinScale = 0.4 }
 local ARROW_H = 18    -- the upgrade arrow row after a reroll
 local labelScale = 1
 local function rowHeight(s)
@@ -636,25 +663,36 @@ local function rowHeight(s)
 	local mult = math.max(LABEL.MinText, math.floor(LABEL.Mult * s + 0.5))
 	return name + 4 + circle + mult + 4 + LABEL.Gap * 2, name, circle, mult
 end
-local function labelBand() return (rowHeight(1)) + ARROW_H end
+local reserveScale = 1 -- the label scale the framing leaves room for (estimated in frameCamera)
+local function labelBand() return (rowHeight(reserveScale)) + ARROW_H end
 -- the overall plate, placed from the camera: { cf = rest CFrame, d = diameter }
 local heroLayout = nil
 
--- the bar group (the bar, the plates, the helix)
+-- the bar group's real outline: the grip end and sleeve end (helix width), and the rims of the innermost and outermost
+-- plates (a ring of points each, so the fit follows the discs instead of a box around them)
 local function framePoints()
 	local points = {}
-	local r = PLATE.Diameter.S / 2 + 0.1
+	local thin = HELIX.Radius + 0.1
 	for _, x in ipairs({ BAR.GripStart, BAR.SleeveEnd }) do
-		for _, side in ipairs({ -1, 1 }) do
-			table.insert(points, (BAR_CF * CFrame.new(x, side * r, 0)).Position)
-			table.insert(points, (BAR_CF * CFrame.new(x, 0, side * r)).Position)
+		for k = 0, 7 do
+			local a = k / 8 * math.pi * 2
+			table.insert(points, (BAR_CF * CFrame.new(x, math.cos(a) * thin, math.sin(a) * thin)).Position)
+		end
+	end
+	local r = PLATE.Diameter.S / 2 + 0.05
+	for _, slot in ipairs({ 1, 6 }) do
+		for _, dx in ipairs({ -PLATE.Thickness / 2, PLATE.Thickness / 2 }) do
+			for k = 0, 15 do
+				local a = k / 16 * math.pi * 2
+				table.insert(points, (BAR_CF * CFrame.new(slotX(slot) + dx, math.cos(a) * r, math.sin(a) * r)).Position)
+			end
 		end
 	end
 	return points
 end
-local HERO_SHARE = 0.31   -- the left part of the screen for the overall plate (the bar group gets the rest)
-local HERO_HEIGHT = 0.42  -- the overall plate's diameter on screen, as a share of the screen height (when it fits)
-local HERO_LABELS = 84    -- px under the overall plate for "Overall" and its word
+local HERO_SHARE = 0.27   -- the left part of the screen for the overall plate (the bar group gets the rest)
+local HERO_HEIGHT = 0.40  -- the overall plate's diameter on screen, as a share of the screen height (when it fits)
+local HERO_LABELS = 104   -- px under the overall plate for "Overall" and its word
 
 -- The free band for the 3D content, in viewport pixels (what WorldToViewportPoint gives). (AbsolutePosition counts from
 -- under the Roblox top bar even on a full-screen gui: add the inset back.)
@@ -677,7 +715,7 @@ local function fitCamera()
 	local center = (STAGE_CF * CFrame.new(-0.4, 0.2, 0.6)).Position
 	local distance = 16
 	local look = STAGE_CF.Rotation * CFrame.Angles(-CAMERA.Pitch, 0, 0)
-	for _ = 1, 10 do
+	for _ = 1, 16 do
 		local cf = CFrame.new(center) * look * CFrame.new(0, 0, distance)
 		camera.CFrame = cf
 		local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
@@ -732,10 +770,31 @@ local function layoutHero()
 	heroLayout = { cf = CFrame.fromMatrix(position, facing, Vector3.yAxis), d = d }
 end
 
--- Frames the bar group in the right part, then places the overall plate in the left part.
+-- The label scale the plate spacing allows (from the framed camera): neighbouring plates' x distance on screen vs the
+-- widest label (the longest group name) at full size.
+local function estimateLabelScale(): number
+	local longest = 0
+	for _, group in ipairs(Muscles.Groups) do longest = math.max(longest, #group.name) end
+	local width = math.max(longest * LABEL.Name * 0.34, 5 * LABEL.Mult * 0.42, LABEL.Circle)
+	local scale = 1
+	for slot = 2, 6 do
+		local a = camera:WorldToViewportPoint(slotCF(slot - 1).Position)
+		local b = camera:WorldToViewportPoint(slotCF(slot).Position)
+		scale = math.min(scale, math.abs(b.X - a.X) / (width + LABEL.Space))
+	end
+	return math.clamp(scale, LABEL.MinScale, 1)
+end
+
+-- Frames the bar group in the right part (leaving room under it for the labels at the size they will have), then
+-- places the overall plate in the left part.
 local function frameCamera()
 	if not stage then return end
 	if camera.ViewportSize.Y < 2 then return end
+	reserveScale = 1
+	for _ = 1, 3 do
+		fitCamera()
+		reserveScale = estimateLabelScale()
+	end
 	fitCamera()
 	layoutHero()
 end
@@ -916,7 +975,7 @@ local function updateLabels()
 				label.name.TextSize = nameSize
 				label.name.Size = UDim2.new(1, 0, 0, nameSize + 4)
 				label.tag.Size = UDim2.fromOffset(circleSize, circleSize)
-				label.tag.Letter.TextSize = math.max(LABEL.MinText, math.floor(LABEL.Name * labelScale + 0.5))
+				label.tag.Letter.TextSize = math.max(LABEL.MinText, math.floor(LABEL.Circle * 0.55 * labelScale + 0.5))
 				label.mult.TextSize = multSize
 				label.mult.Size = UDim2.new(1, 0, 0, multSize + 4)
 			end
@@ -1032,7 +1091,7 @@ end
 local function dropHero(grade)
 	local layout = heroLayout or { cf = HERO_CF, d = HERO.Diameter }
 	local k = layout.d / HERO.Diameter
-	hero = { parts = makePlate(grade, layout.d, HERO.Thickness, HERO.Hub * k, nil, stage), d = layout.d }
+	hero = { parts = makePlate(grade, layout.d, HERO.Thickness, HERO.Hub * k, stage), d = layout.d }
 	local rest = layout.cf
 	local from = rest + Vector3.new(0, 6, 0)
 	animate(TIME.Drop, function(t) place(hero, from:Lerp(rest, easeIn(t))) end)
@@ -1136,7 +1195,7 @@ local function runReveal(genetics, previous)
 	for slot, item in ipairs(order) do
 		if not isOpen then return end
 		local entry = { group = item.group.id, grade = item.grade, index = item.index, slot = slot, prev = previous and previous.grades[item.group.id] }
-		entry.parts = makePlate(item.grade, PLATE.Diameter[item.grade], PLATE.Thickness, PLATE.Hub, item.group.name, stage)
+		entry.parts = makePlate(item.grade, PLATE.Diameter[item.grade], PLATE.Thickness, PLATE.Hub, stage)
 		place(entry, BAR_CF * CFrame.new(BAR.SleeveEnd + 1.6, 0, 0))
 		plates[slot] = entry
 		task.spawn(slideOn, entry, slot)

@@ -33,7 +33,7 @@ function Machines.StackWidth(tier): number
 	for _, lb in ipairs(tier.plates) do width += Machines.Plates[lb].thickness + Machines.PlateGap end
 	return width
 end
-Machines.Brand = "MM BC" -- printed on every plate face (the owner's gym brand)
+Machines.Brand = "M WEIGHTS" -- printed on every plate face (the owner's gym brand)
 Machines.PlateOrder = { 55, 45, 35, 25, 10, 5 } -- heaviest first (inside on the sleeve, bottom of a stack)
 
 -- rows: { weight, plates per side, label? }; the first row is the empty bar / bodyweight / lightest stack

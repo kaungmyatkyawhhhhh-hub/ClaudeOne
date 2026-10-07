@@ -143,7 +143,7 @@ Barbell Row (Rhomboids; Lats, Rear Delts, Biceps), Crunch Bench (Abs; Obliques),
 Leg Press (Quads; Glutes, Hamstrings) and Hack Squat (Quads; Glutes, a light touch of Calves): plate-loaded, the sled /
 carriage slides on its rail with the rep; 2 of each in the starter gym, 1 of each in the pro gym. A secondary under 20%
 (the hack squat's calves) gains EXP but doesn't put that muscle into the Growth Spurt goal.
-Every plate carries the gym brand "MM BC" on both faces (small, above the hub, a shade of the plate color); plates are
+Every plate carries the gym brand "M WEIGHTS" on both faces (above the hub, a shade of the plate color); plates are
 thin like calibrated plates so the heaviest tier fits the sleeves, with a collar at the end. The Muscles panel lists
 each group's exercises.
 Pro gym (unlocks at Growth Spurt 2): Dips (Mid Chest; Triceps, Front Delts), Lateral Raise (Side Delts),
@@ -177,7 +177,9 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
   far above the town) seen by the real camera, so plates are real 3D parts with SurfaceGui letters and real shadows;
   movement is frozen and the side menu, top bar and right column step aside while it's open.
 - Look: plates are wide and thin (all the same thickness; better grade a little wider), stepped bevel edge, raised
-  rim, inset ring, chrome hub, the grade letter on the FLAT FACE (group name under it). Colors are the rank-tag colors
+  rim, inset ring, chrome hub. Printed like a competition bumper plate on both faces, bold white: "M WEIGHTS" curved
+  tight across the band above the hub (filling it) and upside down below it, the grade letter at 9 o'clock (upright)
+  and 3 o'clock (turned 180). No group name on the face (the label under the plate names it). Colors are the rank-tag colors
   made deeper (`Theme.GradePlates`). Loaded tight in grade order (best on the inside), a collar closes the sleeve.
 - Shadows: a warm key light from the top left with Shadows on, everything on the bar casts shadows; the bar lies low
   over a dark matte floor (the biggest plates almost touch it) and soft contact shadows under the plates and the
