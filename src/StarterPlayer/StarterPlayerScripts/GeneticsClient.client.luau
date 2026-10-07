@@ -71,7 +71,15 @@ end
 local FLOOR_Y = -PLATE.Diameter.S / 2 - 0.04 -- the floor's top: an S plate (the biggest) almost touches it
 local HERO_CF = STAGE_CF * CFrame.new(-8.2, FLOOR_Y + HERO.Diameter / 2, 1.0) * CFrame.Angles(0, math.rad(-70), 0) -- on its rim on the floor, facing the camera
 -- a 3/4 view: about 35 degrees off the bar's side (BAR.Yaw), slightly from above, drifting a little so the light moves
-local CAMERA = { Fov = 30, Pitch = math.rad(16), Drift = math.rad(2.5), DriftSpeed = 0.35 }
+local CAMERA = { Fov = 30, Pitch = 8, Height = 0, Drift = math.rad(2.5), DriftSpeed = 0.35 }
+-- Fine-tuning in Studio without code: ReplicatedStorage.GeneticsCameraRig (a Configuration) with CamPitch (degrees the
+-- camera looks down) and CamHeight (studs up / down after the framing). Edited while the screen is open, it re-frames.
+-- (kept in the CAMERA table: this script is at the top-level local limit)
+CAMERA.Rig = ReplicatedStorage:FindFirstChild("GeneticsCameraRig")
+function CAMERA.Value(name: string, default: number): number
+	local value = CAMERA.Rig and CAMERA.Rig:GetAttribute(name)
+	return if typeof(value) == "number" then value else default
+end
 local HELIX = {
 	Color = Color3.fromRGB(0, 200, 255), -- (the glowing core in the grip)
 	Strands = { Color3.fromRGB(0, 200, 255), Color3.fromRGB(255, 60, 170) }, -- cyan, magenta
@@ -714,7 +722,7 @@ local function fitCamera()
 	local points = framePoints()
 	local center = (STAGE_CF * CFrame.new(-0.4, 0.2, 0.6)).Position
 	local distance = 16
-	local look = STAGE_CF.Rotation * CFrame.Angles(-CAMERA.Pitch, 0, 0)
+	local look = STAGE_CF.Rotation * CFrame.Angles(-math.rad(CAMERA.Value("CamPitch", CAMERA.Pitch)), 0, 0)
 	for _ = 1, 16 do
 		local cf = CFrame.new(center) * look * CFrame.new(0, 0, distance)
 		camera.CFrame = cf
@@ -731,7 +739,7 @@ local function fitCamera()
 		center -= cf.RightVector * dx * studsPerPx
 		center += cf.UpVector * dy * studsPerPx
 	end
-	cameraBase = CFrame.new(center) * look * CFrame.new(0, 0, distance)
+	cameraBase = CFrame.new(center + Vector3.new(0, CAMERA.Value("CamHeight", CAMERA.Height), 0)) * look * CFrame.new(0, 0, distance)
 	camera.CFrame = cameraBase
 	if dof then dof.FocusDistance = (cameraBase.Position - BAR_CF.Position).Magnitude end
 end
@@ -748,17 +756,24 @@ local function layoutHero()
 	local target = math.min(size.Y * HERO_HEIGHT, (split - left) * 0.9, allowH * 0.95)
 	local ray = camera:ViewportPointToRay((left + split) / 2, top + allowH / 2)
 	local tanHalf = math.tan(math.rad(CAMERA.Fov) / 2)
-	local d, position = HERO.Diameter * 1.4, nil
-	for _ = 1, 8 do
-		local y = STAGE_CF.Position.Y + FLOOR_Y + d / 2
-		if ray.Direction.Y > -1e-3 then break end
-		local t = (y - ray.Origin.Y) / ray.Direction.Y
-		if t <= 0 then break end
-		position = ray.Origin + ray.Direction * t
-		local depth = (position - camera.CFrame.Position):Dot(camera.CFrame.LookVector)
-		local pixels = d * size.Y / (2 * depth * tanHalf)
-		d = math.clamp(d * target / pixels, 1.5, 14)
+	-- a bigger plate stands its centre higher, so it meets the ray nearer the camera and looks bigger still: the on-screen
+	-- size only grows with d, so bisect for the d that gives the target size
+	local function placeAt(d: number): (Vector3?, number)
+		if ray.Direction.Y > -1e-3 then return nil, math.huge end
+		local t = (STAGE_CF.Position.Y + FLOOR_Y + d / 2 - ray.Origin.Y) / ray.Direction.Y
+		if t <= 0 then return nil, math.huge end
+		local point = ray.Origin + ray.Direction * t
+		local depth = (point - camera.CFrame.Position):Dot(camera.CFrame.LookVector)
+		return point, d * size.Y / (2 * depth * tanHalf)
 	end
+	local low, high = 0.5, 40
+	for _ = 1, 30 do
+		local mid = (low + high) / 2
+		local _, pixels = placeAt(mid)
+		if pixels > target then high = mid else low = mid end
+	end
+	local d = low
+	local position = placeAt(d)
 	if not position then
 		heroLayout = { cf = HERO_CF, d = HERO.Diameter }
 		return
@@ -1451,7 +1466,7 @@ ClientData.Changed:Connect(function(path)
 	if isOpen and (path[1] == "dnaTokens" or path[1] == "freeReroll") and not revealing then refreshButtons() end
 end)
 
-camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+function CAMERA.Reframe()
 	if isOpen and stage then
 		applyLayout()
 		task.defer(function()
@@ -1459,7 +1474,9 @@ camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
 			moveHero()
 		end)
 	end
-end)
+end
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(CAMERA.Reframe)
+if CAMERA.Rig then CAMERA.Rig.AttributeChanged:Connect(CAMERA.Reframe) end
 
 menuButton.Activated:Connect(function()
 	if isOpen then keep() else open() end

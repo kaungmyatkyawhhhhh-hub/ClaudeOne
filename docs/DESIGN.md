@@ -187,7 +187,8 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
   on its rim on the floor on the left.
 - Layout: the overall plate stands on the floor in the left part of the screen, placed and sized from the camera (about
   42% of the screen height, less where it doesn't fit), "Overall" and its word about 1.4x bigger under it. The bar group
-  (bar ~28 degrees from straight-on, slightly above; bigger plates packed tight with a steel microplate between every
+  (bar ~28 degrees from straight-on; the camera looks down only ~8 degrees so the plates show a little top edge, tunable
+  in Studio with the CamPitch / CamHeight attributes on `ReplicatedStorage.GeneticsCameraRig`; bigger plates packed tight with a steel microplate between every
   two) fills the right part. One row of labels: each right under its own plate (projected every frame), stacked name /
   grade circle in the plate's color / multiplier, all scaled down together when neighbours would touch (never 2 rows).
   One shadow source: real key-light shadows, or contact shadows on low graphics. The frame card has a small silhouette.
