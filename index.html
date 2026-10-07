@@ -384,6 +384,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .tts{font-family:var(--mono);font-size:.62rem;color:var(--up);letter-spacing:.04em}.tts.wait{color:var(--muted)}
 .htp .wnsheet{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}.htpic{font-size:4rem;line-height:1;margin-top:6px;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}
 .htpdots{display:flex;gap:6px}.htpdots i{width:8px;height:8px;border-radius:50%;background:var(--sunk)}.htpdots i.on{background:var(--ink)}.htp .cta{width:100%}
+.gardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gplot{border-radius:16px;padding:12px;background:#6b4a2a;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.2)}.gplot b{font-size:2.6rem;line-height:1;transition:transform .3s}.gplot small{font-weight:700}.gplot span{font:700 .72rem var(--mono);opacity:.85}.gplot.empty{background:#8a6a4a;opacity:.7}.gplot.ripe{background:#3f7a3a;box-shadow:0 0 0 3px #ffcc33,inset 0 -6px 0 rgba(0,0,0,.2)}.gplot .cta{width:100%;padding:8px;justify-content:center;font-size:.78rem}
 .petaway{font-size:.75rem;font-weight:700;color:var(--muted);padding:6px 0;text-align:center}.petcard .cta{width:100%;padding:8px;justify-content:center;font-size:.8rem}
 .vaultwrap{display:flex;justify-content:center;margin:12px 0}.vaultwrap canvas{width:min(80vw,300px);height:auto}.vsteps{display:flex;gap:10px;justify-content:center;margin-bottom:12px}.vsteps i{width:18px;height:18px;border-radius:50%;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--line)}.vsteps i.on{background:#2fd28a}
 .nightroom{background:linear-gradient(#120a24,#2a1446);color:#fff}.nightroom .perk{background:rgba(255,255,255,.06);color:#fff}.nightroom .note{background:rgba(255,255,255,.06);color:#e9e2ff}.nightroom .leave{color:var(--ink)}
@@ -1130,6 +1131,16 @@ const ACH=[
  ["tower10","Skyline","Build 10 floors of Flip Tower",()=>(S.tower||0)>=10,50000],
  ["tower100","Cloud piercer","Build 100 floors of Flip Tower",()=>(S.tower||0)>=100,5e6],
  ["zig25","Temple builder","Build 25 tiers of the Amber Ziggurat",()=>zigN()>=25,1e9],
+ ["arcade10","Arcade rat","Play 10 arcade games",()=>(S.stats.arcade||0)>=10,5000],
+ ["tix1k","Ticket hoarder","Win 1,000 arcade tickets in total",()=>(S.tix||0)+((S.accOwn||{}).joy?700:0)+((S.accOwn||{}).acrown?400:0)>=1000,20000],
+ ["dig1","X marks the spot","Dig up a buried treasure",()=>(S.stats.treasure||0)>=1,3000],
+ ["dig10","Treasure hunter","Dig up 10 buried treasures",()=>(S.stats.treasure||0)>=10,50000],
+ ["heist1","Safecracker","Crack the bank vault",()=>(S.stats.heists||0)>=1,10000],
+ ["heist7","Master thief","Crack the bank vault 7 times",()=>(S.stats.heists||0)>=7,250000],
+ ["duel10","Duelist","Win 10 duels",()=>(S.stats.duelWins||0)>=10,15000],
+ ["champ","Champion","Reach the Champion duel rank",()=>(S.elo||0)>=1700,1e6],
+ ["petadv10","Explorer's best friend","Send pets on 10 adventures",()=>(S.stats.petAdv||0)>=10,25000],
+ ["harvest25","Green thumb","Harvest 25 crops",()=>(S.stats.harvests||0)>=25,30000],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
  ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
  ["tall190","Towering","Grow to 190 cm",()=>(S.height||170)>=190,10000],
@@ -2195,7 +2206,7 @@ function openHome(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(MPW?"My house":"Home")}
       <div class="art homeart">${homeArt()}</div>${MPW?`<div class="note">Your house in the Township. Upgrading your property changes how it looks on the street.</div>`:""}
       <button class="bigbtn" id="sleepBtn">Sleep<small>Refill energy to ${maxEnergy()} · wake up next morning${S.awake>20?" · you're tired":""}</small></button>
-      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button><button class="bigbtn alt" id="lookBtn">Your look<small>Clothes, face, hair</small></button><button class="bigbtn alt" id="setBtn">Settings<small>Effects, help</small></button>${S.partner&&S.partner.married?`<button class="bigbtn alt" id="famBtn">Family<small>${(S.kids||[]).length} kid${(S.kids||[]).length===1?"":"s"}</small></button>`:""}</div>
+      <div class="tiles"><button class="bigbtn alt" id="wheelBtn">Prize wheel<small>${wheelReady()?"Free spin ready!":"Spun today"}</small></button><button class="bigbtn alt" id="petsBtn">Pets<small>${S.pet?petOf(S.pet).n:"Adopt one"}</small></button><button class="bigbtn alt" id="gardBtn">Garden<small>${gardenReady()?gardenReady()+" ready to pick":"Grow and harvest"}</small></button><button class="bigbtn alt" id="furnBtn">Interior<small>Comfort ${comfort()}</small></button><button class="bigbtn alt" id="collBtn">Collection<small>${POOL.filter(p=>(S.coll||{})[p.cat+":"+p.code]).length}/${POOL.length}</small></button><button class="bigbtn alt" id="gramBtn">FlipGram<small>${fmtN(Math.round(S.fans||0))} followers</small></button><button class="bigbtn alt" id="passBtn">Passport<small>${COUNTRIES.filter(c=>(S.visited||{})[c.k]).length}/${COUNTRIES.length}</small></button><button class="bigbtn alt" id="lookBtn">Your look<small>Clothes, face, hair</small></button><button class="bigbtn alt" id="setBtn">Settings<small>Effects, help</small></button>${S.partner&&S.partner.married?`<button class="bigbtn alt" id="famBtn">Family<small>${(S.kids||[]).length} kid${(S.kids||[]).length===1?"":"s"}</small></button>`:""}</div>
       ${dailyCard()}${missCard()}
       <div class="sechead"><h3>Property</h3><span class="eyebrow">Kept forever</span></div>
       <div class="perks">${PROPS.map((pr,i)=>{const own=(S.home||0)>=i;return `<button class="perk nopic" data-home="${i}" ${own||i!==(S.home||0)+1||pr.cost>S.cash?"disabled":""}><span class="t">${(S.home||0)===i?"✓ ":""}${pr.n}</span><span class="d">${pr.d}</span><span class="c">${own?(S.home===i?"Living here":"Owned"):fmt(pr.cost)}</span></button>`}).join("")}</div>
@@ -2219,7 +2230,7 @@ function openHome(){
       <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
       <div class="lbtabs">${[["ready","Ready ("+ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+")"],["todo","To do"],["done","Done"],["all","All"]].map(([k,n])=>`<button class="${achF===k?"on":""}" data-achf="${k}">${n}</button>`).join("")}</div>
       <div class="perks">${ACH.filter(a=>{const done=S.ach[a[0]],ready=!done&&a[3]();return achF==="all"||(achF==="ready"&&ready)||(achF==="todo"&&!done&&!ready)||(achF==="done"&&done)}).map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")||`<p class="fine">Nothing here right now.</p>`}</div></div>`;
-    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});$("setBtn").onclick=()=>openSettings(()=>{room="home";draw()});const fmb=$("famBtn");if(fmb)fmb.onclick=()=>openFamily(()=>{room="home";draw()});bindMiss(draw);
+    $("leaveBtn").onclick=closeRoom;bindAccount();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("gardBtn").onclick=()=>openGarden(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});$("setBtn").onclick=()=>openSettings(()=>{room="home";draw()});const fmb=$("famBtn");if(fmb)fmb.onclick=()=>openFamily(()=>{room="home";draw()});bindMiss(draw);
     $("room").querySelectorAll("[data-achf]").forEach(b=>b.onclick=()=>{achF=b.dataset.achf;draw()});
     $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
@@ -4220,6 +4231,26 @@ function advLoot(k){const pd=S.pets[k],a=pd.adv,T=PADV.find(x=>x.k===a.k)||PADV[
   if(Math.random()<T.gold&&S.stash.length<maxSlots()){const pool=POOL.filter(q=>S.unlocked.includes(q.cat)&&(HEAVY[q.code]||0)<=S.pr).sort((x,y)=>y.base-x.base),it=pick(pool.slice(0,5)),cc=CAT[it.cat],cond=cc.conds[0];S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:1,fake:false,paid:0,gold:1});out.push("Golden "+it.name)}
   pd.bond=Math.min(10,(pd.bond||0)+(T.m>=30?1:0));pd.adv=null;S.stats.petAdv=(S.stats.petAdv||0)+1;dirty=true;return out}
 setInterval(()=>{if(!S||!S.pets)return;for(const k in S.pets){const a=S.pets[k].adv;if(a&&!a.told&&advLeft(a)<=0){a.told=1;dirty=true;const p=petOf(k);banner((p?p.n:"Your pet")+" is back from an adventure!","g");SFX.hot()}}},5000);
+/* ---------- home garden: plant seeds, come back later, harvest ---------- */
+const SEEDS=[{k:"sprout",n:"Lucky sprout",ic:"🌱",m:2,c:.002,p:.006,mc:20,mp:60},{k:"tomato",n:"Tomatoes",ic:"🍅",m:10,c:.006,p:.024,mc:60,mp:240},{k:"pumpkin",n:"Giant pumpkin",ic:"🎃",m:30,c:.015,p:.07,mc:150,mp:700},{k:"melon",n:"Golden melon",ic:"🍈",m:60,c:.03,p:.16,mc:300,mp:1600},{k:"apple",n:"Golden apple tree",ic:"🍏",m:120,c:.05,p:.34,mc:500,mp:3400}];
+const GARD_N=4,seedOf=k=>SEEDS.find(x=>x.k===k);
+const gardenPlots=()=>{S.garden=S.garden||[];while(S.garden.length<GARD_N)S.garden.push(null);return S.garden};
+const plotLeft=pl=>Math.max(0,pl.t0+pl.m*60000-Date.now());
+const gardenReady=()=>S&&S.garden?S.garden.filter(pl=>pl&&plotLeft(pl)<=0).length:0;
+const seedCost=sd=>Math.round(Math.max(sd.mc,rwBase()*sd.c)),seedPay=(sd,pl)=>Math.round(Math.max(sd.mp,(pl&&pl.base||rwBase())*sd.p));
+function openGarden(back){room="garden";$("room").hidden=false;const draw=()=>{const P=gardenPlots();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Garden")}<div class="note">Plant a seed, go do something else, then come back and harvest. Bigger plants take longer and pay far more. Watering a growing plant once speeds it up by 20%.</div>
+    <div class="gardgrid">${P.map((pl,i)=>{if(!pl)return `<div class="gplot empty"><b>🟫</b><small>Empty plot</small></div>`;const sd=seedOf(pl.k),L=plotLeft(pl),f=1-L/(pl.m*60000);
+      return `<div class="gplot${L<=0?" ripe":""}"><b style="transform:scale(${(.45+.55*Math.min(1,f)).toFixed(2)})">${L<=0?sd.ic:f<.35?"🌱":f<.7?"🌿":sd.ic}</b><small>${sd.n}</small><div class="bondbar"><i style="width:${Math.min(100,f*100).toFixed(0)}%"></i></div>${L<=0?`<button class="cta" data-hv="${i}">Harvest ${fmt(seedPay(sd,pl))}</button>`:`<span>${L>=3600000?Math.ceil(L/3600000)+"h":Math.ceil(L/60000)+"m"} left</span>${pl.w?"":`<button class="mpgift" data-wt="${i}">💧 Water</button>`}`}</div>`}).join("")}</div>
+    <div class="sechead"><h3>Seeds</h3><span class="eyebrow">${P.filter(x=>!x).length} empty plot${P.filter(x=>!x).length===1?"":"s"}</span></div>
+    <div class="perks">${SEEDS.map(sd=>`<button class="perk nopic" data-sd="${sd.k}" ${!P.some(x=>!x)||S.cash<seedCost(sd)?"disabled":""}><span class="t">${sd.ic} ${sd.n}</span><span class="d">Ready in ${sd.m<60?sd.m+" min":sd.m/60+" h"} · harvest about ${fmt(seedPay(sd))}</span><span class="c">${fmt(seedCost(sd))}</span></button>`).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("room").querySelectorAll("[data-sd]").forEach(b=>b.onclick=()=>{const sd=seedOf(b.dataset.sd),P=gardenPlots(),i=P.findIndex(x=>!x),c=seedCost(sd);if(i<0||S.cash<c)return;S.cash-=c;P[i]={k:sd.k,m:sd.m,t0:Date.now(),base:rwBase()};dirty=true;SFX.tick(.6);buzz(8);banner(sd.n+" planted","a");draw();updMini()});
+  $("room").querySelectorAll("[data-wt]").forEach(b=>b.onclick=()=>{const pl=gardenPlots()[+b.dataset.wt];if(!pl||pl.w)return;pl.w=1;pl.t0-=Math.max(0,plotLeft(pl))*.2;dirty=true;SFX.hot();confetti(30,null,null,["#4fe3ff","#bfe6ff","#fff"]);draw()});
+  $("room").querySelectorAll("[data-hv]").forEach(b=>b.onclick=()=>{const P=gardenPlots(),i=+b.dataset.hv,pl=P[i];if(!pl||plotLeft(pl)>0)return;const sd=seedOf(pl.k),v=seedPay(sd,pl);earn(v);P[i]=null;S.stats.harvests=(S.stats.harvests||0)+1;dirty=true;
+    if(sd.m>=60&&Math.random()<.35){gainCrate(1);banner("A crate was buried in the roots!","g")}SFX.sell(3);confetti(90,null,null,["#2fd28a","#ffcc33","#fff"]);banner(sd.n+" harvested · +"+fmt(v),"g");draw();updMini()})};
+  draw();const iv=setInterval(()=>{if(room!=="garden")return clearInterval(iv);draw()},5000)}
+setInterval(()=>{if(!S||!S.garden)return;S.garden.forEach(pl=>{if(pl&&!pl.told&&plotLeft(pl)<=0){pl.told=1;dirty=true;banner(seedOf(pl.k).ic+" "+seedOf(pl.k).n+" ready to harvest at Home","g")}})},7000);
 function openPets(back){S.pets=S.pets||{};
   const draw=()=>{const own=PETS.filter(p=>S.pets[p.k]);
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Pets")}
@@ -4743,7 +4774,10 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=40,WN=[
+const WN_VER=41,WN=[
+ ["🌱","Home garden","Plant seeds in four plots at Home and harvest them later: a 2-minute sprout up to a 2-hour golden apple tree. Water once to speed it up.","2026-10-07T04:00"],
+ ["⛳","Mini golf","A fourth Arcade game: three putting holes, beat par for big tickets.","2026-10-07T03:55"],
+ ["🏆","New achievements","Achievements for the arcade, treasure hunting, the vault, duels, pet adventures and gardening.","2026-10-07T03:58"],
  ["🏮","Night Market","A lantern market on the beach, open 8 PM to 5 AM: a fortune teller, a midnight collector who pays +40% for one item, and glowing gear you can only buy after dark.","2026-10-07T03:50"],
  ["🔐","Crack the vault","Once a day at the Bank, try to crack the vault: stop the spinning dial on the gold notch three times for a big payout. Miss and the alarm rings until tomorrow.","2026-10-07T03:40"],
  ["🧭","Pet adventures","Send a pet on a park run, into the woods or on a wild expedition from the Pets screen. It comes back with cash, crates, treasure maps or even golden items.","2026-10-07T03:30"],
