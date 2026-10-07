@@ -85,13 +85,69 @@ function Muscles.GetGroupLevel(muscleData, groupId)
 	return total / #group.muscles
 end
 
--- Stat numbers are SHOWN bigger so progress feels big (levels stay small inside the game: goals, caps and saves are unchanged).
-Muscles.DisplayScale = 150
-function Muscles.Shown(value)
-	return math.floor(value * Muscles.DisplayScale + 0.5)
+------------------------------------------------------------------------
+-- EXP: the number everyone SEES. Inside the game a muscle has a level and some xp towards the next level (saves, caps and
+-- machines work on levels), but the stats show EXP = every xp the muscle has ever earned, times one constant, so the first
+-- Growth Spurt asks for exactly Muscles.FirstSpurtExp (50,000) in every group. A rep's gain popup is the same unit.
+--   xp for level L = sum of XpToNext = L*L + 19*L   (also fine for a fractional level)
+------------------------------------------------------------------------
+Muscles.FirstSpurtExp = 50000 -- EXP a group needs for the first Growth Spurt
+Muscles.FirstSpurtLevel = 15  -- = GrowthSpurts stage 1 requiredLevel (tests/muscles checks they agree)
+
+-- xp earned in total to be at `level` (levels may be fractional)
+function Muscles.CumXp(level)
+	return level * level + 19 * level
+end
+-- the (fractional) level where the total xp is `xp`
+function Muscles.LevelFromXp(xp)
+	return (-19 + math.sqrt(361 + 4 * math.max(xp, 0))) / 2
 end
 
--- Total strength: every muscle level added up (shown above your head and over other players).
+-- EXP shown per xp
+Muscles.ExpPerXp = Muscles.FirstSpurtExp / Muscles.CumXp(Muscles.FirstSpurtLevel)
+
+-- One muscle's entry ({ level, xp }) as total xp, and as an exact (fractional) level.
+function Muscles.EntryXp(entry)
+	return entry and (Muscles.CumXp(entry.level) + (entry.xp or 0)) or 0
+end
+function Muscles.ExactLevel(entry)
+	return Muscles.LevelFromXp(Muscles.EntryXp(entry))
+end
+
+-- EXP shown for a level (fractional ok) / for an amount of xp (a rep's gain)
+function Muscles.Shown(level)
+	return math.floor(Muscles.CumXp(level) * Muscles.ExpPerXp + 0.5)
+end
+function Muscles.ShownXp(xp)
+	return math.floor(xp * Muscles.ExpPerXp + 0.5)
+end
+
+-- EXP of one muscle, of a group (the average of its muscles, like the goal), and of the whole body (strength)
+function Muscles.MuscleExp(entry)
+	return math.floor(Muscles.EntryXp(entry) * Muscles.ExpPerXp + 0.5)
+end
+function Muscles.GroupExp(muscleData, groupId)
+	local group = Muscles.GroupById[groupId]
+	local total = 0
+	for _, muscle in ipairs(group.muscles) do total += Muscles.EntryXp(muscleData[muscle.id]) end
+	return math.floor(total / #group.muscles * Muscles.ExpPerXp + 0.5)
+end
+function Muscles.TotalExp(muscleData)
+	local total = 0
+	for _, muscle in ipairs(Muscles.List) do total += Muscles.EntryXp(muscleData[muscle.id]) end
+	return math.floor(total * Muscles.ExpPerXp + 0.5)
+end
+
+-- 12345 -> "12,345"
+function Muscles.FormatExp(value)
+	local formatted, count = tostring(math.floor(value)), 1
+	while count > 0 do
+		formatted, count = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+	end
+	return formatted
+end
+
+-- Total strength: every muscle level added up (used by logic; the stats show Muscles.TotalExp).
 function Muscles.TotalStrength(muscleData)
 	local total = 0
 	for _, muscle in ipairs(Muscles.List) do

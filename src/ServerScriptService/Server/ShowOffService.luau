@@ -112,7 +112,7 @@ local function refreshBoard()
 			if entry then
 				local spurts, level = ShowOff.SplitGroupScore(entry.value)
 				row.name.Text = rank .. "  " .. nameOf(tonumber(entry.key))
-				row.level.Text = "Lv " .. level .. (spurts > 0 and (" · GS" .. spurts) or "")
+				row.level.Text = Muscles.FormatExp(Muscles.Shown(level)) .. " exp" .. (spurts > 0 and (" · GS" .. spurts) or "")
 			else
 				row.name.Text = rank .. "  -"
 				row.level.Text = ""

@@ -243,3 +243,10 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - Old procedural LatSpread/AbsAndThighs/MostMuscular removed from EmoteClient (high five, shake chug and the regulars' curl/flex stay).
 - Tested: all 7 poses on a player with a shirt at max muscles (and side chest at level 0), an NPC posing, blend in ~0.35s (shoulder 4 to 95 deg), walking and jumping cancel and restore movement, judges score on the posing stage (10/10 at max), statue in front double biceps. Screenshots `poses_*.png`. No joint needed a sign flip.
 - Not checked: the posing-stage judges with low muscles, the pose hit sound (CrowdOoh is a placeholder id, pick a real one in Config/Sounds), phone.
+
+## EXP instead of levels (7 Oct 2026)
+- Every number you see is **EXP**: a muscle's total xp earned times one constant (`Muscles.ExpPerXp`), so the first Growth Spurt needs exactly **50,000 EXP** per group (`Muscles.FirstSpurtExp`, tied to stage 1's level goal of 15; `tests/exp` checks it). Later goals: spurt 2 = 304,118, spurt 3 = 642,353, spurt 4 = 1,231,961. Levels still exist inside (saves, caps, machines, tiers); no saved data changed.
+- The Growth Spurt goal check now uses the group's average EXP (`GrowthSpurts.GoalLevel` = that average as a fractional level), so the number on screen and the goal agree. The pacing test still passes.
+- Shown as EXP: stats labels (expanded muscles, strength = total EXP), Muscles panel, body-map widget, level-up flash ("Mid Chest · 21,176 exp"), rep and set popups (a rep's gain is in the same unit), progress mirror, leaderboard, quest and title wording and progress.
+- Hover highlight is now a neon glow: the lit muscle turns Neon material with directional shading baked into its faces (so it keeps its shape), the rest of that mesh dims, the clothing layer steps aside and a pulsing red light spills onto the body and floor. Screenshots `highlight_neon*.png`, `exp_*.png`.
+- Not checked: a long session through a whole spurt (pacing is by test only), and EXP text widths on phones.

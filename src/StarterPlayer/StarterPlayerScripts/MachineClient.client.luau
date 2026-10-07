@@ -1355,7 +1355,7 @@ end
 local function flashLevel(name, level)
 	flashToken += 1
 	local token = flashToken
-	levelFlash.Text = name .. " · Level " .. level
+	levelFlash.Text = name .. " · " .. Muscles.FormatExp(Muscles.Shown(level)) .. " exp"
 	levelFlash.TextTransparency = 0
 	levelFlashStroke.Transparency = Theme.Alpha.TextShadow
 	levelFlashScale.Scale = 0.6
@@ -1489,7 +1489,7 @@ local function localLockout(state)
 	local main = machine.muscles[1].id
 	local quality = (state.pumped and Gains.Pump.Multiplier or 1) * (state.big and Gains.BigRep.Multiplier or 1)
 	local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"), quality)
-	local shown = math.max(1, Muscles.Shown(xp[main] or 0))
+	local shown = math.max(1, Muscles.ShownXp(xp[main] or 0))
 	current.setGain = (current.setGain or 0) + shown
 	local mode = gainNumbersMode()
 	local showSet = mode ~= "Off" -- On and Minimal

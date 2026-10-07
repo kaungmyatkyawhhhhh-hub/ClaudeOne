@@ -168,10 +168,10 @@ local function refreshNumbers()
 	for _, entry in ipairs(labels) do
 		local group = Muscles.GroupById[entry.spec.id]
 		local maxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
-		entry.number.Text = maxed and "Max" or commas(Muscles.Shown(Muscles.GetGroupLevel(data.muscles, group.id)))
+		entry.number.Text = maxed and "Max" or commas(Muscles.GroupExp(data.muscles, group.id))
 		entry.number.TextColor3 = maxed and Colors.Gold or Colors.StatNumber
 	end
-	strength.number.Text = commas(Muscles.Shown(Muscles.TotalStrength(data.muscles)))
+	strength.number.Text = commas(Muscles.TotalExp(data.muscles))
 	local max = player:GetAttribute("MaxStamina")
 	stamina.number.Text = commas(math.clamp(data.stamina or 0, 0, type(max) == "number" and max or Stamina.Max))
 	task.defer(fitAll)
@@ -240,9 +240,9 @@ local function refreshSubs()
 	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
 	for _, entry in ipairs(labels) do
 		for _, sub in ipairs(entry.subs) do
-			local level = data.muscles[sub.muscle.id].level
-			local maxed = level >= cap
-			sub.text.Text = sub.muscle.name .. "  " .. (maxed and "Max" or commas(Muscles.Shown(level)))
+			local entry = data.muscles[sub.muscle.id]
+			local maxed = entry.level >= cap
+			sub.text.Text = sub.muscle.name .. "  " .. (maxed and "Max" or commas(Muscles.MuscleExp(entry)))
 			sub.text.TextColor3 = maxed and Colors.Gold or Colors.Text
 			sub.back.Size = UDim2.fromOffset((sub.text.TextBounds.X + 12) * 1.5, SUB_HEIGHT - 2)
 		end

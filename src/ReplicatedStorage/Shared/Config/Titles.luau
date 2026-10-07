@@ -12,6 +12,9 @@
 --   season:    `min` reps during seasonal event `id` (Config.Seasons adds these automatically)
 --   never:     not obtainable yet (shows as ??? in the book)
 -- badgeId: optional Roblox badge awarded with the title (create the badge on the website, paste the id).
+local Muscles = require(script.Parent.Muscles)
+local function exp(level) return Muscles.FormatExp(Muscles.Shown(level)) .. " exp" end -- levels are shown as EXP
+
 local Titles = {}
 
 -- Display colors live in Shared.UI.Theme.Rarity.
@@ -32,7 +35,7 @@ Titles.List = {
 	{ id = "LockIn", name = "Lock In", rarity = "Rare", category = "Trend",
 		description = "Do 50 reps in one set.", condition = { type = "stat", stat = "bestSet", min = 50 } },
 	{ id = "GlowUp", name = "Glow Up", rarity = "Epic", category = "Trend",
-		description = "Get every muscle group to level 25.", condition = { type = "allGroups", minLevel = 25 } },
+		description = "Get every muscle group to " .. exp(25) .. ".", condition = { type = "allGroups", minLevel = 25 } },
 	{ id = "SkippedLegDay", name = "Skipped Leg Day", rarity = "Uncommon", category = "Physique",
 		description = "Chest at least twice as strong as your legs.", condition = { type = "ratio", group = "Chest", versus = "Legs", factor = 2, minLevel = 15 } },
 	{ id = "ChickenLegs", name = "Chicken Legs", rarity = "Uncommon", category = "Physique",
@@ -40,9 +43,9 @@ Titles.List = {
 	{ id = "BoulderShoulders", name = "Boulder Shoulders", rarity = "Rare", category = "Physique",
 		description = "Shoulders 1.5x stronger than your other groups.", condition = { type = "ratio", group = "Shoulders", versus = "Others", factor = 1.5, minLevel = 20 } },
 	{ id = "GreekStatue", name = "Greek Statue", rarity = "Epic", category = "Physique",
-		description = "Every group within 10% of each other, all level 30+.", condition = { type = "balanced", spread = 0.1, minLevel = 30 } },
+		description = "Every group within 10% of each other, all " .. exp(30) .. "+.", condition = { type = "balanced", spread = 0.1, minLevel = 30 } },
 	{ id = "AestheticsGod", name = "Aesthetics God", rarity = "Legendary", category = "Physique",
-		description = "Every group at level 45 or higher.", condition = { type = "allGroups", minLevel = 45 }, badgeId = nil },
+		description = "Every group at " .. exp(45) .. " or higher.", condition = { type = "allGroups", minLevel = 45 }, badgeId = nil },
 	{ id = "LateBloomer", name = "Late Bloomer", rarity = "Rare", category = "Growth Spurt",
 		description = "Do your first Growth Spurt.", condition = { type = "spurts", min = 1 } },
 	{ id = "Skyscraper", name = "Skyscraper", rarity = "Legendary", category = "Growth Spurt",

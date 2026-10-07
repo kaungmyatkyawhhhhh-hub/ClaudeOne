@@ -130,9 +130,9 @@ local function open(rigs)
 	addMuscles(after)
 	title.Text = player.DisplayName .. " · GYM ARC"
 	beforeName.Text = "Day one"
-	beforeInfo.Text = GrowthSpurts.FormatHeight(dayOne.height or GrowthSpurts.StartHeight) .. "  ·  Level " .. (dayOne.level or 0)
+	beforeInfo.Text = GrowthSpurts.FormatHeight(dayOne.height or GrowthSpurts.StartHeight) .. "  ·  " .. Muscles.FormatExp(Muscles.Shown(dayOne.level or 0)) .. " exp"
 	afterName.Text = "Now"
-	afterInfo.Text = GrowthSpurts.FormatHeight(nowHeight) .. "  ·  Level " .. averageLevel(data)
+	afterInfo.Text = GrowthSpurts.FormatHeight(nowHeight) .. "  ·  " .. Muscles.FormatExp(Muscles.TotalExp(data.muscles) / #Muscles.List) .. " exp"
 		.. (data.growthSpurts > 0 and ("  ·  Growth Spurt " .. data.growthSpurts) or "")
 	isOpen = true
 	gui.Enabled = true

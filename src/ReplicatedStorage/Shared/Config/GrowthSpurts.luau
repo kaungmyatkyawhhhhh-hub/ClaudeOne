@@ -1,5 +1,7 @@
 -- Growth Spurt n: reach `requiredLevel` in all 6 groups to do it; you become `height`
 -- inches tall with a permanent `bonus`. Your muscle level cap is the next spurt's requiredLevel.
+local Muscles = require(script.Parent.Muscles)
+
 local GrowthSpurts = {}
 
 GrowthSpurts.StartHeight = 48 -- 4'0"
@@ -63,17 +65,18 @@ function GrowthSpurts.GetGoal(spurts)
 	return GrowthSpurts.Get(spurts + 1).requiredLevel
 end
 
--- A group's level for the spurt goal: the average of its muscles you can train right now
--- (so a group never waits on a muscle no open machine trains).
+-- A group's level for the spurt goal: the average EXP of its muscles you can train right now (so a group never waits on a
+-- muscle no open machine trains), expressed as a (fractional) level. A group meets the goal exactly when its average EXP
+-- reaches the goal EXP shown on screen (50,000 for the first spurt).
 function GrowthSpurts.GoalLevel(muscleData, group, trainable)
 	local total, count = 0, 0
 	for _, muscle in ipairs(group.muscles) do
 		if trainable[muscle.id] then
-			total += muscleData[muscle.id].level
+			total += Muscles.EntryXp(muscleData[muscle.id])
 			count += 1
 		end
 	end
-	return count > 0 and total / count or 0
+	return count > 0 and Muscles.LevelFromXp(total / count) or 0
 end
 
 -- Progress toward the next Growth Spurt: { required, met, total, ready, groups = { [groupId] = goalLevel } }

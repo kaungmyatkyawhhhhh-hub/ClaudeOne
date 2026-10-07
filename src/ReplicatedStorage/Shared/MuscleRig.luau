@@ -24,6 +24,7 @@
 --   rig:Destroy()
 local AssetService = game:GetService("AssetService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local MuscleMeshes = require(script.Parent.MuscleMeshes)
 local Muscles = require(script.Parent.Config.Muscles)
@@ -41,7 +42,7 @@ local PUMP_STEP = 0.03     -- the small pulse
 local PULSE_TIME = 0.55
 local MIN_CHANGE = 0.0015
 local MARBLE = Color3.fromHex("#C9C6BF")
-local HIGHLIGHT = Color3.fromRGB(255, 30, 70) -- the stats hover highlight (neon red)
+local HIGHLIGHT = Color3.fromRGB(255, 45, 95) -- the stats hover highlight (neon red-pink)
 local REALLOCATE_EVERY = 0.4
 
 -- The snatched-waist torso is a unit of its own (two meshes) applied to the real UpperTorso / LowerTorso (MeshPart:ApplyMesh),
@@ -516,6 +517,7 @@ local function destroyGroup(group)
 	group.mesh, group.part, group.cloth, group.template, group.data, group.vertexIds, group.colors, group.body = nil, nil, nil, nil, nil, nil, nil, nil
 	group.applied = {}
 	group.lit = nil
+	group.glowOn, group.glowShades = nil, nil
 end
 
 local function destroyUnit(state)
@@ -701,27 +703,105 @@ end
 
 -- The stats hover highlight: every muscle id in `set` (a table { [id] = true }, or nil to clear) is painted neon red on the
 -- character `model` (only the meshes that are built). Cheap enough to do on hover.
+-- The neon glow keeps its shape: Neon material is emissive and flat, so the shading is baked into the lit faces. Each face gets
+-- the neon color scaled by how much it faces a fixed light (front, a little from above), in  steps, so the
+-- muscle reads as a glowing 3D shape and not a solid slab.
+local GLOW_SHADES = 12
+local GLOW_LIGHT = Vector3.new(-0.2, 0.7, -0.7).Unit
+local function glowFaces(group, range)
+	local mesh, data = group.mesh, group.data
+	if not group.glowShades then
+		group.glowShades = {}
+		for step = 1, GLOW_SHADES do
+			local k = 0.38 + 0.62 * (step - 1) / (GLOW_SHADES - 1)
+			group.glowShades[step] = mesh:AddColor(Color3.new(math.min(HIGHLIGHT.R * k * 1.0, 1), HIGHLIGHT.G * k, HIGHLIGHT.B * k), 1)
+		end
+	end
+	local g = group.applied[range] or 1
+	local base, delta, tris = data.base, data.delta, data.tris
+	for f = range.triFirst, range.triFirst + range.triCount - 1 do
+		local a, b, c = tris[f * 3 - 2] + 1, tris[f * 3 - 1] + 1, tris[f * 3] + 1
+		local pa, pb, pc = base[a] + delta[a] * g, base[b] + delta[b] * g, base[c] + delta[c] * g
+		local normal = (pb - pa):Cross(pc - pa)
+		local shade = 0.5
+		if normal.Magnitude > 1e-9 then
+			normal = normal.Unit
+			-- outward = away from the part centre
+			if normal:Dot((pa + pb + pc) / 3) < 0 then normal = -normal end
+			shade = math.clamp(0.5 + 0.5 * normal:Dot(GLOW_LIGHT), 0, 1)
+		end
+		local id = group.glowShades[1 + math.floor(shade * (GLOW_SHADES - 1) + 0.5)]
+		mesh:SetFaceColors(group.faceIds[f], { id, id, id })
+	end
+end
+
 function MuscleRig.SetHighlight(model: Model, set: { [string]: boolean }?)
 	for rig in pairs(active) do
 		if rig.model == model then
 			for _, state in ipairs(rig.units) do
 				for _, group in ipairs(state.groups) do
-					if group.mesh and group.faceIds then
-						local skin, shorts, top = colorsOf(rig)
-						pcall(function()
-							for _, range in ipairs(group.data.ranges) do
-								local lit = set ~= nil and set[range.id] == true
-								if lit ~= (group.lit and group.lit[range] or false) then
-									group.lit = group.lit or {}
-									group.lit[range] = lit
-									local normal = if range.shorts then group.colors[2] elseif range.id and group.def.part == "UpperTorso" then group.colors[3] else group.colors[1]
-									local color = lit and group.glowId or normal
-									for f = range.triFirst, range.triFirst + range.triCount - 1 do
-										group.mesh:SetFaceColors(group.faceIds[f], { color, color, color })
+					if group.mesh and group.faceIds and group.part then
+						-- which muscles of this mesh are lit now
+						local anyLit = false
+						for _, range in ipairs(group.data.ranges) do
+							if set ~= nil and set[range.id] == true then anyLit = true end
+						end
+						if anyLit then
+							-- the lit muscles glow: the part turns Neon (emissive, so the vertex colors show at full strength and the
+							-- scene's bloom picks them up), the lit faces get the neon color, every other muscle on the part is dimmed so
+							-- the glow stands out, the clothing layer steps aside and a pulsing light spills the glow around
+							pcall(function()
+								local dim = Color3.new(0.34, 0.31, 0.31)
+								for _, id in ipairs(group.colors) do group.mesh:SetColor(id, dim) end
+								for _, range in ipairs(group.data.ranges) do
+									local lit = set[range.id] == true
+									if lit ~= (group.lit and group.lit[range] or false) or not group.glowOn then
+										group.lit = group.lit or {}
+										group.lit[range] = lit
+										local normal = if range.shorts then group.colors[2] elseif group.def.part == "UpperTorso" then group.colors[3] else group.colors[1]
+										if lit then
+											glowFaces(group, range)
+										else
+											for f = range.triFirst, range.triFirst + range.triCount - 1 do
+												group.mesh:SetFaceColors(group.faceIds[f], { normal, normal, normal })
+											end
+										end
 									end
 								end
+							end)
+							if not group.glowOn then
+								group.glowOn = true
+								group.part.Material = Enum.Material.Neon
+								group.part.Color = Color3.new(1, 1, 1)
+								if group.cloth then group.cloth.Transparency = 1 end
+								local light = Instance.new("PointLight")
+								light.Name = "HighlightGlow"
+								light.Color = HIGHLIGHT
+								light.Range = 5
+								light.Brightness = 0.8
+								light.Shadows = false
+								light.Parent = group.part
+								TweenService:Create(light, TweenInfo.new(0.55, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Brightness = 1.6, Range = 7 }):Play()
 							end
-						end)
+						elseif group.glowOn then
+							-- back to normal: faces, colors, material, clothing
+							group.glowOn = false
+							local light = group.part:FindFirstChild("HighlightGlow")
+							if light then light:Destroy() end
+							pcall(function()
+								for _, range in ipairs(group.data.ranges) do
+									if group.lit and group.lit[range] then
+										local normal = if range.shorts then group.colors[2] elseif group.def.part == "UpperTorso" then group.colors[3] else group.colors[1]
+										for f = range.triFirst, range.triFirst + range.triCount - 1 do
+											group.mesh:SetFaceColors(group.faceIds[f], { normal, normal, normal })
+										end
+									end
+								end
+							end)
+							group.lit = nil
+							recolor(rig, group)
+							if group.cloth then group.cloth.Transparency = CLOTH_TRANSPARENCY end
+						end
 					end
 				end
 			end

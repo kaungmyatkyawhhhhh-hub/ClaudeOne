@@ -9,6 +9,11 @@
 --   titles       own `count` titles
 --   spurts       Growth Spurt count at least `count` (new players start at 0)
 -- reward: { coins = n, dnaTokens = n, shakes = n } (any of them)
+local Muscles = require(script.Parent.Muscles)
+
+-- quest levels are shown as EXP (Muscles.Shown)
+local function exp(level) return Muscles.FormatExp(Muscles.Shown(level)) end
+
 local Quests = {}
 
 Quests.Chain = {
@@ -17,10 +22,10 @@ Quests.Chain = {
 	{ id = "GoHeavier", text = "Unlock a heavier weight on any machine", type = "anyTier", tier = 2, reward = { coins = 20 } },
 	{ id = "BackDay", text = "Do 20 reps on the Deadlift or Barbell Row", type = "machineReps", machines = { "Deadlift", "BarbellRow" }, count = 20, reward = { coins = 25, shakes = 1 } },
 	{ id = "PullUps", text = "Do 15 reps on the Pull-Up Bar", type = "machineReps", machines = { "PullUpBar" }, count = 15, reward = { coins = 25 } },
-	{ id = "ChestTen", text = "Get your Chest to level 10", type = "groupLevel", group = "Chest", level = 10, reward = { coins = 40 } },
+	{ id = "ChestTen", text = "Get your Chest to " .. exp(10) .. " exp", type = "groupLevel", group = "Chest", level = 10, reward = { coins = 40 } },
 	{ id = "Shoulders", text = "Do 25 Overhead Press reps", type = "machineReps", machines = { "OverheadPress" }, count = 25, reward = { coins = 35 } },
 	{ id = "Crunches", text = "Do 25 reps on the Crunch Bench", type = "machineReps", machines = { "CrunchBench" }, count = 25, reward = { coins = 35, shakes = 1 } },
-	{ id = "AllFive", text = "Get every muscle group to level 5", type = "allGroups", level = 5, reward = { coins = 60 } },
+	{ id = "AllFive", text = "Get every muscle group to " .. exp(5) .. " exp", type = "allGroups", level = 5, reward = { coins = 60 } },
 	{ id = "ThreeTitles", text = "Earn 3 titles", type = "titles", count = 3, reward = { coins = 60 } },
 	{ id = "Grind", text = "Do 200 reps", type = "reps", count = 200, reward = { coins = 100, dnaTokens = 1 } },
 	{ id = "FirstSpurt", text = "Do your first Growth Spurt", type = "spurts", count = 1, reward = { coins = 200, shakes = 2 } },

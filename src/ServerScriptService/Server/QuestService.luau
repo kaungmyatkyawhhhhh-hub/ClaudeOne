@@ -42,13 +42,13 @@ local function measure(data, quest)
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	if quest.type == "groupLevel" then
 		local group = Muscles.GroupById[quest.group]
-		return math.floor(GrowthSpurts.GoalLevel(data.muscles, group, trainable)), quest.level
+		return Muscles.Shown(GrowthSpurts.GoalLevel(data.muscles, group, trainable)), Muscles.Shown(quest.level) -- in EXP, like the screen
 	elseif quest.type == "allGroups" then
 		local lowest = math.huge
 		for _, group in ipairs(Muscles.Groups) do
 			lowest = math.min(lowest, GrowthSpurts.GoalLevel(data.muscles, group, trainable))
 		end
-		return math.floor(lowest), quest.level
+		return Muscles.Shown(lowest), Muscles.Shown(quest.level)
 	elseif quest.type == "anyTier" then
 		local best = 1
 		for _, progress in pairs(data.machines) do best = math.max(best, progress.unlocked or 1) end
