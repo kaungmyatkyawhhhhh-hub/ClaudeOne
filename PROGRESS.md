@@ -44,6 +44,10 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
   Persistent Models (were Folders; the builders make Models too).
 
+- **Equipment (7 Oct):** "MM BC" on every plate (templates rebuilt, 157 placed plates branded in place; those keep their old
+  thickness, only bar/machine plates got thinner), end collars on bars, Leg Press + Hack Squat (2 + 2 starter, 1 + 1 pro),
+  quests "Do 15 leg presses / hack squats", exercises line on the Muscles cards.
+
 ## Limits (found in Studio, not fixable here)
 - A client can hold only **8 live EditableMeshes**; your character uses all 8 (snatched torso 2, front torso, back, upper
   arms 2, upper legs 2). Forearms, calves, other players, NPCs and the statue get little or no muscle unless a live server allows more.

@@ -7,8 +7,9 @@ the recipes that made the code-made areas into real parts, kept so an area can b
 
 | Builder | Makes | Wired by |
 |---|---|---|
-| `GymAssets` | `ReplicatedStorage.GymAssets`: plate templates `Plates.Plate55..Plate5` (CSG faces, rim, hub, number on `FaceRight`/`FaceLeft`), `BarSleeve` | MachineService (plates on bars), RetentionService (loose plates), GymKit |
+| `GymAssets` | `ReplicatedStorage.GymAssets`: plate templates `Plates.Plate55..Plate5` (CSG faces, rim, hub, number on `FaceRight`/`FaceLeft`, the "MM BC" brand on `BrandRight`/`BrandLeft`; `GymAssets.Brand(model, weight)` brands an older plate), `BarSleeve` | MachineService (plates on bars), RetentionService (loose plates), GymKit |
 | `GymKit` | (helper module) all gym equipment and props: plate-loaded starter machines, pro machines with weight stacks (`Stack` attribute, `StackBlock1..12`), racks, cardio, desk, lockers, posters, mirrors, pendants | used by `Gyms` |
+| `GymKit.LegPress` / `GymKit.HackSquat` | the plate-loaded leg machines (Sled / Carriage load part, `Rides` folder, Rail* attributes). Placed by hand (7 Oct): starter gym x 15 z -41.5 / -48.5 (leg presses, facing -X), x 9.5 / 16.5 z -56.5 (hack squats); pro gym (86, -35.5) and (78, -28.5) | MachineService, MachineClient |
 | `Gyms` | `Workspace.Gym.StarterGym` (72 x 70 room, zones, props, lights), `Workspace.Gym.Machines` (18 machines), `Workspace.ProGym` (room, 15 machines, `GlassWall.GlassDoor` with `Blocker`, lockers, podium), `Workspace.Gym.NpcSpots`. Keeps `Workspace.Gym.Entrance`. Needs `GymAssets` first | MachineService, ProGymService, ProGymClient, GymGoerService |
 | `ProGym` | old pro gym builder; only `ProGym.BuildMachine` is still used (by `Town` for the beach gym) | |
 | `TownKit` | (helper module) trees, palms, bushes, flowers, rocks, street lamp, bench, bin, bike rack, hydrant, bus stop, signpost, string lights, the building facade generator, umbrellas, beach chairs, surfboards | used by `Town` |

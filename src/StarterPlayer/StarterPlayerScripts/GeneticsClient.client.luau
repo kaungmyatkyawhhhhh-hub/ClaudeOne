@@ -27,6 +27,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = Shared:WaitForChild("Config")
 local Muscles = require(Config.Muscles)
 local Genetics = require(Config.Genetics)
+local Machines = require(Config.Machines)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
@@ -399,6 +400,20 @@ local function makePlate(grade, diameter, thickness, hub, groupName, parent)
 			Parent = canvas,
 		})
 	end
+	-- the gym brand, small near the rim (like every plate in the gym)
+	New("TextLabel", {
+		Name = "Brand",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, if groupName then 0.885 else 0.8),
+		Size = UDim2.fromScale(0.34, 0.07),
+		BackgroundTransparency = 1,
+		Text = Machines.Brand,
+		FontFace = Theme.Fonts.Bold,
+		TextSize = math.floor(px * 0.06),
+		TextColor3 = style.Text,
+		TextTransparency = 0.45,
+		Parent = canvas,
+	})
 	-- S: a shine band that can sweep across the face once (clipped to the round face by a CanvasGroup)
 	local shine = nil
 	if grade == "S" then

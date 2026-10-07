@@ -15,15 +15,25 @@ Machines.Progression = {
 }
 
 -- Plates per weight: one color per weight, used the same way everywhere (bars, racks, the HUD barbell).
--- color = Theme.Bumper key ("Steel" = small metal change plate). Sizes in studs.
+-- color = Theme.Bumper key ("Steel" = small metal change plate). Sizes in studs. Thin like calibrated plates, so the
+-- heaviest tier fits the sleeves (tests/machines checks every tier fits Machines.SleeveRoom).
 Machines.Plates = {
-	[55] = { thickness = 0.36, diameter = 2.3, color = "Red" },
-	[45] = { thickness = 0.3, diameter = 2.3, color = "Blue" },
-	[35] = { thickness = 0.26, diameter = 2.05, color = "Yellow" },
-	[25] = { thickness = 0.22, diameter = 1.75, color = "Green" },
-	[10] = { thickness = 0.18, diameter = 1.3, color = "White" },
-	[5] = { thickness = 0.12, diameter = 0.95, color = "Steel" },
+	[55] = { thickness = 0.2, diameter = 2.3, color = "Red" },
+	[45] = { thickness = 0.17, diameter = 2.3, color = "Blue" },
+	[35] = { thickness = 0.15, diameter = 2.05, color = "Yellow" },
+	[25] = { thickness = 0.13, diameter = 1.75, color = "Green" },
+	[10] = { thickness = 0.1, diameter = 1.3, color = "White" },
+	[5] = { thickness = 0.07, diameter = 0.95, color = "Steel" },
 }
+Machines.PlateGap = 0.02   -- between plates on a sleeve
+Machines.SleeveRoom = 1.55 -- studs of sleeve for plates (the BarSleeve is 1.75 long, the end collar takes the rest)
+-- Width of one side's plates (plus gaps and the end collar) for a tier.
+function Machines.StackWidth(tier): number
+	local width = 0.12 -- the end collar
+	for _, lb in ipairs(tier.plates) do width += Machines.Plates[lb].thickness + Machines.PlateGap end
+	return width
+end
+Machines.Brand = "MM BC" -- printed on every plate face (the owner's gym brand)
 Machines.PlateOrder = { 55, 45, 35, 25, 10, 5 } -- heaviest first (inside on the sleeve, bottom of a stack)
 
 -- rows: { weight, plates per side, label? }; the first row is the empty bar / bodyweight / lightest stack
@@ -54,6 +64,12 @@ Machines.TierSets = {
 		{ 255, { 55, 45, 5 } }, { 275, { 55, 55, 5 } }, { 315, { 55, 55, 25 } }, { 365, { 55, 55, 45, 5 } },
 		{ 405, { 55, 55, 45, 25 } }, { 455, { 55, 55, 55, 35, 5 } },
 	}, "Empty Bar"),
+	-- Leg press and hack squat: the same heavy loading as a squat, on a sled / carriage.
+	Sled = tierSet({
+		{ 45, {} }, { 95, { 25 } }, { 135, { 45 } }, { 165, { 55, 5 } }, { 185, { 45, 25 } }, { 225, { 45, 45 } },
+		{ 255, { 55, 45, 5 } }, { 275, { 55, 55, 5 } }, { 315, { 55, 55, 25 } }, { 365, { 55, 55, 45, 5 } },
+		{ 405, { 55, 55, 45, 25 } }, { 455, { 55, 55, 55, 35, 5 } },
+	}, "Empty Sled"),
 	-- Pull-ups, dips, crunches: bodyweight, then plates added (belt / held on the chest).
 	Bodyweight = tierSet({
 		{ 0, {}, "BW" }, { 5, { 5 }, "+5" }, { 10, { 10 }, "+10" }, { 15, { 10, 5 }, "+15" }, { 25, { 25 }, "+25" },
@@ -136,6 +152,18 @@ Machines.List = {
 		muscles = { { id = "Abs", share = 1 }, { id = "Obliques", share = 0.6 } }, -- (the obliques work on every crunch: the starter gym trains them too)
 		tiers = Machines.TierSets.Bodyweight, staminaCost = 4,
 	},
+	-- Plate-loaded leg machines (also placed in the pro gym). load = the part that slides on the machine's rail with the
+	-- rep (the sled's foot platform / the hack squat carriage), see the model's Rail* attributes (GymKit).
+	{
+		id = "LegPress", name = "Leg Press", gym = "Starter", pose = "LegPress", load = "Sled",
+		muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.42 }, { id = "Hamstrings", share = 0.25 } },
+		tiers = Machines.TierSets.Sled, staminaCost = 6,
+	},
+	{
+		id = "HackSquat", name = "Hack Squat", gym = "Starter", pose = "HackSquat", load = "Carriage",
+		muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.2 }, { id = "Calves", share = 0.13 } },
+		tiers = Machines.TierSets.Sled, staminaCost = 6,
+	},
 }
 
 -- Pro gym (opens at Growth Spurt 2). Built from code by ProGymService; every one carries its plates on a
@@ -205,15 +233,32 @@ end
 -- Gyms open by Growth Spurt count (the pro gym opens at Growth Spurt 2).
 Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 2, Seasonal = 0 }
 
--- Set of muscle ids that some open machine trains (main or secondary).
+-- Set of muscle ids that some open machine trains (main or a real secondary: a light touch, below GoalShare, like the
+-- hack squat's calves, still gains a little but doesn't put that muscle into the Growth Spurt goal).
+Machines.GoalShare = 0.2
 function Machines.TrainableMuscles(growthSpurts)
 	local set = {}
 	for _, machine in ipairs(Machines.List) do
 		if growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) then
-			for _, entry in ipairs(machine.muscles) do set[entry.id] = true end
+			for _, entry in ipairs(machine.muscles) do
+				if (entry.share or 1) >= Machines.GoalShare then set[entry.id] = true end
+			end
 		end
 	end
 	return set
+end
+
+-- The open machines whose MAIN muscle is in a group (the Muscles panel lists them as the group's exercises).
+function Machines.ExercisesFor(groupId: string, growthSpurts: number, muscleGroup: (string) -> string): { string }
+	local names, seen = {}, {}
+	for _, machine in ipairs(Machines.List) do
+		local open = growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.gym ~= "Seasonal"
+		if open and muscleGroup(machine.muscles[1].id) == groupId and not seen[machine.name] then
+			seen[machine.name] = true
+			table.insert(names, machine.name)
+		end
+	end
+	return names
 end
 
 return Machines

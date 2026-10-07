@@ -2,7 +2,8 @@
 --   Lie:   body = exact HumanoidRootPart CFrame.
 --   Stand: position on the floor + yaw; height comes from the character's hip height.
 --   Hang:  like Stand, but the height is set so straight arms reach barHeight.
--- follow = what carries the plates while lifting: "Hands", "Back", "Hips" or "None".
+-- follow = what carries the plates while lifting: "Hands", "Back", "Hips", "None" or "Rail" (the load slides along the
+-- machine's rail to the lifter's feet / shoulders: model attributes RailAxis, RailAnchor, RailOffset, RailMin, RailMax).
 local FACE_FORWARD = 180 -- yaw that faces the character toward +Z
 
 local Poses = {
@@ -25,6 +26,15 @@ local Poses = {
 	OverheadPress = { kind = "Stand", position = Vector3.new(0, 0.25, 0.4), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, 4), follow = "Hands" },
 	BarbellRow = { kind = "Stand", position = Vector3.new(0, 0.25, 0.75), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, 4), follow = "Hands" },
 	PullUp = { kind = "Hang", position = Vector3.new(0, 0, 0), barHeight = 9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, 3.5), follow = "Hips" },
+	-- Leg press: reclined 50 degrees on the seat, legs toward the sled (the sled rides the rail to the feet).
+	LegPress = {
+		kind = "Lie",
+		body = CFrame.lookAt(Vector3.new(0, 2.0, -0.6), Vector3.new(0, 2.766, 0.043), Vector3.new(0, 0.643, -0.766)),
+		exit = Vector3.new(2.8, 0, -0.6),
+		follow = "Rail",
+	},
+	-- Hack squat: standing on the platform, back on the pad, shoulders under the pads (the carriage rides with them).
+	HackSquat = { kind = "Stand", position = Vector3.new(0, 0.55, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, 3), follow = "Rail" },
 	Crunch = {
 		kind = "Lie",
 		body = CFrame.lookAt(Vector3.new(0, 2.35, -0.6), Vector3.new(0, 3.35, -0.6), Vector3.new(0, 0, -1)),

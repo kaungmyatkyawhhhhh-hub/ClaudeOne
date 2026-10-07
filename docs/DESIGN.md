@@ -139,7 +139,13 @@ the EXP shown for a group is its muscles ADDED UP (Core = Abs + Obliques), and a
 Starter gym: Flat Bench (Mid Chest; Front Delts, Triceps), Incline Bench (Upper Chest; Front Delts, Triceps),
 Squat Rack (Quads; Glutes, Lower Back), Deadlift (Lower Back; Hamstrings, Glutes, Traps, Forearms),
 Overhead Press (Front Delts; Side Delts, Triceps), Pull-Up Bar (Lats; Biceps, Rear Delts),
-Barbell Row (Rhomboids; Lats, Rear Delts, Biceps), Crunch Bench (Abs; Obliques).
+Barbell Row (Rhomboids; Lats, Rear Delts, Biceps), Crunch Bench (Abs; Obliques),
+Leg Press (Quads; Glutes, Hamstrings) and Hack Squat (Quads; Glutes, a light touch of Calves): plate-loaded, the sled /
+carriage slides on its rail with the rep; 2 of each in the starter gym, 1 of each in the pro gym. A secondary under 20%
+(the hack squat's calves) gains EXP but doesn't put that muscle into the Growth Spurt goal.
+Every plate carries the gym brand "MM BC" on both faces (small, above the hub, a shade of the plate color); plates are
+thin like calibrated plates so the heaviest tier fits the sleeves, with a collar at the end. The Muscles panel lists
+each group's exercises.
 Pro gym (unlocks at Growth Spurt 2): Dips (Mid Chest; Triceps, Front Delts), Lateral Raise (Side Delts),
 Reverse Fly (Rear Delts; Rhomboids), Shrugs (Traps; Forearms), Leg Curl (Hamstrings), Hip Thrust (Glutes; Hamstrings),
 Calf Raise (Calves), Bicep Curl (Biceps; Forearms), Tricep Pushdown (Triceps), Hanging Leg Raise (Abs; Forearms),

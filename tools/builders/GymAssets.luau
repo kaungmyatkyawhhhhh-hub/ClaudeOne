@@ -4,6 +4,8 @@
 --                               outer rim, an inset ring, a metal hub with a hole, and the weight number on both faces
 --                               (SurfaceGuis "LabelRight"/"LabelLeft", off by default: whoever places the plate turns
 --                               on the face people see). The plate's axis is the model's X axis, centered at the pivot.
+--                               Both faces also carry the gym brand (Machines.Brand, "MM BC") above the hub, always on,
+--                               on their own thin parts "BrandRight"/"BrandLeft" (Builder.Brand adds it to older plates).
 --   BarSleeve                   chrome sleeve + collar for one end of a barbell (MachineService puts them on bars)
 -- Uses CSG (GeometryService), so it must run in Studio. Re-running replaces the folder.
 local GeometryService = game:GetService("GeometryService")
@@ -77,6 +79,55 @@ local function label(body, face, text, color, diameter)
 	return gui
 end
 
+-- The brand: small bold condensed text straight across above the hub, a lighter (dark plates) or darker (light
+-- plates) shade of the plate color, on both faces, always shown within BRAND_DISTANCE.
+local BRAND_DISTANCE = 45
+local function brand(model, weight)
+	local spec = Machines.Plates[weight]
+	if not spec then return end
+	for _, name in ipairs({ "BrandRight", "BrandLeft" }) do
+		local old = model:FindFirstChild(name)
+		if old then old:Destroy() end
+	end
+	local bumper = Theme.Bumper[spec.color] or Theme.Bumper.Black
+	local fill = bumper.Fill
+	local light = bumper.Text == Theme.Colors.Ink -- white, yellow, steel plates
+	local color = if light then fill:Lerp(Color3.new(0, 0, 0), 0.38) else fill:Lerp(Color3.new(1, 1, 1), 0.42)
+	local d, t = spec.diameter, spec.thickness
+	local recess = math.min(0.04, t * 0.15)
+	local font = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold)
+	for _, side in ipairs({ { Enum.NormalId.Right, 1 }, { Enum.NormalId.Left, -1 } }) do
+		local face = Instance.new("Part")
+		face.Name = "Brand" .. side[1].Name
+		face.Size = Vector3.new(0.01, d * 0.84, d * 0.84)
+		face.CFrame = model:GetPivot() * CFrame.new(side[2] * (t / 2 - recess + 0.024), 0, 0)
+		face.Transparency = 1
+		face.Anchored = true
+		face.CanCollide, face.CanQuery, face.CanTouch, face.CastShadow = false, false, false, false
+		face.Parent = model
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "Brand"
+		gui.Face = side[1]
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 60
+		gui.LightInfluence = 1
+		gui.MaxDistance = BRAND_DISTANCE
+		gui.Parent = face
+		local text = Instance.new("TextLabel")
+		text.Name = "Brand"
+		text.AnchorPoint = Vector2.new(0.5, 0.5)
+		text.Position = UDim2.fromScale(0.5, 0.29)
+		text.Size = UDim2.fromScale(0.46, 0.085)
+		text.BackgroundTransparency = 1
+		text.Text = Machines.Brand
+		text.TextColor3 = color
+		text.FontFace = font
+		text.TextScaled = true -- world-space text on a plate face
+		text.Parent = gui
+	end
+end
+Builder.Brand = brand
+
 local function buildPlate(weight, spec)
 	local model = Instance.new("Model")
 	model.Name = "Plate" .. weight
@@ -133,6 +184,7 @@ local function buildPlate(weight, spec)
 	end
 	model.PrimaryPart = body
 	model.WorldPivot = CFrame.new()
+	brand(model, weight)
 	model:SetAttribute("Weight", weight)
 	model:SetAttribute("Thickness", t)
 	model:SetAttribute("Diameter", d)

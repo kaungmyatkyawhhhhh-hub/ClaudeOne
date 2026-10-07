@@ -345,6 +345,139 @@ GymKit.Starter = {
 local STACK_BLOCKS = 12
 
 -- A weight stack tower at `cframe` (floor, facing local +Z toward the lifter). Returns the top pulley position.
+------------------------------------------------------------------------
+-- Plate-loaded leg machines (Leg Press, Hack Squat). The load part (Sled / Carriage) slides on the machine's rail with the
+-- rep (MachineClient follow = "Rail"); everything that moves with it is in the "Rides" folder. Plates go on BarSleeve
+-- horns beside it (SleeveStart attribute = where the horns start, from the load's centre, along its X axis).
+------------------------------------------------------------------------
+-- a part laid in an inclined frame: o = the frame's rotation (model space), size in that frame
+local function inclined(m, name, size, pivot, position, o, color, material, solid)
+	return p(m, name, size, pivot * CFrame.new(position) * o, color, material, solid)
+end
+
+function GymKit.LegPress(parent, pivot)
+	local m, machine = machineShell(parent, "LegPress", pivot)
+	-- the lifter's hips (Config.Poses.LegPress), the seat back direction u and the sled rail direction f (50 degrees up)
+	local hips = Vector3.new(0, 2.0, -0.6)
+	local u = Vector3.new(0, 0.643, -0.766)
+	local f = Vector3.new(0, 0.766, 0.643)
+	local o = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, u) -- Y along the seat back, Z along the rail
+	-- base frame on the floor
+	for _, x in ipairs({ -1.25, 1.25 }) do
+		p(m, "Runner", Vector3.new(0.3, 0.25, 8.2), at(pivot, x, 0.125, 0.6), C.Frame, M.Metal, true)
+		p(m, "RunnerFoot", Vector3.new(0.5, 0.06, 0.5), at(pivot, x, 0.03, -3.3), C.Rubber, M.Rubber)
+		p(m, "RunnerFoot", Vector3.new(0.5, 0.06, 0.5), at(pivot, x, 0.03, 4.5), C.Rubber, M.Rubber)
+	end
+	for _, z in ipairs({ -3.2, 0.2, 3.4 }) do
+		p(m, "CrossMember", Vector3.new(2.8, 0.22, 0.3), at(pivot, 0, 0.13, z), C.Frame, M.Metal, true)
+	end
+	-- the seat: a long reclined back pad and a short seat pad under the hips, on a column and a rear post
+	local back = inclined(m, "BackPad", Vector3.new(1.7, 3.0, 0.38), pivot, hips - f * 0.72 + u * 1.05, o, C.Pad, M.Leather, true)
+	inclined(m, "BackBoard", Vector3.new(1.6, 2.9, 0.1), pivot, hips - f * 0.96 + u * 1.05, o, hex("#3A2A1E"), M.Wood)
+	inclined(m, "Piping", Vector3.new(1.72, 3.02, 0.04), pivot, hips - f * 0.55 + u * 1.05, o, hex("#141212"), M.Leather)
+	inclined(m, "SeatPad", Vector3.new(1.7, 1.0, 0.38), pivot, hips - f * 0.72 - u * 0.95 + f * 0.12, o * CFrame.Angles(math.rad(-25), 0, 0), C.Pad, M.Leather, true)
+	p(m, "SeatColumn", Vector3.new(0.4, 1.5, 0.4), at(pivot, 0, 0.85, -1.15), C.Frame, M.Metal, true)
+	p(m, "SeatBracket", Vector3.new(1.0, 0.18, 1.2), at(pivot, 0, 1.6, -1.25), C.Frame, M.Metal, true)
+	post(m, at(pivot, 0, 0.25, -3.3), 2.6, false)
+	inclined(m, "BackBrace", Vector3.new(0.3, 0.3, 1.4), pivot, Vector3.new(0, 2.55, -2.85), CFrame.Angles(math.rad(35), 0, 0), C.Frame, M.Metal, true)
+	-- side handles by the hips
+	for _, x in ipairs({ -1.05, 1.05 }) do
+		p(m, "HandlePost", Vector3.new(0.18, 1.35, 0.18), at(pivot, x, 0.9, -0.55), C.Frame, M.Metal, true)
+		cyl(m, "Handle", 0.9, 0.16, at(pivot, x, 1.62, -0.35, 0, 90, 0), C.Chrome, M.Metal)
+		cyl(m, "Grip", 0.5, 0.2, at(pivot, x, 1.62, -0.2, 0, 90, 0), C.Rubber, M.Rubber)
+	end
+	-- the two guide rails (along f), their posts and end stops
+	for _, x in ipairs({ -1.05, 1.05 }) do
+		local line = Vector3.new(x, hips.Y, hips.Z) - u * 0.55
+		inclined(m, "Rail", Vector3.new(0.22, 0.22, 5.0), pivot, line + f * 3.1, o, C.Chrome, M.Metal, true)
+		inclined(m, "RailStop", Vector3.new(0.34, 0.34, 0.2), pivot, line + f * 5.65, o, C.Rubber, M.Rubber)
+		local top = line + f * 5.4
+		p(m, "RailPost", Vector3.new(0.32, top.Y, 0.32), at(pivot, x, top.Y / 2, top.Z + 0.1), C.Frame, M.Metal, true)
+		local low = line + f * 0.7
+		p(m, "RailFoot", Vector3.new(0.32, low.Y, 0.32), at(pivot, x, low.Y / 2, low.Z), C.Frame, M.Metal, true)
+		inclined(m, "RailBrace", Vector3.new(0.24, 0.24, 3.0), pivot, Vector3.new(x, 1.6, 2.4), CFrame.Angles(math.rad(-38), 0, 0), C.Frame, M.Metal, true)
+	end
+	p(m, "TopCross", Vector3.new(2.4, 0.26, 0.3), at(pivot, 0, (hips - u * 0.55 + f * 5.4).Y, (hips - u * 0.55 + f * 5.4).Z + 0.1), C.Frame, M.Metal, true)
+	-- the sled: the foot platform is the load ("Sled"); its carriage, rollers and heel lip ride with it
+	local rest = hips + f * 3.3
+	local sled = inclined(m, "Sled", Vector3.new(2.3, 2.0, 0.16), pivot, rest, o, hex("#3A3A3F"), M.DiamondPlate)
+	local rides = Instance.new("Folder")
+	rides.Name = "Rides"
+	rides.Parent = m
+	inclined(rides, "SledFrame", Vector3.new(2.4, 2.1, 0.08), pivot, rest + f * 0.12, o, C.Frame, M.Metal)
+	inclined(rides, "SledBeam", Vector3.new(2.5, 0.26, 0.4), pivot, rest + f * 0.36, o, C.Frame, M.Metal)
+	inclined(rides, "SledBeam", Vector3.new(2.5, 0.26, 0.4), pivot, rest + f * 0.36 - u * 0.8, o, C.Frame, M.Metal)
+	inclined(rides, "HeelLip", Vector3.new(2.3, 0.1, 0.28), pivot, rest - u * 1.0 - f * 0.12, o, C.Frame, M.Metal)
+	for _, x in ipairs({ -1.05, 1.05 }) do
+		inclined(rides, "Roller", Vector3.new(0.34, 0.5, 1.0), pivot, Vector3.new(x, rest.Y, rest.Z) - u * 0.55 + f * 0.1, o, hex("#2E2E33"), M.Metal)
+		inclined(rides, "SafetyHandle", Vector3.new(0.12, 0.12, 0.7), pivot, Vector3.new(x * 1.12, rest.Y, rest.Z) - u * 0.9 - f * 0.25, o, C.Chrome, M.Metal)
+	end
+	promptOn(back, machine)
+	m:SetAttribute("SleeveStart", 1.25)
+	m:SetAttribute("RailAxis", f)
+	m:SetAttribute("RailAnchor", "Feet")
+	m:SetAttribute("RailOffset", 0.33)
+	m:SetAttribute("RailMin", -2.8)
+	m:SetAttribute("RailMax", 0)
+	sled.CanQuery = false
+	return m
+end
+
+function GymKit.HackSquat(parent, pivot)
+	local m, machine = machineShell(parent, "HackSquat", pivot)
+	-- the lifter stands at the pivot facing +Z, leaning back on the pad; the rail r tilts back 12 degrees, n = the pad's front
+	local r = Vector3.new(0, 0.978, -0.208)
+	local n = Vector3.new(0, 0.208, 0.978)
+	local o = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, r) -- Y along the rail, Z = the pad's front
+	-- base and the foot platform (diamond plate, a toe lip)
+	for _, x in ipairs({ -1.0, 1.0 }) do
+		p(m, "Runner", Vector3.new(0.3, 0.25, 4.6), at(pivot, x, 0.125, -0.5), C.Frame, M.Metal, true)
+	end
+	p(m, "FootPlatform", Vector3.new(2.6, 0.12, 2.0), at(pivot, 0, 0.49, 0.35), hex("#3A3A3F"), M.DiamondPlate, true)
+	p(m, "PlatformFrame", Vector3.new(2.7, 0.3, 2.1), at(pivot, 0, 0.3, 0.35), C.Frame, M.Metal, true)
+	p(m, "ToeLip", Vector3.new(2.6, 0.18, 0.12), at(pivot, 0, 0.62, 1.34), C.Frame, M.Metal)
+	-- the two rails (along r) from the base to the top, with rear posts and a top bar
+	local foot = Vector3.new(0, 0.6, -1.05)
+	for _, x in ipairs({ -0.95, 0.95 }) do
+		inclined(m, "Rail", Vector3.new(0.22, 7.4, 0.22), pivot, Vector3.new(x, foot.Y, foot.Z) + r * 3.7, o, C.Chrome, M.Metal, true)
+		local top = Vector3.new(x, foot.Y, foot.Z) + r * 7.4
+		p(m, "RearPost", Vector3.new(0.32, top.Y, 0.32), at(pivot, x, top.Y / 2, top.Z - 0.3), C.Frame, M.Metal, true)
+		p(m, "PostFoot", Vector3.new(0.6, 0.08, 0.6), at(pivot, x, 0.04, top.Z - 0.3), C.Frame, M.Metal)
+		inclined(m, "RailStop", Vector3.new(0.34, 0.2, 0.34), pivot, Vector3.new(x, foot.Y, foot.Z) + r * 7.45, o, C.Rubber, M.Rubber)
+		p(m, "RailBase", Vector3.new(0.4, 0.5, 0.5), at(pivot, x, 0.5, foot.Z), C.Frame, M.Metal, true)
+	end
+	local topCenter = foot + r * 7.4
+	p(m, "TopBar", Vector3.new(2.2, 0.28, 0.32), at(pivot, 0, topCenter.Y, topCenter.Z - 0.3), C.Frame, M.Metal, true)
+	p(m, "MidBar", Vector3.new(2.2, 0.24, 0.3), at(pivot, 0, 3.0, topCenter.Z - 0.3), C.Frame, M.Metal, true)
+	-- the carriage (the load) at standing shoulder height, with the back pad, shoulder pads, handles and rollers riding on it
+	local restPad = Vector3.new(0, 2.5, -0.78) + r * 2.2   -- on the pad's centre line
+	local carriage = restPad - n * 0.3
+	local load = inclined(m, "Carriage", Vector3.new(2.0, 0.3, 0.3), pivot, carriage, o, C.Frame, M.Metal)
+	local rides = Instance.new("Folder")
+	rides.Name = "Rides"
+	rides.Parent = m
+	inclined(rides, "BackPad", Vector3.new(1.5, 3.2, 0.35), pivot, carriage + n * 0.3 - r * 1.45, o, C.Pad, M.Leather)
+	inclined(rides, "BackBoard", Vector3.new(1.4, 3.1, 0.1), pivot, carriage + n * 0.08 - r * 1.45, o, hex("#3A2A1E"), M.Wood)
+	inclined(rides, "CarriageSpine", Vector3.new(0.3, 3.4, 0.25), pivot, carriage - r * 1.5, o, C.Frame, M.Metal)
+	for _, x in ipairs({ -0.55, 0.55 }) do
+		inclined(rides, "ShoulderPad", Vector3.new(0.42, 0.38, 1.05), pivot, Vector3.new(x, carriage.Y, carriage.Z) + n * 0.85 + r * 0.32, o, C.Pad, M.Leather)
+		inclined(rides, "ShoulderArm", Vector3.new(0.16, 0.16, 0.9), pivot, Vector3.new(x, carriage.Y, carriage.Z) + n * 0.6 + r * 0.55, o, C.Frame, M.Metal)
+	end
+	for _, x in ipairs({ -0.95, 0.95 }) do
+		inclined(rides, "Roller", Vector3.new(0.36, 0.7, 0.36), pivot, Vector3.new(x, carriage.Y, carriage.Z), o, hex("#2E2E33"), M.Metal)
+		inclined(rides, "Handle", Vector3.new(0.14, 0.14, 0.6), pivot, Vector3.new(x * 0.95, carriage.Y, carriage.Z) + n * 0.95 + r * 0.05, o, C.Chrome, M.Metal)
+	end
+	promptOn(m:FindFirstChild("FootPlatform"), machine)
+	m:SetAttribute("SleeveStart", 1.2)
+	m:SetAttribute("RailAxis", r)
+	m:SetAttribute("RailAnchor", "Shoulders")
+	m:SetAttribute("RailOffset", -0.15)
+	m:SetAttribute("RailMin", -3.2)
+	m:SetAttribute("RailMax", 1.2)
+	load.CanQuery = false
+	return m
+end
+
 local function stackTower(m, cframe, height, shroudColor)
 	height = height or 8
 	p(m, "TowerBase", Vector3.new(2.6, 0.25, 1.6), cframe * CFrame.new(0, 0.12, 0), C.Frame, M.Metal, true)

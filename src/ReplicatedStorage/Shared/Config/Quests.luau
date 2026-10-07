@@ -36,6 +36,8 @@ Quests.Repeatable = {
 	{ id = "LegsAgain", text = "Do 40 reps on the Squat Rack or Deadlift", type = "machineReps", machines = { "SquatRack", "Deadlift" }, count = 40, reward = { coins = 50, shakes = 1 } },
 	{ id = "PushDay", text = "Do 40 reps on any bench", type = "machineReps", machines = { "FlatBench", "InclineBench" }, count = 40, reward = { coins = 50 } },
 	{ id = "PullDay", text = "Do 40 Pull-Up Bar or Barbell Row reps", type = "machineReps", machines = { "PullUpBar", "BarbellRow" }, count = 40, reward = { coins = 50 } },
+	{ id = "LegPress", text = "Do 15 leg presses", type = "machineReps", machines = { "LegPress" }, count = 15, reward = { coins = 30 } },
+	{ id = "HackSquat", text = "Do 15 hack squats", type = "machineReps", machines = { "HackSquat" }, count = 15, reward = { coins = 30 } },
 }
 
 -- The Coach's one-liners (original lines; one is picked at random).

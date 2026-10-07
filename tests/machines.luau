@@ -37,6 +37,15 @@ for _, m in Machines.List do
 	end
 end
 H.check(pro == 11, "11 pro machines (" .. pro .. ")")
+-- every plate-loaded bar / sled tier fits its sleeves (plates + gaps + the end collar)
+for _, m in Machines.List do
+	if m.layout ~= "Center" then
+		for i, tier in m.tiers do
+			H.check(Machines.StackWidth(tier) <= Machines.SleeveRoom, m.id .. " tier " .. i .. " fits the sleeve")
+		end
+	end
+end
+H.check(not Machines.TrainableMuscles(0).Calves, "the hack squat's light calf work doesn't open Calves for the goal")
 local all = Machines.TrainableMuscles(2)
 H.check(all.Calves and all.Obliques, "Calves and Obliques trainable at Growth Spurt 2")
 local starter = Machines.TrainableMuscles(1)

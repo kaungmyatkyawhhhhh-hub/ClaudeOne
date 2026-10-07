@@ -148,6 +148,13 @@ local function placeBar(model, cframe)
 		local offset = plateOffsets[plate]
 		if offset then plate.CFrame = cframe * offset end
 	end
+	local rides = model:FindFirstChild("Rides")
+	if rides then
+		for _, part in ipairs(rides:GetDescendants()) do
+			local offset = plateOffsets[part]
+			if offset then part.CFrame = cframe * offset end
+		end
+	end
 end
 
 -- Weight stack machines (pro gym): the selected blocks (1..StackCount, top down) and the pin rise with each rep.
@@ -303,6 +310,24 @@ POSE_ANIMS.PullUp = function(character, d, jitter)
 	end
 end
 
+-- Leg press: reclined on the seat; lockout = legs long toward the sled, bottom = knees to the chest. The hands hold the
+-- side handles. (The sled follows the feet along its rail.)
+POSE_ANIMS.LegPress = function(character, d, jitter)
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Hip", Angles(rad(104 + 40 * d) + jitter * 0.3, 0, side[2] * rad(6)))
+		setJoint(character, side[1] .. "Knee", Angles(-rad(6 + 96 * d), 0, 0))
+		setJoint(character, side[1] .. "Ankle", Angles(rad(4 + 26 * d), 0, 0))
+	end
+	frontArms(character, rad(18), rad(28), rad(25), 0)
+end
+
+-- Hack squat: leaning back on the pad, hands on the shoulder-pad handles; sit down until the thighs are about
+-- parallel. (The carriage follows the shoulders along its rail.)
+POSE_ANIMS.HackSquat = function(character, d, jitter)
+	lowerBody(character, rad(66 * d), -rad(12))
+	frontArms(character, rad(145) + jitter * 0.5, rad(22), rad(125), 0)
+end
+
 -- Crunch: lying, plate held on the chest, knees up; lockout = curled up.
 POSE_ANIMS.Crunch = function(character, d, jitter)
 	setJoint(character, "Waist", Angles(-rad(40 * (1 - d)) - jitter * 0.3, 0, 0))
@@ -433,6 +458,24 @@ local function followCFrame(model, character)
 		if torso then
 			return torso.CFrame * CFrame.new(0, torso.Size.Y * 0.42, torso.Size.Z * 0.65)
 		end
+	elseif follow == "Rail" then
+		-- the load slides along the machine's rail to the lifter's feet (leg press) or shoulders (hack squat)
+		local axis = model:GetAttribute("RailAxis")
+		local rest = barRest[model]
+		if typeof(axis) ~= "Vector3" or not rest then return nil end
+		axis = model:GetPivot():VectorToWorldSpace(axis).Unit
+		local anchor
+		if model:GetAttribute("RailAnchor") == "Shoulders" then
+			local torso = character:FindFirstChild("UpperTorso")
+			anchor = torso and (torso.CFrame * CFrame.new(0, torso.Size.Y / 2, 0)).Position
+		else
+			local right, left = character:FindFirstChild("RightFoot"), character:FindFirstChild("LeftFoot")
+			anchor = right and left and (right.Position + left.Position) / 2
+		end
+		if not anchor then return nil end
+		local t = (anchor - rest.Position):Dot(axis) + (model:GetAttribute("RailOffset") or 0)
+		t = math.clamp(t, model:GetAttribute("RailMin") or -3, model:GetAttribute("RailMax") or 0)
+		return rest + axis * t
 	elseif follow == "Hips" then
 		local hips = character:FindFirstChild("LowerTorso")
 		if hips then
@@ -1611,6 +1654,11 @@ local function setupMachine(model)
 	if not bar or not plates then return end
 	barRest[model] = bar.CFrame
 	for _, plate in ipairs(plates:GetDescendants()) do trackPlate(model, plate) end
+	-- the sled / carriage parts that move with the load (leg press, hack squat)
+	local rides = model:FindFirstChild("Rides")
+	if rides then
+		for _, part in ipairs(rides:GetDescendants()) do trackPlate(model, part) end
+	end
 	plates.DescendantAdded:Connect(function(plate) trackPlate(model, plate) end)
 	plates.DescendantRemoving:Connect(function(plate) plateOffsets[plate] = nil end)
 	model:GetAttributeChangedSignal("Reps"):Connect(function()

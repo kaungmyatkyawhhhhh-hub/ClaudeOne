@@ -34,7 +34,7 @@ local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
 local Left, Top = Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top
 
-local CARD_HEIGHT = 140 -- fits a group's name row, genetics row and up to 4 muscle rows
+local CARD_HEIGHT = 160 -- fits a group's name row, genetics row, up to 4 muscle rows and its exercises line
 local ROW_HEIGHT = 16
 
 ------------------------------------------------------------------------
@@ -173,7 +173,9 @@ local level = Theme.Text({ LayoutOrder = 3, Font = "SemiBold", TextSize = "Body"
 		local value = Theme.Text({ Font = "SemiBold", TextSize = "Small", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.5, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
 		muscleRows[muscle.id] = { level = value, fill = fill }
 	end
-	cards[group.id] = { level = level, disc = disc, grade = grade, mult = mult, needs = needs, muscles = muscleRows }
+	-- the machines that train this group (main muscle), e.g. "Squat Rack · Leg Press · Hack Squat"
+	local exercises = Theme.Text({ Name = "Exercises", LayoutOrder = 20, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, ROW_HEIGHT), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = frame })
+	cards[group.id] = { level = level, disc = disc, grade = grade, mult = mult, needs = needs, muscles = muscleRows, exercises = exercises }
 end
 
 -- columns: as many cards across as fit (~200px each): up to 3 on big screens, 2 on phones
@@ -231,6 +233,7 @@ local function refreshScreen()
 		card.level.Text = groupExp .. " / " .. Muscles.FormatExp(Muscles.GroupShown(group.id, progress.required))
 		card.level.TextColor3 = Colors.Text
 		card.needs.Visible = group.id == weakest and ties == 1
+		card.exercises.Text = table.concat(Machines.ExercisesFor(group.id, data.growthSpurts or 0, function(id) return Muscles.ById[id].group end), " · ")
 		for _, muscle in ipairs(group.muscles) do
 			local row = card.muscles[muscle.id]
 			local entry = data.muscles[muscle.id]

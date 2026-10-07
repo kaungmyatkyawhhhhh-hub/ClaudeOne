@@ -45,7 +45,8 @@ end
 -- and the weight on the face. Barbells also get sleeves + collars (they ride with the plates). Only the outermost
 -- plate on each side shows its number (that's the face people see).
 local Assets = ReplicatedStorage:WaitForChild("GymAssets", 10)
-local SLEEVE_START = 3.0 -- the collar sits at the end of the bar shaft (shaft = 6 studs)
+local SLEEVE_START = 3.0 -- the collar sits at the end of the bar shaft (shaft = 6 studs); a machine model's SleeveStart
+-- attribute overrides it (the leg press / hack squat horns sit closer in)
 
 local function plateModel(lb)
 	local template = Assets and Assets.Plates:FindFirstChild("Plate" .. lb)
@@ -100,16 +101,18 @@ local function updatePlates(model, tier)
 	end
 
 	local centered = machine.layout == "Center"
-	local start = SLEEVE_START + 0.2
+	local sleeveStart = model:GetAttribute("SleeveStart")
+	sleeveStart = if type(sleeveStart) == "number" then sleeveStart else SLEEVE_START
+	local start = sleeveStart + 0.2
 	if centered then
 		-- one stack, centered on the load part
 		local width = 0
-		for _, lb in ipairs(tier.plates) do width += Machines.Plates[lb].thickness + 0.03 end
+		for _, lb in ipairs(tier.plates) do width += Machines.Plates[lb].thickness + Machines.PlateGap end
 		start = -width / 2
 	elseif Assets and Assets:FindFirstChild("BarSleeve") then
 		for _, side in ipairs({ 1, -1 }) do
 			local sleeve = Assets.BarSleeve:Clone()
-			sleeve:PivotTo(bar.CFrame * CFrame.new(side * SLEEVE_START, 0, 0) * (side < 0 and CFrame.Angles(0, math.pi, 0) or CFrame.identity))
+			sleeve:PivotTo(bar.CFrame * CFrame.new(side * sleeveStart, 0, 0) * (side < 0 and CFrame.Angles(0, math.pi, 0) or CFrame.identity))
 			sleeve.Parent = folder
 		end
 	end
@@ -127,7 +130,25 @@ local function updatePlates(model, tier)
 				if label then label.Enabled = true end
 			end
 			plate.Parent = folder
-			x += spec.thickness + 0.03
+			x += spec.thickness + Machines.PlateGap
+		end
+		-- a spring collar locks the stack on each sleeve
+		if not centered and #tier.plates > 0 then
+			local clamp = Instance.new("Part")
+			clamp.Name = "ClampCollar"
+			clamp.Shape = Enum.PartType.Cylinder
+			clamp.Size = Vector3.new(0.1, 0.46, 0.46)
+			clamp.Color = Color3.fromHex("#2A2A2E")
+			clamp.Material = Enum.Material.Metal
+			clamp.Anchored, clamp.CanCollide, clamp.CanQuery, clamp.CanTouch, clamp.CastShadow = true, false, false, false, false
+			clamp.CFrame = bar.CFrame * CFrame.new(side * (x + 0.05), 0, 0)
+			clamp.Parent = folder
+			local handle = clamp:Clone()
+			handle.Name = "ClampHandle"
+			handle.Shape = Enum.PartType.Block
+			handle.Size = Vector3.new(0.06, 0.32, 0.06)
+			handle.CFrame = clamp.CFrame * CFrame.new(0, 0.36, 0)
+			handle.Parent = folder
 		end
 	end
 end
