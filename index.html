@@ -1579,7 +1579,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -1601,7 +1601,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  funArrows();drawGoalNav();drawMapX();drawTT();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  funArrows();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -3115,6 +3115,28 @@ function drawTT(){if(!TT||SCN||MPW||room)return;TT.cps.forEach((c,k)=>{if(k<TT.i
   ctx.save();ctx.translate(sx,sy);ctx.globalAlpha=cur?1:.35;ctx.strokeStyle=cur?"#ffcc33":"#fff";ctx.lineWidth=cur?6:3;const r=cur?26+Math.sin(wt*6)*3:18;ctx.beginPath();ctx.ellipse(0,0,r,r*.45,0,0,7);ctx.stroke();
   ctx.fillStyle=cur?"#ffcc33":"#fff";ctx.font="900 13px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(k+1),0,-r*.45-12);ctx.restore()})}
 setInterval(()=>{try{ttTick()}catch(e){}},80);
+/* ---------- wandering merchant: shows up somewhere in town for 90 seconds with odd deals ---------- */
+let WM=null,wmT=200,wmOpen=false;
+function wmTick(dt){if(!S||SCN||MPW||(S.stats.flips||0)<5)return;if(WM){WM.left-=dt;if(WM.left<=0&&!wmOpen){WM=null;banner("The wandering merchant moved on","a")}else if(!wmOpen&&!room&&$("overlay").hidden&&Math.hypot(S.px-WM.x,S.py-WM.y)<44)openMerchant();return}
+  if(room)return;wmT-=dt;if(wmT>0)return;wmT=rnd(300,540);for(let i=0;i<120;i++){const a=Math.random()*7,d=rnd(250,600),x=S.px+Math.cos(a)*d,y=S.py+Math.sin(a)*d;if(x<80||x>W-80||y<120||y>SEA-60||!regionOpen(regionOf(x,y))||inBld(x,y,30)||inPond(x,y,30))continue;
+    const pool=POOL.filter(p=>S.unlocked.includes(p.cat)&&(HEAVY[p.code]||0)<=S.pr).sort((a,b)=>b.base-a.base),it=pick(pool.slice(0,6)),c=CAT[it.cat],cond=c.conds[0],base=Math.round(it.base*cond[1]*edK());
+    WM={x:Math.round(x),y:Math.round(y),left:90,item:{cat:it.cat,code:it.code,name:it.name,cond:cond[0],base,noise:1,fake:false},bought:{}};SFX.hot();banner("🧙 A wandering merchant appeared · follow the purple arrow","a");return}}
+function drawMerchant(){if(!WM||SCN||MPW)return;const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-120||sx>vw+40||sy>vh+40)return;
+  drawPerson(WM.x,WM.y,{shirt:"#5a2a8a",skin:"#c98e62",hair:"#d9d9d9",acc:{h:"wizard",o:"robe"},legs:"#2a1c66",build:{c:.3,l:.2,b:.3},mv:false,ph:wt});
+  const c=ctx;c.save();c.translate(WM.x,WM.y);for(let i=0;i<5;i++){const a=wt*2+i*1.26;c.fillStyle=`rgba(255,215,90,${.5+.5*Math.sin(wt*5+i)})`;c.beginPath();c.arc(Math.cos(a)*26,-40+Math.sin(a)*16,2.2,0,7);c.fill()}
+  c.font="800 11px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const lab="Merchant · "+Math.ceil(WM.left)+"s",w=c.measureText(lab).width+14;c.fillStyle="rgba(58,34,102,.9)";rr(-w/2,-96,w,18,8);c.fill();c.fillStyle="#fff";c.fillText(lab,0,-87);c.restore()}
+function openMerchant(){if(!WM)return;wmOpen=true;room="merchant";$("room").hidden=false;const it=WM.item,deal=Math.round(it.base*S.trend[it.cat]*.4),pot=Math.round(Math.max(200,rwBase()*.01)),pack=Math.round(Math.max(300,rwBase()*.012));
+  const draw=()=>{$("room").innerHTML=`<div class="room-in scroll nightroom">${roomHead("Wandering merchant")}<div class="note">"Psst. I don't stay long. Rare wares, honest prices… mostly." <b>${Math.ceil(WM.left)}s</b> before he packs up.</div>
+    <div class="perks"><button class="perk nopic" data-wm="item" ${WM.bought.item||S.cash<deal||S.stash.length>=maxSlots()?"disabled":""}><span class="t">✨ ${esc(it.name)}${WM.bought.item?' <em class="beat">BOUGHT</em>':""}</span><span class="d">${it.cond} · worth ${fmt(it.base*S.trend[it.cat])} · 60% off${S.stash.length>=maxSlots()?" · your stash is full":""}</span><span class="c">${fmt(deal)}</span></button>
+    <button class="perk nopic" data-wm="pot" ${WM.bought.pot||S.cash<pot?"disabled":""}><span class="t">🧪 Mystery potion${WM.bought.pot?' <em class="beat">DRUNK</em>':""}</span><span class="d">Full energy, a hype rush, lucky sales… or a surprise</span><span class="c">${fmt(pot)}</span></button>
+    <button class="perk nopic" data-wm="pack" ${WM.bought.pack||S.cash<pack?"disabled":""}><span class="t">📒 Sticker pack${WM.bought.pack?' <em class="beat">OPENED</em>':""}</span><span class="d">Three random stickers for your book</span><span class="c">${fmt(pack)}</span></button></div></div>`;
+    $("leaveBtn").onclick=()=>{wmOpen=false;closeRoom()};
+    $("room").querySelectorAll("[data-wm]").forEach(b=>b.onclick=()=>{const k=b.dataset.wm;if(WM.bought[k])return;
+      if(k==="item"){if(S.cash<deal||S.stash.length>=maxSlots())return;S.cash-=deal;S.stash.push({...it,paid:deal});banner("Got "+it.name+" for "+fmt(deal),"g")}
+      if(k==="pot"){if(S.cash<pot)return;S.cash-=pot;const r=Math.random();if(r<.3){S.energy=maxEnergy();banner("You feel amazing · full energy","g")}else if(r<.6){hype(10);banner("HYPE RUSH","g")}else if(r<.85){S.buffs.fortune=Math.max(S.buffs.fortune||0,180);banner("Lucky hands · sales +30% for 3 min","g")}else{gainCrate(2);banner("It was a crate potion? +2 crates","g")}}
+      if(k==="pack"){if(S.cash<pack)return;S.cash-=pack;for(let i=0;i<3;i++)stkGive(Math.floor(Math.random()*STK_PAGES.length))}
+      WM.bought[k]=1;dirty=true;SFX.rebirth();confetti(90,null,null,["#8f52d4","#ffcc33","#fff"]);draw();updMini()})};draw()}
+setInterval(()=>{try{wmTick(.25)}catch(e){}},250);
 /* ---------- sticker book: doing things drops stickers; full pages pay out ---------- */
 const STK_PAGES=[{n:"Hustle",c:"#2a3cff",src:"flips",ch:.03,s:["💸","🧾","🏷️","🤑","📈","💼"]},{n:"Fun & games",c:"#ff4fd8",src:"arcade",ch:.3,s:["🕹️","🎯","🎳","🏀","⛳","👾"]},
   {n:"Treasure",c:"#cf9a14",src:"treasure",ch:.6,s:["🗺️","🪙","💎","🏴‍☠️","⚓","🧭"]},{n:"Outdoors",c:"#2f9a4e",src:"harvests",ch:.3,s:["🌻","🍄","🐝","🌈","🦋","🍀"]},
@@ -4876,7 +4898,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=46,WN=[
+const WN_VER=47,WN=[
+ ["🧙","Wandering merchant","Every few minutes a merchant appears somewhere in town for 90 seconds. Reach him for a rare item at 60% off, a mystery potion or a sticker pack.","2026-10-07T04:45"],
  ["⏱️","Street time trial","Start a time trial at the Docks Car Meet and race through six glowing rings across town. Beat par for tickets and set a personal best.","2026-10-07T04:35"],
  ["📒","Sticker book","Activities around town drop collectible stickers. Fill all eight pages for cash and crates, and trade duplicates for the ones you're missing. Find it at Home.","2026-10-07T04:25"],
  ["🎈","Mystery balloons","Every few minutes a balloon drifts across town. Tap it before it floats away for cash, a crate, a treasure map, tickets or hype.","2026-10-07T04:15"],
