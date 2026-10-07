@@ -92,7 +92,9 @@ for where everything sits in Studio.
 - `StatsClient`: the Stats menu button (toggles the world labels), the bottom-center Muscles button and the "Your muscles" panel (goal + six cards); hides the rest of the HUD while the panel is open.
 - `StatsLabelsClient`: your stats as compact 2D labels with lines to dots on your body (Strength + Stamina above the head, six groups on both sides); steps off prompts, the goal bar and the machine panel.
 - `BodyMapClient`: the small front/back body-map widget that slides in while you are on a machine (muscles glow by level, the trained ones pulse, fold chip, clears on exit/respawn/death).
-- `GeneticsClient`: genetics reveal and reroll screen.
+- `GeneticsClient`: genetics reveal and reroll screen: its own dark 3D stage far above the town (client only; real
+  camera, so SurfaceGui letters, lights and particles work), DNA helix bar, plates revealed one by one by grade, labels
+  projected under the plates, frame/body cards, reroll with upgrade arrows. Plate colors: `Theme.GradePlates`.
 - `TitlesClient`: Title Book and equip.
 - `SettingsClient`: music/effects volume sliders, background music.
 - `OverheadTitleClient`: local effects on overhead title tags.

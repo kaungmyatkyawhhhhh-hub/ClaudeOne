@@ -48,7 +48,9 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 
 ## Waiting on you
 - **Sound ids** (you pick them; all in `Config/Sounds.luau`). Placeholders reusing other clips: `CrowdOoh`, `PumpFull`, `BigRep`,
-  `PersonalRecord`, `Grew`, `LevelUp`, `Maxed`, `TitleUnlocked`, `TierUnlocked`, `GeneticsClank`, `OutOfStamina`, `RepTick`/`Click`.
+  `PersonalRecord`, `Grew`, `LevelUp`, `Maxed`, `TitleUnlocked`, `TierUnlocked`, `GeneticsClank`, `OutOfStamina`, `RepTick`/`Click`,
+  and the genetics reveal's `GeneticsSpin`, `GeneticsFlip`, `GeneticsPop`, `GeneticsShimmer`, `GeneticsBurst`, `GeneticsDrumRoll`,
+  `GeneticsExplode`, `GeneticsBlessed`.
   No sound yet: skateboard rolling, sliding doors, store purchase, mirror opening. Area music only has Starter and Pro.
 - **Badge ids:** Aesthetics God, Skyscraper, Defied Genetics have `badgeId = nil` in `Config/Titles.luau`.
 - **Monetization ids** (stays OFF until you add them): 7 game passes, 3 products in `Config/Monetization.luau`.
@@ -88,4 +90,5 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
 `TestCoins`, `TestSpurts`, `TestMuscleShare` (0..3 x the goal, live), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
-`ReplayTutorial`. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.
+`ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D": six grades in group order for the first roll / the
+next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate, 8 = BLESSED). Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.

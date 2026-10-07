@@ -82,6 +82,7 @@ Theme.Tile = {
 }
 
 Theme.TextSize = {
+	Slam = 72,  -- one-off slams of a big moment (the genetics "S!")
 	Huge = 40,  -- big numbers
 	Large = 22, -- screen titles
 	Popup = 26, -- 3D gain popups
@@ -423,6 +424,22 @@ Theme.RankColors = {
 	C = Color3.fromHex("#6FD08C"), -- soft green
 	D = Color3.fromHex("#B8B8BE"), -- gray
 }
+-- The genetics plates (owner's genetics redesign): the rank colors, deeper and less saturated, with a slight metallic
+-- sheen (Reflectance). Fill = plate body, Rim = raised rim / inset ring, Glow = light and particles (the bright rank
+-- color), Text = the grade letter on the plate face.
+local function gradePlate(grade, deepen)
+	local glow = Theme.RankColors[grade]
+	local fill = glow:Lerp(Color3.fromHex("#16161A"), deepen)
+	return { Fill = fill, Rim = fill:Lerp(Color3.new(0, 0, 0), 0.35), Glow = glow, Text = Theme.Colors.Text }
+end
+Theme.GradePlates = {
+	S = gradePlate("S", 0.3),
+	A = gradePlate("A", 0.32),
+	B = gradePlate("B", 0.3),
+	C = gradePlate("C", 0.34),
+	D = gradePlate("D", 0.4),
+}
+Theme.Colors.Upgrade = Theme.RankColors.C -- the green "upgrade" arrow after a reroll
 function Theme.SetRankTag(tag, grade)
 	local color = Theme.RankColors[grade] or Theme.RankColors.D
 	local stroke = tag:FindFirstChild("Border")

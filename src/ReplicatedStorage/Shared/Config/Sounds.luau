@@ -41,6 +41,15 @@ return {
 	GeneticsThud = { ids = { 9119388384 }, volume = 0.55, pitch = 0, group = "Gameplay", maxLength = 2.2 },          -- Distant Metal Booms, deep soft impact: overall plate
 	GeneticsThudLow = { ids = { 9113479635 }, volume = 0.5, pitch = 0, group = "Gameplay", maxLength = 1.0 },        -- Body Falls on Carpet: low layer under the overall plate
 	ChalkPuff = { ids = { 9125964822 }, volume = 0.22, pitch = 0.05, group = "Gameplay", maxLength = 0.8 },          -- Snow breaks into powder: S-grade chalk puff
+	-- PLACEHOLDERS for the genetics reveal redesign (owner picks the real ids): these reuse clips from above until then
+	GeneticsSpin = { ids = { 9125715121 }, volume = 0.2, pitch = 0.05, basePitch = 0.85, group = "Gameplay", maxLength = 0.7 },     -- PLACEHOLDER (Robe Swish): a plate spins in face-down
+	GeneticsFlip = { ids = { 9116717455, 9116717780 }, volume = 0.35, pitch = 0.04, group = "Gameplay", maxLength = 0.6 },          -- PLACEHOLDER (Metal Knocks): the plate flips to show its grade
+	GeneticsPop = { ids = { 9114212934 }, volume = 0.3, pitch = 0.04, basePitch = 0.8, group = "Gameplay" },                          -- PLACEHOLDER (Button click, low): C / D small pop
+	GeneticsShimmer = { ids = { 9116163687 }, volume = 0.3, pitch = 0.03, basePitch = 1.35, group = "Gameplay", maxLength = 1.2 },  -- PLACEHOLDER (Key Dings, high): B gold shimmer
+	GeneticsBurst = { ids = { 9113421788 }, volume = 0.3, pitch = 0.02, basePitch = 1.1, group = "Gameplay", maxLength = 1.6 },     -- PLACEHOLDER (Bell Rings): A blue burst
+	GeneticsDrumRoll = { ids = { 9113757391 }, volume = 0.35, pitch = 0, basePitch = 0.7, group = "Gameplay", maxLength = 1.4 },    -- PLACEHOLDER (Chain Hit Metal, slowed): S build-up drum roll
+	GeneticsExplode = { ids = { 9119388384 }, volume = 0.6, pitch = 0, basePitch = 0.9, group = "Gameplay", maxLength = 2.2 },     -- PLACEHOLDER (Distant Metal Booms): S explodes
+	GeneticsBlessed = { ids = { 9113421788 }, volume = 0.3, pitch = 0, basePitch = 1.25, group = "Gameplay", maxLength = 2 },      -- PLACEHOLDER (Bell Rings, high): the BLESSED banner (2+ S)
 
 	-- Music (2D, low in the background, plays the tracks in order and loops)
 	Music = { ids = { 9043990443, 9043990341 }, volume = 0.5, pitch = 0, group = "Music" }, -- APM "Lovely Sunrise" C (underscore) and A (vinyl chillhop)

@@ -243,7 +243,7 @@ local function onPlayerAdded(player)
 		data.onboarding.tutorialStep = 1
 	end
 	if not data.genetics then
-		data.genetics = Genetics.Roll()
+		data.genetics = PlayerData.TestGenetics("TestGenetics") or Genetics.Roll()
 	end
 	if data.meta.firstJoin == 0 then
 		data.meta.firstJoin = os.time()
@@ -394,6 +394,22 @@ function PlayerData.AddDnaTokens(player, amount)
 	return true
 end
 
+-- Studio testing: the Workspace attribute `attribute` ("TestGenetics" for the first roll, "TestRerollGenetics" for rerolls)
+-- = six grades in group order, e.g. "C,B,A,S,S,D", forces those grades (frame and body type stay random). nil otherwise.
+function PlayerData.TestGenetics(attribute)
+	if not RunService:IsStudio() then return nil end
+	local text = workspace:GetAttribute(attribute)
+	if type(text) ~= "string" or text == "" then return nil end
+	local list = string.split(text, ",")
+	local rolled = Genetics.Roll()
+	for index, group in ipairs(Muscles.Groups) do
+		local grade = list[index] and string.upper((string.gsub(list[index], "%s", "")))
+		if grade and Genetics.GradeById[grade] then rolled.grades[group.id] = grade end
+	end
+	rolled.overall = Genetics.GetOverallGrade(rolled.grades)
+	return rolled
+end
+
 -- Rerolls all genetics, spending the free reroll first, then a DNA Token.
 function PlayerData.RerollGenetics(player)
 	local data = PlayerData.Get(player)
@@ -408,7 +424,7 @@ function PlayerData.RerollGenetics(player)
 		return false
 	end
 	local previous = data.genetics
-	data.genetics = Genetics.Roll()
+	data.genetics = PlayerData.TestGenetics("TestRerollGenetics") or Genetics.Roll()
 	-- Gene Lock pass: the best group keeps its grade (if the new roll is worse)
 	if player:GetAttribute("Pass_GeneLock") and previous and previous.grades then
 		local multOf = {}
