@@ -406,6 +406,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .gardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gplot{border-radius:16px;padding:12px;background:#6b4a2a;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.2)}.gplot b{font-size:2.6rem;line-height:1;transition:transform .3s}.gplot small{font-weight:700}.gplot span{font:700 .72rem var(--mono);opacity:.85}.gplot.empty{background:#8a6a4a;opacity:.7}.gplot.ripe{background:#3f7a3a;box-shadow:0 0 0 3px #ffcc33,inset 0 -6px 0 rgba(0,0,0,.2)}.gplot .cta{width:100%;padding:8px;justify-content:center;font-size:.78rem}
 .fobtn{background:linear-gradient(90deg,#1b1f2a,#3a2266)!important;color:#ffcc33!important}.fobtn b{color:#fff!important}
 .fobar{margin:8px 0;padding:10px 12px;border-radius:14px;background:#1b1f2a;color:#fff}.foh{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;margin-bottom:6px}.foh span{font:900 1rem var(--mono);color:#ffcc33}.fotrack{height:10px;border-radius:5px;background:#e2364a;overflow:hidden}.fotrack i{display:block;height:100%;background:#2fd28a;transition:width .25s}
+.simon{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(80vw,320px);margin:16px auto}.simon button{aspect-ratio:1;border-radius:24px;font-size:3rem;display:grid;place-items:center;background:color-mix(in oklab,var(--pc) 35%,var(--surface));box-shadow:var(--shadow);transition:transform .1s,background .1s;touch-action:manipulation}.simon button.lit{background:var(--pc);transform:scale(1.06);box-shadow:0 0 30px var(--pc)}
 .bxwrap{display:flex;justify-content:center;margin:10px 0}.bxwrap canvas{width:min(80vw,300px);height:auto;border-radius:18px;touch-action:manipulation}
 .hlrow{display:flex;align-items:center;gap:8px;width:min(92vw,360px)}.hlrow em{font-style:normal;font-weight:900;color:var(--muted)}.hlcard{flex:1;border-radius:18px;padding:14px 8px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}.hlcard b{font-size:.82rem;min-height:2.2em}.hlcard span{font:900 1.3rem var(--mono)}
 .hlbtns{display:flex;gap:10px;width:min(92vw,360px);margin-top:12px}.hlbtns .bigbtn{flex:1;text-align:center}
@@ -1178,6 +1179,7 @@ const ACH=[
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
  ["box20","Float like a butterfly","Reach a ×20 combo on the boxing bag",()=>(S.boxBest||0)>=20,30000],
+ ["tricks5","Circus star","Teach a pet all five tricks",()=>Object.values(S.pets||{}).some(pd=>(pd.tr||[]).length>=5),50000],
  ["vinny10","Vinny's nightmare","Win 10 flip-offs",()=>(S.stats.foWins||0)>=10,500000],
  ["stk48","Complete book","Collect every sticker",()=>stkCount()>=48,5e6],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
@@ -4477,18 +4479,32 @@ function openGarden(back){room="garden";$("room").hidden=false;const draw=()=>{c
     if(sd.m>=60&&Math.random()<.35){gainCrate(1);banner("A crate was buried in the roots!","g")}SFX.sell(3);confetti(90,null,null,["#2fd28a","#ffcc33","#fff"]);banner(sd.n+" harvested · +"+fmt(v),"g");draw();updMini()})};
   draw();const iv=setInterval(()=>{if(room!=="garden")return clearInterval(iv);draw()},5000)}
 setInterval(()=>{if(!S||!S.garden)return;S.garden.forEach(pl=>{if(pl&&!pl.told&&plotLeft(pl)<=0){pl.told=1;dirty=true;banner(seedOf(pl.k).ic+" "+seedOf(pl.k).n+" ready to harvest at Home","g")}})},7000);
+/* ---------- pet tricks: teach with a Simon-says memory game, show them off for fans ---------- */
+const TRICKS=[["Sit","🪑",3],["Spin","🌀",4],["High five","✋",5],["Dance","💃",6],["Backflip","🤸",7]];
+function trainTrick(k,back){const pd=S.pets[k],T=(pd.tr||[]).length;if(T>=TRICKS.length)return;if(!spend(5))return;const tr=TRICKS[T],len=tr[2],seq=Array.from({length:len},()=>Math.floor(Math.random()*4)),pads=[["🐾","#e2364a"],["🦴","#2a5bd7"],["🎾","#2fd28a"],["⭐","#ffcc33"]];let step=0,showing=true,fails=0;
+  room="pets";$("room").innerHTML=`<div class="room-in">${roomHead("Teach "+tr[0])}<div class="note">Watch ${petOf(k).n} and repeat the pattern. ${len} steps. Two mistakes and it's nap time.</div><div class="simon">${pads.map((p,i)=>`<button data-sp="${i}" style="--pc:${p[1]}">${p[0]}</button>`).join("")}</div><p class="fine" id="smMsg">Watch…</p></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;const btns=[...$("room").querySelectorAll("[data-sp]")];
+  const flashP=(i,ms=380)=>{const b=btns[i];b.classList.add("lit");tone(300+i*120,.18,{type:"sine",vol:.05});setTimeout(()=>b.classList.remove("lit"),ms)};
+  const play=()=>{showing=true;$("smMsg").textContent="Watch…";seq.forEach((v,j)=>setTimeout(()=>flashP(v),500+j*560));setTimeout(()=>{showing=false;step=0;$("smMsg").textContent="Your turn!"},500+seq.length*560)};
+  btns.forEach((b,i)=>b.addEventListener("pointerdown",e=>{e.preventDefault();if(showing)return;flashP(i,200);if(seq[step]===i){step++;if(step>=seq.length){pd.tr=pd.tr||[];pd.tr.push(tr[0]);pd.bond=Math.min(10,(pd.bond||0)+1);dirty=true;SFX.rebirth();confetti(160);banner(petOf(k).n+" learned "+tr[0]+" "+tr[1]+" · bond +1","g");setTimeout(back,900)}}
+    else{fails++;SFX.loss();buzz(30);if(fails>=2){banner(petOf(k).n+" got bored. Try again later","r");setTimeout(back,700)}else{$("smMsg").textContent="Oops! Watch again";setTimeout(play,600)}}}));play()}
+function performTricks(k){const pd=S.pets[k],T=pd.tr||[];if(!T.length||Date.now()-(pd.pf||0)<3600000)return;pd.pf=Date.now();const f=Math.round(Math.max(20,(S.fans||0)*.004)*T.length*(1+petBond(k)*.1));S.fans=(S.fans||0)+f;S.stats.petShows=(S.stats.petShows||0)+1;dirty=true;
+  SFX.hot();confetti(120,null,null,["#ff8fa3","#ffcc33","#fff"]);banner(petOf(k).n+" did "+T.map(t=>TRICKS.find(x=>x[0]===t)[1]).join(" ")+" · +"+fmtN(f)+" fans","g")}
 function openPets(back){S.pets=S.pets||{};
   const draw=()=>{const own=PETS.filter(p=>S.pets[p.k]);
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Pets")}
       <div class="note">Your pet follows you around town and gives you its perk. Pet it once a day to grow your bond (up to 10): every level makes its perk 10% stronger.</div>
       ${own.length?`<div class="sechead"><h3>Your pets</h3></div><div class="petgrid">${own.map(p=>{const pd=S.pets[p.k],today=pd.day===dayKey();return `<div class="petcard${S.pet===p.k?" on":""}">${petArt(p.k)}<b>${p.n}</b><small>Bond ${petBond(p.k)}/10</small><div class="bondbar"><i style="width:${petBond(p.k)*10}%"></i></div>
         ${(()=>{const a=petAdv(p.k);if(!a)return `<div class="petbtns"><button data-walk="${p.k}" ${S.pet===p.k?"disabled":""}>${S.pet===p.k?"Walking":"Walk"}</button><button data-pat="${p.k}" ${today?"disabled":""}>${today?"Petted ❤":"Pet"}</button></div><div class="petbtns">${PADV.map(T=>`<button data-adv="${p.k}|${T.k}" title="${T.n}">🧭 ${T.m<60?T.m+"m":T.m/60+"h"}</button>`).join("")}</div>`;
+          return null})()||""}${(()=>{const a=petAdv(p.k);if(a)return "";const T=(S.pets[p.k].tr||[]).length;return `<div class="petbtns"><button data-trn="${p.k}" ${T>=TRICKS.length?"disabled":""}>🎓 ${T>=TRICKS.length?"All tricks":"Teach "+TRICKS[T][0]}</button><button data-prf="${p.k}" ${!T||Date.now()-(S.pets[p.k].pf||0)<3600000?"disabled":""}>🎪 Show</button></div>`})()}${(()=>{const a=petAdv(p.k);if(!a)return "";
           const L=advLeft(a);return L>0?`<div class="petaway">🧭 On an adventure · back in ${L>=3600000?Math.ceil(L/3600000)+"h":Math.ceil(L/60000)+"m"}</div>`:`<button class="cta" data-loot="${p.k}">🎁 Back! Open loot</button>`})()}</div>`}).join("")}</div>
       <p class="fine">Adventures: a 5-minute park run, 30 minutes in the woods or a 2-hour wild expedition. Longer trips bring back crates, treasure maps and golden items, and grow your bond.</p>`:""}
       <div class="sechead"><h3>Pet shop</h3><span class="eyebrow">${PETS.length} pets</span></div>
       <div class="perks">${PETS.map(p=>{const o=!!S.pets[p.k];return `<button class="perk opp" data-pet="${p.k}" ${o||S.cash<p.cost?"disabled":""}><span class="oav petav">${petArt(p.k)}</span><span class="t">${p.n}${o?' <em class="beat">YOURS</em>':""}</span><span class="d">${p.d}</span><span class="c">${o?"Owned":fmt(p.cost)}</span></button>`}).join("")}</div></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-pet]").forEach(b=>b.onclick=()=>{const p=petOf(b.dataset.pet);if(S.pets[p.k]||S.cash<p.cost)return;S.cash-=p.cost;S.pets[p.k]={bond:0,day:-1};S.pet=p.k;PET=null;dirty=true;SFX.rebirth();confetti(90);banner(p.n+" adopted","g");draw();updMini()});
+    $("room").querySelectorAll("[data-trn]").forEach(b=>b.onclick=()=>trainTrick(b.dataset.trn,()=>openPets(back)));
+    $("room").querySelectorAll("[data-prf]").forEach(b=>b.onclick=()=>{performTricks(b.dataset.prf);draw()});
     $("room").querySelectorAll("[data-adv]").forEach(b=>b.onclick=()=>{const[k,t]=b.dataset.adv.split("|"),T=PADV.find(x=>x.k===t);if(!T||petAdv(k))return;S.pets[k].adv={k:t,m:T.m,t0:Date.now()};if(S.pet===k){S.pet=null;PET=null}dirty=true;SFX.hot();banner(petOf(k).n+" set off: "+T.n,"a");draw()});
     $("room").querySelectorAll("[data-loot]").forEach(b=>b.onclick=()=>{const k=b.dataset.loot,a=petAdv(k);if(!a||advLeft(a)>0)return;const out=advLoot(k);SFX.rebirth();confetti(160);flash("#ffcc33",.3);banner(petOf(k).n+" found: "+out.join(" · "),"g");S.pet=S.pet||k;PET=null;draw();updMini()});
     $("room").querySelectorAll("[data-walk]").forEach(b=>b.onclick=()=>{S.pet=b.dataset.walk;PET=null;dirty=true;SFX.tick(.6);draw()});
@@ -5032,7 +5048,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=52,WN=[
+const WN_VER=53,WN=[
+ ["🎓","Pet tricks","Teach your pets Sit, Spin, High five, Dance and Backflip with a memory game, then show them off once an hour for fans.","2026-10-07T05:25"],
  ["🥊","Boxing bag","A rhythm boxing bag at the Gym: punch as the ring meets the gold circle. Combos earn fans, no muscles needed.","2026-10-07T05:20"],
  ["🐾","Lost pets","Townspeople sometimes lose a pet. Search the pink circle on the map, then walk it back to its owner for cash, fans and sometimes a crate.","2026-10-07T05:15"],
  ["⚔️","Flip-off vs Slick Vinny","Once a day in any market, race the rival trader Vinny: whoever makes more profit in 3 minutes wins cash and crates.","2026-10-07T05:10"],
