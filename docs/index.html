@@ -403,6 +403,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .tts{font-family:var(--mono);font-size:.62rem;color:var(--up);letter-spacing:.04em}.tts.wait{color:var(--muted)}
 .htp .wnsheet{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}.htpic{font-size:4rem;line-height:1;margin-top:6px;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}
 .htpdots{display:flex;gap:6px}.htpdots i{width:8px;height:8px;border-radius:50%;background:var(--sunk)}.htpdots i.on{background:var(--ink)}.htp .cta{width:100%}
+.petaway{font-size:.75rem;font-weight:700;color:var(--muted);padding:6px 0;text-align:center}.petcard .cta{width:100%;padding:8px;justify-content:center;font-size:.8rem}
 .dlbadge{font-style:normal;font-family:var(--mono);font-weight:800;font-size:.72rem;padding:2px 7px;border-radius:8px;background:color-mix(in oklab,var(--tc) 20%,transparent);color:var(--tc);white-space:nowrap}
 .duelb{background:#1b1f2a!important;color:#ffcc33!important}
 .dlask{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:66;width:min(92vw,420px);padding:14px;border-radius:18px;background:var(--bg);box-shadow:0 0 0 2px #ffcc33,0 16px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.dlask small{color:var(--muted)}.dlask span{display:flex;gap:8px}.dlask .cta{flex:1;padding:10px;justify-content:center}
@@ -4190,16 +4191,28 @@ function petArt(k){const P=petOf(k);return `<svg viewBox="0 0 120 80" width="84"
   :k==="dragon"?`<ellipse cx="56" cy="46" rx="24" ry="15" fill="#d6384b"/><circle cx="80" cy="34" r="12" fill="#d6384b"/><path d="M84 24 L88 10 L92 24Z M74 24 L76 12 L82 24Z" fill="#ffcc33"/><path d="M46 38 L24 8 L64 36Z" fill="#8a1d2a"/><path d="M34 50 Q14 60 10 44" stroke="#d6384b" stroke-width="6" fill="none"/><circle cx="84" cy="32" r="2.4" fill="#141824"/><path d="M92 38 q6 0 8 -3" stroke="#ff9a3d" stroke-width="2" fill="none"/>`
   :k==="penguin"?`<ellipse cx="60" cy="44" rx="18" ry="26" fill="#2b2f3a"/><ellipse cx="62" cy="47" rx="12" ry="19" fill="#fff"/><path d="M70 30 L82 33 L70 36Z" fill="#ff9a3d"/><circle cx="66" cy="26" r="2.4" fill="#141824"/><rect x="50" y="68" width="8" height="4" fill="#ff9a3d"/><rect x="62" y="68" width="8" height="4" fill="#ff9a3d"/>`
   :`<ellipse cx="54" cy="46" rx="26" ry="14" fill="${k==="tiger"?"#f4f6fa":P.c}"/><circle cx="82" cy="36" r="13" fill="${k==="tiger"?"#f4f6fa":P.c}"/>${k==="cat"||k==="tiger"?`<path d="M72 28 L74 14 L82 24Z M84 24 L92 14 L92 30Z" fill="${k==="tiger"?"#f4f6fa":P.c}"/>`:`<ellipse cx="74" cy="34" rx="5" ry="10" fill="${k==="husky"?"#5b6272":k==="pug"?"#3b2a20":"#c9963f"}"/>`}${k==="tiger"?[44,54,64].map(x=>`<path d="M${x} 34 l3 12" stroke="#2b2f3a" stroke-width="3"/>`).join(""):""}${k==="pug"?`<circle cx="90" cy="40" r="6" fill="#3b2a20"/>`:""}<circle cx="86" cy="33" r="2.4" fill="#141824"/>${[36,46,62,72].map(x=>`<rect x="${x}" y="56" width="6" height="14" rx="2" fill="${k==="tiger"?"#f4f6fa":P.c}"/>`).join("")}<path d="M30 42 Q18 34 22 22" stroke="${k==="tiger"?"#f4f6fa":P.c}" stroke-width="5" fill="none"/>`}</svg>`}
+/* ---------- pet adventures: send a pet off for a while; it comes back with loot ---------- */
+const PADV=[{k:"park",n:"Park run",m:5,cash:.01,crate:.15,map:.08,gold:0},{k:"woods",n:"Into the woods",m:30,cash:.04,crate:.45,map:.25,gold:.25},{k:"wild",n:"Wild expedition",m:120,cash:.12,crate:1,map:.5,gold:.6}];
+const petAdv=k=>((S.pets||{})[k]||{}).adv||null,advLeft=a=>Math.max(0,a.t0+a.m*60000-Date.now());
+function advLoot(k){const pd=S.pets[k],a=pd.adv,T=PADV.find(x=>x.k===a.k)||PADV[0],bk=1+petBond(k)*.1,out=[];const cash=Math.round(Math.max(300,rwBase()*T.cash*bk));earn(cash);out.push("+"+fmt(cash));
+  if(Math.random()<T.crate){gainCrate(T.m>=120?2:1);out.push(T.m>=120?"2 crates":"A crate")}if(Math.random()<T.map){S.maps=(S.maps||0)+1;out.push("A treasure map")}
+  if(Math.random()<T.gold&&S.stash.length<maxSlots()){const pool=POOL.filter(q=>S.unlocked.includes(q.cat)&&(HEAVY[q.code]||0)<=S.pr).sort((x,y)=>y.base-x.base),it=pick(pool.slice(0,5)),cc=CAT[it.cat],cond=cc.conds[0];S.stash.push({cat:it.cat,code:it.code,name:it.name,cond:cond[0],base:Math.round(it.base*cond[1]),noise:1,fake:false,paid:0,gold:1});out.push("Golden "+it.name)}
+  pd.bond=Math.min(10,(pd.bond||0)+(T.m>=30?1:0));pd.adv=null;S.stats.petAdv=(S.stats.petAdv||0)+1;dirty=true;return out}
+setInterval(()=>{if(!S||!S.pets)return;for(const k in S.pets){const a=S.pets[k].adv;if(a&&!a.told&&advLeft(a)<=0){a.told=1;dirty=true;const p=petOf(k);banner((p?p.n:"Your pet")+" is back from an adventure!","g");SFX.hot()}}},5000);
 function openPets(back){S.pets=S.pets||{};
   const draw=()=>{const own=PETS.filter(p=>S.pets[p.k]);
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Pets")}
       <div class="note">Your pet follows you around town and gives you its perk. Pet it once a day to grow your bond (up to 10): every level makes its perk 10% stronger.</div>
       ${own.length?`<div class="sechead"><h3>Your pets</h3></div><div class="petgrid">${own.map(p=>{const pd=S.pets[p.k],today=pd.day===dayKey();return `<div class="petcard${S.pet===p.k?" on":""}">${petArt(p.k)}<b>${p.n}</b><small>Bond ${petBond(p.k)}/10</small><div class="bondbar"><i style="width:${petBond(p.k)*10}%"></i></div>
-        <div class="petbtns"><button data-walk="${p.k}" ${S.pet===p.k?"disabled":""}>${S.pet===p.k?"Walking":"Walk"}</button><button data-pat="${p.k}" ${today?"disabled":""}>${today?"Petted ❤":"Pet"}</button></div></div>`}).join("")}</div>`:""}
+        ${(()=>{const a=petAdv(p.k);if(!a)return `<div class="petbtns"><button data-walk="${p.k}" ${S.pet===p.k?"disabled":""}>${S.pet===p.k?"Walking":"Walk"}</button><button data-pat="${p.k}" ${today?"disabled":""}>${today?"Petted ❤":"Pet"}</button></div><div class="petbtns">${PADV.map(T=>`<button data-adv="${p.k}|${T.k}" title="${T.n}">🧭 ${T.m<60?T.m+"m":T.m/60+"h"}</button>`).join("")}</div>`;
+          const L=advLeft(a);return L>0?`<div class="petaway">🧭 On an adventure · back in ${L>=3600000?Math.ceil(L/3600000)+"h":Math.ceil(L/60000)+"m"}</div>`:`<button class="cta" data-loot="${p.k}">🎁 Back! Open loot</button>`})()}</div>`}).join("")}</div>
+      <p class="fine">Adventures: a 5-minute park run, 30 minutes in the woods or a 2-hour wild expedition. Longer trips bring back crates, treasure maps and golden items, and grow your bond.</p>`:""}
       <div class="sechead"><h3>Pet shop</h3><span class="eyebrow">${PETS.length} pets</span></div>
       <div class="perks">${PETS.map(p=>{const o=!!S.pets[p.k];return `<button class="perk opp" data-pet="${p.k}" ${o||S.cash<p.cost?"disabled":""}><span class="oav petav">${petArt(p.k)}</span><span class="t">${p.n}${o?' <em class="beat">YOURS</em>':""}</span><span class="d">${p.d}</span><span class="c">${o?"Owned":fmt(p.cost)}</span></button>`}).join("")}</div></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-pet]").forEach(b=>b.onclick=()=>{const p=petOf(b.dataset.pet);if(S.pets[p.k]||S.cash<p.cost)return;S.cash-=p.cost;S.pets[p.k]={bond:0,day:-1};S.pet=p.k;PET=null;dirty=true;SFX.rebirth();confetti(90);banner(p.n+" adopted","g");draw();updMini()});
+    $("room").querySelectorAll("[data-adv]").forEach(b=>b.onclick=()=>{const[k,t]=b.dataset.adv.split("|"),T=PADV.find(x=>x.k===t);if(!T||petAdv(k))return;S.pets[k].adv={k:t,m:T.m,t0:Date.now()};if(S.pet===k){S.pet=null;PET=null}dirty=true;SFX.hot();banner(petOf(k).n+" set off: "+T.n,"a");draw()});
+    $("room").querySelectorAll("[data-loot]").forEach(b=>b.onclick=()=>{const k=b.dataset.loot,a=petAdv(k);if(!a||advLeft(a)>0)return;const out=advLoot(k);SFX.rebirth();confetti(160);flash("#ffcc33",.3);banner(petOf(k).n+" found: "+out.join(" · "),"g");S.pet=S.pet||k;PET=null;draw();updMini()});
     $("room").querySelectorAll("[data-walk]").forEach(b=>b.onclick=()=>{S.pet=b.dataset.walk;PET=null;dirty=true;SFX.tick(.6);draw()});
     $("room").querySelectorAll("[data-pat]").forEach(b=>b.onclick=()=>{const pd=S.pets[b.dataset.pat];if(pd.day===dayKey())return;pd.day=dayKey();pd.bond=Math.min(10,(pd.bond||0)+1);dirty=true;SFX.hot();buzz(10);confetti(30,null,null,["#ff4fd8","#ff9ad5","#fff"]);banner("Bond "+pd.bond+"/10 ❤","u");draw()})};draw()}
 
@@ -4685,7 +4698,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=37,WN=[
+const WN_VER=38,WN=[
+ ["🧭","Pet adventures","Send a pet on a park run, into the woods or on a wild expedition from the Pets screen. It comes back with cash, crates, treasure maps or even golden items.","2026-10-07T03:30"],
  ["🏅","Duel ranks","Duels now have a rating, from Bronze to Champion. Beat stronger players to climb faster. Ranks show in the Friends list and the duel menu.","2026-10-07T03:20"],
  ["🗺️","Treasure maps","Crates and the Arcade can give you treasure maps. Read one and a red X appears somewhere in town. Walk there and dig for cash, golden items and more.","2026-10-07T03:15"],
  ["🕹️","The Arcade","A neon arcade downtown: Mole mash, Tower stack and Hoop shot. Win tickets and trade them at the prize counter for crates, cash, energy and arcade-only neon gear.","2026-10-07T03:30"],
