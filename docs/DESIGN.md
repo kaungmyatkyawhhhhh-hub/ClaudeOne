@@ -288,8 +288,10 @@ shareable before/after snapshot.
 - Max = a lean aesthetic V-taper (fitness model, not a bodybuilder); the mass monster sizes come from the manifest
   (mass_monster.g per mesh) plus 12% extra thickness.
 - Widths by Growth Spurt (`Config/Body.Widths`, manifest growth_spurt_width): factor = 1 + k * (height / 4'0" - 1) per
-  region (shoulders with the genetics frame on top, hips, arms, legs, torso depth); k goes from skinny (wide clavicles
-  and hips, thin arms and legs) to the maxed V-taper with the muscle progress and on to the mass monster. Lying poses are
+  region (shoulders with the genetics frame on top, hips, arms, legs, torso depth); k goes from skinny (wide clavicles,
+  narrow hips, thin arms and legs) to the maxed V-taper smoothly with the muscle progress and on to the mass monster;
+  the hips (k 0.2 -> 0.7 -> 1.2) widen the LowerTorso, the shorts and the leg positions together, and the waist meets
+  the LowerTorso at the same width. Lying poses are
   lifted by the extra torso depth so the back stays on the pad.
 - Muscles are real EditableMesh muscles (muscle v8): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), everyone gets the snatched-waist torso, each muscle's outline stays on the skin and only the bulge rises with its level (continuous, tweened, small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the

@@ -48,7 +48,8 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   (`BodyShape.ApplyProportions`, re-applied after every rescale).
 - **Muscle data v8 final (8 Oct):** MuscleData regenerated from the latest `muscle_v8` (37 meshes): border "blend" weights
   (the old "share" averaging is gone), DeltCap shoulder balls (in the UpperArms meshes), the waist morph (start -> snatched),
-  the aesthetic max data, per-mesh mass monster sizes and Growth Spurt widths (`BodyService.WidthFactors`,
+  the aesthetic max data, per-mesh mass monster sizes and Growth Spurt widths (tall skinny players start with narrow hips that
+  widen with muscle) (`BodyService.WidthFactors`,
   `BodyShape.ApplyWidths`; attributes FrameWidth / WaistWidth drive the torso taper). Studio hook `TestMachine` = a
   machine name puts you on it. Open: at mass monster the traps and triceps grow pointed tips (the manifest sizes 2.6 / 2.1
   plus the +12% push the max shape far out); lower `Muscles.Look.MonsterG` for them if they look too sharp.
