@@ -1740,17 +1740,269 @@ return Config
 ]]></string>
         </Properties>
       </Item>
+      <Item class="ModuleScript" referent="9">
+        <Properties>
+          <string name="Name">FacadeTex</string>
+          <string name="Source"><![CDATA[--[[
+	FacadeTex
+	Procedural building facade textures (pure Luau, only uses `buffer`, so the
+	exact same code runs in Roblox and in offline tools).
+
+	A texture tile is 8 window modules wide x 8 floors high. Each style paints
+	its own wall (glass curtain wall, office panels, limestone, brick), window
+	frames, floor slabs and glass. Lit windows show a room interior: ceiling
+	light falloff, blinds on some, desks/furniture silhouettes on others, warm
+	or cool colour temperatures and a few whole floors left on late at night.
+
+	Maps produced (RGBA8 buffers, SIZE x SIZE):
+	  color    : albedo; lit rooms carry their interior colour
+	  emissive : grayscale mask of what glows (lit rooms only)
+	  normal   : window recesses / frame bevels
+	  rough    : glass is glossy, walls are matte
+	  metal    : glass and metal frames reflect the environment
+]]
+
+local FacadeTex = {}
+
+FacadeTex.SIZE = 256
+FacadeTex.COLS = 8
+FacadeTex.ROWS = 8
+FacadeTex.FLOOR_STUDS = 11
+
+local CELL = FacadeTex.SIZE // FacadeTex.COLS
+
+export type Style = {
+	pier: number, -- px of wall either side of a window (per side)
+	spandrel: number, -- px of floor slab under the window
+	head: number, -- px of wall above the window
+	wall: { number },
+	wallNoise: number,
+	frame: { number },
+	glass: { number },
+	sky: number, -- reflection brightening toward the top of each pane
+	pattern: string, -- "plain" | "brick" | "stone" | "panel"
+	glassRough: number,
+	glassMetal: number,
+	wallRough: number,
+	frameMetal: number,
+}
+
+FacadeTex.STYLES = {
+	glass = { pier = 1, spandrel = 6, head = 1, wall = { 62, 68, 80 }, wallNoise = 2, frame = { 92, 98, 110 }, glass = { 18, 28, 44 }, sky = 22, pattern = "plain", glassRough = 20, glassMetal = 190, wallRough = 120, frameMetal = 200 },
+	panel = { pier = 3, spandrel = 9, head = 2, wall = { 50, 53, 61 }, wallNoise = 3, frame = { 30, 31, 36 }, glass = { 16, 22, 32 }, sky = 16, pattern = "panel", glassRough = 26, glassMetal = 150, wallRough = 170, frameMetal = 160 },
+	stone = { pier = 7, spandrel = 9, head = 5, wall = { 128, 118, 102 }, wallNoise = 9, frame = { 44, 40, 36 }, glass = { 18, 22, 28 }, sky = 14, pattern = "stone", glassRough = 30, glassMetal = 120, wallRough = 225, frameMetal = 0 },
+	brick = { pier = 7, spandrel = 9, head = 6, wall = { 116, 62, 46 }, wallNoise = 10, frame = { 196, 190, 178 }, glass = { 16, 20, 26 }, sky = 12, pattern = "brick", glassRough = 30, glassMetal = 110, wallRough = 235, frameMetal = 0 },
+}
+
+local WARM = { { 255, 196, 128 }, { 255, 210, 160 }, { 255, 184, 112 }, { 250, 220, 180 } }
+local COOL = { { 196, 218, 255 }, { 170, 198, 255 }, { 220, 232, 255 }, { 150, 185, 240 } }
+
+-- deterministic LCG (identical results everywhere; products stay below 2^53)
+local function rng(seed: number): () -> number
+	local state = seed % 4294967296
+	return function(): number
+		state = (state * 1664525 + 1013904223) % 4294967296
+		return state / 4294967296
+	end
+end
+
+local function hashSeed(style: string, warm: boolean, busy: boolean): number
+	local h = 2166136261
+	local key = style .. (if warm then "W" else "C") .. (if busy then "B" else "S")
+	for i = 1, #key do
+		h = ((h * 16777619) + string.byte(key, i)) % 4294967296
+	end
+	return h
+end
+
+local function put(buf: buffer, x: number, y: number, r: number, g: number, b: number, a: number?)
+	local function c(v: number): number
+		return math.clamp(math.floor(v + 0.5), 0, 255)
+	end
+	buffer.writeu32(buf, (y * FacadeTex.SIZE + x) * 4, c(r) + c(g) * 256 + c(b) * 65536 + c(a or 255) * 16777216)
+end
+
+-- window rectangle inside a cell, in cell-local pixels (top-left origin)
+local function windowRect(st: Style): (number, number, number, number)
+	return st.pier, st.head, CELL - 1 - st.pier, CELL - 1 - st.spandrel
+end
+
+local function wallColor(st: Style, x: number, y: number, rand: () -> number): (number, number, number)
+	local w = st.wall
+	local n = (rand() - 0.5) * 2 * st.wallNoise
+	local r, g, b = w[1] + n, w[2] + n, w[3] + n
+	if st.pattern == "brick" then
+		local row = y // 4
+		local offset = if row % 2 == 0 then 0 else 4
+		if y % 4 == 3 or (x + offset) % 8 == 0 then
+			r, g, b = 150 + n * 0.3, 136 + n * 0.3, 122 + n * 0.3 -- mortar
+		else
+			local tone = ((x + offset) // 8 * 7 + row * 13) % 5 - 2
+			r, g, b = r + tone * 4, g + tone * 2, b + tone * 2
+		end
+	elseif st.pattern == "stone" then
+		if y % 16 == 15 or (x % 32 == 0 and (y // 16) % 2 == 0) or ((x + 16) % 32 == 0 and (y // 16) % 2 == 1) then
+			r, g, b = r - 18, g - 18, b - 16 -- block joints
+		end
+	elseif st.pattern == "panel" then
+		if x % CELL == 0 or y % CELL == 0 then
+			r, g, b = r - 14, g - 14, b - 12 -- panel seams
+		end
+	end
+	return r, g, b
+end
+
+--[[
+	color + emissive for one lighting mood
+	warm: mostly warm interiors; busy: more rooms lit
+]]
+function FacadeTex.generate(styleName: string, warm: boolean, busy: boolean): (buffer, buffer)
+	local st: Style = FacadeTex.STYLES[styleName] or FacadeTex.STYLES.panel
+	local N = FacadeTex.SIZE
+	local color = buffer.create(N * N * 4)
+	local emissive = buffer.create(N * N * 4)
+	local rand = rng(hashSeed(styleName, warm, busy))
+	local x0, y0, x1, y1 = windowRect(st)
+
+	-- background wall
+	for y = 0, N - 1 do
+		for x = 0, N - 1 do
+			local r, g, b = wallColor(st, x, y, rand)
+			-- slab line where the floor plate meets the facade
+			local cy = y % CELL
+			if st.pattern == "plain" and cy >= y1 + 1 then
+				r, g, b = 28, 32, 42
+			end
+			put(color, x, y, r, g, b)
+			put(emissive, x, y, 0, 0, 0)
+		end
+	end
+
+	local litChance = if busy then 0.5 else 0.28
+	for row = 0, FacadeTex.ROWS - 1 do
+		local floorOn = rand() < (if busy then 0.22 else 0.1) -- whole floor still working
+		local floorOff = rand() < 0.18
+		for col = 0, FacadeTex.COLS - 1 do
+			local lit = if floorOn then rand() < 0.9 elseif floorOff then rand() < 0.05 else rand() < litChance
+			local palette = if (rand() < 0.8) == warm then WARM else COOL
+			local tint = palette[1 + math.floor(rand() * #palette)]
+			local bright = 0.5 + rand() * 0.5
+			local blinds = rand() < 0.3
+			local furniture = rand() < 0.35
+			local tvBlue = not lit and rand() < 0.04 -- the odd TV glow in a dark room
+			local gx, gy = col * CELL, row * CELL
+			for y = y0, y1 do
+				for x = x0, x1 do
+					local px, py = gx + x, gy + y
+					local edge = x == x0 or x == x1 or y == y0 or y == y1
+					if edge then
+						local f = st.frame
+						put(color, px, py, f[1], f[2], f[3])
+					else
+						local v = (y - y0) / math.max(1, y1 - y0) -- 0 top .. 1 bottom
+						if lit or tvBlue then
+							local k = bright * (1 - 0.45 * v) -- ceiling light falls off downwards
+							local tr, tg, tb = tint[1], tint[2], tint[3]
+							if tvBlue then
+								tr, tg, tb, k = 90, 130, 255, 0.35
+							end
+							if blinds and (y - y0) % 3 == 0 then
+								k *= 0.55
+							end
+							if furniture and v > 0.68 and ((x - x0) // 5) % 3 ~= 1 then
+								k *= 0.35 -- desks / sofa silhouettes
+							end
+							-- mullion in the middle of wide panes
+							if (x1 - x0) > 20 and x == (x0 + x1) // 2 then
+								local f = st.frame
+								put(color, px, py, f[1], f[2], f[3])
+								continue
+							end
+							put(color, px, py, tr * k, tg * k, tb * k)
+							local e = 255 * k
+							put(emissive, px, py, e, e, e)
+						else
+							local g = st.glass
+							local sky = st.sky * (1 - v) + (rand() - 0.5) * 3
+							put(color, px, py, g[1] + sky, g[2] + sky, g[3] + sky * 1.3)
+						end
+					end
+				end
+			end
+			-- stone / brick: sill under each window
+			if st.pattern == "stone" or st.pattern == "brick" then
+				for x = x0 - 1, x1 + 1 do
+					put(color, gx + x, gy + y1 + 1, st.wall[1] + 26, st.wall[2] + 24, st.wall[3] + 22)
+				end
+			end
+		end
+	end
+	return color, emissive
+end
+
+-- normal / roughness / metalness for a style (shared by every mood)
+function FacadeTex.surface(styleName: string): (buffer, buffer, buffer)
+	local st: Style = FacadeTex.STYLES[styleName] or FacadeTex.STYLES.panel
+	local N = FacadeTex.SIZE
+	local normal = buffer.create(N * N * 4)
+	local rough = buffer.create(N * N * 4)
+	local metal = buffer.create(N * N * 4)
+	local x0, y0, x1, y1 = windowRect(st)
+	for y = 0, N - 1 do
+		for x = 0, N - 1 do
+			local cx, cy = x % CELL, y % CELL
+			local inside = cx >= x0 and cx <= x1 and cy >= y0 and cy <= y1
+			local nx, ny = 128, 128
+			if inside then
+				-- recess bevel: the reveal around each pane faces inward
+				if cx == x0 then
+					nx = 200
+				elseif cx == x1 then
+					nx = 56
+				end
+				if cy == y0 then
+					ny = 56
+				elseif cy == y1 then
+					ny = 200
+				end
+			elseif st.pattern == "brick" and (y % 4 == 3) then
+				ny = 150 -- mortar grooves
+			end
+			put(normal, x, y, nx, ny, 255)
+			local frameEdge = inside and (cx == x0 or cx == x1 or cy == y0 or cy == y1)
+			local r = if inside and not frameEdge then st.glassRough elseif frameEdge then 110 else st.wallRough
+			local m = if inside and not frameEdge then st.glassMetal elseif frameEdge then st.frameMetal else 0
+			put(rough, x, y, r, r, r)
+			put(metal, x, y, m, m, m)
+		end
+	end
+	return normal, rough, metal
+end
+
+-- studs covered by one tile horizontally for a given window module
+function FacadeTex.tileStudsU(module: number): number
+	return module * FacadeTex.COLS
+end
+
+function FacadeTex.tileStudsV(): number
+	return FacadeTex.FLOOR_STUDS * FacadeTex.ROWS
+end
+
+return FacadeTex
+]]></string>
+        </Properties>
+      </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="9">
+  <Item class="ServerScriptService" referent="10">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="10">
+    <Item class="Folder" referent="11">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="ModuleScript" referent="11">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">CityBuilder</string>
           <string name="Source"><![CDATA[--[[
@@ -2181,6 +2433,7 @@ local CORP_NAMES = {
 }
 
 type Palette = {
+	kind: string, -- facade texture style (FacadeTex): glass / panel / stone / brick
 	body: Color3,
 	mat: Enum.Material,
 	refl: number,
@@ -2200,17 +2453,17 @@ local function randomPalette(kind: string): Palette
 	local lit = rng:NextNumber(0.3, 0.6)
 	if kind == "glass" then
 		local tints = { Color3.fromRGB(20, 30, 46), Color3.fromRGB(16, 24, 32), Color3.fromRGB(30, 36, 50), Color3.fromRGB(18, 34, 38), Color3.fromRGB(42, 36, 30) }
-		return { body = pick(tints), mat = Enum.Material.Glass, refl = 0.35, fin = Color3.fromRGB(96, 100, 108), finMat = Enum.Material.Metal, finW = 0.5, module = 6.5, winH = 7.5, warm = warm, lit = lit, ledges = false, punched = false }
+		return { kind = "glass", body = pick(tints), mat = Enum.Material.Glass, refl = 0.35, fin = Color3.fromRGB(96, 100, 108), finMat = Enum.Material.Metal, finW = 0.5, module = 6.5, winH = 7.5, warm = warm, lit = lit, ledges = false, punched = false }
 	elseif kind == "stone" then
 		local stones = { Color3.fromRGB(118, 110, 98), Color3.fromRGB(92, 90, 88), Color3.fromRGB(130, 120, 104) }
 		local c = pick(stones)
-		return { body = c, mat = Enum.Material.Limestone, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.15), finMat = Enum.Material.Limestone, finW = 1.8, module = 7.5, winH = 6, warm = true, lit = lit, ledges = true, punched = true }
+		return { kind = "stone", body = c, mat = Enum.Material.Limestone, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.15), finMat = Enum.Material.Limestone, finW = 1.8, module = 7.5, winH = 6, warm = true, lit = lit, ledges = true, punched = true }
 	elseif kind == "brick" then
 		local c = pick({ Color3.fromRGB(104, 58, 44), Color3.fromRGB(86, 52, 42), Color3.fromRGB(120, 76, 58) })
-		return { body = c, mat = Enum.Material.Brick, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.1), finMat = Enum.Material.Brick, finW = 2, module = 7, winH = 5.5, warm = true, lit = lit, ledges = true, punched = true }
+		return { kind = "brick", body = c, mat = Enum.Material.Brick, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.1), finMat = Enum.Material.Brick, finW = 2, module = 7, winH = 5.5, warm = true, lit = lit, ledges = true, punched = true }
 	end
 	-- dark metal panel office block
-	return { body = Color3.fromRGB(44, 46, 54), mat = Enum.Material.SmoothPlastic, refl = 0.12, fin = Color3.fromRGB(28, 28, 32), finMat = Enum.Material.Metal, finW = 0.9, module = 7, winH = 6.5, warm = warm, lit = lit, ledges = false, punched = true }
+	return { kind = "panel", body = Color3.fromRGB(44, 46, 54), mat = Enum.Material.SmoothPlastic, refl = 0.12, fin = Color3.fromRGB(28, 28, 32), finMat = Enum.Material.Metal, finW = 0.9, module = 7, winH = 6.5, warm = warm, lit = lit, ledges = false, punched = true }
 end
 
 local FACE_DEFS = {
@@ -2232,7 +2485,16 @@ local PANE = Color3.fromRGB(16, 20, 28)
 local function facadeTier(model: Instance, cx: number, cz: number, w: number, dpt: number, y0: number, y1: number, pal: Palette, premium: boolean, skipFace: Vector3?, fine: Instance?)
 	local h = y1 - y0
 	local fineParent = fine or model
-	mk(model, Vector3.new(w, h, dpt), CFrame.new(cx, y0 + h / 2, cz), pal.body, pal.mat, { reflectance = pal.refl, name = "Tower" })
+	local tower = mk(model, Vector3.new(w, h, dpt), CFrame.new(cx, y0 + h / 2, cz), pal.body, pal.mat, { reflectance = pal.refl, name = "Tower" })
+	-- the client paints real facade textures from these (see BuildingSkin)
+	tower:SetAttribute("Style", pal.kind)
+	tower:SetAttribute("Module", pal.module)
+	tower:SetAttribute("Warm", pal.warm)
+	tower:SetAttribute("Busy", pal.lit > 0.45)
+	tower:SetAttribute("BaseY", y0)
+	if skipFace then
+		tower:SetAttribute("SkipFace", skipFace)
+	end
 	local floorH = 11
 	local floors = math.floor((h - 3) / floorH)
 	for _, face in FACE_DEFS do
@@ -2257,7 +2519,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 			-- dark panes across the floor for punched-window walls
 			if premium and pal.punched then
 				local pc = Vector3.new(cx, y, cz) + face.n * (off + 0.04)
-				deco(fineParent, Vector3.new(len - 2, pal.winH, 0.12), CFrame.lookAt(pc, pc + face.n), PANE, Enum.Material.Glass, { reflectance = 0.3 })
+				deco(fineParent, Vector3.new(len - 2, pal.winH, 0.12), CFrame.lookAt(pc, pc + face.n), PANE, Enum.Material.Glass, { reflectance = 0.3, name = "Pane" })
 			end
 			-- runs of lit rooms; neighbouring lit runs merge into one part (the
 			-- mullions drawn on top still show the individual windows)
@@ -2269,7 +2531,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 					local width = (lastCol - first + 1) * module - pal.finW
 					local color = if pal.warm then WINDOW_COLORS[rng:NextInteger(1, 3)] else WINDOW_COLORS[rng:NextInteger(3, 6)]
 					local center = Vector3.new(cx, y, cz) + face.n * (off + 0.08) + tangent * mid
-					deco(model, Vector3.new(width, pal.winH - 0.4, 0.14), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.2, 0.42) })
+					deco(model, Vector3.new(width, pal.winH - 0.4, 0.14), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.2, 0.42), name = "WinLit" })
 					litStart = nil
 				end
 			end
@@ -2290,7 +2552,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 			for k = 1, cols - 1 do
 				local t = colX(k) + module / 2
 				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.3) + tangent * t
-				deco(fineParent, Vector3.new(pal.finW, h, 0.6), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = if pal.finMat == Enum.Material.Metal then 0.2 else 0 })
+				deco(fineParent, Vector3.new(pal.finW, h, 0.6), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = if pal.finMat == Enum.Material.Metal then 0.2 else 0, name = "Fin" })
 			end
 			-- corner piers frame the facade
 			for _, sgn in { -1, 1 } do
@@ -2303,7 +2565,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 	if premium and pal.ledges then
 		for f = 1, floors do
 			local y = y0 + 1.5 + f * floorH - floorH / 2 - pal.winH / 2 - 0.4
-			deco(fineParent, Vector3.new(w + 1, 0.6, dpt + 1), CFrame.new(cx, y, cz), pal.fin, pal.finMat)
+			deco(fineParent, Vector3.new(w + 1, 0.6, dpt + 1), CFrame.new(cx, y, cz), pal.fin, pal.finMat, { name = "Ledge" })
 		end
 	end
 	-- dark granite plinth where the building meets the street
@@ -2969,7 +3231,7 @@ return CityBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="13">
         <Properties>
           <string name="Name">CityPremium</string>
           <string name="Source"><![CDATA[--[[
@@ -3431,7 +3693,7 @@ return CityPremium
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Script" referent="13">
+      <Item class="Script" referent="14">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -3785,7 +4047,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">PlayerData</string>
           <string name="Source"><![CDATA[--[[
@@ -3937,24 +4199,24 @@ return PlayerData
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="15">
+  <Item class="SoundService" referent="16">
     <Properties>
       <string name="Name">SoundService</string>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="16">
+  <Item class="StarterPlayer" referent="17">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="17">
+    <Item class="StarterPlayerScripts" referent="18">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="18">
+      <Item class="Folder" referent="19">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="19">
+        <Item class="ModuleScript" referent="20">
           <Properties>
             <string name="Name">Audio</string>
             <string name="Source"><![CDATA[--[[
@@ -4343,7 +4605,139 @@ return Audio
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="20">
+        <Item class="ModuleScript" referent="21">
+          <Properties>
+            <string name="Name">BuildingSkin</string>
+            <string name="Source"><![CDATA[--[[
+	BuildingSkin (client)
+	Paints every tower with generated PBR facade textures (FacadeTex ->
+	EditableImage -> tiled Texture): colour, emissive (lit rooms glow), normal,
+	roughness and metalness. The part-built window strips, panes, mullions and
+	ledges it replaces are removed locally, which also takes ~25k parts out of
+	the scene.
+
+	If runtime images aren't available (e.g. the place hasn't allowed the
+	Mesh / Image APIs) nothing changes and the part facades stay.
+]]
+
+local AssetService = game:GetService("AssetService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local FacadeTex = require(Shared:WaitForChild("FacadeTex"))
+
+local BuildingSkin = {}
+
+local REMOVE = { WinLit = true, Pane = true, Fin = true, Ledge = true }
+local FACES = { Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }
+
+type Maps = { color: any, emissive: any }
+type Surface = { normal: any, rough: any, metal: any }
+
+local keepAlive: { any } = {}
+
+local function image(buf: buffer): any
+	local N = FacadeTex.SIZE
+	local img = AssetService:CreateEditableImage({ Size = Vector2.new(N, N) })
+	img:WritePixelsBuffer(Vector2.zero, Vector2.new(N, N), buf)
+	table.insert(keepAlive, img)
+	return Content.fromObject(img)
+end
+
+local function buildLibrary(): ({ [string]: Maps }, { [string]: Surface })
+	local moods: { [string]: Maps } = {}
+	local surfaces: { [string]: Surface } = {}
+	for style in FacadeTex.STYLES do
+		local n, r, m = FacadeTex.surface(style)
+		surfaces[style] = { normal = image(n), rough = image(r), metal = image(m) }
+		for _, warm in { true, false } do
+			for _, busy in { true, false } do
+				local c, e = FacadeTex.generate(style, warm, busy)
+				moods[style .. tostring(warm) .. tostring(busy)] = { color = image(c), emissive = image(e) }
+				task.wait() -- spread the work over frames
+			end
+		end
+	end
+	return moods, surfaces
+end
+
+function BuildingSkin.apply(city: Instance): boolean
+	local ok, moods, surfaces = pcall(buildLibrary)
+	if not ok then
+		warn("[CityLegends] Facade textures unavailable, keeping part facades:", moods)
+		return false
+	end
+
+	local towers: { BasePart } = {}
+	local remove: { Instance } = {}
+	for _, d in city:GetDescendants() do
+		if d:IsA("BasePart") then
+			if d.Name == "Tower" and d:GetAttribute("Style") then
+				table.insert(towers, d)
+			elseif REMOVE[d.Name] then
+				table.insert(remove, d)
+			end
+		end
+	end
+
+	local rng = Random.new(4242)
+	for i, tower in towers do
+		local style = tower:GetAttribute("Style") :: string
+		local module = (tower:GetAttribute("Module") :: number?) or 7
+		local warm = tower:GetAttribute("Warm") == true
+		local busy = tower:GetAttribute("Busy") == true
+		local skip = tower:GetAttribute("SkipFace") :: Vector3?
+		local maps = moods[style .. tostring(warm) .. tostring(busy)]
+		local surf = surfaces[style]
+		if maps and surf then
+			local offsetU = rng:NextNumber(0, FacadeTex.tileStudsU(module))
+			for _, face in FACES do
+				local normal = tower.CFrame:VectorToWorldSpace(Vector3.FromNormalId(face))
+				if not (skip and normal:Dot(skip) > 0.9) then
+					local tex = Instance.new("Texture")
+					tex.Face = face
+					tex.ColorMapContent = maps.color
+					tex.EmissiveMaskContent = maps.emissive
+					tex.EmissiveStrength = 1.4
+					tex.EmissiveTint = Color3.new(1, 1, 1)
+					tex.NormalMapContent = surf.normal
+					tex.RoughnessMapContent = surf.rough
+					tex.MetalnessMapContent = surf.metal
+					tex.StudsPerTileU = FacadeTex.tileStudsU(module)
+					tex.StudsPerTileV = FacadeTex.tileStudsV()
+					tex.OffsetStudsU = offsetU
+					tex.Parent = tower
+				end
+			end
+			-- the texture carries the look now; a plain matte core avoids glass refraction artefacts
+			tower.Material = Enum.Material.SmoothPlastic
+			tower.Reflectance = 0
+		end
+		if i % 60 == 0 then
+			task.wait()
+		end
+	end
+
+	for i, p in remove do
+		p:Destroy()
+		if i % 2000 == 0 then
+			task.wait()
+		end
+	end
+	-- drop the now-empty facade LOD groups so the LOD system ignores them
+	for _, d in city:GetDescendants() do
+		if d:IsA("Model") and d.Name == "Facade" and #d:GetChildren() == 0 then
+			d:Destroy()
+		end
+	end
+	return true
+end
+
+return BuildingSkin
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="22">
           <Properties>
             <string name="Name">CarSkin</string>
             <string name="Source"><![CDATA[--[[
@@ -4513,7 +4907,7 @@ return CarSkin
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">Cutscene</string>
             <string name="Source"><![CDATA[--[[
@@ -5147,7 +5541,7 @@ return Cutscene
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="22">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">Driving</string>
             <string name="Source"><![CDATA[--[[
@@ -5889,7 +6283,7 @@ return Driving
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="23">
+        <Item class="LocalScript" referent="25">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--[[
@@ -5911,6 +6305,7 @@ local Driving = require(script.Parent:WaitForChild("Driving"))
 local Cutscene = require(script.Parent:WaitForChild("Cutscene"))
 local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local BuildingSkin = require(script.Parent:WaitForChild("BuildingSkin"))
 local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local player = Players.LocalPlayer
@@ -5941,6 +6336,10 @@ task.wait(1) -- let the world finish replicating
 ---------------------------------------------------------------------
 -- World effects: lights, searchlights, billboards, monorail
 ---------------------------------------------------------------------
+if city then
+	UI.showLoading("Painting the skyline...")
+	BuildingSkin.apply(city)
+end
 WorldFx.start()
 
 ---------------------------------------------------------------------
@@ -6142,7 +6541,7 @@ showMenu()
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="24">
+        <Item class="ModuleScript" referent="26">
           <Properties>
             <string name="Name">Traffic</string>
             <string name="Source"><![CDATA[--[[
@@ -6646,7 +7045,7 @@ return Traffic
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="25">
+        <Item class="ModuleScript" referent="27">
           <Properties>
             <string name="Name">UI</string>
             <string name="Source"><![CDATA[--[[
@@ -7735,7 +8134,7 @@ return UI
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="26">
+        <Item class="ModuleScript" referent="28">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--[[
@@ -8066,7 +8465,7 @@ return WorldFx
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="27">
+  <Item class="Workspace" referent="29">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

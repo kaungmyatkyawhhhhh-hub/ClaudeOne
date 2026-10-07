@@ -426,6 +426,7 @@ local CORP_NAMES = {
 }
 
 type Palette = {
+	kind: string, -- facade texture style (FacadeTex): glass / panel / stone / brick
 	body: Color3,
 	mat: Enum.Material,
 	refl: number,
@@ -445,17 +446,17 @@ local function randomPalette(kind: string): Palette
 	local lit = rng:NextNumber(0.3, 0.6)
 	if kind == "glass" then
 		local tints = { Color3.fromRGB(20, 30, 46), Color3.fromRGB(16, 24, 32), Color3.fromRGB(30, 36, 50), Color3.fromRGB(18, 34, 38), Color3.fromRGB(42, 36, 30) }
-		return { body = pick(tints), mat = Enum.Material.Glass, refl = 0.35, fin = Color3.fromRGB(96, 100, 108), finMat = Enum.Material.Metal, finW = 0.5, module = 6.5, winH = 7.5, warm = warm, lit = lit, ledges = false, punched = false }
+		return { kind = "glass", body = pick(tints), mat = Enum.Material.Glass, refl = 0.35, fin = Color3.fromRGB(96, 100, 108), finMat = Enum.Material.Metal, finW = 0.5, module = 6.5, winH = 7.5, warm = warm, lit = lit, ledges = false, punched = false }
 	elseif kind == "stone" then
 		local stones = { Color3.fromRGB(118, 110, 98), Color3.fromRGB(92, 90, 88), Color3.fromRGB(130, 120, 104) }
 		local c = pick(stones)
-		return { body = c, mat = Enum.Material.Limestone, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.15), finMat = Enum.Material.Limestone, finW = 1.8, module = 7.5, winH = 6, warm = true, lit = lit, ledges = true, punched = true }
+		return { kind = "stone", body = c, mat = Enum.Material.Limestone, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.15), finMat = Enum.Material.Limestone, finW = 1.8, module = 7.5, winH = 6, warm = true, lit = lit, ledges = true, punched = true }
 	elseif kind == "brick" then
 		local c = pick({ Color3.fromRGB(104, 58, 44), Color3.fromRGB(86, 52, 42), Color3.fromRGB(120, 76, 58) })
-		return { body = c, mat = Enum.Material.Brick, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.1), finMat = Enum.Material.Brick, finW = 2, module = 7, winH = 5.5, warm = true, lit = lit, ledges = true, punched = true }
+		return { kind = "brick", body = c, mat = Enum.Material.Brick, refl = 0, fin = c:Lerp(Color3.new(0, 0, 0), 0.1), finMat = Enum.Material.Brick, finW = 2, module = 7, winH = 5.5, warm = true, lit = lit, ledges = true, punched = true }
 	end
 	-- dark metal panel office block
-	return { body = Color3.fromRGB(44, 46, 54), mat = Enum.Material.SmoothPlastic, refl = 0.12, fin = Color3.fromRGB(28, 28, 32), finMat = Enum.Material.Metal, finW = 0.9, module = 7, winH = 6.5, warm = warm, lit = lit, ledges = false, punched = true }
+	return { kind = "panel", body = Color3.fromRGB(44, 46, 54), mat = Enum.Material.SmoothPlastic, refl = 0.12, fin = Color3.fromRGB(28, 28, 32), finMat = Enum.Material.Metal, finW = 0.9, module = 7, winH = 6.5, warm = warm, lit = lit, ledges = false, punched = true }
 end
 
 local FACE_DEFS = {
@@ -477,7 +478,16 @@ local PANE = Color3.fromRGB(16, 20, 28)
 local function facadeTier(model: Instance, cx: number, cz: number, w: number, dpt: number, y0: number, y1: number, pal: Palette, premium: boolean, skipFace: Vector3?, fine: Instance?)
 	local h = y1 - y0
 	local fineParent = fine or model
-	mk(model, Vector3.new(w, h, dpt), CFrame.new(cx, y0 + h / 2, cz), pal.body, pal.mat, { reflectance = pal.refl, name = "Tower" })
+	local tower = mk(model, Vector3.new(w, h, dpt), CFrame.new(cx, y0 + h / 2, cz), pal.body, pal.mat, { reflectance = pal.refl, name = "Tower" })
+	-- the client paints real facade textures from these (see BuildingSkin)
+	tower:SetAttribute("Style", pal.kind)
+	tower:SetAttribute("Module", pal.module)
+	tower:SetAttribute("Warm", pal.warm)
+	tower:SetAttribute("Busy", pal.lit > 0.45)
+	tower:SetAttribute("BaseY", y0)
+	if skipFace then
+		tower:SetAttribute("SkipFace", skipFace)
+	end
 	local floorH = 11
 	local floors = math.floor((h - 3) / floorH)
 	for _, face in FACE_DEFS do
@@ -502,7 +512,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 			-- dark panes across the floor for punched-window walls
 			if premium and pal.punched then
 				local pc = Vector3.new(cx, y, cz) + face.n * (off + 0.04)
-				deco(fineParent, Vector3.new(len - 2, pal.winH, 0.12), CFrame.lookAt(pc, pc + face.n), PANE, Enum.Material.Glass, { reflectance = 0.3 })
+				deco(fineParent, Vector3.new(len - 2, pal.winH, 0.12), CFrame.lookAt(pc, pc + face.n), PANE, Enum.Material.Glass, { reflectance = 0.3, name = "Pane" })
 			end
 			-- runs of lit rooms; neighbouring lit runs merge into one part (the
 			-- mullions drawn on top still show the individual windows)
@@ -514,7 +524,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 					local width = (lastCol - first + 1) * module - pal.finW
 					local color = if pal.warm then WINDOW_COLORS[rng:NextInteger(1, 3)] else WINDOW_COLORS[rng:NextInteger(3, 6)]
 					local center = Vector3.new(cx, y, cz) + face.n * (off + 0.08) + tangent * mid
-					deco(model, Vector3.new(width, pal.winH - 0.4, 0.14), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.2, 0.42) })
+					deco(model, Vector3.new(width, pal.winH - 0.4, 0.14), CFrame.lookAt(center, center + face.n), color, Enum.Material.Neon, { transparency = rng:NextNumber(0.2, 0.42), name = "WinLit" })
 					litStart = nil
 				end
 			end
@@ -535,7 +545,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 			for k = 1, cols - 1 do
 				local t = colX(k) + module / 2
 				local pos = Vector3.new(cx, y0 + h / 2, cz) + face.n * (off + 0.3) + tangent * t
-				deco(fineParent, Vector3.new(pal.finW, h, 0.6), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = if pal.finMat == Enum.Material.Metal then 0.2 else 0 })
+				deco(fineParent, Vector3.new(pal.finW, h, 0.6), CFrame.lookAt(pos, pos + face.n), pal.fin, pal.finMat, { reflectance = if pal.finMat == Enum.Material.Metal then 0.2 else 0, name = "Fin" })
 			end
 			-- corner piers frame the facade
 			for _, sgn in { -1, 1 } do
@@ -548,7 +558,7 @@ local function facadeTier(model: Instance, cx: number, cz: number, w: number, dp
 	if premium and pal.ledges then
 		for f = 1, floors do
 			local y = y0 + 1.5 + f * floorH - floorH / 2 - pal.winH / 2 - 0.4
-			deco(fineParent, Vector3.new(w + 1, 0.6, dpt + 1), CFrame.new(cx, y, cz), pal.fin, pal.finMat)
+			deco(fineParent, Vector3.new(w + 1, 0.6, dpt + 1), CFrame.new(cx, y, cz), pal.fin, pal.finMat, { name = "Ledge" })
 		end
 	end
 	-- dark granite plinth where the building meets the street

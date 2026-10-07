@@ -17,6 +17,7 @@ local Driving = require(script.Parent:WaitForChild("Driving"))
 local Cutscene = require(script.Parent:WaitForChild("Cutscene"))
 local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
+local BuildingSkin = require(script.Parent:WaitForChild("BuildingSkin"))
 local Audio = require(script.Parent:WaitForChild("Audio"))
 
 local player = Players.LocalPlayer
@@ -47,6 +48,10 @@ task.wait(1) -- let the world finish replicating
 ---------------------------------------------------------------------
 -- World effects: lights, searchlights, billboards, monorail
 ---------------------------------------------------------------------
+if city then
+	UI.showLoading("Painting the skyline...")
+	BuildingSkin.apply(city)
+end
 WorldFx.start()
 
 ---------------------------------------------------------------------

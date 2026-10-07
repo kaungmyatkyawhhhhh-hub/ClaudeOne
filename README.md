@@ -72,6 +72,12 @@ Everything is in `src/client/Audio.lua`. It uses only files that ship inside eve
 
 Every ID is test-loaded on the loading screen. If one doesn't load in your game, Output shows a warning and that slot uses the built-in sound instead. You can swap in any IDs you like.
 
+## Facade textures
+
+`src/shared/FacadeTex.lua` paints building facades procedurally: glass curtain wall, office panels, limestone or brick, with window frames, floor slabs, glass reflections and lit rooms (ceiling falloff, blinds, furniture, warm or cool interiors, a few whole floors still working). `src/client/BuildingSkin.lua` turns these into runtime images and tiles them over every tower as PBR textures: colour, emissive (lit rooms glow), normal, roughness and metalness. It then removes the part-built window strips locally, which cuts about 22,000 parts from what the client draws.
+
+This needs the same **Allow Mesh / Image APIs** setting as the car bodies. Without it, buildings keep their part facades.
+
 ## Smooth car bodies
 
 Car bodies are generated at runtime as real meshes (`src/shared/BodyMesh.lua` builds the geometry and `src/client/CarSkin.lua` turns it into MeshParts with `EditableMesh`). Each body has curved panels, wheel arches, a sloped hood, a rounded nose and tail, fender humps on super/hypercars, and a tinted glass cabin. Lights, wheels, mirrors, spoilers and the interior stay as detail parts.
