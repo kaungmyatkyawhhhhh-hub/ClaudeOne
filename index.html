@@ -384,6 +384,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .tts{font-family:var(--mono);font-size:.62rem;color:var(--up);letter-spacing:.04em}.tts.wait{color:var(--muted)}
 .htp .wnsheet{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}.htpic{font-size:4rem;line-height:1;margin-top:6px;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}
 .htpdots{display:flex;gap:6px}.htpdots i{width:8px;height:8px;border-radius:50%;background:var(--sunk)}.htpdots i.on{background:var(--ink)}.htp .cta{width:100%}
+.dlbadge{font-style:normal;font-family:var(--mono);font-weight:800;font-size:.72rem;padding:2px 7px;border-radius:8px;background:color-mix(in oklab,var(--tc) 20%,transparent);color:var(--tc);white-space:nowrap}
 .duelb{background:#1b1f2a!important;color:#ffcc33!important}
 .dlask{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:66;width:min(92vw,420px);padding:14px;border-radius:18px;background:var(--bg);box-shadow:0 0 0 2px #ffcc33,0 16px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.dlask small{color:var(--muted)}.dlask span{display:flex;gap:8px}.dlask .cta{flex:1;padding:10px;justify-content:center}
 .dlvs{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:8px 4px}.dlvs b{font-family:var(--display);color:#e2364a}
@@ -2724,6 +2725,10 @@ let RACE=null,DOCKS_DRAW=null;
 const CRBOTS=()=>{const k=1+SC()*.5;return[{n:"Tuner Tim",sp:2.6,bet:Math.round(1000*k),c:"#2a5bd7"},{n:"Drift Queen",sp:3.2,bet:Math.round(6000*k),c:"#ff4fd8"},{n:"Midnight Max",sp:4.2,bet:Math.round(30000*k),c:"#1b1f2a"}]};
 const crTime=(sp,launch)=>9/Math.sqrt(Math.max(.5,sp))+launch;
 /* ================= duels: quick 1v1 games anyone can win, no muscles needed ================= */
+// duel rating: Elo from 1000, K=32; tiers by rating
+const DL_TIERS=[[0,"Bronze","🥉","#b0703a"],[1100,"Silver","🥈","#9aa3b3"],[1250,"Gold","🥇","#cf9a14"],[1400,"Platinum","💠","#4fe3ff"],[1550,"Diamond","💎","#7fd6ff"],[1700,"Champion","👑","#ff4fd8"]];
+const dlTier=e=>{let t=DL_TIERS[0];DL_TIERS.forEach(x=>{if((e||1000)>=x[0])t=x});return t};
+const dlBadge=e=>{const t=dlTier(e);return `<em class="dlbadge" style="--tc:${t[3]}">${t[2]} ${Math.round(e||1000)}</em>`};
 const DLG={draw:{n:"Quick draw",ic:"🤠",d:"Wait for DRAW!, then tap first. Tap early and you foul.",lo:1,unit:"ms"},taps:{n:"Tap frenzy",ic:"👆",d:"Most taps in 5 seconds wins.",lo:0,unit:"taps"},sprint:{n:"100 m sprint",ic:"🏃",d:"Tap LEFT and RIGHT in turn to run. Fastest time wins.",lo:1,unit:"s"}};
 let DL=null,DLOUT=null;
 function openDuel(id){if(!MP||!MP.peers[id])return;const P=MP.peers[id];room="duel";$("room").hidden=false;
@@ -2731,7 +2736,9 @@ function openDuel(id){if(!MP||!MP.peers[id])return;const P=MP.peers[id];room="du
     <div class="perks">${Object.entries(DLG).map(([k,g])=>`<button class="perk nopic" data-dg="${k}"><span class="t">${g.ic} ${g.n}</span><span class="d">${g.d}</span><span class="c">Challenge</span></button>`).join("")}
     <button class="perk nopic" data-dg="race"><span class="t">🏎️ Drag race</span><span class="d">Race cars at the Docks Car Meet</span><span class="c">Go</span></button>
     <button class="perk nopic" data-dg="arm"><span class="t">💪 Arm wrestle</span><span class="d">The strength duel, at the Arena</span><span class="c">Go</span></button></div>
-    <p class="fine" id="dlWait"></p></div>`;
+    <p class="fine" id="dlWait"></p>
+    <div class="sechead"><h3>Duel ranks</h3><span class="eyebrow">You: ${dlTier(S.elo)[2]} ${dlTier(S.elo)[1]} · ${S.stats.duelWins||0} wins</span></div>
+    <div class="perks">${[{n:mpName()+" (you)",el:S.elo||1000,me:1},...Object.values(MP.peers).map(q=>({n:q.n,el:q.el||1000}))].sort((a,b)=>b.el-a.el).slice(0,10).map((q,i)=>`<div class="perk nopic${q.me?" here":""}"><span class="t">${i+1}. ${esc(String(q.n).slice(0,18))}</span>${dlBadge(q.el)}</div>`).join("")}</div></div>`;
   $("leaveBtn").onclick=()=>{DLOUT=null;closeRoom()};
   $("room").querySelectorAll("[data-dg]").forEach(b=>b.onclick=()=>{const g=b.dataset.dg;if(g==="race"){closeRoom();walkTo("docks");return}if(g==="arm"){closeRoom();walkTo("arena");return}
     DLOUT={id,g,t:Date.now()};mpSend("dl",{t:"ask",f:MP_ID,n:mpName(),g},id);SFX.hot();$("dlWait").textContent="Waiting for "+String(P.n).slice(0,16)+" to accept…";
@@ -2766,10 +2773,12 @@ function dlFinish(sc){if(!DL||DL.score!=null)return;DL.score=sc;mpSend("dl",{t:"
   const D=DL;setTimeout(()=>{if(DL===D&&D.peerScore==null){D.peerScore=DLG[D.g].lo?99999:-1;dlCheck()}},15000);dlCheck()}
 function dlCheck(){const D=DL;if(!D||D.done||D.score==null||D.peerScore==null)return;D.done=true;const G=DLG[D.g],fmtS=v=>v>=99999?"foul":v<0?"no show":v+" "+G.unit;
   const win=G.lo?D.score<D.peerScore:D.score>D.peerScore,tie=D.score===D.peerScore;S.stats.duels=(S.stats.duels||0)+1;let txt="";
+  const me=S.elo||1000,op=(MP&&MP.peers[D.peer.id]&&MP.peers[D.peer.id].el)||1000,ex=1/(1+Math.pow(10,(op-me)/400)),old=dlTier(me);S.elo=Math.max(100,Math.round(me+32*((win?1:tie?.5:0)-ex)));const dE=S.elo-me,nt=dlTier(S.elo);
+  if(nt[0]>old[0])setTimeout(()=>{banner("Promoted to "+nt[2]+" "+nt[1],"g");confetti(220);SFX.level()},900);
   if(win){S.stats.duelWins=(S.stats.duelWins||0)+1;const f=Math.round(Math.max(50,(S.fans||0)*.01));S.fans=(S.fans||0)+f;dirty=true;SFX.rebirth();confetti(200);shake(6);txt=`You win! +${fmtN(f)} fans`;if(MP)mpSend("c",{n:mpName(),t:"beat "+D.peer.n+" at "+G.n.toLowerCase()+" ("+fmtS(D.score)+")",sys:1})}
   else if(tie){txt="A tie!";SFX.hot()}else{txt=D.peer.n+" wins this one";SFX.loss()}
   const a=$("dlA");if(a){a.className="dlarena "+(win?"go":tie?"wait":"foul");$("dlBig").textContent=win?"WIN":tie?"TIE":"LOSS";$("dlSub").textContent="You "+fmtS(D.score)+" · "+D.peer.n+" "+fmtS(D.peerScore)}
-  const i=$("dlInfo");if(i)i.innerHTML=txt+` · <button class="mpgift" id="dlAgain">Rematch</button>`;const ag=$("dlAgain");if(ag)ag.onclick=()=>{const id=D.peer.id;DL=null;openDuel(id)}}
+  const i=$("dlInfo");if(i)i.innerHTML=txt+` · rating ${dE>=0?"+":""}${dE} ${dlBadge(S.elo)} · <button class="mpgift" id="dlAgain">Rematch</button>`;const ag=$("dlAgain");if(ag)ag.onclick=()=>{const id=D.peer.id;DL=null;openDuel(id)}}
 function crMsg(d){if(!d||d.f===MP_ID)return;const n=esc(String(d.n||"A friend").slice(0,16));
   if(d.t==="ask"){if(RACE&&!RACE.done)return mpSend("cr",{t:"no",f:MP_ID,n:mpName()},d.f);MP.crAsk={f:d.f,n,t:Date.now()};SFX.hot();buzz([20,40,20]);banner(n+" wants to race","u");if(room==="docks"&&DOCKS_DRAW)DOCKS_DRAW();else rayTextFrom(n,"Race me at the Docks Car Meet! Head there to accept.");return}
   if(d.t==="no"){if(MP.crOut===d.f){MP.crOut=null;banner(n+" said no","a");if(room==="docks"&&DOCKS_DRAW)DOCKS_DRAW()}return}
@@ -3649,7 +3658,7 @@ function mpOnMsg(topic,buf){
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
 function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
-function mpState(){const b=myBuild(),L=myLook();return{ow:Object.keys(S.deeds||{}),sn:S.names&&S.names.street||0,go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss,L.sl],pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="prehist"?"Deep Time":SCN.kind==="planet"?PLANETS[SCN.k].n:SCN.kind==="house"?"a house":SCN.kind==="arena"?"the Arena":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0,...(SCN&&!room?{sc:scKey(),sx:Math.round(S.px),sy:Math.round(S.py)}:{})}}
+function mpState(){const b=myBuild(),L=myLook();return{ow:Object.keys(S.deeds||{}),sn:S.names&&S.names.street||0,go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss,L.sl],el:Math.round(S.elo||1000),pu:MP&&MP.pub?1:0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="prehist"?"Deep Time":SCN.kind==="planet"?PLANETS[SCN.k].n:SCN.kind==="house"?"a house":SCN.kind==="arena"?"the Arena":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:S.acc||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0,...(SCN&&!room?{sc:scKey(),sx:Math.round(S.px),sy:Math.round(S.py)}:{})}}
 function mpTick(dt){
   if(!MP)return;botsTick();MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
   if(MP.sendT<=0){MP.sendT=.1;const st=mpState(),j=JSON.stringify(st),k=JSON.stringify({...st,c:0,lv:0});if(k!==MP.last||MP.beatT<=0){MP.last=k;MP.beatT=1;mpSend("p",j)}}
@@ -3682,7 +3691,7 @@ function mpUI(keep){
   const peers=Object.entries(MP.peers);
   sh.innerHTML=`<div class="pshead"><div><small>${isNpcW()?"NPC WORLD":MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${isNpcW()?BOTW.find(b=>b.c===MP.code).n:MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
     <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>${S.title?esc(S.title)+" · ":""}Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
-      ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${fmtN(p.f||0)} fans · ${p.cm||170} cm · ${esc(PLACE_N(p.w))}</small></span><button class="mpgift duelb" data-duel="${id}">⚔ Duel</button>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${giftAmt(p)<1?"disabled":""}>Gift ${fmt(giftAmt(p))}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
+      ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${fmtN(p.f||0)} fans · ${dlTier(p.el)[2]} ${dlTier(p.el)[1]} · ${esc(PLACE_N(p.w))}</small></span><button class="mpgift duelb" data-duel="${id}">⚔ Duel</button>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${giftAmt(p)<1?"disabled":""}>Gift ${fmt(giftAmt(p))}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
     ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
     <div class="mpjoin"><input id="mpIn" maxlength="80" placeholder="Message" autocomplete="off"><button class="cta" id="mpSendB">Send</button></div>
@@ -4657,7 +4666,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=36,WN=[
+const WN_VER=37,WN=[
+ ["🏅","Duel ranks","Duels now have a rating, from Bronze to Champion. Beat stronger players to climb faster. Ranks show in the Friends list and the duel menu.","2026-10-07T03:20"],
  ["🗺️","Treasure maps","Crates and the Arcade can give you treasure maps. Read one and a red X appears somewhere in town. Walk there and dig for cash, golden items and more.","2026-10-07T03:15"],
  ["🕹️","The Arcade","A neon arcade downtown: Mole mash, Tower stack and Hoop shot. Win tickets and trade them at the prize counter for crates, cash, energy and arcade-only neon gear.","2026-10-07T03:30"],
  ["⚔️","Duels","Challenge anyone in your room, bots too, from the Friends list: Quick draw, Tap frenzy or a 100 m sprint. No muscles needed. Winners get fans.","2026-10-07T14:00"],
@@ -6777,7 +6787,7 @@ function botLook(p,W,i,lvl){const r=k=>hsh(W.c,i,k),bld=Math.min(2.4,lvl/110*(.6
   let ti=0;TIERS.forEach((T,j)=>{if(cash>=T.nw)ti=j});
   Object.assign(p,{lv:lvl,cm,t:+tallFor(cm).toFixed(2),z:+(1+.6*Math.min(1,bld/1.4)).toFixed(2),b:[+bld.toFixed(2),+(bld*(.8+r("l")*.3)).toFixed(2),+bld.toFixed(2)],c:Math.round(cash),ti,pr:Math.round(20+lvl*14*(.6+r("p"))),k:lvl>200?5:lvl>90?3:0,
     ac:lvl<15?{}:{g:lvl>60?"dshades":lvl>25?"aviator":"shades",c:lvl>80?"diamond":lvl>30?"gold":"silver",...(lvl>50?{h:pick2(["top","cowboy","halo","cap"],i)}:{}),...(lvl>90?{b:i%2?"cape":"wings"}:{})},
-    fb:Math.round(Math.pow(lvl,2.2)*3*(.25+r("f")*1.5)+lvl*20),hm:Math.max(0,Math.min(PROPS.length-1,Math.floor(lvl/35*(.6+r("hm")*.8)))),rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
+    fb:Math.round(Math.pow(lvl,2.2)*3*(.25+r("f")*1.5)+lvl*20),el:Math.round(880+Math.min(900,lvl*4)*(.7+r("e")*.6)),hm:Math.max(0,Math.min(PROPS.length-1,Math.floor(lvl/35*(.6+r("hm")*.8)))),rd:lvl>20&&i%3===0?(lvl>80?"supercar":"car"):0,pt:pick2(["#e2364a","#ffcc33","#1b1f2a","#2a5bd7"],i)})}
 /* ================= editions: once you outgrow the catalogue, the market brings you pricier editions of the same items ================= */
 let edTop=0,edTopN=-1;
 function edK(){if(!S)return 1;if(edTopN!==S.unlocked.length){edTopN=S.unlocked.length;edTop=Math.max(...POOL.filter(p=>S.unlocked.includes(p.cat)&&p.cat!=="lux").map(p=>p.base))}const w=Math.max(260,(S.cash+stashVal())*1.4);return Math.max(1,w*EDF/edTop)}
