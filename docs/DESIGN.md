@@ -183,11 +183,16 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
   over a dark matte floor (the biggest plates almost touch it) and soft contact shadows under the plates and the
   overall plate ground them even on low graphics. No stands, no pedestal: the overall plate (bigger, matching) stands
   on its rim on the floor on the left.
-- Layout: the bar faces the camera about 28 degrees from straight-on (slightly above), bigger plates on a thicker bar, packed tight with a small steel microplate between every two;
-  each label sits right under its own plate (name 18px, grade letter in a 32px circle, multiplier 22px),
-  staggered in two rows when they would touch. One shadow source: real key-light shadows, or contact shadows on low
-  graphics instead. The frame card has a small silhouette of the shoulder width.
-- DNA: a helix of two thin strands (opposite phase) with short rungs every ~0.3 studs, alternating soft blue / white, slow spin. Plain dark background (no lines, dust or ghost text).
+- Layout: the overall plate stands on the floor in the left part of the screen, placed and sized from the camera (about
+  42% of the screen height, less where it doesn't fit), "Overall" and its word about 1.4x bigger under it. The bar group
+  (bar ~28 degrees from straight-on, slightly above; bigger plates packed tight with a steel microplate between every
+  two) fills the right part. One row of labels: each right under its own plate (projected every frame), stacked name /
+  grade circle in the plate's color / multiplier, all scaled down together when neighbours would touch (never 2 rows).
+  One shadow source: real key-light shadows, or contact shadows on low graphics. The frame card has a small silhouette.
+- DNA: a cyan and a magenta strand (opposite phase) with base-pair rungs every ~0.3 studs in the A/T/G/C colors (red,
+  yellow, green, blue), glowing Beams plus three soft colored lights along the bar; one turn every 6 seconds.
+- Spin: the plates turn slowly with the bar (one turn every 20 s), the overall plate on its centre (every 25 s); both
+  pause during the reveal and ease back in over a second.
   Title "YOUR GENETICS" ("NEW GENETICS" after a reroll), DNA tokens top right (owner's call: caps here).
 - Reveal (under 3 s): plates slide onto the sleeve about 0.2 s apart, best grade first, each with a clank (pitch by
   grade, small camera punch); S plates get one shine sweep. Then the collar, then the overall plate drops in with a
