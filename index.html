@@ -1156,6 +1156,7 @@ const ACH=[
  ["stk24","Sticker collector","Collect 24 stickers",()=>stkCount()>=24,100000],
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
+ ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
  ["vinny10","Vinny's nightmare","Win 10 flip-offs",()=>(S.stats.foWins||0)>=10,500000],
  ["stk48","Complete book","Collect every sticker",()=>stkCount()>=48,5e6],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
@@ -1585,7 +1586,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const pu=.5+.5*Math.sin(wt*5);ctx.strokeStyle=EV.color;ctx.lineWidth=3;ctx.globalAlpha=.4+.4*pu;ctx.beginPath();ctx.ellipse(EV.x,EV.y,26+pu*8,11+pu*3,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     ctx.fillStyle=EV.color;rr(EV.x-15,EV.y-52,30,30,9);ctx.fill();ctx.fillStyle="#fff";ctx.font="900 17px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(EV.glyph,EV.x,EV.y-36);
     ctx.beginPath();ctx.moveTo(EV.x-6,EV.y-23);ctx.lineTo(EV.x+6,EV.y-23);ctx.lineTo(EV.x,EV.y-15);ctx.closePath();ctx.fillStyle=EV.color;ctx.fill()}
-  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
+  drawFountain();drawTraffic(1/60);drawIslands();drawTown();drawBalloon();drawMerchant();drawLostWorld();drawCrewHQ();drawDeedFlags();drawStreetSign();drawSeasonDecor();townDecoAnim();
   // lamp heads
   LAMPS.forEach(([x,y])=>{ctx.fillStyle=nightA>.3?"#ffe08a":"#d4d8e0";ctx.beginPath();ctx.arc(x,y-19,4.5,0,7);ctx.fill()});
   {const hb=PL.harbor,bob=Math.sin(wt*2)*3,x=hb.x+hb.w/2,y=hb.y-34+bob;ctx.font="900 21px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";const lab="MULTIPLAYER",w=ctx.measureText(lab).width+46;
@@ -1607,7 +1608,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  drawFireworks();funArrows();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  drawFireworks();funArrows();drawLostArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -3130,6 +3131,25 @@ const dayEv=()=>DAYEV[new Date().getDay()],isDay=k=>dayEv()[0]===k;
 let devSnap=null;
 setInterval(()=>{if(!S||!S.stats)return;const now={l:S.stats.lifted||0,f:S.stats.flips||0};if(devSnap){if(isDay("tue")&&now.l>devSnap.l&&Math.random()<.12)gainCrate(1);if(isDay("thu")&&now.f>devSnap.f&&Math.random()<.08){S.maps=(S.maps||0)+1;dirty=true;banner("Treasure Thursday · a map was hidden in that sale!","g")}}devSnap=now;
   const dk=dayKey();if(S.devSeen!==dk&&(S.stats.flips||0)>=3&&!room&&$("overlay").hidden){S.devSeen=dk;dirty=true;const d=dayEv();setTimeout(()=>{banner(d[1]+" "+d[2],"g");rayText("Today is "+d[2]+": "+d[3].toLowerCase()+".")},800)}},1200);
+/* ---------- lost pets: a townsperson loses a pet; search the circled area, then walk it home ---------- */
+let LF=null,lfT=360;
+const LF_KINDS=[["cat","🐱","their cat"],["dog","🐶","their dog"],["parrot","🦜","their parrot"],["bunny","🐰","their bunny"],["turtle","🐢","their turtle"]];
+function lfSpot(nearX,nearY,dmin,dmax){for(let i=0;i<160;i++){const a=Math.random()*7,d=rnd(dmin,dmax),x=nearX+Math.cos(a)*d,y=nearY+Math.sin(a)*d;if(x<80||x>W-80||y<120||y>SEA-60||!regionOpen(regionOf(x,y))||inBld(x,y,24)||inPond(x,y,24)||onRoad(x,y,0))continue;return[Math.round(x),Math.round(y)]}return null}
+function lfTick(dt){if(!S||SCN||MPW||(S.stats.flips||0)<8)return;if(!LF){if(room)return;lfT-=dt;if(lfT>0)return;lfT=rnd(420,720);const o=lfSpot(S.px,S.py,140,320);if(!o)return;const p=lfSpot(o[0],o[1],350,650);if(!p)return;
+    const k=pick(LF_KINDS),n=pick(["Mrs. Lee","Old Tom","Priya","Mo","Grandpa Joe","Ava","Kenji"]);LF={stage:"find",kind:k,n,ox:o[0],oy:o[1],px:p[0],py:p[1],cx:p[0]+rnd(-90,90),cy:p[1]+rnd(-90,90),t:0};SFX.hot();banner(k[1]+" "+n+" lost "+k[2]+"! Search the circled area","a");rayTextFrom(n,"Please, have you seen "+k[2]+"? Last time I saw it was somewhere around there…");return}
+  LF.t+=dt;if(LF.t>420){banner(LF.n+" found "+LF.kind[2]+" on their own","a");LF=null;return}
+  if(LF.stage==="find"&&Math.hypot(S.px-LF.px,S.py-LF.py)<40){LF.stage="return";SFX.tick(1);buzz([20,30,20]);banner("Found "+LF.kind[1]+"! Walk it back to "+LF.n,"g")}
+  else if(LF.stage==="return"&&Math.hypot(S.px-LF.ox,S.py-LF.oy)<44){const v=Math.round(Math.max(400,rwBase()*.05)),f=Math.round(Math.max(30,(S.fans||0)*.01));earn(v);S.fans=(S.fans||0)+f;S.stats.rescues=(S.stats.rescues||0)+1;if(Math.random()<.5)gainCrate(1);dirty=true;
+    SFX.rebirth();confetti(180,null,null,["#ff8fa3","#ffcc33","#fff"]);banner(LF.n+": thank you! +"+fmt(v)+" and +"+fmtN(f)+" fans","g");LF=null}}
+function drawLostWorld(){if(!LF||SCN||MPW)return;const c=ctx;
+  // the owner, waving
+  drawPerson(LF.ox,LF.oy,{shirt:"#e39a52",skin:"#e8b896",hair:"#9aa3b3",legs:"#262b3a",mv:false,ph:wt,pose:Math.sin(wt*4)>0?"bi":null});
+  c.save();c.translate(LF.ox,LF.oy);c.font="800 11px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const lab=LF.stage==="return"?"Bring it here!":LF.n+" · lost "+LF.kind[1],w=c.measureText(lab).width+14;c.fillStyle="rgba(10,14,22,.78)";rr(-w/2,-86,w,18,8);c.fill();c.fillStyle="#fff";c.fillText(lab,0,-77);c.restore();
+  if(LF.stage==="find"){c.save();c.strokeStyle="rgba(255,143,163,.8)";c.lineWidth=3;c.setLineDash([10,8]);c.lineDashOffset=-wt*20;c.beginPath();c.ellipse(LF.cx,LF.cy,150,75,0,0,7);c.stroke();c.restore();
+    if(Math.hypot(S.px-LF.px,S.py-LF.py)<220){c.save();c.font="22px sans-serif";c.textAlign="center";c.textBaseline="middle";c.globalAlpha=.85+.15*Math.sin(wt*6);c.fillText(LF.kind[1],LF.px,LF.py-8+Math.sin(wt*5)*2);c.restore()}}
+  else{c.save();c.font="18px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(LF.kind[1],S.px+18,S.py-6+Math.sin(wt*8)*2);c.restore()}}
+function drawLostArrow(){if(!LF||SCN||MPW||room)return;const tx=LF.stage==="find"?LF.cx:LF.ox,ty=LF.stage==="find"?LF.cy:LF.oy,sx=tx-cam.x,sy=ty-cam.y;if(sx<20||sy<200||sx>vw-20||sy>vh-140)drawEdgeArrow(tx,ty,"#ff8fa3")}
+setInterval(()=>{try{lfTick(.25)}catch(e){}},250);
 /* ---------- fireworks show: 20 seconds of rockets over town; your taps launch extra ones ---------- */
 let FWS=null;const FW=[];
 function fwLaunch(tx,ty,mine){const col=pick(["#ff6fe0","#6ff0ff","#ffd84f","#4ff0a0","#ff5a6e","#ffffff","#b47cff"]);FW.push({x:tx+rnd(-20,20),y:vh+10,tx,ty:Math.max(60,ty),vy:-rnd(520,680),col,boom:false,p:[]});if(mine&&FWS){FWS.taps++;S.fans=(S.fans||0)+FWS.per;dirty=true}tone(300,.25,{type:"triangle",vol:.03,to:900})}
@@ -4965,7 +4985,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=50,WN=[
+const WN_VER=51,WN=[
+ ["🐾","Lost pets","Townspeople sometimes lose a pet. Search the pink circle on the map, then walk it back to its owner for cash, fans and sometimes a crate.","2026-10-07T05:15"],
  ["⚔️","Flip-off vs Slick Vinny","Once a day in any market, race the rival trader Vinny: whoever makes more profit in 3 minutes wins cash and crates.","2026-10-07T05:10"],
  ["📆","A different town every day","Each weekday has a bonus: Market Madness Monday, Gains Tuesday, Arcade Wednesday, Treasure Thursday, Fireworks Friday, Green Saturday and Lazy Sunday.","2026-10-07T05:05"],
  ["🎳","Bowling & Higher or lower","Two more Arcade games.","2026-10-07T05:00"],
