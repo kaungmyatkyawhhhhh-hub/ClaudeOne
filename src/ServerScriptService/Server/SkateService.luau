@@ -1,6 +1,6 @@
 -- SkateService: a skateboard for the town hub. The player taps Skate (SkateClient); the server checks they're outdoors
--- in the hub (Config.Town) and not on a machine, welds a board under their feet and makes them faster. Normal movement
--- controls steer (thumbstick on phones), so there's nothing new to learn. Leaving the outdoor area, getting on a
+-- in the hub (Config.Town) and not on a machine and puts a board under their feet. SkateClient does the riding (push,
+-- carve, coast, brake, ollie) with the normal movement controls (thumbstick on phones). Leaving the outdoor area, getting on a
 -- machine or dying takes the board away. Everyone sees the board; the "Skating" attribute drives SkateClient.
 -- Upgrades come from the clothing store (Config.Cosmetics): a deck design (slot Board) and faster wheels (slot Wheels,
 -- item.speed); changing them while skating rebuilds the board (SkateService.Refresh, called by CosmeticService).
@@ -16,15 +16,16 @@ local PlayerData = require(script.Parent.PlayerData)
 local SkateService = {}
 
 local SKATE = {
-	WalkSpeed = 30,   -- normal is 16
-	Lift = 0.45,      -- studs the board raises the character (board + wheels)
-	DeckColor = Color3.fromHex("#2B2B2B"),
+	WalkSpeed = 32,   -- top speed without upgraded wheels (walking is 16); SkateClient drives the board
+	Lift = 0.4,       -- studs the board raises the character (wheels + deck: the deck top)
+	DeckColor = Color3.fromHex("#C99A62"), -- natural maple (the grip on top is black)
 	GripColor = Color3.fromHex("#1A1A1C"),
 	WheelColor = Color3.fromHex("#F4F1EA"),
 	Check = 0.5,      -- seconds between "still allowed to skate?" checks
 }
 
-local riders = {} -- [player] = { board, walkSpeed, hipHeight }
+local riders = {} -- [player] = { board, hipHeight }
+local TRUCK = Color3.fromHex("#B4B8BE")
 
 local function parts(player)
 	local character = player.Character
@@ -60,56 +61,63 @@ local function lookOf(player)
 	}
 end
 
--- builds speed up gradually (a push, then rolling) instead of jumping from 16 to 30 at once
-local function ramp(player, target)
-	local rider = riders[player]
-	if not rider then return end
-	rider.token = (rider.token or 0) + 1
-	local token = rider.token
-	task.spawn(function()
-		local _, humanoid = parts(player)
-		if not humanoid then return end
-		local from = humanoid.WalkSpeed
-		for i = 1, 12 do
-			task.wait(0.1)
-			if riders[player] ~= rider or rider.token ~= token or humanoid.Parent == nil then return end
-			humanoid.WalkSpeed = from + (target - from) * (i / 12)
-		end
-	end)
-end
-
+-- The board: a deck with kicked-up nose and tail, grip tape, two trucks (baseplate, hanger, axle) and four wheels. The deck
+-- hangs on a Motor6D ("BoardJoint", root -> deck) so every client can tilt it (carving, ollies) without the server; the other
+-- pieces are welded to the deck. Deck local axes: +X = nose (the way the rider rolls), +Y up.
 local function makeBoard(root, hipHeight, look)
 	local board = Instance.new("Model")
 	board.Name = "Skateboard"
-	-- the deck sits right under the feet of the lifted character (hipHeight includes the lift), wheels on the ground
-	local feetY = -(root.Size.Y / 2 + hipHeight)
-	local base = root.CFrame * CFrame.new(0, feetY - 0.06, 0) * CFrame.Angles(0, math.rad(90), 0) -- board lies along the walk
-	local function piece(name, size, offset, color, material, shape)
+	-- hipHeight includes the lift, so this is the ground; the wheels stand on it and the deck top ends up right under the
+	-- lifted feet (deck centre 0.33 up: wheel radius 0.13 + axle 0.2)
+	local groundY = -(root.Size.Y / 2 + hipHeight)
+	local deckCFrame = root.CFrame * CFrame.new(0, groundY + 0.33, 0) * CFrame.Angles(0, math.rad(90), 0)
+	local deck
+	local function piece(name, size, offset, color, material, shape, shadow)
 		local p = Instance.new("Part")
 		p.Name = name
 		p.Size = size
 		p.Color = color
 		p.Material = material
-		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
+		p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, true
+		p.CastShadow = shadow == true
 		if shape then p.Shape = shape end
-		p.CFrame = base * offset
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0, weld.Part1 = root, p
-		weld.Parent = p
+		p.CFrame = deckCFrame * offset
+		if deck then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1 = deck, p
+			weld.Parent = p
+		end
 		p.Parent = board
 		return p
 	end
-	piece("Deck", Vector3.new(3.2, 0.12, 0.95), CFrame.new(), look.deck, Enum.Material.Wood)
-	piece("Grip", Vector3.new(3.1, 0.02, 0.9), CFrame.new(0, 0.07, 0), SKATE.GripColor, Enum.Material.Sand)
+	local wood, metal, grip = Enum.Material.Wood, Enum.Material.Metal, Enum.Material.Sand
+	deck = piece("Deck", Vector3.new(2.5, 0.1, 0.95), CFrame.new(), look.deck, wood, nil, true)
+	piece("Grip", Vector3.new(2.46, 0.02, 0.9), CFrame.new(0, 0.06, 0), SKATE.GripColor, grip)
 	if look.stripe then
-		piece("Stripe", Vector3.new(3.0, 0.02, 0.18), CFrame.new(0, 0.085, 0), look.stripe, Enum.Material.SmoothPlastic)
+		piece("Stripe", Vector3.new(2.3, 0.02, 0.16), CFrame.new(0, 0.075, 0), look.stripe, Enum.Material.SmoothPlastic)
 	end
-	for _, x in ipairs({ -1.05, 1.05 }) do
-		piece("Truck", Vector3.new(0.18, 0.1, 0.8), CFrame.new(x, -0.11, 0), Color3.fromHex("#9EA2A8"), Enum.Material.Metal)
-		for _, z in ipairs({ -0.42, 0.42 }) do
-			piece("Wheel", Vector3.new(0.12, 0.26, 0.26), CFrame.new(x, -0.2, z) * CFrame.Angles(0, math.rad(90), 0), look.wheel, Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+	-- kicked-up nose and tail (each a tilted deck piece with grip, rounded end)
+	for _, dir in ipairs({ 1, -1 }) do
+		local hinge = CFrame.new(dir * 1.25, 0, 0) * CFrame.Angles(0, 0, dir * math.rad(17))
+		piece("Kick", Vector3.new(0.5, 0.1, 0.95), hinge * CFrame.new(dir * 0.25, 0, 0), look.deck, wood, nil, true)
+		piece("KickGrip", Vector3.new(0.46, 0.02, 0.9), hinge * CFrame.new(dir * 0.25, 0.06, 0), SKATE.GripColor, grip)
+		piece("KickEnd", Vector3.new(0.1, 0.95, 0.95), hinge * CFrame.new(dir * 0.5, 0, 0) * CFrame.Angles(0, 0, math.rad(90)), look.deck, wood, Enum.PartType.Cylinder)
+	end
+	-- trucks and wheels
+	for _, x in ipairs({ -0.95, 0.95 }) do
+		piece("Baseplate", Vector3.new(0.34, 0.05, 0.3), CFrame.new(x, -0.075, 0), TRUCK, metal)
+		piece("Hanger", Vector3.new(0.16, 0.12, 0.62), CFrame.new(x, -0.16, 0), TRUCK, metal)
+		piece("Axle", Vector3.new(0.9, 0.05, 0.05), CFrame.new(x, -0.2, 0) * CFrame.Angles(0, math.rad(90), 0), TRUCK, metal, Enum.PartType.Cylinder)
+		for _, z in ipairs({ -0.38, 0.38 }) do
+			piece("Wheel", Vector3.new(0.14, 0.26, 0.26), CFrame.new(x, -0.2, z) * CFrame.Angles(0, math.rad(90), 0), look.wheel, Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+			piece("Bearing", Vector3.new(0.15, 0.1, 0.1), CFrame.new(x, -0.2, z) * CFrame.Angles(0, math.rad(90), 0), TRUCK, metal, Enum.PartType.Cylinder)
 		end
 	end
+	local joint = Instance.new("Motor6D")
+	joint.Name = "BoardJoint"
+	joint.Part0, joint.Part1 = root, deck
+	joint.C0 = root.CFrame:ToObjectSpace(deckCFrame)
+	joint.Parent = deck
 	return board
 end
 
@@ -119,24 +127,23 @@ function SkateService.Stop(player)
 	riders[player] = nil
 	if rider.board then rider.board:Destroy() end
 	local _, humanoid = parts(player)
-	if humanoid then
-		humanoid.WalkSpeed = rider.walkSpeed
-		humanoid.HipHeight = rider.hipHeight
-	end
+	if humanoid then humanoid.HipHeight = rider.hipHeight end
+	-- (SkateClient gives the player their walk speed and turning back)
+	player:SetAttribute("SkateSpeed", nil)
 	player:SetAttribute("Skating", nil)
 end
 
 local function start(player)
 	if riders[player] or not allowed(player) then return end
 	local character, humanoid, root = parts(player)
-	local rider = { walkSpeed = humanoid.WalkSpeed, hipHeight = humanoid.HipHeight }
+	local rider = { hipHeight = humanoid.HipHeight }
 	humanoid.HipHeight = rider.hipHeight + SKATE.Lift
 	local look = lookOf(player)
 	local board = makeBoard(root, humanoid.HipHeight, look)
 	board.Parent = character
 	rider.board = board
 	riders[player] = rider
-	ramp(player, look.speed)
+	player:SetAttribute("SkateSpeed", look.speed) -- the top speed; SkateClient drives the board (the server only checks the rules)
 	player:SetAttribute("Skating", true)
 end
 
@@ -149,7 +156,7 @@ function SkateService.Refresh(player)
 	local look = lookOf(player)
 	rider.board = makeBoard(root, humanoid.HipHeight, look)
 	rider.board.Parent = character
-	ramp(player, look.speed)
+	player:SetAttribute("SkateSpeed", look.speed) -- the top speed; SkateClient drives the board (the server only checks the rules)
 end
 
 function SkateService.Start()

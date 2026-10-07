@@ -221,3 +221,8 @@ Short and current (6 Oct 2026, after fix list 3). Full history: `git log -p -- P
 - **Skate (less goofy):** riders now get a side-on skater stance on every client (body turned sideways on the board, knees bent deeper at speed, arms out, lean into turns and when accelerating) instead of running on the spot; speed ramps up over ~1.2s instead of jumping to 30; a little extra FOV at speed for you. Joint angles are a first pass: look at it riding and tell me what looks off. Wheels don't spin yet.
 
 - **NPC fix (7 Oct):** regulars were lying on the floor stuck in FallingDown: the body was re-applied while they walked, and the earlier fix had also switched off GettingUp so they could never stand. Now: FallingDown/Ragdoll off, GettingUp on, the body is only re-applied if the place doesn't already have it, NPCs are dressed BEFORE they start walking, and the loop stands them back up if they ever fall. Verified: all 12 upright over 40s, most walking.
+
+## Skate rework (7 Oct 2026)
+- `SkateClient` rides the board: momentum (push up to the top speed, coast, brake by holding back), carving (turn rate falls with speed), hills speed you up/slow you down, walls stop you, Jump = ollie. Input = Humanoid.MoveDirection (works with keys, phone thumbstick, gamepad; the new Roblox PlayerModule has no GetControls), movement = a LinearVelocity on the root with WalkSpeed 0.
+- Pose for every skater: side-on regular stance, bent knees (deeper at speed), feet flat on the deck, back-foot push cycle, toe/heel lean in carves, tuck + arms up in the air; the board tilts with carves and pops on ollies (BoardJoint Motor6D).
+- `SkateService`: new board (maple deck with kicktails, grip, trucks, wheels, bearings), wheels on the ground and the deck top under the feet.
