@@ -1193,6 +1193,7 @@ const ACH=[
  ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["vinny","Slicker than Vinny","Win a flip-off",()=>(S.stats.foWins||0)>=1,20000],
  ["rescue5","Pet detective","Return 5 lost pets",()=>(S.stats.rescues||0)>=5,40000],
+ ["wish10","Wishful thinking","Catch 10 shooting stars",()=>(S.stats.wishes||0)>=10,50000],
  ["ghost25","Ghostbuster","Catch 25 ghosts",()=>(S.stats.ghosts||0)>=25,60000],
  ["cups200","Lemonade tycoon","Sell 200 cups of lemonade",()=>(S.stats.cups||0)>=200,50000],
  ["bugs12","Entomologist","Complete the bug book",()=>Object.keys(S.bugs||{}).length>=12,150000],
@@ -1679,7 +1680,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  drawWeather();drawFireworks();funArrows();drawLostArrow();drawRideArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  drawWeather();drawStar();drawFireworks();funArrows();drawLostArrow();drawRideArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -1695,7 +1696,7 @@ function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/
 let lockT=0;
 function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
 function lockedNotice(r){if(wt-lockT<2)return;lockT=wt;banner(REGION_NAME[r]+" is locked","r");SFX.nope()}
-cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();if(FWS&&FWS.t<FWS.dur){const r=cv.getBoundingClientRect(),k=cssScale()*(Z||1);fwLaunch((e.clientX-r.left)/(r.width)*vw,(e.clientY-r.top)/(r.height)*vh,true);return}const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}if(balloonTap(x,y))return;const tx=taxiAt(x,y);if(tx){const[cx2,cy2]=trafficPos(tx);if(Math.hypot(cx2-S.px,cy2-S.py)<520){openTaxi();return}}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){npcTalk(np);return}const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
+cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();if(FWS&&FWS.t<FWS.dur){const r=cv.getBoundingClientRect(),k=cssScale()*(Z||1);fwLaunch((e.clientX-r.left)/(r.width)*vw,(e.clientY-r.top)/(r.height)*vh,true);return}if(STAR&&!SCN){const r=cv.getBoundingClientRect();if(starTap((e.clientX-r.left)/r.width*vw,(e.clientY-r.top)/r.height*vh))return}const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}if(balloonTap(x,y))return;const tx=taxiAt(x,y);if(tx){const[cx2,cy2]=trafficPos(tx);if(Math.hypot(cx2-S.px,cy2-S.py)<520){openTaxi();return}}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){npcTalk(np);return}const t=[clamp(x,10,W-10),clamp(y,10,SEA-20)];const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
 function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;moving=true}
 
 /* bottom bar */
@@ -3312,6 +3313,18 @@ function drawGhosts(){if(SCN||MPW||!GH.length)return;const c=ctx;for(const g of 
   c.fillStyle="#f4f6ff";c.shadowColor="#bfd0ff";c.shadowBlur=12;c.beginPath();c.arc(0,-6,11,Math.PI,0);c.lineTo(11,8);for(let k=0;k<4;k++){c.quadraticCurveTo(11-k*5.5-2.75,4+(k%2?6:-1)+Math.sin(wt*6+k)*1.5,11-(k+1)*5.5,8)}c.closePath();c.fill();c.shadowBlur=0;
   c.fillStyle="#1b1d22";c.beginPath();c.ellipse(-4,-7,1.8,2.6,0,0,7);c.ellipse(4,-7,1.8,2.6,0,0,7);c.fill();if(g.boo){c.beginPath();c.ellipse(0,-1,2.4,3,0,0,7);c.fill();c.font="900 10px "+FONTS.d;c.textAlign="center";c.fillStyle="#7a2fd6";c.fillText("BOO!",0,-22)}c.restore()}}
 const CANDY_SHOP=[{k:"ghostsuit",n:"Ghost sheet",ic:"👻",c:30,acc:1},{k:"witch",n:"Witch hat",ic:"🧙‍♀️",c:20,acc:1},{k:"vamp",n:"Vampire cape",ic:"🧛",c:40,acc:1},{k:"cbucket",n:"Candy bucket",ic:"🎃",c:10,acc:1},{k:"crate",n:"Mystery crate",ic:"📦",c:15,f:()=>gainCrate(1)},{k:"hype",n:"Sugar rush",ic:"⚡",c:5,f:()=>{S.energy=Math.min(maxEnergy()*1.5,S.energy+50);hype(5)}}];
+/* ---------- shooting stars: at night one streaks across the sky now and then; tap it to make a wish ---------- */
+let STAR=null,starT=40;
+function starTick(dt){if(!S||SCN||MPW||room||(S.stats.flips||0)<4)return;const night=S.clock>=20||S.clock<5;if(!night||STAR)return;starT-=dt;if(starT>0)return;starT=rnd(70,160);
+  const dir=Math.random()<.5?1:-1,x0=dir>0?rnd(-40,vw*.4):rnd(vw*.6,vw+40),y0=rnd(vh*.3,vh*.5);STAR={x0,y0,vx:dir*rnd(420,560),vy:rnd(120,200),t:0,dur:1.7};if(!S.starHint){S.starHint=1;dirty=true;banner("🌠 Tap shooting stars to make a wish!","u")}}
+setInterval(()=>{try{starTick(.25)}catch(e){}},250);
+function starTap(sx,sy){if(!STAR||STAR.t>STAR.dur+.5)return false;const t=Math.min(STAR.t,STAR.dur),hx=STAR.x0+STAR.vx*t,hy=STAR.y0+STAR.vy*t,tx=STAR.x0+STAR.vx*Math.max(0,t-.35),ty=STAR.y0+STAR.vy*Math.max(0,t-.35);
+  const L=Math.hypot(hx-tx,hy-ty)||1,u=clamp(((sx-tx)*(hx-tx)+(sy-ty)*(hy-ty))/(L*L),0,1),d=Math.hypot(sx-(tx+(hx-tx)*u),sy-(ty+(hy-ty)*u));if(d>48)return false;STAR=null;
+  const W2=[[30,"cash",()=>{const v=Math.round(Math.max(800,rwBase()*.05));earn(v);return "+"+fmt(v)}],[22,"crate",()=>{gainCrate(1);return "a mystery crate"}],[16,"fans",()=>{const f=Math.round(Math.max(50,(S.fans||0)*.02));S.fans=(S.fans||0)+f;return "+"+fmtN(f)+" fans"}],[14,"energy",()=>{S.energy=Math.max(S.energy,maxEnergy());return "full energy"}],[10,"tix",()=>{S.tix=(S.tix||0)+40;return "40 arcade tickets"}],[5,"jack",()=>{gainCrate(3);const v=Math.round(Math.max(5000,rwBase()*.15));earn(v);return "a JACKPOT: "+fmt(v)+" and 3 crates"}],[3,"map",()=>{S.maps=(S.maps||0)+1;return "a treasure map"}]];
+  let r=Math.random()*W2.reduce((a,w)=>a+w[0],0),w=W2[0];for(const q of W2){r-=q[0];if(r<=0){w=q;break}}const msg=w[2]();S.stats.wishes=(S.stats.wishes||0)+1;dirty=true;SFX.rebirth();confetti(160,sx,sy,["#fff7d0","#ffcc33","#bfd0ff"]);buzz([20,40,20]);banner("🌠 Wish granted: "+msg,"g");updMini();return true}
+function drawStar(){if(!STAR||SCN||MPW||room)return;const dt=1/60;STAR.t+=dt;if(STAR.t>STAR.dur+.6){STAR=null;return}const c=ctx,t=Math.min(STAR.t,STAR.dur),hx=STAR.x0+STAR.vx*t,hy=STAR.y0+STAR.vy*t,tx=STAR.x0+STAR.vx*Math.max(0,t-.35),ty=STAR.y0+STAR.vy*Math.max(0,t-.35),a=STAR.t>STAR.dur?1-(STAR.t-STAR.dur)/.6:1;
+  c.save();c.globalAlpha=a;const gr=c.createLinearGradient(tx,ty,hx,hy);gr.addColorStop(0,"rgba(255,247,208,0)");gr.addColorStop(1,"rgba(255,247,208,.95)");c.strokeStyle=gr;c.lineWidth=4.5;c.lineCap="round";c.shadowColor="#fff7d0";c.shadowBlur=10;c.beginPath();c.moveTo(tx,ty);c.lineTo(hx,hy);c.stroke();
+  if(STAR.t<=STAR.dur){c.shadowColor="#fff7d0";c.shadowBlur=20;c.fillStyle="#fff";c.beginPath();c.arc(hx,hy,4.6,0,7);c.fill()}c.restore()}
 /* ---------- lost pets: a townsperson loses a pet; search the circled area, then walk it home ---------- */
 let LF=null,lfT=360;
 const LF_KINDS=[["cat","🐱","their cat"],["dog","🐶","their dog"],["parrot","🦜","their parrot"],["bunny","🐰","their bunny"],["turtle","🐢","their turtle"]];
@@ -5378,7 +5391,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=64,WN=[
+const WN_VER=65,WN=[
+ ["🌠","Shooting stars","Look up at night: shooting stars streak across the sky. Tap one before it fades to make a wish.","2026-10-07T06:15"],
  ["👻","Spooky nights","Ghosts drift around town after dark, and lots of them in October! Catch them for candy and trade it at the Night Market's Candy corner for a Ghost sheet, Witch hat, Vampire cape and Candy bucket.","2026-10-07T06:12"],
  ["🎈","Water balloons","A new Arcade game: tap kids to soak them with water balloons and dodge their shadows.","2026-10-07T06:08"],
  ["🍋","Lemonade stand","At the Boardwalk Flea, run a lemonade stand: choose lemons, sugar and ice, set your price and see if 24 beachgoers bite. Hot days love ice; rain keeps people away.","2026-10-07T06:05"],
