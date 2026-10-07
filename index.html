@@ -1006,7 +1006,7 @@ PLACES.forEach(p=>p.region=p.region||"core");
 const REGION_NAME={beach:"The Beach",downtown:"Downtown"};
 const regionOf=(x,y)=>y>=1400?"beach":x>=1400?"downtown":"core";
 const regionOpen=r=>r==="core"||!!(S&&S.unl&&S.unl[r]);
-const shownPlaces=()=>PLACES.filter(p=>!(MPW&&p.k==="home"));
+const shownPlaces=()=>{const L=PLACES.filter(p=>!(MPW&&p.k==="home"));return typeof hubPlaces==="function"&&S&&S.w4&&S.w4.open&&!MPW?L.concat(hubPlaces()):L};
 const VEH=[{k:"bike",n:"Bike",d:"1.6× speed. Pedal power.",sp:1.6,cost:800,shop:"mall"},{k:"scooter",n:"Electric scooter",d:"2.2× speed. Silent and quick.",sp:2.2,cost:6000,shop:"dealer"},{k:"car",n:"Sports car",d:"3.2× speed. Red, loud, fast.",sp:3.2,cost:45000,shop:"dealer"}];
 VEH.push({k:"truck",n:"Pickup truck",d:"2.6× speed. Built tough.",sp:2.6,cost:20000,shop:"dealer"},{k:"classic",n:"Classic coupe",d:"2.8× speed. Sells back for 130%.",sp:2.8,cost:80000,shop:"dealer",resale:1.3},{k:"supercar",n:"Hypercar",d:"4× speed. The fastest thing in town.",sp:4,cost:250000,shop:"dealer"});
 const CARS=["car","truck","classic","supercar"];
@@ -1681,7 +1681,7 @@ function drawWorld(){
   if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,hs:n.f?8:0,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{...emoOpts(),acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
-  drawThief(ppl);mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
+  hubPeople(ppl);drawThief(ppl);mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
   ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());
   mpTags();drawTownies();drawCop();funDraw();
   drawToys();drawBirds(1/60);
@@ -1695,7 +1695,7 @@ function drawWorld(){
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
   drawWeather();drawStar();drawFireworks();funArrows();drawLostArrow();drawRideArrow();drawGoalNav();drawMapX();drawTT();if(WM){const sx=WM.x-cam.x,sy=WM.y-cam.y;if(sx<-40||sy<-60||sx>vw+40||sy>vh+40)drawEdgeArrow(WM.x,WM.y,"#8f52d4")}if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
-  if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
+  if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);if(hubOpen()&&cam.x+vw>X4){ctx.globalCompositeOperation="lighter";withHub(()=>{decoGlow(nightA);w4Glow(nightA)});ctx.globalCompositeOperation="source-over"}
     ctx.globalCompositeOperation="lighter";
     LAMPS.forEach(([x,y])=>{const sx=x-cam.x,sy=y-cam.y-19;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,54);g.addColorStop(0,`rgba(255,205,120,${.4*nightA})`);g.addColorStop(1,"rgba(255,205,120,0)");ctx.fillStyle=g;ctx.fillRect(sx-56,sy-56,112,112)});
     shownPlaces().forEach(p=>winRects(p).forEach(([x,y,w,h])=>{const sx=x+w/2-cam.x,sy=y+h-cam.y+10;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60)return;const g=ctx.createRadialGradient(sx,sy,0,sx,sy,30);g.addColorStop(0,`rgba(255,200,110,${.22*nightA})`);g.addColorStop(1,"rgba(255,200,110,0)");ctx.fillStyle=g;ctx.fillRect(sx-30,sy-30,60,60)}));
@@ -1709,7 +1709,7 @@ function toWorld(e){const r=cv.getBoundingClientRect(),k=cv.clientWidth/r.width/
 let lockT=0;
 function lockHint(r){const i=GOALS.findIndex(g=>g.unlock===r);return i<0?"":`Unlocks at goal ${i+1}: ${GOALS[i].t}`}
 function lockedNotice(r){if(wt-lockT<2)return;lockT=wt;banner(REGION_NAME[r]+" is locked","r");SFX.nope()}
-cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();if(FWS&&FWS.t<FWS.dur){const r=cv.getBoundingClientRect(),k=cssScale()*(Z||1);fwLaunch((e.clientX-r.left)/(r.width)*vw,(e.clientY-r.top)/(r.height)*vh,true);return}if(STAR&&!SCN){const r=cv.getBoundingClientRect();if(starTap((e.clientX-r.left)/r.width*vw,(e.clientY-r.top)/r.height*vh))return}const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}if(balloonTap(x,y))return;const tx=taxiAt(x,y);if(tx){const[cx2,cy2]=trafficPos(tx);if(Math.hypot(cx2-S.px,cy2-S.py)<520){openTaxi();return}}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){npcTalk(np);return}let t=[clamp(x,10,townW()-10),clamp(y,10,SEA-20)];if(t[0]>W-30)t[1]=clamp(t[1],ROAD_Y-90,ROAD_Y+90);const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
+cv.addEventListener("pointerdown",e=>{if(!S||!$("room").hidden||!$("overlay").hidden)return;audioOn();if(FWS&&FWS.t<FWS.dur){const r=cv.getBoundingClientRect(),k=cssScale()*(Z||1);fwLaunch((e.clientX-r.left)/(r.width)*vw,(e.clientY-r.top)/(r.height)*vh,true);return}if(STAR&&!SCN){const r=cv.getBoundingClientRect();if(starTap((e.clientX-r.left)/r.width*vw,(e.clientY-r.top)/r.height*vh))return}const[x,y]=toWorld(e);if(SCN){sceneTap(x,y);return}if(balloonTap(x,y))return;const tx=taxiAt(x,y);if(tx){const[cx2,cy2]=trafficPos(tx);if(Math.hypot(cx2-S.px,cy2-S.py)<520){openTaxi();return}}const np=NPCS.find(n=>Math.hypot(n.x-x,n.y-20-y)<26);if(np&&Math.hypot(np.x-S.px,np.y-S.py)<420){npcTalk(np);return}let t=[clamp(x,10,townW()-10),clamp(y,10,SEA-20)];if(t[0]>W-30&&t[0]<X4+30)t[1]=clamp(t[1],ROAD_Y-90,ROAD_Y+90);else if(t[0]>=X4+30)t[1]=clamp(t[1],Y4+175,Y4+W4H-25);const r=regionOf(t[0],t[1]);if(!regionOpen(r)){lockedNotice(r);return}target=t;autoEnter=null;moving=true});
 function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;moving=true}
 
 /* bottom bar */
@@ -1720,9 +1720,9 @@ function renderBottom(){
   let h="";
   if(near)h+=`<button class="enter" id="enterBtn"><span>Enter ${near.n}<small>${near.sub}</small></span>${ARROW}</button>`;
   else if(!S.stats.flips&&!moving)h+=`<span class="tip">Tap the map to walk, or pick a place below</span>`;
-  const ar=achReady();h+=`<div class="places">${MPW?`<button class="place${near&&near.plot&&near.plot.me?" here":""}" data-go="myhouse"><i style="background:${myShirt()}"></i>My house${ar?`<b class="dot">${ar}</b>`:""}</button>${S.crew?`<button class="place" data-go="crewhq"><i style="background:${S.crew.c}"></i>Crew HQ</button>`:""}`:""}${shownPlaces().filter(p=>regionOpen(p.region)).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
+  const ar=achReady();h+=`<div class="places">${MPW?`<button class="place${near&&near.plot&&near.plot.me?" here":""}" data-go="myhouse"><i style="background:${myShirt()}"></i>My house${ar?`<b class="dot">${ar}</b>`:""}</button>${S.crew?`<button class="place" data-go="crewhq"><i style="background:${S.crew.c}"></i>Crew HQ</button>`:""}`:""}${shownPlaces().filter(p=>regionOpen(p.region)&&!p.hub).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
   el.innerHTML=h;
-  const eb=$("enterBtn");if(eb)eb.onclick=()=>near.crew?openCrew(closeRoom):near.plot?openPlot(near.plot):openRoom(near.k);
+  const eb=$("enterBtn");if(eb)eb.onclick=()=>near.crew?openCrew(closeRoom):near.plot?openPlot(near.plot):near.hub?(audioOn(),near.go()):openRoom(near.k);
   el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(k==="crewhq"){const n=nearPlace();if(n&&n.crew)openCrew(closeRoom);else{target=[CREWHQ.x+CREWHQ.w/2,CREWHQ.y+CREWHQ.h+16];autoEnter="crewhq";moving=true}return}if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(!me)return;const n=nearPlace();if(n&&n.plot&&n.plot.me)openPlot(me);else{const[dx,dy]=plotDoor(me.plot);target=[dx,dy+(me.plot.top?10:-10)];autoEnter="myhouse";moving=true}return}if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
 }
 let hudT=0;
@@ -3804,8 +3804,8 @@ function loop(now){
       for(const b in S.buffs)if(S.buffs[b]>0)S.buffs[b]=Math.max(0,S.buffs[b]-dt);
       if(S.lastSeason!==season().n&&!SCN&&!MPW){if(S.lastSeason){banner(season().n+" is here","a");rayText(season().n+" prices: "+Object.entries(season().m).map(([k,v])=>CAT[k].n+" "+(v>=1?"+":"")+Math.round((v-1)*100)+"%").join(", "))}S.lastSeason=season().n}
       if(SCN)sceneTick(dt);else if(target&&!room){const sp=walkSpeed(),dx=target[0]-S.px,dy=target[1]-S.py,d=Math.hypot(dx,dy);
-        if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(me)openPlot(me)}else if(k==="crewhq")openCrew(closeRoom);else openRoom(k)}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
-          if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=nx>W-30?clamp(ny,ROAD_Y-95,ROAD_Y+95):ny;moving=true;dirty=true;if(S.px>W-40&&S.py>600&&S.py<800)roadEastEdge();if(S.job)jobArrive();if(EV&&EV.x!=null){const ed=Math.hypot(S.px-EV.x,S.py-EV.y);if(ed<34&&!EV.inside){EV.inside=1;eventArrive()}else if(ed>60)EV.inside=0}}}}
+        if(d<3){moving=false;target=null;if(autoEnter){const k=autoEnter;autoEnter=null;if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(me)openPlot(me)}else if(k==="crewhq")openCrew(closeRoom);else{const hp=!PL[k]&&hubPlaces().find(q=>q.k===k);if(hp)hp.go();else openRoom(k)}}}else{const st=Math.min(d,sp*dt),nx=S.px+dx/d*st,ny=S.py+dy/d*st,rg=regionOf(nx,ny);
+          if(!regionOpen(rg)){moving=false;target=null;lockedNotice(rg)}else{if(nx>=X4+30&&!W4_OK(nx-X4,ny-Y4)){moving=false;target=null}else{S.hd=Math.atan2(dy,dx);S.px=nx;S.py=nx>W-30&&nx<X4+30?clamp(ny,ROAD_Y-95,ROAD_Y+95):ny;moving=true;dirty=true;if(S.px>W-40&&S.py>600&&S.py<800)roadEastEdge();{const ih=S.px>=X4;if(ih!==hubOpen.was){hubOpen.was=ih;shownCash=null;renderHud();if(ih&&!S.flags.w4Seen){S.flags.w4Seen=1;{const W4=w4();if(!W4.gift){W4.gift=1;W4.gems+=50}W4.last=W4.last||Date.now()}banner("Welcome to the Frontier "+GEM,"g");rayText("Here's 50 Gems to get you going. Head to the Sky Islands and dig a couple of crystal mines. They keep digging even while you're gone.")}}}}if(S.job)jobArrive();if(EV&&EV.x!=null){const ed=Math.hypot(S.px-EV.x,S.py-EV.y);if(ed<34&&!EV.inside){EV.inside=1;eventArrive()}else if(ed>60)EV.inside=0}}}}
       drift+=dt;
       if(drift>=.5){drift=0;
         CATS.forEach(c=>{S.trend[c.k]=clamp(S.trend[c.k]+rnd(-.06,.06)+(1-S.trend[c.k])*.035,.5,1.85)});
@@ -5427,7 +5427,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=82,WN=[
+const WN_VER=83,WN=[
+ ["🗺️","One big map","World 4 is now part of Flip City's map: walk east past the old edge of town, down the road, and straight into the Tycoon Frontier without ever loading a new area. The grass slowly changes colour along the way.","2026-10-07T08:45"],
  ["🛣️","The road is part of town","The Frontier Road is now simply part of Flip City's map: keep walking east past the old edge of town, past Rusty's diner, and you reach World 4. The rift portal between Deep Time and World 4 is back too. Also fixed: you can leave a shop you opened from the phone.","2026-10-07T08:30"],
  ["🚀","Roomier worlds","The Cosmos and Deep Time are now about as big as Flip City, with far more people about (and a few aliens). New things to do there: a Space Arcade, Galactic Diner, Zero-G Club and Alien Pet Shop in orbit, and a Cave Arcade, Mammoth Grill and Dino Pet Pen in Deep Time. The Frontier got lamp posts and glowing zone gates at night.","2026-10-07T08:20"],
  ["🛤️","A real road","The Frontier Road is now a place you walk: Flip City's asphalt crumbles into a dirt track past fields, a farmhouse, Rusty's Roadside Diner and billboards of your old worlds, all the way to the Frontier's welcome arch.","2026-10-07T08:05"],
@@ -6076,7 +6077,7 @@ function enterIsland(k,fid){const G=islGeo(k),i=ISLANDS.find(x=>x.k===k);
       if(hasPier(k,fid)){const px=G.cx+G.rx*.62,py=G.cy+G.ry*.36,dx=x-px,dy=y-py,u=dx*Math.cos(.62)+dy*Math.sin(.62),v=-dx*Math.sin(.62)+dy*Math.cos(.62);return u>-10&&u<300&&Math.abs(v)<22}return false}});
   banner(fid?"Visiting "+SCN.title:"Welcome to "+SCN.title,"a")}
 const hasPier=(k,fid)=>!!islBuilt(k,fid).pier;
-function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle home",tone:"#7a2fd6",fx:"orb",orb:{...planetOrb(t.k),back:1}},enterCosmos);return}if(t.kind==="road"){roadToTown();return}if(t.kind==="castle"){flyTo({n:"Tycoon Frontier",cn:"Up the stairs",tone:"#ff4fd8",fx:"whirl"},()=>{enterW4();const k=SCN.places.find(p=>p.k==="keep");if(k){S.px=k.door[0];S.py=k.door[1]+20}});return}if(t.kind==="w4"){roadWestEdge();return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6",fx:"whirl"},enterCosmos);return}if(t.kind==="house"||t.kind==="arena"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
+function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle home",tone:"#7a2fd6",fx:"orb",orb:{...planetOrb(t.k),back:1}},enterCosmos);return}if(t.kind==="road"){roadToTown();return}if(t.kind==="castle"){flyTo({n:"Tycoon Frontier",cn:"Up the stairs",tone:"#ff4fd8",fx:"whirl"},()=>{enterW4();const k=hubPlaces().find(p=>p.k==="keep");if(k){S.px=k.door[0];S.py=k.door[1]+20}});return}if(t.kind==="w4"){roadWestEdge();return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6",fx:"whirl"},enterCosmos);return}if(t.kind==="house"||t.kind==="arena"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
   const done=()=>{SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner(city?"Back in Flip City":"Back at the Harbor","a")};
   if(city||t.kind==="space")flyTo({n:"Flip City",cn:t.kind==="space"?"World 1 · Earth":"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
 /* moving, tapping, drawing */
@@ -6882,7 +6883,7 @@ const isTaxi=v=>TRAFFIC.indexOf(v)%4===1;
 function taxiAt(x,y){for(const v of TRAFFIC){if(!isTaxi(v))continue;if(v.k!=="ring"&&!regionOpen("downtown"))continue;const[tx,ty]=trafficPos(v);if(Math.hypot(tx-x,ty-y)<34)return v}return null}
 function openTaxi(){room="taxi";$("room").hidden=false;const fare=p=>Math.max(20,Math.round(Math.hypot(p.door[0]-S.px,p.door[1]-S.py)*.12*(1+repLevel()*.05)));
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Taxi")}<div class="note">Hop in. The driver takes you straight to the door.</div>
-    <div class="perks">${shownPlaces().filter(p=>regionOpen(p.region)).map(p=>`<button class="perk nopic" data-taxi="${p.k}" ${S.cash<fare(p)?"disabled":""}><span class="t">${p.n}</span><span class="d">${p.sub||""}</span><span class="c">${fmt(fare(p))}</span></button>`).join("")}</div></div>`;
+    <div class="perks">${shownPlaces().filter(p=>regionOpen(p.region)&&!p.hub).map(p=>`<button class="perk nopic" data-taxi="${p.k}" ${S.cash<fare(p)?"disabled":""}><span class="t">${p.n}</span><span class="d">${p.sub||""}</span><span class="c">${fmt(fare(p))}</span></button>`).join("")}</div></div>`;
   $("leaveBtn").onclick=closeRoom;$("room").querySelectorAll("[data-taxi]").forEach(b=>b.onclick=()=>{const p=PL[b.dataset.taxi],f=fare(p);if(S.cash<f)return;S.cash-=f;dirty=true;closeRoom();
     const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="🚕";document.body.appendChild(fx);SFX.door();setTimeout(()=>{S.px=p.door[0];S.py=p.door[1]+16;target=null;moving=false;bKey="";PET=null;PT=null;KT=null},600);setTimeout(()=>{fx.remove();banner("Arrived at "+p.n,"u")},1300)})}
 /* police: drive too fast in a car and you might get chased */
@@ -7176,7 +7177,7 @@ const W4ART={
 const w4Art=(k,sz=40)=>`<svg viewBox="0 0 40 40" width="${sz}" height="${sz}" aria-hidden="true">${W4ART[k]||""}</svg>`;
 const W4ZK=k=>W4Z.find(z=>z.k===k),W4B=(z,k)=>z.B.find(b=>b.k===k);
 const w4=()=>{S.w4=S.w4||{open:0,gems:0,tot:0,last:Date.now(),unl:{sky:1},z:{},ex:"",gift:0};W4Z.forEach(z=>{if(!S.w4.z[z.k])S.w4.z[z.k]={t:Array(W4_COLS*W4_ROWS).fill(null),storm:null,ev:0}});return S.w4};
-const inW4=()=>typeof SCN!=="undefined"&&!!SCN&&(SCN.kind==="w4"||SCN.kind==="castle");
+const inW4=()=>typeof SCN!=="undefined"&&(SCN?SCN.kind==="w4"||SCN.kind==="castle":!!(S&&!MPW&&S.px>=X4));
 const w4Nb=i=>{const x=i%W4_COLS,y=Math.floor(i/W4_COLS),o=[];if(x>0)o.push(i-1);if(x<W4_COLS-1)o.push(i+1);if(y>0)o.push(i-W4_COLS);if(y<W4_ROWS-1)o.push(i+W4_COLS);return o};
 const w4Count=(zk,bk)=>w4().z[zk].t.filter(t=>t&&t.k===bk).length;
 const w4Cost=(z,b)=>Math.round(b.c*Math.pow(1.12,w4Count(z.k,b.k)));
@@ -7217,7 +7218,7 @@ function w4MkWorkers(){const W=w4(),L=[];let n=0;
   else if(SCN.kind==="castle"){const P=k=>SCN.places.find(p=>p.k===k).door;const R=[["guard","🛡️",{shirt:"#9aa3b3",acc:{h:"viking"}},[[250,560],[1350,560],[1350,880],[250,880]]],["guard","🛡️",{shirt:"#9aa3b3",acc:{h:"viking"}},[[800,430],[800,1000]]],["cook","🍲",{shirt:"#f4f4f4",acc:{h:"chef"}},[P("hall"),[P("hall")[0]+120,P("hall")[1]+40]]],["cook","🍞",{shirt:"#f4f4f4",acc:{h:"chef"}},[[P("hall")[0]-120,P("hall")[1]+30],P("hall")]],["treasurer","💎",{shirt:"#7a2fd6",acc:{h:"top",x:"case"}},[P("vault"),P("throne")]],["servant","🧺",{shirt:"#a3142e"},[P("hall"),P("throne"),P("vault")]],["jester","🎭",{shirt:"#ffcc33",acc:{h:"party"}},[P("throne"),[P("throne")[0]-100,P("throne")[1]+60]]],["smith","⚒️",{shirt:"#5b6272",acc:{h:"bandana"}},[P("forge"),[P("forge")[0]+90,P("forge")[1]+30]]]];
     R.forEach(([job,ic,lk,pts])=>L.push({x:pts[0][0],y:pts[0][1],pts,i:1%pts.length,wait:rnd(0,2),job:{ic,n:job,carry:job==="treasurer"?"#4fe3ff":job==="servant"?"#ffcc33":null},look:{skin:pick(VSKIN),hair:pick(VHAIR),...lk},n:VNAMES[(n++)%VNAMES.length],sp:rnd(30,44),ph:Math.random()*9}))}
   SCN.wk=L;SCN.wkT=performance.now()}
-function w4People(ppl){if(!SCN||(SCN.kind!=="w4"&&SCN.kind!=="castle"))return;if(SCN.kind==="w4"&&S.px<48&&Math.abs(S.py-780)<70&&moving){moving=false;target=null;setTimeout(roadWestEdge,0)}if(!SCN.wk)w4MkWorkers();const now=performance.now(),dt=Math.min(.05,(now-SCN.wkT)/1000);SCN.wkT=now;
+function w4People(ppl){if(!SCN||(SCN.kind!=="w4"&&SCN.kind!=="castle"))return;if(SCN.kind==="w4"&&!SCN.attached&&S.px<48&&Math.abs(S.py-780)<70&&moving){moving=false;target=null;setTimeout(roadWestEdge,0)}if(!SCN.wk)w4MkWorkers();const now=performance.now(),dt=Math.min(.05,(now-SCN.wkT)/1000);SCN.wkT=now;
   SCN.wk.forEach(w=>{const tg=w.pts[w.i];let working=false;if(w.wait>0){w.wait-=dt;working=true}else{const dx=tg[0]-w.x,dy=tg[1]-w.y,d=Math.hypot(dx,dy);if(d<4){w.wait=rnd(2,4);if(SCN.kind==="w4"){w.carry=w.i===0;if(w.i===1&&Math.random()<.5)w.pop={t:0,txt:"+"+GEM}}w.i=(w.i+1)%w.pts.length}else{w.x+=dx/d*w.sp*dt;w.y+=dy/d*w.sp*dt;w.hd=dx}}
     if(w.pop){w.pop.t+=dt;if(w.pop.t>1.4)w.pop=null}
     ppl.push([w.y,()=>{const c=ctx;drawPerson(w.x,w.y,{...w.look,legs:"#3b2a20",mv:!working,ph:w.ph+now/1000,pose:working&&Math.sin(now/180+w.ph)>.2?"bi":null});
@@ -7380,14 +7381,16 @@ const W4_OK=(x,y)=>x>20&&x<W4W-20&&y>160&&y<W4H-20;   // the road leaves the map
 const W4_PATHS=[[290,600],[1510,600],[290,1140],[1510,1140],[900,390],[900,1340],[-60,780]];
 const w4OnPath=(x,y,m)=>{if(Math.hypot(x-900,y-780)<150+m)return true;return W4_PATHS.some(([px,py])=>{const dx=px-900,dy=py-780,t=Math.max(0,Math.min(1,((x-900)*dx+(y-780)*dy)/(dx*dx+dy*dy)));return Math.hypot(x-900-dx*t,y-780-dy*t)<m})};
 function buildW4(){const g=SCN_C.getContext("2d");SCN_C.width=W4W;SCN_C.height=W4H;let sd=91;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
-  const sky=g.createLinearGradient(0,0,0,170);sky.addColorStop(0,"#7a5cff");sky.addColorStop(1,"#ffb3e6");g.fillStyle=sky;g.fillRect(0,0,W4W,170);
-  const gg=g.createRadialGradient(900,750,100,900,750,1100);gg.addColorStop(0,"#b6e388");gg.addColorStop(1,"#5fa86a");g.fillStyle=gg;g.fillRect(0,160,W4W,W4H-160);
+  if(SCN.attached){g.fillStyle=EDGE4;g.fillRect(0,0,W4W,W4H);const gg=g.createRadialGradient(900,750,80,900,750,820);gg.addColorStop(0,"rgba(182,227,136,1)");gg.addColorStop(1,"rgba(182,227,136,0)");g.fillStyle=gg;g.fillRect(0,0,W4W,W4H)}
+  else{const sky=g.createLinearGradient(0,0,0,170);sky.addColorStop(0,"#7a5cff");sky.addColorStop(1,"#ffb3e6");g.fillStyle=sky;g.fillRect(0,0,W4W,170);
+  const gg=g.createRadialGradient(900,750,100,900,750,1100);gg.addColorStop(0,"#b6e388");gg.addColorStop(1,"#5fa86a");g.fillStyle=gg;g.fillRect(0,160,W4W,W4H-160)}
   g.strokeStyle="#e8d8b0";g.lineWidth=46;g.lineCap="round";const ctr=[900,780];[[290,600],[1510,600],[290,1140],[1510,1140],[900,390],[900,1340]].forEach(([x,y])=>{g.beginPath();g.moveTo(ctr[0],ctr[1]);g.quadraticCurveTo((ctr[0]+x)/2,(ctr[1]+y)/2+(r()-.5)*120,x,y);g.stroke()});
-  g.fillStyle="#4a4f5c";g.fillRect(0,742,760,76);g.fillStyle="#3a3f4c";g.fillRect(0,812,760,6);g.fillStyle="#ffe08a";for(let x=10;x<740;x+=60)g.fillRect(x,778,32,4);
+  if(SCN.attached){g.fillStyle="#c9a26b";g.fillRect(0,720,760,120);g.fillStyle="#b58c58";for(let i=0;i<220;i++)g.fillRect(r()*760,720+r()*120,3,2)}
+  else{g.fillStyle="#4a4f5c";g.fillRect(0,742,760,76);g.fillStyle="#3a3f4c";g.fillRect(0,812,760,6);g.fillStyle="#ffe08a";for(let x=10;x<740;x+=60)g.fillRect(x,778,32,4)}
   g.fillStyle="#8a5a2c";g.fillRect(118,676,6,60);g.fillStyle="#a8743a";rrp(g,60,656,124,28,6);g.fill();g.fillStyle="#fff7e0";g.font=`900 12px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";g.fillText("← FLIP CITY",122,670);
   g.fillStyle="#e8d8b0";g.beginPath();g.arc(900,780,150,0,7);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<80;i++){g.beginPath();g.arc(r()*W4W,170+r()*(W4H-170),4+r()*10,0,7);g.fill()}
   const tree=(x,y)=>{g.fillStyle="rgba(0,0,0,.15)";g.beginPath();g.ellipse(x,y+4,18,6,0,0,7);g.fill();g.fillStyle="#6b4a2f";g.fillRect(x-3,y-14,6,16);g.fillStyle=pick(["#3f9a4e","#2f7a3e","#4fb35e"]);g.beginPath();g.arc(x,y-22,16,0,7);g.fill()};
-  for(let i=0;i<70;i++){const x=40+r()*(W4W-80),y=200+r()*(W4H-240);if(SCN.places.some(p=>x>p.x-60&&x<p.x+p.w+60&&y>p.y-60&&y<p.y+p.h+70)||Math.hypot(x-900,y-780)<200)continue;tree(x,y)}
+  for(let i=0;i<70;i++){const x=40+r()*(W4W-80),y=200+r()*(W4H-240);if(SCN.places.some(p=>x>p.x-60&&x<p.x+p.w+60&&y>p.y-60&&y<p.y+p.h+70)||Math.hypot(x-900,y-780)<200||w4OnPath(x,y,45))continue;tree(x,y)}
   // lamp posts along the paths so the Frontier glows at night
   W4_PATHS.forEach(([px,py])=>{for(let t=.32;t<.95;t+=.3){const x=900+(px-900)*t+((py-780)?28:0),y=780+(py-780)*t+((py-780)?0:-48);if(x<30||x>W4W-30)continue;g.fillStyle="rgba(0,0,0,.18)";g.beginPath();g.ellipse(x+4,y+3,8,3,0,0,7);g.fill();g.fillStyle="#3a3f4c";g.fillRect(x-2,y-46,4,46);g.fillStyle="#5b6272";rrp(g,x-7,y-54,14,10,3);g.fill();SCN.lamps.push([x,y-49])}});
   const W=w4();SCN.places.forEach(p=>{const zk=p.k.startsWith("z_")?p.k.slice(2):null,x=p.x,y=p.y,w=p.w,h=p.h;if(zk){g.fillStyle="rgba(30,20,40,.16)";rrp(g,x+10,y+14,w,h,24);g.fill()}g.save();
@@ -7415,12 +7418,27 @@ function w4Anim(){const W=w4();
 /* ---------- the road between Flip City and the Tycoon Frontier: same land, further east ---------- */
 const ROAD_Y=700;let ROADTRIP=false;
 // Flip City runs on past its old east edge (W) for another RDW pixels of dirt road; only the road band is walkable out there
-const townW=()=>S&&S.w4&&S.w4.open?W+RDW:W,ROAD_OFF=200;   // the road land is drawn RDH tall, starting ROAD_OFF px down the map
+const ROAD_OFF=200,X4=2600+2800,Y4=ROAD_Y-780,EDGE4="#79b866";   // World 4's hub sits at the end of the road: its west road (y=780) lines up with Flip City's (y=700)
+const hubOpen=()=>!!(S&&S.w4&&S.w4.open&&!MPW),townW=()=>hubOpen()?X4+W4W:W;   // the road land is drawn RDH tall, starting ROAD_OFF px down the map
+let HUBC=null,HUBS=null,HUBK="",HUBT=0;
+function hubKey(){const W=w4();return Object.keys(W.unl).join(",")+"|"+hasCastle()+"|"+isDark()}
+function hubLand(){const now=performance.now();if(HUBC&&now-HUBT<1000)return HUBC;HUBT=now;const k=hubKey();if(HUBC&&k===HUBK)return HUBC;HUBK=k;
+  const keep=SCN,fake={k:"frontier",kind:"w4",attached:1,w:W4W,h:W4H,places:null};SCN=fake;try{fake.places=w4Places();buildW4()}finally{SCN=keep}
+  HUBC=HUBC||document.createElement("canvas");HUBC.width=W4W;HUBC.height=W4H;HUBC.getContext("2d").drawImage(SCN_C,0,0);SCN_C.width=SCN_C.height=1;
+  HUBS={kind:"w4",k:"frontier",attached:1,places:fake.places,lamps:fake.lamps||[],torches:fake.torches||[],wk:null};HUBTOWN=null;return HUBC}
+// run World 4 drawing code as if we were in its scene: hub coordinates, camera and player shifted
+function withHub(fn,world){if(!HUBS)return;const k=SCN,cx=cam.x,cy=cam.y,px=S.px,py=S.py;SCN=HUBS;cam.x-=X4;cam.y-=Y4;S.px-=X4;S.py-=Y4;if(world){ctx.save();ctx.translate(X4,Y4)}try{fn()}finally{if(world)ctx.restore();SCN=k;cam.x=cx;cam.y=cy;S.px=px;S.py=py}}
+let HUBTOWN=null;function hubPlaces(){if(!hubOpen())return [];hubLand();if(!HUBTOWN)HUBTOWN=HUBS.places.map(p=>({...p,x:p.x+X4,y:p.y+Y4,door:[p.door[0]+X4,p.door[1]+Y4],region:"core",hub:1}));return HUBTOWN}
+function hubPeople(ppl){if(!hubOpen()||!HUBS||cam.x+vw<X4-100)return;const L=[];withHub(()=>w4People(L));L.forEach(([y,f])=>ppl.push([y+Y4,()=>withHub(f,true)]))}
 let ROADC=null;function roadLand(){if(ROADC)return ROADC;const keep=SCN;SCN={k:"road",kind:"road",attached:1,places:roadPlaces(),w:RDW,h:RDH};try{buildRoad()}finally{SCN=keep}ROADC=document.createElement("canvas");ROADC.width=RDW;ROADC.height=RDH;ROADC.getContext("2d").drawImage(SCN_C,0,0);SCN_C.width=SCN_C.height=1;return ROADC}
-function drawRoadLand(){if(!(S.w4&&S.w4.open)||cam.x+vw<W)return;const R2=roadLand(),sx=Math.max(0,cam.x-W),dx=Math.max(W,cam.x);const w=Math.min(RDW-sx,cam.x+vw-dx);if(w<=0)return;ctx.drawImage(R2,sx,0,w,RDH,dx,ROAD_OFF,w,RDH);
+function drawRoadLand(){if(!hubOpen()||cam.x+vw<W)return;
+  // grass that slowly turns from Flip City's to the Frontier's over the whole length of the road
+  {const gg=ctx.createLinearGradient(W,0,X4+300,0);gg.addColorStop(0,isDark()?PAL_D.grass:PAL_L.grass);gg.addColorStop(1,EDGE4);ctx.fillStyle=gg;const x0=Math.max(W,cam.x),x1=cam.x+vw;ctx.fillRect(x0,cam.y,x1-x0,vh)}
+  if(cam.x+vw>X4){const H2=hubLand();const sx=Math.max(0,cam.x-X4),dx=Math.max(X4,cam.x),w=Math.min(W4W-sx,cam.x+vw-dx);if(w>0)ctx.drawImage(H2,sx,0,w,W4H,dx,Y4,w,W4H);withHub(()=>{w4Anim();decoHeads(night())},true)}
+  if(cam.x>X4)return;const R2=roadLand(),sx=Math.max(0,cam.x-W),dx=Math.max(W,cam.x);const w=Math.min(RDW-sx,cam.x+vw-dx);if(w<=0)return;ctx.drawImage(R2,sx,0,w,RDH,dx,ROAD_OFF,w,RDH);
   ctx.save();ctx.translate(W,ROAD_OFF);const c=ctx,x=933,y=90;c.save();c.translate(x,y);c.rotate(wt*1.2);c.fillStyle="#f2f2f2";for(let i=0;i<4;i++){c.rotate(Math.PI/2);c.fillRect(-4,0,8,60)}c.restore();c.fillStyle="#2b2233";c.beginPath();c.arc(x,y,6,0,7);c.fill();
   c.strokeStyle="#2b2233";c.lineWidth=2;for(let i=0;i<4;i++){const bx=((wt*40+i*700)%(RDW+200))-100,by=160+i*60+Math.sin(wt*2+i)*10,f=Math.sin(wt*8+i)*4;c.beginPath();c.moveTo(bx-8,by-f);c.quadraticCurveTo(bx-3,by-4,bx,by);c.quadraticCurveTo(bx+3,by-4,bx+8,by-f);c.stroke()}ctx.restore()}
-function roadEastEdge(){if(ROADTRIP||SCN||MPW||room)return;if(S.w4&&S.w4.open){if(S.px>W+RDW-40){target=null;moving=false;enterW4(true)}return}{S.px=W-70;target=null;moving=false;if(!roadEastEdge.t||Date.now()-roadEastEdge.t>4000){roadEastEdge.t=Date.now();banner("🚧 Road closed. Build the Amber Ziggurat in Deep Time to 10 tiers ("+zigN()+"/"+W4_ZIG+")","a")}return}
+function roadEastEdge(){if(ROADTRIP||SCN||MPW||room)return;if(S.w4&&S.w4.open)return;{S.px=W-70;target=null;moving=false;if(!roadEastEdge.t||Date.now()-roadEastEdge.t>4000){roadEastEdge.t=Date.now();banner("🚧 Road closed. Build the Amber Ziggurat in Deep Time to 10 tiers ("+zigN()+"/"+W4_ZIG+")","a")}return}
 }
 function roadWestEdge(){if(!SCN||SCN.kind!=="w4"||room)return;target=null;moving=false;SCN=null;S.px=W+RDW-90;S.py=ROAD_Y;S.hd=Math.PI;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner("On the Frontier Road · Flip City is west","a")}
 // a little side-on walk down the road: city blocks give way to fields, then the Frontier's sky islands and ferris wheel
@@ -7451,7 +7469,7 @@ function roadPlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];L.pu
   return L}
 function buildRoad(){const g=SCN_C.getContext("2d");SCN_C.width=RDW;SCN_C.height=RDH;let sd=313;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
   // grass that slowly turns from city green to frontier pink-green as you go east
-  const gg=g.createLinearGradient(0,0,RDW,0);gg.addColorStop(0,"#8ccf7a");gg.addColorStop(.6,"#7fbf6a");gg.addColorStop(1,"#a8d98a");g.fillStyle=gg;g.fillRect(0,0,RDW,RDH);
+  if(!SCN.attached){const gg=g.createLinearGradient(0,0,RDW,0);gg.addColorStop(0,"#8ccf7a");gg.addColorStop(.6,"#7fbf6a");gg.addColorStop(1,"#a8d98a");g.fillStyle=gg;g.fillRect(0,0,RDW,RDH)}else g.clearRect(0,0,RDW,RDH);
   g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<260;i++){g.beginPath();g.arc(r()*RDW,r()*RDH,3+r()*8,0,7);g.fill()}
   // the edge of Flip City on the far left: pavement, a couple of buildings and a streetlight
   if(!SCN.attached){g.fillStyle="#d6d9e0";g.fillRect(0,0,220,RDH);g.fillStyle="#c4c8d0";for(let y=0;y<RDH;y+=40)g.fillRect(0,y,220,2);}
@@ -7526,7 +7544,7 @@ function openRift(back){room="rift";const W=w4();
     <button class="bigbtn" id="rfGo" disabled>The rift is still closed<small>It opens when the Ziggurat reaches ${W4_ZIG} tiers (${zigN()}/${W4_ZIG}). The road east of Flip City opens then too.</small></button></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
   $("rfGo").onclick=()=>{if(zigN()<W4_ZIG||S.cash<W4_COST)return;S.cash-=W4_COST;W.open=1;W.last=Date.now();if(!W.gift){W.gift=1;W.gems+=50}dirty=true;SFX.rebirth();flash("#ff4fd8",.8);confetti(320,null,null,["#ff4fd8","#4fe3ff","#ffcc33","#fff"]);shake(12,.9);banner("THE RIFT IS OPEN","g");closeRoom();setTimeout(()=>flyTo({n:"Tycoon Frontier",cn:"World 4 · build anything",tone:"#ff4fd8",fx:"whirl"},enterW4),900)}}
-function enterW4(fromRoad){const W=w4();W.open=1;if(!W.gift){W.gift=1;W.gems+=50}W.last=W.last||Date.now();enterScene({kind:"w4",k:"frontier",w:W4W,h:W4H,spawn:fromRoad?[110,780]:[900,1250],bg:"#5fa86a",title:"Tycoon Frontier",shirts:["#ff4fd8","#4fe3ff","#ffcc33","#7a2fd6","#2fd28a"],mk:w4Places,pt:()=>{for(let t=0;t<30;t++){const x=200+Math.random()*1400,y=300+Math.random()*1000;if(W4_OK(x,y)&&!SCN.places.some(p=>x>p.x-10&&x<p.x+p.w+10&&y>p.y-10&&y<p.y+p.h+10))return[x,y]}return[900,900]},ok:W4_OK});
+function enterW4(fromRoad){const W=w4();W.open=1;if(!W.gift){W.gift=1;W.gems+=50}W.last=W.last||Date.now();if(room)closeRoom();if(MPW)return;SCN=null;S.px=X4+(fromRoad?110:900);S.py=Y4+(fromRoad?780:1250);S.hd=-Math.PI/2;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;hubOpen.was=null;shownCash=null;renderHud();return;enterScene({kind:"w4",k:"frontier",w:W4W,h:W4H,spawn:fromRoad?[110,780]:[900,1250],bg:"#5fa86a",title:"Tycoon Frontier",shirts:["#ff4fd8","#4fe3ff","#ffcc33","#7a2fd6","#2fd28a"],mk:w4Places,pt:()=>{for(let t=0;t<30;t++){const x=200+Math.random()*1400,y=300+Math.random()*1000;if(W4_OK(x,y)&&!SCN.places.some(p=>x>p.x-10&&x<p.x+p.w+10&&y>p.y-10&&y<p.y+p.h+10))return[x,y]}return[900,900]},ok:W4_OK});
   SCN.npc=[];if(fromRoad){S.hd=0;SCN.tx=W-90;SCN.ty=ROAD_Y}
   if(!S.flags.w4Seen){S.flags.w4Seen=1;dirty=true;setTimeout(()=>{banner("Welcome to the Frontier "+GEM,"g");rayText("Here's 50 Gems to get you going. Head to the Sky Islands and dig a couple of crystal mines. They keep digging even while you're gone.")},1200)}}
 /* ---------- rooms ---------- */
