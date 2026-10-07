@@ -405,6 +405,8 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .htpdots{display:flex;gap:6px}.htpdots i{width:8px;height:8px;border-radius:50%;background:var(--sunk)}.htpdots i.on{background:var(--ink)}.htp .cta{width:100%}
 .petaway{font-size:.75rem;font-weight:700;color:var(--muted);padding:6px 0;text-align:center}.petcard .cta{width:100%;padding:8px;justify-content:center;font-size:.8rem}
 .vaultwrap{display:flex;justify-content:center;margin:12px 0}.vaultwrap canvas{width:min(80vw,300px);height:auto}.vsteps{display:flex;gap:10px;justify-content:center;margin-bottom:12px}.vsteps i{width:18px;height:18px;border-radius:50%;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--line)}.vsteps i.on{background:#2fd28a}
+.nightroom{background:linear-gradient(#120a24,#2a1446);color:#fff}.nightroom .perk{background:rgba(255,255,255,.06);color:#fff}.nightroom .note{background:rgba(255,255,255,.06);color:#e9e2ff}.nightroom .leave{color:var(--ink)}
+.nmart{font-size:1.8rem;text-align:center;letter-spacing:.35em;padding:10px 0;filter:drop-shadow(0 0 10px rgba(255,179,71,.7));animation:nmglow 2s ease-in-out infinite}@keyframes nmglow{50%{filter:drop-shadow(0 0 3px rgba(255,179,71,.4))}}
 .dlbadge{font-style:normal;font-family:var(--mono);font-weight:800;font-size:.72rem;padding:2px 7px;border-radius:8px;background:color-mix(in oklab,var(--tc) 20%,transparent);color:var(--tc);white-space:nowrap}
 .duelb{background:#1b1f2a!important;color:#ffcc33!important}
 .dlask{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:66;width:min(92vw,420px);padding:14px;border-radius:18px;background:var(--bg);box-shadow:0 0 0 2px #ffcc33,0 16px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.dlask small{color:var(--muted)}.dlask span{display:flex;gap:8px}.dlask .cta{flex:1;padding:10px;justify-content:center}
@@ -963,6 +965,7 @@ const PLACES=[
  {k:"trade",n:"Trading Centre",c:"#0e1a2f",x:20,y:300,w:180,h:150,door:[110,450],sub:"Live futures charts. Long or short with leverage"},
  {k:"flea",n:"Boardwalk Flea",c:"#f2762e",x:300,y:1440,w:300,h:130,door:[450,1570],region:"beach",sub:"Cheap steals, mystery boxes, fakes"},
  {k:"mbeach",n:"Muscle Beach",c:"#14a3a8",x:1720,y:1450,w:220,h:120,door:[1830,1570],region:"beach",sub:"Outdoor gym, lifts cost half energy"},
+ {k:"night",n:"Night Market",c:"#3a2266",x:1000,y:1450,w:220,h:120,door:[1110,1570],region:"beach",sub:"Lanterns, fortunes and rare stock · 8 PM to 5 AM"},
  {k:"arcade",n:"Arcade",c:"#d63fb8",x:2140,y:440,w:220,h:150,door:[2250,590],region:"downtown",sub:"Play for tickets, win prizes"},
  {k:"airport",n:"Airport",c:"#3b6fd8",x:2000,y:1405,w:580,h:185,door:[2290,1590],region:"beach",sub:"Fly to Tokyo or Paris markets"},
  {k:"docks",n:"Docks Car Meet",c:"#4a5568",x:40,y:1440,w:200,h:130,door:[140,1570],region:"beach",sub:"Show off your cars and street race"},
@@ -1655,7 +1658,7 @@ function openRoom(k){
   if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
-  ({arcade:()=>openArcade(),market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
+  ({night:()=>openNightMkt(),arcade:()=>openArcade(),market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();
 }
 function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;XP=null;DJ=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
@@ -2374,6 +2377,25 @@ function openHeist(){room="heist";$("room").hidden=false;const pay=Math.round(Ma
     g.save();g.rotate(H.target);g.fillStyle="#ffcc33";g.beginPath();g.moveTo(-10,-140);g.lineTo(10,-140);g.lineTo(0,-118);g.closePath();g.fill();g.restore();
     g.save();g.rotate(H.ang);g.fillStyle="#e2364a";g.beginPath();g.moveTo(-6,-112);g.lineTo(6,-112);g.lineTo(0,-78);g.closePath();g.fill();g.restore();
     g.fillStyle="#5b6272";g.beginPath();g.arc(0,0,40,0,7);g.fill();g.fillStyle="#8a93a5";g.beginPath();g.arc(0,0,22,0,7);g.fill();g.restore();requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+/* ---------- Night Market: open 8 PM to 5 AM on the boardwalk ---------- */
+const NIGHT_GEAR=[{k:"lantern",n:"Lantern hat",ic:"🏮",f:.004},{k:"glow",n:"Glow sticks",ic:"🪄",f:.002}];
+const nightOpen=()=>S.clock>=20||S.clock<5;
+function openNightMkt(){room="night";$("room").hidden=false;const draw=()=>{const open=nightOpen(),tonight=S.day+(S.clock<5?-1:0),ft=Math.round(Math.max(200,rwBase()*.004)),told=S.fortuneN===tonight,sold=S.nightSell===tonight;
+  const hh=Math.floor(S.clock),mm=Math.floor((S.clock%1)*60),tm=((hh+11)%12+1)+":"+String(mm).padStart(2,"0")+(hh<12?" AM":" PM");
+  $("room").innerHTML=`<div class="room-in scroll nightroom">${roomHead("Night Market")}<div class="nmart">${"🏮".repeat(7)}</div>
+    ${!open?`<div class="note">The stalls are shut. They open at <b>8 PM</b> and close at <b>5 AM</b>. It's ${tm} now.</div>`:`
+    <div class="sechead"><h3>🔮 Fortune teller</h3><span class="eyebrow">Once a night</span></div>
+    <button class="bigbtn" id="nmFort" ${told||S.cash<ft?"disabled":""}>${told?"The cards are resting":"Read my fortune"}<small>${told?"Come back tomorrow night":fmt(ft)+" · luck, a map, fame or a golden find"}</small></button>
+    <div class="sechead"><h3>🌙 Midnight collector</h3><span class="eyebrow">Pays +40% · one item a night</span></div>
+    <div class="perks">${sold?`<div class="note">The collector has gone home with tonight's treasure.</div>`:S.stash.length?S.stash.map((it,i)=>`<button class="perk nopic" data-nm="${i}"><span class="t">${esc(it.name)}</span><span class="d">${it.cond}${it.fake?" · they can spot fakes":""}</span><span class="c">${fmt(Math.round(sellValue(it)*(it.fake?.2:1.4)))}</span></button>`).join(""):`<div class="note">Bring something in your stash and the collector will make an offer.</div>`}</div>
+    <div class="sechead"><h3>✨ Night-only gear</h3><span class="eyebrow">Only sold after dark</span></div>
+    <div class="perks">${NIGHT_GEAR.map(gx=>{const own=(S.accOwn||{})[gx.k],c=Math.round(Math.max(2000,rwBase()*gx.f));return `<button class="perk nopic" data-ng="${gx.k}" ${own||S.cash<c?"disabled":""}><span class="t">${gx.ic} ${gx.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">Glows in the dark</span><span class="c">${own?"Owned":fmt(c)}</span></button>`}).join("")}</div>`}</div>`;
+  $("leaveBtn").onclick=closeRoom;
+  const fb=$("nmFort");if(fb)fb.onclick=()=>{if(S.fortuneN===tonight||S.cash<ft)return;S.cash-=ft;S.fortuneN=tonight;dirty=true;const r=Math.random();let msg;
+    if(r<.4){S.buffs.fortune=240;msg="Lucky hands: every sale pays +30% for 4 minutes"}else if(r<.6){S.maps=(S.maps||0)+1;msg="A vision of buried gold: you got a treasure map"}else if(r<.8){const f=Math.round(Math.max(200,(S.fans||0)*.05));S.fans=(S.fans||0)+f;msg="Fame is coming: +"+fmtN(f)+" fans"}else{S.nextGold=1;msg="A golden find awaits: the next market item you see is golden"}
+    SFX.hot();confetti(100,null,null,["#8f52d4","#ffcc33","#fff"]);rayTextFrom("Madame Luna",msg);draw();updMini()};
+  $("room").querySelectorAll("[data-nm]").forEach(b=>b.onclick=()=>{if(S.nightSell===tonight)return;const i=+b.dataset.nm,it=S.stash[i];if(!it)return;const v=Math.round(sellValue(it)*(it.fake?.2:1.4));S.stash.splice(i,1);earn(v);S.stats.flips++;S.nightSell=tonight;dirty=true;SFX.sell(3);confetti(80);banner("Sold to the midnight collector · +"+fmt(v),"g");draw();updMini()});
+  $("room").querySelectorAll("[data-ng]").forEach(b=>b.onclick=()=>{const gx=NIGHT_GEAR.find(x=>x.k===b.dataset.ng),c=Math.round(Math.max(2000,rwBase()*gx.f));S.accOwn=S.accOwn||{};if(S.accOwn[gx.k]||S.cash<c)return;S.cash-=c;S.accOwn[gx.k]=1;S.acc=S.acc||{};S.acc[accOf(gx.k).s]=gx.k;dirty=true;SFX.rebirth();confetti(90,null,null,["#ffb347","#ff4fd8","#2fd28a"]);banner(gx.n+" · equipped","g");draw();updMini()})};draw()}
 function openBank(){
   const draw=()=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
@@ -3135,11 +3157,11 @@ const MC=()=>(M&&M.cfg)||MKT.market;
 const cmult=()=>1.6+.3*S.up.clout+(hasStr(220)?.5:0);
 const tileFor=(cat,code,sm)=>cat?`<div class="tile${sm?" sm":""}" style="--h:${CAT[cat].h}">${code}</div>`:`<div class="tile mys${sm?" sm":""}">?</div>`;
 const hotFor=s=>!!M&&!!M.ev&&M.ev.type==="collector"&&M.ev.cat===s.cat&&!s.fake;
-const sellValue=s=>(s.gold?4:1)*valueOf(s)*(1-WT)*moonK()*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*collK(s.cat)*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(isWeekend()?1.15:1)*(1+.12*pk("cat_"+s.cat)));
+const sellValue=s=>(s.gold?4:1)*valueOf(s)*(1-WT)*moonK()*(S.buffs&&S.buffs.fortune>0?1.3:1)*capM(rawMult()*(hotFor(s)?cmult():1)*(hasStr(120)?1.1:1)*MC().sell*(EV&&EV.type==="celeb"?1.5:1)*(1+PROPS[S.home||0].sell)*((MC().cat||{})[s.cat]||1)*((MC().code||{})[s.code]||1)*petSell()*collK(s.cat)*(S.buffs&&S.buffs.hype>0?1.3:1)*(S.buffs&&S.buffs.rested>0?1+restK():1)*(isWeekend()?1.15:1)*(1+.12*pk("cat_"+s.cat)));
 function affordable(k=1){const cap=Math.max(260,(S.cash+stashVal())*1.4)*k,mb=MC().minBase;const p=POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base<=cap&&p.base>=mb);return p.length?p:POOL.filter(p=>S.unlocked.includes(p.cat)&&p.base>=mb).sort((a,b)=>a.base-b.base).slice(0,4)}
 // rookie luck: a new player's first 25 sales find far more steals, no fakes for the first 8, and shelves restock twice as fast
 const ROOKIE_N=25,rookieLeft=()=>S?Math.max(0,ROOKIE_N-(S.stats.flips||0)):0;let FORCE_STEAL=0;
-function newListing(){const l=newListing0();if(l&&l.kind==="item"&&!l.fake&&S.earned>200&&Math.random()<.04)l.golden=1;return l}
+function newListing(){const l=newListing0();if(l&&l.kind==="item"&&!l.fake&&S.nextGold){S.nextGold=0;l.golden=1;dirty=true}if(l&&l.kind==="item"&&!l.fake&&S.earned>200&&Math.random()<.04)l.golden=1;return l}
 function newListing0(){
   const life=rnd(3.6,6.2)*(1+.3*S.up.alerts)*tLife();
   const b0={id:S.nextId++,disc:0,gone:0,fake:false};
@@ -4278,7 +4300,7 @@ const ACCS=[
  {k:"shades",s:"g",n:"Shades",cost:300,rz:1},{k:"aviator",s:"g",n:"Aviators",cost:4000,rz:2},{k:"dshades",s:"g",n:"Diamond shades",cost:2e6,rz:5},
  {k:"silver",s:"c",n:"Silver chain",cost:2500,rz:1},{k:"gold",s:"c",n:"Gold chain",cost:50000,rz:3},{k:"diamond",s:"c",n:"Diamond chain",cost:8e6,rz:6},
  {k:"pack",s:"b",n:"Backpack",cost:1200,rz:0,d:"+1 stash slot"},{k:"cape",s:"b",n:"Superhero cape",cost:1.5e7,rz:4},{k:"wings",s:"b",n:"Angel wings",cost:5e8,rz:10},
- {k:"phones",s:"h",n:"Headphones",cost:1500,rz:1},{k:"bandana",s:"h",n:"Bandana",cost:2000,rz:1},{k:"party",s:"h",n:"Party hat",cost:3500,rz:2},{k:"chef",s:"h",n:"Chef's hat",cost:8000,rz:2},{k:"viking",s:"h",n:"Viking helmet",cost:250000,rz:3},{k:"wizard",s:"h",n:"Wizard hat",cost:4e6,rz:4},{k:"robe",s:"o",n:"Wizard robe",cost:4e6,rz:4,d:"Matches the wizard hat"},{k:"acrown",s:"h",n:"Neon crown",cost:0,rz:5,arc:1,d:"Arcade prize"},{k:"nshade",s:"g",n:"Neon shades",cost:0,rz:3,arc:1,d:"Arcade prize"},{k:"joy",s:"x",n:"Golden joystick",cost:0,rz:6,arc:1,d:"Arcade prize"},{k:"astro",w2:1,s:"h",n:"Space helmet",cost:1e16,rz:9},{k:"jcrown",w2:1,s:"h",n:"Cosmic crown",cost:1e30,rz:20},
+ {k:"phones",s:"h",n:"Headphones",cost:1500,rz:1},{k:"bandana",s:"h",n:"Bandana",cost:2000,rz:1},{k:"party",s:"h",n:"Party hat",cost:3500,rz:2},{k:"chef",s:"h",n:"Chef's hat",cost:8000,rz:2},{k:"viking",s:"h",n:"Viking helmet",cost:250000,rz:3},{k:"wizard",s:"h",n:"Wizard hat",cost:4e6,rz:4},{k:"robe",s:"o",n:"Wizard robe",cost:4e6,rz:4,d:"Matches the wizard hat"},{k:"acrown",s:"h",n:"Neon crown",cost:0,rz:5,arc:1,d:"Arcade prize"},{k:"lantern",s:"h",n:"Lantern hat",cost:0,rz:4,arc:1,d:"Night Market"},{k:"glow",s:"x",n:"Glow sticks",cost:0,rz:3,arc:1,d:"Night Market"},{k:"nshade",s:"g",n:"Neon shades",cost:0,rz:3,arc:1,d:"Arcade prize"},{k:"joy",s:"x",n:"Golden joystick",cost:0,rz:6,arc:1,d:"Arcade prize"},{k:"astro",w2:1,s:"h",n:"Space helmet",cost:1e16,rz:9},{k:"jcrown",w2:1,s:"h",n:"Cosmic crown",cost:1e30,rz:20},
  {k:"nerd",s:"g",n:"Round glasses",cost:700,rz:1},{k:"hearts",s:"g",n:"Heart shades",cost:6000,rz:2},{k:"monocle",s:"g",n:"Gold monocle",cost:900000,rz:3},{k:"vr",s:"g",n:"VR headset",cost:3e7,rz:4},{k:"visor",w2:1,s:"g",n:"Laser visor",cost:1e18,rz:12},
  {k:"bowtie",s:"c",n:"Bow tie",cost:1800,rz:1},{k:"scarf",s:"c",n:"Scarf",cost:3000,rz:1},{k:"medal",s:"c",n:"Gold medal",cost:1e6,rz:3},{k:"bhole",w2:1,s:"c",n:"Black hole pendant",cost:1e27,rz:18},
  {k:"guitar",s:"b",n:"Guitar",cost:9000,rz:2},{k:"surf",s:"b",n:"Surfboard",cost:20000,rz:2},{k:"jet",s:"b",n:"Jetpack",cost:1e10,rz:8},{k:"dwings",w2:1,s:"b",n:"Dragon wings",cost:1e21,rz:15},{k:"gwings",w2:1,s:"b",n:"Galaxy wings",cost:1e33,rz:25},
@@ -4310,6 +4332,7 @@ function accGlasses(c,k,x,y){
   if(k==="visor"){c.fillStyle=`rgba(255,40,60,${.75+.25*Math.sin(wt*8)})`;rrp(c,x-9.5,y-.6,19,3.6,1.6);c.fill();c.fillStyle="rgba(255,255,255,.7)";c.fillRect(x-7+((wt*20)%14),y,2,1.6);return}c.fillStyle=k==="aviator"?"#7a5a36":k==="dshades"?"#bfefff":"#141824";if(k==="aviator"){c.beginPath();c.ellipse(x-3.5,y+1,3.3,2.6,0,0,7);c.ellipse(x+3.5,y+1,3.3,2.6,0,0,7);c.fill()}else{rrp(c,x-7.5,y-.6,6.5,3.6,1.2);c.fill();rrp(c,x+1,y-.6,6.5,3.6,1.2);c.fill()}c.fillRect(x-1.2,y,2.4,1);
   if(k==="dshades"){c.fillStyle="#fff";c.globalAlpha=.5+.5*Math.sin(wt*5);c.fillRect(x-6,y,1.4,1.4);c.fillRect(x+2.5,y,1.4,1.4);c.globalAlpha=1}}
 function accHat(c,k,x,y){
+  if(k==="lantern"){c.fillStyle="#7a1d2a";c.beginPath();c.ellipse(x,y-6,12,3,0,0,7);c.fill();const gl=.7+.3*Math.sin((typeof wt==="number"?wt:0)*3);c.save();c.shadowColor="#ffb347";c.shadowBlur=10*gl;c.fillStyle="#e2364a";rrp(c,x-7,y-20,14,13,5);c.fill();c.restore();c.fillStyle="#ffcc33";c.fillRect(x-7,y-15,14,1.6);c.fillRect(x-1,y-24,2,4);return}
   if(k==="acrown"){const gl=.6+.4*Math.sin((typeof wt==="number"?wt:0)*4);c.save();c.shadowColor="#ff4fd8";c.shadowBlur=8*gl;c.fillStyle="#ff4fd8";c.beginPath();c.moveTo(x-9,y-6);c.lineTo(x-9,y-15);c.lineTo(x-4.5,y-10);c.lineTo(x,y-17);c.lineTo(x+4.5,y-10);c.lineTo(x+9,y-15);c.lineTo(x+9,y-6);c.closePath();c.fill();c.restore();c.fillStyle="#4fe3ff";[-6,0,6].forEach(d=>{c.beginPath();c.arc(x+d,y-8,1.4,0,7);c.fill()});return}
   if(k==="phones"){c.strokeStyle="#1b1d22";c.lineWidth=2.2;c.beginPath();c.arc(x,y-1,11,Math.PI*1.08,Math.PI*1.92);c.stroke();c.fillStyle="#e2364a";rrp(c,x-12.5,y-3,4.5,8,2);c.fill();rrp(c,x+8,y-3,4.5,8,2);c.fill()}
   if(k==="bandana"){c.fillStyle="#e2364a";c.beginPath();c.arc(x,y-2,9.9,Math.PI*1.02,Math.PI*1.98);c.lineTo(x+9.9,y-2);c.closePath();c.fill();c.fillStyle="#fff";for(let i=0;i<4;i++){c.beginPath();c.arc(x-6+i*4,y-6,.9,0,7);c.fill()}c.fillStyle="#e2364a";c.beginPath();c.moveTo(x+9,y-3);c.lineTo(x+14,y-1);c.lineTo(x+12,y+3);c.fill()}
@@ -4347,6 +4370,7 @@ function shirtStyle(c,k,x,y,hx,o){
   if(k===7){c.fillStyle="rgba(255,255,255,.35)";c.beginPath();c.ellipse(x,y-29.5,hx*.38,1.8,0,0,7);c.fill();c.fillStyle="rgba(0,0,0,.12)";c.fillRect(x-hx+2,y-14,2*hx-4,1.4)}
   if(k===5){c.fillStyle="#fff";c.font="900 8px "+FONTS.d;c.textAlign="center";c.textBaseline="middle";c.fillText("10",x,y-20);c.fillStyle="rgba(255,255,255,.5)";c.fillRect(x-hx+1,y-29,2*hx-2,1.4)}}
 function accHand(c,k,x,y){
+  if(k==="glow"){const t=typeof wt==="number"?wt:0;[["#2fd28a",-2.4,-.3],["#ff4fd8",2.4,.3]].forEach(([col,dx,rot])=>{c.save();c.translate(x+dx,y-3);c.rotate(rot+Math.sin(t*6)*.15);c.shadowColor=col;c.shadowBlur=8;c.fillStyle=col;rrp(c,-1.2,-7,2.4,11,1.2);c.fill();c.restore()});return}
   if(k==="joy"){c.fillStyle="#1b1d22";rrp(c,x-4,y-1,8,4,1.5);c.fill();c.fillStyle="#cf9a14";c.fillRect(x-.8,y-7,1.6,6);c.fillStyle="#ffcc33";c.beginPath();c.arc(x,y-7.5,2.4,0,7);c.fill();c.fillStyle="#e2364a";c.beginPath();c.arc(x+2.6,y+.6,.9,0,7);c.fill();return}
   if(k==="phone"){c.fillStyle="#1b1d22";rrp(c,x-2,y-6,4.5,8,1);c.fill();c.fillStyle="#4fe3ff";c.fillRect(x-1.2,y-5,3,5)}
   if(k==="coffee"){c.fillStyle="#fff";rrp(c,x-2.5,y-6,5,7,1);c.fill();c.fillStyle="#7a5a3a";c.fillRect(x-2.8,y-7,5.6,1.8);c.fillStyle="#c4945f";c.fillRect(x-2.5,y-3,5,2)}
@@ -4716,7 +4740,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=39,WN=[
+const WN_VER=40,WN=[
+ ["🏮","Night Market","A lantern market on the beach, open 8 PM to 5 AM: a fortune teller, a midnight collector who pays +40% for one item, and glowing gear you can only buy after dark.","2026-10-07T03:50"],
  ["🔐","Crack the vault","Once a day at the Bank, try to crack the vault: stop the spinning dial on the gold notch three times for a big payout. Miss and the alarm rings until tomorrow.","2026-10-07T03:40"],
  ["🧭","Pet adventures","Send a pet on a park run, into the woods or on a wild expedition from the Pets screen. It comes back with cash, crates, treasure maps or even golden items.","2026-10-07T03:30"],
  ["🏅","Duel ranks","Duels now have a rating, from Bronze to Champion. Beat stronger players to climb faster. Ranks show in the Friends list and the duel menu.","2026-10-07T03:20"],
