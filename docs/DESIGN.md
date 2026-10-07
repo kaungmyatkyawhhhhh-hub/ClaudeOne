@@ -177,8 +177,8 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
   over a dark matte floor (the biggest plates almost touch it) and soft contact shadows under the plates and the
   overall plate ground them even on low graphics. No stands, no pedestal: the overall plate (bigger, matching) stands
   on its rim on the floor on the left.
-- Layout: the bar faces the camera about 28 degrees from straight-on (slightly above), plates a little apart so every
-  face shows; each label sits right under its own plate (name 18px, grade letter in a 32px circle, multiplier 22px),
+- Layout: the bar faces the camera about 28 degrees from straight-on (slightly above), bigger plates on a thicker bar, packed tight with a small steel microplate between every two;
+  each label sits right under its own plate (name 18px, grade letter in a 32px circle, multiplier 22px),
   staggered in two rows when they would touch. One shadow source: real key-light shadows, or contact shadows on low
   graphics instead. The frame card has a small silhouette of the shoulder width.
 - DNA: a helix of two thin strands (opposite phase) with short rungs every ~0.3 studs, alternating soft blue / white, slow spin. Plain dark background (no lines, dust or ghost text).

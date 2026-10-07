@@ -4,8 +4,8 @@
 -- plates, collar and overall plate cast shadows), a soft fill from the right, a cool rim from behind on the plate edges.
 -- The bar lies low over a dark matte floor (the biggest plates almost touch it). ONE shadow source: the key light's real
 -- shadows, or (low graphics, where real shadows don't render) soft contact shadows under the plates instead. No stands.
--- The camera looks at the bar about 28 degrees from straight-on, slightly above, and drifts a little; the plates sit a
--- little apart on the sleeve so every flat face shows, spread left to right, and each label sits right under its plate.
+-- The camera looks at the bar about 28 degrees from straight-on, slightly above, and drifts a little; bigger plates sit
+-- tight on a thicker bar with a small steel microplate between every two, and each label sits right under its plate.
 --  * The bar carries a DNA helix: two thin strands of light (opposite phase) with short rungs every ~0.3 studs,
 --    alternating soft blue / white, slowly turning. The background is plain dark.
 --  * Plates are rubber bumper plates (stepped bevel edge, raised rim, inset ring, chrome hub, the grade letter printed on
@@ -45,11 +45,14 @@ local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Hor
 ------------------------------------------------------------------------
 local STAGE_CF = CFrame.new(0, 1600, 0) -- far above the town, inside its own dark room
 -- Plates: wide and thin (diameter about 3x thickness), all the same thickness; better grade = a little wider.
-local PLATE = { Thickness = 0.62, Diameter = { S = 2.3, A = 2.15, B = 2.0, C = 1.85, D = 1.7 }, Hub = 0.62 }
-local HERO = { Thickness = 0.9, Diameter = 3.2, Hub = 0.9 }
+local PLATE = { Thickness = 0.8, Diameter = { S = 3.0, A = 2.8, B = 2.6, C = 2.4, D = 2.2 }, Hub = 0.86 }
+local HERO = { Thickness = 1.1, Diameter = 4.0, Hub = 1.1 }
+-- a small steel change plate between every two stat plates (they sit tight against each other, no gaps)
+local MICRO = { Thickness = 0.24, Diameter = 1.95, Color = Color3.fromHex("#D3D7DE") }
+local BAR_SIZE = { Grip = 0.38, Core = 0.12, Sleeve = 0.72, InnerCollar = 1.05, Collar = 1.0 }
 -- Along the bar's own X axis: grip on the left, the inner collar at 0, plates from SlotStart outward, sleeve end.
 -- the plates sit Gap apart on the sleeve, so every face shows (the sleeve is long enough for six plates and the collar)
-local BAR = { GripStart = -3.8, SlotStart = 0.15, Gap = 0.55, SleeveEnd = 7.3, Yaw = math.rad(-28) }
+local BAR = { GripStart = -4.6, SlotStart = 0.2, Gap = MICRO.Thickness, SleeveEnd = 6.5, Yaw = math.rad(-28) }
 local BAR_CF = STAGE_CF * CFrame.new(-0.4, 0, 0) * CFrame.Angles(0, BAR.Yaw, 0) -- ~28 degrees from straight-on, the sleeve end toward the camera
 -- where plate `slot` (1 = innermost) sits along the bar
 local function slotX(slot)
@@ -59,11 +62,11 @@ local function slotCF(slot)
 	return BAR_CF * CFrame.new(slotX(slot), 0, 0)
 end
 local FLOOR_Y = -PLATE.Diameter.S / 2 - 0.04 -- the floor's top: an S plate (the biggest) almost touches it
-local HERO_CF = STAGE_CF * CFrame.new(-6.6, FLOOR_Y + HERO.Diameter / 2, 0.8) * CFrame.Angles(0, math.rad(-70), 0) -- on its rim on the floor, facing the camera
+local HERO_CF = STAGE_CF * CFrame.new(-8.2, FLOOR_Y + HERO.Diameter / 2, 1.0) * CFrame.Angles(0, math.rad(-70), 0) -- on its rim on the floor, facing the camera
 -- a 3/4 view: about 35 degrees off the bar's side (BAR.Yaw), slightly from above, drifting a little so the light moves
 local CAMERA = { Fov = 30, Pitch = math.rad(16), Drift = math.rad(2.5), DriftSpeed = 0.35 }
 local HELIX = {
-	Color = Color3.fromHex("#BFE3FF"), Radius = 0.3, Turns = 5, Points = 110, Speed = 0.45, Width = 0.04, Transparency = 0.3,
+	Color = Color3.fromHex("#BFE3FF"), Radius = 0.36, Turns = 5, Points = 110, Speed = 0.45, Width = 0.04, Transparency = 0.3,
 	RungStep = 0.3, RungWidth = 0.022, RungTransparency = 0.4,
 	RungColors = { Color3.fromHex("#8CC4FF"), Color3.fromHex("#F2F6FF") }, -- alternating soft blue / white
 }
@@ -566,14 +569,14 @@ local function buildStage()
 	-- the bar: a glassy grip with a soft glowing core, the inner collar, the chrome sleeve
 	local barModel = New("Model", { Name = "Bar", Parent = stage })
 	local gripLength = 0 - BAR.GripStart - 0.15
-	local grip = cylinder("Grip", gripLength, 0.28, Color3.fromHex("#9FB4C8"), Enum.Material.Glass, BAR_CF * CFrame.new(BAR.GripStart + gripLength / 2, 0, 0), barModel)
+	local grip = cylinder("Grip", gripLength, BAR_SIZE.Grip, Color3.fromHex("#9FB4C8"), Enum.Material.Glass, BAR_CF * CFrame.new(BAR.GripStart + gripLength / 2, 0, 0), barModel)
 	grip.Transparency = 0.35
-	cylinder("Core", gripLength, 0.09, HELIX.Color, Enum.Material.Neon, grip.CFrame, barModel).Transparency = 0.45
-	cylinder("GripEnd", 0.06, 0.32, CHROME, Enum.Material.Metal, BAR_CF * CFrame.new(BAR.GripStart, 0, 0), barModel)
-	cylinder("InnerCollar", 0.3, 0.78, CHROME, Enum.Material.Metal, BAR_CF * CFrame.new(0, 0, 0), barModel)
+	cylinder("Core", gripLength, BAR_SIZE.Core, HELIX.Color, Enum.Material.Neon, grip.CFrame, barModel).Transparency = 0.45
+	cylinder("GripEnd", 0.08, BAR_SIZE.Grip + 0.06, CHROME, Enum.Material.Metal, BAR_CF * CFrame.new(BAR.GripStart, 0, 0), barModel)
+	cylinder("InnerCollar", 0.36, BAR_SIZE.InnerCollar, CHROME, Enum.Material.Metal, BAR_CF * CFrame.new(0, 0, 0), barModel)
 	local sleeveLength = BAR.SleeveEnd - 0.15
-	cylinder("Sleeve", sleeveLength, 0.5, CHROME, Enum.Material.Metal, BAR_CF * CFrame.new(0.15 + sleeveLength / 2, 0, 0), barModel)
-	cylinder("EndCap", 0.08, 0.56, CHROME:Lerp(Color3.new(0, 0, 0), 0.15), Enum.Material.Metal, BAR_CF * CFrame.new(BAR.SleeveEnd, 0, 0), barModel)
+	cylinder("Sleeve", sleeveLength, BAR_SIZE.Sleeve, CHROME, Enum.Material.Metal, BAR_CF * CFrame.new(0.15 + sleeveLength / 2, 0, 0), barModel)
+	cylinder("EndCap", 0.1, BAR_SIZE.Sleeve + 0.08, CHROME:Lerp(Color3.new(0, 0, 0), 0.15), Enum.Material.Metal, BAR_CF * CFrame.new(BAR.SleeveEnd, 0, 0), barModel)
 	castShadows(barModel)
 	-- the DNA helix along the whole bar (thin, soft, slow)
 	helix = makeHelix(BAR_CF, HELIX.Points, HELIX.Radius, BAR.GripStart, BAR.SleeveEnd, HELIX.Turns, HELIX.Width, HELIX.Color, HELIX.Transparency, stage)
@@ -869,12 +872,35 @@ end
 
 -- A plate slides onto the sleeve from its end into its slot (best grade first, so it ends up innermost) and lands with
 -- a clank (pitch by grade); S plates get a quick shine sweep.
+-- A steel microplate (rim, face and a hole), axis = X like the plates.
+local function makeMicro()
+	local model = New("Model", { Name = "Micro" })
+	local body = cylinder("Body", MICRO.Thickness, MICRO.Diameter, MICRO.Color, Enum.Material.Metal, nil, model)
+	model.PrimaryPart = body
+	cylinder("Rim", MICRO.Thickness + 0.02, MICRO.Diameter + 0.05, MICRO.Color:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.Metal, nil, model).Transparency = 0
+	body.Size = Vector3.new(MICRO.Thickness + 0.04, MICRO.Diameter - 0.06, MICRO.Diameter - 0.06)
+	cylinder("Hole", MICRO.Thickness + 0.06, BAR_SIZE.Sleeve + 0.04, Color3.fromRGB(28, 28, 32), nil, nil, model)
+	castShadows(model)
+	model.Parent = stage
+	return model
+end
+-- the microplate rides on the inner side of its plate (between it and the plate before)
+local MICRO_OFFSET = CFrame.new(-(PLATE.Thickness + MICRO.Thickness) / 2, 0, 0)
+local function placeMicro(entry)
+	if entry.micro then entry.micro:PivotTo(entry.cf * MICRO_OFFSET) end
+end
+
 local function slideOn(entry, slot)
 	local target = slotCF(slot)
 	local from = BAR_CF * CFrame.new(BAR.SleeveEnd + 1.6, 0, 0)
 	place(entry, from)
-	animate(TIME.Slide, function(t) place(entry, from:Lerp(target, easeIn(t))) end)
+	if slot > 1 then entry.micro = makeMicro() end
+	animate(TIME.Slide, function(t)
+		place(entry, from:Lerp(target, easeIn(t)))
+		placeMicro(entry)
+	end)
 	place(entry, target)
+	placeMicro(entry)
 	landed += 1
 	setBarShadow(landed)
 	play("GeneticsClank", { pitch = FLIP_PITCH[entry.grade] })
@@ -890,8 +916,8 @@ end
 local function closeCollar(count)
 	collar = { parts = { model = New("Model", { Name = "Collar" }) } }
 	local model = collar.parts.model
-	local ringPart = cylinder("Ring", 0.28, 0.74, CHROME, Enum.Material.Metal, nil, model)
-	cylinder("Lever", 0.14, 0.18, CHROME:Lerp(Color3.new(0, 0, 0), 0.2), Enum.Material.Metal, CFrame.new(0, 0.42, 0), model)
+	local ringPart = cylinder("Ring", 0.34, BAR_SIZE.Collar, CHROME, Enum.Material.Metal, nil, model)
+	cylinder("Lever", 0.16, 0.22, CHROME:Lerp(Color3.new(0, 0, 0), 0.2), Enum.Material.Metal, CFrame.new(0, BAR_SIZE.Collar / 2 + 0.06, 0), model)
 	model.PrimaryPart = ringPart
 	castShadows(model)
 	model.Parent = stage
@@ -928,6 +954,7 @@ end
 local function clearBoard()
 	for _, entry in ipairs(plates) do
 		entry.parts.model:Destroy()
+		if entry.micro then entry.micro:Destroy() end
 		for _, item in ipairs({ entry.column, entry.hit }) do
 			if item then item:Destroy() end
 		end
@@ -1041,8 +1068,12 @@ local function slideOff()
 		local from = entry.cf
 		local to = BAR_CF * CFrame.new(BAR.SleeveEnd + 2.5, 0, 0)
 		task.spawn(function()
-			animate(0.2, function(t) place(entry, from:Lerp(to, easeIn(t))) end)
+			animate(0.2, function(t)
+				place(entry, from:Lerp(to, easeIn(t)))
+				placeMicro(entry)
+			end)
 			entry.parts.model:Destroy()
+			if entry.micro then entry.micro:Destroy() end
 		end)
 		task.wait(0.06)
 	end
