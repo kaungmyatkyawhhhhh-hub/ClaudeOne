@@ -74,5 +74,5 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   642,353 / 1,231,961 EXP ...). Retune with `lune run tests/pacing tune` if gains, tiers or stamina change.
 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
-`TestCoins`, `TestSpurts`, `TestMuscleShare` (0..1.12, live), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
+`TestCoins`, `TestSpurts`, `TestMuscleShare` (0..3 x the goal, live), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.
