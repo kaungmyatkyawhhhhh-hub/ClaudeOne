@@ -186,13 +186,13 @@ First Growth Spurt should be reachable in ~15-20 minutes.
   reference game); pressing it again hides them. Hidden by default. Thin white lines from small white dots on the body to
   each label; a label is a small dark see-through box with the name on top (white) and the number under it (light
   blue-white, with commas). Strength (total of all muscle levels) and Stamina above the head; the six groups around the
-  body: Chest, Core, Legs on the camera's left, Shoulders, Back, Arms on its right. A maxed group shows "Max" in soft
-  gold. Compact (the whole set about 40% of the screen height), the same size on screen at any camera distance, stable
+  body: Chest, Core, Legs on the camera's left, Shoulders, Back, Arms on its right. A maxed group shows its EXP like any
+  other (no "Max" text). Compact (the whole set about 40% of the screen height), the same size on screen at any camera distance, stable
   while walking/jumping, never hidden behind walls, never over a machine's "E / Use" prompt.
 - While the labels are shown, a small **Muscles** button sits at the bottom center (above the machine panel while
   lifting). It opens the "Your muscles" panel.
 - **"Your muscles" panel:** title, Growth Spurt bar + height + "x/6 groups at level y · gains x1.50 after", six group
-  cards (grade badge, name, level or Max, "Genetics x1.20", each muscle with a bar and its level, "Needs work" in soft
+  cards (grade badge, name, EXP, "Genetics x1.20", each muscle with a bar and its EXP, "Needs work" in soft
   red on the weakest group when there is no tie). On top of everything, the rest of the HUD is switched off behind it,
   everything fits (the cards scroll on short screens; one or two columns on phones). Close: X, Esc or a tap outside.
 - **On a machine: a small body-map widget** slides in at the right (front and back silhouettes made of muscle shapes,

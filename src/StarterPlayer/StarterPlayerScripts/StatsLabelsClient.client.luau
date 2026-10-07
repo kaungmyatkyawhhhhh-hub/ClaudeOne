@@ -3,7 +3,7 @@
 --  * Compact: a small box per stat (name on top, the number under it in light blue-white, with commas), a thin white line
 --    to a small white dot on the body. Strength (total of all muscle levels) and Stamina sit above the head; the six
 --    groups sit on both sides, three each: Chest, Core, Legs to the camera's left, Shoulders, Back, Arms to its right.
---    A maxed group shows "Max" in soft gold. The set stays close to the body (about 40% of the screen height) and keeps
+--    A maxed group just shows its EXP (no "Max" text). The set stays close to the body (about 40% of the screen height) and keeps
 --    the same size on screen at any camera distance.
 --  * A 2D layer placed from the character's projected position, so it is always visible (never hidden behind walls or
 --    machines) and doesn't jitter: positions come from the root part (not the animated limbs) and are smoothed. Columns
@@ -168,8 +168,9 @@ local function refreshNumbers()
 	for _, entry in ipairs(labels) do
 		local group = Muscles.GroupById[entry.spec.id]
 		local maxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
-		entry.number.Text = maxed and "Max" or commas(Muscles.GroupExp(data.muscles, group.id))
-		entry.number.TextColor3 = maxed and Colors.Gold or Colors.StatNumber
+		local exp = commas(Muscles.GroupExp(data.muscles, group.id))
+		entry.number.Text = exp -- (a maxed group shows its EXP like any other: no "Max")
+		entry.number.TextColor3 = Colors.StatNumber
 	end
 	strength.number.Text = commas(Muscles.TotalExp(data.muscles))
 	local max = player:GetAttribute("MaxStamina")
@@ -243,8 +244,9 @@ local function refreshSubs()
 			local entry = data.muscles[sub.muscle.id]
 			if not entry then continue end
 			local maxed = entry.level >= cap
-			sub.text.Text = sub.muscle.name .. "  " .. (maxed and "Max" or commas(Muscles.MuscleExp(entry)))
-			sub.text.TextColor3 = maxed and Colors.Gold or Colors.Text
+			local exp = commas(Muscles.MuscleExp(entry))
+			sub.text.Text = sub.muscle.name .. "  " .. exp
+			sub.text.TextColor3 = Colors.Text
 			sub.back.Size = UDim2.fromOffset((sub.text.TextBounds.X + 12) * 1.5, SUB_HEIGHT - 2)
 		end
 	end

@@ -157,19 +157,20 @@ for index, group in ipairs(Muscles.Groups) do
 	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Parent = frame }, { Theme.List(Horizontal, "S", Left) })
 	local disc = Theme.RankTag("B", { LayoutOrder = 1, Size = UDim2.fromOffset(20, 18), Parent = top })
 	local grade = disc
-	local nameCol = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, -78, 1, 0), BackgroundTransparency = 1, Parent = top })
+	local nameCol = New("Frame", { LayoutOrder = 2, Size = UDim2.new(0.36, 0, 1, 0), BackgroundTransparency = 1, Parent = top })
 	Theme.Text({ Text = group.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = nameCol })
-	local level = Theme.Text({ LayoutOrder = 3, Font = "Light", TextSize = "Large", Size = UDim2.new(0, 46, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = top })
+	-- the group's EXP: takes the rest of the row so six or seven digits fit
+local level = Theme.Text({ LayoutOrder = 3, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(0.64, -34, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, Parent = top })
 	local sub = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Parent = frame })
 	local mult = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = sub })
 	local needs = Theme.Text({ Text = "Needs work", Font = "Regular", TextSize = "Small", TextColor3 = Colors.NeedsWork, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = sub })
 	local muscleRows = {}
 	for m, muscle in ipairs(group.muscles) do
 		local row = New("Frame", { Name = muscle.id, LayoutOrder = 2 + m, Size = UDim2.new(1, 0, 0, ROW_HEIGHT), BackgroundTransparency = 1, Parent = frame })
-		Theme.Text({ Text = muscle.name, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(0.52, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
-		local back = New("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.55, 0, 0.5, 0), Size = UDim2.new(0.28, 0, 0, 5), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = row }, { Theme.Round("Segment") })
+		Theme.Text({ Text = muscle.name, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(0.34, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
+		local back = New("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.36, 0, 0.5, 0), Size = UDim2.new(0.12, 0, 0, 5), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = row }, { Theme.Round("Segment") })
 		local fill = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
-		local value = Theme.Text({ Font = "SemiBold", TextSize = "Small", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.15, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = row })
+		local value = Theme.Text({ Font = "SemiBold", TextSize = "Small", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.5, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
 		muscleRows[muscle.id] = { level = value, fill = fill }
 	end
 	cards[group.id] = { level = level, disc = disc, grade = grade, mult = mult, needs = needs, muscles = muscleRows }
@@ -227,15 +228,17 @@ local function refreshScreen()
 		Theme.SetRankTag(card.disc, gradeId)
 		card.mult.Text = string.format("Genetics x%.2f", Genetics.GetMultiplier(data.genetics, group.muscles[1].id))
 		local groupMaxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
-		card.level.Text = groupMaxed and "Max" or Muscles.FormatExp(Muscles.GroupExp(data.muscles, group.id))
-		card.level.TextColor3 = groupMaxed and Colors.Gold or Colors.Text
+		local groupExp = Muscles.FormatExp(Muscles.GroupExp(data.muscles, group.id))
+		card.level.Text = groupExp -- (no "Max" text: a maxed group shows its EXP like any other)
+		card.level.TextColor3 = Colors.Text
 		card.needs.Visible = group.id == weakest and ties == 1 and not groupMaxed
 		for _, muscle in ipairs(group.muscles) do
 			local row = card.muscles[muscle.id]
 			local entry = data.muscles[muscle.id]
 			local level = entry.level
-			row.level.Text = level >= cap and "Max" or Muscles.FormatExp(Muscles.MuscleExp(entry))
-			row.level.TextColor3 = level >= cap and Colors.Gold or Colors.Text
+			local rowExp = Muscles.FormatExp(Muscles.MuscleExp(entry))
+			row.level.Text = rowExp
+			row.level.TextColor3 = Colors.Text
 			Theme.Tween(row.fill, { Size = UDim2.fromScale(math.clamp(Muscles.ExactLevel(entry) / progress.required, 0, 1), 1) })
 		end
 	end
