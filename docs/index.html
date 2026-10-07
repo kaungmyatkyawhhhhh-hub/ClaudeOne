@@ -425,7 +425,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .dlpads{display:flex;gap:10px}.dlpads button{flex:1;height:110px;display:grid;place-items:center;text-align:center;border-radius:20px;background:#1b1f2a;color:#fff;font:900 1.3rem var(--display);touch-action:manipulation}.dlpads button:active{background:#2a3cff}
 .arcroom{background:linear-gradient(#1a0b2e,#2a0f3f);color:#fff}.arcroom .leave,.arcroom .rh .leave{color:var(--ink)}.arcroom .perk{background:rgba(255,255,255,.06);color:#fff}.arcroom .kv>div{background:rgba(255,255,255,.08);color:#fff}
 .arcmarq{font:900 .8rem var(--mono);letter-spacing:.2em;color:#ffcc33;text-align:center;padding:8px;border-radius:12px;background:#000;box-shadow:0 0 18px rgba(255,79,216,.5) inset;animation:marq 1.2s steps(2) infinite}@keyframes marq{50%{color:#ff4fd8}}
-.arcbox{margin:10px 0;display:flex;justify-content:center}.arcbox canvas{border-radius:16px;max-width:100%;touch-action:manipulation}
+.arcbox{margin:10px 0;display:flex;flex-direction:column;align-items:center}.arcbox canvas{border-radius:16px;max-width:100%;touch-action:manipulation}
 .molegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:min(92vw,340px)}.molegrid button{aspect-ratio:1;border-radius:50%;background:radial-gradient(#3a2414 55%,#5a3a1a);position:relative;overflow:hidden;touch-action:manipulation}
 .molegrid i{position:absolute;left:18%;right:18%;bottom:-70%;height:70%;border-radius:50% 50% 20% 20%;background:#8a5a3a;transition:bottom .08s}.molegrid i::after{content:"• •";position:absolute;top:22%;left:0;right:0;text-align:center;font-weight:900;color:#1b1d22}
 .molegrid .up i{bottom:6%}.molegrid .gold i{background:#ffcc33}.molegrid .hit i{background:#e2364a}
@@ -4549,7 +4549,7 @@ function accHand(c,k,x,y){
   if(k==="saber"){const col=["#4fe3ff","#ff4fd8","#2fd28a"][Math.floor(wt/3)%3];c.fillStyle="#9aa3b3";c.fillRect(x-1,y-2,2,5);c.save();c.globalAlpha=.35+.15*Math.sin(wt*20);c.strokeStyle=col;c.lineWidth=5;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke();c.restore();c.strokeStyle="#fff";c.lineWidth=1.4;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke()}
   if(k==="orb"){const g2=c.createRadialGradient(x,y-6,0,x,y-6,7);g2.addColorStop(0,"#fff");g2.addColorStop(.4,"#b388ff");g2.addColorStop(1,"rgba(122,47,214,0)");c.fillStyle=g2;c.beginPath();c.arc(x,y-6,7+Math.sin(wt*4),0,7);c.fill()}}
 /* ================= Arcade: quick skill games for tickets, and a prize counter ================= */
-const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."},golf:{n:"Mini golf",ic:"⛳",d:"Three holes. Drag back from the ball to aim, let go to putt. Beat par for big tickets."}};
+const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."},golf:{n:"Mini golf",ic:"⛳",d:"Three holes. Drag back from the ball to aim, let go to putt. Beat par for big tickets."},bowl:{n:"Bowling",ic:"🎳",d:"Five frames. Tap to lock the aim, tap again for power. Strikes pay big."}};
 const ARC_PRIZE=[{k:"crate",n:"Mystery crate",ic:"📦",t:100,f:()=>gainCrate(1)},{k:"energy",n:"Energy drink",ic:"🥤",t:60,f:()=>{S.energy=Math.min(maxEnergy()*1.5,S.energy+60)}},{k:"hype",n:"Hype rush",ic:"🔥",t:80,f:()=>hype(10)},
   {k:"cash",n:"Bag of cash",ic:"💰",t:150,f:()=>earn(Math.round(Math.max(1000,rwBase()*.03)))},{k:"map",n:"Treasure map",ic:"🗺️",t:120,f:()=>{S.maps=(S.maps||0)+1}},{k:"nshade",n:"Neon shades",ic:"🕶️",t:250,acc:1},{k:"acrown",n:"Neon crown",ic:"👑",t:400,acc:1},{k:"joy",n:"Golden joystick",ic:"🕹️",t:700,acc:1}];
 function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||{};const draw=()=>{const T=S.tix||0;
@@ -4586,6 +4586,30 @@ function arcPlay(k,back){const G=ARC_G[k];room="arcade";
       const camY=Math.max(0,st.length*H-260);g.fillStyle="#140b2a";g.fillRect(0,0,300,380);for(let i=0;i<40;i++){g.fillStyle="rgba(255,255,255,.25)";g.fillRect((i*73)%300,(i*41+camY*.3)%380,2,2)}
       st.forEach((b,i)=>{const y=380-(i+1)*H+camY;g.fillStyle=cols[i%cols.length];g.fillRect(b.x,y,b.w,H-2);g.fillStyle="rgba(255,255,255,.3)";g.fillRect(b.x,y,b.w,3)});
       if(!over){const y=380-(st.length+1)*H+camY;g.fillStyle=cols[st.length%cols.length];g.globalAlpha=.9;g.fillRect(cur.x,y,cur.w,H-2);g.globalAlpha=1}
+      requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+  if(k==="bowl"){box.innerHTML=`<canvas id="bwCv" width="300" height="420"></canvas><button class="bigbtn" id="bwGo" style="width:min(92vw,300px);margin-top:10px">Lock aim</button>`;$("arL").textContent="Frame";
+    const cv=$("bwCv"),g=cv.getContext("2d"),PIN0=[[150,70],[138,52],[162,52],[126,34],[150,34],[174,34],[114,16],[138,16],[162,16],[186,16]].map(([x,y])=>[x,y+40]);
+    let frame=0,roll=0,pins=PIN0.map(p=>({x:p[0],y:p[1],up:true,vx:0,vy:0,r:0})),phase="aim",aim=0,pow=0,ball=null,total=0,first=0,lt=performance.now(),msg="",msgT=0;const frames=[];
+    const resetPins=()=>{pins=PIN0.map(p=>({x:p[0],y:p[1],up:true,vx:0,vy:0,r:0}))};
+    const go=e=>{if(e)e.preventDefault();if(phase==="aim"){phase="pow";$("bwGo").textContent="Bowl!"}else if(phase==="pow"){phase="roll";const ang=(aim-.5)*.5,spd=420+pow*360;ball={x:150+(aim-.5)*60,y:395,vx:Math.sin(ang)*spd,vy:-Math.cos(ang)*spd,hook:(aim-.5)*-40};SFX.tick(.4);$("bwGo").disabled=true}};
+    $("bwGo").addEventListener("pointerdown",go);cv.addEventListener("pointerdown",go);
+    const settle=()=>{const down=pins.filter(p=>!p.up).length,now=down-(roll?first:0);if(roll===0){first=down;if(down===10){msg="STRIKE!";SFX.rebirth();confetti(120);frames.push([10]);total+=20;next()}else{msg=down+" pins";roll=1;pins=pins.filter(p=>p.up).length?pins:pins;phase="aim";$("bwGo").textContent="Lock aim";$("bwGo").disabled=false}}
+      else{const fr=down;if(fr===10){msg="SPARE!";SFX.hot();total+=15}else{msg=fr+" pins";total+=fr}frames.push([first,fr-first]);next()}msgT=1.4;$("arS").textContent=total};
+    const next=()=>{frame++;roll=0;first=0;if(frame>=5){setTimeout(()=>{AR=null;end(total,Math.round(total/3))},1200);phase="done";return}setTimeout(()=>{resetPins();phase="aim";$("bwGo").textContent="Lock aim";$("bwGo").disabled=false},900);$("arT").textContent=(frame+1)+"/5"};
+    $("arT").textContent="1/5";
+    const loop=now=>{if(!AR||room!=="arcade")return;const dt=Math.min(.033,(now-lt)/1000);lt=now;const t=now/1000;if(phase==="aim")aim=(Math.sin(t*2.2)+1)/2;if(phase==="pow")pow=(Math.sin(t*3.4)+1)/2;
+      if(ball){ball.vx+=ball.hook*dt;ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;if(ball.x<88||ball.x>212){ball.x=clamp(ball.x,88,212);ball.vx=0;ball.gutter=1}
+        pins.forEach(p=>{if(!p.up&&!p.vx&&!p.vy)return;const d=Math.hypot(p.x-ball.x,p.y-ball.y);if(p.up&&d<17&&!ball.gutter){p.up=false;const a=Math.atan2(p.y-ball.y,p.x-ball.x);p.vx=Math.cos(a)*260+ball.vx*.3;p.vy=Math.sin(a)*260+ball.vy*.25;tone(140+Math.random()*80,.08,{type:"square",vol:.03})}});
+        pins.forEach(p=>{if(p.up)return;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=dt*8;p.vx*=.96;p.vy*=.96;pins.forEach(q=>{if(q.up&&Math.hypot(q.x-p.x,q.y-p.y)<13&&Math.hypot(p.vx,p.vy)>60){q.up=false;q.vx=p.vx*.7+rnd(-60,60);q.vy=p.vy*.7;tone(180,.06,{type:"square",vol:.025})}})});
+        if(ball.y<-20){ball=null;setTimeout(settle,500)}}
+      g.fillStyle="#140b2a";g.fillRect(0,0,300,420);g.fillStyle="#c99a62";g.fillRect(90,0,120,420);g.fillStyle="#b3864f";for(let x=95;x<210;x+=12)g.fillRect(x,0,2,420);g.fillStyle="#2b2f3a";g.fillRect(78,0,12,420);g.fillRect(210,0,12,420);
+      [0,1,2,3,4].forEach(i=>{g.fillStyle="#7a5a36";g.beginPath();g.moveTo(130+i*10,300);g.lineTo(126+i*10,312);g.lineTo(134+i*10,312);g.fill()});
+      pins.forEach(p=>{g.save();g.translate(p.x,p.y);g.rotate(p.r);g.globalAlpha=p.up?1:.55;g.fillStyle="#fff";g.beginPath();g.ellipse(0,0,6,9,0,0,7);g.fill();g.fillStyle="#e2364a";g.fillRect(-5,-3,10,2);g.restore()});
+      if(ball){g.fillStyle="#2a3cff";g.beginPath();g.arc(ball.x,ball.y,11,0,7);g.fill();g.fillStyle="#1b1f2a";[[-3,-3],[3,-3],[0,3]].forEach(([a,b])=>{g.beginPath();g.arc(ball.x+a,ball.y+b,1.6,0,7);g.fill()})}
+      if(phase==="aim"||phase==="pow"){const bx=150+(aim-.5)*60,ang=(aim-.5)*.5;g.strokeStyle="#ffcc33";g.lineWidth=4;g.beginPath();g.moveTo(bx,395);g.lineTo(bx+Math.sin(ang)*80,395-Math.cos(ang)*80);g.stroke();g.fillStyle="#2a3cff";g.beginPath();g.arc(bx,395,11,0,7);g.fill()}
+      if(phase==="pow"){g.fillStyle="#1b1f2a";g.fillRect(232,120,18,200);const gr=g.createLinearGradient(0,320,0,120);gr.addColorStop(0,"#2fd28a");gr.addColorStop(1,"#e2364a");g.fillStyle=gr;g.fillRect(234,320-pow*196,14,pow*196)}
+      if(msgT>0){msgT-=dt;g.fillStyle=`rgba(255,204,51,${Math.min(1,msgT)})`;g.font="900 34px "+FONTS.d;g.textAlign="center";g.fillText(msg,150,230)}
+      g.fillStyle="#fff";g.font="700 11px "+FONTS.m;g.textAlign="left";g.fillText(frames.map(f=>f[0]===10?"X":f[0]+f[1]===10?f[0]+"/":f[0]+"-"+f[1]).join("  "),8,412);
       requestAnimationFrame(loop)};requestAnimationFrame(loop)}
   if(k==="golf"){box.innerHTML=`<canvas id="gfCv" width="300" height="420"></canvas>`;$("arL").textContent="Hole";const cv=$("gfCv"),g=cv.getContext("2d");
     // three holes: walls as [x,y,w,h], a moving blocker on the last
@@ -4946,7 +4970,7 @@ const WN_VER=48,WN=[
  ["🧭","Pet adventures","Send a pet on a park run, into the woods or on a wild expedition from the Pets screen. It comes back with cash, crates, treasure maps or even golden items.","2026-10-07T03:30"],
  ["🏅","Duel ranks","Duels now have a rating, from Bronze to Champion. Beat stronger players to climb faster. Ranks show in the Friends list and the duel menu.","2026-10-07T03:20"],
  ["🗺️","Treasure maps","Crates and the Arcade can give you treasure maps. Read one and a red X appears somewhere in town. Walk there and dig for cash, golden items and more.","2026-10-07T03:15"],
- ["🕹️","The Arcade","A neon arcade downtown: Mole mash, Tower stack, Hoop shot and Mini golf. Win tickets and trade them at the prize counter for crates, cash, energy and arcade-only neon gear.","2026-10-07T03:30"],
+ ["🕹️","The Arcade","A neon arcade downtown: Mole mash, Tower stack, Hoop shot, Mini golf and Bowling. Win tickets and trade them at the prize counter for crates, cash, energy and arcade-only neon gear.","2026-10-07T03:30"],
  ["⚔️","Duels","Challenge anyone in your room, bots too, from the Friends list: Quick draw, Tap frenzy or a 100 m sprint. No muscles needed. Winners get fans.","2026-10-07T14:00"],
  ["🚀","Moon & Mars matter","Rocket to a little grey Moon or a big red Mars. Plant your flag to unlock Space elevators (Moon) and Dyson spheres (Mars), and build each planet's Colony HQ for huge generator boosts.","2026-10-07T13:00"],
  ["🧙","Wizard robe","A long starry robe to match the wizard hat, in the new Outfit slot at the Mall.","2026-10-07T12:00"],
