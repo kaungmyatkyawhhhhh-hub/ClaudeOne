@@ -313,7 +313,15 @@ body.frz::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40
 @keyframes goldshine{from{background-position:150% 0}to{background-position:-100% 0}}
 .gtag{font:800 .6rem var(--mono);color:#1b1200;background:#ffcc33;border-radius:5px;padding:1px 5px}
 
-.rocketov{background:#05061a}.rocketov .saillab{bottom:auto;top:16%}
+.rocketov{background:#05061a}
+.sailov.orbov{background:radial-gradient(circle at 50% 120%,#1a1040,#05061a 70%)}.orbsky{position:absolute;inset:0}.orbsky i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:orbdrift 2.6s linear forwards}
+@keyframes orbdrift{to{transform:translateX(-60px)}}
+.orbfar{position:absolute;top:50%;width:var(--sz);height:var(--sz);transform:translate(-50%,-50%) scale(.25)}.orbfar svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 20px rgba(255,255,255,.15))}
+.orbfar.orbin{left:82%;animation:orbcome 2.6s cubic-bezier(.4,0,.7,1) forwards}.orbfar.orbout{left:22%;transform:translate(-50%,-50%) scale(2.2);animation:orbleave 2.6s ease-in forwards}
+@keyframes orbcome{to{left:68%;transform:translate(-50%,-50%) scale(2.4)}}@keyframes orbleave{to{left:-10%;transform:translate(-50%,-50%) scale(.3);opacity:.4}}
+.orbship{position:absolute;left:12%;top:50%;width:min(30vw,130px);transform:translateY(-50%);animation:orbship 2.6s cubic-bezier(.3,0,.6,1) forwards}.orbship svg{display:block;width:100%;animation:rkshake .08s linear infinite}
+.orbflame{position:absolute;right:96%;top:38%;width:46%;height:24%;border-radius:50%;background:linear-gradient(270deg,#fff3c4,#ff7a3d 50%,transparent);animation:rkshake .06s linear infinite}
+@keyframes orbship{to{left:46%}}.orbov .saillab{bottom:auto;top:14%}.rocketov .saillab{bottom:auto;top:16%}
 .rksky{position:absolute;inset:0;background:linear-gradient(#05061a 0%,#120a3a 30%,#2a5bd7 62%,#9fd8f2 100%);background-size:100% 300%;background-position:0 100%;animation:rksky 2.6s ease-in forwards}
 @keyframes rksky{to{background-position:0 0}}
 .rkstars{position:absolute;inset:0;opacity:0;animation:rkstarsin 2.6s ease-in forwards}
@@ -2373,9 +2381,9 @@ const GOALS=[
  {t:"Reach the Master tier",d:"Grow your net worth to ✦1 Radiant ($1 quadrillion).",ok:()=>tierN()>=5,rw:1e13,go:"market"},
  {t:"Open the Stargate",d:"The Airport has a gate to World 2. It costs ✦10.",ok:()=>!!(S.w2&&S.w2.open),rw:1e15,go:"airport"},
  {t:"Make ✦1 a minute",d:"Build a solar collector at the Radiant Reactor in the Cosmos.",ok:()=>w2Rate()>=1,rw:5e15,go:"c:reactor"},
- {t:"Make ✦1,000 a minute",d:"Stack generators, research upgrades, and sail home to build space tech on your islands. They earn Radiant too.",ok:()=>w2Rate()>=1000,rw:5e17,go:"c:reactor"},
+ {t:"Make ✦1,000 a minute",d:"Fly to the Moon from the Landing pad and plant your flag: it unlocks Space elevators, and the Moon Colony HQ powers every generator.",ok:()=>w2Rate()>=1000,rw:5e17,go:"c:reactor"},
  {t:"Map 10 cosmic objects",d:"The Observatory in the Cosmos is waiting.",ok:()=>!!(S.w2&&S.w2.disc.length>=10),rw:1e19,go:"c:obs"},
- {t:"Make ✦1M a minute",d:"Wormholes, neutron forges, pocket universes, and a Wormhole beacon on every island. Go big.",ok:()=>w2Rate()>=1e6,rw:1e22,go:"c:reactor"},
+ {t:"Make ✦1M a minute",d:"Plant your flag on Mars for Dyson spheres, build up the Mars Colony HQ, and fill your islands with space tech. Go big.",ok:()=>w2Rate()>=1e6,rw:1e22,go:"c:reactor"},
  {t:"Build a Multiverse gate",d:"The last generator in the Cosmos. It powers the time machine.",ok:()=>!!(S.w2&&genN("multi")>0),rw:1e27,go:"c:reactor"},
  {t:"Travel back in time",d:"Power up the time machine on the space station (◈1 Amber).",ok:()=>!!(S.w3&&S.w3.open),rw:1e29,go:"c:tmach"},
  {t:"Grow a trilobite colony",d:"Plant life at the Tree of Life in Deep Time.",ok:()=>!!(S.w3&&lifeN("trilo")>0),rw:5e29,go:"d:nursery"},
@@ -3730,8 +3738,8 @@ function bizStreet(b,nt){const id=b.id||"x";let h=0;for(const ch of id)h=(h*31+c
     ${b.t!=="resort"&&b.t!=="condo"?[130,256].map(x=>`<rect x="${x}" y="190" width="14" height="8" rx="2" fill="#8a6a4a"/>${[0,1,2].map(j=>`<circle cx="${x+3+j*4}" cy="189" r="2.6" fill="${["#ff8fa3","#ffd166","#b8a1ff"][j]}"/>`).join("")}`).join(""):""}`}
 /* screens */
 let CITY=null,BZV=null;
-function flyTo(c,then){const ov=document.createElement("div");ov.className="sailov flyov"+(c.fx?" "+c.fx+"ov":"");ov.innerHTML=c.fx==="rocket"?rocketFx(c):c.fx==="whirl"?whirlFx(c):`<div class="sailsky"></div><div class="sailboat"><svg viewBox="0 0 160 90"><path d="M20 46h96c12 0 22 3 22 7s-10 7-22 7H36l-16-7Z" fill="#f4f6fa"/><path d="M70 47l-18-24h11l28 24Z" fill="${c.tone}"/><path d="M76 59l-14 16h10l20-16Z" fill="${c.tone}"/><path d="M26 47l-8-15h7l11 15Z" fill="${c.tone}"/>${[92,100,108,116].map(x=>`<circle cx="${x}" cy="52" r="2" fill="#1b1f2a"/>`).join("")}</svg></div><div class="flyclouds"></div><div class="saillab"><b>Flying to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`;
-  document.body.appendChild(ov);if(c.fx==="rocket"){tone(70,2.6,{type:"sawtooth",vol:.06,to:320});tone(140,2.6,{type:"square",vol:.015,to:60})}else if(c.fx==="whirl"){tone(180,2.6,{type:"sine",vol:.06,to:1100});tone(270,2.6,{type:"triangle",vol:.03,to:60})}else SFX.door();const t0=performance.now(),sec=c.fx?2.6:1.6;const tick=()=>{const k=Math.min(1,(performance.now()-t0)/(sec*1000)),b=ov.querySelector("#sailBar");if(b)b.style.width=k*100+"%";if(k<1)requestAnimationFrame(tick);else{ov.classList.add("out");setTimeout(()=>ov.remove(),350);SFX.level();then?then():openCity(c.k,true)}};requestAnimationFrame(tick)}
+function flyTo(c,then){const ov=document.createElement("div");ov.className="sailov flyov"+(c.fx?" "+c.fx+"ov":"");ov.innerHTML=c.fx==="rocket"?rocketFx(c):c.fx==="orb"?orbFx(c):c.fx==="whirl"?whirlFx(c):`<div class="sailsky"></div><div class="sailboat"><svg viewBox="0 0 160 90"><path d="M20 46h96c12 0 22 3 22 7s-10 7-22 7H36l-16-7Z" fill="#f4f6fa"/><path d="M70 47l-18-24h11l28 24Z" fill="${c.tone}"/><path d="M76 59l-14 16h10l20-16Z" fill="${c.tone}"/><path d="M26 47l-8-15h7l11 15Z" fill="${c.tone}"/>${[92,100,108,116].map(x=>`<circle cx="${x}" cy="52" r="2" fill="#1b1f2a"/>`).join("")}</svg></div><div class="flyclouds"></div><div class="saillab"><b>Flying to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`;
+  document.body.appendChild(ov);if(c.fx==="rocket"||c.fx==="orb"){tone(70,2.6,{type:"sawtooth",vol:.06,to:320});tone(140,2.6,{type:"square",vol:.015,to:60})}else if(c.fx==="whirl"){tone(180,2.6,{type:"sine",vol:.06,to:1100});tone(270,2.6,{type:"triangle",vol:.03,to:60})}else SFX.door();const t0=performance.now(),sec=c.fx?2.6:1.6;const tick=()=>{const k=Math.min(1,(performance.now()-t0)/(sec*1000)),b=ov.querySelector("#sailBar");if(b)b.style.width=k*100+"%";if(k<1)requestAnimationFrame(tick);else{ov.classList.add("out");setTimeout(()=>ov.remove(),350);SFX.level();then?then():openCity(c.k,true)}};requestAnimationFrame(tick)}
 function openAirport(){const L=repLevel();
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Airport")}<div class="art">${planeArt()}</div>
     <div class="note">Fly anywhere in the world. Every city has its own <b>market</b>, a <b>Prestige House</b> trading $50M–$100M pieces, and <b>real estate</b> you can buy and run. ${hasToy("jet")?"Your private jet flies free.":"Fares grow with distance."}</div>
@@ -4513,7 +4521,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=32,WN=[
+const WN_VER=33,WN=[
+ ["🚀","Moon & Mars matter","Rocket to a little grey Moon or a big red Mars. Plant your flag to unlock Space elevators (Moon) and Dyson spheres (Mars), and build each planet's Colony HQ for huge generator boosts.","2026-10-07T13:00"],
  ["🧙","Wizard robe","A long starry robe to match the wizard hat, in the new Outfit slot at the Mall.","2026-10-07T12:00"],
  ["🧥","Sweaters & long sleeves","New Sweater and Long sleeve styles, and hoodies now cover your arms. Pick Sleeves: Long to hide your arms under any outfit.","2026-10-07T12:00"],
  ["🦕","Islands go deeper","Islands now go on sale once the Stargate opens. Late in Deep Time, each island can host four prehistoric wonders that earn Amber, and finishing an island blesses all life ×1.25.","2026-10-07T11:00"],
@@ -5107,7 +5116,7 @@ function enterIsland(k,fid){const G=islGeo(k),i=ISLANDS.find(x=>x.k===k);
       if(hasPier(k,fid)){const px=G.cx+G.rx*.62,py=G.cy+G.ry*.36,dx=x-px,dy=y-py,u=dx*Math.cos(.62)+dy*Math.sin(.62),v=-dx*Math.sin(.62)+dy*Math.cos(.62);return u>-10&&u<300&&Math.abs(v)<22}return false}});
   banner(fid?"Visiting "+SCN.title:"Welcome to "+SCN.title,"a")}
 const hasPier=(k,fid)=>!!islBuilt(k,fid).pier;
-function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle",tone:"#7a2fd6"},enterCosmos);return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6",fx:"whirl"},enterCosmos);return}if(t.kind==="house"||t.kind==="arena"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
+function leaveScene(){if(!SCN)return;const t=SCN,city=t.kind==="city";if(room)closeRoom();if(t.kind==="planet"){flyTo({n:"The Cosmos",cn:"Shuttle home",tone:"#7a2fd6",fx:"orb",orb:{...planetOrb(t.k),back:1}},enterCosmos);return}if(t.kind==="prehist"){flyTo({n:"The Cosmos",cn:"Time machine · the future",tone:"#7a2fd6",fx:"whirl"},enterCosmos);return}if(t.kind==="house"||t.kind==="arena"){SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;SFX.door();renderHud();return}
   const done=()=>{SCN=null;S.px=t.tx;S.py=t.ty;target=null;moving=false;autoEnter=null;PET=null;PT=null;KT=null;bKey="";dirty=true;renderHud();banner(city?"Back in Flip City":"Back at the Harbor","a")};
   if(city||t.kind==="space")flyTo({n:"Flip City",cn:t.kind==="space"?"World 1 · Earth":"Home",tone:"#2a3cff"},done);else{const b=bestBoat();sail(b?"Sailing back":"Flying back",b?Math.max(.8,b.sec*.5):1,done)}}
 /* moving, tapping, drawing */
@@ -5411,7 +5420,20 @@ const COSMOS=[
  ["🧭","The Great Attractor","Something pulling whole galaxies towards it."],["🌈","Cosmic microwave background","The afterglow of the Big Bang, still everywhere."],["🔭","Hubble Deep Field","Thousands of galaxies in a speck of sky."],["🌑","Dark matter","Five times more of it than ordinary matter."],
  ["⚡","Dark energy","The mystery pushing the universe apart faster."],["🔁","The Multiverse","Maybe ours is one bubble among many."]];
 // everything that boosts generator output
-function genMult(g){const W=w2();let m=Math.pow(2,genMile(g));if(W.up["u_"+g.k])m*=3;return m}
+// the Space elevator is anchored on the Moon and the Dyson sphere is built from Mars: plant your flag there first
+const GEN_REQ={elev:"moon",dyson:"mars"},genReqOk=g=>!GEN_REQ[g.k]||!!(S.flags&&S.flags["flag_"+GEN_REQ[g.k]])||genN(g.k)>0;
+// Colony HQ upgrades, bought on each planet with Radiant
+const COLONY={moon:[{k:"cranes",n:"Low-gravity cranes",d:"Moon bases ×3",c:300,g:"moon",m:3},{k:"he3",n:"Helium-3 fusion",d:"All generators ×2",c:2e5,m:2},{k:"yard",n:"Lunar shipyard",d:"All generators ×2",c:3e8,m:2}],
+  mars:[{k:"terra",n:"Terraformers",d:"Mars colonies ×3",c:5e3,g:"mars",m:3},{k:"rush",n:"Red rush",d:"All generators ×2",c:5e6,m:2},{k:"olymp",n:"Olympus launch rail",d:"All generators ×3",c:2e10,m:3}]};
+const colOwn=k=>!!(S.w2&&S.w2.col&&S.w2.col[k]);
+function colMult(g){let m=1;for(const pl in COLONY)COLONY[pl].forEach(u=>{if(colOwn(u.k)&&(!u.g||u.g===g.k))m*=u.m});return m}
+function openColony(k,back){room="colony";const P=PLANETS[k],L=COLONY[k];const draw=()=>{
+  $("room").innerHTML=`<div class="room-in scroll w2room">${roomHead(k==="moon"?"Moon Colony HQ":"Mars Colony HQ")}
+    <div class="note">Upgrades bought here only exist on ${P.n}. ${k==="moon"?"The Moon anchors your <b>Space elevator</b>.":"Mars is where <b>Dyson spheres</b> are built."} They power your whole Radiant economy.</div>
+    <div class="perks">${L.map(u=>{const own=colOwn(u.k);return `<button class="perk nopic" data-col="${u.k}" ${own||S.cash<u.c*RAD?"disabled":""}><span class="t">${u.n}${own?' <em class="beat">BUILT</em>':""}</span><span class="d">${u.d}</span><span class="c">${own?"Built":"✦"+radF(u.c)}</span></button>`}).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+  $("room").querySelectorAll("[data-col]").forEach(b=>b.onclick=()=>{const u=L.find(x=>x.k===b.dataset.col);if(!u||colOwn(u.k)||S.cash<u.c*RAD)return;S.cash-=u.c*RAD;const W=w2();W.col=W.col||{};W.col[u.k]=1;dirty=true;SFX.rebirth();confetti(200,null,null,[P.tone,"#fff","#4fe3ff"]);shake(6);banner(u.n+" · "+u.d,"g");draw();updMini()})};draw()}
+function genMult(g){const W=w2();let m=Math.pow(2,genMile(g));if(W.up["u_"+g.k])m*=3;return m*colMult(g)}
 function w2Mult(){const W=w2();let m=1;if(W.up.all1)m*=2;if(W.up.all2)m*=2;if(W.up.all3)m*=2;if(W.up.all4)m*=3;if(W.up.all5)m*=5;m*=1+.05*(W.dm||0);m*=1+.03*W.disc.length;m*=1+.25*(W.home+1);return m}
 // Radiant per minute from every generator
 function w2Rate(){if(!S||!S.w2)return 0;const m=w2Mult();return (GEN.reduce((a,g)=>a+genN(g.k)*g.r*genMult(g),0)*islSpaceMult()+islSpaceRate())*m}
@@ -5510,12 +5532,13 @@ function openReactor(back){room="reactor";let bulk=REACT_BULK;
       <button class="core" id="rCore"><span class="corei"></span><b>✦${radF(r)}<small>/min</small></b><small>Tap the core for a burst</small></button>
       <div class="lbtabs">${[1,10,100].map(q=>`<button class="${bulk===q?"on":""}" data-bulk="${q}">Buy ×${q}</button>`).join("")}</div>
       <div class="gens">${GEN.map((g,i)=>{const n=genN(g.k),unlocked=i===0||genN(GEN[i-1].k)>0||n>0,c=genBulk(g,bulk),each=g.r*genMult(g)*w2Mult(),next=[25,50,100,200,300,400,500].find(m=>m>n);
+        if(unlocked&&!genReqOk(g)){const pl=GEN_REQ[g.k];return `<div class="gen lock"><span class="gi">${pl==="moon"?"🌙":"🔴"}</span><span class="gt"><b>${g.n}</b><small>Plant your flag on ${PLANETS[pl].n} first · Landing pad</small></span></div>`}
         return unlocked?`<button class="gen" data-gen="${g.k}" ${S.cash<c*RAD?"disabled":""}><span class="gi">${g.ic}</span><span class="gt"><b>${g.n} <em>${n}</em></b><small>${g.d} ✦${radF(each)}/min each${next?` · ×2 at ${next}`:""}</small></span><span class="gc">✦${radF(c)}</span></button>`:`<div class="gen lock"><span class="gi">❔</span><span class="gt"><b>???</b><small>Buy a ${GEN[i-1].n.toLowerCase()} to reveal</small></span></div>`}).join("")}</div>
       <p class="fine">Radiant is your money at cosmic scale: ✦1 = $1 quadrillion. Generators keep earning in World 1 and while you're offline (up to 8 hours).</p></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("rCore").onclick=e=>{const W2=w2(),now=Date.now();if(now-(W2.tapT||0)<120)return;W2.tapT=now;const v=Math.max(1,w2Rate()/60*2)*(W2.up.tap?10:1)*RAD;S.cash+=v;S.earned+=v;S.stats.earnedAll+=v;dirty=true;SFX.tick(.8);sparks(e.clientX,e.clientY,"#ff4fd8",10,1);floatAt(e.currentTarget,"+"+fmt(v),"#ff4fd8");updMini()};
     $("room").querySelectorAll("[data-bulk]").forEach(b=>b.onclick=()=>{bulk=REACT_BULK=+b.dataset.bulk;draw()});
-    $("room").querySelectorAll("[data-gen]").forEach(b=>b.onclick=()=>{const g=GEN.find(x=>x.k===b.dataset.gen),c=genBulk(g,bulk)*RAD;if(S.cash<c)return;const before=genMile(g);S.cash-=c;w2().gen[g.k]=genN(g.k)+bulk;dirty=true;SFX.buy();
+    $("room").querySelectorAll("[data-gen]").forEach(b=>b.onclick=()=>{const g=GEN.find(x=>x.k===b.dataset.gen),c=genBulk(g,bulk)*RAD;if(S.cash<c||!genReqOk(g))return;const before=genMile(g);S.cash-=c;w2().gen[g.k]=genN(g.k)+bulk;dirty=true;SFX.buy();
       if(genMile(g)>before){SFX.rebirth();confetti(120,null,null,["#7a2fd6","#ff4fd8","#fff"]);banner(g.n+" output ×2","g")}draw();updMini()})};
   draw();const iv=setInterval(()=>{if(room!=="reactor")return clearInterval(iv);const b=$("room").querySelectorAll("[data-gen]");b.forEach(x=>{const g=GEN.find(y=>y.k===x.dataset.gen);x.disabled=S.cash<genBulk(g,bulk)*RAD})},500)}
 let REACT_BULK=1;
@@ -5947,11 +5970,13 @@ function openDeeds(back){room="deeds";const draw=()=>{S.deeds=S.deeds||{};S.name
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
+const planetOrb=k=>k==="moon"?{col:"#7d838c",hi:"#e4e7ec",small:1}:{col:"#9a3a1a",hi:"#ff8a5c"};
 function planetPlaces(){const k=SCN.k,P=PLANETS[k],L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=o.bld!==0;L.push(o)};
   add({k:"pmkt",n:P.n+" Market",short:"Market",sub:"Space rocks sell for 25% more here",c:P.tone==="#cfd6e4"?"#5f6b7e":"#c2410c",x:260,y:360,w:260,h:150,go:()=>{room="cosmos";openMarket({...COSMOS_MKT,k:k+"mkt",n:P.n+" Market",sell:1.25});backTo(closeRoom)}});
   add({k:"mine",n:"Mining site",verb:"Work the",sub:"Dig for "+(k==="moon"?"moon rocks":"Martian crystals")+" · 10 energy",c:"#cf9a14",x:1060,y:380,w:200,h:120,bld:0,go:()=>planetMine(k)});
   add({k:"base",n:k==="moon"?"Lunar base":"Mars habitat",sub:"Rest inside: full energy (every 5 min)",c:"#2a5bd7",x:640,y:240,w:300,h:170,go:()=>{if(!coolOk("pbase",300000))return;S.energy=maxEnergy();SFX.level();banner("Rested in the "+(k==="moon"?"base":"habitat"),"u");updMini()}});
-  if(!(S.flags["flag_"+k]))add({k:"flag",n:"Plant your flag",verb:"",sub:"Claim this world for yourself",c:"#e2364a",x:760,y:760,w:80,h:40,bld:0,go:()=>{S.flags["flag_"+k]=1;const v=Math.round(Math.max(1e6,rwBase()*.02));earn(v);gainCrate(5);dirty=true;SFX.rebirth();confetti(220,null,null,["#e2364a","#fff","#ffcc33"]);banner("Flag planted on "+P.n+"! +"+fmt(v),"g");SCN.sig="";bKey=""}});
+  add({k:"colony",n:k==="moon"?"Moon Colony HQ":"Mars Colony HQ",sub:COLONY[k].filter(u=>colOwn(u.k)).length+"/"+COLONY[k].length+" upgrades · powers your generators",c:k==="moon"?"#4a5468":"#8a2a12",x:1060,y:700,w:280,h:160,go:()=>openColony(k,closeRoom)});
+  if(!(S.flags["flag_"+k]))add({k:"flag",n:"Plant your flag",verb:"",sub:"Claim this world for yourself",c:"#e2364a",x:760,y:760,w:80,h:40,bld:0,go:()=>{S.flags["flag_"+k]=1;const v=Math.round(Math.max(1e6,rwBase()*.02));earn(v);gainCrate(5);dirty=true;SFX.rebirth();confetti(220,null,null,["#e2364a","#fff","#ffcc33"]);banner("Flag planted on "+P.n+"! +"+fmt(v),"g");setTimeout(()=>banner((k==="moon"?"Space elevators":"Dyson spheres")+" unlocked at the Reactor","a"),1400);SCN.sig="";bKey=""}});
   add({k:"shuttle",n:"Shuttle",verb:"Board the",sub:"Back to the space station",c:"#4fe3ff",x:740,y:1010,w:120,h:60,bld:0,go:()=>leaveScene()});
   return L}
 function buildPlanet(){const k=SCN.k,P=PLANETS[k],g=SCN_C.getContext("2d");SCN_C.width=PW;SCN_C.height=PH;let sd=k.length*13+5;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
@@ -5975,7 +6000,7 @@ function planetAnim(){const k=SCN.k;{const t=wt*.05%1,x=200+t*1200,y=880-Math.si
 function enterPlanet(k){const P=PLANETS[k];enterScene({kind:"planet",k,w:PW,h:PH,spawn:[800,960],bg:P.sky,title:P.n,shirts:["#f2f2f2","#cfd6e4"],mk:planetPlaces,pt:()=>[200+Math.random()*1200,300+Math.random()*800],ok:(x,y)=>x>20&&x<PW-20&&y>240&&y<PH-20});SCN.npc.forEach(n=>n.astro=1);banner("Welcome to "+P.n,"a")}
 function openPad(back){room="pad";const draw=()=>{$("room").innerHTML=`<div class="room-in scroll">${roomHead("Landing pad")}<div class="note">Shuttles to the surface. With a capsule upgraded at the Spaceport, the ride is free.</div>
   <div class="perks">${Object.entries(PLANETS).map(([k,P])=>{const free=rk("cap")>=P.cap,c=P.tick*RAD;return `<button class="perk nopic" data-pl="${k}" ${!free&&S.cash<c?"disabled":""}><span class="t">${P.n}</span><span class="d">${k==="moon"?"Craters, a lunar base, moon rocks":"Red dust, a habitat, Martian crystals"}${S.flags["flag_"+k]?" · your flag is there":""}</span><span class="c">${free?"Free":fmt(c)}</span></button>`}).join("")}</div></div>`;
-  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("room").querySelectorAll("[data-pl]").forEach(b=>b.onclick=()=>{const k=b.dataset.pl,P=PLANETS[k],free=rk("cap")>=P.cap,c=P.tick*RAD;if(!free){if(S.cash<c)return;S.cash-=c;dirty=true}closeRoom();flyTo({n:P.n,cn:"Shuttle",tone:P.tone},()=>enterPlanet(k))})};draw()}
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("room").querySelectorAll("[data-pl]").forEach(b=>b.onclick=()=>{const k=b.dataset.pl,P=PLANETS[k],free=rk("cap")>=P.cap,c=P.tick*RAD;if(!free){if(S.cash<c)return;S.cash-=c;dirty=true}closeRoom();flyTo({n:P.n,cn:"Shuttle",tone:P.tone,fx:"orb",orb:planetOrb(k)},()=>enterPlanet(k))})};draw()}
 function planetMine(k){if(!coolOk("mine_"+k,90000))return;if(S.stash.length>=maxSlots())return banner("Stash full","r");if(!spend(10))return;const P=PLANETS[k],code=Math.random()<.75?P.item[0]:P.item[1],it=POOL.find(p=>p.cat==="space"&&p.code===code),c=CAT.space.conds[Math.random()<.5?0:1];
   S.stash.push({cat:"space",code,name:it.name,cond:c[0],base:Math.round(it.base*c[1]),noise:rnd(.9,1.1),fake:false,paid:0});S.coll=S.coll||{};S.coll["space:"+code]=1;dirty=true;SFX.grail();shake(5);confetti(80,null,null,[P.tone,"#fff"]);banner("Dug up: "+it.name,"g")}
 /* ================= World 3: Deep Time. The time machine from the Cosmos lands after the Cambrian explosion ================= */
@@ -6153,6 +6178,13 @@ function fossilDig(){if(!coolOk("dig3",60000))return;if(S.stash.length>=maxSlots
 /* ================= world travel: rocket launch to World 2, a time whirlpool to World 3, and reloads put you back where you were ================= */
 function rocketFx(c){let st="";for(let i=0;i<46;i++)st+=`<i style="left:${(Math.random()*100).toFixed(1)}%;top:${(Math.random()*100).toFixed(1)}%;animation-delay:-${(Math.random()*.6).toFixed(2)}s;opacity:${(.4+Math.random()*.6).toFixed(2)}"></i>`;
   return `<div class="rksky"></div><div class="rkstars">${st}</div><div class="rkground"></div><div class="rkship"><svg viewBox="0 0 80 190"><path d="M40 4C58 24 64 56 62 104H18C16 56 22 24 40 4Z" fill="#f4f6fa"/><path d="M40 4C49 14 55 28 58 44H22C25 28 31 14 40 4Z" fill="${c.tone}"/><circle cx="40" cy="70" r="10" fill="#1b1f2a"/><circle cx="40" cy="70" r="6" fill="#4fe3ff"/><path d="M18 84 2 120 2 134 20 118Z" fill="${c.tone}"/><path d="M62 84 78 120 78 134 60 118Z" fill="${c.tone}"/><path d="M26 104h28l-4 12H30Z" fill="#3a3f4c"/><path d="M38 90h4v24h-4Z" fill="${c.tone}"/></svg><div class="rkflame"></div></div><div class="rksmoke"></div><div class="saillab"><b>Launching to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`}
+// planet hops: the rocket flies right toward the planet, which grows; going back, the planet shrinks behind and the station grows ahead
+function orbFx(c){const o=c.orb,big=o.small?90:150,gid="og"+Math.random().toString(36).slice(2,7);let st="";for(let i=0;i<60;i++)st+=`<i style="left:${(Math.random()*100).toFixed(1)}%;top:${(Math.random()*100).toFixed(1)}%;opacity:${(.3+Math.random()*.7).toFixed(2)}"></i>`;
+  const planet=`<svg viewBox="0 0 100 100"><defs><radialGradient id="${gid}" cx=".35" cy=".35"><stop offset="0" stop-color="${o.hi}"/><stop offset="1" stop-color="${o.col}"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#${gid})"/>${o.small?`<circle cx="34" cy="40" r="7" fill="rgba(0,0,0,.18)"/><circle cx="62" cy="62" r="10" fill="rgba(0,0,0,.15)"/><circle cx="64" cy="30" r="4" fill="rgba(0,0,0,.18)"/>`:`<path d="M10 44 Q50 36 92 48" stroke="rgba(0,0,0,.18)" stroke-width="6" fill="none"/><path d="M14 66 Q50 58 88 70" stroke="rgba(0,0,0,.14)" stroke-width="5" fill="none"/><ellipse cx="50" cy="8" rx="14" ry="4" fill="rgba(255,255,255,.7)"/>`}</svg>`;
+  const station=`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#7a2fd6" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="#4fe3ff" stroke-width="3"/><rect x="44" y="10" width="12" height="80" rx="4" fill="#cfd6e4"/><circle cx="50" cy="50" r="12" fill="#4fe3ff"/></svg>`;
+  return `<div class="orbsky">${st}</div><div class="orbfar ${o.back?"orbout":"orbin"}" style="--sz:${big}px">${o.back?planet:planet}</div>${o.back?`<div class="orbfar orbin" style="--sz:120px">${station}</div>`:""}
+  <div class="orbship"><svg viewBox="0 0 120 50"><path d="M8 25 Q30 6 86 14 L112 25 L86 36 Q30 44 8 25Z" fill="#f4f6fa"/><path d="M86 14 L112 25 L86 36Z" fill="${c.tone}"/><circle cx="74" cy="25" r="6" fill="#1b1f2a"/><circle cx="74" cy="25" r="3.5" fill="#4fe3ff"/><path d="M30 14 L18 0 L40 12Z M30 36 L18 50 L40 38Z" fill="${c.tone}"/></svg><span class="orbflame"></span></div>
+  <div class="saillab"><b>${o.back?"Back to":"Rocketing to"} ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`}
 function whirlFx(c){return `<div class="wpool"></div><div class="wpool w2"></div><div class="wpool w3"></div><div class="wcore"></div><div class="saillab"><b>Through time to ${c.n}</b><i><b id="sailBar"></b></i><small>${c.cn}</small></div>`}
 function resumeWorld(){const L=S.wl;S.wl=null;if(!L||MPW||SCN)return;try{
   if(L.k==="prehist"&&S.w3&&S.w3.open)enterPrehist();else if(L.k==="planet"&&PLANETS[L.p]&&S.w2&&S.w2.open)enterPlanet(L.p);else if(S.w2&&S.w2.open)enterCosmos();else return;
