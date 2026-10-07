@@ -2,6 +2,44 @@
 
 Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
+## MORNING REPORT (overnight run, 8 Oct)
+Everything is in Studio and pushed; **File > Save to Roblox first** (new models, rebuilt treadmills, decor, uploaded ids).
+
+- **Forearms + calves:** your character now uses **7 EditableMeshes (was 8)**: the front torso muscles and the snatched upper
+  torso share one mesh. (The whole UpperTorso can't be one mesh: front 9,570 + back 17,908 triangles > the 20,000 limit.)
+  The forearm / calf **stage meshes are wired but NOT in yet**: a script can't upload meshes ("CreateAssetAsync ... not
+  available yet"). Until they're in, the old EditableMesh forearms / calves stay (they still don't fit on your character).
+  **Your steps:** 1) Studio > File > Import 3D, pick all 28 OBJs in `limb_stages/meshes` (bulk import, "Import only as
+  models" off is fine). 2) Drag them into Workspace (each keeps its file name, e.g. `RightLowerArm__Forearms__g040`).
+  3) Command bar: paste and run `tools/limb_stages_setup.luau`; it prints "28 templates made". 4) Save. That's it: the
+  code (`Shared/LimbStages`) turns on by itself (stage cross-fade, clothing, tint, scaling, NPCs / statue too). Tested with
+  stand-in templates (cross-fade measured, sizes follow the 7'0" body), not with the real meshes.
+- **Fits:** 6 tops x 4 colors (black, grey, white, an accent) in the Gear and Fits store, worn from the Wardrobe, prices
+  150-400 coins in `Config/Cosmetics`. Classic Shirts drawn by `tools/clothing_templates.ps1` (`clothing_templates/`) and
+  **already uploaded** (ids in Config): nothing to do. Known issue: at mass monster size bits of skin poke through on the
+  biggest delts / biceps (`task2_fit_croppedhoodie_monster_known_issue.png`): the muscles' skin under-layer + shirt-layer trick
+  (any classic shirt). The pump cover's sleeves end near the elbow.
+- **Treadmill:** 2 working treadmills in the starter gym cardio corner (the 3rd stays decor): mph tiers, no stamina cost,
+  light leg EXP, coins, sliding belt, run animation, saved distance, **Cardio King** at 10 km (`Machines.Cardio`). No uploads.
+- **Shoulders widen with muscle** (k 0.4 / 1.15 / 1.4) and **look balance cap only inside groups** (in studs) are in too.
+- **Map:** parts 20,982 before -> 21,081 after (+99 decor, nothing gameplay moved). Studio play solo on this PC (not the
+  phone emulator; I can't run it): spawn **38.1 -> 43.9 FPS**, worst frame **227 -> 28 ms**; town 51.3 -> 48.8 FPS (25 -> 24 ms).
+  Shadow-casting lights 18 -> 3 (one per room), 36 small props lost shadows / touch, 13 empty models removed, no exact
+  duplicates found. StreamingEnabled was already on. Decor (each in a `Decor` folder): starter gym lockers, rolling
+  whiteboard, sign-in clipboard; pro gym 2 wall TVs, smoothie counter, wood platform; plaza fountain
+  (`tools/builders/Decor.luau`). Beach gym already had everything on the list (tower, net, surfboards, towels, umbrellas).
+- **Couldn't do:** phone-size checks (the Studio viewport can't be resized from here), the phone emulator FPS, draw-call
+  counts (not readable from scripts), merging parts into unions (risky for parts scripts find by name), uploading meshes.
+- **TRY FIRST:** 1) the Gear and Fits store: buy a stringer and a cropped hoodie, look at them on your muscles. 2) the
+  treadmill in the starter gym cardio corner (watch the belt, check the mph tiers, Cardio King). 3) train only Upper Chest
+  or only Biceps and look at the lock + hint in the Muscles panel.
+- **Screenshots:** task1a_merged_torso_7meshes, task1b_shoulders_7ft_{level0,halfway,max,monster},
+  task1c_{upperchest_only_panel,upperchest_only_body,both_chest_maxed,biceps_only},
+  task2_fit_{gymtee,stringer,pumpcover,compression,croppedhoodie,sleevelesshoodie}_{front,back} (pump cover front only),
+  task2_fit_gymtee_level0, task2_fit_croppedhoodie_monster_known_issue, task3_treadmill_running,
+  task4_before_{startergym,progym,beachgym,plaza}, task4_after_{startergym,progym,plaza_fountain}.
+  (No forearm / calf stage shots: the meshes aren't uploaded yet.)
+
 ## Workflow (no Rojo)
 - **Roblox Studio is the source of truth** (edit through the MCP connection); GitHub is a backup. Scripts are synced between
   Studio and `src/` (`tools/export` exports Studio -> `src/`; during build sessions `src/` is edited and pushed into Studio).
