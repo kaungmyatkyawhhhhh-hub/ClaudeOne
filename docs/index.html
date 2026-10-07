@@ -407,6 +407,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .brorder{margin:12px 0;padding:14px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow);text-align:center;display:flex;flex-direction:column;gap:6px}.brorder small{color:var(--muted);font-weight:700}.brorder b{font-family:var(--display);font-size:1.4rem}.brorder span{display:flex;gap:10px;justify-content:center;font-size:2rem}.brorder i{font-style:normal;opacity:.35}.brorder i.done{opacity:1;transform:scale(1.15)}
 .brpat{height:10px;border-radius:5px;background:var(--sunk);overflow:hidden;margin-bottom:12px}.brpat i{display:block;height:100%;width:100%;transition:width .1s linear}
 .bring{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.bring button{border-radius:18px;padding:14px 6px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:4px;touch-action:manipulation}.bring b{font-size:2rem}.bring small{font-weight:700;font-size:.72rem;color:var(--muted)}.bring button.bad{background:#e2364a}.bring button:active{transform:scale(.94)}
+.wkbar{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--sunk);margin-right:6px;vertical-align:middle;overflow:hidden}.wkbar i{display:block;height:100%;background:#2fd28a}
 .petaway{font-size:.75rem;font-weight:700;color:var(--muted);padding:6px 0;text-align:center}.petcard .cta{width:100%;padding:8px;justify-content:center;font-size:.8rem}
 .vaultwrap{display:flex;justify-content:center;margin:12px 0}.vaultwrap canvas{width:min(80vw,300px);height:auto}.vsteps{display:flex;gap:10px;justify-content:center;margin-bottom:12px}.vsteps i{width:18px;height:18px;border-radius:50%;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--line)}.vsteps i.on{background:#2fd28a}
 .nightroom{background:linear-gradient(#120a24,#2a1446);color:#fff}.nightroom .perk{background:rgba(255,255,255,.06);color:#fff}.nightroom .note{background:rgba(255,255,255,.06);color:#e9e2ff}.nightroom .leave{color:var(--ink)}
@@ -869,7 +870,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill" id="goalChip"></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button><button class="chip pill wk" id="wkChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -3108,6 +3109,25 @@ function renderRvChip(){const el=$("rvChip"),r=S.rival;if(!r){el.hidden=true;ret
   const have=r.t==="earn"?Math.max(0,S.stats.earnedAll-r.base):r.have,s=Math.max(0,Math.ceil(r.left));
   el.innerHTML=`<span class="pk">Vince</span><span class="pt">${r.txt}</span><span class="pr">${r.t==="earn"?Math.round(have/r.goal*100)+"%":have+"/"+r.goal} · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`}
 $("crateChip").onclick=()=>{audioOn();openCrate()};
+/* ---------- weekly quests: five a week from a bigger pool, they point you at things to try ---------- */
+const WKQ=[{k:"flips",n:"Make 40 sales",ic:"💰",need:40},{k:"arcade",n:"Play 8 arcade games",ic:"🕹️",need:8},{k:"treasure",n:"Dig up 2 treasures",ic:"🗺️",need:2},{k:"heists",n:"Crack the bank vault",ic:"🔐",need:1},{k:"harvests",n:"Harvest 6 crops",ic:"🌱",need:6},
+  {k:"barista",n:"Work 2 barista shifts",ic:"☕",need:2},{k:"duelWins",n:"Win 3 duels",ic:"⚔️",need:3},{k:"petAdv",n:"Send pets on 3 adventures",ic:"🧭",need:3},{k:"lifted",n:"Do 30 lifts",ic:"🏋️",need:30},{k:"fish",n:"Catch 10 fish",ic:"🐟",need:10},{k:"crits",n:"Land 5 critical sales",ic:"💥",need:5}];
+const wkN=()=>Math.floor((Date.now()-Date.UTC(2026,0,5))/(7*864e5));
+function wkState(){const n=wkN();if(!S.wk||S.wk.n!==n){let sd=n*9301+49297;const r=()=>(sd=(sd*16807)%2147483647)/2147483647,L=WKQ.slice().sort(()=>r()-.5).slice(0,5),base={};L.forEach(q=>base[q.k]=S.stats[q.k]||0);S.wk={n,q:L.map(q=>q.k),base,done:{},all:0};dirty=true}return S.wk}
+const wkProg=k=>{const W=wkState(),q=WKQ.find(x=>x.k===k);return Math.min(q.need,Math.max(0,(S.stats[k]||0)-(W.base[k]||0)))};
+const wkClaimable=()=>{const W=wkState();return W.q.filter(k=>!W.done[k]&&wkProg(k)>=WKQ.find(x=>x.k===k).need).length+(W.q.every(k=>W.done[k])&&!W.all?1:0)};
+function renderWkChip(){const el=$("wkChip");if(!el||!S)return;const show=(S.stats.flips||0)>=5;el.hidden=!show;if(!show)return;const W=wkState(),d=W.q.filter(k=>W.done[k]).length,c=wkClaimable();
+  const h=`<span class="pk">📅 Weekly</span><span class="pt">${d}/5 quests</span>${c?`<b class="dot">${c}</b>`:""}`;if(el.innerHTML!==h)el.innerHTML=h}
+function openWeekly(){room="weekly";$("room").hidden=false;const draw=()=>{const W=wkState(),ends=Date.UTC(2026,0,5)+(W.n+1)*7*864e5,days=Math.ceil((ends-Date.now())/864e5);
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Weekly quests")}<div class="note">Five new quests every Monday. Each one pays a crate and tickets. Finish all five for a <b>legendary chest</b>. ${days} day${days===1?"":"s"} left this week.</div>
+    <div class="perks">${W.q.map(k=>{const q=WKQ.find(x=>x.k===k),p=wkProg(k),ok=p>=q.need,dn=W.done[k];return `<button class="perk nopic" data-wq="${k}" ${!ok||dn?"disabled":""}><span class="t">${q.ic} ${q.n}${dn?' <em class="beat">DONE</em>':""}</span><span class="d"><span class="wkbar"><i style="width:${p/q.need*100}%"></i></span>${p}/${q.need}</span><span class="c">${dn?"Claimed":ok?"Claim":"🎟️ 50 + 📦"}</span></button>`}).join("")}
+    <button class="perk nopic" data-wq="all" ${!W.q.every(k=>W.done[k])||W.all?"disabled":""}><span class="t">👑 All five done</span><span class="d">3 crates, 2 treasure maps and a big cash bonus</span><span class="c">${W.all?"Claimed":"Legendary chest"}</span></button></div></div>`;
+  $("leaveBtn").onclick=closeRoom;
+  $("room").querySelectorAll("[data-wq]").forEach(b=>b.onclick=()=>{const W=wkState(),k=b.dataset.wq;
+    if(k==="all"){if(W.all||!W.q.every(x=>W.done[x]))return;W.all=1;gainCrate(3);S.maps=(S.maps||0)+2;earn(Math.round(Math.max(20000,rwBase()*.15)));SFX.rebirth();confetti(300);flash("#ffcc33",.5);shake(10,.6);banner("Legendary chest!","g")}
+    else{const q=WKQ.find(x=>x.k===k);if(W.done[k]||wkProg(k)<q.need)return;W.done[k]=1;gainCrate(1);S.tix=(S.tix||0)+50;SFX.level();confetti(120);banner(q.n+" · done","g")}
+    dirty=true;draw();renderWkChip();updMini()})};draw()}
+$("wkChip").onclick=()=>{audioOn();if(room)closeRoom();openWeekly()};
 /* ---------- treasure maps: read one and an X appears somewhere in town; walk there and dig ---------- */
 function renderMapChip(){const el=$("mapChip");if(!el||!S)return;const n=S.maps||0,on=!!S.tmap;el.hidden=!n&&!on;if(el.hidden)return;
   const h=on?`<span class="pk">🗺️ Map</span><span class="pt">Follow the X</span><span class="pr">${Math.round(Math.hypot(S.px-S.tmap.x,S.py-S.tmap.y)/10)} m</span>`:`<span class="pk">🗺️ Map</span><span class="pt">Tap to read</span><span class="pr">×${n}</span>`;if(el.innerHTML!==h)el.innerHTML=h}
@@ -3440,7 +3460,7 @@ function loop(now){
       achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
       renderBottom();tutTick(dt);
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
-      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderChChip();renderCrateChip();renderMapChip();renderBzChip();renderLvlBtn();renderPillTog()}
+      hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderChChip();renderCrateChip();renderMapChip();renderWkChip();renderBzChip();renderLvlBtn();renderPillTog()}
     }
     NPCS.forEach(n=>{if(BUY&&BUY.n===n){n.ph+=dt*.2;return}if(!n.ok){n.ok=1;n.t=npcNext(n,roadPoint)}const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,roadPoint);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room){if(SCN)drawScene();else drawWorld()}
@@ -4815,7 +4835,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=42,WN=[
+const WN_VER=43,WN=[
+ ["📅","Weekly quests","Five new quests every Monday from the 📅 chip, each paying a crate and arcade tickets. Finish all five for a legendary chest.","2026-10-07T04:10"],
  ["☕","Barista shift","Work a daily 60-second shift at the Café: tap each drink's ingredients in order before the customer leaves. Streaks tip more.","2026-10-07T04:05"],
  ["🌱","Home garden","Plant seeds in four plots at Home and harvest them later: a 2-minute sprout up to a 2-hour golden apple tree. Water once to speed it up.","2026-10-07T04:00"],
  ["⛳","Mini golf","A fourth Arcade game: three putting holes, beat par for big tickets.","2026-10-07T03:55"],
