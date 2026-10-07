@@ -1,6 +1,6 @@
 -- BodyMapClient: the small body-map widget that slides in while you're on a machine (and out when you leave).
 --  * Front and back silhouettes made of muscle shapes. Each muscle glows by its level toward the next Growth Spurt goal
---    (dim -> bright), with a gold outline when maxed. The muscles the machine trains pulse on every rep.
+--    (dim -> bright; no cap, they keep brightening up to the goal). The muscles the machine trains pulse on every rep.
 --  * Under the figures: your level, the Growth Spurt (next / ready) and a small segmented bar. Tapping the widget opens
 --    the "Your muscles" panel. The "-" button folds it into a small "Stats" chip (and the chip unfolds it again).
 --  * It lives in the right column (under the quest panel's place, so it never sits on a phone's thumbstick at the bottom
@@ -160,7 +160,6 @@ local function figure(order, title, muscles)
 		for _, spec in ipairs(list) do
 			local frame = draw(spec, MAP.Dim, 2)
 			frame.Name = muscleId
-			New("UIStroke", { Name = "Maxed", Color = Colors.Gold, Thickness = 1, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = frame })
 			rest[frame] = MAP.Dim
 			table.insert(shapes[muscleId], frame)
 		end
@@ -277,7 +276,6 @@ local function refreshMap()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
 	local goalLevel = GrowthSpurts.GetGoal(data.growthSpurts)
-	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
 	for muscleId, frames in pairs(shapes) do
 		local level = data.muscles[muscleId].level
 		local share = math.clamp(level / goalLevel, 0, 1)
@@ -285,7 +283,6 @@ local function refreshMap()
 		for _, frame in ipairs(frames) do
 			rest[frame] = transparency
 			Theme.Tween(frame, { BackgroundTransparency = shownTransparency(frame) }, 0.4)
-			frame.Maxed.Transparency = level >= cap and 0 or 1
 		end
 	end
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)

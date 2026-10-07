@@ -1035,11 +1035,6 @@ local function canUnlock(machine, tier)
 	return mainLevel(machine) >= tier.unlockLevel and ClientData.Get().coins >= tier.cost
 end
 
-local function isMaxed(machine)
-	local data = ClientData.Get()
-	return data.muscles[machine.muscles[1].id].level >= GrowthSpurts.GetLevelCap(data.growthSpurts)
-end
-
 -- Recolor a line icon (lines are filled frames, outlines are strokes).
 local function tintIcon(icon, color)
 	for _, part in ipairs(icon:GetDescendants()) do
@@ -1120,7 +1115,6 @@ end
 
 local function noteSituation()
 	local machine = current.machine
-	if isMaxed(machine) then return "maxed" end
 	if staminaRatio() < FEEL.LowStamina then return "lowStamina" end
 	local unlocked = progressFor(machine.id)
 	local nextTier = machine.tiers[unlocked + 1]
@@ -1716,7 +1710,7 @@ local function open(model)
 	refreshStamina()
 	refreshReps()
 	refreshTier()
-	setNote(isMaxed(machine) and "maxed" or "firstSet")
+	setNote("firstSet")
 
 	gui.Enabled = true
 	SideMenu.SetTraining(true)
@@ -1809,24 +1803,17 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 	end
 	if current then current.nextBig = result.nextBig == true end
 	if result.pr and current then showPersonalRecord(result.pr) end
-	local leveled, maxed = false, false
-	-- the main muscle gets the small "Level 12" flash (with a sparkle burst); secondary muscles only flash the HUD
-	-- muscle list. Maxed muscles get a corner note.
+	local leveled = false
+	-- the main muscle gets the small level-up flash (with a sparkle burst, now in EXP); secondary muscles only flash the HUD
+	-- muscle list. (There is no level cap, so no muscle ever "maxes".)
 	local mainId = current and current.machine.muscles[1].id
 	for muscleId, level in pairs(result.levels or {}) do
 		local name = Muscles.ById[muscleId].name
-		if result.maxed and result.maxed[muscleId] then
-			Notify.Show(name .. " maxed")
-			maxed = true
-		else
-			if muscleId == mainId then flashLevel(name, level) end
-			leveled = true
-		end
+		if muscleId == mainId then flashLevel(name, level) end
+		leveled = true
 	end
 	-- one sound per rep, however many muscles levelled; early levels come fast, so the ding is spaced out
-	if maxed then
-		Audio.Play2D("Maxed")
-	elseif leveled and os.clock() - lastLevelSound > 1.5 then
+	if leveled and os.clock() - lastLevelSound > 1.5 then
 		lastLevelSound = os.clock()
 		Audio.Play2D("LevelUp")
 	end

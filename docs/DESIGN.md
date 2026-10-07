@@ -141,7 +141,7 @@ Each machine has weight tiers (empty bar → max) unlocked by muscle level; plat
 gains per rep = machine weight tier × genetics grade × frame/body bonus × Growth Spurt bonus × shake/server boost × diminishing factor
 - Diminishing: higher muscle level = slower growth (weak muscles catch up fastest).
 - Balanced bonus: small passive bonus if all 6 groups are close together.
-- Muscle level cap per Growth Spurt stage ("MAXED" glow when reached).
+- No cap on muscle levels or stats: a muscle keeps growing the more you train it (diminishing returns slow it down). The Growth Spurt only asks each group to reach its goal.
 - Cap total stacked multipliers (around 5x max).
 
 ## 4. Stamina

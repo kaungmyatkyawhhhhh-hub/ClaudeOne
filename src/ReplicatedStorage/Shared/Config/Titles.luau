@@ -7,7 +7,7 @@
 --   balanced:  all groups within `spread` (fraction) of each other, all >= minLevel
 --   allGroups: every group >= minLevel
 --   overall:   overall genetics grade == grade
---   maxedGrade: a group with this genetics grade has reached the level cap
+--   maxedGrade: a group with this genetics grade has reached the mastery mark (130% of the Growth Spurt goal; there is no level cap)
 --   legend:    finished legend `id`'s challenge (Config.Legends adds these automatically)
 --   season:    `min` reps during seasonal event `id` (Config.Seasons adds these automatically)
 --   never:     not obtainable yet (shows as ??? in the book)
@@ -55,7 +55,7 @@ Titles.List = {
 	{ id = "HardGainer", name = "Hard Gainer", rarity = "Uncommon", category = "Genetics",
 		description = "Have a D overall genetics grade.", condition = { type = "overall", grade = "D" } },
 	{ id = "DefiedGenetics", name = "Defied Genetics", rarity = "Legendary", category = "Genetics",
-		description = "Max out a muscle group with a D grade.", condition = { type = "maxedGrade", grade = "D" }, badgeId = nil },
+		description = "Take a muscle group with a D grade to 130% of the Growth Spurt goal.", condition = { type = "maxedGrade", grade = "D" }, badgeId = nil },
 	{ id = "Spotter", name = "Spotter", rarity = "Rare", category = "Social",
 		description = "Spot other lifters for 10 reps.", condition = { type = "stat", stat = "spotReps", min = 10 } },
 	{ id = "GymBuddy", name = "Gym Buddy", rarity = "Uncommon", category = "Social",
@@ -131,7 +131,7 @@ function Titles.Check(title, ctx)
 		return data.legends ~= nil and data.legends.met[c.id] == true
 	elseif c.type == "maxedGrade" then
 		for groupId, grade in pairs(data.genetics.grades) do
-			if grade == c.grade and (ctx.goalGroups[groupId] or 0) >= ctx.cap then return true end
+			if grade == c.grade and (ctx.goalGroups[groupId] or 0) >= ctx.mastery then return true end
 		end
 		return false
 	end

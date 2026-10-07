@@ -52,12 +52,16 @@ function GrowthSpurts.GetBonus(spurts)
 	return spurts == 0 and 1 or GrowthSpurts.Get(spurts).bonus
 end
 
--- Muscles can go a bit past the goal (CapOverGoal), so a strong muscle helps its group's average and nobody has to
--- grind a muscle that only a few machines train as a side muscle.
-GrowthSpurts.CapOverGoal = 1.3
+-- NO CAP: a muscle keeps growing as long as you train it (the diminishing factor in Gains.PerRep slows it down), so a strong
+-- muscle helps its group's average. GetLevelCap stays so every caller keeps working; it is simply infinite.
+function GrowthSpurts.GetLevelCap(_spurts)
+	return math.huge
+end
 
-function GrowthSpurts.GetLevelCap(spurts)
-	return math.ceil(GrowthSpurts.Get(spurts + 1).requiredLevel * GrowthSpurts.CapOverGoal)
+-- A mark for the "Defied Genetics" title only (not a limit): 130% of the next goal.
+GrowthSpurts.MasteryOverGoal = 1.3
+function GrowthSpurts.GetMasteryLevel(spurts)
+	return math.ceil(GrowthSpurts.Get(spurts + 1).requiredLevel * GrowthSpurts.MasteryOverGoal)
 end
 
 -- The level every group needs for the next Growth Spurt.

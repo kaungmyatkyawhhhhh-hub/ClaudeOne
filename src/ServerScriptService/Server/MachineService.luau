@@ -362,7 +362,6 @@ local function lift(player)
 	local progress = PlayerData.GetMachine(player, machine.id)
 	local tierIndex = Machines.LiftTier(machine, progress, data.muscles[machine.muscles[1].id].level)
 	local tier = machine.tiers[tierIndex]
-	local cap = PlayerData.GetLevelCap(player)
 	-- how the rep was done: PUMPED x2, BIG REP x3 (rolled one rep ahead, so the client can show it at lockout)
 	local pumped = serverNow() < session.pump.pumpedUntil
 	local big = session.nextBig
@@ -370,12 +369,11 @@ local function lift(player)
 	local quality = (pumped and Pump.Multiplier or 1) * (big and Gains.BigRep.Multiplier or 1)
 	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player), quality)
 
-	local levels, maxed = {}, {}
+	local levels = {}
 	for muscleId, amount in pairs(xp) do
 		if PlayerData.AddMuscleXp(player, muscleId, amount) > 0 then
 			local level = data.muscles[muscleId].level
 			levels[muscleId] = level
-			if level >= cap then maxed[muscleId] = true end
 		end
 	end
 	local coins = math.max(1, math.floor(tier.coins * BoostService.Coins(player) + 0.5))
@@ -394,7 +392,7 @@ local function lift(player)
 	end
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
-	Remotes.RepResult:FireClient(player, { levels = levels, maxed = maxed, coins = coins, big = big,
+	Remotes.RepResult:FireClient(player, { levels = levels, coins = coins, big = big,
 		nextBig = session.nextBig, pumped = pumped, pr = pr })
 end
 

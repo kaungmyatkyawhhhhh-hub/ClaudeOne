@@ -163,11 +163,8 @@ applySize(wantSmall())
 local function refreshNumbers()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
-	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
-	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	for _, entry in ipairs(labels) do
 		local group = Muscles.GroupById[entry.spec.id]
-		local maxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
 		local exp = commas(Muscles.GroupExp(data.muscles, group.id))
 		entry.number.Text = exp -- (a maxed group shows its EXP like any other: no "Max")
 		entry.number.TextColor3 = Colors.StatNumber
@@ -238,12 +235,10 @@ end
 local function refreshSubs()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
-	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
 	for _, entry in ipairs(labels) do
 		for _, sub in ipairs(entry.subs) do
 			local entry = data.muscles[sub.muscle.id]
 			if not entry then continue end
-			local maxed = entry.level >= cap
 			local exp = commas(Muscles.MuscleExp(entry))
 			sub.text.Text = sub.muscle.name .. "  " .. exp
 			sub.text.TextColor3 = Colors.Text

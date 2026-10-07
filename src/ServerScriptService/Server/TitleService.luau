@@ -114,6 +114,7 @@ local function context(player, data)
 		groups = groups,
 		goalGroups = goalGroups,
 		cap = GrowthSpurts.GetLevelCap(data.growthSpurts),
+		mastery = GrowthSpurts.GetMasteryLevel(data.growthSpurts),
 		heightInches = GrowthSpurts.GetHeight(data.growthSpurts),
 		session = session(player),
 	}

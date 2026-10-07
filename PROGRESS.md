@@ -61,7 +61,7 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 
 ## Decisions (still in force)
 - Gold (#F2C14E) only for big moments (BIG REP, NEW PR, PUMPED, maxed). PUMPED and BIG REP multiply outside the 5x cap.
-- Muscles can go 30% past the Growth Spurt goal (`GrowthSpurts.CapOverGoal`). XP per level = `20 + 2 x level`, BaseXp 34.
+- **No cap on stats** (owner's call): muscles keep growing past the Growth Spurt goal (`GrowthSpurts.GetLevelCap` is infinite); the diminishing factor is the only brake. "Defied Genetics" uses a 130% mark (`GetMasteryLevel`). Side effect: one strong muscle can lift its group's average, so a group can reach the goal with one muscle far ahead. XP per level = `20 + 2 x level`, BaseXp 34.
 - NEW PR banner stays (small banner, not a window) although the design file lists PR popups as cut.
 - Beach gym machines are Growth Spurt 1; racks/benches/pull-up bars there are normal starter machines.
 - Phones/tablets are locked to landscape. "Phone" = touch without a keyboard (Studio: Workspace attribute `TestPhoneLayout`).

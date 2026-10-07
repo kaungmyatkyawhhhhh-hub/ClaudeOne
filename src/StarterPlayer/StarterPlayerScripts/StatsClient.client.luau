@@ -212,7 +212,6 @@ local function refreshScreen()
 	-- the six cards (about 40 tweens) only need updating while the window is open; opening it refreshes everything
 	if not musclesOpen then return end
 
-	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
 	local levels, weakest, ties = {}, nil, 0
 	for _, group in ipairs(Muscles.Groups) do
 		levels[group.id] = math.floor(Muscles.GetGroupLevel(data.muscles, group.id))
@@ -227,15 +226,13 @@ local function refreshScreen()
 		local gradeId = data.genetics and data.genetics.grades and data.genetics.grades[group.id] or "B"
 		Theme.SetRankTag(card.disc, gradeId)
 		card.mult.Text = string.format("Genetics x%.2f", Genetics.GetMultiplier(data.genetics, group.muscles[1].id))
-		local groupMaxed = GrowthSpurts.GoalLevel(data.muscles, group, trainable) >= cap
 		local groupExp = Muscles.FormatExp(Muscles.GroupExp(data.muscles, group.id))
 		card.level.Text = groupExp -- (no "Max" text: a maxed group shows its EXP like any other)
 		card.level.TextColor3 = Colors.Text
-		card.needs.Visible = group.id == weakest and ties == 1 and not groupMaxed
+		card.needs.Visible = group.id == weakest and ties == 1
 		for _, muscle in ipairs(group.muscles) do
 			local row = card.muscles[muscle.id]
 			local entry = data.muscles[muscle.id]
-			local level = entry.level
 			local rowExp = Muscles.FormatExp(Muscles.MuscleExp(entry))
 			row.level.Text = rowExp
 			row.level.TextColor3 = Colors.Text
