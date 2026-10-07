@@ -217,6 +217,23 @@ local function onPlayerAdded(player)
 		workspace:GetAttributeChangedSignal("TestMuscleIds"):Connect(applyTestMuscles)
 	end
 
+	-- Studio testing: a "TestMuscleExp" number attribute on Workspace (e.g. 2000000) puts every muscle at that much EXP
+	-- on your OWN save (to see the big look), with saving off for the session so the real save stays untouched.
+	local testExp = if RunService:IsStudio() then workspace:GetAttribute("TestMuscleExp") else nil
+	if type(testExp) == "number" and testExp > 0 then
+		warn("[PlayerData] TestMuscleExp: every muscle at " .. testExp .. " EXP for this session. Progress will NOT save.")
+		canSave = false
+		local xp = testExp / Muscles.ExpPerXp
+		local level = math.floor(Muscles.LevelFromXp(xp))
+		for _, muscle in ipairs(Muscles.List) do
+			local entry = data.muscles and data.muscles[muscle.id]
+			if entry then
+				entry.level = level
+				entry.xp = math.max(0, math.floor(xp - Muscles.CumXp(level)))
+			end
+		end
+	end
+
 	-- Saves from before the tutorial existed: players who already lifted skip it.
 	local onboarding = data.onboarding
 	if onboarding and onboarding.tutorialStep == nil and data.stats and (data.stats.totalReps or 0) > 0 then

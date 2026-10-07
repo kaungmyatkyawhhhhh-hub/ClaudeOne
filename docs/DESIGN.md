@@ -139,7 +139,7 @@ the EXP shown for a group is its muscles ADDED UP (Core = Abs + Obliques), and a
 Starter gym: Flat Bench (Mid Chest; Front Delts, Triceps), Incline Bench (Upper Chest; Front Delts, Triceps),
 Squat Rack (Quads; Glutes, Lower Back), Deadlift (Lower Back; Hamstrings, Glutes, Traps, Forearms),
 Overhead Press (Front Delts; Side Delts, Triceps), Pull-Up Bar (Lats; Biceps, Rear Delts),
-Barbell Row (Rhomboids; Lats, Rear Delts, Biceps), Crunch Bench (Abs).
+Barbell Row (Rhomboids; Lats, Rear Delts, Biceps), Crunch Bench (Abs; Obliques).
 Pro gym (unlocks at Growth Spurt 2): Dips (Mid Chest; Triceps, Front Delts), Lateral Raise (Side Delts),
 Reverse Fly (Rear Delts; Rhomboids), Shrugs (Traps; Forearms), Leg Curl (Hamstrings), Hip Thrust (Glutes; Hamstrings),
 Calf Raise (Calves), Bicep Curl (Biceps; Forearms), Tricep Pushdown (Triceps), Hanging Leg Raise (Abs; Forearms),

@@ -30,8 +30,8 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   SmoothPlastic (Plastic's grain followed the clothing UVs as a speckle) and sit 0.02 studs off the skin (`SKIN_LIFT`).
   Veins (`vein`) are wired at 0.4 while PUMPED at max; the full mass monster stage is still not built.
 - **Obliques/serratus (7 Oct):** the serratus slips are part of the Obliques mesh (`muscle_v8/source/parts.py`), driven
-  by the Obliques stat, which only Cable Woodchop trains (pro gym, Growth Spurt 2). Before that Obliques stay at 0, so the
-  mesh is hidden inside the body. Mesh, data (new muscle_v8 UpperTorso growdata imported) and the snatched torso are fine.
+  by the Obliques stat. The Crunch Bench now trains Obliques too (secondary, share 0.6), so they grow from the start
+  (they count in the first Growth Spurt's Core goal; pacing still passes); Cable Woodchop (pro gym) trains them as main.
 - **Poses:** `PoseData` + `PoseController` (from the poses package), `PoseClient` (name, facing, hit, release),
   `ShowOffService.SetPose` (server sets attribute `Pose`; judges score on the stage); statue + mirrors use `Shared/PoseApply`.
 - **Skate:** `SkateClient` (momentum, carve, brake, ollie, side-on stance) + `SkateService` (board model).
@@ -103,4 +103,4 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
 `TestCoins`, `TestSpurts`, `TestMuscleShare` (0..6 x the goal, live; 2 = full look, 5 = mass monster), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D": six grades in group order for the first roll / the
-next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots). Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.
+next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots). Without FreshPlayer: `TestMuscleExp` (e.g. 2000000) = every muscle at that EXP on your own save, saving off for the session. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.

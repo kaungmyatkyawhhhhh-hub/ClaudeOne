@@ -133,7 +133,7 @@ Machines.List = {
 	},
 	{
 		id = "CrunchBench", name = "Crunch Bench", gym = "Starter", pose = "Crunch", load = "Load", layout = "Center",
-		muscles = { { id = "Abs", share = 1 } },
+		muscles = { { id = "Abs", share = 1 }, { id = "Obliques", share = 0.6 } }, -- (the obliques work on every crunch: the starter gym trains them too)
 		tiers = Machines.TierSets.Bodyweight, staminaCost = 4,
 	},
 }
