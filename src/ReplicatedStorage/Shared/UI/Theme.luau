@@ -1,5 +1,5 @@
--- GYM ARC design system: "clean minimal". Dark see-through panels, thin light borders, Montserrat in
--- white and gray. Color is only used for bumper plates, grades and rarity. Every UI reads its look from here.
+-- GYM ARC design system: "clean minimal". Dark see-through panels, thin light borders, Oswald (headings, numbers,
+-- buttons; UPPERCASE titles and buttons) + Nunito (body) in white and gray. Color is only used for bumper plates, grades and rarity. Every UI reads its look from here.
 local TweenService = game:GetService("TweenService")
 
 local Theme = {}
@@ -52,12 +52,15 @@ Theme.Rarity = {
 	Secret = Theme.Bumper.Black,
 }
 
-local MONTSERRAT = "rbxasset://fonts/families/Montserrat.json"
+-- The UI fonts live in UIFonts (Oswald for headings / numbers / buttons, Nunito for body text); never Montserrat or Gotham.
+-- The weight names stay so every screen keeps working: Regular = body text, the rest = Oswald.
+local UIFonts = require(script.Parent:WaitForChild("UIFonts"))
+Theme.UIFonts = UIFonts
 Theme.Fonts = {
-	Light = Font.new(MONTSERRAT, Enum.FontWeight.Light),       -- big calm numbers
-	Regular = Font.new(MONTSERRAT, Enum.FontWeight.Regular),   -- normal text
-	SemiBold = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold), -- important numbers and button labels only
-	Bold = Font.new(MONTSERRAT, Enum.FontWeight.Bold),         -- rank tag letters
+	Light = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Regular), -- big calm numbers
+	Regular = UIFonts.Body,                                                             -- normal text
+	SemiBold = UIFonts.Heading,                                                         -- titles, button labels, important numbers
+	Bold = UIFonts.Heading,                                                             -- rank tag letters
 }
 -- older names, kept so every screen reads the same three weights
 Theme.Fonts.Heading = Theme.Fonts.SemiBold
@@ -65,7 +68,7 @@ Theme.Fonts.Label = Theme.Fonts.Regular
 Theme.Fonts.Small = Theme.Fonts.Regular
 
 -- The left menu tiles (owner's UI v7 brief) use a bold rounded display face for their labels, with a dark outline;
--- everything else stays Montserrat.
+-- everything else is Oswald / Nunito.
 Theme.TileFont = Font.fromEnum(Enum.Font.FredokaOne)
 Theme.TileStroke = Color3.fromHex("#1A1320") -- the dark outline around tile labels
 Theme.PillHeight = 44 -- the top-bar pills (44 = the smallest tap target) (coins, quests, daily reward, settings)
@@ -238,16 +241,38 @@ end
 
 -- Crisp text: a whole-number Theme.TextSize (never below 14), no TextScaled. Normal case.
 -- props.TextSize = "Huge" | "Large" | "Popup" | "Body" | "Small"; props.Font = "Light" | "Regular" | "SemiBold".
+-- Titles and button labels are UPPERCASE (Oswald text that is a title size, or sits in a button). The text stays upper
+-- when a script changes it later. props.Upper = false keeps a label's own case (e.g. a word that should read "Blessed").
+local TITLE_SIZES = { Large = true, Huge = true, Hero = true, HeroCompact = true, Slam = true }
+local HEADING_FONTS = { SemiBold = true, Bold = true, Heading = true }
+function Theme.Uppercase(label)
+	if label:GetAttribute("Upper") then return end
+	label:SetAttribute("Upper", true)
+	local function apply()
+		local upper = string.upper(label.Text)
+		if upper ~= label.Text then label.Text = upper end
+	end
+	apply()
+	label:GetPropertyChangedSignal("Text"):Connect(apply)
+end
+
 function Theme.Text(props)
 	local sizeKey = props.TextSize or "Body"
 	local fontKey = props.Font or "Regular"
+	local upper = props.Upper
 	props.Font = nil
+	props.Upper = nil
 	props.BackgroundTransparency = 1
 	props.TextScaled = false
 	props.TextSize = math.max(Theme.TextSize.Small, math.floor(Theme.TextSize[sizeKey]))
 	props.FontFace = Theme.Fonts[fontKey]
 	props.TextColor3 = props.TextColor3 or Theme.Colors.Text
-	return Theme.New("TextLabel", props)
+	local label = Theme.New("TextLabel", props)
+	if upper ~= false and HEADING_FONTS[fontKey] and (TITLE_SIZES[sizeKey] or (label.Parent and label.Parent:IsA("GuiButton"))) then
+		Theme.Uppercase(label)
+	end
+	if upper == false then label:SetAttribute("Upper", true) end -- (so a button can't make it upper either)
+	return label
 end
 
 -- Fade a whole UI tree by tweening each element's own transparency (no CanvasGroup, which
@@ -404,6 +429,12 @@ function Theme.Button(style, props, children)
 	props.BackgroundColor3 = primary and Theme.Colors.Text or Theme.Colors.Panel
 	props.BackgroundTransparency = primary and Theme.Alpha.Primary or Theme.Alpha.Panel
 	local button = Theme.New("TextButton", props, children)
+	-- button labels are UPPERCASE Oswald (labels passed in as children, or added later)
+	local function upperLabel(item)
+		if item:IsA("TextLabel") and item.FontFace == Theme.Fonts.SemiBold then Theme.Uppercase(item) end
+	end
+	for _, item in ipairs(button:GetDescendants()) do upperLabel(item) end
+	button.DescendantAdded:Connect(function(item) task.defer(upperLabel, item) end)
 	Theme.Round("Button").Parent = button
 	Theme.Stroke(Theme.Colors.Border, 1, primary and 0.6 or Theme.Alpha.ButtonBorder).Parent = button
 	Theme.BindPress(button)
@@ -418,7 +449,7 @@ function Theme.PlateDisc(bumper, props)
 end
 
 -- RankTag: the one reusable rank badge (genetics grades S/A/B/C/D): a small fully-rounded pill (20x18), thin border and the
--- letter in the rank color, dark see-through fill, Montserrat Bold. S gets a very faint glow. Use it everywhere a grade shows.
+-- letter in the rank color, dark see-through fill, Oswald Bold. S gets a very faint glow. Use it everywhere a grade shows.
 Theme.RankColors = {
 	S = Color3.fromHex("#FF7B6E"), -- soft red/coral
 	A = Color3.fromHex("#6FA8FF"), -- soft blue

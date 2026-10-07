@@ -103,13 +103,14 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
--- A row of choices (the chosen one lit): Gain numbers On / Minimal / Off.
+-- A row of choices (the chosen one lit): Gain numbers On / Minimal / Off. `inline` puts the title and the choices on one
+-- line (the short On / Off rows), so the whole panel still fits a phone screen.
 local choiceRows = {}
-local function choiceRow(order, key, title, modes, labels)
-	local row = New("Frame", { Name = key, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 20 + Spacing.S + Theme.MinTouch), BackgroundTransparency = 1, Parent = panel },
-		{ Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
-	Theme.Text({ LayoutOrder = 1, Text = title, Font = "Regular", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
-	local choices = New("Frame", { Name = "Choices", LayoutOrder = 2, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = row },
+local function choiceRow(order, key, title, modes, labels, inline)
+	local row = New("Frame", { Name = key, LayoutOrder = order, Size = UDim2.new(1, 0, 0, if inline then Theme.MinTouch else 20 + Spacing.S + Theme.MinTouch), BackgroundTransparency = 1, Parent = panel },
+		{ Theme.List(if inline then Horizontal else Vertical, "S", Enum.HorizontalAlignment.Left, if inline then Enum.VerticalAlignment.Center else Enum.VerticalAlignment.Top) })
+	Theme.Text({ LayoutOrder = 1, Text = title, Font = "Regular", TextSize = "Body", Size = if inline then UDim2.new(0.4, -Spacing.S, 0, 20) else UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
+	local choices = New("Frame", { Name = "Choices", LayoutOrder = 2, Size = if inline then UDim2.new(0.6, 0, 0, Theme.MinTouch) else UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = row },
 		{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
 	local buttons = {}
 	local function show()
@@ -142,7 +143,7 @@ end
 -- Gain numbers: On (rep + set popups) / Minimal (set popups only) / Off
 choiceRow(4, "gainNumbers", "Gain numbers", { "On", "Minimal", "Off" })
 -- Rep flash: the trained muscles glow warm for a moment on each rep
-choiceRow(5, "repFlash", "Rep flash", { "On", "Off" })
+choiceRow(5, "repFlash", "Rep flash", { "On", "Off" }, nil, true)
 
 local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),

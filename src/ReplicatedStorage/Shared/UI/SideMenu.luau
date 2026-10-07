@@ -112,7 +112,7 @@ local function makeButton(id, labelText, iconFactory, side, order)
 	else
 		iconFactory(Colors.Text).Parent = iconSlot
 	end
-	-- bold label with a dark outline (the one place that isn't Montserrat, see Theme.TileFont)
+	-- bold label with a dark outline (the one place that isn't Oswald / Nunito, see Theme.TileFont)
 	local label = New("TextLabel", {
 		Name = "Label",
 		Text = labelText,

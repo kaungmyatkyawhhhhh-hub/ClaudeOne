@@ -12,9 +12,11 @@
 - Cloud sessions can't reach Studio: they can only edit `src/`, and the owner must copy those changes into Studio.
   Say so clearly.
 - **UI style is "clean minimal"** (described in `docs/DESIGN.md`): dark see-through panels, thin light borders,
-  Montserrat, white/gray text, color only for plates, grades and rarity. `ReplicatedStorage.Shared.UI.Theme` is the
+  Oswald + Nunito, white/gray text, color only for plates, grades and rarity. `ReplicatedStorage.Shared.UI.Theme` is the
   source of truth for the look: use Theme helpers, never hardcoded styles. StarterGui is empty; all UI is built in
   code from Theme. All data writes go through `PlayerData`.
+- UI fonts: Oswald (headings/numbers) + Nunito (body). Never Montserrat/Gotham. (`Shared.UI.UIFonts`; Theme.Fonts maps
+  the weights onto them; titles and button labels are UPPERCASE.)
 - Monetization stays OFF (no gamepasses/products/badges created). No emojis in UI, no grunt sounds, no real
   people/brands/copyrighted art. The owner picks sound IDs; never pick new ones.
 - Lighting: `Lighting.Technology` no longer exists; never set it. Use `LightingStyle = Realistic` and

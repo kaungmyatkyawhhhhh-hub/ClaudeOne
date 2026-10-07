@@ -567,7 +567,7 @@ local POPUP = {
 	Float = 1,        -- studs it floats up while fading
 	SetScale = 1.25,  -- set popups are slightly bigger
 	Height = 40,      -- px
-	CharWidth = 15,   -- px per character at the Popup text size (Montserrat SemiBold), for the clear-spot check
+	CharWidth = 15,   -- px per character at the Popup text size (Oswald), for the clear-spot check
 	BarGap = 0.3,     -- studs kept clear around the bar and its plates (all along its path)
 	ScreenMargin = 8, -- px from the screen edges
 }

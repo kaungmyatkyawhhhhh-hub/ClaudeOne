@@ -33,9 +33,10 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - Depth (via Theme.AddDepth / Theme.Panel / Theme.Button): a soft dark drop shadow under panels and buttons
   (stacked faint strokes, lighter toward the top). Frames and strokes only (no images) so it stays crisp.
 - Corners: panels and buttons 10px, bar segments 3px, plate discs and icons fully round.
-- Text: white #FFFFFF for main text, gray #B8B8BE for secondary text. Normal sentence case, no ALL CAPS.
-- Font: Montserrat only, in three weights: Light (big calm numbers), Regular (normal text), SemiBold
-  (important numbers and button labels). No other fonts, no handwritten/marker fonts, no tape labels.
+- Text: white #FFFFFF for main text, gray #B8B8BE for secondary text. Sentence case for body text; titles and button labels are UPPERCASE.
+- Fonts (`Shared.UI.UIFonts`, owner's fonts brief): Oswald Bold for headings, titles, numbers, grades, stats and
+  buttons; Nunito (Regular / SemiBold) for body text. Never Montserrat or Gotham. No other fonts (except the side menu
+  tile labels), no handwritten/marker fonts, no tape labels.
 - Color only means something: bumper plate colors for weight tiers, grades and rarity. Everything else is
   white/gray on dark.
 - Progress bars are chunky segmented blocks (like stacked plates), not thin smooth bars.
@@ -58,7 +59,7 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 ## Side menu tiles (left middle) and top bar (UI v7, replaces the old 64x68 buttons)
 - A 2-column grid of about 90px square tiles on the left edge, vertically centered, 8px gaps (smaller only on short screens
   so all fit). Each tile: a big white icon, a bold label at the bottom with a dark outline (Fredoka One: the one place that
-  is not Montserrat), 10px corners, a colored border per tile, a slight 3D look (lighter top, darker bottom edge) and a
+  is not Oswald / Nunito), 10px corners, a colored border per tile, a slight 3D look (lighter top, darker bottom edge) and a
   bounce on hover and press. Tiles: Stats, Muscles, Titles, Genetics, Poses, Crew, Wardrobe (Store when monetization is on).
 - Active tile: brighter face and a white border. Small white dot top-right when something is new; clears when opened.
 - An arrow tab on the tiles' right edge (level with Genetics) slides them all out to the left and back, like a drawer (it
@@ -71,7 +72,7 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 
 ## Overhead title
 - BillboardGui sized in studs (scales with distance), just above the head and the player's name, MaxDistance ~60.
-- No box: Montserrat SemiBold in the rarity color with a thin dark text stroke and a tiny plate disc in front.
+- No box: Oswald in the rarity color with a thin dark text stroke and a tiny plate disc in front.
   Secret titles use white text (their plate is black).
 - Legendary titles get a subtle slow shine every few seconds.
 - The local player's own title is smaller and ~40% transparent so it never blocks their view.

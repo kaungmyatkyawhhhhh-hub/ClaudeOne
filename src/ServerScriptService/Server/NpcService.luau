@@ -115,7 +115,7 @@ function NpcService.Build(spec, cframe)
 	local rootHalf = root and root.Size.Y / 2 or 1
 	model:PivotTo(cframe + Vector3.new(0, hip + rootHalf, 0))
 
-	-- name label: small and clean (fixed 14px Montserrat, so it's never bigger than the HUD), only up close
+	-- name label: small and clean (fixed 14px Nunito, so it's never bigger than the HUD), only up close
 	local head = model:FindFirstChild("Head")
 	if head and not spec.noLabel then
 		local label = Instance.new("BillboardGui")

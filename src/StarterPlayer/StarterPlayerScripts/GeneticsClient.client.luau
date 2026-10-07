@@ -238,7 +238,7 @@ oddsList(6, "Body type", Genetics.BodyTypes)
 local heroLabels = New("Frame", { Name = "Overall", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(200, 44), BackgroundTransparency = 1, Visible = false, Parent = labelLayer },
 	{ Theme.List(Vertical, nil, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
 local overallLabel = Theme.Text({ LayoutOrder = 1, Text = "Overall", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), Parent = heroLabels })
-local wordLabel = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 26), Parent = heroLabels })
+local wordLabel = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Large", Upper = false, Size = UDim2.new(1, 0, 0, 26), Parent = heroLabels })
 Theme.TextShadow(overallLabel)
 Theme.TextShadow(wordLabel)
 

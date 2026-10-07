@@ -29,7 +29,7 @@ local function session(player)
 	return s
 end
 
--- Equipped title above the head (and above the player's name): Montserrat SemiBold in the rarity color with a
+-- Equipped title above the head (and above the player's name): Oswald in the rarity color with a
 -- thin dark stroke and a tiny plate disc in front. Sized in studs so it reads the same at any distance.
 -- The client adds the legendary shine and dims the local player's own title.
 local TAG = {
