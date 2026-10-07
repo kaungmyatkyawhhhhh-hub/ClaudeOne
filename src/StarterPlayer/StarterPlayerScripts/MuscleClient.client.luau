@@ -22,6 +22,9 @@ local player = Players.LocalPlayer
 
 local RANGE, DROP = 100, 140
 local SCAN_EVERY = 0.5
+-- the client holds only a few muscle meshes: other characters wait until my own muscles are built (or this long), so NPCs
+-- never grab the meshes first and make mine wait for them to be taken back
+local OTHERS_WAIT = 12
 
 local tracked = {} -- [model] = { rig, source, mine }
 
@@ -70,7 +73,7 @@ local function track(model: Model, source: Instance, mine: boolean, kind: string
 		keepBody = keepBody,
 	})
 	rig:Snap(targetsFor(source, mine))
-	tracked[model] = { rig = rig, source = source, mine = mine, kind = kind, levels = nil }
+	tracked[model] = { rig = rig, source = source, mine = mine, kind = kind, levels = nil, since = os.clock() }
 	-- a character that dies has its joints broken (the muscle welds with them): take the muscles off at once so no part falls
 	-- through the floor and the hidden real torso is shown again; they come back on the new character
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -168,6 +171,8 @@ local function scan()
 	local camera = Workspace.CurrentCamera
 	if not camera then return end
 	local seen = {}
+	local myInfo = player.Character and tracked[player.Character]
+	local othersAllowed = myInfo ~= nil and (myInfo.rig:IsReady() or os.clock() - myInfo.since > OTHERS_WAIT)
 	for _, item in ipairs(candidates()) do
 		seen[item.model] = true
 		local info = tracked[item.model]
@@ -178,7 +183,7 @@ local function scan()
 			else
 				refreshInfo(item.model, info, distance)
 			end
-		elseif distance < RANGE or item.mine then
+		elseif item.mine or (distance < RANGE and othersAllowed) then
 			track(item.model, item.source, item.mine, item.kind)
 			refreshInfo(item.model, tracked[item.model], distance)
 		end
@@ -194,7 +199,9 @@ task.spawn(function()
 		-- (one bad model must not stop the muscles for the rest of the session)
 		local ok, err = pcall(scan)
 		if not ok then warn("[MuscleClient] scan failed:", err) end
-		task.wait(SCAN_EVERY)
+		-- (quick scans until my own character is tracked, so the muscles start the moment the body is ready)
+		local mine = player.Character and tracked[player.Character]
+		task.wait(if mine then SCAN_EVERY else 0.1)
 	end
 end)
 

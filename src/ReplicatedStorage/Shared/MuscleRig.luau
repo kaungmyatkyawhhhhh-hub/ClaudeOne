@@ -34,7 +34,9 @@ local MuscleRig = {}
 MuscleRig.__index = MuscleRig
 
 local VERTEX_BUDGET = 6000 -- vertex updates per frame, for all rigs together
-local BUILD_YIELD = 3000   -- API calls between yields while building one mesh
+local BUILD_MS = 0.004     -- seconds of mesh building per frame per build (time, not a call count: fast PCs build quicker)
+local MAX_BUILDS = 3       -- units built at once (CreateMeshPartAsync waits 0.3-1s on the engine; side by side the waits overlap)
+local BUILD_CHECK = 250    -- API calls between clock checks
 local MIN_SHOW = 0.02      -- below this growth a muscle is hidden inside the body
 local TWEEN = 0.4          -- seconds a growth change takes
 local PUMPED = 1.04
@@ -70,7 +72,7 @@ local meshOf = setmetatable({}, { __mode = "k" }) -- [muscle MeshPart] = its Edi
 local alive = 0
 local limit = math.huge
 local limitResetAt = 0
-local building = false
+local building = 0 -- units being built right now
 local lastAllocate = 0
 
 local function smooth(t: number): number
@@ -409,9 +411,13 @@ local function buildGroup(self, state, group): boolean
 	local mesh = newMesh()
 	if not mesh then return false end
 	local calls = 0
+	local sliceStart = os.clock()
 	local function tick()
 		calls += 1
-		if calls % BUILD_YIELD == 0 then task.wait() end
+		if calls % BUILD_CHECK == 0 and os.clock() - sliceStart > BUILD_MS then
+			task.wait()
+			sliceStart = os.clock()
+		end
 	end
 	local ok, err = pcall(function()
 		local white = Color3.new(1, 1, 1)
@@ -670,11 +676,11 @@ local function allocate()
 end
 
 local function startBuilds(jobs)
-	if building then return end
+	if building >= MAX_BUILDS then return end
 	for _, job in ipairs(jobs) do
 		local state, rig = job.state, job.rig
 		if job.keep and not state.built and not state.building and not rig.destroyed and (state.failedAt or 0) < os.clock() then
-			building = true
+			building += 1
 			state.building = true
 			state.cancelled = false
 			task.spawn(function()
@@ -700,9 +706,10 @@ local function startBuilds(jobs)
 					state.failedAt = os.clock() + 3 -- try again a little later (the budget may have changed)
 				end
 				state.building = false
-				building = false
+				building -= 1
+				lastAllocate = 0 -- start the next unit on the next frame (no waiting for the allocator's tick)
 			end)
-			return
+			if building >= MAX_BUILDS then return end
 		end
 	end
 end
@@ -832,6 +839,14 @@ end
 -- The live EditableMesh behind a muscle MeshPart (nil if it is not one). A second MeshPart made with
 -- AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) shows the same, always up-to-date shape without using another
 -- of the client's few EditableMeshes (the glass reflection does this).
+-- true when every unit this rig wants (the snatched torso and every muscle with growth) has its meshes
+function MuscleRig.IsReady(self): boolean
+	for _, state in ipairs(self.units) do
+		if not state.built and wantedUnit(self, state) then return false end
+	end
+	return true
+end
+
 function MuscleRig.MeshOf(part: Instance): any
 	return meshOf[part]
 end

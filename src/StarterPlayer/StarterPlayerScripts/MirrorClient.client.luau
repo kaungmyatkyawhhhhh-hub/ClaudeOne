@@ -79,17 +79,68 @@ local function prepare(rig)
 	return copy, size
 end
 
--- the muscle meshes (muscle v7) of the two viewport bodies; built by the client from the numbers the server put on the rigs
-local muscleRigs = {}
-local function addMuscles(copy)
-	local source = copy
-	local rig = MuscleRig.new(copy, { static = true, priority = 200, noSnatch = true, style = MuscleRig.StyleFrom(source, copy) })
-	rig:Snap(MuscleRig.Decode(source:GetAttribute("MuscleG")))
-	table.insert(muscleRigs, rig)
+-- The muscles of the "Now" body: parts that show the SAME live meshes as your character's muscles (like the reflection on
+-- the glass). A new muscle rig here would need meshes of its own, and the client can only hold 8: it took them from your
+-- character, whose muscles vanished. "Day one" has no growth, so it needs no muscles.
+local openCount = 0
+local function addLiveMuscles(copy)
+	local character = player.Character
+	local sourceFolder = character and character:FindFirstChild("MuscleMeshes")
+	if not sourceFolder then return end
+	local folder = Instance.new("Folder")
+	folder.Name = "MuscleMeshes"
+	folder.Parent = copy
+	-- the body looks like your character's (MuscleRig paints it plain skin / top / gym shorts)
+	for _, liveBody in ipairs(character:GetChildren()) do
+		local copyBody = copy:FindFirstChild(liveBody.Name)
+		if liveBody:IsA("BasePart") and copyBody and copyBody:IsA("BasePart") and liveBody.Name ~= "HumanoidRootPart" then
+			copyBody.Color, copyBody.Material = liveBody.Color, liveBody.Material
+			if not liveBody:FindFirstChildOfClass("SurfaceAppearance") then
+				local sa = copyBody:FindFirstChildOfClass("SurfaceAppearance")
+				if sa then sa:Destroy() end
+			end
+		end
+	end
+	-- plain parts (the gym shorts on the thighs): placed on the same body part, same offset
+	for _, source in ipairs(sourceFolder:GetChildren()) do
+		local weld = source:FindFirstChildOfClass("Weld")
+		local liveBody = weld and weld.Part0
+		local copyBody = liveBody and copy:FindFirstChild(liveBody.Name)
+		if source:IsA("Part") and copyBody and copyBody:IsA("BasePart") and source.Transparency < 1 then
+			local part = source:Clone()
+			part:ClearAllChildren()
+			part.Anchored = true
+			part.CFrame = copyBody.CFrame * liveBody.CFrame:ToObjectSpace(source.CFrame)
+			part.Parent = folder
+		end
+	end
+	local session = openCount
+	task.spawn(function()
+		for _, source in ipairs(sourceFolder:GetChildren()) do
+			local mesh = source:IsA("MeshPart") and MuscleRig.MeshOf(source)
+			local bodyName = string.gsub(source.Name, "Muscles$", ""):gsub("Cloth$", ""):gsub("Snatched$", "")
+			local liveBody, copyBody = character:FindFirstChild(bodyName), copy:FindFirstChild(bodyName)
+			if mesh and liveBody and copyBody and copyBody:IsA("BasePart") then
+				local ok, part = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) end)
+				if not ok or not part then continue end
+				if session ~= openCount or not folder.Parent then
+					part:Destroy()
+					return
+				end
+				part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
+				part.Color, part.Material = source.Color, source.Material
+				part.TextureID, part.Transparency = source.TextureID, source.Transparency
+				part.Size = source.Size * (copyBody.Size / liveBody.Size) -- (the same body, so normally 1)
+				part.CFrame = copyBody.CFrame -- muscle parts sit on their body part's center
+				part.Parent = folder
+				-- the snatched waist replaces the real torso
+				if string.find(source.Name, "Snatched$") then copyBody.Transparency = 1 end
+			end
+		end
+	end)
 end
 local function clearMuscles()
-	for _, rig in ipairs(muscleRigs) do rig:Destroy() end
-	table.clear(muscleRigs)
+	openCount += 1
 end
 
 local function show(viewport, copy, tallest)
@@ -126,8 +177,7 @@ local function open(rigs)
 	show(beforeView, before, tallest)
 	show(afterView, after, tallest)
 	clearMuscles()
-	addMuscles(before)
-	addMuscles(after)
+	addLiveMuscles(after)
 	title.Text = player.DisplayName .. " · GYM ARC"
 	beforeName.Text = "Day one"
 	beforeInfo.Text = GrowthSpurts.FormatHeight(dayOne.height or GrowthSpurts.StartHeight) .. "  ·  " .. Muscles.FormatExp(Muscles.Shown(dayOne.level or 0)) .. " exp"

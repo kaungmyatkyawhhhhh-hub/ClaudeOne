@@ -21,7 +21,8 @@ local proGym = Workspace:WaitForChild("ProGym", 60)
 local door = proGym and proGym:WaitForChild("GlassWall", 30) and proGym.GlassWall:WaitForChild("GlassDoor", 30)
 if not door then return end
 
-local blocker = door:WaitForChild("Blocker")
+-- (the door streams in as one piece: GlassDoor.ModelStreamingMode = Atomic; until then wait quietly)
+local blocker = door:WaitForChild("Blocker", math.huge)
 local leaves = {}
 for _, leaf in ipairs(door:GetChildren()) do
 	if leaf:IsA("Model") and leaf:GetAttribute("Side") then
