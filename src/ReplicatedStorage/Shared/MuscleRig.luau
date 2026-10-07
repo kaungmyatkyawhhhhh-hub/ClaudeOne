@@ -362,7 +362,7 @@ function MuscleRig.SetGrowth(self, targets: { [string]: number })
 	local now = os.clock()
 	for _, muscle in ipairs(Muscles.List) do
 		local id = muscle.id
-		local g = math.clamp(targets[id] or 0, 0, 1.12)
+		local g = math.clamp(targets[id] or 0, 0, Muscles.MaxLookG)
 		if math.abs(g - self.target[id]) > 0.0005 then
 			self.from[id] = self.current[id]
 			self.target[id] = g
@@ -404,12 +404,16 @@ local function currentShown(self, id: string): number
 		local t = (os.clock() - pulseStart) / (self.pulseTimes[id] or PULSE_TIME)
 		if t < 1 then pulse = 1 + (self.pulseAmounts[id] or PUMP_STEP) * math.sin(t * math.pi) end
 	end
-	return math.min(g * (self.pumped and PUMPED or 1) * pulse, 1.12)
+	return math.min(g * (self.pumped and PUMPED or 1) * pulse, Muscles.MaxLookG * 1.06)
 end
 
--- the vein amount for a muscle: only while PUMPED at max
+-- the vein amount for a muscle: they come in with the mass monster stage (g past 1 toward the muscle's monster size), and
+-- briefly while PUMPED at the full aesthetic size
 local function veinFor(self, id: string): number
-	return if self.pumped and (self.current[id] or 0) >= 1 then VEIN_PUMPED else 0
+	local g = self.current[id] or 0
+	local monster = math.clamp((g - 1) / math.max(Muscles.MonsterG(id) - 1, 0.01), 0, 1)
+	local pumped = if self.pumped and g >= 1 then VEIN_PUMPED else 0
+	return math.max(monster, pumped)
 end
 
 -- Smooth, no seams (muscle_v8): every vertex grows with g_v = the average of its own muscle's growth and the growth of
@@ -507,9 +511,14 @@ local function buildGroup(self, state, group): boolean
 		local uvIds = table.create(data.verts)
 		-- the package's own normals (set, never auto-computed: auto normals make every muscle look like a separate piece)
 		local normalIds = if data.nbase then table.create(data.verts) else nil
+		local buildG = table.create(data.verts)
+		for _, range in ipairs(data.ranges) do
+			local monster = Muscles.MonsterG(range.id)
+			for i = range.first, range.first + range.count - 1 do buildG[i] = monster end
+		end
 		for i = 1, data.verts do
-			-- built in the MAX shape (the biggest bounds); the real growth is applied below
-			vertexIds[i] = mesh:AddVertex(data.base[i] + data.delta[i])
+			-- built in the biggest shape (the mass monster size, so its bounds hold every growth); the real growth is applied below
+			vertexIds[i] = mesh:AddVertex(data.base[i] + data.delta[i] * buildG[i])
 			uvIds[i] = mesh:AddUV(data.uv[i]) -- the clothing template coordinates (Shirt / Pants)
 			if normalIds then normalIds[i] = mesh:AddNormal((data.nbase[i] + data.ndelta[i]).Unit) end
 			tick()

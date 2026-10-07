@@ -125,7 +125,8 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - The machine panel stays compact and low so it never covers the lift.
 
 ## 1. Muscles (18, in 6 groups)
-Each sub-muscle has its own level. Group level = average of its sub-muscles.
+Each sub-muscle has its own level. Group level = average of its sub-muscles (for the Growth Spurt goal and logic);
+the EXP shown for a group is its muscles ADDED UP (Core = Abs + Obliques), and a group's goal is shown as the same sum.
 - Chest: Upper Chest, Mid Chest
 - Shoulders: Front Delts, Side Delts, Rear Delts
 - Back: Lats, Traps, Rhomboids, Lower Back
@@ -247,6 +248,9 @@ shareable before/after snapshot.
 ## Bodies and muscles (v4)
 - Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all. Head, face, hair, accessories, skin color and animations stay theirs.
 - Muscles are real EditableMesh muscles (muscle v8): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), everyone gets the snatched-waist torso, each muscle's outline stays on the skin and only the bulge rises with its level (continuous, tweened, small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
+- The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
+  look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass
+  monster size (muscle_v8 manifest `mass_monster.g`, veins come in with it); past 5x the look stays, the stats keep going.
 - Default look: shirtless with game shorts; the Wardrobe has Top (Shirtless/Tank/Sports) and shorts colors.
 
 ## 14. Visuals and feel

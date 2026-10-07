@@ -86,6 +86,9 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 - NPCs are not solid on each client (`NpcLookClient`): the camera zoomed into your arm when one stood behind your bench.
 - Gold (#F2C14E) only for big moments (BIG REP, NEW PR, PUMPED, maxed). PUMPED and BIG REP multiply outside the 5x cap.
 - **No cap on stats** (owner's call): muscles keep growing past the Growth Spurt goal (`GrowthSpurts.GetLevelCap` is infinite); the diminishing factor is the only brake. "Defied Genetics" uses a 130% mark (`GetMasteryLevel`). Side effect: one strong muscle can lift its group's average, so a group can reach the goal with one muscle far ahead. XP per level = `20 + 2 x level`, BaseXp 34.
+- **Group stats are sums, the look has room to grow** (owner's call, 7 Oct): a group's EXP = its muscles added up (goal shown
+  as the same sum; quests/titles say "every muscle"); the look is full at 2x the goal's EXP and mass monster at 5x
+  (`Muscles.Look`). The rock skin of the mass monster is still not built (textures would need uploading).
 - NEW PR banner stays (small banner, not a window) although the design file lists PR popups as cut.
 - Beach gym machines are Growth Spurt 1; racks/benches/pull-up bars there are normal starter machines.
 - Phones/tablets are locked to landscape. "Phone" = touch without a keyboard (Studio: Workspace attribute `TestPhoneLayout`).
@@ -98,6 +101,6 @@ Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   642,353 / 1,231,961 EXP ...). Retune with `lune run tests/pacing tune` if gains, tiers or stamina change.
 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
-`TestCoins`, `TestSpurts`, `TestMuscleShare` (0..3 x the goal, live), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
+`TestCoins`, `TestSpurts`, `TestMuscleShare` (0..6 x the goal, live; 2 = full look, 5 = mass monster), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D": six grades in group order for the first roll / the
 next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots). Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.

@@ -199,7 +199,7 @@ local function onPlayerAdded(player)
 		-- optional "TestSpurts" (number) attribute: start after that many Growth Spurts (to test the pro gym)
 		local testSpurts = workspace:GetAttribute("TestSpurts")
 		if type(testSpurts) == "number" then data.growthSpurts = math.clamp(math.floor(testSpurts), 0, 20) end
-		-- optional "TestMuscleShare" (0 to 3 times the goal; there is no level cap) and "TestMuscleIds" ("Biceps,Triceps", default all): start with those muscles at that
+		-- optional "TestMuscleShare" (0 to 6 times the goal's EXP; there is no level cap; 2 = full look, 5 = mass monster) and "TestMuscleIds" ("Biceps,Triceps", default all): start with those muscles at that
 		-- share of the Growth Spurt goal (to test the muscle blobs). Changing TestMuscleShare while playing updates the muscles.
 		local function applyTestMuscles()
 			local share = workspace:GetAttribute("TestMuscleShare")
@@ -208,7 +208,7 @@ local function onPlayerAdded(player)
 			local only = workspace:GetAttribute("TestMuscleIds")
 			for id, entry in pairs(data.muscles) do
 				local wanted = type(only) ~= "string" or only == "" or string.find("," .. only .. ",", "," .. id .. ",", 1, true) ~= nil
-				entry.level = wanted and math.ceil(math.clamp(share, 0, 3) * goal - 1e-6) or 0
+				entry.level = wanted and math.ceil(Muscles.LevelFromXp(math.clamp(share, 0, 6) * Muscles.CumXp(goal)) - 1e-6) or 0
 			end
 			if player.Parent then replicate(player, { "muscles" }, data.muscles) end
 		end

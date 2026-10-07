@@ -42,7 +42,8 @@ local function measure(data, quest)
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	if quest.type == "groupLevel" then
 		local group = Muscles.GroupById[quest.group]
-		return Muscles.Shown(GrowthSpurts.GoalLevel(data.muscles, group, trainable)), Muscles.Shown(quest.level) -- in EXP, like the screen
+		-- in EXP like the stats: the group's muscles added up
+		return Muscles.GroupShown(group.id, GrowthSpurts.GoalLevel(data.muscles, group, trainable)), Muscles.GroupShown(group.id, quest.level)
 	elseif quest.type == "allGroups" then
 		local lowest = math.huge
 		for _, group in ipairs(Muscles.Groups) do

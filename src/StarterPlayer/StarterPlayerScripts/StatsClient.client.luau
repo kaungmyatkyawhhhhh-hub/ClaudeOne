@@ -200,7 +200,7 @@ local function refreshScreen()
 	for _, group in ipairs(Muscles.Groups) do
 		Theme.Tween(goalFills[group.id], { Size = UDim2.fromScale(math.clamp(progress.groups[group.id] / progress.required, 0, 1), 1) })
 	end
-	goalLabel.Text = string.format("%d/%d groups at %s exp  ·  gains x%.2f after", progress.met, progress.total, Muscles.FormatExp(Muscles.Shown(progress.required)), GrowthSpurts.GetBonus(nextSpurt))
+	goalLabel.Text = string.format("%d/%d groups at their goal  ·  gains x%.2f after", progress.met, progress.total, GrowthSpurts.GetBonus(nextSpurt))
 	goalLabel.Visible = not progress.ready
 	spurtButton.Visible = progress.ready
 	if progress.ready and wasReady == false then
@@ -226,8 +226,9 @@ local function refreshScreen()
 		local gradeId = data.genetics and data.genetics.grades and data.genetics.grades[group.id] or "B"
 		Theme.SetRankTag(card.disc, gradeId)
 		card.mult.Text = string.format("Genetics x%.2f", Genetics.GetMultiplier(data.genetics, group.muscles[1].id))
+		-- the group's muscles added up, and its Growth Spurt goal as the same sum (no "Max": it keeps counting past it)
 		local groupExp = Muscles.FormatExp(Muscles.GroupExp(data.muscles, group.id))
-		card.level.Text = groupExp -- (no "Max" text: a maxed group shows its EXP like any other)
+		card.level.Text = groupExp .. " / " .. Muscles.FormatExp(Muscles.GroupShown(group.id, progress.required))
 		card.level.TextColor3 = Colors.Text
 		card.needs.Visible = group.id == weakest and ties == 1
 		for _, muscle in ipairs(group.muscles) do

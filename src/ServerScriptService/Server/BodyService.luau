@@ -5,7 +5,7 @@
 --    the player's own. If anything resets the body (wardrobe, emotes, outfit changes) it is put back.
 --  * Height comes from Growth Spurts (Humanoid BodyHeightScale).
 --  * Muscles (muscle v7) are drawn on every client (Shared.MuscleRig / MuscleClient): this service only PUBLISHES the numbers as
---    player attributes: MuscleG (18 growth values 0..1 in Config.Muscles order, i.e. level / Growth Spurt goal), Top and
+--    player attributes: MuscleG (18 look values in Config.Muscles order, Muscles.LookG of level / Growth Spurt goal), Top and
 --    Shorts (the wardrobe choices; ids from Config.Body). A Growth Spurt resets the muscles, so they shrink back on their own.
 --  * When the muscle progress passes 25/50/75/100%, the owner gets a "Grew" event (the "you grew" pulse + sound).
 local AssetService = game:GetService("AssetService")
@@ -61,11 +61,12 @@ local function progressOf(levels, goal)
 	return count > 0 and total / count or 0
 end
 
--- The growth numbers as text for an attribute: g = level / goal for each muscle in Config.Muscles order, 3 decimals.
+-- The growth numbers as text for an attribute: the look g (Muscles.LookG: full aesthetic at 2x the goal, mass monster
+-- at 5x) for each muscle in Config.Muscles order, 3 decimals.
 function BodyService.EncodeLevels(levels, goal)
 	local parts = {}
 	for index, muscle in ipairs(Muscles.List) do
-		parts[index] = string.format("%.3f", math.clamp((levels[muscle.id] or 0) / math.max(goal, 1), 0, 1.12))
+		parts[index] = string.format("%.3f", Muscles.LookG(muscle.id, levels[muscle.id] or 0, goal))
 	end
 	return table.concat(parts, ",")
 end

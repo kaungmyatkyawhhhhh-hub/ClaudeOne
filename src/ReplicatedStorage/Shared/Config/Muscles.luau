@@ -122,7 +122,7 @@ function Muscles.ShownXp(xp)
 	return math.floor(xp * Muscles.ExpPerXp + 0.5)
 end
 
--- EXP of one muscle, of a group (the average of its muscles, like the goal), and of the whole body (strength)
+-- EXP of one muscle, of a group (its muscles ADDED UP: Core = Abs + Obliques), and of the whole body (strength)
 function Muscles.MuscleExp(entry)
 	return math.floor(Muscles.EntryXp(entry) * Muscles.ExpPerXp + 0.5)
 end
@@ -130,7 +130,49 @@ function Muscles.GroupExp(muscleData, groupId)
 	local group = Muscles.GroupById[groupId]
 	local total = 0
 	for _, muscle in ipairs(group.muscles) do total += Muscles.EntryXp(muscleData[muscle.id]) end
-	return math.floor(total / #group.muscles * Muscles.ExpPerXp + 0.5)
+	return math.floor(total * Muscles.ExpPerXp + 0.5)
+end
+-- A group's EXP target for a level every one of its muscles should reach (the Growth Spurt goal, quests): the level's
+-- EXP times the number of muscles, the same sum the stats show.
+function Muscles.GroupShown(groupId, level)
+	return Muscles.Shown(level) * #Muscles.GroupById[groupId].muscles
+end
+
+------------------------------------------------------------------------
+-- The LOOK: how big a muscle is drawn (g: 0 = flat on the skin, 1 = the full aesthetic shape, above 1 = mass monster).
+-- r = the muscle's EXP / the EXP of the current Growth Spurt goal (2x = twice the goal's EXP, as the stats show).
+-- Reaching the goal does NOT max the look:
+--   0 .. AestheticAt x the goal: g rises to 1 (eased out, so the first reps show)
+--   AestheticAt .. MonsterAt:    g grows on to the muscle's mass monster size (muscle_v8 manifest mass_monster.g)
+--   past MonsterAt:              the look stays at the monster size; the stats keep counting (there is no stat cap)
+------------------------------------------------------------------------
+Muscles.Look = {
+	AestheticAt = 2,
+	MonsterAt = 5,
+	Ease = 1.6,
+	DefaultMonsterG = 1.35,
+	MonsterG = {
+		UpperChest = 1.4, MidChest = 1.4, FrontDelts = 1.45, SideDelts = 1.5, RearDelts = 1.45, Lats = 1.45, Traps = 1.7,
+		Rhomboids = 1.45, LowerBack = 1.4, Biceps = 1.4, Triceps = 1.45, Forearms = 1.4, Quads = 1.45, Hamstrings = 1.4,
+		Glutes = 1.35, Calves = 1.35, Abs = 1.25, Obliques = 1.6,
+	},
+}
+Muscles.MaxLookG = 1.7 -- the biggest MonsterG
+
+function Muscles.MonsterG(muscleId: string): number
+	return Muscles.Look.MonsterG[muscleId] or Muscles.Look.DefaultMonsterG
+end
+
+-- g for a muscle at `level` while the Growth Spurt goal is `goalLevel`
+function Muscles.LookG(muscleId: string, level: number, goalLevel: number): number
+	local look = Muscles.Look
+	local r = Muscles.CumXp(math.max(level, 0)) / math.max(Muscles.CumXp(math.max(goalLevel, 1)), 1)
+	if r <= look.AestheticAt then
+		return 1 - (1 - r / look.AestheticAt) ^ look.Ease
+	end
+	local monster = Muscles.MonsterG(muscleId)
+	local t = math.clamp((r - look.AestheticAt) / (look.MonsterAt - look.AestheticAt), 0, 1)
+	return 1 + (monster - 1) * t
 end
 function Muscles.TotalExp(muscleData)
 	local total = 0

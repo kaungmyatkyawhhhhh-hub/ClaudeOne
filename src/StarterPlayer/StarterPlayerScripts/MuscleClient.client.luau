@@ -1,7 +1,7 @@
 -- MuscleClient: draws the muscles (muscle v8, Shared.MuscleRig) on every character this client can see. The muscles wear the
 -- character's own Shirt / Pants (re-read every scan, so a wardrobe change or respawn shows at once) and everyone gets the
 -- snatched-waist torso.
---  * Players: the growth numbers come from the player attribute MuscleG (BodyService publishes level / goal for the 18
+--  * Players: the growth numbers come from the player attribute MuscleG (BodyService publishes Muscles.LookG for the 18
 --    muscles); for YOUR character they come straight from ClientData, so a level-up shows at once. PUMPED comes from the
 --    PumpedUntil attribute. Top / Shorts / SkinColor attributes give the look.
 --  * NPCs (Workspace.NPCs) and the statue carry the same attribute (a preset share), so everyone shows muscles.
@@ -36,7 +36,7 @@ local function myTargets()
 	local targets = {}
 	for _, muscle in ipairs(Muscles.List) do
 		local entry = data.muscles[muscle.id]
-		targets[muscle.id] = math.clamp((entry and entry.level or 0) / goal, 0, 1.12)
+		targets[muscle.id] = Muscles.LookG(muscle.id, entry and entry.level or 0, goal)
 	end
 	return targets, data
 end
