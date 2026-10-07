@@ -388,6 +388,7 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .brorder{margin:12px 0;padding:14px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow);text-align:center;display:flex;flex-direction:column;gap:6px}.brorder small{color:var(--muted);font-weight:700}.brorder b{font-family:var(--display);font-size:1.4rem}.brorder span{display:flex;gap:10px;justify-content:center;font-size:2rem}.brorder i{font-style:normal;opacity:.35}.brorder i.done{opacity:1;transform:scale(1.15)}
 .brpat{height:10px;border-radius:5px;background:var(--sunk);overflow:hidden;margin-bottom:12px}.brpat i{display:block;height:100%;width:100%;transition:width .1s linear}
 .bring{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.bring button{border-radius:18px;padding:14px 6px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:4px;touch-action:manipulation}.bring b{font-size:2rem}.bring small{font-weight:700;font-size:.72rem;color:var(--muted)}.bring button.bad{background:#e2364a}.bring button:active{transform:scale(.94)}
+#ttChip{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translateX(-50%);z-index:62;padding:8px 16px;border-radius:14px;background:#1b1f2a;color:#ffcc33;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.35);pointer-events:none}#ttChip b{font:900 1.3rem var(--mono);display:block}#ttChip small{color:#fff;font-weight:700;font-size:.7rem}#ttChip[hidden]{display:none}
 .stkpage{margin:12px 0;padding:12px;border-radius:18px;background:color-mix(in oklab,var(--pc) 12%,var(--surface));box-shadow:inset 0 0 0 2px color-mix(in oklab,var(--pc) 40%,transparent)}.stkhead{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px}.stkhead span{font-family:var(--mono);color:var(--pc)}
 .stkgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.stkgrid i{font-style:normal;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;font-size:1.5rem;background:var(--sunk);color:var(--muted);font-weight:900}.stkgrid i.on{background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15);transform:rotate(-4deg)}.stkgrid i.on:nth-child(even){transform:rotate(3deg)}
 .wkbar{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--sunk);margin-right:6px;vertical-align:middle;overflow:hidden}.wkbar i{display:block;height:100%;background:#2fd28a}
@@ -1149,6 +1150,7 @@ const ACH=[
  ["harvest25","Green thumb","Harvest 25 crops",()=>(S.stats.harvests||0)>=25,30000],
  ["balloon10","Pop star","Pop 10 mystery balloons",()=>(S.stats.balloons||0)>=10,20000],
  ["stk24","Sticker collector","Collect 24 stickers",()=>stkCount()>=24,100000],
+ ["trial5","Street racer","Finish 5 time trials",()=>(S.stats.trials||0)>=5,25000],
  ["stk48","Complete book","Collect every sticker",()=>stkCount()>=48,5e6],
  ["toys","Billionaire","Own every billionaire toy",()=>TOYS.every(t=>hasToy(t.k)),1e7],
  ["rich1","Richest on Earth","Reach #1 on the rich list",()=>S.bestRank===1,1e8],
@@ -1599,7 +1601,7 @@ function drawWorld(){
   else if(!room)seasonFx();
   if(!room)weatherFx(1/60);
   if(EV&&EV.x!=null){const sx=EV.x-cam.x,sy=EV.y-cam.y-30;if(sx<20||sy<200||sx>vw-20||sy>vh-140){const cx=clamp(sx,30,vw-30),cy=clamp(sy,210,vh-150),an=Math.atan2(sy-cy,sx-cx);ctx.save();ctx.translate(cx,cy);ctx.rotate(an);ctx.fillStyle=EV.color;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-3,0);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore()}}
-  funArrows();drawGoalNav();drawMapX();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
+  funArrows();drawGoalNav();drawMapX();drawTT();if(S.job){const d=PL[S.job.dest];drawEdgeArrow(d.door[0],d.door[1]+14,"#d4a017")}if(HUNT&&!room)drawEdgeArrow(HUNT.x,HUNT.y,"#ffcc33");{const tg=tutGo();if(tg)drawEdgeArrow(tg.door[0],tg.door[1]+14,"#4fe3ff")}if(LV&&MPW&&!LV.done&&!room){const c=LV.kind==="race"?LV.cps[LV.cp]:LV.kind==="boss"?LVBOSS:null;if(c)drawEdgeArrow(c[0],c[1],LV.kind==="race"?"#2fd28a":"#e2364a")}
   const gr=grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0){ctx.fillStyle=`rgba(8,12,38,${.48*nightA})`;ctx.fillRect(0,0,vw,vh);
     ctx.globalCompositeOperation="lighter";
@@ -2782,6 +2784,7 @@ const vipCost=()=>Math.max(500,Math.round(S.cash*.03));
 function openDocks(){room="docks";
   const draw=()=>{if(room!=="docks"||(RACE&&!RACE.done))return;const cars=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)),best=cars.sort((a,b)=>b.sp-a.sp)[0],shown=S.flags.showDay===S.day,ask=MP&&MP.crAsk&&MP.peers[MP.crAsk.f]?MP.crAsk:null,fr=MP?Object.entries(MP.peers).filter(([id,p])=>p.n):[];
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Docks Car Meet")}
+      <button class="bigbtn alt2" id="ttBtn">⏱️ Street time trial<small>Six checkpoints across town, on foot or on wheels${S.ttBest?" · best "+S.ttBest.toFixed(1)+" s":""}</small></button>
       ${!best?`<div class="note">Bring a car to join the meet. Trucks, coupes and hypercars are at the Dealership downtown, and the sports car too.</div>`:`
       <div class="note">You're rolling up in your <b>${best.n}</b> (${best.sp}× speed). Hit <b>GO</b> the moment the lights turn green for a faster launch.</div>
       ${ask?`<div class="crask"><b>${esc(ask.n)}</b> wants to race you<div class="seg3"><button class="cta" id="crYes">Race them</button><button class="cta ghost" id="crNo">No thanks</button></div></div>`:""}
@@ -2791,7 +2794,7 @@ function openDocks(){room="docks";
       <div class="sechead"><h3>Race the bots</h3><span class="eyebrow">Up to 3 at once</span></div>
       <div class="perks">${CRBOTS().map((o,i)=>`<button class="perk nopic" data-race="${i}" ${S.cash<o.bet?"disabled":""}><span class="t">${o.n}</span><span class="d">${o.sp}× car · bet ${fmt(o.bet)} · 1st pays ${fmt(o.bet*3)}</span><span class="c">Race</span></button>`).join("")}
         <button class="perk nopic" data-race="all" ${S.cash<CRBOTS()[2].bet?"disabled":""}><span class="t">All three at once</span><span class="d">Bet ${fmt(CRBOTS()[2].bet)} · 1st pays ${fmt(CRBOTS()[2].bet*4)}, 2nd gets it back</span><span class="c">Race</span></button></div>`}</div>`;
-    $("leaveBtn").onclick=()=>{RACE=null;closeRoom()};
+    {const tb=$("ttBtn");if(tb)tb.onclick=()=>{closeRoom();ttStart()}}$("leaveBtn").onclick=()=>{RACE=null;closeRoom()};
     const sb=$("showBtn");if(sb)sb.onclick=()=>{if(S.flags.showDay===S.day)return;S.flags.showDay=S.day;const v=Math.round(VEH.filter(x=>S.veh[x.k]&&CARS.includes(x.k)).reduce((a,x)=>a+x.cost*.03,0));earn(v);SFX.level();banner("Car show +"+fmt(v),"g");draw();updMini()};
     $("room").querySelectorAll("[data-race]").forEach(b=>b.onclick=()=>{const B=CRBOTS(),all=b.dataset.race==="all",ops=all?B:[B[+b.dataset.race]],bet=all?B[2].bet:ops[0].bet;if(S.cash<bet)return;S.cash-=bet;dirty=true;
       raceRun({me:best,bots:ops,bet,prize1:bet*(all?4:3),prize2:all?bet:0,back:draw})});
@@ -3095,6 +3098,23 @@ function renderRvChip(){const el=$("rvChip"),r=S.rival;if(!r){el.hidden=true;ret
   const have=r.t==="earn"?Math.max(0,S.stats.earnedAll-r.base):r.have,s=Math.max(0,Math.ceil(r.left));
   el.innerHTML=`<span class="pk">Vince</span><span class="pt">${r.txt}</span><span class="pr">${r.t==="earn"?Math.round(have/r.goal*100)+"%":have+"/"+r.goal} · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`}
 $("crateChip").onclick=()=>{audioOn();openCrate()};
+/* ---------- street time trial: race through six checkpoints around town ---------- */
+let TT=null;
+function ttStart(){if(SCN||MPW)return;const cps=[];let px=S.px,py=S.py;for(let k=0;k<6;k++){for(let i=0;i<200;i++){const a=Math.random()*7,d=rnd(260,520),x=px+Math.cos(a)*d,y=py+Math.sin(a)*d;
+    if(x<80||x>W-80||y<120||y>SEA-60||!regionOpen(regionOf(x,y))||inBld(x,y,30)||inPond(x,y,30))continue;cps.push([Math.round(x),Math.round(y)]);px=x;py=y;break}}
+  if(cps.length<6)return banner("No room for a race here","r");let dist=Math.hypot(cps[0][0]-S.px,cps[0][1]-S.py);for(let k=1;k<6;k++)dist+=Math.hypot(cps[k][0]-cps[k-1][0],cps[k][1]-cps[k-1][1]);
+  TT={cps,i:0,t0:performance.now()+3000,par:+(dist/walkSpeed()*1.25+2).toFixed(1),go:false};SFX.hot();banner("3… 2… 1… GO! Hit the glowing rings in order","a");renderTTChip()}
+function ttTick(){if(!TT||SCN||MPW)return;const t=(performance.now()-TT.t0)/1000;if(t<0)return;if(!TT.go){TT.go=true;SFX.level();buzz(30)}
+  const c=TT.cps[TT.i];if(Math.hypot(S.px-c[0],S.py-c[1])<48){TT.i++;SFX.tick(1);buzz(12);sparks(fxW/2,fxH/2,"#ffcc33",16,.7);if(TT.i>=TT.cps.length){const tt=+t.toFixed(1),best=!S.ttBest||tt<S.ttBest,under=tt<=TT.par;
+    if(best)S.ttBest=tt;S.stats.trials=(S.stats.trials||0)+1;const v=Math.round(Math.max(300,rwBase()*(under?.04:.015)));earn(v);if(under)S.tix=(S.tix||0)+30;dirty=true;SFX.rebirth();confetti(best?240:120);
+    banner((best?"New best! ":"")+tt+" s"+(under?" · under par "+TT.par+" s":" · par "+TT.par+" s")+" · +"+fmt(v)+(under?" +30 tickets":""),under?"g":"a");TT=null}}
+  else if(t>TT.par*2.5){banner("Time trial timed out","r");TT=null}renderTTChip()}
+function renderTTChip(){let el=$("ttChip");if(!TT){if(el)el.hidden=true;return}if(!el){el=document.createElement("div");el.id="ttChip";document.body.appendChild(el)}el.hidden=false;const t=(performance.now()-TT.t0)/1000;
+  el.innerHTML=t<0?`<b>${Math.ceil(-t)}</b>`:`<b>${t.toFixed(1)} s</b><small>Ring ${TT.i+1}/6 · par ${TT.par} s</small>`}
+function drawTT(){if(!TT||SCN||MPW||room)return;TT.cps.forEach((c,k)=>{if(k<TT.i)return;const sx=c[0]-cam.x,sy=c[1]-cam.y,cur=k===TT.i;if(sx<-60||sy<-60||sx>vw+60||sy>vh+60){if(cur)drawEdgeArrow(c[0],c[1],"#ffcc33");return}
+  ctx.save();ctx.translate(sx,sy);ctx.globalAlpha=cur?1:.35;ctx.strokeStyle=cur?"#ffcc33":"#fff";ctx.lineWidth=cur?6:3;const r=cur?26+Math.sin(wt*6)*3:18;ctx.beginPath();ctx.ellipse(0,0,r,r*.45,0,0,7);ctx.stroke();
+  ctx.fillStyle=cur?"#ffcc33":"#fff";ctx.font="900 13px "+FONTS.d;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(k+1),0,-r*.45-12);ctx.restore()})}
+setInterval(()=>{try{ttTick()}catch(e){}},80);
 /* ---------- sticker book: doing things drops stickers; full pages pay out ---------- */
 const STK_PAGES=[{n:"Hustle",c:"#2a3cff",src:"flips",ch:.03,s:["💸","🧾","🏷️","🤑","📈","💼"]},{n:"Fun & games",c:"#ff4fd8",src:"arcade",ch:.3,s:["🕹️","🎯","🎳","🏀","⛳","👾"]},
   {n:"Treasure",c:"#cf9a14",src:"treasure",ch:.6,s:["🗺️","🪙","💎","🏴‍☠️","⚓","🧭"]},{n:"Outdoors",c:"#2f9a4e",src:"harvests",ch:.3,s:["🌻","🍄","🐝","🌈","🦋","🍀"]},
@@ -4856,7 +4876,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=45,WN=[
+const WN_VER=46,WN=[
+ ["⏱️","Street time trial","Start a time trial at the Docks Car Meet and race through six glowing rings across town. Beat par for tickets and set a personal best.","2026-10-07T04:35"],
  ["📒","Sticker book","Activities around town drop collectible stickers. Fill all eight pages for cash and crates, and trade duplicates for the ones you're missing. Find it at Home.","2026-10-07T04:25"],
  ["🎈","Mystery balloons","Every few minutes a balloon drifts across town. Tap it before it floats away for cash, a crate, a treasure map, tickets or hype.","2026-10-07T04:15"],
  ["📅","Weekly quests","Five new quests every Monday from the 📅 chip, each paying a crate and arcade tickets. Finish all five for a legendary chest.","2026-10-07T04:10"],
