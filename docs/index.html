@@ -815,6 +815,9 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .crtable{background:radial-gradient(circle at 50% 40%,#2b8a5a,#174f33);border-radius:18px;padding:18px;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:inset 0 0 0 3px #cf9a14}.crcards{display:flex;gap:8px}.crcards .pcard:first-child:not(:last-child){opacity:.55;transform:scale(.85)}.crpot{color:#fff;text-align:right;display:flex;flex-direction:column}.crpot .eyebrow{color:#cfe8d8}.crpot b{font:900 1.5rem var(--display)}.crpot small{opacity:.8;font-size:.72rem}
 .partgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.pbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;gap:2px;font:inherit}.pbtn b{font-size:.82rem}.pbtn small{font-size:.68rem;color:var(--muted)}.pbtn.ok{border-color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}.pbtn.no{opacity:.45}
 .anlot{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin:0 0 10px;display:flex;flex-direction:column;gap:4px}.anlot>b{font:800 1.1rem var(--display)}.anlot>small{color:var(--muted)}.antop{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--bg);font-size:.85rem}.antop.lead{background:color-mix(in srgb,var(--up) 15%,transparent)}
+.stall{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:10px;margin:0 0 10px}.stallh{display:flex;align-items:center;gap:4px;margin:0 0 8px}.stallh b{font:800 .95rem var(--display)}
+.bpost{display:flex;flex-direction:column;gap:8px}.bpost select{font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.cgoal{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin:0 0 10px;display:flex;flex-direction:column;gap:6px}.cgoal>b{font:800 1.15rem var(--display)}.cgoal>small{color:var(--muted)}.cgoal>i{display:block;height:10px;border-radius:5px;background:var(--line);overflow:hidden}.cgoal>i>i{display:block;height:100%;background:#b9763d}.cgoal>span{font:700 .8rem var(--mono);color:var(--muted)}
 .cutov{position:fixed;inset:0;z-index:9800;background:#0b0d11;touch-action:none;user-select:none;-webkit-user-select:none}.cutov canvas{display:block}.cutbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}.cutbar i{display:block;height:100%;width:0;background:#e2364a}
 .roadov{position:fixed;inset:0;z-index:9500;background:#8fd3ff;transition:opacity .45s}.roadov.out{opacity:0}.roadov canvas{display:block}.roadlab{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 28px);text-align:center;color:#fff;font:800 1.1rem var(--display);text-shadow:0 2px 8px rgba(0,0,0,.35)}.roadskip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font:700 .75rem var(--mono)}
 .w5gate{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#1b0b2a,#3a2266);color:#fff;margin:8px 0}.w5gate>span{font-size:.8rem;opacity:.85}.w5gate>i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}.w5gate>i>i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff4fd8)}.w5gate small{font:700 .7rem var(--mono);opacity:.7}
@@ -1298,7 +1301,7 @@ const isWeekend=()=>{const d=new Date().getDay();return d===0||d===6};
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+missReady();
 const maxEnergy=()=>goalEnK(maxEnergyFor(strLv()));
 const maxSlots=()=>4+Math.min(strLv(),12)+2*S.up.bag+pk("slot")+((S&&S.spurts)||0)+(S&&S.acc&&S.acc.b==="pack"?1:0);
-const walkSpeed=()=>(S&&S.buffs&&S.buffs.zoom>0?1.5:1)*(1+.12*petK("husky"))*(1+accFx("speed"))*(S&&S.gup&&S.gup.boots?1.2:1)*150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1)*wxSlow();
+const walkSpeed=()=>(S&&S.buffs&&S.buffs.zoom>0?1.5:1)*(1+.12*petK("husky"))*(1+accFx("speed"))*(S&&S.gup&&S.gup.boots?1.2:1)*150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1)*wxSlow()*(typeof cityBuilt==="function"&&cityBuilt("skate")?1.1:1);
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]||1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
@@ -1434,7 +1437,7 @@ function isDark(){return root.dataset.theme==="dark"||(root.dataset.theme!=="lig
 const PAL_L={pave:"#dfe2e7",paveLine:"rgba(0,0,0,.05)",sand:"#efdcae",sand2:"#e6cf98",sand3:"#f6e8c4",wet:"#d8c48f",sea:"#6cbfe6",sea2:"#4aa6d6",board:"#c4945f",board2:"#9c7244",towel:"#ffffff",tower:"#7b8496",tower1:"#9aa3b3",tower2:"#4e5667",towerWin:"rgba(210,230,255,.55)",grass:"#b9d69c",grass2:"#aecd8f",tuft:"#a3c585",tuft2:"#c8e0ae",road:"#cdd2db",line:"#fbfcfd",walk:"#e6e9ee",curb:"#c3c8d1",tree:"#5a9650",tree2:"#78b16a",tree3:"#93c784",trunk:"#8a6a4a",shadow:"rgba(25,40,25,.22)",sign:"#ffffff",ink:"#0d1015",water:"#8ec3e8",glass:"rgba(255,255,255,.6)",glassD:"rgba(200,225,255,.75)"};
 const PAL_D={pave:"#20242c",paveLine:"rgba(255,255,255,.03)",sand:"#4a4231",sand2:"#41392a",sand3:"#544a37",wet:"#3a3426",sea:"#143049",sea2:"#0f263b",board:"#5e4630",board2:"#46331f",towel:"#cfcfcf",tower:"#2c3240",tower1:"#363d4d",tower2:"#1b1f29",towerWin:"rgba(120,150,200,.18)",grass:"#17241a",grass2:"#1b2a1e",tuft:"#203223",tuft2:"#142016",road:"#262b35",line:"#4b5264",walk:"#2f3542",curb:"#3a4150",tree:"#21402a",tree2:"#2b5135",tree3:"#356140",trunk:"#46372a",shadow:"rgba(0,0,0,.45)",sign:"#14171d",ink:"#eff2f6",water:"#1c3754",glass:"rgba(120,150,200,.22)",glassD:"rgba(120,150,200,.3)"};
 const ROADS=[[655,180,90,1420],[0,655,2600,90],[215,215,970,70],[215,1115,970,70],[215,215,70,970],[1115,215,70,970],[1955,40,90,1360],[1400,1150,1200,80]];
-const SKY=[[1450,60,160,200],[1650,30,130,220],[2350,90,200,220],[2470,790,110,250]];
+const SKY=[[1450,60,160,200],[1650,30,130,220],[2470,790,110,250]];
 let seed=7;const srnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const onRoad=(x,y,m=0)=>ROADS.some(([rx,ry,rw,rh])=>x>rx-m&&x<rx+rw+m&&y>ry-m&&y<ry+rh+m);
 const HOUSES=[];
@@ -1815,7 +1818,7 @@ function openRoom(k){
   room=k;target=null;moving=false;autoEnter=null;SFX.door();
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
   ({night:()=>openNightMkt(),arcade:()=>openArcade(),market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,frontier:openFrontier,diner:openDiner,stand:openStand,raceoff:openRaceOffice,cityhall:()=>openCityHall(),alley:openAlley,cards:openCards,garage:openGarage,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
-  $("leaveBtn").onclick=closeRoom;renderHud();
+  $("leaveBtn").onclick=closeRoom;renderHud();bountyArrive(k).catch(()=>{});
 }
 function closeRoom(){if(M)closeMarket();BZV=null;CITY=null;SH=null;XP=null;DJ=null;G=null;GS=null;CS=null;A=null;room=null;$("room").hidden=true;$("room").innerHTML="";bKey="";save();renderHud()}
 // buying or claiming redraws the room; keep the scroll position when it's the same screen
@@ -3684,12 +3687,13 @@ function openMarket(cfg){
   $("room").innerHTML=`<div class="room-in">${roomHead(cfg.n)}
     <div class="news"><span class="live">LIVE</span><span id="news"></span></div>
     ${cfg.k==="market"?`<button class="reqbtn" id="mReq">📋 Buyer requests<b>${reqReady()?reqReady()+" ready to deliver":"3 new every day"}</b></button>`:""}
+    ${cfg.k==="market"?`<button class="reqbtn" id="mStall">🏪 Player stalls<b>${S.stall&&S.stall.it.length?S.stall.it.length+" of yours listed":"Sell to other players, even offline"}</b></button>`:""}
     ${cfg.k==="flea"?`<button class="reqbtn lmbtn" id="mLem">🍋 Lemonade stand<b>Mix a recipe, set a price, read the weather · 8 energy</b></button>`:""}
     ${!cfg.only&&(S.stats.flips||0)>=10?(FO?`<div class="fobar" id="foBar"></div>`:`<button class="reqbtn fobtn" id="mFO" ${S.foDay===dayKey()?"disabled":""}>⚔️ Flip-off vs Slick Vinny<b>${S.foDay===dayKey()?"Rematch tomorrow":"3 minutes · most profit wins"}</b></button>`):""}
     <div id="event" class="collector"></div>
     <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
     <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="mHype" class="mhype"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
-  {const fb=$("mFO");if(fb)fb.onclick=()=>foStart()}{const lb=$("mLem");if(lb)lb.onclick=()=>{const cf=M.cfg;closeMarket();openLemon(()=>{room="flea";openMarket(cf)})}}
+  {const fb=$("mFO");if(fb)fb.onclick=()=>foStart()}{const sb=$("mStall");if(sb)sb.onclick=()=>{const cf=M.cfg;closeMarket();openStalls(()=>{room="market";openMarket(cf)})}}{const lb=$("mLem");if(lb)lb.onclick=()=>{const cf=M.cfg;closeMarket();openLemon(()=>{room="flea";openMarket(cf)})}}
   const m=$("market");slotEls.length=0;slotKeys=[];
   for(let i=0;i<3;i++){const el=document.createElement("div");el.className="lst";el.dataset.i=i;el.tabIndex=0;m.appendChild(el);slotEls.push(el)}
   m.addEventListener("pointerdown",e=>{const el=e.target.closest(".lst");if(!el)return;const i=+el.dataset.i,l=M.market[i];if(!l||l.gone)return;e.preventDefault();audioOn();hold={i,id:l.id,t0:performance.now(),active:false,acc:0};try{el.setPointerCapture(e.pointerId)}catch(_){}});
@@ -5512,7 +5516,11 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=93,WN=[
+const WN_VER=94,WN=[
+ ["🏪","Player stalls","Rent a stall at the Market and sell to other players, even while you're offline. You get paid next time you play.","2026-10-07T22:00"],
+ ["📋","Bounties","City Hall has a job board. Deliver an item to the place named for a reward, or post your own job and get the item delivered to you.","2026-10-07T22:00"],
+ ["👻","Ghost races","The Frontier Road race now shows your best run, and the best run of someone you've played with, as ghosts to race against.","2026-10-07T22:00"],
+ ["🧱","The city goal","Everyone chips in bricks at City Hall for the next big building. When it's finished every player gets its perk. Watch it go up next to City Hall.","2026-10-07T22:00"],
  ["🌨️","Real weather","Rain is joined by snow in winter and heatwaves in summer. Weather changes what sells, closes some places (look for the CLOSED sign) and makes the Frontier Road slippery.","2026-10-07T20:30"],
  ["🌙","After dark","Two new places downtown open only from 8 PM to 5 AM: the Back Alley, for half-price goods nobody asks about, and Lucky Lou's card table.","2026-10-07T20:30"],
  ["🔧","Breakdowns and Mo's Garage","Cars sometimes break down now. Tow it to Mo's Garage downtown, work out what's broken from the symptoms, and flip the old parts on Mo's parts market.","2026-10-07T20:30"],
@@ -7028,7 +7036,7 @@ function openToll(){room="toll";$("room").hidden=false;const q=pick(TRIV),opts=q
   const end=msg=>{REV=null;closeRoom();banner(msg[0],msg[1])};
   $("leaveBtn").onclick=()=>{S.cash=Math.max(0,S.cash-toll);dirty=true;end(["🧌 You paid "+fmt(toll)+" to pass","a"])};$("tlPay").onclick=$("leaveBtn").onclick;
   $("room").querySelectorAll("[data-tl]").forEach(b=>b.onclick=()=>{if(opts[+b.dataset.tl]===q[1]){const v=Math.round(Math.max(500,rwBase()*.03));earn(v);roadFind(.45);S.tix=(S.tix||0)+30;dirty=true;SFX.rebirth();confetti(140);end(["🧌 \"Bah! Correct.\" The troll pays "+fmt(v)+" and 30 tickets","g"])}else{S.cash=Math.max(0,S.cash-toll);dirty=true;SFX.hot();end(["🧌 \"Wrong! It was "+q[1]+".\" You pay "+fmt(toll),"r"])}})}
-function roadFinish(t){const R=roadS();RRUN=null;const old=R.best||0,pb=!old||t<old;if(pb)R.best=+t.toFixed(2);let med=0;RR_MED.forEach((m,i)=>{if(t<=m[2])med=i+1});let msg=[];
+function roadFinish(t){ghostSave(t);const R=roadS();RRUN=null;const old=R.best||0,pb=!old||t<old;if(pb)R.best=+t.toFixed(2);let med=0;RR_MED.forEach((m,i)=>{if(t<=m[2])med=i+1});let msg=[];
   for(let i=(R.med||0)+1;i<=med;i++){const v=Math.round(Math.max(800,rwBase()*.02*i));earn(v);S.tix=(S.tix||0)+20*i;if(i>=2)gainCrate(i-1);msg.push(RR_MED[i-1][0]+" "+RR_MED[i-1][1]+" medal: +"+fmt(v)+(i>=2?" · "+(i-1)+" crate"+(i>2?"s":""):""))}
   if(med>(R.med||0))R.med=med;if(R.day!==dayKey()){R.day=dayKey();S.tix=(S.tix||0)+20;msg.push("First race today: +20 tickets")}S.stats.races=(S.stats.races||0)+1;dirty=true;
   RRES={t:performance.now(),time:t,pb,med};SFX[pb?"rebirth":"level"]();confetti(pb?200:80);banner("🏁 "+t.toFixed(2)+"s"+(pb?" · new best!":" · best "+old.toFixed(2)+"s"),pb?"g":"u");if(msg.length)setTimeout(()=>rayText(msg.join(". ")+"."),900)}
@@ -7364,7 +7372,7 @@ function bookGet(pg,k,quiet){if(!S)return false;S.book=S.book||{};const P=S.book
   if(n===B.e.length)setTimeout(()=>{banner(B.n+" page complete · "+B.bonus,"g");confetti(180);SFX.rebirth()},1900);return true}
 function roadFind(ch){if(Math.random()>ch)return;const B=BOOK[1],left=B.e.filter(x=>!bookP("road")[x[0]]);if(left.length)bookGet("road",pick(left)[0])}
 function hitchTale(name){const B=BOOK[2],left=B.e.filter(x=>!bookP("hitch")[x[0]]),k=(left.length&&Math.random()<.85?pick(left):pick(B.e))[0];setTimeout(()=>rayTextFrom(name,HITCH_TALE[k]),1200);bookGet("hitch",k,true)}
-setInterval(()=>{if(!S||!playing||!bookDone("diner")||S.bookCrate===dayKey())return;S.bookCrate=dayKey();dirty=true;gainCrate(1);banner("Rusty's menu page · your free crate for today","g")},5000);
+setInterval(()=>{if(!S||!playing)return;if(bookDone("diner")&&S.bookCrate!==dayKey()){S.bookCrate=dayKey();dirty=true;gainCrate(1);banner("Rusty's menu page · your free crate for today","g")}if(typeof cityBuilt==="function"&&cityBuilt("tower")&&S.cityCrate!==dayKey()){S.cityCrate=dayKey();dirty=true;gainCrate(1);banner("The Lighthouse Tower's daily crate is yours","g")}},5000);
 function openBook(back){room="book";$("room").hidden=false;
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Collection book")}<div class="note">Four pages of things that happened to you. Fill a page and you keep its bonus forever. ${bookN()}/${BOOK_ALL} stamps so far.</div>
     ${BOOK.map(B=>{const P=bookP(B.k),n=B.e.filter(x=>P[x[0]]).length,done=n===B.e.length;return `<div class="bookpg${done?" done":""}"><div class="bph"><b>${B.ic} ${B.n}</b><span>${n}/${B.e.length}</span></div><div class="bpgrid">${B.e.map(x=>`<div class="stamp${P[x[0]]?" got":""}"><i>${P[x[0]]?"✓":"?"}</i><small>${P[x[0]]?esc(x[1]):"???"}</small></div>`).join("")}</div><p class="fine">${done?"Complete · ":"Finish the page for "}<b>${B.bonus}</b>${B.k==="road"?" · from tumbleweeds, broken trucks, lost dogs and the toll troll":B.k==="hitch"?" · give hitchhikers on the Frontier Road a lift and listen":B.k==="diner"?" · order everything at Rusty's Roadside Diner":" · flip, crit and find rare things"}</p></div>`}).join("")}</div>`;
@@ -7404,7 +7412,7 @@ function statuePeople(ppl){if(SCN||!PL.cityhall)return;const{x,y}=STATUE;if(x<ca
   c.fillStyle="rgba(0,0,0,.18)";c.beginPath();c.ellipse(x,y+2,40,12,0,0,7);c.fill();c.fillStyle="#b9b2a2";rr(x-34,y-24,68,26,4);c.fill();c.fillStyle="#d8d2c4";rr(x-28,y-38,56,16,3);c.fill();
   if(MAYOR){c.save();c.globalAlpha=.97;drawPerson(x,y-38,{shirt:"#cf9a14",skin:"#e0b04a",hair:"#a8781c",legs:"#b8862a",ph:0});c.restore();c.fillStyle="#3a3324";c.font="800 9px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";c.fillText("MAYOR "+MAYOR.n.toUpperCase(),x,y-11)}
   else{c.fillStyle="#3a3324";c.font="800 8px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";c.fillText("YOUR STATUE HERE",x,y-11)}}])}
-function goalPeople(ppl){karmaPeople(ppl);statuePeople(ppl)}
+function goalPeople(ppl){karmaPeople(ppl);statuePeople(ppl);ghostPeople(ppl)}
 function openCityHall(tab){room="cityhall";$("room").hidden=false;tab=tab||"mayor";
   const draw=()=>{const m=mayorS(),today=dayKey();if(m.cd!==today){m.cd=today;m.camp=0}const cc=Math.round(Math.max(200,rwBase()*.02)*(1+m.camp)),online=!!crewCls(),days=Math.ceil(weekLeft()/864e5);
     const tabs=`<div class="seg3 chtabs">${[["mayor","Mayor race"],["goal","City goal"],["bounty","Bounties"]].map(([k,t])=>`<button class="${tab===k?"on":""}" data-cht="${k}">${t}</button>`).join("")}</div>`;
@@ -7428,8 +7436,8 @@ function openCityHall(tab){room="cityhall";$("room").hidden=false;tab=tab||"mayo
     if(tab==="mayor"&&!MAYOR_LB&&!draw.busy){draw.busy=1;setTimeout(async()=>{mayorPutT=0;mayorTick(0);const d=await netScan(NET+"mayor/"+weekNo()+"/");draw.busy=0;MAYOR_LB=d?mayorRank(d):[];if(room==="cityhall")draw()},400)}};
   MAYOR_LB=null;draw();mayorFetch()}
 // small multipliers the rest of the game asks for (wrapped so they're safe to call while the page is still loading)
-function goalSellK(){try{return karmaSellK()*keyK()*(bookDone("rare")?1.05:1)*(mayorK("market")?1.1:1)}catch(e){return 1}}
-function goalEnK(e){try{return Math.round(e*(mayorK("energy")?1.25:1))+(bookDone("road")?40:0)}catch(x){return e}}
+function goalSellK(){try{return karmaSellK()*keyK()*(bookDone("rare")?1.05:1)*(mayorK("market")?1.1:1)*(cityBuilt("stadium")?1.05:1)}catch(e){return 1}}
+function goalEnK(e){try{return Math.round(e*(mayorK("energy")?1.25:1))+(bookDone("road")?40:0)+(cityBuilt("fountain")?20:0)}catch(x){return e}}
 function freeTaxi(){try{return mayorK("taxi")||bookDone("hitch")}catch(e){return false}}
 function goalMarks(){const L=[];try{if(maeHere())L.push([MAE.x,MAE.y,"#2a9df4","🙏"]);if(knkHere())L.push([KNK.x,KNK.y,"#d6384b","🦈"])}catch(e){}return L}
 function storyEnd(){const t=karmaTier();return t>=3?"saint":t<=1?"shark":"fair"}
@@ -7558,7 +7566,110 @@ function openAucNight(back){room="aucn";$("room").hidden=false;const draw=()=>{c
       <p class="fine">You only pay if you win when the minute is up. The regulars tonight: ${lot.npc.map(p=>esc(p.n)).join(", ")}.</p>`}}
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Auction Night")}${body}</div>`;$("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{openAucNight.draw=null;back()};
   $("room").querySelectorAll("[data-anb]").forEach(b=>b.onclick=()=>{anBid(+b.dataset.anb);draw()})};openAucNight.draw=draw;draw()}
-function worldPeople(){drawClosedSigns();drawBreakdown()}
+function worldPeople(){drawClosedSigns();drawBreakdown();drawCitySite()}
+/* ================= player stalls: rent a stall in the Market and sell to other players, even while you're offline ================= */
+// stall/<me> holds your listings (retained). A buyer writes stall/<seller>/sold/<id>; the seller's game collects the money next time it's online.
+const STALL_MAX=4,stallFee=()=>Math.max(50,Math.round(rwBase()*.003));
+let STALLS=null,stallT=20;
+function stallPut(){const st=S.stall;if(!st)return;netPut("stall/"+netMe(),st.it.length?{n:mpName(),s:myShirt(),it:st.it.map(o=>({...safeItem(o.it),id:o.id,p:o.p})),t:Date.now()}:null)}
+async function stallCollect(){const st=S.stall;if(!st||!st.it.length||!crewCls())return;const d=await netScan(NET+"stall/"+netMe()+"/sold/");if(!d)return;let got=0,n=0;
+  for(const id in d){const r=d[id],o=st.it.find(x=>x.id===id);netPut("stall/"+netMe()+"/sold/"+id,null);if(!o||!r)continue;st.it=st.it.filter(x=>x!==o);earn(o.p);got+=o.p;n++;S.stats.stallSold=(S.stats.stallSold||0)+1;karmaAdd(.5);vote(2)}
+  if(n){dirty=true;stallPut();SFX.sell();banner("Your stall sold "+n+" item"+(n>1?"s":"")+" while you were away · +"+fmt(got),"g")}}
+setInterval(()=>{if(!S||!playing)return;stallT-=5;if(stallT<=0){stallT=120;stallCollect().catch(()=>{})}},5000);
+async function stallBuy(seller,o,draw){if(seller===netMe())return;const p=Math.round(+o.p||0);if(!(p>0)||S.cash<p)return banner("You need "+fmt(p),"r");if(S.stash.length>=maxSlots())return banner("Stash full","r");
+  const chk=await netScan(NET+"stall/"+seller+"/sold/",1200);if(chk&&chk[o.id])return banner("Someone just bought that","a");
+  if(!netPut("stall/"+seller+"/sold/"+o.id,{by:netMe(),n:mpName(),p,t:Date.now()}))return banner("Log in online to buy from stalls","r");
+  S.cash-=p;S.stash.push({...safeItem(o),paid:p});dirty=true;SFX.buy();banner("Bought "+String(o.name).slice(0,30)+" from a player's stall","g");
+  const L=STALLS&&STALLS.find(x=>x.id===seller);if(L)L.it=L.it.filter(x=>x.id!==o.id);draw();updMini()}
+function openStalls(back){room="stalls";$("room").hidden=false;S.stall=S.stall||{it:[]};let pick=null;
+  const draw=()=>{const st=S.stall,online=!!crewCls(),others=(STALLS||[]).filter(x=>x.id!==netMe()&&x.it.length);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Player stalls")}
+      <div class="note">Rent a stall in the Market and other players can buy from it, even when you're offline. You get paid the next time you play. Listing costs ${fmt(stallFee())}. You can list up to ${STALL_MAX} things.</div>
+      ${online?"":`<div class="note">Log in online to rent a stall or buy from other players.</div>`}
+      <div class="sechead"><h3>Other players' stalls</h3><span class="eyebrow">${STALLS?others.length+" open":"loading…"}</span></div>
+      ${STALLS?others.map(x=>`<div class="stall"><div class="stallh"><i class="lbdot" style="background:${okCol(x.s)?x.s:"#2a3cff"}"></i><b>${esc(x.n)}'s stall</b></div><div class="perks">${x.it.map(o=>`<button class="perk opp" data-sb="${esc(x.id)}|${esc(o.id)}" ${S.cash<o.p||!online?"disabled":""}><span class="oav" style="background:transparent">${tileFor(o.cat,o.code,1)}</span><span class="t">${esc(o.name)}</span><span class="d">${esc(o.cond)} · worth ~${fmt(valueOf(o))}</span><span class="c">${fmt(o.p)}</span></button>`).join("")}</div></div>`).join("")||`<p class="fine">No stalls open right now. Be the first.</p>`:`<p class="fine">Walking the aisles…</p>`}
+      <div class="sechead"><h3>Your stall</h3><span class="eyebrow">${st.it.length}/${STALL_MAX}</span></div>
+      <div class="perks">${st.it.map(o=>`<button class="perk opp" data-sun="${o.id}"><span class="oav" style="background:transparent">${tileFor(o.it.cat,o.it.code,1)}</span><span class="t">${esc(o.it.name)}</span><span class="d">Listed for ${fmt(o.p)}</span><span class="c">Take back</span></button>`).join("")||`<p class="fine">Your stall is empty.</p>`}</div>
+      ${online&&st.it.length<STALL_MAX?`<div class="sechead"><h3>List something</h3><span class="eyebrow">Pick a price</span></div><div class="perks">${S.stash.map((s,i)=>{if(s.fake)return "";const v=Math.round(valueOf(s));return `<div class="perk opp plrow"><span class="oav pmt">${tileFor(s.cat,s.code,1)}</span><span class="t">${esc(s.name)}</span><span class="d">Worth about ${fmt(v)}</span><span class="pmbtns">${[1,1.2,1.5].map(m=>`<button data-sl="${i}|${Math.round(v*m)}" ${S.cash<stallFee()?"disabled":""}>${fmt(Math.round(v*m))}</button>`).join("")}</span></div>`}).join("")}</div>`:""}</div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-sb]").forEach(b=>b.onclick=()=>{const[sid,oid]=b.dataset.sb.split("|"),x=STALLS.find(q=>q.id===sid),o=x&&x.it.find(q=>q.id===oid);if(o)stallBuy(sid,o,draw)});
+    $("room").querySelectorAll("[data-sun]").forEach(b=>b.onclick=()=>{const o=st.it.find(x=>x.id===b.dataset.sun);if(!o)return;if(S.stash.length>=maxSlots())return banner("Stash full","r");st.it=st.it.filter(x=>x!==o);S.stash.push(o.it);dirty=true;stallPut();SFX.tick(.5);draw()});
+    $("room").querySelectorAll("[data-sl]").forEach(b=>b.onclick=()=>{const[i,p]=b.dataset.sl.split("|").map(Number),s=S.stash[i];if(!s||st.it.length>=STALL_MAX||S.cash<stallFee())return;S.cash-=stallFee();S.stash.splice(i,1);st.it.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),it:s,p});dirty=true;stallPut();SFX.buy();banner("Listed at your stall for "+fmt(p),"g");draw();updMini()})};
+  STALLS=null;draw();stallCollect().catch(()=>{});
+  netScan(NET+"stall/").then(d=>{STALLS=[];if(d)for(const k in d){if(k.includes("/"))continue;const x=d[k];if(!x||!Array.isArray(x.it)||typeof x.n!=="string")continue;STALLS.push({id:k,n:x.n.slice(0,16),s:x.s,it:x.it.slice(0,STALL_MAX).filter(o=>o&&o.id&&POOL.some(p=>p.cat===o.cat&&p.code===o.code)).map(o=>({...safeItem(o),id:String(o.id).slice(0,16),p:Math.max(1,Math.round(+o.p||0))}))})}if(room==="stalls")draw()})}
+/* ================= bounties: post a delivery job, or do someone else's ================= */
+// bounty/<poster>/<id> is the job, bounty/<poster>/<id>/done is the receipt. Townspeople post a few too, so the board is never empty.
+const B_TO=["diner","cafe","harbor","club","arcade","gym","bank","airport","depot","dealer"];
+let BOUNTIES=null;
+const bTowns=()=>{const d=dayKey(),h=[...d].reduce((a,c)=>a*31+c.charCodeAt(0)|0,7),who=["Rusty","Sister Mae","Old Man Pemberton","Coach Dee","Mrs. Kimura","Lefty Ortiz"],cats=(S.unlocked||["kicks"]);
+  return [0,1,2].map(i=>{const r=k=>srand(h+i*13+k),to=B_TO.filter(k=>PL[k]&&deedOpen({k}))[Math.floor(r(1)*B_TO.length)%Math.max(1,B_TO.filter(k=>PL[k]&&deedOpen({k})).length)]||"cafe";return{id:"npc"+i,npc:1,n:who[Math.floor(r(2)*who.length)],cat:cats[Math.floor(r(3)*cats.length)],to,r:Math.round(Math.max(300,rwBase()*.03)*(1+r(4)))}})};
+function bMine(){S.bty=S.bty||{post:[],job:null,npc:{}};if(S.bty.npcD!==dayKey()){S.bty.npcD=dayKey();S.bty.npc={}}return S.bty}
+function bountyHTML(){const B=bMine(),online=!!crewCls(),list=(BOUNTIES||[]).filter(x=>x.by!==netMe()),job=B.job,cats=S.unlocked||[];
+  const card=(x,key,done,off)=>`<button class="perk nopic" ${key?`data-bt="${esc(key)}"`:""} ${done||off||job?"disabled":""}><span class="t">${esc(CAT[x.cat]?CAT[x.cat].n:x.cat)} → ${esc(PL[x.to]?PL[x.to].n:x.to)}</span><span class="d">Posted by ${esc(x.n)}${x.npc?"":" · a player"} · pays ${fmt(bPay(x))}</span><span class="c">${done?"Done":"Take"}</span></button>`;
+  return `<div class="note">Someone needs something delivered. Take a job, bring an item from that category to the place named, and walk in to hand it over. You can post your own jobs too: whoever delivers gets your reward and you get their item.</div>
+   ${job?`<div class="dcard" style="border-left:4px solid #2fbf71"><span class="eyebrow">Your job</span><b>Bring ${esc(CAT[job.cat]?CAT[job.cat].n:job.cat)} to ${esc(PL[job.to]?PL[job.to].n:job.to)}</b><p class="fine" style="text-align:left;margin:6px 0">For ${esc(job.n)} · pays ${fmt(bPay(job))}. ${S.stash.some(s=>s.cat===job.cat&&!s.fake)?"You've got one in your stash. Head over.":"Find one first: any "+esc(CAT[job.cat]?CAT[job.cat].n.toLowerCase():job.cat)+" item that isn't fake."}</p><button class="bigbtn alt" id="bDrop">Drop this job</button></div>`:""}
+   <div class="sechead"><h3>Jobs from town</h3><span class="eyebrow">New every day</span></div><div class="perks">${bTowns().map(x=>card(x,x.id,B.npc[x.id],false)).join("")}</div>
+   <div class="sechead"><h3>Jobs from players</h3><span class="eyebrow">${BOUNTIES?list.length:"loading…"}</span></div><div class="perks">${BOUNTIES?list.map(x=>card(x,x.by+"|"+x.id,false,!online)).join("")||`<p class="fine">No player jobs right now.</p>`:`<p class="fine">Checking the board…</p>`}</div>
+   <div class="sechead"><h3>Post a job</h3><span class="eyebrow">${B.post.length}/3 posted</span></div>
+   ${B.post.map(x=>`<button class="perk nopic" data-bx="${x.id}"><span class="t">${esc(CAT[x.cat]?CAT[x.cat].n:x.cat)} → ${esc(PL[x.to].n)}</span><span class="d">Reward ${fmt(x.r)} · waiting for someone</span><span class="c">Cancel</span></button>`).join("")}
+   ${online&&B.post.length<3?`<div class="bpost"><select id="bCat">${cats.map(k=>`<option value="${k}">${esc(CAT[k].n)}</option>`).join("")}</select><select id="bTo">${B_TO.filter(k=>PL[k]).map(k=>`<option value="${k}">${esc(PL[k].n)}</option>`).join("")}</select><div class="seg3">${[1,2,4].map(m=>{const r=Math.round(Math.max(300,rwBase()*.03)*m);return `<button data-bp="${r}" ${S.cash<r?"disabled":""}>Post<small>${fmt(r)}</small></button>`}).join("")}</div></div>`:online?"":`<p class="fine">Log in online to post jobs for other players.</p>`}`}
+const bPay=x=>x.npc?x.r:Math.min(x.r,Math.max(1e4,netWorth()*.05));
+function bountyBind(draw){const B=bMine();
+  $("room").querySelectorAll("[data-bt]").forEach(b=>b.onclick=()=>{const k=b.dataset.bt;let x;if(k.startsWith("npc"))x=bTowns().find(q=>q.id===k);else{const[by,id]=k.split("|");x=(BOUNTIES||[]).find(q=>q.by===by&&q.id===id)}if(!x)return;B.job={...x};dirty=true;SFX.tick(.6);banner("Job taken: bring "+CAT[x.cat].n.toLowerCase()+" to "+PL[x.to].n,"u");draw()});
+  const dr=$("bDrop");if(dr)dr.onclick=()=>{B.job=null;dirty=true;draw()};
+  $("room").querySelectorAll("[data-bx]").forEach(b=>b.onclick=()=>{const x=B.post.find(q=>q.id===b.dataset.bx);if(!x)return;netPut("bounty/"+netMe()+"/"+x.id,null);B.post=B.post.filter(q=>q!==x);earn(x.r);dirty=true;banner("Job cancelled, reward refunded","a");BOUNTIES=null;draw()});
+  $("room").querySelectorAll("[data-bp]").forEach(b=>b.onclick=()=>{const r=+b.dataset.bp,cat=$("bCat").value,to=$("bTo").value;if(S.cash<r||!CAT[cat]||!PL[to])return;const id=Date.now().toString(36);S.cash-=r;B.post.push({id,cat,to,r,t:Date.now()});dirty=true;netPut("bounty/"+netMe()+"/"+id,{n:mpName(),cat,to,r,t:Date.now()});SFX.buy();banner("Job posted. Whoever delivers gets "+fmt(r),"g");BOUNTIES=null;draw();updMini()});
+  if(!BOUNTIES&&!bountyBind.busy){bountyBind.busy=1;netScan(NET+"bounty/").then(d=>{bountyBind.busy=0;BOUNTIES=[];if(d)for(const k in d){const p=k.split("/");if(p.length!==2)continue;const x=d[k];if(!x||!CAT[x.cat]||!PL[x.to]||!(x.r>0)||d[k+"/done"]||Date.now()-(x.t||0)>864e5)continue;BOUNTIES.push({by:p[0],id:p[1],n:String(x.n||"?").slice(0,16),cat:x.cat,to:x.to,r:Math.round(x.r)})}if(room==="cityhall")draw()})}}
+// walking into the right place with the right item finishes the job
+async function bountyArrive(k){const B=S&&S.bty;if(!B||!B.job||B.job.to!==k)return;const j=B.job,i=S.stash.findIndex(s=>s.cat===j.cat&&!s.fake);if(i<0)return banner("You still need a "+CAT[j.cat].n.toLowerCase()+" item for "+j.n,"a");
+  if(!j.npc){const chk=await netScan(NET+"bounty/"+j.by+"/"+j.id+"/",1200);if(chk&&chk.done){B.job=null;dirty=true;return banner("Someone else delivered "+j.n+"'s job first","a")}}
+  const it=S.stash.splice(i,1)[0],pay=bPay(j);if(j.npc)B.npc[j.id]=1;else netPut("bounty/"+j.by+"/"+j.id+"/done",{by:netMe(),n:mpName(),it:safeItem(it),t:Date.now()});
+  B.job=null;earn(pay);S.stats.bounties=(S.stats.bounties||0)+1;karmaAdd(3);vote(10);dirty=true;SFX.rebirth();confetti(140);banner("Delivered to "+j.n+" · +"+fmt(pay),"g");updMini()}
+// your own posted jobs: collect what people delivered, refund the ones nobody took after a day
+let bChkT=30;setInterval(async()=>{if(!S||!playing||!S.bty||!S.bty.post.length||!crewCls())return;bChkT-=10;if(bChkT>0)return;bChkT=150;const B=S.bty,d=await netScan(NET+"bounty/"+netMe()+"/");if(!d)return;
+  for(const x of B.post.slice()){const r=d[x.id+"/done"];if(r&&r.it&&POOL.some(p=>p.cat===r.it.cat&&p.code===r.it.code)){B.post=B.post.filter(q=>q!==x);netPut("bounty/"+netMe()+"/"+x.id,null);netPut("bounty/"+netMe()+"/"+x.id+"/done",null);const it=safeItem(r.it);if(S.stash.length<maxSlots())S.stash.push({...it,paid:x.r});else earn(Math.round(valueOf(it)*.8));dirty=true;SFX.sell();banner(String(r.n||"Someone").slice(0,14)+" delivered your job: "+it.name,"g")}
+    else if(Date.now()-x.t>864e5){B.post=B.post.filter(q=>q!==x);netPut("bounty/"+netMe()+"/"+x.id,null);earn(x.r);dirty=true;banner("Nobody took your job in a day. Reward refunded","a")}}},10000);
+/* ================= ghost races: your best run, and the best runs of people you've played with ================= */
+let RREC=null,GHOSTS=null;
+function metAdd(){if(!S||!MP)return;S.met=S.met||{};for(const id in MP.peers){const n=String(MP.peers[id].n||"").toLowerCase().slice(0,16);if(n&&n!=="player"&&!S.met[n]){S.met[n]=Date.now();dirty=true}}}
+setInterval(()=>{try{metAdd()}catch(e){}},15000);
+setInterval(()=>{if(!S)return;if(RRUN){if(!RREC||RREC.t0!==RRUN.t0)RREC={t0:RRUN.t0,dir:RRUN.dir,p:[]};if(RREC.p.length<900)RREC.p.push(Math.round(S.px),Math.round(S.py))}},100);
+function ghostSave(t){const r=RREC;if(!r||r.dir==null)return;RREC=null;const R=roadS();R.gh=R.gh||{};const k=r.dir>0?"e":"w";if(R.gh[k]&&R.gh[k].t<=t)return;const g={t:+t.toFixed(2),p:r.p};R.gh[k]=g;dirty=true;netPut("ghost/"+mpName().toLowerCase().slice(0,16)+"/"+k,{n:mpName(),s:myShirt(),...g})}
+async function ghostFetch(){const d=await netScan(NET+"ghost/");if(!d)return;const me=mpName().toLowerCase(),met=S.met||{},crew=S.crew&&S.crew.mem?S.crew.mem:{},L={e:[],w:[]};
+  for(const k in d){const[n,dir]=k.split("/"),g=d[k];if(n===me||!L[dir]||!g||!Array.isArray(g.p)||!(g.t>3)||g.p.length>1800)continue;L[dir].push({n:String(g.n||n).slice(0,16),s:okCol(g.s)?g.s:"#2fd28a",t:+g.t,p:g.p.map(Number),f:!!met[n]})}
+  for(const k in L)L[k].sort((a,b)=>(b.f-a.f)||(a.t-b.t));GHOSTS={e:L.e[0]||null,w:L.w[0]||null,at:Date.now()}}
+function ghostPeople(ppl){if(!RRUN||SCN)return;if(!GHOSTS||Date.now()-GHOSTS.at>3e5){if(!ghostFetch.busy){ghostFetch.busy=1;ghostFetch().finally(()=>ghostFetch.busy=0)}}
+  const k=RRUN.dir>0?"e":"w",e=(performance.now()-RRUN.t0)/1000,R=roadS(),list=[];if(R.gh&&R.gh[k])list.push({n:"Your best",s:myShirt(),...R.gh[k]});if(GHOSTS&&GHOSTS[k])list.push(GHOSTS[k]);
+  list.forEach(g=>{const i=Math.min(g.p.length/2-1,Math.floor(e*10)),x=g.p[i*2],y=g.p[i*2+1];if(x==null)return;ppl.push([y,()=>{ctx.save();ctx.globalAlpha=.45;drawPerson(x,y,{shirt:g.s,skin:"#e8d4c0",hair:"#888",legs:"#555",mv:e<g.t,ph:e*6});ctx.restore();ctx.font="800 10px "+FONTS.b;ctx.textAlign="center";ctx.fillStyle="rgba(20,24,36,.75)";ctx.fillText(g.n+(g.f?" · friend":"")+" · "+g.t.toFixed(2)+"s",x,y-80)}])})}
+/* ================= the city goal: everyone chips in bricks for a new building, and when it's built everybody gets the perk ================= */
+// city/<goal>/<me> holds how many bricks each player gave. Townspeople add a steady trickle so it always moves.
+const CITY_GOALS=[{k:"fountain",n:"Grand Fountain",need:1500,perk:"+20 max energy for everyone",ic:"⛲"},{k:"skate",n:"Skate Park",need:2500,perk:"+10% walking speed for everyone",ic:"🛹"},{k:"stadium",n:"Flip City Stadium",need:4000,perk:"+5% on every sale for everyone",ic:"🏟️"},{k:"tower",n:"Lighthouse Tower",need:6000,perk:"A free crate every day for everyone",ic:"🗼"}];
+const CITY_EPOCH=Date.UTC(2026,9,1),townBricks=()=>Math.floor((Date.now()-CITY_EPOCH)/36e5)*3;
+let CGOAL={tot:null,top:[],at:0};
+const brickC=()=>Math.max(100,Math.round(rwBase()*.01));
+function cityState(){let left=CGOAL.tot==null?townBricks():CGOAL.tot+townBricks(),i=0;while(i<CITY_GOALS.length&&left>=CITY_GOALS[i].need){left-=CITY_GOALS[i].need;i++}return{i,have:left,built:CITY_GOALS.slice(0,i).map(g=>g.k)}}
+const cityBuilt=k=>{try{return cityState().built.includes(k)}catch(e){return false}};
+async function cityFetch(){const d=await netScan(NET+"city/");if(!d)return;let tot=0;const by={};for(const k in d){const x=d[k];if(!x||!isFinite(x.b)||x.b<0)continue;const b=Math.min(Math.floor(x.b),5000);tot+=b;by[k]={n:String(x.n||"?").slice(0,16),b}}
+  const before=cityState().i;CGOAL={tot,top:Object.values(by).sort((a,b)=>b.b-a.b).slice(0,5),at:Date.now()};const now=cityState().i;if(now>before&&before<CITY_GOALS.length&&S.cityLast!==now){S.cityLast=now;dirty=true;const g=CITY_GOALS[now-1];banner("City goal complete: "+g.n,"g");confetti(240);rayText("Flip City built the "+g.n+" together! "+g.perk[0].toUpperCase()+g.perk.slice(1)+".")}}
+setInterval(()=>{if(S&&playing&&Date.now()-CGOAL.at>6e5){CGOAL.at=Date.now();cityFetch().catch(()=>{})}},20000);
+function cityGoalHTML(){const c=cityState(),g=CITY_GOALS[c.i],today=dayKey(),mine=S.city&&S.city.d===today?S.city.n:0,online=!!crewCls();
+  return `<div class="note">Everyone in Flip City chips in bricks for the next big building. When it's finished, <b>every player</b> gets its perk for good. Townspeople add a few bricks every hour, and you can give up to 25 a day.</div>
+   ${g?`<div class="cgoal"><span class="eyebrow">Building now</span><b>${g.ic} ${g.n}</b><small>When it's done: ${g.perk}</small><i><i style="width:${Math.min(100,c.have/g.need*100).toFixed(1)}%"></i></i><span>${fmtN(c.have)} / ${fmtN(g.need)} bricks${CGOAL.tot==null?" · offline count":""}</span></div>
+   <div class="seg3">${[1,5,10].map(n=>`<button data-brk="${n}" ${!online||mine+n>25||S.cash<brickC()*n?"disabled":""}>Give ${n}<small>${fmt(brickC()*n)}</small></button>`).join("")}</div><p class="fine">${online?"You've given "+mine+"/25 today · "+fmtN((S.city&&S.city.tot)||0)+" bricks in total":"Log in online to give bricks."}</p>`:`<div class="note">Every city goal is built. Flip City has never looked better.</div>`}
+   ${CGOAL.top.length?`<div class="sechead"><h3>Top builders</h3></div><div class="perks">${CGOAL.top.map((r,i)=>`<div class="perk nopic"><span class="t">#${i+1} ${esc(r.n)}</span><span class="c">${fmtN(r.b)}</span></div>`).join("")}</div>`:""}
+   ${c.built.length?`<div class="sechead"><h3>Built so far</h3></div><div class="perks">${CITY_GOALS.slice(0,c.i).map(x=>`<div class="perk nopic"><span class="t">${x.ic} ${x.n}</span><span class="d">${x.perk}</span><span class="c">Built</span></div>`).join("")}</div>`:""}`}
+function cityGoalBind(draw){$("room").querySelectorAll("[data-brk]").forEach(b=>b.onclick=()=>{const n=+b.dataset.brk,c=brickC()*n,today=dayKey();S.city=S.city&&S.city.d===today?S.city:{d:today,n:0,tot:(S.city&&S.city.tot)||0};if(S.city.n+n>25||S.cash<c)return;
+  S.cash-=c;S.city.n+=n;S.city.tot+=n;karmaAdd(n*.3);vote(n*2);dirty=true;netPut("city/"+netMe(),{n:mpName(),b:S.city.tot,t:Date.now()});CGOAL.tot=(CGOAL.tot||0)+n;SFX.buy();banner("+"+n+" brick"+(n>1?"s":"")+" for the "+CITY_GOALS[cityState().i]?.n,"g");draw();updMini()});
+  if(Date.now()-CGOAL.at>6e4&&!cityGoalBind.busy){cityGoalBind.busy=1;CGOAL.at=Date.now();cityFetch().finally(()=>{cityGoalBind.busy=0;if(room==="cityhall")draw()})}}
+// the building site next to City Hall shows how far along the current goal is
+const CSITE={x:2350,y:100,w:200,h:200};
+function drawCitySite(){if(SCN)return;const{x,y,w,h}=CSITE;if(x>cam.x+vw+40||x+w<cam.x-40||y>cam.y+vh+40||y+h<cam.y-80)return;const c=ctx,st=cityState(),g=CITY_GOALS[st.i],last=CITY_GOALS[st.i-1],pr=g?st.have/g.need:1;
+  c.save();c.fillStyle="#cdbf9c";rr(x,y+h-26,w,26,6);c.fill();
+  if(last&&(!g||pr<.05)){c.font="64px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(last.ic,x+w/2,y+h/2-6)}
+  if(g){const bh=(h-50)*pr;c.fillStyle="#b9763d";c.fillRect(x+30,y+h-26-bh,w-60,bh);c.strokeStyle="rgba(0,0,0,.18)";c.lineWidth=1;for(let yy=y+h-26;yy>y+h-26-bh;yy-=8){c.beginPath();c.moveTo(x+30,yy);c.lineTo(x+w-30,yy);c.stroke()}
+    c.strokeStyle="#e0a22a";c.lineWidth=4;c.beginPath();c.moveTo(x+w-16,y+h-26);c.lineTo(x+w-16,y+12);c.lineTo(x+40,y+12);c.stroke();c.beginPath();c.moveTo(x+60,y+12);c.lineTo(x+60,y+40);c.stroke();
+    c.fillStyle="#fffaf0";rr(x+w/2-62,y+h-22,124,18,5);c.fill();c.fillStyle="#3a3324";c.font="800 9px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";c.fillText(g.n.toUpperCase()+" · "+Math.floor(pr*100)+"%",x+w/2,y+h-13)}
+  c.restore()}
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
