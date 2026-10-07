@@ -4362,7 +4362,7 @@ function accHand(c,k,x,y){
   if(k==="saber"){const col=["#4fe3ff","#ff4fd8","#2fd28a"][Math.floor(wt/3)%3];c.fillStyle="#9aa3b3";c.fillRect(x-1,y-2,2,5);c.save();c.globalAlpha=.35+.15*Math.sin(wt*20);c.strokeStyle=col;c.lineWidth=5;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke();c.restore();c.strokeStyle="#fff";c.lineWidth=1.4;c.beginPath();c.moveTo(x,y-2);c.lineTo(x,y-26);c.stroke()}
   if(k==="orb"){const g2=c.createRadialGradient(x,y-6,0,x,y-6,7);g2.addColorStop(0,"#fff");g2.addColorStop(.4,"#b388ff");g2.addColorStop(1,"rgba(122,47,214,0)");c.fillStyle=g2;c.beginPath();c.arc(x,y-6,7+Math.sin(wt*4),0,7);c.fill()}}
 /* ================= Arcade: quick skill games for tickets, and a prize counter ================= */
-const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."}};
+const ARC_G={mole:{n:"Mole mash",ic:"🔨",d:"Bop the moles for 20 seconds. Gold moles are worth 3."},stack:{n:"Tower stack",ic:"🧱",d:"Drop each block on the last. Overhangs fall off."},hoop:{n:"Hoop shot",ic:"🏀",d:"Ten shots. Stop the meter in the green, dead centre is a swish."},golf:{n:"Mini golf",ic:"⛳",d:"Three holes. Drag back from the ball to aim, let go to putt. Beat par for big tickets."}};
 const ARC_PRIZE=[{k:"crate",n:"Mystery crate",ic:"📦",t:100,f:()=>gainCrate(1)},{k:"energy",n:"Energy drink",ic:"🥤",t:60,f:()=>{S.energy=Math.min(maxEnergy()*1.5,S.energy+60)}},{k:"hype",n:"Hype rush",ic:"🔥",t:80,f:()=>hype(10)},
   {k:"cash",n:"Bag of cash",ic:"💰",t:150,f:()=>earn(Math.round(Math.max(1000,rwBase()*.03)))},{k:"map",n:"Treasure map",ic:"🗺️",t:120,f:()=>{S.maps=(S.maps||0)+1}},{k:"nshade",n:"Neon shades",ic:"🕶️",t:250,acc:1},{k:"acrown",n:"Neon crown",ic:"👑",t:400,acc:1},{k:"joy",n:"Golden joystick",ic:"🕹️",t:700,acc:1}];
 function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||{};const draw=()=>{const T=S.tix||0;
@@ -4399,6 +4399,28 @@ function arcPlay(k,back){const G=ARC_G[k];room="arcade";
       const camY=Math.max(0,st.length*H-260);g.fillStyle="#140b2a";g.fillRect(0,0,300,380);for(let i=0;i<40;i++){g.fillStyle="rgba(255,255,255,.25)";g.fillRect((i*73)%300,(i*41+camY*.3)%380,2,2)}
       st.forEach((b,i)=>{const y=380-(i+1)*H+camY;g.fillStyle=cols[i%cols.length];g.fillRect(b.x,y,b.w,H-2);g.fillStyle="rgba(255,255,255,.3)";g.fillRect(b.x,y,b.w,3)});
       if(!over){const y=380-(st.length+1)*H+camY;g.fillStyle=cols[st.length%cols.length];g.globalAlpha=.9;g.fillRect(cur.x,y,cur.w,H-2);g.globalAlpha=1}
+      requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+  if(k==="golf"){box.innerHTML=`<canvas id="gfCv" width="300" height="420"></canvas>`;$("arL").textContent="Hole";const cv=$("gfCv"),g=cv.getContext("2d");
+    // three holes: walls as [x,y,w,h], a moving blocker on the last
+    const HOLES=[{par:2,ball:[150,370],cup:[150,70],walls:[[60,200,110,14]]},{par:3,ball:[60,370],cup:[240,70],walls:[[0,240,200,14],[100,130,200,14]]},{par:3,ball:[150,380],cup:[150,60],walls:[[30,150,90,14],[180,150,90,14]],mover:1}];
+    let h=0,b,v=[0,0],strokes=0,total=0,parT=0,drag=null,sunk=false,lt=performance.now();const reset=()=>{const H=HOLES[h];b=[...H.ball];v=[0,0];strokes=0;sunk=false;$("arT").textContent=(h+1)+"/3 · par "+H.par};reset();
+    const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*300/r.width,(e.clientY-r.top)*420/r.height]};
+    cv.addEventListener("pointerdown",e=>{e.preventDefault();if(sunk||Math.hypot(v[0],v[1])>2)return;drag={s:pos(e),c:pos(e)};cv.setPointerCapture(e.pointerId)});
+    cv.addEventListener("pointermove",e=>{if(drag)drag.c=pos(e)});
+    cv.addEventListener("pointerup",e=>{if(!drag)return;const dx=drag.s[0]-drag.c[0],dy=drag.s[1]-drag.c[1],m=Math.min(160,Math.hypot(dx,dy));drag=null;if(m<6)return;const a=Math.atan2(dy,dx);v=[Math.cos(a)*m*5.5,Math.sin(a)*m*5.5];strokes++;SFX.tick(.7);buzz(8)});
+    const loop=now=>{if(!AR||room!=="arcade")return;const dt=Math.min(.033,(now-lt)/1000);lt=now;const H=HOLES[h],t=now/1000,mv=H.mover?[[115+Math.sin(t*1.6)*95,260,70,14]]:[],W=[...H.walls,...mv];
+      if(!sunk){b[0]+=v[0]*dt;b[1]+=v[1]*dt;const f=Math.pow(.42,dt);v=[v[0]*f,v[1]*f];if(Math.hypot(v[0],v[1])<6)v=[0,0];
+        if(b[0]<8){b[0]=8;v[0]=-v[0]*.8}if(b[0]>292){b[0]=292;v[0]=-v[0]*.8}if(b[1]<8){b[1]=8;v[1]=-v[1]*.8}if(b[1]>412){b[1]=412;v[1]=-v[1]*.8}
+        W.forEach(([x,y,w,hh])=>{if(b[0]>x-7&&b[0]<x+w+7&&b[1]>y-7&&b[1]<y+hh+7){const ox=Math.min(b[0]-(x-7),x+w+7-b[0]),oy=Math.min(b[1]-(y-7),y+hh+7-b[1]);if(ox<oy){v[0]=-v[0]*.8;b[0]+=b[0]<x+w/2?-ox:ox}else{v[1]=-v[1]*.8;b[1]+=b[1]<y+hh/2?-oy:oy}SFX.tick(.3)}});
+        const sp=Math.hypot(v[0],v[1]),dc=Math.hypot(b[0]-H.cup[0],b[1]-H.cup[1]);if(dc<11&&sp<520){sunk=true;v=[0,0];total+=strokes;parT+=H.par;const d=strokes-H.par;banner(strokes===1?"HOLE IN ONE!":d<=-1?"Birdie!":d===0?"Par":"+"+d,d<0||strokes===1?"g":"a");SFX[strokes===1?"rebirth":"sell"]();if(strokes===1)confetti(160);
+          setTimeout(()=>{h++;if(h>=HOLES.length){AR=null;const under=parT-total;end(total,Math.max(4,10+under*8+(total<=parT?10:0)));return}reset()},900)}
+        else if(strokes>=8&&sp===0){sunk=true;total+=9;parT+=H.par;banner("Picked up","r");setTimeout(()=>{h++;if(h>=HOLES.length){AR=null;end(total,Math.max(4,10+(parT-total)*8));return}reset()},700)}}
+      $("arS").textContent=total+strokes*(sunk?0:1);
+      g.fillStyle="#2f9a4e";g.fillRect(0,0,300,420);g.fillStyle="#3aaa58";for(let i=0;i<14;i++)g.fillRect(0,i*30,300,15);g.strokeStyle="#7a5a36";g.lineWidth=8;g.strokeRect(4,4,292,412);
+      g.fillStyle="#1b1d22";g.beginPath();g.arc(H.cup[0],H.cup[1],11,0,7);g.fill();g.fillStyle="#fff";g.fillRect(H.cup[0]-1,H.cup[1]-40,2,40);g.fillStyle="#e2364a";g.beginPath();g.moveTo(H.cup[0]+1,H.cup[1]-40);g.lineTo(H.cup[0]+20,H.cup[1]-33);g.lineTo(H.cup[0]+1,H.cup[1]-26);g.fill();
+      W.forEach(([x,y,w,hh])=>{g.fillStyle="#8a5a3a";g.fillRect(x,y,w,hh);g.fillStyle="#a8743a";g.fillRect(x,y,w,4)});
+      if(drag){const dx=drag.s[0]-drag.c[0],dy=drag.s[1]-drag.c[1],m=Math.min(160,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);g.strokeStyle="rgba(255,255,255,.85)";g.setLineDash([6,6]);g.lineWidth=3;g.beginPath();g.moveTo(b[0],b[1]);g.lineTo(b[0]+Math.cos(a)*m*.8,b[1]+Math.sin(a)*m*.8);g.stroke();g.setLineDash([]);g.fillStyle=m>120?"#e2364a":m>60?"#ffcc33":"#2fd28a";g.fillRect(10,400,m/160*120,8)}
+      if(!sunk){g.fillStyle="rgba(0,0,0,.25)";g.beginPath();g.ellipse(b[0]+2,b[1]+3,7,4,0,0,7);g.fill();g.fillStyle="#fff";g.beginPath();g.arc(b[0],b[1],7,0,7);g.fill()}
       requestAnimationFrame(loop)};requestAnimationFrame(loop)}
   if(k==="hoop"){box.innerHTML=`<div class="hoopbox"><div class="hoopnet">🏀</div><div class="hmeter"><i class="hz" id="hZ"></i><b id="hM"></b></div><button class="bigbtn" id="hShoot">Shoot</button></div>`;$("arL").textContent="Shots left";
     let shot=0,sc=0,t0=performance.now(),zone=.3;const fire=e=>{e.preventDefault();if(shot>=10)return;const t=(performance.now()-t0)/1000,pos=(Math.sin(t*(2.4+shot*.25))+1)/2,d=Math.abs(pos-.5);shot++;
@@ -4727,7 +4749,7 @@ const WN_VER=40,WN=[
  ["🧭","Pet adventures","Send a pet on a park run, into the woods or on a wild expedition from the Pets screen. It comes back with cash, crates, treasure maps or even golden items.","2026-10-07T03:30"],
  ["🏅","Duel ranks","Duels now have a rating, from Bronze to Champion. Beat stronger players to climb faster. Ranks show in the Friends list and the duel menu.","2026-10-07T03:20"],
  ["🗺️","Treasure maps","Crates and the Arcade can give you treasure maps. Read one and a red X appears somewhere in town. Walk there and dig for cash, golden items and more.","2026-10-07T03:15"],
- ["🕹️","The Arcade","A neon arcade downtown: Mole mash, Tower stack and Hoop shot. Win tickets and trade them at the prize counter for crates, cash, energy and arcade-only neon gear.","2026-10-07T03:30"],
+ ["🕹️","The Arcade","A neon arcade downtown: Mole mash, Tower stack, Hoop shot and Mini golf. Win tickets and trade them at the prize counter for crates, cash, energy and arcade-only neon gear.","2026-10-07T03:30"],
  ["⚔️","Duels","Challenge anyone in your room, bots too, from the Friends list: Quick draw, Tap frenzy or a 100 m sprint. No muscles needed. Winners get fans.","2026-10-07T14:00"],
  ["🚀","Moon & Mars matter","Rocket to a little grey Moon or a big red Mars. Plant your flag to unlock Space elevators (Moon) and Dyson spheres (Mars), and build each planet's Colony HQ for huge generator boosts.","2026-10-07T13:00"],
  ["🧙","Wizard robe","A long starry robe to match the wizard hat, in the new Outfit slot at the Mall.","2026-10-07T12:00"],
