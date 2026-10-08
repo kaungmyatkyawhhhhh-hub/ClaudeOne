@@ -2,9 +2,28 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (8 Oct, night): place lost, rebuilt from the repo, parking arrows
-**Saved to Roblox (Version History 296-299, last 9:36 PM) and published once (v298, 9:34 PM, by the owner). The parking
-arrow fix (v299) is saved but not published yet: publish (Alt+P) to make it live.**
+## LATEST (8 Oct, 10 PM): bigger skate park, grinding, smooth quarter pipes
+**Saved to Roblox (v302, 9:57 PM); not published: publish (Alt+P) to make it (and the parking arrows) live.**
+- **Bigger:** `Config/Town.SkatePark` 56 x 46 -> **84 x 64** (x -164..-80, z 174..238, same centre). New layout
+  (`Town.luau` `buildSkatePark`, the old `SkateParkExtras` builder folded in and deleted): big quarter pipe (west), half
+  pipe (back), quarter pipe (front east), fun box with a rail, two ledges with stripes, a kicker, a manual pad, a flat
+  bar, a long rail (20 studs) and a low beginner rail, three painted discs, benches by the gate, 4 floodlights (range 56).
+  Boardwalks to the two gates shortened (`Config/Town.Boardwalks`), 4 palms moved off the footprint (`PALMS` /
+  `PALM_MOVES`). In the place: `require(_Builders.Town).RebuildSkatePark()` (only the park, its two boardwalks and the
+  palms; the rest of the town keeps its hand fixes). Graffiti walls now Oswald (they were Montserrat).
+- **Smooth quarter pipe sides:** the side walls were stacked boxes (looked like stairs). Each side is now a solid cheek
+  whose top edge follows the curve (per slice a block + a wedge), 10 slices, the deck block as wide as the cheeks.
+- **Grinding (`SkateClient`):** rails tagged `GrindRail` (the 2 rails, the fun box rail, the flat bar). Ollie onto one
+  while rolling roughly along it (within ~63 degrees) and the board locks on: slides along the bar with light friction,
+  steering ignored, sparks from the board, a lower crouch with arms out (others: a board on metal shows the grind pose);
+  it ends at the bar's end, when slow, or when you jump. Tested (scripted ride, `TestSkateMove` hook): ollie at x -155,
+  locked on at -146.8 with the feet exactly on the bar top (2.05), slid 17 studs at ~18 studs/s, rolled off the end; no
+  errors. No grind sound yet (you pick sound ids). Screenshots: skatepark_new_above, quarterpipe_new_side, grind_rail.
+- Not done: a screenshot of a rider mid-grind (the capture tool's delay kept missing the 1 s grind; try it yourself:
+  Skate, roll along the long rail by the west quarter pipe, jump just before it).
+
+## Before that (8 Oct, night): place lost, rebuilt from the repo, parking arrows
+**Saved to Roblox (Version History 296-299, last 9:36 PM) and published once (v298, 9:34 PM, by the owner).**
 
 **What happened.** The GYM ARC cloud place fell back to about 7 Oct 21:00: its last Save to Roblox before tonight was
 7 Oct 9:54 PM, so all 8 Oct work (unified muscles, skin stages, machine cards, pro gym lifts ...) existed only in the
@@ -170,7 +189,8 @@ end: a local file can't play-test (no DataStore: PlayerData errors at load, the 
   (they count in the first Growth Spurt's Core goal; pacing still passes); Cable Woodchop (pro gym) trains them as main.
 - **Poses:** `PoseData` + `PoseController` (from the poses package), `PoseClient` (name, facing, hit, release),
   `ShowOffService.SetPose` (server sets attribute `Pose`; judges score on the stage); statue + mirrors use `Shared/PoseApply`.
-- **Skate:** `SkateClient` (momentum, carve, brake, ollie, side-on stance) + `SkateService` (board model).
+- **Skate:** `SkateClient` (momentum, carve, brake, ollie, side-on stance, grinding on `GrindRail` bars) + `SkateService`
+  (board model). Skate park 84 x 64 (`Config/Town.SkatePark`, built by `Town.luau`).
 - **UI v7:** 2-column colored 3D tiles on the left (`SideMenu`) with a fold arrow (phones: the tiles hang from the arrow
   at the top left, folded by default; no centre grid any more), top-bar pills (`TopBar`: coins; Quests, Daily, Settings),
   world stat labels with click-to-expand, hover glow, spring float and push-apart. Icons/colors in `Config/HudIcons`
@@ -246,7 +266,7 @@ end: a local file can't play-test (no DataStore: PlayerData errors at load, the 
   `PersonalRecord`, `Grew`, `LevelUp`, `Maxed`, `TitleUnlocked`, `TierUnlocked`, `GeneticsClank`, `OutOfStamina`, `RepTick`/`Click`,
   and the genetics reveal's `GeneticsSpin`, `GeneticsFlip`, `GeneticsPop`, `GeneticsShimmer`, `GeneticsBurst`, `GeneticsDrumRoll`,
   `GeneticsExplode`, `GeneticsBlessed`.
-  No sound yet: skateboard rolling, sliding doors, store purchase, mirror opening. Area music only has Starter and Pro.
+  No sound yet: skateboard rolling, grinding on a rail, sliding doors, store purchase, mirror opening. Area music only has Starter and Pro.
 - **Badge ids:** Aesthetics God, Skyscraper, Defied Genetics have `badgeId = nil` in `Config/Titles.luau`.
 - **Monetization ids** (stays OFF until you add them): 7 game passes, 3 products in `Config/Monetization.luau`.
 - **DataStore name:** Studio saves to `"PlayerData_1"`. Tell me if it should be something else.
@@ -296,4 +316,4 @@ end: a local file can't play-test (no DataStore: PlayerData errors at load, the 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
 `TestCoins`, `TestSpurts`, `TestMuscleShare` (0..6 x the goal, live; 2 = full look, 5 = mass monster), `TestMuscleIds` ("Biceps,Triceps", or with own shares "Abs=0.7,Lats=2"), `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D" or "C,B,A,S,S,D,VTaper": six grades in group order, optional frame, for the first roll / the
-next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots), `PoseDebug` (PoseController prints joints found/missing and playing tracks). Without FreshPlayer: `TestMuscleExp` (e.g. 2000000) = every muscle at that EXP on your own save, saving off for the session. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.
+next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots), `PoseDebug` (PoseController prints joints found/missing and playing tracks). Without FreshPlayer: `TestMuscleExp` (e.g. 2000000) = every muscle at that EXP on your own save, saving off for the session. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`. `TestSkateMove` (a Vector3, set on the client) stands in for the stick while skating (scripted ride / grind tests; the MCP play session has no control scripts).

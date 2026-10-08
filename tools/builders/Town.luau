@@ -1079,12 +1079,15 @@ end
 local CONCRETE = hex("#A8A49C")
 local COPING = hex("#C9CCD2")
 
--- Quarter pipe facing local -Z: curved transition made of slices, a deck on top with metal coping.
 -- Quarter pipe: riders come from local -Z; the curve starts flat at the pivot and rises toward +Z (radius R, up to 80
--- degrees), then a deck with metal coping. Built from slices, with side walls filling in under the curve.
+-- degrees), then a deck with metal coping. Built from slices. Each side is a solid cheek whose top edge follows the
+-- curve exactly (per slice a block up to the slice's low end and a wedge from there to its high end), so the side
+-- reads as one smooth curved wall (the old side walls were stacked boxes that looked like stairs).
+local CHEEK = hex("#A6A29A")
 local function quarterPipe(m, cf, width, radius)
-	local slices = 8
+	local slices = 10
 	local maxAngle = rad(80)
+	local cheekX = width / 2 + 0.2 -- flush against the transition's sides
 	for i = 0, slices - 1 do
 		local a0, a1 = (i / slices) * maxAngle, ((i + 1) / slices) * maxAngle
 		local z0, y0 = radius * math.sin(a0), radius - radius * math.cos(a0)
@@ -1093,22 +1096,26 @@ local function quarterPipe(m, cf, width, radius)
 		local am = (a0 + a1) / 2
 		p(m, "Transition", Vector3.new(width, 0.5, len + 0.15), cf * CFrame.new(0, (y0 + y1) / 2, (z0 + z1) / 2) * CFrame.Angles(-am, 0, 0) * CFrame.new(0, -0.25, 0), CONCRETE, M.Concrete, true)
 		for _, side in ipairs({ -1, 1 }) do
-			local h = (y0 + y1) / 2
-			if h > 0.05 then p(m, "SideWall", Vector3.new(0.4, h, len), cf * CFrame.new(side * (width / 2 - 0.2), h / 2, (z0 + z1) / 2), hex("#A6A29A"), M.Concrete, true) end
+			if y0 > 0.01 then p(m, "Cheek", Vector3.new(0.4, y0, z1 - z0), cf * CFrame.new(side * cheekX, y0 / 2, (z0 + z1) / 2), CHEEK, M.Concrete, true) end
+			local w = Kit.wedge(m, "Cheek", Vector3.new(0.4, y1 - y0, z1 - z0), cf * CFrame.new(side * cheekX, y0 + (y1 - y0) / 2, (z0 + z1) / 2), CHEEK, M.Concrete)
+			w.CastShadow = true
 		end
 	end
 	local topY, topZ = radius - radius * math.cos(maxAngle), radius * math.sin(maxAngle)
-	-- deck on a solid block, coping on the lip, a rail at the back
-	p(m, "DeckBlock", Vector3.new(width, topY, 3.6), cf * CFrame.new(0, topY / 2, topZ + 1.8), hex("#A6A29A"), M.Concrete, true)
-	p(m, "Deck", Vector3.new(width, 0.4, 3.6), cf * CFrame.new(0, topY + 0.2, topZ + 1.8), CONCRETE, M.Concrete, true)
+	-- deck on a solid block (as wide as the cheeks, so the sides are one flat wall), coping on the lip, a rail at the back
+	p(m, "DeckBlock", Vector3.new(width + 0.8, topY, 3.6), cf * CFrame.new(0, topY / 2, topZ + 1.8), CHEEK, M.Concrete, true)
+	p(m, "Deck", Vector3.new(width + 0.8, 0.4, 3.6), cf * CFrame.new(0, topY + 0.2, topZ + 1.8), CONCRETE, M.Concrete, true)
 	cyl(m, "Coping", width, 0.35, cf * CFrame.new(0, topY + 0.25, topZ + 0.1), COPING, M.Metal)
 	p(m, "DeckRail", Vector3.new(width, 0.12, 0.12), cf * CFrame.new(0, topY + 3, topZ + 3.5), C.Iron, M.Metal)
 	for x = -width / 2 + 0.3, width / 2 - 0.3, 3 do p(m, "DeckPost", Vector3.new(0.15, 2.8, 0.15), cf * CFrame.new(x, topY + 1.6, topZ + 3.5), C.Iron, M.Metal, true) end
 end
 
+-- A grind rail from a to b (floor points) at `height`. The round bar is tagged "GrindRail": SkateClient lets a board ride
+-- along it (the bar's axis is its local X, its length Size.X).
 local function grindRail(m, a, b, height)
 	local mid = (a + b) / 2
-	cyl(m, "Rail", (b - a).Magnitude, 0.3, CFrame.lookAt(mid + Vector3.new(0, height, 0), b + Vector3.new(0, height, 0)) * CFrame.Angles(0, rad(90), 0), COPING, M.Metal, true)
+	local bar = cyl(m, "Rail", (b - a).Magnitude, 0.3, CFrame.lookAt(mid + Vector3.new(0, height, 0), b + Vector3.new(0, height, 0)) * CFrame.Angles(0, rad(90), 0), COPING, M.Metal, true)
+	CollectionService:AddTag(bar, "GrindRail")
 	for _, point in ipairs({ a, b, mid }) do
 		p(m, "RailPost", Vector3.new(0.25, height, 0.25), CFrame.new(point + Vector3.new(0, height / 2, 0)), C.Iron, M.Metal, true)
 		p(m, "RailFoot", Vector3.new(0.7, 0.12, 0.7), CFrame.new(point + Vector3.new(0, 0.06, 0)), C.Iron, M.Metal)
@@ -1144,7 +1151,7 @@ local function graffiti(m, cf, w, h, words, colors)
 	label.BackgroundTransparency = 1
 	label.Text = words
 	label.TextColor3 = hex("#F7F2E8")
-	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
+	label.FontFace = Theme.Fonts.Bold -- (Oswald: the game never uses Montserrat)
 	label.TextScaled = true
 	label.Rotation = -6
 	label.Parent = gui
@@ -1154,34 +1161,80 @@ local function graffiti(m, cf, w, h, words, colors)
 	return wallPart
 end
 
+-- painted floor disc in a bumper color with a thin white ring and hub (slightly different heights: nothing flickers)
+local function paintedDisc(m, cf, diameter, color)
+	cyl(m, "PaintRing", 0.05, diameter + 0.5, cf * CFrame.new(0, 0.325, 0) * up, C.White, M.SmoothPlastic)
+	cyl(m, "Paint", 0.05, diameter, cf * CFrame.new(0, 0.36, 0) * up, color, M.SmoothPlastic)
+	cyl(m, "PaintHub", 0.05, diameter * 0.28, cf * CFrame.new(0, 0.395, 0) * up, C.White, M.SmoothPlastic)
+end
+
+-- a kicker: a wedge rising toward local +Z (ride in from -Z, launch off the +Z edge) with a metal lip and a back panel
+local function kicker(m, cf, width, length, height)
+	local w = Kit.wedge(m, "Kicker", Vector3.new(width, height, length), cf * CFrame.new(0, 0.3 + height / 2, 0), CONCRETE, M.Concrete)
+	w.CastShadow = true
+	p(m, "KickerLip", Vector3.new(width + 0.08, 0.12, 0.3), cf * CFrame.new(0, 0.3 + height - 0.04, length / 2 - 0.15), COPING, M.Metal)
+	p(m, "KickerBack", Vector3.new(width, height, 0.25), cf * CFrame.new(0, 0.3 + height / 2, length / 2 + 0.125), CHEEK, M.Concrete, true)
+end
+
+-- a ledge along local X: concrete block with a steel edge on its -Z side and a painted stripe on both faces
+local function ledge(m, cf, length, stripe)
+	p(m, "Ledge", Vector3.new(length, 1.4, 2), cf * CFrame.new(0, 1, 0), hex("#C9C4BA"), M.Concrete, true)
+	p(m, "LedgeEdge", Vector3.new(length, 0.15, 0.2), cf * CFrame.new(0, 1.72, -1), COPING, M.Metal)
+	for _, s in ipairs({ -1, 1 }) do
+		p(m, "LedgeStripe", Vector3.new(length - 0.4, 0.28, 0.04), cf * CFrame.new(0, 0.85, s * 1.02), stripe, M.SmoothPlastic)
+	end
+end
+
+-- The skate park (Config.Town.SkatePark, 84 x 64 since 8 Oct). Local layout around the centre: x -42..42, z -32..32;
+-- the main gate is in the middle of the -Z side (Beach Road), a side gate in the middle of the +X side (beach gym).
+-- West: a big quarter pipe. Back: a half pipe. Front east: a quarter pipe. Middle: a fun box with a rail on top, two
+-- ledges, a kicker, a manual pad, painted discs. Grindable ("GrindRail"): a long rail, a low beginner rail, the fun box
+-- rail and a flat bar.
 local function buildSkatePark()
 	local spec = Town.SkatePark
 	local c, s = spec.Center, spec.Size
 	local m = model(folder, "SkatePark", CFrame.new(c))
 	local base = CFrame.new(c.X, 0, c.Z)
+	local function at(x, z) return base * CFrame.new(x, 0, z) end
+	local function ground(x, z) return (base * CFrame.new(x, 0.3, z)).Position end
 	p(m, "Slab", Vector3.new(s.X, 0.5, s.Z), base * CFrame.new(0, 0.05, 0), CONCRETE, M.Concrete, true)
 	for x = -s.X / 2 + 6, s.X / 2 - 1, 6 do p(m, "SlabJoint", Vector3.new(0.08, 0.02, s.Z), base * CFrame.new(x, 0.31, 0), hex("#9A968E")) end
-	-- quarter pipes at both ends, a half pipe in the back, a fun box with a rail in the middle, ledges, rails
-	-- quarter pipes at both ends (each rises toward its fence), a half pipe at the back (two facing quarter pipes)
-	quarterPipe(m, base * CFrame.new(-s.X / 2 + 9.5, 0.3, -2) * CFrame.Angles(0, rad(-90), 0), 12, 4.5)
-	quarterPipe(m, base * CFrame.new(s.X / 2 - 9, 0.3, -s.Z / 4) * CFrame.Angles(0, rad(90), 0), 10, 4)
-	local hp = base * CFrame.new(2, 0.3, s.Z / 2 - 9)
-	quarterPipe(m, hp * CFrame.new(-4, 0, 0) * CFrame.Angles(0, rad(-90), 0), 10, 5)
-	quarterPipe(m, hp * CFrame.new(4, 0, 0) * CFrame.Angles(0, rad(90), 0), 10, 5)
+	-- quarter pipes (each rises toward its fence) and the half pipe at the back (two facing quarter pipes)
+	quarterPipe(m, base * CFrame.new(-32, 0.3, 0) * CFrame.Angles(0, rad(-90), 0), 18, 5.5)
+	quarterPipe(m, base * CFrame.new(33, 0.3, -18) * CFrame.Angles(0, rad(90), 0), 12, 4.5)
+	local hp = base * CFrame.new(8, 0.3, 22)
+	quarterPipe(m, hp * CFrame.new(-5, 0, 0) * CFrame.Angles(0, rad(-90), 0), 12, 5.5)
+	quarterPipe(m, hp * CFrame.new(5, 0, 0) * CFrame.Angles(0, rad(90), 0), 12, 5.5)
 	-- fun box: flat top with ramps on two sides (wedges rise toward the box) and a rail across it
-	local fb = base * CFrame.new(-2, 0.3, -6)
+	local fb = base * CFrame.new(-6, 0.3, -8)
 	p(m, "FunBoxTop", Vector3.new(8, 1.6, 6), fb * CFrame.new(0, 0.8, 0), CONCRETE, M.Concrete, true)
 	Kit.wedge(m, "FunBoxRamp", Vector3.new(6, 1.6, 4), fb * CFrame.new(-6, 0.8, 0) * CFrame.Angles(0, rad(90), 0), CONCRETE, M.Concrete)
 	Kit.wedge(m, "FunBoxRamp", Vector3.new(6, 1.6, 4), fb * CFrame.new(6, 0.8, 0) * CFrame.Angles(0, rad(-90), 0), CONCRETE, M.Concrete)
 	for _, z in ipairs({ -3, 3 }) do p(m, "FunBoxEdge", Vector3.new(8, 0.15, 0.15), fb * CFrame.new(0, 1.62, z), COPING, M.Metal) end
 	grindRail(m, (fb * CFrame.new(-3, 0, 0)).Position + Vector3.new(0, 1.6, 0), (fb * CFrame.new(3, 0, 0)).Position + Vector3.new(0, 1.6, 0), 1)
-	grindRail(m, (base * CFrame.new(-12, 0.3, 10)).Position, (base * CFrame.new(4, 0.3, 10)).Position, 1.6)
-	-- ledges: concrete blocks with steel edges
-	for i, z in ipairs({ -14, 6 }) do
-		local l = base * CFrame.new(10 - i * 4, 0.3, z)
-		p(m, "Ledge", Vector3.new(10, 1.4, 2), l * CFrame.new(0, 0.7, 0), hex("#C9C4BA"), M.Concrete, true)
-		p(m, "LedgeEdge", Vector3.new(10, 0.15, 0.2), l * CFrame.new(0, 1.42, -1), COPING, M.Metal)
+	-- rails: a long one (20 studs) and a low beginner rail
+	grindRail(m, ground(-28, 12), ground(-8, 12), 1.6)
+	grindRail(m, ground(6, -24), ground(22, -24), 1)
+	-- flat bar along z (two posts, a long round bar, end caps)
+	local bar = at(30, 12)
+	for _, z in ipairs({ -3.5, 3.5 }) do
+		p(m, "BarPost", Vector3.new(0.25, 1.1, 0.25), bar * CFrame.new(0, 0.85, z), C.Iron, M.Metal, true)
+		p(m, "BarFoot", Vector3.new(0.7, 0.1, 0.7), bar * CFrame.new(0, 0.35, z), C.Iron, M.Metal)
 	end
+	CollectionService:AddTag(cyl(m, "FlatBar", 8.6, 0.28, bar * CFrame.new(0, 1.5, 0) * CFrame.Angles(0, rad(90), 0), COPING, M.Metal, true), "GrindRail")
+	for _, z in ipairs({ -4.3, 4.3 }) do cyl(m, "BarCap", 0.12, 0.34, bar * CFrame.new(0, 1.5, z) * CFrame.Angles(0, rad(90), 0), C.Iron, M.Metal) end
+	-- ledges, a kicker toward the east quarter pipe, a manual pad (low, long, coping on both long edges)
+	ledge(m, at(18, 6), 10, hex("#E86A6A"))
+	ledge(m, at(-14, 2), 10, hex("#7CC6A5"))
+	kicker(m, at(12, -10) * CFrame.Angles(0, rad(90), 0), 3.2, 3.6, 1.2)
+	local pad = at(-30, -22) * CFrame.Angles(0, rad(90), 0)
+	p(m, "ManualPad", Vector3.new(9, 0.9, 3.2), pad * CFrame.new(0, 0.75, 0), CONCRETE, M.Concrete, true)
+	for _, side in ipairs({ -1, 1 }) do p(m, "PadCoping", Vector3.new(9.08, 0.14, 0.18), pad * CFrame.new(0, 1.22, side * 1.55), COPING, M.Metal) end
+	p(m, "PadStripe", Vector3.new(9.02, 0.2, 3.22), pad * CFrame.new(0, 0.5, 0), hex("#2E6E8E"), M.Concrete)
+	-- painted floor discs in the open spots
+	paintedDisc(m, at(-22, -12), 7, hex("#7CC6A5"))
+	paintedDisc(m, at(0, 6), 7, hex("#F2C14E"))
+	paintedDisc(m, at(24, -6), 6, hex("#E86A6A"))
 	-- fence with gates (posts, top rail, see-through mesh panels)
 	local function fence(x0, z0, x1, z1)
 		local a, b = Vector3.new(x0, 0, z0), Vector3.new(x1, 0, z1)
@@ -1201,16 +1254,16 @@ local function buildSkatePark()
 	fence(x1, c.Z + 4, x1, z1)
 	-- graffiti walls, benches, lights
 	local artColors = { hex("#E86A6A"), hex("#F2C14E"), hex("#7CC6A5"), hex("#6FA8DC"), hex("#C77DD6") }
-	graffiti(m, look(Vector3.new(c.X - 6, 0.3, z1 - 1.5), Vector3.new(c.X - 6, 0.3, z0)), 16, 6, "RIDE ON", artColors)
-	graffiti(m, look(Vector3.new(x0 + 1.5, 0.3, c.Z + 8), Vector3.new(x1, 0.3, c.Z + 8)), 12, 5, "GYM ARC", { artColors[4], artColors[2], artColors[1] })
-	for _, z in ipairs({ z0 + 4, z0 + 14 }) do TownKit.bench(m, look(Vector3.new(x1 - 2, 0.3, z), Vector3.new(x0, 0.3, z))) end
+	graffiti(m, look(Vector3.new(c.X - 24, 0.3, z1 - 1.5), Vector3.new(c.X - 24, 0.3, z0)), 16, 6, "RIDE ON", artColors)
+	graffiti(m, look(Vector3.new(x0 + 1.5, 0.3, c.Z + 22), Vector3.new(x1, 0.3, c.Z + 22)), 12, 5, "GYM ARC", { artColors[4], artColors[2], artColors[1] })
+	for _, x in ipairs({ -16, 16 }) do TownKit.bench(m, look(Vector3.new(c.X + x, 0.3, z0 + 2), Vector3.new(c.X + x, 0.3, c.Z))) end
 	for _, corner in ipairs({ { x0 + 1, z0 + 1 }, { x1 - 1, z0 + 1 }, { x0 + 1, z1 - 1 }, { x1 - 1, z1 - 1 } }) do
 		cyl(m, "FloodPole", 12, 0.4, CFrame.new(corner[1], 6.3, corner[2]) * up, C.Iron, M.Metal, true)
 		local head = p(m, "Floodlight", Vector3.new(1.6, 0.6, 1), CFrame.lookAt(Vector3.new(corner[1], 12.4, corner[2]), c + Vector3.new(0, 0, 0)), hex("#2B2B2B"), M.Metal)
 		local lens = p(m, "FloodLens", Vector3.new(1.3, 0.4, 0.1), head.CFrame * CFrame.new(0, 0, -0.52), hex("#FFF2DD"), M.Glass)
 		local light = Instance.new("SpotLight")
 		light.Face = Enum.NormalId.Front
-		light.Color, light.Brightness, light.Range, light.Angle, light.Shadows = hex("#FFF2DD"), 1.6, 40, 70, false
+		light.Color, light.Brightness, light.Range, light.Angle, light.Shadows = hex("#FFF2DD"), 1.6, 56, 75, false
 		light.Parent = lens
 		TownKit.nightLight(lens, hex("#FFF2DD"))
 	end
@@ -1261,19 +1314,25 @@ local function beachShower(parent, cf)
 	p(parent, "ShowerTap", Vector3.new(0.3, 0.2, 0.3), cf * CFrame.new(0, 3.2, -0.25), hex("#2E6E8E"), M.Metal)
 end
 
+-- beach palms { x, z, scale }; four moved out of the bigger skate park on 8 Oct (PALM_MOVES: old spot -> new spot)
+local PALMS = {
+	{ -168, 178, 1.1 }, { -171, 200, 0.95 }, { -170, 222, 1.2 }, { -73, 177, 1.15 }, { -72, 194, 0.9 }, { -48, 186, 1.05 },
+	{ -64, 226, 1.2 }, { -44, 244, 0.95 }, { 74, 178, 1.1 }, { 82, 196, 1.0 }, { 96, 232, 1.15 }, { 128, 180, 1.05 },
+	{ 136, 214, 0.95 }, { 190, 182, 1.2 }, { 196, 206, 1.0 }, { 178, 236, 1.1 }, { -116, 248, 1.0 }, { -150, 246, 1.15 },
+}
+local PALM_MOVES = {
+	{ Vector3.new(-162, 0, 196), Vector3.new(-171, 0, 200) }, { Vector3.new(-86, 0, 178), Vector3.new(-73, 0, 177) },
+	{ Vector3.new(-80, 0, 192), Vector3.new(-72, 0, 194) }, { Vector3.new(-120, 0, 240), Vector3.new(-116, 0, 248) },
+}
+
 local function buildBeach()
 	local beach = Instance.new("Folder")
 	beach.Name = "Beach"
 	beach.Parent = folder
 	-- boardwalks connect Beach Road, the skate park, the beach gym and the posing stage
 	for _, bw in ipairs(Town.Boardwalks) do boardwalk(beach, bw[1], bw[2], 6) end
-	-- palms in groups (never in a grid), different heights
-	local palms = {
-		{ -168, 178, 1.1 }, { -162, 196, 0.95 }, { -170, 222, 1.2 }, { -86, 178, 1.15 }, { -80, 192, 0.9 }, { -48, 186, 1.05 },
-		{ -64, 226, 1.2 }, { -44, 244, 0.95 }, { 74, 178, 1.1 }, { 82, 196, 1.0 }, { 96, 232, 1.15 }, { 128, 180, 1.05 },
-		{ 136, 214, 0.95 }, { 190, 182, 1.2 }, { 196, 206, 1.0 }, { 178, 236, 1.1 }, { -120, 240, 1.0 }, { -150, 246, 1.15 },
-	}
-	for i, palm in ipairs(palms) do TownKit.palm(beach, Vector3.new(palm[1], 0, palm[2]), palm[3], i) end
+	-- palms in groups (never in a grid), different heights (none inside the skate park's footprint)
+	for i, palm in ipairs(PALMS) do TownKit.palm(beach, Vector3.new(palm[1], 0, palm[2]), palm[3], i) end
 	-- umbrellas with towels and beach chairs, in two relaxed groups near the water
 	local umbrellaColors = { { hex("#E86A6A"), hex("#F7F2E8") }, { hex("#6FA8DC"), hex("#F7F2E8") }, { hex("#F2C14E"), hex("#F7F2E8") }, { hex("#7CC6A5"), hex("#F7F2E8") } }
 	for i, spot in ipairs({ { 132, 242 }, { 146, 248 }, { 160, 240 }, { 176, 250 }, { -82, 246 }, { -66, 252 }, { 78, 250 }, { -172, 244 } }) do
@@ -1915,6 +1974,42 @@ function Builder.Build()
 		end
 	end
 	return folder
+end
+
+-- Rebuilds ONLY the skate park in the saved place (the rest of the town keeps its hand fixes): replaces
+-- Workspace.Town.SkatePark, re-lays the two boardwalks to its gates (Config.Town.Boardwalks 2 and 4) and moves the palms
+-- that stood where the bigger park is (PALM_MOVES). Command bar, with the builders in ServerStorage._Builders:
+--   require(game.ServerStorage._Builders.Town).RebuildSkatePark()
+local BOARDWALK_PARTS = { Plank = true, Stringer = true, RopePost = true, Rope = true }
+function Builder.RebuildSkatePark()
+	folder = Workspace:FindFirstChild("Town")
+	assert(folder, "Workspace.Town is missing: run Town.Build first")
+	local old = folder:FindFirstChild("SkatePark")
+	if old then old:Destroy() end
+	local beach = folder:FindFirstChild("Beach")
+	if beach then
+		-- the old boardwalks on the two skate park paths (Beach Road -> main gate, side gate -> beach gym), with any length
+		local function onPath(position)
+			return (math.abs(position.X + 122) < 4 and position.Z > 160 and position.Z < 192)
+				or (math.abs(position.Z - 206) < 4 and position.X > -100 and position.X < -34)
+		end
+		for _, part in ipairs(beach:GetChildren()) do
+			if part:IsA("BasePart") and BOARDWALK_PARTS[part.Name] and onPath(part.Position) then part:Destroy() end
+		end
+		for _, index in ipairs({ 2, 4 }) do
+			local bw = Town.Boardwalks[index]
+			boardwalk(beach, bw[1], bw[2], 6)
+		end
+		for _, item in ipairs(beach:GetChildren()) do
+			if item:IsA("Model") and item.Name == "Palm" then
+				local at = item:GetPivot().Position * Vector3.new(1, 0, 1)
+				for _, move in ipairs(PALM_MOVES) do
+					if (at - move[1]).Magnitude < 1.5 then item:PivotTo(item:GetPivot() + (move[2] - move[1])) end
+				end
+			end
+		end
+	end
+	return buildSkatePark()
 end
 
 return Builder

@@ -34,14 +34,14 @@ Town.SportsCourt = { MinX = 60, MaxX = 110, MinZ = 96, MaxZ = 140 }
 Town.SmoothieBar = { Center = Vector3.new(-82, 0, 63), Size = Vector3.new(22, 12, 18) }
 Town.ClothingStore = { Center = Vector3.new(82, 0, 63), Size = Vector3.new(22, 12, 18) }
 Town.Beach = { MinX = -176, MaxX = 200, MinZ = 167 }
-Town.SkatePark = { Center = Vector3.new(-122, 0, 206), Size = Vector3.new(56, 0, 46) }
+Town.SkatePark = { Center = Vector3.new(-122, 0, 206), Size = Vector3.new(84, 0, 64) } -- x -164..-80, z 174..238
 Town.BeachGym = { Center = Vector3.new(16, 0, 206), Size = Vector3.new(104, 0, 66) } -- open-air zones on the sand
 Town.Stage = { Center = Vector3.new(112, 0, 214), Size = Vector3.new(16, 2, 12) }
 Town.Boardwalks = {                                                              -- { from, to } on the sand, 6 wide
 	{ Vector3.new(0, 0, 165), Vector3.new(0, 0, 175) },        -- Beach Road -> beach gym entrance
-	{ Vector3.new(-122, 0, 165), Vector3.new(-122, 0, 184) },  -- Beach Road -> skate park gate
+	{ Vector3.new(-122, 0, 165), Vector3.new(-122, 0, 175) },  -- Beach Road -> skate park gate
 	{ Vector3.new(112, 0, 165), Vector3.new(112, 0, 187) },    -- Beach Road -> posing stage crowd
-	{ Vector3.new(-93, 0, 206), Vector3.new(-37, 0, 206) },    -- skate park side gate -> beach gym
+	{ Vector3.new(-79, 0, 206), Vector3.new(-37, 0, 206) },    -- skate park side gate -> beach gym
 	{ Vector3.new(68, 0, 206), Vector3.new(103, 0, 206) },     -- beach gym -> posing stage
 }
 Town.Sea = { MinZ = 262, MaxZ = 5000 }                                           -- terrain water to the horizon

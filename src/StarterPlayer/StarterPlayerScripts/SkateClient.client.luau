@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Town = require(Shared.Config.Town)
@@ -75,10 +76,93 @@ local RIDE = {
 	MinSpeed = 0.4,
 }
 
-local ride = nil -- { heading, speed, walkSpeed, slowFor, pushing, mover }
+local ride = nil -- { heading, speed, walkSpeed, slowFor, pushing, mover, grind, grindReady, sparks }
+
+------------------------------------------------------------------------
+-- GRINDING. The skate park's rails are tagged "GrindRail" (a round bar lying flat, its axis = local X, length Size.X).
+-- Ollie onto one while rolling roughly along it and the board locks on: it slides along the bar (a little friction,
+-- steering ignored) until it runs off an end, slows down, or you jump off. The bar is solid, so the Humanoid stands on it
+-- (height and jumping stay normal); each frame the board is pulled onto the bar's line and points along it. Sparks fly
+-- from the board while grinding.
+------------------------------------------------------------------------
+local GRIND = {
+	Reach = 1.3,     -- studs sideways from the bar's line to lock on
+	Above = 1.6,     -- the feet may be this far above the bar's top (landing on it) ...
+	Below = 0.6,     -- ... or this far below it (catching its edge: the board is lifted on)
+	Align = 0.45,    -- |cos| between the board and the bar (about 63 degrees or less)
+	MinSpeed = 4,
+	MaxRise = 4,     -- no lock-on while still going up fast from the ollie
+	Friction = 1.6,  -- studs/s² lost while sliding
+	Cooldown = 0.35, -- seconds after leaving a bar before the next lock-on
+}
+local rails = {} -- [part] = true (streamed in / out)
+local function trackRail(part)
+	if part:IsA("BasePart") then rails[part] = true end
+end
+for _, part in ipairs(CollectionService:GetTagged("GrindRail")) do trackRail(part) end
+CollectionService:GetInstanceAddedSignal("GrindRail"):Connect(trackRail)
+CollectionService:GetInstanceRemovedSignal("GrindRail"):Connect(function(part) rails[part] = nil end)
+
+local function feetY(humanoid, root): number
+	return root.Position.Y - humanoid.HipHeight - root.Size.Y / 2
+end
+
+-- the bar under / near the board that it can lock onto, or nil
+local function findRail(humanoid, root, forward: Vector3)
+	local feet = feetY(humanoid, root)
+	local best, bestSide = nil, math.huge
+	for part in pairs(rails) do
+		if part.Parent then
+			local axis = part.CFrame.RightVector
+			local half = part.Size.X / 2
+			local t = (root.Position - part.Position):Dot(axis)
+			if math.abs(t) < half - 0.3 then
+				local onLine = part.Position + axis * t
+				local side = ((root.Position - onLine) * Vector3.new(1, 0, 1)).Magnitude
+				local top = onLine.Y + part.Size.Y / 2
+				local flat = axis * Vector3.new(1, 0, 1)
+				local align = if flat.Magnitude > 0.01 then math.abs(forward:Dot(flat.Unit)) else 0
+				if side < GRIND.Reach and side < bestSide and feet > top - GRIND.Below and feet < top + GRIND.Above and align > GRIND.Align then
+					best, bestSide = { part = part, axis = axis, half = half, top = top }, side
+				end
+			end
+		end
+	end
+	return best
+end
+
+-- sparks under the board while grinding (my own board, this client only)
+local function setSparks(root, humanoid, on: boolean)
+	if not ride then return end
+	if on and not ride.sparks then
+		local attachment = Instance.new("Attachment")
+		attachment.Name = "GrindSparks"
+		attachment.Position = Vector3.new(0, -(humanoid.HipHeight + root.Size.Y / 2), 0)
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Color = ColorSequence.new(Color3.fromRGB(255, 236, 170), Color3.fromRGB(255, 150, 60))
+		emitter.LightEmission = 1
+		emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.14), NumberSequenceKeypoint.new(1, 0) })
+		emitter.Lifetime = NumberRange.new(0.18, 0.35)
+		emitter.Speed = NumberRange.new(5, 9)
+		emitter.SpreadAngle = Vector2.new(70, 70)
+		emitter.Acceleration = Vector3.new(0, -30, 0)
+		emitter.Drag = 2
+		emitter.Rate = 45
+		emitter.Parent = attachment
+		attachment.Parent = root
+		ride.sparks = attachment
+	end
+	if ride.sparks then
+		local emitter = ride.sparks:FindFirstChildOfClass("ParticleEmitter")
+		if emitter then emitter.Enabled = on end
+	end
+end
 
 -- the direction the player is asking for, flat in the world (nil when the stick / keys are idle)
 local function inputDirection(humanoid): Vector3?
+	-- Studio test hook: a "TestSkateMove" Vector3 attribute on Workspace stands in for the stick (scripted ride tests)
+	local test = if RunService:IsStudio() then workspace:GetAttribute("TestSkateMove") else nil
+	if typeof(test) == "Vector3" and test.Magnitude > 0.1 then return (test * Vector3.new(1, 0, 1)).Unit end
 	local move = humanoid.MoveDirection * Vector3.new(1, 0, 1)
 	if move.Magnitude < 0.15 then return nil end
 	return move.Unit
@@ -96,6 +180,8 @@ local function startRide(humanoid, root)
 		walkSpeed = if humanoid.WalkSpeed > 0 then humanoid.WalkSpeed else 16,
 		slowFor = 0,
 		pushing = false,
+		grind = nil, -- { part, axis, half, top, dir } while on a bar
+		grindReady = 0, -- os.clock() after which the next lock-on may happen
 	}
 	humanoid.AutoRotate = false
 	humanoid.WalkSpeed = 0
@@ -124,6 +210,7 @@ local function stopRide()
 	end
 	if ride.mover then ride.mover:Destroy() end
 	if ride.attachment then ride.attachment:Destroy() end
+	if ride.sparks then ride.sparks:Destroy() end
 	ride = nil
 	player:SetAttribute("SkatePushing", nil)
 end
@@ -143,10 +230,39 @@ RunService:BindToRenderStep("SkateRide", Enum.RenderPriority.Input.Value + 1, fu
 	dt = math.min(dt, 0.1)
 	local top = player:GetAttribute("SkateSpeed")
 	top = if type(top) == "number" then top else 32
-	local want = inputDirection(humanoid)
+	local velocity = root.AssemblyLinearVelocity
+	local now = os.clock()
+	-- grinding: let go of the bar, or lock onto one
+	if ride.grind then
+		local g = ride.grind
+		local t = (root.Position - g.part.Position):Dot(g.axis)
+		if not g.part.Parent or math.abs(t) > g.half + 0.2 or ride.speed < 2 or velocity.Y > 6 or feetY(humanoid, root) < g.top - 0.9 then
+			ride.grind = nil
+			ride.grindReady = now + GRIND.Cooldown
+			setSparks(root, humanoid, false)
+		end
+	elseif ride.speed > GRIND.MinSpeed and now > ride.grindReady and velocity.Y < GRIND.MaxRise then
+		local g = findRail(humanoid, root, headingVector(ride.heading))
+		if g then
+			-- point along the bar the way we were going; catching its edge lifts the board onto it
+			g.dir = if headingVector(ride.heading):Dot(g.axis) >= 0 then g.axis else -g.axis
+			ride.heading = math.atan2(-g.dir.X, -g.dir.Z)
+			local standY = g.top + humanoid.HipHeight + root.Size.Y / 2 + 0.05
+			if root.Position.Y < standY then
+				root.CFrame = CFrame.new(root.Position.X, standY, root.Position.Z) * CFrame.Angles(0, ride.heading, 0)
+				root.AssemblyLinearVelocity = velocity * Vector3.new(1, 0, 1)
+			end
+			ride.grind = g
+			setSparks(root, humanoid, true)
+		end
+	end
+	local want = if ride.grind then nil else inputDirection(humanoid)
 	local forward = headingVector(ride.heading)
 	ride.pushing = false
-	if want then
+	if ride.grind then
+		-- on the bar: no steering, a little friction
+		ride.speed = math.max(ride.speed - GRIND.Friction * dt, 0)
+	elseif want then
 		local agree = want:Dot(forward)
 		if agree < -0.55 and ride.speed > 3 then
 			-- holding the opposite way: brake (the board keeps pointing where it goes)
@@ -165,14 +281,13 @@ RunService:BindToRenderStep("SkateRide", Enum.RenderPriority.Input.Value + 1, fu
 		ride.speed = math.max(ride.speed - RIDE.Coast * dt, 0)
 	end
 	-- hills: going down speeds you up, climbing slows you down
-	local velocity = root.AssemblyLinearVelocity
-	if humanoid.FloorMaterial ~= Enum.Material.Air then
+	if humanoid.FloorMaterial ~= Enum.Material.Air and not ride.grind then
 		ride.speed = math.clamp(ride.speed - velocity.Y * RIDE.Slope * dt, 0, top * 1.35)
 	end
 	-- a wall (or anything solid) stops the board instead of letting it push on forever
 	forward = headingVector(ride.heading)
 	local actual = (velocity * Vector3.new(1, 0, 1)):Dot(forward)
-	if ride.speed > 6 and actual < ride.speed * 0.45 then
+	if ride.speed > 6 and actual < ride.speed * 0.45 and not ride.grind then
 		ride.slowFor += dt
 		if ride.slowFor > 0.25 then
 			ride.speed = math.max(actual, 0)
@@ -181,8 +296,14 @@ RunService:BindToRenderStep("SkateRide", Enum.RenderPriority.Input.Value + 1, fu
 	else
 		ride.slowFor = 0
 	end
-	-- apply: face the board's heading and roll at our speed
-	root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, ride.heading, 0)
+	-- apply: face the board's heading and roll at our speed (on a bar: pulled onto its line)
+	local position = root.Position
+	if ride.grind then
+		local g = ride.grind
+		local onLine = g.part.Position + g.axis * (position - g.part.Position):Dot(g.axis)
+		position = Vector3.new(onLine.X, position.Y, onLine.Z)
+	end
+	root.CFrame = CFrame.new(position) * CFrame.Angles(0, ride.heading, 0)
 	if ride.speed < RIDE.MinSpeed then ride.speed = 0 end
 	humanoid.WalkSpeed = 0
 	local roll = forward * ride.speed
@@ -238,7 +359,7 @@ end
 local function pose(other, character, root, dt)
 	local s = poses[character]
 	if not s then
-		s = { speed = 0, carve = 0, crouch = 0, push = 0, pushPhase = 0, air = 0, pop = 0, lastYaw = nil }
+		s = { speed = 0, carve = 0, crouch = 0, push = 0, pushPhase = 0, air = 0, pop = 0, grind = 0, lastYaw = nil }
 		poses[character] = s
 	end
 	local velocity = root.AssemblyLinearVelocity
@@ -259,6 +380,11 @@ local function pose(other, character, root, dt)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local airborne = (humanoid ~= nil and humanoid.FloorMaterial == Enum.Material.Air) or math.abs(velocity.Y) > 6
 	s.air = follow(s.air, if airborne then 1 else 0, 10, dt)
+	-- grinding: my own board knows; for others, a board rolling on metal (the rails) is a grind
+	local grinding = if other == player then (ride ~= nil and ride.grind ~= nil)
+		else (humanoid ~= nil and humanoid.FloorMaterial == Enum.Material.Metal and speed > 2)
+	s.grind = follow(s.grind, if grinding then 1 else 0, 10, dt)
+	if grinding then pushing = false end
 	-- the ollie pop: a quick nose-up when the board leaves the ground going up
 	if airborne and velocity.Y > 8 and s.pop <= 0 then s.pop = 1 end
 	s.pop = math.max(s.pop - dt * 3.2, 0)
@@ -268,7 +394,7 @@ local function pose(other, character, root, dt)
 	s.crouch = follow(s.crouch, math.clamp(speed / top, 0, 1), 3, dt)
 
 	local tuck = s.air * 0.6
-	local knee = rad(22) + rad(16) * s.crouch + rad(38) * tuck
+	local knee = rad(22) + rad(16) * s.crouch + rad(38) * tuck + rad(14) * s.grind -- (lower on a rail)
 	local flex = knee * 0.5
 	-- the pelvis drops so the feet stay on the deck while the knees bend
 	local thigh = character:FindFirstChild("LeftUpperLeg")
@@ -301,7 +427,7 @@ local function pose(other, character, root, dt)
 	set(character, "LAnkle", Angles(-(rootPitch + frontHip - frontKnee), 0, 0))
 	set(character, "RAnkle", Angles(-(rootPitch + backHip - backKnee), 0, 0))
 	-- arms out for balance (more in turns and in the air), elbows soft
-	local balance = rad(38) + math.abs(s.carve) * rad(18) + s.air * rad(22)
+	local balance = rad(38) + math.abs(s.carve) * rad(18) + s.air * rad(22) + s.grind * rad(16)
 	set(character, "LShoulder", Angles(rad(8), 0, -balance - s.carve * rad(10)))
 	set(character, "RShoulder", Angles(-rad(8), 0, balance - s.carve * rad(10)))
 	set(character, "LElbow", Angles(rad(18), 0, 0))
