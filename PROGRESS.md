@@ -3,9 +3,10 @@
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
 ## LATEST (9 Oct): MAX weight button
-- Machine panel: a MAX button right after the machine name ("Crunch Bench  MAX"), above the panel and outside its
-  frame, following the name's width, 1.1x the name's text height (18 px), yellow text #E8C21C (owner moved and styled it; MachineClient, created without a new top-level local: the script is at
-  Luau's 200-local limit). Server `MaxWeight` action (MachineService maxWeight): buys every next plate in order while the
+- Machine panel: a MAX button directly on top of the + button (owner's final layout after two moves): the same width,
+  1/4.5 of its height (10 px at a 44 px +), a 3 px gap, yellow text #E8C21C at 8 px; placed from the + button's screen
+  rectangle (it lives in the title row, which has no layout). MachineClient, created without a new top-level local: the
+  script is at Luau's 200-local limit. Screenshot max_button_above_plus. Server `MaxWeight` action (MachineService maxWeight): buys every next plate in order while the
   main muscle's level allows it and the coins cover it (same checks as UnlockTier), then selects the heaviest usable plate
   (Machines.UsableTier). The panel jumps there at once when nothing is bought, or when the purchases arrive.
 - Tested (fresh player, ~225 coins, MidChest level 26-27, Flat Bench): MAX bought plates 2-6 (157 coins; plate 7 needs

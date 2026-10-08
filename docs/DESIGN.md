@@ -80,9 +80,10 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 ## Machine HUD (shown while on a machine)
 - Machine name in white SemiBold just above the panel (left aligned, text shadow).
 - Weight selector: +/- buttons (line icons), big SemiBold weight number, "lb · tier N" in gray under it.
-- MAX button (owner, 9 Oct) right after the machine name, above the panel (outside its frame), 1.1x the name's text height, yellow
-  text (the bumper yellow; owner's call, so it is under the 44px touch minimum): buys every next plate in order while the main muscle level allows it and the coins
-  cover it, then selects the heaviest plate you can lift (server: MachineService maxWeight, the same checks as Unlock).
+- MAX button (owner, 9 Oct) directly on top of the + button: the same width, 1/4.5 of its height, a 3 px gap, yellow text
+  (the bumper yellow; the owner's layout, so it and its text are under the 44 px touch / 14 px text minimums). Buys every next
+  plate in order while the main muscle level allows it and the coins cover it, then selects the heaviest plate you can lift
+  (server: MachineService maxWeight, the same checks as Unlock).
 - Barbell graphic: plates use the bumper plate color for the current weight tier.
 - Muscles this machine trains, in small muted text under the barbell.
 - Stamina: chunky segmented white bar (10 segments); soft light red under 15%.

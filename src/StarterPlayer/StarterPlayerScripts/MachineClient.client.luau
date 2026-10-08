@@ -1545,33 +1545,6 @@ local titleLabel = Theme.Text({
 	Parent = tapeRow,
 })
 Theme.TextShadow(titleLabel)
--- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift. It sits
--- right after the machine name, above the panel (it follows the name's width), 1.1x the name's text height, yellow text
--- (owner, 9 Oct). (No new top-level local: this script is at Luau's 200-local limit; wired up below by name.)
-do
-	local maxButton = Theme.Button("Secondary", {
-		Name = "Max",
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, Spacing.S, 1, 0),
-		Size = UDim2.fromOffset(48, 20),
-		ZIndex = 4,
-		Parent = tapeRow,
-	})
-	local maxText = Theme.Text({ Text = "MAX", Font = "SemiBold", TextSize = "Small", TextColor3 = Theme.Bumper.Yellow.Fill,
-		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = maxButton })
-	Theme.TextShadow(maxText)
-	local function follow()
-		local textHeight = titleLabel.TextBounds.Y
-		local height = math.floor(textHeight * 1.1 + 0.5)
-		maxButton.Size = UDim2.fromOffset(math.max(height * 2.4, maxText.TextBounds.X + Spacing.M * 2), height)
-		-- centred on the name's line (its text is centred in the label, whose bottom is the row's): never over the panel
-		maxButton.Position = UDim2.new(0, Spacing.S + titleLabel.TextBounds.X + Spacing.M, 1, -(titleLabel.AbsoluteSize.Y - height) / 2)
-	end
-	titleLabel:GetPropertyChangedSignal("TextBounds"):Connect(follow)
-	titleLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(follow)
-	maxText:GetPropertyChangedSignal("TextBounds"):Connect(follow)
-	follow()
-end
 
 local panel = Theme.Panel({
 	Name = "Panel",
@@ -1612,6 +1585,35 @@ end
 local minusButton = stepButton("Minus", 1, Icons.Minus(Colors.Text))
 local weightColumn = box({ LayoutOrder = 2, Size = UDim2.fromScale(0.38, 1), Parent = weightSection }, { Theme.List(Vertical, "XS") })
 local plusButton = stepButton("Plus", 3, Icons.Plus(Colors.Text))
+-- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift. Directly on
+-- top of the + button: the same width, 1/4.5 of its height, a 3 px gap, yellow text (owner's layout). It lives in the
+-- title row (no layout there) and is placed from the + button's screen rectangle, so it follows it on every screen.
+-- (No new top-level local: this script is at Luau's 200-local limit; wired up below by name.)
+do
+	local MAX_GAP, MAX_SHARE = 3, 1 / 4.5
+	local maxButton = Theme.Button("Secondary", {
+		Name = "Max",
+		Size = UDim2.fromOffset(44, 10),
+		ZIndex = 4,
+		Parent = tapeRow,
+	})
+	local maxText = Theme.Text({ Text = "MAX", Font = "SemiBold", TextColor3 = Theme.Bumper.Yellow.Fill,
+		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = maxButton })
+	Theme.TextShadow(maxText)
+	local function follow()
+		local size = plusButton.AbsoluteSize
+		local height = math.max(math.floor(size.Y * MAX_SHARE + 0.5), 6)
+		local at = plusButton.AbsolutePosition - tapeRow.AbsolutePosition
+		maxButton.Size = UDim2.fromOffset(size.X, height)
+		maxButton.Position = UDim2.fromOffset(at.X, at.Y - MAX_GAP - height)
+		-- (whole-number text that fits the thin button: below the usual 14 px minimum, the owner's call)
+		maxText.TextSize = math.max(height - 2, 6)
+	end
+	plusButton:GetPropertyChangedSignal("AbsoluteSize"):Connect(follow)
+	plusButton:GetPropertyChangedSignal("AbsolutePosition"):Connect(follow)
+	tapeRow:GetPropertyChangedSignal("AbsolutePosition"):Connect(follow)
+	follow()
+end
 
 local weightNumber = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 0.56), Parent = weightColumn })
 local tierLabel = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.24), Parent = weightColumn })
