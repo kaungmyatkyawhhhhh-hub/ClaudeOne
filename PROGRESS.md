@@ -2,7 +2,17 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): upper traps
+## LATEST (9 Oct): NPC body shapes lost on clients (the giant looked narrow)
+- Found while widening Dante: Roblox rescales an NPC that has a height scale on EACH CLIENT and drops the server's
+  shaping, so on players' screens Dante's body parts were plain (UpperTorso 2.00 wide instead of 4.91) and Kira, Ivy and
+  Marcus lost the golden ratio; the stage meshes size from the body parts, so his shoulders looked narrow. Players were
+  fine. Fix: `MuscleClient` (fixNpcBody, each scan, only NPCs it shows muscles on) re-applies the widths (the giant's new
+  `BodyWidths` attribute: shoulders 2.46, hips 1.90, arms / legs / depth 1.674 = the mass monster widths at 7'0" with the
+  V-Taper frame) and the proportions when the client's sizes differ from the server's markers (two numbers compared).
+  Tested: every NPC matches the server on the client; Dante's chest stage is 6.92 wide (was 2.81), wider than a maxed
+  player (screenshot giant_vs_maxed_player).
+
+## Before that (9 Oct): upper traps
 - The owner's upper traps never grew: the package's Traps only pushes the upper back out; the slope from the neck to the
   shoulders was a flat fan cap. `tools/gen_muscle_data` now gives the torso cap a ring halfway in (every 4th rim vertex:
   each torso half is 19,950 triangles, the limit is 20,000; four full rings broke the torso) and adds UPPER_TRAPS to the

@@ -17,6 +17,7 @@ local MuscleRig = require(Shared.MuscleRig)
 local Muscles = require(Shared.Config.Muscles)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local ClientData = require(Shared.ClientData)
+local BodyShape = require(Shared.BodyShape)
 
 local player = Players.LocalPlayer
 
@@ -167,6 +168,27 @@ local function candidates()
 	return list
 end
 
+-- NPC bodies: Roblox rescales an NPC that has a height scale on each client and drops the server's shaping (golden ratio
+-- proportions, the giant's widths), so the muscles would sit on a plain body. Put it back when it was lost: a cheap check of
+-- two numbers each scan; BodyShape only touches what Roblox rebuilt.
+local function fixNpcBody(npc: Model)
+	local lower, upper = npc:FindFirstChild("LowerTorso"), npc:FindFirstChild("UpperTorso")
+	if not (lower and lower:IsA("BasePart") and upper and upper:IsA("BasePart")) then return end
+	local propY, widX = lower:GetAttribute("PropY"), upper:GetAttribute("WidX")
+	local lostProportions = type(propY) == "number" and math.abs(lower.Size.Y - propY) > 1e-3
+	local lostWidths = type(widX) == "number" and math.abs(upper.Size.X - widX) > 1e-3
+	if not (lostProportions or lostWidths) then return end
+	local widths = npc:GetAttribute("BodyWidths")
+	if type(widths) == "string" then
+		local s, h, a, l, d = string.match(widths, "^([%d%.]+),([%d%.]+),([%d%.]+),([%d%.]+),([%d%.]+)$")
+		if s then
+			BodyShape.ApplyWidths(npc, { shoulders = tonumber(s) :: number, hips = tonumber(h) :: number, arms = tonumber(a) :: number,
+				legs = tonumber(l) :: number, depth = tonumber(d) :: number })
+		end
+	end
+	BodyShape.ApplyProportions(npc, false)
+end
+
 local function scan()
 	local camera = Workspace.CurrentCamera
 	if not camera then return end
@@ -181,9 +203,11 @@ local function scan()
 			if distance > DROP and not item.mine then
 				untrack(item.model)
 			else
+				if item.kind == "npc" then fixNpcBody(item.model) end
 				refreshInfo(item.model, info, distance)
 			end
 		elseif item.mine or (distance < RANGE and othersAllowed) then
+			if item.kind == "npc" then fixNpcBody(item.model) end
 			track(item.model, item.source, item.mine, item.kind)
 			refreshInfo(item.model, tracked[item.model], distance)
 		end

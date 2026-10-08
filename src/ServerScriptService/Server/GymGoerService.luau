@@ -348,6 +348,10 @@ local function makeGiant(npc)
 	local data = giantData()
 	NpcService.ApplyBody(npc, GrowthSpurts.GetHeight(GIANT.spurts) / BodyShape.BaseHeight)
 	BodyService.ApplyFrame(npc, data)
+	-- (clients re-apply these: Roblox rescales an NPC with a height scale on each client and drops the server's widths;
+	-- MuscleClient puts them back from this attribute)
+	local f = BodyService.WidthFactors(data)
+	npc:SetAttribute("BodyWidths", string.format("%.3f,%.3f,%.3f,%.3f,%.3f", f.shoulders, f.hips, f.arms, f.legs, f.depth))
 	local lift = BodyShape.ApplyProportions(npc, true)
 	if lift ~= 0 then npc:PivotTo(npc:GetPivot() + Vector3.new(0, lift, 0)) end
 	local levels, goal = BodyService.LevelsOf(data)
