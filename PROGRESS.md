@@ -3,8 +3,10 @@
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
 ## LATEST (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
-Not published yet: publish (Alt+P) to make it live. Next up (owner's later briefs): the beach gym uses the real machines,
-then the new spotting system.
+Saved to Roblox (22:41 and 22:43); dated backup `DocumentsGymArc_backupsGymArc_2026-10-08.rbxl` (via File > Download a
+Copy). Not published yet: publish (Alt+P) to make it live. Next up (owner's later briefs, waiting for the OK on this
+one): the beach gym uses the real machines, then the new spotting system (the second version of its boost table: by
+spotter count, coins only).
 - **Machine sign (`MachineSignsClient`, rewritten):** the nearest machine within 12 studs shows a floating glass diamond
   (square turned 45 degrees, dark tinted glass, thin glowing Neon border, slow bob) that turns smoothly toward the
   camera on BOTH axes. Its content (BodyFigure icon with the main muscle in red, the muscle name, the share in red) is a
@@ -115,8 +117,7 @@ end: a local file can't play-test (no DataStore: PlayerData errors at load, the 
   screenshots, so it is the muscle data, not the rebuild.
 - Screenshots: rebuild_{menu,starter_gym,machine_plates,town,character_max,lifting_flatbench,machine_card,genetics}.
 
-**Still to do by the owner:** the dated backup: **File > Download a Copy** (cloud places have no "Save to File As") to
-`C:\Users\kaung\OneDrive\Documents\GymArc_backups\GymArc_2026-10-08.rbxl` (folder made). Publish (Alt+P) for the arrows.
+**Backup:** done at 22:43 (see the LATEST section).
 
 - **Machine card (8 Oct, redesign):** the glowing diamond is gone: one small flat charcoal card over the nearest machine
   (see "Game feel" in the brief); the machine HUD shows the muscle split with percents. Screenshots: card_next_to_barbellrow_pc,
