@@ -1822,13 +1822,22 @@ function renderHud(){hudReveal();
 let room=null;
 function roomHead(title){const gd=typeof GUIDE!=="undefined"&&GUIDE[room]?`<button class="rguide" id="rGuide" aria-label="What is this?">?</button>`:"",tl=String(title).replace(/<[^>]*>|&[a-z]+;/g,"").length;return `<div class="roomhead"><button class="leave" id="leaveBtn">${ARROW}Leave</button><h2 class="${tl>(gd?8:11)?"xlong":tl>(gd?5:7)?"long":""}"><span class="pdot"></span>${title}</h2>${gd}<div class="mini"><b id="rCash">${inW4()?gemF(w4().gems):fmt(Math.round(shownCash==null?S.cash:shownCash))}</b><div class="bar en" id="rEn"><i style="width:${S.energy/maxEnergy()*100}%"></i></div></div></div><div class="rfr" id="rFr">${friendsHere()}</div>`}
 function updMini(){const c=$("rCash");if(c){const e=$("rEn");e.firstChild.style.width=(S.energy/maxEnergy()*100)+"%";e.classList.toggle("low",S.energy<maxEnergy()*.2)}}
+/* every place has its own sound when you walk in */
+const PLACE_SND={cards:()=>{for(let i=0;i<6;i++)tone(1800+Math.random()*900,.025,{type:"square",vol:.012,at:i*.045})},garage:()=>{tone(1200,.08,{type:"square",vol:.03});tone(900,.12,{type:"triangle",vol:.04,at:.09});tone(1500,.05,{type:"square",vol:.02,at:.22})},
+ diner:()=>{tone(1760,.25,{vol:.05});tone(1760,.35,{vol:.04,at:.18})},cityhall:()=>{[523,659,784].forEach((f,i)=>tone(f,.4,{vol:.04,at:i*.14}))},alley:()=>{tone(180,.5,{type:"sawtooth",vol:.03,to:120});tone(90,.3,{type:"triangle",vol:.04,at:.1})},
+ market:()=>{tone(1320,.06,{type:"square",vol:.02});tone(1760,.18,{vol:.05,at:.06})},bank:()=>{tone(110,.25,{type:"triangle",vol:.08,to:60});tone(70,.3,{type:"sine",vol:.06,at:.08})},gym:()=>{tone(200,.06,{type:"square",vol:.05});tone(150,.1,{type:"square",vol:.04,at:.07})},
+ mbeach:()=>{tone(200,.06,{type:"square",vol:.05});tone(150,.1,{type:"square",vol:.04,at:.07})},arcade:()=>{[660,880,1100,1320].forEach((f,i)=>tone(f,.06,{type:"square",vol:.025,at:i*.05}))},club:()=>{[0,.22].forEach(a=>tone(70,.18,{type:"sine",vol:.12,at:a}))},
+ cafe:()=>{tone(2100,.3,{vol:.035});tone(2600,.25,{vol:.025,at:.03})},flea:()=>{tone(700,.08,{type:"triangle",vol:.04});tone(500,.1,{type:"triangle",vol:.04,at:.08})},harbor:()=>{tone(150,.6,{type:"sawtooth",vol:.03,to:140})},
+ airport:()=>{[880,1100].forEach((f,i)=>tone(f,.3,{vol:.035,at:i*.25}))},dealer:()=>{tone(90,.4,{type:"sawtooth",vol:.04,to:200})},lux:()=>{[1568,2093,2637].forEach((f,i)=>tone(f,.35,{vol:.02,at:i*.07}))},night:()=>{[784,988,1175].forEach((f,i)=>tone(f,.5,{vol:.025,at:i*.12}))},
+ storage:()=>{tone(300,.4,{type:"sawtooth",vol:.03,to:200})},raceoff:()=>{tone(90,.35,{type:"sawtooth",vol:.05,to:180})}};
+function placeSnd(k){(PLACE_SND[k]||SFX.door)()}
 function openRoom(k){
   {const cl=placeClosed(k);if(cl){banner(cl,"a");SFX.nope();autoEnter=null;return}}
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
   if(k==="arena"&&!SCN&&S){$("mpSheet").hidden=true;enterArena();return}
   $("mpSheet").hidden=true;
   if(!$("perkSheet").hidden){$("perkSheet").hidden=true;$("perkSheet").innerHTML=""}
-  room=k;target=null;moving=false;autoEnter=null;SFX.door();
+  room=k;target=null;moving=false;autoEnter=null;placeSnd(k);
   const r=$("room");r.hidden=false;r.style.setProperty("--pc",(PL[k]||{c:k==="tokyo"?"#e2364a":k==="paris"?"#2a5bd7":"#f2762e"}).c);
   ({night:()=>openNightMkt(),arcade:()=>openArcade(),market:()=>openMarket(MKT.market),flea:()=>openMarket(MKT.flea),lux:()=>openMarket(MKT.lux),gym:()=>openGym(false),mbeach:()=>openGym(true),home:openHome,tower:openTower,harbor:openHarbor,township:openTownship,storage:openStorage,depot:openDepot,cafe:openCafe,mall:openMall,arena:openArena,bank:openBank,dealer:openDealer,sale:openSale,trade:openTrade,airport:openAirport,frontier:openFrontier,diner:openDiner,stand:openStand,raceoff:openRaceOffice,cityhall:()=>openCityHall(),alley:openAlley,cards:openCards,garage:openGarage,club:openClub,docks:openDocks,tokyo:()=>openMarket(MKT.tokyo),paris:()=>openMarket(MKT.paris)})[k]();
   $("leaveBtn").onclick=closeRoom;renderHud();bountyArrive(k).catch(()=>{});
@@ -5531,7 +5540,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=97,WN=[
+const WN_VER=98,WN=[
+ ["🎵","More music, more sounds","New tracks for the Frontier, the Frontier Road, Flip City at night, the castle, Rusty's jukebox, the Back Alley and City Hall. Every place now has its own sound when you walk in.","2026-10-08T13:30"],
  ["📋","The Now button","A new Now button by the sound icon shows everything that's live or waiting on you: Auction Night, heists, your delivery job, the weather, the mayor race, the crew war, the city goal and more. Tap any row to go there.","2026-10-08T13:00"],
  ["📰","The Flip City Times","A fresh newspaper every morning, written from what actually happened: your day, the mayor, the crew war, the city goal, the weather, classifieds and gossip about Vince.","2026-10-08T13:00"],
  ["👋","While you were away","Stall sales, Frontier visits, delivered jobs and crew trophies that arrive while you're gone now show up together in one summary when you come back.","2026-10-08T13:00"],
@@ -6940,10 +6950,15 @@ const TRACKS={town:{n:"Flip City Lo-fi",bpm:84,root:57,sc:[0,3,5,7,10],ch:[[0,3,
  dubai:{n:"Desert Gold",bpm:90,root:58,sc:[0,1,4,5,7,8,11],ch:[[0,4,7],[1,5,8],[0,4,7],[5,8,12]],w:"sawtooth"},monaco:{n:"Riviera Jazz",bpm:100,root:55,sc:[0,2,4,5,7,9,10],ch:[[0,4,7,10],[5,9,12,15],[2,5,9,12],[7,11,14,17]],w:"triangle"},
  isle:{n:"Island Breeze",bpm:88,root:64,sc:[0,2,4,7,9],ch:[[0,4,7],[5,9,12],[7,11,14],[0,4,7]],w:"sine"},space:{n:"Cosmic Drift",bpm:66,root:50,sc:[0,2,3,7,8],ch:[[0,3,7],[8,12,15],[3,7,10],[5,8,12]],w:"sine"},
  prehist:{n:"Jurassic Drums",bpm:92,root:52,sc:[0,3,5,7,10],ch:[[0,7,12],[5,12,17],[3,10,15],[7,14,19]],w:"triangle"},
- home:{n:"Sunday Morning",bpm:76,root:59,sc:[0,2,4,7,9],ch:[[0,4,7,11],[5,9,12,16],[9,12,16],[7,11,14]],w:"sine"}};
+ home:{n:"Sunday Morning",bpm:76,root:59,sc:[0,2,4,7,9],ch:[[0,4,7,11],[5,9,12,16],[9,12,16],[7,11,14]],w:"sine"},
+ frontier:{n:"Frontier Twang",bpm:100,root:55,sc:[0,2,4,7,9,10],ch:[[0,4,7],[5,9,12],[7,11,14],[0,4,7]],w:"triangle"},road:{n:"Open Road",bpm:118,root:57,sc:[0,3,5,7,10],ch:[[0,3,7],[10,14,17],[8,12,15],[7,10,14]],w:"square"},
+ night:{n:"Flip City After Dark",bpm:70,root:53,sc:[0,2,3,7,10],ch:[[0,3,7,10],[8,12,15],[5,8,12],[7,10,14]],w:"sine"},castle:{n:"Castle Halls",bpm:80,root:50,sc:[0,2,3,5,7,8,11],ch:[[0,3,7],[8,12,15],[5,8,12],[7,11,14]],w:"triangle"},
+ diner:{n:"Rusty's Jukebox",bpm:132,root:60,sc:[0,2,4,7,9],ch:[[0,4,7],[9,12,16],[5,9,12],[7,11,14]],w:"square"},alley:{n:"Back Alley Blues",bpm:84,root:48,sc:[0,3,5,6,7,10],ch:[[0,3,7,10],[5,8,12,15],[0,3,7,10],[7,10,13]],w:"sawtooth"},
+ civic:{n:"City Hall March",bpm:96,root:60,sc:[0,2,4,5,7,9,11],ch:[[0,4,7],[5,9,12],[7,11,14],[0,4,7]],w:"triangle"}};
+const ROOM_TRACK={diner:"diner",alley:"alley",cards:"monaco",cityhall:"civic",coheist:"road",aucn:"monaco",knk:"alley",club:"online"};
 let MUS={on:false,k:null,step:0,next:0,iv:null,g:null};
 const midiF=m=>440*Math.pow(2,(m-69)/12);
-function musTrack(){if(SCN){if(SCN.kind==="city")return TRACKS[SCN.k]?SCN.k:"town";if(SCN.kind==="isle")return"isle";if(SCN.kind==="space")return"space";if(SCN.kind==="house")return S.jbox&&TRACKS[S.jbox]?S.jbox:"home";if(SCN.kind==="prehist")return"prehist";if(SCN.kind==="planet")return"space"}return MPW?"online":"town"}
+function musTrack(){if(room&&ROOM_TRACK[room])return ROOM_TRACK[room];if(SCN){if(SCN.kind==="w4")return"frontier";if(SCN.kind==="castle")return"castle";if(SCN.kind==="city")return TRACKS[SCN.k]?SCN.k:"town";if(SCN.kind==="isle")return"isle";if(SCN.kind==="space")return"space";if(SCN.kind==="house")return S.jbox&&TRACKS[S.jbox]?S.jbox:"home";if(SCN.kind==="prehist")return"prehist";if(SCN.kind==="planet")return"space"}if(MPW)return"online";if(S&&S.px>=X4)return"frontier";if(S&&S.px>W-40)return"road";return typeof night==="function"&&night()>.55?"night":"town"}
 function mnote(m,t,d,w,v){if(!ac||!MUS.g)return;const o=ac.createOscillator(),g=ac.createGain();o.type=w;o.frequency.setValueAtTime(midiF(m),t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(MUS.g);o.start(t);o.stop(t+d+.05)}
 function musTick(){const want=!SET.nomusic&&!muted&&ac&&ac.state==="running"&&!document.hidden;if(!want){if(MUS.g){try{MUS.g.disconnect()}catch(e){}MUS.g=null}return}
   if(!MUS.g){MUS.g=ac.createGain();MUS.g.gain.value=.5;MUS.g.connect(ac.destination);MUS.next=ac.currentTime+.1}
