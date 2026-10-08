@@ -2,25 +2,63 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (8 Oct, 9:30 PM): place rebuilt from the repo
-The cloud place had fallen back to 7 Oct 21:00 (its last Save to Roblox was 7 Oct 9:54 PM). Rebuilt in the real
-GYM ARC place (Team Create) from the repo, saved to Roblox (Version History 296-298, 9:20-9:28 PM):
-- All 370 scripts from `src/` (byte-identical, 0 compile errors); MuscleData + Config/LimbStages regenerated from
-  `Downloads\muscle_v9_unified.zip` and `Downloads\limb_stages` (identical to the repo).
-- Builders whose code changed since 7 Oct re-run: GymAssets (plates), Gyms (both rooms, 60 machines incl. 6 treadmills,
-  pec deck, pro equipment), ProGymPolish, Decor, GeneticsSet, SkinStages, limb stage templates (28); Leg Press / Hack
-  Squat placed as before (no builder); `GymAssets.Replace` swapped 157 plates; `GeneticsCameraRig` (CamPitch 8).
-  Town, beach gym, posing stage, sauna, skate extras, sails, poster, door frames, mirror, cat, NPCs, arm wrestling,
-  leaderboard, statue pedestal, season decor: builders unchanged and their output already there, so NOT re-run (the
-  town carries hand fixes that aren't in any builder). Shadow lights 18 -> 3; shadow / touch flags copied from the
-  8 Oct play-test snapshot (`server.rbxl`).
-- `MachineClient`: no WaitForChild without a timeout; a machine sets itself up when its load part and "Plates" both
-  exist (ChildAdded), no infinite-yield warnings. (The "no Plates" warnings came from playing an unpublished local file:
-  no DataStore, so the server never started and MachineService never made the Plates.)
-- Play solo (fresh player, TestMuscleShare 2): 60/60 machines with Plates (300 plates), no errors in Output; menu, PLAY
-  glide, tutorial, bench reps + coins + HUD split + body map, machine card + "!" NEW, genetics scene, town, max look.
-  Screenshots: rebuild_{menu,starter_gym,machine_plates,town,character_max,lifting_flatbench,machine_card,genetics}.
-- Still to do by the owner: the dated backup copy (`Documents\GymArc_backups`, File > Save to File As).
+## LATEST (8 Oct, night): place lost, rebuilt from the repo, parking arrows
+**Saved to Roblox (Version History 296-299, last 9:36 PM) and published once (v298, 9:34 PM, by the owner). The parking
+arrow fix (v299) is saved but not published yet: publish (Alt+P) to make it live.**
+
+**What happened.** The GYM ARC cloud place fell back to about 7 Oct 21:00: its last Save to Roblox before tonight was
+7 Oct 9:54 PM, so all 8 Oct work (unified muscles, skin stages, machine cards, pro gym lifts ...) existed only in the
+repo. New rule in CLAUDE.md: after every task Save to Roblox + a dated backup copy.
+
+**First try (superseded): the autosave.** `80031260599632_AutoRecovery_2.rbxl` (8 Oct 8:50 PM, really the 7 Oct 21:00
+state) was copied to `export/GymArc_recovered_2026-10-08.rbxl` (git-ignored), scripts and builders pushed into it. Dead
+end: a local file can't play-test (no DataStore: PlayerData errors at load, the server never starts, every machine logs
+"Infinite yield ... Plates"; that is where the "no Plates" warnings came from). That window can be closed without saving.
+
+**The rebuild (in the real cloud place, Team Create):**
+- Scripts: all 370 from `src/` (latest commit), byte-identical, 0 compile errors; 173 stale MuscleData modules (old v8
+  per-muscle data) removed; new: `MachineSignsClient`, `Shared/LimbStages`, `Config/LimbStages`, `Config/SkinStages`,
+  `UI/BodyFigure` + 142 MuscleData modules.
+- Data: MuscleData regenerated from `Downloads\muscle_v9_unified.zip` and `Config/LimbStages` from `Downloads\limb_stages`
+  (`tools/gen_muscle_data`, `tools/gen_limb_stages`): both identical to the repo.
+- World, builders whose code changed since 7 Oct (re-run, they replace what they made): GymAssets (plate templates),
+  Gyms (both rooms, 60 machines incl. 6 working treadmills, pec deck, pro equipment, NPC spots; keeps the Entrance and
+  its MenuCamera), ProGymPolish, Decor (starter / pro / plaza fountain), GeneticsSet, SkinStages, the 28 limb stage
+  templates (`tools/limb_stages_setup`, from the uploaded ids); `GymAssets.Replace` swapped all 157 placed plates;
+  Leg Press x2 + Hack Squat x2 (starter) and 1 + 1 (pro) placed at their old spots (no builder); `GeneticsCameraRig`
+  (CamPitch 8, CamHeight 0).
+- NOT re-run (builder unchanged since 7 Oct and its output already there): Town, beach gym, posing stage, sauna, skate
+  extras, sails, gym front poster, door frames, mirror, gym cat, NPCs + beach NPCs, arm wrestling table, leaderboard
+  wall, statue pedestal, season decor. The town carries hand fixes no builder has (overlaps, sign distances, LOD).
+- World pass redone: shadow-casting lights 18 -> 3 (starter pendant, pro spotlight, posing stage), shadow / touch flags
+  of 17,774 parts copied from the 8 Oct play-test snapshot (`%LOCALAPPDATA%\Roblox\server.rbxl`), small new props
+  without shadows, CanTouch off on 461 static parts (no script uses touch; Seats keep it). 21,281 parts.
+- `MachineClient`: no WaitForChild without a timeout (`waitFor` helper: 5 s timed waits in a loop); a machine sets
+  itself up once its load part and "Plates" both exist (ChildAdded), so a missing Plates gives no warning. The `Config`
+  local was dropped (the script is at Luau's 200 top-level locals).
+- Parking lot arrows (owner): the head was one right-angle wedge that read as a half head pointing back at the shaft;
+  now two mirrored wedges make a symmetric head pointing the way of the shaft (+X). Fixed in the place and in the
+  Town builder. Screenshots: parking_arrows_{before,fixed}.
+
+**Checked in a solo play test** (fresh player, `TestMuscleShare` 2; the test attributes were removed afterwards):
+- OK: no errors in Output the whole session; 60/60 machines got their Plates (300 plates); loading + menu + PLAY glide;
+  tutorial steps advance; bench reps (tier 1 of 12, stamina segments, coins 25 -> 77, HUD split "Mid Chest 53% · Front
+  Delts 21% · Triceps 26%", body-map widget, blue training tint); machine card on the nearest machine + "!" NEW on unused
+  ones; genetics screen (gym set, DNA, labels, frame / body cards, reroll); EXP numbers; side menu + top bar; Coach Dex,
+  a visiting legend (Chad Gainsworth), Muscle of the Day board, 12 regulars walking, titles over heads; prompts for
+  spotting, arm wrestling, shop, posing, mirror, shakes; statue; sliding doors; your character with 7 live muscle
+  meshes, the skin stage and the 4 limb stage meshes; the town.
+- Rebuilt: both gyms and their machines, plates, leg press / hack squat, treadmills, genetics scene, skin and limb
+  stages, decor.
+- There but not tested: skateboard, poses on the stage, running on a treadmill, pro gym lifts, the Gear & Fits store,
+  crews, wardrobe, mirror reflection, anything needing two players. Seasons: decor templates exist, no season was
+  running.
+- Noted: at 2x the goal (full look) the character is much bulkier than the brief's "lean V-taper"; same as the v9
+  screenshots, so it is the muscle data, not the rebuild.
+- Screenshots: rebuild_{menu,starter_gym,machine_plates,town,character_max,lifting_flatbench,machine_card,genetics}.
+
+**Still to do by the owner:** the dated backup: **File > Download a Copy** (cloud places have no "Save to File As") to
+`C:\Users\kaung\OneDrive\Documents\GymArc_backups\GymArc_2026-10-08.rbxl` (folder made). Publish (Alt+P) for the arrows.
 
 - **Machine card (8 Oct, redesign):** the glowing diamond is gone: one small flat charcoal card over the nearest machine
   (see "Game feel" in the brief); the machine HUD shows the muscle split with percents. Screenshots: card_next_to_barbellrow_pc,
@@ -102,11 +140,13 @@ GYM ARC place (Team Create) from the repo, saved to Roblox (Version History 296-
 ## Workflow (no Rojo)
 - **Roblox Studio is the source of truth** (edit through the MCP connection); GitHub is a backup. Scripts are synced between
   Studio and `src/` (`tools/export` exports Studio -> `src/`; during build sessions `src/` is edited and pushed into Studio).
-- After each piece: run the checks in CLAUDE.md, commit + push. **Save the place in Studio** after every session.
+- After each piece: run the checks in CLAUDE.md, commit + push. **After every task: File > Save to Roblox + a dated
+  backup copy** (File > Download a Copy -> `Documents\GymArc_backups\GymArc_<date>.rbxl`), and check Version History.
+- Work in the cloud place (the "GYM ARC" Studio window), never a local .rbxl: a local file has no DataStore.
 - World areas are built once from recipes in `tools/builders` (see `tools/bake.md`), then edited as normal parts.
 
 ## First thing to do
-1. **File > Save to Roblox** (the muscle v9 data/scripts, skin stages and the performance fixes live only in the open place until saved).
+1. **File > Download a Copy** to `Documents\GymArc_backups\GymArc_2026-10-08.rbxl`, then **Publish (Alt+P)** for the arrow fix.
 2. Look at the new things yourself: skateboard, poses on the posing stage, the tiles/pills, EXP numbers, the red stat highlight and the rep flash.
 
 ## What exists (all built and tested in Studio unless noted)
