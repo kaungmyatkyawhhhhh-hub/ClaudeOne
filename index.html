@@ -1107,8 +1107,8 @@ const CAFE=[
  {k:"coffee",t:"Coffee",d:"+25 energy",base:10,fx:s=>{s.energy=Math.min(maxEnergy(),s.energy+25)}},
  {k:"drink",t:"Energy drink",d:"+60 energy",base:25,fx:s=>{s.energy=Math.min(maxEnergy(),s.energy+60)}},
  {k:"meal",t:"Big breakfast",d:"Refill all energy",base:55,fx:s=>{s.energy=maxEnergy()}},
-  {k:"meal2",t:"Chicken & rice",d:"Well fed for 3 minutes: bigger green zone and faster energy regen",base:40,fx:s=>{s.buffs=s.buffs||{};s.buffs.fed=180}},
- {k:"shake",t:"Protein shake",d:"Bigger green zone and a slower needle at the gym for 90 seconds",base:30,fx:s=>{s.protein=90}}
+  {k:"meal2",t:"Chicken & rice",d:"Well fed for 3 minutes: bigger green zone and faster energy regen. Buy more to add time (up to 30 min)",base:40,fx:s=>{s.buffs=s.buffs||{};s.buffs.fed=Math.min(1800,(s.buffs.fed||0)+180)}},
+ {k:"shake",t:"Protein shake",d:"Bigger green zone and a slower needle at the gym for 90 seconds. Buy more to add time (up to 15 min)",base:30,fx:s=>{s.protein=Math.min(900,(s.protein||0)+90)}}
 ];
 
 /* ================= sound ================= */
@@ -1929,7 +1929,8 @@ const hgt=()=>(S&&S.height)||170;
 const rbOk=()=>hgt()>=rbReq();
 // extra rebirths in one go: every 40 cm over the requirement adds one more
 function rbMulti(){return hgt()<rbReq()?0:1+Math.floor((hgt()-rbReq())/40)}
-const spurtReq=()=>{const n=S.spurts||0;return Math.max(80,120-10*rbN())+30*n+Math.round(2*n*n)};
+// the weight for your next growth spurt grows with your height (every 4 cm over 170 counts as one step)
+const spurtReq=()=>{const n=Math.max(0,((S.height||170)-170)/4);return Math.round(Math.max(80,120-10*rbN())+30*n+2*n*n)};
 const spurtGain=()=>Math.min(6+rbN(),2+rbN()+Math.floor(Math.max(0,S.pr-spurtReq())/40));
 // Height is exaggerated on screen so every cm shows: 180 cm looks ~8% taller, 200 cm ~25%.
 // There's no cap: past ~270 cm each cm shows a little less (300 cm ≈ 2.0×, 400 cm ≈ 2.4×), but you never stop growing.
@@ -5599,7 +5600,7 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
 
 /* ================= what's new: shown once after an update ================= */
 const WN_VER=111,WN=[
- ["🔥","Lift streaks, faster gym, café boosts","Clean lifts in a row now build a streak: the green zone grows with it, and 5, 10, 25, 50 and 100 in a row pay energy, crates, fans and the Iron Will tracksuit. One miss resets it. Lifts no longer pause in between, poses can be struck with keys 1 to 4, and café boosts show a timer in the café and at the top of the screen.","2026-10-09T21:00"],
+ ["🔥","Lift streaks, faster gym, café boosts","Growth spurts now need a weight based on your height. Buying a café boost again adds its time on top. Clean lifts in a row now build a streak: the green zone grows with it, and 5, 10, 25, 50 and 100 in a row pay energy, crates, fans and the Iron Will tracksuit. One miss resets it. Lifts no longer pause in between, poses can be struck with keys 1 to 4, and café boosts show a timer in the café and at the top of the screen.","2026-10-09T21:00"],
  ["📱","Phone goes to the Market","The reselling phone now always opens the Market in Flip City, wherever you are. Visit the other markets in person.","2026-10-09T20:00"],
  ["🌬️","Wind farms reach the corners","In the Sky Islands a Wind farm now boosts all 8 tiles around it, diagonals included, so one wind farm can power a whole ring of mines.","2026-10-09T19:00"],
  ["📏","Rebirth needs height now","Rebirth at the gym's lift station now needs you to be tall enough instead of a number of growth spurts: 190 cm for your first, then 15 cm more each time. Every 40 cm over the requirement gives an extra rebirth in one go.","2026-10-09T18:00"],
