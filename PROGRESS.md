@@ -6,8 +6,7 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 - Machine panel: a MAX button directly on top of the + button and in line with it (it sits in the + button's holder,
   scale-sized, so the left edge and width match exactly), a slight yellow glow (owner's layout after a few rounds), 1/3
   of its height (16 px), a 3 px gap, a yellow background (bumper yellow at the + button's 0.55 transparency) with white
-  14 px text; the - and + buttons sit 10 px lower (each in a same-size holder in the row). MAX is placed from the + button's
-  screen rectangle (it lives in the title row, which has no layout). MachineClient, created without a new top-level local: the
+  14 px text; the - and + buttons sit 10 px lower (each in a same-size holder in the row). MachineClient, created without a new top-level local: the
   script is at Luau's 200-local limit. Screenshot max_button_above_plus. Server `MaxWeight` action (MachineService maxWeight): buys every next plate in order while the
   main muscle's level allows it and the coins cover it (same checks as UnlockTier), then selects the heaviest usable plate
   (Machines.UsableTier). The panel jumps there at once when nothing is bought, or when the purchases arrive.
