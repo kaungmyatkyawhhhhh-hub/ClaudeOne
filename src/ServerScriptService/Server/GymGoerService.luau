@@ -335,7 +335,7 @@ local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
 -- like a maxed player (every muscle at 5.5x that Growth Spurt's goal, so every muscle is at its mass monster size; the
 -- monster widths: shoulders, hips, arms, legs and torso depth; the V-Taper frame, the widest shoulders; the golden ratio
 -- proportions like everyone).
-local GIANT = { name = "Dante", spurts = #GrowthSpurts.Stages, frame = "VTaper" }
+local GIANT = { name = "Dante", spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black", shoes = Color3.fromHex("#2B2B2B") }
 local function giantData()
 	local goal = GrowthSpurts.GetGoal(GIANT.spurts)
 	local level = math.ceil(Muscles.LevelFromXp(Muscles.Look.MonsterAt * 1.1 * Muscles.CumXp(goal)))
@@ -353,6 +353,32 @@ local function makeGiant(npc)
 	local levels, goal = BodyService.LevelsOf(data)
 	npc:SetAttribute("MuscleG", BodyService.EncodeLevels(levels, goal))
 	npc:SetAttribute("Giant", true)
+	-- shirtless in the game's black gym shorts, bald (owner, 9 Oct). NPC muscles take their colors from the body parts
+	-- (MuscleClient): the torso and arms in the skin color (so every muscle wears the skin texture stage: the mass monster
+	-- one at his look), the hips and thighs in the shorts color, bare calves, dark shoes.
+	for _, item in ipairs(npc:GetChildren()) do
+		if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
+			item:Destroy()
+		elseif item:IsA("Accessory") and (item.AccessoryType == Enum.AccessoryType.Hair or string.find(item.Name, "Hair")) then
+			item:Destroy()
+		end
+	end
+	local head = npc:FindFirstChild("Head")
+	local skin = head and head:IsA("BasePart") and head.Color or Color3.fromHex("#8D5524")
+	local shorts = Body.ShortsColor(GIANT.shorts)
+	local paint = {
+		UpperTorso = skin, RightUpperArm = skin, LeftUpperArm = skin, RightLowerArm = skin, LeftLowerArm = skin,
+		RightHand = skin, LeftHand = skin, RightLowerLeg = skin, LeftLowerLeg = skin,
+		LowerTorso = shorts, RightUpperLeg = shorts, LeftUpperLeg = shorts,
+		RightFoot = GIANT.shoes, LeftFoot = GIANT.shoes,
+	}
+	for name, color in pairs(paint) do
+		local part = npc:FindFirstChild(name)
+		if part and part:IsA("BasePart") then part.Color = color end
+	end
+	npc:SetAttribute("SkinColor", skin)
+	npc:SetAttribute("Top", "Shirtless")
+	npc:SetAttribute("Shorts", GIANT.shorts)
 end
 
 local function dressNpc(npc, gym)
