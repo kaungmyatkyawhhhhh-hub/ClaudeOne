@@ -193,6 +193,32 @@ for _, unit in ipairs(MuscleMeshes.Units) do
 end
 
 local partCache: { [string]: any } = {}
+
+-- The highlight / rep flash tints only the part of a muscle that actually bulges: each vertex gets a band 0..TintBands from
+-- its growth length against the muscle's own (p90) growth, eased, times how much it stays its own muscle (1 - its blend
+-- weights to neighbours). The flat border that lies on the skin and the blend zone get little or none, so the tint fades
+-- softly and never spreads onto the neighbouring muscles.
+MuscleMeshes.TintBands = 4
+local TINT_FROM, TINT_TO = 0.12, 0.55 -- growth (share of the muscle's p90) where the tint starts / is full
+local function tintBands(data, blends): { number }
+	local lengths = table.create(data.verts)
+	for i = 1, data.verts do lengths[i] = data.delta[i].Magnitude end
+	local sorted = table.clone(lengths)
+	table.sort(sorted)
+	local p90 = math.max(sorted[math.max(1, math.floor(#sorted * 0.9))] or 0, 1e-4)
+	local bands = table.create(data.verts)
+	for i = 1, data.verts do
+		local t = math.clamp((lengths[i] / p90 - TINT_FROM) / (TINT_TO - TINT_FROM), 0, 1)
+		t = t * t * (3 - 2 * t)
+		local own = 1
+		local list = blends and blends[i]
+		if list then
+			for _, pair in ipairs(list) do own -= pair[2] end
+		end
+		bands[i] = math.floor(t * math.clamp(own, 0, 1) * MuscleMeshes.TintBands + 0.5)
+	end
+	return bands
+end
 -- Muscles sit this far off the skin (studs, along the vertex's base normal). The muscle data lies exactly on the body, so
 -- without it the muscle and the snatched torso fight for depth and their borders show as stair-steps; the skirts on outer
 -- edges tuck 0.16 into the body, so the lift never opens a gap.
@@ -206,7 +232,7 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 	local found = partCache[key]
 	if found then return found end
 	local base, delta, uv, tris, faceKind, ranges = {}, {}, {}, {}, {}, {}
-	local nbase, ndelta, vein, blends = {}, {}, {}, {}
+	local nbase, ndelta, vein, blends, bands = {}, {}, {}, {}, {}
 	local hasNormals, hasVeins = true, true
 	local vertexCount, triCount = 0, 0
 	for _, name in ipairs(group.records) do
@@ -225,6 +251,10 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 		local range = ranges[#ranges]
 		range.center = centerSum / math.max(data.verts, 1)
 		range.normal = if normalSum.Magnitude > 1e-6 then normalSum.Unit else Vector3.zAxis * -1
+		local own = tintBands(data, data.blends)
+		for i = 1, data.verts do
+			bands[vertexCount + i] = own[i]
+		end
 		for i = 1, data.verts do
 			local at = vertexCount + i
 			base[at] = if data.nbase and data.nbase[i].Magnitude > 1e-6 then data.base[i] + data.nbase[i].Unit * SKIN_LIFT else data.base[i]
@@ -262,6 +292,7 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 			local normal = if snatched.normals then snatched.normals[i] else Vector3.yAxis
 			nbase[at], ndelta[at] = normal, Vector3.zero
 			vein[at] = Vector3.zero
+			bands[at] = 0 -- (the torso shell is never tinted)
 		end
 		local t = snatched.tris
 		for k = 1, #t, 3 do
@@ -274,7 +305,7 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 		vertexCount += count
 	end
 	assert(triCount <= 20000, "group " .. key .. " has more than 20,000 triangles")
-	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, morphStart = morphStart,
+	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, morphStart = morphStart, bands = bands,
 		nbase = hasNormals and nbase or nil, ndelta = hasNormals and ndelta or nil, vein = hasVeins and vein or nil,
 		clothing = MuscleMeshes.ByName[group.records[1]].clothing or "Shirt", faceKind = faceKind, ranges = ranges, triCount = triCount }
 	partCache[key] = merged

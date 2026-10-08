@@ -335,7 +335,7 @@ local function recolor(self, group)
 			for _, range in ipairs(group.data.ranges) do
 				local kind = group.rangeKinds[range]
 				local color = group.kindBase[kind]
-				mesh:SetColor(group.rangeColors[range], color)
+				for _, id in pairs(group.rangeColors[range]) do mesh:SetColor(id, color) end
 				group.shownColors[range] = color
 			end
 		end)
@@ -559,17 +559,20 @@ local function buildGroup(self, state, group): boolean
 		end
 	end
 	local ok, err = pcall(function()
-		-- one vertex color per muscle (so a single muscle can be tinted with one SetColor); its kind picks the base color:
-		-- 1 skin, 2 gym shorts, 3 top (the UpperTorso muscles)
+		-- a few vertex colors per muscle, one per tint band (MuscleMeshes.TintBands: band 0 = never tinted, the top band = the
+		-- full tint), so the highlight / flash fades from the bulge to nothing at the muscle's flat edges with a handful of
+		-- SetColor calls; its kind picks the base color: 1 skin, 2 gym shorts, 3 top (the UpperTorso muscles)
 		local white = Color3.new(1, 1, 1)
 		group.rangeColors, group.rangeKinds = {}, {}
-		local faceColor = table.create(data.triCount)
+		local rangeOf = table.create(data.verts)
 		for _, range in ipairs(data.ranges) do
-			local id = mesh:AddColor(white, 1)
-			group.rangeColors[range] = id
+			local ids = {}
+			for band = 0, MuscleMeshes.TintBands do ids[band] = mesh:AddColor(white, 1) end
+			group.rangeColors[range] = ids
 			group.rangeKinds[range] = if range.shorts then 2 elseif group.def.part == "UpperTorso" then 3 else 1
-			for f = range.triFirst, range.triFirst + range.triCount - 1 do faceColor[f] = id end
+			for i = range.first, range.first + range.count - 1 do rangeOf[i] = ids end
 		end
+		local bands = data.bands
 		group.faceIds = table.create(data.triCount)
 		local vertexIds = table.create(data.verts)
 		local uvIds = table.create(data.verts)
@@ -599,8 +602,8 @@ local function buildGroup(self, state, group): boolean
 			group.faceIds[f] = face
 			mesh:SetFaceUVs(face, { uvIds[a], uvIds[b], uvIds[c] })
 			if normalIds then mesh:SetFaceNormals(face, { normalIds[a], normalIds[b], normalIds[c] }) end
-			local color = faceColor[f]
-			mesh:SetFaceColors(face, { color, color, color })
+			-- (each corner takes its own vertex's band: the colors blend across the face, a soft edge)
+			mesh:SetFaceColors(face, { rangeOf[a][bands[a] or 0], rangeOf[b][bands[b] or 0], rangeOf[c][bands[c] or 0] })
 			tick()
 		end
 		group.vertexIds = vertexIds
@@ -801,7 +804,8 @@ local function tintGroup(self, group, cameraPosition: Vector3)
 	local scale = if meshSize.Magnitude > 0 then part.Size / meshSize else Vector3.one
 	for _, range in ipairs(group.data.ranges) do
 		local kind = group.rangeKinds[range]
-				local color = group.kindBase[kind]
+		local base = group.kindBase[kind]
+		local color = base -- the fully tinted color (the top band); lower bands take part of the tint
 		local h = self.highlightAmount[range.id] or 0
 		local f = self.flashAmount[range.id] or 0
 		if (h > 0 or f > 0) and range.normal then
@@ -814,7 +818,10 @@ local function tintGroup(self, group, cameraPosition: Vector3)
 		end
 		if group.shownColors[range] ~= color then
 			group.shownColors[range] = color
-			pcall(function() mesh:SetColor(group.rangeColors[range], color) end)
+			local ids, top = group.rangeColors[range], MuscleMeshes.TintBands
+			pcall(function()
+				for band = 0, top do mesh:SetColor(ids[band], base:Lerp(color, band / top)) end
+			end)
 		end
 	end
 end
