@@ -2,7 +2,7 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (8 Oct, ~11 PM): other players' muscles as body stage meshes (WAITING FOR THE OWNER'S IMPORT)
+## LATEST (8 Oct, ~11 PM): other players' muscles as body stage meshes (ON; owner's 2-player test next)
 - **Why:** a client holds at most 8 EditableMeshes, a hard COUNT (measured: plain, fixed-size, asset copies and a 200-
   triangle mesh all fail once 8 exist), and your own body uses 7. So nobody else can have live muscle meshes; LOD
   EditableMeshes don't help either. Also `AssetService:CreateAssetAsync` is still "not available yet" (no mesh upload from
@@ -16,9 +16,12 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   as TextureID, skin / top / gym-shorts colors, skin texture stage on skin pieces, tints, Growth Spurt scaling, the plain
   part hidden. `MuscleRig` uses it for every rig that isn't your own (players, NPCs, the statue); the mirror's "Day one"
   card wears look 0. Your own character is unchanged (live meshes). Previewed in Studio (look 0 / full / monster).
-- **Off until imported** (`BodyStages.Available()`): the game runs as before. Owner: Import 3D the 62 OBJs (one mesh per file: the first import of 2 multi-object OBJs merged each into one mesh; settings in the
-  chat: studs, separate meshes, into Workspace), then say "imported"; then `tools/body_stages_setup.luau` moves the
-  `BS_...` MeshParts into `ReplicatedStorage.BodyStages`, checks count / sizes / the import's turn; then the 2-player test.
+- **Imported and ON:** the owner imported the 62 one-mesh OBJs (Import 3D merges a multi-object OBJ into one "default"
+  mesh, so the first 2-file import was thrown away); `tools/body_stages_setup.luau` moved all 62 into
+  `ReplicatedStorage.BodyStages` (0 missing, sizes match, the importer's 180 degree turn is undone by `ImportTurn`). A
+  client warns once in Output when any stage mesh is missing. Solo play check: NPCs within 80 studs wear the 9 stage
+  parts with their own Shirt / Pants textures, plain parts hidden; your own character still on live meshes. Next: the
+  owner's 2-player test (Clients and Servers). The place must be saved (File > Save to Roblox) to keep the templates.
 
 ## Before that (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
 Saved to Roblox (22:41 and 22:43); dated backup `Documents\GymArc_backups\GymArc_2026-10-08.rbxl` (via File > Download a
