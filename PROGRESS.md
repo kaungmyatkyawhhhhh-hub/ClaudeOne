@@ -59,7 +59,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - **EXP:** every number shown is EXP (total xp earned x `Muscles.ExpPerXp`); the first Growth Spurt needs exactly 50,000 per
   group. Levels still exist inside (saves/caps/machines). `tests/exp` checks it.
 - **Muscles (v8):** real EditableMesh muscles that grow from the skin, wear the character's own Shirt/Pants, snatched-waist
-  torso for everyone, red tint when hovered in Stats and a warm flash on each rep (only muscles facing the camera; `MuscleRig.SetHighlight` / `MuscleRig.Flash`, one vertex color per muscle). Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
+  torso for everyone, red tint when hovered in Stats (blends ~40%, pulses 30-45%, keeps the shading) and a warm 35% flash on each rep (only muscles facing the camera, soft 4-row edge, clothing 15%, the torso under a muscle tints with it so it works at level 0; `MuscleRig.SetHighlight` / `MuscleRig.Flash`). No z-fighting: the torso sits 0.05 under the shells (push grows as the muscle emerges), barely-grown shells sink under it, and each muscle's skin edge snaps onto the torso (`MuscleMeshes.EdgeSnap`). Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
   -> `ReplicatedStorage/MuscleData` -> `Shared/MuscleMeshes` -> `Shared/MuscleRig` -> `MuscleClient`. Keep `muscle_v8/`
   unzipped before running the generator (it empties MuscleData first).
 - **Muscle v8-1 (7 Oct, "smooth, no seams" + spikes fix v2 + more definition):** border vertices grow with the average g of
@@ -157,6 +157,8 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - Part count: town ~16,100, gyms ~3,500; StreamingEnabled is on. If phones struggle: MeshPart templates for windows/trees.
 - Cosmetic headbands can hide under big hair; ProximityPrompts only show when their part is on screen.
 - Rep and set popups are big numbers now (about 3,000+ EXP at the start): easy to scale in `Muscles.ExpPerXp` if too loud.
+- Traps: their outer edge reaches over the shoulder and can show as a thin shelf above the delt from low angles (in the muscle_v8 mesh, was there before the z-fight fix). Back at max: small skin gaps between lats / lower back / traps with stepped seams.
+- The rep flash (warm white-orange) is hard to see on light skin under bright lights; it is clear on darker skin.
 
 ## Decisions (still in force)
 - World pass (7 Oct, place only): small props cast no shadow (outside machines/NPCs), static parts have CanTouch off (no

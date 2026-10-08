@@ -52,17 +52,22 @@ local MARBLE = Color3.fromHex("#C9C6BF")
 -- Tints on the muscles: the stats hover highlight (red) and the rep flash (warm). Only muscles facing the camera show them
 -- (each muscle's average outward normal vs the direction to the camera: full above Facing.Full, gone below Facing.None).
 -- A tint is a vertex color on the normal lit material: no Neon, no glow light.
+-- A tint, not paint: the skin color is blended part of the way toward the tint color, on the normal lit material, so the
+-- muscle's shading, creases and shadows stay visible through it.
 local TINT = {
-	Highlight = Color3.fromRGB(178, 14, 18), -- deep red (blended into the skin / clothing color; warm lights push it orange)
-	HighlightStrength = 0.8,
+	Highlight = Color3.fromRGB(225, 45, 45), -- red
+	HoverMin = 0.30, HoverMax = 0.45, HoverPeriod = 1.2, -- the stats hover pulses between these, one cycle per HoverPeriod s
 	HighlightIn = 0.15, HighlightOut = 0.2,  -- seconds to fade in / out
-	Flash = Color3.fromRGB(255, 118, 46),    -- warm orange-red
-	FlashIn = 0.15, FlashOut = 0.35,
-	FlashStrength = 0.6,                     -- main muscle (secondaries get their weight of it)
-	BigStrength = 0.85, BigOut = 0.55,       -- BIG REP / PUMPED: stronger, a little longer
+	Flash = Color3.fromRGB(255, 196, 140),   -- warm white-orange
+	FlashIn = 0.08, FlashOut = 0.35,
+	FlashStrength = 0.35,                    -- main muscle at the peak (secondaries get their weight of it)
+	BigStrength = 0.45, BigOut = 0.55,       -- BIG REP / PUMPED: a little stronger and longer
+	ClothScale = 0.375,                      -- over a Shirt / Pants image the tint is this much of it (0.4 -> 0.15)
 	FacingFull = 0.1, FacingNone = -0.1,
 	Pump = 0.02, PumpTime = 0.2,             -- the tiny pump with each flash (g * 1.02 for 0.2s)
 }
+-- Below EMERGE growth a muscle shell sinks up to SINK studs under the skin (gone at level 0, rising into place as it grows).
+local EMERGE, SINK = 0.12, 0.12
 local REALLOCATE_EVERY = 0.4
 
 -- The snatched-waist torso: the upper half rides in the torso-front mesh (MuscleMeshes: one mesh for the front muscles and
@@ -338,6 +343,10 @@ local function recolor(self, group)
 				for _, id in pairs(group.rangeColors[range]) do mesh:SetColor(id, color) end
 				group.shownColors[range] = color
 			end
+			for _, ids in pairs(group.extraColors or {}) do
+				for _, id in pairs(ids) do mesh:SetColor(id, group.kindBase[3]) end
+			end
+			if group.extraShown then table.clear(group.extraShown) end
 		end)
 	end
 	if self.marble then
@@ -465,6 +474,13 @@ local function waistProgress(self): number
 	return smooth(total / #Muscles.List)
 end
 
+-- How far the barely-grown muscles have risen (changes only below EMERGE): the torso is re-applied when it changes.
+local function emergeKey(self): number
+	local sum = 0
+	for _, muscle in ipairs(Muscles.List) do sum += math.min(self.current[muscle.id] or 0, EMERGE) end
+	return sum
+end
+
 local function applyRange(self, group, range)
 	local data, mesh, ids, normalIds = group.data, group.mesh, group.vertexIds, group.normalIds
 	if range.snatched then
@@ -472,12 +488,31 @@ local function applyRange(self, group, range)
 		-- the muscle data's reference to the body's own mesh size (it replaces the body part)
 		local w = waistProgress(self)
 		local taper, start, scale = group.taper, data.morphStart, group.snatchScale or Vector3.one
+		local front, back = data.pushFront, if self.backBuilt then data.pushBack else nil
+		local owners = data.owners or {}
+		local emerged = {}
 		for i = range.first, range.first + range.count - 1 do
-			local position = (start[i] + (data.base[i] - start[i]) * w) * scale
+			local push = front and front[i] or Vector3.zero
+			if back and back[i].Magnitude > push.Magnitude then push = back[i] end
+			-- the push grows with the muscle over it, like the shell rises (at level 0 neither: just the smooth torso)
+			local owner = owners[i]
+			if owner and push.Magnitude > 0 then
+				local id = owner[1]
+				local e = emerged[id]
+				if not e then
+					e = math.clamp(currentShown(self, id) / EMERGE, 0, 1)
+					e = e * e * (3 - 2 * e)
+					emerged[id] = e
+				end
+				push *= e
+			end
+			local position = (start[i] + (data.base[i] - start[i]) * w + push) * scale
 			if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
 			mesh:SetPosition(ids[i], position)
 		end
 		group.applied[range] = w
+		group.appliedBack = self.backBuilt
+		group.appliedEmerge = emergeKey(self)
 		return
 	end
 	local base, delta, blends, nbase, ndelta, vein = data.base, data.delta, data.blends, data.nbase, data.ndelta, data.vein
@@ -486,6 +521,10 @@ local function applyRange(self, group, range)
 	local others = {}
 	for _, key in ipairs(range.blendKeys) do others[key] = meshShown(self, key, MuscleMeshes.MuscleId(key)) end
 	local v = if vein then veinFor(self, range.id) else 0
+	local morph = data.morph
+	local snapK, skinPos, skinNormal = data.snapK or {}, data.skinPos or {}, data.skinNormal or {}
+	local w = waistProgress(self)
+	local waistOff = 1 - w
 	for i = range.first, range.first + range.count - 1 do
 		local gv = g
 		local list = blends[i]
@@ -498,24 +537,44 @@ local function applyRange(self, group, range)
 			gv = (1 - weights) * g + sum
 		end
 		local position = base[i] + delta[i] * gv
+		-- the skin edge blends into the torso surface under it (position and, below, normal)
+		local snap = snapK[i]
+		if snap then position = position:Lerp(skinPos[i], snap) end
+		if morph and morph[i] then position += morph[i] * waistOff end -- (rides the torso's waist morph)
+		-- a muscle that has barely grown stays just under the torso (its outline and lighting would show as a line on the flat
+		-- body) and rises into place as it grows
+		if gv < EMERGE and nbase then
+			local e = gv / EMERGE
+			position -= nbase[i].Unit * (SINK * (1 - e * e * (3 - 2 * e)))
+		end
 		if v > 0 then position += vein[i] * v end
 		if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
 		mesh:SetPosition(ids[i], position)
 		if normalIds then
 			local normal = nbase[i] + ndelta[i] * gv
-			if normal.Magnitude > 1e-6 then mesh:SetNormal(normalIds[i], normal.Unit) end
+			if normal.Magnitude > 1e-6 then
+				normal = normal.Unit
+				if snap then normal = normal:Lerp(skinNormal[i], snap) end
+				mesh:SetNormal(normalIds[i], normal.Unit)
+			end
 		end
 	end
 	group.applied[range] = g
 	group.appliedOthers[range] = others
 	group.appliedVein[range] = v
+	group.appliedW = group.appliedW or {}
+	group.appliedW[range] = w
 end
 
 -- true when the mesh, a mesh it blends with, or its vein amount changed since it was last applied
 local function rangeChanged(self, group, range): boolean
 	local last = group.applied[range]
-	if range.snatched then return last == nil or math.abs(waistProgress(self) - last) > 0.004 end
+	if range.snatched then
+		return last == nil or math.abs(waistProgress(self) - last) > 0.004 or group.appliedBack ~= self.backBuilt
+			or math.abs(emergeKey(self) - (group.appliedEmerge or -1)) > 0.01
+	end
 	if last == nil or math.abs(meshShown(self, range.key, range.id) - last) > MIN_CHANGE then return true end
+	if group.data.morph and math.abs(waistProgress(self) - ((group.appliedW and group.appliedW[range]) or -1)) > 0.004 then return true end
 	local others = group.appliedOthers[range]
 	for _, key in ipairs(range.blendKeys) do
 		if not others or math.abs(meshShown(self, key, MuscleMeshes.MuscleId(key)) - (others[key] or 0)) > MIN_CHANGE then return true end
@@ -573,6 +632,28 @@ local function buildGroup(self, state, group): boolean
 			for i = range.first, range.first + range.count - 1 do rangeOf[i] = ids end
 		end
 		local bands = data.bands
+		-- the torso (in the torso-front mesh): each vertex takes the tint set of the muscle it lies under, at that muscle's band;
+		-- muscles from another mesh (the back) get sets of their own here (group.extraColors)
+		if data.owners then
+			local setOf = {}
+			for _, range in ipairs(data.ranges) do
+				if not range.snatched then setOf[range.id] = group.rangeColors[range] end
+			end
+			group.extraColors, group.extraShown = {}, {}
+			bands = table.clone(bands)
+			for i, owner in pairs(data.owners) do
+				local id = owner[1]
+				local ids = setOf[id]
+				if not ids then
+					ids = {}
+					for band = 0, MuscleMeshes.TintBands do ids[band] = mesh:AddColor(white, 1) end
+					setOf[id] = ids
+					group.extraColors[id] = ids
+				end
+				rangeOf[i] = ids
+				bands[i] = owner[2]
+			end
+		end
 		group.faceIds = table.create(data.triCount)
 		local vertexIds = table.create(data.verts)
 		local uvIds = table.create(data.verts)
@@ -732,6 +813,7 @@ local function destroyGroup(group)
 	group.normalIds = nil
 	group.applied, group.appliedOthers, group.appliedVein = {}, {}, {}
 	group.rangeColors, group.rangeKinds, group.kindBase, group.shownColors = nil, nil, nil, nil
+	group.extraColors, group.extraShown, group.appliedW = nil, nil, nil
 end
 
 local function destroyUnit(state)
@@ -795,6 +877,29 @@ local function updateTintState(self, dt: number): boolean
 	return live
 end
 
+-- The fully tinted color of a muscle (its top tint band): base blended toward the hover red (pulsing) and the flash warm
+-- white, scaled by how much it faces the camera, and much lighter over clothing.
+local function tinted(self, id: string, base: Color3, facing: number, clothed: boolean): Color3
+	local h = self.highlightAmount[id] or 0
+	local f = self.flashAmount[id] or 0
+	if h <= 0 and f <= 0 then return base end
+	local cloth = if clothed then TINT.ClothScale else 1
+	local color = base
+	if h > 0 then
+		local pulse = 0.5 + 0.5 * math.sin(os.clock() * math.pi * 2 / TINT.HoverPeriod)
+		color = color:Lerp(TINT.Highlight, h * (TINT.HoverMin + (TINT.HoverMax - TINT.HoverMin) * pulse) * facing * cloth)
+	end
+	if f > 0 then color = color:Lerp(TINT.Flash, math.min(f, 1) * facing * cloth) end
+	return color
+end
+
+local function facingOf(cf: CFrame, scale: Vector3, center: Vector3, normal: Vector3, cameraPosition: Vector3): number
+	local at = cf:PointToWorldSpace(center * scale)
+	local toCamera = cameraPosition - at
+	local dot = if toCamera.Magnitude > 1e-4 then cf:VectorToWorldSpace(normal):Dot(toCamera.Unit) else 1
+	return math.clamp((dot - TINT.FacingNone) / (TINT.FacingFull - TINT.FacingNone), 0, 1)
+end
+
 -- Sets each muscle's color: its base, tinted by the highlight / flash in proportion to how much it faces the camera.
 local function tintGroup(self, group, cameraPosition: Vector3)
 	local part, mesh = group.part, group.mesh
@@ -806,15 +911,8 @@ local function tintGroup(self, group, cameraPosition: Vector3)
 		local kind = group.rangeKinds[range]
 		local base = group.kindBase[kind]
 		local color = base -- the fully tinted color (the top band); lower bands take part of the tint
-		local h = self.highlightAmount[range.id] or 0
-		local f = self.flashAmount[range.id] or 0
-		if (h > 0 or f > 0) and range.normal then
-			local center = cf:PointToWorldSpace(range.center * scale)
-			local toCamera = cameraPosition - center
-			local dot = if toCamera.Magnitude > 1e-4 then cf:VectorToWorldSpace(range.normal):Dot(toCamera.Unit) else 1
-			local facing = math.clamp((dot - TINT.FacingNone) / (TINT.FacingFull - TINT.FacingNone), 0, 1)
-			if h > 0 then color = color:Lerp(TINT.Highlight, h * TINT.HighlightStrength * facing) end
-			if f > 0 then color = color:Lerp(TINT.Flash, math.min(f, 1) * facing) end
+		if range.normal and ((self.highlightAmount[range.id] or 0) > 0 or (self.flashAmount[range.id] or 0) > 0) then
+			color = tinted(self, range.id, base, facingOf(cf, scale, range.center, range.normal, cameraPosition), group.template ~= nil)
 		end
 		if group.shownColors[range] ~= color then
 			group.shownColors[range] = color
@@ -822,6 +920,21 @@ local function tintGroup(self, group, cameraPosition: Vector3)
 			pcall(function()
 				for band = 0, top do mesh:SetColor(ids[band], base:Lerp(color, band / top)) end
 			end)
+		end
+	end
+	-- the torso under muscles of other meshes (the back): their tint sets in this mesh
+	if group.extraColors then
+		local base = group.kindBase[3]
+		for id, ids in pairs(group.extraColors) do
+			local facing = group.data.ownerFacing and group.data.ownerFacing[id]
+			local color = if facing then tinted(self, id, base, facingOf(cf, scale, facing.center, facing.normal, cameraPosition), group.template ~= nil) else base
+			if group.extraShown[id] ~= color then
+				group.extraShown[id] = color
+				local top = MuscleMeshes.TintBands
+				pcall(function()
+					for band = 0, top do mesh:SetColor(ids[band], base:Lerp(color, band / top)) end
+				end)
+			end
 		end
 	end
 end
@@ -872,6 +985,11 @@ local function step(self, dt: number, budget: number): number
 		end
 		self.covered = covered
 	end
+	local backBuilt = false
+	for _, state in ipairs(self.units) do
+		if state.unit.id == "TorsoBack" and state.built then backBuilt = true end
+	end
+	self.backBuilt = backBuilt
 	for _, state in ipairs(self.units) do
 		state.wanted = wantedUnit(self, state)
 		if state.built then
@@ -925,11 +1043,7 @@ local function step(self, dt: number, budget: number): number
 		self.limbs:Update(function(id, key) return meshShown(self, key, id) end, {
 			skin = (self.style and self.style.skin) or nil, shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
 		}, function(id, base)
-			local color = base
-			local h, f = highlight[id] or 0, flash[id] or 0
-			if h > 0 then color = color:Lerp(TINT.Highlight, h * TINT.HighlightStrength) end
-			if f > 0 then color = color:Lerp(TINT.Flash, math.min(f, 1)) end
-			return color
+			return tinted(self, id, base, 1, templateFor(self, if id == "Calves" then "Pants" else "Shirt") ~= nil)
 		end, self.covered, self.marble)
 	end
 	if tintLive or self.tintWasLive then

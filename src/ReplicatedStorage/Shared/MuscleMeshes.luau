@@ -110,6 +110,27 @@ function MuscleMeshes.Load(name: string): any
 		end
 		data.vein = vein
 	end
+	-- the waist morph under a torso muscle (start - max of the torso surface beneath each vertex; tools/gen_muscle_data)
+	if record.chunks.morph then
+		local m = numbers(record, "morph")
+		local morph = table.create(count)
+		for i = 1, count do
+			local o = (i - 1) * 3
+			morph[i] = Vector3.new(m[o + 1], m[o + 2], m[o + 3])
+		end
+		data.morph = morph
+	end
+	-- the torso surface under a torso muscle's vertex (point relative to the vertex, and its normal): the skin edge snaps to it
+	if record.chunks.skin then
+		local s = numbers(record, "skin")
+		local skinAt, skinNormal = table.create(count), table.create(count)
+		for i = 1, count do
+			local o = (i - 1) * 6
+			skinAt[i] = Vector3.new(s[o + 1], s[o + 2], s[o + 3])
+			skinNormal[i] = Vector3.new(s[o + 4], s[o + 5], s[o + 6])
+		end
+		data.skinAt, data.skinNormal = skinAt, skinNormal
+	end
 	-- border blend weights: "Name:vertex,weight,vertex,weight|Name2:..." (0-based) -> blends[vertex] = { { key, weight } }
 	data.blends = {}
 	data.blendKeys = {}
@@ -194,35 +215,122 @@ end
 
 local partCache: { [string]: any } = {}
 
--- The highlight / rep flash tints only the part of a muscle that actually bulges: each vertex gets a band 0..TintBands from
--- its growth length against the muscle's own (p90) growth, eased, times how much it stays its own muscle (1 - its blend
--- weights to neighbours). The flat border that lies on the skin and the blend zone get little or none, so the tint fades
--- softly and never spreads onto the neighbouring muscles.
-MuscleMeshes.TintBands = 4
-local TINT_FROM, TINT_TO = 0.12, 0.55 -- growth (share of the muscle's p90) where the tint starts / is full
+-- The highlight / rep flash covers the muscle's AREA on the body (the same at every level, also flat at level 0): full in
+-- the middle, fading out over its last TintRows rows of vertices to its border (an open edge, or where it blends into a
+-- neighbour), times how much each vertex stays its own muscle (1 - its blend weights). So the edge is a soft gradient that
+-- never reaches the neighbours. Band 0 = no tint .. TintBands = the full tint.
+MuscleMeshes.TintBands = 8
+MuscleMeshes.TintRows = 4
 local function tintBands(data, blends): { number }
-	local lengths = table.create(data.verts)
-	for i = 1, data.verts do lengths[i] = data.delta[i].Magnitude end
-	local sorted = table.clone(lengths)
-	table.sort(sorted)
-	local p90 = math.max(sorted[math.max(1, math.floor(#sorted * 0.9))] or 0, 1e-4)
-	local bands = table.create(data.verts)
-	for i = 1, data.verts do
-		local t = math.clamp((lengths[i] / p90 - TINT_FROM) / (TINT_TO - TINT_FROM), 0, 1)
-		t = t * t * (3 - 2 * t)
-		local own = 1
+	local n = data.verts
+	local tris = data.tris
+	-- neighbours, and the edges used by one triangle (the mesh's open border)
+	local adjacent, edgeUse = table.create(n), {}
+	for i = 1, n do adjacent[i] = {} end
+	for k = 1, #tris, 3 do
+		local corners = { tris[k] + 1, tris[k + 1] + 1, tris[k + 2] + 1 }
+		for c = 1, 3 do
+			local a, b = corners[c], corners[c % 3 + 1]
+			table.insert(adjacent[a], b)
+			local key = if a < b then a * 65536 + b else b * 65536 + a
+			edgeUse[key] = (edgeUse[key] or 0) + 1
+		end
+	end
+	local own = table.create(n, 1)
+	for i = 1, n do
 		local list = blends and blends[i]
 		if list then
-			for _, pair in ipairs(list) do own -= pair[2] end
+			local o = 1
+			for _, pair in ipairs(list) do o -= pair[2] end
+			own[i] = math.clamp(o, 0, 1)
 		end
-		bands[i] = math.floor(t * math.clamp(own, 0, 1) * MuscleMeshes.TintBands + 0.5)
+	end
+	-- rows from the border (breadth first): the border = open-edge vertices and mostly-blended ones
+	local rows = table.create(n, math.huge)
+	local queue, head = {}, 1
+	for key, used in pairs(edgeUse) do
+		if used == 1 then
+			for _, v in ipairs({ key // 65536, key % 65536 }) do
+				if rows[v] ~= 0 then rows[v] = 0 table.insert(queue, v) end
+			end
+		end
+	end
+	for i = 1, n do
+		if own[i] < 0.5 and rows[i] ~= 0 then rows[i] = 0 table.insert(queue, i) end
+	end
+	while head <= #queue do
+		local v = queue[head]
+		head += 1
+		for _, w in ipairs(adjacent[v]) do
+			if rows[w] > rows[v] + 1 then
+				rows[w] = rows[v] + 1
+				table.insert(queue, w)
+			end
+		end
+	end
+	local bands = table.create(n)
+	for i = 1, n do
+		local t = math.clamp(rows[i] / MuscleMeshes.TintRows, 0, 1)
+		t = t * t * (3 - 2 * t)
+		bands[i] = math.floor(t * own[i] * MuscleMeshes.TintBands + 0.5)
 	end
 	return bands
 end
+MuscleMeshes.TintBandsOf = tintBands
 -- Muscles sit this far off the skin (studs, along the vertex's base normal). The muscle data lies exactly on the body, so
 -- without it the muscle and the snatched torso fight for depth and their borders show as stair-steps; the skirts on outer
 -- edges tuck 0.16 into the body, so the lift never opens a gap.
 local SKIN_LIFT = 0.02
+-- The skin edge of a torso muscle (open-edge vertices that don't blend into a neighbour, and the next rows) becomes the
+-- torso surface under it, position and normal, by these weights per row: the outline (stair-stepped in the data) then
+-- has nothing to show against, the shell blends into the torso. EDGE_SINK keeps it a hair under the torso.
+MuscleMeshes.EdgeSnap = { [0] = 1, [1] = 0.75, [2] = 0.4, [3] = 0.12 }
+local EDGE_SINK = 0.004
+-- (an edge farther than this from the torso, like the armpit or neck edges that lie on other parts, fades out of the snap)
+local SNAP_NEAR, SNAP_FAR = 0.08, 0.2
+local function edgeRows(data): { [number]: number }
+	local blendSum = {}
+	for i, list in pairs(data.blends or {}) do
+		local s = 0
+		for _, pair in ipairs(list) do s += pair[2] end
+		blendSum[i] = s
+	end
+	local use, adjacent = {}, {}
+	local t = data.tris
+	for k = 1, #t, 3 do
+		local corners = { t[k] + 1, t[k + 1] + 1, t[k + 2] + 1 }
+		for c = 1, 3 do
+			local a, b = corners[c], corners[c % 3 + 1]
+			adjacent[a] = adjacent[a] or {}
+			table.insert(adjacent[a], b)
+			local key = if a < b then a * 65536 + b else b * 65536 + a
+			use[key] = (use[key] or 0) + 1
+		end
+	end
+	local rows = {}
+	for key, n in pairs(use) do
+		if n == 1 then
+			for _, v in ipairs({ key // 65536, key % 65536 }) do
+				if (blendSum[v] or 0) < 0.2 then rows[v] = 0 end
+			end
+		end
+	end
+	local frontier = {}
+	for v in pairs(rows) do table.insert(frontier, v) end
+	for row = 1, 3 do
+		local nextFrontier = {}
+		for _, v in ipairs(frontier) do
+			for _, w in ipairs(adjacent[v] or {}) do
+				if rows[w] == nil and (blendSum[w] or 0) < 0.2 then
+					rows[w] = row
+					table.insert(nextFrontier, w)
+				end
+			end
+		end
+		frontier = nextFrontier
+	end
+	return rows
+end
 
 -- The merged data of one group { part, records }: one set of arrays for all its muscles. Each range (one mesh) knows its
 -- muscle id, its mesh key and the neighbouring mesh keys it blends with (range.blendKeys); blends[vertex] lists them.
@@ -232,7 +340,9 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 	local found = partCache[key]
 	if found then return found end
 	local base, delta, uv, tris, faceKind, ranges = {}, {}, {}, {}, {}, {}
-	local nbase, ndelta, vein, blends, bands = {}, {}, {}, {}, {}
+	local nbase, ndelta, vein, blends, bands, morph = {}, {}, {}, {}, {}, {}
+	local snapK, skinPos, skinNormal = {}, {}, {}
+	local hasMorph = false
 	local hasNormals, hasVeins = true, true
 	local vertexCount, triCount = 0, 0
 	for _, name in ipairs(group.records) do
@@ -251,19 +361,34 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 		local range = ranges[#ranges]
 		range.center = centerSum / math.max(data.verts, 1)
 		range.normal = if normalSum.Magnitude > 1e-6 then normalSum.Unit else Vector3.zAxis * -1
-		local own = tintBands(data, data.blends)
+		data.bands = data.bands or tintBands(data, data.blends)
+		local own = data.bands
+		local edge = if record.part == "UpperTorso" then edgeRows(data) else {}
 		for i = 1, data.verts do
 			bands[vertexCount + i] = own[i]
 		end
 		for i = 1, data.verts do
 			local at = vertexCount + i
 			base[at] = if data.nbase and data.nbase[i].Magnitude > 1e-6 then data.base[i] + data.nbase[i].Unit * SKIN_LIFT else data.base[i]
+			-- the skin edge: how much it snaps onto the torso (MuscleRig blends position and normal toward skinPos / skinNormal)
+			local k = edge[i] and MuscleMeshes.EdgeSnap[edge[i]]
+			if k and data.skinAt then
+				local fade = math.clamp((SNAP_FAR - data.skinAt[i].Magnitude) / (SNAP_FAR - SNAP_NEAR), 0, 1)
+				k *= fade * fade * (3 - 2 * fade)
+			end
+			if k and k > 0 and data.skinAt and data.skinAt[i].Magnitude > 1e-6 then
+				snapK[at] = k
+				skinPos[at] = data.base[i] + data.skinAt[i] - data.skinNormal[i] * EDGE_SINK
+				skinNormal[at] = data.skinNormal[i]
+			end
 			delta[at] = data.delta[i]
 			uv[at] = data.uv[i]
 			if data.nbase then nbase[at], ndelta[at] = data.nbase[i], data.ndelta[i] end
 			if data.vein then vein[at] = data.vein[i] end
 			blends[at] = data.blends[i]
+			if data.morph then morph[at] = data.morph[i] end
 		end
+		hasMorph = hasMorph or data.morph ~= nil
 		local kind = if record.shorts then 2 elseif record.part == "UpperTorso" then 3 else 1
 		local t = data.tris
 		for k = 1, #t, 3 do
@@ -276,9 +401,10 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 		vertexCount += data.verts
 	end
 	-- the snatched torso as one more range: its shape (the snatched max) in base, the wide start in morphStart, no growth
-	local morphStart = nil
+	local morphStart, owners, ownerFacing, pushFront, pushBack = nil, nil, nil, nil, nil
 	if snatched then
-		morphStart = {}
+		morphStart, owners = {}, {}
+		ownerFacing, pushFront, pushBack = {}, {}, {}
 		local count = #snatched.verts
 		local range = { id = "Snatched", key = "Snatched", snatched = true, shorts = false, first = vertexCount + 1, count = count,
 			triFirst = triCount + 1, triCount = #snatched.tris / 3, blendKeys = {} }
@@ -292,7 +418,31 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 			local normal = if snatched.normals then snatched.normals[i] else Vector3.yAxis
 			nbase[at], ndelta[at] = normal, Vector3.zero
 			vein[at] = Vector3.zero
-			bands[at] = 0 -- (the torso shell is never tinted)
+			-- pushed inward under the muscle shells (no z-fighting), the same at every waist width: always under the front
+			-- muscles (built with the torso), under the back muscles only while those are built (MuscleRig picks)
+			pushFront[at] = -normal * ((snatched.push and snatched.push[i]) or 0)
+			pushBack[at] = -normal * ((snatched.pushBack and snatched.pushBack[i]) or 0)
+			-- tinted with the muscle it lies under (its band at the owner's nearest vertex), so the highlight looks the same
+			-- whichever surface shows; owners[at] = { muscle id, band }
+			local owner = snatched.owner and snatched.owner[i]
+			if owner and owner ~= "" then
+				local meshName, vertex = string.match(owner, "^(.-):(%d+)$")
+				local record = meshName and MuscleMeshes.ByName[meshName]
+				if record then
+					local ownerData = MuscleMeshes.Load(meshName)
+					ownerData.bands = ownerData.bands or tintBands(ownerData, ownerData.blends)
+					owners[at] = { record.id, ownerData.bands[(tonumber(vertex) :: number) + 1] or 0 }
+					if not ownerFacing[record.id] then
+						local centerSum, normalSum = Vector3.zero, Vector3.zero
+						for j = 1, ownerData.verts do
+							centerSum += ownerData.base[j] + ownerData.delta[j] * 0.5
+							normalSum += if ownerData.nbase then ownerData.nbase[j] else Vector3.zero
+						end
+						ownerFacing[record.id] = { center = centerSum / math.max(ownerData.verts, 1), normal = if normalSum.Magnitude > 1e-6 then normalSum.Unit else -Vector3.zAxis }
+					end
+				end
+			end
+			bands[at] = 0
 		end
 		local t = snatched.tris
 		for k = 1, #t, 3 do
@@ -306,6 +456,7 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 	end
 	assert(triCount <= 20000, "group " .. key .. " has more than 20,000 triangles")
 	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, morphStart = morphStart, bands = bands,
+		morph = if hasMorph then morph else nil, owners = owners, snapK = snapK, skinPos = skinPos, skinNormal = skinNormal, ownerFacing = ownerFacing, pushFront = pushFront, pushBack = pushBack,
 		nbase = hasNormals and nbase or nil, ndelta = hasNormals and ndelta or nil, vein = hasVeins and vein or nil,
 		clothing = MuscleMeshes.ByName[group.records[1]].clothing or "Shirt", faceKind = faceKind, ranges = ranges, triCount = triCount }
 	partCache[key] = merged
@@ -330,7 +481,8 @@ function MuscleMeshes.LoadSnatched(part: string): any
 		verts[i] = Vector3.new(raw.verts[i * 3 - 2], raw.verts[i * 3 - 1], raw.verts[i * 3])
 		uv[i] = Vector2.new(raw.uv[i * 2 - 1], raw.uv[i * 2])
 	end
-	local data = { verts = verts, uv = uv, tris = raw.tris, normals = nil :: { Vector3 }?, start = nil :: { Vector3 }? }
+	local data = { verts = verts, uv = uv, tris = raw.tris, normals = nil :: { Vector3 }?, start = nil :: { Vector3 }?,
+		push = raw.push, pushBack = raw.pushBack, owner = raw.owner }
 	if raw.start and #raw.start == #raw.verts then
 		local start = {}
 		for i = 1, #raw.start // 3 do start[i] = Vector3.new(raw.start[i * 3 - 2], raw.start[i * 3 - 1], raw.start[i * 3]) end
