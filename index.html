@@ -803,6 +803,10 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .shelf{background:linear-gradient(#efe2c8,#e6d4b0);border-radius:14px;padding:8px 8px 0;box-shadow:inset 0 0 0 3px #b98a52,var(--shadow);margin:0 0 6px}.shrow{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;border-bottom:10px solid #9a6a36;box-shadow:0 6px 0 -3px rgba(0,0,0,.15);margin:0 -8px 8px;padding:0 8px}.tslot{background:none;border:0;padding:4px 0 2px;display:flex;flex-direction:column;align-items:center;gap:0;font:inherit;color:#4a3a22}.tslot canvas{width:60px;height:55px}.tslot small{font-size:.6rem;font-weight:700;line-height:1.1;min-height:1.3em;text-align:center}.tslot.lock small{opacity:.5}
 :root[data-theme="dark"] .shelf{background:linear-gradient(#3a2f22,#2e251a)}:root[data-theme="dark"] .tslot{color:#e8dcc4}
 .photobar{flex-wrap:wrap;justify-content:center;width:max-content;max-width:94vw}.photobar #phX{background:var(--surface);box-shadow:var(--shadow)}.phopt{font-size:.72rem!important;line-height:1.15;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:1px!important;background:var(--surface)!important;color:var(--ink)!important;padding:8px 14px!important;min-height:0!important;box-shadow:var(--shadow)!important}.phopt small{display:block;font:600 .68rem var(--body);text-transform:none;letter-spacing:0;opacity:.7}
+.hzroles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px}.hzrole{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:11px;text-align:left;display:flex;flex-direction:column;gap:3px;font:inherit;box-shadow:var(--shadow)}.hzrole b{font:800 .98rem var(--display)}.hzrole small{font:700 .72rem var(--mono);color:var(--accent)}.hzrole span{font-size:.7rem;color:var(--muted);line-height:1.3}.hzrole.on{box-shadow:inset 0 0 0 2px var(--up),var(--shadow)}.hzrole.taken{opacity:.55}
+.hzhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}.hzhead b{font:900 1.3rem var(--display)}.hzhead span{font:800 1.1rem var(--mono);color:var(--down)}.hzgame{display:flex;justify-content:center;margin:8px 0}.hzgame canvas{border-radius:14px;touch-action:none;box-shadow:var(--shadow)}
+.hzres{background:var(--surface);border-radius:14px;box-shadow:inset 0 0 0 2px var(--down),var(--shadow);padding:16px;margin:0 0 10px;display:flex;flex-direction:column;gap:4px;text-align:center}.hzres.ok{box-shadow:inset 0 0 0 2px var(--up),var(--shadow)}.hzres b{font:900 2rem var(--display)}.hzres small{color:var(--muted)}
+.vzone{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:10px;margin:0 0 10px}.vzh{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px}.vzh b{font:800 .95rem var(--display)}.vzh span{font-size:.72rem;color:var(--muted)}.vgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.vgrid i{aspect-ratio:1;border-radius:8px;background:color-mix(in srgb,var(--zb) 35%,transparent);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:1.25rem;position:relative}.vgrid i.b{background:var(--zb)}.vgrid i small{position:absolute;right:3px;bottom:1px;font:800 .55rem var(--mono);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .cutov{position:fixed;inset:0;z-index:9800;background:#0b0d11;touch-action:none;user-select:none;-webkit-user-select:none}.cutov canvas{display:block}.cutbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}.cutbar i{display:block;height:100%;width:0;background:#e2364a}
 .roadov{position:fixed;inset:0;z-index:9500;background:#8fd3ff;transition:opacity .45s}.roadov.out{opacity:0}.roadov canvas{display:block}.roadlab{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 28px);text-align:center;color:#fff;font:800 1.1rem var(--display);text-shadow:0 2px 8px rgba(0,0,0,.35)}.roadskip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font:700 .75rem var(--mono)}
 .w5gate{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#1b0b2a,#3a2266);color:#fff;margin:8px 0}.w5gate>span{font-size:.8rem;opacity:.85}.w5gate>i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}.w5gate>i>i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff4fd8)}.w5gate small{font:700 .7rem var(--mono);opacity:.7}
@@ -2597,10 +2601,10 @@ function openBank(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
-      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt2" id="bkHeist">🔐 Crack the vault<small>${S.heistDay===dayKey()?"Alarm still ringing · try tomorrow":"Once a day · big payout"}</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt" id="bkDeeds">Deeds<small>${Object.keys(S.deeds||{}).length?Object.keys(S.deeds).length+" owned · "+fmt(deedInc())+"/min":"Own the town, from "+fmt(DEEDS[0].c)}</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
+      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt2" id="bkHeist">🔐 Crack the vault<small>${S.heistDay===dayKey()?"Alarm still ringing · try tomorrow":"Once a day · big payout"}</small></button><button class="bigbtn alt" id="bkCoop">Co-op heist<small>${MP?(hzHumans().length?"2 to 4 friends · "+hzLeft()+" left today":"Needs a friend in your room"):"Join an online room first"}</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt" id="bkDeeds">Deeds<small>${Object.keys(S.deeds||{}).length?Object.keys(S.deeds).length+" owned · "+fmt(deedInc())+"/min":"Own the town, from "+fmt(DEEDS[0].c)}</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
       ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
-    {const hb=$("bkHeist");if(hb)hb.onclick=()=>{if(S.heistDay===dayKey())return banner("Security is on alert. Come back tomorrow","r");openHeist()}}$("leaveBtn").onclick=closeRoom;
+    {const cb=$("bkCoop");if(cb)cb.onclick=()=>{if(HZ&&HZ.st!=="done")return openCoHeist();HZ=null;hzHost()}}{const hb=$("bkHeist");if(hb)hb.onclick=()=>{if(S.heistDay===dayKey())return banner("Security is on alert. Come back tomorrow","r");openHeist()}}$("leaveBtn").onclick=closeRoom;
     const dep=a=>{a=Math.floor(a);if(a<=0)return;S.cash-=a;S.bank=(S.bank||0)+a;SFX.buy();dirty=true;draw();updMini()};
     $("bkRe").onclick=()=>openRealty("home",()=>{room="bank";openBank()});$("bkEmp").onclick=()=>openEmpire(()=>{room="bank";openBank()});$("bkLb").onclick=()=>openWorldLB(()=>{room="bank";openBank()});$("bkMega").onclick=()=>openMega(()=>{room="bank";openBank()});$("bkDeeds").onclick=()=>openDeeds(()=>{room="bank";openBank()});
     $("dAll").onclick=()=>dep(S.cash);$("dHalf").onclick=()=>dep(S.cash/2);
@@ -4207,6 +4211,7 @@ function mpOnMsg(topic,buf){
   if(kind==="au"){const from=d&&d.f?String(d.f):id;if(from===MP_ID||(id!==from&&id!==MP_ID))return;aucMsg(d,from);return}
   if(kind==="pm"){if(id===MP_ID&&d)pmMsg(d);return}
   if(kind==="tr"){if(id!==MP_ID)huntMsg(id,d);return}
+  if(kind==="hs"){if(id!==MP_ID&&d)hzMsg(d,id);return}
   if(id===MP_ID)return;
   if(kind==="bye"){const p=MP.peers[id];if(p){mpLog(p.n,"left the room",1);if(A&&A.pvp&&A.peer===id&&A.state!=="done")pvpEnd(MP_ID,"left");delete MP.peers[id];renderMpChip();mpRefresh()}return}
   if(!d)return;
@@ -4252,12 +4257,13 @@ function mpUI(keep){
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
     <div class="mpjoin"><input id="mpIn" maxlength="80" placeholder="Message" autocomplete="off"><button class="cta" id="mpSendB">Send</button></div>
     <button class="cta" id="mpMkt" style="margin-bottom:8px"><span>Player market${Object.values(MP.peers).reduce((a,p)=>a+((p.ls||[]).length),0)?" · "+Object.values(MP.peers).reduce((a,p)=>a+((p.ls||[]).length),0)+" for sale":""}</span>${ARROW}</button>
+    <button class="cta" id="mpHz" style="margin-bottom:8px"><span>Plan a co-op heist${HZ_OFFER&&!HZ&&Date.now()-HZ_OFFER.t<7000?" · "+esc(HZ_OFFER.n)+" is planning one":""}</span>${ARROW}</button>
     <button class="cta" id="mpAuc" style="margin-bottom:8px"><span>Auction house${Object.values(AUC).filter(a=>Date.now()<a.ends).length?" · "+Object.values(AUC).filter(a=>Date.now()<a.ends).length+" live":""}</span>${ARROW}</button>
     <button class="cta" id="mpCrew" style="margin-bottom:8px"><span>${S.crew?"Crew · "+esc(S.crew.n):"Crews"}</span>${ARROW}</button>
     <button class="cta ghost2" id="mpLeaveB">Leave room</button>`;
   const c=$("mpChat");c.scrollTop=c.scrollHeight;if(draft)$("mpIn").value=draft;
   const say=t=>{t=String(t||"").trim().slice(0,80);if(!t||!MP)return;const now=Date.now();if(now-MP.chatT<800)return;MP.chatT=now;mpSend("c",{n:mpName(),t});mpLog(mpName(),t);myBub={txt:t,t:4};SFX.tick(.5);mpUI()};
-  $("mpX").onclick=()=>{sh.hidden=true};$("mpLeaveB").onclick=()=>{mpLeave();mpUI()};$("mpMkt").onclick=()=>{sh.hidden=true;if(room)closeRoom();openPlayerMarket(closeRoom)};$("mpAuc").onclick=()=>{sh.hidden=true;if(room)closeRoom();openAuctions(closeRoom)};$("mpCrew").onclick=()=>{sh.hidden=true;if(room)closeRoom();openCrew(closeRoom)};
+  $("mpX").onclick=()=>{sh.hidden=true};$("mpLeaveB").onclick=()=>{mpLeave();mpUI()};$("mpMkt").onclick=()=>{sh.hidden=true;if(room)closeRoom();openPlayerMarket(closeRoom)};$("mpAuc").onclick=()=>{sh.hidden=true;if(room)closeRoom();openAuctions(closeRoom)};$("mpHz").onclick=()=>{sh.hidden=true;if(room)closeRoom();if(HZ&&HZ.st!=="done")return openCoHeist();HZ=null;if(HZ_OFFER&&Date.now()-HZ_OFFER.t<7000)hzJoin();else hzHost()};$("mpCrew").onclick=()=>{sh.hidden=true;if(room)closeRoom();openCrew(closeRoom)};
   $("mpCopy").onclick=()=>{try{navigator.clipboard.writeText(MP.code).then(()=>banner("Code copied","u"))}catch(e){}};
   $("mpSendB").onclick=()=>say($("mpIn").value);$("mpIn").onkeydown=e=>{if(e.key==="Enter")say($("mpIn").value)};
   sh.querySelectorAll("[data-lb]").forEach(b=>b.onclick=()=>{lbK=b.dataset.lb;mpUI(true)});
@@ -5501,7 +5507,10 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=95,WN=[
+const WN_VER=96,WN=[
+ ["🔐","Co-op heists","Plan a heist with 2 to 4 friends in your online room, from the Bank or the room menu. Everyone takes a job (driver, lookout, safecracker or hacker) and plays it at the same time. Do well together and everyone gets a big payout.","2026-10-08T10:00"],
+ ["🏆","Crew wars","Every week the crews race for points. The same things that earn mayor votes count. The winning crew gets a trophy on its HQ and 3 crates each. Check the Crew war tab on your crew screen.","2026-10-08T10:00"],
+ ["💎","Visit a friend's Frontier","From the Gem Exchange in World 4, look around other players' tycoons and leave a free boost (+25% Gems for 30 minutes) or a tip, once a day each.","2026-10-08T10:00"],
  ["🏆","Trophy shelf and stats","Your Apartment now has a trophy shelf that fills with real objects as you hit milestones, and a stats board: total earned, best flip, distance driven, time played and more.","2026-10-07T23:00"],
  ["🖼️","Photo frames","Photo mode has frames now (Polaroid, film, newspaper and gold) and captions for showing off a big flip or an outfit.","2026-10-07T23:00"],
  ["🏪","Player stalls","Rent a stall at the Market and sell to other players, even while you're offline. You get paid next time you play.","2026-10-07T22:00"],
@@ -6820,8 +6829,8 @@ function crewGive(f){const C=S.crew;if(!C)return;const a=Math.floor(S.cash*f);if
 function openCrew(back){room="crew";$("room").hidden=false;let LB=null,col=CREW_COLS[0],view="mine";
   const draw=()=>{const C=S.crew,lv=C?crewLv(C.bank||0):0,nxt=C?1e4*Math.pow(10,lv):0;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(C?esc(C.n):"Crews")}
-      <div class="lbtabs"><button class="${view==="mine"?"on":""}" data-cv="mine">${C?"Your crew":"Join or create"}</button><button class="${view==="lb"?"on":""}" data-cv="lb">Crew leaderboard</button></div>
-      ${view==="lb"?`<div class="perks">${LB==null?`<p class="fine">Loading crews…</p>`:LB.length?LB.slice(0,30).map((c,i)=>`<div class="crewrow${C&&C.id===c.id?" me":""}" style="--cc:${c.c}"><b>#${i+1}</b><span class="cflag"></span><span class="cn"><b>${esc(c.n)}</b><small>${c.size} member${c.size===1?"":"s"} · level ${crewLv(c.bank)} · ${esc(c.id)}</small></span><span class="cb">${fmt(c.bank)}</span>${!C?`<button class="cta" data-cj="${c.id}">Join</button>`:""}</div>`).join(""):`<p class="fine">No crews yet. Be the first.</p>`}</div>`
+      <div class="lbtabs"><button class="${view==="mine"?"on":""}" data-cv="mine">${C?"Your crew":"Join or create"}</button><button class="${view==="lb"?"on":""}" data-cv="lb">Crew leaderboard</button><button class="${view==="war"?"on":""}" data-cv="war">Crew war</button></div>
+      ${view==="war"?cwHTML():view==="lb"?`<div class="perks">${LB==null?`<p class="fine">Loading crews…</p>`:LB.length?LB.slice(0,30).map((c,i)=>`<div class="crewrow${C&&C.id===c.id?" me":""}" style="--cc:${c.c}"><b>#${i+1}</b><span class="cflag"></span><span class="cn"><b>${esc(c.n)}</b><small>${c.size} member${c.size===1?"":"s"} · level ${crewLv(c.bank)} · ${esc(c.id)}</small></span><span class="cb">${fmt(c.bank)}</span>${!C?`<button class="cta" data-cj="${c.id}">Join</button>`:""}</div>`).join(""):`<p class="fine">No crews yet. Be the first.</p>`}</div>`
       :C?`<div class="crewhq" style="--cc:${C.c}"><div class="cflag big"></div><div><b>${esc(C.n)}</b><small>Crew code <b>${esc(C.id)}</b> · ${C.size||1} member${(C.size||1)===1?"":"s"}</small></div></div>
         <div class="kv"><div><span class="eyebrow">Crew bank</span><b>${fmt(C.bank||0)}</b></div><div><span class="eyebrow">Crew level</span><b>${lv} · +${lv*3}% money</b></div><div><span class="eyebrow">You gave</span><b>${fmt(C.g||0)}</b></div><div><span class="eyebrow">Next level</span><b>${lv>=20?"Max":fmt(nxt)}</b></div></div>
         <div class="note">Every member gets <b>+3% money per crew level</b>. The bank levels up every 10×. Share the code <b>${esc(C.id)}</b> so friends can join. Your crew's HQ stands on the Township street in the Online Town.</div>
@@ -6832,7 +6841,7 @@ function openCrew(back){room="crew";$("room").hidden=false;let LB=null,col=CREW_
         <div class="sechead"><h3>Start a crew</h3><span class="eyebrow">${fmt(1e5)}</span></div><div class="mpjoin"><input id="crName" maxlength="16" placeholder="Crew name" autocomplete="off"><button class="cta" id="crMake" ${S.cash<1e5?"disabled":""}>Create</button></div>
         <div class="swrow">${CREW_COLS.map(c=>`<button class="sw big${col===c?" on":""}" data-cc="${c}" style="background:${c}"></button>`).join("")}</div>`}</div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-    $("room").querySelectorAll("[data-cv]").forEach(b=>b.onclick=()=>{view=b.dataset.cv;if(view==="lb"&&LB==null)crewFetch().then(L=>{LB=L||[];if(room==="crew")draw()});draw()});
+    $("room").querySelectorAll("[data-cv]").forEach(b=>b.onclick=()=>{view=b.dataset.cv;if(view==="war"&&(!CWAR||Date.now()-CWAR.at>6e4))cwRefresh().then(()=>{if(room==="crew")draw()});if(view==="lb"&&LB==null)crewFetch().then(L=>{LB=L||[];if(room==="crew")draw()});draw()});
     $("room").querySelectorAll("[data-cj]").forEach(b=>b.onclick=()=>crewJoin(b.dataset.cj).then(()=>{view="mine";draw()}));
     $("room").querySelectorAll("[data-cc]").forEach(b=>b.onclick=()=>{col=b.dataset.cc;const n=$("crName").value;draw();$("crName").value=n});
     $("room").querySelectorAll("[data-give]").forEach(b=>b.onclick=()=>{crewGive(+b.dataset.give);draw();updMini()});
@@ -6846,7 +6855,8 @@ const CREWHQ={x:600,y:1690,w:200,h:130};
 function drawCrewHQ(){if(!MPW||!S.crew)return;const C=S.crew,{x,y,w,h}=CREWHQ,lv=crewLv(C.bank||0);if(x>cam.x+vw+60||x+w<cam.x-60||y>cam.y+vh+60||y+h<cam.y-140)return;
   drawBuilding(ctx,{k:"crewhq",n:String(C.n).slice(0,14)+" HQ",c:C.c,x,y,w,h,door:[x+w/2,y+h]},isDark()?PAL_D:PAL_L);
   ctx.strokeStyle="#3a3f4c";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+w-24,y+10);ctx.lineTo(x+w-24,y-46);ctx.stroke();const f=Math.sin(wt*4)*4;ctx.fillStyle=C.c;ctx.beginPath();ctx.moveTo(x+w-24,y-46);ctx.quadraticCurveTo(x+w+4,y-40+f,x+w+20,y-36);ctx.lineTo(x+w-24,y-22);ctx.closePath();ctx.fill();
-  ctx.fillStyle="#ffcc33";for(let i=0;i<Math.min(5,Math.ceil(lv/4));i++){ctx.beginPath();ctx.arc(x+20+i*14,y+14,5,0,7);ctx.fill()}}
+  ctx.fillStyle="#ffcc33";for(let i=0;i<Math.min(5,Math.ceil(lv/4));i++){ctx.beginPath();ctx.arc(x+20+i*14,y+14,5,0,7);ctx.fill()}
+  const cups=(C.cups||[]).length;for(let i=0;i<Math.min(6,cups);i++)BIG_CUP_DRAW(ctx,x+24+i*22,y-2,1.3);if(cups>6){ctx.fillStyle="#3a3324";ctx.font="800 11px "+FONTS.b;ctx.textAlign="left";ctx.fillText("×"+cups,x+24+6*22,y-8)}}
 /* ================= seasons: a free 30-level reward track that resets every 30 days ================= */
 const SEA_EPOCH=Date.UTC(2026,0,1),SEA_LEN=30*864e5,SEA_XP=150,SEA_MAX=30;
 const SEA_THEMES=[["Neon Nights","#ff4fd8","🌃"],["Gold Rush","#cf9a14","🪙"],["Summer Splash","#2fa6d9","🏖️"],["Street Kings","#e2364a","👑"],["Cosmic Drift","#7a2fd6","🌌"],["Frost Bite","#7fd6ff","❄️"],["Jungle Fever","#2f9a4e","🌴"],["Royal Court","#8a1d2a","🏰"]];
@@ -7381,7 +7391,7 @@ const weekLeft=()=>{const end=(weekNo()+1)*7*864e5-3*864e5;return Math.max(0,end
 const MAYOR_PERKS={market:["Market Day","+10% on every sale"],taxi:["Free Rides","Taxis cost nothing"],energy:["Energy Festival","+25% max energy"],crates:["Crate Week","Twice as many crates from sales"]};
 let MAYOR=null,MAYOR_LB=null,mayorDirty=1,mayorPutT=8,mayorGetT=2;
 function mayorS(){const w=weekNo();let m=S.mayor;if(!m||m.wk!==w){m=S.mayor={wk:w,v:0,camp:0,cd:""};dirty=true}return m}
-function vote(n){if(!S||!n)return;mayorS().v+=n;dirty=true;mayorDirty=1}
+function vote(n){if(!S||!n)return;mayorS().v+=n;dirty=true;mayorDirty=1;cwAdd(n)}
 const mayorPerk=()=>MAYOR&&MAYOR.wk===weekNo()-1?MAYOR.perk:null,mayorK=k=>mayorPerk()===k;
 function mayorTick(dt){if(!S||!playing)return;mayorPutT-=dt;mayorGetT-=dt;
   if(mayorPutT<=0){mayorPutT=60;const m=mayorS();if(mayorDirty&&m.v>0&&crewCls()){mayorDirty=0;netPut("mayor/"+m.wk+"/"+netMe(),{n:mpName(),v:m.v,s:myShirt(),t:Date.now()})}}
@@ -7704,6 +7714,145 @@ function phFrame(src,fr,cap,k){const w=src.width,h=src.height,d=new Date(),date=
     g.fillStyle="#141824";g.textAlign="left";g.textBaseline="middle";g.font=`800 ${Math.round(20*k)}px ${FONTS.d}`;g.fillText(cap,pad*1.5,h+pad+capH*.38);g.font=`600 ${Math.round(12*k)}px ${FONTS.b}`;g.fillStyle="#6b7385";g.fillText(mpName()+" · "+date+" · Flip Rush",pad*1.5,h+pad+capH*.72)}
   return o}
 function R2(g,x,y,w,h,r){rrp(g,x,y,w,h,r);g.fill()}
+/* ================= co-op heists: two to four friends in a room, one job each, one shared score ================= */
+// The host's game runs the lobby and adds up the scores; everyone gets paid in their own game, in their own money.
+const HROLES=[["driver","Driver","Dodge the traffic on the getaway. Tap left or right to change lanes."],["lookout","Lookout","Guards pop up in the windows. Tap the guards, leave everyone else alone."],["safe","Safecracker","Stop the dial on the green notch. Four notches open the safe."],["hack","Hacker","Watch the code light up, then tap it back in the same order."]];
+const HZ_LEN=25;let HZ=null,HZ_OFFER=null,HZG=null;
+const hzHumans=()=>MP?Object.keys(MP.peers).filter(id=>!String(id).startsWith("bot_")):[];
+const hzBase=()=>Math.max(8000,Math.round(rwBase()*.25));
+function hzLeft(){const d=dayKey();if(!S.coh||S.coh.d!==d)S.coh={d,n:0};return 3-S.coh.n}
+function hzSend(op,o){mpSend("hs",{op,h:HZ?HZ.id:o&&o.h,f:MP_ID,n:mpName(),...o})}
+const hzRole=id=>HZ&&HZ.crew[id]&&HZ.crew[id].r;
+function hzHost(){if(!MP)return banner("Join an online room first. Heists need a crew","r");if(!hzHumans().length)return banner("You need at least one friend in your room","r");if(hzLeft()<=0)return banner("Three heists a day is plenty. Lie low until tomorrow","r");
+  HZ={id:Math.random().toString(36).slice(2,8),host:MP_ID,st:"lobby",crew:{[MP_ID]:{n:mpName(),r:null}},scores:{}};hzSend("lobby",{crew:HZ.crew});openCoHeist()}
+setInterval(()=>{if(HZ&&HZ.host===MP_ID&&HZ.st==="lobby"&&MP){for(const id in HZ.crew)if(id!==MP_ID&&!MP.peers[id])delete HZ.crew[id];hzSend("lobby",{crew:HZ.crew})}renderHzChip();
+  if(HZ&&(HZ.st==="play"||HZ.st==="wait")&&Date.now()>HZ.t0+(HZ_LEN+20)*1000){if(HZ.host===MP_ID)hzResolve();else if(Date.now()>HZ.t0+(HZ_LEN+35)*1000)hzFinish(hzTeam(HZ.scores),HZ.scores)}},2000);
+function hzMsg(d,from){if(!d||!d.op)return;const n=String(d.n||"?").slice(0,16);
+  if(d.op==="lobby"){if(HZ&&HZ.id===d.h&&HZ.host===from){const c=hzClean(d.crew);if(!c[MP_ID]){if(Date.now()-(HZ.joinT||0)<6000){hzSend("join",{});return}HZ=null;banner("You're not on the heist crew any more","a");if(room==="coheist")closeRoom();return}HZ.crew=c;hzRedraw();return}
+    if(!HZ&&from!==MP_ID){const fresh=!HZ_OFFER||HZ_OFFER.h!==d.h;HZ_OFFER={h:d.h,host:from,n,t:Date.now(),size:Object.keys(d.crew||{}).length};if(fresh){SFX.hot();banner(n+" is planning a heist. Tap the pill to join","u")}renderHzChip()}return}
+  if(!HZ||HZ.id!==d.h)return;
+  if(HZ.host===MP_ID){
+    if(d.op==="join"&&HZ.st==="lobby"&&(HZ.crew[from]||Object.keys(HZ.crew).length<4)){HZ.crew[from]=HZ.crew[from]||{n,r:null};SFX.door();hzSend("lobby",{crew:HZ.crew});hzRedraw()}
+    if(d.op==="role"&&HZ.st==="lobby"&&HZ.crew[from]){const r=HROLES.some(x=>x[0]===d.r)?d.r:null;if(!r||!Object.entries(HZ.crew).some(([id,c])=>id!==from&&c.r===r))HZ.crew[from].r=r;hzSend("lobby",{crew:HZ.crew});hzRedraw()}
+    if(d.op==="leave"){delete HZ.crew[from];hzSend("lobby",{crew:HZ.crew});hzRedraw()}
+    if(d.op==="score"&&HZ.crew[from]){HZ.scores[from]=clamp(+d.s||0,0,1);if(Object.keys(HZ.crew).every(id=>HZ.scores[id]!=null))hzResolve()}}
+  if(from===HZ.host){if(d.op==="go"&&HZ.st==="lobby"){HZ.crew=hzClean(d.crew);if(!HZ.crew[MP_ID])return void(HZ=null);HZ.st="play";HZ.t0=+d.t0||Date.now();hzRedraw()}
+    if(d.op==="done"&&HZ.st!=="done")hzFinish(+d.team||0,d.scores||{});if(d.op==="cancel"){HZ=null;banner(n+" called off the heist","a");if(room==="coheist")closeRoom()}}}
+function hzClean(c){const o={};for(const id in c||{}){const x=c[id];if(x&&typeof x.n==="string")o[id]={n:x.n.slice(0,16),r:HROLES.some(r=>r[0]===x.r)?x.r:null}}return o}
+function hzTeam(sc){const by={};for(const id in HZ.crew){const r=HZ.crew[id].r;if(r)by[r]=sc[id]!=null?sc[id]:0}return HROLES.reduce((a,[r])=>a+(by[r]!=null?by[r]:.3),0)/HROLES.length}
+function hzResolve(){if(!HZ||HZ.st==="done")return;const team=hzTeam(HZ.scores);hzSend("done",{team,scores:HZ.scores});hzFinish(team,HZ.scores)}
+function hzFinish(team,scores){if(!HZ||HZ.st==="done")return;HZ.st="done";HZG&&HZG.stop&&HZG.stop();HZG=null;const n=Object.keys(HZ.crew).length,ok=team>=.5;hzLeft();S.coh.n++;S.stats.coheists=(S.stats.coheists||0)+1;karmaAdd(-2);
+  let pay=0;if(ok){pay=Math.round(hzBase()*(.5+team)*(1+.2*(n-2)));earn(pay);vote(8);S.stats.coWins=(S.stats.coWins||0)+1;SFX.crit(team>.8?3:2);confetti(220,null,null,["#2fbf71","#ffcc33","#fff"]);flash("#2fbf71",.3)}
+  else{const f=Math.round(S.cash*.01);S.cash=Math.max(0,S.cash-f);pay=-f;SFX.loss();shake(8)}
+  HZ.res={team,ok,pay,scores};dirty=true;banner(ok?"Heist pulled off · +"+fmt(pay):"The alarm went off. Bail cost "+fmt(-pay),ok?"g":"r");hzRedraw();updMini()}
+function hzRedraw(){if(room==="coheist"&&openCoHeist.draw)openCoHeist.draw()}
+function renderHzChip(){let el=$("hzChip");const show=!HZ&&HZ_OFFER&&Date.now()-HZ_OFFER.t<7000&&MP&&MP.peers[HZ_OFFER.host];if(!show){if(el)el.hidden=true;return}
+  if(!el){el=document.createElement("button");el.className="chip pill ev";el.id="hzChip";el.style.setProperty("--ec","#2fbf71");el.onclick=()=>{audioOn();hzJoin()};$("hudpills").insertBefore(el,$("goalChip"))}el.hidden=false;const t="🔐 "+HZ_OFFER.n+"'s heist · join";if(el.textContent!==t)el.textContent=t}
+function hzJoin(){const o=HZ_OFFER;if(!o||!MP||!MP.peers[o.host])return banner("That heist isn't forming any more","a");if(hzLeft()<=0)return banner("Three heists a day is plenty. Lie low until tomorrow","r");if(o.size>=4)return banner("That crew is full","a");
+  HZ={id:o.h,host:o.host,st:"lobby",crew:{},scores:{},joinT:Date.now()};HZ_OFFER=null;hzSend("join",{});if(room)closeRoom();openCoHeist();renderHzChip()}
+function openCoHeist(){room="coheist";$("room").hidden=false;
+  const draw=()=>{if(!HZ){closeRoom();return}const me=MP_ID,host=HZ.host===me,crew=Object.entries(HZ.crew),mine=hzRole(me),allSet=crew.length>=2&&crew.every(([,c])=>c.r);let body="";
+    if(HZ.st==="lobby")body=`<div class="note">${host?"You're planning the job.":esc((HZ.crew[HZ.host]||{n:"The host"}).n)+" is planning the job."} Everyone picks a different role, then the host gives the signal. Every role you leave empty makes the job harder. Up to 4 players.</div>
+      <div class="hzroles">${HROLES.map(([k,n,d])=>{const who=crew.find(([,c])=>c.r===k);return `<button class="hzrole${mine===k?" on":""}${who&&who[0]!==me?" taken":""}" data-hr="${k}" ${who&&who[0]!==me?"disabled":""}><b>${n}</b><small>${who?esc(who[1].n)+(who[0]===me?" (you)":""):"Open"}</small><span>${d}</span></button>`}).join("")}</div>
+      <div class="sechead"><h3>The crew</h3><span class="eyebrow">${crew.length}/4</span></div><div class="perks">${crew.map(([id,c])=>`<div class="perk nopic"><span class="t">${esc(c.n)}${id===me?" (you)":""}${id===HZ.host?" · planner":""}</span><span class="c">${c.r?HROLES.find(r=>r[0]===c.r)[1]:"choosing…"}</span></div>`).join("")}</div>
+      ${host?`<button class="bigbtn" id="hzGo" ${allSet?"":"disabled"}>Start the heist<small>${crew.length<2?"Waiting for someone to join":allSet?"Everyone's in position":"Everyone needs a role"}</small></button>`:`<p class="fine">Waiting for the planner to start.</p>`}
+      <button class="bigbtn alt2" id="hzQuit">${host?"Call it off":"Leave the crew"}</button>`;
+    else if(HZ.st==="play"){const r=HROLES.find(x=>x[0]===mine);body=`<div class="hzhead"><b>${r?r[1]:""}</b><span id="hzT"></span></div><p class="fine" style="text-align:left">${r?r[2]:""}</p><div id="hzGame" class="hzgame"></div>`}
+    else if(HZ.st==="wait")body=`<div class="note">You did your part. Waiting for the rest of the crew…</div><div class="perks">${crew.map(([id,c])=>`<div class="perk nopic"><span class="t">${esc(c.n)} · ${HROLES.find(r=>r[0]===c.r)[1]}</span><span class="c">${HZ.scores[id]!=null?Math.round(HZ.scores[id]*100)+"%":"…"}</span></div>`).join("")}</div>`;
+    else if(HZ.res){const R=HZ.res;body=`<div class="hzres${R.ok?" ok":""}"><span class="eyebrow">${R.ok?"Clean getaway":"Busted"}</span><b>${R.ok?"+"+fmt(R.pay):"−"+fmt(-R.pay)}</b><small>Team score ${Math.round(R.team*100)}% · you needed 50%</small></div>
+      <div class="perks">${HROLES.map(([k,n])=>{const e=crew.find(([,c])=>c.r===k);return `<div class="perk nopic"><span class="t">${n}</span><span class="d">${e?esc(e[1].n):"Nobody (counts as 30%)"}</span><span class="c">${e?Math.round((R.scores[e[0]]||0)*100)+"%":"30%"}</span></div>`}).join("")}</div>
+      <button class="bigbtn" id="hzDone">Back to the bank<small>${hzLeft()} heist${hzLeft()===1?"":"s"} left today</small></button>`}
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Co-op heist")}${body}</div>`;
+    $("leaveBtn").onclick=()=>{if(HZ&&HZ.st==="lobby"){hzSend(host?"cancel":"leave",{});HZ=null}else if(HZ&&HZ.st==="done")HZ=null;closeRoom()};
+    $("room").querySelectorAll("[data-hr]").forEach(b=>b.onclick=()=>{const r=mine===b.dataset.hr?null:b.dataset.hr;SFX.tick(.5);if(host){if(!r||!crew.some(([id,c])=>id!==me&&c.r===r))HZ.crew[me].r=r;hzSend("lobby",{crew:HZ.crew});draw()}else hzSend("role",{r})});
+    const go=$("hzGo");if(go)go.onclick=()=>{if(!allSet)return;HZ.st="play";HZ.t0=Date.now()+2500;hzSend("go",{crew:HZ.crew,t0:HZ.t0});SFX.level();draw()};
+    const q=$("hzQuit");if(q)q.onclick=$("leaveBtn").onclick;const dn=$("hzDone");if(dn)dn.onclick=()=>{HZ=null;closeRoom();openRoom("bank")};
+    if(HZ.st==="play"&&!HZG)hzStartGame(mine)};
+  openCoHeist.draw=draw;draw()}
+function hzStartGame(role){const el=$("hzGame"),tEl=$("hzT");if(!el)return;let done=false,raf=0;const t0=HZ.t0,end=t0+HZ_LEN*1000;
+  const fin=s=>{if(done)return;done=true;cancelAnimationFrame(raf);HZG=null;s=clamp(s,0,1);HZ.scores[MP_ID]=s;if(HZ.host!==MP_ID)hzSend("score",{s});HZ.st="wait";SFX.tick(1);hzRedraw();if(HZ.host===MP_ID&&Object.keys(HZ.crew).every(id=>HZ.scores[id]!=null))hzResolve()};
+  const G=HZG={stop:()=>{done=true;cancelAnimationFrame(raf)}};const W=Math.min(el.clientWidth||320,360),H=260;el.innerHTML=`<canvas width="${W*2}" height="${H*2}" style="width:${W}px;height:${H}px"></canvas>`;const cv=el.querySelector("canvas"),g=cv.getContext("2d");g.scale(2,2);
+  const st={hit:0,miss:0,ok:0,tot:0,lane:1,obs:[],next:0,ang:0,sp:2.4,notch:Math.random()*6.28,win:[],seq:[],inp:[],round:0,show:0,flash:-1,flashT:0},now=()=>Date.now();
+  if(role==="hack"){const nx=()=>{st.seq=Array.from({length:3+st.round},()=>Math.floor(Math.random()*4));st.inp=[];st.show=Math.max(now(),t0)+600};st.nx=nx;nx()}
+  cv.onpointerdown=e=>{if(done||now()<t0)return;const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+    if(role==="driver"){st.lane=clamp(st.lane+(x<W/2?-1:1),0,2);SFX.tick(.3)}
+    else if(role==="safe"){const a=((st.ang%6.283)+6.283)%6.283,d=Math.abs(((a-st.notch+9.42)%6.283)-3.14);if(d<.24){st.ok++;SFX.lift();st.notch=Math.random()*6.28;st.sp*=1.18;if(st.ok>=4)fin(1-.06*st.miss+.1)}else{st.miss++;SFX.nope();shake(3)}}
+    else if(role==="lookout"){const c=Math.floor(x/(W/3)),rw=Math.floor(y/(H/3)),i=rw*3+c,w=st.win[i];if(w&&!w.tap){w.tap=1;if(w.g){st.ok++;SFX.coin(st.ok)}else{st.hit++;SFX.nope()}}}
+    else if(role==="hack"&&now()>st.showEnd){const c=Math.floor(x/(W/2)),rw=Math.floor(y/(H/2)),k=rw*2+c;st.flash=k;st.flashT=now()+180;st.inp.push(k);SFX.tick(.3+k*.15);const i=st.inp.length-1;if(st.inp[i]!==st.seq[i]){st.miss++;SFX.nope();st.round++;if(st.round>=4)return fin(st.ok/4);st.nx()}else if(st.inp.length===st.seq.length){st.ok++;SFX.coin(st.ok*2);st.round++;if(st.round>=4)return fin(st.ok/4);st.nx()}}};
+  const COLS=["#e2364a","#2a9df4","#ffcc33","#2fbf71"];
+  const loop=()=>{if(done)return;const t=now(),left=Math.max(0,(end-t)/1000);if(tEl)tEl.textContent=t<t0?"Get ready…":Math.ceil(left)+"s";g.clearRect(0,0,W,H);
+    if(role==="driver"){g.fillStyle="#3d4250";g.fillRect(0,0,W,H);g.fillStyle="#f3f0e6";for(let i=1;i<3;i++)for(let y=(t/6)%40-40;y<H;y+=40)g.fillRect(i*W/3-2,y,4,20);
+      if(t>=t0&&t>st.next){st.next=t+Math.max(380,800-(t-t0)/40);st.obs.push({l:Math.floor(Math.random()*3),y:-30});st.tot++}
+      const sp=3+(t-t0)/6000;st.obs.forEach(o=>{o.y+=sp;g.fillStyle="#ff7a3d";rrp(g,o.l*W/3+W/6-16,o.y,32,22,4);g.fill();g.fillStyle="#fff";g.fillRect(o.l*W/3+W/6-12,o.y+9,24,4);if(!o.hit&&o.l===st.lane&&o.y>H-70&&o.y<H-20){o.hit=1;st.hit++;SFX.loss();shake(4)}});st.obs=st.obs.filter(o=>o.y<H+30);
+      const cx=st.lane*W/3+W/6;g.fillStyle="#e2364a";rrp(g,cx-15,H-62,30,44,7);g.fill();g.fillStyle="#9fd3ef";g.fillRect(cx-10,H-54,20,10);g.fillStyle="#1b1d22";[[-17,-55],[13,-55],[-17,-30],[13,-30]].forEach(([dx,dy])=>g.fillRect(cx+dx,H+dy,4,10));
+      if(t>=end)return fin(1-st.hit/Math.max(4,st.tot*.5))}
+    else if(role==="safe"){if(t>=t0)st.ang+=st.sp/60;const cx=W/2,cy=H/2,R=Math.min(W,H)*.4;g.fillStyle="#2b2f3a";g.beginPath();g.arc(cx,cy,R+12,0,7);g.fill();g.fillStyle="#9aa3b3";g.beginPath();g.arc(cx,cy,R,0,7);g.fill();
+      g.strokeStyle="#2fbf71";g.lineWidth=14;g.beginPath();g.arc(cx,cy,R-10,st.notch-.24,st.notch+.24);g.stroke();g.strokeStyle="#5b6272";g.lineWidth=2;for(let i=0;i<40;i++){const a=i/40*6.283;g.beginPath();g.moveTo(cx+Math.cos(a)*(R-2),cy+Math.sin(a)*(R-2));g.lineTo(cx+Math.cos(a)*(R-(i%5?7:13)),cy+Math.sin(a)*(R-(i%5?7:13)));g.stroke()}
+      g.strokeStyle="#e2364a";g.lineWidth=4;g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+Math.cos(st.ang)*(R-6),cy+Math.sin(st.ang)*(R-6));g.stroke();g.fillStyle="#1b1d22";g.beginPath();g.arc(cx,cy,12,0,7);g.fill();
+      g.fillStyle="#fff";g.font="800 13px "+FONTS.b;g.textAlign="center";g.fillText(st.ok+"/4",cx,cy+5);if(t>=end)return fin(st.ok/4-.05*st.miss)}
+    else if(role==="lookout"){const cw=W/3,ch=H/3;if(t>=t0&&t>st.next){st.next=t+Math.max(450,950-(t-t0)/50);const free=[...Array(9).keys()].filter(i=>!st.win[i]);if(free.length){const i=pick(free);st.win[i]={g:Math.random()<.72,until:t+1100}}}
+      for(let i=0;i<9;i++){const x=(i%3)*cw,y=Math.floor(i/3)*ch,w=st.win[i];g.fillStyle="#c9a26b";g.fillRect(x+2,y+2,cw-4,ch-4);g.fillStyle=w&&!w.tap?"#ffe8a0":"#2b3346";g.fillRect(x+10,y+10,cw-20,ch-20);
+        if(w){if(!w.tap){g.fillStyle=w.g?"#1b2f5a":"#c46f45";g.beginPath();g.arc(x+cw/2,y+ch/2-6,11,0,7);g.fill();g.fillRect(x+cw/2-13,y+ch/2+6,26,ch/2-20);if(w.g){g.fillStyle="#1b2f5a";g.fillRect(x+cw/2-14,y+ch/2-20,28,6);g.fillStyle="#ffcc33";g.fillRect(x+cw/2-3,y+ch/2-19,6,4)}}
+          if(t>w.until){if(w.g&&!w.tap)st.miss++;st.win[i]=null}}}
+      if(t>=end)return fin(st.ok/Math.max(1,st.ok+st.miss)-.12*st.hit)}
+    else if(role==="hack"){if(!st.showEnd||st.showEnd<st.show)st.showEnd=st.show+st.seq.length*520;const cw=W/2,ch=H/2,lit=t>=st.show&&t<st.showEnd?st.seq[Math.floor((t-st.show)/520)]:t<st.flashT?st.flash:-1;
+      for(let k=0;k<4;k++){const x=(k%2)*cw,y=Math.floor(k/2)*ch;g.globalAlpha=lit===k?1:.35;g.fillStyle=COLS[k];rrp(g,x+6,y+6,cw-12,ch-12,14);g.fill()}g.globalAlpha=1;const lb=t<st.showEnd?"Watch…":"Your turn · "+st.inp.length+"/"+st.seq.length;g.font="800 13px "+FONTS.b;g.textAlign="center";const lw=g.measureText(lb).width+20;g.fillStyle="rgba(20,24,36,.85)";rrp(g,W/2-lw/2,H/2-12,lw,24,12);g.fill();g.fillStyle="#fff";g.fillText(lb,W/2,H/2+5);
+      if(t>=end)return fin(st.ok/4)}
+    raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop);return G}
+/* ================= crew wars: every week the crews race for points, and the winners get a trophy on their HQ ================= */
+// crew/<id>/w/<week>/<member> holds what each member scored that week. Points come from the same things as mayor votes.
+let cwDirty=0,cwPutT=12,cwGetT=4,CWAR=null;
+function cwS(){const w=weekNo();if(!S.cwar||S.cwar.wk!==w){S.cwar={wk:w,p:0};dirty=true}return S.cwar}
+function cwAdd(n){if(!S||!S.crew||!n)return;cwS().p+=n;cwDirty=1;dirty=true}
+async function cwFetch(wk){const d=await netScan(CRT);if(!d)return null;const C={};for(const k in d){const p=k.split("/"),x=d[k];if(!/^[A-Z0-9]{4,8}$/.test(p[0])||!x)continue;const c=C[p[0]]=C[p[0]]||{id:p[0],p:0,mem:{}};
+    if(p[1]==="i"&&typeof x.n==="string"){c.n=x.n.slice(0,18);c.c=CREW_COLS.includes(x.c)?x.c:"#2a5bd7"}else if(p[1]==="w"&&+p[2]===wk&&p[3]&&isFinite(x.p)&&x.p>0){const v=Math.min(Math.floor(x.p),1e7);c.p+=v;c.mem[p[3]]={n:String(x.n||"?").slice(0,16),p:v}}}
+  return Object.values(C).filter(c=>c.n&&c.p>0).sort((a,b)=>b.p-a.p||(a.id<b.id?-1:1))}
+async function cwRefresh(){const w=weekNo(),[now,last]=await Promise.all([cwFetch(w),cwFetch(w-1)]);if(!now)return;CWAR={wk:w,list:now,champ:last&&last[0]||null,at:Date.now()};
+  const C=S.crew,ch=CWAR.champ;if(C&&ch&&ch.id===C.id){C.cups=C.cups||[];if(!C.cups.includes(w-1)){C.cups.push(w-1);dirty=true;gainCrate(3);setTimeout(()=>{banner("Your crew won the crew war","g");confetti(260);rayText(C.n+" scored the most points in Flip City last week. There's a new trophy on your crew HQ in the Online Town, and 3 crates for you.")},1200)}}}
+setInterval(()=>{if(!S||!playing||!S.crew||!crewCls())return;cwPutT-=5;cwGetT-=5;
+  if(cwPutT<=0){cwPutT=60;const c=cwS();if(cwDirty&&c.p>0){cwDirty=0;cloudPut(crewCls(),CRT+S.crew.id+"/w/"+c.wk+"/"+crewMe(),JSON.stringify({n:mpName(),p:c.p,t:Date.now()}))}}
+  if(cwGetT<=0){cwGetT=600;cwRefresh().catch(()=>{})}},5000);
+const BIG_CUP_DRAW=(c,x,y,k)=>{c.fillStyle="#a8781c";c.fillRect(x-5*k,y-3*k,10*k,3*k);c.fillStyle="#cf9a14";c.fillRect(x-1.5*k,y-8*k,3*k,5*k);c.beginPath();c.moveTo(x-7*k,y-18*k);c.lineTo(x+7*k,y-18*k);c.quadraticCurveTo(x+7*k,y-8*k,x,y-7*k);c.quadraticCurveTo(x-7*k,y-8*k,x-7*k,y-18*k);c.fill();c.fillStyle="rgba(255,255,255,.5)";c.fillRect(x-4*k,y-16*k,2*k,5*k)};
+function cwHTML(){const C=S.crew,W=CWAR,me=C&&W?W.list.findIndex(c=>c.id===C.id):-1,mine=me>=0?W.list[me]:null,rival=me>0?W.list[me-1]:null,days=Math.ceil(weekLeft()/864e5);
+  return `<div class="note">Every week the crews race for points: profitable sales, deeds, hitchhikers, gifts, bounties, heists and bricks for the city goal all count, the same as mayor votes. The crew with the most points on Sunday night gets a trophy on its HQ, and every member gets 3 crates.</div>
+   ${C?`<div class="kv"><div><span class="eyebrow">Your points</span><b>${fmtN(cwS().p)}</b></div><div><span class="eyebrow">${esc(C.n)}</span><b>${mine?"#"+(me+1)+" · "+fmtN(mine.p):"—"}</b></div><div><span class="eyebrow">Ends in</span><b>${days} day${days===1?"":"s"}</b></div><div><span class="eyebrow">Trophies</span><b>${(C.cups||[]).length}</b></div></div>
+   ${rival?`<div class="dcard" style="border-left:4px solid ${rival.c}"><span class="eyebrow">Crew to beat</span><b>${esc(rival.n)}</b><p class="fine" style="text-align:left;margin:6px 0">${fmtN(rival.p-mine.p+1)} points ahead of you. Catch them before Sunday.</p></div>`:mine&&me===0?`<div class="dcard" style="border-left:4px solid #cf9a14"><span class="eyebrow">You're in front</span><b>${esc(C.n)} leads the war</b><p class="fine" style="text-align:left;margin:6px 0">${W.list[1]?"Ahead of "+esc(W.list[1].n)+" by "+fmtN(mine.p-W.list[1].p)+" points.":"Nobody else has scored yet."}</p></div>`:""}`:`<div class="note">Join a crew to take part.</div>`}
+   ${W&&W.champ?`<div class="dcard" style="border-left:4px solid ${W.champ.c}"><span class="eyebrow">Last week's champions</span><b>${esc(W.champ.n)}</b><p class="fine" style="text-align:left;margin:6px 0">${fmtN(W.champ.p)} points</p></div>`:""}
+   <div class="sechead"><h3>This week</h3><span class="eyebrow">${W?W.list.length+" crews scoring":"loading…"}</span></div>
+   <div class="perks">${W?W.list.slice(0,15).map((c,i)=>`<div class="crewrow${C&&C.id===c.id?" me":""}" style="--cc:${c.c}"><b>#${i+1}</b><span class="cflag"></span><span class="cn"><b>${esc(c.n)}</b><small>${Object.keys(c.mem).length} scoring · top: ${esc(Object.values(c.mem).sort((a,b)=>b.p-a.p)[0].n)}</small></span><span class="cb">${fmtN(c.p)}</span></div>`).join("")||`<p class="fine">No crew has scored yet this week.</p>`:`<p class="fine">Counting points…</p>`}</div>`}
+/* ================= World 4 visits: look around a friend's Frontier, leave a boost or a tip ================= */
+// w4s/<name> is a snapshot of someone's zones; w4v/<name>/<visitor> is what a visitor left behind until the owner collects it.
+const W4V_BOOST=1.25,W4V_MIN=30;let W4SNAP=null,w4sT=8;
+const myKey=()=>mpName().toLowerCase().slice(0,16);
+function w4Snap(){const W=w4(),z={};W4Z.forEach(q=>{if(W.unl[q.k])z[q.k]=W.z[q.k].t.map(t=>t?t.k+"."+t.l:0)});return{n:mpName(),s:myShirt(),stars:W.stars||0,rate:w4Rate(),tot:W.tot||0,z,t:Date.now()}}
+setInterval(()=>{if(!S||!playing||!S.w4||!S.w4.open||!crewCls())return;w4sT-=10;if(w4sT>0)return;w4sT=300;netPut("w4s/"+myKey(),w4Snap());w4vCollect().catch(()=>{})},10000);
+async function w4vCollect(){const d=await netScan(NET+"w4v/"+myKey()+"/");if(!d)return;const W=w4();for(const who in d){const v=d[who];netPut("w4v/"+myKey()+"/"+who,null);if(!v||!v.k)continue;const n=String(v.n||who).slice(0,16),msg=v.m?' "'+String(v.m).slice(0,40)+'"':"";
+  if(v.k==="boost"){W.vb=Math.max(Date.now(),W.vb||0)+W4V_MIN*6e4;S.stats.w4boosts=(S.stats.w4boosts||0)+1;banner(n+" visited your Frontier and left a boost: +25% Gems for "+W4V_MIN+" min"+msg,"g")}
+  else if(v.k==="tip"){const g=Math.min(Math.max(0,+v.g||0),Math.max(1000,w4Rate()*1800));if(g>0){W.gems+=g;W.tot+=g;banner(n+" visited your Frontier and tipped "+gemF(g)+msg,"g")}}
+  dirty=true;SFX.grail()}}
+const w4vK=()=>(w4().vb||0)>Date.now()?W4V_BOOST:1;
+const W4V_MSG=["Love what you've built","Nice park!","Those robots are amazing","Your castle looks great","Teach me your ways","See you at the top"];
+function openW4Visits(back){room="w4vis";$("room").hidden=false;let view=null,msg=0;
+  const draw=()=>{const met=S.met||{},me=myKey(),L=W4SNAP?Object.entries(W4SNAP).filter(([k])=>k!==me).map(([k,v])=>({k,...v,f:!!met[k]||!!(MP&&Object.values(MP.peers).some(p=>String(p.n||"").toLowerCase()===k))})).sort((a,b)=>(b.f-a.f)||(b.stars-a.stars)||(b.rate-a.rate)):null;
+    if(view){const v=view,vis=(S.w4vis||{})[v.k]===dayKey(),W=w4(),tips=[.01,.05].map(f=>Math.floor(W.gems*f));
+      $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(v.n)+"'s Frontier")}
+        <div class="kv"><div><span class="eyebrow">Gems a second</span><b>${gemF(v.rate||0)}</b></div><div><span class="eyebrow">Tycoon stars</span><b>${starF(v.stars||0)}</b></div><div><span class="eyebrow">Zones open</span><b>${Object.keys(v.z||{}).length}/${W4Z.length}</b></div></div>
+        ${W4Z.filter(z=>v.z&&v.z[z.k]).map(z=>{const T=v.z[z.k],n=T.filter(Boolean).length;return `<div class="vzone" style="--zb:${z.tile}"><div class="vzh"><b>${z.ic} ${z.n}</b><span>${n} building${n===1?"":"s"}</span></div><div class="vgrid">${T.map(t=>{if(!t)return `<i></i>`;const[k,l]=String(t).split("."),b=W4B(z,k);return `<i class="b" title="${b?esc(b.n):""}">${b?b.ic:"?"}${+l>1?`<small>${+l}</small>`:""}</i>`}).join("")}</div></div>`}).join("")||`<p class="fine">They haven't built anything yet.</p>`}
+        <div class="sechead"><h3>Leave something</h3><span class="eyebrow">${vis?"You visited today":"Once a day per friend"}</span></div>
+        <div class="seg3">${W4V_MSG.slice(0,3).map((m,i)=>`<button class="${msg===i?"on":""}" data-vm="${i}">${esc(m)}</button>`).join("")}</div>
+        <button class="bigbtn" id="vBoost" ${vis?"disabled":""}>Leave a boost<small>Free · +25% Gems for them for ${W4V_MIN} minutes</small></button>
+        <div class="seg3">${tips.map((g,i)=>`<button data-vt="${g}" ${vis||g<1?"disabled":""}>Tip ${["1%","5%"][i]}<small>${gemF(g)}</small></button>`).join("")}<button disabled>Your Gems<small>${gemF(W.gems)}</small></button></div>
+        <p class="fine">They get it the next time they play. Tips come out of your own Gems.</p></div>`;
+      $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{view=null;draw()};
+      const send=(k,g)=>{if((S.w4vis||{})[v.k]===dayKey())return;if(!netPut("w4v/"+v.k+"/"+me,{n:mpName(),k,g:g||0,m:W4V_MSG[msg],t:Date.now()}))return banner("Log in online to visit friends","r");S.w4vis=S.w4vis||{};S.w4vis[v.k]=dayKey();if(g){W.gems-=g}vote(2);karmaAdd(1);dirty=true;SFX.rebirth();confetti(100,null,null,["#4fe3ff","#ff4fd8","#fff"]);banner(k==="boost"?"You left "+v.n+" a boost":"You tipped "+v.n+" "+gemF(g),"g");draw()};
+      $("vBoost").onclick=()=>send("boost");$("room").querySelectorAll("[data-vt]").forEach(b=>b.onclick=()=>{const g=+b.dataset.vt;if(g<1||W.gems<g)return;send("tip",g)});
+      $("room").querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{msg=+b.dataset.vm;SFX.tick(.4);draw()});return}
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Visit a Frontier")}<div class="note">Look around other players' World 4 tycoons. Once a day you can leave each one a free boost (+25% Gems for ${W4V_MIN} minutes) or a tip from your own Gems. People you've played with online come first.</div>
+      ${crewCls()?"":`<div class="note">Log in online to visit other players.</div>`}
+      <div class="perks">${L?L.slice(0,30).map(v=>`<button class="perk nopic" data-vv="${esc(v.k)}"><span class="t"><i class="lbdot" style="background:${okCol(v.s)?v.s:"#4fe3ff"}"></i>${esc(String(v.n).slice(0,16))}${v.f?" · friend":""}</span><span class="d">${Object.keys(v.z||{}).length} zones · ${gemF(v.rate||0)}/s · ${starF(v.stars||0)} ⭐</span><span class="c">${(S.w4vis||{})[v.k]===dayKey()?"Visited":"Visit"}</span></button>`).join("")||`<p class="fine">Nobody else has opened World 4 yet.</p>`:`<p class="fine">Looking around…</p>`}</div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-vv]").forEach(b=>b.onclick=()=>{const k=b.dataset.vv,v=W4SNAP&&W4SNAP[k];if(!v)return;view={k,...v};SFX.door();draw()})};
+  draw();if(crewCls()&&S.w4&&S.w4.open)netPut("w4s/"+myKey(),w4Snap());netScan(NET+"w4s/").then(d=>{W4SNAP={};if(d)for(const k in d){const v=d[k];if(!v||typeof v.n!=="string"||!v.z||typeof v.z!=="object")continue;const z={};W4Z.forEach(q=>{if(Array.isArray(v.z[q.k]))z[q.k]=v.z[q.k].slice(0,W4_COLS*W4_ROWS)});W4SNAP[k]={n:v.n.slice(0,16),s:v.s,stars:+v.stars||0,rate:+v.rate||0,z}}if(room==="w4vis")draw()})}
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
@@ -7949,7 +8098,7 @@ function w4Calc(zk){const z=W4ZK(zk),Z=w4().z[zk],T=Z.t,st=T.map(()=>""),out=T.m
 const w4Rate=()=>W4Z.filter(z=>w4().unl[z.k]).reduce((a,z)=>a+w4Calc(z.k).rate,0)*w4Mult();
 // tuned with a greedy-bot simulation: about an hour of perfect play from entering World 4 to 1 Qa stars (World 5)
 let W4_STAR_X=15,W4_STAR_DIV=2e6,W4_STAR_B=.1,W4_EARN=.4,W4_STAR_E=.8;const W5_STARS=1e15;   // W4_EARN: all World 4 income ×0.4 (cut 60%)
-const w4Mult=()=>(1+accFx("gems"))*W4_EARN*(1+.1*Object.keys(w4().unl).length-.1)*(1+W4_STAR_B*(w4().stars||0));
+const w4Mult=()=>(1+accFx("gems"))*W4_EARN*(1+.1*Object.keys(w4().unl).length-.1)*(1+W4_STAR_B*(w4().stars||0))*((w4().vb||0)>Date.now()?1.25:1);
 const w4StarGain=()=>{const W=w4();return W4_STAR_X*Math.max(0,Math.floor(Math.pow((W.run==null?W.tot:W.run)/W4_STAR_DIV,W4_STAR_E)))};
 function w4Tick(){if(!S||!S.w4||!S.w4.open)return;const W=w4(),now=Date.now();let dt=(now-(W.last||now))/1000;W.last=now;if(dt<=0)return;const away=dt>120;dt=Math.min(dt,8*3600);const g=w4Rate()*dt;W.gems+=g;W.tot+=g;W.run=(W.run||0)+g;
   if(away&&g>0)setTimeout(()=>banner(GEM+" Your World 4 zones made "+gemF(g)+" while you were away","g"),1500);
@@ -8114,12 +8263,13 @@ function openGemEx(back){const W=w4(),today=dayKey(),done=W.ex===today,give=Math
     <div class="note">Out here it's Gems ${GEM} or nothing. The guy behind the counter will take a tenth of your cash once a day and hand you a bag of Gems, roughly what your zones dig up in 15 minutes. Not a great rate, but it's something.</div>
     <div class="kv"><div><span class="eyebrow">Gems</span><b>${gemF(W.gems)}</b></div><div><span class="eyebrow">All zones</span><b>${gemF(w4Rate())}/s</b></div><div><span class="eyebrow">Lifetime</span><b>${gemF(W.tot)}</b></div></div>
     <button class="bigbtn" id="gxGo" ${done?"disabled":""}>${done?"Exchanged today":"Swap for "+gemF(give)}<small>${done?"Come back tomorrow":"Costs "+fmt(cost)}</small></button>
+    <button class="bigbtn alt" id="gxVis">Visit a friend's Frontier<small>Look around their tycoon · leave a boost or a tip${(w4().vb||0)>Date.now()?" · you're boosted for "+Math.ceil(((w4().vb||0)-Date.now())/6e4)+" min":""}</small></button>
     <div class="sechead"><h3>⭐ Franchise your empire</h3><span class="eyebrow">${starF(W.stars||0)} ⭐ · Gems ×${starF(1+W4_STAR_B*(W.stars||0))} for good</span></div>
     <div class="note">Sell the whole lot to investors and start over with a reputation. Your zones, buildings and Gems go, but you keep the <b>Tycoon Stars</b>, and every star makes all your Gem income 10% bigger for good. The more you earned this run, the more stars you get. A good rule: franchise when it would double your stars.</div>
     <div class="w5gate"><b>🌌 World 5</b><span>${(W.stars||0)>=W5_STARS?"You have the stars. World 5 is on its way!":"Sealed · needs "+starF(W5_STARS)+" ⭐"}</span><i><i style="width:${Math.min(100,(W.stars||0)/W5_STARS*100).toFixed(1)}%"></i></i><small>${starF(W.stars||0)} / ${starF(W5_STARS)} stars</small></div>
     <button class="bigbtn alt2" id="gxFr" ${w4StarGain()<1?"disabled":""}>Franchise for ${starF(w4StarGain())} ⭐<small>${w4StarGain()<1?"Earn "+gemF(W4_STAR_DIV)+" this run for your first stars":"Resets World 4 zones and Gems"}</small></button>
     <div class="sechead"><h3>Your zones</h3></div><div class="perks">${W4Z.map(z=>{const u=W.unl[z.k],c=u?w4Calc(z.k):null;return `<button class="perk nopic" data-gz="${z.k}"><span class="t">${z.ic} ${z.n}</span><span class="d">${u?((W.z[z.k]&&W.z[z.k].t||[]).filter(Boolean).length)+" buildings · "+gemF(c.rate*w4Mult())+"/s":"Locked · "+gemF(z.unl)+(W.gems>=z.unl?" · you can afford it":"")}</span><span class="c">${u?"Open":W.gems>=z.unl?"Unlock":"🔒"}</span></button>`}).join("")}</div></div>`;
-  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("room").querySelectorAll("[data-gz]").forEach(b=>b.onclick=()=>openW4Zone(b.dataset.gz,()=>openGemEx(back)));$("gxFr").onclick=()=>{const n=w4StarGain();if(n<1)return;const fb=$("gxFr");if(!fb.dataset.sure){fb.dataset.sure=1;fb.innerHTML="Tap again to franchise<small>Zones and Gems reset · you keep "+starF(n)+" new ⭐</small>";SFX.tick(.5);return}W.stars=(W.stars||0)+n;W.gems=50;W.run=0;W.unl={sky:1};W.z={};w4();S.stats.franchises=(S.stats.franchises||0)+1;dirty=true;SFX.rebirth();flash("#ffcc33",.7);confetti(320,null,null,["#ffcc33","#fff","#ff4fd8"]);shake(10,.8);banner("⭐ Sold! You now have "+starF(W.stars)+" Tycoon Stars · Gems ×"+starF(1+W4_STAR_B*W.stars),"g");if(W.stars>=W5_STARS&&W.stars-n<W5_STARS)setTimeout(()=>{banner("🌌 "+starF(W5_STARS)+" stars! World 5 will open for you as soon as it's built","g");confetti(300)},1800);if(SCN)SCN.stSig=null;openGemEx(back)};
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;$("room").querySelectorAll("[data-gz]").forEach(b=>b.onclick=()=>openW4Zone(b.dataset.gz,()=>openGemEx(back)));$("gxVis").onclick=()=>openW4Visits(()=>openGemEx(back));$("gxFr").onclick=()=>{const n=w4StarGain();if(n<1)return;const fb=$("gxFr");if(!fb.dataset.sure){fb.dataset.sure=1;fb.innerHTML="Tap again to franchise<small>Zones and Gems reset · you keep "+starF(n)+" new ⭐</small>";SFX.tick(.5);return}W.stars=(W.stars||0)+n;W.gems=50;W.run=0;W.unl={sky:1};W.z={};w4();S.stats.franchises=(S.stats.franchises||0)+1;dirty=true;SFX.rebirth();flash("#ffcc33",.7);confetti(320,null,null,["#ffcc33","#fff","#ff4fd8"]);shake(10,.8);banner("⭐ Sold! You now have "+starF(W.stars)+" Tycoon Stars · Gems ×"+starF(1+W4_STAR_B*W.stars),"g");if(W.stars>=W5_STARS&&W.stars-n<W5_STARS)setTimeout(()=>{banner("🌌 "+starF(W5_STARS)+" stars! World 5 will open for you as soon as it's built","g");confetti(300)},1800);if(SCN)SCN.stSig=null;openGemEx(back)};
     $("gxGo").onclick=()=>{if(W.ex===today)return;S.cash-=cost;W.ex=today;W.gems+=give;W.tot+=give;W.run=(W.run||0)+give;dirty=true;SFX.rebirth();confetti(160,null,null,["#4fe3ff","#ff4fd8","#fff"]);banner("+"+gemF(give),"g");openGemEx(back)}}
 function w4Places(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];o.bld=!!o.bld;L.push(o)},W=w4();
   const pos={sky:[160,420],park:[1380,420],sea:[160,960],fac:[1380,960],king:[720,180]};
