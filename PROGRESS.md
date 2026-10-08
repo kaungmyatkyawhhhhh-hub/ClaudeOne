@@ -2,15 +2,19 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): Dante 8'0" (uncapped widths) + NPC upper traps (owner's re-import pending)
+## LATEST (9 Oct): Dante 8'0" (uncapped widths) + NPC upper traps (re-imported, in Studio)
 - **Dante is 8'0"** (owner: an NPC no player can reach; players cap at 7'0"). Same width formula as players
   (BodyService.WidthFactors) with no cap for him: his made-up data carries `heightInches = 96` (targetHeight uses it;
   saves never have it), s = 96 / 48 = 2.0: shoulders (1 + 1.4 x 1) x 1.2 V-Taper = 2.88, hips 2.20, arms / legs /
   depth 1.90. Measured: height scale 1.60, UpperTorso 5.75 wide (server and client), hips 3.63. Screenshot giant_dante_8ft.
 - **NPC / other-player upper traps**: the stage meshes were regenerated in Studio from the new muscle data (all 62 rewritten
   in Downloads\other_player_stages; only the 14 torso ones change) and src Config/BodyStages.luau has the new torso
-  bounds. NOT in Studio yet: the owner imports the 14 files in Downloads\other_player_stages\reimport_torso_upper_traps
-  with Import 3D, then Claude syncs Config/BodyStages and runs tools/body_stages_setup (now replaces same-name templates).
+  bounds. The owner re-imported the 14 files (reimport_torso_upper_traps); Config/BodyStages synced and
+  tools/body_stages_setup run (it now replaces same-name templates): 14 torso templates replaced, 62 in the folder, none
+  missing, import turn 180 (matches). Tested on frozen test copies at the full look and the mass monster, and on Dante:
+  the traps rise from the neck to the shoulders, no clipping, no download errors (screenshots npc_upper_traps_back /
+  _front, dante_upper_traps_back). Studio is left with Workspace TestMuscleShare = 2 for the owner's 2-player test
+  (remove it afterwards).
 
 ## Before that (9 Oct): NPC body shapes lost on clients (the giant looked narrow)
 - Found while widening Dante: Roblox rescales an NPC that has a height scale on EACH CLIENT and drops the server's
