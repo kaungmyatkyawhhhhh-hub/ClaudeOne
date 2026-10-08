@@ -859,7 +859,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .accrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .accrow .perk{grid-template-columns:1fr}
 .pill.mp .pk{color:#2fd28a}.pill.mp.on{box-shadow:inset 0 0 0 2px #2fd28a,var(--shadow)}
-.mpsheet{max-height:min(78vh,620px);overflow-y:auto}
+.mpsheet{max-height:min(86vh,760px);overflow-y:auto}.mpsheet .mplist,.mpsheet .mplb{flex:none;max-height:180px;overflow-y:auto}
 .mpjoin{display:grid;grid-template-columns:1fr auto;gap:8px}
 .mpjoin input{font:700 1rem var(--body);padding:13px 14px;border-radius:14px;border:0;background:var(--bg);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);outline:none;min-width:0}
 .mpjoin input:focus{box-shadow:inset 0 0 0 2px var(--accent)}
@@ -871,7 +871,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .mplist b{display:block;font-size:.88rem}.mplist small{font-family:var(--mono);font-size:.64rem;color:var(--muted)}
 .mpgift{padding:8px 10px;border-radius:10px;background:#2fd28a;color:#06281a;font-weight:800;font-size:.72rem}
 .mpgift[disabled]{opacity:.4}
-.mpchat{display:flex;flex-direction:column;gap:4px;max-height:130px;overflow-y:auto;padding:8px 10px;border-radius:14px;background:var(--bg);font-size:.82rem}
+.mpchat{display:flex;flex-direction:column;gap:5px;flex:none;min-height:170px;height:30vh;max-height:300px;overflow-y:auto;padding:10px 12px;border-radius:14px;background:var(--bg);font-size:.88rem;line-height:1.35}.mpchat>div{flex:none}
 .mpchat .sys{color:var(--muted);font-style:italic}.mpchat b{color:var(--accent)}
 .mpemo{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .mpemo button{padding:9px 0;border-radius:12px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);font-size:1.1rem;font-weight:800}
@@ -4312,7 +4312,7 @@ function mpOnMsg(topic,buf){
   if(kind==="p"){let p=MP.peers[id];const isNew=!p;if(!p)p=MP.peers[id]={dx:d.x,dy:d.y,ph:0};Object.assign(p,d,{seen:Date.now()});if(isNew){banner(String(d.n||"Someone").slice(0,16)+" is here","u");SFX.door();renderMpChip();mpRefresh()}return}
   if(kind==="c"){const p=MP.peers[id];const n=d.n||(p&&p.n)||"Someone";const txt=String(d.t||"").slice(0,80);if(p&&!d.sys){p.bub=txt;p.bubT=4}mpLog(n,txt,d.sys);if(!d.sys)SFX.news();mpRefresh()}
 }
-function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>30)MP.chat.shift()}
+function mpLog(n,t,sys){if(!MP)return;MP.chat.push({n:String(n||"").slice(0,16),t,sys});if(MP.chat.length>40)MP.chat.shift()}
 function mpState(){const b=myBuild(),L=myLook();return{ow:Object.keys(S.deeds||{}),sn:S.names&&S.names.street||0,go:gymLv(),em:EMO&&wt<EMO.until?EMO.k:0,cw:S.crew?[S.crew.n,S.crew.c]:null,ti:tierN(),lk:[L.legs,L.shoes,L.fh,L.ey,L.ss,L.sl,Object.fromEntries(Object.values(S.acc||{}).filter(k=>okCol((S.accCol||{})[k])).map(k=>[k,S.accCol[k]]))],el:Math.round(S.elo||1000),pu:MP&&MP.pub?1:0,rr:S.road&&S.road.best||0,n:mpName(),x:Math.round(SCN?SCN.tx:S.px),y:Math.round(SCN?SCN.ty:S.py),h:+(S.hd||0).toFixed(2),m:moving?1:0,s:myShirt(),k:S.skin||0,t:+tallK().toFixed(2),z:+bodyK().toFixed(2),b:[+b.c.toFixed(2),+b.l.toFixed(2),+b.b.toFixed(2)],lv:repLevel(),c:Math.round(S.cash),w:room||(SCN?"@"+(SCN.kind==="city"?CTRY(SCN.k).n:SCN.kind==="space"?"the Cosmos":SCN.kind==="prehist"?"Deep Time":SCN.kind==="w4"||SCN.kind==="castle"?"World 4":SCN.kind==="road"?"the Frontier Road":SCN.kind==="planet"?PLANETS[SCN.k].n:SCN.kind==="house"?"a house":SCN.kind==="arena"?"the Arena":"an island"):""),pr:S.pr,cm:S.height||170,hm:S.home||0,is:Object.keys(S.isl||{}),tw:S.tower||0,tr:Object.keys(S.trophies||{}).length,f:Math.round(S.fans||0),i:inPos(),sk:mySkin(),hr:myHair(),hs:myHs(),rd:ride()||0,pt:S.paint||0,cmo:S.cmod||0,ls:plistState(),ac:myAcc()||0,fu:Object.keys(S.furn||{}),fi:Object.keys(S.fish||{}).slice(0,6),pe:S.pet||0,ib:Object.fromEntries(Object.entries(S.islB||{}).map(([k,v])=>[k,Object.keys(v.b||{})])),pa:S.partner?[String(S.partner.n).slice(0,16),S.partner.s,S.partner.k,S.partner.h]:0,...(SCN&&!room?{sc:scKey(),sx:Math.round(S.px),sy:Math.round(S.py)}:{})}}
 function mpTick(dt){
   if(!MP)return;botsTick();MP.sendT-=dt;MP.beatT-=dt;if(myBub){myBub.t-=dt;if(myBub.t<=0)myBub=null}
@@ -4347,7 +4347,7 @@ function mpUI(keep){
   sh.innerHTML=`<div class="pshead"><div><small>${isNpcW()?"NPC WORLD":MP.pub?"PUBLIC TOWN":"PRIVATE ROOM"} · ${peers.length+1} ONLINE</small><b>${isNpcW()?BOTW.find(b=>b.c===MP.code).n:MP.code}</b></div><div style="display:flex;gap:6px"><button class="psx" id="mpCopy" title="Copy code">⧉</button><button class="psx" id="mpX">✕</button></div></div>
     <div class="mplist"><div class="mpme"><span class="accav">${esc(mpName()[0]||"?").toUpperCase()}</span><span><b>${esc(mpName())} (you)</b><small>${S.title?esc(S.title)+" · ":""}Lv ${repLevel()} · ${fmt(S.cash)} · ${S.height||170} cm</small></span></div>
       ${peers.length?peers.map(([id,p])=>`<div><span class="accav" style="background:${p.s||"#2a3cff"}">${esc(String(p.n||"?")[0]).toUpperCase()}</span><span><b>${esc(String(p.n||"?").slice(0,16))}</b><small>Lv ${p.lv||0} · ${fmt(p.c||0)} · ${fmtN(p.f||0)} fans · ${dlTier(p.el)[2]} ${dlTier(p.el)[1]} · ${esc(PLACE_N(p.w))}</small></span><button class="mpgift duelb" data-duel="${id}">⚔ Duel</button>${p.bot?`<span class="mpgift" style="background:var(--sunk);color:var(--muted)">NPC</span>`:`<button class="mpgift" data-gift="${id}" ${giftAmt(p)<1?"disabled":""}>Gift ${fmt(giftAmt(p))}</button>`}</div>`).join(""):`<p class="fine">Waiting for friends. Send them the code <b>${MP.code}</b>.</p>`}</div>
-    ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-8).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
+    ${peers.length?`<div class="mplb">${leaderHTML()}</div>`:""}<div class="mpchat" id="mpChat">${MP.chat.slice(-40).map(m=>`<div class="${m.sys?"sys":""}"><b>${esc(m.n)}</b> ${esc(m.t)}</div>`).join("")||`<div class="sys">Say hi!</div>`}</div>
     <div class="mpemo">${EMOTES.map(e=>`<button data-emo="${e}">${e}</button>`).join("")}</div>
     <div class="mpjoin"><input id="mpIn" maxlength="80" placeholder="Message" autocomplete="off"><button class="cta" id="mpSendB">Send</button></div>
     <button class="cta" id="mpMkt" style="margin-bottom:8px"><span>Player market${Object.values(MP.peers).reduce((a,p)=>a+((p.ls||[]).length),0)?" · "+Object.values(MP.peers).reduce((a,p)=>a+((p.ls||[]).length),0)+" for sale":""}</span>${ARROW}</button>
