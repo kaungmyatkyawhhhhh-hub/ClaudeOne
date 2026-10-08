@@ -961,7 +961,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev story" id="storyChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill boost" id="boostChip" hidden></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button><button class="chip pill wk" id="wkChip" hidden></button></div>
+  <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev story" id="storyChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill mood" id="moodChip" hidden></button><button class="chip pill boost" id="boostChip" hidden></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button><button class="chip pill wk" id="wkChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="ridebtn" id="rideBtn" hidden aria-label="Walk or ride"></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
 <div class="bottom" id="bottom"></div>
@@ -1205,7 +1205,17 @@ const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S
 // Stacked bonuses have diminishing returns past x2, so money can't run away
 const capM=m=>m<=3?m:3+Math.log2(m/3)*2.6;
 const moonK=()=>emp("moon")?2:1;
-const mult=()=>capM(rawMult())*moonK()*rbK()*ovK()*megaK()*tierK()*crewK()*chK()*gearK();
+/* ================= mood: going out keeps you happy, staying in makes you sad; mood moves money by up to ±15% ================= */
+const MOOD_FUN={club:[15,"a night out at the club"],diner:[10,"a proper meal at Rusty's"],arcade:[10,"a round at the arcade"],cafe:[6,"a coffee with the regulars"],night:[6,"the Night Market buzz"],mall:[6,"a stroll round the Mall"],mbeach:[6,"sun at Muscle Beach"],cards:[6,"a hand at Lucky Lou's"],docks:[6,"the car meet"]};
+const mood=()=>S&&S.mood!=null?S.mood:60,moodK=()=>.85+.3*mood()/100;
+const moodFace=()=>{const m=mood();return m>=80?["😄","Very happy"]:m>=60?["🙂","Happy"]:m>=40?["😐","Okay"]:m>=20?["😕","Down"]:["😞","Sad"]};
+function moodAdd(v){const b=mood();S.mood=clamp(b+v,0,100);dirty=true;renderMoodChip()}
+function moodVisit(k){const f=MOOD_FUN[k];if(!f||!S)return;S.moodAt=S.moodAt||{};const now=Date.now();if(now-(S.moodAt[k]||0)<5*60000)return;S.moodAt[k]=now;moodAdd(f[0]);
+  setTimeout(()=>banner(moodFace()[0]+" Mood +"+f[0]+" from "+f[1]+" · money ×"+moodK().toFixed(2),"g"),700)}
+let moodT=0;function moodTick(dt){if(!S||!playing||tutOn())return;moodT+=dt;if(moodT<30)return;moodT=0;const b=mood();S.mood=Math.max(0,b-1);dirty=true;
+  if(b>=30&&S.mood<30)banner("😕 You're feeling down: money ×"+moodK().toFixed(2)+". Go out: the Nightclub, Rusty's Diner, the Arcade or the Café","a");renderMoodChip()}
+function renderMoodChip(){const el=$("moodChip");if(!el||!S)return;el.hidden=false;const[f,n]=moodFace(),p=Math.round((moodK()-1)*100),h=`<span class="pk">${f}</span><span class="pt">${n}</span><span class="pr" style="color:${p>=0?"var(--up)":"var(--down)"}">${p>=0?"+":""}${p}%</span>`;if(el.innerHTML!==h)el.innerHTML=h}
+const mult=()=>moodK()*capM(rawMult())*moonK()*rbK()*ovK()*megaK()*tierK()*crewK()*chK()*gearK();
 const gearK=()=>(1+accFx("money"))*(S&&S.gup&&S.gup.sense?1.15:1)*(S&&S.gup&&S.gup.touch?2:1);
 let WT=0;// market fees: 5% plus a wealth tax that grows with net worth
 const feeNow=()=>WT;
@@ -1643,7 +1653,7 @@ let STATICV=0;function buildStatic(){STATICV++;
   STATIC=c;staticDark=isDark();
 }
 function drawPerson(x,y,o){
-  const c0=o.g||ctx,T=o.tall||1,FL=o.build?clamp((o.build.c+o.build.l+o.build.b)/3,0,1):0;if(T!==1){c0.save();c0.translate(x,y);c0.scale(1+(T-1)*.45*FL,T);c0.translate(-x,-y)}drawPerson0(x,y,T!==1?{...o,_hs:(1+(T-1)*.45*FL)/T}:o);if(T!==1)c0.restore()}
+  const c0=o.g||ctx,T=o.tall||1,FL=o.build?clamp((o.build.c+o.build.l+o.build.b)/3,0,1):0;const SX=1+(T-1)*(.4+.45*FL);if(T!==1){c0.save();c0.translate(x,y);c0.scale(SX,T);c0.translate(-x,-y)}drawPerson0(x,y,T!==1?{...o,_hs:SX/T}:o);if(T!==1)c0.restore()}
 // sleeves: hoodies, sweaters and long-sleeve shirts cover the arms (hands stay bare); the Sleeves option overrides it
 const LONG_SS=[2,6,7,10,11,13],sleevesOn=(ss,sl)=>sl===2||(sl!==1&&LONG_SS.includes(ss|0));
 const sleeveCol=o=>sleevesOn(o.ss,o.sl)&&typeof o.shirt==="string"&&o.shirt.length===7?(o.ss===11?"#f2f2f2":shade(o.shirt,.9)):null;
@@ -1868,7 +1878,7 @@ const PLACE_SND={cards:()=>{for(let i=0;i<6;i++)tone(1800+Math.random()*900,.025
  storage:()=>{tone(300,.4,{type:"sawtooth",vol:.03,to:200})},raceoff:()=>{tone(90,.35,{type:"sawtooth",vol:.05,to:180})}};
 function placeSnd(k){(PLACE_SND[k]||SFX.door)()}
 function openRoom(k){
-  {const cl=placeClosed(k);if(cl){banner(cl,"a");SFX.nope();autoEnter=null;return}}
+  {const cl=placeClosed(k);if(cl){banner(cl,"a");SFX.nope();autoEnter=null;return}}moodVisit(k);
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
   if(k==="arena"&&!SCN&&S){$("mpSheet").hidden=true;enterArena();return}
   $("mpSheet").hidden=true;
@@ -1905,8 +1915,14 @@ const VEH_IC={bike:"🚲",scooter:"🛴",car:"🏎️",truck:"🛻",classic:"�
 const rideBack=()=>{const ok=k=>S.veh[k]&&!(S.broke&&S.broke.k===k);if(S.lastRide&&ok(S.lastRide))return S.lastRide;const o=VEH.filter(v=>ok(v.k)).sort((a,b)=>b.sp-a.sp);return o.length?o[0].k:null};
 function renderRideBtn(){const el=$("rideBtn");if(!el||!S)return;const r=ride(),back=r?null:rideBack(),show=$("room").hidden&&!!(r||back);el.hidden=!show;if(!show)return;
   el.classList.toggle("up",!!S.up.phone);const h=r?`<span>🚶</span><small>Walk</small>`:`<span>${VEH_IC[back]||"🚗"}</span><small>Ride</small>`;if(el.innerHTML!==h)el.innerHTML=h}
+$("moodChip").onclick=()=>{audioOn();banner(moodFace()[0]+" Mood "+Math.round(mood())+"/100 · money ×"+moodK().toFixed(2)+". It drops while you work. Go out to lift it: Nightclub +15, Rusty's Diner +10, Arcade +10, Café, Night Market, Mall, Muscle Beach, Lucky Lou's, Docks +6","u")};
 $("rideBtn").onclick=()=>{audioOn();const r=ride();if(r){S.lastRide=r;S.cur="walk";banner("Walking","u")}else{const k=rideBack();if(!k)return;S.cur=k;banner("Riding your "+vehName(k),"u")}dirty=true;SFX.door();buzz(10);renderRideBtn()};
-$("phoneBtn").onclick=()=>{audioOn();const m=MKT.market;room=m.k;$("room").hidden=false;openMarket(m);banner(m.n+" · Flip City","u")};
+const phoneMkts=()=>[["market",MKT.market,"Everything, fair prices",1],["flea",MKT.flea,"Cheap, more fakes",regionOpen("beach")],["lux",MKT.lux,"Pricey, pays the most",regionOpen("downtown")]].filter(x=>x[1]&&x[3]);
+function openPhone(){room="phone";$("room").hidden=false;const L=phoneMkts();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Reseller app")}<div class="note">Pick a market to shop from your phone. Your last pick is marked.</div>
+    <div class="perks">${L.map(([k,m,d])=>`<button class="perk nopic${S.phoneM===k?" cfon":""}" data-pm="${k}"><span class="t">${esc(m.n)}${S.phoneM===k?' <em class="cfact">LAST</em>':""}</span><span class="d">${d}</span><span class="c">Open</span></button>`).join("")}</div></div>`;
+  $("leaveBtn").onclick=closeRoom;$("room").querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>{const k=b.dataset.pm,m=L.find(x=>x[0]===k)[1];S.phoneM=k;dirty=true;room=m.k;openMarket(m)})}
+$("phoneBtn").onclick=()=>{audioOn();const L=phoneMkts();if(L.length<2){const m=MKT.market;room=m.k;$("room").hidden=false;openMarket(m);return}openPhone()};
 
 /* ---------- gym ---------- */
 // Plates per side for a given total on a 20 kg bar, heaviest first
@@ -2529,7 +2545,7 @@ function openCafe(){
       <button class="bigbtn alt2" id="bShift">☕ Work a barista shift<small>${S.baristaDay===dayKey()?"You already worked today · come back tomorrow":"60 seconds of orders · tips and a best score"}${S.baristaBest?" · best "+S.baristaBest+" drinks":""}</small></button>
       <div class="perks">${CAFE.map(c=>`<button class="perk nopic${bk===c.k?" bought":""}${cafeLeft(c.k)>0?" cfon":""}" data-c="${c.k}" ${price(c)>S.cash?"disabled":""}><span class="t">${c.t}${cafeLeft(c.k)>0?` <em class="cfact" data-left="${c.k}">ACTIVE · ${mmss(cafeLeft(c.k))}</em>`:""}</span><span class="d">${c.d}</span><span class="c">${fmt(price(c))}</span></button>`).join("")}</div><div class="sechead"><h3>Dates</h3><span class="eyebrow">${S.partner?"❤ "+esc(S.partner.n):"Numbers from the Nightclub"}</span></div>${dateList()}${scratchList()}</div>`;
     $("leaveBtn").onclick=closeRoom;{const bs=$("bShift");if(bs)bs.onclick=()=>{if(S.baristaDay===dayKey())return banner("Your shift is done for today","a");baristaShift(()=>openCafe())}}bindDates(()=>draw());$("room").querySelectorAll("[data-scr]").forEach(b=>b.onclick=()=>scratchCard(b.dataset.scr,()=>draw()));
-    $("room").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const c=CAFE.find(x=>x.k===b.dataset.c),p=price(c);if(S.cash<p)return;const e0=S.energy;S.cash-=p;c.fx(S);SFX.buy();dirty=true;
+    $("room").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const c=CAFE.find(x=>x.k===b.dataset.c),p=price(c);if(S.cash<p)return;const e0=S.energy;S.cash-=p;c.fx(S);moodAdd(2);SFX.buy();dirty=true;
       const got=Math.round(S.energy-e0),t=cafeLeft(c.k),msg=t>0?(c.k==="meal2"?"WELL FED":"PROTEIN")+" "+mmss(t):got>0?"+"+got+" ENERGY":"ENERGY FULL";
       draw(c.k);const nb=$("room").querySelector(`[data-c="${c.k}"]`);floatAt(nb||b,msg,"var(--up)");confetti(30);
       banner(c.t+" · "+(t>0?(c.k==="meal2"?"well fed":"protein")+" for "+mmss(t)+" (bigger green zone"+(c.k==="meal2"?", faster energy":"")+")":got>0?"+"+got+" energy ("+Math.floor(S.energy)+"/"+maxEnergy()+")":"energy already full"),"g");updMini();renderBoostChip()});
@@ -3452,7 +3468,7 @@ function rsTick(dt){if(!RS)return;if(SCN){RS=null;return}if(room)return;const ca
 function rsAfter(ok){RS.i++;if(ok)S.stats.fares=(S.stats.fares||0)+1;dirty=true;if(RS.i>=RS.n){const e=RS.earned;RS=null;if(e){SFX.rebirth();confetti(140);banner("Shift over · earned "+fmt(e),"g")}return}rsNext()}
 setInterval(()=>{try{rsTick(.25)}catch(e){}},250);
 let EDGE_DIRT=null;function edgeDirt(){if(EDGE_DIRT)return EDGE_DIRT;const cv=document.createElement("canvas");cv.width=320;cv.height=90;const g=cv.getContext("2d");let sd=99;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
-  for(let x=0;x<320;x+=6)for(let y=0;y<90;y+=6){const k=x/320;if(r()<k*k*1.4){g.fillStyle=r()<.5?"#c9a26b":"#b58c58";g.fillRect(x,y,7,7)}}g.fillStyle="rgba(120,90,50,.35)";for(let i=0;i<40;i++){const x=160+r()*160;g.fillRect(x,r()*90,3,2)}return EDGE_DIRT=cv}
+  for(let x=0;x<320;x+=6)for(let y=0;y<90;y+=6){const k=x/320;if(r()<k*k*1.4){g.fillStyle=r()<.5?"#e8d8b0":"#ddc99c";g.fillRect(x,y,7,7)}}g.fillStyle="rgba(150,120,75,.25)";for(let i=0;i<40;i++){const x=160+r()*160;g.fillRect(x,r()*90,3,2)}return EDGE_DIRT=cv}
 function drawFrontierEdge(){if(SCN)return;const c=ctx,open=!!(S.w4&&S.w4.open),x=W-150;if(x<cam.x-400||x>cam.x+vw+200)return;
   c.drawImage(edgeDirt(),W-320,655,320,90);
   c.save();c.fillStyle="#8a5a2c";c.fillRect(x-4,600,8,52);c.fillStyle="#a8743a";rr(x-70,578,140,30,7);c.fill();c.strokeStyle="#5a3a1e";c.lineWidth=2;rr(x-70,578,140,30,7);c.stroke();c.fillStyle="#fff7e0";c.font=`900 12px ${FONTS.d}`;c.textAlign="center";c.textBaseline="middle";c.fillText(open?"THE FRONTIER →":"FRONTIER · CLOSED",x,593);
@@ -3990,7 +4006,7 @@ function loop(now){
       if(!SCN)findsTick(dt);funTick(dt);jobTick(dt);rivalTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else if(!SCN&&!tutOn()){nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
-      achT-=dt;if(achT<=0){achT=1;renderBoostChip();if(!(Math.abs(S.cash)<=NUM_CAP)||!(S.stats.earnedAll<=NUM_CAP)||!(Math.abs(S.bank||0)<=NUM_CAP)||!(S.earned<=NUM_CAP))fixNums(S);checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;achPop(a)}})}
+      achT-=dt;if(achT<=0){achT=1;renderBoostChip();moodTick(1);if(!(Math.abs(S.cash)<=NUM_CAP)||!(S.stats.earnedAll<=NUM_CAP)||!(Math.abs(S.bank||0)<=NUM_CAP)||!(S.earned<=NUM_CAP))fixNums(S);checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;achPop(a)}})}
       renderBottom();tutTick(dt);
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderChChip();renderCrateChip();renderMapChip();renderWkChip();renderBzChip();renderLvlBtn();renderPillTog()}
@@ -5619,11 +5635,12 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=113,WN=[
+const WN_VER=114,WN=[
+ ["😄","Mood","You now have a mood (the face chip at the top). It slowly drops while you work. Go out to lift it: the Nightclub, Rusty's Diner, the Arcade, the Café and more. Happy pays up to +15% on everything you earn, sad costs up to 15%. Also: the Frontier Road now matches World 4's paths, and the phone lets you pick which market to open.","2026-10-10T00:00"],
  ["🧭","A friendlier start","A longer tutorial now explains the cash panel, the chip row (it slides sideways, and you can drag it with a mouse), the Goal chip and the Now button. Every place shows a short card the first time you walk in. New players start in Calm mode (fewer coins and confetti, no flashes or shaking), which you can switch in Settings, and the Vince story and random events wait until the tutorial is done.","2026-10-09T23:00"],
  ["🛠️","Market fix","Very rich players could spam buy and sell at the Market to grow their money without limit, because prices followed their wealth exactly. Prices still rise as you get richer, just more slowly than your money. Friends buying at a building you own also no longer send you a cut. New: a Walk / Ride button on the right of the screen switches between walking and your vehicle anywhere.","2026-10-09T22:00"],
  ["🔥","Lift streaks, faster gym, café boosts","Growth spurts now need a weight based on your height. Buying a café boost again adds its time on top. Clean lifts in a row now build a streak: the green zone grows with it, and 5, 10, 25, 50 and 100 in a row pay energy, crates, fans and the Iron Will tracksuit. One miss resets it. Lifts no longer pause in between, poses can be struck with keys 1 to 4, and café boosts show a timer in the café and at the top of the screen.","2026-10-09T21:00"],
- ["📱","Phone goes to the Market","The reselling phone now always opens the Market in Flip City, wherever you are. Visit the other markets in person.","2026-10-09T20:00"],
+ ["📱","Phone picks the market","The reselling phone now asks which Flip City market to open: the Market, the Boardwalk Flea or the Luxury Exchange, once you've unlocked them. It remembers your last pick.","2026-10-09T20:00"],
  ["🌬️","Wind farms reach the corners","In the Sky Islands a Wind farm now boosts all 8 tiles around it, diagonals included, so one wind farm can power a whole ring of mines.","2026-10-09T19:00"],
  ["📏","Rebirth needs height now","Rebirth at the gym's lift station now needs you to be tall enough instead of a number of growth spurts: 190 cm for your first, then 15 cm more each time. Every 40 cm over the requirement gives an extra rebirth in one go.","2026-10-09T18:00"],
  ["🏅","Achievements pay, pets work, cars get a garage","Achievements now pop up with a Claim button and pay real money plus a crate, hype, energy or a rare find. Every 10 you claim adds +1% to every sale, and 15, 40 and 70 unlock new outfits. Flip of the day (Now button) gives everyone the same item: get the best markup and climb today's leaderboard. Your dog now sniffs out fakes, your husky carries an extra item and your parrot spots treasure on the Frontier Road. Mo's Garage and the Docks have a new Garage for paint, number plates, style and tuning, and the Docks show tonight's lineup of everyone's cars. The bottom of the screen is tidier too.","2026-10-09T14:00"],
@@ -7577,7 +7594,7 @@ function openCityHall(tab){room="cityhall";$("room").hidden=false;tab=tab||"mayo
   MAYOR_LB=null;draw();mayorFetch()}
 // small multipliers the rest of the game asks for (wrapped so they're safe to call while the page is still loading)
 function luxWorldK(s){try{return M&&M.cfg&&M.cfg.k==="lux"?({fossil:1.6,space:1.3}[s.cat]||1):1}catch(e){return 1}}
-function goalSellK(){try{return (SCN?1:1+.05*ctech("scan"))*karmaSellK()*keyK()*(bookDone("rare")?1.05:1)*(mayorK("market")?1.1:1)*(cityBuilt("stadium")?1.05:1)*achSellK()*(M&&M.cfg?wbSellK(M.cfg.k):1)}catch(e){return 1}}
+function goalSellK(){try{return moodK()*(SCN?1:1+.05*ctech("scan"))*karmaSellK()*keyK()*(bookDone("rare")?1.05:1)*(mayorK("market")?1.1:1)*(cityBuilt("stadium")?1.05:1)*achSellK()*(M&&M.cfg?wbSellK(M.cfg.k):1)}catch(e){return 1}}
 function goalEnK(e){try{return Math.round(e*(mayorK("energy")?1.25:1))+(bookDone("road")?40:0)+(cityBuilt("fountain")?20:0)}catch(x){return e}}
 function freeTaxi(){try{return mayorK("taxi")||bookDone("hitch")||ctech("taxi")>0}catch(e){return false}}
 function goalMarks(){const L=[];try{if(maeHere())L.push([MAE.x,MAE.y,"#2a9df4","🙏"]);if(knkHere())L.push([KNK.x,KNK.y,"#d6384b","🦈"]);const b=wbNow();if(b){const p=wbPos(b);if(p)L.push([p.x,p.y,"#e2364a","👹"])}}catch(e){}return L}
@@ -8757,7 +8774,7 @@ function buildW4(){const g=SCN_C.getContext("2d");SCN_C.width=W4W;SCN_C.height=W
   else{const sky=g.createLinearGradient(0,0,0,170);sky.addColorStop(0,"#7a5cff");sky.addColorStop(1,"#ffb3e6");g.fillStyle=sky;g.fillRect(0,0,W4W,170);
   const gg=g.createRadialGradient(900,750,100,900,750,1100);gg.addColorStop(0,"#b6e388");gg.addColorStop(1,"#5fa86a");g.fillStyle=gg;g.fillRect(0,160,W4W,W4H-160)}
   g.strokeStyle="#e8d8b0";g.lineWidth=46;g.lineCap="round";const ctr=[900,780];[[290,600],[1510,600],[290,1140],[1510,1140],[900,390],[900,1340]].forEach(([x,y])=>{g.beginPath();g.moveTo(ctr[0],ctr[1]);g.quadraticCurveTo((ctr[0]+x)/2,(ctr[1]+y)/2+(r()-.5)*120,x,y);g.stroke()});
-  if(SCN.attached){g.fillStyle="#c9a26b";g.fillRect(0,720,760,120);g.fillStyle="#b58c58";for(let i=0;i<220;i++)g.fillRect(r()*760,720+r()*120,3,2)}
+  if(SCN.attached)paintTrail(g,0,720,760,120,r);
   else{g.fillStyle="#4a4f5c";g.fillRect(0,742,760,76);g.fillStyle="#3a3f4c";g.fillRect(0,812,760,6);g.fillStyle="#ffe08a";for(let x=10;x<740;x+=60)g.fillRect(x,778,32,4)}
   g.fillStyle="#8a5a2c";g.fillRect(118,676,6,60);g.fillStyle="#a8743a";rrp(g,60,656,124,28,6);g.fill();g.fillStyle="#fff7e0";g.font=`900 12px ${FONTS.d}`;g.textAlign="center";g.textBaseline="middle";g.fillText("← FLIP CITY",122,670);
   g.fillStyle="#e8d8b0";g.beginPath();g.arc(900,780,150,0,7);g.fill();g.fillStyle="rgba(0,0,0,.05)";for(let i=0;i<80;i++){g.beginPath();g.arc(r()*W4W,170+r()*(W4H-170),4+r()*10,0,7);g.fill()}
@@ -8840,6 +8857,11 @@ function roadPlaces(){const L=[],add=o=>{o.door=o.door||[o.x+o.w/2,o.y+o.h];L.pu
   add({k:"stand",n:"Farm Stand",c:"#7aa84a",x:330,y:290,w:170,h:100,bld:1,go:()=>{}});add({k:"raceoff",n:"Race Office",c:"#1b2230",x:560,y:290,w:150,h:100,bld:1,go:()=>{}});
   add({k:"diner",n:"Rusty's Roadside Diner",sub:"Pie and coffee · +60 energy",c:"#e2364a",x:1250,y:250,w:220,h:140,bld:1,go:()=>{const c=Math.max(50,Math.round(S.cash*.002));if(S.cash<c)return banner("Rusty wants "+fmt(c)+" for a slice","r");S.cash-=c;S.energy=Math.min(maxEnergy()*1.2,S.energy+60);dirty=true;SFX.buy();banner("🥧 Best pie on the road. +60 energy","g");updMini()}});
   return L}
+// the Frontier Road is painted in the same sandy cream as World 4's paths: lighter down the middle, darker at the edges, with soft wheel tracks
+function paintTrail(g,x,top,w,h,r){g.fillStyle="#e8d8b0";g.fillRect(x,top,w,h);
+  const sh=g.createLinearGradient(0,top,0,top+h);sh.addColorStop(0,"rgba(120,90,50,.28)");sh.addColorStop(.18,"rgba(120,90,50,.06)");sh.addColorStop(.5,"rgba(255,255,255,.14)");sh.addColorStop(.82,"rgba(120,90,50,.06)");sh.addColorStop(1,"rgba(120,90,50,.32)");g.fillStyle=sh;g.fillRect(x,top,w,h);
+  g.fillStyle="rgba(150,120,75,.22)";for(let i=0;i<w*.5;i++)g.fillRect(x+r()*w,top+r()*h,2+r()*3,2);
+  g.strokeStyle="rgba(150,118,70,.22)";g.lineWidth=7;[top+h*.3,top+h*.7].forEach(y=>{g.beginPath();g.moveTo(x,y);g.lineTo(x+w,y);g.stroke()})}
 function buildRoad(){const g=SCN_C.getContext("2d");SCN_C.width=RDW;SCN_C.height=RDH;let sd=313;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;SCN.lamps=[];SCN.founts=[];SCN.jets=[];SCN.torches=[];SCN.gulls=[];SCN.turt=[];
   // grass that slowly turns from city green to frontier pink-green as you go east
   if(!SCN.attached){const gg=g.createLinearGradient(0,0,RDW,0);gg.addColorStop(0,"#8ccf7a");gg.addColorStop(.6,"#7fbf6a");gg.addColorStop(1,"#a8d98a");g.fillStyle=gg;g.fillRect(0,0,RDW,RDH)}else g.clearRect(0,0,RDW,RDH);
@@ -8848,8 +8870,7 @@ function buildRoad(){const g=SCN_C.getContext("2d");SCN_C.width=RDW;SCN_C.height
   if(!SCN.attached){g.fillStyle="#d6d9e0";g.fillRect(0,0,220,RDH);g.fillStyle="#c4c8d0";for(let y=0;y<RDH;y+=40)g.fillRect(0,y,220,2);}
   if(!SCN.attached)[["#3346f0",20,150,150,160],["#d63fb8",30,640,140,170]].forEach(([c,x,y,w,h])=>{g.fillStyle="rgba(0,0,0,.18)";g.fillRect(x+6,y+8,w,h);g.fillStyle=c;rrp(g,x,y,w,h,10);g.fill();g.fillStyle="rgba(255,255,255,.4)";for(let a=0;a<3;a++)for(let b=0;b<2;b++)g.fillRect(x+16+a*44,y+18+b*60,26,36)});
   // the road: Flip City asphalt that crumbles into a dirt track, overlapping in patches
-  const top=RDY-60,h=120;g.fillStyle="#c9a26b";g.fillRect(0,top,RDW,h);g.fillStyle="#b58c58";for(let i=0;i<500;i++){const x=r()*RDW,y=top+r()*h;g.fillRect(x,y,2+r()*4,2)}
-  g.strokeStyle="rgba(120,90,50,.45)";g.lineWidth=5;g.setLineDash([16,22]);[top+32,top+h-32].forEach(y=>{g.beginPath();g.moveTo(0,y);g.lineTo(RDW,y);g.stroke()});g.setLineDash([]);
+  const top=RDY-60,h=120;paintTrail(g,0,top,RDW,h,r);
   if(!SCN.attached)for(let x=0;x<520;x+=8){const keep=x<200?1:1-(x-200)/320;for(let y=top;y<top+h;y+=8){if(r()<keep*keep*1.05){g.fillStyle=r()<.5?"#4a4f5c":"#50566a";g.fillRect(x,y,9,9)}}}
   if(!SCN.attached){g.fillStyle="#ffe08a";for(let x=10;x<360;x+=60){if(x>200&&r()<(x-200)/160)continue;g.fillRect(x,RDY-2,32,4)}}
   else{const tg=g.createLinearGradient(0,0,RDW,0);tg.addColorStop(0,"rgba(140,207,122,0)");tg.addColorStop(.02,"rgba(140,207,122,0)");g.fillStyle=tg;g.fillRect(0,0,30,RDH)}
