@@ -2,18 +2,23 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): arm wrestling animation (written, NOT yet synced or tested: Studio had no place open)
-- New `ArmWrestleClient` (every client): both wrestlers lean in, right elbow on their pad, hands clasped over the
-  middle, free hand on the peg; during the match the hands swing toward the loser's side with the meter and shake;
-  the winner slams the arm down, holds it, then pumps the fist. Poses go on the joints after the Animator, so the sit
-  animation keeps the legs. The practice opponent now sits on the stool (posed the same way) instead of standing behind it.
+## LATEST (9 Oct): arm wrestling animation + the giant regular (synced and tested in Studio)
+- **Giant regular** (owner): Dante (pro gym) is 7'0" (the last Growth Spurt's height) with the mass monster physique,
+  built like a maxed player (every muscle at 5.5x that spurt's goal, monster widths, Wide frame): `GymGoerService`
+  GIANT / makeGiant, `NpcService.ApplyBody(npc, heightScale)`. Tested: height scale 1.40, monster stage meshes on.
+  Screenshot giant_dante.
+- **Arm wrestling animation**, new `ArmWrestleClient` (every client): both wrestlers sit facing each other, lean in,
+  the right elbows toward their pads, hands clasped over the table, free hand on the peg; the hands swing toward the
+  loser's side with the meter and shake; the winner slams the arm down, holds it, then pumps the fist. The grip sits a
+  little above both wrestlers' shoulders (averaged) and is split by arm length, so a 4'0" player and a tall one still
+  meet. The practice opponent now sits on the stool (legs posed). Screenshots armwrestle_grip, armwrestle_live,
+  armwrestle_win_fistpump.
 - Server (`ArmWrestleService`): publishes AwState / AwMeter / AwWinner on Workspace.ArmWrestleTable (meter at 10 Hz,
   rounded); a pin ends on the full meter; the rookie stays seated for the slam (2.5 s). Config: `Social.ArmWrestle`
   SeatedRootY, LiveAngle, PinAngle, AnimateDistance.
 - Cheap for slow devices (owner at ~20 FPS): nothing runs unless someone is at the table AND it's within 70 studs of the
-  camera; joints cached; no per-frame searches or new tables. The lighting pass now has only 4 shadow-casting lights (was 14).
-- To do in Studio: sync the 4 files (ArmWrestleClient, ArmWrestleService, Config/Social, builders/GymLighting + rerun it),
-  check the pose signs (WAIST / NECK / HIP / KNEE at the top of ArmWrestleClient) and SeatedRootY with a real sit.
+  camera; joints cached; no per-frame searches or new tables. The lighting pass now has only 4 shadow-casting lights
+  (was 14; GymLighting re-run). Growth Spurt 0 start synced into Studio.
 
 ## Before that (9 Oct): release data reset + save-lock fix
 - **Fresh data for the release**: player saves now live in the DataStore `GymArcDataStoreV1` (the old test saves stay

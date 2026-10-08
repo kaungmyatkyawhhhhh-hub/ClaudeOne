@@ -22,10 +22,11 @@ local rad = math.rad
 -- 0.75 toward each player, the pegs 0.75 to each side of the centre line
 local CENTER = Config.TableSpot + Vector3.new(0, 3.225, 0)
 local ELBOW_UP = 0.33 -- elbow joint above the surface (on the pad)
+local GRIP_ABOVE_SHOULDER = 0.15 -- the clasped hands this far above the wrestlers' shoulders (upright)
 local PAD_OUT = 0.75
 local PEG_OUT, PEG_UP = 0.75, 0.33
 local LEFT_ELBOW = Vector3.new(0.8, 0.3, 1.15) -- the free arm's elbow: left, up, back toward the player
-local WAIST = { -16, 0, 0 } -- lean in (degrees about the lower torso's axes)
+local WAIST = { -14, 0, 0 } -- lean in (degrees about the lower torso's axes)
 local NECK = { -14, 0, 0 } -- look down at the hands
 local HIP, KNEE = { 90, 0, 0 }, { -90, 0, 0 } -- the practice opponent's sitting legs
 local ARM_JOINTS = { "Waist", "Neck", "RightShoulder", "RightElbow", "RightWrist", "LeftShoulder", "LeftElbow", "LeftWrist" }
@@ -69,13 +70,15 @@ local function rigOf(character)
 		if d:IsA("Motor6D") or d:IsA("AnimationConstraint") then joints[d.Name] = d end
 	end
 	local root = character:FindFirstChild("HumanoidRootPart")
-	local hand = character:FindFirstChild("RightHand")
 	if not (root and joints.Root and joints.Waist and joints.RightShoulder and joints.RightElbow and joints.RightWrist and joints.LeftShoulder and joints.LeftElbow and joints.LeftWrist) then
 		return nil
 	end
-	local forearm = (joints.RightElbow.C1.Position - joints.RightWrist.C0.Position).Magnitude
-	local reach = forearm + (hand and hand:IsA("BasePart") and hand.Size.Y * 0.45 or 0.3)
-	rig = { joints = joints, root = root, reach = reach }
+	-- arm length: shoulder -> elbow -> wrist -> middle of the hand
+	local hand = character:FindFirstChild("RightHand")
+	local armLength = (joints.RightShoulder.C1.Position - joints.RightElbow.C0.Position).Magnitude
+		+ (joints.RightElbow.C1.Position - joints.RightWrist.C0.Position).Magnitude
+		+ (hand and hand:IsA("BasePart") and hand.Size.Y * 0.5 or 0.3)
+	rig = { joints = joints, root = root, armLength = armLength }
 	rigs[character] = rig
 	return rig
 end
@@ -147,47 +150,48 @@ local resultAt = 0
 local lastState = "idle"
 local posed = {} -- [character] = true (this frame)
 
-local function pose(character, side, isRookie, state, winner, now)
+-- Pass 1: the body (rookie legs, lean, head). Returns the rig and its UpperTorso CFrame.
+local function body(character, side, isRookie, state, now)
 	local rig = rigOf(character)
-	if not rig then return end
+	if not rig then return nil, nil end
 	local j = rig.joints
-	local f = frames[side]
-	local left = -f.RightVector
-	local toPlayer = -f.LookVector
-
-	local rootCFrame = rig.root.CFrame
 	if isRookie then
 		for _, name in ipairs({ "RightHip", "LeftHip" }) do if j[name] then j[name].Transform = local3(j[name], HIP) end end
 		for _, name in ipairs({ "RightKnee", "LeftKnee" }) do if j[name] then j[name].Transform = local3(j[name], KNEE) end end
 	end
-	local lower = child(rootCFrame, j.Root, isRookie and CFrame.identity or j.Root.Transform)
+	local lower = child(rig.root.CFrame, j.Root, isRookie and CFrame.identity or j.Root.Transform)
 	local strain = state == "live" and math.sin(now * 31 + side) * 1.2 or 0
 	local waist = local3(j.Waist, { WAIST[1] + strain, WAIST[2], WAIST[3] })
 	j.Waist.Transform = waist
-	local torso = child(lower, j.Waist, waist)
 	if j.Neck then j.Neck.Transform = local3(j.Neck, NECK) end
+	posed[character] = true
+	return rig, child(lower, j.Waist, waist)
+end
 
+-- Pass 2: the arms. `grip` = where the clasped hands are this frame (shared by both wrestlers).
+local function arms(rig, torso, side, state, winner, now, grip)
+	local j = rig.joints
+	local f = frames[side]
+	local left = -f.RightVector
+	local toPlayer = -f.LookVector
+	-- the elbow goes toward its pad; small players can't reach it and keep it just above the table edge
 	local elbowAt = CENTER + toPlayer * PAD_OUT + UP * ELBOW_UP
-	local handAt
-	local celebrate = state == "result" and winner == side and now - resultAt > 0.9
-	if celebrate then
+	local handAt = grip
+	if state == "result" and winner == side and now - resultAt > 0.9 then
 		-- fist pump: the upper arm out and up, the forearm straight up, a little bounce
 		local shoulderPos = (torso * j.RightShoulder.C0).Position
 		local bounce = math.abs(math.sin((now - resultAt) * 7)) * 0.15
 		elbowAt = shoulderPos + UP * (0.55 + bounce) + f.RightVector * 0.6 - toPlayer * 0.1
 		handAt = elbowAt + UP * 1.2
-	else
-		local h = math.sqrt(math.max(rig.reach * rig.reach - PAD_OUT * PAD_OUT, 0.09))
-		local a = rad(angle)
-		handAt = CENTER + UP * (ELBOW_UP + h * math.cos(a)) + PIN_DIR * (h * math.sin(a))
 	end
 	arm(rig, torso, "Right", elbowAt, handAt, f.RightVector)
 	-- the free hand grips the peg on that side
 	local leftElbow = CENTER + left * LEFT_ELBOW.X + UP * LEFT_ELBOW.Y + toPlayer * LEFT_ELBOW.Z
 	local peg = CENTER + left * PEG_OUT + UP * PEG_UP
 	arm(rig, torso, "Left", leftElbow, peg, f.RightVector)
-	posed[character] = true
 end
+
+local found = { {}, {} } -- this frame's wrestlers: { rig, torso }
 
 local wrestlers = {} -- last frame's characters
 local camera = Workspace.CurrentCamera
@@ -224,13 +228,45 @@ RunService.PreSimulation:Connect(function(dt)
 	angle += (target - angle) * (1 - math.exp(-rate * dt))
 
 	table.clear(posed)
+	local shoulderY, count = 0, 0
+	local meet = CENTER -- where the hands meet over the centre line (moved toward the shorter arm)
 	for side = 1, 2 do
 		local occupant = stools[side].Occupant
 		local character = occupant and occupant.Parent
+		local rig, torso = nil, nil
 		if character then
-			pose(character, side, false, state, winner, now)
+			rig, torso = body(character, side, false, state, now)
 		elseif rookies[side] and rookies[side].Parent then
-			pose(rookies[side], side, true, state, winner, now)
+			rig, torso = body(rookies[side], side, true, state, now)
+		end
+		found[side].rig, found[side].torso = rig, torso
+		if rig then
+			local shoulder = (torso * rig.joints.RightShoulder.C0).Position
+			found[side].shoulder = shoulder
+			shoulderY += shoulder.Y
+			count += 1
+		end
+	end
+	if count == 2 then
+		-- split the gap between the shoulders by arm length, so a short arm and a long arm both reach the grip
+		local a, b = found[1], found[2]
+		local s1 = Vector3.new(a.shoulder.X, CENTER.Y, a.shoulder.Z)
+		local s2 = Vector3.new(b.shoulder.X, CENTER.Y, b.shoulder.Z)
+		local share = a.rig.armLength / (a.rig.armLength + b.rig.armLength)
+		local along = s1:Lerp(s2, share)
+		local axis = frames[1].LookVector
+		meet = CENTER + axis * (along - CENTER):Dot(axis)
+	end
+	if count > 0 then
+		-- the hands meet a little above the wrestlers' shoulders (averaged, so a small player and a tall one meet
+		-- halfway) and swing around a pivot just above the table toward the losing side
+		local pivot = meet + UP * ELBOW_UP
+		local radius = math.max(shoulderY / count + GRIP_ABOVE_SHOULDER - pivot.Y, 0.5)
+		local a = rad(angle)
+		local grip = pivot + UP * (radius * math.cos(a)) + PIN_DIR * (radius * math.sin(a))
+		for side = 1, 2 do
+			local item = found[side]
+			if item.rig then arms(item.rig, item.torso, side, state, winner, now, grip) end
 		end
 	end
 	for character in pairs(wrestlers) do

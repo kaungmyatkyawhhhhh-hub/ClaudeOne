@@ -160,7 +160,8 @@ end
 
 -- NPCs baked into the place (gym regulars, the Coach) get the Robloxian 2.0 body at startup, keeping their own head, hair,
 -- clothes and painted colors. Re-anchors them the way Build does.
-function NpcService.ApplyBody(npc)
+-- heightScale (optional): the body height (Body.ApplyTo), e.g. the 7'0" giant regular
+function NpcService.ApplyBody(npc, heightScale)
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")
 	local torso = npc:FindFirstChild("UpperTorso")
 	local head = npc:FindFirstChild("Head")
@@ -171,7 +172,7 @@ function NpcService.ApplyBody(npc)
 	local ok, desc = pcall(humanoid.GetAppliedDescription, humanoid)
 	if not ok or not desc then return false end
 	local shirtId, pantsId = desc.Shirt, desc.Pants
-	Body.ApplyTo(desc, skin, nil)
+	Body.ApplyTo(desc, skin, heightScale)
 	desc.Shirt, desc.Pants = shirtId, pantsId
 	if not pcall(humanoid.ApplyDescription, humanoid, desc) then return false end
 	-- the golden ratio body; it stands taller on its longer legs, so lift it by what the hips gained

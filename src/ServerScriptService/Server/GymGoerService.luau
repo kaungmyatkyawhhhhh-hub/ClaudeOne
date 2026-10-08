@@ -16,6 +16,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
 local BodyService = require(script.Parent.BodyService)
 local Body = require(ReplicatedStorage.Shared.Config.Body)
+local GrowthSpurts = require(ReplicatedStorage.Shared.Config.GrowthSpurts)
+local Muscles = require(ReplicatedStorage.Shared.Config.Muscles)
+local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 local NpcService = require(script.Parent.NpcService)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
 local ShowOff = require(ReplicatedStorage.Shared.Config.ShowOff)
@@ -327,6 +330,30 @@ end
 -- The regulars show what to aim for: every NPC has the Robloxian 2.0 body (NpcService) and muscle blobs grown to a preset
 -- (pro gym big, starter gym medium), keeping their own clothes and hair.
 local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
+
+-- One regular is the giant (owner, 9 Oct): 7'0" (the last Growth Spurt's height) with the mass monster physique, built
+-- like a maxed player (every muscle at 5.5x that Growth Spurt's goal, so every muscle is at its mass monster size; the
+-- monster widths; a Wide frame).
+local GIANT = { name = "Dante", spurts = #GrowthSpurts.Stages, frame = "Wide" }
+local function giantData()
+	local goal = GrowthSpurts.GetGoal(GIANT.spurts)
+	local level = math.ceil(Muscles.LevelFromXp(Muscles.Look.MonsterAt * 1.1 * Muscles.CumXp(goal)))
+	local muscles = {}
+	for _, muscle in ipairs(Muscles.List) do muscles[muscle.id] = { level = level, xp = 0 } end
+	return { growthSpurts = GIANT.spurts, muscles = muscles, genetics = { frame = GIANT.frame } }
+end
+
+local function makeGiant(npc)
+	local data = giantData()
+	NpcService.ApplyBody(npc, GrowthSpurts.GetHeight(GIANT.spurts) / BodyShape.BaseHeight)
+	BodyService.ApplyFrame(npc, data)
+	local lift = BodyShape.ApplyProportions(npc, true)
+	if lift ~= 0 then npc:PivotTo(npc:GetPivot() + Vector3.new(0, lift, 0)) end
+	local levels, goal = BodyService.LevelsOf(data)
+	npc:SetAttribute("MuscleG", BodyService.EncodeLevels(levels, goal))
+	npc:SetAttribute("Giant", true)
+end
+
 local function dressNpc(npc, gym)
 	local hum = npc:FindFirstChildOfClass("Humanoid")
 	-- regulars never fall over or ragdoll (falling over froze them on the floor). Getting up stays ON, so one that does tip
@@ -347,6 +374,10 @@ local function dressNpc(npc, gym)
 	end
 	-- PoseController poses every character tagged "Poser" that gets the "Pose" attribute (regulars strike poses now and then)
 	CollectionService:AddTag(npc, "Poser")
+	if npc.Name == GIANT.name and CollectionService:HasTag(npc, "GymNpc") then
+		makeGiant(npc)
+		return
+	end
 	-- the clients draw the muscles from this number (muscle v7), grown to the gym's preset
 	npc:SetAttribute("MuscleG", BodyService.EncodeShare(NPC_GROWTH[gym] or NPC_GROWTH.Starter))
 end
