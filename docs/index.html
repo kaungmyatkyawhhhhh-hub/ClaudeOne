@@ -520,6 +520,14 @@ html.tablet .stash{grid-template-columns:repeat(3,minmax(0,1fr))}
 .platerow{display:flex;gap:8px}.platerow input{flex:1;min-width:0;padding:12px;border-radius:12px;border:2px solid var(--line);background:#f6f3e6;color:#1b1f2a;font-family:var(--mono);font-weight:800;font-size:1.1rem;text-transform:uppercase;letter-spacing:.1em}.platerow .cta{justify-content:center;padding:10px 18px}
 .awkv{grid-template-columns:repeat(4,minmax(0,1fr))!important}.awkv b{font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html.desk .room .tapbtn::after,html.desk #liftBtn::after{content:"Space";margin-left:10px;font:700 .6rem var(--mono);padding:2px 6px;border-radius:5px;background:rgba(255,255,255,.18);vertical-align:middle}
+.vmsg{position:fixed;left:16px;z-index:46;box-sizing:border-box;width:min(calc(100vw - 32px),420px);display:flex;gap:12px;align-items:flex-start;padding:12px 12px 12px 14px;border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:inset 4px 0 0 var(--vc),0 0 0 2px color-mix(in oklab,var(--vc) 55%,transparent),0 14px 34px rgba(0,0,0,.35);animation:vin .35s cubic-bezier(.2,1.4,.4,1),vglow 1.6s ease-in-out .4s 3;transition:top .25s}
+.vmsg .vav{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--vc);color:#fff;font-family:var(--display);font-weight:900;font-size:1.1rem}
+.vmsg .vbody{flex:1;min-width:0}.vmsg b{display:flex;gap:8px;align-items:baseline;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--vc)}.vmsg .vmore{font-style:normal;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:600}
+.vmsg p{margin:3px 0 0;font-size:.9rem;line-height:1.4;font-weight:600}
+.vmsg .vok{flex:none;align-self:center;background:var(--vc);color:#fff;border-radius:10px;padding:8px 12px;font-weight:800;font-size:.78rem}
+.vmsg.out{opacity:0;transform:translateX(-20px);transition:all .2s}
+@keyframes vin{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}@keyframes vglow{50%{box-shadow:inset 4px 0 0 var(--vc),0 0 0 5px color-mix(in oklab,var(--vc) 35%,transparent),0 14px 34px rgba(0,0,0,.35)}}
+html.desk .vmsg{left:20px}
 .achpop{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 92px);transform:translate(-50%,-30px);opacity:0;z-index:72;width:min(320px,84vw);padding:10px 14px;border-radius:20px;background:var(--bg);box-shadow:0 0 0 3px #ffcc33,0 16px 50px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:3px;animation:apIn .4s cubic-bezier(.2,1.5,.4,1) forwards}
 .achpop b{font-family:var(--display);font-size:1rem}.achpop .eyebrow{font-size:.62rem}.achpop small{color:var(--muted);font-size:.8rem}.achpop em{font-style:normal;font-family:var(--display);font-weight:900;font-size:1.05rem;color:var(--up)}.achpop em.sm{font-size:.95rem}
 .achbtns{display:flex;gap:8px;margin-top:6px}.achbtns .cta{flex:1;padding:7px;font-size:.85rem;justify-content:center;min-height:0}.achpop.out{animation:apOut .4s ease forwards}
@@ -3303,7 +3311,15 @@ function questFromNPC(n){
   const name=n&&n.n?n.n:pick(["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora"]);S.quest={name,cat,minV,m,left:240};dirty=true;SFX.hot();
   rayTextFrom(name,`${pick(Q_LINES)} some ${CAT[cat].n.toLowerCase()} worth at least ${fmt(minV)}. Bring it within 4 minutes and I'll pay ×${m}.`);
 }
-function rayTextFrom(name,msg){msg=String(msg).replace(EMO_LEAD,"");if(rq.some(q=>q&&q.m===msg))return;if(rq.length>=3)rq.shift();rq.push({n:name,m:msg,c:name==="Vince"?"#5b2a86":"var(--gold)"});if(!rBusy)nextRay()}
+// characters (Vince and friends) talk to you in a message card at the top-left that stays until you tap Got it
+let VQ=[],vEl=null;
+function rayTextFrom(name,msg){msg=String(msg).replace(EMO_LEAD,"");if(VQ.some(q=>q.m===msg)||(vEl&&vEl.dataset.m===msg))return;if(VQ.length>=6)VQ.shift();VQ.push({n:name,m:msg,c:name==="Vince"?"#7a3cff":"#cf9a14"});showMsg()}
+function msgTop(){if(!$("room").hidden)return 70;const h=$("hud");let b=0;if(h&&!h.hidden)h.querySelectorAll(".chip,.hudpills,.iconbtn").forEach(e=>{const r=e.getBoundingClientRect();if(r.height&&r.width&&r.top<innerHeight*.5)b=Math.max(b,r.bottom)});return Math.round(b+10)}
+function showMsg(){if(vEl){const c=vEl.querySelector(".vmore");if(c)c.textContent=VQ.length?"+"+VQ.length+" more":"";return}const m=VQ.shift();if(!m)return;SFX.hot();buzz([20,30,20]);
+  const t=vEl=document.createElement("div");t.className="vmsg";t.dataset.m=m.m;t.style.setProperty("--vc",m.c);t.style.top=msgTop()+"px";
+  t.innerHTML=`<span class="vav">${esc(m.n[0])}</span><div class="vbody"><b>${esc(m.n)}<i class="vmore">${VQ.length?"+"+VQ.length+" more":""}</i></b><p>${m.m}</p></div><button class="vok">Got it</button>`;
+  document.body.appendChild(t);t.querySelector(".vok").onclick=e=>{e.stopPropagation();t.classList.add("out");setTimeout(()=>{t.remove();vEl=null;showMsg()},220)}}
+setInterval(()=>{if(vEl)vEl.style.top=msgTop()+"px"},500);
 function renderQChip(){const el=$("qChip"),q=S.quest;if(!q){el.hidden=true;return}el.hidden=false;const ok=questItem()>=0;
   el.innerHTML=`<span class="pk">Quest</span><span class="pt">${q.name}: ${CAT[q.cat].n} ≥ ${fmt(q.minV)}</span><span class="pr" style="color:${ok?"var(--up)":"var(--muted)"}">${ok?"Deliver":Math.ceil(q.left)+"s"}</span>`}
 const questItem=()=>{const q=S.quest;if(!q)return-1;let bi=-1,bv=0;S.stash.forEach((x,i)=>{if(x.cat===q.cat&&!x.fake){const v=valueOf(x);if(v>=q.minV&&(bi<0||v<bv)){bi=i;bv=v}}});return bi};
@@ -7338,7 +7354,7 @@ function storyBase(){return{vW:S.stats.vW||0,flips:S.stats.flips||0}}
 function storyCur(){const st=S.story;return st&&!st.done?STORY[st.ch]:null}
 function storyHave(){const c=storyCur();return c?Math.max(0,c.have(S.story.base)):0}
 function storyFmt(c,v){return c.f?(c.f.length?c.f(v)+" / "+c.f(c.need):c.f()):Math.min(v,c.need)+"/"+c.need}
-function storyBegin(i){const c=STORY[i];S.story.ch=i;S.story.wait=0;S.story.base=storyBase();S.story.ready=false;dirty=true;VNC=null;setTimeout(()=>{rayTextFrom("Vince","📖 Chapter "+(i+1)+": "+c.t+". "+c.intro);if(c.rival&&!S.rival)setTimeout(()=>{try{rivalStart();renderRvChip()}catch(e){}},2500)},600);renderStory()}
+function storyBegin(i){const c=STORY[i];S.story.ch=i;S.story.wait=0;S.story.base=storyBase();S.story.ready=false;dirty=true;VNC=null;setTimeout(()=>{rayTextFrom("Vince","📖 Chapter "+(i+1)+": "+c.t+(/[.!?]$/.test(c.t)?" ":". ")+c.intro);if(c.rival&&!S.rival)setTimeout(()=>{try{rivalStart();renderRvChip()}catch(e){}},2500)},600);renderStory()}
 function storyTick(){if(!S||!playing)return;if(!S.story){if((S.stats.flips||0)<3||room||tutOn())return;S.story={ch:0,base:storyBase(),ready:false,done:false};storyBegin(0);return}const st=S.story,c=storyCur();if(!c){VNC=null;return}
   if(!st.ready&&!st.wait&&storyHave()>=c.need){st.ready=true;dirty=true;SFX.level();banner("📖 Chapter done! Vince wants a word","g")}
   if(st.ready&&!SCN&&!room){if(!VNC||Math.hypot(VNC.x-S.px,VNC.y-S.py)>900){const sp=typeof lfSpot==="function"&&lfSpot(S.px,S.py,110,200);VNC=sp?{x:sp[0],y:sp[1]}:{x:S.px+90,y:S.py}}if(Math.hypot(VNC.x-S.px,VNC.y-S.py)<56)storyClaim()}
