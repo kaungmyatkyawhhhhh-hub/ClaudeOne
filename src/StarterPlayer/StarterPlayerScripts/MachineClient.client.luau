@@ -13,15 +13,24 @@ local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = Shared:WaitForChild("Config")
-local Machines = require(Config.Machines)
-local Poses = require(Config.Poses)
-local Muscles = require(Config.Muscles)
-local Stamina = require(Config.Stamina)
-local Gains = require(Config.Gains)
-local GrowthSpurts = require(Config.GrowthSpurts)
-local CoachNotes = require(Config.CoachNotes)
+-- WaitForChild in short timed waits: waits as long as needed, never an "Infinite yield possible" warning
+local function waitFor(parent: Instance, name: string): Instance
+	local child = parent:FindFirstChild(name)
+	while not child do
+		child = parent:WaitForChild(name, 5)
+	end
+	return child
+end
+
+local Shared = waitFor(ReplicatedStorage, "Shared")
+waitFor(Shared, "Config") -- (the requires below read Shared.Config; no local: this script is at Luau's 200 top-level locals)
+local Machines = require(Shared.Config.Machines)
+local Poses = require(Shared.Config.Poses)
+local Muscles = require(Shared.Config.Muscles)
+local Stamina = require(Shared.Config.Stamina)
+local Gains = require(Shared.Config.Gains)
+local GrowthSpurts = require(Shared.Config.GrowthSpurts)
+local CoachNotes = require(Shared.Config.CoachNotes)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
@@ -30,7 +39,7 @@ local SideMenu = require(Shared.UI.SideMenu)
 local Audio = require(Shared.Audio)
 local MuscleRig = require(Shared.MuscleRig)
 local UIBus = require(Shared.UI.UIBus)
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local Remotes = waitFor(ReplicatedStorage, "Remotes")
 
 local player = Players.LocalPlayer
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
@@ -1295,7 +1304,7 @@ local function gainPopup(character, text, scale, model, color)
 		AlwaysOnTop = true,
 		LightInfluence = 0,
 		ResetOnSpawn = false,
-		Parent = player:WaitForChild("PlayerGui"),
+		Parent = waitFor(player, "PlayerGui"),
 	})
 	local holder = New("Frame", {
 		AnchorPoint = Vector2.new(onRight and 0 or 1, 0.5), -- the pop-in grows from the body side
@@ -1338,7 +1347,7 @@ end
 -- same numbers the server applies: Gains.PerRep), so no extra network traffic.
 local ExpPops = {} -- (one local: this script is near Luau's 200-locals limit)
 do
-	local HudIcons = require(Config.HudIcons)
+	local HudIcons = require(Shared.Config.HudIcons)
 	local EXP_POP = {
 		Max = 8,
 		Life = 0.8,
@@ -1371,7 +1380,7 @@ do
 			LightInfluence = 0,
 			MaxDistance = 80,
 			ResetOnSpawn = false,
-			Parent = player:WaitForChild("PlayerGui"),
+			Parent = waitFor(player, "PlayerGui"),
 		})
 		local holder = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = billboard },
 			{ Theme.List(Enum.FillDirection.Horizontal, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
@@ -1438,7 +1447,7 @@ local gui = Theme.ScreenGui({
 	Name = "MachineHud",
 	Enabled = false,
 	DisplayOrder = 5,
-	Parent = player:WaitForChild("PlayerGui"),
+	Parent = waitFor(player, "PlayerGui"),
 })
 
 local column = New("Frame", {
@@ -2328,28 +2337,39 @@ end)
 
 local function setupMachine(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
-	-- no timeout: with Workspace streaming a machine can arrive late (it runs in its own thread)
-	local bar = model:WaitForChild(machine and machine.load or "Bar")
-	local plates = model:WaitForChild("Plates")
-	if not bar or not plates then return end
-	barRest[model] = bar.CFrame
-	for _, plate in ipairs(plates:GetDescendants()) do trackPlate(model, plate) end
-	-- the sled / carriage parts that move with the load (leg press, hack squat)
-	local rides = model:FindFirstChild("Rides")
-	if rides then
-		for _, part in ipairs(rides:GetDescendants()) do trackPlate(model, part) end
-	end
-	plates.DescendantAdded:Connect(function(plate) trackPlate(model, plate) end)
-	plates.DescendantRemoving:Connect(function(plate)
-		plateOffsets[plate] = nil
-		bars.moving[model], bars.placed[model] = nil, nil
-	end)
-	model:GetAttributeChangedSignal("Reps"):Connect(function()
-		-- our own reps start instantly on tap; other lifters start when the server counts them
-		if model:GetAttribute("UserId") ~= player.UserId then
-			startRep(model, model:GetAttribute("Tier"), false)
+	local loadName = machine and machine.load or "Bar"
+	-- The load part comes with the model; "Plates" is made by MachineService when the server starts, and with Workspace
+	-- streaming a machine's children can arrive late. Set up once both are there, without yielding: a machine whose
+	-- Plates never comes (e.g. the server failed to start) just stays idle, with no infinite-yield warning.
+	local ready = false
+	local watch
+	local function trySetup()
+		if ready then return end
+		local bar, plates = model:FindFirstChild(loadName), model:FindFirstChild("Plates")
+		if not bar or not plates then return end
+		ready = true
+		if watch then watch:Disconnect() end
+		barRest[model] = bar.CFrame
+		for _, plate in ipairs(plates:GetDescendants()) do trackPlate(model, plate) end
+		-- the sled / carriage parts that move with the load (leg press, hack squat)
+		local rides = model:FindFirstChild("Rides")
+		if rides then
+			for _, part in ipairs(rides:GetDescendants()) do trackPlate(model, part) end
 		end
-	end)
+		plates.DescendantAdded:Connect(function(plate) trackPlate(model, plate) end)
+		plates.DescendantRemoving:Connect(function(plate)
+			plateOffsets[plate] = nil
+			bars.moving[model], bars.placed[model] = nil, nil
+		end)
+		model:GetAttributeChangedSignal("Reps"):Connect(function()
+			-- our own reps start instantly on tap; other lifters start when the server counts them
+			if model:GetAttribute("UserId") ~= player.UserId then
+				startRep(model, model:GetAttribute("Tier"), false)
+			end
+		end)
+	end
+	watch = model.ChildAdded:Connect(trySetup)
+	trySetup()
 end
 
 for _, model in ipairs(CollectionService:GetTagged("Machine")) do task.spawn(setupMachine, model) end

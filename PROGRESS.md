@@ -2,8 +2,25 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (8 Oct evening): unified muscles, skin stages, performance
-Everything is in Studio and pushed; **File > Save to Roblox first.**
+## LATEST (8 Oct, 9:30 PM): place rebuilt from the repo
+The cloud place had fallen back to 7 Oct 21:00 (its last Save to Roblox was 7 Oct 9:54 PM). Rebuilt in the real
+GYM ARC place (Team Create) from the repo, saved to Roblox (Version History 296-298, 9:20-9:28 PM):
+- All 370 scripts from `src/` (byte-identical, 0 compile errors); MuscleData + Config/LimbStages regenerated from
+  `Downloads\muscle_v9_unified.zip` and `Downloads\limb_stages` (identical to the repo).
+- Builders whose code changed since 7 Oct re-run: GymAssets (plates), Gyms (both rooms, 60 machines incl. 6 treadmills,
+  pec deck, pro equipment), ProGymPolish, Decor, GeneticsSet, SkinStages, limb stage templates (28); Leg Press / Hack
+  Squat placed as before (no builder); `GymAssets.Replace` swapped 157 plates; `GeneticsCameraRig` (CamPitch 8).
+  Town, beach gym, posing stage, sauna, skate extras, sails, poster, door frames, mirror, cat, NPCs, arm wrestling,
+  leaderboard, statue pedestal, season decor: builders unchanged and their output already there, so NOT re-run (the
+  town carries hand fixes that aren't in any builder). Shadow lights 18 -> 3; shadow / touch flags copied from the
+  8 Oct play-test snapshot (`server.rbxl`).
+- `MachineClient`: no WaitForChild without a timeout; a machine sets itself up when its load part and "Plates" both
+  exist (ChildAdded), no infinite-yield warnings. (The "no Plates" warnings came from playing an unpublished local file:
+  no DataStore, so the server never started and MachineService never made the Plates.)
+- Play solo (fresh player, TestMuscleShare 2): 60/60 machines with Plates (300 plates), no errors in Output; menu, PLAY
+  glide, tutorial, bench reps + coins + HUD split + body map, machine card + "!" NEW, genetics scene, town, max look.
+  Screenshots: rebuild_{menu,starter_gym,machine_plates,town,character_max,lifting_flatbench,machine_card,genetics}.
+- Still to do by the owner: the dated backup copy (`Documents\GymArc_backups`, File > Save to File As).
 
 - **Machine card (8 Oct, redesign):** the glowing diamond is gone: one small flat charcoal card over the nearest machine
   (see "Game feel" in the brief); the machine HUD shows the muscle split with percents. Screenshots: card_next_to_barbellrow_pc,

@@ -9,6 +9,10 @@
 - After each finished piece of work, export the changed scripts from Studio into `src/` (`tools/export`, see below),
   then commit + push with a clear message.
 - After any big change, remind the owner to **save/publish the place** in Studio. Never assume it's saved.
+- **After every task (owner's rule, 8 Oct): File > Save to Roblox, AND a dated backup copy** via File > Save to File As
+  to `Documents\GymArc_backups\GymArc_<YYYY-MM-DD>.rbxl` (Documents is `C:\Users\kaung\OneDrive\Documents`; add `_2`,
+  `_3` for more saves that day). Check the place's Version History (Creator Hub) shows the new version. The 8 Oct work
+  was lost once because the place was never saved to Roblox.
 - Cloud sessions can't reach Studio: they can only edit `src/`, and the owner must copy those changes into Studio.
   Say so clearly.
 - **UI style is "clean minimal"** (described in `docs/DESIGN.md`): dark see-through panels, thin light borders,
