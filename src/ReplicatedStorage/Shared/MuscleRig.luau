@@ -65,15 +65,15 @@ local MIN_CHANGE = 0.0015
 local MARBLE = Color3.fromHex("#C9C6BF")
 -- Tints on the muscles (a tint, not paint: the color blended part of the way toward the tint, on the normal lit surface):
 --   * Stats hover (red): only the muscles facing the camera;
---   * training (cool light blue, MuscleRig.SetTraining): the whole time you're on a machine, every muscle it trains, main
---     strong / secondaries light, both sides of the body; fades in / out; each rep a quick brighter pulse
---     (MuscleRig.Flash) on top. Blue = training, red = Stats hover (hover wins while both).
+--   * training (red, MuscleRig.SetTraining; owner 8 Oct night, was blue): the whole time you're on a machine, every muscle
+--     it trains, main strong / secondaries light, both sides of the body; fades in / out; each rep a quick brighter pulse
+--     (MuscleRig.Flash) on top. Hover wins while both.
 local TINT = {
 	Highlight = Color3.fromRGB(225, 45, 45),
 	Hover = 0.40,
 	HighlightIn = 0.15, HighlightOut = 0.2,
-	Training = Color3.fromRGB(95, 160, 255), -- (the brief: about 120, 180, 255; a bit deeper so it still reads blue under the warm gym lamps)
-	TrainingBright = Color3.fromRGB(185, 220, 255), -- the pulse's color
+	Training = Color3.fromRGB(255, 70, 70), -- (the owner's "about 255, 70, 70")
+	TrainingBright = Color3.fromRGB(255, 150, 140), -- the pulse's color (a brighter, lighter red)
 	TrainMain = 0.55, TrainHelper = 0.30,
 	TrainIn = 0.25, TrainOut = 0.4,
 	PulseUp = 0.05, PulseDown = 0.15, -- the rep pulse: ~0.2 s

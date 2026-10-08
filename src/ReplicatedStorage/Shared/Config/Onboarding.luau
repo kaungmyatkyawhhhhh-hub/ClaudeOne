@@ -15,7 +15,7 @@
 local Onboarding = {}
 
 Onboarding.Steps = {
-	{ id = "GoBench", text = "Walk to the Flat Bench and tap Use.", onMachineText = "Tap Exit, then walk to the Flat Bench.",
+	{ id = "GoBench", text = "Walk to the Flat Bench and tap Occupy.", onMachineText = "Tap Exit, then walk to the Flat Bench.",
 		target = "FlatBench", done = { type = "onMachine" } },
 	{ id = "FirstLift", text = "Reps go on their own. Tap anywhere to pump and go faster.", done = { type = "reps", count = 1 } },
 	{ id = "Stamina", text = "Every rep uses stamina. Keep lifting until it runs low.", done = { type = "staminaLow", below = 0.4, count = 20 } },

@@ -50,7 +50,7 @@ Quests.Lines = {
 Quests.CoachName = "Coach Dex"
 -- Where Coach Dex stands (behind the front desk, facing the room) and how he looks (built in Studio by
 -- tools/builders/NPCs.luau; tag "Coach", prompt "TalkPrompt").
-Quests.CoachSpot = CFrame.lookAt(Vector3.new(22.4, 0.15, -11), Vector3.new(0, 0.15, -11)) -- behind the front desk
+Quests.CoachSpot = CFrame.lookAt(Vector3.new(27.4, 0.15, -12.56), Vector3.new(0, 0.15, -12.56)) -- behind the front desk (bigger gym, 8 Oct night)
 Quests.CoachLook = { name = Quests.CoachName, skin = "#8D5524", shirt = "#F4F1EA", pants = "#1E1E22", tag = "Coach",
 	prompt = { action = "Talk", object = Quests.CoachName, distance = 10 } }
 

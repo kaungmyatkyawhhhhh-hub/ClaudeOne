@@ -5,7 +5,8 @@
 --   Workspace.ProGym           room, 15 machines, lockers, podium, signage, LED + spotlights
 --   Workspace.ProGym.GlassDoor the door between the gyms (ProGymService/ProGymClient run it)
 --   Workspace.Gym.NpcSpots     points the gym-goer NPCs walk to (water, chat, rest)
--- Starter gym inside: x -36..36, z -73.5..-4 (front wall with the entrance at z -3.5). Pro gym inside: x 37..93.
+-- Starter gym inside: x -44..44, z -89..-4 (front wall with the entrance at z -3.5), ceiling 16. Pro gym inside:
+-- x 45..113, ceiling 18; the shared wall at x 44.5 (8 Oct night: both rooms about 1.5x the floor area, see Gyms.Map).
 -- Needs ReplicatedStorage.GymAssets (GymAssets builder) for the plates.
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
@@ -21,17 +22,40 @@ local C, p, cyl, at, model = GymKit.C, GymKit.p, GymKit.cyl, GymKit.at, GymKit.m
 local hex, rad = Kit.hex, math.rad
 local M = Enum.Material
 
-Gyms.Starter = { MinX = -36, MaxX = 36, MinZ = -73.5, MaxZ = -4, Height = 13 }
-Gyms.Pro = { MinX = 37, MaxX = 93, MinZ = -73.5, MaxZ = -4, Height = 14 }
-Gyms.Door = { Z = -11, Width = 6, Height = 8 } -- the glass door in the shared wall (x = 36.5)
+Gyms.Starter = { MinX = -44, MaxX = 44, MinZ = -89, MaxZ = -4, Height = 16 }
+Gyms.Pro = { MinX = 45, MaxX = 113, MinZ = -89, MaxZ = -4, Height = 18 }
+Gyms.SharedX = 44.5 -- the wall between the gyms
+
+-- The room layouts below are written in the first rooms' coordinates (Gyms.Design: starter x -36..36, pro x 37..93,
+-- z -73.5..-4). Gyms.Map spreads every anchor point (a machine's spot, a prop's spot, a light, a wall decoration) into
+-- the bigger rooms: the pieces keep their size, the walkways and the gaps between machines grow ~22%, and anything on a
+-- wall stays on that wall. Other builders and Config spots use it too (Decor, NPC spots, Config.Social.TableSpot ...).
+Gyms.Design = { SharedX = 36.5, StarterMaxX = 36, ProMinX = 37, ProMaxX = 93, MinZ = -73.5 }
+function Gyms.Map(position: Vector3): Vector3
+	local D, S, P = Gyms.Design, Gyms.Starter, Gyms.Pro
+	local z = S.MaxZ + (position.Z - S.MaxZ) * (S.MaxZ - S.MinZ) / (S.MaxZ - D.MinZ)
+	local x
+	if position.X <= D.SharedX then
+		x = position.X * S.MaxX / D.StarterMaxX
+	else
+		x = P.MinX + (position.X - D.ProMinX) * (P.MaxX - P.MinX) / (D.ProMaxX - D.ProMinX)
+	end
+	return Vector3.new(x, position.Y, z)
+end
+Gyms.Door = { Z = Gyms.Map(Vector3.new(0, 0, -11)).Z, Width = 6, Height = 8 } -- the glass door in the shared wall
 
 -- yaw that turns local +Z toward a direction (machines: the lifter looks along local +Z; props with their front on
 -- local -Z use the opposite one)
 local YAW = { East = 90, West = -90, North = 180, South = 0 }
 
+-- layout helpers: design coordinates in, spread (Gyms.Map) placements out
 local function face(x, z, yaw)
-	return CFrame.new(x, 0, z) * CFrame.Angles(0, rad(yaw or 0), 0)
+	local at = Gyms.Map(Vector3.new(x, 0, z))
+	return CFrame.new(at.X, 0, at.Z) * CFrame.Angles(0, rad(yaw or 0), 0)
 end
+local function mv(x, y, z) return Gyms.Map(Vector3.new(x, y, z)) end
+local function mc(x, y, z) return CFrame.new(Gyms.Map(Vector3.new(x, y, z))) end
+local function lookAtMapped(a: Vector3, b: Vector3) return CFrame.lookAt(Gyms.Map(a), Gyms.Map(b)) end
 
 ------------------------------------------------------------------------
 -- Shell pieces
@@ -43,7 +67,7 @@ local function wallWithWindows(parent, name, from, to, height, color, material, 
 	local cf = CFrame.lookAt((from + to) / 2, (from + to) / 2 + dir.Unit:Cross(Vector3.yAxis)) -- local X along the wall
 	local wall = p(parent, name, Vector3.new(length + 1, height, 1), cf * CFrame.new(0, height / 2, 0), color, material, true)
 	for _, win in ipairs(windows or {}) do
-		local wcf = cf * CFrame.new(win[1] - length / 2, 10.4, 0)
+		local wcf = cf * CFrame.new(win[1] - length / 2, height - 2.6, 0) -- (high windows: 2.6 under the ceiling)
 		local pane = p(parent, "Window", Vector3.new(win[2], 1.9, 1.04), wcf, hex("#E8E2D6"), M.Glass, false, { Transparency = 0.25 })
 		p(parent, "WindowFrame", Vector3.new(win[2] + 0.3, 0.15, 1.08), wcf * CFrame.new(0, 1.0, 0), hex("#1C1C1E"), M.Metal)
 		p(parent, "WindowFrame", Vector3.new(win[2] + 0.3, 0.15, 1.08), wcf * CFrame.new(0, -1.0, 0), hex("#1C1C1E"), M.Metal)
@@ -86,10 +110,10 @@ local function starterShell(room)
 	-- walls (front wall leaves the entrance gap x -5..5, the east wall is the glass partition)
 	local h = S.Height
 	wallWithWindows(shell, "WestWall", Vector3.new(S.MinX - 0.5, 0, S.MinZ - 0.5), Vector3.new(S.MinX - 0.5, 0, -3.5), h, C.Brick, M.Brick,
-		{ { 10, 5 }, { 26, 5 }, { 42, 5 }, { 58, 5 } })
+		{ { 12, 6 }, { 32, 6 }, { 52, 6 }, { 72, 6 } })
 	wallWithWindows(shell, "BackWall", Vector3.new(S.MinX - 1, 0, S.MinZ - 0.5), Vector3.new(S.MaxX + 1, 0, S.MinZ - 0.5), h, C.Brick, M.Brick,
-		{ { 8, 5 }, { 64, 5 } })
-	-- front wall (x -37..-5 and 5..37) with big framed street windows, so people outside see into the gym
+		{ { 10, 6 }, { 79, 6 } })
+	-- front wall (x MinX-1..-5 and 5..MaxX+1) with big framed street windows, so people outside see into the gym
 	local function frontWall(fromX, toX, windows)
 		local x = fromX
 		table.sort(windows, function(a, b) return a[1] < b[1] end)
@@ -113,8 +137,8 @@ local function starterShell(room)
 		end
 		if toX > x then p(shell, "FrontWall", Vector3.new(toX - x, h, 1), CFrame.new((x + toX) / 2, h / 2, -3.5), C.Brick, M.Brick, true) end
 	end
-	frontWall(-37, -5, { { -31, 6 }, { -19, 6 } })
-	frontWall(5, 37, { { 31, 6 } })
+	frontWall(S.MinX - 1, -5, { { -38, 7 }, { -23, 7 } })
+	frontWall(5, S.MaxX + 1, { { 30, 7 }, { 40, 7 } }) -- (clear of the poster box outside at x 14.5..22.5)
 	p(shell, "DoorHeader", Vector3.new(10, 4, 1), CFrame.new(0, 11, -3.5), C.Brick, M.Brick, true)
 	for _, x in ipairs({ -5.2, 5.2 }) do p(shell, "DoorFrame", Vector3.new(0.4, 9, 1.2), CFrame.new(x, 4.5, -3.5), C.Frame, M.Metal, true) end
 	p(shell, "DoorFrame", Vector3.new(10.6, 0.5, 1.2), CFrame.new(0, 9.1, -3.5), C.Frame, M.Metal, true)
@@ -128,22 +152,22 @@ local function starterShell(room)
 		p(shell, "Beam", Vector3.new(w, 0.9, 0.5), CFrame.new(cx, h - 0.45, z), C.Frame, M.Metal)
 		p(shell, "BeamFlange", Vector3.new(w, 0.1, 0.8), CFrame.new(cx, h - 0.9, z), C.Frame, M.Metal)
 	end
-	for _, x in ipairs({ -20, 4, 26 }) do
+	for _, x in ipairs({ -25, 5, 32 }) do
 		p(shell, "Duct", Vector3.new(2.2, 1.4, d - 2), CFrame.new(x, h - 1.3, cz), hex("#5A5C60"), M.DiamondPlate)
 		for z = S.MinZ + 10, S.MaxZ - 4, 12 do p(shell, "Vent", Vector3.new(1.6, 0.1, 1.6), CFrame.new(x, h - 2.05, z), hex("#3A3C40"), M.DiamondPlate) end
 		p(shell, "DuctStrap", Vector3.new(2.4, 0.1, 0.2), CFrame.new(x, h - 0.55, cz), C.Frame, M.Metal)
 	end
-	for _, x in ipairs({ -10, -9.4, 14 }) do
-		cyl(shell, "Pipe", d - 2, x == 14 and 0.6 or 0.35, CFrame.new(x, h - 0.6, cz) * CFrame.Angles(0, rad(90), 0), x == 14 and hex("#6B4A3A") or C.Steel, M.Metal)
+	for _, x in ipairs({ -12, -11.4, 17 }) do
+		cyl(shell, "Pipe", d - 2, x == 17 and 0.6 or 0.35, CFrame.new(x, h - 0.6, cz) * CFrame.Angles(0, rad(90), 0), x == 17 and hex("#6B4A3A") or C.Steel, M.Metal)
 	end
 end
 
 -- The shared wall between the gyms: brick on the starter side, dark concrete on the pro side, a long glass window and
 -- the glass door. `build` is the folder to put it in.
 local function sharedWall(folder)
-	local x, h, minZ = 36.5, 14, Gyms.Starter.MinZ - 0.5
+	local x, h, minZ = Gyms.SharedX, Gyms.Pro.Height, Gyms.Starter.MinZ - 0.5
 	local doorZ, doorW, doorH = Gyms.Door.Z, Gyms.Door.Width, Gyms.Door.Height
-	local glassFrom, glassTo = -17, -70 -- the window spans z -17 .. -70
+	local glassFrom, glassTo = Gyms.Map(Vector3.new(0, 0, -17)).Z, Gyms.Map(Vector3.new(0, 0, -70)).Z -- the long window
 	local function pier(z0, z1)
 		local len, mid = z0 - z1, (z0 + z1) / 2
 		p(folder, "PierStarter", Vector3.new(0.5, h, len), CFrame.new(x - 0.25, h / 2, mid), C.Brick, M.Brick, true)
@@ -319,11 +343,11 @@ local function starterRoom(gym)
 	-- Reception (front right): desk facing the entrance aisle, towels, cat bed, the Muscle of the Day board
 	GymKit.frontDesk(props, face(20, -11, 90), 9)
 	GymKit.towelRack(props, face(33.5, -6.5, 180))
-	local catBed = model(props, "CatBed", CFrame.new(31.5, 0, -14))
-	cyl(catBed, "Cushion", 0.35, 2.4, CFrame.new(31.5, 0.2, -14) * CFrame.Angles(0, 0, rad(90)), hex("#6B4F3A"), M.Fabric)
-	cyl(catBed, "Rim", 0.6, 2.7, CFrame.new(31.5, 0.3, -14) * CFrame.Angles(0, 0, rad(90)), hex("#4A3628"), M.Fabric)
-	cyl(catBed, "Inner", 0.62, 2.0, CFrame.new(31.5, 0.33, -14) * CFrame.Angles(0, 0, rad(90)), hex("#7A5C44"), M.Fabric)
-	muscleBoard(decor, CFrame.lookAt(Vector3.new(12, 6.2, -4.1), Vector3.new(12, 6.2, 0)) * CFrame.Angles(0, math.pi, 0))
+	local catBed = model(props, "CatBed", mc(31.5, 0, -14))
+	cyl(catBed, "Cushion", 0.35, 2.4, mc(31.5, 0.2, -14) * CFrame.Angles(0, 0, rad(90)), hex("#6B4F3A"), M.Fabric)
+	cyl(catBed, "Rim", 0.6, 2.7, mc(31.5, 0.3, -14) * CFrame.Angles(0, 0, rad(90)), hex("#4A3628"), M.Fabric)
+	cyl(catBed, "Inner", 0.62, 2.0, mc(31.5, 0.33, -14) * CFrame.Angles(0, 0, rad(90)), hex("#7A5C44"), M.Fabric)
+	muscleBoard(decor, lookAtMapped(Vector3.new(12, 6.2, -4.1), Vector3.new(12, 6.2, 0)) * CFrame.Angles(0, math.pi, 0))
 	GymKit.plant(props, face(7.5, -5.8), 3.6)
 	GymKit.plant(props, face(-7.5, -5.8), 3.6)
 	-- welcome strip (front left): water fountain, benches, bag cubbies, trash
@@ -335,7 +359,7 @@ local function starterRoom(gym)
 	for i, color in ipairs({ hex("#1E2A3A"), hex("#3A2A22"), hex("#2A3A2E") }) do
 		GymKit.gymBag(props, face(-26 + i * 1.9, -5.5 + 0.1 * i, 90), color)
 	end
-	GymKit.wallClock(decor, CFrame.lookAt(Vector3.new(0, 11.2, -4.1), Vector3.new(0, 11.2, -10)))
+	GymKit.wallClock(decor, lookAtMapped(Vector3.new(0, 13, -4.1), Vector3.new(0, 13, -10)))
 
 	-- Free weights (west): power racks and overhead press stands along the wall, lifting platforms beside them
 	local machines = Kit.fresh(gym, "Folder", "Machines")
@@ -348,17 +372,16 @@ local function starterRoom(gym)
 	GymKit.BarbellRow(machines, face(-17.5, -30, YAW.East))
 	GymKit.Deadlift(machines, face(-17.5, -44, YAW.East))
 	GymKit.BarbellRow(machines, face(-17.5, -57, YAW.East))
-	GymKit.plateTree(props, face(-24, -20, 15))
-	GymKit.plateTree(props, face(-24, -44, -10))
-	GymKit.plateTree(props, face(-24, -66, 30), { { 45, 45 }, { 55 }, { 35, 25 }, { 25 }, { 10, 10 }, { 5 } })
+	-- the plate trees stand together in the back-left corner, out of the walkway between the racks and the platforms
+	GymKit.plateTree(props, face(-33.6, -71, 15))
+	GymKit.plateTree(props, face(-29.6, -71.2, -10), { { 45, 45 }, { 55 }, { 35, 25 }, { 25 }, { 10, 10 }, { 5 } })
 	GymKit.chalkBowl(props, face(-24, -32))
 	GymKit.chalkBowl(props, face(-24, -56))
 	GymKit.dumbbellRack(props, face(-21, -71.2, 180), 12)
-	for i = 0, 3 do GymKit.kettlebell(props, face(-30 + i * 1.3, -71.6), 0.7 + i * 0.12) end
 	-- mirrors and posters on the west wall, between the windows
-	for _, z in ipairs({ -20, -44, -68 }) do GymKit.mirror(decor, CFrame.lookAt(Vector3.new(-35.92, 4.3, z), Vector3.new(0, 4.3, z)), 6, 6.5) end
-	GymKit.poster(decor, CFrame.lookAt(Vector3.new(-35.9, 5.8, -32), Vector3.new(0, 5.8, -32)), "CHALK UP.\nLOCK IN.", 3, 4)
-	GymKit.poster(decor, CFrame.lookAt(Vector3.new(-35.9, 5.8, -56), Vector3.new(0, 5.8, -56)), "ONE\nMORE\nREP.", 3, 4)
+	for _, z in ipairs({ -20, -44, -62 }) do GymKit.mirror(decor, lookAtMapped(Vector3.new(-35.92, 4.3, z), Vector3.new(0, 4.3, z)), 6, 6.5) end
+	GymKit.poster(decor, lookAtMapped(Vector3.new(-35.9, 5.8, -32), Vector3.new(0, 5.8, -32)), "CHALK UP.\nLOCK IN.", 3, 4)
+	GymKit.poster(decor, lookAtMapped(Vector3.new(-35.9, 5.8, -56), Vector3.new(0, 5.8, -56)), "ONE\nMORE\nREP.", 3, 4)
 
 	-- Bench row (back): flat and incline benches facing the mirror wall, neon sign above it
 	GymKit.FlatBench(machines, face(-12, -66, 0))
@@ -366,8 +389,8 @@ local function starterRoom(gym)
 	GymKit.FlatBench(machines, face(2, -66, 0))
 	GymKit.InclineBench(machines, face(9, -66, 0))
 	GymKit.FlatBench(machines, face(16, -66, 0))
-	GymKit.mirror(decor, CFrame.lookAt(Vector3.new(2, 4.4, -73.42), Vector3.new(2, 4.4, 0)), 38, 7.4)
-	neonSign(decor, CFrame.lookAt(Vector3.new(2, 10.4, -73.35), Vector3.new(2, 10.4, 0)), "GYM ARC", C.Red, 14, 2.6)
+	GymKit.mirror(decor, lookAtMapped(Vector3.new(2, 4.4, -73.42), Vector3.new(2, 4.4, 0)), 44, 7.4)
+	neonSign(decor, lookAtMapped(Vector3.new(2, 12, -73.35), Vector3.new(2, 12, 0)), "GYM ARC", C.Red, 14, 2.6)
 	GymKit.floorMat(props, face(2, -66.5), 33, 9, hex("#252527"))
 
 	-- Bodyweight corner (back right): pull-up towers and crunch benches
@@ -375,22 +398,27 @@ local function starterRoom(gym)
 	GymKit.PullUpBar(machines, face(32, -67, 0))
 	GymKit.CrunchBench(machines, face(28, -55, YAW.West))
 	GymKit.CrunchBench(machines, face(28, -46, YAW.West))
-	GymKit.poster(decor, CFrame.lookAt(Vector3.new(29, 6.5, -73.4), Vector3.new(29, 6.5, 0)), "EVERYONE\nSTARTS\nTINY.", 3, 4)
+	-- plate-loaded leg machines (were placed by hand on 7 Oct; now part of the layout): two leg presses facing west, two
+	-- hack squats facing the back wall, between the stretching area and the bench row
+	GymKit.LegPress(machines, face(15, -41.5, YAW.West))
+	GymKit.LegPress(machines, face(15, -48.5, YAW.West))
+	GymKit.HackSquat(machines, face(9.5, -56.5, 0))
+	GymKit.HackSquat(machines, face(16.5, -56.5, 0))
+	GymKit.poster(decor, lookAtMapped(Vector3.new(29, 6.5, -73.4), Vector3.new(29, 6.5, 0)), "EVERYONE\nSTARTS\nTINY.", 3, 4)
 
 	-- Cardio (east, facing the glass so you can watch the pro gym)
-	local cardio = model(props, "Cardio", CFrame.new(27, 0, -29))
-	GymKit.treadmill(cardio, face(31.5, -20, YAW.West))
-	GymKit.Treadmill(cardio, face(31.5, -26, YAW.West)) -- (two of the three are real machines; overnight 8 Oct)
-	GymKit.Treadmill(cardio, face(31.5, -32, YAW.West))
+	local cardio = model(props, "Cardio", mc(27, 0, -29))
+	-- three working treadmills, the same premium model as the pro gym (owner, 8 Oct night)
+	for _, z in ipairs({ -20, -26, -32 }) do GymKit.Treadmill(cardio, face(31.5, z, YAW.West), true) end
 	GymKit.bike(cardio, face(24.5, -21, YAW.West))
 	GymKit.bike(cardio, face(24.5, -27, YAW.West))
 	GymKit.rower(cardio, face(24.5, -35, 0))
 	cardio:SetAttribute("Recovery", "Cardio")
 
 	-- Stretching area (middle): mats, foam rollers, kettlebells (a recovery station: stamina refills faster here)
-	local stretch = model(props, "StretchingArea", CFrame.new(12, 0, -29))
-	p(stretch, "Mat", Vector3.new(12, 0.08, 16), CFrame.new(12, 0.19, -29), hex("#283029"), M.Rubber)
-	p(stretch, "MatEdge", Vector3.new(12.3, 0.06, 16.3), CFrame.new(12, 0.18, -29), hex("#151716"), M.Rubber)
+	local stretch = model(props, "StretchingArea", mc(12, 0, -29))
+	p(stretch, "Mat", Vector3.new(12, 0.08, 16), mc(12, 0.19, -29), hex("#283029"), M.Rubber)
+	p(stretch, "MatEdge", Vector3.new(12.3, 0.06, 16.3), mc(12, 0.18, -29), hex("#151716"), M.Rubber)
 	for i, z in ipairs({ -23, -27, -31, -35 }) do
 		GymKit.yogaMat(stretch, face(8.5 + (i % 2) * 0.4, z, 90), i % 2 == 0 and hex("#2F3A36") or hex("#3A3530"))
 	end
@@ -398,18 +426,18 @@ local function starterRoom(gym)
 	GymKit.foamRoller(stretch, face(15.5, -24.5, -5))
 	GymKit.foamRoller(stretch, face(15, -26.5, 0))
 	for i = 0, 4 do GymKit.kettlebell(stretch, face(16.5, -31 - i * 1.3), 0.6 + i * 0.1) end
-	local ball = p(stretch, "StabilityBall", Vector3.new(2.2, 2.2, 2.2), CFrame.new(14.5, 1.3, -35.5), hex("#4A4C50"), M.SmoothPlastic, true)
+	local ball = p(stretch, "StabilityBall", Vector3.new(2.2, 2.2, 2.2), mc(14.5, 1.3, -35.5), hex("#4A4C50"), M.SmoothPlastic, true)
 	ball.Shape = Enum.PartType.Ball
 	stretch:SetAttribute("Recovery", "StretchMat")
 
 	-- walls: posters, speakers, fans
-	GymKit.poster(decor, CFrame.lookAt(Vector3.new(-14, 7, -4.1), Vector3.new(-14, 7, -10)), "SHOW UP.\nGET BIG.", 3, 4)
-	GymKit.poster(decor, CFrame.lookAt(Vector3.new(24, 7, -4.1), Vector3.new(24, 7, -10)), "REST IS\nPART OF\nTHE PLAN.", 3, 4)
+	GymKit.poster(decor, lookAtMapped(Vector3.new(-14, 7, -4.1), Vector3.new(-14, 7, -10)), "SHOW UP.\nGET BIG.", 3, 4)
+	GymKit.poster(decor, lookAtMapped(Vector3.new(17, 7, -4.1), Vector3.new(17, 7, -10)), "REST IS\nPART OF\nTHE PLAN.", 3, 4)
 	for _, spot in ipairs({ { -34, -71 }, { 34, -71 }, { -34, -6 }, { 34, -6 } }) do
-		GymKit.speaker(decor, CFrame.lookAt(Vector3.new(spot[1], 11, spot[2]), Vector3.new(0, 10, -38)))
+		GymKit.speaker(decor, lookAtMapped(Vector3.new(spot[1], 13.5, spot[2]), Vector3.new(0, 12, -38)))
 	end
-	GymKit.wallFan(decor, CFrame.lookAt(Vector3.new(-35.8, 9.5, -8), Vector3.new(0, 9.5, -8)))
-	GymKit.wallFan(decor, CFrame.lookAt(Vector3.new(-35.8, 9.5, -72), Vector3.new(0, 9.5, -72)) * CFrame.Angles(0, rad(20), 0))
+	GymKit.wallFan(decor, lookAtMapped(Vector3.new(-35.8, 9.5, -8), Vector3.new(0, 9.5, -8)))
+	GymKit.wallFan(decor, lookAtMapped(Vector3.new(-35.8, 9.5, -72), Vector3.new(0, 9.5, -72)) * CFrame.Angles(0, rad(20), 0))
 
 	-- lights: a warm pendant over every station (every other one casts shadows), fill lights along the walkways
 	local lights = Instance.new("Folder")
@@ -422,13 +450,13 @@ local function starterRoom(gym)
 		{ 28, -26 }, { 12, -24 }, { 12, -34 }, { 20, -10 }, { -16, -8 }, { 0, -10 },
 	}
 	for i, spot in ipairs(spots) do
-		GymKit.pendant(lights, Vector3.new(spot[1], 9.2, spot[2]), S.Height, i % 2 == 1)
+		GymKit.pendant(lights, mv(spot[1], 10.6, spot[2]), S.Height, i % 2 == 1)
 	end
 	local fills = Instance.new("Folder")
 	fills.Name = "FillLights"
 	fills.Parent = room
 	for _, x in ipairs({ -24, 0, 24 }) do
-		for z = -12, -68, -14 do GymKit.fillLight(fills, Vector3.new(x, 10.5, z), 20, 0.5) end
+		for z = -12, -68, -14 do GymKit.fillLight(fills, mv(x, 13, z), 20, 0.5) end
 	end
 	return room, machines
 end
@@ -444,24 +472,37 @@ local function proShell(room)
 	shell.Name = "Shell"
 	shell.Parent = room
 	p(shell, "Slab", Vector3.new(w + 2, 1, d + 2), CFrame.new(cx, -0.45, cz), C.Concrete, M.Concrete, true)
-	local floor = p(shell, "Floor", Vector3.new(w, 0.1, d), CFrame.new(cx, 0.1, cz), C.ProFloor, M.SmoothPlastic, true) -- polished concrete look
-	floor.Reflectance = 0.03
-	for x = P.MinX + 7, P.MaxX - 1, 7 do p(shell, "FloorJoint", Vector3.new(0.05, 0.01, d), CFrame.new(x, 0.155, cz), hex("#0E0E10")) end
+	-- charcoal rubber floor with a faint 4-stud tile grid (was ProGymPolish)
+	p(shell, "Floor", Vector3.new(w, 0.1, d), CFrame.new(cx, 0.1, cz), hex("#303036"), M.Rubber, true)
+	for x = P.MinX + 4, P.MaxX - 1, 4 do p(shell, "TileSeam", Vector3.new(0.08, 0.02, d), CFrame.new(x, 0.16, cz), hex("#1E1E22"), M.SmoothPlastic) end
+	for z = P.MinZ + 4, P.MaxZ - 1, 4 do p(shell, "TileSeam", Vector3.new(w, 0.02, 0.08), CFrame.new(cx, 0.16, z), hex("#1E1E22"), M.SmoothPlastic) end
 	p(shell, "EastWall", Vector3.new(1, h, d + 1), CFrame.new(P.MaxX + 0.5, h / 2, cz), C.ProWall, M.Concrete, true)
 	p(shell, "BackWall", Vector3.new(w + 2, h, 1), CFrame.new(cx, h / 2, P.MinZ - 0.5), C.ProWall, M.Concrete, true)
-	-- street front: a dark glass curtain wall (x 38..76) with chrome mullions and LED trim, solid where the lockers are
-	local glassFrom, glassTo = 38, 76
+	-- street front: a glass curtain wall with gunmetal mullions and LED trim, solid where the lockers are
+	local glassFrom, glassTo = Gyms.Map(Vector3.new(38, 0, 0)).X, Gyms.Map(Vector3.new(76, 0, 0)).X
 	p(shell, "FrontWall", Vector3.new(P.MaxX + 1 - glassTo, h, 1), CFrame.new((glassTo + P.MaxX + 1) / 2, h / 2, -3.5), C.ProWall, M.Concrete, true)
 	p(shell, "FrontWall", Vector3.new(glassFrom - P.MinX + 1, h, 1), CFrame.new((P.MinX - 1 + glassFrom) / 2, h / 2, -3.5), C.ProWall, M.Concrete, true)
 	p(shell, "FrontSpandrel", Vector3.new(glassTo - glassFrom, h - 11, 1), CFrame.new((glassFrom + glassTo) / 2, 11 + (h - 11) / 2, -3.5), C.ProWall, M.Concrete, true)
 	p(shell, "FrontBase", Vector3.new(glassTo - glassFrom, 0.8, 1), CFrame.new((glassFrom + glassTo) / 2, 0.4, -3.5), C.ProWall, M.Concrete, true)
-	local curtain = p(shell, "CurtainGlass", Vector3.new(glassTo - glassFrom, 10.2, 0.25), CFrame.new((glassFrom + glassTo) / 2, 5.9, -3.5), hex("#1E2A33"), M.Glass, true, { Transparency = 0.35, Reflectance = 0.25 })
+	local curtain = p(shell, "CurtainGlass", Vector3.new(glassTo - glassFrom, 10.2, 0.25), CFrame.new((glassFrom + glassTo) / 2, 5.9, -3.5), hex("#96B9D2"), M.Glass, true, { Transparency = 0.55, Reflectance = 0.2 })
 	curtain.CastShadow = false
-	for x = glassFrom, glassTo, 4 do
-		p(shell, "CurtainMullion", Vector3.new(0.3, 10.2, 0.5), CFrame.new(x, 5.9, -3.5), C.Chrome, M.Metal)
+	for x = glassFrom, glassTo, (glassTo - glassFrom) / math.floor((glassTo - glassFrom) / 4) do
+		p(shell, "CurtainMullion", Vector3.new(0.3, 10.2, 0.5), CFrame.new(x, 5.9, -3.5), hex("#282A30"), M.Metal)
 	end
-	p(shell, "CurtainRail", Vector3.new(glassTo - glassFrom, 0.3, 0.5), CFrame.new((glassFrom + glassTo) / 2, 11, -3.5), C.Chrome, M.Metal)
-	p(shell, "CurtainRail", Vector3.new(glassTo - glassFrom, 0.3, 0.5), CFrame.new((glassFrom + glassTo) / 2, 0.8, -3.5), C.Chrome, M.Metal)
+	p(shell, "CurtainRail", Vector3.new(glassTo - glassFrom, 0.3, 0.5), CFrame.new((glassFrom + glassTo) / 2, 11, -3.5), hex("#282A30"), M.Metal)
+	p(shell, "CurtainRail", Vector3.new(glassTo - glassFrom, 0.3, 0.5), CFrame.new((glassFrom + glassTo) / 2, 0.8, -3.5), hex("#282A30"), M.Metal)
+	-- soft warm fill lights under the ceiling so nothing is pitch black (was ProGymPolish)
+	local fills = Instance.new("Folder")
+	fills.Name = "FillLights"
+	fills.Parent = room
+	for _, fx in ipairs({ 0.18, 0.5, 0.82 }) do
+		for _, fz in ipairs({ 0.2, 0.5, 0.8 }) do
+			local part = p(fills, "FillLight", Vector3.new(1, 1, 1), CFrame.new(P.MinX + w * fx, h - 3, P.MaxZ - d * fz), C.Steel, M.SmoothPlastic, false, { Transparency = 1 })
+			local light = Instance.new("PointLight")
+			light.Brightness, light.Range, light.Color, light.Shadows = 0.9, 32, hex("#FFECD6"), false
+			light.Parent = part
+		end
+	end
 	p(shell, "OutsideLed", Vector3.new(P.MaxX - P.MinX + 2, 0.12, 0.12), CFrame.new(cx, h - 0.4, -2.9), C.Led, M.Neon)
 	p(shell, "OutsideLed", Vector3.new(P.MaxX - P.MinX + 2, 0.12, 0.12), CFrame.new(cx, 0.35, -2.9), C.Led, M.Neon)
 	p(shell, "Ceiling", Vector3.new(w + 2, 1, d + 2), CFrame.new(cx, h + 0.5, cz), hex("#0C0C0E"), M.Concrete, true)
@@ -499,11 +540,119 @@ local function spotlight(folder, position, shadows)
 	p(fixture, "Stem", Vector3.new(0.12, 0.8, 0.12), CFrame.new(position + Vector3.new(0, 0.8, 0)), hex("#1A1A1C"), M.Metal)
 	local light = Instance.new("SpotLight")
 	light.Face = Enum.NormalId.Bottom
-	light.Brightness, light.Range, light.Angle, light.Color, light.Shadows = 4, 20, 55, hex("#EAF0FF"), shadows == true
+	light.Brightness, light.Range, light.Angle, light.Color, light.Shadows = 2.4, 22, 55, hex("#FFF1DE"), shadows == true -- (soft, warm: was ProGymPolish)
 	-- the lens is turned 90 degrees about Z, so its Left face (-X) is the one pointing down
 	light.Face = Enum.NormalId.Left
 	light.Parent = lens
 	return fixture
+end
+
+-- A clean hanging zone sign: a dark panel in a thin chrome frame on two thin cables from the ceiling, white Oswald
+-- letters on both faces (it hangs along X, read from the front and the back of the room).
+local function zoneSign(parent, position: Vector3, text: string, width: number, ceilingY: number)
+	local cf = CFrame.new(position)
+	local m = model(parent, "ZoneSign", cf)
+	local panel = p(m, "Panel", Vector3.new(width, 1.3, 0.12), cf, hex("#16171A"), M.SmoothPlastic)
+	p(m, "Frame", Vector3.new(width + 0.16, 1.46, 0.08), cf, C.Chrome, M.Metal)
+	for _, side in ipairs({ -1, 1 }) do
+		local top = position + Vector3.new(side * (width / 2 - 0.5), 0.73, 0)
+		local length = ceilingY - top.Y
+		p(m, "Cable", Vector3.new(0.04, length, 0.04), CFrame.new(top + Vector3.new(0, length / 2, 0)), hex("#8E9096"), M.Metal)
+	end
+	for _, faceId in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = faceId
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 50
+		gui.LightInfluence = 0.3
+		gui.MaxDistance = 120
+		gui.Parent = panel
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Position, label.Size = UDim2.fromScale(0.06, 0.16), UDim2.fromScale(0.88, 0.68)
+		label.Text = text
+		label.TextColor3 = hex("#F4F4F2")
+		label.FontFace = Theme.Fonts.Bold
+		label.TextScaled = true -- (world-space text on a sign)
+		label.Parent = gui
+	end
+	for _, part in ipairs(m:GetDescendants()) do
+		if part:IsA("BasePart") then part.CastShadow = false end
+	end
+	return m
+end
+
+-- The pro gym's smoothie bar corner. `base` stands on the floor at the counter's middle, its -Z (LookVector) toward the
+-- customers (into the room): the counter (wood slat front, stone top), a back bar along the wall with a drinks fridge,
+-- blenders, cups and fruit, three stools in front. Decoration only (the shakes are sold at the town's smoothie bar).
+local function smoothieBar(parent, base: CFrame, ceilingY: number)
+	local m = model(parent, "SmoothieBar", base)
+	local wood, stone, dark = hex("#7A5236"), hex("#D9D6CF"), hex("#26272A")
+	p(m, "CounterBody", Vector3.new(9, 3.2, 1.6), base * CFrame.new(0, 1.6, 0), dark, M.SmoothPlastic, true)
+	for i = -4, 4 do p(m, "Slat", Vector3.new(0.86, 2.8, 0.06), base * CFrame.new(i * 0.98, 1.6, -0.83), wood, M.Wood) end
+	p(m, "CounterTop", Vector3.new(9.4, 0.16, 1.9), base * CFrame.new(0, 3.28, -0.1), stone, M.Marble)
+	p(m, "Kick", Vector3.new(9, 0.25, 1.4), base * CFrame.new(0, 0.12, 0.05), hex("#141416"), M.Rubber)
+	-- the back bar along the glass
+	p(m, "BackCounter", Vector3.new(9, 3, 1.2), base * CFrame.new(0, 1.5, 2.55), dark, M.SmoothPlastic, true)
+	p(m, "BackTop", Vector3.new(9.2, 0.12, 1.3), base * CFrame.new(0, 3.06, 2.55), stone, M.Marble)
+	local fridge = base * CFrame.new(3.5, 0, 2.55)
+	p(m, "Fridge", Vector3.new(2, 5.4, 1.2), fridge * CFrame.new(0, 2.7, 0), hex("#1A1B1E"), M.Metal, true)
+	local glass = p(m, "FridgeGlass", Vector3.new(1.7, 4.6, 0.05), fridge * CFrame.new(0, 2.9, -0.62), hex("#BFD6DF"), M.Glass)
+	glass.Transparency = 0.45
+	for shelf = 0, 3 do
+		local y = 1.2 + shelf * 1.1
+		p(m, "FridgeShelf", Vector3.new(1.6, 0.05, 0.9), fridge * CFrame.new(0, y, 0), hex("#C9CCD2"), M.Metal)
+		for b = 0, 3 do
+			local bottle = cyl(m, "Bottle", 0.5, 0.22, fridge * CFrame.new(-0.6 + b * 0.4, y + 0.28, -0.1) * CFrame.Angles(0, 0, rad(90)),
+				({ hex("#E86FA3"), hex("#F2C14E"), hex("#7CC6A5"), hex("#E8A04E") })[b + 1], M.SmoothPlastic)
+			bottle.CastShadow = false
+		end
+	end
+	local glow = Instance.new("SurfaceLight")
+	glow.Face = Enum.NormalId.Front
+	glow.Brightness, glow.Range, glow.Angle, glow.Color, glow.Shadows = 0.5, 5, 90, hex("#F2F6FF"), false
+	glow.Parent = glass
+	for i, x in ipairs({ -3.4, -2.4 }) do
+		p(m, "BlenderBase", Vector3.new(0.45, 0.35, 0.45), base * CFrame.new(x, 3.3, 2.55), hex("#1E1E22"), M.SmoothPlastic)
+		local jar = cyl(m, "BlenderJar", 0.7, 0.4, base * CFrame.new(x, 3.82, 2.55) * CFrame.Angles(0, 0, rad(90)), hex("#BFD6DF"), M.Glass)
+		jar.Transparency = 0.35
+		cyl(m, "Smoothie", 0.4, 0.34, base * CFrame.new(x, 3.68, 2.55) * CFrame.Angles(0, 0, rad(90)), i == 1 and hex("#E86FA3") or hex("#F2C14E"), M.SmoothPlastic)
+	end
+	for i, color in ipairs({ "#E86FA3", "#F2C14E", "#7CC6A5", "#E8A04E" }) do
+		cyl(m, "Cup", 0.45, 0.26, base * CFrame.new(-1.6 + i * 0.5, 3.6, -0.3) * CFrame.Angles(0, 0, rad(90)), hex(color), M.SmoothPlastic)
+	end
+	for i, color in ipairs({ "#F2C14E", "#E86A6A", "#7CC6A5" }) do
+		p(m, "Fruit", Vector3.new(0.35, 0.35, 0.35), base * CFrame.new(-0.6 + i * 0.4, 3.3, 2.4), hex(color), M.SmoothPlastic).Shape = Enum.PartType.Ball
+	end
+	-- a small menu card on the counter
+	local menu = p(m, "MenuCard", Vector3.new(1.4, 0.9, 0.06), base * CFrame.new(2.6, 3.82, -0.2) * CFrame.Angles(rad(-12), 0, 0), hex("#16171A"), M.SmoothPlastic)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 80
+	gui.MaxDistance = 60
+	gui.Parent = menu
+	local list = Instance.new("TextLabel")
+	list.BackgroundTransparency = 1
+	list.Size = UDim2.fromScale(0.9, 0.9)
+	list.Position = UDim2.fromScale(0.05, 0.05)
+	list.Text = "BERRY BLAST\nMANGO SUNRISE\nGREEN POWER"
+	list.TextColor3 = hex("#F4F4F2")
+	list.FontFace = Theme.Fonts.Bold
+	list.TextScaled = true
+	list.Parent = gui
+	-- three stools on the customers' side
+	for i = -1, 1 do
+		local at = base * CFrame.new(i * 2.8, 0, -2.2)
+		cyl(m, "StoolBase", 0.12, 1.3, at * CFrame.new(0, 0.06, 0) * CFrame.Angles(0, 0, rad(90)), C.Chrome, M.Metal)
+		cyl(m, "StoolPost", 2.3, 0.18, at * CFrame.new(0, 1.2, 0) * CFrame.Angles(0, 0, rad(90)), C.Chrome, M.Metal)
+		cyl(m, "StoolRing", 0.06, 1.0, at * CFrame.new(0, 0.9, 0) * CFrame.Angles(0, 0, rad(90)), C.Chrome, M.Metal)
+		cyl(m, "StoolSeat", 0.3, 1.3, at * CFrame.new(0, 2.45, 0) * CFrame.Angles(0, 0, rad(90)), hex("#1A1A1C"), M.Leather, true)
+	end
+	for _, part in ipairs(m:GetDescendants()) do
+		if part:IsA("BasePart") and part.Size.Magnitude < 2.5 then part.CastShadow = false end
+	end
+	return m
 end
 
 local function proRoom()
@@ -532,7 +681,17 @@ local function proRoom()
 	for i, spec in ipairs(heavy) do
 		local m = spec[1](machines, face(spec[2], spec[3], spec[4]))
 		m:SetAttribute("Pro", true)
-		spotlight(lights, Vector3.new(spec[2] - 1, P.Height - 1.4, spec[3]), i % 2 == 1)
+		spotlight(lights, mv(spec[2] - 1, P.Height - 1.4, spec[3]), i % 2 == 1)
+		-- chrome racks in the pro gym (the starter gym's frames are black)
+		for _, part in ipairs(m:GetDescendants()) do
+			if part:IsA("BasePart") and part.Material == M.Metal then
+				local c = part.Color
+				if math.abs(c.R - C.Frame.R) + math.abs(c.G - C.Frame.G) + math.abs(c.B - C.Frame.B) < 0.03 then
+					part.Color = C.Chrome
+					part.Reflectance = 0.15
+				end
+			end
+		end
 	end
 	GymKit.plateTree(props, face(48, -31, 20), { { 55, 55 }, { 55, 45 }, { 45, 45 }, { 35, 35 }, { 25, 25 }, { 10, 10 } })
 	GymKit.plateTree(props, face(48, -45, -15), { { 55, 55 }, { 55, 45 }, { 45, 45 }, { 35, 35 }, { 25, 25 }, { 10, 10 } })
@@ -544,31 +703,34 @@ local function proRoom()
 	for i, id in ipairs(rowA) do
 		local x, z = 58 + (i - 1) * 6.4, -62
 		GymKit.Pro[id](machines, face(x, z, 180))
-		spotlight(lights, Vector3.new(x, P.Height - 1.4, z + 0.5), i % 3 == 1)
+		spotlight(lights, mv(x, P.Height - 1.4, z + 0.5), i % 3 == 1)
 	end
 	for i, id in ipairs(rowB) do
 		local x, z = 61 + (i - 1) * 6.6, -44
 		GymKit.Pro[id](machines, face(x, z, 0))
-		spotlight(lights, Vector3.new(x, P.Height - 1.4, z + 0.5), i % 3 == 2)
+		spotlight(lights, mv(x, P.Height - 1.4, z + 0.5), i % 3 == 2)
 	end
 	GymKit.dumbbellRack(props, face(75, -71.3, 180), 14)
-	GymKit.mirror(props, CFrame.lookAt(Vector3.new(75, 4.6, -73.28), Vector3.new(75, 4.6, 0)), 30, 7)
+	-- a leg press and a hack squat by the locker side (were placed by hand on 7 Oct)
+	GymKit.LegPress(machines, face(86, -35.5, YAW.West))
+	GymKit.HackSquat(machines, face(78, -28.5, 0))
+	GymKit.mirror(props, lookAtMapped(Vector3.new(66, 5, -73.28), Vector3.new(66, 5, 0)), 56, 8) -- (a mirror wall across the back)
 
 	-- Podium spot (back of the aisle): a round two-step podium under a ring of light, the sign above it
-	local podium = model(props, "Podium", CFrame.new(60, 0, -52))
-	cyl(podium, "Step1", 0.5, 7, CFrame.new(60, 0.4, -52.5) * CFrame.Angles(0, 0, rad(90)), hex("#202024"), M.Marble, true)
-	cyl(podium, "Step2", 0.5, 5, CFrame.new(60, 0.9, -52.5) * CFrame.Angles(0, 0, rad(90)), hex("#2A2A2E"), M.Marble, true)
-	cyl(podium, "Rim", 0.06, 5.05, CFrame.new(60, 1.16, -52.5) * CFrame.Angles(0, 0, rad(90)), C.Led, M.Neon)
-	cyl(podium, "RimLow", 0.06, 7.05, CFrame.new(60, 0.66, -52.5) * CFrame.Angles(0, 0, rad(90)), C.Led, M.Neon)
-	spotlight(lights, Vector3.new(60, P.Height - 1.4, -52.5), true)
+	local podium = model(props, "Podium", mc(60, 0, -52))
+	cyl(podium, "Step1", 0.5, 7, mc(60, 0.4, -52.5) * CFrame.Angles(0, 0, rad(90)), hex("#202024"), M.Marble, true)
+	cyl(podium, "Step2", 0.5, 5, mc(60, 0.9, -52.5) * CFrame.Angles(0, 0, rad(90)), hex("#2A2A2E"), M.Marble, true)
+	cyl(podium, "Rim", 0.06, 5.05, mc(60, 1.16, -52.5) * CFrame.Angles(0, 0, rad(90)), hex("#235FD7"), M.Neon)
+	cyl(podium, "RimLow", 0.06, 7.05, mc(60, 0.66, -52.5) * CFrame.Angles(0, 0, rad(90)), hex("#235FD7"), M.Neon)
+	spotlight(lights, mv(60, P.Height - 1.4, -52.5), true)
 	podium:SetAttribute("NpcSpot", "Pose")
 
 	-- Signs: GYM ARC PRO on the east wall (seen through the glass) and over the machine rows
-	neonSign(props, CFrame.lookAt(Vector3.new(P.MaxX - 0.3, 9.5, -38), Vector3.new(0, 9.5, -38)), "GYM ARC PRO", C.Led, 20, 3.2)
-	neonSign(props, CFrame.lookAt(Vector3.new(70, 11, -73.3), Vector3.new(70, 11, 0)), "PRO", C.Red, 7, 2.2)
+	neonSign(props, lookAtMapped(Vector3.new(92.7, 12, -38), Vector3.new(0, 12, -38)), "GYM ARC PRO", C.Led, 20, 3.2)
+	neonSign(props, lookAtMapped(Vector3.new(70, 14, -73.3), Vector3.new(70, 14, 0)), "PRO", C.Red, 7, 2.2)
 
 	-- Cardio (front, facing the windows of the east wall)
-	local cardio = model(props, "Cardio", CFrame.new(70, 0, -12))
+	local cardio = model(props, "Cardio", mc(70, 0, -12))
 	for i = 0, 3 do GymKit.Treadmill(cardio, face(56 + i * 4.5, -10, 180), true) end -- (real machines since 8 Oct)
 	GymKit.bike(cardio, face(76, -10, 180))
 	GymKit.rower(cardio, face(80.5, -11, 180))
@@ -579,24 +741,30 @@ local function proRoom()
 	GymKit.bench(props, face(85, -15, 90), 5)
 	GymKit.bench(props, face(85, -21.5, 90), 5)
 	GymKit.towelRack(props, face(90.5, -27, YAW.West))
-	GymKit.mirror(props, CFrame.lookAt(Vector3.new(92.78, 4.6, -32), Vector3.new(0, 4.6, -32)), 4, 6.5)
+	GymKit.mirror(props, lookAtMapped(Vector3.new(92.78, 4.6, -32), Vector3.new(0, 4.6, -32)), 4, 6.5)
 	GymKit.waterFountain(props, face(52, -4.8, 0))
 	GymKit.plant(props, face(91, -70.5), 5)
 	GymKit.plant(props, face(40, -71), 5)
+	-- smoothie bar in the front-left corner, along the street glass by the door from the starter gym
+	local barAt = Vector3.new(Gyms.Map(Vector3.new(38, 0, 0)).X + 5, 0, P.MaxZ - 3.3)
+	smoothieBar(props, CFrame.lookAt(barAt, barAt - Vector3.new(0, 0, 1)), P.Height)
+	-- clean hanging zone signs (both faces)
+	local signY = P.Height - 3.6
+	zoneSign(props, mv(51, signY, -44), "FREE WEIGHTS", 7, P.Height)
+	zoneSign(props, mv(73, signY, -53), "MACHINES", 5.5, P.Height)
+	zoneSign(props, mv(66, signY, -16), "CARDIO", 4.5, P.Height)
+	zoneSign(props, mv(86, signY, -60), "STRETCH", 4.5, P.Height)
+	zoneSign(props, Vector3.new(barAt.X, P.Height - 5, barAt.Z - 0.6), "SMOOTHIE BAR", 6.5, P.Height)
 	-- Stretching (back right)
-	local stretch = model(props, "StretchingArea", CFrame.new(86, 0, -60))
-	p(stretch, "Mat", Vector3.new(11, 0.08, 18), CFrame.new(86.5, 0.19, -58), hex("#1F2421"), M.Rubber)
+	local stretch = model(props, "StretchingArea", mc(86, 0, -60))
+	p(stretch, "Mat", Vector3.new(11, 0.08, 18), mc(86.5, 0.19, -58), hex("#1F2421"), M.Rubber)
 	for i, z in ipairs({ -52, -56, -60, -64 }) do GymKit.yogaMat(stretch, face(84 + (i % 2) * 0.4, z, 90), hex("#2A2F33")) end
 	GymKit.foamRoller(stretch, face(90, -54, 0))
 	GymKit.foamRoller(stretch, face(90, -56, 10))
 	stretch:SetAttribute("Recovery", "StretchMat")
 	-- speakers
 	for _, spot in ipairs({ { 39, -71 }, { 91, -71 }, { 91, -6 } }) do
-		GymKit.speaker(props, CFrame.lookAt(Vector3.new(spot[1], 11.5, spot[2]), Vector3.new(65, 10, -38)))
-	end
-	-- soft fill so nothing is pitch black between the pools
-	for _, x in ipairs({ 48, 65, 82 }) do
-		for z = -12, -68, -18 do GymKit.fillLight(lights, Vector3.new(x, 11, z), 22, 0.35, hex("#DDE6FF")) end
+		GymKit.speaker(props, lookAtMapped(Vector3.new(spot[1], 15, spot[2]), Vector3.new(65, 12, -38)))
 	end
 	return room, machines
 end
@@ -611,15 +779,15 @@ local function npcSpots(gym)
 		part:SetAttribute("Kind", kind)
 		part:SetAttribute("Gym", gymName)
 	end
-	spot("Water", "Water", Vector3.new(-14, 0.2, -7.5), "Starter")
-	spot("Water", "Water", Vector3.new(52, 0.2, -7.5), "Pro")
-	spot("Chat", "Chat", Vector3.new(4, 0.2, -18), "Starter")
-	spot("Chat", "Chat", Vector3.new(-6, 0.2, -50), "Starter")
-	spot("Chat", "Chat", Vector3.new(68, 0.2, -30), "Pro")
-	spot("Chat", "Chat", Vector3.new(80, 0.2, -38), "Pro")
-	spot("Rest", "Rest", Vector3.new(-24, 0.2, -8), "Starter")
-	spot("Rest", "Rest", Vector3.new(85, 0.2, -18), "Pro")
-	spot("Pose", "Pose", Vector3.new(60, 1.3, -52.5), "Pro")
+	spot("Water", "Water", mv(-14, 0.2, -7.5), "Starter")
+	spot("Water", "Water", mv(52, 0.2, -7.5), "Pro")
+	spot("Chat", "Chat", mv(4, 0.2, -18), "Starter")
+	spot("Chat", "Chat", mv(-6, 0.2, -50), "Starter")
+	spot("Chat", "Chat", mv(68, 0.2, -30), "Pro")
+	spot("Chat", "Chat", mv(80, 0.2, -38), "Pro")
+	spot("Rest", "Rest", mv(-24, 0.2, -8), "Starter")
+	spot("Rest", "Rest", mv(85, 0.2, -18), "Pro")
+	spot("Pose", "Pose", mv(60, 1.3, -52.5), "Pro")
 	return folder
 end
 

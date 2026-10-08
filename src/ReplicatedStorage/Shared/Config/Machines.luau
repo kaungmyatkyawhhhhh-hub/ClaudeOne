@@ -173,7 +173,7 @@ Machines.List = {
 		muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.2 }, { id = "Calves", share = 0.13 } },
 		tiers = Machines.TierSets.Sled, staminaCost = 6,
 	},
-	-- Treadmill (2 in the starter gym's cardio corner, 4 in the pro gym): trains STAMINA, not muscles (trains = "Stamina":
+	-- Treadmill (3 in the starter gym's cardio corner, 4 in the pro gym; all the premium model since 8 Oct night): trains STAMINA, not muscles (trains = "Stamina":
 	-- no muscle EXP; the distance run raises max stamina, Config.Stamina.Cardio, and counts toward Cardio King). Running
 	-- uses no stamina (it keeps refilling, so it's something to do between sets), normal coins. `muscles` only picks which
 	-- level unlocks the faster speeds. load = the belt (no plates).

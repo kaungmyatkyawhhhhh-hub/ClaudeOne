@@ -2,8 +2,47 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (8 Oct, 10 PM): bigger skate park, grinding, smooth quarter pipes
-**Saved to Roblox (v302, 9:57 PM); not published: publish (Alt+P) to make it (and the parking arrows) live.**
+## LATEST (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
+Not published yet: publish (Alt+P) to make it live. Next up (owner's later briefs): the beach gym uses the real machines,
+then the new spotting system.
+- **Machine sign (`MachineSignsClient`, rewritten):** the nearest machine within 12 studs shows a floating glass diamond
+  (square turned 45 degrees, dark tinted glass, thin glowing Neon border, slow bob) that turns smoothly toward the
+  camera on BOTH axes. Its content (BodyFigure icon with the main muscle in red, the muscle name, the share in red) is a
+  SurfaceGui on an upright face that turns with the glass, clipped to a safe square inside the border, text shrinking to
+  fit (owner's bug: text spilled over the frame when the camera pitched). Name above and the prompt below are offset in
+  screen space (never over the diamond): a square dark-glass key ("E" / gamepad / tap) and "OCCUPY", or "UNLOCK · 45
+  COINS" when the next weight can be bought. Machine prompts are Custom style, 10 studs (MachineService). Glowing floor
+  outline around the footprint, brighter when you stand in it. 12-60 studs: only "!" + "NEW" on unused machines.
+  Hidden while you're on a machine. The old card and Roblox's wide "Use" panel are gone. Studio hook `TestSignCamera`
+  (a Vector3: the sign faces that point, for screenshots from any angle).
+- **Training tint is red** (255, 70, 70; the rep pulse lighter red), same softness / falloff (`MuscleRig` TINT).
+- **No Back / Front / Neck accessories** on anyone (`AccessoryService`, new): removed on spawn, outfit change, body
+  rebuild, for players, NPCs, legends, the statue. Hats, hair, face accessories stay.
+- **Bigger gyms (~1.5x floor):** starter 88 x 85 (ceiling 16), pro 68 x 85 (ceiling 18), shared wall x 44.5, both to
+  z -89. `Gyms.Map` spreads the old layout into the new rooms (wider walkways, more room between machines); Decor,
+  NPCs, Seasons and the Config spots (re-rack spots, legend spot, Coach Dex, leaderboard, arm wrestling table, pro door
+  outside spot) follow it. The town's gym fronts, roofs and boundary are rebuilt for the new size
+  (`Town.RebuildGymExterior`); terrain cleared / lowered under the floors (grass blades grew through), 9 lawn trees /
+  rocks removed. Leg Press / Hack Squat are now in the Gyms builder (were hand placed).
+- **Pro gym premium:** chrome free-weight racks, wood platforms, a mirror wall across the back, rubber floor with a
+  tile grid, linear LED lights + LED strips, warm spotlight pools, a smoothie bar corner by the glass door (counter,
+  back bar with a drinks fridge, blenders, three stools), hanging zone signs (FREE WEIGHTS, MACHINES, CARDIO, STRETCH,
+  SMOOTHIE BAR). `ProGymPolish` folded into the builder and deleted.
+- **Treadmills:** the one "near the pro gym door" that didn't work was the starter gym's first treadmill: decoration
+  only (no Machine tag, no prompt). All 3 starter treadmills are now real, the same premium model as the pro gym's.
+  The run is a real running cycle on its own clock (stride rate / size follow the belt speed, knees lift, arms swing
+  opposite, slight lean, bounce), not one stride per rep.
+- **"Plates pet":** read as the three plate trees standing in the walkway between the rack row and the platforms; the
+  plate trees now stand together in the starter gym's back-left corner (the kettlebells that stood there went). If you
+  meant something else (the gym cat is still on its bed by the front desk), tell me.
+- Checked in play: sign at every angle (below / above / side, the longest names), "!" only from the middle, red tint on
+  bench reps, accessories gone (your guitar), both gyms, the run; no errors in Output. Screenshots: sign_angle_{below,
+  above,side}, sign_diamond_*, gym_middle_only_bangs, training_tint_red_bench, accessories_hidden_back,
+  {starter,pro}_gym_bigger_wide, pro_gym_smoothie_corner, starter_gym_back_corner, treadmill_run_stride{,2}.
+- Tutorial text says "tap Occupy".
+
+## Before that (8 Oct, 10 PM): bigger skate park, grinding, smooth quarter pipes
+**Saved to Roblox (v302, 9:57 PM).**
 - **Bigger:** `Config/Town.SkatePark` 56 x 46 -> **84 x 64** (x -164..-80, z 174..238, same centre). New layout
   (`Town.luau` `buildSkatePark`, the old `SkateParkExtras` builder folded in and deleted): big quarter pipe (west), half
   pipe (back), quarter pipe (front east), fun box with a rail, two ledges with stripes, a kicker, a manual pad, a flat
@@ -316,4 +355,4 @@ end: a local file can't play-test (no DataStore: PlayerData errors at load, the 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
 `TestCoins`, `TestSpurts`, `TestMuscleShare` (0..6 x the goal, live; 2 = full look, 5 = mass monster), `TestMuscleIds` ("Biceps,Triceps", or with own shares "Abs=0.7,Lats=2"), `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D" or "C,B,A,S,S,D,VTaper": six grades in group order, optional frame, for the first roll / the
-next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots), `PoseDebug` (PoseController prints joints found/missing and playing tracks). Without FreshPlayer: `TestMuscleExp` (e.g. 2000000) = every muscle at that EXP on your own save, saving off for the session. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`. `TestSkateMove` (a Vector3, set on the client) stands in for the stick while skating (scripted ride / grind tests; the MCP play session has no control scripts).
+next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots), `PoseDebug` (PoseController prints joints found/missing and playing tracks). Without FreshPlayer: `TestMuscleExp` (e.g. 2000000) = every muscle at that EXP on your own save, saving off for the session. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`. `TestSkateMove` (a Vector3, set on the client) stands in for the stick while skating (scripted ride / grind tests; the MCP play session has no control scripts). `TestSignCamera` (a Vector3, client) = the point the machine sign faces (angle screenshots).

@@ -1,13 +1,13 @@
 -- The town around the gyms (built in Studio with tools/builders/Town.luau; this is its layout). y = 0 is the ground,
--- +Z is north toward the sea. The gyms sit south of Main Street (starter gym x -37..37 with its entrance hall out to
--- z = 13.5, pro gym x 37..94). North of Main Street two avenues lead up to Beach Road; between them the open plaza and
+-- +Z is north toward the sea. The gyms sit south of Main Street (starter gym x -45..45 with its entrance hall out to
+-- z = 13.5, pro gym x 45..114, both back to z -90: tools/builders/Gyms). North of Main Street two avenues lead up to Beach Road; between them the open plaza and
 -- the park, west of them the smoothie bar, shops, a side street and the parking lot, east of them Gear & Fits, shops, a
 -- side street, the sports court and more buildings. North of Beach Road the beach: skate park (west), the beach gym
 -- (middle), the posing stage and the volleyball court (east), then the sea. Studs.
 local Town = {}
 
 -- Everything walkable (invisible walls stop players leaving).
-Town.Bounds = { MinX = -176, MaxX = 200, MinZ = -80, MaxZ = 262 }
+Town.Bounds = { MinX = -176, MaxX = 200, MinZ = -98, MaxZ = 262 } -- (MinZ -80 -> -98: the bigger gyms, 8 Oct night)
 
 -- Outdoor area where skating is allowed (north of the gym fronts; buildings excluded, see IsOutdoors).
 Town.SkateArea = { MinX = -174, MaxX = 198, MinZ = -2, MaxZ = 258 }
@@ -24,7 +24,7 @@ Town.SideSidewalk = 4                                                           
 Town.Crosswalks = { -44, 0, 44, 120 }                                            -- x of each Main Street crosswalk
 Town.BeachRoadCrosswalks = { -122, -44, 0, 44, 112 }
 
-Town.Forecourt = { MinX = -40, MaxX = 96, MinZ = -3, MaxZ = 18 }                -- paving in front of both gyms
+Town.Forecourt = { MinX = -48, MaxX = 117, MinZ = -3, MaxZ = 18 }               -- paving in front of both gyms
 Town.Hall = { Center = Vector3.new(0, 0, 5), Size = Vector3.new(22, 14, 17) }  -- the gym's entrance hall
 Town.EntranceDoor = Vector3.new(0, 0, 12.9)                                     -- the glass doors that slide open
 Town.Plaza = { MinX = -34, MaxX = 34, MinZ = 50, MaxZ = 92 }                    -- open paved square
@@ -50,8 +50,8 @@ Town.Sea = { MinZ = 262, MaxZ = 5000 }                                          
 Town.Lawns = {
 	{ MinX = -176, MaxX = -154, MinZ = 94, MaxZ = 143, bumps = 4, trees = 5, flowers = 4, rocks = 2 },
 	{ MinX = 114, MaxX = 200, MinZ = 116, MaxZ = 143, bumps = 6, trees = 8, flowers = 6, rocks = 3 },
-	{ MinX = -176, MaxX = -42, MinZ = -76, MaxZ = -2, bumps = 8, trees = 18, flowers = 8, rocks = 4 },
-	{ MinX = 98, MaxX = 200, MinZ = -76, MaxZ = -2, bumps = 8, trees = 15, flowers = 7, rocks = 4 },
+	{ MinX = -176, MaxX = -50, MinZ = -94, MaxZ = -2, bumps = 8, trees = 18, flowers = 8, rocks = 4 }, -- (beside the bigger gyms)
+	{ MinX = 121, MaxX = 200, MinZ = -94, MaxZ = -2, bumps = 8, trees = 15, flowers = 7, rocks = 4 },
 }
 
 -- Is a position outdoors in the hub (not inside a building)?

@@ -1,10 +1,13 @@
 -- Decor builder (run once in Studio; see tools/bake.md): extra decorations, each area's in its own "Decor" folder so it can
 -- be deleted in one go. Simple parts, no logos or brands, nothing gameplay uses (no prompts, no collisions on small props).
 --   StarterGym.Decor: lockers by the door, a whiteboard with a workout plan, a sign-in clipboard on the front desk
---   ProGym.Decor:     two wall TVs with simple gym graphics, a smoothie counter, a wood lifting platform with a bar
+--   ProGym.Decor:     two wall TVs with simple gym graphics, a wood lifting platform with a bar (the smoothie bar corner is
+--                     built by Gyms)
 --   Town.Plaza.Decor: a fountain on the plaza's compass rings
 -- Needs Kit next to it. Running it again replaces what it built.
 local Kit = require(script.Parent.Kit)
+local Gyms = require(script.Parent.Gyms) -- (spots are written in the first rooms' coordinates; Gyms.Map spreads them into the bigger gyms)
+local function spot(x, y, z) return Gyms.Map(Vector3.new(x, y, z)) end
 
 local Decor = {}
 
@@ -72,7 +75,7 @@ function Decor.Starter(gym)
 	local decor = folder(gym)
 	-- a rolling whiteboard with a workout plan (free floor left of the centre aisle, facing the aisle); on legs with wheels
 	local board = model(decor, "Whiteboard")
-	local stand = CFrame.lookAt(Vector3.new(-9, 0, -18), Vector3.new(0, 0, -18))
+	local stand = CFrame.lookAt(spot(-9, 0, -18), spot(0, 0, -18))
 	local at = stand * CFrame.new(0, 4.6, 0)
 	for _, x in ipairs({ -2.3, 2.3 }) do
 		prop(board, "Leg", Vector3.new(0.12, 4.4, 0.12), stand * CFrame.new(x, 2.4, 0), hex("#B9BCC2"), M.Metal)
@@ -90,7 +93,7 @@ function Decor.Starter(gym)
 	end
 	-- lockers by the door (front wall, left of the door): three tall lockers with vents, handles and number plates
 	local lockers = model(decor, "Lockers")
-	local base = CFrame.lookAt(Vector3.new(-11, 0, -4.7), Vector3.new(-11, 0, -10))
+	local base = CFrame.lookAt(spot(-11, 0, -4.7), spot(-11, 0, -10))
 	prop(lockers, "Plinth", Vector3.new(2.7, 0.3, 1.1), base * CFrame.new(0, 0.15, 0), hex("#1E1E22"), M.Metal)
 	for i = -1, 1 do
 		local x = i * 0.88
@@ -105,7 +108,7 @@ function Decor.Starter(gym)
 	prop(lockers, "Top", Vector3.new(2.75, 0.12, 1.1), base * CFrame.new(0, 5.75, 0), hex("#2B3F52"), M.Metal)
 	-- sign-in clipboard on the front desk, with a pen
 	local clip = model(decor, "SignIn")
-	local deskTop = CFrame.new(18.2, 5.08, -10.6) * CFrame.Angles(0, math.rad(12), 0)
+	local deskTop = CFrame.new(spot(18.2, 5.08, -10.6)) * CFrame.Angles(0, math.rad(12), 0)
 	prop(clip, "Clipboard", Vector3.new(0.9, 0.04, 1.2), deskTop, hex("#8A6A45"), M.Wood)
 	local paper = prop(clip, "Paper", Vector3.new(0.78, 0.01, 1.0), deskTop * CFrame.new(0, 0.025, 0.05), hex("#FAFAF7"), M.SmoothPlastic)
 	paper.CFrame = paper.CFrame * CFrame.Angles(math.rad(-90), 0, 0) -- (text on the top face)
@@ -161,27 +164,11 @@ end
 function Decor.Pro(gym)
 	local decor = folder(gym)
 	-- two TVs on the east wall, facing into the room (-X)
-	tv(decor, Vector3.new(92.75, 8, -52), Vector3.new(80, 8, -52), "LEG DAY")
-	tv(decor, Vector3.new(92.75, 8, -24), Vector3.new(80, 8, -24), "PUSH  PULL  LEGS")
-	-- smoothie counter by the front wall: a wood-fronted counter with a stone top, two blenders, cups and a menu board
-	local bar = model(decor, "SmoothieCounter")
-	local base = CFrame.lookAt(Vector3.new(78.5, 0, -5.3), Vector3.new(78.5, 0, -10))
-	prop(bar, "Body", Vector3.new(5, 3.2, 1.3), base * CFrame.new(0, 1.6, 0), hex("#2A2B2E"), M.SmoothPlastic)
-	for i = -2, 2 do prop(bar, "Slat", Vector3.new(0.8, 2.8, 0.06), base * CFrame.new(i * 0.95, 1.6, -0.68), hex("#7A5236"), M.Wood) end
-	prop(bar, "Top", Vector3.new(5.3, 0.16, 1.5), base * CFrame.new(0, 3.28, 0), hex("#D9D6CF"), M.Marble)
-	prop(bar, "Kick", Vector3.new(5, 0.25, 1.2), base * CFrame.new(0, 0.12, 0.05), hex("#141416"), M.Rubber)
-	for _, x in ipairs({ -1.6, -0.6 }) do
-		prop(bar, "BlenderBase", Vector3.new(0.45, 0.35, 0.45), base * CFrame.new(x, 3.53, 0.2), hex("#1E1E22"), M.SmoothPlastic)
-		prop(bar, "BlenderJar", Vector3.new(0.7, 0.4, 0.4), base * CFrame.new(x, 4.05, 0.2) * CFrame.Angles(0, 0, math.rad(90)), hex("#BFD6DF"), M.Glass, Enum.PartType.Cylinder).Transparency = 0.35
-	end
-	for i, color in ipairs({ "#E86FA3", "#F2C14E", "#7CC6A5" }) do
-		prop(bar, "Cup", Vector3.new(0.45, 0.24, 0.24), base * CFrame.new(0.6 + i * 0.45, 3.58, -0.2) * CFrame.Angles(0, 0, math.rad(90)), hex(color), M.SmoothPlastic, Enum.PartType.Cylinder)
-	end
-	local menu = prop(bar, "Menu", Vector3.new(3.2, 1.6, 0.08), CFrame.lookAt(Vector3.new(78.5, 6.6, -4.08), Vector3.new(78.5, 6.6, -10)), hex("#1E1E22"), M.SmoothPlastic)
-	writing(menu, { "SMOOTHIES", "Berry blast", "Mango sunrise", "Green power" }, hex("#F4F4F2"), Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold), 60)
+	tv(decor, spot(92.75, 9, -52), spot(80, 9, -52), "LEG DAY")
+	tv(decor, spot(92.75, 9, -24), spot(80, 9, -24), "PUSH  PULL  LEGS")
 	-- a wood lifting platform (wood centre, black rubber sides, steel edge) with a loaded bar resting on it
 	local platform = model(decor, "Platform")
-	local mid = CFrame.new(60, 0.15, -28)
+	local mid = CFrame.new(spot(60, 0.15, -28))
 	prop(platform, "Rubber", Vector3.new(8, 0.1, 6), mid * CFrame.new(0, 0.05, 0), hex("#1A1A1C"), M.Rubber)
 	prop(platform, "Wood", Vector3.new(3.4, 0.11, 5.9), mid * CFrame.new(0, 0.055, 0), hex("#B98A52"), M.Wood)
 	for _, z in ipairs({ -3.02, 3.02 }) do prop(platform, "Trim", Vector3.new(8.04, 0.12, 0.05), mid * CFrame.new(0, 0.06, z), hex("#8E9096"), M.Metal) end

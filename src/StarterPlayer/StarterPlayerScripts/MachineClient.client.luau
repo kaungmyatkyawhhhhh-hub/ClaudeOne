@@ -949,18 +949,40 @@ task.spawn(function()
 	end)
 end)
 
--- Treadmill run: one stride per rep (d 0 -> 1 -> 0), legs and arms swinging in opposite pairs, a small bounce. The body
--- stays on the belt (only the joints move; the root bobs up and down).
-POSE_ANIMS.Run = function(character, d, jitter)
-	local s = d * 2 - 1 -- -1 .. 1: which leg is forward
-	setJoint(character, "Root", CFrame.new(0, 0.12 * math.abs(s), 0) * Angles(-rad(6), 0, 0))
+-- Treadmill run (owner, 8 Oct night): a real running cycle on its own clock (not one stride per rep). The stride rate and
+-- the size of the motion follow the belt's speed (the machine's tier: 2 mph is a brisk walk, 13 a sprint). Legs swing in
+-- opposite pairs: the leg swinging forward bends and lifts its knee (most in mid-swing), the landing / pushing leg stays
+-- nearly straight; arms swing opposite to the legs with bent elbows; a slight forward lean; the chest counter-twists a
+-- little; the body dips on each landing and rises between steps. The feet stay on the belt (only the joints move).
+bars.runClock = setmetatable({}, { __mode = "k" }) -- [character] = { phase 0..1, last os.clock() }
+POSE_ANIMS.Run = function(character, d, jitter, model)
+	local tier = model and Machines.ById.Treadmill.tiers[model:GetAttribute("Tier") or 1]
+	local mph = if tier then tier.weight else 5
+	local pace = math.clamp((mph - 2) / 11, 0, 1) -- 0 = walk .. 1 = sprint
+	local clock = bars.runClock[character]
+	local now = os.clock()
+	if not clock then
+		clock = { phase = 0, last = now }
+		bars.runClock[character] = clock
+	end
+	clock.phase = (clock.phase + math.min(now - clock.last, 0.1) * (0.85 + 0.75 * pace)) % 1 -- strides per second
+	clock.last = now
+	local t = clock.phase * 2 * math.pi
+	local lean = rad(4 + 9 * pace)
+	local bounce = 0.03 + 0.1 * pace
+	-- lowest just after each landing (a foot lands when its thigh is furthest forward), highest between steps
+	setJoint(character, "Root", CFrame.new(0, bounce * (1 - math.abs(math.cos(t - 0.35))), 0) * Angles(-lean, 0, 0))
+	setJoint(character, "Waist", Angles(0, rad(6) * math.sin(t) * (0.5 + pace), 0))
 	for _, side in ipairs(SIDES) do
-		local swing = s * side[2]
-		setJoint(character, side[1] .. "Hip", Angles(rad(38) * swing + rad(10), 0, 0))
-		setJoint(character, side[1] .. "Knee", Angles(-rad(20 + 45 * math.max(-swing, 0)), 0, 0))
-		setJoint(character, side[1] .. "Ankle", Angles(rad(10) * swing, 0, 0))
-		setJoint(character, side[1] .. "Shoulder", Angles(-rad(35) * swing + jitter, 0, -side[2] * rad(6)))
-		setJoint(character, side[1] .. "Elbow", Angles(rad(85), 0, 0))
+		local s = side[2] -- the two legs are half a stride apart
+		local swing = math.sin(t) * s -- +1 = thigh forward
+		local forward = math.max(0, math.cos(t) * s) -- this leg is swinging forward (recovery)
+		local stance = math.max(0, -math.cos(t) * s) -- this leg is on the belt, pushing back
+		setJoint(character, side[1] .. "Hip", Angles(rad(22 + 26 * pace) * swing + lean * 0.6 + rad(10) * forward, 0, 0))
+		setJoint(character, side[1] .. "Knee", Angles(-(rad(10) + rad(35 + 70 * pace) * forward ^ 1.4 + rad(10) * stance), 0, 0))
+		setJoint(character, side[1] .. "Ankle", Angles(rad(14) * forward - rad(8) * stance, 0, 0))
+		setJoint(character, side[1] .. "Shoulder", Angles(-rad(20 + 30 * pace) * swing + jitter, 0, -s * rad(6)))
+		setJoint(character, side[1] .. "Elbow", Angles(rad(70 + 20 * pace), 0, 0))
 	end
 end
 

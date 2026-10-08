@@ -118,24 +118,27 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - Setting "Gain numbers: On / Minimal / Off" in Settings: On = rep + set popups, Minimal = set popups only,
   Off = no gain popups (the chime, chalk and HUD flash stay). Default On, saved per player.
 - Training tint (owner, 8 Oct; replaces the warm rep flash on the body): the whole time someone is on a machine, every
-  muscle it trains is tinted cool light blue (main ~55%, secondaries ~30%), soft edges, shading kept, both sides of the
-  body; fades in 0.25 s / out 0.4 s. Each rep a quick ~0.2 s brighter pulse on top (BIG REP / PUMPED stronger). Muscles
-  under the gym shorts keep the shorts. Same on the forearm / calf stages, NPCs on machines (their body parts) and the
-  mirror. Blue = training, red = Stats hover (hover wins). (The body-map widget still flashes warm.) Setting "Rep flash:
-  On / Off" turns the rep pulse off.
+  muscle it trains is tinted RED, about RGB 255, 70, 70 (owner, 8 Oct night; was cool blue) (main ~55%, secondaries
+  ~30%), soft edges, shading kept, both sides of the body; fades in 0.25 s / out 0.4 s. Each rep a quick ~0.2 s brighter
+  (lighter red) pulse on top (BIG REP / PUMPED stronger). Muscles under the gym shorts keep the shorts. Same on the
+  forearm / calf stages, NPCs on machines (their body parts) and the mirror. Stats hover is red too and wins while both.
+  (The body-map widget still flashes warm.) Setting "Rep flash: On / Off" turns the rep pulse off.
 - EXP popups (owner, 8 Oct): every rep a small popup per trained muscle around you: the muscle group's color chip
   (`Config/HudIcons.MuscleGroups`) + its real EXP ("+112", "+1.2K"); main bigger and warm red-orange, secondaries smaller
   and green, PUMPED / BIG REP gold; pop in with a bounce, drift up and out at random angles, fade over 0.8 s; at most 8 at
   once (the oldest go). Client only. Setting "Show EXP popups" On / Off (default On; Off = the old single "+N").
-- Machine card (owner's redesign, 8 Oct, `MachineSignsClient`; replaces the glowing diamond): only the NEAREST machine
-  within 10 studs shows a small flat card just above it (about 2.4 x 1.2 studs, solid charcoal 25,25,28, rounded, a 2px
-  stripe on the left in the main muscle's group color, no glow): one flat muscle shape in that color, the machine name
-  (Oswald, white, uppercase) and the main muscle (Nunito, light gray). No percentages, no secondaries (the machine HUD
-  shows the full split, "Mid Chest 53% · Front Delts 26% · Triceps 21%", after you sit down). Locked: a lock + "Growth
-  Spurt N". It faces the camera and keeps its world size, but never draws under 46 px tall (text >= 14 px) or over 1/6 of
-  the screen; it widens so the name never gets cut. Hidden on your own machine and while the camera is within 4 studs.
-  Machines you never did a rep on show a small bouncing yellow "!" (world-sized: smaller far away) with a "NEW" tag when
-  near, up to 60 studs (`machinesUsed` in the save). 0.2 s fades. One invisible anchor part per machine.
+- Machine sign + prompt (owner, 8 Oct night, `MachineSignsClient`; replaces the flat card and Roblox's wide "Use" panel):
+  only the NEAREST machine within 12 studs shows a floating glass diamond above it: a square slab turned 45 degrees, dark
+  tinted glass (~0.3 transparent) with a thin glowing white Neon border, a slow gentle bob, turning smoothly toward the
+  camera (a 3D object). Above it the machine name (big bold white Oswald, dark stroke). Inside: our own white body icon
+  (`Shared/UI/BodyFigure`) with the main muscle in red, the main muscle's name in bold white and its share in red ("53%").
+  Main muscle only (the machine HUD shows the full split after you sit down). Below it the prompt: a small square
+  dark-glass key ("E" on PC, the gamepad button, a tap button on touch) and "OCCUPY" under it ("UNLOCK · 45 COINS" when
+  your next weight can be bought); the machines' ProximityPrompts use the Custom style, 10 studs. A glowing white
+  rectangle (thin Neon strips, 0.05 high) on the floor around the machine's footprint, brighter while you stand inside it.
+  Locked machines: a lock + "Growth Spurt N". Hidden while you're on a machine; the diamond also while the camera is
+  within 4 studs. From 12 to 60 studs only the bouncing yellow "!" + "NEW" for machines you never did a rep on
+  (`machinesUsed` in the save); nothing beyond. 0.2 s fades. One set of sign parts moved to the nearest machine.
 - Machine look (owner, for map work): worn dark metal (DiamondPlate / Metal, darker, slightly rust-tinted), very dark
   padded seats (Fabric or SmoothPlastic), chunky realistic frames, no brand names (the plates' own "M WEIGHTS" stays).
 - Muscle highlight (hovering a stat label): the muscles turn red (a tint on the normal material, no neon glow), only
@@ -181,7 +184,7 @@ gains per rep = machine weight tier × genetics grade × frame/body bonus × Gro
 ## 4. Stamina
 Each rep uses stamina. Refills fast on its own; faster at recovery stations (stretch mat, foam roller, sauna);
 instantly with an Energy Shake. Petting the gym cat = tiny refill.
-Treadmills train stamina (owner, 8 Oct): running gives no muscle EXP; the distance run raises max stamina.
+Treadmills train stamina (owner, 8 Oct): running gives no muscle EXP; the distance run raises max stamina. All treadmills are the premium model (3 in the starter gym, 4 in the pro gym); the runner does a real running cycle on its own clock, its stride rate and size following the belt speed (owner, 8 Oct night).
 
 ## 5. Energy Shakes
 Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. Flavors are cosmetic only.
@@ -294,7 +297,7 @@ wall leaderboards per muscle group (crown for #1), membership card (Bronze→Dia
 shareable before/after snapshot.
 
 ## Bodies and muscles (v4)
-- Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all except the shoulder width from the genetics Frame (Narrow 0.9x, Average 1x, Wide 1.1x, V-Taper 1.2x: UpperTorso width + arms moved out, the muscle meshes taper back to the normal waist so it reads as a V). Head, face, hair, accessories, skin color and animations stay theirs.
+- Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all except the shoulder width from the genetics Frame (Narrow 0.9x, Average 1x, Wide 1.1x, V-Taper 1.2x: UpperTorso width + arms moved out, the muscle meshes taper back to the normal waist so it reads as a V). Head, face, hair, hats, face accessories, skin color and animations stay theirs. Nobody wears Back, Front or Neck accessories (owner, 8 Oct night: capes, backpacks, guitars, scarves hide the muscles): `AccessoryService` removes them from every player, NPC, legend and the statue on spawn, outfit change and body rebuild.
 - Golden ratio proportions (muscle_v8 manifest "proportions"): torso (neck base -> navel) : legs (navel -> ankle) =
   1 : 1.618 at the same total height. Everything from the ankle to the navel is x1.08 taller, from the navel to the neck
   base x0.893; feet, head and arm length stay (they ride on the joints). Applied to every Robloxian rig on top of the
@@ -347,18 +350,19 @@ shareable before/after snapshot.
 ## 14. Visuals and feel
 Pump effect (trained muscle temporarily bigger), body part scaling per group, veins/abs/delt detail at high levels,
 trendy gym fits, skateboard, area music, satisfying weight sounds. Gym cat, NPC gym-goers, re-racking plates.
-Pro gym lighting: dark walls/floor, Future lighting, spotlight pools over machines, neon LED strips, light bloom/haze.
+Pro gym (looks clearly better than the starter gym, realistic, not cluttered): darker premium interior, charcoal rubber floor with a tile grid, chrome free-weight racks on wood lifting platforms, a mirror wall across the back, linear LED ceiling lights and LED strips, spotlight pools over the machines, a smoothie bar corner (counter, back bar with a drinks fridge, stools) by the glass door, clean hanging zone signs (FREE WEIGHTS, MACHINES, CARDIO, STRETCH, SMOOTHIE BAR), Future lighting, light bloom/haze.
 Starter gym: warm, old-school, brick walls.
 
 ## Starter gym layout (built)
-- Size: 56 x 44 studs, ceiling 13 (low, dark, exposed pipes/ducts/beams). Door in the middle of the front wall.
+- Size (8 Oct night, ~1.5x the floor area): starter 88 x 85 studs (x -44..44, z -89..-4), ceiling 16 (dark, exposed pipes/ducts/beams); pro gym 68 x 85 (x 45..113), ceiling 18; the shared glass wall at x 44.5. The layout keeps its zones; `Gyms.Map` spreads every spot (wider walkways, more room between machines). Door in the middle of the front wall.
 - Floor: black rubber tiles everywhere; lifting platforms (wood center, rubber sides) under the squat rack,
   deadlift and barbell row.
 - Zones, with a clear center aisle from the door to the bench row:
   - Entrance: front desk (right of the door) with towels, shake machine (left of the door), water fountain,
     Muscle of the Day chalkboard next to the desk, cat bed for the gym cat by the desk.
   - Rack area along the left wall, lifters facing into the room: Squat Rack, Overhead Press, Deadlift,
-    Barbell Row. Wall plate racks between them, chalk bowl in front.
+    Barbell Row. Wall plate racks between them, chalk bowl in front. The plate trees stand together in the back-left
+    corner (owner, 8 Oct night: out of the walkway between the racks and the platforms).
   - Bench row facing the full mirror wall (back wall): Flat Bench, Incline Bench, Crunch Bench.
     Neon "GYM ARC" sign above the mirror.
   - Pull-up/dip corner (back right): Pull-Up Bar + dip station.

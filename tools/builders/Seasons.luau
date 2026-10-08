@@ -1,6 +1,8 @@
 -- Seasons builder (run once in Studio; see tools/bake.md): the seasonal decorations, stored as templates in
 -- ServerStorage.SeasonDecor.<season id> (Halloween, Winter with the Sled Pull machine, Summer). SeasonService clones the
 -- running season's folder into the gym (and tags the sled as a machine), so nothing shows outside its season.
+local Gyms = require(script.Parent.Gyms)
+
 local Builder = {}
 
 local function part(parent, props)
@@ -67,7 +69,7 @@ DECOR.Summer = {
 	end,
 }
 
-local SLED_PIVOT = CFrame.new(-12, 0.1, -32) -- open floor between the rack area and the free-weight zone, facing +Z
+local SLED_PIVOT = CFrame.new(Gyms.Map(Vector3.new(-12, 0.1, -32))) -- open floor between the rack area and the free-weight zone, facing +Z
 local function buildSled(parent)
 	local model = Instance.new("Model")
 	model.Name = "SledPull"
@@ -100,7 +102,7 @@ function Builder.Build(_, ServerStorage)
 		local folder = Instance.new("Folder")
 		folder.Name = seasonId
 		for _, spot in ipairs(spec.spots) do
-			spec.build(folder, Vector3.new(spot[1], spot[2], spot[3]))
+			spec.build(folder, Gyms.Map(Vector3.new(spot[1], spot[2], spot[3]))) -- (the first layout's spots, spread into the bigger gym)
 		end
 		if seasonId == "Winter" then buildSled(folder) end
 		folder.Parent = root

@@ -9,7 +9,7 @@ Legends.Visit = {
 	FirstVisitSeconds = 120,   -- after a server starts (30 in Studio, for testing)
 	-- Left of the entrance aisle (between the shake machine and the Barbell Row), facing the aisle: seen from the door
 	-- and away from every machine (in front of the bench row he stood inside the Flat Bench camera).
-	Spot = Vector3.new(-10, 0.1, -12),
+	Spot = Vector3.new(-12.2, 0.1, -13.8), -- (in the bigger starter gym, 8 Oct night)
 	Facing = Vector3.new(1, 0, 0),
 }
 

@@ -13,6 +13,7 @@ local Workspace = game:GetService("Workspace")
 local Kit = require(script.Parent.Kit)
 local TownKit = require(script.Parent.TownKit)
 local GymKit = require(script.Parent.GymKit)
+local Gyms = require(script.Parent.Gyms) -- (the gyms' size: the gym fronts, parapets and roofs follow it)
 local Town = require(ReplicatedStorage.Shared.Config.Town)
 local Stamina = require(ReplicatedStorage.Shared.Config.Stamina)
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
@@ -414,7 +415,9 @@ local function buildGymFront()
 	glow.Color, glow.Brightness, glow.Range, glow.Shadows = C.Red, 1.2, 10, false
 	glow.Parent = board
 	-- rooftop sign over the main gym, facing the street
-	local roof = look(Vector3.new(-20, 17, -3.6), Vector3.new(-20, 17, 40))
+	local G, S, P = Gyms.Map, Gyms.Starter, Gyms.Pro
+	local roofX = G(Vector3.new(-20, 0, 0)).X
+	local roof = look(Vector3.new(roofX, S.Height + 4, -3.6), Vector3.new(roofX, S.Height + 4, 40))
 	for _, x in ipairs({ -5, 5 }) do p(front, "RoofSignLeg", Vector3.new(0.3, 3.4, 0.3), roof * CFrame.new(x, -1.6, 0.4), hex("#1C1C1E"), M.Metal) end
 	p(front, "RoofSignBack", Vector3.new(13, 3.2, 0.4), roof * CFrame.new(0, 1.2, 0.2), hex("#1C1C1E"), M.Metal)
 	local rb, rl = Kit.sign(front, "RoofSign", Vector3.new(12.4, 2.6, 0.1), roof * CFrame.new(0, 1.2, -0.05), "GYM ARC", C.White, hex("#1C1C1E"), 40)
@@ -424,7 +427,8 @@ local function buildGymFront()
 	rg.Color, rg.Brightness, rg.Range, rg.Shadows = hex("#FFF2DD"), 0.8, 8, false
 	rg.Parent = rb
 	-- the PRO sign on the pro gym front (LED letters on dark glass)
-	local pro = look(Vector3.new(66, 12.6, -2.8), Vector3.new(66, 12.6, 40))
+	local proX = G(Vector3.new(66, 0, 0)).X
+	local pro = look(Vector3.new(proX, P.Height - 3.5, -2.8), Vector3.new(proX, P.Height - 3.5, 40))
 	local pb, pl = Kit.sign(front, "ProSign", Vector3.new(16, 2.4, 0.1), pro, "GYM ARC PRO", C.Chalk, hex("#121418"), 40)
 	pl.FontFace = Theme.Fonts.SemiBold
 	local pg = Instance.new("SurfaceLight")
@@ -439,22 +443,23 @@ local function buildGymFront()
 		p(front, "Parapet", Vector3.new(0.8, 1.2, z0 - z1), CFrame.new(x1, y + 0.6, (z0 + z1) / 2), color, M.Concrete, true)
 		p(front, "Coping", Vector3.new(x1 - x0 + 1.4, 0.2, 1.1), CFrame.new((x0 + x1) / 2, y + 1.3, z0), hex("#CFC6B6"), M.Concrete)
 	end
-	parapet(-37.5, -2.9, 37, -74.6, 14, hex("#8C4A3A"))
+	parapet(S.MinX - 1.5, -2.9, S.MaxX + 1, S.MinZ - 1.1, S.Height + 1, hex("#8C4A3A"))
 	parapet(-11, 14.1, 11, -2.9, 14, hex("#8C4A3A"))
-	parapet(37, -2.9, 94.5, -74.6, 15, hex("#16171A"))
-	for _, x in ipairs({ -36.5, -11.5, 11.5, 36.2 }) do
-		cyl(front, "Drainpipe", 14, 0.4, CFrame.new(x, 7, -2.6) * up, hex("#3A3A3D"), M.Metal)
+	parapet(Gyms.SharedX + 0.5, -2.9, P.MaxX + 1.5, P.MinZ - 1.1, P.Height + 1, hex("#16171A"))
+	for _, x in ipairs({ S.MinX - 0.5, -11.5, 11.5, S.MaxX - 0.3 }) do
+		cyl(front, "Drainpipe", S.Height + 1, 0.4, CFrame.new(x, (S.Height + 1) / 2, -2.6) * up, hex("#3A3A3D"), M.Metal)
 		p(front, "Shoe", Vector3.new(0.6, 0.3, 0.8), CFrame.new(x, 0.35, -2.4), hex("#3A3A3D"), M.Metal)
 	end
-	for _, x in ipairs({ -25, -13, 13, 25, 46, 58, 70, 82, 90 }) do
-		local lampCF = CFrame.new(x, 9.6, -2.75)
+	for _, designX in ipairs({ -25, -13, 13, 25, 46, 58, 70, 82, 90 }) do
+		local x = G(Vector3.new(designX, 0, 0)).X
+		local lampCF = CFrame.new(x, if x > Gyms.SharedX then P.Height - 5.5 else 9.6, -2.75)
 		p(front, "WallLightArm", Vector3.new(0.12, 0.12, 0.6), lampCF, hex("#1C1C1E"), M.Metal)
-		local shade = p(front, "WallLight", Vector3.new(0.7, 0.4, 0.5), lampCF * CFrame.new(0, -0.15, 0.3), x > 37 and C.Chalk or C.Warm, M.Neon)
+		local shade = p(front, "WallLight", Vector3.new(0.7, 0.4, 0.5), lampCF * CFrame.new(0, -0.15, 0.3), x > Gyms.SharedX and C.Chalk or C.Warm, M.Neon)
 		local light = Instance.new("SpotLight")
 		light.Face = Enum.NormalId.Bottom
-		light.Color, light.Brightness, light.Range, light.Angle, light.Shadows = x > 37 and hex("#DCE6FF") or C.Warm, 1, 12, 80, false
+		light.Color, light.Brightness, light.Range, light.Angle, light.Shadows = x > Gyms.SharedX and hex("#DCE6FF") or C.Warm, 1, 12, 80, false
 		light.Parent = shade
-		TownKit.nightLight(shade, x > 37 and C.Chalk or C.Warm)
+		TownKit.nightLight(shade, x > Gyms.SharedX and C.Chalk or C.Warm)
 	end
 	-- planters by the entrance, a bike rack with a couple of bikes, benches, trees in planters along the front
 	for _, x in ipairs({ -8, 8 }) do TownKit.planter(front, CFrame.new(x, 0.2, 16.5), 3, 3, "bush") end
@@ -463,12 +468,13 @@ local function buildGymFront()
 	TownKit.bike(front, CFrame.new(-17.6, 0.2, 10.2) * CFrame.Angles(0, rad(90), 0), hex("#B5654A"))
 	TownKit.bench(front, look(Vector3.new(-28, 0.2, 8), Vector3.new(-28, 0, -20)))
 	TownKit.bench(front, look(Vector3.new(24, 0.2, 8), Vector3.new(24, 0, -20)))
-	for _, x in ipairs({ -32, -4 - 20, 18, 30, 44, 58, 72, 86 }) do
+	for _, designX in ipairs({ -32, -4 - 20, 18, 30, 44, 58, 72, 86 }) do
+		local x = math.floor(G(Vector3.new(designX, 0, 0)).X + 0.5)
 		if math.abs(x) > 14 then
 			TownKit.planter(front, CFrame.new(x, 0.2, 2.6), 3.2, 3.2, x % 2 == 0 and "flowers" or "bush")
 		end
 	end
-	for _, x in ipairs({ 50, 64, 78, 92 }) do TownKit.cypress(front, Vector3.new(x, 0.2, 12), 1.1) end
+	for _, designX in ipairs({ 50, 64, 78, 92 }) do TownKit.cypress(front, Vector3.new(G(Vector3.new(designX, 0, 0)).X, 0.2, 12), 1.1) end
 	TownKit.bin(front, CFrame.new(-12, 0.2, 17.5))
 	TownKit.bin(front, CFrame.new(12, 0.2, 17.5))
 	TownKit.hydrant(front, CFrame.new(40, 0.35, 19))
@@ -482,8 +488,14 @@ local function buildGymRoofs()
 	local function seams(x0, x1, z0, z1, y, color)
 		for x = x0 + 6, x1 - 1, 6 do p(roof, "RoofSeam", Vector3.new(0.12, 0.05, z1 - z0), CFrame.new(x, y + 0.02, (z0 + z1) / 2), color) end
 	end
-	seams(-37, 37, -74, -3, 14, hex("#55524D"))
-	seams(37, 94, -74, -3, 15, hex("#26272A"))
+	local S, P = Gyms.Starter, Gyms.Pro
+	-- a roof point from the first layout's coordinates (Gyms.Map), on top of whichever gym it is over
+	local function onRoof(x, z, lift)
+		local at = Gyms.Map(Vector3.new(x, 0, z))
+		return CFrame.new(at.X, (if at.X > Gyms.SharedX then P.Height else S.Height) + 1 + (lift or 0), at.Z)
+	end
+	seams(S.MinX - 1, S.MaxX + 1, S.MinZ - 1, -3, S.Height + 1, hex("#55524D"))
+	seams(Gyms.SharedX + 0.5, P.MaxX + 1, P.MinZ - 1, -3, P.Height + 1, hex("#26272A"))
 	local function acUnit(cf)
 		p(roof, "AcUnit", Vector3.new(4, 2.4, 3), cf * CFrame.new(0, 1.2, 0), hex("#C9C6BF"), M.Metal, true)
 		cyl(roof, "AcFan", 0.1, 2.2, cf * CFrame.new(-0.8, 2.45, 0) * up, hex("#4A4C50"), M.DiamondPlate)
@@ -491,31 +503,32 @@ local function buildGymRoofs()
 		p(roof, "AcGrille", Vector3.new(3.8, 1.6, 0.05), cf * CFrame.new(0, 1.1, -1.52), hex("#9E9B94"), M.DiamondPlate)
 		p(roof, "AcPipe", Vector3.new(0.3, 0.3, 3), cf * CFrame.new(1.6, 0.3, 3), C.Iron, M.Metal)
 	end
-	for _, spot in ipairs({ { -28, 14, -60 }, { -28, 14, -48 }, { 26, 14, -66 }, { 84, 15, -60 }, { 84, 15, -48 } }) do
-		acUnit(CFrame.new(spot[1], spot[2], spot[3]))
+	for _, spot in ipairs({ { -28, -60 }, { -28, -48 }, { 26, -66 }, { 84, -60 }, { 84, -48 } }) do
+		acUnit(onRoof(spot[1], spot[2]))
 	end
 	-- skylights over the starter gym (glass hipped boxes with frames)
 	for _, spot in ipairs({ { -8, -24 }, { 10, -24 }, { -8, -44 }, { 10, -44 } }) do
-		local cf = CFrame.new(spot[1], 14, spot[2])
+		local cf = onRoof(spot[1], spot[2])
 		p(roof, "SkylightCurb", Vector3.new(8.4, 0.8, 4.4), cf * CFrame.new(0, 0.4, 0), hex("#8C4A3A"), M.Concrete, true)
 		p(roof, "SkylightGlass", Vector3.new(8, 1, 4), cf * CFrame.new(0, 1.3, 0), hex("#9DB3BE"), M.Glass, false, { Transparency = 0.3, Reflectance = 0.2 })
 		for x = -4, 4, 2 do p(roof, "SkylightBar", Vector3.new(0.12, 1.05, 4.05), cf * CFrame.new(x, 1.3, 0), C.Iron, M.Metal) end
 	end
 	-- exhaust fans and a roof hatch
-	for _, spot in ipairs({ { 20, 14, -40 }, { -18, 14, -12 }, { 50, 15, -20 } }) do
-		local cf = CFrame.new(spot[1], spot[2], spot[3])
+	for _, spot in ipairs({ { 20, -40 }, { -18, -12 }, { 50, -20 } }) do
+		local cf = onRoof(spot[1], spot[2])
 		cyl(roof, "FanBase", 0.8, 2.2, cf * CFrame.new(0, 0.4, 0) * up, hex("#9E9B94"), M.Metal, true)
 		cyl(roof, "FanHood", 0.6, 2.6, cf * CFrame.new(0, 1.2, 0) * up, hex("#B8B5AE"), M.Metal)
 		cyl(roof, "FanCap", 0.3, 1.2, cf * CFrame.new(0, 1.65, 0) * up, hex("#B8B5AE"), M.Metal)
 	end
-	p(roof, "Hatch", Vector3.new(3, 1, 3), CFrame.new(-30, 14.5, -20), hex("#8C4A3A"), M.Concrete, true)
-	p(roof, "HatchLid", Vector3.new(3.2, 0.2, 3.2), CFrame.new(-30, 15.1, -20), C.Iron, M.Metal)
+	p(roof, "Hatch", Vector3.new(3, 1, 3), onRoof(-30, -20, 0.5), hex("#8C4A3A"), M.Concrete, true)
+	p(roof, "HatchLid", Vector3.new(3.2, 0.2, 3.2), onRoof(-30, -20, 1.1), C.Iron, M.Metal)
 	-- solar panels on the pro gym (tilted rows on frames)
 	for row = 0, 3 do
 		for col = 0, 4 do
-			local cf = CFrame.new(46 + col * 8, 15, -30 - row * 7) * CFrame.Angles(rad(-20), 0, 0)
-			p(roof, "SolarFrame", Vector3.new(0.2, 1.4, 0.2), CFrame.new(46 + col * 8 - 3, 15.7, -30 - row * 7 + 1.4), C.Iron, M.Metal)
-			p(roof, "SolarFrame", Vector3.new(0.2, 1.4, 0.2), CFrame.new(46 + col * 8 + 3, 15.7, -30 - row * 7 + 1.4), C.Iron, M.Metal)
+			local base = onRoof(46 + col * 8, -30 - row * 7)
+			local cf = base * CFrame.Angles(rad(-20), 0, 0)
+			p(roof, "SolarFrame", Vector3.new(0.2, 1.4, 0.2), base * CFrame.new(-3, 0.7, 1.4), C.Iron, M.Metal)
+			p(roof, "SolarFrame", Vector3.new(0.2, 1.4, 0.2), base * CFrame.new(3, 0.7, 1.4), C.Iron, M.Metal)
 			p(roof, "SolarPanel", Vector3.new(7, 0.15, 4), cf * CFrame.new(0, 1.3, 0), hex("#1E2A44"), M.Glass, false, { Reflectance = 0.25 })
 			p(roof, "SolarEdge", Vector3.new(7.1, 0.12, 4.1), cf * CFrame.new(0, 1.22, 0), hex("#C9CCD2"), M.Metal)
 		end
@@ -1974,6 +1987,38 @@ function Builder.Build()
 		end
 	end
 	return folder
+end
+
+-- Rebuilds the gyms' OUTSIDE in the saved place after the gyms changed size (Gyms builder; 8 Oct night): Town.GymFront
+-- (run GymFrontPoster after it for its poster box), Town.GymRoofs and the boundary walls (Town.Bounds), and clears the
+-- terrain and the lawns' trees / rocks out of the bigger footprint. The rest of the town keeps its hand fixes. Command
+-- bar, with the builders in ServerStorage._Builders:  require(game.ServerStorage._Builders.Town).RebuildGymExterior()
+function Builder.RebuildGymExterior()
+	folder = Workspace:FindFirstChild("Town")
+	assert(folder, "Workspace.Town is missing: run Town.Build first")
+	for _, name in ipairs({ "GymFront", "GymRoofs" }) do
+		local old = folder:FindFirstChild(name)
+		if old then old:Destroy() end
+	end
+	for _, part in ipairs(folder:GetChildren()) do
+		if part.Name == "Boundary" then part:Destroy() end
+	end
+	buildGymFront()
+	buildGymRoofs()
+	buildBoundary()
+	local S, P = Gyms.Starter, Gyms.Pro
+	local minX, maxX, minZ, maxZ = S.MinX - 3, P.MaxX + 3, S.MinZ - 3, -2.5
+	Workspace.Terrain:FillBlock(CFrame.new((minX + maxX) / 2, 15, (minZ + maxZ) / 2), Vector3.new(maxX - minX, 30, maxZ - minZ), M.Air)
+	local removed = 0
+	local greenery = folder:FindFirstChild("Greenery")
+	for _, item in ipairs(greenery and greenery:GetChildren() or {}) do
+		local at = if item:IsA("Model") then item:GetPivot().Position elseif item:IsA("BasePart") then item.Position else nil
+		if at and at.X > minX - 2 and at.X < maxX + 2 and at.Z > minZ - 2 and at.Z < maxZ then
+			item:Destroy()
+			removed += 1
+		end
+	end
+	return removed
 end
 
 -- Rebuilds ONLY the skate park in the saved place (the rest of the town keeps its hand fixes): replaces

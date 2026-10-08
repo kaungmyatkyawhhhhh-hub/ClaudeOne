@@ -7,7 +7,7 @@ local Stamina = require(ReplicatedStorage.Shared.Config.Stamina)
 
 local GymCat = {}
 
-local CAT_SPOT = CFrame.new(25.4, 0.1, -8.6) * CFrame.Angles(0, math.rad(-90), 0) -- in front of the cat bed, facing the room
+local CAT_SPOT = CFrame.new(31, 0.1, -10.5) * CFrame.Angles(0, math.rad(-90), 0) -- in front of the cat bed, facing the room (bigger gym, 8 Oct night)
 
 local function part(model, name, size, offset, color, shape)
 	local p = Instance.new("Part")

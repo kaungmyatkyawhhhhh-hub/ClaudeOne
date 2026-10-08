@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local NpcService = require(ServerScriptService.Server.NpcService)
 local Quests = require(ReplicatedStorage.Shared.Config.Quests)
+local Gyms = require(script.Parent.Gyms)
 
 local Builder = {}
 
@@ -67,7 +68,8 @@ function Builder.Build(Workspace)
 			scale = { height = goer.height or 1, width = goer.width or 1, depth = goer.depth or goer.width or 1, head = 1 },
 			tag = "GymNpc", animated = true,
 		}
-		local model = NpcService.Build(spec, CFrame.lookAt(goer.spot, goer.spot + Vector3.new(0, 0, -1)))
+		local at = if goer.gym == "Beach" then goer.spot else Gyms.Map(goer.spot) -- (gym spots: the first layout, spread into the bigger gyms)
+		local model = NpcService.Build(spec, CFrame.lookAt(at, at + Vector3.new(0, 0, -1)))
 		model:SetAttribute("Gym", goer.gym)
 	end
 

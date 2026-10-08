@@ -17,7 +17,7 @@ local ProGymService = {}
 
 -- inside of the pro gym (see the builder) and the spot just outside its door, in the starter gym
 ProGymService.Bounds = { MinX = 37, MaxX = 93, MinZ = -73.5, MaxZ = -4 }
-local OUTSIDE = CFrame.lookAt(Vector3.new(32.5, 0.15, -11), Vector3.new(0, 0.15, -11))
+local OUTSIDE = CFrame.lookAt(Vector3.new(39.7, 0.15, -12.56), Vector3.new(0, 0.15, -12.56)) -- (by the glass door, bigger gyms 8 Oct night)
 
 local welcomed = {}
 

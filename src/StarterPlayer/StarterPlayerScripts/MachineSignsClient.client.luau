@@ -1,51 +1,58 @@
--- MachineSignsClient: a small card above the machine you stand next to (client only, owner's redesign 8 Oct).
---  * The card: a flat solid charcoal rounded rectangle (about CARD.Width x CARD.Height studs), a thin accent stripe on the
---    left in the main muscle's group color (Config/HudIcons.MuscleGroups), one flat muscle shape in that color, and two
---    lines: the machine name (Oswald, white) and the main muscle (Nunito, light gray). No glow, no percentages (the full
---    split shows in the machine HUD after you sit down). A locked machine shows a lock and what unlocks it.
---  * Only the nearest machine within CARD.Near studs shows its card. It faces the camera and keeps its world size (smaller
---    with distance), but never draws smaller than readable (text >= 14 px) or bigger than about 1/6 of the screen.
---    Hidden while you're on that machine and while the camera is closer than CARD.CameraMin studs to it.
---  * Machines you never did a rep on show a small bouncing yellow "!" + "NEW" within BANG.Far studs (gone after the first
---    rep; the save's `machinesUsed`). Everything fades over FADE seconds.
---  * Cheap: one invisible anchor part per machine (made the first time you come near); one card, moved to the nearest.
+-- MachineSignsClient: the sign over the machine you stand next to, its prompt and floor outline (client only; owner's
+-- brief 8 Oct night, replaces the flat card and Roblox's wide "Use" panel).
+--  * A floating glass diamond: a square slab turned 45 degrees, dark tinted glass with a thin glowing white (Neon) border,
+--    bobbing gently and turning smoothly toward the camera on both axes (a 3D object, not a flat label). Inside (a
+--    SurfaceGui on an upright square face that turns with the glass, clipped to a safe square inside the border, the
+--    text shrinking to fit): our own body icon (BodyFigure) in white with the main muscle in red, the
+--    main muscle's name in bold white and its share in red ("53%"). Main muscle only.
+--  * Above it the machine name (big bold white, dark stroke). Below it the prompt: a small square dark-glass key ("E",
+--    the gamepad button, or a tap button on touch screens) and "Occupy" under it ("Unlock · 45 coins" when your next
+--    weight can be bought). The machines' ProximityPrompts use the Custom style (MachineService), so this is their UI.
+--  * A glowing white rectangle on the floor around the machine's footprint (thin Neon strips), brighter while you stand
+--    inside it.
+--  * Only the nearest machine within SIGN.Near studs shows all this; from there to BANG.Far studs, machines you never
+--    did a rep on show the bouncing yellow "!" + "NEW" (the save's `machinesUsed`); nothing beyond. While you're on a
+--    machine the diamond, prompt and outline are hidden. Hidden too while the camera is within SIGN.CameraMin studs.
+--  * Cheap: one set of sign parts moved to the nearest machine; one invisible anchor part per machine for its "!".
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
-local TextService = game:GetService("TextService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = Shared:WaitForChild("Config")
 local Machines = require(Config.Machines)
 local Muscles = require(Config.Muscles)
-local HudIcons = require(Config.HudIcons)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
+local BodyFigure = require(Shared.UI.BodyFigure)
 
 local player = Players.LocalPlayer
 local New = Theme.New
 
-local CARD = {
-	Near = 10,            -- studs from your character: the nearest machine this close shows its card
-	CameraMin = 4,        -- studs: hidden when the camera is closer than this to the card
-	Width = 2.4, Height = 1.2, -- studs (its world size)
-	Lift = 0.9,           -- studs between the machine's top and the card's bottom
-	Background = Color3.fromRGB(25, 25, 28),
-	Name = Color3.fromRGB(255, 255, 255), Sub = Color3.fromRGB(184, 184, 190),
-	MinHeight = 46,       -- px: the smallest it draws (so its text stays >= 14 px)
-	MaxScreen = 1 / 6,    -- of the screen height: the biggest it draws
+local SIGN = {
+	Near = 12,            -- studs from your character: the nearest machine this close shows its sign
+	CameraMin = 4,        -- studs: the diamond hides when the camera is closer than this
+	Side = 2.6,           -- studs: the diamond's square side (its diagonal is ~3.7)
+	Safe = 1.68,          -- studs: the content's square in the middle (an upright square fits up to 0.707 x Side)
+	Lift = 1.9,           -- studs from the machine's top to the diamond's centre
+	Glass = Color3.fromRGB(18, 20, 26), GlassTransparency = 0.3,
+	Edge = Color3.fromRGB(255, 255, 255), EdgeWidth = 0.07,
+	Bob = 0.12, BobSpeed = 1.7, TurnRate = 5, -- studs, radians/s of the bob, how fast it turns toward the camera
+	Red = Color3.fromRGB(255, 70, 70),
+	Floor = 0.05,         -- studs: the floor outline's height
+	FloorPad = 0.5,       -- studs around the machine's footprint
 }
--- the "!": world-sized (smaller far away, so a room of new machines stays calm), between MinPx and MaxPx tall; the
--- "NEW" tag only while it is at least TagPx tall (near), so its text never gets tiny
 local BANG = { Far = 60, Color = Color3.fromRGB(255, 214, 64), Bounce = 0.25, Speed = 4, Height = 1.1, MinPx = 22, MaxPx = 62, TagPx = 50 }
 local FADE = 0.2
 
 local folder = Instance.new("Folder")
 folder.Name = "MachineSigns"
 folder.Parent = Workspace
+local playerGui = player:WaitForChild("PlayerGui")
 
 local anchors = {} -- [model] = { part, machine, bang, bangLabel, newTag, newLabel, bangAlpha, phase }
 local pivots = {}
@@ -54,11 +61,6 @@ local localUsed = {} -- machine ids you did a rep on this session (the data catc
 local function mainMuscle(machine)
 	local entry = machine.muscles[1]
 	return entry and Muscles.ById[entry.id]
-end
-local function accentOf(machine): Color3
-	local muscle = mainMuscle(machine)
-	local group = muscle and HudIcons.MuscleGroups[muscle.group]
-	return group and group.accent or HudIcons.DefaultAccent
 end
 local function lockText(machine): string?
 	local need = Machines.GymUnlock[machine.gym] or 0
@@ -74,80 +76,177 @@ local function isNew(machineId: string): boolean
 end
 
 ------------------------------------------------------------------------
--- The card (one, moved to the nearest machine)
+-- The sign's 3D parts (one set, moved to the nearest machine)
 ------------------------------------------------------------------------
-local card = New("BillboardGui", {
-	Name = "MachineCard",
-	Size = UDim2.fromOffset(92, CARD.MinHeight),
-	AlwaysOnTop = false,
-	LightInfluence = 0,
-	ResetOnSpawn = false,
-	Enabled = false,
-	Parent = player:WaitForChild("PlayerGui"),
-})
-local box = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = CARD.Background, BorderSizePixel = 0, Parent = card },
-	{ New("UICorner", { CornerRadius = UDim.new(0.18, 0) }) })
-local stripe = New("Frame", { Position = UDim2.new(0, 0, 0.18, 0), Size = UDim2.new(0, 2, 0.64, 0), BorderSizePixel = 0, Parent = box })
--- the muscle shape: one flat rounded muscle belly in the muscle color (our own simple glyph)
-local iconSlot = New("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.07, 0, 0.5, 0), Size = UDim2.fromScale(0.2, 0.6), BackgroundTransparency = 1, Parent = box },
-	{ New("UIAspectRatioConstraint", { AspectRatio = 1 }) })
-local belly = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.6, 1), Rotation = 28, BorderSizePixel = 0, Parent = iconSlot },
-	{ New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
-local lockSlot = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = iconSlot })
-Icons.Lock(CARD.Name).Parent = lockSlot
-local function line(font, color, y, height, minSize, maxSize)
-	local label = New("TextLabel", {
-		BackgroundTransparency = 1,
-		TextScaled = true, -- (world-space UI scales with the card; CARD.MinHeight keeps it >= 14 px)
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		FontFace = font,
-		TextColor3 = color,
-		Position = UDim2.fromScale(0.33, y),
-		Size = UDim2.fromScale(0.62, height),
-		Parent = box,
-	}, { New("UITextSizeConstraint", { MinTextSize = minSize, MaxTextSize = maxSize }) })
-	New("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
+local function signPart(name, size, color, material, transparency)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.Color = color
+	part.Material = material
+	part.Transparency = transparency
+	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
+	part.Parent = folder
+	return part
+end
+local glass = signPart("SignGlass", Vector3.new(SIGN.Side, SIGN.Side, 0.1), SIGN.Glass, Enum.Material.Glass, 1)
+local edges = {}
+for i = 1, 4 do
+	-- edges 1 / 2 are the top and bottom of the square, 3 / 4 its sides (in the square's own frame)
+	local horizontal = i <= 2
+	edges[i] = signPart("SignEdge", if horizontal then Vector3.new(SIGN.Side + SIGN.EdgeWidth, SIGN.EdgeWidth, 0.12) else Vector3.new(SIGN.EdgeWidth, SIGN.Side + SIGN.EdgeWidth, 0.12),
+		SIGN.Edge, Enum.Material.Neon, 1)
+end
+-- the name and the prompt (BillboardGuis) hang on an unrotated anchor at the diamond's centre
+local signAnchor = signPart("SignAnchor", Vector3.new(0.1, 0.1, 0.1), SIGN.Edge, Enum.Material.SmoothPlastic, 1)
+-- the content's face: an upright invisible square just in front of the glass, turned with it (one 3D object), so the
+-- icon and the text can never reach the border at any camera angle
+local signFace = signPart("SignFace", Vector3.new(SIGN.Safe, SIGN.Safe, 0.02), SIGN.Glass, Enum.Material.SmoothPlastic, 1)
+local glow = Instance.new("PointLight")
+glow.Color, glow.Range, glow.Brightness, glow.Shadows = SIGN.Edge, 6, 0, false
+glow.Parent = glass
+local floorStrips = {}
+for i = 1, 4 do floorStrips[i] = signPart("SignFloor", Vector3.new(1, SIGN.Floor, 0.08), SIGN.Edge, Enum.Material.Neon, 1) end
+
+------------------------------------------------------------------------
+-- The sign's screen parts: name above, content inside, prompt below (BillboardGuis sized in studs)
+------------------------------------------------------------------------
+local function stroked(label, thickness)
+	New("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.2, Thickness = thickness or 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
 	return label
 end
-local nameLabel = line(Theme.Fonts.SemiBold, CARD.Name, 0.15, 0.4, 15, 40)
-local subLabel = line(Theme.Fonts.Regular, CARD.Sub, 0.56, 0.3, 14, 30)
-
-local shown = { model = nil, alpha = 0, nameRatio = 0 } -- the card's machine, its fade, the name's width per px of text size
-local function fill(machine)
-	local accent = accentOf(machine)
-	local lock = lockText(machine)
-	stripe.BackgroundColor3 = accent
-	belly.BackgroundColor3 = accent
-	belly.Visible = lock == nil
-	lockSlot.Visible = lock ~= nil
-	nameLabel.Text = string.upper(machine.name)
-	-- how wide the name is (the card widens so it never gets cut off)
-	shown.nameRatio = 0.6 * #nameLabel.Text
-	task.spawn(function()
-		local params = Instance.new("GetTextBoundsParams")
-		params.Text = nameLabel.Text
-		params.Font = Theme.Fonts.SemiBold
-		params.Size = 100
-		params.Width = 100000
-		local ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
-		if ok and bounds then shown.nameRatio = bounds.X / 100 end
-	end)
-	local muscle = mainMuscle(machine)
-	subLabel.Text = lock or (if machine.trains == "Stamina" then "Stamina" else (muscle and muscle.name or ""))
+local function scaledText(props, minSize, maxSize)
+	props.BackgroundTransparency = 1
+	props.TextScaled = true -- (world-space UI sized in studs; the minimum keeps it >= 14 px)
+	local label = New("TextLabel", props, { New("UITextSizeConstraint", { MinTextSize = minSize, MaxTextSize = maxSize }) })
+	return label
 end
+
+local nameGui = New("BillboardGui", { Name = "MachineSignName", Size = UDim2.new(8, 0, 0.95, 0), LightInfluence = 0, AlwaysOnTop = false, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+local nameLabel = stroked(scaledText({ Size = UDim2.fromScale(1, 1), FontFace = Theme.Fonts.Bold, TextColor3 = Color3.new(1, 1, 1), Parent = nameGui }, 16, 60), 3)
+
+-- the content: a SurfaceGui on the face (it turns with the diamond), clipped to its square; text shrinks to fit the width
+local inside = New("SurfaceGui", { Name = "MachineSignInside", Face = Enum.NormalId.Front, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
+	PixelsPerStud = 110, LightInfluence = 0, Enabled = false, Parent = signFace })
+local safe = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ClipsDescendants = true, Parent = inside })
+local figureSlot = New("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.02), Size = UDim2.fromScale(0.5, 0.5), BackgroundTransparency = 1, Parent = safe },
+	{ New("UIAspectRatioConstraint", { AspectRatio = 0.4 }) })
+local lockSlot = New("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.08), Size = UDim2.fromScale(0.38, 0.38), BackgroundTransparency = 1, Visible = false, Parent = safe })
+Icons.Lock(Color3.new(1, 1, 1)).Parent = lockSlot
+local muscleLabel = stroked(scaledText({ Position = UDim2.fromScale(0.03, 0.55), Size = UDim2.fromScale(0.94, 0.22), FontFace = Theme.Fonts.Bold, TextColor3 = Color3.new(1, 1, 1), Parent = safe }, 1, 44), 2)
+local shareLabel = stroked(scaledText({ Position = UDim2.fromScale(0.15, 0.78), Size = UDim2.fromScale(0.7, 0.18), FontFace = Theme.Fonts.Bold, TextColor3 = SIGN.Red, Parent = safe }, 1, 36), 2)
+
+-- (not AlwaysOnTop: those did not draw reliably; instead it is pulled toward the camera so the machine never hides it)
+local promptGui = New("BillboardGui", { Name = "MachineSignPrompt", Size = UDim2.new(2.6, 0, 1.45, 0), LightInfluence = 0, AlwaysOnTop = false, Active = true, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+local keyButton = New("TextButton", {
+	AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.36, 0.62),
+	BackgroundColor3 = SIGN.Glass, BackgroundTransparency = 0.25, AutoButtonColor = false, Text = "", Parent = promptGui,
+}, {
+	New("UIAspectRatioConstraint", { AspectRatio = 1 }),
+	New("UICorner", { CornerRadius = UDim.new(0.18, 0) }),
+	New("UIStroke", { Color = Color3.new(1, 1, 1), Transparency = 0.25, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+})
+local keyLabel = stroked(scaledText({ Size = UDim2.fromScale(1, 1), FontFace = Theme.Fonts.Bold, TextColor3 = Color3.new(1, 1, 1), Text = "E", Parent = keyButton }, 14, 40), 1)
+local tapIcon = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.42, 0.42), BackgroundColor3 = Color3.new(1, 1, 1),
+	Visible = false, Parent = keyButton }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+local actionLabel = stroked(scaledText({ Position = UDim2.fromScale(0, 0.66), Size = UDim2.fromScale(1, 0.34), FontFace = Theme.Fonts.Bold, TextColor3 = Color3.new(1, 1, 1), Text = "OCCUPY", Parent = promptGui }, 14, 32), 2)
+
+------------------------------------------------------------------------
+-- Which machine the sign is on, and its prompt
+------------------------------------------------------------------------
+local shown = { model = nil, machine = nil, alpha = 0, yaw = nil, inside = false }
+local shownPrompts = {} -- [model] = { prompt, inputType } while Roblox shows that machine's prompt
+
+local function machineOf(instance)
+	local node = instance
+	while node and node ~= Workspace do
+		if node:IsA("Model") and CollectionService:HasTag(node, "Machine") then return node end
+		node = node.Parent
+	end
+	return nil
+end
+ProximityPromptService.PromptShown:Connect(function(prompt, inputType)
+	local model = machineOf(prompt)
+	if model and prompt.Style == Enum.ProximityPromptStyle.Custom then shownPrompts[model] = { prompt = prompt, inputType = inputType } end
+end)
+ProximityPromptService.PromptHidden:Connect(function(prompt)
+	local model = machineOf(prompt)
+	if model and shownPrompts[model] and shownPrompts[model].prompt == prompt then shownPrompts[model] = nil end
+end)
+keyButton.Activated:Connect(function()
+	local entry = shown.model and shownPrompts[shown.model]
+	if not entry then return end
+	entry.prompt:InputHoldBegin()
+	task.defer(function() entry.prompt:InputHoldEnd() end)
+end)
+
+-- the content for this machine: body icon, main muscle, share
+local function fill(model, machine)
+	shown.model, shown.machine = model, machine
+	nameLabel.Text = string.upper(machine.name)
+	for _, child in ipairs(figureSlot:GetChildren()) do
+		if not child:IsA("UIAspectRatioConstraint") then child:Destroy() end
+	end
+	local lock = lockText(machine)
+	local muscle = mainMuscle(machine)
+	figureSlot.Visible = lock == nil
+	lockSlot.Visible = lock ~= nil
+	if lock then
+		muscleLabel.Text = "Locked"
+		shareLabel.Text = lock
+	elseif machine.trains == "Stamina" then
+		BodyFigure.Draw(figureSlot, "Front", function(id) return if id == "Quads" or id == "Calves" then SIGN.Red else nil end, Color3.new(1, 1, 1), 0.05)
+		muscleLabel.Text = "Stamina"
+		shareLabel.Text = "Cardio"
+	else
+		local view = if muscle and BodyFigure.Back[muscle.id] then "Back" else "Front"
+		BodyFigure.Draw(figureSlot, view, function(id) return if muscle and id == muscle.id then SIGN.Red else nil end, Color3.new(1, 1, 1), 0.05)
+		muscleLabel.Text = muscle and muscle.name or ""
+		local share = Machines.SharePercents(machine)[1]
+		shareLabel.Text = (share and share.pct or 100) .. "%"
+	end
+end
+
 local function setAlpha(a: number)
 	local t = 1 - a
-	box.BackgroundTransparency = t
-	stripe.BackgroundTransparency = t
-	belly.BackgroundTransparency = t
-	nameLabel.TextTransparency, subLabel.TextTransparency = t, t
-	nameLabel:FindFirstChildOfClass("UIStroke").Transparency = 1 - a * 0.5
-	subLabel:FindFirstChildOfClass("UIStroke").Transparency = 1 - a * 0.5
+	glass.Transparency = 1 - a * (1 - SIGN.GlassTransparency)
+	for _, edge in ipairs(edges) do edge.Transparency = t end
+	glow.Brightness = 0.6 * a
+	for _, label in ipairs({ nameLabel, muscleLabel, shareLabel }) do
+		label.TextTransparency = t
+		label:FindFirstChildOfClass("UIStroke").Transparency = 1 - a * 0.8
+	end
+	for _, frame in ipairs(figureSlot:GetDescendants()) do
+		if frame:IsA("Frame") then frame.BackgroundTransparency = math.max(t, if frame.ZIndex == 1 then 0.05 else 0) end
+	end
 	for _, item in ipairs(lockSlot:GetDescendants()) do
 		if item:IsA("UIStroke") then item.Transparency = t end
 	end
-	card.Enabled = a > 0
+	nameGui.Enabled, inside.Enabled = a > 0, a > 0
+end
+
+-- the floor outline: 4 strips around the footprint, at the floor under the machine
+local function placeFloor(model)
+	local boxCf, boxSize = model:GetBoundingBox()
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local exclude = { model, folder }
+	for _, other in ipairs(Players:GetPlayers()) do if other.Character then table.insert(exclude, other.Character) end end
+	params.FilterDescendantsInstances = exclude
+	local bottom = boxCf.Position.Y - boxSize.Y / 2
+	local hit = Workspace:Raycast(boxCf.Position + Vector3.new(0, 0.5, 0), Vector3.new(0, -boxSize.Y - 2, 0), params)
+	local floorY = if hit then hit.Position.Y else bottom
+	local flat = CFrame.new(boxCf.Position.X, floorY + SIGN.Floor / 2 + 0.02, boxCf.Position.Z) * (boxCf - boxCf.Position)
+	local w, d = boxSize.X + SIGN.FloorPad * 2, boxSize.Z + SIGN.FloorPad * 2
+	floorStrips[1].Size, floorStrips[1].CFrame = Vector3.new(w + 0.08, SIGN.Floor, 0.08), flat * CFrame.new(0, 0, -d / 2)
+	floorStrips[2].Size, floorStrips[2].CFrame = Vector3.new(w + 0.08, SIGN.Floor, 0.08), flat * CFrame.new(0, 0, d / 2)
+	floorStrips[3].Size, floorStrips[3].CFrame = Vector3.new(0.08, SIGN.Floor, d), flat * CFrame.new(-w / 2, 0, 0)
+	floorStrips[4].Size, floorStrips[4].CFrame = Vector3.new(0.08, SIGN.Floor, d), flat * CFrame.new(w / 2, 0, 0)
+	shown.footprint = { cf = flat, w = w, d = d }
+end
+local function setFloorAlpha(a: number, bright: boolean)
+	local visible = if bright then a else a * 0.55
+	for _, strip in ipairs(floorStrips) do strip.Transparency = 1 - visible end
 end
 
 ------------------------------------------------------------------------
@@ -158,13 +257,13 @@ local function build(model)
 	if not machine then return nil end
 	local boxCf, boxSize = model:GetBoundingBox()
 	local top = boxCf.Position.Y + boxSize.Y / 2
-	-- under a low ceiling the card sits just under it
+	-- under a low ceiling the sign sits just under it
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { model, folder }
-	local lift = CARD.Lift + CARD.Height / 2
-	local hit = Workspace:Raycast(Vector3.new(boxCf.Position.X, top + 0.05, boxCf.Position.Z), Vector3.new(0, lift + CARD.Height, 0), params)
-	if hit then lift = math.min(lift, math.max(0.3, hit.Position.Y - top - CARD.Height / 2 - 0.2)) end
+	local lift = SIGN.Lift
+	local hit = Workspace:Raycast(Vector3.new(boxCf.Position.X, top + 0.05, boxCf.Position.Z), Vector3.new(0, lift + 3.2, 0), params)
+	if hit then lift = math.min(lift, math.max(1.2, hit.Position.Y - top - 3)) end
 	local part = Instance.new("Part")
 	part.Name = model.Name .. "Sign"
 	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
@@ -172,10 +271,10 @@ local function build(model)
 	part.Size = Vector3.new(0.1, 0.1, 0.1)
 	part.CFrame = CFrame.new(boxCf.Position.X, top + lift, boxCf.Position.Z)
 	part.Parent = folder
-	local anchor = { part = part, machine = machine, bangAlpha = 0, phase = math.random() * math.pi * 2 }
+	local anchor = { part = part, machine = machine, top = top, bangAlpha = 0, phase = math.random() * math.pi * 2 }
 	anchor.bang = New("BillboardGui", {
 		Size = UDim2.fromOffset(46, 62),
-		StudsOffset = Vector3.new(0, 0.6, 0),
+		StudsOffset = Vector3.new(0, -0.6, 0),
 		AlwaysOnTop = false,
 		LightInfluence = 0,
 		MaxDistance = BANG.Far + 5,
@@ -217,7 +316,14 @@ RunService.RenderStepped:Connect(function(dt)
 	local now = os.clock()
 	local from = root.Position
 	local cameraPosition = camera.CFrame.Position
-	local nearest, nearestDistance = nil, CARD.Near
+	-- Studio test hook: a "TestSignCamera" Vector3 on Workspace = the point the sign turns to (screenshots from any angle)
+	local testView = if RunService:IsStudio() then Workspace:GetAttribute("TestSignCamera") else nil
+	if typeof(testView) == "Vector3" then cameraPosition = testView end
+	local nearest, nearestDistance = nil, SIGN.Near
+	local onMachine = false
+	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
+		if model:GetAttribute("UserId") == player.UserId then onMachine = true end
+	end
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 		local pivot = pivots[model]
 		if not pivot then
@@ -236,11 +342,11 @@ RunService.RenderStepped:Connect(function(dt)
 			anchors[model] = anchor
 		end
 		local mine = model:GetAttribute("UserId") == player.UserId
-		if not mine and distance < nearestDistance then nearest, nearestDistance = model, distance end
-		-- the "!" + "NEW" (not on the machine whose card shows: one thing per machine)
+		if not onMachine and distance < nearestDistance then nearest, nearestDistance = model, distance end
+		-- the "!" + "NEW" (not on the machine whose sign shows: one thing per machine)
 		local id = model:GetAttribute("MachineId")
-		local carded = model == shown.model and shown.alpha > 0
-		local wantBang = if not mine and not carded and id ~= nil and isNew(id) and distance <= BANG.Far then 1 else 0
+		local signed = model == shown.model and shown.alpha > 0
+		local wantBang = if not mine and not signed and id ~= nil and isNew(id) and distance <= BANG.Far then 1 else 0
 		local before = anchor.bangAlpha
 		anchor.bangAlpha = approach(anchor.bangAlpha, wantBang, dt)
 		local b = anchor.bangAlpha
@@ -253,34 +359,73 @@ RunService.RenderStepped:Connect(function(dt)
 			anchor.bang.Size = UDim2.fromOffset(math.floor(px * 0.75), math.floor(if tag then px else px * 0.68))
 			anchor.bangLabel.Size = UDim2.fromScale(1, if tag then 0.66 else 1)
 			anchor.newTag.Visible = tag
-			anchor.bang.StudsOffset = Vector3.new(0, 0.6 + math.abs(math.sin(now * BANG.Speed + anchor.phase)) * BANG.Bounce, 0)
+			anchor.bang.StudsOffset = Vector3.new(0, -0.6 + math.abs(math.sin(now * BANG.Speed + anchor.phase)) * BANG.Bounce, 0)
 			anchor.bangLabel.TextTransparency = 1 - b
 			anchor.bangLabel:FindFirstChildOfClass("UIStroke").Transparency = 1 - b * 0.7
 			anchor.newTag.BackgroundTransparency = 1 - b
 			anchor.newLabel.TextTransparency = 1 - b
 		end
 	end
-	-- the card: only the nearest machine; a new one takes over once the old card has faded out
+
+	-- the sign: only the nearest machine; a new one takes over once the old sign has faded out
 	if nearest and nearest ~= shown.model and shown.alpha <= 0 then
-		shown.model = nearest
-		fill(anchors[nearest].machine)
-		card.Adornee = anchors[nearest].part
+		local anchor = anchors[nearest]
+		fill(nearest, anchor.machine)
+		nameGui.Adornee, promptGui.Adornee = signAnchor, signAnchor
+		placeFloor(nearest)
+		shown.turn = nil
 	end
 	local anchor = shown.model and anchors[shown.model]
 	local want = 0
 	if anchor and nearest == shown.model then
-		local cameraDistance = (anchor.part.Position - cameraPosition).Magnitude
-		if cameraDistance >= CARD.CameraMin then want = 1 end
-		-- its world size in pixels at this distance, kept readable and never too big
-		local viewport = camera.ViewportSize
-		local pxPerStud = viewport.Y / (2 * math.max(cameraDistance, 0.1) * math.tan(math.rad(camera.FieldOfView) / 2))
-		local height = math.clamp(CARD.Height * pxPerStud, CARD.MinHeight, math.max(CARD.MinHeight, viewport.Y * CARD.MaxScreen))
-		local nameSize = math.clamp(math.floor(height * 0.4), 15, 40) -- (the name's line: 40% of the card)
-		local width = math.max(height * CARD.Width / CARD.Height, (shown.nameRatio * nameSize + 4) / 0.62)
-		card.Size = UDim2.fromOffset(math.floor(width), math.floor(height))
+		want = 1
+		-- bob, and turn smoothly toward the camera on both axes (like a billboard, so it never looks squashed): the glass,
+		-- its border and the content's face move as one object, the square standing on a corner
+		local centre = anchor.part.Position + Vector3.new(0, math.sin(now * SIGN.BobSpeed) * SIGN.Bob, 0)
+		local target = CFrame.lookAt(centre, cameraPosition).Rotation
+		shown.turn = if shown.turn then shown.turn:Lerp(target, math.min(1, dt * SIGN.TurnRate)) else target
+		local frame = CFrame.new(centre) * shown.turn
+		glass.CFrame = frame * CFrame.Angles(0, 0, math.rad(45))
+		signFace.CFrame = frame * CFrame.new(0, 0, -0.08) -- (a hair in front of the glass, toward the camera)
+		signAnchor.CFrame = CFrame.new(centre)
+		local half = SIGN.Side / 2
+		edges[1].CFrame = glass.CFrame * CFrame.new(0, half, 0)
+		edges[2].CFrame = glass.CFrame * CFrame.new(0, -half, 0)
+		edges[3].CFrame = glass.CFrame * CFrame.new(-half, 0, 0)
+		edges[4].CFrame = glass.CFrame * CFrame.new(half, 0, 0)
+		-- the name above and the prompt below, offset on the SCREEN (camera space): they stay clear of the diamond at any
+		-- camera angle; the prompt is pulled toward the camera so the machine's frame doesn't hide it
+		local diagonal = SIGN.Side * math.sqrt(2) / 2
+		nameGui.StudsOffset = Vector3.new(0, diagonal + 0.7, 0)
+		promptGui.StudsOffset = Vector3.new(0, -diagonal - 1.05, math.min(2.2, (cameraPosition - centre).Magnitude * 0.4))
+		-- too close to the camera: hide the diamond (the floor outline stays)
+		if (centre - cameraPosition).Magnitude < SIGN.CameraMin then want = 0 end
+		-- standing inside the outline makes it brighter
+		local fp = shown.footprint
+		if fp then
+			local localPos = fp.cf:PointToObjectSpace(from)
+			shown.inside = math.abs(localPos.X) <= fp.w / 2 and math.abs(localPos.Z) <= fp.d / 2
+		end
 	end
 	local before = shown.alpha
 	shown.alpha = approach(shown.alpha, want, dt)
 	if shown.alpha ~= before then setAlpha(shown.alpha) end
-	if shown.alpha <= 0 and want == 0 then shown.model = nil end
+	-- the floor outline follows the sign's machine (it stays while the camera is close)
+	local floorWant = if anchor and nearest == shown.model then 1 else 0
+	shown.floorAlpha = approach(shown.floorAlpha or 0, floorWant, dt)
+	setFloorAlpha(shown.floorAlpha, shown.inside)
+	-- the prompt: while Roblox shows this machine's prompt (it decides distance / exclusivity)
+	local entry = shown.model and shownPrompts[shown.model]
+	local promptOn = entry ~= nil and shown.alpha > 0.5 and entry.prompt.Enabled
+	promptGui.Enabled = promptOn
+	if promptOn then
+		local touch = entry.inputType == Enum.ProximityPromptInputType.Touch
+		local gamepad = entry.inputType == Enum.ProximityPromptInputType.Gamepad
+		tapIcon.Visible = touch
+		keyLabel.Visible = not touch
+		keyLabel.Text = if gamepad then string.gsub(entry.prompt.GamepadKeyCode.Name, "^Button", "") else entry.prompt.KeyboardKeyCode.Name
+		local coins = string.match(entry.prompt.ObjectText, "unlocks for (%d+) coins")
+		actionLabel.Text = if coins then "UNLOCK · " .. coins .. " COINS" else "OCCUPY"
+	end
+	if shown.alpha <= 0 and want == 0 and (shown.floorAlpha or 0) <= 0 then shown.model = nil end
 end)

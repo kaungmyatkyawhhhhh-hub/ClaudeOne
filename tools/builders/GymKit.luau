@@ -124,7 +124,7 @@ local function machineShell(parent, machineId, pivot)
 end
 
 local function promptOn(part, machine)
-	return Kit.prompt(part, "ProximityPrompt", "Use", machine.name, 8)
+	return Kit.prompt(part, "ProximityPrompt", "Occupy", machine.name, 10)
 end
 
 local function barbell(m, cframe, length)

@@ -17,7 +17,7 @@ Social.Together = {
 
 -- Arm wrestling table (right side of the gym). Strength comes from these muscles.
 Social.ArmWrestle = {
-	TableSpot = Vector3.new(11, 0.1, -15.5), -- by the front desk
+	TableSpot = Vector3.new(13.4, 0.1, -18.1), -- by the front desk (bigger gym, 8 Oct night)
 	Muscles = { "Biceps", "Forearms", "FrontDelts" },
 	PushPerTap = 0.035,     -- meter moved per tap at strength 1 (the meter goes from -1 to 1)
 	LevelForDouble = 40,    -- average level of the muscles above that doubles your push

@@ -7,7 +7,7 @@ ShowOff.Leaderboard = {
 	Refresh = 120,  -- seconds between updates
 	Top = 5,        -- rows per group
 	-- the board on the front wall above the front desk (center, size in studs)
-	BoardCenter = Vector3.new(20.75, 9.2, -4.1),
+	BoardCenter = Vector3.new(25.36, 11, -4.12), -- (over the front desk in the bigger gym, above its street window)
 	BoardSize = Vector2.new(10.5, 5),
 }
 

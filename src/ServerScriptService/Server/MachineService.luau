@@ -34,7 +34,7 @@ local MachineService = {}
 local sessions = {}  -- [player] = { model, machine, lastRep, connections, pump, nextBig }
 local occupants = {} -- [model] = player
 
--- The machine's own "Use" prompt (SocialService adds a separate "SpotPrompt" next to it).
+-- The machine's own "Occupy" prompt (SocialService adds a separate "SpotPrompt" next to it).
 local function getPrompt(model)
 	for _, descendant in ipairs(model:GetDescendants()) do
 		if descendant:IsA("ProximityPrompt") and descendant.Name ~= "SpotPrompt" then return descendant end
@@ -523,8 +523,11 @@ local function setupMachine(model)
 	if model:IsA("Model") then model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent end
 	local prompt = getPrompt(model)
 	if prompt then
-		prompt.ActionText = "Use"
+		prompt.ActionText = "Occupy"
 		prompt.ObjectText = machine.name -- each client adds its own next-weight line (MachineClient)
+		-- drawn by MachineSignsClient under the machine's glass diamond (no wide Roblox panel)
+		prompt.Style = Enum.ProximityPromptStyle.Custom
+		prompt.MaxActivationDistance = 10
 		Guard.OnTriggered(prompt, function(player)
 			enter(player, model)
 		end)
