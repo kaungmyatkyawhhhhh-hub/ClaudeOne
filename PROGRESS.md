@@ -5,17 +5,28 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## LATEST (8 Oct evening): unified muscles, skin stages, performance
 Everything is in Studio and pushed; **File > Save to Roblox first.**
 
+- **Fix (late 8 Oct): blocky arms / legs and the floating piece under the neck.** The "floating piece" was the package's
+  separate upper traps shell: made for the old torso, it hovered over the unified torso's chest with a sawtooth gap at
+  higher levels. Removed (generator `SKIP`, data, unit, code); the unified torso grows the traps itself (back and neck
+  checked at max: no hole). The upper arms and legs were only built once a muscle in them grew, so at level 0 the plain
+  blocky Robloxian parts showed: both are built from level 0 now, the legs no longer sink under the skin (on a thin leg
+  the sink pushed them out the other side as spikes) and hide the plain upper legs (their shells cover the whole thigh).
+  Your character: **7 live EditableMeshes** (torso front + back, 2 upper arms, 2 upper legs, waist), plain UpperTorso /
+  LowerTorso / upper arms / upper legs at Transparency 1, forearms / calves the static stage meshes. The unified data is
+  welded (0 duplicate vertices in torso, arms, legs) with averaged per-vertex normals. Screenshots: unified_front_{level0,
+  half,max}, unified_back_max, before_fix_{max_floating_traps,level0_spiky_legs}.
+
 - **Unified muscles (muscle v9):** the torso and both upper arms are ONE welded mesh each (the old torso / arm shells and the
   DeltCap balls are gone); every muscle moves its own vertices, so any mix (one muscle maxed, the rest 0) has no holes or
   cracks. The torso (39,600 triangles) is split into front / back halves (20,000 per mesh limit) that always update in the
-  same frame; its open top is closed by a low dome under the upper traps. Highlight and rep flash tint by each muscle's weight.
+  same frame; its open top is closed by a low dome. Highlight and rep flash tint by each muscle's weight.
 - **Look balance cap removed** (Config/LookBalance, Config/MuscleBulge, the lock / held-back bar / hint / toast,
   tests/lookbalance, settings.lookCapHintSeen): each muscle shows its own look.
 - **Skin stages:** all 15 images found in the group "Myanmar Builders Club" (ids in `Config/SkinStages`); the place IS owned
   by that group (id 33151111), so they load. `ReplicatedStorage.SkinStages` Stage1..5 (`tools/builders/SkinStages`). Stage by
   the overall look: 0 -> 1, half -> 2, full -> 3, mass monster -> 4 -> 5, swapping at the midpoint (preloaded, no white flash).
 - **Forearms / calves stay the static stage meshes:** the freed slots were not enough. A play client holds at most 8
-  EditableMeshes, and your body now uses exactly 8 (torso front + back, 2 upper arms, 2 upper legs, waist, upper traps).
+  EditableMeshes; your body uses 7 (torso front + back, 2 upper arms, 2 upper legs, waist).
 - **Other players, NPCs, the statue: no mesh muscles** (they got none before either once the 8 were used: the budget is per
   client, and a MeshPart made from an EditableMesh goes blank when that mesh is freed, so they can't be "baked"). They wear
   the skin stage and the limb stages. The statue is marble (no skin stage).
@@ -62,7 +73,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first.**
 - **EXP:** every number shown is EXP (total xp earned x `Muscles.ExpPerXp`); the first Growth Spurt needs exactly 50,000 per
   group. Levels still exist inside (saves/caps/machines). `tests/exp` checks it.
 - **Muscles (v9 unified, 8 Oct):** real EditableMesh muscles on your own character: unified torso (front + back halves) and
-  upper arms, shell meshes for the upper traps and legs, the snatched waist, static stage meshes for forearms / calves
+  upper arms, shell meshes covering the thighs, the snatched waist, static stage meshes for forearms / calves
   (`Shared/LimbStages`). They wear the character's own Shirt/Pants and the skin stage (`Config/SkinStages`); under a
   SurfaceAppearance vertex colors don't show, so tints and the thighs' gym shorts live on a thin color layer part over each
   skinned mesh. Red tint when hovered in Stats, warm flash on each rep (only muscles facing the camera; `MuscleRig.SetHighlight`
@@ -129,7 +140,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first.**
   every frame (a mesh part's Size never reads back equal), which re-processed the meshes: 22 FPS near the door -> 60 FPS.
 
 ## Limits (found in Studio, not fixable here)
-- A client can hold only **8 live EditableMeshes** (even empty ones; in Edit mode 40+ fit), and your character uses all 8.
+- A client can hold only **8 live EditableMeshes** (even empty ones; in Edit mode 40+ fit), and your character uses 7.
   A MeshPart made from an EditableMesh shows nothing once that EditableMesh is destroyed (no baking), so other characters
   get no mesh muscles. The whole UpperTorso can't be one mesh: 39,600 triangles > the 20,000 per-mesh limit (front / back).
 - **Every EditableMesh change costs ~40-60 ms of engine time** (positions or colors, any amount, measured 8 Oct). Changing a
@@ -165,7 +176,6 @@ Everything is in Studio and pushed; **File > Save to Roblox first.**
 - Part count: town ~16,100, gyms ~3,500; StreamingEnabled is on. If phones struggle: MeshPart templates for windows/trees.
 - Cosmetic headbands can hide under big hair; ProximityPrompts only show when their part is on screen.
 - Rep and set popups are big numbers now (about 3,000+ EXP at the start): easy to scale in `Muscles.ExpPerXp` if too loud.
-- Traps: their outer edge reaches over the shoulder and can show as a thin shelf above the delt from low angles (the upper traps mesh).
 - The rep flash (warm white-orange) is hard to see on light skin under bright lights; it is clear on darker skin.
 - v9: on the rock skin stages a zigzag shows along the upper arm's UV seam; the traps' outline edges are faintly visible
   from some angles. The rep flash no longer has its 2% mesh pump (cost a ~50 ms frame on every rep).

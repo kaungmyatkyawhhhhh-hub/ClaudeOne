@@ -20,17 +20,15 @@ local MuscleMeshes = {}
 MuscleMeshes.Index = Index
 MuscleMeshes.Parts = Index.parts :: { [string]: { size: Vector3 } }
 
--- A shell mesh's own muscle name ("UpperTorso__UpperTraps" -> "UpperTraps", "..__Quads_Shorts" -> "Quads"): its mass monster
--- size and blend key.
+-- A shell mesh's own muscle name ("RightUpperLeg__Quads" -> "Quads", "..__Quads_Shorts" -> "Quads"): its mass monster size
+-- and blend key.
 function MuscleMeshes.MeshKey(name: string): string
 	local key = string.match(name, "__(.+)$") or name
 	return (string.gsub(key, "_Shorts$", ""))
 end
--- The game's muscle id for a mesh key: the upper traps grow with Traps.
-local EXTRA_NAMES: { [string]: string } = { UpperTraps = "Traps" }
+-- The game's muscle id for a mesh key.
 function MuscleMeshes.MuscleId(name: string): string
-	local key = MuscleMeshes.MeshKey(name)
-	return EXTRA_NAMES[key] or key
+	return MuscleMeshes.MeshKey(name)
 end
 
 -- The mass monster size of a mesh / muscle (manifest mass_monster.g by name).
@@ -321,7 +319,6 @@ end
 
 -- Shell muscles sit this far off the skin (studs, along the base normal), so they never fight the body part for depth.
 local SKIN_LIFT = 0.02
-local TRAPS_LIFT = 0.032
 local groupCache: { [string]: any } = {}
 -- The merged data of one shell group { part, records }: one set of arrays for all its meshes; each range (one mesh) knows
 -- its muscle id, mesh key and the neighbouring keys it blends with.
@@ -349,9 +346,8 @@ function MuscleMeshes.LoadGroup(group: any): any
 		range.center = centerSum / math.max(data.verts, 1)
 		range.normal = if normalSum.Magnitude > 1e-6 then normalSum.Unit else -Vector3.zAxis
 		data.bands = data.bands or tintBands(data)
-		-- a mesh that replaces its body part (forearms, calves) IS the skin: no lift; the upper traps lie over the unified torso
-		-- (which is skin + 0.012 itself): a little more, so the two never fight
-		local lift = if record.hidePart then 0 elseif record.key == "UpperTraps" then TRAPS_LIFT else SKIN_LIFT
+		-- a mesh that replaces its body part (forearms, calves) IS the skin: no lift
+		local lift = if record.hidePart then 0 else SKIN_LIFT
 		for i = 1, data.verts do
 			local at = vertexCount + i
 			base[at] = if data.nbase and data.nbase[i].Magnitude > 1e-6 then data.base[i] + data.nbase[i].Unit * lift else data.base[i]
@@ -410,7 +406,7 @@ end
 -- Units: what MuscleRig builds, in this order of importance (a client holds a limited EditableMesh budget). A UNIT grows
 -- together (both sides of a pair, or the torso's two halves); a GROUP is one EditableMesh on one body part.
 --   kind "unified": a piece of a unified mesh (hides the body part: the mesh is its whole skin)
---   kind "shell":   merged shell meshes (records)
+--   kind "shell":   merged shell meshes (records); hidePart = they cover the body part, which is hidden
 --   kind "snatched": the snatched LowerTorso
 ------------------------------------------------------------------------
 local function shells(part: string, list: { string }): { string }
@@ -421,18 +417,24 @@ end
 local function shellPair(list: { string }, a: string, b: string)
 	return { { kind = "shell", part = a, records = shells(a, list) }, { kind = "shell", part = b, records = shells(b, list) } }
 end
+-- groups whose meshes cover their whole body part: the plain (blocky) part is hidden under them
+local function covering(groups)
+	for _, group in ipairs(groups) do group.hidePart = true end
+	return groups
+end
 MuscleMeshes.Units = {
 	{ id = "Torso", alwaysWanted = true, groups = {
 		{ kind = "unified", part = "UpperTorso", mesh = "UpperTorso__Unified", half = "Front" },
 		{ kind = "unified", part = "UpperTorso", mesh = "UpperTorso__Unified", half = "Back" },
 	} },
 	{ id = "Snatched", alwaysWanted = true, groups = { { kind = "snatched", part = "LowerTorso" } } },
-	{ id = "UpperArms", groups = {
+	-- (the arms and legs from level 0 too: without them the plain blocky Robloxian parts show)
+	{ id = "UpperArms", alwaysWanted = true, groups = {
 		{ kind = "unified", part = "RightUpperArm", mesh = "RightUpperArm__Unified" },
 		{ kind = "unified", part = "LeftUpperArm", mesh = "LeftUpperArm__Unified" },
 	} },
-	{ id = "UpperLegs", groups = shellPair({ "Quads", "Quads_Shorts", "Hamstrings", "Hamstrings_Shorts", "Glutes", "Glutes_Shorts" }, "RightUpperLeg", "LeftUpperLeg") },
-	{ id = "UpperTraps", groups = { { kind = "shell", part = "UpperTorso", records = shells("UpperTorso", { "UpperTraps" }) } } },
+	-- (the quads, hamstrings and glutes with their shorts cover the whole thigh: checked in Studio, 8 Oct)
+	{ id = "UpperLegs", alwaysWanted = true, groups = covering(shellPair({ "Quads", "Quads_Shorts", "Hamstrings", "Hamstrings_Shorts", "Glutes", "Glutes_Shorts" }, "RightUpperLeg", "LeftUpperLeg")) },
 	{ id = "Forearms", liveOnly = true, groups = shellPair({ "Forearms" }, "RightLowerArm", "LeftLowerArm") },
 	{ id = "Calves", liveOnly = true, groups = shellPair({ "Calves" }, "RightLowerLeg", "LeftLowerLeg") },
 }

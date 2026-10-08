@@ -2,8 +2,9 @@
 --
 -- The torso and the upper arms are UNIFIED meshes: one welded EditableMesh per body part that is its whole skin, so any mix of
 -- levels is one smooth surface. Per vertex: pos = base + morph * (1 - waistT) + sum(g_m * disp_m) + vein * v (MuscleMeshes);
--- normals come the same way from the data (nbase + sum(g_m * ndisp_m)). The legs, forearms, calves and the upper traps are
--- SHELL meshes (base + (max - base) * g, smooth borders by blend weights). The LowerTorso is the snatched waist.
+-- normals come the same way from the data (nbase + sum(g_m * ndisp_m)). The legs, forearms and calves are SHELL meshes
+-- (base + (max - base) * g, smooth borders by blend weights). The LowerTorso is the snatched waist. (The package's separate
+-- upper traps shell is not used: it floated over the unified torso, which grows the traps itself.)
 --
 -- COST RULES (8 Oct, the lag pass):
 --   * vertices are only written when a look, the pump, the waist, the veins or the torso width actually changed, and only the
@@ -12,8 +13,8 @@
 --   * the hover highlight and the rep flash are a handful of vertex-color writes per muscle, only while a fade runs;
 --   * only YOUR character gets EditableMeshes. Measured in Studio (8 Oct): a play client holds at most 8 EditableMeshes (even
 --     empty ones), and a mesh's MeshPart shows nothing once its EditableMesh is gone (no baking, also not via ApplyMesh). Your
---     body needs exactly 8 (torso front + back: 39,600 triangles over the 20,000 limit; two upper arms; two upper legs; the
---     waist; the upper traps), so everyone else (players, NPCs, the statue) shows the plain body with the skin stage, and every
+--     body uses 7, all from level 0 (torso front + back: 39,600 triangles over the 20,000 limit; two upper arms; two upper
+--     legs: they cover the thighs, the plain upper legs are hidden; the waist), so everyone else (players, NPCs, the statue) shows the plain body with the skin stage, and every
 --     character's forearms / calves are the static stage meshes (Shared.LimbStages). MuscleClient tracks nobody past ~80 studs.
 -- Skin: every skin surface (muscle meshes, the body parts) wears the skin texture stage for its look (Config.SkinStages, a
 -- SurfaceAppearance tinted to the skin color), unless the character's own Shirt / Pants covers it. Under a SurfaceAppearance a
@@ -75,12 +76,9 @@ local TINT = {
 	ClothScale = 0.375,
 	FacingFull = 0.1, FacingNone = -0.1,
 }
--- Below EMERGE growth a shell muscle (the legs, the upper traps) sinks up to SINK studs under the skin (gone at level 0, rising
--- into place as it grows: flat it would show its outline on the body). Unified meshes and the forearm / calf meshes ARE the skin.
-local EMERGE, SINK = 0.12, 0.3
 local REALLOCATE_EVERY = 0.4
 
-local OWN_ORDER = { Torso = 1, Snatched = 2, UpperArms = 3, UpperLegs = 4, UpperTraps = 5, Forearms = 6, Calves = 7 }
+local OWN_ORDER = { Torso = 1, Snatched = 2, UpperArms = 3, UpperLegs = 4, Forearms = 6, Calves = 7 }
 
 -- Layered (3D) clothing can't be painted onto muscles: the muscles of the body parts it covers are hidden under it.
 local LAYERED_COVERS = {
@@ -703,7 +701,6 @@ local function applyRange(self, group, range): number
 	local v = if vein then veinFor(self, range.id) else 0
 	local w = waistProgress(self)
 	local waistOff = 1 - w
-	local sinks = not group.def.hidePart
 	for i = range.first, range.first + range.count - 1 do
 		local gv = g
 		local list = blends[i]
@@ -717,10 +714,6 @@ local function applyRange(self, group, range): number
 		end
 		local position = base[i] + delta[i] * gv
 		if morph and morph[i] then position += morph[i] * waistOff end
-		if sinks and gv < EMERGE and nbase then
-			local e = gv / EMERGE
-			position -= nbase[i].Unit * (SINK * (1 - e * e * (3 - 2 * e)))
-		end
 		if v > 0 then position += vein[i] * v end
 		if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
 		mesh:SetPosition(ids[i], position)
@@ -1098,7 +1091,7 @@ local function writeBands(mesh, ids, base: Color3, alpha: number, color: Color3,
 end
 
 -- The tints (hover highlight, rep flash), as far as each muscle faces the camera. Three ways, all cheap per frame:
---   * a skinned mesh with a color layer (torso, arms, upper traps): the layer's vertex colors hold a MASK (the tint color, alpha =
+--   * a skinned mesh with a color layer (torso, arms): the layer's vertex colors hold a MASK (the tint color, alpha =
 --     each muscle's weight x its band x how much it faces the camera, in steps), written only when that changes (the same
 --     muscles every rep: once); the fade is the layer part's Transparency (a part property: no mesh change);
 --   * a skinned mesh whose layer shows the gym shorts (the thighs): the whole mesh is tinted through its skin stage's Color;

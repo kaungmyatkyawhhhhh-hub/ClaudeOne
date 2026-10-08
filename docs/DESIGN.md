@@ -287,8 +287,11 @@ shareable before/after snapshot.
   (g_v = (1 - sum w) * g_own + sum(w * g_other)), so a maxed muscle next to a flat one is a smooth slope.
 - Unified muscles (muscle v9, 8 Oct): the torso and the upper arms are each ONE welded mesh (the whole skin of the part;
   per muscle a vertex list and its displacement): pos = base + waist morph + sum(look g x displacement) + veins, so any mix
-  of levels (one muscle huge, the rest 0) is smooth with no holes. The torso's top opening is closed by a low dome under
-  the upper traps; the upper traps, legs, forearms and calves stay shell meshes. The waist tightens with the average growth.
+  of levels (one muscle huge, the rest 0) is smooth with no holes. The torso's top opening is closed by a low dome; the
+  torso grows the traps itself (the package's separate upper traps shell is NOT used: it floated over the chest). The
+  legs are shell meshes that cover the whole thigh (quads, hamstrings, glutes + their shorts), forearms and calves are the
+  static stage meshes. The arms and legs show from level 0 and every plain body part under a mesh is hidden, so no
+  blocky Robloxian part shows. The waist tightens with the average growth.
 - Max = a lean aesthetic V-taper (fitness model, not a bodybuilder); the mass monster sizes come from the manifest
   (mass_monster.g per mesh) plus 12% extra thickness.
 - Widths by Growth Spurt (`Config/Body.Widths`, manifest growth_spurt_width): factor = 1 + k * (height / 4'0" - 1) per
@@ -299,8 +302,8 @@ shareable before/after snapshot.
   lifted by the extra torso depth so the back stays on the pad.
 - Muscles are real EditableMesh muscles (muscle v9 unified): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), each muscle's outline stays on the skin and only the bulge rises with its level (small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
 - Only YOUR character has muscle meshes: a play client holds at most 8 EditableMeshes and a mesh's MeshPart shows nothing
-  once its EditableMesh is gone (measured 8 Oct), and your body needs exactly 8 (torso front + back, two upper arms, two
-  upper legs, the waist, the upper traps). Other players, NPCs and the statue show the plain body with the skin stage;
+  once its EditableMesh is gone (measured 8 Oct), and your body uses 7 (torso front + back, two upper arms, two upper
+  legs, the waist). Other players, NPCs and the statue show the plain body with the skin stage;
   everyone's forearms / calves are the static stage meshes.
 - Skin texture stages (`Config/SkinStages`, ReplicatedStorage.SkinStages Stage1..5, the owner's 15 images in the group
   inventory): the skin (muscle meshes and body parts not under the character's own clothing) wears a SurfaceAppearance

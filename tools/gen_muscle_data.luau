@@ -84,8 +84,13 @@ local function writeField(name, field, list)
 	return #pieces
 end
 
+-- Meshes in the package the game doesn't use: the upper traps shell was made for the old separate torso muscles; on the
+-- unified torso (which grows the traps itself) it floated above the chest with a gap at higher levels (removed 8 Oct).
+local SKIP = { UpperTorso__UpperTraps = true }
+
 for _, entry in ipairs(manifest.meshes) do
 	local name = string.gsub(entry.file, "%.obj$", "")
+	if SKIP[name] then continue end
 	local data = serde.decode("json", fs.readFile(SRC .. "/growdata/" .. name .. ".json"))
 	local verts = #data.base // 3
 	assert(#data.uv / 2 == verts, name .. ": uv count does not match vertex count")
@@ -317,7 +322,7 @@ for _, r in ipairs(index.meshes) do
 		tostring(r.shorts == true), tostring(r.hidePart == true), r.clothing, r.verts, r.tris, table.concat(chunkList, ", ")))
 end
 table.insert(lines, "\t},")
--- the mass monster size of each mesh's muscle (manifest mass_monster.g, by name: UpperTraps has its own)
+-- the mass monster size of each mesh's muscle (manifest mass_monster.g, by name)
 table.insert(lines, "\tmonsterG = {")
 local monsterNames = {}
 for name in pairs(manifest.mass_monster.g) do table.insert(monsterNames, name) end
