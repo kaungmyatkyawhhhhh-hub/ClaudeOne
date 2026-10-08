@@ -55,3 +55,7 @@ You need Android Studio, Node.js 22+, and a Google Play developer account ($25 o
 
 - Item names in the game are made up on purpose. App stores reject apps that use real brands (sneaker, card, watch or toy brands) without permission.
 - The game collects no data and has no ads or purchases, so the privacy forms are simple.
+
+## Web version on Vercel
+
+`vercel.json` builds the game with `node scripts/build-app.mjs` and serves the `docs/` folder (the home-screen web app). No install step or environment variables are needed.
