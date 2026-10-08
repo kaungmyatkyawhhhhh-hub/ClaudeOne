@@ -263,6 +263,26 @@ local function onPlayerAdded(player)
 		data.onboarding.tutorialVersion = Onboarding.Version
 	end
 	data.sessionLock = nil
+	-- The beach gym's own machines are gone (owner, 8 Oct night: it uses the real machines): their weight progress moves to
+	-- the real machine (same tier sets, so the same tier numbers; the higher of the two is kept)
+	for oldId, newId in pairs(require(Config.Machines).Renamed) do
+		local old = data.machines[oldId]
+		if type(old) == "table" then
+			local new = data.machines[newId]
+			if type(new) ~= "table" then
+				data.machines[newId] = old
+			else
+				new.unlocked = math.max(new.unlocked or 1, old.unlocked or 1)
+				new.best = math.max(new.best or 0, old.best or 0)
+				new.selected = math.min(new.selected or old.selected or 1, new.unlocked)
+			end
+			data.machines[oldId] = nil
+		end
+		if data.machinesUsed[oldId] then
+			data.machinesUsed[newId] = true
+			data.machinesUsed[oldId] = nil
+		end
+	end
 	-- Studio testing: set a "ReplayTutorial" attribute (checked) on Workspace to see the genetics reveal and
 	-- the tutorial again. Ignored on live servers.
 	if RunService:IsStudio() and workspace:GetAttribute("ReplayTutorial") then

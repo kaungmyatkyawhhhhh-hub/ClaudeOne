@@ -2,7 +2,23 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (8 Oct, ~11 PM): other players' muscles as body stage meshes (ON; owner's 2-player test next)
+## LATEST (9 Oct, after midnight): the beach gym uses the real machines
+- The 9 beach-only machines (Beach Curl, Beach Lateral Raise, Beach Shrug, 3 rows) are gone, configs too; in their spots
+  copies of the real Bicep Curl, Lateral Raise and Shrugs (`GymKit.Pro`, same model / name / config / tiers / EXP /
+  MachineId), done in place with `Town.RebuildBeachMachines()` (the Town builder builds them the same way). Weights,
+  "NEW" tags and quests are shared with the pro gym (5 beach curl reps recorded `BicepCurl`). The beach squat racks,
+  benches and pull-up bars already were the real ones. Pro gym checked: only real machines, no "Pro" copies; no "Beach"
+  machine names left anywhere (prompts, signs, quests, the Muscles panel lists machine names from the config).
+- Every beach machine has the model attribute `Gym = "Beach"`: `Machines.GymOpenAt` opens it with the beach gym (Growth
+  Spurt 1), never later than its own gym, so the curls there open at 1 (in the pro gym at 2). Tested: at Growth Spurt 0
+  "The beach gym opens at Growth Spurt 1."; at 6 you sit down. The Growth Spurt goal doesn't change (same muscles).
+- Old saves: progress on BeachCurl / BeachRaise / BeachShrug moves to the real machine (`Machines.Renamed`, PlayerData;
+  the higher tier wins). `TestMachine = "Beach/BicepCurl"` picks the beach copy without raising Growth Spurts.
+- Stage meshes: the client checks the downloads again 6 s and 30 s after the first pass (a failure outside it was
+  missed once). Screenshots: beach_real_machines_row, pro_same_machines.
+- Not saved to Roblox yet (owner: File > Save to Roblox; the Studio window is titled "Place2").
+
+## Before that (8 Oct, ~11 PM): other players' muscles as body stage meshes (ON; owner's 2-player test next)
 - **Why:** a client holds at most 8 EditableMeshes, a hard COUNT (measured: plain, fixed-size, asset copies and a 200-
   triangle mesh all fail once 8 exist), and your own body uses 7. So nobody else can have live muscle meshes; LOD
   EditableMeshes don't help either. Also `AssetService:CreateAssetAsync` is still "not available yet" (no mesh upload from

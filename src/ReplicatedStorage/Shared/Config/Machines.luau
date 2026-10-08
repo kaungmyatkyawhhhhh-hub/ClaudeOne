@@ -224,23 +224,11 @@ for _, machine in ipairs(PRO) do
 	table.insert(Machines.List, machine)
 end
 
--- Beach gym (town hub, opens at Growth Spurt 1): outdoor cable stacks under a canopy (TownService builds them with the
--- pro gym's machine builder). They only train muscles the starter gym already trains, so the Growth Spurt goal
--- never changes; they're a faster way to bring up arms, shoulders and traps after the first spurt.
-local BEACH = {
-	{ id = "BeachCurl", name = "Beach Curl", pose = "BicepCurl", tiers = "Cable", staminaCost = 4,
-		muscles = { { id = "Biceps", share = 1 }, { id = "Forearms", share = 0.4 } } },
-	{ id = "BeachRaise", name = "Beach Lateral Raise", pose = "LateralRaise", tiers = "Cable", staminaCost = 4,
-		muscles = { { id = "SideDelts", share = 1 } } },
-	{ id = "BeachShrug", name = "Beach Shrug", pose = "Shrug", tiers = "Barbell", staminaCost = 4,
-		muscles = { { id = "Traps", share = 1 }, { id = "Forearms", share = 0.4 } } },
-}
-for _, machine in ipairs(BEACH) do
-	machine.gym = "Beach"
-	machine.layout = "Center"
-	machine.tiers = Machines.TierSets[machine.tiers]
-	table.insert(Machines.List, machine)
-end
+-- Beach gym (town hub, opens at Growth Spurt 1): no machines of its own (owner, 8 Oct night): it has copies of the REAL
+-- machines (same models, configs, tiers, EXP; the same MachineId, so unlocked weights, "NEW" tags and quests are shared
+-- with every gym). A copy carries the model attribute Gym = "Beach": it opens with the beach gym but never later than its
+-- own gym would (Machines.GymOpenAt). The old beach-only machines' saved progress moves to the real ones (PlayerData).
+Machines.Renamed = { BeachCurl = "BicepCurl", BeachRaise = "LateralRaise", BeachShrug = "Shrugs" }
 
 -- Seasonal: only built while Winter Lifts runs (SeasonService). Trains muscles the starter gym already trains,
 -- so it never changes what counts toward a Growth Spurt.
@@ -257,6 +245,18 @@ end
 
 -- Gyms open by Growth Spurt count (the pro gym opens at Growth Spurt 2).
 Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 2, Seasonal = 0 }
+
+-- The Growth Spurt count a machine MODEL opens at: its config's gym, or the gym it stands in (the model attribute "Gym",
+-- e.g. a real Bicep Curl in the beach gym opens with the beach gym) when that opens earlier.
+function Machines.GymOpenAt(machine, model: Instance?): (number, string)
+	local gym = machine.gym
+	local need = Machines.GymUnlock[gym] or 0
+	local placed = model and model:GetAttribute("Gym")
+	if type(placed) == "string" and Machines.GymUnlock[placed] and Machines.GymUnlock[placed] < need then
+		return Machines.GymUnlock[placed], placed
+	end
+	return need, gym
+end
 
 -- Set of muscle ids that some open machine trains (main or a real secondary: a light touch, below GoalShare, like the
 -- hack squat's calves, still gains a little but doesn't put that muscle into the Growth Spurt goal).

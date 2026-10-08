@@ -16,7 +16,6 @@ local GymKit = require(script.Parent.GymKit)
 local Gyms = require(script.Parent.Gyms) -- (the gyms' size: the gym fronts, parapets and roofs follow it)
 local Town = require(ReplicatedStorage.Shared.Config.Town)
 local Stamina = require(ReplicatedStorage.Shared.Config.Stamina)
-local Machines = require(ReplicatedStorage.Shared.Config.Machines)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 
 local Builder = {}
@@ -1498,6 +1497,16 @@ local function plyoBox(m, cf, h)
 	p(m, "PlyoHandle", Vector3.new(0.8, 0.3, 0.05), cf * CFrame.new(0, h * 0.7, -1.01), hex("#5E4632"), M.Wood)
 end
 
+-- The beach gym's cable rows: copies of the real pro machines (same model, MachineId, config).
+Builder.BeachRow = { "BicepCurl", "LateralRaise", "Shrugs" }
+-- Every machine in the beach gym gets Gym = "Beach": it opens with the beach gym (Machines.GymOpenAt), never later than
+-- its own gym would.
+function Builder.TagBeachMachines(gym)
+	for _, item in ipairs(gym:GetDescendants()) do
+		if item:IsA("Model") and item:GetAttribute("MachineId") then item:SetAttribute("Gym", "Beach") end
+	end
+end
+
 local function buildBeachGym()
 	local spec = Town.BeachGym
 	local center, size = spec.Center, spec.Size
@@ -1556,24 +1565,10 @@ local function buildBeachGym()
 		ft.Parent = fgui
 	end
 
-	-- the beach machines: 3 of each, one of each kind under every shade, all facing the sea
-	local beachMachines = {}
-	for _, machine in ipairs(Machines.List) do
-		if machine.gym == "Beach" then table.insert(beachMachines, machine) end
-	end
-	local builders = {
-		BeachCurl = GymKit.Pro.BicepCurl, BeachRaise = GymKit.Pro.LateralRaise, BeachShrug = GymKit.Pro.Shrugs,
-	}
+	-- the cable rows: the REAL machines (owner, 8 Oct night: no beach versions), one of each under every shade, facing the sea
 	local function machineRow(rowCenter)
-		for index, machine in ipairs(beachMachines) do
-			local x = rowCenter.X + (index - 2) * 8
-			local built = builders[machine.id] and builders[machine.id](m, CFrame.new(x, 0.25, rowCenter.Z))
-			if built then
-				built.Name = machine.id
-				built:SetAttribute("MachineId", machine.id)
-				local prompt = built:FindFirstChildWhichIsA("ProximityPrompt", true)
-				if prompt then prompt.ObjectText = machine.name end
-			end
+		for index, id in ipairs(Builder.BeachRow) do
+			GymKit.Pro[id](m, CFrame.new(rowCenter.X + (index - 2) * 8, 0.25, rowCenter.Z))
 		end
 		-- a rubber mat under the row
 		p(m, "Mat", Vector3.new(26, 0.2, 10), CFrame.new(rowCenter.X, 0.08, rowCenter.Z + 0.8), hex("#2A2A2E"), M.Rubber, true)
@@ -1685,6 +1680,7 @@ local function buildBeachGym()
 	GymKit.waterFountain(m, CFrame.new(wx + 5, 0, wz + 8) * CFrame.Angles(0, rad(-90), 0))
 	GymKit.towelRack(m, CFrame.new(wx + 4.8, 0, z0 + 23) * CFrame.Angles(0, rad(90), 0))
 	for _, x in ipairs({ x1 - 10, x1 - 22 }) do TownKit.bench(m, look(Vector3.new(x, 0, z1 - 2.5), Vector3.new(x, 0, z1 + 30))) end
+	Builder.TagBeachMachines(m)
 	return m
 end
 
@@ -2055,6 +2051,34 @@ function Builder.RebuildSkatePark()
 		end
 	end
 	return buildSkatePark()
+end
+
+-- Swaps the beach gym's old beach-only machines (BeachCurl / BeachRaise / BeachShrug, before 8 Oct night) for copies of the
+-- real ones in the same spots, and tags every machine there; nothing else in the town is touched. Returns a report.
+function Builder.RebuildBeachMachines()
+	local gym = workspace.Town.BeachGym
+	local swap = { BeachCurl = "BicepCurl", BeachRaise = "LateralRaise", BeachShrug = "Shrugs" }
+	local made, removed = 0, 0
+	for _, item in ipairs(gym:GetChildren()) do
+		local newId = item:IsA("Model") and (swap[item:GetAttribute("MachineId") or ""] or swap[item.Name])
+		if newId then
+			local pivot = item:GetPivot()
+			item:Destroy()
+			removed += 1
+			GymKit.Pro[newId](gym, pivot)
+			made += 1
+		end
+	end
+	Builder.TagBeachMachines(gym)
+	local ids = {}
+	for _, item in ipairs(gym:GetDescendants()) do
+		local id = item:IsA("Model") and item:GetAttribute("MachineId")
+		if id then ids[id] = (ids[id] or 0) + 1 end
+	end
+	local list = {}
+	for id, count in pairs(ids) do table.insert(list, id .. " x" .. count) end
+	table.sort(list)
+	return string.format("removed %d, built %d; machines now: %s", removed, made, table.concat(list, ", "))
 end
 
 return Builder

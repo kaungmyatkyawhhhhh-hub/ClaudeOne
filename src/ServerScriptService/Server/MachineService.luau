@@ -339,8 +339,9 @@ local function enter(player, model)
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not machine or not humanoid or not root or humanoid.Health <= 0 or humanoid.Sit or not PlayerData.Get(player) then return end
 	-- gyms open with Growth Spurts (the pro gym at 2)
-	if PlayerData.Get(player).growthSpurts < (Machines.GymUnlock[machine.gym] or 0) then
-		Remotes.PlayerEvent:FireClient(player, "GymLocked", { gym = machine.gym, spurts = Machines.GymUnlock[machine.gym] })
+	local openAt, gym = Machines.GymOpenAt(machine, model)
+	if PlayerData.Get(player).growthSpurts < openAt then
+		Remotes.PlayerEvent:FireClient(player, "GymLocked", { gym = gym, spurts = openAt })
 		return
 	end
 
@@ -562,7 +563,8 @@ function MachineService.Start()
 	Players.PlayerRemoving:Connect(leave)
 
 	-- Studio testing: Workspace attribute "TestMachine" = a machine model's name (or its MachineId) puts the first player on
-	-- it (to check every pose); "" gets them off.
+	-- it (to check every pose; Growth Spurts raised to 2 so every gym is open); "Gym/Id" (e.g. "Beach/BicepCurl") picks the
+	-- copy standing in that gym and leaves the Growth Spurts alone (to check the gym locks); "" gets them off.
 	if RunService:IsStudio() then
 		workspace:GetAttributeChangedSignal("TestMachine"):Connect(function()
 			local player = Players:GetPlayers()[1]
@@ -570,10 +572,13 @@ function MachineService.Start()
 			leave(player)
 			local wanted = workspace:GetAttribute("TestMachine")
 			if type(wanted) ~= "string" or wanted == "" then return end
+			local gym, id = string.match(wanted, "^(%w+)/(%w+)$")
 			for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-				if model.Name == wanted or model:GetAttribute("MachineId") == wanted then
+				local match = if gym then model:GetAttribute("Gym") == gym and model:GetAttribute("MachineId") == id
+					else model.Name == wanted or model:GetAttribute("MachineId") == wanted
+				if match then
 					local data = PlayerData.Get(player)
-					if data and data.growthSpurts < 2 then data.growthSpurts = 2 end -- (the pro gym too)
+					if not gym and data and data.growthSpurts < 2 then data.growthSpurts = 2 end -- (the pro gym too)
 					enter(player, model)
 					return
 				end

@@ -389,6 +389,10 @@ Starter gym: warm, old-school, brick walls.
 
 ## 15. World, menu, onboarding
 Town hub: starter gym, pro gym, beach gym + posing stage, skate park, smoothie bar, clothing store.
+The beach gym (opens at Growth Spurt 1) has NO machines of its own (owner, 8 Oct night): copies of the real machines
+(same model, name, config, tiers, EXP and MachineId, so unlocked weights, the "NEW" tag and quests are shared with every
+gym); only the surroundings are beachy. A copy opens with the beach gym, never later than its own gym
+(`Machines.GymOpenAt`, model attribute `Gym`). No "Pro" copies in the pro gym either.
 Start: a loading screen from the first frame (ReplicatedFirst: dark, GYM ARC title, segmented bar) until the area behind
 the menu has streamed in (RequestStreamAroundAsync at the shot, ~8s max; the gym building, front and entrance are
 Persistent models). Menu: a fixed eye-height shot of the starter gym entrance with a very slow drift (the MenuCamera

@@ -62,8 +62,8 @@ local function mainMuscle(machine)
 	local entry = machine.muscles[1]
 	return entry and Muscles.ById[entry.id]
 end
-local function lockText(machine): string?
-	local need = Machines.GymUnlock[machine.gym] or 0
+local function lockText(machine, model): string?
+	local need = Machines.GymOpenAt(machine, model)
 	if (ClientData.Get().growthSpurts or 0) < need then return "Growth Spurt " .. need end
 	return nil
 end
@@ -187,7 +187,7 @@ local function fill(model, machine)
 	for _, child in ipairs(figureSlot:GetChildren()) do
 		if not child:IsA("UIAspectRatioConstraint") then child:Destroy() end
 	end
-	local lock = lockText(machine)
+	local lock = lockText(machine, model)
 	local muscle = mainMuscle(machine)
 	figureSlot.Visible = lock == nil
 	lockSlot.Visible = lock ~= nil

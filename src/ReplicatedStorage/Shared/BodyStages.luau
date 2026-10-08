@@ -95,17 +95,19 @@ function BodyStages.Progress(): number
 end
 if not available or not RunService:IsClient() then ready = true end
 if available and RunService:IsClient() then
-	task.spawn(function()
-		local byId = {}
-		local list = {}
+	-- Studio test hook: Workspace attribute TestBrokenStage = a template name acts as a failed download that never repairs
+	local test = workspace:GetAttribute("TestBrokenStage")
+	local testPart = type(test) == "string" and templates:FindFirstChild(test) or nil
+	-- the templates whose mesh is not (or no longer) loaded, checked in batches; `count` moves the loading bar
+	local function scan(count: boolean): { MeshPart }
+		local list, byId, failed = {}, {}, {}
 		for _, part in ipairs(templates:GetChildren()) do
-			if part:IsA("MeshPart") then
+			if part:IsA("MeshPart") and not broken[part.Name] then
 				byId[part.MeshId] = part
 				table.insert(list, part)
 			end
 		end
-		total = #list
-		local failed = {}
+		if count then total = #list end
 		for first = 1, #list, BATCH do
 			local batch = table.move(list, first, math.min(first + BATCH - 1, #list), 1, {})
 			pcall(function()
@@ -117,18 +119,31 @@ if available and RunService:IsClient() then
 					end
 				end)
 			end)
-			loaded = math.min(first + BATCH - 1, #list)
+			if count then loaded = math.min(first + BATCH - 1, #list) end
 		end
-		-- Studio test hook: Workspace attribute TestBrokenStage = a template name acts as a failed download that never repairs
-		local test = workspace:GetAttribute("TestBrokenStage")
-		local testPart = type(test) == "string" and templates:FindFirstChild(test) or nil
-		if testPart and not table.find(failed, testPart) then table.insert(failed, testPart) end
+		if testPart and testPart.Parent and not broken[testPart.Name] and not table.find(failed, testPart) then table.insert(failed, testPart) end
+		return failed
+	end
+	local repair -- (below)
+	local function flag(failed: { MeshPart })
 		for _, part in ipairs(failed) do
 			broken[part.Name] = true
 			warn("[BodyStages] the stage mesh " .. part.Name .. " (" .. part.MeshId .. ") failed to download; using the nearest other stage and trying again")
+			task.spawn(repair, part)
 		end
+	end
+	task.spawn(function()
+		flag(scan(true))
 		ready = true
-		for _, template in ipairs(failed) do
+		-- a download can also fail outside this pass (measured 8 Oct night: the first pass said fine, a later fetch of the
+		-- same mesh failed): look again a little later
+		for _, delay in ipairs({ 6, 30 }) do
+			task.wait(delay)
+			flag(scan(false))
+		end
+	end)
+	repair = function(template: MeshPart)
+		do
 			for attempt = 1, 4 do
 				task.wait(attempt * 3)
 				local ok, fresh = false, nil
@@ -153,7 +168,7 @@ if available and RunService:IsClient() then
 				end
 			end
 		end
-	end)
+	end
 end
 
 -- the body parts a region stands in for (MuscleRig's garments / plain thighs)
