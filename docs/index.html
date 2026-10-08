@@ -5606,7 +5606,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=108,WN=[
+const WN_VER=109,WN=[
+ ["🌬️","Wind farms reach the corners","In the Sky Islands a Wind farm now boosts all 8 tiles around it, diagonals included, so one wind farm can power a whole ring of mines.","2026-10-09T19:00"],
  ["📏","Rebirth needs height now","Rebirth at the gym's lift station now needs you to be tall enough instead of a number of growth spurts: 190 cm for your first, then 15 cm more each time. Every 40 cm over the requirement gives an extra rebirth in one go.","2026-10-09T18:00"],
  ["🏅","Achievements pay, pets work, cars get a garage","Achievements now pop up with a Claim button and pay real money plus a crate, hype, energy or a rare find. Every 10 you claim adds +1% to every sale, and 15, 40 and 70 unlock new outfits. Flip of the day (Now button) gives everyone the same item: get the best markup and climb today's leaderboard. Your dog now sniffs out fakes, your husky carries an extra item and your parrot spots treasure on the Frontier Road. Mo's Garage and the Docks have a new Garage for paint, number plates, style and tuning, and the Docks show tonight's lineup of everyone's cars. The bottom of the screen is tidier too.","2026-10-09T14:00"],
  ["🌌","The worlds come home","The Cosmos has an Export Dock with tech that boosts your life back in Flip City. Deep Time has a Trading Post for fossil crates that sell 60% higher at the Luxury Exchange. The Gem Exchange sells Frontier decor worth double in the buildings you own. The bounty board has world jobs that pay triple, the weekly boss sometimes shows up in the Cosmos or Deep Time, and the new Wallet (Now button) shows where all your money comes from.","2026-10-09T10:00"],
@@ -8482,8 +8483,8 @@ function openTimeMachine(back){room="tmach";const W=w3(),has=genN("multi")>0;
 /* ================= World 4: Tycoon Frontier. Five build-it-yourself zones, all run on Gems ================= */
 const W4W=1800,W4H=1500,GEM="💎",gemF=v=>GEM+(v>=1e6?radF(Math.floor(v)):fmtN(Math.floor(v))),starF=v=>v>=1e6?radF(v):fmtN(v),W4_ZIG=10,W4_COST=500*AMB,W4_COLS=5,W4_ROWS=6;
 const W4Z=[
- {k:"sky",n:"Sky Islands",ic:"☁️",unl:0,c:"#4fb3e8",tile:"#8fd18a",bg:"linear-gradient(#8fd3ff,#e6f6ff)",d:"Little islands drifting over the clouds. Put wind farms next to your mines, and keep a storm shield close by, because storms roll through every few minutes.",B:[
-  {k:"mine",n:"Crystal mine",ic:"⛏️",c:10,r:.5},{k:"wind",n:"Wind farm",ic:"🌬️",c:60,boost:.3,d:"+30% to every neighbour"},{k:"farm",n:"Sky farm",ic:"🌾",c:150,r:4},{k:"shield",n:"Storm shield",ic:"🛡️",c:400,shield:1,d:"Protects itself and neighbours from storms"},{k:"hotel",n:"Cloud hotel",ic:"🏨",c:1200,r:22},{k:"ship",n:"Airship dock",ic:"🛸",c:9000,r:140}]},
+ {k:"sky",n:"Sky Islands",ic:"☁️",unl:0,c:"#4fb3e8",tile:"#8fd18a",bg:"linear-gradient(#8fd3ff,#e6f6ff)",d:"Little islands drifting over the clouds. Put wind farms among your mines (they boost all 8 tiles around them), and keep a storm shield close by, because storms roll through every few minutes.",B:[
+  {k:"mine",n:"Crystal mine",ic:"⛏️",c:10,r:.5},{k:"wind",n:"Wind farm",ic:"🌬️",c:60,boost:.3,wide:1,d:"+30% to all 8 tiles around it, corners too"},{k:"farm",n:"Sky farm",ic:"🌾",c:150,r:4},{k:"shield",n:"Storm shield",ic:"🛡️",c:400,shield:1,d:"Protects itself and neighbours from storms"},{k:"hotel",n:"Cloud hotel",ic:"🏨",c:1200,r:22},{k:"ship",n:"Airship dock",ic:"🛸",c:9000,r:140}]},
  {k:"park",n:"Theme Park",ic:"🎢",unl:5000,c:"#ff4fd8",tile:"#9fd68a",bg:"linear-gradient(#ffd6f0,#fff3c4)",d:"Rides make the money. A food stand right next to a ride keeps the queue fed and happy, and every fountain cheers up the whole park.",B:[
   {k:"caro",n:"Carousel",ic:"🎠",c:3000,r:60,ride:1},{k:"food",n:"Food stand",ic:"🌭",c:5000,boost:.4,rideOnly:1,d:"+40% to neighbouring rides"},{k:"bump",n:"Bumper cars",ic:"🚗",c:18000,r:260,ride:1},{k:"fount",n:"Fountain",ic:"⛲",c:12000,happy:.05,d:"+5% to the whole park (up to +60%)"},{k:"ferris",n:"Ferris wheel",ic:"🎡",c:90000,r:1100,ride:1},{k:"coast",n:"Roller coaster",ic:"🎢",c:600000,r:6500,ride:1}]},
  {k:"sea",n:"Underwater City",ic:"🐠",unl:1.5e6,c:"#2a8ad7",tile:"#2f6fa8",bg:"linear-gradient(#1f6f8a,#0b2a4a)",d:"Down here everything needs air. Keep enough pumps running or the whole city slows to a crawl.",B:[
@@ -8528,6 +8529,8 @@ const w4Art=(k,sz=40)=>`<svg viewBox="0 0 40 40" width="${sz}" height="${sz}" ar
 const W4ZK=k=>W4Z.find(z=>z.k===k),W4B=(z,k)=>z.B.find(b=>b.k===k);
 const w4=()=>{S.w4=S.w4||{open:0,gems:0,tot:0,last:Date.now(),unl:{sky:1},z:{},ex:"",gift:0};W4Z.forEach(z=>{if(!S.w4.z[z.k])S.w4.z[z.k]={t:Array(W4_COLS*W4_ROWS).fill(null),storm:null,ev:0}});return S.w4};
 const inW4=()=>typeof SCN!=="undefined"&&(SCN?SCN.kind==="w4"||SCN.kind==="castle":!!(S&&S.px>=X4));
+// all 8 surrounding tiles, diagonals too (the Sky Islands wind farm reaches these)
+const w4Nb8=i=>{const x=i%W4_COLS,y=Math.floor(i/W4_COLS),o=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx>=0&&nx<W4_COLS&&ny>=0&&ny<W4_ROWS)o.push(ny*W4_COLS+nx)}return o};
 const w4Nb=i=>{const x=i%W4_COLS,y=Math.floor(i/W4_COLS),o=[];if(x>0)o.push(i-1);if(x<W4_COLS-1)o.push(i+1);if(y>0)o.push(i-W4_COLS);if(y<W4_ROWS-1)o.push(i+W4_COLS);return o};
 const w4Count=(zk,bk)=>w4().z[zk].t.filter(t=>t&&t.k===bk).length;
 const w4Cost=(z,b)=>Math.round(b.c*Math.pow(1.12,w4Count(z.k,b.k)));
@@ -8538,7 +8541,7 @@ function w4Calc(zk){const z=W4ZK(zk),Z=w4().z[zk],T=Z.t,st=T.map(()=>""),out=T.m
   T.forEach((t,i)=>{if(!t)return;const b=W4B(z,t.k);if(!b)return;if(b.o2)o2+=b.o2*t.l;if(b.use)use+=b.use;if(b.pop)pop+=b.pop*t.l;if(b.work)work+=b.work;if(b.def)def+=b.def*t.l;if(b.happy)happy+=b.happy*t.l});
   const now=Date.now(),storm=Z.storm&&Z.storm.until>now?Z.storm:null,shielded=i=>[i,...w4Nb(i)].some(j=>T[j]&&W4B(z,T[j].k)&&W4B(z,T[j].k).shield);
   const air=use?Math.min(1,o2/use):1,staff=work?Math.min(1,pop/work):1,fun=1+Math.min(.6,happy);
-  T.forEach((t,i)=>{if(!t)return;const b=W4B(z,t.k);if(!b||!b.r)return;let m=1;w4Nb(i).forEach(j=>{const n=T[j]&&W4B(z,T[j].k);if(n&&n.boost&&(!n.rideOnly||b.ride))m+=n.boost*(1+(T[j].l-1)*.25)});
+  T.forEach((t,i)=>{if(!t)return;const b=W4B(z,t.k);if(!b||!b.r)return;let m=1;const n4=w4Nb(i);w4Nb8(i).forEach(j=>{const n=T[j]&&W4B(z,T[j].k);if(n&&n.boost&&(!n.rideOnly||b.ride)&&(n4.includes(j)||n.wide))m+=n.boost*(1+(T[j].l-1)*.25)});
     if(b.need&&!w4Nb(i).some(j=>T[j]&&T[j].k===b.need)){st[i]="🔌";return}
     if(storm&&storm.hit.includes(i)&&!shielded(i)){st[i]="⛈️";return}
     let v=b.r*t.l*m;if(zk==="sky")v*=1+.05*(w4().relics||0);if(zk==="sea")v*=1+.03*Object.keys(w4().aqua||{}).length;if(zk==="fac"&&(w4().oc||0)>Date.now())v*=2;if(zk==="king"&&(w4().decree||0)>Date.now())v*=2;if((w4().feast||0)>Date.now())v*=1.5;if(zk==="park")v*=fun;if(zk==="sea"){v*=air;if(air<1)st[i]="🫧"}if(zk==="king"){v*=staff;if(staff<1)st[i]="👷"}if(m>1&&!st[i])st[i]="⚡";out[i]=v});
