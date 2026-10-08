@@ -9,6 +9,9 @@ const src = readFileSync("index.html", "utf8");
 const body = src.replace(/<link rel="preconnect"[^>]*>\n?/g, "")
   .replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^>]*>/, '<link rel="stylesheet" href="fonts/fonts.css">');
 
+// link previews (Discord, WhatsApp, iMessage) need full addresses
+const SITE = "https://fliprush.site";
+
 const webAppHead = `<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
@@ -17,7 +20,21 @@ const webAppHead = `<link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Flip Rush">
 <meta name="theme-color" content="#0b0d11">
-<meta name="description" content="Buy under market. Sell into the hype. Make rent before the bell.">`;
+<meta name="description" content="Buy under market. Sell into the hype. Build an empire with friends. Free to play in your browser.">
+<link rel="canonical" href="${SITE}/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Flip Rush">
+<meta property="og:title" content="Flip Rush: play free in your browser">
+<meta property="og:description" content="Buy under market. Sell into the hype. Build an empire with friends.">
+<meta property="og:url" content="${SITE}/">
+<meta property="og:image" content="${SITE}/icons/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Flip Rush: a city of shops, cars and people seen from above">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Flip Rush: play free in your browser">
+<meta name="twitter:description" content="Buy under market. Sell into the hype. Build an empire with friends.">
+<meta name="twitter:image" content="${SITE}/icons/og.png">`;
 
 const registerWorker = `<script>
 if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
