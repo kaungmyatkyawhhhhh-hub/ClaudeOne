@@ -5535,7 +5535,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=103,WN=[
+const WN_VER=104,WN=[
+ ["🔧","No more stray circles","Fixed the big white circles that showed up across the Cosmos, Deep Time and other places. They were the island shoreline ripple drawing where it didn't belong.","2026-10-08T20:00"],
  ["🧹","Tidier screen","Uncle Ray's tips are now small notes in the corner instead of big cards, never repeat, and come at most once every 45 seconds (you can switch them off in Settings). On phones the Now button is a small icon so the cash panel has room. Fixed the oversized alert pills.","2026-10-08T19:00"],
  ["🎃","Halloween is here","All October: trick-or-treat at the glowing porches after 8 PM for candy, bid on a cursed lot at Auction Night every night, and trade candy for the Witch hat, Vampire cape and Skeleton suit. Winter Fest comes in December with carolling, a snowball race and its own outfits.","2026-10-08T17:30"],
  ["🛋️","Decorate what you own","Tap a building you own on the Deeds screen to decorate inside. Every piece of decor adds 4% to that building's income. Visit friends' buildings from the Deeds screen and leave them a star.","2026-10-08T16:30"],
@@ -6253,7 +6254,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
   else if(SCN.kind==="arena"){}
   else if(SCN.kind==="planet")planetAnim();
   else if(SCN.kind==="prehist")prehistAnim();if(SCN.kind==="w4")w4Anim();if(SCN.kind==="castle")castleAnim();if(SCN.kind==="road")roadAnim();
-  else{const G=islGeo(SCN.k);ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=3;for(let k=0;k<2;k++){const s=1+((wt*.08+k*.5)%1)*.12;ctx.globalAlpha=1-((wt*.08+k*.5)%1);ctx.beginPath();ctx.ellipse(G.cx,G.cy,G.rx*s+6,G.ry*s+6,0,0,7);ctx.stroke()}ctx.globalAlpha=1;
+  if(SCN.kind==="isle"){const G=islGeo(SCN.k);ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=3;for(let k=0;k<2;k++){const s=1+((wt*.08+k*.5)%1)*.12;ctx.globalAlpha=1-((wt*.08+k*.5)%1);ctx.beginPath();ctx.ellipse(G.cx,G.cy,G.rx*s+6,G.ry*s+6,0,0,7);ctx.stroke()}ctx.globalAlpha=1;
     for(let j=0;j<4;j++){const a=1.2+j*1.3+Math.sin(wt*.2+j)*.1,x=G.cx+Math.cos(a)*(G.rx+60),y=G.cy+Math.sin(a)*(G.ry+50)+Math.sin(wt*2+j)*3;ctx.fillStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.ellipse(x,y+4,14,5,0,0,7);ctx.fill();ctx.fillStyle=["#e8b896","#8d5a3b","#f3d0b5","#b9825c"][j];ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill()}
     {const b=Math.sin(wt*1.6)*2,x=G.cx+60,y=G.cy+G.ry+60;ctx.fillStyle="#f4f6fa";ctx.beginPath();ctx.moveTo(x-40,y+b);ctx.lineTo(x+40,y+b);ctx.quadraticCurveTo(x+52,y+6+b,x+38,y+12+b);ctx.lineTo(x-34,y+12+b);ctx.closePath();ctx.fill();ctx.fillStyle="#2a3cff";ctx.fillRect(x-16,y-8+b,30,8)}
     if(G.t===2){const vx=G.cx-G.rx*.42,vy=G.cy-G.ry*.3-160;ctx.fillStyle=`rgba(200,200,200,${.45+.15*Math.sin(wt)})`;for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(vx+j*10+Math.sin(wt+j)*4,vy-j*24-((wt*12)%24),12+j*4,0,7);ctx.fill()}}
