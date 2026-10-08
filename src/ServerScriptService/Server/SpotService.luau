@@ -145,7 +145,9 @@ local function stopSpotting(player, reason: string)
 	spotting[player] = nil
 	local spot = spots[model]
 	release(player)
-	send(player, "Ended", { reason = reason })
+	-- (with the session's totals, for the spotter's "you spotted N reps, +C coins" wrap-up)
+	local record = spot and spot.spotters[player]
+	send(player, "Ended", { reason = reason, reps = record and record.totalReps or 0, coins = record and record.totalCoins or 0 })
 	if not spot then return end
 	spot.spotters[player] = nil
 	local index = table.find(spot.order, player)
@@ -269,13 +271,18 @@ function SpotService.OnRep(lifter)
 		local data = PlayerData.Get(player)
 		if data then
 			record.reps += 1
+			record.totalReps = (record.totalReps or 0) + 1
 			PlayerData.SetStat(player, "spotReps", (data.stats.spotReps or 0) + 1)
+			local clicking = now < record.clickingUntil
+			local paid = nil
 			if record.reps >= Spotting.RewardEvery then
 				record.reps = 0
-				local coins = Spotting.RewardCoins + (if now < record.clickingUntil then Spotting.RewardClickingCoins else 0)
-				PlayerData.AddCoins(player, coins)
-				send(player, "Reward", { coins = coins })
+				paid = Spotting.RewardCoins + (if clicking then Spotting.RewardClickingCoins else 0)
+				PlayerData.AddCoins(player, paid)
+				record.totalCoins = (record.totalCoins or 0) + paid
 			end
+			-- every lifter rep reaches the spotter (their payout bar, the "assist" when they were pushing, the coins)
+			send(player, "Rep", { progress = record.reps, every = Spotting.RewardEvery, assist = clicking, paid = paid })
 			TitleService.Check(player)
 		end
 	end

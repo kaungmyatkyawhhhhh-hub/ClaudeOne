@@ -31,6 +31,12 @@ return {
 	PersonalRecord = { ids = { 9113421788 }, volume = 0.2, pitch = 0, basePitch = 1.2, group = "Gameplay", maxLength = 1.8 },       -- PLACEHOLDER (Bell Rings): NEW PR banner
 	Grew = { ids = { 9119388384 }, volume = 0.35, pitch = 0.03, basePitch = 1.15, group = "Gameplay", maxLength = 1.2 },            -- PLACEHOLDER (Distant Metal Booms): "you grew" moment
 	CrowdOoh = { ids = { 9119388384 }, volume = 0.3, pitch = 0.04, basePitch = 1.3, group = "Gameplay", range = { 16, 80 }, maxLength = 1.4 }, -- PLACEHOLDER (Distant Metal Booms, higher): the crowd "ooh" when a pose hits; owner picks the real id
+	-- Spotting (SpotClient; all PLACEHOLDERS made from ids above: the owner picks the real ones)
+	SpotPush = { ids = { 9114212934 }, volume = 0.06, pitch = 0.04, basePitch = 1.1, group = "UI" },                          -- PLACEHOLDER (Button click): every push; the pitch climbs with the combo
+	SpotBoostOn = { ids = { 9116163687 }, volume = 0.2, pitch = 0.02, basePitch = 1.45, group = "Gameplay", maxLength = 0.9 },  -- PLACEHOLDER (Key Dings, high): you start counting as clicking
+	SpotCombo = { ids = { 9116163687 }, volume = 0.16, pitch = 0.02, basePitch = 1.6, group = "UI", maxLength = 0.8 },          -- PLACEHOLDER (Key Dings, higher): combo 10 / 25 / 50 / 100
+	SpotAssist = { ids = { 9116717455, 9116717780 }, volume = 0.14, pitch = 0.05, basePitch = 1.2, group = "Gameplay", maxLength = 0.5 }, -- PLACEHOLDER (Metal Knocks): the lifter's rep landed while you pushed
+	SpotPayout = { ids = { 9116163687 }, volume = 0.24, pitch = 0.02, basePitch = 1.2, group = "Gameplay", maxLength = 1.0 },   -- PLACEHOLDER (Key Dings): spotting coins paid out
 
 	-- Interface (2D, quieter than gameplay)
 	Click = { ids = { 9114212934 }, volume = 0.1, pitch = 0.05, group = "UI" },                  -- Button click: every button press

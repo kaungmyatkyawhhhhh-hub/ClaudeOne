@@ -15,6 +15,13 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   in play with server-sent example messages: request card (top left), spotter panel, hype pose, hands pose at a bench
   (hands under the bar), clicks on the world reach the server as pushes; no errors. NOT tested: two real players.
 - Screenshots: spot_request_card, spot_spotter_panel_hype, spot_hands_bench_middle.
+- **Spotter feel (owner: "more dopamine"):** a ring where you click (gold while boosting), a push tick climbing in pitch
+  with the combo, a combo counter ("x23", gold from 10) that hops, milestones 10 / 25 / 50 / 100 / 200 (ding, gold
+  flash, "COMBO 25" floats up), boost on = gold border + meter + "BOOSTING x1.35" + ding, a coins bar (a plate per lifter
+  rep, gold when you pushed on it) with "Coins in 4 reps", a gold "ASSIST" over the lifter, payout = coins fly to the
+  coins pill + "+8 COINS", and a wrap-up note ("12 reps spotted, +13 coins"). Server sends "Rep" every lifter rep.
+  New sounds SpotPush / SpotBoostOn / SpotCombo / SpotAssist / SpotPayout are PLACEHOLDERS (existing ids): owner picks.
+  Screenshots: spot_dopamine_combo_boost, spot_dopamine_payout.
 
 ## Before that (9 Oct, after midnight): the beach gym uses the real machines
 - The 9 beach-only machines (Beach Curl, Beach Lateral Raise, Beach Shrug, 3 rows) are gone, configs too; in their spots

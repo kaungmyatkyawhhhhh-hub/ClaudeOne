@@ -167,12 +167,28 @@ end
 ------------------------------------------------------------------------
 -- 3. The spotter's panel (bottom centre): PUSH, the meter, EXIT
 ------------------------------------------------------------------------
+-- The feel (owner, 9 Oct: "more dopamine for spotters"): every push answers at once (a ring where you clicked, a tick
+-- that climbs in pitch with your combo, the combo number hopping); combo milestones (10 / 25 / 50 / 100 / 200) ding and
+-- flash the panel gold; counting as clicking turns the border gold with a ding ("BOOSTING x1.35"); each of the lifter's
+-- reps fills the coins bar (a plate per rep) and, if you were pushing, pops a gold "ASSIST" over them; a payout flies
+-- coins from the bar to your coins pill with "+8 COINS"; the end shows what you did. Small and quick, nothing covers the
+-- screen. Sounds: Config.Sounds Spot* (placeholders until the owner picks ids).
 local SEGMENTS = 10
+local COMBO_RESET = 1.2           -- seconds without a push before the combo starts again
+local MILESTONES = { [10] = true, [25] = true, [50] = true, [100] = true, [200] = true }
 local panel = Theme.Panel({ Name = "Spotter", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -Spacing.XL),
-	Size = UDim2.fromOffset(340, 0), AutomaticSize = Enum.AutomaticSize.Y, Visible = false, Parent = gui }, {
+	Size = UDim2.fromOffset(360, 0), AutomaticSize = Enum.AutomaticSize.Y, Visible = false, Parent = gui }, {
 	Theme.Pad("M"), Theme.List(Vertical, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
 })
-local spotTitle = Theme.Text({ LayoutOrder = 1, Text = "", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), Parent = panel })
+local panelStroke = panel:FindFirstChildOfClass("UIStroke")
+local header = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, Parent = panel })
+local spotTitle = Theme.Text({ Text = "", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -90, 1, 0),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
+local comboHolder = New("Frame", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 90, 1, 0),
+	BackgroundTransparency = 1, Parent = header })
+local comboLabel = Theme.Text({ Text = "", Font = "SemiBold", TextSize = "Title", Upper = false, Size = UDim2.fromScale(1, 1),
+	TextXAlignment = Enum.TextXAlignment.Right, Parent = comboHolder })
+-- your push rate
 local meter = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 14), BackgroundTransparency = 1, Parent = panel },
 	{ Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
 local segments = {}
@@ -180,27 +196,106 @@ for i = 1, SEGMENTS do
 	segments[i] = New("Frame", { LayoutOrder = i, Size = UDim2.new(1 / SEGMENTS, -Spacing.XS, 1, 0), BackgroundColor3 = Colors.Chalk,
 		BackgroundTransparency = 0.85, Parent = meter }, { New("UICorner", { CornerRadius = Theme.Corner.Segment }) })
 end
-local spotStatus = Theme.Text({ LayoutOrder = 3, Text = "", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted,
+-- the coins bar: one small plate per lifter rep until the next payout
+local payoutRow = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = panel })
+local payoutLabel = Theme.Text({ Text = "", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(0, 120, 1, 0),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = payoutRow })
+local plates = New("Frame", { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.new(1, -128, 0, 8),
+	BackgroundTransparency = 1, Parent = payoutRow }, { Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
+local payoutPlates = {}
+for i = 1, Spotting.RewardEvery do
+	payoutPlates[i] = New("Frame", { LayoutOrder = i, Size = UDim2.new(1 / Spotting.RewardEvery, -Spacing.XS, 1, 0), BackgroundColor3 = Colors.Chalk,
+		BackgroundTransparency = 0.85, Parent = plates }, { New("UICorner", { CornerRadius = Theme.Corner.Segment }) })
+end
+local spotStatus = Theme.Text({ LayoutOrder = 4, Text = "", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted,
 	Size = UDim2.new(1, 0, 0, 18), Parent = panel })
-local exitButton = Theme.Button("Secondary", { LayoutOrder = 4, Size = UDim2.fromOffset(120, Theme.MinTouch), Parent = panel }, {
+local exitButton = Theme.Button("Secondary", { LayoutOrder = 5, Size = UDim2.fromOffset(120, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Exit", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
+local assisted = {} -- [plate index] = true: that rep landed while you pushed (it stays gold until the payout)
+local function setPayout(progress: number)
+	if progress == 0 then table.clear(assisted) end
+	for i, plate in ipairs(payoutPlates) do
+		plate.BackgroundTransparency = if i <= progress then 0.1 else 0.85
+		plate.BackgroundColor3 = if i <= progress and assisted[i] then Colors.Gold else Colors.Chalk
+	end
+	local left = Spotting.RewardEvery - progress
+	payoutLabel.Text = if left == 1 then "Coins next rep" else "Coins in " .. left .. " reps"
+end
+
+-- a short text that floats up from a screen point and fades (combo milestones, "+8 COINS")
+local function floatText(text: string, at: Vector2, color: Color3)
+	local label = Theme.Text({ Text = text, Font = "SemiBold", TextSize = "Large", Upper = false, TextColor3 = color,
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(220, 30), Parent = gui })
+	Theme.TextShadow(label)
+	Theme.Tween(label, { Position = UDim2.fromOffset(at.X, at.Y - 46) }, 0.8, Enum.EasingStyle.Quad)
+	task.delay(0.35, function()
+		Theme.Tween(label, { TextTransparency = 1 }, 0.45, Enum.EasingStyle.Quad)
+		local shadow = label:FindFirstChildOfClass("UIStroke")
+		if shadow then Theme.Tween(shadow, { Transparency = 1 }, 0.45, Enum.EasingStyle.Quad) end
+	end)
+	task.delay(0.85, function() label:Destroy() end)
+end
+
+local function panelTop(): Vector2
+	return Vector2.new(panel.AbsolutePosition.X + panel.AbsoluteSize.X / 2, panel.AbsolutePosition.Y - 10)
+end
+
+-- a ring where you clicked (gold while you're boosting)
+local serverClicking, boostShown = false, 1
+local function ripple(at: Vector2)
+	local ring = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(12, 12),
+		BackgroundColor3 = if serverClicking then Colors.Gold else Colors.Chalk, BackgroundTransparency = 0.55, Parent = gui },
+		{ New("UICorner", { CornerRadius = Theme.Corner.Round }) })
+	local stroke = Theme.Stroke(if serverClicking then Colors.Gold else Colors.Chalk, 2, 0.2)
+	stroke.Parent = ring
+	Theme.Tween(ring, { Size = UDim2.fromOffset(64, 64), BackgroundTransparency = 1 }, 0.35, Enum.EasingStyle.Quad)
+	Theme.Tween(stroke, { Transparency = 1 }, 0.35, Enum.EasingStyle.Quad)
+	task.delay(0.4, function() ring:Destroy() end)
+end
+
+local function flashBorder(color: Color3)
+	if not panelStroke then return end
+	panelStroke.Color, panelStroke.Transparency = color, 0
+	task.delay(0.15, function()
+		if serverClicking then return end -- (gold stays while boosting)
+		Theme.Tween(panelStroke, { Color = Colors.Border, Transparency = Theme.Alpha.Border }, 0.4, Enum.EasingStyle.Quad)
+	end)
+end
+
 -- PUSH = a click / tap ANYWHERE on the screen (owner, 9 Oct: no push button), or F / R2; taps on buttons (EXIT) don't count
 local myTaps = {}
-local serverClicking, boostShown = false, 1
-local function push()
+local combo, lastPush = 0, 0
+local function push(at: Vector2?)
 	if not spottingNow then return end
-	table.insert(myTaps, os.clock())
+	local now = os.clock()
+	table.insert(myTaps, now)
 	remote:FireServer("Push")
+	combo = if now - lastPush > COMBO_RESET then 1 else combo + 1
+	lastPush = now
+	comboLabel.Text = "x" .. combo
+	comboLabel.TextTransparency = 0
+	comboLabel.TextColor3 = if combo >= 10 then Colors.Gold else Colors.Text
+	-- the number hops (moved, not scaled: text stays crisp)
+	comboLabel.Position = UDim2.fromOffset(0, -5)
+	Theme.Tween(comboLabel, { Position = UDim2.fromOffset(0, 0) }, 0.18, Enum.EasingStyle.Back)
+	Audio.PlayUI("SpotPush", { pitch = 1 + math.min(combo, 40) * 0.015 })
+	if at then ripple(at) end
+	if MILESTONES[combo] then
+		Audio.PlayUI("SpotCombo")
+		flashBorder(Colors.Gold)
+		floatText("COMBO " .. combo, panelTop(), Colors.Gold)
+	end
 end
 exitButton.Activated:Connect(function() remote:FireServer("Exit") end)
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or not spottingNow then return end
 	local kind = input.UserInputType
-	if kind == Enum.UserInputType.MouseButton1 or kind == Enum.UserInputType.Touch
-		or input.KeyCode == Enum.KeyCode.F or input.KeyCode == Enum.KeyCode.ButtonR2 then
-		push()
+	if kind == Enum.UserInputType.MouseButton1 or kind == Enum.UserInputType.Touch then
+		push(Vector2.new(input.Position.X, input.Position.Y))
+	elseif input.KeyCode == Enum.KeyCode.F or input.KeyCode == Enum.KeyCode.ButtonR2 then
+		push(nil)
 	end
 end)
 local PUSH_HINT = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then "Tap anywhere fast to push" else "Click anywhere fast to push"
@@ -210,11 +305,97 @@ local function setSpotting(on: boolean, info)
 	panel.Visible = on
 	table.clear(myTaps)
 	serverClicking = false
+	combo, lastPush = 0, 0
+	comboLabel.Text = ""
+	if panelStroke then panelStroke.Color, panelStroke.Transparency = Colors.Border, Theme.Alpha.Border end
 	if on then
 		hidePopup()
 		spotTitle.Text = string.upper("Spotting " .. tostring(info.lifter or ""))
 		spotStatus.Text = PUSH_HINT .. " and boost their gains"
+		spotStatus.TextColor3 = Colors.Muted
+		setPayout(0)
 	end
+end
+
+-- the boost turning on / off (from the server's State)
+local function setBoosting(on: boolean)
+	if on == serverClicking then return end
+	serverClicking = on
+	if on then
+		Audio.PlayUI("SpotBoostOn")
+		if panelStroke then
+			panelStroke.Color = Colors.Gold
+			Theme.Tween(panelStroke, { Transparency = 0.15 }, 0.2, Enum.EasingStyle.Quad)
+		end
+	elseif panelStroke then
+		Theme.Tween(panelStroke, { Color = Colors.Border, Transparency = Theme.Alpha.Border }, 0.4, Enum.EasingStyle.Quad)
+	end
+end
+
+-- "ASSIST" over the lifter's head when their rep lands while you push
+local function assistPop()
+	local character = player.Character
+	local lifterId = character and character:GetAttribute("SpotLifter")
+	local lifter = type(lifterId) == "number" and Players:GetPlayerByUserId(lifterId)
+	local head = lifter and lifter.Character and lifter.Character:FindFirstChild("Head")
+	if not head then return end
+	local board = New("BillboardGui", { Size = UDim2.fromOffset(160, 36), StudsOffsetWorldSpace = Vector3.new(0, 2.2, 0), AlwaysOnTop = true,
+		LightInfluence = 0, MaxDistance = 80, Adornee = head, Parent = player:FindFirstChildOfClass("PlayerGui") })
+	local label = Theme.Text({ Text = "ASSIST", Font = "SemiBold", TextSize = "Large", Upper = false, TextColor3 = Colors.Gold,
+		Size = UDim2.fromScale(1, 1), Parent = board })
+	Theme.TextShadow(label)
+	label.Position = UDim2.fromOffset(0, 8)
+	Theme.Tween(label, { Position = UDim2.fromOffset(0, -6) }, 0.25, Enum.EasingStyle.Back)
+	task.delay(0.45, function()
+		Theme.Tween(label, { TextTransparency = 1 }, 0.35, Enum.EasingStyle.Quad)
+		local shadow = label:FindFirstChildOfClass("UIStroke")
+		if shadow then Theme.Tween(shadow, { Transparency = 1 }, 0.35, Enum.EasingStyle.Quad) end
+	end)
+	task.delay(0.85, function() board:Destroy() end)
+	Audio.PlayUI("SpotAssist")
+end
+
+-- coins fly from the coins bar to the coins pill
+local function coinBurst(coins: number)
+	local from = Vector2.new(plates.AbsolutePosition.X + plates.AbsoluteSize.X / 2, plates.AbsolutePosition.Y)
+	local topBar = player.PlayerGui:FindFirstChild("TopBar")
+	local pill = topBar and topBar:FindFirstChild("Coins", true)
+	local to = if pill and pill:IsA("GuiObject") and pill.AbsoluteSize.X > 0
+		then Vector2.new(pill.AbsolutePosition.X + 22, pill.AbsolutePosition.Y + pill.AbsoluteSize.Y / 2)
+		else Vector2.new(60, 40)
+	for i = 1, math.clamp(coins, 4, 8) do
+		local coin = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(from.X + (i - 4) * 12, from.Y),
+			Size = UDim2.fromOffset(14, 14), BackgroundColor3 = Colors.Gold, Parent = gui }, { New("UICorner", { CornerRadius = Theme.Corner.Round }) })
+		Theme.Stroke(Color3.fromHex("#B8862B"), 2, 0).Parent = coin
+		task.delay(i * 0.05, function()
+			Theme.Tween(coin, { Position = UDim2.fromOffset(to.X, to.Y), Size = UDim2.fromOffset(8, 8) }, 0.55, Enum.EasingStyle.Quad)
+			task.delay(0.55, function() coin:Destroy() end)
+		end)
+	end
+	floatText("+" .. coins .. " COINS", panelTop(), Colors.Gold)
+	Audio.PlayUI("SpotPayout")
+	-- the coins bar flashes gold, then starts again
+	for _, plate in ipairs(payoutPlates) do
+		plate.BackgroundColor3, plate.BackgroundTransparency = Colors.Gold, 0
+	end
+	task.delay(0.35, function() if spottingNow then setPayout(0) end end)
+end
+
+local function onRep(info)
+	if not spottingNow then return end
+	local progress = tonumber(info.progress) or 0
+	if info.paid then
+		coinBurst(tonumber(info.paid) or 0)
+	else
+		assisted[progress] = info.assist == true
+		setPayout(progress)
+		local plate = payoutPlates[progress]
+		if plate then
+			plate.Size = UDim2.new(1 / Spotting.RewardEvery, -Spacing.XS, 1.8, 0)
+			Theme.Tween(plate, { Size = UDim2.new(1 / Spotting.RewardEvery, -Spacing.XS, 1, 0) }, 0.25, Enum.EasingStyle.Back)
+		end
+	end
+	if info.assist then assistPop() end
 end
 
 -- moving or jumping stops spotting (the root is held in place, so only the input shows it)
@@ -232,6 +413,12 @@ RunService.Heartbeat:Connect(function()
 	local lit = math.clamp(math.floor(#myTaps / (Spotting.ClickRate * 2) * SEGMENTS + 0.5), 0, SEGMENTS)
 	for i, segment in ipairs(segments) do
 		segment.BackgroundTransparency = if i <= lit then (if serverClicking then 0 else 0.45) else 0.85
+		segment.BackgroundColor3 = if serverClicking and i <= lit then Colors.Gold else Colors.Chalk
+	end
+	-- the combo fades out once you stop
+	if combo > 0 and now - lastPush > COMBO_RESET then
+		combo = 0
+		Theme.Tween(comboLabel, { TextTransparency = 1 }, 0.3, Enum.EasingStyle.Quad)
 	end
 end)
 
@@ -296,19 +483,23 @@ remote.OnClientEvent:Connect(function(kind, info)
 		Notify.Show("Spotting " .. tostring(info.lifter), nil, "spot")
 		Audio.PlayUI("Click")
 	elseif kind == "State" then
-		serverClicking = info.clicking == true
 		boostShown = tonumber(info.boost) or 1
 		if spottingNow then
-			spotStatus.Text = if serverClicking then string.format("Pushing hard: their gains x%.2f", boostShown)
+			setBoosting(info.clicking == true)
+			spotStatus.Text = if serverClicking then string.format("BOOSTING  x%.2f", boostShown)
 				else string.format("Their gains x%.2f. %s for more", boostShown, PUSH_HINT)
+			spotStatus.TextColor3 = if serverClicking then Colors.Gold else Colors.Muted
 		end
+	elseif kind == "Rep" then
+		onRep(info)
 	elseif kind == "Ended" then
 		if spottingNow or panel.Visible then setSpotting(false, info) end
-		Notify.Show(ENDED[info.reason] or "Spotting ended", nil, "spot")
+		-- the wrap-up: what you did
+		local reps, coins = tonumber(info.reps) or 0, tonumber(info.coins) or 0
+		local wrap = if reps > 0 then string.format(" · %d reps spotted%s", reps, if coins > 0 then ", +" .. coins .. " coins" else "") else ""
+		Notify.Show((ENDED[info.reason] or "Spotting ended") .. wrap, nil, "spot")
 	elseif kind == "Spotted" then
 		showSpotted(info)
-	elseif kind == "Reward" then
-		Notify.Show("+" .. tostring(info.coins) .. " coins for spotting", nil, "spotreward")
 	end
 end)
 
