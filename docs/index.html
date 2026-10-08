@@ -6875,7 +6875,7 @@ function drawCrewHQ(){if(!MPW||!S.crew)return;const C=S.crew,{x,y,w,h}=CREWHQ,lv
   drawBuilding(ctx,{k:"crewhq",n:String(C.n).slice(0,14)+" HQ",c:C.c,x,y,w,h,door:[x+w/2,y+h]},isDark()?PAL_D:PAL_L);
   ctx.strokeStyle="#3a3f4c";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+w-24,y+10);ctx.lineTo(x+w-24,y-46);ctx.stroke();const f=Math.sin(wt*4)*4;ctx.fillStyle=C.c;ctx.beginPath();ctx.moveTo(x+w-24,y-46);ctx.quadraticCurveTo(x+w+4,y-40+f,x+w+20,y-36);ctx.lineTo(x+w-24,y-22);ctx.closePath();ctx.fill();
   ctx.fillStyle="#ffcc33";for(let i=0;i<Math.min(5,Math.ceil(lv/4));i++){ctx.beginPath();ctx.arc(x+20+i*14,y+14,5,0,7);ctx.fill()}
-  const cups=(C.cups||[]).length;for(let i=0;i<Math.min(6,cups);i++)BIG_CUP_DRAW(ctx,x+24+i*22,y-2,1.3);if(cups>6){ctx.fillStyle="#3a3324";ctx.font="800 11px "+FONTS.b;ctx.textAlign="left";ctx.fillText("×"+cups,x+24+6*22,y-8)}}
+  const cups=(C.cups||[]).length;for(let i=0;i<Math.min(5,cups);i++)BIG_CUP_DRAW(ctx,x+26+i*30,y-2,2);if(cups>5){ctx.fillStyle="#3a3324";ctx.font="800 12px "+FONTS.b;ctx.textAlign="left";ctx.fillText("×"+cups,x+26+5*30,y-14)}}
 /* ================= seasons: a free 30-level reward track that resets every 30 days ================= */
 const SEA_EPOCH=Date.UTC(2026,0,1),SEA_LEN=30*864e5,SEA_XP=150,SEA_MAX=30;
 const SEA_THEMES=[["Neon Nights","#ff4fd8","🌃"],["Gold Rush","#cf9a14","🪙"],["Summer Splash","#2fa6d9","🏖️"],["Street Kings","#e2364a","👑"],["Cosmic Drift","#7a2fd6","🌌"],["Frost Bite","#7fd6ff","❄️"],["Jungle Fever","#2f9a4e","🌴"],["Royal Court","#8a1d2a","🏰"]];
@@ -7853,7 +7853,7 @@ const w4vK=()=>(w4().vb||0)>Date.now()?W4V_BOOST:1;
 const W4V_MSG=["Love what you've built","Nice park!","Those robots are amazing","Your castle looks great","Teach me your ways","See you at the top"];
 function openW4Visits(back){room="w4vis";$("room").hidden=false;let view=null,msg=0;
   const draw=()=>{const met=S.met||{},me=myKey(),L=W4SNAP?Object.entries(W4SNAP).filter(([k])=>k!==me).map(([k,v])=>({k,...v,f:!!met[k]||!!(MP&&Object.values(MP.peers).some(p=>String(p.n||"").toLowerCase()===k))})).sort((a,b)=>(b.f-a.f)||(b.stars-a.stars)||(b.rate-a.rate)):null;
-    if(view){const v=view,vis=(S.w4vis||{})[v.k]===dayKey(),W=w4(),tips=[.01,.05].map(f=>Math.floor(W.gems*f));
+    if(view){const v=view,vis=(S.w4vis||{})[v.k]===dayKey(),W=w4(),tipCap=Math.max(1000,(v.rate||0)*1800),tips=[.01,.05].map(f=>Math.floor(Math.min(W.gems*f,tipCap)));
       $("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(v.n)+"'s Frontier")}
         <div class="kv"><div><span class="eyebrow">Gems a second</span><b>${gemF(v.rate||0)}</b></div><div><span class="eyebrow">Tycoon stars</span><b>${starF(v.stars||0)}</b></div><div><span class="eyebrow">Zones open</span><b>${Object.keys(v.z||{}).length}/${W4Z.length}</b></div></div>
         ${W4Z.filter(z=>v.z&&v.z[z.k]).map(z=>{const T=v.z[z.k],n=T.filter(Boolean).length;return `<div class="vzone" style="--zb:${z.tile}"><div class="vzh"><b>${z.ic} ${z.n}</b><span>${n} building${n===1?"":"s"}</span></div><div class="vgrid">${T.map(t=>{if(!t)return `<i></i>`;const[k,l]=String(t).split("."),b=W4B(z,k);return `<i class="b" title="${b?esc(b.n):""}">${b?b.ic:"?"}${+l>1?`<small>${+l}</small>`:""}</i>`}).join("")}</div></div>`}).join("")||`<p class="fine">They haven't built anything yet.</p>`}
@@ -7861,7 +7861,7 @@ function openW4Visits(back){room="w4vis";$("room").hidden=false;let view=null,ms
         <div class="seg3">${W4V_MSG.slice(0,3).map((m,i)=>`<button class="${msg===i?"on":""}" data-vm="${i}">${esc(m)}</button>`).join("")}</div>
         <button class="bigbtn" id="vBoost" ${vis?"disabled":""}>Leave a boost<small>Free · +25% Gems for them for ${W4V_MIN} minutes</small></button>
         <div class="seg3">${tips.map((g,i)=>`<button data-vt="${g}" ${vis||g<1?"disabled":""}>Tip ${["1%","5%"][i]}<small>${gemF(g)}</small></button>`).join("")}<button disabled>Your Gems<small>${gemF(W.gems)}</small></button></div>
-        <p class="fine">They get it the next time they play. Tips come out of your own Gems.</p></div>`;
+        <p class="fine">They get it the next time they play. Tips come out of your own Gems, up to half an hour of their income.</p></div>`;
       $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{view=null;draw()};
       const send=(k,g)=>{if((S.w4vis||{})[v.k]===dayKey())return;if(!netPut("w4v/"+v.k+"/"+me,{n:mpName(),k,g:g||0,m:W4V_MSG[msg],t:Date.now()}))return banner("Log in online to visit friends","r");S.w4vis=S.w4vis||{};S.w4vis[v.k]=dayKey();if(g){W.gems-=g}vote(2);karmaAdd(1);dirty=true;SFX.rebirth();confetti(100,null,null,["#4fe3ff","#ff4fd8","#fff"]);banner(k==="boost"?"You left "+v.n+" a boost":"You tipped "+v.n+" "+gemF(g),"g");draw()};
       $("vBoost").onclick=()=>send("boost");$("room").querySelectorAll("[data-vt]").forEach(b=>b.onclick=()=>{const g=+b.dataset.vt;if(g<1||W.gems<g)return;send("tip",g)});
