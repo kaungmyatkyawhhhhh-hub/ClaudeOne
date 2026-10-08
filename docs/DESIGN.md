@@ -239,7 +239,7 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
 - Sounds (placeholders until the owner picks ids): GeneticsClank, GeneticsShimmer, GeneticsThud, GeneticsThudLow.
 
 ## 7. Growth Spurts (rebirth system — never call it "sacrifice")
-Players start at Growth Spurt 1 (4'6"; owner, 9 Oct release; 0 = 4'0"). When all 6 groups hit the goal, Growth Spurt: muscles reset to 0, character gets taller,
+Players start at Growth Spurt 0, short (4'0"; owner, 9 Oct release). When all 6 groups hit the goal, Growth Spurt: muscles reset to 0, character gets taller,
 permanent gains bonus. Example: 1 → 4'6" lvl 50 1.25x; 2 → 5'0" lvl 100 1.5x; 3 → 5'6" lvl 175 1.75x;
 4 → 6'0" lvl 275 2x; 5 → 6'6" lvl 400 2.5x. Height caps ~7'0"; later spurts still give bonuses.
 First Growth Spurt should be reachable in ~15-20 minutes.

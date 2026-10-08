@@ -4,14 +4,14 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 
 ## LATEST (9 Oct): release data reset + save-lock fix
 - **Fresh data for the release**: player saves now live in the DataStore `GymArcDataStoreV1` (the old test saves stay
-  untouched in `PlayerData_1`), so everyone starts over. New players start at Growth Spurt 1 (4'6"), muscles 0, 0 coins
+  untouched in `PlayerData_1`), so everyone starts over. New players start at Growth Spurt 0 (4'0"), muscles 0, 0 coins
   (`DataTemplate`; was Growth Spurt 6 for testing). The leaderboards (`LeaderboardV1_<group>`) and crews (`CrewsV1`,
   `CrewLeaderboardV1`) are fresh too, so test scores don't show on the wall or the statue.
 - **"Your data is still saving from another server" kick** (owner's live account): a dead server's session lock blocked
   rejoining for 5 minutes. Now: dead locks expire after 180 s (live locks are refreshed by the 60 s autosave), the
   loader waits up to ~60 s instead of 30 s before kicking, a lock left by a Studio playtest never blocks a live
   server, sessions that don't save (Studio TestMuscleExp) still release their lock, and FreshPlayer playtests don't
-  touch the real save at all. Tested: FreshPlayer starts at Growth Spurt 1 (4'6"), muscles 0, and leaves no entry in
+  touch the real save at all. Tested: FreshPlayer starts at Growth Spurt 0 (4'0"), muscles 0, and leaves no entry in
   the new store.
 
 ## Before that (9 Oct): gym lighting pass
