@@ -31,7 +31,16 @@ local Cars = require(Shared:WaitForChild("Cars"))
 local CarSkin = {}
 
 type Template = { part: MeshPart, offset: CFrame }
-type Imported = { body: { [string]: Template }, wheel: { [string]: Template }, plate: CFrame?, exhausts: { Vector3 } }
+type GenericWheel = { x: number, parts: { Template } }
+type Imported = {
+	body: { [string]: Template },
+	wheel: { [string]: Template },
+	plate: CFrame?,
+	exhausts: { Vector3 },
+	-- set for any other car model (Creator Store, bought, hand-made): parts keep
+	-- their own look and each corner's wheel parts ride on our wheel
+	generic: { [string]: GenericWheel }?,
+}
 type Look = { material: Enum.Material, color: Color3?, reflectance: number, transparency: number, shadow: boolean }
 
 local TRIM = Color3.fromRGB(16, 16, 18)
@@ -144,6 +153,7 @@ local function wheelFor(style: string, R: number, width: number, rimFrac: number
 end
 
 -- Imported model for a car (see header), read once
+local readGeneric: (src: Instance, dims: { [string]: number }) -> Imported -- defined below
 local MARK_REF = 4 -- Mark_RefX / Mark_RefZ sit this many studs from Mark_Origin
 local function readImported(src: Instance): Imported
 	local function mark(name: string): Vector3?
@@ -152,7 +162,8 @@ local function readImported(src: Instance): Imported
 	end
 	local o, rx, rz = mark("Mark_Origin"), mark("Mark_RefX"), mark("Mark_RefZ")
 	if not (o and rx and rz) then
-		error("missing Mark_Origin / Mark_RefX / Mark_RefZ")
+		local spec = Cars.get((src:GetAttribute("CarId") :: string?) or src.Name)
+		return readGeneric(src, CarBuilder.getDims(spec.Class, spec.Id) :: any)
 	end
 	local ex, ez = rx - o, rz - o
 	local scale = MARK_REF / ex.Magnitude
@@ -202,6 +213,183 @@ local function readImported(src: Instance): Imported
 	end
 	if next(out.body) == nil then
 		error("no body parts")
+	end
+	return out
+end
+
+--[[
+	Any other car model (Toolbox / Creator Store, bought, made in Blender):
+	  * forward = its VehicleSeat (A-Chassis "DriveSeat"), else its PrimaryPart,
+	    else the longest side. Set a Reverse = true attribute on the model if
+	    it comes out backwards.
+	  * wheels = the FL / FR / RL / RR children of a "Wheels" folder (A-Chassis),
+	    else parts named wheel / tire / tyre / rim, split into four corners
+	  * scaled so its wheelbase matches ours; its wheels spin on our wheels
+	  * only visible parts are used, and only their looks are copied (mesh,
+	    colour, material, textures): scripts and everything else stay behind
+]]
+local KEEP_CHILD = { SurfaceAppearance = true, SpecialMesh = true, Decal = true, Texture = true }
+local function visualClone(d: BasePart, scale: number): BasePart
+	local p = d:Clone()
+	for _, c in p:GetChildren() do
+		if not KEEP_CHILD[c.ClassName] then
+			c:Destroy()
+		end
+	end
+	p.Size = d.Size * scale
+	local sm = p:FindFirstChildOfClass("SpecialMesh")
+	if sm then
+		if sm.MeshType == Enum.MeshType.FileMesh then
+			sm.Scale *= scale -- file meshes don't follow the part size
+		end
+		sm.Offset *= scale
+	end
+	p.Anchored = false
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	return p
+end
+
+function readGeneric(src: Instance, dims: { [string]: number }): Imported
+	local visible: { BasePart } = {}
+	for _, d in src:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 0.98 and not d:IsA("Seat") and not d:IsA("VehicleSeat") then
+			table.insert(visible, d)
+		end
+	end
+	if #visible == 0 then
+		error("no visible parts")
+	end
+	local minV, maxV = Vector3.one * math.huge, -Vector3.one * math.huge
+	for _, d in visible do
+		minV = minV:Min(d.Position)
+		maxV = maxV:Max(d.Position)
+	end
+	-- forward direction
+	local seat = src:FindFirstChildWhichIsA("VehicleSeat", true)
+	local primary = if src:IsA("Model") then src.PrimaryPart else nil
+	local f: Vector3
+	if seat then
+		f = seat.CFrame.LookVector
+	elseif primary then
+		f = primary.CFrame.LookVector
+	else
+		local ext = maxV - minV
+		f = if ext.X > ext.Z then Vector3.xAxis else -Vector3.zAxis
+	end
+	f = Vector3.new(f.X, 0, f.Z)
+	if f.Magnitude < 1e-3 then
+		error("can't tell which way the car faces")
+	end
+	f = f.Unit
+	if src:GetAttribute("Reverse") == true then
+		f = -f
+	end
+	local right = f:Cross(Vector3.yAxis)
+
+	-- wheel groups
+	type Group = { parts: { BasePart }, center: Vector3 }
+	local groups: { Group } = {}
+	local inWheel: { [BasePart]: boolean } = {}
+	local function centerOf(list: { BasePart }): Vector3
+		local a, b = Vector3.one * math.huge, -Vector3.one * math.huge
+		for _, d in list do
+			a = a:Min(d.Position - d.Size / 2)
+			b = b:Max(d.Position + d.Size / 2)
+		end
+		return (a + b) / 2
+	end
+	local wheelsNode = src:FindFirstChild("Wheels", true)
+	if wheelsNode then
+		for _, c in wheelsNode:GetChildren() do
+			local list: { BasePart } = {}
+			for _, d in visible do
+				if d == c or d:IsDescendantOf(c) then
+					table.insert(list, d)
+				end
+			end
+			if #list > 0 then
+				table.insert(groups, { parts = list, center = if c:IsA("BasePart") then c.Position else centerOf(list) })
+			end
+		end
+	end
+	if #groups ~= 4 then
+		groups = {}
+		local cand: { BasePart } = {}
+		for _, d in visible do
+			local n = d.Name:lower()
+			if n:find("wheel") or n:find("tire") or n:find("tyre") or n:find("rim") then
+				table.insert(cand, d)
+			end
+		end
+		if #cand >= 4 then
+			local c0 = centerOf(cand)
+			local quads: { [string]: { BasePart } } = {}
+			for _, d in cand do
+				local rel = d.Position - c0
+				local key = (if rel:Dot(f) > 0 then "F" else "R") .. (if rel:Dot(right) > 0 then "R" else "L")
+				quads[key] = quads[key] or {}
+				table.insert(quads[key], d)
+			end
+			for _, list in quads do
+				table.insert(groups, { parts = list, center = centerOf(list) })
+			end
+		end
+	end
+	if #groups ~= 4 then
+		error("couldn't find 4 wheels: put them in a 'Wheels' folder as FL, FR, RL, RR")
+	end
+	for _, g in groups do
+		for _, d in g.parts do
+			inWheel[d] = true
+		end
+	end
+	local mid = Vector3.zero
+	for _, g in groups do
+		mid += g.center / 4
+	end
+	local frontZ, rearZ, nf, nr = 0, 0, 0, 0
+	for _, g in groups do
+		local a = (g.center - mid):Dot(f)
+		if a > 0 then
+			frontZ += a
+			nf += 1
+		else
+			rearZ += a
+			nr += 1
+		end
+	end
+	if nf ~= 2 or nr ~= 2 then
+		error("wheels are not two at the front and two at the back")
+	end
+	local wheelbase = (frontZ - rearZ) / 2
+	local scale = math.clamp(dims.wb / math.max(wheelbase, 1e-3), 0.02, 50)
+	-- ground frame: its wheel centres land at our wheel height
+	local origin = Vector3.new(mid.X, mid.Y - dims.wheelR / scale, mid.Z)
+	local frame = CFrame.lookAt(origin, origin + f)
+	local function tmpl(d: BasePart, about: Vector3): Template
+		local rel = frame:ToObjectSpace(d.CFrame)
+		return { part = visualClone(d, scale) :: any, offset = CFrame.new(rel.Position * scale - about) * rel.Rotation }
+	end
+	local out: Imported = { body = {}, wheel = {}, exhausts = {}, generic = {} }
+	local k = 0
+	for _, d in visible do
+		if not inWheel[d] then
+			k += 1
+			out.body["Part" .. k] = tmpl(d, Vector3.zero)
+		end
+	end
+	local generic = out.generic :: { [string]: GenericWheel }
+	for _, g in groups do
+		local c = frame:PointToObjectSpace(g.center) * scale
+		local key = (if c.Z < 0 then "F" else "R") .. (if c.X < 0 then "L" else "R")
+		local parts = {}
+		for _, d in g.parts do
+			table.insert(parts, tmpl(d, c))
+		end
+		generic[key] = { x = c.X, parts = parts }
 	end
 	return out
 end
@@ -317,7 +505,19 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 	skin.Name = "Skin"
 	skin.Parent = model
 	local drl = if design.drl then Color3.fromRGB(design.drl[1], design.drl[2], design.drl[3]) else Color3.new(1, 1, 1)
+	local generic = if imported then imported.generic else nil
 	for name, t in body do
+		if generic then
+			local p = t.part:Clone()
+			p.Name = "Skin" .. name
+			p.CFrame = groundCF * t.offset
+			p.Parent = skin
+			local w = Instance.new("WeldConstraint")
+			w.Part0 = root
+			w.Part1 = p
+			w.Parent = p
+			continue
+		end
 		local base = name:match("^%a+") or name -- "Paint2" is the second half of a big layer
 		local look = LOOKS[base] or LOOKS.Paint
 		local color = if base == "Accent" then accent elseif base == "Drl" then drl else paint
@@ -381,6 +581,24 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 		end
 		local R = (j:GetAttribute("Radius") :: number?) or dims.wheelR
 		local front = j:GetAttribute("Front") == true
+		if generic then
+			-- the model's own wheel for this corner, spinning with ours (kept at its own track width)
+			local gw = generic[(if front then "F" else "R") .. (if j.C0.Position.X < 0 then "L" else "R")]
+			if gw then
+				local base = tire.CFrame * CFrame.new(gw.x - j.C0.Position.X, 0, 0)
+				for i, t in gw.parts do
+					local p = t.part:Clone()
+					p.Name = "SkinWheel" .. i
+					p.CFrame = base * t.offset
+					p.Parent = skin
+					local w = Instance.new("WeldConstraint")
+					w.Part0 = tire
+					w.Part1 = p
+					w.Parent = p
+				end
+			end
+			continue
+		end
 		-- imported wheels were exported at the front radius: scale to this one
 		local wheel = if imported and next(imported.wheel) then imported.wheel else wheelFor(design.wheel, R, dims.wheelW, design.rimFrac, liteMode)
 		local wheelScale = if imported and wheel == imported.wheel then R / dims.wheelR else 1

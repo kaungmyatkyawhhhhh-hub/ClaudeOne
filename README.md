@@ -61,7 +61,16 @@ The cars can also come in as normal imported meshes instead of being generated w
 
 Each car model holds its body layers (`Paint`, `Glass`, `Trim`, ...), one wheel (`WheelTire`, `WheelRim`, `WheelCaliper`) and small `Mark_*` parts. Leave the `Mark_*` parts in: the game reads the car's position, scale, wheel hub, plate and exhaust tips from them. Player cars, the garage and the cutscene use the imported model when one exists. Traffic keeps the lighter runtime meshes and switches to the imported ones if runtime meshes aren't allowed.
 
-You can swap in a model you made or bought the same way. Name it after the car id, name its parts like the ones above, and keep the `Mark_Origin`, `Mark_RefX` (4 studs along +X) and `Mark_RefZ` (4 studs along +Z, towards the rear) markers.
+### Any other car model (Toolbox, Creator Store, bought, Blender)
+
+Any car model can replace a car's body. Put it in a Folder named `CarModels` in ReplicatedStorage and name it after the car id (e.g. `brute_srx`, see `src/shared/Cars.lua`). No markers are needed:
+
+- **Facing:** taken from its VehicleSeat (A-Chassis "DriveSeat"), else its PrimaryPart, else its longest side. If it comes out backwards, give the model a boolean attribute `Reverse` = true.
+- **Wheels:** the `FL`, `FR`, `RL`, `RR` children of a `Wheels` folder (the A-Chassis layout), otherwise parts named wheel / tire / tyre / rim, split into four corners. They spin on the game's wheels.
+- **Size:** scaled so its wheelbase matches the car it replaces.
+- **What gets copied:** only visible parts, and only their looks (mesh, colour, material, textures, SurfaceAppearance). Scripts, sounds, seats and joints are never copied.
+
+Free models can contain harmful scripts. After inserting one, delete every Script, LocalScript and ModuleScript inside it before you publish. Scripts don't run in ReplicatedStorage, but delete them anyway. Cars named after real brands can also break Roblox's rules on others' intellectual property, so check before publishing.
 
 ## Weather
 
