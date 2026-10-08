@@ -1546,23 +1546,30 @@ local titleLabel = Theme.Text({
 })
 Theme.TextShadow(titleLabel)
 -- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift. It sits
--- right after the machine name, above the panel (it follows the name's width). (No new top-level local: this script is
--- at Luau's 200-local limit; wired up below by name.)
+-- right after the machine name, above the panel (it follows the name's width), 1.1x the name's text height, yellow text
+-- (owner, 9 Oct). (No new top-level local: this script is at Luau's 200-local limit; wired up below by name.)
 do
 	local maxButton = Theme.Button("Secondary", {
 		Name = "Max",
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, Spacing.S, 1, 0),
-		Size = UDim2.fromOffset(64, Theme.MinTouch),
+		Size = UDim2.fromOffset(48, 20),
 		ZIndex = 4,
 		Parent = tapeRow,
-	}, {
-		Theme.Text({ Text = "MAX", Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(1, 1), ZIndex = 5 }),
 	})
+	local maxText = Theme.Text({ Text = "MAX", Font = "SemiBold", TextSize = "Small", TextColor3 = Theme.Bumper.Yellow.Fill,
+		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = maxButton })
+	Theme.TextShadow(maxText)
 	local function follow()
-		maxButton.Position = UDim2.new(0, Spacing.S + titleLabel.TextBounds.X + Spacing.M, 1, 0) -- (bottom on the row: never over the panel)
+		local textHeight = titleLabel.TextBounds.Y
+		local height = math.floor(textHeight * 1.1 + 0.5)
+		maxButton.Size = UDim2.fromOffset(math.max(height * 2.4, maxText.TextBounds.X + Spacing.M * 2), height)
+		-- centred on the name's line (its text is centred in the label, whose bottom is the row's): never over the panel
+		maxButton.Position = UDim2.new(0, Spacing.S + titleLabel.TextBounds.X + Spacing.M, 1, -(titleLabel.AbsoluteSize.Y - height) / 2)
 	end
 	titleLabel:GetPropertyChangedSignal("TextBounds"):Connect(follow)
+	titleLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(follow)
+	maxText:GetPropertyChangedSignal("TextBounds"):Connect(follow)
 	follow()
 end
 
