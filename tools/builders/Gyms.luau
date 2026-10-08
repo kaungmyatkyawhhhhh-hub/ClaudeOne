@@ -798,6 +798,7 @@ function Gyms.Build()
 	npcSpots(gym)
 	local old = Workspace:FindFirstChild("ProGymBuild")
 	if old then old:Destroy() end
+	require(script.Parent.GymLighting).Build(Workspace) -- the lighting pass (pendant pools, wall washers)
 end
 
 return Gyms

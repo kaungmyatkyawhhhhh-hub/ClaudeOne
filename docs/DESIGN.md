@@ -390,6 +390,9 @@ Starter gym: warm, old-school, brick walls.
   against walls, small high windows with soft light.
 - Lighting: Future lighting, warm hanging industrial pendants over each station with shadows between them,
   window light, the neon sign as an accent, subtle Atmosphere haze, light bloom, warm ColorCorrection.
+  Lighting pass (owner, 9 Oct, `tools/builders/GymLighting`): tight bright pendant pools, small black wall-washer can
+  lights grazing the brick (west and back walls); in the pro gym brighter tight spotlight pools with the fills turned
+  down, neutral wall washers on the east and back walls.
 - Moody, not dark: warm Ambient/OutdoorAmbient raised a little, slightly higher ExposureCompensation, no
   pitch-black areas. Floor is dark charcoal rubber (~#2B2B2B) so light pools show. Pendants warm (~#FFC98A) with
   wide, soft pools spilling onto the floor; soft fill lights along walkways. No harsh white panels.

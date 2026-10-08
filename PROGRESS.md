@@ -2,7 +2,19 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): new loading screen and menu, matte machine signs
+## LATEST (9 Oct): gym lighting pass
+- New builder `tools/builders/GymLighting` (run in Studio; `Gyms.Build` now runs it at the end). Only lights and small
+  light fixtures, no other geometry changed; Lighting service untouched (outdoors looks the same).
+- **Starter gym**: pendants brighter and tighter (Brightness 9, Range 24, Angle 90: real warm pools; every third one
+  casts shadows), 3 extra pendants over the centre aisle and leg machines, fills dimmer and less orange, high windows
+  brighter, the neon sign's spill kept subtle. 9 warm wall washers (small black can lights on brackets) graze the brick
+  on the west and back walls (`StarterGym.LightingPass`).
+- **Pro gym**: spotlights brighter and tighter (Brightness 7, Angle 60; the fills were washing their pools out), fills
+  and ceiling light bars toned down, 14 neutral wall washers on the east and back walls (`ProGym.LightingPass`).
+- 109 lights in both gyms (was ~83), 14 cast shadows. Screenshots: lighting_before/after_starter, lighting_before/after_pro,
+  lighting_wall_washer. Values are at the top of the builder to tweak.
+
+## Before that (9 Oct): new loading screen and menu, matte machine signs
 - **Loading screen** (`ReplicatedFirst/LoadingScreen`, rewritten): dark room, a soft overhead glow (stacked faint ovals),
   chalk dust drifting up, GYM ARC + tagline, a 2D barbell that loads with the game: 5 pairs of bumper plates (red, blue,
   yellow, green, white; heaviest inside) slide on with a clank (Config.Sounds Clank's id, pitch by plate), collars close,
