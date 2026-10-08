@@ -5,6 +5,21 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## LATEST (8 Oct evening): unified muscles, skin stages, performance
 Everything is in Studio and pushed; **File > Save to Roblox first.**
 
+- **Fix (8 Oct, night): progress mirror + shorts.** Mirror: it showed your back (each part was turned by M*R*M, which
+  keeps the way you face; now M*R*F = your front, facing you, flipped left / right like a real mirror) and a white box for
+  a torso (a ViewportFrame honours vertex alpha even under a SurfaceAppearance, and the color layer's alpha 0 on skin made
+  the copies see-through). While the reflection or the before / after card shows: `MuscleRig.SetMirrorMode` makes every
+  vertex opaque (one color write per mesh on the way in / out; skin tints pause, the thighs' layer shows flat skin + the
+  shorts in SmoothPlastic). The copies are every live mesh part (layers, clothing) with the skin stage, transparency kept
+  in step, sized right; 120 px per stud (was 40: a blur) and a bit more key light. Your pose / animation is copied every
+  frame. Shorts: the "puffy inner tube" was the color layer drawn ~1.7x too big. A MeshPart made from an EditableMesh scales
+  the mesh by Size / ITS OWN MeshSize (= the mesh's bounds when that part was made); the layers and clothing were made
+  later (smaller bounds) but given the inner part's Size. Each part is sized from its own MeshSize now (`sizeParts`; the
+  mirror's `copySize`). Also: the shorts' layer is matte Fabric (was glossy SmoothPlastic), and under the shorts the
+  thigh / glute growth eases to half (fabric over muscle, `MuscleMeshes` SHORTS.Hug 0.5, full growth on the lower thigh, one
+  curve so the hem stays flush). Your avatar in Studio wears no Pants, so the black is the game's own gym shorts.
+  Screenshots: mirror_front, mirror_three_quarter, mirror_card_now, shorts_{front,side,back}. Left: a small lip at the outer
+  sides of the waistband (the waist piece's bottom edge is a hair wider than the thigh tops).
 - **Fix (late 8 Oct): blocky arms / legs and the floating piece under the neck.** The "floating piece" was the package's
   separate upper traps shell: made for the old torso, it hovered over the unified torso's chest with a sawtooth gap at
   higher levels. Removed (generator `SKIP`, data, unit, code); the unified torso grows the traps itself (back and neck
@@ -143,6 +158,9 @@ Everything is in Studio and pushed; **File > Save to Roblox first.**
 - A client can hold only **8 live EditableMeshes** (even empty ones; in Edit mode 40+ fit), and your character uses 7.
   A MeshPart made from an EditableMesh shows nothing once that EditableMesh is destroyed (no baking), so other characters
   get no mesh muscles. The whole UpperTorso can't be one mesh: 39,600 triangles > the 20,000 per-mesh limit (front / back).
+- A MeshPart made from an EditableMesh scales the mesh by Size / its own MeshSize, the mesh's bounds when that part was
+  made (every part from the same mesh can differ). A ViewportFrame honours vertex alpha even under a SurfaceAppearance (the
+  world ignores it there).
 - **Every EditableMesh change costs ~40-60 ms of engine time** (positions or colors, any amount, measured 8 Oct). Changing a
   mesh part's Size every frame is also expensive (frame p50 57 ms); its Transparency or Color is cheap.
 - A script can't upload meshes yet ("CreateAssetAsync ... not available yet"), so the stage meshes must be imported by hand.

@@ -47,8 +47,8 @@ local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 3,
 -- direction, the place's Ambient gives the fill. Tune with MIRROR_LIGHT.
 local MIRROR_LIGHT = {
 	Reach = 40,      -- studs: lamps further than this from the glass are ignored
-	Key = 0.55,      -- key light strength (the ViewportFrame light has no falloff, so it needs toning down)
-	Ambient = 1.0,   -- share of Lighting.Ambient used as the fill
+	Key = 0.8,       -- key light strength (the ViewportFrame light has no falloff, so it needs toning down; 0.55 left the muscles flat)
+	Ambient = 0.8,   -- share of Lighting.Ambient used as the fill
 	Glow = 1.45,     -- SurfaceGui brightness of the reflection (it is not lit by the world: LightInfluence 0)
 }
 local function gymLight(point: Vector3)
@@ -117,6 +117,41 @@ local function prepare(rig)
 	return copy, size
 end
 
+-- A part that shows one of your live muscle meshes (the muscles, their clothing and color layers): its EditableMesh.
+local function liveMeshOf(part: Instance): any
+	if not part:IsA("MeshPart") then return nil end
+	local ok, content = pcall(function() return part.MeshContent end)
+	local object = ok and content and content.Object
+	return if object and object:IsA("EditableMesh") then object else nil
+end
+-- The Size a copy of a live mesh part needs to draw the mesh like its source: a MeshPart made from an EditableMesh scales
+-- the mesh by Size / its own MeshSize, which is the mesh's bounds when that part was made (different for every part).
+local function copySize(source: MeshPart, copy: MeshPart): Vector3
+	return copy.MeshSize * (source.Size / source.MeshSize)
+end
+-- A new part showing the same live mesh with the same look (color, material, clothing texture, skin stage).
+local function copyLiveMesh(source: MeshPart): MeshPart?
+	local mesh = liveMeshOf(source)
+	if not mesh then return nil end
+	local ok, part = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) end)
+	if not ok or not part then return nil end
+	part.Name = source.Name
+	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
+	part.Color, part.Material, part.Size = source.Color, source.Material, copySize(source, part)
+	part.TextureID, part.Transparency = source.TextureID, source.Transparency
+	local skin = source:FindFirstChild("SkinStage") -- (the skin texture stage, Config.SkinStages)
+	if skin then skin:Clone().Parent = part end
+	return part
+end
+-- Mirror mode (MuscleRig.SetMirrorMode) while the reflection or the before / after card shows your muscles: a ViewportFrame
+-- honours the meshes' vertex alpha (the color layer's), so they are made opaque meanwhile.
+local mirrorUsers = { reflection = false, card = false }
+local function setMirrorUser(name: string, on: boolean)
+	mirrorUsers[name] = on
+	local character = player.Character
+	if character then MuscleRig.SetMirrorMode(character, mirrorUsers.reflection or mirrorUsers.card) end
+end
+
 -- The muscles of the "Now" body: parts that show the SAME live meshes as your character's muscles (like the reflection on
 -- the glass). A new muscle rig here would need meshes of its own, and the client can only hold 8: it took them from your
 -- character, whose muscles vanished. "Day one" has no growth, so it needs no muscles.
@@ -155,27 +190,29 @@ local function addLiveMuscles(copy)
 			if stage then copyBody.Transparency = 1 end
 		end
 	end
+	-- body parts your muscle meshes cover (the torso, upper arms, thighs) are hidden on the copy too
+	for _, liveBody in ipairs(character:GetChildren()) do
+		local copyBody = copy:FindFirstChild(liveBody.Name)
+		if liveBody:IsA("BasePart") and copyBody and copyBody:IsA("BasePart") and liveBody.Name ~= "HumanoidRootPart" and liveBody.Transparency >= 1 then
+			copyBody.Transparency = 1
+		end
+	end
 	local session = openCount
 	task.spawn(function()
 		for _, source in ipairs(sourceFolder:GetChildren()) do
-			local mesh = source:IsA("MeshPart") and MuscleRig.MeshOf(source)
-			local bodyName = string.gsub(source.Name, "Muscles$", ""):gsub("Cloth$", ""):gsub("Snatched$", "")
-			local liveBody, copyBody = character:FindFirstChild(bodyName), copy:FindFirstChild(bodyName)
-			if mesh and liveBody and copyBody and copyBody:IsA("BasePart") then
-				local ok, part = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) end)
-				if not ok or not part then continue end
+			local weld = source:FindFirstChildOfClass("Weld")
+			local liveBody = weld and weld.Part0
+			local copyBody = liveBody and copy:FindFirstChild(liveBody.Name)
+			if liveMeshOf(source) and liveBody and copyBody and copyBody:IsA("BasePart") then
+				local part = copyLiveMesh(source)
+				if not part then continue end
 				if session ~= openCount or not folder.Parent then
 					part:Destroy()
 					return
 				end
-				part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
-				part.Color, part.Material = source.Color, source.Material
-				part.TextureID, part.Transparency = source.TextureID, source.Transparency
-				part.Size = source.Size * (copyBody.Size / liveBody.Size) -- (the same body, so normally 1)
-				part.CFrame = copyBody.CFrame -- muscle parts sit on their body part's center
+				part.Size = copySize(source, part) * (copyBody.Size / liveBody.Size) -- (the same body, so normally 1)
+				part.CFrame = copyBody.CFrame * liveBody.CFrame:ToObjectSpace(source.CFrame)
 				part.Parent = folder
-				-- the snatched waist replaces the real torso
-				if string.find(source.Name, "Snatched$") then copyBody.Transparency = 1 end
 			end
 		end
 	end)
@@ -218,6 +255,7 @@ local function open(rigs)
 	show(beforeView, before, tallest)
 	show(afterView, after, tallest)
 	clearMuscles()
+	setMirrorUser("card", true)
 	addLiveMuscles(after)
 	title.Text = player.DisplayName .. " · GYM ARC"
 	beforeName.Text = "Day one"
@@ -234,6 +272,7 @@ end
 local function close()
 	if not isOpen then return end
 	isOpen = false
+	setMirrorUser("card", false)
 	local tween = Theme.Fade(root, false)
 	if tween then
 		tween.Completed:Connect(function()
@@ -266,9 +305,13 @@ end)
 ------------------------------------------------------------------------
 local REFLECT_RANGE = 25 -- studs from the glass
 local ROOM_DEPTH = 26    -- studs of room in front of the glass that get a static reflected copy
-local PPS = 40           -- SurfaceGui pixels per stud
+local PPS = 120          -- SurfaceGui pixels per stud (40 drew the whole glass at ~160 x 280 pixels: a blur, no muscle detail)
 
--- Reflect a CFrame across the plane (point p0, unit normal n): position mirrored, rotation M*R*M (a proper rotation).
+-- Reflect a CFrame across the plane (point p0, unit normal n): position mirrored, rotation M*R*F, F = the part's own X
+-- flipped (M*R alone is a reflection, not a rotation; M*R*F is a proper rotation that puts every part where its mirror image
+-- is, facing the way its mirror image faces: you see your FRONT, facing you, your right hand on the right of the glass like a
+-- real mirror. Each part's own shape is shown un-flipped, the same for left / right symmetric parts.) The old M*R*M kept
+-- every part facing the way you face, so the glass showed your back.
 local function reflector(p0, n)
 	local nx, ny, nz = n.X, n.Y, n.Z
 	local m = { -- M = I - 2nn^T
@@ -287,8 +330,7 @@ local function reflector(p0, n)
 			for j = 1, 3 do mr[i][j] = m[i][1] * r[1][j] + m[i][2] * r[2][j] + m[i][3] * r[3][j] end
 		end
 		for i = 1, 3 do
-			o[i] = {}
-			for j = 1, 3 do o[i][j] = mr[i][1] * m[1][j] + mr[i][2] * m[2][j] + mr[i][3] * m[3][j] end
+			o[i] = { -mr[i][1], mr[i][2], mr[i][3] }
 		end
 		return CFrame.new(q.X, q.Y, q.Z, o[1][1], o[1][2], o[1][3], o[2][1], o[2][2], o[2][3], o[3][1], o[3][2], o[3][3])
 	end
@@ -421,26 +463,23 @@ local function startReflection(mirrorModel, glass)
 		if copyFolder then
 			for index = #list, 1, -1 do
 				local pair = list[index]
-				if pair[2]:IsDescendantOf(copyFolder) and MuscleRig.MeshOf(pair[1]) then table.remove(list, index) pair[2]:Destroy() end
+				if pair[2]:IsDescendantOf(copyFolder) and liveMeshOf(pair[1]) then table.remove(list, index) pair[2]:Destroy() end
 			end
 		end
+		setMirrorUser("reflection", true)
 		copy.Parent = world
 		mirrored = { model = copy, pairs = list, character = character, count = #sources, version = character:GetAttribute("BodyVersion") }
 		if sourceFolder and copyFolder then
 			local pairsList = list
 			task.spawn(function()
 				for _, source in ipairs(sourceFolder:GetChildren()) do
-					local mesh = source:IsA("MeshPart") and MuscleRig.MeshOf(source)
-					if mesh then
-						local ok, part = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh)) end)
-						if ok and part and copyFolder.Parent then
-							part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
-							part.Color, part.Material, part.Size = source.Color, source.Material, source.Size
-							part.TextureID, part.Transparency = source.TextureID, source.Transparency
-							local skin = source:FindFirstChild("SkinStage") -- (the skin texture stage, Config.SkinStages)
-							if skin then skin:Clone().Parent = part end
+					if liveMeshOf(source) then
+						local part = copyLiveMesh(source :: MeshPart)
+						if part and copyFolder.Parent then
 							part.Parent = copyFolder
 							table.insert(pairsList, { source, part })
+						elseif part then
+							part:Destroy()
 						end
 					end
 				end
@@ -478,9 +517,12 @@ local function startReflection(mirrorModel, glass)
 		if near ~= active then
 			active = near
 			surface.Enabled = near
-			if not near and mirrored then
-				mirrored.model:Destroy()
-				mirrored = nil
+			if not near then
+				if mirrored then
+					mirrored.model:Destroy()
+					mirrored = nil
+				end
+				setMirrorUser("reflection", false)
 			end
 		end
 		if not near then return end
@@ -503,10 +545,12 @@ local function startReflection(mirrorModel, glass)
 		for _, pair in ipairs(mirrored.pairs) do
 			local source, copy = pair[1], pair[2]
 			copy.CFrame = reflect(source.CFrame)
+			-- (what shows and hides on you shows and hides in the glass: covered body parts, the color layers, clothing)
+			if copy.Transparency ~= source.Transparency then copy.Transparency = source.Transparency end
 			local size = source.Size
 			if not pair[3] or (size - pair[3]).Magnitude > 1e-3 then
 				pair[3] = size
-				copy.Size = size
+				copy.Size = if liveMeshOf(source) then copySize(source, copy) else size
 			end
 		end
 		-- camera at your eye, looking straight into the glass; size and place the image so the glass lines up

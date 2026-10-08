@@ -319,6 +319,16 @@ end
 
 -- Shell muscles sit this far off the skin (studs, along the base normal), so they never fight the body part for depth.
 local SKIN_LIFT = 0.02
+-- Under the shorts the thigh / glute muscles grow like fabric stretched over muscle, not like bare muscle (at full growth
+-- the glutes and the tops of the quads flared out as a puffy inner tube, with a ledge at the hem): over a thigh mesh group
+-- that has shorts, by the vertex's height (one curve for the skin and the shorts meshes, so they still meet at the hem):
+-- full growth on the lower thigh, easing to SHORTS.Hug from HemBelow under the hem to HemAbove over it. (Not less at the
+-- waistband: the waist piece above is wider than the bare thigh tops, so less growth there opened a lip.)
+local SHORTS = { Hug = 0.5, HemBelow = 0.16, HemAbove = 0.08 }
+local function smoothstep(t: number): number
+	t = math.clamp(t, 0, 1)
+	return t * t * (3 - 2 * t)
+end
 local groupCache: { [string]: any } = {}
 -- The merged data of one shell group { part, records }: one set of arrays for all its meshes; each range (one mesh) knows
 -- its muscle id, mesh key and the neighbouring keys it blends with.
@@ -327,8 +337,9 @@ function MuscleMeshes.LoadGroup(group: any): any
 	local found = groupCache[key]
 	if found then return found end
 	local base, delta, uv, tris, ranges = {}, {}, {}, {}, {}
-	local nbase, ndelta, vein, blends, bands, morph = {}, {}, {}, {}, {}, {}
-	local hasMorph, hasNormals, hasVeins = false, true, true
+	local nbase, ndelta, vein, blends, bands, morph, hug = {}, {}, {}, {}, {}, {}, {}
+	local hasMorph, hasNormals, hasVeins, hasHug = false, true, true, false
+	local hemY, topY = math.huge, -math.huge -- (the shorts' hem and waistband heights, when the group has shorts)
 	local vertexCount, triCount = 0, 0
 	for _, name in ipairs(group.records) do
 		local data = MuscleMeshes.Load(name)
@@ -359,6 +370,13 @@ function MuscleMeshes.LoadGroup(group: any): any
 			blends[at] = data.blends[i]
 			if data.morph then morph[at] = data.morph[i] end
 		end
+		if record.shorts then
+			for i = 1, data.verts do
+				local y = data.base[i].Y
+				hemY = math.min(hemY, y)
+				topY = math.max(topY, y)
+			end
+		end
 		hasMorph = hasMorph or data.morph ~= nil
 		local t = data.tris
 		for k = 1, #t, 3 do
@@ -370,10 +388,18 @@ function MuscleMeshes.LoadGroup(group: any): any
 		vertexCount += data.verts
 	end
 	assert(triCount <= 20000, "group " .. key .. " has more than 20,000 triangles")
+	if topY - hemY > SHORTS.HemAbove then
+		hasHug = true
+		for i = 1, vertexCount do
+			local y = base[i].Y
+			local up = smoothstep((y - (hemY - SHORTS.HemBelow)) / (SHORTS.HemBelow + SHORTS.HemAbove)) -- 0 low on the thigh .. 1 over the hem
+			hug[i] = 1 - (1 - SHORTS.Hug) * up
+		end
+	end
 	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, bands = bands,
 		morph = if hasMorph then morph else nil, nbase = hasNormals and nbase or nil, ndelta = hasNormals and ndelta or nil,
 		vein = hasVeins and vein or nil, clothing = MuscleMeshes.ByName[group.records[1]].clothing or "Shirt", ranges = ranges,
-		triCount = triCount }
+		triCount = triCount, hug = if hasHug then hug else nil }
 	groupCache[key] = merged
 	return merged
 end

@@ -310,7 +310,13 @@ shareable before/after snapshot.
   tinted to the skin color: Stage1 at level 0, Stage2 about half, Stage3 at the full look, Stage4 then Stage5 through the
   mass monster stage, switching at the midpoint between two stages (with a little hysteresis). Under a SurfaceAppearance
   vertex colors don't show, so the hover highlight / rep flash on skin is a thin color layer over the mesh (a mask written
-  once, faded by the layer's transparency); the thighs' gym shorts are on that layer too.
+  once, faded by the layer's transparency); the thighs' gym shorts are on that layer too (matte Fabric).
+- Shorts: under the shorts the thigh / glute muscles grow like fabric over muscle (about half the bulge; full growth on
+  the bare lower thigh, one smooth curve so the hem sits flush). No ring, no puffy tube.
+- Progress mirror (live reflection on the glass + the before / after card): shows YOUR front, facing you, flipped
+  left / right like a real mirror, with your exact muscles (copies of your live muscle meshes), skin color and stage,
+  clothing and accessories, moving with your pose and animation. While it shows, your meshes' vertex colors are opaque
+  ("mirror mode": skin tints pause), because a ViewportFrame would draw the color layer's see-through alpha.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
   look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass
   monster size (muscle_v8 manifest `mass_monster.g`, veins come in with it); past 5x the look stays, the stats keep going.

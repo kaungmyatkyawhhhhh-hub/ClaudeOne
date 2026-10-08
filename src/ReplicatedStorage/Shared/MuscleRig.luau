@@ -361,13 +361,17 @@ local LAYER_IDLE, LAYER_HOLD = 0.99, 3
 -- 20,000-triangle mesh (the parts are welded to a moving character: every vertex write did, ~80 ms a write, measured 8 Oct)
 local MESH_PART_OPTIONS = { CollisionFidelity = Enum.CollisionFidelity.Box }
 
+-- A MeshPart made from an EditableMesh draws the mesh scaled by Size / ITS OWN MeshSize, and its MeshSize is the mesh's
+-- bounds at the moment that part was made: the inner part was made at the biggest shape, the clothing and color layers
+-- later (the real, smaller shape). So each part is sized from its own MeshSize (8 Oct: giving the layers the inner part's
+-- Size drew them ~1.7x too big: the gym shorts on the thighs' layer were the "puffy inner tube").
 local function sizeParts(group)
 	local part, cloth = group.part, group.cloth
 	if not part then return end
-	local full = part.MeshSize * groupScale(group)
-	part.Size = if cloth then full * INNER_SCALE else full
-	if cloth then cloth.Size = full end
-	if group.layer then group.layer.Size = full * LAYER_SCALE end
+	local scale = groupScale(group)
+	part.Size = part.MeshSize * scale * (if cloth then INNER_SCALE else 1)
+	if cloth then cloth.Size = cloth.MeshSize * scale end
+	if group.layer then group.layer.Size = group.layer.MeshSize * scale * LAYER_SCALE end
 end
 
 local function attach(self, part: MeshPart, body: BasePart, name: string)
@@ -428,7 +432,9 @@ local function makeLayer(self, group)
 	group.layerPending = nil
 	if ok and layer and group.mesh == mesh and group.skinned and not group.layer then
 		layer.Color = Color3.new(1, 1, 1)
-		layer.Material = Enum.Material.SmoothPlastic
+		-- (the gym shorts on it are cloth: matte Fabric; SmoothPlastic made them a glossy black plastic. In mirror mode the layer
+		-- also covers the thigh skin, which must not look like cloth: SmoothPlastic then)
+		layer.Material = if group.hasShorts and not self.mirrorMode then Enum.Material.Fabric else Enum.Material.SmoothPlastic
 		layer.Transparency = 1
 		attach(self, layer, body, group.def.part .. "Layer")
 		group.layer = layer
@@ -453,7 +459,13 @@ local function recolor(self, group)
 	local skin, shorts, top = colorsOf(self)
 	local white = Color3.new(1, 1, 1)
 	group.skinned = skinnedFor(self, group)
-	if group.skinned then
+	if group.skinned and self.mirrorMode then
+		-- MIRROR MODE (MuscleRig.SetMirrorMode): every vertex opaque. The progress mirror's ViewportFrame draws copies of these
+		-- meshes and, unlike the world, it honours vertex alpha even under a SurfaceAppearance: the layer's alpha 0 on skin
+		-- made the copies see-through (the "white torso"). The skin's own part ignores vertex colors (its SurfaceAppearance);
+		-- the layer then shows flat skin + the shorts on the thighs, and no tint.
+		group.kindBase, group.kindAlpha = { skin, shorts, skin }, { 1, 1, 1 }
+	elseif group.skinned then
 		-- the layer: nothing over the skin, the gym shorts over the shorts meshes
 		group.kindBase, group.kindAlpha = { white, shorts, white }, { 0, 1, 0 }
 	else
@@ -484,6 +496,7 @@ local function recolor(self, group)
 		end)
 	end
 	if group.skinned then
+		if group.layer then group.layer.Material = if group.hasShorts and not self.mirrorMode then Enum.Material.Fabric else Enum.Material.SmoothPlastic end
 		task.spawn(makeLayer, self, group)
 	else
 		dropLayer(group)
@@ -694,6 +707,7 @@ end
 local function applyRange(self, group, range): number
 	local data, mesh, ids, normalIds = group.data, group.mesh, group.vertexIds, group.normalIds
 	local base, delta, blends, nbase, ndelta, vein, morph = data.base, data.delta, data.blends, data.nbase, data.ndelta, data.vein, data.morph
+	local hug = data.hug
 	local taper = group.taper
 	local g = rangeShown(self, range)
 	local others = {}
@@ -712,6 +726,8 @@ local function applyRange(self, group, range): number
 			end
 			gv = (1 - weights) * g + sum
 		end
+		-- (the shorts: fabric over the muscle, MuscleMeshes.LoadGroup)
+		if hug and hug[i] then gv *= hug[i] end
 		local position = base[i] + delta[i] * gv
 		if morph and morph[i] then position += morph[i] * waistOff end
 		if v > 0 then position += vein[i] * v end
@@ -1124,6 +1140,11 @@ local function tintGroup(self, group, cameraPosition: Vector3)
 		group.tintList = list
 	end
 	local hovering = next(self.highlightAmount) ~= nil
+	if group.skinned and self.mirrorMode then
+		group.layerOpacity = 0
+		group.layerLive = false
+		return
+	end
 	if group.skinned and group.layer and not group.hasShorts then
 		-- the mask and the layer's fade
 		local color, weights, opacity = TINT.Flash, {}, 0
@@ -1296,7 +1317,7 @@ local function step(self, dt: number)
 				end
 				-- the color layer only draws while it has something to show (the shorts, or a tint)
 				if group.layer then
-					local layerT = if hidden or not (group.hasShorts or (group.layerOpacity or 0) > 0 or os.clock() < (group.layerHoldUntil or 0)) then 1
+					local layerT = if hidden or not (group.hasShorts or (group.layerOpacity or 0) > 0 or os.clock() < (group.layerHoldUntil or 0)) or (self.mirrorMode and not group.hasShorts) then 1
 						elseif group.hasShorts then LAYER_TRANSPARENCY
 						elseif (group.layerOpacity or 0) > 0 then math.max(1 - group.layerOpacity, LAYER_TRANSPARENCY)
 							else LAYER_IDLE
@@ -1352,7 +1373,7 @@ local function step(self, dt: number)
 					-- (the color layer shows at once when a tint starts, and goes away with it)
 					if group.layer and group.body then
 						local hidden = self.covered and self.covered[group.body.Name] == true
-						local layerT = if hidden or not (group.hasShorts or group.layerLive) then 1
+						local layerT = if hidden or not (group.hasShorts or group.layerLive) or (self.mirrorMode and not group.hasShorts) then 1
 							elseif group.hasShorts then LAYER_TRANSPARENCY
 							elseif (group.layerOpacity or 0) > 0 then math.max(1 - group.layerOpacity, LAYER_TRANSPARENCY)
 							else LAYER_IDLE
@@ -1481,6 +1502,20 @@ function MuscleRig.Destroy(self)
 		if sa then sa:Destroy() end
 	end
 	if self.folder then self.folder:Destroy() end
+end
+
+-- Mirror mode (the progress mirror, while its reflection is live): opaque vertex colors on the skinned meshes, so the
+-- mirror's copies of them draw solid (see recolor). One color write per mesh when it switches.
+function MuscleRig.SetMirrorMode(model: Model, on: boolean)
+	for rig in pairs(active) do
+		if rig.model == model and (rig.mirrorMode == true) ~= on then
+			rig.mirrorMode = on
+			rig.dirty = true
+			for _, state in ipairs(rig.units) do
+				for _, group in ipairs(state.groups) do recolor(rig, group) end
+			end
+		end
+	end
 end
 
 function MuscleRig.SetHighlight(model: Model, set: { [string]: boolean }?)
