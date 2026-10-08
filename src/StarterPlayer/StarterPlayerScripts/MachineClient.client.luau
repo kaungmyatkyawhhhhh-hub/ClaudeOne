@@ -1608,7 +1608,8 @@ do
 	maxButton.BackgroundTransparency = Theme.Alpha.Panel
 	-- a slight yellow glow (owner, 9 Oct): its border in yellow, and a soft halo of stacked faint yellow strokes, wider and
 	-- fainter outward, on see-through copies of its shape behind it (static: no per-frame cost)
-	local yellow = Theme.Bumper.Yellow.Fill
+	-- (the glow: the bumper yellow 10% toward white, a soft yellow: owner, 9 Oct)
+	local yellow = Theme.Bumper.Yellow.Fill:Lerp(Color3.new(1, 1, 1), 0.1)
 	local border = maxButton:FindFirstChildOfClass("UIStroke")
 	if border then border.Color, border.Transparency = yellow, 0.35 end
 	local corner = maxButton:FindFirstChildOfClass("UICorner")
