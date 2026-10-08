@@ -2,7 +2,8 @@
 -- GYM ARC title and a small segmented progress bar. It stays until MenuClient says the menu scene is ready (the
 -- LocalPlayer attribute "MenuReady", after the area behind the menu has streamed in), then fades out.
 -- Progress: game loaded, then MenuClient's "MenuLoad" attribute (0..1) while it streams the menu scene; between those
--- steps the bar creeps slowly so it never looks stuck.
+-- steps the bar creeps slowly so it never looks stuck. Then "Loading players": the other players' body stage meshes
+-- (Shared.BodyStages) finish downloading in small batches, at most TIMING.Stages seconds more.
 -- This runs before ReplicatedStorage has replicated, so it can't read Shared.UI.Theme / UIFonts: the few colors and
 -- fonts below repeat Theme's values (panel #0E0E10, text #FFFFFF, muted #B8B8BE, Oswald / Nunito).
 local Players = game:GetService("Players")
@@ -30,6 +31,7 @@ local TIMING = {
 	Hold = 0.15,      -- full bar shown this long before fading
 	Fade = 0.4,
 	GiveUp = 30,      -- after the game has loaded, never wait longer than this for the menu
+	Stages = 8,       -- after the menu is ready, wait at most this long for the other players' body stage meshes
 }
 
 local function new(class, props, children)
@@ -87,20 +89,39 @@ end
 
 local function menuProgress()
 	local value = player:GetAttribute("MenuLoad")
-	if type(value) == "number" then setStep(0.55 + 0.45 * math.clamp(value, 0, 1), "Loading the gym") end
+	if type(value) == "number" then setStep(0.55 + 0.35 * math.clamp(value, 0, 1), "Loading the gym") end -- (the last 10%: the body stages)
 end
 player:GetAttributeChangedSignal("MenuLoad"):Connect(menuProgress)
 
+-- The other players' body stage meshes (Shared.BodyStages) download in small batches behind this screen, so they are in
+-- before you see anyone (owner, 8 Oct night: fewer "could not fetch" misses); requiring the module starts the download.
+local BodyStages = nil
 task.spawn(function()
 	if not game:IsLoaded() then game.Loaded:Wait() end
 	loadedAt = os.clock()
 	setStep(0.55, "Loading the gym")
 	menuProgress()
+	local shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared", 10)
+	local module = shared and shared:WaitForChild("BodyStages", 10)
+	if module then
+		local ok, result = pcall(require, module)
+		if ok then BodyStages = result end
+	end
 end)
 
 local done = false
+local finishing = false
 local function finish()
-	if done then return end
+	if done or finishing then return end
+	finishing = true
+	-- the menu is ready: give the body stage meshes a few more seconds (the bar's last step shows their download)
+	if BodyStages then
+		status.Text = "Loading players"
+		local deadline = os.clock() + TIMING.Stages
+		while not BodyStages.WaitReady(0.1) and os.clock() < deadline and gui.Parent do
+			setStep(0.9 + 0.09 * BodyStages.Progress())
+		end
+	end
 	done = true
 	setStep(1)
 	task.delay(math.max(0.25, 1 / TIMING.Follow) + TIMING.Hold, function()
@@ -119,9 +140,9 @@ local function finish()
 	end)
 end
 
-if player:GetAttribute("MenuReady") then finish() end
+if player:GetAttribute("MenuReady") then task.spawn(finish) end
 player:GetAttributeChangedSignal("MenuReady"):Connect(function()
-	if player:GetAttribute("MenuReady") then finish() end
+	if player:GetAttribute("MenuReady") then task.spawn(finish) end
 end)
 
 local connection
@@ -130,7 +151,7 @@ connection = RunService.RenderStepped:Connect(function(dt)
 		connection:Disconnect()
 		return
 	end
-	if loadedAt and not done and os.clock() - loadedAt > TIMING.GiveUp then finish() end
+	if loadedAt and not done and os.clock() - loadedAt > TIMING.GiveUp then task.spawn(finish) end
 	-- creep a little past the last step while waiting, then follow the target smoothly
 	local creep = if step < 1 then TIMING.Creep * (1 - math.exp(-(os.clock() - stepAt) / TIMING.CreepTime)) else 0
 	local target = math.min(step + creep, 1)

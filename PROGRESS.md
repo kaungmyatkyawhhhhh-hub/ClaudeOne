@@ -27,6 +27,8 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   for the session. The client now preloads the 62 templates, warns once, shows the nearest stage that loaded instead (no
   hole), and fetches the failed one again (AssetService, 4 tries); a warning if it still fails. Tested with the Studio
   hook `TestBrokenStage` (Workspace attribute = a template name: acts as a failed download that never repairs).
+  The 62 meshes download in batches of 6 behind the loading screen ("Loading players", the last 10% of the bar, at
+  most 8 s after the menu is ready; measured ~5 s), so they are in before you see anyone.
 
 ## Before that (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
 Saved to Roblox (22:41 and 22:43); dated backup `Documents\GymArc_backups\GymArc_2026-10-08.rbxl` (via File > Download a

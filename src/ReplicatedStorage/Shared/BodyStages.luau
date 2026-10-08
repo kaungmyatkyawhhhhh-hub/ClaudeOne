@@ -66,30 +66,59 @@ function BodyStages.IsOn(): boolean return available end
 -- piece cloned from it would draw nothing over a hidden body part (a hole). So the client preloads the templates; a
 -- failed one is fetched again through AssetService (another download path) and replaces its template, a few tries apart;
 -- until then regions skip the stages that use it (the nearest stage that loaded is shown instead).
+-- The download runs in small batches (BATCH meshes at a time, not all 62 at once: fewer failures) and starts as soon as
+-- this module is required; the loading screen requires it early and waits for BodyStages.WaitReady (owner, 8 Oct night).
+local BATCH = 6
 local broken: { [string]: boolean } = {}
 BodyStages.Broken = broken -- (the templates that failed to download and aren't repaired yet; read-only, for checks)
+local ready = false
+local loaded, total = 0, 0
 local function stageUsable(stage): boolean
 	for _, object in pairs(stage.objects) do
 		if broken[object.file] then return false end
 	end
 	return true
 end
+-- Waits until the first download pass is done (or `timeout` seconds); true when it finished.
+function BodyStages.WaitReady(timeout: number?): boolean
+	if not ready then
+		local deadline = os.clock() + (timeout or math.huge)
+		while not ready and os.clock() < deadline do
+			task.wait(0.1)
+		end
+	end
+	return ready
+end
+-- How far the first download pass is (0 .. 1), for the loading bar.
+function BodyStages.Progress(): number
+	return if ready then 1 elseif total > 0 then loaded / total else 0
+end
+if not available or not RunService:IsClient() then ready = true end
 if available and RunService:IsClient() then
 	task.spawn(function()
 		local byId = {}
+		local list = {}
 		for _, part in ipairs(templates:GetChildren()) do
-			if part:IsA("MeshPart") then byId[part.MeshId] = part end
+			if part:IsA("MeshPart") then
+				byId[part.MeshId] = part
+				table.insert(list, part)
+			end
 		end
+		total = #list
 		local failed = {}
-		pcall(function()
-			ContentProvider:PreloadAsync(templates:GetChildren(), function(id, status)
-				if status == Enum.AssetFetchStatus.Failure or status == Enum.AssetFetchStatus.TimedOut then
-					for meshId, part in pairs(byId) do
-						if string.match(meshId, "%d+$") == string.match(tostring(id), "%d+$") then table.insert(failed, part) end
+		for first = 1, #list, BATCH do
+			local batch = table.move(list, first, math.min(first + BATCH - 1, #list), 1, {})
+			pcall(function()
+				ContentProvider:PreloadAsync(batch, function(id, status)
+					if status == Enum.AssetFetchStatus.Failure or status == Enum.AssetFetchStatus.TimedOut then
+						for meshId, part in pairs(byId) do
+							if string.match(meshId, "%d+$") == string.match(tostring(id), "%d+$") and not table.find(failed, part) then table.insert(failed, part) end
+						end
 					end
-				end
+				end)
 			end)
-		end)
+			loaded = math.min(first + BATCH - 1, #list)
+		end
 		-- Studio test hook: Workspace attribute TestBrokenStage = a template name acts as a failed download that never repairs
 		local test = workspace:GetAttribute("TestBrokenStage")
 		local testPart = type(test) == "string" and templates:FindFirstChild(test) or nil
@@ -98,6 +127,7 @@ if available and RunService:IsClient() then
 			broken[part.Name] = true
 			warn("[BodyStages] the stage mesh " .. part.Name .. " (" .. part.MeshId .. ") failed to download; using the nearest other stage and trying again")
 		end
+		ready = true
 		for _, template in ipairs(failed) do
 			for attempt = 1, 4 do
 				task.wait(attempt * 3)
