@@ -826,6 +826,11 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .hzhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}.hzhead b{font:900 1.3rem var(--display)}.hzhead span{font:800 1.1rem var(--mono);color:var(--down)}.hzgame{display:flex;justify-content:center;margin:8px 0}.hzgame canvas{border-radius:14px;touch-action:none;box-shadow:var(--shadow)}
 .hzres{background:var(--surface);border-radius:14px;box-shadow:inset 0 0 0 2px var(--down),var(--shadow);padding:16px;margin:0 0 10px;display:flex;flex-direction:column;gap:4px;text-align:center}.hzres.ok{box-shadow:inset 0 0 0 2px var(--up),var(--shadow)}.hzres b{font:900 2rem var(--display)}.hzres small{color:var(--muted)}
 .vzone{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:10px;margin:0 0 10px}.vzh{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px}.vzh b{font:800 .95rem var(--display)}.vzh span{font-size:.72rem;color:var(--muted)}.vgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.vgrid i{aspect-ratio:1;border-radius:8px;background:color-mix(in srgb,var(--zb) 35%,transparent);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:1.25rem;position:relative}.vgrid i.b{background:var(--zb)}.vgrid i small{position:absolute;right:3px;bottom:1px;font:800 .55rem var(--mono);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.nowbtn{width:auto!important;min-width:32px;padding:0 9px;border-radius:16px!important;display:flex!important;align-items:center;gap:4px;font:800 .68rem var(--body);color:var(--ink)!important;letter-spacing:.02em}.nowbtn i{font-style:normal;background:var(--down);color:#fff;border-radius:8px;min-width:15px;height:15px;line-height:15px;padding:0 4px;font-size:.62rem;text-align:center}
+.nowlist{display:flex;flex-direction:column;gap:8px}.nowrow{display:flex;align-items:center;gap:12px;text-align:left;border:0;background:var(--surface);color:var(--ink);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);font:inherit}.nowrow.nlive{box-shadow:inset 3px 0 0 var(--up),var(--shadow)}.nowrow .nic{font-size:1.35rem;width:28px;text-align:center}.nowrow .nt{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}.nowrow b{font:800 .92rem var(--display)}.nowrow small{font-size:.74rem;color:var(--muted);line-height:1.3}.nowrow i{width:18px;color:var(--muted)}.nowrow:disabled{opacity:1}
+.paper{background:#f1ecdf;color:#1b1b1b;border-radius:6px;padding:16px 16px 18px;box-shadow:var(--shadow);font-family:Georgia,"Times New Roman",serif}.pmast{text-align:center;border-bottom:3px double #1b1b1b;padding-bottom:8px;margin-bottom:12px}.pmast b{display:block;font:900 1.65rem Georgia,serif;letter-spacing:-.01em}.pmast span{font:600 .62rem var(--body);text-transform:uppercase;letter-spacing:.12em;color:#555}.paper h1{font:900 1.45rem/1.1 Georgia,serif;margin:0 0 6px}.plede{font-style:italic;color:#444;margin:0 0 12px;font-size:.92rem}.pcols{columns:2;column-gap:16px;column-rule:1px solid #cfc6b0}.pcols section{break-inside:avoid;margin:0 0 12px}.pcols h4{font:800 .66rem var(--body);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #1b1b1b;margin:0 0 5px;padding-bottom:2px}.pcols p,.pcols li{font-size:.8rem;line-height:1.35;margin:0}.pcols ul,.pcols ol{margin:0;padding-left:16px}.pcols li{margin-bottom:3px}
+@media (max-width:360px){.pcols{columns:1}}
+.awlist{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px;text-align:left}.aw{background:var(--bg);border-radius:10px;padding:9px 11px;font-size:.84rem;border-left:4px solid var(--muted)}.aw.g{border-left-color:var(--up)}.aw.a{border-left-color:var(--gold)}.aw.r{border-left-color:var(--down)}
 .cutov{position:fixed;inset:0;z-index:9800;background:#0b0d11;touch-action:none;user-select:none;-webkit-user-select:none}.cutov canvas{display:block}.cutbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}.cutbar i{display:block;height:100%;width:0;background:#e2364a}
 .roadov{position:fixed;inset:0;z-index:9500;background:#8fd3ff;transition:opacity .45s}.roadov.out{opacity:0}.roadov canvas{display:block}.roadlab{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 28px);text-align:center;color:#fff;font:800 1.1rem var(--display);text-shadow:0 2px 8px rgba(0,0,0,.35)}.roadskip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font:700 .75rem var(--mono)}
 .w5gate{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#1b0b2a,#3a2266);color:#fff;margin:8px 0}.w5gate>span{font-size:.8rem;opacity:.85}.w5gate>i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}.w5gate>i>i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff4fd8)}.w5gate small{font:700 .7rem var(--mono);opacity:.7}
@@ -935,7 +940,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
   <div class="hudtop">
     <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span><div class="hypebar" id="hype"><b>HYPE</b><span class="hseg"></span><em></em></div></div>
     <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span><canvas class="minimap" id="miniMap" aria-label="Minimap. Tap for the full map."></canvas></div>
-    <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button><button class="iconbtn" id="hudMin" aria-label="Collapse the top bar"></button></div>
+    <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button><button class="iconbtn" id="hudMin" aria-label="Collapse the top bar"></button><button class="iconbtn nowbtn" id="nowBtn" aria-label="What's on now"><span>Now</span></button></div>
   </div>
   <div class="chip stats">
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
@@ -1840,7 +1845,7 @@ let pillsMin=store.get("fliprush_pillsmin")==="1";
 function renderPillTog(){const box=$("hudpills"),t=$("pillTog");if(!box||!t)return;box.classList.toggle("min",pillsMin);const n=[...box.children].filter(e=>e!==t&&e.id!=="goalChip"&&!e.hidden).length;const h=pillsMin?`▾ ${n}`:"▴";if(t.textContent!==h)t.textContent=h;t.hidden=!n}
 $("seaChip").onclick=()=>{audioOn();if(room)closeRoom();openSeason(closeRoom)};
 $("room").addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#rGuide")){audioOn();rayText(GUIDE[room]||"")}});
-$("emoBtn").onclick=()=>{audioOn();emoMenu()};$("camBtn").onclick=()=>{audioOn();photoMode()};
+$("emoBtn").onclick=()=>{audioOn();emoMenu()};$("nowBtn").onclick=()=>{audioOn();if(room)closeRoom();openNow()};$("camBtn").onclick=()=>{audioOn();photoMode()};
 $("liveChip").onclick=()=>{audioOn();if(LV&&LV.kind==="boss"&&!LV.done&&!room)liveHit()};
 let hudMin=store.get("fliprush_hudmin")==="1";
 function renderHudMin(){const h=$("hud"),b=$("hudMin");if(!h||!b)return;h.classList.toggle("hudmin",hudMin);b.textContent=hudMin?"▾":"▴";b.setAttribute("aria-label",hudMin?"Expand the top bar":"Collapse the top bar");try{SAFE.t=0}catch(e){}}
@@ -3796,7 +3801,7 @@ function sellAt(i,v,{hot=false,el=null}={}){
   const s=S.stash[i];v=Math.round(v);const gain=v-s.paid;let bonus=0;
   if(gain>0){M.streak=(M.t-M.streakT<4)?M.streak+1:1;M.streakT=M.t;bonus=Math.round(gain*Math.min(.1*(M.streak-1),.5))}else M.streak=0;
   let crit=1;if(gain>0){crit=rollCrit();if(crit>1){bonus+=gain*(crit-1);S.stats.crits=(S.stats.crits||0)+1;critFX(crit,el)}}
-  earn(v+bonus);S.stats.flips++;if(S.stats.flips%10===0||Math.random()<(mayorK("crates")?.12:.06))setTimeout(()=>gainCrate(),350);dailyProg("sales");if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);if(s.fake)karmaAdd(-3);else if(gain>0){karmaAdd(.15);vote(1)}if(crit>=2)bookGet("rare","crit2");if(crit>=5)bookGet("rare","crit5");if(hot)bookGet("rare","collector");if(gain>=s.paid&&s.paid>0)bookGet("rare","double");
+  earn(v+bonus);S.stats.flips++;if(S.stats.flips%10===0||Math.random()<(mayorK("crates")?.12:.06))setTimeout(()=>gainCrate(),350);dailyProg("sales");if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);S.dbest=Math.max(S.dbest||0,gain+bonus);if(s.fake)karmaAdd(-3);else if(gain>0){karmaAdd(.15);vote(1)}if(crit>=2)bookGet("rare","crit2");if(crit>=5)bookGet("rare","crit5");if(hot)bookGet("rare","collector");if(gain>=s.paid&&s.paid>0)bookGet("rare","double");
   S.stash.splice(i,1);
   if(el)floatAt(el,(gain>=0?"+":"−")+fmt(Math.abs(gain+bonus)).replace("−","")+(crit>1?`<small>CRIT ×${crit}</small>`:bonus?`<small>STREAK ×${(1+Math.min(.1*(M.streak-1),.5)).toFixed(1)}</small>`:hot?"<small>COLLECTOR</small>":""),gain>=0?"var(--up)":"var(--down)");
   if(gain>0){SFX.sell(M.streak);buzz(12);hype(crit>1?3:s.gold?3:1)}else{SFX.loss();buzz(35)}
@@ -5526,7 +5531,10 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=96,WN=[
+const WN_VER=97,WN=[
+ ["📋","The Now button","A new Now button by the sound icon shows everything that's live or waiting on you: Auction Night, heists, your delivery job, the weather, the mayor race, the crew war, the city goal and more. Tap any row to go there.","2026-10-08T13:00"],
+ ["📰","The Flip City Times","A fresh newspaper every morning, written from what actually happened: your day, the mayor, the crew war, the city goal, the weather, classifieds and gossip about Vince.","2026-10-08T13:00"],
+ ["👋","While you were away","Stall sales, Frontier visits, delivered jobs and crew trophies that arrive while you're gone now show up together in one summary when you come back.","2026-10-08T13:00"],
  ["🔐","Co-op heists","Plan a heist with 2 to 4 friends in your online room, from the Bank or the room menu. Everyone takes a job (driver, lookout, safecracker or hacker) and plays it at the same time. Do well together and everyone gets a big payout.","2026-10-08T10:00"],
  ["🏆","Crew wars","Every week the crews race for points. The same things that earn mayor votes count. The winning crew gets a trophy on its HQ and 3 crates each. Check the Crew war tab on your crew screen.","2026-10-08T10:00"],
  ["💎","Visit a friend's Frontier","From the Gem Exchange in World 4, look around other players' tycoons and leave a free boost (+25% Gems for 30 minutes) or a tip, once a day each.","2026-10-08T10:00"],
@@ -7111,7 +7119,7 @@ function storyTick(){if(!S||!playing)return;if(!S.story){if((S.stats.flips||0)<3
   else if(SCN)VNC=null;renderStory()}
 function storyClaim(){const st=S.story,c=storyCur();if(!c||!st.ready)return;const i=st.ch,v=Math.round(Math.max(2000,rwBase()*(.04+.012*i))),cr=1+Math.floor(i/3),tx=30+10*i;earn(v);gainCrate(cr);S.tix=(S.tix||0)+tx;let gm="";
   if(i>=6&&S.w4&&S.w4.open){const W4=w4(),g=Math.max(50,Math.round((W4.gems||0)*.1));W4.gems+=g;W4.tot=(W4.tot||0)+g;gm=" · "+gemF(g)+" "+GEM}
-  VNC=null;dirty=true;SFX.rebirth();confetti(220);flash("#7a2fd6",.3);buzz([30,40,30]);const fin=i+1>=STORY.length;if(fin)st.end=storyEnd();rayTextFrom("Vince",fin?STORY_END[st.end][1]:c.win);banner("📖 "+c.t+" · +"+fmt(v)+" · "+cr+" crate"+(cr>1?"s":"")+" · "+tx+" tickets"+gm,"g");
+  VNC=null;dirty=true;nlog(mpName()+" beat Vince in chapter "+(i+1)+": "+c.t);SFX.rebirth();confetti(220);flash("#7a2fd6",.3);buzz([30,40,30]);const fin=i+1>=STORY.length;if(fin)st.end=storyEnd();rayTextFrom("Vince",fin?STORY_END[st.end][1]:c.win);banner("📖 "+c.t+" · +"+fmt(v)+" · "+cr+" crate"+(cr>1?"s":"")+" · "+tx+" tickets"+gm,"g");
   if(i+1>=STORY.length){st.done=true;st.ready=false;S.accOwn=S.accOwn||{};S.accOwn.vmedal=1;gainCrate(5);setTimeout(()=>{banner("👑 You beat Vince · ending: "+STORY_END[st.end][0],"g");confetti(300);rayText("You beat Vince! The Mogul medal is in your wardrobe (+5% money from sales), and Vince's challenges pay double from now on. World 5 is next.")},2200);renderStory();return}
   setTimeout(()=>storyBegin(i+1),3500);st.ready=false;renderStory()}
 function renderStory(){const el=$("storyChip");if(!el||!S)return;const c=storyCur();if(!c){el.hidden=true;return}el.hidden=false;el.style.setProperty("--ec","#7a2fd6");
@@ -7321,7 +7329,7 @@ function deedBuyHook(k,price){if(!MP)return;for(const id in MP.peers){const p=MP
 function deedMsg(d){if(!d||!ownsDeed(d.k))return;const a=Math.min(+d.a||0,Math.max(1e4,netWorth()*.002));if(a<1)return;earn(a);banner(String(d.n||"A friend").slice(0,14)+" shopped at your "+PL[d.k].n+" +"+fmt(a),"g")}
 function deedBuy(k){const d=DEEDS.find(x=>x.k===k);if(!d||ownsDeed(k)||S.cash<d.c||!deedOpen(d))return false;S.deeds=S.deeds||{};S.cash-=d.c;S.deeds[k]=1;dirty=true;vote(25);SFX.rebirth();confetti(160,null,null,["#ffcc33","#fff"]);
   const n=deedN();if(n>=DEEDS.length&&!S.flags.key){S.flags.key=1;setTimeout(()=>{banner("You own all of Flip City","g");confetti(320);flash("#ffcc33",.5);rayText("Every building in town has your name on the deed. The mayor handed you a golden key, and every sale now pays 10% more.")},900)}
-  else banner("You own the "+PL[k].n+" · "+n+"/"+DEEDS.length+" buildings","g");updMini();MMSIG="";return true}
+  else banner("You own the "+PL[k].n+" · "+n+"/"+DEEDS.length+" buildings","g");nlog(mpName()+" bought the deed to the "+PL[k].n);updMini();MMSIG="";return true}
 function drawDeedFlags(){if(!S)return;const L=[];for(const d of DEEDS){if(ownsDeed(d.k))L.push([d.k,myShirt()]);else{const q=deedPeer(d.k);if(q)L.push([d.k,okCol(q.s)?q.s:"#2fd28a"])}}
   for(const[k,col]of L){const p=PL[k];const x=p.x+p.w-16,y=p.y+4;if(x<cam.x-40||x>cam.x+vw+40||y<cam.y-80||y>cam.y+vh+40)continue;ctx.strokeStyle="#3a3f4c";ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-40);ctx.stroke();const f=Math.sin(wt*4+x)*3;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y-40);ctx.quadraticCurveTo(x+14,y-36+f,x+24,y-32);ctx.lineTo(x,y-24);ctx.closePath();ctx.fill();ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x+9,y-32,2.6,0,7);ctx.fill()}}
 /* naming rights */
@@ -7348,7 +7356,7 @@ const karma=()=>clamp((S&&S.karma)||0,-100,100);
 const karmaTier=v=>{v=v==null?karma():v;return v<=-60?0:v<=-20?1:v<20?2:v<60?3:4};
 const karmaSellK=()=>[1,1,1,1.03,1.06][karmaTier()];
 const karmaBuyK=()=>[.94,.97,1,1,1][karmaTier()];
-function karmaAdd(d){if(!S||!d)return;const a=karmaTier();S.karma=clamp((S.karma||0)+d,-100,100);dirty=true;const b=karmaTier();if(a!==b)setTimeout(()=>{banner("Reputation: "+KT_N[b],b>a?"g":"r");rayText(KT_MSG[b])},500)}
+function karmaAdd(d){if(!S||!d)return;const a=karmaTier();S.karma=clamp((S.karma||0)+d,-100,100);dirty=true;const b=karmaTier();if(a!==b)nlog(mpName()+" is now known around town as a "+KT_N[b]);if(a!==b)setTimeout(()=>{banner("Reputation: "+KT_N[b],b>a?"g":"r");rayText(KT_MSG[b])},500)}
 function karmaBar(){const v=karma(),t=karmaTier();return `<div class="karma"><div class="krow"><span>Shark</span><b style="color:${KT_C[t]}">${KT_N[t]}</b><span>Saint</span></div><div class="ktrack"><i style="left:${(v+100)/2}%;background:${KT_C[t]}"></i></div><p class="fine">${KT_MSG[t]}</p></div>`}
 // Sister Mae (Saints) and Knuckles (Sharks) only show up for people with the right reputation
 const MAE={x:1180,y:1225},KNK={x:1440,y:1232};let KNEAR=null;
@@ -7419,7 +7427,7 @@ setInterval(()=>{try{mayorTick(1)}catch(e){}},1000);
 function mayorRank(d){return Object.entries(d||{}).filter(([k,o])=>k!=="perk"&&o&&typeof o.n==="string"&&isFinite(o.v)&&o.v>0).map(([k,o])=>({id:k,n:o.n.slice(0,16),v:Math.min(Math.floor(o.v),1e9),s:okCol(o.s)?o.s:"#cf9a14"})).sort((a,b)=>b.v-a.v||(a.id<b.id?-1:1))}
 async function mayorFetch(){const w=weekNo()-1,d=await netScan(NET+"mayor/"+w+"/");if(!d)return;const top=mayorRank(d)[0],pk=d.perk;
   MAYOR=top?{wk:w,...top,perk:pk&&MAYOR_PERKS[pk.k]&&pk.by===top.id?pk.k:Object.keys(MAYOR_PERKS)[w%4],picked:!!(pk&&MAYOR_PERKS[pk.k]&&pk.by===top.id)}:null;
-  if(MAYOR&&MAYOR.id===netMe()&&!MAYOR.picked&&S.mayorWon!==w){S.mayorWon=w;dirty=true;setTimeout(()=>{banner("Mayor of Flip City","g");confetti(260);rayText("You won last week's mayor race! Your gold statue is up in Town Square. Go to City Hall and pick a perk for the whole city this week.")},1500)}}
+  if(MAYOR&&MAYOR.id===netMe()&&!MAYOR.picked&&S.mayorWon!==w){S.mayorWon=w;dirty=true;nlog(mpName()+" was elected mayor of Flip City");setTimeout(()=>{banner("Mayor of Flip City","g");confetti(260);rayText("You won last week's mayor race! Your gold statue is up in Town Square. Go to City Hall and pick a perk for the whole city this week.")},1500)}}
 function mayorPick(k){if(!MAYOR||MAYOR.id!==netMe()||!MAYOR_PERKS[k])return;netPut("mayor/"+MAYOR.wk+"/perk",{k,by:netMe()});MAYOR.perk=k;MAYOR.picked=true;SFX.level();banner("This week in Flip City: "+MAYOR_PERKS[k][0],"g")}
 // the statue in Town Square, in front of City Hall
 const STATUE={x:2200,y:362};
@@ -7569,7 +7577,7 @@ function anBid(m){const n=anNow();if(!AN||!n.live||n.el>=58)return;const L=AN.lo
 function anFinish(i){const L=AN&&AN.lots[i];if(!L||L.done)return;L.done=1;if(L.top.id!==netMe())return void(L.mine&&banner(L.top.who+" won lot "+(i+1)+" for "+L.top.m.toFixed(1)+"×","a"));
   const cost=Math.round(anB()*L.top.m);if(S.cash<cost)return banner("You couldn't pay for lot "+(i+1)+", so it went back on the shelf","r");S.cash-=cost;const val=anB()*L.lot.v,it=itemOfValue(val);it.paid=cost;
   if(S.stash.length<maxSlots())S.stash.push(it);else earn(Math.round(valueOf(it)*.8));S.stats.aucWins=(S.stats.aucWins||0)+1;vote(2);dirty=true;
-  const good=val>cost;(good?SFX.grail:SFX.loss)();if(good)confetti(140);banner("Lot "+(i+1)+": "+it.name+", worth "+fmt(valueOf(it))+" · you paid "+fmt(cost),good?"g":"r");updMini()}
+  const good=val>cost;nlog(mpName()+" won a mystery lot at Auction Night: "+it.name+(good?", a bargain":", overpaid"));(good?SFX.grail:SFX.loss)();if(good)confetti(140);banner("Lot "+(i+1)+": "+it.name+", worth "+fmt(valueOf(it))+" · you paid "+fmt(cost),good?"g":"r");updMini()}
 function renderAnChip(n){let el=$("anChip");if(!n||!n.live||SCN){if(el)el.hidden=true;return}if(!el){el=document.createElement("button");el.className="chip pill ev";el.id="anChip";el.style.setProperty("--ec","#cf9a14");el.onclick=()=>{audioOn();if(room)closeRoom();openAucNight(closeRoom)};const box=$("hudpills");box.insertBefore(el,$("goalChip"))}
   el.hidden=false;const t="🔨 Auction · lot "+(n.i+1)+"/"+AN_LOTS+" · "+Math.max(0,Math.ceil(60-n.el))+"s";if(el.textContent!==t)el.textContent=t}
 function openAucNight(back){room="aucn";$("room").hidden=false;const draw=()=>{const n=anNow(),B=anB();let body;
@@ -7589,7 +7597,7 @@ let STALLS=null,stallT=20;
 function stallPut(){const st=S.stall;if(!st)return;netPut("stall/"+netMe(),st.it.length?{n:mpName(),s:myShirt(),it:st.it.map(o=>({...safeItem(o.it),id:o.id,p:o.p})),t:Date.now()}:null)}
 async function stallCollect(){const st=S.stall;if(!st||!st.it.length||!crewCls())return;const d=await netScan(NET+"stall/"+netMe()+"/sold/");if(!d)return;let got=0,n=0;
   for(const id in d){const r=d[id],o=st.it.find(x=>x.id===id);netPut("stall/"+netMe()+"/sold/"+id,null);if(!o||!r)continue;st.it=st.it.filter(x=>x!==o);earn(o.p);got+=o.p;n++;S.stats.stallSold=(S.stats.stallSold||0)+1;karmaAdd(.5);vote(2)}
-  if(n){dirty=true;stallPut();SFX.sell();banner("Your stall sold "+n+" item"+(n>1?"s":"")+" while you were away · +"+fmt(got),"g")}}
+  if(n){dirty=true;stallPut();SFX.sell();nlog(mpName()+"'s stall sold "+n+" item"+(n>1?"s":""));awayOr("Your stall sold "+n+" item"+(n>1?"s":"")+" while you were away · +"+fmt(got),"g")}}
 setInterval(()=>{if(!S||!playing)return;stallT-=5;if(stallT<=0){stallT=120;stallCollect().catch(()=>{})}},5000);
 async function stallBuy(seller,o,draw){if(seller===netMe())return;const p=Math.round(+o.p||0);if(!(p>0)||S.cash<p)return banner("You need "+fmt(p),"r");if(S.stash.length>=maxSlots())return banner("Stash full","r");
   const chk=await netScan(NET+"stall/"+seller+"/sold/",1200);if(chk&&chk[o.id])return banner("Someone just bought that","a");
@@ -7639,17 +7647,17 @@ function bountyBind(draw){const B=bMine();
 async function bountyArrive(k){const B=S&&S.bty;if(!B||!B.job||B.job.to!==k)return;const j=B.job,i=S.stash.findIndex(s=>s.cat===j.cat&&!s.fake);if(i<0)return banner("You still need a "+CAT[j.cat].n.toLowerCase()+" item for "+j.n,"a");
   if(!j.npc){const chk=await netScan(NET+"bounty/"+j.by+"/"+j.id+"/",1200);if(chk&&chk.done){B.job=null;dirty=true;return banner("Someone else delivered "+j.n+"'s job first","a")}}
   const it=S.stash.splice(i,1)[0],pay=bPay(j);if(j.npc)B.npc[j.id]=1;else netPut("bounty/"+j.by+"/"+j.id+"/done",{by:netMe(),n:mpName(),it:safeItem(it),t:Date.now()});
-  B.job=null;earn(pay);S.stats.bounties=(S.stats.bounties||0)+1;karmaAdd(3);vote(10);dirty=true;SFX.rebirth();confetti(140);banner("Delivered to "+j.n+" · +"+fmt(pay),"g");updMini()}
+  B.job=null;earn(pay);nlog(mpName()+" delivered "+CAT[j.cat].n.toLowerCase()+" to "+PL[j.to].n+" for "+j.n);S.stats.bounties=(S.stats.bounties||0)+1;karmaAdd(3);vote(10);dirty=true;SFX.rebirth();confetti(140);banner("Delivered to "+j.n+" · +"+fmt(pay),"g");updMini()}
 // your own posted jobs: collect what people delivered, refund the ones nobody took after a day
 let bChkT=30;setInterval(async()=>{if(!S||!playing||!S.bty||!S.bty.post.length||!crewCls())return;bChkT-=10;if(bChkT>0)return;bChkT=150;const B=S.bty,d=await netScan(NET+"bounty/"+netMe()+"/");if(!d)return;
-  for(const x of B.post.slice()){const r=d[x.id+"/done"];if(r&&r.it&&POOL.some(p=>p.cat===r.it.cat&&p.code===r.it.code)){B.post=B.post.filter(q=>q!==x);netPut("bounty/"+netMe()+"/"+x.id,null);netPut("bounty/"+netMe()+"/"+x.id+"/done",null);const it=safeItem(r.it);if(S.stash.length<maxSlots())S.stash.push({...it,paid:x.r});else earn(Math.round(valueOf(it)*.8));dirty=true;SFX.sell();banner(String(r.n||"Someone").slice(0,14)+" delivered your job: "+it.name,"g")}
-    else if(Date.now()-x.t>864e5){B.post=B.post.filter(q=>q!==x);netPut("bounty/"+netMe()+"/"+x.id,null);earn(x.r);dirty=true;banner("Nobody took your job in a day. Reward refunded","a")}}},10000);
+  for(const x of B.post.slice()){const r=d[x.id+"/done"];if(r&&r.it&&POOL.some(p=>p.cat===r.it.cat&&p.code===r.it.code)){B.post=B.post.filter(q=>q!==x);netPut("bounty/"+netMe()+"/"+x.id,null);netPut("bounty/"+netMe()+"/"+x.id+"/done",null);const it=safeItem(r.it);if(S.stash.length<maxSlots())S.stash.push({...it,paid:x.r});else earn(Math.round(valueOf(it)*.8));dirty=true;SFX.sell();awayOr(String(r.n||"Someone").slice(0,14)+" delivered your job: "+it.name,"g")}
+    else if(Date.now()-x.t>864e5){B.post=B.post.filter(q=>q!==x);netPut("bounty/"+netMe()+"/"+x.id,null);earn(x.r);dirty=true;awayOr("Nobody took your job in a day. Reward refunded","a")}}},10000);
 /* ================= ghost races: your best run, and the best runs of people you've played with ================= */
 let RREC=null,GHOSTS=null;
 function metAdd(){if(!S||!MP)return;S.met=S.met||{};for(const id in MP.peers){const n=String(MP.peers[id].n||"").toLowerCase().slice(0,16);if(n&&n!=="player"&&!S.met[n]){S.met[n]=Date.now();dirty=true}}}
 setInterval(()=>{try{metAdd()}catch(e){}},15000);
 setInterval(()=>{if(!S)return;if(RRUN){if(!RREC||RREC.t0!==RRUN.t0)RREC={t0:RRUN.t0,dir:RRUN.dir,p:[]};if(RREC.p.length<900)RREC.p.push(Math.round(S.px),Math.round(S.py))}},100);
-function ghostSave(t){const r=RREC;if(!r||r.dir==null)return;RREC=null;const R=roadS();R.gh=R.gh||{};const k=r.dir>0?"e":"w";if(R.gh[k]&&R.gh[k].t<=t)return;const g={t:+t.toFixed(2),p:r.p};R.gh[k]=g;dirty=true;netPut("ghost/"+mpName().toLowerCase().slice(0,16)+"/"+k,{n:mpName(),s:myShirt(),...g})}
+function ghostSave(t){const r=RREC;if(!r||r.dir==null)return;RREC=null;const R=roadS();R.gh=R.gh||{};const k=r.dir>0?"e":"w";if(R.gh[k]&&R.gh[k].t<=t)return;const g={t:+t.toFixed(2),p:r.p};R.gh[k]=g;nlog(mpName()+" set a personal best of "+g.t+"s on the Frontier Road");dirty=true;netPut("ghost/"+mpName().toLowerCase().slice(0,16)+"/"+k,{n:mpName(),s:myShirt(),...g})}
 async function ghostFetch(){const d=await netScan(NET+"ghost/");if(!d)return;const me=mpName().toLowerCase(),met=S.met||{},crew=S.crew&&S.crew.mem?S.crew.mem:{},L={e:[],w:[]};
   for(const k in d){const[n,dir]=k.split("/"),g=d[k];if(n===me||!L[dir]||!g||!Array.isArray(g.p)||!(g.t>3)||g.p.length>1800)continue;L[dir].push({n:String(g.n||n).slice(0,16),s:okCol(g.s)?g.s:"#2fd28a",t:+g.t,p:g.p.map(Number),f:!!met[n]})}
   for(const k in L)L[k].sort((a,b)=>(b.f-a.f)||(a.t-b.t));GHOSTS={e:L.e[0]||null,w:L.w[0]||null,at:Date.now()}}
@@ -7665,7 +7673,7 @@ const brickC=()=>Math.max(100,Math.round(rwBase()*.01));
 function cityState(){let left=CGOAL.tot==null?townBricks():CGOAL.tot+townBricks(),i=0;while(i<CITY_GOALS.length&&left>=CITY_GOALS[i].need){left-=CITY_GOALS[i].need;i++}return{i,have:left,built:CITY_GOALS.slice(0,i).map(g=>g.k)}}
 const cityBuilt=k=>{try{return cityState().built.includes(k)}catch(e){return false}};
 async function cityFetch(){const d=await netScan(NET+"city/");if(!d)return;let tot=0;const by={};for(const k in d){const x=d[k];if(!x||!isFinite(x.b)||x.b<0)continue;const b=Math.min(Math.floor(x.b),5000);tot+=b;by[k]={n:String(x.n||"?").slice(0,16),b}}
-  const before=cityState().i;CGOAL={tot,top:Object.values(by).sort((a,b)=>b.b-a.b).slice(0,5),at:Date.now()};const now=cityState().i;if(now>before&&before<CITY_GOALS.length&&S.cityLast!==now){S.cityLast=now;dirty=true;const g=CITY_GOALS[now-1];banner("City goal complete: "+g.n,"g");confetti(240);rayText("Flip City built the "+g.n+" together! "+g.perk[0].toUpperCase()+g.perk.slice(1)+".")}}
+  const before=cityState().i;CGOAL={tot,top:Object.values(by).sort((a,b)=>b.b-a.b).slice(0,5),at:Date.now()};const now=cityState().i;if(now>before&&before<CITY_GOALS.length&&S.cityLast!==now){S.cityLast=now;dirty=true;const g=CITY_GOALS[now-1];nlog("Flip City finished building the "+g.n);banner("City goal complete: "+g.n,"g");confetti(240);rayText("Flip City built the "+g.n+" together! "+g.perk[0].toUpperCase()+g.perk.slice(1)+".")}}
 setInterval(()=>{if(S&&playing&&Date.now()-CGOAL.at>6e5){CGOAL.at=Date.now();cityFetch().catch(()=>{})}},20000);
 function cityGoalHTML(){const c=cityState(),g=CITY_GOALS[c.i],today=dayKey(),mine=S.city&&S.city.d===today?S.city.n:0,online=!!crewCls();
   return `<div class="note">Everyone in Flip City chips in bricks for the next big building. When it's finished, <b>every player</b> gets its perk for good. Townspeople add a few bricks every hour, and you can give up to 25 a day.</div>
@@ -7763,7 +7771,7 @@ function hzResolve(){if(!HZ||HZ.st==="done")return;const team=hzTeam(HZ.scores);
 function hzFinish(team,scores){if(!HZ||HZ.st==="done")return;HZ.st="done";HZG&&HZG.stop&&HZG.stop();HZG=null;const n=Object.keys(HZ.crew).length,ok=team>=.5;hzLeft();S.coh.n++;S.stats.coheists=(S.stats.coheists||0)+1;karmaAdd(-2);
   let pay=0;if(ok){pay=Math.round(hzBase()*(.5+team)*(1+.2*(n-2)));earn(pay);vote(8);S.stats.coWins=(S.stats.coWins||0)+1;SFX.crit(team>.8?3:2);confetti(220,null,null,["#2fbf71","#ffcc33","#fff"]);flash("#2fbf71",.3)}
   else{const f=Math.round(S.cash*.01);S.cash=Math.max(0,S.cash-f);pay=-f;SFX.loss();shake(8)}
-  HZ.res={team,ok,pay,scores};dirty=true;banner(ok?"Heist pulled off · +"+fmt(pay):"The alarm went off. Bail cost "+fmt(-pay),ok?"g":"r");hzRedraw();updMini()}
+  HZ.res={team,ok,pay,scores};nlog(ok?"A crew of "+n+" pulled off a heist at the bank":"A heist at the bank went wrong. The alarm rang for an hour");dirty=true;banner(ok?"Heist pulled off · +"+fmt(pay):"The alarm went off. Bail cost "+fmt(-pay),ok?"g":"r");hzRedraw();updMini()}
 function hzRedraw(){if(room==="coheist"&&openCoHeist.draw)openCoHeist.draw()}
 function renderHzChip(){let el=$("hzChip");const show=!HZ&&HZ_OFFER&&Date.now()-HZ_OFFER.t<7000&&MP&&MP.peers[HZ_OFFER.host];if(!show){if(el)el.hidden=true;return}
   if(!el){el=document.createElement("button");el.className="chip pill ev";el.id="hzChip";el.style.setProperty("--ec","#2fbf71");el.onclick=()=>{audioOn();hzJoin()};$("hudpills").insertBefore(el,$("goalChip"))}el.hidden=false;const t="🔐 "+HZ_OFFER.n+"'s heist · join";if(el.textContent!==t)el.textContent=t}
@@ -7827,7 +7835,7 @@ async function cwFetch(wk){const d=await netScan(CRT);if(!d)return null;const C=
     if(p[1]==="i"&&typeof x.n==="string"){c.n=x.n.slice(0,18);c.c=CREW_COLS.includes(x.c)?x.c:"#2a5bd7"}else if(p[1]==="w"&&+p[2]===wk&&p[3]&&isFinite(x.p)&&x.p>0){const v=Math.min(Math.floor(x.p),1e7);c.p+=v;c.mem[p[3]]={n:String(x.n||"?").slice(0,16),p:v}}}
   return Object.values(C).filter(c=>c.n&&c.p>0).sort((a,b)=>b.p-a.p||(a.id<b.id?-1:1))}
 async function cwRefresh(){const w=weekNo(),[now,last]=await Promise.all([cwFetch(w),cwFetch(w-1)]);if(!now)return;CWAR={wk:w,list:now,champ:last&&last[0]||null,at:Date.now()};
-  const C=S.crew,ch=CWAR.champ;if(C&&ch&&ch.id===C.id){C.cups=C.cups||[];if(!C.cups.includes(w-1)){C.cups.push(w-1);dirty=true;gainCrate(3);setTimeout(()=>{banner("Your crew won the crew war","g");confetti(260);rayText(C.n+" scored the most points in Flip City last week. There's a new trophy on your crew HQ in the Online Town, and 3 crates for you.")},1200)}}}
+  const C=S.crew,ch=CWAR.champ;if(C&&ch&&ch.id===C.id){C.cups=C.cups||[];if(!C.cups.includes(w-1)){C.cups.push(w-1);dirty=true;gainCrate(3);nlog(C.n+" won the crew war");setTimeout(()=>{awayOr("Your crew won the crew war · +3 crates","g");confetti(260);rayText(C.n+" scored the most points in Flip City last week. There's a new trophy on your crew HQ in the Online Town, and 3 crates for you.")},1200)}}}
 setInterval(()=>{if(!S||!playing||!S.crew||!crewCls())return;cwPutT-=5;cwGetT-=5;
   if(cwPutT<=0){cwPutT=60;const c=cwS();if(cwDirty&&c.p>0){cwDirty=0;cloudPut(crewCls(),CRT+S.crew.id+"/w/"+c.wk+"/"+crewMe(),JSON.stringify({n:mpName(),p:c.p,t:Date.now()}))}}
   if(cwGetT<=0){cwGetT=600;cwRefresh().catch(()=>{})}},5000);
@@ -7846,8 +7854,8 @@ const myKey=()=>mpName().toLowerCase().slice(0,16);
 function w4Snap(){const W=w4(),z={};W4Z.forEach(q=>{if(W.unl[q.k])z[q.k]=W.z[q.k].t.map(t=>t?t.k+"."+t.l:0)});return{n:mpName(),s:myShirt(),stars:W.stars||0,rate:w4Rate(),tot:W.tot||0,z,t:Date.now()}}
 setInterval(()=>{if(!S||!playing||!S.w4||!S.w4.open||!crewCls())return;w4sT-=10;if(w4sT>0)return;w4sT=300;netPut("w4s/"+myKey(),w4Snap());w4vCollect().catch(()=>{})},10000);
 async function w4vCollect(){const d=await netScan(NET+"w4v/"+myKey()+"/");if(!d)return;const W=w4();for(const who in d){const v=d[who];netPut("w4v/"+myKey()+"/"+who,null);if(!v||!v.k)continue;const n=String(v.n||who).slice(0,16),msg=v.m?' "'+String(v.m).slice(0,40)+'"':"";
-  if(v.k==="boost"){W.vb=Math.max(Date.now(),W.vb||0)+W4V_MIN*6e4;S.stats.w4boosts=(S.stats.w4boosts||0)+1;banner(n+" visited your Frontier and left a boost: +25% Gems for "+W4V_MIN+" min"+msg,"g")}
-  else if(v.k==="tip"){const g=Math.min(Math.max(0,+v.g||0),Math.max(1000,w4Rate()*1800));if(g>0){W.gems+=g;W.tot+=g;banner(n+" visited your Frontier and tipped "+gemF(g)+msg,"g")}}
+  if(v.k==="boost"){W.vb=Math.max(Date.now(),W.vb||0)+W4V_MIN*6e4;S.stats.w4boosts=(S.stats.w4boosts||0)+1;awayOr(n+" visited your Frontier and left a boost: +25% Gems for "+W4V_MIN+" min"+msg,"g");nlog(n+" visited "+mpName()+"'s Frontier")}
+  else if(v.k==="tip"){const g=Math.min(Math.max(0,+v.g||0),Math.max(1000,w4Rate()*1800));if(g>0){W.gems+=g;W.tot+=g;awayOr(n+" visited your Frontier and tipped "+gemF(g)+msg,"g")}}
   dirty=true;SFX.grail()}}
 const w4vK=()=>(w4().vb||0)>Date.now()?W4V_BOOST:1;
 const W4V_MSG=["Love what you've built","Nice park!","Those robots are amazing","Your castle looks great","Teach me your ways","See you at the top"];
@@ -7872,6 +7880,60 @@ function openW4Visits(back){room="w4vis";$("room").hidden=false;let view=null,ms
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
     $("room").querySelectorAll("[data-vv]").forEach(b=>b.onclick=()=>{const k=b.dataset.vv,v=W4SNAP&&W4SNAP[k];if(!v)return;view={k,...v};SFX.door();draw()})};
   draw();if(crewCls()&&S.w4&&S.w4.open)netPut("w4s/"+myKey(),w4Snap());netScan(NET+"w4s/").then(d=>{W4SNAP={};if(d)for(const k in d){const v=d[k];if(!v||typeof v.n!=="string"||!v.z||typeof v.z!=="object")continue;const z={};W4Z.forEach(q=>{if(Array.isArray(v.z[q.k]))z[q.k]=v.z[q.k].slice(0,W4_COLS*W4_ROWS)});W4SNAP[k]={n:v.n.slice(0,16),s:v.s,stars:+v.stars||0,rate:+v.rate||0,z}}if(room==="w4vis")draw()})}
+/* ================= the Now board: everything that's live or waiting on you, in one place ================= */
+function nowItems(){const L=[],add=(ic,t,d,go,live)=>L.push({ic,t,d,go,live:!!live});if(!S)return L;
+  const go=k=>()=>{closeRoom();if(PL[k]&&!SCN){walkTo(k);banner("Heading to "+PL[k].n,"u")}};
+  if(S.paperDay!==dayKey())add("📰","Today's paper is out","The Flip City Times: your day, the mayor, the crew war and what's on",()=>openTimes(()=>openNow()),1);
+  const an=anNow();add("🔨",an.live?"Auction Night is live":"Auction Night",an.live?"Lot "+(an.i+1)+" of "+AN_LOTS+" · "+Math.ceil(60-an.el)+"s left":"Next one in "+Math.ceil(an.next/6e4)+" min",()=>openAucNight(()=>openNow()),an.live);
+  if(HZ&&HZ.st!=="done")add("🔐","Your heist","It's waiting for you",()=>openCoHeist(),1);else if(HZ_OFFER&&Date.now()-HZ_OFFER.t<7000)add("🔐",HZ_OFFER.n+" is planning a heist","Join the crew before it starts",()=>{closeRoom();hzJoin()},1);
+  if(typeof WBOSS!=="undefined"&&wbNow())add("👹",wbNow().n+" has taken over "+(PL[wbNow().at]||{n:"town"}).n,"Everyone online is fighting back · "+Math.round(wbHpLeft()*100)+"% left",go(wbNow().at),1);
+  if(S.broke)add("🔧","Your "+vehName(S.broke.k)+" is broken","Mo's Garage can fix it",go("garage"),1);
+  const B=S.bty;if(B&&B.job)add("📋","Deliver "+CAT[B.job.cat].n.toLowerCase()+" to "+PL[B.job.to].n,"For "+B.job.n+" · "+fmt(bPay(B.job))+(S.stash.some(s=>s.cat===B.job.cat&&!s.fake)?" · you've got one":" · find one first"),go(B.job.to),1);
+  const st=S.story,sc=storyCur();if(st&&st.ready)add("🕴️","Vince wants to pay you","Chapter "+(st.ch+1)+" is done. Collect from him",()=>{closeRoom();openStory()},1);else if(sc)add("📖","Vince Saga · chapter "+(st.ch+1),sc.obj,()=>{closeRoom();openStory()});
+  const w=wxNow();if(w){const F=WX_FX[w];add(w==="snow"?"🌨️":w==="heat"?"🔥":"🌧️",F.n+" right now",(F.close.length?F.close.map(k=>PL[k].n).join(", ")+" closed · ":"")+Object.entries(F.cat).filter(([,v])=>v>1).map(([k])=>CAT[k]?CAT[k].n:k).join(" and ")+" sell higher",null,1)}
+  add("🌙",nightOpen()?"The Back Alley and Lucky Lou's are open":"After-dark places are shut",nightOpen()?"Until 5 AM":"They open at 8 PM. It's "+$("timeTxt").textContent,nightOpen()&&regionOpen("downtown")?go("alley"):null,nightOpen());
+  const m=mayorS(),wl=Math.ceil(weekLeft()/864e5);add("🏛️","Mayor race · "+fmtN(m.v)+" votes",(MAYOR?"Mayor "+MAYOR.n+" · "+MAYOR_PERKS[MAYOR.perk][0]+" this week · ":"")+"ends in "+wl+" day"+(wl===1?"":"s"),()=>{closeRoom();openCityHall("mayor")});
+  if(S.crew&&CWAR){const i=CWAR.list.findIndex(c=>c.id===S.crew.id),r=i>0?CWAR.list[i-1]:null;add("🏆","Crew war · "+(i>=0?"#"+(i+1):"not scoring yet"),r?fmtN(r.p-CWAR.list[i].p+1)+" points behind "+r.n:i===0?"Your crew is in front":"Score points to get on the board",()=>{closeRoom();openCrew(closeRoom)})}
+  {const c=cityState(),g=CITY_GOALS[c.i];if(g)add("🧱","City goal · "+g.n,Math.floor(c.have/g.need*100)+"% built · "+g.perk,()=>{closeRoom();openCityHall("goal")})}
+  if(S.stall&&S.stall.it.length)add("🏪","Your stall · "+S.stall.it.length+" listed","You get paid next time you play after something sells",null);
+  if(maeHere())add("🙏","Sister Mae is by the pond","She takes donations",()=>{closeRoom();target=[MAE.x,MAE.y];moving=true});if(knkHere())add("🦈","Knuckles is downtown","He buys fakes",()=>{closeRoom();target=[KNK.x,KNK.y];moving=true});
+  if(S.w4&&S.w4.open)add("💎",(w4().vb||0)>Date.now()?"Your Frontier is boosted":"Visit a friend's Frontier",(w4().vb||0)>Date.now()?Math.ceil((w4().vb-Date.now())/6e4)+" min of +25% Gems left":"Leave a boost or a tip, once a day each",()=>{closeRoom();openW4Visits(closeRoom)});
+  return L}
+function openNow(){room="now";$("room").hidden=false;const L=nowItems();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Right now")}<div class="nowlist">${L.map((x,i)=>`<button class="nowrow${x.live?" nlive":""}" data-now="${i}" ${x.go?"":"disabled"}><span class="nic">${x.ic}</span><span class="nt"><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span>${x.go?`<i>${ARROW}</i>`:""}</button>`).join("")}</div></div>`;
+  $("leaveBtn").onclick=closeRoom;$("room").querySelectorAll("[data-now]").forEach(b=>b.onclick=()=>{const x=L[+b.dataset.now];if(x&&x.go){SFX.tick(.5);x.go()}})}
+function renderNowBtn(){const b=$("nowBtn");if(!b||!S)return;let n=0;try{n=nowItems().filter(x=>x.live).length}catch(e){}const h=`<span>Now</span>${n?`<i>${n}</i>`:""}`;if(b.innerHTML!==h)b.innerHTML=h}
+setInterval(()=>{try{renderNowBtn()}catch(e){}},2000);
+/* ================= The Flip City Times: a fresh paper every morning, written from what actually happened ================= */
+function nlog(t,k){if(!S)return;S.nlog=S.nlog||[];S.nlog.push({t:String(t).slice(0,90),k:k||"",d:dayKey()});if(S.nlog.length>40)S.nlog.shift();dirty=true}
+setInterval(()=>{if(!S||!playing)return;const d=dayKey(),st=S.stats,o=S.dsnap;if(!o){S.dsnap={d,e:st.earnedAll||0,f:st.flips||0};return}if(o.d!==d){S.yday={d:o.d,e:(st.earnedAll||0)-o.e,f:(st.flips||0)-o.f,best:S.dbest||0};S.dsnap={d,e:st.earnedAll||0,f:st.flips||0};S.dbest=0;dirty=true}},5000);
+const VINCE_GOSSIP=["Vince was seen buying every umbrella in town. Nobody knows why.","Sources say Vince practises his evil laugh in the mirror every morning.","Vince's limo got a parking ticket outside the Diner. He paid it in pennies.","Vince claims he invented flipping. He did not invent flipping.","Vince tried to buy the Moon again. The Moon said no.","Vince was overheard saying 'that kid is good'. He denies it.","Vince bought a statue of himself. It's slightly taller than him.","Vince has started showing up at Rusty's Diner. He always orders the pie."];
+function openTimes(back){room="times";$("room").hidden=false;S.paperDay=dayKey();dirty=true;renderNowBtn();
+  const d=new Date(),date=d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}),y=S.yday,log=(S.nlog||[]).slice(-8).reverse(),seed=[...dayKey()].reduce((a,c)=>a+c.charCodeAt(0),0);
+  let head,sub;if(MAYOR){head="Mayor "+MAYOR.n+" takes office";sub="Won last week's race with "+fmtN(MAYOR.v)+" votes. This week: "+MAYOR_PERKS[MAYOR.perk][0].toLowerCase()+", "+MAYOR_PERKS[MAYOR.perk][1].toLowerCase()+"."}
+  else if(CWAR&&CWAR.list[0]){head=CWAR.list[0].n+" lead the crew war";sub=fmtN(CWAR.list[0].p)+" points so far this week."+(CWAR.list[1]?" "+CWAR.list[1].n+" are chasing.":"")}
+  else if(log[0]){head=log[0].t;sub="More on what happened around town inside."}else{head="Quiet day in Flip City";sub="Somebody should make some news. Why not you?"}
+  const t=karmaTier(),c=cityState(),g=CITY_GOALS[c.i],town=bTowns(),sn=season().n,an=anNow();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("The paper")}<div class="paper">
+    <div class="pmast"><b>The Flip City Times</b><span>${esc(date)} · Morning edition · 25¢</span></div>
+    <h1>${esc(head)}</h1><p class="plede">${esc(sub)}</p>
+    <div class="pcols">
+      <section><h4>Your day yesterday</h4>${y?`<p><b>${fmt(y.e)}</b> earned from <b>${fmtN(y.f)}</b> flips. Best single flip: <b>${fmt(y.best)}</b>.</p>`:`<p>Your first day on the job. Check back tomorrow for the numbers.</p>`}</section>
+      <section><h4>Around town</h4>${log.length?`<ul>${log.slice(0,6).map(x=>`<li>${esc(x.t)}</li>`).join("")}</ul>`:`<p>Nothing to report. Yet.</p>`}</section>
+      <section><h4>Crew war</h4>${CWAR&&CWAR.list.length?`<ol>${CWAR.list.slice(0,3).map(x=>`<li>${esc(x.n)} · ${fmtN(x.p)}</li>`).join("")}</ol>`:`<p>No crew has scored yet this week.</p>`}</section>
+      <section><h4>City goal</h4>${g?`<p>The ${esc(g.n)} is ${Math.floor(c.have/g.need*100)}% built. When it's finished: ${esc(g.perk)}.</p>`:`<p>Every city goal is built.</p>`}</section>
+      <section><h4>Forecast</h4><p>${sn} in Flip City. ${sn==="Winter"?"Snow likely: vintage coats and toys sell higher.":sn==="Summer"?"Heatwaves likely: sneakers and gym gear sell higher.":"Showers on and off: tech and cards do well in the rain."} The Back Alley and Lucky Lou's open at 8 PM.</p></section>
+      <section><h4>Society</h4><p>${["Locals say a certain Shark has been fencing fakes with Knuckles downtown.","Word is you drive a hard bargain. Sellers are nervous.","Nobody in town has made up their mind about you yet.","Shopkeepers say you're one of the good ones.","Sister Mae calls you the most honest dealer in Flip City."][t]}</p></section>
+      <section><h4>Classifieds</h4><ul>${town.map(x=>`<li>WANTED: ${esc(CAT[x.cat]?CAT[x.cat].n.toLowerCase():x.cat)}, delivered to ${esc(PL[x.to]?PL[x.to].n:x.to)}. Pays ${fmt(x.r)}. Ask ${esc(x.n)}.</li>`).join("")}<li>AUCTION NIGHT: ${an.live?"on right now":"next one in "+Math.ceil(an.next/6e4)+" minutes"}. Mystery lots.</li></ul></section>
+      <section><h4>Gossip</h4><p>${esc(VINCE_GOSSIP[seed%VINCE_GOSSIP.length])}</p></section>
+    </div></div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back||closeRoom;SFX.news()}
+/* ================= while you were away: notes that arrive right after you log in go into one summary ================= */
+const AWAY={until:0,list:[],t:null};
+function awayOr(t,c){if(Date.now()<AWAY.until){AWAY.list.push([t,c]);clearTimeout(AWAY.t);AWAY.t=setTimeout(awayShow,2500);return}banner(t,c)}
+function awayShow(){if(!AWAY.list.length)return;if(room||!$("overlay").hidden||document.querySelector(".wnov")){AWAY.t=setTimeout(awayShow,2000);return}const L=AWAY.list.splice(0);
+  const ov=document.createElement("div");ov.className="wnov";ov.innerHTML=`<div class="wnsheet"><span class="eyebrow">Welcome back</span><h2>While you were away</h2><div class="awlist">${L.map(([t,c])=>`<div class="aw ${c}">${esc(String(t).replace(EMO_LEAD,""))}</div>`).join("")}</div><button class="cta" id="awNow"><span>See what's on now</span>${ARROW}</button><button class="cta ghost2" id="awX" style="margin-top:8px">Close</button></div>`;
+  document.body.appendChild(ov);SFX.reveal();$("awX").onclick=()=>ov.remove();$("awNow").onclick=()=>{ov.remove();openNow()}}
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
@@ -8120,7 +8182,7 @@ let W4_STAR_X=15,W4_STAR_DIV=2e6,W4_STAR_B=.1,W4_EARN=.4,W4_STAR_E=.8;const W5_S
 const w4Mult=()=>(1+accFx("gems"))*W4_EARN*(1+.1*Object.keys(w4().unl).length-.1)*(1+W4_STAR_B*(w4().stars||0))*((w4().vb||0)>Date.now()?1.25:1);
 const w4StarGain=()=>{const W=w4();return W4_STAR_X*Math.max(0,Math.floor(Math.pow((W.run==null?W.tot:W.run)/W4_STAR_DIV,W4_STAR_E)))};
 function w4Tick(){if(!S||!S.w4||!S.w4.open)return;const W=w4(),now=Date.now();let dt=(now-(W.last||now))/1000;W.last=now;if(dt<=0)return;const away=dt>120;dt=Math.min(dt,8*3600);const g=w4Rate()*dt;W.gems+=g;W.tot+=g;W.run=(W.run||0)+g;
-  if(away&&g>0)setTimeout(()=>banner(GEM+" Your World 4 zones made "+gemF(g)+" while you were away","g"),1500);
+  if(away&&g>0)setTimeout(()=>awayOr(GEM+" Your World 4 zones made "+gemF(g)+" while you were away","g"),1500);
   // storms over the Sky Islands
   const sky=W.z.sky,skyN=sky.t.filter(Boolean).length;if(skyN>=4&&(!sky.storm||sky.storm.until<now)&&now>(sky.ev||0)){if(sky.ev){const prod=sky.t.map((t,i)=>t&&W4B(W4ZK("sky"),t.k).r?i:-1).filter(i=>i>=0).sort(()=>Math.random()-.5).slice(0,3);sky.storm={until:now+90000,hit:prod};if(inW4())banner("⛈️ Storm over the Sky Islands! Anything without a shield is out for a minute and a half","r")}sky.ev=now+rnd(6,10)*60000}
   // dragons over the Kingdom
@@ -9427,7 +9489,7 @@ function titleMain(){
     else $("bNew").onclick=()=>{newGame();save();start(true)};
   };draw();
 }
-function start(isNew){if(!S.flags.cut){$("overlay").hidden=true;return playCut(()=>{S.flags.cut=1;dirty=true;start(isNew)})}shownCash=null;setTimeout(()=>{if(S&&S.tut===0&&!(S.stats.flips||0))howToPlay()},400);try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(!isNew)resumeWorld();if(isNew){banner("Welcome to town","a")}else{setTimeout(whatsNew,900);welcomeBack();w2Offline();w3Offline()}if(HOLI())setTimeout(()=>!SCN&&!MPW&&banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
+function start(isNew){if(!S.flags.cut){$("overlay").hidden=true;return playCut(()=>{S.flags.cut=1;dirty=true;start(isNew)})}shownCash=null;setTimeout(()=>{if(S&&S.tut===0&&!(S.stats.flips||0))howToPlay()},400);try{applyNames()}catch(e){}if(S.tut==null)S.tut=isNew||(S.stats.flips||0)<1?0:99;if(!S.lifts){const r=x=>Math.max(20,Math.round(x/2.5)*2.5);S.lifts={bench:r(S.pr*.7),squat:r(S.pr*.9),dead:S.pr}}syncHome();ensureDaily();if(!isNew&&S.login.d!==dayKey())return loginReward(()=>start(isNew));if(isNew)S.login={d:dayKey(),streak:1};if(Object.keys(S.pos||{}).length)feedInit();audioOn();$("overlay").hidden=true;playing=true;renderMpChip();bKey="";renderHud();renderBottom();renderGoalChip();if(!isNew)resumeWorld();if(isNew){banner("Welcome to town","a")}else{AWAY.until=Date.now()+45000;setTimeout(whatsNew,900);welcomeBack();w2Offline();w3Offline()}if(HOLI())setTimeout(()=>!SCN&&!MPW&&banner(HOLI().n+" event: collect "+(HOLI().k==="hw"?"pumpkins":"presents")+" around town","a"),3600);if(isWeekend())setTimeout(()=>banner("Weekend bonus: +15% on every sale","g"),2400);const g=GOALS[S.goal];rayText(g?g.d:"Every goal done. Keep flipping, legend.")}
 
 /* ================= fit phones showing the desktop layout ================= */
 function fitScreen(){
