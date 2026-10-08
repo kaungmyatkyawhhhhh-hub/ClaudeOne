@@ -831,6 +831,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .paper{background:#f1ecdf;color:#1b1b1b;border-radius:6px;padding:16px 16px 18px;box-shadow:var(--shadow);font-family:Georgia,"Times New Roman",serif}.pmast{text-align:center;border-bottom:3px double #1b1b1b;padding-bottom:8px;margin-bottom:12px}.pmast b{display:block;font:900 1.65rem Georgia,serif;letter-spacing:-.01em}.pmast span{font:600 .62rem var(--body);text-transform:uppercase;letter-spacing:.12em;color:#555}.paper h1{font:900 1.45rem/1.1 Georgia,serif;margin:0 0 6px}.plede{font-style:italic;color:#444;margin:0 0 12px;font-size:.92rem}.pcols{columns:2;column-gap:16px;column-rule:1px solid #cfc6b0}.pcols section{break-inside:avoid;margin:0 0 12px}.pcols h4{font:800 .66rem var(--body);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #1b1b1b;margin:0 0 5px;padding-bottom:2px}.pcols p,.pcols li{font-size:.8rem;line-height:1.35;margin:0}.pcols ul,.pcols ol{margin:0;padding-left:16px}.pcols li{margin-bottom:3px}
 @media (max-width:360px){.pcols{columns:1}}
 .awlist{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px;text-align:left}.aw{background:var(--bg);border-radius:10px;padding:9px 11px;font-size:.84rem;border-left:4px solid var(--muted)}.aw.g{border-left-color:var(--up)}.aw.a{border-left-color:var(--gold)}.aw.r{border-left-color:var(--down)}
+.hearts{color:#e2364a;font-size:.8rem;letter-spacing:1px}.hearts i{font-style:normal;color:var(--muted);opacity:.6}
 .cutov{position:fixed;inset:0;z-index:9800;background:#0b0d11;touch-action:none;user-select:none;-webkit-user-select:none}.cutov canvas{display:block}.cutbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}.cutbar i{display:block;height:100%;width:0;background:#e2364a}
 .roadov{position:fixed;inset:0;z-index:9500;background:#8fd3ff;transition:opacity .45s}.roadov.out{opacity:0}.roadov canvas{display:block}.roadlab{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 28px);text-align:center;color:#fff;font:800 1.1rem var(--display);text-shadow:0 2px 8px rgba(0,0,0,.35)}.roadskip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font:700 .75rem var(--mono)}
 .w5gate{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#1b0b2a,#3a2266);color:#fff;margin:8px 0}.w5gate>span{font-size:.8rem;opacity:.85}.w5gate>i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}.w5gate>i>i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff4fd8)}.w5gate small{font:700 .7rem var(--mono);opacity:.7}
@@ -3924,7 +3925,7 @@ function loop(now){
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderChChip();renderCrateChip();renderMapChip();renderWkChip();renderBzChip();renderLvlBtn();renderPillTog()}
     }
-    NPCS.forEach(n=>{if(BUY&&BUY.n===n){n.ph+=dt*.2;return}if(!n.ok){n.ok=1;n.t=npcNext(n,roadPoint)}const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,roadPoint);else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
+    NPCS.forEach(n=>{if(BUY&&BUY.n===n){n.ph+=dt*.2;return}if(!n.ok){n.ok=1;n.t=npcNext(n,()=>npcGoal(n))}const dx=n.t[0]-n.x,dy=n.t[1]-n.y,d=Math.hypot(dx,dy);if(d<4)n.t=npcNext(n,()=>npcGoal(n));else{n.x+=dx/d*n.sp*dt;n.y+=dy/d*n.sp*dt}n.ph+=dt});
     if(!room){if(SCN)drawScene();else drawWorld()}
   }
   requestAnimationFrame(loop);
@@ -5543,7 +5544,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=99,WN=[
+const WN_VER=100,WN=[
+ ["🧑‍🤝‍🧑","The locals have lives now","The ten people of Flip City have jobs and routines: work in the morning, a favourite spot in the afternoon, out at night. They gossip about the mayor, the boss and your friends. Chat to fill their hearts, and at three hearts they bring you something every day. See them all from the Now button.","2026-10-08T15:30"],
  ["👹","The weekly boss","Every week one of Vince's partners takes over a shop in Flip City. Walk up and fight. Everyone's hits count together, and when the boss goes down, everyone who helped gets a rare outfit and 3 crates.","2026-10-08T14:30"],
  ["🎵","More music, more sounds","New tracks for the Frontier, the Frontier Road, Flip City at night, the castle, Rusty's jukebox, the Back Alley and City Hall. Every place now has its own sound when you walk in.","2026-10-08T13:30"],
  ["📋","The Now button","A new Now button by the sound icon shows everything that's live or waiting on you: Auction Night, heists, your delivery job, the weather, the mayor race, the crew war, the city goal and more. Tap any row to go there.","2026-10-08T13:00"],
@@ -7022,15 +7024,16 @@ const TOWNIES=["Jess","Omar","Lucy","Raj","Bea","Tomás","Kai","Nora","Mo","Ivy"
 NPCS.forEach((n,i)=>{n.n=TOWNIES[i%TOWNIES.length];n.f=["Jess","Lucy","Bea","Nora","Ivy"].includes(n.n)});
 function npcLine(n){S.npcMem=S.npcMem||{};const today=dayKey(),m=S.npcMem[n.n]=S.npcMem[n.n]&&S.npcMem[n.n].d===today?S.npcMem[n.n]:{d:today,c:0,ever:(S.npcMem[n.n]&&S.npcMem[n.n].ever)||0};m.c++;m.ever++;dirty=true;const you=mpName();
   if(m.ever===1)return"Hi, I'm "+n.n+"! You must be "+you+". Everyone's talking about you.";
-  if(m.c>=5)return"Again? That's "+m.c+" chats today, "+you+". I like you.";
+  {const gl=townGift(n);if(gl)return gl}
+  if(m.c===5||m.c===10)return"Again? That's "+m.c+" chats today, "+you+". I like you.";
   const o=[];if(isRad(S.cash))o.push("Over a quadrillion?! You're richer than the sun!");else if(S.cash>=1e9)o.push("A billionaire in my town? Lunch is on you.");else if(S.cash>=1e6)o.push("Look at you, a millionaire already.");else o.push("Saving up? Buy low, sell high, "+you+".");
   if(S.pr>=200)o.push("Those arms! Do you lift cars for fun?");if((S.height||170)>=200)o.push("How's the weather up there?");if((S.fans||0)>=1e4)o.push("OMG, it's you! Can I get a selfie?");if(S.partner&&S.partner.married)o.push("Say hi to "+String(S.partner.n||"your partner")+" for me!");if(S.pet)o.push("Your "+(petOf(S.pet)||{n:"pet"}).n.toLowerCase()+" is adorable.");if(S.crew)o.push("You're in "+S.crew.n+"? Nice flag.");
-  if(m.ever>10)o.push("Good to see you again, "+you+". The usual?");return pick(o)}
+  if(m.ever>10)o.push("Good to see you again, "+you+". The usual?");if(m.ever>1&&Math.random()<.7){const t=townTalk(n);if(t)return t}return pick(o)}
 function npcTalk(n){const t=npcLine(n);n.bub={txt:t,until:wt+4};SFX.tick(.7);if((S.fans||0)>=1e4&&t.startsWith("OMG")){S.fans+=5;dirty=true}
   if(!S.quest&&Math.random()<.35)setTimeout(()=>{if(!S.quest)questFromNPC(n)},1600)}
 function bubble2(x,y,txt){ctx.font="700 11px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const words=String(txt).split(" "),lines=[""];words.forEach(w=>{const t=(lines[lines.length-1]+" "+w).trim();if(ctx.measureText(t).width>190&&lines[lines.length-1])lines.push(w);else lines[lines.length-1]=t});const L=lines.slice(0,3),w=Math.min(210,Math.max(...L.map(l=>ctx.measureText(l).width))+18),h=L.length*14+10;
   ctx.fillStyle="rgba(255,255,255,.97)";rr(x-w/2,y-h,w,h,10);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y-1);ctx.lineTo(x+5,y-1);ctx.lineTo(x,y+6);ctx.fill();ctx.fillStyle="#141824";L.forEach((l,i)=>ctx.fillText(l,x,y-h+12+i*14))}
-function drawTownies(){const tx=S.px,ty=S.py;NPCS.forEach(n=>{const d=Math.hypot(n.x-tx,n.y-ty);if(n.bub&&wt<n.bub.until)bubble2(n.x,n.y-56,n.bub.txt);else if(d<140){ctx.font="700 10px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const w=ctx.measureText(n.n).width+12;ctx.fillStyle="rgba(255,255,255,.85)";rr(n.x-w/2,n.y-58,w,16,8);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(n.n,n.x,n.y-50)}})}
+function drawTownies(){const tx=S.px,ty=S.py;NPCS.forEach(n=>{const d=Math.hypot(n.x-tx,n.y-ty);if(n.bub&&wt<n.bub.until)bubble2(n.x,n.y-56,n.bub.txt);else if(d<140){ctx.font="700 10px "+FONTS.b;ctx.textAlign="center";ctx.textBaseline="middle";const hh=tHearts(n.n),lab=n.n+(hh?" "+"♥".repeat(hh):"");const w=ctx.measureText(lab).width+12;ctx.fillStyle="rgba(255,255,255,.85)";rr(n.x-w/2,n.y-58,w,16,8);ctx.fill();ctx.fillStyle="#141824";ctx.fillText(lab,n.x,n.y-50)}})}
 /* taxis: two of the cars are cabs you can hail */
 const isTaxi=v=>TRAFFIC.indexOf(v)%4===1;
 function taxiAt(x,y){for(const v of TRAFFIC){if(!isTaxi(v))continue;if(v.k!=="ring"&&!regionOpen("downtown"))continue;const[tx,ty]=trafficPos(v);if(Math.hypot(tx-x,ty-y)<34)return v}return null}
@@ -7916,6 +7919,7 @@ function nowItems(){const L=[],add=(ic,t,d,go,live)=>L.push({ic,t,d,go,live:!!li
   {const c=cityState(),g=CITY_GOALS[c.i];if(g)add("🧱","City goal · "+g.n,Math.floor(c.have/g.need*100)+"% built · "+g.perk,()=>{closeRoom();openCityHall("goal")})}
   if(S.stall&&S.stall.it.length)add("🏪","Your stall · "+S.stall.it.length+" listed","You get paid next time you play after something sells",null);
   if(maeHere())add("🙏","Sister Mae is by the pond","She takes donations",()=>{closeRoom();target=[MAE.x,MAE.y];moving=true});if(knkHere())add("🦈","Knuckles is downtown","He buys fakes",()=>{closeRoom();target=[KNK.x,KNK.y];moving=true});
+  {const best=NPCS.map(n=>[n,tHearts(n.n)]).sort((a,b)=>b[1]-a[1])[0];add("🧑‍🤝‍🧑","The locals",best&&best[1]?best[0].n+" is your closest friend · "+"♥".repeat(best[1]):"Ten people with their own routines. Chat to make friends",()=>openTownies(()=>openNow()))}
   if(S.w4&&S.w4.open)add("💎",(w4().vb||0)>Date.now()?"Your Frontier is boosted":"Visit a friend's Frontier",(w4().vb||0)>Date.now()?Math.ceil((w4().vb-Date.now())/6e4)+" min of +25% Gems left":"Leave a boost or a tip, once a day each",()=>{closeRoom();openW4Visits(closeRoom)});
   return L}
 function openNow(){room="now";$("room").hidden=false;const L=nowItems();
@@ -7998,6 +8002,38 @@ function wbFight(draw){const el=$("wbGame"),tEl=$("wbT"),b=wbNow();const W=Math.
     if(t>=end){done=true;wbHit(dmg,hits);WBF=null;draw();return}raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop)}
 function wbHit(dmg){const b=wbNow()||WBOSS[weekNo()%WBOSS.length],wk=weekNo();if(!S.wboss||S.wboss.wk!==wk)S.wboss={wk,d:0};const was=wbHpLeft();S.wboss.d+=dmg;S.wbAt=Date.now();S.stats.bossHits=(S.stats.bossHits||0)+dmg;dirty=true;vote(Math.ceil(dmg/5));karmaAdd(1);
   netPut("boss/"+wk+"/"+netMe(),{n:mpName(),d:S.wboss.d,t:Date.now()});if(WBDMG)WBDMG.tot+=dmg;SFX.crit(dmg>30?2:1);banner("You hit "+b.n+" for "+dmg,"g");wbCheck(was)}
+/* ================= the locals: jobs, daily routines, gossip and friendship ================= */
+const TPROF={
+ Jess:{job:"Barista at the Café",work:"cafe",fav:"flea",nite:"club",gift:["energy",40,"a free coffee"],lines:["If you see someone order a seven-shot latte, that's Vince. Every morning.","I'm saving up for my own café. Don't tell my boss.","The Flea gets the best stuff on Sunday mornings. You didn't hear it from me."]},
+ Omar:{job:"Mechanic at Mo's Garage",work:"garage",fav:"docks",nite:"alley",gift:["cash",.01,"some cash for a part he didn't need"],lines:["Funny noise from your engine? Bring it in before it gets worse.","Mo taught me everything. Mostly how to charge for it.","The car meet at the Docks is where the real money is."]},
+ Lucy:{job:"Coach at the Gym",work:"gym",fav:"mbeach",nite:"cafe",gift:["energy",60,"one of her protein shakes"],lines:["Lift with your legs, flip with your head.","Muscle Beach is the same gym with a better view.","Rest days are for people who aren't me."]},
+ Raj:{job:"Trader at the Market",work:"market",fav:"bank",nite:"night",gift:["cash",.015,"a cut from a good trade"],lines:["The trick is knowing what something's worth before the seller does.","Lowball too hard and you get a reputation. Trust me.","The Night Market has stock you'll never see in daylight."]},
+ Bea:{job:"Painter at the Boardwalk",work:"flea",fav:"lux",nite:"cafe",gift:["tix",20,"tickets she won at the Arcade"],lines:["I sold a painting at the Luxury Exchange once. Once.","Half the art at the Flea is fake. The other half is mine.","Sunsets on the boardwalk are free. Best deal in town."]},
+ "Tomás":{job:"Chef who loves the Arcade",work:"arcade",fav:"cafe",nite:"night",gift:["energy",50,"a plate of tacos"],lines:["Rusty's pie is good. My pie is better. Don't tell Rusty.","I'm one high score away from immortality.","Cook, play, sleep, repeat."]},
+ Kai:{job:"Street racer",work:"docks",fav:"dealer",nite:"club",gift:["tix",30,"tickets from a race bet"],lines:["The Frontier Road record is mine. For now.","Drive fast, brake late, flip cars.","If the cops chase you, take the beach road."]},
+ Nora:{job:"Banker",work:"bank",fav:"lux",nite:"cityhall",gift:["cash",.02,"a little interest she 'found'"],lines:["Money in the bank grows. Money in your pocket goes.","I've seen Vince's bank statement. I can't say more.","The mayor's office is busier than ever this week."]},
+ Mo:{job:"Owner of Mo's Garage",work:"garage",fav:"dealer",nite:"diner",gift:["crate",1,"a crate he found in a trunk"],lines:["If it's got wheels, I can fix it.","Rusty owes me forty dollars. Since 1994.","Old parts are worth more than people think."]},
+ Ivy:{job:"Student who runs errands",work:"cityhall",fav:"arcade",nite:"night",gift:["crate",1,"a crate from a delivery job"],lines:["I deliver anything for anyone. Check the bounty board at City Hall.","I'm going to be mayor one day. Vote Ivy.","Lucky Lou's card table is rigged. Probably. Maybe."]}};
+const tprof=n=>TPROF[n&&n.n];
+function townSpot(n){const P=tprof(n);if(!P)return null;const h=S.clock,k=h>=7&&h<13?P.work:h>=13&&h<19?P.fav:h>=19||h<2?P.nite:null;return k&&PL[k]&&deedOpen({k})&&!(NIGHT_ONLY.includes(k)&&!nightOpen())?k:null}
+function npcGoal(n){const k=townSpot(n);if(k){const d=PL[k].door,gx=d[0]+rnd(-80,80),gy=d[1]+rnd(14,70),dx=gx-n.x,dy=gy-n.y,L=Math.hypot(dx,dy);if(L>380){const st=rnd(160,300),a=Math.atan2(dy,dx)+rnd(-.5,.5);return[n.x+Math.cos(a)*st,n.y+Math.sin(a)*st]}return[gx,gy]}return roadPoint()}
+const tHearts=name=>Math.min(5,Math.floor((((S.npcMem||{})[name]||{}).ever||0)/4));
+function townGossip(){const o=[];if(MAYOR)o.push("Did you hear? "+MAYOR.n+" is mayor this week. "+MAYOR_PERKS[MAYOR.perk][0]+" was their idea.");if(CWAR&&CWAR.list[0])o.push(CWAR.list[0].n+" are winning the crew war. Again.");
+  const b=wbNow();if(b)o.push(b.n+" has taken over the "+PL[b.at].n+". Somebody do something!");if(MP)Object.values(MP.peers).slice(0,3).forEach(p=>p.n&&o.push("I just saw "+String(p.n).slice(0,14)+" walk past. Friend of yours?"));
+  const log=(S.nlog||[]).filter(x=>x.d===dayKey());if(log.length){const x=pick(log);o.push("Word around town: "+x.t.charAt(0).toLowerCase()+x.t.slice(1)+".")}
+  if(HZ_OFFER&&Date.now()-HZ_OFFER.t<7000)o.push("Somebody's planning something at the bank. I didn't see anything.");return o}
+function townGift(n){const P=tprof(n);if(!P)return null;const m=(S.npcMem||{})[n.n]||{},h0=Math.min(5,Math.floor(((m.ever||1)-1)/4)),h=tHearts(n.n),today=dayKey();
+  if(h>h0){setTimeout(()=>banner(n.n+" likes you more · "+"♥".repeat(h)+"♡".repeat(5-h),"g"),600);if(h===5)nlog(mpName()+" and "+n.n+" are best friends now")}
+  if(h>=3&&m.gift!==today){m.gift=today;const[k,v,what]=P.gift,x=h>=5?2:1;if(k==="energy")S.energy=Math.min(maxEnergy()*1.2,S.energy+v*x);else if(k==="cash")earn(Math.round(Math.max(200,rwBase()*v*x)));else if(k==="tix")S.tix=(S.tix||0)+v*x;else if(k==="crate")gainCrate(v*x);dirty=true;SFX.grail();setTimeout(()=>banner(n.n+" gives you "+what+(x>1?" (best-friend size)":""),"g"),1200);return"Here, I saved you something. Don't make it weird."}return null}
+function townTalk(n){const P=tprof(n);if(!P)return null;const k=townSpot(n),r=Math.random(),t=karmaTier(),g=townGossip();
+  if(r<.3&&g.length)return pick(g);if(r<.5&&k)return["Off to the "+PL[k].n+". ","See you at the "+PL[k].n+" later? "][Math.floor(r*10)%2]+pick(P.lines);
+  if(r<.62&&t!==2)return t>=3?"Everyone says you're the honest one. Keep it that way.":"People say you fence fakes with Knuckles. I'm keeping an eye on my wallet.";
+  return pick(P.lines)}
+function openTownies(back){room="townies";$("room").hidden=false;
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("The locals")}<div class="note">Ten people live and work in Flip City. They keep their own hours: at work in the morning, somewhere they love in the afternoon, out at night. Chat with them on the street to make friends. Three hearts and they bring you a little something every day. Five and they're your best friend.</div>
+    <div class="perks">${NPCS.map(n=>{const P=tprof(n);if(!P)return "";const k=townSpot(n),h=tHearts(n.n);return `<button class="perk nopic" data-tw="${esc(n.n)}"><span class="t">${esc(n.n)} <span class="hearts">${"♥".repeat(h)}<i>${"♡".repeat(5-h)}</i></span></span><span class="d">${esc(P.job)} · ${k?(Math.hypot(n.x-PL[k].door[0],n.y-PL[k].door[1])<200?"at the ":"on the way to the ")+esc(PL[k].n):"wandering the streets"}</span><span class="c">Find</span></button>`}).join("")}</div></div>`;
+  $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back||closeRoom;
+  $("room").querySelectorAll("[data-tw]").forEach(b=>b.onclick=()=>{const n=NPCS.find(x=>x.n===b.dataset.tw);if(!n)return;closeRoom();target=[n.x,n.y+20];moving=true;banner("Heading to "+n.n,"u")})}
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
