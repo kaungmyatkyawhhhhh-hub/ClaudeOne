@@ -5554,7 +5554,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=104,WN=[
+const WN_VER=105,WN=[
+ ["📖","Collect from Vince in one go","The Vince Saga screen now updates by itself: the Collect button and the next chapter show up without closing and reopening it.","2026-10-08T21:00"],
  ["🔧","No more stray circles","Fixed the big white circles that showed up across the Cosmos, Deep Time and other places. They were the island shoreline ripple drawing where it didn't belong.","2026-10-08T20:00"],
  ["🧹","Tidier screen","Uncle Ray's tips are now small notes in the corner instead of big cards, never repeat, and come at most once every 45 seconds (you can switch them off in Settings). On phones the Now button is a small icon so the cash panel has room. Fixed the oversized alert pills.","2026-10-08T19:00"],
  ["🎃","Halloween is here","All October: trick-or-treat at the glowing porches after 8 PM for candy, bid on a cursed lot at Auction Night every night, and trade candy for the Witch hat, Vampire cape and Skeleton suit. Winter Fest comes in December with carolling, a snowball race and its own outfits.","2026-10-08T17:30"],
@@ -7148,16 +7149,16 @@ function storyBase(){return{vW:S.stats.vW||0,flips:S.stats.flips||0}}
 function storyCur(){const st=S.story;return st&&!st.done?STORY[st.ch]:null}
 function storyHave(){const c=storyCur();return c?Math.max(0,c.have(S.story.base)):0}
 function storyFmt(c,v){return c.f?(c.f.length?c.f(v)+" / "+c.f(c.need):c.f()):Math.min(v,c.need)+"/"+c.need}
-function storyBegin(i){const c=STORY[i];S.story.ch=i;S.story.base=storyBase();S.story.ready=false;dirty=true;VNC=null;setTimeout(()=>{rayTextFrom("Vince","📖 Chapter "+(i+1)+": "+c.t+". "+c.intro);if(c.rival&&!S.rival)setTimeout(()=>{try{rivalStart();renderRvChip()}catch(e){}},2500)},600);renderStory()}
+function storyBegin(i){const c=STORY[i];S.story.ch=i;S.story.wait=0;S.story.base=storyBase();S.story.ready=false;dirty=true;VNC=null;setTimeout(()=>{rayTextFrom("Vince","📖 Chapter "+(i+1)+": "+c.t+". "+c.intro);if(c.rival&&!S.rival)setTimeout(()=>{try{rivalStart();renderRvChip()}catch(e){}},2500)},600);renderStory()}
 function storyTick(){if(!S||!playing)return;if(!S.story){if((S.stats.flips||0)<3||room)return;S.story={ch:0,base:storyBase(),ready:false,done:false};storyBegin(0);return}const st=S.story,c=storyCur();if(!c){VNC=null;return}
-  if(!st.ready&&storyHave()>=c.need){st.ready=true;dirty=true;SFX.level();banner("📖 Chapter done! Vince wants a word","g")}
+  if(!st.ready&&!st.wait&&storyHave()>=c.need){st.ready=true;dirty=true;SFX.level();banner("📖 Chapter done! Vince wants a word","g")}
   if(st.ready&&!SCN&&!room){if(!VNC||Math.hypot(VNC.x-S.px,VNC.y-S.py)>900){const sp=typeof lfSpot==="function"&&lfSpot(S.px,S.py,110,200);VNC=sp?{x:sp[0],y:sp[1]}:{x:S.px+90,y:S.py}}if(Math.hypot(VNC.x-S.px,VNC.y-S.py)<56)storyClaim()}
   else if(SCN)VNC=null;renderStory()}
-function storyClaim(){const st=S.story,c=storyCur();if(!c||!st.ready)return;const i=st.ch,v=Math.round(Math.max(2000,rwBase()*(.04+.012*i))),cr=1+Math.floor(i/3),tx=30+10*i;earn(v);gainCrate(cr);S.tix=(S.tix||0)+tx;let gm="";
+function storyClaim(){const st=S.story,c=storyCur();if(!c||!st.ready||st.wait)return;st.wait=1;const i=st.ch,v=Math.round(Math.max(2000,rwBase()*(.04+.012*i))),cr=1+Math.floor(i/3),tx=30+10*i;earn(v);gainCrate(cr);S.tix=(S.tix||0)+tx;let gm="";
   if(i>=6&&S.w4&&S.w4.open){const W4=w4(),g=Math.max(50,Math.round((W4.gems||0)*.1));W4.gems+=g;W4.tot=(W4.tot||0)+g;gm=" · "+gemF(g)+" "+GEM}
   VNC=null;dirty=true;nlog(mpName()+" beat Vince in chapter "+(i+1)+": "+c.t);SFX.rebirth();confetti(220);flash("#7a2fd6",.3);buzz([30,40,30]);const fin=i+1>=STORY.length;if(fin)st.end=storyEnd();rayTextFrom("Vince",fin?STORY_END[st.end][1]:c.win);banner("📖 "+c.t+" · +"+fmt(v)+" · "+cr+" crate"+(cr>1?"s":"")+" · "+tx+" tickets"+gm,"g");
   if(i+1>=STORY.length){st.done=true;st.ready=false;S.accOwn=S.accOwn||{};S.accOwn.vmedal=1;gainCrate(5);setTimeout(()=>{banner("👑 You beat Vince · ending: "+STORY_END[st.end][0],"g");confetti(300);rayText("You beat Vince! The Mogul medal is in your wardrobe (+5% money from sales), and Vince's challenges pay double from now on. World 5 is next.")},2200);renderStory();return}
-  setTimeout(()=>storyBegin(i+1),3500);st.ready=false;renderStory()}
+  setTimeout(()=>storyBegin(i+1),room==="story"?600:3500);st.ready=false;renderStory()}
 function renderStory(){const el=$("storyChip");if(!el||!S)return;const c=storyCur();if(!c){el.hidden=true;return}el.hidden=false;el.style.setProperty("--ec","#7a2fd6");
   const h=`<span class="pk">📖 Story ${S.story.ch+1}/${STORY.length}</span><span class="pt">${S.story.ready?"Find Vince to collect":c.t}</span><span class="pr">${S.story.ready?"🕴️ ready":storyFmt(c,storyHave())}</span>`;if(el.innerHTML!==h)el.innerHTML=h;el.classList.toggle("beat",!!S.story.ready)}
 function openStory(){room="story";$("room").hidden=false;const draw=()=>{const st=S.story,cur=storyCur();
@@ -7167,7 +7168,9 @@ function openStory(){room="story";$("room").hidden=false;const draw=()=>{const s
      <div class="bar xp" style="margin:6px 0"><i style="width:${Math.min(100,cur.f&&!cur.f.length?(storyHave()>=cur.need?100:0):storyHave()/cur.need*100).toFixed(1)}%"></i></div><span class="fine" style="display:block;text-align:left">${storyFmt(cur,storyHave())} · 📍 ${esc(cur.go)}</span>
      ${st.ready?`<button class="bigbtn" id="stClaim" style="margin-top:10px">Collect from Vince<small>He's waiting near you. You can also collect here</small></button>`:""}</div>`:`<div class="dcard"><b>👑 Saga complete</b><span class="fine">Vince works for you now. His challenges pay double, and you earned the Mogul medal.</span></div>`}
    <div class="sechead"><h3>Chapters</h3></div><div class="perks">${STORY.map((c,i)=>{const done=st.done||i<st.ch,now=!st.done&&i===st.ch;return `<div class="perk nopic"${now?' style="outline:2px solid #7a2fd6"':""}><span class="t">${done?"✅":now?c.ic:"🔒"} ${i+1}. ${done||now?esc(c.t):"???"}</span><span class="d">${done?esc(c.win):now?esc(c.obj):"Finish the chapter before"}</span></div>`}).join("")}<div class="perk nopic"><span class="t">${st.done?"👑":"🔒"} Reward</span><span class="d">Mogul medal (+5% sales money) · Vince's challenges pay double</span></div></div></div>`;
-  $("leaveBtn").onclick=closeRoom;const b=$("stClaim");if(b)b.onclick=()=>{storyClaim();draw()}};draw()}
+  $("leaveBtn").onclick=closeRoom;const b=$("stClaim");if(b)b.onclick=()=>{storyClaim();draw()}};draw();
+  // keep the screen live: the next chapter, its progress and the Collect button appear without reopening
+  const skey=()=>{const st=S.story,c=storyCur();return st?[st.ch,st.ready,st.done,c?storyHave():0].join("|"):""};let sig=skey();const iv=setInterval(()=>{if(room!=="story")return clearInterval(iv);const k=skey();if(k!==sig){sig=k;draw()}},400)}
 function storyPeople(ppl){if(!VNC||SCN)return;const v=VNC,now=performance.now()/1000;ppl.push([v.y,()=>{drawPerson(v.x,v.y,{...VINCE_LOOK,ph:now*2});const c=ctx;c.save();c.font="800 11px "+FONTS.b;c.textAlign="center";c.textBaseline="middle";const t="Vince",w=c.measureText(t).width+16;c.fillStyle="rgba(122,47,214,.9)";rr(v.x-w/2,v.y-92,w,18,8);c.fill();c.fillStyle="#fff";c.fillText(t,v.x,v.y-83);c.font="16px sans-serif";c.fillText("💬",v.x+18,v.y-64+Math.sin(now*3)*2);c.restore()}])}
 $("storyChip").onclick=()=>{audioOn();if(!room)openStory()};
 /* ---------- intro cutscene: 18 seconds, plays once, can't be skipped (Settings can replay it) ---------- */
