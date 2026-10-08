@@ -2450,8 +2450,8 @@ local function open(model)
 
 	titleLabel.Text = machine.name
 	local names = {}
-	for _, entry in ipairs(machine.muscles) do
-		table.insert(names, Muscles.ById[entry.id].name)
+	for _, entry in ipairs(Machines.SharePercents(machine)) do
+		table.insert(names, Muscles.ById[entry.id].name .. " " .. entry.pct .. "%")
 	end
 	musclesLabel.Text = if machine.trains == "Stamina" then "Stamina" else table.concat(names, " · ")
 	refreshCoins()

@@ -1,4 +1,4 @@
--- BodyFigure: the body silhouette made of muscle shapes (the body-map widget, the machine signs).
+-- BodyFigure: the body silhouette made of muscle shapes (the body-map widget).
 -- Drawn on a 40 x 100 grid (head = 12.8: torso 3 heads, legs 3.5 heads, arms end at mid-thigh).
 local BodyFigure = {}
 

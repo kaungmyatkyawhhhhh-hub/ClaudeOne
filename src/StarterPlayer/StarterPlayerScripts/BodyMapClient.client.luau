@@ -48,7 +48,7 @@ local MAP = {
 local BAR_SEGMENTS = 10
 
 ------------------------------------------------------------------------
--- The 40 x 100 grid and the muscle shapes: Shared.UI.BodyFigure (the machine signs draw the same figure).
+-- The 40 x 100 grid and the muscle shapes: Shared.UI.BodyFigure.
 ------------------------------------------------------------------------
 local BodyFigure = require(Shared.UI.BodyFigure)
 local BODY, FRONT, BACK = BodyFigure.Body, BodyFigure.Front, BodyFigure.Back

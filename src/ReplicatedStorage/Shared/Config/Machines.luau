@@ -260,6 +260,21 @@ Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 2, Seasonal = 0 }
 
 -- Set of muscle ids that some open machine trains (main or a real secondary: a light touch, below GoalShare, like the
 -- hack squat's calves, still gains a little but doesn't put that muscle into the Growth Spurt goal).
+-- A machine's muscle split as whole percents that add up to 100 (the main muscle takes the rounding): the machine HUD
+-- shows it after you sit down (owner, 8 Oct).
+function Machines.SharePercents(machine): { { id: string, pct: number } }
+	local total = 0
+	for _, entry in ipairs(machine.muscles) do total += entry.share or 1 end
+	local out, sum = {}, 0
+	for _, entry in ipairs(machine.muscles) do
+		local pct = math.floor((entry.share or 1) / total * 100 + 0.5)
+		table.insert(out, { id = entry.id, pct = pct })
+		sum += pct
+	end
+	if out[1] then out[1].pct += 100 - sum end
+	return out
+end
+
 Machines.GoalShare = 0.2
 function Machines.TrainableMuscles(growthSpurts)
 	local set = {}

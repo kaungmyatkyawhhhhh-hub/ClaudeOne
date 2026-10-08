@@ -5,8 +5,11 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## LATEST (8 Oct evening): unified muscles, skin stages, performance
 Everything is in Studio and pushed; **File > Save to Roblox first.**
 
+- **Machine card (8 Oct, redesign):** the glowing diamond is gone: one small flat charcoal card over the nearest machine
+  (see "Game feel" in the brief); the machine HUD shows the muscle split with percents. Screenshots: card_next_to_barbellrow_pc,
+  card_middle_of_gym_pc. Phone-size screenshots not possible from here (Studio's viewport can't be resized).
 - **Machine signs, EXP popups, training tint (8 Oct, late night):** see "Game feel" in the brief. New:
-  `MachineSignsClient` (3D diamond signs, floor outlines, "!" + "NEW"), `Shared/UI/BodyFigure` (the body-map's shapes,
+  `MachineSignsClient` (machine card + "!" / "NEW"), `Shared/UI/BodyFigure` (the body-map's shapes,
   shared), `Config/HudIcons.MuscleGroups` (group colors), `Muscles.FormatExpShort`, save fields `machinesUsed` and
   `settings.expPopups`, `MuscleRig.SetTraining` (the blue training tint; `MuscleRig.Flash` is now its rep pulse). The skin
   color layers (torso, arms) are OPAQUE now (a see-through overlay vanished behind Glass): drawn only while tinted, flat skin

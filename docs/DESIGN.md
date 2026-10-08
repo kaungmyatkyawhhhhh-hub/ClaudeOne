@@ -127,15 +127,15 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   (`Config/HudIcons.MuscleGroups`) + its real EXP ("+112", "+1.2K"); main bigger and warm red-orange, secondaries smaller
   and green, PUMPED / BIG REP gold; pop in with a bounce, drift up and out at random angles, fade over 0.8 s; at most 8 at
   once (the oldest go). Client only. Setting "Show EXP popups" On / Off (default On; Off = the old single "+N").
-- Machine signs (owner, 8 Oct, `MachineSignsClient`): above every machine a thin dark-glass diamond (3.5 x 3.5 square
-  turned 45 degrees, Transparency 0.35) with a glowing white neon frame; both faces: the name (Oswald, dark stroke), a
-  front + back body figure (`Shared/UI/BodyFigure`, the body-map's shapes) with the main muscle red and the secondaries
-  lighter, "Mid Chest 56%" and the secondaries smaller (shares from `Config/Machines`, whole percents adding to 100).
-  Locked: a lock + "Growth Spurt N". It turns toward the camera with a little lag and bobs; it shrinks to fit under a low
-  ceiling. A glowing white floor outline around the machine, brighter while you stand inside it. A bouncing yellow "!" +
-  "NEW" over machines you never did a rep on (`machinesUsed` in the save). Distance: within 15 studs the diamond +
-  outline; 15-60 only "!" + "NEW"; beyond nothing; 0.2 s fades; hidden on your own machine. 7 parts per machine, made
-  the first time you come near. The Use prompts sit on the machine's base / seat, under the diamond.
+- Machine card (owner's redesign, 8 Oct, `MachineSignsClient`; replaces the glowing diamond): only the NEAREST machine
+  within 10 studs shows a small flat card just above it (about 2.4 x 1.2 studs, solid charcoal 25,25,28, rounded, a 2px
+  stripe on the left in the main muscle's group color, no glow): one flat muscle shape in that color, the machine name
+  (Oswald, white, uppercase) and the main muscle (Nunito, light gray). No percentages, no secondaries (the machine HUD
+  shows the full split, "Mid Chest 53% · Front Delts 26% · Triceps 21%", after you sit down). Locked: a lock + "Growth
+  Spurt N". It faces the camera and keeps its world size, but never draws under 46 px tall (text >= 14 px) or over 1/6 of
+  the screen; it widens so the name never gets cut. Hidden on your own machine and while the camera is within 4 studs.
+  Machines you never did a rep on show a small bouncing yellow "!" (world-sized: smaller far away) with a "NEW" tag when
+  near, up to 60 studs (`machinesUsed` in the save). 0.2 s fades. One invisible anchor part per machine.
 - Machine look (owner, for map work): worn dark metal (DiamondPlate / Metal, darker, slightly rust-tinted), very dark
   padded seats (Fabric or SmoothPlastic), chunky realistic frames, no brand names (the plates' own "M WEIGHTS" stays).
 - Muscle highlight (hovering a stat label): the muscles turn red (a tint on the normal material, no neon glow), only
