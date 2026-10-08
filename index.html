@@ -1922,9 +1922,12 @@ function rbK(){return 1+.3*rbN()}
 // overgrown: lifting past your next growth spurt pays +1% money per 10 kg over (up to +50%)
 const ovKg=()=>S?Math.max(0,S.pr-spurtReq()):0;
 function ovK(){return 1+Math.min(.5,ovKg()/1000)}
-const rbReq=()=>5+2*rbN();
-// extra rebirths in one go: spurts over the requirement count for half (each extra rebirth costs double)
-function rbMulti(){let n=rbN(),left=(S&&S.spurts)||0,k=0;while(left>=(5+2*(n+k))*(k?2:1)){left-=(5+2*(n+k))*(k?2:1);k++}return k}
+// rebirth needs height: 190 cm for the first, +15 cm for each one after
+const rbReq=(n=rbN())=>190+15*n;
+const hgt=()=>(S&&S.height)||170;
+const rbOk=()=>hgt()>=rbReq();
+// extra rebirths in one go: every 40 cm over the requirement adds one more
+function rbMulti(){return hgt()<rbReq()?0:1+Math.floor((hgt()-rbReq())/40)}
 const spurtReq=()=>{const n=S.spurts||0;return Math.max(80,120-10*rbN())+30*n+Math.round(2*n*n)};
 const spurtGain=()=>Math.min(6+rbN(),2+rbN()+Math.floor(Math.max(0,S.pr-spurtReq())/40));
 // Height is exaggerated on screen so every cm shows: 180 cm looks ~8% taller, 200 cm ~25%.
@@ -1956,8 +1959,8 @@ function liftPanel(l0){
       <div class="note">Reset all three lifts to 20 kg and <b>grow taller</b>. Every cm over 170 gives confidence: +0.5% on sales, safer lowballing, bigger flex crowds and more fans. Muscle memory makes each climb back faster: bigger green zone, bigger jumps, and more weight allowed over your PR. Your muscles still have to be rebuilt to look big again.</div>
       <button class="bigbtn alt" id="gSpurt" ${S.pr<spurtReq()?"disabled":""}>Growth spurt +${spurtGain()} cm<small>${S.pr<spurtReq()?`Needs ${spurtReq()} kg max lift · you have ${S.pr} kg`:`Lifts go back to 20 kg · you'll be ${(S.height||170)+spurtGain()} cm`}</small></button>
       <div class="sechead"><h3>Rebirth</h3><span class="eyebrow">${rbN()?"Reborn ×"+rbN()+" · +"+Math.round(.3*rbN()*100)+"% money":"Not reborn yet"}</span></div>
-      <div class="note">Give up <b>every growth spurt</b>: your height goes back to 170 cm, and you lose the muscle memory and bag slots that came with them. In return you keep, forever: <b>+30% money</b> per rebirth, growth spurts that need 10 kg less and give +1 cm more each. Lifts, cash and everything else stay.</div>
-      <button class="bigbtn alt2" id="gReb" ${(S.spurts||0)<rbReq()?"disabled":""}>Rebirth ${rbMulti()>1?"×"+rbMulti():rbN()+1}<small>${(S.spurts||0)<rbReq()?`Needs ${rbReq()} growth spurts · you have ${S.spurts||0}`:`Reset ${S.spurts} spurts and ${S.height} cm · money ×${rbK().toFixed(1)} → ×${(rbK()+.3*rbMulti()).toFixed(1)}`}</small></button>
+      <div class="note">Reach <b>${rbReq()} cm</b> to be reborn. You give up <b>every growth spurt</b>: your height goes back to 170 cm, and you lose the muscle memory and bag slots that came with them. In return you keep, forever: <b>+30% money</b> per rebirth, growth spurts that need 10 kg less and give +1 cm more each. Lifts, cash and everything else stay.</div>
+      <button class="bigbtn alt2" id="gReb" ${!rbOk()?"disabled":""}>Rebirth ${rbMulti()>1?"×"+rbMulti():rbN()+1}<small>${!rbOk()?`Needs ${rbReq()} cm tall · you're ${hgt()} cm`:`Reset ${S.spurts||0} spurts and ${hgt()} cm · money ×${rbK().toFixed(1)} → ×${(rbK()+.3*rbMulti()).toFixed(1)}`}</small></button>
       <div class="sechead"><h3>Strength perks</h3><span class="eyebrow">${strTier()} · ${S.pr} kg</span></div>
       <div class="sperks">
         <div class="on"><b>Every 10 kg</b><span>+1 stash slot (up to 12), +2 max energy, more patient sellers</span></div>
@@ -1969,7 +1972,7 @@ function liftPanel(l0){
     $("gBack").onclick=closePanel;
     const setW=w=>{G.w=clamp(w,20,S.lifts[G.lift]+liftOver());newZone();draw()};
     P.querySelectorAll("[data-lift]").forEach(b=>b.onclick=()=>{G.lift=G0lift=b.dataset.lift;G.w=S.lifts[G.lift]+(S.liftMax?liftOver():5);newZone();draw()});
-    $("wDown").onclick=()=>{S.liftMax=0;setW(G.w-2.5)};$("wUp").onclick=()=>{S.liftMax=0;setW(G.w+2.5)};{let armed=false;const rb=$("gReb");rb.onclick=()=>{if((S.spurts||0)<rbReq())return;if(rb.dataset.sure!=="1"){rb.dataset.sure="1";rb.innerHTML="Tap again to be reborn<small>Your height, growth spurts and lifts reset</small>";SFX.hot();return}
+    $("wDown").onclick=()=>{S.liftMax=0;setW(G.w-2.5)};$("wUp").onclick=()=>{S.liftMax=0;setW(G.w+2.5)};{let armed=false;const rb=$("gReb");rb.onclick=()=>{if(!rbOk())return;if(rb.dataset.sure!=="1"){rb.dataset.sure="1";rb.innerHTML="Tap again to be reborn<small>Your height, growth spurts and lifts reset</small>";SFX.hot();return}
       const rbk=Math.max(1,rbMulti());S.reborn=rbN()+rbk;S.spurts=0;S.height=170;S.lifts={bench:20,squat:20,dead:20};syncPR();S.liftMax=0;if(G){G.w=25;newZone()}dirty=true;SFX.rebirth();setTimeout(()=>SFX.grail(),400);flash("#ffcc33",.7);confetti(320,null,null,["#ffcc33","#ffffff","#ff4fd8","#4fe3ff"]);shake(12,.8);buzz([60,40,60,40,200]);
       banner(rbk>1?"REBORN ×"+rbk:"REBORN","g");banner("Money ×"+rbK().toFixed(1)+" forever","g");if(GS)gymPop(GS.px,GS.py-90,"REBORN","#ffcc33",{life:2.4});draw();updMini();renderHud()};const sb=$("gSpurt");sb.onclick=()=>{if(S.pr<spurtReq())return;if(!armed){armed=true;sb.innerHTML="Tap again to grow<small>All lifts reset to 20 kg</small>";SFX.hot();return}
       const g=spurtGain();S.height=(S.height||170)+g;S.spurts=(S.spurts||0)+1;S.lifts={bench:20,squat:20,dead:20};syncPR();G.w=25;newZone();dirty=true;
@@ -5570,7 +5573,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=107,WN=[
+const WN_VER=108,WN=[
+ ["📏","Rebirth needs height now","Rebirth at the gym's lift station now needs you to be tall enough instead of a number of growth spurts: 190 cm for your first, then 15 cm more each time. Every 40 cm over the requirement gives an extra rebirth in one go.","2026-10-09T18:00"],
  ["🏅","Achievements pay, pets work, cars get a garage","Achievements now pop up with a Claim button and pay real money plus a crate, hype, energy or a rare find. Every 10 you claim adds +1% to every sale, and 15, 40 and 70 unlock new outfits. Flip of the day (Now button) gives everyone the same item: get the best markup and climb today's leaderboard. Your dog now sniffs out fakes, your husky carries an extra item and your parrot spots treasure on the Frontier Road. Mo's Garage and the Docks have a new Garage for paint, number plates, style and tuning, and the Docks show tonight's lineup of everyone's cars. The bottom of the screen is tidier too.","2026-10-09T14:00"],
  ["🌌","The worlds come home","The Cosmos has an Export Dock with tech that boosts your life back in Flip City. Deep Time has a Trading Post for fossil crates that sell 60% higher at the Luxury Exchange. The Gem Exchange sells Frontier decor worth double in the buildings you own. The bounty board has world jobs that pay triple, the weekly boss sometimes shows up in the Cosmos or Deep Time, and the new Wallet (Now button) shows where all your money comes from.","2026-10-09T10:00"],
  ["📖","Collect from Vince in one go","The Vince Saga screen now updates by itself: the Collect button and the next chapter show up without closing and reopening it.","2026-10-08T21:00"],
@@ -7038,7 +7042,7 @@ function openNext(back){room="next";$("room").hidden=false;const L=repLevel(),nw
   const nt=TIERS[tierN()+1];if(nt)add(nt.i,"Tier: "+nt.n,"Reach "+fmt(nt.nw)+" net worth.",Math.min(1,Math.log10(Math.max(1,nw))/Math.log10(nt.nw)));
   if(!(S.w2&&S.w2.open))add("🌌","World 2: the Cosmos","Open the Stargate at the Airport for "+fmt(W2_COST)+".",Math.min(1,S.cash/W2_COST));
   else{const ng=GEN.find((x,i)=>!genN(x.k)&&(i===0||genN(GEN[i-1].k)));if(ng)add(ng.ic,"Generator: "+ng.n,"Costs ✦"+radF(ng.c)+" at the Radiant Reactor.",Math.min(1,S.cash/RAD/ng.c))}
-  if((S.spurts||0)<rbReq())add("🔁","Rebirth "+(rbN()+1),"Needs "+rbReq()+" growth spurts (you have "+(S.spurts||0)+").",(S.spurts||0)/rbReq());
+  if(!rbOk())add("🔁","Rebirth "+(rbN()+1),"Needs "+rbReq()+" cm tall (you're "+hgt()+" cm). Growth spurts make you taller.",Math.max(0,hgt()-170)/(rbReq()-170));
   if(seaLv()<SEA_MAX)add(seaTheme(seaN())[2],"Season level "+(seaLv()+1),(SEA_XP-seaXP()%SEA_XP)+" more season points.",(seaXP()%SEA_XP)/SEA_XP);
   if(!S.crew)add("⚑","Join a crew","From the Harbor or the room menu, team up for +3% money per crew level.");
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("What's next")}<div class="nextlist">${rows.map(r=>`<div class="nextrow"><span>${r.ic}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small>${r.p!=null?`<i class="reqbar"><i style="width:${Math.max(3,Math.min(100,r.p*100))}%"></i></i>`:""}</div></div>`).join("")}</div></div>`;
