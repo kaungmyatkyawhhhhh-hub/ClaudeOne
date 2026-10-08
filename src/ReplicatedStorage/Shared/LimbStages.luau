@@ -6,7 +6,9 @@
 --   * size and weld follow the body part's size (golden ratio, Growth Spurts, widths): scale = body.Size / reference size;
 --   * clothing: TextureID = the character's Shirt (forearms) / Pants (calves) image, Color = the skin, so see-through areas
 --     of the clothing show skin like on the real body part; layered clothing on that part hides them;
---   * the rep flash and the stats hover highlight tint the part's Color like the other muscles.
+--   * the rep flash and the stats hover highlight tint the part's Color like the other muscles;
+--   * a stage is the whole lower arm / leg, so the plain body part under it is hidden (its square ends would poke out at
+--     the wrist and ankle); it shows again under layered clothing and when the stages go away.
 --   local limbs = LimbStages.new(model, folder, static)  -- nil when the templates aren't there
 --   limbs:Update(getG, style, tints, covered)            -- every frame
 --   limbs:Destroy()
@@ -61,7 +63,7 @@ local function place(self, limb, part: MeshPart, body: BasePart, stage)
 	local ref = PARTS[limb.def.part] and PARTS[limb.def.part].size or body.Size
 	local scale = body.Size / ref
 	part.Size = part.MeshSize * scale
-	local offset = CFrame.new(stage.center * scale)
+	local offset = CFrame.new(stage.center * scale) * Config.ImportTurn
 	if self.static then
 		part.CFrame = body.CFrame * offset
 	else
@@ -108,6 +110,7 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		if limb.part and limb.body ~= body then
 			limb.part:Destroy()
 			limb.part, limb.stage = nil, nil
+			if limb.body and limb.body.Parent then limb.body.Transparency = 0 end
 		end
 		limb.body = body
 		local g = getG(def.muscle, def.muscle)
@@ -136,7 +139,7 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 			limb.size = body.Size
 			place(self, limb, part, body, def.stages[limb.stage])
 		end
-		if self.static then part.CFrame = body.CFrame * CFrame.new(def.stages[limb.stage].center * (body.Size / (PARTS[def.part] and PARTS[def.part].size or body.Size))) end
+		if self.static then part.CFrame = body.CFrame * CFrame.new(def.stages[limb.stage].center * (body.Size / (PARTS[def.part] and PARTS[def.part].size or body.Size))) * Config.ImportTurn end
 		-- clothing and color (the skin shows where the clothing image is see-through)
 		local template = if marble then "" else (if def.clothing == "Pants" then style.pants else style.shirt) or ""
 		if part.TextureID ~= template then part.TextureID = template end
@@ -148,6 +151,9 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		if hidden and part.Transparency < 1 then part.Transparency = 1 end
 		if not hidden and part.Transparency >= 1 and limb.shownHidden then part.Transparency = 0 end
 		limb.shownHidden = hidden
+		-- the stage replaces the plain body part (shown again under layered clothing)
+		local bodyTransparency = if hidden then 0 else 1
+		if body.Transparency ~= bodyTransparency then body.Transparency = bodyTransparency end
 	end
 end
 
@@ -155,6 +161,7 @@ function LimbStages.Destroy(self)
 	for _, limb in pairs(self.limbs) do
 		if limb.part then limb.part:Destroy() end
 		limb.part = nil
+		if limb.body and limb.body.Parent then limb.body.Transparency = 0 end
 	end
 end
 

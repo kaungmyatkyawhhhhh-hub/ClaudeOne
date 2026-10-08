@@ -7,13 +7,10 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 
 - **Forearms + calves:** your character now uses **7 EditableMeshes (was 8)**: the front torso muscles and the snatched upper
   torso share one mesh. (The whole UpperTorso can't be one mesh: front 9,570 + back 17,908 triangles > the 20,000 limit.)
-  The forearm / calf **stage meshes are wired but NOT in yet**: a script can't upload meshes ("CreateAssetAsync ... not
-  available yet"). Until they're in, the old EditableMesh forearms / calves stay (they still don't fit on your character).
-  **Your steps:** 1) Studio > File > Import 3D, pick all 28 OBJs in `limb_stages/meshes` (bulk import, "Import only as
-  models" off is fine). 2) Drag them into Workspace (each keeps its file name, e.g. `RightLowerArm__Forearms__g040`).
-  3) Command bar: paste and run `tools/limb_stages_setup.luau`; it prints "28 templates made". 4) Save. That's it: the
-  code (`Shared/LimbStages`) turns on by itself (stage cross-fade, clothing, tint, scaling, NPCs / statue too). Tested with
-  stand-in templates (cross-fade measured, sizes follow the 7'0" body), not with the real meshes.
+  **Update 8 Oct (afternoon): the 28 forearm / calf stage meshes are IN** (`ReplicatedStorage.LimbStages`, ids in
+  `Config/LimbStages`): static MeshParts welded to LowerArm / LowerLeg, nearest stage to the shown look, 0.3 s cross-fade,
+  the plain block hidden under them, clothing, hover / flash tint, mirrors, NPCs and the statue. Import 3D turns the OBJs
+  180 degrees around Y (checked vertex by vertex): `Config/LimbStages.ImportTurn` turns them back.
 - **Fits:** 6 tops x 4 colors (black, grey, white, an accent) in the Gear and Fits store, worn from the Wardrobe, prices
   150-400 coins in `Config/Cosmetics`. Classic Shirts drawn by `tools/clothing_templates.ps1` (`clothing_templates/`) and
   **already uploaded** (ids in Config): nothing to do. Known issue: at mass monster size bits of skin poke through on the
@@ -38,7 +35,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   task2_fit_{gymtee,stringer,pumpcover,compression,croppedhoodie,sleevelesshoodie}_{front,back} (pump cover front only),
   task2_fit_gymtee_level0, task2_fit_croppedhoodie_monster_known_issue, task3_treadmill_running,
   task4_before_{startergym,progym,beachgym,plaza}, task4_after_{startergym,progym,plaza_fountain}.
-  (No forearm / calf stage shots: the meshes aren't uploaded yet.)
+  Afternoon: limbs_{g0,half,max,monster}_{front,back}, limbs_hover_arms, midline_* (chest / abs midline checks).
 
 ## Workflow (no Rojo)
 - **Roblox Studio is the source of truth** (edit through the MCP connection); GitHub is a backup. Scripts are synced between
@@ -59,7 +56,8 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - **EXP:** every number shown is EXP (total xp earned x `Muscles.ExpPerXp`); the first Growth Spurt needs exactly 50,000 per
   group. Levels still exist inside (saves/caps/machines). `tests/exp` checks it.
 - **Muscles (v8):** real EditableMesh muscles that grow from the skin, wear the character's own Shirt/Pants, snatched-waist
-  torso for everyone, red tint when hovered in Stats (blends ~40%, pulses 30-45%, keeps the shading) and a warm 35% flash on each rep (only muscles facing the camera, soft 4-row edge, clothing 15%, the torso under a muscle tints with it so it works at level 0; `MuscleRig.SetHighlight` / `MuscleRig.Flash`). No z-fighting: the torso sits 0.05 under the shells (push grows as the muscle emerges), barely-grown shells sink under it, and each muscle's skin edge snaps onto the torso (`MuscleMeshes.EdgeSnap`). Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
+  torso for everyone, red tint when hovered in Stats (a steady ~40% blend that keeps the shading; hover keeps 0.12 s of grace and a hovered
+  label stays put, so it never flickers) and a warm 35% flash on each rep (only muscles facing the camera, soft 4-row edge, clothing 15%, the torso under a muscle tints with it so it works at level 0; `MuscleRig.SetHighlight` / `MuscleRig.Flash`). No z-fighting: the torso sits 0.05 under the shells (push grows as the muscle emerges), barely-grown shells sink under it, and each muscle's skin edge snaps onto the torso (`MuscleMeshes.EdgeSnap`). Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
   -> `ReplicatedStorage/MuscleData` -> `Shared/MuscleMeshes` -> `Shared/MuscleRig` -> `MuscleClient`. Keep `muscle_v8/`
   unzipped before running the generator (it empties MuscleData first).
 - **Muscle v8-1 (7 Oct, "smooth, no seams" + spikes fix v2 + more definition):** border vertices grow with the average g of
@@ -124,8 +122,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   character uses **7** (was 8): torso front + snatched upper torso in ONE mesh, torso back, LowerTorso, upper arms 2, upper
   legs 2. Merging the whole UpperTorso into one mesh is impossible: front muscles 9,570 + back 17,908 triangles > the 20,000
   per-mesh limit. Forearms and calves move to STATIC stage meshes (`Shared/LimbStages`, `Config/LimbStages`): no EditableMesh
-  at all, on every character, NPCs and the statue too. They need the 28 stage meshes uploaded (see the morning report); until
-  then the old EditableMesh forearms / calves stay (and don't fit on your character).
+  at all, on every character, NPCs and the statue too (the 28 templates are in `ReplicatedStorage.LimbStages`).
 - A script can't upload meshes yet ("CreateAssetAsync ... not available yet"), so the stage meshes must be imported by hand.
 - A game script can't set a SurfaceAppearance image, and other people's clothing images can't be read into an EditableImage,
   so muscles wear clothing through a second textured part at 2% transparency. T-shirt graphics don't show on the snatched torso.
@@ -159,6 +156,8 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - Rep and set popups are big numbers now (about 3,000+ EXP at the start): easy to scale in `Muscles.ExpPerXp` if too loud.
 - Traps: their outer edge reaches over the shoulder and can show as a thin shelf above the delt from low angles (in the muscle_v8 mesh, was there before the z-fight fix). Back at max: small skin gaps between lats / lower back / traps with stepped seams.
 - The rep flash (warm white-orange) is hard to see on light skin under bright lights; it is clear on darker skin.
+- Forearm / calf stages: their open ends show a small stepped lip at the wrist and ankle (in the stage OBJs), and the hover /
+  flash tints the whole stage evenly (one MeshPart color, no soft edge).
 
 ## Decisions (still in force)
 - World pass (7 Oct, place only): small props cast no shadow (outside machines/NPCs), static parts have CanTouch off (no

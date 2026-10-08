@@ -47,7 +47,9 @@ end
 
 -- UpperTorso: the muscles and the snatched torso under them (worked out once here, so the game does no geometry):
 --   * every torso muscle vertex gets a "morph" offset: where the torso surface under it moves between the snatched max
---     and the wide level-0 start (the waist morph), so the muscle shell rides the torso and never sinks into it;
+--     and the wide level-0 start (the waist morph), so the muscle shell rides the torso and never sinks into it; the
+--     package's own "morph_off" (muscle_v8 growdata, PROMPT.md "jagged dark holes" update) when it has one, else worked
+--     out here from the torso under the vertex;
 --   * every torso vertex under a muscle gets a "push" (studs, along its normal, inward) so the torso stays at least
 --     TORSO_GAP under the shells (no z-fighting); its open edges (waist seam, neck, armholes) don't move;
 --   * every torso vertex gets an "owner": the nearest muscle vertex over it ("Mesh:index"), so it takes that muscle's tint.
@@ -265,6 +267,9 @@ for _, entry in ipairs(manifest.meshes) do
 					for _, idx in ipairs({ ia, ib, ic }) do needs[idx] = math.max(needs[idx], need) end
 				end
 			end
+			-- the package's offset (muscle_v8 "morph_off", same order as base) wins over the one worked out here
+			local mo = data.morph_off
+			if mo then offset = vector.create(mo[i * 3 - 2], mo[i * 3 - 1], mo[i * 3]) end
 			offsets[i] = offset
 			if edgeRow[i] then
 				local q, qn, d = closestOnTorso(p)

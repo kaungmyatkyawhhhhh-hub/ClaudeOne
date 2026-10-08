@@ -1,6 +1,28 @@
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
-local spec = serde.decode("json", fs.readFile("limb_stages/stages.json"))
+-- the package folder: Downloads\limb_stages (or a local copy in limb_stages/, git-ignored)
+local DOWNLOADS = "C:/Users/kaung/Downloads/limb_stages"
+local SRC = if fs.isDir(DOWNLOADS) then DOWNLOADS else "limb_stages"
+local spec = serde.decode("json", fs.readFile(SRC .. "/stages.json"))
+-- the Mesh asset ids of the imported stage meshes (Import 3D, 8 Oct 2026; also the templates in ReplicatedStorage.LimbStages)
+local IDS = {
+	LeftLowerArm__Forearms__g000 = 134869377242546, LeftLowerArm__Forearms__g020 = 123009547386725,
+	LeftLowerArm__Forearms__g040 = 76792021283700, LeftLowerArm__Forearms__g060 = 132613480057027,
+	LeftLowerArm__Forearms__g080 = 114924583885932, LeftLowerArm__Forearms__g100 = 100062384852138,
+	LeftLowerArm__Forearms__monster = 115849574876488,
+	LeftLowerLeg__Calves__g000 = 125453886740390, LeftLowerLeg__Calves__g020 = 122880136727946,
+	LeftLowerLeg__Calves__g040 = 133809753819097, LeftLowerLeg__Calves__g060 = 111890429209312,
+	LeftLowerLeg__Calves__g080 = 121445466025708, LeftLowerLeg__Calves__g100 = 74484219214533,
+	LeftLowerLeg__Calves__monster = 130744507772371,
+	RightLowerArm__Forearms__g000 = 98873297011050, RightLowerArm__Forearms__g020 = 133870990764025,
+	RightLowerArm__Forearms__g040 = 111851600610564, RightLowerArm__Forearms__g060 = 120848174618651,
+	RightLowerArm__Forearms__g080 = 122354124151374, RightLowerArm__Forearms__g100 = 129875298103198,
+	RightLowerArm__Forearms__monster = 134082376460352,
+	RightLowerLeg__Calves__g000 = 116276175859139, RightLowerLeg__Calves__g020 = 74950949400699,
+	RightLowerLeg__Calves__g040 = 139959019469236, RightLowerLeg__Calves__g060 = 95527494242011,
+	RightLowerLeg__Calves__g080 = 112519178091945, RightLowerLeg__Calves__g100 = 89281522213071,
+	RightLowerLeg__Calves__monster = 90400414812442,
+}
 local names = {}
 for name in pairs(spec.stages) do table.insert(names, name) end
 table.sort(names)
@@ -16,6 +38,8 @@ local lines = {
 	"local LimbStages = {}",
 	"",
 	"LimbStages.FadeTime = 0.3 -- seconds of cross-fade between two stages",
+	"-- Studio's Import 3D turns the OBJs 180 degrees around Y (x and z negated, checked vertex by vertex): turned back here",
+	"LimbStages.ImportTurn = CFrame.Angles(0, math.pi, 0)",
 	"",
 	"LimbStages.Meshes = {",
 }
@@ -24,7 +48,7 @@ for _, name in ipairs(names) do
 	table.insert(lines, string.format("\t%s = { part = %q, muscle = %q, clothing = %q, stages = {", name, part, muscle, if string.find(part, "Arm") then "Shirt" else "Pants"))
 	for _, stage in ipairs(spec.stages[name]) do
 		local minV, maxV = { math.huge, math.huge, math.huge }, { -math.huge, -math.huge, -math.huge }
-		for line in string.gmatch(fs.readFile("limb_stages/meshes/" .. stage.file), "[^\r\n]+") do
+		for line in string.gmatch(fs.readFile(SRC .. "/meshes/" .. stage.file), "[^\r\n]+") do
 			local x, y, z = string.match(line, "^v%s+(%S+)%s+(%S+)%s+(%S+)")
 			if x then
 				local v = { tonumber(x), tonumber(y), tonumber(z) }
@@ -35,7 +59,7 @@ for _, name in ipairs(names) do
 		for k = 1, 3 do center[k] = string.format("%.4f", (minV[k] + maxV[k]) / 2) end
 		local size = {}
 		for k = 1, 3 do size[k] = string.format("%.4f", maxV[k] - minV[k]) end
-		table.insert(lines, string.format("\t\t{ g = %s, file = %q, center = Vector3.new(%s), size = Vector3.new(%s), id = 0 },", tostring(stage.g), (string.gsub(stage.file, "%.obj$", "")), table.concat(center, ", "), table.concat(size, ", ")))
+		table.insert(lines, string.format("\t\t{ g = %s, file = %q, center = Vector3.new(%s), size = Vector3.new(%s), id = %d },", tostring(stage.g), (string.gsub(stage.file, "%.obj$", "")), table.concat(center, ", "), table.concat(size, ", "), IDS[(string.gsub(stage.file, "%.obj$", ""))] or 0))
 	end
 	table.insert(lines, "\t} },")
 end

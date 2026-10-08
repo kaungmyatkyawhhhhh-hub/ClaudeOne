@@ -101,17 +101,20 @@ local function addLiveMuscles(copy)
 			end
 		end
 	end
-	-- plain parts (the gym shorts on the thighs): placed on the same body part, same offset
+	-- plain parts (the gym shorts on the thighs) and the forearm / calf stage meshes (Shared.LimbStages): placed on the same
+	-- body part, same offset; a stage replaces its body part, like on the character
 	for _, source in ipairs(sourceFolder:GetChildren()) do
 		local weld = source:FindFirstChildOfClass("Weld")
 		local liveBody = weld and weld.Part0
 		local copyBody = liveBody and copy:FindFirstChild(liveBody.Name)
-		if source:IsA("Part") and copyBody and copyBody:IsA("BasePart") and source.Transparency < 1 then
+		local stage = source:IsA("MeshPart") and source:GetAttribute("Stage") ~= nil
+		if (source:IsA("Part") or stage) and copyBody and copyBody:IsA("BasePart") and source.Transparency < 1 then
 			local part = source:Clone()
 			part:ClearAllChildren()
 			part.Anchored = true
 			part.CFrame = copyBody.CFrame * liveBody.CFrame:ToObjectSpace(source.CFrame)
 			part.Parent = folder
+			if stage then copyBody.Transparency = 1 end
 		end
 	end
 	local session = openCount

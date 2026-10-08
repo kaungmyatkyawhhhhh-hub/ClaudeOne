@@ -56,7 +56,7 @@ local MARBLE = Color3.fromHex("#C9C6BF")
 -- muscle's shading, creases and shadows stay visible through it.
 local TINT = {
 	Highlight = Color3.fromRGB(225, 45, 45), -- red
-	HoverMin = 0.30, HoverMax = 0.45, HoverPeriod = 1.2, -- the stats hover pulses between these, one cycle per HoverPeriod s
+	Hover = 0.40,                            -- the stats hover: a steady blend toward the red (no pulse: it read as flicker)
 	HighlightIn = 0.15, HighlightOut = 0.2,  -- seconds to fade in / out
 	Flash = Color3.fromRGB(255, 196, 140),   -- warm white-orange
 	FlashIn = 0.08, FlashOut = 0.35,
@@ -845,10 +845,11 @@ local function updateTintState(self, dt: number): boolean
 	end
 	for id, amount in pairs(amounts) do
 		local want = if set and set[id] then 1 else 0
+		-- from where it is toward the target (and nothing once there: at full it must not dip and climb back every frame)
 		if want > amount then
-			amount = math.min(1, amount + dt / TINT.HighlightIn)
-		else
-			amount = math.max(0, amount - dt / TINT.HighlightOut)
+			amount = math.min(want, amount + dt / TINT.HighlightIn)
+		elseif want < amount then
+			amount = math.max(want, amount - dt / TINT.HighlightOut)
 		end
 		if amount <= 0 and want == 0 then
 			amounts[id] = nil
@@ -877,7 +878,7 @@ local function updateTintState(self, dt: number): boolean
 	return live
 end
 
--- The fully tinted color of a muscle (its top tint band): base blended toward the hover red (pulsing) and the flash warm
+-- The fully tinted color of a muscle (its top tint band): base blended toward the hover red (steady) and the flash warm
 -- white, scaled by how much it faces the camera, and much lighter over clothing.
 local function tinted(self, id: string, base: Color3, facing: number, clothed: boolean): Color3
 	local h = self.highlightAmount[id] or 0
@@ -886,8 +887,7 @@ local function tinted(self, id: string, base: Color3, facing: number, clothed: b
 	local cloth = if clothed then TINT.ClothScale else 1
 	local color = base
 	if h > 0 then
-		local pulse = 0.5 + 0.5 * math.sin(os.clock() * math.pi * 2 / TINT.HoverPeriod)
-		color = color:Lerp(TINT.Highlight, h * (TINT.HoverMin + (TINT.HoverMax - TINT.HoverMin) * pulse) * facing * cloth)
+		color = color:Lerp(TINT.Highlight, h * TINT.Hover * facing * cloth)
 	end
 	if f > 0 then color = color:Lerp(TINT.Flash, math.min(f, 1) * facing * cloth) end
 	return color

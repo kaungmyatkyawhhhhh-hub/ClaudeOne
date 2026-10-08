@@ -14,6 +14,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -183,25 +184,55 @@ end
 -- Click to expand (one group open at a time) and hover highlights on the real character
 ------------------------------------------------------------------------
 local SUB_HEIGHT = 18
+local HOVER_GRACE = 0.12 -- seconds a hover outlives MouseLeave, so tiny pointer / label movements never drop it
+local HIT_PAD = 6 -- px the invisible hover / tap area reaches past a label on every side
 local openGroup = nil -- the expanded group id
-local hoverKey = nil
+local hoverKey = nil -- the one hovered label (a group id or a muscle id)
+local leaveAt = nil -- when the hover ends (set by MouseLeave, cancelled by any enter)
 
--- the hovered group / muscle is painted neon red on your character (the muscle meshes' own face colors, so a single muscle
--- lights up on its own); target = a set { [muscleId] = true } or nil to clear
+-- the hovered group / muscle gets the red tint on your character (MuscleRig fades it in from where it is);
+-- target = a set { [muscleId] = true } or nil to clear
 local function setHighlight(target, on)
 	local character = player.Character
 	if character then MuscleRig.SetHighlight(character, on and target or nil) end
 end
 
+-- One hovered-label state: it only changes when a different label is entered; leaving starts a short grace time.
 local function hover(key, ids)
 	if ids then
-		hoverKey = key
-		local set = {}
-		for _, id in ipairs(ids) do set[id] = true end
-		setHighlight(set, true)
+		leaveAt = nil
+		if key ~= hoverKey then
+			hoverKey = key
+			local set = {}
+			for _, id in ipairs(ids) do set[id] = true end
+			setHighlight(set, true)
+		end
 	elseif hoverKey == key then
-		hoverKey = nil
+		leaveAt = os.clock() + HOVER_GRACE
+	end
+end
+local function updateHover()
+	if leaveAt and os.clock() >= leaveAt then
+		leaveAt, hoverKey = nil, nil
 		setHighlight(nil, false)
+	end
+end
+
+-- A label stays where it is while the mouse is over it (no float, drift or lean), so it never slides out from under the
+-- pointer; mouse only (a tap on a phone doesn't pin it).
+local function pointerIsMouse(): boolean
+	local last = UserInputService:GetLastInputType()
+	return last == Enum.UserInputType.MouseMovement or last == Enum.UserInputType.MouseButton1 or last == Enum.UserInputType.MouseButton2
+		or last == Enum.UserInputType.MouseWheel
+end
+local function hold(entry, over: boolean)
+	if over then
+		entry.overCount = (entry.overCount or 0) + 1
+		entry.releaseAt = nil
+		if not entry.held and entry.shownAt and pointerIsMouse() then entry.held = entry.shownAt end
+	else
+		entry.overCount = math.max((entry.overCount or 1) - 1, 0)
+		if entry.overCount == 0 then entry.releaseAt = os.clock() + HOVER_GRACE end
 	end
 end
 
@@ -211,9 +242,9 @@ for _, entry in ipairs(labels) do
 	for _, muscle in ipairs(group.muscles) do table.insert(groupIds, muscle.id) end
 	entry.extra = 0
 	entry.subs = {}
-	local hit = New("TextButton", { Name = "Hit", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 6, Parent = entry.holder })
-	hit.MouseEnter:Connect(function() hover(group.id, groupIds) end)
-	hit.MouseLeave:Connect(function() hover(group.id, nil) end)
+	local hit = New("TextButton", { Name = "Hit", Position = UDim2.fromOffset(-HIT_PAD, -HIT_PAD), Size = UDim2.new(1, HIT_PAD * 2, 1, HIT_PAD * 2), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 6, Parent = entry.holder })
+	hit.MouseEnter:Connect(function() hold(entry, true) hover(group.id, groupIds) end)
+	hit.MouseLeave:Connect(function() hold(entry, false) hover(group.id, nil) end)
 	hit.Activated:Connect(function()
 		if openGroup == group.id then
 			openGroup = nil
@@ -228,8 +259,8 @@ for _, entry in ipairs(labels) do
 		local back = New("Frame", { Name = "Back", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(size.Width, SUB_HEIGHT - 2), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0, ZIndex = 5, Parent = sub }, { New("UICorner", { CornerRadius = UDim.new(0, 5) }) })
 		local text = Theme.Text({ Name = "Text", Text = muscle.name, Font = "Regular", TextSize = "Small", Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = sub })
 		Theme.TextShadow(text)
-		sub.MouseEnter:Connect(function() hover(muscle.id, { muscle.id }) end)
-		sub.MouseLeave:Connect(function() hover(muscle.id, nil) end)
+		sub.MouseEnter:Connect(function() hold(entry, true) hover(muscle.id, { muscle.id }) end)
+		sub.MouseLeave:Connect(function() hold(entry, false) hover(muscle.id, nil) end)
 		sub.Activated:Connect(function() hover(muscle.id, { muscle.id }) end)
 		table.insert(entry.subs, { frame = sub, back = back, text = text, muscle = muscle })
 	end
@@ -499,6 +530,7 @@ end
 
 local function place(dt)
 	updateTurn(dt)
+	updateHover()
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local head = character and character:FindFirstChild("Head")
@@ -561,7 +593,15 @@ local function place(dt)
 			at = Vector2.new(math.clamp(at.X, LAYOUT.Margin, math.max(LAYOUT.Margin, view.X - LAYOUT.Margin - size.Width)), at.Y) -- (and always on screen)
 			lastBottom = at.Y + size.Height + entry.extra
 			local tiltYaw, tiltPitch = tiltFor(entry, side == "Left" and 1 or -1, dt)
-			at += applyTilt(entry, tiltYaw, tiltPitch)
+			if entry.releaseAt and os.clock() >= entry.releaseAt then entry.held, entry.releaseAt = nil, nil end
+			if entry.held then
+				-- the mouse is over it: it stays put, flat (the spring keeps running underneath, so it glides back after)
+				applyTilt(entry, 0, 0)
+				at = entry.held
+			else
+				at += applyTilt(entry, tiltYaw, tiltPitch)
+			end
+			entry.shownAt = at
 			entry.frame.Position = UDim2.fromOffset(math.floor(at.X + 0.5), math.floor(at.Y + 0.5))
 			for subIndex, sub in ipairs(entry.subs) do
 				local show = entry.extra > subIndex * SUB_HEIGHT * 0.5
@@ -653,6 +693,8 @@ local function update()
 	else
 		openGroup = nil -- stats closing: collapse and clear any highlight
 		hoverKey = nil
+		leaveAt = nil
+		for _, entry in ipairs(labels) do entry.held, entry.releaseAt, entry.overCount = nil, nil, 0 end
 		setHighlight(nil, false)
 		local tween = Theme.Fade(layer, false, 0.2)
 		local function stop()
