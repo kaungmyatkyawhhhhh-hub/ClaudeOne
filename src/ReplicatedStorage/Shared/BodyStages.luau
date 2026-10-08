@@ -15,7 +15,10 @@
 --   local stages = BodyStages.new(model, folder, static)  -- nil when the templates aren't there
 --   stages:Update(getLook, style, tint, covered, marble)  -- often (cheap when nothing changed)
 --   stages:Destroy()
+local AssetService = game:GetService("AssetService")
+local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Config = require(script.Parent.Config.BodyStages)
@@ -58,6 +61,71 @@ if not available then
 end
 function BodyStages.IsOn(): boolean return available end
 
+-- Download failures (measured 8 Oct night): now and then one of the 62 meshes fails to download in a session ("could not
+-- fetch", a different one each time; fetched again it loads fine), and the engine keeps that failure for the session: a
+-- piece cloned from it would draw nothing over a hidden body part (a hole). So the client preloads the templates; a
+-- failed one is fetched again through AssetService (another download path) and replaces its template, a few tries apart;
+-- until then regions skip the stages that use it (the nearest stage that loaded is shown instead).
+local broken: { [string]: boolean } = {}
+BodyStages.Broken = broken -- (the templates that failed to download and aren't repaired yet; read-only, for checks)
+local function stageUsable(stage): boolean
+	for _, object in pairs(stage.objects) do
+		if broken[object.file] then return false end
+	end
+	return true
+end
+if available and RunService:IsClient() then
+	task.spawn(function()
+		local byId = {}
+		for _, part in ipairs(templates:GetChildren()) do
+			if part:IsA("MeshPart") then byId[part.MeshId] = part end
+		end
+		local failed = {}
+		pcall(function()
+			ContentProvider:PreloadAsync(templates:GetChildren(), function(id, status)
+				if status == Enum.AssetFetchStatus.Failure or status == Enum.AssetFetchStatus.TimedOut then
+					for meshId, part in pairs(byId) do
+						if string.match(meshId, "%d+$") == string.match(tostring(id), "%d+$") then table.insert(failed, part) end
+					end
+				end
+			end)
+		end)
+		-- Studio test hook: Workspace attribute TestBrokenStage = a template name acts as a failed download that never repairs
+		local test = workspace:GetAttribute("TestBrokenStage")
+		local testPart = type(test) == "string" and templates:FindFirstChild(test) or nil
+		if testPart and not table.find(failed, testPart) then table.insert(failed, testPart) end
+		for _, part in ipairs(failed) do
+			broken[part.Name] = true
+			warn("[BodyStages] the stage mesh " .. part.Name .. " (" .. part.MeshId .. ") failed to download; using the nearest other stage and trying again")
+		end
+		for _, template in ipairs(failed) do
+			for attempt = 1, 4 do
+				task.wait(attempt * 3)
+				local ok, fresh = false, nil
+				if template ~= testPart then
+					ok, fresh = pcall(function()
+						return AssetService:CreateMeshPartAsync(Content.fromUri(template.MeshId), { CollisionFidelity = Enum.CollisionFidelity.Box })
+					end)
+				end
+				if ok and fresh then
+					fresh.Name = template.Name
+					fresh.Anchored, fresh.CanCollide, fresh.CanQuery, fresh.CanTouch, fresh.CastShadow = true, false, false, false, false
+					fresh.Massless = true
+					fresh.Size = template.Size
+					fresh.Color = template.Color
+					fresh.Parent = templates
+					template:Destroy()
+					broken[fresh.Name] = nil
+					print("[BodyStages] " .. fresh.Name .. " downloaded on try " .. attempt)
+					break
+				elseif attempt == 4 then
+					warn("[BodyStages] the stage mesh " .. template.Name .. " (" .. template.MeshId .. ") could not be downloaded; the nearest other stage is shown instead")
+				end
+			end
+		end
+	end)
+end
+
 -- the body parts a region stands in for (MuscleRig's garments / plain thighs)
 BodyStages.Parts = {}
 for _, region in ipairs(Config.Regions) do BodyStages.Parts[region.part] = true end
@@ -84,9 +152,9 @@ local function nearestStage(stages, value: number, current: number?): number
 	local best, bestDistance = 1, math.huge
 	for index, stage in ipairs(stages) do
 		local distance = math.abs(stage.g - value)
-		if distance < bestDistance then best, bestDistance = index, distance end
+		if distance < bestDistance and stageUsable(stage) then best, bestDistance = index, distance end
 	end
-	if current and stages[current] and math.abs(stages[current].g - value) <= bestDistance + HYSTERESIS then return current end
+	if current and stages[current] and stageUsable(stages[current]) and math.abs(stages[current].g - value) <= bestDistance + HYSTERESIS then return current end
 	return best
 end
 

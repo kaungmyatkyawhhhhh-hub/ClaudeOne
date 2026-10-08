@@ -22,6 +22,11 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   client warns once in Output when any stage mesh is missing. Solo play check: NPCs within 80 studs wear the 9 stage
   parts with their own Shirt / Pants textures, plain parts hidden; your own character still on live meshes. Next: the
   owner's 2-player test (Clients and Servers). The place must be saved (File > Save to Roblox) to keep the templates.
+- **Download hiccups:** in some play sessions ONE stage mesh fails to download ("MeshContentProvider ... could not fetch",
+  a different one each time; the same mesh loads fine in Edit and in the next session), and the engine keeps the failure
+  for the session. The client now preloads the 62 templates, warns once, shows the nearest stage that loaded instead (no
+  hole), and fetches the failed one again (AssetService, 4 tries); a warning if it still fails. Tested with the Studio
+  hook `TestBrokenStage` (Workspace attribute = a template name: acts as a failed download that never repairs).
 
 ## Before that (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
 Saved to Roblox (22:41 and 22:43); dated backup `Documents\GymArc_backups\GymArc_2026-10-08.rbxl` (via File > Download a
