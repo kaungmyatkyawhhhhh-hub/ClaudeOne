@@ -349,6 +349,7 @@ end
 local function startTraining(machine)
 	clearTraining() -- (switching machines: the old highlight goes first)
 	currentMachine = machine
+	if machine.trains == "Stamina" then return end -- (cardio: no muscle lights up)
 	for _, entry in ipairs(machine.muscles) do
 		for _, frame in ipairs(shapes[entry.id] or {}) do
 			training[frame] = true

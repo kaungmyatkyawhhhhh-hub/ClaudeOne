@@ -52,4 +52,17 @@ local starter = Machines.TrainableMuscles(1)
 H.check(not starter.Calves, "...Calves not before")
 H.check(Machines.TrainableMuscles(0).Obliques, "Obliques trainable from the start (the Crunch Bench)")
 H.check(builder:find('cyl%(m, "HangBar"') ~= nil, "hanging leg raise has its bar")
+-- the treadmill trains stamina (8 Oct): no muscle EXP, the distance run raises max stamina, never a muscle goal machine
+local Stamina = H.module("ReplicatedStorage/Shared/Config/Stamina")
+local Gains = H.module("ReplicatedStorage/Shared/Config/Gains")
+local treadmill = Machines.ById.Treadmill
+H.check(treadmill.trains == "Stamina", "the treadmill trains stamina")
+H.check(next(Gains.PerRep({ growthSpurts = 0, muscles = {}, genetics = {} }, treadmill, 1)) == nil, "...and gives no muscle EXP")
+H.check(Stamina.MaxFor(0) == Stamina.Max and Stamina.MaxFor(Stamina.Cardio.MetersPerPoint * 10) == Stamina.Max + 10, "max stamina grows with the distance run")
+H.check(Stamina.MaxFor(1e9) == Stamina.Max + Stamina.Cardio.MaxBonus, "...up to MaxBonus")
+for _, group in Muscles.Groups do
+	for _, name in Machines.ExercisesFor(group.id, 9, function(id) return Muscles.ById[id].group end) do
+		H.check(name ~= treadmill.name, "the treadmill is not listed as a " .. group.name .. " exercise")
+	end
+end
 H.done()

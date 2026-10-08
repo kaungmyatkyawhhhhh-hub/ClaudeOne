@@ -483,10 +483,17 @@ local function startReflection(mirrorModel, glass)
 			lastSignatureCheck = now
 		end
 		if not mirrored then return end
+		-- (Size only when it really changed since we last set it: a mesh part's Size never reads back exactly equal, and
+		-- setting it re-processes the mesh; on the muscle parts every frame that cost ~30 ms a frame, the lag by the gym
+		-- entrance, 8 Oct)
 		for _, pair in ipairs(mirrored.pairs) do
 			local source, copy = pair[1], pair[2]
 			copy.CFrame = reflect(source.CFrame)
-			if copy.Size ~= source.Size then copy.Size = source.Size end
+			local size = source.Size
+			if not pair[3] or (size - pair[3]).Magnitude > 1e-3 then
+				pair[3] = size
+				copy.Size = size
+			end
 		end
 		-- camera at your eye, looking straight into the glass; size and place the image so the glass lines up
 		local foot = eye - normal * distance

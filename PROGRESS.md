@@ -1,6 +1,6 @@
 # GYM ARC — Progress
 
-Short and current (7 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
+Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
 ## MORNING REPORT (overnight run, 8 Oct)
 Everything is in Studio and pushed; **File > Save to Roblox first** (new models, rebuilt treadmills, decor, uploaded ids).
@@ -16,8 +16,9 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   **already uploaded** (ids in Config): nothing to do. Known issue: at mass monster size bits of skin poke through on the
   biggest delts / biceps (`task2_fit_croppedhoodie_monster_known_issue.png`): the muscles' skin under-layer + shirt-layer trick
   (any classic shirt). The pump cover's sleeves end near the elbow.
-- **Treadmill:** 2 working treadmills in the starter gym cardio corner (the 3rd stays decor): mph tiers, no stamina cost,
-  light leg EXP, coins, sliding belt, run animation, saved distance, **Cardio King** at 10 km (`Machines.Cardio`). No uploads.
+- **Treadmill:** 2 working treadmills in the starter gym cardio corner (the 3rd stays decor), 4 in the pro gym: mph tiers,
+  no stamina cost, **trains stamina (not muscles)**, coins, sliding belt, run animation, saved distance, **Cardio King** at
+  10 km (`Machines.Cardio`). No uploads.
 - **Shoulders widen with muscle** (k 0.4 / 1.15 / 1.4) and **look balance cap only inside groups** (in studs) are in too.
 - **Map:** parts 20,982 before -> 21,081 after (+99 decor, nothing gameplay moved). Studio play solo on this PC (not the
   phone emulator; I can't run it): spawn **38.1 -> 43.9 FPS**, worst frame **227 -> 28 ms**; town 51.3 -> 48.8 FPS (25 -> 24 ms).
@@ -80,11 +81,14 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   `MenuCamera` part in `Gym.Entrance` (move it to reframe). `Gym.Entrance`, `Gym.StarterGym` and `Town.GymFront` are now
   Persistent Models (were Folders; the builders make Models too).
 
-- **Treadmill (8 Oct, overnight):** 2 of the 3 cardio-corner treadmills in the starter gym are machines (`Config/Machines`
-  Treadmill (2 in the starter gym, 4 in the pro gym since 8 Oct): speeds 2-13 mph as tiers, no stamina cost, gainScale 0.35, Quads + Hamstrings + a light touch of Calves under
-  GoalShare); belt slats slide while running (MachineClient), run animation `POSE_ANIMS.Run`, distance in
-  `stats.cardioMeters` (speed x `Machines.Cardio.MetersPerMph` per rep), title "Cardio King" at `Cardio.KingMeters` (10 km).
-  Built with `GymKit.Treadmill` (Gyms builder updated).
+- **Treadmill:** `Config/Machines` Treadmill (2 in the starter gym, 4 in the pro gym): speeds 2-13 mph as tiers, no stamina
+  cost, `trains = "Stamina"`: no muscle EXP (`Gains.PerRep` returns nothing), the distance run (`stats.cardioMeters`, speed x
+  `Machines.Cardio.MetersPerMph` per rep) raises max stamina by 1 per `Stamina.Cardio.MetersPerPoint` (40 m), up to +150
+  (`Stamina.MaxFor`; `PlayerData.RefreshMaxStamina` keeps the player's MaxStamina attribute, x Iron Lungs). Popups show
+  metres, "Max stamina · N" when it goes up; not listed as a Legs exercise; its speeds still unlock with Quads. Belt slats
+  slide while running, run animation `POSE_ANIMS.Run`, "Cardio King" at `Cardio.KingMeters` (10 km). Pro gym treadmills are
+  the premium model (`GymKit.treadmillPro`: chrome uprights + side rails, motor hood with LED strip, angled console with a live
+  speed / time / distance readout, cup holders, safety key).
 - **Gym fits (8 Oct, overnight):** 6 classic-Shirt tops x 4 colors in the Gear and Fits store (new cosmetics slot "Fit",
   `Config/Cosmetics` Fits + FitTemplates, prices 150-400 coins), worn from the Wardrobe; `CosmeticService` puts a Shirt
   "GymArcFit" on the character, the muscles wear it. Images drawn by `tools/clothing_templates.ps1` into
@@ -113,9 +117,21 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   `tools/builders/GeneticsSet`): platform, J-hooks, plate tree, dim back wall with racks, soft depth of field. Camera
   tuning: `ReplicatedStorage.GeneticsCameraRig` (CamPitch / CamHeight attributes).
 
-- **Equipment (7 Oct):** "M WEIGHTS" on every plate (templates rebuilt, 157 placed plates branded in place; those keep their old
-  thickness, only bar/machine plates got thinner), end collars on bars, Leg Press + Hack Squat (2 + 2 starter, 1 + 1 pro),
+- **Equipment (7 Oct):** "M WEIGHTS" on every plate. **8 Oct: plates look like the genetics plates** (`tools/builders/GymAssets`):
+  stepped bevel edge, raised rim band, chrome hub + flange, groove ring, "M WEIGHTS" curved over and under the hub, the weight at
+  9 and 3 o'clock, printed on both faces (drawn within 40 studs); `GymAssets.Replace` swapped all 157 placed plates. Also end collars on bars, Leg Press + Hack Squat (2 + 2 starter, 1 + 1 pro),
   quests "Do 15 leg presses / hack squats", exercises line on the Muscles cards.
+
+- **Pro gym lifts (8 Oct):** every pro machine animates on the real equipment. Arm IK (`bars.armIK`, two-bone, elbow pole)
+  puts the hands on the handles (it turns each arm part by its own bone direction: the Robloxian upper arm's elbow sits ~36
+  degrees off the part's axis). New pose kinds in `Config/Poses` + `MachineService.bodyCFrame`: Sit (pec deck), Support (dips:
+  straight arms on the handles), Thrust (hip thrust: upper back on the pad). `contract = true` poses rest relaxed and each rep
+  goes relaxed -> contracted -> relaxed (curls, raises, shrugs, crunch, leg raise ...). Reverse fly is a **pec deck** now (seat,
+  chest pad, swing arms). Cable machines (lateral raise, curl, pushdown, woodchop) have real cables that follow the handle
+  (`Link` parts, `bars.updateLinks`). Pull-up and hanging leg raise grip the bar with IK. Studio hook: Workspace attribute
+  `TestPoseDepth` (0..1) freezes your rep at that depth (screenshots).
+- **Entrance lag fixed (8 Oct):** the progress mirror (16 studs from the gym door) re-set the Size of its 14 muscle copies
+  every frame (a mesh part's Size never reads back equal), which re-processed the meshes: 22 FPS near the door -> 60 FPS.
 
 ## Limits (found in Studio, not fixable here)
 - A client can hold only **8 live EditableMeshes** (in Studio the 8th already fails with "memory budget"). Since 8 Oct your

@@ -2,8 +2,14 @@
 --   Lie:   body = exact HumanoidRootPart CFrame.
 --   Stand: position on the floor + yaw; height comes from the character's hip height.
 --   Hang:  like Stand, but the height is set so straight arms reach barHeight.
--- follow = what carries the plates while lifting: "Hands", "Back", "Hips", "None" or "Rail" (the load slides along the
--- machine's rail to the lifter's feet / shoulders: model attributes RailAxis, RailAnchor, RailOffset, RailMin, RailMax).
+--   Sit:   on a seat (seat = its top height): the hips rest on it, the body upright, facing yaw.
+--   Support: held up on two handles (handleTop = their top): straight arms down from the shoulders (dips).
+--   Thrust: lying face up with the upper back on a pad (padTop = its top, padEdge = where the back touches it), head
+--           toward +Z (hip thrust); sized from the character.
+-- follow = what carries the plates while lifting: "Hands", "Back", "Hips", "Chest", "None" or "Rail" (the load slides along
+-- the machine's rail to the lifter's feet / shoulders: model attributes RailAxis, RailAnchor, RailOffset, RailMin, RailMax).
+-- contract = true: the lift's work is a contraction (curl, raise, shrug ...): the body rests in the relaxed position and
+-- each rep goes relaxed -> contracted -> relaxed (MachineClient flips the rep's depth). Without it a rep starts at the top.
 local FACE_FORWARD = 180 -- yaw that faces the character toward +Z
 
 local Poses = {
@@ -40,34 +46,31 @@ local Poses = {
 		kind = "Lie",
 		body = CFrame.lookAt(Vector3.new(0, 2.35, -0.6), Vector3.new(0, 3.35, -0.6), Vector3.new(0, 0, -1)),
 		exit = Vector3.new(3, 0, 0.5),
-		follow = "Chest",
+		follow = "Chest", contract = true,
 	},
 
 	-- Pro gym (built by ProGymService: the lifter stands at the pivot facing +Z, the stack is in front)
-	Dip = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	LateralRaise = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	ReverseFly = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	Shrug = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	CalfRaise = { kind = "Stand", position = Vector3.new(0, 0.48, 0.5), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" }, -- (on the step: top 0.475; shoulders under the pads)
-	BicepCurl = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	TricepPushdown = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	Woodchop = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	Dip = { kind = "Support", position = Vector3.new(0, 0, 0.1), handleTop = 3.32, handleX = 1.15, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	LateralRaise = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
+	-- Reverse fly on the pec deck: seated facing the chest pad.
+	ReverseFly = { kind = "Sit", position = Vector3.new(0, 0, -0.45), seat = 2.01, yaw = FACE_FORWARD, exit = Vector3.new(2.8, 0, -0.4), follow = "None", contract = true },
+	Shrug = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
+	CalfRaise = { kind = "Stand", position = Vector3.new(0, 0.48, 0.5), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true }, -- (on the step: top 0.475; shoulders under the pads)
+	BicepCurl = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
+	TricepPushdown = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
+	-- Woodchop: side-on to the tower (it is on the lifter's left: facing -X).
+	Woodchop = { kind = "Stand", position = Vector3.new(0, 0.1, 0.2), yaw = 90, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
 	LegCurl = {
 		kind = "Lie",
 		-- face down on the pad, head toward the stack
 		body = CFrame.lookAt(Vector3.new(0, 2.3, 0), Vector3.new(0, 1.3, 0), Vector3.new(0, 0, 1)),
-		exit = Vector3.new(3, 0, 0), follow = "None",
+		exit = Vector3.new(3, 0, 0), follow = "None", contract = true,
 	},
-	HipThrust = {
-		kind = "Lie",
-		-- face up, shoulders on the pad
-		body = CFrame.lookAt(Vector3.new(0, 2.1, 0), Vector3.new(0, 3.1, 0), Vector3.new(0, 0, 1)),
-		exit = Vector3.new(3, 0, 0), follow = "None",
-	},
+	HipThrust = { kind = "Thrust", padTop = 0.955, padEdge = 1.35, exit = Vector3.new(3, 0, 0), follow = "None", contract = true },
 	-- Treadmill: on the belt (its top 0.69 above the floor), facing the console (local -Z); off behind it.
 	Run = { kind = "Stand", position = Vector3.new(0, 0.69, 0.3), yaw = 0, exit = Vector3.new(0, 0, 4.5), follow = "None" },
 	SledPush = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	LegRaise = { kind = "Hang", position = Vector3.new(0, 0, 0), barHeight = 9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	LegRaise = { kind = "Hang", position = Vector3.new(0, 0, 0), barHeight = 9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
 }
 
 return Poses

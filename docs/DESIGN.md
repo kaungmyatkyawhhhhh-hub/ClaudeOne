@@ -147,7 +147,7 @@ Every plate carries the gym brand "M WEIGHTS" on both faces (above the hub, a sh
 thin like calibrated plates so the heaviest tier fits the sleeves, with a collar at the end. The Muscles panel lists
 each group's exercises.
 Pro gym (unlocks at Growth Spurt 2): Dips (Mid Chest; Triceps, Front Delts), Lateral Raise (Side Delts),
-Reverse Fly (Rear Delts; Rhomboids), Shrugs (Traps; Forearms), Leg Curl (Hamstrings), Hip Thrust (Glutes; Hamstrings),
+Reverse Fly (Rear Delts; Rhomboids; on a pec deck, not a cable), Shrugs (Traps; Forearms), Leg Curl (Hamstrings), Hip Thrust (Glutes; Hamstrings),
 Calf Raise (Calves), Bicep Curl (Biceps; Forearms), Tricep Pushdown (Triceps), Hanging Leg Raise (Abs; Forearms),
 Cable Woodchop (Obliques; Abs).
 Players only see muscle names on machines, never percentages.
@@ -163,6 +163,7 @@ gains per rep = machine weight tier × genetics grade × frame/body bonus × Gro
 ## 4. Stamina
 Each rep uses stamina. Refills fast on its own; faster at recovery stations (stretch mat, foam roller, sauna);
 instantly with an Energy Shake. Petting the gym cat = tiny refill.
+Treadmills train stamina (owner, 8 Oct): running gives no muscle EXP; the distance run raises max stamina.
 
 ## 5. Energy Shakes
 Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. Flavors are cosmetic only.

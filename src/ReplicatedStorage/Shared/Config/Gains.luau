@@ -51,6 +51,7 @@ end
 -- Gains.MaxMultiplier cap with genetics and Growth Spurt bonuses). `quality` = how the rep was done (PUMPED x2,
 -- BIG REP x3): earned by playing, so it sits outside the cap and still matters after many Growth Spurts.
 function Gains.PerRep(data, machine, tierIndex, boost, quality)
+	if machine.trains == "Stamina" then return {} end -- (cardio trains stamina, not muscles: Config.Stamina.Cardio)
 	local tier = machine.tiers[tierIndex]
 	local shared = GrowthSpurts.GetBonus(data.growthSpurts)
 		* (boost or 1)

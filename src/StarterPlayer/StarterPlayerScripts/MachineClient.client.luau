@@ -123,7 +123,17 @@ end
 --   travel[model] = { low = CFrame, high = CFrame }: the lowest and highest the bar has been while someone lifts on it
 --     (the gain popup keeps clear of the whole path, not just where the bar is at lockout)
 --   near(position, distance): is it close enough to the camera to animate? (client performance, Machines.ClientCull)
-local bars = { moving = {}, travel = {} }
+local bars = { moving = {}, travel = {}, T = setmetatable({}, { __mode = "k" }), restSize = {} }
+-- A joint's two frames (C0 on Part0, C1 on Part1), for Motor6Ds and for AnimationConstraints (newer rigs: their two
+-- attachments); both move Part1 to Part0 * C0 * Transform * C1:Inverse().
+function bars.c0(joint): CFrame
+	if joint:IsA("Motor6D") then return joint.C0 end
+	return joint.Attachment0 and joint.Attachment0.CFrame or CFrame.identity
+end
+function bars.c1(joint): CFrame
+	if joint:IsA("Motor6D") then return joint.C1 end
+	return joint.Attachment1 and joint.Attachment1.CFrame or CFrame.identity
+end
 function bars.near(position: Vector3, distance: number): boolean
 	local camera = workspace.CurrentCamera
 	return camera ~= nil and (camera.CFrame.Position - position).Magnitude <= distance
@@ -235,6 +245,12 @@ local function setJoint(character, key, cframe)
 	local part = character:FindFirstChild(spec[1])
 	local motor = part and part:FindFirstChild(spec[2])
 	if motor then motor.Transform = cframe end
+	local record = bars.T[character]
+	if not record then
+		record = {}
+		bars.T[character] = record
+	end
+	record[key] = cframe
 end
 
 local function resetPose(character)
@@ -290,9 +306,9 @@ function bars.legIK(character, target: Vector3, ankle: number, lowerFrame: CFram
 		local knee = shin and shin:FindFirstChild(long .. "Knee")
 		local ankleJoint = foot and foot:FindFirstChild(long .. "Ankle")
 		if not (hip and knee and ankleJoint) then continue end
-		local a = (hip.C1.Position - knee.C0.Position).Magnitude
-		local b = (knee.C1.Position - ankleJoint.C0.Position).Magnitude
-		local t = frame:PointToObjectSpace(target) - hip.C0.Position
+		local a = (bars.c1(hip).Position - bars.c0(knee).Position).Magnitude
+		local b = (bars.c1(knee).Position - bars.c0(ankleJoint).Position).Magnitude
+		local t = frame:PointToObjectSpace(target) - bars.c0(hip).Position
 		local d = math.clamp(math.sqrt(t.Y * t.Y + t.Z * t.Z), math.abs(a - b) + 0.05, a + b - 0.01)
 		local phi = math.atan2(-t.Z, -t.Y) -- from straight down toward the front
 		local inner = math.acos(math.clamp((a * a + b * b - d * d) / (2 * a * b), -1, 1))
@@ -318,8 +334,15 @@ function bars.restOf(model, names)
 	return rest
 end
 function bars.resetProps(model)
-	for part, cframe in pairs(bars.propRest[model] or {}) do
-		if part.Parent then part.CFrame = cframe end
+	for inst, rest in pairs(bars.propRest[model] or {}) do
+		if inst.Parent then
+			if inst:IsA("Model") then
+				inst:PivotTo(rest)
+			else
+				inst.CFrame = rest
+				if bars.restSize[inst] then inst.Size = bars.restSize[inst] end
+			end
+		end
 	end
 end
 
@@ -361,14 +384,23 @@ POSE_ANIMS.BarbellRow = function(character, d, jitter)
 	frontArms(character, hinge + extra - rad(75 * (1 - d)), rad(10), rad(95 * (1 - d)), jitter)
 end
 
--- Pull-up: lockout = chin over the bar, bottom = dead hang. The body rises on the root.
-POSE_ANIMS.PullUp = function(character, d, jitter)
-	local rise = limbLength(character, "RightUpperArm", "RightLowerArm") * 0.35 * (1 - d)
-	setJoint(character, "Root", CFrame.new(0, rise, 0))
-	sideArms(character, 0, rad(95 + 70 * d), rad(120 * (1 - d)), jitter)
+-- Pull-up: lockout = chin up to the bar, bottom = dead hang. The body rises on the root; the hands stay on the bar
+-- ("Bar"), a little wider than the shoulders, elbows out to the sides.
+POSE_ANIMS.PullUp = function(character, d, jitter, model)
+	local arm = bars.arm(character, "R")
+	local reach = arm and (arm.a + arm.b) or 2
+	bars.base(character, CFrame.new(0, reach * 0.55 * (1 - d), 0) * Angles(-rad(4) * (1 - d) + jitter * 0.2, 0, 0))
+	bars.legs(character, rad(10), -rad(50), 0)
+	local _, frame = bars.frames(character)
+	local bar = model and model:FindFirstChild("Bar")
+	if not (frame and bar and bar:IsA("BasePart")) then return end
+	local axis = bar.CFrame.XVector
 	for _, side in ipairs(SIDES) do
-		setJoint(character, side[1] .. "Hip", Angles(rad(10), 0, 0))
-		setJoint(character, side[1] .. "Knee", Angles(-rad(50), 0, 0))
+		local sideArm = bars.arm(character, side[1])
+		if sideArm then
+			local s = (frame * bars.c0(sideArm.shoulder)).Position + frame.RightVector * side[2] * reach * 0.2
+			bars.armIK(character, side[1], frame, bar.Position + axis * (s - bar.Position):Dot(axis), bars.bodyDir(frame, side[1], Vector3.new(1, 0, -0.3)))
+		end
 	end
 end
 
@@ -407,9 +439,9 @@ POSE_ANIMS.Crunch = function(character, d, jitter, model)
 	local thigh, shin, foot = character:FindFirstChild("RightUpperLeg"), character:FindFirstChild("RightLowerLeg"), character:FindFirstChild("RightFoot")
 	local hip, knee, ankle = thigh and thigh:FindFirstChild("RightHip"), shin and shin:FindFirstChild("RightKnee"), foot and foot:FindFirstChild("RightAnkle")
 	if not (root and rootJoint and hip and knee and ankle) then return end
-	local reach = ((hip.C1.Position - knee.C0.Position).Magnitude + (knee.C1.Position - ankle.C0.Position).Magnitude) * 0.62 -- (knees well up)
-	local base = root.CFrame * rootJoint.C0 * rootJoint.C1:Inverse()
-	local hipAt = base:PointToWorldSpace(Vector3.new(0, hip.C0.Position.Y, hip.C0.Position.Z))
+	local reach = ((bars.c1(hip).Position - bars.c0(knee).Position).Magnitude + (bars.c1(knee).Position - bars.c0(ankle).Position).Magnitude) * 0.62 -- (knees well up)
+	local base = root.CFrame * bars.c0(rootJoint) * bars.c1(rootJoint):Inverse()
+	local hipAt = base:PointToWorldSpace(Vector3.new(0, bars.c0(hip).Position.Y, bars.c0(hip).Position.Z))
 	local feet = base:VectorToWorldSpace(Vector3.new(0, -1, 0))
 	local offset = hipAt - target
 	local along = offset:Dot(feet)
@@ -417,39 +449,352 @@ POSE_ANIMS.Crunch = function(character, d, jitter, model)
 	local slide = if disc >= 0 then math.clamp(-along - math.sqrt(disc), 0, 2.5) else 0
 	local move = CFrame.new(0, -slide, 0)
 	setJoint(character, "Root", move)
-	bars.legIK(character, target, rad(35), root.CFrame * rootJoint.C0 * move * rootJoint.C1:Inverse())
+	bars.legIK(character, target, rad(35), root.CFrame * bars.c0(rootJoint) * move * bars.c1(rootJoint):Inverse())
 end
 
--- Pro gym poses (first pass, same helpers and angle conventions as the starter lifts above).
--- Dips: body sinks between the bars, elbows bend back, knees tucked.
-POSE_ANIMS.Dip = function(character, d, jitter)
-	setJoint(character, "Root", CFrame.new(0, -0.8 * d, 0))
-	frontArms(character, -rad(10 + 30 * d) + jitter, rad(12), rad(90 * d), 0)
+-- Pro gym poses. Free handles (cables, shrug levers, the pec deck) follow the hands (bars.props); fixed grips (the dip
+-- handles, the hanging bar) hold the hands (arm IK). Contract poses (Config.Poses contract): d = 1 relaxed (also at rest),
+-- 0 contracted.
+
+-- Root / Waist (and the legs) are set every frame, identity unless given, so nothing of the idle animation mixes in.
+function bars.base(character, root, waist)
+	setJoint(character, "Root", root or CFrame.identity)
+	setJoint(character, "Waist", waist or CFrame.identity)
+end
+function bars.legs(character, hip, knee, ankle)
 	for _, side in ipairs(SIDES) do
-		setJoint(character, side[1] .. "Hip", Angles(rad(20), 0, 0))
-		setJoint(character, side[1] .. "Knee", Angles(-rad(70), 0, 0))
+		setJoint(character, side[1] .. "Hip", Angles(hip, 0, 0))
+		setJoint(character, side[1] .. "Knee", Angles(knee, 0, 0))
+		setJoint(character, side[1] .. "Ankle", Angles(ankle, 0, 0))
 	end
 end
 
--- Lateral raise: arms out to the sides up to shoulder height at lockout, elbows soft.
+-- Where the LowerTorso and UpperTorso are this frame: from the root part and the Root / Waist transforms just set.
+function bars.frames(character)
+	local root, lower, upper = character:FindFirstChild("HumanoidRootPart"), character:FindFirstChild("LowerTorso"), character:FindFirstChild("UpperTorso")
+	local rootJoint, waist = lower and lower:FindFirstChild("Root"), upper and upper:FindFirstChild("Waist")
+	if not (root and rootJoint and waist) then return nil, nil end
+	local record = bars.T[character] or {}
+	local lowerFrame = root.CFrame * bars.c0(rootJoint) * (record.Root or CFrame.identity) * bars.c1(rootJoint):Inverse()
+	return lowerFrame, lowerFrame * bars.c0(waist) * (record.Waist or CFrame.identity) * bars.c1(waist):Inverse()
+end
+
+-- One arm: its shoulder and elbow joints, the upper arm length (a) and forearm + hand length to the hand's centre (b).
+function bars.arm(character, side)
+	local long = side == "R" and "Right" or "Left"
+	local upperArm, lowerArm, hand = character:FindFirstChild(long .. "UpperArm"), character:FindFirstChild(long .. "LowerArm"), character:FindFirstChild(long .. "Hand")
+	local shoulder = upperArm and upperArm:FindFirstChild(long .. "Shoulder")
+	local elbow = lowerArm and lowerArm:FindFirstChild(long .. "Elbow")
+	local wrist = hand and hand:FindFirstChild(long .. "Wrist")
+	if not (shoulder and elbow and wrist) then return nil end
+	local boneA = bars.c0(elbow).Position - bars.c1(shoulder).Position -- shoulder -> elbow, in the upper arm's space
+	local boneB = bars.c0(wrist).Position - bars.c1(elbow).Position    -- elbow -> wrist, in the forearm's space
+	return {
+		shoulder = shoulder, elbow = elbow,
+		a = boneA.Magnitude,
+		b = boneB.Magnitude + bars.c1(wrist).Position.Magnitude,
+		-- (the bones don't run straight down their parts on every body: the Robloxian upper arm's elbow sits ~36 degrees
+		-- off its axis, so the IK turns each part by its own bone direction)
+		boneA = boneA.Unit, boneB = boneB.Unit,
+	}
+end
+
+-- The turn (in a part's own space) that takes its -Y axis onto the bone direction `bone`.
+function bars.boneTurn(bone: Vector3): CFrame
+	local down = Vector3.new(0, -1, 0)
+	local axis = down:Cross(bone)
+	if axis.Magnitude < 1e-4 then return CFrame.identity end
+	return CFrame.fromAxisAngle(axis.Unit, math.acos(math.clamp(down:Dot(bone), -1, 1)))
+end
+
+-- Two-joint arm IK: the hand's centre goes to `target` (world), the elbow bends toward `pole` (a world direction); lift
+-- raises the shoulder (studs along the torso's up: shrugs). frame = the UpperTorso this frame (bars.frames).
+function bars.armIK(character, side, frame, target, pole, lift)
+	local arm = bars.arm(character, side)
+	if not arm then return end
+	local liftOffset = frame.UpVector * (lift or 0)
+	local shoulderFrame = frame * bars.c0(arm.shoulder)
+	local s = shoulderFrame.Position + liftOffset
+	local a, b = arm.a, arm.b
+	local toTarget = target - s
+	local d = math.clamp(toTarget.Magnitude, math.abs(a - b) + 0.02, a + b - 0.005)
+	local dir = if toTarget.Magnitude > 1e-4 then toTarget.Unit else -frame.UpVector
+	local bendSide = pole - dir * pole:Dot(dir)
+	if bendSide.Magnitude < 1e-3 then bendSide = -frame.LookVector - dir * (-frame.LookVector):Dot(dir) end
+	bendSide = bendSide.Unit
+	local cosA = math.clamp((a * a + d * d - b * b) / (2 * a * d), -1, 1)
+	local u = (dir * cosA + bendSide * math.sqrt(1 - cosA * cosA)).Unit -- shoulder -> elbow
+	local f = (s + dir * d - (s + u * a)).Unit -- elbow -> hand
+	local w = f - u * f:Dot(u) -- the way the forearm folds (the arm's local -Z)
+	w = if w.Magnitude > 1e-4 then w.Unit else -bendSide
+	local x = u:Cross(w)
+	local armRotation = CFrame.fromMatrix(Vector3.zero, x, -u, -w) * bars.boneTurn(arm.boneA):Inverse()
+	local shoulderTransform = CFrame.new(shoulderFrame:VectorToObjectSpace(liftOffset))
+		* shoulderFrame.Rotation:Inverse() * armRotation * bars.c1(arm.shoulder).Rotation
+	setJoint(character, side .. "Shoulder", shoulderTransform)
+	local elbowFrame = shoulderFrame * shoulderTransform * bars.c1(arm.shoulder):Inverse() * bars.c0(arm.elbow)
+	local forearmRotation = CFrame.fromMatrix(Vector3.zero, x, -f, x:Cross(-f)) * bars.boneTurn(arm.boneB):Inverse()
+	setJoint(character, side .. "Elbow", elbowFrame.Rotation:Inverse() * forearmRotation * bars.c1(arm.elbow).Rotation)
+end
+
+-- A direction in the torso's space (x outward for the arm on `side`, y up, z back).
+function bars.bodyDir(frame, side, v)
+	local sign = side == "R" and 1 or -1
+	return frame:VectorToWorldSpace(Vector3.new(v.X * sign, v.Y, v.Z))
+end
+-- Each hand to body-space point v from its own shoulder (in arm lengths, x outward), elbows toward pole (body space).
+function bars.reachBoth(character, frame, v, pole, lift)
+	for _, side in ipairs(SIDES) do
+		local arm = bars.arm(character, side[1])
+		if arm then
+			local s = (frame * bars.c0(arm.shoulder)).Position + frame.UpVector * (lift or 0)
+			local target = s + bars.bodyDir(frame, side[1], v) * (arm.a + arm.b)
+			bars.armIK(character, side[1], frame, target, bars.bodyDir(frame, side[1], pole), lift)
+		end
+	end
+end
+-- Both hands on one grip: its centre is body-space point v from between the shoulders (arm lengths, x = the body's
+-- right), the hands `width` x the shoulder spacing apart. On a broad chest with short arms the grip is drawn in toward
+-- the chest until both arms reach it.
+function bars.gripBoth(character, frame, v, width, pole)
+	local r, l = bars.arm(character, "R"), bars.arm(character, "L")
+	if not (r and l) then return end
+	local sr, sl = (frame * bars.c0(r.shoulder)).Position, (frame * bars.c0(l.shoulder)).Position
+	local reach = math.min(r.a + r.b, l.a + l.b) * 0.97
+	local half = frame.RightVector * ((sr - sl).Magnitude / 2 * width)
+	local center
+	for _ = 1, 14 do
+		center = (sr + sl) / 2 + frame:VectorToWorldSpace(v * (r.a + r.b))
+		if (center + half - sr).Magnitude <= reach and (center - half - sl).Magnitude <= reach then break end
+		v *= 0.92
+	end
+	bars.armIK(character, "R", frame, center + half, bars.bodyDir(frame, "R", pole))
+	bars.armIK(character, "L", frame, center - half, bars.bodyDir(frame, "L", pole))
+end
+
+-- Dips: held up on the handles (the hands stay on them); the body sinks between them leaning forward a little, knees
+-- bent with the feet back. Lockout = arms straight (not a contract pose: it starts at the top).
+POSE_ANIMS.Dip = function(character, d, jitter, model)
+	local arm = bars.arm(character, "R")
+	local reach = arm and (arm.a + arm.b) or 2
+	bars.base(character, CFrame.new(0, -reach * 0.42 * d, 0) * Angles(-rad(14) * d + jitter * 0.3, 0, 0))
+	bars.legs(character, -rad(6), -rad(80), rad(20))
+	local _, frame = bars.frames(character)
+	if not (frame and model) then return end
+	for _, side in ipairs(SIDES) do
+		local sideArm = bars.arm(character, side[1])
+		local best, bestScore = nil, -math.huge
+		for _, part in ipairs(model:GetChildren()) do
+			if part.Name == "Handle" and part:IsA("BasePart") then
+				local score = (part.Position - frame.Position):Dot(frame.RightVector) * side[2]
+				if score > bestScore then best, bestScore = part, score end
+			end
+		end
+		if best and sideArm then
+			local s = (frame * bars.c0(sideArm.shoulder)).Position
+			local axis = best.CFrame.XVector
+			local half = best.Size.X / 2 - 0.3
+			local t = math.clamp((s - best.Position):Dot(axis), -half, half)
+			bars.armIK(character, side[1], frame, best.Position + axis * t, bars.bodyDir(frame, side[1], Vector3.new(0.25, 0, 1)))
+		end
+	end
+end
+
+-- Lateral raise: arms from the sides up and out to shoulder height, elbows soft.
 POSE_ANIMS.LateralRaise = function(character, d, jitter)
-	sideArms(character, rad(5), rad(15 + 72 * (1 - d)), rad(12), jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local v = Vector3.new(0.22, -0.96, -0.16):Lerp(Vector3.new(0.97, -0.12 + jitter, -0.18), c).Unit * 0.96
+	bars.reachBoth(character, frame, v, Vector3.new(0, -1, 0.35))
 end
 
--- Reverse fly: bent over, arms swing out and back.
+-- Reverse fly on the pec deck: seated, chest on the pad; arms straight ahead (relaxed) sweep out to the sides.
 POSE_ANIMS.ReverseFly = function(character, d, jitter)
-	lowerBody(character, rad(15), rad(40))
-	setJoint(character, "Waist", Angles(-rad(10), 0, 0))
-	frontArms(character, rad(50) + jitter, rad(15 + 65 * (1 - d)), rad(12), 0)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, rad(90), -rad(90), 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local v = Vector3.new(0.1, -0.08, -1):Lerp(Vector3.new(0.96, -0.08 + jitter, 0.24), c).Unit * 0.95
+	bars.reachBoth(character, frame, v, Vector3.new(0, -1, 0))
 end
 
--- Shrugs: arms hang, shoulders lift at lockout.
+-- Shrugs: arms hang straight holding the grips; the shoulders lift.
 POSE_ANIMS.Shrug = function(character, d, jitter)
-	local lift = 0.28 * (1 - d) + jitter * 0.1
-	for _, side in ipairs(SIDES) do
-		setJoint(character, side[1] .. "Shoulder", CFrame.new(0, lift, 0) * Angles(0, 0, side[2] * rad(8)))
-		setJoint(character, side[1] .. "Elbow", CFrame.identity)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	local torso = character:FindFirstChild("UpperTorso")
+	if not (frame and torso) then return end
+	bars.reachBoth(character, frame, Vector3.new(0.2, -0.97, -0.06), Vector3.new(0, 0, 1), torso.Size.Y * 0.17 * c + jitter * 0.05)
+end
+
+-- Hip thrust: upper back on the pad, feet flat on the plate; the body turns about the upper back, so the hips sink at
+-- rest and the bridge is straight at the top. The hip pad rides on the hips (bars.props.HipThrust).
+POSE_ANIMS.HipThrust = function(character, d, jitter, model)
+	local root, lower, upper = character:FindFirstChild("HumanoidRootPart"), character:FindFirstChild("LowerTorso"), character:FindFirstChild("UpperTorso")
+	local rootJoint, waist = lower and lower:FindFirstChild("Root"), upper and upper:FindFirstChild("Waist")
+	if not (root and rootJoint and waist) then return end
+	local toUpper = bars.c0(rootJoint) * bars.c1(rootJoint):Inverse() * bars.c0(waist) * bars.c1(waist):Inverse()
+	local back = bars.c0(rootJoint):PointToObjectSpace((toUpper * CFrame.new(0, upper.Size.Y * 0.15, upper.Size.Z / 2)).Position)
+	bars.base(character, CFrame.new(back) * Angles(-rad(40) * d - jitter * 0.2, 0, 0) * CFrame.new(-back))
+	local lowerFrame, frame = bars.frames(character)
+	local thigh = character:FindFirstChild("RightUpperLeg")
+	local hipJoint = thigh and thigh:FindFirstChild("RightHip")
+	if lowerFrame and hipJoint then
+		local hipAt = (lowerFrame * bars.c0(hipJoint)).Position
+		local feetward = -root.CFrame.UpVector
+		feetward = Vector3.new(feetward.X, 0, feetward.Z)
+		local floor = (model and model:GetPivot().Position.Y or 0) + 0.26 + 0.25
+		local target = Vector3.new(hipAt.X, floor, hipAt.Z) + (if feetward.Magnitude > 1e-3 then feetward.Unit else Vector3.zero) * thigh.Size.Y * 0.95
+		bars.legIK(character, target, -rad(10), lowerFrame)
 	end
+	-- the hands hold the hip roller, one each side of the hips
+	if frame and lowerFrame then
+		local roller = lowerFrame * CFrame.new(0, 0, -(lower.Size.Z / 2 + 0.25))
+		for _, side in ipairs(SIDES) do
+			bars.armIK(character, side[1], frame, (roller * CFrame.new(side[2] * 0.85, 0, 0)).Position, bars.bodyDir(frame, side[1], Vector3.new(1, 0, 0.6)))
+		end
+	end
+end
+
+-- Biceps curl: the bar from the thighs up to the shoulders, elbows at the sides.
+POSE_ANIMS.BicepCurl = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local v = Vector3.new(0, -0.9, -0.24):Lerp(Vector3.new(0, -0.22 + jitter, -0.48), c)
+	bars.gripBoth(character, frame, v, 0.75, Vector3.new(0.05, -1, 0.6))
+end
+
+-- Triceps pushdown: leaning in a little, elbows pinned back; the rope from chest height down to the thighs.
+POSE_ANIMS.TricepPushdown = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character, nil, Angles(-rad(12), 0, 0))
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local v = Vector3.new(0, -0.42, -0.5):Lerp(Vector3.new(0, -0.93 + jitter, -0.22), c)
+	bars.gripBoth(character, frame, v, 0.4, Vector3.new(0, 0, 1))
+end
+
+-- Hanging leg raise: hanging from the bar (the hands stay on it), legs straight down at rest, up to level at the top.
+POSE_ANIMS.LegRaise = function(character, d, jitter, model)
+	local c = 1 - d
+	bars.base(character, Angles(rad(7) * c, 0, 0))
+	bars.legs(character, rad(88) * c + jitter, -rad(4 + 14 * c), rad(8) * c)
+	local _, frame = bars.frames(character)
+	local bar = model and model:FindFirstChild("HangBar")
+	if not (frame and bar) then return end
+	local axis = bar.CFrame.XVector
+	for _, side in ipairs(SIDES) do
+		local arm = bars.arm(character, side[1])
+		if arm then
+			local s = (frame * bars.c0(arm.shoulder)).Position + frame.RightVector * side[2] * (arm.a + arm.b) * 0.12
+			bars.armIK(character, side[1], frame, bar.Position + axis * (s - bar.Position):Dot(axis), bars.bodyDir(frame, side[1], Vector3.new(1, 0, 0.4)))
+		end
+	end
+end
+
+-- Cable woodchop: side-on to the tower (on the left); from high on the left, turned toward the pulley, down across the
+-- body to the right hip, the hips turning with it.
+POSE_ANIMS.Woodchop = function(character, d, jitter)
+	local c = 1 - d
+	local twist = rad(50) - rad(100) * c
+	bars.base(character, Angles(0, twist * 0.35, 0), Angles(0, twist * 0.65, 0))
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	-- (the handle stays in front of the turned chest: both arms reach it)
+	local v = Vector3.new(0, 0.5, -0.55):Lerp(Vector3.new(0, -0.62 + jitter, -0.45), c)
+	bars.gripBoth(character, frame, v, 0.18, Vector3.new(0, -1, 0.3))
+end
+
+-- Free handles: a handle model goes to a world point (oriented by its Axis and the torso), then every link (cable,
+-- lever, swing arm) is stretched to where its handle is now. Rest places are remembered (bars.resetProps).
+function bars.remember(model, inst)
+	local rest = bars.propRest[model]
+	if not rest then
+		rest = {}
+		bars.propRest[model] = rest
+	end
+	if rest[inst] == nil then
+		if inst:IsA("Model") then
+			rest[inst] = inst:GetPivot()
+		else
+			rest[inst] = inst.CFrame
+			bars.restSize[inst] = inst.Size
+		end
+	end
+end
+function bars.placeHandle(model, name, position, torso)
+	local h = model:FindFirstChild(name)
+	if not (h and h:IsA("Model")) then return end
+	bars.remember(model, h)
+	local along = if h:GetAttribute("Axis") == "Forward" then torso.LookVector else torso.RightVector
+	along = Vector3.new(along.X, 0, along.Z)
+	if along.Magnitude < 1e-3 then along = Vector3.xAxis end
+	h:PivotTo(CFrame.fromMatrix(position, along.Unit, Vector3.yAxis))
+end
+function bars.updateLinks(model)
+	local pivot = model:GetPivot()
+	for _, part in ipairs(model:GetChildren()) do
+		local to = part:IsA("BasePart") and part:GetAttribute("To")
+		local handle = to and model:FindFirstChild(to)
+		local fromLocal = part:GetAttribute("From")
+		if handle and handle:IsA("Model") and typeof(fromLocal) == "Vector3" then
+			bars.remember(model, part)
+			local from = pivot:PointToWorldSpace(fromLocal)
+			local offset = (handle:GetAttribute("CablePoint") or Vector3.zero) + (part:GetAttribute("ToOffset") or Vector3.zero)
+			local point = handle:GetPivot():PointToWorldSpace(offset)
+			if part:GetAttribute("Level") then point = Vector3.new(point.X, from.Y, point.Z) end
+			if part:GetAttribute("Drop") then from = Vector3.new(point.X, from.Y, point.Z) end
+			local span = point - from
+			if span.Magnitude > 0.02 then
+				part.Size = Vector3.new(part.Size.X, part.Size.Y, span.Magnitude)
+				part.CFrame = CFrame.lookAt((from + point) / 2, point, if math.abs(span.Unit.Y) > 0.99 then Vector3.xAxis else Vector3.yAxis)
+			end
+		end
+	end
+end
+function bars.grip(hand) return (hand.CFrame * CFrame.new(0, -hand.Size.Y * 0.1, 0)).Position end
+-- the handle(s) into the hands: one in each ("HandleR" / "HandleL") or one held by both ("HandleBoth")
+function bars.handsTo(model, character, both)
+	local torso, r, l = character:FindFirstChild("UpperTorso"), character:FindFirstChild("RightHand"), character:FindFirstChild("LeftHand")
+	if not (torso and r and l) then return end
+	if both then
+		bars.placeHandle(model, "HandleBoth", (bars.grip(r) + bars.grip(l)) / 2, torso.CFrame)
+	else
+		bars.placeHandle(model, "HandleR", bars.grip(r), torso.CFrame)
+		bars.placeHandle(model, "HandleL", bars.grip(l), torso.CFrame)
+	end
+	bars.updateLinks(model)
+end
+bars.props.LateralRaise = function(model, character) bars.handsTo(model, character, false) end
+bars.props.Shrug = bars.props.LateralRaise
+bars.props.BicepCurl = function(model, character) bars.handsTo(model, character, true) end
+bars.props.TricepPushdown = bars.props.BicepCurl
+bars.props.Woodchop = bars.props.BicepCurl
+-- the pec deck's chest pad slides to the chest (below the shoulders, so the arms pass over it)
+bars.props.ReverseFly = function(model, character)
+	local torso = character:FindFirstChild("UpperTorso")
+	if torso then
+		bars.placeHandle(model, "ChestPad", (torso.CFrame * CFrame.new(0, -torso.Size.Y * 0.22, -(torso.Size.Z / 2 + 0.16))).Position, torso.CFrame)
+	end
+	bars.handsTo(model, character, false)
+end
+-- the hip thrust's roller lies across the front of the hips
+bars.props.HipThrust = function(model, character)
+	local lower, torso = character:FindFirstChild("LowerTorso"), character:FindFirstChild("UpperTorso")
+	if not (lower and torso) then return end
+	bars.placeHandle(model, "HandleBoth", (lower.CFrame * CFrame.new(0, 0, -(lower.Size.Z / 2 + 0.25))).Position, torso.CFrame)
+	bars.updateLinks(model)
 end
 
 -- Leg curl: face down; heels curl toward the glutes at lockout, hands on the handles in front of the head. The ankle
@@ -480,15 +825,6 @@ bars.props.LegCurl = function(model, character)
 	end
 end
 
--- Hip thrust: face up on the pad, knees bent; hips extend at lockout, flex at the bottom.
-POSE_ANIMS.HipThrust = function(character, d, jitter)
-	for _, side in ipairs(SIDES) do
-		setJoint(character, side[1] .. "Hip", Angles(rad(10 + 60 * d) + jitter, 0, 0))
-		setJoint(character, side[1] .. "Knee", Angles(-rad(90), 0, 0))
-	end
-	frontArms(character, rad(10), rad(35), 0, 0)
-end
-
 -- Calf raise: standing on the step, shoulders under the pads, hands gripping the pads; up on the toes at lockout. The
 -- pads and their arm sit on the shoulders and rise with them (bars.props.CalfRaise), whatever the body's height.
 POSE_ANIMS.CalfRaise = function(character, d, jitter)
@@ -512,41 +848,46 @@ bars.props.CalfRaise = function(model, character)
 	for part, cframe in pairs(rest) do part.CFrame = cframe + lift end
 end
 
--- Bicep curl: curled up at lockout, arms long at the bottom.
-POSE_ANIMS.BicepCurl = function(character, d, jitter)
-	frontArms(character, rad(5), rad(10), rad(30 + 110 * (1 - d)), jitter)
-end
-
--- Tricep pushdown: arms straight down at lockout, elbows bend up at the bottom, leaning in a little.
-POSE_ANIMS.TricepPushdown = function(character, d, jitter)
-	setJoint(character, "Waist", Angles(-rad(10), 0, 0))
-	frontArms(character, rad(10), rad(6), rad(10 + 90 * d), jitter)
-end
-
--- Hanging leg raise: arms overhead on the bar, legs come up at lockout.
-POSE_ANIMS.LegRaise = function(character, d, jitter)
-	sideArms(character, 0, rad(165), 0, 0)
-	for _, side in ipairs(SIDES) do
-		setJoint(character, side[1] .. "Hip", Angles(rad(15 + 75 * (1 - d)) + jitter, 0, 0))
-		setJoint(character, side[1] .. "Knee", Angles(-rad(20), 0, 0))
-	end
-end
-
--- Cable woodchop: twist from high on one side (bottom) to low across the body (lockout).
-POSE_ANIMS.Woodchop = function(character, d, jitter)
-	setJoint(character, "Waist", Angles(0, rad(-50 + 100 * d), 0))
-	frontArms(character, rad(30 + 50 * d) + jitter, rad(20), rad(10), 0)
-end
-
 -- Sled push (winter): leaning into the sled's handles, legs driving in a lunge that switches each rep.
 -- Treadmill belts: while someone runs on one (the machine's UserId attribute), its slats slide back along the belt at the
--- tier's speed and wrap around (client only, looks only).
+-- tier's speed and wrap around, and a pro treadmill's readout (Screen.Readout) counts speed / time / distance for the run
+-- (client only, looks only).
 task.spawn(function()
 	local CollectionService = game:GetService("CollectionService")
 	local offsets = {} -- [model] = studs travelled
+	local runs = {} -- [model] = { time, miles, shown } for the readout
+	local function readout(model, mph, seconds, miles)
+		local screen = model:FindFirstChild("Screen")
+		local gui = screen and screen:FindFirstChild("Readout")
+		if not gui then return end
+		local cells = {}
+		for _, cell in ipairs(gui:GetChildren()) do
+			if cell:IsA("Frame") then table.insert(cells, cell) end
+		end
+		local values = { string.format("%.1f", mph), string.format("%02d:%02d", seconds // 60 % 100, seconds % 60), string.format("%.2f", miles) }
+		for i, cell in ipairs(cells) do
+			local label = cell:FindFirstChildOfClass("TextLabel")
+			if label and values[i] then label.Text = values[i] end
+		end
+	end
 	RunService.Heartbeat:Connect(function(dt)
+		for model, run in pairs(runs) do
+			if not model.Parent or not model:GetAttribute("UserId") then
+				runs[model] = nil
+				if model.Parent then readout(model, 0, 0, 0) end
+			end
+		end
 		for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 			if model:GetAttribute("MachineId") ~= "Treadmill" or not model:GetAttribute("UserId") then continue end
+			local mph = Machines.ById.Treadmill.tiers[model:GetAttribute("Tier") or 1].weight
+			local run = runs[model] or { time = 0, miles = 0, shown = -1 }
+			runs[model] = run
+			run.time += dt
+			run.miles += mph * dt / 3600
+			if math.floor(run.time) ~= run.shown then -- (once a second)
+				run.shown = math.floor(run.time)
+				readout(model, mph, run.shown, run.miles)
+			end
 			local belt, slats = model:FindFirstChild("Belt"), model:FindFirstChild("Slats")
 			local tier = Machines.ById.Treadmill.tiers[model:GetAttribute("Tier") or 1]
 			if not (belt and slats and tier) then continue end
@@ -648,6 +989,7 @@ end
 local pumped = {} -- [part] = { base, amount, bounce, last }
 
 local function pump(character, machine)
+	if machine.trains == "Stamina" then return end -- (cardio trains stamina, not a muscle)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if character ~= player.Character and not (root and bars.near(root.Position, Machines.ClientCull.PumpDistance)) then return end
 	for index, entry in ipairs(machine.muscles) do
@@ -667,6 +1009,7 @@ end
 
 -- PUMPED: one big swell + bounce on the trained parts (scale only, no extra parts)
 local function pumpBurst(character, machine)
+	if machine.trains == "Stamina" then return end
 	for _, entry in ipairs(machine.muscles) do
 		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
 			local part = character:FindFirstChild(partName)
@@ -1564,10 +1907,10 @@ local function sparkleBurst(character, color)
 	Debris:AddItem(attachment, 1.2)
 end
 
-local function flashLevel(name, level)
+local function flashLevel(name, level, text: string?)
 	flashToken += 1
 	local token = flashToken
-	levelFlash.Text = name .. " · " .. Muscles.FormatExp(Muscles.Shown(level)) .. " exp"
+	levelFlash.Text = text or (name .. " · " .. Muscles.FormatExp(Muscles.Shown(level)) .. " exp")
 	levelFlash.TextTransparency = 0
 	levelFlashStroke.Transparency = Theme.Alpha.TextShadow
 	levelFlashScale.Scale = 0.6
@@ -1700,14 +2043,21 @@ local function localLockout(state)
 	-- popup adds these up
 	local main = machine.muscles[1].id
 	local quality = (state.pumped and Gains.Pump.Multiplier or 1) * (state.big and Gains.BigRep.Multiplier or 1)
-	local xp = Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"), quality)
-	local shown = math.max(1, Muscles.ShownXp(xp[main] or 0))
+	local cardio = machine.trains == "Stamina" -- (the treadmill trains stamina: its numbers are the distance run)
+	local xp = if cardio then {} else Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"), quality)
+	local shown = if cardio then machine.tiers[state.tier].weight * Machines.Cardio.MetersPerMph else math.max(1, Muscles.ShownXp(xp[main] or 0))
 	current.setGain = (current.setGain or 0) + shown
 	local mode = gainNumbersMode()
 	local showSet = mode ~= "Off" -- On and Minimal
 	local showRep = mode == "On"
 	-- (a BIG REP on the last rep of a set still ends in the "Set done" popup: its total already includes the big rep)
-	if character and setDone and showSet then
+	if character and cardio then
+		if setDone and showSet then
+			gainPopup(character, "Set done · " .. Muscles.FormatExp(current.setGain) .. " m run", POPUP.SetScale, machineModel)
+		elseif not setDone and showRep then
+			gainPopup(character, "+" .. Muscles.FormatExp(shown) .. " m", 1, machineModel)
+		end
+	elseif character and setDone and showSet then
 		local group = Muscles.GroupById[Muscles.ById[main].group]
 		gainPopup(character, "Set done · +" .. Muscles.FormatExp(current.setGain) .. " " .. group.name, POPUP.SetScale, machineModel)
 		if state.big then Audio.Play2D("BigRep") end
@@ -1720,7 +2070,7 @@ local function localLockout(state)
 	end
 	if setDone then current.setGain = 0 end
 	flashMuscles() -- the secondary muscles get a flash of the HUD's muscle list instead of popups
-	if character then repFlash(character, machine, state.big or state.pumped) end
+	if character and not cardio then repFlash(character, machine, state.big or state.pumped) end
 
 	-- every rep a small camera punch; heavy tiers and BIG REPs hit harder
 	fovPunch(state.big and FEEL.FovPunchBig or (state.tier >= FEEL.HeavyTier and FEEL.FovPunchHeavy or FEEL.FovPunch))
@@ -1785,6 +2135,10 @@ RunService.Stepped:Connect(function()
 					end
 				end
 			end
+			-- contract poses rest relaxed: a rep goes relaxed -> contracted -> relaxed (Config.Poses contract)
+			if (Poses[poseFor(model)] or {}).contract then depth = 1 - depth end
+			-- Studio test hook: Workspace attribute "TestPoseDepth" (0..1) freezes every pose at that depth (after the flip: 1 = relaxed)
+			if RunService:IsStudio() and type(workspace:GetAttribute("TestPoseDepth")) == "number" then depth = workspace:GetAttribute("TestPoseDepth") end
 			animate(model, character, depth, state and state.shake and phase == "press")
 			posed[model] = character
 			if model:GetAttribute("Stack") then placeStack(model, depth) end
@@ -1941,7 +2295,7 @@ local function open(model)
 	for _, entry in ipairs(machine.muscles) do
 		table.insert(names, Muscles.ById[entry.id].name)
 	end
-	musclesLabel.Text = table.concat(names, " · ")
+	musclesLabel.Text = if machine.trains == "Stamina" then "Stamina" else table.concat(names, " · ")
 	refreshCoins()
 	refreshStamina()
 	refreshReps()
@@ -2039,6 +2393,11 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 	end
 	if current then current.nextBig = result.nextBig == true end
 	if result.pr and current then showPersonalRecord(result.pr) end
+	if type(result.staminaUp) == "number" then
+		flashLevel(nil, nil, "Max stamina · " .. Muscles.FormatExp(result.staminaUp))
+		Audio.Play2D("LevelUp")
+		lastLevelSound = os.clock()
+	end
 	local leveled = false
 	-- the main muscle gets the small level-up flash (with a sparkle burst, now in EXP); secondary muscles only flash the HUD
 	-- muscle list. (There is no level cap, so no muscle ever "maxes".)

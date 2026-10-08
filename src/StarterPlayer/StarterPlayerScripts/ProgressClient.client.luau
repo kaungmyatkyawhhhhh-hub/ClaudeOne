@@ -115,6 +115,9 @@ local function machineGoal(data, machine)
 	if not nextTier then return nil end
 	local weight = Machines.WeightText(nextTier)
 	if level < nextTier.unlockLevel then
+		if machine.trains == "Stamina" then -- (running trains stamina: the faster speeds unlock with leg training)
+			return "Train " .. Muscles.ById[machine.muscles[1].id].name .. " to unlock " .. weight
+		end
 		local reps = repsToLevel(data, machine, nextTier.unlockLevel)
 		return reps .. (reps == 1 and " rep" or " reps") .. " to unlock " .. weight
 	end
@@ -139,7 +142,7 @@ local function goalText(data, progress)
 	if not lowest then return "" end
 	for _, machine in ipairs(Machines.List) do
 		local open = data.growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.gym ~= "Seasonal"
-		if open and Muscles.ById[machine.muscles[1].id].group == lowest.id then
+		if open and machine.trains ~= "Stamina" and Muscles.ById[machine.muscles[1].id].group == lowest.id then
 			return "Next: " .. lowest.name .. " on the " .. machine.name
 		end
 	end

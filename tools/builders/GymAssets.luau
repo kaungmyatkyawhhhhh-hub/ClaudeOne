@@ -1,14 +1,14 @@
 -- GymAssets builder (run once in Studio; see tools/bake.md): templates that are cloned at runtime and by the other
 -- builders, saved in ReplicatedStorage.GymAssets:
---   Plates.Plate55 ... Plate5   one model per weight (Machines.Plates): flat faces with a recessed inner face, a raised
---                               outer rim, an inset ring, a metal hub with a hole, and the weight number on both faces
---                               (SurfaceGuis "LabelRight"/"LabelLeft", off by default: whoever places the plate turns
---                               on the face people see). The plate's axis is the model's X axis, centered at the pivot.
---                               Both faces also carry the gym brand (Machines.Brand, "M WEIGHTS") above the hub, always on,
---                               on their own thin parts "BrandRight"/"BrandLeft" (Builder.Brand adds it to older plates).
+--   Plates.Plate55 ... Plate5   one model per weight (Machines.Plates), built like the genetics screen's plates (8 Oct):
+--                               a core over a thinner, wider edge (a stepped bevel), a raised rim band on each face, a
+--                               chrome hub with a flange and the hole, and printed like a competition bumper plate on each
+--                               face: a groove ring, "M WEIGHTS" curved over the hub and upside down under it, the weight
+--                               at 9 and 3 o'clock (SurfaceGuis on the thin parts "FaceRight"/"FaceLeft", both always on,
+--                               drawn within PRINT_DISTANCE). Axis = the model's X, centered at the pivot. Builder.Replace
+--                               swaps every plate already placed in the world for the new ones.
 --   BarSleeve                   chrome sleeve + collar for one end of a barbell (MachineService puts them on bars)
--- Uses CSG (GeometryService), so it must run in Studio. Re-running replaces the folder.
-local GeometryService = game:GetService("GeometryService")
+-- Runs in Studio (it measures the print font with TextService). Re-running replaces the folder.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Kit = require(script.Parent.Kit)
@@ -17,7 +17,6 @@ local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 
 local Builder = {}
 
-local STEEL = Color3.fromHex("#C9CCD2")
 local HOLE = Color3.fromHex("#141416")
 
 local function cylinder(length, diameter, cframe)
@@ -29,141 +28,147 @@ local function cylinder(length, diameter, cframe)
 	return p
 end
 
--- Body with both faces recessed inside the rim and a thin groove ring on each face.
-local function plateBody(spec, color, material)
-	local d, t = spec.diameter, spec.thickness
-	local body = cylinder(t, d, CFrame.new())
-	local cutters = {}
-	local recess = math.min(0.04, t * 0.15)
-	for _, side in ipairs({ 1, -1 }) do
-		-- recessed face inside the rim
-		table.insert(cutters, cylinder(recess * 2, d * 0.84, CFrame.new(side * t / 2, 0, 0)))
-	end
-	local ok, result = pcall(function()
-		return GeometryService:SubtractAsync(body, cutters, { CollisionFidelity = Enum.CollisionFidelity.Box, RenderFidelity = Enum.RenderFidelity.Automatic })
+local TextService = game:GetService("TextService")
+local CHROME = Color3.fromHex("#D6D8DE")
+local PRINT_PPS = 70 -- SurfaceGui pixels per stud on the plate faces
+local PRINT_DISTANCE = 40 -- studs: the printing stops drawing past this (performance: each face is its own texture)
+
+-- Each character's box at font size 1, measured once in the print font (so the curved letters sit close together).
+local boxCache = {}
+local function textBox(str: string): Vector2
+	if boxCache[str] then return boxCache[str] end
+	local box = Vector2.new(0.55 * #str, 1.25)
+	local ok, bounds = pcall(function()
+		local params = Instance.new("GetTextBoundsParams")
+		params.Text = str
+		params.Font = Theme.Fonts.Bold
+		params.Size = 100
+		params.Width = 2000
+		return TextService:GetTextBoundsAsync(params)
 	end)
-	local main = (ok and result and result[1]) or body
-	-- groove ring: a slightly darker thin ring sitting in the recessed face (separate thin parts, cheap)
-	main.Name = "Body"
-	main.Color = color
-	main.Material = material
-	if main:IsA("PartOperation") then main.UsePartColor = true end
-	return main, recess
+	if ok and bounds then box = Vector2.new(bounds.X / 100, bounds.Y / 100) end
+	boxCache[str] = box
+	return box
 end
 
-local LABEL_DISTANCE = 60 -- studs: plate numbers stop drawing past this (performance)
-local function label(body, face, text, color, diameter)
+-- The printing on one face (a SurfaceGui on a thin invisible part just off the face): the groove ring, the brand curved
+-- over the hub and upside down under it, the weight at 9 and 3 o'clock.
+local function printFace(model, face, sign, weight, spec, bumper, hub)
+	local d, t = spec.diameter, spec.thickness
+	local part = Instance.new("Part")
+	part.Name = "Face" .. face.Name
+	part.Size = Vector3.new(0.01, d, d)
+	part.CFrame = CFrame.new(sign * (t / 2 + 0.022), 0, 0)
+	part.Transparency = 1
+	part.Parent = model
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "Label" .. face.Name
 	gui.Face = face
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 60
-	gui.MaxDistance = LABEL_DISTANCE -- (the number is unreadable past this; each SurfaceGui draws into its own texture)
+	gui.PixelsPerStud = PRINT_PPS
 	gui.LightInfluence = 1
-	gui.Enabled = false
-	gui.Parent = body
-	local textLabel = Instance.new("TextLabel")
-	textLabel.AnchorPoint = Vector2.new(0.5, 0)
-	textLabel.Position = UDim2.fromScale(0.5, 0.035)
-	textLabel.Size = UDim2.fromScale(0.5, 0.16)
-	textLabel.BackgroundTransparency = 1
-	textLabel.Text = text
-	textLabel.TextColor3 = color
-	textLabel.FontFace = Theme.Fonts.SemiBold
-	textLabel.TextScaled = true -- world-space label on a plate face
-	textLabel.Parent = gui
-	local lb = textLabel:Clone()
-	lb.Name = "Unit"
-	lb.Text = "LB"
-	lb.Position = UDim2.fromScale(0.5, 0.845)
-	lb.Size = UDim2.fromScale(0.3, 0.1)
-	lb.Parent = gui
-	return gui
-end
-
--- The brand: small bold condensed text straight across above the hub, a lighter (dark plates) or darker (light
--- plates) shade of the plate color, on both faces, always shown within BRAND_DISTANCE.
-local BRAND_DISTANCE = 45
-local function brand(model, weight)
-	local spec = Machines.Plates[weight]
-	if not spec then return end
-	for _, name in ipairs({ "BrandRight", "BrandLeft" }) do
-		local old = model:FindFirstChild(name)
-		if old then old:Destroy() end
+	gui.MaxDistance = PRINT_DISTANCE
+	gui.Parent = part
+	local canvas = Instance.new("Frame")
+	canvas.Size = UDim2.fromScale(1, 1)
+	canvas.BackgroundTransparency = 1
+	canvas.Parent = gui
+	local light = bumper.Text == Theme.Colors.Ink -- white / yellow / steel plates print dark
+	local ink = if light then Color3.fromHex("#1A1A1C") else Color3.new(1, 1, 1)
+	local px = d * PRINT_PPS
+	local function ring(scale, color, thickness, transparency)
+		local frame = Instance.new("Frame")
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Position = UDim2.fromScale(0.5, 0.5)
+		frame.Size = UDim2.fromScale(scale, scale)
+		frame.BackgroundTransparency = 1
+		frame.Parent = canvas
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = frame
+		local stroke = Instance.new("UIStroke")
+		stroke.Color, stroke.Thickness, stroke.Transparency = color, thickness, transparency
+		stroke.Parent = frame
 	end
-	local bumper = Theme.Bumper[spec.color] or Theme.Bumper.Black
-	local fill = bumper.Fill
-	local light = bumper.Text == Theme.Colors.Ink -- white, yellow, steel plates
-	local color = if light then fill:Lerp(Color3.new(0, 0, 0), 0.38) else fill:Lerp(Color3.new(1, 1, 1), 0.42)
-	local d, t = spec.diameter, spec.thickness
-	local recess = math.min(0.04, t * 0.15)
-	local font = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold)
-	for _, side in ipairs({ { Enum.NormalId.Right, 1 }, { Enum.NormalId.Left, -1 } }) do
-		local face = Instance.new("Part")
-		face.Name = "Brand" .. side[1].Name
-		face.Size = Vector3.new(0.01, d * 0.84, d * 0.84)
-		face.CFrame = model:GetPivot() * CFrame.new(side[2] * (t / 2 - recess + 0.024), 0, 0)
-		face.Transparency = 1
-		face.Anchored = true
-		face.CanCollide, face.CanQuery, face.CanTouch, face.CastShadow = false, false, false, false
-		face.Parent = model
-		local gui = Instance.new("SurfaceGui")
-		gui.Name = "Brand"
-		gui.Face = side[1]
-		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = 60
-		gui.LightInfluence = 1
-		gui.MaxDistance = BRAND_DISTANCE
-		gui.Parent = face
-		local text = Instance.new("TextLabel")
-		text.Name = "Brand"
-		text.AnchorPoint = Vector2.new(0.5, 0.5)
-		text.Position = UDim2.fromScale(0.5, 0.285)
-		text.Size = UDim2.fromScale(0.66, 0.1)
-		text.BackgroundTransparency = 1
-		text.Text = Machines.Brand
-		text.TextColor3 = color
-		text.FontFace = font
-		text.TextScaled = true -- world-space text on a plate face
-		text.Parent = gui
+	local ringR = 0.4
+	ring(ringR * 2, bumper.Rim, math.max(px * 0.012, 2), 0.1)
+	ring(ringR * 2 + 0.02, bumper.Fill:Lerp(Color3.new(1, 1, 1), 0.25), math.max(px * 0.004, 1), 0.4)
+	local function print(name, str, x, y, w, h, rotation)
+		local label = Instance.new("TextLabel")
+		label.Name = name
+		label.AnchorPoint = Vector2.new(0.5, 0.5)
+		label.Position = UDim2.fromScale(x, y)
+		label.Size = UDim2.fromScale(w, h)
+		label.Rotation = rotation
+		label.BackgroundTransparency = 1
+		label.Text = str
+		label.FontFace = Theme.Fonts.Bold
+		label.TextScaled = true -- world-space text on a plate face
+		label.TextColor3 = ink
+		label.TextStrokeColor3 = Color3.new(0, 0, 0)
+		label.TextStrokeTransparency = if light then 1 else 0.8
+		label.ZIndex = 3
+		label.Parent = canvas
 	end
+	-- the band between the flange and the groove ring: the brand follows its curve, one letter at a time
+	local hubR = hub * 1.45 / 2 / d
+	local mid, band = (hubR + ringR) / 2, ringR - hubR
+	local letters, total = {}, 0
+	for ch in string.gmatch(Machines.Brand, ".") do
+		local box = textBox(ch)
+		local w = if ch == " " then 0.2 else box.X
+		table.insert(letters, { ch = ch, x = w, y = box.Y })
+		total += w * 0.9
+	end
+	local size = math.min(band * 1.05, math.rad(120) * mid / total)
+	for _, base in ipairs({ 0, math.pi }) do
+		local along = -total * size / 2
+		for _, letter in ipairs(letters) do
+			local advance = letter.x * 0.9 * size
+			local angle = base + (along + advance / 2) / mid
+			along += advance
+			if letter.ch ~= " " then
+				print("Brand", letter.ch, 0.5 + math.sin(angle) * mid, 0.5 - math.cos(angle) * mid, letter.x * size, letter.y * size, math.deg(angle))
+			end
+		end
+	end
+	-- the weight at 9 o'clock (upright) and 3 o'clock (turned over), as tall as the brand's letters
+	local number = textBox(tostring(weight))
+	local numberSize = size * 1.05
+	print("Weight", tostring(weight), 0.5 - mid, 0.5, number.X * numberSize, number.Y * numberSize, 0)
+	print("Weight", tostring(weight), 0.5 + mid, 0.5, number.X * numberSize, number.Y * numberSize, 180)
 end
-Builder.Brand = brand
 
 local function buildPlate(weight, spec)
 	local model = Instance.new("Model")
 	model.Name = "Plate" .. weight
 	local bumper = Theme.Bumper[spec.color] or Theme.Bumper.Black
 	local isSteel = spec.color == "Steel"
-	local body, recess = plateBody(spec, bumper.Fill, isSteel and Enum.Material.Metal or Enum.Material.SmoothPlastic)
-	body.Anchored = true
-	body.CanCollide, body.CanQuery, body.CanTouch = false, false, false
-	body.Parent = model
+	local material = isSteel and Enum.Material.Metal or Enum.Material.SmoothPlastic
+	local fill = bumper.Fill:Lerp(Color3.new(0, 0, 0), 0.08) -- (a touch deeper, like the genetics plates)
 	local d, t = spec.diameter, spec.thickness
-	-- inset ring: a thin darker ring in the recessed face, both sides
-	for _, side in ipairs({ 1, -1 }) do
-		local ring = cylinder(0.012, d * 0.62, CFrame.new(side * (t / 2 - recess + 0.006), 0, 0))
-		ring.Name = "InsetRing"
-		ring.Color = bumper.Rim
-		ring.Material = body.Material
-		ring.Parent = model
-		local inner = cylinder(0.014, d * 0.58, CFrame.new(side * (t / 2 - recess + 0.007), 0, 0))
-		inner.Name = "InsetFace"
-		inner.Color = bumper.Fill
-		inner.Material = body.Material
-		inner.Parent = model
+	local function disc(name, length, diameter, color, x, mat)
+		local part = cylinder(length, diameter, CFrame.new(x or 0, 0, 0))
+		part.Name = name
+		part.Color = color
+		part.Material = mat or material
+		part.Parent = model
+		return part
 	end
-	local hub = cylinder(t + 0.05, math.max(0.34, d * 0.2), CFrame.new())
-	hub.Name = "Hub"
-	hub.Color = STEEL
-	hub.Material = Enum.Material.Metal
-	hub.Reflectance = 0.2
-	hub.Parent = model
-	local hole = cylinder(t + 0.07, 0.2, CFrame.new())
-	hole.Name = "Hole"
-	hole.Color = HOLE
-	hole.Material = Enum.Material.SmoothPlastic
-	hole.Parent = model
+	local body = disc("Body", t, d - 0.06, fill)
+	disc("Edge", math.max(t - 0.04, t * 0.7), d, fill:Lerp(Color3.new(0, 0, 0), 0.12)) -- the stepped bevel
+	for _, sign in ipairs({ 1, -1 }) do
+		-- the raised rim band near the edge: a lighter ring with the face color inside it
+		disc("Rim", 0.012, d - 0.12, fill:Lerp(Color3.new(1, 1, 1), 0.07), sign * (t / 2 + 0.006))
+		disc("RimInner", 0.014, d - 0.28, fill, sign * (t / 2 + 0.007))
+	end
+	local hub = math.max(0.5, d * 0.3)
+	disc("Flange", t + 0.03, math.min(hub * 1.45, d - 0.3), CHROME:Lerp(Color3.new(0, 0, 0), 0.12), 0, Enum.Material.Metal)
+	local hubPart = disc("Hub", t + 0.08, hub, CHROME, 0, Enum.Material.Metal)
+	hubPart.Reflectance = 0.2
+	disc("Hole", t + 0.1, math.max(0.36, hub * 0.6), HOLE, 0, Enum.Material.SmoothPlastic)
+	printFace(model, Enum.NormalId.Right, 1, weight, spec, bumper, hub)
+	printFace(model, Enum.NormalId.Left, -1, weight, spec, bumper, hub)
 	for _, part in ipairs(model:GetChildren()) do
 		if part:IsA("BasePart") then
 			part.Anchored = true
@@ -171,22 +176,8 @@ local function buildPlate(weight, spec)
 		end
 	end
 	body.CastShadow = true
-	local textColor = bumper.Text == Theme.Colors.Ink and Color3.fromHex("#1A1A1C") or Color3.fromHex("#F4F1EA")
-	-- SurfaceGuis don't draw on unions: each face gets a thin invisible part to carry its label
-	for _, side in ipairs({ { Enum.NormalId.Right, 1 }, { Enum.NormalId.Left, -1 } }) do
-		local face = Instance.new("Part")
-		face.Name = "Face" .. side[1].Name
-		face.Size = Vector3.new(0.01, d * 0.84, d * 0.84)
-		face.CFrame = CFrame.new(side[2] * (t / 2 - recess + 0.02), 0, 0)
-		face.Transparency = 1
-		face.Anchored = true
-		face.CanCollide, face.CanQuery, face.CanTouch, face.CastShadow = false, false, false, false
-		face.Parent = model
-		label(face, side[1], tostring(weight), textColor, d)
-	end
 	model.PrimaryPart = body
 	model.WorldPivot = CFrame.new()
-	brand(model, weight)
 	model:SetAttribute("Weight", weight)
 	model:SetAttribute("Thickness", t)
 	model:SetAttribute("Diameter", d)
@@ -220,6 +211,28 @@ local function buildSleeve()
 	model.PrimaryPart = collar
 	model.WorldPivot = CFrame.new()
 	return model
+end
+
+-- Swaps every placed plate (a model with a Weight attribute and a Body, outside GymAssets) for a clone of the current
+-- template, keeping its name, place and attributes. Returns how many were swapped.
+function Builder.Replace(root)
+	local plates = ReplicatedStorage:FindFirstChild("GymAssets") and ReplicatedStorage.GymAssets:FindFirstChild("Plates")
+	if not plates then return 0 end
+	local swapped = 0
+	for _, old in ipairs(root:GetDescendants()) do
+		local weight = old:IsA("Model") and old:GetAttribute("Weight")
+		local template = weight and plates:FindFirstChild("Plate" .. weight)
+		if template and old:FindFirstChild("Body") and old.Parent then
+			local new = template:Clone()
+			new.Name = old.Name
+			for key, value in pairs(old:GetAttributes()) do new:SetAttribute(key, value) end
+			new:PivotTo(old:GetPivot())
+			new.Parent = old.Parent
+			old:Destroy()
+			swapped += 1
+		end
+	end
+	return swapped
 end
 
 function Builder.Build()

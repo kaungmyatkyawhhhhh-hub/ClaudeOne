@@ -173,13 +173,14 @@ Machines.List = {
 		muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.2 }, { id = "Calves", share = 0.13 } },
 		tiers = Machines.TierSets.Sled, staminaCost = 6,
 	},
-	-- Treadmill (2 in the starter gym's cardio corner, 4 in the pro gym): running uses no stamina (it keeps refilling, so it's something to do
-	-- between sets), a little leg EXP (gainScale: well below a real leg machine, so it never beats lifting), normal coins,
-	-- and the distance counts toward the Cardio King title (Machines.Cardio). load = the belt (no plates).
+	-- Treadmill (2 in the starter gym's cardio corner, 4 in the pro gym): trains STAMINA, not muscles (trains = "Stamina":
+	-- no muscle EXP; the distance run raises max stamina, Config.Stamina.Cardio, and counts toward Cardio King). Running
+	-- uses no stamina (it keeps refilling, so it's something to do between sets), normal coins. `muscles` only picks which
+	-- level unlocks the faster speeds. load = the belt (no plates).
 	{
-		id = "Treadmill", name = "Treadmill", gym = "Starter", pose = "Run", load = "Belt", layout = "Center",
-		muscles = { { id = "Quads", share = 1 }, { id = "Hamstrings", share = 0.3 }, { id = "Calves", share = 0.13 } },
-		tiers = Machines.TierSets.Treadmill, staminaCost = 0, gainScale = 0.35,
+		id = "Treadmill", name = "Treadmill", gym = "Starter", pose = "Run", load = "Belt", layout = "Center", trains = "Stamina",
+		muscles = { { id = "Quads", share = 1 } },
+		tiers = Machines.TierSets.Treadmill, staminaCost = 0,
 	},
 }
 
@@ -263,7 +264,7 @@ Machines.GoalShare = 0.2
 function Machines.TrainableMuscles(growthSpurts)
 	local set = {}
 	for _, machine in ipairs(Machines.List) do
-		if growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) then
+		if growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.trains ~= "Stamina" then
 			for _, entry in ipairs(machine.muscles) do
 				if (entry.share or 1) >= Machines.GoalShare then set[entry.id] = true end
 			end
@@ -277,7 +278,7 @@ function Machines.ExercisesFor(groupId: string, growthSpurts: number, muscleGrou
 	local names, seen = {}, {}
 	for _, machine in ipairs(Machines.List) do
 		local open = growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.gym ~= "Seasonal"
-		if open and muscleGroup(machine.muscles[1].id) == groupId and not seen[machine.name] then
+		if open and machine.trains ~= "Stamina" and muscleGroup(machine.muscles[1].id) == groupId and not seen[machine.name] then
 			seen[machine.name] = true
 			table.insert(names, machine.name)
 		end

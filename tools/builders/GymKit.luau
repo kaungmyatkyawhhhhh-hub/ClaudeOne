@@ -520,11 +520,71 @@ local function cable(m, from, to)
 	p(m, "Cable", Vector3.new(0.05, 0.05, length), CFrame.lookAt(mid, to), hex("#1A1A1A"), M.SmoothPlastic)
 end
 
-local function dHandle(m, cframe)
-	p(m, "HandleGrip", Vector3.new(0.5, 0.12, 0.12), cframe, hex("#1A1A1A"), M.Rubber)
-	p(m, "HandleFrame", Vector3.new(0.6, 0.06, 0.06), cframe * CFrame.new(0, 0.25, 0), C.Chrome, M.Metal)
-	p(m, "HandleSide", Vector3.new(0.06, 0.3, 0.06), cframe * CFrame.new(-0.28, 0.12, 0), C.Chrome, M.Metal)
-	p(m, "HandleSide", Vector3.new(0.06, 0.3, 0.06), cframe * CFrame.new(0.28, 0.12, 0), C.Chrome, M.Metal)
+-- Moving handles (pro gym). A handle is a Model "HandleR" / "HandleL" / "HandleBoth" / "ChestPad" (attribute Axis:
+-- "Right" = the grip runs across the body, "Forward" = it points ahead, "Up" = an upright grip, "Pad" = a pad facing the
+-- lifter; CablePoint = where a cable / lever meets it, in the handle's own space) that MachineClient moves into the
+-- lifter's hands. Parts with attribute To (a handle's name) are links (cables, levers, arms) stretched every frame from
+-- From (a point in the machine's pivot space) to that handle (+ ToOffset); Level = the link stays at From's height (it
+-- ends above the handle), Drop = it runs straight down from above the handle to it.
+local function handleModel(m, name, cframe, axis, cablePoint)
+	local h = model(m, name, cframe)
+	h:SetAttribute("Axis", axis)
+	h:SetAttribute("CablePoint", cablePoint or Vector3.zero)
+	return h
+end
+
+local function link(m, name, fromWorld, handle, thickness, color, material, opts)
+	opts = opts or {}
+	local to = handle:GetPivot():PointToWorldSpace((handle:GetAttribute("CablePoint") or Vector3.zero) + (opts.toOffset or Vector3.zero))
+	local from = fromWorld
+	if opts.level then to = Vector3.new(to.X, from.Y, to.Z) end
+	if opts.drop then from = Vector3.new(to.X, from.Y, to.Z) end
+	local dir = to - from
+	local up = if math.abs(dir.Unit.Y) > 0.99 then Vector3.xAxis else Vector3.yAxis
+	local part = p(m, name, Vector3.new(thickness, thickness, math.max(dir.Magnitude, 0.05)), CFrame.lookAt((from + to) / 2, to, up), color, material)
+	part:SetAttribute("From", m:GetPivot():PointToObjectSpace(fromWorld))
+	part:SetAttribute("To", handle.Name)
+	if opts.toOffset then part:SetAttribute("ToOffset", opts.toOffset) end
+	if opts.level then part:SetAttribute("Level", true) end
+	if opts.drop then part:SetAttribute("Drop", true) end
+	return part
+end
+
+local CABLE = hex("#1A1A1A")
+
+-- D handle: the grip runs along local X, the steel frame and ring above it.
+local function dGrip(m, name, cframe)
+	local h = handleModel(m, name, cframe, "Right", Vector3.new(0, 0.42, 0))
+	p(h, "HandleGrip", Vector3.new(0.5, 0.13, 0.13), cframe, CABLE, M.Rubber)
+	p(h, "HandleFrame", Vector3.new(0.62, 0.06, 0.06), cframe * CFrame.new(0, 0.3, 0), C.Chrome, M.Metal)
+	for _, x in ipairs({ -0.29, 0.29 }) do
+		p(h, "HandleSide", Vector3.new(0.06, 0.36, 0.06), cframe * CFrame.new(x, 0.14, 0), C.Chrome, M.Metal)
+	end
+	ball(h, "HandleRing", 0.14, cframe * CFrame.new(0, 0.38, 0), C.Steel, M.Metal)
+	return h
+end
+
+-- Straight bar (curls): chrome shaft, two rubber grips, end caps, a swivel in the middle for the cable.
+local function straightBar(m, name, cframe, length)
+	local h = handleModel(m, name, cframe, "Right", Vector3.new(0, 0.16, 0))
+	cyl(h, "BarShaft", length, 0.12, cframe, C.Chrome, M.Metal)
+	for _, x in ipairs({ -1, 1 }) do
+		cyl(h, "BarGrip", length * 0.28, 0.15, cframe * CFrame.new(x * length * 0.3, 0, 0), CABLE, M.Rubber)
+		cyl(h, "BarCap", 0.05, 0.17, cframe * CFrame.new(x * length / 2, 0, 0), C.Steel, M.Metal)
+	end
+	cyl(h, "BarSwivel", 0.2, 0.12, cframe * CFrame.new(0, 0.08, 0) * CFrame.Angles(0, 0, rad(90)), C.Steel, M.Metal)
+	return h
+end
+
+-- Triceps rope: two rope ends with rubber stops hanging from a steel clip.
+local function rope(m, name, cframe)
+	local h = handleModel(m, name, cframe, "Right", Vector3.new(0, 0.5, 0))
+	ball(h, "RopeClip", 0.16, cframe * CFrame.new(0, 0.46, 0), C.Steel, M.Metal)
+	for _, x in ipairs({ -1, 1 }) do
+		p(h, "Rope", Vector3.new(0.12, 0.55, 0.12), cframe * CFrame.new(x * 0.13, 0.2, 0) * CFrame.Angles(0, 0, rad(-x * 25)), hex("#2A2A2A"), M.Fabric)
+		ball(h, "RopeEnd", 0.2, cframe * CFrame.new(x * 0.25, -0.06, 0), hex("#141414"), M.Rubber)
+	end
+	return h
 end
 
 local function proBase(parent, machineId, pivot)
@@ -535,35 +595,104 @@ local function proBase(parent, machineId, pivot)
 	return m, machine
 end
 
--- Cable machines: the lifter stands at the pivot facing the tower 2.6 studs ahead.
-local function cableStation(parent, machineId, pivot, handleHeight, handleOffsetX)
-	local m = proBase(parent, machineId, pivot)
-	local towerCF = at(pivot, 0, 0, 2.8, 0, 180, 0)
-	local pulley = stackTower(m, towerCF, 8)
-	local low = handleHeight < 3
-	local outlet = at(pivot, 0, low and 0.8 or 7.6, 2.2)
-	cyl(m, "Pulley", 0.2, 0.55, outlet, hex("#3A3C40"), M.Metal)
-	local handle = at(pivot, handleOffsetX or 0, handleHeight, 0.9)
-	cable(m, pulley.Position, outlet.Position)
-	cable(m, outlet.Position, handle.Position + Vector3.new(0, 0.3, 0))
-	dHandle(m, handle)
-	return m
+-- A weight-stack tower 2.8 studs ahead of the lifter with cable pulleys at `outlets` (pivot space); returns their world
+-- positions. The fixed cable runs from the top pulley to each outlet.
+local function cableTower(m, pivot, outlets)
+	local pulley = stackTower(m, at(pivot, 0, 0, 2.8, 0, 180, 0), 8)
+	local world = {}
+	for i, o in ipairs(outlets) do
+		local cf = at(pivot, o.X, o.Y, o.Z)
+		cyl(m, "Pulley", 0.2, 0.5, cf, hex("#3A3C40"), M.Metal)
+		p(m, "PulleyBracket", Vector3.new(0.3, 0.55, 0.4), cf * CFrame.new(0, 0, 0.25), C.Frame, M.Metal)
+		cable(m, pulley.Position, cf.Position)
+		world[i] = cf.Position
+	end
+	return world
 end
 
 GymKit.Pro = {}
-GymKit.Pro.LateralRaise = function(parent, pivot) return cableStation(parent, "LateralRaise", pivot, 1.2, 0.6) end
-GymKit.Pro.ReverseFly = function(parent, pivot) return cableStation(parent, "ReverseFly", pivot, 5.6, 0) end
-GymKit.Pro.BicepCurl = function(parent, pivot) return cableStation(parent, "BicepCurl", pivot, 1.6, 0) end
-GymKit.Pro.TricepPushdown = function(parent, pivot) return cableStation(parent, "TricepPushdown", pivot, 5.2, 0) end
-GymKit.Pro.CableWoodchop = function(parent, pivot) return cableStation(parent, "CableWoodchop", pivot, 6.2, -0.8) end
 
+-- Lateral raise: two low pulleys, a D handle in each hand (facing +Z, the lifter's right is -X).
+GymKit.Pro.LateralRaise = function(parent, pivot)
+	local m = proBase(parent, "LateralRaise", pivot)
+	local outs = cableTower(m, pivot, { Vector3.new(-0.45, 0.7, 2.2), Vector3.new(0.45, 0.7, 2.2) })
+	link(m, "HandleCable", outs[1], dGrip(m, "HandleR", at(pivot, -0.45, 0.3, 1.95)), 0.05, CABLE, M.SmoothPlastic)
+	link(m, "HandleCable", outs[2], dGrip(m, "HandleL", at(pivot, 0.45, 0.3, 1.95)), 0.05, CABLE, M.SmoothPlastic)
+	return m
+end
+
+-- Biceps curl: low pulley, straight bar in both hands.
+GymKit.Pro.BicepCurl = function(parent, pivot)
+	local m = proBase(parent, "BicepCurl", pivot)
+	local outs = cableTower(m, pivot, { Vector3.new(0, 0.7, 2.2) })
+	link(m, "HandleCable", outs[1], straightBar(m, "HandleBoth", at(pivot, 0, 0.3, 1.9), 1.9), 0.05, CABLE, M.SmoothPlastic)
+	return m
+end
+
+-- Triceps pushdown: high pulley, rope in both hands.
+GymKit.Pro.TricepPushdown = function(parent, pivot)
+	local m = proBase(parent, "TricepPushdown", pivot)
+	local outs = cableTower(m, pivot, { Vector3.new(0, 7.6, 2.2) })
+	link(m, "HandleCable", outs[1], rope(m, "HandleBoth", at(pivot, 0, 6.85, 2.15)), 0.05, CABLE, M.SmoothPlastic)
+	return m
+end
+
+-- Cable woodchop: high pulley, one D handle in both hands; the lifter stands side-on (the tower on their left).
+GymKit.Pro.CableWoodchop = function(parent, pivot)
+	local m = proBase(parent, "CableWoodchop", pivot)
+	local outs = cableTower(m, pivot, { Vector3.new(0, 7.6, 2.2) })
+	link(m, "HandleCable", outs[1], dGrip(m, "HandleBoth", at(pivot, 0, 6.95, 2.15)), 0.05, CABLE, M.SmoothPlastic)
+	return m
+end
+
+-- Reverse fly on a pec deck: seated, chest on the pad, two swing arms from pivots above, an upright grip at each end.
+GymKit.Pro.ReverseFly = function(parent, pivot)
+	local m = proBase(parent, "ReverseFly", pivot)
+	stackTower(m, at(pivot, 0, 0, 3.0, 0, 180, 0), 7.5)
+	p(m, "SeatFoot", Vector3.new(1.3, 0.15, 1.3), at(pivot, 0, 0.19, -0.4), C.Frame, M.Metal, true)
+	p(m, "SeatPost", Vector3.new(0.32, 1.45, 0.32), at(pivot, 0, 0.95, -0.4), C.Chrome, M.Metal, true)
+	p(m, "SeatTrim", Vector3.new(1.62, 0.06, 1.52), at(pivot, 0, 1.66, -0.4), C.Frame, M.Metal)
+	p(m, "Seat", Vector3.new(1.6, 0.32, 1.5), at(pivot, 0, 1.85, -0.4), C.Pad, M.Leather, true)
+	cyl(m, "FootBar", 1.8, 0.14, at(pivot, 0, 0.75, 0.8), C.Chrome, M.Metal)
+	p(m, "FootBarPost", Vector3.new(0.18, 0.62, 0.18), at(pivot, 0, 0.45, 0.8), C.Frame, M.Metal)
+	p(m, "Column", Vector3.new(0.45, 6.4, 0.45), at(pivot, 0, 3.2, 1.95), C.Frame, M.Metal, true)
+	p(m, "ColumnCap", Vector3.new(0.55, 0.12, 0.55), at(pivot, 0, 6.42, 1.95), hex("#111113"), M.Plastic)
+	p(m, "TopBeam", Vector3.new(0.4, 0.4, 1.8), at(pivot, 0, 6.2, 1.2), C.Frame, M.Metal, true)
+	local pivots = {}
+	for i, x in ipairs({ -0.2, 0.2 }) do
+		local cf = at(pivot, x, 5.95, 0.45, 0, 0, 90)
+		cyl(m, "FlyPivot", 0.5, 0.3, cf, C.Chrome, M.Metal)
+		pivots[i] = cf.Position
+	end
+	-- chest pad on an arm from the column (it slides to the lifter's chest)
+	local padCF = at(pivot, 0, 3.4, 0.7, 0, 180, 0)
+	local pad = handleModel(m, "ChestPad", padCF, "Pad", Vector3.new(0, 0, -0.17))
+	p(pad, "ChestPad", Vector3.new(1.3, 1.25, 0.3), padCF, C.Pad, M.Leather)
+	p(pad, "ChestPadBoard", Vector3.new(1.2, 1.15, 0.06), padCF * CFrame.new(0, 0, -0.18), hex("#3A2A1E"), M.Wood)
+	link(m, "ChestPadArm", (at(pivot, 0, 3.4, 1.75)).Position, pad, 0.28, C.Frame, M.Metal)
+	-- the swing arms: level from each pivot to above its grip, then a drop to the grip (right = -X)
+	for i, spec in ipairs({ { "HandleR", -0.3 }, { "HandleL", 0.3 } }) do
+		local gripCF = at(pivot, spec[2], 3.7, 0.2)
+		local h = handleModel(m, spec[1], gripCF, "Up", Vector3.new(0, 0.4, 0))
+		cyl(h, "FlyGrip", 0.7, 0.17, gripCF * CFrame.Angles(0, 0, rad(90)), CABLE, M.Rubber)
+		cyl(h, "FlyGripCap", 0.06, 0.2, gripCF * CFrame.new(0, -0.36, 0) * CFrame.Angles(0, 0, rad(90)), C.Steel, M.Metal)
+		link(m, "FlyArm", pivots[i], h, 0.2, C.Frame, M.Metal, { level = true })
+		link(m, "FlyDrop", pivots[i], h, 0.16, C.Chrome, M.Metal, { drop = true })
+	end
+	return m
+end
+
+-- Shrugs: two grips on levers that pivot on an axle at the tower; the grips point forward.
 GymKit.Pro.Shrugs = function(parent, pivot)
 	local m = proBase(parent, "Shrugs", pivot)
 	stackTower(m, at(pivot, 0, 0, 2.6, 0, 180, 0), 6.5)
-	-- shrug handles at the lifter's sides on a lever
-	for _, x in ipairs({ -1.25, 1.25 }) do
-		p(m, "Lever", Vector3.new(0.2, 0.2, 2.4), at(pivot, x, 2.6, 1.3), C.Frame, M.Metal)
-		cyl(m, "Grip", 0.6, 0.22, at(pivot, x, 2.4, 0.2, 0, 0, 90), hex("#1A1A1A"), M.Rubber)
+	cyl(m, "LeverAxle", 2.9, 0.22, at(pivot, 0, 2.4, 2.1), C.Chrome, M.Metal)
+	for _, spec in ipairs({ { "HandleR", -1.15 }, { "HandleL", 1.15 } }) do
+		local gripCF = at(pivot, spec[2], 2.2, 0.15, 0, -90, 0)
+		local h = handleModel(m, spec[1], gripCF, "Forward", Vector3.new(0.32, 0, 0))
+		cyl(h, "Grip", 0.6, 0.22, gripCF, CABLE, M.Rubber)
+		cyl(h, "GripCap", 0.05, 0.26, gripCF * CFrame.new(-0.31, 0, 0), C.Steel, M.Metal)
+		link(m, "Lever", (at(pivot, spec[2], 2.4, 2.1)).Position, h, 0.2, C.Frame, M.Metal)
 	end
 	return m
 end
@@ -596,10 +725,26 @@ end
 
 GymKit.Pro.HipThrust = function(parent, pivot)
 	local m = proBase(parent, "HipThrust", pivot)
-	-- shoulder bench, a hip belt over the lap and a plate-loaded pin at the side ("Bar")
-	p(m, "Pad", Vector3.new(3, 0.6, 1.2), at(pivot, 0, 1.5, 1.6), C.Pad, M.Leather, true)
-	p(m, "Support", Vector3.new(2.6, 1.2, 0.8), at(pivot, 0, 0.6, 1.6), C.Frame, M.Metal, true)
-	p(m, "FootPlate", Vector3.new(2.6, 0.12, 1.4), at(pivot, 0, 0.18, -2.0), hex("#2E2E33"), M.DiamondPlate)
+	-- the bench for the upper back, a foot plate, lever arms on both sides with a padded roller over the hips (it rides
+	-- on them); plates load on the pin at the side ("Bar")
+	-- (knee height: the bench top at 0.955 so every body's feet reach the plate with the hips up)
+	p(m, "Pad", Vector3.new(3, 0.5, 1.1), at(pivot, 0, 0.705, 1.75), C.Pad, M.Leather, true)
+	p(m, "PadBoard", Vector3.new(2.9, 0.1, 1.0), at(pivot, 0, 0.42, 1.75), hex("#3A2A1E"), M.Wood)
+	p(m, "Support", Vector3.new(2.6, 0.3, 0.8), at(pivot, 0, 0.24, 1.75), C.Frame, M.Metal, true)
+	p(m, "FootPlate", Vector3.new(2.8, 0.14, 3.2), at(pivot, 0, 0.19, -1.4), hex("#2E2E33"), M.DiamondPlate)
+	local axles = {}
+	for i, x in ipairs({ -1.45, 1.45 }) do
+		p(m, "LeverPost", Vector3.new(0.3, 0.85, 0.3), at(pivot, x, 0.52, 1.15), C.Frame, M.Metal, true)
+		local cf = at(pivot, x, 0.95, 1.15)
+		cyl(m, "LeverAxle", 0.4, 0.22, cf, C.Chrome, M.Metal)
+		axles[i] = cf.Position
+	end
+	local hipCF = at(pivot, 0, 1.5, 0.1)
+	local hip = handleModel(m, "HandleBoth", hipCF, "Right", Vector3.zero)
+	cyl(hip, "HipPad", 2.3, 0.5, hipCF, C.Pad, M.Leather)
+	cyl(hip, "HipPadCore", 2.6, 0.16, hipCF, C.Chrome, M.Metal)
+	link(m, "Lever", axles[1], hip, 0.18, C.Frame, M.Metal, { toOffset = Vector3.new(-1.25, 0, 0) })
+	link(m, "Lever", axles[2], hip, 0.18, C.Frame, M.Metal, { toOffset = Vector3.new(1.25, 0, 0) })
 	p(m, "PinPost", Vector3.new(0.3, 1.6, 0.3), at(pivot, 2.4, 0.8, 0), C.Frame, M.Metal, true)
 	cyl(m, "Bar", 1.2, 0.2, at(pivot, 2.4, 1.5, 0), C.Chrome, M.Metal)
 	return m
@@ -612,7 +757,6 @@ GymKit.Pro.Dips = function(parent, pivot)
 		post(m, at(pivot, x, 0.12, -0.9), 3.1, false)
 		cyl(m, "Handle", 2.4, 0.24, at(pivot, x, 3.2, 0.1, 0, 90, 0), hex("#1A1A1A"), M.Rubber)
 	end
-	p(m, "BackPad", Vector3.new(1.4, 1.6, 0.3), at(pivot, 0, 3.6, 1.4), C.Pad, M.Leather)
 	p(m, "PinPost", Vector3.new(0.3, 1.6, 0.3), at(pivot, 2.4, 0.8, 0), C.Frame, M.Metal, true)
 	cyl(m, "Bar", 1.2, 0.2, at(pivot, 2.4, 1.5, 0), C.Chrome, M.Metal)
 	return m
@@ -732,12 +876,97 @@ function GymKit.treadmill(parent, cframe, pro)
 	return m
 end
 
+-- The pro gym treadmill: a premium commercial machine. Same belt (size, height 0.69, "Belt") and "Console" as the basic
+-- one, plus: rubber side platforms with chrome trim, a rounded motor hood with an LED strip, chrome uprights that sweep
+-- back into side handrails with grip sensors, a front bar, a big angled console with a readout (speed / time / distance),
+-- key buttons and cup holders, a safety key, rear roller caps, rubber feet and a soft LED glow under the deck.
+function GymKit.treadmillPro(parent, cframe)
+	local m = model(parent, "Treadmill", cframe)
+	local trim, dark, rubber = C.Chrome, hex("#1C1D20"), hex("#141416")
+	p(m, "Deck", Vector3.new(2.7, 0.45, 6.6), cframe * CFrame.new(0, 0.3, 0), dark, M.Metal, true)
+	p(m, "DeckBase", Vector3.new(2.5, 0.12, 6.3), cframe * CFrame.new(0, 0.06, 0), rubber, M.Rubber)
+	p(m, "Belt", Vector3.new(1.9, 0.05, 5.6), cframe * CFrame.new(0, 0.66, 0.1), hex("#111112"), M.Fabric)
+	for _, x in ipairs({ -1, 1 }) do
+		p(m, "SidePlatform", Vector3.new(0.34, 0.08, 6.0), cframe * CFrame.new(x * 1.14, 0.57, 0.1), hex("#2A2B2F"), M.Rubber)
+		p(m, "SideTrim", Vector3.new(0.04, 0.12, 6.4), cframe * CFrame.new(x * 1.33, 0.52, 0.05), trim, M.Metal)
+		p(m, "DeckLed", Vector3.new(0.03, 0.03, 5.8), cframe * CFrame.new(x * 1.3, 0.1, 0.1), C.Led, M.Neon)
+		for _, z in ipairs({ -2.9, 2.9 }) do
+			p(m, "Foot", Vector3.new(0.4, 0.1, 0.4), cframe * CFrame.new(x * 1.05, 0.05, z), rubber, M.Rubber)
+		end
+		cyl(m, "RollerCap", 0.08, 0.36, cframe * CFrame.new(x * 1.37, 0.33, 3.1), trim, M.Metal)
+		-- the upright sweeps up from the hood, then the side handrail runs back from its top
+		p(m, "Upright", Vector3.new(0.2, 3.9, 0.26), at(cframe, x * 1.2, 2.45, -2.75, -10, 0, 0), trim, M.Metal, true)
+		p(m, "UprightCap", Vector3.new(0.26, 0.3, 0.3), cframe * CFrame.new(x * 1.2, 0.5, -3.05), dark, M.Plastic)
+		p(m, "HandRail", Vector3.new(0.14, 0.14, 2.15), cframe * CFrame.new(x * 1.2, 3.55, -1.8), trim, M.Metal)
+		p(m, "GripSensor", Vector3.new(0.18, 0.18, 0.55), cframe * CFrame.new(x * 1.2, 3.55, -1.35), hex("#3A3C40"), M.Metal)
+		p(m, "RailEnd", Vector3.new(0.18, 0.18, 0.1), cframe * CFrame.new(x * 1.2, 3.55, -0.7), dark, M.Rubber)
+	end
+	-- the motor hood: a block with a rounded nose and an LED strip
+	p(m, "MotorHood", Vector3.new(2.7, 0.62, 0.9), cframe * CFrame.new(0, 0.55, -3.05), dark, M.Plastic, true)
+	cyl(m, "HoodNose", 2.7, 0.62, cframe * CFrame.new(0, 0.55, -3.5), dark, M.Plastic)
+	p(m, "HoodStripe", Vector3.new(2.2, 0.04, 0.03), cframe * CFrame.new(0, 0.7, -3.81), C.Led, M.Neon)
+	p(m, "HoodCap", Vector3.new(2.4, 0.04, 0.8), cframe * CFrame.new(0, 0.87, -3.0), hex("#2A2B2F"), M.Metal)
+	-- front bar between the uprights
+	cyl(m, "FrontBar", 2.3, 0.14, cframe * CFrame.new(0, 3.3, -2.9), trim, M.Metal)
+	-- the console: an angled panel with a dark glass readout, buttons and cup holders
+	local console = cframe * CFrame.new(0, 4.35, -3.1) * CFrame.Angles(rad(-28), 0, 0)
+	p(m, "Console", Vector3.new(2.7, 1.15, 0.28), console, hex("#1E1F23"), M.Plastic)
+	p(m, "ConsoleTrim", Vector3.new(2.76, 0.06, 0.32), console * CFrame.new(0, 0.6, 0), trim, M.Metal)
+	local screen = p(m, "Screen", Vector3.new(1.5, 0.66, 0.04), console * CFrame.new(0, 0.12, 0.15), C.Screen, M.Glass)
+	screen.Reflectance = 0.25
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Readout"
+	gui.Face = Enum.NormalId.Back
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 60
+	gui.LightInfluence = 0
+	gui.Brightness = 1.4
+	gui.MaxDistance = 40
+	gui.Parent = screen
+	local list = Instance.new("UIListLayout")
+	list.FillDirection = Enum.FillDirection.Horizontal
+	list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	list.VerticalAlignment = Enum.VerticalAlignment.Center
+	list.Padding = UDim.new(0.04, 0)
+	list.Parent = gui
+	for _, field in ipairs({ { "0.0", "MPH" }, { "00:00", "TIME" }, { "0.00", "MI" } }) do
+		local cell = Instance.new("Frame")
+		cell.Size = UDim2.fromScale(0.28, 0.8)
+		cell.BackgroundTransparency = 1
+		cell.Parent = gui
+		local value = Instance.new("TextLabel")
+		value.Size = UDim2.fromScale(1, 0.62)
+		value.BackgroundTransparency = 1
+		value.Text = field[1]
+		value.TextColor3 = C.Led
+		value.FontFace = Theme.Fonts.Bold
+		value.TextScaled = true -- world-space text on a screen
+		value.Parent = cell
+		local caption = value:Clone()
+		caption.Text = field[2]
+		caption.Position = UDim2.fromScale(0, 0.66)
+		caption.Size = UDim2.fromScale(1, 0.3)
+		caption.TextColor3 = hex("#8A93A6")
+		caption.Parent = cell
+	end
+	for i = -2, 2 do
+		p(m, "ConsoleKey", Vector3.new(0.2, 0.1, 0.04), console * CFrame.new(i * 0.28, -0.38, 0.15), hex("#3A3C40"), M.Plastic)
+	end
+	for _, x in ipairs({ -1.1, 1.1 }) do
+		cyl(m, "CupHolder", 0.22, 0.3, console * CFrame.new(x, -0.25, 0.2) * CFrame.Angles(0, 0, rad(90)), hex("#2A2B2F"), M.Plastic)
+	end
+	p(m, "Bottle", Vector3.new(0.18, 0.5, 0.18), console * CFrame.new(1.1, 0.0, 0.2), hex("#BFD6DF"), M.Glass, false, { Transparency = 0.3 })
+	p(m, "SafetyKey", Vector3.new(0.12, 0.12, 0.08), console * CFrame.new(-0.85, -0.38, 0.16), hex("#B8BBC2"), M.Metal)
+	p(m, "SafetyCord", Vector3.new(0.03, 0.5, 0.03), console * CFrame.new(-0.85, -0.65, 0.17), hex("#1A1A1A"), M.Fabric)
+	return m
+end
+
 -- The treadmill MACHINE (Config.Machines Treadmill): the cardio treadmill, tagged as a machine, with the Use prompt on the
 -- console and thin slats on the belt ("Slats" folder) that MachineClient slides along while someone runs. pro = the pro
 -- gym look (chrome frame, LED screen glow).
 function GymKit.Treadmill(parent, pivot, pro)
 	local shell, machine = machineShell(parent, "Treadmill", pivot)
-	local m = GymKit.treadmill(shell, pivot, pro)
+	local m = if pro then GymKit.treadmillPro(shell, pivot) else GymKit.treadmill(shell, pivot)
 	for _, part in ipairs(m:GetChildren()) do part.Parent = shell end
 	m:Destroy()
 	local belt = shell:FindFirstChild("Belt")

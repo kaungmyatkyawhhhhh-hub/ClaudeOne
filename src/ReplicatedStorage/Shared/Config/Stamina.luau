@@ -1,6 +1,15 @@
 local Stamina = {}
 
 Stamina.Max = 100
+
+-- Cardio trains stamina: every MetersPerPoint run on a treadmill (saved as stats.cardioMeters) adds 1 to max stamina,
+-- up to MaxBonus extra. (Iron Lungs multiplies the result.)
+Stamina.Cardio = { MetersPerPoint = 40, MaxBonus = 150 }
+
+-- Max stamina for a player who has run `meters` in total.
+function Stamina.MaxFor(meters: number?): number
+	return Stamina.Max + math.min(Stamina.Cardio.MaxBonus, math.floor((meters or 0) / Stamina.Cardio.MetersPerPoint))
+end
 Stamina.RegenPerSecond = 20
 Stamina.RegenDelay = 2 -- seconds after a rep before refilling starts (shorter = it refills between casual taps)
 

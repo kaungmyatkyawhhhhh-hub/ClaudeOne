@@ -12,6 +12,7 @@ local Genetics = require(Config.Genetics)
 local Body = require(Config.Body)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local Stamina = require(Config.Stamina)
+local Monetization = require(Config.Monetization)
 local Titles = require(Config.Titles)
 local Onboarding = require(Config.Onboarding)
 local DataTemplate = require(script.Parent.DataTemplate)
@@ -277,6 +278,7 @@ local function onPlayerAdded(player)
 	data.meta.sessions += 1
 
 	profiles[player] = { data = data, canSave = canSave }
+	PlayerData.RefreshMaxStamina(player)
 	player:SetAttribute("DataLoaded", true)
 	loadedEvent:Fire(player, data)
 end
@@ -315,10 +317,18 @@ function PlayerData.WaitFor(player, timeout)
 	return PlayerData.Get(player)
 end
 
--- Max stamina (Iron Lungs sets a bigger "MaxStamina" attribute on the player).
+-- Max stamina: trained by cardio (Stamina.MaxFor the distance run) x Iron Lungs; kept on the player's "MaxStamina"
+-- attribute so clients read the same number.
 function PlayerData.GetMaxStamina(player)
-	local bonus = player and player:GetAttribute("MaxStamina")
-	return type(bonus) == "number" and bonus or Stamina.Max
+	local max = player and player:GetAttribute("MaxStamina")
+	return type(max) == "number" and max or Stamina.Max
+end
+
+function PlayerData.RefreshMaxStamina(player)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local lungs = if player:GetAttribute("Pass_IronLungs") then Monetization.Effects.IronLungsMax else 1
+	player:SetAttribute("MaxStamina", Stamina.MaxFor(data.stats.cardioMeters) * lungs)
 end
 
 function PlayerData.GetLevelCap(player)
@@ -512,6 +522,7 @@ function PlayerData.SetStat(player, stat, value)
 	if not data then return end
 	data.stats[stat] = value
 	replicate(player, { "stats", stat }, value)
+	if stat == "cardioMeters" then PlayerData.RefreshMaxStamina(player) end
 end
 
 function PlayerData.SetFlag(player, flag, value)

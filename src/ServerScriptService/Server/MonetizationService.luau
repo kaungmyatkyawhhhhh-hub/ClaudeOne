@@ -30,7 +30,7 @@ local function applyPass(player, key)
 	if key == "DoubleGains" then
 		BoostService.SetPlayer(player, "PassDoubleGains", { gains = Effects.DoubleGains })
 	elseif key == "IronLungs" then
-		player:SetAttribute("MaxStamina", Stamina.Max * Effects.IronLungsMax)
+		PlayerData.RefreshMaxStamina(player) -- (reads the Pass_IronLungs attribute set above)
 	elseif key == "FastRecovery" then
 		BoostService.SetPlayer(player, "PassFastRecovery", { regen = Effects.FastRecovery })
 	elseif key == "VIP" then

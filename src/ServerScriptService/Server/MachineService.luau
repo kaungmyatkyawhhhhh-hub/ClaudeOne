@@ -169,21 +169,58 @@ local function bodyCFrame(character, humanoid, root, model, pose)
 		end
 		return cf
 	end
+	-- joint offsets from the root part (in its space), from the rig itself (whatever pose the body is in right now); joints
+	-- are Motor6Ds or AnimationConstraints (C0 / C1 = their two attachments)
+	local function c0(joint) return if joint:IsA("Motor6D") then joint.C0 elseif joint.Attachment0 then joint.Attachment0.CFrame else CFrame.identity end
+	local function c1(joint) return if joint:IsA("Motor6D") then joint.C1 elseif joint.Attachment1 then joint.Attachment1.CFrame else CFrame.identity end
+	local function armReach(): number?
+		local arm, lowerArm, hand = character:FindFirstChild("RightUpperArm"), character:FindFirstChild("RightLowerArm"), character:FindFirstChild("RightHand")
+		local shoulder = arm and arm:FindFirstChild("RightShoulder")
+		local elbow = lowerArm and lowerArm:FindFirstChild("RightElbow")
+		local wrist = hand and hand:FindFirstChild("RightWrist")
+		if not (shoulder and elbow and wrist) then return nil end
+		return (c1(shoulder).Position - c0(elbow).Position).Magnitude + (c1(elbow).Position - c0(wrist).Position).Magnitude + c1(wrist).Position.Magnitude
+	end
+	local lower, upper = character:FindFirstChild("LowerTorso"), character:FindFirstChild("UpperTorso")
+	local rootJoint = lower and lower:FindFirstChild("Root")
+	local waist = upper and upper:FindFirstChild("Waist")
+	local toLower = rootJoint and c0(rootJoint) * c1(rootJoint):Inverse() or nil
+	local toUpper = toLower and waist and toLower * c0(waist) * c1(waist):Inverse() or nil
+	if pose.kind == "Thrust" and toUpper and upper then
+		-- face up, head toward +Z, the upper back (a little below the shoulders) on the pad's edge
+		local back = (toUpper * CFrame.new(0, upper.Size.Y * 0.15, 0)).Position.Y
+		local at = Vector3.new(0, pose.padTop + upper.Size.Z / 2, pose.padEdge - back)
+		return pivot * CFrame.lookAt(at, at + Vector3.yAxis, Vector3.zAxis)
+	end
 	local facing = CFrame.Angles(0, math.rad(pose.yaw or 0), 0)
 	local height = humanoid.HipHeight + root.Size.Y / 2
+	if pose.kind == "Sit" and toLower then
+		-- the thighs rest on the seat: the hip joints sit half a thigh above it
+		local thigh = character:FindFirstChild("RightUpperLeg")
+		local hipJoint = thigh and thigh:FindFirstChild("RightHip")
+		if thigh and hipJoint then
+			height = pose.seat + thigh.Size.Z / 2 - (toLower * c0(hipJoint)).Position.Y
+		end
+	elseif pose.kind == "Support" and toUpper then
+		-- the shoulders above the handles by a (nearly) straight arm
+		local arm = character:FindFirstChild("RightUpperArm")
+		local shoulder = arm and arm:FindFirstChild("RightShoulder")
+		local reach = armReach()
+		if shoulder and reach then
+			-- the arm (almost straight) reaches down and in / out from the shoulder to the handle
+			local shoulderAt = (toUpper * c0(shoulder)).Position
+			local across = math.abs(math.abs(shoulderAt.X) - (pose.handleX or math.abs(shoulderAt.X)))
+			local down = math.sqrt(math.max((reach * 0.93) ^ 2 - across ^ 2, (reach * 0.5) ^ 2))
+			height = pose.handleTop + down - shoulderAt.Y
+		end
+	end
 	if pose.kind == "Hang" then
-		-- straight arms overhead reach the bar
-		local torso = character:FindFirstChild("UpperTorso")
-		local upper, lower, hand = character:FindFirstChild("RightUpperArm"), character:FindFirstChild("RightLowerArm"), character:FindFirstChild("RightHand")
-		local shoulder = upper and upper:FindFirstChild("RightShoulder")
-		if torso and shoulder and lower and hand then
-			-- R15 joints are Motor6Ds or (newer avatars) AnimationConstraints between rig attachments
-			local shoulderPoint = if shoulder:IsA("Motor6D") then (torso.CFrame * shoulder.C0).Position
-				elseif shoulder:IsA("AnimationConstraint") and shoulder.Attachment0 then shoulder.Attachment0.WorldPosition
-				else torso.Position + Vector3.new(0, torso.Size.Y * 0.4, 0)
-			local shoulderHeight = shoulderPoint.Y - root.Position.Y
-			local reach = upper.Size.Y + lower.Size.Y + hand.Size.Y * 0.5
-			height = pose.barHeight - shoulderHeight - reach
+		-- (nearly) straight arms overhead reach the bar
+		local arm = character:FindFirstChild("RightUpperArm")
+		local shoulder = arm and arm:FindFirstChild("RightShoulder")
+		local reach = armReach()
+		if toUpper and shoulder and reach then
+			height = pose.barHeight - (toUpper * c0(shoulder)).Position.Y - reach * 0.93
 		end
 	end
 	return pivot * CFrame.new(pose.position + Vector3.new(0, height, 0)) * facing
@@ -399,7 +436,7 @@ local function lift(player)
 	local big = session.nextBig
 	session.nextBig = math.random() < Gains.BigRep.Chance
 	local quality = (pumped and Pump.Multiplier or 1) * (big and Gains.BigRep.Multiplier or 1)
-	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player), quality)
+	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player), quality) -- (none on cardio: it trains stamina)
 
 	local levels = {}
 	for muscleId, amount in pairs(xp) do
@@ -410,8 +447,12 @@ local function lift(player)
 	end
 	local coins = math.max(1, math.floor(tier.coins * BoostService.Coins(player) + 0.5))
 	PlayerData.AddCoins(player, coins)
-	if tier.unit == "mph" then -- the treadmill: the distance run (Cardio King)
+	local staminaUp = nil
+	if tier.unit == "mph" then -- the treadmill: the distance run (max stamina, Cardio King)
+		local before = PlayerData.GetMaxStamina(player)
 		PlayerData.SetStat(player, "cardioMeters", (data.stats.cardioMeters or 0) + tier.weight * Machines.Cardio.MetersPerMph)
+		local after = PlayerData.GetMaxStamina(player)
+		if after > before then staminaUp = after end
 	end
 	TitleService.OnRep(player)
 	QuestService.OnRep(player, machine.id)
@@ -428,7 +469,7 @@ local function lift(player)
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
 	Remotes.RepResult:FireClient(player, { levels = levels, coins = coins, big = big,
-		nextBig = session.nextBig, pumped = pumped, pr = pr })
+		nextBig = session.nextBig, pumped = pumped, pr = pr, staminaUp = staminaUp })
 end
 
 local function isTierIndex(value)
