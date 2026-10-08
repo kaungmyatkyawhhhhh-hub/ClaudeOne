@@ -333,8 +333,9 @@ local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
 
 -- One regular is the giant (owner, 9 Oct): 7'0" (the last Growth Spurt's height) with the mass monster physique, built
 -- like a maxed player (every muscle at 5.5x that Growth Spurt's goal, so every muscle is at its mass monster size; the
--- monster widths; a Wide frame).
-local GIANT = { name = "Dante", spurts = #GrowthSpurts.Stages, frame = "Wide" }
+-- monster widths: shoulders, hips, arms, legs and torso depth; the V-Taper frame, the widest shoulders; the golden ratio
+-- proportions like everyone).
+local GIANT = { name = "Dante", spurts = #GrowthSpurts.Stages, frame = "VTaper" }
 local function giantData()
 	local goal = GrowthSpurts.GetGoal(GIANT.spurts)
 	local level = math.ceil(Muscles.LevelFromXp(Muscles.Look.MonsterAt * 1.1 * Muscles.CumXp(goal)))

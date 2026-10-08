@@ -368,7 +368,7 @@ shareable before/after snapshot.
 
 ## 14. Visuals and feel
 Pump effect (trained muscle temporarily bigger), body part scaling per group, veins/abs/delt detail at high levels,
-trendy gym fits, skateboard, area music, satisfying weight sounds. Gym cat, NPC gym-goers (one of them, Dante in the pro gym, is a 7'0" mass monster; owner, 9 Oct), re-racking plates.
+trendy gym fits, skateboard, area music, satisfying weight sounds. Gym cat, NPC gym-goers (one of them, Dante in the pro gym, is a 7'0" mass monster: the monster widths, the V-Taper frame (widest shoulders), golden ratio proportions; owner, 9 Oct), re-racking plates.
 Pro gym (looks clearly better than the starter gym, realistic, not cluttered): darker premium interior, charcoal rubber floor with a tile grid, chrome free-weight racks on wood lifting platforms, a mirror wall across the back, linear LED ceiling lights and LED strips, spotlight pools over the machines, a smoothie bar corner (counter, back bar with a drinks fridge, stools) by the glass door, clean hanging zone signs (FREE WEIGHTS, MACHINES, CARDIO, STRETCH, SMOOTHIE BAR), Future lighting, light bloom/haze.
 Starter gym: warm, old-school, brick walls.
 

@@ -14,7 +14,8 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 
 ## Before that (9 Oct): arm wrestling animation + the giant regular (synced and tested in Studio)
 - **Giant regular** (owner): Dante (pro gym) is 7'0" (the last Growth Spurt's height) with the mass monster physique,
-  built like a maxed player (every muscle at 5.5x that spurt's goal, monster widths, Wide frame): `GymGoerService`
+  built like a maxed player (every muscle at 5.5x that spurt's goal, monster widths, V-Taper frame = the widest
+  shoulders, golden ratio): measured UpperTorso 4.91 wide (Ivy 2.00), hips 3.14 (1.65). `GymGoerService`
   GIANT / makeGiant, `NpcService.ApplyBody(npc, heightScale)`. Tested: height scale 1.40, monster stage meshes on.
   Screenshot giant_dante.
 - **Arm wrestling animation**, new `ArmWrestleClient` (every client): both wrestlers sit facing each other, lean in,
