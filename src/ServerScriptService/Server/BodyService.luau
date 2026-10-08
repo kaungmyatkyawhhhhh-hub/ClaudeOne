@@ -12,10 +12,9 @@
 --    shoulders) and WaistWidth (the hips) tell the clients, whose torso meshes taper from one to the other (a V).
 --  * Golden ratio proportions (Config.Body.Proportions, BodyShape.ApplyProportions): longer legs, shorter torso, same
 --    height; re-applied with the frame whenever Roblox rebuilds the body.
---  * Muscles (muscle v7) are drawn on every client (Shared.MuscleRig / MuscleClient): this service only PUBLISHES the numbers as
---    player attributes: MuscleG (18 look values in Config.Muscles order: Muscles.LookG of level / Growth Spurt goal, held by
---    the look balance cap, Config.LookBalance), Top and
---    Shorts (the wardrobe choices; ids from Config.Body). A Growth Spurt resets the muscles, so they shrink back on their own.
+--  * Muscles (muscle v9 unified) are drawn on every client (Shared.MuscleRig / MuscleClient): this service only PUBLISHES the
+--    numbers as player attributes: MuscleG (18 look values in Config.Muscles order: Muscles.LookG of level / Growth Spurt
+--    goal, each muscle its own), Top and Shorts (the wardrobe choices; ids from Config.Body). A Growth Spurt resets the muscles, so they shrink back on their own.
 --  * When the muscle progress passes 25/50/75/100%, the owner gets a "Grew" event (the "you grew" pulse + sound).
 local AssetService = game:GetService("AssetService")
 local Players = game:GetService("Players")
@@ -26,7 +25,6 @@ local Body = require(Shared.Config.Body)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local Muscles = require(Shared.Config.Muscles)
 local Genetics = require(Shared.Config.Genetics)
-local LookBalance = require(Shared.Config.LookBalance)
 local BodyShape = require(Shared.BodyShape)
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -73,10 +71,9 @@ local function progressOf(levels, goal)
 end
 
 -- The growth numbers as text for an attribute: the look g (Muscles.LookG: full aesthetic at 2x the goal, mass monster
--- at 5x, then held by the look balance cap: a muscle can't look far ahead of its partners) for each muscle in
--- Config.Muscles order, 3 decimals.
+-- at 5x) for each muscle in Config.Muscles order, 3 decimals.
 function BodyService.EncodeLevels(levels, goal)
-	local shown = LookBalance.FromLevels(levels, goal)
+	local shown = Muscles.LooksFromLevels(levels, goal)
 	local parts = {}
 	for index, muscle in ipairs(Muscles.List) do
 		parts[index] = string.format("%.3f", shown[muscle.id])
@@ -168,7 +165,7 @@ function BodyService.WidthFactors(data)
 	local W = Body.Widths
 	local s = targetHeight(data) / (GrowthSpurts.GetHeight(0) / BodyShape.BaseHeight)
 	local levels, goal = levelsOf(data), goalOf(data)
-	local shown = LookBalance.FromLevels(levels, goal) -- (the capped look: the body widens with what it shows)
+	local shown = Muscles.LooksFromLevels(levels, goal)
 	local grown, monster = 0, 0
 	for _, muscle in ipairs(Muscles.List) do
 		local g = shown[muscle.id]

@@ -117,7 +117,8 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   the rep popup. No big pop-up window.
 - Setting "Gain numbers: On / Minimal / Off" in Settings: On = rep + set popups, Minimal = set popups only,
   Off = no gain popups (the chime, chalk and HUD flash stay). Default On, saved per player.
-- Rep flash: each rep the muscles it trained glow warm for a moment (~0.15s in, ~0.35s out) with a tiny pump (2%);
+- Rep flash: each rep the muscles it trained glow warm for a moment (~0.15s in, ~0.35s out) (the tiny 2% mesh pump with it
+  was dropped 8 Oct: every mesh change costs ~40 ms, see Performance);
   the main muscle strongest, secondaries weaker; BIG REP / PUMPED stronger and a little longer. Only the muscles facing
   the camera show it. Setting "Rep flash: On / Off" (default On, saved per player).
 - Muscle highlight (hovering a stat label): the muscles turn red (a tint on the normal material, no neon glow), only
@@ -284,8 +285,10 @@ shareable before/after snapshot.
   their part's size, HipHeight grows with the legs, no gaps.
 - Smooth borders at uneven levels: a border vertex follows its neighbouring muscles by the data's blend weights
   (g_v = (1 - sum w) * g_own + sum(w * g_other)), so a maxed muscle next to a flat one is a smooth slope.
-- Round shoulders: a DeltCap ball on each shoulder grows with Side Delts. The waist tightens: the snatched torso morphs
-  from a wide straight waist at level 0 to the snatched V with the average growth.
+- Unified muscles (muscle v9, 8 Oct): the torso and the upper arms are each ONE welded mesh (the whole skin of the part;
+  per muscle a vertex list and its displacement): pos = base + waist morph + sum(look g x displacement) + veins, so any mix
+  of levels (one muscle huge, the rest 0) is smooth with no holes. The torso's top opening is closed by a low dome under
+  the upper traps; the upper traps, legs, forearms and calves stay shell meshes. The waist tightens with the average growth.
 - Max = a lean aesthetic V-taper (fitness model, not a bodybuilder); the mass monster sizes come from the manifest
   (mass_monster.g per mesh) plus 12% extra thickness.
 - Widths by Growth Spurt (`Config/Body.Widths`, manifest growth_spurt_width): factor = 1 + k * (height / 4'0" - 1) per
@@ -294,16 +297,25 @@ shareable before/after snapshot.
   the hips (k 0.2 -> 0.7 -> 1.2) widen the LowerTorso, the shorts and the leg positions together, and the waist meets
   the LowerTorso at the same width. Lying poses are
   lifted by the extra torso depth so the back stays on the pad.
-- Muscles are real EditableMesh muscles (muscle v8): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), everyone gets the snatched-waist torso, each muscle's outline stays on the skin and only the bulge rises with its level (continuous, tweened, small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
+- Muscles are real EditableMesh muscles (muscle v9 unified): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), each muscle's outline stays on the skin and only the bulge rises with its level (small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
+- Only YOUR character has muscle meshes: a play client holds at most 8 EditableMeshes and a mesh's MeshPart shows nothing
+  once its EditableMesh is gone (measured 8 Oct), and your body needs exactly 8 (torso front + back, two upper arms, two
+  upper legs, the waist, the upper traps). Other players, NPCs and the statue show the plain body with the skin stage;
+  everyone's forearms / calves are the static stage meshes.
+- Skin texture stages (`Config/SkinStages`, ReplicatedStorage.SkinStages Stage1..5, the owner's 15 images in the group
+  inventory): the skin (muscle meshes and body parts not under the character's own clothing) wears a SurfaceAppearance
+  tinted to the skin color: Stage1 at level 0, Stage2 about half, Stage3 at the full look, Stage4 then Stage5 through the
+  mass monster stage, switching at the midpoint between two stages (with a little hysteresis). Under a SurfaceAppearance
+  vertex colors don't show, so the hover highlight / rep flash on skin is a thin color layer over the mesh (a mask written
+  once, faded by the layer's transparency); the thighs' gym shorts are on that layer too.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
   look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass
   monster size (muscle_v8 manifest `mass_monster.g`, veins come in with it); past 5x the look stays, the stats keep going.
-- Look balance cap (`Config/LookBalance`; looks only, stats/EXP/leaderboards untouched): only INSIDE each muscle group
-  (no cross-group rules). In real bulge studs (`Config/MuscleBulge`): a muscle sticks out at most max(smallest groupmate
-  + 0.15, smallest groupmate x 1.5) studs (MaxGap / MaxRatio), never held below its groupmate's own look level (so a
-  balanced body is never capped), soft-capped so it never snaps. It drives the meshes, the waist, the widths and the
-  monster stage. Muscles panel: a drawn lock, a faint held-back bar segment, hover / tap "Look capped - train Mid Chest to
-  unlock". One toast the first time a muscle is held back by over 0.05 studs; the rep flash when a cap lifts.
+- No look balance cap (removed 8 Oct, the unified meshes have no holes at uneven levels): each muscle's look is its own
+  look value (plus pump).
+- Performance (8 Oct): every change to an EditableMesh costs the engine ~40 ms of a frame whatever its size, so muscle
+  meshes change rarely: a look moves in steps of 0.015, one body region per frame, tints fade with a part property; body
+  parts under muscle meshes don't pump by size.
 - Default look: shirtless with game shorts; the Wardrobe has Top (Shirtless/Tank/Sports) and shorts colors.
 
 ## 14. Visuals and feel

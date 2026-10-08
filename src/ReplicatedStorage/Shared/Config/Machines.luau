@@ -189,7 +189,7 @@ Machines.Cardio = { MetersPerMph = 2, KingMeters = 10000, BeltScroll = 1.2 } -- 
 
 -- Client performance: other lifters (players and NPC regulars) are only animated (arms, moving bar and plates) within
 -- AnimateDistance studs of the camera, and the pump swell only shows within PumpDistance. Your own lift always animates.
-Machines.ClientCull = { AnimateDistance = 80, PumpDistance = 45 }
+Machines.ClientCull = { AnimateDistance = 80, PumpDistance = 30 }
 
 -- Pro gym (opens at Growth Spurt 2). Built from code by ProGymService; every one carries its plates on a
 -- weight stack ("Bar" part, centered layout) and the lifter's hands stay free (pose follow = "None").

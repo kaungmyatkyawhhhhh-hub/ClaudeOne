@@ -593,7 +593,6 @@ function PlayerData.SetSettings(player, settings)
 		if entry.id == settings.shorts then new.shorts = entry.id end
 	end
 	if settings.pumpHintSeen == true then new.pumpHintSeen = true end -- one-way: the "Tap to pump" hint never comes back
-	if settings.lookCapHintSeen == true then new.lookCapHintSeen = true end -- one-way: the first "look capped" toast
 	data.settings = new
 	replicate(player, { "settings" }, new)
 end

@@ -112,10 +112,12 @@ end)
 -- The cat's tail wags (local, so it costs no network)
 ------------------------------------------------------------------------
 RunService.Heartbeat:Connect(function()
+	local camera = workspace.CurrentCamera
 	for _, cat in ipairs(CollectionService:GetTagged("GymCat")) do
 		local tail = cat:FindFirstChild("Tail")
 		local base = tail and tail:GetAttribute("BaseCFrame")
-		if base then
+		-- (only near the camera: nobody sees a tail wag from across the town)
+		if base and camera and (camera.CFrame.Position - base.Position).Magnitude < 60 then
 			local swing = math.sin(os.clock() * 2.2) * math.rad(18)
 			-- pivot at the tail's root (the end touching the body)
 			local root = base * CFrame.new(-tail.Size.X / 2, 0, 0)

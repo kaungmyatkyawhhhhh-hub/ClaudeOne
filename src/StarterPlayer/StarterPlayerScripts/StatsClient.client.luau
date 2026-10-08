@@ -5,9 +5,8 @@
 --    panel while you lift). It opens the full panel.
 --  * "Your muscles" panel: the Growth Spurt goal (with the Growth Spurt button when ready), then the six groups as
 --    cards: grade badge, level or Max (soft gold), genetics, each muscle with a bar and its level, "Needs work" (soft
---    red) on the weakest group when there is no tie. A muscle held back by the look balance cap (Config.LookBalance) shows
---    a small lock next to its bar and a faint segment for the held-back part; hovering / tapping it shows which partner
---    to train in the card's bottom line. It sits on top of everything, the rest of the HUD is switched off
+--    red) on the weakest group when there is no tie, and the group's exercises on its bottom line. It sits on top of
+--    everything, the rest of the HUD is switched off
 --    behind it, every card fits (the area scrolls on short screens), and it closes with the X, Esc or a tap outside.
 --  * The Growth Spurt moment (a line of text, a bell, a chalk burst) is played here too.
 local Players = game:GetService("Players")
@@ -21,7 +20,6 @@ local Muscles = require(Config.Muscles)
 local Machines = require(Config.Machines)
 local Genetics = require(Config.Genetics)
 local GrowthSpurts = require(Config.GrowthSpurts)
-local LookBalance = require(Config.LookBalance)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
@@ -153,27 +151,7 @@ local grid = New("UIGridLayout", {
 	Parent = scroll,
 })
 
-local hintRow -- (defined right below; the rows connect to it)
-local cards = {} -- [groupId] = { level, disc, grade, mult, needs, muscles = { [id] = { level, fill, held, lock, hint } }, exercises, hinting }
--- The card's bottom line: the exercises, or (hovering / tapping a capped muscle) "Look capped - train Back to unlock".
--- on = true / false (hover), nil = toggle (tap).
-local function showBottomLine(card)
-	local row = card.hinting and card.muscles[card.hinting]
-	if row and row.hint then
-		card.exercises.Text = row.hint
-		card.exercises.TextColor3 = Colors.Text
-	else
-		card.exercises.Text = card.exercisesText or ""
-		card.exercises.TextColor3 = Colors.Muted
-	end
-end
-hintRow = function(groupId: string, muscleId: string, on: boolean?)
-	local card = cards[groupId]
-	if not card then return end
-	if on == nil then on = card.hinting ~= muscleId end
-	if on then card.hinting = muscleId elseif card.hinting == muscleId then card.hinting = nil end
-	showBottomLine(card)
-end
+local cards = {} -- [groupId] = { level, disc, grade, mult, needs, muscles = { [id] = { level, fill } }, exercises }
 for index, group in ipairs(Muscles.Groups) do
 	local frame = New("Frame", { Name = group.id, LayoutOrder = index, BackgroundColor3 = Colors.Panel, BackgroundTransparency = 0.6, Parent = scroll },
 		{ Theme.Round("Panel"), Theme.Stroke(), Theme.Pad("S"), Theme.List(Vertical, "XS", Left, Top) })
@@ -192,23 +170,9 @@ local level = Theme.Text({ LayoutOrder = 3, Font = "SemiBold", TextSize = "Body"
 		local row = New("Frame", { Name = muscle.id, LayoutOrder = 2 + m, Size = UDim2.new(1, 0, 0, ROW_HEIGHT), BackgroundTransparency = 1, Parent = frame })
 		Theme.Text({ Text = muscle.name, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(0.34, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
 		local back = New("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.36, 0, 0.5, 0), Size = UDim2.new(0.12, 0, 0, 5), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = row }, { Theme.Round("Segment") })
-		-- (the held-back look: a faint segment after the solid part, shown while the look balance cap holds the muscle)
-		local held = New("Frame", { Name = "Held", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.7, Visible = false, Parent = back }, { Theme.Round("Segment") })
 		local fill = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, ZIndex = 2, Parent = back }, { Theme.Round("Segment") })
-		-- a small lock drawn from shapes: a round shackle (a stroked ring, its lower half behind the body) over a body
-		local lock = New("Frame", { Name = "Lock", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.48, 4, 0.5, 0), Size = UDim2.fromOffset(9, 11), BackgroundTransparency = 1, Visible = false, Parent = row })
-		New("Frame", { Name = "Shackle", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(6, 8), BackgroundTransparency = 1, Parent = lock },
-			{ New("UICorner", { CornerRadius = UDim.new(0.5, 0) }), New("UIStroke", { Color = Colors.Text, Thickness = 1.5 }) })
-		New("Frame", { Name = "Body", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromOffset(9, 6), BackgroundColor3 = Colors.Text, ZIndex = 2, Parent = lock },
-			{ New("UICorner", { CornerRadius = UDim.new(0, 2) }) })
 		local value = Theme.Text({ Font = "SemiBold", TextSize = "Small", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.5, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-		local entryRow = { level = value, fill = fill, held = held, lock = lock, hint = nil }
-		muscleRows[muscle.id] = entryRow
-		-- hover (PC) or tap (phones): the card's bottom line says which partner to train
-		local hit = New("TextButton", { Name = "Hit", Text = "", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, AutoButtonColor = false, ZIndex = 3, Parent = row })
-		hit.MouseEnter:Connect(function() hintRow(group.id, muscle.id, true) end)
-		hit.MouseLeave:Connect(function() hintRow(group.id, muscle.id, false) end)
-		hit.Activated:Connect(function() hintRow(group.id, muscle.id, nil) end)
+		muscleRows[muscle.id] = { level = value, fill = fill }
 	end
 	-- the machines that train this group (main muscle), e.g. "Squat Rack · Leg Press · Hack Squat"
 	local exercises = Theme.Text({ Name = "Exercises", LayoutOrder = 20, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, ROW_HEIGHT), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = frame })
@@ -251,14 +215,7 @@ local function refreshScreen()
 	-- the six cards (about 40 tweens) only need updating while the window is open; opening it refreshes everything
 	if not musclesOpen then return end
 
-	-- the look balance cap of every muscle (what the body shows vs what was trained)
-	local muscleLevels = {}
-	for _, muscle in ipairs(Muscles.List) do
-		local entry = data.muscles[muscle.id]
-		muscleLevels[muscle.id] = entry and entry.level or 0
-	end
-	local _, lookInfo = LookBalance.FromLevels(muscleLevels, math.max(GrowthSpurts.GetGoal(data.growthSpurts or 0), 1))
-
+	-- the groups' levels (the weakest gets "Needs work")
 	local levels, weakest, ties = {}, nil, 0
 	for _, group in ipairs(Muscles.Groups) do
 		levels[group.id] = math.floor(Muscles.GetGroupLevel(data.muscles, group.id))
@@ -285,18 +242,10 @@ local function refreshScreen()
 			local rowExp = Muscles.FormatExp(Muscles.MuscleExp(entry))
 			row.level.Text = rowExp
 			row.level.TextColor3 = Colors.Text
-			-- the bar: the muscle's progress; while the look balance cap holds it, the solid part is the share that shows and a
-			-- faint segment the held-back rest
-			local full = math.clamp(Muscles.ExactLevel(entry) / progress.required, 0, 1)
-			local look = lookInfo[muscle.id]
-			local solid = if look.capped and look.raw > 0 then full * look.shown / look.raw else full
-			Theme.Tween(row.fill, { Size = UDim2.fromScale(solid, 1) })
-			row.held.Visible = look.capped
-			row.held.Size = UDim2.fromScale(full, 1)
-			row.lock.Visible = look.capped
-			row.hint = if look.capped and look.rule then "Look capped - train " .. look.rule.name .. " to unlock" else nil
+			-- the bar: the muscle's progress toward the Growth Spurt goal
+			Theme.Tween(row.fill, { Size = UDim2.fromScale(math.clamp(Muscles.ExactLevel(entry) / progress.required, 0, 1), 1) })
 		end
-		showBottomLine(card)
+		card.exercises.Text = card.exercisesText or ""
 	end
 end
 

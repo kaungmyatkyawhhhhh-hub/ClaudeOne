@@ -2,41 +2,46 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## MORNING REPORT (overnight run, 8 Oct)
-Everything is in Studio and pushed; **File > Save to Roblox first** (new models, rebuilt treadmills, decor, uploaded ids).
+## LATEST (8 Oct evening): unified muscles, skin stages, performance
+Everything is in Studio and pushed; **File > Save to Roblox first.**
 
-- **Forearms + calves:** your character now uses **7 EditableMeshes (was 8)**: the front torso muscles and the snatched upper
-  torso share one mesh. (The whole UpperTorso can't be one mesh: front 9,570 + back 17,908 triangles > the 20,000 limit.)
-  **Update 8 Oct: the 28 forearm / calf stage meshes are IN (v9 clean tubes, re-imported the same day)** (`ReplicatedStorage.LimbStages`, ids in
-  `Config/LimbStages`): static MeshParts welded to LowerArm / LowerLeg, nearest stage to the shown look, 0.3 s cross-fade,
-  the plain block hidden under them, clothing, hover / flash tint, mirrors, NPCs and the statue. Import 3D turns the OBJs
-  180 degrees around Y (checked vertex by vertex): `Config/LimbStages.ImportTurn` turns them back.
-- **Fits:** 6 tops x 4 colors (black, grey, white, an accent) in the Gear and Fits store, worn from the Wardrobe, prices
-  150-400 coins in `Config/Cosmetics`. Classic Shirts drawn by `tools/clothing_templates.ps1` (`clothing_templates/`) and
-  **already uploaded** (ids in Config): nothing to do. Known issue: at mass monster size bits of skin poke through on the
-  biggest delts / biceps (`task2_fit_croppedhoodie_monster_known_issue.png`): the muscles' skin under-layer + shirt-layer trick
-  (any classic shirt). The pump cover's sleeves end near the elbow.
-- **Treadmill:** 2 working treadmills in the starter gym cardio corner (the 3rd stays decor), 4 in the pro gym: mph tiers,
-  no stamina cost, **trains stamina (not muscles)**, coins, sliding belt, run animation, saved distance, **Cardio King** at
-  10 km (`Machines.Cardio`). No uploads.
-- **Shoulders widen with muscle** (k 0.4 / 1.15 / 1.4) and **look balance cap only inside groups** (in studs) are in too.
-- **Map:** parts 20,982 before -> 21,081 after (+99 decor, nothing gameplay moved). Studio play solo on this PC (not the
-  phone emulator; I can't run it): spawn **38.1 -> 43.9 FPS**, worst frame **227 -> 28 ms**; town 51.3 -> 48.8 FPS (25 -> 24 ms).
-  Shadow-casting lights 18 -> 3 (one per room), 36 small props lost shadows / touch, 13 empty models removed, no exact
-  duplicates found. StreamingEnabled was already on. Decor (each in a `Decor` folder): starter gym lockers, rolling
-  whiteboard, sign-in clipboard; pro gym 2 wall TVs, smoothie counter, wood platform; plaza fountain
-  (`tools/builders/Decor.luau`). Beach gym already had everything on the list (tower, net, surfboards, towels, umbrellas).
-- **Couldn't do:** phone-size checks (the Studio viewport can't be resized from here), the phone emulator FPS, draw-call
-  counts (not readable from scripts), merging parts into unions (risky for parts scripts find by name), uploading meshes.
-- **TRY FIRST:** 1) the Gear and Fits store: buy a stringer and a cropped hoodie, look at them on your muscles. 2) the
-  treadmill in the starter gym cardio corner (watch the belt, check the mph tiers, Cardio King). 3) train only Upper Chest
-  or only Biceps and look at the lock + hint in the Muscles panel.
-- **Screenshots:** task1a_merged_torso_7meshes, task1b_shoulders_7ft_{level0,halfway,max,monster},
-  task1c_{upperchest_only_panel,upperchest_only_body,both_chest_maxed,biceps_only},
-  task2_fit_{gymtee,stringer,pumpcover,compression,croppedhoodie,sleevelesshoodie}_{front,back} (pump cover front only),
-  task2_fit_gymtee_level0, task2_fit_croppedhoodie_monster_known_issue, task3_treadmill_running,
-  task4_before_{startergym,progym,beachgym,plaza}, task4_after_{startergym,progym,plaza_fountain}.
-  Afternoon: limbs_{g0,half,max,monster}_{front,back}, limbs_hover_arms, midline_* (chest / abs midline checks).
+- **Unified muscles (muscle v9):** the torso and both upper arms are ONE welded mesh each (the old torso / arm shells and the
+  DeltCap balls are gone); every muscle moves its own vertices, so any mix (one muscle maxed, the rest 0) has no holes or
+  cracks. The torso (39,600 triangles) is split into front / back halves (20,000 per mesh limit) that always update in the
+  same frame; its open top is closed by a low dome under the upper traps. Highlight and rep flash tint by each muscle's weight.
+- **Look balance cap removed** (Config/LookBalance, Config/MuscleBulge, the lock / held-back bar / hint / toast,
+  tests/lookbalance, settings.lookCapHintSeen): each muscle shows its own look.
+- **Skin stages:** all 15 images found in the group "Myanmar Builders Club" (ids in `Config/SkinStages`); the place IS owned
+  by that group (id 33151111), so they load. `ReplicatedStorage.SkinStages` Stage1..5 (`tools/builders/SkinStages`). Stage by
+  the overall look: 0 -> 1, half -> 2, full -> 3, mass monster -> 4 -> 5, swapping at the midpoint (preloaded, no white flash).
+- **Forearms / calves stay the static stage meshes:** the freed slots were not enough. A play client holds at most 8
+  EditableMeshes, and your body now uses exactly 8 (torso front + back, 2 upper arms, 2 upper legs, waist, upper traps).
+- **Other players, NPCs, the statue: no mesh muscles** (they got none before either once the 8 were used: the budget is per
+  client, and a MeshPart made from an EditableMesh goes blank when that mesh is freed, so they can't be "baked"). They wear
+  the skin stage and the limb stages. The statue is marble (no skin stage).
+- **Performance** (Studio play solo on your PC; Studio caps at 60 FPS and drops to 15 FPS whenever its window isn't in front,
+  so judge FPS with Studio in front; "Lua" = all client script time per frame, the Studio Tag Editor plugin included):
+
+  | Where | Before (old build) | v9 before fixes | After |
+  |---|---|---|---|
+  | Spawn | 60 fps, Lua ~2.3 ms | | 60 fps (p95 18 ms), Lua 2.2 ms |
+  | Starter gym | 60 fps, Lua 2.3 ms | Lua 3.3 ms | 60 fps (p95 17.8 ms), Lua 2.0 ms |
+  | Town plaza / street | 60 fps | | 60 fps (p95 17.8 ms), Lua 1.5-1.9 ms |
+  | Pro gym | 60 fps | | 60 fps, game scripts ~1.6 ms |
+  | **Reps on the bench** | | **22 fps, 100 ms spikes every rep** | **60 fps, worst frame 26 ms, 0 spikes** |
+  | Near the gym door (mirror) | 22 fps | | 60 fps |
+
+  The big one: **every change to an EditableMesh costs the engine ~40-60 ms of a frame**, whatever its size (measured with a
+  2,000 triangle test mesh). Fixes: the rep flash / hover highlight write a color mask ONCE and fade with a part's
+  Transparency; no per-rep mesh pump; looks move in 0.015 steps; one body region writes per frame; idle bodies don't touch
+  their meshes; body parts under muscle meshes don't pump by Size; Box collision on the mesh parts; other lifters animate only
+  near and on screen and move their bar + plates in one BulkMoveTo; the cat's tail only within 60 studs; the mirror only
+  while on screen. World: CanTouch off on 380 static parts, CastShadow off on 236 small ones; 3 shadow-casting lights; no
+  depth of field; StreamingEnabled on; nothing unanchored. No memory leak (90 s in the gym: instances and memory flat).
+  Not measured: the phone emulator FPS (can't drive it from here).
+- **Screenshots** (`screenshots/`): v9_max_{front,back,back_high}, v9_monster_{front,back}, v9_single_<muscle> (13),
+  v9_neck_closeup, v9_hover_highlight_{chest,shoulders}, v9_rep_flash_mask, skin_{gym,outdoors}_{level0,half,max,monster}.
+- **TRY FIRST:** bench a few sets (smooth now?), hover the stat labels (red tint), look at the skin up close at your level.
 
 ## Workflow (no Rojo)
 - **Roblox Studio is the source of truth** (edit through the MCP connection); GitHub is a backup. Scripts are synced between
@@ -45,7 +50,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - World areas are built once from recipes in `tools/builders` (see `tools/bake.md`), then edited as normal parts.
 
 ## First thing to do
-1. **File > Save to Roblox** (the muscle v8 data/scripts, poses, EXP, UI v7, skate and many fixes live only in the open place until saved).
+1. **File > Save to Roblox** (the muscle v9 data/scripts, skin stages and the performance fixes live only in the open place until saved).
 2. Look at the new things yourself: skateboard, poses on the posing stage, the tiles/pills, EXP numbers, the red stat highlight and the rep flash.
 
 ## What exists (all built and tested in Studio unless noted)
@@ -56,16 +61,14 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   posing stage, shops), day lighting with night lamps, 14 NPC regulars (they walk, lift, strike poses).
 - **EXP:** every number shown is EXP (total xp earned x `Muscles.ExpPerXp`); the first Growth Spurt needs exactly 50,000 per
   group. Levels still exist inside (saves/caps/machines). `tests/exp` checks it.
-- **Muscles (v8):** real EditableMesh muscles that grow from the skin, wear the character's own Shirt/Pants, snatched-waist
-  torso for everyone, red tint when hovered in Stats (a steady ~40% blend that keeps the shading; hover keeps 0.12 s of grace and a hovered
-  label stays put, so it never flickers) and a warm 35% flash on each rep (only muscles facing the camera, soft 4-row edge, clothing 15%, the torso under a muscle tints with it so it works at level 0; `MuscleRig.SetHighlight` / `MuscleRig.Flash`). No z-fighting: the torso sits 0.05 under the shells (each push grows with the muscle it is for), the torso and the muscles that ride its waist morph (muscle_v8 morph_off) update in the same frame, barely-grown shells sink 0.3 under it, each muscle's skin edge snaps onto the torso (`MuscleMeshes.EdgeSnap`), and a seam snaps too while its neighbour is flat. Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
-  -> `ReplicatedStorage/MuscleData` -> `Shared/MuscleMeshes` -> `Shared/MuscleRig` -> `MuscleClient`. Keep `muscle_v8/`
-  unzipped before running the generator (it empties MuscleData first).
-- **Muscle v8-1 (7 Oct, "smooth, no seams" + spikes fix v2 + more definition):** border vertices grow with the average g of
-  every muscle that shares them (`share`), normals come from the data (`nbase`/`nmax`, also the snatched torso's OBJ normals),
-  muscles at 0 lie flat on the skin (no more tucking inside). New mesh Hamstrings_Shorts (UpperLegs unit). Muscle parts are
-  SmoothPlastic (Plastic's grain followed the clothing UVs as a speckle) and sit 0.02 studs off the skin (`SKIN_LIFT`).
-  Veins (`vein`) are wired at 0.4 while PUMPED at max; the full mass monster stage is still not built.
+- **Muscles (v9 unified, 8 Oct):** real EditableMesh muscles on your own character: unified torso (front + back halves) and
+  upper arms, shell meshes for the upper traps and legs, the snatched waist, static stage meshes for forearms / calves
+  (`Shared/LimbStages`). They wear the character's own Shirt/Pants and the skin stage (`Config/SkinStages`); under a
+  SurfaceAppearance vertex colors don't show, so tints and the thighs' gym shorts live on a thin color layer part over each
+  skinned mesh. Red tint when hovered in Stats, warm flash on each rep (only muscles facing the camera; `MuscleRig.SetHighlight`
+  / `MuscleRig.Flash`). Pipeline: `muscle_v8/` (the unzipped muscle_v9_unified package, local, git-ignored) ->
+  `tools/gen_muscle_data` (also caps the open tops) -> `ReplicatedStorage/MuscleData` -> `Shared/MuscleMeshes` ->
+  `Shared/MuscleRig` -> `MuscleClient`. Keep `muscle_v8/` unzipped before running the generator (it empties MuscleData first).
 - **Obliques/serratus (7 Oct):** the serratus slips are part of the Obliques mesh (`muscle_v8/source/parts.py`), driven
   by the Obliques stat. The Crunch Bench now trains Obliques too (secondary, share 0.6), so they grow from the start
   (they count in the first Growth Spurt's Core goal; pacing still passes); Cable Woodchop (pro gym) trains them as main.
@@ -96,18 +99,10 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   through on overhanging delts / biceps (the inner-part + cloth-part trick, any classic shirt).
 - **Shoulders widen with muscle (8 Oct):** tall skinny players start with narrow shoulders (k 0.4 -> 1.15 -> 1.4), the frame
   on top, always wider than the hips (`Body.Widths.ShouldersOverHips`).
-- **Look balance cap (8 Oct, reworked overnight):** only inside each group, in bulge studs (`Config/LookBalance` MaxGap 0.15 /
-  MaxRatio 1.5, `Config/MuscleBulge` generated by `tools/gen_muscle_data`); applied in `BodyService.EncodeLevels` /
-  `WidthFactors` and `MuscleClient`; lock + held-back bar + hint, one-time toast (`settings.lookCapHintSeen`, > 0.05 studs),
-  rep flash when a cap lifts. `tests/lookbalance`. My addition: never below the groupmate's own look level, because muscles
-  differ in natural size (Lats 0.42 studs vs Lower Back 0.12 at full look) and the pure stud rule would hold a balanced back
-  at ~65% forever.
-
 - **Golden ratio body (8 Oct):** longer legs, shorter torso, same height, on players, NPCs, mirror rigs and the statue
   (`BodyShape.ApplyProportions`, re-applied after every rescale).
-- **Muscle data v8 final (8 Oct):** MuscleData regenerated from the latest `muscle_v8` (37 meshes): border "blend" weights
-  (the old "share" averaging is gone), DeltCap shoulder balls (in the UpperArms meshes), the waist morph (start -> snatched),
-  the aesthetic max data, per-mesh mass monster sizes and Growth Spurt widths (tall skinny players start with narrow hips that
+- **Muscle data (8 Oct):** the waist morph (start -> snatched), the aesthetic max data, per-mesh mass monster sizes and Growth
+  Spurt widths (tall skinny players start with narrow hips that
   widen with muscle) (`BodyService.WidthFactors`,
   `BodyShape.ApplyWidths`; attributes FrameWidth / WaistWidth drive the torso taper). Studio hook `TestMachine` = a
   machine name puts you on it. Open: at mass monster the traps and triceps grow pointed tips (the manifest sizes 2.6 / 2.1
@@ -134,11 +129,11 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   every frame (a mesh part's Size never reads back equal), which re-processed the meshes: 22 FPS near the door -> 60 FPS.
 
 ## Limits (found in Studio, not fixable here)
-- A client can hold only **8 live EditableMeshes** (in Studio the 8th already fails with "memory budget"). Since 8 Oct your
-  character uses **7** (was 8): torso front + snatched upper torso in ONE mesh, torso back, LowerTorso, upper arms 2, upper
-  legs 2. Merging the whole UpperTorso into one mesh is impossible: front muscles 9,570 + back 17,908 triangles > the 20,000
-  per-mesh limit. Forearms and calves move to STATIC stage meshes (`Shared/LimbStages`, `Config/LimbStages`): no EditableMesh
-  at all, on every character, NPCs and the statue too (the 28 templates are in `ReplicatedStorage.LimbStages`).
+- A client can hold only **8 live EditableMeshes** (even empty ones; in Edit mode 40+ fit), and your character uses all 8.
+  A MeshPart made from an EditableMesh shows nothing once that EditableMesh is destroyed (no baking), so other characters
+  get no mesh muscles. The whole UpperTorso can't be one mesh: 39,600 triangles > the 20,000 per-mesh limit (front / back).
+- **Every EditableMesh change costs ~40-60 ms of engine time** (positions or colors, any amount, measured 8 Oct). Changing a
+  mesh part's Size every frame is also expensive (frame p50 57 ms); its Transparency or Color is cheap.
 - A script can't upload meshes yet ("CreateAssetAsync ... not available yet"), so the stage meshes must be imported by hand.
 - A game script can't set a SurfaceAppearance image, and other people's clothing images can't be read into an EditableImage,
   so muscles wear clothing through a second textured part at 2% transparency. T-shirt graphics don't show on the snatched torso.
@@ -146,7 +141,6 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   time slice (`BUILD_MS`); NPCs/statue only get meshes once your own muscles are built (`MuscleClient` `OTHERS_WAIT`). Your
   muscles finish ~1-1.5s after the body swap (was ~4-5s). The progress mirror's "Now" body shows copies of your LIVE muscle
   meshes (a new rig there took your character's 8 meshes and your muscles vanished).
-- Not built: rock "mass monster" skin (can't trigger: levels never pass the goal; textures would need uploading).
 
 ## Waiting on you
 - **Sound ids** (you pick them; all in `Config/Sounds.luau`). Placeholders reusing other clips: `CrowdOoh`, `PumpFull`, `BigRep`,
@@ -171,8 +165,11 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - Part count: town ~16,100, gyms ~3,500; StreamingEnabled is on. If phones struggle: MeshPart templates for windows/trees.
 - Cosmetic headbands can hide under big hair; ProximityPrompts only show when their part is on screen.
 - Rep and set popups are big numbers now (about 3,000+ EXP at the start): easy to scale in `Muscles.ExpPerXp` if too loud.
-- Traps: their outer edge reaches over the shoulder and can show as a thin shelf above the delt from low angles (in the muscle_v8 mesh, was there before the z-fight fix). Back at max: small skin gaps between lats / lower back / traps with stepped seams.
+- Traps: their outer edge reaches over the shoulder and can show as a thin shelf above the delt from low angles (the upper traps mesh).
 - The rep flash (warm white-orange) is hard to see on light skin under bright lights; it is clear on darker skin.
+- v9: on the rock skin stages a zigzag shows along the upper arm's UV seam; the traps' outline edges are faintly visible
+  from some angles. The rep flash no longer has its 2% mesh pump (cost a ~50 ms frame on every rep).
+- Fits: at mass monster size bits of skin poke through on the biggest delts / biceps (the shirt-layer trick, any classic shirt).
 - Forearm / calf stages (v9): a slightly darker band at the top of each tube where it meets the upper arm / thigh, and the
   hover / flash tints the whole stage evenly (one MeshPart color, no soft edge).
 
@@ -186,7 +183,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - **No cap on stats** (owner's call): muscles keep growing past the Growth Spurt goal (`GrowthSpurts.GetLevelCap` is infinite); the diminishing factor is the only brake. "Defied Genetics" uses a 130% mark (`GetMasteryLevel`). Side effect: one strong muscle can lift its group's average, so a group can reach the goal with one muscle far ahead. XP per level = `20 + 2 x level`, BaseXp 34.
 - **Group stats are sums, the look has room to grow** (owner's call, 7 Oct): a group's EXP = its muscles added up (goal shown
   as the same sum; quests/titles say "every muscle"); the look is full at 2x the goal's EXP and mass monster at 5x
-  (`Muscles.Look`). The rock skin of the mass monster is still not built (textures would need uploading).
+  (`Muscles.Look`). The mass monster gets the rock skin stages 4-5 (`Config/SkinStages`).
 - NEW PR banner stays (small banner, not a window) although the design file lists PR popups as cut.
 - Beach gym machines are Growth Spurt 1; racks/benches/pull-up bars there are normal starter machines.
 - Phones/tablets are locked to landscape. "Phone" = touch without a keyboard (Studio: Workspace attribute `TestPhoneLayout`).

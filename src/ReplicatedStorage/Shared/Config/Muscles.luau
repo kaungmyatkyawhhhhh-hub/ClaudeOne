@@ -151,8 +151,8 @@ Muscles.Look = {
 	MonsterAt = 5,
 	Ease = 1.6,
 	DefaultMonsterG = 1.35,
-	-- muscle_v8 manifest mass_monster.g (the aesthetic max update raised them so the monster stays bulky); the meshes that
-	-- grow with another muscle (DeltCap with Side Delts, UpperTraps with Traps) have their own size in MuscleData.Index
+	-- the muscle package's manifest mass_monster.g (the aesthetic max update raised them so the monster stays bulky); the
+	-- upper traps mesh (grows with Traps) has its own size in MuscleData.Index
 	MonsterG = {
 		UpperChest = 1.522, MidChest = 1.522, FrontDelts = 1.526, SideDelts = 1.5, RearDelts = 1.45, Lats = 1.318,
 		Traps = 2.625, Rhomboids = 1.7, LowerBack = 1.647, Biceps = 2.083, Triceps = 2.083, Forearms = 2, Quads = 2.132,
@@ -166,6 +166,14 @@ function Muscles.MonsterG(muscleId: string): number
 end
 
 -- g for a muscle at `level` while the Growth Spurt goal is `goalLevel`
+-- Every muscle's look from saved levels ({ [muscleId] = level }): each muscle its own Muscles.LookG, nothing else
+-- (the look balance cap is gone, 8 Oct: the unified muscle meshes have no holes at uneven levels).
+function Muscles.LooksFromLevels(levels: { [string]: number }, goalLevel: number): { [string]: number }
+	local looks = {}
+	for _, muscle in ipairs(Muscles.List) do looks[muscle.id] = Muscles.LookG(muscle.id, levels[muscle.id] or 0, goalLevel) end
+	return looks
+end
+
 function Muscles.LookG(muscleId: string, level: number, goalLevel: number): number
 	local look = Muscles.Look
 	local r = Muscles.CumXp(math.max(level, 0)) / math.max(Muscles.CumXp(math.max(goalLevel, 1)), 1)

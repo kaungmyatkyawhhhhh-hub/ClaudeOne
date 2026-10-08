@@ -123,7 +123,7 @@ end
 --   travel[model] = { low = CFrame, high = CFrame }: the lowest and highest the bar has been while someone lifts on it
 --     (the gain popup keeps clear of the whole path, not just where the bar is at lockout)
 --   near(position, distance): is it close enough to the camera to animate? (client performance, Machines.ClientCull)
-local bars = { moving = {}, travel = {}, T = setmetatable({}, { __mode = "k" }), restSize = {} }
+local bars = { moving = {}, travel = {}, placed = {}, T = setmetatable({}, { __mode = "k" }), restSize = {} }
 -- A joint's two frames (C0 on Part0, C1 on Part1), for Motor6Ds and for AnimationConstraints (newer rigs: their two
 -- attachments); both move Part1 to Part0 * C0 * Transform * C1:Inverse().
 function bars.c0(joint): CFrame
@@ -138,12 +138,37 @@ function bars.near(position: Vector3, distance: number): boolean
 	local camera = workspace.CurrentCamera
 	return camera ~= nil and (camera.CFrame.Position - position).Magnitude <= distance
 end
+-- true when a point (with `margin` studs around it) is in front of the camera and inside the screen (a little beyond its
+-- edges, so a lifter walking into view is already animated)
+function bars.onScreen(position: Vector3, margin: number): boolean
+	local camera = workspace.CurrentCamera
+	if not camera then return true end
+	local toPoint = position - camera.CFrame.Position
+	if toPoint.Magnitude <= margin then return true end
+	if toPoint:Dot(camera.CFrame.LookVector) < -margin then return false end
+	local point = camera:WorldToViewportPoint(position)
+	local size = camera.ViewportSize
+	local slack = math.max(size.X, size.Y) * 0.25
+	return point.X > -slack and point.X < size.X + slack and point.Y > -slack and point.Y < size.Y + slack
+end
+
+-- true when a body part has muscle meshes standing in for it (MuscleRig: "<part>Muscles..." in the MuscleMeshes folder): its
+-- own size must not pump (it is hidden or covered, and every size change makes the muscle meshes re-process: 20+ ms a frame
+-- while lifting, measured 8 Oct); the meshes pump themselves (the rep flash's pulse)
+function bars.hasMuscleMesh(character, partName: string): boolean
+	local folder = character:FindFirstChild("MuscleMeshes")
+	if not folder then return false end
+	for _, child in ipairs(folder:GetChildren()) do
+		if child:IsA("MeshPart") and string.sub(child.Name, 1, #partName) == partName and not string.find(child.Name, "Stage$") then return true end
+	end
+	return false
+end
 
 -- every part of the plates (plate models, sleeves) rides with the bar
 local function trackPlate(model, plate)
 	if plate:IsA("BasePart") and barRest[model] then
 		plateOffsets[plate] = barRest[model]:ToObjectSpace(plate.CFrame)
-		bars.moving[model] = nil
+		bars.moving[model], bars.placed[model] = nil, nil
 	end
 end
 
@@ -152,8 +177,11 @@ local function loadPart(model)
 	return model:FindFirstChild(machine and machine.load or "Bar")
 end
 
+-- (the bar and its plates move in one BulkMoveTo call, and not at all when the bar hasn't moved: a plate is ~10 parts)
 local function placeBar(model, cframe)
-	loadPart(model).CFrame = cframe
+	if bars.placed[model] == cframe then return end
+	bars.placed[model] = cframe
+	local bar = loadPart(model)
 	local travel = bars.travel[model]
 	if not travel then
 		bars.travel[model] = { low = cframe, high = cframe }
@@ -176,10 +204,15 @@ local function placeBar(model, cframe)
 		end
 		bars.moving[model] = parts
 	end
+	local list, cframes = { bar }, { cframe }
 	for _, part in ipairs(parts) do
 		local offset = plateOffsets[part]
-		if offset and part.Parent then part.CFrame = cframe * offset end
+		if offset and part.Parent then
+			table.insert(list, part)
+			table.insert(cframes, cframe * offset)
+		end
 	end
+	workspace:BulkMoveTo(list, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 end
 
 -- Weight stack machines (pro gym): the selected blocks (1..StackCount, top down) and the pin rise with each rep.
@@ -202,13 +235,19 @@ local function placeStack(model, depth)
 		stackRest[model] = rest
 	end
 	local count = model:GetAttribute("StackCount") or 1
+	local key = count + depth * 0.001
+	if bars.placed[model] == key then return end
+	bars.placed[model] = key
 	local lift = Vector3.new(0, 1.6 * (1 - depth), 0)
+	local list, cframes = {}, {}
 	for part, cframe in pairs(rest) do
 		local block = part.Parent and part.Parent.Name:match("^StackBlock(%d+)$") and part.Parent or part
 		local index = tonumber(block.Name:match("^StackBlock(%d+)$") or "0")
 		local lifted = part.Name == "TopPlate" or (index >= 1 and index <= count)
-		part.CFrame = lifted and (cframe + lift) or cframe
+		table.insert(list, part)
+		table.insert(cframes, lifted and (cframe + lift) or cframe)
 	end
+	workspace:BulkMoveTo(list, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 end
 
 -- Who is on a machine: a player (UserId attribute) or an NPC gym-goer ("Occupant" ObjectValue).
@@ -991,12 +1030,12 @@ local pumped = {} -- [part] = { base, amount, bounce, last }
 local function pump(character, machine)
 	if machine.trains == "Stamina" then return end -- (cardio trains stamina, not a muscle)
 	local root = character:FindFirstChild("HumanoidRootPart")
-	if character ~= player.Character and not (root and bars.near(root.Position, Machines.ClientCull.PumpDistance)) then return end
+	if character ~= player.Character and not (root and bars.near(root.Position, Machines.ClientCull.PumpDistance) and bars.onScreen(root.Position, 4)) then return end
 	for index, entry in ipairs(machine.muscles) do
 		local amount = FEEL.PumpPerRep * (index == 1 and 1 or 0.5)
 		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
 			local part = character:FindFirstChild(partName)
-			if part then
+			if part and not bars.hasMuscleMesh(character, partName) then
 				local state = pumped[part] or { base = part:GetAttribute("BaseSize") or part.Size, amount = 0, bounce = 0 }
 				state.amount = math.min(state.amount + amount, FEEL.PumpMax)
 				state.bounce = FEEL.PumpBounce
@@ -1013,7 +1052,7 @@ local function pumpBurst(character, machine)
 	for _, entry in ipairs(machine.muscles) do
 		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
 			local part = character:FindFirstChild(partName)
-			if part then
+			if part and not bars.hasMuscleMesh(character, partName) then
 				local state = pumped[part] or { base = part:GetAttribute("BaseSize") or part.Size, amount = 0, bounce = 0 }
 				state.amount = FEEL.PumpMax
 				state.bounce = FEEL.PumpBounce * 3
@@ -2112,9 +2151,10 @@ RunService.Stepped:Connect(function()
 	local now = os.clock()
 	for model in pairs(barRest) do
 		local character = userCharacter(model)
-		-- someone else's lift far from the camera: not animated (the bar waits on the rack), so a busy gym costs nothing
+		-- someone else's lift far from the camera or off the screen: not animated (the bar waits on the rack), so a busy gym
+		-- costs nothing
 		if character and character ~= player.Character
-			and not bars.near(barRest[model].Position, Machines.ClientCull.AnimateDistance) then
+			and not (bars.near(barRest[model].Position, Machines.ClientCull.AnimateDistance) and bars.onScreen(barRest[model].Position, 6)) then
 			character = nil
 			repState[model] = nil
 		end
@@ -2184,7 +2224,7 @@ local function setupMachine(model)
 	plates.DescendantAdded:Connect(function(plate) trackPlate(model, plate) end)
 	plates.DescendantRemoving:Connect(function(plate)
 		plateOffsets[plate] = nil
-		bars.moving[model] = nil
+		bars.moving[model], bars.placed[model] = nil, nil
 	end)
 	model:GetAttributeChangedSignal("Reps"):Connect(function()
 		-- our own reps start instantly on tap; other lifters start when the server counts them

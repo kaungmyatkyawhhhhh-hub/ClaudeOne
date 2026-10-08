@@ -2,13 +2,11 @@
 -- character's own Shirt / Pants (re-read every scan, so a wardrobe change or respawn shows at once) and everyone gets the
 -- snatched-waist torso.
 --  * Players: the growth numbers come from the player attribute MuscleG (BodyService publishes Muscles.LookG for the 18
---    muscles, held by the look balance cap); for YOUR character they come straight from ClientData (the same capped
---    numbers, Config.LookBalance), so a level-up shows at once. The first time one of your muscles is capped a toast says
---    which partner to train (once per player); when a cap lifts and the look jumps up, that muscle gets the rep flash. PUMPED comes from the
---    PumpedUntil attribute. Top / Shorts / SkinColor attributes give the look.
+--    muscles); for YOUR character they come straight from ClientData (the same numbers, Muscles.LooksFromLevels), so a
+--    level-up shows at once. PUMPED comes from the PumpedUntil attribute. Top / Shorts / SkinColor attributes give the look.
 --  * NPCs (Workspace.NPCs) and the statue carry the same attribute (a preset share), so everyone shows muscles.
---  * Muscles are only built for characters within ~100 studs of the camera and are removed beyond ~140, so a crowded server
---    stays smooth. A muscle is only built once it has growth (level 0 = the plain Robloxian 2.0 body).
+--  * Muscles are only built for characters within ~80 studs of the camera and are removed beyond ~100, so a crowded server
+--    stays smooth (only your own character keeps live meshes: MuscleRig bakes everyone else's). A muscle is only built once it has growth (level 0 = the plain Robloxian 2.0 body).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,15 +16,11 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local MuscleRig = require(Shared.MuscleRig)
 local Muscles = require(Shared.Config.Muscles)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
-local LookBalance = require(Shared.Config.LookBalance)
 local ClientData = require(Shared.ClientData)
-local Notify = require(Shared.UI.Notify)
-local UIBus = require(Shared.UI.UIBus)
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
 
-local RANGE, DROP = 100, 140
+local RANGE, DROP = 80, 100
 local SCAN_EVERY = 0.5
 -- the client holds only a few muscle meshes: other characters wait until my own muscles are built (or this long), so NPCs
 -- never grab the meshes first and make mine wait for them to be taken back
@@ -44,50 +38,7 @@ local function myTargets()
 		local entry = data.muscles[muscle.id]
 		levels[muscle.id] = entry and entry.level or 0
 	end
-	local targets, info = LookBalance.FromLevels(levels, goal)
-	return targets, data, info
-end
-
--- The look balance cap, for my own muscles: the first cap ever gets one toast; a muscle whose cap lifts (its look jumps up
--- while it was held) gets the rep flash.
-local heldAt = {}    -- [muscleId] = the look it was held at
-local toastShown = false
-local function capName(id: string, rule: any): string
-	-- the muscle's group ("Chest"), or the muscle itself when the partners are in the same group ("Upper Chest")
-	local group = Muscles.ById[id].group
-	local same = true
-	for _, partner in ipairs(rule.partners) do
-		if Muscles.ById[partner].group ~= group then same = false end
-	end
-	return if same then Muscles.ById[id].name else Muscles.GroupById[group].name
-end
-local function checkCaps()
-	local targets, data, info = myTargets()
-	if not targets or not info then return end
-	local lifted, worst, worstBy = {}, nil, 0
-	for _, muscle in ipairs(Muscles.List) do
-		local id = muscle.id
-		local held = heldAt[id]
-		if held and targets[id] > held + 0.03 then lifted[id] = 1 end
-		heldAt[id] = if info[id].capped then targets[id] else nil
-		local by = info[id].held -- (studs held back)
-		if by > LookBalance.ToastStuds and by > worstBy then worst, worstBy = id, by end
-	end
-	local settings = data.settings or {}
-	if next(lifted) and settings.repFlash ~= "Off" and player.Character then MuscleRig.Flash(player.Character, lifted, false) end
-	if worst and not toastShown and not settings.lookCapHintSeen then
-		toastShown = true
-		local rule = info[worst].rule
-		local message = string.format("Your %s is ahead of your %s. Train %s to keep growing your look.", capName(worst, rule), rule.name, rule.name)
-		-- (after the menu: at join it would show behind it; the genetics screen holds toasts on its own)
-		task.spawn(function()
-			task.wait(1)
-			UIBus.WaitForMenu()
-			task.wait(1.5)
-			Notify.Show(message, nil, "lookCap")
-		end)
-		Remotes.PlayerAction:FireServer("SetSettings", { lookCapHintSeen = true })
-	end
+	return Muscles.LooksFromLevels(levels, goal), data
 end
 
 local function isStatic(model: Model): boolean
@@ -244,7 +195,6 @@ end
 
 task.spawn(function()
 	ClientData.Get()
-	checkCaps() -- (a muscle already capped when you join)
 	while true do
 		-- (one bad model must not stop the muscles for the rest of the session)
 		local ok, err = pcall(scan)
@@ -263,5 +213,4 @@ ClientData.Changed:Connect(function(path)
 		mine.rig:SetGrowth(targetsFor(player, true))
 	end
 	pulseMine()
-	checkCaps()
 end)

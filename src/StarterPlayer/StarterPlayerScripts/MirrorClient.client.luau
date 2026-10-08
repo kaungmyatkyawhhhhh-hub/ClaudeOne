@@ -437,6 +437,8 @@ local function startReflection(mirrorModel, glass)
 							part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
 							part.Color, part.Material, part.Size = source.Color, source.Material, source.Size
 							part.TextureID, part.Transparency = source.TextureID, source.Transparency
+							local skin = source:FindFirstChild("SkinStage") -- (the skin texture stage, Config.SkinStages)
+							if skin then skin:Clone().Parent = part end
 							part.Parent = copyFolder
 							table.insert(pairsList, { source, part })
 						end
@@ -461,6 +463,18 @@ local function startReflection(mirrorModel, glass)
 		local eye = workspace.CurrentCamera.CFrame.Position
 		local distance = (eye - planePoint):Dot(normal)
 		local near = root ~= nil and (root.Position - glass.Position).Magnitude < REFLECT_RANGE and distance > 0.2
+		-- (and only while the glass is on the screen: a reflection nobody looks at costs nothing)
+		if near then
+			local _, visible = workspace.CurrentCamera:WorldToViewportPoint(glass.Position)
+			local corners = false
+			for _, sx in ipairs({ -1, 1 }) do
+				for _, sy in ipairs({ -1, 1 }) do
+					local _, on = workspace.CurrentCamera:WorldToViewportPoint(glass.Position + right * glass.Size.X / 2 * sx + up * glass.Size.Y / 2 * sy)
+					corners = corners or on
+				end
+			end
+			near = visible or corners
+		end
 		if near ~= active then
 			active = near
 			surface.Enabled = near

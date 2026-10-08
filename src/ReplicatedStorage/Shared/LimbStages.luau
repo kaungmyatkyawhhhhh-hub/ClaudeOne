@@ -1,6 +1,6 @@
 -- LimbStages: Forearms and Calves on one character as STATIC stage meshes (client side, used by MuscleRig).
--- Each limb mesh (Config.LimbStages) has 7 stages by look g; the stage nearest to the muscle's displayed look (after the look
--- balance cap) is a MeshPart welded to its LowerArm / LowerLeg, and a stage change cross-fades the two over FadeTime. The
+-- Each limb mesh (Config.LimbStages) has 7 stages by look g; the stage nearest to the muscle's displayed look is a MeshPart
+-- welded to its LowerArm / LowerLeg, and a stage change cross-fades the two over FadeTime. The
 -- parts are clones of the templates in ReplicatedStorage.LimbStages (made once in Studio by tools/limb_stages_setup.luau
 -- from the uploaded meshes). They are ordinary MeshParts: no EditableMesh, no limit, so every character can have them.
 --   * size and weld follow the body part's size (golden ratio, Growth Spurts, widths): scale = body.Size / reference size;
