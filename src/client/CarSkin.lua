@@ -8,9 +8,16 @@
 	spin).
 
 	Meshes are generated once per car design and cloned, so a city of traffic
-	costs 12 designs. Traffic uses the lighter "lite" versions. If the engine
-	refuses runtime meshes (the place hasn't allowed Mesh APIs) apply()
-	returns false and the cars keep their part bodies.
+	costs one set per design. Traffic uses the lighter "lite" versions.
+
+	Imported models: if ReplicatedStorage has a "CarModels" folder holding a
+	model named after a car id (made by tools/make_glb.py and brought in with
+	Studio's 3D Importer), that car uses those MeshParts instead of runtime
+	meshes. The "Mark_*" parts in it give the car's frame and scale, so it
+	doesn't matter where the importer put it. Player cars, the garage and the
+	cutscene prefer imported models; traffic keeps the cheap runtime "lite"
+	meshes and falls back to the imported ones when runtime meshes are not
+	allowed. With neither, apply() returns false and the part bodies stay.
 ]]
 
 local AssetService = game:GetService("AssetService")
@@ -23,7 +30,8 @@ local Cars = require(Shared:WaitForChild("Cars"))
 
 local CarSkin = {}
 
-type Template = { part: MeshPart, center: Vector3 }
+type Template = { part: MeshPart, offset: CFrame }
+type Imported = { body: { [string]: Template }, wheel: { [string]: Template }, plate: CFrame?, exhausts: { Vector3 } }
 type Look = { material: Enum.Material, color: Color3?, reflectance: number, transparency: number, shadow: boolean }
 
 local TRIM = Color3.fromRGB(16, 16, 18)
@@ -45,6 +53,7 @@ local LOOKS: { [string]: Look } = {
 
 local bodyCache: { [string]: { [string]: Template } | false } = {}
 local bodyMeta: { [string]: { [string]: any } } = {}
+local importCache: { [string]: Imported | false } = {}
 local wheelCache: { [string]: { [string]: Template } | false } = {}
 local keepAlive: { any } = {} -- EditableMeshes must stay alive while their MeshParts render
 local warned = false
@@ -78,13 +87,13 @@ local function build(layer: CarMesh.Layer): Template
 	part.CanTouch = false
 	part.Massless = true
 	table.insert(keepAlive, em)
-	return { part = part, center = center }
+	return { part = part, offset = CFrame.new(center) }
 end
 
 local function fail(err: any)
 	if not warned then
 		warned = true
-		warn("[CityLegends] Smooth car bodies unavailable, using part bodies instead:", err)
+		warn("[CityLegends] Runtime car meshes unavailable (allow Mesh / Image APIs, or import CarModels):", err)
 	end
 end
 
@@ -134,6 +143,89 @@ local function wheelFor(style: string, R: number, width: number, rimFrac: number
 	return nil
 end
 
+-- Imported model for a car (see header), read once
+local MARK_REF = 4 -- Mark_RefX / Mark_RefZ sit this many studs from Mark_Origin
+local function readImported(src: Instance): Imported
+	local function mark(name: string): Vector3?
+		local m = src:FindFirstChild(name, true)
+		return if m and m:IsA("BasePart") then m.Position else nil
+	end
+	local o, rx, rz = mark("Mark_Origin"), mark("Mark_RefX"), mark("Mark_RefZ")
+	if not (o and rx and rz) then
+		error("missing Mark_Origin / Mark_RefX / Mark_RefZ")
+	end
+	local ex, ez = rx - o, rz - o
+	local scale = MARK_REF / ex.Magnitude
+	local frame = CFrame.fromMatrix(o, ex.Unit, ez.Unit:Cross(ex.Unit), ez.Unit)
+	local function local_(p: Vector3): Vector3
+		return frame:PointToObjectSpace(p) * scale
+	end
+	local hubW = mark("Mark_Hub")
+	local hub = if hubW then local_(hubW) else Vector3.zero
+	local out: Imported = { body = {}, wheel = {}, exhausts = {} }
+	for _, d in src:GetDescendants() do
+		if not d:IsA("MeshPart") or d.Name:sub(1, 5) == "Mark_" then
+			continue
+		end
+		local rel = frame:ToObjectSpace(d.CFrame)
+		local isWheel = d.Name:sub(1, 5) == "Wheel"
+		local part = d:Clone()
+		part:ClearAllChildren() -- importer SurfaceAppearances etc.; LOOKS styles the parts
+		part.Size = d.Size * scale
+		part.Anchored = false
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Massless = true
+		part.RenderFidelity = Enum.RenderFidelity.Automatic
+		local pos = rel.Position * scale - (if isWheel then hub else Vector3.zero)
+		local t = { part = part, offset = CFrame.new(pos) * rel.Rotation }
+		if isWheel then
+			out.wheel[d.Name:sub(6)] = t
+		else
+			out.body[d.Name] = t
+		end
+	end
+	local plate = mark("Mark_Plate")
+	if plate then
+		local p = local_(plate)
+		out.plate = CFrame.lookAt(p, p + Vector3.zAxis)
+	end
+	local i = 1
+	while true do
+		local e = mark("Mark_Exhaust" .. i)
+		if not e then
+			break
+		end
+		table.insert(out.exhausts, local_(e))
+		i += 1
+	end
+	if next(out.body) == nil then
+		error("no body parts")
+	end
+	return out
+end
+
+local function importedFor(id: string): Imported?
+	local cached = importCache[id]
+	if cached ~= nil then
+		return if cached then cached else nil
+	end
+	local folder = ReplicatedStorage:FindFirstChild("CarModels", true) -- anywhere in ReplicatedStorage
+	local src = if folder then folder:FindFirstChild(id, true) else nil
+	local result: Imported? = nil
+	if src then
+		local ok, res = pcall(readImported, src)
+		if ok then
+			result = res
+		else
+			warn("[CityLegends] CarModels/" .. id .. " could not be used:", res)
+		end
+	end
+	importCache[id] = result or false
+	return result
+end
+
 -- Build the meshes ahead of time (loading screen): every traffic design plus the given full ones
 function CarSkin.preload(fullIds: { string }?)
 	for _, spec in Cars.List do
@@ -143,18 +235,11 @@ function CarSkin.preload(fullIds: { string }?)
 	local full: { string } = fullIds or {}
 	for _, id in full do
 		local spec = Cars.get(id)
-		bodyFor(spec.Id, spec.Class, false)
-		task.wait()
-	end
-end
-
-function CarSkin.isSupported(): boolean
-	for _, v in bodyCache do
-		if v then
-			return true
+		if not importedFor(spec.Id) then
+			bodyFor(spec.Id, spec.Class, false)
+			task.wait()
 		end
 	end
-	return false
 end
 
 -- The knuckle joint for a wheel joint (steer only), if the car is skinned
@@ -166,15 +251,21 @@ function CarSkin.knuckleFor(wheelMotor: Motor6D): Motor6D?
 	return root:FindFirstChild("Knuckle_" .. wheelMotor.Name:sub(7)) :: Motor6D?
 end
 
-local function place(t: Template, name: string, look: Look, color: Color3, cf: CFrame, weldTo: BasePart, parent: Instance): MeshPart
+local function place(t: Template, name: string, look: Look, color: Color3, cf: CFrame, weldTo: BasePart, parent: Instance, scale: number?): MeshPart
 	local p = t.part:Clone()
+	local k = scale or 1
 	p.Name = name
 	p.Material = look.material
 	p.Color = look.color or color
 	p.Reflectance = look.reflectance
 	p.Transparency = look.transparency
 	p.CastShadow = look.shadow
-	p.CFrame = cf * CFrame.new(t.center)
+	if k ~= 1 then
+		p.Size *= k
+		p.CFrame = cf * CFrame.new(t.offset.Position * k) * t.offset.Rotation
+	else
+		p.CFrame = cf * t.offset
+	end
 	p.Parent = parent
 	local w = Instance.new("WeldConstraint")
 	w.Part0 = weldTo
@@ -200,10 +291,17 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 		return false
 	end
 	local liteMode = lite == true
-	local body = bodyFor(id, class, liteMode)
+	-- imported models first for the cars you look at; runtime lite meshes first for traffic
+	local imported = if liteMode then nil else importedFor(id)
+	local body = if imported then imported.body else bodyFor(id, class, liteMode)
+	if not body then
+		imported = importedFor(id)
+		body = if imported then imported.body else nil
+	end
 	if not body then
 		return false
 	end
+	local meta = if imported then { plate = imported.plate, exhausts = imported.exhausts } else bodyMeta[id .. (if liteMode then "/lite" else "")]
 	local spec = Cars.get(id)
 	local dims = CarBuilder.getDims(class, id)
 	local design = CarMesh.design(id, class, dims :: any)
@@ -220,16 +318,16 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 	skin.Parent = model
 	local drl = if design.drl then Color3.fromRGB(design.drl[1], design.drl[2], design.drl[3]) else Color3.new(1, 1, 1)
 	for name, t in body do
-		local look = LOOKS[name] or LOOKS.Paint
-		local color = if name == "Accent" then accent elseif name == "Drl" then drl else paint
+		local base = name:match("^%a+") or name -- "Paint2" is the second half of a big layer
+		local look = LOOKS[base] or LOOKS.Paint
+		local color = if base == "Accent" then accent elseif base == "Drl" then drl else paint
 		local p = place(t, "Skin" .. name, look, color, groundCF, root, skin)
-		if name == "Tail" then
+		if base == "Tail" then
 			p:SetAttribute("TailLight", true)
 		end
 	end
 
 	-- licence plate text (the plate itself is part of the mesh)
-	local meta = bodyMeta[id .. (if liteMode then "/lite" else "")]
 	if meta and meta.plate and not liteMode then
 		local plate = Instance.new("Part")
 		plate.Name = "PlateText"
@@ -283,7 +381,9 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 		end
 		local R = (j:GetAttribute("Radius") :: number?) or dims.wheelR
 		local front = j:GetAttribute("Front") == true
-		local wheel = wheelFor(design.wheel, R, dims.wheelW, design.rimFrac, liteMode)
+		-- imported wheels were exported at the front radius: scale to this one
+		local wheel = if imported and next(imported.wheel) then imported.wheel else wheelFor(design.wheel, R, dims.wheelW, design.rimFrac, liteMode)
+		local wheelScale = if imported and wheel == imported.wheel then R / dims.wheelR else 1
 		if not wheel then
 			break
 		end
@@ -309,14 +409,15 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 		km.C0 = j.C0
 		km.Parent = root
 		for name, t in wheel do
-			local look = LOOKS[name] or LOOKS.Rim
-			if name == "Caliper" then
+			local base = name:match("^%a+") or name
+			local look = LOOKS[base] or LOOKS.Rim
+			if base == "Caliper" then
 				-- sit the caliper towards the middle of the car
 				local towards = (if front then 1 else -1) * (if left then -1 else 1)
 				local cf = rest * turn * (if towards < 0 then CFrame.Angles(math.rad(-86), 0, 0) else CFrame.new())
-				place(t, "SkinCaliper", look, caliper, cf, knuckle, skin)
+				place(t, "SkinCaliper", look, caliper, cf, knuckle, skin, wheelScale)
 			else
-				place(t, "Skin" .. name, look, if name == "Rim" then rim else look.color or rim, spinCF, tire, skin)
+				place(t, "Skin" .. name, look, if base == "Rim" then rim else look.color or rim, spinCF, tire, skin, wheelScale)
 			end
 		end
 	end

@@ -51,6 +51,18 @@ Mobile players get on-screen buttons.
 - **Daily gift:** free cash every 24 hours, and the amount grows with your level. The server keeps the timer and checks it before it pays.
 - Level, XP and the gift timer are saved with your cash. Old saves load at level 1. All the numbers are in `Config.Progression` and `Config.Daily`. The remotes are `Progress` (server → client) and `ClaimDaily`.
 
+## Imported car models (recommended)
+
+The cars can also come in as normal imported meshes instead of being generated while the game runs. They are 3x denser (about 35k triangles each), load instantly, and work without the "Allow Mesh / Image APIs" setting.
+
+1. Generate the files (or use the `CityLegendsCars.glb` you were sent): `lune run tools/export_models.luau && python3 tools/make_glb.py`. This writes `build/models/CityLegendsCars.glb` (all cars) and `build/models/cars/<id>.glb` (one per car).
+2. In Studio: **File > Import 3D**, pick `CityLegendsCars.glb`. Keep the default settings, but make sure merging meshes is off so every part stays separate.
+3. Drag the imported model into **ReplicatedStorage**. Its name doesn't matter: the game looks for the `CarModels` group inside it. If you import cars one by one, put each one in a Folder named `CarModels` in ReplicatedStorage.
+
+Each car model holds its body layers (`Paint`, `Glass`, `Trim`, ...), one wheel (`WheelTire`, `WheelRim`, `WheelCaliper`) and small `Mark_*` parts. Leave the `Mark_*` parts in: the game reads the car's position, scale, wheel hub, plate and exhaust tips from them. Player cars, the garage and the cutscene use the imported model when one exists. Traffic keeps the lighter runtime meshes and switches to the imported ones if runtime meshes aren't allowed.
+
+You can swap in a model you made or bought the same way. Name it after the car id, name its parts like the ones above, and keep the `Mark_Origin`, `Mark_RefX` (4 studs along +X) and `Mark_RefZ` (4 studs along +Z, towards the rear) markers.
+
 ## Weather
 
 `Weather.lua` alternates rain and clear spells (4-8 minutes each; it is raining when you join). Rain streaks and road splashes follow the camera and stop under the tunnel, roads and sidewalks turn darker and glossier, the haze thickens, and a rain bed fades in. Lifting off at high revs or upshifting fires blue exhaust flames from the real pipe positions.

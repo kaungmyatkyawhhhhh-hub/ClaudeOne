@@ -35,6 +35,9 @@
 
 local CarMesh = {}
 
+-- true = extra-dense meshes for exporting model files (never at runtime)
+CarMesh.hq = false
+
 export type Layer = { verts: { Vector3 }, normals: { Vector3 }, tris: { number } }
 export type Layers = { [string]: Layer }
 
@@ -657,7 +660,8 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): (Lay
 	local isSuper = class == "Supercar" or class == "Hypercar"
 	local roofLayer = ds.roofLayer or (if ds.accentRoof then "Accent" else "Paint")
 	local pillarLayer = if ds.blackPillars then "Trim" else roofLayer
-	local res = if lite then 0.5 else 1
+	local hq = CarMesh.hq and not lite
+	local res = if lite then 0.5 elseif hq then 1.7 else 1
 	local function n(k: number): number
 		return math.max(2, math.floor(k * res + 0.5))
 	end
@@ -803,7 +807,9 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): (Lay
 	-- segment shaping: subdivisions and outward bulge per band
 	local SUB = { [0] = 1, [1] = 1, [2] = 2, [3] = 3, [4] = 1, [5] = 2, [6] = 2, [7] = 1, [8] = 4 }
 	local BULGE = { [0] = 0, [1] = 0, [2] = 0.02, [3] = 0.05, [4] = 0, [5] = 0.03, [6] = 0.03, [7] = 0, [8] = 0.05 }
-	if lite then
+	if hq then
+		SUB = { [0] = 1, [1] = 2, [2] = 4, [3] = 6, [4] = 2, [5] = 4, [6] = 4, [7] = 2, [8] = 8 }
+	elseif lite then
 		SUB = { [0] = 1, [1] = 1, [2] = 1, [3] = 2, [4] = 1, [5] = 1, [6] = 1, [7] = 1, [8] = 2 }
 	end
 	-- expand a section into grid columns (crease points doubled)
@@ -831,7 +837,7 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): (Lay
 
 	-- stations along the car (denser at the ends)
 	local zs = {}
-	local count = if lite then 64 else 128
+	local count = if lite then 64 elseif hq then 220 else 128
 	for i = 0, count do
 		local u = i / count
 		table.insert(zs, zF + L * (u - 0.6 * math.sin(u * math.pi * 2) / (math.pi * 2)))
@@ -1832,7 +1838,7 @@ end
 ---------------------------------------------------------------------
 function CarMesh.wheel(style: string, R: number, width: number, rimFrac: number, lite: boolean?): Layers
 	local layers: Layers = {}
-	local segs = if lite then 22 else 40
+	local segs = if lite then 22 elseif CarMesh.hq then 64 else 40
 	local xo = width / 2
 	local Rr = R * rimFrac
 	local side = R - Rr
