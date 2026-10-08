@@ -2,7 +2,15 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): Dante 8'0" (uncapped widths) + NPC upper traps (re-imported, in Studio)
+## LATEST (9 Oct): MAX weight button
+- Machine panel: a MAX button after the + (MachineClient; created without a new top-level local: the script is at
+  Luau's 200-local limit). Server `MaxWeight` action (MachineService maxWeight): buys every next plate in order while the
+  main muscle's level allows it and the coins cover it (same checks as UnlockTier), then selects the heaviest usable plate
+  (Machines.UsableTier). The panel jumps there at once when nothing is bought, or when the purchases arrive.
+- Tested (fresh player, ~225 coins, MidChest level 26-27, Flat Bench): MAX bought plates 2-6 (157 coins; plate 7 needs
+  level 33) and showed 155 lb, tier 6; after two "-" steps, MAX went straight back to plate 6 without spending.
+
+## Before that (9 Oct): Dante 8'0" (uncapped widths) + NPC upper traps (re-imported, in Studio)
 - **Dante is 8'0"** (owner: an NPC no player can reach; players cap at 7'0"). Same width formula as players
   (BodyService.WidthFactors) with no cap for him: his made-up data carries `heightInches = 96` (targetHeight uses it;
   saves never have it), s = 96 / 48 = 2.0: shoulders (1 + 1.4 x 1) x 1.2 V-Taper = 2.88, hips 2.20, arms / legs /

@@ -1585,6 +1585,13 @@ end
 local minusButton = stepButton("Minus", 1, Icons.Minus(Colors.Text))
 local weightColumn = box({ LayoutOrder = 2, Size = UDim2.fromScale(0.38, 1), Parent = weightSection }, { Theme.List(Vertical, "XS") })
 local plusButton = stepButton("Plus", 3, Icons.Plus(Colors.Text))
+-- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift
+-- (no new top-level local: this script is at Luau's 200-local limit; wired up below by name)
+Theme.Button("Secondary", { Name = "Max", LayoutOrder = 4, Size = UDim2.fromScale(1, 0.56), Parent = weightSection }, {
+	Theme.Aspect(1, Enum.DominantAxis.Height),
+	Theme.Limit(Vector2.new(Theme.MinTouch, Theme.MinTouch), Vector2.new(math.huge, math.huge)),
+	Theme.Text({ Text = "MAX", Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(1, 1) }),
+})
 
 local weightNumber = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 0.56), Parent = weightColumn })
 local tierLabel = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.24), Parent = weightColumn })
@@ -2566,6 +2573,32 @@ end
 
 minusButton.Activated:Connect(function() stepTier(-1) end)
 plusButton.Activated:Connect(function() stepTier(1) end)
+do
+	local maxButton = weightSection:FindFirstChild("Max") :: GuiButton
+	maxButton.Activated:Connect(function()
+		if not current then return end
+		local machine = current.machine
+		-- the same rule as the server (MachineService maxWeight), so the panel jumps there at once; the data confirms it
+		local unlocked = progressFor(machine.id)
+		local level, coins = mainLevel(machine), ClientData.Get().coins
+		while unlocked < #machine.tiers do
+			local tier = machine.tiers[unlocked + 1]
+			if level < tier.unlockLevel or coins < tier.cost then break end
+			coins -= tier.cost
+			unlocked += 1
+		end
+		local best = Machines.UsableTier(machine, { unlocked = unlocked }, level)
+		if best ~= viewTier then Audio.PlayAt("PlateSlide", barOf(current.model)) end
+		Remotes.MachineAction:FireServer("MaxWeight")
+		if unlocked > progressFor(machine.id) then
+			-- plates are being bought: show the selected one when the data arrives (the panel can't look past what you own + 1)
+			current.maxPending = true
+		else
+			viewTier = best
+			refreshTier()
+		end
+	end)
+end
 exitButton.Activated:Connect(function()
 	Remotes.MachineAction:FireServer("Leave")
 end)
@@ -2666,6 +2699,12 @@ ClientData.Changed:Connect(function(path)
 				Audio.PlayAt("TierUnlocked", barOf(current.model))
 			end
 			current.knownUnlocked = unlocked
+			if current.maxPending then
+				-- the MAX button's purchases arrived: show the plate the server picked
+				current.maxPending = nil
+				local _, selected = progressFor(current.machine.id)
+				viewTier = selected
+			end
 		end
 		refreshTier()
 	end

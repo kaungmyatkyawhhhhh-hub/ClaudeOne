@@ -509,12 +509,36 @@ local function unlockTier(player, index)
 	updatePlates(session.model, tier)
 end
 
+-- MAX button (owner, 9 Oct): buys every next plate in order while the main muscle's level allows it and the coins cover it
+-- (the same checks as UnlockTier), then selects the heaviest plate the player can lift now.
+local function maxWeight(player)
+	local session = sessions[player]
+	if not session then return end
+	local machine = session.machine
+	local progress = PlayerData.GetMachine(player, machine.id)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local level = data.muscles[machine.muscles[1].id].level
+	local unlocked = progress.unlocked
+	while unlocked < #machine.tiers do
+		local tier = machine.tiers[unlocked + 1]
+		if level < tier.unlockLevel or not PlayerData.SpendCoins(player, tier.cost) then break end
+		unlocked += 1
+	end
+	local best = Machines.UsableTier(machine, { unlocked = unlocked }, level)
+	if unlocked ~= progress.unlocked or best ~= progress.selected then
+		PlayerData.SetMachine(player, machine.id, unlocked, best)
+	end
+	updatePlates(session.model, machine.tiers[best])
+end
+
 local actions = {
 	Lift = lift,
 	Tap = tap,
 	Leave = leave,
 	SelectTier = selectTier,
 	UnlockTier = unlockTier,
+	MaxWeight = maxWeight,
 }
 
 local function setupMachine(model)
