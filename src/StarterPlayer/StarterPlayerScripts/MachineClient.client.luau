@@ -118,10 +118,22 @@ local function repDepth(state, now)
 	return 0, "done"
 end
 
+-- Bar bookkeeping in one table (this script is near Luau's 200 top-level locals):
+--   moving[model] = { part, ... }: the plates and rides that follow the bar (rebuilt when they change)
+--   travel[model] = { low = CFrame, high = CFrame }: the lowest and highest the bar has been while someone lifts on it
+--     (the gain popup keeps clear of the whole path, not just where the bar is at lockout)
+--   near(position, distance): is it close enough to the camera to animate? (client performance, Machines.ClientCull)
+local bars = { moving = {}, travel = {} }
+function bars.near(position: Vector3, distance: number): boolean
+	local camera = workspace.CurrentCamera
+	return camera ~= nil and (camera.CFrame.Position - position).Magnitude <= distance
+end
+
 -- every part of the plates (plate models, sleeves) rides with the bar
 local function trackPlate(model, plate)
 	if plate:IsA("BasePart") and barRest[model] then
 		plateOffsets[plate] = barRest[model]:ToObjectSpace(plate.CFrame)
+		bars.moving[model] = nil
 	end
 end
 
@@ -130,30 +142,33 @@ local function loadPart(model)
 	return model:FindFirstChild(machine and machine.load or "Bar")
 end
 
--- [model] = { low = CFrame, high = CFrame }: the lowest and highest the bar has been while someone lifts on it
--- (the gain popup keeps clear of the whole path, not just where the bar is at lockout)
-local barTravel = {}
-
 local function placeBar(model, cframe)
 	loadPart(model).CFrame = cframe
-	local travel = barTravel[model]
+	local travel = bars.travel[model]
 	if not travel then
-		barTravel[model] = { low = cframe, high = cframe }
+		bars.travel[model] = { low = cframe, high = cframe }
 	elseif cframe.Y < travel.low.Y then
 		travel.low = cframe
 	elseif cframe.Y > travel.high.Y then
 		travel.high = cframe
 	end
-	for _, plate in ipairs(model.Plates:GetDescendants()) do
-		local offset = plateOffsets[plate]
-		if offset then plate.CFrame = cframe * offset end
-	end
-	local rides = model:FindFirstChild("Rides")
-	if rides then
-		for _, part in ipairs(rides:GetDescendants()) do
-			local offset = plateOffsets[part]
-			if offset then part.CFrame = cframe * offset end
+	local parts = bars.moving[model]
+	if not parts then
+		parts = {}
+		for _, plate in ipairs(model.Plates:GetDescendants()) do
+			if plateOffsets[plate] then table.insert(parts, plate) end
 		end
+		local rides = model:FindFirstChild("Rides")
+		if rides then
+			for _, part in ipairs(rides:GetDescendants()) do
+				if plateOffsets[part] then table.insert(parts, part) end
+			end
+		end
+		bars.moving[model] = parts
+	end
+	for _, part in ipairs(parts) do
+		local offset = plateOffsets[part]
+		if offset and part.Parent then part.CFrame = cframe * offset end
 	end
 end
 
@@ -527,6 +542,8 @@ end
 local pumped = {} -- [part] = { base, amount, bounce, last }
 
 local function pump(character, machine)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if character ~= player.Character and not (root and bars.near(root.Position, Machines.ClientCull.PumpDistance)) then return end
 	for index, entry in ipairs(machine.muscles) do
 		local amount = FEEL.PumpPerRep * (index == 1 and 1 or 0.5)
 		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
@@ -728,7 +745,7 @@ local function popupSpot(character, torso, model, anchorWorld, textWidth, scale,
 				plateRadius = math.max(plateRadius, math.max(plate.Size.X, plate.Size.Y, plate.Size.Z) / 2)
 			end
 		end
-		local travel = barTravel[model] or { low = load.CFrame, high = load.CFrame }
+		local travel = bars.travel[model] or { low = load.CFrame, high = load.CFrame }
 		local tanHalf = math.tan(math.rad(camera.FieldOfView) / 2)
 		for _, t in ipairs({ 0, 0.25, 0.5, 0.75, 1 }) do
 			local cf = travel.low:Lerp(travel.high, t)
@@ -1639,6 +1656,12 @@ RunService.Stepped:Connect(function()
 	local now = os.clock()
 	for model in pairs(barRest) do
 		local character = userCharacter(model)
+		-- someone else's lift far from the camera: not animated (the bar waits on the rack), so a busy gym costs nothing
+		if character and character ~= player.Character
+			and not bars.near(barRest[model].Position, Machines.ClientCull.AnimateDistance) then
+			character = nil
+			repState[model] = nil
+		end
 		if character then
 			local state = repState[model]
 			local depth, phase = 0, nil
@@ -1696,7 +1719,10 @@ local function setupMachine(model)
 		for _, part in ipairs(rides:GetDescendants()) do trackPlate(model, part) end
 	end
 	plates.DescendantAdded:Connect(function(plate) trackPlate(model, plate) end)
-	plates.DescendantRemoving:Connect(function(plate) plateOffsets[plate] = nil end)
+	plates.DescendantRemoving:Connect(function(plate)
+		plateOffsets[plate] = nil
+		bars.moving[model] = nil
+	end)
 	model:GetAttributeChangedSignal("Reps"):Connect(function()
 		-- our own reps start instantly on tap; other lifters start when the server counts them
 		if model:GetAttribute("UserId") ~= player.UserId then
@@ -1784,7 +1810,7 @@ local function open(model)
 	wasPumped = false
 	pumpLabel.Text, pumpLabel.TextColor3 = "Pump", Colors.Text
 	pumpGlow.Transparency = 1
-	barTravel[model] = nil -- measure this lift's bar path fresh
+	bars.travel[model] = nil -- measure this lift's bar path fresh
 	-- the lifter never sees this machine's prompts (e.g. "Spot · Help them lift" on their own machine), only on this
 	-- client, so other players still get them; the server's next change after Exit replaces this local value
 	for _, prompt in ipairs(model:GetDescendants()) do

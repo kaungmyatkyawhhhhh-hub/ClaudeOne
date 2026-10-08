@@ -173,7 +173,7 @@ Machines.List = {
 		muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.2 }, { id = "Calves", share = 0.13 } },
 		tiers = Machines.TierSets.Sled, staminaCost = 6,
 	},
-	-- Treadmill (2 in the starter gym's cardio corner): running uses no stamina (it keeps refilling, so it's something to do
+	-- Treadmill (2 in the starter gym's cardio corner, 4 in the pro gym): running uses no stamina (it keeps refilling, so it's something to do
 	-- between sets), a little leg EXP (gainScale: well below a real leg machine, so it never beats lifting), normal coins,
 	-- and the distance counts toward the Cardio King title (Machines.Cardio). load = the belt (no plates).
 	{
@@ -185,6 +185,10 @@ Machines.List = {
 
 -- Cardio: the in-game distance per treadmill rep is the speed (mph) x MetersPerMph; Cardio King needs KingMeters in total.
 Machines.Cardio = { MetersPerMph = 2, KingMeters = 10000, BeltScroll = 1.2 } -- BeltScroll: belt texture studs/s per mph
+
+-- Client performance: other lifters (players and NPC regulars) are only animated (arms, moving bar and plates) within
+-- AnimateDistance studs of the camera, and the pump swell only shows within PumpDistance. Your own lift always animates.
+Machines.ClientCull = { AnimateDistance = 80, PumpDistance = 45 }
 
 -- Pro gym (opens at Growth Spurt 2). Built from code by ProGymService; every one carries its plates on a
 -- weight stack ("Bar" part, centered layout) and the lifter's hands stay free (pose follow = "None").

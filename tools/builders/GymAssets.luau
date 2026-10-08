@@ -51,12 +51,14 @@ local function plateBody(spec, color, material)
 	return main, recess
 end
 
+local LABEL_DISTANCE = 60 -- studs: plate numbers stop drawing past this (performance)
 local function label(body, face, text, color, diameter)
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "Label" .. face.Name
 	gui.Face = face
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 60
+	gui.MaxDistance = LABEL_DISTANCE -- (the number is unreadable past this; each SurfaceGui draws into its own texture)
 	gui.LightInfluence = 1
 	gui.Enabled = false
 	gui.Parent = body

@@ -39,6 +39,7 @@ local function writing(part, lines, textColor, font, pps)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.MaxDistance = 80 -- (performance: not drawn from across the map)
 	gui.PixelsPerStud = pps or 60
 	gui.LightInfluence = 1
 	gui.Parent = part
@@ -127,6 +128,7 @@ local function tv(parent, position, toward, title)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.MaxDistance = 80 -- (performance: not drawn from across the map)
 	gui.PixelsPerStud = 60
 	gui.LightInfluence = 0
 	gui.Brightness = 1.2

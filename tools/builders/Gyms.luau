@@ -569,7 +569,7 @@ local function proRoom()
 
 	-- Cardio (front, facing the windows of the east wall)
 	local cardio = model(props, "Cardio", CFrame.new(70, 0, -12))
-	for i = 0, 3 do GymKit.treadmill(cardio, face(56 + i * 4.5, -10, 180), true) end
+	for i = 0, 3 do GymKit.Treadmill(cardio, face(56 + i * 4.5, -10, 180), true) end -- (real machines since 8 Oct)
 	GymKit.bike(cardio, face(76, -10, 180))
 	GymKit.rower(cardio, face(80.5, -11, 180))
 	cardio:SetAttribute("Recovery", "Cardio")

@@ -81,7 +81,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   Persistent Models (were Folders; the builders make Models too).
 
 - **Treadmill (8 Oct, overnight):** 2 of the 3 cardio-corner treadmills in the starter gym are machines (`Config/Machines`
-  Treadmill: speeds 2-13 mph as tiers, no stamina cost, gainScale 0.35, Quads + Hamstrings + a light touch of Calves under
+  Treadmill (2 in the starter gym, 4 in the pro gym since 8 Oct): speeds 2-13 mph as tiers, no stamina cost, gainScale 0.35, Quads + Hamstrings + a light touch of Calves under
   GoalShare); belt slats slide while running (MachineClient), run animation `POSE_ANIMS.Run`, distance in
   `stats.cardioMeters` (speed x `Machines.Cardio.MetersPerMph` per rep), title "Cardio King" at `Cardio.KingMeters` (10 km).
   Built with `GymKit.Treadmill` (Gyms builder updated).
@@ -150,6 +150,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - DataStore: Studio sometimes gets `InternalServerError` after many quick test sessions; wait a minute and play again.
 
 ## Known issues
+- Performance (8 Oct): other lifters animate only within 80 studs of the camera and pump only within 45 (`Machines.ClientCull`); plate number labels draw within 60 studs, decor screens within 80; the starter gym pendants lost their invisible glow PointLights (20 fewer lights). In Studio the Tag Editor and Building Tools plugins cost more CPU than the game scripts: turn them off while play testing. Studio caps the frame rate at 15 when its window is not focused, so FPS can only be judged with Studio in front.
 - Spurts after ~11 get a few minutes longer each (the permanent bonus hits the 5x cap).
 - Part count: town ~16,100, gyms ~3,500; StreamingEnabled is on. If phones struggle: MeshPart templates for windows/trees.
 - Cosmetic headbands can hide under big hair; ProximityPrompts only show when their part is on screen.

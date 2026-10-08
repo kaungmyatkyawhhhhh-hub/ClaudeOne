@@ -733,10 +733,11 @@ function GymKit.treadmill(parent, cframe, pro)
 end
 
 -- The treadmill MACHINE (Config.Machines Treadmill): the cardio treadmill, tagged as a machine, with the Use prompt on the
--- console and thin slats on the belt ("Slats" folder) that MachineClient slides along while someone runs.
-function GymKit.Treadmill(parent, pivot)
+-- console and thin slats on the belt ("Slats" folder) that MachineClient slides along while someone runs. pro = the pro
+-- gym look (chrome frame, LED screen glow).
+function GymKit.Treadmill(parent, pivot, pro)
 	local shell, machine = machineShell(parent, "Treadmill", pivot)
-	local m = GymKit.treadmill(shell, pivot)
+	local m = GymKit.treadmill(shell, pivot, pro)
 	for _, part in ipairs(m:GetChildren()) do part.Parent = shell end
 	m:Destroy()
 	local belt = shell:FindFirstChild("Belt")
@@ -791,10 +792,8 @@ function GymKit.pendant(parent, position, ceilingY, shadows, color)
 	local shade = cyl(m, "Shade", 1.6, 1.6, CFrame.new(position) * CFrame.Angles(0, 0, rad(90)), C.Dark, M.Metal)
 	shade.Size = Vector3.new(0.9, 1.7, 1.7)
 	local bulb = ball(m, "Bulb", 0.55, CFrame.new(position - Vector3.new(0, 0.35, 0)), color or C.Bulb, M.Neon)
-	local glow = Instance.new("PointLight")
-	glow.Name = "Glow"
-	glow.Brightness, glow.Range, glow.Color, glow.Shadows = 0.25, 12, C.Warm, false
-	glow.Parent = bulb
+	-- (no extra glow PointLight: at 0.25 brightness it was invisible next to the spotlight, and 20 fewer lights in the room
+	-- help performance; 8 Oct)
 	local spot = Instance.new("SpotLight")
 	spot.Face = Enum.NormalId.Bottom
 	spot.Brightness, spot.Range, spot.Angle, spot.Color, spot.Shadows = 3.2, 32, 120, C.Warm, shadows == true
