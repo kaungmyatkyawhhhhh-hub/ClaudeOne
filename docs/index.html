@@ -518,6 +518,8 @@ html.tablet .stash{grid-template-columns:repeat(3,minmax(0,1fr))}
 .fotdcard{padding:16px 18px;border-radius:20px;background:linear-gradient(135deg,#ff4fd8,#7a3cff);color:#fff;display:flex;flex-direction:column;gap:4px;margin-bottom:10px}.fotdcard b{font-family:var(--display);font-size:1.5rem}.fotdcard small{opacity:.85}.fotdcard .eyebrow{color:rgba(255,255,255,.85)}.fotdcard em{font-style:normal;font-family:var(--display);font-weight:900;font-size:1.4rem;margin-top:6px}.fotdcard .bigbtn{margin-top:10px}
 .meetgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}.meetcar{background:var(--surface);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}.meetcar.me{box-shadow:inset 0 0 0 2px var(--accent),var(--shadow)}.meetcar canvas{width:100%;height:auto;border-radius:10px;display:block}.meetcar b{font-size:.9rem;padding:0 4px}.meetcar span{font-size:.75rem;color:var(--muted);padding:0 4px 4px}
 .platerow{display:flex;gap:8px}.platerow input{flex:1;min-width:0;padding:12px;border-radius:12px;border:2px solid var(--line);background:#f6f3e6;color:#1b1f2a;font-family:var(--mono);font-weight:800;font-size:1.1rem;text-transform:uppercase;letter-spacing:.1em}.platerow .cta{justify-content:center;padding:10px 18px}
+.awkv{grid-template-columns:repeat(4,minmax(0,1fr))!important}.awkv b{font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.desk .room .tapbtn::after,html.desk #liftBtn::after{content:"Space";margin-left:10px;font:700 .6rem var(--mono);padding:2px 6px;border-radius:5px;background:rgba(255,255,255,.18);vertical-align:middle}
 .achpop{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 92px);transform:translate(-50%,-30px);opacity:0;z-index:72;width:min(320px,84vw);padding:10px 14px;border-radius:20px;background:var(--bg);box-shadow:0 0 0 3px #ffcc33,0 16px 50px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:3px;animation:apIn .4s cubic-bezier(.2,1.5,.4,1) forwards}
 .achpop b{font-family:var(--display);font-size:1rem}.achpop .eyebrow{font-size:.62rem}.achpop small{color:var(--muted);font-size:.8rem}.achpop em{font-style:normal;font-family:var(--display);font-weight:900;font-size:1.05rem;color:var(--up)}.achpop em.sm{font-size:.95rem}
 .achbtns{display:flex;gap:8px;margin-top:6px}.achbtns .cta{flex:1;padding:7px;font-size:.85rem;justify-content:center;min-height:0}.achpop.out{animation:apOut .4s ease forwards}
@@ -1027,7 +1029,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
-  <div class="keyhelp" id="keyHelp"><b>Keys</b> <kbd>WASD</kbd> walk · <kbd>E</kbd> enter · <kbd>Esc</kbd> leave · <kbd>M</kbd> map · <kbd>N</kbd> now · <kbd>P</kbd> phone · <kbd>R</kbd> ride</div>
+  <div class="keyhelp" id="keyHelp"><b>Keys</b> <kbd>WASD</kbd> walk · <kbd>E</kbd> enter · <kbd>Esc</kbd> leave · <kbd>M</kbd> map · <kbd>N</kbd> now · <kbd>P</kbd> phone · <kbd>R</kbd> ride · <kbd>Space</kbd> tap / lift</div>
   <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev story" id="storyChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill mood" id="moodChip" hidden></button><button class="chip pill boost" id="boostChip" hidden></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button><button class="chip pill wk" id="wkChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="ridebtn" id="rideBtn" hidden aria-label="Walk or ride"></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
@@ -2328,7 +2330,10 @@ addEventListener("keydown",e=>{if(!GS||!GS.flex||GS.flex.done||e.repeat||e.ctrlK
 const KEYS={};let KEYW=false;
 const typing=e=>{const t=e.target;return t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable)};
 addEventListener("keydown",e=>{if(typing(e)||e.ctrlKey||e.metaKey||e.altKey||!S||!playing)return;const k=e.key.toLowerCase();
-  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)&&!room&&$("overlay").hidden){KEYS[k]=1;e.preventDefault();return}
+  const gymFloor=room&&GS&&!G&&(room==="gym"||room==="mbeach");
+  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)&&(!room||gymFloor)&&$("overlay").hidden){KEYS[k]=1;e.preventDefault();return}
+  // Space / Enter press the main action of a mini-game (arm wrestle, lift, boxing, races, gym stations)
+  if((k===" "||k==="enter")&&room&&!e.repeat){const PD=["tapBtn","bxHit","prGo","bwGo"];for(const id of ["tapBtn","liftBtn","bxHit","goBtn","prGo","bwGo","gLift","gCurl","gComp"]){const b=$(id);if(b&&!b.disabled&&b.offsetParent!==null){e.preventDefault();if(PD.includes(id)&&!(id==="tapBtn"&&!(A&&A.state==="go")))b.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true}));else b.click();return}}}
   if(e.repeat)return;
   if(k==="escape"){if(!$("mmBig").hidden){$("mmBig").hidden=true;return}const lb=$("leaveBtn");if(room&&lb){lb.click();return}if(!$("mpSheet").hidden){$("mpSheet").hidden=true;return}return}
   if(room||!$("overlay").hidden)return;
@@ -2337,7 +2342,7 @@ addEventListener("keydown",e=>{if(typing(e)||e.ctrlKey||e.metaKey||e.altKey||!S|
   if(k==="m")click("miniMap");else if(k==="n")click("nowBtn");else if(k==="p")click("phoneBtn");else if(k==="r")click("rideBtn")});
 addEventListener("keyup",e=>{delete KEYS[e.key.toLowerCase()]});addEventListener("blur",()=>{for(const k in KEYS)delete KEYS[k]});
 setInterval(()=>{if(!S)return;const dx=(KEYS.d||KEYS.arrowright?1:0)-(KEYS.a||KEYS.arrowleft?1:0),dy=(KEYS.s||KEYS.arrowdown?1:0)-(KEYS.w||KEYS.arrowup?1:0);
-  if((dx||dy)&&!room){const n=Math.hypot(dx,dy);target=[S.px+dx/n*90,S.py+dy/n*90];autoEnter=null;moving=true;KEYW=true}else if(KEYW){KEYW=false;target=null;moving=false}},40);
+  if((dx||dy)&&!room){const n=Math.hypot(dx,dy);target=[S.px+dx/n*90,S.py+dy/n*90];autoEnter=null;moving=true;KEYW=true}else if((dx||dy)&&GS&&!G&&(room==="gym"||room==="mbeach")){const n=Math.hypot(dx,dy);GS.tx=clamp(GS.px+dx/n*40,26,GSW-26);GS.ty=clamp(GS.py+dy/n*40,124,GSH-14);KEYW="gym"}else if(KEYW){if(KEYW==="gym"&&GS){GS.tx=null;GS.ty=null}else{target=null;moving=false}KEYW=false}},40);
 function gymTap(e){
   if(!GS||(GS.flex&&!GS.flex.done))return;audioOn();
   const cv=$("gCv"),r=cv.getBoundingClientRect(),f=cv.clientWidth/r.width,x=((e.clientX-r.left)*f-GS.ox)/GS.k,y=((e.clientY-r.top)*f-GS.oy)/GS.k;
@@ -2693,6 +2698,7 @@ function openArena(opt){opt=opt||{};
   const list=()=>{A=null;ARENA_LIST=list;
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Arena")}
       ${pvpCard()}${meetCard()}
+      <div class="kv awkv"><div><span class="eyebrow">Your power</span><b>${S.pr} kg</b></div><div><span class="eyebrow">Cash</span><b>${fmt(S.cash)}</b></div><div><span class="eyebrow">Wins</span><b>${S.stats.armWins||0}</b></div><div><span class="eyebrow">Won here</span><b class="u">${fmt(S.stats.armEarn||0)}</b></div></div>
       <div class="note">Arm wrestle for cash. Your power is your max lift: <b>${S.pr} kg</b>. Tap as fast as you can to pin them before the clock runs out. Each match costs 8 energy.</div>
       <div class="perks">${OPPS.map((o,i)=>{const bet=betOf(o),beat=(S.stats.beat||[]).includes(i),r=S.pr/o.kg;return `<button class="perk opp" data-o="${i}" ${bet>S.cash?"disabled":""}>
         <span class="oav" style="background:${o.look[2]}"><i style="background:${o.look[0]}"></i></span>
@@ -2706,6 +2712,7 @@ function openArena(opt){opt=opt||{};
     const o=OPPS[i];A={i,o,bet,pos:.5,t:12,state:"go",list};
     $("room").innerHTML=`<div class="room-in">${roomHead("Arena")}
       <div class="art">${armsSVG(o)}</div>
+      <div class="kv awkv"><div><span class="eyebrow">You</span><b>${S.pr} kg</b></div><div><span class="eyebrow">${esc(o.n)}</span><b>${o.kg} kg</b></div><div><span class="eyebrow">Bet</span><b>${fmt(bet)}</b></div><div><span class="eyebrow">Win</span><b class="u" id="awWin">${fmt(Math.round(bet*2*(1+.15*pk("arena"))))}</b></div></div>
       <div class="tug"><i id="tugFill"></i><span id="tugT">12.0s</span></div>
       <p class="fine" id="tugMsg">${o.n} grabs your hand. Tap!</p>
       <button class="bigbtn tapbtn" id="tapBtn">TAP<small>Bet ${fmt(bet)} · win ${fmt(bet*2)}</small></button></div>`;
@@ -2727,10 +2734,11 @@ function arenaTick(dt){
   A.t-=dt;A.pos-=dt*(.22+.08*Math.sin(wt*2.3+A.i));
   if(A.pos>=1||A.pos<=0||A.t<=0){
     const win=A.pos>=1||(A.t<=0&&A.pos>.5);A.pos=clamp(A.pos,0,1);A.state="done";updArms();
-    if(win){confetti(120);shake(7);earn(Math.round(A.bet*2*(1+.15*pk("arena"))));dailyProg("arm");S.stats.armWins=(S.stats.armWins||0)+1;S.stats.beat=S.stats.beat||[];if(!S.stats.beat.includes(A.i))S.stats.beat.push(A.i);SFX.level();buzz([20,40,20]);banner("You win","u");banner("+"+fmt(A.bet*2),"g")}
+    A.won=win?Math.round(A.bet*2*(1+.15*pk("arena"))):0;if(win)S.stats.armEarn=(S.stats.armEarn||0)+A.won-A.bet;
+    if(win){confetti(120);shake(7);earn(A.won);dailyProg("arm");S.stats.armWins=(S.stats.armWins||0)+1;S.stats.beat=S.stats.beat||[];if(!S.stats.beat.includes(A.i))S.stats.beat.push(A.i);SFX.level();buzz([20,40,20]);banner("You win","u");banner("+"+fmt(A.bet*2),"g")}
     else{SFX.loss();buzz([40,60,40]);banner("Pinned","r")}
     dirty=true;updMini();
-    const m=$("tugMsg");if(m)m.textContent=win?`You beat ${A.o.n}!`:`${A.o.n} pinned you. Get stronger at the gym.`;
+    const m=$("tugMsg");if(m)m.innerHTML=win?`You beat ${esc(A.o.n)}! <b class="u">+${fmt(A.won)}</b>`:`${esc(A.o.n)} pinned you. <b class="d">−${fmt(A.bet)}</b> · get stronger at the gym.`;
     const b=$("tapBtn");if(b){b.innerHTML=`Back<small>${win?"Winnings added":"Lost "+fmt(A.bet)}</small>`;const back=A.list;setTimeout(()=>{if(b.isConnected)b.onclick=()=>back()},300)}
     return;
   }
@@ -7471,7 +7479,7 @@ function mmDraw(){const cv=$("miniMap");if(!cv||!S||!playing)return;const M=mmMa
   if(!$("room").hidden||!$("overlay").hidden||document.hidden)return;const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
   if(!MMI||M.key!==MMKEY){MMKEY=M.key;MMI=MMI||document.createElement("canvas");MMI.width=Math.ceil(M.w*MMK);MMI.height=Math.ceil(M.h*MMK);mmPaint(MMI.getContext("2d"),M,MMK);MMSIG=""}
   const D=Math.min(2,devicePixelRatio||1),cw=Math.round(w*D),ch=Math.round(h*D);if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;MMSIG=""}
-  let sig=M.key+"|d"+deedN()+"|"+Math.round(S.px/6)+","+Math.round(S.py/6)+","+(S.hd||0).toFixed(1)+"|"+mmExtra().map(e=>Math.round(e[0]/10)+","+Math.round(e[1]/10)).join(";");
+  let sig=M.key+"|d"+deedN()+"|"+Math.round(S.px/2)+","+Math.round(S.py/2)+","+(S.hd||0).toFixed(2)+"|"+mmExtra().map(e=>Math.round(e[0]/10)+","+Math.round(e[1]/10)).join(";");
   if(MP)for(const id in MP.peers){const q=MP.peers[id];sig+="|"+Math.round((SCN?q.sx:q.dx)/10)+","+Math.round((SCN?q.sy:q.dy)/10)}
   try{const gd=goalDest();if(gd)sig+="|g"+Math.round(gd.x)+","+Math.round(gd.y)}catch(e){}if(sig===MMSIG)return;MMSIG=sig;
   const g=cv.getContext("2d");g.setTransform(D,0,0,D,0,0);g.fillStyle=M.bg;g.fillRect(0,0,w,h);
@@ -7490,7 +7498,7 @@ function mmSel(){const el=$("mmSel");if(!el||!MMB)return;const p=MMB.sel;if(!p){
   const t=$("mmTaxi");if(t)t.onclick=()=>{if(S.cash<f)return;S.cash-=f;dirty=true;mmClose();const fx=document.createElement("div");fx.className="sleepfx";fx.textContent="🚕";document.body.appendChild(fx);SFX.door();
     setTimeout(()=>{S.px=p.door[0];S.py=p.door[1]+16;target=null;moving=false;bKey="";PET=null;PT=null;KT=null;hubOpen.was=null},600);setTimeout(()=>{fx.remove();banner("Arrived at "+p.n,"u");renderHud()},1300)}}
 function mmBigDraw(){if(!MMB)return;const{M,k,img,D}=MMB,cv=$("mmCv");if(!cv)return;const g=cv.getContext("2d");g.setTransform(1,0,0,1,0,0);g.drawImage(img,0,0);g.setTransform(D,0,0,D,0,0);mmMarks(g,M,k,0,0,true)}
-setInterval(()=>{try{mmDraw();if(MMB)mmBigDraw()}catch(e){console.warn(e)}},250);
+setInterval(()=>{try{mmDraw();if(MMB)mmBigDraw()}catch(e){console.warn(e)}},40);
 $("miniMap").onclick=mmOpen;
 /* police: drive too fast in a car and you might get chased */
 let COP=null,copT=30;
