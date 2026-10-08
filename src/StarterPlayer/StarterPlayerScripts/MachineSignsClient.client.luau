@@ -85,11 +85,13 @@ local function signPart(name, size, color, material, transparency)
 	part.Color = color
 	part.Material = material
 	part.Transparency = transparency
+	part.Reflectance = 0
 	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
 	part.Parent = folder
 	return part
 end
-local glass = signPart("SignGlass", Vector3.new(SIGN.Side, SIGN.Side, 0.1), SIGN.Glass, Enum.Material.Glass, 1)
+-- (matte, owner 9 Oct: the Glass material mirrored the room on the sign; the tint and see-through stay)
+local glass = signPart("SignGlass", Vector3.new(SIGN.Side, SIGN.Side, 0.1), SIGN.Glass, Enum.Material.SmoothPlastic, 1)
 local edges = {}
 for i = 1, 4 do
 	-- edges 1 / 2 are the top and bottom of the square, 3 / 4 its sides (in the square's own frame)

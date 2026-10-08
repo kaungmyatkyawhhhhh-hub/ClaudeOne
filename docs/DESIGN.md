@@ -129,7 +129,7 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   once (the oldest go). Client only. Setting "Show EXP popups" On / Off (default On; Off = the old single "+N").
 - Machine sign + prompt (owner, 8 Oct night, `MachineSignsClient`; replaces the flat card and Roblox's wide "Use" panel):
   only the NEAREST machine within 12 studs shows a floating glass diamond above it: a square slab turned 45 degrees, dark
-  tinted glass (~0.3 transparent) with a thin glowing white Neon border, a slow gentle bob, turning smoothly toward the
+  tinted glass (~0.3 transparent, matte: no reflections, owner 9 Oct) with a thin glowing white Neon border, a slow gentle bob, turning smoothly toward the
   camera (a 3D object). Above it the machine name (big bold white Oswald, dark stroke). Inside: our own white body icon
   (`Shared/UI/BodyFigure`) with the main muscle in red, the main muscle's name in bold white and its share in red ("53%").
   Main muscle only (the machine HUD shows the full split after you sit down). Below it the prompt: a small square
@@ -408,13 +408,20 @@ The beach gym (opens at Growth Spurt 1) has NO machines of its own (owner, 8 Oct
 (same model, name, config, tiers, EXP and MachineId, so unlocked weights, the "NEW" tag and quests are shared with every
 gym); only the surroundings are beachy. A copy opens with the beach gym, never later than its own gym
 (`Machines.GymOpenAt`, model attribute `Gym`). No "Pro" copies in the pro gym either.
-Start: a loading screen from the first frame (ReplicatedFirst: dark, GYM ARC title, segmented bar) until the area behind
-the menu has streamed in (RequestStreamAroundAsync at the shot, ~8s max; the gym building, front and entrance are
-Persistent models). Menu: a fixed eye-height shot of the starter gym entrance with a very slow drift (the MenuCamera
-part in Gym.Entrance; never sky or baseplate), a dark see-through card on the right (big GYM ARC title in Oswald,
-"Everyone starts tiny." in Nunito, a solid white PLAY button with a hover/press bounce), Titles, Settings,
-offline gains/streak/Muscle of the Day info. Play: the camera glides in through the door to behind the character,
-then the HUD fades in.
+Start (owner, 9 Oct: as good as the genetics screen): a loading screen from the first frame (ReplicatedFirst): a dark
+room with one soft overhead light and faint chalk dust drifting up, the GYM ARC title, and a BARBELL that loads as the
+game loads: bumper plates in the grade colors (heaviest inside) slide onto both sleeves pair by pair with a clank, the
+collars close, and when full the bar is lifted with a bounce before it fades; the step and a short rotating tip under
+it. It stays until the area behind the menu has streamed in (RequestStreamAroundAsync, ~8s max; the gym building,
+front and entrance are Persistent models) and the other players' stage meshes are in ("Loading players", 8 s max).
+Menu: a slow cinematic tour (MenuClient PLACES): the entrance (the MenuCamera part in Gym.Entrance), the starter gym,
+the pro gym, the beach gym, the skate park, each a slow dolly with soft depth of field, dissolving through black, a
+small caption naming the place (never sky or baseplate). On the left over a dark fade (black, never colored): the big
+GYM ARC title, a thin white rule, "Everyone starts tiny.", for returning players a profile (genetics grade badge, name,
+membership, Growth Spurt + height, equipped title in its rarity color), a solid white PLAY button that breathes (a soft
+glow) and catches a light sweep, TITLES / SETTINGS, small chips (streak, offline coins, Muscle of the Day); the rows
+slide in one after another. Play: from another place it dips to black back to the entrance, the camera glides in
+through the door to behind the character, then the HUD fades in.
 NO shop on menu. New players get a simplified menu.
 First 5 minutes: genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack
 → stats (inspect mode) → first quest → Growth Spurt goal shown. Taught with glowing paths and one-line coach messages.

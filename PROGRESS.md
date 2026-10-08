@@ -2,7 +2,22 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct, after midnight): new spotting system (owner's 3-player test next)
+## LATEST (9 Oct): new loading screen and menu, matte machine signs
+- **Loading screen** (`ReplicatedFirst/LoadingScreen`, rewritten): dark room, a soft overhead glow (stacked faint ovals),
+  chalk dust drifting up, GYM ARC + tagline, a 2D barbell that loads with the game: 5 pairs of bumper plates (red, blue,
+  yellow, green, white; heaviest inside) slide on with a clank (Config.Sounds Clank's id, pitch by plate), collars close,
+  the bar lifts ("Let's lift"), then it fades. Rotating original tips. Same logic as before (MenuLoad / MenuReady, the
+  body stage wait, 30 s give-up). Screenshot: loading_barbell.
+- **Menu** (`MenuClient`, rewritten): a cinematic tour (entrance "Main Street", starter gym, pro gym, beach gym, skate
+  park: slow dollies, depth of field + a little contrast on the camera, dips through black, a place caption bottom
+  right; the next place streams in during the current one), a left column over a black fade (title, rule, tagline,
+  profile for returning players, breathing PLAY with a light sweep, TITLES / SETTINGS, chips), rows slide in after the
+  loading screen; the old separate player card is folded into the profile. Tested as a new and a returning player.
+  Screenshots: menu_returning_main_street, menu_pro_gym, menu_skate_park. Shots are in MenuClient `PLACES` to reframe.
+- **Machine signs are matte** (owner): the diamond was the Glass material, which mirrored the room; now SmoothPlastic,
+  Reflectance 0 (same tint and transparency).
+
+## Before that (9 Oct, after midnight): new spotting system (owner's 3-player test next)
 - Replaces the old "Spot" prompt (SocialService keeps only the together bonus). `Config/Spotting` (all numbers),
   `SpotService` (server, remote `Spot`), `SpotClient`, spot types in `Config/Machines`, `tools/builders/SpotPoints`
   (run: spots on all 54 non-cardio machines, every hype spot clear with a view of the lifter), Settings "Spot requests".
