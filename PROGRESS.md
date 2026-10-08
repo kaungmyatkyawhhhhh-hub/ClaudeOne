@@ -7,7 +7,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 
 - **Forearms + calves:** your character now uses **7 EditableMeshes (was 8)**: the front torso muscles and the snatched upper
   torso share one mesh. (The whole UpperTorso can't be one mesh: front 9,570 + back 17,908 triangles > the 20,000 limit.)
-  **Update 8 Oct (afternoon): the 28 forearm / calf stage meshes are IN** (`ReplicatedStorage.LimbStages`, ids in
+  **Update 8 Oct: the 28 forearm / calf stage meshes are IN (v9 clean tubes, re-imported the same day)** (`ReplicatedStorage.LimbStages`, ids in
   `Config/LimbStages`): static MeshParts welded to LowerArm / LowerLeg, nearest stage to the shown look, 0.3 s cross-fade,
   the plain block hidden under them, clothing, hover / flash tint, mirrors, NPCs and the statue. Import 3D turns the OBJs
   180 degrees around Y (checked vertex by vertex): `Config/LimbStages.ImportTurn` turns them back.
@@ -156,8 +156,8 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
 - Rep and set popups are big numbers now (about 3,000+ EXP at the start): easy to scale in `Muscles.ExpPerXp` if too loud.
 - Traps: their outer edge reaches over the shoulder and can show as a thin shelf above the delt from low angles (in the muscle_v8 mesh, was there before the z-fight fix). Back at max: small skin gaps between lats / lower back / traps with stepped seams.
 - The rep flash (warm white-orange) is hard to see on light skin under bright lights; it is clear on darker skin.
-- Forearm / calf stages: their open ends show a small stepped lip at the wrist and ankle (in the stage OBJs), and the hover /
-  flash tints the whole stage evenly (one MeshPart color, no soft edge).
+- Forearm / calf stages (v9): a slightly darker band at the top of each tube where it meets the upper arm / thigh, and the
+  hover / flash tints the whole stage evenly (one MeshPart color, no soft edge).
 
 ## Decisions (still in force)
 - World pass (7 Oct, place only): small props cast no shadow (outside machines/NPCs), static parts have CanTouch off (no

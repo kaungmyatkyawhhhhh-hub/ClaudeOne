@@ -4,24 +4,25 @@ local serde = require("@lune/serde")
 local DOWNLOADS = "C:/Users/kaung/Downloads/limb_stages"
 local SRC = if fs.isDir(DOWNLOADS) then DOWNLOADS else "limb_stages"
 local spec = serde.decode("json", fs.readFile(SRC .. "/stages.json"))
--- the Mesh asset ids of the imported stage meshes (Import 3D, 8 Oct 2026; also the templates in ReplicatedStorage.LimbStages)
+-- the Mesh asset ids of the imported stage meshes (v9 clean tubes, Import 3D, 8 Oct 2026; also the templates in
+-- ReplicatedStorage.LimbStages)
 local IDS = {
-	LeftLowerArm__Forearms__g000 = 134869377242546, LeftLowerArm__Forearms__g020 = 123009547386725,
-	LeftLowerArm__Forearms__g040 = 76792021283700, LeftLowerArm__Forearms__g060 = 132613480057027,
-	LeftLowerArm__Forearms__g080 = 114924583885932, LeftLowerArm__Forearms__g100 = 100062384852138,
-	LeftLowerArm__Forearms__monster = 115849574876488,
-	LeftLowerLeg__Calves__g000 = 125453886740390, LeftLowerLeg__Calves__g020 = 122880136727946,
-	LeftLowerLeg__Calves__g040 = 133809753819097, LeftLowerLeg__Calves__g060 = 111890429209312,
-	LeftLowerLeg__Calves__g080 = 121445466025708, LeftLowerLeg__Calves__g100 = 74484219214533,
-	LeftLowerLeg__Calves__monster = 130744507772371,
-	RightLowerArm__Forearms__g000 = 98873297011050, RightLowerArm__Forearms__g020 = 133870990764025,
-	RightLowerArm__Forearms__g040 = 111851600610564, RightLowerArm__Forearms__g060 = 120848174618651,
-	RightLowerArm__Forearms__g080 = 122354124151374, RightLowerArm__Forearms__g100 = 129875298103198,
-	RightLowerArm__Forearms__monster = 134082376460352,
-	RightLowerLeg__Calves__g000 = 116276175859139, RightLowerLeg__Calves__g020 = 74950949400699,
-	RightLowerLeg__Calves__g040 = 139959019469236, RightLowerLeg__Calves__g060 = 95527494242011,
-	RightLowerLeg__Calves__g080 = 112519178091945, RightLowerLeg__Calves__g100 = 89281522213071,
-	RightLowerLeg__Calves__monster = 90400414812442,
+	LeftLowerArm__Forearms__g000 = 104232401952574, LeftLowerArm__Forearms__g020 = 121351977446187,
+	LeftLowerArm__Forearms__g040 = 117111957404941, LeftLowerArm__Forearms__g060 = 107781006835322,
+	LeftLowerArm__Forearms__g080 = 115045281020437, LeftLowerArm__Forearms__g100 = 85641953715646,
+	LeftLowerArm__Forearms__monster = 119772422681082,
+	LeftLowerLeg__Calves__g000 = 94263400999465, LeftLowerLeg__Calves__g020 = 114825270343042,
+	LeftLowerLeg__Calves__g040 = 135669953618648, LeftLowerLeg__Calves__g060 = 99553546064235,
+	LeftLowerLeg__Calves__g080 = 72185514973888, LeftLowerLeg__Calves__g100 = 70477912756207,
+	LeftLowerLeg__Calves__monster = 71548997860162,
+	RightLowerArm__Forearms__g000 = 110289781224774, RightLowerArm__Forearms__g020 = 139142047998655,
+	RightLowerArm__Forearms__g040 = 80454363835860, RightLowerArm__Forearms__g060 = 137492097782767,
+	RightLowerArm__Forearms__g080 = 140674161913939, RightLowerArm__Forearms__g100 = 97239896133357,
+	RightLowerArm__Forearms__monster = 136899509536113,
+	RightLowerLeg__Calves__g000 = 135484380701597, RightLowerLeg__Calves__g020 = 119055514992687,
+	RightLowerLeg__Calves__g040 = 105150171763752, RightLowerLeg__Calves__g060 = 130394052996009,
+	RightLowerLeg__Calves__g080 = 119758067624797, RightLowerLeg__Calves__g100 = 92126058222800,
+	RightLowerLeg__Calves__monster = 117626792723692,
 }
 local names = {}
 for name in pairs(spec.stages) do table.insert(names, name) end
