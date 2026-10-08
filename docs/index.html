@@ -483,6 +483,37 @@ body .banner.tst{max-width:min(calc(100vw - 104px),320px)}body .banner.tst.ray{m
 #ftip .eyebrow{color:#ffcc33}#ftip p{margin:0;font-size:.86rem;line-height:1.4}#ftip button{align-self:flex-end;background:var(--bg);color:var(--ink);border-radius:10px;padding:6px 14px;font-weight:800;font-size:.78rem}
 .hudpills.more{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}.hudpills.more.less{-webkit-mask-image:linear-gradient(90deg,transparent,#000 30px,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,transparent,#000 30px,#000 calc(100% - 44px),transparent)}
 @media (pointer:fine){.hudpills{cursor:grab}}
+/* ===== computers: sidebar HUD, map beside it, wide shop screens ===== */
+.keyhelp{display:none}.mcols{display:contents}
+html.desk #world{left:340px;width:calc(100% - 340px)}
+html.desk .hud{left:0;right:auto;top:0;bottom:0;width:340px;max-width:none;margin:0;padding:18px 16px;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;background:var(--bg);box-shadow:1px 0 0 var(--line);pointer-events:auto;gap:12px;scrollbar-width:thin}
+html.desk .hudtop{flex-wrap:wrap;align-items:stretch!important}
+html.desk .cashchip{flex:1 1 100%!important;flex-direction:column!important;align-items:flex-start!important;padding:14px 16px!important}
+html.desk .timechip{display:flex!important;flex:1 1 100%;height:210px;box-sizing:border-box}
+html.desk .hudbtns{flex:1 1 100%;width:100%;display:flex!important;flex-direction:row!important;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:center}
+html.desk .stats{grid-template-columns:1fr!important}
+html.desk .hudpills{flex-direction:column!important;align-items:stretch!important;overflow:visible!important;margin:0!important;padding:0!important;-webkit-mask-image:none!important;mask-image:none!important;cursor:default}
+html.desk .hudpills .pill{max-width:none!important;width:100%;box-sizing:border-box;justify-content:flex-start}html.desk .hudpills .pill .pt{max-width:none!important;flex:1}html.desk #pillTog{display:none!important}
+html.desk .keyhelp{display:block;order:99;font-size:.7rem;line-height:1.9;color:var(--muted);padding:10px 12px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line)}html.desk .keyhelp kbd{font-family:var(--mono);font-size:.62rem;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--surface);box-shadow:inset 0 -1px 0 var(--line);color:var(--ink)}
+html.desk .bottom{left:340px!important;right:0!important;max-width:none!important;margin:0!important;padding:0 28px 18px!important;align-items:center}
+html.desk .bottom .places{flex-wrap:wrap;justify-content:center;overflow:visible;max-width:1100px}html.desk .bottom .enter{width:min(560px,100%);position:relative}html.desk .bottom .scnbar{width:min(1100px,100%)}
+html.desk #enterBtn::after{content:"E";position:absolute;top:-8px;right:-8px;font:700 .62rem var(--mono);padding:2px 6px;border-radius:6px;background:var(--accent);color:var(--accent-ink)}
+html.desk #leaveBtn{position:relative}html.desk #leaveBtn::after{content:"Esc";margin-left:8px;font:700 .58rem var(--mono);padding:1px 5px;border-radius:4px;background:var(--line);color:var(--muted);vertical-align:middle}
+html.desk body .banner.tst{left:364px}html.desk #tut,html.desk #ftip,html.desk .achpop,html.desk .goalpop{left:calc(50% + 170px)}
+html.desk .room-in{max-width:1120px;padding-inline:36px}
+html.desk .room .perks{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+html.desk .mcols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;flex:1;min-height:0}html.desk .mcols>section{min-height:0;overflow-y:auto}html.desk .stash{grid-template-columns:repeat(2,minmax(0,1fr))}
+html.desk .room .art,html.desk .room .garprev,html.desk .room .bxwrap,html.desk .room .fotdcard{max-width:620px;width:100%;margin-inline:auto;box-sizing:border-box}
+html.tablet .room .art,html.tablet .room .garprev{max-width:560px;margin-inline:auto}
+html.desk .room .tiles{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+/* ===== tablets: roomier layout and bigger targets ===== */
+html.tablet .hud,html.tablet .bottom{max-width:780px}
+html.tablet .timechip{display:flex!important}
+html.tablet .place{padding:10px 14px;font-size:.84rem}
+html.tablet .room-in{max-width:880px;padding-inline:26px}
+html.tablet .room .perks{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+html.tablet .stash{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (orientation:landscape){html.tablet .mcols{display:grid;grid-template-columns:1fr 1fr;gap:22px;flex:1;min-height:0}html.tablet .mcols>section{min-height:0;overflow-y:auto}html.tablet .stash{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .fotdcard{padding:16px 18px;border-radius:20px;background:linear-gradient(135deg,#ff4fd8,#7a3cff);color:#fff;display:flex;flex-direction:column;gap:4px;margin-bottom:10px}.fotdcard b{font-family:var(--display);font-size:1.5rem}.fotdcard small{opacity:.85}.fotdcard .eyebrow{color:rgba(255,255,255,.85)}.fotdcard em{font-style:normal;font-family:var(--display);font-weight:900;font-size:1.4rem;margin-top:6px}.fotdcard .bigbtn{margin-top:10px}
 .meetgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}.meetcar{background:var(--surface);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}.meetcar.me{box-shadow:inset 0 0 0 2px var(--accent),var(--shadow)}.meetcar canvas{width:100%;height:auto;border-radius:10px;display:block}.meetcar b{font-size:.9rem;padding:0 4px}.meetcar span{font-size:.75rem;color:var(--muted);padding:0 4px 4px}
 .platerow{display:flex;gap:8px}.platerow input{flex:1;min-width:0;padding:12px;border-radius:12px;border:2px solid var(--line);background:#f6f3e6;color:#1b1f2a;font-family:var(--mono);font-weight:800;font-size:1.1rem;text-transform:uppercase;letter-spacing:.1em}.platerow .cta{justify-content:center;padding:10px 18px}
@@ -994,6 +1025,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
     <div class="stat"><small>Max lift <b id="strTxt">20 kg</b></small><div class="bar xp" id="xpBar"><i></i></div></div>
   </div>
+  <div class="keyhelp" id="keyHelp"><b>Keys</b> <kbd>WASD</kbd> walk · <kbd>E</kbd> enter · <kbd>Esc</kbd> leave · <kbd>M</kbd> map · <kbd>N</kbd> now · <kbd>P</kbd> phone · <kbd>R</kbd> ride</div>
   <div class="hudpills" id="hudpills"><button class="chip pill tog" id="pillTog" aria-label="Show or hide alerts"></button><button class="chip pill ev story" id="storyChip" hidden></button><button class="chip pill" id="goalChip"></button><button class="chip pill mood" id="moodChip" hidden></button><button class="chip pill boost" id="boostChip" hidden></button><button class="chip pill ev" id="chChip" hidden></button><button class="chip pill ev live" id="liveChip" hidden></button><button class="chip pill sea" id="seaChip" hidden></button><button class="chip pill ev" id="bzChip" hidden></button><button class="chip pill mp" id="mpChip"></button><button class="chip pill ev" id="evChip" hidden></button><button class="chip pill tr" id="trChip" hidden></button><button class="chip pill q" id="qChip" hidden></button><button class="chip pill ev" id="jobChip" hidden></button><button class="chip pill ev" id="rvChip" hidden></button><button class="chip pill crate" id="crateChip" hidden></button><button class="chip pill tmap" id="mapChip" hidden></button><button class="chip pill wk" id="wkChip" hidden></button></div>
 </div>
 <div class="perksheet" id="perkSheet" hidden></div><div class="perksheet mpsheet" id="mpSheet" hidden></div><button class="lvlbtn" id="lvlBtn" hidden aria-label="Pick a perk"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="currentColor"/></svg><b id="lvlN">1</b><span>LEVEL UP</span></button><button class="ridebtn" id="rideBtn" hidden aria-label="Walk or ride"></button><button class="phonebtn" id="phoneBtn" hidden aria-label="Open the market on your phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18h2"/></svg></button>
@@ -1406,6 +1438,8 @@ function nextBanner(){if(bq.length&&document.querySelector(".goalpop")){bBusy=tr
 
 /* ================= juice: coins, confetti, shake, crits, crates ================= */
 const TABLET=matchMedia("(pointer:coarse)").matches&&Math.min(screen.width,screen.height)>=600;if(TABLET)document.documentElement.classList.add("tablet");
+// computers get their own layout: a sidebar instead of the phone HUD, wide shop screens and keyboard controls
+let DESK=false;const deskCheck=()=>{const d=!TABLET&&matchMedia("(pointer:fine)").matches&&innerWidth>=1100;if(d!==DESK){DESK=d;document.documentElement.classList.toggle("desk",d);try{lastRS="";resize()}catch(e){}}};deskCheck();addEventListener("resize",deskCheck);
 const fxc=document.createElement("canvas");fxc.id="fx";document.body.appendChild(fxc);const fxg=fxc.getContext("2d");
 let FXP=[],shakeT=0,shakeA=0,lastPt=null,lastPtT=0,shownCash=null,fxW=0,fxH=0,fxD=1,coinN=0,coinNT=0,bumpT=0;
 // no autoclickers: every press must come at least 5 ms after the last one
@@ -1831,7 +1865,7 @@ function drawWorld(){
     ctx.fillStyle="rgba(10,14,22,.88)";rr(x-w/2,y-19,w,38,19);ctx.fill();ctx.beginPath();ctx.moveTo(x-8,y+18);ctx.lineTo(x+8,y+18);ctx.lineTo(x,y+27);ctx.fill();ctx.fillStyle="#2fd28a";ctx.beginPath();ctx.arc(x-w/2+17,y,4.5+Math.sin(wt*4),0,7);ctx.fill();ctx.fillStyle="#ffffff";ctx.fillText(lab,x+7,y+1)}
   drawFinds();liveDraw();
   if(S.job){const d=PL[S.job.dest];drawPin(d.door[0],d.door[1]+14,"#d4a017","→")}drawHunt();drawHol();{const tg=tutGo();if(tg)drawPin(tg.door[0],tg.door[1]+14,"#4fe3ff","!")}
-  if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
+  if(target&&moving&&!KEYW){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const r=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],r*1.6,r*.7,0,0,7);ctx.stroke()}
   const ppl=NPCS.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,hs:n.f?8:0,mv:true,ph:n.ph})]);
   ppl.push([S.py,()=>{const rd=ride();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{...emoOpts(),acc:myAcc(),tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   hubPeople(ppl);roadPeople(ppl);storyPeople(ppl);goalPeople(ppl);drawThief(ppl);mpPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);
@@ -2285,6 +2319,19 @@ addEventListener("keydown",e=>{if(!GS||!GS.flex||GS.flex.done||e.repeat||e.ctrlK
   addEventListener("pointerup",()=>{if(D&&D.m){const stop=ev=>{ev.stopPropagation();ev.preventDefault()};addEventListener("click",stop,{capture:true,once:true});setTimeout(()=>removeEventListener("click",stop,true),60)}D=null});
   hp.addEventListener("wheel",e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){hp.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
   const fade=()=>{hp.classList.toggle("more",hp.scrollLeft+hp.clientWidth<hp.scrollWidth-8);hp.classList.toggle("less",hp.scrollLeft>8)};hp.addEventListener("scroll",fade,{passive:true});setInterval(fade,1000)}}
+const KEYS={};let KEYW=false;
+const typing=e=>{const t=e.target;return t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable)};
+addEventListener("keydown",e=>{if(typing(e)||e.ctrlKey||e.metaKey||e.altKey||!S||!playing)return;const k=e.key.toLowerCase();
+  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)&&!room&&$("overlay").hidden){KEYS[k]=1;e.preventDefault();return}
+  if(e.repeat)return;
+  if(k==="escape"){if(!$("mmBig").hidden){$("mmBig").hidden=true;return}const lb=$("leaveBtn");if(room&&lb){lb.click();return}if(!$("mpSheet").hidden){$("mpSheet").hidden=true;return}return}
+  if(room||!$("overlay").hidden)return;
+  if(k==="e"||k==="enter"){const b=$("enterBtn");if(b){e.preventDefault();b.click()}return}
+  const click=id=>{const b=$(id);if(b&&!b.hidden&&b.offsetParent!==null)b.click()};
+  if(k==="m")click("miniMap");else if(k==="n")click("nowBtn");else if(k==="p")click("phoneBtn");else if(k==="r")click("rideBtn")});
+addEventListener("keyup",e=>{delete KEYS[e.key.toLowerCase()]});addEventListener("blur",()=>{for(const k in KEYS)delete KEYS[k]});
+setInterval(()=>{if(!S)return;const dx=(KEYS.d||KEYS.arrowright?1:0)-(KEYS.a||KEYS.arrowleft?1:0),dy=(KEYS.s||KEYS.arrowdown?1:0)-(KEYS.w||KEYS.arrowup?1:0);
+  if((dx||dy)&&!room){const n=Math.hypot(dx,dy);target=[S.px+dx/n*90,S.py+dy/n*90];autoEnter=null;moving=true;KEYW=true}else if(KEYW){KEYW=false;target=null;moving=false}},40);
 function gymTap(e){
   if(!GS||(GS.flex&&!GS.flex.done))return;audioOn();
   const cv=$("gCv"),r=cv.getBoundingClientRect(),f=cv.clientWidth/r.width,x=((e.clientX-r.left)*f-GS.ox)/GS.k,y=((e.clientY-r.top)*f-GS.oy)/GS.k;
@@ -3836,8 +3883,8 @@ function openMarket(cfg){
     ${cfg.k==="flea"?`<button class="reqbtn lmbtn" id="mLem">🍋 Lemonade<b>Stand · 8 energy</b></button>`:""}
     ${!cfg.only&&(S.stats.flips||0)>=10?(FO?`<div class="fobar" id="foBar"></div>`:`<button class="reqbtn fobtn" id="mFO" ${S.foDay===dayKey()?"disabled":""}>⚔️ Flip-off<b>${S.foDay===dayKey()?"Rematch tomorrow":"vs Slick Vinny · 3 min"}</b></button>`):""}</div>
     <div id="event" class="collector"></div>
-    <section><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
-    <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="mHype" class="mhype"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div>`;
+    <div class="mcols"><section class="lstsec"><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
+    <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="mHype" class="mhype"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div></div>`;
   {const fb=$("mFO");if(fb)fb.onclick=()=>foStart()}{const sb=$("mStall");if(sb)sb.onclick=()=>{const cf=M.cfg;closeMarket();openStalls(()=>{room="market";openMarket(cf)})}}{const lb=$("mLem");if(lb)lb.onclick=()=>{const cf=M.cfg;closeMarket();openLemon(()=>{room="flea";openMarket(cf)})}}
   const m=$("market");slotEls.length=0;slotKeys=[];
   for(let i=0;i<3;i++){const el=document.createElement("div");el.className="lst";el.dataset.i=i;el.tabIndex=0;m.appendChild(el);slotEls.push(el)}
@@ -5668,7 +5715,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=114,WN=[
+const WN_VER=115,WN=[
+ ["🖥️","Made for your screen","On a computer the game now has its own layout: a sidebar with your cash, a big minimap, energy and every chip, the map beside it, wide shop screens with listings and stash side by side, and keyboard controls (WASD to walk, E to enter, Esc to leave, M map, N now, P phone, R ride). Tablets get a roomier layout too. Also fixed: friends no longer stay frozen inside a house after they leave.","2026-10-10T01:00"],
  ["😄","Mood","You now have a mood (the face chip at the top). It slowly drops while you work. Go out to lift it: the Nightclub, Rusty's Diner, the Arcade, the Café and more. Happy pays up to +15% on everything you earn, sad costs up to 15%. Also: the Frontier Road now matches World 4's paths, and the phone lets you pick which market to open.","2026-10-10T00:00"],
  ["🧭","A friendlier start","A longer tutorial now explains the cash panel, the chip row (it slides sideways, and you can drag it with a mouse), the Goal chip and the Now button. Every place shows a short card the first time you walk in. New players start in Calm mode (fewer coins and confetti, no flashes or shaking), which you can switch in Settings, and the Vince story and random events wait until the tutorial is done.","2026-10-09T23:00"],
  ["🛠️","Market fix","Very rich players could spam buy and sell at the Market to grow their money without limit, because prices followed their wealth exactly. Prices still rise as you get richer, just more slowly than your money. Friends buying at a building you own also no longer send you a cut. New: a Walk / Ride button on the right of the screen switches between walking and your vehicle anywhere.","2026-10-09T22:00"],
@@ -6406,7 +6454,7 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
   const ppl=SCN.npc.map(n=>[n.y,()=>drawPerson(n.x,n.y,{shirt:n.shirt,skin:n.skin,hair:n.hair,hs:n.f?8:0,mv:true,ph:n.ph,acc:n.astro?{h:"astro"}:null,bob:n.astro?5+Math.sin(wt*2+n.ph)*3:0})]);
   ppl.push([S.py,()=>{const rd=SCN.kind==="city"?ride():null,sp=SCN.kind==="space"||SCN.kind==="planet",ac=sp&&!["astro","jcrown"].includes(myAcc().h)?{...myAcc(),h:"astro"}:myAcc();if(rd)drawRide(rd);if(!CARS.includes(rd))drawPerson(S.px,S.py-(rd?7:0),{bob:sp?6+Math.sin(wt*2)*4:0,...emoOpts(),acc:ac,tall:tallK(),build:myBuild(),crown:(S.skin||0)>=5,...myLook(),mv:moving&&!rd,ph:wt,you:true,size:bodyK()+(pumped()?.06:0)})}]);
   decoUnder();w4People(ppl);bossPeople(ppl);mpPeopleScene(ppl);arenaPeople(ppl);drawPartner(ppl);drawPet(ppl);drawKid(ppl);ppl.sort((a,b)=>a[0]-b[0]).forEach(p=>p[1]());decoHeads(nightA);decoOver();
-  if(target&&moving){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
+  if(target&&moving&&!KEYW){ctx.strokeStyle="#2a3cff";ctx.lineWidth=2.5;const rr2=8+Math.sin(wt*8)*2;ctx.beginPath();ctx.ellipse(target[0],target[1],rr2*1.6,rr2*.7,0,0,7);ctx.stroke()}
   ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
   const indoor=SCN.kind==="space"||SCN.kind==="house"||SCN.kind==="planet"||SCN.kind==="castle",gr=indoor?null:grade(S.clock);if(gr){ctx.fillStyle=`rgba(${gr[0]},${gr[1]},${gr[2]},${gr[3]})`;ctx.fillRect(0,0,vw,vh)}
   if(nightA>0&&!indoor){ctx.fillStyle=`rgba(8,12,38,${.42*nightA})`;ctx.fillRect(0,0,vw,vh);ctx.globalCompositeOperation="lighter";
@@ -9264,7 +9312,7 @@ function arenaPeople(ppl){if(!SCN||SCN.kind!=="arena")return;OPPS.forEach((o,i)=
   ppl.push([y,()=>drawPerson(cx,y,{shirt:o.look[2],skin:o.look[0],hair:o.look[1],hs:o.n.startsWith("Titan Tess")?8:0,size:sz,build:{c:Math.min(1,o.kg/260),l:Math.min(1,o.kg/320),b:Math.min(1,o.kg/280)},pose:fl?"bi":null,ph:wt+i})])})}
 /* ================= camera: never let the HUD or the bottom buttons cover you near the edge of a map ================= */
 let SAFE={t:0,top:0,bot:0};
-function camSafe(){const now=performance.now();if(now-SAFE.t>500){SAFE.t=now;const h=$("hud"),b=$("bottom");const k=cssScale()*(typeof Z==="number"&&Z>0?Z:1),cv=$("world"),ct=cv?cv.getBoundingClientRect().top:0;let bt=0;if(h&&!h.hidden)h.querySelectorAll("*").forEach(e=>{if(!e.offsetParent&&getComputedStyle(e).position!=="fixed")return;const r=e.getBoundingClientRect();if(r.height&&r.width)bt=Math.max(bt,r.bottom)});SAFE.top=Math.max(0,(bt-ct)/k);SAFE.bot=b&&!b.hidden&&b.offsetHeight?Math.max(0,((cv?cv.getBoundingClientRect().bottom:innerHeight)-b.getBoundingClientRect().top)/k):0}
+function camSafe(){const now=performance.now();if(now-SAFE.t>500&&DESK){SAFE.t=now;SAFE.top=0;const b=$("bottom");SAFE.bot=b&&!b.hidden&&b.offsetHeight?b.offsetHeight/(cssScale()*(Z||1)):0}if(now-SAFE.t>500){SAFE.t=now;const h=$("hud"),b=$("bottom");const k=cssScale()*(typeof Z==="number"&&Z>0?Z:1),cv=$("world"),ct=cv?cv.getBoundingClientRect().top:0;let bt=0;if(h&&!h.hidden)h.querySelectorAll("*").forEach(e=>{if(!e.offsetParent&&getComputedStyle(e).position!=="fixed")return;const r=e.getBoundingClientRect();if(r.height&&r.width)bt=Math.max(bt,r.bottom)});SAFE.top=Math.max(0,(bt-ct)/k);SAFE.bot=b&&!b.hidden&&b.offsetHeight?Math.max(0,((cv?cv.getBoundingClientRect().bottom:innerHeight)-b.getBoundingClientRect().top)/k):0}
   const head=78*(typeof tallK==="function"?Math.max(1,tallK()):1),lo=S.py-(vh-SAFE.bot-14),hi=S.py-(SAFE.top+head);if(hi>=lo)cam.y=clamp(cam.y,lo,hi)}
 /* ================= a gym in every world: each city, the Cosmos and Deep Time ================= */
 const GYMT={tokyo:{n:"Shibuya Dojo Gym",sign:"SHIBUYA DOJO",c:"#e2364a"},paris:{n:"Club Musculation",sign:"CLUB MUSCU",c:"#2a5bd7"},dubai:{n:"Desert Iron Gym",sign:"DESERT IRON",c:"#cf9a14"},monaco:{n:"Riviera Fitness",sign:"RIVIERA FIT",c:"#14a3a8"},
