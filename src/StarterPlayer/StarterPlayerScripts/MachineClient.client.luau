@@ -1545,6 +1545,26 @@ local titleLabel = Theme.Text({
 	Parent = tapeRow,
 })
 Theme.TextShadow(titleLabel)
+-- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift. It sits
+-- right after the machine name, above the panel (it follows the name's width). (No new top-level local: this script is
+-- at Luau's 200-local limit; wired up below by name.)
+do
+	local maxButton = Theme.Button("Secondary", {
+		Name = "Max",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, Spacing.S, 1, 0),
+		Size = UDim2.fromOffset(64, Theme.MinTouch),
+		ZIndex = 4,
+		Parent = tapeRow,
+	}, {
+		Theme.Text({ Text = "MAX", Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(1, 1), ZIndex = 5 }),
+	})
+	local function follow()
+		maxButton.Position = UDim2.new(0, Spacing.S + titleLabel.TextBounds.X + Spacing.M, 1, 0) -- (bottom on the row: never over the panel)
+	end
+	titleLabel:GetPropertyChangedSignal("TextBounds"):Connect(follow)
+	follow()
+end
 
 local panel = Theme.Panel({
 	Name = "Panel",
@@ -1585,13 +1605,6 @@ end
 local minusButton = stepButton("Minus", 1, Icons.Minus(Colors.Text))
 local weightColumn = box({ LayoutOrder = 2, Size = UDim2.fromScale(0.38, 1), Parent = weightSection }, { Theme.List(Vertical, "XS") })
 local plusButton = stepButton("Plus", 3, Icons.Plus(Colors.Text))
--- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift
--- (no new top-level local: this script is at Luau's 200-local limit; wired up below by name)
-Theme.Button("Secondary", { Name = "Max", LayoutOrder = 4, Size = UDim2.fromScale(1, 0.56), Parent = weightSection }, {
-	Theme.Aspect(1, Enum.DominantAxis.Height),
-	Theme.Limit(Vector2.new(Theme.MinTouch, Theme.MinTouch), Vector2.new(math.huge, math.huge)),
-	Theme.Text({ Text = "MAX", Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(1, 1) }),
-})
 
 local weightNumber = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 0.56), Parent = weightColumn })
 local tierLabel = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.24), Parent = weightColumn })
@@ -2574,7 +2587,7 @@ end
 minusButton.Activated:Connect(function() stepTier(-1) end)
 plusButton.Activated:Connect(function() stepTier(1) end)
 do
-	local maxButton = weightSection:FindFirstChild("Max") :: GuiButton
+	local maxButton = tapeRow:FindFirstChild("Max") :: GuiButton
 	maxButton.Activated:Connect(function()
 		if not current then return end
 		local machine = current.machine
