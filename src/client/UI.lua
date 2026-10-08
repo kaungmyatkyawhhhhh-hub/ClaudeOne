@@ -3,7 +3,9 @@
 	  * loading screen, fades, cinematic letterbox, title card
 	  * main menu
 	  * garage with live 3D car preview, class tabs, stats and buy/drive
-	  * HUD: cash, speedometer gauge with gear + rpm, combo meter, cut-up popups
+	  * HUD: level + XP bar, analog rev-counter speedometer with gear, cash tab,
+	    settings / shop / gifts buttons, daily gift card, controls tab, combo
+	    meter, cut-up popups, level-up banner
 	  * touch controls for mobile
 ]]
 
@@ -26,6 +28,11 @@ local player = Players.LocalPlayer
 local UI = {}
 UI.touch = { throttle = 0, brake = 0, steer = 0, handbrake = false }
 UI.isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- Callbacks assigned by Main
+UI.onGarageButton = nil :: (() -> ())?
+UI.onCameraButton = nil :: (() -> ())?
+UI.onDailyClaim = nil :: (() -> ())? -- asks the server to pay the daily gift
 
 ---------------------------------------------------------------------
 -- Helpers
@@ -130,16 +137,839 @@ local overlay: Frame
 local cashLabel: TextLabel
 local speedLabel: TextLabel
 local gearLabel: TextLabel
-local rpmFill: Frame
-local arcSegments: { Frame } = {}
+local gearTag: TextLabel
+local needleHolder: Frame
+local rpmTrack: { Frame } = {}
 local comboFrame: Frame
 local comboLabel: TextLabel
 local comboBar: Frame
 local popupHolder: Frame
 local toast: TextLabel
-local camLabel: TextButton
+local levelLabel: TextLabel
+local xpFill: Frame
+local xpText: TextLabel
+local xpGain: TextLabel
+local camToggle: TextButton
+local musicToggle: TextButton
+local settingsPanel: Frame
+local dailyPanel: Frame
+local controlsPanel: Frame? = nil
+local controlsArrow: TextLabel? = nil
+local giftDot: Frame
+local dailyCardTime: TextLabel
+local dailyCardSub: TextLabel
+local dailyCardStroke: UIStroke
+local dailyPanelAmount: TextLabel
+local dailyClaimBtn: TextButton
 local displayedCash = 0
 local targetCash = 0
+
+local WHITE = Color3.new(1, 1, 1)
+local RPM_MAX = 7 -- the gauge reads 0..7 (x1000 rpm)
+local REDLINE = 6
+
+local progress = { level = 1, xp = 0, need = Config.xpForLevel(1) }
+local daily = { known = false, readyAt = 0, claiming = false, shown = -1 }
+
+-- 0..RPM_MAX -> gauge angle in degrees (maths convention, 0 = right, CCW);
+-- the dial sweeps 270 degrees clockwise from bottom-left to bottom-right
+local function rpmAngle(v: number): number
+	return 225 - (v / RPM_MAX) * 270
+end
+
+-- position on a circle around the centre of the parent
+local function polar(r: number, deg: number): UDim2
+	local a = math.rad(deg)
+	return UDim2.new(0.5, math.cos(a) * r, 0.5, -math.sin(a) * r)
+end
+
+local function formatClock(seconds: number): string
+	local s = math.max(0, math.ceil(seconds))
+	local h = s // 3600
+	local m = (s % 3600) // 60
+	if h > 0 then
+		return string.format("%d:%02d:%02d", h, m, s % 60)
+	end
+	return string.format("%02d:%02d", m, s % 60)
+end
+
+local function musicOn(): boolean
+	local m = game:GetService("SoundService"):FindFirstChild("Music")
+	return not (m and m:IsA("Sound") and m.Volume <= 0)
+end
+
+---------------------------------------------------------------------
+-- Flash / toast
+---------------------------------------------------------------------
+local flashFrame: Frame? = nil
+function UI.flash(color: Color3)
+	if not flashFrame then
+		flashFrame = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), BorderSizePixel = 0, ZIndex = 15, Parent = gui })
+	end
+	local f = flashFrame :: Frame
+	f.BackgroundColor3 = color
+	f.BackgroundTransparency = 0.6
+	tween(f, 0.5, { BackgroundTransparency = 1 })
+end
+
+local toastToken = 0
+function UI.toast(text: string, color: Color3?)
+	toastToken += 1
+	local my = toastToken
+	toast.Text = text
+	toast.TextColor3 = color or Theme.Text
+	toast.Visible = true
+	toast.TextTransparency = 0
+	toast.BackgroundTransparency = 0.1
+	task.delay(2.2, function()
+		if my == toastToken then
+			tween(toast, 0.4, { TextTransparency = 1, BackgroundTransparency = 1 })
+		end
+	end)
+end
+
+---------------------------------------------------------------------
+-- Touch controls
+---------------------------------------------------------------------
+function UI.buildTouchControls()
+	local holder = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = hud })
+	local function touchButton(text: string, pos: UDim2, size: UDim2, color: Color3, onDown: () -> (), onUp: () -> ())
+		local b: TextButton = new("TextButton", {
+			AutoButtonColor = false,
+			Text = text,
+			Font = Enum.Font.GothamBlack,
+			TextSize = 20,
+			TextColor3 = Theme.Text,
+			BackgroundColor3 = Theme.Panel,
+			BackgroundTransparency = 0.25,
+			Position = pos,
+			Size = size,
+			Parent = holder,
+		}, { corner(14), stroke(color, 2, 0.2) })
+		b.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				b.BackgroundTransparency = 0
+				onDown()
+			end
+		end)
+		b.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				b.BackgroundTransparency = 0.25
+				onUp()
+			end
+		end)
+	end
+	local left, right = false, false
+	local function updSteer()
+		UI.touch.steer = (if right then 1 else 0) - (if left then 1 else 0)
+	end
+	touchButton("◀", UDim2.new(0, 24, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
+		left = true
+		updSteer()
+	end, function()
+		left = false
+		updSteer()
+	end)
+	touchButton("▶", UDim2.new(0, 124, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
+		right = true
+		updSteer()
+	end, function()
+		right = false
+		updSteer()
+	end)
+	touchButton("GAS", UDim2.new(1, -114, 1, -160), UDim2.fromOffset(90, 120), Theme.Money, function()
+		UI.touch.throttle = 1
+	end, function()
+		UI.touch.throttle = 0
+	end)
+	touchButton("BRAKE", UDim2.new(1, -214, 1, -130), UDim2.fromOffset(90, 90), Theme.Danger, function()
+		UI.touch.brake = 1
+	end, function()
+		UI.touch.brake = 0
+	end)
+	touchButton("DRIFT", UDim2.new(1, -214, 1, -230), UDim2.fromOffset(90, 80), Theme.Accent2, function()
+		UI.touch.handbrake = true
+	end, function()
+		UI.touch.handbrake = false
+	end)
+end
+
+---------------------------------------------------------------------
+-- Icons: drawn from plain frames (no image assets) on a 32x32 grid
+---------------------------------------------------------------------
+local function icon(kind: string, parent: Instance, size: number, color: Color3?): Frame
+	local k = size / 32
+	local col = color or WHITE
+	local canvas = new("Frame", {
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(size, size),
+		Parent = parent,
+	})
+	local function box(x: number, y: number, w: number, h: number, radius: number?, rotation: number?): Frame
+		local f = new("Frame", {
+			BackgroundColor3 = col,
+			BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset((x + w / 2) * k, (y + h / 2) * k),
+			Size = UDim2.fromOffset(w * k, h * k),
+			Rotation = rotation or 0,
+			Parent = canvas,
+		})
+		if radius then
+			new("UICorner", { CornerRadius = if radius < 0 then UDim.new(1, 0) else UDim.new(0, radius * k), Parent = f })
+		end
+		return f
+	end
+	if kind == "gear" then
+		-- eight teeth around a thick ring
+		for t = 0, 7 do
+			local a = math.rad(t * 45)
+			box(16 + math.cos(a) * 11.5 - 3.5, 16 + math.sin(a) * 11.5 - 3.5, 7, 7, 1.5, t * 45 + 90)
+		end
+		local ring = box(10, 10, 12, 12, -1)
+		ring.BackgroundTransparency = 1
+		new("UIStroke", { Color = col, Thickness = math.max(2, 5 * k), Parent = ring })
+	elseif kind == "cart" then
+		box(2, 5, 7, 3, 1.5) -- handle
+		box(7.5, 5, 3, 17, 1.5) -- frame post
+		box(9, 9, 20, 10, 2) -- basket
+		box(9, 20, 17, 3, 1.5) -- bottom rail
+		box(10, 24.5, 5.5, 5.5, -1) -- wheels
+		box(21, 24.5, 5.5, 5.5, -1)
+	elseif kind == "gift" then
+		box(4, 11, 11, 6, 1.5) -- lid (split by the ribbon gap)
+		box(17, 11, 11, 6, 1.5)
+		box(6, 18, 9, 11, 1.5) -- box
+		box(17, 18, 9, 11, 1.5)
+		box(8.5, 5, 8, 5.5, -1, 30) -- bow loops
+		box(15.5, 5, 8, 5.5, -1, -30)
+	end
+	return canvas
+end
+
+---------------------------------------------------------------------
+-- HUD pieces
+---------------------------------------------------------------------
+local function buildSpeedometer()
+	local size = if UI.isTouch then 180 else 240
+	local half = size / 2
+	local gauge = new("Frame", {
+		Name = "Speedometer",
+		AnchorPoint = if UI.isTouch then Vector2.new(0.5, 1) else Vector2.new(1, 1),
+		-- on touch it sits bottom-centre between the pedals and the steering
+		-- buttons, lifted above the cash tab
+		Position = if UI.isTouch then UDim2.new(0.5, 0, 1, -48) else UDim2.new(1, -24, 1, -24),
+		Size = UDim2.fromOffset(size, size),
+		BackgroundColor3 = Theme.Background,
+		BackgroundTransparency = 0.22,
+		Parent = hud,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Stroke, 2, 0.15) })
+	new("UIGradient", {
+		Rotation = 90,
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0) }),
+		Parent = gauge,
+	})
+
+	-- rpm track: thin arc that lights up to the current rpm, red in the redline
+	local segCount = 63
+	local rTrack = half - 9
+	local step = 270 / segCount
+	local segLen = rTrack * math.rad(step) + 1.2
+	for i = 1, segCount do
+		local mid = (i - 0.5) / segCount * RPM_MAX
+		local a = rpmAngle(mid)
+		local seg = new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = polar(rTrack, a),
+			Size = UDim2.fromOffset(segLen, if UI.isTouch then 3 else 4),
+			Rotation = 90 - a,
+			BackgroundColor3 = if mid >= REDLINE then Theme.Danger else Theme.Stroke,
+			BackgroundTransparency = if mid >= REDLINE then 0.45 else 0.1,
+			BorderSizePixel = 0,
+			ZIndex = 2,
+			Parent = gauge,
+		})
+		table.insert(rpmTrack, seg)
+	end
+
+	-- ticks every 500 rpm, numbers every 1000
+	local rTick = half - 15
+	local major = size * 0.06
+	local minor = size * 0.03
+	for t = 0, RPM_MAX * 2 do
+		local v = t / 2
+		local isMajor = t % 2 == 0
+		local len = if isMajor then major else minor
+		local a = rpmAngle(v)
+		new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = polar(rTick - len / 2, a),
+			Size = UDim2.fromOffset(if isMajor then 3 else 2, len),
+			Rotation = 90 - a,
+			BackgroundColor3 = if v >= REDLINE then Theme.Danger else Theme.Text,
+			BackgroundTransparency = if isMajor then 0 else 0.35,
+			BorderSizePixel = 0,
+			ZIndex = 2,
+			Parent = gauge,
+		})
+		if isMajor then
+			label({
+				Text = tostring(v),
+				TextSize = math.floor(size * 0.068),
+				Font = Enum.Font.GothamBlack,
+				TextColor3 = if v >= REDLINE then Theme.Danger else Theme.Text,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = polar(rTick - major - size * 0.065, a),
+				Size = UDim2.fromOffset(24, 18),
+				ZIndex = 2,
+				Parent = gauge,
+			})
+		end
+	end
+	label({
+		Text = "x1000rpm",
+		TextSize = math.max(8, math.floor(size * 0.037)),
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Theme.SubText,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.285),
+		Size = UDim2.new(0.4, 0, 0, 12),
+		ZIndex = 2,
+		Parent = gauge,
+	})
+
+	-- centre ring with the gear
+	local ringSize = size * 0.34
+	new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(ringSize, ringSize),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.35,
+		ZIndex = 2,
+		Parent = gauge,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Stroke, 1.5, 0.2) })
+	local gearRow = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(ringSize, ringSize * 0.6),
+		BackgroundTransparency = 1,
+		ZIndex = 3,
+		Parent = gauge,
+	}, {
+		new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 2),
+		}),
+	})
+	gearLabel = label({
+		Text = "N",
+		TextSize = math.floor(size * 0.19),
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.Accent,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
+		LayoutOrder = 1,
+		ZIndex = 3,
+		Parent = gearRow,
+	})
+	gearTag = label({
+		Text = "AT",
+		TextSize = math.max(9, math.floor(size * 0.05)),
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.SubText,
+		TextYAlignment = Enum.TextYAlignment.Bottom,
+		Size = UDim2.new(0, size * 0.08, 0.62, 0),
+		LayoutOrder = 2,
+		Visible = false,
+		ZIndex = 3,
+		Parent = gearRow,
+	})
+
+	-- speed readout under the ring
+	speedLabel = label({
+		Text = "0",
+		TextSize = math.floor(size * 0.145),
+		Font = Enum.Font.GothamBlack,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.785),
+		Size = UDim2.new(0.5, 0, 0, size * 0.15),
+		ZIndex = 3,
+		Parent = gauge,
+	})
+	label({
+		Text = "mph",
+		TextSize = math.max(10, math.floor(size * 0.05)),
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Theme.SubText,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.885),
+		Size = UDim2.new(0.4, 0, 0, 14),
+		ZIndex = 3,
+		Parent = gauge,
+	})
+
+	-- needle: a square the size of the gauge, rotated about its centre; the
+	-- red bar starts outside the centre ring so the gear stays readable
+	needleHolder = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Rotation = 90 - rpmAngle(0),
+		ZIndex = 4,
+		Parent = gauge,
+	})
+	local rIn = ringSize / 2 + 4
+	local rOut = half - 12
+	local width = if UI.isTouch then 3 else 4
+	new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0.5, -rIn),
+		Size = UDim2.fromOffset(width + 6, rOut - rIn),
+		BackgroundColor3 = Theme.Danger,
+		BackgroundTransparency = 0.78,
+		BorderSizePixel = 0,
+		ZIndex = 4,
+		Parent = needleHolder,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	local needle = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0.5, -rIn),
+		Size = UDim2.fromOffset(width, rOut - rIn),
+		BackgroundColor3 = Theme.Danger,
+		BorderSizePixel = 0,
+		ZIndex = 5,
+		Parent = needleHolder,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new(Color3.fromRGB(255, 170, 170), WHITE),
+		Parent = needle,
+	})
+end
+
+local function buildLevelBar()
+	local barWidth = if UI.isTouch then 240 else 380
+	local top = new("Frame", {
+		Name = "Level",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 8),
+		Size = UDim2.fromOffset(barWidth, 66),
+		BackgroundTransparency = 1,
+		Parent = hud,
+	})
+	levelLabel = label({
+		Text = "Level 1",
+		TextSize = if UI.isTouch then 28 else 36,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = WHITE, -- coloured by the gradient below
+		Size = UDim2.new(1, 0, 0, 40),
+		Parent = top,
+	})
+	new("UIStroke", { Color = Color3.fromRGB(20, 4, 12), Thickness = 2.5, Transparency = 0.1, Parent = levelLabel })
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new(Color3.fromRGB(255, 120, 170), Theme.Accent2),
+		Parent = levelLabel,
+	})
+	local back = new("Frame", {
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, 0, 0, 16),
+		BackgroundColor3 = Theme.Background,
+		BackgroundTransparency = 0.25,
+		ClipsDescendants = true,
+		Parent = top,
+	}, { corner(8), stroke(Theme.Stroke, 1.5, 0.1) })
+	xpFill = new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = WHITE, BorderSizePixel = 0, Parent = back }, { corner(8) })
+	new("UIGradient", { Color = ColorSequence.new(Theme.Accent2, Color3.fromRGB(255, 92, 92)), Parent = xpFill })
+	xpText = label({
+		Text = "0 / 40 XP",
+		TextSize = 12,
+		Font = Enum.Font.GothamBlack,
+		TextStrokeTransparency = 0.45,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 2,
+		Parent = back,
+	})
+	xpGain = label({
+		Text = "",
+		TextSize = 14,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.Accent,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTransparency = 1,
+		TextStrokeTransparency = 1,
+		Position = UDim2.new(1, 10, 0, 44),
+		Size = UDim2.fromOffset(90, 16),
+		Parent = top,
+	})
+end
+
+local function buildCashTab()
+	local width = if UI.isTouch then 190 else 240
+	local height = if UI.isTouch then 38 else 46
+	-- the pill extends below the screen edge so only its top corners round
+	local tab = new("Frame", {
+		Name = "Cash",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, 14),
+		Size = UDim2.fromOffset(width, height + 14),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.12,
+		Parent = hud,
+	}, { corner(14), stroke(Theme.Stroke, 1.5, 0.15) })
+	new("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(0.5, 0, 0, 2), BackgroundColor3 = Theme.Money, BorderSizePixel = 0, Parent = tab }, { corner(1) })
+	cashLabel = label({
+		Text = "$0",
+		TextSize = if UI.isTouch then 24 else 30,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.Money,
+		Size = UDim2.new(1, -16, 0, height),
+		Position = UDim2.fromOffset(8, 0),
+		Parent = tab,
+	})
+	new("UIStroke", { Color = Color3.fromRGB(0, 30, 14), Thickness = 1.5, Transparency = 0.3, Parent = cashLabel })
+
+	-- controls hint tab next to the cash (keyboard players only)
+	if UI.isTouch then
+		return
+	end
+	local ctab: TextButton = new("TextButton", {
+		AutoButtonColor = false,
+		Text = "",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0.5, width / 2 + 8, 1, 14),
+		Size = UDim2.fromOffset(124, 30 + 14),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.12,
+		Parent = hud,
+	}, { corner(10), stroke(Theme.Stroke, 1.5, 0.15) })
+	label({
+		Text = "CONTROLS",
+		TextSize = 12,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.SubText,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(14, 0),
+		Size = UDim2.new(1, -14, 0, 30),
+		Parent = ctab,
+	})
+	controlsArrow = label({
+		Text = "▲",
+		TextSize = 10,
+		TextColor3 = Theme.SubText,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -12, 0, 0),
+		Size = UDim2.fromOffset(14, 30),
+		Parent = ctab,
+	})
+
+	local rows = {
+		{ "W / S", "Throttle  ·  brake / reverse" },
+		{ "A / D", "Steer" },
+		{ "SPACE", "Handbrake (drift)" },
+		{ "C", "Camera  (hold RMB to look)" },
+		{ "R", "Reset car to road" },
+		{ "G", "Garage / shop" },
+		{ "M", "Music on / off" },
+	}
+	local panel = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -56),
+		Size = UDim2.fromOffset(340, 44 + #rows * 28),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.1,
+		Visible = false,
+		ZIndex = 5,
+		Parent = hud,
+	}, {
+		corner(12),
+		stroke(Theme.Stroke, 1.5, 0.1),
+		new("UIPadding", { PaddingTop = UDim.new(0, 12), PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16) }),
+		new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+	label({ Text = "CONTROLS", TextSize = 13, Font = Enum.Font.GothamBlack, TextColor3 = Theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 0, ZIndex = 5, Parent = panel })
+	for i, row in rows do
+		local r = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = i, ZIndex = 5, Parent = panel })
+		local chip = new("Frame", { Size = UDim2.fromOffset(70, 22), BackgroundColor3 = Theme.PanelLight, ZIndex = 5, Parent = r }, { corner(6), stroke(Theme.Stroke, 1, 0.2) })
+		label({ Text = row[1], TextSize = 12, Font = Enum.Font.GothamBlack, Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = chip })
+		label({ Text = row[2], TextSize = 13, Font = Enum.Font.GothamMedium, TextColor3 = Theme.Text, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(84, 0), Size = UDim2.new(1, -84, 1, 0), ZIndex = 5, Parent = r })
+	end
+	controlsPanel = panel
+
+	ctab.Activated:Connect(function()
+		Audio.click()
+		UI.toggleControls()
+	end)
+	ctab.MouseEnter:Connect(function()
+		tween(ctab, 0.12, { BackgroundColor3 = Theme.PanelLight })
+	end)
+	ctab.MouseLeave:Connect(function()
+		tween(ctab, 0.12, { BackgroundColor3 = Theme.Panel })
+	end)
+end
+
+-- small dark panel with a title and a close button, used by settings + gift
+local function sidePanel(title: string, height: number, anchorY: number): Frame
+	local p = new("Frame", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, if UI.isTouch then 76 else 96, anchorY, 0),
+		Size = UDim2.fromOffset(270, height),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.06,
+		Visible = false,
+		ZIndex = 5,
+		Parent = hud,
+	}, { corner(12), stroke(Theme.Stroke, 1.5, 0.1) })
+	label({ Text = title, TextSize = 16, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(16, 12), Size = UDim2.new(1, -60, 0, 22), ZIndex = 5, Parent = p })
+	local close = button("✕", Theme.Danger, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(28, 28), TextSize = 13, ZIndex = 6, Parent = p })
+	close.Activated:Connect(function()
+		p.Visible = false
+	end)
+	return p
+end
+
+local function closePanels()
+	settingsPanel.Visible = false
+	dailyPanel.Visible = false
+end
+
+local function togglePanel(p: Frame)
+	local show = not p.Visible
+	closePanels()
+	p.Visible = show
+	if show then
+		local final = p.Position
+		p.Position = final - UDim2.fromOffset(14, 0)
+		tween(p, 0.2, { Position = final }, Enum.EasingStyle.Quint)
+	end
+end
+
+local function dailyLeft(): number
+	return if daily.known then daily.readyAt - os.clock() else math.huge
+end
+
+local claimDaily: () -> ()
+
+local function buildSideButtons()
+	local size = if UI.isTouch then 48 else 64
+	local column = new("Frame", {
+		Name = "SideButtons",
+		AnchorPoint = Vector2.new(0, 0.5),
+		-- on touch, lift it clear of the steering buttons
+		Position = if UI.isTouch then UDim2.new(0, 14, 0.4, 0) else UDim2.new(0, 20, 0.5, 0),
+		Size = UDim2.fromOffset(size, size * 3 + 20),
+		BackgroundTransparency = 1,
+		Parent = hud,
+	}, {
+		new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+	local function sideButton(kind: string, caption: string, order: number): TextButton
+		local b: TextButton = new("TextButton", {
+			AutoButtonColor = false,
+			Text = "",
+			LayoutOrder = order,
+			Size = UDim2.fromOffset(size, size),
+			BackgroundColor3 = Theme.Panel,
+			BackgroundTransparency = 0.12,
+			Parent = column,
+		}, { corner(if UI.isTouch then 10 else 14) })
+		local st = stroke(Theme.Stroke, 1.5, 0.1)
+		st.Parent = b
+		local iconArea = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, if UI.isTouch then 0 else -12), Parent = b })
+		icon(kind, iconArea, size * (if UI.isTouch then 0.55 else 0.48))
+		if not UI.isTouch then
+			label({ Text = caption, TextSize = 9, Font = Enum.Font.GothamBlack, TextColor3 = Theme.SubText, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, 0, 0, 10), Parent = b })
+		end
+		b.Activated:Connect(Audio.click)
+		b.MouseEnter:Connect(function()
+			tween(b, 0.12, { BackgroundColor3 = Theme.PanelLight })
+			tween(st, 0.12, { Color = Theme.Accent })
+		end)
+		b.MouseLeave:Connect(function()
+			tween(b, 0.12, { BackgroundColor3 = Theme.Panel })
+			tween(st, 0.12, { Color = Theme.Stroke })
+		end)
+		return b
+	end
+
+	local settingsBtn = sideButton("gear", "SETTINGS", 1)
+	local shopBtn = sideButton("cart", "SHOP", 2)
+	local giftBtn = sideButton("gift", "GIFTS", 3)
+	giftDot = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -6, 0, 6),
+		Size = UDim2.fromOffset(12, 12),
+		BackgroundColor3 = Theme.Danger,
+		Visible = false,
+		ZIndex = 3,
+		Parent = giftBtn,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Background, 2, 0) })
+
+	-- settings: camera + music toggles (same actions as C and M)
+	settingsPanel = sidePanel("SETTINGS", 148, if UI.isTouch then 0.4 else 0.5)
+	local function settingRow(name: string, key: string, y: number): TextButton
+		label({ Text = name, TextSize = 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(16, y), Size = UDim2.fromOffset(110, 32), ZIndex = 5, Parent = settingsPanel })
+		if not UI.isTouch then
+			label({ Text = "[" .. key .. "]", TextSize = 11, Font = Enum.Font.GothamBold, TextColor3 = Theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(84, y), Size = UDim2.fromOffset(40, 32), ZIndex = 5, Parent = settingsPanel })
+		end
+		return button("", Theme.Accent, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, y), Size = UDim2.fromOffset(120, 32), TextSize = 13, TextColor3 = Theme.Accent, ZIndex = 6, Parent = settingsPanel })
+	end
+	camToggle = settingRow("Camera", "C", 52)
+	camToggle.Text = "CHASE"
+	musicToggle = settingRow("Music", "M", 96)
+	local function refreshMusic()
+		local on = musicOn()
+		musicToggle.Text = if on then "ON" else "OFF"
+		musicToggle.TextColor3 = if on then Theme.Accent else Theme.SubText
+	end
+	refreshMusic()
+	camToggle.Activated:Connect(function()
+		if UI.onCameraButton then
+			UI.onCameraButton()
+		end
+	end)
+	musicToggle.Activated:Connect(function()
+		Audio.toggleMusic()
+		refreshMusic()
+	end)
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.KeyCode == Enum.KeyCode.M then
+			task.defer(refreshMusic) -- Audio handles the key itself
+		end
+	end)
+
+	-- daily gift panel
+	dailyPanel = sidePanel("DAILY GIFT", 196, if UI.isTouch then 0.4 else 0.5)
+	local giftArea = new("Frame", { Position = UDim2.fromOffset(16, 48), Size = UDim2.fromOffset(64, 64), BackgroundColor3 = Theme.Warning:Lerp(Theme.Panel, 0.75), ZIndex = 5, Parent = dailyPanel }, { corner(12), stroke(Theme.Warning, 1.5, 0.4) })
+	icon("gift", giftArea, 38, Theme.Warning)
+	dailyPanelAmount = label({ Text = "$0", TextSize = 26, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Money, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(94, 52), Size = UDim2.new(1, -104, 0, 30), ZIndex = 5, Parent = dailyPanel })
+	label({ Text = "Free cash every 24 hours.\nGrows with your level.", TextSize = 12, Font = Enum.Font.GothamMedium, TextColor3 = Theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(94, 84), Size = UDim2.new(1, -104, 0, 30), ZIndex = 5, Parent = dailyPanel })
+	dailyClaimBtn = button("CLAIM", Theme.Money, { Position = UDim2.new(0, 16, 1, -62), Size = UDim2.new(1, -32, 0, 46), TextSize = 18, ZIndex = 6, Parent = dailyPanel })
+	dailyClaimBtn.Activated:Connect(function()
+		claimDaily()
+	end)
+
+	settingsBtn.Activated:Connect(function()
+		togglePanel(settingsPanel)
+	end)
+	shopBtn.Activated:Connect(function()
+		closePanels()
+		if UI.onGarageButton then
+			UI.onGarageButton()
+		end
+	end)
+	giftBtn.Activated:Connect(function()
+		togglePanel(dailyPanel)
+	end)
+end
+
+-- "DAILY GIFT" offer card on the right with the countdown to the next gift
+local function buildDailyCard()
+	local w = if UI.isTouch then 176 else 212
+	local h = if UI.isTouch then 70 else 84
+	local card: TextButton = new("TextButton", {
+		Name = "DailyCard",
+		AutoButtonColor = false,
+		Text = "",
+		AnchorPoint = if UI.isTouch then Vector2.new(1, 0) else Vector2.new(1, 0.5),
+		-- on touch, top-right so it stays clear of the pedals
+		Position = if UI.isTouch then UDim2.new(1, -14, 0, 70) else UDim2.new(1, -20, 0.5, 0),
+		Size = UDim2.fromOffset(w, h),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.08,
+		Parent = hud,
+	}, { corner(14) })
+	new("UIGradient", {
+		Rotation = 0,
+		Color = ColorSequence.new(Theme.Warning:Lerp(Theme.Panel, 0.72), Theme.Panel),
+		Parent = card,
+	})
+	dailyCardStroke = stroke(Theme.Warning, 1.5, 0.35)
+	dailyCardStroke.Parent = card
+	local iconBox = new("Frame", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 10, 0.5, 0),
+		Size = UDim2.fromOffset(h - 22, h - 22),
+		BackgroundColor3 = Theme.Background,
+		BackgroundTransparency = 0.4,
+		Parent = card,
+	}, { corner(10) })
+	icon("gift", iconBox, (h - 22) * 0.62, Theme.Warning)
+	local textX = h - 2
+	label({ Text = "DAILY GIFT", TextSize = if UI.isTouch then 11 else 13, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Warning, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(0, textX, 0, 8), Size = UDim2.new(1, -textX - 8, 0, 16), Parent = card })
+	dailyCardTime = label({ Text = "--:--", TextSize = if UI.isTouch then 22 else 28, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(0, textX, 0.5, -14), Size = UDim2.new(1, -textX - 8, 0, 30), Parent = card })
+	dailyCardSub = label({ Text = "", TextSize = if UI.isTouch then 10 else 12, Font = Enum.Font.GothamBold, TextColor3 = Theme.Money, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(0, textX, 1, -22), Size = UDim2.new(1, -textX - 8, 0, 16), Parent = card })
+	card.Activated:Connect(function()
+		Audio.click()
+		claimDaily()
+	end)
+	card.MouseEnter:Connect(function()
+		tween(card, 0.12, { BackgroundColor3 = Theme.PanelLight })
+	end)
+	card.MouseLeave:Connect(function()
+		tween(card, 0.12, { BackgroundColor3 = Theme.Panel })
+	end)
+end
+
+-- keeps every daily-gift widget in step with the countdown (cheap: only
+-- touches text when the shown second changes)
+local function refreshDaily(force: boolean?)
+	local left = dailyLeft()
+	local ready = daily.known and left <= 0
+	local shown = if ready then 0 elseif daily.known then math.ceil(left) else -2
+	if not force and shown == daily.shown then
+		return
+	end
+	daily.shown = shown
+	local amount = formatCash(Config.dailyReward(progress.level))
+	dailyPanelAmount.Text = amount
+	giftDot.Visible = ready
+	if ready then
+		dailyCardTime.Text = "READY!"
+		dailyCardTime.TextColor3 = Theme.Money
+		dailyCardSub.Text = "CLAIM  +" .. amount
+		dailyClaimBtn.Text = if daily.claiming then "..." else "CLAIM"
+		dailyClaimBtn.TextColor3 = Theme.Money
+	else
+		dailyCardTime.Text = if daily.known then formatClock(left) else "--:--"
+		dailyCardTime.TextColor3 = Theme.Text
+		dailyCardSub.Text = "+" .. amount .. " cash"
+		dailyClaimBtn.Text = if daily.known then "READY IN " .. formatClock(left) else "..."
+		dailyClaimBtn.TextColor3 = Theme.SubText
+	end
+end
+
+claimDaily = function()
+	if daily.claiming then
+		return
+	end
+	local left = dailyLeft()
+	if not daily.known or left > 0 then
+		UI.toast(if daily.known then "Next daily gift in " .. formatClock(left) else "Daily gift not available yet", Theme.SubText)
+		return
+	end
+	local cb = UI.onDailyClaim
+	if not cb then
+		return
+	end
+	daily.claiming = true
+	refreshDaily(true)
+	task.spawn(function()
+		local ok, err = pcall(cb)
+		if not ok then
+			warn("[CityLegends] daily claim failed:", err)
+		end
+		daily.claiming = false
+		refreshDaily(true)
+	end)
+end
 
 function UI.init()
 	local pg = player:WaitForChild("PlayerGui")
@@ -155,55 +985,16 @@ function UI.init()
 	-- HUD ------------------------------------------------------------
 	hud = new("Frame", { Name = "HUD", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = gui })
 
-	-- cash
-	local cashPanel = new("Frame", {
-		Position = UDim2.new(0, 20, 0, 54),
-		Size = UDim2.fromOffset(250, 64),
-		BackgroundColor3 = Theme.Panel,
-		BackgroundTransparency = 0.15,
-		Parent = hud,
-	}, { corner(10), stroke(Theme.Stroke, 1, 0.2) })
-	new("Frame", { Size = UDim2.new(0, 4, 1, -16), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Theme.Money, BorderSizePixel = 0, Parent = cashPanel }, { corner(2) })
-	label({ Text = "CASH", TextColor3 = Theme.SubText, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(22, 8), Size = UDim2.new(1, -30, 0, 14), Parent = cashPanel })
-	cashLabel = label({ Text = "$0", TextColor3 = Theme.Money, TextSize = 30, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(22, 22), Size = UDim2.new(1, -30, 0, 34), Parent = cashPanel })
+	buildLevelBar()
+	buildSpeedometer()
+	buildCashTab()
+	buildSideButtons()
+	buildDailyCard()
 
-	-- speedometer (circular arc of segments)
-	local gaugeSize = if UI.isTouch then 190 else 240
-	local gauge = new("Frame", {
-		Name = "Speedometer",
-		AnchorPoint = if UI.isTouch then Vector2.new(0.5, 1) else Vector2.new(1, 1),
-		Position = if UI.isTouch then UDim2.new(0.5, 0, 1, -16) else UDim2.new(1, -24, 1, -24),
-		Size = UDim2.fromOffset(gaugeSize, gaugeSize),
-		BackgroundColor3 = Theme.Panel,
-		BackgroundTransparency = 0.2,
-		Parent = hud,
-	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Stroke, 2, 0.1) })
-	local segCount = 34
-	local radius = gaugeSize / 2 - 16
-	for k = 0, segCount - 1 do
-		local a = math.rad(225 - k * (270 / (segCount - 1)))
-		local seg = new("Frame", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, math.cos(a) * radius, 0.5, -math.sin(a) * radius),
-			Size = UDim2.fromOffset(4, 13),
-			Rotation = 90 - math.deg(a),
-			BackgroundColor3 = Theme.Stroke,
-			BorderSizePixel = 0,
-			Parent = gauge,
-		}, { corner(2) })
-		table.insert(arcSegments, seg)
-	end
-	speedLabel = label({ Text = "0", TextSize = if UI.isTouch then 52 else 66, Font = Enum.Font.GothamBlack, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromScale(0.8, 0.3), Parent = gauge })
-	label({ Text = "MPH", TextColor3 = Theme.SubText, TextSize = 14, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.63), Size = UDim2.fromScale(0.5, 0.1), Parent = gauge })
-	local gearBox = new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.8), Size = UDim2.fromOffset(44, 32), BackgroundColor3 = Theme.Background, Parent = gauge }, { corner(6), stroke(Theme.Accent, 1.5, 0.2) })
-	gearLabel = label({ Text = "N", TextColor3 = Theme.Accent, TextSize = 20, Font = Enum.Font.GothamBlack, Size = UDim2.fromScale(1, 1), Parent = gearBox })
-	local rpmBack = new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.92), Size = UDim2.new(0.42, 0, 0, 4), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = gauge }, { corner(2) })
-	rpmFill = new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Theme.Accent2, BorderSizePixel = 0, Parent = rpmBack }, { corner(2) })
-
-	-- combo
+	-- combo (under the level bar)
 	comboFrame = new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 60),
+		Position = UDim2.new(0.5, 0, 0, 84),
 		Size = UDim2.fromOffset(260, 66),
 		BackgroundColor3 = Theme.Panel,
 		BackgroundTransparency = 0.15,
@@ -214,50 +1005,18 @@ function UI.init()
 	local comboBack = new("Frame", { Position = UDim2.new(0, 16, 1, -14), Size = UDim2.new(1, -32, 0, 5), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = comboFrame }, { corner(3) })
 	comboBar = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Accent2, BorderSizePixel = 0, Parent = comboBack }, { corner(3) })
 
-	popupHolder = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36), Size = UDim2.fromOffset(500, 200), Parent = hud })
-
-	-- top-right buttons
-	local topRight = new("Frame", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -20, 0, 54), Size = UDim2.fromOffset(330, 40), BackgroundTransparency = 1, Parent = hud }, {
-		new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 8) }),
-	})
-	local garageBtn = button("GARAGE  [G]", Theme.Accent, { Size = UDim2.fromOffset(150, 40), TextSize = 15, Parent = topRight })
-	local camBtn = button("CAMERA  [C]", Theme.Accent, { Size = UDim2.fromOffset(150, 40), TextSize = 15, Parent = topRight })
-	camLabel = camBtn
-	garageBtn.Activated:Connect(function()
-		if UI.onGarageButton then
-			UI.onGarageButton()
-		end
-	end)
-	camBtn.Activated:Connect(function()
-		if UI.onCameraButton then
-			UI.onCameraButton()
-		end
-	end)
-
-	-- controls hint
-	if not UI.isTouch then
-		label({
-			Text = "W/S  throttle · brake      A/D  steer      SPACE  handbrake      C  camera      R  reset      G  garage      M  music",
-			TextColor3 = Theme.SubText,
-			TextSize = 13,
-			Font = Enum.Font.GothamMedium,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.new(0, 22, 1, -34),
-			Size = UDim2.new(0.6, 0, 0, 20),
-			Parent = hud,
-		})
-	end
+	popupHolder = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.38), Size = UDim2.fromOffset(500, 200), Parent = hud })
 
 	toast = label({
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 140),
+		Position = UDim2.new(0.5, 0, 0, 162),
 		Size = UDim2.fromOffset(420, 40),
 		BackgroundColor3 = Theme.Panel,
 		BackgroundTransparency = 0.1,
 		TextSize = 16,
 		TextTransparency = 1,
 		Visible = false,
-		ZIndex = 50,
+		ZIndex = 75, -- readable over the garage too
 		Parent = gui,
 	})
 	corner(8).Parent = toast
@@ -269,6 +1028,8 @@ function UI.init()
 		UI.buildTouchControls()
 	end
 
+	refreshDaily(true)
+	local dailyTick = 0
 	RunService.RenderStepped:Connect(function(dt)
 		if displayedCash ~= targetCash then
 			local diff = targetCash - displayedCash
@@ -279,6 +1040,15 @@ function UI.init()
 				displayedCash += math.sign(diff) * step
 			end
 			cashLabel.Text = formatCash(displayedCash)
+		end
+		dailyTick += dt
+		if dailyTick >= 0.2 then
+			dailyTick = 0
+			refreshDaily()
+		end
+		if hud.Visible then
+			-- breathe the card outline while a gift is waiting
+			dailyCardStroke.Transparency = if daily.shown == 0 then 0.25 + 0.25 * math.sin(os.clock() * 4) else 0.35
 		end
 	end)
 end
@@ -594,7 +1364,7 @@ function UI.showMainMenu(cash: number, onPlay: () -> ())
 	label({ Text = "Cut up through traffic. Get paid. Become a legend.", TextColor3 = Theme.SubText, TextSize = 16, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(0, 200), Size = UDim2.new(1, 0, 0, 22), ZIndex = 6, Parent = panel })
 	local play = button("PLAY", Theme.Accent, { Position = UDim2.fromOffset(0, 246), Size = UDim2.fromOffset(240, 54), TextSize = 22, ZIndex = 6, Parent = panel })
 	play.BackgroundColor3 = Theme.Accent:Lerp(Theme.PanelLight, 0.7)
-	label({ Text = "CASH  " .. formatCash(cash), TextColor3 = Theme.Money, TextSize = 16, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(0, 314), Size = UDim2.new(1, 0, 0, 22), ZIndex = 6, Parent = panel })
+	label({ Text = "LEVEL " .. progress.level .. "   ·   CASH  " .. formatCash(cash), TextColor3 = Theme.Money, TextSize = 16, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(0, 314), Size = UDim2.new(1, 0, 0, 22), ZIndex = 6, Parent = panel })
 	play.Activated:Connect(function()
 		onPlay()
 	end)
@@ -906,6 +1676,9 @@ end
 ---------------------------------------------------------------------
 function UI.showHud(visible: boolean)
 	hud.Visible = visible
+	if not visible then
+		closePanels()
+	end
 end
 
 function UI.setCash(amount: number, instant: boolean?)
@@ -916,28 +1689,162 @@ function UI.setCash(amount: number, instant: boolean?)
 	end
 end
 
-local lastSegLit = -1
-function UI.setSpeed(mph: number, frac: number, gear: string, rpm: number)
-	speedLabel.Text = tostring(math.floor(math.abs(mph) + 0.5))
-	gearLabel.Text = gear
-	rpmFill.Size = UDim2.fromScale(math.clamp(rpm, 0, 1), 1)
-	rpmFill.BackgroundColor3 = if rpm > 0.9 then Theme.Danger else Theme.Accent2
-	local lit = math.floor(math.clamp(frac, 0, 1) * #arcSegments + 0.5)
-	if lit ~= lastSegLit then
-		lastSegLit = lit
-		for k, seg in arcSegments do
-			if k <= lit then
-				local t = k / #arcSegments
-				seg.BackgroundColor3 = if t < 0.6 then Theme.Accent:Lerp(Theme.Accent2, t / 0.6) else Theme.Accent2:Lerp(Theme.Danger, (t - 0.6) / 0.4)
+local lastLit = -1
+local lastSpeedText = ""
+local lastGear = ""
+-- mph, speed fraction of top speed (unused by the analog dial), gear ("N",
+-- "R", "1".."6") and rpm 0..1 (needle sweeps 0..7 x1000)
+function UI.setSpeed(mph: number, _frac: number, gear: string, rpm: number)
+	local speedText = tostring(math.floor(math.abs(mph) + 0.5))
+	if speedText ~= lastSpeedText then
+		lastSpeedText = speedText
+		speedLabel.Text = speedText
+	end
+	if gear ~= lastGear then
+		lastGear = gear
+		local numeric = tonumber(gear) ~= nil
+		gearLabel.Text = gear
+		gearTag.Visible = numeric
+		gearLabel.TextColor3 = if numeric then Theme.Text elseif gear == "R" then Theme.Warning else Theme.Accent
+	end
+	local v = math.clamp(rpm, 0, 1) * RPM_MAX
+	needleHolder.Rotation = 90 - rpmAngle(v)
+	local lit = math.floor(v / RPM_MAX * #rpmTrack + 0.5)
+	if lit ~= lastLit then
+		lastLit = lit
+		for i, seg in rpmTrack do
+			local segV = (i - 0.5) / #rpmTrack * RPM_MAX
+			local red = segV >= REDLINE
+			if i <= lit then
+				seg.BackgroundColor3 = if red then Theme.Danger else Theme.Accent:Lerp(Theme.Accent2, segV / REDLINE)
+				seg.BackgroundTransparency = 0
 			else
-				seg.BackgroundColor3 = Theme.Stroke
+				seg.BackgroundColor3 = if red then Theme.Danger else Theme.Stroke
+				seg.BackgroundTransparency = if red then 0.45 else 0.1
 			end
 		end
 	end
 end
 
 function UI.setCameraLabel(mode: string)
-	camLabel.Text = (if mode == "Interior" then "INTERIOR" else "CHASE") .. "  [C]"
+	camToggle.Text = if mode == "Interior" then "INTERIOR" else "CHASE"
+end
+
+function UI.toggleControls(show: boolean?)
+	local panel = controlsPanel
+	if not panel then
+		return
+	end
+	local visible = if show == nil then not panel.Visible else show
+	panel.Visible = visible
+	if controlsArrow then
+		controlsArrow.Text = if visible then "▼" else "▲"
+	end
+end
+
+-- Level + XP bar. `gained` (optional) flashes "+N XP" next to the bar.
+local xpToken = 0
+function UI.setProgress(level: number, xp: number, need: number, gained: number?)
+	local levelChanged = level ~= progress.level
+	progress.level = level
+	progress.xp = xp
+	progress.need = math.max(1, need)
+	levelLabel.Text = "Level " .. level
+	xpText.Text = string.format("%d / %d XP", math.floor(xp), math.floor(progress.need))
+	local frac = math.clamp(xp / progress.need, 0, 1)
+	xpToken += 1
+	local my = xpToken
+	if levelChanged then
+		-- fill up, then restart from empty for the new level
+		tween(xpFill, 0.25, { Size = UDim2.fromScale(1, 1) })
+		task.delay(0.3, function()
+			if my == xpToken then
+				xpFill.Size = UDim2.fromScale(0, 1)
+				tween(xpFill, 0.4, { Size = UDim2.fromScale(frac, 1) })
+			end
+		end)
+		refreshDaily(true) -- the gift grows with level
+	else
+		tween(xpFill, 0.3, { Size = UDim2.fromScale(frac, 1) })
+	end
+	if gained and gained > 0 then
+		xpGain.Text = "+" .. gained .. " XP"
+		xpGain.TextTransparency = 0
+		xpGain.TextStrokeTransparency = 0.5
+		xpGain.Position = UDim2.new(1, 10, 0, 50)
+		tween(xpGain, 0.25, { Position = UDim2.new(1, 10, 0, 44) }, Enum.EasingStyle.Back)
+		task.delay(0.9, function()
+			if my == xpToken then
+				tween(xpGain, 0.5, { TextTransparency = 1, TextStrokeTransparency = 1 })
+			end
+		end)
+	end
+end
+
+function UI.getLevel(): number
+	return progress.level
+end
+
+-- Big "LEVEL UP" banner (shown over everything, even the garage)
+local levelUpFrame: Frame? = nil
+function UI.levelUp(level: number, reward: number)
+	if levelUpFrame then
+		levelUpFrame:Destroy()
+	end
+	local f = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 212),
+		Size = UDim2.fromOffset(520, 150),
+		BackgroundTransparency = 1,
+		ZIndex = 70, -- above the garage too
+		Parent = gui,
+	})
+	levelUpFrame = f
+	local scale = new("UIScale", { Scale = 0.4, Parent = f })
+	local title = label({ Text = "LEVEL UP!", TextSize = 64, Font = Enum.Font.GothamBlack, Size = UDim2.new(1, 0, 0, 70), ZIndex = 71, Parent = f })
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, WHITE),
+			ColorSequenceKeypoint.new(0.55, Color3.fromRGB(255, 150, 190)),
+			ColorSequenceKeypoint.new(1, Theme.Accent2),
+		}),
+		Parent = title,
+	})
+	local glow = new("UIStroke", { Color = Color3.fromRGB(40, 0, 20), Thickness = 3, Transparency = 0.1, Parent = title })
+	local sub = label({ Text = "Level " .. level, TextSize = 26, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Text, Position = UDim2.fromOffset(0, 72), Size = UDim2.new(1, 0, 0, 30), ZIndex = 71, Parent = f })
+	local subStroke = new("UIStroke", { Color = Color3.new(0, 0, 0), Thickness = 2, Transparency = 0.4, Parent = sub })
+	local cash = label({ Text = if reward > 0 then "+" .. formatCash(reward) else "", TextSize = 24, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Money, Position = UDim2.fromOffset(0, 104), Size = UDim2.new(1, 0, 0, 28), ZIndex = 71, Parent = f })
+	local cashStroke = new("UIStroke", { Color = Color3.new(0, 0, 0), Thickness = 2, Transparency = 0.4, Parent = cash })
+	tween(scale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
+	UI.flash(Theme.Accent2)
+	Audio.boom(0.5)
+	UI.toast("Level " .. level .. " reached!" .. (if reward > 0 then "  +" .. formatCash(reward) else ""), Theme.Accent2)
+	task.delay(2.6, function()
+		if levelUpFrame ~= f then
+			return
+		end
+		tween(scale, 0.5, { Scale = 1.15 })
+		for _, l in { title, sub, cash } do
+			tween(l, 0.5, { TextTransparency = 1 })
+		end
+		for _, st in { glow, subStroke, cashStroke } do
+			tween(st, 0.5, { Transparency = 1 })
+		end
+		task.delay(0.55, function()
+			f:Destroy()
+			if levelUpFrame == f then
+				levelUpFrame = nil
+			end
+		end)
+	end)
+end
+
+-- seconds until the next daily gift (0 = ready now)
+function UI.setDaily(readyIn: number)
+	daily.known = true
+	daily.readyAt = os.clock() + math.max(0, readyIn)
+	refreshDaily(true)
 end
 
 local comboExpire = 0
@@ -982,102 +1889,5 @@ function UI.popup(text: string, amount: number, color: Color3)
 		holder:Destroy()
 	end)
 end
-
-local flashFrame: Frame? = nil
-function UI.flash(color: Color3)
-	if not flashFrame then
-		flashFrame = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), BorderSizePixel = 0, ZIndex = 15, Parent = gui })
-	end
-	local f = flashFrame :: Frame
-	f.BackgroundColor3 = color
-	f.BackgroundTransparency = 0.6
-	tween(f, 0.5, { BackgroundTransparency = 1 })
-end
-
-local toastToken = 0
-function UI.toast(text: string, color: Color3?)
-	toastToken += 1
-	local my = toastToken
-	toast.Text = text
-	toast.TextColor3 = color or Theme.Text
-	toast.Visible = true
-	toast.TextTransparency = 0
-	toast.BackgroundTransparency = 0.1
-	task.delay(2.2, function()
-		if my == toastToken then
-			tween(toast, 0.4, { TextTransparency = 1, BackgroundTransparency = 1 })
-		end
-	end)
-end
-
----------------------------------------------------------------------
--- Touch controls
----------------------------------------------------------------------
-function UI.buildTouchControls()
-	local holder = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = hud })
-	local function touchButton(text: string, pos: UDim2, size: UDim2, color: Color3, onDown: () -> (), onUp: () -> ())
-		local b: TextButton = new("TextButton", {
-			AutoButtonColor = false,
-			Text = text,
-			Font = Enum.Font.GothamBlack,
-			TextSize = 20,
-			TextColor3 = Theme.Text,
-			BackgroundColor3 = Theme.Panel,
-			BackgroundTransparency = 0.25,
-			Position = pos,
-			Size = size,
-			Parent = holder,
-		}, { corner(14), stroke(color, 2, 0.2) })
-		b.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-				b.BackgroundTransparency = 0
-				onDown()
-			end
-		end)
-		b.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-				b.BackgroundTransparency = 0.25
-				onUp()
-			end
-		end)
-	end
-	local left, right = false, false
-	local function updSteer()
-		UI.touch.steer = (if right then 1 else 0) - (if left then 1 else 0)
-	end
-	touchButton("◀", UDim2.new(0, 24, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
-		left = true
-		updSteer()
-	end, function()
-		left = false
-		updSteer()
-	end)
-	touchButton("▶", UDim2.new(0, 124, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
-		right = true
-		updSteer()
-	end, function()
-		right = false
-		updSteer()
-	end)
-	touchButton("GAS", UDim2.new(1, -114, 1, -160), UDim2.fromOffset(90, 120), Theme.Money, function()
-		UI.touch.throttle = 1
-	end, function()
-		UI.touch.throttle = 0
-	end)
-	touchButton("BRAKE", UDim2.new(1, -214, 1, -130), UDim2.fromOffset(90, 90), Theme.Danger, function()
-		UI.touch.brake = 1
-	end, function()
-		UI.touch.brake = 0
-	end)
-	touchButton("DRIFT", UDim2.new(1, -214, 1, -230), UDim2.fromOffset(90, 80), Theme.Accent2, function()
-		UI.touch.handbrake = true
-	end, function()
-		UI.touch.handbrake = false
-	end)
-end
-
--- Callbacks assigned by Main
-UI.onGarageButton = nil :: (() -> ())?
-UI.onCameraButton = nil :: (() -> ())?
 
 return UI

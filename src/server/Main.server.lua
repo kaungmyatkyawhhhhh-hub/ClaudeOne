@@ -3,6 +3,7 @@
 	  * builds the city
 	  * spawns player cars (client-owned physics)
 	  * pays passive driving income + validates "cut up" rewards
+	  * XP / levels (earned with the same events as cash) + the daily gift
 	  * garage purchases + saving
 ]]
 
@@ -39,6 +40,8 @@ local DespawnCar: RemoteEvent = remote("RemoteEvent", "DespawnCar")
 local CutUp: RemoteEvent = remote("RemoteEvent", "CutUp")
 local Crash: RemoteEvent = remote("RemoteEvent", "Crash")
 local Earned: RemoteEvent = remote("RemoteEvent", "Earned")
+local Progress: RemoteEvent = remote("RemoteEvent", "Progress") -- server -> client XP / level updates
+local ClaimDaily: RemoteFunction = remote("RemoteFunction", "ClaimDaily")
 remotes.Parent = ReplicatedStorage
 
 local playerCars = Instance.new("Folder")
@@ -58,13 +61,14 @@ type Session = {
 	lastCut: number,
 	cutTimes: { number },
 	incomeCarry: number,
+	xpCarry: number,
 }
 local sessions: { [Player]: Session } = {}
 
 local function getSession(player: Player): Session
 	local s = sessions[player]
 	if not s then
-		s = { car = nil, combo = 0, lastCut = 0, cutTimes = {}, incomeCarry = 0 }
+		s = { car = nil, combo = 0, lastCut = 0, cutTimes = {}, incomeCarry = 0, xpCarry = 0 }
 		sessions[player] = s
 	end
 	return s
@@ -73,6 +77,28 @@ end
 local function horizontalSpeed(part: BasePart): number
 	local v = part.AssemblyLinearVelocity
 	return Vector3.new(v.X, 0, v.Z).Magnitude
+end
+
+---------------------------------------------------------------------
+-- XP / levels
+---------------------------------------------------------------------
+local function grantXp(player: Player, amount: number, source: string)
+	local result = PlayerData.addXp(player, amount)
+	if not result then
+		return
+	end
+	Progress:FireClient(player, {
+		level = result.level,
+		xp = result.xp,
+		need = result.need,
+		gained = math.floor(amount),
+		source = source,
+		levelUp = result.levels > 0,
+		reward = result.reward,
+	})
+	if result.levels > 0 then
+		task.spawn(PlayerData.save, player)
+	end
 end
 
 ---------------------------------------------------------------------
@@ -128,6 +154,7 @@ local function spawnFor(player: Player, carId: string)
 
 	local spec = Cars.get(carId)
 	local model = CarBuilder.build(spec, { interior = true, lights = true, anchored = false })
+	model:SetAttribute("Plate", string.upper(player.Name):gsub("[^%w]", ""):sub(1, 7))
 	model.Name = player.Name
 	model:SetAttribute("Owner", player.UserId)
 
@@ -178,6 +205,16 @@ GetData.OnServerInvoke = function(player: Player)
 		task.wait(0.1)
 	end
 	return PlayerData.snapshot(player)
+end
+
+ClaimDaily.OnServerInvoke = function(player: Player)
+	local ok, amount = PlayerData.claimDaily(player)
+	local readyIn = PlayerData.dailyReadyIn(player)
+	if not ok then
+		return { ok = false, message = "Your next gift isn't ready yet", amount = 0, readyIn = readyIn }
+	end
+	task.spawn(PlayerData.save, player)
+	return { ok = true, message = "Daily gift claimed", amount = amount, readyIn = readyIn }
 end
 
 BuyCar.OnServerInvoke = function(player: Player, carId: any)
@@ -280,6 +317,9 @@ CutUp.OnServerEvent:Connect(function(player: Player, info: any)
 
 	local label = if thread then "THREAD THE NEEDLE" elseif oncoming then "ONCOMING CUT" elseif closeness > 0.75 then "INSANE CUT" elseif closeness > 0.4 then "CLOSE CUT" else "CUT UP"
 	Earned:FireClient(player, { amount = amount, combo = s.combo, kind = "cut", label = label })
+
+	local P = Config.Progression
+	grantXp(player, math.clamp(math.floor(amount * P.CutXpPerCash + 0.5), 1, P.CutXpMax), "cut")
 end)
 
 ---------------------------------------------------------------------
@@ -304,6 +344,13 @@ RunService.Heartbeat:Connect(function(dt)
 				if whole >= 1 then
 					s.incomeCarry -= whole
 					PlayerData.addCash(player, whole)
+				end
+				-- driving XP mirrors the driving income
+				s.xpCarry += mph * Config.Progression.DriveXpPerSecond * step
+				local xp = math.floor(s.xpCarry)
+				if xp >= 1 then
+					s.xpCarry -= xp
+					grantXp(player, xp, "drive")
 				end
 			end
 			-- drop combos that expired

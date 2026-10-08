@@ -112,6 +112,44 @@ Config.Economy = {
 }
 
 ---------------------------------------------------------------------
+-- Progression: XP + levels (earned alongside cash) and the daily gift
+---------------------------------------------------------------------
+Config.Progression = {
+	XpBase = 40, -- XP needed for level 1 -> 2
+	XpExponent = 1.35, -- XP needed = XpBase * level ^ XpExponent
+	MaxLevel = 999,
+	DriveXpPerSecond = 1 / 90, -- XP per mph per second ( 90mph -> 1 XP/s )
+	CutXpPerCash = 1 / 30, -- a cut-up gives this much XP per $ it paid
+	CutXpMax = 60, -- cap on XP from a single cut-up
+	LevelUpCashBase = 500, -- cash reward on reaching a level:
+	LevelUpCashPerLevel = 250, --   base + perLevel * newLevel
+}
+
+Config.Daily = {
+	Cooldown = 24 * 60 * 60, -- seconds between daily gifts
+	Cash = 2000, -- daily gift: Cash + CashPerLevel * (level - 1)
+	CashPerLevel = 150,
+}
+
+-- XP needed to go from `level` to `level + 1`
+function Config.xpForLevel(level: number): number
+	local P = Config.Progression
+	return math.max(1, math.floor(P.XpBase * math.max(1, level) ^ P.XpExponent + 0.5))
+end
+
+-- cash paid when the player reaches `level`
+function Config.levelReward(level: number): number
+	local P = Config.Progression
+	return math.floor(P.LevelUpCashBase + P.LevelUpCashPerLevel * level)
+end
+
+-- cash in the daily gift for a player at `level`
+function Config.dailyReward(level: number): number
+	local D = Config.Daily
+	return math.floor(D.Cash + D.CashPerLevel * (math.max(1, level) - 1))
+end
+
+---------------------------------------------------------------------
 -- Camera
 ---------------------------------------------------------------------
 Config.Camera = {

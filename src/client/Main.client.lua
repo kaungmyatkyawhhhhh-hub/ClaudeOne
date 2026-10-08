@@ -20,6 +20,7 @@ local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 local BuildingSkin = require(script.Parent:WaitForChild("BuildingSkin"))
 local Audio = require(script.Parent:WaitForChild("Audio"))
+local Weather = require(script.Parent:WaitForChild("Weather"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -33,6 +34,8 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local GetData = remotes:WaitForChild("GetData") :: RemoteFunction
 local BuyCar = remotes:WaitForChild("BuyCar") :: RemoteFunction
 local SpawnCar = remotes:WaitForChild("SpawnCar") :: RemoteEvent
+local Progress = remotes:WaitForChild("Progress") :: RemoteEvent
+local ClaimDaily = remotes:WaitForChild("ClaimDaily") :: RemoteFunction
 
 Driving.init()
 
@@ -54,6 +57,7 @@ if city then
 	BuildingSkin.apply(city)
 end
 WorldFx.start()
+Weather.init() -- rain cycle (starts raining), wet roads, mist, rain sound
 
 ---------------------------------------------------------------------
 -- Data
@@ -63,6 +67,44 @@ if not data then
 	data = { Cash = Config.Economy.StartingCash, Owned = { "aurelia_s4" }, Selected = "aurelia_s4" }
 end
 UI.setCash(data.Cash, true)
+UI.setProgress(tonumber(data.Level) or 1, tonumber(data.XP) or 0, tonumber(data.XPNeed) or Config.xpForLevel(tonumber(data.Level) or 1))
+if type(data.DailyIn) == "number" then
+	UI.setDaily(data.DailyIn)
+end
+
+-- XP / level updates pushed by the server
+Progress.OnClientEvent:Connect(function(info)
+	if type(info) ~= "table" then
+		return
+	end
+	local level = tonumber(info.level) or 1
+	-- only cut-ups flash "+N XP"; driving XP trickles in quietly
+	local gained = if info.source == "cut" then tonumber(info.gained) else nil
+	UI.setProgress(level, tonumber(info.xp) or 0, tonumber(info.need) or Config.xpForLevel(level), gained)
+	data.Level = level
+	if info.levelUp then
+		UI.levelUp(level, tonumber(info.reward) or 0)
+	end
+end)
+
+-- daily gift (the server checks the 24h timer and pays it)
+UI.onDailyClaim = function()
+	local ok, result = pcall(function()
+		return ClaimDaily:InvokeServer()
+	end)
+	if not ok or type(result) ~= "table" then
+		UI.toast("Could not claim the gift, try again", Config.Theme.Danger)
+		return
+	end
+	if type(result.readyIn) == "number" then
+		UI.setDaily(result.readyIn)
+	end
+	if result.ok then
+		UI.toast("Daily gift claimed  +" .. UI.formatCash(tonumber(result.amount) or 0), Config.Theme.Money)
+	else
+		UI.toast(tostring(result.message or "Gift not ready yet"), Config.Theme.Warning)
+	end
+end
 
 local function bindCash()
 	local stats = player:WaitForChild("leaderstats", 30)

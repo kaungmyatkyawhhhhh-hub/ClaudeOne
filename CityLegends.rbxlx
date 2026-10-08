@@ -96,8 +96,31 @@ local DIMS: { [string]: Dims } = {
 	Hypercar = { L = 14.8, W = 6.7, H = 3.45, clr = 0.35, belt = 2.0, wheelR = 1.12, wheelW = 1.1, wb = 8.9, hood = 3.4, ws = 3.1, roof = 1.8, rear = 3.8, inset = 0.75, slope = 0.95, nose = 0.4, doors = 2 },
 }
 
-function CarBuilder.getDims(class: string): Dims
-	return DIMS[class] or DIMS.Sedan
+-- per-car proportions on top of the class (muscle cars: long hood, wide stance)
+local DIM_OVERRIDES: { [string]: { [string]: number } } = {
+	brute_srx = { L = 15.2, W = 6.5, H = 4.25, clr = 0.5, belt = 2.85, wheelR = 1.12, wheelW = 1.0, wb = 9.4, hood = 5.2, ws = 2.3, roof = 2.7, rear = 2.0 },
+	outlaw_69 = { L = 15.6, W = 6.6, H = 4.0, clr = 0.42, belt = 2.72, wheelR = 1.12, wheelW = 1.05, wb = 9.6, hood = 5.5, ws = 2.1, roof = 2.6, rear = 2.4 },
+	velluto_p7 = { L = 15.2, H = 3.4, hood = 3.8, ws = 2.7, roof = 1.9, rear = 3.6, wb = 9.0 },
+}
+local mergedDims: { [string]: Dims } = {}
+
+function CarBuilder.getDims(class: string, id: string?): Dims
+	local base = DIMS[class] or DIMS.Sedan
+	local over = if id then DIM_OVERRIDES[id] else nil
+	if not over or not id then
+		return base
+	end
+	local key = class .. "/" .. id
+	local cached = mergedDims[key]
+	if not cached then
+		local d = table.clone(base)
+		for k, v in over do
+			(d :: any)[k] = v
+		end
+		cached = d
+		mergedDims[key] = d
+	end
+	return cached
 end
 
 ---------------------------------------------------------------------
@@ -169,7 +192,7 @@ end
 ---------------------------------------------------------------------
 function CarBuilder.build(spec: Cars.CarSpec, options: BuildOptions?): Model
 	local opts: BuildOptions = options or {}
-	local d = CarBuilder.getDims(spec.Class)
+	local d = CarBuilder.getDims(spec.Class, spec.Id)
 	local L, W, H = d.L, d.W, d.H
 	local clr, belt = d.clr, d.belt
 	local class = spec.Class
@@ -1317,17 +1340,25 @@ end
 -- per-car styling (keys override the class defaults)
 local DESIGNS: { [string]: Design } = {
 	aurelia_s4 = {},
-	meridian_lx = { grille = "upright", head = "slim", tailLamp = "bar", wheel = "multi", rim = { 210, 212, 216 }, noseW = 0.9, hoodK = 2.0 },
+	-- full-size muscle sedan: blunt nose, wide black mouth, racetrack tail lamp
+	meridian_lx = {
+		noseH = 2.42, noseB = 0.8, noseW = 0.93, noseLen = 0.75, faceLen = 0.4, hoodK = 2.6, cowlDrop = -0.05,
+		shoulderDrop = 0.24, tumble = 0.1, topIn = 0.24, tailW = 0.93, tailLen = 0.7, tailFace = 0.4, tailH = 2.86, ducktail = 0.08,
+		grille = "charger", head = "angular", tailLamp = "race", wheel = "five", rim = { 196, 198, 204 }, caliper = { 200, 30, 30 },
+		exhaust = "dual", chromeDLO = false, flareF = 0.06, flareR = 0.08, splitter = true,
+	},
+	-- compact M coupe-saloon: tall kidneys, yellow DRLs, bronze wheels
 	kensho_m5 = {
-		grille = "kidney", head = "angel", tailLamp = "split", wheel = "y5", rim = { 34, 34, 38 }, caliper = { 20, 80, 220 },
-		exhaust = "quad", skirt = true, splitter = true, diffuser = true, flareF = 0.1, flareR = 0.12, ducktail = 0.1, chromeDLO = false,
+		grille = "kidneyTall", head = "m2", drl = { 255, 196, 20 }, tailLamp = "split", wheel = "y5", rim = { 150, 112, 62 }, caliper = { 20, 80, 220 },
+		exhaust = "quad", skirt = true, splitter = true, diffuser = true, flareF = 0.16, flareR = 0.2, ducktail = 0.12, chromeDLO = false,
+		noseH = 2.3, noseW = 0.9, noseLen = 0.9, hoodK = 2.2, blackPillars = true, roofLayer = "Trim",
 	},
 	-- late-90s JDM coupe: upright nose, boxy body, quad round tail lamps, wing, livery
 	strada_c2 = {
 		noseW = 0.93, noseLen = 0.55, nosePow = 2, faceLen = 0.35, noseH = 2.12, noseB = 0.75, hoodK = 2.6, cowlDrop = -0.03,
 		shoulderDrop = 0.22, tumble = 0.08, topIn = 0.22, tailW = 0.94, tailLen = 0.55, tailFace = 0.35, tailH = 2.55,
 		grille = "jdm", head = "jdm", tailLamp = "rings", wheel = "six", rim = { 26, 26, 30 }, caliper = { 200, 30, 30 },
-		wing = "gt", livery = "stripes", flareF = 0.06, flareR = 0.08, fastK = 1.05, tumbleG = 0.4, roofSag = 0.06,
+		wing = "gt", livery = "twin", liveryW = 0.36, liveryGap = 0.1, sideSwoosh = true, flareF = 0.06, flareR = 0.08, fastK = 1.05, tumbleG = 0.4, roofSag = 0.06,
 	},
 	-- widebody GT: huge bolt-on flares, big mesh grille, carbon hood, wing
 	kaizen_rz = {
@@ -1336,13 +1367,39 @@ local DESIGNS: { [string]: Design } = {
 		wing = "gt", accentHood = true, flareF = 0.34, flareR = 0.4, skirt = true, splitter = true, diffuser = true, exhaust = "quad",
 		fastK = 1.35, tumbleG = 0.55, rimFrac = 0.74,
 	},
+	-- widebody muscle coupe: long flat hood with a big scoop, quad halo lamps in a full-width grille
+	brute_srx = {
+		noseH = 2.6, noseB = 0.72, noseW = 0.95, noseLen = 0.5, nosePow = 2, faceLen = 0.3, hoodK = 3.2, cowlDrop = -0.06,
+		shoulderDrop = 0.22, tumble = 0.06, topIn = 0.18, tuck = 0.22, midF = 0.45,
+		tailH = 2.95, tailB = 0.75, tailW = 0.95, tailLen = 0.45, tailFace = 0.3, deckH = 2.96, ducktail = 0.07,
+		roofSag = 0.05, wsK = 1.7, fastK = 1.1, tumbleG = 0.42, roofCrown = 0.08,
+		flareF = 0.3, flareR = 0.36, grille = "muscle", head = "muscle", halo = true, tailLamp = "full",
+		wheel = "multi", rim = { 20, 20, 22 }, caliper = { 210, 30, 30 }, rimFrac = 0.74, exhaust = "dual",
+		scoop = "big", skirt = true, splitter = true, diffuser = false, chromeDLO = false,
+	},
+	-- '69 restomod: full-width chrome-framed grille, quad round lamps, twin stripes, wide arches
+	outlaw_69 = {
+		noseH = 2.5, noseB = 0.62, noseW = 0.97, noseLen = 0.35, nosePow = 2, faceLen = 0.22, hoodK = 4, cowlDrop = -0.04,
+		shoulderDrop = 0.16, tumble = 0.05, topIn = 0.14, tuck = 0.26, midF = 0.5,
+		tailH = 2.82, tailB = 0.62, tailW = 0.96, tailLen = 0.35, tailFace = 0.25, deckH = 2.84, ducktail = 0.12,
+		roofSag = 0.04, wsK = 1.8, fastK = 1.0, tumbleG = 0.38, roofCrown = 0.06,
+		flareF = 0.36, flareR = 0.44, grille = "classic", head = "muscle", tailLamp = "full",
+		wheel = "multi", rim = { 60, 62, 68 }, caliper = { 220, 220, 224 }, rimFrac = 0.74, exhaust = "dual",
+		scoop = "low", livery = "twin", liveryW = 0.34, liveryGap = 0.16, skirt = true, splitter = true, diffuser = false,
+		chromeDLO = false, blackPillars = false,
+	},
 	atlas_x7 = {},
 	monolith_gt = {
 		grille = "hex", head = "y", tailLamp = "y", wheel = "multi", rim = { 26, 26, 30 }, caliper = { 255, 180, 0 },
 		fastK = 1.5, exhaust = "quad", skirt = true, splitter = true, flareF = 0.16, flareR = 0.18, rails = false, chromeDLO = false,
 		hoodVents = true, noseH = 3.15, cowlDrop = 0.04,
 	},
-	vortex_v10 = { head = "y", tailLamp = "y", wheel = "y5", rim = { 28, 28, 32 }, caliper = { 255, 200, 0 } },
+	-- mid-engine British-style: eye-socket lamps, smooth nose, black roof, deep side channels
+	vortex_v10 = {
+		head = "eye", tailLamp = "thin", wheel = "y5", rim = { 28, 28, 32 }, caliper = { 255, 200, 0 },
+		noseH = 0.95, noseW = 0.7, nosePow = 1.9, noseLen = 1.4, cowlDrop = 0.06, roofLayer = "Trim", louvres = false,
+		hoodVents = true, exhaust = "center", tailFace = 0.8,
+	},
 	-- V12 wedge: knife nose, faceted V hood, Y lamps, huge side scoops, wing
 	spectre_720 = {
 		noseH = 0.86, noseB = 0.48, noseW = 0.66, noseLen = 1.45, nosePow = 1.1, hoodK = 1.15, cowlDrop = 0.18,
@@ -1358,7 +1415,19 @@ local DESIGNS: { [string]: Design } = {
 		grille = "horseshoe", head = "quad", tailLamp = "bar", wheel = "turbine", rim = { 175, 178, 186 }, caliper = { 20, 40, 120 },
 		cline = true, roofLayer = "Accent", wing = "none", ducktail = 0.1, noseW = 0.7, nosePow = 1.8, cowlDrop = 0.04, blackPillars = false,
 	},
-	eclipse_jx = { head = "slim", tailLamp = "bar", wheel = "multi", rim = { 22, 22, 26 }, caliper = { 150, 60, 255 }, wing = "big", stripe = true },
+	-- Swedish-style megacar: swan-neck wing, roof scoop, slim vertical lamps, centre-lock wheels
+	eclipse_jx = {
+		head = "slim", tailLamp = "thin", wheel = "turbine", rim = { 22, 22, 26 }, caliper = { 255, 120, 20 }, wing = "swan",
+		roofScoop = true, noseH = 0.92, noseW = 0.66, nosePow = 1.5, cowlDrop = 0.12, hoodVents = true, roofLayer = "Trim",
+		exhaust = "center",
+	},
+	-- Italian-style coachbuilt hypercar: purple carbon, gold pinlines, portholes, long tail
+	velluto_p7 = {
+		head = "slim", tailLamp = "rings", wheel = "multi", rim = { 34, 30, 26 }, caliper = { 206, 156, 58 }, wing = "none",
+		sideIntake = "oval", goldLine = true, noseH = 0.9, noseW = 0.6, noseLen = 1.7, nosePow = 1.25, cowlDrop = 0.16,
+		fenderF = 0.22, fenderR = 0.2, waist = 0.34, ducktail = 0.2, tailLen = 1.3, tailW = 0.84, roofLayer = "Paint",
+		blackPillars = false, louvres = false, exhaust = "center", hoodVents = false,
+	},
 }
 
 function CarMesh.design(id: string, class: string, D: { [string]: number }): Design
@@ -1448,9 +1517,10 @@ end
 ---------------------------------------------------------------------
 type Dims = { [string]: number }
 
-function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Layers
+function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): (Layers, { [string]: any })
 	local ds = CarMesh.design(id, class, D)
 	local layers: Layers = {}
+	local meta: { [string]: any } = {} -- plate: CFrame of the rear plate (looking out of the car)
 	local L, W, H = D.L, D.W, D.H
 	local hw = W / 2
 	local zF, zB = -L / 2, L / 2
@@ -1814,6 +1884,47 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 	local faceBot = yBot(zF)
 	local noseFaceH = faceTop - faceBot
 
+	-- raised hood scoop: a hump on the hood surface, open at the front
+	local scoop = ds.scoop
+	local sz0, sz1, sxw, sh = 0, 0, 0, 0
+	if scoop == "big" then
+		sz0, sz1, sxw, sh = lerp(zF, zWs, 0.3), zWs - 0.35, 0.95, 0.3
+	elseif scoop == "low" then
+		sz0, sz1, sxw, sh = lerp(zF, zWs, 0.42), zWs - 0.5, 0.62, 0.13
+	end
+	local function hump(x: number, z: number): number
+		if sh <= 0 or z < sz0 or z > sz1 then
+			return 0
+		end
+		local sx = clamp01(1 - (math.abs(x) / sxw) ^ 4) ^ 0.5
+		local t = (z - sz0) / (sz1 - sz0)
+		return sh * sx * sstep(0, 0.07, t) * (1 - sstep(0.35, 1, t))
+	end
+	local function hoodTop(x: number, z: number): (Vector3?, Vector3?)
+		local p, nn = topF(x, z)
+		if not p then
+			return nil, nil
+		end
+		local h = hump(x, z)
+		if h <= 0 then
+			return p, nn
+		end
+		return p + UP * h, nil
+	end
+	if sh > 0 then
+		local zs0 = sz0 + (sz1 - sz0) * 0.07
+		local HF = function(z: number, x: number)
+			return hoodTop(x, z)
+		end
+		local function capHint(p: Vector3): Vector3
+			return V3(p.X / sxw * 1.5, 1, 0).Unit
+		end
+		patch(layers, "Paint", HF, zs0, sz1, rect(0, sxw), n(18), n(10), 0.01, true, capHint)
+		patch(layers, "Trim", HF, sz0, zs0, rect(0, sxw), 2, n(10), 0.01, true, function()
+			return V3(0, 0.2, -1).Unit
+		end)
+	end
+
 	-----------------------------------------------------------------
 	-- Interior tub (seen through the glass), wheel wells, underbody
 	-----------------------------------------------------------------
@@ -1997,6 +2108,41 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 				box(layers, "Trim", CFrame.new(p + V3(0.15, 0, -0.05)) * CFrame.Angles(0, 0.25, -0.25), V3(0.55, 0.04, 0.3), true)
 			end
 		end
+	elseif grille == "kidneyTall" then
+		-- tall frameless kidneys with horizontal slats
+		local x0, x1 = 0.1, tipW * 0.4
+		local shape = lens(x0, x1, faceBot + 0.3, faceTop - 0.03, faceBot + 0.36, faceTop - 0.08, 0.22)
+		chromeFrame(frontF, x0, x1, shape, 0.03)
+		patch(layers, "Trim", frontF, x0, x1, shape, n(10), n(8), 0.026, true, outward)
+		for i = 1, (if lite then 0 else 6) do
+			local y = lerp(faceBot + 0.36, faceTop - 0.1, i / 7)
+			patch(layers, "Trim", frontF, x0 + 0.04, x1 - 0.04, rect(y - 0.018, y + 0.018), n(6), 1, 0.04, true, outward)
+		end
+	elseif grille == "charger" then
+		-- one wide black mouth between the lamps + fog lamps low down
+		local gw = tipW * 0.5
+		local g0, g1 = faceTop - 0.56, faceTop - 0.07
+		local shape = lens(-gw, gw, g0, g1, g0 + 0.1, g1, 0.14)
+		chromeFrame(frontF, 0, gw, shape, 0.035)
+		patch(layers, "Trim", frontF, 0, gw, shape, n(16), n(6), 0.026, true, outward)
+		patch(layers, "Trim", frontF, tipW * 0.74, tipW * 0.94, lens(tipW * 0.74, tipW * 0.94, faceBot + 0.2, faceBot + 0.44, faceBot + 0.22, faceBot + 0.42, 0.3), n(6), n(3), 0.02, true, outward)
+		patch(layers, "Lamp", frontF, tipW * 0.8, tipW * 0.88, circle(tipW * 0.84, faceBot + 0.32, 0.06), n(6), n(3), 0.03, true, outward)
+	elseif grille == "muscle" or grille == "classic" then
+		-- full-width black grille band carrying the lamps, big lower mouth
+		local gw = tipW * 0.97
+		local g0, g1 = faceTop - 0.62, faceTop - 0.05
+		if grille == "classic" then
+			chromeFrame(frontF, 0, gw, rect(g0, g1), 0.06)
+		end
+		patch(layers, "Trim", frontF, 0, gw, rect(g0, g1), n(18), n(5), 0.026, true, outward)
+		if not lite then
+			for i = 1, 3 do
+				local y = lerp(g0, g1, i / 4)
+				patch(layers, if grille == "classic" then "Chrome" else "Trim", frontF, 0, tipW * 0.42, rect(y - 0.014, y + 0.014), n(8), 1, 0.032, true, outward)
+			end
+		end
+		local mw = tipW * 0.72
+		patch(layers, "Trim", frontF, 0, mw, lens(-mw, mw, faceBot + 0.08, faceBot + 0.44, faceBot + 0.12, faceBot + 0.4, 0.1), n(16), n(4), 0.024, true, outward)
 	elseif grille == "hex" then
 		local gw = tipW * 0.62
 		local shape = lens(-gw, gw, faceBot + 0.15, faceTop - 0.1, faceBot + 0.4, faceTop - 0.05, 0.1)
@@ -2025,7 +2171,7 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			local y = (by0 + by1) / 2
 			patch(layers, "Paint", frontF, ix0 + 0.1, ix1 - 0.1, rect(y - 0.03, y + 0.03), n(10), 1, 0.03, true, outward)
 		end
-	elseif grille ~= "hex" and grille ~= "jdm" and grille ~= "gt" then
+	elseif grille ~= "hex" and grille ~= "jdm" and grille ~= "gt" and grille ~= "muscle" and grille ~= "classic" then
 		local iw = tipW * 0.66
 		patch(layers, "Trim", frontF, 0, iw, lens(-iw, iw, faceBot + 0.06, faceBot + 0.3, faceBot + 0.08, faceBot + 0.26, 0.12), n(14), n(4), 0.02, true, outward)
 	end
@@ -2088,8 +2234,27 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			patch(layers, "Lamp", TF, p.X - 0.08, p.X + 0.08, rect(p.Y - 0.1, p.Y + 0.1), 2, 2, 0.034, true, upward)
 		end
 	end
+	-- muscle cars: quad round lamps sitting in the grille band, optional halos
+	if not isSuper and ds.head == "muscle" then
+		local g0, g1 = faceTop - 0.62, faceTop - 0.05
+		local yc = (g0 + g1) / 2
+		local r = math.min(0.2, (g1 - g0) / 2 - 0.05)
+		for _, f in { 0.6, 0.83 } do
+			local xc = tipW * f
+			patch(layers, "Chrome", frontF, xc - r - 0.04, xc + r + 0.04, circle(xc, yc, r + 0.04), n(10), n(4), 0.03, true, outward)
+			patch(layers, "Lamp", frontF, xc - r, xc + r, circle(xc, yc, r), n(10), n(4), 0.038, true, outward)
+			if ds.halo then
+				local ring = {}
+				for k = 0, 20 do
+					local a = k / 20 * math.pi * 2
+					table.insert(ring, V3(xc + math.cos(a) * (r + 0.1), yc + math.sin(a) * (r + 0.1), 0))
+				end
+				stroke(layers, "Lamp", frontF, ring, 0.035, 0.034, true, outward)
+			end
+		end
+	end
 	-- headlights (placed on the upper nose corners)
-	if not isSuper then
+	if not isSuper and ds.head ~= "muscle" then
 		local style = ds.head
 		local hx0, hx1 = tipW * 0.5, tipW * 0.98
 		local ylo, yhi
@@ -2180,6 +2345,16 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			dot(x, y + 0.02, 0.08)
 			local x2, y2 = mid(0.3)
 			dot(x2, y2 + 0.04, 0.07)
+		elseif style == "m2" then
+			-- coloured DRL along the top edge hooking down at the inner end, two projectors
+			local function drl(path: { Vector3 })
+				stroke(layers, "Drl", frontF, path, 0.055, 0.036, true, outward)
+			end
+			drl({ edge(0.94, true, 0.06), edge(0.3, true, 0.06), edge(0.1, false, 0.07) })
+			local x1, y1 = mid(0.48)
+			local x2, y2 = mid(0.74)
+			dot(x1, y1 - 0.03, 0.08)
+			dot(x2, y2 - 0.03, 0.08)
 		elseif style == "quad" then
 			for i = 0, 3 do
 				local x = lerp(hx0, hx1, 0.16 + i * 0.22)
@@ -2226,7 +2401,25 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			patch(layers, if isSuper then "Trim" else "Chrome", sideF, z - 0.28, z + 0.28, lens(z - 0.28, z + 0.28, hy - 0.05, hy + 0.05, hy - 0.05, hy + 0.05, 0.3), 4, 2, 0.02, true, outward)
 		end
 	end
-	if ds.sideIntake then
+	if ds.sideIntake == "oval" then
+		-- oval porthole intake with a contrasting rim
+		local rw = wheels[2]
+		local zc = lerp(zRoofEnd - 0.6, rw.z - rw.arch - 0.1, 0.5)
+		local yc = lerp(yBot(zc), yEdge(zc), 0.6)
+		local rz, ry = 0.62, 0.32
+		local function ell(z: number): (number, number)
+			local t = (z - zc) / rz
+			local h = ry * math.sqrt(math.max(0, 1 - t * t))
+			return yc - h, yc + h
+		end
+		patch(layers, "Trim", sideF, zc - rz, zc + rz, ell, n(14), n(6), 0.018, true, outward)
+		local ring = {}
+		for k = 0, 24 do
+			local a = k / 24 * math.pi * 2
+			table.insert(ring, V3(zc + math.cos(a) * (rz + 0.04), yc + math.sin(a) * (ry + 0.04), 0))
+		end
+		stroke(layers, "Accent", sideF, ring, 0.05, 0.026, true, outward)
+	elseif ds.sideIntake then
 		-- big scoop ahead of the rear wheel
 		local rw = wheels[2]
 		local z0, z1 = zRoofEnd - 1.0, rw.z - rw.arch - 0.1
@@ -2252,18 +2445,46 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 	if ds.stripe then
 		stroke(layers, "Accent", sideF, { V3(zF + 1.4, yEdge(zF + 1.4) - 0.1, 0), V3(zB - 1.0, yEdge(zB - 1.0) - 0.1, 0) }, 0.05, 0.012, true, outward, 60)
 	end
-	if ds.livery == "stripes" and not lite then
-		-- blue livery: long arrows along the lower side and over the arches
-		local function stripe(z0: number, z1: number, y0: number, y1: number, w: number)
-			stroke(layers, "Accent", sideF, { V3(z0, y0, 0), V3(z1, y1, 0) }, w, 0.014, true, outward, 40)
+	if ds.livery == "twin" then
+		-- twin racing stripes over the nose, hood (and scoop), roof and deck
+		local x0 = (ds.liveryGap or 0.12) / 2
+		local x1 = x0 + (ds.liveryW or 0.36)
+		local T = function(z: number, x: number)
+			return hoodTop(x, z)
 		end
-		local yl = clr + 0.75
-		stripe(zF + 1.0, zB - 1.4, yl, yl + 0.3, 0.12)
-		stripe(zF + 2.2, zB - 2.2, yl + 0.22, yl + 0.55, 0.08)
-		for i = 0, 3 do
-			local z = doorFront + 0.6 + i * 0.45
-			stroke(layers, "Accent", sideF, { V3(z, yl + 0.2, 0), V3(z + 0.55, yEdge(z) - 0.2, 0) }, 0.07, 0.014, true, outward, 16)
+		for _, seg in { { zF + 0.1, zWs - 0.05 }, { zRoofA + 0.03, zRoofB - 0.03 }, { zRearEnd + 0.06, zB - 0.06 } } do
+			if seg[2] > seg[1] then
+				patch(layers, "Accent", T, seg[1], seg[2], rect(x0, x1), n(28), 2, 0.014, true, upward)
+			end
 		end
+		patch(layers, "Accent", frontF, x0, x1, rect(faceBot + 0.04, faceTop + 0.1), 2, n(10), 0.014, true, outward)
+	end
+	if ds.sideSwoosh and not lite then
+		-- sweeping graphic rising from the front arch to the rear quarter
+		local zA = wheels[1].z + wheels[1].arch + 0.15
+		local zC = wheels[2].z - wheels[2].arch - 0.15
+		local yl = yBot(zA) + 0.45
+		local path = {}
+		for i = 0, 12 do
+			local t = i / 12
+			local z = lerp(zA, zC, t)
+			table.insert(path, V3(z, yl + 0.55 * t ^ 1.8, 0))
+		end
+		stroke(layers, "Accent", sideF, path, 0.2, 0.014, true, outward, 48)
+		local path2 = {}
+		for _, p in path do
+			table.insert(path2, V3(p.X, p.Y + 0.24, 0))
+		end
+		stroke(layers, "Accent", sideF, path2, 0.07, 0.014, true, outward, 48)
+	end
+	if ds.goldLine then
+		-- thin contrasting pinlines along the sill, the front lip and the tail
+		local zA = wheels[1].z + wheels[1].arch + 0.12
+		local zC = wheels[2].z - wheels[2].arch - 0.12
+		stroke(layers, "Accent", sideF, { V3(zA, yBot(zA) + 0.32, 0), V3(zC, yBot(zC) + 0.32, 0) }, 0.035, 0.02, true, outward, 40)
+		stroke(layers, "Accent", frontF, { V3(0, faceBot + 0.12, 0), V3(tipW * 0.92, faceBot + 0.2, 0) }, 0.035, 0.03, true, outward, 24)
+		local yt = yBot(zB) + 0.55
+		stroke(layers, "Accent", rearF, { V3(0, yt, 0), V3(tailW * 0.9, yt + 0.04, 0) }, 0.035, 0.03, true, outward, 24)
 	end
 	if not isSuper and not lite then
 		local zm = wheels[1].z + wheels[1].arch + 0.35
@@ -2314,6 +2535,32 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 				end
 				stroke(layers, "Tail", rearF, ring, r * 0.42, 0.03, true, outward)
 			end
+		elseif style == "race" or style == "full" then
+			-- full-width lamp: a "racetrack" outline, or a solid bar with a centre badge gap
+			local y0, y1 = ty1 - 0.5, ty1
+			if ds.grille == "classic" then
+				chromeFrame(rearF, 0, tailW * 0.97, rect(y0, y1), 0.05)
+			end
+			patch(layers, "Trim", rearF, 0, tailW * 0.97, rect(y0, y1), n(18), n(3), 0.016, true, outward)
+			if style == "race" then
+				local x1, yt, yb2 = tailW * 0.93, y1 - 0.08, y0 + 0.08
+				local rr = (yt - yb2) / 2
+				local path = { V3(0, yt, 0) }
+				for k = 0, 10 do
+					local a = math.pi / 2 - k / 10 * math.pi
+					table.insert(path, V3(x1 - rr + math.cos(a) * rr, (yt + yb2) / 2 + math.sin(a) * rr, 0))
+				end
+				table.insert(path, V3(0, yb2, 0))
+				stroke(layers, "Tail", rearF, path, 0.06, 0.03, true, outward)
+			else
+				patch(layers, "Tail", rearF, tailW * 0.12, tailW * 0.95, rect(y0 + 0.08, y1 - 0.08), n(14), 1, 0.03, true, outward)
+				if not lite then
+					for i = 1, 3 do
+						local x = lerp(tailW * 0.12, tailW * 0.95, i / 4)
+						patch(layers, "Trim", rearF, x - 0.02, x + 0.02, rect(y0 + 0.06, y1 - 0.06), 1, 1, 0.036, true, outward)
+					end
+				end
+			end
 		elseif style == "tri" then
 			tailBand(tailW * 0.42, tailW * 0.99, ty0, ty1)
 			for i = 0, 2 do
@@ -2327,6 +2574,10 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 		if ds.plate then
 			local yb = yBot(zB)
 			local py = lerp(yb, ty0, 0.55)
+			local pp, pn = rearF(0, py)
+			if pp then
+				meta.plate = CFrame.lookAt(pp + (pn or V3(0, 0, 1)) * 0.035, pp + (pn or V3(0, 0, 1)) * 2)
+			end
 			patch(layers, "Trim", rearF, 0, 0.66, rect(py - 0.24, py + 0.24), n(4), 2, 0.018, true, outward)
 			patch(layers, "Plate", rearF, 0, 0.6, rect(py - 0.19, py + 0.19), n(4), 2, 0.028, true, outward)
 		end
@@ -2342,9 +2593,12 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 		else
 			tips = { { tailW * 0.62, yb + 0.18, 0.15 } }
 		end
+		meta.exhausts = {}
 		for _, t in tips do
 			local x, y, r = t[1], t[2], t[3]
 			local p = rearF(x, y) or V3(x, y, zB)
+			table.insert(meta.exhausts, V3(x, y, p.Z + 0.12))
+			table.insert(meta.exhausts, V3(-x, y, p.Z + 0.12))
 			local cf = CFrame.fromMatrix(V3(x, y, p.Z - 0.25), V3(0, 0, 1), UP)
 			revolve(layers, "Chrome", cf, { V3(0, r * 0.82, 0), V3(0.36, r * 0.86, 0), V3(0.38, r, 0), V3(0, r, 0) }, if lite then 10 else 18, true)
 			annulus(layers, "Trim", cf * CFrame.new(0.3, 0, 0), 0, r * 0.82, if lite then 8 else 14, 1, true)
@@ -2388,11 +2642,12 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			box(layers, "Trim", CFrame.new(path[i] - UP * 0.07), V3(0.12, 0.14, 0.3), true)
 		end
 	end
-	if ds.wing == "big" or ds.wing == "gt" then
-		local big = ds.wing == "big"
+	if ds.wing == "big" or ds.wing == "gt" or ds.wing == "swan" then
+		local big = ds.wing ~= "gt"
+		local swan = ds.wing == "swan"
 		local span = hw - (if big then 0.15 else 0.3)
 		local wz = zB - (if big then 0.85 else 0.7)
-		local wy = yEdge(wz) + (if big then 0.95 else 0.75)
+		local wy = yEdge(wz) + (if swan then 1.2 elseif big then 0.95 else 0.75)
 		local chord = if big then 1.25 else 0.95
 		local foil = {}
 		for i = 0, 10 do
@@ -2408,12 +2663,28 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 		local plate = { V3(-0.35, -chord / 2 - 0.1, 0), V3(0.22, -chord / 2 + 0.1, 0), V3(0.22, chord / 2 + 0.15, 0), V3(-0.25, chord / 2 + 0.05, 0) }
 		extrude(layers, "Trim", CFrame.new(span, wy, wz), plate, -0.04, 0.04, true)
 		local x = hw * 0.4
-		local p0 = (topF(x, wz + 0.3)) or V3(x, yEdge(wz), wz + 0.3)
-		local p1 = V3(x, wy + 0.04, wz - 0.1)
-		box(layers, "Trim", CFrame.lookAt((p0 + p1) / 2, p1), V3(0.07, 0.22, (p1 - p0).Magnitude), true)
+		if swan then
+			-- swan-neck struts hang the wing from above
+			local p0 = (topF(x, wz + 0.5)) or V3(x, yEdge(wz), wz + 0.5)
+			local p1 = V3(x, wy + 0.32, wz + 0.25)
+			local p2 = V3(x, wy + 0.08, wz - 0.2)
+			box(layers, "Trim", CFrame.lookAt((p0 + p1) / 2, p1), V3(0.07, 0.24, (p1 - p0).Magnitude + 0.06), true)
+			box(layers, "Trim", CFrame.lookAt((p1 + p2) / 2, p2), V3(0.07, 0.2, (p2 - p1).Magnitude + 0.06), true)
+		else
+			local p0 = (topF(x, wz + 0.3)) or V3(x, yEdge(wz), wz + 0.3)
+			local p1 = V3(x, wy + 0.04, wz - 0.1)
+			box(layers, "Trim", CFrame.lookAt((p0 + p1) / 2, p1), V3(0.07, 0.22, (p1 - p0).Magnitude), true)
+		end
 		if class == "Hypercar" then
 			box(layers, "Accent", CFrame.new(span - 0.02, wy + 0.03, wz) * CFrame.Angles(math.rad(-8), 0, 0), V3(0.1, 0.05, chord + 0.04), true)
 		end
+	end
+	if ds.roofScoop then
+		-- periscope intake on the roof
+		local z = zRoofB - 0.2
+		local y = roofLine(z) or roofTop
+		extrude(layers, "Trim", CFrame.new(0, y - 0.04, z), { V3(-0.02, -0.55, 0), V3(0.26, -0.45, 0), V3(0.3, 0.4, 0), V3(-0.02, 0.6, 0) }, -0.36, 0.36, false)
+		box(layers, "Interior", CFrame.new(0, y + 0.13, z - 0.47), V3(0.6, 0.2, 0.04), false)
 	end
 	if not isSuper and not lite then
 		-- shark fin antenna
@@ -2427,7 +2698,7 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			layers[name] = nil
 		end
 	end
-	return layers
+	return layers, meta
 end
 
 ---------------------------------------------------------------------
@@ -2659,25 +2930,28 @@ Cars.ClassLabels = {
 local list: { CarSpec } = {
 	-- Sedans
 	{ Id = "aurelia_s4", Name = "Aurelia S4", Class = "Sedan", TopSpeed = 124, ZeroToSixty = 7.2, Handling = 0.55, Price = 0, Color = Color3.fromRGB(196, 199, 204), Order = 1 },
-	{ Id = "meridian_lx", Name = "Meridian LX", Class = "Sedan", TopSpeed = 142, ZeroToSixty = 5.6, Handling = 0.62, Price = 18000, Color = Color3.fromRGB(18, 22, 30), Order = 2 },
-	{ Id = "kensho_m5", Name = "Kensho M-Sport", Class = "Sedan", TopSpeed = 165, ZeroToSixty = 3.9, Handling = 0.72, Price = 65000, Color = Color3.fromRGB(28, 58, 120), Order = 3 },
+	{ Id = "meridian_lx", Name = "Meridian SRT", Class = "Sedan", TopSpeed = 155, ZeroToSixty = 4.8, Handling = 0.62, Price = 18000, Color = Color3.fromRGB(38, 50, 58), Order = 2 },
+	{ Id = "kensho_m5", Name = "Kensho M-Sport", Class = "Sedan", TopSpeed = 165, ZeroToSixty = 3.9, Handling = 0.72, Price = 65000, Color = Color3.fromRGB(104, 18, 98), Order = 3 },
 
 	-- Coupes
 	{ Id = "strada_c2", Name = "Strada C2", Class = "Coupe", TopSpeed = 150, ZeroToSixty = 5.0, Handling = 0.7, Price = 32000, Color = Color3.fromRGB(188, 192, 200), Accent = Color3.fromRGB(24, 60, 210), Order = 4 },
 	{ Id = "kaizen_rz", Name = "Kaizen RZ", Class = "Coupe", TopSpeed = 172, ZeroToSixty = 4.1, Handling = 0.8, Price = 78000, Color = Color3.fromRGB(160, 12, 22), Accent = Color3.fromRGB(18, 18, 20), Order = 5 },
+	{ Id = "brute_srx", Name = "Brute SRX", Class = "Coupe", TopSpeed = 168, ZeroToSixty = 3.6, Handling = 0.66, Price = 95000, Color = Color3.fromRGB(176, 14, 18), Accent = Color3.fromRGB(16, 16, 18), Order = 6 },
+	{ Id = "outlaw_69", Name = "Outlaw '69", Class = "Coupe", TopSpeed = 175, ZeroToSixty = 3.4, Handling = 0.7, Price = 120000, Color = Color3.fromRGB(232, 233, 235), Accent = Color3.fromRGB(14, 14, 16), Order = 7 },
 
 	-- SUVs
-	{ Id = "atlas_x7", Name = "Atlas X7", Class = "SUV", TopSpeed = 135, ZeroToSixty = 6.1, Handling = 0.5, Price = 40000, Color = Color3.fromRGB(40, 44, 50), Order = 6 },
-	{ Id = "monolith_gt", Name = "Monolith GT", Class = "SUV", TopSpeed = 180, ZeroToSixty = 3.6, Handling = 0.6, Price = 145000, Color = Color3.fromRGB(12, 12, 14), Accent = Color3.fromRGB(255, 180, 0), Order = 7 },
+	{ Id = "atlas_x7", Name = "Atlas X7", Class = "SUV", TopSpeed = 135, ZeroToSixty = 6.1, Handling = 0.5, Price = 40000, Color = Color3.fromRGB(40, 44, 50), Order = 8 },
+	{ Id = "monolith_gt", Name = "Monolith GT", Class = "SUV", TopSpeed = 180, ZeroToSixty = 3.6, Handling = 0.6, Price = 145000, Color = Color3.fromRGB(12, 12, 14), Accent = Color3.fromRGB(255, 180, 0), Order = 9 },
 
 	-- Supercars
-	{ Id = "vortex_v10", Name = "Vortex V10", Class = "Supercar", TopSpeed = 205, ZeroToSixty = 2.9, Handling = 0.86, Price = 240000, Color = Color3.fromRGB(120, 200, 20), Order = 8 },
-	{ Id = "spectre_720", Name = "Spectre 720", Class = "Supercar", TopSpeed = 212, ZeroToSixty = 2.8, Handling = 0.88, Price = 320000, Color = Color3.fromRGB(255, 120, 0), Order = 9 },
-	{ Id = "rosso_f8", Name = "Rosso F8", Class = "Supercar", TopSpeed = 210, ZeroToSixty = 2.8, Handling = 0.9, Price = 360000, Color = Color3.fromRGB(200, 10, 20), Order = 10 },
+	{ Id = "vortex_v10", Name = "Vortex V10", Class = "Supercar", TopSpeed = 205, ZeroToSixty = 2.9, Handling = 0.86, Price = 240000, Color = Color3.fromRGB(120, 200, 20), Order = 10 },
+	{ Id = "spectre_720", Name = "Spectre 720", Class = "Supercar", TopSpeed = 212, ZeroToSixty = 2.8, Handling = 0.88, Price = 320000, Color = Color3.fromRGB(255, 120, 0), Order = 11 },
+	{ Id = "rosso_f8", Name = "Rosso F8", Class = "Supercar", TopSpeed = 210, ZeroToSixty = 2.8, Handling = 0.9, Price = 360000, Color = Color3.fromRGB(200, 10, 20), Order = 12 },
 
 	-- Hypercars
-	{ Id = "phantom_w16", Name = "Phantom W16", Class = "Hypercar", TopSpeed = 261, ZeroToSixty = 2.4, Handling = 0.9, Price = 1200000, Color = Color3.fromRGB(20, 40, 90), Accent = Color3.fromRGB(15, 15, 18), Order = 11 },
-	{ Id = "eclipse_jx", Name = "Eclipse JX", Class = "Hypercar", TopSpeed = 278, ZeroToSixty = 2.3, Handling = 0.93, Price = 2500000, Color = Color3.fromRGB(16, 16, 20), Accent = Color3.fromRGB(150, 60, 255), Order = 12 },
+	{ Id = "phantom_w16", Name = "Phantom W16", Class = "Hypercar", TopSpeed = 261, ZeroToSixty = 2.4, Handling = 0.9, Price = 1200000, Color = Color3.fromRGB(20, 40, 90), Accent = Color3.fromRGB(15, 15, 18), Order = 13 },
+	{ Id = "eclipse_jx", Name = "Eclipse JX", Class = "Hypercar", TopSpeed = 278, ZeroToSixty = 2.3, Handling = 0.93, Price = 2500000, Color = Color3.fromRGB(226, 84, 8), Accent = Color3.fromRGB(16, 16, 18), Order = 14 },
+	{ Id = "velluto_p7", Name = "Velluto P7", Class = "Hypercar", TopSpeed = 268, ZeroToSixty = 2.5, Handling = 0.92, Price = 3200000, Color = Color3.fromRGB(62, 18, 88), Accent = Color3.fromRGB(206, 156, 58), Order = 15 },
 }
 
 Cars.List = list
@@ -3159,6 +3433,44 @@ Config.Economy = {
 	ThreadBonus = 2.5,
 	NearMissGap = 5, -- studs of free space that still counts as a cut
 }
+
+---------------------------------------------------------------------
+-- Progression: XP + levels (earned alongside cash) and the daily gift
+---------------------------------------------------------------------
+Config.Progression = {
+	XpBase = 40, -- XP needed for level 1 -> 2
+	XpExponent = 1.35, -- XP needed = XpBase * level ^ XpExponent
+	MaxLevel = 999,
+	DriveXpPerSecond = 1 / 90, -- XP per mph per second ( 90mph -> 1 XP/s )
+	CutXpPerCash = 1 / 30, -- a cut-up gives this much XP per $ it paid
+	CutXpMax = 60, -- cap on XP from a single cut-up
+	LevelUpCashBase = 500, -- cash reward on reaching a level:
+	LevelUpCashPerLevel = 250, --   base + perLevel * newLevel
+}
+
+Config.Daily = {
+	Cooldown = 24 * 60 * 60, -- seconds between daily gifts
+	Cash = 2000, -- daily gift: Cash + CashPerLevel * (level - 1)
+	CashPerLevel = 150,
+}
+
+-- XP needed to go from `level` to `level + 1`
+function Config.xpForLevel(level: number): number
+	local P = Config.Progression
+	return math.max(1, math.floor(P.XpBase * math.max(1, level) ^ P.XpExponent + 0.5))
+end
+
+-- cash paid when the player reaches `level`
+function Config.levelReward(level: number): number
+	local P = Config.Progression
+	return math.floor(P.LevelUpCashBase + P.LevelUpCashPerLevel * level)
+end
+
+-- cash in the daily gift for a player at `level`
+function Config.dailyReward(level: number): number
+	local D = Config.Daily
+	return math.floor(D.Cash + D.CashPerLevel * (math.max(1, level) - 1))
+end
 
 ---------------------------------------------------------------------
 -- Camera
@@ -5184,6 +5496,7 @@ return CityPremium
 	  * builds the city
 	  * spawns player cars (client-owned physics)
 	  * pays passive driving income + validates "cut up" rewards
+	  * XP / levels (earned with the same events as cash) + the daily gift
 	  * garage purchases + saving
 ]]
 
@@ -5220,6 +5533,8 @@ local DespawnCar: RemoteEvent = remote("RemoteEvent", "DespawnCar")
 local CutUp: RemoteEvent = remote("RemoteEvent", "CutUp")
 local Crash: RemoteEvent = remote("RemoteEvent", "Crash")
 local Earned: RemoteEvent = remote("RemoteEvent", "Earned")
+local Progress: RemoteEvent = remote("RemoteEvent", "Progress") -- server -> client XP / level updates
+local ClaimDaily: RemoteFunction = remote("RemoteFunction", "ClaimDaily")
 remotes.Parent = ReplicatedStorage
 
 local playerCars = Instance.new("Folder")
@@ -5239,13 +5554,14 @@ type Session = {
 	lastCut: number,
 	cutTimes: { number },
 	incomeCarry: number,
+	xpCarry: number,
 }
 local sessions: { [Player]: Session } = {}
 
 local function getSession(player: Player): Session
 	local s = sessions[player]
 	if not s then
-		s = { car = nil, combo = 0, lastCut = 0, cutTimes = {}, incomeCarry = 0 }
+		s = { car = nil, combo = 0, lastCut = 0, cutTimes = {}, incomeCarry = 0, xpCarry = 0 }
 		sessions[player] = s
 	end
 	return s
@@ -5254,6 +5570,28 @@ end
 local function horizontalSpeed(part: BasePart): number
 	local v = part.AssemblyLinearVelocity
 	return Vector3.new(v.X, 0, v.Z).Magnitude
+end
+
+---------------------------------------------------------------------
+-- XP / levels
+---------------------------------------------------------------------
+local function grantXp(player: Player, amount: number, source: string)
+	local result = PlayerData.addXp(player, amount)
+	if not result then
+		return
+	end
+	Progress:FireClient(player, {
+		level = result.level,
+		xp = result.xp,
+		need = result.need,
+		gained = math.floor(amount),
+		source = source,
+		levelUp = result.levels > 0,
+		reward = result.reward,
+	})
+	if result.levels > 0 then
+		task.spawn(PlayerData.save, player)
+	end
 end
 
 ---------------------------------------------------------------------
@@ -5309,6 +5647,7 @@ local function spawnFor(player: Player, carId: string)
 
 	local spec = Cars.get(carId)
 	local model = CarBuilder.build(spec, { interior = true, lights = true, anchored = false })
+	model:SetAttribute("Plate", string.upper(player.Name):gsub("[^%w]", ""):sub(1, 7))
 	model.Name = player.Name
 	model:SetAttribute("Owner", player.UserId)
 
@@ -5359,6 +5698,16 @@ GetData.OnServerInvoke = function(player: Player)
 		task.wait(0.1)
 	end
 	return PlayerData.snapshot(player)
+end
+
+ClaimDaily.OnServerInvoke = function(player: Player)
+	local ok, amount = PlayerData.claimDaily(player)
+	local readyIn = PlayerData.dailyReadyIn(player)
+	if not ok then
+		return { ok = false, message = "Your next gift isn't ready yet", amount = 0, readyIn = readyIn }
+	end
+	task.spawn(PlayerData.save, player)
+	return { ok = true, message = "Daily gift claimed", amount = amount, readyIn = readyIn }
 end
 
 BuyCar.OnServerInvoke = function(player: Player, carId: any)
@@ -5461,6 +5810,9 @@ CutUp.OnServerEvent:Connect(function(player: Player, info: any)
 
 	local label = if thread then "THREAD THE NEEDLE" elseif oncoming then "ONCOMING CUT" elseif closeness > 0.75 then "INSANE CUT" elseif closeness > 0.4 then "CLOSE CUT" else "CUT UP"
 	Earned:FireClient(player, { amount = amount, combo = s.combo, kind = "cut", label = label })
+
+	local P = Config.Progression
+	grantXp(player, math.clamp(math.floor(amount * P.CutXpPerCash + 0.5), 1, P.CutXpMax), "cut")
 end)
 
 ---------------------------------------------------------------------
@@ -5485,6 +5837,13 @@ RunService.Heartbeat:Connect(function(dt)
 				if whole >= 1 then
 					s.incomeCarry -= whole
 					PlayerData.addCash(player, whole)
+				end
+				-- driving XP mirrors the driving income
+				s.xpCarry += mph * Config.Progression.DriveXpPerSecond * step
+				local xp = math.floor(s.xpCarry)
+				if xp >= 1 then
+					s.xpCarry -= xp
+					grantXp(player, xp, "drive")
 				end
 			end
 			-- drop combos that expired
@@ -5534,7 +5893,8 @@ end)
           <string name="Name">PlayerData</string>
           <string name="Source"><![CDATA[--[[
 	PlayerData
-	Cash + owned cars, saved with DataStoreService when available
+	Cash, owned cars, level/XP and the daily gift timer, saved with DataStoreService
+	when available. Old saves without the progression fields load as level 1.
 	(publish the place and enable "Studio Access to API Services" to save in Studio).
 ]]
 
@@ -5550,7 +5910,28 @@ export type Profile = {
 	Cash: number,
 	Owned: { [string]: boolean },
 	Selected: string,
+	Level: number,
+	XP: number, -- progress inside the current level
+	LastDaily: number, -- os.time() of the last daily gift claim (0 = never)
 	Loaded: boolean,
+}
+
+export type Snapshot = {
+	Cash: number,
+	Owned: { string },
+	Selected: string,
+	Level: number,
+	XP: number,
+	XPNeed: number,
+	DailyIn: number, -- seconds until the daily gift can be claimed
+}
+
+export type XpResult = {
+	level: number,
+	xp: number,
+	need: number,
+	levels: number, -- levels gained by this award
+	reward: number, -- cash paid for those levels
 }
 
 local PlayerData = {}
@@ -5573,18 +5954,33 @@ local function defaultProfile(): Profile
 		Cash = Config.Economy.StartingCash,
 		Owned = { [Cars.StarterId] = true },
 		Selected = Cars.StarterId,
+		Level = 1,
+		XP = 0,
+		LastDaily = 0,
 		Loaded = false,
 	}
 end
 
-local function makeLeaderstats(player: Player, cash: number)
+local function makeLeaderstats(player: Player, profile: Profile)
 	local stats = Instance.new("Folder")
 	stats.Name = "leaderstats"
+	local level = Instance.new("IntValue")
+	level.Name = "Level"
+	level.Value = profile.Level
+	level.Parent = stats
 	local value = Instance.new("IntValue")
 	value.Name = "Cash"
-	value.Value = cash
+	value.Value = profile.Cash
 	value.Parent = stats
 	stats.Parent = player
+end
+
+local function setStat(player: Player, name: string, v: number)
+	local stats = player:FindFirstChild("leaderstats")
+	local value = stats and stats:FindFirstChild(name)
+	if value and value:IsA("IntValue") then
+		value.Value = v
+	end
 end
 
 function PlayerData.load(player: Player): Profile
@@ -5607,13 +6003,23 @@ function PlayerData.load(player: Player): Profile
 			if type(saved.Selected) == "string" and profile.Owned[saved.Selected] then
 				profile.Selected = saved.Selected
 			end
+			-- progression (absent in saves from before levels existed)
+			if type(saved.Level) == "number" then
+				profile.Level = math.clamp(math.floor(saved.Level), 1, Config.Progression.MaxLevel)
+			end
+			if type(saved.XP) == "number" then
+				profile.XP = math.clamp(math.floor(saved.XP), 0, Config.xpForLevel(profile.Level))
+			end
+			if type(saved.LastDaily) == "number" then
+				profile.LastDaily = math.clamp(math.floor(saved.LastDaily), 0, os.time())
+			end
 		elseif not ok then
 			warn("[CityLegends] load failed for", player.Name, saved)
 		end
 	end
 	profile.Loaded = true
 	profiles[player] = profile
-	makeLeaderstats(player, profile.Cash)
+	makeLeaderstats(player, profile)
 	return profile
 end
 
@@ -5626,7 +6032,14 @@ function PlayerData.save(player: Player)
 	for id in profile.Owned do
 		table.insert(owned, id)
 	end
-	local payload = { Cash = profile.Cash, Owned = owned, Selected = profile.Selected }
+	local payload = {
+		Cash = profile.Cash,
+		Owned = owned,
+		Selected = profile.Selected,
+		Level = profile.Level,
+		XP = profile.XP,
+		LastDaily = profile.LastDaily,
+	}
 	local ok, err = pcall(function()
 		(store :: DataStore):SetAsync("p_" .. player.UserId, payload)
 	end)
@@ -5645,14 +6058,57 @@ function PlayerData.addCash(player: Player, amount: number)
 		return
 	end
 	profile.Cash = math.max(0, math.floor(profile.Cash + amount))
-	local stats = player:FindFirstChild("leaderstats")
-	local value = stats and stats:FindFirstChild("Cash")
-	if value and value:IsA("IntValue") then
-		value.Value = profile.Cash
-	end
+	setStat(player, "Cash", profile.Cash)
 end
 
-function PlayerData.snapshot(player: Player): { Cash: number, Owned: { string }, Selected: string }?
+-- Adds XP, rolls over as many levels as it covers and pays the level-up cash.
+function PlayerData.addXp(player: Player, amount: number): XpResult?
+	local profile = profiles[player]
+	amount = math.floor(amount)
+	if not profile or amount <= 0 then
+		return nil
+	end
+	local maxLevel = Config.Progression.MaxLevel
+	profile.XP += amount
+	local levels, reward = 0, 0
+	while profile.Level < maxLevel and profile.XP >= Config.xpForLevel(profile.Level) do
+		profile.XP -= Config.xpForLevel(profile.Level)
+		profile.Level += 1
+		levels += 1
+		reward += Config.levelReward(profile.Level)
+	end
+	local need = Config.xpForLevel(profile.Level)
+	if profile.Level >= maxLevel then
+		profile.XP = math.min(profile.XP, need)
+	end
+	if levels > 0 then
+		setStat(player, "Level", profile.Level)
+		PlayerData.addCash(player, reward)
+	end
+	return { level = profile.Level, xp = profile.XP, need = need, levels = levels, reward = reward }
+end
+
+function PlayerData.dailyReadyIn(player: Player): number
+	local profile = profiles[player]
+	if not profile then
+		return Config.Daily.Cooldown
+	end
+	return math.max(0, profile.LastDaily + Config.Daily.Cooldown - os.time())
+end
+
+-- Returns (claimed, cash paid). Only succeeds once per Config.Daily.Cooldown.
+function PlayerData.claimDaily(player: Player): (boolean, number)
+	local profile = profiles[player]
+	if not profile or not profile.Loaded or PlayerData.dailyReadyIn(player) > 0 then
+		return false, 0
+	end
+	local amount = Config.dailyReward(profile.Level)
+	profile.LastDaily = os.time()
+	PlayerData.addCash(player, amount)
+	return true, amount
+end
+
+function PlayerData.snapshot(player: Player): Snapshot?
 	local profile = profiles[player]
 	if not profile then
 		return nil
@@ -5661,7 +6117,15 @@ function PlayerData.snapshot(player: Player): { Cash: number, Owned: { string },
 	for id in profile.Owned do
 		table.insert(owned, id)
 	end
-	return { Cash = profile.Cash, Owned = owned, Selected = profile.Selected }
+	return {
+		Cash = profile.Cash,
+		Owned = owned,
+		Selected = profile.Selected,
+		Level = profile.Level,
+		XP = profile.XP,
+		XPNeed = Config.xpForLevel(profile.Level),
+		DailyIn = PlayerData.dailyReadyIn(player),
+	}
 end
 
 function PlayerData.release(player: Player)
@@ -5718,6 +6182,7 @@ return PlayerData
 	  backfire  : exhaust pops on high-rpm upshifts
 	  UI        : button clicks
 	  ambience  : low city night hum; reverb switches to "tunnel" inside the tunnel
+	  rain      : looping rain bed faded in/out by Weather
 
 	Any asset id put in Config.Sounds is checked at startup and replaces the
 	built-in layer only if it actually loads.
@@ -5937,6 +6402,28 @@ function Audio.backfire(parent: Instance?)
 	if parent then
 		s.RollOffMaxDistance = 300
 	end
+end
+
+--[[
+	Rain bed for Weather (looped, starts silent; the caller drives Volume).
+	Uses Config.Sounds.Rain if one is configured and passed the load check;
+	otherwise, when USE_BUILTIN_RAIN is on, a soft "shhh" made from the wind
+	recording with the lows cut away. Returns nil when there is nothing to play.
+]]
+local USE_BUILTIN_RAIN = true
+function Audio.rainLoop(): Sound?
+	local id = pickCustom("Rain")
+	if not id and not USE_BUILTIN_RAIN then
+		return nil
+	end
+	local s = newSound(id or BUILTIN.wind, SoundService, 0, true)
+	s.Name = "Rain"
+	if not id then
+		s.PlaybackSpeed = 1.3
+		effect("EqualizerSoundEffect", s, { LowGain = -26, MidGain = -3, HighGain = 2 })
+	end
+	s:Play()
+	return s
 end
 
 -- big low "hit" for titles / cuts
@@ -6259,6 +6746,7 @@ local LOOKS: { [string]: Look } = {
 	Glass = { material = Enum.Material.Glass, color = Color3.fromRGB(12, 16, 22), reflectance = 0.25, transparency = 0.25, shadow = false },
 	Lamp = { material = Enum.Material.Neon, color = Color3.fromRGB(236, 243, 255), reflectance = 0, transparency = 0, shadow = false },
 	Tail = { material = Enum.Material.Neon, color = Color3.fromRGB(150, 0, 6), reflectance = 0, transparency = 0, shadow = false },
+	Drl = { material = Enum.Material.Neon, reflectance = 0, transparency = 0, shadow = false },
 	Plate = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(232, 232, 228), reflectance = 0, transparency = 0, shadow = false },
 	Interior = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(22, 22, 26), reflectance = 0, transparency = 0, shadow = false },
 	Tire = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(20, 20, 22), reflectance = 0, transparency = 0, shadow = true },
@@ -6267,6 +6755,7 @@ local LOOKS: { [string]: Look } = {
 }
 
 local bodyCache: { [string]: { [string]: Template } | false } = {}
+local bodyMeta: { [string]: { [string]: any } } = {}
 local wheelCache: { [string]: { [string]: Template } | false } = {}
 local keepAlive: { any } = {} -- EditableMeshes must stay alive while their MeshParts render
 local warned = false
@@ -6317,7 +6806,8 @@ local function bodyFor(id: string, class: string, lite: boolean): { [string]: Te
 		return if cached then cached else nil
 	end
 	local ok, result = pcall(function()
-		local layers = CarMesh.build(id, class, CarBuilder.getDims(class) :: any, lite)
+		local layers, meta = CarMesh.build(id, class, CarBuilder.getDims(class, id) :: any, lite)
+		bodyMeta[key] = meta
 		local out = {}
 		for name, layer in layers do
 			out[name] = build(layer)
@@ -6426,7 +6916,7 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 		return false
 	end
 	local spec = Cars.get(id)
-	local dims = CarBuilder.getDims(class)
+	local dims = CarBuilder.getDims(class, id)
 	local design = CarMesh.design(id, class, dims :: any)
 	local height = (model:GetAttribute("Height") :: number?) or dims.H
 	local groundCF = root.CFrame * CFrame.new(0, -height / 2, 0)
@@ -6439,12 +6929,55 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 	local skin = Instance.new("Model")
 	skin.Name = "Skin"
 	skin.Parent = model
+	local drl = if design.drl then Color3.fromRGB(design.drl[1], design.drl[2], design.drl[3]) else Color3.new(1, 1, 1)
 	for name, t in body do
 		local look = LOOKS[name] or LOOKS.Paint
-		local color = if name == "Accent" then accent else paint
+		local color = if name == "Accent" then accent elseif name == "Drl" then drl else paint
 		local p = place(t, "Skin" .. name, look, color, groundCF, root, skin)
 		if name == "Tail" then
 			p:SetAttribute("TailLight", true)
+		end
+	end
+
+	-- licence plate text (the plate itself is part of the mesh)
+	local meta = bodyMeta[id .. (if liteMode then "/lite" else "")]
+	if meta and meta.plate and not liteMode then
+		local plate = Instance.new("Part")
+		plate.Name = "PlateText"
+		plate.Size = Vector3.new(1.16, 0.36, 0.02)
+		plate.Transparency = 1
+		plate.CanCollide = false
+		plate.CanQuery = false
+		plate.CanTouch = false
+		plate.Massless = true
+		plate.CastShadow = false
+		plate.CFrame = groundCF * (meta.plate :: CFrame) -- front face looks out of the car
+		plate.Parent = skin
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = plate
+		weld.Parent = plate
+		local sg = Instance.new("SurfaceGui")
+		sg.Face = Enum.NormalId.Front
+		sg.CanvasSize = Vector2.new(232, 72)
+		sg.LightInfluence = 1
+		sg.MaxDistance = 90
+		sg.Parent = plate
+		local text = Instance.new("TextLabel")
+		text.BackgroundTransparency = 1
+		text.Size = UDim2.fromScale(1, 1)
+		text.Font = Enum.Font.GothamBlack
+		text.TextScaled = true
+		text.TextColor3 = Color3.fromRGB(20, 26, 60)
+		local plateText = model:GetAttribute("Plate")
+		text.Text = if type(plateText) == "string" then plateText else "CTYLGND"
+		text.Parent = sg
+	end
+
+	-- exhaust tips in root space (Driving puts the backfire flames there)
+	if meta and meta.exhausts then
+		for i, p in meta.exhausts :: { Vector3 } do
+			model:SetAttribute("Exhaust" .. i, p - Vector3.new(0, height / 2, 0))
 		end
 	end
 
@@ -6676,7 +7209,7 @@ function Cutscene.play()
 	local heroH = hero:GetAttribute("Height") :: number
 	local heroW = hero:GetAttribute("Width") :: number
 	local heroL = hero:GetAttribute("Length") :: number
-	local dims = CarBuilder.getDims(heroSpec.Class)
+	local dims = CarBuilder.getDims(heroSpec.Class, heroSpec.Id)
 	local heroWheels: { Motor6D } = {}
 	for _, j in heroRoot:GetChildren() do
 		if j:IsA("Motor6D") and j.Name:sub(1, 6) == "Wheel_" then
@@ -7169,6 +7702,7 @@ return Cutscene
 	    sensitive steering with a lateral-g cap, tyre grip + handbrake drifts
 	  * push the result into the LinearVelocity / AlignOrientation constraints
 	  * detect crashes (physics stopped us) and "cut ups" (passing traffic close)
+	  * pop small blue/orange exhaust flames on upshifts and lift-off crackles
 	Every render frame we:
 	  * spin + steer the wheels, turn the steering wheel, and solve 2-bone IK so
 	    the driver's arms follow their hands on the wheel
@@ -7246,6 +7780,13 @@ type State = {
 	engine: Audio.Engine,
 	throttle: number,
 	slip: number,
+	flames: { ParticleEmitter },
+	flameParts: { Instance },
+	flameLight: PointLight?,
+	flameGlow: number,
+	throttleIn: number,
+	pops: number,
+	popTimer: number,
 }
 
 local state: State? = nil
@@ -7372,6 +7913,99 @@ local function buildGauges(model: Model): (TextLabel?, TextLabel?, Frame?)
 	return speed, gear, bar
 end
 
+---------------------------------------------------------------------
+-- Exhaust flames (local player's car only)
+---------------------------------------------------------------------
+-- Exhaust tip positions in root space. A skinned car shows CarMesh's pipes,
+-- so mirror its placement; otherwise use the (visible) part-built pipes.
+local function exhaustTips(model: Model, root: BasePart): { Vector3 }
+	local tips: { Vector3 } = {}
+	if model:GetAttribute("Skinned") then
+		-- CarSkin stores the mesh's pipe tips (root space) as Exhaust1..n
+		local i = 1
+		while true do
+			local p = model:GetAttribute("Exhaust" .. i)
+			if typeof(p) ~= "Vector3" then
+				break
+			end
+			table.insert(tips, p)
+			i += 1
+		end
+		if #tips > 0 then
+			return tips
+		end
+	end
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Name == "Exhaust" then
+			-- cylinder axis points backwards; its length is Size.X
+			table.insert(tips, root.CFrame:PointToObjectSpace(d.Position) + Vector3.new(0, 0, d.Size.X / 2))
+		end
+	end
+	return tips
+end
+
+local function buildFlames(model: Model, root: BasePart, spec: Cars.CarSpec): ({ ParticleEmitter }, { Instance }, PointLight?)
+	local emitters: { ParticleEmitter } = {}
+	local parts: { Instance } = {}
+	local tips = exhaustTips(model, root)
+	if #tips == 0 then
+		return emitters, parts, nil
+	end
+	local sum = Vector3.zero
+	for _, tip in tips do
+		sum += tip
+		local att = Instance.new("Attachment")
+		att.Name = "ExhaustFlame"
+		att.Position = tip
+		att.Parent = root
+		table.insert(parts, att)
+		local e = Instance.new("ParticleEmitter")
+		e.Rate = 0
+		e.LockedToPart = true -- stays on the pipe at any speed
+		e.EmissionDirection = Enum.NormalId.Back
+		e.Lifetime = NumberRange.new(0.05, 0.12)
+		e.Speed = NumberRange.new(8, 15)
+		e.SpreadAngle = Vector2.new(8, 8)
+		e.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.32),
+			NumberSequenceKeypoint.new(0.5, 0.26),
+			NumberSequenceKeypoint.new(1, 0.04),
+		})
+		e.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 140, 255)),
+			ColorSequenceKeypoint.new(0.55, Color3.fromRGB(120, 130, 255)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 140, 40)),
+		})
+		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 1) })
+		e.LightEmission = 1
+		e.LightInfluence = 0
+		e.Brightness = 2
+		e.ZOffset = 0.3
+		e.Parent = att
+		table.insert(emitters, e)
+	end
+	local glowAtt = Instance.new("Attachment")
+	glowAtt.Name = "ExhaustGlow"
+	glowAtt.Position = sum / #tips + Vector3.new(0, 0, 0.6)
+	glowAtt.Parent = root
+	table.insert(parts, glowAtt)
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(130, 160, 255)
+	light.Range = 9
+	light.Brightness = 0
+	light.Shadows = false
+	light.Enabled = false
+	light.Parent = glowAtt
+	return emitters, parts, light
+end
+
+local function exhaustPop(s: State, strength: number)
+	for _, e in s.flames do
+		e:Emit(math.max(1, math.floor((4 + math.random() * 4) * strength)))
+	end
+	s.flameGlow = math.max(s.flameGlow, 4 * strength)
+end
+
 function Driving.detach()
 	local s = state
 	if not s then
@@ -7379,6 +8013,9 @@ function Driving.detach()
 	end
 	for _, c in s.connections do
 		c:Disconnect()
+	end
+	for _, f in s.flameParts do
+		f:Destroy()
 	end
 	s.engine:destroy()
 	if s.cabinLight then
@@ -7434,7 +8071,7 @@ function Driving.attach(model: Model)
 	Driving.detach()
 	local root = model.PrimaryPart :: BasePart
 	local spec = Cars.get(model:GetAttribute("CarId") :: string)
-	local dims = CarBuilder.getDims(spec.Class)
+	local dims = CarBuilder.getDims(spec.Class, spec.Id)
 	local lv = root:WaitForChild("Drive") :: LinearVelocity
 	local ao = root:WaitForChild("Steer") :: AlignOrientation
 
@@ -7483,7 +8120,7 @@ function Driving.attach(model: Model)
 	cabinLight.Parent = root
 
 	local gSpeed, gGear, gBar = buildGauges(model)
-
+	local flames, flameParts, flameLight = buildFlames(model, root, spec)
 
 	local s: State = {
 		model = model,
@@ -7531,6 +8168,13 @@ function Driving.attach(model: Model)
 		engine = Audio.engine(spec.Class, nil),
 		throttle = 0,
 		slip = 0,
+		flames = flames,
+		flameParts = flameParts,
+		flameLight = flameLight,
+		flameGlow = 0,
+		throttleIn = 0,
+		pops = 0,
+		popTimer = 0,
 	}
 	state = s
 	Audio.engineStart()
@@ -7615,6 +8259,12 @@ function Driving.step(dt: number)
 	local root = s.root
 	local throttle, brake, steerIn, handbrake = readInput()
 	s.throttle += (throttle - s.throttle) * math.min(1, dt * 10)
+	-- lifting off at high revs: a short crackle of pops + flames
+	if s.throttleIn > 0.7 and throttle < 0.2 and s.rpm > 0.6 and Config.spsToMph(s.vel.Magnitude) > 30 then
+		s.pops = math.random(2, 4)
+		s.popTimer = 0.04
+	end
+	s.throttleIn = throttle
 
 	-- ground check
 	rayParams.FilterDescendantsInstances = { s.model, workspace:FindFirstChild("Traffic") :: Instance }
@@ -7731,6 +8381,9 @@ function Driving.step(dt: number)
 	local pg, ng = tonumber(prevGear), tonumber(s.gear)
 	if pg and ng and ng ~= pg then
 		s.engine:shift(ng > pg)
+		if ng > pg and throttle > 0.5 then
+			exhaustPop(s, 1)
+		end
 	end
 
 	local mph = Config.spsToMph(math.abs(fs))
@@ -7796,6 +8449,24 @@ function Driving.render(dt: number)
 
 	-- engine / wind / tyre audio
 	s.engine:update(s.rpm, s.throttle, speedFrac, s.slip)
+
+	-- exhaust crackle + flame glow
+	if s.pops > 0 then
+		s.popTimer -= dt
+		if s.popTimer <= 0 then
+			s.pops -= 1
+			s.popTimer = 0.07 + math.random() * 0.12
+			exhaustPop(s, 0.6 + math.random() * 0.4)
+			if math.random() < 0.6 then
+				Audio.backfire()
+			end
+		end
+	end
+	if s.flameLight then
+		s.flameGlow = math.max(0, s.flameGlow - dt * 40)
+		s.flameLight.Brightness = s.flameGlow
+		s.flameLight.Enabled = s.flameGlow > 0
+	end
 
 	-- camera
 	local C = Config.Camera
@@ -7930,6 +8601,7 @@ local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
 local CarSkin = require(script.Parent:WaitForChild("CarSkin"))
 local BuildingSkin = require(script.Parent:WaitForChild("BuildingSkin"))
 local Audio = require(script.Parent:WaitForChild("Audio"))
+local Weather = require(script.Parent:WaitForChild("Weather"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -7943,6 +8615,8 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local GetData = remotes:WaitForChild("GetData") :: RemoteFunction
 local BuyCar = remotes:WaitForChild("BuyCar") :: RemoteFunction
 local SpawnCar = remotes:WaitForChild("SpawnCar") :: RemoteEvent
+local Progress = remotes:WaitForChild("Progress") :: RemoteEvent
+local ClaimDaily = remotes:WaitForChild("ClaimDaily") :: RemoteFunction
 
 Driving.init()
 
@@ -7964,6 +8638,7 @@ if city then
 	BuildingSkin.apply(city)
 end
 WorldFx.start()
+Weather.init() -- rain cycle (starts raining), wet roads, mist, rain sound
 
 ---------------------------------------------------------------------
 -- Data
@@ -7973,6 +8648,44 @@ if not data then
 	data = { Cash = Config.Economy.StartingCash, Owned = { "aurelia_s4" }, Selected = "aurelia_s4" }
 end
 UI.setCash(data.Cash, true)
+UI.setProgress(tonumber(data.Level) or 1, tonumber(data.XP) or 0, tonumber(data.XPNeed) or Config.xpForLevel(tonumber(data.Level) or 1))
+if type(data.DailyIn) == "number" then
+	UI.setDaily(data.DailyIn)
+end
+
+-- XP / level updates pushed by the server
+Progress.OnClientEvent:Connect(function(info)
+	if type(info) ~= "table" then
+		return
+	end
+	local level = tonumber(info.level) or 1
+	-- only cut-ups flash "+N XP"; driving XP trickles in quietly
+	local gained = if info.source == "cut" then tonumber(info.gained) else nil
+	UI.setProgress(level, tonumber(info.xp) or 0, tonumber(info.need) or Config.xpForLevel(level), gained)
+	data.Level = level
+	if info.levelUp then
+		UI.levelUp(level, tonumber(info.reward) or 0)
+	end
+end)
+
+-- daily gift (the server checks the 24h timer and pays it)
+UI.onDailyClaim = function()
+	local ok, result = pcall(function()
+		return ClaimDaily:InvokeServer()
+	end)
+	if not ok or type(result) ~= "table" then
+		UI.toast("Could not claim the gift, try again", Config.Theme.Danger)
+		return
+	end
+	if type(result.readyIn) == "number" then
+		UI.setDaily(result.readyIn)
+	end
+	if result.ok then
+		UI.toast("Daily gift claimed  +" .. UI.formatCash(tonumber(result.amount) or 0), Config.Theme.Money)
+	else
+		UI.toast(tostring(result.message or "Gift not ready yet"), Config.Theme.Warning)
+	end
+end
 
 local function bindCash()
 	local stats = player:WaitForChild("leaderstats", 30)
@@ -8695,7 +9408,9 @@ return Traffic
 	  * loading screen, fades, cinematic letterbox, title card
 	  * main menu
 	  * garage with live 3D car preview, class tabs, stats and buy/drive
-	  * HUD: cash, speedometer gauge with gear + rpm, combo meter, cut-up popups
+	  * HUD: level + XP bar, analog rev-counter speedometer with gear, cash tab,
+	    settings / shop / gifts buttons, daily gift card, controls tab, combo
+	    meter, cut-up popups, level-up banner
 	  * touch controls for mobile
 ]]
 
@@ -8718,6 +9433,11 @@ local player = Players.LocalPlayer
 local UI = {}
 UI.touch = { throttle = 0, brake = 0, steer = 0, handbrake = false }
 UI.isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- Callbacks assigned by Main
+UI.onGarageButton = nil :: (() -> ())?
+UI.onCameraButton = nil :: (() -> ())?
+UI.onDailyClaim = nil :: (() -> ())? -- asks the server to pay the daily gift
 
 ---------------------------------------------------------------------
 -- Helpers
@@ -8822,16 +9542,839 @@ local overlay: Frame
 local cashLabel: TextLabel
 local speedLabel: TextLabel
 local gearLabel: TextLabel
-local rpmFill: Frame
-local arcSegments: { Frame } = {}
+local gearTag: TextLabel
+local needleHolder: Frame
+local rpmTrack: { Frame } = {}
 local comboFrame: Frame
 local comboLabel: TextLabel
 local comboBar: Frame
 local popupHolder: Frame
 local toast: TextLabel
-local camLabel: TextButton
+local levelLabel: TextLabel
+local xpFill: Frame
+local xpText: TextLabel
+local xpGain: TextLabel
+local camToggle: TextButton
+local musicToggle: TextButton
+local settingsPanel: Frame
+local dailyPanel: Frame
+local controlsPanel: Frame? = nil
+local controlsArrow: TextLabel? = nil
+local giftDot: Frame
+local dailyCardTime: TextLabel
+local dailyCardSub: TextLabel
+local dailyCardStroke: UIStroke
+local dailyPanelAmount: TextLabel
+local dailyClaimBtn: TextButton
 local displayedCash = 0
 local targetCash = 0
+
+local WHITE = Color3.new(1, 1, 1)
+local RPM_MAX = 7 -- the gauge reads 0..7 (x1000 rpm)
+local REDLINE = 6
+
+local progress = { level = 1, xp = 0, need = Config.xpForLevel(1) }
+local daily = { known = false, readyAt = 0, claiming = false, shown = -1 }
+
+-- 0..RPM_MAX -> gauge angle in degrees (maths convention, 0 = right, CCW);
+-- the dial sweeps 270 degrees clockwise from bottom-left to bottom-right
+local function rpmAngle(v: number): number
+	return 225 - (v / RPM_MAX) * 270
+end
+
+-- position on a circle around the centre of the parent
+local function polar(r: number, deg: number): UDim2
+	local a = math.rad(deg)
+	return UDim2.new(0.5, math.cos(a) * r, 0.5, -math.sin(a) * r)
+end
+
+local function formatClock(seconds: number): string
+	local s = math.max(0, math.ceil(seconds))
+	local h = s // 3600
+	local m = (s % 3600) // 60
+	if h > 0 then
+		return string.format("%d:%02d:%02d", h, m, s % 60)
+	end
+	return string.format("%02d:%02d", m, s % 60)
+end
+
+local function musicOn(): boolean
+	local m = game:GetService("SoundService"):FindFirstChild("Music")
+	return not (m and m:IsA("Sound") and m.Volume <= 0)
+end
+
+---------------------------------------------------------------------
+-- Flash / toast
+---------------------------------------------------------------------
+local flashFrame: Frame? = nil
+function UI.flash(color: Color3)
+	if not flashFrame then
+		flashFrame = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), BorderSizePixel = 0, ZIndex = 15, Parent = gui })
+	end
+	local f = flashFrame :: Frame
+	f.BackgroundColor3 = color
+	f.BackgroundTransparency = 0.6
+	tween(f, 0.5, { BackgroundTransparency = 1 })
+end
+
+local toastToken = 0
+function UI.toast(text: string, color: Color3?)
+	toastToken += 1
+	local my = toastToken
+	toast.Text = text
+	toast.TextColor3 = color or Theme.Text
+	toast.Visible = true
+	toast.TextTransparency = 0
+	toast.BackgroundTransparency = 0.1
+	task.delay(2.2, function()
+		if my == toastToken then
+			tween(toast, 0.4, { TextTransparency = 1, BackgroundTransparency = 1 })
+		end
+	end)
+end
+
+---------------------------------------------------------------------
+-- Touch controls
+---------------------------------------------------------------------
+function UI.buildTouchControls()
+	local holder = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = hud })
+	local function touchButton(text: string, pos: UDim2, size: UDim2, color: Color3, onDown: () -> (), onUp: () -> ())
+		local b: TextButton = new("TextButton", {
+			AutoButtonColor = false,
+			Text = text,
+			Font = Enum.Font.GothamBlack,
+			TextSize = 20,
+			TextColor3 = Theme.Text,
+			BackgroundColor3 = Theme.Panel,
+			BackgroundTransparency = 0.25,
+			Position = pos,
+			Size = size,
+			Parent = holder,
+		}, { corner(14), stroke(color, 2, 0.2) })
+		b.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				b.BackgroundTransparency = 0
+				onDown()
+			end
+		end)
+		b.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				b.BackgroundTransparency = 0.25
+				onUp()
+			end
+		end)
+	end
+	local left, right = false, false
+	local function updSteer()
+		UI.touch.steer = (if right then 1 else 0) - (if left then 1 else 0)
+	end
+	touchButton("◀", UDim2.new(0, 24, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
+		left = true
+		updSteer()
+	end, function()
+		left = false
+		updSteer()
+	end)
+	touchButton("▶", UDim2.new(0, 124, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
+		right = true
+		updSteer()
+	end, function()
+		right = false
+		updSteer()
+	end)
+	touchButton("GAS", UDim2.new(1, -114, 1, -160), UDim2.fromOffset(90, 120), Theme.Money, function()
+		UI.touch.throttle = 1
+	end, function()
+		UI.touch.throttle = 0
+	end)
+	touchButton("BRAKE", UDim2.new(1, -214, 1, -130), UDim2.fromOffset(90, 90), Theme.Danger, function()
+		UI.touch.brake = 1
+	end, function()
+		UI.touch.brake = 0
+	end)
+	touchButton("DRIFT", UDim2.new(1, -214, 1, -230), UDim2.fromOffset(90, 80), Theme.Accent2, function()
+		UI.touch.handbrake = true
+	end, function()
+		UI.touch.handbrake = false
+	end)
+end
+
+---------------------------------------------------------------------
+-- Icons: drawn from plain frames (no image assets) on a 32x32 grid
+---------------------------------------------------------------------
+local function icon(kind: string, parent: Instance, size: number, color: Color3?): Frame
+	local k = size / 32
+	local col = color or WHITE
+	local canvas = new("Frame", {
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(size, size),
+		Parent = parent,
+	})
+	local function box(x: number, y: number, w: number, h: number, radius: number?, rotation: number?): Frame
+		local f = new("Frame", {
+			BackgroundColor3 = col,
+			BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset((x + w / 2) * k, (y + h / 2) * k),
+			Size = UDim2.fromOffset(w * k, h * k),
+			Rotation = rotation or 0,
+			Parent = canvas,
+		})
+		if radius then
+			new("UICorner", { CornerRadius = if radius < 0 then UDim.new(1, 0) else UDim.new(0, radius * k), Parent = f })
+		end
+		return f
+	end
+	if kind == "gear" then
+		-- eight teeth around a thick ring
+		for t = 0, 7 do
+			local a = math.rad(t * 45)
+			box(16 + math.cos(a) * 11.5 - 3.5, 16 + math.sin(a) * 11.5 - 3.5, 7, 7, 1.5, t * 45 + 90)
+		end
+		local ring = box(10, 10, 12, 12, -1)
+		ring.BackgroundTransparency = 1
+		new("UIStroke", { Color = col, Thickness = math.max(2, 5 * k), Parent = ring })
+	elseif kind == "cart" then
+		box(2, 5, 7, 3, 1.5) -- handle
+		box(7.5, 5, 3, 17, 1.5) -- frame post
+		box(9, 9, 20, 10, 2) -- basket
+		box(9, 20, 17, 3, 1.5) -- bottom rail
+		box(10, 24.5, 5.5, 5.5, -1) -- wheels
+		box(21, 24.5, 5.5, 5.5, -1)
+	elseif kind == "gift" then
+		box(4, 11, 11, 6, 1.5) -- lid (split by the ribbon gap)
+		box(17, 11, 11, 6, 1.5)
+		box(6, 18, 9, 11, 1.5) -- box
+		box(17, 18, 9, 11, 1.5)
+		box(8.5, 5, 8, 5.5, -1, 30) -- bow loops
+		box(15.5, 5, 8, 5.5, -1, -30)
+	end
+	return canvas
+end
+
+---------------------------------------------------------------------
+-- HUD pieces
+---------------------------------------------------------------------
+local function buildSpeedometer()
+	local size = if UI.isTouch then 180 else 240
+	local half = size / 2
+	local gauge = new("Frame", {
+		Name = "Speedometer",
+		AnchorPoint = if UI.isTouch then Vector2.new(0.5, 1) else Vector2.new(1, 1),
+		-- on touch it sits bottom-centre between the pedals and the steering
+		-- buttons, lifted above the cash tab
+		Position = if UI.isTouch then UDim2.new(0.5, 0, 1, -48) else UDim2.new(1, -24, 1, -24),
+		Size = UDim2.fromOffset(size, size),
+		BackgroundColor3 = Theme.Background,
+		BackgroundTransparency = 0.22,
+		Parent = hud,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Stroke, 2, 0.15) })
+	new("UIGradient", {
+		Rotation = 90,
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0) }),
+		Parent = gauge,
+	})
+
+	-- rpm track: thin arc that lights up to the current rpm, red in the redline
+	local segCount = 63
+	local rTrack = half - 9
+	local step = 270 / segCount
+	local segLen = rTrack * math.rad(step) + 1.2
+	for i = 1, segCount do
+		local mid = (i - 0.5) / segCount * RPM_MAX
+		local a = rpmAngle(mid)
+		local seg = new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = polar(rTrack, a),
+			Size = UDim2.fromOffset(segLen, if UI.isTouch then 3 else 4),
+			Rotation = 90 - a,
+			BackgroundColor3 = if mid >= REDLINE then Theme.Danger else Theme.Stroke,
+			BackgroundTransparency = if mid >= REDLINE then 0.45 else 0.1,
+			BorderSizePixel = 0,
+			ZIndex = 2,
+			Parent = gauge,
+		})
+		table.insert(rpmTrack, seg)
+	end
+
+	-- ticks every 500 rpm, numbers every 1000
+	local rTick = half - 15
+	local major = size * 0.06
+	local minor = size * 0.03
+	for t = 0, RPM_MAX * 2 do
+		local v = t / 2
+		local isMajor = t % 2 == 0
+		local len = if isMajor then major else minor
+		local a = rpmAngle(v)
+		new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = polar(rTick - len / 2, a),
+			Size = UDim2.fromOffset(if isMajor then 3 else 2, len),
+			Rotation = 90 - a,
+			BackgroundColor3 = if v >= REDLINE then Theme.Danger else Theme.Text,
+			BackgroundTransparency = if isMajor then 0 else 0.35,
+			BorderSizePixel = 0,
+			ZIndex = 2,
+			Parent = gauge,
+		})
+		if isMajor then
+			label({
+				Text = tostring(v),
+				TextSize = math.floor(size * 0.068),
+				Font = Enum.Font.GothamBlack,
+				TextColor3 = if v >= REDLINE then Theme.Danger else Theme.Text,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = polar(rTick - major - size * 0.065, a),
+				Size = UDim2.fromOffset(24, 18),
+				ZIndex = 2,
+				Parent = gauge,
+			})
+		end
+	end
+	label({
+		Text = "x1000rpm",
+		TextSize = math.max(8, math.floor(size * 0.037)),
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Theme.SubText,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.285),
+		Size = UDim2.new(0.4, 0, 0, 12),
+		ZIndex = 2,
+		Parent = gauge,
+	})
+
+	-- centre ring with the gear
+	local ringSize = size * 0.34
+	new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(ringSize, ringSize),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.35,
+		ZIndex = 2,
+		Parent = gauge,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Stroke, 1.5, 0.2) })
+	local gearRow = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(ringSize, ringSize * 0.6),
+		BackgroundTransparency = 1,
+		ZIndex = 3,
+		Parent = gauge,
+	}, {
+		new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 2),
+		}),
+	})
+	gearLabel = label({
+		Text = "N",
+		TextSize = math.floor(size * 0.19),
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.Accent,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
+		LayoutOrder = 1,
+		ZIndex = 3,
+		Parent = gearRow,
+	})
+	gearTag = label({
+		Text = "AT",
+		TextSize = math.max(9, math.floor(size * 0.05)),
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.SubText,
+		TextYAlignment = Enum.TextYAlignment.Bottom,
+		Size = UDim2.new(0, size * 0.08, 0.62, 0),
+		LayoutOrder = 2,
+		Visible = false,
+		ZIndex = 3,
+		Parent = gearRow,
+	})
+
+	-- speed readout under the ring
+	speedLabel = label({
+		Text = "0",
+		TextSize = math.floor(size * 0.145),
+		Font = Enum.Font.GothamBlack,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.785),
+		Size = UDim2.new(0.5, 0, 0, size * 0.15),
+		ZIndex = 3,
+		Parent = gauge,
+	})
+	label({
+		Text = "mph",
+		TextSize = math.max(10, math.floor(size * 0.05)),
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Theme.SubText,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.885),
+		Size = UDim2.new(0.4, 0, 0, 14),
+		ZIndex = 3,
+		Parent = gauge,
+	})
+
+	-- needle: a square the size of the gauge, rotated about its centre; the
+	-- red bar starts outside the centre ring so the gear stays readable
+	needleHolder = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Rotation = 90 - rpmAngle(0),
+		ZIndex = 4,
+		Parent = gauge,
+	})
+	local rIn = ringSize / 2 + 4
+	local rOut = half - 12
+	local width = if UI.isTouch then 3 else 4
+	new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0.5, -rIn),
+		Size = UDim2.fromOffset(width + 6, rOut - rIn),
+		BackgroundColor3 = Theme.Danger,
+		BackgroundTransparency = 0.78,
+		BorderSizePixel = 0,
+		ZIndex = 4,
+		Parent = needleHolder,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	local needle = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0.5, -rIn),
+		Size = UDim2.fromOffset(width, rOut - rIn),
+		BackgroundColor3 = Theme.Danger,
+		BorderSizePixel = 0,
+		ZIndex = 5,
+		Parent = needleHolder,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new(Color3.fromRGB(255, 170, 170), WHITE),
+		Parent = needle,
+	})
+end
+
+local function buildLevelBar()
+	local barWidth = if UI.isTouch then 240 else 380
+	local top = new("Frame", {
+		Name = "Level",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 8),
+		Size = UDim2.fromOffset(barWidth, 66),
+		BackgroundTransparency = 1,
+		Parent = hud,
+	})
+	levelLabel = label({
+		Text = "Level 1",
+		TextSize = if UI.isTouch then 28 else 36,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = WHITE, -- coloured by the gradient below
+		Size = UDim2.new(1, 0, 0, 40),
+		Parent = top,
+	})
+	new("UIStroke", { Color = Color3.fromRGB(20, 4, 12), Thickness = 2.5, Transparency = 0.1, Parent = levelLabel })
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new(Color3.fromRGB(255, 120, 170), Theme.Accent2),
+		Parent = levelLabel,
+	})
+	local back = new("Frame", {
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, 0, 0, 16),
+		BackgroundColor3 = Theme.Background,
+		BackgroundTransparency = 0.25,
+		ClipsDescendants = true,
+		Parent = top,
+	}, { corner(8), stroke(Theme.Stroke, 1.5, 0.1) })
+	xpFill = new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = WHITE, BorderSizePixel = 0, Parent = back }, { corner(8) })
+	new("UIGradient", { Color = ColorSequence.new(Theme.Accent2, Color3.fromRGB(255, 92, 92)), Parent = xpFill })
+	xpText = label({
+		Text = "0 / 40 XP",
+		TextSize = 12,
+		Font = Enum.Font.GothamBlack,
+		TextStrokeTransparency = 0.45,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 2,
+		Parent = back,
+	})
+	xpGain = label({
+		Text = "",
+		TextSize = 14,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.Accent,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTransparency = 1,
+		TextStrokeTransparency = 1,
+		Position = UDim2.new(1, 10, 0, 44),
+		Size = UDim2.fromOffset(90, 16),
+		Parent = top,
+	})
+end
+
+local function buildCashTab()
+	local width = if UI.isTouch then 190 else 240
+	local height = if UI.isTouch then 38 else 46
+	-- the pill extends below the screen edge so only its top corners round
+	local tab = new("Frame", {
+		Name = "Cash",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, 14),
+		Size = UDim2.fromOffset(width, height + 14),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.12,
+		Parent = hud,
+	}, { corner(14), stroke(Theme.Stroke, 1.5, 0.15) })
+	new("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(0.5, 0, 0, 2), BackgroundColor3 = Theme.Money, BorderSizePixel = 0, Parent = tab }, { corner(1) })
+	cashLabel = label({
+		Text = "$0",
+		TextSize = if UI.isTouch then 24 else 30,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.Money,
+		Size = UDim2.new(1, -16, 0, height),
+		Position = UDim2.fromOffset(8, 0),
+		Parent = tab,
+	})
+	new("UIStroke", { Color = Color3.fromRGB(0, 30, 14), Thickness = 1.5, Transparency = 0.3, Parent = cashLabel })
+
+	-- controls hint tab next to the cash (keyboard players only)
+	if UI.isTouch then
+		return
+	end
+	local ctab: TextButton = new("TextButton", {
+		AutoButtonColor = false,
+		Text = "",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0.5, width / 2 + 8, 1, 14),
+		Size = UDim2.fromOffset(124, 30 + 14),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.12,
+		Parent = hud,
+	}, { corner(10), stroke(Theme.Stroke, 1.5, 0.15) })
+	label({
+		Text = "CONTROLS",
+		TextSize = 12,
+		Font = Enum.Font.GothamBlack,
+		TextColor3 = Theme.SubText,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(14, 0),
+		Size = UDim2.new(1, -14, 0, 30),
+		Parent = ctab,
+	})
+	controlsArrow = label({
+		Text = "▲",
+		TextSize = 10,
+		TextColor3 = Theme.SubText,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -12, 0, 0),
+		Size = UDim2.fromOffset(14, 30),
+		Parent = ctab,
+	})
+
+	local rows = {
+		{ "W / S", "Throttle  ·  brake / reverse" },
+		{ "A / D", "Steer" },
+		{ "SPACE", "Handbrake (drift)" },
+		{ "C", "Camera  (hold RMB to look)" },
+		{ "R", "Reset car to road" },
+		{ "G", "Garage / shop" },
+		{ "M", "Music on / off" },
+	}
+	local panel = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -56),
+		Size = UDim2.fromOffset(340, 44 + #rows * 28),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.1,
+		Visible = false,
+		ZIndex = 5,
+		Parent = hud,
+	}, {
+		corner(12),
+		stroke(Theme.Stroke, 1.5, 0.1),
+		new("UIPadding", { PaddingTop = UDim.new(0, 12), PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16) }),
+		new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+	label({ Text = "CONTROLS", TextSize = 13, Font = Enum.Font.GothamBlack, TextColor3 = Theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, 0, 0, 18), LayoutOrder = 0, ZIndex = 5, Parent = panel })
+	for i, row in rows do
+		local r = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = i, ZIndex = 5, Parent = panel })
+		local chip = new("Frame", { Size = UDim2.fromOffset(70, 22), BackgroundColor3 = Theme.PanelLight, ZIndex = 5, Parent = r }, { corner(6), stroke(Theme.Stroke, 1, 0.2) })
+		label({ Text = row[1], TextSize = 12, Font = Enum.Font.GothamBlack, Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = chip })
+		label({ Text = row[2], TextSize = 13, Font = Enum.Font.GothamMedium, TextColor3 = Theme.Text, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(84, 0), Size = UDim2.new(1, -84, 1, 0), ZIndex = 5, Parent = r })
+	end
+	controlsPanel = panel
+
+	ctab.Activated:Connect(function()
+		Audio.click()
+		UI.toggleControls()
+	end)
+	ctab.MouseEnter:Connect(function()
+		tween(ctab, 0.12, { BackgroundColor3 = Theme.PanelLight })
+	end)
+	ctab.MouseLeave:Connect(function()
+		tween(ctab, 0.12, { BackgroundColor3 = Theme.Panel })
+	end)
+end
+
+-- small dark panel with a title and a close button, used by settings + gift
+local function sidePanel(title: string, height: number, anchorY: number): Frame
+	local p = new("Frame", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, if UI.isTouch then 76 else 96, anchorY, 0),
+		Size = UDim2.fromOffset(270, height),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.06,
+		Visible = false,
+		ZIndex = 5,
+		Parent = hud,
+	}, { corner(12), stroke(Theme.Stroke, 1.5, 0.1) })
+	label({ Text = title, TextSize = 16, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(16, 12), Size = UDim2.new(1, -60, 0, 22), ZIndex = 5, Parent = p })
+	local close = button("✕", Theme.Danger, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(28, 28), TextSize = 13, ZIndex = 6, Parent = p })
+	close.Activated:Connect(function()
+		p.Visible = false
+	end)
+	return p
+end
+
+local function closePanels()
+	settingsPanel.Visible = false
+	dailyPanel.Visible = false
+end
+
+local function togglePanel(p: Frame)
+	local show = not p.Visible
+	closePanels()
+	p.Visible = show
+	if show then
+		local final = p.Position
+		p.Position = final - UDim2.fromOffset(14, 0)
+		tween(p, 0.2, { Position = final }, Enum.EasingStyle.Quint)
+	end
+end
+
+local function dailyLeft(): number
+	return if daily.known then daily.readyAt - os.clock() else math.huge
+end
+
+local claimDaily: () -> ()
+
+local function buildSideButtons()
+	local size = if UI.isTouch then 48 else 64
+	local column = new("Frame", {
+		Name = "SideButtons",
+		AnchorPoint = Vector2.new(0, 0.5),
+		-- on touch, lift it clear of the steering buttons
+		Position = if UI.isTouch then UDim2.new(0, 14, 0.4, 0) else UDim2.new(0, 20, 0.5, 0),
+		Size = UDim2.fromOffset(size, size * 3 + 20),
+		BackgroundTransparency = 1,
+		Parent = hud,
+	}, {
+		new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+	local function sideButton(kind: string, caption: string, order: number): TextButton
+		local b: TextButton = new("TextButton", {
+			AutoButtonColor = false,
+			Text = "",
+			LayoutOrder = order,
+			Size = UDim2.fromOffset(size, size),
+			BackgroundColor3 = Theme.Panel,
+			BackgroundTransparency = 0.12,
+			Parent = column,
+		}, { corner(if UI.isTouch then 10 else 14) })
+		local st = stroke(Theme.Stroke, 1.5, 0.1)
+		st.Parent = b
+		local iconArea = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, if UI.isTouch then 0 else -12), Parent = b })
+		icon(kind, iconArea, size * (if UI.isTouch then 0.55 else 0.48))
+		if not UI.isTouch then
+			label({ Text = caption, TextSize = 9, Font = Enum.Font.GothamBlack, TextColor3 = Theme.SubText, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, 0, 0, 10), Parent = b })
+		end
+		b.Activated:Connect(Audio.click)
+		b.MouseEnter:Connect(function()
+			tween(b, 0.12, { BackgroundColor3 = Theme.PanelLight })
+			tween(st, 0.12, { Color = Theme.Accent })
+		end)
+		b.MouseLeave:Connect(function()
+			tween(b, 0.12, { BackgroundColor3 = Theme.Panel })
+			tween(st, 0.12, { Color = Theme.Stroke })
+		end)
+		return b
+	end
+
+	local settingsBtn = sideButton("gear", "SETTINGS", 1)
+	local shopBtn = sideButton("cart", "SHOP", 2)
+	local giftBtn = sideButton("gift", "GIFTS", 3)
+	giftDot = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -6, 0, 6),
+		Size = UDim2.fromOffset(12, 12),
+		BackgroundColor3 = Theme.Danger,
+		Visible = false,
+		ZIndex = 3,
+		Parent = giftBtn,
+	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Background, 2, 0) })
+
+	-- settings: camera + music toggles (same actions as C and M)
+	settingsPanel = sidePanel("SETTINGS", 148, if UI.isTouch then 0.4 else 0.5)
+	local function settingRow(name: string, key: string, y: number): TextButton
+		label({ Text = name, TextSize = 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(16, y), Size = UDim2.fromOffset(110, 32), ZIndex = 5, Parent = settingsPanel })
+		if not UI.isTouch then
+			label({ Text = "[" .. key .. "]", TextSize = 11, Font = Enum.Font.GothamBold, TextColor3 = Theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(84, y), Size = UDim2.fromOffset(40, 32), ZIndex = 5, Parent = settingsPanel })
+		end
+		return button("", Theme.Accent, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, y), Size = UDim2.fromOffset(120, 32), TextSize = 13, TextColor3 = Theme.Accent, ZIndex = 6, Parent = settingsPanel })
+	end
+	camToggle = settingRow("Camera", "C", 52)
+	camToggle.Text = "CHASE"
+	musicToggle = settingRow("Music", "M", 96)
+	local function refreshMusic()
+		local on = musicOn()
+		musicToggle.Text = if on then "ON" else "OFF"
+		musicToggle.TextColor3 = if on then Theme.Accent else Theme.SubText
+	end
+	refreshMusic()
+	camToggle.Activated:Connect(function()
+		if UI.onCameraButton then
+			UI.onCameraButton()
+		end
+	end)
+	musicToggle.Activated:Connect(function()
+		Audio.toggleMusic()
+		refreshMusic()
+	end)
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.KeyCode == Enum.KeyCode.M then
+			task.defer(refreshMusic) -- Audio handles the key itself
+		end
+	end)
+
+	-- daily gift panel
+	dailyPanel = sidePanel("DAILY GIFT", 196, if UI.isTouch then 0.4 else 0.5)
+	local giftArea = new("Frame", { Position = UDim2.fromOffset(16, 48), Size = UDim2.fromOffset(64, 64), BackgroundColor3 = Theme.Warning:Lerp(Theme.Panel, 0.75), ZIndex = 5, Parent = dailyPanel }, { corner(12), stroke(Theme.Warning, 1.5, 0.4) })
+	icon("gift", giftArea, 38, Theme.Warning)
+	dailyPanelAmount = label({ Text = "$0", TextSize = 26, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Money, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(94, 52), Size = UDim2.new(1, -104, 0, 30), ZIndex = 5, Parent = dailyPanel })
+	label({ Text = "Free cash every 24 hours.\nGrows with your level.", TextSize = 12, Font = Enum.Font.GothamMedium, TextColor3 = Theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(94, 84), Size = UDim2.new(1, -104, 0, 30), ZIndex = 5, Parent = dailyPanel })
+	dailyClaimBtn = button("CLAIM", Theme.Money, { Position = UDim2.new(0, 16, 1, -62), Size = UDim2.new(1, -32, 0, 46), TextSize = 18, ZIndex = 6, Parent = dailyPanel })
+	dailyClaimBtn.Activated:Connect(function()
+		claimDaily()
+	end)
+
+	settingsBtn.Activated:Connect(function()
+		togglePanel(settingsPanel)
+	end)
+	shopBtn.Activated:Connect(function()
+		closePanels()
+		if UI.onGarageButton then
+			UI.onGarageButton()
+		end
+	end)
+	giftBtn.Activated:Connect(function()
+		togglePanel(dailyPanel)
+	end)
+end
+
+-- "DAILY GIFT" offer card on the right with the countdown to the next gift
+local function buildDailyCard()
+	local w = if UI.isTouch then 176 else 212
+	local h = if UI.isTouch then 70 else 84
+	local card: TextButton = new("TextButton", {
+		Name = "DailyCard",
+		AutoButtonColor = false,
+		Text = "",
+		AnchorPoint = if UI.isTouch then Vector2.new(1, 0) else Vector2.new(1, 0.5),
+		-- on touch, top-right so it stays clear of the pedals
+		Position = if UI.isTouch then UDim2.new(1, -14, 0, 70) else UDim2.new(1, -20, 0.5, 0),
+		Size = UDim2.fromOffset(w, h),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0.08,
+		Parent = hud,
+	}, { corner(14) })
+	new("UIGradient", {
+		Rotation = 0,
+		Color = ColorSequence.new(Theme.Warning:Lerp(Theme.Panel, 0.72), Theme.Panel),
+		Parent = card,
+	})
+	dailyCardStroke = stroke(Theme.Warning, 1.5, 0.35)
+	dailyCardStroke.Parent = card
+	local iconBox = new("Frame", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 10, 0.5, 0),
+		Size = UDim2.fromOffset(h - 22, h - 22),
+		BackgroundColor3 = Theme.Background,
+		BackgroundTransparency = 0.4,
+		Parent = card,
+	}, { corner(10) })
+	icon("gift", iconBox, (h - 22) * 0.62, Theme.Warning)
+	local textX = h - 2
+	label({ Text = "DAILY GIFT", TextSize = if UI.isTouch then 11 else 13, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Warning, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(0, textX, 0, 8), Size = UDim2.new(1, -textX - 8, 0, 16), Parent = card })
+	dailyCardTime = label({ Text = "--:--", TextSize = if UI.isTouch then 22 else 28, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(0, textX, 0.5, -14), Size = UDim2.new(1, -textX - 8, 0, 30), Parent = card })
+	dailyCardSub = label({ Text = "", TextSize = if UI.isTouch then 10 else 12, Font = Enum.Font.GothamBold, TextColor3 = Theme.Money, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(0, textX, 1, -22), Size = UDim2.new(1, -textX - 8, 0, 16), Parent = card })
+	card.Activated:Connect(function()
+		Audio.click()
+		claimDaily()
+	end)
+	card.MouseEnter:Connect(function()
+		tween(card, 0.12, { BackgroundColor3 = Theme.PanelLight })
+	end)
+	card.MouseLeave:Connect(function()
+		tween(card, 0.12, { BackgroundColor3 = Theme.Panel })
+	end)
+end
+
+-- keeps every daily-gift widget in step with the countdown (cheap: only
+-- touches text when the shown second changes)
+local function refreshDaily(force: boolean?)
+	local left = dailyLeft()
+	local ready = daily.known and left <= 0
+	local shown = if ready then 0 elseif daily.known then math.ceil(left) else -2
+	if not force and shown == daily.shown then
+		return
+	end
+	daily.shown = shown
+	local amount = formatCash(Config.dailyReward(progress.level))
+	dailyPanelAmount.Text = amount
+	giftDot.Visible = ready
+	if ready then
+		dailyCardTime.Text = "READY!"
+		dailyCardTime.TextColor3 = Theme.Money
+		dailyCardSub.Text = "CLAIM  +" .. amount
+		dailyClaimBtn.Text = if daily.claiming then "..." else "CLAIM"
+		dailyClaimBtn.TextColor3 = Theme.Money
+	else
+		dailyCardTime.Text = if daily.known then formatClock(left) else "--:--"
+		dailyCardTime.TextColor3 = Theme.Text
+		dailyCardSub.Text = "+" .. amount .. " cash"
+		dailyClaimBtn.Text = if daily.known then "READY IN " .. formatClock(left) else "..."
+		dailyClaimBtn.TextColor3 = Theme.SubText
+	end
+end
+
+claimDaily = function()
+	if daily.claiming then
+		return
+	end
+	local left = dailyLeft()
+	if not daily.known or left > 0 then
+		UI.toast(if daily.known then "Next daily gift in " .. formatClock(left) else "Daily gift not available yet", Theme.SubText)
+		return
+	end
+	local cb = UI.onDailyClaim
+	if not cb then
+		return
+	end
+	daily.claiming = true
+	refreshDaily(true)
+	task.spawn(function()
+		local ok, err = pcall(cb)
+		if not ok then
+			warn("[CityLegends] daily claim failed:", err)
+		end
+		daily.claiming = false
+		refreshDaily(true)
+	end)
+end
 
 function UI.init()
 	local pg = player:WaitForChild("PlayerGui")
@@ -8847,55 +10390,16 @@ function UI.init()
 	-- HUD ------------------------------------------------------------
 	hud = new("Frame", { Name = "HUD", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = gui })
 
-	-- cash
-	local cashPanel = new("Frame", {
-		Position = UDim2.new(0, 20, 0, 54),
-		Size = UDim2.fromOffset(250, 64),
-		BackgroundColor3 = Theme.Panel,
-		BackgroundTransparency = 0.15,
-		Parent = hud,
-	}, { corner(10), stroke(Theme.Stroke, 1, 0.2) })
-	new("Frame", { Size = UDim2.new(0, 4, 1, -16), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Theme.Money, BorderSizePixel = 0, Parent = cashPanel }, { corner(2) })
-	label({ Text = "CASH", TextColor3 = Theme.SubText, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(22, 8), Size = UDim2.new(1, -30, 0, 14), Parent = cashPanel })
-	cashLabel = label({ Text = "$0", TextColor3 = Theme.Money, TextSize = 30, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(22, 22), Size = UDim2.new(1, -30, 0, 34), Parent = cashPanel })
+	buildLevelBar()
+	buildSpeedometer()
+	buildCashTab()
+	buildSideButtons()
+	buildDailyCard()
 
-	-- speedometer (circular arc of segments)
-	local gaugeSize = if UI.isTouch then 190 else 240
-	local gauge = new("Frame", {
-		Name = "Speedometer",
-		AnchorPoint = if UI.isTouch then Vector2.new(0.5, 1) else Vector2.new(1, 1),
-		Position = if UI.isTouch then UDim2.new(0.5, 0, 1, -16) else UDim2.new(1, -24, 1, -24),
-		Size = UDim2.fromOffset(gaugeSize, gaugeSize),
-		BackgroundColor3 = Theme.Panel,
-		BackgroundTransparency = 0.2,
-		Parent = hud,
-	}, { new("UICorner", { CornerRadius = UDim.new(1, 0) }), stroke(Theme.Stroke, 2, 0.1) })
-	local segCount = 34
-	local radius = gaugeSize / 2 - 16
-	for k = 0, segCount - 1 do
-		local a = math.rad(225 - k * (270 / (segCount - 1)))
-		local seg = new("Frame", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, math.cos(a) * radius, 0.5, -math.sin(a) * radius),
-			Size = UDim2.fromOffset(4, 13),
-			Rotation = 90 - math.deg(a),
-			BackgroundColor3 = Theme.Stroke,
-			BorderSizePixel = 0,
-			Parent = gauge,
-		}, { corner(2) })
-		table.insert(arcSegments, seg)
-	end
-	speedLabel = label({ Text = "0", TextSize = if UI.isTouch then 52 else 66, Font = Enum.Font.GothamBlack, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromScale(0.8, 0.3), Parent = gauge })
-	label({ Text = "MPH", TextColor3 = Theme.SubText, TextSize = 14, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.63), Size = UDim2.fromScale(0.5, 0.1), Parent = gauge })
-	local gearBox = new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.8), Size = UDim2.fromOffset(44, 32), BackgroundColor3 = Theme.Background, Parent = gauge }, { corner(6), stroke(Theme.Accent, 1.5, 0.2) })
-	gearLabel = label({ Text = "N", TextColor3 = Theme.Accent, TextSize = 20, Font = Enum.Font.GothamBlack, Size = UDim2.fromScale(1, 1), Parent = gearBox })
-	local rpmBack = new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.92), Size = UDim2.new(0.42, 0, 0, 4), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = gauge }, { corner(2) })
-	rpmFill = new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Theme.Accent2, BorderSizePixel = 0, Parent = rpmBack }, { corner(2) })
-
-	-- combo
+	-- combo (under the level bar)
 	comboFrame = new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 60),
+		Position = UDim2.new(0.5, 0, 0, 84),
 		Size = UDim2.fromOffset(260, 66),
 		BackgroundColor3 = Theme.Panel,
 		BackgroundTransparency = 0.15,
@@ -8906,50 +10410,18 @@ function UI.init()
 	local comboBack = new("Frame", { Position = UDim2.new(0, 16, 1, -14), Size = UDim2.new(1, -32, 0, 5), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = comboFrame }, { corner(3) })
 	comboBar = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Accent2, BorderSizePixel = 0, Parent = comboBack }, { corner(3) })
 
-	popupHolder = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36), Size = UDim2.fromOffset(500, 200), Parent = hud })
-
-	-- top-right buttons
-	local topRight = new("Frame", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -20, 0, 54), Size = UDim2.fromOffset(330, 40), BackgroundTransparency = 1, Parent = hud }, {
-		new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 8) }),
-	})
-	local garageBtn = button("GARAGE  [G]", Theme.Accent, { Size = UDim2.fromOffset(150, 40), TextSize = 15, Parent = topRight })
-	local camBtn = button("CAMERA  [C]", Theme.Accent, { Size = UDim2.fromOffset(150, 40), TextSize = 15, Parent = topRight })
-	camLabel = camBtn
-	garageBtn.Activated:Connect(function()
-		if UI.onGarageButton then
-			UI.onGarageButton()
-		end
-	end)
-	camBtn.Activated:Connect(function()
-		if UI.onCameraButton then
-			UI.onCameraButton()
-		end
-	end)
-
-	-- controls hint
-	if not UI.isTouch then
-		label({
-			Text = "W/S  throttle · brake      A/D  steer      SPACE  handbrake      C  camera      R  reset      G  garage      M  music",
-			TextColor3 = Theme.SubText,
-			TextSize = 13,
-			Font = Enum.Font.GothamMedium,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.new(0, 22, 1, -34),
-			Size = UDim2.new(0.6, 0, 0, 20),
-			Parent = hud,
-		})
-	end
+	popupHolder = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.38), Size = UDim2.fromOffset(500, 200), Parent = hud })
 
 	toast = label({
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 140),
+		Position = UDim2.new(0.5, 0, 0, 162),
 		Size = UDim2.fromOffset(420, 40),
 		BackgroundColor3 = Theme.Panel,
 		BackgroundTransparency = 0.1,
 		TextSize = 16,
 		TextTransparency = 1,
 		Visible = false,
-		ZIndex = 50,
+		ZIndex = 75, -- readable over the garage too
 		Parent = gui,
 	})
 	corner(8).Parent = toast
@@ -8961,6 +10433,8 @@ function UI.init()
 		UI.buildTouchControls()
 	end
 
+	refreshDaily(true)
+	local dailyTick = 0
 	RunService.RenderStepped:Connect(function(dt)
 		if displayedCash ~= targetCash then
 			local diff = targetCash - displayedCash
@@ -8971,6 +10445,15 @@ function UI.init()
 				displayedCash += math.sign(diff) * step
 			end
 			cashLabel.Text = formatCash(displayedCash)
+		end
+		dailyTick += dt
+		if dailyTick >= 0.2 then
+			dailyTick = 0
+			refreshDaily()
+		end
+		if hud.Visible then
+			-- breathe the card outline while a gift is waiting
+			dailyCardStroke.Transparency = if daily.shown == 0 then 0.25 + 0.25 * math.sin(os.clock() * 4) else 0.35
 		end
 	end)
 end
@@ -9286,7 +10769,7 @@ function UI.showMainMenu(cash: number, onPlay: () -> ())
 	label({ Text = "Cut up through traffic. Get paid. Become a legend.", TextColor3 = Theme.SubText, TextSize = 16, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(0, 200), Size = UDim2.new(1, 0, 0, 22), ZIndex = 6, Parent = panel })
 	local play = button("PLAY", Theme.Accent, { Position = UDim2.fromOffset(0, 246), Size = UDim2.fromOffset(240, 54), TextSize = 22, ZIndex = 6, Parent = panel })
 	play.BackgroundColor3 = Theme.Accent:Lerp(Theme.PanelLight, 0.7)
-	label({ Text = "CASH  " .. formatCash(cash), TextColor3 = Theme.Money, TextSize = 16, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(0, 314), Size = UDim2.new(1, 0, 0, 22), ZIndex = 6, Parent = panel })
+	label({ Text = "LEVEL " .. progress.level .. "   ·   CASH  " .. formatCash(cash), TextColor3 = Theme.Money, TextSize = 16, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(0, 314), Size = UDim2.new(1, 0, 0, 22), ZIndex = 6, Parent = panel })
 	play.Activated:Connect(function()
 		onPlay()
 	end)
@@ -9598,6 +11081,9 @@ end
 ---------------------------------------------------------------------
 function UI.showHud(visible: boolean)
 	hud.Visible = visible
+	if not visible then
+		closePanels()
+	end
 end
 
 function UI.setCash(amount: number, instant: boolean?)
@@ -9608,28 +11094,162 @@ function UI.setCash(amount: number, instant: boolean?)
 	end
 end
 
-local lastSegLit = -1
-function UI.setSpeed(mph: number, frac: number, gear: string, rpm: number)
-	speedLabel.Text = tostring(math.floor(math.abs(mph) + 0.5))
-	gearLabel.Text = gear
-	rpmFill.Size = UDim2.fromScale(math.clamp(rpm, 0, 1), 1)
-	rpmFill.BackgroundColor3 = if rpm > 0.9 then Theme.Danger else Theme.Accent2
-	local lit = math.floor(math.clamp(frac, 0, 1) * #arcSegments + 0.5)
-	if lit ~= lastSegLit then
-		lastSegLit = lit
-		for k, seg in arcSegments do
-			if k <= lit then
-				local t = k / #arcSegments
-				seg.BackgroundColor3 = if t < 0.6 then Theme.Accent:Lerp(Theme.Accent2, t / 0.6) else Theme.Accent2:Lerp(Theme.Danger, (t - 0.6) / 0.4)
+local lastLit = -1
+local lastSpeedText = ""
+local lastGear = ""
+-- mph, speed fraction of top speed (unused by the analog dial), gear ("N",
+-- "R", "1".."6") and rpm 0..1 (needle sweeps 0..7 x1000)
+function UI.setSpeed(mph: number, _frac: number, gear: string, rpm: number)
+	local speedText = tostring(math.floor(math.abs(mph) + 0.5))
+	if speedText ~= lastSpeedText then
+		lastSpeedText = speedText
+		speedLabel.Text = speedText
+	end
+	if gear ~= lastGear then
+		lastGear = gear
+		local numeric = tonumber(gear) ~= nil
+		gearLabel.Text = gear
+		gearTag.Visible = numeric
+		gearLabel.TextColor3 = if numeric then Theme.Text elseif gear == "R" then Theme.Warning else Theme.Accent
+	end
+	local v = math.clamp(rpm, 0, 1) * RPM_MAX
+	needleHolder.Rotation = 90 - rpmAngle(v)
+	local lit = math.floor(v / RPM_MAX * #rpmTrack + 0.5)
+	if lit ~= lastLit then
+		lastLit = lit
+		for i, seg in rpmTrack do
+			local segV = (i - 0.5) / #rpmTrack * RPM_MAX
+			local red = segV >= REDLINE
+			if i <= lit then
+				seg.BackgroundColor3 = if red then Theme.Danger else Theme.Accent:Lerp(Theme.Accent2, segV / REDLINE)
+				seg.BackgroundTransparency = 0
 			else
-				seg.BackgroundColor3 = Theme.Stroke
+				seg.BackgroundColor3 = if red then Theme.Danger else Theme.Stroke
+				seg.BackgroundTransparency = if red then 0.45 else 0.1
 			end
 		end
 	end
 end
 
 function UI.setCameraLabel(mode: string)
-	camLabel.Text = (if mode == "Interior" then "INTERIOR" else "CHASE") .. "  [C]"
+	camToggle.Text = if mode == "Interior" then "INTERIOR" else "CHASE"
+end
+
+function UI.toggleControls(show: boolean?)
+	local panel = controlsPanel
+	if not panel then
+		return
+	end
+	local visible = if show == nil then not panel.Visible else show
+	panel.Visible = visible
+	if controlsArrow then
+		controlsArrow.Text = if visible then "▼" else "▲"
+	end
+end
+
+-- Level + XP bar. `gained` (optional) flashes "+N XP" next to the bar.
+local xpToken = 0
+function UI.setProgress(level: number, xp: number, need: number, gained: number?)
+	local levelChanged = level ~= progress.level
+	progress.level = level
+	progress.xp = xp
+	progress.need = math.max(1, need)
+	levelLabel.Text = "Level " .. level
+	xpText.Text = string.format("%d / %d XP", math.floor(xp), math.floor(progress.need))
+	local frac = math.clamp(xp / progress.need, 0, 1)
+	xpToken += 1
+	local my = xpToken
+	if levelChanged then
+		-- fill up, then restart from empty for the new level
+		tween(xpFill, 0.25, { Size = UDim2.fromScale(1, 1) })
+		task.delay(0.3, function()
+			if my == xpToken then
+				xpFill.Size = UDim2.fromScale(0, 1)
+				tween(xpFill, 0.4, { Size = UDim2.fromScale(frac, 1) })
+			end
+		end)
+		refreshDaily(true) -- the gift grows with level
+	else
+		tween(xpFill, 0.3, { Size = UDim2.fromScale(frac, 1) })
+	end
+	if gained and gained > 0 then
+		xpGain.Text = "+" .. gained .. " XP"
+		xpGain.TextTransparency = 0
+		xpGain.TextStrokeTransparency = 0.5
+		xpGain.Position = UDim2.new(1, 10, 0, 50)
+		tween(xpGain, 0.25, { Position = UDim2.new(1, 10, 0, 44) }, Enum.EasingStyle.Back)
+		task.delay(0.9, function()
+			if my == xpToken then
+				tween(xpGain, 0.5, { TextTransparency = 1, TextStrokeTransparency = 1 })
+			end
+		end)
+	end
+end
+
+function UI.getLevel(): number
+	return progress.level
+end
+
+-- Big "LEVEL UP" banner (shown over everything, even the garage)
+local levelUpFrame: Frame? = nil
+function UI.levelUp(level: number, reward: number)
+	if levelUpFrame then
+		levelUpFrame:Destroy()
+	end
+	local f = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 212),
+		Size = UDim2.fromOffset(520, 150),
+		BackgroundTransparency = 1,
+		ZIndex = 70, -- above the garage too
+		Parent = gui,
+	})
+	levelUpFrame = f
+	local scale = new("UIScale", { Scale = 0.4, Parent = f })
+	local title = label({ Text = "LEVEL UP!", TextSize = 64, Font = Enum.Font.GothamBlack, Size = UDim2.new(1, 0, 0, 70), ZIndex = 71, Parent = f })
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, WHITE),
+			ColorSequenceKeypoint.new(0.55, Color3.fromRGB(255, 150, 190)),
+			ColorSequenceKeypoint.new(1, Theme.Accent2),
+		}),
+		Parent = title,
+	})
+	local glow = new("UIStroke", { Color = Color3.fromRGB(40, 0, 20), Thickness = 3, Transparency = 0.1, Parent = title })
+	local sub = label({ Text = "Level " .. level, TextSize = 26, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Text, Position = UDim2.fromOffset(0, 72), Size = UDim2.new(1, 0, 0, 30), ZIndex = 71, Parent = f })
+	local subStroke = new("UIStroke", { Color = Color3.new(0, 0, 0), Thickness = 2, Transparency = 0.4, Parent = sub })
+	local cash = label({ Text = if reward > 0 then "+" .. formatCash(reward) else "", TextSize = 24, Font = Enum.Font.GothamBlack, TextColor3 = Theme.Money, Position = UDim2.fromOffset(0, 104), Size = UDim2.new(1, 0, 0, 28), ZIndex = 71, Parent = f })
+	local cashStroke = new("UIStroke", { Color = Color3.new(0, 0, 0), Thickness = 2, Transparency = 0.4, Parent = cash })
+	tween(scale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
+	UI.flash(Theme.Accent2)
+	Audio.boom(0.5)
+	UI.toast("Level " .. level .. " reached!" .. (if reward > 0 then "  +" .. formatCash(reward) else ""), Theme.Accent2)
+	task.delay(2.6, function()
+		if levelUpFrame ~= f then
+			return
+		end
+		tween(scale, 0.5, { Scale = 1.15 })
+		for _, l in { title, sub, cash } do
+			tween(l, 0.5, { TextTransparency = 1 })
+		end
+		for _, st in { glow, subStroke, cashStroke } do
+			tween(st, 0.5, { Transparency = 1 })
+		end
+		task.delay(0.55, function()
+			f:Destroy()
+			if levelUpFrame == f then
+				levelUpFrame = nil
+			end
+		end)
+	end)
+end
+
+-- seconds until the next daily gift (0 = ready now)
+function UI.setDaily(readyIn: number)
+	daily.known = true
+	daily.readyAt = os.clock() + math.max(0, readyIn)
+	refreshDaily(true)
 end
 
 local comboExpire = 0
@@ -9675,108 +11295,556 @@ function UI.popup(text: string, amount: number, color: Color3)
 	end)
 end
 
-local flashFrame: Frame? = nil
-function UI.flash(color: Color3)
-	if not flashFrame then
-		flashFrame = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), BorderSizePixel = 0, ZIndex = 15, Parent = gui })
-	end
-	local f = flashFrame :: Frame
-	f.BackgroundColor3 = color
-	f.BackgroundTransparency = 0.6
-	tween(f, 0.5, { BackgroundTransparency = 1 })
-end
-
-local toastToken = 0
-function UI.toast(text: string, color: Color3?)
-	toastToken += 1
-	local my = toastToken
-	toast.Text = text
-	toast.TextColor3 = color or Theme.Text
-	toast.Visible = true
-	toast.TextTransparency = 0
-	toast.BackgroundTransparency = 0.1
-	task.delay(2.2, function()
-		if my == toastToken then
-			tween(toast, 0.4, { TextTransparency = 1, BackgroundTransparency = 1 })
-		end
-	end)
-end
-
----------------------------------------------------------------------
--- Touch controls
----------------------------------------------------------------------
-function UI.buildTouchControls()
-	local holder = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = hud })
-	local function touchButton(text: string, pos: UDim2, size: UDim2, color: Color3, onDown: () -> (), onUp: () -> ())
-		local b: TextButton = new("TextButton", {
-			AutoButtonColor = false,
-			Text = text,
-			Font = Enum.Font.GothamBlack,
-			TextSize = 20,
-			TextColor3 = Theme.Text,
-			BackgroundColor3 = Theme.Panel,
-			BackgroundTransparency = 0.25,
-			Position = pos,
-			Size = size,
-			Parent = holder,
-		}, { corner(14), stroke(color, 2, 0.2) })
-		b.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-				b.BackgroundTransparency = 0
-				onDown()
-			end
-		end)
-		b.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-				b.BackgroundTransparency = 0.25
-				onUp()
-			end
-		end)
-	end
-	local left, right = false, false
-	local function updSteer()
-		UI.touch.steer = (if right then 1 else 0) - (if left then 1 else 0)
-	end
-	touchButton("◀", UDim2.new(0, 24, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
-		left = true
-		updSteer()
-	end, function()
-		left = false
-		updSteer()
-	end)
-	touchButton("▶", UDim2.new(0, 124, 1, -130), UDim2.fromOffset(90, 90), Theme.Accent, function()
-		right = true
-		updSteer()
-	end, function()
-		right = false
-		updSteer()
-	end)
-	touchButton("GAS", UDim2.new(1, -114, 1, -160), UDim2.fromOffset(90, 120), Theme.Money, function()
-		UI.touch.throttle = 1
-	end, function()
-		UI.touch.throttle = 0
-	end)
-	touchButton("BRAKE", UDim2.new(1, -214, 1, -130), UDim2.fromOffset(90, 90), Theme.Danger, function()
-		UI.touch.brake = 1
-	end, function()
-		UI.touch.brake = 0
-	end)
-	touchButton("DRIFT", UDim2.new(1, -214, 1, -230), UDim2.fromOffset(90, 80), Theme.Accent2, function()
-		UI.touch.handbrake = true
-	end, function()
-		UI.touch.handbrake = false
-	end)
-end
-
--- Callbacks assigned by Main
-UI.onGarageButton = nil :: (() -> ())?
-UI.onCameraButton = nil :: (() -> ())?
-
 return UI
 ]]></string>
           </Properties>
         </Item>
         <Item class="ModuleScript" referent="28">
+          <Properties>
+            <string name="Name">Weather</string>
+            <string name="Source"><![CDATA[--[[
+	Weather (client)
+	Night rain that comes and goes, run locally and cheap enough for phones:
+	  * rain     : a few invisible emitter slabs ride above the camera (leading
+	               it when you drive fast). Particles use the built-in default
+	               texture squashed into thin slivers and aligned to their
+	               velocity, so they read as falling streaks without any upload.
+	  * splashes : one ground-level emitter under the camera flicks tiny flat
+	               droplets up off the road
+	  * wet roads: road + sidewalk slabs darken and gain a little gloss (the
+	               originals are stored and restored as it dries). Changed in
+	               10 steps over the fade, never per frame.
+	  * mood     : denser haze, heavier clouds, a slightly darker, cooler grade
+	  * sound    : a looping rain bed that fades with the weather
+	  * cover    : rain stops in the tunnel / under big overhangs (one upward
+	               ray every 0.3 s), and the near curtain is skipped in the
+	               cockpit camera so no drops fall through the cabin
+	Clear <-> rain alternates every 4-8 minutes; it is raining when you join.
+
+	API: Weather.init(), Weather.setRaining(on, instant?), Weather.isRaining()
+]]
+
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local WorldFx = require(script.Parent:WaitForChild("WorldFx"))
+local Driving = require(script.Parent:WaitForChild("Driving"))
+local Audio = require(script.Parent:WaitForChild("Audio"))
+
+local Weather = {}
+
+local FADE_TIME = 12 -- seconds for the rain to build up / clear away
+local SPELL_MIN, SPELL_MAX = 240, 480 -- each clear / rainy spell lasts 4-8 minutes
+local RAIN_SPEED = 105 -- studs/s
+local NEAR_HALF = 32 -- dense curtain around the camera (half size)
+local RING_HALF = 76 -- lighter outer ring (half size), higher quality only
+local NEAR_UP = 26 -- spawn height above the camera
+local RING_UP = 34
+local NEAR_DENSITY = 0.12 -- particles per stud^2 per second at full quality
+local RING_DENSITY = 0.026
+local SPLASH_HALF = 28
+local SPLASH_RATE = 150
+local COVER_CHECK = 0.3
+local RAIN_VOLUME = 0.32
+
+-- wet look
+local WET_TINT = Color3.fromRGB(6, 7, 10)
+local ROAD_WET_REFLECTANCE = 0.16
+-- rain mood
+local RAIN_ATMO_COLOR = Color3.fromRGB(84, 92, 116)
+local RAIN_ATMO_DECAY = Color3.fromRGB(40, 44, 64)
+local RAIN_CLOUD_COLOR = Color3.fromRGB(34, 34, 48)
+local RAIN_TINT = Color3.fromRGB(228, 236, 255)
+
+type Emitter = { part: BasePart, emitter: ParticleEmitter, offset: Vector3, rate: number, on: boolean }
+type Surface = { part: BasePart, color: Color3, reflectance: number, material: Enum.Material, road: boolean }
+
+local started = false
+local raining = false
+local nextToggle = math.huge
+local wet: NumberValue? = nil
+local tween: Tween? = nil
+
+local function randomSpell(): number
+	return SPELL_MIN + math.random() * (SPELL_MAX - SPELL_MIN)
+end
+
+local function lerp(a: number, b: number, t: number): number
+	return a + (b - a) * t
+end
+
+local function kp(t: number, v: number): NumberSequenceKeypoint
+	return NumberSequenceKeypoint.new(t, v)
+end
+
+---------------------------------------------------------------------
+-- Emitters
+---------------------------------------------------------------------
+local function emitterPart(parent: Instance, name: string, size: Vector3): BasePart
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Transparency = 1
+	p.Size = size
+	p.Parent = parent
+	return p
+end
+
+local function rainEmitter(part: BasePart, size: number): ParticleEmitter
+	-- No Texture set: the built-in default particle squashed 3x and turned to
+	-- face its velocity becomes a thin vertical sliver = a rain streak.
+	local e = Instance.new("ParticleEmitter")
+	e.Name = "Rain"
+	e.Enabled = false
+	e.Rate = 0
+	e.Shape = Enum.ParticleEmitterShape.Box
+	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	e.EmissionDirection = Enum.NormalId.Bottom
+	e.Orientation = Enum.ParticleOrientation.VelocityParallel
+	e.Speed = NumberRange.new(RAIN_SPEED * 0.9, RAIN_SPEED * 1.1)
+	e.SpreadAngle = Vector2.new(2, 2)
+	e.Acceleration = Vector3.new(6, 0, 3) -- light cross wind slants the streaks
+	e.Lifetime = NumberRange.new(0.5)
+	e.Size = NumberSequence.new(size)
+	e.Squash = NumberSequence.new(3)
+	e.Rotation = NumberRange.new(0)
+	e.Transparency = NumberSequence.new({ kp(0, 1), kp(0.12, 0.45), kp(1, 0.5) })
+	e.Color = ColorSequence.new(Color3.fromRGB(196, 208, 232))
+	e.LightEmission = 0.15
+	e.LightInfluence = 0.35
+	e.Brightness = 1.3
+	e.Parent = part
+	return e
+end
+
+local function splashEmitter(part: BasePart): ParticleEmitter
+	local e = Instance.new("ParticleEmitter")
+	e.Name = "Splash"
+	e.Enabled = false
+	e.Rate = 0
+	e.Shape = Enum.ParticleEmitterShape.Box
+	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	e.EmissionDirection = Enum.NormalId.Top
+	e.Orientation = Enum.ParticleOrientation.FacingCameraWorldUp
+	e.Speed = NumberRange.new(2, 5)
+	e.SpreadAngle = Vector2.new(35, 35)
+	e.Acceleration = Vector3.new(0, -45, 0)
+	e.Lifetime = NumberRange.new(0.12, 0.22)
+	e.Size = NumberSequence.new({ kp(0, 0.12), kp(1, 0.5) })
+	e.Squash = NumberSequence.new(-1.5) -- wide + flat
+	e.Transparency = NumberSequence.new({ kp(0, 0.3), kp(1, 1) })
+	e.Color = ColorSequence.new(Color3.fromRGB(205, 214, 235))
+	e.LightEmission = 0.2
+	e.LightInfluence = 0.5
+	e.Parent = part
+	return e
+end
+
+---------------------------------------------------------------------
+-- Wet roads: only the big road / sidewalk slabs the server builds
+-- (City/Ground, City/Highway + Plaza, Block sidewalks, Skyline slabs)
+---------------------------------------------------------------------
+local surfaces: { Surface } = {}
+local collected = false
+local appliedWet = -1
+
+local function bigSlab(p: BasePart): boolean
+	local s = p.Size
+	return p.Transparency < 0.5 and math.max(s.X * s.Z, s.X * s.Y, s.Y * s.Z) >= 2000
+end
+
+local function isRoad(p: BasePart): boolean
+	if p.Material == Enum.Material.Asphalt then
+		return true
+	end
+	local c = p.Color
+	return p.Material == Enum.Material.SmoothPlastic and c.R + c.G + c.B < 0.36
+end
+
+local function collectSurfaces()
+	local city = workspace:FindFirstChild("City")
+	if not city then
+		return
+	end
+	collected = true
+	table.clear(surfaces)
+	local function add(p: Instance, road: boolean)
+		if p:IsA("BasePart") then
+			table.insert(surfaces, { part = p, color = p.Color, reflectance = p.Reflectance, material = p.Material, road = road })
+		end
+	end
+	local ground = city:FindFirstChild("Ground")
+	if ground then
+		for _, p in ground:GetChildren() do
+			if p:IsA("BasePart") and bigSlab(p) then
+				add(p, true)
+			end
+		end
+	end
+	local highway = city:FindFirstChild("Highway")
+	if highway then
+		for _, p in highway:GetChildren() do
+			if p:IsA("BasePart") and bigSlab(p) and isRoad(p) then
+				add(p, true)
+			end
+		end
+		local plaza = highway:FindFirstChild("Plaza")
+		if plaza then
+			for _, p in plaza:GetChildren() do
+				if p:IsA("BasePart") and bigSlab(p) then
+					if p.Name == "Island" then
+						add(p, false)
+					elseif isRoad(p) then
+						add(p, true)
+					end
+				end
+			end
+		end
+	end
+	local blocks = city:FindFirstChild("Blocks")
+	if blocks then
+		for _, block in blocks:GetChildren() do
+			local sidewalk = block:FindFirstChild("Sidewalk")
+			if sidewalk then
+				add(sidewalk, false)
+			end
+		end
+	end
+	local skyline = city:FindFirstChild("Skyline")
+	if skyline then
+		for _, p in skyline:GetChildren() do
+			if p:IsA("BasePart") and p.Material == Enum.Material.Pavement and bigSlab(p) then
+				add(p, false)
+			end
+		end
+	end
+end
+
+local function applyRoads(level: number)
+	local q = math.floor(level * 10 + 0.5) / 10
+	if q == appliedWet then
+		return
+	end
+	appliedWet = q
+	if not collected then
+		collectSurfaces()
+	end
+	for _, s in surfaces do
+		local p = s.part
+		if q <= 0 then
+			p.Color = s.color
+			p.Reflectance = s.reflectance
+			p.Material = s.material
+		elseif s.road then
+			p.Color = s.color:Lerp(WET_TINT, 0.3 * q)
+			p.Reflectance = lerp(s.reflectance, math.max(s.reflectance, ROAD_WET_REFLECTANCE), q)
+			p.Material = if q >= 0.5 then Enum.Material.SmoothPlastic else s.material
+		else
+			p.Color = s.color:Lerp(WET_TINT, 0.35 * q)
+			p.Reflectance = s.reflectance + 0.06 * q
+		end
+	end
+end
+
+---------------------------------------------------------------------
+-- Mood: haze, clouds, exposure, grade (blended from the clear values)
+---------------------------------------------------------------------
+type Base = {
+	atmo: Atmosphere?,
+	density: number,
+	haze: number,
+	atmoColor: Color3,
+	decay: Color3,
+	clouds: Clouds?,
+	cover: number,
+	cloudDensity: number,
+	cloudColor: Color3,
+	exposure: number,
+	outdoor: Color3,
+	specular: number,
+}
+local base: Base? = nil
+local grade: ColorCorrectionEffect? = nil
+
+local function captureBase(): Base
+	local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	return {
+		atmo = atmo,
+		density = if atmo then atmo.Density else 0,
+		haze = if atmo then atmo.Haze else 0,
+		atmoColor = if atmo then atmo.Color else Color3.new(),
+		decay = if atmo then atmo.Decay else Color3.new(),
+		clouds = clouds,
+		cover = if clouds then clouds.Cover else 0,
+		cloudDensity = if clouds then clouds.Density else 0,
+		cloudColor = if clouds then clouds.Color else Color3.new(),
+		exposure = Lighting.ExposureCompensation,
+		outdoor = Lighting.OutdoorAmbient,
+		specular = Lighting.EnvironmentSpecularScale,
+	}
+end
+
+local function applyMood(w: number)
+	local b = base
+	if not b then
+		return
+	end
+	local atmo = b.atmo
+	if atmo and atmo.Parent then
+		atmo.Density = lerp(b.density, b.density + 0.1, w)
+		atmo.Haze = lerp(b.haze, b.haze + 1.2, w)
+		atmo.Color = b.atmoColor:Lerp(RAIN_ATMO_COLOR, 0.5 * w)
+		atmo.Decay = b.decay:Lerp(RAIN_ATMO_DECAY, 0.4 * w)
+	end
+	local clouds = b.clouds
+	if clouds and clouds.Parent then
+		clouds.Cover = lerp(b.cover, math.max(b.cover, 0.85), w)
+		clouds.Density = lerp(b.cloudDensity, math.max(b.cloudDensity, 0.7), w)
+		clouds.Color = b.cloudColor:Lerp(RAIN_CLOUD_COLOR, 0.5 * w)
+	end
+	Lighting.ExposureCompensation = b.exposure - 0.12 * w
+	Lighting.OutdoorAmbient = b.outdoor:Lerp(Color3.new(0, 0, 0), 0.12 * w)
+	Lighting.EnvironmentSpecularScale = lerp(b.specular, math.max(b.specular, 1), w)
+	local g = grade
+	if g then
+		g.Saturation = -0.1 * w
+		g.Contrast = 0.04 * w
+		g.Brightness = -0.015 * w
+		g.TintColor = Color3.new(1, 1, 1):Lerp(RAIN_TINT, w)
+	end
+end
+
+---------------------------------------------------------------------
+-- Public API
+---------------------------------------------------------------------
+function Weather.isRaining(): boolean
+	return raining
+end
+
+function Weather.setRaining(on: boolean, instant: boolean?)
+	raining = on
+	nextToggle = os.clock() + randomSpell()
+	local value = wet
+	if not value then
+		return -- init() picks this up
+	end
+	if tween then
+		tween:Cancel()
+		tween = nil
+	end
+	local target = if on then 1 else 0
+	if instant then
+		value.Value = target
+	else
+		local t = TweenService:Create(value, TweenInfo.new(FADE_TIME, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Value = target })
+		tween = t
+		t:Play()
+	end
+end
+
+function Weather.init()
+	if started then
+		return
+	end
+	started = true
+
+	-- density follows the player's graphics level (phones get far fewer drops)
+	local quality = math.clamp((WorldFx.qualityScale() - 0.45) / 0.6, 0.3, 1)
+
+	local folder = Instance.new("Folder")
+	folder.Name = "WeatherFx"
+	folder.Parent = workspace
+
+	local near: Emitter
+	do
+		local size = Vector3.new(NEAR_HALF * 2, 1, NEAR_HALF * 2)
+		local part = emitterPart(folder, "RainNear", size)
+		near = { part = part, emitter = rainEmitter(part, 0.34), offset = Vector3.zero, rate = NEAR_DENSITY * size.X * size.Z * quality, on = false }
+	end
+	local ring: { Emitter } = {}
+	if quality >= 0.6 then
+		local mid = (NEAR_HALF + RING_HALF) / 2
+		local depth = RING_HALF - NEAR_HALF
+		local layout = {
+			{ Vector3.new(RING_HALF * 2, 1, depth), Vector3.new(0, 0, -mid) },
+			{ Vector3.new(RING_HALF * 2, 1, depth), Vector3.new(0, 0, mid) },
+			{ Vector3.new(depth, 1, NEAR_HALF * 2), Vector3.new(-mid, 0, 0) },
+			{ Vector3.new(depth, 1, NEAR_HALF * 2), Vector3.new(mid, 0, 0) },
+		}
+		for i, l in layout do
+			local part = emitterPart(folder, "RainRing" .. i, l[1])
+			table.insert(ring, { part = part, emitter = rainEmitter(part, 0.46), offset = l[2], rate = RING_DENSITY * l[1].X * l[1].Z * quality, on = false })
+		end
+	end
+	local splash: Emitter
+	do
+		local part = emitterPart(folder, "Splashes", Vector3.new(SPLASH_HALF * 2, 0.2, SPLASH_HALF * 2))
+		splash = { part = part, emitter = splashEmitter(part), offset = Vector3.zero, rate = SPLASH_RATE * quality, on = false }
+	end
+	local all: { Emitter } = { near, splash }
+	for _, e in ring do
+		table.insert(all, e)
+	end
+
+	local g = Instance.new("ColorCorrectionEffect")
+	g.Name = "WeatherGrade"
+	g.Parent = Lighting
+	grade = g
+	base = captureBase()
+
+	local rainSound = Audio.rainLoop()
+	local volume = 0
+
+	local value = Instance.new("NumberValue")
+	value.Name = "Wetness"
+	value.Value = 0
+	value.Parent = folder
+	wet = value
+
+	local function applyLevel()
+		local w = value.Value
+		for _, e in all do
+			e.emitter.Rate = e.rate * w
+		end
+		applyMood(w)
+		applyRoads(w)
+	end
+	value:GetPropertyChangedSignal("Value"):Connect(applyLevel)
+
+	-- camera probes: overhead cover + ground height (sets the drop lifetime)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.IgnoreWater = true
+	local covered = false
+	local groundY = 0
+	local probeTimer = 0
+	local lifeNear, lifeRing = -1, -1
+	local function probe(pos: Vector3)
+		local ignore: { Instance } = { folder }
+		for _, name in { "Traffic", "PlayerCars", "MonorailTrain", "Cutscene" } do
+			local f = workspace:FindFirstChild(name)
+			if f then
+				table.insert(ignore, f)
+			end
+		end
+		params.FilterDescendantsInstances = ignore
+		local up = workspace:Raycast(pos, Vector3.new(0, 160, 0), params)
+		covered = false
+		if up and up.Instance:IsA("BasePart") then
+			local s = up.Instance.Size
+			-- thin things overhead (rails, signs) don't count as a roof
+			covered = math.max(s.X * s.Z, s.X * s.Y, s.Y * s.Z) >= 300
+		end
+		local down = workspace:Raycast(pos, Vector3.new(0, -400, 0), params)
+		groundY = if down then down.Position.Y else 0
+		local ln = math.clamp((pos.Y + NEAR_UP - groundY) / RAIN_SPEED, 0.2, 1.6)
+		if math.abs(ln - lifeNear) > 0.03 then
+			lifeNear = ln
+			near.emitter.Lifetime = NumberRange.new(ln)
+		end
+		local lr = math.clamp((pos.Y + RING_UP - groundY) / RAIN_SPEED, 0.2, 1.6)
+		if math.abs(lr - lifeRing) > 0.03 then
+			lifeRing = lr
+			for _, e in ring do
+				e.emitter.Lifetime = NumberRange.new(lr)
+			end
+		end
+	end
+
+	local function setOn(e: Emitter, on: boolean)
+		if e.on ~= on then
+			e.on = on
+			e.emitter.Enabled = on
+		end
+	end
+
+	local lastPos: Vector3? = nil
+	local camVel = Vector3.zero
+	RunService.RenderStepped:Connect(function(dt: number)
+		local cam = workspace.CurrentCamera
+		if not cam then
+			return
+		end
+		local camCF = cam.CFrame
+		local pos = camCF.Position
+		if lastPos and dt > 0 then
+			local v = (pos - lastPos) / dt
+			if v.Magnitude > 600 then
+				v = Vector3.zero -- camera cut, not motion
+			end
+			camVel = camVel:Lerp(Vector3.new(v.X, 0, v.Z), math.min(1, dt * 6))
+		end
+		lastPos = pos
+
+		local level = value.Value
+		local active = level > 0.01
+		if active then
+			probeTimer -= dt
+			if probeTimer <= 0 then
+				probeTimer = COVER_CHECK
+				probe(pos)
+			end
+		end
+		local open = active and not covered
+		local interior = Driving.isDriving() and Driving.cameraMode == "Interior"
+		setOn(near, open and not interior)
+		setOn(splash, open)
+		for _, e in ring do
+			setOn(e, open)
+		end
+
+		if rainSound then
+			local target = RAIN_VOLUME * level * (if covered then 0.3 elseif interior then 0.7 else 1)
+			volume += (target - volume) * math.min(1, dt * 3)
+			rainSound.Volume = volume
+		end
+		if not open then
+			return
+		end
+
+		-- centre slightly ahead of the view and lead the camera when moving fast,
+		-- so the world-space drops are already falling where you are going
+		local look = camCF.LookVector
+		local flat = Vector3.new(look.X, 0, look.Z)
+		local ahead = if flat.Magnitude > 0.05 then flat.Unit * 14 else Vector3.zero
+		local lead = camVel * math.clamp(lifeNear * 0.5, 0.1, 0.4)
+		if lead.Magnitude > 70 then
+			lead = lead.Unit * 70
+		end
+		local c = pos + ahead + lead
+		near.part.CFrame = CFrame.new(c.X, pos.Y + NEAR_UP, c.Z)
+		for _, e in ring do
+			e.part.CFrame = CFrame.new(c.X + e.offset.X, pos.Y + RING_UP, c.Z + e.offset.Z)
+		end
+		splash.part.CFrame = CFrame.new(c.X, groundY + 0.15, c.Z)
+	end)
+
+	-- clear <-> rain cycle
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			if os.clock() >= nextToggle then
+				Weather.setRaining(not raining)
+			end
+		end
+	end)
+
+	-- the reference night is a rainy one: start wet
+	Weather.setRaining(true, true)
+	applyLevel()
+end
+
+return Weather
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="29">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--[[
@@ -10107,7 +12175,7 @@ return WorldFx
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="29">
+  <Item class="Workspace" referent="30">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

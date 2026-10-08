@@ -44,6 +44,17 @@ To save progress, publish the place and turn on **Game Settings → Security →
 
 Mobile players get on-screen buttons.
 
+## HUD and progression
+
+- **HUD:** your level and XP bar sit at the top centre. An analog rev counter (0–7k rpm, redline, gear and mph) sits bottom right, or bottom centre on touch. Your cash shows in a tab on the bottom edge, with a **Controls** tab next to it. Down the left side are **Settings** (camera and music), **Shop** (the garage) and **Gifts** buttons. On the right, a **Daily Gift** card counts down to your next gift.
+- **XP and levels:** you earn XP from the same things that pay cash: driving above 40 mph and cut-ups (bigger cuts and combos give more). Level N needs `40 × N^1.35` XP. Each level-up shows a banner and pays cash.
+- **Daily gift:** free cash every 24 hours, and the amount grows with your level. The server keeps the timer and checks it before it pays.
+- Level, XP and the gift timer are saved with your cash. Old saves load at level 1. All the numbers are in `Config.Progression` and `Config.Daily`. The remotes are `Progress` (server → client) and `ClaimDaily`.
+
+## Weather
+
+`Weather.lua` alternates rain and clear spells (4-8 minutes each; it is raining when you join). Rain streaks and road splashes follow the camera and stop under the tunnel, roads and sidewalks turn darker and glossier, the haze thickens, and a rain bed fades in. Lifting off at high revs or upshifting fires blue exhaust flames from the real pipe positions.
+
 ## Sound
 
 Everything is in `src/client/Audio.lua`. It uses only files that ship inside every Roblox client (`rbxasset://sounds/...`), so no asset can fail to load or be blocked:
@@ -85,7 +96,7 @@ Every car has its own design, built at runtime as real meshes. `src/shared/CarMe
 - **Body:** hard-edged cross sections lofted along the car. That gives crisp character lines, a shoulder crease, a sharp hood edge and flat panels. On top of that: wedge or upright noses, fender haunches, widebody flares, cut wheel arches, a cabin with raked glass and tumblehome, and a dark interior you can see through the glass.
 - **Details:** laid exactly onto the bodywork: grilles, headlight housings with LED signatures (Y-shaped, eye, quad, angel rings, round JDM lamps), tail lamps (light bars, Y-shapes, round quads), intakes, side scoops, hood vents, engine louvres, shut lines, door handles, plates, badges and liveries. Splitters, diffusers, wings, mirrors and exhausts are real geometry.
 - **Wheels:** tyres with a sidewall and tread grooves, spoked rims (5-spoke, twin-spoke, Y-spoke, 6-spoke, multi-spoke, turbine) and brake discs, all spinning. Calipers sit on a steering knuckle, so they steer but don't spin.
-- **Inspired-by designs:** the Spectre 720 is a V12 wedge with Y lamps, side scoops and a wing. The Kaizen RZ is a widebody GT with a carbon hood and round quad tail lamps. The Strada C2 is a late-90s JDM coupe with blue livery. All names and badges are fictional.
+- **Inspired-by designs:** the Spectre 720 is a V12 wedge with Y lamps, side scoops and a wing. The Kaizen RZ is a widebody GT with a carbon hood and round quad tail lamps. The Strada C2 is a late-90s JDM coupe with blue twin stripes. The Brute SRX and Outlaw '69 are widebody muscle cars (hood scoops, quad round lamps in a full-width grille), the Meridian SRT is a muscle saloon with a racetrack tail lamp, the Kensho M-Sport has tall kidneys and yellow DRLs, the Eclipse JX has a swan-neck wing and roof scoop, and the Velluto P7 is a purple hypercar with gold pinlines and portholes. A car can override its class proportions in `CarBuilder` (`DIM_OVERRIDES`). Rear plates show the owner's name. All names and badges are fictional.
 - **Two levels of detail:** about 24k triangles for your car and the cutscene car, and about 8.5k for traffic. Each design is generated once and cloned.
 
 If the Output shows *"Smooth car bodies unavailable"*, turn on **Game Settings → Security → Allow Mesh / Image APIs**. The cars fall back to their part bodies until you do.
