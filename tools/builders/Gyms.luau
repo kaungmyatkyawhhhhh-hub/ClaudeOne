@@ -340,13 +340,10 @@ local function starterRoom(gym)
 	decor.Name = "WallDecor"
 	decor.Parent = room
 
-	-- Reception (front right): desk facing the entrance aisle, towels, cat bed, the Muscle of the Day board
+	-- Reception (front right): desk facing the entrance aisle, towels, the Muscle of the Day board
 	GymKit.frontDesk(props, face(20, -11, 90), 9)
 	GymKit.towelRack(props, face(33.5, -6.5, 180))
-	local catBed = model(props, "CatBed", mc(31.5, 0, -14))
-	cyl(catBed, "Cushion", 0.35, 2.4, mc(31.5, 0.2, -14) * CFrame.Angles(0, 0, rad(90)), hex("#6B4F3A"), M.Fabric)
-	cyl(catBed, "Rim", 0.6, 2.7, mc(31.5, 0.3, -14) * CFrame.Angles(0, 0, rad(90)), hex("#4A3628"), M.Fabric)
-	cyl(catBed, "Inner", 0.62, 2.0, mc(31.5, 0.33, -14) * CFrame.Angles(0, 0, rad(90)), hex("#7A5C44"), M.Fabric)
+	-- (the cat bed is part of the gym cat's own model: tools/builders/GymCat)
 	muscleBoard(decor, lookAtMapped(Vector3.new(12, 6.2, -4.1), Vector3.new(12, 6.2, 0)) * CFrame.Angles(0, math.pi, 0))
 	GymKit.plant(props, face(7.5, -5.8), 3.6)
 	GymKit.plant(props, face(-7.5, -5.8), 3.6)

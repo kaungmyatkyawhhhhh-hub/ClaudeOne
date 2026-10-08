@@ -34,9 +34,12 @@ spotter count, coins only).
   only (no Machine tag, no prompt). All 3 starter treadmills are now real, the same premium model as the pro gym's.
   The run is a real running cycle on its own clock (stride rate / size follow the belt speed, knees lift, arms swing
   opposite, slight lean, bounce), not one stride per rep.
-- **"Plates pet":** read as the three plate trees standing in the walkway between the rack row and the platforms; the
-  plate trees now stand together in the starter gym's back-left corner (the kettlebells that stood there went). If you
-  meant something else (the gym cat is still on its bed by the front desk), tell me.
+- **Plates the gym cat (owner, 8 Oct night):** "Plates pet" was the cat (named Plates), not the plate trees I first
+  moved (they stay in the back-left corner). The cat and its round bed are now ONE model (`Workspace.NPCs.GymCat`:
+  `Bed`, `HeadGroup`, `Tail`) lying in the starter gym's front-right corner just west of the towel rack, out of the
+  walkway to the pro gym door; the old separate bed is deleted; the Gyms builder no longer makes a bed and the NPCs
+  builder no longer moves the cat (`GymCat.Spot`). Idle: tail wag + a slow look-around (ShakeClient). Screenshot:
+  gym_cat_on_bed_by_towel_rack.
 - Checked in play: sign at every angle (below / above / side, the longest names), "!" only from the middle, red tint on
   bench reps, accessories gone (your guitar), both gyms, the run; no errors in Output. Screenshots: sign_angle_{below,
   above,side}, sign_diamond_*, gym_middle_only_bangs, training_tint_red_bench, accessories_hidden_back,

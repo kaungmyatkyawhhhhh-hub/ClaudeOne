@@ -109,19 +109,28 @@ player:GetAttributeChangedSignal("Recovery"):Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- The cat's tail wags (local, so it costs no network)
+-- Plates the cat's idle (local, so it costs no network): the tail wags, and the head slowly looks around (a soft turn
+-- now and then, a small tilt)
 ------------------------------------------------------------------------
 RunService.Heartbeat:Connect(function()
 	local camera = workspace.CurrentCamera
+	local now = os.clock()
 	for _, cat in ipairs(CollectionService:GetTagged("GymCat")) do
 		local tail = cat:FindFirstChild("Tail")
 		local base = tail and tail:GetAttribute("BaseCFrame")
 		-- (only near the camera: nobody sees a tail wag from across the town)
 		if base and camera and (camera.CFrame.Position - base.Position).Magnitude < 60 then
-			local swing = math.sin(os.clock() * 2.2) * math.rad(18)
+			local swing = math.sin(now * 2.2) * math.rad(18)
 			-- pivot at the tail's root (the end touching the body)
 			local root = base * CFrame.new(-tail.Size.X / 2, 0, 0)
 			tail.CFrame = root * CFrame.Angles(0, swing, 0) * CFrame.new(tail.Size.X / 2, 0, 0) -- side to side
+			local head = cat:FindFirstChild("HeadGroup")
+			local neck = head and head:GetAttribute("BaseCFrame")
+			if neck then
+				-- a slow look left / right (two slow waves so it never repeats exactly) and a small tilt
+				local look = math.sin(now * 0.35) * 0.7 + math.sin(now * 0.13 + 1.7) * 0.3
+				head:PivotTo(neck * CFrame.Angles(0, look * math.rad(28), math.sin(now * 0.5) * math.rad(5)))
+			end
 		end
 	end
 end)

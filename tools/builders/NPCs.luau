@@ -5,7 +5,7 @@
 --   the water fountain and each other). Pro gym regulars are bigger and lift heavier.
 -- Looks: original characters. Clothing and hair are Roblox-made catalog items (checked with
 -- MarketplaceService:GetProductInfo: creator "Roblox"), no real people, no brands.
--- Also moves the gym cat (Workspace.NPCs.GymCat) to its bed by the front desk.
+-- (The gym cat and its bed are one model, placed by tools/builders/GymCat.)
 -- Visiting legends are NOT here: they come and go, so LegendService still builds them while they visit.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -73,11 +73,7 @@ function Builder.Build(Workspace)
 		model:SetAttribute("Gym", goer.gym)
 	end
 
-	local cat = npcs and npcs:FindFirstChild("GymCat")
-	if cat then
-		local pivot = cat:GetPivot()
-		cat:PivotTo(CFrame.new(31.5, pivot.Position.Y, -14) * CFrame.Angles(0, math.rad(-120), 0))
-	end
+	-- (the gym cat lies on its own bed: tools/builders/GymCat places both)
 end
 
 return Builder
