@@ -31,21 +31,31 @@ local MARBLE = Color3.fromHex("#C9C6BF")
 
 local templates = ReplicatedStorage:FindFirstChild("BodyStages")
 
--- True when every stage template is there.
-function BodyStages.Available(): boolean
+-- The stage meshes missing from ReplicatedStorage.BodyStages (all of them when the folder isn't there).
+function BodyStages.Missing(): { string }
 	templates = templates or ReplicatedStorage:FindFirstChild("BodyStages")
-	if not templates then return false end
+	local missing = {}
 	for _, region in ipairs(Config.Regions) do
 		for _, stage in ipairs(region.stages) do
 			for _, object in pairs(stage.objects) do
-				local template = templates:FindFirstChild(object.file)
-				if not (template and template:IsA("MeshPart")) then return false end
+				local template = templates and templates:FindFirstChild(object.file)
+				if not (template and template:IsA("MeshPart")) then table.insert(missing, object.file) end
 			end
 		end
 	end
-	return true
+	return missing
+end
+-- True when every stage template is there.
+function BodyStages.Available(): boolean
+	return #BodyStages.Missing() == 0
 end
 local available = BodyStages.Available()
+if not available then
+	-- (once per client: without every stage mesh, other characters show the plain body)
+	local missing = BodyStages.Missing()
+	warn(string.format("[BodyStages] %d of the body stage meshes are missing from ReplicatedStorage.BodyStages (%s%s): other players, NPCs and the statue show the plain body. Import Downloads\\other_player_stages\\*.obj and run tools/body_stages_setup.luau.",
+		#missing, table.concat(missing, ", ", 1, math.min(#missing, 4)), if #missing > 4 then ", ..." else ""))
+end
 function BodyStages.IsOn(): boolean return available end
 
 -- the body parts a region stands in for (MuscleRig's garments / plain thighs)

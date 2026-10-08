@@ -137,7 +137,10 @@ local CHUNK = 400000
 local files = {} -- [file] = { offset (vertices written), started }
 local entries = {} -- [object name] = { center, size }
 
-local function writeObject(file: string, name: string, pos, uv, tris)
+local function writeObject(_group: string, name: string, pos, uv, tris)
+	-- ONE OBJ per mesh (8 Oct night: Import 3D merged a multi-object OBJ into one mesh named "default"; the 28 separate limb
+	-- stage files imported fine)
+	local file = name .. ".obj"
 	local f = files[file]
 	if not f then
 		f = { offset = 0, started = false, buffer = {}, size = 0 }

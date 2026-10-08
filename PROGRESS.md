@@ -16,7 +16,7 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
   as TextureID, skin / top / gym-shorts colors, skin texture stage on skin pieces, tints, Growth Spurt scaling, the plain
   part hidden. `MuscleRig` uses it for every rig that isn't your own (players, NPCs, the statue); the mirror's "Day one"
   card wears look 0. Your own character is unchanged (live meshes). Previewed in Studio (look 0 / full / monster).
-- **Off until imported** (`BodyStages.Available()`): the game runs as before. Owner: Import 3D both OBJs (settings in the
+- **Off until imported** (`BodyStages.Available()`): the game runs as before. Owner: Import 3D the 62 OBJs (one mesh per file: the first import of 2 multi-object OBJs merged each into one mesh; settings in the
   chat: studs, separate meshes, into Workspace), then say "imported"; then `tools/body_stages_setup.luau` moves the
   `BS_...` MeshParts into `ReplicatedStorage.BodyStages`, checks count / sizes / the import's turn; then the 2-player test.
 
