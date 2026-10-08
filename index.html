@@ -457,7 +457,7 @@ html.desk .hudtop{display:contents}
 html.desk .cashchip{order:1;flex:none!important;flex-direction:row!important;align-items:center!important;gap:14px!important;padding:10px 18px!important}
 html.desk .cashchip .hypebar{width:170px}
 html.desk .chip.stats{order:2;flex:1 1 260px;max-width:420px;display:flex!important;align-items:center;padding:10px 16px}html.desk .chip.stats .stat{flex:1}
-html.desk .timechip{order:3;display:flex!important;flex:none;flex-direction:column;justify-content:center;padding:10px 16px}html.desk .timechip .minimap{display:none}
+html.desk .timechip{order:3;display:flex!important;flex:none;flex-direction:column;justify-content:center;padding:10px 16px;position:static!important}html.desk .timechip .minimap{display:block;position:fixed;right:20px;top:140px;left:auto;width:260px;height:180px;border-radius:14px;border:3px solid var(--surface);box-shadow:var(--shadow);z-index:11;pointer-events:auto}
 html.desk .hudbtns{order:4;margin-left:auto;display:flex!important;flex-direction:row!important;align-items:center;gap:8px}
 html.desk .hudpills{order:5;flex:1 1 100%;margin:0!important;padding:2px 0 6px!important}
 html.desk .keyhelp{display:block;position:fixed;left:16px;bottom:14px;z-index:9;font-size:.68rem;line-height:1.8;color:var(--muted);padding:6px 10px;border-radius:10px;background:color-mix(in oklab,var(--surface) 85%,transparent);box-shadow:var(--shadow);max-width:250px;pointer-events:none}
@@ -763,6 +763,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .crres b{font-family:var(--display);font-variation-settings:"wdth" 125;font-weight:900;font-size:clamp(2.4rem,13vw,3.6rem);line-height:1;color:#ffd34d;text-shadow:0 0 24px rgba(255,204,51,.6);animation:pop .5s .1s cubic-bezier(.3,1.6,.5,1) both}
 .crres span:not(.crrar){font-weight:700;font-size:1rem;opacity:.9}
 .crbtns{display:flex;flex-direction:column;gap:8px;margin-top:14px;width:min(80vw,320px)}
+.crlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 16px;width:min(88vw,760px);max-height:34vh;overflow-y:auto;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.35);font-weight:700;font-size:.9rem;text-align:center;flex:none}
 .crbtns .cta.ghost{background:transparent;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
 @keyframes pop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
 .pcard{animation:pcin .45s cubic-bezier(.3,1.5,.5,1) both;position:relative;overflow:hidden}
@@ -1492,7 +1493,7 @@ function openAllCrates(extra){
   const ov=document.createElement("div");ov.className="crateov";ov.style.setProperty("--rc",R.c);
   ov.innerHTML=`<div class="crrays on"></div><div class="crbox open" style="width:min(44vw,170px)">${crateSVG()}</div>
     <div class="crres"><span class="crrar" style="color:#fff">${n} crates opened</span><div class="crcnt">${cnt.map((k,i)=>k?`<span style="--c:${RAR[i].c}">${k}× ${RAR[i].n}</span>`:"").join("")}</div>${cash?`<b>+${fmt(cash)}</b>`:""}
-    ${Object.entries(extras).map(([k,v])=>`<span>${v>1?v+"× ":""}${k}</span>`).join("")}
+    ${Object.keys(extras).length?`<div class="crlist">${Object.entries(extras).map(([k,v])=>`<span>${v>1?v+"× ":""}${k}</span>`).join("")}</div>`:""}
     <div class="crbtns"><button class="cta" id="crDone">${best>=2?"LET'S GO":"Nice"}</button></div></div>`;
   document.body.appendChild(ov);const c=elC(ov.querySelector(".crbox"))||[fxW/2,fxH/2];
   flash(R.c,best>=2?.55:.3);confetti(60+best*70+Math.min(120,n*6),c[0],c[1],[R.c,"#ffffff","#ffcc33"]);if(best>=2)confetti(90*best);shake(5+best*3,.5);SFX.crit(Math.max(1,best));buzz([40,30,80]);if(cash)coinsTo(cash,c);
