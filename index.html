@@ -813,6 +813,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 @media (max-width:360px){.pcols{columns:1}}
 .awlist{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px;text-align:left}.aw{background:var(--bg);border-radius:10px;padding:9px 11px;font-size:.84rem;border-left:4px solid var(--muted)}.aw.g{border-left-color:var(--up)}.aw.a{border-left-color:var(--gold)}.aw.r{border-left-color:var(--down)}
 .hearts{color:#e2364a;font-size:.8rem;letter-spacing:1px}.hearts i{font-style:normal;color:var(--muted);opacity:.6}
+.proom{background:linear-gradient(var(--wc) 0 38px,#8a5a36 38px 42px,transparent 42px),repeating-linear-gradient(90deg,#d9b48a 0 28px,#cfa77b 28px 30px);border-radius:14px;padding:52px 10px 10px;box-shadow:inset 0 0 0 3px rgba(0,0,0,.12),var(--shadow);margin:0 0 10px}.pgrid{display:grid;grid-template-columns:repeat(var(--pw),1fr);gap:6px}.pt{aspect-ratio:1;border-radius:10px;border:1.5px dashed rgba(90,58,34,.35);background:rgba(255,255,255,.12);font-size:1.7rem;display:flex;align-items:center;justify-content:center;padding:0}.pt.on{border:0;background:rgba(255,255,255,.28);box-shadow:0 3px 0 rgba(0,0,0,.12)}.pt:disabled{opacity:1}
 .cutov{position:fixed;inset:0;z-index:9800;background:#0b0d11;touch-action:none;user-select:none;-webkit-user-select:none}.cutov canvas{display:block}.cutbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}.cutbar i{display:block;height:100%;width:0;background:#e2364a}
 .roadov{position:fixed;inset:0;z-index:9500;background:#8fd3ff;transition:opacity .45s}.roadov.out{opacity:0}.roadov canvas{display:block}.roadlab{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 28px);text-align:center;color:#fff;font:800 1.1rem var(--display);text-shadow:0 2px 8px rgba(0,0,0,.35)}.roadskip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font:700 .75rem var(--mono)}
 .w5gate{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#1b0b2a,#3a2266);color:#fff;margin:8px 0}.w5gate>span{font-size:.8rem;opacity:.85}.w5gate>i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}.w5gate>i>i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff4fd8)}.w5gate small{font:700 .7rem var(--mono);opacity:.7}
@@ -5525,7 +5526,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=100,WN=[
+const WN_VER=101,WN=[
+ ["🛋️","Decorate what you own","Tap a building you own on the Deeds screen to decorate inside. Every piece of decor adds 4% to that building's income. Visit friends' buildings from the Deeds screen and leave them a star.","2026-10-08T16:30"],
  ["🧑‍🤝‍🧑","The locals have lives now","The ten people of Flip City have jobs and routines: work in the morning, a favourite spot in the afternoon, out at night. They gossip about the mayor, the boss and your friends. Chat to fill their hearts, and at three hearts they bring you something every day. See them all from the Now button.","2026-10-08T15:30"],
  ["👹","The weekly boss","Every week one of Vince's partners takes over a shop in Flip City. Walk up and fight. Everyone's hits count together, and when the boss goes down, everyone who helped gets a rare outfit and 3 crates.","2026-10-08T14:30"],
  ["🎵","More music, more sounds","New tracks for the Frontier, the Frontier Road, Flip City at night, the castle, Rusty's jukebox, the Back Alley and City Hall. Every place now has its own sound when you walk in.","2026-10-08T13:30"],
@@ -7322,7 +7324,7 @@ const DEEDS=DEEDS0.filter(([k])=>PL[k]).map(([k,c])=>({k,c}));
 const ownsDeed=k=>!!(S&&S.deeds&&S.deeds[k]);
 const deedN=()=>DEEDS.filter(d=>ownsDeed(d.k)).length;
 const deedOpen=d=>{const p=PL[d.k];return p&&(p.x>=W?hubOpen():regionOpen(p.region))};
-const deedInc=()=>DEEDS.reduce((a,d)=>a+(ownsDeed(d.k)?d.c*.0006:0),0)*moonK();
+const deedInc=()=>DEEDS.reduce((a,d)=>a+(ownsDeed(d.k)?d.c*.0006*(typeof propK==="function"?propK(d.k):1):0),0)*moonK();
 const keyK=()=>S&&S.flags&&S.flags.key?1.1:1;
 const deedPeer=k=>{if(!MP)return null;for(const id in MP.peers){const q=MP.peers[id];if(Array.isArray(q.ow)&&q.ow.includes(k))return q}return null};
 function deedTag(p){const d=DEEDS.find(x=>x.k===p.k);if(!d)return "";if(ownsDeed(d.k))return " · yours, "+fmt(d.c*.0006)+"/min";const q=deedPeer(d.k);return q?" · owned by "+String(q.n||"a friend").slice(0,14):" · deed "+fmt(d.c)}
@@ -7344,13 +7346,13 @@ function openDeeds(back){room="deeds";const draw=()=>{S.deeds=S.deeds||{};S.name
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("Deeds & names")}
     <div class="deedbar"><div><b>${n} of ${DEEDS.length}</b><span>buildings in Flip City are yours${S.flags.key?" · key to the city":""}</span></div><i><i style="width:${(n/DEEDS.length*100).toFixed(1)}%"></i></i></div>
     <div class="note">Buy every building in town, one deed at a time. Each deed pays you every minute and flies your flag over the door, and your colour shows on the map for everyone in your online room. Own all ${DEEDS.length} and you get the <b>key to the city: +10% on every sale</b>. Earning ${fmt(deedInc())}/min now.</div>
-    <div class="perks">${DEEDS.map(d=>{const own=ownsDeed(d.k),p=PL[d.k],op=deedOpen(d),q=!own&&deedPeer(d.k);return `<button class="perk nopic${nx===d?" next":""}" data-deed="${d.k}" ${own||!op||S.cash<d.c?"disabled":""}><span class="t">${own?"✓ ":""}${esc(p.n)}</span><span class="d">${op?fmt(d.c*.0006)+"/min":"Unlock "+(p.x>=W?"the Frontier Road":REGION_NAME[p.region]||"this area")+" first"}${q?" · "+esc(String(q.n).slice(0,14))+" owns one too":""}</span><span class="c">${own?"Yours":fmt(d.c)}</span></button>`}).join("")}</div>
+    <div class="perks">${DEEDS.map(d=>{const own=ownsDeed(d.k),p=PL[d.k],op=deedOpen(d),q=!own&&deedPeer(d.k);return `<button class="perk nopic${nx===d?" next":""}" data-deed="${d.k}" ${!own&&(!op||S.cash<d.c)?"disabled":""}><span class="t">${own?"✓ ":""}${esc(p.n)}</span><span class="d">${own?fmt(d.c*.0006*propK(d.k))+"/min · "+propN(d.k)+" decor":op?fmt(d.c*.0006)+"/min":"Unlock "+(p.x>=W?"the Frontier Road":REGION_NAME[p.region]||"this area")+" first"}${q?" · "+esc(String(q.n).slice(0,14))+" owns one too":""}</span><span class="c">${own?"Decorate":fmt(d.c)}</span></button>`}).join("")}</div><button class="bigbtn alt" id="dVis">Friends' buildings<small>Visit what other players have decorated and leave a star</small></button>
     <div class="sechead"><h3>Naming rights</h3><span class="eyebrow">Your name on the map</span></div>
     <div class="perks"><button class="perk nopic" data-nm="tower" ${S.cash<NAMEC.tower?"disabled":""}><span class="t">Rename Flip Tower</span><span class="d">${esc(S.names.tower||"Flip Tower")}</span><span class="c">${fmt(NAMEC.tower)}</span></button>
       <button class="perk nopic" data-nm="street" ${S.cash<NAMEC.street?"disabled":""}><span class="t">Name the Township street</span><span class="d">${S.names.street?esc(S.names.street):"Everyone in your online room sees the richest player's street name"}</span><span class="c">${fmt(NAMEC.street)}</span></button>
       ${COUNTRIES.map(c=>`<button class="perk nopic" data-nm="lm_${c.k}" ${S.cash<NAMEC.lm?"disabled":""}><span class="t">Rename the ${esc(c.lm0||c.lm)}</span><span class="d">${c.n}${S.names["lm_"+c.k]?" · now "+esc(S.names["lm_"+c.k]):""}</span><span class="c">${fmt(NAMEC.lm)}</span></button>`).join("")}</div></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
-  $("room").querySelectorAll("[data-deed]").forEach(b=>b.onclick=()=>{if(deedBuy(b.dataset.deed))draw()});
+  $("room").querySelectorAll("[data-deed]").forEach(b=>b.onclick=()=>{const k=b.dataset.deed;if(ownsDeed(k))return openProp(k,()=>openDeeds(back));if(deedBuy(k))draw()});$("dVis").onclick=()=>openPropVisits(()=>openDeeds(back));
   $("room").querySelectorAll("[data-nm]").forEach(b=>b.onclick=()=>{const k=b.dataset.nm,c=k.startsWith("lm_")?NAMEC.lm:NAMEC[k];if(S.cash<c)return;const v=prompt("New name (3 to 20 characters)","");if(v==null)return;const t=String(v).replace(/[<>]/g,"").trim().slice(0,20);if(t.length<3)return banner("Too short","r");S.cash-=c;S.names[k]=t;dirty=true;applyNames();SFX.level();banner("Renamed to "+t,"g");draw();updMini()})};draw()}
 /* ================= reputation: honest flips and helping people make you a Saint, fakes and lowballs a Shark ================= */
 const KT_N=["Shark","Hustler","Fair trader","Good egg","Saint"],KT_C=["#d6384b","#ff7a3d","#8a93a3","#2fbf71","#2a9df4"];
@@ -7901,6 +7903,7 @@ function nowItems(){const L=[],add=(ic,t,d,go,live)=>L.push({ic,t,d,go,live:!!li
   if(S.stall&&S.stall.it.length)add("🏪","Your stall · "+S.stall.it.length+" listed","You get paid next time you play after something sells",null);
   if(maeHere())add("🙏","Sister Mae is by the pond","She takes donations",()=>{closeRoom();target=[MAE.x,MAE.y];moving=true});if(knkHere())add("🦈","Knuckles is downtown","He buys fakes",()=>{closeRoom();target=[KNK.x,KNK.y];moving=true});
   {const best=NPCS.map(n=>[n,tHearts(n.n)]).sort((a,b)=>b[1]-a[1])[0];add("🧑‍🤝‍🧑","The locals",best&&best[1]?best[0].n+" is your closest friend · "+"♥".repeat(best[1]):"Ten people with their own routines. Chat to make friends",()=>openTownies(()=>openNow()))}
+  if(deedN())add("🛋️","Your buildings",deedN()+" owned · "+DEEDS.filter(d=>ownsDeed(d.k)).reduce((a,d)=>a+propN(d.k),0)+" pieces of decor. Decor raises their income",()=>openDeeds(()=>openNow()));
   if(S.w4&&S.w4.open)add("💎",(w4().vb||0)>Date.now()?"Your Frontier is boosted":"Visit a friend's Frontier",(w4().vb||0)>Date.now()?Math.ceil((w4().vb-Date.now())/6e4)+" min of +25% Gems left":"Leave a boost or a tip, once a day each",()=>{closeRoom();openW4Visits(closeRoom)});
   return L}
 function openNow(){room="now";$("room").hidden=false;const L=nowItems();
@@ -8015,6 +8018,42 @@ function openTownies(back){room="townies";$("room").hidden=false;
     <div class="perks">${NPCS.map(n=>{const P=tprof(n);if(!P)return "";const k=townSpot(n),h=tHearts(n.n);return `<button class="perk nopic" data-tw="${esc(n.n)}"><span class="t">${esc(n.n)} <span class="hearts">${"♥".repeat(h)}<i>${"♡".repeat(5-h)}</i></span></span><span class="d">${esc(P.job)} · ${k?(Math.hypot(n.x-PL[k].door[0],n.y-PL[k].door[1])<200?"at the ":"on the way to the ")+esc(PL[k].n):"wandering the streets"}</span><span class="c">Find</span></button>`}).join("")}</div></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back||closeRoom;
   $("room").querySelectorAll("[data-tw]").forEach(b=>b.onclick=()=>{const n=NPCS.find(x=>x.n===b.dataset.tw);if(!n)return;closeRoom();target=[n.x,n.y+20];moving=true;banner("Heading to "+n.n,"u")})}
+/* ================= decorate the buildings you own, and visit your friends' ================= */
+// prop/<name> is a snapshot of your decorated buildings; prop/<name>/v/<visitor> is a star someone left you.
+const DECOR=[["plant","🪴","Potted plant",.02],["lamp","💡","Floor lamp",.03],["rug","🟥","Red rug",.03],["books","📚","Bookshelf",.05],["sofa","🛋️","Sofa",.06],["art","🖼️","Painting",.08],["radio","📻","Old radio",.08],["fish","🐠","Aquarium",.12],["arcade","🕹️","Arcade cabinet",.14],["piano","🎹","Piano",.18],["statue","🗿","Statue",.22],["trophy","🏆","Trophy case",.3]];
+const PROP_COLS=5,PROP_ROWS=4,DECOR_K=.04;
+const propOf=k=>{S.prop=S.prop||{};return S.prop[k]=S.prop[k]||Array(PROP_COLS*PROP_ROWS).fill(0)};
+const propN=k=>((S.prop||{})[k]||[]).filter(Boolean).length;
+const propK=k=>1+DECOR_K*propN(k);
+const decorCost=(d,it)=>Math.max(100,Math.round(d.c*it[3]));
+let PROPSNAP=null,propT=15;
+function propSnap(){const o={};for(const d of DEEDS)if(ownsDeed(d.k)&&propN(d.k))o[d.k]=propOf(d.k).map(x=>x||0);return{n:mpName(),s:myShirt(),b:o,t:Date.now()}}
+setInterval(async()=>{if(!S||!playing||!crewCls()||!S.prop)return;propT-=10;if(propT>0)return;propT=300;const sn=propSnap();if(Object.keys(sn.b).length)netPut("prop/"+myKey(),sn);
+  const d=await netScan(NET+"prop/"+myKey()+"/v/");if(!d)return;for(const who in d){const v=d[who];netPut("prop/"+myKey()+"/v/"+who,null);if(!v||!PL[v.k])continue;const f=Math.round(Math.max(20,(S.fans||0)*.005));S.fans=(S.fans||0)+f;S.stats.propStars=(S.stats.propStars||0)+1;dirty=true;awayOr(String(v.n||who).slice(0,16)+" visited your "+PL[v.k].n+" and left a star · +"+fmtN(f)+" fans","g")}},10000);
+function propGrid(T,c,click){return `<div class="pgrid" style="--pw:${c}">${T.map((x,i)=>{const it=x&&DECOR.find(q=>q[0]===x);return `<button class="pt${it?" on":""}" ${click?`data-pt="${i}"`:"disabled"}>${it?it[1]:""}</button>`}).join("")}</div>`}
+function openProp(k,back){room="prop";$("room").hidden=false;let sel=null;const d=DEEDS.find(x=>x.k===k),p=PL[k];
+  const draw=()=>{const T=propOf(k),n=propN(k);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Your "+esc(p.n))}<div class="note">You own this place, so make it yours. Every piece of decor adds <b>+${DECOR_K*100}% to this building's income</b>. Friends online can drop by and leave a star.</div>
+      <div class="kv"><div><span class="eyebrow">Decor</span><b>${n}/${T.length}</b></div><div><span class="eyebrow">Income</span><b>${fmt(d.c*.0006*propK(k))}/min</b></div><div><span class="eyebrow">Boost</span><b>+${Math.round((propK(k)-1)*100)}%</b></div></div>
+      <div class="proom" style="--wc:${p.c}">${propGrid(T,PROP_COLS,1)}</div>
+      ${sel!=null?(T[sel]?`<div class="dcard"><span class="eyebrow">Tile ${sel+1}</span><b>${DECOR.find(q=>q[0]===T[sel])[2]}</b><button class="bigbtn alt2" id="pDel" style="margin-top:8px">Take it out<small>You get half back · ${fmt(Math.round(decorCost(d,DECOR.find(q=>q[0]===T[sel]))*.5))}</small></button></div>`
+        :`<div class="sechead"><h3>Put something here</h3><span class="eyebrow">Tile ${sel+1}</span></div><div class="perks">${DECOR.map(it=>`<button class="perk nopic" data-dec="${it[0]}" ${S.cash<decorCost(d,it)?"disabled":""}><span class="t">${it[1]} ${it[2]}</span><span class="d">+${DECOR_K*100}% income here</span><span class="c">${fmt(decorCost(d,it))}</span></button>`).join("")}</div>`):`<p class="fine">Tap a tile to decorate it.</p>`}</div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{sel=+b.dataset.pt;SFX.tick(.4);draw()});
+    $("room").querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{const it=DECOR.find(q=>q[0]===b.dataset.dec),c=decorCost(d,it);if(S.cash<c||sel==null||T[sel])return;S.cash-=c;T[sel]=it[0];dirty=true;propT=Math.min(propT,30);SFX.buy();banner(it[2]+" placed · "+p.n+" income +"+Math.round((propK(k)-1)*100)+"%","g");if(propN(k)===T.length)nlog(mpName()+" finished decorating the "+p.n);sel=null;draw();updMini()});
+    const del=$("pDel");if(del)del.onclick=()=>{const it=DECOR.find(q=>q[0]===T[sel]);if(!it)return;earn(Math.round(decorCost(d,it)*.5));T[sel]=0;dirty=true;SFX.tick(.6);sel=null;draw();updMini()}};draw()}
+function openPropVisits(back){room="propv";$("room").hidden=false;let view=null;
+  const draw=()=>{const me=myKey(),met=S.met||{};
+    if(view){const v=view,vis=(S.propVis||{})[v.who+"/"+v.k]===dayKey(),p=PL[v.k];$("room").innerHTML=`<div class="room-in scroll">${roomHead(esc(v.n)+"'s "+esc(p.n))}<div class="proom" style="--wc:${p.c}">${propGrid(v.T,PROP_COLS,0)}</div>
+      <button class="bigbtn" id="pvStar" ${vis?"disabled":""}>Leave a star<small>${vis?"You already did today":"They get fans next time they play"}</small></button></div>`;
+      $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{view=null;draw()};
+      $("pvStar").onclick=()=>{if(!netPut("prop/"+v.who+"/v/"+me,{n:mpName(),k:v.k,t:Date.now()}))return banner("Log in online to visit","r");S.propVis=S.propVis||{};S.propVis[v.who+"/"+v.k]=dayKey();dirty=true;karmaAdd(.5);vote(1);SFX.level();banner("You left "+v.n+" a star","g");draw()};return}
+    const L=PROPSNAP?Object.entries(PROPSNAP).filter(([k])=>k!==me).flatMap(([who,x])=>Object.entries(x.b).map(([k,T])=>({who,n:x.n,k,T,f:!!met[who]}))).filter(x=>PL[x.k]).sort((a,b)=>(b.f-a.f)||(b.T.filter(Boolean).length-a.T.filter(Boolean).length)):null;
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Friends' buildings")}<div class="note">Buildings other players own and have decorated. Leave a star on the ones you like, once a day each. People you've played with come first.</div>
+      <div class="perks">${L?L.slice(0,30).map((x,i)=>`<button class="perk nopic" data-pv="${i}"><span class="t">${esc(x.n)}'s ${esc(PL[x.k].n)}${x.f?" · friend":""}</span><span class="d">${x.T.filter(Boolean).length} pieces of decor · ${x.T.filter(Boolean).slice(0,6).map(t=>(DECOR.find(q=>q[0]===t)||["","?"])[1]).join(" ")}</span><span class="c">${(S.propVis||{})[x.who+"/"+x.k]===dayKey()?"Starred":"Visit"}</span></button>`).join("")||`<p class="fine">Nobody has decorated a building yet.</p>`:`<p class="fine">Looking around…</p>`}</div></div>`;
+    $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back;
+    $("room").querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>{view=L[+b.dataset.pv];SFX.door();draw()})};
+  draw();netScan(NET+"prop/").then(d=>{PROPSNAP={};if(d)for(const k in d){if(k.includes("/"))continue;const x=d[k];if(!x||typeof x.n!=="string"||!x.b)continue;const b={};for(const bk in x.b)if(PL[bk]&&Array.isArray(x.b[bk]))b[bk]=x.b[bk].slice(0,PROP_COLS*PROP_ROWS).map(t=>DECOR.some(q=>q[0]===t)?t:0);PROPSNAP[k]={n:x.n.slice(0,16),b}}if(room==="propv")draw()})}
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
