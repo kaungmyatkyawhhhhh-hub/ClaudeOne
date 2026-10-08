@@ -4,7 +4,8 @@
 --   1. start tools/gen_body_stages_receive.ps1 (a localhost receiver), turn on HttpService
 --   2. in the command bar: require(<this file as a ModuleScript>).Generate()
 --   3. turn HttpService off again
--- Writes Downloads\other_player_stages\other_player_stages_torso.obj and ..._body.obj and src Config/BodyStages.luau.
+-- Writes Downloads\other_player_stages\BS_<region>_<piece>_<stage>.obj (62 files, one mesh each: Import 3D merges a
+-- multi-object OBJ into one mesh) and src Config/BodyStages.luau.
 --
 -- A client holds at most 8 EditableMeshes (measured 8 Oct: count, not size) and your own body uses 7, so other players,
 -- NPCs, the statue and the mirror wear STATIC stage meshes (Shared.BodyStages), like the forearm / calf stages: per body
