@@ -22,8 +22,8 @@ local CREW = Social.Crew
 local CrewService = {}
 
 local remote -- RemoteEvent "Crew": client -> server (action, ...); server -> client ("Info", info) / ("Result", text)
-local crewStore = DataStoreService:GetDataStore("Crews")
-local scoreStore = DataStoreService:GetOrderedDataStore("CrewLeaderboard")
+local crewStore = DataStoreService:GetDataStore("CrewsV1") -- (V1: fresh for the release, 9 Oct)
+local scoreStore = DataStoreService:GetOrderedDataStore("CrewLeaderboardV1")
 local cache = {}   -- [crewId] = record (as last read or written by this server)
 local invites = {} -- [player] = { [crewId] = inviterName }
 local names = {}   -- [userId] = name

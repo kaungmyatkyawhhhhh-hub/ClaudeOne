@@ -20,17 +20,21 @@ local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
 
-local STORE_NAME = "PlayerData_1"
+local STORE_NAME = "GymArcDataStoreV1" -- (owner, 9 Oct: fresh store for the release; the old test saves stay in "PlayerData_1")
 local SESSION_ID = HttpService:GenerateGUID(false)
-local LOCK_EXPIRY = 300 -- seconds; a lock older than this belongs to a crashed server
+local LOCK_EXPIRY = 180 -- seconds; a lock older than this belongs to a crashed server (live locks are refreshed by every 60 s autosave)
 -- Studio playtests often stop before the lock is released; there, take over stale locks right away
 -- (live servers keep the full expiry so two real servers never share a save).
-if RunService:IsStudio() then
+local IS_STUDIO = RunService:IsStudio()
+if IS_STUDIO then
 	LOCK_EXPIRY = 0
+end
+local function newLock()
+	return { id = SESSION_ID, time = os.time(), studio = IS_STUDIO or nil }
 end
 local AUTOSAVE_INTERVAL = 60
 local BUDGET_RESERVE = 10 -- UpdateAsync requests kept free for loads and leave-saves before an autosave goes out
-local LOAD_ATTEMPTS = 6 -- waits for another server to release the lock (e.g. quick rejoin)
+local LOAD_ATTEMPTS = 12 -- waits (up to ~60 s, behind the loading screen) for another server to release the lock (e.g. quick rejoin)
 local LOAD_LOCK_WAIT = 5
 local CALL_ATTEMPTS = 5
 
@@ -100,12 +104,15 @@ local function load(player)
 			return store:UpdateAsync(storeKey(player), function(stored)
 				stored = stored or DataTemplate.new()
 				local lock = stored.sessionLock
-				if lock and lock.id ~= SESSION_ID and os.time() - lock.time < LOCK_EXPIRY then
+				-- a lock left by a Studio playtest never blocks a live server (Studio often stops before releasing it;
+				-- if that playtest is still running, its next save sees the new owner and stops saving)
+				local studioLock = type(lock) == "table" and lock.studio == true and not IS_STUDIO
+				if lock and lock.id ~= SESSION_ID and not studioLock and os.time() - lock.time < LOCK_EXPIRY then
 					lockedByOther = true
 					return nil
 				end
 				lockedByOther = false
-				stored.sessionLock = { id = SESSION_ID, time = os.time() }
+				stored.sessionLock = newLock()
 				return stored
 			end)
 		end)
@@ -123,9 +130,31 @@ end
 local savesInFlight = 0 -- saves currently talking to the DataStore (the shutdown handler waits for them)
 
 -- Saves through UpdateAsync, refusing to overwrite a session another server now owns.
+-- Clears this server's session lock without writing any data (sessions that don't save, e.g. Studio TestMuscleExp,
+-- must still let go of the save, or the next server waits out the lock and kicks the player).
+local function releaseLock(player)
+	savesInFlight += 1
+	local ok, err = withRetries(function()
+		return store:UpdateAsync(storeKey(player), function(stored)
+			if type(stored) ~= "table" or not stored.sessionLock or stored.sessionLock.id ~= SESSION_ID then return nil end
+			stored.sessionLock = nil
+			return stored
+		end)
+	end)
+	if not ok then warn("[PlayerData] Couldn't release the session lock for", player.Name, err) end
+	savesInFlight -= 1
+end
+
 local function save(player, release)
 	local profile = profiles[player]
-	if not profile or not profile.canSave or profile.released then return false end
+	if not profile or profile.released then return false end
+	if not profile.canSave then
+		if release and profile.ownsLock then
+			profile.released = true
+			releaseLock(player)
+		end
+		return false
+	end
 	if release then profile.released = true end
 	savesInFlight += 1
 
@@ -144,7 +173,7 @@ local function save(player, release)
 				return nil
 			end
 			local out = deepCopy(data)
-			out.sessionLock = (not release) and { id = SESSION_ID, time = os.time() } or nil
+			out.sessionLock = (not release) and newLock() or nil
 			return out
 		end)
 	end)
@@ -154,6 +183,7 @@ local function save(player, release)
 	elseif lostLock then
 		warn("[PlayerData] Session for", player.Name, "is owned by another server; not saving")
 		profile.canSave = false
+		profile.ownsLock = false
 		if player.Parent and not release then
 			player:Kick("You joined from another server. Please rejoin!")
 		end
@@ -163,8 +193,12 @@ local function save(player, release)
 end
 
 local function onPlayerAdded(player)
-	local data, reason = load(player)
+	-- Studio FreshPlayer sessions never touch the real save (not even its lock)
+	local fresh = IS_STUDIO and workspace:GetAttribute("FreshPlayer") == true
+	local data, reason
+	if not fresh then data, reason = load(player) end
 	local canSave = data ~= nil
+	local ownsLock = data ~= nil
 
 	if not player.Parent then
 		-- Left while loading: release the lock we just took.
@@ -176,7 +210,7 @@ local function onPlayerAdded(player)
 		return
 	end
 
-	if not data then
+	if not data and not fresh then
 		if RunService:IsStudio() then
 			warn("[PlayerData] Using temporary data in Studio (" .. reason .. "). Progress will NOT save.")
 			data = DataTemplate.new()
@@ -190,7 +224,7 @@ local function onPlayerAdded(player)
 
 	-- Studio testing: a "FreshPlayer" attribute (checked) on Workspace plays as a brand-new player (4'0", level 0,
 	-- tutorial) on temporary data that is never saved, so the real save stays untouched. Ignored on live servers.
-	if RunService:IsStudio() and workspace:GetAttribute("FreshPlayer") then
+	if fresh then
 		warn("[PlayerData] FreshPlayer: playing as a new player on temporary data. Progress will NOT save.")
 		data = DataTemplate.new()
 		canSave = false
@@ -297,7 +331,7 @@ local function onPlayerAdded(player)
 	end
 	data.meta.sessions += 1
 
-	profiles[player] = { data = data, canSave = canSave }
+	profiles[player] = { data = data, canSave = canSave, ownsLock = ownsLock }
 	PlayerData.RefreshMaxStamina(player)
 	player:SetAttribute("DataLoaded", true)
 	loadedEvent:Fire(player, data)

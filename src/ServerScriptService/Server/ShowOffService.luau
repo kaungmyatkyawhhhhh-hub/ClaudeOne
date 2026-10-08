@@ -69,7 +69,7 @@ end
 ------------------------------------------------------------------------
 local function store(key)
 	if not stores[key] then
-		stores[key] = DataStoreService:GetOrderedDataStore("Leaderboard_" .. key)
+		stores[key] = DataStoreService:GetOrderedDataStore("LeaderboardV1_" .. key) -- (V1: fresh for the release, 9 Oct)
 	end
 	return stores[key]
 end
