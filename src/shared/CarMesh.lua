@@ -465,17 +465,25 @@ end
 -- per-car styling (keys override the class defaults)
 local DESIGNS: { [string]: Design } = {
 	aurelia_s4 = {},
-	meridian_lx = { grille = "upright", head = "slim", tailLamp = "bar", wheel = "multi", rim = { 210, 212, 216 }, noseW = 0.9, hoodK = 2.0 },
+	-- full-size muscle sedan: blunt nose, wide black mouth, racetrack tail lamp
+	meridian_lx = {
+		noseH = 2.42, noseB = 0.8, noseW = 0.93, noseLen = 0.75, faceLen = 0.4, hoodK = 2.6, cowlDrop = -0.05,
+		shoulderDrop = 0.24, tumble = 0.1, topIn = 0.24, tailW = 0.93, tailLen = 0.7, tailFace = 0.4, tailH = 2.86, ducktail = 0.08,
+		grille = "charger", head = "angular", tailLamp = "race", wheel = "five", rim = { 196, 198, 204 }, caliper = { 200, 30, 30 },
+		exhaust = "dual", chromeDLO = false, flareF = 0.06, flareR = 0.08, splitter = true,
+	},
+	-- compact M coupe-saloon: tall kidneys, yellow DRLs, bronze wheels
 	kensho_m5 = {
-		grille = "kidney", head = "angel", tailLamp = "split", wheel = "y5", rim = { 34, 34, 38 }, caliper = { 20, 80, 220 },
-		exhaust = "quad", skirt = true, splitter = true, diffuser = true, flareF = 0.1, flareR = 0.12, ducktail = 0.1, chromeDLO = false,
+		grille = "kidneyTall", head = "m2", drl = { 255, 196, 20 }, tailLamp = "split", wheel = "y5", rim = { 150, 112, 62 }, caliper = { 20, 80, 220 },
+		exhaust = "quad", skirt = true, splitter = true, diffuser = true, flareF = 0.16, flareR = 0.2, ducktail = 0.12, chromeDLO = false,
+		noseH = 2.3, noseW = 0.9, noseLen = 0.9, hoodK = 2.2, blackPillars = true, roofLayer = "Trim",
 	},
 	-- late-90s JDM coupe: upright nose, boxy body, quad round tail lamps, wing, livery
 	strada_c2 = {
 		noseW = 0.93, noseLen = 0.55, nosePow = 2, faceLen = 0.35, noseH = 2.12, noseB = 0.75, hoodK = 2.6, cowlDrop = -0.03,
 		shoulderDrop = 0.22, tumble = 0.08, topIn = 0.22, tailW = 0.94, tailLen = 0.55, tailFace = 0.35, tailH = 2.55,
 		grille = "jdm", head = "jdm", tailLamp = "rings", wheel = "six", rim = { 26, 26, 30 }, caliper = { 200, 30, 30 },
-		wing = "gt", livery = "stripes", flareF = 0.06, flareR = 0.08, fastK = 1.05, tumbleG = 0.4, roofSag = 0.06,
+		wing = "gt", livery = "twin", liveryW = 0.36, liveryGap = 0.1, sideSwoosh = true, flareF = 0.06, flareR = 0.08, fastK = 1.05, tumbleG = 0.4, roofSag = 0.06,
 	},
 	-- widebody GT: huge bolt-on flares, big mesh grille, carbon hood, wing
 	kaizen_rz = {
@@ -484,13 +492,39 @@ local DESIGNS: { [string]: Design } = {
 		wing = "gt", accentHood = true, flareF = 0.34, flareR = 0.4, skirt = true, splitter = true, diffuser = true, exhaust = "quad",
 		fastK = 1.35, tumbleG = 0.55, rimFrac = 0.74,
 	},
+	-- widebody muscle coupe: long flat hood with a big scoop, quad halo lamps in a full-width grille
+	brute_srx = {
+		noseH = 2.6, noseB = 0.72, noseW = 0.95, noseLen = 0.5, nosePow = 2, faceLen = 0.3, hoodK = 3.2, cowlDrop = -0.06,
+		shoulderDrop = 0.22, tumble = 0.06, topIn = 0.18, tuck = 0.22, midF = 0.45,
+		tailH = 2.95, tailB = 0.75, tailW = 0.95, tailLen = 0.45, tailFace = 0.3, deckH = 2.96, ducktail = 0.07,
+		roofSag = 0.05, wsK = 1.7, fastK = 1.1, tumbleG = 0.42, roofCrown = 0.08,
+		flareF = 0.3, flareR = 0.36, grille = "muscle", head = "muscle", halo = true, tailLamp = "full",
+		wheel = "multi", rim = { 20, 20, 22 }, caliper = { 210, 30, 30 }, rimFrac = 0.74, exhaust = "dual",
+		scoop = "big", skirt = true, splitter = true, diffuser = false, chromeDLO = false,
+	},
+	-- '69 restomod: full-width chrome-framed grille, quad round lamps, twin stripes, wide arches
+	outlaw_69 = {
+		noseH = 2.5, noseB = 0.62, noseW = 0.97, noseLen = 0.35, nosePow = 2, faceLen = 0.22, hoodK = 4, cowlDrop = -0.04,
+		shoulderDrop = 0.16, tumble = 0.05, topIn = 0.14, tuck = 0.26, midF = 0.5,
+		tailH = 2.82, tailB = 0.62, tailW = 0.96, tailLen = 0.35, tailFace = 0.25, deckH = 2.84, ducktail = 0.12,
+		roofSag = 0.04, wsK = 1.8, fastK = 1.0, tumbleG = 0.38, roofCrown = 0.06,
+		flareF = 0.36, flareR = 0.44, grille = "classic", head = "muscle", tailLamp = "full",
+		wheel = "multi", rim = { 60, 62, 68 }, caliper = { 220, 220, 224 }, rimFrac = 0.74, exhaust = "dual",
+		scoop = "low", livery = "twin", liveryW = 0.34, liveryGap = 0.16, skirt = true, splitter = true, diffuser = false,
+		chromeDLO = false, blackPillars = false,
+	},
 	atlas_x7 = {},
 	monolith_gt = {
 		grille = "hex", head = "y", tailLamp = "y", wheel = "multi", rim = { 26, 26, 30 }, caliper = { 255, 180, 0 },
 		fastK = 1.5, exhaust = "quad", skirt = true, splitter = true, flareF = 0.16, flareR = 0.18, rails = false, chromeDLO = false,
 		hoodVents = true, noseH = 3.15, cowlDrop = 0.04,
 	},
-	vortex_v10 = { head = "y", tailLamp = "y", wheel = "y5", rim = { 28, 28, 32 }, caliper = { 255, 200, 0 } },
+	-- mid-engine British-style: eye-socket lamps, smooth nose, black roof, deep side channels
+	vortex_v10 = {
+		head = "eye", tailLamp = "thin", wheel = "y5", rim = { 28, 28, 32 }, caliper = { 255, 200, 0 },
+		noseH = 0.95, noseW = 0.7, nosePow = 1.9, noseLen = 1.4, cowlDrop = 0.06, roofLayer = "Trim", louvres = false,
+		hoodVents = true, exhaust = "center", tailFace = 0.8,
+	},
 	-- V12 wedge: knife nose, faceted V hood, Y lamps, huge side scoops, wing
 	spectre_720 = {
 		noseH = 0.86, noseB = 0.48, noseW = 0.66, noseLen = 1.45, nosePow = 1.1, hoodK = 1.15, cowlDrop = 0.18,
@@ -506,7 +540,19 @@ local DESIGNS: { [string]: Design } = {
 		grille = "horseshoe", head = "quad", tailLamp = "bar", wheel = "turbine", rim = { 175, 178, 186 }, caliper = { 20, 40, 120 },
 		cline = true, roofLayer = "Accent", wing = "none", ducktail = 0.1, noseW = 0.7, nosePow = 1.8, cowlDrop = 0.04, blackPillars = false,
 	},
-	eclipse_jx = { head = "slim", tailLamp = "bar", wheel = "multi", rim = { 22, 22, 26 }, caliper = { 150, 60, 255 }, wing = "big", stripe = true },
+	-- Swedish-style megacar: swan-neck wing, roof scoop, slim vertical lamps, centre-lock wheels
+	eclipse_jx = {
+		head = "slim", tailLamp = "thin", wheel = "turbine", rim = { 22, 22, 26 }, caliper = { 255, 120, 20 }, wing = "swan",
+		roofScoop = true, noseH = 0.92, noseW = 0.66, nosePow = 1.5, cowlDrop = 0.12, hoodVents = true, roofLayer = "Trim",
+		exhaust = "center",
+	},
+	-- Italian-style coachbuilt hypercar: purple carbon, gold pinlines, portholes, long tail
+	velluto_p7 = {
+		head = "slim", tailLamp = "rings", wheel = "multi", rim = { 34, 30, 26 }, caliper = { 206, 156, 58 }, wing = "none",
+		sideIntake = "oval", goldLine = true, noseH = 0.9, noseW = 0.6, noseLen = 1.7, nosePow = 1.25, cowlDrop = 0.16,
+		fenderF = 0.22, fenderR = 0.2, waist = 0.34, ducktail = 0.2, tailLen = 1.3, tailW = 0.84, roofLayer = "Paint",
+		blackPillars = false, louvres = false, exhaust = "center", hoodVents = false,
+	},
 }
 
 function CarMesh.design(id: string, class: string, D: { [string]: number }): Design
@@ -596,9 +642,10 @@ end
 ---------------------------------------------------------------------
 type Dims = { [string]: number }
 
-function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Layers
+function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): (Layers, { [string]: any })
 	local ds = CarMesh.design(id, class, D)
 	local layers: Layers = {}
+	local meta: { [string]: any } = {} -- plate: CFrame of the rear plate (looking out of the car)
 	local L, W, H = D.L, D.W, D.H
 	local hw = W / 2
 	local zF, zB = -L / 2, L / 2
@@ -962,6 +1009,47 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 	local faceBot = yBot(zF)
 	local noseFaceH = faceTop - faceBot
 
+	-- raised hood scoop: a hump on the hood surface, open at the front
+	local scoop = ds.scoop
+	local sz0, sz1, sxw, sh = 0, 0, 0, 0
+	if scoop == "big" then
+		sz0, sz1, sxw, sh = lerp(zF, zWs, 0.3), zWs - 0.35, 0.95, 0.3
+	elseif scoop == "low" then
+		sz0, sz1, sxw, sh = lerp(zF, zWs, 0.42), zWs - 0.5, 0.62, 0.13
+	end
+	local function hump(x: number, z: number): number
+		if sh <= 0 or z < sz0 or z > sz1 then
+			return 0
+		end
+		local sx = clamp01(1 - (math.abs(x) / sxw) ^ 4) ^ 0.5
+		local t = (z - sz0) / (sz1 - sz0)
+		return sh * sx * sstep(0, 0.07, t) * (1 - sstep(0.35, 1, t))
+	end
+	local function hoodTop(x: number, z: number): (Vector3?, Vector3?)
+		local p, nn = topF(x, z)
+		if not p then
+			return nil, nil
+		end
+		local h = hump(x, z)
+		if h <= 0 then
+			return p, nn
+		end
+		return p + UP * h, nil
+	end
+	if sh > 0 then
+		local zs0 = sz0 + (sz1 - sz0) * 0.07
+		local HF = function(z: number, x: number)
+			return hoodTop(x, z)
+		end
+		local function capHint(p: Vector3): Vector3
+			return V3(p.X / sxw * 1.5, 1, 0).Unit
+		end
+		patch(layers, "Paint", HF, zs0, sz1, rect(0, sxw), n(18), n(10), 0.01, true, capHint)
+		patch(layers, "Trim", HF, sz0, zs0, rect(0, sxw), 2, n(10), 0.01, true, function()
+			return V3(0, 0.2, -1).Unit
+		end)
+	end
+
 	-----------------------------------------------------------------
 	-- Interior tub (seen through the glass), wheel wells, underbody
 	-----------------------------------------------------------------
@@ -1145,6 +1233,41 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 				box(layers, "Trim", CFrame.new(p + V3(0.15, 0, -0.05)) * CFrame.Angles(0, 0.25, -0.25), V3(0.55, 0.04, 0.3), true)
 			end
 		end
+	elseif grille == "kidneyTall" then
+		-- tall frameless kidneys with horizontal slats
+		local x0, x1 = 0.1, tipW * 0.4
+		local shape = lens(x0, x1, faceBot + 0.3, faceTop - 0.03, faceBot + 0.36, faceTop - 0.08, 0.22)
+		chromeFrame(frontF, x0, x1, shape, 0.03)
+		patch(layers, "Trim", frontF, x0, x1, shape, n(10), n(8), 0.026, true, outward)
+		for i = 1, (if lite then 0 else 6) do
+			local y = lerp(faceBot + 0.36, faceTop - 0.1, i / 7)
+			patch(layers, "Trim", frontF, x0 + 0.04, x1 - 0.04, rect(y - 0.018, y + 0.018), n(6), 1, 0.04, true, outward)
+		end
+	elseif grille == "charger" then
+		-- one wide black mouth between the lamps + fog lamps low down
+		local gw = tipW * 0.5
+		local g0, g1 = faceTop - 0.56, faceTop - 0.07
+		local shape = lens(-gw, gw, g0, g1, g0 + 0.1, g1, 0.14)
+		chromeFrame(frontF, 0, gw, shape, 0.035)
+		patch(layers, "Trim", frontF, 0, gw, shape, n(16), n(6), 0.026, true, outward)
+		patch(layers, "Trim", frontF, tipW * 0.74, tipW * 0.94, lens(tipW * 0.74, tipW * 0.94, faceBot + 0.2, faceBot + 0.44, faceBot + 0.22, faceBot + 0.42, 0.3), n(6), n(3), 0.02, true, outward)
+		patch(layers, "Lamp", frontF, tipW * 0.8, tipW * 0.88, circle(tipW * 0.84, faceBot + 0.32, 0.06), n(6), n(3), 0.03, true, outward)
+	elseif grille == "muscle" or grille == "classic" then
+		-- full-width black grille band carrying the lamps, big lower mouth
+		local gw = tipW * 0.97
+		local g0, g1 = faceTop - 0.62, faceTop - 0.05
+		if grille == "classic" then
+			chromeFrame(frontF, 0, gw, rect(g0, g1), 0.06)
+		end
+		patch(layers, "Trim", frontF, 0, gw, rect(g0, g1), n(18), n(5), 0.026, true, outward)
+		if not lite then
+			for i = 1, 3 do
+				local y = lerp(g0, g1, i / 4)
+				patch(layers, if grille == "classic" then "Chrome" else "Trim", frontF, 0, tipW * 0.42, rect(y - 0.014, y + 0.014), n(8), 1, 0.032, true, outward)
+			end
+		end
+		local mw = tipW * 0.72
+		patch(layers, "Trim", frontF, 0, mw, lens(-mw, mw, faceBot + 0.08, faceBot + 0.44, faceBot + 0.12, faceBot + 0.4, 0.1), n(16), n(4), 0.024, true, outward)
 	elseif grille == "hex" then
 		local gw = tipW * 0.62
 		local shape = lens(-gw, gw, faceBot + 0.15, faceTop - 0.1, faceBot + 0.4, faceTop - 0.05, 0.1)
@@ -1173,7 +1296,7 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			local y = (by0 + by1) / 2
 			patch(layers, "Paint", frontF, ix0 + 0.1, ix1 - 0.1, rect(y - 0.03, y + 0.03), n(10), 1, 0.03, true, outward)
 		end
-	elseif grille ~= "hex" and grille ~= "jdm" and grille ~= "gt" then
+	elseif grille ~= "hex" and grille ~= "jdm" and grille ~= "gt" and grille ~= "muscle" and grille ~= "classic" then
 		local iw = tipW * 0.66
 		patch(layers, "Trim", frontF, 0, iw, lens(-iw, iw, faceBot + 0.06, faceBot + 0.3, faceBot + 0.08, faceBot + 0.26, 0.12), n(14), n(4), 0.02, true, outward)
 	end
@@ -1236,8 +1359,27 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			patch(layers, "Lamp", TF, p.X - 0.08, p.X + 0.08, rect(p.Y - 0.1, p.Y + 0.1), 2, 2, 0.034, true, upward)
 		end
 	end
+	-- muscle cars: quad round lamps sitting in the grille band, optional halos
+	if not isSuper and ds.head == "muscle" then
+		local g0, g1 = faceTop - 0.62, faceTop - 0.05
+		local yc = (g0 + g1) / 2
+		local r = math.min(0.2, (g1 - g0) / 2 - 0.05)
+		for _, f in { 0.6, 0.83 } do
+			local xc = tipW * f
+			patch(layers, "Chrome", frontF, xc - r - 0.04, xc + r + 0.04, circle(xc, yc, r + 0.04), n(10), n(4), 0.03, true, outward)
+			patch(layers, "Lamp", frontF, xc - r, xc + r, circle(xc, yc, r), n(10), n(4), 0.038, true, outward)
+			if ds.halo then
+				local ring = {}
+				for k = 0, 20 do
+					local a = k / 20 * math.pi * 2
+					table.insert(ring, V3(xc + math.cos(a) * (r + 0.1), yc + math.sin(a) * (r + 0.1), 0))
+				end
+				stroke(layers, "Lamp", frontF, ring, 0.035, 0.034, true, outward)
+			end
+		end
+	end
 	-- headlights (placed on the upper nose corners)
-	if not isSuper then
+	if not isSuper and ds.head ~= "muscle" then
 		local style = ds.head
 		local hx0, hx1 = tipW * 0.5, tipW * 0.98
 		local ylo, yhi
@@ -1328,6 +1470,16 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			dot(x, y + 0.02, 0.08)
 			local x2, y2 = mid(0.3)
 			dot(x2, y2 + 0.04, 0.07)
+		elseif style == "m2" then
+			-- coloured DRL along the top edge hooking down at the inner end, two projectors
+			local function drl(path: { Vector3 })
+				stroke(layers, "Drl", frontF, path, 0.055, 0.036, true, outward)
+			end
+			drl({ edge(0.94, true, 0.06), edge(0.3, true, 0.06), edge(0.1, false, 0.07) })
+			local x1, y1 = mid(0.48)
+			local x2, y2 = mid(0.74)
+			dot(x1, y1 - 0.03, 0.08)
+			dot(x2, y2 - 0.03, 0.08)
 		elseif style == "quad" then
 			for i = 0, 3 do
 				local x = lerp(hx0, hx1, 0.16 + i * 0.22)
@@ -1374,7 +1526,25 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			patch(layers, if isSuper then "Trim" else "Chrome", sideF, z - 0.28, z + 0.28, lens(z - 0.28, z + 0.28, hy - 0.05, hy + 0.05, hy - 0.05, hy + 0.05, 0.3), 4, 2, 0.02, true, outward)
 		end
 	end
-	if ds.sideIntake then
+	if ds.sideIntake == "oval" then
+		-- oval porthole intake with a contrasting rim
+		local rw = wheels[2]
+		local zc = lerp(zRoofEnd - 0.6, rw.z - rw.arch - 0.1, 0.5)
+		local yc = lerp(yBot(zc), yEdge(zc), 0.6)
+		local rz, ry = 0.62, 0.32
+		local function ell(z: number): (number, number)
+			local t = (z - zc) / rz
+			local h = ry * math.sqrt(math.max(0, 1 - t * t))
+			return yc - h, yc + h
+		end
+		patch(layers, "Trim", sideF, zc - rz, zc + rz, ell, n(14), n(6), 0.018, true, outward)
+		local ring = {}
+		for k = 0, 24 do
+			local a = k / 24 * math.pi * 2
+			table.insert(ring, V3(zc + math.cos(a) * (rz + 0.04), yc + math.sin(a) * (ry + 0.04), 0))
+		end
+		stroke(layers, "Accent", sideF, ring, 0.05, 0.026, true, outward)
+	elseif ds.sideIntake then
 		-- big scoop ahead of the rear wheel
 		local rw = wheels[2]
 		local z0, z1 = zRoofEnd - 1.0, rw.z - rw.arch - 0.1
@@ -1400,18 +1570,46 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 	if ds.stripe then
 		stroke(layers, "Accent", sideF, { V3(zF + 1.4, yEdge(zF + 1.4) - 0.1, 0), V3(zB - 1.0, yEdge(zB - 1.0) - 0.1, 0) }, 0.05, 0.012, true, outward, 60)
 	end
-	if ds.livery == "stripes" and not lite then
-		-- blue livery: long arrows along the lower side and over the arches
-		local function stripe(z0: number, z1: number, y0: number, y1: number, w: number)
-			stroke(layers, "Accent", sideF, { V3(z0, y0, 0), V3(z1, y1, 0) }, w, 0.014, true, outward, 40)
+	if ds.livery == "twin" then
+		-- twin racing stripes over the nose, hood (and scoop), roof and deck
+		local x0 = (ds.liveryGap or 0.12) / 2
+		local x1 = x0 + (ds.liveryW or 0.36)
+		local T = function(z: number, x: number)
+			return hoodTop(x, z)
 		end
-		local yl = clr + 0.75
-		stripe(zF + 1.0, zB - 1.4, yl, yl + 0.3, 0.12)
-		stripe(zF + 2.2, zB - 2.2, yl + 0.22, yl + 0.55, 0.08)
-		for i = 0, 3 do
-			local z = doorFront + 0.6 + i * 0.45
-			stroke(layers, "Accent", sideF, { V3(z, yl + 0.2, 0), V3(z + 0.55, yEdge(z) - 0.2, 0) }, 0.07, 0.014, true, outward, 16)
+		for _, seg in { { zF + 0.1, zWs - 0.05 }, { zRoofA + 0.03, zRoofB - 0.03 }, { zRearEnd + 0.06, zB - 0.06 } } do
+			if seg[2] > seg[1] then
+				patch(layers, "Accent", T, seg[1], seg[2], rect(x0, x1), n(28), 2, 0.014, true, upward)
+			end
 		end
+		patch(layers, "Accent", frontF, x0, x1, rect(faceBot + 0.04, faceTop + 0.1), 2, n(10), 0.014, true, outward)
+	end
+	if ds.sideSwoosh and not lite then
+		-- sweeping graphic rising from the front arch to the rear quarter
+		local zA = wheels[1].z + wheels[1].arch + 0.15
+		local zC = wheels[2].z - wheels[2].arch - 0.15
+		local yl = yBot(zA) + 0.45
+		local path = {}
+		for i = 0, 12 do
+			local t = i / 12
+			local z = lerp(zA, zC, t)
+			table.insert(path, V3(z, yl + 0.55 * t ^ 1.8, 0))
+		end
+		stroke(layers, "Accent", sideF, path, 0.2, 0.014, true, outward, 48)
+		local path2 = {}
+		for _, p in path do
+			table.insert(path2, V3(p.X, p.Y + 0.24, 0))
+		end
+		stroke(layers, "Accent", sideF, path2, 0.07, 0.014, true, outward, 48)
+	end
+	if ds.goldLine then
+		-- thin contrasting pinlines along the sill, the front lip and the tail
+		local zA = wheels[1].z + wheels[1].arch + 0.12
+		local zC = wheels[2].z - wheels[2].arch - 0.12
+		stroke(layers, "Accent", sideF, { V3(zA, yBot(zA) + 0.32, 0), V3(zC, yBot(zC) + 0.32, 0) }, 0.035, 0.02, true, outward, 40)
+		stroke(layers, "Accent", frontF, { V3(0, faceBot + 0.12, 0), V3(tipW * 0.92, faceBot + 0.2, 0) }, 0.035, 0.03, true, outward, 24)
+		local yt = yBot(zB) + 0.55
+		stroke(layers, "Accent", rearF, { V3(0, yt, 0), V3(tailW * 0.9, yt + 0.04, 0) }, 0.035, 0.03, true, outward, 24)
 	end
 	if not isSuper and not lite then
 		local zm = wheels[1].z + wheels[1].arch + 0.35
@@ -1462,6 +1660,32 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 				end
 				stroke(layers, "Tail", rearF, ring, r * 0.42, 0.03, true, outward)
 			end
+		elseif style == "race" or style == "full" then
+			-- full-width lamp: a "racetrack" outline, or a solid bar with a centre badge gap
+			local y0, y1 = ty1 - 0.5, ty1
+			if ds.grille == "classic" then
+				chromeFrame(rearF, 0, tailW * 0.97, rect(y0, y1), 0.05)
+			end
+			patch(layers, "Trim", rearF, 0, tailW * 0.97, rect(y0, y1), n(18), n(3), 0.016, true, outward)
+			if style == "race" then
+				local x1, yt, yb2 = tailW * 0.93, y1 - 0.08, y0 + 0.08
+				local rr = (yt - yb2) / 2
+				local path = { V3(0, yt, 0) }
+				for k = 0, 10 do
+					local a = math.pi / 2 - k / 10 * math.pi
+					table.insert(path, V3(x1 - rr + math.cos(a) * rr, (yt + yb2) / 2 + math.sin(a) * rr, 0))
+				end
+				table.insert(path, V3(0, yb2, 0))
+				stroke(layers, "Tail", rearF, path, 0.06, 0.03, true, outward)
+			else
+				patch(layers, "Tail", rearF, tailW * 0.12, tailW * 0.95, rect(y0 + 0.08, y1 - 0.08), n(14), 1, 0.03, true, outward)
+				if not lite then
+					for i = 1, 3 do
+						local x = lerp(tailW * 0.12, tailW * 0.95, i / 4)
+						patch(layers, "Trim", rearF, x - 0.02, x + 0.02, rect(y0 + 0.06, y1 - 0.06), 1, 1, 0.036, true, outward)
+					end
+				end
+			end
 		elseif style == "tri" then
 			tailBand(tailW * 0.42, tailW * 0.99, ty0, ty1)
 			for i = 0, 2 do
@@ -1475,6 +1699,10 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 		if ds.plate then
 			local yb = yBot(zB)
 			local py = lerp(yb, ty0, 0.55)
+			local pp, pn = rearF(0, py)
+			if pp then
+				meta.plate = CFrame.lookAt(pp + (pn or V3(0, 0, 1)) * 0.035, pp + (pn or V3(0, 0, 1)) * 2)
+			end
 			patch(layers, "Trim", rearF, 0, 0.66, rect(py - 0.24, py + 0.24), n(4), 2, 0.018, true, outward)
 			patch(layers, "Plate", rearF, 0, 0.6, rect(py - 0.19, py + 0.19), n(4), 2, 0.028, true, outward)
 		end
@@ -1490,9 +1718,12 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 		else
 			tips = { { tailW * 0.62, yb + 0.18, 0.15 } }
 		end
+		meta.exhausts = {}
 		for _, t in tips do
 			local x, y, r = t[1], t[2], t[3]
 			local p = rearF(x, y) or V3(x, y, zB)
+			table.insert(meta.exhausts, V3(x, y, p.Z + 0.12))
+			table.insert(meta.exhausts, V3(-x, y, p.Z + 0.12))
 			local cf = CFrame.fromMatrix(V3(x, y, p.Z - 0.25), V3(0, 0, 1), UP)
 			revolve(layers, "Chrome", cf, { V3(0, r * 0.82, 0), V3(0.36, r * 0.86, 0), V3(0.38, r, 0), V3(0, r, 0) }, if lite then 10 else 18, true)
 			annulus(layers, "Trim", cf * CFrame.new(0.3, 0, 0), 0, r * 0.82, if lite then 8 else 14, 1, true)
@@ -1536,11 +1767,12 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			box(layers, "Trim", CFrame.new(path[i] - UP * 0.07), V3(0.12, 0.14, 0.3), true)
 		end
 	end
-	if ds.wing == "big" or ds.wing == "gt" then
-		local big = ds.wing == "big"
+	if ds.wing == "big" or ds.wing == "gt" or ds.wing == "swan" then
+		local big = ds.wing ~= "gt"
+		local swan = ds.wing == "swan"
 		local span = hw - (if big then 0.15 else 0.3)
 		local wz = zB - (if big then 0.85 else 0.7)
-		local wy = yEdge(wz) + (if big then 0.95 else 0.75)
+		local wy = yEdge(wz) + (if swan then 1.2 elseif big then 0.95 else 0.75)
 		local chord = if big then 1.25 else 0.95
 		local foil = {}
 		for i = 0, 10 do
@@ -1556,12 +1788,28 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 		local plate = { V3(-0.35, -chord / 2 - 0.1, 0), V3(0.22, -chord / 2 + 0.1, 0), V3(0.22, chord / 2 + 0.15, 0), V3(-0.25, chord / 2 + 0.05, 0) }
 		extrude(layers, "Trim", CFrame.new(span, wy, wz), plate, -0.04, 0.04, true)
 		local x = hw * 0.4
-		local p0 = (topF(x, wz + 0.3)) or V3(x, yEdge(wz), wz + 0.3)
-		local p1 = V3(x, wy + 0.04, wz - 0.1)
-		box(layers, "Trim", CFrame.lookAt((p0 + p1) / 2, p1), V3(0.07, 0.22, (p1 - p0).Magnitude), true)
+		if swan then
+			-- swan-neck struts hang the wing from above
+			local p0 = (topF(x, wz + 0.5)) or V3(x, yEdge(wz), wz + 0.5)
+			local p1 = V3(x, wy + 0.32, wz + 0.25)
+			local p2 = V3(x, wy + 0.08, wz - 0.2)
+			box(layers, "Trim", CFrame.lookAt((p0 + p1) / 2, p1), V3(0.07, 0.24, (p1 - p0).Magnitude + 0.06), true)
+			box(layers, "Trim", CFrame.lookAt((p1 + p2) / 2, p2), V3(0.07, 0.2, (p2 - p1).Magnitude + 0.06), true)
+		else
+			local p0 = (topF(x, wz + 0.3)) or V3(x, yEdge(wz), wz + 0.3)
+			local p1 = V3(x, wy + 0.04, wz - 0.1)
+			box(layers, "Trim", CFrame.lookAt((p0 + p1) / 2, p1), V3(0.07, 0.22, (p1 - p0).Magnitude), true)
+		end
 		if class == "Hypercar" then
 			box(layers, "Accent", CFrame.new(span - 0.02, wy + 0.03, wz) * CFrame.Angles(math.rad(-8), 0, 0), V3(0.1, 0.05, chord + 0.04), true)
 		end
+	end
+	if ds.roofScoop then
+		-- periscope intake on the roof
+		local z = zRoofB - 0.2
+		local y = roofLine(z) or roofTop
+		extrude(layers, "Trim", CFrame.new(0, y - 0.04, z), { V3(-0.02, -0.55, 0), V3(0.26, -0.45, 0), V3(0.3, 0.4, 0), V3(-0.02, 0.6, 0) }, -0.36, 0.36, false)
+		box(layers, "Interior", CFrame.new(0, y + 0.13, z - 0.47), V3(0.6, 0.2, 0.04), false)
 	end
 	if not isSuper and not lite then
 		-- shark fin antenna
@@ -1575,7 +1823,7 @@ function CarMesh.build(id: string, class: string, D: Dims, lite: boolean?): Laye
 			layers[name] = nil
 		end
 	end
-	return layers
+	return layers, meta
 end
 
 ---------------------------------------------------------------------

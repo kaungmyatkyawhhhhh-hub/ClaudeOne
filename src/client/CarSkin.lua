@@ -35,6 +35,7 @@ local LOOKS: { [string]: Look } = {
 	Glass = { material = Enum.Material.Glass, color = Color3.fromRGB(12, 16, 22), reflectance = 0.25, transparency = 0.25, shadow = false },
 	Lamp = { material = Enum.Material.Neon, color = Color3.fromRGB(236, 243, 255), reflectance = 0, transparency = 0, shadow = false },
 	Tail = { material = Enum.Material.Neon, color = Color3.fromRGB(150, 0, 6), reflectance = 0, transparency = 0, shadow = false },
+	Drl = { material = Enum.Material.Neon, reflectance = 0, transparency = 0, shadow = false },
 	Plate = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(232, 232, 228), reflectance = 0, transparency = 0, shadow = false },
 	Interior = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(22, 22, 26), reflectance = 0, transparency = 0, shadow = false },
 	Tire = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(20, 20, 22), reflectance = 0, transparency = 0, shadow = true },
@@ -43,6 +44,7 @@ local LOOKS: { [string]: Look } = {
 }
 
 local bodyCache: { [string]: { [string]: Template } | false } = {}
+local bodyMeta: { [string]: { [string]: any } } = {}
 local wheelCache: { [string]: { [string]: Template } | false } = {}
 local keepAlive: { any } = {} -- EditableMeshes must stay alive while their MeshParts render
 local warned = false
@@ -93,7 +95,8 @@ local function bodyFor(id: string, class: string, lite: boolean): { [string]: Te
 		return if cached then cached else nil
 	end
 	local ok, result = pcall(function()
-		local layers = CarMesh.build(id, class, CarBuilder.getDims(class) :: any, lite)
+		local layers, meta = CarMesh.build(id, class, CarBuilder.getDims(class, id) :: any, lite)
+		bodyMeta[key] = meta
 		local out = {}
 		for name, layer in layers do
 			out[name] = build(layer)
@@ -202,7 +205,7 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 		return false
 	end
 	local spec = Cars.get(id)
-	local dims = CarBuilder.getDims(class)
+	local dims = CarBuilder.getDims(class, id)
 	local design = CarMesh.design(id, class, dims :: any)
 	local height = (model:GetAttribute("Height") :: number?) or dims.H
 	local groundCF = root.CFrame * CFrame.new(0, -height / 2, 0)
@@ -215,12 +218,55 @@ function CarSkin.apply(model: Model, destroyReplaced: boolean?, lite: boolean?):
 	local skin = Instance.new("Model")
 	skin.Name = "Skin"
 	skin.Parent = model
+	local drl = if design.drl then Color3.fromRGB(design.drl[1], design.drl[2], design.drl[3]) else Color3.new(1, 1, 1)
 	for name, t in body do
 		local look = LOOKS[name] or LOOKS.Paint
-		local color = if name == "Accent" then accent else paint
+		local color = if name == "Accent" then accent elseif name == "Drl" then drl else paint
 		local p = place(t, "Skin" .. name, look, color, groundCF, root, skin)
 		if name == "Tail" then
 			p:SetAttribute("TailLight", true)
+		end
+	end
+
+	-- licence plate text (the plate itself is part of the mesh)
+	local meta = bodyMeta[id .. (if liteMode then "/lite" else "")]
+	if meta and meta.plate and not liteMode then
+		local plate = Instance.new("Part")
+		plate.Name = "PlateText"
+		plate.Size = Vector3.new(1.16, 0.36, 0.02)
+		plate.Transparency = 1
+		plate.CanCollide = false
+		plate.CanQuery = false
+		plate.CanTouch = false
+		plate.Massless = true
+		plate.CastShadow = false
+		plate.CFrame = groundCF * (meta.plate :: CFrame) -- front face looks out of the car
+		plate.Parent = skin
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = plate
+		weld.Parent = plate
+		local sg = Instance.new("SurfaceGui")
+		sg.Face = Enum.NormalId.Front
+		sg.CanvasSize = Vector2.new(232, 72)
+		sg.LightInfluence = 1
+		sg.MaxDistance = 90
+		sg.Parent = plate
+		local text = Instance.new("TextLabel")
+		text.BackgroundTransparency = 1
+		text.Size = UDim2.fromScale(1, 1)
+		text.Font = Enum.Font.GothamBlack
+		text.TextScaled = true
+		text.TextColor3 = Color3.fromRGB(20, 26, 60)
+		local plateText = model:GetAttribute("Plate")
+		text.Text = if type(plateText) == "string" then plateText else "CTYLGND"
+		text.Parent = sg
+	end
+
+	-- exhaust tips in root space (Driving puts the backfire flames there)
+	if meta and meta.exhausts then
+		for i, p in meta.exhausts :: { Vector3 } do
+			model:SetAttribute("Exhaust" .. i, p - Vector3.new(0, height / 2, 0))
 		end
 	end
 

@@ -151,7 +151,7 @@ function Cutscene.play()
 	local heroH = hero:GetAttribute("Height") :: number
 	local heroW = hero:GetAttribute("Width") :: number
 	local heroL = hero:GetAttribute("Length") :: number
-	local dims = CarBuilder.getDims(heroSpec.Class)
+	local dims = CarBuilder.getDims(heroSpec.Class, heroSpec.Id)
 	local heroWheels: { Motor6D } = {}
 	for _, j in heroRoot:GetChildren() do
 		if j:IsA("Motor6D") and j.Name:sub(1, 6) == "Wheel_" then

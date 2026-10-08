@@ -15,6 +15,7 @@
 	  backfire  : exhaust pops on high-rpm upshifts
 	  UI        : button clicks
 	  ambience  : low city night hum; reverb switches to "tunnel" inside the tunnel
+	  rain      : looping rain bed faded in/out by Weather
 
 	Any asset id put in Config.Sounds is checked at startup and replaces the
 	built-in layer only if it actually loads.
@@ -234,6 +235,28 @@ function Audio.backfire(parent: Instance?)
 	if parent then
 		s.RollOffMaxDistance = 300
 	end
+end
+
+--[[
+	Rain bed for Weather (looped, starts silent; the caller drives Volume).
+	Uses Config.Sounds.Rain if one is configured and passed the load check;
+	otherwise, when USE_BUILTIN_RAIN is on, a soft "shhh" made from the wind
+	recording with the lows cut away. Returns nil when there is nothing to play.
+]]
+local USE_BUILTIN_RAIN = true
+function Audio.rainLoop(): Sound?
+	local id = pickCustom("Rain")
+	if not id and not USE_BUILTIN_RAIN then
+		return nil
+	end
+	local s = newSound(id or BUILTIN.wind, SoundService, 0, true)
+	s.Name = "Rain"
+	if not id then
+		s.PlaybackSpeed = 1.3
+		effect("EqualizerSoundEffect", s, { LowGain = -26, MidGain = -3, HighGain = 2 })
+	end
+	s:Play()
+	return s
 end
 
 -- big low "hit" for titles / cuts

@@ -56,8 +56,31 @@ local DIMS: { [string]: Dims } = {
 	Hypercar = { L = 14.8, W = 6.7, H = 3.45, clr = 0.35, belt = 2.0, wheelR = 1.12, wheelW = 1.1, wb = 8.9, hood = 3.4, ws = 3.1, roof = 1.8, rear = 3.8, inset = 0.75, slope = 0.95, nose = 0.4, doors = 2 },
 }
 
-function CarBuilder.getDims(class: string): Dims
-	return DIMS[class] or DIMS.Sedan
+-- per-car proportions on top of the class (muscle cars: long hood, wide stance)
+local DIM_OVERRIDES: { [string]: { [string]: number } } = {
+	brute_srx = { L = 15.2, W = 6.5, H = 4.25, clr = 0.5, belt = 2.85, wheelR = 1.12, wheelW = 1.0, wb = 9.4, hood = 5.2, ws = 2.3, roof = 2.7, rear = 2.0 },
+	outlaw_69 = { L = 15.6, W = 6.6, H = 4.0, clr = 0.42, belt = 2.72, wheelR = 1.12, wheelW = 1.05, wb = 9.6, hood = 5.5, ws = 2.1, roof = 2.6, rear = 2.4 },
+	velluto_p7 = { L = 15.2, H = 3.4, hood = 3.8, ws = 2.7, roof = 1.9, rear = 3.6, wb = 9.0 },
+}
+local mergedDims: { [string]: Dims } = {}
+
+function CarBuilder.getDims(class: string, id: string?): Dims
+	local base = DIMS[class] or DIMS.Sedan
+	local over = if id then DIM_OVERRIDES[id] else nil
+	if not over or not id then
+		return base
+	end
+	local key = class .. "/" .. id
+	local cached = mergedDims[key]
+	if not cached then
+		local d = table.clone(base)
+		for k, v in over do
+			(d :: any)[k] = v
+		end
+		cached = d
+		mergedDims[key] = d
+	end
+	return cached
 end
 
 ---------------------------------------------------------------------
@@ -129,7 +152,7 @@ end
 ---------------------------------------------------------------------
 function CarBuilder.build(spec: Cars.CarSpec, options: BuildOptions?): Model
 	local opts: BuildOptions = options or {}
-	local d = CarBuilder.getDims(spec.Class)
+	local d = CarBuilder.getDims(spec.Class, spec.Id)
 	local L, W, H = d.L, d.W, d.H
 	local clr, belt = d.clr, d.belt
 	local class = spec.Class

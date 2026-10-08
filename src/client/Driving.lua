@@ -6,6 +6,7 @@
 	    sensitive steering with a lateral-g cap, tyre grip + handbrake drifts
 	  * push the result into the LinearVelocity / AlignOrientation constraints
 	  * detect crashes (physics stopped us) and "cut ups" (passing traffic close)
+	  * pop small blue/orange exhaust flames on upshifts and lift-off crackles
 	Every render frame we:
 	  * spin + steer the wheels, turn the steering wheel, and solve 2-bone IK so
 	    the driver's arms follow their hands on the wheel
@@ -83,6 +84,13 @@ type State = {
 	engine: Audio.Engine,
 	throttle: number,
 	slip: number,
+	flames: { ParticleEmitter },
+	flameParts: { Instance },
+	flameLight: PointLight?,
+	flameGlow: number,
+	throttleIn: number,
+	pops: number,
+	popTimer: number,
 }
 
 local state: State? = nil
@@ -209,6 +217,99 @@ local function buildGauges(model: Model): (TextLabel?, TextLabel?, Frame?)
 	return speed, gear, bar
 end
 
+---------------------------------------------------------------------
+-- Exhaust flames (local player's car only)
+---------------------------------------------------------------------
+-- Exhaust tip positions in root space. A skinned car shows CarMesh's pipes,
+-- so mirror its placement; otherwise use the (visible) part-built pipes.
+local function exhaustTips(model: Model, root: BasePart): { Vector3 }
+	local tips: { Vector3 } = {}
+	if model:GetAttribute("Skinned") then
+		-- CarSkin stores the mesh's pipe tips (root space) as Exhaust1..n
+		local i = 1
+		while true do
+			local p = model:GetAttribute("Exhaust" .. i)
+			if typeof(p) ~= "Vector3" then
+				break
+			end
+			table.insert(tips, p)
+			i += 1
+		end
+		if #tips > 0 then
+			return tips
+		end
+	end
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Name == "Exhaust" then
+			-- cylinder axis points backwards; its length is Size.X
+			table.insert(tips, root.CFrame:PointToObjectSpace(d.Position) + Vector3.new(0, 0, d.Size.X / 2))
+		end
+	end
+	return tips
+end
+
+local function buildFlames(model: Model, root: BasePart, spec: Cars.CarSpec): ({ ParticleEmitter }, { Instance }, PointLight?)
+	local emitters: { ParticleEmitter } = {}
+	local parts: { Instance } = {}
+	local tips = exhaustTips(model, root)
+	if #tips == 0 then
+		return emitters, parts, nil
+	end
+	local sum = Vector3.zero
+	for _, tip in tips do
+		sum += tip
+		local att = Instance.new("Attachment")
+		att.Name = "ExhaustFlame"
+		att.Position = tip
+		att.Parent = root
+		table.insert(parts, att)
+		local e = Instance.new("ParticleEmitter")
+		e.Rate = 0
+		e.LockedToPart = true -- stays on the pipe at any speed
+		e.EmissionDirection = Enum.NormalId.Back
+		e.Lifetime = NumberRange.new(0.05, 0.12)
+		e.Speed = NumberRange.new(8, 15)
+		e.SpreadAngle = Vector2.new(8, 8)
+		e.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.32),
+			NumberSequenceKeypoint.new(0.5, 0.26),
+			NumberSequenceKeypoint.new(1, 0.04),
+		})
+		e.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 140, 255)),
+			ColorSequenceKeypoint.new(0.55, Color3.fromRGB(120, 130, 255)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 140, 40)),
+		})
+		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 1) })
+		e.LightEmission = 1
+		e.LightInfluence = 0
+		e.Brightness = 2
+		e.ZOffset = 0.3
+		e.Parent = att
+		table.insert(emitters, e)
+	end
+	local glowAtt = Instance.new("Attachment")
+	glowAtt.Name = "ExhaustGlow"
+	glowAtt.Position = sum / #tips + Vector3.new(0, 0, 0.6)
+	glowAtt.Parent = root
+	table.insert(parts, glowAtt)
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(130, 160, 255)
+	light.Range = 9
+	light.Brightness = 0
+	light.Shadows = false
+	light.Enabled = false
+	light.Parent = glowAtt
+	return emitters, parts, light
+end
+
+local function exhaustPop(s: State, strength: number)
+	for _, e in s.flames do
+		e:Emit(math.max(1, math.floor((4 + math.random() * 4) * strength)))
+	end
+	s.flameGlow = math.max(s.flameGlow, 4 * strength)
+end
+
 function Driving.detach()
 	local s = state
 	if not s then
@@ -216,6 +317,9 @@ function Driving.detach()
 	end
 	for _, c in s.connections do
 		c:Disconnect()
+	end
+	for _, f in s.flameParts do
+		f:Destroy()
 	end
 	s.engine:destroy()
 	if s.cabinLight then
@@ -271,7 +375,7 @@ function Driving.attach(model: Model)
 	Driving.detach()
 	local root = model.PrimaryPart :: BasePart
 	local spec = Cars.get(model:GetAttribute("CarId") :: string)
-	local dims = CarBuilder.getDims(spec.Class)
+	local dims = CarBuilder.getDims(spec.Class, spec.Id)
 	local lv = root:WaitForChild("Drive") :: LinearVelocity
 	local ao = root:WaitForChild("Steer") :: AlignOrientation
 
@@ -320,7 +424,7 @@ function Driving.attach(model: Model)
 	cabinLight.Parent = root
 
 	local gSpeed, gGear, gBar = buildGauges(model)
-
+	local flames, flameParts, flameLight = buildFlames(model, root, spec)
 
 	local s: State = {
 		model = model,
@@ -368,6 +472,13 @@ function Driving.attach(model: Model)
 		engine = Audio.engine(spec.Class, nil),
 		throttle = 0,
 		slip = 0,
+		flames = flames,
+		flameParts = flameParts,
+		flameLight = flameLight,
+		flameGlow = 0,
+		throttleIn = 0,
+		pops = 0,
+		popTimer = 0,
 	}
 	state = s
 	Audio.engineStart()
@@ -452,6 +563,12 @@ function Driving.step(dt: number)
 	local root = s.root
 	local throttle, brake, steerIn, handbrake = readInput()
 	s.throttle += (throttle - s.throttle) * math.min(1, dt * 10)
+	-- lifting off at high revs: a short crackle of pops + flames
+	if s.throttleIn > 0.7 and throttle < 0.2 and s.rpm > 0.6 and Config.spsToMph(s.vel.Magnitude) > 30 then
+		s.pops = math.random(2, 4)
+		s.popTimer = 0.04
+	end
+	s.throttleIn = throttle
 
 	-- ground check
 	rayParams.FilterDescendantsInstances = { s.model, workspace:FindFirstChild("Traffic") :: Instance }
@@ -568,6 +685,9 @@ function Driving.step(dt: number)
 	local pg, ng = tonumber(prevGear), tonumber(s.gear)
 	if pg and ng and ng ~= pg then
 		s.engine:shift(ng > pg)
+		if ng > pg and throttle > 0.5 then
+			exhaustPop(s, 1)
+		end
 	end
 
 	local mph = Config.spsToMph(math.abs(fs))
@@ -633,6 +753,24 @@ function Driving.render(dt: number)
 
 	-- engine / wind / tyre audio
 	s.engine:update(s.rpm, s.throttle, speedFrac, s.slip)
+
+	-- exhaust crackle + flame glow
+	if s.pops > 0 then
+		s.popTimer -= dt
+		if s.popTimer <= 0 then
+			s.pops -= 1
+			s.popTimer = 0.07 + math.random() * 0.12
+			exhaustPop(s, 0.6 + math.random() * 0.4)
+			if math.random() < 0.6 then
+				Audio.backfire()
+			end
+		end
+	end
+	if s.flameLight then
+		s.flameGlow = math.max(0, s.flameGlow - dt * 40)
+		s.flameLight.Brightness = s.flameGlow
+		s.flameLight.Enabled = s.flameGlow > 0
+	end
 
 	-- camera
 	local C = Config.Camera
