@@ -276,6 +276,53 @@ local function lowerBody(character, bend, hinge)
 	end
 end
 
+-- Two-joint leg IK: bends each leg (hip + knee, in the body's front plane) so its ankle reaches `target` (world), knees
+-- pointing forward; works for every body size. ankle = extra ankle angle (toes).
+-- lowerFrame = where the LowerTorso will be this frame (when the Root joint moves it too), else its current CFrame.
+function bars.legIK(character, target: Vector3, ankle: number, lowerFrame: CFrame?)
+	local lower = character:FindFirstChild("LowerTorso")
+	if not lower then return end
+	local frame = lowerFrame or lower.CFrame
+	for _, side in ipairs(SIDES) do
+		local long = side[1] == "R" and "Right" or "Left"
+		local thigh, shin, foot = character:FindFirstChild(long .. "UpperLeg"), character:FindFirstChild(long .. "LowerLeg"), character:FindFirstChild(long .. "Foot")
+		local hip = thigh and thigh:FindFirstChild(long .. "Hip")
+		local knee = shin and shin:FindFirstChild(long .. "Knee")
+		local ankleJoint = foot and foot:FindFirstChild(long .. "Ankle")
+		if not (hip and knee and ankleJoint) then continue end
+		local a = (hip.C1.Position - knee.C0.Position).Magnitude
+		local b = (knee.C1.Position - ankleJoint.C0.Position).Magnitude
+		local t = frame:PointToObjectSpace(target) - hip.C0.Position
+		local d = math.clamp(math.sqrt(t.Y * t.Y + t.Z * t.Z), math.abs(a - b) + 0.05, a + b - 0.01)
+		local phi = math.atan2(-t.Z, -t.Y) -- from straight down toward the front
+		local inner = math.acos(math.clamp((a * a + b * b - d * d) / (2 * a * b), -1, 1))
+		local lift = math.acos(math.clamp((a * a + d * d - b * b) / (2 * a * d), -1, 1))
+		setJoint(character, side[1] .. "Hip", Angles(phi + lift, 0, 0))
+		setJoint(character, side[1] .. "Knee", Angles(-(math.pi - inner), 0, 0))
+		setJoint(character, side[1] .. "Ankle", Angles(ankle, 0, 0))
+	end
+end
+
+-- Machine parts that move with the lifter besides the bar, plates and stack (per pose, every frame; put back when they
+-- leave): bars.props[pose](model, character), their rest CFrames in bars.propRest[model][part].
+bars.props, bars.propRest = {}, {}
+function bars.restOf(model, names)
+	local rest = bars.propRest[model]
+	if not rest then
+		rest = {}
+		bars.propRest[model] = rest
+	end
+	for _, part in ipairs(model:GetChildren()) do
+		if part:IsA("BasePart") and table.find(names, part.Name) and not rest[part] then rest[part] = part.CFrame end
+	end
+	return rest
+end
+function bars.resetProps(model)
+	for part, cframe in pairs(bars.propRest[model] or {}) do
+		if part.Parent then part.CFrame = cframe end
+	end
+end
+
 -- One function per pose. depth: 0 = top of the rep (lockout), 1 = the stretched end.
 local POSE_ANIMS = {}
 
@@ -343,15 +390,34 @@ POSE_ANIMS.HackSquat = function(character, d, jitter)
 	frontArms(character, rad(145) + jitter * 0.5, rad(22), rad(125), 0)
 end
 
--- Crunch: lying, plate held on the chest, knees up; lockout = curled up.
-POSE_ANIMS.Crunch = function(character, d, jitter)
+-- Crunch: lying, the plate flat on the chest (follow "Chest") with the arms crossed over it, ankles hooked between the
+-- foot rollers (leg IK, any body size); lockout = curled up.
+POSE_ANIMS.Crunch = function(character, d, jitter, model)
 	setJoint(character, "Waist", Angles(-rad(40 * (1 - d)) - jitter * 0.3, 0, 0))
-	frontArms(character, rad(40), rad(10), rad(110), 0)
-	for _, side in ipairs(SIDES) do
-		setJoint(character, side[1] .. "Hip", Angles(rad(55), 0, 0))
-		setJoint(character, side[1] .. "Knee", Angles(-rad(95), 0, 0))
-		setJoint(character, side[1] .. "Ankle", Angles(rad(40), 0, 0))
+	frontArms(character, rad(70), -rad(38), rad(125), 0)
+	local rollers = {}
+	for _, part in ipairs(model and model:GetChildren() or {}) do
+		if part.Name == "FootRoller" then table.insert(rollers, part.Position) end
 	end
+	if #rollers < 2 then return end
+	local target = (rollers[1] + rollers[2]) / 2
+	-- slide the body along the bench toward the rollers (Root joint) until the legs reach them with the knees bent
+	local root, lower = character:FindFirstChild("HumanoidRootPart"), character:FindFirstChild("LowerTorso")
+	local rootJoint = lower and lower:FindFirstChild("Root")
+	local thigh, shin, foot = character:FindFirstChild("RightUpperLeg"), character:FindFirstChild("RightLowerLeg"), character:FindFirstChild("RightFoot")
+	local hip, knee, ankle = thigh and thigh:FindFirstChild("RightHip"), shin and shin:FindFirstChild("RightKnee"), foot and foot:FindFirstChild("RightAnkle")
+	if not (root and rootJoint and hip and knee and ankle) then return end
+	local reach = ((hip.C1.Position - knee.C0.Position).Magnitude + (knee.C1.Position - ankle.C0.Position).Magnitude) * 0.62 -- (knees well up)
+	local base = root.CFrame * rootJoint.C0 * rootJoint.C1:Inverse()
+	local hipAt = base:PointToWorldSpace(Vector3.new(0, hip.C0.Position.Y, hip.C0.Position.Z))
+	local feet = base:VectorToWorldSpace(Vector3.new(0, -1, 0))
+	local offset = hipAt - target
+	local along = offset:Dot(feet)
+	local disc = along * along - (offset:Dot(offset) - reach * reach)
+	local slide = if disc >= 0 then math.clamp(-along - math.sqrt(disc), 0, 2.5) else 0
+	local move = CFrame.new(0, -slide, 0)
+	setJoint(character, "Root", move)
+	bars.legIK(character, target, rad(35), root.CFrame * rootJoint.C0 * move * rootJoint.C1:Inverse())
 end
 
 -- Pro gym poses (first pass, same helpers and angle conventions as the starter lifts above).
@@ -386,12 +452,32 @@ POSE_ANIMS.Shrug = function(character, d, jitter)
 	end
 end
 
--- Leg curl: face down; heels curl toward the glutes at lockout, arms hold the pad overhead.
+-- Leg curl: face down; heels curl toward the glutes at lockout, hands on the handles in front of the head. The ankle
+-- roller and its lever ride on the back of the ankles and swing up with the shins (bars.props.LegCurl).
 POSE_ANIMS.LegCurl = function(character, d, jitter)
 	for _, side in ipairs(SIDES) do
-		setJoint(character, side[1] .. "Knee", Angles(-rad(20 + 100 * (1 - d)) - jitter, 0, 0))
+		setJoint(character, side[1] .. "Hip", CFrame.identity)
+		setJoint(character, side[1] .. "Knee", Angles(-rad(10 + 105 * (1 - d)) - jitter, 0, 0))
+		setJoint(character, side[1] .. "Ankle", Angles(rad(25), 0, 0))
 	end
-	frontArms(character, rad(165), rad(12), rad(20), 0)
+	frontArms(character, rad(150), rad(4), rad(30), 0)
+end
+bars.props.LegCurl = function(model, character)
+	local rest = bars.restOf(model, { "AnkleRoller", "RollerArm" })
+	local right, left = character:FindFirstChild("RightLowerLeg"), character:FindFirstChild("LeftLowerLeg")
+	if not (right and left) then return end
+	local axes = right.CFrame
+	local frame = CFrame.fromMatrix((right.Position + left.Position) / 2, axes.XVector, axes.YVector, axes.ZVector)
+	local length, depth = right.Size.Y, right.Size.Z
+	for part in pairs(rest) do
+		if part.Name == "AnkleRoller" then
+			-- on the back of the ankles (the shin's +Z is the back of the leg; face down that is up)
+			part.CFrame = frame * CFrame.new(0, -length * 0.4, depth / 2 + math.min(part.Size.Y, part.Size.Z) / 2)
+		else
+			-- the lever: from the roller along the back of the shin toward the knee pivot
+			part.CFrame = frame * CFrame.new(0, -length * 0.4 + part.Size.Y / 2, depth / 2 + 0.12)
+		end
+	end
 end
 
 -- Hip thrust: face up on the pad, knees bent; hips extend at lockout, flex at the bottom.
@@ -403,13 +489,27 @@ POSE_ANIMS.HipThrust = function(character, d, jitter)
 	frontArms(character, rad(10), rad(35), 0, 0)
 end
 
--- Calf raise: up on the toes at lockout, hands on the handles.
+-- Calf raise: standing on the step, shoulders under the pads, hands gripping the pads; up on the toes at lockout. The
+-- pads and their arm sit on the shoulders and rise with them (bars.props.CalfRaise), whatever the body's height.
 POSE_ANIMS.CalfRaise = function(character, d, jitter)
 	setJoint(character, "Root", CFrame.new(0, 0.35 * (1 - d), 0))
 	for _, side in ipairs(SIDES) do
 		setJoint(character, side[1] .. "Ankle", Angles(-rad(35 * (1 - d)) - jitter, 0, 0))
 	end
-	frontArms(character, rad(70), rad(10), rad(30), 0)
+	frontArms(character, rad(30), -rad(6), rad(140), 0) -- (elbows down, hands up at the pads)
+end
+bars.props.CalfRaise = function(model, character)
+	local rest = bars.restOf(model, { "ShoulderPad", "Arm", "ArmLink" })
+	local torso = character:FindFirstChild("UpperTorso")
+	if not torso then return end
+	local padBottom = math.huge
+	for part, cframe in pairs(rest) do
+		if part.Name == "ShoulderPad" then padBottom = math.min(padBottom, cframe.Position.Y - part.Size.Y / 2) end
+	end
+	if padBottom == math.huge then return end
+	local shoulderTop = torso.CFrame:PointToWorldSpace(Vector3.new(0, torso.Size.Y / 2, 0)).Y
+	local lift = Vector3.new(0, shoulderTop - padBottom, 0)
+	for part, cframe in pairs(rest) do part.CFrame = cframe + lift end
 end
 
 -- Bicep curl: curled up at lockout, arms long at the bottom.
@@ -493,7 +593,7 @@ end
 local function animate(model, character, depth, shake)
 	local jitter = shake and rad(FEEL.ShakeDegrees) * math.sin(os.clock() * 45) or 0
 	local anim = POSE_ANIMS[poseFor(model)] or POSE_ANIMS.BenchPress
-	anim(character, depth, jitter)
+	anim(character, depth, jitter, model)
 end
 
 -- Where the plates ride while someone is on the machine.
@@ -527,6 +627,12 @@ local function followCFrame(model, character)
 		local t = (anchor - rest.Position):Dot(axis) + (model:GetAttribute("RailOffset") or 0)
 		t = math.clamp(t, model:GetAttribute("RailMin") or -3, model:GetAttribute("RailMax") or 0)
 		return rest + axis * t
+	elseif follow == "Chest" then
+		-- flat on the chest: the handle points out of the chest, so the plate's face lies on it
+		local torso = character:FindFirstChild("UpperTorso")
+		if torso then
+			return torso.CFrame * CFrame.new(0, torso.Size.Y * 0.05, -(torso.Size.Z / 2 + 0.12)) * Angles(0, rad(90), 0)
+		end
 	elseif follow == "Hips" then
 		local hips = character:FindFirstChild("LowerTorso")
 		if hips then
@@ -1684,6 +1790,7 @@ RunService.Stepped:Connect(function()
 			if model:GetAttribute("Stack") then placeStack(model, depth) end
 		elseif posed[model] then
 			resetPose(posed[model])
+			bars.resetProps(model)
 			posed[model] = nil
 			repState[model] = nil
 			if model:GetAttribute("Stack") then
@@ -1702,6 +1809,8 @@ RunService.Heartbeat:Connect(function()
 		if cframe then
 			placeBar(model, cframe)
 		end
+		local props = bars.props[poseFor(model)]
+		if props and model.Parent then props(model, character) end
 	end
 end)
 

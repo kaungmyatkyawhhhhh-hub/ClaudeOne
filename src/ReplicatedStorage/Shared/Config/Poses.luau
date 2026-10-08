@@ -35,11 +35,12 @@ local Poses = {
 	},
 	-- Hack squat: standing on the platform, back on the pad, shoulders under the pads (the carriage rides with them).
 	HackSquat = { kind = "Stand", position = Vector3.new(0, 0.55, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, 3), follow = "Rail" },
+	-- Crunch: on the back, plate flat on the chest ("Chest": it rides the upper torso), ankles under the foot rollers.
 	Crunch = {
 		kind = "Lie",
 		body = CFrame.lookAt(Vector3.new(0, 2.35, -0.6), Vector3.new(0, 3.35, -0.6), Vector3.new(0, 0, -1)),
 		exit = Vector3.new(3, 0, 0.5),
-		follow = "Hands",
+		follow = "Chest",
 	},
 
 	-- Pro gym (built by ProGymService: the lifter stands at the pivot facing +Z, the stack is in front)
@@ -47,7 +48,7 @@ local Poses = {
 	LateralRaise = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	ReverseFly = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	Shrug = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
-	CalfRaise = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	CalfRaise = { kind = "Stand", position = Vector3.new(0, 0.48, 0.5), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" }, -- (on the step: top 0.475; shoulders under the pads)
 	BicepCurl = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	TricepPushdown = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	Woodchop = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
