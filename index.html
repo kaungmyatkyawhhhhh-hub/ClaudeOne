@@ -1884,13 +1884,8 @@ $("hudMin").onclick=()=>{hudMin=!hudMin;store.set("fliprush_hudmin",hudMin?"1":"
 $("pillTog").onclick=()=>{pillsMin=!pillsMin;store.set("fliprush_pillsmin",pillsMin?"1":"0");renderPillTog()};
 $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("multTxt").addEventListener("click",e=>{if(!e.target.closest(".tierb")||!S)return;audioOn();if(room)closeRoom();room="tiers";openTiers(closeRoom)});
-// the reselling phone opens the best market you've unlocked: best sell price for what you pay, fewest fakes
-function bestMarket(){if(SCN&&(SCN.kind==="space"||SCN.kind==="planet"))return COSMOS_MKT;if(SCN&&SCN.kind==="prehist")return FOSSIL_MKT;
-  // once you've been to Monaco (the casino country), the phone always takes you to the Monte Carlo Market
-  const mc=COUNTRIES.find(c=>c.k==="monaco");if(mc&&(S.visited||{}).monaco&&MKT.monaco)return cMkt(mc);
-  const L=[MKT.market];if(regionOpen("beach"))L.push(MKT.flea);if(regionOpen("downtown"))L.push(MKT.lux);COUNTRIES.forEach(c=>{if((S.visited||{})[c.k]&&MKT[c.k])L.push(cMkt(c))});
-  const score=m=>(m.sell||1)/(m.price||1)*(1-(m.fake||0));return L.reduce((a,b)=>score(b)>score(a)?b:a)}
-$("phoneBtn").onclick=()=>{audioOn();const m=bestMarket();room=m.k;$("room").hidden=false;openMarket(m);banner(m.n+" · best prices you've unlocked","u")};
+// the reselling phone always opens the Market in Flip City (World 1)
+$("phoneBtn").onclick=()=>{audioOn();const m=MKT.market;room=m.k;$("room").hidden=false;openMarket(m);banner(m.n+" · Flip City","u")};
 
 /* ---------- gym ---------- */
 // Plates per side for a given total on a 20 kg bar, heaviest first
@@ -5573,7 +5568,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=109,WN=[
+const WN_VER=110,WN=[
+ ["📱","Phone goes to the Market","The reselling phone now always opens the Market in Flip City, wherever you are. Visit the other markets in person.","2026-10-09T20:00"],
  ["🌬️","Wind farms reach the corners","In the Sky Islands a Wind farm now boosts all 8 tiles around it, diagonals included, so one wind farm can power a whole ring of mines.","2026-10-09T19:00"],
  ["📏","Rebirth needs height now","Rebirth at the gym's lift station now needs you to be tall enough instead of a number of growth spurts: 190 cm for your first, then 15 cm more each time. Every 40 cm over the requirement gives an extra rebirth in one go.","2026-10-09T18:00"],
  ["🏅","Achievements pay, pets work, cars get a garage","Achievements now pop up with a Claim button and pay real money plus a crate, hype, energy or a rare find. Every 10 you claim adds +1% to every sale, and 15, 40 and 70 unlock new outfits. Flip of the day (Now button) gives everyone the same item: get the best markup and climb today's leaderboard. Your dog now sniffs out fakes, your husky carries an extra item and your parrot spots treasure on the Frontier Road. Mo's Garage and the Docks have a new Garage for paint, number plates, style and tuning, and the Docks show tonight's lineup of everyone's cars. The bottom of the screen is tidier too.","2026-10-09T14:00"],
