@@ -2,7 +2,17 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): arm wrestling animation + the giant regular (synced and tested in Studio)
+## LATEST (9 Oct): upper traps
+- The owner's upper traps never grew: the package's Traps only pushes the upper back out; the slope from the neck to the
+  shoulders was a flat fan cap. `tools/gen_muscle_data` now gives the torso cap a ring halfway in (every 4th rim vertex:
+  each torso half is 19,950 triangles, the limit is 20,000; four full rings broke the torso) and adds UPPER_TRAPS to the
+  Traps muscle: up 0.13 studs at the full look (x the mass monster g), a little back, from beside the neck to the
+  shoulders, fading out over the collarbones. Cap vertices get their normals from the cap. Regenerated MuscleData
+  (torso + the arms' cap normals), synced; tested at the full look: screenshots upper_traps_back, upper_traps_front.
+- Not done: other players' torso stage meshes (BodyStages OBJs) don't have it yet: regenerating them needs the owner to
+  re-import the 14 BS_Torso files.
+
+## Before that (9 Oct): arm wrestling animation + the giant regular (synced and tested in Studio)
 - **Giant regular** (owner): Dante (pro gym) is 7'0" (the last Growth Spurt's height) with the mass monster physique,
   built like a maxed player (every muscle at 5.5x that spurt's goal, monster widths, Wide frame): `GymGoerService`
   GIANT / makeGiant, `NpcService.ApplyBody(npc, heightScale)`. Tested: height scale 1.40, monster stage meshes on.

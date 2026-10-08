@@ -323,7 +323,7 @@ shareable before/after snapshot.
 - Unified muscles (muscle v9, 8 Oct): the torso and the upper arms are each ONE welded mesh (the whole skin of the part;
   per muscle a vertex list and its displacement): pos = base + waist morph + sum(look g x displacement) + veins, so any mix
   of levels (one muscle huge, the rest 0) is smooth with no holes. The torso's top opening is closed by a low dome; the
-  torso grows the traps itself (the package's separate upper traps shell is NOT used: it floated over the chest). The
+  torso grows the traps itself (the package's separate upper traps shell is NOT used: it floated over the chest); the generator adds the upper traps to the Traps muscle (owner, 9 Oct: they never rose): the top cap has a ring halfway in and rises from beside the neck toward the shoulders, toward the back (`tools/gen_muscle_data` UPPER_TRAPS; each torso half stays under 20,000 triangles). The
   legs are shell meshes that cover the whole thigh (quads, hamstrings, glutes + their shorts), forearms and calves are the
   static stage meshes. The arms and legs show from level 0 and every plain body part under a mesh is hidden, so no
   blocky Robloxian part shows. The waist tightens with the average growth.

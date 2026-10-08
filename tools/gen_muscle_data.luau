@@ -17,6 +17,25 @@ local serde = require("@lune/serde")
 
 local SRC = "muscle_v8"
 local DOME = 0.085 -- studs the torso cap's centre rises above its rim (to the Robloxian torso top, 0.919)
+-- The torso's top cap gets a ring halfway in (not only one fan to the centre), so it can curve: the upper traps (owner, 9 Oct: "my
+-- upper traps don't exist": the package's Traps only grows the upper back, the slope from the neck to the shoulders never
+-- rose). UPPER_TRAPS adds that rise to the Traps muscle: studs at its full look (g 1; the mass monster g scales it), up
+-- and a little back, from beside the neck out toward the shoulders, fading out over the collarbones (front) and down the back.
+local CAP_RING_STEP = 4 -- the torso cap's ring takes every 4th rim vertex
+local UPPER_TRAPS = { rise = 0.13, back = 0.25, neck = { 0.1, 0.38 }, shoulder = { 0.62, 0.92 }, front = { -0.48, -0.12 }, low = { 0.6, 0.86 } }
+
+local function smoothstep(a, b, t)
+	local x = math.clamp((t - a) / (b - a), 0, 1)
+	return x * x * (3 - 2 * x)
+end
+
+-- how far (0..1 of UPPER_TRAPS.rise) a torso vertex rises with the upper traps
+local function upperTrapsWeight(x, y, z)
+	local u = UPPER_TRAPS
+	local ax = math.abs(x)
+	return smoothstep(u.neck[1], u.neck[2], ax) * (1 - smoothstep(u.shoulder[1], u.shoulder[2], ax))
+		* smoothstep(u.front[1], u.front[2], z) * smoothstep(u.low[1], u.low[2], y)
+end
 local OUT = "src/ReplicatedStorage/MuscleData"
 local CHUNK = 90000
 
@@ -101,7 +120,7 @@ for _, entry in ipairs(manifest.meshes) do
 	if data.format == "unified-v1" then
 		record.format = "unified"
 		-- the caps: every open loop whose rim is above the part's centre gets a fan to its centre point (new vertex)
-		local capTris, capCentres = {}, {}
+		local capTris, capCentres, capVerts = {}, {}, {} -- (capVerts: the vertices the caps add, 0-based)
 		do
 			local edgeUse, directed = {}, {}
 			for k = 1, #data.tris, 3 do
@@ -147,8 +166,9 @@ for _, entry in ipairs(manifest.meshes) do
 						for _, v in ipairs(loop) do top = math.max(top, data.base[v * 3 + 2]) end
 						local span = 0
 						for _, v in ipairs(loop) do span = math.max(span, math.abs(data.base[v * 3 + 1] - centre.x)) end
-						if span > 0.5 then centre = vector.create(centre.x, top + DOME, centre.z) end
-						table.insert(capCentres, { loop = loop, centre = centre })
+						local wide = span > 0.5
+						if wide then centre = vector.create(centre.x, top + DOME, centre.z) end
+						table.insert(capCentres, { loop = loop, centre = centre, wide = wide })
 					end
 				end
 			end
@@ -177,24 +197,111 @@ for _, entry in ipairs(manifest.meshes) do
 					table.insert(data.morph_off, morph.z)
 				end
 				local centre = count
+				capVerts[count] = true
 				count += 1
-				for key, used in pairs(edgeUse) do
-					if used == 1 then
-						local a, b = directed[key][1], directed[key][2]
-						if inLoop[a] and inLoop[b] then
-							table.insert(capTris, b)
-							table.insert(capTris, a)
-							table.insert(capTris, centre)
+				-- a pinhole (the arms) is one fan to the centre. The torso's wide top also gets one ring halfway in, through
+				-- every CAP_RING_STEP-th rim vertex (the torso's front and back halves are near Roblox's 20,000-triangle limit:
+				-- this adds only ~100 triangles), so the cap has a middle that the upper traps can raise.
+				local function addTri(p, q, r, wantUp)
+					local pp = vector.create(data.base[p * 3 + 1], data.base[p * 3 + 2], data.base[p * 3 + 3])
+					local qp = vector.create(data.base[q * 3 + 1], data.base[q * 3 + 2], data.base[q * 3 + 3])
+					local rp = vector.create(data.base[r * 3 + 1], data.base[r * 3 + 2], data.base[r * 3 + 3])
+					local up = vector.cross(qp - pp, rp - pp).y > 0
+					if up ~= wantUp then q, r = r, q end
+					table.insert(capTris, p) table.insert(capTris, q) table.insert(capTris, r)
+				end
+				if not cap.wide then
+					for key, used in pairs(edgeUse) do
+						if used == 1 then
+							local a, b = directed[key][1], directed[key][2]
+							if inLoop[a] and inLoop[b] then
+								table.insert(capTris, b)
+								table.insert(capTris, a)
+								table.insert(capTris, centre)
+							end
 						end
 					end
+				else
+					-- which way the fan faced (the rim edges reversed): every new triangle faces the same way
+					local wantUp = nil
+					for key, used in pairs(edgeUse) do
+						if used == 1 and wantUp == nil then
+							local a, b = directed[key][1], directed[key][2]
+							if inLoop[a] and inLoop[b] then
+								local pa = vector.create(data.base[a * 3 + 1], data.base[a * 3 + 2], data.base[a * 3 + 3])
+								local pb = vector.create(data.base[b * 3 + 1], data.base[b * 3 + 2], data.base[b * 3 + 3])
+								wantUp = vector.cross(pa - pb, cap.centre - pb).y > 0
+							end
+						end
+					end
+					-- the rim in order around the centre
+					local rim = table.clone(cap.loop)
+					local function around(v) return math.atan2(data.base[v * 3 + 3] - cap.centre.z, data.base[v * 3 + 1] - cap.centre.x) end
+					table.sort(rim, function(a, b) return around(a) < around(b) end)
+					local ringList = {}
+					for i = 1, #rim, CAP_RING_STEP do
+						local v = rim[i]
+						local p = vector.create(data.base[v * 3 + 1], data.base[v * 3 + 2], data.base[v * 3 + 3])
+						local t, lift = 0.5, 0.75 -- halfway in, three quarters of the way up (a round top)
+						table.insert(data.base, p.x + (cap.centre.x - p.x) * t)
+						table.insert(data.base, p.y + (cap.centre.y - p.y) * lift)
+						table.insert(data.base, p.z + (cap.centre.z - p.z) * t)
+						table.insert(data.uv, data.uv[v * 2 + 1]) -- (the rim's texture stretches inward)
+						table.insert(data.uv, data.uv[v * 2 + 2])
+						if data.vein then for _ = 1, 3 do table.insert(data.vein, 0) end end
+						if data.morph_off then
+							local rimMorph = vector.create(data.morph_off[v * 3 + 1], data.morph_off[v * 3 + 2], data.morph_off[v * 3 + 3])
+							local mo = rimMorph + (morph - rimMorph) * t
+							table.insert(data.morph_off, mo.x)
+							table.insert(data.morph_off, mo.y)
+							table.insert(data.morph_off, mo.z)
+						end
+						table.insert(ringList, count)
+						capVerts[count] = true
+						count += 1
+					end
+					local R, G = #rim, #ringList
+					for i = 1, R do
+						local a, b = rim[i], rim[i % R + 1]
+						local g = (i - 1) // CAP_RING_STEP + 1
+						addTri(a, b, ringList[g], wantUp)
+						if i % CAP_RING_STEP == 0 or i == R then
+							addTri(ringList[g], b, ringList[g % G + 1], wantUp)
+						end
+					end
+					for j = 1, G do addTri(ringList[j], ringList[j % G + 1], centre, wantUp) end
 				end
-				print(string.format("%s: capped a %d-vertex top opening at y %.2f", name, n, cap.centre.y))
+				print(string.format("%s: capped a %d-vertex top opening at y %.2f%s", name, n, cap.centre.y, cap.wide and " (one ring)" or ""))
 			end
 		end
 		local surfaceTris = table.clone(data.tris) -- (the normals come from the surface without the caps)
 		for _, v in ipairs(capTris) do table.insert(data.tris, v) end
 		verts = #data.base // 3
 		record.verts = verts
+		-- the upper traps (see UPPER_TRAPS): added to the Traps muscle's displacement on the torso's top (cap rings included)
+		local traps = entry.part == "UpperTorso" and data.muscles and data.muscles.Traps
+		if traps then
+			local slot = {}
+			for j, v in ipairs(traps.idx) do slot[v] = j end
+			local added, moved = 0, 0
+			for v = 0, verts - 1 do
+				local w = upperTrapsWeight(data.base[v * 3 + 1], data.base[v * 3 + 2], data.base[v * 3 + 3])
+				if w > 0.002 then
+					local j = slot[v]
+					if not j then
+						table.insert(traps.idx, v)
+						for _ = 1, 3 do table.insert(traps.disp, 0) end
+						j = #traps.idx
+						slot[v] = j
+						added += 1
+					end
+					traps.disp[j * 3 - 1] += UPPER_TRAPS.rise * w
+					traps.disp[j * 3] += UPPER_TRAPS.rise * UPPER_TRAPS.back * w
+					moved += 1
+				end
+			end
+			print(string.format("%s: upper traps on %d vertices (%d new to Traps)", name, moved, added))
+		end
 		record.chunks.base = writeField(name, "base", join(data.base, 4))
 		record.chunks.tris = writeField(name, "tris", join(data.tris))
 		record.chunks.uv = writeField(name, "uv", join(data.uv, 4))
@@ -204,7 +311,9 @@ for _, entry in ipairs(manifest.meshes) do
 		local base = table.create(verts)
 		for i = 1, verts do base[i] = vector.create(data.base[i * 3 - 2], data.base[i * 3 - 1], data.base[i * 3]) end
 		local nbase = vertexNormals(base, surfaceTris)
-		for i = verts - #capCentres + 1, verts do nbase[i] = vector.create(0, 1, 0) end
+		-- the cap vertices take their normals from the cap alone (the rim keeps the surface's)
+		local capNormals = vertexNormals(base, capTris)
+		for v in pairs(capVerts) do nbase[v + 1] = capNormals[v + 1] end
 		-- (outward: the normals must point away from the part's centre on average)
 		local centre = vector.zero
 		for _, p in ipairs(base) do centre += p end
@@ -216,6 +325,7 @@ for _, entry in ipairs(manifest.meshes) do
 			for i, n in ipairs(nbase) do nbase[i] = -n end
 			for k = 1, #data.tris, 3 do data.tris[k + 1], data.tris[k + 2] = data.tris[k + 2], data.tris[k + 1] end
 			for k = 1, #surfaceTris, 3 do surfaceTris[k + 1], surfaceTris[k + 2] = surfaceTris[k + 2], surfaceTris[k + 1] end
+			for k = 1, #capTris, 3 do capTris[k + 1], capTris[k + 2] = capTris[k + 2], capTris[k + 1] end
 			record.chunks.tris = writeField(name, "tris", join(data.tris))
 			print(name .. ": triangles flipped to face outward")
 		end
@@ -237,7 +347,8 @@ for _, entry in ipairs(manifest.meshes) do
 				moved[v + 1] = base[v + 1] + vector.create(m.disp[j * 3 - 2], m.disp[j * 3 - 1], m.disp[j * 3])
 			end
 			local n1 = vertexNormals(moved, surfaceTris)
-			for i = verts - #capCentres + 1, verts do n1[i] = vector.create(0, 1, 0) end
+			local capMoved = vertexNormals(moved, capTris)
+			for v in pairs(capVerts) do n1[v + 1] = capMoved[v + 1] end
 			local nidx, ndisp = {}, {}
 			for i = 1, verts do
 				local d = n1[i] - nbase[i]
