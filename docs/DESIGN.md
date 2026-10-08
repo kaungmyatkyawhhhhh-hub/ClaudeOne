@@ -291,10 +291,25 @@ Coach NPC quests, Muscle of the Day (2x one group, shown on a board), rush hour 
 seasonal events (summer beach, Halloween gym, winter sled pulls).
 
 ## 13. Social and showing off
-Arm wrestling (Biceps, Forearms, Front Delts + tap speed), spotting (bench/squat), workout-together bonus,
+Arm wrestling (Biceps, Forearms, Front Delts + tap speed), spotting (see "Spotting" below), workout-together bonus,
 crews (up to 8, tags, crew leaderboard), emotes (flex poses, high five, shake chug), statue of the strongest player,
 wall leaderboards per muscle group (crown for #1), membership card (Bronze→Diamond), progress mirror,
 shareable before/after snapshot.
+
+## Spotting (owner's redo, 8-9 Oct; `Config/Spotting`, `SpotService`, `SpotClient`)
+- Tap / click a lifter's body: a small popup "SPOT" / X. The lifter gets a small card "<name> wants to spot you"
+  (ACCEPT / X, closes after 8 s); "Spot requests: On / Off" in Settings. Up to 5 spotters; more get "Spot full".
+- Machine spot types (`Config/Machines` spotType): "hands" on the flat / incline bench, squat rack and overhead press
+  (1 = middle, 2 = left + right, 3 = + middle, 4 = two each side, 5 = + middle; hands under the bar, following it each
+  rep), "hype" on everything else (a loose half-circle in front of the lifter, clap / point / fist pump), none on cardio.
+  Spots: attachments Spot_Left1/2, Spot_Right1/2, Spot_Middle, Hype_1..5 on every machine (`tools/builders/SpotPoints`).
+- Boost (the lifter's gains) by spotter count: x1.10 / 1.20 / 1.30 / 1.40 / 1.50, plus 0.15 x (clicking spotters /
+  spotters) (all clicking: 1.25 ... 1.65). Clicking = about 3+ pushes a second, stops ~1 s after; at most 8 count a
+  second, perfectly even timing is ignored (auto-clickers).
+- The spotter pushes by clicking / tapping ANYWHERE on the screen (owner, 9 Oct: no push button; F on a keyboard), with a
+  segmented meter and EXIT; moving or jumping stops spotting too. The lifter sees "SPOTTED x1.35" (gold) and the
+  spotters' names beside them, next to the EXP popups. Spotter reward: coins only, every 10 lifter reps (more while
+  clicking). The lifter leaving releases everyone. All checks on the server.
 
 ## Bodies and muscles (v4)
 - Everyone (players, NPCs, statue, mirrors) has the Robloxian 2.0 body (Roblox bundle 311, ids in `Config/Body`); the player's own body is always replaced, shapes are the same for all except the shoulder width from the genetics Frame (Narrow 0.9x, Average 1x, Wide 1.1x, V-Taper 1.2x: UpperTorso width + arms moved out, the muscle meshes taper back to the normal waist so it reads as a V). Head, face, hair, hats, face accessories, skin color and animations stay theirs. Nobody wears Back, Front or Neck accessories (owner, 8 Oct night: capes, backpacks, guitars, scarves hide the muscles): `AccessoryService` removes them from every player, NPC, legend and the statue on spawn, outfit change and body rebuild.

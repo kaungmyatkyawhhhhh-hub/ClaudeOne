@@ -34,7 +34,7 @@ local MachineService = {}
 local sessions = {}  -- [player] = { model, machine, lastRep, connections, pump, nextBig }
 local occupants = {} -- [model] = player
 
--- The machine's own "Occupy" prompt (SocialService adds a separate "SpotPrompt" next to it).
+-- The machine's own "Occupy" prompt (an old "SpotPrompt" next to it is skipped).
 local function getPrompt(model)
 	for _, descendant in ipairs(model:GetDescendants()) do
 		if descendant:IsA("ProximityPrompt") and descendant.Name ~= "SpotPrompt" then return descendant end
@@ -338,6 +338,9 @@ local function enter(player, model)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not machine or not humanoid or not root or humanoid.Health <= 0 or humanoid.Sit or not PlayerData.Get(player) then return end
+	-- (not while spotting someone: Exit first)
+	local spotOk, SpotService = pcall(require, script.Parent.SpotService)
+	if spotOk and SpotService.IsSpotting(player) then return end
 	-- gyms open with Growth Spurts (the pro gym at 2)
 	local openAt, gym = Machines.GymOpenAt(machine, model)
 	if PlayerData.Get(player).growthSpurts < openAt then

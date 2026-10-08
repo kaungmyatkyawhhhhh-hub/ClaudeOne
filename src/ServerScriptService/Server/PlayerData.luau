@@ -599,6 +599,7 @@ end
 local GAIN_NUMBERS = { On = true, Minimal = true, Off = true }
 local REP_FLASH = { On = true, Off = true }
 local EXP_POPUPS = { On = true, Off = true }
+local SPOT_REQUESTS = { On = true, Off = true }
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
 -- repFlash On/Off, expPopups On/Off.
@@ -615,6 +616,7 @@ function PlayerData.SetSettings(player, settings)
 	if GAIN_NUMBERS[settings.gainNumbers] then new.gainNumbers = settings.gainNumbers end
 	if REP_FLASH[settings.repFlash] then new.repFlash = settings.repFlash end
 	if EXP_POPUPS[settings.expPopups] then new.expPopups = settings.expPopups end
+	if SPOT_REQUESTS[settings.spotRequests] then new.spotRequests = settings.spotRequests end
 	new.statsLabels = nil -- the world stats labels are gone; drop the old saved choice
 	for _, entry in ipairs(Body.Tops) do -- wardrobe: Shirtless / Tank top / Sports top
 		if entry.id == settings.top then new.top = entry.id end

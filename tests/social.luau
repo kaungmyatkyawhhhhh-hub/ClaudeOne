@@ -9,7 +9,6 @@ for _, m in Muscles.List do muscles[m.id] = { level = 0, xp = 0 } end
 H.check(Social.Strength(muscles) == 1, "level 0 strength = 1")
 for _, id in Social.ArmWrestle.Muscles do muscles[id].level = 40 end
 H.check(math.abs(Social.Strength(muscles) - 2) < 1e-9, "level 40 strength = 2")
-for id in Social.Spot.Machines do H.check(Machines.ById[id] ~= nil, "spot machine " .. id .. " exists") end
 for _, id in Social.ArmWrestle.Muscles do H.check(Muscles.ById[id] ~= nil, "arm muscle " .. id .. " exists") end
 print("Titles")
 for _, id in { "Spotter", "GymBuddy", "IronGrip" } do

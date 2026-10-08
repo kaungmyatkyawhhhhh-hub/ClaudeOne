@@ -1,13 +1,5 @@
--- Social: spotting, the workout-together bonus, and arm wrestling. Tune the numbers here.
+-- Social: the workout-together bonus, arm wrestling and crews. Tune the numbers here. (Spotting: Config.Spotting.)
 local Social = {}
-
--- Spotting: stand by a friend on one of these machines and tap Spot.
-Social.Spot = {
-	Machines = { FlatBench = true, InclineBench = true, SquatRack = true },
-	GainsBoost = 1.25,  -- the lifter trains a bit harder with a spotter
-	CoinsPerRep = 1,    -- the spotter earns coins for every rep they spot
-	Range = 10,         -- studs from the machine; walk further and the spot ends
-}
 
 -- Lifting near other lifters.
 Social.Together = {

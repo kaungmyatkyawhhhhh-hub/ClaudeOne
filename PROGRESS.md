@@ -2,7 +2,21 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct, after midnight): the beach gym uses the real machines
+## LATEST (9 Oct, after midnight): new spotting system (owner's 3-player test next)
+- Replaces the old "Spot" prompt (SocialService keeps only the together bonus). `Config/Spotting` (all numbers),
+  `SpotService` (server, remote `Spot`), `SpotClient`, spot types in `Config/Machines`, `tools/builders/SpotPoints`
+  (run: spots on all 54 non-cardio machines, every hype spot clear with a view of the lifter), Settings "Spot requests".
+- Flow: tap a lifter -> SPOT / X popup -> the lifter's card (ACCEPT / X, 8 s) -> the spotter stands at their spot (root
+  anchored) and pushes by clicking / tapping anywhere (owner: no push button; F too), meter + EXIT; moving / jumping /
+  EXIT / the lifter leaving / death / leaving the game end it. Boost by count x1.10..1.50 + 0.15 x clicking fraction;
+  coins every 10 lifter reps (5, +3 while clicking); spotted reps still count for the Spotter title.
+- Tested alone (it needs 2+ players for real): logic tests (`tests/spotting`: the boost table, spot types, layouts, tap
+  rules with exact timings: 5 uneven taps/s = clicking, 2/s not, 20/s capped at 8, perfectly even taps never count);
+  in play with server-sent example messages: request card (top left), spotter panel, hype pose, hands pose at a bench
+  (hands under the bar), clicks on the world reach the server as pushes; no errors. NOT tested: two real players.
+- Screenshots: spot_request_card, spot_spotter_panel_hype, spot_hands_bench_middle.
+
+## Before that (9 Oct, after midnight): the beach gym uses the real machines
 - The 9 beach-only machines (Beach Curl, Beach Lateral Raise, Beach Shrug, 3 rows) are gone, configs too; in their spots
   copies of the real Bicep Curl, Lateral Raise and Shrugs (`GymKit.Pro`, same model / name / config / tiers / EXP /
   MachineId), done in place with `Town.RebuildBeachMachines()` (the Town builder builds them the same way). Weights,

@@ -1,5 +1,5 @@
--- SocialClient: arm wrestling (bottom panel with the push meter, countdown, tap input, result) and corner notes
--- for spotting and lifting together.
+-- SocialClient: arm wrestling (bottom panel with the push meter, countdown, tap input, result) and the corner note
+-- for lifting together (spotting: SpotClient).
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -17,20 +17,11 @@ local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
 
 ------------------------------------------------------------------------
--- Spotting / together notes
+-- Lifting-together note (spotting has its own client: SpotClient)
 ------------------------------------------------------------------------
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
-	if kind == "SpotStarted" then
-		if info.spotter then
-			Notify.Show("Spotting " .. tostring(info.name) .. ". You earn coins for every rep.")
-		else
-			Notify.Show(tostring(info.name) .. " is spotting you. +" .. math.floor((Social.Spot.GainsBoost - 1) * 100 + 0.5) .. "% gains.")
-		end
-		Audio.PlayUI("Click")
-	elseif kind == "SpotEnded" then
-		Notify.Show(info.spotter and "Spot ended." or (tostring(info.name) .. " stopped spotting."), nil, "spot")
-	elseif kind == "TogetherStarted" then
+	if kind == "TogetherStarted" then
 		Notify.Show("Lifting together: +" .. math.floor((Social.Together.GainsBoost - 1) * 100 + 0.5) .. "% gains.", nil, "together")
 	end
 end)

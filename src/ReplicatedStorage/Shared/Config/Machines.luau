@@ -238,6 +238,15 @@ table.insert(Machines.List, {
 	muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.5 }, { id = "Hamstrings", share = 0.4 } },
 })
 
+-- Spotting (Config.Spotting): spotType "hands" = spotters at the bar with their hands under it (the barbell lifts),
+-- "hype" = a cheering half-circle (everything else); cardio can't be spotted.
+local HANDS_SPOT = { FlatBench = true, InclineBench = true, SquatRack = true, OverheadPress = true }
+for _, machine in ipairs(Machines.List) do
+	if machine.spotType == nil and machine.trains ~= "Stamina" then
+		machine.spotType = if HANDS_SPOT[machine.id] then "hands" else "hype"
+	end
+end
+
 Machines.ById = {}
 for _, machine in ipairs(Machines.List) do
 	Machines.ById[machine.id] = machine
