@@ -16,6 +16,7 @@ local Theme = require(Shared.UI.Theme)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local MuscleRig = require(Shared.MuscleRig)
+local BodyStages = require(Shared.BodyStages)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
@@ -252,6 +253,13 @@ local function open(rigs)
 	local after, afterSize = prepare(rigs.after)
 	if not before or not after then return end
 	local tallest = math.max(beforeSize.Y, afterSize.Y)
+	-- "Day one" wears the first body stages (look 0: the plain skinny body, no blocky Robloxian parts), dressed like you
+	local stages = BodyStages.new(before, before, true)
+	if stages then
+		local character = player.Character
+		local style = MuscleRig.StyleFrom(player, character or before)
+		stages:Update(function() return 0 end, style, function(_, base) return base end, nil, false)
+	end
 	show(beforeView, before, tallest)
 	show(afterView, after, tallest)
 	clearMuscles()

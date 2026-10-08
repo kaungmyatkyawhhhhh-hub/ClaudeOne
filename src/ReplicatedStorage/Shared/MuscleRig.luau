@@ -37,6 +37,7 @@ local RunService = game:GetService("RunService")
 
 local MuscleMeshes = require(script.Parent.MuscleMeshes)
 local LimbStages = require(script.Parent.LimbStages)
+local BodyStages = require(script.Parent.BodyStages)
 local Muscles = require(script.Parent.Config.Muscles)
 local Body = require(script.Parent.Config.Body)
 local SkinStages = require(script.Parent.Config.SkinStages)
@@ -301,10 +302,16 @@ local function skinPass(self)
 			if part and part.Parent then setSkin(part, if group.skinned then index else nil, skin) end
 		end
 	end
-	-- the forearm / calf stage meshes of other characters
+	-- the stage meshes of other characters: the forearms / calves, and the body stages (BodyStages: their kind and clothing on
+	-- the part; skin pieces wear the skin stage, the torso only without the game's top, the gym shorts never)
 	for _, child in ipairs(self.folder:GetChildren()) do
 		if child:IsA("MeshPart") and string.sub(child.Name, -5) == "Stage" then
-			skinned(child, true, if string.find(child.Name, "Calves") then "Pants" else "Shirt")
+			local kind = child:GetAttribute("BodyStageKind")
+			if kind then
+				skinned(child, kind == "skin" or (kind == "top" and self.style.top == nil), child:GetAttribute("Clothing"))
+			else
+				skinned(child, true, if string.find(child.Name, "Calves") then "Pants" else "Shirt")
+			end
 		end
 	end
 	self.skinStage = index
@@ -1425,12 +1432,30 @@ local function step(self, dt: number)
 	if checkWrites and not wrote and not pending and not moving then self.dirty = false end
 	-- tints: while one shows, and once more after the last one to put the colors back
 	local tintLive = updateTintState(self, dt)
-	if self.limbs and (moving or self.dirty or tintLive or self.tintWasLive or slowNow) then
+	local stagesNow = moving or self.dirty or tintLive or self.tintWasLive or slowNow
+	if self.limbs and stagesNow then
 		self.limbs:Update(function(id, key) return meshShown(self, key, id) end, {
 			skin = (self.style and self.style.skin) or nil, shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
 		}, function(id, base)
 			return tinted(self, id, base, 1, templateFor(self, if id == "Calves" then "Pants" else "Shirt") ~= nil)
 		end, self.covered, self.marble)
+	end
+	-- the other characters' body regions (BodyStages): the stage from the region's look, the strongest tint of its muscles
+	if self.bodyStages and stagesNow then
+		local skin, shorts, top = colorsOf(self)
+		self.bodyStages:Update(function(id) return currentShown(self, id) end, {
+			skin = skin, shorts = shorts, top = self.style.top and top or nil,
+			shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
+		}, function(ids, base, clothed)
+			local bestColor, bestStrength = nil, 0
+			for _, id in ipairs(if ids == "all" then {} else ids) do
+				local color, strength = tintOf(self, id, 1, clothed)
+				if strength > bestStrength then bestColor, bestStrength = color, strength end
+			end
+			return if bestColor then base:Lerp(bestColor, bestStrength) else base
+		end, self.covered, self.marble)
+	end
+	if (self.limbs or self.bodyStages) and stagesNow then
 		for _, child in ipairs(self.folder:GetChildren()) do
 			local sa = child:IsA("MeshPart") and child:FindFirstChild("SkinStage")
 			if sa and string.sub(child.Name, -5) == "Stage" and (sa :: any).Color ~= child.Color then (sa :: any).Color = child.Color end
@@ -1473,7 +1498,7 @@ local function step(self, dt: number)
 	-- the game's gym shorts on the thighs, unless the character wears its own Pants (or layered clothing on the legs)
 	if slowNow and not self.keepBody and not self.marble then
 		local legsCovered = self.covered and self.covered.RightUpperLeg
-		local legsBuilt = false
+		local legsBuilt = self.bodyStages ~= nil -- (the thigh stages wear the shorts)
 		for _, state in ipairs(self.units) do
 			if state.unit.id == "UpperLegs" and state.built then legsBuilt = true end
 		end
@@ -1564,6 +1589,7 @@ function MuscleRig.Destroy(self)
 	active[self] = nil
 	for _, state in ipairs(self.units) do destroyUnit(self, state) end
 	if self.limbs then self.limbs:Destroy() end
+	if self.bodyStages then self.bodyStages:Destroy() end
 	for body in pairs(self.hidden) do
 		if body.Parent then body.Transparency = 0 end
 	end
@@ -1675,6 +1701,12 @@ local function ensureLimbs(rig)
 	elseif not want and rig.limbs then
 		rig.limbs:Destroy()
 		rig.limbs = nil
+	end
+	-- everyone but your own character: the static body stages (BodyStages; they can't have live meshes)
+	if not isLive(rig) and BodyStages.IsOn() and not rig.bodyStages then
+		rig.bodyStages = BodyStages.new(rig.model, rig.folder, rig.static)
+		rig.dirty = true
+		rig.skinStage = nil
 	end
 end
 

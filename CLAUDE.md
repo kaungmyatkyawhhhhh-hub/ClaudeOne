@@ -61,7 +61,7 @@
   name and only wire them (prompts, doors, machines). New areas: write a builder in `tools/builders`, run it once in
   Studio to make the parts, save the place (see `tools/bake.md`). Small runtime-only visuals (gain popups, cosmetic
   gear on characters, the skateboard, visiting legends, plates on bars) are fine in code.
-- Bodies (see "Bodies and muscles" in the brief): everyone wears the Robloxian 2.0 body (`Config/Body`) and muscles are muscle v9 unified EditableMeshes (`MuscleRig`, only on your own character) that wear the character's own Shirt/Pants and the skin texture stage (`Config/SkinStages`); never go back to blobs, per-player bodies, tiers or part scaling. Every EditableMesh change costs ~40 ms: change muscle meshes rarely (see "Performance" in the brief).
+- Bodies (see "Bodies and muscles" in the brief): everyone wears the Robloxian 2.0 body (`Config/Body`) and muscles are muscle v9 unified EditableMeshes (`MuscleRig`, only on your own character; everyone else wears the static body stage meshes, `Shared/BodyStages`, picked from their replicated look values) that wear the character's own Shirt/Pants and the skin texture stage (`Config/SkinStages`); never go back to blobs, per-player bodies, tiers or part scaling. Every EditableMesh change costs ~40 ms: change muscle meshes rarely (see "Performance" in the brief).
 - Studio testing: Workspace attribute `FreshPlayer` (boolean) = play as a new player on unsaved temporary data;
   `ReplayTutorial` = replay the tutorial on your own save.
 

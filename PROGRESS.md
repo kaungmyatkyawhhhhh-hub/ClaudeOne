@@ -2,7 +2,25 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
+## LATEST (8 Oct, ~11 PM): other players' muscles as body stage meshes (WAITING FOR THE OWNER'S IMPORT)
+- **Why:** a client holds at most 8 EditableMeshes, a hard COUNT (measured: plain, fixed-size, asset copies and a 200-
+  triangle mesh all fail once 8 exist), and your own body uses 7. So nobody else can have live muscle meshes; LOD
+  EditableMeshes don't help either. Also `AssetService:CreateAssetAsync` is still "not available yet" (no mesh upload from
+  a script). Server side was already fine: `MuscleG` (+ Top, Shorts, SkinColor) on every Player, NPC and the statue.
+- **Built:** `tools/gen_body_stages.luau` (runs in Studio with the game's own muscle data; receiver
+  `tools/gen_body_stages_receive.ps1`) wrote `Downloads\other_player_stages\other_player_stages_torso.obj` (14 meshes) and
+  `..._body.obj` (48): per region 7 stages (look 0, 0.2 .. 1.0, mass monster; the waist 6) with the region's muscles at that
+  look; same coordinates, triangles and UVs (V flipped like the limb stage OBJs) as the live meshes; each <= 19,901
+  triangles; validated (no NaN, faces in range). `Config/BodyStages` (generated: regions, pieces, each mesh's bounding box).
+  `Shared/BodyStages`: per region the stage from the averaged look values (hysteresis), cross-fade 0.3 s, Shirt / Pants
+  as TextureID, skin / top / gym-shorts colors, skin texture stage on skin pieces, tints, Growth Spurt scaling, the plain
+  part hidden. `MuscleRig` uses it for every rig that isn't your own (players, NPCs, the statue); the mirror's "Day one"
+  card wears look 0. Your own character is unchanged (live meshes). Previewed in Studio (look 0 / full / monster).
+- **Off until imported** (`BodyStages.Available()`): the game runs as before. Owner: Import 3D both OBJs (settings in the
+  chat: studs, separate meshes, into Workspace), then say "imported"; then `tools/body_stages_setup.luau` moves the
+  `BS_...` MeshParts into `ReplicatedStorage.BodyStages`, checks count / sizes / the import's turn; then the 2-player test.
+
+## Before that (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
 Saved to Roblox (22:41 and 22:43); dated backup `Documents\GymArc_backups\GymArc_2026-10-08.rbxl` (via File > Download a
 Copy). Not published yet: publish (Alt+P) to make it live. Next up (owner's later briefs, waiting for the OK on this
 one): the beach gym uses the real machines, then the new spotting system (the second version of its boost table: by

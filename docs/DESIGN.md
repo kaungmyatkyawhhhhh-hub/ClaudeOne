@@ -321,10 +321,14 @@ shareable before/after snapshot.
   the LowerTorso at the same width. Lying poses are
   lifted by the extra torso depth so the back stays on the pad.
 - Muscles are real EditableMesh muscles (muscle v9 unified): they wear the character's own classic Shirt/Pants (skin shows through see-through parts of the clothing; under layered 3D clothing they hide), each muscle's outline stays on the skin and only the bulge rises with its level (small pump on every 10th level, a Growth Spurt shrinks them). Aesthetic: V-taper, round delts, peaked biceps, clear abs.
-- Only YOUR character has muscle meshes: a play client holds at most 8 EditableMeshes and a mesh's MeshPart shows nothing
-  once its EditableMesh is gone (measured 8 Oct), and your body uses 7 (torso front + back, two upper arms, two upper
-  legs, the waist). Other players, NPCs and the statue show the plain body with the skin stage;
-  everyone's forearms / calves are the static stage meshes.
+- Only YOUR character has LIVE muscle meshes: a play client holds at most 8 EditableMeshes (a hard count, measured 8 Oct
+  night: small, fixed-size and asset copies all count) and a mesh's MeshPart shows nothing once its EditableMesh is gone,
+  and your body uses 7 (torso front + back, two upper arms, two upper legs, the waist). Other players, NPCs, the statue
+  and the mirror's day-one body wear STATIC body stage meshes (owner, 8 Oct night; `Shared/BodyStages`,
+  `Config/BodyStages`): per region (torso, upper arms, thighs with their gym shorts, waist) 7 stages (look 0, 0.2 .. 1.0,
+  mass monster) made from the same muscle data, coordinates and UVs, so Shirt / Pants map the same way; each client picks
+  the stage from the replicated `MuscleG` look values (the region's muscles averaged) and cross-fades on a change.
+  Everyone's forearms / calves are the static stage meshes.
 - Skin texture stages (`Config/SkinStages`, ReplicatedStorage.SkinStages Stage1..5, the owner's 15 images in the group
   inventory): the skin (muscle meshes and body parts not under the character's own clothing) wears a SurfaceAppearance
   tinted to the skin color: Stage1 at level 0, Stage2 about half, Stage3 at the full look, Stage4 then Stage5 through the
