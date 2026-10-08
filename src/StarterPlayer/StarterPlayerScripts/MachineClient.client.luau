@@ -1589,37 +1589,47 @@ local minusButton = stepButton("Minus", 1, Icons.Minus(Colors.Text))
 local weightColumn = box({ LayoutOrder = 2, Size = UDim2.fromScale(0.38, 1), Parent = weightSection }, { Theme.List(Vertical, "XS") })
 local plusButton = stepButton("Plus", 3, Icons.Plus(Colors.Text))
 -- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift. Directly on
--- top of the + button: the same width, 1/3 of its height, a 3 px gap, a yellow background (the + button's transparency)
--- with white text (owner's layout). It lives in the
--- title row (no layout there) and is placed from the + button's screen rectangle, so it follows it on every screen.
--- (No new top-level local: this script is at Luau's 200-local limit; wired up below by name.)
+-- top of the + button, in line with it: the same left edge and width, 1/3 of its height, a 3 px gap, a slight yellow glow, a yellow background
+-- (the + button's transparency) with white text (owner's layout). It sits in the + button's holder (the button is 10 px
+-- down in it), sized and placed in scale so it lines up exactly. (No new top-level local: this script is at Luau's
+-- 200-local limit; wired up below by name.)
 do
 	local MAX_GAP, MAX_SHARE = 3, 1 / 3
 	local maxButton = Theme.Button("Secondary", {
 		Name = "Max",
-		Size = UDim2.fromOffset(44, 10),
+		-- bottom edge MAX_GAP above the + button's top (10 px into the holder)
+		Position = UDim2.new(0, 0, -MAX_SHARE, 10 - MAX_GAP),
+		Size = UDim2.fromScale(1, MAX_SHARE),
 		ZIndex = 4,
-		Parent = tapeRow,
+		Parent = plusButton.Parent,
 	})
 	-- yellow at the same see-through amount as the + button (Theme.Alpha.Panel)
 	maxButton.BackgroundColor3 = Theme.Bumper.Yellow.Fill
 	maxButton.BackgroundTransparency = Theme.Alpha.Panel
+	-- a slight yellow glow (owner, 9 Oct): its border in yellow, and a soft halo of stacked faint yellow strokes, wider and
+	-- fainter outward, on see-through copies of its shape behind it (static: no per-frame cost)
+	local yellow = Theme.Bumper.Yellow.Fill
+	local border = maxButton:FindFirstChildOfClass("UIStroke")
+	if border then border.Color, border.Transparency = yellow, 0.35 end
+	local corner = maxButton:FindFirstChildOfClass("UICorner")
+	for _, ring in ipairs({ { 2, 0.72 }, { 4, 0.86 }, { 7, 0.94 } }) do
+		local halo = New("Frame", {
+			Name = "MaxGlow",
+			BackgroundTransparency = 1,
+			Position = maxButton.Position,
+			Size = maxButton.Size,
+			ZIndex = 3,
+			Parent = maxButton.Parent,
+		}, { New("UIStroke", { Color = yellow, Thickness = ring[1], Transparency = ring[2] }) })
+		if corner then corner:Clone().Parent = halo end
+	end
 	local maxText = Theme.Text({ Text = "MAX", Font = "SemiBold", TextColor3 = Colors.Text,
 		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = maxButton })
 	Theme.TextShadow(maxText)
-	local function follow()
-		local size = plusButton.AbsoluteSize
-		local height = math.max(math.floor(size.Y * MAX_SHARE + 0.5), 6)
-		local at = plusButton.AbsolutePosition - tapeRow.AbsolutePosition
-		maxButton.Size = UDim2.fromOffset(size.X, height)
-		maxButton.Position = UDim2.fromOffset(at.X, at.Y - MAX_GAP - height)
-		-- (whole-number text that fits the thin button: below the usual 14 px minimum, the owner's call)
-		maxText.TextSize = math.max(height - 2, 6)
-	end
-	plusButton:GetPropertyChangedSignal("AbsoluteSize"):Connect(follow)
-	plusButton:GetPropertyChangedSignal("AbsolutePosition"):Connect(follow)
-	tapeRow:GetPropertyChangedSignal("AbsolutePosition"):Connect(follow)
-	follow()
+	-- (whole-number text that fits the thin button)
+	local function fit() maxText.TextSize = math.clamp(math.floor(maxButton.AbsoluteSize.Y) - 2, 6, 14) end
+	maxButton:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+	fit()
 end
 
 local weightNumber = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 0.56), Parent = weightColumn })
@@ -2603,7 +2613,7 @@ end
 minusButton.Activated:Connect(function() stepTier(-1) end)
 plusButton.Activated:Connect(function() stepTier(1) end)
 do
-	local maxButton = tapeRow:FindFirstChild("Max") :: GuiButton
+	local maxButton = plusButton.Parent:FindFirstChild("Max") :: GuiButton
 	maxButton.Activated:Connect(function()
 		if not current then return end
 		local machine = current.machine

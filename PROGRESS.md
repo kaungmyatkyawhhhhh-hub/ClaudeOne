@@ -3,7 +3,8 @@
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
 ## LATEST (9 Oct): MAX weight button
-- Machine panel: a MAX button directly on top of the + button (owner's layout after a few rounds): the same width, 1/3
+- Machine panel: a MAX button directly on top of the + button and in line with it (it sits in the + button's holder,
+  scale-sized, so the left edge and width match exactly), a slight yellow glow (owner's layout after a few rounds), 1/3
   of its height (16 px), a 3 px gap, a yellow background (bumper yellow at the + button's 0.55 transparency) with white
   14 px text; the - and + buttons sit 10 px lower (each in a same-size holder in the row). MAX is placed from the + button's
   screen rectangle (it lives in the title row, which has no layout). MachineClient, created without a new top-level local: the

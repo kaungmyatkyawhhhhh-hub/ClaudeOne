@@ -80,7 +80,8 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 ## Machine HUD (shown while on a machine)
 - Machine name in white SemiBold just above the panel (left aligned, text shadow).
 - Weight selector: +/- buttons (line icons), big SemiBold weight number, "lb · tier N" in gray under it.
-- MAX button (owner, 9 Oct) directly on top of the + button: the same width, 1/3 of its height, a 3 px gap, a yellow
+- MAX button (owner, 9 Oct) directly on top of the + button and in line with it (same left edge and width), 1/3 of its
+  height, a 3 px gap, a slight yellow glow (yellow border + stacked faint yellow strokes), a yellow
   background (the bumper yellow at the + button's transparency) with white text; the - and + buttons sit 10 px lower than
   the row centres them (to make room). Buys every next plate in order while the main muscle level allows it and the coins
   cover it, then selects the heaviest plate you can lift (server: MachineService maxWeight, the same checks as Unlock).
