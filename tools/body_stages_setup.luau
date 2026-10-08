@@ -1,4 +1,5 @@
--- body_stages_setup: run ONCE in Studio's command bar (Edit mode) after importing Downloads\other_player_stages\*.obj with
+-- body_stages_setup: run in Studio's command bar (Edit mode) after importing (again after a re-import: it replaces the old
+-- templates of the same name) Downloads\other_player_stages\*.obj with
 -- Import 3D. Makes the templates ReplicatedStorage.BodyStages.<object name> that Shared.BodyStages clones on other
 -- characters. It takes every MeshPart named "BS_..." wherever the importer put it (Workspace or anywhere else), moves it
 -- into the folder (anchored, no collision / query / touch / shadow, no texture) and removes the emptied import models.
@@ -42,6 +43,9 @@ for _, region in ipairs(Config.Regions) do
 		for _, object in pairs(stage.objects) do
 			local part = found[object.file]
 			if part then
+				-- a re-import replaces the template of the same name (e.g. the torso stages after the upper traps, 9 Oct)
+				local old = folder:FindFirstChild(object.file)
+				if old and old ~= part then old:Destroy() end
 				part.Anchored = true
 				part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = false, false, false, false
 				part.Massless = true

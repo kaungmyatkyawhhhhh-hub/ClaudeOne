@@ -41,6 +41,8 @@ local FALLBACK_SKIN = Color3.fromHex("#E0A878")
 local states = {}
 
 local function targetHeight(data)
+	-- heightInches: only the giant NPC's made-up data (taller than any player can get; saves never have it)
+	if type(data.heightInches) == "number" then return data.heightInches / BodyShape.BaseHeight end
 	return GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight
 end
 

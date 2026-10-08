@@ -331,22 +331,23 @@ end
 -- (pro gym big, starter gym medium), keeping their own clothes and hair.
 local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
 
--- One regular is the giant (owner, 9 Oct): 7'0" (the last Growth Spurt's height) with the mass monster physique, built
--- like a maxed player (every muscle at 5.5x that Growth Spurt's goal, so every muscle is at its mass monster size; the
+-- One regular is the giant (owner, 9 Oct): 8'0" (owner: taller than any player can get; players cap at 7'0") with the
+-- mass monster physique, built like a maxed player (every muscle at 5.5x that Growth Spurt's goal, so every muscle is at its mass monster size; the
 -- monster widths: shoulders, hips, arms, legs and torso depth; the V-Taper frame, the widest shoulders; the golden ratio
 -- proportions like everyone).
-local GIANT = { name = "Dante", spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black", shoes = Color3.fromHex("#2B2B2B") }
+local GIANT = { name = "Dante", heightInches = 96, spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black", shoes = Color3.fromHex("#2B2B2B") }
 local function giantData()
 	local goal = GrowthSpurts.GetGoal(GIANT.spurts)
 	local level = math.ceil(Muscles.LevelFromXp(Muscles.Look.MonsterAt * 1.1 * Muscles.CumXp(goal)))
 	local muscles = {}
 	for _, muscle in ipairs(Muscles.List) do muscles[muscle.id] = { level = level, xp = 0 } end
-	return { growthSpurts = GIANT.spurts, muscles = muscles, genetics = { frame = GIANT.frame } }
+	-- heightInches: the same width formula as players (BodyService.WidthFactors), at his own height, with no cap
+	return { growthSpurts = GIANT.spurts, heightInches = GIANT.heightInches, muscles = muscles, genetics = { frame = GIANT.frame } }
 end
 
 local function makeGiant(npc)
 	local data = giantData()
-	NpcService.ApplyBody(npc, GrowthSpurts.GetHeight(GIANT.spurts) / BodyShape.BaseHeight)
+	NpcService.ApplyBody(npc, GIANT.heightInches / BodyShape.BaseHeight)
 	BodyService.ApplyFrame(npc, data)
 	-- (clients re-apply these: Roblox rescales an NPC with a height scale on each client and drops the server's widths;
 	-- MuscleClient puts them back from this attribute)
