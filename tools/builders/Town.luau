@@ -683,10 +683,19 @@ local function buildParking()
 			end
 		end
 	end
-	-- aisle arrows and a planted island with trees and a lamp at each end of the rows
+	-- aisle arrows (pointing +X) and a planted island with trees and a lamp at each end of the rows. The head is two
+	-- mirrored right-triangle wedges lying flat: a symmetric triangle whose base sits on the shaft's end and whose tip
+	-- points ahead (one wedge alone made a half head pointing back at the shaft).
+	local function arrowHead(baseX, z, length, width)
+		for _, side in ipairs({ 1, -1 }) do
+			local cf = CFrame.fromMatrix(Vector3.new(baseX + length / 2, 0.06, z + side * width / 4), Vector3.new(0, -side, 0), Vector3.new(0, 0, side))
+			local head = Kit.wedge(lot, "ArrowHead", Vector3.new(0.02, width / 2, length), cf, C.Stripe, M.SmoothPlastic)
+			head.CanCollide, head.CanQuery, head.CanTouch, head.CastShadow = false, false, false, false
+		end
+	end
 	for _, x in ipairs({ -130, -104, -78 }) do
 		p(lot, "Arrow", Vector3.new(4, 0.02, 0.5), CFrame.new(x, 0.06, (pk.MinZ + pk.MaxZ) / 2), C.Stripe)
-		Kit.wedge(lot, "ArrowHead", Vector3.new(0.02, 1.4, 1.4), CFrame.new(x + 2.6, 0.06, (pk.MinZ + pk.MaxZ) / 2) * CFrame.Angles(0, rad(90), rad(90)), C.Stripe, M.SmoothPlastic).CanCollide = false
+		arrowHead(x + 2, (pk.MinZ + pk.MaxZ) / 2, 1.6, 1.6)
 	end
 	for _, row in ipairs(rows) do
 		for _, x in ipairs({ pk.MinX + 1.5, pk.MaxX - 1 }) do
