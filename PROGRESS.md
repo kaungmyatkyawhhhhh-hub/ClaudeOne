@@ -3,7 +3,7 @@
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
 ## LATEST (8 Oct, late night): machine diamond + prompt, red training tint, no back/neck accessories, bigger gyms, treadmills
-Saved to Roblox (22:41 and 22:43); dated backup `DocumentsGymArc_backupsGymArc_2026-10-08.rbxl` (via File > Download a
+Saved to Roblox (22:41 and 22:43); dated backup `Documents\GymArc_backups\GymArc_2026-10-08.rbxl` (via File > Download a
 Copy). Not published yet: publish (Alt+P) to make it live. Next up (owner's later briefs, waiting for the OK on this
 one): the beach gym uses the real machines, then the new spotting system (the second version of its boost table: by
 spotter count, coins only).
@@ -205,7 +205,7 @@ end: a local file can't play-test (no DataStore: PlayerData errors at load, the 
 - World areas are built once from recipes in `tools/builders` (see `tools/bake.md`), then edited as normal parts.
 
 ## First thing to do
-1. **File > Download a Copy** to `Documents\GymArc_backups\GymArc_2026-10-08.rbxl`, then **Publish (Alt+P)** for the arrow fix.
+1. **Publish (Alt+P)**: everything saved tonight (arrows, skate park, machine signs, bigger gyms ...) is not live yet.
 2. Look at the new things yourself: skateboard, poses on the posing stage, the tiles/pills, EXP numbers, the red stat highlight and the rep flash.
 
 ## What exists (all built and tested in Studio unless noted)
