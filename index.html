@@ -452,21 +452,22 @@ body .banner.tst{max-width:min(calc(100vw - 104px),320px)}body .banner.tst.ray{m
 @media (pointer:fine){.hudpills{cursor:grab}}
 /* ===== computers: sidebar HUD, map beside it, wide shop screens ===== */
 .keyhelp{display:none}.mcols{display:contents}
-html.desk #world{left:340px;width:calc(100% - 340px)}
-html.desk .hud{left:0;right:auto;top:0;bottom:0;width:340px;max-width:none;margin:0;padding:18px 16px;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;background:var(--bg);box-shadow:1px 0 0 var(--line);pointer-events:auto;gap:12px;scrollbar-width:thin}
-html.desk .hudtop{flex-wrap:wrap;align-items:stretch!important}
-html.desk .cashchip{flex:1 1 100%!important;flex-direction:column!important;align-items:flex-start!important;padding:14px 16px!important}
-html.desk .timechip{display:flex!important;flex:1 1 100%;height:210px;box-sizing:border-box}
-html.desk .hudbtns{flex:1 1 100%;width:100%;display:flex!important;flex-direction:row!important;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:center}
-html.desk .stats{grid-template-columns:1fr!important}
-html.desk .hudpills{flex-direction:column!important;align-items:stretch!important;overflow:visible!important;margin:0!important;padding:0!important;-webkit-mask-image:none!important;mask-image:none!important;cursor:default}
-html.desk .hudpills .pill{max-width:none!important;width:100%;box-sizing:border-box;justify-content:flex-start}html.desk .hudpills .pill .pt{max-width:none!important;flex:1}html.desk #pillTog{display:none!important}
-html.desk .keyhelp{display:block;order:99;font-size:.7rem;line-height:1.9;color:var(--muted);padding:10px 12px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line)}html.desk .keyhelp kbd{font-family:var(--mono);font-size:.62rem;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--surface);box-shadow:inset 0 -1px 0 var(--line);color:var(--ink)}
-html.desk .bottom{left:340px!important;right:0!important;max-width:none!important;margin:0!important;padding:0 28px 18px!important;align-items:center}
-html.desk .bottom .places{flex-wrap:wrap;justify-content:center;overflow:visible;max-width:1100px}html.desk .bottom .enter{width:min(560px,100%);position:relative}html.desk .bottom .scnbar{width:min(1100px,100%)}
+html.desk .hud{max-width:none;margin:0;left:0;right:0;padding:12px 20px 10px;background:linear-gradient(color-mix(in oklab,var(--bg) 70%,transparent),transparent);display:flex;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:10px}
+html.desk .hudtop{display:contents}
+html.desk .cashchip{order:1;flex:none!important;flex-direction:row!important;align-items:center!important;gap:14px!important;padding:10px 18px!important}
+html.desk .cashchip .hypebar{width:170px}
+html.desk .chip.stats{order:2;flex:1 1 260px;max-width:420px;display:flex!important;align-items:center;padding:10px 16px}html.desk .chip.stats .stat{flex:1}
+html.desk .timechip{order:3;display:flex!important;flex:none;flex-direction:column;justify-content:center;padding:10px 16px}html.desk .timechip .minimap{display:none}
+html.desk .hudbtns{order:4;margin-left:auto;display:flex!important;flex-direction:row!important;align-items:center;gap:8px}
+html.desk .hudpills{order:5;flex:1 1 100%;margin:0!important;padding:2px 0 6px!important}
+html.desk .keyhelp{display:block;position:fixed;left:16px;bottom:14px;z-index:9;font-size:.68rem;line-height:1.8;color:var(--muted);padding:6px 10px;border-radius:10px;background:color-mix(in oklab,var(--surface) 85%,transparent);box-shadow:var(--shadow);max-width:250px;pointer-events:none}
+html.desk .keyhelp kbd{font-family:var(--mono);font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--bg);box-shadow:inset 0 -1px 0 var(--line);color:var(--ink)}
+html.desk .bottom{max-width:none!important;padding:0 290px 16px!important;align-items:center}
+html.desk .bottom .places{flex-wrap:nowrap;justify-content:center;max-width:100%}html.desk .bottom .places.all{flex-wrap:wrap}
+html.desk .bottom .enter{width:min(560px,100%);position:relative}html.desk .bottom .scnbar{width:min(1000px,100%)}
+html.desk .place.plmore{background:var(--ink);color:var(--bg)}
 html.desk #enterBtn::after{content:"E";position:absolute;top:-8px;right:-8px;font:700 .62rem var(--mono);padding:2px 6px;border-radius:6px;background:var(--accent);color:var(--accent-ink)}
 html.desk #leaveBtn{position:relative}html.desk #leaveBtn::after{content:"Esc";margin-left:8px;font:700 .58rem var(--mono);padding:1px 5px;border-radius:4px;background:var(--line);color:var(--muted);vertical-align:middle}
-html.desk body .banner.tst{left:364px}html.desk #tut,html.desk #ftip,html.desk .achpop,html.desk .goalpop{left:calc(50% + 170px)}
 html.desk .room-in{max-width:1120px;padding-inline:36px}
 html.desk .room .perks{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
 html.desk .mcols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;flex:1;min-height:0}html.desk .mcols>section{min-height:0;overflow-y:auto}html.desk .stash{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1870,14 +1871,18 @@ function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;mov
 let bKey="";
 // floating buttons sit just above whatever the bottom bar is showing
 function bottomH(){const el=$("bottom");if(el)document.documentElement.style.setProperty("--bh",Math.round(el.offsetHeight||0)+"px")}
+// on a computer the bottom bar shows the 8 places closest to you; "All places" opens the full list
+let BOTALL=false;
+function botList(near){const L=shownPlaces().filter(p=>regionOpen(p.region)&&!p.hub);if(!DESK||BOTALL)return L;
+  const d=p=>Math.hypot(p.door[0]-S.px,p.door[1]-S.py),pick=L.slice().sort((a,b)=>d(a)-d(b)).slice(0,8);if(near&&!pick.includes(near))pick[7]=near;return L.filter(p=>pick.includes(p))}
 function renderBottom(){
   const el=$("bottom");if(!S)return;if(SCN)return renderSceneBottom();const near=nearPlace();
-  const key=(near?near.k:"")+"|"+(S.stats.flips?1:0)+"|"+(moving?1:0)+"|"+achReady();if(key===bKey)return;bKey=key;
+  const key=(near?near.k:"")+"|"+(S.stats.flips?1:0)+"|"+(moving?1:0)+"|"+achReady()+"|"+(DESK?(BOTALL?"A":Math.round(S.px/300)+","+Math.round(S.py/300)):"");if(key===bKey)return;bKey=key;
   let h="";
   if(near)h+=`<button class="enter" id="enterBtn"><span>Enter ${near.n}<small>${near.sub}</small></span>${ARROW}</button>`;
   else if(!S.stats.flips&&!moving)h+=`<span class="tip">Tap the map to walk, or pick a place below</span>`;
-  const ar=achReady();h+=`<div class="places">${MPW?`<button class="place${near&&near.plot&&near.plot.me?" here":""}" data-go="myhouse"><i style="background:${myShirt()}"></i>My house${ar?`<b class="dot">${ar}</b>`:""}</button>${S.crew?`<button class="place" data-go="crewhq"><i style="background:${S.crew.c}"></i>Crew HQ</button>`:""}`:""}${shownPlaces().filter(p=>regionOpen(p.region)&&!p.hub).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
-  el.innerHTML=h;bottomH();
+  const ar=achReady();h+=`<div class="places${DESK&&BOTALL?" all":""}">${MPW?`<button class="place${near&&near.plot&&near.plot.me?" here":""}" data-go="myhouse"><i style="background:${myShirt()}"></i>My house${ar?`<b class="dot">${ar}</b>`:""}</button>${S.crew?`<button class="place" data-go="crewhq"><i style="background:${S.crew.c}"></i>Crew HQ</button>`:""}`:""}${botList(near).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}${DESK?`<button class="place plmore" id="plMore">${BOTALL?"Fewer ▴":"All places ▾"}</button>`:""}</div>`;
+  el.innerHTML=h;bottomH();{const mb=$("plMore");if(mb)mb.onclick=()=>{BOTALL=!BOTALL;bKey="";renderBottom()}}
   const eb=$("enterBtn");if(eb)eb.onclick=()=>near.crew?openCrew(closeRoom):near.plot?openPlot(near.plot):near.hub?(audioOn(),near.go()):openRoom(near.k);
   el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(k==="crewhq"){const n=nearPlace();if(n&&n.crew)openCrew(closeRoom);else{target=[CREWHQ.x+CREWHQ.w/2,CREWHQ.y+CREWHQ.h+16];autoEnter="crewhq";moving=true}return}if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(!me)return;const n=nearPlace();if(n&&n.plot&&n.plot.me)openPlot(me);else{const[dx,dy]=plotDoor(me.plot);target=[dx,dy+(me.plot.top?10:-10)];autoEnter="myhouse";moving=true}return}if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
 }
@@ -9279,7 +9284,7 @@ function arenaPeople(ppl){if(!SCN||SCN.kind!=="arena")return;OPPS.forEach((o,i)=
   ppl.push([y,()=>drawPerson(cx,y,{shirt:o.look[2],skin:o.look[0],hair:o.look[1],hs:o.n.startsWith("Titan Tess")?8:0,size:sz,build:{c:Math.min(1,o.kg/260),l:Math.min(1,o.kg/320),b:Math.min(1,o.kg/280)},pose:fl?"bi":null,ph:wt+i})])})}
 /* ================= camera: never let the HUD or the bottom buttons cover you near the edge of a map ================= */
 let SAFE={t:0,top:0,bot:0};
-function camSafe(){const now=performance.now();if(now-SAFE.t>500&&DESK){SAFE.t=now;SAFE.top=0;const b=$("bottom");SAFE.bot=b&&!b.hidden&&b.offsetHeight?b.offsetHeight/(cssScale()*(Z||1)):0}if(now-SAFE.t>500){SAFE.t=now;const h=$("hud"),b=$("bottom");const k=cssScale()*(typeof Z==="number"&&Z>0?Z:1),cv=$("world"),ct=cv?cv.getBoundingClientRect().top:0;let bt=0;if(h&&!h.hidden)h.querySelectorAll("*").forEach(e=>{if(!e.offsetParent&&getComputedStyle(e).position!=="fixed")return;const r=e.getBoundingClientRect();if(r.height&&r.width)bt=Math.max(bt,r.bottom)});SAFE.top=Math.max(0,(bt-ct)/k);SAFE.bot=b&&!b.hidden&&b.offsetHeight?Math.max(0,((cv?cv.getBoundingClientRect().bottom:innerHeight)-b.getBoundingClientRect().top)/k):0}
+function camSafe(){const now=performance.now();if(now-SAFE.t>500){SAFE.t=now;const h=$("hud"),b=$("bottom");const k=cssScale()*(typeof Z==="number"&&Z>0?Z:1),cv=$("world"),ct=cv?cv.getBoundingClientRect().top:0;let bt=0;if(h&&!h.hidden)h.querySelectorAll("*").forEach(e=>{if(!e.offsetParent&&getComputedStyle(e).position!=="fixed")return;const r=e.getBoundingClientRect();if(r.height&&r.width)bt=Math.max(bt,r.bottom)});SAFE.top=Math.max(0,(bt-ct)/k);SAFE.bot=b&&!b.hidden&&b.offsetHeight?Math.max(0,((cv?cv.getBoundingClientRect().bottom:innerHeight)-b.getBoundingClientRect().top)/k):0}
   const head=78*(typeof tallK==="function"?Math.max(1,tallK()):1),lo=S.py-(vh-SAFE.bot-14),hi=S.py-(SAFE.top+head);if(hi>=lo)cam.y=clamp(cam.y,lo,hi)}
 /* ================= a gym in every world: each city, the Cosmos and Deep Time ================= */
 const GYMT={tokyo:{n:"Shibuya Dojo Gym",sign:"SHIBUYA DOJO",c:"#e2364a"},paris:{n:"Club Musculation",sign:"CLUB MUSCU",c:"#2a5bd7"},dubai:{n:"Desert Iron Gym",sign:"DESERT IRON",c:"#cf9a14"},monaco:{n:"Riviera Fitness",sign:"RIVIERA FIT",c:"#14a3a8"},
