@@ -2,7 +2,20 @@
 
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): release data reset + save-lock fix
+## LATEST (9 Oct): arm wrestling animation (written, NOT yet synced or tested: Studio had no place open)
+- New `ArmWrestleClient` (every client): both wrestlers lean in, right elbow on their pad, hands clasped over the
+  middle, free hand on the peg; during the match the hands swing toward the loser's side with the meter and shake;
+  the winner slams the arm down, holds it, then pumps the fist. Poses go on the joints after the Animator, so the sit
+  animation keeps the legs. The practice opponent now sits on the stool (posed the same way) instead of standing behind it.
+- Server (`ArmWrestleService`): publishes AwState / AwMeter / AwWinner on Workspace.ArmWrestleTable (meter at 10 Hz,
+  rounded); a pin ends on the full meter; the rookie stays seated for the slam (2.5 s). Config: `Social.ArmWrestle`
+  SeatedRootY, LiveAngle, PinAngle, AnimateDistance.
+- Cheap for slow devices (owner at ~20 FPS): nothing runs unless someone is at the table AND it's within 70 studs of the
+  camera; joints cached; no per-frame searches or new tables. The lighting pass now has only 4 shadow-casting lights (was 14).
+- To do in Studio: sync the 4 files (ArmWrestleClient, ArmWrestleService, Config/Social, builders/GymLighting + rerun it),
+  check the pose signs (WAIST / NECK / HIP / KNEE at the top of ArmWrestleClient) and SeatedRootY with a real sit.
+
+## Before that (9 Oct): release data reset + save-lock fix
 - **Fresh data for the release**: player saves now live in the DataStore `GymArcDataStoreV1` (the old test saves stay
   untouched in `PlayerData_1`), so everyone starts over. New players start at Growth Spurt 0 (4'0"), muscles 0, 0 coins
   (`DataTemplate`; was Growth Spurt 6 for testing). The leaderboards (`LeaderboardV1_<group>`) and crews (`CrewsV1`,
@@ -17,13 +30,13 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## Before that (9 Oct): gym lighting pass
 - New builder `tools/builders/GymLighting` (run in Studio; `Gyms.Build` now runs it at the end). Only lights and small
   light fixtures, no other geometry changed; Lighting service untouched (outdoors looks the same).
-- **Starter gym**: pendants brighter and tighter (Brightness 9, Range 24, Angle 90: real warm pools; every third one
-  casts shadows), 3 extra pendants over the centre aisle and leg machines, fills dimmer and less orange, high windows
+- **Starter gym**: pendants brighter and tighter (Brightness 9, Range 24, Angle 90: real warm pools; 2 of them
+  cast shadows), 3 extra pendants over the centre aisle and leg machines, fills dimmer and less orange, high windows
   brighter, the neon sign's spill kept subtle. 9 warm wall washers (small black can lights on brackets) graze the brick
   on the west and back walls (`StarterGym.LightingPass`).
 - **Pro gym**: spotlights brighter and tighter (Brightness 7, Angle 60; the fills were washing their pools out), fills
   and ceiling light bars toned down, 14 neutral wall washers on the east and back walls (`ProGym.LightingPass`).
-- 109 lights in both gyms (was ~83), 14 cast shadows. Screenshots: lighting_before/after_starter, lighting_before/after_pro,
+- 109 lights in both gyms (was ~83), only 4 cast shadows (cut from 14 for the owner's ~20 FPS). Screenshots: lighting_before/after_starter, lighting_before/after_pro,
   lighting_wall_washer. Values are at the top of the builder to tweak.
 
 ## Before that (9 Oct): new loading screen and menu, matte machine signs

@@ -291,7 +291,7 @@ Coach NPC quests, Muscle of the Day (2x one group, shown on a board), rush hour 
 seasonal events (summer beach, Halloween gym, winter sled pulls).
 
 ## 13. Social and showing off
-Arm wrestling (Biceps, Forearms, Front Delts + tap speed), spotting (see "Spotting" below), workout-together bonus,
+Arm wrestling (Biceps, Forearms, Front Delts + tap speed; animated on every client, `ArmWrestleClient`: elbows on the pads, clasped hands swing with the meter, the winner slams and pumps a fist), spotting (see "Spotting" below), workout-together bonus,
 crews (up to 8, tags, crew leaderboard), emotes (flex poses, high five, shake chug), statue of the strongest player,
 wall leaderboards per muscle group (crown for #1), membership card (Bronze→Diamond), progress mirror,
 shareable before/after snapshot.

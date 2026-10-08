@@ -27,6 +27,16 @@ local seats = {
 	{ player = nil, rookie = nil, seat = nil, cframe = nil, prompt = nil },
 }
 local match = nil -- { state = "waiting" | "countdown" | "live", meter, startedAt, lastTap = {}, strength = {}, rookie }
+local tableModel = nil -- Workspace.ArmWrestleTable
+
+-- What every client needs to animate the match (ArmWrestleClient): attributes on the table. AwState idle / waiting /
+-- countdown / live / result, AwMeter -1..1 (+1 = seat 1 wins), AwWinner 0 (none / draw), 1 or 2.
+local function publish(state, winner)
+	if not tableModel then return end
+	tableModel:SetAttribute("AwState", state or (match and match.state) or "idle")
+	tableModel:SetAttribute("AwMeter", match and match.meter and math.floor(match.meter * 100 + 0.5) / 100 or 0)
+	if winner ~= nil then tableModel:SetAttribute("AwWinner", winner) end
+end
 
 ------------------------------------------------------------------------
 -- The table
@@ -36,6 +46,8 @@ local match = nil -- { state = "waiting" | "countdown" | "live", meter, startedA
 local function findTable()
 	local model = Workspace:WaitForChild("ArmWrestleTable", 10)
 	if not model then return false end
+	tableModel = model
+	publish("idle", 0)
 	for index, side in ipairs({ -1, 1 }) do
 		local stool = model:FindFirstChild("Stool" .. index)
 		if not stool then return false end
@@ -73,6 +85,7 @@ local function broadcast(extra)
 		for key, value in pairs(extra or {}) do info[key] = value end
 		send(index, info)
 	end
+	publish()
 end
 
 local function standUp(player)
@@ -115,9 +128,11 @@ local function leave(player, silent)
 		remote:FireClient(remaining, "State", { state = "result", won = true, reason = "Your opponent left." })
 		match = { state = "waiting" }
 		clearRookie()
+		publish("waiting", 0)
 	elseif not remaining then
 		match = nil
 		clearRookie()
+		publish("idle", 0)
 	end
 	refreshPrompts()
 end
@@ -150,8 +165,16 @@ local function finish(winnerIndex, reason)
 			remote:FireClient(player, "State", { state = "result", won = won, draw = winnerIndex == nil, coins = coins, reason = reason })
 		end
 	end
+	-- pinned / time: the winner slams the arm down (clients animate it), then everyone stands up
+	if winnerIndex and reason == "Pinned!" then match.meter = winnerIndex == 1 and 1 or -1 end
+	publish("result", winnerIndex or 0)
 	match = nil
-	clearRookie()
+	-- the practice opponent stays seated for the slam, then leaves with the player
+	local rookie = nil
+	for _, seat in ipairs(seats) do
+		if seat.rookie then rookie = seat.rookie seat.rookie = nil end
+	end
+	if rookie then task.delay(2.5, function() rookie:Destroy() end) end
 	-- both players stand up after a match, so the next pair can sit
 	task.delay(2.5, function()
 		for _, seat in ipairs(seats) do
@@ -165,6 +188,7 @@ local function startMatch()
 	local started = match
 	if not started then return end
 	match.state = "countdown"
+	publish("countdown", 0)
 	match.meter = 0
 	match.lastTap = {}
 	match.strength = {}
@@ -228,8 +252,20 @@ end
 
 local function seatRookie(index)
 	local spec = Config.Rookies[rng:NextInteger(1, #Config.Rookies)]
-	local rookieSpec = { name = spec.name, skin = spec.skin, shirt = spec.shirt, pants = spec.pants }
+	-- animated: only the root is anchored, so ArmWrestleClient can pose it (seated, arm on the table) like a player
+	local rookieSpec = { name = spec.name, skin = spec.skin, shirt = spec.shirt, pants = spec.pants, animated = true }
 	local model = NpcService.Build(rookieSpec, seats[index].cframe)
+	if model then
+		-- sit it on the stool: the root where a seated player's root goes (Config ArmWrestle.SeatedRoot, above the seat)
+		local stool = seats[index].seat
+		local root = model:FindFirstChild("HumanoidRootPart")
+		if stool and root then
+			local facing = CFrame.lookAt(stool.Position, Vector3.new(Config.TableSpot.X, stool.Position.Y, Config.TableSpot.Z))
+			model:PivotTo(facing * CFrame.new(0, Config.SeatedRootY, 0) * root.CFrame:ToObjectSpace(model:GetPivot()))
+		end
+		model:SetAttribute("ArmWrestleSide", index)
+		CollectionService:AddTag(model, "ArmWrestleRookie")
+	end
 	-- the player may have left while the rookie was being built
 	if not model then return end
 	if not match or not (seats[1].player or seats[2].player) then

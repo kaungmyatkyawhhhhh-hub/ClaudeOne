@@ -2,11 +2,11 @@
 -- 9 Oct: "make the gym lighting better"). The old setup was flat and muddy: weak wide pendants drowned by fill lights,
 -- black brick walls, and the pro gym's spotlights washed out by its fills (their pools never showed).
 -- What it does (running it again gives the same result):
---   Starter gym: pendants brighter and tighter (real warm pools on the floor, every third one casts shadows), the fill
+--   Starter gym: pendants brighter and tighter (real warm pools on the floor, 2 cast shadows), the fill
 --   lights dimmer and less orange, the high windows let in more daylight, the neon sign's spill kept subtle. New warm
 --   wall washers (small black can lights on a bracket) graze the brick on the west and back walls, and three more
 --   pendants light the centre aisle and the leg machines. Built in StarterGym.LightingPass.
---   Pro gym: spotlights brighter and tighter (pools over every machine, every third one casts shadows), fills and the
+--   Pro gym: spotlights brighter and tighter (pools over every machine, 2 cast shadows), fills and the
 --   ceiling light bars turned down so the pools read; neutral wall washers light the east and back walls (ProGym.LightingPass).
 -- Gyms.Build() runs it at the end. Lighting itself (Lighting service, post effects) is not touched.
 local Workspace = game:GetService("Workspace")
@@ -24,7 +24,7 @@ local WASH_NEUTRAL = rgb(255, 236, 214)
 local FIXTURE = rgb(26, 26, 28)
 
 GymLighting.Starter = {
-	Pendant = { Brightness = 9, Range = 24, Angle = 90, ShadowEvery = 3 },
+	Pendant = { Brightness = 9, Range = 24, Angle = 90, ShadowEvery = 12 }, -- only 2 of 23 cast shadows (owner plays at ~20 FPS)
 	Fill = { Brightness = 0.6, Range = 24, Color = FILL },
 	Window = { Brightness = 2, Range = 20, Angle = 50 },
 	Sign = { Brightness = 1.4, Range = 10 },
@@ -36,7 +36,7 @@ GymLighting.Starter = {
 	ExtraPendants = { Vector3.new(0, 10.6, -34), Vector3.new(0, 10.6, -52), Vector3.new(16, 10.6, -54) },
 }
 GymLighting.Pro = {
-	Spot = { Brightness = 7, Range = 22, Angle = 60, ShadowEvery = 3 },
+	Spot = { Brightness = 7, Range = 22, Angle = 60, ShadowEvery = 9 }, -- 2 of 16 cast shadows
 	Fill = { Brightness = 0.55, Color = rgb(255, 232, 205) },
 	Bar = { Brightness = 0.6, Range = 16, Angle = 100 },
 	Wash = { Brightness = 2.5, Range = 18, Angle = 90, Color = WASH_NEUTRAL },

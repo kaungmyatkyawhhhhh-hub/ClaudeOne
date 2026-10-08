@@ -28,6 +28,11 @@ Social.ArmWrestle = {
 	},
 	RookieTapsPerSecond = { 5, 8 },   -- random in this range each match
 	RookieStrength = { 0.85, 1.05 },  -- x the player's strength
+	SeatedRootY = 1.6,      -- a seated character's root above the stool's Seat (the practice opponent sits there too)
+	-- the animation (ArmWrestleClient, every client): the clasped hands swing toward the loser's table side
+	LiveAngle = 70,         -- degrees from upright at a full meter
+	PinAngle = 86,          -- the slam at the end
+	AnimateDistance = 70,   -- studs from the camera; farther away the table isn't animated (saves frame time)
 }
 
 -- Crews: small groups with a name and a short tag shown above members' heads. Saved across servers.
