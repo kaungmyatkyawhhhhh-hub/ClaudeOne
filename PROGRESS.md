@@ -57,7 +57,7 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   group. Levels still exist inside (saves/caps/machines). `tests/exp` checks it.
 - **Muscles (v8):** real EditableMesh muscles that grow from the skin, wear the character's own Shirt/Pants, snatched-waist
   torso for everyone, red tint when hovered in Stats (a steady ~40% blend that keeps the shading; hover keeps 0.12 s of grace and a hovered
-  label stays put, so it never flickers) and a warm 35% flash on each rep (only muscles facing the camera, soft 4-row edge, clothing 15%, the torso under a muscle tints with it so it works at level 0; `MuscleRig.SetHighlight` / `MuscleRig.Flash`). No z-fighting: the torso sits 0.05 under the shells (push grows as the muscle emerges), barely-grown shells sink under it, and each muscle's skin edge snaps onto the torso (`MuscleMeshes.EdgeSnap`). Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
+  label stays put, so it never flickers) and a warm 35% flash on each rep (only muscles facing the camera, soft 4-row edge, clothing 15%, the torso under a muscle tints with it so it works at level 0; `MuscleRig.SetHighlight` / `MuscleRig.Flash`). No z-fighting: the torso sits 0.05 under the shells (each push grows with the muscle it is for), the torso and the muscles that ride its waist morph (muscle_v8 morph_off) update in the same frame, barely-grown shells sink 0.3 under it, each muscle's skin edge snaps onto the torso (`MuscleMeshes.EdgeSnap`), and a seam snaps too while its neighbour is flat. Pipeline: `muscle_v8/` (local, git-ignored) -> `tools/gen_muscle_data`
   -> `ReplicatedStorage/MuscleData` -> `Shared/MuscleMeshes` -> `Shared/MuscleRig` -> `MuscleClient`. Keep `muscle_v8/`
   unzipped before running the generator (it empties MuscleData first).
 - **Muscle v8-1 (7 Oct, "smooth, no seams" + spikes fix v2 + more definition):** border vertices grow with the average g of
@@ -182,6 +182,6 @@ Everything is in Studio and pushed; **File > Save to Roblox first** (new models,
   642,353 / 1,231,961 EXP ...). Retune with `lune run tests/pacing tune` if gains, tiers or stamina change.
 
 ## Studio test hooks (with Workspace attribute `FreshPlayer` = temporary new player)
-`TestCoins`, `TestSpurts`, `TestMuscleShare` (0..6 x the goal, live; 2 = full look, 5 = mass monster), `TestMuscleIds`, `TestOpenMirror`, `TestPhoneLayout`,
+`TestCoins`, `TestSpurts`, `TestMuscleShare` (0..6 x the goal, live; 2 = full look, 5 = mass monster), `TestMuscleIds` ("Biceps,Triceps", or with own shares "Abs=0.7,Lats=2"), `TestOpenMirror`, `TestPhoneLayout`,
 `ReplayTutorial`, `TestGenetics` / `TestRerollGenetics` ("C,B,A,S,S,D" or "C,B,A,S,S,D,VTaper": six grades in group order, optional frame, for the first roll / the
 next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's moment, 7 = overall plate), `TestFlashSlow` (n = rep flash n times slower, for screenshots), `PoseDebug` (PoseController prints joints found/missing and playing tracks). Without FreshPlayer: `TestMuscleExp` (e.g. 2000000) = every muscle at that EXP on your own save, saving off for the session. Mouse-free machine tests: from the server context `Remotes.MachineState:FireClient(player, "Enter", model)`.

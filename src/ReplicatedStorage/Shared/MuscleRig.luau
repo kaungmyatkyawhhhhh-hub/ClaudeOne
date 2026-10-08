@@ -67,7 +67,9 @@ local TINT = {
 	Pump = 0.02, PumpTime = 0.2,             -- the tiny pump with each flash (g * 1.02 for 0.2s)
 }
 -- Below EMERGE growth a muscle shell sinks up to SINK studs under the skin (gone at level 0, rising into place as it grows).
-local EMERGE, SINK = 0.12, 0.12
+-- SINK is deeper than the most the torso is ever pushed in (0.25, tools/gen_muscle_data): a flat front muscle next to a grown
+-- lat (whose push lowers the torso there) must still stay under it.
+local EMERGE, SINK = 0.12, 0.3
 local REALLOCATE_EVERY = 0.4
 
 -- The snatched-waist torso: the upper half rides in the torso-front mesh (MuscleMeshes: one mesh for the front muscles and
@@ -490,21 +492,27 @@ local function applyRange(self, group, range)
 		local taper, start, scale = group.taper, data.morphStart, group.snatchScale or Vector3.one
 		local front, back = data.pushFront, if self.backBuilt then data.pushBack else nil
 		local owners = data.owners or {}
+		local frontBy, backBy = data.pushFrontBy or {}, data.pushBackBy or {}
 		local emerged = {}
+		local function emergence(id: string?): number
+			if not id then return 1 end
+			local e = emerged[id]
+			if not e then
+				e = math.clamp(currentShown(self, id) / EMERGE, 0, 1)
+				e = e * e * (3 - 2 * e)
+				emerged[id] = e
+			end
+			return e
+		end
 		for i = range.first, range.first + range.count - 1 do
-			local push = front and front[i] or Vector3.zero
-			if back and back[i].Magnitude > push.Magnitude then push = back[i] end
-			-- the push grows with the muscle over it, like the shell rises (at level 0 neither: just the smooth torso)
+			-- each push grows with the muscle it is for, like that shell rises (at level 0 none: just the smooth torso)
 			local owner = owners[i]
-			if owner and push.Magnitude > 0 then
-				local id = owner[1]
-				local e = emerged[id]
-				if not e then
-					e = math.clamp(currentShown(self, id) / EMERGE, 0, 1)
-					e = e * e * (3 - 2 * e)
-					emerged[id] = e
-				end
-				push *= e
+			local fallback = owner and owner[1]
+			local push = Vector3.zero
+			if front and front[i].Magnitude > 0 then push = front[i] * emergence(frontBy[i] or fallback) end
+			if back and back[i].Magnitude > 0 then
+				local b = back[i] * emergence(backBy[i] or fallback)
+				if b.Magnitude > push.Magnitude then push = b end
 			end
 			local position = (start[i] + (data.base[i] - start[i]) * w + push) * scale
 			if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
@@ -523,6 +531,17 @@ local function applyRange(self, group, range)
 	local v = if vein then veinFor(self, range.id) else 0
 	local morph = data.morph
 	local snapK, skinPos, skinNormal = data.snapK or {}, data.skinPos or {}, data.skinNormal or {}
+	local seamK, seamBy = data.seamK or {}, data.seamBy or {}
+	local flatness = {} -- [muscle id] = 1 while it is flat (sunk), 0 once it has risen
+	local function flatOf(id: string): number
+		local f = flatness[id]
+		if not f then
+			local e = math.clamp(currentShown(self, id) / EMERGE, 0, 1)
+			f = 1 - e * e * (3 - 2 * e)
+			flatness[id] = f
+		end
+		return f
+	end
 	local w = waistProgress(self)
 	local waistOff = 1 - w
 	for i = range.first, range.first + range.count - 1 do
@@ -539,6 +558,11 @@ local function applyRange(self, group, range)
 		local position = base[i] + delta[i] * gv
 		-- the skin edge blends into the torso surface under it (position and, below, normal)
 		local snap = snapK[i]
+		-- a seam whose neighbour is flat is a skin edge too
+		if not snap and seamK[i] then
+			local s = seamK[i] * flatOf(seamBy[i])
+			if s > 0.001 then snap = s end
+		end
 		if snap then position = position:Lerp(skinPos[i], snap) end
 		if morph and morph[i] then position += morph[i] * waistOff end -- (rides the torso's waist morph)
 		-- a muscle that has barely grown stays just under the torso (its outline and lighting would show as a line on the flat
@@ -564,6 +588,10 @@ local function applyRange(self, group, range)
 	group.appliedVein[range] = v
 	group.appliedW = group.appliedW or {}
 	group.appliedW[range] = w
+	if data.seamK then
+		group.appliedSeam = group.appliedSeam or {}
+		group.appliedSeam[range] = emergeKey(self)
+	end
 end
 
 -- true when the mesh, a mesh it blends with, or its vein amount changed since it was last applied
@@ -575,6 +603,7 @@ local function rangeChanged(self, group, range): boolean
 	end
 	if last == nil or math.abs(meshShown(self, range.key, range.id) - last) > MIN_CHANGE then return true end
 	if group.data.morph and math.abs(waistProgress(self) - ((group.appliedW and group.appliedW[range]) or -1)) > 0.004 then return true end
+	if group.data.seamK and math.abs(emergeKey(self) - ((group.appliedSeam and group.appliedSeam[range]) or -1)) > 0.01 then return true end
 	local others = group.appliedOthers[range]
 	for _, key in ipairs(range.blendKeys) do
 		if not others or math.abs(meshShown(self, key, MuscleMeshes.MuscleId(key)) - (others[key] or 0)) > MIN_CHANGE then return true end
@@ -814,6 +843,7 @@ local function destroyGroup(group)
 	group.applied, group.appliedOthers, group.appliedVein = {}, {}, {}
 	group.rangeColors, group.rangeKinds, group.kindBase, group.shownColors = nil, nil, nil, nil
 	group.extraColors, group.extraShown, group.appliedW = nil, nil, nil
+	group.appliedSeam = nil
 end
 
 local function destroyUnit(state)
@@ -990,6 +1020,18 @@ local function step(self, dt: number, budget: number): number
 		if state.unit.id == "TorsoBack" and state.built then backBuilt = true end
 	end
 	self.backBuilt = backBuilt
+	-- the snatched torso and every muscle that rides its waist morph move in the SAME frame, outside the vertex budget: a muscle
+	-- applied a frame later than the torso lets the torso poke through it (jagged dark shapes down the chest / abs midline)
+	local torsoMoves = false
+	for _, state in ipairs(self.units) do
+		if not state.built then continue end
+		for _, group in ipairs(state.groups) do
+			if not (group.data and group.mesh) then continue end
+			for _, range in ipairs(group.data.ranges) do
+				if range.snatched and rangeChanged(self, group, range) then torsoMoves = true end
+			end
+		end
+	end
 	for _, state in ipairs(self.units) do
 		state.wanted = wantedUnit(self, state)
 		if state.built then
@@ -1019,7 +1061,8 @@ local function step(self, dt: number, budget: number): number
 				end
 				-- apply the muscles that changed (within the frame budget)
 				for _, range in ipairs(if group.data then group.data.ranges else {}) do
-					if (budget - used > 0 or used == 0) and rangeChanged(self, group, range) then
+					local together = torsoMoves and (range.snatched or (group.data.morph ~= nil and group.data.morph[range.first] ~= nil))
+					if (together or budget - used > 0 or used == 0) and rangeChanged(self, group, range) then
 						applyRange(self, group, range)
 						used += range.count
 					end

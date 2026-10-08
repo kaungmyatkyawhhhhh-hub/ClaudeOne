@@ -201,14 +201,23 @@ local function onPlayerAdded(player)
 		if type(testSpurts) == "number" then data.growthSpurts = math.clamp(math.floor(testSpurts), 0, 20) end
 		-- optional "TestMuscleShare" (0 to 6 times the goal's EXP; there is no level cap; 2 = full look, 5 = mass monster) and "TestMuscleIds" ("Biceps,Triceps", default all): start with those muscles at that
 		-- share of the Growth Spurt goal (to test the muscle blobs). Changing TestMuscleShare while playing updates the muscles.
+		-- An entry can carry its own share ("Abs=0.7,MidChest=0.7"): those muscles get that, the rest of the list TestMuscleShare.
 		local function applyTestMuscles()
 			local share = workspace:GetAttribute("TestMuscleShare")
 			if type(share) ~= "number" then return end
 			local goal = GrowthSpurts.GetGoal(data.growthSpurts)
 			local only = workspace:GetAttribute("TestMuscleIds")
+			local listed = nil -- [id] = its share (nil list = every muscle at TestMuscleShare)
+			if type(only) == "string" and only ~= "" then
+				listed = {}
+				for item in string.gmatch(only, "[^,]+") do
+					local id, own = string.match(item, "^%s*([%w_]+)%s*=%s*([%d%.]+)%s*$")
+					if id then listed[id] = tonumber(own) else listed[(string.gsub(item, "%s", ""))] = share end
+				end
+			end
 			for id, entry in pairs(data.muscles) do
-				local wanted = type(only) ~= "string" or only == "" or string.find("," .. only .. ",", "," .. id .. ",", 1, true) ~= nil
-				entry.level = wanted and math.ceil(Muscles.LevelFromXp(math.clamp(share, 0, 6) * Muscles.CumXp(goal)) - 1e-6) or 0
+				local wanted = if listed then listed[id] else share
+				entry.level = if wanted then math.ceil(Muscles.LevelFromXp(math.clamp(wanted, 0, 6) * Muscles.CumXp(goal)) - 1e-6) else 0
 			end
 			if player.Parent then replicate(player, { "muscles" }, data.muscles) end
 		end

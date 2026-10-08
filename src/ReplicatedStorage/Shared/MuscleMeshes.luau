@@ -332,6 +332,55 @@ local function edgeRows(data): { [number]: number }
 	return rows
 end
 
+-- The seam of a torso muscle: open-edge vertices that DO blend into a neighbouring muscle (and 3 rows in), with that
+-- neighbour (the heaviest blend, carried inward): [vertex] = { row, neighbour mesh key }. When the neighbour is flat (sunk under
+-- the skin) the seam is a skin edge too and snaps onto the torso (MuscleRig scales seamK by how flat the neighbour is).
+local function seamRows(data, edge): { [number]: { any } }
+	local partner = {}
+	for i, list in pairs(data.blends or {}) do
+		local best, key = 0, nil
+		for _, pair in ipairs(list) do
+			if pair[2] > best then best, key = pair[2], pair[1] end
+		end
+		partner[i] = key
+	end
+	local use, adjacent = {}, {}
+	local t = data.tris
+	for k = 1, #t, 3 do
+		local corners = { t[k] + 1, t[k + 1] + 1, t[k + 2] + 1 }
+		for c = 1, 3 do
+			local a, b = corners[c], corners[c % 3 + 1]
+			adjacent[a] = adjacent[a] or {}
+			table.insert(adjacent[a], b)
+			local key = if a < b then a * 65536 + b else b * 65536 + a
+			use[key] = (use[key] or 0) + 1
+		end
+	end
+	local rows = {}
+	for key, n in pairs(use) do
+		if n == 1 then
+			for _, v in ipairs({ key // 65536, key % 65536 }) do
+				if edge[v] == nil and partner[v] then rows[v] = { 0, partner[v] } end
+			end
+		end
+	end
+	local frontier = {}
+	for v in pairs(rows) do table.insert(frontier, v) end
+	for row = 1, 3 do
+		local nextFrontier = {}
+		for _, v in ipairs(frontier) do
+			for _, w in ipairs(adjacent[v] or {}) do
+				if rows[w] == nil and edge[w] == nil then
+					rows[w] = { row, rows[v][2] }
+					table.insert(nextFrontier, w)
+				end
+			end
+		end
+		frontier = nextFrontier
+	end
+	return rows
+end
+
 -- The merged data of one group { part, records }: one set of arrays for all its muscles. Each range (one mesh) knows its
 -- muscle id, its mesh key and the neighbouring mesh keys it blends with (range.blendKeys); blends[vertex] lists them.
 function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
@@ -342,6 +391,7 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 	local base, delta, uv, tris, faceKind, ranges = {}, {}, {}, {}, {}, {}
 	local nbase, ndelta, vein, blends, bands, morph = {}, {}, {}, {}, {}, {}
 	local snapK, skinPos, skinNormal = {}, {}, {}
+	local seamK, seamBy = {}, {}
 	local hasMorph = false
 	local hasNormals, hasVeins = true, true
 	local vertexCount, triCount = 0, 0
@@ -364,6 +414,7 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 		data.bands = data.bands or tintBands(data, data.blends)
 		local own = data.bands
 		local edge = if record.part == "UpperTorso" then edgeRows(data) else {}
+		local seam = if record.part == "UpperTorso" then seamRows(data, edge) else {}
 		for i = 1, data.verts do
 			bands[vertexCount + i] = own[i]
 		end
@@ -375,6 +426,17 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 			if k and data.skinAt then
 				local fade = math.clamp((SNAP_FAR - data.skinAt[i].Magnitude) / (SNAP_FAR - SNAP_NEAR), 0, 1)
 				k *= fade * fade * (3 - 2 * fade)
+			end
+			-- a seam snaps like an edge, but only as far as its neighbour is flat (MuscleRig)
+			local s = seam[i]
+			if not k and s and data.skinAt and data.skinAt[i].Magnitude > 1e-6 then
+				local fade = math.clamp((SNAP_FAR - data.skinAt[i].Magnitude) / (SNAP_FAR - SNAP_NEAR), 0, 1)
+				local sk = MuscleMeshes.EdgeSnap[s[1]] * fade * fade * (3 - 2 * fade)
+				if sk > 0 then
+					seamK[at], seamBy[at] = sk, MuscleMeshes.MuscleId(s[2])
+					skinPos[at] = data.base[i] + data.skinAt[i] - data.skinNormal[i] * EDGE_SINK
+					skinNormal[at] = data.skinNormal[i]
+				end
 			end
 			if k and k > 0 and data.skinAt and data.skinAt[i].Magnitude > 1e-6 then
 				snapK[at] = k
@@ -402,9 +464,11 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 	end
 	-- the snatched torso as one more range: its shape (the snatched max) in base, the wide start in morphStart, no growth
 	local morphStart, owners, ownerFacing, pushFront, pushBack = nil, nil, nil, nil, nil
+	local pushFrontBy, pushBackBy = nil, nil
 	if snatched then
 		morphStart, owners = {}, {}
 		ownerFacing, pushFront, pushBack = {}, {}, {}
+		pushFrontBy, pushBackBy = {}, {}
 		local count = #snatched.verts
 		local range = { id = "Snatched", key = "Snatched", snatched = true, shorts = false, first = vertexCount + 1, count = count,
 			triFirst = triCount + 1, triCount = #snatched.tris / 3, blendKeys = {} }
@@ -422,6 +486,11 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 			-- muscles (built with the torso), under the back muscles only while those are built (MuscleRig picks)
 			pushFront[at] = -normal * ((snatched.push and snatched.push[i]) or 0)
 			pushBack[at] = -normal * ((snatched.pushBack and snatched.pushBack[i]) or 0)
+			-- the muscle each push is for: it grows with that muscle (a torso point under a lat's border but owned by the
+			-- obliques must sink with the lat, not stay up with flat obliques)
+			local byFront, byBack = snatched.pushBy and snatched.pushBy[i], snatched.pushBackBy and snatched.pushBackBy[i]
+			pushFrontBy[at] = if byFront and byFront ~= "" then MuscleMeshes.MuscleId(byFront) else nil
+			pushBackBy[at] = if byBack and byBack ~= "" then MuscleMeshes.MuscleId(byBack) else nil
 			-- tinted with the muscle it lies under (its band at the owner's nearest vertex), so the highlight looks the same
 			-- whichever surface shows; owners[at] = { muscle id, band }
 			local owner = snatched.owner and snatched.owner[i]
@@ -456,7 +525,9 @@ function MuscleMeshes.LoadGroup(group: any, withSnatched: boolean?): any
 	end
 	assert(triCount <= 20000, "group " .. key .. " has more than 20,000 triangles")
 	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, morphStart = morphStart, bands = bands,
-		morph = if hasMorph then morph else nil, owners = owners, snapK = snapK, skinPos = skinPos, skinNormal = skinNormal, ownerFacing = ownerFacing, pushFront = pushFront, pushBack = pushBack,
+		morph = if hasMorph then morph else nil, owners = owners, snapK = snapK, skinPos = skinPos, skinNormal = skinNormal,
+		seamK = if next(seamK) then seamK else nil, seamBy = seamBy, ownerFacing = ownerFacing, pushFront = pushFront, pushBack = pushBack,
+		pushFrontBy = pushFrontBy, pushBackBy = pushBackBy,
 		nbase = hasNormals and nbase or nil, ndelta = hasNormals and ndelta or nil, vein = hasVeins and vein or nil,
 		clothing = MuscleMeshes.ByName[group.records[1]].clothing or "Shirt", faceKind = faceKind, ranges = ranges, triCount = triCount }
 	partCache[key] = merged
@@ -482,7 +553,7 @@ function MuscleMeshes.LoadSnatched(part: string): any
 		uv[i] = Vector2.new(raw.uv[i * 2 - 1], raw.uv[i * 2])
 	end
 	local data = { verts = verts, uv = uv, tris = raw.tris, normals = nil :: { Vector3 }?, start = nil :: { Vector3 }?,
-		push = raw.push, pushBack = raw.pushBack, owner = raw.owner }
+		push = raw.push, pushBack = raw.pushBack, owner = raw.owner, pushBy = raw.pushBy, pushBackBy = raw.pushBackBy }
 	if raw.start and #raw.start == #raw.verts then
 		local start = {}
 		for i = 1, #raw.start // 3 do start[i] = Vector3.new(raw.start[i * 3 - 2], raw.start[i * 3 - 1], raw.start[i * 3]) end

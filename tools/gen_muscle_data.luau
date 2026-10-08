@@ -97,6 +97,7 @@ do
 end
 local torsoNeed = table.create(#torso.max, 0)     -- under the front muscles (built with the torso, always there)
 local torsoNeedBack = table.create(#torso.max, 0) -- under the back muscles (only while they are built)
+local torsoNeedBy, torsoNeedBackBy = {}, {} -- the mesh that needs the most of each push (the push grows with that muscle)
 local FRONT = { MidChest = true, UpperChest = true, Abs = true, Obliques = true }
 local torsoOwner = {} -- [vertex] = { name, index, distance }
 local muscleMorph = {} -- [mesh name] = { offsets (vector) }
@@ -205,6 +206,7 @@ for _, entry in ipairs(manifest.meshes) do
 		-- three rows in from them (0-3); the game snaps them onto the torso (MuscleMeshes.EdgeSnap), so the torso doesn't move for
 		-- rows 0-1 (they lie on it); rows 2-3, mostly the shell's own, still push it down
 		local edgeRow = {}
+		local seamRow = {} -- open edges that blend into a neighbour (and 3 rows in): they snap to the torso when it is flat
 		do
 			local blendSum = {}
 			for _, list in pairs(data.blend or {}) do
@@ -243,6 +245,27 @@ for _, entry in ipairs(manifest.meshes) do
 				end
 				frontier = nextFrontier
 			end
+			for key, n in pairs(use) do
+				if n == 1 then
+					for _, v in ipairs({ key // 65536, key % 65536 }) do
+						if edgeRow[v] == nil then seamRow[v] = 0 end
+					end
+				end
+			end
+			frontier = {}
+			for v in pairs(seamRow) do table.insert(frontier, v) end
+			for row = 1, 3 do
+				local nextFrontier = {}
+				for _, v in ipairs(frontier) do
+					for _, w in ipairs(adjacent[v] or {}) do
+						if seamRow[w] == nil and edgeRow[w] == nil then
+							seamRow[w] = row
+							table.insert(nextFrontier, w)
+						end
+					end
+				end
+				frontier = nextFrontier
+			end
 		end
 		for i = 1, #data.base // 3 do
 			local p = vector.create(data.base[i * 3 - 2], data.base[i * 3 - 1], data.base[i * 3])
@@ -263,22 +286,27 @@ for _, entry in ipairs(manifest.meshes) do
 				local height = vector.dot(shell - onMax, n) -- the shell above the torso (negative = inside it)
 				if height < TORSO_GAP and (edgeRow[i] == nil or edgeRow[i] >= 2) then
 					local need = TORSO_GAP - height
-					local needs = if FRONT[string.match(name, "__(.+)$")] then torsoNeed else torsoNeedBack
-					for _, idx in ipairs({ ia, ib, ic }) do needs[idx] = math.max(needs[idx], need) end
+					local front = FRONT[string.match(name, "__(.+)$")]
+					local needs = if front then torsoNeed else torsoNeedBack
+					local by = if front then torsoNeedBy else torsoNeedBackBy
+					for _, idx in ipairs({ ia, ib, ic }) do
+						if need > needs[idx] then needs[idx], by[idx] = need, name end
+					end
 				end
 			end
 			-- the package's offset (muscle_v8 "morph_off", same order as base) wins over the one worked out here
 			local mo = data.morph_off
 			if mo then offset = vector.create(mo[i * 3 - 2], mo[i * 3 - 1], mo[i * 3]) end
 			offsets[i] = offset
-			if edgeRow[i] then
+			if edgeRow[i] or seamRow[i] then
 				local q, qn, d = closestOnTorso(p)
 				-- only where the torso is under the edge (an edge hanging past the torso, like the traps over the shoulder, has
 				-- its closest torso point off to the side: it stays as it is)
 				local under = d < 0.02 or vector.dot((q - p) / d, -n) > 0.6
 				if under then skinAt, skinNormal = q - p, qn end
-				skinStats[edgeRow[i]] = skinStats[edgeRow[i]] or {}
-				table.insert(skinStats[edgeRow[i]], d)
+				local row = edgeRow[i] or seamRow[i]
+				skinStats[row] = skinStats[row] or {}
+				table.insert(skinStats[row], d)
 			end
 			skins[i] = { skinAt, skinNormal }
 		end
@@ -549,6 +577,15 @@ for _, part in ipairs({ "UpperTorso", "LowerTorso" }) do
 		.. (if startList then "\tstart = { " .. table.concat(join(startList, 4), ", ") .. " },\n" else "")
 		.. (if part == "UpperTorso" then "\tpush = { " .. table.concat(join(torsoPush, 4), ", ") .. " },\n" else "")
 		.. (if part == "UpperTorso" then "\tpushBack = { " .. table.concat(join(torsoPushBack, 4), ", ") .. " },\n" else "")
+		.. (if part == "UpperTorso" then (function()
+			-- the muscle mesh each push is for (its emergence scales it in the game)
+			local front, back = {}, {}
+			for j = 1, #torsoPush do
+				front[j] = string.format("%q", if torsoPush[j] > 0 then torsoNeedBy[j] or "" else "")
+				back[j] = string.format("%q", if torsoPushBack[j] > 0 then torsoNeedBackBy[j] or "" else "")
+			end
+			return "\tpushBy = { " .. table.concat(front, ", ") .. " },\n\tpushBackBy = { " .. table.concat(back, ", ") .. " },\n"
+		end)() else "")
 		.. (if part == "UpperTorso" then (function()
 			local owners = {}
 			for j = 1, #torsoPush do owners[j] = if torsoOwner[j] then string.format("%q", torsoOwner[j][1] .. ":" .. torsoOwner[j][2]) else '""' end
