@@ -42,6 +42,43 @@ local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 3,
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
+-- The gym's own light at the mirror (so the reflection and the before / after card look like the room around them): the
+-- nearby lamps (each weighted by how much of it reaches the spot in front of the glass) give the key light's color and
+-- direction, the place's Ambient gives the fill. Tune with MIRROR_LIGHT.
+local MIRROR_LIGHT = {
+	Reach = 40,      -- studs: lamps further than this from the glass are ignored
+	Key = 0.55,      -- key light strength (the ViewportFrame light has no falloff, so it needs toning down)
+	Ambient = 1.0,   -- share of Lighting.Ambient used as the fill
+	Glow = 1.45,     -- SurfaceGui brightness of the reflection (it is not lit by the world: LightInfluence 0)
+}
+local function gymLight(point: Vector3)
+	local Lighting = game:GetService("Lighting")
+	local dir, color, total = Vector3.zero, Vector3.zero, 0
+	for _, light in ipairs(workspace:GetDescendants()) do
+		if light:IsA("Light") and light.Enabled and light.Parent and light.Parent:IsA("BasePart") then
+			local from = light.Parent.Position
+			local offset = point - from
+			local distance = offset.Magnitude
+			if distance < MIRROR_LIGHT.Reach and distance < light.Range and distance > 0.01 then
+				local w = light.Brightness * (1 - distance / light.Range) ^ 2
+				if light:IsA("SpotLight") then
+					local face = light.Parent.CFrame:VectorToWorldSpace(Vector3.fromNormalId(light.Face))
+					if math.deg(math.acos(math.clamp(face:Dot(offset.Unit), -1, 1))) > light.Angle / 2 then w *= 0.15 end
+				end
+				dir += offset.Unit * w
+				color += Vector3.new(light.Color.R, light.Color.G, light.Color.B) * w
+				total += w
+			end
+		end
+	end
+	local ambient = Lighting.Ambient
+	ambient = Color3.new(ambient.R * MIRROR_LIGHT.Ambient, ambient.G * MIRROR_LIGHT.Ambient, ambient.B * MIRROR_LIGHT.Ambient)
+	if total <= 0 then return ambient, Color3.new(0, 0, 0), Vector3.new(0, -1, 0) end
+	local c = color / total * math.min(total, 1) * MIRROR_LIGHT.Key
+	return ambient, Color3.new(math.min(c.X, 1), math.min(c.Y, 1), math.min(c.Z, 1)), dir.Unit
+end
+local cardViewports = {} -- the before / after card's viewports (lit like the gym when the mirror is found)
+
 local function column(order)
 	local col = New("Frame", { LayoutOrder = order, Size = UDim2.fromScale(0.46, 1), BackgroundTransparency = 1, Parent = columns },
 		{ Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top) })
@@ -50,12 +87,13 @@ local function column(order)
 		Size = UDim2.fromScale(1, 0),
 		BackgroundColor3 = Colors.Panel,
 		BackgroundTransparency = Theme.Alpha.Panel,
-		-- posing-stage lighting: a strong golden key from the side and front over a dim warm fill, so every muscle casts a shade
-		Ambient = Color3.fromRGB(110, 92, 70),
-		LightColor = Color3.fromRGB(255, 205, 120),
-		LightDirection = Vector3.new(-0.75, -0.45, -0.6),
+		-- (lit like the gym around the mirror: gymLight, set once the mirror is found)
+		Ambient = Color3.fromRGB(110, 96, 82),
+		LightColor = Color3.fromRGB(140, 110, 76),
+		LightDirection = Vector3.new(0.3, -0.9, -0.3),
 		Parent = col,
 	}, { New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }), Theme.Round("Panel"), Theme.Stroke(Colors.Border, 1, Theme.Alpha.Border) })
+	table.insert(cardViewports, viewport)
 	local name = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), Parent = col })
 	local info = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), Parent = col })
 	return viewport, name, info
@@ -269,7 +307,7 @@ local function startReflection(mirrorModel, glass)
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
 		PixelsPerStud = PPS,
 		LightInfluence = 0,
-		Brightness = 2.2,
+		Brightness = MIRROR_LIGHT.Glow,
 		ClipsDescendants = true,
 		Enabled = false,
 		ResetOnSpawn = false,
@@ -277,13 +315,23 @@ local function startReflection(mirrorModel, glass)
 		Parent = player:WaitForChild("PlayerGui"),
 	})
 	local clip = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(78, 66, 58), ClipsDescendants = true, Parent = surface })
+	-- lit like the gym: the room's light at the spot in front of the glass, its direction mirrored (the copies inside are
+	-- reflected, so their light must come from the mirrored side too)
+	local spot = planePoint + normal * 3 + up * 1
+	local ambient, keyColor, keyDir = gymLight(spot)
 	local viewport = New("ViewportFrame", {
 		BackgroundTransparency = 1,
-		Ambient = Color3.fromRGB(120, 98, 72), -- posing-stage lighting (golden key from the side, dim warm fill)
-		LightColor = Color3.fromRGB(255, 205, 120),
-		LightDirection = Vector3.new(-0.75, -0.45, 0.6),
+		Ambient = ambient,
+		LightColor = keyColor,
+		LightDirection = keyDir - 2 * keyDir:Dot(normal) * normal,
 		Parent = clip,
 	})
+	-- the before / after card: the same light, turned into the card's view (it looks at the models from +Z, like you look
+	-- into the glass: normal -> +Z, your right -> +X)
+	local cardDir = Vector3.new(keyDir:Dot(right), keyDir:Dot(up), keyDir:Dot(normal))
+	for _, card in ipairs(cardViewports) do
+		card.Ambient, card.LightColor, card.LightDirection = ambient, keyColor, cardDir
+	end
 	-- a faint cool sheen on top so it reads as glass, not a screen
 	New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(235, 245, 255), BackgroundTransparency = 0.94, ZIndex = 2, Parent = clip })
 	local world = New("WorldModel", { Parent = viewport })
