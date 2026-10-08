@@ -3,9 +3,10 @@
 Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
 ## LATEST (9 Oct): MAX weight button
-- Machine panel: a MAX button directly on top of the + button (owner's final layout after two moves): the same width,
-  1/4.5 of its height (10 px at a 44 px +), a 3 px gap, yellow text #E8C21C at 8 px; placed from the + button's screen
-  rectangle (it lives in the title row, which has no layout). MachineClient, created without a new top-level local: the
+- Machine panel: a MAX button directly on top of the + button (owner's layout after a few rounds): the same width, 1/3
+  of its height (16 px), a 3 px gap, a yellow background (bumper yellow at the + button's 0.55 transparency) with white
+  14 px text; the - and + buttons sit 10 px lower (each in a same-size holder in the row). MAX is placed from the + button's
+  screen rectangle (it lives in the title row, which has no layout). MachineClient, created without a new top-level local: the
   script is at Luau's 200-local limit. Screenshot max_button_above_plus. Server `MaxWeight` action (MachineService maxWeight): buys every next plate in order while the
   main muscle's level allows it and the coins cover it (same checks as UnlockTier), then selects the heaviest usable plate
   (Machines.UsableTier). The panel jumps there at once when nothing is bought, or when the purchases arrive.

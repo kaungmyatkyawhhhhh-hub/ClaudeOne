@@ -1574,10 +1574,13 @@ Theme.TextShadow(noteLabel)
 local weightSection = box({ Name = "Weight", LayoutOrder = 1, Size = UDim2.fromScale(0.34, 1), Parent = panel },
 	{ Theme.List(Horizontal, "S") })
 
+-- (each - / + sits in a same-size holder in the row, 10 px lower than the row would put it: owner, 9 Oct)
 local function stepButton(name, order, icon)
-	return Theme.Button("Secondary", { Name = name, LayoutOrder = order, Size = UDim2.fromScale(1, 0.56), Parent = weightSection }, {
+	local holder = box({ Name = name .. "Slot", LayoutOrder = order, Size = UDim2.fromScale(1, 0.56), Parent = weightSection }, {
 		Theme.Aspect(1, Enum.DominantAxis.Height),
 		Theme.Limit(Vector2.new(Theme.MinTouch, Theme.MinTouch), Vector2.new(math.huge, math.huge)),
+	})
+	return Theme.Button("Secondary", { Name = name, Position = UDim2.fromOffset(0, 10), Size = UDim2.fromScale(1, 1), Parent = holder }, {
 		Theme.Pad("M"),
 		icon,
 	})
@@ -1586,18 +1589,22 @@ local minusButton = stepButton("Minus", 1, Icons.Minus(Colors.Text))
 local weightColumn = box({ LayoutOrder = 2, Size = UDim2.fromScale(0.38, 1), Parent = weightSection }, { Theme.List(Vertical, "XS") })
 local plusButton = stepButton("Plus", 3, Icons.Plus(Colors.Text))
 -- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift. Directly on
--- top of the + button: the same width, 1/4.5 of its height, a 3 px gap, yellow text (owner's layout). It lives in the
+-- top of the + button: the same width, 1/3 of its height, a 3 px gap, a yellow background (the + button's transparency)
+-- with white text (owner's layout). It lives in the
 -- title row (no layout there) and is placed from the + button's screen rectangle, so it follows it on every screen.
 -- (No new top-level local: this script is at Luau's 200-local limit; wired up below by name.)
 do
-	local MAX_GAP, MAX_SHARE = 3, 1 / 4.5
+	local MAX_GAP, MAX_SHARE = 3, 1 / 3
 	local maxButton = Theme.Button("Secondary", {
 		Name = "Max",
 		Size = UDim2.fromOffset(44, 10),
 		ZIndex = 4,
 		Parent = tapeRow,
 	})
-	local maxText = Theme.Text({ Text = "MAX", Font = "SemiBold", TextColor3 = Theme.Bumper.Yellow.Fill,
+	-- yellow at the same see-through amount as the + button (Theme.Alpha.Panel)
+	maxButton.BackgroundColor3 = Theme.Bumper.Yellow.Fill
+	maxButton.BackgroundTransparency = Theme.Alpha.Panel
+	local maxText = Theme.Text({ Text = "MAX", Font = "SemiBold", TextColor3 = Colors.Text,
 		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = maxButton })
 	Theme.TextShadow(maxText)
 	local function follow()
