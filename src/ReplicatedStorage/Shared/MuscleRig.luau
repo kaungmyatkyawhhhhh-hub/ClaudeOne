@@ -63,18 +63,37 @@ local PUMP_STEP = 0.03     -- the small pulse
 local PULSE_TIME = 0.55
 local MIN_CHANGE = 0.0015
 local MARBLE = Color3.fromHex("#C9C6BF")
--- Tints on the muscles: the stats hover highlight (red) and the rep flash (warm). Only muscles facing the camera show them.
--- A tint, not paint: the skin color is blended part of the way toward the tint color on the normal lit material.
+-- Tints on the muscles (a tint, not paint: the color blended part of the way toward the tint, on the normal lit surface):
+--   * Stats hover (red): only the muscles facing the camera;
+--   * training (cool light blue, MuscleRig.SetTraining): the whole time you're on a machine, every muscle it trains, main
+--     strong / secondaries light, both sides of the body; fades in / out; each rep a quick brighter pulse
+--     (MuscleRig.Flash) on top. Blue = training, red = Stats hover (hover wins while both).
 local TINT = {
 	Highlight = Color3.fromRGB(225, 45, 45),
 	Hover = 0.40,
 	HighlightIn = 0.15, HighlightOut = 0.2,
-	Flash = Color3.fromRGB(255, 196, 140),
-	FlashIn = 0.08, FlashOut = 0.35,
-	FlashStrength = 0.35,
-	BigStrength = 0.45, BigOut = 0.55,
+	Training = Color3.fromRGB(95, 160, 255), -- (the brief: about 120, 180, 255; a bit deeper so it still reads blue under the warm gym lamps)
+	TrainingBright = Color3.fromRGB(185, 220, 255), -- the pulse's color
+	TrainMain = 0.55, TrainHelper = 0.30,
+	TrainIn = 0.25, TrainOut = 0.4,
+	PulseUp = 0.05, PulseDown = 0.15, -- the rep pulse: ~0.2 s
+	PulseStrength = 0.6, BigPulse = 1,
+	-- the color layer is drawn at REST x its vertex colors (they are written divided by it) and goes to 1 on a pulse: a
+	-- brighter tint without writing the mesh
+	Rest = 0.88,
+	-- the skin stage textures are darker than the flat skin color: the layer's skin is drawn this much darker so an untinted
+	-- muscle beside a tinted one matches the textured skin, and the blue reads as blue, not pale
+	SkinUnder = 0.8,
 	ClothScale = 0.375,
 	FacingFull = 0.1, FacingNone = -0.1,
+}
+-- which body part shows a muscle on characters without muscle meshes (other players, NPCs): the training tint goes there
+local BODY_OF = {
+	UpperChest = { "UpperTorso" }, MidChest = { "UpperTorso" }, Abs = { "UpperTorso", "LowerTorso" }, Obliques = { "UpperTorso", "LowerTorso" },
+	Traps = { "UpperTorso" }, Rhomboids = { "UpperTorso" }, Lats = { "UpperTorso" }, LowerBack = { "LowerTorso" },
+	FrontDelts = { "LeftUpperArm", "RightUpperArm" }, SideDelts = { "LeftUpperArm", "RightUpperArm" }, RearDelts = { "LeftUpperArm", "RightUpperArm" },
+	Biceps = { "LeftUpperArm", "RightUpperArm" }, Triceps = { "LeftUpperArm", "RightUpperArm" },
+	Quads = { "LeftUpperLeg", "RightUpperLeg" }, Hamstrings = { "LeftUpperLeg", "RightUpperLeg" }, Glutes = { "LeftUpperLeg", "RightUpperLeg" },
 }
 local REALLOCATE_EVERY = 0.4
 
@@ -129,7 +148,7 @@ function MuscleRig.new(model: Model, opts: any?)
 		pumped = false,
 		pulses = {}, pulseAmounts = {}, pulseTimes = {},
 		highlightSet = nil, highlightAmount = {},
-		flashes = {}, flashAmount = {},
+		trainSet = MuscleRig.TrainingOf(model), trainWeights = MuscleRig.TrainingOf(model), trainAmount = 0, pulseStart = nil, pulseStrength = 0, pulse = 0, bodyTint = {},
 		tintWasLive = false,
 		destroyed = false,
 		units = {},
@@ -459,7 +478,17 @@ local function recolor(self, group)
 	local skin, shorts, top = colorsOf(self)
 	local white = Color3.new(1, 1, 1)
 	group.skinned = skinnedFor(self, group)
-	if group.skinned and self.mirrorMode then
+	group.hasShorts = false
+	for _, kind in pairs(group.rangeKinds or {}) do
+		if kind == 2 then group.hasShorts = true end
+	end
+	if group.skinned and not group.hasShorts then
+		-- the torso / arms: their color layer is OPAQUE (it only shows while tinted, and then it is a whole lit surface:
+		-- flat skin + the tint), so every vertex has alpha 1: a transparent overlay vanishes behind Glass (8 Oct) and a
+		-- ViewportFrame (the mirror) would draw the skin's own part see-through
+		local rest = function(c: Color3) return Color3.new(math.min(c.R / TINT.Rest, 1), math.min(c.G / TINT.Rest, 1), math.min(c.B / TINT.Rest, 1)) end
+		group.kindBase, group.kindAlpha = { rest(skin), rest(shorts), rest(skin) }, { 1, 1, 1 }
+	elseif group.skinned and self.mirrorMode then
 		-- MIRROR MODE (MuscleRig.SetMirrorMode): every vertex opaque. The progress mirror's ViewportFrame draws copies of these
 		-- meshes and, unlike the world, it honours vertex alpha even under a SurfaceAppearance: the layer's alpha 0 on skin
 		-- made the copies see-through (the "white torso"). The skin's own part ignores vertex colors (its SurfaceAppearance);
@@ -471,10 +500,6 @@ local function recolor(self, group)
 	else
 		group.kindBase = { if template then white else skin, if template then white else shorts, if template then white else top }
 		group.kindAlpha = { 1, 1, 1 }
-	end
-	group.hasShorts = false
-	for _, kind in pairs(group.rangeKinds or {}) do
-		if kind == 2 then group.hasShorts = true end
 	end
 	group.shownColors = {}
 	group.maskKey = nil
@@ -1045,35 +1070,43 @@ local function updateTintState(self, dt: number): boolean
 			if amount ~= want or want > 0 then live = true end
 		end
 	end
-	local now = os.clock()
-	table.clear(self.flashAmount)
-	for id, flash in pairs(self.flashes) do
-		local t = now - flash.start
-		local v = nil
-		if t < flash.inTime then
-			v = t / flash.inTime
-		elseif t < flash.inTime + flash.outTime then
-			v = 1 - (t - flash.inTime) / flash.outTime
-		end
-		if v then
-			self.flashAmount[id] = v * flash.strength
-			live = true
+	-- training: fade in / out
+	local want = if self.trainSet then 1 else 0
+	if self.trainAmount < want then
+		self.trainAmount = math.min(want, self.trainAmount + dt / TINT.TrainIn)
+	elseif self.trainAmount > want then
+		self.trainAmount = math.max(want, self.trainAmount - dt / TINT.TrainOut)
+	end
+	if self.trainAmount > 0 then live = true end
+	if self.trainAmount <= 0 and not self.trainSet then self.trainWeights = nil end
+	-- the rep pulse
+	self.pulse = 0
+	if self.pulseStart then
+		local t = (os.clock() - self.pulseStart) / (self.pulseSlow or 1)
+		if t < TINT.PulseUp then
+			self.pulse = t / TINT.PulseUp
+		elseif t < TINT.PulseUp + TINT.PulseDown then
+			self.pulse = 1 - (t - TINT.PulseUp) / TINT.PulseDown
 		else
-			self.flashes[id] = nil
+			self.pulseStart = nil
 		end
+		self.pulse *= self.pulseStrength
+		live = true
 	end
 	return live
 end
 
--- a muscle's tint now: its color (the hover red, the flash warm, or a mix) and strength (0 = none .. 1)
+-- a muscle's tint now: its color and strength (0 = none .. 1); the hover red wins over the training blue
 local function tintOf(self, id: string, facing: number, clothed: boolean): (Color3, number)
-	local h = self.highlightAmount[id] or 0
-	local f = self.flashAmount[id] or 0
-	if h <= 0 and f <= 0 then return TINT.Flash, 0 end
 	local cloth = if clothed then TINT.ClothScale else 1
-	local hs, fs = h * TINT.Hover * facing * cloth, math.min(f, 1) * facing * cloth
-	if hs + fs <= 0 then return TINT.Flash, 0 end
-	return TINT.Highlight:Lerp(TINT.Flash, fs / (hs + fs)), math.min(1, hs + fs)
+	local h = self.highlightAmount[id] or 0
+	if h > 0 and facing > 0 then return TINT.Highlight, h * TINT.Hover * facing * cloth end
+	local w = self.trainWeights and self.trainWeights[id]
+	if w and self.trainAmount > 0 then
+		local p = self.pulse
+		return TINT.Training:Lerp(TINT.TrainingBright, p), math.min(1, w * self.trainAmount * (1 + 0.5 * p)) * cloth
+	end
+	return TINT.Training, 0
 end
 local function tinted(self, id: string, base: Color3, facing: number, clothed: boolean): Color3
 	local color, strength = tintOf(self, id, facing, clothed)
@@ -1106,15 +1139,18 @@ local function writeBands(mesh, ids, base: Color3, alpha: number, color: Color3,
 	end)
 end
 
--- The tints (hover highlight, rep flash), as far as each muscle faces the camera. Three ways, all cheap per frame:
---   * a skinned mesh with a color layer (torso, arms): the layer's vertex colors hold a MASK (the tint color, alpha =
---     each muscle's weight x its band x how much it faces the camera, in steps), written only when that changes (the same
---     muscles every rep: once); the fade is the layer part's Transparency (a part property: no mesh change);
---   * a skinned mesh whose layer shows the gym shorts (the thighs): the whole mesh is tinted through its skin stage's Color;
---   * an unskinned mesh (under the character's own clothing, marble): the vertex colors, switched on at the peak and off at
---     the end (2 writes, no fade).
+-- The tints on the muscle meshes. Three ways, all cheap per frame (a mesh write is ~40 ms: only when WHAT is tinted changes):
+--   * a skinned mesh (torso, arms; the thighs while tinted): its OPAQUE color layer, vertex colors = flat skin (and shorts)
+--     blended toward the tint by each muscle's weight with a soft edge (bands), written when the tinted set changes (the
+--     same machine all the time: once); the fade is the layer's Transparency (fully opaque once in, so it never vanishes
+--     behind Glass), the rep pulse its Color (a multiplier: brighter, no write). The thighs' layer carries the gym shorts
+--     (see-through skin) the rest of the time: tinted, it goes opaque at once.
+--   * an unskinned mesh (under the character's own clothing, marble): its vertex colors, on / off (2 writes, no fade).
 local function facingStep(f: number): number
 	return if f >= 0.75 then 1 elseif f >= 0.25 then 0.5 else 0
+end
+local function restColor(c: Color3): Color3
+	return Color3.new(math.min(c.R / TINT.Rest, 1), math.min(c.G / TINT.Rest, 1), math.min(c.B / TINT.Rest, 1))
 end
 local function tintGroup(self, group, cameraPosition: Vector3)
 	local part, mesh = group.part, group.mesh
@@ -1140,87 +1176,86 @@ local function tintGroup(self, group, cameraPosition: Vector3)
 		group.tintList = list
 	end
 	local hovering = next(self.highlightAmount) ~= nil
-	if group.skinned and self.mirrorMode then
-		group.layerOpacity = 0
-		group.layerLive = false
-		return
-	end
-	if group.skinned and group.layer and not group.hasShorts then
-		-- the mask and the layer's fade
-		local color, weights, opacity = TINT.Flash, {}, 0
+	if group.skinned and group.layer then
+		-- which muscles, how strong, which color
+		local color, weights, opacity, any = TINT.Training, {}, 0, false
+		local key = {}
 		if hovering then
 			color = TINT.Highlight
-			for id, amount in pairs(self.highlightAmount) do opacity = math.max(opacity, amount * TINT.Hover) end
-		end
-		local peak = 0
-		if not hovering then
-			for _, flash in pairs(self.flashes) do peak = math.max(peak, flash.strength) end
-		end
-		local key = { if hovering then "H" else "F" }
-		for _, item in ipairs(list) do
-			local id = item[2]
-			local w = 0
-			if hovering then
-				w = if self.highlightSet and self.highlightSet[id] then 1 else 0
-			elseif self.flashes[id] and peak > 0 then
-				w = self.flashes[id].strength / peak
-				opacity = math.max(opacity, self.flashAmount[id] or 0)
-			end
-			if w > 0 then w *= facingStep(facingOf(cf, scale, item[5], item[6], cameraPosition)) end
-			w = math.floor(w * 8 + 0.5) / 8
-			weights[item[1]] = w
-			table.insert(key, tostring(w))
-		end
-		local maskKey = table.concat(key, ",")
-		if opacity > 0 and maskKey ~= group.maskKey then
-			group.maskKey = maskKey
-			pcall(function()
-				local top = MuscleMeshes.TintBands
-				for _, item in ipairs(list) do
-					local ids, w = item[3], weights[item[1]]
-					for band = 0, top do
-						mesh:SetColor(ids[band], color)
-						mesh:SetColorAlpha(ids[band], w * band / top)
-					end
+			table.insert(key, "H")
+			for _, amount in pairs(self.highlightAmount) do opacity = math.max(opacity, amount) end
+			for _, item in ipairs(list) do
+				local w = 0
+				if self.highlightSet and self.highlightSet[item[2]] then
+					w = TINT.Hover * facingStep(facingOf(cf, scale, item[5], item[6], cameraPosition))
 				end
-			end)
+				weights[item[1]] = w
+				any = any or w > 0
+				table.insert(key, tostring(w))
+			end
+		elseif self.trainWeights and self.trainAmount > 0 then
+			table.insert(key, "T")
+			opacity = self.trainAmount
+			for _, item in ipairs(list) do
+				local w = self.trainWeights[item[2]] or 0 -- (both sides of the body: no facing)
+				weights[item[1]] = w
+				any = any or w > 0
+				table.insert(key, tostring(w))
+			end
+		end
+		if not any then opacity = 0 end
+		if opacity > 0 then
+			local maskKey = table.concat(key, ",")
+			if maskKey ~= group.maskKey then
+				group.maskKey = maskKey
+				local skin, shorts = colorsOf(self)
+				pcall(function()
+					local top = MuscleMeshes.TintBands
+					for _, item in ipairs(list) do
+						local ids, w = item[3], weights[item[1]]
+						local base = if item[4] == 2 then shorts else skin:Lerp(Color3.new(0, 0, 0), 1 - TINT.SkinUnder)
+						if item[4] == 2 then w = 0 end -- (the shorts stay shorts)
+						for band = 0, top do
+							mesh:SetColor(ids[band], restColor(base:Lerp(color, w * band / top)))
+							mesh:SetColorAlpha(ids[band], 1)
+						end
+					end
+				end)
+			end
+		elseif group.maskKey ~= nil then
+			-- untinted again: the thighs get their shorts layer back (see-through skin); the torso / arms' layer just hides
+			group.maskKey = nil
+			if group.hasShorts then
+				pcall(function()
+					for _, item in ipairs(list) do
+						writeBands(mesh, item[3], group.kindBase[item[4]], group.kindAlpha[item[4]], group.kindBase[item[4]], 0)
+					end
+				end)
+			end
 		end
 		group.layerOpacity = opacity
-		if opacity > 0 then group.layerHoldUntil = os.clock() + LAYER_HOLD end
-		group.layerLive = opacity > 0 or os.clock() < (group.layerHoldUntil or 0)
+		group.layerLive = opacity > 0
+		-- (the thighs' layer is cloth for the shorts; tinted it is the whole skin surface)
+		local material = if group.hasShorts and opacity <= 0 and not self.mirrorMode then Enum.Material.Fabric else Enum.Material.SmoothPlastic
+		if group.layer.Material ~= material then group.layer.Material = material end
+		-- the pulse: the layer's Color multiplies its vertex colors (written divided by TINT.Rest)
+		local gray = if opacity > 0 then TINT.Rest + (1 - TINT.Rest) * self.pulse else 1
+		local want = Color3.new(gray, gray, gray)
+		if group.layer.Color ~= want then group.layer.Color = want end
 		return
 	end
-	if group.skinned and group.hasShorts then
-		-- the whole mesh through its skin stage's Color
-		local skin = colorsOf(self)
-		local color, strength = TINT.Flash, 0
-		for _, item in ipairs(list) do
-			local id = item[2]
-			if (self.highlightAmount[id] or 0) > 0 or (self.flashAmount[id] or 0) > 0 then
-				local c, s = tintOf(self, id, facingOf(cf, scale, item[5], item[6], cameraPosition), clothed)
-				if s > strength then color, strength = c, s end
-			end
-		end
-		local sa = part:FindFirstChild("SkinStage")
-		local want = skin:Lerp(color, strength)
-		if sa and (sa :: any).Color ~= want then pcall(function() (sa :: any).Color = want end) end
-		group.layerLive = false
-		return
-	end
-	-- unskinned: the vertex colors, on at the peak and off at the end
+	-- unskinned: the vertex colors, on / off
 	local live = false
 	for _, item in ipairs(list) do
 		local key, id, ids, kind = item[1], item[2], item[3], item[4]
 		local base, alpha = group.kindBase[kind], group.kindAlpha[kind]
-		local color, strength = TINT.Flash, 0
-		local on = (self.highlightAmount[id] or 0) > 0 or (self.flashAmount[id] or 0) > 0
-		if on then
-			if hovering then
-				color, strength = tintOf(self, id, facingStep(facingOf(cf, scale, item[5], item[6], cameraPosition)), clothed)
-				strength = if self.highlightSet and self.highlightSet[id] then TINT.Hover * facingStep(facingOf(cf, scale, item[5], item[6], cameraPosition)) * (if clothed then TINT.ClothScale else 1) else 0
-			elseif self.flashes[id] then
-				color, strength = TINT.Flash, self.flashes[id].strength * facingStep(facingOf(cf, scale, item[5], item[6], cameraPosition)) * (if clothed then TINT.ClothScale else 1)
+		local color, strength = TINT.Training, 0
+		if hovering then
+			if self.highlightSet and self.highlightSet[id] and (self.highlightAmount[id] or 0) > 0.5 then
+				color, strength = TINT.Highlight, TINT.Hover * facingStep(facingOf(cf, scale, item[5], item[6], cameraPosition)) * (if clothed then TINT.ClothScale else 1)
 			end
+		elseif self.trainWeights and self.trainWeights[id] and self.trainAmount > 0.5 then
+			color, strength = TINT.Training, self.trainWeights[id] * (if clothed then TINT.ClothScale else 1)
 		end
 		strength = math.floor(strength * 16 + 0.5) / 16
 		if strength > 0 then live = true end
@@ -1231,6 +1266,43 @@ local function tintGroup(self, group, cameraPosition: Vector3)
 		end
 	end
 	group.layerLive = live
+end
+
+-- Characters without muscle meshes (other players, NPCs on machines; your own visible body parts): the training tint on
+-- the body parts that show the trained muscles, through their skin stage's Color (or the part's Color under clothing).
+local function tintBody(self)
+	local active = self.trainWeights and self.trainAmount > 0
+	local wanted = {}
+	if active then
+		for id, w in pairs(self.trainWeights) do
+			for _, name in ipairs(BODY_OF[id] or {}) do wanted[name] = math.max(wanted[name] or 0, w) end
+		end
+	end
+	local skin = colorsOf(self)
+	for name, w in pairs(wanted) do
+		local part = self.model:FindFirstChild(name)
+		if part and part:IsA("BasePart") and part.Transparency < 1 then
+			local sa = part:FindFirstChild("SkinStage")
+			local entry = self.bodyTint[part]
+			if not entry then
+				entry = { base = if sa then skin else part.Color }
+				self.bodyTint[part] = entry
+			end
+			local color = entry.base:Lerp(TINT.Training:Lerp(TINT.TrainingBright, self.pulse), math.min(1, w * self.trainAmount * (1 + 0.5 * self.pulse)))
+			if sa then
+				if (sa :: any).Color ~= color then (sa :: any).Color = color end
+			elseif part.Color ~= color then
+				part.Color = color
+			end
+		end
+	end
+	for part, entry in pairs(self.bodyTint) do
+		if not wanted[part.Name] then
+			local sa = part:FindFirstChild("SkinStage")
+			if sa then (sa :: any).Color = colorsOf(self) elseif part.Parent then part.Color = entry.base end
+			self.bodyTint[part] = nil
+		end
+	end
 end
 
 local function step(self, dt: number)
@@ -1317,9 +1389,11 @@ local function step(self, dt: number)
 				end
 				-- the color layer only draws while it has something to show (the shorts, or a tint)
 				if group.layer then
-					local layerT = if hidden or not (group.hasShorts or (group.layerOpacity or 0) > 0 or os.clock() < (group.layerHoldUntil or 0)) or (self.mirrorMode and not group.hasShorts) then 1
+					local opacity = group.layerOpacity or 0
+					local layerT = if hidden or not (group.hasShorts or opacity > 0 or os.clock() < (group.layerHoldUntil or 0)) then 1
+						elseif opacity > 0 and group.hasShorts then 0
 						elseif group.hasShorts then LAYER_TRANSPARENCY
-						elseif (group.layerOpacity or 0) > 0 then math.max(1 - group.layerOpacity, LAYER_TRANSPARENCY)
+						elseif opacity > 0 then (if opacity >= 0.999 then 0 else 1 - opacity)
 							else LAYER_IDLE
 					if group.layer.Transparency ~= layerT then group.layer.Transparency = layerT end
 				end
@@ -1364,6 +1438,7 @@ local function step(self, dt: number)
 	end
 	-- (every frame while a tint shows: the fade is the color layer's Transparency, the mesh changes only with the mask)
 	if tintLive or self.tintWasLive then
+		tintBody(self)
 		local camera = workspace.CurrentCamera
 		local cameraPosition = if camera then camera.CFrame.Position else Vector3.zero
 		for _, state in ipairs(self.units) do
@@ -1373,9 +1448,11 @@ local function step(self, dt: number)
 					-- (the color layer shows at once when a tint starts, and goes away with it)
 					if group.layer and group.body then
 						local hidden = self.covered and self.covered[group.body.Name] == true
-						local layerT = if hidden or not (group.hasShorts or group.layerLive) or (self.mirrorMode and not group.hasShorts) then 1
+						local opacity = group.layerOpacity or 0
+						local layerT = if hidden or not (group.hasShorts or group.layerLive) then 1
+							elseif opacity > 0 and group.hasShorts then 0
 							elseif group.hasShorts then LAYER_TRANSPARENCY
-							elseif (group.layerOpacity or 0) > 0 then math.max(1 - group.layerOpacity, LAYER_TRANSPARENCY)
+							elseif opacity > 0 then (if opacity >= 0.999 then 0 else 1 - opacity)
 							else LAYER_IDLE
 						if group.layer.Transparency ~= layerT then group.layer.Transparency = layerT end
 					end
@@ -1524,30 +1601,43 @@ function MuscleRig.SetHighlight(model: Model, set: { [string]: boolean }?)
 	end
 end
 
-function MuscleRig.Flash(model: Model, weights: { [string]: number }, big: boolean?)
+-- The training tint (TINT): the muscles a machine trains, { [muscle id] = share } (the first / biggest = main), while
+-- this character is on it; nil when they get off. Works on every rig: your muscle meshes, the forearm / calf stages and,
+-- on characters without muscle meshes, the body parts.
+local trainingOf = setmetatable({}, { __mode = "k" }) -- [model] = weights (a rig made later picks it up)
+function MuscleRig.SetTraining(model: Model, shares: { [string]: number }?)
+	local weights = nil
+	if shares then
+		local top = 0
+		for _, share in pairs(shares) do top = math.max(top, share) end
+		weights = {}
+		for id, share in pairs(shares) do
+			weights[id] = if share >= top then TINT.TrainMain else TINT.TrainHelper
+		end
+	end
+	trainingOf[model] = weights
 	for rig in pairs(active) do
 		if rig.model == model then
-			local now = os.clock()
-			-- Studio test hook: Workspace attribute "TestFlashSlow" = n makes the flash n times slower (for screenshots)
+			rig.trainSet = weights
+			if weights then rig.trainWeights = weights end
+		end
+	end
+end
+function MuscleRig.TrainingOf(model: Model): any
+	return trainingOf[model]
+end
+
+-- The rep pulse on top of the training tint (the trained muscles brighten ~0.2 s). `weights` is kept for the callers
+-- (the body map uses the same table); `big` = BIG REP / PUMPED, a stronger pulse.
+-- Studio test hook: Workspace attribute "TestFlashSlow" = n stretches the pulse n times (for screenshots).
+function MuscleRig.Flash(model: Model, weights: { [string]: number }?, big: boolean?)
+	for rig in pairs(active) do
+		if rig.model == model then
 			local slow = if RunService:IsStudio() then workspace:GetAttribute("TestFlashSlow") else nil
 			slow = if type(slow) == "number" and slow > 0 then slow else 1
-			for id, weight in pairs(weights) do
-				local start = now
-				local inTime = TINT.FlashIn * slow
-				local last = rig.flashes[id]
-				if last then
-					local t = now - last.start
-					local level = if t < last.inTime then t / last.inTime else math.max(0, 1 - (t - last.inTime) / last.outTime)
-					start = now - inTime * level
-				end
-				rig.flashes[id] = {
-					start = start,
-					strength = weight * (if big then TINT.BigStrength else TINT.FlashStrength),
-					inTime = inTime,
-					outTime = (if big then TINT.BigOut else TINT.FlashOut) * slow,
-				}
-				-- (no pump with it any more: a mesh pulse is a full mesh change, ~40 ms, on every rep)
-			end
+			rig.pulseStart = os.clock()
+			rig.pulseSlow = slow
+			rig.pulseStrength = if big then TINT.BigPulse else TINT.PulseStrength
 		end
 	end
 end

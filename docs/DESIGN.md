@@ -117,10 +117,27 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   the rep popup. No big pop-up window.
 - Setting "Gain numbers: On / Minimal / Off" in Settings: On = rep + set popups, Minimal = set popups only,
   Off = no gain popups (the chime, chalk and HUD flash stay). Default On, saved per player.
-- Rep flash: each rep the muscles it trained glow warm for a moment (~0.15s in, ~0.35s out) (the tiny 2% mesh pump with it
-  was dropped 8 Oct: every mesh change costs ~40 ms, see Performance);
-  the main muscle strongest, secondaries weaker; BIG REP / PUMPED stronger and a little longer. Only the muscles facing
-  the camera show it. Setting "Rep flash: On / Off" (default On, saved per player).
+- Training tint (owner, 8 Oct; replaces the warm rep flash on the body): the whole time someone is on a machine, every
+  muscle it trains is tinted cool light blue (main ~55%, secondaries ~30%), soft edges, shading kept, both sides of the
+  body; fades in 0.25 s / out 0.4 s. Each rep a quick ~0.2 s brighter pulse on top (BIG REP / PUMPED stronger). Muscles
+  under the gym shorts keep the shorts. Same on the forearm / calf stages, NPCs on machines (their body parts) and the
+  mirror. Blue = training, red = Stats hover (hover wins). (The body-map widget still flashes warm.) Setting "Rep flash:
+  On / Off" turns the rep pulse off.
+- EXP popups (owner, 8 Oct): every rep a small popup per trained muscle around you: the muscle group's color chip
+  (`Config/HudIcons.MuscleGroups`) + its real EXP ("+112", "+1.2K"); main bigger and warm red-orange, secondaries smaller
+  and green, PUMPED / BIG REP gold; pop in with a bounce, drift up and out at random angles, fade over 0.8 s; at most 8 at
+  once (the oldest go). Client only. Setting "Show EXP popups" On / Off (default On; Off = the old single "+N").
+- Machine signs (owner, 8 Oct, `MachineSignsClient`): above every machine a thin dark-glass diamond (3.5 x 3.5 square
+  turned 45 degrees, Transparency 0.35) with a glowing white neon frame; both faces: the name (Oswald, dark stroke), a
+  front + back body figure (`Shared/UI/BodyFigure`, the body-map's shapes) with the main muscle red and the secondaries
+  lighter, "Mid Chest 56%" and the secondaries smaller (shares from `Config/Machines`, whole percents adding to 100).
+  Locked: a lock + "Growth Spurt N". It turns toward the camera with a little lag and bobs; it shrinks to fit under a low
+  ceiling. A glowing white floor outline around the machine, brighter while you stand inside it. A bouncing yellow "!" +
+  "NEW" over machines you never did a rep on (`machinesUsed` in the save). Distance: within 15 studs the diamond +
+  outline; 15-60 only "!" + "NEW"; beyond nothing; 0.2 s fades; hidden on your own machine. 7 parts per machine, made
+  the first time you come near. The Use prompts sit on the machine's base / seat, under the diamond.
+- Machine look (owner, for map work): worn dark metal (DiamondPlate / Metal, darker, slightly rust-tinted), very dark
+  padded seats (Fabric or SmoothPlastic), chunky realistic frames, no brand names (the plates' own "M WEIGHTS" stays).
 - Muscle highlight (hovering a stat label): the muscles turn red (a tint on the normal material, no neon glow), only
   the ones facing the camera (fades out as a muscle turns away), so hovering Back from the front lights nothing.
 - Chalk puff from the hands when getting on a machine; sweat drop particles under 25% stamina.

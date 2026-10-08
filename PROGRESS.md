@@ -5,6 +5,16 @@ Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code 
 ## LATEST (8 Oct evening): unified muscles, skin stages, performance
 Everything is in Studio and pushed; **File > Save to Roblox first.**
 
+- **Machine signs, EXP popups, training tint (8 Oct, late night):** see "Game feel" in the brief. New:
+  `MachineSignsClient` (3D diamond signs, floor outlines, "!" + "NEW"), `Shared/UI/BodyFigure` (the body-map's shapes,
+  shared), `Config/HudIcons.MuscleGroups` (group colors), `Muscles.FormatExpShort`, save fields `machinesUsed` and
+  `settings.expPopups`, `MuscleRig.SetTraining` (the blue training tint; `MuscleRig.Flash` is now its rep pulse). The skin
+  color layers (torso, arms) are OPAQUE now (a see-through overlay vanished behind Glass): drawn only while tinted, flat skin
+  + the tint, the pulse is the layer part's Color (no mesh write). MachineClient is near Luau's 200-locals limit: new code
+  there goes in tables (`ExpPops`, `bars.*`). Studio hook `TestPopupSlow` (n = popups live n times longer). Not done: phone
+  size screenshots (the Studio viewport can't be resized from here); "Lat Pulldown" doesn't exist, the Pull-Up Bar
+  (Lats) was used. Screenshots: sign_flatbench_close, sign_25_studs, sign_squatrack_lowceiling, exp_popups_flatbench,
+  tint_flatbench_front, tint_pullup_{front,back}, tint_squat_front, tint_npc_on_bench, hover_red_still_works.
 - **Fix (8 Oct, night): progress mirror + shorts.** Mirror: it showed your back (each part was turned by M*R*M, which
   keeps the way you face; now M*R*F = your front, facing you, flipped left / right like a real mirror) and a white box for
   a torso (a ViewportFrame honours vertex alpha even under a SurfaceAppearance, and the color layer's alpha 0 on skin made

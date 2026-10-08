@@ -547,6 +547,15 @@ local function startReflection(mirrorModel, glass)
 			copy.CFrame = reflect(source.CFrame)
 			-- (what shows and hides on you shows and hides in the glass: covered body parts, the color layers, clothing)
 			if copy.Transparency ~= source.Transparency then copy.Transparency = source.Transparency end
+			-- (and the tints: the color layer's pulse multiplier, the stage meshes' skin color)
+			if copy.Color ~= source.Color then copy.Color = source.Color end
+			if pair[4] == nil then
+				pair[4] = source:FindFirstChild("SkinStage") or false
+				pair[5] = copy:FindFirstChild("SkinStage") or false
+			end
+			if pair[4] and pair[5] and pair[4].Parent == source and (pair[5] :: any).Color ~= (pair[4] :: any).Color then
+				(pair[5] :: any).Color = (pair[4] :: any).Color
+			end
 			local size = source.Size
 			if not pair[3] or (size - pair[3]).Magnitude > 1e-3 then
 				pair[3] = size

@@ -455,6 +455,7 @@ local function lift(player)
 		if after > before then staminaUp = after end
 	end
 	TitleService.OnRep(player)
+	PlayerData.MarkMachineUsed(player, machine.id)
 	QuestService.OnRep(player, machine.id)
 	SocialService.OnRep(player, machine.id)
 	LegendService.OnRep(player, machine.id)

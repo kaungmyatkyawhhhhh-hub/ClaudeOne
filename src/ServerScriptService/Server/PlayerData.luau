@@ -489,6 +489,14 @@ function PlayerData.GetMachine(player, machineId)
 end
 
 -- best = heaviest tier ever lifted on it (personal record); nil keeps the current one.
+-- The first rep on a machine (the machine signs stop showing it as "NEW").
+function PlayerData.MarkMachineUsed(player, machineId)
+	local data = PlayerData.Get(player)
+	if not data or type(machineId) ~= "string" or data.machinesUsed[machineId] then return end
+	data.machinesUsed[machineId] = true
+	replicate(player, { "machinesUsed", machineId }, true)
+end
+
 function PlayerData.SetMachine(player, machineId, unlocked, selected, best)
 	local data = PlayerData.Get(player)
 	if not data then return false end
@@ -570,9 +578,10 @@ end
 -- Sound volume settings (0-1 each), clamped here so the client can't store anything odd.
 local GAIN_NUMBERS = { On = true, Minimal = true, Off = true }
 local REP_FLASH = { On = true, Off = true }
+local EXP_POPUPS = { On = true, Off = true }
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
--- repFlash On/Off.
+-- repFlash On/Off, expPopups On/Off.
 function PlayerData.SetSettings(player, settings)
 	local data = PlayerData.Get(player)
 	if not data or type(settings) ~= "table" then return end
@@ -585,6 +594,7 @@ function PlayerData.SetSettings(player, settings)
 	new.effects = volume(settings.effects) or new.effects
 	if GAIN_NUMBERS[settings.gainNumbers] then new.gainNumbers = settings.gainNumbers end
 	if REP_FLASH[settings.repFlash] then new.repFlash = settings.repFlash end
+	if EXP_POPUPS[settings.expPopups] then new.expPopups = settings.expPopups end
 	new.statsLabels = nil -- the world stats labels are gone; drop the old saved choice
 	for _, entry in ipairs(Body.Tops) do -- wardrobe: Shirtless / Tank top / Sports top
 		if entry.id == settings.top then new.top = entry.id end

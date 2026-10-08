@@ -1331,6 +1331,103 @@ local function gainPopup(character, text, scale, model, color)
 	end)
 end
 
+-- EXP popups (Settings "Show EXP popups", default On): every rep a small popup per trained muscle around you, the muscle's
+-- icon chip (its group color) + the real EXP it gained ("+112", "+1.2K"). Main muscle bigger and warm red-orange,
+-- secondaries smaller and green, PUMPED / BIG REP gold. Each pops in with a small bounce, drifts up and out at a random
+-- angle and fades over EXP_POP.Life. At most EXP_POP.Max on screen: on fast reps the oldest go first. Client only (the
+-- same numbers the server applies: Gains.PerRep), so no extra network traffic.
+local ExpPops = {} -- (one local: this script is near Luau's 200-locals limit)
+do
+	local HudIcons = require(Config.HudIcons)
+	local EXP_POP = {
+		Max = 8,
+		Life = 0.8,
+		Rise = 1.5,    -- studs up over its life
+		Spread = 1.3,  -- studs out to the side over its life
+		Main = { TextSize = "Popup", Color = Color3.fromRGB(255, 122, 72), Chip = 20, Width = 130 },
+		Helper = { TextSize = "Medium", Color = Color3.fromRGB(112, 224, 132), Chip = 14, Width = 100 },
+	}
+	local expPops = {} -- live popups, oldest first: { billboard }
+	local function dropExpPop(pop)
+		local index = table.find(expPops, pop)
+		if index then table.remove(expPops, index) end
+		if pop.billboard then pop.billboard:Destroy() end
+	end
+	local function expPopup(torso: BasePart, muscleId: string, amount: number, main: boolean, gold: boolean, order: number)
+		while #expPops >= EXP_POP.Max do dropExpPop(expPops[1]) end
+		local style = if main then EXP_POP.Main else EXP_POP.Helper
+		local muscle = Muscles.ById[muscleId]
+		local group = HudIcons.MuscleGroups[muscle and muscle.group or ""]
+		-- where it starts and where it drifts: around the chest, a random way out (alternating sides)
+		local side = if order % 2 == 0 then 1 else -1
+		local angle = math.rad(math.random(15, 70))
+		local start = Vector3.new(side * (torso.Size.X * 0.55 + math.random() * 0.3), torso.Size.Y * (0.1 + math.random() * 0.3), 0)
+		local drift = Vector3.new(side * math.cos(angle) * EXP_POP.Spread, math.sin(angle) * EXP_POP.Spread * 0.4 + EXP_POP.Rise, 0)
+		local billboard = New("BillboardGui", {
+			Adornee = torso,
+			Size = UDim2.fromOffset(style.Width, Theme.TextSize[style.TextSize] + 10),
+			StudsOffset = start,
+			AlwaysOnTop = true,
+			LightInfluence = 0,
+			MaxDistance = 80,
+			ResetOnSpawn = false,
+			Parent = player:WaitForChild("PlayerGui"),
+		})
+		local holder = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = billboard },
+			{ Theme.List(Enum.FillDirection.Horizontal, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+		local pop = New("UIScale", { Scale = 0.3, Parent = holder })
+		local chip = New("Frame", {
+			LayoutOrder = 1,
+			Size = UDim2.fromOffset(style.Chip, style.Chip),
+			BackgroundColor3 = group and group.accent or HudIcons.DefaultAccent,
+			Parent = holder,
+		}, { Theme.Round("Round"), New("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.45, Thickness = 1.5 }) })
+		local label = Theme.Text({
+			LayoutOrder = 2,
+			Text = "+" .. Muscles.FormatExpShort(amount),
+			Font = "SemiBold",
+			TextSize = style.TextSize,
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.fromScale(0, 1),
+			TextColor3 = if gold then Colors.Gold else style.Color,
+			Parent = holder,
+		})
+		local stroke = Theme.TextShadow(label, 0.4)
+		-- Studio test hook: Workspace attribute "TestPopupSlow" = n makes them live n times longer (for screenshots)
+		local slow = if RunService:IsStudio() then workspace:GetAttribute("TestPopupSlow") else nil
+		local life = EXP_POP.Life * (if type(slow) == "number" and slow > 0 then slow else 1)
+		local entry = { billboard = billboard }
+		table.insert(expPops, entry)
+		-- pop in with a bounce, drift up and out, fade in the second half
+		Theme.Tween(pop, { Scale = 1 }, 0.18, Theme.Motion.Bounce)
+		TweenService:Create(billboard, TweenInfo.new(life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = start + drift }):Play()
+		task.delay(life * 0.45, function()
+			if not billboard.Parent then return end
+			local fade = TweenInfo.new(life * 0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			TweenService:Create(label, fade, { TextTransparency = 1 }):Play()
+			TweenService:Create(stroke, fade, { Transparency = 1 }):Play()
+			TweenService:Create(chip, fade, { BackgroundTransparency = 1 }):Play()
+			local chipStroke = chip:FindFirstChildOfClass("UIStroke")
+			if chipStroke then TweenService:Create(chipStroke, fade, { Transparency = 1 }):Play() end
+		end)
+		task.delay(life, function() dropExpPop(entry) end)
+	end
+	-- All of one rep's popups (xp = Gains.PerRep: raw xp per muscle).
+	function ExpPops.Show(character, machine, xp, gold: boolean)
+		local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+		if not torso or not torso:IsA("BasePart") then return end
+		for index, entry in ipairs(machine.muscles) do
+			local amount = Muscles.ShownXp(xp[entry.id] or 0)
+			if amount >= 1 then expPopup(torso, entry.id, amount, index == 1, gold and index == 1, index) end
+		end
+	end
+	function ExpPops.On(): boolean
+		local settings = ClientData.Get().settings
+		return not (settings and settings.expPopups == "Off")
+	end
+	
+end
+
 ------------------------------------------------------------------------
 -- HUD
 ------------------------------------------------------------------------
@@ -2104,8 +2201,12 @@ local function localLockout(state)
 		-- BIG REP: gold and bigger; Minimal still shows it
 		gainPopup(character, "BIG REP +" .. Muscles.FormatExp(shown), POPUP.SetScale * 1.1, machineModel, Colors.Gold)
 		Audio.Play2D("BigRep")
-	elseif character and not setDone and showRep then
+	elseif character and not setDone and showRep and not ExpPops.On() then
 		gainPopup(character, "+" .. Muscles.FormatExp(shown), 1, machineModel, state.pumped and Colors.Gold or nil)
+	end
+	-- the per-rep EXP popups, one per trained muscle (every rep, the set's last one too)
+	if character and not cardio and showRep and ExpPops.On() then
+		ExpPops.Show(character, machine, xp, state.pumped or state.big)
 	end
 	if setDone then current.setGain = 0 end
 	flashMuscles() -- the secondary muscles get a flash of the HUD's muscle list instead of popups
@@ -2132,6 +2233,15 @@ local function localLockout(state)
 	end
 end
 
+-- { [muscle id] = share } a machine trains (none for the treadmill: it trains stamina)
+function bars.trainingShares(model)
+	local machine = Machines.ById[model:GetAttribute("MachineId")]
+	if not machine or machine.trains == "Stamina" then return nil end
+	local shares = {}
+	for _, muscle in ipairs(machine.muscles) do shares[muscle.id] = muscle.share or 1 end
+	return shares
+end
+
 -- Lockout for any lifter (everyone hears the clank and sees the pump).
 local function onLockout(model, character, state)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
@@ -2143,6 +2253,8 @@ local function onLockout(model, character, state)
 	if machine then pump(character, machine) end
 	if current and model == current.model then
 		localLockout(state)
+	elseif machine and machine.trains ~= "Stamina" then
+		MuscleRig.Flash(character, nil, state.big) -- (their training tint's rep pulse)
 	end
 end
 
@@ -2180,9 +2292,15 @@ RunService.Stepped:Connect(function()
 			-- Studio test hook: Workspace attribute "TestPoseDepth" (0..1) freezes every pose at that depth (after the flip: 1 = relaxed)
 			if RunService:IsStudio() and type(workspace:GetAttribute("TestPoseDepth")) == "number" then depth = workspace:GetAttribute("TestPoseDepth") end
 			animate(model, character, depth, state and state.shake and phase == "press")
+			if posed[model] ~= character then
+				-- the training tint (cool blue on the muscles this machine trains) for as long as they're on it
+				if posed[model] then MuscleRig.SetTraining(posed[model], nil) end
+				MuscleRig.SetTraining(character, bars.trainingShares(model))
+			end
 			posed[model] = character
 			if model:GetAttribute("Stack") then placeStack(model, depth) end
 		elseif posed[model] then
+			MuscleRig.SetTraining(posed[model], nil)
 			resetPose(posed[model])
 			bars.resetProps(model)
 			posed[model] = nil

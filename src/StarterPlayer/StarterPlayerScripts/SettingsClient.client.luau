@@ -36,7 +36,7 @@ local panel = Theme.Panel({
 }, { Theme.Pad("L"), Theme.List(Vertical, "M", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 Theme.Text({ LayoutOrder = 1, Text = "Settings", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
 
-local values = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On" }
+local values = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On" }
 local dragging = nil -- the slider being dragged
 
 local function save()
@@ -45,6 +45,7 @@ local function save()
 		effects = values.effects,
 		gainNumbers = values.gainNumbers,
 		repFlash = values.repFlash,
+		expPopups = values.expPopups,
 	})
 end
 
@@ -144,8 +145,10 @@ end
 choiceRow(4, "gainNumbers", "Gain numbers", { "On", "Minimal", "Off" })
 -- Rep flash: the trained muscles glow warm for a moment on each rep
 choiceRow(5, "repFlash", "Rep flash", { "On", "Off" }, nil, true)
+-- Show EXP popups: every rep, a small "+EXP" per trained muscle around you (MachineClient)
+choiceRow(6, "expPopups", "Show EXP popups", { "On", "Off" }, nil, true)
 
-local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
+local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 7, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
@@ -190,6 +193,7 @@ task.spawn(function()
 	values.effects = settings.effects or 1
 	values.gainNumbers = settings.gainNumbers or "On"
 	values.repFlash = if settings.repFlash == "Off" then "Off" else "On"
+	values.expPopups = if settings.expPopups == "Off" then "Off" else "On"
 	for _, show in pairs(choiceRows) do show() end
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()

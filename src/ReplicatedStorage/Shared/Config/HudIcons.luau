@@ -19,6 +19,16 @@ HudIcons.Tiles = {
 }
 HudIcons.DefaultAccent = Color3.fromHex("#8A8F98")
 
+-- Muscle group colors (the machine signs, the EXP popups' icon chips): one color per group, the tiles' palette.
+HudIcons.MuscleGroups = {
+	Chest = { accent = Color3.fromHex("#E2574C") },
+	Shoulders = { accent = Color3.fromHex("#F0922E") },
+	Back = { accent = Color3.fromHex("#4C8DE0") },
+	Arms = { accent = Color3.fromHex("#9B6BDF") },
+	Legs = { accent = Color3.fromHex("#5BBE5B") },
+	Core = { accent = Color3.fromHex("#E8C21C") },
+}
+
 HudIcons.Pills = {
 	Coins = { icon = "Plate", image = "" },
 	Quests = { icon = "Quest", image = "" },

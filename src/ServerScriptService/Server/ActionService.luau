@@ -66,7 +66,7 @@ handlers.TutorialStep = function(player, step)
 end
 
 -- Settings menu: { music = 0-1, effects = 0-1, gainNumbers = "On" | "Minimal" | "Off", repFlash = "On" | "Off",
--- pumpHintSeen = true } (PlayerData validates)
+-- expPopups = "On" | "Off", pumpHintSeen = true } (PlayerData validates)
 handlers.SetSettings = function(player, settings)
 	if type(settings) == "table" then
 		PlayerData.SetSettings(player, settings)

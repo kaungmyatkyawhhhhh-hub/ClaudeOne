@@ -199,6 +199,16 @@ function Muscles.FormatExp(value)
 	return formatted
 end
 
+-- Short EXP for small popups: 112 -> "112", 1234 -> "1.2K", 3456789 -> "3.5M"
+function Muscles.FormatExpShort(value)
+	value = math.floor(value)
+	if value < 1000 then return tostring(value) end
+	local amount, suffix = value / 1000, "K"
+	if value >= 1e6 then amount, suffix = value / 1e6, "M" end
+	local text = if amount < 100 then string.format("%.1f", amount) else tostring(math.floor(amount))
+	return (string.gsub(text, "%.0$", "")) .. suffix
+end
+
 -- Total strength: every muscle level added up (used by logic; the stats show Muscles.TotalExp).
 function Muscles.TotalStrength(muscleData)
 	local total = 0
