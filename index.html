@@ -270,7 +270,7 @@ button:focus-visible,.lst:focus-visible{outline:2px solid var(--accent);outline-
 .enter small{display:block;font-family:var(--body);font-variation-settings:normal;font-weight:500;font-size:.72rem;text-transform:none;opacity:.7;margin-top:2px}
 .enter svg{width:22px;height:22px;flex:none}
 .tip{align-self:center;font-size:.74rem;font-weight:600;color:var(--ink);background:var(--surface);padding:7px 12px;border-radius:99px;box-shadow:var(--shadow)}
-.phonebtn{position:fixed;right:16px;z-index:11;bottom:calc(132px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:16px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:var(--shadow)}
+.phonebtn{position:fixed;right:16px;z-index:11;bottom:calc(var(--bh,118px) + 14px);width:52px;height:52px;border-radius:16px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:var(--shadow)}
 .phonebtn svg{width:24px;height:24px}
 /* Rooms */
 .room{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;justify-content:center;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);animation:roomin .25s ease-out}
@@ -428,6 +428,21 @@ body.intut #hudpills>.pill:not(#goalChip):not(.tog){display:none}
 .molegrid .up i{bottom:6%}.molegrid .gold i{background:#ffcc33}.molegrid .hit i{background:#e2364a}
 .hoopbox{width:min(92vw,340px);display:flex;flex-direction:column;gap:14px;align-items:center}.hoopnet{font-size:4rem}.hoopnet.pop{animation:gpIn .35s}.hmeter{position:relative;width:100%;height:26px;border-radius:13px;background:#e2364a}.hz{position:absolute;top:0;bottom:0;left:35%;width:30%;background:#2fd28a;border-radius:13px}.hmeter b{position:absolute;top:-4px;width:6px;height:34px;margin-left:-3px;border-radius:3px;background:#fff;box-shadow:0 0 6px #000}.hoopbox .bigbtn{width:100%}
 .digpit{width:170px;height:170px;border-radius:50%;background:radial-gradient(#5a3a1a 40%,#a8743a 41%,#c99a62 70%,transparent 71%);display:grid;place-items:center;font-size:4rem;cursor:pointer;touch-action:manipulation;position:relative;z-index:1}.digpit.hit{animation:digHit .18s}.digpit.open b{animation:gpIn .45s cubic-bezier(.2,1.6,.4,1)}@keyframes digHit{50%{transform:scale(.92) rotate(-6deg)}}
+/* tidy bottom: one compact action bar over one row of places */
+.bottom{gap:6px}
+.bottom .enter{padding:9px 12px 9px 16px;font-size:.92rem;border-radius:14px;min-height:0}
+.bottom .enter span{min-width:0;overflow:hidden}.bottom .enter small{font-size:.68rem;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bottom .enter svg{width:18px;height:18px;padding:7px;box-sizing:content-box;border-radius:10px;background:rgba(255,255,255,.12)}
+.bottom .place{padding:7px 10px;font-size:.72rem}
+.scnbar .w2rate{align-self:center;flex:none;margin-right:auto}
+.banner.tst{max-width:min(calc(100vw - 104px),320px)}.banner.tst.ray{max-width:min(calc(100vw - 104px),340px)}
+.fotdcard{padding:16px 18px;border-radius:20px;background:linear-gradient(135deg,#ff4fd8,#7a3cff);color:#fff;display:flex;flex-direction:column;gap:4px;margin-bottom:10px}.fotdcard b{font-family:var(--display);font-size:1.5rem}.fotdcard small{opacity:.85}.fotdcard .eyebrow{color:rgba(255,255,255,.85)}.fotdcard em{font-style:normal;font-family:var(--display);font-weight:900;font-size:1.4rem;margin-top:6px}.fotdcard .bigbtn{margin-top:10px}
+.meetgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}.meetcar{background:var(--surface);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}.meetcar.me{box-shadow:inset 0 0 0 2px var(--accent),var(--shadow)}.meetcar canvas{width:100%;height:auto;border-radius:10px;display:block}.meetcar b{font-size:.9rem;padding:0 4px}.meetcar span{font-size:.75rem;color:var(--muted);padding:0 4px 4px}
+.platerow{display:flex;gap:8px}.platerow input{flex:1;min-width:0;padding:12px;border-radius:12px;border:2px solid var(--line);background:#f6f3e6;color:#1b1f2a;font-family:var(--mono);font-weight:800;font-size:1.1rem;text-transform:uppercase;letter-spacing:.1em}.platerow .cta{justify-content:center;padding:10px 18px}
+.achpop{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 92px);transform:translate(-50%,-30px);opacity:0;z-index:72;width:min(320px,84vw);padding:10px 14px;border-radius:20px;background:var(--bg);box-shadow:0 0 0 3px #ffcc33,0 16px 50px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:3px;animation:apIn .4s cubic-bezier(.2,1.5,.4,1) forwards}
+.achpop b{font-family:var(--display);font-size:1rem}.achpop .eyebrow{font-size:.62rem}.achpop small{color:var(--muted);font-size:.8rem}.achpop em{font-style:normal;font-family:var(--display);font-weight:900;font-size:1.05rem;color:var(--up)}.achpop em.sm{font-size:.95rem}
+.achbtns{display:flex;gap:8px;margin-top:6px}.achbtns .cta{flex:1;padding:7px;font-size:.85rem;justify-content:center;min-height:0}.achpop.out{animation:apOut .4s ease forwards}
+@keyframes apIn{to{transform:translate(-50%,0);opacity:1}}@keyframes apOut{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-30px);opacity:0}}
 .goalpop{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);z-index:70;min-width:260px;max-width:86vw;padding:18px 22px;border-radius:22px;background:var(--bg);box-shadow:0 0 0 3px #ffcc33,0 20px 60px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:4px;pointer-events:none;animation:gpIn .45s cubic-bezier(.2,1.6,.4,1) forwards}
 .goalpop b{font-family:var(--display);font-size:1.15rem}.goalpop em{font-style:normal;font-family:var(--display);font-weight:900;font-size:2rem;color:var(--up)}.goalpop small{color:var(--muted);font-size:.8rem}.goalpop.out{animation:gpOut .45s ease forwards}
 @keyframes gpIn{to{transform:translate(-50%,-50%) scale(1)}}@keyframes gpOut{to{transform:translate(-50%,-80%) scale(.9);opacity:0}}
@@ -734,7 +749,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .perksheet .pcard .rl{font-size:.52rem;letter-spacing:.08em}
 .perksheet .pcard .pn{font-size:.52rem;margin-top:auto}
 .perksheet .fine{font-size:.66rem}
-.lvlbtn{position:fixed;right:16px;bottom:calc(196px + env(safe-area-inset-bottom,0px));z-index:11;width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#ffd34d,#f5a300);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(255,255,255,.7),0 0 24px rgba(245,179,1,.7),var(--shadow);animation:lvp 1s infinite alternate}
+.lvlbtn{position:fixed;right:16px;bottom:calc(var(--bh,118px) + 78px);z-index:11;width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#ffd34d,#f5a300);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(255,255,255,.7),0 0 24px rgba(245,179,1,.7),var(--shadow);animation:lvp 1s infinite alternate}
 .lvlbtn svg{width:24px;height:24px}
 .lvlbtn span{font-family:var(--mono);font-size:.46rem;font-weight:800;letter-spacing:.06em}
 .lvlbtn b{position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:#e2364a;color:#fff;font-size:.72rem;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
@@ -1299,8 +1314,9 @@ let achF="ready";
 const isWeekend=()=>{const d=new Date().getDay();return d===0||d===6};
 const achReady=()=>ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+missReady();
 const maxEnergy=()=>goalEnK(maxEnergyFor(strLv()));
-const maxSlots=()=>2*((S&&S.ctech&&S.ctech.stash)||0)+4+Math.min(strLv(),12)+2*S.up.bag+pk("slot")+((S&&S.spurts)||0)+(S&&S.acc&&S.acc.b==="pack"?1:0);
-const walkSpeed=()=>(S&&S.buffs&&S.buffs.zoom>0?1.5:1)*(1+.12*petK("husky"))*(1+accFx("speed"))*(S&&S.gup&&S.gup.boots?1.2:1)*150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(ride()?VEH.find(v=>v.k===ride()).sp:1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1)*wxSlow()*(typeof cityBuilt==="function"&&cityBuilt("skate")?1.1:1)*(typeof snowK==="function"?snowK():1)*(!SCN&&S&&S.ctech&&S.ctech.boots?1+.1*S.ctech.boots:1);
+const petSlots=()=>S&&S.pet==="husky"?(petBond("husky")>=5?2:1):0;
+const maxSlots=()=>petSlots()+2*((S&&S.ctech&&S.ctech.stash)||0)+4+Math.min(strLv(),12)+2*S.up.bag+pk("slot")+((S&&S.spurts)||0)+(S&&S.acc&&S.acc.b==="pack"?1:0);
+const walkSpeed=()=>(S&&S.buffs&&S.buffs.zoom>0?1.5:1)*(1+.12*petK("husky"))*(1+accFx("speed"))*(S&&S.gup&&S.gup.boots?1.2:1)*150*(1+.25*S.up.shoes)*(1+.1*pk("speed"))*(ride()?VEH.find(v=>v.k===ride()).sp*(CARS.includes(ride())?1+.04*tune("engine"):1):1)*(EV&&EV.type==="rain"?.8:1)*(S&&S.awake>20?.9:1)*wxSlow()*(typeof cityBuilt==="function"&&cityBuilt("skate")?1.1:1)*(typeof snowK==="function"?snowK():1)*(!SCN&&S&&S.ctech&&S.ctech.boots?1+.1*S.ctech.boots:1);
 const valueOf=s=>s.base*S.trend[s.cat]*s.noise*(s.fake?.12:1)*(season().m[s.cat]||1);
 const stashVal=()=>S.stash.reduce((a,s)=>a+valueOf(s),0);
 
@@ -1628,6 +1644,9 @@ const OUTF={
  skelly:{c:"#1b1d22",legs:"same",d:(c,x,y,hx,o)=>{c.strokeStyle="#f4f4f4";c.lineWidth=1.4;c.beginPath();c.moveTo(x,y-29);c.lineTo(x,y-14);for(let i=0;i<4;i++){const yy=y-26+i*3.4;c.moveTo(x-hx*.6,yy);c.quadraticCurveTo(x,yy-1.5,x+hx*.6,yy)}c.stroke();c.fillStyle="#f4f4f4";c.fillRect(x-hx*.5,y-13,hx,2)}},
  sweater:{c:"#c62a3a",legs:"#2b3346",d:(c,x,y,hx,o)=>{c.fillStyle="#fff";for(let i=0;i<5;i++){c.beginPath();c.moveTo(x-hx+1+i*(2*hx-2)/5,y-19);c.lineTo(x-hx+1+(i+.5)*(2*hx-2)/5,y-22);c.lineTo(x-hx+1+(i+1)*(2*hx-2)/5,y-19);c.fill()}c.fillStyle="#2e6b45";c.beginPath();c.moveTo(x,y-29);c.lineTo(x+4,y-23.5);c.lineTo(x-4,y-23.5);c.closePath();c.fill();c.fillStyle="#fff";c.fillRect(x-hx+1,y-14,2*hx-2,2)}},
  snowsuit:{c:"#f4f8ff",legs:"same",d:(c,x,y,hx,o)=>{c.fillStyle="#1b1d22";[0,1,2].forEach(i=>{c.beginPath();c.arc(x,y-25+i*4.5,1.2,0,7);c.fill()});c.fillStyle="#e2364a";c.fillRect(x-hx+1,y-30,2*hx-2,3);c.fillRect(x+hx*.3,y-30,3,9)}},
+ trophyjkt:{c:"#cf9a14",legs:"#2b2f3a",d:(c,x,y,hx,o)=>{c.fillStyle="#fff3c4";c.beginPath();c.moveTo(x,y-26);c.lineTo(x+2,y-22);c.lineTo(x+6,y-22);c.lineTo(x+3,y-19);c.lineTo(x+4,y-15);c.lineTo(x,y-17);c.lineTo(x-4,y-15);c.lineTo(x-3,y-19);c.lineTo(x-6,y-22);c.lineTo(x-2,y-22);c.fill()}},
+ legendsuit:{c:"#5b2a8a",legs:"#1b1f2a",d:(c,x,y,hx,o)=>{c.fillStyle="#ffcc33";c.fillRect(x-hx+1,y-28,hx*2-2,2);c.fillRect(x-1,y-26,2,12);c.fillStyle="#ff4fd8";c.beginPath();c.arc(x,y-20,2.4,0,7);c.fill()}},
+ hofsuit:{c:"#f4f6fa",legs:"#cf9a14",d:(c,x,y,hx,o)=>{c.fillStyle="#cf9a14";c.fillRect(x-hx+1,y-28,3,14);c.fillRect(x+hx-4,y-28,3,14);c.fillStyle="#2a5bd7";c.beginPath();c.arc(x,y-21,3.2,0,7);c.fill();c.fillStyle="#ffcc33";c.beginPath();c.arc(x,y-21,1.6,0,7);c.fill()}},
  captcoat:{c:"#1b2f5a",legs:"#141824",d:(c,x,y,hx,o)=>{c.fillStyle="#ffcc33";[0,1,2].forEach(i=>{c.beginPath();c.arc(x-2.5,y-25+i*4.5,1.1,0,7);c.arc(x+2.5,y-25+i*4.5,1.1,0,7);c.fill()});c.fillRect(x-hx+1,y-28,4,2);c.fillRect(x+hx-5,y-28,4,2);c.fillStyle="#4fe3ff";c.fillRect(x-hx*.7,y-22,4,3)}},
  bonecoat:{c:"#c4945f",legs:"#5a3a22",d:(c,x,y,hx,o)=>{c.fillStyle="#f4ecd8";c.beginPath();c.ellipse(x+hx*.4,y-21,3,1.4,.5,0,7);c.fill();c.beginPath();c.arc(x+hx*.4-2.2,y-22.6,1.2,0,7);c.arc(x+hx*.4+2.2,y-19.4,1.2,0,7);c.fill();c.fillStyle="#7a5a3a";c.fillRect(x-hx+1,y-13,2*hx-2,2.4);c.fillStyle="#3a2a1a";c.fillRect(x-hx*.75,y-26,4,6)}},
  gavelsuit:{c:"#7a1d2a",legs:"#2b2233",d:(c,x,y,hx,o)=>{c.fillStyle="#cf9a14";c.beginPath();c.moveTo(x-4.5,y-29);c.lineTo(x-1,y-29);c.lineTo(x-3,y-18);c.closePath();c.moveTo(x+4.5,y-29);c.lineTo(x+1,y-29);c.lineTo(x+3,y-18);c.closePath();c.fill();c.fillStyle="#f4f4f4";c.beginPath();c.moveTo(x-1,y-29);c.lineTo(x+1,y-29);c.lineTo(x,y-20);c.closePath();c.fill();c.fillStyle="#8a5a2c";c.fillRect(x+hx*.35,y-24,5,2);c.fillRect(x+hx*.35+3,y-26,3,6)}},
@@ -1784,6 +1803,8 @@ function walkTo(k){const p=PL[k];target=[p.door[0],p.door[1]+16];autoEnter=k;mov
 
 /* bottom bar */
 let bKey="";
+// floating buttons sit just above whatever the bottom bar is showing
+function bottomH(){const el=$("bottom");if(el)document.documentElement.style.setProperty("--bh",Math.round(el.offsetHeight||0)+"px")}
 function renderBottom(){
   const el=$("bottom");if(!S)return;if(SCN)return renderSceneBottom();const near=nearPlace();
   const key=(near?near.k:"")+"|"+(S.stats.flips?1:0)+"|"+(moving?1:0)+"|"+achReady();if(key===bKey)return;bKey=key;
@@ -1791,7 +1812,7 @@ function renderBottom(){
   if(near)h+=`<button class="enter" id="enterBtn"><span>Enter ${near.n}<small>${near.sub}</small></span>${ARROW}</button>`;
   else if(!S.stats.flips&&!moving)h+=`<span class="tip">Tap the map to walk, or pick a place below</span>`;
   const ar=achReady();h+=`<div class="places">${MPW?`<button class="place${near&&near.plot&&near.plot.me?" here":""}" data-go="myhouse"><i style="background:${myShirt()}"></i>My house${ar?`<b class="dot">${ar}</b>`:""}</button>${S.crew?`<button class="place" data-go="crewhq"><i style="background:${S.crew.c}"></i>Crew HQ</button>`:""}`:""}${shownPlaces().filter(p=>regionOpen(p.region)&&!p.hub).map(p=>`<button class="place${near===p?" here":""}" data-go="${p.k}"><i style="background:${p.c}"></i>${p.k==="storage"?"Storage":p.k==="depot"?"Courier":p.n}${p.k==="home"&&ar?`<b class="dot">${ar}</b>`:""}</button>`).join("")}</div>`;
-  el.innerHTML=h;
+  el.innerHTML=h;bottomH();
   const eb=$("enterBtn");if(eb)eb.onclick=()=>near.crew?openCrew(closeRoom):near.plot?openPlot(near.plot):near.hub?(audioOn(),near.go()):openRoom(near.k);
   el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.go;if(k==="crewhq"){const n=nearPlace();if(n&&n.crew)openCrew(closeRoom);else{target=[CREWHQ.x+CREWHQ.w/2,CREWHQ.y+CREWHQ.h+16];autoEnter="crewhq";moving=true}return}if(k==="myhouse"){const me=townPlayers().find(p=>p.me);if(!me)return;const n=nearPlace();if(n&&n.plot&&n.plot.me)openPlot(me);else{const[dx,dy]=plotDoor(me.plot);target=[dx,dy+(me.plot.top?10:-10)];autoEnter="myhouse";moving=true}return}if(nearPlace()===PL[k])openRoom(k);else walkTo(k)});
 }
@@ -2436,12 +2457,12 @@ function openHome(){
         <div><span class="eyebrow">Heaviest lift</span><b>${S.stats.heaviest||S.pr} kg</b></div><div><span class="eyebrow">Grails</span><b>${S.stats.grails}</b></div>
         <div><span class="eyebrow">Level</span><b>${repLevel()}</b></div><div><span class="eyebrow">Height</span><b>${S.height||170} cm</b></div><div><span class="eyebrow">Confidence</span><b>+${cmOver()}%</b></div><div><span class="eyebrow">Fans</span><b>${fmtN(S.fans||0)}</b></div><div><span class="eyebrow">Rich list</span><b>#${richRank()}</b></div><div><span class="eyebrow">Tower floors</span><b>${S.tower||0}</b></div><div><span class="eyebrow">You vs Vince</span><b>${S.stats.vW||0}–${S.stats.vL||0}</b></div><div><span class="eyebrow">Arm wrestling wins</span><b>${S.stats.armWins||0}</b></div>
       </div>
-      <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div>
+      <div class="sechead"><h3>Achievements</h3><span class="eyebrow">${ACH.filter(a=>S.ach[a[0]]).length}/${ACH.length} claimed</span></div><p class="fine">Every 10 you claim adds +1% to every sale for good (now +${Math.round((achSellK()-1)*100)}%). ${(()=>{const m=ACH_MILE.find(([n])=>achClaimed()<n);return m?"At "+m[0]+" you unlock the "+ACCS.find(x=>x.k===m[1]).n+".":"You've unlocked every achievement outfit."})()}</p>
       <div class="lbtabs">${[["ready","Ready ("+ACH.filter(a=>!S.ach[a[0]]&&a[3]()).length+")"],["todo","To do"],["done","Done"],["all","All"]].map(([k,n])=>`<button class="${achF===k?"on":""}" data-achf="${k}">${n}</button>`).join("")}</div>
-      <div class="perks">${ACH.filter(a=>{const done=S.ach[a[0]],ready=!done&&a[3]();return achF==="all"||(achF==="ready"&&ready)||(achF==="todo"&&!done&&!ready)||(achF==="done"&&done)}).map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":ready?"Claim "+fmt(rw):fmt(rw)}</span></button>`}).join("")||`<p class="fine">Nothing here right now.</p>`}</div></div>`;
+      <div class="perks">${ACH.filter(a=>{const done=S.ach[a[0]],ready=!done&&a[3]();return achF==="all"||(achF==="ready"&&ready)||(achF==="todo"&&!done&&!ready)||(achF==="done"&&done)}).map(([id,t,d,ok,rw])=>{const done=S.ach[id],ready=!done&&ok();return `<button class="perk nopic ach${done?" done":""}" data-ach="${id}" ${ready?"":"disabled"}><span class="t">${done?"✓ ":""}${t}</span><span class="d">${d}</span><span class="c">${done?"Claimed":(ready?"Claim ":"")+achPrizeTxt(ACH.find(x=>x[0]===id))}</span></button>`}).join("")||`<p class="fine">Nothing here right now.</p>`}</div></div>`;
     $("leaveBtn").onclick=closeRoom;bindAccount();drawShelf();$("wheelBtn").onclick=()=>openWheel(()=>{room="home";draw()});$("petsBtn").onclick=()=>openPets(()=>{room="home";draw()});$("bookBtn").onclick=()=>openBook(()=>{room="home";draw()});$("gardBtn").onclick=()=>openGarden(()=>{room="home";draw()});$("stkBtn").onclick=()=>openStickers(()=>{room="home";draw()});$("furnBtn").onclick=()=>openInterior(()=>{room="home";draw()});$("collBtn").onclick=()=>openCollection(()=>{room="home";draw()});$("gramBtn").onclick=()=>openGram(()=>{room="home";draw()});$("passBtn").onclick=()=>openPassport(()=>{room="home";draw()});$("lookBtn").onclick=()=>openWardrobe(()=>{room="home";draw()});$("setBtn").onclick=()=>openSettings(()=>{room="home";draw()});const fmb=$("famBtn");if(fmb)fmb.onclick=()=>openFamily(()=>{room="home";draw()});bindMiss(draw);
     $("room").querySelectorAll("[data-achf]").forEach(b=>b.onclick=()=>{achF=b.dataset.achf;draw()});
-    $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const a=ACH.find(x=>x[0]===b.dataset.ach);if(S.ach[a[0]]||!a[3]())return;S.ach[a[0]]=1;S.cash+=a[4];SFX.level();banner("+"+fmt(a[4]),"u");dirty=true;draw();updMini()});
+    $("room").querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{const r=claimAch(ACH.find(x=>x[0]===b.dataset.ach));if(!r)return;banner(r.join(" · "),"u");draw()});
     $("room").querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{const i=+b.dataset.home,pr=PROPS[i];if(i!==(S.home||0)+1||S.cash<pr.cost)return;S.cash-=pr.cost;S.home=i;syncHome();dirty=true;SFX.rebirth();banner("Moved into the "+pr.n,"g");draw();updMini()});
     $("room").querySelectorAll("[data-ride]").forEach(b=>b.onclick=()=>{S.cur=b.dataset.ride;dirty=true;SFX.buy();draw()});
     $("room").querySelectorAll("[data-paint]").forEach(b=>b.onclick=()=>{S.paint=b.dataset.paint;dirty=true;SFX.buy();draw()});
@@ -2995,14 +3016,17 @@ function openDocks(){room="docks";
       ${!best?`<div class="note">Bring a car to join the meet. Trucks, coupes and hypercars are at the Dealership downtown, and the sports car too.</div>`:`
       <div class="note">You're rolling up in your <b>${best.n}</b> (${best.sp}× speed). Hit <b>GO</b> the moment the lights turn green for a faster launch.</div>
       ${ask?`<div class="crask"><b>${esc(ask.n)}</b> wants to race you<div class="seg3"><button class="cta" id="crYes">Race them</button><button class="cta ghost" id="crNo">No thanks</button></div></div>`:""}
-      <button class="bigbtn" id="showBtn" ${shown?"disabled":""}>Show off your cars<small>${shown?"Come back tomorrow":"Earn fans and cash for each car you own"}</small></button>
+      <button class="bigbtn" id="showBtn" ${shown?"disabled":""}>Show off your cars<small>${shown?"Come back tomorrow":"Cash for each car you own · style ×"+(1+carStyle()/100).toFixed(2)}</small></button>
+      <button class="bigbtn alt" id="csBtn">🔧 Garage<small>Paint, plates, style and tuning · style ${carStyle()}</small></button>
+      ${meetLineup()}
       <div class="sechead"><h3>Race your friends</h3><span class="eyebrow">${MP?fr.length+" online":"Offline"}</span></div>
       ${!MP?`<p class="fine">Join an online room at the Harbor to race your friends live.</p>`:fr.length?`<div class="perks">${fr.map(([id,p])=>`<button class="perk nopic" data-cr="${id}"><span class="t">${esc(String(p.n).slice(0,16))}</span><span class="d">Lv ${p.lv||0}${MP.crOut===id?" · waiting for them…":""}</span><span class="c">${MP.crOut===id?"Sent":"Race"}</span></button>`).join("")}</div>`:`<p class="fine">Nobody else is in your room right now.</p>`}
       <div class="sechead"><h3>Race the bots</h3><span class="eyebrow">Up to 3 at once</span></div>
       <div class="perks">${CRBOTS().map((o,i)=>`<button class="perk nopic" data-race="${i}" ${S.cash<o.bet?"disabled":""}><span class="t">${o.n}</span><span class="d">${o.sp}× car · bet ${fmt(o.bet)} · 1st pays ${fmt(o.bet*3)}</span><span class="c">Race</span></button>`).join("")}
         <button class="perk nopic" data-race="all" ${S.cash<CRBOTS()[2].bet?"disabled":""}><span class="t">All three at once</span><span class="d">Bet ${fmt(CRBOTS()[2].bet)} · 1st pays ${fmt(CRBOTS()[2].bet*4)}, 2nd gets it back</span><span class="c">Race</span></button></div>`}</div>`;
     {const tb=$("ttBtn");if(tb)tb.onclick=()=>{closeRoom();ttStart()}}{const rb=$("rsBtn");if(rb)rb.onclick=()=>{const cr=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)).sort((a,b)=>b.sp-a.sp)[0];if(!cr)return;if(!CARS.includes(ride()))S.cur=cr.k;closeRoom();rsStart()}}$("leaveBtn").onclick=()=>{RACE=null;closeRoom()};
-    const sb=$("showBtn");if(sb)sb.onclick=()=>{if(S.flags.showDay===S.day)return;S.flags.showDay=S.day;const v=Math.round(VEH.filter(x=>S.veh[x.k]&&CARS.includes(x.k)).reduce((a,x)=>a+x.cost*.03,0));earn(v);SFX.level();banner("Car show +"+fmt(v),"g");draw();updMini()};
+    {const cb=$("csBtn");if(cb)cb.onclick=()=>openCarShop(()=>openDocks())}if(best){drawLineup();if(!MEET_LB||Date.now()-MEET_T>60000){meetPost();meetFetch(()=>{if(room==="docks"&&!(RACE&&!RACE.done))draw()})}}
+    const sb=$("showBtn");if(sb)sb.onclick=()=>{if(S.flags.showDay===S.day)return;S.flags.showDay=S.day;const v=Math.round(VEH.filter(x=>S.veh[x.k]&&CARS.includes(x.k)).reduce((a,x)=>a+x.cost*.03,0)*(1+carStyle()/100)+rwBase()*.01*carStyle()/100);earn(v);SFX.level();banner("Car show +"+fmt(v),"g");draw();updMini()};
     $("room").querySelectorAll("[data-race]").forEach(b=>b.onclick=()=>{const B=CRBOTS(),all=b.dataset.race==="all",ops=all?B:[B[+b.dataset.race]],bet=all?B[2].bet:ops[0].bet;if(S.cash<bet)return;S.cash-=bet;dirty=true;
       raceRun({me:best,bots:ops,bet,prize1:bet*(all?4:3),prize2:all?bet:0,back:draw})});
     $("room").querySelectorAll("[data-cr]").forEach(b=>b.onclick=()=>{const id=b.dataset.cr;if(!MP||!MP.peers[id])return;MP.crOut=id;mpSend("cr",{t:"ask",f:MP_ID,n:mpName()},id);SFX.hot();banner("Race challenge sent","u");draw();setTimeout(()=>{if(MP&&MP.crOut===id&&!RACE){MP.crOut=null;if(room==="docks")draw()}},30000)});
@@ -3085,7 +3109,7 @@ function raceRun(o){const peer=o.peer;RACE={...o,lanes:[{n:"You",sp:o.me.sp,c:"#
   setTimeout(()=>{if(RACE&&!RACE.launched)crLaunch()},gt+2500);
   $("goBtn").onclick=crLaunch}
 function crLaunch(){const R=RACE;if(!R||R.launched)return;R.launched=true;let launch;if(!R.green)launch=1;else{const rt=(performance.now()-R.green)/1000;launch=rt<.25?-.6:rt<.5?-.3:rt<1?0:.4}
-  R.myT=+(crTime(R.me.sp,launch)*rnd(.98,1.02)).toFixed(3);R.lanes[0].T=R.myT;R.launchTxt=!R.green?"False start!":launch<-.5?"Perfect launch!":launch<0?"Good launch.":launch>0?"Slow launch.":"Okay launch.";
+  R.myT=+Math.max(1,crTime(R.me.sp*tuneSp(),launch-.08*tune("tires"))*rnd(.98,1.02)-.12*tune("nitro")).toFixed(3);R.lanes[0].T=R.myT;R.launchTxt=!R.green?"False start!":launch<-.5?"Perfect launch!":launch<0?"Good launch.":launch>0?"Slow launch.":"Okay launch.";
   R.lanes.forEach(l=>{if(!l.me&&!l.peer)l.T=crTime(l.sp,rnd(-.5,.3))*rnd(.97,1.03)});
   if(R.peer){mpSend("cr",{t:"res",f:MP_ID,time:R.myT,car:R.me.n},R.peer.id);setTimeout(()=>{if(RACE===R&&R.peerT==null){R.peerT=99;R.lanes[1].n=R.peer.n+" (left)";crCheck()}},12000)}
   R.t0=performance.now();$("goBtn").disabled=true;$("rMsg").textContent=R.launchTxt+(R.peer?" Racing "+R.peer.n+"…":"");SFX.rebirth();crAnim();crCheck()}
@@ -3733,7 +3757,7 @@ function drawSlot(i){
   const box=l.kind==="mystery",bad=l.rating===0||l.rating<4.3;
   el.className="lst fresh"+(l.kind==="grail"?" grail":"")+(l.golden?" golden":"")+(box?" mys":"");
   el.innerHTML=`${tileFor(l.cat,l.code)}<div class="info"><div class="nm"><span class="nt">${l.name}</span><span class="sel${bad?" bad":""}">${l.rating===0?"New seller":"★"+l.rating.toFixed(1)}</span></div>
-   <div class="sub"><span class="cond">${l.cond}</span>${box?"<span>Could be anything</span>":`<span>${newbie()?"Worth":"Mkt"} <span class="mono" data-f="mv"></span></span>${newbie()?"":'<span class="disc" data-f="disc"></span>'}`}${newbie()&&!box?'<span class="vd" data-f="vd"></span>':`<span class="tag">${l.kind==="grail"?"GRAIL":"STEAL"}</span>`}${l.golden?'<span class="gtag">GOLDEN ×4</span>':""}${l.kg?`<span class="kg${S.pr<l.kg?" no":""}">${l.kg} KG</span>`:""}${S.up.legit&&l.fake?'<span class="fk">FAKE</span>':""}</div></div>
+   <div class="sub"><span class="cond">${l.cond}</span>${box?"<span>Could be anything</span>":`<span>${newbie()?"Worth":"Mkt"} <span class="mono" data-f="mv"></span></span>${newbie()?"":'<span class="disc" data-f="disc"></span>'}`}${newbie()&&!box?'<span class="vd" data-f="vd"></span>':`<span class="tag">${l.kind==="grail"?"GRAIL":"STEAL"}</span>`}${l.golden?'<span class="gtag">GOLDEN ×4</span>':""}${l.kg?`<span class="kg${S.pr<l.kg?" no":""}">${l.kg} KG</span>`:""}${S.up.legit&&l.fake?'<span class="fk">FAKE</span>':l.fake&&dogSniff(l)?'<span class="fk">🐾 FAKE</span>':""}</div></div>
    <div class="ask"><div class="pr" data-f="pr"></div><div class="act" data-f="act">${box?"Open":"Buy"}</div></div><div class="life"><i data-f="life"></i></div>`;
   el.f={};el.querySelectorAll("[data-f]").forEach(n=>el.f[n.dataset.f]=n);
   if(l.kind==="grail"){SFX.grail();buzz([20,30,20])}
@@ -3805,7 +3829,7 @@ function sellAt(i,v,{hot=false,el=null}={}){
   const s=S.stash[i];v=Math.round(v);const gain=v-s.paid;let bonus=0;
   if(gain>0){M.streak=(M.t-M.streakT<4)?M.streak+1:1;M.streakT=M.t;bonus=Math.round(gain*Math.min(.1*(M.streak-1),.5))}else M.streak=0;
   let crit=1;if(gain>0){crit=rollCrit();if(crit>1){bonus+=gain*(crit-1);S.stats.crits=(S.stats.crits||0)+1;critFX(crit,el)}}
-  earn(v+bonus);S.stats.flips++;if(S.stats.flips%10===0||Math.random()<(mayorK("crates")?.12:.06))setTimeout(()=>gainCrate(),350);dailyProg("sales");if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);S.dbest=Math.max(S.dbest||0,gain+bonus);if(s.fake)karmaAdd(-3);else if(gain>0){karmaAdd(.15);vote(1)}if(crit>=2)bookGet("rare","crit2");if(crit>=5)bookGet("rare","crit5");if(hot)bookGet("rare","collector");if(gain>=s.paid&&s.paid>0)bookGet("rare","double");
+  earn(v+bonus);fotdSold(s,v+bonus);S.stats.flips++;if(S.stats.flips%10===0||Math.random()<(mayorK("crates")?.12:.06))setTimeout(()=>gainCrate(),350);dailyProg("sales");if(M.cfg.k==="lux")S.flags.luxSell=1;S.stats.profit+=gain+bonus;S.stats.best=Math.max(S.stats.best,gain+bonus);S.dbest=Math.max(S.dbest||0,gain+bonus);if(s.fake)karmaAdd(-3);else if(gain>0){karmaAdd(.15);vote(1)}if(crit>=2)bookGet("rare","crit2");if(crit>=5)bookGet("rare","crit5");if(hot)bookGet("rare","collector");if(gain>=s.paid&&s.paid>0)bookGet("rare","double");
   S.stash.splice(i,1);
   if(el)floatAt(el,(gain>=0?"+":"−")+fmt(Math.abs(gain+bonus)).replace("−","")+(crit>1?`<small>CRIT ×${crit}</small>`:bonus?`<small>STREAK ×${(1+Math.min(.1*(M.streak-1),.5)).toFixed(1)}</small>`:hot?"<small>COLLECTOR</small>":""),gain>=0?"var(--up)":"var(--down)");
   if(gain>0){SFX.sell(M.streak);buzz(12);hype(crit>1?3:s.gold?3:1)}else{SFX.loss();buzz(35)}
@@ -3911,7 +3935,7 @@ function loop(now){
       if(!SCN)findsTick(dt);funTick(dt);jobTick(dt);rivalTick(dt);
       if(S.bank>0){S.bank+=S.bank*BANK_RATE/60*dt;if(room==="bank"){const b=$("bBal");if(b){b.textContent=fmt(S.bank);$("bRate").textContent=fmt(S.bank*BANK_RATE)+"/min"}}}
       if(EV){EV.t+=dt;if(EV.t>=EV.dur)worldEventEnd()}else if(!SCN){nextEvT-=dt;if(nextEvT<=0)worldEventStart()}
-      achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;banner("Achievement: "+a[1],"g");confetti(70);SFX.level()}})}
+      achT-=dt;if(achT<=0){achT=1;checkGoals();levelCheck();renderGoalChip();S.flags.achSeen=S.flags.achSeen||{};ACH.forEach(a=>{if(!S.ach[a[0]]&&!S.flags.achSeen[a[0]]&&a[3]()){S.flags.achSeen[a[0]]=1;achPop(a)}})}
       renderBottom();tutTick(dt);
       simTick(dt);feedWatch(dt);tradeTick(dt);mpTick(dt);townTick();shopTick(dt);if(S.quest){S.quest.left-=dt;if(S.quest.left<=0){banner(S.quest.name+" gave up","r");S.quest=null;dirty=true}}
       hudT-=dt;if(hudT<=0){hudT=.1;renderHud();updMini();renderEvChip();renderSeaChip();renderTrChip();renderQChip();renderJobChip();renderRvChip();renderChChip();renderCrateChip();renderMapChip();renderWkChip();renderBzChip();renderLvlBtn();renderPillTog()}
@@ -4723,10 +4747,10 @@ function blackjack(back){fixBet();let G2=null;const deck=()=>{const d=[];for(con
 /* ================= pets: one follows you around, each has a perk that grows with your bond ================= */
 const PETS=[
  {k:"cat",n:"Lucky cat",cost:5000,c:"#f2a65a",d:"+3% on every sale"},
- {k:"dog",n:"Golden retriever",cost:8000,c:"#e0b060",d:"Sniffs out shiny finds around town"},
+ {k:"dog",n:"Golden retriever",cost:8000,c:"#e0b060",d:"Sniffs out fakes at markets and finds shiny things around town"},
  {k:"pug",n:"Pug",cost:15000,c:"#d9c29a",d:"+15 max energy"},
- {k:"parrot",n:"Parrot",cost:40000,c:"#2fd28a",d:"+10 rizz at the club"},
- {k:"husky",n:"Husky",cost:120000,c:"#9fb2c4",d:"+12% walking speed"},
+ {k:"parrot",n:"Parrot",cost:40000,c:"#2fd28a",d:"+10 rizz at the club and spots treasure on the Frontier Road"},
+ {k:"husky",n:"Husky",cost:120000,c:"#9fb2c4",d:"+12% walking speed and carries an extra item (two at bond 5)"},
  {k:"penguin",n:"Penguin",cost:2e6,c:"#2b2f3a",d:"Rarer fish on your islands"},
  {k:"tiger",n:"White tiger",cost:5e7,c:"#f4f6fa",d:"+10% on sales and +15 rizz"},
  {k:"dragon",n:"Baby dragon",cost:1e9,c:"#d6384b",d:"+8% on sales and island income"}];
@@ -4734,6 +4758,8 @@ const petOf=k=>PETS.find(p=>p.k===k);
 const petBond=k=>Math.min(10,((S.pets||{})[k]||{}).bond||0);
 // effect strength for the pet you're walking: 1 at bond 0, 2 at bond 10
 const petK=k=>S&&S.pet===k?1+petBond(k)*.1:0;
+// the dog sniffs each fake listing once; better bond, better nose
+const dogSniff=l=>{if(!(petK("dog")>0))return false;if(l.sniff===undefined)l.sniff=Math.random()<.35+.05*petBond("dog");return l.sniff};
 const petSell=()=>1+.03*petK("cat")+.1*petK("tiger")+.08*petK("dragon");
 let PET=null,petFindT=0;
 function petTick(dt){if(!S||!S.pet||room)return;if(S.pet==="dog"){petFindT+=dt;if(petFindT>75/petK("dog")){petFindT=0;if(typeof spawnFind==="function"){spawnFind(Math.random()<.1);banner("Your dog found something shiny","u")}}}}
@@ -4896,7 +4922,7 @@ const ACCS=[
  {k:"tie",cc:"#2a5bd7",s:"c",n:"Necktie",cost:1400,rz:1},{k:"lei",s:"c",n:"Flower lei",cost:5000,rz:2},{k:"whistle",cc:"#e2364a",s:"c",n:"Coach whistle",cost:900,rz:1},
  {k:"skate",cc:"#e2364a",s:"b",n:"Skateboard",cost:6500,rz:2},{k:"quiver",cc:"#7a5a36",s:"b",n:"Arrow quiver",cost:120000,rz:3},{k:"bwings",cc:"#ff4fd8",s:"b",n:"Butterfly wings",cost:5e6,rz:5},
  {k:"icecream",cc:"#ff8fa3",s:"x",n:"Ice cream",cost:350,rz:1},{k:"balloon",cc:"#e2364a",s:"x",n:"Balloon",cost:600,rz:1},{k:"pizza",s:"x",n:"Pizza slice",cost:450,rz:1},{k:"mic",cc:"#9aa3b3",s:"x",n:"Microphone",cost:12000,rz:2},{k:"bball",s:"x",n:"Basketball",cost:3000,rz:1},{k:"umbrella",cc:"#2a5bd7",s:"x",n:"Umbrella",cost:20000,rz:2},{k:"ghostsuit",cc:"#f4f6ff",s:"o",n:"Ghost sheet",cost:0,rz:3,arc:1,d:"Candy corner"},{k:"witch",cc:"#1b1d22",s:"h",n:"Witch hat",cost:0,rz:3,arc:1,d:"Candy corner"},{k:"vamp",s:"b",n:"Vampire cape",cost:0,rz:4,arc:1,d:"Candy corner"},{k:"cbucket",s:"x",n:"Candy bucket",cost:0,rz:2,arc:1,d:"Candy corner"},{k:"gcrown",s:"h",n:"Gem crown",cost:0,rz:14,arc:1,d:"Gem Shop"},{k:"gcape",s:"b",n:"Prism cape",cost:0,rz:10,arc:1,d:"Gem Shop"},{k:"gspecs",s:"g",n:"Diamond specs",cost:0,rz:8,arc:1,d:"Gem Shop"},{k:"gbag",s:"x",n:"Gem satchel",cost:0,rz:6,arc:1,d:"Gem Shop"},{k:"net",s:"x",n:"Bug net",cost:2000,rz:1,d:"Catch bugs from further away"},{k:"gstat",s:"x",n:"Golden statue",cost:0,rz:8,arc:1,d:"Find all 12 hidden statues"},{k:"wand",cc:"#ffcc33",s:"x",n:"Magic wand",cost:4e6,rz:4,d:"Goes with the robe"},
- {k:"witchhat",s:"h",n:"Witch hat",cost:0,rz:4,ev:"Halloween event shop"},{k:"vcape",s:"b",n:"Vampire cape",cost:0,rz:4,ev:"Halloween event shop"},{k:"skelly",s:"o",n:"Skeleton suit",cost:0,rz:5,ev:"Halloween event shop"},{k:"antlers",s:"h",n:"Reindeer antlers",cost:0,rz:4,ev:"Winter Fest shop"},{k:"sweater",s:"o",n:"Holiday sweater",cost:0,rz:4,ev:"Winter Fest shop"},{k:"snowsuit",s:"o",n:"Snowman suit",cost:0,rz:5,ev:"Winter Fest shop"},{k:"captcoat",s:"o",n:"Captain's coat",cost:0,rz:5,ev:"Help beat Captain Overcharge"},{k:"bonecoat",s:"o",n:"Field jacket",cost:0,rz:5,ev:"Help beat Dr. Fakebone"},{k:"gavelsuit",s:"o",n:"Auctioneer's suit",cost:0,rz:5,ev:"Help beat the Crooked Auctioneer"},{k:"forgecoat",s:"o",n:"Forger's coat",cost:0,rz:5,ev:"Help beat the Counterfeit King"},{k:"markupcoat",s:"o",n:"Markup blazer",cost:0,rz:5,ev:"Help beat Madame Markup"},{k:"ninja",cc:"#1b1d22",s:"o",n:"Ninja suit",cost:25000,rz:2},{k:"chefw",cc:"#f4f4f4",s:"o",n:"Chef whites",cost:12000,rz:1,d:"Goes with the chef's hat"},{k:"lab",cc:"#f4f4f4",s:"o",n:"Lab coat",cost:40000,rz:2},{k:"pirate",cc:"#7a1d2a",s:"o",n:"Pirate coat",cost:400000,rz:3,d:"Goes with the pirate hat"},{k:"dino",cc:"#3f8a4e",s:"o",n:"Dino onesie",cost:150000,rz:3},{k:"tux",cc:"#141824",s:"o",n:"Tuxedo",cost:1e6,rz:3},{k:"knight",cc:"#9aa3b3",s:"o",n:"Knight armour",cost:2e6,rz:4},{k:"hero",cc:"#2a5bd7",s:"o",n:"Hero suit",cost:3e6,rz:4,d:"Goes with the cape"},{k:"space",cc:"#f2f2f2",s:"o",n:"Space suit",cost:1e8,rz:5,d:"Goes with the space helmet"}];
+ {k:"witchhat",s:"h",n:"Witch hat",cost:0,rz:4,ev:"Halloween event shop"},{k:"vcape",s:"b",n:"Vampire cape",cost:0,rz:4,ev:"Halloween event shop"},{k:"skelly",s:"o",n:"Skeleton suit",cost:0,rz:5,ev:"Halloween event shop"},{k:"antlers",s:"h",n:"Reindeer antlers",cost:0,rz:4,ev:"Winter Fest shop"},{k:"sweater",s:"o",n:"Holiday sweater",cost:0,rz:4,ev:"Winter Fest shop"},{k:"snowsuit",s:"o",n:"Snowman suit",cost:0,rz:5,ev:"Winter Fest shop"},{k:"trophyjkt",s:"o",n:"Trophy jacket",cost:0,rz:4,ev:"Claim 15 achievements"},{k:"legendsuit",s:"o",n:"Legend suit",cost:0,rz:5,ev:"Claim 40 achievements"},{k:"hofsuit",s:"o",n:"Hall of Fame suit",cost:0,rz:6,ev:"Claim 70 achievements"},{k:"captcoat",s:"o",n:"Captain's coat",cost:0,rz:5,ev:"Help beat Captain Overcharge"},{k:"bonecoat",s:"o",n:"Field jacket",cost:0,rz:5,ev:"Help beat Dr. Fakebone"},{k:"gavelsuit",s:"o",n:"Auctioneer's suit",cost:0,rz:5,ev:"Help beat the Crooked Auctioneer"},{k:"forgecoat",s:"o",n:"Forger's coat",cost:0,rz:5,ev:"Help beat the Counterfeit King"},{k:"markupcoat",s:"o",n:"Markup blazer",cost:0,rz:5,ev:"Help beat Madame Markup"},{k:"ninja",cc:"#1b1d22",s:"o",n:"Ninja suit",cost:25000,rz:2},{k:"chefw",cc:"#f4f4f4",s:"o",n:"Chef whites",cost:12000,rz:1,d:"Goes with the chef's hat"},{k:"lab",cc:"#f4f4f4",s:"o",n:"Lab coat",cost:40000,rz:2},{k:"pirate",cc:"#7a1d2a",s:"o",n:"Pirate coat",cost:400000,rz:3,d:"Goes with the pirate hat"},{k:"dino",cc:"#3f8a4e",s:"o",n:"Dino onesie",cost:150000,rz:3},{k:"tux",cc:"#141824",s:"o",n:"Tuxedo",cost:1e6,rz:3},{k:"knight",cc:"#9aa3b3",s:"o",n:"Knight armour",cost:2e6,rz:4},{k:"hero",cc:"#2a5bd7",s:"o",n:"Hero suit",cost:3e6,rz:4,d:"Goes with the cape"},{k:"space",cc:"#f2f2f2",s:"o",n:"Space suit",cost:1e8,rz:5,d:"Goes with the space helmet"}];
 const ACC_PAL=["#e2364a","#ff7a3d","#ffcc33","#2fd28a","#2fa6d9","#2a5bd7","#7a2fd6","#ff4fd8","#ff8fa3","#f2f2f2","#9aa3b3","#1b1d22","#8a5a2c","#3f8a4e"];
 const ACC_SLOT={h:"Hats",o:"Outfit",g:"Glasses",c:"Neck",b:"Back",x:"In hand"};
 const accOf=k=>ACCS.find(a=>a.k===k);
@@ -5538,7 +5564,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=106,WN=[
+const WN_VER=107,WN=[
+ ["🏅","Achievements pay, pets work, cars get a garage","Achievements now pop up with a Claim button and pay real money plus a crate, hype, energy or a rare find. Every 10 you claim adds +1% to every sale, and 15, 40 and 70 unlock new outfits. Flip of the day (Now button) gives everyone the same item: get the best markup and climb today's leaderboard. Your dog now sniffs out fakes, your husky carries an extra item and your parrot spots treasure on the Frontier Road. Mo's Garage and the Docks have a new Garage for paint, number plates, style and tuning, and the Docks show tonight's lineup of everyone's cars. The bottom of the screen is tidier too.","2026-10-09T14:00"],
  ["🌌","The worlds come home","The Cosmos has an Export Dock with tech that boosts your life back in Flip City. Deep Time has a Trading Post for fossil crates that sell 60% higher at the Luxury Exchange. The Gem Exchange sells Frontier decor worth double in the buildings you own. The bounty board has world jobs that pay triple, the weekly boss sometimes shows up in the Cosmos or Deep Time, and the new Wallet (Now button) shows where all your money comes from.","2026-10-09T10:00"],
  ["📖","Collect from Vince in one go","The Vince Saga screen now updates by itself: the Collect button and the next chapter show up without closing and reopening it.","2026-10-08T21:00"],
  ["🔧","No more stray circles","Fixed the big white circles that showed up across the Cosmos, Deep Time and other places. They were the island shoreline ripple drawing where it didn't belong.","2026-10-08T20:00"],
@@ -5834,8 +5861,8 @@ const CMODS=[
  {k:"stripe",n:"Racing stripes",cost:20000,opts:["#ffffff","#141824","#ffcc33","#e2364a","#2a5bd7"]},
  {k:"rims",n:"Custom rims",cost:30000,opts:["#cfd6e4","#ffcc33","#e2364a","#4fe3ff"]},
  {k:"spoiler",n:"Spoiler",cost:80000,opts:[1]}];
-function garageHTML(){const car=gpCar();if(!car)return `<p class="fine">Buy a car to customise it in the garage.</p>`;S.cmod=S.cmod||{};S.cmodOwn=S.cmodOwn||{};
-  return `<div class="garprev"><canvas id="garCv" width="300" height="140"></canvas></div><div class="perks">${CMODS.map(m=>{const own=S.cmodOwn[m.k],cur=S.cmod[m.k];return `<div class="perk nopic garrow"><span class="t">${m.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${own?"Pick a style":fmt(m.cost)+" to unlock"}</span><span class="pmbtns">${own?(m.k==="spoiler"?`<button data-cm="spoiler|${cur?0:1}">${cur?"Remove":"Fit"}</button>`:m.opts.map(o=>`<button class="swc${cur===o?" on":""}" data-cm="${m.k}|${o}" style="background:${o}"></button>`).join("")+`<button data-cm="${m.k}|0">Off</button>`):`<button data-cmb="${m.k}" ${S.cash<m.cost?"disabled":""}>Buy</button>`}</span></div>`}).join("")}</div>`}
+function garageHTML(noPrev){const car=gpCar();if(!car)return `<p class="fine">Buy a car to customise it in the garage.</p>`;S.cmod=S.cmod||{};S.cmodOwn=S.cmodOwn||{};
+  return `${noPrev?"":`<div class="garprev"><canvas id="garCv" width="300" height="140"></canvas></div>`}<div class="perks">${CMODS.map(m=>{const own=S.cmodOwn[m.k],cur=S.cmod[m.k];return `<div class="perk nopic garrow"><span class="t">${m.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${own?"Pick a style":fmt(m.cost)+" to unlock"}</span><span class="pmbtns">${own?(m.k==="spoiler"?`<button data-cm="spoiler|${cur?0:1}">${cur?"Remove":"Fit"}</button>`:m.opts.map(o=>`<button class="swc${cur===o?" on":""}" data-cm="${m.k}|${o}" style="background:${o}"></button>`).join("")+`<button data-cm="${m.k}|0">Off</button>`):`<button data-cmb="${m.k}" ${S.cash<m.cost?"disabled":""}>Buy</button>`}</span></div>`}).join("")}</div>`}
 function bindGarage(redraw){const cv=$("garCv");if(cv){const g=cv.getContext("2d");g.fillStyle=isDark()?"#1b1f2a":"#d9dde6";g.fillRect(0,0,300,140);g.fillStyle=isDark()?"#2a2f3c":"#c3c9d4";for(let i=0;i<6;i++)g.fillRect(i*56,100,30,4);g.save();g.translate(150,78);g.scale(2.6,2.6);drawRideAt(0,8,0,gpCar().k,S.paint,S.cmod,g);g.restore()}
   $("room").querySelectorAll("[data-cmb]").forEach(b=>b.onclick=()=>{const m=CMODS.find(x=>x.k===b.dataset.cmb);if(S.cash<m.cost)return;S.cash-=m.cost;S.cmodOwn[m.k]=1;S.cmod[m.k]=m.opts[0];dirty=true;SFX.buy();confetti(50);banner(m.n+" fitted","g");redraw();updMini()});
   $("room").querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>{const[k,v]=b.dataset.cm.split("|");if(!S.cmodOwn[k])return;S.cmod[k]=v==="0"?0:k==="spoiler"?1:v;dirty=true;SFX.tick(.5);redraw()})}
@@ -6277,10 +6304,11 @@ function drawScene(){const P=isDark()?PAL_D:PAL_L,Wd=SCN.w,Ht=SCN.h,sig=sceneSig
   drawGoalNav();
   const vg=ctx.createRadialGradient(vw/2,vh*.55,Math.min(vw,vh)*.45,vw/2,vh*.55,Math.max(vw,vh)*.8);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,isDark()?"rgba(0,0,0,.4)":"rgba(20,30,40,.16)");ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh)}
 function renderSceneBottom(){const el=$("bottom"),near=sceneNear(),key="scn|"+SCN.k+"|"+(near?near.k:"")+"|"+SCN.stSig;if(key===bKey)return;bKey=key;
-  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b><button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"||SCN.kind==="arena"?"Go outside":SCN.kind==="planet"?"Back to the station":SCN.kind==="prehist"?"Back to the Cosmos":SCN.kind==="w4"?"Back to the road":SCN.kind==="castle"?"Back up to the Frontier":SCN.kind==="road"?"Back to Flip City":"Sail back"}</button></div>${SCN.kind==="space"?`<div class="w2rate">✦${radF(w2Rate())}/min</div>`:SCN.kind==="prehist"?`<div class="w2rate amber">${ambF(w3Rate()*AMB)}/min</div>`:SCN.kind==="w4"?`<div class="w2rate gem">${gemF(w4Rate())}/s</div>`:""}`;
+  const rate=SCN.kind==="space"?`<span class="w2rate">✦${radF(w2Rate())}/min</span>`:SCN.kind==="prehist"?`<span class="w2rate amber">${ambF(w3Rate()*AMB)}/min</span>`:SCN.kind==="w4"?`<span class="w2rate gem">${gemF(w4Rate())}/s</span>`:"";
+  let h=`<div class="scnbar"><b>${esc(SCN.title)}</b>${rate}<button class="place" data-sgo="__leave"><i style="background:#3b6fd8"></i>${SCN.kind==="city"?"Fly home":SCN.kind==="space"?"Back to Earth":SCN.kind==="house"||SCN.kind==="arena"?"Go outside":SCN.kind==="planet"?"Back to the station":SCN.kind==="prehist"?"Back to the Cosmos":SCN.kind==="w4"?"Back to the road":SCN.kind==="castle"?"Back up to the Frontier":SCN.kind==="road"?"Back to Flip City":"Sail back"}</button></div>`;
   if(near)h+=`<button class="enter" id="enterBtn"><span>${near.verb||"Enter"} ${esc(near.n)}<small>${esc(String(near.sub||""))}</small></span>${ARROW}</button>`;
   h+=`<div class="places">${SCN.places.filter(p=>p.list!==0&&p.k!=="boat").map(p=>`<button class="place${near===p?" here":""}" data-sgo="${p.k}"><i style="background:${p.c}"></i>${esc(p.short||p.n)}</button>`).join("")}</div>`;
-  el.innerHTML=h;const eb=$("enterBtn");if(eb)eb.onclick=()=>{audioOn();near.go()};
+  el.innerHTML=h;bottomH();const eb=$("enterBtn");if(eb)eb.onclick=()=>{audioOn();near.go()};
   el.querySelectorAll("[data-sgo]").forEach(b=>b.onclick=()=>{audioOn();const k=b.dataset.sgo;if(k==="__leave")return leaveScene();const p=SCN.places.find(x=>x.k===k);if(!p)return;if(sceneNear()===p)p.go();else sceneWalkTo(p)})}
 /* ================= public towns: listed at the Harbor so anyone can join ================= */
 // The oldest player in a public room keeps a retained note on the server; the Harbor reads them all.
@@ -7060,6 +7088,8 @@ function roadTick(dt){if(!S||SCN||!hubOpen()){HIKER=null;RRUN=null;REV=null;RRX=
     if(HIKER.to==="e"?px>X4+70:px<W-70){const sec=(performance.now()-HIKER.t0)/1000,v=Math.round(Math.max(400,rwBase()*.025)),tip=sec<30?Math.round(v*.6):0;earn(v+tip);R.hitch++;S.stats.hitch=(S.stats.hitch||0)+1;karmaAdd(2);vote(3);hitchTale(HIKER.n);dirty=true;SFX.sell();confetti(90);
       let ex="";if(Math.random()<.35){gainCrate(1);ex=" and a crate"}banner("🧍 "+HIKER.n+" pays "+fmt(v)+(tip?" + "+fmt(tip)+" tip for the speed":"")+ex,"g");HIKER=null}
     else if(Math.abs(px-HIKER.x)>500)HIKER=null}
+  // a walking parrot flies ahead and spots treasure on the road
+  if(petK("parrot")>0&&onRoadX(px)&&moving&&!room){R.prT=(R.prT||40)-dt;if(R.prT<=0){R.prT=rnd(45,75)/petK("parrot");const dir=Math.cos(S.hd||0)>=0?1:-1;FINDS.push({x:clamp(px+dir*rnd(260,460),W+60,X4-60),y:ROAD_Y+rnd(-30,30),gold:Math.random()<.12+.02*petBond("parrot"),life:120,ph:Math.random()*7});banner("🦜 Your parrot spotted treasure up the road","u")}}
   // something happening on the road every minute or so
   if(REV){REV.life-=dt;if(REV.life<=0){if(REV.k==="pet"&&REV.st==="follow")banner("🐕 The dog ran off home","a");REV=null}else roadEvTick(dt)}
   else if(onRoadX(px)&&!room){revT-=dt;if(revT<=0){revT=rnd(45,90);roadEvStart()}}}
@@ -7485,7 +7515,7 @@ function openCityHall(tab){room="cityhall";$("room").hidden=false;tab=tab||"mayo
   MAYOR_LB=null;draw();mayorFetch()}
 // small multipliers the rest of the game asks for (wrapped so they're safe to call while the page is still loading)
 function luxWorldK(s){try{return M&&M.cfg&&M.cfg.k==="lux"?({fossil:1.6,space:1.3}[s.cat]||1):1}catch(e){return 1}}
-function goalSellK(){try{return (SCN?1:1+.05*ctech("scan"))*karmaSellK()*keyK()*(bookDone("rare")?1.05:1)*(mayorK("market")?1.1:1)*(cityBuilt("stadium")?1.05:1)*(M&&M.cfg?wbSellK(M.cfg.k):1)}catch(e){return 1}}
+function goalSellK(){try{return (SCN?1:1+.05*ctech("scan"))*karmaSellK()*keyK()*(bookDone("rare")?1.05:1)*(mayorK("market")?1.1:1)*(cityBuilt("stadium")?1.05:1)*achSellK()*(M&&M.cfg?wbSellK(M.cfg.k):1)}catch(e){return 1}}
 function goalEnK(e){try{return Math.round(e*(mayorK("energy")?1.25:1))+(bookDone("road")?40:0)+(cityBuilt("fountain")?20:0)}catch(x){return e}}
 function freeTaxi(){try{return mayorK("taxi")||bookDone("hitch")||ctech("taxi")>0}catch(e){return false}}
 function goalMarks(){const L=[];try{if(maeHere())L.push([MAE.x,MAE.y,"#2a9df4","🙏"]);if(knkHere())L.push([KNK.x,KNK.y,"#d6384b","🦈"]);const b=wbNow();if(b){const p=wbPos(b);if(p)L.push([p.x,p.y,"#e2364a","👹"])}}catch(e){}return L}
@@ -7563,11 +7593,11 @@ const laborC=()=>Math.max(30,Math.round(rwBase()*.002));
 function openGarage(){room="garage";$("room").hidden=false;S.parts=S.parts||{};const draw=()=>{const B=S.broke,hh=Math.floor(Date.now()/36e5),svcC=Math.max(200,Math.round(rwBase()*.01));
   let rep="";if(B){const sym=B.bad.filter(x=>!B.found.includes(x)).map(x=>PARTS.find(p=>p[0]===x)[2]);rep=`<div class="dcard" style="border-left:4px solid #e2364a"><span class="eyebrow">Your ${esc(vehName(B.k))} · ${B.bad.length-B.found.length} problem${B.bad.length-B.found.length===1?"":"s"} left</span><b>Find what's broken</b><p class="fine" style="text-align:left;margin:6px 0">${sym.map(s=>"• "+esc(s)).join("<br>")}</p><p class="fine" style="text-align:left;margin:0 0 8px">Mo charges ${fmt(laborC())} to open up each part. Pick the right ones and the old parts are yours to sell.</p>
     <div class="partgrid">${PARTS.map(([k,n])=>{const f=B.found.includes(k),w=B.wrong.includes(k);return `<button class="pbtn${f?" ok":w?" no":""}" data-fix="${k}" ${f||w||S.cash<laborC()?"disabled":""}><b>${n}</b><small>${f?"Replaced":w?"That's fine":"Check"}</small></button>`}).join("")}</div></div>`}
-  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mo's Garage")}<div class="note">"If it's got wheels, I can fix it." Mo wipes his hands on a rag that's dirtier than they are.</div>${rep}
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mo's Garage")}<div class="note">"If it's got wheels, I can fix it." Mo wipes his hands on a rag that's dirtier than they are.</div>${rep}<button class="bigbtn alt" id="gCs">🔧 Paint, plates and tuning<small>${gpCar()?"Style "+carStyle()+" · show it off at the Docks":"Buy a car first"}</small></button>
     ${!B?`<button class="bigbtn alt" id="gSvc" ${S.svc===dayKey()||S.cash<svcC?"disabled":""}>Full service<small>${S.svc===dayKey()?"Serviced today · no breakdowns until tomorrow":"No breakdowns for the rest of today · "+fmt(svcC)}</small></button>`:""}
     <div class="sechead"><h3>Parts market</h3><span class="eyebrow">Prices change every hour</span></div>
     <div class="perks">${PARTS.map(([k,n])=>{const p=partP(k),pv=partP(k,hh-1),have=S.parts[k]||0,up=p>=pv;return `<div class="perk opp plrow"><span class="t">${n}</span><span class="d">You have ${have} · <b class="${up?"u":"d"}">${up?"▲":"▼"} ${fmt(p)}</b></span><span class="pmbtns"><button data-pbuy="${k}" ${S.cash<p||have>=20?"disabled":""}>Buy</button><button data-psell="${k}" ${have?"":"disabled"}>Sell</button></span></div>`}).join("")}</div></div>`;
-  $("leaveBtn").onclick=closeRoom;
+  $("leaveBtn").onclick=closeRoom;$("gCs").onclick=()=>openCarShop(()=>openGarage());
   $("room").querySelectorAll("[data-fix]").forEach(b=>b.onclick=()=>{const k=b.dataset.fix,c=laborC();if(!S.broke||S.cash<c)return;S.cash-=c;dirty=true;
     if(S.broke.bad.includes(k)){S.broke.found.push(k);S.parts[k]=(S.parts[k]||0)+1;SFX.lift();banner("Mo: \"There's your problem.\" Old "+PARTS.find(p=>p[0]===k)[1].toLowerCase()+" added to your parts","g");
       if(S.broke.found.length>=S.broke.bad.length){const v=S.broke.k;S.broke=null;S.cur=v;BRK_FX=null;S.stats.fixes=(S.stats.fixes||0)+1;SFX.rebirth();confetti(120);setTimeout(()=>banner("Your "+vehName(v)+" is fixed and running","g"),900)}}
@@ -7910,6 +7940,7 @@ function openW4Visits(back){room="w4vis";$("room").hidden=false;let view=null,ms
 /* ================= the Now board: everything that's live or waiting on you, in one place ================= */
 function nowItems(){const L=[],add=(ic,t,d,go,live)=>L.push({ic,t,d,go,live:!!live});if(!S)return L;
   const go=k=>()=>{closeRoom();if(PL[k]&&!SCN){walkTo(k);banner("Heading to "+PL[k].n,"u")}};
+  {const F=fotdS();add("🎯","Flip of the day"+(F.r?" · ×"+F.r.toFixed(2):""),F.r?"See where you rank today":F.b?"Sell today's item for the best markup you can":"Same item for everyone. Best markup wins",()=>openFotd(()=>openNow()),!F.b)}
   add("💰","Wallet","Your money in every world, and where it comes from",()=>openWallet(()=>openNow()));
   {const e=sevNow();if(e)add(e.ci,e.n+" · "+fmtN(sevS().cur)+" "+e.cur,(sevOn()?"Porches are lit. Go "+e.act+" now":"Go "+e.act+" after 8 PM")+" · spend it on event outfits",()=>openSeasonEvent(()=>openNow()),sevOn())}
   if(S.paperDay!==dayKey())add("📰","Today's paper is out","The Flip City Times: your day, the mayor, the crew war and what's on",()=>openTimes(()=>openNow()),1);
@@ -8141,6 +8172,91 @@ function openWallet(back){room="wallet";$("room").hidden=false;const W2=S.w2&&S.
     <div class="sechead"><h3>Bring it home</h3></div>
     <div class="perks"><div class="perk nopic"><span class="t">🌌 Cosmos tech</span><span class="d">${CTECH.map(([k,n])=>n+" "+ctech(k)).join(" · ")} · Export Dock in the Cosmos</span></div><div class="perk nopic"><span class="t">🦖 Fossils</span><span class="d">Trading Post in Deep Time · sell 60% higher at the Luxury Exchange</span></div><div class="perk nopic"><span class="t">💎 Frontier decor</span><span class="d">${Object.values(S.gdec||{}).reduce((a,b)=>a+b,0)} pieces waiting · buy at the Gem Exchange</span></div></div></div>`;
   $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=back||closeRoom}
+/* ================= the car garage: paint, plates, style and tuning, shown at the Docks meet ================= */
+const CTUNE=[["engine","Engine tune","Faster in races, and +4% driving speed a level"],["tires","Race tyres","Better launches at the meet"],["nitro","Nitro","A burst at the end of every race"]];
+const tune=k=>((S&&S.ctune)||{})[k]||0;
+const tuneCost=(k,l)=>Math.round(Math.max(15000,(gpCar()?gpCar().cost:45000)*.2)*Math.pow(3,l)*(k==="nitro"?1.5:1));
+const tuneSp=()=>1+.06*tune("engine");
+const cleanPlate=t=>String(t||"").toUpperCase().replace(/[^A-Z0-9 ]/g,"").slice(0,7).trim();
+function carStyle(){const c=gpCar();if(!c)return 0;const cm=S.cmod||{};return Math.round(10+CARS.indexOf(c.k)*10+["glow","stripe","rims","spoiler"].filter(k=>cm[k]).length*8+CTUNE.reduce((a,[k])=>a+tune(k)*6,0)+(S.plate?8:0)+(S.paint&&S.paint!=="#e2364a"?4:0))}
+const meetMine=()=>{const c=gpCar();return c?{n:mpName().slice(0,16),k:c.k,p:S.paint||"#e2364a",cm:S.cmod||{},pl:S.plate||"",s:carStyle(),t:Date.now()}:null};
+function meetPost(){const m=meetMine();if(m)netPut("meet/"+netMe(),m)}
+let MEET_LB=null,MEET_T=0;
+function meetFetch(cb){if(MEET_LB&&Date.now()-MEET_T<60000)return cb&&cb();MEET_T=Date.now();netScan(NET+"meet/").then(d=>{MEET_LB=[];const me=netMe();if(d)for(const k in d){const x=d[k];if(!x||k===me||typeof x.n!=="string"||!CARS.includes(x.k)||!(Date.now()-(+x.t||0)<7*864e5))continue;
+    const cm={};["glow","stripe","rims"].forEach(q=>{if(typeof(x.cm||{})[q]==="string"&&/^#[0-9a-f]{6}$/i.test(x.cm[q]))cm[q]=x.cm[q]});if(x.cm&&x.cm.spoiler)cm.spoiler=1;
+    MEET_LB.push({n:x.n.slice(0,16),k:x.k,p:/^#[0-9a-f]{6}$/i.test(x.p)?x.p:"#e2364a",cm,pl:cleanPlate(x.pl),s:Math.min(200,+x.s||0)})}cb&&cb()})}
+function carCanvas(cv,k,p,cm,pl){const g=cv.getContext("2d"),w=cv.width,h=cv.height;g.clearRect(0,0,w,h);g.fillStyle=isDark()?"#232836":"#dfe3ea";g.fillRect(0,0,w,h);g.save();g.translate(w/2,h*.48);g.scale(w/120,w/120);drawRideAt(0,8,0,k,p,cm,g);g.restore();
+  if(pl){g.fillStyle="#f6f3e6";g.strokeStyle="#1b1f2a";g.lineWidth=2;const pw=Math.min(w-16,pl.length*w*.075+20),ph=h*.18;g.fillRect(w/2-pw/2,h-ph-6,pw,ph);g.strokeRect(w/2-pw/2,h-ph-6,pw,ph);g.fillStyle="#1b1f2a";g.font="800 "+Math.round(ph*.7)+"px "+FONTS.m;g.textAlign="center";g.textBaseline="middle";g.fillText(pl,w/2,h-ph/2-5)}}
+function meetLineup(){const me=meetMine();if(!me)return "";const L=(MEET_LB||[]).concat([{...me,me:1}]).sort((a,b)=>b.s-a.s),i=L.findIndex(x=>x.me),show=L.slice(0,6);if(i>=6)show.push(L[i]);
+  return `<div class="sechead"><h3>Tonight's lineup</h3><span class="eyebrow">${MEET_LB?"You're #"+(i+1)+" of "+L.length+" on style":"Loading the other cars…"}</span></div>
+    <div class="meetgrid">${show.map((x,j)=>`<div class="meetcar${x.me?" me":""}"><canvas width="220" height="130" data-mc="${j}"></canvas><b>${x.me?"You":esc(x.n)}</b><span>${esc(vehName(x.k))} · style ${x.s}</span></div>`).join("")}</div>`}
+function drawLineup(){const me=meetMine();if(!me)return;const L=(MEET_LB||[]).concat([{...me,me:1}]).sort((a,b)=>b.s-a.s),i=L.findIndex(x=>x.me),show=L.slice(0,6);if(i>=6)show.push(L[i]);
+  $("room").querySelectorAll("[data-mc]").forEach(cv=>{const x=show[+cv.dataset.mc];if(x)carCanvas(cv,x.k,x.p,x.cm,x.pl)})}
+function openCarShop(back){room="carshop";$("room").hidden=false;S.cmod=S.cmod||{};S.cmodOwn=S.cmodOwn||{};S.ctune=S.ctune||{};const draw=()=>{const car=gpCar();
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Garage")}${!car?`<div class="note">Buy a car at the Dealership first. Then paint it, plate it and tune it here.</div>`:`
+    <div class="garprev"><canvas id="csCv" width="300" height="170"></canvas></div>
+    <div class="note">Style <b>${carStyle()}</b>. Style raises your car show payout and your place in the Docks lineup.</div>
+    <div class="paints"><span class="eyebrow">Paint · free</span>${PAINTS.map(c=>`<button class="sw${S.paint===c?" on":""}" data-paint="${c}" style="background:${c}" aria-label="Paint ${c}"></button>`).join("")}</div>
+    <div class="sechead"><h3>Number plate</h3><span class="eyebrow">Up to 7 letters · ${fmt(plateCost())}</span></div>
+    <div class="platerow"><input id="csPl" maxlength="7" placeholder="FLIP 1" value="${esc(S.plate||"")}" autocomplete="off"><button class="cta" id="csPlB" ${S.cash<plateCost()?"disabled":""}>Make it</button></div>
+    <div class="sechead"><h3>Style</h3><span class="eyebrow">Shown at the meet</span></div>${garageHTML(1)}
+    <div class="sechead"><h3>Tuning</h3><span class="eyebrow">Wins races</span></div>
+    <div class="perks">${CTUNE.map(([k,n,d])=>{const l=tune(k),c=tuneCost(k,l);return `<button class="perk nopic" data-tune="${k}" ${l>=3||S.cash<c?"disabled":""}><span class="t">${n} ${"●".repeat(l)}${"○".repeat(3-l)}</span><span class="d">${d}</span><span class="c">${l>=3?"Maxed":fmt(c)}</span></button>`}).join("")}</div>`}</div>`;
+  $("leaveBtn").onclick=()=>{meetPost();(back||closeRoom)()};if(!car)return;
+  carCanvas($("csCv"),car.k,S.paint,S.cmod,S.plate);bindGarage(draw);
+  $("room").querySelectorAll("[data-paint]").forEach(b=>b.onclick=()=>{S.paint=b.dataset.paint;dirty=true;SFX.buy();draw()});
+  $("csPlB").onclick=()=>{const t=cleanPlate($("csPl").value),c=plateCost();if(!t||t===S.plate||S.cash<c)return;S.cash-=c;S.plate=t;dirty=true;SFX.buy();banner("New plate: "+t,"g");draw();updMini()};
+  $("room").querySelectorAll("[data-tune]").forEach(b=>b.onclick=()=>{const k=b.dataset.tune,l=tune(k),c=tuneCost(k,l);if(l>=3||S.cash<c)return;S.cash-=c;S.ctune[k]=l+1;dirty=true;SFX.lift();confetti(40);banner(CTUNE.find(x=>x[0]===k)[1]+" level "+(l+1),"g");draw();updMini()})};draw()}
+const plateCost=()=>Math.round(Math.max(2000,rwBase()*.002));
+/* ================= Flip of the day: one item, same for everyone, best markup wins ================= */
+const fotdDay=()=>Math.floor(Date.now()/864e5);
+function fotdItem(){const d=fotdDay(),pool=POOL.filter(p=>START_CATS.includes(p.cat)),it=pool[Math.floor(srand(d*7.3)*pool.length)],c=CAT[it.cat],cond=c.conds[Math.floor(srand(d*3.1)*c.conds.length)];return{it,cond:cond[0],q:.9+srand(d*5.7)*.5}}
+const fotdS=()=>{const d=fotdDay();if(!S.fotd||S.fotd.d!==d)S.fotd={d};return S.fotd};
+const fotdPrice=()=>Math.round(Math.max(60,rwBase()*.04));
+let FOTD_LB=null,FOTD_LBd=-1;
+function fotdBuy(){const F=fotdS();if(F.b||S.stash.length>=maxSlots())return false;const p=fotdPrice();if(S.cash<p)return false;const X=fotdItem(),it=itemOfValue(p*X.q,X.it.cat);
+  Object.assign(it,{code:X.it.code,name:X.it.name,cond:X.cond,paid:p,fotd:F.d});S.cash-=p;F.b=1;S.stash.push(it);dirty=true;SFX.buy();updMini();return true}
+function fotdSold(s,v){if(!s||s.fotd!==fotdDay())return;const F=fotdS();if(F.r)return;const r=Math.min(50,v/Math.max(1,s.paid));F.r=r;
+  const cr=r>=4?3:r>=2.5?2:r>=1.5?1:0;if(cr)setTimeout(()=>gainCrate(cr),600);if(r>=2.5)S.buffs.hype=Math.max(S.buffs.hype||0,120);
+  netPut("fotd/"+F.d+"/"+netMe(),{n:mpName().slice(0,16),r:Math.round(r*100)/100});FOTD_LB=null;
+  setTimeout(()=>banner("Flip of the day: ×"+r.toFixed(2)+(cr?" · "+cr+" crate"+(cr>1?"s":""):"")+" · see where you rank on the Now board","g"),900)}
+function openFotd(back){room="fotd";$("room").hidden=false;const draw=()=>{const F=fotdS(),X=fotdItem(),p=fotdPrice(),full=S.stash.length>=maxSlots(),mine=S.stash.find(s=>s.fotd===F.d),left=Math.ceil((864e5-Date.now()%864e5)/36e5);
+    const lb=(FOTD_LB||[]).slice().sort((a,b)=>b.r-a.r),me=netMe(),myI=lb.findIndex(x=>x.id===me);
+    $("room").innerHTML=`<div class="room-in scroll">${roomHead("Flip of the day")}
+      <div class="fotdcard"><span class="eyebrow">Today's item · the same for everyone · ${left}h left</span><b>${esc(X.it.name)}</b><small>${esc(X.cond)} · ${esc(CAT[X.it.cat].n)}</small>
+      ${!F.b?`<button class="bigbtn" id="fdBuy" ${S.cash<p||full?"disabled":""}>Buy it · ${fmt(p)}<small>${full?"Your stash is full":"One per day. Then sell it at any market for the best markup you can"}</small></button>`
+       :F.r?`<em>You sold it for ×${F.r.toFixed(2)}</em><small>${F.r>=4?"Legendary flip · 3 crates":F.r>=2.5?"Great flip · 2 crates and hype":F.r>=1.5?"Good flip · 1 crate":"Beat ×1.5 tomorrow for a crate"}</small>`
+       :mine?`<em>It's in your stash</em><small>Sell it at a market. Hot demand, the right market, your pet and crits all raise the markup</small>`:`<em>You've had today's</em><small>It left your stash without a market sale, so it doesn't count</small>`}</div>
+      <p class="fine">Rewards: ×1.5 a crate · ×2.5 two crates and 2 min of hype · ×4 three crates.</p>
+      <div class="sechead"><h3>Today's best flips</h3><span class="eyebrow">${FOTD_LB?lb.length+" player"+(lb.length===1?"":"s"):"loading"}</span></div>
+      <div class="lb">${FOTD_LB?(lb.length?lb.slice(0,20).map((x,i)=>`<div class="${x.id===me?"me":""}"><b>${i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</b><span>${esc(String(x.n).slice(0,16))}${x.id===me?" (you)":""}</span><i>×${x.r.toFixed(2)}</i></div>`).join("")+(myI>=20?`<div class="me"><b>${myI+1}</b><span>${esc(mpName())} (you)</span><i>×${lb[myI].r.toFixed(2)}</i></div>`:""):`<p class="fine">Nobody has sold theirs yet. Be first.</p>`):`<p class="fine">Connecting…</p>`}</div></div>`;
+    $("leaveBtn").onclick=back||closeRoom;const b=$("fdBuy");if(b)b.onclick=()=>{if(fotdBuy()){banner(X.it.name+" is in your stash · sell it for the best markup","g");draw()}};
+    if(FOTD_LB===null||FOTD_LBd!==F.d){FOTD_LB=FOTD_LB||null;if(!draw.busy){draw.busy=1;netScan(NET+"fotd/"+F.d+"/").then(d=>{draw.busy=0;FOTD_LBd=F.d;FOTD_LB=[];if(d)for(const k in d){const x=d[k];if(x&&typeof x.n==="string"&&isFinite(x.r)&&x.r>0&&x.r<=50)FOTD_LB.push({id:k,n:x.n,r:+x.r})}if(room==="fotd")draw()})}}};draw()}
+/* ================= achievements that pay ================= */
+const achClaimed=()=>S&&S.ach?ACH.filter(a=>S.ach[a[0]]).length:0;
+const achSellK=()=>1+.01*Math.floor(achClaimed()/10);
+const ACH_MILE=[[15,"trophyjkt"],[40,"legendsuit"],[70,"hofsuit"]];
+const ACH_X=["a crate","3 min of hype","full energy","a rare find"];
+function achPrize(a){const i=ACH.indexOf(a);return{cash:Math.round(Math.max(a[4],rwBase()*(.02+.008*Math.log10(Math.max(10,a[4]))))),x:i%4}}
+function achPrizeTxt(a){const p=achPrize(a);return fmt(p.cash)+" + "+ACH_X[p.x]}
+function claimAch(a){if(!a||S.ach[a[0]]||!a[3]())return null;const p=achPrize(a),out=["+"+fmt(p.cash)];S.ach[a[0]]=1;S.cash+=p.cash;
+  if(p.x===0){gainCrate(1);out.push("a crate")}
+  else if(p.x===1){S.buffs.hype=Math.max(S.buffs.hype||0,180);out.push("3 min of hype, +30% on sales")}
+  else if(p.x===2){S.energy=maxEnergy();out.push("full energy")}
+  else if(S.stash.length<maxSlots()){const v=rwBase()*.04,it=itemOfValue(v);it.paid=0;S.stash.push(it);out.push(it.name+" in your stash")}
+  else{gainCrate(1);out.push("a crate (stash full)")}
+  const n=achClaimed();if(n%10===0)out.push("+1% on every sale, for good");
+  const m=ACH_MILE.find(([k])=>k===n);if(m){S.accOwn=S.accOwn||{};S.accOwn[m[1]]=1;out.push("the "+ACCS.find(x=>x.k===m[1]).n+" (in your wardrobe)")}
+  SFX.level();confetti(m?160:80);dirty=true;updMini();return out}
+let ACHQ=[],achEl=null;
+function achPop(a){if(a)ACHQ.push(a);if(achEl||!ACHQ.length)return;if(room&&room!=="home"||document.querySelector(".goalpop,.wnov,.crateov,.cutov")){clearTimeout(achPop.t);achPop.t=setTimeout(()=>achPop(),2500);return}
+  const x=ACHQ.shift();if(S.ach[x[0]]){achPop();return}SFX.level();confetti(60);
+  const d=achEl=document.createElement("div");d.className="achpop";
+  d.innerHTML=`<span class="eyebrow">Achievement unlocked${ACHQ.length?" · "+ACHQ.length+" more":""}</span><b>${esc(x[1])}</b><small>${esc(x[2])}</small><em>${esc(achPrizeTxt(x))}</em><div class="achbtns"><button class="cta" data-k="c">Claim</button><button class="cta ghost2" data-k="l">Later</button></div>`;
+  document.body.appendChild(d);let gone=false;
+  const bye=ms=>{if(gone)return;gone=true;setTimeout(()=>{d.classList.add("out");setTimeout(()=>{d.remove();achEl=null;achPop()},450)},ms)},auto=setTimeout(()=>bye(0),9000);
+  d.querySelector('[data-k="c"]').onclick=()=>{clearTimeout(auto);const r=claimAch(x);if(r)d.innerHTML=`<span class="eyebrow">Claimed</span><b>${esc(x[1])}</b>${r.map(t=>`<em class="sm">${esc(t)}</em>`).join("")}`;bye(1800)};
+  d.querySelector('[data-k="l"]').onclick=()=>{clearTimeout(auto);bye(0)}}
 /* ================= the Moon and Mars, walkable, reached from the Cosmos ================= */
 const PLANETS={moon:{n:"The Moon",ground:["#9aa0a8","#7d838c"],sky:"#05061a",item:["MR","ME"],tick:20,cap:2,tone:"#cfd6e4"},mars:{n:"Mars",ground:["#c4623a","#9a4a2a"],sky:"#1a0a08",item:["MC","MX"],tick:200,cap:3,tone:"#ff7a3d"}};
 const PW=1600,PH=1200;
