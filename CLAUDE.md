@@ -4,6 +4,9 @@ A Roblox night-city driving game. Players earn money driving and "cutting up" tr
 
 ## About the owner
 
+The owner's personal context is in their Obsidian vault, GitHub repo `kaungmyatkyawhhhhh-hub/ProjectOne`. When it is in the session (it should be selected when starting one), follow its `CLAUDE.md`. That means reading its start notes before replying, never announcing it, and saving new decisions to the vault.
+
+
 - **Not a programmer.** They work in Roblox Studio and often use a phone, so give short, plain steps ("open X, click Y").
 - **Deliverable is a place file.** Rebuild `CityLegends.rbxlx` after changes and send it to them.
 - **Target look is "Highway Legends"** (another Roblox game): realistic cars, a Highway Legends-style HUD, a rainy night city.
