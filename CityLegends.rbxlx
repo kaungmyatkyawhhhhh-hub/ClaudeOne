@@ -5863,8 +5863,36 @@ end)
 ---------------------------------------------------------------------
 -- Player lifecycle
 ---------------------------------------------------------------------
+--[[
+	Console money hook (server side only: Studio command bar, or the F9
+	Developer Console's server command line in a live game, which only the
+	game's owner / editors can use). Players can't trigger it: attributes they
+	set on themselves don't replicate to the server.
+	  game.Players.NAME:SetAttribute("SetCash", 1000000)  -- set to an amount
+	  game.Players.NAME:SetAttribute("AddCash", 50000)    -- add (negative takes)
+]]
+local function watchConsoleCash(player: Player)
+	for _, attr in { "SetCash", "AddCash" } do
+		player:GetAttributeChangedSignal(attr):Connect(function()
+			local v = player:GetAttribute(attr)
+			if type(v) ~= "number" then
+				return
+			end
+			player:SetAttribute(attr, nil)
+			local profile = PlayerData.get(player)
+			if not profile then
+				return
+			end
+			PlayerData.addCash(player, if attr == "SetCash" then v - profile.Cash else v)
+			task.spawn(PlayerData.save, player)
+			print(("[CityLegends] %s now has $%d"):format(player.Name, profile.Cash))
+		end)
+	end
+end
+
 local function onPlayerAdded(player: Player)
 	getSession(player)
+	watchConsoleCash(player)
 	PlayerData.load(player)
 end
 
