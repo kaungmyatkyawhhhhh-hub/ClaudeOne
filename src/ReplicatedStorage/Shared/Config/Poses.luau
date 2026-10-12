@@ -50,7 +50,8 @@ local Poses = {
 	},
 
 	-- Pro gym (built by ProGymService: the lifter stands at the pivot facing +Z, the stack is in front)
-	Dip = { kind = "Support", position = Vector3.new(0, 0, 0.1), handleTop = 3.32, handleX = 1.15, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
+	-- (handles 3.5 apart: a 7'0" mass monster fits between)
+	Dip = { kind = "Support", position = Vector3.new(0, 0, 0.1), handleTop = 3.32, handleX = 1.75, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	LateralRaise = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
 	-- Reverse fly on the pec deck: seated facing the chest pad.
 	ReverseFly = { kind = "Sit", position = Vector3.new(0, 0, -0.45), seat = 2.01, yaw = FACE_FORWARD, exit = Vector3.new(2.8, 0, -0.4), follow = "None", contract = true },

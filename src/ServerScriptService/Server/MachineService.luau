@@ -154,6 +154,31 @@ local function updatePlates(model, tier)
 	end
 end
 
+-- A big body (7'0", wide mass monster shoulders) lying under a rack: slid toward the feet just far enough that the
+-- shoulders (delts and traps) clear the uprights ("Post" / "Upright" parts on the head side) instead of the uprights going
+-- through them (owner, 13 Oct). Smaller bodies already lie clear and don't move. The bar follows the hands.
+local UPRIGHT_MARGIN = 0.9 -- past the top of the torso, in arm widths (the delts and traps of a big body)
+local function clearUprights(character, root, model, cf)
+	local torso, arm = character:FindFirstChild("UpperTorso"), character:FindFirstChild("RightUpperArm")
+	if not (torso and arm) then return cf end
+	local up, right = cf.UpVector, cf.RightVector -- (a lying root: up = toward the head)
+	if math.abs(up.Y) > 0.3 then return cf end -- (flat benches only: sliding down an incline would sink into the seat)
+	local span = math.abs(root.CFrame:PointToObjectSpace(arm.Position).X) + arm.Size.X -- out to the delts
+	local shoulders = root.CFrame:PointToObjectSpace(torso.Position).Y + torso.Size.Y / 2 + UPRIGHT_MARGIN * arm.Size.X
+	local shift = 0
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") and (part.Name == "Post" or part.Name == "Upright") then
+			local rel = part.Position - cf.Position
+			local half = math.max(part.Size.X, part.Size.Z) / 2
+			local along = rel:Dot(up) - half
+			if along > 0 and math.abs(rel:Dot(right)) - half < span then
+				shift = math.max(shift, shoulders - along)
+			end
+		end
+	end
+	return if shift > 0 then cf - up * shift else cf
+end
+
 -- Where the HumanoidRootPart goes for a pose (see Config.Poses).
 local function bodyCFrame(character, humanoid, root, model, pose)
 	local pivot = model:GetPivot()
@@ -167,7 +192,7 @@ local function bodyCFrame(character, humanoid, root, model, pose)
 			local away = if cf.LookVector.Y >= 0 then cf.LookVector else -cf.LookVector
 			cf += away * ((torso.Size.Z - base) / 2)
 		end
-		return cf
+		return clearUprights(character, root, model, cf)
 	end
 	-- joint offsets from the root part (in its space), from the rig itself (whatever pose the body is in right now); joints
 	-- are Motor6Ds or AnimationConstraints (C0 / C1 = their two attachments)

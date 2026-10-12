@@ -5,7 +5,10 @@ local Muscles = require(script.Parent.Muscles)
 local GrowthSpurts = {}
 
 GrowthSpurts.StartHeight = 48 -- 4'0"
-GrowthSpurts.MaxHeight = 84   -- 7'0"
+-- Height cap (owner, 13 Oct): no spurt ever goes past 7'0" (clamped to exactly 7'0"), and once you're there there are no
+-- more Growth Spurts (height and body scale stop; muscles keep growing). Same inches as the height shown on screen.
+GrowthSpurts.MaxHeightInches = 84 -- 7'0"
+GrowthSpurts.MaxHeight = GrowthSpurts.MaxHeightInches -- (older name, kept for callers)
 
 -- requiredLevel is tuned with tests/pacing to GrowthSpurts.Targets below (the permanent bonus makes later stages much
 -- faster per level, so the goals climb slowly).
@@ -45,7 +48,20 @@ function GrowthSpurts.Get(n)
 end
 
 function GrowthSpurts.GetHeight(spurts)
-	return spurts == 0 and GrowthSpurts.StartHeight or GrowthSpurts.Get(spurts).height
+	local height = spurts == 0 and GrowthSpurts.StartHeight or GrowthSpurts.Get(spurts).height
+	return math.min(height, GrowthSpurts.MaxHeightInches)
+end
+
+-- The spurt that reaches 7'0" (the last one anybody can do).
+function GrowthSpurts.MaxSpurts()
+	local n = 0
+	while GrowthSpurts.GetHeight(n) < GrowthSpurts.MaxHeightInches do n += 1 end
+	return n
+end
+
+-- At 7'0": no more Growth Spurts.
+function GrowthSpurts.IsMaxed(spurts)
+	return GrowthSpurts.GetHeight(spurts or 0) >= GrowthSpurts.MaxHeightInches
 end
 
 function GrowthSpurts.GetBonus(spurts)
@@ -92,12 +108,16 @@ function GrowthSpurts.Progress(data, groups, trainable)
 		result.groups[group.id] = level
 		if level >= required then result.met += 1 end
 	end
-	result.ready = result.met == result.total
+	result.maxed = GrowthSpurts.IsMaxed(data.growthSpurts)
+	result.ready = result.met == result.total and not result.maxed
 	return result
 end
 
-function GrowthSpurts.FormatHeight(inches)
-	return string.format("%d'%d\"", inches // 12, inches % 12)
+-- "5'6\""; a player at the cap reads "7'0\" (MAX)". `plain` skips the MAX tag (NPCs like Dante, who are no player).
+function GrowthSpurts.FormatHeight(inches, plain)
+	local text = string.format("%d'%d\"", inches // 12, inches % 12)
+	if not plain and inches >= GrowthSpurts.MaxHeightInches then text ..= " (MAX)" end
+	return text
 end
 
 return GrowthSpurts

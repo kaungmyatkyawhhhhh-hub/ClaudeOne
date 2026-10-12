@@ -173,6 +173,19 @@ function bars.hasMuscleMesh(character, partName: string): boolean
 	return false
 end
 
+-- true when a body part's size must never pump: it has muscle meshes or body stage meshes standing in for it (their size
+-- follows the part), or the server shaped it (widths / golden ratio, BodyShape attributes). A pumped shaped part was read as
+-- a new base and widened again (Dante 3x wide while training, 13 Oct). Those bodies pump through their meshes and tint.
+function bars.sizeLocked(character, part: BasePart): boolean
+	if part:GetAttribute("WidX") ~= nil or part:GetAttribute("PropY") ~= nil then return true end
+	local folder = character:FindFirstChild("MuscleMeshes")
+	if not folder then return false end
+	for _, child in ipairs(folder:GetChildren()) do
+		if child:IsA("MeshPart") and string.sub(child.Name, 1, #part.Name) == part.Name then return true end
+	end
+	return false
+end
+
 -- every part of the plates (plate models, sleeves) rides with the bar
 local function trackPlate(model, plate)
 	if plate:IsA("BasePart") and barRest[model] then
@@ -447,9 +460,19 @@ POSE_ANIMS.PullUp = function(character, d, jitter, model)
 		local sideArm = bars.arm(character, side[1])
 		if sideArm then
 			local s = (frame * bars.c0(sideArm.shoulder)).Position + frame.RightVector * side[2] * reach * 0.2
-			bars.armIK(character, side[1], frame, bar.Position + axis * (s - bar.Position):Dot(axis), bars.bodyDir(frame, side[1], Vector3.new(1, 0, -0.3)))
+			local hand, pole = bars.hangGrip(bar, axis, s, 1.9) -- (the grips end at 2.0; uprights at 3.3)
+			bars.armIK(character, side[1], frame, hand, bars.bodyDir(frame, side[1], pole or Vector3.new(1, 0, -0.3)))
 		end
 	end
+end
+
+-- The hand on a hanging bar under the shoulder, but never past `limit` from the bar's middle: a very wide body (7'0" mass
+-- monster) grips at the edge of the grips with the elbows turned a bit forward, so its arms stay clear of the uprights.
+-- Returns the hand point and, when it was held in, the elbow direction to use.
+function bars.hangGrip(bar: BasePart, axis: Vector3, shoulder: Vector3, limit: number): (Vector3, Vector3?)
+	local along = (shoulder - bar.Position):Dot(axis)
+	if math.abs(along) <= limit then return bar.Position + axis * along, nil end
+	return bar.Position + axis * math.sign(along) * limit, Vector3.new(0.45, 0, -0.9)
 end
 
 -- Leg press: reclined on the seat; lockout = legs long toward the sled, bottom = knees to the chest. The hands hold the
@@ -745,7 +768,8 @@ POSE_ANIMS.LegRaise = function(character, d, jitter, model)
 		local arm = bars.arm(character, side[1])
 		if arm then
 			local s = (frame * bars.c0(arm.shoulder)).Position + frame.RightVector * side[2] * (arm.a + arm.b) * 0.12
-			bars.armIK(character, side[1], frame, bar.Position + axis * (s - bar.Position):Dot(axis), bars.bodyDir(frame, side[1], Vector3.new(1, 0, 0.4)))
+			local hand, pole = bars.hangGrip(bar, axis, s, 1.7) -- (posts at 3.0)
+			bars.armIK(character, side[1], frame, hand, bars.bodyDir(frame, side[1], pole or Vector3.new(1, 0, 0.4)))
 		end
 	end
 end
@@ -1066,7 +1090,7 @@ local function pump(character, machine)
 		local amount = FEEL.PumpPerRep * (index == 1 and 1 or 0.5)
 		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
 			local part = character:FindFirstChild(partName)
-			if part and not bars.hasMuscleMesh(character, partName) then
+			if part and not bars.sizeLocked(character, part) then
 				local state = pumped[part] or { base = part:GetAttribute("BaseSize") or part.Size, amount = 0, bounce = 0 }
 				state.amount = math.min(state.amount + amount, FEEL.PumpMax)
 				state.bounce = FEEL.PumpBounce
@@ -1083,7 +1107,7 @@ local function pumpBurst(character, machine)
 	for _, entry in ipairs(machine.muscles) do
 		for _, partName in ipairs(Muscles.Body[entry.id].pump) do
 			local part = character:FindFirstChild(partName)
-			if part and not bars.hasMuscleMesh(character, partName) then
+			if part and not bars.sizeLocked(character, part) then
 				local state = pumped[part] or { base = part:GetAttribute("BaseSize") or part.Size, amount = 0, bounce = 0 }
 				state.amount = FEEL.PumpMax
 				state.bounce = FEEL.PumpBounce * 3

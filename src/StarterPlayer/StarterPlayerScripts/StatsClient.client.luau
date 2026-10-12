@@ -125,9 +125,19 @@ for index, group in ipairs(Muscles.Groups) do
 	goalFills[group.id] = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
 end
 local goalLabel = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = goal })
+-- (at 7'0" it reads "MAX GROWTH SPURT REACHED", greyed out and not pressable; the label wraps to 2 lines on narrow buttons)
+local spurtLabel = Theme.Text({ Text = "Growth Spurt", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), TextWrapped = true })
 local spurtButton = Theme.Button("Primary", { Name = "GrowthSpurt", LayoutOrder = 4, Size = UDim2.new(0, 220, 0, Theme.MinTouch), Visible = false, Parent = goal }, {
-	Theme.Text({ Text = "Growth Spurt", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
+	spurtLabel, Theme.Pad("S"),
 })
+local spurtStroke = spurtButton:FindFirstChildOfClass("UIStroke")
+local function setSpurtMaxed(maxed)
+	spurtLabel.Text = maxed and "MAX GROWTH SPURT REACHED" or "Growth Spurt"
+	spurtLabel.TextColor3 = maxed and Colors.Muted or Colors.Text
+	spurtButton.BackgroundTransparency = maxed and 0.92 or Theme.Alpha.Primary
+	if spurtStroke then spurtStroke.Transparency = maxed and 0.9 or 0.6 end
+	spurtButton.Interactable = not maxed -- no press, no click, nothing sent
+end
 
 -- the six groups: cards that always fit their muscles; the area scrolls on short screens
 local scroll = New("ScrollingFrame", {
@@ -198,14 +208,21 @@ local function refreshScreen()
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, trainable)
 	local nextSpurt = data.growthSpurts + 1
-	goalTitle.Text = "Growth Spurt " .. nextSpurt
-	goalHeight.Text = GrowthSpurts.FormatHeight(GrowthSpurts.Get(nextSpurt).height)
+	if progress.maxed then
+		goalTitle.Text = "Growth Spurt " .. data.growthSpurts
+		goalHeight.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts))
+	else
+		goalTitle.Text = "Growth Spurt " .. nextSpurt
+		goalHeight.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(nextSpurt))
+	end
 	for _, group in ipairs(Muscles.Groups) do
-		Theme.Tween(goalFills[group.id], { Size = UDim2.fromScale(math.clamp(progress.groups[group.id] / progress.required, 0, 1), 1) })
+		local share = progress.maxed and 1 or math.clamp(progress.groups[group.id] / progress.required, 0, 1)
+		Theme.Tween(goalFills[group.id], { Size = UDim2.fromScale(share, 1) })
 	end
 	goalLabel.Text = string.format("%d/%d groups at their goal  ·  gains x%.2f after", progress.met, progress.total, GrowthSpurts.GetBonus(nextSpurt))
-	goalLabel.Visible = not progress.ready
-	spurtButton.Visible = progress.ready
+	goalLabel.Visible = not progress.ready and not progress.maxed
+	setSpurtMaxed(progress.maxed)
+	spurtButton.Visible = progress.ready or progress.maxed
 	if progress.ready and wasReady == false then
 		statsButton:SetDot(true) -- something new: clears when stats is opened
 		Notify.Show("Growth Spurt ready! Open Stats, then Muscles.", nil, "spurtReady")
@@ -308,6 +325,7 @@ UserInputService.InputBegan:Connect(function(input)
 	if musclesOpen and input.KeyCode == Enum.KeyCode.Escape then closeMuscles() end
 end)
 spurtButton.Activated:Connect(function()
+	if GrowthSpurts.IsMaxed(ClientData.Get().growthSpurts) then return end
 	Remotes.PlayerAction:FireServer("GrowthSpurt")
 end)
 UIBus.RegisterPanel("Muscles", closeMuscles)

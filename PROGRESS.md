@@ -1,8 +1,39 @@
 # GYM ARC — Progress
 
-Short and current (8 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
+Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (9 Oct): MAX weight button
+## LATEST (13 Oct): 7'0" Growth Spurt cap + NPC size glitch
+- **Cap:** `Config/GrowthSpurts.MaxHeightInches = 84` (`MaxHeight` kept as an alias). `GetHeight` clamps to it;
+  `MaxSpurts()` = 6 (the spurt that lands on exactly 7'0"); `IsMaxed`; `Progress().maxed` makes `ready` false, so
+  `PlayerData.GrowthSpurt` refuses on the server (nothing charged: a spurt never cost anything). Muscles keep growing.
+  Saves hold only the spurt count, so a save past spurt 6 is shown and built at 7'0" with nothing else changed; Studio
+  prints "past the height cap ... clamped to 7'0". Clamped this server: N" on load. `FormatHeight` adds " (MAX)" at 7'0"
+  (menu profile, Muscles panel, top progress bar, mirror card, the Growth Spurt note).
+- **Button at max:** the Muscles panel button reads "MAX GROWTH SPURT REACHED" (wraps to 2 lines, padded), greyed,
+  `Interactable = false`; the top bar says the same and isn't tappable; the body-map widget says "Max". All switch live.
+- **7'0" mass monster fits:** sauna doorway was 2.3 x 5.95 (builder `Sauna`, rebuilt): now 4.4 wide, open to the top
+  plate (7.5 clear), two door leaves, sign + lantern moved beside it. Flat bench: big bodies slide toward the feet until
+  the shoulders clear the J-hook uprights (`MachineService` clearUprights; a 4'0" player moves 0.02). Pull-up bars and
+  hanging leg raise: uprights 7.8 apart (were 5.2 / 3.4), the left starter pull-up moved 1.2 left; hands stay on the grip
+  span with the elbows a little forward (`bars.hangGrip`). Dips handles 3.5 apart (were 2.3; `Poses.Dip.handleX`).
+  Builders `GymKit` / `Gyms` updated to match. Left as is (hidden or small): incline seat under the thighs (~0.4), dip
+  calves touching the posts, leg-press rails under the body. Doors 7.9+, ceilings 16/18; camera follows the head (fits).
+- **NPC size glitch (Dante skinny / suddenly huge) - causes found:**
+  1. Roblox rebuilt NPC body parts from their scale values on every CLIENT the moment the NPC started walking
+     (Humanoid.AutomaticScalingEnabled): Dante's torso went 5.75 -> 2.00 wide (skinny) until the next MuscleClient scan.
+  2. The per-rep pump in MachineClient resized NPC body parts (it skipped live muscle meshes but not stage meshes); then
+     `fixNpcBody` read the pumped size as a "Roblox rebuild" and multiplied it by his 2.88 width again: one pumped rep
+     made his torso 17 studs wide and shorter each time (measured).
+  3. The statue (and mirror rigs) lost the golden ratio on the server the same way when parented.
+  Fix: automatic scaling is off once an NPC / the statue / mirror rigs are shaped (`NpcService.FreezeScale`), so nothing
+  rebuilds them; `MuscleClient.restoreShape` puts back the server's exact replicated sizes (WidX / PropY / WidZ) on NPCs and
+  other players, never re-widening and never writing attributes; the pump never resizes a shaped or meshed part (pumps
+  show through the tint only); stage choice ignores PUMPED (no stage pop while training); other bodies keep their stages
+  out to 180 studs (was 80), so the plain-body switch happens where they're a few pixels tall. Measured after: no client
+  rescale while walking, a forced resize snaps back to the exact server size.
+- Dante stays 8'0" (owner's 9 Oct rule: an NPC no player can reach); the cap is for players, the statue and mirror.
+
+## Before that (9 Oct): MAX weight button
 - Machine panel: a MAX button directly on top of the + button and in line with it (it sits in the + button's holder,
   scale-sized, so the left edge and width match exactly), a slight soft-yellow glow (yellow 10% toward white; owner's layout after a few rounds), 1/3
   of its height (16 px), a 3 px gap, a yellow background (bumper yellow at the + button's 0.55 transparency) with white

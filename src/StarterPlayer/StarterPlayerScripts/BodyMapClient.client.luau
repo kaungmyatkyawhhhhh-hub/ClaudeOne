@@ -280,11 +280,12 @@ local function refreshMap()
 	local fill = 0
 	for _, level in pairs(progress.groups) do fill += math.min(level / progress.required, 1) end
 	fill /= #Muscles.Groups
+	if progress.maxed then fill = 1 end
 	for i, segment in ipairs(barFills) do
 		Theme.Tween(segment, { Size = UDim2.fromScale(math.clamp(fill * BAR_SEGMENTS - (i - 1), 0, 1), 1) }, 0.4)
 	end
 	levelText.Text = Muscles.FormatExp(Muscles.TotalExp(data.muscles) / #Muscles.List) .. " exp"
-	spurtText.Text = progress.ready and "Ready!" or ("Spurt " .. (data.growthSpurts + 1))
+	spurtText.Text = progress.maxed and "Max" or progress.ready and "Ready!" or ("Spurt " .. (data.growthSpurts + 1))
 	spurtText.TextColor3 = progress.ready and Colors.Text or Colors.Muted
 end
 

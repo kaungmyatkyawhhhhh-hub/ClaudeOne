@@ -310,21 +310,22 @@ end
 
 function GymKit.PullUpBar(parent, pivot)
 	local m, machine = machineShell(parent, "PullUpBar", pivot)
-	local mat = p(m, "Platform", Vector3.new(6, 0.25, 5), at(pivot, 0, 0.12, 0), C.Rubber, M.Rubber, true)
+	-- (uprights 7.8 apart: a 7'0" mass monster's delts and arms hang clear of them; owner, 13 Oct)
+	local mat = p(m, "Platform", Vector3.new(8.6, 0.25, 5), at(pivot, 0, 0.12, 0), C.Rubber, M.Rubber, true)
 	promptOn(mat, machine)
-	for _, x in ipairs({ -2.6, 2.6 }) do
+	for _, x in ipairs({ -3.9, 3.9 }) do
 		post(m, at(pivot, x, 0.25, 0), 9.35, false)
 		p(m, "Foot", Vector3.new(0.6, 0.2, 2.6), at(pivot, x, 0.35, 0), C.Frame, M.Metal, true)
 		p(m, "Brace", Vector3.new(0.25, 2.4, 0.25), at(pivot, x, 1.3, 0.8, -35), C.Frame, M.Metal)
 		p(m, "Brace", Vector3.new(0.25, 2.4, 0.25), at(pivot, x, 1.3, -0.8, 35), C.Frame, M.Metal)
 	end
-	cyl(m, "Bar", 5.6, 0.22, at(pivot, 0, 9, 0), C.Chrome, M.Metal)
-	p(m, "TopBeam", Vector3.new(5.6, 0.25, 0.3), at(pivot, 0, 9.5, 0), C.Frame, M.Metal)
+	cyl(m, "Bar", 8.2, 0.22, at(pivot, 0, 9, 0), C.Chrome, M.Metal)
+	p(m, "TopBeam", Vector3.new(8.2, 0.25, 0.3), at(pivot, 0, 9.5, 0), C.Frame, M.Metal)
 	-- wide grips with knurling sleeves
 	for _, x in ipairs({ -1.6, 1.6 }) do cyl(m, "Grip", 0.8, 0.26, at(pivot, x, 9, 0), hex("#1A1A1A"), M.Rubber) end
 	-- plate belt hook (the "Load" the plates hang from) + step box
-	p(m, "Peg", Vector3.new(0.5, 0.15, 0.15), at(pivot, 2.95, 3.2, 0), C.Steel, M.Metal)
-	local load = cyl(m, "Load", 0.9, 0.22, at(pivot, 3.3, 2.7, 0, 0, 90, 0), C.Chrome, M.Metal)
+	p(m, "Peg", Vector3.new(0.5, 0.15, 0.15), at(pivot, 4.25, 3.2, 0), C.Steel, M.Metal)
+	local load = cyl(m, "Load", 0.9, 0.22, at(pivot, 4.6, 2.7, 0, 0, 90, 0), C.Chrome, M.Metal)
 	load.Name = "Load"
 	p(m, "StepBox", Vector3.new(1.6, 1, 1.2), at(pivot, -1.3, 0.75, 1.6), hex("#2A2A2E"), M.Plastic, true)
 	p(m, "StepTop", Vector3.new(1.62, 0.06, 1.22), at(pivot, -1.3, 1.27, 1.6), C.Rubber, M.Rubber)
@@ -752,7 +753,7 @@ end
 
 GymKit.Pro.Dips = function(parent, pivot)
 	local m = proBase(parent, "Dips", pivot)
-	for _, x in ipairs({ -1.15, 1.15 }) do
+	for _, x in ipairs({ -1.75, 1.75 }) do -- (handles 3.5 apart: a 7'0" mass monster fits between; Poses.Dip.handleX)
 		post(m, at(pivot, x, 0.12, 1.1), 3.1, false)
 		post(m, at(pivot, x, 0.12, -0.9), 3.1, false)
 		cyl(m, "Handle", 2.4, 0.24, at(pivot, x, 3.2, 0.1, 0, 90, 0), hex("#1A1A1A"), M.Rubber)
@@ -764,16 +765,19 @@ end
 
 GymKit.Pro.HangingLegRaise = function(parent, pivot)
 	local m = proBase(parent, "HangingLegRaise", pivot)
-	for _, x in ipairs({ -1.7, 1.7 }) do
+	-- (posts 7.8 apart on a wider base: a 7'0" mass monster's delts and arms hang clear of them; owner, 13 Oct)
+	m.Base.Size = Vector3.new(8.4, 0.12, 6.2)
+	m.BaseTrim.Size = Vector3.new(8.5, 0.08, 6.3)
+	for _, x in ipairs({ -3.9, 3.9 }) do
 		post(m, at(pivot, x, 0.12, 0), 9.5, false)
 		p(m, "Foot", Vector3.new(0.6, 0.2, 2.6), at(pivot, x, 0.22, 0), C.Frame, M.Metal, true)
 	end
-	cyl(m, "HangBar", 3.7, 0.22, at(pivot, 0, 9, 0), C.Chrome, M.Metal)
+	cyl(m, "HangBar", 8.1, 0.22, at(pivot, 0, 9, 0), C.Chrome, M.Metal)
 	for _, x in ipairs({ -1.1, 1.1 }) do
 		p(m, "Strap", Vector3.new(0.3, 0.9, 0.12), at(pivot, x, 8.5, 0), hex("#141414"), M.Fabric)
 	end
-	p(m, "PinPost", Vector3.new(0.3, 1.6, 0.3), at(pivot, 2.4, 0.8, 0), C.Frame, M.Metal, true)
-	cyl(m, "Bar", 1.2, 0.2, at(pivot, 2.4, 1.5, 0), C.Chrome, M.Metal)
+	p(m, "PinPost", Vector3.new(0.3, 1.6, 0.3), at(pivot, 4.6, 0.8, 0), C.Frame, M.Metal, true)
+	cyl(m, "Bar", 1.2, 0.2, at(pivot, 4.6, 1.5, 0), C.Chrome, M.Metal)
 	return m
 end
 

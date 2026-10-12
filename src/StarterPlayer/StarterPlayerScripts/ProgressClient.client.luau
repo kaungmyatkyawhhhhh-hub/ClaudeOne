@@ -44,8 +44,8 @@ local panel = Theme.Button("Secondary", {
 panel.Active = false -- only tappable when the Growth Spurt is ready
 
 local titleRow = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = panel })
-local title = Theme.Text({ Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(0.7, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = titleRow })
-local heightLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -26, 0, 0), Size = UDim2.new(0.3, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = titleRow })
+local title = Theme.Text({ Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(0.58, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = titleRow })
+local heightLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -26, 0, 0), Size = UDim2.new(0.42, -26, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = titleRow })
 
 -- the arrow: collapses the panel to its title row and expands it again (a 24px icon in a 44px touch area, centered where
 -- the icon sits, so it is easy to hit on phones)
@@ -128,6 +128,7 @@ local function machineGoal(data, machine)
 end
 
 local function goalText(data, progress)
+	if progress.maxed then return "MAX GROWTH SPURT REACHED" end -- (7'0": no more spurts; greyed, not tappable)
 	if progress.ready then return "Ready! Tap here to grow" end
 	if currentMachine then
 		local goal = machineGoal(data, currentMachine)
@@ -162,8 +163,15 @@ local function refresh()
 	if not data or not data.muscles then return end
 	local progress, fill = spurtProgress(data)
 	local nextSpurt = data.growthSpurts + 1
-	title.Text = "Growth Spurt " .. nextSpurt
-	heightLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.Get(nextSpurt).height)
+	if progress.maxed then
+		fill = 1
+		title.Text = "Growth Spurt " .. data.growthSpurts
+		heightLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts))
+	else
+		title.Text = "Growth Spurt " .. nextSpurt
+		heightLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(nextSpurt))
+	end
+	goalLabel.TextColor3 = progress.maxed and Colors.Muted or Colors.Text
 	if math.abs(fill - shownFill) > 0.0005 then
 		shownFill = fill
 		for i, segment in ipairs(fills) do

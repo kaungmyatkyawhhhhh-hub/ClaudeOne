@@ -30,7 +30,8 @@ local PLAY = {
 	Overhead = 150,       -- first session: menu, genetics reveal, tutorial lines, Coach Dex (not lifting)
 	SpurtOverhead = 45,   -- each later spurt: the Growth Spurt moment, walking to a newly opened gym, checking Stats
 }
-local SPURTS = 8 -- spurts simulated per player (1st-4th have their own targets, later ones share the last one)
+local SPURTS = GrowthSpurts.MaxSpurts() -- spurts simulated per player: every one up to the 7'0" cap (1st-4th have their own
+-- targets, later ones share the last one)
 local PLAYERS = 60
 
 local function newPlayer(seed)
@@ -211,4 +212,17 @@ for _, grade in Genetics.Grades do
 	local list = firstByGrade[grade.id]
 	if list then print(string.format("  first spurt, overall %s: median %.1f (%d players)", grade.id, (median(list)), #list)) end
 end
+
+-- The 7'0" cap (owner, 13 Oct): no height past it, no spurt after reaching it, "7'0\" (MAX)" on screen
+local maxSpurts = GrowthSpurts.MaxSpurts()
+H.check(GrowthSpurts.GetHeight(maxSpurts) == GrowthSpurts.MaxHeightInches, "the last spurt lands exactly on 7'0\"")
+H.check(not GrowthSpurts.IsMaxed(maxSpurts - 1) and GrowthSpurts.IsMaxed(maxSpurts), "maxed only from the last spurt")
+for n = 0, 20 do
+	H.check(GrowthSpurts.GetHeight(n) <= GrowthSpurts.MaxHeightInches, "no height past 7'0\" (spurt " .. n .. ")")
+end
+local full = { growthSpurts = maxSpurts + 3, muscles = {} } -- (an old save past the last spurt, every group far past its goal)
+for _, muscle in Muscles.List do full.muscles[muscle.id] = { level = 5000, xp = 0 } end
+local progress = GrowthSpurts.Progress(full, Muscles.Groups, Machines.TrainableMuscles(full.growthSpurts))
+H.check(progress.maxed and not progress.ready and progress.met == progress.total, "at 7'0\" a spurt is never ready")
+H.check(GrowthSpurts.FormatHeight(84) == "7'0\" (MAX)" and GrowthSpurts.FormatHeight(78) == "6'6\"", "height text")
 H.done()

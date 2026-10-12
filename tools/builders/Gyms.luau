@@ -391,7 +391,7 @@ local function starterRoom(gym)
 	GymKit.floorMat(props, face(2, -66.5), 33, 9, hex("#252527"))
 
 	-- Bodyweight corner (back right): pull-up towers and crunch benches
-	GymKit.PullUpBar(machines, face(25.5, -67, 0))
+	GymKit.PullUpBar(machines, face(24.5, -67, 0)) -- (one stud further left since the frames got wider, 13 Oct)
 	GymKit.PullUpBar(machines, face(32, -67, 0))
 	GymKit.CrunchBench(machines, face(28, -55, YAW.West))
 	GymKit.CrunchBench(machines, face(28, -46, YAW.West))

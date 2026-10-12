@@ -1443,7 +1443,8 @@ local function step(self, dt: number)
 	-- the other characters' body regions (BodyStages): the stage from the region's look, the strongest tint of its muscles
 	if self.bodyStages and stagesNow then
 		local skin, shorts, top = colorsOf(self)
-		self.bodyStages:Update(function(id) return currentShown(self, id) end, {
+		-- (the stage comes from the look itself, never the PUMPED / pulse bump: a pump must not swap a body to a bigger stage)
+		self.bodyStages:Update(function(id) return self.current[id] or 0 end, {
 			skin = skin, shorts = shorts, top = self.style.top and top or nil,
 			shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
 		}, function(ids, base, clothed)

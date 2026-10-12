@@ -5,7 +5,7 @@
 --    muscles); for YOUR character they come straight from ClientData (the same numbers, Muscles.LooksFromLevels), so a
 --    level-up shows at once. PUMPED comes from the PumpedUntil attribute. Top / Shorts / SkinColor attributes give the look.
 --  * NPCs (Workspace.NPCs) and the statue carry the same attribute (a preset share), so everyone shows muscles.
---  * Muscles are only built for characters within ~80 studs of the camera and are removed beyond ~100, so a crowded server
+--  * Muscles are only built for characters within ~180 studs of the camera and are removed beyond ~210, so a crowded server
 --    stays smooth (only your own character keeps live meshes: MuscleRig bakes everyone else's). A muscle is only built once it has growth (level 0 = the plain Robloxian 2.0 body).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -17,11 +17,12 @@ local MuscleRig = require(Shared.MuscleRig)
 local Muscles = require(Shared.Config.Muscles)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local ClientData = require(Shared.ClientData)
-local BodyShape = require(Shared.BodyShape)
 
 local player = Players.LocalPlayer
 
-local RANGE, DROP = 80, 100
+-- (others wear static stage meshes, no EditableMesh budget: drawn out to 180 studs so the switch to the plain body happens
+-- where a body is only a few pixels tall; owner, 13 Oct: never a visible change by distance)
+local RANGE, DROP = 180, 210
 local SCAN_EVERY = 0.5
 -- the client holds only a few muscle meshes: other characters wait until my own muscles are built (or this long), so NPCs
 -- never grab the meshes first and make mine wait for them to be taken back
@@ -168,25 +169,49 @@ local function candidates()
 	return list
 end
 
--- NPC bodies: Roblox rescales an NPC that has a height scale on each client and drops the server's shaping (golden ratio
--- proportions, the giant's widths), so the muscles would sit on a plain body. Put it back when it was lost: a cheap check of
--- two numbers each scan; BodyShape only touches what Roblox rebuilt.
-local function fixNpcBody(npc: Model)
-	local lower, upper = npc:FindFirstChild("LowerTorso"), npc:FindFirstChild("UpperTorso")
-	if not (lower and lower:IsA("BasePart") and upper and upper:IsA("BasePart")) then return end
-	local propY, widX = lower:GetAttribute("PropY"), upper:GetAttribute("WidX")
-	local lostProportions = type(propY) == "number" and math.abs(lower.Size.Y - propY) > 1e-3
-	local lostWidths = type(widX) == "number" and math.abs(upper.Size.X - widX) > 1e-3
-	if not (lostProportions or lostWidths) then return end
-	local widths = npc:GetAttribute("BodyWidths")
-	if type(widths) == "string" then
-		local s, h, a, l, d = string.match(widths, "^([%d%.]+),([%d%.]+),([%d%.]+),([%d%.]+),([%d%.]+)$")
-		if s then
-			BodyShape.ApplyWidths(npc, { shoulders = tonumber(s) :: number, hips = tonumber(h) :: number, arms = tonumber(a) :: number,
-				legs = tonumber(l) :: number, depth = tonumber(d) :: number })
+-- Other bodies (NPCs, other players): the server shapes them (height, golden ratio proportions, widths) and records each final
+-- value on the part / attachment (BodyShape: WidX / WidZ / PropY attributes, replicated). That is the ONE size: if anything on
+-- this client changed a part (an automatic rescale, an old pump), put the server's exact values back. Never re-shape from the
+-- current size (that multiplied a changed size again: Dante 3x wide while training, 13 Oct) and never write the attributes.
+local SHAPED_PARTS = { "UpperTorso", "LowerTorso", "RightUpperArm", "LeftUpperArm", "RightLowerArm", "LeftLowerArm",
+	"RightUpperLeg", "LeftUpperLeg", "RightLowerLeg", "LeftLowerLeg" }
+local function shaped(item: Instance, current: Vector3): Vector3
+	local x, y, z = item:GetAttribute("WidX"), item:GetAttribute("PropY"), item:GetAttribute("WidZ")
+	return Vector3.new(if type(x) == "number" then x else current.X, if type(y) == "number" then y else current.Y,
+		if type(z) == "number" then z else current.Z)
+end
+local function far(a: Vector3, b: Vector3): boolean
+	return math.abs(a.X - b.X) > 1e-3 or math.abs(a.Y - b.Y) > 1e-3 or math.abs(a.Z - b.Z) > 1e-3
+end
+local function restoreShape(model: Model)
+	local changed = false
+	for _, name in ipairs(SHAPED_PARTS) do
+		local part = model:FindFirstChild(name)
+		if not (part and part:IsA("BasePart")) then continue end
+		local want = shaped(part, part.Size)
+		if far(part.Size, want) then
+			part.Size = want
+			changed = true
+		end
+		for _, attachment in ipairs(part:GetChildren()) do
+			if attachment:IsA("Attachment") then
+				local at = shaped(attachment, attachment.Position)
+				if far(attachment.Position, at) then
+					attachment.Position = at
+					changed = true
+				end
+			end
 		end
 	end
-	BodyShape.ApplyProportions(npc, false)
+	if not changed then return end
+	for _, joint in ipairs(model:GetDescendants()) do
+		if joint:IsA("Motor6D") and joint.Part0 and joint.Part1 then
+			local a0 = joint.Part0:FindFirstChild(joint.Name .. "RigAttachment")
+			local a1 = joint.Part1:FindFirstChild(joint.Name .. "RigAttachment")
+			if a0 and a0:IsA("Attachment") then joint.C0 = a0.CFrame end
+			if a1 and a1:IsA("Attachment") then joint.C1 = a1.CFrame end
+		end
+	end
 end
 
 local function scan()
@@ -199,15 +224,15 @@ local function scan()
 		seen[item.model] = true
 		local info = tracked[item.model]
 		local distance = distanceTo(item.model, camera)
+		-- (every scan, tracked or not: the plain body far away is the same size as the stages up close)
+		if not item.mine and item.kind ~= "statue" then restoreShape(item.model) end
 		if info then
 			if distance > DROP and not item.mine then
 				untrack(item.model)
 			else
-				if item.kind == "npc" then fixNpcBody(item.model) end
 				refreshInfo(item.model, info, distance)
 			end
 		elseif item.mine or (distance < RANGE and othersAllowed) then
-			if item.kind == "npc" then fixNpcBody(item.model) end
 			track(item.model, item.source, item.mine, item.kind)
 			refreshInfo(item.model, tracked[item.model], distance)
 		end

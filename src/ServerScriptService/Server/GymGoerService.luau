@@ -349,8 +349,8 @@ local function makeGiant(npc)
 	local data = giantData()
 	NpcService.ApplyBody(npc, GIANT.heightInches / BodyShape.BaseHeight)
 	BodyService.ApplyFrame(npc, data)
-	-- (clients re-apply these: Roblox rescales an NPC with a height scale on each client and drops the server's widths;
-	-- MuscleClient puts them back from this attribute)
+	-- (ApplyBody turned the NPC's automatic scaling off, so no client rebuilds him from his height scale; MuscleClient still
+	-- puts the server's exact sizes back if anything does)
 	local f = BodyService.WidthFactors(data)
 	npc:SetAttribute("BodyWidths", string.format("%.3f,%.3f,%.3f,%.3f,%.3f", f.shoulders, f.hips, f.arms, f.legs, f.depth))
 	local lift = BodyShape.ApplyProportions(npc, true)
@@ -410,6 +410,7 @@ local function dressNpc(npc, gym)
 		makeGiant(npc)
 		return
 	end
+	NpcService.FreezeScale(npc) -- (no automatic rescale on any client: the server's shape is the only one)
 	-- the clients draw the muscles from this number (muscle v7), grown to the gym's preset
 	npc:SetAttribute("MuscleG", BodyService.EncodeShare(NPC_GROWTH[gym] or NPC_GROWTH.Starter))
 end

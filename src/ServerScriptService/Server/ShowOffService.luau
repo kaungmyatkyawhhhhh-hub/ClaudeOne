@@ -167,6 +167,9 @@ local function refreshStatue()
 	if statue then statue:Destroy() end
 	statue = model
 	model.Name = "Statue"
+	-- (no automatic rescale: parenting the rig rebuilt it from its scale values and dropped the golden ratio proportions)
+	local scaling = model:FindFirstChildOfClass("Humanoid")
+	if scaling then scaling.AutomaticScalingEnabled = false end
 	BodyShape.EnsureJoints(model)
 	BodyShape.ApplyProportions(model, true)
 	local cfg = ShowOff.Statue

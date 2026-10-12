@@ -33,6 +33,8 @@ local FLOOR, ROW, ROWS = 0.8, 0.75, 10
 local TOP = FLOOR + ROW * ROWS      -- 8.3: top of the walls
 local RIDGE = TOP + 2.6
 local THICK = 0.4
+local DOOR_HALF = 2.2                -- the doorway: 4.4 wide, clear up to the top plate (TOP - FLOOR = 7.5)
+local LEAF_H = TOP - FLOOR - 0.2     -- door leaf height
 
 local function steam(parent, rate, size, speed)
 	local emitter = Instance.new("ParticleEmitter")
@@ -156,8 +158,9 @@ function Sauna.Build(parent)
 	for _, c in ipairs(corners) do
 		p(m, "CornerPost", Vector3.new(0.7, TOP - FLOOR + 0.1, 0.7), cf * CFrame.new(c.X, (FLOOR + TOP) / 2, c.Z), COLOR.Post, M.Wood, true)
 	end
-	-- door (2.4 wide, rows 1-8) in the middle of the front wall, a window to its right; one window on each side wall
-	wall(m, cf, corners[1], corners[2], { { W / 2 - 1.2, W / 2 + 1.2, 1, 8 }, { W / 2 + 2.3, W / 2 + 4.1, 4, 6 } })
+	-- door (4.4 wide, all rows: 7.5 clear up to the top plate, so a 7'0" mass monster fits; owner, 13 Oct) in the middle of
+	-- the front wall, a window to its right; one window on each side wall
+	wall(m, cf, corners[1], corners[2], { { W / 2 - DOOR_HALF, W / 2 + DOOR_HALF, 1, ROWS }, { W / 2 + 3.1, W / 2 + 4.5, 4, 6 } })
 	wall(m, cf, corners[2], corners[3], { { 2.6, 5.4, 4, 6 } })
 	wall(m, cf, corners[3], corners[4], {})
 	wall(m, cf, corners[4], corners[1], { { 2.6, 5.4, 4, 6 } })
@@ -167,23 +170,22 @@ function Sauna.Build(parent)
 		local look = CFrame.lookAt(Vector3.new(mid.X, TOP + 0.15, mid.Z), Vector3.new(b.X, TOP + 0.15, b.Z))
 		p(m, "TopPlate", Vector3.new(THICK + 0.3, 0.3, (b - a).Magnitude + 0.9), cf * look, COLOR.Trim, M.Wood, true)
 	end
-	window(m, cf, Vector3.new(3.2, FLOOR + 4.5 * ROW, FRONT), Vector3.new(1, 0, 0), 1.8, 2.2)
+	window(m, cf, Vector3.new(3.8, FLOOR + 4.5 * ROW, FRONT), Vector3.new(1, 0, 0), 1.4, 2.2)
 	window(m, cf, Vector3.new(W / 2, FLOOR + 4.5 * ROW, FRONT + 4), Vector3.new(0, 0, 1), 2.8, 2.2)
 	window(m, cf, Vector3.new(-W / 2, FLOOR + 4.5 * ROW, FRONT + 4), Vector3.new(0, 0, 1), 2.8, 2.2)
 
-	-- door frame and the door, standing open against the porch
+	-- door frame (the jambs run up to the top plate, no header under it) and two door leaves standing open on the porch
 	for _, s in ipairs({ -1, 1 }) do
-		p(m, "DoorJamb", Vector3.new(0.3, 6.1, THICK + 0.2), cf * CFrame.new(s * 1.35, FLOOR + 3.05, FRONT), COLOR.Trim, M.Wood, true)
+		p(m, "DoorJamb", Vector3.new(0.3, TOP - FLOOR, THICK + 0.2), cf * CFrame.new(s * (DOOR_HALF + 0.15), (FLOOR + TOP) / 2, FRONT), COLOR.Trim, M.Wood, true)
+		local hinge = cf * CFrame.new(s * (DOOR_HALF + 0.05), FLOOR, FRONT - 0.3) * CFrame.Angles(0, rad(s * -100), 0)
+		local leaf = hinge * CFrame.new(-s * 1.1, LEAF_H / 2 + 0.05, 0)
+		p(m, "Door", Vector3.new(2.2, LEAF_H, 0.16), leaf, COLOR.WallAlt, M.Wood, true)
+		p(m, "DoorWindow", Vector3.new(0.8, 1.2, 0.24), leaf * CFrame.new(0, 1.9, 0), COLOR.Glass, M.Glass, false, { Transparency = 0.4 })
+		for _, yy in ipairs({ -2.6, 0, 2.6 }) do
+			p(m, "DoorBrace", Vector3.new(2.0, 0.22, 0.22), leaf * CFrame.new(0, yy - 0.4, 0.12), COLOR.Trim, M.Wood)
+		end
+		p(m, "DoorHandle", Vector3.new(0.12, 0.7, 0.14), leaf * CFrame.new(-s * 0.8, 0, -0.18), COLOR.Iron, M.Metal)
 	end
-	p(m, "DoorHeader", Vector3.new(3.1, 0.3, THICK + 0.2), cf * CFrame.new(0, FLOOR + 6.1, FRONT), COLOR.Trim, M.Wood, true)
-	local hinge = cf * CFrame.new(1.2, FLOOR, FRONT - 0.3) * CFrame.Angles(0, rad(-100), 0)
-	local leaf = hinge * CFrame.new(-1.15, 2.95, 0)
-	p(m, "Door", Vector3.new(2.3, 5.9, 0.16), leaf, COLOR.WallAlt, M.Wood, true)
-	p(m, "DoorWindow", Vector3.new(0.8, 1.2, 0.24), leaf * CFrame.new(0, 1.4, 0), COLOR.Glass, M.Glass, false, { Transparency = 0.4 })
-	for _, yy in ipairs({ -2, 0, 2 }) do
-		p(m, "DoorBrace", Vector3.new(2.1, 0.22, 0.22), leaf * CFrame.new(0, yy - 0.4, 0.12), COLOR.Trim, M.Wood)
-	end
-	p(m, "DoorHandle", Vector3.new(0.12, 0.7, 0.14), leaf * CFrame.new(0.85, 0, -0.18), COLOR.Iron, M.Metal)
 
 	-- roof: two panels meeting at the ridge, shingle lines, ridge cap, fascia, gable ends
 	local overhangZ, overhangX = 0.8, 0.6
@@ -211,15 +213,16 @@ function Sauna.Build(parent)
 		TownKit.triangle(m, "Gable", a, b, c, THICK, COLOR.Wall, M.Wood)
 	end
 
-	-- sign plaque above the door, lantern beside it
-	local signCf = cf * CFrame.new(0, FLOOR + 6.55, FRONT - THICK / 2 - 0.08)
-	local board = Kit.sign(m, "SaunaSign", Vector3.new(3.2, 0.95, 0.12), signCf, "Sauna", COLOR.Warm, hex("#3A2A1E"), 60)
+	-- sign plaque on the wall left of the (full-height) door, the lantern under it
+	local signX = -(DOOR_HALF + 0.3 + W / 2 - 0.35) / 2 -- the middle of the wall between the jamb and the corner post
+	local signCf = cf * CFrame.new(signX, FLOOR + 6.3, FRONT - THICK / 2 - 0.08)
+	local board = Kit.sign(m, "SaunaSign", Vector3.new(2.2, 0.8, 0.12), signCf, "Sauna", COLOR.Warm, hex("#3A2A1E"), 60)
 	board.Material = M.Wood
 	for _, s in ipairs({ -1, 1 }) do
-		p(m, "SignTrim", Vector3.new(3.5, 0.12, 0.18), signCf * CFrame.new(0, s * 0.53, 0), COLOR.Trim, M.Wood)
-		p(m, "SignTrim", Vector3.new(0.12, 1.18, 0.18), signCf * CFrame.new(s * 1.69, 0, 0), COLOR.Trim, M.Wood)
+		p(m, "SignTrim", Vector3.new(2.5, 0.12, 0.18), signCf * CFrame.new(0, s * 0.46, 0), COLOR.Trim, M.Wood)
+		p(m, "SignTrim", Vector3.new(0.12, 1.04, 0.18), signCf * CFrame.new(s * 1.19, 0, 0), COLOR.Trim, M.Wood)
 	end
-	local lanternCf = cf * CFrame.new(-2.1, FLOOR + 5, FRONT - THICK / 2 - 0.35)
+	local lanternCf = cf * CFrame.new(signX, FLOOR + 4.6, FRONT - THICK / 2 - 0.35)
 	p(m, "LanternArm", Vector3.new(0.12, 0.12, 0.5), lanternCf * CFrame.new(0, 0.55, 0.2), COLOR.Iron, M.Metal)
 	p(m, "LanternTop", Vector3.new(0.6, 0.15, 0.6), lanternCf * CFrame.new(0, 0.45, 0), COLOR.Iron, M.Metal)
 	local glass = p(m, "LanternGlass", Vector3.new(0.4, 0.6, 0.4), lanternCf * CFrame.new(0, 0.05, 0), COLOR.Warm, M.Glass, false, { Transparency = 0.3 })
@@ -232,7 +235,7 @@ function Sauna.Build(parent)
 	local benchCf = cf * CFrame.new(-4.2, FLOOR, FRONT - 1.2)
 	for i = -1, 1 do p(m, "PorchSlat", Vector3.new(2.8, 0.14, 0.32), benchCf * CFrame.new(0, 1.45, i * 0.38), COLOR.Bench, M.Wood, true) end
 	for _, x in ipairs({ -1.15, 1.15 }) do p(m, "PorchLeg", Vector3.new(0.25, 1.38, 1.0), benchCf * CFrame.new(x, 0.69, 0), COLOR.Post, M.Wood) end
-	local bucketCf = cf * CFrame.new(2, FLOOR, FRONT - 0.9)
+	local bucketCf = cf * CFrame.new(3.7, FLOOR, FRONT - 0.9) -- (clear of the open door leaf)
 	cyl(m, "Bucket", 0.9, 0.9, bucketCf * CFrame.new(0, 0.45, 0) * up, COLOR.Bench, M.Wood)
 	for _, yy in ipairs({ 0.2, 0.7 }) do cyl(m, "BucketBand", 0.08, 0.94, bucketCf * CFrame.new(0, yy, 0) * up, COLOR.Iron, M.Metal) end
 	p(m, "Ladle", Vector3.new(0.08, 0.08, 1.3), bucketCf * CFrame.new(0.15, 1.0, 0.1) * CFrame.Angles(rad(-35), 0, 0), COLOR.Post, M.Wood)

@@ -87,6 +87,7 @@ function NpcService.Build(spec, cframe)
 		model = fallbackModel(spec)
 	end
 	model.Name = spec.name
+	NpcService.FreezeScale(model) -- (before the shaping: an automatic rescale would undo it, see FreezeScale)
 	BodyShape.ApplyProportions(model, true) -- the golden ratio body (longer legs, shorter torso)
 
 	-- without catalog clothing, the "shirt" is the torso and upper arms painted in the shirt color (short sleeves)
@@ -158,6 +159,15 @@ function NpcService.Build(spec, cframe)
 	return model, prompt
 end
 
+-- An NPC's body size has ONE source: the shape the server gives it (height scale, golden ratio proportions, widths). With
+-- Humanoid.AutomaticScalingEnabled on, Roblox rebuilds the parts from the scale values on its own (on the server when the
+-- rig is parented, on every client when the NPC starts walking: measured 13 Oct), which drops that shaping: Dante went
+-- skinny for a moment on every walk. Turned off once the description is applied, nothing rescales it again.
+function NpcService.FreezeScale(model)
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid then humanoid.AutomaticScalingEnabled = false end
+end
+
 -- NPCs baked into the place (gym regulars, the Coach) get the Robloxian 2.0 body at startup, keeping their own head, hair,
 -- clothes and painted colors. Re-anchors them the way Build does.
 -- heightScale (optional): the body height (Body.ApplyTo), e.g. the 7'0" giant regular
@@ -174,7 +184,9 @@ function NpcService.ApplyBody(npc, heightScale)
 	local shirtId, pantsId = desc.Shirt, desc.Pants
 	Body.ApplyTo(desc, skin, heightScale)
 	desc.Shirt, desc.Pants = shirtId, pantsId
+	humanoid.AutomaticScalingEnabled = true -- (ApplyDescription needs it to apply the height scale)
 	if not pcall(humanoid.ApplyDescription, humanoid, desc) then return false end
+	NpcService.FreezeScale(npc)
 	-- the golden ratio body; it stands taller on its longer legs, so lift it by what the hips gained
 	local lift = BodyShape.ApplyProportions(npc, true)
 	if lift ~= 0 then npc:PivotTo(npc:GetPivot() + Vector3.new(0, lift, 0)) end

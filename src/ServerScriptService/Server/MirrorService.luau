@@ -62,6 +62,9 @@ local function buildRig(player, name, heightScale, poseName)
 		return nil
 	end
 	rig.Name = name
+	-- (no automatic rescale: parenting the rig would rebuild it from its scale values and drop the proportions; see the statue)
+	local scaling = rig:FindFirstChildOfClass("Humanoid")
+	if scaling then scaling.AutomaticScalingEnabled = false end
 	BodyShape.EnsureJoints(rig)
 	BodyShape.ApplyProportions(rig)
 	for _, item in ipairs(rig:GetDescendants()) do

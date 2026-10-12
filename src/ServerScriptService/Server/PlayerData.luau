@@ -192,6 +192,7 @@ local function save(player, release)
 	return ok and not lostLock
 end
 
+local clampedToMax = 0 -- saves past the 7'0" cap seen by this server (Studio prints it)
 local function onPlayerAdded(player)
 	-- Studio FreshPlayer sessions never touch the real save (not even its lock)
 	local fresh = IS_STUDIO and workspace:GetAttribute("FreshPlayer") == true
@@ -297,6 +298,15 @@ local function onPlayerAdded(player)
 		data.onboarding.tutorialVersion = Onboarding.Version
 	end
 	data.sessionLock = nil
+	-- 7'0" cap (owner, 13 Oct): the save holds only the spurt count and height comes from it (GrowthSpurts.GetHeight
+	-- clamps it), so a save past the last spurt is shown and built at exactly 7'0" with nothing else in it changed.
+	if (data.growthSpurts or 0) > GrowthSpurts.MaxSpurts() then
+		clampedToMax += 1
+		if IS_STUDIO then
+			print(string.format("[PlayerData] %s is past the height cap (Growth Spurt %d): clamped to 7'0\". Clamped this server: %d",
+				player.Name, data.growthSpurts, clampedToMax))
+		end
+	end
 	-- The beach gym's own machines are gone (owner, 8 Oct night: it uses the real machines): their weight progress moves to
 	-- the real machine (same tier sets, so the same tier numbers; the higher of the two is kept)
 	for oldId, newId in pairs(require(Config.Machines).Renamed) do
