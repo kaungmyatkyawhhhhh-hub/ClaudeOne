@@ -991,6 +991,63 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .perkchips b{font-family:var(--mono);color:var(--gold)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
 @media (max-height:640px){.lst{height:54px}.tile{width:38px;height:38px}.collector{height:44px}.cash{font-size:2.1rem}}
+/* ===== Design pass: calm, consistent, professional (matches the Figma file "Flip Rush — UI") ===== */
+:root{--shadow:0 1px 2px rgba(13,16,21,.06),0 6px 16px -8px rgba(13,16,21,.16);--r-card:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 20px -10px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 20px -10px rgba(0,0,0,.6)}
+.eyebrow{font-size:.62rem;font-weight:700;letter-spacing:.08em}
+/* cards and chips: one radius, hairline border, quiet shadow */
+.chip,.place,.hud .iconbtn,.tip,.leave{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--r-card)}
+.place{border-radius:99px}
+/* HUD money: tabular mono, no stretched display type */
+.cashchip .cash,.cash{font-family:var(--mono);font-variation-settings:normal;font-weight:600;letter-spacing:-.03em}
+.cashchip .cash{font-size:1.6rem}
+.hrow .tierb{font-family:var(--body);font-variation-settings:normal;font-weight:700;font-size:.66rem;letter-spacing:.06em}
+.hlv{font-family:var(--mono);font-weight:600;font-size:.66rem;letter-spacing:0;opacity:1;color:var(--muted)}
+.hmul{font-family:var(--mono);font-weight:600}
+.hypebar>b{font:700 .58rem var(--body);letter-spacing:.08em}
+.stat small{font-size:.6rem;letter-spacing:.06em}
+.timechip{font-weight:600}
+/* icon buttons: rounded squares with line icons */
+.hud .iconbtn,.hudbtns .iconbtn{border-radius:10px;color:var(--ink)}
+.hudbtns .iconbtn svg,.iconbtn svg{width:17px;height:17px}
+.nowbtn .nl{font-family:var(--body);font-weight:700;letter-spacing:0}
+/* alert pills: neutral surface, a coloured dot carries the meaning, no glowing outlines */
+.pill,.pill.ev,.pill.crate,.pill.mp.on,#goalChip.nav,.chip.live{box-shadow:var(--shadow);animation:none}
+.pill{border-radius:99px;padding:6px 12px 6px 10px;gap:7px}
+.pill .pk{display:inline-flex;align-items:center;gap:6px;font-family:var(--body);font-size:.62rem;letter-spacing:.06em}
+.pill:not(.tog) .pk::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.pill.ev .pk::before,.pill.crate .pk::before,#goalChip.nav .pk::before{animation:fr-dot 1.4s ease-in-out infinite}
+@keyframes fr-dot{50%{box-shadow:0 0 0 4px color-mix(in oklab,currentColor 25%,transparent)}}
+.pill .pt{font-weight:600}
+.pill .pr{font-weight:600}
+.pill.tog{border-radius:10px}
+/* bottom bar: primary action in the accent colour, sentence case */
+.enter,.bottom .enter{background:var(--accent);color:var(--accent-ink);font-family:var(--body);font-variation-settings:normal;font-weight:700;font-size:1rem;letter-spacing:-.01em;text-transform:none;border-radius:14px;box-shadow:0 1px 2px rgba(13,16,21,.12),0 10px 24px -12px color-mix(in oklab,var(--accent) 70%,transparent)}
+.enter small,.bottom .enter small{opacity:.8;font-weight:500}
+.bottom .enter svg{background:color-mix(in oklab,var(--accent-ink) 16%,transparent)}
+.place{font-weight:600}
+.ridebtn,.phonebtn{border-radius:14px;width:48px;height:48px;border:1px solid var(--line);box-shadow:var(--shadow)}
+.phonebtn{border-color:transparent}
+.ridebtn span{display:grid;place-items:center}.ridebtn span svg{width:20px;height:20px}
+.ridebtn small{font-family:var(--body);font-weight:700;font-size:.56rem;letter-spacing:.04em;text-transform:none}
+/* Vince: a plain notification card, not a purple banner */
+.vmsg{box-shadow:var(--shadow),0 18px 40px -18px rgba(13,16,21,.35);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 12px}
+.vmsg .vav{background:var(--ink);color:var(--surface);font-family:var(--body);font-weight:800;font-size:.95rem;width:34px;height:34px}
+.vmsg b{color:var(--ink);text-transform:none;letter-spacing:0;font-size:.82rem;font-weight:700}
+.vmsg p{font-weight:500;font-size:.88rem}
+.vmsg .vok{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:9px;padding:7px 12px}
+/* rooms: flat background, calm headers */
+.room{background:var(--bg)}
+.roomhead h2{font-family:var(--display);font-variation-settings:normal;font-weight:800;font-size:1.3rem;letter-spacing:-.02em;text-transform:none}
+.sechead h3{font-variation-settings:normal;font-weight:800;font-size:1.02rem;letter-spacing:-.01em;text-transform:none}
+.leave{font-weight:700;letter-spacing:0;text-transform:none;font-size:.8rem;border-radius:99px;padding:8px 13px 8px 10px}
+.pcard b{font-variation-settings:normal;text-transform:none;letter-spacing:-.01em}
+.vmsg{animation:vin .3s cubic-bezier(.2,.9,.3,1)}
+.pill .pk{letter-spacing:.04em}
+.mtools .reqbtn,.mtools .reqbtn.fobtn,.mtools .reqbtn.lmbtn{background:var(--surface)!important;color:var(--ink)!important;border:1px solid var(--line);box-shadow:var(--shadow);border-radius:12px;font-weight:700}
+.mtools .reqbtn b,.mtools .reqbtn.fobtn b,.mtools .reqbtn.lmbtn b{font-family:var(--body);font-weight:500;letter-spacing:0;color:var(--muted)!important;opacity:1}
+.mtools .reqbtn.fobtn::before{content:"";display:none}
 </style>
 
 
@@ -999,7 +1056,7 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
   <div class="hudtop">
     <div class="chip cashchip"><span class="eyebrow" id="cashLab">Cash</span><span id="cash" class="cash">$100</span><span class="mult" id="multTxt"></span><div class="hypebar" id="hype"><b>HYPE</b><span class="hseg"></span><em></em></div></div>
     <div class="chip timechip"><b id="timeTxt">8:00 AM</b><span id="dayTxt">Day 1</span><canvas class="minimap" id="miniMap" aria-label="Minimap. Tap for the full map."></canvas></div>
-    <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes">😀</button><button class="iconbtn" id="camBtn" aria-label="Photo mode">📷</button><button class="iconbtn" id="hudMin" aria-label="Collapse the top bar"></button><button class="iconbtn nowbtn" id="nowBtn" aria-label="What's on now"><span class="nl">Now</span></button></div>
+    <div class="hudbtns"><button class="iconbtn" id="mute" aria-label="Toggle sound"></button><button class="iconbtn" id="emoBtn" aria-label="Emotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></button><button class="iconbtn" id="camBtn" aria-label="Photo mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button><button class="iconbtn" id="hudMin" aria-label="Collapse the top bar"></button><button class="iconbtn nowbtn" id="nowBtn" aria-label="What's on now"><span class="nl">Now</span></button></div>
   </div>
   <div class="chip stats">
     <div class="stat"><small>Energy <b id="enTxt">100/100</b></small><div class="bar en" id="enBar"><i></i></div></div>
@@ -1962,10 +2019,11 @@ $("lvlBtn").onclick=()=>{audioOn();if(!room)showPerkPick()};
 $("multTxt").addEventListener("click",e=>{if(!e.target.closest(".tierb")||!S)return;audioOn();if(room)closeRoom();room="tiers";openTiers(closeRoom)});
 // the reselling phone always opens the Market in Flip City (World 1)
 // walk / ride toggle on the main screen, so you don't have to go home to switch
+const IC_WALK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.8"/><path d="M10.5 21l2-6 2.5 2.5V21"/><path d="M8 11l2.5-3.5h3l2 3.5 2.5 1"/><path d="M12.5 15l-1-4"/></svg>',IC_CAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-3.5L6 8h12l2 4.5V16z"/><path d="M4 12.5h16"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/></svg>';
 const VEH_IC={bike:"🚲",scooter:"🛴",car:"🏎️",truck:"🛻",classic:"🚙",supercar:"🏎️"};
 const rideBack=()=>{const ok=k=>S.veh[k]&&!(S.broke&&S.broke.k===k);if(S.lastRide&&ok(S.lastRide))return S.lastRide;const o=VEH.filter(v=>ok(v.k)).sort((a,b)=>b.sp-a.sp);return o.length?o[0].k:null};
 function renderRideBtn(){const el=$("rideBtn");if(!el||!S)return;const r=ride(),back=r?null:rideBack(),show=$("room").hidden&&!!(r||back);el.hidden=!show;if(!show)return;
-  el.classList.toggle("up",!!S.up.phone);const h=r?`<span>🚶</span><small>Walk</small>`:`<span>${VEH_IC[back]||"🚗"}</span><small>Ride</small>`;if(el.innerHTML!==h)el.innerHTML=h}
+  el.classList.toggle("up",!!S.up.phone);const h=r?`<span>${IC_WALK}</span><small>Walk</small>`:`<span>${IC_CAR}</span><small>Ride</small>`;if(el.innerHTML!==h)el.innerHTML=h}
 $("moodChip").onclick=()=>{audioOn();banner(moodFace()[0]+" Go out to feel better: 🪩 Nightclub · 🍔 Diner · 🕹️ Arcade · ☕ Café","u")};
 $("rideBtn").onclick=()=>{audioOn();const r=ride();if(r){S.lastRide=r;S.cur="walk";banner("Walking","u")}else{const k=rideBack();if(!k)return;S.cur=k;banner("Riding your "+vehName(k),"u")}dirty=true;SFX.door();buzz(10);renderRideBtn()};
 const phoneMkts=()=>[["market",MKT.market,"Everything, fair prices",1],["flea",MKT.flea,"Cheap, more fakes",regionOpen("beach")],["lux",MKT.lux,"Pricey, pays the most",regionOpen("downtown")]].filter(x=>x[1]&&x[3]);
@@ -3876,10 +3934,10 @@ function openMarket(cfg){
   M={cfg,market:[null,null,null],restock:[.2,.6,1],ev:null,nextEv:4,auctionT:rnd(35,70),streak:0,streakT:-99,t:0,newsT:0,evKey:null};
   $("room").innerHTML=`<div class="room-in">${roomHead(cfg.n)}
     <div class="news"><span class="live">LIVE</span><span id="news"></span></div>
-    <div class="mtools">${cfg.k==="market"?`<button class="reqbtn" id="mReq">📋 Requests<b>${reqReady()?reqReady()+" ready":"3 new daily"}</b></button>`:""}
-    ${cfg.k==="market"?`<button class="reqbtn" id="mStall">🏪 Stalls<b>${S.stall&&S.stall.it.length?S.stall.it.length+" listed":"Sell to players"}</b></button>`:""}
-    ${cfg.k==="flea"?`<button class="reqbtn lmbtn" id="mLem">🍋 Lemonade<b>Stand · 8 energy</b></button>`:""}
-    ${!cfg.only&&(S.stats.flips||0)>=10?(FO?`<div class="fobar" id="foBar"></div>`:`<button class="reqbtn fobtn" id="mFO" ${S.foDay===dayKey()?"disabled":""}>⚔️ Flip-off<b>${S.foDay===dayKey()?"Rematch tomorrow":"vs Slick Vinny · 3 min"}</b></button>`):""}</div>
+    <div class="mtools">${cfg.k==="market"?`<button class="reqbtn" id="mReq">Requests<b>${reqReady()?reqReady()+" ready":"3 new daily"}</b></button>`:""}
+    ${cfg.k==="market"?`<button class="reqbtn" id="mStall">Stalls<b>${S.stall&&S.stall.it.length?S.stall.it.length+" listed":"Sell to players"}</b></button>`:""}
+    ${cfg.k==="flea"?`<button class="reqbtn lmbtn" id="mLem">Lemonade<b>Stand · 8 energy</b></button>`:""}
+    ${!cfg.only&&(S.stats.flips||0)>=10?(FO?`<div class="fobar" id="foBar"></div>`:`<button class="reqbtn fobtn" id="mFO" ${S.foDay===dayKey()?"disabled":""}>Flip-off<b>${S.foDay===dayKey()?"Rematch tomorrow":"vs Slick Vinny · 3 min"}</b></button>`):""}</div>
     <div id="event" class="collector"></div>
     <div class="mcols"><section class="lstsec"><div class="sechead"><h3>Listings</h3><span class="eyebrow">Tap to buy · hold to lowball</span></div><div id="market" class="market"></div></section>
     <section class="stashsec"><div class="sechead"><h3>Stash</h3><span class="mono eyebrow" style="margin-left:0" id="slots"></span><span class="feetag">${Math.round(WT*100)}% fees</span><span id="mHype" class="mhype"></span><span id="streak" class="streak" style="margin-left:auto"></span></div><div id="stash" class="stash"></div></section></div></div>`;
@@ -5713,7 +5771,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=116,WN=[
+const WN_VER=117,WN=[
+ ["✨","A cleaner look","The top bar, alerts, buttons, Vince's messages and shop screens have a calmer, tidier design: line icons instead of emoji, one style of card everywhere, and money in clear numbers.","2026-10-12T17:00"],
  ["😄","Easier mood, shorter tutorial","Mood now falls 3× slower, never drops below 25, and going out lifts it twice as much. Happy pays up to +10%, sad costs at most 5%. The tutorial is now a few words a step, with the hand showing you where to tap.","2026-10-12T10:00"],
  ["🖥️","Made for your screen","On a computer the game now has its own layout: a sidebar with your cash, a big minimap, energy and every chip, the map beside it, wide shop screens with listings and stash side by side, and keyboard controls (WASD to walk, E to enter, Esc to leave, M map, N now, P phone, R ride). Tablets get a roomier layout too. Also fixed: friends no longer stay frozen inside a house after they leave.","2026-10-10T01:00"],
  ["😄","Mood","You now have a mood (the face chip at the top). It slowly drops while you work. Go out to lift it: the Nightclub, Rusty's Diner, the Arcade, the Café and more. Happy pays up to +15% on everything you earn, sad costs up to 15%. Also: the Frontier Road now matches World 4's paths, and the phone lets you pick which market to open.","2026-10-10T00:00"],
@@ -7334,7 +7393,7 @@ function storyClaim(){const st=S.story,c=storyCur();if(!c||!st.ready||st.wait)re
   if(i+1>=STORY.length){st.done=true;st.ready=false;S.accOwn=S.accOwn||{};S.accOwn.vmedal=1;gainCrate(5);setTimeout(()=>{banner("👑 You beat Vince · ending: "+STORY_END[st.end][0],"g");confetti(300);rayText("You beat Vince! The Mogul medal is in your wardrobe (+5% money from sales), and Vince's challenges pay double from now on. World 5 is next.")},2200);renderStory();return}
   setTimeout(()=>storyBegin(i+1),room==="story"?600:3500);st.ready=false;renderStory()}
 function renderStory(){const el=$("storyChip");if(!el||!S)return;const c=storyCur();if(!c){el.hidden=true;return}el.hidden=false;el.style.setProperty("--ec","#7a2fd6");
-  const h=`<span class="pk">📖 Story ${S.story.ch+1}/${STORY.length}</span><span class="pt">${S.story.ready?"Find Vince to collect":c.t}</span><span class="pr">${S.story.ready?"🕴️ ready":storyFmt(c,storyHave())}</span>`;if(el.innerHTML!==h)el.innerHTML=h;el.classList.toggle("beat",!!S.story.ready)}
+  const h=`<span class="pk">Story ${S.story.ch+1}/${STORY.length}</span><span class="pt">${S.story.ready?"Find Vince to collect":c.t}</span><span class="pr">${S.story.ready?"Ready":storyFmt(c,storyHave())}</span>`;if(el.innerHTML!==h)el.innerHTML=h;el.classList.toggle("beat",!!S.story.ready)}
 function openStory(){room="story";$("room").hidden=false;const draw=()=>{const st=S.story,cur=storyCur();
   $("room").innerHTML=`<div class="room-in scroll">${roomHead("The Vince Saga")}<div class="note">🕴️ Vince runs the resale game and wants every world for himself: Flip City, the Cosmos, Deep Time and the Frontier. Take them back one chapter at a time. Beat the last chapter and Flip City is yours.</div>
    ${st&&st.done&&st.end?`<div class="dcard" style="border-left:4px solid ${st.end==="saint"?"#2a9df4":st.end==="shark"?"#d6384b":"#cf9a14"}"><span class="eyebrow">Your ending</span><b>${STORY_END[st.end][0]}</b><p class="fine" style="text-align:left;margin:6px 0">“${esc(STORY_END[st.end][1])}”</p><span class="fine" style="display:block;text-align:left">There are three endings. Your reputation when you beat the last chapter picks which one you get.</span></div>`:!(st&&st.done)?`<p class="fine">The ending depends on your reputation when you win: Saints, Sharks and everyone in between each get a different one.</p>${karmaBar()}`:""}
