@@ -1250,14 +1250,14 @@ const rawMult=()=>(1+.04*repLevel())*(1+.25*S.tok.profit)*(1+.05*pk("sales"))*(S
 const capM=m=>m<=3?m:3+Math.log2(m/3)*2.6;
 const moonK=()=>emp("moon")?2:1;
 /* ================= mood: going out keeps you happy, staying in makes you sad; mood moves money by up to ±15% ================= */
-const MOOD_FUN={club:[15,"a night out at the club"],diner:[10,"a proper meal at Rusty's"],arcade:[10,"a round at the arcade"],cafe:[6,"a coffee with the regulars"],night:[6,"the Night Market buzz"],mall:[6,"a stroll round the Mall"],mbeach:[6,"sun at Muscle Beach"],cards:[6,"a hand at Lucky Lou's"],docks:[6,"the car meet"]};
-const mood=()=>S&&S.mood!=null?S.mood:60,moodK=()=>.85+.3*mood()/100;
+const MOOD_FUN={club:[30,"a night out"],diner:[20,"a good meal"],arcade:[20,"the arcade"],cafe:[12,"a coffee"],night:[12,"the Night Market"],mall:[12,"the Mall"],mbeach:[12,"the beach"],cards:[12,"Lucky Lou's"],docks:[12,"the car meet"]};
+const mood=()=>S&&S.mood!=null?S.mood:60,moodK=()=>.95+.15*mood()/100;
 const moodFace=()=>{const m=mood();return m>=80?["😄","Very happy"]:m>=60?["🙂","Happy"]:m>=40?["😐","Okay"]:m>=20?["😕","Down"]:["😞","Sad"]};
 function moodAdd(v){const b=mood();S.mood=clamp(b+v,0,100);dirty=true;renderMoodChip()}
-function moodVisit(k){const f=MOOD_FUN[k];if(!f||!S)return;S.moodAt=S.moodAt||{};const now=Date.now();if(now-(S.moodAt[k]||0)<5*60000)return;S.moodAt[k]=now;moodAdd(f[0]);
-  setTimeout(()=>banner(moodFace()[0]+" Mood +"+f[0]+" from "+f[1]+" · money ×"+moodK().toFixed(2),"g"),700)}
-let moodT=0;function moodTick(dt){if(!S||!playing||tutOn())return;moodT+=dt;if(moodT<30)return;moodT=0;const b=mood();S.mood=Math.max(0,b-1);dirty=true;
-  if(b>=30&&S.mood<30)banner("😕 You're feeling down: money ×"+moodK().toFixed(2)+". Go out: the Nightclub, Rusty's Diner, the Arcade or the Café","a");renderMoodChip()}
+function moodVisit(k){const f=MOOD_FUN[k];if(!f||!S)return;S.moodAt=S.moodAt||{};const now=Date.now();if(now-(S.moodAt[k]||0)<3*60000)return;S.moodAt[k]=now;moodAdd(f[0]);
+  setTimeout(()=>banner(moodFace()[0]+" +"+f[0]+" mood · "+f[1],"g"),700)}
+let moodT=0;function moodTick(dt){if(!S||!playing||tutOn())return;moodT+=dt;if(moodT<90)return;moodT=0;const b=mood();S.mood=Math.max(25,b-1);dirty=true;
+  if(b>=35&&S.mood<35)banner("😕 Feeling down · go out (Nightclub, Diner, Arcade, Café)","a");renderMoodChip()}
 function renderMoodChip(){const el=$("moodChip");if(!el||!S)return;el.hidden=false;const[f,n]=moodFace(),p=Math.round((moodK()-1)*100),h=`<span class="pk">${f}</span><span class="pt">${n}</span><span class="pr" style="color:${p>=0?"var(--up)":"var(--down)"}">${p>=0?"+":""}${p}%</span>`;if(el.innerHTML!==h)el.innerHTML=h}
 const mult=()=>moodK()*capM(rawMult())*moonK()*rbK()*ovK()*megaK()*tierK()*crewK()*chK()*gearK();
 const gearK=()=>(1+accFx("money"))*(S&&S.gup&&S.gup.sense?1.15:1)*(S&&S.gup&&S.gup.touch?2:1);
@@ -1965,7 +1965,7 @@ const VEH_IC={bike:"🚲",scooter:"🛴",car:"🏎️",truck:"🛻",classic:"�
 const rideBack=()=>{const ok=k=>S.veh[k]&&!(S.broke&&S.broke.k===k);if(S.lastRide&&ok(S.lastRide))return S.lastRide;const o=VEH.filter(v=>ok(v.k)).sort((a,b)=>b.sp-a.sp);return o.length?o[0].k:null};
 function renderRideBtn(){const el=$("rideBtn");if(!el||!S)return;const r=ride(),back=r?null:rideBack(),show=$("room").hidden&&!!(r||back);el.hidden=!show;if(!show)return;
   el.classList.toggle("up",!!S.up.phone);const h=r?`<span>🚶</span><small>Walk</small>`:`<span>${VEH_IC[back]||"🚗"}</span><small>Ride</small>`;if(el.innerHTML!==h)el.innerHTML=h}
-$("moodChip").onclick=()=>{audioOn();banner(moodFace()[0]+" Mood "+Math.round(mood())+"/100 · money ×"+moodK().toFixed(2)+". It drops while you work. Go out to lift it: Nightclub +15, Rusty's Diner +10, Arcade +10, Café, Night Market, Mall, Muscle Beach, Lucky Lou's, Docks +6","u")};
+$("moodChip").onclick=()=>{audioOn();banner(moodFace()[0]+" Go out to feel better: 🪩 Nightclub · 🍔 Diner · 🕹️ Arcade · ☕ Café","u")};
 $("rideBtn").onclick=()=>{audioOn();const r=ride();if(r){S.lastRide=r;S.cur="walk";banner("Walking","u")}else{const k=rideBack();if(!k)return;S.cur=k;banner("Riding your "+vehName(k),"u")}dirty=true;SFX.door();buzz(10);renderRideBtn()};
 const phoneMkts=()=>[["market",MKT.market,"Everything, fair prices",1],["flea",MKT.flea,"Cheap, more fakes",regionOpen("beach")],["lux",MKT.lux,"Pricey, pays the most",regionOpen("downtown")]].filter(x=>x[1]&&x[3]);
 function openPhone(){room="phone";$("room").hidden=false;const L=phoneMkts();
@@ -2611,7 +2611,7 @@ function openCafe(){
       <button class="bigbtn alt2" id="bShift">☕ Work a barista shift<small>${S.baristaDay===dayKey()?"You already worked today · come back tomorrow":"60 seconds of orders · tips and a best score"}${S.baristaBest?" · best "+S.baristaBest+" drinks":""}</small></button>
       <div class="perks">${CAFE.map(c=>`<button class="perk nopic${bk===c.k?" bought":""}${cafeLeft(c.k)>0?" cfon":""}" data-c="${c.k}" ${price(c)>S.cash?"disabled":""}><span class="t">${c.t}${cafeLeft(c.k)>0?` <em class="cfact" data-left="${c.k}">ACTIVE · ${mmss(cafeLeft(c.k))}</em>`:""}</span><span class="d">${c.d}</span><span class="c">${fmt(price(c))}</span></button>`).join("")}</div><div class="sechead"><h3>Dates</h3><span class="eyebrow">${S.partner?"❤ "+esc(S.partner.n):"Numbers from the Nightclub"}</span></div>${dateList()}${scratchList()}</div>`;
     $("leaveBtn").onclick=closeRoom;{const bs=$("bShift");if(bs)bs.onclick=()=>{if(S.baristaDay===dayKey())return banner("Your shift is done for today","a");baristaShift(()=>openCafe())}}bindDates(()=>draw());$("room").querySelectorAll("[data-scr]").forEach(b=>b.onclick=()=>scratchCard(b.dataset.scr,()=>draw()));
-    $("room").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const c=CAFE.find(x=>x.k===b.dataset.c),p=price(c);if(S.cash<p)return;const e0=S.energy;S.cash-=p;c.fx(S);moodAdd(2);SFX.buy();dirty=true;
+    $("room").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const c=CAFE.find(x=>x.k===b.dataset.c),p=price(c);if(S.cash<p)return;const e0=S.energy;S.cash-=p;c.fx(S);moodAdd(5);SFX.buy();dirty=true;
       const got=Math.round(S.energy-e0),t=cafeLeft(c.k),msg=t>0?(c.k==="meal2"?"WELL FED":"PROTEIN")+" "+mmss(t):got>0?"+"+got+" ENERGY":"ENERGY FULL";
       draw(c.k);const nb=$("room").querySelector(`[data-c="${c.k}"]`);floatAt(nb||b,msg,"var(--up)");confetti(30);
       banner(c.t+" · "+(t>0?(c.k==="meal2"?"well fed":"protein")+" for "+mmss(t)+" (bigger green zone"+(c.k==="meal2"?", faster energy":"")+")":got>0?"+"+got+" energy ("+Math.floor(S.energy)+"/"+maxEnergy()+")":"energy already full"),"g");updMini();renderBoostChip()});
@@ -2870,7 +2870,7 @@ function checkGoals(){
   if(g.unlock){S.unl[g.unlock]=1;banner(REGION_NAME[g.unlock]+" unlocked","a")}
   const n=GOALS[S.goal];rayText(n?n.d:"That's every goal. You're a legend, kid. Keep flipping.");goalPop(g,n);renderGoalChip();bKey="";
 }
-function goalPop(g,n){const d=document.createElement("div");d.className="goalpop";d.innerHTML=`<span class="eyebrow">Goal complete</span><b>${esc(g.t)}</b><em>+${fmt(g.rw)}</em>${n?`<small>Next: ${esc(n.t)}</small>`:""}`;document.body.appendChild(d);confetti(140);flash("#ffcc33",.25);shake(5,.3);setTimeout(()=>d.classList.add("out"),2300);setTimeout(()=>d.remove(),2800)}
+function goalPop(g,n){if(typeof tutOn==="function"&&tutOn()){banner("✅ "+g.t+" · +"+fmt(g.rw),"g");return}const d=document.createElement("div");d.className="goalpop";d.innerHTML=`<span class="eyebrow">Goal complete</span><b>${esc(g.t)}</b><em>+${fmt(g.rw)}</em>${n?`<small>Next: ${esc(n.t)}</small>`:""}`;document.body.appendChild(d);confetti(140);flash("#ffcc33",.25);shake(5,.3);setTimeout(()=>d.classList.add("out"),2300);setTimeout(()=>d.remove(),2800)}
 function renderGoalChip(){if(S.goal<10&&GNAV!==S.goal&&!(S.flags&&S.flags.gnavOff))GNAV=S.goal;
   const g=GOALS[S.goal],el=$("goalChip");
   el.hidden=!g;el.classList.toggle("nav",GNAV===S.goal);if(g)el.innerHTML=`<span class="pk">${GNAV===S.goal?"➜ ":""}Goal ${S.goal+1}/${GOALS.length}</span><span class="pt">${g.t}</span><span class="pr">${fmt(g.rw)}</span>`;
@@ -5712,7 +5712,8 @@ function launchEnd(){const L=RL;if(!L)return;RL=null;const d=L.d;let msg,good=L.
   banner(good?d.n+" reached":"Launch failed",good?"g":"r");$("lBack").onclick=$("leaveBtn").onclick=L.back;updMini()}
 
 /* ================= what's new: shown once after an update ================= */
-const WN_VER=115,WN=[
+const WN_VER=116,WN=[
+ ["😄","Easier mood, shorter tutorial","Mood now falls 3× slower, never drops below 25, and going out lifts it twice as much. Happy pays up to +10%, sad costs at most 5%. The tutorial is now a few words a step, with the hand showing you where to tap.","2026-10-12T10:00"],
  ["🖥️","Made for your screen","On a computer the game now has its own layout: a sidebar with your cash, a big minimap, energy and every chip, the map beside it, wide shop screens with listings and stash side by side, and keyboard controls (WASD to walk, E to enter, Esc to leave, M map, N now, P phone, R ride). Tablets get a roomier layout too. Also fixed: friends no longer stay frozen inside a house after they leave.","2026-10-10T01:00"],
  ["😄","Mood","You now have a mood (the face chip at the top). It slowly drops while you work. Go out to lift it: the Nightclub, Rusty's Diner, the Arcade, the Café and more. Happy pays up to +15% on everything you earn, sad costs up to 15%. Also: the Frontier Road now matches World 4's paths, and the phone lets you pick which market to open.","2026-10-10T00:00"],
  ["🧭","A friendlier start","A longer tutorial now explains the cash panel, the chip row (it slides sideways, and you can drag it with a mouse), the Goal chip and the Now button. Every place shows a short card the first time you walk in. New players start in Calm mode (fewer coins and confetti, no flashes or shaking), which you can switch in Settings, and the Vince story and random events wait until the tutorial is done.","2026-10-09T23:00"],
@@ -9531,18 +9532,18 @@ let EDF=.3;
 /* ================= tutorial: one short hint at a time, done by playing, skippable ================= */
 const MKTR=()=>room==="market"||room==="flea"||room==="lux";
 const TUT=[
- {t:"This is a game about <b>buying cheap and selling for more</b>. Tap <b>Market</b> at the bottom to go shopping.",go:"market",ok:()=>room==="market"||S.stats.flips>0,aim:()=>room?null:'.places [data-go="market"]'},
- {t:"Tap a listing with a green <b>✓ DEAL</b> to buy it. It goes into your stash below.",where:MKTR,ok:()=>S.stash.length>0||S.stats.flips>0,aim:()=>".lst.fresh.steal:not(.broke),.lst.fresh:not(.broke):not(.mys)"},
- {t:"Now tap the item in <b>your stash</b> to sell it for more than you paid. That's a flip!",where:MKTR,ok:()=>S.stats.flips>0,aim:()=>".itm.up,.itm"},
- {t:"First flip done 💰 Tap <b>Leave</b> (top left) to go back to town.",ok:()=>!room,aim:()=>room?"#leaveBtn":null},
- {t:"Top left is your <b>cash</b>, your level and your money multiplier. The bar under it is <b>energy</b>: buying, selling and lifting use it.",out:1,next:1,aim:()=>".cashchip"},
- {t:"This row of chips <b>slides sideways</b>. Swipe it, or drag it with your mouse, to see them all. Tap a chip to open it.",out:1,next:1,ok:()=>{const h=$("hudpills");return h&&h.scrollLeft>40},aim:()=>"#hudpills"},
- {t:"The <b>Goal</b> chip always says what to do next. Tap it and an arrow shows you the way.",out:1,next:1,aim:()=>"#goalChip"},
- {t:"Now walk to the <b>Gym</b> to get stronger. Tap it at the bottom.",go:"gym",ok:()=>room==="gym"||room==="mbeach"||!!GS&&!$("room").hidden||S.stats.lifted>0,aim:()=>room?null:'.places [data-go="gym"]'},
- {t:"Tap the floor to walk to a bench or squat rack, tap the big lift button, then stop the bar in the <b>green</b>.",where:()=>room==="gym"||room==="mbeach"||!!GS&&!$("room").hidden,ok:()=>S.stats.lifted>0,aim:()=>"#gLift:not([disabled]),#gAct,#gCv"},
- {t:"Nice lift 💪 When your energy runs low, <b>sleep at your Apartment</b>, or grab a coffee at the Café.",next:1},
- {t:"Tap <b>Now</b> (top right) any time to see what's going on: events, deals, friends and your buildings.",out:1,next:1,aim:()=>"#nowBtn"},
- {t:"That's it! New places unlock as you level up, and each one explains itself the first time you go in. Too busy on screen? Turn on <b>Calm mode</b> in Settings.",next:1}];
+ {t:"👆 Tap <b>Market</b>",go:"market",ok:()=>room==="market"||S.stats.flips>0,aim:()=>room?null:'.places [data-go="market"]'},
+ {t:"🛒 Tap a <b>✓ DEAL</b> to buy it",where:MKTR,ok:()=>S.stash.length>0||S.stats.flips>0,aim:()=>".lst.fresh.steal:not(.broke),.lst.fresh:not(.broke):not(.mys)"},
+ {t:"💰 Tap it again to <b>sell for more</b>",where:MKTR,ok:()=>S.stats.flips>0,aim:()=>".itm.up,.itm"},
+ {t:"🎉 Nice flip! Tap <b>Leave</b>",ok:()=>!room,aim:()=>room?"#leaveBtn":null},
+ {t:"💵 Your cash · ⚡ your energy",out:1,next:1,aim:()=>".cashchip"},
+ {t:"👉 Swipe these chips sideways",out:1,next:1,ok:()=>{const h=$("hudpills");return h&&h.scrollLeft>40},aim:()=>"#hudpills"},
+ {t:"🎯 <b>Goal</b> = what to do next",out:1,next:1,aim:()=>"#goalChip"},
+ {t:"🏋️ Tap <b>Gym</b>",go:"gym",ok:()=>room==="gym"||room==="mbeach"||!!GS&&!$("room").hidden||S.stats.lifted>0,aim:()=>room?null:'.places [data-go="gym"]'},
+ {t:"💪 Stop the bar in the <b>green</b>",where:()=>room==="gym"||room==="mbeach"||!!GS&&!$("room").hidden,ok:()=>S.stats.lifted>0,aim:()=>"#gLift:not([disabled]),#gAct,#gCv"},
+ {t:"😴 Tired? Sleep at home or grab a ☕",next:1},
+ {t:"📰 <b>Now</b> = what's happening",out:1,next:1,aim:()=>"#nowBtn"},
+ {t:"🚀 You're ready. Go get rich!",next:1}];
 const tutOn=()=>!!(S&&S.tut!=null&&S.tut<TUT.length);
 let tutKey="",tutAuto=0;
 // where to point for each step (the most useful matching element that's on screen)
@@ -9556,13 +9557,13 @@ function tutHand(){let h=$("tutHand");const st=tutStep(),sel=st&&st.aim&&!tutHid
 function tutHidden(st){return (st.go||st.out)&&room||st.where&&!st.where()}
 function tutStep(){return S&&S.tut!=null&&S.tut<TUT.length?TUT[S.tut]:null}
 function tutGo(){const st=tutStep();return st&&st.go&&!room?PL[st.go]:null}
-function howToPlay(){if(S.flags.intro)return;S.flags.intro=1;dirty=true;const C=[["🛒","Find a deal","Shops sell items below what they're worth. Look for the green <b>✓ DEAL</b> tag."],["💰","Sell for more","Sell what you bought for more than you paid. The difference is your profit."],["🚀","Get rich, unlock more","Profit levels you up, opens new places and new worlds. The goal at the top always tells you what's next."]];let i=0;
+function howToPlay(){if(S.flags.intro)return;S.flags.intro=1;dirty=true;const C=[["🛒","Buy cheap","Look for <b>✓ DEAL</b>"],["💰","Sell for more","That's your profit"],["🚀","Get rich","Unlock new places and worlds"]];let i=0;
   const o=document.createElement("div");o.className="wnov htp";const draw=()=>{const[c,t,d]=C[i];o.innerHTML=`<div class="wnsheet"><div class="htpic">${c}</div><span class="eyebrow">How to play · ${i+1}/${C.length}</span><h2>${t}</h2><p class="lede">${d}</p><div class="htpdots">${C.map((_,j)=>`<i class="${j===i?"on":""}"></i>`).join("")}</div><button class="cta" id="htpGo"><span>${i<C.length-1?"Next":"Let's play"}</span>${ARROW}</button></div>`;
     o.querySelector("#htpGo").onclick=()=>{if(i<C.length-1){i++;draw();SFX.tick(.6)}else{o.remove();audioOn();SFX.level()}}};draw();document.body.appendChild(o)}
 // the first time you walk into a place, a short card says what it's for
 // walkable places (scenes) get a first-visit card too
-const SCN_TIPS={house_own:["Your home","Tap a name at the bottom (or the floor) to walk there, then tap the big button to use it: <b>Bed</b> sleeps and refills energy, <b>Fridge</b> is a free snack, <b>Wardrobe</b> changes your look, <b>Desk</b> has your property, garage, missions and achievements. Tap <b>Go outside</b> at the bottom to leave."],
- house_visit:["Visiting a friend","You're in someone else's house. Walk around and look at their stuff, and use the <b>Guestbook</b> to ring the bell or leave a gift. Tap <b>Go outside</b> at the bottom to leave."]};
+const SCN_TIPS={house_own:["Your home","🛏️ Bed = sleep · 🧊 Fridge = snack · 👕 Wardrobe = look · 💻 Desk = everything else. Tap a name below to use it."],
+ house_visit:["A friend's house","Look around · sign the 📖 <b>Guestbook</b>"]};
 const scnTipKey=()=>!room&&SCN&&SCN.kind==="house"?(SCN.owner?"house_visit":"house_own"):"";
 let ftipK="";function ftipTick(){let el=$("ftip");const free=!tutOn()&&!document.querySelector(".wnov,.achpop")&&$("overlay").hidden,seen=S.flags.gseen||{},sk=scnTipKey(),k=!free?"":room&&GUIDE[room]&&!seen[room]?room:sk&&!seen[sk]?sk:"";
   if(k===ftipK)return;ftipK=k;if(!el){el=document.createElement("div");el.id="ftip";el.hidden=true;document.body.appendChild(el)}if(!k){el.hidden=true;return}
