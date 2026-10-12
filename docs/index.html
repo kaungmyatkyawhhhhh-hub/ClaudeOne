@@ -528,6 +528,7 @@ html.desk .room .tapbtn::after,html.desk #liftBtn::after{content:"Space";margin-
 .vmsg.out{opacity:0;transform:translateX(-20px);transition:all .2s}
 @keyframes vin{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}@keyframes vglow{50%{box-shadow:inset 4px 0 0 var(--vc),0 0 0 5px color-mix(in oklab,var(--vc) 35%,transparent),0 14px 34px rgba(0,0,0,.35)}}
 html.desk .vmsg{left:20px}
+body.tutlock #leaveBtn{visibility:hidden;pointer-events:none}
 .achpop{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 92px);transform:translate(-50%,-30px);opacity:0;z-index:72;width:min(320px,84vw);padding:10px 14px;border-radius:20px;background:var(--bg);box-shadow:0 0 0 3px #ffcc33,0 16px 50px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:3px;animation:apIn .4s cubic-bezier(.2,1.5,.4,1) forwards}
 .achpop b{font-family:var(--display);font-size:1rem}.achpop .eyebrow{font-size:.62rem}.achpop small{color:var(--muted);font-size:.8rem}.achpop em{font-style:normal;font-family:var(--display);font-weight:900;font-size:1.05rem;color:var(--up)}.achpop em.sm{font-size:.95rem}
 .achbtns{display:flex;gap:8px;margin-top:6px}.achbtns .cta{flex:1;padding:7px;font-size:.85rem;justify-content:center;min-height:0}.achpop.out{animation:apOut .4s ease forwards}
@@ -1961,7 +1962,7 @@ const PLACE_SND={cards:()=>{for(let i=0;i<6;i++)tone(1800+Math.random()*900,.025
  storage:()=>{tone(300,.4,{type:"sawtooth",vol:.03,to:200})},raceoff:()=>{tone(90,.35,{type:"sawtooth",vol:.05,to:180})}};
 function placeSnd(k){(PLACE_SND[k]||SFX.door)()}
 function openRoom(k){
-  {const cl=placeClosed(k);if(cl){banner(cl,"a");SFX.nope();autoEnter=null;return}}moodVisit(k);
+  {const cl=placeClosed(k);if(cl){banner(cl,"a");SFX.nope();autoEnter=null;return}}if(tutOn()&&!tutAllows(k)){banner("👆 Follow the hand first","a");SFX.nope();autoEnter=null;return}moodVisit(k);
   if(k==="home"&&!SCN&&S){$("mpSheet").hidden=true;enterHouse(null);return}
   if(k==="arena"&&!SCN&&S){$("mpSheet").hidden=true;enterArena();return}
   $("mpSheet").hidden=true;
@@ -2343,7 +2344,7 @@ addEventListener("keydown",e=>{if(typing(e)||e.ctrlKey||e.metaKey||e.altKey||!S|
   // Space / Enter press the main action of a mini-game (arm wrestle, lift, boxing, races, gym stations)
   if((k===" "||k==="enter")&&room&&!e.repeat){const PD=["tapBtn","bxHit","prGo","bwGo"];for(const id of ["tapBtn","liftBtn","bxHit","goBtn","prGo","bwGo","gLift","gCurl","gComp"]){const b=$(id);if(b&&!b.disabled&&b.offsetParent!==null){e.preventDefault();if(PD.includes(id)&&!(id==="tapBtn"&&!(A&&A.state==="go")))b.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true}));else b.click();return}}}
   if(e.repeat)return;
-  if(k==="escape"){if(!$("mmBig").hidden){$("mmBig").hidden=true;return}const lb=$("leaveBtn");if(room&&lb){lb.click();return}if(!$("mpSheet").hidden){$("mpSheet").hidden=true;return}return}
+  if(k==="escape"){if(!$("mmBig").hidden){$("mmBig").hidden=true;return}const lb=$("leaveBtn");if(room&&lb&&!document.body.classList.contains("tutlock")){lb.click();return}if(!$("mpSheet").hidden){$("mpSheet").hidden=true;return}return}
   if(room||!$("overlay").hidden)return;
   if(k==="e"||k==="enter"){const b=$("enterBtn");if(b){e.preventDefault();b.click()}return}
   const click=id=>{const b=$(id);if(b&&!b.hidden&&b.offsetParent!==null)b.click()};
@@ -9587,6 +9588,7 @@ function tutHand(){let h=$("tutHand");const st=tutStep(),sel=st&&st.aim&&!tutHid
   if(!h){h=document.createElement("div");h.id="tutHand";h.innerHTML='<i></i><b>👆</b>';document.body.appendChild(h)}
   const r=el.getBoundingClientRect(),big=el.id==="gCv";h.hidden=false;h.style.left=(r.left+r.width/2)+"px";h.style.top=(big?r.top+r.height*.6:r.top+r.height/2)+"px";
   const ring=h.firstChild;ring.style.width=(big?60:r.width+10)+"px";ring.style.height=(big?60:r.height+10)+"px"}
+function tutAllows(k){const st=tutStep();if(!st)return true;if(st.go)return k===st.go||(st.go==="gym"&&k==="mbeach");return false}
 function tutHidden(st){return (st.go||st.out)&&room||st.where&&!st.where()}
 function tutStep(){return S&&S.tut!=null&&S.tut<TUT.length?TUT[S.tut]:null}
 function tutGo(){const st=tutStep();return st&&st.go&&!room?PL[st.go]:null}
@@ -9604,11 +9606,11 @@ let ftipK="";function ftipTick(){let el=$("ftip");const free=!tutOn()&&!document
   $("ftipX").onclick=()=>{S.flags.gseen=S.flags.gseen||{};S.flags.gseen[k]=1;dirty=true;el.hidden=true;SFX.tick(.5)}}
 function tutTick(dt){ftipTick();let el=$("tut");const st=tutStep();tutHand();document.body.classList.toggle("intut",!!st);
   if(st){if(st.ok&&st.ok()){S.tut++;dirty=true;tutAuto=0;SFX.tick(.6);buzz(8);return}if(st.auto){tutAuto+=dt;if(tutAuto>st.auto){S.tut++;dirty=true;tutAuto=0;return}}}
-  document.body.classList.toggle("tutearly",!!st&&S.tut<5);
+  document.body.classList.toggle("tutearly",!!st&&S.tut<5);document.body.classList.toggle("tutlock",!!st&&!!st.where&&st.where());
   const blocked=!st||tutHidden(st)||!$("overlay").hidden||!$("perkSheet").hidden||!$("mpSheet").hidden,k=blocked?"":S.tut+"|"+(room?1:0);
   if(!el){el=document.createElement("div");el.id="tut";el.hidden=true;document.body.appendChild(el)}
   if(k!==tutKey){tutKey=k;if(blocked){el.hidden=true;return}el.hidden=false;const last=S.tut===TUT.length-1;
-    el.innerHTML=`<span class="n">${S.tut+1}/${TUT.length}</span><p>${st.t}</p><div class="tutb">${st.next?`<button id="tutN" class="go">${last?"Let's go":"Next"}</button>`:""}${last?"":`<button id="tutX">Skip all</button>`}</div>`;
+    el.innerHTML=`<span class="n">${S.tut+1}/${TUT.length}</span><p>${st.t}</p><div class="tutb">${st.next?`<button id="tutN" class="go">${last?"Let's go":"Next"}</button>`:""}</div>`;
     const nx=$("tutN");if(nx)nx.onclick=()=>{S.tut++;dirty=true;tutKey="~";SFX.tick(.6)};
     const sk=$("tutX");if(sk)sk.onclick=()=>{S.tut=99;banner("Tutorial skipped · replay it any time in Settings","a");dirty=true;tutKey="~";el.hidden=true}}
   if(!el.hidden){const b=$("bottom");if(room){el.style.bottom="auto";el.style.top="calc(66px + env(safe-area-inset-top,0px))"}else{el.style.top="auto";el.style.bottom=((b?b.offsetHeight:90)+8)+"px"}}}
