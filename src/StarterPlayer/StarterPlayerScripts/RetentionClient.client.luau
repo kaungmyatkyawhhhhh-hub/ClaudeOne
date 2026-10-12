@@ -65,7 +65,10 @@ end)
 ------------------------------------------------------------------------
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
-	if kind == "Reracked" then
+	if kind == "SoftShutdown" then
+		-- (ShutdownService: this server is closing for an update; the teleport follows in a second)
+		Notify.Show("The gym is updating. Moving you to the new version, your progress is saved.", nil, "shutdown")
+	elseif kind == "Reracked" then
 		Notify.Show("Plate re-racked. +" .. tostring(info.coins) .. " coins.", nil, "rerack")
 		Audio.PlayUI("Click")
 	elseif kind == "DnaTokenBought" then

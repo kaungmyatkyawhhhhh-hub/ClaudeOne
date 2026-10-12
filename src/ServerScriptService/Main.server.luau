@@ -1,5 +1,14 @@
 local Players = game:GetService("Players")
 
+-- Soft shutdown (ShutdownService): a holding server only sends its players back to the updated game; nothing else runs
+-- there (no data is loaded, so no session lock is taken).
+local ShutdownService = require(script.Parent.Server.ShutdownService)
+if ShutdownService.IsHoldingServer() then
+	ShutdownService.StartHolding()
+	return
+end
+ShutdownService.Start()
+
 local PlayerData = require(script.Parent.Server.PlayerData)
 local MachineService = require(script.Parent.Server.MachineService)
 local BodyService = require(script.Parent.Server.BodyService)

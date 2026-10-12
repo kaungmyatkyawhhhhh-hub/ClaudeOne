@@ -77,6 +77,7 @@ for where everything sits in Studio.
 - `Server/MonetizationService`: pass ownership + effects, product receipts, server boost.
 - `Server/ShowOffService`: leaderboard wall, statue of the strongest player, emotes and high fives (creates the `Emote` remote).
 - `Server/ArmWrestleService`: the arm wrestling table, matches and practice opponents (creates the `ArmWrestle` remote).
+- `Server/ShutdownService`: soft shutdown. On a server close (update) everyone is teleported into one reserved holding server (no data loaded there; the loading screen says "Updating the gym") and after ~6 s back to a fresh public server. `Main` starts only this service in a holding server.
 - `Main` starts newer services in protected calls (a failing one can't stop saving or machines).
 
 **Remotes** (`ReplicatedStorage/Remotes`)

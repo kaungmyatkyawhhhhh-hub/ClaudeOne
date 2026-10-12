@@ -2,7 +2,18 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (13 Oct): 7'0" Growth Spurt cap + NPC size glitch
+## LATEST (13 Oct): soft shutdown
+- `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all
+  servers" / "Migrate to latest update"), players get a small note ("The gym is updating..."), are teleported together into
+  one reserved holding server, and after 6 s go back to a fresh public server on the new version. Saves run as before
+  (BindToClose + leaving by teleport); the holding server runs ONLY this service (`Main` returns early), so it never
+  loads data or takes a session lock; its loading screen says "Updating the gym / Taking you to the new version. Your
+  progress is saved." Teleports retry (4 tries + TeleportInitFailed). Off in Studio. A private server's players come back
+  to a public server.
+- Tested in Studio: the note and the holding screen (via the `SoftShutdown` Workspace attribute); the teleports themselves
+  only work in a live game (test after publishing: join, then "Migrate to latest update").
+
+## Before that (13 Oct): 7'0" Growth Spurt cap + NPC size glitch
 - **Cap:** `Config/GrowthSpurts.MaxHeightInches = 84` (`MaxHeight` kept as an alias). `GetHeight` clamps to it;
   `MaxSpurts()` = 6 (the spurt that lands on exactly 7'0"); `IsMaxed`; `Progress().maxed` makes `ready` false, so
   `PlayerData.GrowthSpurt` refuses on the server (nothing charged: a spurt never cost anything). Muscles keep growing.

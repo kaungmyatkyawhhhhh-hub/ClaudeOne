@@ -181,13 +181,30 @@ local loaded = 0 -- plates on each side
 local lastPlate = 0
 local step, stepAt = 0.05, os.clock()
 local loadedAt = nil
+local updating = false -- (soft shutdown holding server, below: the label stays "Updating the gym")
 
 local function setStep(value: number, label: string?)
 	if value > step then
 		step, stepAt = value, os.clock()
 	end
-	if label then status.Text = label end
+	if label and not updating then status.Text = label end
 end
+
+-- Soft shutdown (ShutdownService): the game was updated and this is the short stop on the way to a new server. The game
+-- never loads here, so the screen stays and says why until the teleport takes over.
+local function checkUpdating()
+	if updating or workspace:GetAttribute("SoftShutdown") ~= true then return end
+	updating = true
+	status.Text = "Updating the gym"
+	tip.Text = "Taking you to the new version. Your progress is saved."
+	setStep(0.9)
+end
+workspace:GetAttributeChangedSignal("SoftShutdown"):Connect(checkUpdating)
+checkUpdating()
+task.spawn(function() -- (the attribute can arrive with the game's first load, without a change signal)
+	if not game:IsLoaded() then game.Loaded:Wait() end
+	checkUpdating()
+end)
 
 local function menuProgress()
 	local value = player:GetAttribute("MenuLoad")
@@ -222,7 +239,7 @@ task.spawn(function()
 	local index = 0
 	while gui.Parent do
 		index = index % #order + 1
-		tip.Text = TIPS[order[index]]
+		tip.Text = if updating then "Taking you to the new version. Your progress is saved." else TIPS[order[index]]
 		TweenService:Create(tip, TweenInfo.new(0.3), { TextTransparency = 0.35 }):Play()
 		task.wait(TIMING.Tip)
 		if not gui.Parent then break end
