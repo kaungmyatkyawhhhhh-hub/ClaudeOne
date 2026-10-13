@@ -63,6 +63,14 @@ in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minute
   window and puts where to go in the top band. The old login calendar card and the quest-tracker hide toggle are gone
   (the Quests pill opens the window now; its badge counts quests ready to claim + a coach quest ready to hand in).
   The tutorial band now steps aside while any window is open. Screenshots: ui_compare_v2/05_quests_*.
+- 07 Stats (done): the Muscles tile, the GROW tile (when not ready) and the machine body map open it. Muscles tab =
+  your body card (the muscle figure lit by level, "101% SIZE", "Physique: Shredded"), 8 cards (Chest, Back, Shoulders,
+  Arms, Legs, Core, Forearms, Calves: genetics grade badge + a bar in the grade's color with the % toward the Growth
+  Spurt goal) and the Growth Spurt row (next height, x/6 groups, GROW!). Lifts tab = every open machine with its main
+  muscle, heaviest weight lifted and weights bought. Genetics tab = the six grades with "Grows x1.20", frame and body
+  type perks, overall word, OPEN GENETICS. "LABELS ON / OFF" in the window does the same as the Stats tile. The Growth
+  Spurt moment is now a big gold line + "You're now 4'6". Gains x1.25 forever!" in the screen center (no duplicate
+  toast). Fixed: the GROW tile did nothing when not ready (OpenStats had no listener). Screenshots: ui_compare_v2/07_*.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by

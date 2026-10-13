@@ -1,17 +1,19 @@
--- StatsClient: the Stats button, the Muscles button and the "Your muscles" panel.
---  * Stats (menu button): shows / hides your stats as labels around your character in the world (StatsLabelsClient does
+-- StatsClient: the Stats tile, the Muscles tile and the Stats window (owner's UI v2, mockup 07_stats).
+--  * Stats (menu tile): shows / hides your stats as labels around your character in the world (StatsLabelsClient does
 --    the drawing; this script fires UIBus.StatsLabels). Hidden by default. The tutorial's "open Stats" step counts it.
---  * While the labels are shown a small "Muscles" button sits at the bottom center of the screen (above the machine
---    panel while you lift). It opens the full panel.
---  * "Your muscles" panel: the Growth Spurt goal (with the Growth Spurt button when ready), then the six groups as
---    cards: grade badge, level or Max (soft gold), genetics, each muscle with a bar and its level, "Needs work" (soft
---    red) on the weakest group when there is no tie, and the group's exercises on its bottom line. It sits on top of
---    everything, the rest of the HUD is switched off
---    behind it, every card fits (the area scrolls on short screens), and it closes with the X, Esc or a tap outside.
+--    The window has the same switch ("LABELS ON / OFF" next to the X).
+--  * Muscles (menu tile), the GROW tile (UIBus.OpenStats) and the machine body map (UIBus.OpenMuscles) open the window.
+--    Tabs above it:
+--      Muscles   left: your body card (the muscle figure lit by level, "71% SIZE", "Physique: Aesthetic"); right: 8 cards
+--                (Chest, Back, Shoulders, Arms, Legs, Core, Forearms, Calves) with the genetics grade badge, the name and a
+--                bar with the % toward the Growth Spurt goal; under them the Growth Spurt row (next height, groups at
+--                their goal, GROW when ready, "MAX GROWTH SPURT REACHED" at 7'0").
+--      Lifts     every open machine: its main muscle, the heaviest weight you lifted and the weights bought.
+--      Genetics  the six grades with their multipliers, frame and body type, the overall grade, and a button to the
+--                genetics screen (reroll there).
 --  * The Growth Spurt moment (a line of text, a bell, a chalk burst) is played here too.
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -22,8 +24,9 @@ local Genetics = require(Config.Genetics)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
+local BodyFigure = require(Shared.UI.BodyFigure)
 local Icons = require(Shared.UI.Icons)
-local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
@@ -33,337 +36,354 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
-local Left, Top = Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top
 
-local CARD_HEIGHT = 160 -- fits a group's name row, genetics row, up to 4 muscle rows and its exercises line
-local ROW_HEIGHT = 16
+local W, H = 566, 290 -- the window (mockup px; clear of the left menu on a phone)
+local BODY_W = 160 -- the body card on the Muscles tab
+local CARD_H = 38
+
+-- the 8 cards: the six groups plus forearms and calves on their own (grade = their group's genetics)
+local CARDS = {
+	{ id = "Chest", group = "Chest" }, { id = "Back", group = "Back" }, { id = "Shoulders", group = "Shoulders" },
+	{ id = "Arms", group = "Arms" }, { id = "Legs", group = "Legs" }, { id = "Core", group = "Core" },
+	{ id = "Forearms", group = "Arms", muscle = "Forearms" }, { id = "Calves", group = "Legs", muscle = "Calves" },
+}
+-- the physique word under the body card, by the average muscle look (1 = the full aesthetic look)
+local PHYSIQUES = { { 0.15, "Beginner" }, { 0.4, "Getting Fit" }, { 0.7, "Athletic" }, { 1, "Aesthetic" }, { 1.25, "Shredded" }, { math.huge, "Mass Monster" } }
+local OVERALL_WORD = { S = "Genetic Freak", A = "Blessed", B = "Gifted", C = "Average", D = "Hardgainer" }
 
 ------------------------------------------------------------------------
--- The Stats button: labels around the character, on / off
+-- Tiles
 ------------------------------------------------------------------------
 local statsButton = SideMenu.Add("Stats", "Stats", Icons.Flex, 1)
+local musclesTile = SideMenu.Add("Muscles", "Muscles", Icons.Stats, 2)
 local labelsOn = false
 local musclesOpen = false
-local musclesTile = nil -- (set below, with the left menu tile)
 
 ------------------------------------------------------------------------
--- The "Your muscles" panel
+-- Window
 ------------------------------------------------------------------------
-local screen = Theme.ScreenGui({ Name = "MusclesScreen", DisplayOrder = 60, Enabled = false, Parent = playerGui }) -- above notifications (50)
-screen.ScreenInsets = Enum.ScreenInsets.None
-local backdrop = New("TextButton", { Name = "Backdrop", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = screen }) -- (no dark backdrop: the world is blurred instead)
-local windowRoot = New("Frame", {
-	Name = "WindowRoot",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromScale(0.94, 0.92),
-	BackgroundTransparency = 1,
-	Parent = Theme.SafeArea(backdrop),
-}, { Theme.Limit(Vector2.new(300, 220), Vector2.new(900, 680)) })
-local window = Theme.Panel({
-	Name = "Window",
-	Size = UDim2.fromScale(1, 1),
-	Active = true, -- taps inside the window never reach the backdrop (which closes it)
-	Parent = windowRoot,
-}, { Theme.Pad("M"), Theme.List(Vertical, "S", Left, Top) })
--- frosted glass: light and see-through with a thin white border
-window.BackgroundColor3 = Color3.new(1, 1, 1)
-window.BackgroundTransparency = 0.85
-local windowStroke = window:FindFirstChildOfClass("UIStroke")
-if windowStroke then
-	windowStroke.Color = Color3.new(1, 1, 1)
-	windowStroke.Transparency = 0.6
+local pages = {}
+local currentTab = "Muscles"
+local refreshScreen -- (below)
+local modal = Kit.Modal({ name = "MusclesScreen", title = "Stats", icon = "biceps-flexed", width = W, height = H, displayOrder = 27,
+	tabs = { { id = "Muscles", text = "Muscles", icon = "biceps-flexed" }, { id = "Lifts", text = "Lifts", icon = "dumbbell" },
+		{ id = "Genetics", text = "Genetics", icon = "star" } },
+	onTab = function(id)
+		currentTab = id
+		for name, page in pairs(pages) do page.Visible = name == id end
+		refreshScreen()
+	end })
+for _, id in ipairs({ "Muscles", "Lifts", "Genetics" }) do
+	pages[id] = New("Frame", { Name = id, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = id == "Muscles", Parent = modal.body })
 end
 
--- the world blurs behind the panel (tweened; always cleared when it closes)
-local Lighting = game:GetService("Lighting")
-local oldBlur = Lighting:FindFirstChild("MusclesBlur")
-if oldBlur then oldBlur:Destroy() end
-local blur = Instance.new("BlurEffect")
-blur.Name = "MusclesBlur"
-blur.Size = 0
-blur.Enabled = false
-blur.Parent = Lighting
-local blurToken = 0
-local function setBlur(on)
-	blurToken += 1
-	local token = blurToken
-	if on then blur.Enabled = true end
-	Theme.Tween(blur, { Size = on and 16 or 0 }, 0.25)
-	if not on then
-		task.delay(0.35, function()
-			if token == blurToken then
-				blur.Size = 0
-				blur.Enabled = false
-			end
-		end)
-	end
+-- the stats labels switch (the Stats tile does the same)
+local labelsButton = Kit.Button("Gray", "Labels Off", { Name = "Labels", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -52, 0, 10), Parent = modal.panel },
+	{ width = 104, height = 26, textSize = 12, icon = "eye" })
+local function setLabels(on: boolean)
+	labelsOn = on
+	statsButton:SetActive(on)
+	Kit.SetButton(labelsButton, on and "Green" or "Gray", on and "Labels On" or "Labels Off")
+	UIBus.StatsLabels:Fire(on)
+	UIBus.StatsVisible:Fire(on) -- (the tutorial's "open Stats" step)
 end
 
--- title row with the close button (the window has a list layout, so the button lives in this row)
-local header = New("Frame", { Name = "Header", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = window })
-Theme.Text({ Text = "Your muscles", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, -(Theme.MinTouch + Spacing.S), 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
-local closeButton = Theme.Button("Secondary", {
-	Name = "Close",
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.fromScale(1, 0.5),
-	Size = UDim2.fromOffset(Theme.MinTouch, Theme.MinTouch),
-	Parent = header,
-}, { New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 20), BackgroundTransparency = 1 }, { Icons.Close(Colors.Text) }) })
-
--- the Growth Spurt goal
-local goal = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Parent = window },
-	{ Theme.List(Vertical, "XS", Left, Top) })
-local goalTitleRow = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Parent = goal })
-local goalTitle = Theme.Text({ Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(0.7, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = goalTitleRow })
-local goalHeight = Theme.Text({ Font = "Regular", TextSize = "Body", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.3, 1), TextXAlignment = Enum.TextXAlignment.Right, Parent = goalTitleRow })
-local goalBlocks = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = goal }, { Theme.List(Horizontal, "XS") })
-local goalFills = {}
-for index, group in ipairs(Muscles.Groups) do
-	local back = New("Frame", { LayoutOrder = index, Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = goalBlocks },
-		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
-	goalFills[group.id] = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
-end
-local goalLabel = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = goal })
--- (at 7'0" it reads "MAX GROWTH SPURT REACHED", greyed out and not pressable; the label wraps to 2 lines on narrow buttons)
-local spurtLabel = Theme.Text({ Text = "Growth Spurt", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), TextWrapped = true })
-local spurtButton = Theme.Button("Primary", { Name = "GrowthSpurt", LayoutOrder = 4, Size = UDim2.new(0, 220, 0, Theme.MinTouch), Visible = false, Parent = goal }, {
-	spurtLabel, Theme.Pad("S"),
+------------------------------------------------------------------------
+-- Muscles tab
+------------------------------------------------------------------------
+-- the body card: the muscle figure lit by level on a dark red glow
+local bodyCard = Kit.Card({ Name = "Body", Size = UDim2.new(0, BODY_W, 1, 0), Piece = "well", Parent = pages.Muscles }, {
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#5A1A1E"), Color3.fromHex("#141418")) }),
 })
-local spurtStroke = spurtButton:FindFirstChildOfClass("UIStroke")
-local function setSpurtMaxed(maxed)
-	spurtLabel.Text = maxed and "MAX GROWTH SPURT REACHED" or "Growth Spurt"
-	spurtLabel.TextColor3 = maxed and Colors.Muted or Colors.Text
-	spurtButton.BackgroundTransparency = maxed and 0.92 or Theme.Alpha.Primary
-	if spurtStroke then spurtStroke.Transparency = maxed and 0.9 or 0.6 end
-	spurtButton.Interactable = not maxed -- no press, no click, nothing sent
+bodyCard.BackgroundColor3 = Color3.new(1, 1, 1) -- (the gradient gives the color)
+local figure = New("Frame", { Name = "Figure", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10),
+	Size = UDim2.new(1, -16, 1, -66), Parent = bodyCard }, { New("UIAspectRatioConstraint", { AspectRatio = 0.8 }) })
+local front = New("Frame", { Name = "Front", BackgroundTransparency = 1, Size = UDim2.fromScale(0.5, 1), Parent = figure })
+local back = New("Frame", { Name = "Back", BackgroundTransparency = 1, Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.5, 1), Parent = figure })
+local sizeLabel = Kit.Text({ Name = "Size", Text = "", Font = "Title", TextSize = 22, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -24),
+	Size = UDim2.new(1, -8, 0, 26), Parent = bodyCard })
+local physiqueLabel = Kit.Text({ Name = "Physique", Text = "", Font = "Title", TextSize = 13, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, -8, 0, 16), Parent = bodyCard })
+
+local looks = {} -- [muscleId] = look (0..monster) for the figure
+local function muscleColor(muscleId: string)
+	local g = looks[muscleId] or 0
+	return Colors.Red:Lerp(Color3.fromHex("#FF9A8A"), math.clamp(g - 1, 0, 1)), 0.75 - 0.7 * math.clamp(g, 0, 1)
+end
+local function drawFigure()
+	front:ClearAllChildren()
+	back:ClearAllChildren()
+	BodyFigure.Draw(front, "Front", muscleColor, Color3.fromHex("#E8D9CF"), 0.82)
+	BodyFigure.Draw(back, "Back", muscleColor, Color3.fromHex("#E8D9CF"), 0.82)
 end
 
--- the six groups: cards that always fit their muscles; the area scrolls on short screens
-local scroll = New("ScrollingFrame", {
-	Name = "Groups",
-	LayoutOrder = 3,
-	Size = UDim2.fromScale(1, 0),
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	ScrollBarThickness = 4,
-	ScrollBarImageColor3 = Colors.Text,
-	ScrollBarImageTransparency = 0.6,
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	CanvasSize = UDim2.new(),
-	ScrollingDirection = Enum.ScrollingDirection.Y,
-	Parent = window,
-}, { New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
-local grid = New("UIGridLayout", {
-	CellPadding = UDim2.fromOffset(Spacing.S, Spacing.S),
-	CellSize = UDim2.new(0.5, -Spacing.S, 0, CARD_HEIGHT),
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Parent = scroll,
+local right = New("Frame", { Name = "Right", BackgroundTransparency = 1, Position = UDim2.fromOffset(BODY_W + 10, 0), Size = UDim2.new(1, -(BODY_W + 10), 1, 0),
+	Parent = pages.Muscles })
+local cardGrid = New("Frame", { Name = "Cards", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 4 * CARD_H + 3 * 6), Parent = right }, {
+	New("UIGridLayout", { CellSize = UDim2.new(0.5, -4, 0, CARD_H), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
 })
+local cards = {}
+for index, spec in ipairs(CARDS) do
+	local card = Kit.Card({ Name = spec.id, LayoutOrder = index, Parent = cardGrid }, {})
+	local badge = Kit.GradeBadge("B", 26, { Name = "Grade", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Parent = card })
+	Kit.Text({ Name = "Label", Text = spec.id, Font = "Title", TextSize = 14, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 38, 0.5, 0),
+		Size = UDim2.new(1, -112, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+	local _, setBar, fill = Kit.Bar(Colors.Green, { Name = "Bar", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(66, 16), Parent = card },
+		{ text = true, textSize = 11 })
+	cards[spec.id] = { card = card, badge = badge, setBar = setBar, fill = fill, spec = spec }
+end
 
-local cards = {} -- [groupId] = { level, disc, grade, mult, needs, muscles = { [id] = { level, fill } }, exercises }
+-- the Growth Spurt row
+local spurtRow = Kit.Card({ Name = "Spurt", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 44), Piece = "banner_gold", Parent = right }, {})
+local spurtTitle = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -130, 0, 18),
+	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = spurtRow })
+local spurtSub = Kit.Text({ Name = "Sub", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(12, 23), Size = UDim2.new(1, -130, 0, 15),
+	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = spurtRow })
+local spurtButton = Kit.Button("Gold", "Grow!", { Name = "GrowthSpurt", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = spurtRow },
+	{ width = 110, height = 30, textSize = 14, icon = "arrow-big-up" })
+local spurtCount = Kit.Text({ Name = "Count", Text = "", Font = "Title", TextSize = 18, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.fromOffset(110, 24), TextXAlignment = Enum.TextXAlignment.Right, Parent = spurtRow })
+
+------------------------------------------------------------------------
+-- Lifts tab
+------------------------------------------------------------------------
+local liftList = New("ScrollingFrame", { Name = "List", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0,
+	ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(),
+	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = pages.Lifts }, {
+	New("UIGridLayout", { CellSize = UDim2.new(0.5, -8, 0, 44), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+	New("UIPadding", { PaddingRight = UDim.new(0, 6), PaddingTop = UDim.new(0, 1), PaddingBottom = UDim.new(0, 2) }),
+})
+local liftRows = {}
+for index, machine in ipairs(Machines.List) do
+	if machine.trains == "Stamina" or not machine.tiers then continue end
+	local card = Kit.Card({ Name = machine.id, LayoutOrder = index, Parent = liftList }, {})
+	local mainId = machine.muscles and machine.muscles[1] and machine.muscles[1].id
+	local group = mainId and Muscles.ById[mainId] and Muscles.ById[mainId].group
+	Kit.IconTile("dumbbell", Colors.Blue, 30, { Name = "Tile", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Parent = card })
+	Kit.Text({ Name = "Name", Text = machine.name, Font = "Title", TextSize = 13, Position = UDim2.fromOffset(44, 5), Size = UDim2.new(1, -120, 0, 17),
+		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+	Kit.Text({ Name = "Muscle", Text = mainId and Muscles.ById[mainId].name or "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted,
+		Position = UDim2.fromOffset(44, 23), Size = UDim2.new(1, -120, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+	local best = Kit.Text({ Name = "Best", Text = "", Font = "Number", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 5),
+		Size = UDim2.fromOffset(80, 17), TextXAlignment = Enum.TextXAlignment.Right, Parent = card })
+	local tiers = Kit.Text({ Name = "Tiers", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 23),
+		Size = UDim2.fromOffset(80, 14), TextXAlignment = Enum.TextXAlignment.Right, Parent = card })
+	liftRows[machine.id] = { card = card, best = best, tiers = tiers, machine = machine, group = group }
+end
+
+------------------------------------------------------------------------
+-- Genetics tab
+------------------------------------------------------------------------
+local geneGrid = New("Frame", { Name = "Grades", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 2 * 44 + 6), Parent = pages.Genetics }, {
+	New("UIGridLayout", { CellSize = UDim2.new(1 / 3, -6, 0, 44), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+local geneCards = {}
 for index, group in ipairs(Muscles.Groups) do
-	local frame = New("Frame", { Name = group.id, LayoutOrder = index, BackgroundColor3 = Colors.Panel, BackgroundTransparency = 0.6, Parent = scroll },
-		{ Theme.Round("Panel"), Theme.Stroke(), Theme.Pad("S"), Theme.List(Vertical, "XS", Left, Top) })
-	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Parent = frame }, { Theme.List(Horizontal, "S", Left) })
-	local disc = Theme.RankTag("B", { LayoutOrder = 1, Size = UDim2.fromOffset(20, 18), Parent = top })
-	local grade = disc
-	local nameCol = New("Frame", { LayoutOrder = 2, Size = UDim2.new(0.36, 0, 1, 0), BackgroundTransparency = 1, Parent = top })
-	Theme.Text({ Text = group.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = nameCol })
-	-- the group's EXP: takes the rest of the row so six or seven digits fit
-local level = Theme.Text({ LayoutOrder = 3, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(0.64, -34, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, Parent = top })
-	local sub = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Parent = frame })
-	local mult = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = sub })
-	local needs = Theme.Text({ Text = "Needs work", Font = "Regular", TextSize = "Small", TextColor3 = Colors.NeedsWork, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = sub })
-	local muscleRows = {}
-	for m, muscle in ipairs(group.muscles) do
-		local row = New("Frame", { Name = muscle.id, LayoutOrder = 2 + m, Size = UDim2.new(1, 0, 0, ROW_HEIGHT), BackgroundTransparency = 1, Parent = frame })
-		Theme.Text({ Text = muscle.name, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(0.34, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-		local back = New("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.36, 0, 0.5, 0), Size = UDim2.new(0.12, 0, 0, 5), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = row }, { Theme.Round("Segment") })
-		local fill = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, ZIndex = 2, Parent = back }, { Theme.Round("Segment") })
-		local value = Theme.Text({ Font = "SemiBold", TextSize = "Small", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0.5, 0, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-		muscleRows[muscle.id] = { level = value, fill = fill }
-	end
-	-- the machines that train this group (main muscle), e.g. "Squat Rack · Leg Press · Hack Squat"
-	local exercises = Theme.Text({ Name = "Exercises", LayoutOrder = 20, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, ROW_HEIGHT), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = frame })
-	cards[group.id] = { level = level, disc = disc, grade = grade, mult = mult, needs = needs, muscles = muscleRows, exercises = exercises }
+	local card = Kit.Card({ Name = group.id, LayoutOrder = index, Parent = geneGrid }, {})
+	local badge = Kit.GradeBadge("B", 28, { Name = "Grade", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Parent = card })
+	Kit.Text({ Name = "Label", Text = group.name, Font = "Title", TextSize = 14, Position = UDim2.fromOffset(42, 5), Size = UDim2.new(1, -48, 0, 18),
+		TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
+	local mult = Kit.Text({ Name = "Mult", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(42, 23), Size = UDim2.new(1, -48, 0, 15),
+		TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
+	geneCards[group.id] = { badge = badge, mult = mult }
 end
+local function infoCard(name: string, order: number, x: number)
+	local card = Kit.Card({ Name = name, Position = UDim2.new(x, x > 0 and 4 or 0, 0, 2 * 44 + 6 + 8), Size = UDim2.new(0.5, -4, 0, 44), Parent = pages.Genetics }, {})
+	local title = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -20, 0, 18),
+		TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
+	local sub = Kit.Text({ Name = "Sub", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(12, 23), Size = UDim2.new(1, -20, 0, 15),
+		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+	return title, sub
+end
+local frameTitle, frameSub = infoCard("Frame", 1, 0)
+local bodyTitle, bodySub = infoCard("BodyType", 2, 0.5)
+local overall = Kit.Card({ Name = "Overall", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 48), Piece = "banner_gold", Parent = pages.Genetics }, {})
+local overallBadge = Kit.GradeBadge("B", 32, { Name = "Grade", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = overall })
+local overallText = Kit.Text({ Name = "Word", Text = "", Font = "Title", TextSize = 16, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 50, 0.5, 0),
+	Size = UDim2.new(1, -220, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = overall })
+local geneticsButton = Kit.Button("Blue", "Open Genetics", { Name = "OpenGenetics", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = overall },
+	{ width = 150, height = 32, textSize = 13, icon = "star" })
 
--- columns: as many cards across as fit (~200px each): up to 3 on big screens, 2 on phones
-local function layoutGrid()
-	local width = scroll.AbsoluteSize.X
-	local maxColumns = Theme.IsCompact() and 2 or 3
-	local columns = math.clamp(math.floor(width / 200), 1, maxColumns)
-	grid.CellSize = UDim2.new(1 / columns, -Spacing.S, 0, CARD_HEIGHT)
+local function bonusText(entry): string
+	if not entry or not entry.bonus then return "" end
+	local parts = {}
+	if entry.bonus.all then table.insert(parts, string.format("+%d%% all", entry.bonus.all * 100)) end
+	for id, value in pairs(entry.bonus.groups or {}) do table.insert(parts, string.format("+%d%% %s", value * 100, id)) end
+	for id, value in pairs(entry.bonus.muscles or {}) do table.insert(parts, string.format("+%d%% %s", value * 100, Muscles.ById[id] and Muscles.ById[id].name or id)) end
+	if entry.detailLevelMult and entry.detailLevelMult < 1 then table.insert(parts, "abs show earlier") end
+	if entry.detailLevelMult and entry.detailLevelMult > 1 then table.insert(parts, "abs show later") end
+	return #parts > 0 and table.concat(parts, ", ") or "No bonus"
 end
-scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutGrid)
 
 ------------------------------------------------------------------------
 -- Data
 ------------------------------------------------------------------------
 local wasReady = nil
-local function refreshScreen()
+function refreshScreen()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, trainable)
 	local nextSpurt = data.growthSpurts + 1
-	if progress.maxed then
-		goalTitle.Text = "Growth Spurt " .. data.growthSpurts
-		goalHeight.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts))
-	else
-		goalTitle.Text = "Growth Spurt " .. nextSpurt
-		goalHeight.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(nextSpurt))
-	end
-	for _, group in ipairs(Muscles.Groups) do
-		local share = progress.maxed and 1 or math.clamp(progress.groups[group.id] / progress.required, 0, 1)
-		Theme.Tween(goalFills[group.id], { Size = UDim2.fromScale(share, 1) })
-	end
-	goalLabel.Text = string.format("%d/%d groups at their goal  ·  gains x%.2f after", progress.met, progress.total, GrowthSpurts.GetBonus(nextSpurt))
-	goalLabel.Visible = not progress.ready and not progress.maxed
-	setSpurtMaxed(progress.maxed)
-	spurtButton.Visible = progress.ready or progress.maxed
 	if progress.ready and wasReady == false then
-		statsButton:SetDot(true) -- something new: clears when stats is opened
-		Notify.Show("Growth Spurt ready! Open Stats, then Muscles.", nil, "spurtReady")
+		statsButton:SetDot(true) -- something new: clears when the window opens
+		musclesTile:SetDot(true)
 	end
 	wasReady = progress.ready
+	if not modal.isOpen() then return end
 
-	-- the six cards (about 40 tweens) only need updating while the window is open; opening it refreshes everything
-	if not musclesOpen then return end
-
-	-- the groups' levels (the weakest gets "Needs work")
-	local levels, weakest, ties = {}, nil, 0
-	for _, group in ipairs(Muscles.Groups) do
-		levels[group.id] = math.floor(Muscles.GetGroupLevel(data.muscles, group.id))
-		if not weakest or levels[group.id] < levels[weakest] then
-			weakest, ties = group.id, 1
-		elseif levels[group.id] == levels[weakest] then
-			ties += 1
-		end
-	end
-	for _, group in ipairs(Muscles.Groups) do
-		local card = cards[group.id]
-		local gradeId = data.genetics and data.genetics.grades and data.genetics.grades[group.id] or "B"
-		Theme.SetRankTag(card.disc, gradeId)
-		card.mult.Text = string.format("Genetics x%.2f", Genetics.GetMultiplier(data.genetics, group.muscles[1].id))
-		-- the group's muscles added up, and its Growth Spurt goal as the same sum (no "Max": it keeps counting past it)
-		local groupExp = Muscles.FormatExp(Muscles.GroupExp(data.muscles, group.id))
-		card.level.Text = groupExp .. " / " .. Muscles.FormatExp(Muscles.GroupShown(group.id, progress.required))
-		card.level.TextColor3 = Colors.Text
-		card.needs.Visible = group.id == weakest and ties == 1
-		card.exercisesText = table.concat(Machines.ExercisesFor(group.id, data.growthSpurts or 0, function(id) return Muscles.ById[id].group end), " · ")
-		for _, muscle in ipairs(group.muscles) do
-			local row = card.muscles[muscle.id]
-			local entry = data.muscles[muscle.id]
-			local rowExp = Muscles.FormatExp(Muscles.MuscleExp(entry))
-			row.level.Text = rowExp
-			row.level.TextColor3 = Colors.Text
-			-- the bar: the muscle's progress toward the Growth Spurt goal
-			Theme.Tween(row.fill, { Size = UDim2.fromScale(math.clamp(Muscles.ExactLevel(entry) / progress.required, 0, 1), 1) })
-		end
-		card.exercises.Text = card.exercisesText or ""
-	end
-end
-
-------------------------------------------------------------------------
--- The rest of the HUD is switched off behind the panel (and put back as it was on close)
-------------------------------------------------------------------------
-local HUD_GUIS = { "RightColumn", "TopBar", "Tutorial", "Notifications", "MachineHud", "MainHud", "MusclesButton" }
-local hudBefore = {}
-local function hideHud(hide)
-	for _, name in ipairs(HUD_GUIS) do
-		local gui = playerGui:FindFirstChild(name)
-		if gui and gui:IsA("ScreenGui") then
-			if hide then
-				hudBefore[name] = gui.Enabled
-				gui.Enabled = false
-			elseif hudBefore[name] ~= nil then
-				gui.Enabled = hudBefore[name]
-				hudBefore[name] = nil
+	local grades = data.genetics and data.genetics.grades or {}
+	if currentTab == "Muscles" then
+		-- the 8 cards: % toward the Growth Spurt goal
+		for _, c in pairs(cards) do
+			local spec = c.spec
+			local grade = grades[spec.group] or "B"
+			Kit.SetGrade(c.badge, grade)
+			-- the bar in the grade's color (mockup 07)
+			local color = Kit.GradeColors[grade] or Colors.Green
+			local gloss = c.fill:FindFirstChild("Gloss")
+			if gloss then gloss.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.2)) end
+			local share
+			if spec.muscle then
+				share = Muscles.ExactLevel(data.muscles[spec.muscle]) / math.max(progress.required, 1)
+			else
+				share = progress.groups[spec.group] / math.max(progress.required, 1)
 			end
+			if progress.maxed then share = math.max(share, 1) end
+			local pct = math.floor(math.clamp(share, 0, 9.99) * 100 + 0.5)
+			c.setBar(math.min(share, 1), pct .. "%")
 		end
+		-- the body card
+		local levels = {}
+		for _, muscle in ipairs(Muscles.List) do levels[muscle.id] = Muscles.ExactLevel(data.muscles[muscle.id]) end
+		local goal = math.max(progress.required, 1)
+		local sum, count = 0, 0
+		for _, muscle in ipairs(Muscles.List) do
+			looks[muscle.id] = Muscles.LookG(muscle.id, levels[muscle.id], goal)
+			sum += looks[muscle.id]
+			count += 1
+		end
+		local average = count > 0 and sum / count or 0
+		sizeLabel.Text = math.floor(average * 100 + 0.5) .. "% SIZE"
+		for _, entry in ipairs(PHYSIQUES) do
+			if average < entry[1] then physiqueLabel.Text = "Physique: " .. entry[2] break end
+		end
+		drawFigure()
+		-- the Growth Spurt row
+		if progress.maxed then
+			spurtTitle.Text = "Growth Spurt " .. data.growthSpurts .. "  ·  " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts)) .. " (MAX)"
+			spurtSub.Text = "Max Growth Spurt reached. Your muscles keep growing."
+		else
+			spurtTitle.Text = "Growth Spurt " .. nextSpurt .. "  ·  " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(nextSpurt))
+			spurtSub.Text = string.format("%d/%d groups at their goal  ·  gains x%.2f after", progress.met, progress.total, GrowthSpurts.GetBonus(nextSpurt))
+		end
+		spurtButton.Visible = progress.ready and not progress.maxed
+		spurtCount.Visible = not spurtButton.Visible
+		spurtCount.Text = progress.maxed and "MAX" or (progress.met .. "/" .. progress.total)
+	elseif currentTab == "Lifts" then
+		for _, row in pairs(liftRows) do
+			local machine = row.machine
+			local open = Machines.GymOpenAt(machine) <= (data.growthSpurts or 0)
+			row.card.Visible = open
+			local state = data.machines and data.machines[machine.id]
+			local bestTier = state and state.best and machine.tiers[state.best]
+			row.best.Text = bestTier and Machines.WeightText(bestTier) or "-"
+			row.tiers.Text = string.format("%d/%d weights", math.min(state and state.unlocked or 1, #machine.tiers), #machine.tiers)
+		end
+	elseif currentTab == "Genetics" then
+		local genetics = data.genetics
+		for _, group in ipairs(Muscles.Groups) do
+			local c = geneCards[group.id]
+			Kit.SetGrade(c.badge, grades[group.id] or "B")
+			c.mult.Text = string.format("Grows x%.2f", Genetics.GetMultiplier(genetics, group.muscles[1].id))
+		end
+		local frame = genetics and Genetics.FrameById[genetics.frame]
+		local bodyType = nil
+		for _, entry in ipairs(Genetics.BodyTypes) do
+			if genetics and entry.id == genetics.bodyType then bodyType = entry end
+		end
+		frameTitle.Text = "Frame: " .. (frame and frame.name or "-")
+		frameSub.Text = bonusText(frame)
+		bodyTitle.Text = "Body: " .. (bodyType and bodyType.name or "-")
+		bodySub.Text = bonusText(bodyType)
+		local overallGrade = next(grades) and Genetics.GetOverallGrade(grades) or "B"
+		Kit.SetGrade(overallBadge, overallGrade)
+		overallText.Text = "Overall: " .. (OVERALL_WORD[overallGrade] or "")
 	end
 end
 
-local function openMuscles()
-	if musclesOpen or UIBus.MenuOpen then return end
-	musclesOpen = true
-	UIBus.PanelOpened("Muscles") -- (side panels close behind the big window)
-	if musclesTile then musclesTile:SetActive(true) end
-	hideHud(true)
+------------------------------------------------------------------------
+-- Open / close
+------------------------------------------------------------------------
+local function openTab(tab: string?)
+	if UIBus.MenuOpen then return end
+	tab = if tab and pages[tab] then tab else currentTab
+	modal.selectTab(tab)
+	currentTab = tab
+	for name, page in pairs(pages) do page.Visible = name == tab end
+	if not modal.isOpen() then
+		UIBus.PanelOpened("Muscles") -- (side panels close behind the window)
+		musclesOpen = true
+		musclesTile:SetActive(true)
+		musclesTile:SetDot(false)
+		statsButton:SetDot(false)
+		modal.open()
+		Audio.PlayUI("Whoosh")
+		UIBus.MusclesVisible:Fire(true)
+	end
 	refreshScreen()
-	screen.Enabled = true
-	layoutGrid()
-	scroll.CanvasPosition = Vector2.zero
-	Audio.PlayUI("Whoosh")
-	setBlur(true)
-	Theme.Fade(windowRoot, true)
-	UIBus.MusclesVisible:Fire(true)
 end
-
 local function closeMuscles()
-	if not musclesOpen then return end
-	musclesOpen = false
-	hideHud(false)
-	if musclesTile then musclesTile:SetActive(false) end
-	setBlur(false)
-	UIBus.MusclesVisible:Fire(false)
-	local tween = Theme.Fade(windowRoot, false)
-	if tween then
-		tween.Completed:Connect(function()
-			if not musclesOpen then screen.Enabled = false end
-		end)
-	else
-		screen.Enabled = false
-	end
+	if modal.isOpen() then modal.close() end
 end
-
-closeButton.Activated:Connect(closeMuscles)
-backdrop.Activated:Connect(closeMuscles)
-UserInputService.InputBegan:Connect(function(input)
-	if musclesOpen and input.KeyCode == Enum.KeyCode.Escape then closeMuscles() end
+modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+	-- (the X, the backdrop and Esc close the window inside Kit.Modal)
+	if not modal.isOpen() and musclesOpen then
+		musclesOpen = false
+		musclesTile:SetActive(false)
+		UIBus.MusclesVisible:Fire(false)
+	end
 end)
+
 spurtButton.Activated:Connect(function()
 	if GrowthSpurts.IsMaxed(ClientData.Get().growthSpurts) then return end
 	Remotes.PlayerAction:FireServer("GrowthSpurt")
 end)
+geneticsButton.Activated:Connect(function()
+	closeMuscles()
+	UIBus.OpenGenetics:Fire()
+end)
+labelsButton.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	setLabels(not labelsOn)
+end)
 UIBus.RegisterPanel("Muscles", closeMuscles)
-UIBus.OpenMuscles.Event:Connect(openMuscles)
+UIBus.OpenMuscles.Event:Connect(function() openTab("Muscles") end)
+UIBus.OpenStats.Event:Connect(function(tab) openTab(tab or "Muscles") end)
 UIBus.GeneticsVisible.Event:Connect(function(visible)
-	if visible and musclesOpen then closeMuscles() end
+	if visible and modal.isOpen() then closeMuscles() end
 end)
 
-------------------------------------------------------------------------
--- The Muscles tile (left menu) opens the panel; there is no floating button any more
-------------------------------------------------------------------------
-musclesTile = SideMenu.Add("Muscles", "Muscles", Icons.Stats, 2)
 musclesTile.Activated:Connect(function()
 	Audio.PlayUI("Click")
-	if musclesOpen then closeMuscles() else openMuscles() end
+	if modal.isOpen() then closeMuscles() else openTab("Muscles") end
 end)
-local menuDone = false
-
 statsButton.Activated:Connect(function()
-	labelsOn = not labelsOn
-	statsButton:SetActive(labelsOn)
 	statsButton:SetDot(false)
 	Audio.PlayUI("Click")
-	UIBus.StatsLabels:Fire(labelsOn)
-	UIBus.StatsVisible:Fire(labelsOn) -- (the tutorial's "open Stats" step)
+	setLabels(not labelsOn)
 end)
 
 task.spawn(function()
 	ClientData.Get()
 	UIBus.WaitForMenu()
-	menuDone = true
 	refreshScreen()
 end)
 
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
-	if key == "growthSpurts" or key == "muscles" or key == "genetics" then
-		refreshScreen() -- live while the panel is open, and keeps the "ready" dot current
+	if key == "growthSpurts" or key == "muscles" or key == "genetics" or key == "machines" then
+		refreshScreen() -- live while the window is open, and keeps the "ready" dot current
 	end
 end)
 
@@ -391,27 +411,22 @@ local function chalkBurst()
 	emitter:Emit(40)
 	Debris:AddItem(attachment, 2)
 end
+local celebrationRoot = Kit.Root(celebration)
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind ~= "GrowthSpurt" then return end
-	if musclesOpen then closeMuscles() end
-	local banner = Theme.Text({
-		Text = "Growth Spurt!",
-		Font = "SemiBold",
-		TextSize = "Huge",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.3, Spacing.XL),
-		Size = UDim2.fromOffset(420, 56),
-		Parent = celebration,
-	})
-	Theme.TextShadow(banner, 0.5)
+	closeMuscles()
+	-- the big gold line and what it gave, in the middle of the screen (clear of the toasts at the top)
+	local banner = New("Frame", { Name = "GrowthSpurt", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, Spacing.XL), Size = UDim2.fromOffset(460, 76), Parent = celebrationRoot })
+	Kit.Text({ Text = "Growth Spurt!", Font = "Title", TextSize = 40, TextColor3 = Colors.Gold, Size = UDim2.new(1, 0, 0, 50), Parent = banner })
+	Kit.Text({ Text = string.format("You're now %s. Gains x%.2f forever!", GrowthSpurts.FormatHeight(info.height), info.bonus), Font = "Title", TextSize = 17,
+		Position = UDim2.fromOffset(0, 50), Size = UDim2.new(1, 0, 0, 22), Parent = banner })
 	Theme.Fade(banner, true)
-	Theme.Tween(banner, { Position = UDim2.fromScale(0.5, 0.3) })
-	task.delay(2.2, function()
+	Theme.Tween(banner, { Position = UDim2.fromScale(0.5, 0.5) })
+	task.delay(2.8, function()
 		local tween = Theme.Fade(banner, false, 0.4)
-		if tween then tween.Completed:Connect(function() banner:Destroy() end) end
+		if tween then tween.Completed:Connect(function() banner:Destroy() end) else banner:Destroy() end
 	end)
 	Audio.Play2D("GrowthSpurt")
 	chalkBurst()
-	Notify.Show(string.format("You're now %s. Gains x%.2f forever!", GrowthSpurts.FormatHeight(info.height), info.bonus))
 end)
-
