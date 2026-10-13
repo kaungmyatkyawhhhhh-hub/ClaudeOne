@@ -1,12 +1,13 @@
--- MealClient (owner's feature run, task 5): the smoothie bar's shop panel and the boost timers. MealService opens the
--- panel when you press a stall's prompt and checks every purchase; this only shows them.
---   * Shop panel (centre): the stall's items with what they do, the price and BUY (dimmed when you can't afford it).
---     Closes with X, Esc or when you walk away from the stall.
---   * Timers: one small pill per running boost at the top of the right column ("Protein Shake 4:32"), from the player
---     attributes Meal_<id> (server time the boost ends).
+-- MealClient: the Smoothie Bar window (owner's UI v2, mockup 09_smoothie_bar) and the boost timers. MealService opens the
+-- window when you press a stall's prompt and checks every purchase; this only shows them.
+--   * Window: a "Drinks" tab, the stall's name as the title, and one tile per drink: a big colored icon tile, the name, what
+--     it does and for how long ("+20% EXP · 5 min") and a green coin-price button (gray "Full" when the boost is already as
+--     long as it gets). Drinks this stall doesn't sell stay gray with where to get them ("Beach only"). Not enough coins:
+--     the tile shakes + "Not enough coins". Closes with X, Esc, a tap outside or when you walk away from the stall.
+--   * Timers: one small chip per running boost in the right column ("+20%  4:32"), from the player attributes Meal_<id>
+--     (server time the boost ends).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
@@ -15,7 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Meals = require(Shared.Config.Meals)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
-local Icons = require(Shared.UI.Icons)
+local Kit = require(Shared.UI.Kit)
 local Notify = require(Shared.UI.Notify)
 local RightColumn = require(Shared.UI.RightColumn)
 local UIBus = require(Shared.UI.UIBus)
@@ -26,109 +27,109 @@ local remote = Remotes:WaitForChild("Meals", 60) :: RemoteEvent
 if not remote then return end -- the meal service didn't start
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors = Theme.New, Theme.Colors
-local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
+
+local W, H = 560, 262 -- the window (mockup px)
+local TILE = Vector2.new(124, 196)
 
 local function now() return Workspace:GetServerTimeNow() end
-local iconOf -- (defined with the shop below)
 
 ------------------------------------------------------------------------
--- Shop panel
+-- Window
 ------------------------------------------------------------------------
-local gui = Theme.ScreenGui({ Name = "MealShop", Enabled = false, DisplayOrder = 25, Parent = playerGui })
-local panel = Theme.Panel({
-	Name = "Panel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(380, 0), AutomaticSize = Enum.AutomaticSize.Y, Active = true, Parent = gui,
-}, { Theme.Pad("L"), Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
-local header = New("Frame", { LayoutOrder = 0, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = panel })
-local title = Theme.Text({ Text = "", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, -52, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
-Theme.Uppercase(title)
-local close = Theme.Button("Secondary", { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(Theme.MinTouch, Theme.MinTouch), Parent = header }, {})
-local closeIcon = New("Frame", { Size = UDim2.fromScale(0.42, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), BackgroundTransparency = 1, Parent = close })
-Icons.Close(Colors.Text).Parent = closeIcon
-local coinsLine = Theme.Text({ LayoutOrder = 1, Text = "", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+local modal = Kit.Modal({ name = "MealShop", title = "Smoothie Bar", icon = "cup-soda", width = W, height = H, displayOrder = 25,
+	tabs = { { id = "Drinks", text = "Drinks", icon = "cup-soda" } } })
+local row = New("Frame", { Name = "Tiles", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, TILE.Y), Parent = modal.body }, {
+	Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
+})
 
-local rows = {} -- the current shop's rows
-
--- an item's icon (a cup with a straw, or a bowl) in the item's color
-iconOf = function(item)
-	local factory = Icons[item.icon or "Cup"] or Icons.Cup
-	return factory(Color3.fromHex(item.color))
+-- where a drink is sold, for the tiles of the drinks this stall doesn't have
+local function soldAt(id: string): string
+	local where = {}
+	for shopId, shop in pairs(Meals.Shops) do
+		if table.find(shop.items, id) then table.insert(where, shopId) end
+	end
+	if #where == 1 and where[1] == "CoconutCart" then return "Beach only" end
+	return "Not sold here"
 end
+
+local function shake(gui: GuiObject)
+	local base = gui.Position
+	task.spawn(function()
+		for _, dx in ipairs({ -6, 6, -5, 5, -3, 3, 0 }) do
+			gui.Position = base + UDim2.fromOffset(dx, 0)
+			task.wait(0.035)
+		end
+		gui.Position = base
+	end)
+end
+
 local openShop = nil -- shop id while open
 local openPart = nil -- the stall part (closes when you walk away)
+local tiles = {}
+for order, item in ipairs(Meals.Items) do
+	local holder = New("Frame", { Name = item.id, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE.X, TILE.Y), Parent = row })
+	local card = Kit.Card({ Name = "Card", Size = UDim2.fromScale(1, 1), Parent = holder }, {})
+	local color = Color3.fromHex(item.uiColor or item.color)
+	local tile = Kit.IconTile(item.uiIcon or "cup-soda", color, 72, { Name = "Tile", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 7), Parent = card })
+	tile.Size = UDim2.new(1, -14, 0, 74)
+	local name = Kit.Text({ Name = "Name", Text = item.name, Font = "Title", TextSize = 15, TextWrapped = true, Position = UDim2.fromOffset(4, 86), Size = UDim2.new(1, -8, 0, 36),
+		TextYAlignment = Enum.TextYAlignment.Center, Parent = card })
+	local sub = Kit.Text({ Name = "Sub", Text = item.sub or item.short or "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, TextWrapped = true,
+		Position = UDim2.fromOffset(4, 122), Size = UDim2.new(1, -8, 0, 28), TextYAlignment = Enum.TextYAlignment.Top, Parent = card })
+	local buy = Kit.Button("Green", Kit.Format(item.price), { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -7), Parent = card },
+		{ width = TILE.X - 16, height = 30, textSize = 15, icon = "coin" })
+	tiles[item.id] = { card = card, tile = tile, name = name, sub = sub, buy = buy, item = item }
+	buy.Activated:Connect(function()
+		local entry = tiles[item.id]
+		if not openShop or not entry.sold then return end
+		if entry.full then return end
+		if (ClientData.Get().coins or 0) < item.price then
+			shake(card)
+			Notify.Toast("Not enough coins", item.name .. " costs " .. Kit.Format(item.price) .. " coins", "coin", Colors.Red, "mealcoins")
+			return
+		end
+		remote:FireServer("Buy", openShop, item.id)
+	end)
+end
+
+local function refreshTiles()
+	local shop = openShop and Meals.Shops[openShop]
+	local t = now()
+	for id, entry in pairs(tiles) do
+		local sold = shop ~= nil and table.find(shop.items, id) ~= nil
+		entry.sold = sold
+		-- a boost already as long as it gets (MaxStack purchases) can't be bought again for now
+		local ends = player:GetAttribute("Meal_" .. id)
+		local left = type(ends) == "number" and ends - t or 0
+		entry.full = sold and not Meals.CanBuy(entry.item, left)
+		entry.sub.Text = sold and (entry.item.sub or entry.item.short or "") or soldAt(id)
+		Kit.SetTileColor(entry.tile, sold and Color3.fromHex(entry.item.uiColor or entry.item.color) or Color3.fromHex("#4A4A55"))
+		local icon = entry.buy:FindFirstChild("Icon", true)
+		if icon then icon.Visible = not entry.full end
+		Kit.SetButton(entry.buy, (sold and not entry.full) and "Green" or "Dark", entry.full and "Full" or Kit.Format(entry.item.price))
+	end
+end
 
 local function setOpen(shopId: string?)
-	if shopId == openShop then return end
-	openShop = shopId
 	if shopId then
-		gui.Enabled = true
-		Audio.PlayUI("Whoosh")
-		Theme.Fade(panel, true)
-	else
-		local tween = Theme.Fade(panel, false)
-		if tween then
-			tween.Completed:Connect(function() if not openShop then gui.Enabled = false end end)
-		else
-			gui.Enabled = false
+		openShop = shopId
+		-- the stall's name in title case ("Smoothie cart" -> "Smoothie Cart")
+		modal.setTitle((string.gsub(Meals.Shops[shopId].name, "(%a)([%w']*)", function(first, rest) return string.upper(first) .. rest end)))
+		refreshTiles()
+		if not modal.isOpen() then
+			modal.open()
+			Audio.PlayUI("Whoosh")
 		end
+	else
+		openShop = nil
+		modal.close()
 	end
 end
-
-local function refreshAffordable()
-	local coins = ClientData.Get().coins or 0
-	coinsLine.Text = "You have " .. coins .. " coins"
-	local t = now()
-	for _, row in ipairs(rows) do
-		-- a boost already as long as it gets (MaxStack purchases) can't be bought again for now
-		local ends = player:GetAttribute("Meal_" .. row.item.id)
-		local left = type(ends) == "number" and ends - t or 0
-		local full = not Meals.CanBuy(row.item, left)
-		local can = coins >= row.item.price and not full
-		row.buy.BackgroundTransparency = can and Theme.Alpha.Primary or 0.92
-		row.label.TextTransparency = can and 0 or 0.5
-		row.label.Text = full and "Full" or ("Buy · " .. row.item.price)
-	end
-end
-
-local function build(shopId: string)
-	for _, row in ipairs(rows) do row.frame:Destroy() end
-	rows = {}
-	local shop = Meals.Shops[shopId]
-	title.Text = shop.name
-	for order, id in ipairs(shop.items) do
-		local item = Meals.ById[id]
-		local frame = New("Frame", { Name = id, LayoutOrder = 10 + order, Size = UDim2.new(1, 0, 0, 58), BackgroundTransparency = 1, Parent = panel })
-		-- the item's own icon in its own color (never the bag's white shaker, so the two never look alike)
-		local iconSlot = New("Frame", { Size = UDim2.fromOffset(28, 28), Position = UDim2.fromOffset(0, 2), BackgroundTransparency = 1, Parent = frame })
-		iconOf(item).Parent = iconSlot
-		Theme.Text({ Text = item.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -164, 0, 22), Position = UDim2.fromOffset(36, 2), TextXAlignment = Enum.TextXAlignment.Left, Upper = false, Parent = frame })
-		Theme.Text({ Text = item.text, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, TextWrapped = true, Size = UDim2.new(1, -164, 0, 32), Position = UDim2.fromOffset(36, 24),
-			TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = frame })
-		local buy = Theme.Button("Primary", { Name = "Buy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(120, Theme.MinTouch), Parent = frame }, {
-			Theme.Text({ Name = "Label", Text = "Buy · " .. item.price, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
-		})
-		buy.Activated:Connect(function()
-			if (ClientData.Get().coins or 0) < item.price then
-				Notify.Show(item.name .. " costs " .. item.price .. " coins.", Colors.NeedsWork, "mealcoins")
-				return
-			end
-			remote:FireServer("Buy", shopId, id)
-		end)
-		table.insert(rows, { frame = frame, item = item, buy = buy, label = buy:FindFirstChild("Label") })
-	end
-	refreshAffordable()
-end
-
-close.Activated:Connect(function() setOpen(nil) end)
+modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+	if not modal.isOpen() then openShop = nil end
+end)
 UIBus.RegisterPanel("MealShop", function() setOpen(nil) end)
-UserInputService.InputBegan:Connect(function(input, processed)
-	if not processed and input.KeyCode == Enum.KeyCode.Escape and openShop then setOpen(nil) end
-end)
-ClientData.Changed:Connect(function(path)
-	if path[1] == "coins" and openShop then refreshAffordable() end
-end)
 
 ------------------------------------------------------------------------
 -- Boost timers (right column)
@@ -152,19 +153,19 @@ remote.OnClientEvent:Connect(function(kind, info)
 				if root and (not openPart or (part.Position - root.Position).Magnitude < (openPart.Position - root.Position).Magnitude) then openPart = part end
 			end
 		end
-		build(info.shop)
 		UIBus.PanelOpened("MealShop")
 		setOpen(info.shop)
 	elseif kind == "Bought" then
 		local item = Meals.ById[info.id]
 		if item then
-			Notify.Show(item.name .. ": " .. item.text:gsub(" for %d+ min$", "") .. " (" .. Meals.Clock(tonumber(info.seconds) or 0) .. ")")
+			Notify.Toast(item.name, (item.sub or item.short or "") .. "  (" .. Meals.Clock(tonumber(info.seconds) or 0) .. " left)", item.uiIcon or "cup-soda",
+				Color3.fromHex(item.uiColor or item.color))
 			Audio.PlayUI("ShopBuy")
 			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			if root then task.delay(0.3, function() Audio.PlayAt("DrinkShake", root) end) end
 		end
 	elseif kind == "Failed" then
-		Notify.Show(tostring(info.text), Colors.NeedsWork, "mealfail")
+		Notify.Toast(tostring(info.text), nil, "cup-soda", Colors.Red, "mealfail")
 	end
 end)
 
@@ -185,7 +186,7 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		if show then pill.chip:SetText(pill.item.chip or "", Meals.Clock(left)) end
 	end
-	if openShop then refreshAffordable() end
+	if openShop then refreshTiles() end
 	-- walked away from the stall: close the shop
 	if openShop and openPart then
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")

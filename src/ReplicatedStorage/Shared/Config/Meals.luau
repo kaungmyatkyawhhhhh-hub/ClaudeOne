@@ -1,6 +1,7 @@
 -- Shakes & meals (owner's feature run, task 5): timed boosts bought with coins at the smoothie bar in the pro gym, a cart
 -- in the starter gym and a coconut cart at the beach gym (MealService, MealClient; carts from tools/builders/SmoothieCarts).
--- uiIcon / uiColor / chip / short: the redesigned shop rows and HUD chips (owner's UI redesign, mockup 08).
+-- uiIcon / uiColor / chip / short / sub: the shop tiles (owner's UI v2, mockup 09: icon tile in uiColor, name, sub line)
+-- and the HUD chips.
 -- One boost of each kind at a time: buying it again adds its time, up to MaxStack x its duration. Boosts PAUSE when you
 -- leave and pick up where they were when you come back (the time left is saved).
 -- effects (multiply with every other boost through BoostService): gains = EXP, regen = stamina refill, cardio = treadmill
@@ -12,13 +13,13 @@ Meals.MaxStack = 3 -- a boost holds at most this many purchases' worth of time
 
 Meals.Items = {
 	{ id = "ProteinShake", name = "Protein Shake", price = 60, seconds = 5 * 60, effects = { gains = 1.2 },
-		text = "+20% EXP for 5 min", color = "#E8DCC8", icon = "Cup", uiIcon = "cup-soda", uiColor = "#E4262F", chip = "+20%", short = "+20% EXP" },
+		text = "+20% EXP for 5 min", color = "#E8DCC8", icon = "Cup", uiIcon = "cup-soda", uiColor = "#E4262F", chip = "+20%", short = "+20% EXP", sub = "+20% EXP · 5 min" },
 	{ id = "EnergySmoothie", name = "Energy Smoothie", price = 50, seconds = 5 * 60, effects = { regen = 1.5 },
-		text = "Stamina refills 50% faster for 5 min", color = "#F2A33A", icon = "Cup", uiIcon = "zap", uiColor = "#36C26B", chip = "", short = "Stamina refills 50% faster" },
+		text = "Stamina refills 50% faster for 5 min", color = "#F2A33A", icon = "Cup", uiIcon = "zap", uiColor = "#36C26B", chip = "", short = "Stamina refills 50% faster", sub = "Stamina +50% · 5 min" },
 	{ id = "ChickenRice", name = "Chicken & Rice", price = 90, seconds = 10 * 60, effects = { gains = 1.1, regen = 1.1 },
-		text = "+10% EXP and +10% stamina refill for 10 min", color = "#F4F1EA", icon = "Bowl", uiIcon = "flame", uiColor = "#F5B62F", chip = "+10%", short = "+10% EXP and +10% stamina" },
+		text = "+10% EXP and +10% stamina refill for 10 min", color = "#F4F1EA", icon = "Bowl", uiIcon = "flame", uiColor = "#F0882A", chip = "+10%", short = "+10% EXP and +10% stamina", sub = "+10% EXP & stamina · 10 min" },
 	{ id = "CoconutWater", name = "Coconut Water", price = 40, seconds = 5 * 60, effects = { cardio = 1.5 },
-		text = "Run 50% farther on the treadmill for 5 min", color = "#9BD48A", icon = "Cup", uiIcon = "heart-pulse", uiColor = "#3F8CFF", chip = "", short = "Faster cardio distance" },
+		text = "Run 50% farther on the treadmill for 5 min", color = "#9BD48A", icon = "Cup", uiIcon = "heart-pulse", uiColor = "#3F8CFF", chip = "", short = "Faster cardio distance", sub = "+50% cardio · 5 min" },
 }
 Meals.ById = {}
 for _, item in ipairs(Meals.Items) do Meals.ById[item.id] = item end

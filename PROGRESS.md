@@ -87,6 +87,13 @@ now look like their pictures (shirt colors painted on, part-built red cap / whit
 headphones, no catalog clothes) and lost their name tags. Tested: not enough coins (shake + toast), hire with
 TestCoins = 2000 (2,000 -> 1,700, FOLLOWING), the red-cap follower. Screenshots: ui_compare_v2/06_*.
 
+- 09 Smoothie bar (done): the stall's prompt opens a "Drinks" window titled with the stall's name (Smoothie Bar / Smoothie
+  Cart / Coconut Cart): one tile per drink (big colored icon tile, name, "+20% EXP · 5 min", green coin-price button;
+  gray "Full" at the time cap). Drinks the stall doesn't sell stay gray with where to get them ("Beach only"). Not enough
+  coins: shake + toast. Chicken & Rice is orange now (mockup). Prices stay as in Config/Meals (60 / 50 / 90 / 40; the
+  mockup's numbers were only examples). Tested at the starter cart: Protein Shake bought (2,000 -> 1,940).
+  Screenshot: ui_compare_v2/09_smoothie_bar_phone.
+
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
 `Config/Features.Wardrobe = false`), "<" fold saved per player (settings.menuCollapsed), auto-folds while lifting, red
