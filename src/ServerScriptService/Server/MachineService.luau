@@ -481,7 +481,7 @@ local function lift(player)
 	local staminaUp = nil
 	if tier.unit == "mph" then -- the treadmill: the distance run (max stamina, Cardio King)
 		local before = PlayerData.GetMaxStamina(player)
-		PlayerData.SetStat(player, "cardioMeters", (data.stats.cardioMeters or 0) + tier.weight * Machines.Cardio.MetersPerMph)
+		PlayerData.SetStat(player, "cardioMeters", (data.stats.cardioMeters or 0) + tier.weight * Machines.Cardio.MetersPerMph * BoostService.Cardio(player))
 		local after = PlayerData.GetMaxStamina(player)
 		if after > before then staminaUp = after end
 	end
@@ -493,7 +493,7 @@ local function lift(player)
 	SeasonService.OnRep(player)
 	-- (daily quests count these: a rep by its main muscle's group, or the distance run)
 	if tier.unit == "mph" then
-		GameEvents.Fire("CardioMeters", player, tier.weight * Machines.Cardio.MetersPerMph)
+		GameEvents.Fire("CardioMeters", player, tier.weight * Machines.Cardio.MetersPerMph * BoostService.Cardio(player))
 	else
 		local main = Muscles.ById[machine.muscles[1].id]
 		GameEvents.Fire("Rep", player, 1, { machineId = machine.id, group = main and main.group })

@@ -91,6 +91,30 @@ knows the bigger gyms, the beach and the town). Weak fits to listen to first: Cr
   real read path (empty new stores, no errors). Not tested: real data from several servers (needs a published game).
 - Screenshots: leaderboards_starter_gym, leaderboards_pro_gym, leaderboards_town_plaza.
 
+### Task 5: Shakes & meals / smoothie bar (done, tested solo)
+- `Config/Meals`, `Server/MealService`, `MealClient`, builder `tools/builders/SmoothieCarts` (owner's answers 13 Oct).
+  Stalls: the pro gym's smoothie bar (its counter, stools, fridge and blenders were already there from the Gyms
+  builder; added a hanging menu board with the real items and prices, and the old counter card now lists them instead of
+  made-up flavors), a smoothie cart in the starter gym (by the front windows) and a coconut cart on the sand by the beach
+  gym entrance (`Feature_SmoothieBar` folders). Each has an invisible `OrderPoint` part in front of its counter (attribute
+  MealShop) carrying the "Order" prompt (RequiresLineOfSight off), so the cart never blocks it.
+- Items: Protein Shake (60 coins, +20% EXP, 5 min), **Energy Smoothie** (50, stamina refills 50% faster, 5 min; named so
+  it isn't confused with the bag's Energy Shake), Chicken & Rice (90, +10% EXP and +10% refill, 10 min), Coconut Water
+  (40, the beach cart only, treadmill distance x1.5, 5 min; new `cardio` boost in BoostService, MachineService uses
+  it). They look different from the bag shake on purpose: a cup with a straw or a bowl icon in the item's own color (the
+  bag shake keeps its white shaker icon).
+- One boost per kind; buying again adds its time up to 3 purchases' worth, but only when the whole drink fits (otherwise
+  the button reads FULL and nothing is charged: found in testing, the 4th buy took 60 coins for 2 seconds). HUD: a
+  small pill per running boost in the right column ("Protein Shake 14:14"), from the player attributes `Meal_<id>`.
+- Pause while away (owner approved): the time left is saved every 5 s (`data.meals`), restored on join (the HUD timers
+  show at once). Found in testing: the periodic save could overwrite the paused times before the restore; it now waits
+  for the restore. Drinking: a shaker in the item's color in the right hand for 2 s with the shake chug (everyone sees).
+- Studio hook: `TestMealRejoin` (n = act out leaving for n seconds). Tested: every item bought (coins taken once each),
+  the boosts multiply (EXP 1.2 x 1.1 = 1.32), timers count down, the cap and FULL, Coconut Water only at the beach cart,
+  leave/rejoin (863 s left before, 862 s after 6 s away), the shaker, the prompt from the front; no errors.
+  Note: Roblox's own prompt UI doesn't show in the MCP screenshots (it's there: checked with PromptShown).
+- Screenshots: meals_shop_panel_starter_cart, meals_hud_timers, meals_drinking_shaker, meals_coconut_cart_beach.
+
 ## Before that (13 Oct): soft shutdown
 - `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all
   servers" / "Migrate to latest update"), players get a small note ("The gym is updating..."), are teleported together into

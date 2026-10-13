@@ -193,6 +193,31 @@ function Icons.Shake(color)
 	return icon
 end
 
+-- Smoothie cup (the smoothie bar's drinks; the bag's Energy Shake is the Shake shaker above): a cup wider at the top,
+-- a domed lid and a tall straw.
+function Icons.Cup(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Cup")
+	line(icon, color, 0.5, 0.5, 0.36)                -- the lid's rim
+	outline(icon, color, 0.34, 0.12, 0.5, 0.3, UDim.new(1, 0)) -- the dome
+	line(icon, color, 0.5, 0.31, 0.62, 82)           -- left side, leaning out at the top
+	line(icon, color, 0.5, 0.69, 0.62, -82)          -- right side
+	line(icon, color, 0.3, 0.5, 0.86)                -- the bottom
+	line(icon, color, 0.32, 0.6, 0.14, -70)          -- the straw
+	return icon
+end
+
+-- Bowl with chopsticks (Chicken & Rice).
+function Icons.Bowl(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Bowl")
+	line(icon, color, 0.78, 0.5, 0.5)                -- the rim
+	outline(icon, color, 0.62, 0.5, 0.5, 0.52, UDim.new(1, 0)) -- the bowl (its lower half shows under the rim)
+	line(icon, color, 0.5, 0.62, 0.3, -35)           -- chopsticks
+	line(icon, color, 0.5, 0.7, 0.34, -28)
+	return icon
+end
+
 -- Clock-style timer: a ring with one hand (shake boost time left).
 function Icons.Timer(color)
 	color = color or Colors.Chalk

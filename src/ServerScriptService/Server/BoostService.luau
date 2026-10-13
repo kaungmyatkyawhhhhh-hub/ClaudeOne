@@ -1,6 +1,6 @@
 -- Every temporary or permanent bonus in one place, so gains/coins/stamina refill always multiply the same way.
 -- Sources are per player (shake, gamepasses) or for the whole server (rush hour, server boost).
--- A source: { gains = x, coins = x, regen = x, untilTime = server time or nil (= permanent) }.
+-- A source: { gains = x, coins = x, regen = x, cardio = x (treadmill distance), untilTime = server time or nil (= permanent) }.
 -- Players get attributes the client reads: GainsBoost, CoinsBoost (current multipliers) and ShakeEnds (server time).
 -- Gains still go through Config.Gains, which caps all stacked multipliers together.
 local Players = game:GetService("Players")
@@ -71,6 +71,11 @@ end
 
 function BoostService.Coins(player)
 	return product(player, "coins")
+end
+
+-- treadmill distance multiplier (Coconut Water, Config.Meals)
+function BoostService.Cardio(player)
+	return product(player, "cardio")
 end
 
 -- Drinking a shake: +Duration seconds of boost (stacking up to MaxDuration).
