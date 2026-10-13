@@ -5,10 +5,12 @@
 --                  - / "45 LB" / +, "Tier 1 / 12" and BEST WEIGHT in gold on one line; when the weight needs a higher
 --                  level, that requirement gets its own line (small, cut with "...") and BEST WEIGHT moves under it.
 --                  AUTO TRAIN under the card (only while Auto Lift is on sale)
---   right, bottom: the red REP CTA ("REP x9", 150x52) with the PUMP panel right above it (same width; full = it glows and
+--   right, bottom: the red REP CTA ("REP x9", 150x46) with the PUMP panel right above it (same width; full = it glows and
 --                  says "TAP TO PUMP!", a tap or Space starts PUMPED x2 and the bar drains with the seconds left).
---                  On touch screens they sit above Roblox's jump button (10 px gap, read from TouchGui's JumpButton);
---                  on a PC / console in the bottom right corner.
+--                  ONE fixed spot (owner, 14 Oct: it must never move during play): on touch screens directly above
+--                  Roblox's jump button (12 px gap, right edges lined up), worked out once from TouchGui's JumpButton
+--                  (its size and place are there even while Roblox hides it on a seat) and again only when the screen
+--                  size changes; on a PC / console the bottom right corner.
 --   left, bottom:  a quiet "x STOP" button (on touch screens above the thumbstick)
 --   bottom center: the slim STAMINA bar (Shared/UI/HudBottom)
 --   top center:    NEW PERSONAL RECORD! (gold) + "315 LB Bench Press"
@@ -30,11 +32,11 @@ MachineHud.PanelTop = 52 -- (set from Kit.UnderTopbar: just under Roblox's top b
 MachineHud.Edge = 12
 MachineHud.HiddenOffset = UDim2.fromOffset(0, 260) -- the bottom widgets wait below the screen edge
 MachineHud.PanelHidden = UDim2.fromOffset(240, 0)  -- the weight card waits past the right edge
-MachineHud.RepSize = Vector2.new(150, 52)
+MachineHud.RepSize = Vector2.new(150, 46)
 MachineHud.PumpSize = Vector2.new(150, 40)
 MachineHud.Corner = 12   -- gap to the screen edges (PC)
-MachineHud.TouchLift = 150 -- touch screen without a readable jump button / thumbstick: this far up from the bottom
-MachineHud.TouchGap = 10   -- REP above the jump button, STOP above the thumbstick
+MachineHud.TouchLift = 150 -- touch screen before Roblox has made its jump button / thumbstick: this far up from the bottom
+MachineHud.TouchGap = 12   -- REP above the jump button, STOP above the thumbstick
 MachineHud.BarHeight = 46
 MachineHud.PlateWidth = 6
 
@@ -53,10 +55,11 @@ local function stepButton(name, icon, props)
 	return button
 end
 
--- Roblox's touch controls (nil on a PC / console): the jump button and the thumbstick's resting place
+-- Roblox's touch controls (nil on a PC / console): the jump button and the thumbstick's resting place. Their size and
+-- place are read even while Roblox hides them (on a seat), so the answer never changes during play.
 local function touchControls(playerGui)
 	local touchGui = playerGui:FindFirstChild("TouchGui")
-	local controls = touchGui and touchGui.Enabled and touchGui:FindFirstChild("TouchControlFrame")
+	local controls = touchGui and touchGui:FindFirstChild("TouchControlFrame")
 	if not controls then return nil, nil end
 	local jump = controls:FindFirstChild("JumpButton")
 	local stick = nil
@@ -67,7 +70,7 @@ local function touchControls(playerGui)
 			break
 		end
 	end
-	return (jump and jump:IsA("GuiObject") and jump.Visible and jump.AbsoluteSize.X > 0) and jump or nil, stick
+	return (jump and jump:IsA("GuiObject") and jump.AbsoluteSize.X > 0) and jump or nil, stick
 end
 
 function MachineHud.Build()
@@ -199,36 +202,65 @@ function MachineHud.Build()
 	panel:GetPropertyChangedSignal("Size"):Connect(placeUnderTopbar)
 	gui:GetPropertyChangedSignal("Enabled"):Connect(function() task.defer(placeUnderTopbar) end)
 
-	-- REP / PUMP above Roblox's jump button and STOP above the thumbstick on touch screens; the corners on a PC
-	local function placeForInput()
+	-- REP / PUMP directly above Roblox's jump button and STOP above the thumbstick on touch screens; the corners on a PC.
+	-- Worked out once and kept (owner, 14 Oct: REP never moves while playing); only a new screen size works it out again.
+	local placed = nil -- { repRight, repBottom, stopBottom, final } in mockup px (final: measured from the real controls)
+	local function measure()
 		local s = Kit.Scale()
 		local rootTop, rootH = root.AbsolutePosition.Y, root.AbsoluteSize.Y
 		local rootRight = root.AbsolutePosition.X + root.AbsoluteSize.X
+		if rootH < 1 then return nil end
 		local jump, stick = touchControls(playerGui)
+		-- (right after spawning Roblox hasn't placed its controls yet: only a jump button / thumbstick in the lower half of
+		-- the screen counts, so a half-made layout is never kept)
+		local half = rootTop + rootH / 2
+		if jump and jump.AbsolutePosition.Y < half then jump = nil end
+		if stick and stick.AbsolutePosition.Y < half then stick = nil end
 		local touch = UserInputService.TouchEnabled
-		local repRight, repBottom = corner, corner
+		local result = { repRight = corner, repBottom = corner, stopBottom = corner, final = not touch or (jump ~= nil and stick ~= nil) }
 		if jump then
-			repRight = math.max(corner, (rootRight - (jump.AbsolutePosition.X + jump.AbsoluteSize.X)) / s)
-			repBottom = (rootTop + rootH - jump.AbsolutePosition.Y) / s + MachineHud.TouchGap
+			result.repRight = math.max(corner, (rootRight - (jump.AbsolutePosition.X + jump.AbsoluteSize.X)) / s)
+			result.repBottom = (rootTop + rootH - jump.AbsolutePosition.Y) / s + MachineHud.TouchGap
 		elseif touch then
-			repBottom = MachineHud.TouchLift
+			result.repBottom = MachineHud.TouchLift
 		end
-		local stopBottom = corner
 		if stick then
-			stopBottom = (rootTop + rootH - stick.AbsolutePosition.Y) / s + MachineHud.TouchGap
+			result.stopBottom = (rootTop + rootH - stick.AbsolutePosition.Y) / s + MachineHud.TouchGap
 		elseif touch then
-			stopBottom = MachineHud.TouchLift
+			result.stopBottom = MachineHud.TouchLift
 		end
-		rep.Position = UDim2.new(1, -repRight, 1, -repBottom)
-		pump.Position = UDim2.new(1, -repRight, 1, -(repBottom + MachineHud.RepSize.Y + 8))
-		hud.exitButton.Position = UDim2.new(0, corner, 1, -stopBottom)
+		return result
+	end
+	local function apply()
+		if not placed then return end
+		rep.Position = UDim2.new(1, -placed.repRight, 1, -placed.repBottom)
+		pump.Position = UDim2.new(1, -placed.repRight, 1, -(placed.repBottom + MachineHud.RepSize.Y + 8))
+		hud.exitButton.Position = UDim2.new(0, corner, 1, -placed.stopBottom)
+	end
+	-- the first measurement from the real controls (on a PC: the corners) is kept for good
+	local function placeForInput()
+		if placed and placed.final then
+			apply()
+			return
+		end
+		local result = measure()
+		if result then
+			placed = result
+			apply()
+		end
 	end
 	hud.placeForInput = placeForInput
-	Kit.OnScale(function() task.defer(placeForInput) end)
-	task.spawn(function() -- (the touch controls come and go: a gamepad or keyboard hides them)
+	local function screenChanged()
+		placed = nil -- (a new screen size: work it out again)
+		task.defer(placeForInput)
+	end
+	local camera = workspace.CurrentCamera
+	if camera then camera:GetPropertyChangedSignal("ViewportSize"):Connect(screenChanged) end
+	Kit.OnScale(screenChanged)
+	task.spawn(function() -- (until Roblox has made its touch controls; checks once a second, never while a spot is final)
 		while true do
-			if gui.Enabled then placeForInput() end
-			task.wait(0.5)
+			if not (placed and placed.final) then placeForInput() end
+			task.wait(1)
 		end
 	end)
 

@@ -112,7 +112,7 @@ local figure = New("Frame", { Name = "Figure", BackgroundTransparency = 1, Ancho
 local front = New("Frame", { Name = "Front", BackgroundTransparency = 1, Size = UDim2.fromScale(0.5, 1), Parent = figure })
 local back = New("Frame", { Name = "Back", BackgroundTransparency = 1, Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.5, 1), Parent = figure })
 -- "71" big gold + "%" muted on the left; "PHYSIQUE" small muted over "AESTHETIC" in gold on the right
-local sizeRow = New("Frame", { Name = "SizeRow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 10, 1, -6),
+local sizeRow = New("Frame", { Name = "SizeRow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 10, 1, -20),
 	Size = UDim2.fromOffset(0, 54), AutomaticSize = Enum.AutomaticSize.X, Parent = bodyCard }, {
 	Theme.List(Horizontal, 2, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Bottom),
 })
@@ -121,9 +121,13 @@ local sizeLabel = Kit.GoldText(Kit.Text({ Name = "Size", LayoutOrder = 1, Text =
 Kit.Text({ Name = "Percent", LayoutOrder = 2, Text = "%", Font = "Number", TextSize = 20, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 24),
 	AutomaticSize = Enum.AutomaticSize.X, Parent = sizeRow })
 Kit.Text({ Name = "PhysiqueWord", Text = "PHYSIQUE", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -10, 1, -30), Size = UDim2.fromOffset(100, 14), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard })
+	Position = UDim2.new(1, -10, 1, -44), Size = UDim2.fromOffset(100, 14), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard })
 local physiqueLabel = Kit.GoldText(Kit.Text({ Name = "Physique", Text = "", Font = "Title", TextSize = 17, Upper = true, AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -10, 1, -10), Size = UDim2.fromOffset(110, 20), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard }))
+	Position = UDim2.new(1, -10, 1, -24), Size = UDim2.fromOffset(110, 20), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard }))
+-- (owner, 14 Oct) above the starting height the % is honest but lower: a taller frame has more muscle to fill
+local tallerNote = Kit.Text({ Name = "TallerNote", Text = "Taller frame - more muscle to fill", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted,
+	AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 10, 1, -6), Size = UDim2.new(1, -20, 0, 13), TextXAlignment = Enum.TextXAlignment.Left,
+	TextTruncate = Enum.TextTruncate.AtEnd, Visible = false, Parent = bodyCard })
 -- the labels switch: a small eye button in the card's top right corner (gold while the labels show)
 labelsButton = Kit.Button("Quiet", "", { Name = "Labels", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 6), ZIndex = 4, Parent = bodyCard },
 	{ width = 32, height = 32, icon = "eye" })
@@ -292,6 +296,7 @@ function refreshScreen()
 		spurtButton.Visible = ready
 		sizeLabel.Parent.Visible = not ready
 		physiqueLabel.Visible = not ready
+		tallerNote.Visible = not ready and GrowthSpurts.GetHeight(data.growthSpurts or 0) > GrowthSpurts.GetHeight(0)
 		bodyCard:FindFirstChild("PhysiqueWord").Visible = not ready
 		if ready then Theme.Pulse(spurtButton, function() return modal.isOpen() and spurtButton.Visible end) end
 	elseif currentTab == "Lifts" then
@@ -450,4 +455,8 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	end)
 	Audio.Play2D("GrowthSpurt")
 	chalkBurst()
+	-- once per Growth Spurt, after the big line: why the % dropped (owner, 14 Oct)
+	task.delay(3.4, function()
+		require(Shared.UI.Notify).Show("You grew! Your muscles have more room to grow.", nil, "grewRoom")
+	end)
 end)

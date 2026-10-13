@@ -75,6 +75,18 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   (LookG clamped to 1), grade from it (S 90+, A 75+, B 55+, C 35+, D), total = average of the six; bars S red, A gold,
   B teal, C steel, D dark gray. LABELS switch = a small eye button in the body card's corner. The left menu folds while
   any window is open. Studio hook: Workspace TestOpenPanel = "Physique" opens it.
+- Physique note (owner): under the total "Taller frame - more muscle to fill" (above the starting height); after a
+  Growth Spurt, once, the toast "You grew! Your muscles have more room to grow." TestOpenPanel only works in Studio
+  (RunService:IsStudio()).
+- REP never moves (owner): its spot is worked out once from TouchGui's JumpButton (readable even while Roblox hides it
+  on a seat; 12 px above it, right edges lined up; PC: bottom right), then only again when the screen size changes. No
+  more 0.5 s re-checks or "jump hidden" fallback. REP 150x46, PUMP right above it.
+- Genetics: the 3D stage is back (restored from git, before bdaf259; its set pieces never moved: ReplicatedStorage.
+  GeneticsSet / GeneticsCameraRig). Phones frame it like a PC: the pose is worked out once on a virtual 1920x1080 screen
+  (stage between 17% and 70% of the height), FieldOfView = max(PC FOV, the FOV that keeps the PC's horizontal view on
+  this aspect). The labels under each plate are gone: GENETICS + DNA tokens on the top bar line, the rest in one
+  final-kit bottom panel (Overall + six groups in a row, Frame / Body chips, View odds, REROLL quiet, KEEP red). Fixed an
+  old bug on the way (the reveal reset a global spinFactor).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
