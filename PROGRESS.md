@@ -2,7 +2,37 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (13 Oct, evening): BIG UI + BUG RUN (owner's v2 prompt, Gym League style), in progress
+## MORNING REPORT (14 Oct): the BIG UI + BUG RUN is done
+**What's done:** all 5 Part 1 bugs (machine HUD, leaving a machine, floating text, pro gym door loop, broken tops),
+every screen of the v2 mockups (main HUD, machine HUD, Shop, Quests with Daily / Rewards / Achievements, Trainers,
+Stats, Titles, Smoothie bar, Settings, tutorial dialog, posing, arm wrestling, loading screen, main menu) plus Emotes and
+Crew in the same window style, and the old colored left-menu tiles tidied (Shop first, badges, "<" fold, folds while
+lifting). Everything is in Studio, exported to `src/` (all 140 scripts byte-checked), committed and pushed; logic tests
+pass, every script compiles. Side-by-side screenshots: `screenshots/ui_compare_v2/` (phone 844x390 + PC).
+**Nothing to upload:** all the images are uploaded (ids in `Config/UI`). The only pass with an id is Extra Trainer
+(2032496303); the other passes / products stay hidden until you give their ids.
+**Test these 3 first:**
+1. New player (Workspace attribute FreshPlayer = true): loading screen -> menu -> PLAY -> genetics -> the Quests window
+   with the Daily Reward -> the tutorial (coach dialog, SKIP TUTORIAL needs two taps). Then sit on the Flat Bench and
+   leave with STOP TRAINING and with jump.
+2. Trainers tile: tap a picture with not enough coins (shake + "Not enough coins"), then hire one (TestCoins = 2000 with
+   FreshPlayer) and check the follower looks like his picture (cap / headband / visor / headphones).
+3. Your own save (FreshPlayer = false): the menu pill (coins | LVL | height), SHOP and UPDATES, then PLAY: the camera
+   should show your whole 7'0" character.
+**Assumptions (please check):** the left menu's Poses tile opens Emotes; Stats (labels) and Muscles (the Stats window)
+stay two tiles; AUTO on the machine panel only shows while the Auto Lift pass has an id; the mockup's "Coach Dante" is
+our Coach Dex (Dante is the pro gym's 8'0" NPC); the mockup's "Other Screams" setting = "Others' Sounds" and "Other
+Auras" is left out (no auras in the game); the Shop's Coins / Boosts / Auras tabs are left out (no coins for sale, no
+auras); smoothie prices stay at the Config values (60 / 50 / 90 / 40), the mockup's numbers were examples; SKIP TUTORIAL
+needs two taps and gives no reward, finishing the tutorial gives 50 coins (new); hiring a trainer works anywhere (the
+Trainer Desk just opens the window); trainers have no names anywhere (their NPC name tags are gone too).
+**Still open (small):** a few skin spots on the lower back under a top at big sizes (Wardrobe is off anyway); the
+spotting popup, clothing store, rival card and mirror card use the new colors and buttons but weren't redrawn one by one.
+**Studio test switches cleared:** TestStore, TestCoins, TestMuscleShare, TestPhoneSize; FreshPlayer is set to false.
+**Please:** File > Save to Roblox, then File > Download a Copy to
+`C:\Users\kaung\OneDrive\Documents\GymArc_backups\GymArc_2026-10-14.rbxl`, and check the new version in Version History.
+
+## 13 Oct, evening: BIG UI + BUG RUN (owner's v2 prompt, Gym League style), DONE
 The dark image-piece redesign (earlier today) is CANCELLED by the owner; its 9-slice pieces are gone from `Config/UI`.
 **Left menu (owner's change of plan, mid-run):** the OLD colored tiles stay (not the 3D-icon tiles of the v2 mockups;
 `menu_*.png` are uploaded but not used). Buttons and panels use the same rounded style and colored borders.

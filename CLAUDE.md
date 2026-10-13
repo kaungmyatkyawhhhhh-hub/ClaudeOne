@@ -15,13 +15,17 @@
   was lost once because the place was never saved to Roblox.
 - Cloud sessions can't reach Studio: they can only edit `src/`, and the owner must copy those changes into Studio.
   Say so clearly.
-- **UI style: the owner's UI redesign** (13 Oct, `Downloads\GYM_ARC_UI_redesign.md` + the mockups; summary in
-  `docs/DESIGN.md`): dark warm panels from 9-slice image pieces (`Config/UI`), red primary buttons, Oswald + Montserrat.
-  `ReplicatedStorage.Shared.UI.Theme` (look) and `Shared.UI.Kit` (components) are the source of truth: use them, never
-  hardcoded styles. StarterGui is empty; all UI is built in code. All data writes go through `PlayerData`.
-- UI fonts: Oswald (titles, buttons, tabs, numbers; UPPERCASE titles / buttons) + Montserrat (body), per the redesign
-  brief (`Shared.UI.UIFonts`).
-- Monetization stays OFF (no gamepasses/products/badges created). No emojis in UI, no grunt sounds, no real
+- **UI style: the owner's UI v2, Gym League style** (13 Oct, `Downloads\GYM_ARC_UI_v2_gymleague_style.md` + the
+  15 mockups in `Downloads\gym_arc_ui_mockups_v2`; summary in `docs/DESIGN.md`; the dark 9-slice redesign is CANCELLED):
+  FredokaOne white text with a thick black outline, glossy gradient buttons with dark outlines, dark rounded panels with
+  tabs above and a red X, blur behind windows. The left menu keeps the OLD colored rounded-square tiles (owner's change of
+  plan; never the 3D menu_*.png icons). `ReplicatedStorage.Shared.UI.Theme` (look) and `Shared.UI.Kit` (components,
+  Kit.Modal for every window) are the source of truth: use them, never hardcoded styles. StarterGui is empty; all UI is
+  built in code. All data writes go through `PlayerData`.
+- UI fonts: FredokaOne (titles, buttons, tabs, numbers, with the black outline) + Montserrat SemiBold / Bold (body)
+  (`Shared.UI.UIFonts`).
+- Monetization stays OFF except what the owner creates and gives an ID for (13 Oct: the Extra Trainer pass
+  2032496303, `Config/Monetization`); never create passes, products or badges yourself. No emojis in UI, no grunt sounds, no real
   people/brands/copyrighted art. Sound IDs (owner, 13 Oct: "pick audios for me"): Claude picks them, ONLY from Roblox's licensed
   library (creator ProSoundEffects for effects, APM Music for music; never user uploads), and lists every pick in
   `Config/Sounds` comments and the vault's Music and Sounds note so the owner can swap any.

@@ -26,24 +26,28 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - Use a menu screen to cover data loading time.
 - Modular code: shared config ModuleScripts for muscles, machines, titles, genetics, so adding content = adding a table entry.
 
-## UI design system (owner's UI redesign, 13 Oct: Downloads\GYM_ARC_UI_redesign.md + gym_arc_ui_mockups; replaces "clean minimal")
+## UI design system (owner's UI v2, 13 Oct: Gym League style; Downloads\GYM_ARC_UI_v2_gymleague_style.md + the 15 mockups in gym_arc_ui_mockups_v2; the dark 9-slice redesign is cancelled)
 - The mockups (844x390 landscape phone) are the source of truth for layout, sizes, colors and wording. Screens are built
   in mockup px inside `Kit.Root`, whose UIScale follows the screen (shorter side / 390, never wider than 844 px across).
-- Built from 9-slice image pieces (`Config/UI.Pieces`, the owner's uploads in the Myanmar Builders Club group, with the
-  SliceCenter / SliceScale from pieces.json) through `Shared.UI.Theme` (Panel, Button, colors, fonts) and `Shared.UI.Kit`
-  (Button, Tabs, Chip, Bar, Tag, Card, IconTile, GradeBadge, Toggle, Slider, Modal). Text, numbers and icons stay live
-  on top; icons are `Config/UI.Icons` (white, tinted), shop art `Config/UI.ShopIcons`. No hardcoded styles elsewhere.
-- Colors: panel #141113 (6% see-through), cards #1D191B, wells #0F0C0E, borders white at 87% / 93%; text #F6F3F3,
-  muted #9D9396, faint #6F6669; red #E4262F (primary), dark red tint #3A1013, gold #F5B62F, green #36C26B, blue #3F8CFF,
-  purple #9A5CFF. Modal backdrop black at 38% + a slight blur. Grades and rarity keep the bumper plate colors.
-- Fonts (both built into Roblox): Oswald Bold UPPERCASE for titles, buttons, tabs; Oswald SemiBold for numbers;
-  Montserrat SemiBold / Bold for body text; small section labels Oswald SemiBold 10px, muted.
-- Shapes: panels 12, cards / buttons / chips 8-10, tags 5, bars fully round. Buttons have a 3px darker bottom edge;
-  pressed = content down 2px and the edge goes. No gradients except the panel header and progress fills; no glow.
-- Panel header: 46px, a 4px red accent bar, title, tabs, then coins chip and X on the right.
+- Look: FredokaOne white text with a thick black outline for titles, buttons, tabs and numbers; Montserrat SemiBold /
+  Bold for body text. Glossy gradient buttons (Green, Red, Gold, Blue, Gray, Dark, Purple, Orange, Teal) with a dark
+  outline, a lighter colored border and a darker bottom lip; dark rounded top-bar pills; dark panels (#18181E, 14px
+  corners) with cards #28282F. Colors: red #EE3A42, gold #FFC93C, green #5FD35A, blue #4AA3FF; outlines #0D0D12.
+- Windows (`Kit.Modal`): tabs above the panel (the active one red), the title with a red icon, the red X with a white
+  border on the top-right corner, the game blurred and darkened behind; one window at a time; open with a small pop
+  (scale 0.96 -> 1, 0.18 s). The right column, the tutorial band / skip / coach dialog step aside while one is open.
+- Left menu: the OLD colored rounded-square tiles (Shop gold first, Stats dark red, Muscles brown, Titles olive,
+  Genetics teal, Poses pink, Crew navy, Quests teal, Trainers orange; white line icons, white label under, lighter
+  colored border), same size and gap everywhere, the "<" folds it (remembered per player), it folds itself while
+  lifting, red number badges (quests ready, new titles). The Wardrobe tile hides while Config/Features.Wardrobe is false.
+- Top bar: coins, height "6'4" / 7'0"", level on the left; Daily Reward, Quests and the gear on the right.
+- Toasts: small cards under the top bar (max 3, never over the HUD). Hints: one at a time in the top band, gone after 4 s.
+- Built through `Shared.UI.Theme` (colors, gradients, surfaces, buttons, fonts) and `Shared.UI.Kit` (Button, Tabs,
+  Chip, Bar, Tag, Card, IconTile, GradeBadge, Toggle, Slider, Modal, Coin). Icons are `Config/UI.Icons` (white,
+  tinted), shop art `Config/UI.ShopIcons`, trainer portraits `Config/UI.Trainers`, menu / loading art `Config/UI.MenuArt`.
+  No hardcoded styles elsewhere.
 - Text never below 10px at phone size; touch targets at least 44px (the hit area may be bigger than the visual).
-  Spacing in multiples of 4. Open / close: scale from 0.96 + fade 0.18s (Quad Out).
-- Text over the 3D world gets a subtle dark outline (Theme.TextShadow). No CanvasGroup fades (Theme.Fade instead).
+- Text over the 3D world gets a dark outline. No CanvasGroup fades (Theme.Fade instead).
 
 ## Overhead title
 - BillboardGui sized in studs (scales with distance), just above the head and the player's name, MaxDistance ~60.
@@ -393,21 +397,16 @@ The beach gym (opens at Growth Spurt 1) has NO machines of its own (owner, 8 Oct
 (same model, name, config, tiers, EXP and MachineId, so unlocked weights, the "NEW" tag and quests are shared with every
 gym); only the surroundings are beachy. A copy opens with the beach gym, never later than its own gym
 (`Machines.GymOpenAt`, model attribute `Gym`). No "Pro" copies in the pro gym either.
-Start (owner, 9 Oct: as good as the genetics screen): a loading screen from the first frame (ReplicatedFirst): a dark
-room with one soft overhead light and faint chalk dust drifting up, the GYM ARC title, and a BARBELL that loads as the
-game loads: bumper plates in the grade colors (heaviest inside) slide onto both sleeves pair by pair with a clank, the
-collars close, and when full the bar is lifted with a bounce before it fades; the step and a short rotating tip under
-it. It stays until the area behind the menu has streamed in (RequestStreamAroundAsync, ~8s max; the gym building,
-front and entrance are Persistent models) and the other players' stage meshes are in ("Loading players", 8 s max).
-Menu: a slow cinematic tour (MenuClient PLACES): the entrance (the MenuCamera part in Gym.Entrance), the starter gym,
-the pro gym, the beach gym, the skate park, each a slow dolly with soft depth of field, dissolving through black, a
-small caption naming the place (never sky or baseplate). On the left over a dark fade (black, never colored): the big
-GYM ARC title, a thin white rule, "Everyone starts tiny.", for returning players a profile (genetics grade badge, name,
-membership, Growth Spurt + height, equipped title in its rarity color), a solid white PLAY button that breathes (a soft
-glow) and catches a light sweep, TITLES / SETTINGS, small chips (streak, offline coins, Muscle of the Day); the rows
-slide in one after another. Play: from another place it dips to black back to the entrance, the camera glides in
-through the door to behind the character, then the HUD fades in.
-NO shop on menu. New players get a simplified menu.
+Start (owner's UI v2, 13 Oct, mockups 00): a loading screen from the first frame (ReplicatedFirst; Roblox's default is
+removed): black with the menu art (`Config/UI.MenuArt`) on the right fading into the dark, the GYM ARC logo (GYM white,
+ARC red) and "Everyone starts tiny.", a rotating "TIP:" line (`Config/UI.LoadingTips`), a red progress bar with the step
+("Loading muscles... 64%": the game, ContentProvider:PreloadAsync of the UI images, the save data and the world around
+you, the other players' body meshes), SKIP top right after 5 s, then it fades into the menu. Menu: the same art, the logo
+and tagline, a big green PLAY, a gold SHOP (players who finished the tutorial, only while something is for sale; it plays
+and opens the Gym Store), a blue UPDATES (update notes, `Config/UI.Updates`) and a small pill: coins | LVL | height. The
+live gym tour, the white PLAY and the pointing hand are gone. Play: the menu fades, the camera is behind the character at
+a distance that fits their height, the HUD fades in.
+New players get a simplified menu (PLAY and UPDATES only).
 First 5 minutes: genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack
 → stats (inspect mode) → first quest → Growth Spurt goal shown. Taught with glowing paths and one-line coach messages.
 No shop/gamepass prompts in the first 5 minutes.
