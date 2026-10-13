@@ -82,6 +82,8 @@ UI.Trainers = { -- portraits shown in the Trainers panel (by Config/Trainers id 
 }
 
 UI.MenuArt = "rbxassetid://99238211044120" -- main menu + loading screen (right side, fading into the dark)
+-- the GYM ARC logo image (Downloads\gym_arc_ui_3d_icons\logo.png, 1182x286, uploaded from Studio 14 Oct): loading screen + menu
+UI.Logo = "rbxassetid://84167052331251"
 
 -- Loading screen tips (one at a time, rotating)
 UI.LoadingTips = {

@@ -46,7 +46,6 @@ local NOT_HUD = { MenuScreen = true, LoadingScreen = true, GeneticsScreen = true
 -- avatar headshot, name, "Level 27 · 6'4"", coins); a small "NEW · <latest update>" tag bottom-right. Drawn in mockup px
 -- inside Kit.Root with the Theme / Kit pieces.
 ------------------------------------------------------------------------
-local LOGO_FONT = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold) -- (the logo: tall condensed caps)
 local PANEL = Vector2.new(290, 292)
 
 local gui = Theme.ScreenGui({ Name = "MenuScreen", DisplayOrder = 20, IgnoreGuiInset = true, Parent = playerGui })
@@ -78,18 +77,9 @@ local root = Kit.Root(gui)
 local column = Theme.Panel({ Name = "Column", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 46, 0.5, 0), Size = UDim2.fromOffset(PANEL.X, PANEL.Y),
 	Parent = root })
 
--- the logo: GYM in white (a soft top light), ARC in red
-local logo = New("Frame", { Name = "Logo", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 12), Size = UDim2.new(1, 0, 0, 70), Parent = column }, {
-	Theme.List(Enum.FillDirection.Horizontal, 14, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
-})
-New("TextLabel", { Name = "GYM", LayoutOrder = 1, BackgroundTransparency = 1, Text = "GYM", FontFace = LOGO_FONT, TextSize = 64, TextColor3 = Color3.new(1, 1, 1),
-	Size = UDim2.fromOffset(0, 70), AutomaticSize = Enum.AutomaticSize.X, Parent = logo }, {
-	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromHex("#CFC8CA")) }),
-})
-New("TextLabel", { Name = "ARC", LayoutOrder = 2, BackgroundTransparency = 1, Text = "ARC", FontFace = LOGO_FONT, TextSize = 64, TextColor3 = Color3.new(1, 1, 1),
-	Size = UDim2.fromOffset(0, 70), AutomaticSize = Enum.AutomaticSize.X, Parent = logo }, {
-	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#FF4A52"), Color3.fromHex("#C41E27")) }),
-})
+-- the logo image (Config/UI.Logo: GYM white, ARC red)
+New("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = UI.Logo, ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 14), Size = UDim2.fromOffset(PANEL.X - 40, 64), Parent = column })
 Kit.Text({ Name = "Tagline", Text = "Everyone starts tiny.", Font = "Strong", TextSize = 13, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, 84),
 	Size = UDim2.new(1, 0, 0, 18), Parent = column })
 

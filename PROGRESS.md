@@ -44,6 +44,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   player row: headshot, name, "Level 46 · 7'0"", coins); bottom right a NEW tag with the newest update's name (opens the
   update notes). Loading screen unchanged.
 - Settings: new "Reduce Motion" row (settings.reduceMotion On/Off): stops the UI's looping pulses and shines.
+- Loading screen (mockup 00_loading): the logo IMAGE (Config/UI.Logo 84167052331251, uploaded from
+  gym_arc_ui_3d_icons/logo.png; the title menu uses it too), gray tagline, the tip in a graphite tile with a gold TIP tag,
+  "LOADING PLAYERS" heavy italic + gold percent, thick metallic red bar in a dark track, page dots (gold = current tip),
+  quiet SKIP.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

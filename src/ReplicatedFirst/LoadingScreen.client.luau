@@ -1,14 +1,16 @@
--- LoadingScreen: replaces Roblox's default loading screen from the very first frame (owner's UI v2, mockup 00_loading).
--- Black, with the menu art (UI.MenuArt) on the right fading into the dark on its left and a dim, soft copy of it behind
--- everything; the GYM ARC logo (GYM white, ARC red, FredokaOne with a thick black outline), "Everyone starts tiny.", a
--- rotating tip ("TIP:" in gold, Config/UI.LoadingTips), and at the bottom a red progress bar with the step in it
--- ("Loading muscles... 64%"). SKIP shows top right after 5 seconds (straight to the menu). It fades into the menu.
+-- LoadingScreen: replaces Roblox's default loading screen from the very first frame (owner's final kit "BLACK + GOLD",
+-- mockup gym_arc_ui_final/00_loading). Black, with the menu art (UI.MenuArt) on the right fading into the dark on its left
+-- and a dim, soft copy of it behind everything; the GYM ARC logo image (UI.Logo), "Everyone starts tiny." in gray, a
+-- rotating tip in a dark graphite tile with a small gold TIP tag (Config/UI.LoadingTips), and at the bottom the step
+-- ("LOADING PLAYERS", heavy italic) with the percent in gold on the right, a thick metallic red bar in a dark track and
+-- small page dots under it (gold = the current tip). SKIP (a quiet dark button) shows top right after 5 seconds
+-- (straight to the menu). It fades into the menu.
 -- Steps (the bar): the game itself (to 30%), "Loading muscles" = ContentProvider:PreloadAsync of the UI images (icons,
 -- art, trainer portraits; to 55%), "Loading the gym" = your save data and the world around you (MenuClient's MenuLoad
 -- attribute 0..1, to 90%), "Loading players" = the other players' body stage meshes (Shared.BodyStages, to 100%, at most
 -- TIMING.Stages seconds). Between steps the bar creeps a little so it never looks stuck.
--- This starts before ReplicatedStorage has replicated, so the colors, fonts, the art id and a few tips are repeated here
--- (Theme: background #0C0A0C, red #EE3A42, gold #FFC93C; FredokaOne; UI.MenuArt); the full tip list is read once it's in.
+-- This starts before ReplicatedStorage has replicated, so the kit's colors, fonts, the art / logo ids and a few tips are
+-- repeated here (Theme.Colors, UIFonts, UI.MenuArt / UI.Logo); the full tip list is read once it's in.
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local RunService = game:GetService("RunService")
@@ -21,16 +23,31 @@ ReplicatedFirst:RemoveDefaultLoadingScreen()
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+local MONTSERRAT = "rbxasset://fonts/families/Montserrat.json"
 local LOOK = {
 	Background = Color3.fromHex("#0C0A0C"),
 	Text = Color3.fromHex("#FFFFFF"),
-	Red = Color3.fromHex("#EE3A42"),
-	Gold = Color3.fromHex("#FFC93C"),
-	Outline = Color3.fromHex("#0D0D12"),
-	Track = Color3.fromHex("#1B171A"),
-	Display = Font.fromEnum(Enum.Font.FredokaOne),
+	Muted = Color3.fromHex("#A39A9D"),
+	Gold = Color3.fromHex("#F6C75A"),
+	Ink = Color3.fromHex("#2A1C05"),
+	Outline = Color3.fromHex("#050405"),
+	Well = Color3.fromHex("#0A090B"),
+	PanelTop = Color3.fromHex("#252226"),
+	PanelBottom = Color3.fromHex("#18161A"),
+	QuietTop = Color3.fromHex("#2E2A2F"),
+	QuietBottom = Color3.fromHex("#1A181B"),
+	Dot = Color3.fromHex("#3A363B"),
+	Display = Font.new(MONTSERRAT, Enum.FontWeight.Heavy, Enum.FontStyle.Italic), -- UIFonts.Display
+	Body = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
 	Art = "rbxassetid://99238211044120", -- Config/UI.MenuArt
+	Logo = "rbxassetid://84167052331251", -- Config/UI.Logo
 }
+local GOLD = ColorSequence.new({ -- Theme.GoldSequence
+	ColorSequenceKeypoint.new(0, Color3.fromHex("#FFF3C4")),
+	ColorSequenceKeypoint.new(0.3, Color3.fromHex("#F6C75A")),
+	ColorSequenceKeypoint.new(0.72, Color3.fromHex("#C98A12")),
+	ColorSequenceKeypoint.new(1, Color3.fromHex("#F2C45A")),
+})
 local TIMING = { Skip = 5, Tip = 4.5, Fade = 0.5, Stages = 8, GiveUp = 25, Creep = 0.08, CreepTime = 6, Follow = 4 }
 local TIPS = {
 	"Spot other players on their lifts to earn coins!",
@@ -48,15 +65,25 @@ local function new(class, props, children)
 	if props and props.Parent then instance.Parent = props.Parent end
 	return instance
 end
-local function outlined(props)
-	local thickness = props.Stroke or 2
-	props.Stroke = nil
+local function text(props)
 	props.BackgroundTransparency = 1
 	props.FontFace = props.FontFace or LOOK.Display
 	props.TextColor3 = props.TextColor3 or LOOK.Text
 	local label = new("TextLabel", props)
-	new("UIStroke", { Color = LOOK.Outline, Thickness = thickness, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
+	-- the kit's soft dark outline on text
+	new("UIStroke", { Color = LOOK.Outline, Thickness = 1, Transparency = 0.55, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
 	return label
+end
+-- a graphite surface (top -> bottom gradient, a dark edge, the light hairline along the top)
+local function graphite(frame, top, bottom, radius)
+	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	frame.BorderSizePixel = 0
+	new("UICorner", { CornerRadius = UDim.new(0, radius), Parent = frame })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(top, bottom), Parent = frame })
+	new("UIStroke", { Color = LOOK.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = frame })
+	new("Frame", { Name = "Hairline", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.78, BorderSizePixel = 0,
+		Position = UDim2.new(0, radius, 0, 1), Size = UDim2.new(1, -2 * radius, 0, 1), Parent = frame })
+	return frame
 end
 
 local gui = new("ScreenGui", { Name = "LoadingScreen", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 100,
@@ -66,7 +93,7 @@ local back = new("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), Backgro
 new("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop, ImageTransparency = 0.9, ImageColor3 = Color3.fromRGB(110, 90, 90),
 	Size = UDim2.fromScale(1, 1), Parent = back })
 -- the art on the right, fading into the dark on its left
-local art = new("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop, AnchorPoint = Vector2.new(1, 0),
+new("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop, AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.62, 1), Parent = back }, {
 	new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.42, 0.2),
 		NumberSequenceKeypoint.new(0.6, 0), NumberSequenceKeypoint.new(1, 0) }) }),
@@ -84,37 +111,73 @@ end
 rescale()
 if Workspace.CurrentCamera then Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale) end
 
--- the logo
-local logo = new("Frame", { Name = "Logo", BackgroundTransparency = 1, Position = UDim2.fromOffset(46, 62), Size = UDim2.fromOffset(380, 82), Parent = root }, {
-	new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 14), VerticalAlignment = Enum.VerticalAlignment.Center,
+-- the logo and the tagline
+new("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = LOOK.Logo, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(40, 64),
+	Size = UDim2.fromOffset(268, 65), Parent = root })
+text({ Name = "Tagline", Text = "Everyone starts tiny.", FontFace = LOOK.Body, TextSize = 14, TextColor3 = LOOK.Muted, Position = UDim2.fromOffset(44, 140),
+	Size = UDim2.fromOffset(330, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
+
+-- the tip: a graphite tile with a small gold TIP tag
+local tipTile = graphite(new("Frame", { Name = "TipTile", Position = UDim2.fromOffset(44, 200), Size = UDim2.fromOffset(320, 0),
+	AutomaticSize = Enum.AutomaticSize.Y, Parent = root }), LOOK.PanelTop, LOOK.PanelBottom, 10)
+-- (the padding sits on an inner frame, so the tile's hairline stays on its top edge)
+local tipBody = new("Frame", { Name = "Body", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = tipTile }, {
+	new("UIPadding", { PaddingTop = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 14) }),
+})
+local tag = new("Frame", { Name = "Tag", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromOffset(32, 16), Parent = tipBody }, {
+	new("UICorner", { CornerRadius = UDim.new(0, 4) }),
+	new("UIGradient", { Rotation = 90, Color = GOLD }),
+})
+new("TextLabel", { Name = "Text", BackgroundTransparency = 1, Text = "TIP", FontFace = LOOK.Display, TextSize = 11, TextColor3 = LOOK.Ink,
+	Size = UDim2.fromScale(1, 1), Parent = tag })
+local tip = text({ Name = "Tip", Text = "", FontFace = LOOK.Body, TextSize = 13, TextWrapped = true, Position = UDim2.fromOffset(42, 0),
+	Size = UDim2.new(1, -42, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.1, Parent = tipBody })
+
+-- the step and the percent, the bar, the page dots
+local status = text({ Name = "Status", Text = "LOADING THE GAME", TextSize = 13, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 44, 1, -60),
+	Size = UDim2.fromOffset(400, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
+local percent = text({ Name = "Percent", Text = "0%", TextSize = 19, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -44, 1, -58),
+	Size = UDim2.fromOffset(90, 22), TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
+new("UIGradient", { Rotation = 90, Color = GOLD, Parent = percent })
+local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -38), Size = UDim2.new(1, -88, 0, 14),
+	BackgroundColor3 = LOOK.Well, BorderSizePixel = 0, Parent = root }, {
+	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	new("UIStroke", { Color = Color3.fromHex("#2A262B"), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	new("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2) }),
+})
+-- metallic red: a bright band near the top, a dark bottom
+local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = bar }, {
+	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromHex("#FF8A90")),
+		ColorSequenceKeypoint.new(0.28, Color3.fromHex("#F2434B")),
+		ColorSequenceKeypoint.new(0.62, Color3.fromHex("#D0222B")),
+		ColorSequenceKeypoint.new(1, Color3.fromHex("#8E1219")),
+	}) }),
+})
+local dots = new("Frame", { Name = "Dots", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 44, 1, -24),
+	Size = UDim2.fromOffset(300, 6), Parent = root }, {
+	new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), VerticalAlignment = Enum.VerticalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder }),
 })
-outlined({ Name = "Gym", LayoutOrder = 1, Text = "GYM", TextSize = 78, Size = UDim2.fromOffset(0, 82), AutomaticSize = Enum.AutomaticSize.X, Stroke = 4, Parent = logo })
-outlined({ Name = "Arc", LayoutOrder = 2, Text = "ARC", TextSize = 78, TextColor3 = LOOK.Red, Size = UDim2.fromOffset(0, 82), AutomaticSize = Enum.AutomaticSize.X, Stroke = 4, Parent = logo })
-outlined({ Name = "Tagline", Text = "Everyone starts tiny.", TextSize = 18, Position = UDim2.fromOffset(46, 146), Size = UDim2.fromOffset(330, 24),
-	TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
-local tip = outlined({ Name = "Tip", Text = "", RichText = true, TextSize = 15, TextWrapped = true, Position = UDim2.fromOffset(46, 228), Size = UDim2.fromOffset(310, 44),
-	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = root })
+local function drawDots(count: number, current: number)
+	for _, child in ipairs(dots:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+	for index = 1, count do
+		new("Frame", { Name = "Dot" .. index, LayoutOrder = index, BorderSizePixel = 0, Size = UDim2.fromOffset(index == current and 18 or 6, 5),
+			BackgroundColor3 = index == current and LOOK.Gold or LOOK.Dot, Parent = dots }, {
+			new("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		})
+	end
+end
 
--- the progress bar
-local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -28), Size = UDim2.new(1, -92, 0, 24),
-	BackgroundColor3 = LOOK.Track, Parent = root }, {
-	new("UICorner", { CornerRadius = UDim.new(0, 7) }),
-	new("UIStroke", { Color = LOOK.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-})
-local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = bar }, {
-	new("UICorner", { CornerRadius = UDim.new(0, 7) }),
-	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(LOOK.Red:Lerp(Color3.new(1, 1, 1), 0.2), LOOK.Red:Lerp(Color3.new(0, 0, 0), 0.15)) }),
-})
-local status = outlined({ Name = "Status", Text = "Loading the game... 0%", TextSize = 15, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = bar })
-
-local skip = new("TextButton", { Name = "Skip", Text = "SKIP", FontFace = LOOK.Display, TextSize = 16, TextColor3 = LOOK.Text, AutoButtonColor = true,
-	AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16), Size = UDim2.fromOffset(84, 32), BackgroundColor3 = Color3.fromHex("#2E2E36"),
-	Visible = false, Parent = root }, {
-	new("UICorner", { CornerRadius = UDim.new(0, 8) }),
-	new("UIStroke", { Color = Color3.fromHex("#6A6A76"), Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-})
-new("UIStroke", { Color = LOOK.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = skip })
+-- SKIP: a quiet dark button (the word is its own label: the button's gradient would tint its text too)
+local skip = new("TextButton", { Name = "Skip", Text = "", AutoButtonColor = true, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 14),
+	Size = UDim2.fromOffset(64, 34), Visible = false, Parent = root })
+graphite(skip, LOOK.QuietTop, LOOK.QuietBottom, 9)
+text({ Name = "Label", Text = "SKIP", TextSize = 14, Size = UDim2.fromScale(1, 1), Parent = skip })
 
 ------------------------------------------------------------------------
 -- Progress
@@ -136,6 +199,7 @@ local function checkUpdating()
 	if updating or Workspace:GetAttribute("SoftShutdown") ~= true then return end
 	updating = true
 	label = "Updating the gym"
+	dots.Visible = false
 	tip.Text = "Taking you to the new version. Your progress is saved."
 	setStep(0.9)
 end
@@ -192,8 +256,8 @@ task.spawn(function()
 	local index = rng:NextInteger(1, #TIPS)
 	while gui.Parent do
 		index = index % #TIPS + 1
-		tip.Text = if updating then "Taking you to the new version. Your progress is saved."
-			else ('<font color="#' .. LOOK.Gold:ToHex() .. '">TIP:</font> ' .. TIPS[index])
+		tip.Text = if updating then "Taking you to the new version. Your progress is saved." else TIPS[index]
+		drawDots(#TIPS, index)
 		TweenService:Create(tip, TweenInfo.new(0.3), { TextTransparency = 0 }):Play()
 		task.wait(TIMING.Tip)
 		if not gui.Parent then break end
@@ -264,5 +328,6 @@ connection = RunService.RenderStepped:Connect(function(dt)
 	shown += (target - shown) * math.min(1, dt * TIMING.Follow)
 	if step >= 1 and target - shown < 0.01 then shown = 1 end
 	fill.Size = UDim2.fromScale(math.max(shown, 0.02), 1)
-	status.Text = if label == "Let's lift" then label else string.format("%s... %d%%", label, math.floor(shown * 100))
+	status.Text = string.upper(label)
+	percent.Text = math.floor(shown * 100) .. "%"
 end)
