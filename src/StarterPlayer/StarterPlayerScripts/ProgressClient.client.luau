@@ -1,9 +1,9 @@
--- ProgressClient: the GROW tile in the right column (owner's UI v2, mockup 01_main_hud) and the short "you grew" moment
--- when the body moves up a muscle tier (BodyService fires "Grew").
---  * The tile: a gold square with a big up arrow and "Growth Spurt N" under it. While you work toward it, it shows how far
---    you are (the EXP so far / the goal, each group counted up to its goal) as "62%"; when every group is there it says
---    GROW! with a red READY tag, and a tap does the Growth Spurt (same action as the Stats screen's button). Before that a
---    tap opens Stats. At 7'0" it reads MAX (gray).
+-- ProgressClient: the Growth Spurt button in the right column (owner's final kit "BLACK + GOLD", mockup 01_hud) and the
+-- short "you grew" moment when the body moves up a muscle tier (BodyService fires "Grew").
+--  * The button: when every group is at its goal, the wide gold TAP TO GROW CTA ("GROWTH SPURT 2 READY" under it) with a
+--    glow that pulses; a tap does the Growth Spurt (same action as the Physique screen's button). Before that it is a
+--    quiet dark card "GROWTH SPURT 2" with how far you are ("62%"; the EXP so far / the goal, each group counted up to its
+--    goal) and a tap opens Physique. At 7'0" it reads MAX HEIGHT (quiet).
 --  * The next small goal (a new weight a few reps away, coins for the next weight, which group to train) is a hint in the
 --    top band now and then (Notify.Hint), not text on the HUD.
 local Players = game:GetService("Players")
@@ -30,24 +30,12 @@ local New, Colors = Theme.New, Theme.Colors
 ------------------------------------------------------------------------
 -- The card
 ------------------------------------------------------------------------
-local Pieces = require(Shared.UI.Pieces)
 local UIBus = require(Shared.UI.UIBus)
-local TILE = 76
-local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE + 22), BackgroundTransparency = 1, Visible = false })
-local tile = Theme.Button("Gold", { Name = "Tile", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(TILE, TILE), Parent = holder }, {})
-Pieces.Icon("arrow-big-up", Colors.Text, { Name = "Arrow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 7),
-	Size = UDim2.fromOffset(38, 38), Parent = tile }):SetAttribute("KeepColor", true)
-local tileText = Kit.Text({ Name = "Grow", Text = "GROW!", Font = "Title", TextSize = 16, AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(1, 0, 0, 20), Parent = tile })
-local readyTag = New("Frame", { Name = "Ready", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -16, 0, 2), Size = UDim2.fromOffset(0, 20),
-	AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Colors.Red, Visible = false, ZIndex = 4, Parent = tile }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 6) }),
-	New("UIStroke", { Color = Colors.Text, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-	New("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }),
-})
-Kit.Text({ Name = "Text", Text = "READY", Font = "Title", TextSize = 13, Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 4, Parent = readyTag })
-local tileLabel = Kit.Text({ Name = "Label", Text = "Growth Spurt 1", Font = "Title", TextSize = 13, AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(1, -TILE / 2, 0, TILE + 3), Size = UDim2.fromOffset(150, 18), Parent = holder })
+local TILE_H = 54
+local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6), BackgroundTransparency = 1, Visible = false })
+local tile = Theme.Button("Gold", { Name = "Tile", Size = UDim2.new(1, 0, 0, TILE_H), Parent = holder }, {})
+local tileText = Kit.Text({ Name = "Grow", Text = "TAP TO GROW", Font = "Title", TextSize = 22, Position = UDim2.fromOffset(0, 5), Size = UDim2.new(1, 0, 0, 26), Parent = tile })
+local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize = 11, Upper = true, Position = UDim2.fromOffset(0, 29), Size = UDim2.new(1, 0, 0, 14), Parent = tile })
 RightColumn.Add(holder, 9, "bottom")
 
 ------------------------------------------------------------------------
@@ -124,15 +112,19 @@ local function refresh()
 	if not data or not data.muscles then return end
 	local progress, have, need = spurtProgress(data)
 	ready = progress.ready and not progress.maxed
-	readyTag.Visible = ready
 	if progress.maxed then
-		tileText.Text = "MAX"
+		tileText.Text = "MAX HEIGHT"
 		tileLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)
-		Theme.SetButtonStyle(tile, "Gray")
-	else
-		tileText.Text = ready and "GROW!" or (math.floor((need > 0 and have / need or 0) * 100) .. "%")
-		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1)
+		Theme.SetButtonStyle(tile, "Quiet")
+	elseif ready then
+		tileText.Text = "TAP TO GROW"
+		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
 		Theme.SetButtonStyle(tile, "Gold")
+		Theme.Pulse(tile, function() return ready end)
+	else
+		tileText.Text = "GROWTH SPURT " .. (data.growthSpurts + 1)
+		tileLabel.Text = math.floor((need > 0 and have / need or 0) * 100) .. "% · tap for your physique"
+		Theme.SetButtonStyle(tile, "Quiet")
 	end
 	-- the next small goal: a hint now and then (never more than one a minute, and only a new one)
 	local goal = goalText(data, progress)

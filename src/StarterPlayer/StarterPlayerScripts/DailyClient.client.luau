@@ -361,7 +361,7 @@ end
 -- Daily quests
 ------------------------------------------------------------------------
 -- the DAILY QUESTS card in the right column (mockup 01): the first quest still going, its bar, and "1 / 3" done
-local tracker = RightColumn.Tracker({ name = "DailyTracker", title = "Daily quests", color = Colors.Green, order = 2, idleOnly = true, clickable = true })
+local tracker = RightColumn.Tracker({ name = "DailyTracker", title = "Today's quest", color = Colors.Teal, order = 2, idleOnly = true, clickable = true })
 local function refreshTracker(dq, valid)
 	local done, total = 0, DailyQuests.PerDay
 	local current, currentQuest = nil, nil

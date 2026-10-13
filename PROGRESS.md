@@ -29,6 +29,12 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   Left: body card on a dark red glow, big gold "71%" + PHYSIQUE / AESTHETIC (TAP TO GROW gold CTA takes its place when a
   spurt is ready; the old Growth Spurt row is gone). Right: the six groups best first, gold grade plate (Kit.GradeBadge),
   fat metallic bar in the grade color (S red, A gold, B teal, C gray), %. Forearms / Calves cards dropped (mockup).
+- 5. HUD (mockup 01): left menu = dark glass tiles (graphite gradient, faint light border, white line icons, the Shop's
+  gold, small italic caps labels, plain red dots; open panel = gold border). Top bar: bold italic caps (DAILY, QUESTS),
+  "LVL 45" + a small gold bar toward the next level, plain red dots. Right column: tracker cards with body text and a
+  plain teal bar (TODAY'S QUEST 1/3); the GROW tile is now a wide button: gold TAP TO GROW + "GROWTH SPURT N READY"
+  (pulses) when ready, quiet "GROWTH SPURT N · 62%" before, "MAX HEIGHT" at 7'0". Bottom: the STAMINA panel (teal
+  lightning, "250 / 250", fat teal bar; soft red when low). Fixed on the way: the level bar must be parented in Kit.Bar.
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier

@@ -3,10 +3,11 @@
 --  * 2 columns of rounded-square tiles (a 3rd column only if a short screen can't fit them), VERTICALLY CENTERED on the
 --    left (owner, 14 Oct: AnchorPoint 0, 0.5 at 0.5 of the screen; only nudged down if it would reach the top bar).
 --    The "<" tab is centered on the tiles' right edge.
---    Each tile: its color made darker as the face (lighter at the top), a lighter colored border, a darker bottom edge the
---    face sinks into when pressed, a white line icon and a white outlined label under it, a bounce on hover and press.
---    Colors, icons, order and labels: Config/HudIcons.Tiles. The open panel's tile lights up (full color, white border).
---  * A red number badge in the top-right corner (quests ready to claim, new titles); a small red dot when there's no number.
+--    Each tile (owner's final kit "BLACK + GOLD", mockup 01_hud): dark glass (a graphite gradient, a faint light border,
+--    a darker bottom edge the face sinks into when pressed), a white line icon (the Shop's in gold), the label in small
+--    italic caps under it, a bounce on hover and press. Icons, order and labels: Config/HudIcons.Tiles. The open panel's
+--    tile lights up (lighter glass, a gold border).
+--  * A red dot in the top-right corner (quests ready to claim, new titles), with a number when there is one.
 --  * The "<" tab on the tiles' right edge folds them away to the left (it then points ">" at the screen edge, with a red
 --    dot when a folded tile has a badge) and back. The choice is saved per player (settings.menuCollapsed).
 --  * On a machine the menu folds away by itself and comes back when you leave (unless you had folded it).
@@ -45,10 +46,6 @@ local hiddenAll = false
 local collapsed = false      -- what the player chose (saved)
 local columns = 2
 local gridTop = SideMenu.Top -- where the grid's top edge is now (mockup px from the top of the safe area)
-
-local function darker(color, amount)
-	return color:Lerp(Colors.Shadow, amount)
-end
 
 local function shownEntries()
 	local list = {}
@@ -167,17 +164,18 @@ end
 -- One tile (the old look): lip, face, border, icon, outlined label, badge.
 local function makeTile(id, labelText, iconFactory)
 	local cfg = HudIcons.Tiles[id] or {}
-	local accent = cfg.accent or HudIcons.DefaultAccent
 	local size = SideMenu.TileSize
+	local iconColor = id == "Store" and Colors.Gold or Colors.Text -- (the Shop's icon is gold)
 	local button = New("TextButton", { Name = id, Text = "", AutoButtonColor = false, BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(size, size), Parent = bar })
-	New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = darker(accent, SideMenu.LipDarken), Parent = button },
-		{ New("UICorner", { CornerRadius = Theme.Corner.Card }) })
-	local border = New("UIStroke", { Color = accent, Thickness = 2, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-	local face = New("Frame", { Name = "Face", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundColor3 = darker(accent, SideMenu.FaceDarken), ZIndex = 2, Parent = button }, {
-		New("UICorner", { CornerRadius = Theme.Corner.Card }),
+	New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("#08070A"), BackgroundTransparency = 0.1, Parent = button },
+		{ New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
+	local border = New("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 1.2, Transparency = 0.86, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local face = New("Frame", { Name = "Face", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.08,
+		ZIndex = 2, Parent = button }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 11) }),
 		border,
-		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 160)) }),
+		New("UIGradient", { Name = "Glass", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A262B"), Color3.fromHex("#141215")) }),
 	})
 	local content = New("Frame", { Name = "Content", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundTransparency = 1, ZIndex = 3, Parent = face })
 	local grow = New("UIScale", { Parent = content })
@@ -187,31 +185,31 @@ local function makeTile(id, labelText, iconFactory)
 	if cfg.image and cfg.image ~= "" then
 		New("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Image = cfg.image, ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Parent = iconSlot })
 	elseif cfg.uiIcon then
-		Pieces.Icon(cfg.uiIcon, Colors.Text, { Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = iconSlot })
+		Pieces.Icon(cfg.uiIcon, iconColor, { Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = iconSlot }):SetAttribute("KeepColor", true)
 	elseif iconFactory then
-		local icon = iconFactory(Colors.Text)
+		local icon = iconFactory(iconColor)
 		icon.Parent = iconSlot
 	end
-	local label = Kit.Text({ Name = "Label", Text = cfg.label or labelText, Font = "Title", TextSize = 11, AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -3), Size = UDim2.new(1, 4, 0, 14), ZIndex = 4, Parent = content })
-	local badge = New("Frame", { Name = "Badge", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -4, 0, 4), Size = UDim2.fromOffset(18, 18),
+	local label = Kit.Text({ Name = "Label", Text = string.upper(cfg.label or labelText), Font = "Title", TextSize = 10, TextColor3 = Color3.fromHex("#D9D2D5"),
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, 4, 0, 14), ZIndex = 4, Parent = content })
+	local badge = New("Frame", { Name = "Badge", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -7, 0, 7), Size = UDim2.fromOffset(18, 18),
 		BackgroundColor3 = Colors.Red, Visible = false, ZIndex = 6, Parent = button }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Color = Colors.Text, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	local badgeText = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 11, Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = badge })
 
 	local entry = { id = id, order = cfg.order or 50, button = button, label = label, count = 0, dot = false, active = false, hover = false }
 	function entry.paint()
-		local color = entry.active and accent or (entry.hover and darker(accent, 0.28) or darker(accent, SideMenu.FaceDarken))
-		Theme.Tween(face, { BackgroundColor3 = color }, 0.15)
-		Theme.Tween(border, { Color = entry.active and Color3.new(1, 1, 1) or accent, Transparency = (entry.active or entry.hover) and 0 or 0.1 }, 0.15)
+		-- lighter glass on hover / while its panel is open; the open one gets a gold border
+		Theme.Tween(face, { BackgroundTransparency = (entry.active or entry.hover) and 0 or 0.08,
+			BackgroundColor3 = (entry.active or entry.hover) and Color3.fromRGB(255, 245, 235) or Color3.new(1, 1, 1) }, 0.15)
+		Theme.Tween(border, { Color = entry.active and Colors.Gold or Color3.new(1, 1, 1), Transparency = entry.active and 0.1 or (entry.hover and 0.7 or 0.86) }, 0.15)
 		Theme.Tween(grow, { Scale = entry.hover and 1.08 or 1 }, 0.22, Theme.Motion.Bounce)
 	end
 	function entry.paintBadge()
 		badge.Visible = entry.count > 0 or entry.dot
 		badgeText.Text = entry.count > 0 and tostring(math.min(entry.count, 9)) or ""
-		badge.Size = entry.count > 0 and UDim2.fromOffset(18, 18) or UDim2.fromOffset(10, 10)
+		badge.Size = entry.count > 0 and UDim2.fromOffset(18, 18) or UDim2.fromOffset(11, 11)
 		refreshArrowDot()
 	end
 	-- press: the face sinks onto its edge; letting go springs back

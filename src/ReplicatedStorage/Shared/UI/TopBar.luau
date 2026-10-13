@@ -1,7 +1,8 @@
 -- TopBar (client): the row of dark round pills at the top of the HUD (owner's UI v2, mockup 01_main_hud), in mockup px
 -- inside a Kit.Root so it scales with the screen:
---   left (after the space Roblox's own buttons need): coins | height "6'4" / 7'0"" | level (red badge + LVL)
---   right: Daily Reward | Quests | the settings gear
+--   left (after the space Roblox's own buttons need): coins | height "6'4" / 7'0"" | level ("LVL 27" + a small gold bar
+--   toward the next level)
+--   right: DAILY | QUESTS | the settings gear (owner's final kit "BLACK + GOLD": bold italic caps, plain red dots)
 -- Level = the average exact level of the 18 muscles. Shown on the HUD and while training (mockup 02); hidden on the main
 -- menu and the genetics screen.
 -- TopBar.AddPill(id, text, iconFactory, order): "Daily", "Quests" and "Settings" are the right-hand pills; any other id
@@ -26,14 +27,14 @@ TopBar.TextSize = 14
 
 -- the right-hand pills: id -> look
 local PILLS = {
-	Daily = { order = 1, text = "Daily Reward", icon = "calendar-days" },
+	Daily = { order = 1, text = "Daily", icon = "calendar-days" },
 	Quests = { order = 2, text = "Quests", icon = "list-checks" },
 	Settings = { order = 3, icon = "settings", round = true },
 }
 
 local geneticsOpen = false
 local gui, root, leftRow, rightRow
-local coinsText, levelBadge, heightText, heightMax
+local coinsText, levelNumber, setLevelBar, heightText, heightMax
 
 local function refreshVisible()
 	if not gui then return end
@@ -52,8 +53,8 @@ local function pill(name, order, parent, clickable)
 end
 
 local function text(name, order, value, parent, color, size)
-	return Kit.Text({ Name = name, LayoutOrder = order, Text = value, Font = "Body", TextSize = size or TopBar.TextSize, TextColor3 = color or Colors.Text,
-		Size = UDim2.fromOffset(0, TopBar.Height), AutomaticSize = Enum.AutomaticSize.X, Parent = parent })
+	return Kit.Text({ Name = name, LayoutOrder = order, Text = value, Font = "Title", TextSize = size or TopBar.TextSize, TextColor3 = color or Colors.Text,
+		Upper = true, Size = UDim2.fromOffset(0, TopBar.Height), AutomaticSize = Enum.AutomaticSize.X, Parent = parent })
 end
 
 local function build()
@@ -80,15 +81,12 @@ local function build()
 	Pieces.Icon("ruler", Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(17, 17), Parent = height })
 	heightText = text("Value", 2, "", height)
 	heightMax = text("Max", 3, "", height, Colors.Muted)
-	-- level: red badge with the number + "LVL"
+	-- level: "LVL" in gray, the number, a small gold bar toward the next level
 	local level = pill("Level", 3, leftRow)
-	level:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 4)
-	levelBadge = New("Frame", { Name = "Badge", LayoutOrder = 1, Size = UDim2.fromOffset(25, 25), BackgroundColor3 = Colors.Red, Parent = level }, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-	})
-	Kit.Text({ Name = "Number", Text = "0", Font = "Number", TextSize = 13, Size = UDim2.fromScale(1, 1), Parent = levelBadge })
-	text("Label", 2, "LVL", level)
+	text("Label", 1, "LVL", level, Colors.Muted, 12)
+	levelNumber = text("Number", 2, "0", level, Colors.Text, 17)
+	local _
+	_, setLevelBar = Kit.Bar(Colors.Gold, { Name = "Bar", LayoutOrder = 3, Size = UDim2.fromOffset(52, 9), Parent = level }, { outline = 1.5 })
 end
 
 local function refreshData()
@@ -108,7 +106,9 @@ local function refreshData()
 			count += 1
 		end
 	end
-	levelBadge.Number.Text = tostring(math.floor(count > 0 and total / count or 0))
+	local average = count > 0 and total / count or 0
+	levelNumber.Text = tostring(math.floor(average))
+	setLevelBar(average - math.floor(average))
 	heightText.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts or 0), true)
 	heightMax.Text = "/ " .. GrowthSpurts.FormatHeight(GrowthSpurts.MaxHeightInches, true)
 end
@@ -165,10 +165,9 @@ function TopBar.AddPill(id, labelText, _iconFactory, _order)
 	end
 	Pieces.Icon(cfg.icon, Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(18, 18), Parent = p })
 	local label = cfg.text and text("Label", 2, cfg.text or labelText, p) or nil
-	local dot = New("Frame", { Name = "Dot", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -4, 0, 4), Size = UDim2.fromOffset(14, 14),
+	local dot = New("Frame", { Name = "Dot", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -5, 0, 5), Size = UDim2.fromOffset(12, 12),
 		BackgroundColor3 = Colors.Red, Visible = false, ZIndex = 3, Parent = p }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	local dotText = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 10, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = dot })
 	p.Activated:Connect(function() activated:Fire() end)
@@ -176,15 +175,17 @@ function TopBar.AddPill(id, labelText, _iconFactory, _order)
 	function api.SetActive() end
 	function api.SetDot(_, on)
 		dot.Visible = on and true or false
+		dot.Size = UDim2.fromOffset(12, 12)
 		dotText.Text = ""
 	end
 	function api.SetBadge(_, n)
 		n = tonumber(n) or 0
 		dot.Visible = n > 0
+		dot.Size = UDim2.fromOffset(16, 16)
 		dotText.Text = n > 0 and tostring(math.min(n, 9)) or ""
 	end
 	function api.SetText(_, value)
-		-- (the pills keep their own words: "Daily Reward", "Quests")
+		-- (the pills keep their own words: "Daily", "Quests")
 		if label and value and id ~= "Daily" and id ~= "Quests" then label.Text = value end
 	end
 	return api

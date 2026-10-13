@@ -136,10 +136,12 @@ function RightColumn.Tracker(props)
 		Size = UDim2.new(1, -titleX - 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = head })
 	local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 15, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = head })
-	local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Title", TextSize = 12, Size = UDim2.new(1, 0, 0, 0),
+	local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Strong", TextSize = 13, TextColor3 = Color3.fromHex("#E9E3E5"), Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
-	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Parent = card })
-	local _, setBar, fill = Kit.Bar(props.color or Colors.Green, { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 1), Parent = barRow }, { text = true, textSize = 11 })
+	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = card })
+	-- (owner's final kit: progress is teal; a gold tracker keeps its gold)
+	local barColor = (props.color == Colors.Gold) and Colors.Gold or Colors.Teal
+	local _, setBar, fill = Kit.Bar(barColor, { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 3), Parent = barRow })
 	local footer = Kit.Text({ Name = "Footer", LayoutOrder = 4, Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Visible = false,
 		Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 	RightColumn.Add(card, props.order or 2, props.idleOnly)
@@ -153,7 +155,7 @@ function RightColumn.Tracker(props)
 	-- fraction 0..1 (nil hides the bar) and the numbers in it ("34/50")
 	function api.SetProgress(_, fraction, label)
 		barRow.Visible = fraction ~= nil
-		if fraction then setBar(fraction, label or "") end
+		if fraction then setBar(fraction) end -- (the bar shows no numbers in this kit; the count is in the header)
 	end
 	function api.SetFooter(_, value)
 		footer.Text = value or ""
@@ -161,7 +163,7 @@ function RightColumn.Tracker(props)
 	end
 	function api.SetColor(_, color)
 		local gloss = fill:FindFirstChild("Gloss")
-		if gloss then gloss.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.2)) end
+		if gloss then gloss.Color = Kit.Metal(color == Colors.Gold and Colors.Gold or Colors.Teal) end
 	end
 	return api
 end
