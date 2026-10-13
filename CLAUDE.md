@@ -40,8 +40,9 @@
   sends, saved exactly as sent: `YYYY-MM-DD GYM ARC Prompt - <title>.md`); `Features\` (one note per system:
   `GYM ARC - <System>.md`, list in `GYM ARC - Features index`); `Bugs\` (one note per bug: `GYM ARC - Bug - <title>.md`,
   what happened / cause / fix / status open or fixed, list in `GYM ARC - Bugs index`); `Config\GYM ARC - Config values.md`
-  (every tunable number and what it does); `Monetization\GYM ARC - Monetization products.md` (name, description, price,
-  ID, status); `Sounds\GYM ARC - Sounds.md` (every SoundId / music slot, filled or empty); `Screenshots\` (copies of
+  (every tunable number and what it does); `Monetization\GYM ARC - Monetization.md` (the system + every pass / product: name,
+  description, price, ID, status); `Sounds\GYM ARC - Music and Sounds.md` (the system + every SoundId / music slot,
+  filled or empty); `Screenshots\` (copies of
   `screenshots/`, same file names); `Assets\GYM ARC - Assets.md` (meshes / textures / images with asset IDs).
 - Writing: Markdown with frontmatter (`date`, `tags` with `gymarc` on everything plus `bug` / `feature` / `progress` /
   `prompt` etc., `status`). `[[wikilinks]]`; embed screenshots as `![[GYM ARC/Screenshots/<file>]]`. Note names must be
@@ -54,6 +55,19 @@
     Monetization and Sounds notes that changed; copy new screenshots into `Screenshots\`.
   - A morning report goes at the top of that day's Progress note too.
   - Keep `00 GYM ARC Home.md` up to date (status, next, open bugs).
+- No duplicates, no dead links (owner, 13 Oct):
+  - The "GYM ARC - Index" list at the bottom of `00 GYM ARC Home.md` names every GYM ARC note: it is the source of truth
+    for names. Add each new note to it in the same edit; remove deleted ones.
+  - Before creating a GYM ARC note, search the vault for an existing note on that topic (file names AND `aliases:` in
+    frontmatter, e.g. `grep -ri "aliases:.*<word>"`). If one exists, update it instead of creating a new one. Planned
+    parts of an existing system go in that system's note (a "Planned change" section), not a new note.
+  - Only link to note names that exist (or create the note in the same step). Copy names exactly from the Index
+    (case included). Aliases only help search, Obsidian still shows a link to an alias name as a missing note, so
+    always link the real name.
+  - When merging notes: keep one, move everything over (on disagreement the newer info wins, the old line goes under
+    "History"), put the old names in the kept note's `aliases: [...]`, rewrite every link, then delete the duplicate.
+  - Example `[[links]]` inside saved prompts go in a ```text block so they don't show as missing notes.
+  - After writing notes, check: every `[[link]]` / `![[embed]]` in `GYM ARC\` must point to an existing file.
 
 ## Layout of `src/` (mirrors the Explorer)
 - `src/ServerScriptService` (`Main.server.luau` + `Server/` modules), `src/ReplicatedStorage/Shared` (Config, UI,
