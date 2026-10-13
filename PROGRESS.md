@@ -78,6 +78,15 @@ in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minute
   Boosts / Auras tabs are left out: the game sells no coins and has no auras. Studio test switch: Workspace attribute
   TestStore = true shows the Shop tile at once. Screenshot: ui_compare_v2/04_shop_phone.
 
+**Part 3, Trainers (mockup 06, done):** four picture tiles (trainer_exp / stamina / coins / pump), no names anywhere: the
+perk ("+5% EXP", "+10% Stamina", "+5% Coins", "+25% Pump") and a coin + price (300 / 450 / 600 / 800, Config/Trainers).
+Tap: not hired = hire, anywhere (the Trainer Desk is no longer needed; not enough coins = the tile shakes + "Not enough
+coins"); hired = "TAP TO EQUIP"; following = green outline + "FOLLOWING" (tap again = stop). Bottom: "Following 1/1" and
+the gold "99 · 2ND SLOT" button (Extra Trainer pass 2032496303, price read from Roblox, hidden once owned). The followers
+now look like their pictures (shirt colors painted on, part-built red cap / white headband / gold visor / black
+headphones, no catalog clothes) and lost their name tags. Tested: not enough coins (shake + toast), hire with
+TestCoins = 2000 (2,000 -> 1,700, FOLLOWING), the red-cap follower. Screenshots: ui_compare_v2/06_*.
+
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
 `Config/Features.Wardrobe = false`), "<" fold saved per player (settings.menuCollapsed), auto-folds while lifting, red

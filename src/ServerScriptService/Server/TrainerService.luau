@@ -1,12 +1,14 @@
 -- TrainerService (owner's feature run, task 7B): personal trainers (Config/Trainers).
 --   * Trainer Desks: invisible TrainerPoint parts in front of each desk (tag "TrainerDesk", tools/builders/TrainerDesks)
---     with the "Trainers" prompt; it opens the Trainers panel in hire mode.
---   * Remote "Trainers": client -> server "Hire" (near a desk, coins taken once), "Equip", "Unequip"; server -> client
+--     with the "Trainers" prompt; it opens the Trainers window.
+--   * Remote "Trainers": client -> server "Hire" (anywhere, owner's UI v2: tapping a tile buys it; coins taken once),
+--     "Equip", "Unequip"; server -> client
 --     "Open" | "Hired" | "Failed". Saved in data.trainers = { owned = { ids }, equipped = { ids } }.
 --   * The equipped trainers' perks are BoostService sources ("Trainer_<id>": gains / regen / coins / pump), and the player
 --     attribute "Trainers" lists them ("RookieCoach,PumpCoach") so every client can draw them following that player.
---   * The trainer models: one template per trainer, built here at start (NpcService: the Robloxian body, catalog clothes,
---     a clipboard in the right hand; nothing collides) into ReplicatedStorage.TrainerModels; clients clone them.
+--   * The trainer models: one template per trainer, built here at start (NpcService: the Robloxian body painted in his
+--     picture's colors, a hat from parts, a clipboard in the right hand, no name tag; nothing collides) into
+--     ReplicatedStorage.TrainerModels; clients clone them.
 -- Slots: Config.Trainers.Slots, +1 with the Extra Trainer pass (player attribute Pass_ExtraTrainer, MonetizationService).
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -52,24 +54,13 @@ local function apply(player, state)
 	player:SetAttribute("Trainers", table.concat(state.equipped, ","))
 end
 
-local function nearDesk(player): boolean
-	for _, desk in ipairs(desks) do
-		if desk.Parent and Guard.Near(player, desk, Trainers.DeskDistance + Guard.DistanceSlack) then return true end
-	end
-	return false
-end
-
 local function hire(player, id)
 	local trainer = type(id) == "string" and Trainers.ById[id]
 	if not trainer or not PlayerData.Get(player) then return end
-	if not nearDesk(player) then
-		send(player, "Failed", { text = "Hire trainers at a Trainer Desk at the front of any gym." })
-		return
-	end
 	local state = stateOf(player)
 	if table.find(state.owned, trainer.id) then return end
 	if not PlayerData.SpendCoins(player, trainer.price) then
-		send(player, "Failed", { text = trainer.name .. " costs " .. trainer.price .. " coins." })
+		send(player, "Failed", { text = "Not enough coins", id = trainer.id })
 		return
 	end
 	table.insert(state.owned, trainer.id)
@@ -123,6 +114,53 @@ local function clipboard(model)
 	piece("Clip", Vector3.new(0.34, 0.12, 0.08), Vector3.new(0, 0.46, -0.03), Color3.fromHex("#C9CCD2"), Enum.Material.Metal)
 end
 
+-- The hat from his picture, from parts welded to the head (short hair under it): "cap" (crown + brim + button),
+-- "headband" (a band round the forehead), "visor" (a band + brim, no crown), "headphones" (a band over the top + ear cups).
+local function hat(model, look)
+	local head = model:FindFirstChild("Head")
+	if not head or not head:IsA("BasePart") then return end
+	local size = head.Size
+	local d = math.max(size.X, size.Z) -- head width
+	local top = size.Y / 2
+	local function piece(name, shape, partSize, offset: CFrame, hex)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Shape = shape
+		p.Size = partSize
+		p.Color = Color3.fromHex(hex)
+		p.Material = Enum.Material.SmoothPlastic
+		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
+		p.CFrame = head.CFrame * offset
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0, weld.Part1 = head, p
+		weld.Parent = p
+		p.Parent = model
+		return p
+	end
+	local upright = CFrame.Angles(0, 0, math.rad(90)) -- a cylinder standing up (its axis is X)
+	local cylinder, block = Enum.PartType.Cylinder, Enum.PartType.Block
+	local color = look.hatColor or "#1E1E22"
+	-- short hair: a flat cap of hair on the top of the head (under the cap / visor it barely shows)
+	piece("Hair", cylinder, Vector3.new(0.22, d * 1.03, d * 1.03), CFrame.new(0, top - 0.08, 0.02) * upright, look.hair or "#2B2B30")
+	if look.hat == "cap" then
+		piece("CapCrown", cylinder, Vector3.new(0.42, d * 1.07, d * 1.07), CFrame.new(0, top - 0.02, 0.02) * upright, color)
+		piece("CapTop", Enum.PartType.Ball, Vector3.new(d * 0.98, d * 0.98, d * 0.98) * Vector3.new(1, 0.4, 1), CFrame.new(0, top + 0.2, 0.02), color)
+		piece("CapBrim", block, Vector3.new(d * 0.78, 0.07, d * 0.42), CFrame.new(0, top - 0.18, -d * 0.62) * CFrame.Angles(math.rad(-8), 0, 0), color)
+		piece("CapButton", Enum.PartType.Ball, Vector3.new(0.14, 0.14, 0.14), CFrame.new(0, top + 0.3, 0.02), color)
+	elseif look.hat == "headband" then
+		piece("Headband", cylinder, Vector3.new(0.2, d * 1.06, d * 1.06), CFrame.new(0, top - 0.32, 0) * upright, color)
+	elseif look.hat == "visor" then
+		piece("VisorBand", cylinder, Vector3.new(0.2, d * 1.06, d * 1.06), CFrame.new(0, top - 0.24, 0) * upright, color)
+		piece("VisorBrim", block, Vector3.new(d * 0.8, 0.07, d * 0.44), CFrame.new(0, top - 0.3, -d * 0.62) * CFrame.Angles(math.rad(-10), 0, 0), color)
+	elseif look.hat == "headphones" then
+		piece("PhonesBand", block, Vector3.new(d * 1.1, 0.12, 0.2), CFrame.new(0, top + 0.12, 0.04), color)
+		for _, side in ipairs({ -1, 1 }) do
+			piece("PhonesSide", block, Vector3.new(0.12, 0.42, 0.2), CFrame.new(side * d * 0.55, top - 0.12, 0.04), color)
+			piece("PhonesCup", cylinder, Vector3.new(0.18, 0.42, 0.42), CFrame.new(side * d * 0.56, -size.Y * 0.05, 0.04), color)
+		end
+	end
+end
+
 -- Hair and hats: welded to the body part their attachment sits on (the clones on the clients carry the weld; without it
 -- an accessory falls off as soon as the clone moves)
 local function attachAccessories(model)
@@ -156,12 +194,12 @@ local function buildTemplates()
 	folder.Name = "TrainerModels"
 	for _, trainer in ipairs(Trainers.List) do
 		local look = trainer.look
-		local spec = { name = trainer.coachName, skin = look.skin, shirtId = look.shirt, pantsId = look.pants, hairIds = { look.hair }, animated = true }
+		local spec = { name = trainer.id, skin = look.skin, shirt = look.shirt, pants = look.pants, animated = true, noLabel = true }
 		local ok, model = pcall(NpcService.Build, spec, CFrame.new(0, -500, 0))
 		if ok and model then
 			model.Name = trainer.id
-			model:SetAttribute("CoachName", trainer.coachName)
 			clipboard(model)
+			hat(model, look)
 			attachAccessories(model)
 			for _, part in ipairs(model:GetDescendants()) do
 				if part:IsA("BasePart") then

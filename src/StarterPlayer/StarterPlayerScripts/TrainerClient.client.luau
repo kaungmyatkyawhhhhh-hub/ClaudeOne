@@ -1,16 +1,22 @@
--- TrainerClient (owner's feature run, task 7B): the Trainers panel. A "Trainers" tile in the side menu opens it anywhere
--- (equip / unequip); a Trainer Desk's prompt opens it in hire mode (HIRE buttons work only there, TrainerService checks).
--- Each row: the trainer, his coach name and perk, and one button: HIRE · price / EQUIP / UNEQUIP. Slots on top.
+-- TrainerClient: the Trainers window (owner's UI v2, mockup 06_trainers). The Trainers tile and a Trainer Desk's prompt
+-- open it. Four picture tiles, no names anywhere: the trainer's portrait (Config/UI.Trainers), his perk ("+5% EXP") and
+-- one status line:
+--   not hired   a coin + his price (Config/Trainers): tap = hire (not enough coins: the tile shakes + "Not enough coins")
+--   hired       "TAP TO EQUIP": tap = he follows you (all slots full: he takes the last slot's place)
+--   following   green outline + "FOLLOWING": tap again = he stops following
+-- Bottom: "Following 1/1" and the gold "R$ 99 · 2ND SLOT" button for the Extra Trainer pass (only while not owned).
 -- The trainers themselves are drawn by TrainerFollowClient.
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Trainers = require(Shared.Config.Trainers)
+local Monetization = require(Shared.Config.Monetization)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
+local Pieces = require(Shared.UI.Pieces)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
@@ -23,149 +29,155 @@ if not remote then return end -- the trainer service didn't start
 
 local player = Players.LocalPlayer
 local New, Colors = Theme.New, Theme.Colors
-local Vertical = Enum.FillDirection.Vertical
+
+local W, H = 560, 280 -- the window (mockup px)
+local TILE = Vector2.new(124, 176)
+local PASS = Monetization.PassByKey[Trainers.ExtraSlotPass]
 
 local menuButton = SideMenu.Add("Trainers", "Trainers", Icons.Clipboard, 7.5)
 
-local gui = Theme.ScreenGui({ Name = "Trainers", Enabled = false, DisplayOrder = 25, Parent = player:WaitForChild("PlayerGui") })
-local panel = Theme.Panel({
-	Name = "Panel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(440, 0), AutomaticSize = Enum.AutomaticSize.Y, Active = true, Parent = gui,
-}, { Theme.Pad("L"), Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+local modal = Kit.Modal({ name = "Trainers", title = "Personal Trainers", icon = "clipboard-list", width = W, height = H, displayOrder = 25,
+	tabs = { { id = "Trainers", text = "Trainers", icon = "clipboard-list" } } })
 
-local header = New("Frame", { Name = "Header", LayoutOrder = 0, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = panel })
-local title = Theme.Text({ Text = "Personal trainers", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, -52, 0, 26), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
-Theme.Uppercase(title)
-local slotsLine = Theme.Text({ Text = "", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, -52, 0, 18), Position = UDim2.fromOffset(0, 26), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
-local close = Theme.Button("Secondary", { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(Theme.MinTouch, Theme.MinTouch), Parent = header }, {})
-local closeIcon = New("Frame", { Size = UDim2.fromScale(0.42, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), BackgroundTransparency = 1, Parent = close })
-Icons.Close(Colors.Text).Parent = closeIcon
-local note = Theme.Text({ Name = "Note", LayoutOrder = 1, Text = "", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, TextWrapped = true,
-	Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-
-local rows = {}
-for order, trainer in ipairs(Trainers.List) do
-	local row = New("Frame", { Name = trainer.id, LayoutOrder = 10 + order, Size = UDim2.new(1, 0, 0, 54), BackgroundTransparency = 1, Parent = panel })
-	local iconSlot = New("Frame", { Size = UDim2.fromOffset(26, 26), Position = UDim2.fromOffset(0, 4), BackgroundTransparency = 1, Parent = row })
-	Icons.Clipboard(Colors.Text).Parent = iconSlot
-	Theme.Text({ Text = trainer.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -170, 0, 20), Position = UDim2.fromOffset(36, 2), TextXAlignment = Enum.TextXAlignment.Left, Upper = false, Parent = row })
-	Theme.Text({ Text = trainer.coachName .. " · " .. trainer.perkText, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, TextWrapped = true,
-		Size = UDim2.new(1, -170, 0, 32), Position = UDim2.fromOffset(36, 22), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = row })
-	local button = Theme.Button("Primary", { Name = "Action", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(128, Theme.MinTouch), Parent = row }, {
-		Theme.Text({ Name = "Label", Text = "", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
-	})
-	rows[trainer.id] = { trainer = trainer, button = button, label = button:FindFirstChild("Label") :: TextLabel, action = nil }
-	button.Activated:Connect(function()
-		local entry = rows[trainer.id]
-		if entry.action == "Hire" and (ClientData.Get().coins or 0) < trainer.price then
-			Notify.Show(trainer.name .. " costs " .. trainer.price .. " coins.", Colors.NeedsWork, "trainercoins")
-			return
-		end
-		if entry.action then remote:FireServer(entry.action, trainer.id) end
-	end)
-end
-
-local isOpen = false
-local atDesk = false
-local openedAt = nil -- where you stood when it opened from a desk (walking away closes it)
+local row = New("Frame", { Name = "Tiles", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, TILE.Y), Parent = modal.body }, {
+	Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
+})
 
 local function state()
 	local data = ClientData.Get()
 	local t = type(data.trainers) == "table" and data.trainers or {}
 	return type(t.owned) == "table" and t.owned or {}, type(t.equipped) == "table" and t.equipped or {}
 end
+local function slots(): number
+	return Trainers.SlotsFor(player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) == true)
+end
+
+-- a short side-to-side shake (not enough coins)
+local function shake(gui: GuiObject)
+	local base = gui.Position
+	task.spawn(function()
+		for _, dx in ipairs({ -6, 6, -5, 5, -3, 3, 0 }) do
+			gui.Position = base + UDim2.fromOffset(dx, 0)
+			task.wait(0.035)
+		end
+		gui.Position = base
+	end)
+end
+
+local tiles = {}
+for order, trainer in ipairs(Trainers.List) do
+	local holder = New("Frame", { Name = trainer.id, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE.X, TILE.Y), Parent = row })
+	local card = Kit.Card({ Name = "Card", Clickable = true, Size = UDim2.fromScale(1, 1), Parent = holder }, {})
+	local picture = Pieces.Image(trainer.picture, { Name = "Picture", Position = UDim2.fromOffset(6, 6), Size = UDim2.new(1, -12, 0, TILE.X - 12), Parent = card })
+	picture.ScaleType = Enum.ScaleType.Crop
+	New("UICorner", { CornerRadius = UDim.new(0, 8), Parent = picture })
+	New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = picture })
+	Kit.Text({ Name = "Perk", Text = trainer.perkShort, Font = "Title", TextSize = 16, Position = UDim2.fromOffset(2, TILE.X), Size = UDim2.new(1, -4, 0, 22), Parent = card })
+	local status = Kit.Text({ Name = "Status", Text = "", Font = "Title", TextSize = 13, Position = UDim2.fromOffset(2, TILE.X + 22), Size = UDim2.new(1, -4, 0, 18), Parent = card })
+	local priceLine = New("Frame", { Name = "Price", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, TILE.X + 22), Size = UDim2.new(1, 0, 0, 18), Parent = card }, {
+		Theme.List(Enum.FillDirection.Horizontal, 4, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
+	})
+	Kit.Coin(15, { LayoutOrder = 1, Parent = priceLine })
+	Kit.Text({ LayoutOrder = 2, Text = Kit.Format(trainer.price), Font = "Title", TextSize = 15, TextColor3 = Colors.Gold, Size = UDim2.fromOffset(0, 18),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = priceLine })
+	tiles[trainer.id] = { card = card, status = status, priceLine = priceLine, trainer = trainer }
+	card.Activated:Connect(function()
+		local owned, equipped = state()
+		if table.find(equipped, trainer.id) then
+			Audio.PlayUI("Click")
+			remote:FireServer("Unequip", trainer.id)
+		elseif table.find(owned, trainer.id) then
+			Audio.PlayUI("Click")
+			remote:FireServer("Equip", trainer.id)
+		elseif (ClientData.Get().coins or 0) < trainer.price then
+			shake(card)
+			Notify.Toast("Not enough coins", trainer.perkShort .. " costs " .. Kit.Format(trainer.price) .. " coins", "coin", Colors.Red, "trainercoins")
+		else
+			remote:FireServer("Hire", trainer.id)
+		end
+	end)
+end
+
+-- bottom line: how many follow you, and the 2nd slot pass
+local bottom = New("Frame", { Name = "Bottom", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1),
+	Size = UDim2.new(1, 0, 0, 34), Parent = modal.body })
+local following = Kit.Text({ Name = "Following", Text = "", Font = "Title", TextSize = 16, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0),
+	Size = UDim2.fromOffset(0, 22), AutomaticSize = Enum.AutomaticSize.X, TextXAlignment = Enum.TextXAlignment.Left, Parent = bottom })
+local hint = Kit.Text({ Name = "Hint", Text = "Tap a trainer to hire or swap", Font = "Body", TextSize = 12, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 120, 0.5, 0), Size = UDim2.fromOffset(200, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = bottom })
+local slotButton = Kit.Button("Gold", "2nd slot", { Name = "SecondSlot", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -4, 0.5, 0), Parent = bottom },
+	{ height = 30, textSize = 14, icon = "robux" })
+slotButton.Visible = PASS ~= nil and PASS.id ~= nil
+local passPrice = nil
+if PASS and PASS.id then
+	task.spawn(function()
+		local ok, info = pcall(function() return MarketplaceService:GetProductInfo(PASS.id, Enum.InfoType.GamePass) end)
+		if ok and info and info.PriceInRobux then
+			passPrice = info.PriceInRobux
+			Kit.SetButton(slotButton, nil, Kit.Format(passPrice) .. " · 2nd slot")
+		end
+	end)
+end
+slotButton.Activated:Connect(function()
+	if PASS and PASS.id and not player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) then
+		MarketplaceService:PromptGamePassPurchase(player, PASS.id)
+	end
+end)
 
 local function refresh()
-	-- phones (short screens): no note line and tighter spacing, so the four rows fit the height
-	local compact = Theme.IsCompact()
-	note.Visible = not compact
-	local pad = panel:FindFirstChildOfClass("UIPadding")
-	local space = compact and Theme.Spacing.M or Theme.Spacing.L
-	if pad then pad.PaddingTop, pad.PaddingBottom, pad.PaddingLeft, pad.PaddingRight = UDim.new(0, space), UDim.new(0, space), UDim.new(0, space), UDim.new(0, space) end
 	local owned, equipped = state()
-	local slots = Trainers.SlotsFor(player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) == true)
-	slotsLine.Text = "Following you: " .. #equipped .. " / " .. slots
-	note.Text = atDesk and "Hire a coach to follow you around and cheer you on. Each one has a small perk."
-		or "Hire coaches at the Trainer Desk at the front of any gym."
-	local coins = ClientData.Get().coins or 0
-	for id, entry in pairs(rows) do
-		local action, text, enabled
-		if table.find(equipped, id) then
-			action, text, enabled = "Unequip", "Unequip", true
-		elseif table.find(owned, id) then
-			action, text, enabled = "Equip", "Equip", true
-		else
-			action, text, enabled = "Hire", "Hire · " .. entry.trainer.price, atDesk
-			if not atDesk then action = nil end
-			enabled = enabled and coins >= entry.trainer.price
-		end
-		entry.action = action
-		entry.label.Text = text
-		entry.button.BackgroundTransparency = enabled and Theme.Alpha.Primary or 0.92
-		entry.label.TextTransparency = enabled and 0 or 0.5
+	for id, tile in pairs(tiles) do
+		local isFollowing = table.find(equipped, id) ~= nil
+		local isOwned = table.find(owned, id) ~= nil
+		Theme.SetPiece(tile.card, isFollowing and "card_selected" or "card")
+		tile.priceLine.Visible = not isOwned
+		tile.status.Visible = isOwned
+		tile.status.Text = isFollowing and "FOLLOWING" or "TAP TO EQUIP"
+		tile.status.TextColor3 = isFollowing and Colors.Green or Colors.Text
 	end
+	following.Text = "Following " .. #equipped .. "/" .. slots()
+	hint.Position = UDim2.new(0, following.TextBounds.X + 16, 0.5, 0)
+	slotButton.Visible = PASS ~= nil and PASS.id ~= nil and player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) ~= true
 end
 
-local function setOpen(open: boolean, fromDesk: boolean?)
-	if open then
-		atDesk = fromDesk == true
-		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		openedAt = atDesk and root and root.Position or nil
-		refresh()
-		if isOpen then return end
-		isOpen = true
-		UIBus.PanelOpened("Trainers")
-		menuButton:SetActive(true)
-		gui.Enabled = true
-		Audio.PlayUI("Whoosh")
-		Theme.Fade(panel, true)
-	else
-		if not isOpen then return end
-		isOpen = false
-		atDesk = false
+local function open()
+	refresh()
+	if modal.isOpen() then return end
+	menuButton:SetActive(true)
+	UIBus.MenuPanelVisible:Fire(true)
+	modal.open()
+	Audio.PlayUI("Whoosh")
+end
+modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+	if not modal.isOpen() then
 		menuButton:SetActive(false)
-		local tween = Theme.Fade(panel, false)
-		if tween then
-			tween.Completed:Connect(function() if not isOpen then gui.Enabled = false end end)
-		else
-			gui.Enabled = false
-		end
+		UIBus.MenuPanelVisible:Fire(false)
 	end
-end
-
-menuButton.Activated:Connect(function() setOpen(not isOpen, false) end)
-close.Activated:Connect(function() setOpen(false) end)
-UIBus.RegisterPanel("Trainers", function() setOpen(false) end)
-UserInputService.InputBegan:Connect(function(input, processed)
-	if not processed and input.KeyCode == Enum.KeyCode.Escape and isOpen then setOpen(false) end
 end)
+menuButton.Activated:Connect(function()
+	if modal.isOpen() then modal.close() else UIBus.PanelOpened("Trainers") open() end
+end)
+UIBus.RegisterPanel("Trainers", function() modal.close() end)
 ClientData.Changed:Connect(function(path)
-	if isOpen and (path[1] == "coins" or path[1] == "trainers") then refresh() end
+	if modal.isOpen() and (path[1] == "coins" or path[1] == "trainers") then refresh() end
 end)
-player:GetAttributeChangedSignal("Pass_" .. Trainers.ExtraSlotPass):Connect(function() if isOpen then refresh() end end)
+player:GetAttributeChangedSignal("Pass_" .. Trainers.ExtraSlotPass):Connect(function() if modal.isOpen() then refresh() end end)
 
 remote.OnClientEvent:Connect(function(kind, info)
 	info = type(info) == "table" and info or {}
 	if kind == "Open" then
-		setOpen(true, info.desk == true)
+		if not modal.isOpen() then UIBus.PanelOpened("Trainers") end
+		open()
 	elseif kind == "Hired" then
 		local trainer = Trainers.ById[info.id]
 		if trainer then
-			Notify.Show(trainer.coachName .. " is your " .. string.lower(trainer.name) .. " now (" .. trainer.perkText .. ").")
+			Notify.Toast("Trainer hired!", trainer.perkShort, "clipboard-list", Colors.Green)
 			Audio.PlayUI("ShopBuy")
 		end
 		refresh()
 	elseif kind == "Failed" then
-		Notify.Show(tostring(info.text), Colors.NeedsWork, "trainerfail")
+		local tile = info.id and tiles[info.id]
+		if tile then shake(tile.card) end
+		Notify.Toast(tostring(info.text), nil, "coin", Colors.Red, "trainerfail")
 	end
-end)
-
--- walked away from the desk: the hire mode ends (the panel closes)
-local acc = 0
-RunService.Heartbeat:Connect(function(dt)
-	acc += dt
-	if acc < 0.5 or not (isOpen and atDesk and openedAt) then return end
-	acc = 0
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not root or (root.Position - openedAt).Magnitude > Trainers.DeskDistance + 6 then setOpen(false) end
 end)
