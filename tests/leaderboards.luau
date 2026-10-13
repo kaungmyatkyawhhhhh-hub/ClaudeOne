@@ -1,0 +1,21 @@
+local H = require("./harness")
+local L = H.module("ReplicatedStorage/Shared/Config/Leaderboards")
+print("Boards")
+local ids = {}
+for _, b in L.Boards do ids[b.id] = true end
+for _, id in { "Biggest", "Strongest", "Tallest", "RepsToday", "PosingWins", "ArmWins" } do H.check(ids[id], id .. " exists") end
+H.check(#L.Boards == 6 and L.Top == 10, "six boards, top 10")
+H.check(L.Refresh >= 60 and L.Refresh <= 120, "refresh inside 60-120 s")
+print("Formatting")
+H.check(L.Format("Tallest", 84) == "7'0\"", "7'0\"")
+H.check(L.Format("Tallest", 54) == "4'6\"", "4'6\"")
+H.check(L.Format("Strongest", 1255) == "1,255 lb", "commas")
+H.check(L.Format("PosingWins", 1) == "1 win" and L.Format("ArmWins", 3) == "3 wins", "win / wins")
+print("Stores")
+H.check(L.StoreName("RepsToday", 20000) ~= L.StoreName("RepsToday", 20001), "the daily board gets a new store each day")
+H.check(L.StoreName("Biggest", 20000) == L.StoreName("Biggest", 20001), "all-time boards keep one store")
+print("Your rank")
+H.check(L.YourRankText(3) == "You're #3!", "in the top 10")
+H.check(L.YourRankText(23) == "Your rank: #23", "below the top 10")
+H.check(L.YourRankText(nil) == "Your rank: " .. L.FetchCount .. "+", "not fetched")
+H.done()

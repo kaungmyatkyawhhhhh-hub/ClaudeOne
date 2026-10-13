@@ -31,6 +31,7 @@ function DataTemplate.new()
 		daily = { lastDay = 0, streak = 0, best = 0, calendarDay = 0 }, -- login streak calendar (Config.Economy.Login): last claimed day + calendar day
 		-- today's quests (Config.DailyQuests, DailyService): list = { { id, progress, done, claimed } }, groups trained today
 		dailyQuests = { day = 0, list = {}, bonus = false, swaps = 0, groups = {} },
+		repsToday = { day = 0, count = 0 }, -- reps on the current UTC day (the "Most reps today" board, LeaderboardService)
 		seasons = {}, -- seasonId -> reps done during that event (Config.Seasons)
 		crew = { id = nil }, -- crew id (records live in the "Crews" DataStore, see CrewService)
 		cosmetics = { owned = {}, equipped = {} }, -- clothing store gear (Config.Cosmetics, CosmeticService)

@@ -71,6 +71,26 @@ knows the bigger gyms, the beach and the town). Weak fits to listen to first: Cr
 - Screenshots: armwrestle_pick_opponent, armwrestle_vs_npc_live_bar, armwrestle_vs_npc_phone_layout,
   armwrestle_win_screen, armwrestle_sign_occupy.
 
+### Task 4: Leaderboards (done, tested solo with example data)
+- `Config/Leaderboards`, `Server/LeaderboardService`, `LeaderboardClient`, builder `tools/builders/Leaderboards`.
+  Six boards, top 10: Biggest (average muscle look x100, "Size 142"), Strongest (heaviest weight ever lifted on any
+  machine, lb; the treadmill doesn't count), Tallest (height, 7'0" max), Most reps today (store `LB1_RepsToday_<UTC
+  day>`, counted from GameEvents into the save's `repsToday`), Posing wins, Arm wrestling wins. OrderedDataStores
+  `LB1_<board>`; every 90 s (Config) each player's changed values are written (never for FreshPlayer / failed loads),
+  each board's top 100 is read, the top 10's names looked up, and it's all published as JSON in
+  `ReplicatedStorage.LeaderboardData`.
+- Board walls (6 framed screens, "LEADERBOARDS" header with a light strip): starter gym front wall left of the hall door
+  above the windows (fits between the window tops 8.35 and the cornice 15.7, clear of the poster and the speaker), pro
+  gym front band above the glass, and a freestanding stand on posts at the north edge of the town plaza (clear of the
+  corner tree / light pole / planter). Each in a `Feature_Leaderboards` folder.
+- The client draws only the panels streamed in near you (on new data and when a panel streams in); headshots are
+  `rbxthumb://` AvatarHeadShot images (no web calls); your name in light blue; under each board "You're #3!" in the top
+  10, "Your rank: #23" inside the top 100, "Your rank: 100+" below. (Exact ranks past 100 would need a read per
+  player; written down as a choice.) The older per-group wall above the front desk and the statue are unchanged.
+- Studio hook: `TestLeaderboards` (example rows, nothing written). Tested: all three walls with example data, the
+  real read path (empty new stores, no errors). Not tested: real data from several servers (needs a published game).
+- Screenshots: leaderboards_starter_gym, leaderboards_pro_gym, leaderboards_town_plaza.
+
 ## Before that (13 Oct): soft shutdown
 - `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all
   servers" / "Migrate to latest update"), players get a small note ("The gym is updating..."), are teleported together into

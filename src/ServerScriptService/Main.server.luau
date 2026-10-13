@@ -27,7 +27,7 @@ local OPTIONAL_SERVICES = { "BoostService", "QuestService", "MuscleOfTheDayServi
 	"SocialService", "ArmWrestleService", "LegendService", "ShowOffService",
 	"MonetizationService", "ProGymService", "CrewService", "SeasonService",
 	"TownService", "CosmeticService", "SkateService", "MirrorService", "GymGoerService", "NightLightService",
-	"AccessoryService", "PosingCompService", "DailyService" }
+	"AccessoryService", "PosingCompService", "DailyService", "LeaderboardService" }
 for _, name in ipairs(OPTIONAL_SERVICES) do
 	task.spawn(function()
 		local ok, err = pcall(function()
