@@ -1,31 +1,23 @@
--- Pieces: the UI image pieces (Config/UI.Pieces, owner's UI redesign) as ImageLabels with their 9-slice data, so corners
--- stay sharp at any size. Panels, cards, buttons, tabs, chips, bars, toggles, tags and badges are these images; text,
--- numbers and icons stay live on top.
---   Pieces.Image(name, props?)        -> ImageLabel showing piece `name` (props: any ImageLabel properties)
---   Pieces.Apply(image, name)          sets an existing ImageLabel / ImageButton to piece `name`
---   Pieces.Icon(name, color?, props?)  -> ImageLabel showing icon `name` (Config/UI.Icons), tinted `color`
---   Pieces.ShopIcon(name, props?)      -> ImageLabel showing shop icon `name` (Config/UI.ShopIcons)
+-- Pieces: the UI images (Config/UI) as ImageLabels.
+--   Pieces.Icon(name, color?, props?)  -> ImageLabel showing white line icon `name` (Config/UI.Icons), tinted `color`
+--   Pieces.ShopIcon(name, props?)      -> ImageLabel showing shop art `name` (Config/UI.ShopIcons)
+--   Pieces.Image(name, props?)         -> ImageLabel showing a named picture: a 3D menu icon (MenuIcons), a trainer
+--                                         portrait (Trainers) or a shop icon; anything else is blank
+--   Pieces.Apply(image, name)          sets an existing ImageLabel / ImageButton to picture `name`
+-- (The 9-slice pieces of the cancelled dark style are gone: panels and buttons are Theme surfaces now.)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local UI = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("UI"))
 
 local Pieces = {}
 
+local function lookup(name: string): string
+	return UI.MenuIcons[name] or UI.Trainers[name] or UI.ShopIcons[name] or (name == "menu_art" and UI.MenuArt) or ""
+end
+
 function Pieces.Apply(image: any, name: string)
-	local piece = UI.Pieces[name]
-	if not piece then
-		warn("[Pieces] unknown piece " .. tostring(name))
-		return
-	end
-	image.Image = piece.image
-	if piece.scaleType == "Slice" then
-		local c = piece.sliceCenter
-		image.ScaleType = Enum.ScaleType.Slice
-		image.SliceCenter = Rect.new(c[1], c[2], c[3], c[4])
-		image.SliceScale = piece.sliceScale or 1
-	else
-		image.ScaleType = Enum.ScaleType.Fit
-	end
+	image.Image = lookup(name)
+	image.ScaleType = Enum.ScaleType.Fit
 end
 
 local function set(instance, props)
@@ -59,10 +51,9 @@ function Pieces.ShopIcon(name: string, props: { [string]: any }?): ImageLabel
 	image.Name = "ShopIcon"
 	image.BackgroundTransparency = 1
 	image.BorderSizePixel = 0
-	image.ScaleType = Enum.ScaleType.Crop
+	image.ScaleType = Enum.ScaleType.Fit
 	image.Image = UI.ShopIcons[name] or ""
 	return set(image, props)
 end
 
-Pieces.Config = UI
 return Pieces

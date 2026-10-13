@@ -644,6 +644,7 @@ local GAIN_NUMBERS = { On = true, Minimal = true, Off = true }
 local REP_FLASH = { On = true, Off = true }
 local EXP_POPUPS = { On = true, Off = true }
 local SPOT_REQUESTS = { On = true, Off = true }
+local ON_OFF = { On = true, Off = true }
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
 -- repFlash On/Off, expPopups On/Off.
@@ -669,6 +670,12 @@ function PlayerData.SetSettings(player, settings)
 		if entry.id == settings.shorts then new.shorts = entry.id end
 	end
 	if settings.pumpHintSeen == true then new.pumpHintSeen = true end -- one-way: the "Tap to pump" hint never comes back
+	-- (UI v2, 13 Oct) the left menu folded away; Settings toggles: tutorial / coach hints, other players' scream sounds and
+	-- auras, low graphics
+	if type(settings.menuCollapsed) == "boolean" then new.menuCollapsed = settings.menuCollapsed end
+	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "lowGraphics" }) do
+		if ON_OFF[settings[key]] then new[key] = settings[key] end
+	end
 	data.settings = new
 	replicate(player, { "settings" }, new)
 end

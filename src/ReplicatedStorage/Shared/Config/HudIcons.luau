@@ -7,23 +7,21 @@
 -- Quests, Store (tiles) and Coins, Quests, Daily, Settings (pills).
 local HudIcons = {}
 
--- The menu tiles (owner's UI redesign, mockup 01): order (mockup first: Shop, Quests, Muscles, Trainers, Titles,
--- Emotes, Crew, Settings; then the extra ones), label, uiIcon (Config/UI.Icons), gold = the highlighted gold tile.
--- image = YOUR OWN icon ("rbxassetid://<id>") instead of uiIcon.
+-- The left menu tiles (owner, 13 Oct: keep the old colored tiles): accent = the tile's color (its face is the accent made
+-- darker, its border the accent; the open panel's tile lights up in the full accent), icon = the built-in white line icon
+-- (Shared.UI.Icons) or uiIcon (Config/UI.Icons), order = top-left to bottom-right, label = the word under the icon.
+-- image = YOUR OWN icon ("rbxassetid://<id>") instead of the built-in one.
 HudIcons.Tiles = {
-	Store = { order = 1, label = "Shop", uiIcon = "shopping-cart", gold = true, image = "" }, -- hidden while monetization is OFF
-	Quests = { order = 2, label = "Quests", uiIcon = "list-checks", image = "" },          -- daily quests (DailyClient)
-	Muscles = { order = 3, label = "Muscles", uiIcon = "biceps-flexed", image = "" },
-	Trainers = { order = 4, label = "Trainers", uiIcon = "clipboard-list", image = "" },
-	Titles = { order = 5, label = "Titles", uiIcon = "medal", image = "" },
-	Emotes = { order = 6, label = "Emotes", uiIcon = "smile", image = "" },
-	Crew = { order = 7, label = "Crew", uiIcon = "users", image = "" },
-	Settings = { order = 8, label = "Settings", uiIcon = "settings", image = "" },
-	Stats = { order = 9, label = "Stats", uiIcon = "eye", image = "" },                   -- the stats labels around you
-	Wardrobe = { order = 10, label = "Wardrobe", uiIcon = "sparkles", image = "" },
-	Genetics = { order = 11, label = "Genetics", uiIcon = "star", image = "" },
-	Coach = { order = 12, label = "Coach", uiIcon = "bell", image = "" },                  -- Coach Dex's quest (QuestClient)
-	Daily = { order = 13, label = "Daily", uiIcon = "calendar-days", image = "" },         -- the login streak (DailyClient)
+	Store = { order = 1, label = "Shop", accent = Color3.fromHex("#F2B51F"), uiIcon = "shopping-cart", image = "" }, -- only while something is for sale
+	Stats = { order = 2, label = "Stats", accent = Color3.fromHex("#E2574C"), icon = "Flex", image = "" },         -- the stats labels around you
+	Muscles = { order = 3, label = "Muscles", accent = Color3.fromHex("#F0922E"), icon = "Stats", image = "" },
+	Titles = { order = 4, label = "Titles", accent = Color3.fromHex("#E8C21C"), icon = "Trophy", image = "" },
+	Genetics = { order = 5, label = "Genetics", accent = Color3.fromHex("#3FB8AF"), icon = "DNA", image = "" },
+	Emotes = { order = 6, label = "Poses", accent = Color3.fromHex("#E96BA8"), icon = "Pose", image = "" },        -- poses + emotes panel
+	Crew = { order = 7, label = "Crew", accent = Color3.fromHex("#4C8DE0"), icon = "People", image = "" },
+	Quests = { order = 8, label = "Quests", accent = Color3.fromHex("#2FA8C8"), icon = "Quest", image = "" },       -- daily quests (DailyClient)
+	Trainers = { order = 9, label = "Trainers", accent = Color3.fromHex("#D9823B"), icon = "Clipboard", image = "" }, -- personal trainers
+	Wardrobe = { order = 10, label = "Wardrobe", accent = Color3.fromHex("#9B6BDF"), icon = "Hanger", image = "" }, -- hidden: Config/Features.Wardrobe
 }
 HudIcons.DefaultAccent = Color3.fromHex("#8A8F98")
 

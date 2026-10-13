@@ -1,6 +1,6 @@
 -- MachineClient: lift input, machine HUD, and all lifting game feel (motion, sounds,
 -- gains, pump, particles). Effects play instantly on tap; the server validates and applies gains.
--- Reps run on their own at a slow pace; tapping (a tap anywhere that isn't a button, a click, Space) makes them faster and
+-- Reps run on their own at a slow pace; tapping (REP, a tap anywhere that isn't a button, a click) makes them faster and
 -- fills the PUMP meter above the machine panel (full = PUMPED: x2 gains, faster reps, a glow). About 1 in 12 reps is a BIG REP (x3, gold).
 -- Nobody is ever punished for not tapping.
 local Players = game:GetService("Players")
@@ -34,6 +34,7 @@ local CoachNotes = require(Shared.Config.CoachNotes)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local MachineHud = require(Shared.UI.MachineHud)
+local HudBottom = require(Shared.UI.HudBottom)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local Audio = require(Shared.Audio)
@@ -1550,9 +1551,12 @@ local function refreshStamina()
 	end
 	-- the segment that just drained flashes
 	if lastStamina and ClientData.Get().stamina < lastStamina then
+		-- (UI v2: no segments any more; stamina is the bar at the bottom, HudBottom)
 		local back = segmentBacks[math.clamp(math.floor(filled) + 1, 1, STAMINA_SEGMENTS)]
-		back.BackgroundTransparency = 0.35
-		Theme.Tween(back, { BackgroundTransparency = SEGMENT_BACK }, Theme.Motion.Time * 1.6)
+		if back then
+			back.BackgroundTransparency = 0.35
+			Theme.Tween(back, { BackgroundTransparency = SEGMENT_BACK }, Theme.Motion.Time * 1.6)
+		end
 	end
 	lastStamina = ClientData.Get().stamina
 	if current then setSweat(ratio < FEEL.SweatBelow) end
@@ -1605,7 +1609,7 @@ local function refreshTier()
 	weightNumber.TextColor3 = locked and Colors.Muted or Colors.Text
 	hud.weightUnit.Text = string.upper(tier.unit or (tier.weight > 0 and "lb" or ""))
 	hud.weightUnit.Visible = hud.weightUnit.Text ~= ""
-	hud.tierTag:FindFirstChild("Text").Text = "TIER " .. viewTier .. " / " .. #machine.tiers
+	hud.tierTag:FindFirstChild("Text").Text = "Tier " .. viewTier .. " / " .. #machine.tiers
 	setStepButton(minusButton, viewTier > 1)
 	setStepButton(plusButton, viewTier < maxView)
 	drawBarbell(tier)
@@ -1613,11 +1617,12 @@ local function refreshTier()
 	unlockButton.Visible = viewTier > unlocked and levelOk
 	needsLabel.Visible = not levelOk
 	hud.tierTag.Visible = not unlockButton.Visible and levelOk
+	hud.maxButton.Visible = not unlockButton.Visible
 	if locked and levelOk then
 		-- Can't afford yet: faded button with gray text.
 		costLabel.Text = Muscles.FormatExp(tier.cost)
 		local affordable = canUnlock(machine, tier)
-		local ink = affordable and Colors.Ink or Colors.Muted
+		local ink = affordable and Colors.Text or Colors.Muted
 		Theme.SetButtonStyle(unlockButton, affordable and "Gold" or "Disabled")
 		unlockText.TextColor3 = ink
 		costLabel.TextColor3 = ink
@@ -1634,10 +1639,9 @@ local function setNote(category)
 	end
 	current.lastNote = line
 	current.setsSinceNote = 0
-	Theme.Tween(noteLabel, { TextTransparency = 1 }, Theme.Motion.PressTime).Completed:Connect(function()
-		noteLabel.Text = line
-		Theme.Tween(noteLabel, { TextTransparency = 0 })
-	end)
+	-- (owner, 13 Oct: no floating text while lifting; the coach's line is a hint in the top band, one at a time)
+	noteLabel.Text = line
+	Notify.Hint(line)
 end
 
 local function noteSituation()
@@ -2150,14 +2154,15 @@ do
 		if player:GetAttribute("Pass_AutoLift") == true then
 			hud.setAuto(player:GetAttribute("AutoLiftOn") and "on" or "off")
 		else
-			hud.setAuto(Monetization.AnyConfigured() and "locked" or "hidden")
+			-- (locked only while Auto Lift is actually for sale)
+			hud.setAuto(Monetization.PassByKey.AutoLift and Monetization.PassByKey.AutoLift.id and "locked" or "hidden")
 		end
 	end
 	hud.autoButton.Activated:Connect(function()
 		if player:GetAttribute("Pass_AutoLift") == true then
 			-- a local attribute: only this client reads it
 			player:SetAttribute("AutoLiftOn", not player:GetAttribute("AutoLiftOn"))
-		elseif Monetization.AnyConfigured() then
+		elseif Monetization.PassByKey.AutoLift and Monetization.PassByKey.AutoLift.id then
 			UIBus.OpenShop:Fire("Passes")
 		end
 	end)
@@ -2267,15 +2272,24 @@ local function open(model)
 
 	gui.Enabled = true
 	SideMenu.SetTraining(true)
+	HudBottom.SetTraining(true)
+	hud.show(true)
 	Audio.PlayAt("BarRattle", barOf(model))
 	stack.Position = HIDDEN_OFFSET
 	Theme.Tween(stack, { Position = UDim2.new() }) -- slides up
 	local settings = ClientData.Get().settings
 	hintTaps = 0
-	pumpHint.Visible = not (settings and settings.pumpHintSeen) -- once per player, gone after a few taps
+	-- the first time ever on a machine: one hint in the top band (saved as seen at once)
+	if not (settings and settings.pumpHintSeen) then
+		Notify.Hint((UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) and "Tap REP to lift. Tap fast to fill PUMP!"
+			or "Click REP (or anywhere) to lift. Click fast to fill PUMP! Space gets you off.")
+		Remotes.PlayerAction:FireServer("SetSettings", { pumpHintSeen = true })
+	end
 
+	-- (Space / the jump button gets you off the machine now: see requestLeave; gamepads lift with R2 / X)
 	ContextActionService:BindActionAtPriority("MachineLift", onLiftAction, false,
-		Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space, Enum.KeyCode.ButtonA)
+		Enum.ContextActionPriority.High.Value, Enum.KeyCode.ButtonR2, Enum.KeyCode.ButtonX)
+	current.openedAt = os.clock()
 
 	-- chalk up as you grab the bar (hands need a frame to reach it)
 	task.delay(0.15, function()
@@ -2305,6 +2319,8 @@ local function close()
 	prBanner.Visible = false
 	hidePumpHint(false)
 	SideMenu.SetTraining(false)
+	HudBottom.SetTraining(false)
+	hud.show(false)
 	setSweat(false)
 	if baseFov then Workspace.CurrentCamera.FieldOfView = baseFov end
 	ContextActionService:UnbindAction("MachineLift")
@@ -2355,8 +2371,26 @@ do
 		end
 	end)
 end
-exitButton.Activated:Connect(function()
+-- STOP TRAINING and the jump button / key get you off (bug, 13 Oct: you couldn't leave). The server answers with Exit;
+-- if that doesn't come (a lost message), ask again every second while you're still on.
+local leaveToken = 0
+local function requestLeave()
+	if not current then return end
+	leaveToken += 1
+	local token = leaveToken
 	Remotes.MachineAction:FireServer("Leave")
+	task.spawn(function()
+		for _ = 1, 4 do
+			task.wait(1)
+			if not current or token ~= leaveToken then return end
+			Remotes.MachineAction:FireServer("Leave")
+		end
+	end)
+end
+exitButton.Activated:Connect(requestLeave)
+UserInputService.JumpRequest:Connect(function()
+	-- (not in the first moment after getting on: a held jump key from walking up shouldn't throw you off)
+	if current and os.clock() - (current.openedAt or 0) > 0.4 then requestLeave() end
 end)
 unlockButton.Activated:Connect(function()
 	if not current then return end

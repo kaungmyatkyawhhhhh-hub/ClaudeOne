@@ -62,7 +62,7 @@ RunService.Heartbeat:Connect(function(dt)
 	local distance = root and (root.Position - center).Magnitude or math.huge
 	if not open and distance < NOTE_RANGE and os.clock() - lastNote > 8 then
 		lastNote = os.clock()
-		Notify.Show("The pro gym unlocks at Growth Spurt 2. Watch through the glass for now.", nil, "progym")
+		Notify.Show("Reach Growth Spurt " .. (Machines.GymUnlock.Pro or 2) .. " to enter the Pro Gym", nil, "progym")
 	end
 	local target = (open and distance < OPEN_RANGE) and 1 or 0
 	if amount == target then return end

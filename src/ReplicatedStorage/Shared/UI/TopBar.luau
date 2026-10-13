@@ -1,10 +1,11 @@
--- TopBar (client): the row at the top center of the HUD (owner's UI redesign, mockup 01_main_hud), in mockup px inside a
--- Kit.Root so it scales with the screen:
---   coins chip (+ a gold "+" that opens Shop > Coins, only while the shop exists) | LEVEL badge + EXP bar | height chip
--- Level = the average exact level of the 18 muscles; the bar and % are the way to the next one.
--- Visible on the HUD and while training (mockup 02); hidden on the main menu and the genetics screen.
--- TopBar.AddPill (the old top-right pills: Settings, the coach quest, the daily reward) now makes a menu tile
--- (SideMenu) with the same api: { button, SetActive(on), SetDot(on), SetText(text), Activated }.
+-- TopBar (client): the row of dark round pills at the top of the HUD (owner's UI v2, mockup 01_main_hud), in mockup px
+-- inside a Kit.Root so it scales with the screen:
+--   left (after the space Roblox's own buttons need): coins | height "6'4" / 7'0"" | level (red badge + LVL)
+--   right: Daily Reward | Quests | the settings gear
+-- Level = the average exact level of the 18 muscles. Shown on the HUD and while training (mockup 02); hidden on the main
+-- menu and the genetics screen.
+-- TopBar.AddPill(id, text, iconFactory, order): "Daily", "Quests" and "Settings" are the right-hand pills; any other id
+-- is a hidden placeholder. Returns { button, SetActive(on), SetDot(on), SetBadge(n), SetText(text), Activated }.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
@@ -17,64 +18,72 @@ local Horizontal = Enum.FillDirection.Horizontal
 
 local TopBar = {}
 
-TopBar.Top = 8      -- mockup px from the top of the screen
-TopBar.Height = 34
+TopBar.Top = 8       -- mockup px from the top of the screen
+TopBar.Height = 32
+TopBar.Left = 150    -- the left pills start here (Roblox's menu buttons sit before it)
+TopBar.Right = 12
+TopBar.TextSize = 14
+
+-- the right-hand pills: id -> look
+local PILLS = {
+	Daily = { order = 1, text = "Daily Reward", icon = "calendar-days" },
+	Quests = { order = 2, text = "Quests", icon = "list-checks" },
+	Settings = { order = 3, icon = "settings", round = true },
+}
 
 local geneticsOpen = false
-local gui, row
-local coinsText, plusButton, levelBadge, levelLabel, levelPct, setLevelBar, heightText, heightMax
-
--- (old pill ids -> menu tile ids)
-local TILE_IDS = { Quests = "Coach", Daily = "Daily", Settings = "Settings" }
+local gui, root, leftRow, rightRow
+local coinsText, levelBadge, heightText, heightMax
 
 local function refreshVisible()
 	if not gui then return end
 	gui.Enabled = not UIBus.MenuOpen and not geneticsOpen and not SideMenu.IsHidden()
 end
 
+-- a dark round pill (clickable = an ImageButton); returns the pill
+local function pill(name, order, parent, clickable)
+	local p = Theme.Panel({ Name = name, LayoutOrder = order, Piece = "pill", Clickable = clickable,
+		Size = UDim2.fromOffset(0, TopBar.Height), AutomaticSize = Enum.AutomaticSize.X, Parent = parent }, {
+		New("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 14) }),
+		Theme.List(Horizontal, 7, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+	})
+	if clickable then Theme.BindPress(p) end
+	return p
+end
+
+local function text(name, order, value, parent, color, size)
+	return Kit.Text({ Name = name, LayoutOrder = order, Text = value, Font = "Body", TextSize = size or TopBar.TextSize, TextColor3 = color or Colors.Text,
+		Size = UDim2.fromOffset(0, TopBar.Height), AutomaticSize = Enum.AutomaticSize.X, Parent = parent })
+end
+
 local function build()
 	gui = Theme.ScreenGui({ Name = "TopBar", DisplayOrder = 5, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
 	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
-	local root = Kit.Root(gui)
-	row = New("Frame", { Name = "Row", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TopBar.Top),
+	root = Kit.Root(gui)
+	leftRow = New("Frame", { Name = "Row", Position = UDim2.fromOffset(TopBar.Left, TopBar.Top), Size = UDim2.fromOffset(0, TopBar.Height),
+		AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = root }, { Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Left) })
+	rightRow = New("Frame", { Name = "RightRow", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -TopBar.Right, 0, TopBar.Top),
 		Size = UDim2.fromOffset(0, TopBar.Height), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = root },
-		{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+		{ Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Right) })
 
-	-- coins: the coin, the number, a gold "+" (Shop > Coins)
-	local coins = Theme.Panel({ Name = "Coins", LayoutOrder = 1, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(0, TopBar.Height),
-		AutomaticSize = Enum.AutomaticSize.X, Parent = row }, {
-		New("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 6) }),
-		Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+	-- coins
+	local coins = pill("Coins", 1, leftRow)
+	Kit.Coin(19, { LayoutOrder = 1, Parent = coins })
+	coinsText = text("Value", 2, "0", coins)
+	-- height: ruler, "6'4"", "/ 7'0"" in gray
+	local height = pill("Height", 2, leftRow)
+	Pieces.Icon("ruler", Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(17, 17), Parent = height })
+	heightText = text("Value", 2, "", height)
+	heightMax = text("Max", 3, "", height, Colors.Muted)
+	-- level: red badge with the number + "LVL"
+	local level = pill("Level", 3, leftRow)
+	level:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 4)
+	levelBadge = New("Frame", { Name = "Badge", LayoutOrder = 1, Size = UDim2.fromOffset(25, 25), BackgroundColor3 = Colors.Red, Parent = level }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
-	Kit.Coin(18, { LayoutOrder = 1, Parent = coins })
-	coinsText = Kit.Text({ Name = "Value", LayoutOrder = 2, Text = "0", Font = "Number", TextSize = 18, Size = UDim2.fromOffset(0, TopBar.Height),
-		AutomaticSize = Enum.AutomaticSize.X, Parent = coins })
-	plusButton = Theme.Button("Gold", { Name = "Plus", LayoutOrder = 3, Size = UDim2.fromOffset(22, 22), Visible = false, Parent = coins }, {})
-	Pieces.Icon("plus", Colors.Ink, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -1), Size = UDim2.fromOffset(14, 14), Parent = plusButton })
-	plusButton.Activated:Connect(function() UIBus.OpenShop:Fire("Coins") end)
-
-	-- level: red badge, "LEVEL 27", the %, a red EXP bar
-	local level = Theme.Panel({ Name = "Level", LayoutOrder = 2, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(171, TopBar.Height), Parent = row })
-	levelBadge = Pieces.Image("rounded_white_r8", { Name = "Badge", ImageColor3 = Colors.Red, Position = UDim2.fromOffset(5, 5), Size = UDim2.fromOffset(24, 24), Parent = level })
-	Kit.Text({ Name = "Number", Text = "0", Font = "Title", TextSize = 14, Size = UDim2.fromScale(1, 1), Parent = levelBadge })
-	levelLabel = Kit.Text({ Name = "Label", Text = "LEVEL 0", Font = "Body", TextSize = 9, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(38, 5),
-		Size = UDim2.fromOffset(90, 12), TextXAlignment = Enum.TextXAlignment.Left, Parent = level })
-	levelPct = Kit.Text({ Name = "Pct", Text = "0%", Font = "Number", TextSize = 9, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 5),
-		Size = UDim2.fromOffset(40, 12), TextXAlignment = Enum.TextXAlignment.Right, Parent = level })
-	local _, setBar = Kit.Bar(Colors.Red, { Name = "Bar", Position = UDim2.fromOffset(38, 21), Size = UDim2.new(1, -48, 0, 5), Parent = level })
-	setLevelBar = setBar
-
-	-- height: ruler, "6'4"", "/ 7'0""
-	local height = Theme.Panel({ Name = "Height", LayoutOrder = 3, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(0, TopBar.Height),
-		AutomaticSize = Enum.AutomaticSize.X, Parent = row }, {
-		New("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 10) }),
-		Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
-	})
-	Pieces.Icon("ruler", Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(15, 15), Parent = height })
-	heightText = Kit.Text({ Name = "Value", LayoutOrder = 2, Text = "", Font = "Number", TextSize = 18, Size = UDim2.fromOffset(0, TopBar.Height),
-		AutomaticSize = Enum.AutomaticSize.X, Parent = height })
-	heightMax = Kit.Text({ Name = "Max", LayoutOrder = 3, Text = "", Font = "Number", TextSize = 10, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, TopBar.Height),
-		AutomaticSize = Enum.AutomaticSize.X, Parent = height })
+	Kit.Text({ Name = "Number", Text = "0", Font = "Number", TextSize = 13, Size = UDim2.fromScale(1, 1), Parent = levelBadge })
+	text("Label", 2, "LVL", level)
 end
 
 local function refreshData()
@@ -94,17 +103,9 @@ local function refreshData()
 			count += 1
 		end
 	end
-	local exact = count > 0 and total / count or 0
-	local level = math.floor(exact)
-	local frac = exact - level
-	levelBadge.Number.Text = tostring(level)
-	levelLabel.Text = "LEVEL " .. level
-	levelPct.Text = math.floor(frac * 100) .. "%"
-	setLevelBar(frac)
+	levelBadge.Number.Text = tostring(math.floor(count > 0 and total / count or 0))
 	heightText.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts or 0), true)
 	heightMax.Text = "/ " .. GrowthSpurts.FormatHeight(GrowthSpurts.MaxHeightInches, true)
-	local okM, Monetization = pcall(function() return require(Config.Monetization) end)
-	plusButton.Visible = okM and Monetization.AnyConfigured() or false
 end
 
 local function ensure()
@@ -135,14 +136,56 @@ local function ensure()
 	return gui
 end
 
--- (old api) A top-right pill: now a menu tile. `order` is ignored (Config/HudIcons.Tiles sorts the tiles).
-function TopBar.AddPill(id, text, iconFactory, order)
+-- A right-hand pill (Daily Reward, Quests, Settings). Other ids get a hidden placeholder with the same api.
+function TopBar.AddPill(id, labelText, _iconFactory, _order)
 	ensure()
-	local tile = SideMenu.Add(TILE_IDS[id] or id, text, iconFactory, order)
-	return tile
+	local cfg = PILLS[id]
+	local activated = Instance.new("BindableEvent")
+	local api = { Activated = activated.Event }
+	if not cfg then
+		api.button = New("TextButton", { Name = id, Visible = false, Text = "", Parent = rightRow })
+		function api.SetActive() end
+		function api.SetDot() end
+		function api.SetBadge() end
+		function api.SetText() end
+		return api
+	end
+	local p = pill(id, cfg.order, rightRow, true)
+	if cfg.round then
+		p.AutomaticSize = Enum.AutomaticSize.None
+		p.Size = UDim2.fromOffset(TopBar.Height, TopBar.Height)
+		local pad = p:FindFirstChildOfClass("UIPadding")
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 0), UDim.new(0, 0)
+		p:FindFirstChildOfClass("UIListLayout").HorizontalAlignment = Enum.HorizontalAlignment.Center
+	end
+	Pieces.Icon(cfg.icon, Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(18, 18), Parent = p })
+	local label = cfg.text and text("Label", 2, cfg.text or labelText, p) or nil
+	local dot = New("Frame", { Name = "Dot", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -4, 0, 4), Size = UDim2.fromOffset(14, 14),
+		BackgroundColor3 = Colors.Red, Visible = false, ZIndex = 3, Parent = p }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	local dotText = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 10, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = dot })
+	p.Activated:Connect(function() activated:Fire() end)
+	api.button = p
+	function api.SetActive() end
+	function api.SetDot(_, on)
+		dot.Visible = on and true or false
+		dotText.Text = ""
+	end
+	function api.SetBadge(_, n)
+		n = tonumber(n) or 0
+		dot.Visible = n > 0
+		dotText.Text = n > 0 and tostring(math.min(n, 9)) or ""
+	end
+	function api.SetText(_, value)
+		-- (the pills keep their own words: "Daily Reward", "Quests")
+		if label and value and id ~= "Daily" and id ~= "Quests" then label.Text = value end
+	end
+	return api
 end
 
--- Screen px (from the top of the safe area) just under the row.
+-- Screen px (from the top of the safe area) just under the bar.
 function TopBar.Bottom()
 	ensure()
 	return math.floor((TopBar.Top + TopBar.Height) * Kit.Scale())

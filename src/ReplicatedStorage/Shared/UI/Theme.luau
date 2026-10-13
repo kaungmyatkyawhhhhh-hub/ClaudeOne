@@ -1,49 +1,80 @@
--- GYM ARC design system (owner's UI redesign, 13 Oct; GYM_ARC_UI_redesign.md + the mockups): dark warm panels built
--- from 9-slice image pieces (Shared.UI.Pieces, Config/UI), red primary buttons, Oswald (titles, buttons, tabs, numbers;
--- UPPERCASE) + Montserrat (body). Color means something: red = primary / main muscle, gold = coins / big moments,
--- green = done / claim, blue / purple = tags; plates, grades and rarity keep the bumper colors. Every UI reads its look
--- from here and from Shared.UI.Kit (the components).
+-- GYM ARC design system, UI v2 (owner, 13 Oct: GYM_ARC_UI_v2_gymleague_style.md + gym_arc_ui_mockups_v2; replaces the
+-- dark image-piece style): bright "simulator" UI built from Frames + UIGradient + UIStroke + UICorner.
+--   * Text: FredokaOne, white with a thick black outline (labels, titles, buttons, numbers); body text (descriptions,
+--     dialog) Montserrat Bold, white, no outline.
+--   * Buttons: glossy vertical gradients (green / red / gold / blue / gray / purple / orange / teal), 10px corners and a
+--     lighter border in their own color like the left menu tiles (owner, 13 Oct), a thin lighter inner line and a darker
+--     bottom lip. Press = shrink to 0.94 and bounce back.
+--   * Panels: dark translucent #18181E, 14px corners, a soft light edge. Cards inside: #28282F, 10px corners.
+--   * Tabs sit above a panel as separate buttons (active = red); close = a red square X with a white border.
+-- Color still means something: plates, grades and rarity keep the bumper plate colors. Every UI reads its look from here
+-- and from Shared.UI.Kit (the components).
 local TweenService = game:GetService("TweenService")
 
 local Theme = {}
 
 Theme.Colors = {
-	Background = Color3.fromHex("#0F0C0E"), -- modal backdrops, deep wells
-	Panel = Color3.fromHex("#141113"),      -- panels (the panel piece; use Theme.Alpha.Panel for plain frames)
-	Card = Color3.fromHex("#1D191B"),       -- cards inside panels
-	Well = Color3.fromHex("#0F0C0E"),       -- deep wells: bar tracks, the tab strip
-	Secondary = Color3.fromHex("#2B2427"),  -- secondary buttons
-	Disabled = Color3.fromHex("#1F1B1D"),
-	TabActive = Color3.fromHex("#2C2528"),
-	HeaderTop = Color3.fromHex("#1F1A1C"),  -- the panel header's subtle gradient
-	HeaderBottom = Color3.fromHex("#181416"),
-	Border = Color3.fromHex("#FFFFFF"),     -- 1px borders (use Theme.Alpha.Border / BorderSoft)
-	Text = Color3.fromHex("#F6F3F3"),       -- main text
-	Muted = Color3.fromHex("#9D9396"),      -- secondary text
-	Faint = Color3.fromHex("#6F6669"),      -- faint text, locked items
-	Chalk = Color3.fromHex("#F6F3F3"),      -- light fills (icons, bar segments)
-	Ink = Color3.fromHex("#141113"),        -- dark text on light fills
+	Background = Color3.fromHex("#0D0D12"), -- modal backdrops, deep wells
+	Panel = Color3.fromHex("#18181E"),      -- panels
+	Card = Color3.fromHex("#28282F"),       -- cards / rows inside panels
+	Well = Color3.fromHex("#101016"),       -- bar tracks
+	Pill = Color3.fromHex("#16161A"),       -- top bar pills, HUD cards over the world
+	Secondary = Color3.fromHex("#3A3A44"),  -- gray buttons
+	Disabled = Color3.fromHex("#2C2C34"),
+	TabActive = Color3.fromHex("#EE3A42"),
+	HeaderTop = Color3.fromHex("#18181E"),
+	HeaderBottom = Color3.fromHex("#18181E"),
+	Outline = Color3.fromHex("#0D0D12"),    -- the dark outline around panels, buttons and cards
+	Border = Color3.fromHex("#0D0D12"),     -- (old name for the outline)
+	Text = Color3.fromHex("#FFFFFF"),       -- main text
+	Muted = Color3.fromHex("#B8B8C4"),      -- secondary text
+	Faint = Color3.fromHex("#6E6E7A"),      -- locked items
+	Chalk = Color3.fromHex("#FFFFFF"),
+	Ink = Color3.fromHex("#16161A"),        -- dark text on light fills
 	Shadow = Color3.fromHex("#000000"),
-	Red = Color3.fromHex("#E4262F"),        -- primary
-	RedTint = Color3.fromHex("#3A1013"),    -- tag / icon tile backgrounds
-	Gold = Color3.fromHex("#F5B62F"),       -- coins, PUMP, big moments (NEW PR, BIG REP)
-	Green = Color3.fromHex("#36C26B"),      -- claim, done, auto on, quest bars
-	Blue = Color3.fromHex("#3F8CFF"),
-	Purple = Color3.fromHex("#9A5CFF"),
+	Red = Color3.fromHex("#EE3A42"),        -- primary
+	RedTint = Color3.fromHex("#4A1A1E"),
+	Gold = Color3.fromHex("#FFC93C"),       -- coins, prices, tiers, big moments
+	Green = Color3.fromHex("#5FD35A"),      -- claim, done, auto on, following
+	Blue = Color3.fromHex("#4AA3FF"),       -- stamina, rare
+	Purple = Color3.fromHex("#B26BFF"),     -- epic
+	Orange = Color3.fromHex("#FF9A2E"),
+	Teal = Color3.fromHex("#2EC4B6"),
+	Robux = Color3.fromHex("#5FD35A"),      -- "R$ 249" prices
 	NeedsWork = Color3.fromHex("#FF8A8A"),  -- soft light red: "needs work", very low stamina
 	StatNumber = Color3.fromHex("#DCEEFF"), -- light blue-white: the numbers on the world stats labels
 }
 
 -- Transparency levels (0 = solid, 1 = invisible)
 Theme.Alpha = {
-	Panel = 0.06,         -- panels (#141113 at 6%)
+	Panel = 0.06,         -- panels (#18181E at 6%)
+	Pill = 0.22,          -- top bar pills
+	HudCard = 0.12,       -- HUD cards over the world (daily quests)
 	LabelBacking = 0.6,   -- the faint box behind world labels
-	Border = 0.87,        -- strong 1px white border
-	BorderSoft = 0.93,    -- soft 1px white border
-	ButtonBorder = 0.87,
-	Primary = 1,          -- (buttons are image pieces now: their own frame stays invisible)
-	TextShadow = 0.6,     -- subtle dark stroke behind text over the world
-	Backdrop = 0.38,      -- black behind a modal
+	Border = 0,           -- the dark outline is solid
+	BorderSoft = 0.4,
+	ButtonBorder = 0,
+	Primary = 0,
+	TextShadow = 0,       -- the black outline on text over the world
+	Backdrop = 0.6,       -- black behind a modal (the game also blurs)
+}
+
+-- The glossy button gradients (top -> bottom). The bottom lip is the bottom color made darker.
+Theme.Gradients = {
+	Green = { Color3.fromHex("#5FD35A"), Color3.fromHex("#2F9E35") },
+	Red = { Color3.fromHex("#EE3A42"), Color3.fromHex("#B31D25") },
+	Gold = { Color3.fromHex("#FFD34D"), Color3.fromHex("#E79A12") },
+	Blue = { Color3.fromHex("#4AA3FF"), Color3.fromHex("#1F62D6") },
+	Gray = { Color3.fromHex("#4A4A55"), Color3.fromHex("#2C2C34") },
+	Purple = { Color3.fromHex("#B26BFF"), Color3.fromHex("#6D2FD1") },
+	Orange = { Color3.fromHex("#FFB04A"), Color3.fromHex("#E2701A") },
+	Teal = { Color3.fromHex("#4FE0CF"), Color3.fromHex("#1A9A8D") },
+	Dark = { Color3.fromHex("#2E2E36"), Color3.fromHex("#1E1E25") },
+}
+-- button style names -> gradient (old names kept: Primary / Main = red, Secondary = gray, White = gray)
+Theme.ButtonGradients = {
+	Primary = "Red", Main = "Red", Red = "Red", Green = "Green", Gold = "Gold", Blue = "Blue", Secondary = "Gray", Gray = "Gray",
+	Disabled = "Dark", Purple = "Purple", Orange = "Orange", Teal = "Teal", White = "Gray", Dark = "Dark",
 }
 
 -- Real bumper plate colors (plate fill + darker rim). Used for grades, rarity and plates.
@@ -70,76 +101,73 @@ Theme.Rarity = {
 	Secret = Theme.Bumper.Black,
 }
 
--- The UI fonts live in UIFonts (Oswald for titles / numbers / buttons, Montserrat for body text).
--- The weight names stay so every screen keeps working: Regular = body text, Light / Medium = Oswald numbers, the rest =
--- Oswald Bold, Strong = Montserrat Bold.
+-- Fonts (UIFonts): Display = FredokaOne (labels, titles, buttons, numbers; white with a black outline), Body = Montserrat
+-- SemiBold, BodyBold = Montserrat Bold. The weight names stay so every screen keeps working: Regular / Small / Label =
+-- body text, Strong = bold body text, everything else = FredokaOne.
 local UIFonts = require(script.Parent:WaitForChild("UIFonts"))
 Theme.UIFonts = UIFonts
 Theme.Fonts = {
-	Light = UIFonts.Number,                                                             -- calm numbers
-	Regular = UIFonts.Body,                                                             -- normal text
-	SemiBold = UIFonts.Heading,                                                         -- titles, button labels, important numbers
-	Bold = UIFonts.Heading,                                                             -- rank tag letters
-	Strong = UIFonts.BodyBold,                                                          -- names and item names in body text
+	Light = UIFonts.Display,
+	Regular = UIFonts.Body,
+	SemiBold = UIFonts.Display,
+	Bold = UIFonts.Display,
+	Strong = UIFonts.BodyBold,
 }
--- older names, kept so every screen reads the same three weights
-Theme.Fonts.Medium = UIFonts.Number -- Oswald SemiBold in sentence case (genetics plate labels)
-Theme.Fonts.Heading = Theme.Fonts.SemiBold
+Theme.Fonts.Medium = UIFonts.Display
+Theme.Fonts.Heading = UIFonts.Display
+Theme.Fonts.Display = UIFonts.Display
 Theme.Fonts.Label = Theme.Fonts.Regular
 Theme.Fonts.Small = Theme.Fonts.Regular
 
--- The left menu tiles (owner's UI v7 brief) use a bold rounded display face for their labels, with a dark outline;
--- everything else is Oswald / Nunito.
-Theme.TileFont = Font.fromEnum(Enum.Font.FredokaOne)
-Theme.TileStroke = Color3.fromHex("#1A1320") -- the dark outline around tile labels
-Theme.PillHeight = 44 -- the top-bar pills (44 = the smallest tap target) (coins, quests, daily reward, settings)
--- Tile look (SideMenu): the 3D face fades from white to this gray from top to bottom, the active tile's border is white, and
--- the label is 14px (17px on the bigger PC tiles).
+Theme.TileFont = UIFonts.Display
+Theme.TileStroke = Theme.Colors.Outline
+Theme.PillHeight = 32 -- the top-bar pills (mockup px; their tap area is padded to 44)
 Theme.Tile = {
 	ShadeBottom = Color3.fromRGB(140, 140, 150),
 	ActiveBorder = Color3.new(1, 1, 1),
 	LabelSmall = 14,
 	LabelBig = 17,
-	BigFrom = 80, -- tiles at least this many px wide use the big label
-	LipDarken = 0.66, -- how dark the bottom edge is (0 = the accent, 1 = black)
+	BigFrom = 80,
+	LipDarken = 0.66,
 	FaceDarken = 0.5,
 }
 
--- Named sizes, or a plain number (the redesigned screens use the mockup's px; Theme.ScreenScale scales the whole gui).
+-- Named sizes, or a plain number (mockup px inside a Kit.Root).
 Theme.TextSize = {
-	Slam = 72,  -- one-off slams of a big moment (the genetics "S!")
-	Hero = 56,  -- the GYM ARC title on the menu card (HeroCompact on phones)
+	Slam = 72,
+	Hero = 56,
 	HeroCompact = 38,
-	Huge = 40,  -- big numbers
+	Huge = 40,
 	Display = 42,
-	Big = 34,     -- the genetics "Overall" label (the word under it is Hero size)
+	Big = 34,
 	Title = 30,
-	Large = 22, -- screen titles
-	Medium = 18, -- the genetics stat row names
-	Popup = 26, -- 3D gain popups
+	Large = 22,
+	Medium = 18,
+	Popup = 26,
 	Body = 16,
 	Small = 14,
-	Label = 10, -- small section labels ("DAILY QUESTS", "STAMINA") at mockup size
+	Label = 11,
 }
 Theme.MinTextSize = 10
 
 Theme.Spacing = { XS = 4, S = 8, M = 12, L = 16, XL = 24 }
 
 Theme.Corner = {
-	Panel = UDim.new(0, 12),
+	Panel = UDim.new(0, 14),
 	Card = UDim.new(0, 10),
-	Button = UDim.new(0, 8),
-	Tag = UDim.new(0, 5),
+	Button = UDim.new(0, 10), -- (the left menu tiles' corners)
+	Tag = UDim.new(0, 6),
 	Segment = UDim.new(0, 3),
-	Round = UDim.new(1, 0), -- plate discs and icons
+	Round = UDim.new(1, 0),
 }
 
-Theme.Border = { Color = Theme.Colors.Border, Thickness = 1, Transparency = Theme.Alpha.Border }
+Theme.Border = { Color = Theme.Colors.Outline, Thickness = 2, Transparency = 0 }
+Theme.Outline = { Panel = 2, Button = 2, Card = 1.5 }
+Theme.Colors.Edge = Color3.fromHex("#3A3A46")      -- the soft light edge around panels and cards (like the menu's "<" tab)
 Theme.IconStroke = 2
 Theme.MinTouch = 44 -- px, smallest tappable button on mobile
 
--- Short screens (phones in landscape, e.g. 667x375) get compact layouts: tighter spacing, 44px buttons, panels that
--- fit the height. In Studio a "TestPhoneLayout" attribute on Workspace forces it, to check phone layouts on a PC.
+-- Short screens (phones in landscape) get compact layouts. In Studio a "TestPhoneLayout" attribute on Workspace forces it.
 Theme.CompactHeight = 520
 function Theme.IsCompact()
 	local camera = workspace.CurrentCamera
@@ -147,8 +175,6 @@ function Theme.IsCompact()
 	return game:GetService("RunService"):IsStudio() and workspace:GetAttribute("TestPhoneLayout") == true
 end
 
--- Calls callback(isCompact) now and again whenever the screen switches between compact and normal (the viewport is
--- often not its final size yet when scripts start, e.g. on phones, and it changes when a window is resized).
 function Theme.OnCompactChanged(callback)
 	local last = Theme.IsCompact()
 	task.spawn(callback, last)
@@ -171,27 +197,14 @@ Theme.Motion = {
 	Time = 0.25,
 	Style = Enum.EasingStyle.Quad,
 	Direction = Enum.EasingDirection.Out,
-	PressScale = 0.95,
-	PressTime = 0.08,
-	Bounce = Enum.EasingStyle.Back, -- pops, rep counter
+	PressScale = 0.94,
+	PressTime = 0.07,
+	Bounce = Enum.EasingStyle.Back, -- pops, rep counter, button release
 }
 
 ------------------------------------------------------------------------
 -- Builders
 ------------------------------------------------------------------------
--- UIPadding also shrinks the Depth pieces, so they are pushed back out by the padding.
-local Pieces -- Shared.UI.Pieces (loaded on first use)
-local function pieces()
-	Pieces = Pieces or require(script.Parent:WaitForChild("Pieces"))
-	return Pieces
-end
-
-local function paddingOf(gui)
-	local p = gui:FindFirstChildOfClass("UIPadding")
-	if not p then return 0, 0, 0, 0 end
-	return p.PaddingLeft.Offset, p.PaddingRight.Offset, p.PaddingTop.Offset, p.PaddingBottom.Offset
-end
-
 function Theme.Tween(instance, props, time, style)
 	local info = TweenInfo.new(time or Theme.Motion.Time, style or Theme.Motion.Style, Theme.Motion.Direction)
 	local tween = TweenService:Create(instance, info, props)
@@ -221,8 +234,7 @@ function Theme.ScreenGui(props)
 	return Theme.New("ScreenGui", props)
 end
 
--- The part of a full-screen gui (ScreenInsets.None, so its dim backdrop covers the top bar too) below the Roblox top
--- bar. Panels go in here: centred on the whole screen, a short phone screen puts their header under the top bar.
+-- The part of a full-screen gui (ScreenInsets.None) below the Roblox top bar.
 function Theme.SafeArea(parent)
 	local GuiService = game:GetService("GuiService")
 	local frame = Theme.New("Frame", { Name = "Safe", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = parent })
@@ -240,7 +252,7 @@ function Theme.Round(kind)
 	return Theme.New("UICorner", { CornerRadius = Theme.Corner[kind] })
 end
 
--- Thin light border (1px white at 85% transparency by default).
+-- An outline (the dark #0D0D12 one by default).
 function Theme.Stroke(color, thickness, transparency)
 	return Theme.New("UIStroke", {
 		Color = color or Theme.Border.Color,
@@ -250,9 +262,15 @@ function Theme.Stroke(color, thickness, transparency)
 	})
 end
 
--- Subtle dark outline behind text, only where text sits over the 3D world.
+-- The black outline on text (every FredokaOne label gets one; this adds or returns it).
 function Theme.TextShadow(label, transparency)
-	return Theme.New("UIStroke", { Color = Theme.Colors.Shadow, Thickness = 1, Transparency = transparency or Theme.Alpha.TextShadow, Parent = label })
+	local existing = label:FindFirstChild("TextStroke")
+	if existing then
+		if transparency then existing.Transparency = transparency end
+		return existing
+	end
+	return Theme.New("UIStroke", { Name = "TextStroke", Color = Theme.Colors.Shadow, Thickness = 2,
+		Transparency = transparency or Theme.Alpha.TextShadow, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
 end
 
 function Theme.Pad(space)
@@ -263,7 +281,7 @@ end
 function Theme.List(direction, space, horizontal, vertical)
 	return Theme.New("UIListLayout", {
 		FillDirection = direction,
-		Padding = UDim.new(0, Theme.Spacing[space] or 0),
+		Padding = UDim.new(0, type(space) == "number" and space or Theme.Spacing[space] or 0),
 		HorizontalAlignment = horizontal or Enum.HorizontalAlignment.Center,
 		VerticalAlignment = vertical or Enum.VerticalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder,
@@ -281,12 +299,8 @@ function Theme.Limit(minSize, maxSize)
 	return Theme.New("UISizeConstraint", { MinSize = minSize, MaxSize = maxSize })
 end
 
--- Crisp text: a whole-number Theme.TextSize (never below 14), no TextScaled. Normal case.
--- props.TextSize = "Huge" | "Large" | "Popup" | "Body" | "Small"; props.Font = "Light" | "Regular" | "SemiBold".
--- Titles and button labels are UPPERCASE (Oswald text that is a title size, or sits in a button). The text stays upper
--- when a script changes it later. props.Upper = false keeps a label's own case (e.g. a word that should read "Blessed").
-local TITLE_SIZES = { Large = true, Huge = true, Hero = true, HeroCompact = true, Slam = true }
-local HEADING_FONTS = { SemiBold = true, Bold = true, Heading = true }
+-- Button labels are UPPERCASE (titles keep their case in this style: "Gym Store", "Bench Press").
+-- props.Upper = false keeps a label's own case even inside a button.
 function Theme.Uppercase(label)
 	if label:GetAttribute("Upper") then return end
 	label:SetAttribute("Upper", true)
@@ -298,22 +312,32 @@ function Theme.Uppercase(label)
 	label:GetPropertyChangedSignal("Text"):Connect(apply)
 end
 
+-- Text: whole-number sizes (named or mockup px), no TextScaled. FredokaOne text (every weight but Regular / Small /
+-- Label / Strong) gets the black outline, thicker on big text; props.Stroke = false leaves it off.
+local BODY_FONTS = { Regular = true, Small = true, Label = true, Strong = true }
+function Theme.StrokeFor(size)
+	return size >= 24 and 3 or (size >= 14 and 2 or 1.5)
+end
 function Theme.Text(props)
 	local sizeKey = props.TextSize or "Body"
 	local fontKey = props.Font or "Regular"
 	local upper = props.Upper
+	local stroke = props.Stroke
 	props.Font = nil
 	props.Upper = nil
+	props.Stroke = nil
 	props.BackgroundTransparency = 1
 	props.TextScaled = false
 	local size = type(sizeKey) == "number" and sizeKey or Theme.TextSize[sizeKey] or Theme.TextSize.Body
 	props.TextSize = math.max(Theme.MinTextSize, math.floor(size))
-	props.FontFace = Theme.Fonts[fontKey]
+	props.FontFace = Theme.Fonts[fontKey] or Theme.Fonts.Regular
 	props.TextColor3 = props.TextColor3 or Theme.Colors.Text
 	local label = Theme.New("TextLabel", props)
-	if upper ~= false and HEADING_FONTS[fontKey] and (TITLE_SIZES[sizeKey] or (label.Parent and label.Parent:IsA("GuiButton"))) then
-		Theme.Uppercase(label)
+	if stroke ~= false and not BODY_FONTS[fontKey] then
+		local outline = Theme.TextShadow(label)
+		outline.Thickness = Theme.StrokeFor(props.TextSize)
 	end
+	if upper == true then Theme.Uppercase(label) end
 	if upper == false then label:SetAttribute("Upper", true) end -- (so a button can't make it upper either)
 	return label
 end
@@ -390,8 +414,7 @@ function Theme.Fade(root, visible, time)
 	return lastTween
 end
 
--- Pressing a button: image buttons move their content down 2px and lose the edge (the red one swaps to its pressed
--- piece); plain buttons shrink a little instead. A very soft click.
+-- Pressing a button: shrink to 0.94, then bounce back on release. A very soft click.
 local audio -- Shared.Audio, loaded on first press (client only)
 function Theme.BindPress(button)
 	local function isPress(input)
@@ -401,20 +424,11 @@ function Theme.BindPress(button)
 	local function setDown(on)
 		if on == down then return end
 		down = on
-		local piece = button:GetAttribute("Piece")
-		if piece then
-			local pad = button:FindFirstChildOfClass("UIPadding") or Theme.New("UIPadding", { Parent = button })
-			local shift = on and 2 or -2
-			pad.PaddingTop = UDim.new(pad.PaddingTop.Scale, pad.PaddingTop.Offset + shift)
-			pad.PaddingBottom = UDim.new(pad.PaddingBottom.Scale, pad.PaddingBottom.Offset - shift)
-			local depth = button:FindFirstChild("Depth")
-			local bg = (button:IsA("ImageButton") or button:IsA("ImageLabel")) and button or (depth and depth:FindFirstChild("Bg"))
-			local pressed = Theme.ButtonPressed[piece]
-			if bg and pressed then pieces().Apply(bg, on and pressed or piece) end
-			if bg and not pressed then bg.ImageColor3 = on and Color3.new(0.85, 0.85, 0.85) or Color3.new(1, 1, 1) end
+		local scale = button:FindFirstChild("PressScale") or Theme.New("UIScale", { Name = "PressScale", Parent = button })
+		if on then
+			Theme.Tween(scale, { Scale = Theme.Motion.PressScale }, Theme.Motion.PressTime)
 		else
-			local scale = button:FindFirstChildOfClass("UIScale") or Theme.New("UIScale", { Parent = button })
-			Theme.Tween(scale, { Scale = on and Theme.Motion.PressScale or 1 }, on and Theme.Motion.PressTime or nil)
+			Theme.Tween(scale, { Scale = 1 }, 0.22, Theme.Motion.Bounce)
 		end
 	end
 	button.InputBegan:Connect(function(input) if isPress(input) then setDown(true) end end)
@@ -426,143 +440,129 @@ function Theme.BindPress(button)
 	end)
 end
 
+-- (the soft drop shadows of the old styles: this style has none; kept so older screens still work)
+Theme.Depth = { Shadow = { Offset = 0, Rings = {} } }
+function Theme.AddDepth(gui)
+	return gui
+end
+Theme.PanelShadowGrow = 0
+
 ------------------------------------------------------------------------
--- Depth: a soft drop shadow under panels and buttons. It lives in a "Depth" Folder, which list/grid
--- layouts ignore, so it never disturbs layouts. Built only from frames and strokes (no images).
+-- Surfaces: panels, cards, wells, pills. Theme.SetPiece(gui, name) gives a gui one of these looks (the names are the
+-- old image piece names, so every screen keeps working):
+--   panel       dark #18181E, 14px corners, 3px outline           hud_box  HUD card over the world (#16161A)
+--   card        #28282F row / cell, 10px corners, 2px outline     well     dark inset (bar tracks)
+--   card_selected  card with a green outline (equipped, following)  card_gold  card with a gold outline
+--   chip / pill    dark round pill (top bar)                       banner_gold  dark gold banner
 ------------------------------------------------------------------------
-Theme.Depth = {
-	Shadow = { Offset = 2, Rings = { { 2, 0.86 }, { 5, 0.92 }, { 10, 0.96 } } }, -- ring thickness px, transparency
+Theme.Surfaces = {
+	panel = { color = Theme.Colors.Panel, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Edge },
+	hud_box = { color = Theme.Colors.Pill, alpha = Theme.Alpha.HudCard, corner = 12, outline = 1.5, outlineColor = Theme.Colors.Edge },
+	card = { color = Theme.Colors.Card, alpha = 0, corner = 10, outline = 1.5, outlineColor = Theme.Colors.Edge },
+	card_selected = { color = Theme.Colors.Card, alpha = 0, corner = 10, outline = 3, outlineColor = Theme.Colors.Green },
+	card_gold = { color = Theme.Colors.Card, alpha = 0, corner = 10, outline = 3, outlineColor = Theme.Colors.Gold },
+	well = { color = Theme.Colors.Well, alpha = 0, corner = 8, outline = 1.5, outlineColor = Theme.Colors.Edge },
+	chip = { color = Theme.Colors.Pill, alpha = Theme.Alpha.Pill, corner = 999, outline = 0 },
+	pill = { color = Theme.Colors.Pill, alpha = Theme.Alpha.Pill, corner = 999, outline = 0 },
+	panel_header = { color = Theme.Colors.Panel, alpha = 1, corner = 14, outline = 0 },
+	banner_gold = { color = Color3.fromHex("#3A2A0C"), alpha = 0.1, corner = 12, outline = 3, outlineColor = Theme.Colors.Gold },
 }
 
-
--- kind and cornerKind: "Panel" (default) or "Button" pick the corner radius; extra args are ignored.
-function Theme.AddDepth(gui, kind, cornerKind)
-	local folder = gui:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = gui })
-	local border = gui:FindFirstChildOfClass("UIStroke")
-	local pad = border and math.ceil(border.Thickness) or 0
-	local left, right, top, bottom = paddingOf(gui)
-	local corner = Theme.Corner[cornerKind or kind or "Panel"] or Theme.Corner.Panel
-	for _, ring in ipairs(Theme.Depth.Shadow.Rings) do
-		Theme.New("Frame", {
-			Name = "Shadow",
-			BackgroundTransparency = 1,
-			Position = UDim2.new(0, -pad - left, 0, -pad + Theme.Depth.Shadow.Offset - top),
-			Size = UDim2.new(1, pad * 2 + left + right, 1, pad * 2 + top + bottom),
-			ZIndex = 0,
-			Parent = folder,
-		}, {
-			Theme.New("UICorner", { CornerRadius = corner.Scale > 0 and corner or UDim.new(0, corner.Offset + pad) }),
-			Theme.New("UIStroke", { Color = Theme.Colors.Shadow, Thickness = ring[1], Transparency = ring[2], ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, {
-				-- lighter along the top edge (light comes from above)
-				Theme.New("UIGradient", {
-					Rotation = 90,
-					Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(0.4, 0.2), NumberSequenceKeypoint.new(1, 0) }),
-				}),
-			}),
-		})
+local function outlineOf(gui)
+	local stroke = gui:FindFirstChild("Border")
+	if not stroke then
+		stroke = Theme.New("UIStroke", { Name = "Border", ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = gui })
 	end
+	return stroke
+end
+
+function Theme.SetPiece(gui, name)
+	local surface = Theme.Surfaces[name] or Theme.Surfaces.card
+	gui.BackgroundColor3 = surface.color
+	gui.BackgroundTransparency = surface.alpha
+	if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then gui.Image = "" end
+	local corner = gui:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = gui })
+	corner.CornerRadius = surface.corner >= 999 and UDim.new(1, 0) or UDim.new(0, surface.corner)
+	local stroke = outlineOf(gui)
+	stroke.Color = surface.outlineColor or Theme.Colors.Outline
+	stroke.Thickness = surface.outline
+	stroke.Transparency = 0
+	stroke.Enabled = surface.outline > 0
+	gui:SetAttribute("Piece", name)
 	return gui
 end
 
-------------------------------------------------------------------------
--- Image pieces behind panels and buttons. They live in the "Depth" Folder (list / grid layouts ignore it), pushed back
--- out by the gui's UIPadding (UIPadding moves them too), kept in step when the padding changes (button presses).
-------------------------------------------------------------------------
-
-local function fitBehind(gui, image, grow)
-	local function fit()
-		local left, right, top, bottom = paddingOf(gui)
-		image.Position = UDim2.fromOffset(-left - grow, -top - grow)
-		image.Size = UDim2.new(1, left + right + grow * 2, 1, top + bottom + grow * 2)
-	end
-	local watched = nil
-	local function watch()
-		local pad = gui:FindFirstChildOfClass("UIPadding")
-		if pad and pad ~= watched then
-			watched = pad
-			for _, prop in ipairs({ "PaddingLeft", "PaddingRight", "PaddingTop", "PaddingBottom" }) do
-				pad:GetPropertyChangedSignal(prop):Connect(fit)
-			end
-		end
-		fit()
-	end
-	watch()
-	gui.ChildAdded:Connect(function(child) if child:IsA("UIPadding") then task.defer(watch) end end)
-end
-
-Theme.PanelShadowGrow = 20 -- the soft shadow behind a panel is this much bigger on every side
-
--- Shows piece `name` on `gui`: an ImageLabel / ImageButton draws it itself (panels and buttons are those), anything else
--- gets it as a "Bg" image behind its content. `shadow` adds the soft panel shadow (only on a gui that doesn't size
--- itself to its content: a child bigger than an AutomaticSize frame would keep growing it). Returns the image.
-function Theme.SetPiece(gui, name, shadow)
-	local folder = gui:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = gui })
-	local bg
-	if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then
-		pieces().Apply(gui, name)
-		bg = gui
-	else
-		bg = folder:FindFirstChild("Bg")
-		if not bg then
-			bg = pieces().Image(name, { Name = "Bg", ZIndex = 0, Parent = folder }) -- (under the content)
-			fitBehind(gui, bg, 0)
-		else
-			pieces().Apply(bg, name)
-		end
-	end
-	if shadow and gui.AutomaticSize == Enum.AutomaticSize.None and not folder:FindFirstChild("PanelShadow") then
-		local s = pieces().Image("panel_shadow", { Name = "PanelShadow", ZIndex = -1, Parent = folder })
-		fitBehind(gui, s, Theme.PanelShadowGrow)
-	end
-	gui:SetAttribute("Piece", name)
-	return bg
-end
-
--- A hidden 1px border every panel and button keeps, so a script can still light it up (a selected card, a warning).
--- (No UICorner on the image panels: the pieces have their own rounded corners, and a UICorner on a sliced image draws
--- dark blobs past its corners.)
-local function hookStroke(gui, corner)
-	if not gui:FindFirstChildOfClass("UIStroke") then
-		Theme.New("UIStroke", { Name = "Border", Color = Theme.Colors.Border, Thickness = 1, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = gui })
-	end
-	if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then
-		local c = gui:FindFirstChildOfClass("UICorner")
-		if c then c:Destroy() end
-		return
-	end
-	local c = gui:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = gui })
-	c.CornerRadius = corner
-end
-
--- Panel: the panel piece (dark, 12px corners, thin border) with its soft shadow. props.Piece picks another piece ("card",
--- "hud_box", "well", "chip" ...); props.Shadow = false leaves the shadow out (default: only the "panel" piece has one).
+-- Panel: a surface (props.Piece: "panel" by default, or any Theme.Surfaces name). props.Clickable = true makes it a button
+-- (an ImageButton without an image: use its Activated).
 function Theme.Panel(props, children)
 	local piece = props.Piece or "panel"
-	local shadow = props.Shadow
-	if shadow == nil then shadow = piece == "panel" end
-	local clickable = props.Clickable -- a panel you can tap (an ImageButton; use its Activated)
+	local clickable = props.Clickable
 	props.Piece, props.Shadow, props.Clickable = nil, nil, nil
-	props.BackgroundTransparency = 1
 	if clickable then props.AutoButtonColor = false end
-	local panel = Theme.New(clickable and "ImageButton" or "ImageLabel", props, children) -- (draws its own piece: see SetPiece)
-	hookStroke(panel, piece == "panel" and Theme.Corner.Panel or Theme.Corner.Card)
-	Theme.SetPiece(panel, piece, shadow)
+	local panel = Theme.New(clickable and "ImageButton" or "ImageLabel", props, children)
+	Theme.SetPiece(panel, piece)
 	return panel
 end
 
--- Buttons: image pieces with a darker bottom edge so they feel pressable. Styles: "Primary" (red; also "Main"),
--- "Secondary" (dark), "Gold", "Green", "Disabled", "White" (tint the piece). Press = the content moves down 2px and the
--- edge goes (the red one swaps to its pressed piece). Theme.SetButtonStyle(button, style) switches it later.
-Theme.ButtonPieces = {
-	Primary = "btn_red", Main = "btn_red", Secondary = "btn_dark", Gold = "btn_gold", Green = "btn_green",
-	Disabled = "btn_disabled", White = "btn_white_tint",
-}
-Theme.ButtonPressed = { btn_red = "btn_red_pressed" }
-Theme.ButtonText = { Gold = Theme.Colors.Ink, Disabled = Theme.Colors.Muted }
+------------------------------------------------------------------------
+-- Buttons: a glossy gradient (Theme.Gradients) with a darker bottom lip, a thin lighter inner line and the dark
+-- outline. Styles: "Primary" / "Main" / "Red", "Green", "Gold", "Blue", "Secondary" / "Gray", "Disabled", "Purple",
+-- "Orange", "Teal". Labels are FredokaOne, white with a black outline, UPPERCASE. Theme.SetButtonStyle switches it.
+------------------------------------------------------------------------
+Theme.ButtonText = { Disabled = Theme.Colors.Muted }
+Theme.LipHeight = 0.14 -- share of the button's height that is the darker bottom lip
+
+local function gradientFor(style)
+	local g = Theme.Gradients[Theme.ButtonGradients[style] or "Gray"]
+	local top, bottom = g[1], g[2]
+	local lip = bottom:Lerp(Color3.new(0, 0, 0), 0.3)
+	local edge = 1 - Theme.LipHeight
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, top),
+		ColorSequenceKeypoint.new(edge - 0.001, bottom),
+		ColorSequenceKeypoint.new(edge, lip),
+		ColorSequenceKeypoint.new(1, lip),
+	})
+end
 
 function Theme.SetButtonStyle(button, style)
 	button:SetAttribute("Style", style)
-	Theme.SetPiece(button, Theme.ButtonPieces[style] or Theme.ButtonPieces.Secondary, false)
+	button.BackgroundColor3 = Color3.new(1, 1, 1)
+	button.BackgroundTransparency = 0
+	if button:IsA("ImageButton") or button:IsA("ImageLabel") then button.Image = "" end
+	local gradient = button:FindFirstChild("Gloss") or Theme.New("UIGradient", { Name = "Gloss", Rotation = 90, Parent = button })
+	gradient.Color = gradientFor(style)
+	local corner = button:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = button })
+	corner.CornerRadius = Theme.Corner.Button
+	-- (owner, 13 Oct: buttons match the left menu tiles: a lighter border in the button's own color, the tiles' corners)
+	local g = Theme.Gradients[Theme.ButtonGradients[style] or "Gray"]
+	local stroke = outlineOf(button)
+	stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = g[1]:Lerp(Color3.new(1, 1, 1), 0.3), Theme.Outline.Button, 0.1, true
+	-- the thin lighter line just inside the outline (above the lip). It lives in a "Depth" Folder (list layouts ignore
+	-- it) and is pushed back out by the button's UIPadding.
+	local depth = button:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = button })
+	local inner = depth:FindFirstChild("Inner")
+	if not inner then
+		inner = Theme.New("Frame", { Name = "Inner", BackgroundTransparency = 1, ZIndex = button.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { CornerRadius = UDim.new(0, 7) }),
+			Theme.New("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 1, Transparency = 0.7, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		local lip = Theme.LipHeight
+		local function fit()
+			local pad = button:FindFirstChildOfClass("UIPadding")
+			local l = pad and pad.PaddingLeft.Offset or 0
+			local r = pad and pad.PaddingRight.Offset or 0
+			local t = pad and pad.PaddingTop.Offset or 0
+			local b = pad and pad.PaddingBottom.Offset or 0
+			inner.Position = UDim2.fromOffset(2 - l, 2 - t)
+			inner.Size = UDim2.new(1, l + r - 4, 1 - lip, (t + b) * (1 - lip) - 2)
+		end
+		fit()
+		button.ChildAdded:Connect(function(child)
+			if child:IsA("UIPadding") then task.defer(fit) end
+		end)
+	end
+	inner:FindFirstChildOfClass("UIStroke").Transparency = style == "Disabled" and 0.92 or 0.7
 	local color = Theme.ButtonText[style] or Theme.Colors.Text
 	for _, item in ipairs(button:GetDescendants()) do
 		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then item.TextColor3 = color end
@@ -573,21 +573,18 @@ end
 function Theme.Button(style, props, children)
 	props.Text = nil
 	props.AutoButtonColor = false
-	props.BackgroundTransparency = 1
-	local button = Theme.New("ImageButton", props, children) -- (draws its own piece: see SetPiece)
-	-- button labels are UPPERCASE Oswald (labels passed in as children, or added later)
+	local button = Theme.New("ImageButton", props, children)
+	-- button labels are UPPERCASE (labels passed in as children, or added later)
 	local function upperLabel(item)
-		if item:IsA("TextLabel") and item.FontFace == Theme.Fonts.SemiBold then Theme.Uppercase(item) end
+		if item:IsA("TextLabel") and item.FontFace == Theme.Fonts.Display then Theme.Uppercase(item) end
 	end
 	for _, item in ipairs(button:GetDescendants()) do upperLabel(item) end
 	button.DescendantAdded:Connect(function(item) task.defer(upperLabel, item) end)
-	hookStroke(button, Theme.Corner.Button)
 	Theme.SetButtonStyle(button, style)
 	Theme.BindPress(button)
 	return button
 end
 
--- Bumper plate disc (circle with darker rim), e.g. for grades and rarity.
 function Theme.PlateDisc(bumper, props)
 	props.BackgroundColor3 = bumper.Fill
 	return Theme.New("Frame", props, { Theme.Round("Round"), Theme.Stroke(bumper.Rim, 2, 0) })

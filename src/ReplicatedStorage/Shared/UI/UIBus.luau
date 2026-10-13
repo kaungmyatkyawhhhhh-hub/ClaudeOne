@@ -17,6 +17,8 @@ UIBus.OpenSettings = signal()    -- the menu screen opens Settings
 UIBus.MenuPanelVisible = signal() -- fired with true/false when Titles/Settings open/close (the menu steps aside)
 UIBus.MenuClosed = signal()      -- the player pressed Play on the menu screen
 UIBus.OpenShop = signal()        -- (tab id) the coins "+" and other buttons open the Shop on a tab ("Coins", "Passes")
+UIBus.OpenQuests = signal()      -- (tab id) open the Quests panel on a tab ("Daily", "Rewards", "Achievements")
+UIBus.OpenStats = signal()       -- (tab id) open the Stats panel on a tab ("Muscles", "Lifts", "Genetics")
 UIBus.RepFlash = signal()        -- a rep landed: (weights { [muscleId] = 0..1 }, strong) for the body-map widget's flash
 
 -- Screens that cover the middle of the view: the Stats labels and the Muscles button step aside while any is open.

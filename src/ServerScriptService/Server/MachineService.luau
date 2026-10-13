@@ -604,8 +604,16 @@ function MachineService.Start()
 	end
 	CollectionService:GetInstanceAddedSignal("Machine"):Connect(setupMachine)
 
-	-- reps, taps, tier buttons and Exit: far more than a real player can send, far less than a spam script
+	-- reps, taps and tier buttons: far more than a real player can send, far less than a spam script.
+	-- Leave never goes through that limit (bug, 13 Oct: fast taps + PUMP + Auto Lift used up the budget, so STOP TRAINING
+	-- was silently dropped and you couldn't get off); it has its own small budget instead.
+	Remotes.MachineAction.OnServerEvent:Connect(function(player, action)
+		if action == "Leave" and Guard.Allow(player, "machineLeave", 4, 8) then
+			leave(player)
+		end
+	end)
 	Guard.Remote(Remotes.MachineAction, "MachineAction", 16, 24, function(player, action, arg)
+		if action == "Leave" then return end
 		local handler = type(action) == "string" and actions[action]
 		if handler then
 			handler(player, arg)

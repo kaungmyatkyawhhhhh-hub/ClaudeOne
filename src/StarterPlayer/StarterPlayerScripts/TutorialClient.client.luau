@@ -83,24 +83,15 @@ local function placeLine()
 	end
 end
 
+-- (owner, 13 Oct: one hint at a time, in the top band, gone after 4 s: the step's line goes to Notify's band; the old
+-- coach line pill stays hidden)
+line.Visible = false
 local shownText = nil
 local function setLine(text)
 	if text == shownText then return end
-	local first = shownText == nil
 	shownText = text
 	lineText.Text = text
-	-- long lines use the smaller text so they stay clear of the pills and buttons at the top right
-	lineText.TextSize = if #text > 60 then Theme.TextSize.Small else Theme.TextSize.Body
-	if first then
-		placeLine()
-		Theme.Fade(line, true)
-	else
-		-- a new step: a small nudge so the change is noticed
-		Theme.Fade(lineText, false, 0.1)
-		task.delay(0.1, function()
-			if shownText == text then Theme.Fade(lineText, true, 0.15) end
-		end)
-	end
+	Notify.SetBand(text)
 end
 
 ------------------------------------------------------------------------
@@ -386,6 +377,7 @@ end
 local function finish()
 	hidePath()
 	shownText = nil
+	Notify.SetBand(nil)
 	local tween = Theme.Fade(line, false)
 	if tween then tween.Completed:Connect(function() gui:Destroy() end) end
 	Notify.Show(Onboarding.FinishedText)

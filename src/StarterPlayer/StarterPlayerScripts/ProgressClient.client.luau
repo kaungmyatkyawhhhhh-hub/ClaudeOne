@@ -1,11 +1,11 @@
--- ProgressClient: the Growth Spurt card at the bottom of the right column (owner's UI redesign, mockup 01_main_hud), the
--- small "next goal" line in it, and the short "you grew" moment when the body moves up a muscle tier (BodyService fires
--- "Grew").
---  * The card: an up arrow, GROWTH SPURT, the EXP so far / the goal (each group counted up to its goal) and a gold bar.
---    When every group is there it says "READY! TAP TO GROW" and a tap does the Growth Spurt (same action as the Muscles
---    screen's button). At 7'0" it reads MAX GROWTH SPURT REACHED (greyed, not tappable).
---  * The goal line always shows the next small thing (a new weight a few reps away, coins for the next weight, which
---    group to train), so there's a new goal every 30-60 seconds.
+-- ProgressClient: the GROW tile in the right column (owner's UI v2, mockup 01_main_hud) and the short "you grew" moment
+-- when the body moves up a muscle tier (BodyService fires "Grew").
+--  * The tile: a gold square with a big up arrow and "Growth Spurt N" under it. While you work toward it, it shows how far
+--    you are (the EXP so far / the goal, each group counted up to its goal) as "62%"; when every group is there it says
+--    GROW! with a red READY tag, and a tap does the Growth Spurt (same action as the Stats screen's button). Before that a
+--    tap opens Stats. At 7'0" it reads MAX (gray).
+--  * The next small goal (a new weight a few reps away, coins for the next weight, which group to train) is a hint in the
+--    top band now and then (Notify.Hint), not text on the HUD.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -30,9 +30,25 @@ local New, Colors = Theme.New, Theme.Colors
 ------------------------------------------------------------------------
 -- The card
 ------------------------------------------------------------------------
--- (the whole card is the button; it only does something when the Growth Spurt is ready)
-local card = RightColumn.Tracker({ name = "GrowthSpurt", title = "Growth Spurt", color = Colors.Gold, icon = "arrow-big-up", iconColor = Colors.Gold, order = 9, idleOnly = "bottom", clickable = true })
-card.frame.Visible = false
+local Pieces = require(Shared.UI.Pieces)
+local UIBus = require(Shared.UI.UIBus)
+local TILE = 76
+local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE + 22), BackgroundTransparency = 1, Visible = false })
+local tile = Theme.Button("Gold", { Name = "Tile", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(TILE, TILE), Parent = holder }, {})
+Pieces.Icon("arrow-big-up", Colors.Text, { Name = "Arrow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 7),
+	Size = UDim2.fromOffset(38, 38), Parent = tile }):SetAttribute("KeepColor", true)
+local tileText = Kit.Text({ Name = "Grow", Text = "GROW!", Font = "Title", TextSize = 16, AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(1, 0, 0, 20), Parent = tile })
+local readyTag = New("Frame", { Name = "Ready", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -16, 0, 2), Size = UDim2.fromOffset(0, 20),
+	AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Colors.Red, Visible = false, ZIndex = 4, Parent = tile }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+	New("UIStroke", { Color = Colors.Text, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }),
+})
+Kit.Text({ Name = "Text", Text = "READY", Font = "Title", TextSize = 13, Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 4, Parent = readyTag })
+local tileLabel = Kit.Text({ Name = "Label", Text = "Growth Spurt 1", Font = "Title", TextSize = 13, AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(1, -TILE / 2, 0, TILE + 3), Size = UDim2.fromOffset(150, 18), Parent = holder })
+RightColumn.Add(holder, 9, "bottom")
 
 ------------------------------------------------------------------------
 -- Progress + goals
@@ -105,29 +121,36 @@ local function goalText(data, progress)
 	return "Next: train " .. lowest.name
 end
 
+local lastGoal, lastGoalAt = "", 0
 local function refresh()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
 	local progress, have, need = spurtProgress(data)
+	ready = progress.ready and not progress.maxed
+	readyTag.Visible = ready
 	if progress.maxed then
-		card:SetTitle("Max Growth Spurt reached")
-		card:SetCount("")
-		card:SetProgress(1, GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true))
-		card:SetColor(Colors.Faint)
+		tileText.Text = "MAX"
+		tileLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)
+		Theme.SetButtonStyle(tile, "Gray")
 	else
-		card:SetTitle(progress.ready and "Ready! Tap to grow" or ("Growth Spurt " .. (data.growthSpurts + 1)))
-		card:SetCount("")
-		card:SetProgress(need > 0 and have / need or 0, Kit.Format(have) .. " / " .. Kit.Format(need))
-		card:SetColor(Colors.Gold)
+		tileText.Text = ready and "GROW!" or (math.floor((need > 0 and have / need or 0) * 100) .. "%")
+		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1)
+		Theme.SetButtonStyle(tile, "Gold")
 	end
-	card:SetText("")
-	card:SetFooter(goalText(data, progress))
-	ready = progress.ready
-	card.title.TextColor3 = ready and Colors.Gold or Colors.Text
+	-- the next small goal: a hint now and then (never more than one a minute, and only a new one)
+	local goal = goalText(data, progress)
+	if goal ~= "" and goal ~= lastGoal and os.clock() - lastGoalAt > 60 then
+		lastGoal, lastGoalAt = goal, os.clock()
+		Notify.Hint(goal)
+	end
 end
 
-card.Activated:Connect(function()
-	if ready then Remotes.PlayerAction:FireServer("GrowthSpurt") end
+tile.Activated:Connect(function()
+	if ready then
+		Remotes.PlayerAction:FireServer("GrowthSpurt")
+	else
+		UIBus.OpenStats:Fire("Muscles")
+	end
 end)
 
 Remotes.MachineState.OnClientEvent:Connect(function(state, model)
@@ -174,7 +197,7 @@ end)
 task.spawn(function()
 	ClientData.Get() -- waits for the data snapshot
 	refresh()
-	card.frame.Visible = true
+	holder.Visible = true
 end)
 ClientData.Changed:Connect(function(path)
 	local key = path[1]

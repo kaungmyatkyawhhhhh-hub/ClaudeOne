@@ -1,12 +1,12 @@
--- The column of small HUD cards on the right of the screen (owner's UI redesign, mockup 01_main_hud): tracker cards
--- (daily quest, coach quest, legend), a wrapping row of boost chips (smoothies, the shake, rush hour) and the Growth
--- Spurt card, plus small buttons (Skate, Photo, Drink shake). Built in mockup px inside a Kit.Root (it scales with the
--- screen). Each script adds its own frame; the column stacks them with an 8px gap so they never overlap.
+-- The column of small HUD cards on the right of the screen (owner's UI v2, mockup 01_main_hud): tracker cards (daily
+-- quests, coach quest, legend) and the GROW tile (Growth Spurt), plus small buttons (Skate, Photo, Drink shake). Built
+-- in mockup px inside a Kit.Root (it scales with the screen). Each script adds its own frame; the column stacks them
+-- with an 8px gap so they never overlap.
 --   RightColumn.Add(frame, order, idleOnly)  idleOnly = true: idle cards; "bottom": under the idle cards
 --   RightColumn.Tracker(props)               -> card api { frame, SetTitle, SetCount, SetText, SetProgress, SetFooter }
---   RightColumn.Chip(icon, color, order)     -> chip api { frame, SetText(main, sub?), SetVisible }
+--   RightColumn.Chip(icon, color, order)     -> a boost icon in the row above the stamina bar (HudBottom.Chip)
 --   RightColumn.Width                        the column's width (mockup px)
--- On a machine the whole column steps aside (the right side belongs to PUMP / REP, mockup 02).
+-- On a machine the whole column steps aside (the right side belongs to the weight panel, mockup 02).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
@@ -18,11 +18,11 @@ local New, Colors = Theme.New, Theme.Colors
 local RightColumn = {}
 
 local WIDTH = 196  -- mockup px
-local TOP = 57     -- under the top row (coins / level / height)
+local TOP = 52     -- under the top bar
 local EDGE = 12
 RightColumn.Width = WIDTH
 
-local column, always, chips, idle, bottom
+local column, always, idle, bottom
 local changed = Instance.new("BindableEvent")
 RightColumn.Changed = changed.Event -- fires when the column's size changes (notifications follow it)
 
@@ -53,12 +53,6 @@ local function ensure()
 	}, { Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top) })
 	column:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() changed:Fire() end)
 	always = container("Always", 1)
-	-- the boost chips: a row that wraps (two side by side in the mockup)
-	chips = New("Frame", { Name = "Chips", LayoutOrder = 2, Size = UDim2.fromOffset(WIDTH, 0), AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 1, Parent = column }, {
-		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Wraps = true, Padding = UDim.new(0, 8),
-			HorizontalAlignment = Enum.HorizontalAlignment.Left, SortOrder = Enum.SortOrder.LayoutOrder }),
-	})
 	local middle = New("Frame", { Name = "Middle", LayoutOrder = 3, Size = UDim2.fromOffset(WIDTH, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Parent = column },
 		{ Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top) })
 	idle = container("Idle", 1, middle)
@@ -91,7 +85,7 @@ local function ensure()
 	for _, child in ipairs(playerGui:GetChildren()) do watchCover(child) end
 	playerGui.ChildAdded:Connect(watchCover)
 
-	-- on a machine the right side belongs to PUMP / REP (mockup 02): the column steps aside
+	-- on a machine the right side belongs to the weight panel (mockup 02): the column steps aside
 	task.spawn(function()
 		local remotes = ReplicatedStorage:WaitForChild("Remotes", 30)
 		local machineState = remotes and remotes:WaitForChild("MachineState", 30)
@@ -122,32 +116,30 @@ function RightColumn.Add(frame, order, idleOnly)
 	return frame
 end
 
--- A tracker card (DAILY QUESTS 1 / 3, a line of text, a bar and its numbers).
--- props: { title, color (bar), order, idleOnly, icon? (an icon name shown before the title), iconColor?, name?,
+-- A tracker card (mockup 01: "DAILY QUESTS  1/3", a line of text, a green bar with "34/50" in it).
+-- props: { title, color (bar), order, idleOnly, icon? (an icon name before the title), iconColor?, name?,
 --          clickable? (the card is a button: api.Activated) }
 function RightColumn.Tracker(props)
 	ensure()
-	local card = Theme.Panel({ Name = props.name or "Tracker", Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(WIDTH, 0),
+	local card = Theme.Panel({ Name = props.name or "Tracker", Piece = "hud_box", Size = UDim2.fromOffset(WIDTH, 0),
 		AutomaticSize = Enum.AutomaticSize.Y, Clickable = props.clickable }, {
-		New("UIPadding", { PaddingLeft = UDim.new(0, 11), PaddingRight = UDim.new(0, 11), PaddingTop = UDim.new(0, 9), PaddingBottom = UDim.new(0, 10) }),
-		Theme.List(Enum.FillDirection.Vertical, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 11), PaddingRight = UDim.new(0, 11), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 10) }),
+		Theme.List(Enum.FillDirection.Vertical, 3, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 	})
-	local head = New("Frame", { Name = "Head", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Parent = card })
+	local head = New("Frame", { Name = "Head", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Parent = card })
 	local titleX = 0
 	if props.icon then
-		require(script.Parent.Pieces).Icon(props.icon, props.iconColor or Colors.Gold, { Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(0, 1), Parent = head })
-		titleX = 18
+		require(script.Parent.Pieces).Icon(props.icon, props.iconColor or Colors.Gold, { Size = UDim2.fromOffset(15, 15), Position = UDim2.fromOffset(0, 2), Parent = head })
+		titleX = 20
 	end
-	local title = Kit.Text({ Name = "Title", Text = props.title or "", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(titleX, 0),
-		Size = UDim2.new(1, -titleX - 60, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = head })
-	local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 80, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = head })
-	local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Body", TextSize = 11, Size = UDim2.new(1, 0, 0, 0),
+	local title = Kit.Text({ Name = "Title", Text = props.title or "", Font = "Title", TextSize = 15, Upper = true, Position = UDim2.fromOffset(titleX, 0),
+		Size = UDim2.new(1, -titleX - 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = head })
+	local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 15, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = head })
+	local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Title", TextSize = 12, Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
-	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 14), BackgroundTransparency = 1, Parent = card })
-	local track, setBar, fill = Kit.Bar(props.color or Colors.Green, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.new(1, -52, 0, 5), Parent = barRow })
-	local barText = Kit.Text({ Name = "BarText", Text = "", Font = "Number", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.fromScale(1, 0.5), Size = UDim2.fromOffset(48, 14), TextXAlignment = Enum.TextXAlignment.Right, Parent = barRow })
+	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Parent = card })
+	local _, setBar, fill = Kit.Bar(props.color or Colors.Green, { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 1), Parent = barRow }, { text = true, textSize = 11 })
 	local footer = Kit.Text({ Name = "Footer", LayoutOrder = 4, Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Visible = false,
 		Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 	RightColumn.Add(card, props.order or 2, props.idleOnly)
@@ -158,45 +150,25 @@ function RightColumn.Tracker(props)
 		text.Text = value or ""
 		text.Visible = (value or "") ~= ""
 	end
-	-- fraction 0..1 (nil hides the bar row) and the numbers beside it ("34/50")
+	-- fraction 0..1 (nil hides the bar) and the numbers in it ("34/50")
 	function api.SetProgress(_, fraction, label)
 		barRow.Visible = fraction ~= nil
-		if fraction then setBar(fraction) end
-		barText.Text = label or ""
-		local w = label and #label > 6 and 84 or 48
-		barText.Size = UDim2.fromOffset(w, 14)
-		track.Size = UDim2.new(1, -(w + 4), 0, 5)
+		if fraction then setBar(fraction, label or "") end
 	end
 	function api.SetFooter(_, value)
 		footer.Text = value or ""
 		footer.Visible = (value or "") ~= ""
 	end
-	function api.SetColor(_, color) fill.ImageColor3 = color end
+	function api.SetColor(_, color)
+		local gloss = fill:FindFirstChild("Gloss")
+		if gloss then gloss.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.2)) end
+	end
 	return api
 end
 
--- A boost chip: an icon tile in its color + the number ("+20%") + a muted timer ("4:12").
+-- A boost icon (smoothies, the shake, rush hour, server boost): it lives in the row above the stamina bar now.
 function RightColumn.Chip(icon: string, color: Color3, order: number?)
-	ensure()
-	local chip = Theme.Panel({ Name = "Chip_" .. icon, LayoutOrder = order or 1, Piece = "chip", Shadow = false, Size = UDim2.fromOffset(0, 32),
-		AutomaticSize = Enum.AutomaticSize.X, Visible = false, Parent = chips }, {
-		New("UIPadding", { PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 9) }),
-		Theme.List(Enum.FillDirection.Horizontal, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
-	})
-	Kit.IconTile(icon, color, 24, { LayoutOrder = 1, Parent = chip })
-	local main = Kit.Text({ Name = "Main", LayoutOrder = 2, Text = "", Font = "Title", TextSize = 13, Size = UDim2.fromOffset(0, 32),
-		AutomaticSize = Enum.AutomaticSize.X, Upper = false, Parent = chip })
-	local sub = Kit.Text({ Name = "Sub", LayoutOrder = 3, Text = "", Font = "Number", TextSize = 12, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 32),
-		AutomaticSize = Enum.AutomaticSize.X, Parent = chip })
-	local api = { frame = chip }
-	function api.SetText(_, a, b)
-		main.Text = a or ""
-		main.Visible = (a or "") ~= ""
-		sub.Text = b or ""
-		sub.Visible = (b or "") ~= ""
-	end
-	function api.SetVisible(_, on) chip.Visible = on end
-	return api
+	return require(script.Parent.HudBottom).Chip(icon, color, order)
 end
 
 -- Show or hide the whole column.

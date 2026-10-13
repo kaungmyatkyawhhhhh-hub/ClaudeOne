@@ -68,7 +68,7 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 		local names = { Beach = "The beach gym", Pro = "The pro gym" }
 		Notify.Show((names[info.gym] or "This gym") .. " opens at Growth Spurt " .. tostring(info.spurts) .. ".", nil, "gymlocked")
 	elseif kind == "ProGymLocked" then
-		Notify.Show("The pro gym opens at Growth Spurt " .. tostring(info.spurts) .. ".", nil, "progym")
+		Notify.Show("Reach Growth Spurt " .. tostring(info.spurts) .. " to enter the Pro Gym", nil, "progym")
 	elseif kind == "ProGymEntered" then
 		Notify.Show("Welcome to the pro gym. 11 new machines, including Calves and Obliques.", nil, "progym")
 		Audio.PlayUI("Whoosh")

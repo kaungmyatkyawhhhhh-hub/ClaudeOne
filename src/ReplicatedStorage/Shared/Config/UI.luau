@@ -1,47 +1,11 @@
--- UI images (owner's UI redesign, 13 Oct): the 9-slice pieces, the white line icons and the shop item icons, uploaded to
--- the Myanmar Builders Club group (Images). Names = the file names in Downloads\gym_arc_ui_pieces / gym_arc_ui_icons /
--- gym_arc_shop_icons; ids found by exact name in the group (newest when there were two).
--- Pieces carry their 9-slice data from pieces.json (SliceCenter in image pixels, SliceScale 0.5 because the images are
--- 2x); Shared.UI.Pieces applies them. Text, numbers and icons are never baked into these images.
+-- UI images and texts (owner's UI v2, 13 Oct: Gym League style).
+--   Icons      the white line icons (Downloads\gym_arc_ui_icons, Myanmar Builders Club group, found by exact name)
+--   ShopIcons  pass / product art (Downloads\gym_arc_shop_icons, same group)
+--   MenuIcons  the 3D left-menu icons (Downloads\gym_arc_ui_3d_icons\menu_*.png)
+--   Trainers   the trainer portraits (trainer_*.png), MenuArt the main menu + loading art (menu_art.png)
+-- MenuIcons / Trainers / MenuArt were uploaded from Studio on 13 Oct (owner's account inventory; the group search had no
+-- copies). The old 9-slice pieces of the cancelled dark style (gym_arc_ui_pieces) are gone.
 local UI = {}
-
-UI.Pieces = {
-	banner_gold = { image = "rbxassetid://115205618940710", scaleType = "Slice", sliceCenter = { 24, 24, 104, 64 }, sliceScale = 0.5, size = { 128, 88 } }, -- Personal record / bonus banner (stretch horizontally)
-	bar_fill_white = { image = "rbxassetid://70877208326440", scaleType = "Slice", sliceCenter = { 8, 0, 40, 16 }, sliceScale = 0.5, size = { 48, 16 } }, -- Progress bar fill: tint with ImageColor3
-	bar_track = { image = "rbxassetid://130815257879238", scaleType = "Slice", sliceCenter = { 8, 0, 40, 16 }, sliceScale = 0.5, size = { 48, 16 } }, -- Progress bar track (slice left/right caps only)
-	btn_dark = { image = "rbxassetid://79558645245279", scaleType = "Slice", sliceCenter = { 24, 24, 56, 48 }, sliceScale = 0.5, size = { 80, 72 } }, -- Secondary button
-	btn_disabled = { image = "rbxassetid://104541942792486", scaleType = "Slice", sliceCenter = { 24, 24, 56, 48 }, sliceScale = 0.5, size = { 80, 72 } }, -- Disabled / Owned button
-	btn_gold = { image = "rbxassetid://115290205001292", scaleType = "Slice", sliceCenter = { 24, 24, 56, 48 }, sliceScale = 0.5, size = { 80, 72 } }, -- Gold button
-	btn_green = { image = "rbxassetid://127359786325035", scaleType = "Slice", sliceCenter = { 24, 24, 56, 48 }, sliceScale = 0.5, size = { 80, 72 } }, -- Green button (Claim, Auto on)
-	btn_red = { image = "rbxassetid://118666360299995", scaleType = "Slice", sliceCenter = { 24, 24, 56, 48 }, sliceScale = 0.5, size = { 80, 72 } }, -- Primary button
-	btn_red_pressed = { image = "rbxassetid://139607004382316", scaleType = "Slice", sliceCenter = { 24, 24, 56, 48 }, sliceScale = 0.5, size = { 80, 72 } }, -- Primary button pressed (also move content down 2px)
-	btn_white_tint = { image = "rbxassetid://94263610268055", scaleType = "Slice", sliceCenter = { 24, 24, 56, 48 }, sliceScale = 0.5, size = { 80, 72 } }, -- White button with edge: tint with ImageColor3 for any color
-	card = { image = "rbxassetid://96201934485200", scaleType = "Slice", sliceCenter = { 28, 28, 68, 68 }, sliceScale = 0.5, size = { 96, 96 } }, -- Card inside panels
-	card_gold = { image = "rbxassetid://71840017814532", scaleType = "Slice", sliceCenter = { 28, 28, 68, 68 }, sliceScale = 0.5, size = { 96, 96 } }, -- Highlighted card (gold outline)
-	card_selected = { image = "rbxassetid://91356384750016", scaleType = "Slice", sliceCenter = { 28, 28, 68, 68 }, sliceScale = 0.5, size = { 96, 96 } }, -- Selected/equipped card (red outline)
-	chip = { image = "rbxassetid://104082743935636", scaleType = "Slice", sliceCenter = { 20, 20, 60, 40 }, sliceScale = 0.5, size = { 80, 60 } }, -- Currency/timer chip
-	circle_white = { image = "rbxassetid://88826644116797", scaleType = "Fit", size = { 128, 128 } }, -- Circle: knob, avatar dot, badge (tint)
-	close_button = { image = "rbxassetid://99710466327905", scaleType = "Slice", sliceCenter = { 20, 20, 44, 44 }, sliceScale = 0.5, size = { 64, 64 } }, -- X close button background
-	hud_box = { image = "rbxassetid://130442784531222", scaleType = "Slice", sliceCenter = { 28, 28, 68, 68 }, sliceScale = 0.5, size = { 96, 96 } }, -- HUD widgets over the 3D world
-	keycap = { image = "rbxassetid://104453719007886", scaleType = "Fit", size = { 60, 60 } }, -- "E" key cap on prompts
-	menu_button = { image = "rbxassetid://119543809493914", scaleType = "Slice", sliceCenter = { 32, 32, 80, 80 }, sliceScale = 0.5, size = { 112, 112 } }, -- Left HUD menu button
-	menu_button_gold = { image = "rbxassetid://135003978318011", scaleType = "Slice", sliceCenter = { 32, 32, 80, 80 }, sliceScale = 0.5, size = { 112, 112 } }, -- Left HUD menu button, highlighted (Shop)
-	occupied_pill = { image = "rbxassetid://135340689231547", scaleType = "Slice", sliceCenter = { 24, 24, 72, 48 }, sliceScale = 0.5, size = { 96, 72 } }, -- OCCUPIED billboard pill
-	panel = { image = "rbxassetid://123121872692894", scaleType = "Slice", sliceCenter = { 32, 32, 96, 96 }, sliceScale = 0.5, size = { 128, 128 } }, -- Main panel/modal background
-	panel_header = { image = "rbxassetid://83160527499076", scaleType = "Slice", sliceCenter = { 32, 32, 96, 64 }, sliceScale = 0.5, size = { 128, 96 } }, -- Panel header strip (top corners only)
-	panel_shadow = { image = "rbxassetid://78666998262260", scaleType = "Slice", sliceCenter = { 80, 80, 144, 144 }, sliceScale = 0.5, size = { 224, 224 } }, -- Soft drop shadow, place behind panel, 20px larger each side
-	pump_button = { image = "rbxassetid://133633520753151", scaleType = "Fit", size = { 128, 128 } }, -- PUMP button
-	pump_button_ring = { image = "rbxassetid://137260792281738", scaleType = "Fit", size = { 144, 144 } }, -- Soft ring behind PUMP
-	rep_button = { image = "rbxassetid://72004773138623", scaleType = "Fit", size = { 208, 208 } }, -- Big REP / TAP button (ScaleType Fit)
-	rep_button_ring = { image = "rbxassetid://114726965424288", scaleType = "Fit", size = { 232, 232 } }, -- Soft ring behind REP button
-	rounded_white_r12 = { image = "rbxassetid://77868079055148", scaleType = "Slice", sliceCenter = { 28, 28, 68, 68 }, sliceScale = 0.5, size = { 96, 96 } }, -- Large tinted tile (trainer art background)
-	rounded_white_r5 = { image = "rbxassetid://96053267897517", scaleType = "Slice", sliceCenter = { 12, 12, 28, 24 }, sliceScale = 0.5, size = { 40, 36 } }, -- Tag background: tint with ImageColor3
-	rounded_white_r8 = { image = "rbxassetid://129110074875363", scaleType = "Slice", sliceCenter = { 20, 20, 44, 44 }, sliceScale = 0.5, size = { 64, 64 } }, -- Icon tile / grade badge / level badge: tint with ImageColor3
-	tab_active = { image = "rbxassetid://96381485218221", scaleType = "Slice", sliceCenter = { 18, 18, 62, 38 }, sliceScale = 0.5, size = { 80, 56 } }, -- Active tab
-	toggle_off = { image = "rbxassetid://136521293735673", scaleType = "Slice", sliceCenter = { 22, 0, 58, 44 }, sliceScale = 0.5, size = { 80, 44 } }, -- Toggle track off
-	toggle_on = { image = "rbxassetid://72526427816704", scaleType = "Slice", sliceCenter = { 22, 0, 58, 44 }, sliceScale = 0.5, size = { 80, 44 } }, -- Toggle track on
-	well = { image = "rbxassetid://83433589437265", scaleType = "Slice", sliceCenter = { 28, 28, 68, 68 }, sliceScale = 0.5, size = { 96, 96 } }, -- Dark inset area (tab strip, inputs)
-}
 
 UI.Icons = { -- white on transparent, 128x128 (tint with ImageColor3)
 	["arrow-big-up"] = "rbxassetid://102878631565166",
@@ -97,6 +61,40 @@ UI.ShopIcons = { -- shop items that aren't a real pass / product (those read the
 	product_shake_bundle = "rbxassetid://107883030118451",
 	product_skip_growth_cooldown = "rbxassetid://113267233802315",
 	product_stamina_refill = "rbxassetid://136768220289914",
+}
+
+UI.MenuIcons = { -- 3D menu icons: NOT USED (owner, 13 Oct: keep the old left menu tiles); kept only as a record
+	menu_shop = "rbxassetid://104966488045071",
+	menu_quests = "rbxassetid://103446520698076",
+	menu_muscles = "rbxassetid://92738638488258",   -- the Stats tile
+	menu_trainers = "rbxassetid://71228174724353",
+	menu_titles = "rbxassetid://76507667998298",
+	menu_emotes = "rbxassetid://75490148811539",
+	menu_crew = "rbxassetid://136275598337928",
+	menu_settings = "rbxassetid://100011256897276",
+}
+
+UI.Trainers = { -- portraits shown in the Trainers panel (by Config/Trainers id order: exp, stamina, coins, pump)
+	trainer_exp = "rbxassetid://108489802167979",
+	trainer_stamina = "rbxassetid://93869050690348",
+	trainer_coins = "rbxassetid://117668445111854",
+	trainer_pump = "rbxassetid://130549873400301",
+}
+
+UI.MenuArt = "rbxassetid://99238211044120" -- main menu + loading screen (right side, fading into the dark)
+
+-- Loading screen tips (one at a time, rotating)
+UI.LoadingTips = {
+	"Spot other players on their lifts to earn coins!",
+	"Tap fast while lifting to fill PUMP: pumped reps grow twice as much.",
+	"Weak muscles grow fastest. Train the group that needs work.",
+	"Every Growth Spurt makes you taller and grows your gains for good.",
+	"Drinks at the smoothie bar give short boosts. Check the timers above your stamina bar.",
+	"Claim your Daily Reward every day: day 7 is the big one.",
+	"Trainers follow you around and give a small boost while they do.",
+	"Titles are earned, never bought. Some of them are secret.",
+	"Running on a treadmill raises your max stamina.",
+	"The pro gym opens at Growth Spurt 2. Watch through the glass until then.",
 }
 
 return UI

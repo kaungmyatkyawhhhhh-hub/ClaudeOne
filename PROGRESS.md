@@ -2,33 +2,43 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (13 Oct): UI redesign with image pieces (owner's GYM_ARC_UI_redesign.md), in progress
-- **Asset ids:** all 85 images found in the Myanmar Builders Club group by exact name (35 pieces, 37 icons, 13 shop
-  icons), none missing; in `Config/UI` (Pieces with their 9-slice data from pieces.json, Icons, ShopIcons).
-- **Permission check:** a group piece (panel), icon (coin) and shop icon (pass_vip) all load in the user-owned place
-  (PreloadAsync: Success, IsLoaded true). No permission change needed. Screenshot: ui_assets_load_test.
-- **Foundation** (commit 4e795bf): `Shared.UI.Pieces` (9-slice images), `Shared.UI.Kit` (components, mockup-px root scaled
-  with the screen), Theme's panels / buttons are the image pieces (ImageLabel / ImageButton that draw their own piece),
-  Oswald + Montserrat. CLAUDE.md / DESIGN.md follow the redesign brief now (it asks for Montserrat body text and UIScale).
-  Studio switch `TestPhoneSize` (Vector2, e.g. 844, 390) shows the redesigned screens as that phone in the window.
-- **01 main HUD** (done): top row (coins + gold "+" for Shop > Coins, only while the shop exists; LEVEL badge + EXP bar,
-  level = the average exact muscle level; height / 7'0"), menu tiles (menu_button pieces, uploaded icons, red count
-  badge on Quests), right column (DAILY QUESTS card, coach quest and legend cards, boost chips for smoothies / the shake /
-  rush hour / server boost, Growth Spurt card that's tapped to grow), toasts at the bottom center. Checked at PC size and
-  844x390. Not matched yet: the mockup has 8 tiles in 2 columns; the game still has Stats, Wardrobe, Genetics, Coach and
-  Daily too (a 3rd column; Genetics / Coach / Daily move into their panels in steps 06 / 07). Screenshots:
-  ui_compare/01_main_hud_pc, 01_main_hud_phone.
-- **02/03 machine HUD** (done, `Shared/UI/MachineHud`; MachineClient keeps all the logic): panel at the bottom center
-  (name + group tag + AUTO, the muscle split line, - / barbell + weight + TIER tag / +, MAX on top of +, green segmented
-  stamina + %), coach note above it, gold PUMP (fills with your taps, glows while PUMPED) over the big red REP button
-  (rep count), LEAVE top left, gold NEW PERSONAL RECORD banner. The unlock button (gold, coin price) and "Needs ..." take
-  the tier tag's place. AUTO: green AUTO ON / AUTO for Auto Lift owners, a locked AUTO that opens the shop for others
-  only while the shop exists (hidden now, monetization is off); the right-column Auto Lift button is gone.
-  Not matched: the mockup has no MAX button and no coach note (both kept: owner's earlier rules).
-  Screenshot: ui_compare/02_machine_hud_phone.
-- **Studio disconnected** after the 02 test (13 Oct ~5:35 PM): the last two small tweaks (PUMP button brightness 0.7 when
-  empty, toasts 216 px up while training) are in `src/` but NOT yet in Studio; also clear the Workspace attribute
-  `TestPhoneSize` (left on for the phone check).
+## LATEST (13 Oct, evening): BIG UI + BUG RUN (owner's v2 prompt, Gym League style), in progress
+The dark image-piece redesign (earlier today) is CANCELLED by the owner; its 9-slice pieces are gone from `Config/UI`.
+**Left menu (owner's change of plan, mid-run):** the OLD colored tiles stay (not the 3D-icon tiles of the v2 mockups;
+`menu_*.png` are uploaded but not used). Buttons and panels use the same rounded style and colored borders.
+
+**Images uploaded** (from Studio, owner's account; the group had no copies): menu_*.png x8 (not used), trainer_exp /
+stamina / coins / pump, menu_art. Ids in `Config/UI` (MenuIcons, Trainers, MenuArt). Extra Trainer pass id 2032496303 is
+in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minutes, with that one pass).
+
+**Part 1, bugs**
+1. Machine HUD covered the player: rebuilt to mockup 02 (`Shared/UI/MachineHud`): weight panel on the right (AUTO TRAIN /
+   AUTO ON, WEIGHT, Tier, - / +, BEST WEIGHT = the old MAX, UNLOCK + price in its place while a weight isn't bought),
+   REP + PUMP circles bottom right, STOP TRAINING above the stamina bar, NEW PERSONAL RECORD! as text at the top. Nothing
+   in the middle. AUTO shows only while Auto Lift is for sale (hidden now). DONE, tested phone size.
+2. Couldn't leave a machine: cause = every tap, PUMP tap and Auto Lift tick is a MachineAction message, and the server's
+   anti-spam limit (16/s) silently dropped "Leave" too. Leave now skips that limit (own small budget); the client re-asks
+   every second until the server answers; the jump button / Space gets you off (Space no longer lifts; gamepads lift
+   with R2 / X). Tested: all 22 machine types after 20 fast taps mid-rep, the bench with Auto Lift on + Space. DONE.
+3. Floating text: the coach note, pump hint, level-up text and the tutorial pill are gone from the lift view. One hint at
+   a time in the top band (`Notify.Hint` / `Notify.SetBand`), hidden after 4 s; the Settings "Tutorial Hints" toggle
+   (settings.hints) turns hints off. Toasts stack under the top bar / band at the top center, newest on top, max 3. DONE.
+4. Pro gym teleport loop: cause = the server's pro gym zone still had the pre-8-Oct size (MinX 37), so the strip by the
+   door in the starter gym counted as inside and the "outside" spot (x 39.7) was in it too: standing there teleported you
+   every 0.5 s. Now the zone is the pro gym's Floor part (x 45-113), the outside spot is 6 studs clear of it (asserted),
+   a 1.5 s per-player debounce, and "Reach Growth Spurt 2 to enter the Pro Gym" at most every 3 s (the door's Blocker
+   stays solid for locked players). Tested solo (by the door: no teleport; inside: put back once, stays). 2-player test
+   not possible in Studio solo: the state is per player. DONE.
+5. Wardrobe clothes: next.
+
+**Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
+(Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
+`Config/Features.Wardrobe = false`), "<" fold saved per player (settings.menuCollapsed), auto-folds while lifting, red
+number badges; DAILY QUESTS card; gold GROW tile (READY tag; tap = grow, or opens Stats before that); big blue stamina bar
+with the boost icons + timers above it (`Shared/UI/HudBottom`). Theme / Kit rebuilt (FredokaOne white text with a black
+outline, Montserrat body, gradient buttons with a lighter colored border, dark panels, red X).
+Choices: Emotes already exists as the Poses tile (same panel), so no second tile; the Stats, Muscles and Genetics tiles
+stay separate (owner's old menu list). Screenshots: ui_compare_v2/01_main_hud_menu_phone, 02_machine_hud_phone.
 
 ## LATEST (13 Oct): new features run (owner's GYM_ARC_new_features.md): DONE, report
 

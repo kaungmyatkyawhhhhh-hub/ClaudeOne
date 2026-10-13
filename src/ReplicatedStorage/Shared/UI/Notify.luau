@@ -1,9 +1,17 @@
--- Toasts (owner's UI redesign, mockup 01_main_hud): a small card at the bottom center (an icon tile, a title line and an
--- optional second line) that pops in and fades out. A newer toast pushes the older one up; at most two at once.
---   Notify.Show(text, color?, key?)            one line (color tints the icon tile; key throttles repeats of a message)
---   Notify.Toast(title, sub?, icon?, color?, key?)  title + a second line + an icon (Config/UI.Icons)
--- On a machine the toasts sit just above the machine panel. While the genetics screen is up they wait.
+-- Toasts and hints (owner's UI v2, 13 Oct):
+--   Notify.Show(text, color?, key?)               a toast: one line on a small dark card with a colored icon tile
+--   Notify.Toast(title, sub?, icon?, color?, key?) a toast with a second line and an icon (Config/UI.Icons)
+--   Notify.Hint(text, key?)                        a HINT in the top tutorial band: only one at a time (a new one replaces
+--                                                  the old), hidden after Notify.HintSeconds. Off when the player turned
+--                                                  "Tutorial Hints" off in Settings (settings.hints == "Off").
+--   Notify.SetBand(text?)                          the tutorial step's line in the band (TutorialClient): shown like a
+--                                                  hint (also gone after HintSeconds; the coach dialog keeps the words)
+--   Notify.BandBottom()                            mockup px from the top to the bottom of the band (0 when empty)
+-- Toasts stack under the top bar at the top center (newest on top, at most Notify.MaxVisible), below the band, so they
+-- never cover each other, the band or the machine panel (which sits on the right). key throttles repeats of a message.
+-- While the genetics screen is up they wait.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
 local UIBus = require(script.Parent.UIBus)
@@ -12,41 +20,53 @@ local New, Colors = Theme.New, Theme.Colors
 
 local Notify = {}
 
-Notify.Lifetime = 2.8
-Notify.MaxVisible = 2
-Notify.Bottom = 16        -- mockup px from the bottom of the screen
-Notify.TrainingBottom = 216 -- ...while on a machine (above the machine panel and its coach note)
+Notify.Lifetime = 3
+Notify.MaxVisible = 3
+Notify.Top = 48           -- mockup px from the top: just under the top bar
+Notify.HintSeconds = 4
+Notify.BandHeight = 30
 
-local list
+local gui, root, list, band, bandText
 local order = 0
 local lastShown = {}
 local held = nil -- toasts waiting while the genetics screen is up
-local training = false
+local hintToken = 0
+local tutorialLine = nil
+
+local function bandVisible()
+	return band ~= nil and band.Visible
+end
+
+local function placeList()
+	if not list then return end
+	list.Position = UDim2.new(0.5, 0, 0, Notify.Top + (bandVisible() and (Notify.BandHeight + 4) or 0))
+end
 
 local function ensure()
 	if list then return end
-	local gui = Theme.ScreenGui({ Name = "Notifications", DisplayOrder = 50, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
+	gui = Theme.ScreenGui({ Name = "Notifications", DisplayOrder = 50, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
 	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
-	local root = Kit.Root(gui)
-	list = New("Frame", { Name = "List", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -Notify.Bottom),
-		Size = UDim2.fromOffset(420, 200), BackgroundTransparency = 1, Parent = root }, {
-		New("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			VerticalAlignment = Enum.VerticalAlignment.Bottom }),
+	root = Kit.Root(gui)
+	-- the band: dark, fading out to both sides, the line in big outlined text (mockup 11)
+	band = New("Frame", { Name = "Band", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, Notify.Top),
+		Size = UDim2.fromOffset(560, Notify.BandHeight), BackgroundColor3 = Colors.Shadow, BackgroundTransparency = 0.45, Visible = false, Parent = root }, {
+		New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0),
+			NumberSequenceKeypoint.new(0.8, 0), NumberSequenceKeypoint.new(1, 1) }) }),
 	})
-	task.spawn(function()
-		local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 30)
-		local machineState = remotes and remotes:WaitForChild("MachineState", 30)
-		if machineState then
-			machineState.OnClientEvent:Connect(function(state)
-				training = state == "Enter"
-				list.Position = UDim2.new(0.5, 0, 1, -(training and Notify.TrainingBottom or Notify.Bottom))
-			end)
-		end
-		Players.LocalPlayer.CharacterAdded:Connect(function()
-			training = false
-			list.Position = UDim2.new(0.5, 0, 1, -Notify.Bottom)
-		end)
-	end)
+	bandText = Kit.Text({ Name = "Text", Text = "", Font = "Title", TextSize = 17, Size = UDim2.new(1, -40, 1, 0), Position = UDim2.fromOffset(20, 0),
+		TextTruncate = Enum.TextTruncate.AtEnd, Parent = band })
+	list = New("Frame", { Name = "List", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(420, 200), BackgroundTransparency = 1, Parent = root }, {
+		New("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Top }),
+	})
+	placeList()
+end
+
+local function setBandText(text)
+	ensure()
+	band.Visible = text ~= nil and text ~= ""
+	bandText.Text = text or ""
+	placeList()
 end
 
 local function show(title, sub, icon, color)
@@ -55,32 +75,29 @@ local function show(title, sub, icon, color)
 	for _, child in ipairs(list:GetChildren()) do
 		if child:IsA("GuiObject") and child.Name == "Toast" then table.insert(toasts, child) end
 	end
-	table.sort(toasts, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
-	for i = 1, #toasts - Notify.MaxVisible + 1 do toasts[i]:Destroy() end
+	table.sort(toasts, function(a, b) return a.LayoutOrder > b.LayoutOrder end)
+	for i = Notify.MaxVisible, #toasts do toasts[i]:Destroy() end
 
-	order += 1
+	order -= 1 -- (newest on top)
 	local tint = color or Colors.Gold
-	local toast = Theme.Panel({ Name = "Toast", LayoutOrder = order, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(0, sub and 40 or 34),
+	local toast = Theme.Panel({ Name = "Toast", LayoutOrder = order, Piece = "hud_box", Size = UDim2.fromOffset(0, sub and 42 or 34),
 		AutomaticSize = Enum.AutomaticSize.X, Parent = list }, {
-		New("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 14) }),
-		Theme.List(Enum.FillDirection.Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 14) }),
+		Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
 	})
-	New("UISizeConstraint", { MaxSize = Vector2.new(420, 80), Parent = toast })
-	local iconSize = sub and 28 or 24
-	local tile = Kit.IconTile(icon or "bell", Colors.Ink, iconSize, { LayoutOrder = 1, ImageColor3 = tint, Parent = toast })
-	local iconImage = tile:FindFirstChild("Icon")
-	if iconImage then iconImage.ImageColor3 = (tint == Colors.Gold or tint == Theme.Bumper.White.Fill or tint == Theme.Bumper.Yellow.Fill) and Colors.Ink or Colors.Text end
-	local texts = New("Frame", { LayoutOrder = 2, Size = UDim2.fromOffset(0, sub and 32 or 26), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = toast },
+	New("UISizeConstraint", { MaxSize = Vector2.new(440, 80), Parent = toast })
+	Kit.IconTile(icon or "bell", tint, sub and 30 or 25, { LayoutOrder = 1, Parent = toast })
+	local texts = New("Frame", { LayoutOrder = 2, Size = UDim2.fromOffset(0, sub and 34 or 28), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = toast },
 		{ Theme.List(Enum.FillDirection.Vertical, 0, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	if sub then
-		Kit.Text({ LayoutOrder = 1, Text = title, Font = "Title", TextSize = 14, Size = UDim2.fromOffset(0, 17), AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
-		Kit.Text({ LayoutOrder = 2, Text = sub, Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 13), AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
+		Kit.Text({ LayoutOrder = 1, Text = title, Font = "Title", TextSize = 14, Size = UDim2.fromOffset(0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
+		Kit.Text({ LayoutOrder = 2, Text = sub, Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 14), AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
 	else
-		Kit.Text({ LayoutOrder = 1, Text = title, Font = "Body", TextSize = 11, Size = UDim2.fromOffset(0, 26), AutomaticSize = Enum.AutomaticSize.X,
+		Kit.Text({ LayoutOrder = 1, Text = title, Font = "Title", TextSize = 14, Size = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.X,
 			TextTruncate = Enum.TextTruncate.AtEnd, Parent = texts })
 	end
-	local pop = New("UIScale", { Scale = 0.96, Parent = toast })
-	Theme.Tween(pop, { Scale = 1 }, 0.18)
+	local pop = New("UIScale", { Scale = 0.9, Parent = toast })
+	Theme.Tween(pop, { Scale = 1 }, 0.2, Enum.EasingStyle.Back)
 	Theme.Fade(toast, true, 0.18)
 	task.delay(Notify.Lifetime, function()
 		if toast.Parent then
@@ -111,7 +128,46 @@ function Notify.Toast(title, sub, icon, color, key)
 	queue(tostring(title), sub, icon, color, key)
 end
 
+local function hintsOn()
+	local ok, ClientData = pcall(function() return require(ReplicatedStorage.Shared.ClientData) end)
+	local data = ok and ClientData.Get and ClientData.Get() or nil
+	local settings = data and data.settings
+	return not (settings and settings.hints == "Off")
+end
+
+local function showBand(text)
+	hintToken += 1
+	local token = hintToken
+	setBandText(text)
+	task.delay(Notify.HintSeconds, function()
+		if token == hintToken then setBandText(nil) end
+	end)
+end
+
+-- One hint at a time in the band (a new one replaces the old), hidden after HintSeconds.
+function Notify.Hint(text, key)
+	if not text or text == "" or not hintsOn() then return end
+	if key then
+		if lastShown[key] and os.clock() - lastShown[key] < 6 then return end
+		lastShown[key] = os.clock()
+	end
+	showBand(text)
+end
+
+-- A tutorial step's line (the tutorial always shows, even with hints off).
+function Notify.SetBand(text)
+	if text == tutorialLine then return end
+	tutorialLine = text
+	if text and text ~= "" then showBand(text) else hintToken += 1; setBandText(nil) end
+end
+
+function Notify.BandBottom()
+	ensure()
+	return bandVisible() and (Notify.Top + Notify.BandHeight) or 0
+end
+
 UIBus.GeneticsVisible.Event:Connect(function(visible)
+	if gui then gui.Enabled = not visible end
 	if visible then
 		held = held or {}
 		return
