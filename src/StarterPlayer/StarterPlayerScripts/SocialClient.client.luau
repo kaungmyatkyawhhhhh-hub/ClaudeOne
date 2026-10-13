@@ -1,6 +1,6 @@
--- SocialClient: arm wrestling (bottom panel: pick an NPC opponent or wait for a player, the 3-2-1, a big TAP button
--- (or tap anywhere / Space / gamepad A), the push bar, the result) and the corner note for lifting together
--- (spotting: SpotClient). Matches run on the server (ArmWrestleService); the arms move in ArmWrestleClient.
+-- SocialClient: arm wrestling (pick an NPC opponent or wait for a player, the 3-2-1, a big round TAP button (or tap
+-- anywhere / Space / gamepad A), the tug bar, the result) and the note for lifting together (spotting: SpotClient).
+-- Matches run on the server (ArmWrestleService); the arms move in ArmWrestleClient.
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -9,13 +9,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Social = require(Shared.Config.Social)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local Notify = require(Shared.UI.Notify)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
-local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
-local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
+local New, Colors = Theme.New, Theme.Colors
+local Horizontal = Enum.FillDirection.Horizontal
 
 ------------------------------------------------------------------------
 -- Lifting-together note (spotting has its own client: SpotClient)
@@ -23,7 +24,7 @@ local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Hor
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
 	if kind == "TogetherStarted" then
-		Notify.Show("Lifting together: +" .. math.floor((Social.Together.GainsBoost - 1) * 100 + 0.5) .. "% gains.", nil, "together")
+		Notify.Toast("Lifting together", "+" .. math.floor((Social.Together.GainsBoost - 1) * 100 + 0.5) .. "% gains", "users", Colors.Green, "together")
 	end
 end)
 
@@ -33,36 +34,54 @@ end)
 local remote = Remotes:WaitForChild("ArmWrestle", 30)
 if not remote then return end -- the arm wrestling service didn't start
 
+-- Owner's UI v2 (mockup 13_arm_wrestle): at the top "YOU" (left) and the opponent's name (right) over one long bar, red
+-- from the left (you) and blue from the right (them), split where the match stands; the gold timer between the names (the
+-- 3-2-1 and "GO!" there too); a big round red "TAP!" button ("as fast as you can") at the bottom. Waiting at the table: the
+-- opponent buttons (NPCs: name + Easy / Medium / Hard · coins) and STAND UP in a small panel at the bottom. The result
+-- shows big in the middle ("YOU WIN!" gold, "YOU LOSE" red, "DRAW") with the coins under it.
 local gui = Theme.ScreenGui({ Name = "ArmWrestle", DisplayOrder = 7, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
-local panel = Theme.Panel({
-	Name = "Panel",
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -Spacing.XL),
-	Size = UDim2.fromOffset(420, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
-	Parent = gui,
-}, {
-	Theme.Pad("L"),
-	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
-})
-local title = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), Parent = panel })
-local big = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Huge", Size = UDim2.new(1, 0, 0, 44), Parent = panel })
+local root = Kit.Root(gui)
+local BAR_W = 480
 
--- meter: your side on the left; the white fill grows from the middle toward whoever is winning
-local meterRow = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Parent = panel })
-local track = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = meterRow }, { Theme.Round("Segment") })
-local fill = New("Frame", { AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = track }, { Theme.Round("Segment") })
-New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0, 2, 1, 8), BackgroundColor3 = Colors.Text, Parent = meterRow })
-local labels = New("Frame", { LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = panel })
-Theme.Text({ Text = "You", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = labels })
-local themLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Right, Parent = labels })
-local hint = Theme.Text({ LayoutOrder = 5, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), Parent = panel })
--- alone at the table: pick an NPC opponent (or wait for a player to sit down)
-local npcRow = New("Frame", { Name = "Npcs", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Visible = false, Parent = panel },
-	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+local top = New("Frame", { Name = "Top", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52),
+	Size = UDim2.fromOffset(BAR_W, 64), Parent = root })
+Kit.Text({ Name = "You", Text = "YOU", Font = "Title", TextSize = 20, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0.35, 0, 0, 26),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+local themLabel = Kit.Text({ Name = "Them", Text = "", Font = "Title", TextSize = 20, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0),
+	Size = UDim2.new(0.35, 0, 0, 26), TextXAlignment = Enum.TextXAlignment.Right, Parent = top })
+local big = Kit.Text({ Name = "Timer", Text = "", Font = "Title", TextSize = 30, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, -6), Size = UDim2.new(0.3, 0, 0, 34), Parent = top })
+-- the tug bar: blue track (them) with a red fill (you) from the left
+local bar = New("Frame", { Name = "Bar", Position = UDim2.fromOffset(0, 32), Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(1, 1, 1), Parent = top }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+	New("UIStroke", { Color = Colors.Outline, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Colors.Blue:Lerp(Color3.new(1, 1, 1), 0.2), Colors.Blue:Lerp(Color3.new(0, 0, 0), 0.2)) }),
+})
+local fill = New("Frame", { Name = "You", Size = UDim2.fromScale(0.5, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = bar }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Colors.Red:Lerp(Color3.new(1, 1, 1), 0.2), Colors.Red:Lerp(Color3.new(0, 0, 0), 0.2)) }),
+})
+
+-- the result, big in the middle
+local result = New("Frame", { Name = "Result", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45),
+	Size = UDim2.fromOffset(460, 80), Visible = false, Parent = root })
+local resultText = Kit.Text({ Name = "Text", Text = "", Font = "Title", TextSize = 46, Size = UDim2.new(1, 0, 0, 52), Parent = result })
+local resultSub = Kit.Text({ Name = "Sub", Text = "", Font = "Title", TextSize = 17, Position = UDim2.fromOffset(0, 54), Size = UDim2.new(1, 0, 0, 22), Parent = result })
+
+-- waiting at the table: pick an NPC opponent (or wait for a player to sit down), or stand up
+local waitPanel = Theme.Panel({ Name = "Waiting", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.fromOffset(470, 132),
+	Active = true, Parent = root }, {})
+local hint = Kit.Text({ Name = "Hint", Text = "", Font = "Title", TextSize = 15, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 20), Parent = waitPanel })
+local npcRow = New("Frame", { Name = "Npcs", BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 48), Parent = waitPanel },
+	{ Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+local leaveButton = Kit.Button("Gray", "Stand up", { Name = "Leave", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Parent = waitPanel },
+	{ width = 150, height = 32, textSize = 14 })
+leaveButton.Activated:Connect(function() remote:FireServer("Leave") end)
+
 -- one button per opponent the server offers (Social.ArmWrestle.Npcs, plus an NPC rival whose challenge you accepted)
 local npcButtons = {}
 local shownChoices = ""
+local NPC_STYLE = { Easy = "Green", Medium = "Gold", Hard = "Red" }
 local function buildChoices(list)
 	local key = ""
 	for _, npc in ipairs(list) do key ..= tostring(npc.id) .. "," end
@@ -72,38 +91,39 @@ local function buildChoices(list)
 	npcButtons = {}
 	for order, npc in ipairs(list) do
 		local sub = npc.coins and (tostring(npc.label) .. " · " .. npc.coins .. " coins") or tostring(npc.label)
-		local button = Theme.Button("Secondary", { Name = tostring(npc.id), LayoutOrder = order, Size = UDim2.new(1 / #list, -Spacing.S, 0, 56), Parent = npcRow }, {
-			Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
-			Theme.Text({ LayoutOrder = 1, Text = tostring(npc.name), Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20) }),
-			Theme.Text({ LayoutOrder = 2, Text = sub, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), Upper = false }),
-		})
+		local button = Kit.Button(NPC_STYLE[npc.label] or "Blue", tostring(npc.name), { Name = tostring(npc.id), LayoutOrder = order, Parent = npcRow },
+			{ width = math.floor((470 - 24 - 8 * (#list - 1)) / #list), height = 46, textSize = 15, upper = false })
+		-- the difficulty and the coins under the name (the button's row stacks them)
+		local list = button:FindFirstChildOfClass("UIListLayout")
+		if list then
+			list.FillDirection = Enum.FillDirection.Vertical
+			list.Padding = UDim.new(0, 0)
+		end
+		local label = button:FindFirstChild("Label")
+		if label then label.Size = UDim2.fromOffset(0, 20) end
+		Kit.Text({ Name = "Sub", LayoutOrder = 3, Text = sub, Font = "Body", TextSize = 11, Size = UDim2.new(1, 0, 0, 13), Parent = button })
 		button.Activated:Connect(function()
 			remote:FireServer("Npc", npc.id)
-			npcRow.Visible = false
 		end)
 		npcButtons[npc.id] = button
 	end
 end
 buildChoices(Social.ArmWrestle.Npcs)
--- the big TAP button (tapping anywhere works too)
-local tapButton = Theme.Button("Primary", { Name = "Tap", LayoutOrder = 7, Size = UDim2.fromOffset(150, 72), Visible = false, Parent = panel }, {
-	Theme.Text({ Text = "Tap!", Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 1) }),
-})
-local leaveButton = Theme.Button("Secondary", { Name = "Leave", LayoutOrder = 8, Size = UDim2.new(0, 160, 0, Theme.MinTouch), Parent = panel }, {
-	Theme.Text({ Text = "Stand up", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
-})
-leaveButton.Activated:Connect(function() remote:FireServer("Leave") end)
 
--- phones (short screens): a narrower, lower panel so the wrestlers stay in view
-Theme.OnCompactChanged(function(compact)
-	panel.Size = UDim2.fromOffset(compact and 340 or 420, 0)
-	panel.Position = UDim2.new(0.5, 0, 1, compact and -Spacing.S or -Spacing.XL)
-	tapButton.Size = compact and UDim2.fromOffset(130, 56) or UDim2.fromOffset(150, 72)
-	big.Size = UDim2.new(1, 0, 0, compact and 34 or 44)
-end)
+-- the big round TAP button (tapping anywhere works too)
+local tapButton = New("TextButton", { Name = "Tap", Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
+	Size = UDim2.fromOffset(136, 136), BackgroundColor3 = Color3.new(1, 1, 1), Visible = false, Parent = root }, {
+	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	New("UIStroke", { Color = Colors.Outline, Thickness = 5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Colors.Red:Lerp(Color3.new(1, 1, 1), 0.25), Colors.Red:Lerp(Color3.new(0, 0, 0), 0.15)) }),
+})
+local tapScale = New("UIScale", { Parent = tapButton })
+Kit.Text({ Name = "Big", Text = "TAP!", Font = "Title", TextSize = 42, Position = UDim2.new(0, 0, 0.18, 0), Size = UDim2.new(1, 0, 0, 46), Parent = tapButton })
+Kit.Text({ Name = "Small", Text = "as fast as you can", Font = "Title", TextSize = 12, Position = UDim2.new(0, 0, 0.58, 0), Size = UDim2.new(1, 0, 0, 16), Parent = tapButton })
 
 local live = false
 local mySide = 1
+local liveEnds = 0 -- os.clock() when the match runs out (Social.ArmWrestle.MaxTime after GO)
 
 -- is this press on the TAP button? (then the button's own Activated counts it, not the tap-anywhere input)
 local function overTapButton(input)
@@ -117,6 +137,8 @@ local function sendTap()
 	if not live then return end
 	remote:FireServer("Tap")
 	Audio.PlayUI("ArmTap")
+	tapScale.Scale = 0.92
+	Theme.Tween(tapScale, { Scale = 1 }, 0.12)
 end
 tapButton.Activated:Connect(sendTap)
 
@@ -143,13 +165,18 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 local function showMeter(meter)
-	-- meter is +1 when seat 1 wins; turn it into "you" (left) vs "them" (right)
-	local mine = meter * mySide -- +1 = you are winning
-	local width = math.abs(mine) * 0.5
-	fill.Size = UDim2.fromScale(width, 1)
-	fill.Position = UDim2.fromScale(mine >= 0 and 0.5 - width or 0.5, 0)
-	fill.BackgroundColor3 = mine >= 0 and Colors.Text or Colors.NeedsWork
+	-- meter is +1 when seat 1 wins; turn it into "you" (left, red) vs "them" (right, blue)
+	local mine = math.clamp(meter * mySide, -1, 1) -- +1 = you are winning
+	Theme.Tween(fill, { Size = UDim2.fromScale(0.5 + mine * 0.5, 1) }, 0.12)
 end
+
+-- the timer while the match runs
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		if live then big.Text = string.format("0:%02d", math.max(0, math.ceil(liveEnds - os.clock()))) end
+	end
+end)
 
 local resultToken = 0
 local resultUntil = 0 -- the result stays readable this long, even after the server stands you up
@@ -159,50 +186,48 @@ remote.OnClientEvent:Connect(function(kind, info)
 	if state == "idle" then
 		setLive(false)
 		tapButton.Visible = false
-		npcRow.Visible = false
+		waitPanel.Visible = false
 		if os.clock() >= resultUntil then gui.Enabled = false end
 		return
 	end
 	gui.Enabled = true
 	mySide = info.side or mySide
-	themLabel.Text = info.opponent or "..."
-	tapButton.Visible = state == "live"
-	if state ~= "waiting" then npcRow.Visible = false end
+	themLabel.Text = string.upper(tostring(info.opponent or "..."))
+	tapButton.Visible = state == "live" or state == "countdown"
+	waitPanel.Visible = state == "waiting"
+	top.Visible = state ~= "waiting"
+	result.Visible = state == "result"
 	if state == "waiting" then
 		setLive(false)
-		title.Text = "Arm wrestling"
 		big.Text = ""
 		local choices = type(info.npcs) == "table" and #info.npcs > 0
 		if choices then buildChoices(info.npcs) end
 		npcRow.Visible = choices
 		hint.Text = choices and "Pick an opponent, or wait for a player to sit down" or "Waiting for an opponent..."
-		leaveButton.Visible = true
 		showMeter(0)
 	elseif state == "countdown" then
 		setLive(false)
-		title.Text = "vs " .. (info.opponent or "...")
 		big.Text = tostring(info.countdown or "")
-		hint.Text = "Get ready to tap fast"
-		leaveButton.Visible = false
 		showMeter(0)
 		Audio.PlayUI("ArmCountdown")
 	elseif state == "live" then
 		if info.countdown == 0 then
-			big.Text = "Go!"
+			big.Text = "GO!"
+			liveEnds = os.clock() + (Social.ArmWrestle.MaxTime or 8)
 			Audio.PlayUI("ArmGo")
 		end
 		setLive(true)
-		hint.Text = "Tap anywhere as fast as you can"
-		leaveButton.Visible = false
 		showMeter(info.meter or 0)
 	elseif state == "result" then
 		setLive(false)
-		leaveButton.Visible = false
+		tapButton.Visible = false
 		showMeter(info.won and mySide or -mySide)
-		title.Text = tostring(info.reason or "")
-		big.Text = info.draw and "Draw" or (info.won and "You win" or "You lose")
-		hint.Text = info.coins and ("+" .. info.coins .. " coins") or ""
-		if info.king then hint.Text ..= " · you beat the champion!" end
+		big.Text = ""
+		resultText.Text = info.draw and "DRAW" or (info.won and "YOU WIN!" or "YOU LOSE")
+		resultText.TextColor3 = info.draw and Colors.Text or (info.won and Colors.Gold or Colors.Red)
+		local sub = info.coins and ("+" .. info.coins .. " coins") or tostring(info.reason or "")
+		if info.king then sub ..= " · you beat the champion!" end
+		resultSub.Text = sub
 		if info.won then Audio.PlayUI("SetComplete") end
 		resultToken += 1
 		local token = resultToken

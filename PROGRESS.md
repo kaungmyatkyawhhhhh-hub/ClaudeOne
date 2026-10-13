@@ -101,6 +101,11 @@ TestCoins = 2000 (2,000 -> 1,700, FOLLOWING), the red-cap follower. Screenshots:
   pays 50 coins (Onboarding.FinishCoins, ActionService). The Goal step now points at the Muscles window (Muscles window
   or the stat labels both count as "stats open"). The mockup says "Coach Dante": the game's coach is Coach Dex (Dante is
   the pro gym's 8'0" NPC), so it says Coach Dex. Screenshots: ui_compare_v2/11_*.
+- 13 Arm wrestle (done): "YOU" and the opponent's name over one long bar (red = you from the left, blue = them from the
+  right, split where the match stands), the gold timer between them (3-2-1 and GO! there too, then 0:08 counting down),
+  a big round red TAP! button ("as fast as you can"; tapping anywhere still counts). Waiting at the table: the opponents
+  as green / gold / red buttons (Easy / Medium / Hard · coins) and STAND UP. Result big in the middle (YOU WIN! gold /
+  YOU LOSE red / DRAW) with the coins. Tested a match against Rocco. Screenshots: ui_compare_v2/13_*.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
