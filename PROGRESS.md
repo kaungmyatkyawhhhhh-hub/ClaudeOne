@@ -71,6 +71,12 @@ in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minute
   type perks, overall word, OPEN GENETICS. "LABELS ON / OFF" in the window does the same as the Stats tile. The Growth
   Spurt moment is now a big gold line + "You're now 4'6". Gains x1.25 forever!" in the screen center (no duplicate
   toast). Fixed: the GROW tile did nothing when not ready (OpenStats had no listener). Screenshots: ui_compare_v2/07_*.
+- 04 Shop (done): "Gym Store" window from the gold Shop tile (first in the menu, only after the tutorial + 5 minutes,
+  only when something has an id). Tabs Passes / Items (only tabs that have something: today just Passes with Extra
+  Trainer), a 3-column grid of cards (name, shop art, Robux price from Roblox or OWNED in gold) and the picked item big on
+  the right with what it does and the green Robux button (the only thing that opens a purchase). The mockup's Coins /
+  Boosts / Auras tabs are left out: the game sells no coins and has no auras. Studio test switch: Workspace attribute
+  TestStore = true shows the Shop tile at once. Screenshot: ui_compare_v2/04_shop_phone.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
