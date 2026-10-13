@@ -106,6 +106,12 @@ TestCoins = 2000 (2,000 -> 1,700, FOLLOWING), the red-cap follower. Screenshots:
   a big round red TAP! button ("as fast as you can"; tapping anywhere still counts). Waiting at the table: the opponents
   as green / gold / red buttons (Easy / Medium / Hard · coins) and STAND UP. Result big in the middle (YOU WIN! gold /
   YOU LOSE red / DRAW) with the coins. Tested a match against Rocco. Screenshots: ui_compare_v2/13_*.
+- 12 Posing (done): during a round, "POSING COMPETITION · Pose 2/3" and a timer at the top, the pose's name big in gold
+  ("FRONT LAT SPREAD!"), the Judges panel on the right (each contestant's last card, best total first, "You" for you),
+  and at the bottom a TIMING bar (the marker runs to the green: perfect in the middle, good in the light green; the
+  same windows the old closing ring used) over a big red POSE! button. Its own gui (PosingRound), so the right column
+  steps aside. Vote buttons and the result / vote notes in the new style. Tested with TestPosingComp: pose 1 and 2,
+  judges' scores filled in. Screenshots: ui_compare_v2/12_*.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by

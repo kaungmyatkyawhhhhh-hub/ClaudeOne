@@ -1,8 +1,9 @@
 -- PosingCompClient: the posing competition on every screen (PosingCompService runs it; Config.PosingComp has the numbers).
 --   * Countdown: a small banner under the top bar ("Posing competition · starts in 0:42 · go to the stage") and a waypoint:
 --     a marker over the stage (with the distance) and an arrow at the screen edge while the stage is off screen.
---   * Contestants: each pose a big TAP button with a ring closing on it; tap when it closes (Space / gamepad A work too),
---     then hold still until the judges' cards go up.
+--   * Contestants (owner's UI v2, mockup 12): the pose's name big in gold, the Judges panel, and a TIMING bar over a big
+--     red POSE! button: tap when the marker reaches the green (Space / gamepad A work too), then hold still until the
+--     judges' cards go up.
 --   * Watchers near the stage: during the last pose a small vote panel (tap a contestant's name; never yourself).
 --   * Results: the podium names, your place and coins.
 local Players = game:GetService("Players")
@@ -15,6 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local PosingComp = require(Shared.Config.PosingComp)
 local Town = require(Shared.Config.Town)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local RightColumn = require(Shared.UI.RightColumn)
@@ -199,41 +201,79 @@ local function updateGuide()
 end
 
 ------------------------------------------------------------------------
--- The pose button (contestants)
+-- The round screen (contestants; owner's UI v2, mockup 12_posing): "POSING COMPETITION · Pose 2/3" and a timer at the top,
+-- the pose's name big in gold, the Judges panel on the right (each contestant's last card, best first, "You" for you), and
+-- at the bottom the TIMING bar (a marker runs to the green zone: perfect in the middle, good in the light green) over a
+-- big red POSE! button (Space / gamepad A work too). Its own gui, so the right column steps aside while it's up.
 ------------------------------------------------------------------------
-local poseHolder = New("Frame", {
-	Name = "Pose", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -Theme.Spacing.XL),
-	Size = UDim2.fromOffset(260, 180), BackgroundTransparency = 1, Visible = false, Parent = gui,
-})
-local poseName = Theme.Text({ Text = "", Font = "SemiBold", TextSize = "Large", Size = UDim2.new(1, 0, 0, 28), Parent = poseHolder })
-Theme.TextShadow(poseName, 0.3)
-local poseStep = Theme.Text({ Text = "", Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 28), Parent = poseHolder })
-Theme.TextShadow(poseStep, 0.3)
-local BUTTON = 96
-local tapButton = Theme.Button("Primary", {
-	Name = "Tap", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.fromOffset(BUTTON, BUTTON), Parent = poseHolder,
-}, {})
-local corner = tapButton:FindFirstChildOfClass("UICorner")
-if corner then corner.CornerRadius = UDim.new(1, 0) end
-local tapLabel = Theme.Text({ Text = "Pose", Font = "SemiBold", TextSize = "Large", Size = UDim2.fromScale(1, 1), Parent = tapButton })
-Theme.Uppercase(tapLabel)
--- the ring that closes onto the button (a circle outline, bigger at the start)
-local ring = New("Frame", {
-	Name = "Ring", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(BUTTON, BUTTON),
-	BackgroundTransparency = 1, Parent = tapButton,
-}, { Theme.Round("Round"), New("UIStroke", { Color = Colors.Text, Thickness = 3, Transparency = 0.1 }) })
-local ringStroke = ring:FindFirstChildOfClass("UIStroke") :: UIStroke
-local tapResult = Theme.Text({ Text = "", Font = "SemiBold", TextSize = "Large", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -6),
-	Size = UDim2.new(1, 0, 0, 28), Parent = tapButton })
-Theme.TextShadow(tapResult, 0.3)
+local roundGui = Theme.ScreenGui({ Name = "PosingRound", DisplayOrder = 22, Enabled = false, Parent = playerGui })
+local roundRoot = Kit.Root(roundGui)
+local header = Kit.Text({ Name = "Header", Text = "", Font = "Title", TextSize = 20, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52),
+	Size = UDim2.fromOffset(420, 24), Parent = roundRoot })
+local timer = Kit.Text({ Name = "Timer", Text = "", Font = "Title", TextSize = 18, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 76),
+	Size = UDim2.fromOffset(120, 22), Parent = roundRoot })
+local poseName = Kit.Text({ Name = "PoseName", Text = "", Font = "Title", TextSize = 42, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 104), Size = UDim2.fromOffset(520, 50), Parent = roundRoot })
 
-local current = nil -- { cueAt, cueTime, tapped }
+-- the judges' scores (right)
+local judges = Theme.Panel({ Name = "Judges", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 52), Size = UDim2.fromOffset(196, 0),
+	AutomaticSize = Enum.AutomaticSize.Y, Parent = roundRoot }, {
+	New("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+	Theme.List(Vertical, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
+})
+Kit.Text({ Name = "Title", LayoutOrder = 0, Text = "Judges", Font = "Title", TextSize = 17, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = judges })
+local judgeRows = {}
+for i = 1, 3 do
+	local row = Kit.Card({ Name = "Row" .. i, LayoutOrder = i, Size = UDim2.new(1, 0, 0, 30), Parent = judges }, {})
+	local rank = Kit.Text({ Text = tostring(i), Font = "Title", TextSize = 15, Position = UDim2.fromOffset(8, 0), Size = UDim2.fromOffset(14, 30), Parent = row })
+	local name = Kit.Text({ Text = "", Font = "Strong", TextSize = 13, Position = UDim2.fromOffset(30, 0), Size = UDim2.new(1, -78, 1, 0), TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
+	local score = Kit.Text({ Text = "", Font = "Title", TextSize = 16, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 0),
+		Size = UDim2.fromOffset(40, 30), TextXAlignment = Enum.TextXAlignment.Right, Parent = row })
+	judgeRows[i] = { row = row, rank = rank, name = name, score = score }
+end
+local lastCards = {} -- [contestant index] = the last card
+local function showJudges(contestants)
+	local list = {}
+	for i, c in ipairs(contestants or {}) do
+		if not c.out then table.insert(list, { name = c.userId == player.UserId and "You" or c.name, total = c.total or 0, card = lastCards[i] }) end
+	end
+	table.sort(list, function(x, y) return x.total > y.total end)
+	for i, row in ipairs(judgeRows) do
+		local entry = list[i]
+		row.row.Visible = entry ~= nil
+		if entry then
+			row.name.Text = entry.name
+			row.score.Text = entry.card and string.format("%.1f", entry.card) or "-"
+		end
+	end
+end
+
+-- the timing bar and the POSE! button (bottom)
+local CUE_AT = 0.7 -- where on the bar the cue lands
+local timing = Theme.Panel({ Name = "Timing", Piece = "hud_box", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -80), Size = UDim2.fromOffset(420, 30),
+	Parent = roundRoot }, {})
+Kit.Text({ Text = "TIMING", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(12, 0), Size = UDim2.fromOffset(70, 30), TextXAlignment = Enum.TextXAlignment.Left, Parent = timing })
+local track = New("Frame", { Name = "Track", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 90, 0.5, 0), Size = UDim2.new(1, -102, 0, 16),
+	BackgroundColor3 = Colors.Well, Parent = timing }, { New("UICorner", { CornerRadius = UDim.new(0, 5) }) })
+local goodZone = New("Frame", { Name = "Good", AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Colors.Green, BackgroundTransparency = 0.55,
+	Position = UDim2.fromScale(CUE_AT, 0), Size = UDim2.fromScale(CUE_AT * 2 * PosingComp.Good / PosingComp.CueTime, 1), Parent = track })
+local perfectZone = New("Frame", { Name = "Perfect", AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Colors.Green,
+	Position = UDim2.fromScale(CUE_AT, 0), Size = UDim2.fromScale(CUE_AT * 2 * PosingComp.Perfect / PosingComp.CueTime, 1), ZIndex = 2, Parent = track })
+local markerLine = New("Frame", { Name = "Marker", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.new(0, 4, 1, 8),
+	BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 3, Parent = track }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+local _ = goodZone and perfectZone
+local tapButton = Kit.Button("Red", "Pose!", { Name = "Tap", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Parent = roundRoot },
+	{ width = 230, height = 58, textSize = 32 })
+local tapResult = Kit.Text({ Name = "TapResult", Text = "", Font = "Title", TextSize = 22, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -116),
+	Size = UDim2.fromOffset(240, 26), Parent = roundRoot })
+
+local current = nil -- { cueAt, cueTime, holdUntil, tapped }
 local function sendTap()
 	if not current or current.tapped then return end
 	current.tapped = true
 	remote:FireServer("Tap")
-	tapButton.Active = false
-	Theme.Tween(ring, { Size = UDim2.fromOffset(BUTTON, BUTTON) }, 0.08)
+	Kit.SetButton(tapButton, "Gray")
 end
 tapButton.Activated:Connect(sendTap)
 local function boundTap(_, state)
@@ -242,30 +282,32 @@ local function boundTap(_, state)
 end
 
 local function showPose(info)
-	current = { cueAt = info.cueAt, cueTime = info.cueTime, tapped = false, cued = false }
-	poseName.Text = string.upper(info.name)
-	poseStep.Text = string.format("Pose %d of %d: tap when the ring closes", info.index, info.count)
+	current = { cueAt = info.cueAt, cueTime = info.cueTime, holdUntil = info.holdUntil, tapped = false, cued = false }
+	header.Text = string.format("POSING COMPETITION · Pose %d/%d", info.index, info.count)
+	poseName.Text = string.upper(info.name) .. "!"
 	tapResult.Text = ""
-	tapButton.Active = true
-	poseHolder.Visible = true
+	Kit.SetButton(tapButton, "Red")
+	showJudges(info.contestants)
+	roundGui.Enabled = true
 	ContextActionService:BindActionAtPriority("PosingTap", boundTap, false, 3000, Enum.KeyCode.Space, Enum.KeyCode.ButtonA)
 end
 
 local function hidePose()
 	current = nil
-	poseHolder.Visible = false
+	roundGui.Enabled = false
 	ContextActionService:UnbindAction("PosingTap")
 end
 
 local function updatePose()
 	if not current then return end
-	local left = current.cueAt - now()
+	local t = now()
+	local left = current.cueAt - t
+	-- the timer: to the cue, then the hold until the judges score
+	timer.Text = clock(left > 0 and left or ((current.holdUntil or t) - t))
 	if not current.tapped then
-		-- the ring shrinks from 2.2x the button to the button as the cue comes
-		local t = math.clamp(1 - left / current.cueTime, 0, 1)
-		local size = BUTTON * (2.2 - 1.2 * t)
-		ring.Size = UDim2.fromOffset(size, size)
-		ringStroke.Color = math.abs(left) <= PosingComp.Perfect and Colors.Gold or Colors.Text
+		-- the marker runs from the left edge to the cue spot as the cue comes, and on past it
+		local f = 1 - left / current.cueTime
+		markerLine.Position = UDim2.fromScale(math.clamp(f * CUE_AT, 0, 1), 0.5)
 		if left <= 0 and not current.cued then
 			current.cued = true
 			Audio.Play2D(PosingComp.Sounds.Cue)
@@ -296,9 +338,8 @@ local function showVote(contestants)
 	voteButtons = {}
 	for index, c in ipairs(contestants) do
 		if not c.out and c.userId ~= player.UserId then
-			local button = Theme.Button("Secondary", { Name = "Vote" .. index, LayoutOrder = index, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = votePanel }, {
-				Theme.Text({ Text = c.name, Font = "Regular", TextSize = "Body", Size = UDim2.fromScale(1, 1), Upper = false }),
-			})
+			local button = Kit.Button("Blue", c.name, { Name = "Vote" .. index, LayoutOrder = index, Parent = votePanel },
+				{ width = 196, height = 36, textSize = 15, upper = false })
 			button.Activated:Connect(function()
 				remote:FireServer("Vote", index)
 				hideVote()
@@ -333,12 +374,13 @@ remote.OnClientEvent:Connect(function(kind, info)
 		setGuide(true)
 	elseif kind == "Start" then
 		countdownEnds = nil
+		lastCards = {}
 		setGuide(false)
 		inRound = amContestant(info.contestants)
 		if inRound then
 			stageCamera(true)
 			bannerTitle.Text = "You're in!"
-			bannerLine.Text = "Tap the pose button when the ring closes"
+			bannerLine.Text = "Tap POSE! when the marker reaches the green"
 			showBanner(true)
 			task.delay(info.intro or 4, function() if inRound then showBanner(false) end end)
 		else
@@ -358,11 +400,13 @@ remote.OnClientEvent:Connect(function(kind, info)
 		if info.vote and not inRound and nearStage() then showVote(info.contestants) end
 	elseif kind == "Tapped" then
 		if current then current.tapped = true end
-		tapResult.Text = string.upper(tostring(info.label or ""))
-		tapResult.TextColor3 = info.label == "Perfect" and Colors.Gold or Colors.Text
-		tapButton.Active = false
+		tapResult.Text = string.upper(tostring(info.label or "")) .. (info.label == "Perfect" and "!" or "")
+		tapResult.TextColor3 = info.label == "Perfect" and Colors.Gold or (info.label == "Good" and Colors.Green or Colors.Text)
+		Kit.SetButton(tapButton, "Gray")
 	elseif kind == "Scores" then
-		hidePose()
+		for i, card in pairs(type(info.cards) == "table" and info.cards or {}) do lastCards[i] = card end
+		showJudges(info.contestants)
+		if current then current = nil end -- (the round screen stays up between poses; the next Pose refreshes it)
 		if inRound or nearStage() then Audio.Play2D(PosingComp.Sounds.Score) end
 	elseif kind == "Out" then
 		if not amContestant(info.contestants) and inRound then
@@ -372,7 +416,7 @@ remote.OnClientEvent:Connect(function(kind, info)
 			Notify.Show("You left the stage: you're out of this round", Colors.NeedsWork)
 		end
 	elseif kind == "Voted" then
-		Notify.Show("You voted for " .. tostring(info.name))
+		Notify.Toast("Vote sent", "You voted for " .. tostring(info.name), "star", Colors.Blue)
 	elseif kind == "Results" then
 		hidePose()
 		hideVote()
@@ -386,7 +430,8 @@ remote.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "Reward" then
 		local place = tonumber(info.place) or 0
 		local names = { "1st", "2nd", "3rd" }
-		Notify.Show(string.format("%s place: +%d coins", names[place] or (place .. "th"), tonumber(info.coins) or 0), place == 1 and Colors.Gold or nil)
+		Notify.Toast(string.format("%s place!", names[place] or (place .. "th")), string.format("+%d coins", tonumber(info.coins) or 0), "trophy",
+			place == 1 and Colors.Gold or Colors.Blue)
 	end
 end)
 
