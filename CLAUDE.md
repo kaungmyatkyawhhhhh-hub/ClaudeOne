@@ -7,7 +7,7 @@
 - No Rojo. Studio is the source of truth (edit through the MCP connection). GitHub is backup only (export changed
   scripts to src/). Never suggest or set up Rojo.
 - After each finished piece of work, export the changed scripts from Studio into `src/` (`tools/export`, see below),
-  then commit + push with a clear message.
+  then commit + push with a clear message. Then update the Obsidian vault (see "Obsidian vault" below).
 - After any big change, remind the owner to **save/publish the place** in Studio. Never assume it's saved.
 - **After every task (owner's rule, 8 Oct): File > Save to Roblox, AND a dated backup copy** via File > Download a Copy
   (the cloud place has no "Save to File As") to `Documents\GymArc_backups\GymArc_<YYYY-MM-DD>.rbxl` (Documents is `C:\Users\kaung\OneDrive\Documents`; add `_2`,
@@ -26,6 +26,34 @@
 - Lighting: `Lighting.Technology` no longer exists; never set it. Use `LightingStyle = Realistic` and
   `PrioritizeLightingQuality = true` (already set in the place).
 - `export/GymArc.rbxlx` is an old place snapshot (4 Oct 2026), kept as a backup.
+
+## Obsidian vault (owner's standing rule, 13 Oct): save everything there too
+- Vault: `C:\ObsidianOne\Claude+Obsidian`. GYM ARC lives ONLY in its `GYM ARC\` folder. The vault also holds the owner's
+  other games (Break A Bed, City Legends): never edit, move, rename or delete anything outside `GYM ARC\` (the one
+  exception: the GYM ARC link line in `00-START-HERE.md`). Leave `.obsidian\` alone.
+- The vault is a git repo synced by Obsidian Git (branch `master`, remote ProjectOne). After writing notes: commit only
+  the `GYM ARC/` folder (`git add "GYM ARC"`) and push to `master`, per the vault's own `CLAUDE.md`.
+- The vault is a copy: never move or delete anything from the repo or Downloads. Studio stays the source of truth,
+  GitHub `src/` stays the backup.
+- Layout of `GYM ARC\`: `00 GYM ARC Home.md` (what the game is, current status, what's next, open bugs, links);
+  `Progress\` (one note per work session: `YYYY-MM-DD GYM ARC <short title>.md`); `Prompts\` (every prompt the owner
+  sends, saved exactly as sent: `YYYY-MM-DD GYM ARC Prompt - <title>.md`); `Features\` (one note per system:
+  `GYM ARC - <System>.md`, list in `GYM ARC - Features index`); `Bugs\` (one note per bug: `GYM ARC - Bug - <title>.md`,
+  what happened / cause / fix / status open or fixed, list in `GYM ARC - Bugs index`); `Config\GYM ARC - Config values.md`
+  (every tunable number and what it does); `Monetization\GYM ARC - Monetization products.md` (name, description, price,
+  ID, status); `Sounds\GYM ARC - Sounds.md` (every SoundId / music slot, filled or empty); `Screenshots\` (copies of
+  `screenshots/`, same file names); `Assets\GYM ARC - Assets.md` (meshes / textures / images with asset IDs).
+- Writing: Markdown with frontmatter (`date`, `tags` with `gymarc` on everything plus `bug` / `feature` / `progress` /
+  `prompt` etc., `status`). `[[wikilinks]]`; embed screenshots as `![[GYM ARC/Screenshots/<file>]]`. Note names must be
+  unique across the whole vault (Break A Bed uses plain date names and "Settings", "Project Overview" ...), so every
+  GYM ARC note name carries "GYM ARC". Short, plain English for a non-programmer, no emojis. Each note starts with
+  "Back to [[00 GYM ARC Home|GYM ARC Home]]".
+- When to save:
+  - A new prompt from the owner: save it in `Prompts\` FIRST, then start working.
+  - Every time PROGRESS.md is updated: write / update this session's Progress note plus the Feature, Bug, Config,
+    Monetization and Sounds notes that changed; copy new screenshots into `Screenshots\`.
+  - A morning report goes at the top of that day's Progress note too.
+  - Keep `00 GYM ARC Home.md` up to date (status, next, open bugs).
 
 ## Layout of `src/` (mirrors the Explorer)
 - `src/ServerScriptService` (`Main.server.luau` + `Server/` modules), `src/ReplicatedStorage/Shared` (Config, UI,
