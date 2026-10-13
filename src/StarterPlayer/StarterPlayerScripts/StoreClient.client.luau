@@ -26,7 +26,6 @@ local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Hor
 ------------------------------------------------------------------------
 -- Server boost pill (anyone in the server sees it)
 ------------------------------------------------------------------------
-local Kit = require(Shared.UI.Kit)
 local boostChip = RightColumn.Chip("zap", Colors.Gold, 1)
 local started = false
 task.spawn(function()
@@ -55,23 +54,6 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 end)
 
 ------------------------------------------------------------------------
--- Auto Lift toggle (only for owners)
-------------------------------------------------------------------------
-local autoButton, autoLabel = Kit.Button("Secondary", "Auto lift: off", { Name = "AutoLift", Visible = false }, { height = 30, width = RightColumn.Width, icon = "repeat", textSize = 12 })
-RightColumn.Add(autoButton, 4)
-local function refreshAuto()
-	local owns = player:GetAttribute("Pass_AutoLift") == true
-	autoButton.Visible = started and owns
-	autoLabel.Text = player:GetAttribute("AutoLiftOn") and "Auto lift: on" or "Auto lift: off"
-end
-autoButton.Activated:Connect(function()
-	-- a local attribute: MachineClient reads it on this client only
-	player:SetAttribute("AutoLiftOn", not player:GetAttribute("AutoLiftOn"))
-	refreshAuto()
-end)
-player:GetAttributeChangedSignal("Pass_AutoLift"):Connect(refreshAuto)
-
-------------------------------------------------------------------------
 -- Store (only when something is for sale)
 ------------------------------------------------------------------------
 if not Monetization.AnyConfigured() then
@@ -79,7 +61,6 @@ if not Monetization.AnyConfigured() then
 		ClientData.Get()
 		UIBus.WaitForMenu()
 		started = true
-		refreshAuto()
 	end)
 	return
 end
@@ -143,7 +124,7 @@ local function refreshRows()
 	end
 end
 player.AttributeChanged:Connect(function(name)
-	if name:sub(1, 5) == "Pass_" then refreshRows() refreshAuto() end
+	if name:sub(1, 5) == "Pass_" then refreshRows() end
 end)
 
 local menuButton = nil
@@ -169,7 +150,6 @@ task.spawn(function()
 	local data = ClientData.Get()
 	UIBus.WaitForMenu()
 	started = true
-	refreshAuto()
 	local playStart = os.clock()
 	while (data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done
 		or os.clock() - playStart < Monetization.StoreAfterMinutes * 60 do

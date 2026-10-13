@@ -18,6 +18,17 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   844x390. Not matched yet: the mockup has 8 tiles in 2 columns; the game still has Stats, Wardrobe, Genetics, Coach and
   Daily too (a 3rd column; Genetics / Coach / Daily move into their panels in steps 06 / 07). Screenshots:
   ui_compare/01_main_hud_pc, 01_main_hud_phone.
+- **02/03 machine HUD** (done, `Shared/UI/MachineHud`; MachineClient keeps all the logic): panel at the bottom center
+  (name + group tag + AUTO, the muscle split line, - / barbell + weight + TIER tag / +, MAX on top of +, green segmented
+  stamina + %), coach note above it, gold PUMP (fills with your taps, glows while PUMPED) over the big red REP button
+  (rep count), LEAVE top left, gold NEW PERSONAL RECORD banner. The unlock button (gold, coin price) and "Needs ..." take
+  the tier tag's place. AUTO: green AUTO ON / AUTO for Auto Lift owners, a locked AUTO that opens the shop for others
+  only while the shop exists (hidden now, monetization is off); the right-column Auto Lift button is gone.
+  Not matched: the mockup has no MAX button and no coach note (both kept: owner's earlier rules).
+  Screenshot: ui_compare/02_machine_hud_phone.
+- **Studio disconnected** after the 02 test (13 Oct ~5:35 PM): the last two small tweaks (PUMP button brightness 0.7 when
+  empty, toasts 216 px up while training) are in `src/` but NOT yet in Studio; also clear the Workspace attribute
+  `TestPhoneSize` (left on for the phone check).
 
 ## LATEST (13 Oct): new features run (owner's GYM_ARC_new_features.md): DONE, report
 

@@ -15,7 +15,7 @@ local Notify = {}
 Notify.Lifetime = 2.8
 Notify.MaxVisible = 2
 Notify.Bottom = 16        -- mockup px from the bottom of the screen
-Notify.TrainingBottom = 196 -- ...while on a machine (just above the machine panel)
+Notify.TrainingBottom = 216 -- ...while on a machine (above the machine panel and its coach note)
 
 local list
 local order = 0

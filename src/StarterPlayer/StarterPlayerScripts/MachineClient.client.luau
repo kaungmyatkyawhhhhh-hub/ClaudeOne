@@ -33,7 +33,7 @@ local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local CoachNotes = require(Shared.Config.CoachNotes)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
-local Icons = require(Shared.UI.Icons)
+local MachineHud = require(Shared.UI.MachineHud)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local Audio = require(Shared.Audio)
@@ -42,7 +42,7 @@ local UIBus = require(Shared.UI.UIBus)
 local Remotes = waitFor(ReplicatedStorage, "Remotes")
 
 local player = Players.LocalPlayer
-local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
+local New, Colors = Theme.New, Theme.Colors
 
 -- Game feel tuning
 local FEEL = {
@@ -74,7 +74,7 @@ local FEEL = {
 
 local STAMINA_SEGMENTS = 10
 local STAMINA_LOW = 0.15 -- segments turn soft light red below this
-local SEGMENT_BACK = 0.85 -- empty segments: faint white
+local SEGMENT_BACK = 0.88 -- empty segments: faint white (MachineHud.SegmentBack)
 
 local PARTICLE_SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local PARTICLE_DROP = "rbxasset://textures/particles/sparkles_main.dds"
@@ -1484,278 +1484,26 @@ do
 end
 
 ------------------------------------------------------------------------
--- HUD
+-- HUD (the look lives in Shared/UI/MachineHud: owner's UI redesign, mockups 02 / 03)
 ------------------------------------------------------------------------
-local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
-local Left, Right = Enum.HorizontalAlignment.Left, Enum.HorizontalAlignment.Right
+local hud = MachineHud.Build()
+local gui, stack, HIDDEN_OFFSET = hud.gui, hud.stack, MachineHud.HiddenOffset
+local titleLabel, musclesLabel, noteLabel = hud.titleLabel, hud.musclesLabel, hud.noteLabel
+local minusButton, plusButton, weightNumber = hud.minusButton, hud.plusButton, hud.weightNumber
+local needsLabel, unlockButton, unlockText, costLabel = hud.needsLabel, hud.unlockButton, hud.unlockText, hud.costLabel
+local barPlates, repsLabel, repsScale = hud.barPlates, hud.repsLabel, hud.repsScale
+local segmentBacks, segments, exitButton = hud.segmentBacks, hud.segments, hud.exitButton
 
-local gui = Theme.ScreenGui({
-	Name = "MachineHud",
-	Enabled = false,
-	DisplayOrder = 5,
-	Parent = waitFor(player, "PlayerGui"),
-})
-
-local column = New("Frame", {
-	Name = "Column",
-	Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 1,
-	Parent = gui,
-}, {
-	Theme.List(Vertical, "M", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom),
-	New("UIPadding", { PaddingBottom = UDim.new(0, Spacing.XS) }),
-})
-
--- phones: the thumbstick and jump button are hidden while lifting, so the panel sits left and leaves the right side
--- to the quest panel (top right)
-do
-	local columnList = column:FindFirstChildOfClass("UIListLayout")
-	local columnPad = column:FindFirstChildOfClass("UIPadding")
-	Theme.OnCompactChanged(function(isCompact)
-		columnList.HorizontalAlignment = isCompact and Enum.HorizontalAlignment.Left or Enum.HorizontalAlignment.Center
-		columnPad.PaddingLeft = UDim.new(0, isCompact and Spacing.M or 0)
-	end)
-end
-local function box(props, children)
-	props.BackgroundTransparency = props.BackgroundTransparency or 1
-	return New("Frame", props, children)
-end
-
-local function iconSlot(order, icon, scale)
-	return box({ LayoutOrder = order, Size = UDim2.fromScale(1, scale or 1) }, { Theme.Aspect(1, Enum.DominantAxis.Height), icon })
-end
-
--- Compact stack: tape, panel, coach note.
-local stackSlot = box({
-	Name = "Stack",
-	LayoutOrder = 1,
-	Size = UDim2.fromScale(0.6, 0.32),
-	Parent = column,
-}, { Theme.Aspect(3.4), Theme.Limit(Vector2.new(540, 160), Vector2.new(680, 200)) })
-
--- Invisible button under the stack so taps on the HUD don't count as lifts.
-New("TextButton", {
-	Name = "TapBlocker",
-	Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 1,
-	Text = "",
-	AutoButtonColor = false,
-	ZIndex = 1,
-	Parent = stackSlot,
-})
-
-local HIDDEN_OFFSET = UDim2.fromOffset(0, 320) -- the panel waits below the screen edge
-local stack = New("Frame", {
-	Name = "Group",
-	Size = UDim2.fromScale(1, 1),
-	Position = HIDDEN_OFFSET,
-	BackgroundTransparency = 1,
-	ZIndex = 2,
-	Parent = stackSlot,
-}, {
-	Theme.List(Vertical, "S", Left, Enum.VerticalAlignment.Bottom),
-	New("UIPadding", { PaddingLeft = UDim.new(0, Spacing.XS), PaddingRight = UDim.new(0, Spacing.XS), PaddingBottom = UDim.new(0, Spacing.XS) }),
-})
-
-local tapeRow = box({ Name = "TitleRow", LayoutOrder = 1, Size = UDim2.fromScale(1, 0.16), ZIndex = 3, Parent = stack })
-local titleLabel = Theme.Text({
-	Name = "MachineName",
-	Font = "SemiBold",
-	TextSize = "Body",
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, Spacing.S, 1, 0),
-	Size = UDim2.fromScale(0.6, 1),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Parent = tapeRow,
-})
-Theme.TextShadow(titleLabel)
-
-local panel = Theme.Panel({
-	Name = "Panel",
-	LayoutOrder = 2,
-	Size = UDim2.fromScale(1, 0.64),
-	ZIndex = 2,
-	Parent = stack,
-}, {
-	Theme.Pad("M"),
-	Theme.List(Horizontal, "S", Left),
-})
-
-local noteRow = box({ Name = "NoteRow", LayoutOrder = 3, Size = UDim2.fromScale(1, 0.12), Parent = stack },
-	{ New("UIPadding", { PaddingLeft = UDim.new(0, Spacing.L) }) })
-local noteLabel = Theme.Text({
-	Name = "CoachNote",
-	Font = "Regular",
-	TextSize = "Small",
-	TextColor3 = Colors.Muted,
-	Size = UDim2.fromScale(0.85, 1),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Parent = noteRow,
-})
-Theme.TextShadow(noteLabel)
-
----------------------------------------------------------------- weight selector
-local weightSection = box({ Name = "Weight", LayoutOrder = 1, Size = UDim2.fromScale(0.34, 1), Parent = panel },
-	{ Theme.List(Horizontal, "S") })
-
--- (each - / + sits in a same-size holder in the row, 10 px lower than the row would put it: owner, 9 Oct)
-local function stepButton(name, order, icon)
-	local holder = box({ Name = name .. "Slot", LayoutOrder = order, Size = UDim2.fromScale(1, 0.56), Parent = weightSection }, {
-		Theme.Aspect(1, Enum.DominantAxis.Height),
-		Theme.Limit(Vector2.new(Theme.MinTouch, Theme.MinTouch), Vector2.new(math.huge, math.huge)),
-	})
-	return Theme.Button("Secondary", { Name = name, Position = UDim2.fromOffset(0, 10), Size = UDim2.fromScale(1, 1), Parent = holder }, {
-		Theme.Pad("M"),
-		icon,
-	})
-end
-local minusButton = stepButton("Minus", 1, Icons.Minus(Colors.Text))
-local weightColumn = box({ LayoutOrder = 2, Size = UDim2.fromScale(0.38, 1), Parent = weightSection }, { Theme.List(Vertical, "XS") })
-local plusButton = stepButton("Plus", 3, Icons.Plus(Colors.Text))
--- MAX (owner, 9 Oct): buys every next plate your level and coins allow, then picks the heaviest you can lift. Directly on
--- top of the + button, in line with it: the same left edge and width, 1/3 of its height, a 3 px gap, a slight yellow glow, a yellow background
--- (the + button's transparency) with white text (owner's layout). It sits in the + button's holder (the button is 10 px
--- down in it), sized and placed in scale so it lines up exactly. (No new top-level local: this script is at Luau's
--- 200-local limit; wired up below by name.)
-do
-	local MAX_GAP, MAX_SHARE = 3, 1 / 3
-	local maxButton = Theme.Button("Secondary", {
-		Name = "Max",
-		-- bottom edge MAX_GAP above the + button's top (10 px into the holder)
-		Position = UDim2.new(0, 0, -MAX_SHARE, 10 - MAX_GAP),
-		Size = UDim2.fromScale(1, MAX_SHARE),
-		ZIndex = 4,
-		Parent = plusButton.Parent,
-	})
-	-- yellow at the same see-through amount as the + button (Theme.Alpha.Panel)
-	maxButton.BackgroundColor3 = Theme.Bumper.Yellow.Fill
-	maxButton.BackgroundTransparency = Theme.Alpha.Panel
-	-- a slight yellow glow (owner, 9 Oct): its border in yellow, and a soft halo of stacked faint yellow strokes, wider and
-	-- fainter outward, on see-through copies of its shape behind it (static: no per-frame cost)
-	-- (the glow: the bumper yellow 10% toward white, a soft yellow: owner, 9 Oct)
-	local yellow = Theme.Bumper.Yellow.Fill:Lerp(Color3.new(1, 1, 1), 0.1)
-	local border = maxButton:FindFirstChildOfClass("UIStroke")
-	if border then border.Color, border.Transparency = yellow, 0.35 end
-	local corner = maxButton:FindFirstChildOfClass("UICorner")
-	for _, ring in ipairs({ { 2, 0.72 }, { 4, 0.86 }, { 7, 0.94 } }) do
-		local halo = New("Frame", {
-			Name = "MaxGlow",
-			BackgroundTransparency = 1,
-			Position = maxButton.Position,
-			Size = maxButton.Size,
-			ZIndex = 3,
-			Parent = maxButton.Parent,
-		}, { New("UIStroke", { Color = yellow, Thickness = ring[1], Transparency = ring[2] }) })
-		if corner then corner:Clone().Parent = halo end
-	end
-	local maxText = Theme.Text({ Text = "MAX", Font = "SemiBold", TextColor3 = Colors.Text,
-		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = maxButton })
-	Theme.TextShadow(maxText)
-	-- (whole-number text that fits the thin button)
-	local function fit() maxText.TextSize = math.clamp(math.floor(maxButton.AbsoluteSize.Y) - 2, 6, 14) end
-	maxButton:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
-	fit()
-end
-
-local weightNumber = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 0.56), Parent = weightColumn })
-local tierLabel = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.24), Parent = weightColumn })
-
----------------------------------------------------------------- barbell + muscles / unlock
-local barSection = box({ Name = "Barbell", LayoutOrder = 2, Size = UDim2.fromScale(0.25, 1), Parent = panel },
-	{ Theme.List(Vertical, "XS") })
-local barbell = box({ Name = "Graphic", LayoutOrder = 1, Size = UDim2.fromScale(1, 0.4), Parent = barSection })
-local barInfo = box({ Name = "Info", LayoutOrder = 2, Size = UDim2.fromScale(1, 0.56), Parent = barSection })
-
-local musclesLabel = Theme.Text({
-	Font = "Regular",
-	TextSize = "Small",
-	TextColor3 = Colors.Muted,
-	Size = UDim2.fromScale(1, 1),
-	TextWrapped = true,
-	Parent = barInfo,
-})
-local needsLabel = Theme.Text({
-	Font = "Regular",
-	TextSize = "Small",
-	TextColor3 = Colors.NeedsWork,
-	Size = UDim2.fromScale(1, 1),
-	TextWrapped = true,
-	Visible = false,
-	Parent = barInfo,
-})
-local unlockButton = Theme.Button("Primary", {
-	Name = "Unlock",
-	Size = UDim2.fromScale(1, 1),
-	Visible = false,
-	Parent = barInfo,
-}, {
-	Theme.Limit(Vector2.new(0, Theme.MinTouch), Vector2.new(math.huge, math.huge)),
-	Theme.List(Horizontal, "XS"),
-	Theme.Pad("S"),
-})
-local unlockText = Theme.Text({ LayoutOrder = 1, Text = "Unlock", Font = "SemiBold", TextSize = "Body", AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), Parent = unlockButton })
-local unlockIcon = iconSlot(2, Icons.Plate(Colors.Text))
-unlockIcon.Parent = unlockButton
-local costLabel = Theme.Text({ LayoutOrder = 3, Font = "SemiBold", TextSize = "Body", AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), Parent = unlockButton })
-
-local barPlates = {} -- plate frames in the HUD barbell (for the heavy-rep jiggle)
-
--- Side view of a loaded barbell; each plate in its weight's color (Machines.Plates).
+-- Side view of the loaded bar; each plate in its weight's color (Machines.Plates), heaviest inside.
 local function drawBarbell(tier)
-	barbell:ClearAllChildren()
-	table.clear(barPlates)
-	Theme.List(Horizontal, nil).Parent = barbell
-	local order = 0
-	local function piece(width, height, color, extra)
-		order += 1
-		return box({ LayoutOrder = order, Size = UDim2.fromScale(width, height), BackgroundTransparency = 0, BackgroundColor3 = color, Parent = barbell }, extra)
+	local plates = {}
+	for _, lb in ipairs(tier.plates) do
+		local spec = Machines.Plates[lb]
+		local bumper = Theme.Bumper[spec and spec.color or "White"] or Theme.Bumper.White
+		table.insert(plates, { color = bumper.Fill, height = spec and spec.diameter / 2.3 or 0.6 })
 	end
-	local function plates(list)
-		for _, lb in ipairs(list) do
-			local spec = Machines.Plates[lb]
-			local bumper = Theme.Bumper[spec and spec.color or "White"] or Theme.Bumper.White
-			local height = spec and spec.diameter / 2.3 * 0.95 or 0.6
-			table.insert(barPlates, piece(0.05, height, bumper.Fill, { Theme.Round("Segment"), Theme.Stroke(bumper.Rim, Theme.IconStroke) }))
-		end
-	end
-	local reversed = {}
-	for i = #tier.plates, 1, -1 do table.insert(reversed, tier.plates[i]) end
-
-	piece(0.06, 0.1, Colors.Muted)   -- sleeve end
-	plates(reversed)
-	piece(0.025, 0.36, Colors.Muted) -- collar
-	local shaft = piece(0, 0.07, Colors.Muted)
-	New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill, Parent = shaft })
-	piece(0.025, 0.36, Colors.Muted)
-	plates(tier.plates)
-	piece(0.06, 0.1, Colors.Muted)
+	hud.drawBarbell(plates)
 end
-
----------------------------------------------------------------- reps + stamina
-local staminaSection = box({ Name = "Stamina", LayoutOrder = 3, Size = UDim2.fromScale(0.22, 1), Parent = panel },
-	{ Theme.List(Vertical, "XS", Left) })
-local repsLabel = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 0.3), TextXAlignment = Enum.TextXAlignment.Left, Parent = staminaSection })
-local repsScale = New("UIScale", { Parent = repsLabel })
-Theme.Text({ LayoutOrder = 2, Text = "Stamina", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 0.26), TextXAlignment = Enum.TextXAlignment.Left, Parent = staminaSection })
-local segmentRow = box({ LayoutOrder = 3, Size = UDim2.fromScale(1, 0.32), Parent = staminaSection }, { Theme.List(Horizontal, "XS", Left) })
-local segmentBacks, segments = {}, {}
-for i = 1, STAMINA_SEGMENTS do
-	segmentBacks[i] = box({ LayoutOrder = i, Size = UDim2.fromScale(0, 1), BackgroundTransparency = SEGMENT_BACK, BackgroundColor3 = Colors.Text, Parent = segmentRow },
-		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
-	segments[i] = box({ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Colors.Text, Parent = segmentBacks[i] },
-		{ Theme.Round("Segment") })
-end
-
----------------------------------------------------------------- coins + exit
-local endSection = box({ Name = "End", LayoutOrder = 4, Size = UDim2.fromScale(0.13, 1), Parent = panel },
-	{ Theme.List(Vertical, "S", Right) })
-local coinRow = box({ LayoutOrder = 1, Size = UDim2.fromScale(1, 0.3), Parent = endSection }, { Theme.List(Horizontal, "XS", Right) })
-iconSlot(1, Icons.Plate(), 0.6).Parent = coinRow
-local coinLabel = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(0.6, 1), TextXAlignment = Enum.TextXAlignment.Right, Parent = coinRow })
-local exitButton = Theme.Button("Secondary", { Name = "Exit", LayoutOrder = 2, Size = UDim2.fromScale(1, 0.5), Parent = endSection }, {
-	Theme.Limit(Vector2.new(Theme.MinTouch, Theme.MinTouch), Vector2.new(math.huge, math.huge)),
-	Theme.Text({ Text = "Exit", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(0.8, 0.6), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) }),
-})
 
 ------------------------------------------------------------------------
 -- HUD state
@@ -1784,17 +1532,19 @@ local function staminaRatio()
 end
 
 local function refreshCoins()
-	coinLabel.Text = Muscles.FormatExp(ClientData.Get().coins)
+	-- (the coins show in the top bar now; the unlock button's price is refreshed by refreshTier)
 end
 
 local function staminaColor(ratio)
-	return ratio < STAMINA_LOW and Colors.NeedsWork or Colors.Text
+	return ratio < STAMINA_LOW and Colors.Red or Colors.Green
 end
 
 local function refreshStamina()
 	local ratio = staminaRatio()
 	local filled = ratio * STAMINA_SEGMENTS
 	local color = staminaColor(ratio)
+	hud.staminaPct.Text = math.floor(ratio * 100 + 0.5) .. "%"
+	hud.staminaPct.TextColor3 = ratio < STAMINA_LOW and Colors.NeedsWork or Colors.Text
 	for i, fill in ipairs(segments) do
 		Theme.Tween(fill, { Size = UDim2.fromScale(math.clamp(filled - (i - 1), 0, 1), 1), BackgroundColor3 = color }, Theme.Motion.PressTime * 2)
 	end
@@ -1809,7 +1559,7 @@ local function refreshStamina()
 end
 
 local function refreshReps()
-	repsLabel.Text = "Reps ×" .. (current and current.reps or 0)
+	repsLabel.Text = "x" .. (current and current.reps or 0)
 end
 
 local function bounceReps()
@@ -1834,32 +1584,9 @@ local function canUnlock(machine, tier)
 	return mainLevel(machine) >= tier.unlockLevel and ClientData.Get().coins >= tier.cost
 end
 
--- Recolor a line icon (lines are filled frames, outlines are strokes).
-local function tintIcon(icon, color)
-	for _, part in ipairs(icon:GetDescendants()) do
-		if part:IsA("UIStroke") then
-			part.Color = color
-		elseif part:IsA("Frame") and part.BackgroundTransparency < 1 then
-			part.BackgroundColor3 = color
-		end
-	end
-end
-
--- Unavailable step buttons keep their space so nothing shifts.
+-- Unavailable step buttons hide (their spot stays: the panel is laid out by position).
 local function setStepButton(button, shown)
-	button.BackgroundTransparency = shown and Theme.Alpha.Panel or 1
-	button.Active = shown
-	button:FindFirstChildOfClass("UIStroke").Enabled = shown
-	for _, child in ipairs(button:GetChildren()) do
-		if child:IsA("Frame") then child.Visible = shown end
-	end
-	-- the soft shadow (Theme.AddDepth) too, or a ghost outline stays where the button was
-	local depth = button:FindFirstChild("Depth")
-	if depth then
-		for _, shadow in ipairs(depth:GetChildren()) do
-			if shadow:IsA("Frame") then shadow.Visible = shown end
-		end
-	end
+	button.Visible = shown
 end
 
 local function refreshTier()
@@ -1876,23 +1603,24 @@ local function refreshTier()
 	local locked = viewTier > unlocked or not levelOk
 	weightNumber.Text = tier.label or tostring(tier.weight)
 	weightNumber.TextColor3 = locked and Colors.Muted or Colors.Text
-	tierLabel.Text = (if tier.unit then tier.unit .. " · " elseif tier.weight > 0 then "lb · " else "") .. "tier " .. viewTier .. " of " .. #machine.tiers
+	hud.weightUnit.Text = string.upper(tier.unit or (tier.weight > 0 and "lb" or ""))
+	hud.weightUnit.Visible = hud.weightUnit.Text ~= ""
+	hud.tierTag:FindFirstChild("Text").Text = "TIER " .. viewTier .. " / " .. #machine.tiers
 	setStepButton(minusButton, viewTier > 1)
 	setStepButton(plusButton, viewTier < maxView)
 	drawBarbell(tier)
 
-	musclesLabel.Visible = not locked
 	unlockButton.Visible = viewTier > unlocked and levelOk
 	needsLabel.Visible = not levelOk
+	hud.tierTag.Visible = not unlockButton.Visible and levelOk
 	if locked and levelOk then
 		-- Can't afford yet: faded button with gray text.
 		costLabel.Text = Muscles.FormatExp(tier.cost)
 		local affordable = canUnlock(machine, tier)
-		local ink = affordable and Colors.Text or Colors.Muted
-		unlockButton.BackgroundTransparency = affordable and Theme.Alpha.Primary or 0.92
+		local ink = affordable and Colors.Ink or Colors.Muted
+		Theme.SetButtonStyle(unlockButton, affordable and "Gold" or "Disabled")
 		unlockText.TextColor3 = ink
 		costLabel.TextColor3 = ink
-		tintIcon(unlockIcon, ink)
 	elseif not levelOk then
 		needsLabel.Text = "Needs " .. main.name .. " " .. Muscles.FormatExp(Muscles.Shown(tier.unlockLevel)) .. " exp"
 	end
@@ -1935,58 +1663,10 @@ end
 -- anywhere that isn't a button (phone), clicking or Space (PC) counts as a tap. Visible only on a machine.
 ------------------------------------------------------------------------
 local Pump = Gains.Pump
-local PUMP_SEGMENTS = 10
 local tryLift -- defined with the lifting code below
-
-local pumpBar = box({
-	Name = "PumpBar",
-	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -Spacing.S, 1, 0),
-	Size = UDim2.fromScale(0.46, 1),
-	ZIndex = 3,
-	Parent = tapeRow,
-}, { Theme.List(Horizontal, "S", Right, Enum.VerticalAlignment.Center) })
-local pumpLabel = Theme.Text({
-	LayoutOrder = 1,
-	Text = "Pump",
-	Font = "SemiBold",
-	TextSize = "Small",
-	Size = UDim2.new(0.34, 0, 1, 0),
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Parent = pumpBar,
-})
-Theme.TextShadow(pumpLabel)
--- a dark backing behind the segments; it gets a gold border that glows while PUMPED
-local pumpBack = box({
-	LayoutOrder = 2,
-	Size = UDim2.new(0.62, 0, 0, 14),
-	BackgroundTransparency = Theme.Alpha.Panel,
-	BackgroundColor3 = Colors.Panel,
-	Parent = pumpBar,
-}, { Theme.Round("Segment"), New("UIPadding", { PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }) })
-local pumpGlow = New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, Transparency = 1, Parent = pumpBack })
-local pumpRow = box({ Size = UDim2.fromScale(1, 1), Parent = pumpBack }, { Theme.List(Horizontal, "XS") })
-local pumpSegments = {}
-for i = 1, PUMP_SEGMENTS do
-	local back = box({ LayoutOrder = i, Size = UDim2.fromScale(0, 1), BackgroundTransparency = SEGMENT_BACK, BackgroundColor3 = Colors.Text, Parent = pumpRow },
-		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
-	pumpSegments[i] = box({ Size = UDim2.fromScale(0, 1), BackgroundTransparency = 0, BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
-end
-titleLabel.Size = UDim2.fromScale(0.5, 1) -- the machine name keeps the left half
-
--- one-time hint for players who haven't pumped yet ("Tap to pump"), just above the bar; saved once seen
-local pumpHint = Theme.Text({
-	Text = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) and "Tap to pump" or "Tap to pump (click or Space)",
-	Font = "SemiBold",
-	TextSize = "Small",
-	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -Spacing.S, 0, -Spacing.XS),
-	Size = UDim2.new(0.46, 0, 0, 18),
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Visible = false,
-	Parent = tapeRow,
-})
-Theme.TextShadow(pumpHint)
+-- (PUMP is the gold button above REP: MachineHud.setPump draws the meter)
+local pumpHint = hud.pumpHint
+pumpHint.Text = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) and "Tap to pump" or "Tap to pump (click or Space)"
 local hintTaps = 0
 local function hidePumpHint(save)
 	if not pumpHint.Visible then return end
@@ -2052,9 +1732,6 @@ local function refreshPump(now)
 			end
 		end
 		setPumpGlow(pumped)
-		pumpLabel.Text = pumped and "PUMPED  x2" or "Pump"
-		pumpLabel.TextColor3 = pumped and Colors.Gold or Colors.Text
-		pumpGlow.Transparency = pumped and 0.15 or 1
 	end
 	-- drain while not tapping (same rule as the server)
 	local from = math.max(pumpSettled, pumpLastTap + Pump.DrainDelay)
@@ -2062,16 +1739,9 @@ local function refreshPump(now)
 		pumpMeter = math.max(0, pumpMeter - Pump.DrainPerSecond * (now - from))
 	end
 	pumpSettled = now
-	local fill = pumped and (left / Pump.Duration) or pumpMeter
-	local color = pumped and Colors.Gold or Colors.Text
-	for i, segment in ipairs(pumpSegments) do
-		segment.Size = UDim2.fromScale(math.clamp(fill * PUMP_SEGMENTS - (i - 1), 0, 1), 1)
-		segment.BackgroundColor3 = color
-	end
+	hud.setPump(pumped and (left / Pump.Duration) or pumpMeter, pumped, left, now)
 	if pumped then
 		local pulse = 0.75 + 0.1 * math.sin(now * 8)
-		pumpLabel.Text = "PUMPED " .. math.ceil(left) .. "s"
-		pumpGlow.Transparency = 0.1 + 0.25 * (0.5 + 0.5 * math.sin(now * 6))
 		for _, glow in ipairs(glows) do glow.FillTransparency = pulse end
 	end
 end
@@ -2089,13 +1759,12 @@ local function registerTap()
 		pumpMeter = math.min(1, pumpMeter + 1 / Pump.TapsToFill)
 	end
 	Remotes.MachineAction:FireServer("Tap")
-	-- the button breathes with every tap
-	pumpLabel.TextSize = Theme.TextSize.Small + 2
+	-- the PUMP button breathes with every tap
+	hud.tapPop()
 	if pumpHint.Visible then
 		hintTaps += 1
 		if hintTaps >= 3 then hidePumpHint(true) end
 	end
-	Theme.Tween(pumpLabel, { TextSize = Theme.TextSize.Small }, Theme.Motion.PressTime * 2)
 end
 
 -- the server's meter wins when they drift (e.g. taps lost on a slow connection)
@@ -2111,14 +1780,14 @@ local levelFlash = Theme.Text({
 	Name = "LevelFlash",
 	Text = "",
 	Font = "SemiBold",
-	TextSize = "Large",
+	TextSize = 18,
 	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -Spacing.S, 0, -24), -- above the pump hint
-	Size = UDim2.new(0.5, 0, 0, 28),
+	Position = UDim2.new(1, -4, 1, 0), -- just above the panel, right
+	Size = UDim2.new(0.5, 0, 0, 24),
 	TextXAlignment = Enum.TextXAlignment.Right,
 	TextTransparency = 1,
 	ZIndex = 4,
-	Parent = tapeRow,
+	Parent = hud.flashSlot,
 })
 local levelFlashStroke = Theme.TextShadow(levelFlash)
 local levelFlashScale = New("UIScale", { Parent = levelFlash })
@@ -2161,28 +1830,18 @@ local function flashLevel(name, level, text: string?)
 	sparkleBurst(player.Character, Colors.Text)
 end
 
-local prBanner = Theme.Panel({
-	Name = "PersonalRecord",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 84),
-	Size = UDim2.fromOffset(240, 58),
-	Visible = false,
-	ZIndex = 5,
-	Parent = gui,
-}, { Theme.List(Vertical, "XS"), Theme.Pad("S") })
-local prTitle = Theme.Text({ LayoutOrder = 1, Text = "NEW PR", Font = "SemiBold", TextSize = "Large", TextColor3 = Colors.Gold, Size = UDim2.new(1, 0, 0, 24), Parent = prBanner })
-local prInfo = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), Parent = prBanner })
+local prBanner, prTitle, prInfo = hud.prBanner, hud.prTitle, hud.prInfo
 local prToken = 0
 
 local function showPersonalRecord(weightText)
 	if not current then return end
 	prToken += 1
 	local token = prToken
-	prTitle.Text = "NEW PR"
-	prInfo.Text = current.machine.name .. " · " .. weightText
+	prTitle.Text = "NEW PERSONAL RECORD"
+	prInfo.Text = string.upper(tostring(weightText)) .. " · " .. current.machine.name
 	prBanner.Visible = true
-	prBanner.Position = UDim2.new(0.5, 0, 0, 60)
-	Theme.Tween(prBanner, { Position = UDim2.new(0.5, 0, 0, 84) }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
+	prBanner.Position = UDim2.new(0.5, 0, 0, 36)
+	Theme.Tween(prBanner, { Position = UDim2.new(0.5, 0, 0, 52) }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
 	Theme.Fade(prBanner, true)
 	Audio.Play2D("PersonalRecord")
 	fovPunch(FEEL.FovPunchBig)
@@ -2479,6 +2138,34 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
+-- REP and PUMP (mockup 02): a press counts at once (not on release), like a tap on the world.
+hud.repButton.MouseButton1Down:Connect(function() tryLift() end)
+hud.pumpButton.MouseButton1Down:Connect(function() tryLift() end)
+
+-- AUTO (mockups 02 / 03): Auto Lift owners switch it on / off (green AUTO ON); others see it locked (opens the shop's
+-- passes) while the shop exists; hidden when nothing is for sale.
+do
+	local Monetization = require(Shared.Config.Monetization)
+	local function refreshAuto()
+		if player:GetAttribute("Pass_AutoLift") == true then
+			hud.setAuto(player:GetAttribute("AutoLiftOn") and "on" or "off")
+		else
+			hud.setAuto(Monetization.AnyConfigured() and "locked" or "hidden")
+		end
+	end
+	hud.autoButton.Activated:Connect(function()
+		if player:GetAttribute("Pass_AutoLift") == true then
+			-- a local attribute: only this client reads it
+			player:SetAttribute("AutoLiftOn", not player:GetAttribute("AutoLiftOn"))
+		elseif Monetization.AnyConfigured() then
+			UIBus.OpenShop:Fire("Passes")
+		end
+	end)
+	player:GetAttributeChangedSignal("Pass_AutoLift"):Connect(refreshAuto)
+	player:GetAttributeChangedSignal("AutoLiftOn"):Connect(refreshAuto)
+	refreshAuto()
+end
+
 -- Auto Lift pass: while it's switched on, keep lifting (same path as a tap, so it looks and sounds the same).
 task.spawn(function()
 	while true do
@@ -2542,8 +2229,7 @@ local function open(model)
 		repEnd = os.clock() }
 	pumpMeter, pumpLastTap, pumpSettled = 0, 0, os.clock()
 	wasPumped = false
-	pumpLabel.Text, pumpLabel.TextColor3 = "Pump", Colors.Text
-	pumpGlow.Transparency = 1
+	hud.setPump(0, false, 0, os.clock())
 	bars.travel[model] = nil -- measure this lift's bar path fresh
 	-- the lifter never sees this machine's prompts (e.g. "Spot · Help them lift" on their own machine), only on this
 	-- client, so other players still get them; the server's next change after Exit replaces this local value
@@ -2562,6 +2248,12 @@ local function open(model)
 	lastStamina = nil
 
 	titleLabel.Text = machine.name
+	do -- the main muscle's group tag ("CHEST"); none on cardio
+		local muscle = Muscles.ById[machine.muscles[1].id]
+		local group = muscle and Muscles.GroupById[muscle.group]
+		hud.groupTag.Visible = group ~= nil and machine.trains ~= "Stamina"
+		if group then hud.groupTag:FindFirstChild("Text").Text = string.upper(group.name) end
+	end
 	local names = {}
 	for _, entry in ipairs(Machines.SharePercents(machine)) do
 		table.insert(names, Muscles.ById[entry.id].name .. " " .. entry.pct .. "%")
