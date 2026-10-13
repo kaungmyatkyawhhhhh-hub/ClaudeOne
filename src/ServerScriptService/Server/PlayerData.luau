@@ -671,11 +671,11 @@ function PlayerData.SetSettings(player, settings)
 	end
 	if settings.pumpHintSeen == true then new.pumpHintSeen = true end -- one-way: the "Tap to pump" hint never comes back
 	-- (UI v2, 13 Oct) the left menu folded away; Settings toggles: tutorial / coach hints, other players' scream sounds and
-	-- auras, low graphics
+	-- auras, low graphics; (final kit, 14 Oct) reduce motion: the UI's looping pulses / shines stop
 	if type(settings.menuCollapsed) == "boolean" then new.menuCollapsed = settings.menuCollapsed end
 	-- the newest update notes the player opened (main menu UPDATES red dot; a short stamp like "14 Oct")
 	if type(settings.updatesSeen) == "string" and #settings.updatesSeen <= 24 then new.updatesSeen = settings.updatesSeen end
-	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "lowGraphics" }) do
+	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "lowGraphics", "reduceMotion" }) do
 		if ON_OFF[settings[key]] then new[key] = settings[key] end
 	end
 	data.settings = new

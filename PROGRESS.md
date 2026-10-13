@@ -43,6 +43,7 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   tiny.", the red PLAY CTA with a pulse and one shine, gold SHOP + quiet UPDATES with the red news dot, a divider, the
   player row: headshot, name, "Level 46 · 7'0"", coins); bottom right a NEW tag with the newest update's name (opens the
   update notes). Loading screen unchanged.
+- Settings: new "Reduce Motion" row (settings.reduceMotion On/Off): stops the UI's looping pulses and shines.
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier

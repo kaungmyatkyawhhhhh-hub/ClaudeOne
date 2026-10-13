@@ -39,7 +39,7 @@ local grid = New("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UD
 })
 
 local values = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On", spotRequests = "On",
-	hints = "On", otherScreams = "On", lowGraphics = "Off" }
+	hints = "On", otherScreams = "On", lowGraphics = "Off", reduceMotion = "Off" }
 
 local function save(changes)
 	Remotes.PlayerAction:FireServer("SetSettings", changes)
@@ -115,6 +115,7 @@ row(6, "gainNumbers", "Gain Numbers", "zap", { "On", "Minimal", "Off" })
 row(7, "repFlash", "Rep Flash", "heart-pulse", ONOFF)
 row(8, "expPopups", "EXP Popups", "sparkles", ONOFF)
 row(9, "spotRequests", "Spot Requests", "hand", ONOFF)
+row(10, "reduceMotion", "Reduce Motion", "timer", { "Off", "On" }) -- (stops the UI's looping pulses and shines; Theme.ReducedMotion)
 
 local function refreshAll()
 	for _, show in pairs(rows) do show() end
@@ -157,6 +158,7 @@ task.spawn(function()
 	values.hints = if settings.hints == "Off" then "Off" else "On"
 	values.otherScreams = if settings.otherScreams == "Off" then "Off" else "On"
 	values.lowGraphics = if settings.lowGraphics == "On" then "On" else "Off"
+	values.reduceMotion = if settings.reduceMotion == "On" then "On" else "Off"
 	refreshAll()
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.OthersMuted = values.otherScreams == "Off"
