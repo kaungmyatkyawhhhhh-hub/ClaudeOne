@@ -95,9 +95,10 @@ return {
 	-- list as you like, separated by commas: they play one after another in that order, then start again from the first.
 	-- e.g. Starter = { 86451874359343, 131532099124744, 139266399633943 },
 	AreaMusic = {
-		Starter = { 86451874359343 }, -- the starter gym
-		Pro = { 118959016267248 },    -- the pro gym
-		Beach = { 1837324500 },       -- the beach, beach gym, posing stage, skate park
-		Town = { 1840007392 },        -- APM 'Maypole Summer' (d): the streets, plaza and shops
+		-- (owner, 14 Oct: several songs in every area: each area's own song first, then the owner's other tracks)
+		Starter = { 86451874359343, 131532099124744, 139266399633943, 113417603188158 }, -- the starter gym
+		Pro = { 118959016267248, 113417603188158, 139266399633943, 131532099124744 },    -- the pro gym
+		Beach = { 1837324500, 139266399633943, 131532099124744, 86451874359343 },         -- the beach, beach gym, posing stage, skate park
+		Town = { 1840007392, 113417603188158, 118959016267248, 131532099124744 },         -- the streets, plaza and shops
 	},
 }
