@@ -21,6 +21,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   gold bar, bonus coins, CLAIM, "Resets in"). The small calendar left the Daily tab (Streak has it). Claims fire
   Kit.CoinBurst (coins fly to the counter + a gold sparkle burst). Window 620 wide. Tested a real claim (chest reps).
   Also: owner's music edit synced from Studio (each area back to one song, the owner's choice).
+- 3. Coaches (mockup 06; the Trainers window, title COACHES, coins pill in the header): portrait in a dark box, the perk
+  big ("+5%" + small "EXP"); coaching = tile 7% bigger, gold frame + glow, gold perk, "COACHING"; owned = quiet EQUIP;
+  locked = gray veil + lock + coin price pill. Bottom: "Tap a coach to hire or swap · 1 / 1 active" + gold
+  "R$ 99 · 2ND SLOT" CTA (pulses). Tested on a FreshPlayer save with TestCoins (hired two, one coaching).
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier
