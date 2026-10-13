@@ -78,8 +78,29 @@ function Audio.Play2D(name, opts)
 end
 Audio.PlayUI = Audio.Play2D
 
+-- Settings "Other Players' Sounds" Off (13 Oct): sounds on another player's character or on a machine someone else is
+-- lifting on stay quiet on this client.
+Audio.OthersMuted = false
+local function othersSound(where): boolean
+	local Players = game:GetService("Players")
+	local me = Players.LocalPlayer
+	if not me then return false end
+	local node = where
+	while node and node ~= Workspace do
+		if node:IsA("Model") then
+			local owner = Players:GetPlayerFromCharacter(node)
+			if owner then return owner ~= me end
+			local userId = node:GetAttribute("UserId")
+			if type(userId) == "number" then return userId ~= me.UserId end
+		end
+		node = node.Parent
+	end
+	return false
+end
+
 -- where: a BasePart, an Attachment or a Vector3
 function Audio.PlayAt(name, where, opts)
+	if Audio.OthersMuted and typeof(where) == "Instance" and othersSound(where) then return nil end
 	if typeof(where) == "Vector3" then
 		local attachment = Instance.new("Attachment")
 		attachment.WorldPosition = where

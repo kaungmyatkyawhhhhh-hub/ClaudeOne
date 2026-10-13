@@ -56,4 +56,17 @@ function Pieces.ShopIcon(name: string, props: { [string]: any }?): ImageLabel
 	return set(image, props)
 end
 
+-- (client) load every icon once at the start, so a panel never opens with blank icons while they download
+if game:GetService("RunService"):IsClient() then
+	task.spawn(function()
+		local list = {}
+		for _, id in pairs(UI.Icons) do
+			local image = Instance.new("ImageLabel")
+			image.Image = id
+			table.insert(list, image)
+		end
+		pcall(function() game:GetService("ContentProvider"):PreloadAsync(list) end)
+	end)
+end
+
 return Pieces

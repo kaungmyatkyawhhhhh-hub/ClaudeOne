@@ -46,6 +46,13 @@ in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minute
    tops gets them removed and their coins refunded once (CosmeticService refundFits, toast "Coins refunded").
    Screenshots: fit_bug_before_tee, fit_fix_level0_front / back, fit_fix_half_hoodie_front / back, fit_fix_mass_front / back.
 
+**Part 2, panels** (each a Kit.Modal: tabs above, title + red icon, red X, blur):
+- 10 Settings (done): 2 columns of rows, gold icon + name + ON (green) / OFF (gray): Music, Sound Effects, Others' Sounds
+  (the mockup's "Other Screams": no screams in this game; mutes other players' lift sounds), Low Graphics (shadows and
+  bloom / depth of field / sun rays off on this device), Tutorial Hints (= the coach hints toggle), Gain Numbers
+  (On / Minimal / Off), Rep Flash, EXP Popups, Spot Requests. The mockup's "Other Auras" is left out (no auras yet).
+  Screenshot: ui_compare_v2/10_settings_phone. Icons now preload when the game starts.
+
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
 `Config/Features.Wardrobe = false`), "<" fold saved per player (settings.menuCollapsed), auto-folds while lifting, red
