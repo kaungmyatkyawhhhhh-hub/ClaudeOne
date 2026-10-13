@@ -18,6 +18,8 @@ local BoostService = require(script.Parent.BoostService)
 local SocialService = require(script.Parent.SocialService)
 local LegendService = require(script.Parent.LegendService)
 local SeasonService = require(script.Parent.SeasonService)
+local GameEvents = require(script.Parent.GameEvents)
+local Muscles = require(Config.Muscles)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme) -- bumper plate colors
 
 -- Bars sit loaded when nobody is using them (a mix, so the gym shows every plate color).
@@ -489,6 +491,13 @@ local function lift(player)
 	SocialService.OnRep(player, machine.id)
 	LegendService.OnRep(player, machine.id)
 	SeasonService.OnRep(player)
+	-- (daily quests count these: a rep by its main muscle's group, or the distance run)
+	if tier.unit == "mph" then
+		GameEvents.Fire("CardioMeters", player, tier.weight * Machines.Cardio.MetersPerMph)
+	else
+		local main = Muscles.ById[machine.muscles[1].id]
+		GameEvents.Fire("Rep", player, 1, { machineId = machine.id, group = main and main.group })
+	end
 
 	-- personal record: the heaviest weight ever lifted on this machine
 	local pr = nil

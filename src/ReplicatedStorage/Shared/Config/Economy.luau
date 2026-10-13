@@ -1,15 +1,13 @@
--- Coins outside of reps: daily streak, offline coins, re-racking loose plates, DNA tokens at the front desk, and
+-- Coins outside of reps: the login streak calendar, offline coins, re-racking loose plates, DNA tokens at the front desk, and
 -- rush hour. All paid out on the server (RetentionService). Tune the numbers here.
 local Economy = {}
 
--- Daily streak: claimed automatically on the first join of each UTC day.
--- Missing days only drops the streak a few days back (not to zero).
-Economy.Daily = {
-	BaseCoins = 20,
-	CoinsPerDay = 5,        -- + this per streak day
-	MaxStreakBonus = 30,    -- streak days counted for coins
-	DropPerMissedDay = 3,   -- each missed day takes this many days off the streak
-	TokenEvery = 7,         -- a DNA token on every 7th streak day
+-- Login streak (owner's feature run, task 2; replaces the old automatic streak): a 7-day calendar. Join each UTC day and
+-- press Claim for that day's reward (a popup on join, or the Daily pill). Missing a day starts again at day 1; after day 7
+-- the calendar starts over. Day 7 is the big one: coins, a DNA token and (the first time) the "Dedicated" title.
+Economy.Login = {
+	Coins = { 25, 35, 50, 70, 90, 120, 300 }, -- day 1..7
+	Day7DnaTokens = 1,
 }
 
 -- Offline coins: for time away, capped.
@@ -47,17 +45,19 @@ function Economy.Day(now)
 	return math.floor((now or os.time()) / 86400)
 end
 
--- Streak after a join on `today`, given the last claimed day and streak. Returns newStreak, claimedToday.
-function Economy.NextStreak(lastDay, streak, today)
-	if lastDay == today then return streak, false end
-	if lastDay == today - 1 then return streak + 1, true end
-	if lastDay <= 0 then return 1, true end
-	local missed = today - lastDay - 1
-	return math.max(0, streak - missed * Economy.Daily.DropPerMissedDay) + 1, true
+-- The calendar day to claim today (1..7), or nil when today's reward is already claimed. lastDay = the day number of the
+-- last claim (0 = never), calendarDay = the calendar day claimed then.
+function Economy.LoginDay(lastDay, calendarDay, today)
+	if lastDay == today then return nil end
+	if lastDay == today - 1 then return (calendarDay or 0) % #Economy.Login.Coins + 1 end
+	return 1 -- first claim ever, or a missed day: back to day 1
 end
 
-function Economy.StreakCoins(streak)
-	return Economy.Daily.BaseCoins + Economy.Daily.CoinsPerDay * math.min(streak, Economy.Daily.MaxStreakBonus)
+-- The reward for a calendar day: coins, DNA tokens.
+function Economy.LoginReward(calendarDay)
+	local coins = Economy.Login.Coins[calendarDay] or Economy.Login.Coins[1]
+	local tokens = calendarDay == #Economy.Login.Coins and Economy.Login.Day7DnaTokens or 0
+	return coins, tokens
 end
 
 function Economy.OfflineCoins(secondsAway)

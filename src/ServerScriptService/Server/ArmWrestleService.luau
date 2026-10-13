@@ -12,6 +12,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 local TitleService = require(script.Parent.TitleService)
 local NpcService = require(script.Parent.NpcService)
+local GameEvents = require(script.Parent.GameEvents)
 
 local Remotes = ReplicatedStorage.Remotes
 local Config = Social.ArmWrestle
@@ -160,6 +161,7 @@ local function finish(winnerIndex, reason)
 				if data then
 					PlayerData.SetStat(player, "armWins", (data.stats.armWins or 0) + 1)
 					TitleService.Check(player)
+					GameEvents.Fire("ArmWrestleWon", player, 1, { practice = practice })
 				end
 			end
 			remote:FireClient(player, "State", { state = "result", won = won, draw = winnerIndex == nil, coins = coins, reason = reason })

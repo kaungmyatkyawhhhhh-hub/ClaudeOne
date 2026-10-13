@@ -23,6 +23,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 local BoostService = require(script.Parent.BoostService)
 local TitleService = require(script.Parent.TitleService)
+local GameEvents = require(script.Parent.GameEvents)
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -272,6 +273,7 @@ function SpotService.OnRep(lifter)
 		if data then
 			record.reps += 1
 			record.totalReps = (record.totalReps or 0) + 1
+			if record.totalReps == 1 then GameEvents.Fire("Spot", player, 1) end -- (a spot counts once the lifter did a rep)
 			PlayerData.SetStat(player, "spotReps", (data.stats.spotReps or 0) + 1)
 			local clicking = now < record.clickingUntil
 			local paid = nil

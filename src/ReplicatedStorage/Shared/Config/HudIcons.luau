@@ -4,7 +4,7 @@
 --   image   YOUR OWN icon: put an "rbxassetid://<id>" here and that tile/pill uses it instead of the built-in icon
 -- Leave `image` empty to keep the built-in icons. The built-in icons are simple white glyphs built from UI shapes, so
 -- these are the ones to replace with your own art later: Stats, Muscles, Titles, Genetics, Wardrobe, Poses, Crew,
--- Store (tiles) and Coins, Quests, Daily, Settings (pills).
+-- Quests, Store (tiles) and Coins, Quests, Daily, Settings (pills).
 local HudIcons = {}
 
 HudIcons.Tiles = {
@@ -15,6 +15,7 @@ HudIcons.Tiles = {
 	Wardrobe = { accent = Color3.fromHex("#9B6BDF"), icon = "Hanger", image = "" },
 	Emotes = { accent = Color3.fromHex("#E96BA8"), icon = "Pose", image = "" },
 	Crew = { accent = Color3.fromHex("#4C8DE0"), icon = "People", image = "" },
+	Quests = { accent = Color3.fromHex("#2FA8C8"), icon = "Quest", image = "" }, -- daily quests (DailyClient)
 	Store = { accent = Color3.fromHex("#5BBE5B"), icon = "Plate", image = "" }, -- hidden while monetization is OFF
 }
 HudIcons.DefaultAccent = Color3.fromHex("#8A8F98")

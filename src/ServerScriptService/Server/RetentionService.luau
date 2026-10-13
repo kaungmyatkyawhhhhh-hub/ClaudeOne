@@ -1,4 +1,5 @@
--- Coins outside of reps (numbers in Config.Economy): the daily streak and offline coins (paid once per join),
+-- Coins outside of reps (numbers in Config.Economy): offline coins (paid once per join; the login streak calendar is
+-- DailyService),
 -- loose plates to re-rack, DNA tokens for coins at the front desk, and rush hour every 30 minutes.
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -23,24 +24,15 @@ local function event(player, kind, info)
 end
 
 ------------------------------------------------------------------------
--- Daily streak + offline coins (once per join)
+-- Offline coins (once per join)
 ------------------------------------------------------------------------
 local function welcome(player, data)
 	if welcomed[player] then return end
 	welcomed[player] = true
 	local now = os.time()
-	local today = Economy.Day(now)
 
-	local daily = data.daily
-	local streak, claimed = Economy.NextStreak(daily.lastDay, daily.streak, today)
+	-- (the login streak is claimed by hand from the calendar now: DailyService)
 	local streakCoins, streakToken = 0, false
-	if claimed then
-		streakCoins = Economy.StreakCoins(streak)
-		streakToken = streak % Economy.Daily.TokenEvery == 0
-		PlayerData.SetTable(player, "daily", { lastDay = today, streak = streak, best = math.max(daily.best or 0, streak) })
-		PlayerData.AddCoins(player, streakCoins)
-		if streakToken then PlayerData.AddDnaTokens(player, 1) end
-	end
 
 	local offlineCoins = 0
 	local lastSeen = data.meta.lastSeen or 0

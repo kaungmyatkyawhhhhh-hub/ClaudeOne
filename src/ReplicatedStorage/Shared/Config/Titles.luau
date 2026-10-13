@@ -67,6 +67,8 @@ Titles.List = {
 		description = "Win 10 arm wrestling matches.", condition = { type = "stat", stat = "armWins", min = 10 } },
 	{ id = "PosingChampion", name = "Posing Champion", rarity = "Epic", category = "Social",
 		description = "Win a posing competition on the beach stage.", condition = { type = "stat", stat = "posingWins", min = 1 } },
+	{ id = "Dedicated", name = "Dedicated", rarity = "Rare", category = "Activity",
+		description = "Claim all 7 days of the login calendar in a row.", condition = { type = "stat", stat = "loginWeeks", min = 1 } },
 	{ id = "NoDaysOff", name = "No Days Off", rarity = "Secret", category = "Secret",
 		description = "Do 500 reps in one visit.", condition = { type = "stat", stat = "sessionReps", min = 500 } },
 }

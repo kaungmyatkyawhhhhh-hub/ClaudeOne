@@ -30,6 +30,27 @@ knows the bigger gyms, the beach and the town). Weak fits to listen to first: Cr
 - Screenshots: posing_countdown_banner_arrow, posing_3_contestants_score_cards, posing_vote_panel, posing_podium,
   posing_statue_champion.
 
+### Task 2: Daily quests + login streak (done, tested solo)
+- `Config/DailyQuests` (pool of 12, 3 a day, bonus 150, 1 swap a day), `Server/DailyService`, `DailyClient`. Quests
+  are picked per player per UTC day (reset 00:00 UTC; same list all day), at most one needing another player (spotting).
+  Progress from `GameEvents`: MachineService fires "Rep" (with the main muscle's group; the treadmill fires
+  "CardioMeters" instead), SpotService "Spot" (a session where the lifter did a rep), ArmWrestleService "ArmWrestleWon"
+  (practice opponents count), PosingCompService "PosingEntered". Types: reps, groupReps, groups (3 different), cardio,
+  spots, posing, armWins.
+- UI: a new **Quests** tile in the side menu (owner: "one button on the HUD side bar"; tile color in `Config/HudIcons`)
+  opens a panel beside the tiles: 3 quests with chunky bars, CLAIM +coins, SWAP (one a day, never swaps in a quest that
+  needs another player), "Claim all 3: +150". Coach Dex's quests and the top-bar Quests pill are unchanged.
+- **Login streak** replaces the old automatic streak (owner's rule: missing a day = back to day 1): `Config/Economy.Login`
+  (25 / 35 / 50 / 70 / 90 / 120 / 300 coins; day 7 + a DNA token + stat loginWeeks = title "Dedicated"; then it starts
+  over). Nothing is paid on join any more: the calendar card pops up after Play (after the genetics screen for new
+  players) with CLAIM; the top-bar Daily pill (moved from RetentionClient to DailyClient) opens it, a dot when unclaimed.
+  Old saves keep their `daily.lastDay`, so a player who played yesterday continues at day 1 of the new calendar.
+- Studio hook: `TestLoginDay` (n = today's claim is calendar day n).
+- Tested: day 1 popup + claim (+25), day 7 (300 coins, DNA token, Dedicated), chest reps counted to 50/50, claim
+  (+60), unfinished claim refused, swap (and the second swap refused); no errors. Not tested: two players (spot quest),
+  a real UTC midnight rollover (the 30 s check + the client's day check), phone emulator.
+- Screenshots: daily_quests_panel, streak_popup_day1, streak_popup_day7.
+
 ## Before that (13 Oct): soft shutdown
 - `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all
   servers" / "Migrate to latest update"), players get a small note ("The gym is updating..."), are teleported together into
