@@ -404,6 +404,7 @@ local function setBlur(on: boolean)
 		blur = Lighting:FindFirstChild("ModalBlur") or New("BlurEffect", { Name = "ModalBlur", Size = 0, Parent = Lighting })
 	end
 	Theme.Tween(blur, { Size = openModals > 0 and Kit.BlurSize or 0 }, Kit.OpenTime)
+	if Players.LocalPlayer then Players.LocalPlayer:SetAttribute("WindowOpen", openModals > 0) end -- (Notify hides the band)
 end
 Kit.SetBlur = setBlur
 

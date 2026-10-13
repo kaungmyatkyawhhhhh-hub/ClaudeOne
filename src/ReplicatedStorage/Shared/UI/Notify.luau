@@ -33,6 +33,7 @@ local held = nil -- toasts waiting while the genetics screen is up
 local hintToken = 0
 local tutorialLine = nil
 
+local applyBand -- (below)
 local function bandVisible()
 	return band ~= nil and band.Visible
 end
@@ -60,13 +61,20 @@ local function ensure()
 			VerticalAlignment = Enum.VerticalAlignment.Top }),
 	})
 	placeList()
+	Players.LocalPlayer:GetAttributeChangedSignal("WindowOpen"):Connect(applyBand)
+end
+
+-- (the band steps aside while a menu window is open, Kit.Modal sets the player's WindowOpen attribute, and comes back
+-- after it closes if its line is still current)
+function applyBand()
+	band.Visible = bandText.Text ~= "" and not Players.LocalPlayer:GetAttribute("WindowOpen")
+	placeList()
 end
 
 local function setBandText(text)
 	ensure()
-	band.Visible = text ~= nil and text ~= ""
 	bandText.Text = text or ""
-	placeList()
+	applyBand()
 end
 
 local function show(title, sub, icon, color)

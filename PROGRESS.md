@@ -55,6 +55,14 @@ in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minute
 - 08 Titles (done): tabs All / Owned, count "x / 36", 4-column scrolling grid of cards: rarity word in its color, name,
   EQUIP (green) / EQUIPPED (gold, gold outline) when owned, a lock when not (secret = "???"); tapping a locked card shows
   how to earn it in a toast. Screenshot: ui_compare_v2/08_titles_phone.
+- 05 Quests (done): one window for the Quests tile, the Quests pill, the Daily Reward pill and the Daily quests card.
+  Daily tab = today's 3 quests (blue icon, bar "0/40", coins, CLAIM / GO / DONE, the once-a-day swap button), the
+  "Complete all 3" gold bonus row, and the 7-day Daily Reward grid with CLAIM DAY N (today green, claimed ticked, later
+  days dimmed). Rewards tab = the 7 days big + the streak rules (the Daily Reward pill opens it). Achievements tab = the
+  Coach's quest chain (done / current with its bar / locked; after the chain his current repeat quest). GO closes the
+  window and puts where to go in the top band. The old login calendar card and the quest-tracker hide toggle are gone
+  (the Quests pill opens the window now; its badge counts quests ready to claim + a coach quest ready to hand in).
+  The tutorial band now steps aside while any window is open. Screenshots: ui_compare_v2/05_quests_*.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
