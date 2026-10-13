@@ -2,6 +2,12 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
+## LATEST (13 Oct): UI redesign with image pieces (owner's GYM_ARC_UI_redesign.md), in progress
+- **Asset ids:** all 85 images found in the Myanmar Builders Club group by exact name (35 pieces, 37 icons, 13 shop
+  icons), none missing; in `Config/UI` (Pieces with their 9-slice data from pieces.json, Icons, ShopIcons).
+- **Permission check:** a group piece (panel), icon (coin) and shop icon (pass_vip) all load in the user-owned place
+  (PreloadAsync: Success, IsLoaded true). No permission change needed. Screenshot: ui_assets_load_test.
+
 ## LATEST (13 Oct): new features run (owner's GYM_ARC_new_features.md): DONE, report
 
 **Not saved to Roblox yet.** Owner: File > Save to Roblox, then File > Download a Copy to
