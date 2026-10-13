@@ -363,11 +363,7 @@ end
 -- coins fly from the coins bar to the coins pill
 local function coinBurst(coins: number)
 	local from = Vector2.new(plates.AbsolutePosition.X + plates.AbsoluteSize.X / 2, plates.AbsolutePosition.Y)
-	local topBar = player.PlayerGui:FindFirstChild("TopBar")
-	local pill = topBar and topBar:FindFirstChild("Coins", true)
-	local to = if pill and pill:IsA("GuiObject") and pill.AbsoluteSize.X > 0
-		then Vector2.new(pill.AbsolutePosition.X + 22, pill.AbsolutePosition.Y + pill.AbsoluteSize.Y / 2)
-		else Vector2.new(60, 40)
+	local to = require(Shared.UI.TopBar).CoinsPosition() or Vector2.new(240, 30)
 	for i = 1, math.clamp(coins, 4, 8) do
 		local coin = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(from.X + (i - 4) * 12, from.Y),
 			Size = UDim2.fromOffset(14, 14), BackgroundColor3 = Colors.Gold, Parent = gui }, { New("UICorner", { CornerRadius = Theme.Corner.Round }) })

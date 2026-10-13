@@ -222,6 +222,16 @@ local judges = Theme.Panel({ Name = "Judges", AnchorPoint = Vector2.new(1, 0), P
 	Theme.List(Vertical, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
 })
 Kit.Text({ Name = "Title", LayoutOrder = 0, Text = "Judges", Font = "Title", TextSize = 17, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = judges })
+-- (everything up here starts just under Roblox's top bar, Kit.UnderTopbar)
+local function placeUnderTopbar()
+	local top = Kit.UnderTopbar(roundRoot)
+	header.Position = UDim2.new(0.5, 0, 0, top)
+	timer.Position = UDim2.new(0.5, 0, 0, top + 24)
+	poseName.Position = UDim2.new(0.5, 0, 0, top + 52)
+	judges.Position = UDim2.new(1, -10, 0, top)
+end
+Kit.OnTopbar(placeUnderTopbar)
+roundGui:GetPropertyChangedSignal("Enabled"):Connect(function() task.defer(placeUnderTopbar) end)
 local judgeRows = {}
 for i = 1, 3 do
 	local row = Kit.Card({ Name = "Row" .. i, LayoutOrder = i, Size = UDim2.new(1, 0, 0, 30), Parent = judges }, {})

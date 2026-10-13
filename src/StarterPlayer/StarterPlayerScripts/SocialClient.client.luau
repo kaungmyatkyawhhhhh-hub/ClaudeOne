@@ -45,6 +45,10 @@ local BAR_W = 480
 
 local top = New("Frame", { Name = "Top", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52),
 	Size = UDim2.fromOffset(BAR_W, 64), Parent = root })
+-- (just under Roblox's top bar, Kit.UnderTopbar)
+local function placeTop() top.Position = UDim2.new(0.5, 0, 0, Kit.UnderTopbar(root)) end
+Kit.OnTopbar(placeTop)
+gui:GetPropertyChangedSignal("Enabled"):Connect(function() task.defer(placeTop) end)
 Kit.Text({ Name = "You", Text = "YOU", Font = "Title", TextSize = 20, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0.35, 0, 0, 26),
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
 local themLabel = Kit.Text({ Name = "Them", Text = "", Font = "Title", TextSize = 20, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0),

@@ -1870,8 +1870,9 @@ local function showPersonalRecord(weightText)
 	prTitle.Text = "NEW PERSONAL RECORD"
 	prInfo.Text = string.upper(tostring(weightText)) .. " · " .. current.machine.name
 	prBanner.Visible = true
-	prBanner.Position = UDim2.new(0.5, 0, 0, 36)
-	Theme.Tween(prBanner, { Position = UDim2.new(0.5, 0, 0, 52) }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
+	local underTop = Kit.UnderTopbar(prBanner.Parent)
+	prBanner.Position = UDim2.new(0.5, 0, 0, underTop - 16)
+	Theme.Tween(prBanner, { Position = UDim2.new(0.5, 0, 0, underTop) }, Theme.Motion.Time * 1.4, Theme.Motion.Bounce)
 	Theme.Fade(prBanner, true)
 	Audio.Play2D("PersonalRecord")
 	fovPunch(FEEL.FovPunchBig)

@@ -41,7 +41,10 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   colored border), same size and gap everywhere, VERTICALLY CENTERED on the left (owner, 14 Oct; never above the top
   bar), the "<" on its right edge (centered too) folds it (remembered per player), it folds itself while
   lifting, red number badges (quests ready, new titles). The Wardrobe tile hides while Config/Features.Wardrobe is false.
-- Top bar: coins, height "6'4" / 7'0"", level on the left; Daily Reward, Quests and the gear on the right.
+- Top bar (owner, 14 Oct: TopbarPlus v3.4.0 by ForeverHD, `ReplicatedStorage.Packages.Icon`, unedited): icons on Roblox's
+  own top bar, the same height and line as Roblox's buttons. Left: coins (gold coin), height ("7'0" MAX" at the cap, folds
+  away first on narrow screens), level ("LVL 60", caption = progress to the next); right: Daily, Quests, the gear.
+  Anything under the top bar starts at GuiService.TopbarInset.Max.Y + 8 (`Kit.UnderTopbar`).
 - Toasts: small cards under the top bar (max 3, never over the HUD). Hints: one at a time in the top band, gone after 4 s.
 - Built through `Shared.UI.Theme` (colors, gradients, surfaces, buttons, fonts) and `Shared.UI.Kit` (Button, Tabs,
   Chip, Bar, Tag, Card, IconTile, GradeBadge, Toggle, Slider, Modal, Coin). Icons are `Config/UI.Icons` (white,

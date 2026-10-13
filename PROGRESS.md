@@ -48,6 +48,13 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   gym_arc_ui_3d_icons/logo.png; the title menu uses it too), gray tagline, the tip in a graphite tile with a gold TIP tag,
   "LOADING PLAYERS" heavy italic + gold percent, thick metallic red bar in a dark track, page dots (gold = current tip),
   quiet SKIP.
+- Top bar = TopbarPlus v3.4.0 (ForeverHD, official Creator Store model 92368439343389, only the Icon module kept in
+  ReplicatedStorage.Packages, unedited; READ_ME example script deleted). Shared/UI/TopBar wraps it (AddPill: Daily,
+  Quests, Settings with notice counts), TopBarClient makes Coins / Height / Level; Height folds away when the icons don't
+  fit. Our old TopBar ScreenGui is gone. Kit.UnderTopbar / Kit.OnTopbar: the right column, toasts, the weight card, the
+  record banner, posing and arm wrestling headers start at TopbarInset.Max.Y + 8. Studio: the TestPhoneSize attribute is
+  cleared (it squeezed the HUD inside the Device Emulator). Fixed a stray "5" typed into Analytics in Studio (it stopped
+  the whole server from starting).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

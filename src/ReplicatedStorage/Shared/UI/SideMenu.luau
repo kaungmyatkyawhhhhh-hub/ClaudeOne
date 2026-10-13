@@ -29,7 +29,7 @@ local SideMenu = {}
 SideMenu.TileSize = 54
 SideMenu.Gap = 8
 SideMenu.Left = 12
-SideMenu.Top = 52      -- never higher than this: under Roblox's buttons and the top bar
+SideMenu.Top = 52      -- never higher than this: under Roblox's top bar (set from Kit.UnderTopbar)
 SideMenu.BottomRoom = 12 -- room left at the bottom of the screen
 SideMenu.Arrow = Vector2.new(24, 46)
 SideMenu.FaceDarken = 0.5
@@ -148,6 +148,10 @@ local function ensure()
 	})
 	arrow.Activated:Connect(function() setCollapsed(not collapsed, true) end)
 	root:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() layout() end)
+	Kit.OnTopbar(function()
+		SideMenu.Top = Kit.UnderTopbar(root)
+		layout()
+	end)
 	Kit.OnScale(function() task.defer(layout) end)
 	-- the saved choice
 	task.spawn(function()

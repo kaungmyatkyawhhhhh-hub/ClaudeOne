@@ -23,7 +23,7 @@ local Notify = {}
 
 Notify.Lifetime = 3
 Notify.MaxVisible = 3
-Notify.Top = 48           -- mockup px from the top: just under the top bar
+Notify.Top = 48           -- mockup px from the top: just under Roblox's top bar (set from Kit.UnderTopbar)
 Notify.HintSeconds = 4
 Notify.BandHeight = 30
 
@@ -63,6 +63,11 @@ local function ensure()
 			VerticalAlignment = Enum.VerticalAlignment.Top }),
 	})
 	placeList()
+	Kit.OnTopbar(function()
+		Notify.Top = Kit.UnderTopbar(root)
+		band.Position = UDim2.new(0.5, 0, 0, Notify.Top)
+		placeList()
+	end)
 	Players.LocalPlayer:GetAttributeChangedSignal("WindowOpen"):Connect(applyBand)
 end
 

@@ -20,7 +20,7 @@ local New, Colors = Theme.New, Theme.Colors
 local MachineHud = {}
 
 MachineHud.PanelSize = Vector2.new(204, 110) -- the weight card
-MachineHud.PanelTop = 52
+MachineHud.PanelTop = 52 -- (set from Kit.UnderTopbar: just under Roblox's top bar)
 MachineHud.Edge = 12
 MachineHud.HiddenOffset = UDim2.fromOffset(0, 260) -- the bottom widgets wait below the screen edge
 MachineHud.PanelHidden = UDim2.fromOffset(240, 0)  -- the weight card waits past the right edge
@@ -154,6 +154,17 @@ function MachineHud.Build()
 	hud.prInfo = Kit.Text({ Name = "Info", Text = "", Font = "Number", TextSize = 13, Position = UDim2.fromOffset(0, 33),
 		Size = UDim2.new(1, 0, 0, 16), ZIndex = 6, Parent = banner })
 	hud.prBanner = banner
+
+	-- the weight card and the record banner start just under Roblox's top bar
+	local function placeUnderTopbar()
+		local top = Kit.UnderTopbar(root)
+		MachineHud.PanelTop = top
+		panel.Position = UDim2.new(1, -edge, 0, top)
+		hud.autoButton.Position = UDim2.new(1, -edge, 0, top + size.Y + 8)
+		banner.Position = UDim2.new(0.5, 0, 0, top)
+	end
+	Kit.OnTopbar(placeUnderTopbar)
+	gui:GetPropertyChangedSignal("Enabled"):Connect(function() task.defer(placeUnderTopbar) end)
 
 	------------------------------------------------------------ helpers
 	function hud.drawBarbell(_plates) end -- (no barbell drawing in this style)

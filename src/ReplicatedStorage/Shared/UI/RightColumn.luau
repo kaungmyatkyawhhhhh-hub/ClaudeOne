@@ -18,7 +18,7 @@ local New, Colors = Theme.New, Theme.Colors
 local RightColumn = {}
 
 local WIDTH = 196  -- mockup px
-local TOP = 52     -- under the top bar
+local TOP = 52     -- under Roblox's top bar (set from Kit.UnderTopbar)
 local EDGE = 12
 RightColumn.Width = WIDTH
 
@@ -52,6 +52,11 @@ local function ensure()
 		Parent = root,
 	}, { Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top) })
 	column:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() changed:Fire() end)
+	Kit.OnTopbar(function()
+		TOP = Kit.UnderTopbar(root)
+		column.Position = UDim2.new(1, -EDGE, 0, TOP)
+		changed:Fire()
+	end)
 	always = container("Always", 1)
 	local middle = New("Frame", { Name = "Middle", LayoutOrder = 3, Size = UDim2.fromOffset(WIDTH, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Parent = column },
 		{ Theme.List(Enum.FillDirection.Vertical, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top) })

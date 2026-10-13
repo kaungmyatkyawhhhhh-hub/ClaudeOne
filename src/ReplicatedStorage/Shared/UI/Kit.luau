@@ -22,7 +22,11 @@
 --   Kit.Headshot(userId, name, size, props?) the player's real avatar headshot in a plain dark circle (owner, 14 Oct)
 --   Kit.CoinBurst(fromGui)                   claim feedback: coins fly to the coin counter + a small gold sparkle burst
 --   Kit.ApplyHeadshot(image, userId, name)   the same look on an existing ImageLabel (e.g. a leaderboard row)
+--   Kit.UnderTopbar(guiObject, gap?)          mockup px from the top of guiObject (inside a Kit.Root) to just under Roblox's top
+--                                             bar (GuiService.TopbarInset.Max.Y + 8): where anything under the top bar starts
+--   Kit.OnTopbar(fn)                          calls fn now and whenever the top bar's size or the screen's scale changes
 local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -91,6 +95,20 @@ refreshScale()
 
 function Kit.Scale(): number return currentScale end
 function Kit.OnScale(fn) table.insert(scaleListeners, fn); task.spawn(fn, currentScale) end
+
+-- Under Roblox's top bar (owner, 14 Oct: TopbarPlus icons sit on it; everything under it starts at TopbarInset.Max.Y + 8).
+-- AbsolutePosition is measured from under the GUI inset, so the object's screen y is AbsolutePosition.Y + the inset.
+Kit.TopbarGap = 8
+function Kit.UnderTopbar(guiObject: GuiObject, gap: number?): number
+	local inset = GuiService:GetGuiInset()
+	local screenY = guiObject.AbsolutePosition.Y + inset.Y
+	return math.max(0, (GuiService.TopbarInset.Max.Y + (gap or Kit.TopbarGap) - screenY) / currentScale)
+end
+function Kit.OnTopbar(fn)
+	GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(function() task.defer(fn) end)
+	table.insert(scaleListeners, function() task.defer(fn) end)
+	task.defer(fn)
+end
 
 -- A frame that fills the screen gui, measured in mockup px (so 844 wide on the mockup phone).
 function Kit.Root(screenGui: Instance, name: string?): Frame
