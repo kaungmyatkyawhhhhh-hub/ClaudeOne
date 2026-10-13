@@ -1067,6 +1067,20 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .note b{color:var(--ink)}
 .nightroom .note,.arcroom .note{border-color:rgba(255,255,255,.12)}
 .perk{border:1px solid var(--line);box-shadow:var(--shadow)}
+/* pop-ups: one card style, no thick yellow rings, no shouting capitals */
+.cta{font-family:var(--body);font-variation-settings:normal;font-weight:700;font-size:1rem;text-transform:none;letter-spacing:-.01em;border-radius:12px}
+.achpop,.goalpop,.dlask{background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 2px rgba(13,16,21,.08),0 20px 44px -16px rgba(13,16,21,.4);border-radius:16px}
+.achpop{padding:14px 16px 12px;gap:4px}
+.achpop::before,.goalpop::before{content:"";display:block;width:28px;height:4px;border-radius:2px;background:var(--gold);margin:0 auto 6px}
+.achpop b,.goalpop b{font-family:var(--body);font-weight:700;letter-spacing:-.01em}
+.achpop em,.goalpop em{font-family:var(--mono);font-weight:600;letter-spacing:-.02em}
+.goalpop em{font-size:1.7rem}
+.achbtns .cta{font-size:.86rem;padding:9px}
+.crhint{font-family:var(--body)!important;font-variation-settings:normal!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important;font-size:1.05rem!important}
+.crbtns .cta{font-size:.95rem}
+.pshead b{font-family:var(--body);font-variation-settings:normal;font-weight:800;font-size:1.2rem;text-transform:none;letter-spacing:-.015em}
+.pshead small{font-family:var(--body);letter-spacing:.06em}
+.perksheet{border:1px solid var(--line)}
 .nightroom .perk,.arcroom .perk{border-color:rgba(255,255,255,.1)}
 </style>
 
