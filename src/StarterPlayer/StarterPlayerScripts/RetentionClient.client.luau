@@ -17,24 +17,12 @@ local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local Colors = Theme.Colors
-local Horizontal = Enum.FillDirection.Horizontal
 
 ------------------------------------------------------------------------
 -- Rush hour pill
 ------------------------------------------------------------------------
-local pill = Theme.Panel({
-	Name = "RushHour",
-	Size = UDim2.fromOffset(RightColumn.Width, 36),
-	Visible = false,
-}, {
-	Theme.Pad("S"),
-	Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left),
-})
-RightColumn.Add(pill, 0)
-local iconSlot = Theme.New("Frame", { LayoutOrder = 1, Size = UDim2.fromScale(0, 1), BackgroundTransparency = 1, Parent = pill }, { Theme.Aspect(1, Enum.DominantAxis.Height) })
-Icons.Timer(Colors.Text).Parent = iconSlot
-local pillText = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, -30, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = pill })
-pillText.TextTruncate = Enum.TextTruncate.AtEnd
+-- (owner's UI redesign) a boost chip: a gold timer tile, "2x" and the time left
+local chip = RightColumn.Chip("timer", Colors.Gold, 0)
 
 local started = false
 local function rushLeft()
@@ -45,9 +33,9 @@ end
 
 local function refreshPill()
 	local left = rushLeft()
-	pill.Visible = started and left > 0
+	chip:SetVisible(started and left > 0)
 	if left > 0 then
-		pillText.Text = string.format("Rush %d:%02d · %dx coins", left // 60, math.floor(left % 60), Economy.RushHour.Coins)
+		chip:SetText(Economy.RushHour.Coins .. "x coins", string.format("%d:%02d", left // 60, math.floor(left % 60)))
 	end
 end
 

@@ -408,7 +408,7 @@ function Theme.BindPress(button)
 			pad.PaddingTop = UDim.new(pad.PaddingTop.Scale, pad.PaddingTop.Offset + shift)
 			pad.PaddingBottom = UDim.new(pad.PaddingBottom.Scale, pad.PaddingBottom.Offset - shift)
 			local depth = button:FindFirstChild("Depth")
-			local bg = depth and depth:FindFirstChild("Bg")
+			local bg = (button:IsA("ImageButton") or button:IsA("ImageLabel")) and button or (depth and depth:FindFirstChild("Bg"))
 			local pressed = Theme.ButtonPressed[piece]
 			if bg and pressed then pieces().Apply(bg, on and pressed or piece) end
 			if bg and not pressed then bg.ImageColor3 = on and Color3.new(0.85, 0.85, 0.85) or Color3.new(1, 1, 1) end
@@ -492,17 +492,25 @@ end
 
 Theme.PanelShadowGrow = 20 -- the soft shadow behind a panel is this much bigger on every side
 
--- Puts piece `name` behind `gui` (and the soft panel shadow when `shadow`). Returns the image.
+-- Shows piece `name` on `gui`: an ImageLabel / ImageButton draws it itself (panels and buttons are those), anything else
+-- gets it as a "Bg" image behind its content. `shadow` adds the soft panel shadow (only on a gui that doesn't size
+-- itself to its content: a child bigger than an AutomaticSize frame would keep growing it). Returns the image.
 function Theme.SetPiece(gui, name, shadow)
 	local folder = gui:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = gui })
-	local bg = folder:FindFirstChild("Bg")
-	if not bg then
-		bg = pieces().Image(name, { Name = "Bg", ZIndex = 0, Parent = folder }) -- (under the content)
-		fitBehind(gui, bg, 0)
+	local bg
+	if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then
+		pieces().Apply(gui, name)
+		bg = gui
 	else
-		pieces().Apply(bg, name)
+		bg = folder:FindFirstChild("Bg")
+		if not bg then
+			bg = pieces().Image(name, { Name = "Bg", ZIndex = 0, Parent = folder }) -- (under the content)
+			fitBehind(gui, bg, 0)
+		else
+			pieces().Apply(bg, name)
+		end
 	end
-	if shadow and not folder:FindFirstChild("PanelShadow") then
+	if shadow and gui.AutomaticSize == Enum.AutomaticSize.None and not folder:FindFirstChild("PanelShadow") then
 		local s = pieces().Image("panel_shadow", { Name = "PanelShadow", ZIndex = -1, Parent = folder })
 		fitBehind(gui, s, Theme.PanelShadowGrow)
 	end
@@ -511,9 +519,16 @@ function Theme.SetPiece(gui, name, shadow)
 end
 
 -- A hidden 1px border every panel and button keeps, so a script can still light it up (a selected card, a warning).
+-- (No UICorner on the image panels: the pieces have their own rounded corners, and a UICorner on a sliced image draws
+-- dark blobs past its corners.)
 local function hookStroke(gui, corner)
 	if not gui:FindFirstChildOfClass("UIStroke") then
 		Theme.New("UIStroke", { Name = "Border", Color = Theme.Colors.Border, Thickness = 1, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = gui })
+	end
+	if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then
+		local c = gui:FindFirstChildOfClass("UICorner")
+		if c then c:Destroy() end
+		return
 	end
 	local c = gui:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = gui })
 	c.CornerRadius = corner
@@ -525,9 +540,11 @@ function Theme.Panel(props, children)
 	local piece = props.Piece or "panel"
 	local shadow = props.Shadow
 	if shadow == nil then shadow = piece == "panel" end
-	props.Piece, props.Shadow = nil, nil
+	local clickable = props.Clickable -- a panel you can tap (an ImageButton; use its Activated)
+	props.Piece, props.Shadow, props.Clickable = nil, nil, nil
 	props.BackgroundTransparency = 1
-	local panel = Theme.New("Frame", props, children)
+	if clickable then props.AutoButtonColor = false end
+	local panel = Theme.New(clickable and "ImageButton" or "ImageLabel", props, children) -- (draws its own piece: see SetPiece)
 	hookStroke(panel, piece == "panel" and Theme.Corner.Panel or Theme.Corner.Card)
 	Theme.SetPiece(panel, piece, shadow)
 	return panel
@@ -554,10 +571,10 @@ function Theme.SetButtonStyle(button, style)
 end
 
 function Theme.Button(style, props, children)
-	props.Text = ""
+	props.Text = nil
 	props.AutoButtonColor = false
 	props.BackgroundTransparency = 1
-	local button = Theme.New("TextButton", props, children)
+	local button = Theme.New("ImageButton", props, children) -- (draws its own piece: see SetPiece)
 	-- button labels are UPPERCASE Oswald (labels passed in as children, or added later)
 	local function upperLabel(item)
 		if item:IsA("TextLabel") and item.FontFace == Theme.Fonts.SemiBold then Theme.Uppercase(item) end

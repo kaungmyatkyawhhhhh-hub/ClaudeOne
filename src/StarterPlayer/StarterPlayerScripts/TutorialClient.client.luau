@@ -70,10 +70,10 @@ local lineText = Theme.Text({ LayoutOrder = 2, Font = "Regular", TextSize = "Bod
 local statsOpen = false
 local onMachine = nil -- MachineId of the machine the player is on
 local function placeLine()
-	-- the Growth Spurt bar (ProgressClient) owns the top center: sit just under it. While the stats screen is open
-	-- the bar hides, so the line moves up to the top (it draws above the stats screen).
-	local spurtGui = playerGui:FindFirstChild("SpurtBar")
-	local bar = spurtGui and spurtGui:FindFirstChild("Panel")
+	-- the top row (TopBar: coins / level / height) owns the top center: sit just under it. While the stats screen is
+	-- open the row hides, so the line moves up to the top (it draws above the stats screen).
+	local spurtGui = playerGui:FindFirstChild("TopBar")
+	local bar = spurtGui and spurtGui:FindFirstChild("Row", true)
 	line.AnchorPoint = Vector2.new(0.5, 0)
 	if not statsOpen and spurtGui and spurtGui.Enabled and bar and bar:IsA("GuiObject") and bar.AbsoluteSize.Y > 0 then
 		-- both are Theme.ScreenGuis (same inset), so the bar's AbsolutePosition is in this gui's space

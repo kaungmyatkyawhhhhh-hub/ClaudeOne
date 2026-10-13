@@ -17,17 +17,9 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local player = Players.LocalPlayer
 local Horizontal = Enum.FillDirection.Horizontal
 
-local button = Theme.Button("Secondary", {
-	Name = "Skate",
-	Size = UDim2.fromOffset(132, Theme.MinTouch), -- a small button at the top of the column (not a full-width panel)
-	Visible = false,
-}, {
-	Theme.Pad("S"),
-	Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center),
-})
-button:SetAttribute("KeepWidth", true)
+local Kit = require(Shared.UI.Kit)
+local button, label = Kit.Button("Secondary", "Skate", { Name = "Skate", Visible = false }, { height = 30, width = RightColumn.Width, icon = "footprints", textSize = 12 })
 RightColumn.Add(button, 0, true) -- top of the idle group: hidden while lifting
-local label = Theme.Text({ LayoutOrder = 1, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 1, 0), Parent = button })
 
 local function skating()
 	return player:GetAttribute("Skating") == true

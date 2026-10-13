@@ -17,6 +17,7 @@ local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
+local RightColumn = require(Shared.UI.RightColumn)
 local TopBar = require(Shared.UI.TopBar)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
@@ -93,6 +94,27 @@ local bonusClaim = Theme.Button("Primary", { Name = "ClaimBonus", AnchorPoint = 
 })
 bonusClaim.Activated:Connect(function() remote:FireServer("ClaimBonus") end)
 
+-- the DAILY QUESTS card in the right column (mockup 01): the first quest still going, its bar, and "1 / 3" done
+local tracker = RightColumn.Tracker({ name = "DailyTracker", title = "Daily quests", color = Colors.Green, order = 2, idleOnly = true, clickable = true })
+local function refreshTracker(dq, valid)
+	local done, total = 0, DailyQuests.PerDay
+	local current, currentQuest = nil, nil
+	for i = 1, total do
+		local entry = valid and dq.list[i] or nil
+		local quest = entry and DailyQuests.ById[entry.id]
+		if entry and entry.done then done += 1 end
+		if quest and not entry.done and not current then current, currentQuest = entry, quest end
+	end
+	tracker:SetCount(done .. " / " .. total)
+	if currentQuest then
+		tracker:SetText(currentQuest.text)
+		tracker:SetProgress(math.clamp((current.progress or 0) / currentQuest.count, 0, 1), (current.progress or 0) .. "/" .. currentQuest.count)
+	else
+		tracker:SetText(valid and "All done for today!" or "New quests soon")
+		tracker:SetProgress(valid and 1 or nil, valid and (done .. "/" .. total) or nil)
+	end
+end
+
 local function refreshQuests()
 	local data = ClientData.Get()
 	local dq = data.dailyQuests
@@ -131,7 +153,14 @@ local function refreshQuests()
 	bonusClaim.Visible = allClaimed and not bonusDone
 	bonusText.Text = bonusDone and ("All done: +" .. DailyQuests.BonusCoins .. " coins claimed")
 		or ("Claim all " .. DailyQuests.PerDay .. ": +" .. DailyQuests.BonusCoins .. " bonus coins")
-	questTile:SetDot(anyClaimable or (allClaimed and not bonusDone))
+	local claimableCount = 0
+	for i = 1, #rows do
+		local entry = valid and dq.list[i] or nil
+		if entry and entry.done and not entry.claimed then claimableCount += 1 end
+	end
+	if allClaimed and not bonusDone then claimableCount += 1 end
+	questTile:SetBadge(claimableCount)
+	refreshTracker(dq, valid)
 	resetLine.Text = "New quests in " .. untilReset()
 end
 
@@ -159,6 +188,10 @@ UIBus.RegisterPanel("DailyQuests", function() setQuests(false) end)
 questTile.Activated:Connect(function()
 	if not questsOpen then UIBus.PanelOpened("DailyQuests") end
 	setQuests(not questsOpen)
+end)
+tracker.Activated:Connect(function()
+	if not questsOpen then UIBus.PanelOpened("DailyQuests") end
+	setQuests(true)
 end)
 
 ------------------------------------------------------------------------

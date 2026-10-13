@@ -33,13 +33,8 @@ local emoteRemote = Remotes:WaitForChild("Emote", 30) :: RemoteEvent?
 ------------------------------------------------------------------------
 -- The PHOTO button (right column, only near a photo spot)
 ------------------------------------------------------------------------
-local photoButton = Theme.Button("Secondary", { Name = "Photo", Size = UDim2.new(1, 0, 0, Theme.MinTouch), Visible = false }, {
-	Theme.Pad("S"),
-	Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
-})
-local photoIconSlot = New("Frame", { LayoutOrder = 1, Size = UDim2.fromOffset(22, 22), BackgroundTransparency = 1, Parent = photoButton })
-Icons.Camera(Colors.Text).Parent = photoIconSlot
-Theme.Text({ LayoutOrder = 2, Text = "Photo", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromOffset(0, 22), AutomaticSize = Enum.AutomaticSize.X, Parent = photoButton })
+local Kit = require(Shared.UI.Kit)
+local photoButton = Kit.Button("Secondary", "Photo", { Name = "Photo", Visible = false }, { height = 30, width = RightColumn.Width, icon = "eye", textSize = 12 })
 RightColumn.Add(photoButton, 0, true)
 
 ------------------------------------------------------------------------

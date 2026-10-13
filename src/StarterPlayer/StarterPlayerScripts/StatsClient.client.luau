@@ -269,7 +269,7 @@ end
 ------------------------------------------------------------------------
 -- The rest of the HUD is switched off behind the panel (and put back as it was on close)
 ------------------------------------------------------------------------
-local HUD_GUIS = { "RightColumn", "SpurtBar", "Tutorial", "Notifications", "MachineHud", "MainHud", "MusclesButton" }
+local HUD_GUIS = { "RightColumn", "TopBar", "Tutorial", "Notifications", "MachineHud", "MainHud", "MusclesButton" }
 local hudBefore = {}
 local function hideHud(hide)
 	for _, name in ipairs(HUD_GUIS) do

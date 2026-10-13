@@ -7,6 +7,17 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   icons), none missing; in `Config/UI` (Pieces with their 9-slice data from pieces.json, Icons, ShopIcons).
 - **Permission check:** a group piece (panel), icon (coin) and shop icon (pass_vip) all load in the user-owned place
   (PreloadAsync: Success, IsLoaded true). No permission change needed. Screenshot: ui_assets_load_test.
+- **Foundation** (commit 4e795bf): `Shared.UI.Pieces` (9-slice images), `Shared.UI.Kit` (components, mockup-px root scaled
+  with the screen), Theme's panels / buttons are the image pieces (ImageLabel / ImageButton that draw their own piece),
+  Oswald + Montserrat. CLAUDE.md / DESIGN.md follow the redesign brief now (it asks for Montserrat body text and UIScale).
+  Studio switch `TestPhoneSize` (Vector2, e.g. 844, 390) shows the redesigned screens as that phone in the window.
+- **01 main HUD** (done): top row (coins + gold "+" for Shop > Coins, only while the shop exists; LEVEL badge + EXP bar,
+  level = the average exact muscle level; height / 7'0"), menu tiles (menu_button pieces, uploaded icons, red count
+  badge on Quests), right column (DAILY QUESTS card, coach quest and legend cards, boost chips for smoothies / the shake /
+  rush hour / server boost, Growth Spurt card that's tapped to grow), toasts at the bottom center. Checked at PC size and
+  844x390. Not matched yet: the mockup has 8 tiles in 2 columns; the game still has Stats, Wardrobe, Genetics, Coach and
+  Daily too (a 3rd column; Genetics / Coach / Daily move into their panels in steps 06 / 07). Screenshots:
+  ui_compare/01_main_hud_pc, 01_main_hud_phone.
 
 ## LATEST (13 Oct): new features run (owner's GYM_ARC_new_features.md): DONE, report
 

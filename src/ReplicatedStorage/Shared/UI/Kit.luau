@@ -45,19 +45,37 @@ function Kit.ScaleFor(viewport: Vector2): number
 	return math.clamp(s, Kit.MinScale, Kit.MaxScale)
 end
 
+-- Studio: the Workspace attribute TestPhoneSize (a Vector2, e.g. 844, 390) lays every redesigned screen out in a phone
+-- of that size in the top left of the window (scaled to fit), to check the phone layout on a PC.
+local function testPhone(): Vector2?
+	if not game:GetService("RunService"):IsStudio() then return nil end
+	local v = Workspace:GetAttribute("TestPhoneSize")
+	return typeof(v) == "Vector2" and v.X > 100 and v.Y > 100 and v or nil
+end
+
 local scaleListeners = {}
 local currentScale = 1
+local currentPhone = nil
 local function refreshScale()
 	local camera = Workspace.CurrentCamera
-	local s = Kit.ScaleFor(camera and camera.ViewportSize or Kit.Base)
-	if math.abs(s - currentScale) < 0.001 then return end
-	currentScale = s
+	local viewport = camera and camera.ViewportSize or Kit.Base
+	local phone = testPhone()
+	local s
+	if phone then
+		-- (the phone's own scale, then blown up to fill the window)
+		s = Kit.ScaleFor(phone) * math.min(viewport.X / phone.X, viewport.Y / phone.Y)
+	else
+		s = Kit.ScaleFor(viewport)
+	end
+	if math.abs(s - currentScale) < 0.001 and phone == currentPhone then return end
+	currentScale, currentPhone = s, phone
 	for _, fn in ipairs(scaleListeners) do task.spawn(fn, s) end
 end
 local function watchCamera(camera)
 	if camera then camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshScale) end
 end
 watchCamera(Workspace.CurrentCamera)
+Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(refreshScale)
 Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 	watchCamera(Workspace.CurrentCamera)
 	refreshScale()
@@ -73,7 +91,12 @@ function Kit.Root(screenGui: Instance, name: string?): Frame
 	local scale = New("UIScale", { Parent = root })
 	Kit.OnScale(function(s)
 		scale.Scale = s
-		root.Size = UDim2.fromScale(1 / s, 1 / s)
+		if currentPhone then
+			local units = Kit.ScaleFor(currentPhone)
+			root.Size = UDim2.fromOffset(currentPhone.X / units, currentPhone.Y / units)
+		else
+			root.Size = UDim2.fromScale(1 / s, 1 / s)
+		end
 	end)
 	return root
 end
@@ -405,6 +428,16 @@ function Kit.Modal(spec)
 		Size = UDim2.fromOffset(width, height or 0), AutomaticSize = height and Enum.AutomaticSize.None or Enum.AutomaticSize.Y,
 		Active = true, Parent = root })
 	local pop = New("UIScale", { Parent = panel })
+	-- the soft shadow behind the panel (a sibling: a child bigger than an auto-sized panel would keep growing it)
+	local shadow = Pieces.Image("panel_shadow", { Name = "Shadow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		ZIndex = 0, Parent = root })
+	panel.ZIndex = 1
+	local function fitShadow()
+		local s = Kit.Scale()
+		shadow.Size = UDim2.fromOffset(panel.AbsoluteSize.X / s + Theme.PanelShadowGrow * 2, panel.AbsoluteSize.Y / s + Theme.PanelShadowGrow * 2)
+	end
+	panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitShadow)
+	fitShadow()
 	New("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Parent = panel })
 	-- header: red accent bar, title, tabs, coins chip, X
 	local header = Pieces.Image("panel_header", { Name = "Header", LayoutOrder = 0, Size = UDim2.new(1, 0, 0, Kit.HeaderHeight), Parent = panel })
@@ -453,6 +486,8 @@ function Kit.Modal(spec)
 		pop.Scale = Kit.OpenScale
 		Theme.Tween(pop, { Scale = 1 }, Kit.OpenTime)
 		Theme.Fade(panel, true, Kit.OpenTime)
+		shadow.ImageTransparency = 1
+		Theme.Tween(shadow, { ImageTransparency = 0 }, Kit.OpenTime)
 		backdrop.BackgroundTransparency = 1
 		Theme.Tween(backdrop, { BackgroundTransparency = Theme.Alpha.Backdrop }, Kit.OpenTime)
 		setBlur(true)
@@ -462,6 +497,7 @@ function Kit.Modal(spec)
 		open = false
 		Theme.Tween(pop, { Scale = Kit.OpenScale }, Kit.OpenTime)
 		Theme.Tween(backdrop, { BackgroundTransparency = 1 }, Kit.OpenTime)
+		Theme.Tween(shadow, { ImageTransparency = 1 }, Kit.OpenTime)
 		setBlur(false)
 		local tween = Theme.Fade(panel, false, Kit.OpenTime)
 		local function hide() if not open then gui.Enabled = false end end

@@ -370,7 +370,7 @@ local function obstacles()
 			end
 		end
 	end
-	addGui("SpurtBar")
+	addGui("TopBar", "Row")
 	addGui("Tutorial", "CoachLine")
 	addGui("MachineHud", "Stack")
 	return rects

@@ -1,184 +1,121 @@
--- TopBar (client): rounded pill buttons along the top of the screen, just under the Roblox top bar (owner's UI v7 brief).
---   left:  the coins pill (always your coin count)
---   right: Quests, Daily Reward and Settings pills (each an icon + a short text; phones show the icon only)
--- Each right-hand pill is made with TopBar.AddPill, which returns { button, SetActive(on), SetDot(on), SetText(text),
--- Activated } like SideMenu.Add. The icons and any images you want to use instead are in Config.HudIcons.
--- Hidden while training (clean HUD) and while a screen hides the whole menu (SideMenu.SetHidden).
--- TopBar.Bottom() = the y (inside the safe area) just below the pills, for the right-hand column and panels that drop down.
+-- TopBar (client): the row at the top center of the HUD (owner's UI redesign, mockup 01_main_hud), in mockup px inside a
+-- Kit.Root so it scales with the screen:
+--   coins chip (+ a gold "+" that opens Shop > Coins, only while the shop exists) | LEVEL badge + EXP bar | height chip
+-- Level = the average exact level of the 18 muscles; the bar and % are the way to the next one.
+-- Visible on the HUD and while training (mockup 02); hidden on the main menu and the genetics screen.
+-- TopBar.AddPill (the old top-right pills: Settings, the coach quest, the daily reward) now makes a menu tile
+-- (SideMenu) with the same api: { button, SetActive(on), SetDot(on), SetText(text), Activated }.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
-local HudIcons = require(script.Parent.Parent.Config.HudIcons)
-local Icons = require(script.Parent.Icons)
+local Kit = require(script.Parent.Kit)
+local Pieces = require(script.Parent.Pieces)
 local SideMenu = require(script.Parent.SideMenu)
 local UIBus = require(script.Parent.UIBus)
-local New, Colors, Spacing, Alpha = Theme.New, Theme.Colors, Theme.Spacing, Theme.Alpha
+local New, Colors = Theme.New, Theme.Colors
+local Horizontal = Enum.FillDirection.Horizontal
 
 local TopBar = {}
 
-local TOP = Spacing.S
-local EDGE = Spacing.M
-local NARROW_WIDTH = 1400 -- px: under this the right pills drop their text
-local ACTIVE_FILL = 0.8
-local HOVER_FILL = 0.4
+TopBar.Top = 8      -- mockup px from the top of the screen
+TopBar.Height = 34
 
-local geneticsOpen = false -- the Genetics screen needs the whole top of the screen
-local gui, left, right, coinsText
-local pills = {}
-local compact = false -- a phone (short screen): the coins pill goes right of the Menu button
-local narrow = false  -- not much width (phones, small windows): the right pills show only their icons, so they stay clear of
-                      -- the Growth Spurt bar in the middle
+local geneticsOpen = false
+local gui, row
+local coinsText, plusButton, levelBadge, levelLabel, levelPct, setLevelBar, heightText, heightMax
 
-local function pillIcon(id, factory)
-	local cfg = HudIcons.Pills[id]
-	if cfg and cfg.image and cfg.image ~= "" then
-		return New("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Image = cfg.image, ScaleType = Enum.ScaleType.Fit })
-	end
-	return factory(Colors.Text)
-end
-
--- One pill: a dark see-through rounded capsule with a thin border, the icon and the text.
-local function makePill(id, text, factory, textWidth)
-	local pill = New("TextButton", {
-		Name = id,
-		Size = UDim2.new(0, 0, 0, Theme.PillHeight),
-		AutomaticSize = Enum.AutomaticSize.X,
-		Text = "",
-		AutoButtonColor = false,
-		BackgroundColor3 = Colors.Panel,
-		BackgroundTransparency = Alpha.Panel,
-	}, {
-		New("UICorner", { CornerRadius = UDim.new(0.5, 0) }),
-		Theme.Stroke(Colors.Border, 1, Alpha.Border),
-		New("UIPadding", { PaddingLeft = UDim.new(0, Spacing.M), PaddingRight = UDim.new(0, Spacing.M) }),
-		New("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Padding = UDim.new(0, Spacing.S),
-		}),
-	})
-	local slot = New("Frame", { Name = "Icon", LayoutOrder = 1, Size = UDim2.fromOffset(20, 20), BackgroundTransparency = 1, Parent = pill })
-	pillIcon(id, factory).Parent = slot
-	local label = Theme.Text({
-		Name = "Text",
-		LayoutOrder = 2,
-		Text = text,
-		Font = "SemiBold",
-		TextSize = "Body",
-		Size = UDim2.new(0, textWidth or 0, 1, 0),
-		AutomaticSize = textWidth and Enum.AutomaticSize.None or Enum.AutomaticSize.X,
-		Parent = pill,
-	})
-	local dot = New("Frame", {
-		Name = "Dot",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(1, 1, 0, 1),
-		Size = UDim2.fromOffset(Spacing.S, Spacing.S),
-		BackgroundColor3 = Colors.Text,
-		Visible = false,
-		ZIndex = 3,
-		Parent = slot, -- (on the icon's corner: the pill's list layout would move it if it were a child of the pill)
-	}, { Theme.Round("Round") })
-	Theme.BindPress(pill)
-	Theme.AddDepth(pill, "Button", "Round")
-	local api = { button = pill, label = label, dot = dot, active = false, hover = false }
-	local border = pill:FindFirstChildOfClass("UIStroke")
-	function api.paint()
-		local fill = api.active and ACTIVE_FILL or (api.hover and HOVER_FILL or Alpha.Panel)
-		Theme.Tween(pill, { BackgroundColor3 = api.active and Colors.Text or Colors.Panel, BackgroundTransparency = fill }, 0.15)
-		if border then Theme.Tween(border, { Transparency = (api.active or api.hover) and 0.5 or Alpha.Border }, 0.15) end
-	end
-	pill.MouseEnter:Connect(function() api.hover = true; api.paint() end)
-	pill.MouseLeave:Connect(function() api.hover = false; api.paint() end)
-	return api
-end
-
-local function applyMode()
-	if not gui then return end
-	-- phones: the right pills show only icons (the coins pill keeps the top left corner)
-	local phone = SideMenu.IsCompact() or compact -- the same "phone" as the menu (a short screen, or touch without a keyboard)
-	local iconsOnly = narrow or phone
-	left.Position = UDim2.fromOffset(EDGE, TOP) -- (the menu arrow sits beside the tiles now, never in this corner)
-	for _, entry in pairs(pills) do
-		entry.api.label.Visible = not iconsOnly or entry.keepText == true
-	end
-end
-
--- full-width screens the pills step aside for (Settings is not one: it opens from a pill)
-local COVERS = { "MusclesScreen", "TitleBook", "ProgressMirror", "GeneticsScreen", "ClothingStore", "ArmWrestle", "Store", "Wardrobe", "Crew" }
-local function coverOpen()
-	local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-	if not playerGui then return false end
-	for _, name in ipairs(COVERS) do
-		local screen = playerGui:FindFirstChild(name)
-		if screen and screen:IsA("ScreenGui") and screen.Enabled then return true end
-	end
-	return false
-end
+-- (old pill ids -> menu tile ids)
+local TILE_IDS = { Quests = "Coach", Daily = "Daily", Settings = "Settings" }
 
 local function refreshVisible()
 	if not gui then return end
-	local show = not SideMenu.IsTraining() and not SideMenu.IsHidden() and not UIBus.MenuOpen and not geneticsOpen and not coverOpen()
-	left.Visible = show
-	right.Visible = show
+	gui.Enabled = not UIBus.MenuOpen and not geneticsOpen and not SideMenu.IsHidden()
 end
 
-local function coinsNow()
+local function build()
+	gui = Theme.ScreenGui({ Name = "TopBar", DisplayOrder = 5, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
+	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	local root = Kit.Root(gui)
+	row = New("Frame", { Name = "Row", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TopBar.Top),
+		Size = UDim2.fromOffset(0, TopBar.Height), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = root },
+		{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+
+	-- coins: the coin, the number, a gold "+" (Shop > Coins)
+	local coins = Theme.Panel({ Name = "Coins", LayoutOrder = 1, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(0, TopBar.Height),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = row }, {
+		New("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 6) }),
+		Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+	})
+	Kit.Coin(18, { LayoutOrder = 1, Parent = coins })
+	coinsText = Kit.Text({ Name = "Value", LayoutOrder = 2, Text = "0", Font = "Number", TextSize = 18, Size = UDim2.fromOffset(0, TopBar.Height),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = coins })
+	plusButton = Theme.Button("Gold", { Name = "Plus", LayoutOrder = 3, Size = UDim2.fromOffset(22, 22), Visible = false, Parent = coins }, {})
+	Pieces.Icon("plus", Colors.Ink, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -1), Size = UDim2.fromOffset(14, 14), Parent = plusButton })
+	plusButton.Activated:Connect(function() UIBus.OpenShop:Fire("Coins") end)
+
+	-- level: red badge, "LEVEL 27", the %, a red EXP bar
+	local level = Theme.Panel({ Name = "Level", LayoutOrder = 2, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(171, TopBar.Height), Parent = row })
+	levelBadge = Pieces.Image("rounded_white_r8", { Name = "Badge", ImageColor3 = Colors.Red, Position = UDim2.fromOffset(5, 5), Size = UDim2.fromOffset(24, 24), Parent = level })
+	Kit.Text({ Name = "Number", Text = "0", Font = "Title", TextSize = 14, Size = UDim2.fromScale(1, 1), Parent = levelBadge })
+	levelLabel = Kit.Text({ Name = "Label", Text = "LEVEL 0", Font = "Body", TextSize = 9, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(38, 5),
+		Size = UDim2.fromOffset(90, 12), TextXAlignment = Enum.TextXAlignment.Left, Parent = level })
+	levelPct = Kit.Text({ Name = "Pct", Text = "0%", Font = "Number", TextSize = 9, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 5),
+		Size = UDim2.fromOffset(40, 12), TextXAlignment = Enum.TextXAlignment.Right, Parent = level })
+	local _, setBar = Kit.Bar(Colors.Red, { Name = "Bar", Position = UDim2.fromOffset(38, 21), Size = UDim2.new(1, -48, 0, 5), Parent = level })
+	setLevelBar = setBar
+
+	-- height: ruler, "6'4"", "/ 7'0""
+	local height = Theme.Panel({ Name = "Height", LayoutOrder = 3, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(0, TopBar.Height),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = row }, {
+		New("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 10) }),
+		Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+	})
+	Pieces.Icon("ruler", Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(15, 15), Parent = height })
+	heightText = Kit.Text({ Name = "Value", LayoutOrder = 2, Text = "", Font = "Number", TextSize = 18, Size = UDim2.fromOffset(0, TopBar.Height),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = height })
+	heightMax = Kit.Text({ Name = "Max", LayoutOrder = 3, Text = "", Font = "Number", TextSize = 10, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, TopBar.Height),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = height })
+end
+
+local function refreshData()
 	local ok, ClientData = pcall(function() return require(ReplicatedStorage.Shared.ClientData) end)
-	if not ok then return 0 end
+	if not ok then return end
 	local data = ClientData.Get()
-	return data and data.coins or 0
+	if not data then return end
+	coinsText.Text = Kit.Format(data.coins or 0)
+	local Config = ReplicatedStorage.Shared.Config
+	local Muscles = require(Config.Muscles)
+	local GrowthSpurts = require(Config.GrowthSpurts)
+	local total, count = 0, 0
+	for _, muscle in ipairs(Muscles.List) do
+		local entry = data.muscles and data.muscles[muscle.id]
+		if entry then
+			total += Muscles.ExactLevel(entry)
+			count += 1
+		end
+	end
+	local exact = count > 0 and total / count or 0
+	local level = math.floor(exact)
+	local frac = exact - level
+	levelBadge.Number.Text = tostring(level)
+	levelLabel.Text = "LEVEL " .. level
+	levelPct.Text = math.floor(frac * 100) .. "%"
+	setLevelBar(frac)
+	heightText.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts or 0), true)
+	heightMax.Text = "/ " .. GrowthSpurts.FormatHeight(GrowthSpurts.MaxHeightInches, true)
+	local okM, Monetization = pcall(function() return require(Config.Monetization) end)
+	plusButton.Visible = okM and Monetization.AnyConfigured() or false
 end
 
 local function ensure()
 	if gui then return gui end
-	gui = Theme.ScreenGui({ Name = "TopBar", DisplayOrder = 5, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
-	left = New("Frame", { Name = "Left", Size = UDim2.new(0, 0, 0, Theme.PillHeight), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = gui },
-		{ Theme.List(Enum.FillDirection.Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
-	right = New("Frame", {
-		Name = "Right",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -EDGE, 0, TOP),
-		Size = UDim2.new(0, 0, 0, Theme.PillHeight),
-		AutomaticSize = Enum.AutomaticSize.X,
-		BackgroundTransparency = 1,
-		Parent = gui,
-	}, { Theme.List(Enum.FillDirection.Horizontal, "S", Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
-
-	-- the coins pill (not a button: it just shows the count)
-	local coins = makePill("Coins", "0", Icons.Plate)
-	coins.button.Active = false
-	coins.button.Parent = left
-	coinsText = coins.label
-	coins.button.Interactable = false
-
-	local function viewportWatch(camera)
-		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-			local now = camera.ViewportSize.X < NARROW_WIDTH
-			if now ~= narrow then
-				narrow = now or compact
-				applyMode()
-			end
-		end)
-	end
-	Theme.OnCompactChanged(function(isCompact)
-		compact = isCompact
-		local camera = workspace.CurrentCamera
-		narrow = isCompact or (camera ~= nil and camera.ViewportSize.X < NARROW_WIDTH)
-		applyMode()
-	end)
-	if workspace.CurrentCamera then viewportWatch(workspace.CurrentCamera) end
-	SideMenu.Changed:Connect(function()
-		refreshVisible()
-		applyMode()
-	end)
+	build()
 	UIBus.MenuClosed.Event:Connect(refreshVisible)
 	UIBus.GeneticsVisible.Event:Connect(function(open)
 		geneticsOpen = open
 		refreshVisible()
 	end)
+	SideMenu.Changed:Connect(refreshVisible)
 	task.spawn(function() -- (MenuClient raises UIBus.MenuOpen when it starts, which can be after this runs)
 		while true do
 			task.wait(0.4)
@@ -188,49 +125,33 @@ local function ensure()
 	task.spawn(function()
 		local ClientData = require(ReplicatedStorage.Shared.ClientData)
 		ClientData.Get()
-		local function update() coinsText.Text = require(ReplicatedStorage.Shared.Config.Muscles).FormatExp(coinsNow()) end
-		update()
+		refreshData()
 		ClientData.Changed:Connect(function(path)
-			if path[1] == "coins" then update() end
+			local key = path[1]
+			if key == "coins" or key == "muscles" or key == "growthSpurts" then refreshData() end
 		end)
 	end)
 	refreshVisible()
 	return gui
 end
 
--- A pill on the right. `order` sorts them left to right. keepText = keep the text on phones too.
-function TopBar.AddPill(id, text, iconFactory, order, keepText)
+-- (old api) A top-right pill: now a menu tile. `order` is ignored (Config/HudIcons.Tiles sorts the tiles).
+function TopBar.AddPill(id, text, iconFactory, order)
 	ensure()
-	local api = makePill(id, text, iconFactory)
-	api.button.LayoutOrder = order or 1
-	api.button.Parent = right
-	pills[id] = { api = api, keepText = keepText }
-	applyMode()
-
-	local activated = Instance.new("BindableEvent")
-	api.button.Activated:Connect(function() activated:Fire() end)
-	local out = { button = api.button, Activated = activated.Event }
-	function out.SetActive(_, on)
-		api.active = on
-		api.paint()
-	end
-	function out.SetDot(_, on)
-		api.dot.Visible = on
-	end
-	function out.SetText(_, newText)
-		api.label.Text = newText
-	end
-	return out
+	local tile = SideMenu.Add(TILE_IDS[id] or id, text, iconFactory, order)
+	return tile
 end
 
--- Pixel y (inside the safe area) just under the pills.
+-- Screen px (from the top of the safe area) just under the row.
 function TopBar.Bottom()
-	return TOP + Theme.PillHeight
+	ensure()
+	return math.floor((TopBar.Top + TopBar.Height) * Kit.Scale())
 end
 
--- Pixel distance from the right edge to where the pills start (right-hand panels line up with it).
+-- Screen px from the right edge where right-hand panels line up.
 function TopBar.Edge()
-	return EDGE
+	return math.floor(12 * Kit.Scale())
 end
 
+ensure()
 return TopBar

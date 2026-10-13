@@ -1,145 +1,114 @@
--- Small corner notifications that fade out. Notify.Show(text, color?, key?)
--- `key` throttles repeats of the same message. While the genetics screen is up (it owns the top right), toasts wait
--- and show when it closes.
+-- Toasts (owner's UI redesign, mockup 01_main_hud): a small card at the bottom center (an icon tile, a title line and an
+-- optional second line) that pops in and fades out. A newer toast pushes the older one up; at most two at once.
+--   Notify.Show(text, color?, key?)            one line (color tints the icon tile; key throttles repeats of a message)
+--   Notify.Toast(title, sub?, icon?, color?, key?)  title + a second line + an icon (Config/UI.Icons)
+-- On a machine the toasts sit just above the machine panel. While the genetics screen is up they wait.
 local Players = game:GetService("Players")
 local Theme = require(script.Parent.Theme)
+local Kit = require(script.Parent.Kit)
 local UIBus = require(script.Parent.UIBus)
-local RightColumn = require(script.Parent.RightColumn)
-local SideMenu = require(script.Parent.SideMenu)
+
+local New, Colors = Theme.New, Theme.Colors
 
 local Notify = {}
 
-local LIFETIME = 2.5
-local MAX_VISIBLE = 4
+Notify.Lifetime = 2.8
+Notify.MaxVisible = 2
+Notify.Bottom = 16        -- mockup px from the bottom of the screen
+Notify.TrainingBottom = 196 -- ...while on a machine (just above the machine panel)
 
 local list
-local reposition -- set in ensure()
 local order = 0
 local lastShown = {}
-local held = nil -- { {text, color} } while the genetics screen is up
-local training = false -- on a machine (phones show fewer notes then)
+local held = nil -- toasts waiting while the genetics screen is up
+local training = false
 
 local function ensure()
 	if list then return end
-	local gui = Theme.ScreenGui({
-		Name = "Notifications",
-		DisplayOrder = 50,
-		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+	local gui = Theme.ScreenGui({ Name = "Notifications", DisplayOrder = 50, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
+	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	local root = Kit.Root(gui)
+	list = New("Frame", { Name = "List", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -Notify.Bottom),
+		Size = UDim2.fromOffset(420, 200), BackgroundTransparency = 1, Parent = root }, {
+		New("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Bottom }),
 	})
-	-- top right, stacked just under the right column (quest, shake button...)
-	list = Theme.New("Frame", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 12),
-		Size = UDim2.new(0, 260, 0, 200),
-		BackgroundTransparency = 1,
-		Parent = gui,
-	}, {
-		Theme.New("UIListLayout", {
-			Padding = UDim.new(0, 6),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			HorizontalAlignment = Enum.HorizontalAlignment.Right,
-		}),
-	})
-	-- the notifications use the same safe area as the right column, so they follow its bottom edge
-	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
-	-- phones: the right side under the column is the jump button and the bottom is the machine panel, so notes go to
-	-- the top left: under the coins pill, beside whatever the menu shows (the arrow, or the open tiles)
-	local layout = list:FindFirstChildOfClass("UIListLayout")
-	local function follow()
-		if Theme.IsCompact() then
-			list.AnchorPoint = Vector2.new(0, 0)
-			list.Position = UDim2.new(0, math.max(SideMenu.VisibleRight(), 0) + Theme.Spacing.S, 0, Theme.Spacing.S + Theme.MinTouch + Theme.Spacing.S)
-			layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-		else
-			list.AnchorPoint = Vector2.new(1, 0)
-			list.Position = UDim2.new(1, -12, 0, RightColumn.Bottom() + 8)
-			layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-		end
-	end
-	follow()
-	RightColumn.Changed:Connect(follow)
-	SideMenu.Changed:Connect(follow)
-	Theme.OnCompactChanged(function() task.defer(follow) end)
-	reposition = follow
 	task.spawn(function()
 		local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 30)
 		local machineState = remotes and remotes:WaitForChild("MachineState", 30)
-		if machineState then machineState.OnClientEvent:Connect(function(state) training = state == "Enter" end) end
-		Players.LocalPlayer.CharacterAdded:Connect(function() training = false end)
+		if machineState then
+			machineState.OnClientEvent:Connect(function(state)
+				training = state == "Enter"
+				list.Position = UDim2.new(0.5, 0, 1, -(training and Notify.TrainingBottom or Notify.Bottom))
+			end)
+		end
+		Players.LocalPlayer.CharacterAdded:Connect(function()
+			training = false
+			list.Position = UDim2.new(0.5, 0, 1, -Notify.Bottom)
+		end)
 	end)
 end
 
-local function show(text, color)
+local function show(title, sub, icon, color)
 	ensure()
-	reposition()
-
 	local toasts = {}
 	for _, child in ipairs(list:GetChildren()) do
-		if child:IsA("Frame") then table.insert(toasts, child) end
+		if child:IsA("GuiObject") and child.Name == "Toast" then table.insert(toasts, child) end
 	end
 	table.sort(toasts, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
-	local compact = Theme.IsCompact()
-	-- on a machine the panel and its pump meter sit low in the middle: one note at a time, no wider than the right column
-	-- (a long one-line note reached left over the pump meter)
-	local wrapped = compact or training
-	local maxVisible = (compact or training) and (training and 1 or 2) or MAX_VISIBLE
-	for i = 1, #toasts - maxVisible + 1 do
-		toasts[i]:Destroy()
-	end
+	for i = 1, #toasts - Notify.MaxVisible + 1 do toasts[i]:Destroy() end
 
 	order += 1
-	-- big screens: one line that grows to fit; phones (and big screens while training): a fixed width with the text wrapped
-	local toast = Theme.New("Frame", {
-		LayoutOrder = order,
-		AutomaticSize = wrapped and Enum.AutomaticSize.Y or Enum.AutomaticSize.X,
-		Size = wrapped and UDim2.new(0, compact and 150 or RightColumn.Width, 0, 0) or UDim2.new(0, 0, 0, 36),
-		BackgroundColor3 = Theme.Colors.Panel,
-		BackgroundTransparency = Theme.Alpha.Panel,
-		Parent = list,
-	}, {
-		Theme.Round("Button"),
-		Theme.Stroke(),
-		Theme.New("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 12), PaddingTop = UDim.new(0, wrapped and 6 or 0), PaddingBottom = UDim.new(0, wrapped and 6 or 0) }),
-		Theme.New("Frame", {
-			Size = UDim2.new(0, 3, 1, -12),
-			Position = UDim2.new(0, -8, 0, 6),
-			BackgroundColor3 = color or Theme.Colors.Muted, -- a rarity color for titles, otherwise gray
-			BorderSizePixel = 0,
-		}, { Theme.Round("Segment") }),
-		Theme.New("TextLabel", {
-			AutomaticSize = wrapped and Enum.AutomaticSize.Y or Enum.AutomaticSize.X,
-			Size = wrapped and UDim2.new(1, 0, 0, 0) or UDim2.new(0, 0, 1, 0),
-			BackgroundTransparency = 1,
-			FontFace = Theme.Fonts.Regular,
-			TextSize = compact and Theme.TextSize.Small or Theme.TextSize.Body,
-			TextWrapped = wrapped,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = Theme.Colors.Text,
-			Text = text,
-		}),
+	local tint = color or Colors.Gold
+	local toast = Theme.Panel({ Name = "Toast", LayoutOrder = order, Piece = "hud_box", Shadow = false, Size = UDim2.fromOffset(0, sub and 40 or 34),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = list }, {
+		New("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 14) }),
+		Theme.List(Enum.FillDirection.Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
 	})
-	Theme.AddDepth(toast, "Button")
-
-	Theme.Fade(toast, true, 0.2)
-	task.delay(LIFETIME, function()
+	New("UISizeConstraint", { MaxSize = Vector2.new(420, 80), Parent = toast })
+	local iconSize = sub and 28 or 24
+	local tile = Kit.IconTile(icon or "bell", Colors.Ink, iconSize, { LayoutOrder = 1, ImageColor3 = tint, Parent = toast })
+	local iconImage = tile:FindFirstChild("Icon")
+	if iconImage then iconImage.ImageColor3 = (tint == Colors.Gold or tint == Theme.Bumper.White.Fill or tint == Theme.Bumper.Yellow.Fill) and Colors.Ink or Colors.Text end
+	local texts = New("Frame", { LayoutOrder = 2, Size = UDim2.fromOffset(0, sub and 32 or 26), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = toast },
+		{ Theme.List(Enum.FillDirection.Vertical, 0, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
+	if sub then
+		Kit.Text({ LayoutOrder = 1, Text = title, Font = "Title", TextSize = 14, Size = UDim2.fromOffset(0, 17), AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
+		Kit.Text({ LayoutOrder = 2, Text = sub, Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 13), AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
+	else
+		Kit.Text({ LayoutOrder = 1, Text = title, Font = "Body", TextSize = 11, Size = UDim2.fromOffset(0, 26), AutomaticSize = Enum.AutomaticSize.X,
+			TextTruncate = Enum.TextTruncate.AtEnd, Parent = texts })
+	end
+	local pop = New("UIScale", { Scale = 0.96, Parent = toast })
+	Theme.Tween(pop, { Scale = 1 }, 0.18)
+	Theme.Fade(toast, true, 0.18)
+	task.delay(Notify.Lifetime, function()
 		if toast.Parent then
-			local tween = Theme.Fade(toast, false, 0.4)
+			local tween = Theme.Fade(toast, false, 0.35)
 			if tween then tween.Completed:Wait() end
 			toast:Destroy()
 		end
 	end)
 end
 
-function Notify.Show(text, color, key)
+local function queue(title, sub, icon, color, key)
 	if key then
 		if lastShown[key] and os.clock() - lastShown[key] < 2 then return end
 		lastShown[key] = os.clock()
 	end
 	if held then
-		table.insert(held, { text, color })
+		table.insert(held, { title, sub, icon, color })
 		return
 	end
-	show(text, color)
+	show(title, sub, icon, color)
+end
+
+function Notify.Show(text, color, key)
+	queue(tostring(text), nil, nil, color, key)
+end
+
+function Notify.Toast(title, sub, icon, color, key)
+	queue(tostring(title), sub, icon, color, key)
 end
 
 UIBus.GeneticsVisible.Event:Connect(function(visible)
@@ -150,7 +119,7 @@ UIBus.GeneticsVisible.Event:Connect(function(visible)
 	local waiting = held or {}
 	held = nil
 	for index, toast in ipairs(waiting) do
-		task.delay(0.4 + (index - 1) * 0.3, show, toast[1], toast[2])
+		task.delay(0.4 + (index - 1) * 0.3, show, toast[1], toast[2], toast[3], toast[4])
 	end
 end)
 

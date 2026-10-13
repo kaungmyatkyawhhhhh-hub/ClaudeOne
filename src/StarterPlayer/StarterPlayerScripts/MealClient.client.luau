@@ -133,16 +133,10 @@ end)
 ------------------------------------------------------------------------
 -- Boost timers (right column)
 ------------------------------------------------------------------------
-local pills = {} -- [item id] = { frame, text }
-for _, item in ipairs(Meals.Items) do
-	local pill = Theme.Panel({ Name = "Meal_" .. item.id, Size = UDim2.new(1, 0, 0, 34), Visible = false },
-		{ Theme.Pad("S"), Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
-	local slot = New("Frame", { LayoutOrder = 1, Size = UDim2.fromOffset(20, 20), BackgroundTransparency = 1, Parent = pill })
-	iconOf(item).Parent = slot
-	local text = Theme.Text({ LayoutOrder = 2, Text = "", Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, -28, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Upper = false, Parent = pill })
-	text.TextTruncate = Enum.TextTruncate.AtEnd
-	RightColumn.Add(pill, 1) -- (under the rush hour pill, with the shake button)
-	pills[item.id] = { frame = pill, text = text, item = item }
+local pills = {} -- [item id] = chip api (RightColumn.Chip: icon tile, "+20%", "4:12")
+for order, item in ipairs(Meals.Items) do
+	local chip = RightColumn.Chip(item.uiIcon or "cup-soda", Color3.fromHex(item.uiColor or item.color), order)
+	pills[item.id] = { chip = chip, item = item, shown = false }
 end
 
 ------------------------------------------------------------------------
@@ -185,8 +179,11 @@ RunService.Heartbeat:Connect(function(dt)
 		local ends = player:GetAttribute("Meal_" .. id)
 		local left = type(ends) == "number" and ends - t or 0
 		local show = left > 0
-		if pill.frame.Visible ~= show then pill.frame.Visible = show end
-		if show then pill.text.Text = pill.item.name .. "  " .. Meals.Clock(left) end
+		if pill.shown ~= show then
+			pill.shown = show
+			pill.chip:SetVisible(show)
+		end
+		if show then pill.chip:SetText(pill.item.chip or "", Meals.Clock(left)) end
 	end
 	if openShop then refreshAffordable() end
 	-- walked away from the stall: close the shop

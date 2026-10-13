@@ -10,7 +10,6 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Stamina = require(Shared.Config.Stamina)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
-local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local UIBus = require(Shared.UI.UIBus)
 local RightColumn = require(Shared.UI.RightColumn)
@@ -18,24 +17,18 @@ local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
-local Colors, Spacing = Theme.Colors, Theme.Spacing
-local Horizontal = Enum.FillDirection.Horizontal
+local Colors = Theme.Colors
 
 ------------------------------------------------------------------------
 -- Button
 ------------------------------------------------------------------------
-local button = Theme.Button("Secondary", {
-	Name = "DrinkShake",
-	Size = UDim2.fromOffset(RightColumn.Width, Theme.MinTouch + 4),
-	Visible = false,
-}, {
-	Theme.Pad("S"),
-	Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left),
-})
+-- (owner's UI redesign) the bag shake keeps its own look, never the smoothies': purple "sparkles". A small DRINK SHAKE
+-- button with the count, and a chip with the boost's time left.
+local Kit = require(Shared.UI.Kit)
+local button, label = Kit.Button("Secondary", "Drink shake", { Name = "DrinkShake", Visible = false },
+	{ height = 30, width = RightColumn.Width, icon = "sparkles", iconColor = Colors.Purple, textSize = 12 })
 RightColumn.Add(button, 1)
-local iconSlot = Theme.New("Frame", { LayoutOrder = 1, Size = UDim2.fromScale(0, 1), BackgroundTransparency = 1, Parent = button }, { Theme.Aspect(1, Enum.DominantAxis.Height) })
-Icons.Shake(Colors.Text).Parent = iconSlot
-local label = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -40, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = button })
+local chip = RightColumn.Chip("sparkles", Colors.Purple, 10)
 
 local started = false
 
@@ -49,13 +42,12 @@ local function refresh()
 	if not started then return end
 	local shakes = ClientData.Get().shakes or 0
 	local left = boostLeft()
-	button.Visible = shakes > 0 or left > 0
+	button.Visible = shakes > 0
+	label.Text = shakes == 1 and "Drink shake" or ("Drink shake · " .. shakes)
+	chip:SetVisible(left > 0)
 	if left > 0 then
-		label.Text = string.format("Shake boost %ds", math.ceil(left)) .. (shakes > 0 and ("  ·  " .. shakes) or "")
-		label.TextColor3 = Colors.Text
-	else
-		label.Text = shakes == 1 and "Drink shake" or ("Drink shake  ·  " .. shakes)
-		label.TextColor3 = Colors.Text
+		local s = math.ceil(left)
+		chip:SetText(string.format("+%d%%", math.floor((Stamina.Shake.GainsBoost - 1) * 100 + 0.5)), string.format("%d:%02d", s // 60, s % 60))
 	end
 end
 

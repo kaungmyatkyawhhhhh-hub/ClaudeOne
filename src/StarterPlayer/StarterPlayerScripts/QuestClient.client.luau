@@ -22,63 +22,35 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
-local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
+local New, Colors = Theme.New, Theme.Colors
 
-local SEGMENTS = 10
+
 local SPEECH = { Time = 5, Width = 9, Height = 1.6, Offset = 3.2 } -- seconds, studs
 
 ------------------------------------------------------------------------
 -- Tracker
 ------------------------------------------------------------------------
-local panel = Theme.Panel({
-	Name = "QuestTracker",
-	Size = UDim2.fromOffset(RightColumn.Width, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
-	Visible = false, -- shown after Play
-}, {
-	Theme.Pad("M"),
-	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
-})
-RightColumn.Add(panel, 2, true) -- hidden while training
-local header = Theme.Text({ LayoutOrder = 1, Text = "Quest", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-local questText = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
--- phones: smaller quest text (two lines instead of three), so the column fits above the jump button
-Theme.OnCompactChanged(function(isCompact)
-	questText.TextSize = isCompact and Theme.TextSize.Small or Theme.TextSize.Body
-	header.Visible = not isCompact
-end)
-local bar = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = panel }, { Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Left) })
-local segments = {}
-for i = 1, SEGMENTS do
-	local back = New("Frame", { LayoutOrder = i, Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = bar },
-		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
-	segments[i] = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
-end
-local footer = Theme.Text({ LayoutOrder = 4, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+-- the coach quest card (RightColumn.Tracker, mockup 01 look)
+local tracker = RightColumn.Tracker({ name = "QuestTracker", title = "Coach quest", color = Colors.Green, order = 3, idleOnly = true })
+local panel = tracker.frame
+panel.Visible = false -- shown after Play
 
 local function refresh()
 	local data = ClientData.Get()
 	local active = data.quests and data.quests.active
 	local quest = active and Quests.ById[active.id]
 	if not quest then
-		header.Text = "Quest"
-		questText.Text = "Talk to " .. Quests.CoachName .. " at the front desk"
-		bar.Visible = false
-		footer.Text = ""
-		footer.Visible = false
+		tracker:SetCount("")
+		tracker:SetText("Talk to " .. Quests.CoachName .. " at the front desk")
+		tracker:SetProgress(nil)
+		tracker:SetFooter("")
 		return
 	end
-	header.Text = "Quest"
-	questText.Text = quest.text
-	bar.Visible = true
-	local filled = active.goal > 0 and active.progress / active.goal * SEGMENTS or 0
-	for i, fill in ipairs(segments) do
-		Theme.Tween(fill, { Size = UDim2.fromScale(math.clamp(filled - (i - 1), 0, 1), 1) }, Theme.Motion.Time)
-	end
-	footer.Visible = true
-	footer.Text = active.ready and ("Done. Talk to " .. Quests.CoachName) or (Muscles.FormatExp(active.progress) .. " / " .. Muscles.FormatExp(active.goal))
-	footer.TextColor3 = active.ready and Colors.Text or Colors.Muted
+	tracker:SetText(quest.text)
+	tracker:SetProgress(active.goal > 0 and active.progress / active.goal or 0,
+		active.ready and "Done" or (Muscles.FormatExp(active.progress) .. "/" .. Muscles.FormatExp(active.goal)))
+	tracker:SetFooter(active.ready and ("Done. Talk to " .. Quests.CoachName) or "")
+	tracker:SetCount(active.ready and "Ready" or "")
 end
 
 -- New players see the tracker once the tutorial sends them to the Coach, so it never competes with the coach line.

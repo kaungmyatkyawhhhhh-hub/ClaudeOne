@@ -1,10 +1,11 @@
--- ProgressClient: the always-visible Growth Spurt bar (top center), the small "next goal" line under it, and the
--- short "you grew" moment when the body moves up a muscle tier (BodyService fires "Grew").
---  * The bar fills smoothly with the average progress of the 6 groups toward the next Growth Spurt goal. When every
---    group is there it says so and a tap does the Growth Spurt (same action as the Stats screen's button).
+-- ProgressClient: the Growth Spurt card at the bottom of the right column (owner's UI redesign, mockup 01_main_hud), the
+-- small "next goal" line in it, and the short "you grew" moment when the body moves up a muscle tier (BodyService fires
+-- "Grew").
+--  * The card: an up arrow, GROWTH SPURT, the EXP so far / the goal (each group counted up to its goal) and a gold bar.
+--    When every group is there it says "READY! TAP TO GROW" and a tap does the Growth Spurt (same action as the Muscles
+--    screen's button). At 7'0" it reads MAX GROWTH SPURT REACHED (greyed, not tappable).
 --  * The goal line always shows the next small thing (a new weight a few reps away, coins for the next weight, which
 --    group to train), so there's a new goal every 30-60 seconds.
---  * Hidden while the menu, the genetics screen or the Stats overlay (which has its own goal panel) is up.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -17,83 +18,38 @@ local Gains = require(Config.Gains)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
-local UIBus = require(Shared.UI.UIBus)
+local Kit = require(Shared.UI.Kit)
+local RightColumn = require(Shared.UI.RightColumn)
 local Notify = require(Shared.UI.Notify)
-local Icons = require(Shared.UI.Icons)
-local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local Audio = require(Shared.Audio)
 
 local player = Players.LocalPlayer
 local New, Colors = Theme.New, Theme.Colors
-local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
 
-local SEGMENTS = 20
-local compact = Theme.IsCompact()
-
-local gui = Theme.ScreenGui({ Name = "SpurtBar", DisplayOrder = 4, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
-gui.ScreenInsets = Enum.ScreenInsets.None -- (sits right at the top edge of the screen)
-
-local panel = Theme.Button("Secondary", {
-	Name = "Panel",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 4),
-	Size = UDim2.fromOffset(compact and 260 or 320, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
-	Parent = gui,
-}, { Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top), Theme.Pad("S") })
-panel.Active = false -- only tappable when the Growth Spurt is ready
-
-local titleRow = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = panel })
-local title = Theme.Text({ Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(0.58, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = titleRow })
-local heightLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -26, 0, 0), Size = UDim2.new(0.42, -26, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = titleRow })
-
--- the arrow: collapses the panel to its title row and expands it again (a 24px icon in a 44px touch area, centered where
--- the icon sits, so it is easy to hit on phones)
-local arrow = New("TextButton", { Name = "Arrow", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 10, 0.5, 0), Size = UDim2.fromOffset(Theme.MinTouch, Theme.MinTouch), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 2, Parent = titleRow })
-local arrowIcon = Icons.Chevron(1, Colors.Text)
-arrowIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-arrowIcon.Position = UDim2.fromScale(0.5, 0.5)
-arrowIcon.Size = UDim2.fromOffset(24, 24)
-arrowIcon.Rotation = -90
-arrowIcon.Parent = arrow
-
-local barRow = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = panel }, { Theme.List(Horizontal, "XS") })
-local fills = {}
-for i = 1, SEGMENTS do
-	local back = New("Frame", { LayoutOrder = i, Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = barRow },
-		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
-	fills[i] = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
-end
-
--- the next goal: white (readable over any background) and wrapped onto a second line instead of being cut off
-local goalLabel = Theme.Text({ LayoutOrder = 3, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Text, Size = UDim2.new(1, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, Parent = panel })
-Theme.TextShadow(goalLabel)
-
-local collapsed = false
-local function setCollapsed(value)
-	collapsed = value
-	barRow.Visible = not collapsed
-	goalLabel.Visible = not collapsed
-	Theme.Tween(arrowIcon, { Rotation = collapsed and 90 or -90 }, 0.2)
-end
-arrow.Activated:Connect(function()
-	Audio.PlayUI("Click")
-	setCollapsed(not collapsed)
-end)
+------------------------------------------------------------------------
+-- The card
+------------------------------------------------------------------------
+-- (the whole card is the button; it only does something when the Growth Spurt is ready)
+local card = RightColumn.Tracker({ name = "GrowthSpurt", title = "Growth Spurt", color = Colors.Gold, icon = "arrow-big-up", iconColor = Colors.Gold, order = 9, idleOnly = "bottom", clickable = true })
+card.frame.Visible = false
 
 ------------------------------------------------------------------------
 -- Progress + goals
 ------------------------------------------------------------------------
 local currentMachine = nil -- the machine the player is on (MachineState)
-local shownFill = -1
 local ready = false
 
 local function spurtProgress(data)
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, trainable)
-	local total = 0
-	for _, level in pairs(progress.groups) do total += math.min(level / progress.required, 1) end
-	return progress, total / #Muscles.Groups
+	local have, need = 0, 0
+	for _, group in ipairs(Muscles.Groups) do
+		local level = progress.groups[group.id] or 0
+		have += Muscles.Shown(math.min(level, progress.required))
+		need += Muscles.Shown(progress.required)
+	end
+	return progress, have, need
 end
 
 -- Reps of `machine` (at the tier the player lifts now) until its main muscle reaches `level`.
@@ -128,8 +84,7 @@ local function machineGoal(data, machine)
 end
 
 local function goalText(data, progress)
-	if progress.maxed then return "MAX GROWTH SPURT REACHED" end -- (7'0": no more spurts; greyed, not tappable)
-	if progress.ready then return "Ready! Tap here to grow" end
+	if progress.maxed or progress.ready then return "" end
 	if currentMachine then
 		local goal = machineGoal(data, currentMachine)
 		if goal then return goal end
@@ -150,70 +105,30 @@ local function goalText(data, progress)
 	return "Next: train " .. lowest.name
 end
 
-local lastGoal = nil
-local function setGoal(text)
-	if text == lastGoal then return end
-	lastGoal = text
-	goalLabel.Text = text
-	goalLabel.TextTransparency = 0 -- always solid (a fade-in here could get stuck half-transparent)
-end
-
 local function refresh()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
-	local progress, fill = spurtProgress(data)
-	local nextSpurt = data.growthSpurts + 1
+	local progress, have, need = spurtProgress(data)
 	if progress.maxed then
-		fill = 1
-		title.Text = "Growth Spurt " .. data.growthSpurts
-		heightLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts))
+		card:SetTitle("Max Growth Spurt reached")
+		card:SetCount("")
+		card:SetProgress(1, GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true))
+		card:SetColor(Colors.Faint)
 	else
-		title.Text = "Growth Spurt " .. nextSpurt
-		heightLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(nextSpurt))
+		card:SetTitle(progress.ready and "Ready! Tap to grow" or ("Growth Spurt " .. (data.growthSpurts + 1)))
+		card:SetCount("")
+		card:SetProgress(need > 0 and have / need or 0, Kit.Format(have) .. " / " .. Kit.Format(need))
+		card:SetColor(Colors.Gold)
 	end
-	goalLabel.TextColor3 = progress.maxed and Colors.Muted or Colors.Text
-	if math.abs(fill - shownFill) > 0.0005 then
-		shownFill = fill
-		for i, segment in ipairs(fills) do
-			Theme.Tween(segment, { Size = UDim2.fromScale(math.clamp(fill * SEGMENTS - (i - 1), 0, 1), 1) }, 0.4)
-		end
-	end
+	card:SetText("")
+	card:SetFooter(goalText(data, progress))
 	ready = progress.ready
-	panel.Active = ready
-	goalLabel.FontFace = ready and Theme.Fonts.SemiBold or Theme.Fonts.Regular
-	setGoal(goalText(data, progress))
+	card.title.TextColor3 = ready and Colors.Gold or Colors.Text
 end
 
-panel.Activated:Connect(function()
+card.Activated:Connect(function()
 	if ready then Remotes.PlayerAction:FireServer("GrowthSpurt") end
 end)
-
-------------------------------------------------------------------------
--- Visibility
-------------------------------------------------------------------------
-local hidden = { menu = true, genetics = false, stats = false }
-local shown = false
-local function updateVisible()
-	local want = not (hidden.menu or hidden.genetics or hidden.stats)
-	if want == shown then return end
-	shown = want
-	if want then
-		gui.Enabled = true
-		Theme.Fade(panel, true)
-	else
-		local tween = Theme.Fade(panel, false)
-		if tween then
-			tween.Completed:Connect(function()
-				if not shown then gui.Enabled = false end
-			end)
-		else
-			gui.Enabled = false
-		end
-	end
-end
-
-UIBus.GeneticsVisible.Event:Connect(function(visible) hidden.genetics = visible; updateVisible() end)
-UIBus.MusclesVisible.Event:Connect(function(visible) hidden.stats = visible; updateVisible() end)
 
 Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	if state == "Enter" and typeof(model) == "Instance" then
@@ -225,7 +140,7 @@ Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 end)
 
 ------------------------------------------------------------------------
--- "You grew": a quick pulse on the body, a sound and a small corner note
+-- "You grew": a quick pulse on the body, a sound and a small note
 ------------------------------------------------------------------------
 local function grewMoment(tier)
 	local character = player.Character
@@ -257,11 +172,9 @@ end)
 
 ------------------------------------------------------------------------
 task.spawn(function()
-	ClientData.Get() -- waits for the data snapshot (by then the menu screen has started)
-	UIBus.WaitForMenu()
-	hidden.menu = false
+	ClientData.Get() -- waits for the data snapshot
 	refresh()
-	updateVisible()
+	card.frame.Visible = true
 end)
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
@@ -270,11 +183,6 @@ end)
 task.spawn(function()
 	while true do
 		task.wait(2)
-		if shown then refresh() end
+		refresh()
 	end
-end)
-
--- phones get a narrower bar (switches live with the screen size)
-Theme.OnCompactChanged(function(isCompact)
-	panel.Size = UDim2.fromOffset(isCompact and 260 or 320, 0)
 end)

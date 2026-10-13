@@ -26,23 +26,17 @@ local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Hor
 ------------------------------------------------------------------------
 -- Server boost pill (anyone in the server sees it)
 ------------------------------------------------------------------------
-local pill = Theme.Panel({ Name = "ServerBoost", Size = UDim2.fromOffset(RightColumn.Width, 36), Visible = false },
-	{ Theme.Pad("S"), Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left) })
-RightColumn.Add(pill, 0)
-local pillIcon = New("Frame", { LayoutOrder = 1, Size = UDim2.fromScale(0, 1), BackgroundTransparency = 1, Parent = pill }, { Theme.Aspect(1, Enum.DominantAxis.Height) })
-Icons.Timer(Colors.Text).Parent = pillIcon
-local pillText = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, -30, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = pill })
-
+local Kit = require(Shared.UI.Kit)
+local boostChip = RightColumn.Chip("zap", Colors.Gold, 1)
 local started = false
 task.spawn(function()
 	while true do
 		task.wait(1)
 		local ends = ReplicatedStorage:GetAttribute("ServerBoostEnds")
 		local left = type(ends) == "number" and math.max(0, ends - Workspace:GetServerTimeNow()) or 0
-		pill.Visible = started and left > 0
+		boostChip:SetVisible(started and left > 0)
 		if left > 0 then
-			pillText.Text = string.format("%dx gains %d:%02d · by %s", Monetization.Effects.ServerBoostGains, left // 60,
-				math.floor(left % 60), tostring(ReplicatedStorage:GetAttribute("ServerBoostBy") or "someone"))
+			boostChip:SetText(Monetization.Effects.ServerBoostGains .. "x", string.format("%d:%02d", left // 60, math.floor(left % 60)))
 		end
 	end
 end)
@@ -63,9 +57,8 @@ end)
 ------------------------------------------------------------------------
 -- Auto Lift toggle (only for owners)
 ------------------------------------------------------------------------
-local autoButton = Theme.Button("Secondary", { Name = "AutoLift", Size = UDim2.fromOffset(RightColumn.Width, Theme.MinTouch), Visible = false }, {})
+local autoButton, autoLabel = Kit.Button("Secondary", "Auto lift: off", { Name = "AutoLift", Visible = false }, { height = 30, width = RightColumn.Width, icon = "repeat", textSize = 12 })
 RightColumn.Add(autoButton, 4)
-local autoLabel = Theme.Text({ Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), Parent = autoButton })
 local function refreshAuto()
 	local owns = player:GetAttribute("Pass_AutoLift") == true
 	autoButton.Visible = started and owns

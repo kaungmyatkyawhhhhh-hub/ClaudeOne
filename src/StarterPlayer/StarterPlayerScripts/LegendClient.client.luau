@@ -13,30 +13,11 @@ local RightColumn = require(Shared.UI.RightColumn)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
-local New, Colors = Theme.New, Theme.Colors
-local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
-local SEGMENTS = 10
-
-local panel = Theme.Panel({
-	Name = "LegendTracker",
-	Size = UDim2.fromOffset(RightColumn.Width, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
-	Visible = false,
-}, {
-	Theme.Pad("M"),
-	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
-})
-RightColumn.Add(panel, 3, true) -- hidden while training
-local header = Theme.Text({ LayoutOrder = 1, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-local text = Theme.Text({ LayoutOrder = 2, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-local bar = New("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 8), BackgroundTransparency = 1, Parent = panel }, { Theme.List(Horizontal, "XS", Enum.HorizontalAlignment.Left) })
-local segments = {}
-for i = 1, SEGMENTS do
-	local back = New("Frame", { LayoutOrder = i, Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, BackgroundTransparency = 0.85, Parent = bar },
-		{ Theme.Round("Segment"), New("UIFlexItem", { FlexMode = Enum.UIFlexMode.Fill }) })
-	segments[i] = New("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Colors.Text, Parent = back }, { Theme.Round("Segment") })
-end
-local footer = Theme.Text({ LayoutOrder = 4, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+local Colors = Theme.Colors
+-- the legend challenge card (RightColumn.Tracker, mockup 01 look)
+local tracker = RightColumn.Tracker({ name = "LegendTracker", title = "Legend challenge", color = Colors.Gold, icon = "trophy", order = 4, idleOnly = true })
+local panel = tracker.frame
+panel.Visible = false
 
 local started = false
 local function refresh()
@@ -46,13 +27,9 @@ local function refresh()
 	local legend = active and Legends.ById[active.id]
 	panel.Visible = legend ~= nil
 	if not legend then return end
-	header.Text = "Legend challenge · " .. legend.name
-	text.Text = legend.quest.text
-	local filled = active.goal > 0 and active.progress / active.goal * SEGMENTS or 0
-	for i, fill in ipairs(segments) do
-		Theme.Tween(fill, { Size = UDim2.fromScale(math.clamp(filled - (i - 1), 0, 1), 1) }, Theme.Motion.Time)
-	end
-	footer.Text = active.progress .. " / " .. active.goal
+	tracker:SetTitle("Legend · " .. legend.name)
+	tracker:SetText(legend.quest.text)
+	tracker:SetProgress(active.goal > 0 and active.progress / active.goal or 0, active.progress .. "/" .. active.goal)
 end
 
 ClientData.Changed:Connect(function(path)
