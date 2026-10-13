@@ -45,6 +45,7 @@ local function create(name, parent, opts)
 		warn("[Audio] unknown sound " .. tostring(name))
 		return nil
 	end
+	if #def.ids == 0 then return nil end -- an empty slot (the owner hasn't picked its id yet): silent
 	opts = opts or {}
 	local spread = def.pitch or 0
 	local sound = Instance.new("Sound")

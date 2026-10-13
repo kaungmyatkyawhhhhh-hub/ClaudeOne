@@ -201,14 +201,24 @@ task.spawn(function()
 	for _, show in pairs(choiceRows) do show() end
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.StartMusic()
-	-- area music: the pro gym is the room east of the starter gym (x 37..93, z -73.5..-4, see the Gyms builder)
+	-- area music: the pro gym is the room east of the starter gym (x 44.5..114, z -90..-4; the starter gym with its hall is
+	-- x -45..44.5 up to z 13.5, see the Gyms builder), the beach is north of Beach Road (z > 162), the town everywhere else
 	while true do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		if root then
 			local p = root.Position
-			local inPro = p.X > 37 and p.X < 93 and p.Z > -73.5 and p.Z < -4 and p.Y < 20
-			Audio.SetArea(inPro and "Pro" or "Starter")
+			local area = "Town"
+			if p.Y > 60 then
+				area = "Starter" -- (the genetics stage high above the town)
+			elseif p.X > 44.5 and p.X < 114 and p.Z > -90 and p.Z < -4 then
+				area = "Pro"
+			elseif p.X > -45 and p.X < 44.5 and p.Z > -90 and p.Z < 13.5 then
+				area = "Starter"
+			elseif p.Z > 162 then
+				area = "Beach"
+			end
+			Audio.SetArea(area)
 		end
 		task.wait(2)
 	end

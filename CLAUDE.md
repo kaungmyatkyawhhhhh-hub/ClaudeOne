@@ -22,7 +22,9 @@
 - UI fonts: Oswald (headings/numbers) + Nunito (body). Never Montserrat/Gotham. (`Shared.UI.UIFonts`; Theme.Fonts maps
   the weights onto them; titles and button labels are UPPERCASE.)
 - Monetization stays OFF (no gamepasses/products/badges created). No emojis in UI, no grunt sounds, no real
-  people/brands/copyrighted art. The owner picks sound IDs; never pick new ones.
+  people/brands/copyrighted art. Sound IDs (owner, 13 Oct: "pick audios for me"): Claude picks them, ONLY from Roblox's licensed
+  library (creator ProSoundEffects for effects, APM Music for music; never user uploads), and lists every pick in
+  `Config/Sounds` comments and the vault's Music and Sounds note so the owner can swap any.
 - Lighting: `Lighting.Technology` no longer exists; never set it. Use `LightingStyle = Realistic` and
   `PrioritizeLightingQuality = true` (already set in the place).
 - `export/GymArc.rbxlx` is an old place snapshot (4 Oct 2026), kept as a backup.

@@ -148,7 +148,11 @@ local function watch(character: Instance)
 		end
 		lastName = name
 		if character == player.Character then
-			if emote then
+			if emote and player:GetAttribute("PosingComp") then
+				-- on stage in a posing competition: PosingCompClient shows the pose, and moving is never wanted here
+				posingSince = nil
+				gui.Enabled = false
+			elseif emote then
 				if not posingSince then faceCamera(character) end
 				posingSince = os.clock()
 				nameLabel.Text = emote.name

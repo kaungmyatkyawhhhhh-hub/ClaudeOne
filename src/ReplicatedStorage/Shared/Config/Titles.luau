@@ -65,6 +65,8 @@ Titles.List = {
 		description = "Do 100 reps while someone lifts nearby.", condition = { type = "stat", stat = "togetherReps", min = 100 } },
 	{ id = "IronGrip", name = "Iron Grip", rarity = "Rare", category = "Social",
 		description = "Win 10 arm wrestling matches.", condition = { type = "stat", stat = "armWins", min = 10 } },
+	{ id = "PosingChampion", name = "Posing Champion", rarity = "Epic", category = "Social",
+		description = "Win a posing competition on the beach stage.", condition = { type = "stat", stat = "posingWins", min = 1 } },
 	{ id = "NoDaysOff", name = "No Days Off", rarity = "Secret", category = "Secret",
 		description = "Do 500 reps in one visit.", condition = { type = "stat", stat = "sessionReps", min = 500 } },
 }

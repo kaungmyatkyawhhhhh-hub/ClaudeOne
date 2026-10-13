@@ -30,6 +30,9 @@ local written = {} -- [player] = { [key] = score } last value written
 local names = {}   -- [userId] = name
 local statueUserId = nil
 local statueSpurts = nil
+local statueKey = nil -- what the statue shows now ("strongest" or "champion" + the user id), so it rebuilds on a change
+local champion = nil  -- the last posing competition's winner (PosingCompService): { userId, name, spurts, muscleG }
+local stageJudging = true -- the posing stage's everyday judges (off while a posing competition runs)
 
 ------------------------------------------------------------------------
 -- Leaderboard board (built in Studio: Workspace.LeaderboardWall, made with tools/builders/ShowOff.luau)
@@ -144,11 +147,19 @@ end
 -- a real R15 rig from the HumanoidDescription, all marble, posed, then every part placed from its joints and anchored
 -- (anchoring before the joints are solved is what left gaps and a missing head before).
 local function refreshStatue()
-	local entry = top("Total", 1)[1]
-	local userId = entry and tonumber(entry.key) or 0
-	-- the statue is as tall as that player is (their Growth Spurts; the Total score carries the count)
-	local spurts = entry and entry.value // 1000000 or 0
-	if userId == statueUserId and spurts == statueSpurts and statue and statue.Parent then return end
+	local userId, spurts, kind
+	if champion then
+		-- the posing champion stands there until the next round (their own muscles, see below)
+		userId, spurts, kind = champion.userId, champion.spurts, "champion"
+	else
+		local entry = top("Total", 1)[1]
+		userId = entry and tonumber(entry.key) or 0
+		-- the statue is as tall as that player is (their Growth Spurts; the Total score carries the count)
+		spurts = entry and entry.value // 1000000 or 0
+		kind = "strongest"
+	end
+	local key = kind .. userId
+	if userId == statueUserId and spurts == statueSpurts and key == statueKey and statue and statue.Parent then return end
 	local desc = nil
 	if userId > 0 then
 		local ok, result = pcall(Players.GetHumanoidDescriptionFromUserId, Players, userId)
@@ -164,6 +175,7 @@ local function refreshStatue()
 	end
 	statueUserId = userId
 	statueSpurts = spurts
+	statueKey = key
 	if statue then statue:Destroy() end
 	statue = model
 	model.Name = "Statue"
@@ -205,11 +217,16 @@ local function refreshStatue()
 	end
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model.Parent = Workspace
-	-- the clients draw the full-grown marble muscles (muscle v7) from these attributes
-	model:SetAttribute("MuscleG", BodyService.EncodeShare(1))
+	-- the clients draw the marble muscles from these attributes (static body stage meshes, like any other body): full
+	-- grown for the strongest lifter, the champion's own muscles for the posing champion
+	model:SetAttribute("MuscleG", champion and champion.muscleG or BodyService.EncodeShare(1))
 	model:SetAttribute("MuscleMarble", true)
 	if plaque then
-		plaque.Text = userId > 0 and ("Strongest lifter: " .. nameOf(userId)) or "Strongest lifter: could be you"
+		if champion then
+			plaque.Text = "Posing champion: " .. champion.name
+		else
+			plaque.Text = userId > 0 and ("Strongest lifter: " .. nameOf(userId)) or "Strongest lifter: could be you"
+		end
 	end
 end
 
@@ -259,6 +276,7 @@ local function onStage(root)
 end
 
 local function judge(player, emote, token)
+	if not stageJudging then return end
 	local state = posed[player]
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -273,6 +291,26 @@ local function judge(player, emote, token)
 	local share = total / #emote.muscles
 	local score = math.floor((1 + 9 * share) * 2 + 0.5) / 2 -- 1 to 10 in halves
 	Remotes.PlayerEvent:FireClient(player, "PoseScore", { name = emote.name, score = score })
+end
+
+-- The posing stage's everyday judges (a pose held on the stage gets a score) are quiet while a competition runs.
+function ShowOffService.SetStageJudging(on)
+	stageJudging = on
+end
+
+-- The posing competition's winner becomes the statue until the next round (nil = back to the strongest lifter).
+function ShowOffService.SetChampion(player)
+	local data = player and PlayerData.Get(player)
+	if data then
+		local levels, goal = BodyService.LevelsOf(data)
+		champion = { userId = player.UserId, name = player.DisplayName, spurts = data.growthSpurts or 0, muscleG = BodyService.EncodeLevels(levels, goal) }
+	else
+		champion = nil
+	end
+	task.spawn(function()
+		local ok, err = pcall(refreshStatue)
+		if not ok then warn("[ShowOffService] refreshStatue:", err) end
+	end)
 end
 
 function ShowOffService.SetPose(player, emote)

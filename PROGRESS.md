@@ -2,7 +2,35 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (13 Oct): soft shutdown
+## LATEST (13 Oct): new features run (owner's GYM_ARC_new_features.md), in progress
+Sounds: the owner asked Claude to pick them ("pick audios for me"): every placeholder and new slot in `Config/Sounds` now
+has a Roblox-licensed id (ProSoundEffects / APM only), plus Beach and Town area music (SettingsClient's area check now
+knows the bigger gyms, the beach and the town). Weak fits to listen to first: CrowdOoh (a crowd surge; no licensed
+"ooh" exists), RivalLose, DoorSlide (an elevator door), SkateGrind (a concrete grind). `Audio` skips an empty slot.
+
+### Task 1: Posing Competition (done, tested solo)
+- `Config/PosingComp` (every number), `Server/PosingCompService`, `PosingCompClient`, builder `tools/builders/PosingComp`
+  (run: `Workspace.Town.PosingStage.Feature_PosingComp` = 6 taped marks, a 3-step podium, a scoreboard screen beside the
+  stage), `Server/GameEvents` (a small event bus for the daily quests), stats `posingWins` / `posingEntries`, title
+  "Posing Champion" (`stat posingWins >= 1`). The stage's old Montserrat backdrop text is Oswald / Nunito now.
+- Flow: every 12 min a server-wide countdown (60 s; banner at the top of the right column, a marker over the stage and
+  an arrow on a ring around the screen centre while it's off screen). Standing on the stage when it ends = in (max 6,
+  closest first; never someone lifting or skating). Fewer than 2: NPC bodybuilders fill up to 3 (shirtless, own looks).
+  Contestants get the crowd's camera; 3 poses (front double biceps, lat spread, most muscular): a ring closes on a big
+  POSE button (Space / gamepad A too), the server times the tap (ping forgiven, capped 0.3 s), then the judges' card
+  (1-10) goes up above every contestant. Score = 55% size + 25% balance + 20% timing. Watchers within 150 studs vote
+  during the last pose (+0.5 a vote, max +2; never yourself). Podium for 10 s; coins 150 / 90 / 50 / 10; a winning
+  player gets the title and becomes the statue (their own muscles, plaque "Posing champion") until the next round; an
+  NPC win gives the statue back to the strongest lifter. Leaving the stage / reset / leaving = out, no reward.
+- Studio hooks: `TestPosingComp` (start a countdown now), `TestPosingCountdown` (its seconds), `TestPosingWatch` (NPCs
+  only, so a solo tester can vote).
+- Tested (solo, FreshPlayer): countdown + marker/arrow, NPC fill, perfect taps (3 x 10 = 30, won), missed taps (8s), the
+  cards, vote panel + vote counted, podium, title + 150 coins, statue + plaque, camera back to normal; no errors in
+  Output. NOT tested: two real players (MCP play is solo only), phone emulator (can't be driven from here).
+- Screenshots: posing_countdown_banner_arrow, posing_3_contestants_score_cards, posing_vote_panel, posing_podium,
+  posing_statue_champion.
+
+## Before that (13 Oct): soft shutdown
 - `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all
   servers" / "Migrate to latest update"), players get a small note ("The gym is updating..."), are teleported together into
   one reserved holding server, and after 6 s go back to a fresh public server on the new version. Saves run as before
