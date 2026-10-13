@@ -70,6 +70,11 @@ local function build()
 	local coins = pill("Coins", 1, leftRow)
 	Kit.Coin(19, { LayoutOrder = 1, Parent = coins })
 	coinsText = text("Value", 2, "0", coins)
+	-- (owner's final kit: hidden while a window is open; the window has its own coins pill)
+	local player = Players.LocalPlayer
+	local function coinsShown() coins.Visible = player:GetAttribute("WindowOpen") ~= true end
+	player:GetAttributeChangedSignal("WindowOpen"):Connect(coinsShown)
+	coinsShown()
 	-- height: ruler, "6'4"", "/ 7'0"" in gray
 	local height = pill("Height", 2, leftRow)
 	Pieces.Icon("ruler", Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(17, 17), Parent = height })

@@ -37,6 +37,9 @@ Monetization.Effects = {
 -- The Store button waits until the tutorial is done and this much play time in the session.
 Monetization.StoreAfterMinutes = 5
 
+-- The Store's hero tile shows a small BEST SELLER tag on this item (owner's final kit, mockup 04_store).
+Monetization.BestSeller = "AutoLift"
+
 Monetization.PassByKey, Monetization.ProductByKey = {}, {}
 for _, pass in ipairs(Monetization.Passes) do Monetization.PassByKey[pass.key] = pass end
 for _, product in ipairs(Monetization.Products) do Monetization.ProductByKey[product.key] = product end

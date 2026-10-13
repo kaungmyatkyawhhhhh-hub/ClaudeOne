@@ -2,6 +2,20 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
+## 14 Oct: FINAL UI KIT "BLACK + GOLD" (owner's GYM_ARC_UI_final.md + gym_arc_ui_final mockups), screen by screen
+- 1. Store (the reference frame) + the shared kit. Theme: graphite panels (vertical gradient #252226 -> #18161A ->
+  #0D0C0E, 1px top hairline, soft dark edge, 14px), cards #232023 -> #141215 with a top highlight and a darker lip (11px),
+  Montserrat Black Italic display font (GothamBlack has no italic face in Roblox; Montserrat's is built in and matches),
+  Montserrat Medium body. Buttons: CTA Red / Gold (bevel, glossy top lip, dark lip, soft colored glow, diagonal shine
+  streak that sweeps once when a window opens, Theme.Pulse every 1.6 s); every other style is quiet dark; inactive tabs
+  FLAT; hover 1.04 / press 0.96. Kit.Modal: TITLE + tabs inside the panel header, coins pill (spec.coins) + quiet X on
+  the right; 90% size, a soft dark vignette + light blur so the gym shows; the HUD coin counter hides while a window is
+  open. Kit.Bar fat outlined + metallic fill, Kit.PricePill, Kit.GoldText, gold rank plates (Kit.GradeBadge).
+  Store: hero tile (gold border + glow, BEST SELLER on Monetization.BestSeller = AutoLift, big art, gold name, red
+  R$ CTA that pulses) + 3-column grid with price pills; OWNED = rotated gold stamp, tile art / name dimmed.
+  Studio preview: Workspace TestStoreAll = true shows every item. Screenshots: ui_compare_final/04_store_*.
+  Note: every window picks up the new materials now; the next steps fit Quests, Coaches, Physique, HUD, Lifting, title.
+
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier
   ignores what was bought, server SelectTier / MaxWeight never charge). No price on signs, panel or goal lines. Tested:

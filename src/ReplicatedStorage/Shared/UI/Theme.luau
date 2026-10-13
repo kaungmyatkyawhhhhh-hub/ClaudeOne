@@ -1,12 +1,15 @@
--- GYM ARC design system, UI v2 (owner, 13 Oct: GYM_ARC_UI_v2_gymleague_style.md + gym_arc_ui_mockups_v2; replaces the
--- dark image-piece style): bright "simulator" UI built from Frames + UIGradient + UIStroke + UICorner.
---   * Text: FredokaOne, white with a thick black outline (labels, titles, buttons, numbers); body text (descriptions,
---     dialog) Montserrat Bold, white, no outline.
---   * Buttons: glossy vertical gradients (green / red / gold / blue / gray / purple / orange / teal), 10px corners and a
---     lighter border in their own color like the left menu tiles (owner, 13 Oct), a thin lighter inner line and a darker
---     bottom lip. Press = shrink to 0.94 and bounce back.
---   * Panels: dark translucent #18181E, 14px corners, a soft light edge. Cards inside: #28282F, 10px corners.
---   * Tabs sit above a panel as separate buttons (active = red); close = a red square X with a white border.
+-- GYM ARC design system: the FINAL UI kit "BLACK + GOLD" (owner, 14 Oct: Downloads/GYM_ARC_UI_final.md + the mockups in
+-- gym_arc_ui_final; replaces every earlier look: grit, Gym League, premium). Layouts stay; only the materials changed.
+--   * Panels: dark graphite, a vertical gradient #252226 -> #18161A -> #0D0C0E, a 1px light hairline along the top edge,
+--     14px corners and a soft dark edge. Cards inside: #232023 -> #141215, a top highlight, a darker bottom lip, 11px.
+--   * Text: one heavy italic athletic font (Montserrat Black Italic) for titles, names, buttons and numbers; small body
+--     text Montserrat Medium in gray.
+--   * Gold (a gradient with a glint) for the active tab, hero names, rewards, big numbers and rank plates. Red only for
+--     the one hype / CTA button on a screen; teal only for progress and stamina.
+--   * CTA buttons (Red, Gold): a bevelled gradient with a glossy top lip, a darker bottom lip, a soft colored glow and a
+--     diagonal shine streak (it sweeps across once when a window opens; featured CTAs pulse every 1.6 s).
+--     Everything else is quiet: dark buttons with a top highlight; inactive tabs are FLAT (no bevel, gray text).
+--   * Hover 1.04, press 0.96. Reduced motion (Roblox's setting or the game's Settings toggle) stops the loops.
 -- Color still means something: plates, grades and rarity keep the bumper plate colors. Every UI reads its look from here
 -- and from Shared.UI.Kit (the components).
 local TweenService = game:GetService("TweenService")
@@ -14,68 +17,84 @@ local TweenService = game:GetService("TweenService")
 local Theme = {}
 
 Theme.Colors = {
-	Background = Color3.fromHex("#0D0D12"), -- modal backdrops, deep wells
-	Panel = Color3.fromHex("#18181E"),      -- panels
-	Card = Color3.fromHex("#28282F"),       -- cards / rows inside panels
-	Well = Color3.fromHex("#101016"),       -- bar tracks
-	Pill = Color3.fromHex("#16161A"),       -- top bar pills, HUD cards over the world
-	Secondary = Color3.fromHex("#3A3A44"),  -- gray buttons
-	Disabled = Color3.fromHex("#2C2C34"),
-	TabActive = Color3.fromHex("#EE3A42"),
-	HeaderTop = Color3.fromHex("#18181E"),
-	HeaderBottom = Color3.fromHex("#18181E"),
-	Outline = Color3.fromHex("#0D0D12"),    -- the dark outline around panels, buttons and cards
-	Border = Color3.fromHex("#0D0D12"),     -- (old name for the outline)
+	Background = Color3.fromHex("#0A090B"), -- modal backdrops, deep wells
+	Panel = Color3.fromHex("#18161A"),      -- panels (the middle of their gradient)
+	Card = Color3.fromHex("#1B181C"),       -- cards / rows inside panels
+	Well = Color3.fromHex("#0A090B"),       -- bar tracks, price pills
+	Pill = Color3.fromHex("#141215"),       -- top bar pills, HUD cards over the world
+	Secondary = Color3.fromHex("#2A272B"),  -- quiet buttons
+	Disabled = Color3.fromHex("#1C1A1D"),
+	TabActive = Color3.fromHex("#F6C75A"),
+	HeaderTop = Color3.fromHex("#252226"),
+	HeaderBottom = Color3.fromHex("#18161A"),
+	Outline = Color3.fromHex("#050405"),    -- the dark edge around panels, buttons and cards
+	Border = Color3.fromHex("#050405"),     -- (old name for the outline)
 	Text = Color3.fromHex("#FFFFFF"),       -- main text
-	Muted = Color3.fromHex("#B8B8C4"),      -- secondary text
-	Faint = Color3.fromHex("#6E6E7A"),      -- locked items
+	Muted = Color3.fromHex("#A39A9D"),      -- secondary text
+	Faint = Color3.fromHex("#6F6669"),      -- locked items
 	Chalk = Color3.fromHex("#FFFFFF"),
-	Ink = Color3.fromHex("#16161A"),        -- dark text on light fills
+	Ink = Color3.fromHex("#2A1C05"),        -- dark text on gold
 	Shadow = Color3.fromHex("#000000"),
-	Red = Color3.fromHex("#EE3A42"),        -- primary
-	RedTint = Color3.fromHex("#4A1A1E"),
-	Gold = Color3.fromHex("#FFC93C"),       -- coins, prices, tiers, big moments
-	Green = Color3.fromHex("#5FD35A"),      -- claim, done, auto on, following
-	Blue = Color3.fromHex("#4AA3FF"),       -- stamina, rare
-	Purple = Color3.fromHex("#B26BFF"),     -- epic
+	Red = Color3.fromHex("#E8343C"),        -- the CTA
+	RedTint = Color3.fromHex("#3A1013"),
+	Gold = Color3.fromHex("#F6C75A"),       -- coins, prices, tiers, big moments
+	GoldDeep = Color3.fromHex("#C98A12"),
+	Green = Color3.fromHex("#36C26B"),      -- claim, done, auto on, following
+	Blue = Color3.fromHex("#3F8CFF"),       -- rare
+	Purple = Color3.fromHex("#9A5CFF"),     -- epic
 	Orange = Color3.fromHex("#FF9A2E"),
-	Teal = Color3.fromHex("#2EC4B6"),
-	Robux = Color3.fromHex("#5FD35A"),      -- "R$ 249" prices
+	Teal = Color3.fromHex("#3CC8B4"),       -- progress and stamina only
+	Robux = Color3.fromHex("#FFFFFF"),      -- "R$ 249" prices (white in a dark pill)
 	NeedsWork = Color3.fromHex("#FF8A8A"),  -- soft light red: "needs work", very low stamina
 	StatNumber = Color3.fromHex("#DCEEFF"), -- light blue-white: the numbers on the world stats labels
 }
 
 -- Transparency levels (0 = solid, 1 = invisible)
 Theme.Alpha = {
-	Panel = 0.06,         -- panels (#18181E at 6%)
-	Pill = 0.22,          -- top bar pills
-	HudCard = 0.12,       -- HUD cards over the world (daily quests)
+	Panel = 0,            -- panels are solid graphite
+	Pill = 0.08,          -- top bar pills
+	HudCard = 0.06,       -- HUD cards over the world (daily quests)
 	LabelBacking = 0.6,   -- the faint box behind world labels
-	Border = 0,           -- the dark outline is solid
+	Border = 0,
 	BorderSoft = 0.4,
 	ButtonBorder = 0,
 	Primary = 0,
-	TextShadow = 0,       -- the black outline on text over the world
-	Backdrop = 0.6,       -- black behind a modal (the game also blurs)
+	TextShadow = 0.55,    -- the soft dark outline on text (strong enough over the world, quiet on panels)
+	Backdrop = 0.82,      -- black behind a modal: light, the gym stays visible (the vignette darkens near the panel)
+	Hairline = 0.78,      -- the light line along a panel's top edge
 }
 
--- The glossy button gradients (top -> bottom). The bottom lip is the bottom color made darker.
+-- The gold gradient (with a glint) and the red CTA, top -> bottom.
+Theme.GoldSequence = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromHex("#FFF3C4")),
+	ColorSequenceKeypoint.new(0.3, Color3.fromHex("#F6C75A")),
+	ColorSequenceKeypoint.new(0.72, Color3.fromHex("#C98A12")),
+	ColorSequenceKeypoint.new(1, Color3.fromHex("#F2C45A")),
+})
+-- Button gradients (top, bottom); the bottom lip is the bottom made darker. Gold / Red are the CTAs.
 Theme.Gradients = {
-	Green = { Color3.fromHex("#5FD35A"), Color3.fromHex("#2F9E35") },
-	Red = { Color3.fromHex("#EE3A42"), Color3.fromHex("#B31D25") },
-	Gold = { Color3.fromHex("#FFD34D"), Color3.fromHex("#E79A12") },
-	Blue = { Color3.fromHex("#4AA3FF"), Color3.fromHex("#1F62D6") },
-	Gray = { Color3.fromHex("#4A4A55"), Color3.fromHex("#2C2C34") },
-	Purple = { Color3.fromHex("#B26BFF"), Color3.fromHex("#6D2FD1") },
-	Orange = { Color3.fromHex("#FFB04A"), Color3.fromHex("#E2701A") },
-	Teal = { Color3.fromHex("#4FE0CF"), Color3.fromHex("#1A9A8D") },
-	Dark = { Color3.fromHex("#2E2E36"), Color3.fromHex("#1E1E25") },
+	Gold = { Color3.fromHex("#FFE9A6"), Color3.fromHex("#D69B22") },
+	Red = { Color3.fromHex("#FF5A61"), Color3.fromHex("#C41E27") },
+	Quiet = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
+	Flat = { Color3.fromHex("#1C1A1D"), Color3.fromHex("#1C1A1D") },
+	Disabled = { Color3.fromHex("#1A181B"), Color3.fromHex("#1A181B") },
+	-- (older names some screens still pass; they all draw as a quiet or CTA button)
+	Green = { Color3.fromHex("#FFE9A6"), Color3.fromHex("#D69B22") },
+	Blue = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
+	Gray = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
+	Purple = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
+	Orange = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
+	Teal = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
+	Dark = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
 }
--- button style names -> gradient (old names kept: Primary / Main = red, Secondary = gray, White = gray)
+-- button style names -> look. Red / Primary / Main = the red CTA; Gold / Green = the gold CTA; Flat = an inactive tab;
+-- Disabled; everything else (Gray, Secondary, Dark, Blue, Purple, Orange, Teal, White) = a quiet dark button.
 Theme.ButtonGradients = {
-	Primary = "Red", Main = "Red", Red = "Red", Green = "Green", Gold = "Gold", Blue = "Blue", Secondary = "Gray", Gray = "Gray",
-	Disabled = "Dark", Purple = "Purple", Orange = "Orange", Teal = "Teal", White = "Gray", Dark = "Dark",
+	Primary = "Red", Main = "Red", Red = "Red", Gold = "Gold", Green = "Gold", Flat = "Flat", Disabled = "Disabled",
+	Secondary = "Quiet", Gray = "Quiet", Dark = "Quiet", Blue = "Quiet", Purple = "Quiet", Orange = "Quiet", Teal = "Quiet",
+	White = "Quiet", Quiet = "Quiet",
 }
+Theme.CTA = { Red = Color3.fromHex("#FF4A52"), Gold = Color3.fromHex("#FFD36B") } -- each CTA's glow color
 
 -- Real bumper plate colors (plate fill + darker rim). Used for grades, rarity and plates.
 local function plate(hex, textOnPlate)
@@ -101,9 +120,9 @@ Theme.Rarity = {
 	Secret = Theme.Bumper.Black,
 }
 
--- Fonts (UIFonts): Display = FredokaOne (labels, titles, buttons, numbers; white with a black outline), Body = Montserrat
--- SemiBold, BodyBold = Montserrat Bold. The weight names stay so every screen keeps working: Regular / Small / Label =
--- body text, Strong = bold body text, everything else = FredokaOne.
+-- Fonts (UIFonts): Display = Montserrat Black Italic (titles, names, buttons, numbers), Body = Montserrat Medium,
+-- BodyBold = Montserrat Bold. The weight names stay so every screen keeps working: Regular / Small / Label = body text,
+-- Strong = bold body text, everything else = the display font.
 local UIFonts = require(script.Parent:WaitForChild("UIFonts"))
 Theme.UIFonts = UIFonts
 Theme.Fonts = {
@@ -163,7 +182,7 @@ Theme.Corner = {
 
 Theme.Border = { Color = Theme.Colors.Outline, Thickness = 2, Transparency = 0 }
 Theme.Outline = { Panel = 2, Button = 2, Card = 1.5 }
-Theme.Colors.Edge = Color3.fromHex("#3A3A46")      -- the soft light edge around panels and cards (like the menu's "<" tab)
+Theme.Colors.Edge = Color3.fromHex("#2E2A2E")      -- a soft lighter edge (rows, inputs)
 Theme.IconStroke = 2
 Theme.MinTouch = 44 -- px, smallest tappable button on mobile
 
@@ -197,7 +216,8 @@ Theme.Motion = {
 	Time = 0.25,
 	Style = Enum.EasingStyle.Quad,
 	Direction = Enum.EasingDirection.Out,
-	PressScale = 0.94,
+	PressScale = 0.96,
+	HoverScale = 1.04,
 	PressTime = 0.07,
 	Bounce = Enum.EasingStyle.Back, -- pops, rep counter, button release
 }
@@ -252,7 +272,7 @@ function Theme.Round(kind)
 	return Theme.New("UICorner", { CornerRadius = Theme.Corner[kind] })
 end
 
--- An outline (the dark #0D0D12 one by default).
+-- An outline (the dark one by default).
 function Theme.Stroke(color, thickness, transparency)
 	return Theme.New("UIStroke", {
 		Color = color or Theme.Border.Color,
@@ -262,14 +282,14 @@ function Theme.Stroke(color, thickness, transparency)
 	})
 end
 
--- The black outline on text (every FredokaOne label gets one; this adds or returns it).
+-- The soft dark outline on text (every display-font label gets one; this adds or returns it).
 function Theme.TextShadow(label, transparency)
 	local existing = label:FindFirstChild("TextStroke")
 	if existing then
 		if transparency then existing.Transparency = transparency end
 		return existing
 	end
-	return Theme.New("UIStroke", { Name = "TextStroke", Color = Theme.Colors.Shadow, Thickness = 2,
+	return Theme.New("UIStroke", { Name = "TextStroke", Color = Theme.Colors.Shadow, Thickness = 1,
 		Transparency = transparency or Theme.Alpha.TextShadow, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
 end
 
@@ -312,11 +332,11 @@ function Theme.Uppercase(label)
 	label:GetPropertyChangedSignal("Text"):Connect(apply)
 end
 
--- Text: whole-number sizes (named or mockup px), no TextScaled. FredokaOne text (every weight but Regular / Small /
--- Label / Strong) gets the black outline, thicker on big text; props.Stroke = false leaves it off.
+-- Text: whole-number sizes (named or mockup px), no TextScaled. Display-font text (every weight but Regular / Small /
+-- Label / Strong) gets a soft dark outline; props.Stroke = false leaves it off.
 local BODY_FONTS = { Regular = true, Small = true, Label = true, Strong = true }
 function Theme.StrokeFor(size)
-	return size >= 24 and 3 or (size >= 14 and 2 or 1.5)
+	return size >= 24 and 1.5 or 1
 end
 function Theme.Text(props)
 	local sizeKey = props.TextSize or "Body"
@@ -414,30 +434,56 @@ function Theme.Fade(root, visible, time)
 	return lastTween
 end
 
--- Pressing a button: shrink to 0.94, then bounce back on release. A very soft click.
+-- Hover grows a button to 1.04, pressing shrinks it to 0.96 and it bounces back on release. A very soft click.
 local audio -- Shared.Audio, loaded on first press (client only)
 function Theme.BindPress(button)
 	local function isPress(input)
 		return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
 	end
-	local down = false
-	local function setDown(on)
-		if on == down then return end
-		down = on
+	local down, hover = false, false
+	local function apply()
 		local scale = button:FindFirstChild("PressScale") or Theme.New("UIScale", { Name = "PressScale", Parent = button })
-		if on then
+		if down then
 			Theme.Tween(scale, { Scale = Theme.Motion.PressScale }, Theme.Motion.PressTime)
 		else
-			Theme.Tween(scale, { Scale = 1 }, 0.22, Theme.Motion.Bounce)
+			Theme.Tween(scale, { Scale = hover and Theme.Motion.HoverScale or 1 }, 0.2, Theme.Motion.Bounce)
 		end
 	end
-	button.InputBegan:Connect(function(input) if isPress(input) then setDown(true) end end)
-	button.InputEnded:Connect(function(input) if isPress(input) then setDown(false) end end)
-	button.MouseLeave:Connect(function() setDown(false) end)
+	button.InputBegan:Connect(function(input)
+		if isPress(input) then
+			down = true
+			apply()
+		end
+	end)
+	button.InputEnded:Connect(function(input)
+		if isPress(input) then
+			down = false
+			apply()
+		end
+	end)
+	button.MouseEnter:Connect(function()
+		hover = true
+		apply()
+	end)
+	button.MouseLeave:Connect(function()
+		hover, down = false, false
+		apply()
+	end)
 	button.Activated:Connect(function()
 		audio = audio or require(script.Parent.Parent:WaitForChild("Audio"))
 		audio.PlayUI("Click")
 	end)
+end
+
+-- Reduced motion: Roblox's own setting or the game's Settings toggle (settings.reduceMotion = "On") stops the loops
+-- (pulses); one-off moves (a window opening) still play.
+function Theme.ReducedMotion(): boolean
+	if game:GetService("GuiService").ReducedMotionEnabled then return true end
+	local ok, data = pcall(function()
+		local clientData = require(script.Parent.Parent:WaitForChild("ClientData"))
+		return clientData.IsLoaded() and clientData.Get() or nil
+	end)
+	return ok and type(data) == "table" and data.settings and data.settings.reduceMotion == "On" or false
 end
 
 -- (the soft drop shadows of the old styles: this style has none; kept so older screens still work)
@@ -450,22 +496,31 @@ Theme.PanelShadowGrow = 0
 ------------------------------------------------------------------------
 -- Surfaces: panels, cards, wells, pills. Theme.SetPiece(gui, name) gives a gui one of these looks (the names are the
 -- old image piece names, so every screen keeps working):
---   panel       dark #18181E, 14px corners, 3px outline           hud_box  HUD card over the world (#16161A)
---   card        #28282F row / cell, 10px corners, 2px outline     well     dark inset (bar tracks)
---   card_selected  card with a green outline (equipped, following)  card_gold  card with a gold outline
---   chip / pill    dark round pill (top bar)                       banner_gold  dark gold banner
+--   panel       graphite gradient, 14px, top hairline, soft dark edge   hud_box  the same over the world
+--   card        #232023 -> #141215, 11px, top highlight, darker lip     well     near-black inset (bar tracks, prices)
+--   card_selected / card_gold  a card with a 2.5px gold border + a soft gold glow outside it
+--   chip / pill    dark round pill (top bar)                           banner_gold  dark gold banner
+-- The hairline and the glow live in a "Depth" Folder inside the gui (list / grid layouts ignore a Folder's children).
 ------------------------------------------------------------------------
+local function sequence(points)
+	local keys = {}
+	for _, p in ipairs(points) do table.insert(keys, ColorSequenceKeypoint.new(p[1], Color3.fromHex(p[2]))) end
+	return ColorSequence.new(keys)
+end
+local PANEL_SHEEN = sequence({ { 0, "#252226" }, { 0.5, "#18161A" }, { 1, "#0D0C0E" } })
+local CARD_SHEEN = sequence({ { 0, "#232023" }, { 0.9, "#141215" }, { 0.905, "#0E0C0F" }, { 1, "#0E0C0F" } })
+local PILL_SHEEN = sequence({ { 0, "#211E22" }, { 1, "#121013" } })
 Theme.Surfaces = {
-	panel = { color = Theme.Colors.Panel, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Edge },
-	hud_box = { color = Theme.Colors.Pill, alpha = Theme.Alpha.HudCard, corner = 12, outline = 1.5, outlineColor = Theme.Colors.Edge },
-	card = { color = Theme.Colors.Card, alpha = 0, corner = 10, outline = 1.5, outlineColor = Theme.Colors.Edge },
-	card_selected = { color = Theme.Colors.Card, alpha = 0, corner = 10, outline = 3, outlineColor = Theme.Colors.Green },
-	card_gold = { color = Theme.Colors.Card, alpha = 0, corner = 10, outline = 3, outlineColor = Theme.Colors.Gold },
-	well = { color = Theme.Colors.Well, alpha = 0, corner = 8, outline = 1.5, outlineColor = Theme.Colors.Edge },
-	chip = { color = Theme.Colors.Pill, alpha = Theme.Alpha.Pill, corner = 999, outline = 0 },
-	pill = { color = Theme.Colors.Pill, alpha = Theme.Alpha.Pill, corner = 999, outline = 0 },
+	panel = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline },
+	hud_box = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 12, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline },
+	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88 },
+	card_selected = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.72 },
+	card_gold = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.6 },
+	well = { color = Theme.Colors.Well, alpha = 0, corner = 8, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.2 },
+	chip = { sheen = PILL_SHEEN, alpha = Theme.Alpha.Pill, corner = 999, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.86 },
+	pill = { sheen = PILL_SHEEN, alpha = Theme.Alpha.Pill, corner = 999, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.86 },
 	panel_header = { color = Theme.Colors.Panel, alpha = 1, corner = 14, outline = 0 },
-	banner_gold = { color = Color3.fromHex("#3A2A0C"), alpha = 0.1, corner = 12, outline = 3, outlineColor = Theme.Colors.Gold },
+	banner_gold = { color = Color3.fromHex("#2A1F0A"), alpha = 0.05, corner = 12, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.85, glow = 0.7 },
 }
 
 local function outlineOf(gui)
@@ -476,9 +531,62 @@ local function outlineOf(gui)
 	return stroke
 end
 
+local function depthOf(gui)
+	return gui:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = gui })
+end
+
+-- the 1px light line along the top edge (inset past the corners)
+local function setHairline(gui, alpha: number?, corner: number)
+	local depth = depthOf(gui)
+	local line = depth:FindFirstChild("Hairline")
+	if not alpha then
+		if line then line.Visible = false end
+		return
+	end
+	if not line then
+		line = Theme.New("Frame", { Name = "Hairline", BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = gui.ZIndex, Parent = depth })
+	end
+	local inset = math.max(4, math.floor(corner * 0.8))
+	line.Position = UDim2.fromOffset(inset, 1)
+	line.Size = UDim2.new(1, -inset * 2, 0, 1)
+	line.BackgroundTransparency = alpha
+	line.Visible = true
+end
+
+-- a soft colored glow just outside the border (a see-through frame with its own stroke, so it never covers the content)
+local function setGlow(gui, color: Color3?, alpha: number?, corner: number)
+	local depth = depthOf(gui)
+	local glow = depth:FindFirstChild("Glow")
+	if not color then
+		if glow then glow.Visible = false end
+		return
+	end
+	if not glow then
+		glow = Theme.New("Frame", { Name = "Glow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 8, 1, 8), ZIndex = gui.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { Name = "Corner" }),
+			Theme.New("UIStroke", { Name = "Stroke", Thickness = 4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+	end
+	glow.Corner.CornerRadius = UDim.new(0, corner + 4)
+	glow.Stroke.Color = color
+	glow.Stroke.Transparency = alpha or 0.7
+	glow.Visible = true
+end
+Theme.SetGlow = setGlow
+
 function Theme.SetPiece(gui, name)
 	local surface = Theme.Surfaces[name] or Theme.Surfaces.card
-	gui.BackgroundColor3 = surface.color
+	local sheen = gui:FindFirstChild("Sheen")
+	if surface.sheen then
+		gui.BackgroundColor3 = Color3.new(1, 1, 1)
+		sheen = sheen or Theme.New("UIGradient", { Name = "Sheen", Rotation = 90, Parent = gui })
+		sheen.Color = surface.sheen
+		sheen.Enabled = true
+	else
+		gui.BackgroundColor3 = surface.color
+		if sheen then sheen.Enabled = false end
+	end
 	gui.BackgroundTransparency = surface.alpha
 	if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then gui.Image = "" end
 	local corner = gui:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = gui })
@@ -486,8 +594,11 @@ function Theme.SetPiece(gui, name)
 	local stroke = outlineOf(gui)
 	stroke.Color = surface.outlineColor or Theme.Colors.Outline
 	stroke.Thickness = surface.outline
-	stroke.Transparency = 0
+	stroke.Transparency = surface.outlineAlpha or 0
 	stroke.Enabled = surface.outline > 0
+	local radius = surface.corner >= 999 and 12 or surface.corner
+	setHairline(gui, surface.hairline, radius)
+	setGlow(gui, surface.glow and Theme.Colors.Gold or nil, surface.glow, radius)
 	gui:SetAttribute("Piece", name)
 	return gui
 end
@@ -505,17 +616,34 @@ function Theme.Panel(props, children)
 end
 
 ------------------------------------------------------------------------
--- Buttons: a glossy gradient (Theme.Gradients) with a darker bottom lip, a thin lighter inner line and the dark
--- outline. Styles: "Primary" / "Main" / "Red", "Green", "Gold", "Blue", "Secondary" / "Gray", "Disabled", "Purple",
--- "Orange", "Teal". Labels are FredokaOne, white with a black outline, UPPERCASE. Theme.SetButtonStyle switches it.
+-- Buttons. CTA ("Red" / "Primary" / "Main", "Gold" / "Green"): a bevelled gradient, a glossy top lip (white on the top
+-- 44%), a darker bottom lip, a soft colored glow and a diagonal shine streak. Quiet (every other style): dark with a
+-- top highlight. "Flat": an inactive tab (no bevel, no glow, gray text). "Disabled": flat with faint text.
+-- Labels: the display font, UPPERCASE; dark ink on gold, white on red / quiet. Theme.SetButtonStyle switches it.
 ------------------------------------------------------------------------
-Theme.ButtonText = { Disabled = Theme.Colors.Muted }
+Theme.ButtonText = { Gold = Theme.Colors.Ink, Green = Theme.Colors.Ink, Flat = Theme.Colors.Muted, Disabled = Theme.Colors.Faint }
 Theme.LipHeight = 0.14 -- share of the button's height that is the darker bottom lip
 
+local function lookOf(style)
+	return Theme.ButtonGradients[style] or "Quiet"
+end
+
 local function gradientFor(style)
-	local g = Theme.Gradients[Theme.ButtonGradients[style] or "Gray"]
+	local look = lookOf(style)
+	if look == "Gold" then
+		local edge = 1 - Theme.LipHeight
+		return ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromHex("#FFF3C4")),
+			ColorSequenceKeypoint.new(0.3, Color3.fromHex("#F6C75A")),
+			ColorSequenceKeypoint.new(edge - 0.001, Color3.fromHex("#D69B22")),
+			ColorSequenceKeypoint.new(edge, Color3.fromHex("#8A5A06")),
+			ColorSequenceKeypoint.new(1, Color3.fromHex("#8A5A06")),
+		})
+	end
+	local g = Theme.Gradients[look]
 	local top, bottom = g[1], g[2]
-	local lip = bottom:Lerp(Color3.new(0, 0, 0), 0.3)
+	if look == "Flat" or look == "Disabled" then return ColorSequence.new(top) end
+	local lip = bottom:Lerp(Color3.new(0, 0, 0), 0.45)
 	local edge = 1 - Theme.LipHeight
 	return ColorSequence.new({
 		ColorSequenceKeypoint.new(0, top),
@@ -525,8 +653,33 @@ local function gradientFor(style)
 	})
 end
 
+-- the glossy top lip and the shine streak (CTAs only), in the button's Depth folder
+local function ctaLayers(button, on: boolean)
+	local depth = depthOf(button)
+	local gloss = depth:FindFirstChild("TopGloss")
+	local streak = depth:FindFirstChild("Streak")
+	if on and not gloss then
+		gloss = Theme.New("Frame", { Name = "TopGloss", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, 0, 0.44, 0),
+			ZIndex = button.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { CornerRadius = Theme.Corner.Button }),
+			Theme.New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0.93) }) }),
+		})
+		streak = Theme.New("Frame", { Name = "Streak", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, 0, 1 - Theme.LipHeight, 0),
+			ZIndex = button.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { CornerRadius = Theme.Corner.Button }),
+			Theme.New("UIGradient", { Name = "Band", Rotation = 25, Offset = Vector2.new(-0.28, 0), Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 1), NumberSequenceKeypoint.new(0.45, 0.78),
+				NumberSequenceKeypoint.new(0.52, 0.78), NumberSequenceKeypoint.new(0.57, 1), NumberSequenceKeypoint.new(1, 1) }) }),
+		})
+	end
+	if gloss then gloss.Visible = on end
+	if streak then streak.Visible = on end
+end
+
 function Theme.SetButtonStyle(button, style)
 	button:SetAttribute("Style", style)
+	local look = lookOf(style)
+	local cta = look == "Red" or look == "Gold"
 	button.BackgroundColor3 = Color3.new(1, 1, 1)
 	button.BackgroundTransparency = 0
 	if button:IsA("ImageButton") or button:IsA("ImageLabel") then button.Image = "" end
@@ -534,38 +687,27 @@ function Theme.SetButtonStyle(button, style)
 	gradient.Color = gradientFor(style)
 	local corner = button:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = button })
 	corner.CornerRadius = Theme.Corner.Button
-	-- (owner, 13 Oct: buttons match the left menu tiles: a lighter border in the button's own color, the tiles' corners)
-	local g = Theme.Gradients[Theme.ButtonGradients[style] or "Gray"]
 	local stroke = outlineOf(button)
-	stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = g[1]:Lerp(Color3.new(1, 1, 1), 0.3), Theme.Outline.Button, 0.1, true
-	-- the thin lighter line just inside the outline (above the lip). It lives in a "Depth" Folder (list layouts ignore
-	-- it) and is pushed back out by the button's UIPadding.
-	local depth = button:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = button })
-	local inner = depth:FindFirstChild("Inner")
-	if not inner then
-		inner = Theme.New("Frame", { Name = "Inner", BackgroundTransparency = 1, ZIndex = button.ZIndex, Parent = depth }, {
-			Theme.New("UICorner", { CornerRadius = UDim.new(0, 7) }),
-			Theme.New("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 1, Transparency = 0.7, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-		})
-		local lip = Theme.LipHeight
-		local function fit()
-			local pad = button:FindFirstChildOfClass("UIPadding")
-			local l = pad and pad.PaddingLeft.Offset or 0
-			local r = pad and pad.PaddingRight.Offset or 0
-			local t = pad and pad.PaddingTop.Offset or 0
-			local b = pad and pad.PaddingBottom.Offset or 0
-			inner.Position = UDim2.fromOffset(2 - l, 2 - t)
-			inner.Size = UDim2.new(1, l + r - 4, 1 - lip, (t + b) * (1 - lip) - 2)
-		end
-		fit()
-		button.ChildAdded:Connect(function(child)
-			if child:IsA("UIPadding") then task.defer(fit) end
-		end)
+	if cta then
+		-- the dark edge, and the soft colored glow just outside it
+		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.2, true
+		setGlow(button, Theme.CTA[look], 0.55, 10)
+	elseif look == "Flat" or look == "Disabled" then
+		stroke.Enabled = false
+		setGlow(button, nil, nil, 10)
+	else
+		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.25, true
+		setGlow(button, nil, nil, 10)
 	end
-	inner:FindFirstChildOfClass("UIStroke").Transparency = style == "Disabled" and 0.92 or 0.7
-	local color = Theme.ButtonText[style] or Theme.Colors.Text
+	setHairline(button, (look == "Quiet") and 0.84 or nil, 10)
+	ctaLayers(button, cta)
+	local color = Theme.ButtonText[style] or Theme.ButtonText[look] or Theme.Colors.Text
 	for _, item in ipairs(button:GetDescendants()) do
-		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then item.TextColor3 = color end
+		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then
+			item.TextColor3 = color
+			local outline = item:FindFirstChild("TextStroke")
+			if outline then outline.Transparency = (look == "Gold") and 1 or Theme.Alpha.TextShadow end
+		end
 		if item:IsA("ImageLabel") and item.Name == "Icon" and not item:GetAttribute("KeepColor") then item.ImageColor3 = color end
 	end
 end
@@ -581,8 +723,68 @@ function Theme.Button(style, props, children)
 	for _, item in ipairs(button:GetDescendants()) do upperLabel(item) end
 	button.DescendantAdded:Connect(function(item) task.defer(upperLabel, item) end)
 	Theme.SetButtonStyle(button, style)
+	-- content passed in as children goes back on top of the gloss / shine layers
+	for _, child in ipairs(children or {}) do
+		if child:IsA("GuiObject") then
+			child.Parent = nil
+			child.Parent = button
+		end
+	end
 	Theme.BindPress(button)
 	return button
+end
+
+-- The shine streak sweeps across a CTA once (windows call it for their CTAs on open).
+function Theme.Shine(button, delay: number?)
+	local depth = button:FindFirstChild("Depth")
+	local streak = depth and depth:FindFirstChild("Streak")
+	local band = streak and streak:FindFirstChild("Band")
+	if not band or not streak.Visible then return end
+	task.delay(delay or 0, function()
+		band.Offset = Vector2.new(-1, 0)
+		local tween = TweenService:Create(band, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Offset = Vector2.new(1, 0) })
+		tween:Play()
+		tween.Completed:Connect(function()
+			band.Offset = Vector2.new(-1, 0)
+			TweenService:Create(band, TweenInfo.new(0.4), { Offset = Vector2.new(-0.28, 0) }):Play()
+		end)
+	end)
+end
+
+-- Every CTA inside `root` shines once, one after another.
+function Theme.ShineAll(root)
+	local n = 0
+	for _, item in ipairs(root:GetDescendants()) do
+		if item.Name == "Streak" and item:IsA("Frame") and item.Parent and item.Parent.Name == "Depth" then
+			Theme.Shine(item.Parent.Parent, 0.12 + n * 0.08)
+			n += 1
+		end
+	end
+end
+
+-- A featured CTA pulses: scale 1 -> 1.03 and its glow a little brighter, every 1.6 s, while `alive()` says so (default:
+-- while it's in the game). Reduced motion stops it.
+function Theme.Pulse(button, alive: (() -> boolean)?)
+	if button:GetAttribute("Pulsing") then return end
+	button:SetAttribute("Pulsing", true)
+	local scale = button:FindFirstChild("PulseScale") or Theme.New("UIScale", { Name = "PulseScale", Parent = button })
+	task.spawn(function()
+		while button.Parent and (not alive or alive()) do
+			if not Theme.ReducedMotion() and button.Visible then
+				local glow = button:FindFirstChild("Depth") and button.Depth:FindFirstChild("Glow")
+				Theme.Tween(scale, { Scale = 1.03 }, 0.5, Enum.EasingStyle.Sine)
+				if glow and glow.Visible then Theme.Tween(glow.Stroke, { Transparency = 0.3 }, 0.5, Enum.EasingStyle.Sine) end
+				task.wait(0.5)
+				Theme.Tween(scale, { Scale = 1 }, 0.6, Enum.EasingStyle.Sine)
+				if glow and glow.Visible then Theme.Tween(glow.Stroke, { Transparency = 0.55 }, 0.6, Enum.EasingStyle.Sine) end
+				task.wait(1.1)
+			else
+				scale.Scale = 1
+				task.wait(1)
+			end
+		end
+		button:SetAttribute("Pulsing", nil)
+	end)
 end
 
 function Theme.PlateDisc(bumper, props)

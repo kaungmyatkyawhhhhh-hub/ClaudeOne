@@ -1,21 +1,23 @@
--- Kit: the UI components (owner's UI v2, 13 Oct: Gym League style, GYM_ARC_UI_v2_gymleague_style.md + the v2 mockups),
--- built once and reused by every screen. They are drawn in the mockups' pixels (844x390 landscape phone); Kit.Root
+-- Kit: the UI components (owner's final kit "BLACK + GOLD", 14 Oct: GYM_ARC_UI_final.md + gym_arc_ui_final; the looks
+-- come from Theme), built once and reused by every screen. They are drawn in the mockups' pixels (844x390 landscape phone); Kit.Root
 -- scales a whole gui with the screen (UIScale from the shorter side, base 390, never wider than the 844px layout), so
 -- the same numbers fit a phone, a tablet and a PC. Looks come from Theme (colors, gradients, fonts, surfaces).
 --   Kit.Root(screenGui)                       -> Frame that fills the screen in mockup px (its UIScale follows the screen)
 --   Kit.Text(props)                           Theme.Text with Font = "Title" | "Number" | "Label" | "Body" | "Strong"
---   Kit.Button(style, text, props?, opts?)    glossy gradient button with a label (+ opts.icon, textSize, height, width)
---   Kit.CloseButton(props?)                   the red square X with a white border
+--   Kit.Button(style, text, props?, opts?)    a button with a label (CTA "Red" / "Gold", quiet, "Flat"; opts.icon, textSize, height, width)
+--   Kit.CloseButton(props?)                   the quiet dark X
 --   Kit.Chip(icon, text, props?)              dark round pill with an icon and a value (top bar)
---   Kit.Bar(color, props?, opts?)             -> track, set(f, text?), fill (chunky bar, opts.text = centered text)
+--   Kit.Bar(color, props?, opts?)             -> track, set(f, text?), fill (fat outlined bar, metallic fill, opts.text)
+--   Kit.PricePill(text, props?)               -> pill, label: a small dark price pill ("R$ 249", coins)
+--   Kit.GoldText(label)                       paints a label with the gold gradient
 --   Kit.Tag(text, color, props?)              small colored word on a tint
 --   Kit.Card(props?, children?)               #28282F card (props.Piece = "card_selected" (green) / "card_gold")
 --   Kit.IconTile(icon, color, size, props?)   glossy colored rounded square with a white icon
 --   Kit.GradeBadge(grade, size, props?)       S / A / B / C / D badge
 --   Kit.Toggle(on, onChanged, props?)         ON (green) / OFF (gray) button -> button, set(on)
 --   Kit.Slider(value, onChanged, props?)      -> frame, set(value) (0..100)
---   Kit.Tabs(tabs, onSelect, props?)          tab buttons in a row (active red) -> row, select(id)
---   Kit.Modal(spec)                           a menu window: tabs above, title + red icon, red X, blur behind
+--   Kit.Tabs(tabs, onSelect, props?)          tab buttons in a row (active gold, the rest flat) -> row, select(id)
+--   Kit.Modal(spec)                           a window: TITLE + tabs in its header, coins + X on the right, a vignette behind
 --   Kit.Coin(size, props?), Kit.Format(n) "1,500", Kit.Short(n) "1.5K"
 --   Kit.Headshot(userId, name, size, props?) the player's real avatar headshot in a plain dark circle (owner, 14 Oct)
 --   Kit.ApplyHeadshot(image, userId, name)   the same look on an existing ImageLabel (e.g. a leaderboard row)
@@ -39,7 +41,8 @@ Kit.MinScale, Kit.MaxScale = 0.8, 2.4
 Kit.HeaderHeight = 46
 Kit.OpenTime = 0.18
 Kit.OpenScale = 0.96
-Kit.BlurSize = 10
+Kit.PanelScale = 0.9 -- (owner's final kit: panels ~10% smaller than before, so the gym shows around them)
+Kit.BlurSize = 4     -- a light blur (Roblox can only blur the whole screen; the vignette keeps the edges clear)
 
 -- The scale for a viewport: the shorter side against 390, but never so big that 844 mockup px don't fit across.
 function Kit.ScaleFor(viewport: Vector2): number
@@ -110,8 +113,8 @@ end
 local FONTS = {
 	Title = "SemiBold", Number = "SemiBold", Body = "Regular", Strong = "Strong", Label = "SemiBold",
 }
--- props.Font: Title / Number / Label (FredokaOne, white with a black outline; Label is small and gray), Body (Montserrat
--- SemiBold), Strong (Montserrat Bold). props.TextSize: mockup px. props.Upper = true makes it UPPERCASE.
+-- props.Font: Title / Number / Label (the heavy italic display font with a soft dark outline; Label is small and gray),
+-- Body (Montserrat Medium), Strong (Montserrat Bold). props.TextSize: mockup px. props.Upper = true makes it UPPERCASE.
 function Kit.Text(props)
 	local kind = props.Font or "Body"
 	props.Font = FONTS[kind] or kind
@@ -172,15 +175,13 @@ function Kit.SetButton(button, style: string?, text: string?)
 	if text and label then label.Text = text end
 end
 
--- The red square X with a white border (top-right of a panel).
+-- The X (top-right of a panel): a quiet dark square with a white X.
 function Kit.CloseButton(props: { [string]: any }?)
 	props = props or {}
 	props.Name = props.Name or "Close"
 	props.Size = props.Size or UDim2.fromOffset(38, 38)
-	local button = Theme.Button("Red", props, {})
-	local stroke = button:FindFirstChild("Border")
-	stroke.Color, stroke.Thickness = Color3.new(1, 1, 1), 3
-	local x = Pieces.Icon("x", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromScale(0.62, 0.62), Parent = button })
+	local button = Theme.Button("Quiet", props, {})
+	local x = Pieces.Icon("x", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.44), Size = UDim2.fromScale(0.5, 0.5), Parent = button })
 	x:SetAttribute("KeepColor", true)
 	return button
 end
@@ -204,26 +205,35 @@ function Kit.Chip(icon: string?, text: string, props: { [string]: any }?)
 	elseif icon then
 		Pieces.Icon(icon, Colors.Text, { LayoutOrder = 1, Size = UDim2.fromOffset(math.floor(h * 0.52), math.floor(h * 0.52)), Parent = chip })
 	end
-	Kit.Text({ Name = "Value", LayoutOrder = 2, Text = text, Font = "Body", TextSize = math.floor(h * 0.44),
+	Kit.Text({ Name = "Value", LayoutOrder = 2, Text = text, Font = "Number", TextSize = math.floor(h * 0.46),
 		Size = UDim2.fromOffset(0, h), AutomaticSize = Enum.AutomaticSize.X, Parent = chip })
 	return chip
 end
 
--- A chunky bar: dark track with an outline, a glossy fill of `color`, optional text in the middle (opts.text = true).
--- Returns track, set(fraction, text?), fill.
+-- A fat outlined bar: a near-black track with a dark outline, a metallic fill of `color` (a highlight along its top),
+-- optional text in the middle (opts.text = true). Returns track, set(fraction, text?), fill.
+function Kit.Metal(color: Color3): ColorSequence
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, color:Lerp(Color3.new(1, 1, 1), 0.55)),
+		ColorSequenceKeypoint.new(0.28, color:Lerp(Color3.new(1, 1, 1), 0.12)),
+		ColorSequenceKeypoint.new(0.7, color),
+		ColorSequenceKeypoint.new(1, color:Lerp(Color3.new(0, 0, 0), 0.35)),
+	})
+end
 function Kit.Bar(color: Color3, props: { [string]: any }?, opts: { [string]: any }?)
 	props = props or {}
 	opts = opts or {}
 	props.Size = props.Size or UDim2.new(1, 0, 0, 14)
 	props.BackgroundColor3 = Colors.Well
-	props.BackgroundTransparency = 0.05
+	props.BackgroundTransparency = 0
 	local track = New("Frame", props, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = opts.outline or 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = opts.outline or 2, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIPadding", { Name = "Inset", PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }),
 	})
 	local fill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), Parent = track }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIGradient", { Name = "Gloss", Rotation = 90, Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.2)) }),
+		New("UIGradient", { Name = "Gloss", Rotation = 90, Color = Kit.Metal(color) }),
 	})
 	local label
 	if opts.text then
@@ -238,6 +248,38 @@ function Kit.Bar(color: Color3, props: { [string]: any }?, opts: { [string]: any
 	end
 	set(0)
 	return track, set, fill
+end
+
+-- Paints a label with the gold gradient (hero names, rewards, big numbers). Its outline goes so the gold stays clean.
+function Kit.GoldText(label: TextLabel)
+	local gradient = label:FindFirstChild("Gold") or New("UIGradient", { Name = "Gold", Rotation = 90, Parent = label })
+	gradient.Color = Theme.GoldSequence
+	label.TextColor3 = Color3.new(1, 1, 1)
+	local outline = label:FindFirstChild("TextStroke")
+	if outline then outline.Transparency = 0.7 end
+	return label
+end
+
+-- A small dark price pill (near black, a thin inner highlight): "R$ 249" or a coin + "600". icon: "coin" or nil.
+function Kit.PricePill(text: string, props: { [string]: any }?, icon: string?)
+	props = props or {}
+	local h = props.Size and props.Size.Y.Offset or 26
+	props.Size = props.Size or UDim2.fromOffset(0, h)
+	if not props.AutomaticSize then props.AutomaticSize = Enum.AutomaticSize.X end
+	props.Piece = "well"
+	local pill = Theme.Panel(props, {
+		New("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }),
+		Theme.List(Horizontal, 5, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
+	})
+	local corner = pill:FindFirstChildOfClass("UICorner")
+	if corner then corner.CornerRadius = UDim.new(0, 8) end
+	local line = New("Frame", { Name = "Highlight", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88,
+		Position = UDim2.fromOffset(6, 1), Size = UDim2.new(1, -12, 0, 1), Parent = New("Folder", { Name = "Depth", Parent = pill }) })
+	line.ZIndex = pill.ZIndex
+	if icon == "coin" then Kit.Coin(math.floor(h * 0.7), { LayoutOrder = 1, Parent = pill }) end
+	local label = Kit.Text({ Name = "Price", LayoutOrder = 2, Text = text, Font = "Number", TextSize = math.floor(h * 0.66),
+		Size = UDim2.fromOffset(0, h), AutomaticSize = Enum.AutomaticSize.X, Parent = pill })
+	return pill, label
 end
 
 local function tint(color: Color3, amount: number?)
@@ -346,22 +388,25 @@ function Kit.Headshot(userId: number?, name: string?, size: number, props: { [st
 	return image
 end
 
--- Grade badges (mockup 07): S red, A blue, B gold, C green, D gray; a rounded square with a white-outlined letter.
+-- Grade badges (owner's final kit: the rank letter on a small gold plate, mockup 07_physique). Kit.GradeColors stays for
+-- screens that tint other things by grade.
 Kit.GradeColors = {
 	S = Colors.Red, A = Color3.fromHex("#2F7BEA"), B = Color3.fromHex("#F2B51F"), C = Color3.fromHex("#3DBA4A"), D = Color3.fromHex("#5A5A66"),
 }
 function Kit.GradeBadge(grade: string, size: number, props: { [string]: any }?)
 	props = props or {}
-	local badge = Kit.IconTile("star", Kit.GradeColors[grade] or Kit.GradeColors.D, size, props)
-	local icon = badge:FindFirstChild("Icon")
-	if icon then icon:Destroy() end
-	local stroke = badge:FindFirstChild("Border")
-	if stroke then stroke.Color, stroke.Thickness = Color3.new(1, 1, 1), 2 end
-	Kit.Text({ Name = "Letter", Text = grade, Font = "Title", TextSize = math.floor(size * 0.66), Size = UDim2.fromScale(1, 1), Parent = badge })
+	props.Size = UDim2.fromOffset(size, size)
+	props.BackgroundColor3 = Color3.new(1, 1, 1)
+	local badge = New("Frame", props, {
+		New("UICorner", { CornerRadius = UDim.new(0, math.max(5, math.floor(size * 0.2))) }),
+		New("UIStroke", { Name = "Border", Color = Color3.fromHex("#6B4A06"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Name = "Gloss", Rotation = 90, Color = Theme.GoldSequence }),
+	})
+	Kit.Text({ Name = "Letter", Text = grade, Font = "Title", TextSize = math.floor(size * 0.66), TextColor3 = Colors.Ink, Stroke = false,
+		Size = UDim2.fromScale(1, 1), Parent = badge })
 	return badge
 end
 function Kit.SetGrade(badge, grade: string)
-	Kit.SetTileColor(badge, Kit.GradeColors[grade] or Kit.GradeColors.D)
 	local letter = badge:FindFirstChild("Letter")
 	if letter then letter.Text = grade end
 end
@@ -369,11 +414,11 @@ end
 -- ON / OFF button (mockup 10): green ON, gray OFF. Returns button, set(on).
 function Kit.Toggle(on: boolean, onChanged: (boolean) -> (), props: { [string]: any }?)
 	props = props or {}
-	local button = Kit.Button(on and "Green" or "Gray", on and "On" or "Off", props, { width = props.Size and props.Size.X.Offset or 60, height = props.Size and props.Size.Y.Offset or 30 })
+	local button = Kit.Button(on and "Gold" or "Quiet", on and "On" or "Off", props, { width = props.Size and props.Size.X.Offset or 60, height = props.Size and props.Size.Y.Offset or 30 })
 	local state = on
 	local function set(value: boolean)
 		state = value
-		Kit.SetButton(button, value and "Green" or "Gray", value and "On" or "Off")
+		Kit.SetButton(button, value and "Gold" or "Quiet", value and "On" or "Off")
 	end
 	button.Activated:Connect(function()
 		set(not state)
@@ -388,7 +433,7 @@ function Kit.Slider(value: number, onChanged: (number) -> (), props: { [string]:
 	props.Size = props.Size or UDim2.fromOffset(120, 22)
 	props.BackgroundTransparency = 1
 	local frame = New("Frame", props)
-	local track, setFill = Kit.Bar(Colors.Green, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.new(1, 0, 0, 10), Parent = frame })
+	local track, setFill = Kit.Bar(Colors.Teal, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.new(1, 0, 0, 10), Parent = frame })
 	local knob = New("Frame", { Name = "Knob", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(18, 18), BackgroundColor3 = Colors.Text, ZIndex = 3, Parent = frame }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 		New("UIStroke", { Color = Colors.Outline, Thickness = 2 }),
@@ -422,24 +467,24 @@ function Kit.Slider(value: number, onChanged: (number) -> (), props: { [string]:
 	return frame, set
 end
 
--- Tabs ABOVE a panel (mockups 04-10): separate buttons in a row, the active one red, the others dark gray.
--- tabs = { { id = "Passes", text = "Passes", icon = "star" }, ... }; onSelect(id). Returns row, select(id).
+-- Tabs (owner's final kit): the active tab is a gold CTA, the others FLAT (no bevel, darker, gray text) so the gold pops.
+-- tabs = { { id = "Passes", text = "Passes" }, ... }; onSelect(id). Returns row, select(id).
 function Kit.Tabs(tabs, onSelect: (string) -> (), props: { [string]: any }?)
 	props = props or {}
 	local h = props.Size and props.Size.Y.Offset or 30
 	props.Size = UDim2.fromOffset(0, h)
 	props.AutomaticSize = Enum.AutomaticSize.X
 	props.BackgroundTransparency = 1
-	local row = New("Frame", props, { Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Bottom) })
+	local row = New("Frame", props, { Theme.List(Horizontal, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	local items = {}
 	local function select(id: string)
 		for _, item in ipairs(items) do
-			Theme.SetButtonStyle(item.button, item.id == id and "Red" or "Dark")
+			Theme.SetButtonStyle(item.button, item.id == id and "Gold" or "Flat")
 		end
 	end
 	for order, tab in ipairs(tabs) do
-		local button = Kit.Button("Dark", tab.text, { Name = tab.id, LayoutOrder = order, Parent = row },
-			{ height = h, icon = tab.icon, textSize = math.floor(h * 0.56), upper = false })
+		local button = Kit.Button("Flat", tab.text, { Name = tab.id, LayoutOrder = order, Parent = row },
+			{ height = h, textSize = math.floor(h * 0.5) })
 		table.insert(items, { id = tab.id, button = button })
 		button.Activated:Connect(function()
 			select(tab.id)
@@ -451,12 +496,16 @@ function Kit.Tabs(tabs, onSelect: (string) -> (), props: { [string]: any }?)
 end
 
 ------------------------------------------------------------------------
--- Modal panel (mockups 04-10): tabs above the panel, a title with a red icon inside it, the red X on the top-right
--- corner, the game blurred and darkened behind.
+-- Modal window (owner's final kit, mockups 04-07): the header inside the panel: the TITLE (big heavy italic, uppercase),
+-- the tabs right after it, then on the right the coins pill (spec.coins = true; the HUD's own coin counter hides while
+-- a window is open) and the quiet X. Behind it a soft dark vignette around the panel and a light blur, so the gym stays
+-- visible at the edges. The whole window is Kit.PanelScale of its mockup size and pops 0.96 -> 1 with a fade (0.18 s);
+-- its CTAs shine once as it opens.
 ------------------------------------------------------------------------
--- spec: { name, title, icon? (Config/UI.Icons name for the red title icon), width, height (mockup px), tabs?, onTab?,
---         onClose?, displayOrder?, noTitle? }
--- Returns modal = { gui, root, panel, body, title, open(), close(), isOpen(), selectTab(id), setTitle(text, icon?) }.
+-- spec: { name, title, icon? (unused in this kit), width, height (mockup px), tabs?, onTab?, onClose?, onOpen?,
+--         displayOrder?, noTitle?, coins? }
+-- Returns modal = { gui, root, group, panel, body, title, closeButton, coins?, open(), close(), isOpen(), selectTab(id),
+-- setTitle(text) }.
 local openModals = 0
 local blur = nil
 local function setBlur(on: boolean)
@@ -465,7 +514,7 @@ local function setBlur(on: boolean)
 		blur = Lighting:FindFirstChild("ModalBlur") or New("BlurEffect", { Name = "ModalBlur", Size = 0, Parent = Lighting })
 	end
 	Theme.Tween(blur, { Size = openModals > 0 and Kit.BlurSize or 0 }, Kit.OpenTime)
-	if Players.LocalPlayer then Players.LocalPlayer:SetAttribute("WindowOpen", openModals > 0) end -- (Notify hides the band)
+	if Players.LocalPlayer then Players.LocalPlayer:SetAttribute("WindowOpen", openModals > 0) end -- (Notify hides the band, TopBar the coins)
 end
 Kit.SetBlur = setBlur
 
@@ -486,7 +535,19 @@ function Kit.Short(n: number): string
 end
 
 Kit.TabHeight = 30
-Kit.TitleHeight = 46
+Kit.TitleHeight = 56 -- the header inside the panel (title, tabs, coins, X)
+Kit.HeaderExtra = 10 -- the panel grows by this much: its header is taller than the old title row
+
+-- the soft dark vignette behind a window: darkest at the panel, clear toward the screen edges
+local function vignette(parent, width: number, height: number)
+	local frame = New("Frame", { Name = "Vignette", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 8),
+		Size = UDim2.fromOffset(width + 300, height + 220), BackgroundColor3 = Colors.Shadow, BackgroundTransparency = 0, Parent = parent }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 160) }),
+		New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.22, 0.6),
+			NumberSequenceKeypoint.new(0.5, 0.45), NumberSequenceKeypoint.new(0.78, 0.6), NumberSequenceKeypoint.new(1, 1) }) }),
+	})
+	return frame
+end
 
 local activeModal = nil -- one menu at a time: opening one closes the other
 function Kit.Modal(spec)
@@ -497,35 +558,52 @@ function Kit.Modal(spec)
 	local backdrop = New("TextButton", { Name = "Backdrop", Text = "", AutoButtonColor = false, BackgroundColor3 = Colors.Shadow,
 		BackgroundTransparency = Theme.Alpha.Backdrop, Size = UDim2.fromScale(1, 1), Parent = gui })
 	local root = Kit.Root(gui)
-	local width, height = spec.width or 600, spec.height or 290
-	-- the group: tabs row on top, the panel under it; centred a little below the middle (under the top bar)
+	local width = spec.width or 600
+	local height = (spec.height or 290) + (spec.noTitle and 0 or Kit.HeaderExtra)
+	local shade = vignette(root, width * Kit.PanelScale, height * Kit.PanelScale)
+	-- the group: the panel, centred a little below the middle (under the top bar)
 	local group = New("Frame", { Name = "Group", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 14), Size = UDim2.fromOffset(width, height + Kit.TabHeight + 10), Parent = root })
+		Position = UDim2.new(0.5, 0, 0.5, 8), Size = UDim2.fromOffset(width, height), Parent = root })
 	local pop = New("UIScale", { Parent = group })
-	local panel = Theme.Panel({ Name = "Panel", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1),
-		Size = UDim2.fromOffset(width, height), Active = true, Parent = group })
+	local panel = Theme.Panel({ Name = "Panel", Size = UDim2.fromScale(1, 1), Active = true, Parent = group })
+	-- header: TITLE, then the tabs
+	local titleRow = New("Frame", { Name = "TitleRow", BackgroundTransparency = 1, Position = UDim2.fromOffset(18, 8),
+		Size = UDim2.new(1, -36, 0, Kit.TitleHeight - 14), Visible = not spec.noTitle, Parent = panel }, {
+		Theme.List(Horizontal, 14, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+	})
+	local titleIcon = Pieces.Icon(spec.icon or "star", Colors.Gold, { Name = "TitleIcon", LayoutOrder = 1, Size = UDim2.fromOffset(22, 22),
+		Visible = false, Parent = titleRow })
+	titleIcon:SetAttribute("KeepColor", true)
+	local title = Kit.Text({ Name = "Title", LayoutOrder = 2, Text = spec.title or "", Font = "Title", TextSize = 30, Upper = true,
+		Size = UDim2.fromOffset(0, Kit.TitleHeight - 14), AutomaticSize = Enum.AutomaticSize.X, Parent = titleRow })
 	local selectTab = nil
 	if spec.tabs then
-		local row
-		row, selectTab = Kit.Tabs(spec.tabs, spec.onTab or function() end, { Name = "Tabs", Size = UDim2.fromOffset(0, Kit.TabHeight), Parent = group })
-		row.Position = UDim2.fromOffset(0, 0)
+		local _row
+		_row, selectTab = Kit.Tabs(spec.tabs, spec.onTab or function() end, { Name = "Tabs", LayoutOrder = 3, Size = UDim2.fromOffset(0, Kit.TabHeight), Parent = titleRow })
 	end
-	local titleRow = New("Frame", { Name = "TitleRow", BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 6),
-		Size = UDim2.new(1, -32, 0, Kit.TitleHeight - 6), Visible = not spec.noTitle, Parent = panel }, {
-		Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
-	})
-	local titleIcon = Pieces.Icon(spec.icon or "star", Colors.Red, { Name = "TitleIcon", LayoutOrder = 1, Size = UDim2.fromOffset(22, 22),
-		Visible = spec.icon ~= nil, Parent = titleRow })
-	titleIcon:SetAttribute("KeepColor", true)
-	local title = Kit.Text({ Name = "Title", LayoutOrder = 2, Text = spec.title or "", Font = "Title", TextSize = 22,
-		Size = UDim2.fromOffset(0, Kit.TitleHeight - 6), AutomaticSize = Enum.AutomaticSize.X, Parent = titleRow })
 	local top = spec.noTitle and 12 or Kit.TitleHeight
-	local body = New("Frame", { Name = "Body", BackgroundTransparency = 1, Position = UDim2.fromOffset(12, top),
-		Size = UDim2.new(1, -24, 1, -top - 12), Parent = panel })
-	-- the red X on the panel's top-right corner
-	local close = Kit.CloseButton({ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -18, 1, -height - 22), ZIndex = 5, Parent = group })
+	local body = New("Frame", { Name = "Body", BackgroundTransparency = 1, Position = UDim2.fromOffset(14, top),
+		Size = UDim2.new(1, -28, 1, -top - 14), Parent = panel })
+	-- right: the coins pill and the X
+	local close = Kit.CloseButton({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 10), ZIndex = 5, Parent = panel })
+	local coins = nil
+	if spec.coins then
+		coins = Kit.Chip("coin", "0", { Name = "Coins", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -60, 0, 12),
+			Size = UDim2.fromOffset(0, 34), Parent = panel })
+		task.spawn(function()
+			local clientData = require(Shared:WaitForChild("ClientData"))
+			local function refresh()
+				local value = coins:FindFirstChild("Value")
+				if value then value.Text = formatInt(clientData.Get().coins or 0) end
+			end
+			refresh()
+			clientData.Changed:Connect(function(path)
+				if path[1] == "coins" then refresh() end
+			end)
+		end)
+	end
 
-	local modal = { gui = gui, root = root, group = group, panel = panel, body = body, title = title, closeButton = close }
+	local modal = { gui = gui, root = root, group = group, panel = panel, body = body, title = title, closeButton = close, coins = coins }
 	local open = false
 	function modal.isOpen() return open end
 	function modal.open()
@@ -534,20 +612,24 @@ function Kit.Modal(spec)
 		activeModal = modal
 		open = true
 		gui.Enabled = true
-		pop.Scale = Kit.OpenScale
-		Theme.Tween(pop, { Scale = 1 }, Kit.OpenTime, Enum.EasingStyle.Back)
+		pop.Scale = Kit.OpenScale * Kit.PanelScale
+		Theme.Tween(pop, { Scale = Kit.PanelScale }, Kit.OpenTime)
 		Theme.Fade(group, true, Kit.OpenTime)
 		backdrop.BackgroundTransparency = 1
 		Theme.Tween(backdrop, { BackgroundTransparency = Theme.Alpha.Backdrop }, Kit.OpenTime)
+		shade.BackgroundTransparency = 1
+		Theme.Tween(shade, { BackgroundTransparency = 0 }, Kit.OpenTime)
 		setBlur(true)
+		task.delay(Kit.OpenTime, function() if open then Theme.ShineAll(panel) end end)
 		if spec.onOpen then task.spawn(spec.onOpen) end
 	end
 	function modal.close()
 		if not open then return end
 		open = false
 		if activeModal == modal then activeModal = nil end
-		Theme.Tween(pop, { Scale = Kit.OpenScale }, Kit.OpenTime)
+		Theme.Tween(pop, { Scale = Kit.OpenScale * Kit.PanelScale }, Kit.OpenTime)
 		Theme.Tween(backdrop, { BackgroundTransparency = 1 }, Kit.OpenTime)
+		Theme.Tween(shade, { BackgroundTransparency = 1 }, Kit.OpenTime)
 		setBlur(false)
 		local tween = Theme.Fade(group, false, Kit.OpenTime)
 		local function hide() if not open then gui.Enabled = false end end
@@ -560,12 +642,8 @@ function Kit.Modal(spec)
 	function modal.selectTab(id: string)
 		if selectTab then selectTab(id) end
 	end
-	function modal.setTitle(text: string, icon: string?)
+	function modal.setTitle(text: string, _icon: string?)
 		title.Text = text
-		if icon then
-			titleIcon.Image = require(Shared.Config.UI).Icons[icon] or titleIcon.Image
-			titleIcon.Visible = true
-		end
 	end
 	close.Activated:Connect(modal.close)
 	backdrop.Activated:Connect(modal.close)
