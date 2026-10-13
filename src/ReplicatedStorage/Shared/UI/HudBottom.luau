@@ -20,7 +20,7 @@ local HudBottom = {}
 HudBottom.BarSize = Vector2.new(300, 52) -- the stamina panel
 HudBottom.Bottom = 13         -- bar's gap to the screen bottom (mockup px)
 HudBottom.ChipSize = 28
-HudBottom.TrainingRowLift = 44 -- while training, STOP TRAINING sits right above the bar; the boost row goes above it
+HudBottom.TrainingRowLift = 0 -- (owner's final kit: STOP sits bottom-left now, nothing above the stamina panel)
 HudBottom.LowStamina = 0.15
 
 local gui, root, row, setBar, barTrack, fill, staminaNow, staminaMaxText

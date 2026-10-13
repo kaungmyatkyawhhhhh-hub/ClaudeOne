@@ -35,6 +35,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   plain teal bar (TODAY'S QUEST 1/3); the GROW tile is now a wide button: gold TAP TO GROW + "GROWTH SPURT N READY"
   (pulses) when ready, quiet "GROWTH SPURT N · 62%" before, "MAX HEIGHT" at 7'0". Bottom: the STAMINA panel (teal
   lightning, "250 / 250", fat teal bar; soft red when low). Fixed on the way: the level bar must be parented in Kit.Bar.
+- 6. Lifting (mockup 02, MachineHud): the weight card top right (machine name + red muscle tag, quiet - / + squares,
+  "315 LB", "Tier 12 / 12", BEST WEIGHT in gold text), the PUMP panel (gold flame, %, metallic gold bar; full = glow +
+  "TAP TO PUMP!"), the big red "REP x3" CTA bottom right, a quiet "x STOP" bottom left (no longer above the stamina
+  panel, HudBottom.TrainingRowLift 0). AUTO TRAIN sits under the card (only while Auto Lift is on sale).
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier
