@@ -2,13 +2,16 @@
 -- gym_arc_ui_final/07_physique).
 --  * Stats (menu tile): shows / hides your stats as labels around your character in the world (StatsLabelsClient does
 --    the drawing; this script fires UIBus.StatsLabels). Hidden by default. The tutorial's "open Stats" step counts it.
---    The window has the same switch ("LABELS ON / OFF" next to the X).
+--    The window has the same switch: a small eye button in the body card's corner (gold while the labels show).
 --  * Muscles (menu tile), the GROW tile (UIBus.OpenStats) and the machine body map (UIBus.OpenMuscles) open the window.
 --    Tabs in the header (MUSCLES / LIFTS / GENES):
 --      Muscles   left: your body card (the muscle figure lit by level on a dark red glow, a big gold "71%" and
 --                "PHYSIQUE / AESTHETIC"; when a Growth Spurt is ready the gold TAP TO GROW CTA takes the number's place);
---                right: the six groups, best first: the genetics grade on a small gold plate, the name, a fat metallic
---                bar in the grade's color (S red, A gold, B teal, C gray) with the % toward the Growth Spurt goal.
+--                right: the six groups, best first: a grade on a small gold plate, the name, a fat metallic bar in the
+--                grade's color (S red, A gold, B teal, C steel, D dark gray) and the %.
+--                (owner, 14 Oct) One number drives all of it: a group's % = its muscles' progress to the full aesthetic
+--                look (Muscles.LookG, 1 = full; the mass monster beyond counts as 100%); its grade comes from that %
+--                (S 90+, A 75+, B 55+, C 35+, D below); the big total = the average of the six groups.
 --      Lifts     every open machine: its main muscle, the heaviest weight you lifted and the weights bought.
 --      Genetics  (tab "GENES") the six grades with their multipliers, frame and body type, the overall grade, and a button to the
 --                genetics screen (reroll there).
@@ -47,8 +50,16 @@ local CARDS = {
 	{ id = "Chest", group = "Chest" }, { id = "Back", group = "Back" }, { id = "Shoulders", group = "Shoulders" },
 	{ id = "Arms", group = "Arms" }, { id = "Legs", group = "Legs" }, { id = "Core", group = "Core" },
 }
--- the bar colors by grade (mockup 07: S red, A gold, B teal, C gray)
-local BAR_COLORS = { S = Color3.fromHex("#E8343C"), A = Color3.fromHex("#F2B640"), B = Color3.fromHex("#3CC8B4"), C = Color3.fromHex("#9A9496"), D = Color3.fromHex("#6F6669") }
+-- the bar colors by grade (mockup 07: S red, A gold, B teal, C steel, D dark gray)
+local BAR_COLORS = { S = Color3.fromHex("#E8343C"), A = Color3.fromHex("#F2B640"), B = Color3.fromHex("#3CC8B4"), C = Color3.fromHex("#8E9AA6"), D = Color3.fromHex("#4A4548") }
+-- a group's grade from its % (owner, 14 Oct)
+local GRADE_FROM = { { 90, "S" }, { 75, "A" }, { 55, "B" }, { 35, "C" } }
+local function gradeFor(pct: number): string
+	for _, entry in ipairs(GRADE_FROM) do
+		if pct >= entry[1] then return entry[2] end
+	end
+	return "D"
+end
 -- the physique word under the body card, by the average muscle look (1 = the full aesthetic look)
 local PHYSIQUES = { { 0.15, "Beginner" }, { 0.4, "Getting Fit" }, { 0.7, "Athletic" }, { 1, "Aesthetic" }, { 1.25, "Shredded" }, { math.huge, "Mass Monster" } }
 local OVERALL_WORD = { S = "Genetic Freak", A = "Blessed", B = "Gifted", C = "Average", D = "Hardgainer" }
@@ -78,13 +89,12 @@ for _, id in ipairs({ "Muscles", "Lifts", "Genetics" }) do
 	pages[id] = New("Frame", { Name = id, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = id == "Muscles", Parent = modal.body })
 end
 
--- the stats labels switch (the Stats tile does the same)
-local labelsButton = Kit.Button("Quiet", "Labels Off", { Name = "Labels", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -60, 0, 14), Parent = modal.panel },
-	{ width = 110, height = 30, textSize = 12, icon = "eye" })
+-- the stats labels switch (the Stats tile does the same): a small eye button in the body card's corner (made below)
+local labelsButton
 local function setLabels(on: boolean)
 	labelsOn = on
 	statsButton:SetActive(on)
-	Kit.SetButton(labelsButton, on and "Gold" or "Quiet", on and "Labels On" or "Labels Off")
+	Kit.SetButton(labelsButton, on and "Gold" or "Quiet", "")
 	UIBus.StatsLabels:Fire(on)
 	UIBus.StatsVisible:Fire(on) -- (the tutorial's "open Stats" step)
 end
@@ -114,6 +124,9 @@ Kit.Text({ Name = "PhysiqueWord", Text = "PHYSIQUE", Font = "Body", TextSize = 1
 	Position = UDim2.new(1, -10, 1, -30), Size = UDim2.fromOffset(100, 14), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard })
 local physiqueLabel = Kit.GoldText(Kit.Text({ Name = "Physique", Text = "", Font = "Title", TextSize = 17, Upper = true, AnchorPoint = Vector2.new(1, 1),
 	Position = UDim2.new(1, -10, 1, -10), Size = UDim2.fromOffset(110, 20), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard }))
+-- the labels switch: a small eye button in the card's top right corner (gold while the labels show)
+labelsButton = Kit.Button("Quiet", "", { Name = "Labels", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 6), ZIndex = 4, Parent = bodyCard },
+	{ width = 32, height = 32, icon = "eye" })
 -- a Growth Spurt is ready: the gold TAP TO GROW CTA takes the number's place
 local spurtButton = Kit.Button("Gold", "Tap to grow", { Name = "GrowthSpurt", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
 	Visible = false, Parent = bodyCard }, { width = BODY_W - 20, height = 40, textSize = 16 })
@@ -235,24 +248,7 @@ function refreshScreen()
 
 	local grades = data.genetics and data.genetics.grades or {}
 	if currentTab == "Muscles" then
-		-- the six rows: % toward the Growth Spurt goal, best first
-		local order = {}
-		for _, c in pairs(cards) do
-			local spec = c.spec
-			local grade = grades[spec.group] or "B"
-			Kit.SetGrade(c.badge, grade)
-			local gloss = c.fill:FindFirstChild("Gloss")
-			if gloss then gloss.Color = Kit.Metal(BAR_COLORS[grade] or Colors.Teal) end
-			local share = progress.groups[spec.group] / math.max(progress.required, 1)
-			if progress.maxed then share = math.max(share, 1) end
-			local pct = math.floor(math.clamp(share, 0, 9.99) * 100 + 0.5)
-			c.setBar(math.min(share, 1))
-			c.pct.Text = pct .. "%"
-			table.insert(order, { c = c, share = share })
-		end
-		table.sort(order, function(a, b) return a.share > b.share end)
-		for i, entry in ipairs(order) do entry.c.card.LayoutOrder = i end
-		-- the body card
+		-- every muscle's look (1 = the full aesthetic look; the figure and the physique word use it as is)
 		local levels = {}
 		for _, muscle in ipairs(Muscles.List) do levels[muscle.id] = Muscles.ExactLevel(data.muscles[muscle.id]) end
 		local goal = math.max(progress.required, 1)
@@ -263,7 +259,27 @@ function refreshScreen()
 			count += 1
 		end
 		local average = count > 0 and sum / count or 0
-		sizeLabel.Text = tostring(math.floor(average * 100 + 0.5))
+		-- the six rows from ONE number: the group's progress to the full look -> the %, the bar, the grade, its color
+		local order, total = {}, 0
+		for _, group in ipairs(Muscles.Groups) do
+			local c = cards[group.id]
+			local groupSum = 0
+			for _, muscle in ipairs(group.muscles) do groupSum += math.clamp(looks[muscle.id] or 0, 0, 1) end
+			local share = groupSum / math.max(#group.muscles, 1)
+			local pct = math.floor(share * 100 + 0.5)
+			local grade = gradeFor(pct)
+			Kit.SetGrade(c.badge, grade)
+			local gloss = c.fill:FindFirstChild("Gloss")
+			if gloss then gloss.Color = Kit.Metal(BAR_COLORS[grade]) end
+			c.setBar(share)
+			c.pct.Text = pct .. "%"
+			total += pct
+			table.insert(order, { c = c, share = share })
+		end
+		table.sort(order, function(a, b) return a.share > b.share end)
+		for i, entry in ipairs(order) do entry.c.card.LayoutOrder = i end
+		-- the body card: the total = the average of the six groups
+		sizeLabel.Text = tostring(math.floor(total / #Muscles.Groups + 0.5))
 		for _, entry in ipairs(PHYSIQUES) do
 			if average < entry[1] then
 				physiqueLabel.Text = entry[2]
@@ -358,6 +374,13 @@ end)
 UIBus.RegisterPanel("Muscles", closeMuscles)
 UIBus.OpenMuscles.Event:Connect(function() openTab("Muscles") end)
 UIBus.OpenStats.Event:Connect(function(tab) openTab(tab or "Muscles") end)
+-- Studio test hook: Workspace attribute TestOpenPanel = "Physique" opens the window (the Device Emulator's clicks can miss
+-- the menu tiles)
+if game:GetService("RunService"):IsStudio() then
+	workspace:GetAttributeChangedSignal("TestOpenPanel"):Connect(function()
+		if workspace:GetAttribute("TestOpenPanel") == "Physique" then openTab("Muscles") end
+	end)
+end
 UIBus.GeneticsVisible.Event:Connect(function(visible)
 	if visible and modal.isOpen() then closeMuscles() end
 end)

@@ -70,6 +70,11 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   wrap, REROLL quiet + KEEP red, inline good-roll confirm, odds panel). Tested on the phone emulator (749x388) and the
   667x375 layout: reveal, confirm, reroll (UP / DOWN), odds. The 3D set (ReplicatedStorage.GeneticsSet,
   GeneticsCameraRig) is no longer used (left in the place).
+- Physique fix: the rows, grades and total disagreed (bars = Growth Spurt goal progress, 100% for a maxed player;
+  letters = genetics grades; total = average look). Now one number: group % = its muscles' progress to the full look
+  (LookG clamped to 1), grade from it (S 90+, A 75+, B 55+, C 35+, D), total = average of the six; bars S red, A gold,
+  B teal, C steel, D dark gray. LABELS switch = a small eye button in the body card's corner. The left menu folds while
+  any window is open. Studio hook: Workspace TestOpenPanel = "Physique" opens it.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
