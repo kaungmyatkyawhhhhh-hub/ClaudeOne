@@ -2,6 +2,23 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
+## 14 Oct: REP / PUMP bar, treadmill sounds, arm wrestling table (owner's "TWO FIXES" prompt)
+- REP / PUMP: REP is a normal red button at the bottom right again (104 x 52, "REP x13"), and PUMP is a bar again (as
+  before the redesigns): right above REP, dark track with a dark outline, gold fill with every tapped rep, flame + "PUMP".
+  NEW: a full bar waits (it no longer starts PUMPED by itself and doesn't drain): it pulses "TAP TO PUMP!"; tapping it
+  (or Space) starts PUMPED x2 (the bar drains with the seconds left, "PUMPED x2 6s"). Space with a bar that isn't full
+  still gets you off the machine. Auto Lift pumps by itself when the bar is full. Server: MachineService action "Pump".
+  Tested phone + PC: half / full / Space pump / Space leave; nothing overlaps (pump bar, REP, STOP TRAINING, stamina).
+- Treadmill sounds: the treadmill never plays the lifting sounds now (no clank, plate knock, bar rattle, floor thud,
+  plate slide, metal unlock clang). New Config/Sounds slots TreadmillLoop (loops on the belt while someone runs, 3D,
+  quiet, fades out over 0.3 s) and TreadmillStep (soft footstep every stride, rate follows the speed): ids EMPTY for the
+  owner to pick (silent until then). Other machines checked: barbells / sleds / cables clank; a bodyweight set with no
+  plates (pull-ups or dips at BW) no longer clanks. Tested on a treadmill: only the soft rep tick played.
+- Arm wrestling table moved off the spawn: from by the front door (13.4, -18.1) to (18, -31), right of the center aisle
+  ~28 studs into the starter gym (Config/Social TableSpot updated; the table model moved in Studio).
+Screenshots: ui_compare_v2/machine_hud_pump_half_phone, _full_phone, machine_hud_pumped_phone, machine_hud_treadmill_phone,
+machine_hud_pump_pc.
+
 ## MORNING REPORT (14 Oct): the BIG UI + BUG RUN is done
 **What's done:** all 5 Part 1 bugs (machine HUD, leaving a machine, floating text, pro gym door loop, broken tops),
 every screen of the v2 mockups (main HUD, machine HUD, Shop, Quests with Daily / Rewards / Achievements, Trainers,

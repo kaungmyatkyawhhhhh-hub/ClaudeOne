@@ -13,7 +13,7 @@ Social.Together = {
 -- every tap pushes the bar toward your side, a little harder with bigger biceps and forearms (capped, so tapping skill
 -- still decides most matches). Push it all the way, or be ahead when time runs out. All decided on the server.
 Social.ArmWrestle = {
-	TableSpot = Vector3.new(13.4, 0.1, -18.1), -- the starter gym's table, by the front desk (bigger gym, 8 Oct night)
+	TableSpot = Vector3.new(18, 0.1, -31), -- the starter gym's table: right of the aisle, ~28 studs in from the door (owner, 14 Oct: not at the spawn)
 	ProTableSpot = Vector3.new(88, 0.1, -64),  -- the pro gym's table, on the open floor in front of the cable machines
 	Muscles = { "Biceps", "Forearms" },        -- strength: their look (forearms = grip)
 	PushPerTap = 0.035,     -- bar moved per tap at strength 1 (the bar goes from -1 to 1)

@@ -60,8 +60,11 @@ local function create(name, parent, opts)
 		sound.RollOffMaxDistance = def.range[2]
 	end
 	sound.Parent = parent
+	sound.Looped = opts.loop == true
 	sound:Play()
-	if def.maxLength then
+	if opts.loop then
+		-- a loop lives until Audio.StopLoop
+	elseif def.maxLength then
 		local fade = math.min(0.15, def.maxLength / 3)
 		task.delay(def.maxLength - fade, function()
 			if sound.Parent then TweenService:Create(sound, TweenInfo.new(fade), { Volume = 0 }):Play() end
@@ -110,6 +113,20 @@ function Audio.PlayAt(name, where, opts)
 	end
 	if not where or not where.Parent then return nil end
 	return create(name, where, opts)
+end
+
+-- A looping sound on `where` (a BasePart or an Attachment) until Audio.StopLoop; nil when its slot is empty.
+function Audio.Loop(name, where)
+	if not where or not where.Parent then return nil end
+	return create(name, where, { loop = true })
+end
+
+-- Fades a loop out (seconds, default 0.3) and removes it.
+function Audio.StopLoop(sound, fade)
+	if not sound or not sound.Parent then return end
+	fade = fade or 0.3
+	TweenService:Create(sound, TweenInfo.new(fade), { Volume = 0 }):Play()
+	task.delay(fade, function() sound:Destroy() end)
 end
 
 function Audio.SetVolumes(music, effects)

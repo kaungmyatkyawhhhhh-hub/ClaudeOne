@@ -29,7 +29,7 @@ Gains.Pump = {
 	TapsPerSecond = 8,      -- most taps per second that count (rate limit)
 	DrainDelay = 0.8,       -- seconds after the last tap before the meter starts draining
 	DrainPerSecond = 0.12,  -- share of the meter lost per second while not tapping
-	Duration = 8,           -- seconds of PUMPED once the meter is full (the meter drains over this time)
+	Duration = 8,           -- seconds of PUMPED after tapping the full PUMP bar (a full bar waits, it doesn't drain)
 	Multiplier = 2,         -- gains while PUMPED
 	Speed = 0.75,           -- rep animation time while PUMPED (x)
 }

@@ -405,7 +405,8 @@ local function enter(player, model)
 end
 
 ------------------------------------------------------------------------
--- PUMP meter: taps fill it, a full meter = PUMPED for Gains.Pump.Duration (x2 gains), not tapping drains it.
+-- PUMP meter: taps fill it; a full meter waits (it doesn't drain) until the player taps the PUMP bar (or Space, or Auto
+-- Lift does it): action "Pump" = PUMPED for Gains.Pump.Duration (x2 gains). Not tapping drains a meter that isn't full.
 -- The server owns it; the client predicts it for an instant feel and follows these player attributes.
 ------------------------------------------------------------------------
 local Pump = Gains.Pump
@@ -418,7 +419,7 @@ end
 local function settlePump(session, now)
 	local pump = session.pump
 	local from = math.max(pump.settled or now, pump.lastTap + Pump.DrainDelay, pump.pumpedUntil)
-	if now > from and pump.meter > 0 then
+	if now > from and pump.meter > 0 and pump.meter < 1 then -- (a full meter waits for the PUMP tap)
 		pump.meter = math.max(0, pump.meter - Pump.DrainPerSecond * (now - from))
 	end
 	pump.settled = now
@@ -435,12 +436,20 @@ local function tap(player)
 	if now < pump.pumpedUntil then return end -- already PUMPED: it runs out on its own
 	local perk = BoostService.Pump(player) -- (the Pump Coach: fills faster, lasts longer)
 	pump.meter = math.min(1, pump.meter + perk / Pump.TapsToFill)
-	if pump.meter >= 1 then
-		pump.meter = 0
-		pump.pumpedUntil = now + Pump.Duration * perk
-		player:SetAttribute("PumpedUntil", pump.pumpedUntil)
-	end
 	player:SetAttribute("PumpMeter", math.floor(pump.meter * 100 + 0.5) / 100)
+end
+
+-- The PUMP bar tapped while full: PUMPED.
+local function pumpNow(player)
+	local session = sessions[player]
+	if not session then return end
+	local now = serverNow()
+	local pump = settlePump(session, now)
+	if pump.meter < 1 or now < pump.pumpedUntil then return end
+	pump.meter = 0
+	pump.pumpedUntil = now + Pump.Duration * BoostService.Pump(player)
+	player:SetAttribute("PumpedUntil", pump.pumpedUntil)
+	player:SetAttribute("PumpMeter", 0)
 end
 
 local function lift(player)
@@ -570,6 +579,7 @@ end
 local actions = {
 	Lift = lift,
 	Tap = tap,
+	Pump = pumpNow,
 	Leave = leave,
 	SelectTier = selectTier,
 	UnlockTier = unlockTier,

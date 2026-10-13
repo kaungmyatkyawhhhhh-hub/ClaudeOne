@@ -3,7 +3,9 @@
 -- Nothing sits in the middle of the screen (owner, 13 Oct: the old panel covered the player):
 --   right:         the weight panel: AUTO TRAIN (AUTO ON in green), WEIGHT "315 LB", "Tier 12 / 12" (or what it needs),
 --                  - / +, BEST WEIGHT (or UNLOCK with the price when the weight shown isn't bought yet)
---   bottom right:  the big red REP circle (reps "x13") and the gold PUMP circle left of it
+--   bottom right:  the red REP button (reps "x13") and, right above it, the PUMP bar (owner, 14 Oct: back to a bar as
+--                  before the new UI): gold fill with every tapped rep; full = it pulses "TAP TO PUMP!" and a tap on it
+--                  (or Space) starts PUMPED (x2, the bar drains with the seconds left)
 --   bottom center: STOP TRAINING, right above the stamina bar (Shared/UI/HudBottom)
 --   top center:    NEW PERSONAL RECORD! (gold outlined text) + "315 LB Bench Press"
 -- (No floating text while lifting: coach lines and hints go to the top band, Notify.Hint.)
@@ -23,36 +25,15 @@ MachineHud.PanelTop = 85
 MachineHud.Edge = 11
 MachineHud.HiddenOffset = UDim2.fromOffset(0, 260) -- the bottom widgets wait below the screen edge
 MachineHud.PanelHidden = UDim2.fromOffset(230, 0)  -- the weight panel waits past the right edge
-MachineHud.RepSize = 92
-MachineHud.PumpSize = 56
+MachineHud.RepSize = Vector2.new(104, 52)
+MachineHud.PumpSize = Vector2.new(186, 28)
+MachineHud.Corner = 12 -- the REP / PUMP gap to the screen's bottom right edge
 MachineHud.BarHeight = 46
 MachineHud.PlateWidth = 6
 
 local function frame(props, children)
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
 	return New("Frame", props, children)
-end
-
--- A round glossy button (REP / PUMP): gradient circle, dark outline, a lighter ring inside, a press bounce.
-local function circle(name, gradient, size, parent)
-	local button = New("ImageButton", { Name = name, AutoButtonColor = false, BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5),
-		Size = UDim2.fromOffset(size, size), Parent = parent }, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-		New("UIGradient", { Name = "Gloss", Rotation = 90, Color = ColorSequence.new(Theme.Gradients[gradient][1], Theme.Gradients[gradient][2]) }),
-	})
-	-- the lighter ring just inside the outline
-	local ring = frame({ Name = "Ring", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -6, 1, -6), Parent = button }, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 2, Transparency = 0.6 }),
-	})
-	-- a soft dark halo around it
-	frame({ Name = "Halo", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 10, 1, 10), ZIndex = 0, Parent = button }, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Color = Colors.Shadow, Thickness = 5, Transparency = 0.6 }),
-	})
-	Theme.BindPress(button)
-	return button, ring
 end
 
 local function grayButton(name, glyph, props)
@@ -135,23 +116,37 @@ function MachineHud.Build()
 	hud.barPlates = {}
 	hud.segmentBacks, hud.segments = {}, {}
 
-	------------------------------------------------------------ REP + PUMP (bottom right) and STOP TRAINING
-	local rep, repRing = circle("Rep", "Red", MachineHud.RepSize, stack)
-	rep.Position = UDim2.new(1, -(844 - 596), 1, -(390 - 284))
-	Kit.Text({ Name = "Label", Text = "REP", Font = "Title", TextSize = 30, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42),
-		Size = UDim2.new(1, 0, 0, 32), Parent = rep })
-	hud.repsLabel = Kit.Text({ Name = "Count", Text = "x0", Font = "Number", TextSize = 15, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.72),
-		Size = UDim2.new(1, 0, 0, 18), Parent = rep })
+	------------------------------------------------------------ REP + the PUMP bar (bottom right) and STOP TRAINING
+	local edge = MachineHud.Corner
+	local rep = Theme.Button("Red", { Name = "Rep", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -edge, 1, -edge),
+		Size = UDim2.fromOffset(MachineHud.RepSize.X, MachineHud.RepSize.Y), Parent = stack }, {})
+	Kit.Text({ Name = "Label", Text = "REP", Font = "Title", TextSize = 24, Position = UDim2.fromOffset(0, 3), Size = UDim2.new(1, 0, 0, 26), Parent = rep })
+	hud.repsLabel = Kit.Text({ Name = "Count", Text = "x0", Font = "Number", TextSize = 13, Position = UDim2.fromOffset(0, 27), Size = UDim2.new(1, 0, 0, 16), Parent = rep })
 	hud.repsScale = New("UIScale", { Parent = hud.repsLabel })
-	hud.repButton, hud.repRing = rep, repRing
+	hud.repButton = rep
 
-	local pump, pumpRing = circle("Pump", "Gold", MachineHud.PumpSize, stack)
-	pump.Position = UDim2.new(1, -(844 - 507), 1, -(390 - 300))
-	Pieces.Icon("flame", Colors.Text, { Name = "Flame", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36),
-		Size = UDim2.fromOffset(20, 20), Parent = pump }):SetAttribute("KeepColor", true)
-	hud.pumpLabel = Kit.Text({ Name = "Label", Text = "PUMP", Font = "Title", TextSize = 13, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.72),
-		Size = UDim2.new(1, 0, 0, 16), Parent = pump })
-	hud.pumpButton, hud.pumpRing = pump, pumpRing
+	-- the PUMP bar: a dark track with a dark outline, the gold fill, a flame + PUMP on the left, the state on the right
+	local pump = New("TextButton", { Name = "Pump", Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -edge, 1, -(edge + MachineHud.RepSize.Y + 6)), Size = UDim2.fromOffset(MachineHud.PumpSize.X, MachineHud.PumpSize.Y),
+		BackgroundColor3 = Colors.Well, Parent = stack }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	local glow = New("UIStroke", { Name = "Glow", Color = Colors.Gold, Thickness = 3, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	-- (the glow sits on a frame just outside the outline, so both show)
+	frame({ Name = "GlowRing", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 6, 1, 6), Parent = pump }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }), glow,
+	})
+	local fill = New("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = pump }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Theme.Gradients.Gold[1], Theme.Gradients.Gold[2]) }),
+	})
+	Pieces.Icon("flame", Colors.Text, { Name = "Flame", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Size = UDim2.fromOffset(16, 16),
+		ZIndex = 3, Parent = pump }):SetAttribute("KeepColor", true)
+	hud.pumpLabel = Kit.Text({ Name = "Label", Text = "PUMP", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(27, 0), Size = UDim2.new(1, -34, 1, 0),
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = pump })
+	local pumpScale = New("UIScale", { Parent = pump })
+	hud.pumpButton = pump
 
 	hud.exitButton = Kit.Button("Red", "Stop training", { Name = "Exit", AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -(HudBottom.BarTop() + 11)), Parent = stack }, { width = 146, height = 28, textSize = 15 })
@@ -184,25 +179,33 @@ function MachineHud.Build()
 		end
 	end
 
-	-- PUMP: dim while the meter is low, bright as it fills; while PUMPED it shows the seconds left and the ring glows.
-	function hud.setPump(fill: number, pumped: boolean, left: number?, now: number)
-		local bright = pumped and 1 or (0.62 + 0.38 * math.clamp(fill, 0, 1))
-		pump.BackgroundColor3 = Color3.new(bright, bright, bright)
-		local ringStroke = pumpRing:FindFirstChildOfClass("UIStroke")
+	-- PUMP: the gold fill follows the meter; full = it pulses "TAP TO PUMP!"; while PUMPED it drains with the seconds left
+	-- ("PUMPED x2  6s") and glows.
+	function hud.setPump(fill01: number, pumped: boolean, left: number?, now: number)
+		local amount = math.clamp(fill01, 0, 1)
+		fill.Visible = amount > 0.01
+		fill.Size = UDim2.fromScale(amount, 1)
+		local wave = 0.5 + 0.5 * math.sin(now * 7)
 		if pumped then
-			hud.pumpLabel.Text = math.ceil(left or 0) .. "s"
-			ringStroke.Transparency = 0.1 + 0.3 * (0.5 + 0.5 * math.sin(now * 6))
+			hud.pumpLabel.Text = "PUMPED x2  " .. math.ceil(left or 0) .. "s"
+			glow.Transparency = 0.15 + 0.35 * wave
+			pumpScale.Scale = 1
+		elseif amount >= 0.999 then
+			hud.pumpLabel.Text = "TAP TO PUMP!"
+			glow.Transparency = 0.6 * wave
+			pumpScale.Scale = 1 + 0.04 * wave
 		else
 			hud.pumpLabel.Text = "PUMP"
-			ringStroke.Transparency = 0.6 - 0.4 * math.clamp(fill, 0, 1)
+			glow.Transparency = 1
+			pumpScale.Scale = 1
 		end
 	end
 
-	-- every tap: PUMP pops a little (its press scale is a UIScale named PressScale, made by Theme.BindPress)
+	-- every tap: REP pops a little (its press scale is a UIScale named PressScale, made by Theme.Button)
 	function hud.tapPop()
-		local scale = pump:FindFirstChild("PressScale") or New("UIScale", { Name = "PressScale", Parent = pump })
-		scale.Scale = 1.08
-		Theme.Tween(scale, { Scale = 1 }, 0.16)
+		local scale = rep:FindFirstChild("PressScale") or New("UIScale", { Name = "PressScale", Parent = rep })
+		scale.Scale = 1.06
+		Theme.Tween(scale, { Scale = 1 }, 0.14)
 	end
 
 	-- the weight panel slides in from the right (the bottom widgets come up with `stack`)

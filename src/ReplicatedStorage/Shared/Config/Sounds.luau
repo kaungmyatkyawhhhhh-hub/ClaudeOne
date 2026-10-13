@@ -16,6 +16,11 @@ return {
 	FloorThud = { ids = { 9113479635 }, volume = 0.45, pitch = 0.05, group = "Gameplay", range = { 10, 60 }, maxLength = 0.9 },   -- Body Falls on Carpet, low thuddy: rubber floor thud
 	Breath = { ids = { 9113585730, 9113586280 }, volume = 0.6, pitch = 0.05, group = "Gameplay", range = { 12, 45 }, maxLength = 1.6 }, -- Breath Exhale 11/20: heavy tiers / low stamina only
 
+	-- Treadmill (3D, on the belt; owner, 14 Oct: the treadmill never uses the lifting sounds). EMPTY on purpose: the owner
+	-- picks these ids (Roblox's licensed library only); an empty slot is silent.
+	TreadmillLoop = { ids = {}, volume = 0.18, pitch = 0, group = "Gameplay", range = { 6, 30 } }, -- looping belt / running hum while someone runs (fades out over 0.3 s)
+	TreadmillStep = { ids = {}, volume = 0.08, pitch = 0.08, group = "Gameplay", range = { 5, 22 }, maxLength = 0.4 }, -- soft footstep, every stride
+
 	-- Training feedback (2D)
 	RepTick = { ids = { 9114212934 }, volume = 0.07, pitch = 0.05, group = "UI" },                       -- Button click: soft tick on each rep
 	SetComplete = { ids = { 9116163687 }, volume = 0.22, pitch = 0.03, group = "Gameplay" },              -- Key Dings, light metal clinking: every 10 reps

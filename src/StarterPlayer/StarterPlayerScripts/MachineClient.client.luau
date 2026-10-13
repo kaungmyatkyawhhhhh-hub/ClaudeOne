@@ -924,11 +924,13 @@ end
 -- Sled push (winter): leaning into the sled's handles, legs driving in a lunge that switches each rep.
 -- Treadmill belts: while someone runs on one (the machine's UserId attribute), its slats slide back along the belt at the
 -- tier's speed and wrap around, and a pro treadmill's readout (Screen.Readout) counts speed / time / distance for the run
--- (client only, looks only).
+-- (client only). Sounds (owner, 14 Oct: never the lifting clank): Config/Sounds TreadmillLoop loops on the belt while
+-- someone runs (3D, quiet; fades out over 0.3 s when they stop or get off) and TreadmillStep plays on every stride (the
+-- stride rate follows the speed, like the running animation).
 task.spawn(function()
 	local CollectionService = game:GetService("CollectionService")
 	local offsets = {} -- [model] = studs travelled
-	local runs = {} -- [model] = { time, miles, shown } for the readout
+	local runs = {} -- [model] = { time, miles, shown, loop, step } for the readout and the sounds
 	local function readout(model, mph, seconds, miles)
 		local screen = model:FindFirstChild("Screen")
 		local gui = screen and screen:FindFirstChild("Readout")
@@ -947,14 +949,28 @@ task.spawn(function()
 		for model, run in pairs(runs) do
 			if not model.Parent or not model:GetAttribute("UserId") then
 				runs[model] = nil
+				Audio.StopLoop(run.loop, 0.3)
 				if model.Parent then readout(model, 0, 0, 0) end
 			end
 		end
 		for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 			if model:GetAttribute("MachineId") ~= "Treadmill" or not model:GetAttribute("UserId") then continue end
 			local mph = Machines.ById.Treadmill.tiers[model:GetAttribute("Tier") or 1].weight
-			local run = runs[model] or { time = 0, miles = 0, shown = -1 }
-			runs[model] = run
+			local run = runs[model]
+			if not run then
+				run = { time = 0, miles = 0, shown = -1, step = 0 }
+				runs[model] = run
+				local belt = model:FindFirstChild("Belt")
+				run.loop = Audio.Loop("TreadmillLoop", belt)
+			end
+			-- a soft footstep on every stride (strides a second follow the speed: the running animation's clock x2)
+			local pace = math.clamp((mph - 2) / 11, 0, 1)
+			run.step += dt * 2 * (0.85 + 0.75 * pace)
+			if run.step >= 1 then
+				run.step -= 1
+				local belt = model:FindFirstChild("Belt")
+				if belt then Audio.PlayAt("TreadmillStep", belt) end
+			end
 			run.time += dt
 			run.miles += mph * dt / 3600
 			if math.floor(run.time) ~= run.shown then -- (once a second)
@@ -1668,7 +1684,8 @@ end
 ------------------------------------------------------------------------
 local Pump = Gains.Pump
 local tryLift -- defined with the lifting code below
--- (PUMP is the gold button above REP: MachineHud.setPump draws the meter)
+-- (PUMP is the gold bar above REP: MachineHud.setPump draws the meter. Taps fill it; a full bar waits for a tap on the
+-- bar, Space or Auto Lift: tryPump)
 local pumpHint = hud.pumpHint
 pumpHint.Text = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) and "Tap to pump" or "Tap to pump (click or Space)"
 local hintTaps = 0
@@ -1739,7 +1756,7 @@ local function refreshPump(now)
 	end
 	-- drain while not tapping (same rule as the server)
 	local from = math.max(pumpSettled, pumpLastTap + Pump.DrainDelay)
-	if not pumped and now > from and pumpMeter > 0 then
+	if not pumped and now > from and pumpMeter > 0 and pumpMeter < 1 then -- (a full bar waits for the PUMP tap)
 		pumpMeter = math.max(0, pumpMeter - Pump.DrainPerSecond * (now - from))
 	end
 	pumpSettled = now
@@ -1769,6 +1786,19 @@ local function registerTap()
 		hintTaps += 1
 		if hintTaps >= 3 then hidePumpHint(true) end
 	end
+end
+
+-- The full PUMP bar tapped (or Space, or Auto Lift): PUMPED (the server checks the meter).
+local pumpAskedAt = 0
+local function pumpReady(): boolean
+	return pumpMeter >= 0.999 and not isPumped()
+end
+local function tryPump(): boolean
+	if not current or not pumpReady() then return false end
+	if os.clock() - pumpAskedAt < 0.5 then return true end
+	pumpAskedAt = os.clock()
+	Remotes.MachineAction:FireServer("Pump")
+	return true
 end
 
 -- the server's meter wins when they drift (e.g. taps lost on a slow connection)
@@ -1998,6 +2028,14 @@ local function localLockout(state)
 	end
 end
 
+-- Does this rep make a metal sound (the plate clank)? Never on the treadmill (it has its own sounds), never on a
+-- bodyweight set with no plates (a pull-up at "BW").
+function bars.metal(machine, tier: number?): boolean
+	if not machine or machine.trains == "Stamina" then return false end
+	local def = machine.tiers[tier or 1]
+	return not (def and def.label == "BW" and #(def.plates or {}) == 0)
+end
+
 -- { [muscle id] = share } a machine trains (none for the treadmill: it trains stamina)
 function bars.trainingShares(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
@@ -2013,8 +2051,10 @@ local function onLockout(model, character, state)
 	-- deeper for heavier tiers; Audio adds the random +-5%
 	local pitch = 1 - FEEL.ClankDeeperPerTier * (state.tier - 1)
 	local bar = barOf(model)
-	Audio.PlayAt("Clank", bar, { pitch = pitch })
-	if state.tier >= FEEL.HeavyTier then Audio.PlayAt("PlateKnock", bar, { pitch = pitch }) end
+	if bars.metal(machine, state.tier) then
+		Audio.PlayAt("Clank", bar, { pitch = pitch })
+		if state.tier >= FEEL.HeavyTier then Audio.PlayAt("PlateKnock", bar, { pitch = pitch }) end
+	end
 	if machine then pump(character, machine) end
 	if current and model == current.model then
 		localLockout(state)
@@ -2142,9 +2182,17 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
--- REP and PUMP (mockup 02): a press counts at once (not on release), like a tap on the world.
+-- REP: a press counts at once (not on release), like a tap on the world. The PUMP bar: PUMPED when it's full (otherwise
+-- a tap on it is a rep like anywhere else). Space while the bar is full pumps (otherwise Space gets you off).
 hud.repButton.MouseButton1Down:Connect(function() tryLift() end)
-hud.pumpButton.MouseButton1Down:Connect(function() tryLift() end)
+hud.pumpButton.MouseButton1Down:Connect(function()
+	if not tryPump() then tryLift() end
+end)
+ContextActionService:BindActionAtPriority("MachinePump", function(_, state)
+	if not pumpReady() or not current then return Enum.ContextActionResult.Pass end
+	if state == Enum.UserInputState.Begin then tryPump() end
+	return Enum.ContextActionResult.Sink
+end, false, Enum.ContextActionPriority.High.Value + 100, Enum.KeyCode.Space)
 
 -- AUTO (mockups 02 / 03): Auto Lift owners switch it on / off (green AUTO ON); others see it locked (opens the shop's
 -- passes) while the shop exists; hidden when nothing is for sale.
@@ -2177,6 +2225,7 @@ task.spawn(function()
 		task.wait(0.15)
 		if current and player:GetAttribute("Pass_AutoLift") and player:GetAttribute("AutoLiftOn") then
 			local data = ClientData.Get()
+			if pumpReady() then tryPump() end -- (Auto Lift pumps as soon as the bar is full)
 			if data.stamina >= current.machine.staminaCost then tryLift() end
 		end
 	end
@@ -2274,15 +2323,15 @@ local function open(model)
 	SideMenu.SetTraining(true)
 	HudBottom.SetTraining(true)
 	hud.show(true)
-	Audio.PlayAt("BarRattle", barOf(model))
+	if current.machine.trains ~= "Stamina" then Audio.PlayAt("BarRattle", barOf(model)) end -- (no bar on a treadmill)
 	stack.Position = HIDDEN_OFFSET
 	Theme.Tween(stack, { Position = UDim2.new() }) -- slides up
 	local settings = ClientData.Get().settings
 	hintTaps = 0
 	-- the first time ever on a machine: one hint in the top band (saved as seen at once)
 	if not (settings and settings.pumpHintSeen) then
-		Notify.Hint((UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) and "Tap REP to lift. Tap fast to fill PUMP!"
-			or "Click REP (or anywhere) to lift. Click fast to fill PUMP! Space gets you off.")
+		Notify.Hint((UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) and "Tap REP to lift. When PUMP is full, tap it!"
+			or "Click REP (or anywhere) to lift. When PUMP is full, click it or press Space!")
 		Remotes.PlayerAction:FireServer("SetSettings", { pumpHintSeen = true })
 	end
 
@@ -2302,8 +2351,10 @@ local function close()
 	if current then
 		-- racking the bar: a rattle, plus a rubber floor thud on lifting platforms
 		local model = current.model
-		Audio.PlayAt("BarRattle", barOf(model))
-		if model:FindFirstChild("Platform") then Audio.PlayAt("FloorThud", barOf(model)) end
+		if current.machine.trains ~= "Stamina" then
+			Audio.PlayAt("BarRattle", barOf(model))
+			if model:FindFirstChild("Platform") then Audio.PlayAt("FloorThud", barOf(model)) end
+		end
 		for _, connection in ipairs(current.promptConnections) do connection:Disconnect() end
 		-- The server re-enables the Use prompt just before it sends Exit, and the guard above already caught that change
 		-- and switched it back off, so set the server's state here: Use = free again, Spot = nobody to spot.
@@ -2335,7 +2386,7 @@ local function stepTier(delta)
 	local target = viewTier + delta
 	if target < 1 or target > math.min(#current.machine.tiers, unlocked + 1) then return end
 	viewTier = target
-	Audio.PlayAt("PlateSlide", barOf(current.model)) -- plates on/off the bar
+	if current.machine.trains ~= "Stamina" then Audio.PlayAt("PlateSlide", barOf(current.model)) end -- plates on/off the bar
 	local levelOk = mainLevel(current.machine) >= current.machine.tiers[viewTier].unlockLevel
 	if viewTier <= unlocked and levelOk and viewTier ~= selected then
 		Remotes.MachineAction:FireServer("SelectTier", viewTier)
@@ -2360,7 +2411,7 @@ do
 			unlocked += 1
 		end
 		local best = Machines.UsableTier(machine, { unlocked = unlocked }, level)
-		if best ~= viewTier then Audio.PlayAt("PlateSlide", barOf(current.model)) end
+		if best ~= viewTier and current.machine.trains ~= "Stamina" then Audio.PlayAt("PlateSlide", barOf(current.model)) end
 		Remotes.MachineAction:FireServer("MaxWeight")
 		if unlocked > progressFor(machine.id) then
 			-- plates are being bought: show the selected one when the data arrives (the panel can't look past what you own + 1)
@@ -2486,7 +2537,7 @@ ClientData.Changed:Connect(function(path)
 		if key == "machines" and current and path[2] == current.machine.id then
 			local unlocked = progressFor(current.machine.id)
 			if current.knownUnlocked and unlocked > current.knownUnlocked then
-				Audio.PlayAt("TierUnlocked", barOf(current.model))
+				if current.machine.trains == "Stamina" then Audio.Play2D("LevelUp") else Audio.PlayAt("TierUnlocked", barOf(current.model)) end
 			end
 			current.knownUnlocked = unlocked
 			if current.maxPending then
