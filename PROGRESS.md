@@ -52,6 +52,9 @@ in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minute
   bloom / depth of field / sun rays off on this device), Tutorial Hints (= the coach hints toggle), Gain Numbers
   (On / Minimal / Off), Rep Flash, EXP Popups, Spot Requests. The mockup's "Other Auras" is left out (no auras yet).
   Screenshot: ui_compare_v2/10_settings_phone. Icons now preload when the game starts.
+- 08 Titles (done): tabs All / Owned, count "x / 36", 4-column scrolling grid of cards: rarity word in its color, name,
+  EQUIP (green) / EQUIPPED (gold, gold outline) when owned, a lock when not (secret = "???"); tapping a locked card shows
+  how to earn it in a toast. Screenshot: ui_compare_v2/08_titles_phone.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
