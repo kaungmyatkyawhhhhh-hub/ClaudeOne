@@ -143,6 +143,7 @@ local musicStarted = false
 local musicPlayer = nil
 local area = nil
 local playlist = nil -- ids for the current area
+local trackIndex = 0 -- the playing track in the playlist
 
 -- The tracks for an area (Config.Sounds.AreaMusic), or the whole Music list.
 local function tracksFor(name)
@@ -160,10 +161,12 @@ function Audio.StartMusic()
 	musicPlayer.SoundGroup = getGroup("Music")
 	musicPlayer.Parent = SoundService
 	playlist = tracksFor(area)
-	local index = 0
+	trackIndex = 0
+	-- the next track of the current area's list (in order, then from the first again)
 	local function nextTrack()
-		index = index % #playlist + 1
-		musicPlayer.SoundId = "rbxassetid://" .. playlist[index]
+		if #playlist == 0 then return end
+		trackIndex = trackIndex % #playlist + 1
+		musicPlayer.SoundId = "rbxassetid://" .. playlist[trackIndex]
 		musicPlayer.TimePosition = 0
 		musicPlayer:Play()
 	end
@@ -182,7 +185,8 @@ function Audio.SetArea(name)
 	local fade = TweenService:Create(musicPlayer, TweenInfo.new(0.8), { Volume = 0 })
 	fade:Play()
 	fade.Completed:Connect(function()
-		if playlist ~= tracks then return end
+		if playlist ~= tracks or #tracks == 0 then return end
+		trackIndex = 1 -- (a new area starts its list from the first track; Ended then moves through the rest)
 		musicPlayer.SoundId = "rbxassetid://" .. tracks[1]
 		musicPlayer.TimePosition = 0
 		musicPlayer:Play()

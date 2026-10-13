@@ -87,14 +87,17 @@ return {
 	StorePurchase = { ids = { 9126072697 }, volume = 0.2, pitch = 0.02, group = "UI", maxLength = 1.4 },      -- PSE Synth Sparkle Bell Ding 1: store purchase (not wired yet)
 	MirrorOpen = { ids = { 9116395179 }, volume = 0.2, pitch = 0, group = "UI", maxLength = 2.2 },            -- PSE Magic Glows Chiming Hits 6: the mirror opens (not wired yet)
 
-	-- Music (2D, low in the background, plays the tracks in order and loops)
-	Music = { ids = { 9043990443, 9043990341 }, volume = 0.5, pitch = 0, group = "Music" }, -- APM "Lovely Sunrise" C (underscore) and A (vinyl chillhop)
+	-- Music (2D, low in the background, plays the tracks in order and loops). The owner's own tracks (14 Oct); this list
+	-- plays wherever an area below has no list of its own.
+	Music = { ids = { 118959016267248, 131532099124744, 139266399633943, 86451874359343, 113417603188158, 1840007392 }, volume = 0.7, pitch = 0, group = "Music" },
 
-	-- Area music: which of the music tracks plays where (Audio.SetArea; SettingsClient picks the area).
+	-- Area music: which tracks play where (Audio.SetArea; SettingsClient picks the area). Put as many ids in an area's
+	-- list as you like, separated by commas: they play one after another in that order, then start again from the first.
+	-- e.g. Starter = { 86451874359343, 131532099124744, 139266399633943 },
 	AreaMusic = {
-		Starter = { 9043990443 }, -- underscore: warm, old-school starter gym
-		Pro = { 9043990341 },     -- vinyl chillhop: the darker pro gym
-		Beach = { 9043824232 },   -- APM 'Happy Island' (City Breeze): the beach, beach gym, posing stage, skate park
-		Town = { 1840007392 },    -- APM 'Maypole Summer' (d): the streets, plaza and shops
+		Starter = { 86451874359343 }, -- the starter gym
+		Pro = { 118959016267248 },    -- the pro gym
+		Beach = { 1837324500 },       -- the beach, beach gym, posing stage, skate park
+		Town = { 1840007392 },        -- APM 'Maypole Summer' (d): the streets, plaza and shops
 	},
 }
