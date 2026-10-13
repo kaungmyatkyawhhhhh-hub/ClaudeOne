@@ -25,6 +25,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   big ("+5%" + small "EXP"); coaching = tile 7% bigger, gold frame + glow, gold perk, "COACHING"; owned = quiet EQUIP;
   locked = gray veil + lock + coin price pill. Bottom: "Tap a coach to hire or swap · 1 / 1 active" + gold
   "R$ 99 · 2ND SLOT" CTA (pulses). Tested on a FreshPlayer save with TestCoins (hired two, one coaching).
+- 4. Physique (mockup 07; the Stats window): title PHYSIQUE, tabs MUSCLES / LIFTS / GENES, LABELS ON/OFF next to the X.
+  Left: body card on a dark red glow, big gold "71%" + PHYSIQUE / AESTHETIC (TAP TO GROW gold CTA takes its place when a
+  spurt is ready; the old Growth Spurt row is gone). Right: the six groups best first, gold grade plate (Kit.GradeBadge),
+  fat metallic bar in the grade color (S red, A gold, B teal, C gray), %. Forearms / Calves cards dropped (mockup).
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier

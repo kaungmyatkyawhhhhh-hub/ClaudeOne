@@ -1,15 +1,16 @@
--- StatsClient: the Stats tile, the Muscles tile and the Stats window (owner's UI v2, mockup 07_stats).
+-- StatsClient: the Stats tile, the Muscles tile and the PHYSIQUE window (owner's final kit "BLACK + GOLD", mockup
+-- gym_arc_ui_final/07_physique).
 --  * Stats (menu tile): shows / hides your stats as labels around your character in the world (StatsLabelsClient does
 --    the drawing; this script fires UIBus.StatsLabels). Hidden by default. The tutorial's "open Stats" step counts it.
 --    The window has the same switch ("LABELS ON / OFF" next to the X).
 --  * Muscles (menu tile), the GROW tile (UIBus.OpenStats) and the machine body map (UIBus.OpenMuscles) open the window.
---    Tabs above it:
---      Muscles   left: your body card (the muscle figure lit by level, "71% SIZE", "Physique: Aesthetic"); right: 8 cards
---                (Chest, Back, Shoulders, Arms, Legs, Core, Forearms, Calves) with the genetics grade badge, the name and a
---                bar with the % toward the Growth Spurt goal; under them the Growth Spurt row (next height, groups at
---                their goal, GROW when ready, "MAX GROWTH SPURT REACHED" at 7'0").
+--    Tabs in the header (MUSCLES / LIFTS / GENES):
+--      Muscles   left: your body card (the muscle figure lit by level on a dark red glow, a big gold "71%" and
+--                "PHYSIQUE / AESTHETIC"; when a Growth Spurt is ready the gold TAP TO GROW CTA takes the number's place);
+--                right: the six groups, best first: the genetics grade on a small gold plate, the name, a fat metallic
+--                bar in the grade's color (S red, A gold, B teal, C gray) with the % toward the Growth Spurt goal.
 --      Lifts     every open machine: its main muscle, the heaviest weight you lifted and the weights bought.
---      Genetics  the six grades with their multipliers, frame and body type, the overall grade, and a button to the
+--      Genetics  (tab "GENES") the six grades with their multipliers, frame and body type, the overall grade, and a button to the
 --                genetics screen (reroll there).
 --  * The Growth Spurt moment (a line of text, a bell, a chalk burst) is played here too.
 local Players = game:GetService("Players")
@@ -38,15 +39,16 @@ local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 local Vertical, Horizontal = Enum.FillDirection.Vertical, Enum.FillDirection.Horizontal
 
 local W, H = 566, 290 -- the window (mockup px; clear of the left menu on a phone)
-local BODY_W = 160 -- the body card on the Muscles tab
-local CARD_H = 38
+local BODY_W = 196 -- the body card on the Muscles tab
+local ROW_H = 30
 
--- the 8 cards: the six groups plus forearms and calves on their own (grade = their group's genetics)
+-- the six group rows (owner's final kit: the groups only, sorted best first)
 local CARDS = {
 	{ id = "Chest", group = "Chest" }, { id = "Back", group = "Back" }, { id = "Shoulders", group = "Shoulders" },
 	{ id = "Arms", group = "Arms" }, { id = "Legs", group = "Legs" }, { id = "Core", group = "Core" },
-	{ id = "Forearms", group = "Arms", muscle = "Forearms" }, { id = "Calves", group = "Legs", muscle = "Calves" },
 }
+-- the bar colors by grade (mockup 07: S red, A gold, B teal, C gray)
+local BAR_COLORS = { S = Color3.fromHex("#E8343C"), A = Color3.fromHex("#F2B640"), B = Color3.fromHex("#3CC8B4"), C = Color3.fromHex("#9A9496"), D = Color3.fromHex("#6F6669") }
 -- the physique word under the body card, by the average muscle look (1 = the full aesthetic look)
 local PHYSIQUES = { { 0.15, "Beginner" }, { 0.4, "Getting Fit" }, { 0.7, "Athletic" }, { 1, "Aesthetic" }, { 1.25, "Shredded" }, { math.huge, "Mass Monster" } }
 local OVERALL_WORD = { S = "Genetic Freak", A = "Blessed", B = "Gifted", C = "Average", D = "Hardgainer" }
@@ -65,9 +67,8 @@ local musclesOpen = false
 local pages = {}
 local currentTab = "Muscles"
 local refreshScreen -- (below)
-local modal = Kit.Modal({ name = "MusclesScreen", title = "Stats", icon = "biceps-flexed", width = W, height = H, displayOrder = 27,
-	tabs = { { id = "Muscles", text = "Muscles", icon = "biceps-flexed" }, { id = "Lifts", text = "Lifts", icon = "dumbbell" },
-		{ id = "Genetics", text = "Genetics", icon = "star" } },
+local modal = Kit.Modal({ name = "MusclesScreen", title = "Physique", width = W, height = H, displayOrder = 27,
+	tabs = { { id = "Muscles", text = "Muscles" }, { id = "Lifts", text = "Lifts" }, { id = "Genetics", text = "Genes" } },
 	onTab = function(id)
 		currentTab = id
 		for name, page in pairs(pages) do page.Visible = name == id end
@@ -78,12 +79,12 @@ for _, id in ipairs({ "Muscles", "Lifts", "Genetics" }) do
 end
 
 -- the stats labels switch (the Stats tile does the same)
-local labelsButton = Kit.Button("Gray", "Labels Off", { Name = "Labels", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -52, 0, 10), Parent = modal.panel },
-	{ width = 104, height = 26, textSize = 12, icon = "eye" })
+local labelsButton = Kit.Button("Quiet", "Labels Off", { Name = "Labels", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -60, 0, 14), Parent = modal.panel },
+	{ width = 110, height = 30, textSize = 12, icon = "eye" })
 local function setLabels(on: boolean)
 	labelsOn = on
 	statsButton:SetActive(on)
-	Kit.SetButton(labelsButton, on and "Green" or "Gray", on and "Labels On" or "Labels Off")
+	Kit.SetButton(labelsButton, on and "Gold" or "Quiet", on and "Labels On" or "Labels Off")
 	UIBus.StatsLabels:Fire(on)
 	UIBus.StatsVisible:Fire(on) -- (the tutorial's "open Stats" step)
 end
@@ -91,19 +92,31 @@ end
 ------------------------------------------------------------------------
 -- Muscles tab
 ------------------------------------------------------------------------
--- the body card: the muscle figure lit by level on a dark red glow
-local bodyCard = Kit.Card({ Name = "Body", Size = UDim2.new(0, BODY_W, 1, 0), Piece = "well", Parent = pages.Muscles }, {
-	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#5A1A1E"), Color3.fromHex("#141418")) }),
+-- the body card: the muscle figure lit by level on a dark red glow, the big gold % and the physique word
+local bodyCard = Kit.Card({ Name = "Body", Size = UDim2.new(0, BODY_W, 1, 0), Parent = pages.Muscles }, {})
+bodyCard:FindFirstChild("Sheen").Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromHex("#3A1416")), ColorSequenceKeypoint.new(0.55, Color3.fromHex("#1E1416")), ColorSequenceKeypoint.new(1, Color3.fromHex("#141215")),
 })
-bodyCard.BackgroundColor3 = Color3.new(1, 1, 1) -- (the gradient gives the color)
-local figure = New("Frame", { Name = "Figure", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10),
-	Size = UDim2.new(1, -16, 1, -66), Parent = bodyCard }, { New("UIAspectRatioConstraint", { AspectRatio = 0.8 }) })
+local figure = New("Frame", { Name = "Figure", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8),
+	Size = UDim2.new(1, -16, 1, -70), Parent = bodyCard }, { New("UIAspectRatioConstraint", { AspectRatio = 0.8 }) })
 local front = New("Frame", { Name = "Front", BackgroundTransparency = 1, Size = UDim2.fromScale(0.5, 1), Parent = figure })
 local back = New("Frame", { Name = "Back", BackgroundTransparency = 1, Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.5, 1), Parent = figure })
-local sizeLabel = Kit.Text({ Name = "Size", Text = "", Font = "Title", TextSize = 22, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -24),
-	Size = UDim2.new(1, -8, 0, 26), Parent = bodyCard })
-local physiqueLabel = Kit.Text({ Name = "Physique", Text = "", Font = "Title", TextSize = 13, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, -8, 0, 16), Parent = bodyCard })
+-- "71" big gold + "%" muted on the left; "PHYSIQUE" small muted over "AESTHETIC" in gold on the right
+local sizeRow = New("Frame", { Name = "SizeRow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 10, 1, -6),
+	Size = UDim2.fromOffset(0, 54), AutomaticSize = Enum.AutomaticSize.X, Parent = bodyCard }, {
+	Theme.List(Horizontal, 2, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Bottom),
+})
+local sizeLabel = Kit.GoldText(Kit.Text({ Name = "Size", LayoutOrder = 1, Text = "0", Font = "Number", TextSize = 50, Size = UDim2.fromOffset(0, 54),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = sizeRow }))
+Kit.Text({ Name = "Percent", LayoutOrder = 2, Text = "%", Font = "Number", TextSize = 20, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 24),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = sizeRow })
+Kit.Text({ Name = "PhysiqueWord", Text = "PHYSIQUE", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -10, 1, -30), Size = UDim2.fromOffset(100, 14), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard })
+local physiqueLabel = Kit.GoldText(Kit.Text({ Name = "Physique", Text = "", Font = "Title", TextSize = 17, Upper = true, AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -10, 1, -10), Size = UDim2.fromOffset(110, 20), TextXAlignment = Enum.TextXAlignment.Right, Parent = bodyCard }))
+-- a Growth Spurt is ready: the gold TAP TO GROW CTA takes the number's place
+local spurtButton = Kit.Button("Gold", "Tap to grow", { Name = "GrowthSpurt", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
+	Visible = false, Parent = bodyCard }, { width = BODY_W - 20, height = 40, textSize = 16 })
 
 local looks = {} -- [muscleId] = look (0..monster) for the figure
 local function muscleColor(muscleId: string)
@@ -117,32 +130,21 @@ local function drawFigure()
 	BodyFigure.Draw(back, "Back", muscleColor, Color3.fromHex("#E8D9CF"), 0.82)
 end
 
-local right = New("Frame", { Name = "Right", BackgroundTransparency = 1, Position = UDim2.fromOffset(BODY_W + 10, 0), Size = UDim2.new(1, -(BODY_W + 10), 1, 0),
-	Parent = pages.Muscles })
-local cardGrid = New("Frame", { Name = "Cards", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 4 * CARD_H + 3 * 6), Parent = right }, {
-	New("UIGridLayout", { CellSize = UDim2.new(0.5, -4, 0, CARD_H), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+local right = New("Frame", { Name = "Right", BackgroundTransparency = 1, Position = UDim2.fromOffset(BODY_W + 14, 2), Size = UDim2.new(1, -(BODY_W + 14), 1, -2),
+	Parent = pages.Muscles }, {
+	Theme.List(Vertical, 7, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
 local cards = {}
 for index, spec in ipairs(CARDS) do
-	local card = Kit.Card({ Name = spec.id, LayoutOrder = index, Parent = cardGrid }, {})
-	local badge = Kit.GradeBadge("B", 26, { Name = "Grade", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Parent = card })
-	Kit.Text({ Name = "Label", Text = spec.id, Font = "Title", TextSize = 14, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 38, 0.5, 0),
-		Size = UDim2.new(1, -112, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
-	local _, setBar, fill = Kit.Bar(Colors.Green, { Name = "Bar", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(66, 16), Parent = card },
-		{ text = true, textSize = 11 })
-	cards[spec.id] = { card = card, badge = badge, setBar = setBar, fill = fill, spec = spec }
+	local row = New("Frame", { Name = spec.id, LayoutOrder = index, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, ROW_H), Parent = right })
+	local badge = Kit.GradeBadge("B", 26, { Name = "Grade", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), Parent = row })
+	Kit.Text({ Name = "Label", Text = spec.id, Font = "Title", TextSize = 16, Upper = true, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 36, 0.5, 0),
+		Size = UDim2.fromOffset(96, ROW_H), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
+	local _, setBar, fill = Kit.Bar(Colors.Teal, { Name = "Bar", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 136, 0.5, 0), Size = UDim2.new(1, -196, 0, 18), Parent = row })
+	local pct = Kit.Text({ Name = "Pct", Text = "", Font = "Number", TextSize = 16, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0),
+		Size = UDim2.fromOffset(52, ROW_H), TextXAlignment = Enum.TextXAlignment.Right, Parent = row })
+	cards[spec.id] = { card = row, badge = badge, setBar = setBar, fill = fill, pct = pct, spec = spec }
 end
-
--- the Growth Spurt row
-local spurtRow = Kit.Card({ Name = "Spurt", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 44), Piece = "banner_gold", Parent = right }, {})
-local spurtTitle = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -130, 0, 18),
-	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = spurtRow })
-local spurtSub = Kit.Text({ Name = "Sub", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(12, 23), Size = UDim2.new(1, -130, 0, 15),
-	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = spurtRow })
-local spurtButton = Kit.Button("Gold", "Grow!", { Name = "GrowthSpurt", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = spurtRow },
-	{ width = 110, height = 30, textSize = 14, icon = "arrow-big-up" })
-local spurtCount = Kit.Text({ Name = "Count", Text = "", Font = "Title", TextSize = 18, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.fromOffset(110, 24), TextXAlignment = Enum.TextXAlignment.Right, Parent = spurtRow })
 
 ------------------------------------------------------------------------
 -- Lifts tab
@@ -159,7 +161,7 @@ for index, machine in ipairs(Machines.List) do
 	local card = Kit.Card({ Name = machine.id, LayoutOrder = index, Parent = liftList }, {})
 	local mainId = machine.muscles and machine.muscles[1] and machine.muscles[1].id
 	local group = mainId and Muscles.ById[mainId] and Muscles.ById[mainId].group
-	Kit.IconTile("dumbbell", Colors.Blue, 30, { Name = "Tile", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Parent = card })
+	Kit.IconTile("dumbbell", Color3.fromHex("#2A262B"), 30, { Name = "Tile", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Parent = card })
 	Kit.Text({ Name = "Name", Text = machine.name, Font = "Title", TextSize = 13, Position = UDim2.fromOffset(44, 5), Size = UDim2.new(1, -120, 0, 17),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
 	Kit.Text({ Name = "Muscle", Text = mainId and Muscles.ById[mainId].name or "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted,
@@ -201,7 +203,7 @@ local overall = Kit.Card({ Name = "Overall", AnchorPoint = Vector2.new(0, 1), Po
 local overallBadge = Kit.GradeBadge("B", 32, { Name = "Grade", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = overall })
 local overallText = Kit.Text({ Name = "Word", Text = "", Font = "Title", TextSize = 16, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 50, 0.5, 0),
 	Size = UDim2.new(1, -220, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = overall })
-local geneticsButton = Kit.Button("Blue", "Open Genetics", { Name = "OpenGenetics", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = overall },
+local geneticsButton = Kit.Button("Red", "Open Genetics", { Name = "OpenGenetics", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = overall },
 	{ width = 150, height = 32, textSize = 13, icon = "star" })
 
 local function bonusText(entry): string
@@ -224,7 +226,6 @@ function refreshScreen()
 	if not data or not data.muscles then return end
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, trainable)
-	local nextSpurt = data.growthSpurts + 1
 	if progress.ready and wasReady == false then
 		statsButton:SetDot(true) -- something new: clears when the window opens
 		musclesTile:SetDot(true)
@@ -234,25 +235,23 @@ function refreshScreen()
 
 	local grades = data.genetics and data.genetics.grades or {}
 	if currentTab == "Muscles" then
-		-- the 8 cards: % toward the Growth Spurt goal
+		-- the six rows: % toward the Growth Spurt goal, best first
+		local order = {}
 		for _, c in pairs(cards) do
 			local spec = c.spec
 			local grade = grades[spec.group] or "B"
 			Kit.SetGrade(c.badge, grade)
-			-- the bar in the grade's color (mockup 07)
-			local color = Kit.GradeColors[grade] or Colors.Green
 			local gloss = c.fill:FindFirstChild("Gloss")
-			if gloss then gloss.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.2)) end
-			local share
-			if spec.muscle then
-				share = Muscles.ExactLevel(data.muscles[spec.muscle]) / math.max(progress.required, 1)
-			else
-				share = progress.groups[spec.group] / math.max(progress.required, 1)
-			end
+			if gloss then gloss.Color = Kit.Metal(BAR_COLORS[grade] or Colors.Teal) end
+			local share = progress.groups[spec.group] / math.max(progress.required, 1)
 			if progress.maxed then share = math.max(share, 1) end
 			local pct = math.floor(math.clamp(share, 0, 9.99) * 100 + 0.5)
-			c.setBar(math.min(share, 1), pct .. "%")
+			c.setBar(math.min(share, 1))
+			c.pct.Text = pct .. "%"
+			table.insert(order, { c = c, share = share })
 		end
+		table.sort(order, function(a, b) return a.share > b.share end)
+		for i, entry in ipairs(order) do entry.c.card.LayoutOrder = i end
 		-- the body card
 		local levels = {}
 		for _, muscle in ipairs(Muscles.List) do levels[muscle.id] = Muscles.ExactLevel(data.muscles[muscle.id]) end
@@ -264,22 +263,21 @@ function refreshScreen()
 			count += 1
 		end
 		local average = count > 0 and sum / count or 0
-		sizeLabel.Text = math.floor(average * 100 + 0.5) .. "% SIZE"
+		sizeLabel.Text = tostring(math.floor(average * 100 + 0.5))
 		for _, entry in ipairs(PHYSIQUES) do
-			if average < entry[1] then physiqueLabel.Text = "Physique: " .. entry[2] break end
+			if average < entry[1] then
+				physiqueLabel.Text = entry[2]
+				break
+			end
 		end
 		drawFigure()
-		-- the Growth Spurt row
-		if progress.maxed then
-			spurtTitle.Text = "Growth Spurt " .. data.growthSpurts .. "  ·  " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts)) .. " (MAX)"
-			spurtSub.Text = "Max Growth Spurt reached. Your muscles keep growing."
-		else
-			spurtTitle.Text = "Growth Spurt " .. nextSpurt .. "  ·  " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(nextSpurt))
-			spurtSub.Text = string.format("%d/%d groups at their goal  ·  gains x%.2f after", progress.met, progress.total, GrowthSpurts.GetBonus(nextSpurt))
-		end
-		spurtButton.Visible = progress.ready and not progress.maxed
-		spurtCount.Visible = not spurtButton.Visible
-		spurtCount.Text = progress.maxed and "MAX" or (progress.met .. "/" .. progress.total)
+		-- a Growth Spurt is ready: TAP TO GROW replaces the number
+		local ready = progress.ready and not progress.maxed
+		spurtButton.Visible = ready
+		sizeLabel.Parent.Visible = not ready
+		physiqueLabel.Visible = not ready
+		bodyCard:FindFirstChild("PhysiqueWord").Visible = not ready
+		if ready then Theme.Pulse(spurtButton, function() return modal.isOpen() and spurtButton.Visible end) end
 	elseif currentTab == "Lifts" then
 		for _, row in pairs(liftRows) do
 			local machine = row.machine
