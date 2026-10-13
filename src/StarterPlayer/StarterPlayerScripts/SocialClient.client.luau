@@ -1,5 +1,6 @@
--- SocialClient: arm wrestling (bottom panel with the push meter, countdown, tap input, result) and the corner note
--- for lifting together (spotting: SpotClient).
+-- SocialClient: arm wrestling (bottom panel: pick an NPC opponent or wait for a player, the 3-2-1, a big TAP button
+-- (or tap anywhere / Space / gamepad A), the push bar, the result) and the corner note for lifting together
+-- (spotting: SpotClient). Matches run on the server (ArmWrestleService); the arms move in ArmWrestleClient.
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -56,17 +57,56 @@ local labels = New("Frame", { LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 18), Ba
 Theme.Text({ Text = "You", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Left, Parent = labels })
 local themLabel = Theme.Text({ Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.5, 1), TextXAlignment = Enum.TextXAlignment.Right, Parent = labels })
 local hint = Theme.Text({ LayoutOrder = 5, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 18), Parent = panel })
-local leaveButton = Theme.Button("Secondary", { Name = "Leave", LayoutOrder = 6, Size = UDim2.new(0, 160, 0, Theme.MinTouch), Parent = panel }, {
+-- alone at the table: pick an NPC opponent (or wait for a player to sit down)
+local npcRow = New("Frame", { Name = "Npcs", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Visible = false, Parent = panel },
+	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+local npcButtons = {}
+for order, npc in ipairs(Social.ArmWrestle.Npcs) do
+	local button = Theme.Button("Secondary", { Name = npc.id, LayoutOrder = order, Size = UDim2.new(1 / #Social.ArmWrestle.Npcs, -Spacing.S, 0, 56), Parent = npcRow }, {
+		Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
+		Theme.Text({ LayoutOrder = 1, Text = npc.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20) }),
+		Theme.Text({ LayoutOrder = 2, Text = npc.label .. " · " .. npc.coins .. " coins", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), Upper = false }),
+	})
+	button.Activated:Connect(function()
+		remote:FireServer("Npc", npc.id)
+		npcRow.Visible = false
+	end)
+	npcButtons[npc.id] = button
+end
+-- the big TAP button (tapping anywhere works too)
+local tapButton = Theme.Button("Primary", { Name = "Tap", LayoutOrder = 7, Size = UDim2.fromOffset(150, 72), Visible = false, Parent = panel }, {
+	Theme.Text({ Text = "Tap!", Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 1) }),
+})
+local leaveButton = Theme.Button("Secondary", { Name = "Leave", LayoutOrder = 8, Size = UDim2.new(0, 160, 0, Theme.MinTouch), Parent = panel }, {
 	Theme.Text({ Text = "Stand up", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 leaveButton.Activated:Connect(function() remote:FireServer("Leave") end)
 
+-- phones (short screens): a narrower, lower panel so the wrestlers stay in view
+Theme.OnCompactChanged(function(compact)
+	panel.Size = UDim2.fromOffset(compact and 340 or 420, 0)
+	panel.Position = UDim2.new(0.5, 0, 1, compact and -Spacing.S or -Spacing.XL)
+	tapButton.Size = compact and UDim2.fromOffset(130, 56) or UDim2.fromOffset(150, 72)
+	big.Size = UDim2.new(1, 0, 0, compact and 34 or 44)
+end)
+
 local live = false
 local mySide = 1
 
-local function sendTap()
-	if live then remote:FireServer("Tap") end
+-- is this press on the TAP button? (then the button's own Activated counts it, not the tap-anywhere input)
+local function overTapButton(input)
+	if not tapButton.Visible then return false end
+	local p, s = tapButton.AbsolutePosition, tapButton.AbsoluteSize
+	local x, y = input.Position.X, input.Position.Y + game:GetService("GuiService"):GetGuiInset().Y
+	return x >= p.X and x <= p.X + s.X and y >= p.Y and y <= p.Y + s.Y
 end
+
+local function sendTap()
+	if not live then return end
+	remote:FireServer("Tap")
+	Audio.PlayUI("ArmTap")
+end
+tapButton.Activated:Connect(sendTap)
 
 local function setLive(on)
 	if live == on then return end
@@ -84,7 +124,9 @@ end
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or not live then return end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		sendTap()
+		-- (a press on the TAP button is already counted by its Activated)
+		local over = overTapButton(input)
+		if not over then sendTap() end
 	end
 end)
 
@@ -98,22 +140,29 @@ local function showMeter(meter)
 end
 
 local resultToken = 0
+local resultUntil = 0 -- the result stays readable this long, even after the server stands you up
 remote.OnClientEvent:Connect(function(kind, info)
 	if kind ~= "State" or type(info) ~= "table" then return end
 	local state = info.state
 	if state == "idle" then
 		setLive(false)
-		gui.Enabled = false
+		tapButton.Visible = false
+		npcRow.Visible = false
+		if os.clock() >= resultUntil then gui.Enabled = false end
 		return
 	end
 	gui.Enabled = true
 	mySide = info.side or mySide
 	themLabel.Text = info.opponent or "..."
+	tapButton.Visible = state == "live"
+	if state ~= "waiting" then npcRow.Visible = false end
 	if state == "waiting" then
 		setLive(false)
 		title.Text = "Arm wrestling"
 		big.Text = ""
-		hint.Text = "Waiting for an opponent..."
+		local choices = type(info.npcs) == "table" and #info.npcs > 0
+		npcRow.Visible = choices
+		hint.Text = choices and "Pick an opponent, or wait for a player to sit down" or "Waiting for an opponent..."
 		leaveButton.Visible = true
 		showMeter(0)
 	elseif state == "countdown" then
@@ -123,11 +172,11 @@ remote.OnClientEvent:Connect(function(kind, info)
 		hint.Text = "Get ready to tap fast"
 		leaveButton.Visible = false
 		showMeter(0)
-		Audio.PlayUI("Click")
+		Audio.PlayUI("ArmCountdown")
 	elseif state == "live" then
 		if info.countdown == 0 then
-			big.Text = "Tap!"
-			Audio.PlayUI("SetComplete")
+			big.Text = "Go!"
+			Audio.PlayUI("ArmGo")
 		end
 		setLive(true)
 		hint.Text = "Tap anywhere as fast as you can"
@@ -140,10 +189,12 @@ remote.OnClientEvent:Connect(function(kind, info)
 		title.Text = tostring(info.reason or "")
 		big.Text = info.draw and "Draw" or (info.won and "You win" or "You lose")
 		hint.Text = info.coins and ("+" .. info.coins .. " coins") or ""
-		if info.won then Audio.PlayUI("TitleUnlocked") end
+		if info.king then hint.Text ..= " · you beat the champion!" end
+		if info.won then Audio.PlayUI("SetComplete") end
 		resultToken += 1
 		local token = resultToken
-		task.delay(3, function()
+		resultUntil = os.clock() + 4
+		task.delay(4, function()
 			if token == resultToken and not live then gui.Enabled = false end
 		end)
 	end

@@ -1,14 +1,19 @@
--- Arm wrestling (numbers in Config.Social.ArmWrestle). A table on the right side of the gym with two stools.
--- Sit down (prompt), wait for a second player (or a practice opponent after a few seconds), 3-2-1, then both tap
--- as fast as they can: every tap pushes the meter toward your side, harder with stronger Biceps, Forearms and
--- Front Delts. Push it all the way, or be ahead when time runs out. Everything is decided on the server.
+-- Arm wrestling (numbers in Config.Social.ArmWrestle; owner's feature run, task 3). Every model tagged "ArmWrestleTable"
+-- (the starter gym's and the pro gym's, tools/builders/ArmWrestleTable) runs its own matches. Sit down with the OCCUPY
+-- prompt (Custom style: MachineSignsClient draws it like a machine's). Two players = a match. Alone, you pick an NPC
+-- opponent (3 levels) or wait for a player. 3-2-1, then both tap as fast as they can for up to MaxTime: every tap pushes
+-- the bar toward your side, a bit harder with bigger biceps and forearms (capped). Push it all the way, or be ahead when
+-- time runs out. Coins and a little Biceps / Forearms XP for both; beating the hardest NPC = "Arm Wrestling King".
+-- Everything is decided on the server; taps are capped at MaxTapsPerSecond.
+-- Remote "ArmWrestle": client -> server "Tap" | "Leave" | "Npc", npcId; server -> client "State", info.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
-local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Social = require(ReplicatedStorage.Shared.Config.Social)
+local Muscles = require(ReplicatedStorage.Shared.Config.Muscles)
 local PlayerData = require(script.Parent.PlayerData)
+local BodyService = require(script.Parent.BodyService)
 local Guard = require(script.Parent.Guard)
 local TitleService = require(script.Parent.TitleService)
 local NpcService = require(script.Parent.NpcService)
@@ -19,102 +24,90 @@ local Config = Social.ArmWrestle
 
 local ArmWrestleService = {}
 
-local remote -- RemoteEvent "ArmWrestle": client -> server "Tap" / "Leave"; server -> client "State", info
+local remote: RemoteEvent
 local rng = Random.new()
+local tables = {} -- list of tables: { model, center, seats = { { player, npc, seat, prompt } x2 }, match }
 
--- seats[1] pushes the meter toward +1, seats[2] toward -1
-local seats = {
-	{ player = nil, rookie = nil, seat = nil, cframe = nil, prompt = nil },
-	{ player = nil, rookie = nil, seat = nil, cframe = nil, prompt = nil },
-}
-local match = nil -- { state = "waiting" | "countdown" | "live", meter, startedAt, lastTap = {}, strength = {}, rookie }
-local tableModel = nil -- Workspace.ArmWrestleTable
-
--- What every client needs to animate the match (ArmWrestleClient): attributes on the table. AwState idle / waiting /
--- countdown / live / result, AwMeter -1..1 (+1 = seat 1 wins), AwWinner 0 (none / draw), 1 or 2.
-local function publish(state, winner)
-	if not tableModel then return end
-	tableModel:SetAttribute("AwState", state or (match and match.state) or "idle")
-	tableModel:SetAttribute("AwMeter", match and match.meter and math.floor(match.meter * 100 + 0.5) / 100 or 0)
-	if winner ~= nil then tableModel:SetAttribute("AwWinner", winner) end
+------------------------------------------------------------------------
+-- What clients see
+------------------------------------------------------------------------
+-- Every client animates a table from attributes on it (ArmWrestleClient): AwState idle / waiting / countdown / live /
+-- result, AwMeter -1..1 (+1 = seat 1 wins), AwWinner 0 (none / draw), 1 or 2.
+local function publish(t, state, winner)
+	t.model:SetAttribute("AwState", state or (t.match and t.match.state) or "idle")
+	t.model:SetAttribute("AwMeter", t.match and t.match.meter and math.floor(t.match.meter * 100 + 0.5) / 100 or 0)
+	if winner ~= nil then t.model:SetAttribute("AwWinner", winner) end
 end
 
-------------------------------------------------------------------------
--- The table
-------------------------------------------------------------------------
--- The table is built in Studio (Workspace.ArmWrestleTable, made with tools/builders/ArmWrestleTable.luau): two Seats
--- "Stool1" and "Stool2", each with an "ArmWrestlePrompt". This finds them.
-local function findTable()
-	local model = Workspace:WaitForChild("ArmWrestleTable", 10)
-	if not model then return false end
-	tableModel = model
-	publish("idle", 0)
-	for index, side in ipairs({ -1, 1 }) do
-		local stool = model:FindFirstChild("Stool" .. index)
-		if not stool then return false end
-		seats[index].seat = stool
-		seats[index].prompt = stool:FindFirstChild("ArmWrestlePrompt")
-		-- a practice opponent stands just behind the stool
-		seats[index].cframe = CFrame.lookAt(Config.TableSpot + Vector3.new(side * 3, 0, 0), Config.TableSpot)
-	end
-	return true
-end
-
-------------------------------------------------------------------------
--- Seating
-------------------------------------------------------------------------
-local function send(index, info)
-	local seat = seats[index]
+local function send(t, index, info)
+	local seat = t.seats[index]
 	if seat.player and seat.player.Parent then remote:FireClient(seat.player, "State", info) end
 end
 
-local function opponentName(index)
-	local other = seats[3 - index]
+local function opponentName(t, index)
+	local other = t.seats[3 - index]
 	if other.player then return other.player.DisplayName end
-	if other.rookie then return other.rookie.Name end
+	if other.npc then return other.npc.Name end
 	return nil
 end
 
-local function broadcast(extra)
+local npcChoices = {}
+for _, npc in ipairs(Config.Npcs) do table.insert(npcChoices, { id = npc.id, name = npc.name, label = npc.label }) end
+
+local function broadcast(t, extra)
 	for index = 1, 2 do
+		local alone = t.seats[3 - index].player == nil and t.seats[3 - index].npc == nil
 		local info = {
-			state = match and match.state or "idle",
-			meter = match and match.meter or 0,
+			state = t.match and t.match.state or "idle",
+			meter = t.match and t.match.meter or 0,
 			side = index == 1 and 1 or -1,
-			opponent = opponentName(index),
+			opponent = opponentName(t, index),
+			-- alone and waiting: the NPC opponents you can pick
+			npcs = (alone and t.match and t.match.state == "waiting") and npcChoices or nil,
 		}
 		for key, value in pairs(extra or {}) do info[key] = value end
-		send(index, info)
+		send(t, index, info)
 	end
-	publish()
+	publish(t)
+end
+
+------------------------------------------------------------------------
+-- Seats
+------------------------------------------------------------------------
+local function tableOf(player)
+	for _, t in ipairs(tables) do
+		for index, seat in ipairs(t.seats) do
+			if seat.player == player then return t, index end
+		end
+	end
+	return nil, nil
 end
 
 local function standUp(player)
-	local character = player.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	if humanoid and humanoid.Sit then
 		humanoid.Sit = false
 		humanoid.Jump = true
 	end
 end
 
-local function clearRookie()
-	for _, seat in ipairs(seats) do
-		if seat.rookie then
-			seat.rookie:Destroy()
-			seat.rookie = nil
+local function clearNpc(t)
+	for _, seat in ipairs(t.seats) do
+		if seat.npc then
+			seat.npc:Destroy()
+			seat.npc = nil
 		end
 	end
 end
 
-local function refreshPrompts()
-	for _, seat in ipairs(seats) do
-		if seat.prompt then seat.prompt.Enabled = seat.player == nil and seat.rookie == nil end
+local function refreshPrompts(t)
+	for _, seat in ipairs(t.seats) do
+		if seat.prompt then seat.prompt.Enabled = seat.player == nil and seat.npc == nil and not (t.match and t.match.state ~= "waiting") end
 	end
 end
 
-local function leave(player, silent)
-	for index, seat in ipairs(seats) do
+local function leave(t, player, silent)
+	for _, seat in ipairs(t.seats) do
 		if seat.player == player then
 			seat.player = nil
 			if player.Parent then
@@ -123,19 +116,20 @@ local function leave(player, silent)
 			end
 		end
 	end
-	-- nobody left at the table: reset; one player left mid-match: they win by default
-	local remaining = seats[1].player or seats[2].player
-	if match and match.state ~= "waiting" and remaining then
+	-- nobody left: reset; one player left mid-match: they win by default (no coins: the match didn't finish)
+	local remaining = t.seats[1].player or t.seats[2].player
+	if t.match and t.match.state ~= "waiting" and remaining then
 		remote:FireClient(remaining, "State", { state = "result", won = true, reason = "Your opponent left." })
-		match = { state = "waiting" }
-		clearRookie()
-		publish("waiting", 0)
+		t.match = { state = "waiting" }
+		clearNpc(t)
+		publish(t, "waiting", 0)
+		broadcast(t)
 	elseif not remaining then
-		match = nil
-		clearRookie()
-		publish("idle", 0)
+		t.match = nil
+		clearNpc(t)
+		publish(t, "idle", 0)
 	end
-	refreshPrompts()
+	refreshPrompts(t)
 end
 
 ------------------------------------------------------------------------
@@ -143,223 +137,263 @@ end
 ------------------------------------------------------------------------
 local function strengthOf(player)
 	local data = PlayerData.Get(player)
-	return data and Social.Strength(data.muscles) or 1
+	if not data then return 1 end
+	local levels, goal = BodyService.LevelsOf(data)
+	return Social.Strength(Muscles.LooksFromLevels(levels, goal))
 end
 
-local function finish(winnerIndex, reason)
+local function giveXp(player, amount)
+	for _, id in ipairs(Config.Muscles) do PlayerData.AddMuscleXp(player, id, amount) end
+	TitleService.Check(player)
+end
+
+local function finish(t, winnerIndex, reason)
+	local match = t.match
 	if not match then return end
-	local practice = match.rookie ~= nil
+	local npc = match.npc -- the NPC opponent's config, if any
 	for index = 1, 2 do
-		local player = seats[index].player
+		local player = t.seats[index].player
 		if player then
 			local won = index == winnerIndex
-			local coins = won and (practice and Config.PracticeWinCoins or Config.WinCoins) or Config.LoseCoins
-			if winnerIndex == nil then coins = Config.LoseCoins end
+			local coins = Config.LoseCoins
+			if won then coins = npc and npc.coins or Config.WinCoins end
 			PlayerData.AddCoins(player, coins)
+			giveXp(player, won and Config.Xp.Win or Config.Xp.Lose)
 			if won then
 				local data = PlayerData.Get(player)
 				if data then
 					PlayerData.SetStat(player, "armWins", (data.stats.armWins or 0) + 1)
-					TitleService.Check(player)
-					GameEvents.Fire("ArmWrestleWon", player, 1, { practice = practice })
+					if npc and npc.king then PlayerData.SetStat(player, "armKingWins", (data.stats.armKingWins or 0) + 1) end
+					TitleService.Check(player) -- "Iron Grip", "Arm Wrestling King"
+					GameEvents.Fire("ArmWrestleWon", player, 1, { npc = npc and npc.id })
 				end
 			end
-			remote:FireClient(player, "State", { state = "result", won = won, draw = winnerIndex == nil, coins = coins, reason = reason })
+			remote:FireClient(player, "State", { state = "result", won = won, draw = winnerIndex == nil, coins = coins, reason = reason,
+				king = won and npc ~= nil and npc.king == true, opponent = opponentName(t, index), side = index == 1 and 1 or -1 })
 		end
 	end
 	-- pinned / time: the winner slams the arm down (clients animate it), then everyone stands up
 	if winnerIndex and reason == "Pinned!" then match.meter = winnerIndex == 1 and 1 or -1 end
-	publish("result", winnerIndex or 0)
-	match = nil
-	-- the practice opponent stays seated for the slam, then leaves with the player
-	local rookie = nil
-	for _, seat in ipairs(seats) do
-		if seat.rookie then rookie = seat.rookie seat.rookie = nil end
-	end
-	if rookie then task.delay(2.5, function() rookie:Destroy() end) end
-	-- both players stand up after a match, so the next pair can sit
-	task.delay(2.5, function()
-		for _, seat in ipairs(seats) do
-			if seat.player and not match then leave(seat.player, false) end
+	publish(t, "result", winnerIndex or 0)
+	t.match = nil
+	-- the NPC stays seated for the slam, then leaves with the player
+	local seated = nil
+	for _, seat in ipairs(t.seats) do
+		if seat.npc then
+			seated = seat.npc
+			seat.npc = nil
 		end
+	end
+	if seated then task.delay(2.5, function() seated:Destroy() end) end
+	task.delay(2.5, function()
+		for _, seat in ipairs(t.seats) do
+			if seat.player and not t.match then leave(t, seat.player, false) end
+		end
+		refreshPrompts(t)
 	end)
 end
 
-local function startMatch()
-	-- this match only: if a player leaves, `match` is replaced by a new waiting table and this thread must stop
-	local started = match
+local function startMatch(t)
+	-- this match only: if a player leaves, t.match is replaced and this thread must stop
+	local started: any = t.match
 	if not started then return end
-	match.state = "countdown"
-	publish("countdown", 0)
-	match.meter = 0
-	match.lastTap = {}
-	match.strength = {}
+	started.state = "countdown"
+	started.meter = 0
+	started.lastTap = {}
+	started.strength = {}
+	refreshPrompts(t)
 	for index = 1, 2 do
-		local seat = seats[index]
-		match.strength[index] = seat.player and strengthOf(seat.player) or 1
+		local seat = t.seats[index]
+		started.strength[index] = seat.player and strengthOf(seat.player) or 1
 	end
-	if match.rookie then
-		local playerIndex = seats[1].player and 1 or 2
-		local rookieIndex = 3 - playerIndex
-		local range = Config.RookieStrength
-		match.strength[rookieIndex] = match.strength[playerIndex] * rng:NextNumber(range[1], range[2])
-		match.rookieIndex = rookieIndex
-		match.rookieRate = rng:NextNumber(Config.RookieTapsPerSecond[1], Config.RookieTapsPerSecond[2])
+	if started.npc then
+		started.npcIndex = t.seats[1].npc and 1 or 2
+		started.strength[started.npcIndex] = started.npc.strength
+		started.npcRate = rng:NextNumber(started.npc.taps[1], started.npc.taps[2])
 	end
 	for count = Config.Countdown, 1, -1 do
-		if match ~= started then return end
-		broadcast({ countdown = count })
+		if t.match ~= started then return end
+		broadcast(t, { countdown = count })
 		task.wait(1)
 	end
-	if match ~= started or match.state ~= "countdown" then return end
-	match.state = "live"
-	match.startedAt = os.clock()
-	broadcast({ countdown = 0 })
+	if t.match ~= started or started.state ~= "countdown" then return end
+	started.state = "live"
+	started.startedAt = os.clock()
+	broadcast(t, { countdown = 0 })
 
-	local current = match
-	while match == current and match.state == "live" do
+	while t.match == started and started.state == "live" do
 		local dt = task.wait(0.1)
-		if match ~= current then return end
-		if match.rookieIndex then
-			local pushes = match.rookieRate * dt
-			local dir = match.rookieIndex == 1 and 1 or -1
-			match.meter += dir * Config.PushPerTap * match.strength[match.rookieIndex] * pushes
+		if t.match ~= started then return end
+		if started.npcIndex and math.abs(started.meter) < 1 then
+			local dir = started.npcIndex == 1 and 1 or -1
+			started.meter += dir * Config.PushPerTap * started.strength[started.npcIndex] * started.npcRate * dt
 		end
-		match.meter = math.clamp(match.meter, -1, 1)
-		broadcast()
-		if match.meter >= 1 then
-			finish(1, "Pinned!")
-		elseif match.meter <= -1 then
-			finish(2, "Pinned!")
-		elseif os.clock() - match.startedAt >= Config.MaxSeconds then
-			if math.abs(match.meter) < 0.02 then
-				finish(nil, "Draw.")
+		started.meter = math.clamp(started.meter, -1, 1)
+		broadcast(t)
+		if started.meter >= 1 then
+			finish(t, 1, "Pinned!")
+		elseif started.meter <= -1 then
+			finish(t, 2, "Pinned!")
+		elseif os.clock() - started.startedAt >= Config.MaxTime then
+			if math.abs(started.meter) < 0.02 then
+				finish(t, nil, "Draw.")
 			else
-				finish(match.meter > 0 and 1 or 2, "Time! Ahead on points.")
+				finish(t, started.meter > 0 and 1 or 2, "Time! Ahead on points.")
 			end
 		end
 	end
 end
 
 local function tap(player)
+	local t, index = tableOf(player)
+	local match = t and t.match
 	if not match or match.state ~= "live" then return end
-	local index = seats[1].player == player and 1 or (seats[2].player == player and 2 or nil)
-	if not index then return end
 	local now = os.clock()
+	-- the cap: taps closer together than 1 / MaxTapsPerSecond are ignored
 	if now - (match.lastTap[index] or 0) < 1 / Config.MaxTapsPerSecond then return end
 	match.lastTap[index] = now
 	local dir = index == 1 and 1 or -1
 	match.meter = math.clamp(match.meter + dir * Config.PushPerTap * match.strength[index], -1, 1)
+	-- a pin counts the moment the bar is full (before an NPC's next push can take it back)
+	if math.abs(match.meter) >= 1 then finish(t, match.meter > 0 and 1 or 2, "Pinned!") end
 end
 
-local function seatRookie(index)
-	local spec = Config.Rookies[rng:NextInteger(1, #Config.Rookies)]
+-- An NPC opponent sits down on the free stool (the player chose it).
+local function seatNpc(t, index, npc)
+	local seat = t.seats[index]
 	-- animated: only the root is anchored, so ArmWrestleClient can pose it (seated, arm on the table) like a player
-	local rookieSpec = { name = spec.name, skin = spec.skin, shirt = spec.shirt, pants = spec.pants, animated = true }
-	local model = NpcService.Build(rookieSpec, seats[index].cframe)
-	if model then
-		-- sit it on the stool: the root where a seated player's root goes (Config ArmWrestle.SeatedRoot, above the seat)
-		local stool = seats[index].seat
-		local root = model:FindFirstChild("HumanoidRootPart")
-		if stool and root then
-			local facing = CFrame.lookAt(stool.Position, Vector3.new(Config.TableSpot.X, stool.Position.Y, Config.TableSpot.Z))
-			model:PivotTo(facing * CFrame.new(0, Config.SeatedRootY, 0) * root.CFrame:ToObjectSpace(model:GetPivot()))
-		end
-		model:SetAttribute("ArmWrestleSide", index)
-		CollectionService:AddTag(model, "ArmWrestleRookie")
+	local stool = seat.seat
+	local facing = CFrame.lookAt(stool.Position, Vector3.new(t.center.X, stool.Position.Y, t.center.Z))
+	local model = NpcService.Build({ name = npc.name, skin = npc.skin, shirt = npc.shirt, pants = npc.pants, animated = true }, facing)
+	if not model then return false end
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if root then
+		model:PivotTo(facing * CFrame.new(0, Config.SeatedRootY, 0) * root.CFrame:ToObjectSpace(model:GetPivot()))
 	end
-	-- the player may have left while the rookie was being built
-	if not model then return end
-	if not match or not (seats[1].player or seats[2].player) then
+	model:SetAttribute("ArmWrestleSide", index)
+	model:SetAttribute("ArmWrestleTable", t.model.Name)
+	CollectionService:AddTag(model, "ArmWrestleRookie")
+	-- the player may have left while the NPC was being built
+	if not t.match or t.match.state ~= "waiting" or not (t.seats[1].player or t.seats[2].player) then
 		model:Destroy()
-		return
+		return false
 	end
-	seats[index].rookie = model
-	match.rookie = model
-	refreshPrompts()
-	task.spawn(startMatch)
+	seat.npc = model
+	t.match.npc = npc
+	refreshPrompts(t)
+	task.spawn(startMatch, t)
+	return true
+end
+
+local function chooseNpc(player, npcId)
+	local t, index = tableOf(player)
+	local npc = type(npcId) == "string" and Config.NpcById[npcId]
+	if not t or not npc or not t.match or t.match.state ~= "waiting" then return end
+	local other = t.seats[3 - index]
+	if other.player or other.npc then return end
+	seatNpc(t, 3 - index, npc)
 end
 
 -- Someone sat on a stool (from the prompt, or by walking into it): they join the table.
-local function joined(player, index)
-	local seat = seats[index]
+local function joined(t, player, index)
+	local seat = t.seats[index]
 	if seat.player == player then return end
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	local onMachine = false
+	local busy = false
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:GetAttribute("UserId") == player.UserId then onMachine = true end
+		if model:GetAttribute("UserId") == player.UserId then busy = true end
 	end
-	if seat.rookie or seats[3 - index].player == player or onMachine or not PlayerData.Get(player) or (match and match.state ~= "waiting") then
+	local elsewhere = tableOf(player)
+	if seat.npc or t.seats[3 - index].player == player or elsewhere or busy or not PlayerData.Get(player) or (t.match and t.match.state ~= "waiting") then
 		if humanoid then humanoid.Sit = false end
 		return
 	end
 	seat.player = player
-	refreshPrompts()
-	if seats[1].player and seats[2].player then
-		match = match or { state = "waiting" }
-		task.spawn(startMatch)
+	refreshPrompts(t)
+	if t.seats[1].player and t.seats[2].player then
+		t.match = t.match or { state = "waiting" }
+		task.spawn(startMatch, t)
 		return
 	end
-	match = { state = "waiting" }
-	broadcast()
-	local waitingMatch = match
-	task.delay(Config.WaitForOpponent, function()
-		if match == waitingMatch and match.state == "waiting" and seat.player == player and not seats[3 - index].player then
-			seatRookie(3 - index)
-		end
-	end)
+	t.match = { state = "waiting" }
+	broadcast(t)
 end
 
-local function prompted(player, index)
-	local seat = seats[index]
-	if seat.player or seat.rookie then return end
-	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if humanoid and humanoid.Health > 0 then seat.seat:Sit(humanoid) end
+local function setupTable(model)
+	local top = model:FindFirstChild("Top")
+	local stools = { model:FindFirstChild("Stool1"), model:FindFirstChild("Stool2") }
+	if not (top and stools[1] and stools[2]) then
+		warn("[ArmWrestleService] " .. model:GetFullName() .. " is missing its Top or stools")
+		return
+	end
+	local t = { model = model, center = top.Position, seats = {}, match = nil }
+	for index = 1, 2 do
+		local stool = stools[index]
+		local prompt = stool:FindFirstChild("ArmWrestlePrompt")
+		t.seats[index] = { player = nil, npc = nil, seat = stool, prompt = prompt }
+		if prompt then
+			-- the machines' prompt (MachineSignsClient draws the key and OCCUPY over the table's sign)
+			prompt.Style = Enum.ProximityPromptStyle.Custom
+			prompt.ActionText = "Occupy"
+			prompt.ObjectText = "Arm wrestling"
+			Guard.OnTriggered(prompt, function(player)
+				local seat = t.seats[index]
+				if seat.player or seat.npc then return end
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid and humanoid.Health > 0 then stool:Sit(humanoid) end
+			end)
+		end
+		stool:GetPropertyChangedSignal("Occupant"):Connect(function()
+			local occupant = stool.Occupant
+			local player = occupant and Players:GetPlayerFromCharacter(occupant.Parent)
+			if player then
+				joined(t, player, index)
+			elseif t.seats[index].player then
+				leave(t, t.seats[index].player, false)
+			end
+		end)
+	end
+	publish(t, "idle", 0)
+	table.insert(tables, t)
 end
 
-local function watchSeat(index)
-	local seat = seats[index]
-	seat.seat:GetPropertyChangedSignal("Occupant"):Connect(function()
-		local occupant = seat.seat.Occupant
-		local player = occupant and Players:GetPlayerFromCharacter(occupant.Parent)
-		if player then
-			joined(player, index)
-		elseif seat.player then
-			leave(seat.player, false)
-		end
-	end)
+local function leaveAll(player, silent)
+	local t = tableOf(player)
+	if t then leave(t, player, silent) end
 end
 
 function ArmWrestleService.Start()
-	remote = Remotes:FindFirstChild("ArmWrestle")
-	if not remote then
-		remote = Instance.new("RemoteEvent")
-		remote.Name = "ArmWrestle"
-		remote.Parent = Remotes
+	local existing = Remotes:FindFirstChild("ArmWrestle")
+	if existing and existing:IsA("RemoteEvent") then
+		remote = existing
+	else
+		local created = Instance.new("RemoteEvent")
+		created.Name = "ArmWrestle"
+		created.Parent = Remotes
+		remote = created
 	end
-	if not findTable() then
-		warn("[ArmWrestleService] Workspace.ArmWrestleTable is missing: build it in Studio with tools/builders/ArmWrestleTable.luau")
+	for _, model in ipairs(CollectionService:GetTagged("ArmWrestleTable")) do setupTable(model) end
+	if #tables == 0 then
+		warn("[ArmWrestleService] no arm wrestling tables (tag ArmWrestleTable): build them with tools/builders/ArmWrestleTable.luau")
 		return
 	end
-	for index, seat in ipairs(seats) do
-		Guard.OnTriggered(seat.prompt, function(player) prompted(player, index) end)
-		watchSeat(index)
-	end
 	-- taps are capped again inside tap() (MaxTapsPerSecond); this stops floods of anything else
-	Guard.Remote(remote, "ArmWrestle", Config.MaxTapsPerSecond + 6, 30, function(player, action)
+	Guard.Remote(remote, "ArmWrestle", Config.MaxTapsPerSecond + 6, 30, function(player, action, arg)
 		if action == "Tap" then
 			tap(player)
+		elseif action == "Npc" then
+			chooseNpc(player, arg)
 		elseif action == "Leave" then
-			if not match or match.state == "waiting" then leave(player, false) end
+			local t = tableOf(player)
+			if t and (not t.match or t.match.state == "waiting") then leave(t, player, false) end
 		end
 	end)
-	Players.PlayerRemoving:Connect(function(player) leave(player, true) end)
-	Players.PlayerAdded:Connect(function(player)
-		player.CharacterRemoving:Connect(function() leave(player, true) end)
-	end)
-	for _, player in ipairs(Players:GetPlayers()) do
-		player.CharacterRemoving:Connect(function() leave(player, true) end)
+	Players.PlayerRemoving:Connect(function(player) leaveAll(player, true) end)
+	local function hook(player)
+		player.CharacterRemoving:Connect(function() leaveAll(player, true) end)
 	end
+	Players.PlayerAdded:Connect(hook)
+	for _, player in ipairs(Players:GetPlayers()) do hook(player) end
 end
 
 return ArmWrestleService

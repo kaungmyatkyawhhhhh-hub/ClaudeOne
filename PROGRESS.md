@@ -51,6 +51,26 @@ knows the bigger gyms, the beach and the town). Weak fits to listen to first: Cr
   a real UTC midnight rollover (the 30 s check + the client's day check), phone emulator.
 - Screenshots: daily_quests_panel, streak_popup_day1, streak_popup_day7.
 
+### Task 3: Arm wrestling (done, tested solo vs NPCs)
+- The arm wrestling already existed (one table, practice opponents, animation); it now runs at EVERY table tagged
+  `ArmWrestleTable`: the starter gym's (by the front desk) and a new one in the pro gym (`ProGym.Feature_ArmWrestle.
+  ArmWrestleTablePro`, open floor in front of the cable machines; builder `ArmWrestleTable.BuildPro`).
+- Sitting down uses the machines' prompt: the stools' prompts are Custom style and `MachineSignsClient` draws the
+  diamond ("ARM WRESTLING", the body icon with biceps + forearms in red, "1 v 1"), the key + OCCUPY and the floor outline.
+- Two players = a match. Alone: pick an NPC (Rocco easy 8 coins, Tess medium 15, Big Lou hard 35) or wait for a
+  player (the old auto practice opponent after 8 s is gone). 3-2-1 (ArmCountdown beeps, ArmGo whistle), then a big TAP
+  button (tap anywhere / Space / gamepad A still work) for up to 8 s; the server caps taps at 15 a second.
+- Strength (`Social.Strength`): biceps + forearms LOOK, 1 + 0.5 at the full look, capped (tests check a fast tapper
+  can still beat Big Lou and big arms alone can't). Coins 15 / NPC coins for a win, 5 for everyone; +40 / +20 Biceps and
+  Forearms XP (tiny next to a set). Beating Big Lou: stat `armKingWins` = title "Arm Wrestling King". Wins also count
+  for the daily quest. Slam sound on the table (ArmSlam).
+- Fixed on the way: a pin against an NPC could never happen (the NPC's push in the same tick took the full bar back to
+  98%); a pin now counts the moment the bar is full. The result stays readable 4 s even after you're stood up. Phones:
+  a narrower panel and a smaller TAP button (`TestPhoneLayout`).
+- Not tested: two real players at one table (MCP play is solo).
+- Screenshots: armwrestle_pick_opponent, armwrestle_vs_npc_live_bar, armwrestle_vs_npc_phone_layout,
+  armwrestle_win_screen, armwrestle_sign_occupy.
+
 ## Before that (13 Oct): soft shutdown
 - `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all
   servers" / "Migrate to latest update"), players get a small note ("The gym is updating..."), are teleported together into

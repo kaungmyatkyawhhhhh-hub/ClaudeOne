@@ -1,6 +1,8 @@
--- ArmWrestleTable builder (run once in Studio; see tools/bake.md): the arm wrestling table on the right side of the
--- starter gym (Config.Social.ArmWrestle.TableSpot) with two Seats ("Stool1", "Stool2", each with an
--- "ArmWrestlePrompt"), tag "ArmWrestleTable". Output: Workspace.ArmWrestleTable. ArmWrestleService runs matches.
+-- ArmWrestleTable builder (run once in Studio; see tools/bake.md): an arm wrestling table with two Seats ("Stool1",
+-- "Stool2", each with an "ArmWrestlePrompt"), tag "ArmWrestleTable". ArmWrestleService runs a match at every table.
+--   Build(Workspace)                         the starter gym's table: Workspace.ArmWrestleTable (Config TableSpot)
+--   BuildAt(parent, name, spot)              a table anywhere (the two below use it)
+--   BuildPro(Workspace)                      Workspace.ProGym.Feature_ArmWrestle.ArmWrestleTablePro (Config ProTableSpot)
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Kit = require(script.Parent.Kit)
@@ -8,9 +10,9 @@ local Config = require(ReplicatedStorage.Shared.Config.Social).ArmWrestle
 
 local ArmWrestleTable = {}
 
-function ArmWrestleTable.Build(Workspace)
-	local model = Kit.fresh(Workspace, "Model", "ArmWrestleTable")
-	local base = CFrame.new(Config.TableSpot)
+function ArmWrestleTable.BuildAt(parent, name, spot)
+	local model = Kit.fresh(parent, "Model", name)
+	local base = CFrame.new(spot)
 	local dark = Kit.hex("#1E1E22")
 	local steel = Kit.hex("#9EA2A8")
 	local pad = Kit.hex("#221E1E")
@@ -31,11 +33,11 @@ function ArmWrestleTable.Build(Workspace)
 	Kit.prop(model, "Line", Vector3.new(0.04, 0.01, 2.0), base * CFrame.new(0, 3.23, 0), Kit.hex("#F2F0EA"), Enum.Material.SmoothPlastic)
 	for index, side in ipairs({ -1, 1 }) do
 		-- a real Seat (the cushion), so players sit with the normal sitting pose; it faces the table
-		local seatPosition = Config.TableSpot + Vector3.new(side * 2.2, 1.65, 0)
+		local seatPosition = spot + Vector3.new(side * 2.2, 1.65, 0)
 		local stool = Instance.new("Seat")
 		stool.Name = "Stool" .. index
 		stool.Size = Vector3.new(1.3, 0.3, 1.3)
-		stool.CFrame = CFrame.lookAt(seatPosition, Vector3.new(Config.TableSpot.X, seatPosition.Y, Config.TableSpot.Z))
+		stool.CFrame = CFrame.lookAt(seatPosition, Vector3.new(spot.X, seatPosition.Y, spot.Z))
 		stool.Transparency = 1 -- the round cushion below is what you see
 		stool.Anchored = true
 		stool.TopSurface, stool.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
@@ -43,7 +45,7 @@ function ArmWrestleTable.Build(Workspace)
 		Kit.prompt(stool, "ArmWrestlePrompt", "Arm wrestle", "Sit down", 4.5) -- short: Coach Dex (E) stands close by
 		local cushion = Kit.prop(model, "Cushion", Vector3.new(0.3, 1.4, 1.4), CFrame.new(seatPosition) * CFrame.Angles(0, 0, math.rad(90)), pad, Enum.Material.Leather)
 		cushion.Shape = Enum.PartType.Cylinder
-		local floor = Config.TableSpot + Vector3.new(side * 2.2, 0, 0)
+		local floor = spot + Vector3.new(side * 2.2, 0, 0)
 		Kit.part(model, "StoolPost", Vector3.new(0.25, 1.4, 0.25), CFrame.new(floor + Vector3.new(0, 0.8, 0)), dark, Enum.Material.Metal)
 		Kit.prop(model, "StoolBase", Vector3.new(1.1, 0.12, 1.1), CFrame.new(floor + Vector3.new(0, 0.06, 0)), dark, Enum.Material.Metal)
 		Kit.prop(model, "FootRing", Vector3.new(1.0, 0.08, 0.08), CFrame.new(floor + Vector3.new(0, 0.6, 0.45)), steel, Enum.Material.Metal)
@@ -51,6 +53,20 @@ function ArmWrestleTable.Build(Workspace)
 	end
 	CollectionService:AddTag(model, "ArmWrestleTable")
 	return model
+end
+
+function ArmWrestleTable.Build(Workspace)
+	return ArmWrestleTable.BuildAt(Workspace, "ArmWrestleTable", Config.TableSpot)
+end
+
+-- the pro gym's table, in its own feature folder (delete the folder to remove it)
+function ArmWrestleTable.BuildPro(Workspace)
+	local pro = Workspace:FindFirstChild("ProGym")
+	assert(pro, "Workspace.ProGym is missing (Gyms builder)")
+	local folder = pro:FindFirstChild("Feature_ArmWrestle") or Instance.new("Folder")
+	folder.Name = "Feature_ArmWrestle"
+	folder.Parent = pro
+	return ArmWrestleTable.BuildAt(folder, "ArmWrestleTablePro", Config.ProTableSpot)
 end
 
 return ArmWrestleTable

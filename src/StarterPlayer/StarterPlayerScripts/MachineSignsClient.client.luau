@@ -14,6 +14,8 @@
 --    did a rep on show the bouncing yellow "!" + "NEW" (the save's `machinesUsed`); nothing beyond. While you're on a
 --    machine the diamond, prompt and outline are hidden. Hidden too while the camera is within SIGN.CameraMin studs.
 --  * Cheap: one set of sign parts moved to the nearest machine; one invisible anchor part per machine for its "!".
+--  * Arm wrestling tables (tag "ArmWrestleTable", owner's feature run task 3) get the same sign and OCCUPY prompt: the
+--    body icon with the biceps and forearms in red, "Arm wrestling", "1 v 1". Sitting at one hides it like a machine.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -57,6 +59,15 @@ local playerGui = player:WaitForChild("PlayerGui")
 local anchors = {} -- [model] = { part, machine, bang, bangLabel, newTag, newLabel, bangAlpha, phase }
 local pivots = {}
 local localUsed = {} -- machine ids you did a rep on this session (the data catches up)
+
+-- the arm wrestling tables' "machine" for the sign (not a real machine: no MachineId, no "!" / NEW)
+local ARM_TABLE = { id = "ArmWrestle", name = "Arm Wrestling", armWrestle = true, muscles = {} }
+local SIGNED_TAGS = { "Machine", "ArmWrestleTable" }
+local function signedModels()
+	local list = CollectionService:GetTagged("Machine")
+	for _, model in ipairs(CollectionService:GetTagged("ArmWrestleTable")) do table.insert(list, model) end
+	return list
+end
 
 local function mainMuscle(machine)
 	local entry = machine.muscles[1]
@@ -162,7 +173,11 @@ local shownPrompts = {} -- [model] = { prompt, inputType } while Roblox shows th
 local function machineOf(instance)
 	local node = instance
 	while node and node ~= Workspace do
-		if node:IsA("Model") and CollectionService:HasTag(node, "Machine") then return node end
+		if node:IsA("Model") then
+			for _, tag in ipairs(SIGNED_TAGS) do
+				if CollectionService:HasTag(node, tag) then return node end
+			end
+		end
 		node = node.Parent
 	end
 	return nil
@@ -189,11 +204,15 @@ local function fill(model, machine)
 	for _, child in ipairs(figureSlot:GetChildren()) do
 		if not child:IsA("UIAspectRatioConstraint") then child:Destroy() end
 	end
-	local lock = lockText(machine, model)
-	local muscle = mainMuscle(machine)
+	local lock = if machine.armWrestle then nil else lockText(machine, model)
+	local muscle = if machine.armWrestle then nil else mainMuscle(machine)
 	figureSlot.Visible = lock == nil
 	lockSlot.Visible = lock ~= nil
-	if lock then
+	if machine.armWrestle then
+		BodyFigure.Draw(figureSlot, "Front", function(id) return if id == "Biceps" or id == "Forearms" then SIGN.Red else nil end, Color3.new(1, 1, 1), 0.05)
+		muscleLabel.Text = "Biceps · Forearms"
+		shareLabel.Text = "1 v 1"
+	elseif lock then
 		muscleLabel.Text = "Locked"
 		shareLabel.Text = lock
 	elseif machine.trains == "Stamina" then
@@ -256,6 +275,7 @@ end
 ------------------------------------------------------------------------
 local function build(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
+	if not machine and CollectionService:HasTag(model, "ArmWrestleTable") then machine = ARM_TABLE end
 	if not machine then return nil end
 	local boxCf, boxSize = model:GetBoundingBox()
 	local top = boxCf.Position.Y + boxSize.Y / 2
@@ -326,7 +346,11 @@ RunService.RenderStepped:Connect(function(dt)
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 		if model:GetAttribute("UserId") == player.UserId then onMachine = true end
 	end
-	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
+	-- sitting at an arm wrestling table counts as being on a machine (the sign steps aside)
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local seat = humanoid and humanoid.SeatPart
+	if seat and machineOf(seat) then onMachine = true end
+	for _, model in ipairs(signedModels()) do
 		local pivot = pivots[model]
 		if not pivot then
 			if not model:IsDescendantOf(Workspace) then continue end

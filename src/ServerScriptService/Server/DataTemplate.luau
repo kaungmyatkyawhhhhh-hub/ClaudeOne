@@ -25,7 +25,7 @@ function DataTemplate.new()
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest bought tier, selected = tier index, best = heaviest tier lifted }
 		machinesUsed = {}, -- machineId -> true once you did a rep on it (the machine signs' "NEW" tag)
-		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0, cardioMeters = 0, posingWins = 0, posingEntries = 0, loginWeeks = 0 },
+		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0, cardioMeters = 0, posingWins = 0, posingEntries = 0, loginWeeks = 0, armKingWins = 0 },
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
 		shakes = 0, -- Energy Shakes in the bag
 		daily = { lastDay = 0, streak = 0, best = 0, calendarDay = 0 }, -- login streak calendar (Config.Economy.Login): last claimed day + calendar day
