@@ -94,8 +94,7 @@ local function playOneSpurt(data, overhead)
 		local bought = data.bought[machine.id] or 1
 		while machine.tiers[bought + 1] do
 			local tier = machine.tiers[bought + 1]
-			if level < tier.unlockLevel or data.coins < tier.cost then break end
-			data.coins -= tier.cost
+			if level < tier.unlockLevel then break end -- (weights are free, owner 14 Oct)
 			bought += 1
 		end
 		data.bought[machine.id] = bought

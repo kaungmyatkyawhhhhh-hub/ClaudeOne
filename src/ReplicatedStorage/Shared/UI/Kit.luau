@@ -17,6 +17,8 @@
 --   Kit.Tabs(tabs, onSelect, props?)          tab buttons in a row (active red) -> row, select(id)
 --   Kit.Modal(spec)                           a menu window: tabs above, title + red icon, red X, blur behind
 --   Kit.Coin(size, props?), Kit.Format(n) "1,500", Kit.Short(n) "1.5K"
+--   Kit.Headshot(userId, name, size, props?) the player's real avatar headshot in a plain dark circle (owner, 14 Oct)
+--   Kit.ApplyHeadshot(image, userId, name)   the same look on an existing ImageLabel (e.g. a leaderboard row)
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
@@ -283,6 +285,65 @@ end
 function Kit.SetTileColor(tile, color: Color3)
 	local gloss = tile:FindFirstChild("Gloss")
 	if gloss then gloss.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.15), color:Lerp(Color3.new(0, 0, 0), 0.25)) end
+end
+
+-- Player pictures (owner, 14 Oct): the player's real Roblox avatar headshot (Players:GetUserThumbnailAsync, HeadShot
+-- 150x150) as a simple circle: plain dark #1D191B behind it, a thin 1px white border at 88% transparency. No ring, no
+-- gradient, no glow, no generic person icon. While it loads only the dark circle shows; if it fails, the first letter of
+-- the player's name in light gray. Used everywhere a player picture appears (menu card, leaderboards, posing vote,
+-- spot requests, crew).
+Kit.HeadshotLook = { Back = Color3.fromHex("#1D191B"), Border = Color3.new(1, 1, 1), BorderTransparency = 0.88, Letter = Color3.fromHex("#C9C2C4") }
+local headshotCache: { [number]: string } = {}
+function Kit.ApplyHeadshot(image: ImageLabel, userId: number?, name: string?)
+	local look = Kit.HeadshotLook
+	image.BackgroundColor3 = look.Back
+	image.BackgroundTransparency = 0
+	image.BorderSizePixel = 0
+	image.ScaleType = Enum.ScaleType.Crop
+	image.Image = ""
+	local corner = image:FindFirstChild("HeadshotCorner") or New("UICorner", { Name = "HeadshotCorner", CornerRadius = UDim.new(1, 0), Parent = image })
+	corner.CornerRadius = UDim.new(1, 0)
+	if not image:FindFirstChild("HeadshotBorder") then
+		New("UIStroke", { Name = "HeadshotBorder", Color = look.Border, Transparency = look.BorderTransparency, Thickness = 1,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = image })
+	end
+	local letter = image:FindFirstChild("Letter") :: TextLabel?
+	if not letter then
+		letter = New("TextLabel", { Name = "Letter", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Text = "", TextScaled = true,
+			FontFace = Theme.UIFonts.BodyBold, TextColor3 = look.Letter, Visible = false, Parent = image }, {
+			New("UIPadding", { PaddingTop = UDim.new(0.24, 0), PaddingBottom = UDim.new(0.24, 0) }),
+		}) :: TextLabel
+	end
+	(letter :: TextLabel).Visible = false
+	(letter :: TextLabel).Text = string.upper(string.sub(tostring(name or ""), 1, 1))
+	image:SetAttribute("HeadshotUser", userId or 0)
+	if type(userId) ~= "number" or userId <= 0 then
+		(letter :: TextLabel).Visible = true -- (an NPC or unknown player: the letter)
+		return
+	end
+	if headshotCache[userId] then
+		image.Image = headshotCache[userId]
+		return
+	end
+	task.spawn(function()
+		local ok, content, ready = pcall(Players.GetUserThumbnailAsync, Players, userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+		if image:GetAttribute("HeadshotUser") ~= userId then return end -- (reused for someone else meanwhile)
+		if ok and ready ~= false and type(content) == "string" and content ~= "" then
+			headshotCache[userId] = content
+			image.Image = content
+		else
+			(letter :: TextLabel).Visible = true
+		end
+	end)
+end
+
+function Kit.Headshot(userId: number?, name: string?, size: number, props: { [string]: any }?)
+	props = props or {}
+	props.Name = props.Name or "Headshot"
+	props.Size = props.Size or UDim2.fromOffset(size, size)
+	local image = New("ImageLabel", props) :: ImageLabel
+	Kit.ApplyHeadshot(image, userId, name)
+	return image
 end
 
 -- Grade badges (mockup 07): S red, A blue, B gold, C green, D gray; a rounded square with a white-outlined letter.

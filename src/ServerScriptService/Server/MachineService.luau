@@ -530,10 +530,10 @@ local function selectTier(player, index)
 	if not session or not isTierIndex(index) then return end
 	local machine = session.machine
 	local progress = PlayerData.GetMachine(player, machine.id)
-	if index < 1 or index > progress.unlocked then return end
-	-- bought tiers still need the level (again after a Growth Spurt)
+	if index < 1 then return end
+	-- weights are free (owner, 14 Oct): the main muscle's level is the only gate (again after a Growth Spurt)
 	if PlayerData.Get(player).muscles[machine.muscles[1].id].level < machine.tiers[index].unlockLevel then return end
-	PlayerData.SetMachine(player, machine.id, progress.unlocked, index)
+	PlayerData.SetMachine(player, machine.id, math.max(progress.unlocked, index), index)
 	updatePlates(session.model, machine.tiers[index])
 end
 
@@ -546,15 +546,13 @@ local function unlockTier(player, index)
 	if not tier or index ~= progress.unlocked + 1 then return end
 
 	local data = PlayerData.Get(player)
-	if data.muscles[machine.muscles[1].id].level < tier.unlockLevel then return end
-	if not PlayerData.SpendCoins(player, tier.cost) then return end
+	if data.muscles[machine.muscles[1].id].level < tier.unlockLevel then return end -- (free: no coins, owner 14 Oct)
 
 	PlayerData.SetMachine(player, machine.id, index, index)
 	updatePlates(session.model, tier)
 end
 
--- MAX button (owner, 9 Oct): buys every next plate in order while the main muscle's level allows it and the coins cover it
--- (the same checks as UnlockTier), then selects the heaviest plate the player can lift now.
+-- MAX button (owner, 9 Oct): selects the heaviest plate the main muscle's level allows (weights are free, owner 14 Oct).
 local function maxWeight(player)
 	local session = sessions[player]
 	if not session then return end
@@ -563,13 +561,8 @@ local function maxWeight(player)
 	local data = PlayerData.Get(player)
 	if not data then return end
 	local level = data.muscles[machine.muscles[1].id].level
-	local unlocked = progress.unlocked
-	while unlocked < #machine.tiers do
-		local tier = machine.tiers[unlocked + 1]
-		if level < tier.unlockLevel or not PlayerData.SpendCoins(player, tier.cost) then break end
-		unlocked += 1
-	end
-	local best = Machines.UsableTier(machine, { unlocked = unlocked }, level)
+	local best = Machines.UsableTier(machine, progress, level)
+	local unlocked = math.max(progress.unlocked, best)
 	if unlocked ~= progress.unlocked or best ~= progress.selected then
 		PlayerData.SetMachine(player, machine.id, unlocked, best)
 	end

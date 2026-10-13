@@ -11,14 +11,15 @@ GrowthSpurts.MaxHeightInches = 84 -- 7'0"
 GrowthSpurts.MaxHeight = GrowthSpurts.MaxHeightInches -- (older name, kept for callers)
 
 -- requiredLevel is tuned with tests/pacing to GrowthSpurts.Targets below (the permanent bonus makes later stages much
--- faster per level, so the goals climb slowly).
+-- faster per level, so the goals climb slowly). Re-tuned 14 Oct when weights became free (heavier weights sooner):
+-- 47 / 72 / 103 / 135 / 157 -> 58 / 92 / 132 / 164 / 178.
 GrowthSpurts.Stages = {
 	{ height = 54, requiredLevel = 15, bonus = 1.25 },
-	{ height = 60, requiredLevel = 47, bonus = 1.5 },
-	{ height = 66, requiredLevel = 72, bonus = 1.75 },
-	{ height = 72, requiredLevel = 103, bonus = 2 },
-	{ height = 78, requiredLevel = 135, bonus = 2.5 },
-	{ height = 84, requiredLevel = 157, bonus = 3 },
+	{ height = 60, requiredLevel = 58, bonus = 1.5 },
+	{ height = 66, requiredLevel = 92, bonus = 1.75 },
+	{ height = 72, requiredLevel = 132, bonus = 2 },
+	{ height = 78, requiredLevel = 164, bonus = 2.5 },
+	{ height = 84, requiredLevel = 178, bonus = 3 },
 }
 
 -- Beyond the table: keep growing until MaxHeight, and keep adding level + bonus. (From here the bonus mostly runs

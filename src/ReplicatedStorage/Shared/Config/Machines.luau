@@ -2,15 +2,16 @@
 -- the rest are secondaries. Players only ever see muscle names, never shares.
 local Machines = {}
 
--- Weight tiers: 12 per machine, built from the shared progression below. A tier is usable when it is bought
--- (coins, once) AND the machine's main muscle is at its unlockLevel (needed again after every Growth Spurt).
---   gains = gains multiplier, unlockLevel = main muscle level needed, cost = coins to buy it,
+-- Weight tiers: 12 per machine, built from the shared progression below. A tier is usable when the machine's main
+-- muscle is at its unlockLevel (needed again after every Growth Spurt); nothing is bought (owner, 14 Oct).
+--   gains = gains multiplier, unlockLevel = main muscle level needed (the only gate: machines and weights are FREE,
+--   owner, 14 Oct; cost stays 0 so old code paths still read a number),
 --   coins = coins per rep, plates = plates per side (lb), label = optional text instead of the weight (e.g. "BW").
 -- Heavier always pays more per rep, so moving up is always worth it. Tuned with tests/pacing.
 Machines.Progression = {
 	gains = { 1, 1.3, 1.65, 2.05, 2.5, 3, 3.6, 4.3, 5.1, 6, 7, 8.2 },
 	unlockLevel = { 0, 3, 7, 12, 18, 25, 33, 42, 52, 64, 78, 95 },
-	cost = { 0, 5, 12, 25, 45, 70, 110, 160, 230, 320, 440, 600 },
+	cost = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, -- (free, owner 14 Oct: was 0 / 5 / 12 ... 600 coins)
 	coins = { 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 9 },
 }
 
@@ -92,10 +93,11 @@ Machines.TierSets = {
 	}),
 }
 
--- Highest tier this player can lift right now: bought (progress.unlocked) and the main muscle level is high enough.
+-- Highest tier this player can lift right now: the main muscle level is high enough (weights are free, owner 14 Oct:
+-- nothing to buy; progress.unlocked only remembers the heaviest weight ever picked, for quests and stats).
 function Machines.UsableTier(machine, progress, mainLevel)
 	local usable = 1
-	for index = 1, math.min(progress and progress.unlocked or 1, #machine.tiers) do
+	for index = 1, #machine.tiers do
 		if mainLevel >= machine.tiers[index].unlockLevel then usable = index end
 	end
 	return usable

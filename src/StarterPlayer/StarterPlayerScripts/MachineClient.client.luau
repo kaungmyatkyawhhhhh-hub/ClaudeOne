@@ -1507,7 +1507,7 @@ local hud = MachineHud.Build()
 local gui, stack, HIDDEN_OFFSET = hud.gui, hud.stack, MachineHud.HiddenOffset
 local titleLabel, musclesLabel, noteLabel = hud.titleLabel, hud.musclesLabel, hud.noteLabel
 local minusButton, plusButton, weightNumber = hud.minusButton, hud.plusButton, hud.weightNumber
-local needsLabel, unlockButton, unlockText, costLabel = hud.needsLabel, hud.unlockButton, hud.unlockText, hud.costLabel
+local needsLabel, unlockButton = hud.needsLabel, hud.unlockButton
 local barPlates, repsLabel, repsScale = hud.barPlates, hud.repsLabel, hud.repsScale
 local segmentBacks, segments, exitButton = hud.segmentBacks, hud.segments, hud.exitButton
 
@@ -1529,13 +1529,16 @@ local viewTier = 1
 local lastStamina = nil
 local baseFov = nil
 
-local function progressFor(machineId)
-	local progress = ClientData.Get().machines[machineId]
-	return progress and progress.unlocked or 1, progress and progress.selected or 1
-end
-
 local function mainLevel(machine)
 	return ClientData.Get().muscles[machine.muscles[1].id].level
+end
+
+-- (weights are free, owner 14 Oct: every weight the main muscle's level allows is open; nothing to buy)
+local function progressFor(machineId)
+	local progress = ClientData.Get().machines[machineId]
+	local machine = Machines.ById[machineId]
+	local open = machine and Machines.UsableTier(machine, progress, mainLevel(machine)) or 1
+	return open, progress and progress.selected or 1
 end
 
 -- The tier this player lifts right now (selected, but never above what the level allows; same as the server).
@@ -1601,7 +1604,7 @@ local function jigglePlates()
 end
 
 local function canUnlock(machine, tier)
-	return mainLevel(machine) >= tier.unlockLevel and ClientData.Get().coins >= tier.cost
+	return mainLevel(machine) >= tier.unlockLevel
 end
 
 -- Unavailable step buttons hide (their spot stays: the panel is laid out by position).
@@ -1634,15 +1637,8 @@ local function refreshTier()
 	needsLabel.Visible = not levelOk
 	hud.tierTag.Visible = not unlockButton.Visible and levelOk
 	hud.maxButton.Visible = not unlockButton.Visible
-	if locked and levelOk then
-		-- Can't afford yet: faded button with gray text.
-		costLabel.Text = Muscles.FormatExp(tier.cost)
-		local affordable = canUnlock(machine, tier)
-		local ink = affordable and Colors.Text or Colors.Muted
-		Theme.SetButtonStyle(unlockButton, affordable and "Gold" or "Disabled")
-		unlockText.TextColor3 = ink
-		costLabel.TextColor3 = ink
-	elseif not levelOk then
+	-- (free weights: the unlock button never shows now; the next weight just needs the level)
+	if not levelOk then
 		needsLabel.Text = "Needs " .. main.name .. " " .. Muscles.FormatExp(Muscles.Shown(tier.unlockLevel)) .. " exp"
 	end
 end
@@ -2402,24 +2398,11 @@ do
 		if not current then return end
 		local machine = current.machine
 		-- the same rule as the server (MachineService maxWeight), so the panel jumps there at once; the data confirms it
-		local unlocked = progressFor(machine.id)
-		local level, coins = mainLevel(machine), ClientData.Get().coins
-		while unlocked < #machine.tiers do
-			local tier = machine.tiers[unlocked + 1]
-			if level < tier.unlockLevel or coins < tier.cost then break end
-			coins -= tier.cost
-			unlocked += 1
-		end
-		local best = Machines.UsableTier(machine, { unlocked = unlocked }, level)
+		local best = Machines.UsableTier(machine, ClientData.Get().machines[machine.id], mainLevel(machine))
 		if best ~= viewTier and current.machine.trains ~= "Stamina" then Audio.PlayAt("PlateSlide", barOf(current.model)) end
 		Remotes.MachineAction:FireServer("MaxWeight")
-		if unlocked > progressFor(machine.id) then
-			-- plates are being bought: show the selected one when the data arrives (the panel can't look past what you own + 1)
-			current.maxPending = true
-		else
-			viewTier = best
-			refreshTier()
-		end
+		viewTier = best
+		refreshTier()
 	end)
 end
 -- STOP TRAINING and the jump button / key get you off (bug, 13 Oct: you couldn't leave). The server answers with Exit;
@@ -2499,11 +2482,6 @@ local function promptText(machine)
 	local nextTier = machine.tiers[usable + 1]
 	if not nextTier then return machine.name .. " · max weight" end
 	local main = Muscles.ById[machine.muscles[1].id]
-	if level >= nextTier.unlockLevel then
-		local bought = (progress and progress.unlocked or 1) > usable
-		return machine.name .. " · " .. Machines.WeightText(nextTier)
-			.. (bought and " is ready" or (" unlocks for " .. nextTier.cost .. " coins"))
-	end
 	return machine.name .. " · next " .. Machines.WeightText(nextTier) .. " at " .. main.name .. " " .. Muscles.FormatExp(Muscles.Shown(nextTier.unlockLevel)) .. " exp"
 end
 

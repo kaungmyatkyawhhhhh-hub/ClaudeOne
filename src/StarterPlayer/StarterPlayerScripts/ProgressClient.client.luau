@@ -93,10 +93,7 @@ local function machineGoal(data, machine)
 		local reps = repsToLevel(data, machine, nextTier.unlockLevel)
 		return reps .. (reps == 1 and " rep" or " reps") .. " to unlock " .. weight
 	end
-	local bought = (progress and progress.unlocked or 1) >= usable + 1
-	if bought then return weight .. " is ready: press + on the panel" end
-	if data.coins >= nextTier.cost then return "Unlock " .. weight .. " for " .. nextTier.cost .. " coins" end
-	return (nextTier.cost - data.coins) .. " more coins to unlock " .. weight
+	return weight .. " is ready: press + on the panel" -- (weights are free, owner 14 Oct)
 end
 
 local function goalText(data, progress)

@@ -2,6 +2,20 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
+## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
+- Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier
+  ignores what was bought, server SelectTier / MaxWeight never charge). No price on signs, panel or goal lines. Tested:
+  a new save with 38 coins went 45 -> 135 lb via BEST WEIGHT, coins never dropped. No refunds.
+- Growth Spurt goals re-tuned for the faster weights (tests/pacing, all within 10%): 47/72/103/135/157 ->
+  58/92/132/164/178 (spurt 1 stays 15: the EXP scale is tied to it).
+- Main menu rebuilt to the NEW mockup 00_main_menu (MenuClient): art visible on the right + soft dark copy, centered left
+  column (SEASON 1 · NOW LIVE, Luckiest Guy logo with a soft shadow, red rule + tagline, red PLAY with a drawn triangle,
+  dark SHOP / UPDATES with a red news dot (Config/UI.UpdatesStamp, settings.updatesSeen), player card), v1.0 · Update 1.
+- Kit.Headshot / Kit.ApplyHeadshot: real avatar headshots in a plain dark circle (letter fallback) on the menu card,
+  leaderboards, posing vote, spot request card and crew rows (CrewService now sends userId).
+- SideMenu vertically centered (AnchorPoint 0, 0.5; never above the top bar), "<" centered on its edge. Phone + PC checked.
+Screenshots: ui_compare_v2/main_menu_*, left_menu_*, free_weights_new_save.
+
 ## 14 Oct: REP / PUMP bar, treadmill sounds, arm wrestling table (owner's "TWO FIXES" prompt)
 - REP / PUMP: REP is a normal red button at the bottom right again (104 x 52, "REP x13"), and PUMP is a bar again (as
   before the redesigns): right above REP, dark track with a dark outline, gold fill with every tapped rep, flame + "PUMP".

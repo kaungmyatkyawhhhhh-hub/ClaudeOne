@@ -97,8 +97,16 @@ UI.LoadingTips = {
 	"The pro gym opens at Growth Spurt 2. Watch through the glass until then.",
 }
 
--- The main menu's UPDATES window: newest first (date, title, a few short lines). Add an entry for each update.
+-- The main menu's UPDATES window: newest first (date, title, a few short lines). Add an entry for each update and change
+-- UpdatesStamp: the UPDATES button shows a red dot until the player opens the window (saved as settings.updatesSeen).
+UI.UpdatesStamp = "14 Oct"
+UI.MenuVersion = "v1.0 · Update 1" -- small, bottom right of the main menu
 UI.Updates = {
+	{ date = "14 Oct", title = "Free machines", lines = {
+		"Every machine and every weight is free: your muscle level is all you need.",
+		"PUMP is a bar again: fill it with reps, then tap it (or Space) for double gains.",
+		"A new main menu.",
+	} },
 	{ date = "13 Oct", title = "New look", lines = {
 		"Every menu has a fresh, bright new style.",
 		"Quests, Daily Reward and Achievements live in one window.",

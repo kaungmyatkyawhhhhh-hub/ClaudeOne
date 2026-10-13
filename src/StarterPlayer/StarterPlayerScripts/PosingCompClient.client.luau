@@ -340,6 +340,8 @@ local function showVote(contestants)
 		if not c.out and c.userId ~= player.UserId then
 			local button = Kit.Button("Blue", c.name, { Name = "Vote" .. index, LayoutOrder = index, Parent = votePanel },
 				{ width = 196, height = 36, textSize = 15, upper = false })
+			-- the contestant's headshot left of the name (the shared plain circle; an NPC shows its letter)
+			Kit.Headshot(not c.npc and c.userId or nil, c.name, 24, { LayoutOrder = 0, Parent = button })
 			button.Activated:Connect(function()
 				remote:FireServer("Vote", index)
 				hideVote()

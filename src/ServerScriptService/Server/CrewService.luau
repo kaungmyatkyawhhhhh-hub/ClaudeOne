@@ -134,7 +134,7 @@ local function sendInfo(player)
 		local members = {}
 		for userId, member in pairs(record.members) do
 			table.insert(members, {
-				name = nameOf(userId), score = member.score or 0,
+				name = nameOf(userId), userId = tonumber(userId), score = member.score or 0, -- (userId: the headshot)
 				here = Players:GetPlayerByUserId(tonumber(userId)) ~= nil, owner = tostring(record.owner) == userId,
 			})
 		end

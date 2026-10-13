@@ -19,6 +19,7 @@ local CollectionService = game:GetService("CollectionService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local Notify = require(Shared.UI.Notify)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
@@ -136,8 +137,12 @@ local function requestCard(info)
 		Theme.Pad("M"), Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 	})
 	openCards[userId] = card
-	Theme.Text({ LayoutOrder = 1, Text = name .. " wants to spot you", Font = "Regular", TextSize = "Body", TextWrapped = true,
-		TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = card })
+	-- the asker's headshot (the shared plain circle) beside the line
+	local top = New("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, Parent = card },
+		{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
+	Kit.Headshot(userId, name, 34, { LayoutOrder = 1, Parent = top })
+	Theme.Text({ LayoutOrder = 2, Text = name .. " wants to spot you", Font = "Regular", TextSize = "Body", TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -46, 1, 0), Parent = top })
 	local row = New("Frame", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = card },
 		{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	local accept = Theme.Button("Primary", { LayoutOrder = 1, Size = UDim2.new(1, -(Theme.MinTouch + Spacing.S), 1, 0), Parent = row }, {

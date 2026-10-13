@@ -673,6 +673,8 @@ function PlayerData.SetSettings(player, settings)
 	-- (UI v2, 13 Oct) the left menu folded away; Settings toggles: tutorial / coach hints, other players' scream sounds and
 	-- auras, low graphics
 	if type(settings.menuCollapsed) == "boolean" then new.menuCollapsed = settings.menuCollapsed end
+	-- the newest update notes the player opened (main menu UPDATES red dot; a short stamp like "14 Oct")
+	if type(settings.updatesSeen) == "string" and #settings.updatesSeen <= 24 then new.updatesSeen = settings.updatesSeen end
 	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "lowGraphics" }) do
 		if ON_OFF[settings[key]] then new[key] = settings[key] end
 	end

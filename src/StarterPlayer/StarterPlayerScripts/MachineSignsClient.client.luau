@@ -6,8 +6,8 @@
 --    text shrinking to fit): our own body icon (BodyFigure) in white with the main muscle in red, the
 --    main muscle's name in bold white and its share in red ("53%"). Main muscle only.
 --  * Above it the machine name (big bold white, dark stroke). Below it the prompt: a small square dark-glass key ("E",
---    the gamepad button, or a tap button on touch screens) and "Occupy" under it ("Unlock · 45 coins" when your next
---    weight can be bought). The machines' ProximityPrompts use the Custom style (MachineService), so this is their UI.
+--    the gamepad button, or a tap button on touch screens) and "Occupy" under it (machines are free,
+--    owner 14 Oct: never a price). The machines' ProximityPrompts use the Custom style (MachineService), so this is their UI.
 --  * A glowing white rectangle on the floor around the machine's footprint (thin Neon strips), brighter while you stand
 --    inside it.
 --  * Only the nearest machine within SIGN.Near studs shows all this; from there to BANG.Far studs, machines you never
@@ -452,8 +452,7 @@ RunService.RenderStepped:Connect(function(dt)
 		tapIcon.Visible = touch
 		keyLabel.Visible = not touch
 		keyLabel.Text = if gamepad then string.gsub(entry.prompt.GamepadKeyCode.Name, "^Button", "") else entry.prompt.KeyboardKeyCode.Name
-		local coins = string.match(entry.prompt.ObjectText, "unlocks for (%d+) coins")
-		actionLabel.Text = if coins then "UNLOCK · " .. coins .. " COINS" else "OCCUPY"
+		actionLabel.Text = "OCCUPY" -- (machines are free, owner 14 Oct: never a price on the sign)
 	end
 	if shown.alpha <= 0 and want == 0 and (shown.floorAlpha or 0) <= 0 then shown.model = nil end
 end)

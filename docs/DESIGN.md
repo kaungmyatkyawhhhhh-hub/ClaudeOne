@@ -38,7 +38,8 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   (scale 0.96 -> 1, 0.18 s). The right column, the tutorial band / skip / coach dialog step aside while one is open.
 - Left menu: the OLD colored rounded-square tiles (Shop gold first, Stats dark red, Muscles brown, Titles olive,
   Genetics teal, Poses pink, Crew navy, Quests teal, Trainers orange; white line icons, white label under, lighter
-  colored border), same size and gap everywhere, the "<" folds it (remembered per player), it folds itself while
+  colored border), same size and gap everywhere, VERTICALLY CENTERED on the left (owner, 14 Oct; never above the top
+  bar), the "<" on its right edge (centered too) folds it (remembered per player), it folds itself while
   lifting, red number badges (quests ready, new titles). The Wardrobe tile hides while Config/Features.Wardrobe is false.
 - Top bar: coins, height "6'4" / 7'0"", level on the left; Daily Reward, Quests and the gear on the right.
 - Toasts: small cards under the top bar (max 3, never over the HUD). Hints: one at a time in the top band, gone after 4 s.
@@ -62,8 +63,8 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - MAX button (owner, 9 Oct) directly on top of the + button and in line with it (same left edge and width), 1/3 of its
   height, a 3 px gap, a slight soft-yellow glow (the bumper yellow 10% toward white: border + stacked faint strokes), a yellow
   background (the bumper yellow at the + button's transparency) with white text; the - and + buttons sit 10 px lower than
-  the row centres them (to make room). Buys every next plate in order while the main muscle level allows it and the coins
-  cover it, then selects the heaviest plate you can lift (server: MachineService maxWeight, the same checks as Unlock).
+  the row centres them (to make room). Selects the heaviest plate the main muscle level allows (owner, 14 Oct: machines and
+  weights are FREE, the level is the only gate; server: MachineService maxWeight).
 - Barbell graphic: plates use the bumper plate color for the current weight tier.
 - Muscles this machine trains, in small muted text under the barbell.
 - Stamina: chunky segmented white bar (10 segments); soft light red under 15%.
@@ -117,8 +118,8 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
   camera (a 3D object). Above it the machine name (big bold white Oswald, dark stroke). Inside: our own white body icon
   (`Shared/UI/BodyFigure`) with the main muscle in red, the main muscle's name in bold white and its share in red ("53%").
   Main muscle only (the machine HUD shows the full split after you sit down). Below it the prompt: a small square
-  dark-glass key ("E" on PC, the gamepad button, a tap button on touch) and "OCCUPY" under it ("UNLOCK · 45 COINS" when
-  your next weight can be bought); the machines' ProximityPrompts use the Custom style, 10 studs. A glowing white
+  dark-glass key ("E" on PC, the gamepad button, a tap button on touch) and "OCCUPY" under it (never a price: machines are
+  free, owner 14 Oct); the machines' ProximityPrompts use the Custom style, 10 studs. A glowing white
   rectangle (thin Neon strips, 0.05 high) on the floor around the machine's footprint, brighter while you stand inside it.
   Locked machines: a lock + "Growth Spurt N". Hidden while you're on a machine; the diamond also while the camera is
   within 4 studs. From 12 to 60 studs only the bouncing yellow "!" + "NEW" for machines you never did a rep on
@@ -269,7 +270,7 @@ Examples: Chad Gainsworth, Brody Pumpkins, Tank McFlex, Kyle Swole, Ricky Reps, 
 
 ## 11. Economy and retention
 One currency (coins): from reps, quests, re-racking weights, arm wrestling, daily rewards.
-Spent on shakes, weight unlocks, cosmetics, skateboard upgrades, DNA Tokens.
+Spent on shakes, cosmetics, skateboard upgrades, DNA Tokens.
 Offline gains (cap ~8h). Daily streak (missing a day only drops a few days back; DNA Token every 7th day).
 
 ## 12. Quests and events
@@ -401,10 +402,18 @@ Start (owner's UI v2, 13 Oct, mockups 00): a loading screen from the first frame
 removed): black with the menu art (`Config/UI.MenuArt`) on the right fading into the dark, the GYM ARC logo (GYM white,
 ARC red) and "Everyone starts tiny.", a rotating "TIP:" line (`Config/UI.LoadingTips`), a red progress bar with the step
 ("Loading muscles... 64%": the game, ContentProvider:PreloadAsync of the UI images, the save data and the world around
-you, the other players' body meshes), SKIP top right after 5 s, then it fades into the menu. Menu: the same art, the logo
-and tagline, a big green PLAY, a gold SHOP (players who finished the tutorial, only while something is for sale; it plays
-and opens the Gym Store), a blue UPDATES (update notes, `Config/UI.Updates`) and a small pill: coins | LVL | height. The
-live gym tour, the white PLAY and the pointing hand are gone. Play: the menu fades, the camera is behind the character at
+you, the other players' body meshes), SKIP top right after 5 s, then it fades into the menu. Menu (owner, 14 Oct: the NEW
+mockup 00_main_menu, clean and dark, not a simulator: no thick text outlines, no glossy buttons): the art on the right
+fading into the dark plus a soft dark copy over the whole screen; on the left, vertically centered: SEASON 1 · NOW LIVE
+(gold, spaced), the GYM ARC logo (Luckiest Guy, GYM white, ARC red, a small soft drop shadow), a short red rule +
+"Everyone starts tiny." (light gray), a red PLAY with a play triangle (52 px, soft shadow), two dark buttons SHOP (gold
+cart; players who finished the tutorial, only while something is for sale; it plays and opens the Gym Store) and
+UPDATES (bell; a red dot until the newest notes are opened, `Config/UI.UpdatesStamp`, saved as settings.updatesSeen),
+then the player card: the real avatar headshot (plain dark circle), name, LEVEL · height, coins. "v1.0 · Update 1"
+small at the bottom right (`Config/UI.MenuVersion`). Oswald bold UPPERCASE on buttons, Montserrat for small text.
+Player pictures everywhere (menu card, leaderboards, posing vote, spot requests, crew) use `Kit.Headshot`: the real
+avatar headshot in a plain dark #1D191B circle with a 1 px white border at 88% transparency; the first letter of the
+name if it can't load. Play: the menu fades, the camera is behind the character at
 a distance that fits their height, the HUD fades in.
 New players get a simplified menu (PLAY and UPDATES only).
 First 5 minutes: genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack

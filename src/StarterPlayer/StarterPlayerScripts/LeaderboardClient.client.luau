@@ -9,13 +9,10 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Leaderboards = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Leaderboards"))
+local Kit = require(ReplicatedStorage.Shared:WaitForChild("UI"):WaitForChild("Kit"))
 
 local player = Players.LocalPlayer
 local data = nil -- the decoded LeaderboardData: { day, at, boards = { [id] = { { u, v, n }, ... } } }
-
-local function headshot(userId: number): string
-	return string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=48&h=48", userId)
-end
 
 local function draw(panel: Instance)
 	local boardId = panel:GetAttribute("Board")
@@ -39,7 +36,17 @@ local function draw(panel: Instance)
 				name.TextColor3 = (entry and entry.u == player.UserId) and Color3.fromHex("#DCEEFF") or Color3.new(1, 1, 1)
 			end
 			if value then value.Text = entry and Leaderboards.Format(boardId, entry.v) or "" end
-			if head and head:IsA("ImageLabel") then head.Image = entry and headshot(entry.u) or "" end
+			-- (the shared headshot look: a plain dark circle, the real avatar, the name's letter if it fails)
+			if head and head:IsA("ImageLabel") and head:GetAttribute("HeadshotUser") ~= (entry and entry.u or -1) then
+				if entry then
+					head.Visible = true
+					Kit.ApplyHeadshot(head, entry.u, entry.n)
+					head:SetAttribute("HeadshotUser", entry.u)
+				else
+					head.Visible = false
+					head:SetAttribute("HeadshotUser", -1)
+				end
+			end
 		end
 	end
 	local you = gui:FindFirstChild("You")

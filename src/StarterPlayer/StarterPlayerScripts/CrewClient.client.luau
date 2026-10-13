@@ -89,10 +89,15 @@ local function textBox(placeholder, maxLength)
 	return box
 end
 
--- a card row: an icon tile, text (and a smaller line under it), and optionally a button on the right
-local function rowCard(parent, icon: string, color: Color3, text: string, sub: string?, buttonText: string?, buttonStyle: string?, onClick: (() -> ())?)
+-- a card row: an icon tile (or a player's headshot: icon = { userId = n, name = s }), text (and a smaller line under it),
+-- and optionally a button on the right
+local function rowCard(parent, icon: any, color: Color3, text: string, sub: string?, buttonText: string?, buttonStyle: string?, onClick: (() -> ())?)
 	local card = Kit.Card({ LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 44), Parent = parent }, {})
-	Kit.IconTile(icon, color, 30, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Parent = card })
+	if type(icon) == "table" then
+		Kit.Headshot(icon.userId, icon.name, 30, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Parent = card })
+	else
+		Kit.IconTile(icon, color, 30, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Parent = card })
+	end
 	Kit.Text({ Text = text, Font = "Title", TextSize = 14, Position = UDim2.fromOffset(46, sub and 4 or 0), Size = UDim2.new(1, buttonText and -150 or -56, 0, sub and 19 or 44),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
 	if sub then
@@ -128,13 +133,13 @@ local function render(info)
 		line(#crew.members .. " / " .. crew.max .. " members")
 		for _, member in ipairs(crew.members) do
 			local sub = (member.owner and "Leader · " or "") .. (member.here and "In this server · " or "") .. Muscles.FormatExp(member.score) .. " exp"
-			rowCard(scroll, member.owner and "star" or "users", member.here and Colors.Green or Color3.fromHex("#4A4A55"), member.name, sub)
+			rowCard(scroll, { userId = member.userId, name = member.name }, Colors.Card, member.name, sub)
 		end
 		if #crew.members < crew.max then
 			heading("Invite")
 			if #info.eligible == 0 then line("Nobody without a crew is in this server.") end
 			for _, other in ipairs(info.eligible) do
-				rowCard(scroll, "users", Colors.Blue, other.name, nil, "Invite", "Blue", function() remote:FireServer("Invite", other.userId) end)
+				rowCard(scroll, { userId = other.userId, name = other.name }, Colors.Card, other.name, nil, "Invite", "Blue", function() remote:FireServer("Invite", other.userId) end)
 			end
 		end
 		local leave = button("Leave crew", "Red")

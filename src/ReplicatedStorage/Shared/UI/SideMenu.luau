@@ -1,6 +1,8 @@
 -- The left menu (owner, 13 Oct: keep the old colored tiles, only tidied). Built in mockup px inside a Kit.Root, so every
 -- tile has the same size and gap on every screen and scales with it:
---  * 2 columns of rounded-square tiles (a 3rd column only if a short screen can't fit them), starting under the top bar.
+--  * 2 columns of rounded-square tiles (a 3rd column only if a short screen can't fit them), VERTICALLY CENTERED on the
+--    left (owner, 14 Oct: AnchorPoint 0, 0.5 at 0.5 of the screen; only nudged down if it would reach the top bar).
+--    The "<" tab is centered on the tiles' right edge.
 --    Each tile: its color made darker as the face (lighter at the top), a lighter colored border, a darker bottom edge the
 --    face sinks into when pressed, a white line icon and a white outlined label under it, a bounce on hover and press.
 --    Colors, icons, order and labels: Config/HudIcons.Tiles. The open panel's tile lights up (full color, white border).
@@ -26,7 +28,7 @@ local SideMenu = {}
 SideMenu.TileSize = 54
 SideMenu.Gap = 8
 SideMenu.Left = 12
-SideMenu.Top = 52      -- under the top bar
+SideMenu.Top = 52      -- never higher than this: under Roblox's buttons and the top bar
 SideMenu.BottomRoom = 12 -- room left at the bottom of the screen
 SideMenu.Arrow = Vector2.new(24, 46)
 SideMenu.FaceDarken = 0.5
@@ -42,6 +44,7 @@ local training = false
 local hiddenAll = false
 local collapsed = false      -- what the player chose (saved)
 local columns = 2
+local gridTop = SideMenu.Top -- where the grid's top edge is now (mockup px from the top of the safe area)
 
 local function darker(color, amount)
 	return color:Lerp(Colors.Shadow, amount)
@@ -92,8 +95,14 @@ local function layout(animate: boolean?)
 	local gridW, gridH = columns * size + (columns - 1) * gap, rows * size + (rows - 1) * gap
 	bar.Size = UDim2.fromOffset(gridW, gridH)
 	local isFolded = folded()
-	local barPos = UDim2.fromOffset(isFolded and (-gridW - SideMenu.Left) or SideMenu.Left, SideMenu.Top)
-	local arrowPos = UDim2.fromOffset(isFolded and SideMenu.Left or (SideMenu.Left + gridW + gap), SideMenu.Top + math.floor(gridH / 2 - SideMenu.Arrow.Y / 2))
+	-- vertically centered; nudged down only when the centered grid would reach the top bar (a very short screen)
+	local screenH = root.AbsoluteSize.Y / Kit.Scale()
+	local centered = (screenH - gridH) / 2
+	gridTop = math.max(SideMenu.Top, math.min(centered, screenH - SideMenu.BottomRoom - gridH))
+	local shift = math.floor(gridTop - centered)
+	bar.AnchorPoint, arrow.AnchorPoint = Vector2.new(0, 0.5), Vector2.new(0, 0.5)
+	local barPos = UDim2.new(0, isFolded and (-gridW - SideMenu.Left) or SideMenu.Left, 0.5, shift)
+	local arrowPos = UDim2.new(0, isFolded and SideMenu.Left or (SideMenu.Left + gridW + gap), 0.5, shift)
 	bar.Visible = not hiddenAll
 	arrow.Visible = not hiddenAll and not training
 	if animate then
@@ -244,7 +253,7 @@ end
 -- Screen px (from the top of the safe area) of the grid's bottom edge.
 function SideMenu.Bottom()
 	ensure()
-	return math.floor((SideMenu.Top + bar.Size.Y.Offset) * Kit.Scale())
+	return math.floor((gridTop + bar.Size.Y.Offset) * Kit.Scale())
 end
 
 function SideMenu.Add(id, labelText, iconFactory, _order)
