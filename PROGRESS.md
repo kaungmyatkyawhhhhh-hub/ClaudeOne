@@ -93,6 +93,14 @@ TestCoins = 2000 (2,000 -> 1,700, FOLLOWING), the red-cap follower. Screenshots:
   coins: shake + toast. Chicken & Rice is orange now (mockup). Prices stay as in Config/Meals (60 / 50 / 90 / 40; the
   mockup's numbers were only examples). Tested at the starter cart: Protein Shake bought (2,000 -> 1,940).
   Screenshot: ui_compare_v2/09_smoothie_bar_phone.
+- 11 Tutorial dialog (done): the step's short line in the top band (gone after 4 s, as before), a green SKIP TUTORIAL
+  under it (tap it twice: the first tap turns it gold "Tap again to skip" for 3 s, so a stray tap never wipes the
+  tutorial; skipping gives no reward), and the Coach's pages in a dialog at the bottom: a live portrait of the Coach NPC,
+  "Coach Dex · Reward (coin) 50", the words, "Tap to continue (1/2)" (Config/Onboarding `coach` per step). On a machine
+  there is no dialog (it would cover the machine HUD; the band has the line). New: finishing the tutorial the normal way
+  pays 50 coins (Onboarding.FinishCoins, ActionService). The Goal step now points at the Muscles window (Muscles window
+  or the stat labels both count as "stats open"). The mockup says "Coach Dante": the game's coach is Coach Dex (Dante is
+  the pro gym's 8'0" NPC), so it says Coach Dex. Screenshots: ui_compare_v2/11_*.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by

@@ -1,7 +1,10 @@
 -- TutorialClient: the first 5 minutes, after the menu and the genetics reveal. Steps come from Config.Onboarding.
--- Each step shows one coach line (small panel, top center; bottom center while Stats is open). Steps that lead to a
--- machine draw a glowing path of dots on the floor (Roblox pathfinding, so it walks around equipment) and outline
--- the machine. Progress is saved through the server, so a player who leaves mid-tutorial picks up where they were.
+-- Owner's UI v2 (mockup 11): each step's short line goes to the top band (Notify.SetBand), a green SKIP TUTORIAL sits
+-- under it (tap twice: the first tap asks "Tap again to skip"), and the step's coach pages show in a dialog at the bottom
+-- (a live portrait of the Coach NPC, "Coach Dex · Reward (coin) 50", the words, "Tap to continue (1/3)"). On a machine
+-- there is no dialog, so it never covers the machine HUD (the band has the step's line). Steps that lead to a machine
+-- draw a glowing path of dots on the floor (Roblox pathfinding, so it walks around equipment) and outline the machine.
+-- Progress is saved through the server, so a player who leaves mid-tutorial picks up where they were.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -12,9 +15,12 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Onboarding = require(Shared.Config.Onboarding)
+local Quests = require(Shared.Config.Quests)
 local Stamina = require(Shared.Config.Stamina)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
+local Pieces = require(Shared.UI.Pieces)
 local Notify = require(Shared.UI.Notify)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
@@ -93,6 +99,107 @@ local function setLine(text)
 	lineText.Text = text
 	Notify.SetBand(text)
 end
+
+------------------------------------------------------------------------
+-- SKIP TUTORIAL and the coach dialog (mockup 11)
+------------------------------------------------------------------------
+gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets -- the same top as Notify's band and toasts, so they line up
+local root = Kit.Root(gui)
+local SKIP_Y = Notify.Top + Notify.BandHeight + 4
+local skip = Kit.Button("Green", "Skip tutorial", { Name = "Skip", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, SKIP_Y), Parent = root },
+	{ width = 170, height = 30, textSize = 15 })
+Notify.Reserve(38) -- toasts stack under the skip button
+local skipArmed = 0
+
+local dialog = Theme.Panel({ Name = "CoachDialog", Clickable = true, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
+	Size = UDim2.fromOffset(540, 92), Visible = false, Parent = root }, {})
+local portrait = New("ViewportFrame", { Name = "Portrait", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(72, 72),
+	BackgroundColor3 = Colors.Blue, Ambient = Color3.fromRGB(190, 190, 190), LightColor = Color3.new(1, 1, 1), LightDirection = Vector3.new(-0.4, -0.6, -1),
+	Parent = dialog }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+	New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 170)) }),
+})
+local nameRow = New("Frame", { Name = "NameRow", BackgroundTransparency = 1, Position = UDim2.fromOffset(94, 7), Size = UDim2.new(1, -104, 0, 22), Parent = dialog }, {
+	Theme.List(Enum.FillDirection.Horizontal, 4, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+})
+Kit.Text({ LayoutOrder = 1, Text = Quests.CoachName .. " · Reward", Font = "Title", TextSize = 17, TextColor3 = Colors.Gold, Size = UDim2.fromOffset(0, 22),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = nameRow })
+Kit.Coin(17, { LayoutOrder = 2, Parent = nameRow })
+Kit.Text({ LayoutOrder = 3, Text = tostring(Onboarding.FinishCoins or 0), Font = "Title", TextSize = 17, TextColor3 = Colors.Gold, Size = UDim2.fromOffset(0, 22),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = nameRow })
+local dialogText = Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 14, TextWrapped = true, Position = UDim2.fromOffset(94, 30), Size = UDim2.new(1, -106, 0, 38),
+	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = dialog })
+local dialogFoot = Kit.Text({ Name = "Continue", Text = "", Font = "Body", TextSize = 12, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(94, 70), Size = UDim2.new(1, -106, 0, 16),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = dialog })
+
+-- the Coach's face: a copy of the Coach NPC in the portrait (no scripts, prompts or labels)
+task.spawn(function()
+	local coach = CollectionService:GetTagged("Coach")[1]
+	local waited = 0
+	while not coach and waited < 15 do
+		task.wait(0.5)
+		waited += 0.5
+		coach = CollectionService:GetTagged("Coach")[1]
+	end
+	local head = coach and coach:FindFirstChild("Head")
+	if not head then
+		Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait })
+		return
+	end
+	local ok = pcall(function()
+		coach.Archivable = true
+		local copy = coach:Clone()
+		for _, d in ipairs(copy:GetDescendants()) do
+			if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("Sound") then d:Destroy() end
+		end
+		local world = New("WorldModel", { Parent = portrait })
+		copy.Parent = world
+		local copyHead = copy:FindFirstChild("Head") :: BasePart
+		local camera = New("Camera", { FieldOfView = 30, Parent = portrait })
+		local face = copyHead.CFrame
+		camera.CFrame = CFrame.lookAt(face.Position + face.LookVector * 5.6 + Vector3.new(0, 0.2, 0), face.Position - Vector3.new(0, 0.55, 0)) -- head and shoulders
+		portrait.CurrentCamera = camera
+	end)
+	if not ok then Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait }) end
+end)
+
+local pages, pageIndex = nil, 0
+local showPage -- (below)
+local function placeDialog()
+	-- on a machine the machine HUD owns the screen: no dialog (the band shows the step's line)
+	if onMachine and pages then
+		pages = nil
+		showPage()
+	end
+end
+function showPage()
+	if not pages or pageIndex > #pages then
+		if dialog.Visible then
+			local tween = Theme.Fade(dialog, false, 0.2)
+			if tween then tween.Completed:Connect(function() if not pages then dialog.Visible = false end end) else dialog.Visible = false end
+		end
+		pages = nil
+		return
+	end
+	dialogText.Text = pages[pageIndex]
+	dialogFoot.Text = string.format("Tap to continue (%d/%d)", pageIndex, #pages)
+	if not dialog.Visible then
+		dialog.Visible = true
+		Theme.Fade(dialog, true, 0.2)
+	end
+end
+local function showCoach(step)
+	pages = (step and not onMachine) and step.coach or nil
+	pageIndex = 1
+	showPage()
+end
+dialog.Activated:Connect(function()
+	if not pages then return end
+	Audio.PlayUI("Click")
+	pageIndex += 1
+	showPage()
+end)
 
 ------------------------------------------------------------------------
 -- Machines: find them, and the spot just outside each one facing the room
@@ -330,11 +437,18 @@ local function stepDef()
 	return Onboarding.Steps[stepIndex]
 end
 
+local coachShownFor = nil
 local function refreshStep()
 	local step = stepDef()
 	if not step then return end
 	local text = (onMachine and step.onMachineText) or step.text
 	setLine(text)
+	if coachShownFor ~= stepIndex then
+		coachShownFor = stepIndex
+		showCoach(step)
+	elseif pages then
+		placeDialog()
+	end
 	if step.target and onMachine ~= step.target then
 		if not targetPoint then showPath(step.target) end
 	else
@@ -374,15 +488,35 @@ local function check()
 	end
 end
 
-local function finish()
+local function finish(skipped: boolean?)
 	hidePath()
 	shownText = nil
+	pages = nil
 	Notify.SetBand(nil)
-	local tween = Theme.Fade(line, false)
-	if tween then tween.Completed:Connect(function() gui:Destroy() end) end
-	Notify.Show(Onboarding.FinishedText)
+	Notify.Reserve(0)
+	gui:Destroy()
+	if skipped then
+		Notify.Toast("Tutorial skipped", "Quests and hints are in the menu", "list-checks", Colors.Blue)
+	else
+		Notify.Toast(Onboarding.FinishedText, Onboarding.FinishCoins and ("+" .. Onboarding.FinishCoins .. " coins") or nil, "coin", Colors.Gold)
+	end
 	Audio.PlayUI("Whoosh")
 end
+
+skip.Activated:Connect(function()
+	if os.clock() - skipArmed > 3 then
+		-- the first tap only asks (a stray tap never wipes the tutorial)
+		skipArmed = os.clock()
+		Kit.SetButton(skip, "Gold", "Tap again to skip")
+		task.delay(3, function()
+			if skip.Parent and os.clock() - skipArmed >= 3 then Kit.SetButton(skip, "Green", "Skip tutorial") end
+		end)
+		return
+	end
+	stepIndex = Onboarding.Done
+	Remotes.PlayerAction:FireServer("SkipTutorial")
+	finish(true)
+end)
 
 function advance()
 	stepIndex += 1
@@ -435,7 +569,10 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind)
 	end
 end)
 
-UIBus.StatsVisible.Event:Connect(function(visible)
+-- "stats open" = the stat labels around you (the Stats tile) or the Muscles window
+local labelsShown, musclesShown = false, false
+local function onStatsVisible()
+	local visible = labelsShown or musclesShown
 	statsOpen = visible
 	if stepIndex >= Onboarding.Done then return end
 	placeLine()
@@ -448,12 +585,14 @@ UIBus.StatsVisible.Event:Connect(function(visible)
 	else
 		check()
 	end
-end)
+end
+UIBus.StatsVisible.Event:Connect(function(visible) labelsShown = visible onStatsVisible() end)
+UIBus.MusclesVisible.Event:Connect(function(visible) musclesShown = visible onStatsVisible() end)
 
--- The coach line steps aside while the genetics screen is open.
+-- The skip button and the coach dialog step aside while the genetics screen is open.
 UIBus.GeneticsVisible.Event:Connect(function(visible)
-	if stepIndex < Onboarding.Done and shownText then
-		Theme.Fade(line, not visible)
+	if stepIndex < Onboarding.Done and gui.Parent then
+		gui.Enabled = not visible
 	end
 end)
 

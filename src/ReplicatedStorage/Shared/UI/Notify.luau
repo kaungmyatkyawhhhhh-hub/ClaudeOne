@@ -7,6 +7,7 @@
 --   Notify.SetBand(text?)                          the tutorial step's line in the band (TutorialClient): shown like a
 --                                                  hint (also gone after HintSeconds; the coach dialog keeps the words)
 --   Notify.BandBottom()                            mockup px from the top to the bottom of the band (0 when empty)
+--   Notify.Reserve(px)                             keeps px free under the band (toasts stack below it)
 -- Toasts stack under the top bar at the top center (newest on top, at most Notify.MaxVisible), below the band, so they
 -- never cover each other, the band or the machine panel (which sits on the right). key throttles repeats of a message.
 -- While the genetics screen is up they wait.
@@ -38,9 +39,10 @@ local function bandVisible()
 	return band ~= nil and band.Visible
 end
 
+local reserved = 0 -- mockup px kept free under the band (the tutorial's SKIP TUTORIAL button)
 local function placeList()
 	if not list then return end
-	list.Position = UDim2.new(0.5, 0, 0, Notify.Top + (bandVisible() and (Notify.BandHeight + 4) or 0))
+	list.Position = UDim2.new(0.5, 0, 0, Notify.Top + (bandVisible() and (Notify.BandHeight + 4) or 0) + reserved)
 end
 
 local function ensure()
@@ -167,6 +169,12 @@ function Notify.SetBand(text)
 	if text == tutorialLine then return end
 	tutorialLine = text
 	if text and text ~= "" then showBand(text) else hintToken += 1; setBandText(nil) end
+end
+
+-- Keeps `px` (mockup px) free under the band for something else (0 = nothing): toasts stack below it.
+function Notify.Reserve(px: number)
+	reserved = math.max(0, px or 0)
+	placeList()
 end
 
 function Notify.BandBottom()
