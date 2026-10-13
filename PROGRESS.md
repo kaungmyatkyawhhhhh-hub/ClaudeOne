@@ -29,7 +29,22 @@ in `Config/Monetization` (so the Shop tile appears after the tutorial + 5 minute
    a 1.5 s per-player debounce, and "Reach Growth Spurt 2 to enter the Pro Gym" at most every 3 s (the door's Blocker
    stays solid for locked players). Tested solo (by the door: no teleport; inside: put back once, stays). 2-player test
    not possible in Studio solo: the state is per player. DONE.
-5. Wardrobe clothes: next.
+5. Wardrobe clothes (tops broken on the muscle body): three real causes, fixed (no parts hidden):
+   a) The skin part and the shirt part are two MeshParts from one live mesh, and such a part is drawn relative to the
+      mesh's bounds at the moment it was made: the skin part was made at the biggest (monster) shape, the shirt part later
+      at the real shape, so the skin sat ~0.1 stud off and poked through every top (belly, chest, back). Now the shirt
+      and color-layer parts are made together with the skin part (MuscleRig buildGroup spares) and reused.
+   b) The forearm / calf stage meshes (and other players' body stages) were ONE solid part with the shirt image: a solid
+      part ignores the image's transparency, so short sleeves drew BLACK forearms. Now a clothed stage is a hair
+      see-through over a skin copy just inside it (LimbStages, BodyStages).
+   c) ~2,000 torso / ~900 arm triangles cross a texture seam and smeared the image's see-through gaps (MuscleRig faceUVs).
+   Also: the skin sits 3% inside (was 1.5%: speckles), and the waist band takes the fit's color under a gym fit.
+   Tested: white tee at level 0 (front / back), cropped hoodie at half (front / back), white tee at mass monster
+   (front / back), plus stringer / sleeveless hoodie on and off: no errors. Still open (small): a few skin-colored spots
+   on the lower back at big sizes (not depth fighting, not the image, not seams, not the waist: cause not found yet).
+   `Config/Features.Wardrobe = false` keeps the Wardrobe tile hidden and takes the tops off sale; on join anyone who owns
+   tops gets them removed and their coins refunded once (CosmeticService refundFits, toast "Coins refunded").
+   Screenshots: fit_bug_before_tee, fit_fix_level0_front / back, fit_fix_half_hoodie_front / back, fit_fix_mass_front / back.
 
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by

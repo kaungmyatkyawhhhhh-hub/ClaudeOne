@@ -1,13 +1,17 @@
 -- CosmeticService: the clothing store's gear (Config.Cosmetics). Buying (only at the store counter, coins checked
 -- here), wearing (one item per slot, only owned items) and building the gear on characters from simple parts welded
 -- to the body. Gear is rebuilt when a body part changes size (muscle growth, Growth Spurts). Cosmetic only.
--- Save data: cosmetics = { owned = { [itemId] = true }, equipped = { [slot] = itemId } }.
+-- Save data: cosmetics = { owned = { [itemId] = true }, equipped = { [slot] = itemId }, fitsRefunded = true? }.
+-- While Config/Features.Wardrobe is false (owner, 13 Oct) the tops (slot "Fit") can't be bought or worn, and on join a
+-- player who owns any gets them taken back with their coins refunded, once (fitsRefunded). The cause of the "broken
+-- clothes" is fixed in MuscleRig / LimbStages / BodyStages; the switch stays off until the owner turns it on.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = ReplicatedStorage.Shared.Config
 local Cosmetics = require(Config.Cosmetics)
 local Town = require(Config.Town)
+local Features = require(Config.Features)
 local PlayerData = require(script.Parent.PlayerData)
 local ActionService = require(script.Parent.ActionService)
 local Guard = require(script.Parent.Guard)
@@ -19,6 +23,11 @@ local CosmeticService = {}
 local STORE_REACH = 22 -- studs from the clothing store's middle where buying is allowed
 local FOLDER = "Cosmetics"
 local FIT_SHIRT = "GymArcFit" -- the classic Shirt a worn gym fit puts on the character
+
+-- a top (gym fit) while the Wardrobe is switched off
+local function fitBlocked(item)
+	return item ~= nil and item.slot == "Fit" and not Features.Wardrobe
+end
 
 local function event(player, kind, info)
 	if player.Parent then Remotes.PlayerEvent:FireClient(player, kind, info or {}) end
@@ -107,6 +116,7 @@ local function build(player)
 	folder.Parent = character
 	-- the gym fit: a classic Shirt on the character itself (the body swap strips clothing, so it is put back on every build)
 	local fit = Cosmetics.ById[stateOf(data).equipped.Fit or ""]
+	if fitBlocked(fit) then fit = nil end
 	local shirt = character:FindFirstChild(FIT_SHIRT)
 	if fit and fit.shirt and fit.shirt ~= "" then
 		if not (shirt and shirt:IsA("Shirt")) then
@@ -135,6 +145,32 @@ local function scheduleBuild(player)
 		pending[player] = nil
 		if player.Parent then build(player) end
 	end)
+end
+
+-- Once per player while the Wardrobe is off: every top they own is taken back and its price refunded.
+local function refundFits(player)
+	if Features.Wardrobe then return end
+	local data = PlayerData.WaitFor(player)
+	if not data then return end
+	local state = stateOf(data)
+	if state.fitsRefunded then return end
+	local refund, count = 0, 0
+	for itemId in pairs(state.owned) do
+		local item = Cosmetics.ById[itemId]
+		if item and item.slot == "Fit" then
+			state.owned[itemId] = nil
+			refund += item.price or 0
+			count += 1
+		end
+	end
+	state.equipped.Fit = nil
+	state.fitsRefunded = true
+	PlayerData.SetTable(player, "cosmetics", state)
+	if refund > 0 then
+		PlayerData.AddCoins(player, refund)
+		event(player, "FitsRefunded", { coins = refund, count = count })
+	end
+	scheduleBuild(player)
 end
 
 local function watchCharacter(player, character)
@@ -168,6 +204,7 @@ local function buy(player, itemId)
 	local item = type(itemId) == "string" and Cosmetics.ById[itemId]
 	local data = PlayerData.Get(player)
 	if not item or not data then return end
+	if fitBlocked(item) then return end
 	if not nearStore(player) then return end -- only at the store counter
 	local state = stateOf(data)
 	if state.owned[item.id] then return end
@@ -190,6 +227,7 @@ local function equip(player, itemId)
 	if not item or not data then return end
 	local state = stateOf(data)
 	if not state.owned[item.id] then return end
+	if fitBlocked(item) then return end
 	state.equipped[item.slot] = state.equipped[item.slot] ~= item.id and item.id or nil
 	PlayerData.SetTable(player, "cosmetics", state)
 	build(player)
@@ -200,6 +238,7 @@ function CosmeticService.Start()
 	ActionService.Register("BuyCosmetic", buy)
 	ActionService.Register("EquipCosmetic", equip)
 	local function hook(player)
+		task.spawn(refundFits, player)
 		player.CharacterAdded:Connect(function(character) watchCharacter(player, character) end)
 		if player.Character then task.spawn(watchCharacter, player, player.Character) end
 	end

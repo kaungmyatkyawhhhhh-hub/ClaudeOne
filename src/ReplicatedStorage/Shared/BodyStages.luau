@@ -8,7 +8,9 @@
 -- thigh's skin and shorts) always switch together.
 --   * size and placement follow the body part (golden ratio, Growth Spurts, widths): scale = body.Size / reference size;
 --   * clothing: TextureID = the character's Shirt (torso, arms) / Pants (thighs, waist) image, Color = the skin (or the
---     game's top / gym shorts color when no image covers that piece); layered clothing on a part hides its stages;
+--     game's top / gym shorts color when no image covers that piece); layered clothing on a part hides its stages. A
+--     clothed piece is a hair see-through with a plain "Skin" copy just inside it, so the image's see-through areas show
+--     skin (bug, 13 Oct: a fully solid part ignores the image's transparency and drew those pixels BLACK);
 --   * the skin texture stage goes on the skin pieces (MuscleRig's skin pass: the parts carry BodyStageKind / Clothing);
 --   * the training tint / hover highlight tint the part's Color (the strongest tint among the region's muscles);
 --   * the plain body part under a region is hidden while its stage shows.
@@ -221,14 +223,22 @@ local function offsetOf(object, scale: Vector3): CFrame
 	return CFrame.new(object.center * scale) * Config.ImportTurn
 end
 
+local CLOTH_TRANSPARENCY = 0.02 -- a clothed piece (see the header)
+local SKIN_SCALE = 0.97        -- its skin copy just inside it
+
 local function place(self, part: MeshPart, body: BasePart, object, scale: Vector3)
 	part.Size = part.MeshSize * scale
 	local offset = offsetOf(object, scale)
+	local skin = part:FindFirstChild("Skin")
+	if skin then skin.Size = skin.MeshSize * scale * SKIN_SCALE end
 	if self.static then
 		part.CFrame = body.CFrame * offset
+		if skin then skin.CFrame = part.CFrame end
 	else
 		local weld = part:FindFirstChildOfClass("Weld")
 		if weld then weld.C0 = offset end
+		local skinWeld = skin and skin:FindFirstChildOfClass("Weld")
+		if skinWeld then skinWeld.C0 = offset end
 	end
 end
 
@@ -247,6 +257,21 @@ local function makePart(self, region, piece, object, body: BasePart, scale: Vect
 		weld.Part0, weld.Part1 = body, part
 		weld.Parent = part
 	end
+	-- the plain skin copy just inside it (shows only while the piece wears a clothing image; see the header)
+	local skin = template:Clone() :: MeshPart
+	skin.Name = "Skin"
+	skin.TextureID = ""
+	skin.Anchored = self.static
+	skin.CanCollide, skin.CanQuery, skin.CanTouch, skin.CastShadow = false, false, false, false
+	skin.Massless = true
+	skin.Transparency = 1
+	for _, child in ipairs(skin:GetChildren()) do child:Destroy() end
+	if not self.static then
+		local skinWeld = Instance.new("Weld")
+		skinWeld.Part0, skinWeld.Part1 = body, skin
+		skinWeld.Parent = skin
+	end
+	skin.Parent = part
 	place(self, part, body, object, scale)
 	part.Parent = self.folder
 	return part
@@ -308,7 +333,11 @@ function BodyStages.Update(self, getLook, style, tint, covered, marble)
 		for _, piece in ipairs(region.pieces) do
 			local part = state.parts[piece.key]
 			if not part then continue end
-			if self.static then part.CFrame = body.CFrame * offsetOf(region.stages[state.stage].objects[piece.key], scale) end
+			local skinPart = part:FindFirstChild("Skin") :: MeshPart?
+			if self.static then
+				part.CFrame = body.CFrame * offsetOf(region.stages[state.stage].objects[piece.key], scale)
+				if skinPart then skinPart.CFrame = part.CFrame end
+			end
 			-- clothing and color (the skin shows where the clothing image is see-through)
 			local template = if marble then "" else ((if piece.clothing == "Pants" then style.pants else style.shirt) or "")
 			if part.TextureID ~= template then part.TextureID = template end
@@ -332,6 +361,17 @@ function BodyStages.Update(self, getLook, style, tint, covered, marble)
 			-- layered clothing on this part hides it (not while a fade runs)
 			if hidden and part.Transparency < 1 then part.Transparency = 1 end
 			if not hidden and part.Transparency >= 1 and state.wasHidden then part.Transparency = 0 end
+			-- a clothed piece is a hair see-through, its skin copy shows under the image's see-through areas
+			local clothed = template ~= ""
+			if part.Transparency < 0.03 then
+				local want = if clothed then CLOTH_TRANSPARENCY else 0
+				if part.Transparency ~= want then part.Transparency = want end
+			end
+			if skinPart then
+				skinPart.Color = tint(region.muscles, skin, false)
+				local skinT = if clothed and not hidden and part.Transparency < 0.5 then 0 else 1
+				if skinPart.Transparency ~= skinT then skinPart.Transparency = skinT end
+			end
 		end
 		state.wasHidden = hidden
 		-- the stage replaces the plain body part (shown again under layered clothing)

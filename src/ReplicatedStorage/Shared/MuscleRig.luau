@@ -41,6 +41,12 @@ local BodyStages = require(script.Parent.BodyStages)
 local Muscles = require(script.Parent.Config.Muscles)
 local Body = require(script.Parent.Config.Body)
 local SkinStages = require(script.Parent.Config.SkinStages)
+local Cosmetics = require(script.Parent.Config.Cosmetics)
+-- a gym fit's Shirt image -> its main color (the waist band under a fit wears it: see recolor)
+local FIT_COLOR = {}
+for _, item in ipairs(Cosmetics.Items) do
+	if item.shirt and item.shirt ~= "" then FIT_COLOR[item.shirt] = item.color end
+end
 
 local MuscleRig = {}
 MuscleRig.__index = MuscleRig
@@ -376,7 +382,7 @@ local function groupScale(group): Vector3
 	return Vector3.new(size.X / ref.X, size.Y / ref.Y, size.Z / ref.Z)
 end
 
-local INNER_SCALE = 0.985
+local INNER_SCALE = 0.97 -- (13 Oct: 0.985 let the skin flicker through tops in small speckles at a distance)
 local CLOTH_TRANSPARENCY = 0.02
 local LAYER_SCALE = 1.004 -- the color layer (header): a hair bigger than the inner part
 local LAYER_TRANSPARENCY = 0.02
@@ -387,9 +393,14 @@ local LAYER_IDLE, LAYER_HOLD = 0.99, 3
 -- 20,000-triangle mesh (the parts are welded to a moving character: every vertex write did, ~80 ms a write, measured 8 Oct)
 local MESH_PART_OPTIONS = { CollisionFidelity = Enum.CollisionFidelity.Box }
 
--- A MeshPart made from an EditableMesh draws the mesh scaled by Size / ITS OWN MeshSize, and its MeshSize is the mesh's
--- bounds at the moment that part was made: the inner part was made at the biggest shape, the clothing and color layers
--- later (the real, smaller shape). So each part is sized from its own MeshSize (8 Oct: giving the layers the inner part's
+-- A MeshPart made from an EditableMesh draws the mesh relative to the mesh's bounds AT THE MOMENT THAT PART WAS MADE (its
+-- MeshSize and the centre of those bounds). Bug, 13 Oct ("Wardrobe clothes broken"): the inner part was made at the
+-- biggest shape and the clothing / color layers later at the real shape, so their bounds' centres differed (the belly
+-- pushes the front bound forward at the monster size) and the skin part sat ~0.1 stud forward of the shirt in front and
+-- behind it at the back: the skin poked through every top (abs, chest, back) at every level. Now all three parts are made
+-- together at the biggest shape (buildGroup: the spare cloth and layer), so they share one basis and line up; a cloth or
+-- layer taken off is parked as the spare again, never re-made from the live mesh. Each part is still sized from its own
+-- MeshSize (all equal now) (8 Oct: giving the layers the inner part's
 -- Size drew them ~1.7x too big: the gym shorts on the thighs' layer were the "puffy inner tube").
 local function sizeParts(group)
 	local part, cloth = group.part, group.cloth
@@ -415,17 +426,47 @@ local function attach(self, part: MeshPart, body: BasePart, name: string)
 	part.Parent = self.folder
 end
 
+-- a cloth / layer part taken off goes back to being the group's spare (it keeps the inner part's basis, see above)
+local function park(group, part: MeshPart, key: string)
+	meshOf[part] = nil
+	for _, child in ipairs(part:GetChildren()) do
+		if child:IsA("Weld") then child:Destroy() end
+	end
+	if group[key] then
+		part:Destroy()
+	else
+		part.Parent = nil
+		group[key] = part
+	end
+end
+
+-- a part for a cloth / layer: the spare made with the inner part (same basis); a fresh one only if there is none
+local function takePart(group, key: string, mesh): (boolean, MeshPart?)
+	local spare = group[key]
+	if spare then
+		group[key] = nil
+		return true, spare
+	end
+	return pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh), MESH_PART_OPTIONS) end)
+end
+
 -- the clothing part (a second MeshPart made from the same live mesh)
 local function makeCloth(self, group, template: string?)
+	if group.cloth and template and group.cloth.Parent and group.mesh then
+		-- only the image changes
+		group.template = template
+		group.cloth.TextureID = template
+		sizeParts(group)
+		return
+	end
 	if group.cloth then
-		meshOf[group.cloth] = nil
-		group.cloth:Destroy()
+		park(group, group.cloth, "spareCloth")
 		group.cloth = nil
 	end
 	group.template = template
 	local mesh, body = group.mesh, group.body
 	if template and mesh and body then
-		local ok, cloth = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh), MESH_PART_OPTIONS) end)
+		local ok, cloth = takePart(group, "spareCloth", mesh)
 		if ok and cloth and group.mesh == mesh and group.template == template and not group.cloth then
 			cloth.TextureID = template
 			cloth.Transparency = CLOTH_TRANSPARENCY
@@ -434,7 +475,7 @@ local function makeCloth(self, group, template: string?)
 			meshOf[cloth] = mesh
 			group.cloth = cloth
 		elseif ok and cloth then
-			cloth:Destroy()
+			if group.mesh == mesh then park(group, cloth, "spareCloth") else cloth:Destroy() end
 		end
 	end
 	sizeParts(group)
@@ -454,7 +495,7 @@ local function makeLayer(self, group)
 	local mesh, body = group.mesh, group.body
 	if group.layer or group.layerPending or not (mesh and body) then return end
 	group.layerPending = true
-	local ok, layer = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh), MESH_PART_OPTIONS) end)
+	local ok, layer = takePart(group, "spareLayer", mesh)
 	group.layerPending = nil
 	if ok and layer and group.mesh == mesh and group.skinned and not group.layer then
 		layer.Color = Color3.new(1, 1, 1)
@@ -466,12 +507,12 @@ local function makeLayer(self, group)
 		group.layer = layer
 		sizeParts(group)
 	elseif ok and layer then
-		layer:Destroy()
+		if group.mesh == mesh then park(group, layer, "spareLayer") else layer:Destroy() end
 	end
 end
 local function dropLayer(group)
 	if group.layer then
-		group.layer:Destroy()
+		park(group, group.layer, "spareLayer")
 		group.layer = nil
 	end
 end
@@ -505,7 +546,11 @@ local function recolor(self, group)
 		-- the layer: nothing over the skin, the gym shorts over the shorts meshes
 		group.kindBase, group.kindAlpha = { white, shorts, white }, { 0, 1, 0 }
 	else
-		group.kindBase = { if template then white else skin, if template then white else shorts, if template then white else top }
+		-- (13 Oct: the snatched waist has no Shirt image; under one of the game's gym fits its skin band (the belly / lower
+		-- back above the shorts) takes the fit's color, so at big sizes, where the waist bulges past the shirt's hem, it
+		-- reads as the shirt, not as skin poking out)
+		local waistShirt = group.def.kind == "snatched" and not template and self.style.shirt and FIT_COLOR[self.style.shirt] or nil
+		group.kindBase = { if template then white else (waistShirt or skin), if template then white else shorts, if template then white else top }
 		group.kindAlpha = { 1, 1, 1 }
 	end
 	group.shownColors = {}
@@ -852,6 +897,29 @@ local function hideBody(self, body: BasePart, on: boolean)
 	end
 end
 
+-- Seam triangles (13 Oct, "Wardrobe clothes broken"): the unified meshes' texture map is the classic Shirt layout, cut
+-- into panels (front, back, sides) with see-through gaps between them, and ~2,000 torso / ~900 upper arm triangles have a
+-- corner on another panel. A Shirt image on such a triangle smears the whole stretch of image between its corners across
+-- it (gaps included): little holes in every top (the skin showed through on the back). Such a corner now gets its own
+-- texture coordinate in its neighbours' panel (the middle of the other two corners); the shape is untouched.
+local SEAM_UV = 0.035 -- a corner further than this (in texture units, ~20 px of the 585 px image) from the rest is across a seam
+local function faceUVs(mesh, uvIds, uv, a: number, b: number, c: number)
+	local pa, pb, pc = uv[a], uv[b], uv[c]
+	local dab, dbc, dca = (pa - pb).Magnitude, (pb - pc).Magnitude, (pc - pa).Magnitude
+	if math.max(dab, dbc, dca) <= SEAM_UV then return { uvIds[a], uvIds[b], uvIds[c] } end
+	if math.min(dab, dbc, dca) > SEAM_UV then
+		-- (all three on different panels: the whole triangle takes one corner's spot)
+		return { uvIds[a], uvIds[a], uvIds[a] }
+	end
+	if dab <= dbc and dab <= dca then
+		return { uvIds[a], uvIds[b], mesh:AddUV((pa + pb) / 2) }
+	elseif dbc <= dca then
+		return { mesh:AddUV((pb + pc) / 2), uvIds[b], uvIds[c] }
+	else
+		return { uvIds[a], mesh:AddUV((pc + pa) / 2), uvIds[c] }
+	end
+end
+
 -- Builds the EditableMesh of one group (returns true when built). Vertices go in at the biggest shape first (so the
 -- MeshPart's bounds hold every growth), then the real shape is written.
 local function buildGroup(self, state, group): boolean
@@ -911,7 +979,7 @@ local function buildGroup(self, state, group): boolean
 			for k = 1, #tris, 3 do
 				local a, b, c = tris[k] + 1, tris[k + 1] + 1, tris[k + 2] + 1
 				local face = mesh:AddTriangle(ids[a], ids[b], ids[c])
-				mesh:SetFaceUVs(face, { uvIds[a], uvIds[b], uvIds[c] })
+				mesh:SetFaceUVs(face, faceUVs(mesh, uvIds, piece.uv, a, b, c))
 				mesh:SetFaceNormals(face, { normalIds[a], normalIds[b], normalIds[c] })
 				mesh:SetFaceColors(face, { colorOf(a), colorOf(b), colorOf(c) })
 				tick()
@@ -996,6 +1064,12 @@ local function buildGroup(self, state, group): boolean
 		return false
 	end
 	group.mesh, group.body, group.part = mesh, body, part
+	-- the cloth and color layer parts are made NOW, at the same biggest shape as the inner part, so all three share one
+	-- basis (see makeCloth); they wait as spares until a Shirt / Pants image or a skin tint needs them
+	local okCloth, spareCloth = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh), MESH_PART_OPTIONS) end)
+	if okCloth and spareCloth then group.spareCloth = spareCloth end
+	local okLayer, spareLayer = pcall(function() return AssetService:CreateMeshPartAsync(Content.fromObject(mesh), MESH_PART_OPTIONS) end)
+	if okLayer and spareLayer then group.spareLayer = spareLayer end
 	group.refSize = MuscleMeshes.Parts[def.part].size
 	group.bodySize = body.Size
 	-- the real shape, now
@@ -1020,11 +1094,13 @@ local function destroyGroup(self, group)
 		group.hides = nil
 	end
 	if group.mesh then dropMesh(group.mesh) end
-	dropLayer(group)
+	if group.layer then group.layer:Destroy() end
 	if group.cloth then
 		meshOf[group.cloth] = nil
 		group.cloth:Destroy()
 	end
+	if group.spareCloth then group.spareCloth:Destroy() end
+	if group.spareLayer then group.spareLayer:Destroy() end
 	if group.part then
 		meshOf[group.part] = nil
 		group.part:Destroy()

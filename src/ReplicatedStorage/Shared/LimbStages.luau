@@ -4,8 +4,11 @@
 -- parts are clones of the templates in ReplicatedStorage.LimbStages (made once in Studio by tools/limb_stages_setup.luau
 -- from the uploaded meshes). They are ordinary MeshParts: no EditableMesh, no limit, so every character can have them.
 --   * size and weld follow the body part's size (golden ratio, Growth Spurts, widths): scale = body.Size / reference size;
---   * clothing: TextureID = the character's Shirt (forearms) / Pants (calves) image, Color = the skin, so see-through areas
---     of the clothing show skin like on the real body part; layered clothing on that part hides them;
+--   * clothing: TextureID = the character's Shirt (forearms) / Pants (calves) image on the stage part, made a hair
+--     see-through (CLOTH_TRANSPARENCY) so the image's see-through areas show the "Skin" part just inside it (the same mesh,
+--     no image, the skin color), like the muscle meshes. Bug, 13 Oct ("Wardrobe clothes broken"): a fully solid part
+--     ignores the image's transparency, so the see-through pixels (stored as black) drew BLACK: the dark bands on the
+--     forearms (short sleeves) and calves. Layered clothing on that part hides them;
 --   * the rep flash and the stats hover highlight tint the part's Color like the other muscles;
 --   * a stage is the whole lower arm / leg, so the plain body part under it is hidden (its square ends would poke out at
 --     the wrist and ankle); it shows again under layered clothing and when the stages go away.
@@ -41,6 +44,9 @@ function LimbStages.IsOn(): boolean return available end
 -- The muscle ids drawn by stages (MuscleMeshes leaves their units out).
 LimbStages.Muscles = { Forearms = true, Calves = true }
 
+local CLOTH_TRANSPARENCY = 0.02 -- the clothed stage part (see the header)
+local SKIN_SCALE = 0.97        -- the skin part just inside it
+
 local function nearestStage(stages, g: number): number
 	local best, bestDistance = 1, math.huge
 	for index, stage in ipairs(stages) do
@@ -64,13 +70,18 @@ local function place(self, limb, part: MeshPart, body: BasePart, stage)
 	local scale = body.Size / ref
 	part.Size = part.MeshSize * scale
 	local offset = CFrame.new(stage.center * scale) * Config.ImportTurn
+	local skin = part:FindFirstChild("Skin")
+	if skin then skin.Size = skin.MeshSize * scale * SKIN_SCALE end
 	if self.static then
 		part.CFrame = body.CFrame * offset
+		if skin then skin.CFrame = part.CFrame end
 	else
 		local weld = part:FindFirstChildOfClass("Weld")
 		if weld then
 			weld.C0 = offset
 		end
+		local skinWeld = skin and skin:FindFirstChildOfClass("Weld")
+		if skinWeld then skinWeld.C0 = offset end
 	end
 end
 
@@ -88,6 +99,20 @@ local function makePart(self, limb, body: BasePart, stage): MeshPart?
 		weld.Part0, weld.Part1 = body, part
 		weld.Parent = part
 	end
+	-- the skin just inside it (shows only while the stage wears a clothing image; see the header)
+	local skin = template:Clone() :: MeshPart
+	skin.Name = "Skin"
+	skin.TextureID = ""
+	skin.Anchored = self.static
+	skin.CanCollide, skin.CanQuery, skin.CanTouch, skin.CastShadow = false, false, false, false
+	skin.Massless = true
+	skin.Transparency = 1
+	if not self.static then
+		local skinWeld = Instance.new("Weld")
+		skinWeld.Part0, skinWeld.Part1 = body, skin
+		skinWeld.Parent = skin
+	end
+	skin.Parent = part
 	place(self, limb, part, body, stage)
 	part.Parent = self.folder
 	return part
@@ -139,12 +164,28 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 			limb.size = body.Size
 			place(self, limb, part, body, def.stages[limb.stage])
 		end
-		if self.static then part.CFrame = body.CFrame * CFrame.new(def.stages[limb.stage].center * (body.Size / (PARTS[def.part] and PARTS[def.part].size or body.Size))) * Config.ImportTurn end
-		-- clothing and color (the skin shows where the clothing image is see-through)
+		local skin = part:FindFirstChild("Skin") :: MeshPart?
+		if self.static then
+			part.CFrame = body.CFrame * CFrame.new(def.stages[limb.stage].center * (body.Size / (PARTS[def.part] and PARTS[def.part].size or body.Size))) * Config.ImportTurn
+			if skin then skin.CFrame = part.CFrame end
+		end
+		-- clothing and color (the skin part shows where the clothing image is see-through)
 		local template = if marble then "" else (if def.clothing == "Pants" then style.pants else style.shirt) or ""
 		if part.TextureID ~= template then part.TextureID = template end
 		local base = if marble then Color3.fromHex("#C9C6BF") else (style.skin or body.Color)
 		part.Color = tint(def.muscle, base)
+		local clothed = template ~= ""
+		-- (a clothed part is a hair see-through, so the image's see-through pixels show the skin part instead of black)
+		if part.Transparency < 0.5 then
+			local want = if clothed then CLOTH_TRANSPARENCY else 0
+			if part.Transparency ~= want and part.Transparency < 0.03 then part.Transparency = want end
+		end
+		if skin then
+			skin.Color = part.Color
+			if skin.Material ~= part.Material then skin.Material = part.Material end
+			local skinT = if clothed and not hidden and part.Transparency < 0.5 then 0 else 1
+			if skin.Transparency ~= skinT then skin.Transparency = skinT end
+		end
 		if marble and part.Material ~= Enum.Material.Marble then part.Material = Enum.Material.Marble end
 		if not marble and part.Material ~= Enum.Material.SmoothPlastic then part.Material = Enum.Material.SmoothPlastic end
 		-- layered clothing on this part hides it (not while a fade runs)

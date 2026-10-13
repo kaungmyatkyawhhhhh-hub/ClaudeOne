@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared.Config.Cosmetics)
+local Features = require(Shared.Config.Features) -- (Wardrobe = false: the tops are off sale and the Wardrobe tile hidden)
 local Muscles = require(Shared.Config.Muscles)
 local Body = require(Shared.Config.Body)
 local ClientData = require(Shared.ClientData)
@@ -104,6 +105,7 @@ local function refreshStore()
 end
 
 for _, item in ipairs(Cosmetics.Items) do
+	if item.slot == "Fit" and not Features.Wardrobe then continue end
 	local outline = Theme.Stroke(Colors.Border, 1, Theme.Alpha.ButtonBorder)
 	local card = New("TextButton", {
 		Name = item.id,
@@ -228,7 +230,7 @@ local function refreshWardrobe()
 	for _, slot in ipairs(Cosmetics.Slots) do
 		local items = {}
 		for _, item in ipairs(Cosmetics.Items) do
-			if item.slot == slot.id and owned[item.id] then table.insert(items, item) end
+			if item.slot == slot.id and owned[item.id] and not (item.slot == "Fit" and not Features.Wardrobe) then table.insert(items, item) end
 		end
 		if #items > 0 then
 			any = true
@@ -294,6 +296,8 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
 	if kind == "OpenClothingStore" then
 		if not UIBus.MenuOpen then openStore() end
+	elseif kind == "FitsRefunded" then
+		Notify.Toast("Coins refunded", "Tops are off sale for now: +" .. tostring(info.coins) .. " coins back", "coin", Colors.Gold, "fitsrefund")
 	elseif kind == "CosmeticBought" then
 		if info.failed then
 			Notify.Show("You need " .. tostring(info.price) .. " coins for that.", nil, "store")
