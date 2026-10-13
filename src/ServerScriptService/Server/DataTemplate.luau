@@ -32,6 +32,7 @@ function DataTemplate.new()
 		-- today's quests (Config.DailyQuests, DailyService): list = { { id, progress, done, claimed } }, groups trained today
 		dailyQuests = { day = 0, list = {}, bonus = false, swaps = 0, groups = {} },
 		repsToday = { day = 0, count = 0 }, -- reps on the current UTC day (the "Most reps today" board, LeaderboardService)
+		trainers = { owned = {}, equipped = {} }, -- personal trainers (Config.Trainers, TrainerService)
 		rivals = {}, -- NPC rivals: [rival id] = "active" (challenge accepted) | "beaten" (Config.Rivals, RivalService)
 		meals = {}, -- smoothie bar boosts: [item id] = seconds left (paused while away; Config.Meals, MealService)
 		seasons = {}, -- seasonId -> reps done during that event (Config.Seasons)

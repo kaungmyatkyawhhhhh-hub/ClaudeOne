@@ -218,6 +218,27 @@ function Icons.Bowl(color)
 	return icon
 end
 
+-- Clipboard: the board, the clip on top and two lines of writing (personal trainers).
+function Icons.Clipboard(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Clipboard")
+	outline(icon, color, 0.6, 0.76, 0.5, 0.56, UDim.new(0.12, 0)) -- the board
+	outline(icon, color, 0.28, 0.14, 0.5, 0.18, UDim.new(0.3, 0))  -- the clip
+	line(icon, color, 0.32, 0.5, 0.5)                               -- writing
+	line(icon, color, 0.32, 0.5, 0.66)
+	return icon
+end
+
+-- Camera: a rounded body, a round lens and the shutter bump on top (photo mode).
+function Icons.Camera(color)
+	color = color or Colors.Chalk
+	local icon = canvas("Camera")
+	outline(icon, color, 0.84, 0.56, 0.5, 0.56, UDim.new(0.18, 0)) -- the body
+	outline(icon, color, 0.3, 0.3, 0.5, 0.57, UDim.new(1, 0))      -- the lens
+	line(icon, color, 0.24, 0.34, 0.22)                              -- the bump on top
+	return icon
+end
+
 -- Clock-style timer: a ring with one hand (shake boost time left).
 function Icons.Timer(color)
 	color = color or Colors.Chalk

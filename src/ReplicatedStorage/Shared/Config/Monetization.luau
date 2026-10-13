@@ -12,6 +12,7 @@ Monetization.Passes = {
 	{ key = "ShakeFridge", id = nil, name = "Shake Fridge", text = "A free Energy Shake every 10 minutes you play." },
 	{ key = "GeneLock", id = nil, name = "Gene Lock", text = "Rerolling keeps your best muscle group's grade." },
 	{ key = "VIP", id = nil, name = "VIP Gym", text = "+10% coins and a VIP tag on your player card." },
+	{ key = "ExtraTrainer", id = nil, name = "Extra Trainer", text = "A second personal trainer follows you and their perks stack." },
 }
 
 Monetization.Products = {

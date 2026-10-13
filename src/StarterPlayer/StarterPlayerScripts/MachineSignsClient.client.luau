@@ -350,6 +350,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local seat = humanoid and humanoid.SeatPart
 	if seat and machineOf(seat) then onMachine = true end
+	-- photo mode (PhotoModeClient sets this local attribute): no signs in the picture either
+	if player:GetAttribute("PhotoMode") == true then onMachine = true end
 	for _, model in ipairs(signedModels()) do
 		local pivot = pivots[model]
 		if not pivot then

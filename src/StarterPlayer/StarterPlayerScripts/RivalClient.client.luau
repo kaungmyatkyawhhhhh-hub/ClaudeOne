@@ -242,7 +242,7 @@ local function bubbleFor(id)
 		return entry
 	end
 	local bill = New("BillboardGui", { Name = "RivalBubble", Adornee = h, Size = UDim2.fromOffset(240, 60), StudsOffset = Vector3.new(0, 4.2, 0),
-		AlwaysOnTop = true, MaxDistance = 70, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+		AlwaysOnTop = false, MaxDistance = 70, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
 	local box = Theme.Panel({ AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromOffset(0, 0),
 		AutomaticSize = Enum.AutomaticSize.XY, Parent = bill }, { Theme.Pad("S") })
 	local text = Theme.Text({ Text = "", Font = "Regular", TextSize = "Body", Size = UDim2.fromOffset(0, 0), AutomaticSize = Enum.AutomaticSize.XY, TextWrapped = false, Parent = box })

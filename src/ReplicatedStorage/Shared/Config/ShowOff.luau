@@ -42,6 +42,7 @@ ShowOff.Emotes = {
 	{ id = "MostMuscular", name = "Most muscular", poseData = "MostMuscular", muscles = { "Traps", "UpperChest", "MidChest", "FrontDelts" } },
 	{ id = "BackDoubleBiceps", name = "Back double biceps", poseData = "BackDoubleBiceps", muscles = { "Lats", "Rhomboids", "Traps", "LowerBack", "RearDelts" } },
 	{ id = "HighFive", name = "High five", pose = "HighFive", seconds = 1.6 },
+	{ id = "VictoryWave", name = "Victory wave", pose = "VictoryWave", seconds = 2.6 }, -- (owner's feature run, task 7A)
 }
 ShowOff.PoseMaxSeconds = 45 -- a held pose lets go by itself after this long
 -- the judges on the posing stage score a pose held for Delay seconds; Margin = studs around the stage that still count

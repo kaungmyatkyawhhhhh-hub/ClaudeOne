@@ -2,7 +2,69 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
-## LATEST (13 Oct): new features run (owner's GYM_ARC_new_features.md), in progress
+## LATEST (13 Oct): new features run (owner's GYM_ARC_new_features.md): DONE, report
+
+**Not saved to Roblox yet.** Owner: File > Save to Roblox, then File > Download a Copy to
+`Documents\GymArc_backups\GymArc_2026-10-13.rbxl` (Claude can't do either). Builders run in Studio this run (saved only
+with the place): PosingComp, Leaderboards, SmoothieCarts, Rivals, NightGlow, TrainerDesks.
+
+**Per task** (details in the task sections below)
+1. Posing Competition: done. 2. Daily quests + 7-day login streak: done. 3. Arm wrestling at every table + pro gym table:
+done. 4. Leaderboards (six boards, three walls): done. 5. Smoothie bar (shakes & meals, starter / beach carts, pro bar
+menu board): done. 6. NPC rivals Benny / Coral / Dante: done; rivals are an EXTRA goal (gyms already open by Growth
+Spurt; the win card points to the next rival). 7. A) Victory wave added to the Poses panel (the four required poses
+were already there); B) Personal Trainers (desks in all three gyms, 4 coaches, follow / stand beside your machine /
+cheer / clap); C) day / night (20 min, lamps + shop windows + signs at night, gyms keep their lighting); D) photo mode
+(mirrors + posing stage).
+Not done / not possible from here: two-player tests (MCP play is solo only: e.g. seeing another player's trainer, rival
+bubbles, posing votes); the phone emulator can't be driven (phone sizes checked with `TestPhoneLayout`); an FPS number
+on a phone. Pets were replaced by Personal Trainers as the owner asked.
+
+**FPS** (honest): no "before" number exists on the phone emulator (it can't be driven from MCP). Measured after all
+tasks in Studio on this PC, same town view, engine render frame time: day 9.2 ms CPU / 10.8 ms GPU, night 8.7 ms CPU /
+3.4 ms GPU (night costs nothing extra; none of the 207 night lights cast shadows). Studio showed 15 FPS only because a
+background Studio window is throttled. Please check on your phone: town at night, a gym with two trainers.
+
+**New Config values to tune**
+- `Config/PosingComp` (every number of the competition), `Config/DailyQuests`, `Config/Economy` Login (7-day coins
+  25/35/50/70/90/120/300, DNA token on day 7), `Config/Social` ArmWrestle (Npcs, PushPerTap, MaxTapsPerSecond, table
+  spots), `Config/Leaderboards` (boards, refresh 90 s, top 100).
+- `Config/Meals`: Items (price, seconds, effects, color, icon), MaxStack 3, Shops, PromptDistance 8, DrinkSeconds 2,
+  SaveEvery 5.
+- `Config/Rivals`: List (challenge machine + record lb / arm strength + taps, reward coins + title, lines, next),
+  SetReps 10, SetGap 15, LoseLineEvery 30, BubbleSeconds 4.5, HoldSeconds 10, PromptDistance 8.
+- `Config/DayNight`: Length 1200 s, DayShare 0.7, StartHour 9, Dawn 6 / Dusk 18, NightOutdoorAmbient, AmbientFade 1.5,
+  WindowLitShare 0.6.
+- `Config/PhotoMode`: Spots (path + range), Distance 9 (4..20), Pitch, DragSpeed, ZoomStep, FocusHeight.
+- `Config/Trainers`: List (price, perk, look), Slots 1, ExtraSlotPass "ExtraTrainer", DeskDistance 8, RenderDistance 90,
+  FollowBehind 3, FollowSide 2.6, WalkSpeed 15, CatchUpSpeed 26, TeleportDistance 45, StuckSeconds 2.5,
+  CheerCooldown 9, CheerChance 0.35, BubbleSeconds 3, ClapSeconds 1.4, Cheers / SetDoneLines / RecordLines.
+- `Config/ShowOff` Emotes: VictoryWave (2.6 s). `Config/Monetization`: ExtraTrainer pass (id nil = off).
+
+**SoundId fields to fill:** none left empty. Every slot added this run (posing, daily, arm wrestling, ShopBuy,
+DrinkShake, RivalWin, RivalLose, ...) got a licensed id in the "pick audios" pass; listen first to CrowdOoh,
+RivalLose, DoorSlide, SkateGrind (the weakest fits). Trainers and photo mode reuse existing sounds (Whoosh, ShopBuy).
+
+**TRY FIRST**
+1. Town at night on your phone: set Workspace `TestClock` = 21 in Studio (or wait ~14 min): lamps, lit windows, glowing
+   shop signs; walk into a gym: it should look the same as by day. Watch the FPS.
+2. Personal trainer: Trainer Desk at the front left of the starter gym, hire the Rookie Coach (300), then bench: he
+   stands beside you, cheers, claps at 10 reps; walk / run / skate away and see him follow or pop back.
+3. Rival: talk to Benny in the starter gym, I'M IN, then a full set of 10 on the Flat Bench at 115 lb.
+4. Photo mode at the gym mirror wall or the progress mirror: PHOTO, drag / zoom, pick Victory Wave, HIDE UI, tap.
+5. Smoothie cart: buy a Protein Shake, leave the game and rejoin: the timer picks up where it was.
+
+**Screenshots** (repo `screenshots/`, git-ignored; copies in the vault): posing_countdown_banner_arrow,
+posing_3_contestants_score_cards, posing_vote_panel, posing_podium, posing_statue_champion, daily_quests_panel,
+streak_popup_day1, streak_popup_day7, armwrestle_pick_opponent, armwrestle_vs_npc_live_bar,
+armwrestle_vs_npc_phone_layout, armwrestle_win_screen, armwrestle_sign_occupy, leaderboards_starter_gym,
+leaderboards_pro_gym, leaderboards_town_plaza, meals_shop_panel_starter_cart, meals_hud_timers, meals_drinking_shaker,
+meals_coconut_cart_beach, rival_card_benny, rival_card_coral, rival_card_dante, rival_win_benny,
+rival_card_phone_layout, emote_front_double_biceps, emote_front_lat_spread, emote_most_muscular, emote_side_chest,
+emote_victory_wave, trainer_desk_starter, trainers_panel_hire, trainer_following, trainers_cheering_bench,
+town_day_plaza, town_night_plaza, town_night_street, photo_mode_mirror, photo_mode_hidden_ui.
+
+### Run notes
 Sounds: the owner asked Claude to pick them ("pick audios for me"): every placeholder and new slot in `Config/Sounds` now
 has a Roblox-licensed id (ProSoundEffects / APM only), plus Beach and Town area music (SettingsClient's area check now
 knows the bigger gyms, the beach and the town). Weak fits to listen to first: CrowdOoh (a crowd surge; no licensed
@@ -141,6 +203,43 @@ knows the bigger gyms, the beach and the town). Weak fits to listen to first: Cr
   10-rep set at 45 lb (lose line), a set at 115 lb (Benny beaten, 150 coins, title), arm wrestling Coral picked and lost
   (her line), win cards, phone layout, sizes; no errors.
 - Screenshots: rival_card_benny, rival_card_coral, rival_card_dante, rival_win_benny, rival_card_phone_layout.
+
+### Task 7: emotes, personal trainers, day / night, photo mode (done, tested solo)
+- **A) Emotes:** the Poses tile already had Front Double Biceps, Lat Spread, Most Muscular, Side Chest (one tap, everyone
+  sees them); added **Victory wave** (arm high over the head, hand swinging; EmoteClient, `ShowOff.Emotes`). The panel
+  turns into two columns on phones (8 buttons didn't fit the height).
+- **B) Personal trainers** (instead of pets; the gym cat stays a gym NPC): `Config/Trainers`, `Server/TrainerService`,
+  `TrainerClient` (panel + "Trainers" side tile), `TrainerFollowClient` (draws everyone's trainers), builder
+  `tools/builders/TrainerDesks` (a desk at the front of the starter gym (left of the door, between the smoothie cart and
+  the shake machine), the pro gym and inside the beach gym gate: counter, sign board, stool, props). Four coaches:
+  Rookie Coach Sam +5% EXP 300, Cardio Coach Nia +10% refill 450, Money Coach Lou +5% coins 600, Pump Coach Rex pump
+  fills 25% faster and lasts 25% longer 800 (new BoostService `pump`, MachineService tap). 1 slot; the Extra Trainer
+  pass (`Config/Monetization`, id nil = off) adds a 2nd and the perks stack. Saved in `data.trainers`.
+  Trainers are normal-size Robloxian coaches with a clipboard, built once at start (ReplicatedStorage.TrainerModels)
+  and drawn locally by every client (plain parts, no EditableMesh, nothing collides); others' trainers past 90 studs
+  aren't drawn. Following: behind and beside you, feet on the floor (ray), never through walls (ray), pops back when
+  far or stuck. On a machine: a free hype spot or a free point around you, checked for room (found in testing: he stood
+  against the next bench; now never inside a machine). Cheers in a bubble ("Push it!") with a cooldown, claps + "Great
+  set!" every 10 reps (your own reps counted exactly), "New record!" on a personal record.
+  Found in testing: the hair fell off the cloned coaches (no accessory weld): the templates now weld each accessory to
+  its attachment. Bubbles are not always-on-top (Roblox screenshots skip those).
+- **C) Day / night:** `Config/DayNight` (20 min, 70% daytime), `NightLightService` runs the clock (Workspace attribute
+  DayStart), `DayNightClient` moves the sky on every client and fades only the OUTDOOR ambient (gyms keep their light).
+  At night: the 207 street / wall lamps and string lights (as before), the shop windows and 278 of the town's 431
+  windows (builder `tools/builders/NightGlow`, tags NightWindow / NightSign), and 28 gym / shop signs light themselves
+  (SurfaceGui, no new lights). No new shadow lights.
+- **D) Photo mode:** `Config/PhotoMode`, `PhotoModeClient`. A PHOTO button (camera icon) in the right column near the
+  gym mirror walls, the clothing store mirror, the progress mirror and the posing stage. Hides every screen and Roblox's
+  own buttons, prompts and machine signs, freezes walking, camera turns around you (drag) and zooms (wheel / pinch),
+  never inside a wall; pose row; HIDE UI, then a tap anywhere ends it; X / Esc too. Found in testing: the mirror lookup
+  picked the starter gym's second, smaller mirror panel (same name): every instance on the path is checked now.
+- Studio hooks: `TestClock` (hours), `TestTrainers` ("RookieCoach,PumpCoach"), `TestTrainerSlots` (2), `TestPhotoMode`.
+- Tested: hire at the desk (coins once, perk on), follow, both trainers on a bench (clear of parts, cheering), day and
+  night views + render times, photo mode enter / pose / hide / exit, every emote; phone layouts of the trainer panel
+  (316 px) and poses. No errors in Output.
+- Screenshots: emote_front_double_biceps, emote_front_lat_spread, emote_most_muscular, emote_side_chest,
+  emote_victory_wave, trainer_desk_starter, trainers_panel_hire, trainer_following, trainers_cheering_bench,
+  town_day_plaza, town_night_plaza, town_night_street, photo_mode_mirror, photo_mode_hidden_ui.
 
 ## Before that (13 Oct): soft shutdown
 - `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all

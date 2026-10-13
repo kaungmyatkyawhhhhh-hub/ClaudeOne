@@ -1,4 +1,4 @@
--- EmoteClient: the Emotes side button and its small panel (the six bodybuilding poses and the high five). The bodybuilding poses
+-- EmoteClient: the Emotes side button and its small panel (the six bodybuilding poses, the high five and the victory wave). The bodybuilding poses
 -- are PoseData poses (PoseController poses any character whose "Pose" attribute is set; PoseClient adds the pose name, the
 -- pose hit and letting go). The high five and the shake chug are small timed poses done here: the server tells every client
 -- who emotes and each client poses that character locally (R15 joint
@@ -72,8 +72,19 @@ POSES.Chug = function(character, w)
 	setJoint(character, "Waist", Angles(rad(8) * w, 0, 0))
 end
 
+-- the victory wave: waving to a crowd, the right arm high over the head and the hand swinging side to side (about 2
+-- waves a second; the whole arm sways a little with it), the other arm relaxed, chest up a little
+POSES.VictoryWave = function(character, w)
+	local wave = math.sin(os.clock() * math.pi * 4)
+	sideArm(character, SIDES[1], 0, rad(158 + 8 * wave) * w, rad(18 + 16 * wave) * w)
+	setJoint(character, "Waist", Angles(-rad(5) * w, 0, 0))
+end
+
 -- the joints each small pose writes (only those are reset when it ends, so it never wipes a machine or skate pose)
-local POSE_JOINTS = { HighFive = { "RShoulder", "RElbow" }, Chug = { "RShoulder", "RElbow", "Waist" } }
+local POSE_JOINTS = {
+	HighFive = { "RShoulder", "RElbow" }, Chug = { "RShoulder", "RElbow", "Waist" },
+	VictoryWave = { "RShoulder", "RElbow", "Waist" },
+}
 
 local function resetPose(character, keys)
 	for _, key in ipairs(keys) do setJoint(character, key, CFrame.identity) end
@@ -125,7 +136,7 @@ local panel = Theme.Panel({
 	Theme.Pad("M"),
 	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
 })
-Theme.Text({ LayoutOrder = 0, Text = "Poses", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+Theme.Text({ LayoutOrder = 0, Text = "Poses", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel }) -- (full width: its own row in two columns too)
 
 local isOpen = false
 local function close()
@@ -139,8 +150,22 @@ local function close()
 		gui.Enabled = false
 	end
 end
+local buttons = {}
+-- phones (short screens): two columns of buttons, so all eight fit the height
+local function layout()
+	local compact = Theme.IsCompact()
+	local list = panel:FindFirstChildOfClass("UIListLayout")
+	panel.Size = UDim2.fromOffset(compact and 320 or 220, 0)
+	if list then
+		list.FillDirection = compact and Enum.FillDirection.Horizontal or Vertical
+		list.Wraps = compact
+		list.HorizontalAlignment = compact and Enum.HorizontalAlignment.Left or Enum.HorizontalAlignment.Center
+	end
+	for _, button in ipairs(buttons) do button.Size = UDim2.new(compact and 0.5 or 1, compact and -Spacing.S / 2 or 0, 0, Theme.MinTouch) end
+end
 local function open()
 	isOpen = true
+	layout()
 	panel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0) -- beside the side menu (one or two columns)
 	menuButton:SetActive(true)
 	gui.Enabled = true
@@ -160,6 +185,7 @@ for order, emote in ipairs(ShowOff.Emotes) do
 		remote:FireServer(emote.id)
 		close()
 	end)
+	table.insert(buttons, button)
 end
 
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)

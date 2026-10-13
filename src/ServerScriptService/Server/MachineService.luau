@@ -433,10 +433,11 @@ local function tap(player)
 	local pump = settlePump(session, now)
 	pump.lastTap = now
 	if now < pump.pumpedUntil then return end -- already PUMPED: it runs out on its own
-	pump.meter = math.min(1, pump.meter + 1 / Pump.TapsToFill)
+	local perk = BoostService.Pump(player) -- (the Pump Coach: fills faster, lasts longer)
+	pump.meter = math.min(1, pump.meter + perk / Pump.TapsToFill)
 	if pump.meter >= 1 then
 		pump.meter = 0
-		pump.pumpedUntil = now + Pump.Duration
+		pump.pumpedUntil = now + Pump.Duration * perk
 		player:SetAttribute("PumpedUntil", pump.pumpedUntil)
 	end
 	player:SetAttribute("PumpMeter", math.floor(pump.meter * 100 + 0.5) / 100)

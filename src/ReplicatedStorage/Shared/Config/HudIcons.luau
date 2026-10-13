@@ -16,6 +16,7 @@ HudIcons.Tiles = {
 	Emotes = { accent = Color3.fromHex("#E96BA8"), icon = "Pose", image = "" },
 	Crew = { accent = Color3.fromHex("#4C8DE0"), icon = "People", image = "" },
 	Quests = { accent = Color3.fromHex("#2FA8C8"), icon = "Quest", image = "" }, -- daily quests (DailyClient)
+	Trainers = { accent = Color3.fromHex("#D9823B"), icon = "Clipboard", image = "" }, -- personal trainers (TrainerClient)
 	Store = { accent = Color3.fromHex("#5BBE5B"), icon = "Plate", image = "" }, -- hidden while monetization is OFF
 }
 HudIcons.DefaultAccent = Color3.fromHex("#8A8F98")

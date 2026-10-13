@@ -78,6 +78,11 @@ function BoostService.Cardio(player)
 	return product(player, "cardio")
 end
 
+-- Pump perk (the Pump Coach, Config.Trainers): the Pump meter fills this much faster and PUMPED lasts this much longer
+function BoostService.Pump(player)
+	return product(player, "pump")
+end
+
 -- Drinking a shake: +Duration seconds of boost (stacking up to MaxDuration).
 function BoostService.AddShake(player)
 	local current = BoostService.GetPlayer(player, "Shake")
