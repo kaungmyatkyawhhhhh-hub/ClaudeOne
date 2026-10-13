@@ -44,6 +44,9 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   player row: headshot, name, "Level 46 · 7'0"", coins); bottom right a NEW tag with the newest update's name (opens the
   update notes). Loading screen unchanged.
 - Settings: new "Reduce Motion" row (settings.reduceMotion On/Off): stops the UI's looping pulses and shines.
+- Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
+  NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
+  stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier

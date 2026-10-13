@@ -104,6 +104,16 @@ local function standUp(player)
 	end
 end
 
+-- One body per stool (owner, 14 Oct): an NPC opponent isn't really sitting on the Seat (it's placed there), so while an NPC
+-- sits on a stool, or is on its way to it (`reserved`), the stool's Seat is Disabled: nobody can walk into it or take it
+-- with the prompt. (A Seat only takes one player by itself.)
+local function lockStools(t)
+	for _, seat in ipairs(t.seats) do
+		local taken = seat.npc ~= nil or seat.reserved == true
+		if seat.seat.Disabled ~= taken and not (taken and seat.seat.Occupant) then seat.seat.Disabled = taken end
+	end
+end
+
 local function clearNpc(t)
 	for _, seat in ipairs(t.seats) do
 		if seat.npc then
@@ -111,12 +121,17 @@ local function clearNpc(t)
 			seat.npc = nil
 		end
 	end
+	lockStools(t)
 end
 
 local function refreshPrompts(t)
 	for _, seat in ipairs(t.seats) do
-		if seat.prompt then seat.prompt.Enabled = seat.player == nil and seat.npc == nil and not (t.match and t.match.state ~= "waiting") end
+		if seat.prompt then
+			seat.prompt.Enabled = seat.player == nil and seat.npc == nil and not seat.reserved and seat.seat.Occupant == nil
+				and not (t.match and t.match.state ~= "waiting")
+		end
 	end
+	lockStools(t)
 end
 
 local function leave(t, player, silent)
@@ -192,15 +207,20 @@ local function finish(t, winnerIndex, reason)
 	publish(t, "result", winnerIndex or 0)
 	t.match = nil
 	-- the NPC stays seated for the slam, then leaves with the player
-	local seated = nil
+	-- (its stool stays reserved until it's gone: one body per stool)
+	local seated, seatedOn = nil, nil
 	for _, seat in ipairs(t.seats) do
 		if seat.npc then
-			seated = seat.npc
+			seated, seatedOn = seat.npc, seat
 			seat.npc = nil
+			seat.reserved = true
 		end
 	end
-	if seated then task.delay(2.5, function() seated:Destroy() end) end
 	task.delay(2.5, function()
+		if seated then
+			seated:Destroy()
+			seatedOn.reserved = nil
+		end
 		for _, seat in ipairs(t.seats) do
 			if seat.player and not t.match then leave(t, seat.player, false) end
 		end
@@ -276,6 +296,14 @@ end
 -- An NPC opponent sits down on the free stool (the player chose it).
 local function seatNpc(t, index, npc)
 	local seat = t.seats[index]
+	-- only onto an empty stool; hold it while the NPC is being built
+	if seat.player or seat.npc or seat.reserved or seat.seat.Occupant then return false end
+	seat.reserved = true
+	refreshPrompts(t)
+	local function release()
+		seat.reserved = nil
+		refreshPrompts(t)
+	end
 	-- animated: only the root is anchored, so ArmWrestleClient can pose it (seated, arm on the table) like a player
 	local stool = seat.seat
 	local facing = CFrame.lookAt(stool.Position, Vector3.new(t.center.X, stool.Position.Y, t.center.Z))
@@ -283,7 +311,10 @@ local function seatNpc(t, index, npc)
 	local spec = npc.look and table.clone(npc.look) or { skin = npc.skin, shirt = npc.shirt, pants = npc.pants }
 	spec.name, spec.animated = npc.name, true
 	local model = NpcService.Build(spec, facing)
-	if not model then return false end
+	if not model then
+		release()
+		return false
+	end
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if root then
 		model:PivotTo(facing * CFrame.new(0, Config.SeatedRootY, 0) * root.CFrame:ToObjectSpace(model:GetPivot()))
@@ -291,11 +322,13 @@ local function seatNpc(t, index, npc)
 	model:SetAttribute("ArmWrestleSide", index)
 	model:SetAttribute("ArmWrestleTable", t.model.Name)
 	CollectionService:AddTag(model, "ArmWrestleRookie")
-	-- the player may have left while the NPC was being built
-	if not t.match or t.match.state ~= "waiting" or not (t.seats[1].player or t.seats[2].player) then
+	-- the player may have left while the NPC was being built (or someone got onto the stool)
+	if not t.match or t.match.state ~= "waiting" or not (t.seats[1].player or t.seats[2].player) or seat.player or seat.seat.Occupant then
 		model:Destroy()
+		release()
 		return false
 	end
+	seat.reserved = nil
 	seat.npc = model
 	t.match.npc = npc
 	refreshPrompts(t)
@@ -313,7 +346,7 @@ local function chooseNpc(player, npcId)
 	end
 	if not t or not npc or not t.match or t.match.state ~= "waiting" then return end
 	local other = t.seats[3 - index]
-	if other.player or other.npc then return end
+	if other.player or other.npc or other.reserved or other.seat.Occupant then return end
 	seatNpc(t, 3 - index, npc)
 end
 
@@ -327,7 +360,7 @@ local function joined(t, player, index)
 		if model:GetAttribute("UserId") == player.UserId then busy = true end
 	end
 	local elsewhere = tableOf(player)
-	if seat.npc or t.seats[3 - index].player == player or elsewhere or busy or not PlayerData.Get(player) or (t.match and t.match.state ~= "waiting") then
+	if seat.npc or seat.reserved or t.seats[3 - index].player == player or elsewhere or busy or not PlayerData.Get(player) or (t.match and t.match.state ~= "waiting") then
 		if humanoid then humanoid.Sit = false end
 		return
 	end
@@ -361,7 +394,7 @@ local function setupTable(model)
 			prompt.ObjectText = "Arm wrestling"
 			Guard.OnTriggered(prompt, function(player)
 				local seat = t.seats[index]
-				if seat.player or seat.npc then return end
+				if seat.player or seat.npc or seat.reserved or stool.Occupant or stool.Disabled then return end
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid and humanoid.Health > 0 then stool:Sit(humanoid) end
 			end)
@@ -371,8 +404,16 @@ local function setupTable(model)
 			local player = occupant and Players:GetPlayerFromCharacter(occupant.Parent)
 			if player then
 				joined(t, player, index)
+			elseif occupant then
+				-- (only players sit on the stools; NPC opponents are placed by seatNpc): break the weld, Sit = false alone
+				-- doesn't unseat a body the server doesn't own
+				occupant.Sit = false
+				local weld = stool:FindFirstChild("SeatWeld")
+				if weld then weld:Destroy() end
 			elseif t.seats[index].player then
 				leave(t, t.seats[index].player, false)
+			else
+				refreshPrompts(t) -- (a player stood up after the table had already let them go)
 			end
 		end)
 	end
