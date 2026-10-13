@@ -113,6 +113,21 @@ TestCoins = 2000 (2,000 -> 1,700, FOLLOWING), the red-cap follower. Screenshots:
   steps aside. Vote buttons and the result / vote notes in the new style. Tested with TestPosingComp: pose 1 and 2,
   judges' scores filled in. Screenshots: ui_compare_v2/12_*.
 
+**Part 4, main menu + loading (mockups 00, done):**
+- Loading screen (ReplicatedFirst, from the first frame; Roblox's default removed): black with the menu art on the right
+  fading into the dark and a dim soft copy behind, the GYM ARC logo (GYM white, ARC red), "Everyone starts tiny.", a
+  rotating "TIP:" line (Config/UI.LoadingTips), a red progress bar with the step ("Loading the game / Loading muscles /
+  Loading the gym / Loading players... 64%") driven by game load, ContentProvider:PreloadAsync of every UI image, your
+  save data + the world around you, then the other players' body meshes. SKIP top right after 5 s. It fades into the
+  menu. (The barbell, plates and chalk dust of the old one are gone.)
+- Main menu: the same art, the logo + tagline, a big green PLAY (breathes), a gold SHOP (players who finished the
+  tutorial, only while something is for sale: plays and opens the Gym Store) and a blue UPDATES (a window with the update
+  notes, Config/UI.Updates), and the pill "28,132 | LVL 38 | 7'0" (MAX)". The live gym tour, the white PLAY, the
+  pointing hand, TITLES / SETTINGS and the chips are gone. PLAY puts the camera behind your character at a distance that
+  fits your height (a 7'0" character filled the view before).
+- Tested on the owner's real save (FreshPlayer off, nothing bought or claimed): loading, menu, UPDATES, PLAY.
+  Screenshots: ui_compare_v2/00_*.
+
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
 `Config/Features.Wardrobe = false`), "<" fold saved per player (settings.menuCollapsed), auto-folds while lifting, red

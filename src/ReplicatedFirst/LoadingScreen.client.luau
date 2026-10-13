@@ -1,21 +1,20 @@
--- LoadingScreen: replaces Roblox's default loading screen from the very first frame with the game's own (owner, 9 Oct:
--- "make it as good as the genetics screen"): a dark room with one soft overhead light and faint chalk dust drifting
--- up through it, the GYM ARC title, and a BARBELL that loads as the game loads: bumper plates (the grade colors, the
--- heaviest inside) slide onto both sleeves pair by pair with a clank, a collar closes each sleeve, and when it is full the
--- bar is lifted with a little bounce before everything fades. Under it the step ("Loading the gym") and a short tip
--- that changes every few seconds.
--- It stays until MenuClient says the menu scene is ready (the LocalPlayer attribute "MenuReady"), then "Loading
--- players": the other players' body stage meshes (Shared.BodyStages) finish downloading, at most TIMING.Stages more.
--- Progress: game loaded, then MenuClient's "MenuLoad" attribute (0..1) while it streams the menu scene; between those
--- steps the bar creeps slowly so it never looks stuck.
--- This runs before ReplicatedStorage has replicated, so it can't read Shared.UI.Theme / UIFonts / Audio: the colors,
--- fonts and the clank below repeat their values (panel #0E0E10, text #FFFFFF, muted #B8B8BE, Oswald / Nunito, the
--- bumper plate colors, Config.Sounds.Clank's id).
+-- LoadingScreen: replaces Roblox's default loading screen from the very first frame (owner's UI v2, mockup 00_loading).
+-- Black, with the menu art (UI.MenuArt) on the right fading into the dark on its left and a dim, soft copy of it behind
+-- everything; the GYM ARC logo (GYM white, ARC red, FredokaOne with a thick black outline), "Everyone starts tiny.", a
+-- rotating tip ("TIP:" in gold, Config/UI.LoadingTips), and at the bottom a red progress bar with the step in it
+-- ("Loading muscles... 64%"). SKIP shows top right after 5 seconds (straight to the menu). It fades into the menu.
+-- Steps (the bar): the game itself (to 30%), "Loading muscles" = ContentProvider:PreloadAsync of the UI images (icons,
+-- art, trainer portraits; to 55%), "Loading the gym" = your save data and the world around you (MenuClient's MenuLoad
+-- attribute 0..1, to 90%), "Loading players" = the other players' body stage meshes (Shared.BodyStages, to 100%, at most
+-- TIMING.Stages seconds). Between steps the bar creeps a little so it never looks stuck.
+-- This starts before ReplicatedStorage has replicated, so the colors, fonts, the art id and a few tips are repeated here
+-- (Theme: background #0C0A0C, red #EE3A42, gold #FFC93C; FredokaOne; UI.MenuArt); the full tip list is read once it's in.
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
+local ContentProvider = game:GetService("ContentProvider")
+local Workspace = game:GetService("Workspace")
 
 ReplicatedFirst:RemoveDefaultLoadingScreen()
 
@@ -23,224 +22,179 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local LOOK = {
-	Background = Color3.fromHex("#0E0E10"),
+	Background = Color3.fromHex("#0C0A0C"),
 	Text = Color3.fromHex("#FFFFFF"),
-	Muted = Color3.fromHex("#B8B8BE"),
-	Steel = Color3.fromHex("#C9CCD2"),
-	SteelDark = Color3.fromHex("#7E828A"),
-	Heading = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold),
-	Body = Font.new("rbxasset://fonts/families/Nunito.json", Enum.FontWeight.Regular),
+	Red = Color3.fromHex("#EE3A42"),
+	Gold = Color3.fromHex("#FFC93C"),
+	Outline = Color3.fromHex("#0D0D12"),
+	Track = Color3.fromHex("#1B171A"),
+	Display = Font.fromEnum(Enum.Font.FredokaOne),
+	Art = "rbxassetid://99238211044120", -- Config/UI.MenuArt
 }
--- bumper plates, heaviest (inside, biggest) first: red, blue, yellow, green, white (Theme.Plates)
-local PLATES = {
-	{ color = "#D7262E", rim = "#8E1A1F", height = 1.0 },
-	{ color = "#1F5FBF", rim = "#143E7C", height = 0.9 },
-	{ color = "#E8C21C", rim = "#9A8113", height = 0.8 },
-	{ color = "#2E9E4F", rim = "#1E6834", height = 0.7 },
-	{ color = "#F4F1EA", rim = "#A9A59C", height = 0.6 },
-}
-local TIMING = {
-	Follow = 5,       -- how fast the shown progress catches up with its target (per second)
-	Creep = 0.14,     -- how far past the last step the bar may creep while waiting
-	CreepTime = 4,    -- seconds to creep most of that way
-	Lift = 0.45,      -- the bar is lifted when full
-	Hold = 0.35,      -- then held this long before fading
-	Fade = 0.45,
-	GiveUp = 30,      -- after the game has loaded, never wait longer than this for the menu
-	Stages = 8,       -- after the menu is ready, wait at most this long for the other players' body stage meshes
-	Tip = 3.6,        -- seconds per tip
-}
-local CLANK_ID = "rbxassetid://9116750726" -- Config.Sounds.Clank (Metal Plate Impact)
+local TIMING = { Skip = 5, Tip = 4.5, Fade = 0.5, Stages = 8, GiveUp = 25, Creep = 0.08, CreepTime = 6, Follow = 4 }
 local TIPS = {
-	"Weak muscles grow the fastest.",
-	"Pet Plates the gym cat for a little stamina.",
-	"Every Growth Spurt makes you taller.",
-	"Tap fast while lifting to get PUMPED.",
-	"Click a friend while they lift to spot them.",
-	"A shake refills your stamina in one go.",
-	"The beach gym opens after your first Growth Spurt.",
-	"Heavier plates, bigger gains.",
-	"Balanced muscles grow a little faster.",
+	"Spot other players on their lifts to earn coins!",
+	"Tap fast while lifting to fill PUMP: pumped reps grow twice as much.",
+	"Weak muscles grow fastest. Train the group that needs work.",
 }
+local BASE = Vector2.new(844, 390) -- the mockups' phone screen (Kit.Base)
 
 local function new(class, props, children)
 	local instance = Instance.new(class)
-	for key, value in pairs(props) do instance[key] = value end
+	for key, value in pairs(props or {}) do
+		if key ~= "Parent" then (instance :: any)[key] = value end
+	end
 	for _, child in ipairs(children or {}) do child.Parent = instance end
+	if props and props.Parent then instance.Parent = props.Parent end
 	return instance
 end
-local function round(radius) return new("UICorner", { CornerRadius = radius or UDim.new(0, 3) }) end
-
-local camera = workspace.CurrentCamera
-local compact = camera and camera.ViewportSize.Y > 1 and camera.ViewportSize.Y < 520
-local S = if compact then 0.72 else 1 -- the barbell's size on short screens
-
-local gui = new("ScreenGui", { Name = "LoadingScreen", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 100, ZIndexBehavior = Enum.ZIndexBehavior.Sibling })
-local backdrop = new("Frame", { Name = "Backdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = LOOK.Background, BorderSizePixel = 0, Parent = gui })
-
--- one soft overhead light: faint white ovals stacked inside each other (a smooth glow without an edge; never colored)
-local light = new("Frame", { Name = "Light", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 1, Parent = backdrop })
-for i = 1, 22 do
-	local k = i / 22
-	new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.95 * (1.08 - k), 1.15 * (1.08 - k)),
-		BackgroundColor3 = LOOK.Text, BackgroundTransparency = 0.9945, BorderSizePixel = 0, Parent = light }, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }) })
+local function outlined(props)
+	local thickness = props.Stroke or 2
+	props.Stroke = nil
+	props.BackgroundTransparency = 1
+	props.FontFace = props.FontFace or LOOK.Display
+	props.TextColor3 = props.TextColor3 or LOOK.Text
+	local label = new("TextLabel", props)
+	new("UIStroke", { Color = LOOK.Outline, Thickness = thickness, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
+	return label
 end
 
--- chalk dust: a few faint specks drifting up through the light
-local dust = {}
-local rng = Random.new()
-for i = 1, 26 do
-	local size = rng:NextInteger(2, 4)
-	local speck = new("Frame", { Name = "Dust", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(size, size), BackgroundColor3 = LOOK.Text,
-		BackgroundTransparency = rng:NextNumber(0.7, 0.9), BorderSizePixel = 0, Parent = backdrop }, { round(UDim.new(1, 0)) })
-	dust[i] = { frame = speck, x = rng:NextNumber(0.2, 0.8), y = rng:NextNumber(0, 1), speed = rng:NextNumber(0.012, 0.03),
-		sway = rng:NextNumber(0.004, 0.012), phase = rng:NextNumber(0, math.pi * 2) }
-end
-
-local center = new("Frame", { Name = "Center", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.47), Size = UDim2.fromOffset(560 * S, 0),
-	AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Parent = backdrop }, {
-	new("UIListLayout", { FillDirection = Enum.FillDirection.Vertical, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+local gui = new("ScreenGui", { Name = "LoadingScreen", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 100,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = playerGui })
+local back = new("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), BackgroundColor3 = LOOK.Background, BorderSizePixel = 0, Parent = gui })
+-- the soft copy of the art behind everything (dim, big)
+new("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop, ImageTransparency = 0.9, ImageColor3 = Color3.fromRGB(110, 90, 90),
+	Size = UDim2.fromScale(1, 1), Parent = back })
+-- the art on the right, fading into the dark on its left
+local art = new("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop, AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.62, 1), Parent = back }, {
+	new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.42, 0.2),
+		NumberSequenceKeypoint.new(0.6, 0), NumberSequenceKeypoint.new(1, 0) }) }),
 })
-local function text(order, value, font, size, color, height, parent)
-	return new("TextLabel", { LayoutOrder = order, Text = value, FontFace = font, TextSize = size, TextColor3 = color, BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, height), Parent = parent or center })
-end
-text(1, "GYM ARC", LOOK.Heading, if compact then 40 else 56, LOOK.Text, if compact then 48 else 66)
-text(2, "Everyone starts tiny.", LOOK.Body, 16, LOOK.Muted, 20)
-new("Frame", { LayoutOrder = 3, Size = UDim2.fromOffset(1, math.floor(18 * S)), BackgroundTransparency = 1, Parent = center })
 
-------------------------------------------------------------------------
--- The barbell
-------------------------------------------------------------------------
-local BAR_W, BAR_H = math.floor(520 * S), math.max(4, math.floor(7 * S))
-local PLATE_W, PLATE_H, PLATE_GAP = math.floor(14 * S), math.floor(92 * S), math.max(1, math.floor(2 * S))
-local SLEEVE_W = #PLATES * (PLATE_W + PLATE_GAP) + math.floor(16 * S) -- room for every plate and the collar
-local holder = new("Frame", { Name = "Barbell", LayoutOrder = 4, Size = UDim2.fromOffset(BAR_W, PLATE_H + 6), BackgroundTransparency = 1, Parent = center })
-local barbell = new("Frame", { Name = "Lift", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = holder })
-local mid = PLATE_H / 2 + 3
--- the shaft, with knurled grips
-new("Frame", { Name = "Shaft", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(BAR_W / 2, mid), Size = UDim2.fromOffset(BAR_W - 2 * SLEEVE_W + 20, BAR_H),
-	BackgroundColor3 = LOOK.Steel, BorderSizePixel = 0, Parent = barbell }, { round() })
-for _, x in ipairs({ -0.17, 0.17 }) do
-	new("Frame", { Name = "Grip", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(BAR_W / 2 + x * BAR_W, mid), Size = UDim2.fromOffset(math.floor(64 * S), BAR_H),
-		BackgroundColor3 = LOOK.SteelDark, BackgroundTransparency = 0.3, BorderSizePixel = 0, Parent = barbell }, { round() })
+-- everything else in mockup px (scaled like Kit.Root: the shorter side / 390, never wider than the 844px layout)
+local root = new("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = gui })
+local scale = new("UIScale", { Parent = root })
+local function rescale()
+	local size = Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+	local s = math.max(0.5, math.min(size.Y / BASE.Y, size.X / BASE.X))
+	scale.Scale = s
+	root.Size = UDim2.fromOffset(size.X / s, size.Y / s)
 end
--- the sleeves (thicker) with their inner stop
-local sleeves = {}
-for side = -1, 1, 2 do
-	local x = if side < 0 then SLEEVE_W / 2 else BAR_W - SLEEVE_W / 2
-	sleeves[side] = new("Frame", { Name = "Sleeve", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, mid), Size = UDim2.fromOffset(SLEEVE_W, math.floor(BAR_H * 1.8)),
-		BackgroundColor3 = LOOK.Steel, BorderSizePixel = 0, Parent = barbell }, { round() })
-	new("Frame", { Name = "Stop", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(if side < 0 then SLEEVE_W + 2 else BAR_W - SLEEVE_W - 2, mid),
-		Size = UDim2.fromOffset(math.floor(8 * S), math.floor(BAR_H * 3.2)), BackgroundColor3 = LOOK.Steel, BorderSizePixel = 0, Parent = barbell }, { round() })
-end
+rescale()
+if Workspace.CurrentCamera then Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale) end
 
--- where plate n (1 = inside) sits on a side, and where it slides in from (past the sleeve's end)
-local function plateX(side: number, n: number): number
-	local inner = if side < 0 then SLEEVE_W - 4 else BAR_W - SLEEVE_W + 4
-	return inner + side * ((n - 0.5) * (PLATE_W + PLATE_GAP))
-end
-local function plate(side: number, n: number)
-	local spec = PLATES[n]
-	local h = math.floor(PLATE_H * spec.height)
-	local outside = if side < 0 then -PLATE_W * 2 else BAR_W + PLATE_W * 2
-	local frame = new("Frame", { Name = "Plate", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(outside, mid), Size = UDim2.fromOffset(PLATE_W, h),
-		BackgroundColor3 = Color3.fromHex(spec.color), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 2, Parent = barbell }, {
-		round(UDim.new(0, math.max(2, math.floor(4 * S)))),
-		new("UIStroke", { Name = "Rim", Color = Color3.fromHex(spec.rim), Thickness = math.max(1, math.floor(2 * S)), Transparency = 1 }),
-	})
-	local info = TweenInfo.new(0.42, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-	TweenService:Create(frame, info, { Position = UDim2.fromOffset(plateX(side, n), mid), BackgroundTransparency = 0 }):Play()
-	TweenService:Create(frame.Rim, TweenInfo.new(0.2), { Transparency = 0 }):Play()
-end
-local function clank(n: number)
-	local sound = new("Sound", { SoundId = CLANK_ID, Volume = 0.22, PlaybackSpeed = 1.12 - n * 0.05 + rng:NextNumber(-0.03, 0.03), Parent = SoundService })
-	sound:Play()
-	task.delay(2, function() sound:Destroy() end)
-end
-local function collars()
-	for side = -1, 1, 2 do
-		local x = plateX(side, #PLATES) + side * (PLATE_W / 2 + math.floor(6 * S))
-		local collar = new("Frame", { Name = "Collar", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x + side * 30, mid), Size = UDim2.fromOffset(math.floor(8 * S), math.floor(BAR_H * 3)),
-			BackgroundColor3 = LOOK.SteelDark, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 3, Parent = barbell }, { round() })
-		TweenService:Create(collar, TweenInfo.new(0.25, Enum.EasingStyle.Quad), { Position = UDim2.fromOffset(x, mid), BackgroundTransparency = 0 }):Play()
-	end
-end
+-- the logo
+local logo = new("Frame", { Name = "Logo", BackgroundTransparency = 1, Position = UDim2.fromOffset(46, 62), Size = UDim2.fromOffset(380, 82), Parent = root }, {
+	new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 14), VerticalAlignment = Enum.VerticalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+outlined({ Name = "Gym", LayoutOrder = 1, Text = "GYM", TextSize = 78, Size = UDim2.fromOffset(0, 82), AutomaticSize = Enum.AutomaticSize.X, Stroke = 4, Parent = logo })
+outlined({ Name = "Arc", LayoutOrder = 2, Text = "ARC", TextSize = 78, TextColor3 = LOOK.Red, Size = UDim2.fromOffset(0, 82), AutomaticSize = Enum.AutomaticSize.X, Stroke = 4, Parent = logo })
+outlined({ Name = "Tagline", Text = "Everyone starts tiny.", TextSize = 18, Position = UDim2.fromOffset(46, 146), Size = UDim2.fromOffset(330, 24),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
+local tip = outlined({ Name = "Tip", Text = "", RichText = true, TextSize = 15, TextWrapped = true, Position = UDim2.fromOffset(46, 228), Size = UDim2.fromOffset(310, 44),
+	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = root })
 
-local status = text(5, "Loading", LOOK.Body, 14, LOOK.Muted, 18)
-local tip = text(6, "", LOOK.Body, 14, LOOK.Muted, 18)
-tip.TextTransparency = 0.35
-gui.Parent = playerGui
+-- the progress bar
+local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -28), Size = UDim2.new(1, -92, 0, 24),
+	BackgroundColor3 = LOOK.Track, Parent = root }, {
+	new("UICorner", { CornerRadius = UDim.new(0, 7) }),
+	new("UIStroke", { Color = LOOK.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+})
+local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = bar }, {
+	new("UICorner", { CornerRadius = UDim.new(0, 7) }),
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(LOOK.Red:Lerp(Color3.new(1, 1, 1), 0.2), LOOK.Red:Lerp(Color3.new(0, 0, 0), 0.15)) }),
+})
+local status = outlined({ Name = "Status", Text = "Loading the game... 0%", TextSize = 15, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = bar })
+
+local skip = new("TextButton", { Name = "Skip", Text = "SKIP", FontFace = LOOK.Display, TextSize = 16, TextColor3 = LOOK.Text, AutoButtonColor = true,
+	AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16), Size = UDim2.fromOffset(84, 32), BackgroundColor3 = Color3.fromHex("#2E2E36"),
+	Visible = false, Parent = root }, {
+	new("UICorner", { CornerRadius = UDim.new(0, 8) }),
+	new("UIStroke", { Color = Color3.fromHex("#6A6A76"), Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+})
+new("UIStroke", { Color = LOOK.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = skip })
 
 ------------------------------------------------------------------------
 -- Progress
 ------------------------------------------------------------------------
-local shown = 0
-local loaded = 0 -- plates on each side
-local lastPlate = 0
-local step, stepAt = 0.05, os.clock()
+local step, stepAt, shown = 0, os.clock(), 0
+local label = "Loading the game"
+local updating = false
 local loadedAt = nil
-local updating = false -- (soft shutdown holding server, below: the label stays "Updating the gym")
-
-local function setStep(value: number, label: string?)
+local function setStep(value: number, text: string?)
 	if value > step then
 		step, stepAt = value, os.clock()
 	end
-	if label and not updating then status.Text = label end
+	if text and not updating then label = text end
 end
 
 -- Soft shutdown (ShutdownService): the game was updated and this is the short stop on the way to a new server. The game
 -- never loads here, so the screen stays and says why until the teleport takes over.
 local function checkUpdating()
-	if updating or workspace:GetAttribute("SoftShutdown") ~= true then return end
+	if updating or Workspace:GetAttribute("SoftShutdown") ~= true then return end
 	updating = true
-	status.Text = "Updating the gym"
+	label = "Updating the gym"
 	tip.Text = "Taking you to the new version. Your progress is saved."
 	setStep(0.9)
 end
-workspace:GetAttributeChangedSignal("SoftShutdown"):Connect(checkUpdating)
+Workspace:GetAttributeChangedSignal("SoftShutdown"):Connect(checkUpdating)
 checkUpdating()
-task.spawn(function() -- (the attribute can arrive with the game's first load, without a change signal)
-	if not game:IsLoaded() then game.Loaded:Wait() end
-	checkUpdating()
-end)
 
 local function menuProgress()
 	local value = player:GetAttribute("MenuLoad")
-	if type(value) == "number" then setStep(0.55 + 0.35 * math.clamp(value, 0, 1), "Loading the gym") end -- (the last 10%: the body stages)
+	if type(value) == "number" and step >= 0.55 then setStep(0.55 + 0.35 * math.clamp(value, 0, 1), "Loading the gym") end
 end
 player:GetAttributeChangedSignal("MenuLoad"):Connect(menuProgress)
 
--- The other players' body stage meshes (Shared.BodyStages) download in small batches behind this screen, so they are in
--- before you see anyone (owner, 8 Oct night: fewer "could not fetch" misses); requiring the module starts the download.
+-- the game, then the UI images, then (MenuClient) the gym; the other players' body stage meshes download behind it all
 local BodyStages = nil
 task.spawn(function()
 	if not game:IsLoaded() then game.Loaded:Wait() end
+	checkUpdating()
 	loadedAt = os.clock()
+	setStep(0.3, "Loading muscles")
+	local shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared", 10)
+	local config = shared and shared:WaitForChild("Config", 10)
+	local uiModule = config and config:WaitForChild("UI", 10)
+	local ok, UI = pcall(require, uiModule)
+	if ok and type(UI) == "table" then
+		if type(UI.LoadingTips) == "table" and #UI.LoadingTips > 0 then TIPS = UI.LoadingTips end
+		-- preload the UI images (every icon, the art, the trainer portraits): the bar follows them
+		local list = {}
+		for _, group in ipairs({ UI.Icons or {}, UI.Trainers or {}, UI.ShopIcons or {} }) do
+			for _, id in pairs(group) do
+				table.insert(list, new("ImageLabel", { Image = id }))
+			end
+		end
+		table.insert(list, new("ImageLabel", { Image = UI.MenuArt or LOOK.Art }))
+		local done = 0
+		pcall(function()
+			ContentProvider:PreloadAsync(list, function()
+				done += 1
+				setStep(0.3 + 0.25 * done / math.max(#list, 1))
+			end)
+		end)
+	end
 	setStep(0.55, "Loading the gym")
 	menuProgress()
-	local shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared", 10)
 	local module = shared and shared:WaitForChild("BodyStages", 10)
 	if module then
-		local ok, result = pcall(require, module)
-		if ok then BodyStages = result end
+		local okStages, result = pcall(require, module)
+		if okStages then BodyStages = result end
 	end
 end)
 
 -- tips: one at a time, faded in and out
 task.spawn(function()
-	local order = {}
-	for i = 1, #TIPS do order[i] = i end
-	for i = #order, 2, -1 do
-		local j = rng:NextInteger(1, i)
-		order[i], order[j] = order[j], order[i]
-	end
-	local index = 0
+	local rng = Random.new()
+	local index = rng:NextInteger(1, #TIPS)
 	while gui.Parent do
-		index = index % #order + 1
-		tip.Text = if updating then "Taking you to the new version. Your progress is saved." else TIPS[order[index]]
-		TweenService:Create(tip, TweenInfo.new(0.3), { TextTransparency = 0.35 }):Play()
+		index = index % #TIPS + 1
+		tip.Text = if updating then "Taking you to the new version. Your progress is saved."
+			else ('<font color="#' .. LOOK.Gold:ToHex() .. '">TIP:</font> ' .. TIPS[index])
+		TweenService:Create(tip, TweenInfo.new(0.3), { TextTransparency = 0 }):Play()
 		task.wait(TIMING.Tip)
 		if not gui.Parent then break end
 		TweenService:Create(tip, TweenInfo.new(0.3), { TextTransparency = 1 }):Play()
@@ -248,43 +202,42 @@ task.spawn(function()
 	end
 end)
 
-local done = false
-local finishing = false
-local function finish()
-	if done or finishing then return end
-	finishing = true
-	-- the menu is ready: give the body stage meshes a few more seconds (the last plates show their download)
-	if BodyStages then
-		status.Text = "Loading players"
-		local deadline = os.clock() + TIMING.Stages
-		while not BodyStages.WaitReady(0.1) and os.clock() < deadline and gui.Parent do
-			setStep(0.9 + 0.09 * BodyStages.Progress())
-		end
-	end
+local done, finishing = false, false
+local function fadeOut()
+	if done then return end
 	done = true
-	setStep(1)
-	-- wait for the last plates, close the collars, lift the bar, then fade everything
-	while loaded < #PLATES and gui.Parent do RunService.Heartbeat:Wait() end
-	task.wait(0.2)
-	collars()
-	clank(#PLATES)
-	task.wait(0.3)
-	TweenService:Create(barbell, TweenInfo.new(TIMING.Lift, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.fromOffset(0, -math.floor(26 * S)) }):Play()
-	status.Text = "Let's lift"
-	task.wait(TIMING.Lift + TIMING.Hold)
+	player:SetAttribute("LoadingDone", true)
 	local info = TweenInfo.new(TIMING.Fade, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 	for _, item in ipairs(gui:GetDescendants()) do
-		if item:IsA("TextLabel") then
-			TweenService:Create(item, info, { TextTransparency = 1 }):Play()
+		if item:IsA("TextLabel") or item:IsA("TextButton") then
+			TweenService:Create(item, info, { TextTransparency = 1, BackgroundTransparency = 1 }):Play()
+		elseif item:IsA("ImageLabel") then
+			TweenService:Create(item, info, { ImageTransparency = 1 }):Play()
 		elseif item:IsA("Frame") and item.BackgroundTransparency < 1 then
 			TweenService:Create(item, info, { BackgroundTransparency = 1 }):Play()
 		elseif item:IsA("UIStroke") then
 			TweenService:Create(item, info, { Transparency = 1 }):Play()
-		elseif item:IsA("UIGradient") then
-			item.Parent.Visible = false -- (the light: a gradient's frame fades badly, it just goes)
 		end
 	end
 	task.delay(TIMING.Fade, function() gui:Destroy() end)
+end
+local function finish()
+	if done or finishing then return end
+	finishing = true
+	-- the menu is ready: give the body stage meshes a few more seconds
+	if BodyStages then
+		label = "Loading players"
+		local deadline = os.clock() + TIMING.Stages
+		while not done and not BodyStages.WaitReady(0.1) and os.clock() < deadline and gui.Parent do
+			setStep(0.9 + 0.09 * BodyStages.Progress())
+		end
+	end
+	setStep(1)
+	while not done and shown < 0.995 and gui.Parent do RunService.Heartbeat:Wait() end
+	if done then return end
+	label = "Let's lift"
+	task.wait(0.35)
+	fadeOut()
 end
 
 if player:GetAttribute("MenuReady") then task.spawn(finish) end
@@ -292,32 +245,24 @@ player:GetAttributeChangedSignal("MenuReady"):Connect(function()
 	if player:GetAttribute("MenuReady") then task.spawn(finish) end
 end)
 
+-- SKIP after a few seconds: straight to the menu (it keeps loading behind it)
+task.delay(TIMING.Skip, function()
+	if gui.Parent and not done and not updating then skip.Visible = true end
+end)
+skip.Activated:Connect(fadeOut)
+
 local connection
 connection = RunService.RenderStepped:Connect(function(dt)
 	if not gui.Parent then
 		connection:Disconnect()
 		return
 	end
-	if loadedAt and not done and os.clock() - loadedAt > TIMING.GiveUp then task.spawn(finish) end
+	if loadedAt and not finishing and os.clock() - loadedAt > TIMING.GiveUp then task.spawn(finish) end
 	-- creep a little past the last step while waiting, then follow the target smoothly
 	local creep = if step < 1 then TIMING.Creep * (1 - math.exp(-(os.clock() - stepAt) / TIMING.CreepTime)) else 0
 	local target = math.min(step + creep, 1)
 	shown += (target - shown) * math.min(1, dt * TIMING.Follow)
 	if step >= 1 and target - shown < 0.01 then shown = 1 end
-	-- a pair of plates for every fifth of the way (never more than one pair at a time, so each clank is heard)
-	local want = math.clamp(math.floor(shown * #PLATES + 0.02), 0, #PLATES)
-	if want > loaded and os.clock() - lastPlate >= 0.22 then
-		lastPlate = os.clock()
-		loaded += 1
-		plate(-1, loaded)
-		plate(1, loaded)
-		clank(loaded)
-	end
-	-- chalk dust drifting up
-	local t = os.clock()
-	for _, speck in ipairs(dust) do
-		speck.y -= speck.speed * dt
-		if speck.y < -0.02 then speck.y, speck.x = 1.02, rng:NextNumber(0.2, 0.8) end
-		speck.frame.Position = UDim2.fromScale(speck.x + math.sin(t * 0.6 + speck.phase) * speck.sway, speck.y)
-	end
+	fill.Size = UDim2.fromScale(math.max(shown, 0.02), 1)
+	status.Text = if label == "Let's lift" then label else string.format("%s... %d%%", label, math.floor(shown * 100))
 end)

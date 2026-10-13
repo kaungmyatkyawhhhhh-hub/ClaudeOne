@@ -97,4 +97,21 @@ UI.LoadingTips = {
 	"The pro gym opens at Growth Spurt 2. Watch through the glass until then.",
 }
 
+-- The main menu's UPDATES window: newest first (date, title, a few short lines). Add an entry for each update.
+UI.Updates = {
+	{ date = "13 Oct", title = "New look", lines = {
+		"Every menu has a fresh, bright new style.",
+		"Quests, Daily Reward and Achievements live in one window.",
+		"Tap the GROW tile or Muscles to see your Stats: muscles, lifts and genetics.",
+	} },
+	{ date = "13 Oct", title = "Trainers", lines = {
+		"Hire a trainer anywhere: tap his picture in the Trainers menu.",
+		"Each trainer gives a small boost while he follows you.",
+	} },
+	{ date = "13 Oct", title = "Fixes", lines = {
+		"Leaving a machine always works (STOP TRAINING or jump).",
+		"Finish the tutorial for 50 coins. You can skip it too.",
+	} },
+}
+
 return UI
