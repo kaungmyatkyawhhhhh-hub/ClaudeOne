@@ -1,13 +1,16 @@
--- DailyClient: the Quests window (owner's UI v2, mockup 05_quests). DailyService / QuestService on the server decide and
--- pay everything; this only shows the data (ClientData "dailyQuests" / "daily" / "quests") and asks.
--- Opened by the Quests tile (left menu), the Quests pill and the Daily Reward pill (top bar), and the Daily quests card in
--- the right column. Tabs above the window:
---   Daily         today's 3 quests (blue icon, text, bar "50/50", coins, CLAIM green / GO gray / DONE dark; a small swap
---                 button once a day for an unfinished one), the "Complete all 3" bonus row, and on the right the 7-day
---                 Daily Reward grid with CLAIM DAY N.
---   Rewards       the 7-day login streak big, with its rules and CLAIM DAY N.
---   Achievements  the Coach's quest chain in order: done ones DONE, the current one with its bar (GO = where to go),
---                 later ones locked. After the chain: the Coach's current repeat quest.
+-- DailyClient: the Quests window (owner's final kit "BLACK + GOLD", mockup gym_arc_ui_final/05_quests). DailyService /
+-- QuestService on the server decide and pay everything; this only shows the data (ClientData "dailyQuests" / "daily" /
+-- "quests") and asks. Opened by the Quests tile (left menu), the Quests pill and the Daily Reward pill (top bar), and the
+-- Daily quests card in the right column. Tabs in the header:
+--   Daily   today's 3 quests: an icon tile, the quest (big italic caps), a teal bar, the coin reward in gold, and on the
+--           right: a claimable row gets a gold border + glow, a gold icon tile and the red CLAIM; one in progress shows a
+--           dark "1 / 2" pill (tap = where to go); a claimed one is faded with a teal DONE. A small swap button once a day
+--           for an unfinished one. On the right the ALL 3 BONUS card: a big gold "2 / 3", a gold bar, the bonus coins,
+--           CLAIM when all are claimed, "Resets in 6h 12m".
+--   Streak  (id "Rewards") the 7-day login streak, its rules and CLAIM DAY N.
+--   Goals   (id "Achievements") the Coach's quest chain in order: done ones DONE, the current one with its bar (GO =
+--           where to go), later ones locked. After the chain: the Coach's current repeat quest.
+-- Claiming: coins fly to the coin counter with a small gold sparkle burst (Kit.CoinBurst).
 -- It pops up by itself on the Daily tab after Play (and after the genetics screen) when today's reward is waiting.
 -- Badges: the Quests tile and pill show how many things are ready to claim; the Daily Reward pill a dot.
 local Players = game:GetService("Players")
@@ -41,9 +44,9 @@ local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors = Theme.New, Theme.Colors
 local Horizontal, Vertical = Enum.FillDirection.Horizontal, Enum.FillDirection.Vertical
 
-local W, H = 580, 290 -- the window (mockup px)
-local LEFT_W = 360 -- the quest column on the Daily tab
-local ROW_H = 52
+local W, H = 620, 290 -- the window (mockup px)
+local LEFT_W = 424 -- the quest column on the Daily tab
+local ROW_H = 66
 local DAYS = #Economy.Login.Coins
 
 local function today(): number
@@ -80,8 +83,7 @@ local pages = {}
 local currentTab = "Daily"
 local refreshAll -- (below)
 local modal = Kit.Modal({ name = "DailyQuests", title = "Quests", icon = "list-checks", width = W, height = H, displayOrder = 26,
-	tabs = { { id = "Daily", text = "Daily", icon = "list-checks" }, { id = "Rewards", text = "Rewards", icon = "calendar-days" },
-		{ id = "Achievements", text = "Achievements", icon = "trophy" } },
+	tabs = { { id = "Daily", text = "Daily" }, { id = "Rewards", text = "Streak" }, { id = "Achievements", text = "Goals" } },
 	onTab = function(id)
 		currentTab = id
 		for name, page in pairs(pages) do page.Visible = name == id end
@@ -90,43 +92,73 @@ local modal = Kit.Modal({ name = "DailyQuests", title = "Quests", icon = "list-c
 for _, id in ipairs({ "Daily", "Rewards", "Achievements" }) do
 	pages[id] = New("Frame", { Name = id, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = id == "Daily", Parent = modal.body })
 end
-local resetLabel = Kit.Text({ Name = "Reset", Text = "", Font = "Body", TextSize = 12, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -56, 0, 15), Size = UDim2.fromOffset(200, 18), TextXAlignment = Enum.TextXAlignment.Right, Parent = modal.panel })
 
 ------------------------------------------------------------------------
 -- Daily tab: quest rows
 ------------------------------------------------------------------------
 local questCol = New("Frame", { Name = "Quests", BackgroundTransparency = 1, Size = UDim2.new(0, LEFT_W, 1, 0), Parent = pages.Daily },
-	{ Theme.List(Vertical, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+	{ Theme.List(Vertical, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 
--- the coin + amount line
+-- the coin + amount line (the amount in gold)
 local function coinAmount(props)
-	local frame = New("Frame", props, { Theme.List(Horizontal, 4, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
+	local frame = New("Frame", props, { Theme.List(Horizontal, 5, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
 	frame.BackgroundTransparency = 1
-	Kit.Coin(15, { LayoutOrder = 1, Parent = frame })
-	local amount = Kit.Text({ Name = "Amount", LayoutOrder = 2, Text = "", Font = "Number", TextSize = 15, Size = UDim2.fromOffset(0, 18),
-		AutomaticSize = Enum.AutomaticSize.X, Parent = frame })
-	return frame, amount
+	local coin = Kit.Coin(20, { LayoutOrder = 1, Parent = frame })
+	local amount = Kit.GoldText(Kit.Text({ Name = "Amount", LayoutOrder = 2, Text = "", Font = "Number", TextSize = 19, Size = UDim2.fromOffset(0, 24),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = frame }))
+	return frame, amount, coin
+end
+
+-- an icon tile: gold when the quest is ready to claim, dark otherwise
+local function iconTile(parent)
+	local tile = New("Frame", { Name = "Tile", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(42, 42),
+		BackgroundColor3 = Color3.new(1, 1, 1), Parent = parent }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 9) }),
+		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = 1.5, Transparency = 0.3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Name = "Gloss", Rotation = 90 }),
+	})
+	local icon = Pieces.Icon("dumbbell", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.56, 0.56), Parent = tile })
+	icon:SetAttribute("KeepColor", true)
+	return tile, icon
+end
+local function paintTile(tile, icon, gold: boolean, iconName: string)
+	tile.Gloss.Color = gold and Theme.GoldSequence or ColorSequence.new(Color3.fromHex("#2A262B"), Color3.fromHex("#18161A"))
+	icon.ImageColor3 = gold and Colors.Ink or Colors.Text
+	icon.Image = require(Shared.Config.UI).Icons[iconName] or icon.Image
 end
 
 local rows = {}
 for index = 1, DailyQuests.PerDay do
 	local card = Kit.Card({ Name = "Quest" .. index, LayoutOrder = index, Size = UDim2.new(1, 0, 0, ROW_H), Parent = questCol }, {})
-	local tile = Kit.IconTile("dumbbell", Colors.Blue, 38, { Name = "Tile", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Parent = card })
-	local text = Kit.Text({ Name = "Text", Text = "", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(52, 6), Size = UDim2.new(1, -150, 0, 18),
+	local tile, icon = iconTile(card)
+	local text = Kit.Text({ Name = "Text", Text = "", Font = "Title", TextSize = 16, Upper = true, Position = UDim2.fromOffset(62, 13), Size = UDim2.new(1, -250, 0, 20),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
-	local bar, setBar = Kit.Bar(Colors.Green, { Name = "Bar", Position = UDim2.fromOffset(52, 29), Size = UDim2.new(1, -150, 0, 15), Parent = card }, { text = true, textSize = 11 })
-	local _, amount = coinAmount({ Name = "Reward", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 3), Size = UDim2.fromOffset(84, 18), Parent = card })
-	local button = Kit.Button("Green", "Claim", { Name = "Action", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -5), Parent = card },
-		{ width = 84, height = 26, textSize = 13 })
-	-- one swap a day for an unfinished quest (e.g. spotting on an empty server)
-	local swap = Theme.Button("Dark", { Name = "Swap", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -96, 0.5, 0), Size = UDim2.fromOffset(26, 26), Parent = card }, {})
-	Pieces.Icon("repeat", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(14, 14), Parent = swap })
-	local row = { card = card, tile = tile, text = text, bar = bar, setBar = setBar, amount = amount, button = button, swap = swap, state = "go", quest = nil }
+	local bar, setBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(62, 40), Size = UDim2.new(1, -250, 0, 12), Parent = card })
+	local _, amount, coin = coinAmount({ Name = "Reward", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -112, 0.5, 0), Size = UDim2.fromOffset(76, 24), Parent = card })
+	-- right: the red CLAIM, a dark progress pill ("1 / 2"; tap = where to go) or a teal DONE
+	local button = Kit.Button("Red", "Claim", { Name = "Action", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = card },
+		{ width = 96, height = 36, textSize = 16 })
+	local pill, pillText = Kit.PricePill("", { Name = "Progress", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(96, 30),
+		AutomaticSize = Enum.AutomaticSize.None, Parent = card })
+	-- (the tap area sits in a Folder so the pill's list layout ignores it)
+	local pillButton = New("TextButton", { Name = "Tap", Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 4,
+		Parent = New("Folder", { Name = "Hit", Parent = pill }) })
+	local doneLabel = Kit.Text({ Name = "Done", Text = "DONE", Font = "Title", TextSize = 17, TextColor3 = Colors.Teal, AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(96, 24), Visible = false, Parent = card })
+	-- one swap a day for an unfinished quest (e.g. spotting on an empty server): a small badge on the icon tile's corner
+	local swap = Theme.Button("Quiet", { Name = "Swap", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 50, 1, -12), Size = UDim2.fromOffset(22, 22),
+		ZIndex = 3, Parent = card }, {})
+	Pieces.Icon("repeat", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(12, 12), ZIndex = 3, Parent = swap })
+	local row = { card = card, tile = tile, icon = icon, text = text, bar = bar, setBar = setBar, amount = amount, coin = coin, button = button, pill = pill,
+		pillText = pillText, doneLabel = doneLabel, swap = swap, state = "go", quest = nil }
 	button.Activated:Connect(function()
 		if row.state == "claim" then
+			Kit.CoinBurst(button)
 			remote:FireServer("Claim", index)
-		elseif row.state == "go" and row.quest then
+		end
+	end)
+	pillButton.Activated:Connect(function()
+		if row.state == "go" and row.quest then
 			modal.close()
 			Notify.Hint(goHint(row.quest), "questgo")
 		end
@@ -135,19 +167,30 @@ for index = 1, DailyQuests.PerDay do
 	rows[index] = row
 end
 
--- "Complete all 3": the bonus for claiming all of today's quests
-local bonus = Kit.Card({ Name = "Bonus", LayoutOrder = 10, Size = UDim2.new(1, 0, 0, 46), Piece = "banner_gold", Parent = questCol }, {})
-Pieces.Icon("trophy", Colors.Gold, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 0), Size = UDim2.fromOffset(24, 24), Parent = bonus })
-	:SetAttribute("KeepColor", true)
-Kit.Text({ Text = "Complete all " .. DailyQuests.PerDay, Font = "Title", TextSize = 15, Position = UDim2.fromOffset(50, 5), Size = UDim2.new(1, -150, 0, 20),
-	TextXAlignment = Enum.TextXAlignment.Left, Parent = bonus })
-Kit.Text({ Text = "Bonus " .. Kit.Format(DailyQuests.BonusCoins) .. " coins", Font = "Body", TextSize = 12, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(50, 24),
-	Size = UDim2.new(1, -150, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = bonus })
-local bonusCount = Kit.Text({ Name = "Count", Text = "", Font = "Title", TextSize = 20, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(80, 26), TextXAlignment = Enum.TextXAlignment.Right, Parent = bonus })
-local bonusClaim = Kit.Button("Green", "Claim", { Name = "Claim", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Visible = false, Parent = bonus },
-	{ width = 84, height = 28, textSize = 13 })
-bonusClaim.Activated:Connect(function() remote:FireServer("ClaimBonus") end)
+-- ALL 3 BONUS (right): a big gold count, a gold bar, the bonus coins, CLAIM when all are claimed, the reset time
+local bonus = Kit.Card({ Name = "Bonus", Position = UDim2.fromOffset(LEFT_W + 10, 0), Size = UDim2.new(1, -(LEFT_W + 10), 0, ROW_H * 3 + 16),
+	Parent = pages.Daily }, {})
+Kit.Text({ Name = "Title", Text = "All " .. DailyQuests.PerDay .. " bonus", Font = "Title", TextSize = 17, Upper = true, Position = UDim2.fromOffset(12, 10),
+	Size = UDim2.new(1, -24, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = bonus })
+local bonusCount = Kit.GoldText(Kit.Text({ Name = "Count", Text = "0", Font = "Number", TextSize = 50, Position = UDim2.fromOffset(12, 32),
+	Size = UDim2.fromOffset(0, 54), AutomaticSize = Enum.AutomaticSize.X, TextXAlignment = Enum.TextXAlignment.Left, Parent = bonus }))
+local bonusOf = Kit.Text({ Name = "Of", Text = "/" .. DailyQuests.PerDay, Font = "Number", TextSize = 22, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(46, 54),
+	Size = UDim2.fromOffset(40, 26), TextXAlignment = Enum.TextXAlignment.Left, Parent = bonus })
+bonusCount:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+	bonusOf.Position = UDim2.fromOffset(12 + bonusCount.AbsoluteSize.X / math.max(Kit.Scale() * Kit.PanelScale, 0.01) + 6, 54)
+end)
+local _, setBonusBar = Kit.Bar(Colors.Gold, { Name = "Bar", Position = UDim2.fromOffset(12, 92), Size = UDim2.new(1, -24, 0, 14), Parent = bonus })
+local bonusReward = coinAmount({ Name = "Reward", Position = UDim2.fromOffset(12, 114), Size = UDim2.new(1, -24, 0, 26), Parent = bonus })
+bonusReward:FindFirstChildOfClass("UIListLayout").HorizontalAlignment = Enum.HorizontalAlignment.Left
+bonusReward:FindFirstChild("Amount").Text = Kit.Format(DailyQuests.BonusCoins)
+local bonusClaim = Kit.Button("Red", "Claim", { Name = "Claim", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -30), Visible = false, Parent = bonus },
+	{ width = 130, height = 34, textSize = 15 })
+bonusClaim.Activated:Connect(function()
+	Kit.CoinBurst(bonusClaim)
+	remote:FireServer("ClaimBonus")
+end)
+local resetLabel = Kit.Text({ Name = "Reset", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 12, 1, -10), Size = UDim2.new(1, -24, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = bonus })
 
 ------------------------------------------------------------------------
 -- Daily reward grids (the small one on the Daily tab, the big one on the Rewards tab)
@@ -173,11 +216,12 @@ local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: n
 		check:SetAttribute("KeepColor", true)
 		cards[day] = { card = card, label = label, coin = coin, amount = amount, check = check }
 	end
-	local claim = Kit.Button("Green", "Claim", { Name = "Claim", Parent = frame }, { height = 32, textSize = 15 })
+	local claim = Kit.Button("Red", "Claim", { Name = "Claim", Parent = frame }, { height = 32, textSize = 15 })
 	claim.AutomaticSize = Enum.AutomaticSize.None
 	claim.Activated:Connect(function()
 		if claim:GetAttribute("CanClaim") then
 			claim:SetAttribute("CanClaim", false)
+			Kit.CoinBurst(claim)
 			remote:FireServer("ClaimLogin")
 		end
 	end)
@@ -185,13 +229,6 @@ local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: n
 	table.insert(calendars, entry)
 	return entry
 end
-
-local smallCal = makeCalendar(pages.Daily, Vector2.new(56, 44), 3, 15)
-smallCal.frame.Position = UDim2.fromOffset(LEFT_W + 12, 0)
-smallCal.frame.Size = UDim2.new(1, -(LEFT_W + 12), 1, 0)
-smallCal.claim.AnchorPoint = Vector2.new(0, 1)
-smallCal.claim.Position = UDim2.fromScale(0, 1)
-smallCal.claim.Size = UDim2.new(1, 0, 0, 32)
 
 local bigCal = makeCalendar(pages.Rewards, Vector2.new(72, 70), DAYS, 17)
 bigCal.frame.Size = UDim2.fromScale(1, 1)
@@ -215,15 +252,11 @@ end
 local function refreshCalendars()
 	local current, claimed = calendarState()
 	for _, cal in ipairs(calendars) do
-		cal.title.Text = "Daily Reward <font color=\"#" .. Colors.Gold:ToHex() .. "\">Day " .. current .. "</font>"
+		cal.title.Text = "DAILY STREAK <font color=\"#" .. Colors.Gold:ToHex() .. "\">DAY " .. current .. "</font>"
 		for day, c in ipairs(cal.cards) do
 			local got = day < current or (day == current and claimed)
 			local isToday = day == current and not claimed
-			Theme.SetPiece(c.card, "card")
-			if isToday then
-				c.card.BackgroundColor3 = Colors.Green
-				c.card:FindFirstChild("Border").Color = Colors.Green:Lerp(Color3.new(1, 1, 1), 0.35)
-			end
+			Theme.SetPiece(c.card, isToday and "card_gold" or "card")
 			local future = day > current
 			c.label.TextTransparency = future and 0.45 or 0
 			c.amount.TextTransparency = future and 0.45 or 0
@@ -231,7 +264,7 @@ local function refreshCalendars()
 			c.check.Visible = got
 		end
 		cal.claim:SetAttribute("CanClaim", not claimed)
-		Kit.SetButton(cal.claim, claimed and "Gray" or "Green", claimed and "Come back tomorrow" or ("Claim day " .. current))
+		Kit.SetButton(cal.claim, claimed and "Quiet" or "Red", claimed and "Come back tomorrow" or ("Claim day " .. current))
 	end
 	dailyPill:SetDot(not claimed)
 end
@@ -252,7 +285,7 @@ local function chainRow(order: number)
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
 	local sub = Kit.Text({ Name = "Sub", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(46, 23), Size = UDim2.new(1, -150, 0, 15),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
-	local bar, setBar = Kit.Bar(Colors.Green, { Name = "Bar", Position = UDim2.fromOffset(46, 24), Size = UDim2.new(1, -150, 0, 13), Parent = card }, { text = true, textSize = 10 })
+	local bar, setBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(46, 24), Size = UDim2.new(1, -150, 0, 13), Parent = card }, { text = true, textSize = 10 })
 	local button = Kit.Button("Gray", "Done", { Name = "Action", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = card },
 		{ width = 84, height = 28, textSize = 13 })
 	local row = { card = card, tile = tile, text = text, sub = sub, bar = bar, setBar = setBar, button = button, go = nil }
@@ -298,21 +331,22 @@ local function refreshChain()
 		row.sub.Visible = not row.bar.Visible
 		row.sub.Text = Quests.RewardText(quest.reward)
 		row.go = nil
+		Theme.SetPiece(row.card, (isCurrent and active.ready) and "card_gold" or "card")
 		if isDone then
-			setTile(row.tile, "check", Colors.Green)
-			Kit.SetButton(row.button, "Gray", "Done")
+			setTile(row.tile, "check", Colors.Teal)
+			Kit.SetButton(row.button, "Flat", "Done")
 		elseif isCurrent and active.ready then
 			setTile(row.tile, "trophy", Colors.Gold)
 			row.sub.Text = "Done! Talk to " .. Quests.CoachName .. ": " .. Quests.RewardText(quest.reward)
 			row.go = "Talk to " .. Quests.CoachName .. " at the front desk"
-			Kit.SetButton(row.button, "Green", "Go")
+			Kit.SetButton(row.button, "Red", "Go")
 		elseif isCurrent then
-			setTile(row.tile, "trophy", Colors.Blue)
+			setTile(row.tile, "trophy", Color3.fromHex("#2A262B"))
 			row.setBar(active.goal > 0 and active.progress / active.goal or 0, Muscles.FormatExp(active.progress) .. "/" .. Muscles.FormatExp(active.goal))
 			row.go = quest.text
 			Kit.SetButton(row.button, "Dark", "Go")
 		elseif isActive then
-			setTile(row.tile, "trophy", Colors.Blue)
+			setTile(row.tile, "trophy", Color3.fromHex("#2A262B"))
 			row.go = "Talk to " .. Quests.CoachName .. " at the front desk for your next quest"
 			Kit.SetButton(row.button, "Dark", "Go")
 		else
@@ -347,11 +381,12 @@ local function refreshTracker(dq, valid)
 	end
 end
 
-local function progressText(quest, value: number): string
+local function progressText(quest, value: number, spaced: boolean?): string
+	local gap = spaced and " / " or "/"
 	if quest.type == "cardio" then
-		return string.format("%s/%s m", Kit.Format(value), Kit.Format(quest.count))
+		return string.format("%s%s%s m", Kit.Format(value), gap, Kit.Format(quest.count))
 	end
-	return value .. "/" .. quest.count
+	return value .. gap .. quest.count
 end
 
 local function refreshQuests(): number
@@ -367,37 +402,47 @@ local function refreshQuests(): number
 		if quest then
 			local progress = math.min(entry.progress or 0, quest.count)
 			row.text.Text = quest.text
-			row.setBar(progress / quest.count, progressText(quest, progress))
+			row.setBar(progress / quest.count)
 			row.amount.Text = Kit.Format(quest.coins)
-			setTile(row.tile, TYPE_ICON[quest.type] or "dumbbell", Colors.Blue)
 			if entry.claimed then
 				row.state = "done"
 				claimed += 1
-				Kit.SetButton(row.button, "Gray", "Done")
 			elseif entry.done then
 				row.state = "claim"
 				claimable += 1
-				Kit.SetButton(row.button, "Green", "Claim")
 			else
 				row.state = "go"
-				Kit.SetButton(row.button, "Dark", "Go")
 			end
+			local state = row.state
+			paintTile(row.tile, row.icon, state == "claim", TYPE_ICON[quest.type] or "dumbbell")
+			Theme.SetPiece(row.card, state == "claim" and "card_gold" or "card")
+			row.button.Visible = state == "claim"
+			if state == "claim" then Theme.Pulse(row.button, function() return modal.isOpen() and row.state == "claim" end) end
+			row.pill.Visible = state == "go"
+			row.pillText.Text = progressText(quest, progress, true)
+			row.doneLabel.Visible = state == "done"
+			-- a claimed quest fades back (DONE stays bright)
+			local faded = state == "done"
+			row.text.TextTransparency = faded and 0.5 or 0
+			row.amount.TextTransparency = faded and 0.5 or 0
+			row.coin.ImageTransparency = faded and 0.5 or 0
+			row.icon.ImageTransparency = faded and 0.5 or 0
+			row.bar.BackgroundTransparency = faded and 0.4 or 0
 			allClaimed = allClaimed and entry.claimed == true
 			row.swap.Visible = not entry.done and (dq.swaps or 0) < DailyQuests.SwapsPerDay
-			-- the text and bar end before the swap button when it shows
-			local width = row.swap.Visible and -184 or -150
-			row.text.Size = UDim2.new(1, width, 0, 18)
-			row.bar.Size = UDim2.new(1, width, 0, 15)
 		end
 	end
 	local bonusDone = valid and dq.bonus == true
 	local bonusReady = allClaimed and not bonusDone
 	bonusClaim.Visible = bonusReady
-	bonusCount.Visible = not bonusReady
-	bonusCount.Text = bonusDone and "Done" or (claimed .. "/" .. DailyQuests.PerDay)
+	if bonusReady then Theme.Pulse(bonusClaim, function() return modal.isOpen() and bonusClaim.Visible end) end
+	bonusCount.Text = tostring(claimed)
+	setBonusBar(claimed / DailyQuests.PerDay)
+	bonusReward.Visible = not bonusReady
+	if bonusDone then bonusCount.Text = tostring(DailyQuests.PerDay) end
 	if bonusReady then claimable += 1 end
 	refreshTracker(dq, valid)
-	resetLabel.Text = "New quests in " .. untilReset()
+	resetLabel.Text = "Resets in " .. untilReset()
 	return claimable
 end
 
@@ -409,7 +454,6 @@ function refreshAll()
 	local coachReady = qs and qs.active and qs.active.ready == true
 	questTile:SetBadge(claimable)
 	questPill:SetBadge(claimable + (coachReady and 1 or 0))
-	resetLabel.Visible = currentTab == "Daily"
 end
 
 ------------------------------------------------------------------------
@@ -494,7 +538,7 @@ RunService.Heartbeat:Connect(function(dt)
 	acc += dt
 	if acc < 1 then return end
 	acc = 0
-	if modal.isOpen() then resetLabel.Text = "New quests in " .. untilReset() end
+	if modal.isOpen() then resetLabel.Text = "Resets in " .. untilReset() end
 	local day = today()
 	if day ~= lastDay then
 		lastDay = day

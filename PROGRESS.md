@@ -15,6 +15,12 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   R$ CTA that pulses) + 3-column grid with price pills; OWNED = rotated gold stamp, tile art / name dimmed.
   Studio preview: Workspace TestStoreAll = true shows every item. Screenshots: ui_compare_final/04_store_*.
   Note: every window picks up the new materials now; the next steps fit Quests, Coaches, Physique, HUD, Lifting, title.
+- 2. Quests (mockup 05): tabs DAILY / STREAK / GOALS. Rows: icon tile, quest in big italic caps, teal bar, gold coin
+  reward; ready = gold border + glow, gold tile, red CLAIM (pulses); in progress = dark "1 / 2" pill (tap = where to go);
+  claimed = faded + teal DONE. The swap button is a small badge on the tile. Right: ALL 3 BONUS card (big gold count,
+  gold bar, bonus coins, CLAIM, "Resets in"). The small calendar left the Daily tab (Streak has it). Claims fire
+  Kit.CoinBurst (coins fly to the counter + a gold sparkle burst). Window 620 wide. Tested a real claim (chest reps).
+  Also: owner's music edit synced from Studio (each area back to one song, the owner's choice).
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier

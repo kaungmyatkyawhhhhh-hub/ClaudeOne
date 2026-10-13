@@ -20,6 +20,7 @@
 --   Kit.Modal(spec)                           a window: TITLE + tabs in its header, coins + X on the right, a vignette behind
 --   Kit.Coin(size, props?), Kit.Format(n) "1,500", Kit.Short(n) "1.5K"
 --   Kit.Headshot(userId, name, size, props?) the player's real avatar headshot in a plain dark circle (owner, 14 Oct)
+--   Kit.CoinBurst(fromGui)                   claim feedback: coins fly to the coin counter + a small gold sparkle burst
 --   Kit.ApplyHeadshot(image, userId, name)   the same look on an existing ImageLabel (e.g. a leaderboard row)
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
@@ -651,6 +652,58 @@ function Kit.Modal(spec)
 		if open and not processed and input.KeyCode == Enum.KeyCode.Escape then modal.close() end
 	end)
 	return modal
+end
+
+-- Claim feedback (owner's final kit): a small gold sparkle burst at `fromGui` and a few coins flying to the coin counter
+-- (the top bar's, or the open window's own pill). Reduced motion: only the sparkle.
+function Kit.CoinBurst(fromGui: GuiObject)
+	local player = Players.LocalPlayer
+	local playerGui = player and player:FindFirstChild("PlayerGui")
+	if not playerGui or not fromGui.Parent then return end
+	local layer = playerGui:FindFirstChild("CoinBurst")
+	if not layer then
+		layer = Theme.ScreenGui({ Name = "CoinBurst", DisplayOrder = 80, IgnoreGuiInset = true, Parent = playerGui })
+		layer.ScreenInsets = Enum.ScreenInsets.None
+	end
+	local inset = game:GetService("GuiService"):GetGuiInset()
+	local from = fromGui.AbsolutePosition + fromGui.AbsoluteSize / 2 + inset
+	-- where the coins go: a coins pill that is showing (a window's own), else the top bar's
+	local target = nil
+	for _, gui in ipairs(playerGui:GetChildren()) do
+		local pill = gui:IsA("ScreenGui") and gui.Enabled and gui:FindFirstChild("Coins", true)
+		if pill and pill:IsA("GuiObject") and pill.Visible and pill.AbsoluteSize.X > 0 then
+			target = pill.AbsolutePosition + Vector2.new(18, pill.AbsoluteSize.Y / 2) + inset
+			break
+		end
+	end
+	target = target or Vector2.new(180, 30)
+	local s = currentScale
+	-- sparkle: little gold stars popping out and fading
+	for i = 1, 7 do
+		local angle = (i / 7) * math.pi * 2 + math.random() * 0.4
+		local star = Pieces.Icon("sparkles", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(from.X, from.Y),
+			Size = UDim2.fromOffset(4, 4), Parent = layer })
+		star:SetAttribute("KeepColor", true)
+		local reach = (26 + math.random() * 18) * s
+		local goal = from + Vector2.new(math.cos(angle), math.sin(angle)) * reach
+		Theme.Tween(star, { Position = UDim2.fromOffset(goal.X, goal.Y), Size = UDim2.fromOffset(16 * s, 16 * s) }, 0.28)
+		task.delay(0.22, function()
+			Theme.Tween(star, { ImageTransparency = 1, Size = UDim2.fromOffset(6 * s, 6 * s) }, 0.3)
+			task.delay(0.32, function() star:Destroy() end)
+		end)
+	end
+	if Theme.ReducedMotion() then return end
+	for i = 1, 8 do
+		local coin = Kit.Coin(math.floor(20 * s), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(from.X, from.Y), Parent = layer })
+		local spread = from + Vector2.new(math.random(-40, 40), math.random(-34, 10)) * s
+		Theme.Tween(coin, { Position = UDim2.fromOffset(spread.X, spread.Y) }, 0.18)
+		task.delay(0.18 + i * 0.04, function()
+			local fly = game:GetService("TweenService"):Create(coin, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{ Position = UDim2.fromOffset(target.X, target.Y), Size = UDim2.fromOffset(12 * s, 12 * s) })
+			fly:Play()
+			fly.Completed:Connect(function() coin:Destroy() end)
+		end)
+	end
 end
 
 return Kit
