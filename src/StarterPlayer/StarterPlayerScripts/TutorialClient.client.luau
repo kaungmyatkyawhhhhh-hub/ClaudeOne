@@ -589,12 +589,18 @@ end
 UIBus.StatsVisible.Event:Connect(function(visible) labelsShown = visible onStatsVisible() end)
 UIBus.MusclesVisible.Event:Connect(function(visible) musclesShown = visible onStatsVisible() end)
 
--- The skip button and the coach dialog step aside while the genetics screen is open.
-UIBus.GeneticsVisible.Event:Connect(function(visible)
+-- The skip button and the coach dialog step aside while the genetics screen or a menu window is open.
+local geneticsShown = false
+local function applyHidden()
 	if stepIndex < Onboarding.Done and gui.Parent then
-		gui.Enabled = not visible
+		gui.Enabled = not geneticsShown and not player:GetAttribute("WindowOpen")
 	end
+end
+UIBus.GeneticsVisible.Event:Connect(function(visible)
+	geneticsShown = visible == true
+	applyHidden()
 end)
+player:GetAttributeChangedSignal("WindowOpen"):Connect(applyHidden)
 
 -- Timed steps
 task.spawn(function()

@@ -1,13 +1,13 @@
--- CrewClient: the Crew side button (two-people icon) and panel. Without a crew: create one (name + tag) and see
--- invites; with a crew: members (n/8, who's here), invite players in this server, leave. Top crews at the bottom.
+-- CrewClient: the Crew tile (two-people icon) and the Crew window (tabs My Crew / Top Crews). Without a crew: create one
+-- (name + tag) and see invites; with a crew: members (n/8, who's here), invite players in this server, leave.
 -- All checks, filtering and saving happen in CrewService; this only shows what it sends.
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Social = require(Shared.Config.Social)
 local Muscles = require(Shared.Config.Muscles)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
@@ -15,8 +15,7 @@ local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
-local player = Players.LocalPlayer
-local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
+local New, Colors = Theme.New, Theme.Colors
 local Vertical = Enum.FillDirection.Vertical
 local CREW = Social.Crew
 
@@ -24,22 +23,23 @@ local remote = Remotes:WaitForChild("Crew", 30)
 if not remote then return end -- the crew service didn't start
 
 local menuButton = SideMenu.Add("Crew", "Crew", Icons.People, 5)
-local gui = Theme.ScreenGui({ Name = "Crew", Enabled = false, DisplayOrder = 24, Parent = player:WaitForChild("PlayerGui") })
-local panel = Theme.Panel({
-	Name = "Panel",
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0),
-	Size = UDim2.new(0, 320, 1, -Spacing.L * 2), -- as tall as the screen allows (phones), up to 420
-	Parent = gui,
-}, { Theme.Pad("M"), New("UISizeConstraint", { MaxSize = Vector2.new(320, 420) }) })
-local scroll = New("ScrollingFrame", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 1,
-	ScrollBarThickness = 4,
-	CanvasSize = UDim2.new(),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	Parent = panel,
-}, { Theme.List(Vertical, "S", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
+
+-- the window (owner's UI v2: the same window style as the other menus): tabs My Crew / Top Crews
+local pages = {}
+local modal = Kit.Modal({ name = "Crew", title = "Crew", icon = "users", width = 520, height = 272, displayOrder = 24,
+	tabs = { { id = "Mine", text = "My Crew", icon = "users" }, { id = "Top", text = "Top Crews", icon = "trophy" } },
+	onTab = function(id)
+		for name, page in pairs(pages) do page.Visible = name == id end
+	end })
+for _, id in ipairs({ "Mine", "Top" }) do
+	pages[id] = New("ScrollingFrame", { Name = id, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = id == "Mine",
+		ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(),
+		ScrollingDirection = Enum.ScrollingDirection.Y, Parent = modal.body }, {
+		Theme.List(Vertical, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+		New("UIPadding", { PaddingRight = UDim.new(0, 8), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }),
+	})
+end
+local scroll = pages.Mine
 
 ------------------------------------------------------------------------
 -- Building blocks
@@ -50,61 +50,76 @@ local function nextOrder()
 	return order
 end
 
-local function heading(text)
-	return Theme.Text({ LayoutOrder = nextOrder(), Text = text, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, -8, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = scroll })
+local function heading(text, parent)
+	return Kit.Text({ LayoutOrder = nextOrder(), Text = text, Font = "Title", TextSize = 16, Size = UDim2.new(1, 0, 0, 22), TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = parent or scroll })
 end
 
-local function line(text, color)
-	return Theme.Text({ LayoutOrder = nextOrder(), Text = text, Font = "Regular", TextSize = "Small", TextColor3 = color or Colors.Muted, Size = UDim2.new(1, -8, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = scroll })
+local function line(text, color, parent)
+	return Kit.Text({ LayoutOrder = nextOrder(), Text = text, Font = "Body", TextSize = 13, TextColor3 = color or Colors.Muted, Size = UDim2.new(1, 0, 0, 18),
+		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = parent or scroll })
 end
 
-local function button(text, style, width, parent)
-	local b = Theme.Button(style or "Secondary", { LayoutOrder = nextOrder(), Size = UDim2.new(width or 1, width and 0 or -8, 0, Theme.MinTouch), Parent = parent or scroll })
-	Theme.Text({ Text = text, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1), Parent = b })
-	return b
+local function button(text, style)
+	local holder = New("Frame", { LayoutOrder = nextOrder(), BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40), Parent = scroll })
+	return Kit.Button(style or "Gray", text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = holder }, { width = 220, height = 36, textSize = 15 })
 end
 
 local function textBox(placeholder, maxLength)
 	local box = New("TextBox", {
 		LayoutOrder = nextOrder(),
-		Size = UDim2.new(1, -8, 0, Theme.MinTouch),
-		BackgroundColor3 = Colors.Panel,
-		BackgroundTransparency = Theme.Alpha.Panel,
+		Size = UDim2.new(1, 0, 0, 38),
+		BackgroundColor3 = Colors.Well,
 		Text = "",
 		PlaceholderText = placeholder,
 		PlaceholderColor3 = Colors.Muted,
 		TextColor3 = Colors.Text,
-		FontFace = Theme.Fonts.Regular,
-		TextSize = Theme.TextSize.Body,
+		FontFace = Theme.Fonts.SemiBold,
+		TextSize = 15,
 		ClearTextOnFocus = false,
 		Parent = scroll,
-	}, { Theme.Round("Button"), Theme.Stroke(), New("UIPadding", { PaddingLeft = UDim.new(0, Spacing.M), PaddingRight = UDim.new(0, Spacing.M) }) })
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Color = Colors.Edge, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }),
+	})
 	box:GetPropertyChangedSignal("Text"):Connect(function()
 		if #box.Text > maxLength then box.Text = box.Text:sub(1, maxLength) end
 	end)
 	return box
 end
 
--- a row: text on the left, a small button on the right
-local function rowWithButton(text, buttonText, onClick)
-	local row = New("Frame", { LayoutOrder = nextOrder(), Size = UDim2.new(1, -8, 0, Theme.MinTouch), BackgroundTransparency = 1, Parent = scroll })
-	Theme.Text({ Text = text, Font = "Regular", TextSize = "Body", Size = UDim2.new(1, -110, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-	local b = Theme.Button("Secondary", { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Size = UDim2.new(0, 100, 0, Theme.MinTouch - 4), Parent = row })
-	Theme.Text({ Text = buttonText, Font = "SemiBold", TextSize = "Small", Size = UDim2.fromScale(1, 1), Parent = b })
-	b.Activated:Connect(onClick)
-	return row
+-- a card row: an icon tile, text (and a smaller line under it), and optionally a button on the right
+local function rowCard(parent, icon: string, color: Color3, text: string, sub: string?, buttonText: string?, buttonStyle: string?, onClick: (() -> ())?)
+	local card = Kit.Card({ LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 44), Parent = parent }, {})
+	Kit.IconTile(icon, color, 30, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Parent = card })
+	Kit.Text({ Text = text, Font = "Title", TextSize = 14, Position = UDim2.fromOffset(46, sub and 4 or 0), Size = UDim2.new(1, buttonText and -150 or -56, 0, sub and 19 or 44),
+		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+	if sub then
+		Kit.Text({ Text = sub, Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(46, 23), Size = UDim2.new(1, buttonText and -150 or -56, 0, 15),
+			TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+	end
+	if buttonText and onClick then
+		local b = Kit.Button(buttonStyle or "Blue", buttonText, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = card },
+			{ width = 92, height = 30, textSize = 13 })
+		b.Activated:Connect(onClick)
+	end
+	return card
 end
 
 ------------------------------------------------------------------------
 -- Render what the server sent
 ------------------------------------------------------------------------
 local function clear()
-	for _, child in ipairs(scroll:GetChildren()) do
-		if child:IsA("GuiObject") then child:Destroy() end
+	for _, page in pairs(pages) do
+		for _, child in ipairs(page:GetChildren()) do
+			if child:IsA("GuiObject") then child:Destroy() end
+		end
 	end
 	order = 0
 end
 
+local RANK_COLORS = { Colors.Gold, Color3.fromHex("#B8B8C4"), Color3.fromHex("#C77B3A") }
 local function render(info)
 	clear()
 	if info.crew then
@@ -112,38 +127,41 @@ local function render(info)
 		heading(crew.name .. "  [" .. crew.tag .. "]")
 		line(#crew.members .. " / " .. crew.max .. " members")
 		for _, member in ipairs(crew.members) do
-			line(member.name .. (member.owner and "  · leader" or "") .. (member.here and "  · here" or "") .. "   " .. Muscles.FormatExp(member.score) .. " exp", member.here and Colors.Text or Colors.Muted)
+			local sub = (member.owner and "Leader · " or "") .. (member.here and "In this server · " or "") .. Muscles.FormatExp(member.score) .. " exp"
+			rowCard(scroll, member.owner and "star" or "users", member.here and Colors.Green or Color3.fromHex("#4A4A55"), member.name, sub)
 		end
 		if #crew.members < crew.max then
 			heading("Invite")
 			if #info.eligible == 0 then line("Nobody without a crew is in this server.") end
 			for _, other in ipairs(info.eligible) do
-				rowWithButton(other.name, "Invite", function() remote:FireServer("Invite", other.userId) end)
+				rowCard(scroll, "users", Colors.Blue, other.name, nil, "Invite", "Blue", function() remote:FireServer("Invite", other.userId) end)
 			end
 		end
-		local leave = button("Leave crew")
+		local leave = button("Leave crew", "Red")
 		leave.Activated:Connect(function() remote:FireServer("Leave") end)
 	else
 		heading("Start a crew")
 		line("Name (" .. CREW.NameLength[1] .. "-" .. CREW.NameLength[2] .. ") and tag (" .. CREW.TagLength[1] .. "-" .. CREW.TagLength[2] .. " letters)")
 		local nameBox = textBox("Crew name", CREW.NameLength[2])
 		local tagBox = textBox("Tag, e.g. GAIN", CREW.TagLength[2])
-		local create = button(CREW.CreateCost > 0 and ("Create · " .. CREW.CreateCost .. " coins") or "Create", "Primary")
+		local create = button(CREW.CreateCost > 0 and ("Create · " .. CREW.CreateCost .. " coins") or "Create", "Green")
 		create.Activated:Connect(function() remote:FireServer("Create", nameBox.Text, tagBox.Text) end)
 		if #info.invites > 0 then
 			heading("Invites")
 			for _, invite in ipairs(info.invites) do
-				rowWithButton(invite.name .. " [" .. invite.tag .. "] from " .. invite.from, "Join", function()
+				rowCard(scroll, "users", Colors.Gold, invite.name .. " [" .. invite.tag .. "]", "From " .. invite.from, "Join", "Green", function()
 					remote:FireServer("Accept", invite.crewId)
 				end)
 			end
 		end
 	end
 	if info.top and #info.top > 0 then
-		heading("Top crews")
 		for rank, crew in ipairs(info.top) do
-			line(rank .. ".  " .. crew.name .. " [" .. crew.tag .. "]  ·  " .. crew.members .. " members  ·  " .. Muscles.FormatExp(crew.score) .. " exp")
+			rowCard(pages.Top, "trophy", RANK_COLORS[rank] or Colors.Blue, rank .. ".  " .. crew.name .. " [" .. crew.tag .. "]",
+				crew.members .. " members · " .. Muscles.FormatExp(crew.score) .. " exp")
 		end
+	else
+		line("No crews yet. Start one!", nil, pages.Top)
 	end
 end
 
@@ -151,46 +169,40 @@ remote.OnClientEvent:Connect(function(kind, payload)
 	if kind == "Info" and type(payload) == "table" then
 		render(payload)
 	elseif kind == "Result" and type(payload) == "string" then
-		Notify.Show(payload, nil, "crew")
+		Notify.Toast(payload, nil, "users", Colors.Blue, "crew")
 	end
 end)
 
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
 	if kind == "CrewInvite" then
-		Notify.Show(tostring(info.from) .. " invited you to " .. tostring(info.name) .. " [" .. tostring(info.tag) .. "]. Open Crew to join.")
+		Notify.Toast("Crew invite", tostring(info.from) .. " invited you to " .. tostring(info.name) .. " [" .. tostring(info.tag) .. "]", "users", Colors.Gold)
 		menuButton:SetDot(true)
 		Audio.PlayUI("SetComplete")
 	elseif kind == "CrewJoined" then
-		Notify.Show(tostring(info.name) .. " joined your crew.")
+		Notify.Toast("New crew member", tostring(info.name) .. " joined your crew", "users", Colors.Green)
 	end
 end)
 
 ------------------------------------------------------------------------
 -- Open / close
 ------------------------------------------------------------------------
-local isOpen = false
 local function close()
-	if not isOpen then return end
-	isOpen = false
-	menuButton:SetActive(false)
-	local tween = Theme.Fade(panel, false)
-	if tween then tween.Completed:Connect(function() if not isOpen then gui.Enabled = false end end) else gui.Enabled = false end
+	if modal.isOpen() then modal.close() end
 end
 local function open()
-	isOpen = true
-	panel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0) -- beside the side menu (one or two columns)
 	menuButton:SetActive(true)
 	menuButton:SetDot(false)
 	clear()
 	line("Loading...")
-	gui.Enabled = true
+	modal.open()
 	Audio.PlayUI("Whoosh")
-	Theme.Fade(panel, true)
 	remote:FireServer("Info")
 end
+modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+	if not modal.isOpen() then menuButton:SetActive(false) end
+end)
 UIBus.RegisterPanel("Crew", close)
 menuButton.Activated:Connect(function()
-	if isOpen then close() else UIBus.PanelOpened("Crew") open() end
+	if modal.isOpen() then close() else UIBus.PanelOpened("Crew") open() end
 end)
-

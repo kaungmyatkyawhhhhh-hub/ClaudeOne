@@ -1,4 +1,4 @@
--- EmoteClient: the Emotes side button and its small panel (the six bodybuilding poses, the high five and the victory wave). The bodybuilding poses
+-- EmoteClient: the Poses tile and its Emotes window (the six bodybuilding poses, the high five and the victory wave). The bodybuilding poses
 -- are PoseData poses (PoseController poses any character whose "Pose" attribute is set; PoseClient adds the pose name, the
 -- pose hit and letting go). The high five and the shake chug are small timed poses done here: the server tells every client
 -- who emotes and each client poses that character locally (R15 joint
@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ShowOff = require(Shared.Config.ShowOff)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
@@ -18,8 +19,7 @@ local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
-local Spacing = Theme.Spacing
-local Vertical = Enum.FillDirection.Vertical
+local New = Theme.New
 
 local remote = Remotes:WaitForChild("Emote", 30)
 if not remote then return end -- the show-off service didn't start
@@ -121,79 +121,50 @@ RunService.Stepped:Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- Side button + panel
+-- The Poses tile and the Emotes window (owner's UI v2: the same window style as the other menus): a grid of cards, each
+-- a pink icon tile and the pose's name; tap one to do it (the window closes).
 ------------------------------------------------------------------------
+local ICON = { HighFive = "hand", VictoryWave = "smile" } -- (the bodybuilding poses: a flexed arm)
 local menuButton = SideMenu.Add("Emotes", "Poses", Icons.Pose, 4)
-local gui = Theme.ScreenGui({ Name = "Emotes", Enabled = false, DisplayOrder = 24, Parent = player:WaitForChild("PlayerGui") })
-local panel = Theme.Panel({
-	Name = "Panel",
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0),
-	Size = UDim2.fromOffset(220, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
-	Parent = gui,
-}, {
-	Theme.Pad("M"),
-	Theme.List(Vertical, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top),
+local modal = Kit.Modal({ name = "Emotes", title = "Emotes", icon = "smile", width = 540, height = 262, displayOrder = 24,
+	tabs = { { id = "Poses", text = "Poses", icon = "biceps-flexed" } } })
+local grid = New("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = modal.body }, {
+	New("UIGridLayout", { CellSize = UDim2.new(0.25, -6, 0, 94), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 })
-Theme.Text({ LayoutOrder = 0, Text = "Poses", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), TextXAlignment = Enum.TextXAlignment.Left, Parent = panel }) -- (full width: its own row in two columns too)
-
-local isOpen = false
 local function close()
-	if not isOpen then return end
-	isOpen = false
-	menuButton:SetActive(false)
-	local tween = Theme.Fade(panel, false)
-	if tween then
-		tween.Completed:Connect(function() if not isOpen then gui.Enabled = false end end)
-	else
-		gui.Enabled = false
-	end
-end
-local buttons = {}
--- phones (short screens): two columns of buttons, so all eight fit the height
-local function layout()
-	local compact = Theme.IsCompact()
-	local list = panel:FindFirstChildOfClass("UIListLayout")
-	panel.Size = UDim2.fromOffset(compact and 320 or 220, 0)
-	if list then
-		list.FillDirection = compact and Enum.FillDirection.Horizontal or Vertical
-		list.Wraps = compact
-		list.HorizontalAlignment = compact and Enum.HorizontalAlignment.Left or Enum.HorizontalAlignment.Center
-	end
-	for _, button in ipairs(buttons) do button.Size = UDim2.new(compact and 0.5 or 1, compact and -Spacing.S / 2 or 0, 0, Theme.MinTouch) end
+	if modal.isOpen() then modal.close() end
 end
 local function open()
-	isOpen = true
-	layout()
-	panel.Position = UDim2.new(0, SideMenu.Right() + Spacing.M, 0.5, 0) -- beside the side menu (one or two columns)
+	if modal.isOpen() then return end
 	menuButton:SetActive(true)
-	gui.Enabled = true
+	modal.open()
 	Audio.PlayUI("Whoosh")
-	Theme.Fade(panel, true)
 end
+modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+	if not modal.isOpen() then menuButton:SetActive(false) end
+end)
 UIBus.RegisterPanel("Poses", close)
 menuButton.Activated:Connect(function()
-	if isOpen then close() else UIBus.PanelOpened("Poses") open() end
+	if modal.isOpen() then close() else UIBus.PanelOpened("Poses") open() end
 end)
 
 for order, emote in ipairs(ShowOff.Emotes) do
-	local button = Theme.Button("Secondary", { Name = emote.id, LayoutOrder = order, Size = UDim2.new(1, 0, 0, Theme.MinTouch), Parent = panel }, {
-		Theme.Text({ Text = emote.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
-	})
-	button.Activated:Connect(function()
+	local card = Kit.Card({ Name = emote.id, LayoutOrder = order, Clickable = true, Parent = grid }, {})
+	Kit.IconTile(ICON[emote.id] or "biceps-flexed", Color3.fromHex("#E2559A"), 48, { Name = "Tile", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8), Parent = card })
+	Kit.Text({ Name = "Name", Text = emote.name, Font = "Title", TextSize = 13, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4),
+		Size = UDim2.new(1, -8, 0, 32), Parent = card })
+	card.Activated:Connect(function()
 		remote:FireServer(emote.id)
 		close()
 	end)
-	table.insert(buttons, button)
 end
 
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind == "HighFived" and type(info) == "table" then
-		Notify.Show("High five with " .. tostring(info.name) .. "!")
+		Notify.Toast("High five!", "With " .. tostring(info.name), "hand", Color3.fromHex("#E2559A"))
 		Audio.PlayUI("SetComplete")
 	elseif kind == "OpenEmotes" then -- the posing stage's Pose prompt
-		if not isOpen then open() end
+		if not modal.isOpen() then open() end
 	end
 end)
 

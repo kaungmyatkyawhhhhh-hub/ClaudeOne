@@ -128,6 +128,13 @@ TestCoins = 2000 (2,000 -> 1,700, FOLLOWING), the red-cap follower. Screenshots:
 - Tested on the owner's real save (FreshPlayer off, nothing bought or claimed): loading, menu, UPDATES, PLAY.
   Screenshots: ui_compare_v2/00_*.
 
+**Screens without a mockup:** Emotes (the Poses tile: a window with a 4 x 2 grid of pink icon cards) and Crew (tabs My
+Crew / Top Crews, card rows with icon tiles, green CREATE, red LEAVE) now use the same window as the other menus. The
+tutorial's skip button and coach dialog step aside while any window is open. The spotting popup, clothing store, rival
+card, progress mirror card and prompts pick up the new colors, fonts and buttons through Theme (not redrawn one by one);
+the machine signs and the world leaderboards are 3D and keep their look. Screenshots: ui_compare_v2/emotes_window_phone,
+crew_window_phone.
+
 **Main HUD (v2 look so far):** top bar pills (coins, height / 7'0", level; Daily Reward, Quests, gear), the old menu tiles
 (Shop gold first, Stats, Muscles, Titles, Genetics, Poses, Crew, Quests, Trainers; Wardrobe hidden by
 `Config/Features.Wardrobe = false`), "<" fold saved per player (settings.menuCollapsed), auto-folds while lifting, red
