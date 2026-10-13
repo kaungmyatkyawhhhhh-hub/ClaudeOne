@@ -1114,6 +1114,28 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .pshead b{font-family:var(--body);font-variation-settings:normal;font-weight:800;font-size:1.2rem;text-transform:none;letter-spacing:-.015em}
 .pshead small{font-family:var(--body);letter-spacing:.06em}
 .perksheet{border:1px solid var(--line)}
+/* remaining stretched display type: normal width, sentence case for headings */
+.banner.big,.wordmark,.h2,.rank,.modcard .mt,.rep .lv,.roomhead h2.long,.roomhead h2.xlong,.sleepfx,.ttab b,.tbtns button,.crres b,.saillab>b,.lotbid b,.hmul,.hrow .tierb{font-variation-settings:normal}
+.h2,.modcard .mt,.rep .lv,.ttab b,.tbtns button,.crres b,.saillab>b,.lotbid b,.pcols h4,.krow,.raytoast b,.sealv em,.modcard .mg{text-transform:none;letter-spacing:-.01em}
+.h2{font-weight:800;font-size:2rem;letter-spacing:-.03em}
+.banner.big{font-weight:800;letter-spacing:-.02em}
+.raytoast b{font-family:var(--body);font-weight:700}
+.wordmark{letter-spacing:-.045em}
+/* UI cards and buttons: solid fills instead of decorative gradients (game art keeps its gradients) */
+.fotdcard{background:#1b1f2a}.fotdcard .eyebrow{color:#ffcc33}
+.passcover{background:#1b2a5a}
+.lvlbtn{background:#e09a00}
+.psall{background:#f5b301!important}
+.prbtn{background:#1f8a5e!important}
+.tvbtn{background:var(--accent)!important}
+.wallet{background:#17633f}.wallet.gem{background:#5b3fd0}
+.setc.on{background:color-mix(in oklab,var(--accent) 10%,var(--surface));box-shadow:inset 0 0 0 1.5px var(--accent)}
+.mega{background:#1b1f33}.mega.own{background:#3a3014}
+.perk.prestige{background:#1d1b16}
+.shorder{background:#1b1f2a}
+.sevhero{background:color-mix(in oklab,var(--ec) 70%,#1b1d22)}
+.w5gate{background:#24133a}
+.passcover b{font:800 1.5rem var(--body);letter-spacing:-.01em}.passcover small{font-family:var(--body)}
 .nightroom .perk,.arcroom .perk{border-color:rgba(255,255,255,.1)}
 </style>
 
@@ -5123,7 +5145,7 @@ function openPets(back){S.pets=S.pets||{};
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Pets")}
       <div class="note">Your pet follows you around town and gives you its perk. Pet it once a day to grow your bond (up to 10): every level makes its perk 10% stronger.</div>
       <div class="sechead"><h3>🦋 Bug book</h3><span class="eyebrow">${Object.keys(S.bugs||{}).length}/${BUGS.length} · walk into bugs around town</span></div><div class="bugbook">${BUGS.map(b=>{const n=(S.bugs||{})[b.k];return `<div class="bugc${n?"":" un"}"><canvas data-bug="${b.k}" width="60" height="44"></canvas><b>${n?b.n:"???"}</b><small>${n?"×"+n:b.night?"Night only":"★".repeat(Math.min(5,Math.ceil(b.r/1.6)))}</small></div>`}).join("")}</div>
-      ${own.length?`<button class="reqbtn prbtn" id="pRace">🏁 Pet races<b>Cheer your pet to the finish · 5 energy</b></button>`:""}
+      ${own.length?`<button class="reqbtn prbtn" id="pRace">Pet races<b>Cheer your pet to the finish · 5 energy</b></button>`:""}
       ${own.length?`<div class="sechead"><h3>Your pets</h3></div><div class="petgrid">${own.map(p=>{const pd=S.pets[p.k],today=pd.day===dayKey();return `<div class="petcard${S.pet===p.k?" on":""}">${petArt(p.k)}<b>${p.n}</b><small>Bond ${petBond(p.k)}/10</small><div class="bondbar"><i style="width:${petBond(p.k)*10}%"></i></div>
         ${(()=>{const a=petAdv(p.k);if(!a)return `<div class="petbtns"><button data-walk="${p.k}" ${S.pet===p.k?"disabled":""}>${S.pet===p.k?"Walking":"Walk"}</button><button data-pat="${p.k}" ${today?"disabled":""}>${today?"Petted ❤":"Pet"}</button></div><div class="petbtns">${PADV.map(T=>`<button data-adv="${p.k}|${T.k}" title="${T.n}">🧭 ${T.m<60?T.m+"m":T.m/60+"h"}</button>`).join("")}</div>`;
           return null})()||""}${(()=>{const a=petAdv(p.k);if(a)return "";const T=(S.pets[p.k].tr||[]).length;return `<div class="petbtns"><button data-trn="${p.k}" ${T>=TRICKS.length?"disabled":""}>🎓 ${T>=TRICKS.length?"All tricks":"Teach "+TRICKS[T][0]}</button><button data-prf="${p.k}" ${!T||Date.now()-(S.pets[p.k].pf||0)<3600000?"disabled":""}>🎪 Show</button></div>`})()}${(()=>{const a=petAdv(p.k);if(!a)return "";
@@ -5356,7 +5378,7 @@ function openTrivia(back){if(S.trivDay===dayKey())return;S.trivDay=dayKey();dirt
 function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||{};const draw=()=>{const T=S.tix||0;
   $("room").innerHTML=`<div class="room-in scroll arcroom">${roomHead("Arcade")}<div class="arcmarq">★ INSERT COIN ★ HIGH SCORES ★ PRIZES ★</div>
     <div class="kv"><div><span class="eyebrow">Tickets</span><b>🎟️ ${fmtN(T)}</b></div><div><span class="eyebrow">Games</span><b>5 energy each</b></div></div>
-    <button class="reqbtn tvbtn" id="tvGo" ${S.trivDay===dayKey()?"disabled":""}>🧠 Daily trivia<b>${S.trivDay===dayKey()?"Done today · new questions tomorrow":"5 questions · free · tickets for each right answer"}</b></button>
+    <button class="reqbtn tvbtn" id="tvGo" ${S.trivDay===dayKey()?"disabled":""}>Daily trivia<b>${S.trivDay===dayKey()?"Done today · new questions tomorrow":"5 questions · free · tickets for each right answer"}</b></button>
     <div class="sechead"><h3>Games</h3><span class="eyebrow">No muscles needed</span></div>
     <div class="perks">${Object.entries(ARC_G).map(([k,g])=>`<button class="perk nopic" data-ag="${k}" ${S.energy<5?"disabled":""}><span class="t">${g.ic} ${g.n}</span><span class="d">${g.d}${S.arcBest[k]?" · best "+S.arcBest[k]:""}</span><span class="c">Play</span></button>`).join("")}</div>
     <div class="sechead"><h3>Capsule machine</h3><span class="eyebrow">🎟️ 30 a spin · ${capPool().filter(a=>(S.accOwn||{})[a.k]).length}/${capPool().length} collected</span></div>
@@ -5477,7 +5499,7 @@ function openBoutique(back,cosmic){S.accOwn=S.accOwn||{};S.acc=S.acc||{};const i
     $("room").innerHTML=`<div class="room-in scroll">${roomHead(cosmic?"Cosmic Boutique":"Boutique")}${prev}
       <div class="note">Wear one item per slot. Everything you wear adds a little <b>rizz</b> (now +${accRizz()}) and friends see it in the Online Town.</div>
       ${(()=>{const W=Object.entries(S.acc).filter(([sl,k])=>ACCS.some(a=>a.s===sl&&a.k!==k&&S.accOwn[a.k]));if(!W.length)return "";S.mog=S.mog||{};return `<div class="sechead"><h3>🪞 Transmog</h3><span class="eyebrow">keep the stats, change the look</span></div><div class="note">Wear one item for its rizz and powers but make it look like another you own. Heads up: a transmogged item doesn't count toward an outfit set.</div>${W.map(([sl,k])=>{const cur=S.mog[sl]||k;return `<div class="mogrow"><span>${ACC_SLOT[sl]} · wearing <b>${esc(accOf(k).n)}</b>, looks like</span><div class="mogch">${ACCS.filter(a=>a.s===sl&&S.accOwn[a.k]).map(a=>`<button class="${a.k===cur?"on":""}" data-mog="${sl}|${a.k===k?"":a.k}">${a.k===k?"Itself":esc(a.n)}</button>`).join("")}</div></div>`}).join("")}`})()}
-      <div class="btrow"><button class="reqbtn" id="bqPhoto">📸 Photo booth<b>Save a picture of your look</b></button></div>
+      <div class="btrow"><button class="reqbtn" id="bqPhoto">Photo booth<b>Save a picture of your look</b></button></div>
       <div class="sechead"><h3>✨ Sets</h3><span class="eyebrow">wear all pieces for bonus rizz</span></div><div class="setgrid">${ACC_SETS.map(t=>{const on=t.k.every(k=>Object.values(S.acc).includes(k));return `<div class="setc${on?" on":""}"><b>${t.ic} ${t.n}</b><span>${t.k.map(k=>{const a=accOf(k);return `<i class="${Object.values(S.acc).includes(k)?"w":S.accOwn[k]?"o":""}">${esc(a?a.n:k)}</i>`}).join("")}</span><em>+${t.rz} rizz</em></div>`}).join("")}</div>
       ${(()=>{const W=Object.values(S.acc).map(accOf).filter(a=>a&&a.cc);if(!W.length)return "";S.accCol=S.accCol||{};return `<div class="sechead"><h3>🎨 Colours</h3><span class="eyebrow">for what you're wearing</span></div>${W.map(a=>{const cur=S.accCol[a.k]||a.cc;return `<div class="acolrow"><span>${esc(a.n)}</span><div class="swrow">${[a.cc,...ACC_PAL.filter(c=>c!==a.cc)].map(c=>`<button class="sw${c===cur?" on":""}" style="background:${c}" data-acol="${a.k}" data-c="${c}" aria-label="colour"></button>`).join("")}</div></div>`}).join("")}`})()}
       ${cosmic?`<div class="note">Cosmic gear, only sold in orbit. Things you already own from either shop can be worn anywhere.</div>`:""}${Object.entries(ACC_SLOT).map(([sl,nm])=>{const L=ACCS.filter(a=>a.s===sl&&(inShop(a)||(S.accOwn[a.k]&&!cosmic)));return L.length?`<div class="sechead"><h3>${nm}</h3></div><div class="perks">${L.map(a=>{const own=S.accOwn[a.k],on=S.acc[sl]===a.k;return `<button class="perk nopic${on?" bought":""}" data-acc="${a.k}" ${!own&&(a.ev||S.cash<a.cost)?"disabled":""}><span class="t">${on?"✓ ":""}${a.n}</span><span class="d">${a.ev&&!own?a.ev:(a.d?a.d+" · ":"")+"+"+a.rz+" rizz"}${fxText(a.k)?` · <b class="fxp">✨ ${fxText(a.k)}</b>`:""}</span><span class="c">${on?"Take off":own?"Wear":a.ev?"Event":fmt(a.cost)}</span></button>`}).join("")}</div>`:""}).join("")}</div>`;
