@@ -25,13 +25,14 @@ function DataTemplate.new()
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest bought tier, selected = tier index, best = heaviest tier lifted }
 		machinesUsed = {}, -- machineId -> true once you did a rep on it (the machine signs' "NEW" tag)
-		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0, cardioMeters = 0, posingWins = 0, posingEntries = 0, loginWeeks = 0, armKingWins = 0 },
+		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0, cardioMeters = 0, posingWins = 0, posingEntries = 0, loginWeeks = 0, armKingWins = 0, beatBenny = 0, beatCoral = 0, beatDante = 0 },
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
 		shakes = 0, -- Energy Shakes in the bag
 		daily = { lastDay = 0, streak = 0, best = 0, calendarDay = 0 }, -- login streak calendar (Config.Economy.Login): last claimed day + calendar day
 		-- today's quests (Config.DailyQuests, DailyService): list = { { id, progress, done, claimed } }, groups trained today
 		dailyQuests = { day = 0, list = {}, bonus = false, swaps = 0, groups = {} },
 		repsToday = { day = 0, count = 0 }, -- reps on the current UTC day (the "Most reps today" board, LeaderboardService)
+		rivals = {}, -- NPC rivals: [rival id] = "active" (challenge accepted) | "beaten" (Config.Rivals, RivalService)
 		meals = {}, -- smoothie bar boosts: [item id] = seconds left (paused while away; Config.Meals, MealService)
 		seasons = {}, -- seasonId -> reps done during that event (Config.Seasons)
 		crew = { id = nil }, -- crew id (records live in the "Crews" DataStore, see CrewService)

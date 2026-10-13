@@ -115,6 +115,33 @@ knows the bigger gyms, the beach and the town). Weak fits to listen to first: Cr
   Note: Roblox's own prompt UI doesn't show in the MCP screenshots (it's there: checked with PromptShown).
 - Screenshots: meals_shop_panel_starter_cart, meals_hud_timers, meals_drinking_shaker, meals_coconut_cart_beach.
 
+### Task 6: NPC rivals (done, tested solo)
+- `Config/Rivals`, `Server/RivalService`, `RivalClient`, builder `tools/builders/Rivals` (Benny and Coral in Workspace.NPCs;
+  run it again after the NPCs / BeachNPCs builders, they clear every NPC with a Gym attribute).
+- One rival per gym, original characters, numbers rising in the order the gyms open: **Benny** (starter gym) = a full
+  set of 10 on the Flat Bench heavier than 95 lb, 150 coins + "Beat Benny" (Uncommon); **Coral** (beach gym) = win an
+  arm wrestling match against her (strength 1.25, 8-9.5 taps/s; she joins the opponent list at every table once you
+  accept), 300 coins + "Beat Coral" (Rare); **Dante** (pro gym, the existing 8'0" giant) = a full set on the Squat
+  Rack heavier than 315 lb, 600 coins + "Beat Dante" (Epic). Copies of a machine in other gyms count.
+- **Choice written down:** gyms already open by Growth Spurt (beach 1, pro 2), so beating a rival does NOT open a gym.
+  Rivals are an extra goal; the win card points to the next rival and where/when he is ("Next rival: Coral at the beach
+  gym (opens at Growth Spurt 1).").
+- Flow: walk up to a rival, press **Challenge** (he stops and turns to you), the card shows his line, the challenge, his
+  record vs your best, the reward (title plate in its rarity color), I'M IN / LATER. A set at or under his record, or a
+  lost match, gets his kind line in a bubble over his head ("Close one! Come back stronger."); a win gets the win card
+  (bottom, fades after 7 s) and his "Not bad, rookie." line. Saved per player (`data.rivals`, stats beatBenny / beatCoral
+  / beatDante). Phones: a compact card (234 px tall).
+- Size (one source): rivals are built from `Rivals.BuildSpec` (their look and scale in Config), the arm wrestling copy of
+  Coral uses the same spec; NpcService.FreezeScale keeps every rival's size fixed (measured: unchanged while near and
+  training, automatic scaling off). Dante keeps GymGoerService's giant shape.
+- Also: the arm wrestling opponent picker now builds its buttons from the server's list (needed for Coral);
+  `GymGoerService.Hold` (a regular stops and faces you); fixed a TutorialClient error (the path target turned nil while
+  a path was computing, "attempt to index nil with 'Y'").
+- Studio hook `TestRivalBeat` = rival id (wins his challenge for every player). Tested: all three cards, accept, a
+  10-rep set at 45 lb (lose line), a set at 115 lb (Benny beaten, 150 coins, title), arm wrestling Coral picked and lost
+  (her line), win cards, phone layout, sizes; no errors.
+- Screenshots: rival_card_benny, rival_card_coral, rival_card_dante, rival_win_benny, rival_card_phone_layout.
+
 ## Before that (13 Oct): soft shutdown
 - `Server/ShutdownService`: when Roblox closes a live server (after a publish: Creator Hub > Servers > "Shut down all
   servers" / "Migrate to latest update"), players get a small note ("The gym is updating..."), are teleported together into

@@ -60,19 +60,31 @@ local hint = Theme.Text({ LayoutOrder = 5, Font = "Regular", TextSize = "Small",
 -- alone at the table: pick an NPC opponent (or wait for a player to sit down)
 local npcRow = New("Frame", { Name = "Npcs", LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Visible = false, Parent = panel },
 	{ Theme.List(Horizontal, "S", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+-- one button per opponent the server offers (Social.ArmWrestle.Npcs, plus an NPC rival whose challenge you accepted)
 local npcButtons = {}
-for order, npc in ipairs(Social.ArmWrestle.Npcs) do
-	local button = Theme.Button("Secondary", { Name = npc.id, LayoutOrder = order, Size = UDim2.new(1 / #Social.ArmWrestle.Npcs, -Spacing.S, 0, 56), Parent = npcRow }, {
-		Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
-		Theme.Text({ LayoutOrder = 1, Text = npc.name, Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20) }),
-		Theme.Text({ LayoutOrder = 2, Text = npc.label .. " · " .. npc.coins .. " coins", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), Upper = false }),
-	})
-	button.Activated:Connect(function()
-		remote:FireServer("Npc", npc.id)
-		npcRow.Visible = false
-	end)
-	npcButtons[npc.id] = button
+local shownChoices = ""
+local function buildChoices(list)
+	local key = ""
+	for _, npc in ipairs(list) do key ..= tostring(npc.id) .. "," end
+	if key == shownChoices then return end
+	shownChoices = key
+	for _, button in pairs(npcButtons) do button:Destroy() end
+	npcButtons = {}
+	for order, npc in ipairs(list) do
+		local sub = npc.coins and (tostring(npc.label) .. " · " .. npc.coins .. " coins") or tostring(npc.label)
+		local button = Theme.Button("Secondary", { Name = tostring(npc.id), LayoutOrder = order, Size = UDim2.new(1 / #list, -Spacing.S, 0, 56), Parent = npcRow }, {
+			Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
+			Theme.Text({ LayoutOrder = 1, Text = tostring(npc.name), Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 20) }),
+			Theme.Text({ LayoutOrder = 2, Text = sub, Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, Size = UDim2.new(1, 0, 0, 16), Upper = false }),
+		})
+		button.Activated:Connect(function()
+			remote:FireServer("Npc", npc.id)
+			npcRow.Visible = false
+		end)
+		npcButtons[npc.id] = button
+	end
 end
+buildChoices(Social.ArmWrestle.Npcs)
 -- the big TAP button (tapping anywhere works too)
 local tapButton = Theme.Button("Primary", { Name = "Tap", LayoutOrder = 7, Size = UDim2.fromOffset(150, 72), Visible = false, Parent = panel }, {
 	Theme.Text({ Text = "Tap!", Font = "SemiBold", TextSize = "Huge", Size = UDim2.fromScale(1, 1) }),
@@ -161,6 +173,7 @@ remote.OnClientEvent:Connect(function(kind, info)
 		title.Text = "Arm wrestling"
 		big.Text = ""
 		local choices = type(info.npcs) == "table" and #info.npcs > 0
+		if choices then buildChoices(info.npcs) end
 		npcRow.Visible = choices
 		hint.Text = choices and "Pick an opponent, or wait for a player to sit down" or "Waiting for an opponent..."
 		leaveButton.Visible = true

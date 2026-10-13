@@ -52,7 +52,20 @@ local function opponentName(t, index)
 end
 
 local npcChoices = {}
-for _, npc in ipairs(Config.Npcs) do table.insert(npcChoices, { id = npc.id, name = npc.name, label = npc.label }) end
+for _, npc in ipairs(Config.Npcs) do table.insert(npcChoices, { id = npc.id, name = npc.name, label = npc.label, coins = npc.coins }) end
+
+-- Extra opponents only some players can pick (an NPC rival whose challenge they accepted: RivalService sets this).
+-- extraOpponents(player) -> { npc config like Config.Npcs (+ look = NpcService.Build spec) }
+local extraOpponents = function(_player) return {} end
+function ArmWrestleService.SetExtraOpponents(fn) extraOpponents = fn end
+
+local function choicesFor(player)
+	local extra = player and extraOpponents(player) or {}
+	if #extra == 0 then return npcChoices end
+	local list = table.clone(npcChoices)
+	for _, npc in ipairs(extra) do table.insert(list, { id = npc.id, name = npc.name, label = npc.label }) end -- (no coins line: a rival's reward is on his card)
+	return list
+end
 
 local function broadcast(t, extra)
 	for index = 1, 2 do
@@ -63,7 +76,7 @@ local function broadcast(t, extra)
 			side = index == 1 and 1 or -1,
 			opponent = opponentName(t, index),
 			-- alone and waiting: the NPC opponents you can pick
-			npcs = (alone and t.match and t.match.state == "waiting") and npcChoices or nil,
+			npcs = (alone and t.match and t.match.state == "waiting") and choicesFor(t.seats[index].player) or nil,
 		}
 		for key, value in pairs(extra or {}) do info[key] = value end
 		send(t, index, info)
@@ -167,6 +180,8 @@ local function finish(t, winnerIndex, reason)
 					TitleService.Check(player) -- "Iron Grip", "Arm Wrestling King"
 					GameEvents.Fire("ArmWrestleWon", player, 1, { npc = npc and npc.id })
 				end
+			elseif npc and winnerIndex then
+				GameEvents.Fire("ArmWrestleLost", player, 1, { npc = npc.id })
 			end
 			remote:FireClient(player, "State", { state = "result", won = won, draw = winnerIndex == nil, coins = coins, reason = reason,
 				king = won and npc ~= nil and npc.king == true, opponent = opponentName(t, index), side = index == 1 and 1 or -1 })
@@ -264,7 +279,10 @@ local function seatNpc(t, index, npc)
 	-- animated: only the root is anchored, so ArmWrestleClient can pose it (seated, arm on the table) like a player
 	local stool = seat.seat
 	local facing = CFrame.lookAt(stool.Position, Vector3.new(t.center.X, stool.Position.Y, t.center.Z))
-	local model = NpcService.Build({ name = npc.name, skin = npc.skin, shirt = npc.shirt, pants = npc.pants, animated = true }, facing)
+	-- (a rival wears his own look: the same spec and size as in his gym, Config.Rivals)
+	local spec = npc.look and table.clone(npc.look) or { skin = npc.skin, shirt = npc.shirt, pants = npc.pants }
+	spec.name, spec.animated = npc.name, true
+	local model = NpcService.Build(spec, facing)
 	if not model then return false end
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if root then
@@ -288,6 +306,11 @@ end
 local function chooseNpc(player, npcId)
 	local t, index = tableOf(player)
 	local npc = type(npcId) == "string" and Config.NpcById[npcId]
+	if not npc and type(npcId) == "string" then
+		for _, extra in ipairs(extraOpponents(player)) do
+			if extra.id == npcId then npc = extra end
+		end
+	end
 	if not t or not npc or not t.match or t.match.state ~= "waiting" then return end
 	local other = t.seats[3 - index]
 	if other.player or other.npc then return end

@@ -2,7 +2,7 @@
 -- can count it without each service knowing about the others.
 --   GameEvents.Fire(name, player, amount, info)   e.g. Fire("Rep", player, 1, { machineId = "FlatBench", groups = {...} })
 --   GameEvents.On(name, handler)                  handler(player, amount, info); returns the connection
--- Names in use: "Rep", "CardioMeters", "Spot", "PosingEntered", "PosingWon", "ArmWrestleWon", "RivalBeaten".
+-- Names in use: "Rep", "CardioMeters", "Spot", "PosingEntered", "PosingWon", "ArmWrestleWon", "ArmWrestleLost", "RivalBeaten".
 -- Handlers run in their own thread, so a failing or slow handler never breaks the service that fired the event.
 local GameEvents = {}
 

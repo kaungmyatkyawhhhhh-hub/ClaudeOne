@@ -496,7 +496,7 @@ local function lift(player)
 		GameEvents.Fire("CardioMeters", player, tier.weight * Machines.Cardio.MetersPerMph * BoostService.Cardio(player))
 	else
 		local main = Muscles.ById[machine.muscles[1].id]
-		GameEvents.Fire("Rep", player, 1, { machineId = machine.id, group = main and main.group })
+		GameEvents.Fire("Rep", player, 1, { machineId = machine.id, group = main and main.group, weight = tier.weight })
 	end
 
 	-- personal record: the heaviest weight ever lifted on this machine

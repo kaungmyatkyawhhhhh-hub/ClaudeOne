@@ -269,18 +269,19 @@ local function refreshPath(force)
 	if not force and lastFrom and (from - lastFrom).Magnitude < PATH.MoveThreshold then return end
 	lastFrom = from
 	computing = true
+	local target = targetPoint -- (the step can end while the path is computing: targetPoint turns nil)
 	task.spawn(function()
 		local feet = from - Vector3.new(0, 2.5, 0)
-		local ok = pcall(function() agent:ComputeAsync(feet, targetPoint) end)
+		local ok = pcall(function() agent:ComputeAsync(feet, target) end)
 		local points
 		if ok and agent.Status == Enum.PathStatus.Success then
 			points = {}
 			for _, waypoint in ipairs(agent:GetWaypoints()) do table.insert(points, waypoint.Position) end
 		else
-			points = { Vector3.new(from.X, targetPoint.Y, from.Z), targetPoint } -- straight line fallback
+			points = { Vector3.new(from.X, target.Y, from.Z), target } -- straight line fallback
 		end
 		computing = false
-		if targetPoint then placeDots(points) end
+		if targetPoint == target then placeDots(points) end
 	end)
 end
 

@@ -67,6 +67,13 @@ Titles.List = {
 		description = "Win 10 arm wrestling matches.", condition = { type = "stat", stat = "armWins", min = 10 } },
 	{ id = "ArmWrestlingKing", name = "Arm Wrestling King", rarity = "Epic", category = "Social",
 		description = "Beat Big Lou, the strongest arm wrestler.", condition = { type = "stat", stat = "armKingWins", min = 1 } },
+	-- NPC rivals (Config/Rivals, RivalService)
+	{ id = "BeatBenny", name = "Beat Benny", rarity = "Uncommon", category = "Social",
+		description = "Beat Benny, the starter gym's rival, on the flat bench.", condition = { type = "stat", stat = "beatBenny", min = 1 } },
+	{ id = "BeatCoral", name = "Beat Coral", rarity = "Rare", category = "Social",
+		description = "Beat Coral, the beach gym's rival, at arm wrestling.", condition = { type = "stat", stat = "beatCoral", min = 1 } },
+	{ id = "BeatDante", name = "Beat Dante", rarity = "Epic", category = "Social",
+		description = "Beat Dante, the pro gym's giant, on the squat rack.", condition = { type = "stat", stat = "beatDante", min = 1 } },
 	{ id = "PosingChampion", name = "Posing Champion", rarity = "Epic", category = "Social",
 		description = "Win a posing competition on the beach stage.", condition = { type = "stat", stat = "posingWins", min = 1 } },
 	{ id = "Dedicated", name = "Dedicated", rarity = "Rare", category = "Activity",

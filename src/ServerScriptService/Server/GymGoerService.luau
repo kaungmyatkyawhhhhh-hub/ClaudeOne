@@ -37,6 +37,7 @@ local YIELD_AFTER = 1.2      -- seconds a player has to stand by an NPC's machin
 local LOOK_RANGE = 14        -- Coach and legends turn toward players this close
 
 local reserved = {} -- [machine model] = npc walking to it
+local states = {}   -- [npc] = its state (GymGoerService.Hold)
 local rng = Random.new()
 
 ------------------------------------------------------------------------
@@ -145,6 +146,8 @@ local function setWalking(npc, on)
 	end
 end
 
+local faceToward -- (below)
+
 -- Walks to a point (pathfinding, straight line as a fallback). Returns true when it arrived.
 local function walkTo(state, target)
 	local npc, humanoid = state.npc, state.humanoid
@@ -167,6 +170,16 @@ local function walkTo(state, target)
 		while not reached and os.clock() - started < 6 do
 			task.wait(0.1)
 			if not npc.Parent then connection:Disconnect() return false end
+			-- someone is talking to him (Hold): stop, face them, then walk on
+			if os.clock() < (state.holdUntil or 0) then
+				humanoid:MoveTo(root.Position)
+				play(state, "Idle")
+				if state.holdFace then faceToward(npc, state.holdFace) end
+				while os.clock() < (state.holdUntil or 0) and npc.Parent do task.wait(0.2) end
+				play(state, "Walk")
+				humanoid:MoveTo(point)
+				started = os.clock()
+			end
 		end
 		connection:Disconnect()
 	end
@@ -176,7 +189,7 @@ local function walkTo(state, target)
 	return arrived
 end
 
-local function faceToward(npc, point)
+faceToward = function(npc, point)
 	local root = npc:FindFirstChild("HumanoidRootPart")
 	if not root then return end
 	local flat = Vector3.new(point.X, root.Position.Y, point.Z)
@@ -294,7 +307,7 @@ local function loop(state, all)
 		if humState == Enum.HumanoidStateType.FallingDown or humState == Enum.HumanoidStateType.Ragdoll or humState == Enum.HumanoidStateType.Physics then
 			state.humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 		end
-		if os.clock() < (state.busyUntil or 0) then
+		if os.clock() < math.max(state.busyUntil or 0, state.holdUntil or 0) then
 			task.wait(1)
 		else
 			state.free = false
@@ -415,6 +428,18 @@ local function dressNpc(npc, gym)
 	npc:SetAttribute("MuscleG", BodyService.EncodeShare(NPC_GROWTH[gym] or NPC_GROWTH.Starter))
 end
 
+-- A player talks to a regular (a rival's challenge card): he stops walking for `seconds` and faces `point` (on a machine
+-- he just keeps lifting there). Doesn't stop what he's doing otherwise.
+function GymGoerService.Hold(npc, seconds: number, point: Vector3?)
+	local state = states[npc]
+	if not state then return end
+	state.holdUntil = os.clock() + seconds
+	state.holdFace = point
+	if not state.machine and point and npc:FindFirstChild("HumanoidRootPart") and npc.HumanoidRootPart.Anchored then
+		faceToward(npc, point) -- (standing still: turn now)
+	end
+end
+
 function GymGoerService.Start()
 	local npcs = Workspace:WaitForChild("NPCs", 10)
 	if not npcs then return end
@@ -424,6 +449,7 @@ function GymGoerService.Start()
 		if humanoid and npc:GetAttribute("Gym") then
 			local state = { npc = npc, humanoid = humanoid, gym = npc:GetAttribute("Gym"), tracks = loadTracks(npc), free = true }
 			table.insert(all, state)
+			states[npc] = state
 		end
 	end
 	MachineService.OnNpcEvicted(function(npc)
