@@ -14,8 +14,9 @@
 --    did a rep on show the bouncing yellow "!" + "NEW" (the save's `machinesUsed`); nothing beyond. While you're on a
 --    machine the diamond, prompt and outline are hidden. Hidden too while the camera is within SIGN.CameraMin studs.
 --  * Cheap: one set of sign parts moved to the nearest machine; one invisible anchor part per machine for its "!".
---  * Arm wrestling tables (tag "ArmWrestleTable", owner's feature run task 3) get the same sign and OCCUPY prompt: the
---    body icon with the biceps and forearms in red, "Arm wrestling", "1 v 1". Sitting at one hides it like a machine.
+--  * Arm wrestling tables (tag "ArmWrestleTable") are not lifting machines (owner, 14 Oct): no diamond, only a small
+--    simple label (the name in gold on a dark pill, final kit) and the OCCUPY prompt. Sitting at one hides it.
+--  * Every sign here: AlwaysOnTop off, MaxDistance 40, sized in studs; the diamond only within SIGN.Near (15) studs.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -36,7 +37,8 @@ local player = Players.LocalPlayer
 local New = Theme.New
 
 local SIGN = {
-	Near = 12,            -- studs from your character: the nearest machine this close shows its sign
+	Near = 15,            -- studs from your character: the nearest machine this close shows its sign
+	MaxDistance = 40,     -- studs: the sign's billboards never draw beyond this
 	CameraMin = 4,        -- studs: the diamond hides when the camera is closer than this
 	Side = 2.6,           -- studs: the diamond's square side (its diagonal is ~3.7)
 	Safe = 1.68,          -- studs: the content's square in the middle (an upright square fits up to 0.707 x Side)
@@ -136,7 +138,20 @@ local function scaledText(props, minSize, maxSize)
 	return label
 end
 
-local nameGui = New("BillboardGui", { Name = "MachineSignName", Size = UDim2.new(8, 0, 0.95, 0), LightInfluence = 0, AlwaysOnTop = false, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+local nameGui = New("BillboardGui", { Name = "MachineSignName", Size = UDim2.new(8, 0, 0.95, 0), LightInfluence = 0, AlwaysOnTop = false, MaxDistance = SIGN.MaxDistance,
+	Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+-- the simple label for things that aren't lifting machines (the arm wrestling tables): the name in gold on a dark pill
+local simpleGui = New("BillboardGui", { Name = "SimpleSign", Size = UDim2.new(4.4, 0, 0.8, 0), LightInfluence = 0, AlwaysOnTop = false, MaxDistance = SIGN.MaxDistance,
+	Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+local simplePill = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Colors.Pill, BackgroundTransparency = 0.12, Parent = simpleGui }, {
+	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	New("UIStroke", { Color = Theme.Colors.Gold, Thickness = 1.5, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIPadding", { PaddingLeft = UDim.new(0.08, 0), PaddingRight = UDim.new(0.08, 0), PaddingTop = UDim.new(0.16, 0), PaddingBottom = UDim.new(0.16, 0) }),
+})
+local simpleLabel = New("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", TextScaled = true, FontFace = Theme.Fonts.Bold,
+	TextColor3 = Color3.new(1, 1, 1), Parent = simplePill }, {
+	New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
+})
 local nameLabel = stroked(scaledText({ Size = UDim2.fromScale(1, 1), FontFace = Theme.Fonts.Bold, TextColor3 = Color3.new(1, 1, 1), Parent = nameGui }, 16, 60), 3)
 
 -- the content: a SurfaceGui on the face (it turns with the diamond), clipped to its square; text shrinks to fit the width
@@ -151,7 +166,8 @@ local muscleLabel = stroked(scaledText({ Position = UDim2.fromScale(0.03, 0.55),
 local shareLabel = stroked(scaledText({ Position = UDim2.fromScale(0.15, 0.78), Size = UDim2.fromScale(0.7, 0.18), FontFace = Theme.Fonts.Bold, TextColor3 = SIGN.Red, Parent = safe }, 1, 36), 2)
 
 -- (not AlwaysOnTop: those did not draw reliably; instead it is pulled toward the camera so the machine never hides it)
-local promptGui = New("BillboardGui", { Name = "MachineSignPrompt", Size = UDim2.new(2.6, 0, 1.45, 0), LightInfluence = 0, AlwaysOnTop = false, Active = true, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+local promptGui = New("BillboardGui", { Name = "MachineSignPrompt", Size = UDim2.new(2.6, 0, 1.45, 0), LightInfluence = 0, AlwaysOnTop = false, MaxDistance = SIGN.MaxDistance,
+	Active = true, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
 local keyButton = New("TextButton", {
 	AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromScale(0.36, 0.62),
 	BackgroundColor3 = SIGN.Glass, BackgroundTransparency = 0.25, AutoButtonColor = false, Text = "", Parent = promptGui,
@@ -229,7 +245,14 @@ local function fill(model, machine)
 	end
 end
 
-local function setAlpha(a: number)
+local shownSimple = false -- the shown sign is the simple label (not a lifting machine): no diamond
+local function setAlpha(alpha: number)
+	-- the simple label takes the sign's alpha; the diamond (and its name) stay hidden for it
+	simpleGui.Enabled = shownSimple and alpha > 0
+	simplePill.BackgroundTransparency = 1 - alpha * 0.88
+	simpleLabel.TextTransparency = 1 - alpha
+	simplePill:FindFirstChildOfClass("UIStroke").Transparency = 1 - alpha * 0.65
+	local a = if shownSimple then 0 else alpha
 	local t = 1 - a
 	glass.Transparency = 1 - a * (1 - SIGN.GlassTransparency)
 	for _, edge in ipairs(edges) do edge.Transparency = t end
@@ -400,7 +423,9 @@ RunService.RenderStepped:Connect(function(dt)
 	if nearest and nearest ~= shown.model and shown.alpha <= 0 then
 		local anchor = anchors[nearest]
 		fill(nearest, anchor.machine)
-		nameGui.Adornee, promptGui.Adornee = signAnchor, signAnchor
+		shownSimple = anchor.machine.armWrestle == true
+		simpleLabel.Text = string.upper(anchor.machine.name)
+		nameGui.Adornee, promptGui.Adornee, simpleGui.Adornee = signAnchor, signAnchor, signAnchor
 		placeFloor(nearest)
 		shown.turn = nil
 	end
@@ -426,7 +451,14 @@ RunService.RenderStepped:Connect(function(dt)
 		-- camera angle; the prompt is pulled toward the camera so the machine's frame doesn't hide it
 		local diagonal = SIGN.Side * math.sqrt(2) / 2
 		nameGui.StudsOffset = Vector3.new(0, diagonal + 0.7, 0)
-		promptGui.StudsOffset = Vector3.new(0, -diagonal - 1.05, math.min(2.2, (cameraPosition - centre).Magnitude * 0.4))
+		local pull = math.min(2.2, (cameraPosition - centre).Magnitude * 0.4)
+		if shownSimple then
+			-- the simple label where the diamond would be, the prompt right under it
+			simpleGui.StudsOffset = Vector3.new(0, 0.2, 0)
+			promptGui.StudsOffset = Vector3.new(0, -0.95, pull)
+		else
+			promptGui.StudsOffset = Vector3.new(0, -diagonal - 1.05, pull)
+		end
 		-- too close to the camera: hide the diamond (the floor outline stays)
 		if (centre - cameraPosition).Magnitude < SIGN.CameraMin then want = 0 end
 		-- standing inside the outline makes it brighter

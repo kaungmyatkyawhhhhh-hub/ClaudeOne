@@ -134,11 +134,14 @@ end
 ------------------------------------------------------------------------
 -- Waypoint: a marker over the stage and an arrow at the screen edge
 ------------------------------------------------------------------------
+-- (owner, 14 Oct: like every world sign, sized in studs, not through walls, at most 40 studs away; the screen-edge arrow
+-- still points the way from further)
 local marker = New("BillboardGui", {
 	Name = "PosingStageMarker",
-	Size = UDim2.fromOffset(150, 64),
+	Size = UDim2.new(7, 0, 3, 0),
 	StudsOffsetWorldSpace = Vector3.new(0, 15, 0),
-	AlwaysOnTop = true,
+	AlwaysOnTop = false,
+	MaxDistance = 40,
 	LightInfluence = 0,
 	Enabled = false,
 	ResetOnSpawn = false,
@@ -149,12 +152,13 @@ local markerAnchor = New("Part", {
 	Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(STAGE),
 })
 marker.Adornee = markerAnchor
-local markerText = Theme.Text({ Text = "Posing stage", Font = "SemiBold", TextSize = "Body", Size = UDim2.new(1, 0, 0, 22), Parent = marker })
+local markerText = Theme.Text({ Text = "Posing stage", Font = "SemiBold", TextSize = "Body", TextScaled = true, Size = UDim2.fromScale(1, 0.36), Parent = marker })
 Theme.Uppercase(markerText)
 Theme.TextShadow(markerText, 0.2)
-local markerDistance = Theme.Text({ Text = "", Font = "Regular", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 22), Parent = marker })
+local markerDistance = Theme.Text({ Text = "", Font = "Regular", TextSize = "Small", TextScaled = true, Size = UDim2.fromScale(1, 0.26), Position = UDim2.fromScale(0, 0.36), Parent = marker })
 Theme.TextShadow(markerDistance, 0.2)
-local markerArrow = New("Frame", { Size = UDim2.fromOffset(22, 22), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 40), BackgroundTransparency = 1, Rotation = 90, Parent = marker })
+local markerArrow = New("Frame", { Size = UDim2.fromScale(0.34, 0.34), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.64), BackgroundTransparency = 1, Rotation = 90, Parent = marker },
+	{ New("UIAspectRatioConstraint", { AspectRatio = 1 }) })
 Icons.Chevron(1, Colors.Text).Parent = markerArrow
 
 local edgeArrow = New("Frame", {

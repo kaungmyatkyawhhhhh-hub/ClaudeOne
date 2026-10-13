@@ -1,8 +1,15 @@
 -- StatsLabelsClient: your stats around your character in the 3D world, switched on and off by the Stats button (hidden
 -- by default; StatsClient fires UIBus.StatsLabels).
 --  * Compact: a small box per stat (name on top, the number under it in light blue-white, with commas), a thin white line
---    to a small white dot on the body. Strength (total of all muscle levels) and Stamina sit above the head; the six
---    groups sit on both sides, three each: Chest, Core, Legs to the camera's left, Shoulders, Back, Arms to its right.
+--    to a small white dot on the body. Strength (total of all muscle levels) and Stamina sit above the head (never over
+--    Roblox's top bar); the six groups sit on both sides, three each (owner, 14 Oct): Shoulders, Chest, Arms on the
+--    camera's left, Back, Core, Legs on its right.
+--  * Every frame each line ends exactly on its body point (Camera:WorldToViewportPoint on a full-screen gui that ignores
+--    the GUI inset): Chest = the upper torso's front centre, Back = its back centre, Core = the lower torso's front
+--    centre, Shoulders = the top of the upper arm on the left column's side, Arms = that arm's bicep, Legs = the middle
+--    of the thigh on the right column's side; on the muscle mesh's surface when the body wears one (MuscleMeshes),
+--    else the R15 part's. A point on the far side of the body (Back while you face the camera) still gets its line,
+--    faded. While the labels are open and you stand still, your character turns to face the camera.
 --    A maxed group just shows its EXP (no "Max" text). The set stays close to the body (about 40% of the screen height) and keeps
 --    the same size on screen at any camera distance.
 --  * A 2D layer placed from the character's projected position, so it is always visible (never hidden behind walls or
@@ -51,12 +58,12 @@ local LAYOUT = {
 
 -- the six groups: which column, and where the dot sits (see anchorPoint)
 local GROUPS = {
+	{ id = "Shoulders", side = "Left", anchor = "Shoulder" },
 	{ id = "Chest", side = "Left", anchor = "Chest" },
-	{ id = "Core", side = "Left", anchor = "Core" },
-	{ id = "Legs", side = "Left", anchor = "Thigh" },
-	{ id = "Shoulders", side = "Right", anchor = "Shoulder" },
+	{ id = "Arms", side = "Left", anchor = "Biceps" },
 	{ id = "Back", side = "Right", anchor = "Back" },
-	{ id = "Arms", side = "Right", anchor = "Biceps" },
+	{ id = "Core", side = "Right", anchor = "Core" },
+	{ id = "Legs", side = "Right", anchor = "Thigh" },
 }
 
 -- 1966552 -> "1,966,552"
@@ -74,6 +81,10 @@ end
 ------------------------------------------------------------------------
 local gui = Theme.ScreenGui({ Name = "StatsLabels", DisplayOrder = 1, Enabled = false, Parent = playerGui })
 gui.ScreenInsets = Enum.ScreenInsets.None -- positions are viewport pixels (Camera:WorldToViewportPoint)
+gui.IgnoreGuiInset = true -- (owner, 14 Oct: so the viewport pixels line up with the gui exactly)
+-- The drawing layer sits exactly over the camera's viewport (placeOverViewport, every frame): on some devices (screen
+-- notches, the Device Emulator) the full-screen gui is bigger than the 3D viewport and the viewport starts inside it, so
+-- WorldToViewportPoint's pixels only line up inside a layer placed on the viewport. On a normal screen it's the whole gui.
 local layer = New("Frame", { Name = "Layer", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = gui })
 local lineLayer = New("Frame", { Name = "Lines", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = layer })
 
@@ -292,6 +303,14 @@ local function project(point)
 	return Vector2.new(screen.X, screen.Y), screen.Z, onScreen
 end
 
+-- the viewport's top-left corner in the gui (AbsolutePosition counts from under the GUI inset)
+local function placeOverViewport()
+	local origin = -gui.AbsolutePosition - GuiService:GetGuiInset()
+	local view = camera.ViewportSize
+	layer.Position = UDim2.fromOffset(math.floor(origin.X + 0.5), math.floor(origin.Y + 0.5))
+	layer.Size = UDim2.fromOffset(view.X, view.Y)
+end
+
 -- +1 if the part's +X side shows on the right of the screen, else -1
 local function rightSign(part)
 	local a = project(part.CFrame * Vector3.new(1, 0, 0))
@@ -309,27 +328,48 @@ local function pick(character, leftName, rightName, wantRight)
 	return ax < bx and a or b
 end
 
+-- The size of a body part's surface: its muscle mesh when it wears one (MuscleRig welds each mesh to its part with the
+-- same centre and sizes it to the muscle), else the part itself.
+local function surfaceSize(character, part)
+	local size = part.Size
+	local meshes = character:FindFirstChild("MuscleMeshes")
+	if meshes then
+		for _, mesh in ipairs(meshes:GetChildren()) do
+			if mesh:IsA("BasePart") and string.sub(mesh.Name, 1, #part.Name) == part.Name and not string.find(mesh.Name, "Layer", 1, true)
+				and not string.find(mesh.Name, "Cloth", 1, true) then
+				size = Vector3.new(math.max(size.X, mesh.Size.X), math.max(size.Y, mesh.Size.Y), math.max(size.Z, mesh.Size.Z))
+			end
+		end
+	end
+	return size
+end
+
+-- The body point a group's line ends on (world space), and the surface's outward direction there (for "facing away").
 local function anchorPoint(character, name)
 	local torso = character:FindFirstChild("UpperTorso")
 	local waist = character:FindFirstChild("LowerTorso")
 	if name == "Chest" or name == "Back" then
 		if not torso then return nil end
-		local s, toRight = torso.Size, rightSign(torso)
-		-- the chest dot a little to the screen-left of center (its label is left), the back dot to the right
-		local x = (name == "Chest" and -0.22 or 0.3) * s.X * toRight
-		return torso.CFrame * Vector3.new(x, s.Y * (name == "Chest" and 0.18 or 0.12), (name == "Chest" and -0.5 or 0.5) * s.Z)
+		local s = surfaceSize(character, torso)
+		local front = name == "Chest" and -1 or 1 -- (-Z is the front)
+		return torso.CFrame * Vector3.new(0, s.Y * 0.12, front * 0.5 * s.Z), torso.CFrame:VectorToWorldSpace(Vector3.new(0, 0, front))
 	elseif name == "Core" then
 		if not waist then return nil end
-		return waist.CFrame * Vector3.new(-0.2 * waist.Size.X * rightSign(waist), 0, -0.5 * waist.Size.Z)
+		local s = surfaceSize(character, waist)
+		return waist.CFrame * Vector3.new(0, 0, -0.5 * s.Z), waist.CFrame:VectorToWorldSpace(Vector3.new(0, 0, -1))
 	elseif name == "Shoulder" or name == "Biceps" then
-		local arm = pick(character, "LeftUpperArm", "RightUpperArm", true)
+		-- the arm on the left column's side of the screen (so the line never crosses the body)
+		local arm = pick(character, "LeftUpperArm", "RightUpperArm", false)
 		if not arm then return nil end
-		local s = arm.Size
-		if name == "Shoulder" then return arm.CFrame * Vector3.new(0, s.Y * 0.42, 0) end
-		return arm.CFrame * Vector3.new(0, -s.Y * 0.3, -s.Z * 0.5)
+		local s = surfaceSize(character, arm)
+		if name == "Shoulder" then return arm.CFrame * Vector3.new(0, s.Y * 0.45, 0), arm.CFrame.UpVector end
+		return arm.CFrame * Vector3.new(0, -s.Y * 0.1, -s.Z * 0.5), arm.CFrame:VectorToWorldSpace(Vector3.new(0, 0, -1))
 	elseif name == "Thigh" then
-		local leg = pick(character, "LeftUpperLeg", "RightUpperLeg", false)
-		return leg and leg.Position or nil
+		-- the thigh on the right column's side, the middle of its front (the quad)
+		local leg = pick(character, "LeftUpperLeg", "RightUpperLeg", true)
+		if not leg then return nil end
+		local s = surfaceSize(character, leg)
+		return leg.CFrame * Vector3.new(0, 0, -s.Z * 0.5), leg.CFrame:VectorToWorldSpace(Vector3.new(0, 0, -1))
 	end
 	return nil
 end
@@ -361,11 +401,10 @@ local function obstacles()
 	local function addGui(name, path)
 		local screen = playerGui:FindFirstChild(name)
 		if not screen or not screen:IsA("ScreenGui") or not screen.Enabled then return end
-		local inset = screen.ScreenInsets == Enum.ScreenInsets.None and Vector2.zero or GuiService:GetGuiInset()
 		local items = path and { screen:FindFirstChild(path, true) } or screen:GetChildren()
 		for _, item in ipairs(items) do
 			if item:IsA("GuiObject") and item.Visible then
-				local p = item.AbsolutePosition + inset
+				local p = item.AbsolutePosition - layer.AbsolutePosition -- (in the layer's pixels: all AbsolutePositions share one space)
 				table.insert(rects, { p.X, p.Y - Spacing.S, p.X + item.AbsoluteSize.X, p.Y + item.AbsoluteSize.Y + Spacing.S })
 			end
 		end
@@ -410,7 +449,6 @@ local current = {} -- [frame or dot] = Vector2 smoothed position
 -- Labels follow their rest spot on a soft spring (they drift when you walk, turn or jump, up to ~50px, then settle back)
 -- plus a tiny idle float of their own.
 -- which way each dot's body side faces (+1 = the chest side, -1 = the back side); side dots (shoulder, arm, leg) always show
-local FACING = { Chest = 1, Core = 1, Back = -1 }
 
 local SPRING = { Stiffness = 55, Damping = 9.5, MaxDrift = 50, Float = 3 }
 local springs = {}
@@ -529,6 +567,7 @@ local function measure(character)
 end
 
 local function place(dt)
+	placeOverViewport()
 	updateTurn(dt)
 	updateHover()
 	local character = player.Character
@@ -555,7 +594,7 @@ local function place(dt)
 	local halfWidth = math.abs(project(root.Position + camera.CFrame.RightVector * body.half).X - center.X)
 	local gap = LAYOUT.SideGap
 	local rects = obstacles()
-	local topLimit = GuiService:GetGuiInset().Y + LAYOUT.Margin
+	local topLimit = GuiService.TopbarInset.Max.Y + LAYOUT.Margin -- (never over Roblox's top bar)
 	local bottomLimit = view.Y - LAYOUT.Margin
 
 	-- the two columns: three labels each, spread over the body (never more than MaxSpan of the screen)
@@ -611,21 +650,18 @@ local function place(dt)
 					sub.frame.Size = UDim2.fromOffset(size.Width, SUB_HEIGHT)
 				end
 			end
-			local world = anchorPoint(character, entry.spec.anchor)
-			-- dots on the front (Chest, Core) or the back (Back) only show when that side faces the camera (your body blocks them otherwise)
+			-- the exact body point this frame (no smoothing: it stays glued to the body); a point on the far side of the body
+			-- keeps its line, faded
+			local world, outward = anchorPoint(character, entry.spec.anchor)
 			if world then
-				local facing = FACING[entry.spec.anchor]
-				local torsoPart = character:FindFirstChild("UpperTorso")
-				if facing and torsoPart then
-					local normal = torsoPart.CFrame.LookVector * facing
-					if (camera.CFrame.Position - world):Dot(normal) <= 0 then world = nil end
-				end
-			end
-			if world then
-				local dot = smooth(entry.dot, (project(world)), LAYOUT.DotSmooth, dt)
+				local away = outward ~= nil and (camera.CFrame.Position - world):Dot(outward) < 0
+				local dot = (project(world))
 				entry.dot.Visible = true
 				entry.line.Visible = true
 				entry.dot.Position = UDim2.fromOffset(dot.X, dot.Y)
+				local fade = away and 0.65 or 0
+				entry.line.BackgroundTransparency = fade
+				entry.dot.BackgroundTransparency = fade
 				-- the line meets a short horizontal segment under the label (like the reference)
 				local textW = entry.back.Size.X.Offset > 0 and entry.back.Size.X.Offset or (entry.backWidth or size.Width)
 				local x0 = at.X + (size.Width - textW) / 2
@@ -668,6 +704,44 @@ local function place(dt)
 end
 
 ------------------------------------------------------------------------
+-- While the labels are open and you stand still (not seated, not on a skateboard), your character turns to face the
+-- camera so the chest, core and arms show (owner, 14 Oct). Moving gives turning back to Roblox (AutoRotate).
+------------------------------------------------------------------------
+local FACE = { Rate = 6, Still = 0.1 }
+local facingOn = false -- we switched AutoRotate off
+local function faceCamera(dt)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root then return end
+	local still = humanoid.MoveDirection.Magnitude < FACE.Still and not humanoid.Sit and humanoid.SeatPart == nil
+		and player:GetAttribute("Skating") ~= true
+	if not still then
+		if facingOn then
+			humanoid.AutoRotate = true
+			facingOn = false
+		end
+		return
+	end
+	if not facingOn then
+		if not humanoid.AutoRotate then return end -- (something else owns the turning)
+		humanoid.AutoRotate = false
+		facingOn = true
+	end
+	local toCamera = (camera.CFrame.Position - root.Position) * Vector3.new(1, 0, 1)
+	if toCamera.Magnitude < 0.5 then return end
+	local goal = CFrame.lookAt(root.Position, root.Position + toCamera.Unit)
+	root.CFrame = root.CFrame:Lerp(goal, math.min(1, dt * FACE.Rate))
+end
+local function stopFacing()
+	if not facingOn then return end
+	facingOn = false
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid then humanoid.AutoRotate = true end
+end
+player.CharacterAdded:Connect(function() facingOn = false end)
+
+------------------------------------------------------------------------
 -- Show / hide
 ------------------------------------------------------------------------
 local wanted = false -- the Stats button is on
@@ -687,7 +761,12 @@ local function update()
 		table.clear(tilts)
 		cameraLast = nil
 		gui.Enabled = true
-		if not renderConnection then renderConnection = RunService.RenderStepped:Connect(place) end
+		if not renderConnection then
+			renderConnection = RunService.RenderStepped:Connect(function(dt)
+				faceCamera(dt)
+				place(dt)
+			end)
+		end
 		place(0)
 		Theme.Fade(layer, true, 0.2)
 	else
@@ -696,6 +775,7 @@ local function update()
 		leaveAt = nil
 		for _, entry in ipairs(labels) do entry.held, entry.releaseAt, entry.overCount = nil, nil, 0 end
 		setHighlight(nil, false)
+		stopFacing()
 		local tween = Theme.Fade(layer, false, 0.2)
 		local function stop()
 			if shown then return end

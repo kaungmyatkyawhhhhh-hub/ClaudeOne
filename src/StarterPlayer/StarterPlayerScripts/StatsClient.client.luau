@@ -379,11 +379,12 @@ end)
 UIBus.RegisterPanel("Muscles", closeMuscles)
 UIBus.OpenMuscles.Event:Connect(function() openTab("Muscles") end)
 UIBus.OpenStats.Event:Connect(function(tab) openTab(tab or "Muscles") end)
--- Studio test hook: Workspace attribute TestOpenPanel = "Physique" opens the window (the Device Emulator's clicks can miss
--- the menu tiles)
+-- Studio test hook (only in Studio, players can never trigger it): Workspace attribute TestOpenPanel = "Physique" opens the
+-- window, "Stats" turns the stats labels on (the Device Emulator's clicks can miss the menu tiles)
 if game:GetService("RunService"):IsStudio() then
 	workspace:GetAttributeChangedSignal("TestOpenPanel"):Connect(function()
-		if workspace:GetAttribute("TestOpenPanel") == "Physique" then openTab("Muscles") end
+		local which = workspace:GetAttribute("TestOpenPanel")
+		if which == "Physique" then openTab("Muscles") elseif which == "Stats" then setLabels(true) end
 	end)
 end
 UIBus.GeneticsVisible.Event:Connect(function(visible)

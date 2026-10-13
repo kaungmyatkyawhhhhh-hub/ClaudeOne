@@ -194,7 +194,7 @@ local function showCard(model: Model?, card: number, label: string?)
 	gui.Name = "PoseCard"
 	gui.Size = UDim2.new(2.6, 0, 1.7, 0)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, 3.1, 0) -- (above the name and the title)
-	gui.MaxDistance = 120
+	gui.MaxDistance = 40
 	gui.LightInfluence = 0
 	gui.Parent = head
 	local panel = Theme.New("Frame", {

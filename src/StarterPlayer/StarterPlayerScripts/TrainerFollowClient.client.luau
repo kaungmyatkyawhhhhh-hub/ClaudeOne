@@ -83,7 +83,7 @@ local function bubble(state, text)
 	local entry = state.bubble
 	if not entry then
 		local bill = Theme.New("BillboardGui", { Name = "TrainerBubble", Adornee = head, Size = UDim2.fromOffset(200, 40), StudsOffset = Vector3.new(0, 2.6, 0),
-			AlwaysOnTop = false, MaxDistance = 60, Enabled = false, Parent = state.model })
+			AlwaysOnTop = false, MaxDistance = 40, Enabled = false, Parent = state.model })
 		local box = Theme.Panel({ AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromOffset(0, 0),
 			AutomaticSize = Enum.AutomaticSize.XY, Parent = bill }, { Theme.Pad("S") })
 		local label = Theme.Text({ Text = "", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromOffset(0, 0), AutomaticSize = Enum.AutomaticSize.XY, Upper = false, Parent = box })

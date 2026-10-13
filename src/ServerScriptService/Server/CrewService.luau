@@ -102,7 +102,7 @@ local function updateTag(player)
 	tag.Name = "CrewTag"
 	tag.Size = UDim2.fromScale(3, 0.5)
 	tag.StudsOffset = Vector3.new(0, 3.45, 0)
-	tag.MaxDistance = 60
+	tag.MaxDistance = 40
 	tag.LightInfluence = 0
 	tag.Parent = head
 	local label = Instance.new("TextLabel")

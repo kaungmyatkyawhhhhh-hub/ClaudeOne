@@ -242,7 +242,7 @@ local function bubbleFor(id)
 		return entry
 	end
 	local bill = New("BillboardGui", { Name = "RivalBubble", Adornee = h, Size = UDim2.fromOffset(240, 60), StudsOffset = Vector3.new(0, 4.2, 0),
-		AlwaysOnTop = false, MaxDistance = 70, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
+		AlwaysOnTop = false, MaxDistance = 40, Enabled = false, ResetOnSpawn = false, Parent = playerGui })
 	local box = Theme.Panel({ AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromOffset(0, 0),
 		AutomaticSize = Enum.AutomaticSize.XY, Parent = bill }, { Theme.Pad("S") })
 	local text = Theme.Text({ Text = "", Font = "Regular", TextSize = "Body", Size = UDim2.fromOffset(0, 0), AutomaticSize = Enum.AutomaticSize.XY, TextWrapped = false, Parent = box })
@@ -269,19 +269,25 @@ local function say(id, line)
 	end)
 end
 
--- the small RIVAL tag (under his name label, white with a dark outline; only near him)
+-- the small RIVAL tag (under his name label, white with a dark outline; sized in studs, only near him). Owner, 14 Oct:
+-- only while his challenge is on (data.rivals[id] == "active"), never on every rival all the time.
 local tags = {}
 local function tag(npc)
 	local id = npc:GetAttribute("Rival")
-	if not id or tags[npc] then return end
-	local h = head(npc)
-	if not h then return end
-	local bill = New("BillboardGui", { Name = "RivalTag", Adornee = h, Size = UDim2.fromOffset(120, 22), StudsOffset = Vector3.new(0, 2.6, 0),
-		AlwaysOnTop = false, MaxDistance = 45, ResetOnSpawn = false, Parent = playerGui })
-	local label = Theme.Text({ Text = "Rival", Font = "Bold", TextSize = "Small", Size = UDim2.fromScale(1, 1), Parent = bill })
-	Theme.Uppercase(label)
-	Theme.TextShadow(label)
-	tags[npc] = bill
+	if not id then return end
+	local bill = tags[npc]
+	if not bill then
+		local h = head(npc)
+		if not h then return end
+		bill = New("BillboardGui", { Name = "RivalTag", Adornee = h, Size = UDim2.new(2.4, 0, 0.42, 0), StudsOffset = Vector3.new(0, 2.6, 0),
+			AlwaysOnTop = false, MaxDistance = 40, LightInfluence = 0, ResetOnSpawn = false, Parent = playerGui })
+		local label = Theme.Text({ Text = "Rival", Font = "Bold", TextSize = "Small", TextScaled = true, Size = UDim2.fromScale(1, 1), Parent = bill })
+		Theme.Uppercase(label)
+		Theme.TextShadow(label)
+		tags[npc] = bill
+	end
+	local data = require(Shared.ClientData).Get()
+	bill.Enabled = data ~= nil and type(data.rivals) == "table" and data.rivals[id] == "active"
 end
 
 local acc = 0

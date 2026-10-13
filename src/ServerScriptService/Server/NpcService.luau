@@ -118,14 +118,15 @@ function NpcService.Build(spec, cframe)
 	local rootHalf = root and root.Size.Y / 2 or 1
 	model:PivotTo(cframe + Vector3.new(0, hip + rootHalf, 0))
 
-	-- name label: small and clean (fixed 14px Nunito, so it's never bigger than the HUD), only up close
+	-- name label: small and clean, sized in studs (owner, 14 Oct: like every world sign; not through walls, only up close)
 	local head = model:FindFirstChild("Head")
 	if head and not spec.noLabel then
 		local label = Instance.new("BillboardGui")
 		label.Name = "NameTag"
-		label.Size = UDim2.fromOffset(160, 20)
+		label.Size = UDim2.new(4, 0, 0.45, 0)
 		label.StudsOffset = Vector3.new(0, 1.7, 0)
-		label.MaxDistance = 30
+		label.MaxDistance = 40
+		label.AlwaysOnTop = false
 		label.LightInfluence = 0
 		label.Parent = head
 		local text = Instance.new("TextLabel")
@@ -133,7 +134,7 @@ function NpcService.Build(spec, cframe)
 		text.BackgroundTransparency = 1
 		text.Text = spec.name
 		text.FontFace = Theme.Fonts.SemiBold
-		text.TextSize = Theme.TextSize.Small
+		text.TextScaled = true
 		text.TextColor3 = Theme.Colors.Text
 		text.Parent = label
 		local stroke = Instance.new("UIStroke")

@@ -87,6 +87,21 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   this aspect). The labels under each plate are gone: GENETICS + DNA tokens on the top bar line, the rest in one
   final-kit bottom panel (Overall + six groups in a row, Frame / Body chips, View odds, REROLL quiet, KEEP red). Fixed an
   old bug on the way (the reveal reset a global spinFactor).
+- Tested after Studio's Play unstuck: REP in the same spot on bench, squat rack, bench again and overhead press (591,181,
+  133x40 at this phone's scale, 12 px over the jump button); the first try had measured the jump button before Roblox
+  placed it (REP at the top), so only a jump button in the lower half of the screen counts. Genetics 3D on the phone
+  emulator: stage between the top line and the bottom panel, nothing over it.
+- World signs (owner): the arm wrestling tables get a small gold name pill (no diamond) + the OCCUPY prompt; the diamond
+  only for machines, within 15 studs (was 12), fades when you sit. Signs: AlwaysOnTop off, MaxDistance 40, studs: sign
+  name / prompt / simple pill, NPC name tags (code + the 15 baked in Workspace.NPCs), the posing stage marker, the RIVAL
+  tag (now only while that rival's challenge is on, data.rivals[id] == "active"), crew tags, pose cards, rival and
+  trainer bubbles. The starter arm table is at (18, 2, -31), 33 studs from the spawn (not at spawn).
+- Stats overlay (owner): lines end on the exact body point every frame (Chest / Back = upper torso front / back centre,
+  Core = lower torso front, Shoulders / Arms = the arm on the left column's side, Legs = the thigh on the right side; on
+  the muscle mesh surface). Columns: Shoulders, Chest, Arms left; Back, Core, Legs right. A point facing away keeps a
+  faded line. Standing still with the labels open turns you to face the camera. The real offset bug: on devices with
+  insets (the emulator's phone) the full-screen gui is bigger than the 3D viewport, so the drawing layer is now placed
+  over the viewport each frame. Top row never over the top bar. Studio hook TestOpenPanel = "Stats".
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
