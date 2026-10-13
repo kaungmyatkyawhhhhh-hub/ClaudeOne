@@ -65,6 +65,11 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   Roblox hides the touch controls, then 150 up), PUMP right above it (150 wide), STOP above the thumbstick, weight card
   184x86 under the top bar; a weight requirement gets its own line (cut with "...") and BEST WEIGHT moves under it.
   MachineClient now imports Kit (the record banner line needed it).
+- Genetics rebuilt for phones (GeneticsClient, 82 KB 3D stage -> 24 KB panel): one centered 600-wide panel (header +
+  DNA chip, OVERALL plate + gold word + View odds, 2-column group grid with fixed 46 px rows, Frame / Body chips that
+  wrap, REROLL quiet + KEEP red, inline good-roll confirm, odds panel). Tested on the phone emulator (749x388) and the
+  667x375 layout: reveal, confirm, reroll (UP / DOWN), odds. The 3D set (ReplicatedStorage.GeneticsSet,
+  GeneticsCameraRig) is no longer used (left in the place).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
