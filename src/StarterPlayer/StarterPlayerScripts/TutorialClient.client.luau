@@ -601,6 +601,7 @@ UIBus.GeneticsVisible.Event:Connect(function(visible)
 	applyHidden()
 end)
 player:GetAttributeChangedSignal("WindowOpen"):Connect(applyHidden)
+applyHidden() -- (a window can already be open when the tutorial starts: the Daily Reward after Play)
 
 -- Timed steps
 task.spawn(function()
