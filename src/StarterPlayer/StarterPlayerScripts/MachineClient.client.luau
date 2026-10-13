@@ -33,6 +33,7 @@ local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local CoachNotes = require(Shared.Config.CoachNotes)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local MachineHud = require(Shared.UI.MachineHud)
 local HudBottom = require(Shared.UI.HudBottom)
 local Notify = require(Shared.UI.Notify)
@@ -1651,9 +1652,8 @@ local function setNote(category)
 	end
 	current.lastNote = line
 	current.setsSinceNote = 0
-	-- (owner, 13 Oct: no floating text while lifting; the coach's line is a hint in the top band, one at a time)
+	-- (owner, 14 Oct: no coach lines on screen while lifting; the line is only kept on the hidden label)
 	noteLabel.Text = line
-	Notify.Hint(line)
 end
 
 local function noteSituation()

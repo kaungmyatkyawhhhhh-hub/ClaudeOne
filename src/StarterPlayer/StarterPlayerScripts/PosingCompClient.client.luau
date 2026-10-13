@@ -99,7 +99,7 @@ local banner = Theme.Panel({
 	Theme.Pad("S"),
 	Theme.List(Vertical, "XS", Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
-RightColumn.Add(banner, 0)
+RightColumn.Add(banner, 0, nil, RightColumn.Priority.Posing) -- (a card: one at a time on the right)
 local bannerTitle = Theme.Text({ LayoutOrder = 1, Text = "Posing competition", Font = "SemiBold", TextSize = "Small", Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = banner })
 Theme.Uppercase(bannerTitle)
 local bannerLine = Theme.Text({ LayoutOrder = 2, Text = "", Font = "Regular", TextSize = "Small", TextColor3 = Colors.Muted, TextWrapped = true,

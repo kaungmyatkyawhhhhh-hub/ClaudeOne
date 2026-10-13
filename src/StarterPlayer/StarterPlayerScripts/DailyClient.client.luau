@@ -361,7 +361,9 @@ end
 -- Daily quests
 ------------------------------------------------------------------------
 -- the DAILY QUESTS card in the right column (mockup 01): the first quest still going, its bar, and "1 / 3" done
-local tracker = RightColumn.Tracker({ name = "DailyTracker", title = "Today's quest", color = Colors.Teal, order = 2, idleOnly = true, clickable = true })
+-- (one card at a time on the right, RightColumn.Priority: today's quest; once all are done it steps back for the coach)
+local tracker = RightColumn.Tracker({ name = "DailyTracker", title = "Today's quest", color = Colors.Teal, order = 2, idleOnly = true, clickable = true,
+	priority = RightColumn.Priority.Daily })
 local function refreshTracker(dq, valid)
 	local done, total = 0, DailyQuests.PerDay
 	local current, currentQuest = nil, nil
@@ -372,6 +374,7 @@ local function refreshTracker(dq, valid)
 		if quest and not entry.done and not current then current, currentQuest = entry, quest end
 	end
 	tracker:SetCount(done .. " / " .. total)
+	tracker.frame:SetAttribute("CardPriority", currentQuest and RightColumn.Priority.Daily or RightColumn.Priority.Grow + 1)
 	if currentQuest then
 		tracker:SetText(currentQuest.text)
 		tracker:SetProgress(math.clamp((current.progress or 0) / currentQuest.count, 0, 1), (current.progress or 0) .. "/" .. currentQuest.count)

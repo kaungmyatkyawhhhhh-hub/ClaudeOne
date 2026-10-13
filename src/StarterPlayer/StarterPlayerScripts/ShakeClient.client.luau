@@ -89,12 +89,15 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	end
 end)
 
--- Recovery stations (sauna, stretching area, cardio): one small note when you step in (BoostService sets the
--- player attribute Recovery to the station you stand in)
-local lastStation = nil
+-- Recovery stations (sauna, stretching area, cardio): one small note under the top bar when you step in, gone after 3 s
+-- (BoostService sets the player attribute Recovery to the station you stand in). Once per visit: walking along the
+-- edge of a station doesn't repeat it (owner, 14 Oct: no permanent banners).
+local NOTE_AGAIN = 60 -- seconds before the same station's note can show again
+local lastStation, noteShownAt = nil, {}
 player:GetAttributeChangedSignal("Recovery"):Connect(function()
 	local station = player:GetAttribute("Recovery")
-	if station and station ~= lastStation and Stamina.RecoveryNotes[station] then
+	if station and station ~= lastStation and Stamina.RecoveryNotes[station] and os.clock() - (noteShownAt[station] or -math.huge) > NOTE_AGAIN then
+		noteShownAt[station] = os.clock()
 		Notify.Show(Stamina.RecoveryNotes[station], nil, "recovery")
 	end
 	lastStation = station

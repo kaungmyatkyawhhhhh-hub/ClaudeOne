@@ -1,9 +1,14 @@
--- The column of small HUD cards on the right of the screen (owner's UI v2, mockup 01_main_hud): tracker cards (daily
--- quests, coach quest, legend) and the GROW tile (Growth Spurt), plus small buttons (Skate, Photo, Drink shake). Built
--- in mockup px inside a Kit.Root (it scales with the screen). Each script adds its own frame; the column stacks them
--- with an 8px gap so they never overlap.
---   RightColumn.Add(frame, order, idleOnly)  idleOnly = true: idle cards; "bottom": under the idle cards
+-- The column on the right of the screen, just under Roblox's top bar (owner's UI v2, mockup 01_main_hud; owner's
+-- declutter, 14 Oct). It shows ONE CARD at a time: of the cards that want to show, the one with the highest priority
+-- (RightColumn.Priority: TAP TO GROW when ready, the posing competition, a coach quest ready to hand in, today's quest,
+-- the legend challenge, the coach quest still going, the Growth Spurt progress). The rest wait; every quest is in the
+-- Quests window. Small context buttons (Skate outdoors, Photo, Drink shake while you have one) stay above the card.
+-- Built in mockup px inside a Kit.Root (it scales with the screen).
+--   RightColumn.Add(frame, order, idleOnly, priority?)  idleOnly = true: idle items; "bottom": under them. With a
+--                                            priority the frame is a CARD: its own Visible says it wants to show, the
+--                                            column decides if it does; frame attribute CardPriority changes the priority
 --   RightColumn.Tracker(props)               -> card api { frame, SetTitle, SetCount, SetText, SetProgress, SetFooter }
+--                                            (props.priority: a card, default Priority.Daily)
 --   RightColumn.Chip(icon, color, order)     -> a boost icon in the row above the stamina bar (HudBottom.Chip)
 --   RightColumn.Width                        the column's width (mockup px)
 -- On a machine the whole column steps aside (the right side belongs to the weight panel, mockup 02).
@@ -17,10 +22,11 @@ local New, Colors = Theme.New, Theme.Colors
 
 local RightColumn = {}
 
-local WIDTH = 196  -- mockup px
+local WIDTH = 176  -- mockup px (compact cards)
 local TOP = 52     -- under Roblox's top bar (set from Kit.UnderTopbar)
 local EDGE = 12
 RightColumn.Width = WIDTH
+RightColumn.Priority = { GrowReady = 100, Posing = 95, CoachReady = 80, Daily = 50, Legend = 40, Coach = 20, Grow = 10 }
 
 local column, always, idle, bottom
 local changed = Instance.new("BindableEvent")
@@ -113,43 +119,70 @@ function RightColumn.Bottom()
 	return TOP + column.AbsoluteSize.Y / Kit.Scale()
 end
 
--- Parent `frame` into the column; lower `order` sits higher. `idleOnly` = true: idle cards; "bottom": the bottom cards.
-function RightColumn.Add(frame, order, idleOnly)
+-- One card at a time: each card sits in its own slot; only the slot of the card that wants to show (its Visible) with
+-- the highest CardPriority is shown.
+local cards = {} -- card frame -> its slot
+local function pickCard()
+	local best, bestPriority = nil, -math.huge
+	for card in pairs(cards) do
+		local priority = card:GetAttribute("CardPriority") or 0
+		if card.Visible and priority > bestPriority then best, bestPriority = card, priority end
+	end
+	for card, slot in pairs(cards) do slot.Visible = card == best end
+end
+
+-- Parent `frame` into the column; lower `order` sits higher. `idleOnly` = true: idle items; "bottom": the bottom ones.
+-- With a `priority` it is a card (one card at a time, see above).
+function RightColumn.Add(frame, order, idleOnly, priority: number?)
 	ensure()
+	local parent = idleOnly == "bottom" and bottom or (idleOnly and idle or always)
+	if priority then
+		local slot = New("Frame", { Name = frame.Name .. "Slot", LayoutOrder = order or 1, Size = UDim2.fromOffset(WIDTH, 0), AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1, Visible = false, Parent = parent })
+		if frame:GetAttribute("CardPriority") == nil then frame:SetAttribute("CardPriority", priority) end
+		frame.Parent = slot
+		cards[frame] = slot
+		frame:GetPropertyChangedSignal("Visible"):Connect(pickCard)
+		frame:GetAttributeChangedSignal("CardPriority"):Connect(pickCard)
+		pickCard()
+		return frame
+	end
 	frame.LayoutOrder = order or 1
-	frame.Parent = idleOnly == "bottom" and bottom or (idleOnly and idle or always)
+	frame.Parent = parent
 	return frame
 end
 
 -- A tracker card (mockup 01: "DAILY QUESTS  1/3", a line of text, a green bar with "34/50" in it).
 -- props: { title, color (bar), order, idleOnly, icon? (an icon name before the title), iconColor?, name?,
---          clickable? (the card is a button: api.Activated) }
+--          clickable? (the card is a button: api.Activated), priority? (default Priority.Daily) }
+-- Compact (owner, 14 Oct): a small title row, one or two lines of text, a thin bar.
 function RightColumn.Tracker(props)
 	ensure()
 	local card = Theme.Panel({ Name = props.name or "Tracker", Piece = "hud_box", Size = UDim2.fromOffset(WIDTH, 0),
 		AutomaticSize = Enum.AutomaticSize.Y, Clickable = props.clickable }, {
-		New("UIPadding", { PaddingLeft = UDim.new(0, 11), PaddingRight = UDim.new(0, 11), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 10) }),
-		Theme.List(Enum.FillDirection.Vertical, 3, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 9), PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 7) }),
+		Theme.List(Enum.FillDirection.Vertical, 2, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 	})
-	local head = New("Frame", { Name = "Head", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Parent = card })
+	local head = New("Frame", { Name = "Head", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Parent = card })
 	local titleX = 0
 	if props.icon then
-		require(script.Parent.Pieces).Icon(props.icon, props.iconColor or Colors.Gold, { Size = UDim2.fromOffset(15, 15), Position = UDim2.fromOffset(0, 2), Parent = head })
-		titleX = 20
+		require(script.Parent.Pieces).Icon(props.icon, props.iconColor or Colors.Gold, { Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(0, 1), Parent = head })
+		titleX = 17
 	end
-	local title = Kit.Text({ Name = "Title", Text = props.title or "", Font = "Title", TextSize = 15, Upper = true, Position = UDim2.fromOffset(titleX, 0),
+	local title = Kit.Text({ Name = "Title", Text = props.title or "", Font = "Title", TextSize = 12, Upper = true, Position = UDim2.fromOffset(titleX, 0),
 		Size = UDim2.new(1, -titleX - 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = head })
-	local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 15, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0),
+	local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 12, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = head })
-	local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Strong", TextSize = 13, TextColor3 = Color3.fromHex("#E9E3E5"), Size = UDim2.new(1, 0, 0, 0),
+	local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#E9E3E5"), Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
-	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, Parent = card })
+	New("UISizeConstraint", { MaxSize = Vector2.new(math.huge, 28), Parent = text }) -- (two lines at most)
+	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 10), BackgroundTransparency = 1, Parent = card })
 	-- (owner's final kit: progress is teal; a gold tracker keeps its gold)
 	local barColor = (props.color == Colors.Gold) and Colors.Gold or Colors.Teal
-	local _, setBar, fill = Kit.Bar(barColor, { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 3), Parent = barRow })
+	local _, setBar, fill = Kit.Bar(barColor, { Size = UDim2.new(1, 0, 0, 7), Position = UDim2.fromOffset(0, 2), Parent = barRow }, { outline = 1 })
 	local footer = Kit.Text({ Name = "Footer", LayoutOrder = 4, Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Visible = false,
 		Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
-	RightColumn.Add(card, props.order or 2, props.idleOnly)
+	RightColumn.Add(card, props.order or 2, props.idleOnly, props.priority or RightColumn.Priority.Daily)
 	local api = { frame = card, title = title, text = text, count = count, Activated = props.clickable and card.Activated or nil }
 	function api.SetTitle(_, value) title.Text = value end
 	function api.SetCount(_, value) count.Text = value or "" end

@@ -48,7 +48,8 @@ local SIGN = {
 	Floor = 0.05,         -- studs: the floor outline's height
 	FloorPad = 0.5,       -- studs around the machine's footprint
 }
-local BANG = { Far = 60, Color = Color3.fromRGB(255, 214, 64), Bounce = 0.25, Speed = 4, Height = 1.1, MinPx = 22, MaxPx = 62, TagPx = 50 }
+-- (owner, 14 Oct: the floating "!" markers only show when you're close: Far 25 studs)
+local BANG = { Far = 25, Color = Color3.fromRGB(255, 214, 64), Bounce = 0.25, Speed = 4, Height = 1.1, MinPx = 22, MaxPx = 62, TagPx = 50 }
 local FADE = 0.2
 
 local folder = Instance.new("Folder")

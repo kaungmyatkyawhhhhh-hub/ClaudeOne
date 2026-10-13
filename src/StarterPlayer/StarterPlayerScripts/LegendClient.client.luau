@@ -15,7 +15,8 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local Colors = Theme.Colors
 -- the legend challenge card (RightColumn.Tracker, mockup 01 look)
-local tracker = RightColumn.Tracker({ name = "LegendTracker", title = "Legend challenge", color = Colors.Gold, icon = "trophy", order = 4, idleOnly = true })
+local tracker = RightColumn.Tracker({ name = "LegendTracker", title = "Legend challenge", color = Colors.Gold, icon = "trophy", order = 4, idleOnly = true,
+	priority = RightColumn.Priority.Legend })
 local panel = tracker.frame
 panel.Visible = false
 

@@ -55,6 +55,16 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   record banner, posing and arm wrestling headers start at TopbarInset.Max.Y + 8. Studio: the TestPhoneSize attribute is
   cleared (it squeezed the HUD inside the Device Emulator). Fixed a stray "5" typed into Analytics in Studio (it stopped
   the whole server from starting).
+- Declutter (owner, 14 Oct): the right column shows ONE compact card (176 wide) by RightColumn.Priority: TAP TO GROW
+  ready 100, posing competition 95, coach quest ready 80, today's quest 50, legend 40, coach quest going 20, Growth
+  Spurt progress 10 (cards keep their own Visible = "wants to show"; CardPriority attribute). No MAX HEIGHT card. Stamina
+  is a slim 280x34 bar 10 px from the bottom. Left menu: always centered (no top offset), no Quests tile (QUESTS is on
+  the top bar; 8 tiles max), folds while a window is open (WindowOpen). Zone notes once per visit (60 s). Machine "!"
+  markers only within 25 studs. No coach lines on screen while lifting.
+- Lifting on mobile: REP 150x52 (REP 24 / xN 14) 10 px above Roblox's jump button (TouchGui JumpButton; while seated
+  Roblox hides the touch controls, then 150 up), PUMP right above it (150 wide), STOP above the thumbstick, weight card
+  184x86 under the top bar; a weight requirement gets its own line (cut with "...") and BEST WEIGHT moves under it.
+  MachineClient now imports Kit (the record banner line needed it).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

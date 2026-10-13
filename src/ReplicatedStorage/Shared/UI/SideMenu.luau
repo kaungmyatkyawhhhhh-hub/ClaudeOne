@@ -1,8 +1,8 @@
 -- The left menu (owner, 13 Oct: keep the old colored tiles, only tidied). Built in mockup px inside a Kit.Root, so every
 -- tile has the same size and gap on every screen and scales with it:
 --  * 2 columns of rounded-square tiles (a 3rd column only if a short screen can't fit them), VERTICALLY CENTERED on the
---    left (owner, 14 Oct: AnchorPoint 0, 0.5 at 0.5 of the screen; only nudged down if it would reach the top bar).
---    The "<" tab is centered on the tiles' right edge.
+--    left (owner, 14 Oct: AnchorPoint 0, 0.5 at 0.5 of the screen, no top offset; at most 8 tiles; the fold tween only
+--    moves X). The "<" tab is centered on the tiles' right edge.
 --    Each tile (owner's final kit "BLACK + GOLD", mockup 01_hud): dark glass (a graphite gradient, a faint light border,
 --    a darker bottom edge the face sinks into when pressed), a white line icon (the Shop's in gold), the label in small
 --    italic caps under it, a bounce on hover and press. Icons, order and labels: Config/HudIcons.Tiles. The open panel's
@@ -10,7 +10,8 @@
 --  * A red dot in the top-right corner (quests ready to claim, new titles), with a number when there is one.
 --  * The "<" tab on the tiles' right edge folds them away to the left (it then points ">" at the screen edge, with a red
 --    dot when a folded tile has a badge) and back. The choice is saved per player (settings.menuCollapsed).
---  * On a machine the menu folds away by itself and comes back when you leave (unless you had folded it).
+--  * On a machine, and while any window is open (the WindowOpen attribute, Kit.Modal), the menu folds away by itself and
+--    comes back after (unless you had folded it).
 --  * The Wardrobe tile is hidden while Config/Features.Wardrobe is false (no gap). Ids that aren't tiles any more (the
 --    top bar's pills) get a hidden placeholder with the same api.
 -- SideMenu.Add returns { button, SetActive(on), SetDot(on), SetBadge(n), SetText, SetShown(on), Activated }.
@@ -59,8 +60,9 @@ local function shownEntries()
 	return list
 end
 
+local windowOpen = false -- a window (Kit.Modal) is open
 local function folded()
-	return collapsed or training
+	return collapsed or training or windowOpen
 end
 
 local function refreshArrowDot()
@@ -76,7 +78,8 @@ local function layout(animate: boolean?)
 	if not bar then return end
 	local list = shownEntries()
 	local size, gap = SideMenu.TileSize, SideMenu.Gap
-	local room = math.max(size, root.AbsoluteSize.Y / Kit.Scale() - SideMenu.Top - SideMenu.BottomRoom)
+	-- (room for the centered grid: clear of the top bar at the top and the same at the bottom)
+	local room = math.max(size, root.AbsoluteSize.Y / Kit.Scale() - 2 * math.max(SideMenu.Top, SideMenu.BottomRoom))
 	local maxRows = math.max(1, math.floor((room + gap) / (size + gap)))
 	columns = math.max(2, math.ceil(#list / maxRows))
 	local rows = math.max(1, math.ceil(#list / columns))
@@ -92,14 +95,12 @@ local function layout(animate: boolean?)
 	local gridW, gridH = columns * size + (columns - 1) * gap, rows * size + (rows - 1) * gap
 	bar.Size = UDim2.fromOffset(gridW, gridH)
 	local isFolded = folded()
-	-- vertically centered; nudged down only when the centered grid would reach the top bar (a very short screen)
+	-- vertically centered on the screen (the rows above make sure it fits); folding only moves it sideways
 	local screenH = root.AbsoluteSize.Y / Kit.Scale()
-	local centered = (screenH - gridH) / 2
-	gridTop = math.max(SideMenu.Top, math.min(centered, screenH - SideMenu.BottomRoom - gridH))
-	local shift = math.floor(gridTop - centered)
+	gridTop = (screenH - gridH) / 2
 	bar.AnchorPoint, arrow.AnchorPoint = Vector2.new(0, 0.5), Vector2.new(0, 0.5)
-	local barPos = UDim2.new(0, isFolded and (-gridW - SideMenu.Left) or SideMenu.Left, 0.5, shift)
-	local arrowPos = UDim2.new(0, isFolded and SideMenu.Left or (SideMenu.Left + gridW + gap), 0.5, shift)
+	local barPos = UDim2.new(0, isFolded and (-gridW - SideMenu.Left) or SideMenu.Left, 0.5, 0)
+	local arrowPos = UDim2.new(0, isFolded and SideMenu.Left or (SideMenu.Left + gridW + gap), 0.5, 0)
 	bar.Visible = not hiddenAll
 	arrow.Visible = not hiddenAll and not training
 	if animate then
@@ -147,6 +148,15 @@ local function ensure()
 		New("UIStroke", { Color = Colors.Text, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	arrow.Activated:Connect(function() setCollapsed(not collapsed, true) end)
+	-- a window open: the tiles step aside (owner, 14 Oct: they covered the panels on phones)
+	local player = Players.LocalPlayer
+	player:GetAttributeChangedSignal("WindowOpen"):Connect(function()
+		local open = player:GetAttribute("WindowOpen") == true
+		if open ~= windowOpen then
+			windowOpen = open
+			layout(true)
+		end
+	end)
 	root:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() layout() end)
 	Kit.OnTopbar(function()
 		SideMenu.Top = Kit.UnderTopbar(root)

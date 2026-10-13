@@ -1,9 +1,10 @@
 -- ProgressClient: the Growth Spurt button in the right column (owner's final kit "BLACK + GOLD", mockup 01_hud) and the
 -- short "you grew" moment when the body moves up a muscle tier (BodyService fires "Grew").
---  * The button: when every group is at its goal, the wide gold TAP TO GROW CTA ("GROWTH SPURT 2 READY" under it) with a
---    glow that pulses; a tap does the Growth Spurt (same action as the Physique screen's button). Before that it is a
---    quiet dark card "GROWTH SPURT 2" with how far you are ("62%"; the EXP so far / the goal, each group counted up to its
---    goal) and a tap opens Physique. At 7'0" it reads MAX HEIGHT (quiet).
+--  * The button (a card in the right column, one card at a time: RightColumn.Priority): when every group is at its goal,
+--    the wide gold TAP TO GROW CTA ("GROWTH SPURT 2 READY" under it) with a glow that pulses, the first card to show; a
+--    tap does the Growth Spurt (same action as the Physique screen's button). Before that it is a quiet dark card
+--    "GROWTH SPURT 2" with how far you are ("62%"), shown only when no other card wants the spot; a tap opens Physique.
+--    At 7'0" there is no card (owner, 14 Oct: the top bar's height reads "7'0" MAX").
 --  * The next small goal (a new weight a few reps away, coins for the next weight, which group to train) is a hint in the
 --    top band now and then (Notify.Hint), not text on the HUD.
 local Players = game:GetService("Players")
@@ -31,12 +32,13 @@ local New, Colors = Theme.New, Theme.Colors
 -- The card
 ------------------------------------------------------------------------
 local UIBus = require(Shared.UI.UIBus)
-local TILE_H = 54
+local TILE_H = 44
 local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6), BackgroundTransparency = 1, Visible = false })
 local tile = Theme.Button("Gold", { Name = "Tile", Size = UDim2.new(1, 0, 0, TILE_H), Parent = holder }, {})
-local tileText = Kit.Text({ Name = "Grow", Text = "TAP TO GROW", Font = "Title", TextSize = 22, Position = UDim2.fromOffset(0, 5), Size = UDim2.new(1, 0, 0, 26), Parent = tile })
-local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize = 11, Upper = true, Position = UDim2.fromOffset(0, 29), Size = UDim2.new(1, 0, 0, 14), Parent = tile })
-RightColumn.Add(holder, 9, "bottom")
+local tileText = Kit.Text({ Name = "Grow", Text = "TAP TO GROW", Font = "Title", TextSize = 18, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 22), Parent = tile })
+local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize = 10, Upper = true, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 12), Parent = tile })
+RightColumn.Add(holder, 9, "bottom", RightColumn.Priority.Grow)
+local started = false -- (shown after the data is in)
 
 ------------------------------------------------------------------------
 -- Progress + goals
@@ -112,7 +114,10 @@ local function refresh()
 	if not data or not data.muscles then return end
 	local progress, have, need = spurtProgress(data)
 	ready = progress.ready and not progress.maxed
+	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
+	holder.Visible = started and not progress.maxed
 	if progress.maxed then
+		-- (no card at the cap: the top bar's height says "7'0" MAX")
 		tileText.Text = "MAX HEIGHT"
 		tileLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)
 		Theme.SetButtonStyle(tile, "Quiet")
@@ -185,8 +190,8 @@ end)
 ------------------------------------------------------------------------
 task.spawn(function()
 	ClientData.Get() -- waits for the data snapshot
+	started = true
 	refresh()
-	holder.Visible = true
 end)
 ClientData.Changed:Connect(function(path)
 	local key = path[1]

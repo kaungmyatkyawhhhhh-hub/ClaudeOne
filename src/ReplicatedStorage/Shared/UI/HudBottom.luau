@@ -1,6 +1,7 @@
--- HudBottom (owner's final kit "BLACK + GOLD", mockups 01 / 02): the STAMINA panel at the bottom center (a dark panel: a
--- teal lightning icon, "STAMINA", "82 / 100" on the right, a fat teal bar under it; soft red when nearly empty) and the
--- row of active boost icons above it (a colored icon tile with its timer or value under it).
+-- HudBottom (owner's final kit "BLACK + GOLD", mockups 01 / 02; owner's declutter, 14 Oct): the slim STAMINA bar at the
+-- very bottom center, 10 px above the edge, at most 280 wide (a small dark panel: a teal lightning icon, "STAMINA",
+-- "82 / 100" on the right, a thin teal bar under it; soft red when nearly empty), and the row of active boost icons above
+-- it (a colored icon tile with its timer or value under it).
 --   HudBottom.Chip(icon, color, order)   -> chip api { frame, SetText(main, sub?), SetVisible(on) } (sub = the timer)
 --   HudBottom.SetTraining(on)            the bar reads "Stamina 60/100" and the row moves above STOP TRAINING
 --   HudBottom.SetHidden(reason, on)      hide it while a screen needs the bottom (posing, arm wrestling)
@@ -17,8 +18,8 @@ local New, Colors = Theme.New, Theme.Colors
 
 local HudBottom = {}
 
-HudBottom.BarSize = Vector2.new(300, 52) -- the stamina panel
-HudBottom.Bottom = 13         -- bar's gap to the screen bottom (mockup px)
+HudBottom.BarSize = Vector2.new(280, 34) -- the stamina panel
+HudBottom.Bottom = 10         -- bar's gap to the screen bottom (mockup px)
 HudBottom.ChipSize = 28
 HudBottom.TrainingRowLift = 0 -- (owner's final kit: STOP sits bottom-left now, nothing above the stamina panel)
 HudBottom.LowStamina = 0.15
@@ -70,17 +71,17 @@ local function ensure()
 	-- the panel: header (icon, STAMINA, "82 / 100") over the teal bar
 	barTrack = Theme.Panel({ Name = "Stamina", Piece = "hud_box", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -HudBottom.Bottom),
 		Size = UDim2.fromOffset(HudBottom.BarSize.X, HudBottom.BarSize.Y), Parent = root })
-	local zap = require(script.Parent.Pieces).Icon("zap", Colors.Teal, { Name = "Zap", Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(16, 16), Parent = barTrack })
+	local zap = require(script.Parent.Pieces).Icon("zap", Colors.Teal, { Name = "Zap", Position = UDim2.fromOffset(10, 4), Size = UDim2.fromOffset(12, 12), Parent = barTrack })
 	zap:SetAttribute("KeepColor", true)
-	Kit.Text({ Name = "Title", Text = "STAMINA", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(32, 4), Size = UDim2.fromOffset(120, 20),
+	Kit.Text({ Name = "Title", Text = "STAMINA", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(26, 2), Size = UDim2.fromOffset(100, 16),
 		TextXAlignment = Enum.TextXAlignment.Left, Parent = barTrack })
-	local numbers = New("Frame", { Name = "Numbers", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 4),
-		Size = UDim2.fromOffset(120, 20), Parent = barTrack }, { Theme.List(Enum.FillDirection.Horizontal, 4, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
-	staminaNow = Kit.Text({ Name = "Now", LayoutOrder = 1, Text = "0", Font = "Number", TextSize = 15, Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X, Parent = numbers })
-	staminaMaxText = Kit.Text({ Name = "Max", LayoutOrder = 2, Text = "/ 100", Font = "Number", TextSize = 15, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 20),
+	local numbers = New("Frame", { Name = "Numbers", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 2),
+		Size = UDim2.fromOffset(110, 16), Parent = barTrack }, { Theme.List(Enum.FillDirection.Horizontal, 3, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
+	staminaNow = Kit.Text({ Name = "Now", LayoutOrder = 1, Text = "0", Font = "Number", TextSize = 12, Size = UDim2.fromOffset(0, 16), AutomaticSize = Enum.AutomaticSize.X, Parent = numbers })
+	staminaMaxText = Kit.Text({ Name = "Max", LayoutOrder = 2, Text = "/ 100", Font = "Number", TextSize = 12, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 16),
 		AutomaticSize = Enum.AutomaticSize.X, Parent = numbers })
 	local _
-	_, setBar, fill = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -24, 0, 14), Parent = barTrack })
+	_, setBar, fill = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(10, 20), Size = UDim2.new(1, -20, 0, 8), Parent = barTrack }, { outline = 1 })
 	row = New("Frame", { Name = "Boosts", AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.fromOffset(0, HudBottom.ChipSize + 16),
 		AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = root }, {
 		Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom),

@@ -29,7 +29,9 @@ local SPEECH = { Time = 5, Width = 9, Height = 1.6, Offset = 3.2 } -- seconds, s
 -- Tracker
 ------------------------------------------------------------------------
 -- the coach quest card (RightColumn.Tracker, mockup 01 look)
-local tracker = RightColumn.Tracker({ name = "QuestTracker", title = "Coach quest", color = Colors.Green, order = 3, idleOnly = true })
+-- (one card at a time on the right, RightColumn.Priority: a quest ready to hand in comes before today's quest)
+local tracker = RightColumn.Tracker({ name = "QuestTracker", title = "Coach quest", color = Colors.Green, order = 3, idleOnly = true,
+	priority = RightColumn.Priority.Coach })
 local panel = tracker.frame
 panel.Visible = false -- shown after Play
 
@@ -37,6 +39,7 @@ local function refresh()
 	local data = ClientData.Get()
 	local active = data.quests and data.quests.active
 	local quest = active and Quests.ById[active.id]
+	panel:SetAttribute("CardPriority", (quest and active.ready) and RightColumn.Priority.CoachReady or RightColumn.Priority.Coach)
 	if not quest then
 		tracker:SetCount("")
 		tracker:SetText("Talk to " .. Quests.CoachName .. " at the front desk")

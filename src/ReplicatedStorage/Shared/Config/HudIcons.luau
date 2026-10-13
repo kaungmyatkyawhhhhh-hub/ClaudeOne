@@ -19,7 +19,7 @@ HudIcons.Tiles = {
 	Genetics = { order = 5, label = "Genetics", accent = Color3.fromHex("#3FB8AF"), icon = "DNA", image = "" },
 	Emotes = { order = 6, label = "Poses", accent = Color3.fromHex("#E96BA8"), icon = "Pose", image = "" },        -- poses + emotes panel
 	Crew = { order = 7, label = "Crew", accent = Color3.fromHex("#4C8DE0"), icon = "People", image = "" },
-	Quests = { order = 8, label = "Quests", accent = Color3.fromHex("#2FA8C8"), icon = "Quest", image = "" },       -- daily quests (DailyClient)
+	-- (Quests: no tile, owner 14 Oct: one entry point, the QUESTS icon on the top bar)
 	Trainers = { order = 9, label = "Trainers", accent = Color3.fromHex("#D9823B"), icon = "Clipboard", image = "" }, -- personal trainers
 	Wardrobe = { order = 10, label = "Wardrobe", accent = Color3.fromHex("#9B6BDF"), icon = "Hanger", image = "" }, -- hidden: Config/Features.Wardrobe
 }
