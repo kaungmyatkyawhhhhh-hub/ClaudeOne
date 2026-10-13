@@ -26,49 +26,24 @@ Working title: GYM ARC (tagline: "Everyone starts tiny.").
 - Use a menu screen to cover data loading time.
 - Modular code: shared config ModuleScripts for muscles, machines, titles, genetics, so adding content = adding a table entry.
 
-## UI design system: "clean minimal" (ALL UI must follow this)
-- One shared Theme ModuleScript (`Shared.UI.Theme`). Every UI reads from it. No hardcoded colors/fonts anywhere else.
-- Panels: dark see-through (#0E0E10 at 55% transparency) with a thin 1px white border at 85% transparency.
-  No glossy effects, no colorful gradients, no textures.
-- Depth (via Theme.AddDepth / Theme.Panel / Theme.Button): a soft dark drop shadow under panels and buttons
-  (stacked faint strokes, lighter toward the top). Frames and strokes only (no images) so it stays crisp.
-- Corners: panels and buttons 10px, bar segments 3px, plate discs and icons fully round.
-- Text: white #FFFFFF for main text, gray #B8B8BE for secondary text. Sentence case for body text; titles and button labels are UPPERCASE.
-- Fonts (`Shared.UI.UIFonts`, owner's fonts brief): Oswald Bold for headings, titles, numbers, grades, stats and
-  buttons; Nunito (Regular / SemiBold) for body text. Never Montserrat or Gotham. No other fonts (except the side menu
-  tile labels), no handwritten/marker fonts, no tape labels.
-- Color only means something: bumper plate colors for weight tiers, grades and rarity. Everything else is
-  white/gray on dark.
-- Progress bars are chunky segmented blocks (like stacked plates), not thin smooth bars.
-- Grades and rarity use real bumper plate colors, shown as plate discs (circle with darker rim):
-  D/common white #F4F1EA, C/uncommon green #2E9E4F, B/rare yellow #E8C21C (dark text),
-  A/epic blue #1F5FBF, S/legendary red #D7262E. Secret titles: black plate #141414.
-- Soft light red #FF8A8A marks "needs work" and very low stamina.
-- Text over the 3D world gets a subtle dark outline (Theme.TextShadow) so it stays readable.
-- Buttons: Primary = white fill at 85% transparency with a light border; Secondary = the dark see-through panel
-  style. White SemiBold label, min 44px tall for mobile. Press = shrink to 0.95 with a very soft click.
-
-## Crisp text (no blur, whole game)
-- Minimum text size 14px. Whole-number TextSize only (Theme text sizes); no plain TextScaled in screen UI.
-  (Only world-space UI may scale text: BillboardGuis sized in studs and SurfaceGuis on signs/posters.)
-- Never use UIScale to scale whole screens (a press-shrink on a single button is fine).
-- Don't rotate containers that hold text.
-- Don't fade screens with CanvasGroups (they rasterize and blur text). Fade by tweening each element's
-  transparency (Theme.Fade).
-
-## Side menu tiles (left middle) and top bar (UI v7, replaces the old 64x68 buttons)
-- A 2-column grid of about 90px square tiles on the left edge, vertically centered, 8px gaps (smaller only on short screens
-  so all fit). Each tile: a big white icon, a bold label at the bottom with a dark outline (Fredoka One: the one place that
-  is not Oswald / Nunito), 10px corners, a colored border per tile, a slight 3D look (lighter top, darker bottom edge) and a
-  bounce on hover and press. Tiles: Stats, Muscles, Titles, Genetics, Poses, Crew, Wardrobe (Store when monetization is on).
-- Active tile: brighter face and a white border. Small white dot top-right when something is new; clears when opened.
-- An arrow tab on the tiles' right edge (level with Genetics) slides them all out to the left and back, like a drawer (it
-  points right while folded, waiting at the screen edge, left while open; a small dot on it while folded when a tile has something new). Tiles about 68px on PC (0.75x), 60px on phones.
-- Phones: no grid. The same tiles sit under the coins pill at the top left, clear of the thumbstick; they start
-  folded, fold again after picking one, and never share the screen with a side panel.
-- Top bar (under the Roblox top bar): rounded pills with an icon and text. Coins on the left; Quests, Daily Reward and
-  Settings on the right (icon only on narrow screens and phones). Hidden on the main menu, while training and behind full-width panels.
-- Colors, icons and optional image ids for all of these live in `Config/HudIcons`; look tokens in `Theme.Tile`.
+## UI design system (owner's UI redesign, 13 Oct: Downloads\GYM_ARC_UI_redesign.md + gym_arc_ui_mockups; replaces "clean minimal")
+- The mockups (844x390 landscape phone) are the source of truth for layout, sizes, colors and wording. Screens are built
+  in mockup px inside `Kit.Root`, whose UIScale follows the screen (shorter side / 390, never wider than 844 px across).
+- Built from 9-slice image pieces (`Config/UI.Pieces`, the owner's uploads in the Myanmar Builders Club group, with the
+  SliceCenter / SliceScale from pieces.json) through `Shared.UI.Theme` (Panel, Button, colors, fonts) and `Shared.UI.Kit`
+  (Button, Tabs, Chip, Bar, Tag, Card, IconTile, GradeBadge, Toggle, Slider, Modal). Text, numbers and icons stay live
+  on top; icons are `Config/UI.Icons` (white, tinted), shop art `Config/UI.ShopIcons`. No hardcoded styles elsewhere.
+- Colors: panel #141113 (6% see-through), cards #1D191B, wells #0F0C0E, borders white at 87% / 93%; text #F6F3F3,
+  muted #9D9396, faint #6F6669; red #E4262F (primary), dark red tint #3A1013, gold #F5B62F, green #36C26B, blue #3F8CFF,
+  purple #9A5CFF. Modal backdrop black at 38% + a slight blur. Grades and rarity keep the bumper plate colors.
+- Fonts (both built into Roblox): Oswald Bold UPPERCASE for titles, buttons, tabs; Oswald SemiBold for numbers;
+  Montserrat SemiBold / Bold for body text; small section labels Oswald SemiBold 10px, muted.
+- Shapes: panels 12, cards / buttons / chips 8-10, tags 5, bars fully round. Buttons have a 3px darker bottom edge;
+  pressed = content down 2px and the edge goes. No gradients except the panel header and progress fills; no glow.
+- Panel header: 46px, a 4px red accent bar, title, tabs, then coins chip and X on the right.
+- Text never below 10px at phone size; touch targets at least 44px (the hit area may be bigger than the visual).
+  Spacing in multiples of 4. Open / close: scale from 0.96 + fade 0.18s (Quad Out).
+- Text over the 3D world gets a subtle dark outline (Theme.TextShadow). No CanvasGroup fades (Theme.Fade instead).
 
 ## Overhead title
 - BillboardGui sized in studs (scales with distance), just above the head and the player's name, MaxDistance ~60.

@@ -1,31 +1,49 @@
--- GYM ARC design system: "clean minimal". Dark see-through panels, thin light borders, Oswald (headings, numbers,
--- buttons; UPPERCASE titles and buttons) + Nunito (body) in white and gray. Color is only used for bumper plates, grades and rarity. Every UI reads its look from here.
+-- GYM ARC design system (owner's UI redesign, 13 Oct; GYM_ARC_UI_redesign.md + the mockups): dark warm panels built
+-- from 9-slice image pieces (Shared.UI.Pieces, Config/UI), red primary buttons, Oswald (titles, buttons, tabs, numbers;
+-- UPPERCASE) + Montserrat (body). Color means something: red = primary / main muscle, gold = coins / big moments,
+-- green = done / claim, blue / purple = tags; plates, grades and rarity keep the bumper colors. Every UI reads its look
+-- from here and from Shared.UI.Kit (the components).
 local TweenService = game:GetService("TweenService")
 
 local Theme = {}
 
 Theme.Colors = {
-	Background = Color3.fromHex("#0E0E10"), -- dim backdrops
-	Panel = Color3.fromHex("#0E0E10"),      -- see-through panels and label backings (use Theme.Alpha.Panel)
-	Border = Color3.fromHex("#FFFFFF"),     -- thin borders (use Theme.Alpha.Border)
-	Text = Color3.fromHex("#FFFFFF"),       -- main text
-	Muted = Color3.fromHex("#B8B8BE"),      -- secondary text
-	Chalk = Color3.fromHex("#FFFFFF"),      -- light fills (bar segments, icons); same as Text
-	Ink = Color3.fromHex("#0E0E10"),        -- dark text, only on light plate discs
+	Background = Color3.fromHex("#0F0C0E"), -- modal backdrops, deep wells
+	Panel = Color3.fromHex("#141113"),      -- panels (the panel piece; use Theme.Alpha.Panel for plain frames)
+	Card = Color3.fromHex("#1D191B"),       -- cards inside panels
+	Well = Color3.fromHex("#0F0C0E"),       -- deep wells: bar tracks, the tab strip
+	Secondary = Color3.fromHex("#2B2427"),  -- secondary buttons
+	Disabled = Color3.fromHex("#1F1B1D"),
+	TabActive = Color3.fromHex("#2C2528"),
+	HeaderTop = Color3.fromHex("#1F1A1C"),  -- the panel header's subtle gradient
+	HeaderBottom = Color3.fromHex("#181416"),
+	Border = Color3.fromHex("#FFFFFF"),     -- 1px borders (use Theme.Alpha.Border / BorderSoft)
+	Text = Color3.fromHex("#F6F3F3"),       -- main text
+	Muted = Color3.fromHex("#9D9396"),      -- secondary text
+	Faint = Color3.fromHex("#6F6669"),      -- faint text, locked items
+	Chalk = Color3.fromHex("#F6F3F3"),      -- light fills (icons, bar segments)
+	Ink = Color3.fromHex("#141113"),        -- dark text on light fills
 	Shadow = Color3.fromHex("#000000"),
+	Red = Color3.fromHex("#E4262F"),        -- primary
+	RedTint = Color3.fromHex("#3A1013"),    -- tag / icon tile backgrounds
+	Gold = Color3.fromHex("#F5B62F"),       -- coins, PUMP, big moments (NEW PR, BIG REP)
+	Green = Color3.fromHex("#36C26B"),      -- claim, done, auto on, quest bars
+	Blue = Color3.fromHex("#3F8CFF"),
+	Purple = Color3.fromHex("#9A5CFF"),
 	NeedsWork = Color3.fromHex("#FF8A8A"),  -- soft light red: "needs work", very low stamina
-	Gold = Color3.fromHex("#F2C14E"),       -- big moments only: BIG REP, NEW PR, PUMPED, maxed outline
 	StatNumber = Color3.fromHex("#DCEEFF"), -- light blue-white: the numbers on the world stats labels
 }
 
 -- Transparency levels (0 = solid, 1 = invisible)
 Theme.Alpha = {
-	Panel = 0.55,         -- panels and label backings
+	Panel = 0.06,         -- panels (#141113 at 6%)
 	LabelBacking = 0.6,   -- the faint box behind world labels
-	Border = 0.85,        -- 1px white panel border
-	ButtonBorder = 0.7,   -- thin light border on buttons
-	Primary = 0.85,       -- primary button fill (white)
+	Border = 0.87,        -- strong 1px white border
+	BorderSoft = 0.93,    -- soft 1px white border
+	ButtonBorder = 0.87,
+	Primary = 1,          -- (buttons are image pieces now: their own frame stays invisible)
 	TextShadow = 0.6,     -- subtle dark stroke behind text over the world
+	Backdrop = 0.38,      -- black behind a modal
 }
 
 -- Real bumper plate colors (plate fill + darker rim). Used for grades, rarity and plates.
@@ -52,15 +70,17 @@ Theme.Rarity = {
 	Secret = Theme.Bumper.Black,
 }
 
--- The UI fonts live in UIFonts (Oswald for headings / numbers / buttons, Nunito for body text); never Montserrat or Gotham.
--- The weight names stay so every screen keeps working: Regular = body text, the rest = Oswald.
+-- The UI fonts live in UIFonts (Oswald for titles / numbers / buttons, Montserrat for body text).
+-- The weight names stay so every screen keeps working: Regular = body text, Light / Medium = Oswald numbers, the rest =
+-- Oswald Bold, Strong = Montserrat Bold.
 local UIFonts = require(script.Parent:WaitForChild("UIFonts"))
 Theme.UIFonts = UIFonts
 Theme.Fonts = {
-	Light = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Regular), -- big calm numbers
+	Light = UIFonts.Number,                                                             -- calm numbers
 	Regular = UIFonts.Body,                                                             -- normal text
 	SemiBold = UIFonts.Heading,                                                         -- titles, button labels, important numbers
 	Bold = UIFonts.Heading,                                                             -- rank tag letters
+	Strong = UIFonts.BodyBold,                                                          -- names and item names in body text
 }
 -- older names, kept so every screen reads the same three weights
 Theme.Fonts.Medium = UIFonts.Number -- Oswald SemiBold in sentence case (genetics plate labels)
@@ -85,6 +105,7 @@ Theme.Tile = {
 	FaceDarken = 0.5,
 }
 
+-- Named sizes, or a plain number (the redesigned screens use the mockup's px; Theme.ScreenScale scales the whole gui).
 Theme.TextSize = {
 	Slam = 72,  -- one-off slams of a big moment (the genetics "S!")
 	Hero = 56,  -- the GYM ARC title on the menu card (HeroCompact on phones)
@@ -98,13 +119,17 @@ Theme.TextSize = {
 	Popup = 26, -- 3D gain popups
 	Body = 16,
 	Small = 14,
+	Label = 10, -- small section labels ("DAILY QUESTS", "STAMINA") at mockup size
 }
+Theme.MinTextSize = 10
 
 Theme.Spacing = { XS = 4, S = 8, M = 12, L = 16, XL = 24 }
 
 Theme.Corner = {
-	Panel = UDim.new(0, 10),
-	Button = UDim.new(0, 10),
+	Panel = UDim.new(0, 12),
+	Card = UDim.new(0, 10),
+	Button = UDim.new(0, 8),
+	Tag = UDim.new(0, 5),
 	Segment = UDim.new(0, 3),
 	Round = UDim.new(1, 0), -- plate discs and icons
 }
@@ -154,6 +179,18 @@ Theme.Motion = {
 ------------------------------------------------------------------------
 -- Builders
 ------------------------------------------------------------------------
+-- UIPadding also shrinks the Depth pieces, so they are pushed back out by the padding.
+local Pieces -- Shared.UI.Pieces (loaded on first use)
+local function pieces()
+	Pieces = Pieces or require(script.Parent:WaitForChild("Pieces"))
+	return Pieces
+end
+
+local function paddingOf(gui)
+	local p = gui:FindFirstChildOfClass("UIPadding")
+	if not p then return 0, 0, 0, 0 end
+	return p.PaddingLeft.Offset, p.PaddingRight.Offset, p.PaddingTop.Offset, p.PaddingBottom.Offset
+end
 
 function Theme.Tween(instance, props, time, style)
 	local info = TweenInfo.new(time or Theme.Motion.Time, style or Theme.Motion.Style, Theme.Motion.Direction)
@@ -269,7 +306,8 @@ function Theme.Text(props)
 	props.Upper = nil
 	props.BackgroundTransparency = 1
 	props.TextScaled = false
-	props.TextSize = math.max(Theme.TextSize.Small, math.floor(Theme.TextSize[sizeKey]))
+	local size = type(sizeKey) == "number" and sizeKey or Theme.TextSize[sizeKey] or Theme.TextSize.Body
+	props.TextSize = math.max(Theme.MinTextSize, math.floor(size))
 	props.FontFace = Theme.Fonts[fontKey]
 	props.TextColor3 = props.TextColor3 or Theme.Colors.Text
 	local label = Theme.New("TextLabel", props)
@@ -352,19 +390,36 @@ function Theme.Fade(root, visible, time)
 	return lastTween
 end
 
--- Buttons shrink to PressScale while held and spring back, with a very soft click.
+-- Pressing a button: image buttons move their content down 2px and lose the edge (the red one swaps to its pressed
+-- piece); plain buttons shrink a little instead. A very soft click.
 local audio -- Shared.Audio, loaded on first press (client only)
 function Theme.BindPress(button)
-	local scale = button:FindFirstChildOfClass("UIScale") or Theme.New("UIScale", { Parent = button })
 	local function isPress(input)
 		return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
 	end
-	button.InputBegan:Connect(function(input)
-		if isPress(input) then Theme.Tween(scale, { Scale = Theme.Motion.PressScale }, Theme.Motion.PressTime) end
-	end)
-	button.InputEnded:Connect(function(input)
-		if isPress(input) then Theme.Tween(scale, { Scale = 1 }) end
-	end)
+	local down = false
+	local function setDown(on)
+		if on == down then return end
+		down = on
+		local piece = button:GetAttribute("Piece")
+		if piece then
+			local pad = button:FindFirstChildOfClass("UIPadding") or Theme.New("UIPadding", { Parent = button })
+			local shift = on and 2 or -2
+			pad.PaddingTop = UDim.new(pad.PaddingTop.Scale, pad.PaddingTop.Offset + shift)
+			pad.PaddingBottom = UDim.new(pad.PaddingBottom.Scale, pad.PaddingBottom.Offset - shift)
+			local depth = button:FindFirstChild("Depth")
+			local bg = depth and depth:FindFirstChild("Bg")
+			local pressed = Theme.ButtonPressed[piece]
+			if bg and pressed then pieces().Apply(bg, on and pressed or piece) end
+			if bg and not pressed then bg.ImageColor3 = on and Color3.new(0.85, 0.85, 0.85) or Color3.new(1, 1, 1) end
+		else
+			local scale = button:FindFirstChildOfClass("UIScale") or Theme.New("UIScale", { Parent = button })
+			Theme.Tween(scale, { Scale = on and Theme.Motion.PressScale or 1 }, on and Theme.Motion.PressTime or nil)
+		end
+	end
+	button.InputBegan:Connect(function(input) if isPress(input) then setDown(true) end end)
+	button.InputEnded:Connect(function(input) if isPress(input) then setDown(false) end end)
+	button.MouseLeave:Connect(function() setDown(false) end)
 	button.Activated:Connect(function()
 		audio = audio or require(script.Parent.Parent:WaitForChild("Audio"))
 		audio.PlayUI("Click")
@@ -379,12 +434,6 @@ Theme.Depth = {
 	Shadow = { Offset = 2, Rings = { { 2, 0.86 }, { 5, 0.92 }, { 10, 0.96 } } }, -- ring thickness px, transparency
 }
 
--- UIPadding also shrinks the Depth pieces, so they are pushed back out by the padding.
-local function paddingOf(gui)
-	local p = gui:FindFirstChildOfClass("UIPadding")
-	if not p then return 0, 0, 0, 0 end
-	return p.PaddingLeft.Offset, p.PaddingRight.Offset, p.PaddingTop.Offset, p.PaddingBottom.Offset
-end
 
 -- kind and cornerKind: "Panel" (default) or "Button" pick the corner radius; extra args are ignored.
 function Theme.AddDepth(gui, kind, cornerKind)
@@ -415,24 +464,99 @@ function Theme.AddDepth(gui, kind, cornerKind)
 	return gui
 end
 
--- See-through dark panel: #0E0E10 at 55%, 10px corners, 1px faint white border, soft shadow.
-function Theme.Panel(props, children)
-	props.BackgroundColor3 = props.BackgroundColor3 or Theme.Colors.Panel
-	props.BackgroundTransparency = props.BackgroundTransparency or Theme.Alpha.Panel
-	local panel = Theme.New("Frame", props, children)
-	if not panel:FindFirstChildOfClass("UICorner") then Theme.Round("Panel").Parent = panel end
-	if not panel:FindFirstChildOfClass("UIStroke") then Theme.Stroke().Parent = panel end
-	return Theme.AddDepth(panel, "Panel")
+------------------------------------------------------------------------
+-- Image pieces behind panels and buttons. They live in the "Depth" Folder (list / grid layouts ignore it), pushed back
+-- out by the gui's UIPadding (UIPadding moves them too), kept in step when the padding changes (button presses).
+------------------------------------------------------------------------
+
+local function fitBehind(gui, image, grow)
+	local function fit()
+		local left, right, top, bottom = paddingOf(gui)
+		image.Position = UDim2.fromOffset(-left - grow, -top - grow)
+		image.Size = UDim2.new(1, left + right + grow * 2, 1, top + bottom + grow * 2)
+	end
+	local watched = nil
+	local function watch()
+		local pad = gui:FindFirstChildOfClass("UIPadding")
+		if pad and pad ~= watched then
+			watched = pad
+			for _, prop in ipairs({ "PaddingLeft", "PaddingRight", "PaddingTop", "PaddingBottom" }) do
+				pad:GetPropertyChangedSignal(prop):Connect(fit)
+			end
+		end
+		fit()
+	end
+	watch()
+	gui.ChildAdded:Connect(function(child) if child:IsA("UIPadding") then task.defer(watch) end end)
 end
 
--- Buttons: dark see-through rounded rectangles with a thin light border and white text.
--- "Primary" (also "Main") is a little brighter: white fill at 85% transparency.
+Theme.PanelShadowGrow = 20 -- the soft shadow behind a panel is this much bigger on every side
+
+-- Puts piece `name` behind `gui` (and the soft panel shadow when `shadow`). Returns the image.
+function Theme.SetPiece(gui, name, shadow)
+	local folder = gui:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = gui })
+	local bg = folder:FindFirstChild("Bg")
+	if not bg then
+		bg = pieces().Image(name, { Name = "Bg", ZIndex = 0, Parent = folder }) -- (under the content)
+		fitBehind(gui, bg, 0)
+	else
+		pieces().Apply(bg, name)
+	end
+	if shadow and not folder:FindFirstChild("PanelShadow") then
+		local s = pieces().Image("panel_shadow", { Name = "PanelShadow", ZIndex = -1, Parent = folder })
+		fitBehind(gui, s, Theme.PanelShadowGrow)
+	end
+	gui:SetAttribute("Piece", name)
+	return bg
+end
+
+-- A hidden 1px border every panel and button keeps, so a script can still light it up (a selected card, a warning).
+local function hookStroke(gui, corner)
+	if not gui:FindFirstChildOfClass("UIStroke") then
+		Theme.New("UIStroke", { Name = "Border", Color = Theme.Colors.Border, Thickness = 1, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = gui })
+	end
+	local c = gui:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = gui })
+	c.CornerRadius = corner
+end
+
+-- Panel: the panel piece (dark, 12px corners, thin border) with its soft shadow. props.Piece picks another piece ("card",
+-- "hud_box", "well", "chip" ...); props.Shadow = false leaves the shadow out (default: only the "panel" piece has one).
+function Theme.Panel(props, children)
+	local piece = props.Piece or "panel"
+	local shadow = props.Shadow
+	if shadow == nil then shadow = piece == "panel" end
+	props.Piece, props.Shadow = nil, nil
+	props.BackgroundTransparency = 1
+	local panel = Theme.New("Frame", props, children)
+	hookStroke(panel, piece == "panel" and Theme.Corner.Panel or Theme.Corner.Card)
+	Theme.SetPiece(panel, piece, shadow)
+	return panel
+end
+
+-- Buttons: image pieces with a darker bottom edge so they feel pressable. Styles: "Primary" (red; also "Main"),
+-- "Secondary" (dark), "Gold", "Green", "Disabled", "White" (tint the piece). Press = the content moves down 2px and the
+-- edge goes (the red one swaps to its pressed piece). Theme.SetButtonStyle(button, style) switches it later.
+Theme.ButtonPieces = {
+	Primary = "btn_red", Main = "btn_red", Secondary = "btn_dark", Gold = "btn_gold", Green = "btn_green",
+	Disabled = "btn_disabled", White = "btn_white_tint",
+}
+Theme.ButtonPressed = { btn_red = "btn_red_pressed" }
+Theme.ButtonText = { Gold = Theme.Colors.Ink, Disabled = Theme.Colors.Muted }
+
+function Theme.SetButtonStyle(button, style)
+	button:SetAttribute("Style", style)
+	Theme.SetPiece(button, Theme.ButtonPieces[style] or Theme.ButtonPieces.Secondary, false)
+	local color = Theme.ButtonText[style] or Theme.Colors.Text
+	for _, item in ipairs(button:GetDescendants()) do
+		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then item.TextColor3 = color end
+		if item:IsA("ImageLabel") and item.Name == "Icon" and not item:GetAttribute("KeepColor") then item.ImageColor3 = color end
+	end
+end
+
 function Theme.Button(style, props, children)
 	props.Text = ""
 	props.AutoButtonColor = false
-	local primary = style == "Primary" or style == "Main"
-	props.BackgroundColor3 = primary and Theme.Colors.Text or Theme.Colors.Panel
-	props.BackgroundTransparency = primary and Theme.Alpha.Primary or Theme.Alpha.Panel
+	props.BackgroundTransparency = 1
 	local button = Theme.New("TextButton", props, children)
 	-- button labels are UPPERCASE Oswald (labels passed in as children, or added later)
 	local function upperLabel(item)
@@ -440,10 +564,9 @@ function Theme.Button(style, props, children)
 	end
 	for _, item in ipairs(button:GetDescendants()) do upperLabel(item) end
 	button.DescendantAdded:Connect(function(item) task.defer(upperLabel, item) end)
-	Theme.Round("Button").Parent = button
-	Theme.Stroke(Theme.Colors.Border, 1, primary and 0.6 or Theme.Alpha.ButtonBorder).Parent = button
+	hookStroke(button, Theme.Corner.Button)
+	Theme.SetButtonStyle(button, style)
 	Theme.BindPress(button)
-	Theme.AddDepth(button, "Button")
 	return button
 end
 

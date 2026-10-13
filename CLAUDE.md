@@ -15,12 +15,12 @@
   was lost once because the place was never saved to Roblox.
 - Cloud sessions can't reach Studio: they can only edit `src/`, and the owner must copy those changes into Studio.
   Say so clearly.
-- **UI style is "clean minimal"** (described in `docs/DESIGN.md`): dark see-through panels, thin light borders,
-  Oswald + Nunito, white/gray text, color only for plates, grades and rarity. `ReplicatedStorage.Shared.UI.Theme` is the
-  source of truth for the look: use Theme helpers, never hardcoded styles. StarterGui is empty; all UI is built in
-  code from Theme. All data writes go through `PlayerData`.
-- UI fonts: Oswald (headings/numbers) + Nunito (body). Never Montserrat/Gotham. (`Shared.UI.UIFonts`; Theme.Fonts maps
-  the weights onto them; titles and button labels are UPPERCASE.)
+- **UI style: the owner's UI redesign** (13 Oct, `Downloads\GYM_ARC_UI_redesign.md` + the mockups; summary in
+  `docs/DESIGN.md`): dark warm panels from 9-slice image pieces (`Config/UI`), red primary buttons, Oswald + Montserrat.
+  `ReplicatedStorage.Shared.UI.Theme` (look) and `Shared.UI.Kit` (components) are the source of truth: use them, never
+  hardcoded styles. StarterGui is empty; all UI is built in code. All data writes go through `PlayerData`.
+- UI fonts: Oswald (titles, buttons, tabs, numbers; UPPERCASE titles / buttons) + Montserrat (body), per the redesign
+  brief (`Shared.UI.UIFonts`).
 - Monetization stays OFF (no gamepasses/products/badges created). No emojis in UI, no grunt sounds, no real
   people/brands/copyrighted art. Sound IDs (owner, 13 Oct: "pick audios for me"): Claude picks them, ONLY from Roblox's licensed
   library (creator ProSoundEffects for effects, APM Music for music; never user uploads), and lists every pick in
