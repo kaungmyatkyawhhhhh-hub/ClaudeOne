@@ -1048,6 +1048,26 @@ body.photo .hud,body.photo .bottom,body.photo .lvlbtn,body.photo .raytoast,body.
 .mtools .reqbtn,.mtools .reqbtn.fobtn,.mtools .reqbtn.lmbtn{background:var(--surface)!important;color:var(--ink)!important;border:1px solid var(--line);box-shadow:var(--shadow);border-radius:12px;font-weight:700}
 .mtools .reqbtn b,.mtools .reqbtn.fobtn b,.mtools .reqbtn.lmbtn b{font-family:var(--body);font-weight:500;letter-spacing:0;color:var(--muted)!important;opacity:1}
 .mtools .reqbtn.fobtn::before{content:"";display:none}
+/* big action buttons and tiles: solid, sentence case, no stretched display type */
+.bigbtn{font-family:var(--body);font-variation-settings:normal;font-weight:800;font-size:1.15rem;text-transform:none;letter-spacing:-.015em;border-radius:14px;padding:18px 16px;line-height:1.15}
+.bigbtn small{font-family:var(--body);font-weight:500;font-size:.76rem;opacity:.78}
+.room .bigbtn{box-shadow:var(--shadow)}
+.room .bigbtn.alt{border:1px solid var(--line)}
+.tiles .bigbtn{font-size:1rem;padding:14px 12px;border-radius:12px;align-items:flex-start;text-align:left;justify-content:flex-start;min-height:72px}
+.tiles .bigbtn small{font-size:.7rem}
+.bankbtns .bigbtn,.tpos .bigbtn{font-size:1.05rem}
+.gbtn{font-family:var(--body);font-variation-settings:normal;font-weight:800;text-transform:none;letter-spacing:-.01em;border-radius:12px;border:1px solid var(--line)}
+.gbtn small{font-family:var(--body);font-weight:500;font-size:.66rem}
+.gbtn.main,.gbtn.flex{border-color:transparent}
+.gbtn.flex{background:var(--accent);color:var(--accent-ink)}
+.reqbtn.rwbtn{background:var(--surface)!important;color:var(--ink)!important;border:1px solid var(--line);box-shadow:var(--shadow)}.reqbtn.rwbtn b{color:var(--muted)!important;font-family:var(--body);opacity:1}
+.room .bigbtn:not(.alt):not(.alt2):not([disabled]){background:color-mix(in oklab,var(--pc,var(--accent)) 80%,#0d1015)}
+/* info notes: quiet card instead of an accent outline */
+.note{box-shadow:none;border:1px solid var(--line);background:var(--surface)}
+.note b{color:var(--ink)}
+.nightroom .note,.arcroom .note{border-color:rgba(255,255,255,.12)}
+.perk{border:1px solid var(--line);box-shadow:var(--shadow)}
+.nightroom .perk,.arcroom .perk{border-color:rgba(255,255,255,.1)}
 </style>
 
 
@@ -2396,7 +2416,7 @@ function renderGymAct(){
   if(st&&st.lift)h+=`<button class="gbtn main" id="gLift">${st.n}<small>PR ${S.lifts[st.lift]} kg · tap to lift</small></button>`;
   else if(st&&st.k==="dumb")h+=`<button class="gbtn main" id="gCurl">Pump curls<small>3 energy · flex rewards +30% for 90s</small></button>`;
   else if(st&&st.k==="stage")h+=`<button class="gbtn main" id="gComp">Compete<small>Bodybuilding shows</small></button>`;
-  h+=`<button class="gbtn" id="gBox">🥊 Boxing bag<small>5 energy · rhythm, not muscle${S.boxBest?" · best ×"+S.boxBest:""}</small></button>`;
+  h+=`<button class="gbtn" id="gBox">Boxing bag<small>5 energy · rhythm, not muscle${S.boxBest?" · best ×"+S.boxBest:""}</small></button>`;
   h+=`<button class="gbtn flex" id="gFlex">${st&&st.k==="stage"?"Flex on stage":"Flex here"}<small>10 energy${st&&st.k==="stage"?" · ×1.5 fans":" · draw a crowd"}</small></button>`;
   if(!st)h=`<span class="gtip">Tap the floor to walk to a station.</span>`+h;
   el.innerHTML=h;
@@ -2667,7 +2687,7 @@ function openCafe(){
   const draw=bk=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Café")}
       <div class="note">Short on energy? Grab something here instead of walking home. Energy <b id="cfEn">${Math.floor(S.energy)}/${maxEnergy()}</b>.</div>
-      <button class="bigbtn alt2" id="bShift">☕ Work a barista shift<small>${S.baristaDay===dayKey()?"You already worked today · come back tomorrow":"60 seconds of orders · tips and a best score"}${S.baristaBest?" · best "+S.baristaBest+" drinks":""}</small></button>
+      <button class="bigbtn alt2" id="bShift">Work a barista shift<small>${S.baristaDay===dayKey()?"You already worked today · come back tomorrow":"60 seconds of orders · tips and a best score"}${S.baristaBest?" · best "+S.baristaBest+" drinks":""}</small></button>
       <div class="perks">${CAFE.map(c=>`<button class="perk nopic${bk===c.k?" bought":""}${cafeLeft(c.k)>0?" cfon":""}" data-c="${c.k}" ${price(c)>S.cash?"disabled":""}><span class="t">${c.t}${cafeLeft(c.k)>0?` <em class="cfact" data-left="${c.k}">ACTIVE · ${mmss(cafeLeft(c.k))}</em>`:""}</span><span class="d">${c.d}</span><span class="c">${fmt(price(c))}</span></button>`).join("")}</div><div class="sechead"><h3>Dates</h3><span class="eyebrow">${S.partner?"❤ "+esc(S.partner.n):"Numbers from the Nightclub"}</span></div>${dateList()}${scratchList()}</div>`;
     $("leaveBtn").onclick=closeRoom;{const bs=$("bShift");if(bs)bs.onclick=()=>{if(S.baristaDay===dayKey())return banner("Your shift is done for today","a");baristaShift(()=>openCafe())}}bindDates(()=>draw());$("room").querySelectorAll("[data-scr]").forEach(b=>b.onclick=()=>scratchCard(b.dataset.scr,()=>draw()));
     $("room").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const c=CAFE.find(x=>x.k===b.dataset.c),p=price(c);if(S.cash<p)return;const e0=S.energy;S.cash-=p;c.fx(S);moodAdd(5);SFX.buy();dirty=true;
@@ -2702,7 +2722,7 @@ function openMall(){
   const draw=bk=>{
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mall")}
       <div class="tiles"><button class="bigbtn alt" id="mBq">Boutique<small>${ACCS.length} hats, glasses, wings and more</small></button><button class="bigbtn alt" id="mPets2">Pet shop<small>${PETS.length} pets</small></button></div>
-      <button class="reqbtn rwbtn" id="mRunway">${rwTheme().ic} Runway · ${rwTheme().n} night<b>${S.rwDay===dayKey()?"Walked today · "+(S.rwBest||0)+"/30 best":"Daily fashion show · free"}</b></button>
+      <button class="reqbtn rwbtn" id="mRunway">Runway · ${rwTheme().n} night<b>${S.rwDay===dayKey()?"Walked today · "+(S.rwBest||0)+"/30 best":"Daily fashion show · free"}</b></button>
       <div class="perks">${UPGRADES.map(u=>{const l=S.up[u.k],mx=l>=u.max,c=mx?0:u.cost(l);return `<button class="perk nopic${bk===u.k?" bought":""}" data-u="${u.k}" ${mx||c>S.cash?"disabled":""}>
         <span class="t">${u.t}${u.max>1?`<span class="pips">${Array.from({length:u.max},(_,j)=>`<i class="${j<l?"on":""}"></i>`).join("")}</span>`:""}</span><span class="d">${u.d}</span><span class="c">${mx?"Owned":fmt(c)}</span></button>`}).join("")}</div>
       <div class="sechead"><h3>Empire upgrades</h3><span class="eyebrow">$1M to $1Qa</span></div><div class="perks">${empireList()}</div>
@@ -2848,7 +2868,7 @@ function openBank(){
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Bank")}
       <div class="kv"><div><span class="eyebrow">In the bank</span><b id="bBal">${fmt(S.bank||0)}</b></div><div><span class="eyebrow">Earning</span><b id="bRate">${fmt((S.bank||0)*BANK_RATE)}/min</b></div></div>
       <div class="note">Money in the bank earns <b>0.5% every minute</b> while you play. Withdraw any time.</div>
-      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt2" id="bkHeist">🔐 Crack the vault<small>${S.heistDay===dayKey()?"Alarm still ringing · try tomorrow":"Once a day · big payout"}</small></button><button class="bigbtn alt" id="bkCoop">Co-op heist<small>${MP?(hzHumans().length?"2 to 4 friends · "+hzLeft()+" left today":"Needs a friend in your room"):"Join an online room first"}</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt" id="bkDeeds">Deeds<small>${Object.keys(S.deeds||{}).length?Object.keys(S.deeds).length+" owned · "+fmt(deedInc())+"/min":"Own the town, from "+fmt(DEEDS[0].c)}</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
+      <div class="tiles"><button class="bigbtn" id="bkRe">Real estate<small>Buy businesses in Flip City</small></button><button class="bigbtn alt" id="bkEmp">Your businesses<small>${(S.biz||[]).length} · ${fmt(empireInc())}/min</small></button><button class="bigbtn alt2" id="bkHeist">Crack the vault<small>${S.heistDay===dayKey()?"Alarm still ringing · try tomorrow":"Once a day · big payout"}</small></button><button class="bigbtn alt" id="bkCoop">Co-op heist<small>${MP?(hzHumans().length?"2 to 4 friends · "+hzLeft()+" left today":"Needs a friend in your room"):"Join an online room first"}</small></button><button class="bigbtn alt" id="bkLb">World leaderboard<small>Real players</small></button><button class="bigbtn alt" id="bkDeeds">Deeds<small>${Object.keys(S.deeds||{}).length?Object.keys(S.deeds).length+" owned · "+fmt(deedInc())+"/min":"Own the town, from "+fmt(DEEDS[0].c)}</small></button><button class="bigbtn alt2" id="bkMega">Mega projects<small>${megaTotal()?megaTotal()+" levels · +"+Math.round((megaK()-1)*100)+"% money":"From "+fmt(1e15)}</small></button></div>
       ${richListHTML()}
       <div class="bankbtns"><button class="bigbtn" id="dAll">Deposit all<small>${fmt(S.cash)}</small></button><button class="bigbtn alt" id="dHalf">Deposit half<small>${fmt(S.cash/2)}</small></button><button class="bigbtn alt2" id="wAll">Withdraw all<small>${fmt(S.bank||0)}</small></button></div></div>`;
     {const cb=$("bkCoop");if(cb)cb.onclick=()=>{if(HZ&&HZ.st!=="done")return openCoHeist();HZ=null;hzHost()}}{const hb=$("bkHeist");if(hb)hb.onclick=()=>{if(S.heistDay===dayKey())return banner("Security is on alert. Come back tomorrow","r");openHeist()}}$("leaveBtn").onclick=closeRoom;
@@ -3211,12 +3231,12 @@ function openDocks(){room="docks";
   const draw=()=>{if(room!=="docks"||(RACE&&!RACE.done))return;const cars=VEH.filter(v=>S.veh[v.k]&&CARS.includes(v.k)),best=cars.sort((a,b)=>b.sp-a.sp)[0],shown=S.flags.showDay===S.day,ask=MP&&MP.crAsk&&MP.peers[MP.crAsk.f]?MP.crAsk:null,fr=MP?Object.entries(MP.peers).filter(([id,p])=>p.n):[];
     $("room").innerHTML=`<div class="room-in scroll">${roomHead("Docks Car Meet")}
       <button class="bigbtn alt2" id="rsBtn" ${!VEH.some(v=>S.veh[v.k]&&CARS.includes(v.k))||RS?"disabled":""}>🚕 Ride share shift<small>${RS?"Shift in progress":VEH.some(v=>S.veh[v.k]&&CARS.includes(v.k))?"Three passengers · fares plus tips for fast drops":"Needs a car"}</small></button>
-      <button class="bigbtn alt2" id="ttBtn">⏱️ Street time trial<small>Six checkpoints across town, on foot or on wheels${S.ttBest?" · best "+S.ttBest.toFixed(1)+" s":""}</small></button>
+      <button class="bigbtn alt2" id="ttBtn">Street time trial<small>Six checkpoints across town, on foot or on wheels${S.ttBest?" · best "+S.ttBest.toFixed(1)+" s":""}</small></button>
       ${!best?`<div class="note">Bring a car to join the meet. Trucks, coupes and hypercars are at the Dealership downtown, and the sports car too.</div>`:`
       <div class="note">You're rolling up in your <b>${best.n}</b> (${best.sp}× speed). Hit <b>GO</b> the moment the lights turn green for a faster launch.</div>
       ${ask?`<div class="crask"><b>${esc(ask.n)}</b> wants to race you<div class="seg3"><button class="cta" id="crYes">Race them</button><button class="cta ghost" id="crNo">No thanks</button></div></div>`:""}
       <button class="bigbtn" id="showBtn" ${shown?"disabled":""}>Show off your cars<small>${shown?"Come back tomorrow":"Cash for each car you own · style ×"+(1+carStyle()/100).toFixed(2)}</small></button>
-      <button class="bigbtn alt" id="csBtn">🔧 Garage<small>Paint, plates, style and tuning · style ${carStyle()}</small></button>
+      <button class="bigbtn alt" id="csBtn">Garage<small>Paint, plates, style and tuning · style ${carStyle()}</small></button>
       ${meetLineup()}
       <div class="sechead"><h3>Race your friends</h3><span class="eyebrow">${MP?fr.length+" online":"Offline"}</span></div>
       ${!MP?`<p class="fine">Join an online room at the Harbor to race your friends live.</p>`:fr.length?`<div class="perks">${fr.map(([id,p])=>`<button class="perk nopic" data-cr="${id}"><span class="t">${esc(String(p.n).slice(0,16))}</span><span class="d">Lv ${p.lv||0}${MP.crOut===id?" · waiting for them…":""}</span><span class="c">${MP.crOut===id?"Sent":"Race"}</span></button>`).join("")}</div>`:`<p class="fine">Nobody else is in your room right now.</p>`}
@@ -5293,7 +5313,7 @@ function openArcade(){room="arcade";$("room").hidden=false;S.arcBest=S.arcBest||
     <div class="sechead"><h3>Games</h3><span class="eyebrow">No muscles needed</span></div>
     <div class="perks">${Object.entries(ARC_G).map(([k,g])=>`<button class="perk nopic" data-ag="${k}" ${S.energy<5?"disabled":""}><span class="t">${g.ic} ${g.n}</span><span class="d">${g.d}${S.arcBest[k]?" · best "+S.arcBest[k]:""}</span><span class="c">Play</span></button>`).join("")}</div>
     <div class="sechead"><h3>Capsule machine</h3><span class="eyebrow">🎟️ 30 a spin · ${capPool().filter(a=>(S.accOwn||{})[a.k]).length}/${capPool().length} collected</span></div>
-    <button class="bigbtn alt2" id="capGo" ${T<30?"disabled":""}>🔮 Turn the crank<small>A random hat, glasses, chain or gadget · duplicates give 15 tickets back</small></button>
+    <button class="bigbtn alt2" id="capGo" ${T<30?"disabled":""}>Turn the crank<small>A random hat, glasses, chain or gadget · duplicates give 15 tickets back</small></button>
     <div class="sechead"><h3>Prize counter</h3><span class="eyebrow">Neon gear is arcade-only</span></div>
     <div class="perks">${ARC_PRIZE.map((z,i)=>{const own=z.acc&&(S.accOwn||{})[z.k];return `<button class="perk nopic" data-ap="${i}" ${own||T<z.t?"disabled":""}><span class="t">${z.ic} ${z.n}${own?' <em class="beat">OWNED</em>':""}</span><span class="d">${z.acc?"Wear it from the Mall's accessory shop":"Instant"}</span><span class="c">${own?"Owned":"🎟️ "+z.t}</span></button>`}).join("")}</div></div>`;
   $("leaveBtn").onclick=closeRoom;
@@ -7811,7 +7831,7 @@ const laborC=()=>Math.max(30,Math.round(rwBase()*.002));
 function openGarage(){room="garage";$("room").hidden=false;S.parts=S.parts||{};const draw=()=>{const B=S.broke,hh=Math.floor(Date.now()/36e5),svcC=Math.max(200,Math.round(rwBase()*.01));
   let rep="";if(B){const sym=B.bad.filter(x=>!B.found.includes(x)).map(x=>PARTS.find(p=>p[0]===x)[2]);rep=`<div class="dcard" style="border-left:4px solid #e2364a"><span class="eyebrow">Your ${esc(vehName(B.k))} · ${B.bad.length-B.found.length} problem${B.bad.length-B.found.length===1?"":"s"} left</span><b>Find what's broken</b><p class="fine" style="text-align:left;margin:6px 0">${sym.map(s=>"• "+esc(s)).join("<br>")}</p><p class="fine" style="text-align:left;margin:0 0 8px">Mo charges ${fmt(laborC())} to open up each part. Pick the right ones and the old parts are yours to sell.</p>
     <div class="partgrid">${PARTS.map(([k,n])=>{const f=B.found.includes(k),w=B.wrong.includes(k);return `<button class="pbtn${f?" ok":w?" no":""}" data-fix="${k}" ${f||w||S.cash<laborC()?"disabled":""}><b>${n}</b><small>${f?"Replaced":w?"That's fine":"Check"}</small></button>`}).join("")}</div></div>`}
-  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mo's Garage")}<div class="note">"If it's got wheels, I can fix it." Mo wipes his hands on a rag that's dirtier than they are.</div>${rep}<button class="bigbtn alt" id="gCs">🔧 Paint, plates and tuning<small>${gpCar()?"Style "+carStyle()+" · show it off at the Docks":"Buy a car first"}</small></button>
+  $("room").innerHTML=`<div class="room-in scroll">${roomHead("Mo's Garage")}<div class="note">"If it's got wheels, I can fix it." Mo wipes his hands on a rag that's dirtier than they are.</div>${rep}<button class="bigbtn alt" id="gCs">Paint, plates and tuning<small>${gpCar()?"Style "+carStyle()+" · show it off at the Docks":"Buy a car first"}</small></button>
     ${!B?`<button class="bigbtn alt" id="gSvc" ${S.svc===dayKey()||S.cash<svcC?"disabled":""}>Full service<small>${S.svc===dayKey()?"Serviced today · no breakdowns until tomorrow":"No breakdowns for the rest of today · "+fmt(svcC)}</small></button>`:""}
     <div class="sechead"><h3>Parts market</h3><span class="eyebrow">Prices change every hour</span></div>
     <div class="perks">${PARTS.map(([k,n])=>{const p=partP(k),pv=partP(k,hh-1),have=S.parts[k]||0,up=p>=pv;return `<div class="perk opp plrow"><span class="t">${n}</span><span class="d">You have ${have} · <b class="${up?"u":"d"}">${up?"▲":"▼"} ${fmt(p)}</b></span><span class="pmbtns"><button data-pbuy="${k}" ${S.cash<p||have>=20?"disabled":""}>Buy</button><button data-psell="${k}" ${have?"":"disabled"}>Sell</button></span></div>`}).join("")}</div></div>`;
@@ -8823,9 +8843,9 @@ function openW4Zone(zk,back){const z=W4ZK(zk),W=w4();room="w4z";W4Z_CUR=zk;$("ro
     $("room").innerHTML=`<div class="room-in scroll w4room">${roomHead(z.ic+" "+z.n)}
       <div class="kv"><div><span class="eyebrow">Gems</span><b id="w4G">${gemF(W.gems)}</b></div><div><span class="eyebrow">This zone</span><b id="w4R">${gemF(c.rate*w4Mult())}/s</b></div><div><span class="eyebrow">Status</span><b class="w4inf">${info}</b></div></div>
       <div class="w4grid" style="background:${z.bg}">${Z.t.map((t,i)=>{const b=t&&W4B(z,t.k);return `<button class="w4t${t?" on":""}${W4SEL===i?" sel":""}" data-w4="${i}" style="--tc:${z.tile}">${Z.vis&&Z.vis.i===i?`<strong class="w4vis">${SEA_C[Z.vis.c][0]}</strong>`:""}${b?`<b class="w4art">${w4Art(b.k)}</b><i>L${t.l}</i>${c.st[i]?`<em>${c.st[i]}</em>`:""}`:`<span>+</span>`}</button>`}).join("")}</div>
-      ${zk==="sky"&&w4Count("sky","ship")?(()=>{const X=W.exp;if(!X)return `<div class="sechead"><h3>🛸 Airship expeditions</h3><span class="eyebrow">${W.relics||0} sky relics · +${(W.relics||0)*5}% sky output</span></div><div class="seg3">${W4_EXP.map((e,i)=>`<button class="cta${i?" ghost":""}" data-w4x="${i}">${e.n}<br><small>${e.m<60?e.m+" min":e.m/60+" h"}</small></button>`).join("")}</div>`;const L=X.end-Date.now();return L>0?`<div class="note">🛸 Your airship is away on the ${W4_EXP[X.i].n} · back in ${L>=3600000?Math.ceil(L/3600000)+" h":Math.ceil(L/60000)+" min"}</div>`:`<button class="bigbtn" id="w4XL">🛸 The airship is back! Unload<small>Gems and maybe a sky relic</small></button>`})():""}
-      ${zk==="fac"&&Z.t.filter(Boolean).length?(()=>{const n=Date.now(),on=(W.oc||0)>n,cd=(W.ocCd||0)>n;return `<button class="bigbtn alt2" id="w4OC" ${on||cd?"disabled":""}>⚡ ${on?"Overclocked! ×2 for "+Math.ceil((W.oc-n)/1000)+"s":"Overclock the factory"}<small>${on?"Machines running hot":cd?"Cooling down · "+Math.ceil((W.ocCd-n)/60000)+" min":"Double output for 2 minutes · every 20 minutes"}</small></button>`})():""}
-      ${zk==="king"&&Z.t.filter(Boolean).length>=3&&Z.ev&&Z.ev-Date.now()<180000?`<button class="bigbtn" id="w4Drag" style="background:linear-gradient(90deg,#e2364a,#7a1d2a)">🐉 A dragon is coming! Fight it<small>Attacks in ${Math.max(0,Math.ceil((Z.ev-Date.now())/1000))}s · beat it for treasure</small></button>`:""}
+      ${zk==="sky"&&w4Count("sky","ship")?(()=>{const X=W.exp;if(!X)return `<div class="sechead"><h3>🛸 Airship expeditions</h3><span class="eyebrow">${W.relics||0} sky relics · +${(W.relics||0)*5}% sky output</span></div><div class="seg3">${W4_EXP.map((e,i)=>`<button class="cta${i?" ghost":""}" data-w4x="${i}">${e.n}<br><small>${e.m<60?e.m+" min":e.m/60+" h"}</small></button>`).join("")}</div>`;const L=X.end-Date.now();return L>0?`<div class="note">🛸 Your airship is away on the ${W4_EXP[X.i].n} · back in ${L>=3600000?Math.ceil(L/3600000)+" h":Math.ceil(L/60000)+" min"}</div>`:`<button class="bigbtn" id="w4XL">The airship is back! Unload<small>Gems and maybe a sky relic</small></button>`})():""}
+      ${zk==="fac"&&Z.t.filter(Boolean).length?(()=>{const n=Date.now(),on=(W.oc||0)>n,cd=(W.ocCd||0)>n;return `<button class="bigbtn alt2" id="w4OC" ${on||cd?"disabled":""}>${on?"Overclocked! ×2 for "+Math.ceil((W.oc-n)/1000)+"s":"Overclock the factory"}<small>${on?"Machines running hot":cd?"Cooling down · "+Math.ceil((W.ocCd-n)/60000)+" min":"Double output for 2 minutes · every 20 minutes"}</small></button>`})():""}
+      ${zk==="king"&&Z.t.filter(Boolean).length>=3&&Z.ev&&Z.ev-Date.now()<180000?`<button class="bigbtn" id="w4Drag" style="background:linear-gradient(90deg,#e2364a,#7a1d2a)">A dragon is coming! Fight it<small>Attacks in ${Math.max(0,Math.ceil((Z.ev-Date.now())/1000))}s · beat it for treasure</small></button>`:""}
       <div id="w4Sheet"></div><p class="fine">${z.d}</p></div>`;
     $("leaveBtn").innerHTML=ARROW+"Back";$("leaveBtn").onclick=()=>{W4SEL=-1;W4Z_CUR=null;W4REDRAW=null;back()};{const nsc=$("room").querySelector(".w4room");if(nsc&&ost)nsc.scrollTop=ost}
     $("room").querySelectorAll("[data-w4x]").forEach(bt=>bt.onclick=()=>{if(W.exp)return;const i=+bt.dataset.w4x;W.exp={i,end:Date.now()+W4_EXP[i].m*60000,rate:w4Calc("sky").rate*w4Mult()};dirty=true;SFX.hot();banner("🛸 She's off on the "+W4_EXP[i].n+". See you soon!","g");draw()});
