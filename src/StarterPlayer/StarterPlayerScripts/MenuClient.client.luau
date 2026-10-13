@@ -2,11 +2,12 @@
 -- button and the pointing hand).
 --  * The picture: the menu art (Config/UI.MenuArt) on the right fading into the dark on its left, over a dim soft copy of
 --    it (the same picture as the loading screen, so one fades into the other).
---  * On the left, vertically centered (owner, 14 Oct: the NEW mockup 00_main_menu, clean and dark): SEASON 1 · NOW LIVE,
---    the GYM ARC logo (GYM white, ARC red, a small drop shadow), a red rule + "Everyone starts tiny.", a red PLAY, under
---    it two dark buttons: SHOP (gold cart; players who finished the tutorial, only while something is for sale: Play,
---    then the Gym Store opens) and UPDATES (bell, a red dot while there's news; a window with Config/UI.Updates), and the
---    player card (returning players): the real avatar headshot, name, LEVEL · height, coins. "v1.0 · Update 1" bottom right.
+--  * On the left, vertically centered (owner's final kit "BLACK + GOLD", mockup 00_title): ONE graphite panel with the
+--    GYM ARC logo (GYM white, ARC red), "Everyone starts tiny.", the red PLAY CTA (it pulses; its shine sweeps once), a
+--    gold SHOP (players who finished the tutorial, only while something is for sale: Play, then the Store opens) and a
+--    quiet UPDATES (a red dot while there's news; a window with Config/UI.Updates), a thin divider and the player row
+--    (returning players): the real avatar headshot, name, "Level 27 · 6'4"", coins. Bottom right: a small NEW tag with
+--    the newest update's name (tap = the update notes).
 -- Start: ReplicatedFirst's LoadingScreen covers everything until this script has the save data and has streamed in the
 -- area around your character (Player:RequestStreamAroundAsync), then sets the LocalPlayer attribute "MenuReady";
 -- "MenuLoad" (0..1) feeds its bar. Movement is frozen and the HUD hidden while the menu is up.
@@ -29,7 +30,6 @@ local UI = require(Shared.Config.UI)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
-local Pieces = require(Shared.UI.Pieces)
 local Audio = require(Shared.Audio)
 
 local player = Players.LocalPlayer
@@ -41,42 +41,17 @@ local TIMING = { StreamTimeout = 8, Fade = 0.4, HudFade = 0.35, Slide = 0.35 }
 local NOT_HUD = { MenuScreen = true, LoadingScreen = true, GeneticsScreen = true, Updates = true }
 
 ------------------------------------------------------------------------
--- UI (owner, 14 Oct: the NEW mockup 00_main_menu, clean and dark, not a simulator: no black text outlines, no glossy
--- buttons; Oswald bold UPPERCASE on buttons, Montserrat for small text). Drawn in mockup px inside Kit.Root.
+-- UI (owner's final kit "BLACK + GOLD", mockup gym_arc_ui_final/00_title): one graphite panel on the left with the logo,
+-- the tagline, the red PLAY CTA, a gold SHOP and a quiet UPDATES (red dot), a thin divider and the player row (the real
+-- avatar headshot, name, "Level 27 · 6'4"", coins); a small "NEW · <latest update>" tag bottom-right. Drawn in mockup px
+-- inside Kit.Root with the Theme / Kit pieces.
 ------------------------------------------------------------------------
-local MENU = {
-	Back = Color3.fromHex("#0C0A0C"),
-	Surface = Color3.fromHex("#141113"), -- the dark buttons and the player card
-	Edge = Color3.new(1, 1, 1), EdgeTransparency = 0.87,
-	Red = Color3.fromHex("#E4262F"), RedDark = Color3.fromHex("#A5161D"),
-	Gold = Color3.fromHex("#F5B62F"),
-	Text = Color3.fromHex("#F6F3F3"), Soft = Color3.fromHex("#C9C2C4"), Muted = Color3.fromHex("#9D9396"), Faint = Color3.fromHex("#6F6669"),
-	Oswald = "rbxasset://fonts/families/Oswald.json",
-	Montserrat = "rbxasset://fonts/families/Montserrat.json",
-	Logo = "rbxasset://fonts/families/LuckiestGuy.json",
-	Width = 268, -- the column's buttons and card
-}
-local function font(family: string, weight: Enum.FontWeight?): Font
-	return Font.new(family, weight or Enum.FontWeight.Regular)
-end
--- letter-spaced caps ("S E A S O N"), since a TextLabel has no letter spacing
-local function spaced(text: string, gap: string?): string
-	local out = {}
-	for _, word in ipairs(string.split(string.upper(text), " ")) do
-		table.insert(out, (string.gsub(word, "(.)", "%1" .. (gap or "\u{200A}"))))
-	end
-	return table.concat(out, "  ")
-end
--- plain text: no outline (this screen only)
-local function label(props)
-	props.BackgroundTransparency = 1
-	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
-	return New("TextLabel", props)
-end
+local LOGO_FONT = Font.new("rbxasset://fonts/families/Oswald.json", Enum.FontWeight.Bold) -- (the logo: tall condensed caps)
+local PANEL = Vector2.new(290, 292)
 
 local gui = Theme.ScreenGui({ Name = "MenuScreen", DisplayOrder = 20, IgnoreGuiInset = true, Parent = playerGui })
 gui.ScreenInsets = Enum.ScreenInsets.None
-local back = New("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), BackgroundColor3 = MENU.Back, BorderSizePixel = 0, Active = true, Parent = gui })
+local back = New("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("#0C0A0C"), BorderSizePixel = 0, Active = true, Parent = gui })
 -- the soft dark copy filling the whole screen (a blur made of four offset, faint copies)
 for index, offset in ipairs({ Vector2.new(-10, -6), Vector2.new(10, -6), Vector2.new(-10, 6), Vector2.new(10, 6) }) do
 	New("ImageLabel", { Name = "Soft" .. index, BackgroundTransparency = 1, Image = UI.MenuArt, ScaleType = Enum.ScaleType.Crop,
@@ -89,9 +64,9 @@ New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = UI.MenuArt
 	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.45),
 		NumberSequenceKeypoint.new(0.55, 0), NumberSequenceKeypoint.new(1, 0) }) }),
 })
--- the dark fade behind the column (black, never colored), so the text always reads
-New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.62, 1), ZIndex = 3, Parent = back }, {
-	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(0.6, 0.55),
+-- the dark fade behind the panel (black, never colored)
+New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.55, 1), ZIndex = 3, Parent = back }, {
+	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(0.6, 0.6),
 		NumberSequenceKeypoint.new(1, 1) }) }),
 })
 task.spawn(function() -- (load the art first, so the menu never shows a plain dark screen)
@@ -99,156 +74,103 @@ task.spawn(function() -- (load the art first, so the menu never shows a plain da
 end)
 
 local root = Kit.Root(gui)
--- the left column, vertically centered
-local column = New("Frame", { Name = "Column", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 52, 0.5, 0),
-	Size = UDim2.fromOffset(MENU.Width, 296), Parent = root })
+-- the graphite panel, vertically centered on the left
+local column = Theme.Panel({ Name = "Column", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 46, 0.5, 0), Size = UDim2.fromOffset(PANEL.X, PANEL.Y),
+	Parent = root })
 
-local season = label({ Name = "Season", Text = spaced("Season 1", "\u{2009}") .. "   \u{00B7}   " .. spaced("Now live", "\u{2009}"), FontFace = font(MENU.Oswald, Enum.FontWeight.SemiBold),
-	TextSize = 12, TextColor3 = MENU.Gold, Size = UDim2.fromOffset(MENU.Width, 14), Parent = column })
-
--- the logo: GYM white, ARC red, a small soft drop shadow (no thick outline)
-local logo = New("Frame", { Name = "Logo", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 20), Size = UDim2.fromOffset(MENU.Width + 40, 58), Parent = column })
-local function logoWord(text: string, color: Color3, x: number)
-	local props = { Text = text, FontFace = font(MENU.Logo), TextSize = 56, Size = UDim2.fromOffset(0, 58), AutomaticSize = Enum.AutomaticSize.X }
-	local shadow = label(table.clone(props))
-	shadow.Name, shadow.TextColor3, shadow.TextTransparency = text .. "Shadow", Color3.new(0, 0, 0), 0.55
-	shadow.Position = UDim2.fromOffset(x + 2, 3)
-	shadow.Parent = logo
-	local word = label(props)
-	word.Name, word.TextColor3, word.Position, word.ZIndex = text, color, UDim2.fromOffset(x, 0), 2
-	word.Parent = logo
-	return word
-end
-local gym = logoWord("GYM", MENU.Text, 0)
-New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromHex("#D9D3D4")), Parent = gym })
-logoWord("ARC", MENU.Red, 0)
--- ARC sits right after GYM, whatever the font measures
-local function placeArc()
-	local x = gym.AbsoluteSize.X / math.max(Kit.Scale(), 0.01) + 14
-	logo.ARC.Position = UDim2.fromOffset(x, 0)
-	logo.ARCShadow.Position = UDim2.fromOffset(x + 2, 3)
-end
-gym:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeArc)
-task.defer(placeArc)
-
--- a short red line and the tagline
-local tagline = New("Frame", { Name = "Tagline", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 86), Size = UDim2.fromOffset(MENU.Width, 20), Parent = column }, {
-	New("Frame", { Name = "Rule", BackgroundColor3 = MENU.Red, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5),
-		Size = UDim2.fromOffset(26, 3) }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
+-- the logo: GYM in white (a soft top light), ARC in red
+local logo = New("Frame", { Name = "Logo", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 12), Size = UDim2.new(1, 0, 0, 70), Parent = column }, {
+	Theme.List(Enum.FillDirection.Horizontal, 14, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 })
-label({ Name = "Text", Text = "Everyone starts tiny.", FontFace = font(MENU.Montserrat, Enum.FontWeight.Medium), TextSize = 15, TextColor3 = MENU.Soft,
-	Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -36, 1, 0), Parent = tagline })
+New("TextLabel", { Name = "GYM", LayoutOrder = 1, BackgroundTransparency = 1, Text = "GYM", FontFace = LOGO_FONT, TextSize = 64, TextColor3 = Color3.new(1, 1, 1),
+	Size = UDim2.fromOffset(0, 70), AutomaticSize = Enum.AutomaticSize.X, Parent = logo }, {
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromHex("#CFC8CA")) }),
+})
+New("TextLabel", { Name = "ARC", LayoutOrder = 2, BackgroundTransparency = 1, Text = "ARC", FontFace = LOGO_FONT, TextSize = 64, TextColor3 = Color3.new(1, 1, 1),
+	Size = UDim2.fromOffset(0, 70), AutomaticSize = Enum.AutomaticSize.X, Parent = logo }, {
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#FF4A52"), Color3.fromHex("#C41E27")) }),
+})
+Kit.Text({ Name = "Tagline", Text = "Everyone starts tiny.", Font = "Strong", TextSize = 13, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, 84),
+	Size = UDim2.new(1, 0, 0, 18), Parent = column })
 
--- a flat button: a color face over a 3px darker bottom edge (pressed = the face goes down and the edge goes)
-local function flatButton(name: string, props: { [string]: any }, face: Color3, edge: Color3, faceProps: { [string]: any }?)
-	props.Name = name
-	props.Text, props.AutoButtonColor, props.BackgroundColor3, props.BorderSizePixel = "", false, edge, 0
-	local button = New("TextButton", props, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
-	local f = New("Frame", { Name = "Face", BackgroundColor3 = face, BorderSizePixel = 0, Size = UDim2.new(1, 0, 1, -3), Parent = button }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-	})
-	for key, value in pairs(faceProps or {}) do (f :: any)[key] = value end
-	button.MouseButton1Down:Connect(function()
-		f.Position, f.Size = UDim2.fromOffset(0, 2), UDim2.new(1, 0, 1, -2)
-	end)
-	local function release() f.Position, f.Size = UDim2.new(), UDim2.new(1, 0, 1, -3) end
-	button.MouseButton1Up:Connect(release)
-	button.MouseLeave:Connect(release)
-	return button, f
-end
-
--- PLAY: red, 52 tall, a play triangle (drawn from thin strips: no glyph, no emoji) and spaced PLAY, a soft shadow
-local playButton, playFace = flatButton("Play", { Position = UDim2.fromOffset(0, 124), Size = UDim2.fromOffset(MENU.Width, 52), Parent = column },
-	Color3.new(1, 1, 1), MENU.RedDark)
-New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#F0373F"), Color3.fromHex("#C91D25")), Parent = playFace })
-New("Frame", { Name = "Shadow", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 5),
-	Size = UDim2.fromScale(1, 1), ZIndex = 0, Parent = playButton }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
-local playRow = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = playFace }, {
-	Theme.List(Enum.FillDirection.Horizontal, 16, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
+-- PLAY: the red CTA with a play triangle (drawn from thin strips: no glyph, no emoji)
+local playButton = Theme.Button("Red", { Name = "Play", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 112), Size = UDim2.fromOffset(PANEL.X - 36, 54),
+	Parent = column }, {})
+local playRow = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1 - Theme.LipHeight, 0), Parent = playButton }, {
+	Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 })
 local triangle = New("Frame", { Name = "Triangle", LayoutOrder = 1, BackgroundTransparency = 1, Size = UDim2.fromOffset(12, 15), Parent = playRow })
 for row = 0, 14 do
 	local width = 12 * (1 - math.abs(row - 7) / 7.5)
-	New("Frame", { BackgroundColor3 = MENU.Text, BorderSizePixel = 0, Position = UDim2.fromOffset(0, row), Size = UDim2.fromOffset(width, 1), Parent = triangle })
+	New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Position = UDim2.fromOffset(0, row), Size = UDim2.fromOffset(width, 1), Parent = triangle })
 end
-label({ Name = "Label", LayoutOrder = 2, Text = spaced("Play", "\u{2009}"), FontFace = font(MENU.Oswald, Enum.FontWeight.Bold), TextSize = 25, TextColor3 = MENU.Text,
-	Size = UDim2.fromOffset(0, 40), AutomaticSize = Enum.AutomaticSize.X, Parent = playRow })
+Kit.Text({ Name = "Label", LayoutOrder = 2, Text = "Play", Font = "Title", TextSize = 32, Upper = true, Size = UDim2.fromOffset(0, 40),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = playRow })
 playButton.Active = false
 
--- SHOP and UPDATES: dark, a thin light border, an icon and spaced Oswald
-local function darkButton(name: string, icon: string, iconColor: Color3, text: string, x: number)
-	local button, face = flatButton(name, { Position = UDim2.fromOffset(x, 188), Size = UDim2.fromOffset(129, 40), Parent = column },
-		MENU.Surface, Color3.fromHex("#080607"))
-	New("UIStroke", { Color = MENU.Edge, Transparency = MENU.EdgeTransparency, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = face })
-	local row = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = face }, {
-		Theme.List(Enum.FillDirection.Horizontal, 9, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
-	})
-	Pieces.Icon(icon, iconColor, { LayoutOrder = 1, Size = UDim2.fromOffset(16, 16), Parent = row }):SetAttribute("KeepColor", true)
-	label({ Name = "Label", LayoutOrder = 2, Text = spaced(text), FontFace = font(MENU.Oswald, Enum.FontWeight.Bold), TextSize = 15, TextColor3 = MENU.Text,
-		Size = UDim2.fromOffset(0, 24), AutomaticSize = Enum.AutomaticSize.X, Parent = row })
-	return button, face
-end
-local shopButton = darkButton("Shop", "shopping-cart", MENU.Gold, "Shop", 0)
-shopButton.Visible = false
-local updatesButton, updatesFace = darkButton("Updates", "bell", MENU.Text, "Updates", 139)
--- the red dot: there's news the player hasn't opened yet (Config/UI.Updates[1].date, remembered in the save's settings)
-local newsDot = New("Frame", { Name = "NewsDot", BackgroundColor3 = MENU.Red, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -9, 0, 9), Size = UDim2.fromOffset(7, 7), Visible = false, Parent = updatesFace }, {
+-- SHOP (gold) and UPDATES (quiet, a red dot while there's news)
+local halfW = (PANEL.X - 36 - 10) / 2
+local shopButton = Kit.Button("Gold", "Shop", { Name = "Shop", Position = UDim2.fromOffset(18, 176), Visible = false, Parent = column },
+	{ width = halfW, height = 40, textSize = 17 })
+local updatesButton = Kit.Button("Quiet", "Updates", { Name = "Updates", Position = UDim2.fromOffset(18 + halfW + 10, 176), Parent = column },
+	{ width = halfW, height = 40, textSize = 17, icon = "bell" })
+local newsDot = New("Frame", { Name = "NewsDot", BackgroundColor3 = Colors.Red, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -7, 0, 6), Size = UDim2.fromOffset(9, 9), Visible = false, ZIndex = 4, Parent = New("Folder", { Name = "Dot", Parent = updatesButton }) }, {
 	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 })
 
--- the player card: headshot, name, LEVEL · height, coins on the right
-local card = New("Frame", { Name = "Card", BackgroundColor3 = MENU.Surface, BackgroundTransparency = 0.06, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 240),
-	Size = UDim2.fromOffset(MENU.Width, 56), Visible = false, Parent = column }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
-	New("UIStroke", { Color = MENU.Edge, Transparency = MENU.EdgeTransparency, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-})
-Kit.Headshot(player.UserId, player.DisplayName, 34, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 12, 0.5, 0), Parent = card })
-label({ Name = "PlayerName", Text = player.DisplayName, FontFace = font(MENU.Montserrat, Enum.FontWeight.Bold), TextSize = 14, TextColor3 = MENU.Text,
-	TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(56, 10), Size = UDim2.fromOffset(110, 18), Parent = card })
-local cardSub = label({ Name = "Sub", Text = "", FontFace = font(MENU.Montserrat, Enum.FontWeight.SemiBold), TextSize = 11, TextColor3 = MENU.Muted,
-	Position = UDim2.fromOffset(56, 29), Size = UDim2.fromOffset(110, 16), Parent = card })
-local coinRow = New("Frame", { Name = "Coins", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 8),
-	Size = UDim2.fromOffset(110, 22), Parent = card }, {
+-- the divider and the player row: headshot, name, "Level 27 · 6'4"", coins
+local card = New("Frame", { Name = "Card", BackgroundTransparency = 1, Position = UDim2.fromOffset(18, 228), Size = UDim2.new(1, -36, 0, 52), Visible = false, Parent = column })
+New("Frame", { Name = "Divider", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 1), Parent = card })
+Kit.Headshot(player.UserId, player.DisplayName, 34, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 4), Parent = card })
+Kit.Text({ Name = "PlayerName", Text = player.DisplayName, Font = "Strong", TextSize = 14, Position = UDim2.fromOffset(44, 14), Size = UDim2.fromOffset(120, 18),
+	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+local cardSub = Kit.Text({ Name = "Sub", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(44, 32), Size = UDim2.fromOffset(130, 15),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
+local coinRow = New("Frame", { Name = "Coins", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 4),
+	Size = UDim2.fromOffset(110, 24), Parent = card }, {
 	Theme.List(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center),
 })
-Kit.Coin(16, { LayoutOrder = 1, Parent = coinRow })
-local coinText = label({ Name = "Amount", LayoutOrder = 2, Text = "0", FontFace = font(MENU.Oswald, Enum.FontWeight.SemiBold), TextSize = 19, TextColor3 = MENU.Text,
-	Size = UDim2.fromOffset(0, 22), AutomaticSize = Enum.AutomaticSize.X, Parent = coinRow })
-label({ Name = "CoinsWord", Text = spaced("Coins"), FontFace = font(MENU.Montserrat, Enum.FontWeight.SemiBold), TextSize = 10, TextColor3 = MENU.Muted,
-	TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 32), Size = UDim2.fromOffset(110, 14), Parent = card })
+Kit.Coin(18, { LayoutOrder = 1, Parent = coinRow })
+local coinText = Kit.Text({ Name = "Amount", LayoutOrder = 2, Text = "0", Font = "Number", TextSize = 17, Size = UDim2.fromOffset(0, 24),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = coinRow })
 
--- the version, small at the bottom right
-local version = label({ Name = "Version", Text = UI.MenuVersion or "v1.0 \u{00B7} Update 1", FontFace = font(MENU.Montserrat, Enum.FontWeight.Medium), TextSize = 11,
-	TextColor3 = MENU.Muted, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -14),
-	Size = UDim2.fromOffset(240, 14), Parent = root })
+-- bottom right: a small dark pill with a gold NEW tag and the newest update's name (tap = the update notes)
+local newest = UI.Updates and UI.Updates[1]
+local version = Theme.Panel({ Name = "News", Piece = "hud_box", Clickable = true, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -18, 1, -16),
+	Size = UDim2.fromOffset(0, 34), AutomaticSize = Enum.AutomaticSize.X, Visible = newest ~= nil, Parent = root }, {
+	New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 14) }),
+	Theme.List(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+})
+local newTag = New("Frame", { Name = "New", LayoutOrder = 1, Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Color3.new(1, 1, 1),
+	Parent = version }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 5) }),
+	New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
+	New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+})
+Kit.Text({ Name = "Text", Text = "NEW", Font = "Title", TextSize = 12, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.new(0, 0, 1, 0),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = newTag })
+Kit.Text({ Name = "Title", LayoutOrder = 2, Text = newest and newest.title or "", Font = "Title", TextSize = 15, Upper = true, Size = UDim2.fromOffset(0, 24),
+	AutomaticSize = Enum.AutomaticSize.X, Parent = version })
 
--- The column slides in: each piece from a little to the left, fading in (no CanvasGroup: text stays crisp)
+-- The panel slides in from a little to the left, fading in (no CanvasGroup: text stays crisp)
 local function reveal()
-	local pieces = { season, logo, tagline, playButton, shopButton, updatesButton, card, version }
-	for index, piece in ipairs(pieces) do
-		if piece and piece.Visible then
+	for index, piece in ipairs({ column, version }) do
+		if piece.Visible then
 			local goal = piece.Position
 			piece.Position = goal - UDim2.fromOffset(24, 0)
-			task.delay((index - 1) * 0.06, function()
+			task.delay((index - 1) * 0.08, function()
 				Theme.Tween(piece, { Position = goal }, TIMING.Slide)
 				Theme.Fade(piece, true, TIMING.Slide)
 			end)
 		end
 	end
+	task.delay(TIMING.Slide, function() Theme.ShineAll(column) end) -- (the PLAY shine sweeps across once)
 end
 
--- The PLAY button breathes: a soft scale pulse (one button's UIScale only)
+-- PLAY pulses (the featured CTA) while the menu is up
 local function playAlive()
-	local scale = playButton:FindFirstChild("Breath") or New("UIScale", { Name = "Breath", Parent = playButton })
-	task.spawn(function()
-		while playButton.Parent and UIBus.MenuOpen do
-			Theme.Tween(scale, { Scale = 1.025 }, 1.1, Enum.EasingStyle.Sine)
-			task.wait(1.1)
-			Theme.Tween(scale, { Scale = 1 }, 1.1, Enum.EasingStyle.Sine)
-			task.wait(1.1)
-		end
-	end)
+	Theme.Pulse(playButton, function() return UIBus.MenuOpen end)
 end
 
 ------------------------------------------------------------------------
@@ -274,6 +196,10 @@ for order, entry in ipairs(UI.Updates or {}) do
 			AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 	end
 end
+version.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	updates.open()
+end)
 updatesButton.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	updates.open()
@@ -312,7 +238,7 @@ local function levelOf(data): number
 end
 local function refreshPill(data)
 	local height = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts or 0))
-	cardSub.Text = string.format("LEVEL %d  ·  %s", levelOf(data), height)
+	cardSub.Text = string.format("Level %d · %s", levelOf(data), height)
 	coinText.Text = Kit.Format(data.coins or 0)
 end
 
@@ -333,7 +259,11 @@ task.spawn(function()
 
 	local returning = (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done
 	shopButton.Visible = returning and Monetization.AnyConfigured()
-	if not shopButton.Visible then updatesButton.Position = UDim2.fromOffset(0, 188) end
+	if not shopButton.Visible then
+		-- (no shop: UPDATES takes the whole row)
+		updatesButton.Position = UDim2.fromOffset(18, 176)
+		updatesButton.Size = UDim2.fromOffset(PANEL.X - 36, 40)
+	end
 	card.Visible = returning
 	newsDot.Visible = UI.UpdatesStamp ~= nil and (data.settings and data.settings.updatesSeen) ~= UI.UpdatesStamp
 	refreshPill(data)

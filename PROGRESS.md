@@ -39,6 +39,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   "315 LB", "Tier 12 / 12", BEST WEIGHT in gold text), the PUMP panel (gold flame, %, metallic gold bar; full = glow +
   "TAP TO PUMP!"), the big red "REP x3" CTA bottom right, a quiet "x STOP" bottom left (no longer above the stamina
   panel, HudBottom.TrainingRowLift 0). AUTO TRAIN sits under the card (only while Auto Lift is on sale).
+- 7. Title screen (mockup 00, MenuClient): one graphite panel on the left (GYM white / ARC red logo, "Everyone starts
+  tiny.", the red PLAY CTA with a pulse and one shine, gold SHOP + quiet UPDATES with the red news dot, a divider, the
+  player row: headshot, name, "Level 46 · 7'0"", coins); bottom right a NEW tag with the newest update's name (opens the
+  update notes). Loading screen unchanged.
 
 ## 14 Oct: free machines, new main menu, avatar headshots, left menu centered (owner's "THREE FIXES" + headshot prompts)
 - Machines are FREE: every weight opens with the main muscle's level alone (Progression.cost all 0, Machines.UsableTier
