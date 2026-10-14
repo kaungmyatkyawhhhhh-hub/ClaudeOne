@@ -15,7 +15,8 @@ local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 
-local POSE = { Lean = 40, Shoulder = 55, Elbow = 75 } -- degrees: the lean on the counter (tuned in Studio, 15 Oct)
+-- degrees: the lean on the counter, fists down on it (tuned in Studio, 15 Oct: a deeper lean showed the top of the torso mesh)
+local POSE = { Lean = 14, Shoulder = 38, Elbow = 18 }
 local LOOK, NOD = 15, 8         -- studs
 local MAX_YAW, MAX_PITCH = 70, 30
 local TRACK_SPEED, RETURN_SPEED = 6, 6 -- exponential smoothing per second (back to forward in ~0.5 s)
@@ -28,7 +29,18 @@ local coach = nil -- { model, root, joints, yaw, pitch, near, nodAt, pointAt, ne
 local function joint(model, part, name)
 	local p = model:FindFirstChild(part)
 	local m = p and p:FindFirstChild(name)
-	return if m and m:IsA("Motor6D") then m else nil
+	-- (a Motor6D, or an AnimationConstraint on the newer avatar joints: both have Transform)
+	return if m and (m:IsA("Motor6D") or m:IsA("AnimationConstraint")) then m else nil
+end
+
+-- his joints (found again whenever the server rebuilds his body: ApplyBody replaces the parts and their joints)
+local function findJoints(model)
+	return {
+		Waist = joint(model, "UpperTorso", "Waist"), Neck = joint(model, "Head", "Neck"),
+		RS = joint(model, "RightUpperArm", "RightShoulder"), LS = joint(model, "LeftUpperArm", "LeftShoulder"),
+		RE = joint(model, "RightLowerArm", "RightElbow"), LE = joint(model, "LeftLowerArm", "LeftElbow"),
+		RH = joint(model, "RightUpperLeg", "RightHip"), LH = joint(model, "LeftUpperLeg", "LeftHip"),
+	}
 end
 
 local function track(model)
@@ -36,13 +48,7 @@ local function track(model)
 	local root = model:FindFirstChild("HumanoidRootPart") or model:WaitForChild("HumanoidRootPart", 10)
 	if not root then return end
 	coach = {
-		model = model, root = root,
-		joints = {
-			Waist = joint(model, "UpperTorso", "Waist"), Neck = joint(model, "Head", "Neck"),
-			RS = joint(model, "RightUpperArm", "RightShoulder"), LS = joint(model, "LeftUpperArm", "LeftShoulder"),
-			RE = joint(model, "RightLowerArm", "RightElbow"), LE = joint(model, "LeftLowerArm", "LeftElbow"),
-			RH = joint(model, "RightUpperLeg", "RightHip"), LH = joint(model, "LeftUpperLeg", "LeftHip"),
-		},
+		model = model, root = root, joints = {},
 		yaw = 0, pitch = 0, near = false, nodAt = -math.huge, pointAt = -math.huge, flexAt = -math.huge,
 		nextFlex = os.clock() + 8 + math.random() * 4, flexKind = 1, phase = math.random() * 10,
 	}
@@ -66,7 +72,7 @@ local function envelope(since: number, length: number): number
 	return smoothstep(math.min(t / 0.25, 1)) * smoothstep(math.min((1 - t) / 0.3, 1))
 end
 
-local function set(m: Motor6D?, cf: CFrame)
+local function set(m: any, cf: CFrame)
 	if m then m.Transform = cf end
 end
 
@@ -83,6 +89,9 @@ RunService.Stepped:Connect(function(_, dt)
 
 	local now = os.clock()
 	local t = now + c.phase
+	if not c.joints.Waist or not c.joints.Waist.Parent or not c.joints.Neck or not c.joints.Neck.Parent then c.joints = findJoints(c.model) end
+	local root = c.model:FindFirstChild("HumanoidRootPart")
+	if root and root ~= c.root then c.root = root end
 	local J = c.joints
 
 	-- where you are, in his own space

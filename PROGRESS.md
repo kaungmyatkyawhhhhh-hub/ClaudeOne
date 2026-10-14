@@ -1443,3 +1443,9 @@ thigh skin (14 x 6,676) and shorts (14 x 4,498). NPC Robloxian 2.0 parts are 108
 - Right-side cards (RightColumn): a drawer with a graphite tab (gold chevron) on its left edge; folds right (0.25 s Quad
   Out), saved as settings.rightCollapsed; red dot + one pulse when a ready card appears while folded; folds on a
   machine (tab hidden if it would touch the weight panel). NOT YET PLAY-TESTED.
+- Coach Dex checked in play (15 Oct): head tracking now works (his joints are AnimationConstraints, not Motor6Ds: the
+  client skipped them; it also finds his joints again after the server rebuilds his body). Lean made smaller (14 deg,
+  fists on the counter) and his spot moved 0.5 studs to the counter: the 40 deg lean showed the top of the torso mesh.
+  Head follows you within 15 studs, nod when you come close, right arm points when you Talk. Tutorial portrait waits for
+  his finished body (classic head + muscle meshes) and frames head + shoulders from further back. Screenshots:
+  screenshots/coach_dex/ (front, 3/4, head following, nod, point, next to Dante, portrait).

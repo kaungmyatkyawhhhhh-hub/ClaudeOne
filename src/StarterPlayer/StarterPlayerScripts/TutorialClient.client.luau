@@ -142,6 +142,14 @@ task.spawn(function()
 		waited += 0.5
 		coach = CollectionService:GetTagged("Coach")[1]
 	end
+	-- (owner, 15 Oct: Dex's body is rebuilt by the server after he loads; copy him once his face head and his muscle
+	-- meshes are there, so the portrait shows the new Dex, not the plain body)
+	waited = 0
+	while coach and (not coach:FindFirstChild("ClassicHead") or not coach:FindFirstChild("MuscleMeshes")) and waited < 30 do
+		task.wait(0.5)
+		waited += 0.5
+	end
+	if coach then task.wait(1) end
 	local head = coach and coach:FindFirstChild("Head")
 	if not head then
 		Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait })
@@ -149,6 +157,7 @@ task.spawn(function()
 	end
 	local ok = pcall(function()
 		coach.Archivable = true
+		for _, d in ipairs(coach:GetDescendants()) do d.Archivable = true end
 		local copy = coach:Clone()
 		for _, d in ipairs(copy:GetDescendants()) do
 			if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("Sound") then d:Destroy() end
@@ -158,7 +167,8 @@ task.spawn(function()
 		local copyHead = copy:FindFirstChild("Head") :: BasePart
 		local camera = New("Camera", { FieldOfView = 30, Parent = portrait })
 		local face = copyHead.CFrame
-		camera.CFrame = CFrame.lookAt(face.Position + face.LookVector * 5.6 + Vector3.new(0, 0.2, 0), face.Position - Vector3.new(0, 0.55, 0)) -- head and shoulders
+		-- head and his huge shoulders (owner, 15 Oct: the new Dex is far wider, so the camera sits further back)
+		camera.CFrame = CFrame.lookAt(face.Position + face.LookVector * 9 + Vector3.new(0, 0.6, 0), face.Position - Vector3.new(0, 0.9, 0))
 		portrait.CurrentCamera = camera
 	end)
 	if not ok then Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait }) end
