@@ -87,7 +87,6 @@ end
 
 local function grant(player, reward)
 	if reward.coins then PlayerData.AddCoins(player, reward.coins) end
-	if reward.dnaTokens then PlayerData.AddDnaTokens(player, reward.dnaTokens) end
 	if reward.shakes then PlayerData.AddShakes(player, reward.shakes) end
 end
 

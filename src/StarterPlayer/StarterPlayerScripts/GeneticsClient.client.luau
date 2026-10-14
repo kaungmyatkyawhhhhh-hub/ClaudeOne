@@ -28,6 +28,8 @@
 --    the multiplier ("x1.50", 22px white). Tap / hover one for what it means. Frame (with a small
 --    silhouette of the shoulder width) and body type are two cards. Reroll (shows its cost)
 --    replays the reveal: plates that got better show a green arrow, worse ones a gray one; a good roll asks first.
+--  * DNA tokens (owner, 14 Oct, Config/DNA): the count in gold top right. With no free reroll and no token, REROLL opens a
+--    small choice in the buttons row: "25,000" coins or "R$ 99" (the DNA Token product); nothing is spent without a tap.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -203,6 +205,7 @@ local titleLabel = Kit.Text({ Name = "Title", Text = "YOUR GENETICS", Font = "Ti
 local _tokenChip, tokensLabel = Kit.PricePill("0 DNA TOKENS", { Name = "Tokens", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5),
 	Size = UDim2.fromOffset(0, 26), Parent = header })
 tokensLabel.TextSize = 13
+Kit.GoldText(tokensLabel)
 local function placeHeader()
 	local inset = GuiService.TopbarInset
 	local s = Kit.Scale()
@@ -285,6 +288,27 @@ local confirmText = Kit.Text({ Name = "Text", LayoutOrder = 0, Text = "", Font =
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = confirm })
 local confirmCancel = Kit.Button("Quiet", "Cancel", { Name = "Cancel", LayoutOrder = 1, Parent = confirm }, { width = 120, height = 40, textSize = 14 })
 local confirmYes = Kit.Button("Red", "Reroll", { Name = "Yes", LayoutOrder = 2, Parent = confirm }, { width = 150, height = 40, textSize = 16 })
+-- No DNA token: the choice how to get one (replaces the chips and the buttons, like the confirm)
+-- (one table: this script is near Luau's 200 locals limit)
+local BUY = { DNA = require(Config.DNA), market = game:GetService("MarketplaceService") }
+for _, product in ipairs(require(Config.Monetization).Products) do
+	if product.key == "DnaToken" then BUY.product = product.id end
+end
+BUY.frame = New("Frame", { Name = "BuyToken", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = row2 },
+	{ Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
+Kit.Text({ Name = "Text", LayoutOrder = 0, Text = "You need a DNA token to reroll.", Font = "Body", TextSize = 12, TextWrapped = true,
+	Size = UDim2.new(1, -364, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = BUY.frame })
+BUY.cancel = Kit.Button("Quiet", "Cancel", { Name = "Cancel", LayoutOrder = 1, Parent = BUY.frame }, { width = 90, height = 40, textSize = 14 })
+BUY.coins = Kit.Button("Gold", Kit.Format(BUY.DNA.CoinPrice), { Name = "Coins", LayoutOrder = 2, Parent = BUY.frame },
+	{ width = 136, height = 40, textSize = 16, icon = "coin" })
+BUY.robux, BUY.robuxLabel = Kit.Button("Red", "R$ " .. BUY.DNA.RobuxPrice, { Name = "Robux", LayoutOrder = 3, Parent = BUY.frame },
+	{ width = 106, height = 40, textSize = 16 })
+if BUY.product then
+	task.spawn(function() -- (Roblox's real price)
+		local ok, info = pcall(BUY.market.GetProductInfo, BUY.market, BUY.product, Enum.InfoType.Product)
+		if ok and info and info.PriceInRobux then BUY.robuxLabel.Text = "R$ " .. Kit.Format(info.PriceInRobux) end
+	end)
+end
 
 local skipHint = Kit.Text({ Name = "SkipHint", Text = "Tap to skip", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.fromOffset(200, 16), Visible = false, Parent = root })
@@ -1075,13 +1099,9 @@ end
 ------------------------------------------------------------------------
 local function refreshButtons()
 	local data = ClientData.Get()
-	local canReroll = data.freeReroll or data.dnaTokens > 0
-	if canReroll then
-		Kit.SetButton(rerollButton, "Quiet", data.freeReroll and "Reroll · free" or "Reroll · 1 DNA token")
-	else
-		Kit.SetButton(rerollButton, "Disabled", "No DNA tokens")
-	end
-	rerollButton.Active = canReroll and not revealing
+	-- (with no token the button still works: it opens the choice how to get one)
+	Kit.SetButton(rerollButton, "Quiet", data.freeReroll and "Reroll · free" or "Reroll · 1 DNA token")
+	rerollButton.Active = not revealing
 	rerollButton.AutoButtonColor = false
 	tokensLabel.Text = data.dnaTokens .. (data.dnaTokens == 1 and " DNA TOKEN" or " DNA TOKENS")
 end
@@ -1338,8 +1358,18 @@ local function needsConfirm()
 	for _, grade in pairs(genetics.grades) do if grade == "S" then return true end end
 	return false
 end
+function BUY.close()
+	BUY.frame.Visible, buttons.Visible, cardsRow.Visible = false, true, true
+end
 rerollButton.Activated:Connect(function()
 	if revealing or not rerollButton.Active then return end
+	local data = ClientData.Get()
+	if not data.freeReroll and (data.dnaTokens or 0) <= 0 then
+		buttons.Visible, cardsRow.Visible, confirm.Visible, BUY.frame.Visible = false, false, false, true
+		Theme.Fade(BUY.frame, true, 0.2)
+		Audio.PlayUI("Click")
+		return
+	end
 	if needsConfirm() then
 		local genetics = current or ClientData.Get().genetics
 		confirmText.Text = "Replace your " .. genetics.overall .. " genetics? You can't get them back."
@@ -1356,8 +1386,33 @@ confirmYes.Activated:Connect(function()
 	confirm.Visible, buttons.Visible, cardsRow.Visible = false, true, true
 	doReroll()
 end)
-Remotes.PlayerEvent.OnClientEvent:Connect(function(kind)
+BUY.cancel.Activated:Connect(BUY.close)
+-- a short side-to-side shake (not enough coins)
+function BUY.shake(gui: GuiObject)
+	local base = gui.Position
+	task.spawn(function()
+		for _, dx in ipairs({ -6, 6, -5, 5, -3, 3, 0 }) do
+			gui.Position = base + UDim2.fromOffset(dx, 0)
+			task.wait(0.035)
+		end
+		gui.Position = base
+	end)
+end
+BUY.coins.Activated:Connect(function()
+	if (ClientData.Get().coins or 0) < BUY.DNA.CoinPrice then
+		BUY.shake(BUY.coins)
+		require(Shared.UI.Notify).Toast("Not enough coins", "A DNA token costs " .. Kit.Format(BUY.DNA.CoinPrice) .. " coins", "coin", Colors.Red, "dnacoins")
+		return
+	end
+	Remotes.PlayerAction:FireServer("BuyDnaToken") -- (the server checks and takes the coins)
+end)
+BUY.robux.Activated:Connect(function()
+	if BUY.product then BUY.market:PromptProductPurchase(player, BUY.product) end
+end)
+BUY.robux.Visible = BUY.product ~= nil
+Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind == "Rerolled" then pendingReroll = false end
+	if kind == "DnaTokenBought" and type(info) == "table" and info.failed then BUY.shake(BUY.coins) end
 end)
 
 oddsLink.Activated:Connect(function()
@@ -1370,6 +1425,7 @@ oddsClose.Activated:Connect(function()
 end)
 
 ClientData.Changed:Connect(function(path)
+	if path[1] == "dnaTokens" and BUY.frame.Visible and (ClientData.Get().dnaTokens or 0) > 0 then BUY.close() end
 	if isOpen and (path[1] == "dnaTokens" or path[1] == "freeReroll") and not revealing then refreshButtons() end
 end)
 

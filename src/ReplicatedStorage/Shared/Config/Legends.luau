@@ -49,7 +49,7 @@ Legends.List = {
 		quest = { text = "Do 15 reps on the Incline Bench", type = "machineReps", machines = { "InclineBench" }, count = 15 } },
 }
 
-Legends.Reward = { coins = 60, dnaTokens = 1 }
+Legends.Reward = { coins = 60 } -- (no DNA token: owner, 14 Oct, Config/DNA)
 
 Legends.ById = {}
 for _, legend in ipairs(Legends.List) do Legends.ById[legend.id] = legend end

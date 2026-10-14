@@ -143,6 +143,20 @@ function MonetizationService.Start()
 	Players.PlayerAdded:Connect(onJoin)
 	for _, player in ipairs(Players:GetPlayers()) do onJoin(player) end
 
+	-- Studio only: Workspace attribute TestReceipt = "<productId>:<purchaseId>" runs a fake receipt for the first player
+	-- through the real ProcessReceipt (a test purchase without the purchase dialog; the same purchase id twice must not
+	-- grant twice). Prints the decision.
+	if game:GetService("RunService"):IsStudio() then
+		Workspace:GetAttributeChangedSignal("TestReceipt"):Connect(function()
+			local value = Workspace:GetAttribute("TestReceipt")
+			local productId, purchaseId = string.match(tostring(value), "^(%d+):(.+)$")
+			local player = Players:GetPlayers()[1]
+			if not productId or not player then return end
+			local decision = processReceipt({ PlayerId = player.UserId, ProductId = tonumber(productId), PurchaseId = purchaseId, CurrencySpent = 0 })
+			print("[MonetizationService] test receipt " .. purchaseId .. ": " .. tostring(decision))
+		end)
+	end
+
 	-- Shake Fridge: a free shake every few minutes for owners
 	task.spawn(function()
 		while true do

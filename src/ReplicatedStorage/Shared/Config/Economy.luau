@@ -1,13 +1,12 @@
--- Coins outside of reps: the login streak calendar, offline coins, re-racking loose plates, DNA tokens at the front desk, and
--- rush hour. All paid out on the server (RetentionService). Tune the numbers here.
+-- Coins outside of reps: the login streak calendar, offline coins, re-racking loose plates and rush hour. All paid out on the server (RetentionService). Tune the numbers here.
 local Economy = {}
 
 -- Login streak (owner's feature run, task 2; replaces the old automatic streak): a 7-day calendar. Join each UTC day and
 -- press Claim for that day's reward (a popup on join, or the Daily pill). Missing a day starts again at day 1; after day 7
--- the calendar starts over. Day 7 is the big one: coins, a DNA token and (the first time) the "Dedicated" title.
+-- the calendar starts over. Day 7 is the big one: the most coins and (the first time) the "Dedicated" title. (No DNA
+-- tokens: owner, 14 Oct, see Config/DNA.)
 Economy.Login = {
 	Coins = { 25, 35, 50, 70, 90, 120, 300 }, -- day 1..7
-	Day7DnaTokens = 1,
 }
 
 -- Offline coins: for time away, capped.
@@ -30,9 +29,6 @@ Economy.Rerack = {
 	Weights = { 10, 25, 35, 45 }, -- plates from ReplicatedStorage.GymAssets
 }
 
--- DNA tokens can be bought with coins at the front desk.
-Economy.DnaTokenCost = 400
-
 -- Rush hour: every 30 minutes (on the clock, the same on every server) the gym is busy for a few minutes.
 Economy.RushHour = {
 	EveryMinutes = 30,
@@ -53,11 +49,9 @@ function Economy.LoginDay(lastDay, calendarDay, today)
 	return 1 -- first claim ever, or a missed day: back to day 1
 end
 
--- The reward for a calendar day: coins, DNA tokens.
+-- The reward for a calendar day: coins.
 function Economy.LoginReward(calendarDay)
-	local coins = Economy.Login.Coins[calendarDay] or Economy.Login.Coins[1]
-	local tokens = calendarDay == #Economy.Login.Coins and Economy.Login.Day7DnaTokens or 0
-	return coins, tokens
+	return Economy.Login.Coins[calendarDay] or Economy.Login.Coins[1]
 end
 
 function Economy.OfflineCoins(secondsAway)

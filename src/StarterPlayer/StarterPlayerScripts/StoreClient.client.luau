@@ -8,6 +8,8 @@
 -- name, the price in a dark pill); a tap puts that item in the hero tile. OWNED = a rotated gold stamp over the tile's
 -- dimmed art and name. Studio only: Workspace attribute TestStoreAll = true previews every item (no ids, can't be bought).
 -- (The mockup's Coins / Boosts / Auras tabs: the game sells no coins and has no auras; products go under Items.)
+-- DNA Token (owner, 14 Oct, Config/DNA): its hero tile has two buttons, the Robux price and "25,000" coins (the server
+-- checks and takes the coins; not enough = a shake + "Not enough coins").
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +18,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Monetization = require(Shared.Config.Monetization)
 local Onboarding = require(Shared.Config.Onboarding)
+local DNA = require(Shared.Config.DNA)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
@@ -134,6 +137,19 @@ end
 
 local function artFor(image: ImageLabel, entry)
 	local name = ART[entry.item.key]
+	-- the DNA token has no shop art: our own DNA line icon in gold
+	local dnaArt = image:FindFirstChild("DnaArt")
+	if entry.item.key == "DnaToken" then
+		image.Image = ""
+		if not dnaArt then
+			dnaArt = Icons.DNA(Colors.Gold)
+			dnaArt.Name = "DnaArt"
+			dnaArt.Parent = image
+		end
+		return
+	elseif dnaArt then
+		dnaArt:Destroy()
+	end
 	if name then
 		Pieces.Apply(image, name)
 	else
@@ -173,6 +189,10 @@ local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 
 	Size = UDim2.new(1, -24, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = hero })
 local buy = Kit.Button("Red", "", { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Parent = hero },
 	{ width = HERO_W - 22, height = 40, textSize = 20 })
+-- (DNA token only) the coin price beside the Robux button (each half the width)
+local HALF_W = (HERO_W - 22 - 6) / 2
+local coinBuy = Kit.Button("Gold", Kit.Format(DNA.CoinPrice), { Name = "BuyCoins", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -11, 1, -10),
+	Visible = false, Parent = hero }, { width = HALF_W, height = 40, textSize = 14, icon = "coin" })
 
 ------------------------------------------------------------------------
 -- The grid (right): dark tiles with art, name and a price pill
@@ -253,6 +273,13 @@ function refresh()
 		return
 	end
 	if picked then
+		local isDna = picked.item.key == "DnaToken"
+		coinBuy.Visible = isDna
+		buy.Size = UDim2.fromOffset(if isDna then HALF_W else HERO_W - 22, 40)
+		buy.AnchorPoint = if isDna then Vector2.new(0, 1) else Vector2.new(0.5, 1)
+		buy.Position = if isDna then UDim2.new(0, 11, 1, -10) else UDim2.new(0.5, 0, 1, -10)
+		local buyLabel = buy:FindFirstChild("Label")
+		if buyLabel then buyLabel.TextSize = if isDna then 15 else 20 end
 		local isOwned = owned(picked)
 		local price = priceOf(picked)
 		Kit.SetButton(buy, isOwned and "Quiet" or "Red", isOwned and "Owned" or (price and ("R$ " .. Kit.Format(price)) or "Buy"))
@@ -267,6 +294,29 @@ buy.Activated:Connect(function()
 	else
 		MarketplaceService:PromptProductPurchase(player, picked.item.id)
 	end
+end)
+-- a short side-to-side shake (not enough coins)
+local function shake(gui: GuiObject)
+	local base = gui.Position
+	task.spawn(function()
+		for _, dx in ipairs({ -6, 6, -5, 5, -3, 3, 0 }) do
+			gui.Position = base + UDim2.fromOffset(dx, 0)
+			task.wait(0.035)
+		end
+		gui.Position = base
+	end)
+end
+coinBuy.Activated:Connect(function()
+	if not picked or picked.item.key ~= "DnaToken" then return end
+	if (ClientData.Get().coins or 0) < DNA.CoinPrice then
+		shake(coinBuy)
+		Notify.Toast("Not enough coins", "A DNA token costs " .. Kit.Format(DNA.CoinPrice) .. " coins", "coin", Colors.Red, "dnacoins")
+		return
+	end
+	Remotes.PlayerAction:FireServer("BuyDnaToken") -- (the server checks and takes the coins)
+end)
+Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
+	if kind == "DnaTokenBought" and type(info) == "table" and info.failed and coinBuy.Visible then shake(coinBuy) end
 end)
 player.AttributeChanged:Connect(function(name)
 	if name:sub(1, 5) == "Pass_" and modal.isOpen() then refresh() end

@@ -9,6 +9,7 @@ local Seasons = require(Shared.Config.Seasons)
 local Muscles = require(Shared.Config.Muscles)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local Icons = require(Shared.UI.Icons)
 local Notify = require(Shared.UI.Notify)
 local UIBus = require(Shared.UI.UIBus)
@@ -58,10 +59,11 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 		Notify.Show("Plate re-racked. +" .. tostring(info.coins) .. " coins.", nil, "rerack")
 		Audio.PlayUI("Click")
 	elseif kind == "DnaTokenBought" then
+		-- (a coin buy from the Shop or the Genetics screen, ActionService.BuyDnaToken)
 		if info.failed then
-			Notify.Show("A DNA token costs " .. Economy.DnaTokenCost .. " coins.", nil, "dna")
+			Notify.Toast("Not enough coins", "A DNA token costs " .. Kit.Format(tonumber(info.price) or 0) .. " coins", "coin", Colors.Red, "dnacoins")
 		else
-			Notify.Show("Bought a DNA token. Reroll on the Genetics screen.")
+			Notify.Toast("+1 DNA Token", "Reroll your genetics on the Genetics screen", "sparkles", Colors.Gold, "dnatoken")
 			Audio.PlayUI("LevelUp")
 		end
 	elseif kind == "GymLocked" then

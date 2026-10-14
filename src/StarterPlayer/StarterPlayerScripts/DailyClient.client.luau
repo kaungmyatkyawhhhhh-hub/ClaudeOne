@@ -206,11 +206,11 @@ local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: n
 	})
 	local cards = {}
 	for day = 1, DAYS do
-		local coins, tokens = Economy.LoginReward(day)
+		local coins = Economy.LoginReward(day)
 		local card = Kit.Card({ Name = "Day" .. day, LayoutOrder = day, Parent = grid }, {})
 		local label = Kit.Text({ Name = "Day", Text = "DAY " .. day, Font = "Title", TextSize = 12, Position = UDim2.fromOffset(0, 3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
 		local coin = Kit.Coin(math.floor(cell.Y * 0.34), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = card })
-		local amount = Kit.Text({ Name = "Amount", Text = Kit.Short(coins) .. (tokens > 0 and " + DNA" or ""), Font = "Number", TextSize = 12,
+		local amount = Kit.Text({ Name = "Amount", Text = Kit.Short(coins), Font = "Number", TextSize = 12,
 			AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
 		local check = Pieces.Icon("check", Colors.Green, { Name = "Check", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3), Size = UDim2.fromOffset(13, 13), Visible = false, Parent = card })
 		check:SetAttribute("KeepColor", true)
@@ -233,7 +233,7 @@ end
 local bigCal = makeCalendar(pages.Rewards, Vector2.new(72, 70), DAYS, 17)
 bigCal.frame.Size = UDim2.fromScale(1, 1)
 bigCal.grid.Size = UDim2.new(1, 0, 0, 76)
-Kit.Text({ Name = "Rules", Text = "Log in every day to keep your streak. Day " .. DAYS .. " also gives a DNA token and the Dedicated title. Missing a day starts again at day 1.",
+Kit.Text({ Name = "Rules", Text = "Log in every day to keep your streak. Day " .. DAYS .. " also gives the Dedicated title. Missing a day starts again at day 1.",
 	Font = "Body", TextSize = 13, TextColor3 = Colors.Muted, TextWrapped = true, Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 40),
 	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = bigCal.frame })
 bigCal.claim.AnchorPoint = Vector2.new(0.5, 1)
@@ -524,7 +524,6 @@ remote.OnClientEvent:Connect(function(kind, info)
 		Notify.Toast("New quest", tostring(info.text), "repeat", Colors.Blue)
 	elseif kind == "LoginClaimed" then
 		local sub = "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins"
-		if (tonumber(info.tokens) or 0) > 0 then sub ..= " and a DNA token" end
 		Notify.Toast("Day " .. tostring(info.day) .. " reward", sub, "gift", Colors.Gold)
 		Audio.PlayUI("StreakClaim")
 	end

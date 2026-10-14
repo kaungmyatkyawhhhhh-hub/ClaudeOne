@@ -3,6 +3,8 @@
 -- then paste its id below. Items with id = nil stay hidden; with no ids at all, the Store button never shows.
 -- No purchase prompt ever opens by itself, and the Store button only appears after the tutorial plus 5 minutes.
 local Monetization = {}
+local Products = require(script.Parent.Products)
+local function productId(id: number): number? return if id ~= 0 then id else nil end
 
 Monetization.Passes = {
 	{ key = "DoubleGains", id = nil, name = "2x Gains", text = "Every rep gives double gains." },
@@ -17,7 +19,7 @@ Monetization.Passes = {
 }
 
 Monetization.Products = {
-	{ key = "DnaToken", id = nil, name = "DNA Token", text = "One genetics reroll." },
+	{ key = "DnaToken", id = productId(Products.DNAToken), name = "DNA Token", text = "One genetics reroll." },
 	{ key = "ShakePack", id = nil, name = "Shake Pack", text = "5 Energy Shakes." },
 	{ key = "ServerBoost", id = nil, name = "Server Boost", text = "2x gains for everyone in the server for 30 minutes. Your name goes on the board." },
 }

@@ -45,6 +45,18 @@ handlers.Reroll = function(player)
 	end
 end
 
+-- Buy one DNA token with coins (Config/DNA.CoinPrice); the coins are checked and taken here. (PlayerAction is rate
+-- limited by Guard.)
+handlers.BuyDnaToken = function(player)
+	local price = require(Config.DNA).CoinPrice
+	if PlayerData.SpendCoins(player, price) then
+		PlayerData.AddDnaTokens(player, 1)
+		Remotes.PlayerEvent:FireClient(player, "DnaTokenBought", {})
+	else
+		Remotes.PlayerEvent:FireClient(player, "DnaTokenBought", { failed = true, price = price })
+	end
+end
+
 -- The player has seen their genetics reveal (first join).
 handlers.GeneticsSeen = function(player)
 	PlayerData.SetFlag(player, "geneticsRevealed", true)

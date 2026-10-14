@@ -40,9 +40,8 @@ local function complete(player, data, legend)
 	data.legends.active = nil
 	save(player, data)
 	if Legends.Reward.coins then PlayerData.AddCoins(player, Legends.Reward.coins) end
-	if Legends.Reward.dnaTokens then PlayerData.AddDnaTokens(player, Legends.Reward.dnaTokens) end
 	TitleService.Check(player)
-	event(player, "LegendDone", { name = legend.name, title = legend.title, coins = Legends.Reward.coins, dnaTokens = Legends.Reward.dnaTokens })
+	event(player, "LegendDone", { name = legend.name, title = legend.title, coins = Legends.Reward.coins })
 end
 
 local function talk(player, legend, model)

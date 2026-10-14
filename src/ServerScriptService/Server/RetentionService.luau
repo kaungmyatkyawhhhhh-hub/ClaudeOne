@@ -1,6 +1,6 @@
 -- Coins outside of reps (numbers in Config.Economy): offline coins (paid once per join; the login streak calendar is
 -- DailyService),
--- loose plates to re-rack, DNA tokens for coins at the front desk, and rush hour every 30 minutes.
+-- loose plates to re-rack and rush hour every 30 minutes.
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -104,43 +104,6 @@ local function spawnPlate()
 end
 
 ------------------------------------------------------------------------
--- DNA tokens at the front desk
-------------------------------------------------------------------------
-local lastBuy = {}
-local function setupFrontDesk()
-	local desk = Workspace:FindFirstChild("FrontDesk", true)
-	if not desk then return end
-	local holder, biggest = nil, 0
-	for _, part in ipairs(desk:GetDescendants()) do
-		if part:IsA("BasePart") and part.Size.Magnitude > biggest then holder, biggest = part, part.Size.Magnitude end
-	end
-	if not holder then return end
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = "BuyDnaToken"
-	prompt.ActionText = "Buy DNA token"
-	prompt.ObjectText = Economy.DnaTokenCost .. " coins"
-	prompt.MaxActivationDistance = 8
-	prompt.RequiresLineOfSight = false
-	prompt.HoldDuration = 0.6 -- a short hold, so nobody buys one by accident
-	-- Coach Dex stands right behind the desk: a different key, so both prompts show and E always talks to him
-	prompt.KeyboardKeyCode = Enum.KeyCode.F
-	prompt.GamepadKeyCode = Enum.KeyCode.ButtonY
-	prompt.UIOffset = Vector2.new(0, -70) -- shown a little above Dex's prompt, never on top of it
-	prompt.Parent = holder
-	Guard.OnTriggered(prompt, function(player)
-		local now = os.clock()
-		if now - (lastBuy[player] or 0) < 1 then return end
-		lastBuy[player] = now
-		if PlayerData.SpendCoins(player, Economy.DnaTokenCost) then
-			PlayerData.AddDnaTokens(player, 1)
-			event(player, "DnaTokenBought", {})
-		else
-			event(player, "DnaTokenBought", { failed = true })
-		end
-	end)
-end
-
-------------------------------------------------------------------------
 -- Rush hour
 ------------------------------------------------------------------------
 local function rushHourLoop()
@@ -169,10 +132,8 @@ function RetentionService.Start()
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		welcomed[player] = nil
-		lastBuy[player] = nil
 	end)
 
-	setupFrontDesk()
 	task.spawn(rushHourLoop)
 	task.spawn(function()
 		spawnPlate()

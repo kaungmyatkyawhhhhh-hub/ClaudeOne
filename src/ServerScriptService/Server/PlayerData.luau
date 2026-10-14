@@ -501,10 +501,11 @@ function PlayerData.EquipTitle(player, titleId)
 	return true
 end
 
+-- (only three callers, Config/DNA: a Growth Spurt, a coin buy, a Robux purchase)
 function PlayerData.AddDnaTokens(player, amount)
 	local data = PlayerData.Get(player)
-	if not data then return false end
-	data.dnaTokens += amount
+	if not data or type(amount) ~= "number" or amount < 1 or amount % 1 ~= 0 then return false end
+	data.dnaTokens = math.max(0, data.dnaTokens or 0) + amount
 	replicate(player, { "dnaTokens" }, data.dnaTokens)
 	return true
 end
@@ -597,7 +598,7 @@ function PlayerData.GrowthSpurt(player)
 		data.muscles[muscle.id] = { level = 0, xp = 0 }
 	end
 	data.growthSpurts += 1
-	data.dnaTokens += 1
+	data.dnaTokens = math.max(0, data.dnaTokens or 0) + require(Config.DNA).PerGrowthSpurt -- (the free token, once per spurt)
 	replicate(player, { "muscles" }, data.muscles)
 	replicate(player, { "growthSpurts" }, data.growthSpurts)
 	replicate(player, { "dnaTokens" }, data.dnaTokens)

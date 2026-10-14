@@ -8,7 +8,7 @@
 --   anyTier      any machine with weight tier `tier` unlocked
 --   titles       own `count` titles
 --   spurts       Growth Spurt count at least `count` (new players start at 0)
--- reward: { coins = n, dnaTokens = n, shakes = n } (any of them)
+-- reward: { coins = n, shakes = n } (any of them; never DNA tokens, owner 14 Oct: Config/DNA)
 local Muscles = require(script.Parent.Muscles)
 
 -- quest levels are shown as EXP (Muscles.Shown)
@@ -27,7 +27,7 @@ Quests.Chain = {
 	{ id = "Crunches", text = "Do 25 reps on the Crunch Bench", type = "machineReps", machines = { "CrunchBench" }, count = 25, reward = { coins = 35, shakes = 1 } },
 	{ id = "AllFive", text = "Get every muscle to " .. exp(5) .. " exp", type = "allGroups", level = 5, reward = { coins = 60 } },
 	{ id = "ThreeTitles", text = "Earn 3 titles", type = "titles", count = 3, reward = { coins = 60 } },
-	{ id = "Grind", text = "Do 200 reps", type = "reps", count = 200, reward = { coins = 100, dnaTokens = 1 } },
+	{ id = "Grind", text = "Do 200 reps", type = "reps", count = 200, reward = { coins = 100 } },
 	{ id = "FirstSpurt", text = "Do your first Growth Spurt", type = "spurts", count = 1, reward = { coins = 200, shakes = 2 } },
 }
 
@@ -70,7 +70,6 @@ end
 function Quests.RewardText(reward)
 	local parts = {}
 	if reward.coins then table.insert(parts, "+" .. reward.coins .. " coins") end
-	if reward.dnaTokens then table.insert(parts, "+" .. reward.dnaTokens .. (reward.dnaTokens == 1 and " DNA token" or " DNA tokens")) end
 	if reward.shakes then table.insert(parts, "+" .. reward.shakes .. (reward.shakes == 1 and " shake" or " shakes")) end
 	return table.concat(parts, ", ")
 end

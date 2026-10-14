@@ -55,7 +55,7 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "LegendLeft" then
 		Notify.Show(tostring(info.name) .. " left the gym.", nil, "legend")
 	elseif kind == "LegendDone" then
-		Notify.Show("Challenge done: " .. tostring(info.name) .. ". +" .. tostring(info.coins) .. " coins, +" .. tostring(info.dnaTokens) .. " DNA token.")
+		Notify.Show("Challenge done: " .. tostring(info.name) .. ". +" .. tostring(info.coins) .. " coins.")
 		Notify.Show("Legends met: " .. metCount() .. " / " .. #Legends.List)
 		Audio.PlayUI("TitleUnlocked")
 	end
