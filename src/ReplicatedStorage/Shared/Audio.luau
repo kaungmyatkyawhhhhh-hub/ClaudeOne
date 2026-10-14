@@ -1,7 +1,8 @@
 -- Audio (client): plays every sound through Config.Sounds with SoundGroups, random variants and pitch.
 --   Audio.PlayUI(name) / Audio.Play2D(name)   2D (interface, genetics reveal, training feedback)
 --   Audio.PlayAt(name, partOrAttachmentOrPosition)   3D at a machine, quieter with distance
---   Audio.StartMusic()                                 background music, low, loops the playlist
+--   Audio.StartMusic()                                 background music, low, loops the playlist (waits for the menu's track)
+--   Audio.AdoptMenuMusic() / Audio.StopMenuMusic(t)    the loading screen / menu track: into the Music volume, faded out
 --   Audio.SetVolumes(music, effects)                   player settings, 0-1 each
 -- opts (optional): { volume = multiplier, pitch = multiplier }
 local SoundService = game:GetService("SoundService")
@@ -151,9 +152,34 @@ local function tracksFor(name)
 	return (areas and name and areas[name]) or Sounds.Music.ids
 end
 
+-- The loading screen's and main menu's track (Config.Sounds.MenuMusic): ReplicatedFirst.LoadingScreen starts it as
+-- SoundService.MenuMusic before this module can load. Adopt puts it in the Music volume group (the player's setting);
+-- Stop fades it out when the game starts (renamed at once, so the area music starts under the fade).
+function Audio.AdoptMenuMusic()
+	local sound = SoundService:FindFirstChild("MenuMusic")
+	if sound and sound:IsA("Sound") then sound.SoundGroup = getGroup("Music") end
+end
+function Audio.StopMenuMusic(fadeTime: number?)
+	local sound = SoundService:FindFirstChild("MenuMusic")
+	if not (sound and sound:IsA("Sound")) then return end
+	sound.Name = "MenuMusicFading"
+	local fade = TweenService:Create(sound, TweenInfo.new(fadeTime or 1.2), { Volume = 0 })
+	fade.Completed:Connect(function() sound:Destroy() end)
+	fade:Play()
+end
+
 function Audio.StartMusic()
 	if musicStarted then return end
 	musicStarted = true
+	-- (the menu's track plays until the game starts: the area music waits for it, then begins under its fade)
+	if SoundService:FindFirstChild("MenuMusic") then
+		task.spawn(function()
+			while SoundService:FindFirstChild("MenuMusic") do task.wait(0.2) end
+			musicStarted = false
+			Audio.StartMusic()
+		end)
+		return
+	end
 	local def = Sounds.Music
 	musicPlayer = Instance.new("Sound")
 	musicPlayer.Name = "Music"

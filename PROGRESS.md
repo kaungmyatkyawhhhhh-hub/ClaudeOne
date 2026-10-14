@@ -147,6 +147,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   AFTER (same view, camera pinned, NPCs walking): fps 36-40 (47-48 right after LOD), worst frame 31-84 ms, draw calls
   152-191, shadow 607-614, triangles 0.78-1.18 M, render CPU 23-25 ms, instances ~109.3 k, memory ~4.9 GB (Studio).
   BEFORE: fps 27-41, worst 81-142 ms, draw calls ~249, shadow ~720, triangles ~1.78 M, render CPU 23-36 ms.
+- Loading screen + menu music (owner): 118959016267248 (Config/Sounds.MenuMusic, repeated in LoadingScreen LOOK.Music),
+  looping from the first frame (SoundService.MenuMusic), the same Sound through the menu (Audio.AdoptMenuMusic: the
+  player's Music volume), faded out on Play (Audio.StopMenuMusic); the area music waits for it and starts under the
+  fade. Tested: loading -> menu -> Play -> starter gym music.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

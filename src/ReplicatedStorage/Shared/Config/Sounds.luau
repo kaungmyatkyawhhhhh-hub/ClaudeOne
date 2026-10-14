@@ -87,6 +87,11 @@ return {
 	StorePurchase = { ids = { 9126072697 }, volume = 0.2, pitch = 0.02, group = "UI", maxLength = 1.4 },      -- PSE Synth Sparkle Bell Ding 1: store purchase (not wired yet)
 	MirrorOpen = { ids = { 9116395179 }, volume = 0.2, pitch = 0, group = "UI", maxLength = 2.2 },            -- PSE Magic Glows Chiming Hits 6: the mirror opens (not wired yet)
 
+	-- The loading screen and the main menu (owner, 14 Oct): one track, looping, from the first frame until Play. The
+	-- loading screen starts it before this module can load, so the id is repeated in ReplicatedFirst.LoadingScreen (LOOK.Music):
+	-- change both. Then the area music below takes over.
+	MenuMusic = { ids = { 118959016267248 }, volume = 0.7, pitch = 0, group = "Music" },
+
 	-- Music (2D, low in the background, plays the tracks in order and loops). The owner's own tracks (14 Oct); this list
 	-- plays wherever an area below has no list of its own.
 	Music = { ids = { 118959016267248, 131532099124744, 139266399633943, 86451874359343, 113417603188158, 1840007392 }, volume = 0.7, pitch = 0, group = "Music" },

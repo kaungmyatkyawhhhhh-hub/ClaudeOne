@@ -257,6 +257,7 @@ task.spawn(function()
 	card.Visible = returning
 	newsDot.Visible = UI.UpdatesStamp ~= nil and (data.settings and data.settings.updatesSeen) ~= UI.UpdatesStamp
 	refreshPill(data)
+	Audio.AdoptMenuMusic() -- (the loading screen's track keeps playing here, now at the player's music volume)
 	ClientData.Changed:Connect(function(path)
 		if UIBus.MenuOpen and (path[1] == "coins" or path[1] == "muscles" or path[1] == "growthSpurts") then refreshPill(ClientData.Get()) end
 	end)
@@ -291,6 +292,7 @@ local function play(thenShop: boolean?)
 	playButton.Active = false
 	updates.close()
 	Audio.PlayUI("Whoosh")
+	Audio.StopMenuMusic(1.2) -- (the area music starts under the fade)
 	-- the camera behind the character, far enough to see all of them (a 7'0" character needs more room than a 4'0" one)
 	local camera = Workspace.CurrentCamera
 	local character = player.Character

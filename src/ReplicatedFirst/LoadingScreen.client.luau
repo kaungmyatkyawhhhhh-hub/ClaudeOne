@@ -41,6 +41,7 @@ local LOOK = {
 	Body = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
 	Art = "rbxassetid://99238211044120", -- Config/UI.MenuArt
 	Logo = "rbxassetid://84167052331251", -- Config/UI.Logo
+	Music = "rbxassetid://118959016267248", MusicVolume = 0.7, -- Config/Sounds.MenuMusic (owner, 14 Oct)
 }
 local GOLD = ColorSequence.new({ -- Theme.GoldSequence
 	ColorSequenceKeypoint.new(0, Color3.fromHex("#FFF3C4")),
@@ -85,6 +86,16 @@ local function graphite(frame, top, bottom, radius)
 		Position = UDim2.new(0, radius, 0, 1), Size = UDim2.new(1, -2 * radius, 0, 1), Parent = frame })
 	return frame
 end
+
+-- The loading screen and menu track (Config/Sounds.MenuMusic), looping from the first frame; it keeps playing through the
+-- main menu (the same Sound, never restarted) and fades out on Play (MenuClient, Audio.StopMenuMusic)
+local music = Instance.new("Sound")
+music.Name = "MenuMusic"
+music.SoundId = LOOK.Music
+music.Volume = LOOK.MusicVolume
+music.Looped = true
+music.Parent = game:GetService("SoundService")
+music:Play()
 
 local gui = new("ScreenGui", { Name = "LoadingScreen", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 100,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = playerGui })
