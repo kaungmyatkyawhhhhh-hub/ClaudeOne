@@ -7,8 +7,8 @@
 -- AURAS tab (owner, 14 Oct; Config.Auras, AuraService): on the left the picked aura big (its art, name, rarity, how to
 -- get it, the action button) and "Aura: Off"; on the right a grid of aura tiles (art, name, rarity, and its state:
 -- EQUIP / the gold EQUIPPED stamp / a coin price / AURA PACK or VIP (opens that pass's purchase) / locked + how to earn
--- it). (A live 3D preview isn't possible in a window: Roblox doesn't draw particles in a ViewportFrame; equipping shows
--- the aura on your character at full power for a few seconds.) The Store's Auras tab opens this tab (UIBus.OpenTitles).
+-- it). The preview is your own character behind the window wearing the picked aura at full power (Roblox doesn't draw
+-- particles inside a ViewportFrame; AURA.preview). The Store's Auras tab opens this tab (UIBus.OpenTitles).
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -219,10 +219,20 @@ function AURA.refresh()
 	countLabel.Text = owned .. " / " .. #Auras.List
 end
 
+-- the try-on: while the AURAS tab is open, your character wears the picked aura at full power (AuraClient reads the
+-- local "AuraPreview" attribute; nothing is equipped or sent to the server)
+function AURA.preview()
+	local aura = modal.isOpen() and tab == "Auras" and Auras.ById[AURA.picked] or nil
+	local want = aura and aura.vfx or nil
+	if Players.LocalPlayer:GetAttribute("AuraPreview") ~= want then Players.LocalPlayer:SetAttribute("AuraPreview", want) end
+end
+modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function() task.defer(AURA.preview) end)
+
 function refresh()
 	local data = ClientData.Get()
 	grid.Visible = tab ~= "Auras"
 	AURA.frame.Visible = tab == "Auras"
+	AURA.preview()
 	if tab == "Auras" then
 		AURA.refresh()
 		return

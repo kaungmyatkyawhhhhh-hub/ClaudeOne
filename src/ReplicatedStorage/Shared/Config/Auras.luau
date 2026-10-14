@@ -21,34 +21,34 @@ local function c(hex) return Color3.fromHex(hex) end
 
 Auras.List = {
 	-- earned
-	{ id = "Ember", name = "Ember", rarity = "Common", style = "flame", colors = { c("#FF8A2B"), c("#FFD27A") },
+	{ id = "Ember", vfx = "ember", name = "Ember", rarity = "Common", style = "flame", colors = { c("#FF8A2B"), c("#FFD27A") },
 		unlock = { type = "level", level = 10 }, how = "Reach LVL 10", short = "LVL 10", Icon = "rbxassetid://90339926517742" },
-	{ id = "Frost", name = "Frost", rarity = "Uncommon", style = "frost", colors = { c("#8FD8FF"), c("#E8F8FF") },
+	{ id = "Frost", vfx = "frost", name = "Frost", rarity = "Uncommon", style = "frost", colors = { c("#8FD8FF"), c("#E8F8FF") },
 		unlock = { type = "level", level = 25 }, how = "Reach LVL 25", short = "LVL 25", Icon = "rbxassetid://80248947606528" },
-	{ id = "Storm", name = "Storm", rarity = "Rare", style = "electric", colors = { c("#9CC8FF"), c("#FFFFFF") },
+	{ id = "Storm", vfx = "storm", name = "Storm", rarity = "Rare", style = "electric", colors = { c("#9CC8FF"), c("#FFFFFF") },
 		unlock = { type = "level", level = 50 }, how = "Reach LVL 50", short = "LVL 50", Icon = "rbxassetid://103088568186604" },
-	{ id = "Golden", name = "Golden", rarity = "Legendary", style = "flame", colors = { c("#FFC93C"), c("#FFF1B8") },
+	{ id = "Golden", vfx = "golden", name = "Golden", rarity = "Legendary", style = "flame", colors = { c("#FFC93C"), c("#FFF1B8") },
 		unlock = { type = "height" }, how = "Reach 7'0\"", short = "7'0\"", Icon = "rbxassetid://90116111446884" },
-	{ id = "Titan", name = "Titan", rarity = "Legendary", style = "flame", colors = { c("#E8343C"), c("#FFC93C") },
+	{ id = "Titan", vfx = "titan", name = "Titan", rarity = "Legendary", style = "flame", colors = { c("#E8343C"), c("#FFC93C") },
 		unlock = { type = "achievements" }, how = "Finish every Coach quest", short = "All quests", Icon = "rbxassetid://136822081933398" },
 	-- Aura Pack pass
-	{ id = "Inferno", name = "Inferno", rarity = "Epic", style = "flame", colors = { c("#FF3B1F"), c("#FF9A2E") },
+	{ id = "Inferno", vfx = "inferno", name = "Inferno", rarity = "Epic", style = "flame", colors = { c("#FF3B1F"), c("#FF9A2E") },
 		unlock = { type = "pass", pass = "AuraPack" }, how = "Aura Pack", short = "Aura Pack", Icon = "rbxassetid://101220273317214" },
-	{ id = "BloodMoon", name = "Blood Moon", rarity = "Epic", style = "smoke", colors = { c("#B3121C"), c("#1A0A0C") },
+	{ id = "BloodMoon", vfx = "blood_moon", name = "Blood Moon", rarity = "Epic", style = "smoke", colors = { c("#B3121C"), c("#1A0A0C") },
 		unlock = { type = "pass", pass = "AuraPack" }, how = "Aura Pack", short = "Aura Pack", Icon = "rbxassetid://83696658917366" },
-	{ id = "Void", name = "Void", rarity = "Epic", style = "smoke", colors = { c("#8A3CFF"), c("#120A1E") },
+	{ id = "Void", vfx = "void", name = "Void", rarity = "Epic", style = "smoke", colors = { c("#8A3CFF"), c("#120A1E") },
 		unlock = { type = "pass", pass = "AuraPack" }, how = "Aura Pack", short = "Aura Pack", Icon = "rbxassetid://90846813368952" },
-	{ id = "Neon", name = "Neon", rarity = "Epic", style = "electric", colors = { c("#FF3FD2"), c("#3FF2FF") },
+	{ id = "Neon", vfx = "neon", name = "Neon", rarity = "Epic", style = "electric", colors = { c("#FF3FD2"), c("#3FF2FF") },
 		unlock = { type = "pass", pass = "AuraPack" }, how = "Aura Pack", short = "Aura Pack", Icon = "rbxassetid://93346976519907" },
-	{ id = "Galaxy", name = "Galaxy", rarity = "Epic", style = "stars", colors = { c("#2B3FA8"), c("#E6E9FF") },
+	{ id = "Galaxy", vfx = "galaxy", name = "Galaxy", rarity = "Epic", style = "stars", colors = { c("#2B3FA8"), c("#E6E9FF") },
 		unlock = { type = "pass", pass = "AuraPack" }, how = "Aura Pack", short = "Aura Pack", Icon = "rbxassetid://139009049495184" },
 	-- VIP pass
-	{ id = "Royal", name = "Royal", rarity = "Legendary", style = "stars", colors = { c("#FFD36B"), c("#FFFFFF") },
+	{ id = "Royal", vfx = "royal", name = "Royal", rarity = "Legendary", style = "stars", colors = { c("#FFD36B"), c("#FFFFFF") },
 		unlock = { type = "pass", pass = "VIP" }, how = "VIP", short = "VIP", Icon = "rbxassetid://84584030021403" },
 	-- coins
-	{ id = "Toxic", name = "Toxic", rarity = "Rare", style = "toxic", colors = { c("#5FE83A"), c("#C8FF8A") },
+	{ id = "Toxic", vfx = "toxic", name = "Toxic", rarity = "Rare", style = "toxic", colors = { c("#5FE83A"), c("#C8FF8A") },
 		unlock = { type = "coins", price = 50000 }, how = "50,000 coins", short = "50,000", Icon = "rbxassetid://72766894142392" },
-	{ id = "Shadow", name = "Shadow", rarity = "Epic", style = "smoke", colors = { c("#6A6A78"), c("#1A1A20") },
+	{ id = "Shadow", vfx = "shadow", name = "Shadow", rarity = "Epic", style = "smoke", colors = { c("#6A6A78"), c("#1A1A20") },
 		unlock = { type = "coins", price = 150000 }, how = "150,000 coins", short = "150,000", Icon = "rbxassetid://110201785660530" },
 }
 
@@ -58,11 +58,9 @@ for index, aura in ipairs(Auras.List) do
 	Auras.ById[aura.id] = aura
 end
 
--- how other players' auras show (AuraClient)
-Auras.FarOff = 40    -- studs: further away, no aura at all
-Auras.MidFrom = 20   -- studs: from here to FarOff, only the inner glow
-Auras.MaxShown = 8   -- at most this many other players' auras at once (the nearest)
-Auras.MobileRate = 0.5 -- particle rates on touch devices
-Auras.HalfPump = 0.5 -- the outer layer comes in here
+-- how auras show (AuraClient; the effect itself is Shared/VFX/AuraVFX, the owner's module, its preset = `vfx` above)
+Auras.FullLOD = 40   -- studs: other players' auras at full detail within this
+Auras.MidLOD = 90    -- studs: from FullLOD to here, glow + ground only; further away (or the setting off): none
+Auras.IdlePower = 0.15 -- not lifting
 
 return Auras

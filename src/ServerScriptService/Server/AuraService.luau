@@ -69,6 +69,10 @@ local function replicateWorn(player)
 	local worn = auras.equipped
 	if worn and not AuraService.Has(player, worn) then worn = nil end
 	if player:GetAttribute("Aura") ~= worn then player:SetAttribute("Aura", worn) end
+	-- the effect's preset name on the character too ("EquippedAura", AuraVFX: every client builds it from this)
+	local character = player.Character
+	local preset = worn and Auras.ById[worn] and Auras.ById[worn].vfx or nil
+	if character and character:GetAttribute("EquippedAura") ~= preset then character:SetAttribute("EquippedAura", preset) end
 end
 
 local function save(player)
@@ -126,6 +130,8 @@ function AuraService.Start()
 	ActionService.Register("AuraEquip", equip)
 	ActionService.Register("AuraBuy", buy)
 	local function watch(player)
+		-- (a new character gets the attribute again: respawn)
+		player.CharacterAdded:Connect(function() task.defer(replicateWorn, player) end)
 		task.spawn(function()
 			PlayerData.WaitFor(player)
 			checkEarned(player)

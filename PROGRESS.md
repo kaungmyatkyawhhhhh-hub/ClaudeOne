@@ -1275,3 +1275,14 @@ next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's mo
 - Removed the "Skip Growth Cooldown" product (3718306447) on the owner's request: its Config/Monetization entry and its
   shop icon (Config/UI.ShopIcons.product_skip_growth_cooldown). Nothing else referenced it (no Store or ProcessReceipt
   code by name). It was never on sale (hidden).
+- AURA VFX (owner's module, 14 Oct): Shared/VFX/AuraVFX is the owner's AuraVFX.lua with the TEX table filled (8 textures
+  uploaded from Studio = owner's inventory; flipbooks 1024x1024). The old aura effect code in AuraClient is gone.
+  AuraService also puts the worn aura's preset (Config/Auras `vfx`) on the character as "EquippedAura" (again on respawn);
+  AuraClient: every player, Destroy + Build on a change / respawn; power 0.15 idle, PumpMeter while lifting (1 while
+  PUMPED); Burst on a PR (AuraBurst attribute, + the sound) or the pump reaching 100%; LOD own 0, others 0 < 40 studs,
+  1 to 90, 2 beyond or with Others' Auras Off / Low Graphics; Titles AURAS tab = try-on on your own character at power 1
+  ("AuraPreview" local attribute). Rebuilt when the body's size changes by >25% (AuraVFX sizes from the body once: it was
+  built before the muscle meshes loaded and came out too narrow). Textures preloaded on join (first build showed blank
+  cards). Tuned: shadow preset a bit lighter (invisible in the dark gym). Checked all 13 at 100%, golden at idle / 50% /
+  burst, 7'0" and a 6-stud NPC. Screenshots: screenshots/auras_v2/. FPS: Studio driven over MCP runs ~11 fps either way,
+  so no meaningful number; budget instead ~90 live particles per full aura (x0.6 on phones), others past 40 studs ~10.
