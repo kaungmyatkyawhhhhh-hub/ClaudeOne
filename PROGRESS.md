@@ -1327,3 +1327,63 @@ next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's mo
   front / side on the 7'0" mass-monster body, + Inferno while benching). FPS: Studio driven over MCP runs ~15 fps with
   or without auras (no real phone number possible; the emulator can't be switched here): 10 NPC auras at full power =
   418 emitting emitters (about 40 per body), no measurable change; mid LOD the same.
+
+## 14 Oct: LAG, measured (owner: find the cause, cut triangles; no mesh shapes changed)
+Measured in Studio play (client, Starter Gym, 7 NPCs within 80 studs; Studio's emulator can't be switched to a phone from
+here and runs slower while scripts drive it, so treat fps as rough):
+- **Verdict: rendering.** Render CPU 15.7 ms (up to 31 ms with my probes running), GPU 1.6 to 21 ms, Heartbeat scripts
+  1.4 ms, physics 1.1 ms, particles small (GraphicsParticles 15.6 MB). fps 23 / 57 depending on the probe load.
+- **Bodies are the triangles.** One body wearing the static stage meshes = about 123k triangles (142k with the Skin
+  copies): torso front + back 2 x 19,950, upper arms 2 x 13,728, thighs 2 x (6,676 skin + 4,498 shorts), forearms +
+  calves 4 x 8,256, waist 158. Drawn at the gym: about 746k body triangles (Coach Dex, Maya, Theo, a trainer, the statue
+  at 142k each, + your forearms / calves; your own live muscle meshes on top). Hiding every body mesh: render CPU 15.7 ->
+  13.4 ms, GPU 1.6 -> 1.0 ms on this PC; on a phone GPU this is the big one.
+- **The map is draw calls, not triangles:** 21,859 parts (Town 16,844: Buildings 4,634, Street 2,815, BeachGym 2,237,
+  Greenery 1,777, Beach 1,222; Gym 2,541; ProGym 2,165), only 240 MeshParts (all NPC bodies), 294 lights (5 with
+  shadows), 424 SurfaceGuis. StreamingEnabled is on but the client still holds 23,736 parts (the whole town): the
+  streaming radius settings (owner's Properties job, open since 14 Oct) are what would trim this.
+- Memory (Studio, client + server together): total 2,034 MB, Lua heap 1,372 MB, PhysicsParts 1,428 MB, Gui 305 MB,
+  Script 262 MB, textures 168 + 66 MB. Instances 109,354.
+
+Quick wins:
+- Map MeshParts were already right: RenderFidelity Automatic (0 Precise), CollisionFidelity Box, DoubleSided off.
+- 192 small props (< 3 studs) still cast shadows: CastShadow off (in Studio; 12,475 small parts, the rest already off).
+- No exact duplicate parts; the hidden parts are the machines' spare tier plates, fill-light holders and NPC spots (all
+  used). The 15 Workspace scripts are only the NPCs' default Animate scripts (no free-model scripts). ServerStorage.
+  _Leftovers (an old Robloxian export + 2 abs meshes) is unused but never reaches players: left alone.
+- Same mesh many times: NPC bodies share one MeshId per part; every stage clone copies its template's MeshId: OK.
+- NOT DONE (needs the owner): the 90 body-stage templates (ReplicatedStorage.BodyStages / LimbStages) use
+  CollisionFidelity Default (a precise collision shape from a 20k-triangle mesh on every clone, though they never
+  collide). Scripts can't set CollisionFidelity: select them all in Studio, Properties > CollisionFidelity = Box.
+- Muscle LOD check: NPCs past 60 studs DO drop to the plain body (only NPCs under 60 had stage triangles). Other players
+  are never switched (the 14 Oct LOD rule said "never for players"), so a crowded server pays 142k per player at any
+  distance up to 180 studs: say if players should get the far LOD too.
+
+Heaviest meshes (triangle counts read by loading each mesh as an EditableMesh in Studio):
+| # | Mesh | MeshId | Triangles | Copies in the place | Where |
+|---|---|---|---|---|---|
+| 1 | BS_Torso_Front_g000 | 78363131212696 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 2 | BS_Torso_Front_g020 | 84851847888387 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 3 | BS_Torso_Front_g040 | 71416633931227 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 4 | BS_Torso_Front_g060 | 115336578035539 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 5 | BS_Torso_Front_g080 | 99677012136257 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 6 | BS_Torso_Front_g100 | 129324753285817 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 7 | BS_Torso_Front_gmon | 137013043275089 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 8 | BS_Torso_Back_g000 | 109599664465114 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 9 | BS_Torso_Back_g020 | 96188948784068 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 10 | BS_Torso_Back_g040 | 114001138197400 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 11 | BS_Torso_Back_g060 | 97198593908439 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 12 | BS_Torso_Back_g080 | 125070479825044 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 13 | BS_Torso_Back_g100 | 140465933559267 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 14 | BS_Torso_Back_gmon | 127301004702519 | 19,950 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (torso stage) |
+| 15 | BS_LeftArm_Arm_g000 | 106820270054132 | 13,728 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (upper arm stage) |
+| 16 | BS_LeftArm_Arm_g020 | 76714840120580 | 13,728 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (upper arm stage) |
+| 17 | BS_LeftArm_Arm_g040 | 126982024186662 | 13,728 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (upper arm stage) |
+| 18 | BS_LeftArm_Arm_g060 | 84400921353716 | 13,728 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (upper arm stage) |
+| 19 | BS_LeftArm_Arm_g080 | 127996084088671 | 13,728 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (upper arm stage) |
+| 20 | BS_LeftArm_Arm_g100 | 134822315929590 | 13,728 | 1 template; 1 clone per body at that stage | ReplicatedStorage.BodyStages (upper arm stage) |
+
+Next after these: the other 8 upper-arm stages (13,728 each), the 28 forearm / calf stages (LimbStages, 8,256 each),
+thigh skin (14 x 6,676) and shorts (14 x 4,498). NPC Robloxian 2.0 parts are 108 to 344 triangles; one hair (81642452)
+1,026. For Blender: the torso stages at about 5k and the limbs at about 2 to 3k each would cut a body from ~123k to
+~25k triangles (the muscle data generator would need the same vertex order for all 7 stages of a part).
