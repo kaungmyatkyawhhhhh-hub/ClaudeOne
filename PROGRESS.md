@@ -1352,9 +1352,8 @@ Quick wins:
   used). The 15 Workspace scripts are only the NPCs' default Animate scripts (no free-model scripts). ServerStorage.
   _Leftovers (an old Robloxian export + 2 abs meshes) is unused but never reaches players: left alone.
 - Same mesh many times: NPC bodies share one MeshId per part; every stage clone copies its template's MeshId: OK.
-- NOT DONE (needs the owner): the 90 body-stage templates (ReplicatedStorage.BodyStages / LimbStages) use
-  CollisionFidelity Default (a precise collision shape from a 20k-triangle mesh on every clone, though they never
-  collide). Scripts can't set CollisionFidelity: select them all in Studio, Properties > CollisionFidelity = Box.
+- Body-stage templates (ReplicatedStorage.BodyStages / LimbStages, 90): CollisionFidelity is Box (owner: it already
+  was; a first read here said Default, a re-read shows all 90 Box). Nothing to do.
 - Muscle LOD check: NPCs past 60 studs DO drop to the plain body (only NPCs under 60 had stage triangles). Other players
   are never switched (the 14 Oct LOD rule said "never for players"), so a crowded server pays 142k per player at any
   distance up to 180 studs: say if players should get the far LOD too.
