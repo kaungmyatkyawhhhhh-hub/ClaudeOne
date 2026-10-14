@@ -248,6 +248,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   other players' trainers frozen past 60 studs, the stages' skin layer hidden (it poked through the clothes at the lats).
   Portraits re-rendered (dark booth, same camera) and uploaded (Config/UI.Trainers). Not done: a "cheering while you lift"
   screenshot.
+- Trainers' bare skin (owner: "only the clothes show"): hiding the stages' skin layer also hid the bare skin (see-through
+  parts of a clothing image show nothing on these meshes). Each trainer's skin color is now painted under the clothes in
+  his Shirt / Pants images (no see-through parts), new ids in Config/Trainers. Checked: Rex and Nia show skin where bare,
+  clothes solid at the lats.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

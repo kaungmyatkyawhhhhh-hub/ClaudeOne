@@ -128,8 +128,8 @@ local function makeTrainer(id: string, slot: number)
 		end
 	end
 	-- (owner, 14 Oct: torn-looking clothes) the muscle stages' separate skin layer sits under the clothing mesh and pokes
-	-- through it where the muscles bulge (the lats); a trainer is fully dressed in Shirt / Pants images, and the clothing mesh
-	-- already shows his skin color through their see-through parts, so the skin layer is hidden on him
+	-- through it where the muscles bulge (the lats); a trainer's Shirt / Pants images have his skin color painted under the
+	-- clothes (no see-through parts), so the clothing mesh shows his bare skin too and the skin layer is hidden on him
 	local function skinLayer(part)
 		if part:IsA("BasePart") and part.Name == "Skin" and part.Parent and part.Parent.Parent and part.Parent.Parent.Name == "MuscleMeshes" then
 			part.LocalTransparencyModifier = 1

@@ -13,29 +13,30 @@ local Trainers = {}
 -- look (owner, 14 Oct: real gym coaches, built from a HumanoidDescription by TrainerService):
 --   skin, hairIds (Roblox's own free catalog hair, none = buzz / bald), faceTexture (the image of one of Roblox's own
 --   faces, worn on a classic head: TrainerService), shirt / pants = our own clothing templates (images, Downloads-free, no brands; drawn by
---   scratchpad trainer_clothes.py: tracksuit, tank, polo, stringer, joggers, shorts), muscle = how built he looks (the
+--   scratchpad trainer_clothes.py: tracksuit, tank, polo, stringer, joggers, shorts; his skin color is painted under the
+--   clothes, so the images have no see-through parts: TrainerFollowClient hides the muscle stages' skin layer), muscle = how built he looks (the
 --   static muscle stages, share of the goal: 1 = fit; the Pump coach the biggest), extras = small part-built props
 --   ("whistle", "headband", "bottle", "cap", "clipboard", "belt", "wraps"), extraColor = their color.
 Trainers.List = {
 	{ id = "RookieCoach", name = "Rookie Coach", coachName = "Coach Sam", price = 300, perk = { gains = 1.05 }, perkText = "+5% EXP", perkShort = "+5% EXP",
 		picture = "trainer_exp", color = "#E5413F",
 		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
-			shirt = "rbxassetid://77771516278632", pants = "rbxassetid://128469919503097", muscle = 0.9,
+			shirt = "rbxassetid://102959678094397", pants = "rbxassetid://72439591969493", muscle = 0.9,
 			extras = { "whistle" }, extraColor = "#C8262C", tint = "#C8262C" } },
 	{ id = "CardioCoach", name = "Cardio Coach", coachName = "Coach Nia", price = 450, perk = { regen = 1.1 }, perkText = "+10% stamina refill", perkShort = "+10% Stamina",
 		picture = "trainer_stamina", color = "#5CC46B",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
-			shirt = "rbxassetid://133899993895115", pants = "rbxassetid://130320955859264", muscle = 0.7,
+			shirt = "rbxassetid://75627226847033", pants = "rbxassetid://132200798598308", muscle = 0.7,
 			extras = { "headband", "bottle" }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
 	{ id = "MoneyCoach", name = "Money Coach", coachName = "Coach Lou", price = 600, perk = { coins = 1.05 }, perkText = "+5% coins", perkShort = "+5% Coins",
 		picture = "trainer_coins", color = "#F2C64A",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
-			shirt = "rbxassetid://139453050856567", pants = "rbxassetid://114585739101845", muscle = 0.8,
+			shirt = "rbxassetid://115347278747243", pants = "rbxassetid://82450924223675", muscle = 0.8,
 			extras = { "cap", "clipboard" }, extraColor = "#16161A", tint = "#E0B23A" } },
 	{ id = "PumpCoach", name = "Pump Coach", coachName = "Coach Rex", price = 800, perk = { pump = 1.25 }, perkText = "Pump fills 25% faster and lasts 25% longer", perkShort = "+25% Pump",
 		picture = "trainer_pump", color = "#A06BE6",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
-			shirt = "rbxassetid://92108312308529", pants = "rbxassetid://98021423122639", muscle = 1.8,
+			shirt = "rbxassetid://102922865828545", pants = "rbxassetid://92479669230797", muscle = 1.8,
 			extras = { "belt", "wraps" }, extraColor = "#7A3FC8", tint = "#7A3FC8" } },
 }
 Trainers.ById = {}
