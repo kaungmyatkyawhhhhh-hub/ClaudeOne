@@ -1,16 +1,17 @@
 -- LoadingScreen: replaces Roblox's default loading screen from the very first frame (owner's final kit "BLACK + GOLD",
--- mockup gym_arc_ui_final/00_loading). Black, with the menu art (UI.MenuArt) on the right fading into the dark on its left
--- and a dim, soft copy of it behind everything; the GYM ARC logo image (UI.Logo), "Everyone starts tiny." in gray, a
--- rotating tip in a dark graphite tile with a small gold TIP tag (Config/UI.LoadingTips), and at the bottom the step
--- ("LOADING PLAYERS", heavy italic) with the percent in gold on the right, a thick metallic red bar in a dark track and
--- small page dots under it (gold = the current tip). SKIP (a quiet dark button) shows top right after 5 seconds
+-- mockup gym_arc_ui_final/00_loading; owner, 15 Oct: new art). The menu's art (UI.MenuArt) fills the screen, pinned to
+-- the right edge so the character on the right always shows whole (a narrow screen crops the empty left side), with a dark
+-- gradient over the left 40%; the 3D logo (UI.Logo3D) top left with a soft red glow, "Everyone starts tiny." under it;
+-- along the bottom left (never over the character): a rotating tip in a dark graphite tile with a small gold TIP tag
+-- (Config/UI.LoadingTips), the step ("LOADING PLAYERS", heavy italic) with the percent in gold, a thick metallic red bar
+-- and small page dots under it (gold = the current tip). SKIP (a quiet dark button) shows top right after 5 seconds
 -- (straight to the menu). It fades into the menu.
 -- Steps (the bar): the game itself (to 30%), "Loading muscles" = ContentProvider:PreloadAsync of the UI images (icons,
 -- art, trainer portraits; to 55%), "Loading the gym" = your save data and the world around you (MenuClient's MenuLoad
 -- attribute 0..1, to 90%), "Loading players" = the other players' body stage meshes (Shared.BodyStages, to 100%, at most
 -- TIMING.Stages seconds). Between steps the bar creeps a little so it never looks stuck.
 -- This starts before ReplicatedStorage has replicated, so the kit's colors, fonts, the art / logo ids and a few tips are
--- repeated here (Theme.Colors, UIFonts, UI.MenuArt / UI.Logo); the full tip list is read once it's in.
+-- repeated here (Theme.Colors, UIFonts, UI.MenuArt / UI.Logo3D / UI.SoftGlow); the full tip list is read once it's in.
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local RunService = game:GetService("RunService")
@@ -39,8 +40,9 @@ local LOOK = {
 	Dot = Color3.fromHex("#3A363B"),
 	Display = Font.new(MONTSERRAT, Enum.FontWeight.Heavy, Enum.FontStyle.Italic), -- UIFonts.Display
 	Body = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
-	Art = "rbxassetid://99238211044120", -- Config/UI.MenuArt
-	Logo = "rbxassetid://84167052331251", -- Config/UI.Logo
+	Art = "rbxassetid://124549460345839", -- Config/UI.MenuArt (owner, 15 Oct)
+	Logo = "rbxassetid://86034269506160", -- Config/UI.Logo3D
+	Glow = "rbxassetid://108461610476976", -- Config/UI.SoftGlow
 	Music = "rbxassetid://118959016267248", MusicVolume = 0.7, -- Config/Sounds.MenuMusic (owner, 14 Oct)
 }
 local GOLD = ColorSequence.new({ -- Theme.GoldSequence
@@ -56,6 +58,7 @@ local TIPS = {
 	"Weak muscles grow fastest. Train the group that needs work.",
 }
 local BASE = Vector2.new(844, 390) -- the mockups' phone screen (Kit.Base)
+local BAR_W = 320 -- the tip tile and the bar along the bottom left (mockup px): left of the character
 
 local function new(class, props, children)
 	local instance = Instance.new(class)
@@ -100,36 +103,53 @@ music:Play()
 local gui = new("ScreenGui", { Name = "LoadingScreen", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 100,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = playerGui })
 local back = new("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), BackgroundColor3 = LOOK.Background, BorderSizePixel = 0, Parent = gui })
--- the soft copy of the art behind everything (dim, big)
-new("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop, ImageTransparency = 0.9, ImageColor3 = Color3.fromRGB(110, 90, 90),
-	Size = UDim2.fromScale(1, 1), Parent = back })
--- the art on the right, fading into the dark on its left
-new("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop, AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.62, 1), Parent = back }, {
-	new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.42, 0.2),
-		NumberSequenceKeypoint.new(0.6, 0), NumberSequenceKeypoint.new(1, 0) }) }),
+back.ClipsDescendants = true
+-- the art covering the screen, pinned right (sized in rescale below); the dark gradient over the left 40%
+local art = new("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop,
+	ResampleMode = Enum.ResamplerMode.Default, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Parent = back })
+new("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.4, 1), Parent = back }, {
+	new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(0.55, 0.55),
+		NumberSequenceKeypoint.new(1, 1) }) }),
 })
+local ART_SIZE = Vector2.new(1920, 1080)
 
 -- everything else in mockup px (scaled like Kit.Root: the shorter side / 390, never wider than the 844px layout)
 local root = new("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = gui })
 local scale = new("UIScale", { Parent = root })
 local function rescale()
 	local size = Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+	-- (Studio: the TestPhoneSize phone in the top left, like Kit)
+	local phone = RunService:IsStudio() and Workspace:GetAttribute("TestPhoneSize")
+	local blow = 1
+	if typeof(phone) == "Vector2" and phone.X > 0 then
+		blow = math.min(size.X / phone.X, size.Y / phone.Y)
+		size = phone
+	end
 	local s = math.max(0.5, math.min(size.Y / BASE.Y, size.X / BASE.X))
-	scale.Scale = s
+	scale.Scale = s * blow
 	root.Size = UDim2.fromOffset(size.X / s, size.Y / s)
+	-- the art: cover the screen, pinned right
+	local screen = size * blow
+	back.Size = UDim2.fromOffset(screen.X, screen.Y)
+	local k = math.max(screen.X / ART_SIZE.X, screen.Y / ART_SIZE.Y)
+	art.Size = UDim2.fromOffset(math.ceil(ART_SIZE.X * k), math.ceil(ART_SIZE.Y * k))
 end
 rescale()
 if Workspace.CurrentCamera then Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale) end
+Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(rescale)
 
 -- the logo and the tagline
-new("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = LOOK.Logo, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(40, 64),
-	Size = UDim2.fromOffset(268, 65), Parent = root })
-text({ Name = "Tagline", Text = "Everyone starts tiny.", FontFace = LOOK.Body, TextSize = 14, TextColor3 = LOOK.Muted, Position = UDim2.fromOffset(44, 140),
-	Size = UDim2.fromOffset(330, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
+local logo = new("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = LOOK.Logo, ScaleType = Enum.ScaleType.Fit, ZIndex = 2,
+	Position = UDim2.new(0, 18, 0.02, 0), Size = UDim2.fromScale(0.6, 0.32), Parent = root }, {
+	new("UIAspectRatioConstraint", { AspectRatio = 432 / 354, DominantAxis = Enum.DominantAxis.Height }),
+})
+new("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = LOOK.Glow, ImageColor3 = Color3.fromRGB(255, 45, 40), ImageTransparency = 0.35,
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromScale(1.55, 1.45), ZIndex = 1, Parent = logo })
+text({ Name = "Tagline", Text = "Everyone starts tiny.", FontFace = LOOK.Body, TextSize = 14, TextColor3 = Color3.fromHex("#E7DEDF"),
+	Position = UDim2.new(0, 24, 0.34, 4), Size = UDim2.fromOffset(300, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
 
 -- the tip: a graphite tile with a small gold TIP tag
-local tipTile = graphite(new("Frame", { Name = "TipTile", Position = UDim2.fromOffset(44, 200), Size = UDim2.fromOffset(320, 0),
+local tipTile = graphite(new("Frame", { Name = "TipTile", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -78), Size = UDim2.fromOffset(BAR_W, 0),
 	AutomaticSize = Enum.AutomaticSize.Y, Parent = root }), LOOK.PanelTop, LOOK.PanelBottom, 10)
 -- (the padding sits on an inner frame, so the tile's hairline stays on its top edge)
 local tipBody = new("Frame", { Name = "Body", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = tipTile }, {
@@ -146,12 +166,12 @@ local tip = text({ Name = "Tip", Text = "", FontFace = LOOK.Body, TextSize = 13,
 	TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.1, Parent = tipBody })
 
 -- the step and the percent, the bar, the page dots
-local status = text({ Name = "Status", Text = "LOADING THE GAME", TextSize = 13, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 44, 1, -60),
-	Size = UDim2.fromOffset(400, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
-local percent = text({ Name = "Percent", Text = "0%", TextSize = 19, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -44, 1, -58),
-	Size = UDim2.fromOffset(90, 22), TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
+local status = text({ Name = "Status", Text = "LOADING THE GAME", TextSize = 13, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -52),
+	Size = UDim2.fromOffset(BAR_W - 70, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
+local percent = text({ Name = "Percent", Text = "0%", TextSize = 19, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(0, 24 + BAR_W, 1, -50),
+	Size = UDim2.fromOffset(70, 22), TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
 new("UIGradient", { Rotation = 90, Color = GOLD, Parent = percent })
-local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -38), Size = UDim2.new(1, -88, 0, 14),
+local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -32), Size = UDim2.fromOffset(BAR_W, 14),
 	BackgroundColor3 = LOOK.Well, BorderSizePixel = 0, Parent = root }, {
 	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
 	new("UIStroke", { Color = Color3.fromHex("#2A262B"), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
@@ -167,7 +187,7 @@ local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), Backgro
 		ColorSequenceKeypoint.new(1, Color3.fromHex("#8E1219")),
 	}) }),
 })
-local dots = new("Frame", { Name = "Dots", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 44, 1, -24),
+local dots = new("Frame", { Name = "Dots", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -18),
 	Size = UDim2.fromOffset(300, 6), Parent = root }, {
 	new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), VerticalAlignment = Enum.VerticalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder }),
@@ -244,6 +264,7 @@ task.spawn(function()
 			end
 		end
 		table.insert(list, new("ImageLabel", { Image = UI.MenuArt or LOOK.Art }))
+		table.insert(list, new("ImageLabel", { Image = UI.Logo3D or LOOK.Logo }))
 		local done = 0
 		pcall(function()
 			ContentProvider:PreloadAsync(list, function()
@@ -309,6 +330,8 @@ local function finish()
 	end
 	setStep(1)
 	while not done and shown < 0.995 and gui.Parent do RunService.Heartbeat:Wait() end
+	-- (Studio only: the Workspace attribute TestHoldLoading = true keeps the loading screen up, for screenshots)
+	while RunService:IsStudio() and Workspace:GetAttribute("TestHoldLoading") == true and not done do task.wait(0.2) end
 	if done then return end
 	label = "Let's lift"
 	task.wait(0.35)

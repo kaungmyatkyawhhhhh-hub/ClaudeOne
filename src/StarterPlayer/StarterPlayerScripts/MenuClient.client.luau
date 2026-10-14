@@ -1,13 +1,10 @@
 -- MenuClient: the main menu shown on join (owner's UI v2, mockup 00_main_menu; replaces the live gym tour, the white PLAY
 -- button and the pointing hand).
---  * The picture: the menu art (Config/UI.MenuArt) on the right fading into the dark on its left, over a dim soft copy of
---    it (the same picture as the loading screen, so one fades into the other).
---  * On the left, vertically centered (owner's final kit "BLACK + GOLD", mockup 00_title): ONE graphite panel with the
---    GYM ARC logo (GYM white, ARC red), "Everyone starts tiny.", the red PLAY CTA (it pulses; its shine sweeps once), a
---    gold SHOP (players who finished the tutorial, only while something is for sale: Play, then the Store opens) and a
---    quiet UPDATES (a red dot while there's news; a window with Config/UI.Updates), a thin divider and the player row
---    (returning players): the real avatar headshot, name, "Level 27 · 6'4"", coins. Bottom right: a small NEW tag with
---    the newest update's name (tap = the update notes).
+--  * (owner, 15 Oct) The art (Config/UI.MenuArt) fills the screen, pinned right so the character always shows whole, a
+--    dark gradient on the left 40%; the 3D logo (UI.Logo3D) top left with a red glow; under it the tagline, the red PLAY
+--    CTA (it pulses; its shine sweeps once) and SHOP (players who finished the tutorial, while something is for sale:
+--    Play, then the Store opens) / SETTINGS / NEWS (the update notes, a red dot while unread) stacked; the player card
+--    bottom left. The loading screen uses the same art and logo, so one fades into the other.
 -- Start: ReplicatedFirst's LoadingScreen covers everything until this script has the save data and has streamed in the
 -- area around your character (Player:RequestStreamAroundAsync), then sets the LocalPlayer attribute "MenuReady";
 -- "MenuLoad" (0..1) feeds its bar. Movement is frozen and the HUD hidden while the menu is up.
@@ -38,54 +35,81 @@ local New, Colors = Theme.New, Theme.Colors
 
 local TIMING = { StreamTimeout = 8, Fade = 0.4, HudFade = 0.35, Slide = 0.35 }
 -- full-screen and menu UIs that are not part of the HUD fade-in after Play
-local NOT_HUD = { MenuScreen = true, LoadingScreen = true, GeneticsScreen = true, Updates = true }
+local NOT_HUD = { MenuScreen = true, MenuBackground = true, LoadingScreen = true, GeneticsScreen = true, Updates = true }
 
 ------------------------------------------------------------------------
--- UI (owner's final kit "BLACK + GOLD", mockup gym_arc_ui_final/00_title): one graphite panel on the left with the logo,
--- the tagline, the red PLAY CTA, a gold SHOP and a quiet UPDATES (red dot), a thin divider and the player row (the real
--- avatar headshot, name, "Level 27 · 6'4"", coins); a small "NEW · <latest update>" tag bottom-right. Drawn in mockup px
--- inside Kit.Root with the Theme / Kit pieces.
+-- UI (owner, 15 Oct: new art). Two ScreenGuis:
+--   MenuBackground (full screen, no safe-area insets): the art (UI.MenuArt, gym_arc_thumbnail2_nologo) covering the screen,
+--     pinned to the RIGHT edge so a narrow / tall screen (iPad) crops the empty left side and the character on the right
+--     always shows whole; a dark gradient over the left 40% so the text reads.
+--   MenuScreen (inside the safe area, Kit.Root mockup px): top left the 3D logo (UI.Logo3D, ~32% of the screen height)
+--     with a soft red glow behind it (the aura's red), "Everyone starts tiny." under it, then the Column: the red PLAY
+--     CTA and SHOP (players who finished the tutorial, while something is for sale) / SETTINGS / NEWS (the update notes,
+--     red dot while unread) stacked under it, all left of the barbell plate. The player card (headshot, name, level and
+--     height, coins) bottom left. Nothing on the right half: the character.
 ------------------------------------------------------------------------
-local PANEL = Vector2.new(290, 292)
+local COL_W = 172          -- the column's width (mockup px): PLAY and the buttons under it, left of the plate on phones
+local LEFT = 24            -- left margin (inside the safe area)
+local ART_SIZE = Vector2.new(1920, 1080) -- the art's own shape
 
-local gui = Theme.ScreenGui({ Name = "MenuScreen", DisplayOrder = 20, IgnoreGuiInset = true, Parent = playerGui })
-gui.ScreenInsets = Enum.ScreenInsets.None
-local back = New("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("#0C0A0C"), BorderSizePixel = 0, Active = true, Parent = gui })
--- the soft dark copy filling the whole screen (a blur made of four offset, faint copies)
-for index, offset in ipairs({ Vector2.new(-10, -6), Vector2.new(10, -6), Vector2.new(-10, 6), Vector2.new(10, 6) }) do
-	New("ImageLabel", { Name = "Soft" .. index, BackgroundTransparency = 1, Image = UI.MenuArt, ScaleType = Enum.ScaleType.Crop,
-		ImageTransparency = 0.8, ImageColor3 = Color3.fromRGB(120, 90, 90), AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, offset.X, 0.5, offset.Y), Size = UDim2.new(1, 40, 1, 40), Parent = back })
+-- the area the background fills: the whole screen, or in Studio the TestPhoneSize phone in the top left (like Kit)
+local function stageSize(): Vector2
+	local camera = Workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+	local phone = RunService:IsStudio() and Workspace:GetAttribute("TestPhoneSize")
+	if typeof(phone) == "Vector2" and phone.X > 0 then
+		return phone * math.min(viewport.X / phone.X, viewport.Y / phone.Y)
+	end
+	return viewport
 end
--- the art on the right, fading into the dark on its left
-New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = UI.MenuArt, ScaleType = Enum.ScaleType.Crop, AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0), Size = UDim2.fromScale(0.68, 1), ZIndex = 2, Parent = back }, {
-	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.45),
-		NumberSequenceKeypoint.new(0.55, 0), NumberSequenceKeypoint.new(1, 0) }) }),
-})
--- the dark fade behind the panel (black, never colored)
-New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.55, 1), ZIndex = 3, Parent = back }, {
-	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(0.6, 0.6),
+
+local bgGui = Theme.ScreenGui({ Name = "MenuBackground", DisplayOrder = 19, IgnoreGuiInset = true, Parent = playerGui })
+bgGui.ScreenInsets = Enum.ScreenInsets.None
+local back = New("Frame", { Name = "Back", BackgroundColor3 = Color3.fromHex("#0C0A0C"), BorderSizePixel = 0, ClipsDescendants = true, Active = true,
+	Parent = bgGui })
+local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = UI.MenuArt, ScaleType = Enum.ScaleType.Crop,
+	ResampleMode = Enum.ResamplerMode.Default, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Parent = back })
+-- the dark gradient over the left 40% (black, fading out to the right)
+New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.4, 1), ZIndex = 2, Parent = back }, {
+	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(0.55, 0.55),
 		NumberSequenceKeypoint.new(1, 1) }) }),
 })
+local function placeArt()
+	local size = stageSize()
+	back.Size = UDim2.fromOffset(size.X, size.Y)
+	-- cover the stage (no bars), pinned right: the crop comes off the empty left side
+	local k = math.max(size.X / ART_SIZE.X, size.Y / ART_SIZE.Y)
+	art.Size = UDim2.fromOffset(math.ceil(ART_SIZE.X * k), math.ceil(ART_SIZE.Y * k))
+end
+placeArt()
+if Workspace.CurrentCamera then Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placeArt) end
+Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(placeArt)
 task.spawn(function() -- (load the art first, so the menu never shows a plain dark screen)
-	pcall(function() game:GetService("ContentProvider"):PreloadAsync({ back }) end)
+	pcall(function() game:GetService("ContentProvider"):PreloadAsync({ art }) end)
 end)
 
+local gui = Theme.ScreenGui({ Name = "MenuScreen", DisplayOrder = 20, IgnoreGuiInset = true, Parent = playerGui })
+gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 local root = Kit.Root(gui)
--- the graphite panel, vertically centered on the left
-local column = Theme.Panel({ Name = "Column", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 46, 0.5, 0), Size = UDim2.fromOffset(PANEL.X, PANEL.Y),
-	Parent = root })
 
--- the logo image (Config/UI.Logo: GYM white, ARC red)
-New("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = UI.Logo, ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 14), Size = UDim2.fromOffset(PANEL.X - 40, 64), Parent = column })
-Kit.Text({ Name = "Tagline", Text = "Everyone starts tiny.", Font = "Strong", TextSize = 13, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, 84),
-	Size = UDim2.new(1, 0, 0, 18), Parent = column })
+-- the 3D logo, ~32% of the screen height, with a soft red glow behind it
+local logo = New("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = UI.Logo3D, ScaleType = Enum.ScaleType.Fit, ZIndex = 2,
+	Position = UDim2.new(0, LEFT - 6, 0.02, 0), Size = UDim2.fromScale(0.6, 0.32), Parent = root }, {
+	New("UIAspectRatioConstraint", { AspectRatio = 432 / 354, DominantAxis = Enum.DominantAxis.Height }),
+})
+New("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = UI.SoftGlow, ImageColor3 = Color3.fromRGB(255, 45, 40), ImageTransparency = 0.35,
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromScale(1.55, 1.45), ZIndex = 1, Parent = logo })
+
+-- the column: tagline, PLAY, then SHOP / SETTINGS / NEWS stacked
+local column = New("Frame", { Name = "Column", BackgroundTransparency = 1, Position = UDim2.new(0, LEFT, 0.34, 4), Size = UDim2.fromOffset(COL_W, 180),
+	Parent = root }, {
+	Theme.List(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+})
+Kit.Text({ Name = "Tagline", LayoutOrder = 1, Text = "Everyone starts tiny.", Font = "Strong", TextSize = 13, TextColor3 = Color3.fromHex("#E7DEDF"),
+	Size = UDim2.fromOffset(COL_W, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = column })
 
 -- PLAY: the red CTA with a play triangle (drawn from thin strips: no glyph, no emoji)
-local playButton = Theme.Button("Red", { Name = "Play", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 112), Size = UDim2.fromOffset(PANEL.X - 36, 54),
-	Parent = column }, {})
+local playButton = Theme.Button("Red", { Name = "Play", LayoutOrder = 2, Size = UDim2.fromOffset(COL_W, 50), Parent = column }, {})
 local playRow = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1 - Theme.LipHeight, 0), Parent = playButton }, {
 	Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 })
@@ -94,58 +118,40 @@ for row = 0, 14 do
 	local width = 12 * (1 - math.abs(row - 7) / 7.5)
 	New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Position = UDim2.fromOffset(0, row), Size = UDim2.fromOffset(width, 1), Parent = triangle })
 end
-Kit.Text({ Name = "Label", LayoutOrder = 2, Text = "Play", Font = "Title", TextSize = 32, Upper = true, Size = UDim2.fromOffset(0, 40),
+Kit.Text({ Name = "Label", LayoutOrder = 2, Text = "Play", Font = "Title", TextSize = 30, Upper = true, Size = UDim2.fromOffset(0, 40),
 	AutomaticSize = Enum.AutomaticSize.X, Parent = playRow })
 playButton.Active = false
 
--- SHOP (gold) and UPDATES (quiet, a red dot while there's news)
-local halfW = (PANEL.X - 36 - 10) / 2
-local shopButton = Kit.Button("Gold", "Shop", { Name = "Shop", Position = UDim2.fromOffset(18, 176), Visible = false, Parent = column },
-	{ width = halfW, height = 40, textSize = 17 })
-local updatesButton = Kit.Button("Quiet", "Updates", { Name = "Updates", Position = UDim2.fromOffset(18 + halfW + 10, 176), Parent = column },
-	{ width = halfW, height = 40, textSize = 17, icon = "bell" })
+local shopButton = Kit.Button("Gold", "Shop", { Name = "Shop", LayoutOrder = 3, Visible = false, Parent = column },
+	{ width = COL_W, height = 30, textSize = 14, icon = "shopping-cart" })
+local settingsButton = Kit.Button("Quiet", "Settings", { Name = "Settings", LayoutOrder = 4, Parent = column },
+	{ width = COL_W, height = 30, textSize = 14, icon = "settings" })
+local updatesButton = Kit.Button("Quiet", "News", { Name = "Updates", LayoutOrder = 5, Parent = column },
+	{ width = COL_W, height = 30, textSize = 14, icon = "bell" })
 local newsDot = New("Frame", { Name = "NewsDot", BackgroundColor3 = Colors.Red, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -7, 0, 6), Size = UDim2.fromOffset(9, 9), Visible = false, ZIndex = 4, Parent = New("Folder", { Name = "Dot", Parent = updatesButton }) }, {
 	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 })
 
--- the divider and the player row: headshot, name, "Level 27 · 6'4"", coins
-local card = New("Frame", { Name = "Card", BackgroundTransparency = 1, Position = UDim2.fromOffset(18, 228), Size = UDim2.new(1, -36, 0, 52), Visible = false, Parent = column })
-New("Frame", { Name = "Divider", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 1), Parent = card })
-Kit.Headshot(player.UserId, player.DisplayName, 34, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 4), Parent = card })
-Kit.Text({ Name = "PlayerName", Text = player.DisplayName, Font = "Strong", TextSize = 14, Position = UDim2.fromOffset(44, 14), Size = UDim2.fromOffset(120, 18),
+-- the player card, bottom left: headshot, name, level and height, coins
+local card = Theme.Panel({ Name = "Card", Piece = "hud_box", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, LEFT, 1, -12),
+	Size = UDim2.fromOffset(236, 48), Visible = false, Parent = root })
+Kit.Headshot(player.UserId, player.DisplayName, 34, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = card })
+Kit.Text({ Name = "PlayerName", Text = player.DisplayName, Font = "Strong", TextSize = 14, Position = UDim2.fromOffset(50, 7), Size = UDim2.fromOffset(110, 18),
 	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
-local cardSub = Kit.Text({ Name = "Sub", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(44, 32), Size = UDim2.fromOffset(130, 15),
+local cardSub = Kit.Text({ Name = "Sub", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(50, 25), Size = UDim2.fromOffset(120, 15),
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
-local coinRow = New("Frame", { Name = "Coins", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 4),
-	Size = UDim2.fromOffset(110, 24), Parent = card }, {
-	Theme.List(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center),
+local coinRow = New("Frame", { Name = "Coins", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0),
+	Size = UDim2.fromOffset(80, 24), Parent = card }, {
+	Theme.List(Enum.FillDirection.Horizontal, 5, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center),
 })
-Kit.Coin(18, { LayoutOrder = 1, Parent = coinRow })
-local coinText = Kit.Text({ Name = "Amount", LayoutOrder = 2, Text = "0", Font = "Number", TextSize = 17, Size = UDim2.fromOffset(0, 24),
+Kit.Coin(16, { LayoutOrder = 1, Parent = coinRow })
+local coinText = Kit.Text({ Name = "Amount", LayoutOrder = 2, Text = "0", Font = "Number", TextSize = 15, Size = UDim2.fromOffset(0, 24),
 	AutomaticSize = Enum.AutomaticSize.X, Parent = coinRow })
 
--- bottom right: a small dark pill with a gold NEW tag and the newest update's name (tap = the update notes)
-local newest = UI.Updates and UI.Updates[1]
-local version = Theme.Panel({ Name = "News", Piece = "hud_box", Clickable = true, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -18, 1, -16),
-	Size = UDim2.fromOffset(0, 34), AutomaticSize = Enum.AutomaticSize.X, Visible = newest ~= nil, Parent = root }, {
-	New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 14) }),
-	Theme.List(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
-})
-local newTag = New("Frame", { Name = "New", LayoutOrder = 1, Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Color3.new(1, 1, 1),
-	Parent = version }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 5) }),
-	New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
-	New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
-})
-Kit.Text({ Name = "Text", Text = "NEW", Font = "Title", TextSize = 12, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.new(0, 0, 1, 0),
-	AutomaticSize = Enum.AutomaticSize.X, Parent = newTag })
-Kit.Text({ Name = "Title", LayoutOrder = 2, Text = newest and newest.title or "", Font = "Title", TextSize = 15, Upper = true, Size = UDim2.fromOffset(0, 24),
-	AutomaticSize = Enum.AutomaticSize.X, Parent = version })
-
--- The panel slides in from a little to the left, fading in (no CanvasGroup: text stays crisp)
+-- The logo, the column and the card slide in from a little to the left, fading in (no CanvasGroup: text stays crisp)
 local function reveal()
-	for index, piece in ipairs({ column, version }) do
+	for index, piece in ipairs({ logo, column, card }) do
 		if piece.Visible then
 			local goal = piece.Position
 			piece.Position = goal - UDim2.fromOffset(24, 0)
@@ -162,6 +168,11 @@ end
 local function playAlive()
 	Theme.Pulse(playButton, function() return UIBus.MenuOpen end)
 end
+
+settingsButton.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	UIBus.OpenSettings:Fire()
+end)
 
 ------------------------------------------------------------------------
 -- UPDATES: the latest update notes
@@ -186,10 +197,6 @@ for order, entry in ipairs(UI.Updates or {}) do
 			AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 	end
 end
-version.Activated:Connect(function()
-	Audio.PlayUI("Click")
-	updates.open()
-end)
 updatesButton.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	updates.open()
@@ -249,11 +256,6 @@ task.spawn(function()
 
 	local returning = (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done
 	shopButton.Visible = returning and Monetization.AnyConfigured()
-	if not shopButton.Visible then
-		-- (no shop: UPDATES takes the whole row)
-		updatesButton.Position = UDim2.fromOffset(18, 176)
-		updatesButton.Size = UDim2.fromOffset(PANEL.X - 36, 40)
-	end
 	card.Visible = returning
 	newsDot.Visible = UI.UpdatesStamp ~= nil and (data.settings and data.settings.updatesSeen) ~= UI.UpdatesStamp
 	refreshPill(data)
@@ -318,13 +320,18 @@ local function play(thenShop: boolean?)
 			game:GetService("TweenService"):Create(item, info, { ImageTransparency = 1 }):Play()
 		end
 	end
+	game:GetService("TweenService"):Create(art, info, { ImageTransparency = 1 }):Play()
 	game:GetService("TweenService"):Create(back, info, { BackgroundTransparency = 1 }):Play()
+	Theme.Fade(logo, false, TIMING.Fade)
 	Theme.Fade(column, false, TIMING.Fade)
-	Theme.Fade(version, false, TIMING.Fade)
+	Theme.Fade(card, false, TIMING.Fade)
 	for _, item in ipairs(back:GetDescendants()) do
 		if item:IsA("Frame") then game:GetService("TweenService"):Create(item, info, { BackgroundTransparency = 1 }):Play() end
 	end
-	task.delay(TIMING.Fade, function() gui.Enabled = false end)
+	task.delay(TIMING.Fade, function()
+		gui.Enabled = false
+		bgGui.Enabled = false
+	end)
 	if thenShop then
 		task.delay(TIMING.Fade + 0.2, function() UIBus.OpenShop:Fire("Passes") end)
 	end

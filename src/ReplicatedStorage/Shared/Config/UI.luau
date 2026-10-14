@@ -86,7 +86,12 @@ UI.Trainers = { -- portraits shown in the Trainers panel (by Config/Trainers id 
 	trainer_pump = "rbxassetid://86536100657185",
 }
 
-UI.MenuArt = "rbxassetid://99238211044120" -- main menu + loading screen (right side, fading into the dark)
+-- main menu + loading screen background (owner, 15 Oct: Downloads\gym_arc_thumbnail2_nologo_1920x1080.png, colour graded;
+-- uploaded from Studio = the owner's inventory; Roblox keeps it at 1024x576). Was menu_art.png 99238211044120.
+UI.MenuArt = "rbxassetid://124549460345839"
+-- the GYM ARC 3D stone logo (owner, 15 Oct: Downloads\gym_arc_logo_3d.png, 432x354, transparent) on the menu + loading screen
+UI.Logo3D = "rbxassetid://86034269506160"
+UI.SoftGlow = "rbxassetid://108461610476976" -- a soft round glow (the aura's glow_soft.png), tinted red behind the logo
 -- the GYM ARC logo image (Downloads\gym_arc_ui_3d_icons\logo.png, 1182x286, uploaded from Studio 14 Oct): loading screen + menu
 UI.Logo = "rbxassetid://84167052331251"
 -- The SKATE button (owner's Downloads\gym_arc_ui_3d_icons\skate_button.png: the whole round button, ring and background

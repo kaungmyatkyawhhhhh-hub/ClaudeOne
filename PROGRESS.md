@@ -1388,3 +1388,19 @@ Next after these: the other 8 upper-arm stages (13,728 each), the 28 forearm / c
 thigh skin (14 x 6,676) and shorts (14 x 4,498). NPC Robloxian 2.0 parts are 108 to 344 triangles; one hair (81642452)
 1,026. For Blender: the torso stages at about 5k and the limbs at about 2 to 3k each would cut a body from ~123k to
 ~25k triangles (the muscle data generator would need the same vertex order for all 7 stages of a part).
+
+## 15 Oct: MAIN MENU + LOADING SCREEN, new art (owner)
+- Art: Config/UI.MenuArt = 124549460345839 (gym_arc_thumbnail2_nologo_1920x1080.png; Roblox keeps 1024x576), logo
+  UI.Logo3D = 86034269506160 (gym_arc_logo_3d.png, 432x354), red glow = UI.SoftGlow (the aura glow_soft). Uploaded from
+  Studio = owner's inventory (search_asset finds no copy in the user / group scopes).
+- Both screens: the art covers the screen, sized from the viewport and pinned to the RIGHT edge (a wide phone crops top
+  and bottom a little, an iPad crops the empty left side: the character is always whole); a black gradient over the
+  left 40%; the 3D logo top left (32% of the height) with a soft red glow; old menu_art + blurred copies + fade gone.
+- Menu (MenuClient): MenuBackground ScreenGui (full screen) + MenuScreen (safe area); tagline, PLAY, then SHOP
+  (returning players, while for sale) / SETTINGS (new: opens Settings over the menu) / NEWS (the update notes, red dot),
+  stacked left of the plate; player card bottom left. The bottom-right NEW pill is gone (NEWS is in the column; the
+  pill sat over the character's feet).
+- Loading (LoadingScreen): tip tile, step + percent, bar and dots along the bottom left (320 mockup px wide).
+  Studio-only Workspace attribute TestHoldLoading = true keeps it up (screenshots).
+- Checked at 844x390, 667x375, iPad 1024x768, 1920x1080 (Workspace TestPhoneSize): screenshots/menu_art_v2/. Play
+  fades both away, HUD in, no errors. Note: the 1024x576 art is a little soft on a 1920x1080 PC.
