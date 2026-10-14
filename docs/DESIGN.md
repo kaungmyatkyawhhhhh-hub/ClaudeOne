@@ -361,6 +361,12 @@ shareable before/after snapshot.
 - Performance (8 Oct): every change to an EditableMesh costs the engine ~40 ms of a frame whatever its size, so muscle
   meshes change rarely: a look moves in steps of 0.015, one body region per frame, tints fade with a part property; body
   parts under muscle meshes don't pump by size.
+- NPC culling + LOD (owner, 14 Oct, performance, mobile first): one client manager (NpcCullingClient) freezes the
+  animations and effects of NPCs further than 100 studs or off screen and thins particles from 40 studs; NPCs further
+  than 60 studs show the plain body without accessories (back under 50; MuscleRig low detail, nothing rebuilt). This
+  replaces "never a visible change by distance" for NPCs (never for players, the statue or an arm wrestling opponent).
+  The server parks gym regulars with no player within 120 studs. Streaming: machines, NPCs, arm tables, the posing stage
+  and smoothie bars are Atomic; only the spawn area (StarterGym, Entrance, GymFront) is Persistent.
 - Default look: shirtless with game shorts; the Wardrobe has Top (Shirtless/Tank/Sports) and shorts colors.
 
 ## 14. Visuals and feel
