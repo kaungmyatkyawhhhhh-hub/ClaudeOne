@@ -15,7 +15,8 @@ HudIcons.Tiles = {
 	Store = { order = 1, label = "Shop", accent = Color3.fromHex("#F2B51F"), uiIcon = "shopping-cart", image = "" }, -- only while something is for sale
 	Stats = { order = 2, label = "Stats", accent = Color3.fromHex("#E2574C"), icon = "Flex", image = "" },         -- the stats labels around you
 	Muscles = { order = 3, label = "Muscles", accent = Color3.fromHex("#F0922E"), icon = "Stats", image = "" },
-	Titles = { order = 4, label = "Titles", accent = Color3.fromHex("#E8C21C"), icon = "Trophy", image = "" },
+	-- (owner, 14 Oct: the Titles tile became INVENTORY: titles, auras and items; the owner's backpack line icon)
+	Inventory = { order = 4, label = "Inventory", accent = Color3.fromHex("#E8C21C"), uiIcon = "backpack", image = "" },
 	Genetics = { order = 5, label = "Genetics", accent = Color3.fromHex("#3FB8AF"), icon = "DNA", image = "" },
 	Emotes = { order = 6, label = "Poses", accent = Color3.fromHex("#E96BA8"), icon = "Pose", image = "" },        -- poses + emotes panel
 	Crew = { order = 7, label = "Crew", accent = Color3.fromHex("#4C8DE0"), icon = "People", image = "" },

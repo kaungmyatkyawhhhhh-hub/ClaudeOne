@@ -30,7 +30,7 @@ Auras.List = {
 	{ id = "Golden", vfx = "golden", name = "Golden", rarity = "Legendary", style = "flame", colors = { c("#FFC93C"), c("#FFF1B8") },
 		unlock = { type = "height" }, how = "Reach 7'0\"", short = "7'0\"", Icon = "rbxassetid://90116111446884" },
 	{ id = "Titan", vfx = "titan", name = "Titan", rarity = "Legendary", style = "flame", colors = { c("#E8343C"), c("#FFC93C") },
-		unlock = { type = "achievements" }, how = "Finish every Coach quest", short = "All quests", Icon = "rbxassetid://136822081933398" },
+		unlock = { type = "achievements" }, how = "Finish every Coach Quest", short = "All quests", Icon = "rbxassetid://136822081933398" },
 	-- Aura Pack pass
 	{ id = "Inferno", vfx = "inferno", name = "Inferno", rarity = "Epic", style = "flame", colors = { c("#FF3B1F"), c("#FF9A2E") },
 		unlock = { type = "pass", pass = "AuraPack" }, how = "Aura Pack", short = "Aura Pack", Icon = "rbxassetid://101220273317214" },

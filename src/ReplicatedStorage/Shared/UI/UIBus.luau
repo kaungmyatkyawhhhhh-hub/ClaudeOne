@@ -12,9 +12,10 @@ UIBus.StatsVisible = signal()    -- fired with true/false when the Stats button 
 UIBus.StatsLabels = signal()     -- same moment, for StatsLabelsClient (true = show the labels)
 UIBus.MusclesVisible = signal()  -- fired with true/false when the "Your muscles" panel opens/closes
 UIBus.OpenMuscles = signal()     -- any screen can ask for the "Your muscles" panel (the machine body map taps it)
-UIBus.OpenTitles = signal()      -- the menu screen opens the Title Book
+UIBus.OpenInventory = signal()   -- (tab "Titles" / "Auras" / "Items", auraId?) open the Inventory window on a tab
+UIBus.OpenTitles = UIBus.OpenInventory -- (the old name: the Inventory window was the Titles window)
 UIBus.OpenSettings = signal()    -- the menu screen opens Settings
-UIBus.MenuPanelVisible = signal() -- fired with true/false when Titles/Settings open/close (the menu steps aside)
+UIBus.MenuPanelVisible = signal() -- fired with true/false when Inventory/Settings open/close (the menu steps aside)
 UIBus.MenuClosed = signal()      -- the player pressed Play on the menu screen
 UIBus.OpenShop = signal()        -- (tab id) the coins "+" and other buttons open the Shop on a tab ("Coins", "Passes")
 UIBus.OpenQuests = signal()      -- (tab id) open the Quests panel on a tab ("Daily", "Rewards", "Achievements")
@@ -22,7 +23,7 @@ UIBus.OpenStats = signal()       -- (tab id) open the Stats panel on a tab ("Mus
 UIBus.RepFlash = signal()        -- a rep landed: (weights { [muscleId] = 0..1 }, strong) for the body-map widget's flash
 
 -- Screens that cover the middle of the view: the Stats labels and the Muscles button step aside while any is open.
-UIBus.CoverGuis = { "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle", "Settings", "TitleBook", "Store", "GeneticsScreen", "MusclesScreen", "DailyQuests", "Trainers", "MealShop", "PosingRound" }
+UIBus.CoverGuis = { "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle", "Settings", "Inventory", "Store", "GeneticsScreen", "MusclesScreen", "DailyQuests", "Trainers", "MealShop", "PosingRound" }
 function UIBus.CoverOpen(playerGui)
 	for _, name in ipairs(UIBus.CoverGuis) do
 		local gui = playerGui:FindFirstChild(name)
@@ -35,7 +36,7 @@ end
 UIBus.Training = false
 UIBus.ShortScreen = 460 -- screens shorter than this (phones in landscape) are "short"
 
--- Side panels (Settings, Daily, Wardrobe, Crew, Poses, Titles, Muscles) register a close function. Opening one closes the others,
+-- Side panels (Settings, Daily, Wardrobe, Crew, Poses, Inventory, Muscles) register a close function. Opening one closes the others,
 -- and getting on a machine closes all of them (so nothing floats over the lift or stays open with no way to close it).
 local panels = {}
 function UIBus.RegisterPanel(name, close)

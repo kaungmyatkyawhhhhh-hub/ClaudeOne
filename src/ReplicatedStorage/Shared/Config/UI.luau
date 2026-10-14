@@ -9,6 +9,7 @@ local UI = {}
 
 UI.Icons = { -- white on transparent, 128x128 (tint with ImageColor3)
 	["arrow-big-up"] = "rbxassetid://102878631565166",
+	["backpack"] = "rbxassetid://101113089317721", -- (the INVENTORY tile, uploaded from Studio 14 Oct: owner's inventory)
 	["bell"] = "rbxassetid://83280875131790",
 	["biceps-flexed"] = "rbxassetid://97319043121415",
 	["calendar-days"] = "rbxassetid://78358912964734",

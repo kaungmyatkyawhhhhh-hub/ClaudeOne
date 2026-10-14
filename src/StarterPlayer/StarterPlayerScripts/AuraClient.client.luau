@@ -7,7 +7,7 @@
 --          AuraBurst sound.
 --   LOD:   your own aura is always 0 (full); other players' 0 within Auras.FullLOD studs, 1 up to Auras.MidLOD, 2 beyond or
 --          with the Settings "Others' Auras" Off / Low Graphics On.
---   Preview: while the Titles window's AURAS tab is open, your own character wears the picked aura at power 1 (the
+--   Preview: while the Inventory window's AURAS tab is open, your own character wears the picked aura at power 1 (the
 --          "AuraPreview" attribute TitlesClient sets on the local player; a try-on, nothing is equipped).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")

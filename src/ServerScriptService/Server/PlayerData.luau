@@ -700,6 +700,7 @@ local REP_FLASH = { On = true, Off = true }
 local EXP_POPUPS = { On = true, Off = true }
 local SPOT_REQUESTS = { On = true, Off = true }
 local ON_OFF = { On = true, Off = true }
+local INVENTORY_TABS = { Titles = true, Auras = true, Items = true }
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
 -- repFlash On/Off, expPopups On/Off.
@@ -729,6 +730,8 @@ function PlayerData.SetSettings(player, settings)
 	-- (UI v2, 13 Oct) the left menu folded away; Settings toggles: tutorial / coach hints, other players' scream sounds and
 	-- auras, low graphics; (final kit, 14 Oct) reduce motion: the UI's looping pulses / shines stop
 	if type(settings.menuCollapsed) == "boolean" then new.menuCollapsed = settings.menuCollapsed end
+	-- the Inventory window's last tab (owner, 14 Oct: remembered)
+	if INVENTORY_TABS[settings.inventoryTab] then new.inventoryTab = settings.inventoryTab end
 	-- the newest update notes the player opened (main menu UPDATES red dot; a short stamp like "14 Oct")
 	if type(settings.updatesSeen) == "string" and #settings.updatesSeen <= 24 then new.updatesSeen = settings.updatesSeen end
 	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "lowGraphics", "reduceMotion" }) do

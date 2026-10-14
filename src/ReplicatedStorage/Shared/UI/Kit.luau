@@ -145,6 +145,86 @@ function Kit.Text(props)
 	return Theme.Text(props)
 end
 
+-- Fits a label in its box (owner, 14 Oct: no text runs out of its card). Sizes are mockup px (phone scale), so the fit is
+-- the same on every screen (the window's UIScale scales it all together). The text gets the largest size from maxSize
+-- down to minSize (default 10) that fits: lines = 2+ wraps from the start (how-to-unlock text); lines = 1 (names) stays
+-- on one line, and only a name that doesn't fit at minSize wraps onto two lines (when the box is tall enough); "..." only
+-- as a last resort. Measured with TextService (TextScaled is not used: it ignored the room and fell to the minimum).
+-- The box sets the room: the card's width minus 8 px each side.
+local TextService = game:GetService("TextService")
+local measured = {} -- [text|font|size|width] = Vector2
+local function measure(text: string, font: Font, size: number, width: number): Vector2
+	local key = text .. "|" .. font.Family .. font.Weight.Name .. font.Style.Name .. "|" .. size .. "|" .. math.floor(width)
+	local hit = measured[key]
+	if hit then return hit end
+	local params = Instance.new("GetTextBoundsParams")
+	params.Text, params.Font, params.Size, params.Width = text, font, size, width
+	local ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
+	local result = if ok then bounds else Vector2.new(math.huge, math.huge)
+	measured[key] = result
+	return result
+end
+-- the box in mockup px: its absolute size divided by every UIScale above it
+local function mockupBox(label: GuiObject): Vector2
+	local scale = 1
+	local node = label.Parent
+	while node and node ~= game do
+		local s = node:FindFirstChildOfClass("UIScale")
+		if s then scale *= s.Scale end
+		node = node.Parent
+	end
+	return label.AbsoluteSize / math.max(scale, 0.01)
+end
+function Kit.Fit(label: TextLabel, maxSize: number, minSize: number?, lines: number?): TextLabel
+	local low = math.min(minSize or 10, maxSize)
+	local multi = (lines or 1) > 1
+	label.TextScaled = false
+	label.TextWrapped = multi
+	label.TextTruncate = Enum.TextTruncate.AtEnd
+	label.TextSize = maxSize
+	local token = 0
+	local function fit()
+		token += 1
+		local mine = token
+		task.spawn(function()
+			local box = mockupBox(label) - Vector2.new(2, 0) -- (2 px for the italic overhang and the outline)
+			if box.X < 1 or label.Text == "" then return end
+			local text = label.ContentText
+			local font = label.FontFace
+			local pick, wrap = low, multi
+			local found = false
+			if not multi then
+				for size = maxSize, low, -1 do
+					if measure(text, font, size, 1e5).X <= box.X then pick, wrap, found = size, false, true break end
+				end
+			end
+			if not found then
+				for size = maxSize, low, -1 do
+					local b = measure(text, font, size, box.X)
+					if b.Y <= box.Y + 0.5 and b.X <= box.X + 0.5 then pick, wrap, found = size, true, true break end
+				end
+			end
+			if mine ~= token then return end -- (a newer fit is on its way)
+			label.TextWrapped = wrap
+			label.TextSize = pick
+			local outline = label:FindFirstChild("TextStroke")
+			if outline and Theme.StrokeFor then outline.Thickness = Theme.StrokeFor(pick) end
+		end)
+	end
+	if not label:GetAttribute("FitWatch") then
+		label:SetAttribute("FitWatch", true)
+		label:GetPropertyChangedSignal("Text"):Connect(fit)
+		-- (the window's scale changes the absolute size, not the mockup box: refit only when the box itself changes)
+		local last = Vector2.zero
+		label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+			local box = mockupBox(label)
+			if (box - last).Magnitude > 0.5 then last = box fit() end
+		end)
+	end
+	fit()
+	return label
+end
+
 function Kit.Coin(size: number, props: { [string]: any }?)
 	local icon = Pieces.Icon("coin", Color3.new(1, 1, 1), { Size = UDim2.fromOffset(size, size) })
 	icon:SetAttribute("KeepColor", true)

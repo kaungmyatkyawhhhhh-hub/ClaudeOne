@@ -1305,3 +1305,14 @@ next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's mo
   Nothing else adds aura effects: the gold PUMPED Highlight on the trained muscles (MachineClient) is skipped while an
   aura is worn or previewed. Screenshots: screenshots/auras_v3/ (8 auras x front / side / bench at full power, + bench
   without an aura: the pale skin there is the bench light, not the aura). Shadow stays very faint in the dark gym.
+- INVENTORY (owner, 14 Oct; was the Titles tile/window, TitlesClient): tile INVENTORY with the owner's backpack line icon
+  (Config/UI.Icons.backpack 101113089317721, uploaded from Studio; no group copy found by search_asset); window INVENTORY
+  with tabs TITLES | AURAS | ITEMS, the last tab saved as settings.inventoryTab. ITEMS: Energy Shakes (count + DRINK),
+  DNA Tokens (count + "Use in Genetics" -> UIBus.OpenGenetics), and the running boosts with timers (2x EXP, 2x Coins, VIP,
+  Endless Stamina, Energy Shake, Server Boost, smoothie bar drinks). UIBus.OpenInventory(tab, auraId) (OpenTitles is an
+  alias); the Store's Auras tab and the aura toast point to it. The old All / Owned title filter is gone (titles show all).
+- TEXT FIT (owner's bug, 14 Oct): Kit.Fit(label, max, min, lines) sizes text with TextService to the largest size that
+  fits its box (mockup px, so the same on every screen): names one line (two only if they can't fit at 10), unlock text
+  wrapped up to 2 lines in the body font and sentence case; 8 px padding from every card edge; "..." only as a last
+  resort. (TextScaled was tried first: it fell to the minimum size for every name.) Checked every title / aura / item /
+  boost label at the phone (1.0), small phone (0.79) and PC (2.27) window scales: all fit.

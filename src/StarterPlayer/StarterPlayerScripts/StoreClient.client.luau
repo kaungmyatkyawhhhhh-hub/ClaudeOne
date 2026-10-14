@@ -12,7 +12,7 @@
 -- fetched ONCE when the game starts (pcall, 3 tries, cached); until it arrives, or if it never does, the item shows
 -- Config's fallback name / price / art. Items with id 0 are skipped with a warning. Owned passes keep their OWNED stamp.
 -- AURAS tab (owner, 14 Oct): every aura (Config.Auras) with its art and how to get it ("Aura Pack", "50,000 coins",
--- "Reach LVL 10"); the hero's button and a tap on a tile open the Titles window's Auras tab on that aura.
+-- "Reach LVL 10"); the hero's button and a tap on a tile open the Inventory window's Auras tab on that aura.
 -- DNA Token (owner, 14 Oct, Config/DNA): its hero tile has two buttons, the Robux price and "25,000" coins (the server
 -- checks and takes the coins; not enough = a shake + "Not enough coins").
 local Players = game:GetService("Players")
@@ -325,10 +325,10 @@ player:GetAttributeChangedSignal("EndlessStaminaUntil"):Connect(function()
 	if modal.isOpen() then refresh() end
 end)
 
--- an aura: the Titles window's Auras tab, on that aura
+-- an aura: the Inventory window's Auras tab, on that aura
 local function openAura(entry)
 	modal.close()
-	UIBus.OpenTitles:Fire("Auras", entry.item.auraId)
+	UIBus.OpenInventory:Fire("Auras", entry.item.auraId)
 end
 buy.Activated:Connect(function()
 	if picked and picked.isAura then
