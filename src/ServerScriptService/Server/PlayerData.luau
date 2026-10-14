@@ -192,7 +192,8 @@ local function save(player, release)
 	return ok and not lostLock
 end
 
-local clampedToMax = 0 -- saves past the 7'0" cap seen by this server (Studio prints it)
+local clampedToMax = 0 -- saves past the 7'0" cap seen by this server
+local OVER_CAP_EXP = 10000000 -- (owner, 14 Oct) shown EXP added to every muscle of a save past the cap, once
 local function onPlayerAdded(player)
 	-- Studio FreshPlayer sessions never touch the real save (not even its lock)
 	local fresh = IS_STUDIO and workspace:GetAttribute("FreshPlayer") == true
@@ -298,14 +299,28 @@ local function onPlayerAdded(player)
 		data.onboarding.tutorialVersion = Onboarding.Version
 	end
 	data.sessionLock = nil
-	-- 7'0" cap (owner, 13 Oct): the save holds only the spurt count and height comes from it (GrowthSpurts.GetHeight
-	-- clamps it), so a save past the last spurt is shown and built at exactly 7'0" with nothing else in it changed.
-	if (data.growthSpurts or 0) > GrowthSpurts.MaxSpurts() then
+	-- 7'0" cap (owner, 13 Oct): height comes from the spurt count (GrowthSpurts.GetHeight clamps it). A save from before
+	-- the cap with MORE spurts than the last one (owner, 14 Oct): once, +OVER_CAP_EXP shown EXP on every muscle, and the
+	-- spurt count goes back to the last one (6). The count then isn't past the cap any more, so this never runs twice.
+	local maxSpurts = GrowthSpurts.MaxSpurts()
+	if (data.growthSpurts or 0) > maxSpurts then
 		clampedToMax += 1
-		if IS_STUDIO then
-			print(string.format("[PlayerData] %s is past the height cap (Growth Spurt %d): clamped to 7'0\". Clamped this server: %d",
-				player.Name, data.growthSpurts, clampedToMax))
+		local before = data.growthSpurts
+		local extraXp = OVER_CAP_EXP / Muscles.ExpPerXp -- (shown EXP -> the save's xp)
+		for _, muscle in ipairs(Muscles.List) do
+			local entry = data.muscles[muscle.id]
+			if type(entry) == "table" then
+				local total = Muscles.EntryXp(entry) + extraXp
+				local level = math.floor(Muscles.LevelFromXp(total))
+				-- (float safety: never a level whose xp is above the total)
+				while level > 0 and Muscles.CumXp(level) > total do level -= 1 end
+				entry.level = level
+				entry.xp = total - Muscles.CumXp(level)
+			end
 		end
+		data.growthSpurts = maxSpurts
+		print(string.format("[PlayerData] %s was past the height cap (Growth Spurt %d): +%s EXP on every muscle, Growth Spurt set to %d. This server: %d",
+			player.Name, before, Muscles.FormatExp(OVER_CAP_EXP), maxSpurts, clampedToMax))
 	end
 	-- The beach gym's own machines are gone (owner, 8 Oct night: it uses the real machines): their weight progress moves to
 	-- the real machine (same tier sets, so the same tier numbers; the higher of the two is kept)

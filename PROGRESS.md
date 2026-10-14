@@ -151,6 +151,10 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   looping from the first frame (SoundService.MenuMusic), the same Sound through the menu (Audio.AdoptMenuMusic: the
   player's Music volume), faded out on Play (Audio.StopMenuMusic); the area music waits for it and starts under the
   fade. Tested: loading -> menu -> Play -> starter gym music.
+- Saves past the height cap (owner): on load, once, a save with more Growth Spurts than the last one (6) gets +10,000,000
+  shown EXP on every one of the 18 muscles (OVER_CAP_EXP / Muscles.ExpPerXp xp, levels recomputed) and its spurt count
+  goes back to 6 (so it never runs twice; the x3.5 bonus of spurt 7 becomes x3.0). Tested on the owner's save (spurt 7):
+  spurt 6, every muscle +10 M EXP, kept after rejoining, no second payout.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
