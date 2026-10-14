@@ -514,6 +514,7 @@ local function lift(player)
 	if tierIndex > (progress.best or 1) then
 		PlayerData.SetMachine(player, machine.id, progress.unlocked, progress.selected, tierIndex)
 		pr = Machines.WeightText(tier)
+		player:SetAttribute("AuraBurst", workspace:GetServerTimeNow()) -- (every client bursts this player's aura once: AuraClient)
 	end
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)

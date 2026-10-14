@@ -11,6 +11,8 @@
 -- Names, prices and icons (owner's bug, 14 Oct: one bad item must never break the shop): every item's Roblox info is
 -- fetched ONCE when the game starts (pcall, 3 tries, cached); until it arrives, or if it never does, the item shows
 -- Config's fallback name / price / art. Items with id 0 are skipped with a warning. Owned passes keep their OWNED stamp.
+-- AURAS tab (owner, 14 Oct): every aura (Config.Auras) with its art and how to get it ("Aura Pack", "50,000 coins",
+-- "Reach LVL 10"); the hero's button and a tap on a tile open the Titles window's Auras tab on that aura.
 -- DNA Token (owner, 14 Oct, Config/DNA): its hero tile has two buttons, the Robux price and "25,000" coins (the server
 -- checks and takes the coins; not enough = a shake + "Not enough coins").
 local Players = game:GetService("Players")
@@ -20,6 +22,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Monetization = require(Shared.Config.Monetization)
+local Auras = require(Shared.Config.Auras)
 local Onboarding = require(Shared.Config.Onboarding)
 local DNA = require(Shared.Config.DNA)
 local ClientData = require(Shared.ClientData)
@@ -37,7 +40,7 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local player = Players.LocalPlayer
 local New, Colors = Theme.New, Theme.Colors
 
-local W, H = 566, 290 -- the window (mockup px; Kit shows it at Kit.PanelScale)
+local W, H = 660, 290 -- the window (mockup px; Kit shows it at Kit.PanelScale; 660 wide: four tabs + the coins pill)
 local HERO_W = 178
 local GAP = 10
 
@@ -99,10 +102,14 @@ local function consider(item, isPass)
 end
 for _, pass in ipairs(Monetization.Passes) do consider(pass, true) end
 for _, product in ipairs(Monetization.Products) do consider(product, false) end
+for _, aura in ipairs(Auras.List) do
+	table.insert(items, { item = { key = "Aura_" .. aura.id, name = aura.name, text = aura.how, short = aura.short or aura.how, auraId = aura.id, icon = aura.Icon },
+		isAura = true, tab = "Auras" })
+end
 local tabs = {}
 local hasTab = {}
 for _, entry in ipairs(items) do hasTab[entry.tab] = true end
-for _, id in ipairs({ "Passes", "Coins", "Boosts" }) do
+for _, id in ipairs({ "Passes", "Coins", "Boosts", "Auras" }) do
 	if hasTab[id] then table.insert(tabs, { id = id, text = id }) end
 end
 local currentTab = tabs[1].id
@@ -148,6 +155,11 @@ local function priceOf(entry): number?
 end
 
 local function artFor(image: ImageLabel, entry)
+	if entry.isAura then
+		image.Image = entry.item.icon
+		image.ScaleType = Enum.ScaleType.Fit
+		return
+	end
 	local name = entry.item.art
 	if name then
 		Pieces.Apply(image, name)
@@ -158,6 +170,12 @@ local function artFor(image: ImageLabel, entry)
 end
 
 local function owned(entry): boolean
+	if entry.isAura then
+		local aura = Auras.ById[entry.item.auraId]
+		if aura.unlock.type == "pass" then return player:GetAttribute("Pass_" .. aura.unlock.pass) == true end
+		local data = ClientData.Get()
+		return data.auras ~= nil and data.auras.owned ~= nil and data.auras.owned[aura.id] ~= nil
+	end
 	return entry.isPass and player:GetAttribute("Pass_" .. entry.item.key) == true
 end
 
@@ -260,7 +278,7 @@ function refresh()
 		local price = priceOf(entry)
 		c.stamp.Visible = isOwned
 		c.pill.Visible = not isOwned
-		c.price.Text = price and ("R$ " .. Kit.Format(price)) or "..."
+		c.price.Text = if entry.isAura then entry.item.short elseif price then "R$ " .. Kit.Format(price) else "..."
 		-- owned: the stamp is the only bright thing on the tile
 		c.art.ImageTransparency = isOwned and 0.65 or 0
 		c.name.TextColor3 = isOwned and Colors.Faint or Colors.Text
@@ -281,11 +299,24 @@ function refresh()
 		if buyLabel then buyLabel.TextSize = if isDna then 15 else 20 end
 		local isOwned = owned(picked)
 		local price = priceOf(picked)
-		Kit.SetButton(buy, isOwned and "Quiet" or "Red", isOwned and "Owned" or (price and ("R$ " .. Kit.Format(price)) or "Buy"))
+		if picked.isAura then
+			Kit.SetButton(buy, "Gold", "View auras")
+		else
+			Kit.SetButton(buy, isOwned and "Quiet" or "Red", isOwned and "Owned" or (price and ("R$ " .. Kit.Format(price)) or "Buy"))
+		end
 	end
 end
 
+-- an aura: the Titles window's Auras tab, on that aura
+local function openAura(entry)
+	modal.close()
+	UIBus.OpenTitles:Fire("Auras", entry.item.auraId)
+end
 buy.Activated:Connect(function()
+	if picked and picked.isAura then
+		openAura(picked)
+		return
+	end
 	if not picked or not picked.item.id then return end
 	if picked.isPass then
 		if owned(picked) then return end

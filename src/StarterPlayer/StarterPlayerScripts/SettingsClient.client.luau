@@ -9,7 +9,7 @@
 --   Tutorial Hints              the hints and coach lines in the top band (Notify.Hint; the tutorial itself always shows)
 --   Gain Numbers                On / Minimal / Off (tap cycles; MachineClient reads it every rep)
 --   Rep Flash, EXP Popups, Spot Requests   On / Off
--- (The mockup's "Other Auras" row is left out: the game has no auras yet, so it would switch nothing.)
+-- "Others' Auras" (owner, 14 Oct): other players' auras On / Off (AuraClient; Low Graphics also turns them off).
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -34,12 +34,16 @@ local menuButton = TopBar.AddPill("Settings", "Settings", Icons.Gear, 3)
 
 local modal = Kit.Modal({ name = "Settings", title = "Settings", icon = "settings", width = 510, height = 262, displayOrder = 24,
 	tabs = { { id = "Settings", text = "Settings", icon = "settings" } } })
-local grid = New("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = modal.body }, {
-	New("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, ROW_H), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+-- (scrolls when the rows don't fit: 11 rows = 6 lines)
+local grid = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Colors.Muted,
+	Parent = modal.body }, {
+	New("UIGridLayout", { CellSize = UDim2.new(0.5, -8, 0, ROW_H), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+	New("UIPadding", { PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 4) }),
 })
 
 local values = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On", spotRequests = "On",
-	hints = "On", otherScreams = "On", lowGraphics = "Off", reduceMotion = "Off" }
+	hints = "On", otherScreams = "On", otherAuras = "On", lowGraphics = "Off", reduceMotion = "Off" }
 
 local function save(changes)
 	Remotes.PlayerAction:FireServer("SetSettings", changes)
@@ -116,6 +120,7 @@ row(7, "repFlash", "Rep Flash", "heart-pulse", ONOFF)
 row(8, "expPopups", "EXP Popups", "sparkles", ONOFF)
 row(9, "spotRequests", "Spot Requests", "hand", ONOFF)
 row(10, "reduceMotion", "Reduce Motion", "timer", { "Off", "On" }) -- (stops the UI's looping pulses and shines; Theme.ReducedMotion)
+row(11, "otherAuras", "Others' Auras", "sparkles", ONOFF)
 
 local function refreshAll()
 	for _, show in pairs(rows) do show() end
@@ -157,6 +162,7 @@ task.spawn(function()
 	values.spotRequests = if settings.spotRequests == "Off" then "Off" else "On"
 	values.hints = if settings.hints == "Off" then "Off" else "On"
 	values.otherScreams = if settings.otherScreams == "Off" then "Off" else "On"
+	values.otherAuras = if settings.otherAuras == "Off" then "Off" else "On"
 	values.lowGraphics = if settings.lowGraphics == "On" then "On" else "Off"
 	values.reduceMotion = if settings.reduceMotion == "On" then "On" else "Off"
 	refreshAll()

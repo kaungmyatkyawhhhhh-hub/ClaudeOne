@@ -57,6 +57,8 @@ return {
 	GeneticsPop = { ids = { 9117183955 }, volume = 0.3, pitch = 0.04, group = "Gameplay", maxLength = 0.6 }, -- PSE Comic Pops (Pacifier 3): C / D small pop
 	GeneticsShimmer = { ids = { 9116383749 }, volume = 0.28, pitch = 0.03, group = "Gameplay", maxLength = 1.6 }, -- PSE Magical Wing Flutter 5: B gold shimmer
 	GeneticsBurst = { ids = { 9116394545 }, volume = 0.3, pitch = 0.02, group = "Gameplay", maxLength = 2 }, -- PSE Magic Glows Chiming Hits 1: A blue burst
+	-- (owner, 14 Oct: the aura's personal record burst; a power burst, no voice: the "no grunts" rule. Swap the id for another)
+	AuraBurst = { ids = { 9116394545 }, volume = 0.35, pitch = 0.05, group = "Gameplay", maxLength = 2 }, -- PSE Magic Glows Chiming Hits 1
 	GeneticsDrumRoll = { ids = { 1840444182 }, volume = 0.35, pitch = 0, group = "Gameplay", maxLength = 1.6 }, -- APM Drum Rolls (A): S build-up
 	GeneticsExplode = { ids = { 1837830667 }, volume = 0.5, pitch = 0, group = "Gameplay", maxLength = 2.2 }, -- APM BOOM Mid Boom 07: S explodes
 	GeneticsBlessed = { ids = { 9039637427 }, volume = 0.28, pitch = 0, group = "Gameplay", maxLength = 3 }, -- APM Full of Wonder (sting a): the BLESSED banner (2+ S)

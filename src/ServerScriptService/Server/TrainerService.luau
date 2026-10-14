@@ -243,6 +243,15 @@ local function addDesk(part)
 end
 
 function TrainerService.Start()
+	-- (owner, 14 Oct: trainers never bump into players) a collision group that collides with nothing; TrainerFollowClient
+	-- puts every part of the trainer models in it (groups are registered here, on the server, and replicate)
+	local PhysicsService = game:GetService("PhysicsService")
+	pcall(function()
+		if not PhysicsService:IsCollisionGroupRegistered("Trainers") then PhysicsService:RegisterCollisionGroup("Trainers") end
+		for _, group in ipairs(PhysicsService:GetRegisteredCollisionGroups()) do
+			PhysicsService:CollisionGroupSetCollidable("Trainers", group.name, false)
+		end
+	end)
 	local existing = Remotes:FindFirstChild("Trainers")
 	if existing and existing:IsA("RemoteEvent") then
 		remote = existing

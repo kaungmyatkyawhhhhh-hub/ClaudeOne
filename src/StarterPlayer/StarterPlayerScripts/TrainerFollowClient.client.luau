@@ -110,6 +110,15 @@ local function makeTrainer(id: string, slot: number)
 	local root = model:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not humanoid or not root then model:Destroy() return nil end
 	root.Anchored = true
+	-- never in a player's way (owner, 14 Oct): no collisions, no touches, not hit by rays (the camera doesn't zoom in on them)
+	local function ghost(part)
+		if part:IsA("BasePart") then
+			part.CanCollide, part.CanTouch, part.CanQuery = false, false, false
+			part.CollisionGroup = "Trainers"
+		end
+	end
+	for _, part in ipairs(model:GetDescendants()) do ghost(part) end
+	model.DescendantAdded:Connect(ghost)
 	local tracks = {}
 	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
 	for name, animId in pairs(ANIM) do

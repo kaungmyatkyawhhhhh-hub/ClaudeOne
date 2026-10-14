@@ -219,6 +219,22 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   once at start per item (pcall, 3 tries, cached), Config fallbacks otherwise, id 0 = warning + skipped, OWNED passes
   stay listed with their stamp. Tested: all 12 items on 3 tabs with art + prices; test receipts: coins +1,000 once
   (same purchase id twice), shakes +3.
+- Auras (owner): Config/Auras (13: Ember LVL 10, Frost LVL 25, Storm LVL 50, Golden 7'0", Titan every Coach quest; Aura
+  Pack pass: Inferno, Blood Moon, Void, Neon, Galaxy; VIP: Royal; coins: Toxic 50,000, Shadow 150,000; owner's icons
+  uploaded from Studio = owner inventory). AuraService (server): data.auras { owned, equipped }, earned auras kept forever
+  (checked on join + every 10 s), pass auras while Pass_<key> is set (join + purchase finished), coin buys, the worn aura
+  replicated as the "Aura" attribute. AuraClient: per player 3 layers on the upper torso's surface (glow + light / rising
+  energy by style / sparks + a light column Beam), sized from the root; idle = glow at half, lifting = glow, 50% PUMP =
+  layer 2, 100% / PUMPED = layer 3, PR = burst + AuraBurst sound (MachineService sets AuraBurst); others: off past 40
+  studs, glow only from 20, nearest 8, Settings "Others' Auras" / Low Graphics; half rate on phones; no Highlights.
+  UI: Titles > AURAS tab (preview card + tiles with EQUIP / EQUIPPED / price / AURA PACK / VIP / locked, Aura: Off);
+  Store AURAS tab (tiles, VIEW AURAS opens the panel; Store 660 wide for 4 tabs). Tested: owner's save earned
+  Ember / Frost / Storm / Golden, pass flags unlock the 6 pass auras, pump 0.3 / 0.6 / 1 = layers 1 / 2 / 3, PR burst,
+  every aura screenshotted (screenshots/auras). Not done: a live 3D preview in the window (ViewportFrames don't draw
+  particles), a 10-player phone FPS test (can't simulate players from here).
+- Trainers don't collide with players (owner): TrainerFollowClient puts every trainer part in the "Trainers" collision
+  group (registered by TrainerService, collides with nothing) + CanCollide / CanTouch / CanQuery off.
+- Settings: "Others' Auras" row (11 rows: the grid scrolls).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
