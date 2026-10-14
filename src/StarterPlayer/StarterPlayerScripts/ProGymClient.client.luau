@@ -17,36 +17,51 @@ local OPEN_RANGE = 9  -- studs
 local NOTE_RANGE = 5
 local SPEED = 3       -- open per second (0 -> 1)
 
-local proGym = Workspace:WaitForChild("ProGym", 60)
-local door = proGym and proGym:WaitForChild("GlassWall", 30) and proGym.GlassWall:WaitForChild("GlassDoor", 30)
-if not door then return end
-
--- (the door streams in as one piece: GlassDoor.ModelStreamingMode = Atomic; until then wait quietly)
-local blocker = door:WaitForChild("Blocker", math.huge)
-local leaves = {}
-for _, leaf in ipairs(door:GetChildren()) do
-	if leaf:IsA("Model") and leaf:GetAttribute("Side") then
-		local parts = {}
-		for _, part in ipairs(leaf:GetDescendants()) do
-			if part:IsA("BasePart") then parts[part] = part.CFrame end
+-- (owner, 14 Oct: instance streaming) The door (GlassDoor, Atomic) is only on this device while you're near it, and it is a
+-- NEW instance each time it streams back in: so it is looked up again whenever the one we have is gone, never waited for.
+local door, blocker, leaves, locks, center, slide = nil, nil, {}, {}, Vector3.zero, 0
+local function findDoor(): Model?
+	local proGym = Workspace:FindFirstChild("ProGym")
+	local wall = proGym and proGym:FindFirstChild("GlassWall")
+	local found = wall and wall:FindFirstChild("GlassDoor")
+	return if found and found:FindFirstChild("Blocker") then found else nil
+end
+local wasUnlocked = nil -- (declared here: a new door must get its collision and locks set again)
+local function setup(found: Model)
+	door = found
+	blocker = found:FindFirstChild("Blocker") :: BasePart
+	leaves, locks = {}, {}
+	for _, leaf in ipairs(found:GetChildren()) do
+		if leaf:IsA("Model") and leaf:GetAttribute("Side") then
+			local parts = {}
+			for _, part in ipairs(leaf:GetDescendants()) do
+				if part:IsA("BasePart") then parts[part] = part.CFrame end
+			end
+			table.insert(leaves, { side = leaf:GetAttribute("Side"), parts = parts })
+		elseif leaf.Name == "Lock" then
+			table.insert(locks, leaf)
 		end
-		table.insert(leaves, { side = leaf:GetAttribute("Side"), parts = parts })
 	end
+	center = blocker.Position
+	slide = blocker.Size.Z / 2 - 0.2 -- each leaf slides this far into the wall
+	wasUnlocked = nil
 end
-local locks = {}
-for _, lock in ipairs(door:GetChildren()) do
-	if lock.Name == "Lock" then table.insert(locks, lock) end
-end
-local center = blocker.Position
-local slide = blocker.Size.Z / 2 - 0.2 -- each leaf slides this far into the wall
 
 local function unlocked()
 	local data = ClientData.Get()
 	return data and data.growthSpurts ~= nil and data.growthSpurts >= (Machines.GymUnlock.Pro or 2)
 end
 
-local amount, wasUnlocked, lastNote = 0, nil, 0
+local amount, lastNote = 0, 0
 RunService.Heartbeat:Connect(function(dt)
+	-- the door streamed out (or never came in yet): look for it again (cheap: three FindFirstChild)
+	if not door or not door:IsDescendantOf(Workspace) then
+		door = nil
+		local found = findDoor()
+		if not found then return end
+		setup(found)
+		amount = 0
+	end
 	local open = unlocked()
 	if open ~= wasUnlocked then
 		wasUnlocked = open

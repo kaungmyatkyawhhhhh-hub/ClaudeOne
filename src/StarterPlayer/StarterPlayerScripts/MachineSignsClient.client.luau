@@ -354,7 +354,25 @@ local function approach(current: number, target: number, dt: number): number
 	return math.max(target, current - step)
 end
 
+-- (owner, 14 Oct: instance streaming) A machine that streamed out comes back as a NEW instance with its own anchor: the old
+-- one's anchor part, "!" and prompt entry go, and its sign lets go (checked twice a second).
+local sweepClock = 0
+local function sweepStreamedOut()
+	for model, anchor in pairs(anchors) do
+		if not model:IsDescendantOf(Workspace) then
+			anchor.part:Destroy()
+			anchors[model], pivots[model], shownPrompts[model] = nil, nil, nil
+			if shown.model == model then shown.model = nil end
+		end
+	end
+end
+
 RunService.RenderStepped:Connect(function(dt)
+	sweepClock += dt
+	if sweepClock >= 0.5 then
+		sweepClock = 0
+		sweepStreamedOut()
+	end
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local camera = Workspace.CurrentCamera

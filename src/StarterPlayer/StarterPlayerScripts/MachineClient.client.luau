@@ -203,9 +203,10 @@ end
 
 -- (the bar and its plates move in one BulkMoveTo call, and not at all when the bar hasn't moved: a plate is ~10 parts)
 local function placeBar(model, cframe)
-	if bars.placed[model] == cframe then return end
-	bars.placed[model] = cframe
+	if bars.placed[model] == cframe or not cframe then return end
 	local bar = loadPart(model)
+	if not bar then return end -- (not streamed in)
+	bars.placed[model] = cframe
 	local travel = bars.travel[model]
 	if not travel then
 		bars.travel[model] = { low = cframe, high = cframe }
@@ -217,7 +218,8 @@ local function placeBar(model, cframe)
 	local parts = bars.moving[model]
 	if not parts then
 		parts = {}
-		for _, plate in ipairs(model.Plates:GetDescendants()) do
+		local platesFolder = model:FindFirstChild("Plates")
+		for _, plate in ipairs(platesFolder and platesFolder:GetDescendants() or {}) do
 			if plateOffsets[plate] then table.insert(parts, plate) end
 		end
 		local rides = model:FindFirstChild("Rides")
@@ -950,6 +952,7 @@ task.spawn(function()
 		for model, run in pairs(runs) do
 			if not model.Parent or not model:GetAttribute("UserId") then
 				runs[model] = nil
+				if not model.Parent then offsets[model] = nil end -- (streamed out: forget its belt too)
 				Audio.StopLoop(run.loop, 0.3)
 				if model.Parent then readout(model, 0, 0, 0) end
 			end
@@ -2061,9 +2064,25 @@ local function onLockout(model, character, state)
 end
 
 -- Arms are posed before physics so they override animations...
+-- A machine that streamed out (owner, 14 Oct: instance streaming; it comes back as a NEW instance, set up again by the
+-- "Machine" tag signal): let go of the old one, so it never keeps posing someone.
+local function forgetMachine(model)
+	local character = posed[model]
+	if character then
+		MuscleRig.SetTraining(character, nil)
+		resetPose(character)
+	end
+	barRest[model], repState[model], posed[model], stackRest[model] = nil, nil, nil, nil
+	bars.moving[model], bars.placed[model], bars.travel[model], bars.propRest[model] = nil, nil, nil, nil
+end
+
 RunService.Stepped:Connect(function()
 	local now = os.clock()
 	for model in pairs(barRest) do
+		if not model:IsDescendantOf(workspace) then
+			forgetMachine(model)
+			continue
+		end
 		local character = userCharacter(model)
 		-- someone else's lift far from the camera or off the screen: not animated (the bar waits on the rack), so a busy gym
 		-- costs nothing
@@ -2437,6 +2456,18 @@ end)
 
 Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	if state == "Enter" then
+		-- (instance streaming: the machine you sit on is right beside you, so it is loaded; if it ever isn't, it's the tagged
+		-- machine whose UserId is yours once it streams in)
+		if typeof(model) ~= "Instance" then
+			local deadline = os.clock() + 5
+			while not model and os.clock() < deadline do
+				for _, candidate in ipairs(CollectionService:GetTagged("Machine")) do
+					if candidate:GetAttribute("UserId") == player.UserId then model = candidate end
+				end
+				if not model then task.wait(0.1) end
+			end
+			if not model then return end
+		end
 		open(model)
 	elseif state == "Exit" then
 		close()

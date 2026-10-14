@@ -46,7 +46,13 @@ local function check(player, unlock)
 		local now = os.clock()
 		if now - (lastPutBack[player] or 0) < ProGymService.Debounce then return end
 		lastPutBack[player] = now
-		character:PivotTo(OUTSIDE + Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0))
+		-- (streaming: make sure the spot outside is loaded on the player's device before moving them there; in its own task,
+		-- so this loop over every player never waits)
+		local target = OUTSIDE + Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0)
+		task.spawn(function()
+			pcall(function() player:RequestStreamAroundAsync(target.Position, 1) end)
+			if character.Parent then character:PivotTo(target) end
+		end)
 		if now - (lastMessage[player] or -math.huge) >= ProGymService.MessageCooldown then
 			lastMessage[player] = now
 			Remotes.PlayerEvent:FireClient(player, "ProGymLocked", { spurts = unlock })

@@ -585,8 +585,9 @@ local function setupMachine(model)
 		warn("[MachineService] Unknown MachineId on", model:GetFullName())
 		return
 	end
-	-- Workspace streaming: the whole machine is always on every client (posing, plates and the bar need all of it)
-	if model:IsA("Model") then model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent end
+	-- Workspace streaming (owner, 14 Oct: performance): Atomic, the whole machine streams in and out as one piece (posing,
+	-- plates and the bar need all of it); machines out of range aren't on a client at all
+	if model:IsA("Model") then model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end
 	local prompt = getPrompt(model)
 	if prompt then
 		prompt.ActionText = "Occupy"

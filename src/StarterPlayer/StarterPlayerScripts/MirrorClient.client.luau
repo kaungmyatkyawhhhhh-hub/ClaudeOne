@@ -590,10 +590,32 @@ local function startReflection(mirrorModel, glass)
 		viewport.Size = UDim2.fromOffset(sizePx, sizePx)
 		viewport.Position = UDim2.fromOffset(cx - sizePx / 2, cy - sizePx / 2)
 	end)
+	-- stop: the glass streamed out (or a new one came in)
+	return function()
+		RunService:UnbindFromRenderStep("MirrorReflection")
+		if mirrored then
+			mirrored.model:Destroy()
+			mirrored = nil
+		end
+		if active then setMirrorUser("reflection", false) end
+		surface:Destroy()
+	end
 end
 
+-- (owner, 14 Oct: instance streaming) The mirror's glass is only on this device while you're near, and it's a NEW part each
+-- time it streams back in: the reflection starts on whichever glass is here and starts again on a new one.
 task.spawn(function()
-	local mirrorModel = workspace:WaitForChild("ProgressMirror", 60)
-	local glass = mirrorModel and mirrorModel:WaitForChild("Glass", 30)
-	if glass and glass:IsA("BasePart") then startReflection(mirrorModel, glass) end
+	local glassNow, stop = nil, nil
+	while true do
+		local mirrorModel = workspace:FindFirstChild("ProgressMirror")
+		local glass = mirrorModel and mirrorModel:FindFirstChild("Glass")
+		if glass and not glass:IsA("BasePart") then glass = nil end
+		if glass ~= glassNow then
+			if stop then stop() end
+			stop = nil
+			glassNow = glass
+			if glass then stop = startReflection(mirrorModel, glass) end
+		end
+		task.wait(1)
+	end
 end)

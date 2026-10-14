@@ -153,8 +153,8 @@ function NpcService.Build(spec, cframe)
 		prompt.Parent = root
 	end
 
-	-- Workspace streaming: NPCs (Coach, legends, gym-goers) are always on every client, whole
-	model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	-- Workspace streaming (owner, 14 Oct: performance): NPCs stream in and out whole (Atomic), never half a body
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	if spec.tag then CollectionService:AddTag(model, spec.tag) end
 	model.Parent = npcFolder()
 	return model, prompt

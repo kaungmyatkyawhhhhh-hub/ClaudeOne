@@ -126,6 +126,27 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   characters keep theirs) and 15 NPC accessories. No aura VFX exist yet (nothing to cap). Same scene: fps 46.9 / 48.0
   (was 30-40), worst frame 24-26 ms (was 81-142), draw calls 125-146 (was ~249), triangles 476-682 k (was ~1.78 M);
   3 NPCs with muscles, 13 plain. Shadow draw calls still ~700: the gym's shadow-casting lights (next lever).
+- Step 3, streaming: StreamingEnabled was already on. ModelStreamingMode: the 61 machines, the 16 NPCs (+ NpcService
+  for legends / arm opponents), both arm tables, the posing stage, the smoothie bars / cart / menu = Atomic (code:
+  MachineService, NpcService, builders GymKit / GymCat); Persistent only Gym.StarterGym, Gym.Entrance, Town.GymFront
+  (spawn area). ProGymService streams around the spot outside before putting a locked player back (own task, the
+  loop never waits); the other moves (machine sit / exit, spot slots) are a few studs from where you stand. Client audit
+  (all 45 client scripts) + fixes: ProGymClient (door looked up again whenever it's gone, no infinite wait),
+  MachineClient (a streamed-out machine lets go of its pose / tint / tables; "Enter" with no model finds yours; Plates /
+  bar nil-safe; treadmill offsets cleared), MirrorClient (reflection restarts on a new Glass), TutorialClient (the
+  step's machine looked up until it's here; Highlight under the camera), MachineSignsClient (old anchors swept),
+  RivalClient (old tags removed), ArmWrestleClient (never set up twice). Low risk, left: PhotoModeClient spot boxes,
+  MealClient auto-close.
+  NOT SET (scripts can't write them, Properties panel only): Workspace StreamingTargetRadius 256, StreamingMinRadius 64,
+  StreamOutBehavior Opportunistic, StreamingIntegrityMode PauseOutsideLoadedArea. With Studio's current values the
+  whole map is on the client (61/61 machines at join), so stream-out isn't exercised until those are set.
+  Walk test (Studio, 974x584): starter incline bench, pro lateral raise, beach bicep curl: sit + HUD + REP; arm tables
+  (2 prompts each), posing stage, smoothie bars / cart / menu, mirror glass all present with prompts; pro door open for
+  an unlocked player; no errors in Output. Not done: low graphics join (Studio's quality can't be set by script; the
+  game's Low Graphics setting would change the owner's save), several players, a real phone.
+  AFTER (same view, camera pinned, NPCs walking): fps 36-40 (47-48 right after LOD), worst frame 31-84 ms, draw calls
+  152-191, shadow 607-614, triangles 0.78-1.18 M, render CPU 23-25 ms, instances ~109.3 k, memory ~4.9 GB (Studio).
+  BEFORE: fps 27-41, worst 81-142 ms, draw calls ~249, shadow ~720, triangles ~1.78 M, render CPU 23-36 ms.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

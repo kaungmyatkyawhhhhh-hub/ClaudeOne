@@ -95,7 +95,7 @@ function GymCat.Build(Workspace)
 	prompt.RequiresLineOfSight = false
 	prompt.Name = "PetPrompt"
 	prompt.Parent = skull
-	model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent -- Workspace streaming: always on every client
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- Workspace streaming: the cat streams in whole (owner, 14 Oct)
 	CollectionService:AddTag(model, "GymCat")
 	model.Parent = npcs
 	return model

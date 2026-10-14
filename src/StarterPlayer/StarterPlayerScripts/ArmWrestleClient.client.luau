@@ -32,11 +32,14 @@ local LEG_JOINTS = { "RightHip", "RightKnee", "LeftHip", "LeftKnee" }
 
 -- Every table: { model, stools, center, frames, pinDir, angle, resultAt, lastState }
 local tables = {} -- [model] = state
+local pending = {} -- [model] = true while it's being set up (instance streaming: never set up twice)
 local function addTable(model)
-	if tables[model] or not model:IsA("Model") then return end
+	if tables[model] or pending[model] or not model:IsA("Model") then return end
+	pending[model] = true
 	task.spawn(function()
 		local top = model:WaitForChild("Top", 30)
 		local s1, s2 = model:WaitForChild("Stool1", 30), model:WaitForChild("Stool2", 30)
+		pending[model] = nil
 		if not (top and s1 and s2) or not model.Parent then return end
 		local center = top.Position + Vector3.new(0, top.Size.Y / 2, 0)
 		-- each side's frame: from its stool toward the table (look = -Z, right = +X)

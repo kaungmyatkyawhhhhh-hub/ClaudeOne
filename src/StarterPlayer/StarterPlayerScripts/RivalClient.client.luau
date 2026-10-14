@@ -299,6 +299,13 @@ RunService.Heartbeat:Connect(function(dt)
 	for _, npc in ipairs(npcs and npcs:GetChildren() or {}) do
 		if npc:GetAttribute("Rival") then tag(npc) end
 	end
+	-- (instance streaming: a rival that streamed out comes back as a new NPC with its own tag; the old tag goes)
+	for npc, bill in pairs(tags) do
+		if not npc.Parent then
+			bill:Destroy()
+			tags[npc] = nil
+		end
+	end
 	-- walked away: close his card (from where you opened it: he may walk off himself)
 	if openId and openAt then
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")

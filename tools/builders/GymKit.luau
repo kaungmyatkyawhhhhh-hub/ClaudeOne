@@ -118,7 +118,7 @@ local function machineShell(parent, machineId, pivot)
 	local machine = Machines.ById[machineId]
 	local m = model(parent, machineId, pivot)
 	m:SetAttribute("MachineId", machineId)
-	m.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- (owner, 14 Oct: machines stream as one piece, not always loaded)
 	CollectionService:AddTag(m, "Machine")
 	return m, machine
 end

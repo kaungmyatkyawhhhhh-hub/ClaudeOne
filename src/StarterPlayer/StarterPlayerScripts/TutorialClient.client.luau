@@ -383,12 +383,17 @@ local function refreshPath(force)
 	end)
 end
 
+-- (owner, 14 Oct: instance streaming) the target machine may not be on this device yet, or stream out and back in as a
+-- new instance: the step's machine is remembered (wantedTarget) and looked up again until it's here; the highlight lives
+-- under the camera and only points at it, so it never leaves with a streamed-out model
+local wantedTarget = nil
 local function showPath(machineId)
+	wantedTarget = machineId
 	targetModel = machineModel(machineId)
 	if not targetModel then return end
 	targetPoint = approachPoint(targetModel)
 	highlight.Adornee = targetModel
-	highlight.Parent = targetModel
+	highlight.Parent = Workspace.CurrentCamera
 	highlight.Enabled = true
 	dotFolder.Parent = Workspace.CurrentCamera
 	lastFrom = nil
@@ -396,6 +401,7 @@ local function showPath(machineId)
 end
 
 local function hidePath()
+	wantedTarget = nil
 	targetModel, targetPoint = nil, nil
 	polyline = nil
 	highlight.Enabled = false
@@ -404,8 +410,17 @@ local function hidePath()
 	activeDots = 0
 end
 
-local refreshClock = 0
+local refreshClock, retryClock = 0, 0
 RunService.Heartbeat:Connect(function(dt)
+	-- the step's machine not here yet, or streamed out: look again once a second
+	if wantedTarget and (not targetModel or not targetModel:IsDescendantOf(Workspace)) then
+		retryClock += dt
+		if retryClock >= 1 then
+			retryClock = 0
+			targetModel, targetPoint = nil, nil
+			showPath(wantedTarget)
+		end
+	end
 	if not targetPoint then return end
 	refreshClock += dt
 	local rootNow = rootPart()
