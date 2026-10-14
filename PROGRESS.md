@@ -1316,3 +1316,14 @@ next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's mo
   wrapped up to 2 lines in the body font and sentence case; 8 px padding from every card edge; "..." only as a last
   resort. (TextScaled was tried first: it fell to the minimum size for every name.) Checked every title / aura / item /
   boost label at the phone (1.0), small phone (0.79) and PC (2.27) window scales: all fit.
+- AURA VFX v3 (owner's body-hugging AuraVFX.lua, 14 Oct): the module is the owner's file with only the TEX ids filled
+  (new: rim 138347218007327, wisp 136758735885193, lightning 80590302550492, smoke 113405238797101, ember 76009392745145,
+  droplet 137490039482038; kept: flame / spark / ring / ground). Uploaded from Studio = owner's inventory (search_asset
+  in the group finds none). Emitters sit on the 10 largest visible body parts (muscle meshes included); AuraClient
+  rebuilds a player's aura when a body part is added / removed (muscle meshes arriving, a stage swap, a Growth Spurt),
+  batched 0.6 s, at most every 1.5 s. Leftovers: none of the v1/v2 pieces (AuraVFX folder / AuraVolume / AuraCore) exist
+  any more; Config/Auras.VFXTextures (preload) updated to the v3 ids. Studio-only test hook: the local "AuraPreviewPower"
+  attribute sets the try-on's power (idle screenshots). Screenshots: screenshots/auras_v4/ (13 auras x idle / full x
+  front / side on the 7'0" mass-monster body, + Inferno while benching). FPS: Studio driven over MCP runs ~15 fps with
+  or without auras (no real phone number possible; the emulator can't be switched here): 10 NPC auras at full power =
+  418 emitting emitters (about 40 per body), no measurable change; mid LOD the same.

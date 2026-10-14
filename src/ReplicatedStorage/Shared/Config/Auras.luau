@@ -65,8 +65,7 @@ Auras.IdlePower = 0.15 -- not lifting
 -- the effect's textures, preloaded on join (AuraClient) so the first aura never shows blank cards; the SAME ids as the
 -- TEX table in Shared/VFX/AuraVFX (the owner's file, left as it is): change both together
 Auras.VFXTextures = {
-	"rbxassetid://90041400001838", "rbxassetid://105468903616816", "rbxassetid://108461610476976", "rbxassetid://82372237523631",
-	"rbxassetid://84289295380894", "rbxassetid://131893925782949", "rbxassetid://74138882329945", "rbxassetid://138403894498190",
+	"rbxassetid://138347218007327", "rbxassetid://136758735885193", "rbxassetid://90041400001838", "rbxassetid://76009392745145", "rbxassetid://80590302550492", "rbxassetid://113405238797101", "rbxassetid://137490039482038", "rbxassetid://82372237523631", "rbxassetid://131893925782949", "rbxassetid://74138882329945",
 }
 
 return Auras

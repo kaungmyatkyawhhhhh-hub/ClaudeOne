@@ -7,6 +7,9 @@
 --          AuraBurst sound.
 --   LOD:   your own aura is always 0 (full); other players' 0 within Auras.FullLOD studs, 1 up to Auras.MidLOD, 2 beyond or
 --          with the Settings "Others' Auras" Off / Low Graphics On.
+--   Body changes (v3, owner 14 Oct: the effect hugs the body parts it was built on): a body part added to or removed from
+--          the character (the muscle meshes arriving after a spawn, a muscle stage swapping its meshes, a Growth Spurt)
+--          rebuilds that player's aura once things settle (REBUILD_AFTER s, at most every REBUILD_EVERY s).
 --   Preview: while the Inventory window's AURAS tab is open, your own character wears the picked aura at power 1 (the
 --          "AuraPreview" attribute TitlesClient sets on the local player; a try-on, nothing is equipped).
 local Players = game:GetService("Players")
@@ -36,6 +39,7 @@ local LOD_EVERY = 0.25 -- seconds between distance checks
 -- AuraVFX sizes the effect from the character once, when it's built; a body that changes size a lot afterwards (the
 -- muscle meshes loading after a spawn, a Growth Spurt) gets the aura rebuilt, at most every RESIZE_EVERY seconds
 local RESIZE_BY, RESIZE_EVERY = 0.25, 3
+local REBUILD_AFTER, REBUILD_EVERY = 0.6, 1.5
 
 local handles = {} -- [Player] = { handle, character, preset, power, maxed }
 
@@ -51,7 +55,12 @@ end
 
 -- the power for a player right now (the preview is always full)
 local function powerOf(other: Player): number
-	if other == player and player:GetAttribute("AuraPreview") then return 1 end
+	if other == player and player:GetAttribute("AuraPreview") then
+		-- (Studio only: the "AuraPreviewPower" attribute sets the try-on's power, for idle screenshots)
+		local forced = player:GetAttribute("AuraPreviewPower")
+		if RunService:IsStudio() and type(forced) == "number" then return math.clamp(forced, 0, 1) end
+		return 1
+	end
 	local pump = other:GetAttribute("PumpMeter")
 	if type(pump) ~= "number" then return Auras.IdlePower end -- (not on a machine)
 	local pumpedUntil = other:GetAttribute("PumpedUntil")
@@ -96,9 +105,33 @@ local function refresh(other: Player)
 	entry.maxed = maxed
 end
 
+-- rebuild a player's aura after their body parts changed (batched: many parts change together)
+local rebuildToken = {}
+local function rebuildSoon(other: Player)
+	local token = (rebuildToken[other] or 0) + 1
+	rebuildToken[other] = token
+	task.delay(REBUILD_AFTER, function()
+		if rebuildToken[other] ~= token then return end
+		local entry = handles[other]
+		if not entry then return end
+		local wait = REBUILD_EVERY - (os.clock() - entry.builtAt)
+		if wait > 0 then
+			task.delay(wait, function() if rebuildToken[other] == token then drop(other) refresh(other) end end)
+		else
+			drop(other)
+			refresh(other)
+		end
+	end)
+end
+
 local function watch(other: Player)
 	local function hookCharacter(character)
 		character:GetAttributeChangedSignal("EquippedAura"):Connect(function() refresh(other) end)
+		local function bodyChanged(d)
+			if d:IsA("BasePart") and handles[other] then rebuildSoon(other) end
+		end
+		character.DescendantAdded:Connect(bodyChanged)
+		character.DescendantRemoving:Connect(bodyChanged)
 		task.defer(refresh, other)
 	end
 	if other.Character then hookCharacter(other.Character) end
@@ -107,6 +140,7 @@ local function watch(other: Player)
 	other:GetAttributeChangedSignal("PumpedUntil"):Connect(function() refresh(other) end)
 	if other == player then
 		player:GetAttributeChangedSignal("AuraPreview"):Connect(function() refresh(other) end)
+		player:GetAttributeChangedSignal("AuraPreviewPower"):Connect(function() refresh(other) end)
 	end
 	-- a new personal record: burst + sound
 	other:GetAttributeChangedSignal("AuraBurst"):Connect(function()
@@ -123,7 +157,10 @@ local function watch(other: Player)
 end
 for _, other in ipairs(Players:GetPlayers()) do watch(other) end
 Players.PlayerAdded:Connect(watch)
-Players.PlayerRemoving:Connect(drop)
+Players.PlayerRemoving:Connect(function(other)
+	drop(other)
+	rebuildToken[other] = nil
+end)
 
 -- LOD by distance (yours always full), the Settings switch, and a rebuild when the body's size changed
 local elapsed = 0

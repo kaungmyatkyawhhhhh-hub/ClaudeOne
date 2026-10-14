@@ -1,373 +1,348 @@
--- AuraVFX  (ModuleScript, put in ReplicatedStorage.Shared.VFX.AuraVFX)
--- Builds the layered aura effect on a character, CLIENT-SIDE ONLY.
--- Every client builds auras locally from the replicated "EquippedAura" attribute.
+-- AuraVFX v3  (ModuleScript, ReplicatedStorage.Shared.VFX.AuraVFX)
+-- "Body-hugging" auras: effects come off EVERY body part's surface (rim glow, wisps, embers,
+-- crackling lightning, billowing smoke, blood mist), so the aura follows the silhouette
+-- instead of floating as blobs in front of the character. CLIENT-SIDE ONLY.
 --
--- API
---   local handle = AuraVFX.Build(character, "inferno")
---   handle:SetPower(p)   -- 0..1  (0.15 = idle, then follow the PUMP bar while lifting)
---   handle:Burst()       -- one-shot PR / max-pump burst
---   handle:SetLOD(l)     -- 0 = full, 1 = mid (glow + ground only), 2 = off
---   handle:Destroy()
+-- API (unchanged from v2)
+--   local h = AuraVFX.Build(character, "storm")
+--   h:SetPower(p)  -- 0..1 (0.15 idle, then follow the PUMP bar while lifting)
+--   h:Burst()      -- PR / max pump burst
+--   h:SetLOD(l)    -- 0 full, 1 mid (rim glow + ground only), 2 off
+--   h:Destroy()
 --
--- Textures: upload every PNG from Downloads\gym_arc_aura_vfx to the Myanmar Builders Club
--- group, find each ID with search_asset by exact name, and fill TEX below.
+-- Textures: upload every PNG in Downloads\gym_arc_aura_vfx, find each ID with search_asset by
+-- exact name, and fill TEX. Flipbooks must stay 1024x1024 (4x4 grids).
 
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local TEX = {
-	flame     = "rbxassetid://90041400001838", -- flame_flipbook_4x4.png (1024, Grid4x4)
-	smoke     = "rbxassetid://105468903616816", -- smoke_flipbook_4x4.png (1024, Grid4x4)
-	glow      = "rbxassetid://108461610476976", -- glow_soft.png
+	rim       = "rbxassetid://138347218007327", -- rim_glow.png
+	wisp      = "rbxassetid://136758735885193", -- wisp_flipbook_4x4.png
+	flame     = "rbxassetid://90041400001838", -- flame_flipbook_4x4.png
+	ember     = "rbxassetid://76009392745145", -- ember_dot.png
+	lightning = "rbxassetid://80590302550492", -- lightning_flipbook_4x4.png
+	smoke     = "rbxassetid://113405238797101", -- smoke_shaded_4x4.png
+	droplet   = "rbxassetid://137490039482038", -- droplet.png
 	spark     = "rbxassetid://82372237523631", -- spark_star.png
-	streak    = "rbxassetid://84289295380894", -- energy_streak.png
 	ring      = "rbxassetid://131893925782949", -- shockwave_ring.png
 	ground    = "rbxassetid://74138882329945", -- ground_circle.png
-	lightning = "rbxassetid://138403894498190", -- lightning_beam.png
-}
-
-type Preset = {
-	core: Color3, main: Color3, tail: Color3, -- flame colour over its life
-	accent: Color3?,                          -- sparks / ring / lightning (defaults to core)
-	dark: boolean?,                           -- true = smoky, not glowing (LightEmission 0)
-	smoke: Color3?,                           -- adds a smoke layer in this colour
-	lightning: boolean?,                      -- adds crackling beams at high power
-	stars: boolean?,                          -- extra twinkling sparkles
 }
 
 local C = Color3.fromRGB
-local PRESETS: { [string]: Preset } = {
-	ember      = { core = C(255,230,150), main = C(255,140,30),  tail = C(170,40,10) },
-	frost      = { core = C(235,250,255), main = C(110,200,255), tail = C(40,90,200),  stars = true },
-	storm      = { core = C(255,255,225), main = C(140,170,255), tail = C(60,60,200),  accent = C(255,250,190), lightning = true },
-	golden     = { core = C(255,250,215), main = C(255,195,60),  tail = C(190,110,10), stars = true },
-	titan      = { core = C(255,230,140), main = C(255,60,20),   tail = C(120,0,0),    accent = C(255,200,60) },
-	inferno    = { core = C(255,240,170), main = C(255,90,10),   tail = C(140,10,0),   smoke = C(40,20,15) },
-	blood_moon = { core = C(255,90,80),   main = C(190,0,10),    tail = C(40,0,0),     accent = C(255,40,30), dark = true, smoke = C(25,0,0) },
-	void       = { core = C(220,160,255), main = C(130,40,255),  tail = C(25,0,50),    dark = true, smoke = C(30,0,60) },
-	neon       = { core = C(255,255,255), main = C(255,40,190),  tail = C(40,255,255), accent = C(40,255,255), lightning = true },
-	galaxy     = { core = C(220,230,255), main = C(80,110,255),  tail = C(150,70,255), stars = true },
-	royal      = { core = C(255,255,255), main = C(255,215,110), tail = C(255,170,40), stars = true },
-	toxic      = { core = C(230,255,170), main = C(120,255,40),  tail = C(30,110,10),  smoke = C(40,90,10) },
-	shadow     = { core = C(120,120,140), main = C(45,45,55),    tail = C(10,10,12),   accent = C(170,170,190), dark = true, smoke = C(8,8,10) },
+-- style: what comes off the body.
+--   flame     = flame tongues + wisps + embers
+--   lightning = crackling bolts on every limb + sparks
+--   smoke     = thick billowing smoke (+ a little glow)
+--   glow      = bright rim halo + wisps + twinkles from the head
+--   mist      = blood-red mist + falling droplets
+local PRESETS = {
+	ember      = { style = "flame",     main = C(255,140,30),  hot = C(255,200,110), tail = C(170,40,10) },
+	frost      = { style = "glow",      main = C(120,205,255), hot = C(215,245,255), tail = C(50,110,210), smoke = C(190,225,255) },
+	storm      = { style = "lightning", main = C(110,150,255), hot = C(210,225,255), tail = C(50,60,200) },
+	golden     = { style = "glow",      main = C(255,195,60),  hot = C(255,235,160), tail = C(200,120,15) },
+	titan      = { style = "flame",     main = C(255,55,20),   hot = C(255,190,70),  tail = C(110,0,0), accent = C(255,205,70) },
+	inferno    = { style = "flame",     main = C(255,80,10),   hot = C(255,200,90),  tail = C(130,10,0), smoke = C(35,22,18) },
+	blood_moon = { style = "mist",      main = C(200,0,15),    hot = C(255,60,60),   tail = C(60,0,0) },
+	void       = { style = "smoke",     main = C(150,50,255),  hot = C(210,150,255), tail = C(40,0,80), smoke = C(45,10,80) },
+	neon       = { style = "lightning", main = C(255,50,200),  hot = C(255,170,240), tail = C(40,230,255) },
+	galaxy     = { style = "glow",      main = C(90,110,255),  hot = C(200,190,255), tail = C(140,70,255), smoke = C(25,25,70) },
+	royal      = { style = "glow",      main = C(255,215,120), hot = C(255,250,230), tail = C(255,175,50) },
+	toxic      = { style = "smoke",     main = C(120,255,40),  hot = C(210,255,150), tail = C(30,110,10), smoke = C(60,140,20) },
+	shadow     = { style = "smoke",     main = C(70,70,85),    hot = C(150,150,170), tail = C(10,10,12), smoke = C(14,14,16), dark = true },
 }
 
-local function NS(pts: { { number } }): NumberSequence
-	local kps = {}
-	for _, p in pts do table.insert(kps, NumberSequenceKeypoint.new(p[1], p[2], p[3] or 0)) end
-	return NumberSequence.new(kps)
-end
+-- particles/sec for the WHOLE body at idle (power 0.15) and full power (1.0); split across body parts by area
+local RATES = {
+	rim        = { 14, 36 },
+	flame      = { 4, 40 },
+	wisp       = { 3, 26 },
+	ember      = { 3, 22 },
+	lightning  = { 2, 34 },
+	smoke      = { 6, 34 },
+	smokeLight = { 2, 10 },
+	mist       = { 8, 40 },
+	droplet    = { 0, 14 },
+	twinkle    = { 2, 14 },
+}
 
-local function CS(a: Color3, b: Color3, c: Color3): ColorSequence
-	return ColorSequence.new({
-		ColorSequenceKeypoint.new(0, a),
-		ColorSequenceKeypoint.new(0.35, b),
-		ColorSequenceKeypoint.new(1, c),
-	})
+local function NS(pts)
+	local k = {}
+	for _, p in pts do table.insert(k, NumberSequenceKeypoint.new(p[1], p[2], p[3] or 0)) end
+	return NumberSequence.new(k)
 end
-
-local function smooth(e0: number, e1: number, x: number): number
+local function CS3(a, b, c)
+	return ColorSequence.new({ ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(0.4, b), ColorSequenceKeypoint.new(1, c) })
+end
+local function smooth(e0, e1, x)
 	local t = math.clamp((x - e0) / (e1 - e0), 0, 1)
 	return t * t * (3 - 2 * t)
 end
-
-local function emitter(parent: Instance, props: { [string]: any }): ParticleEmitter
+local function emitter(parent, props)
 	local e = Instance.new("ParticleEmitter")
 	e.LightInfluence = 0
-	e.LockedToPart = false
 	e.Rate = 0
-	for k, v in props do (e :: any)[k] = v end
+	for k, v in props do e[k] = v end
 	e.Parent = parent
 	return e
+end
+
+-- visible body parts (muscle meshes included), biggest first, max 10
+local function bodyParts(character)
+	local list = {}
+	for _, d in character:GetDescendants() do
+		if d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" and d.Transparency < 0.9
+			and not d:FindFirstAncestorOfClass("Accessory") then
+			if d.Size.Magnitude > 0.4 then table.insert(list, d) end
+		end
+	end
+	table.sort(list, function(a, b)
+		return a.Size.X * a.Size.Y * a.Size.Z > b.Size.X * b.Size.Y * b.Size.Z
+	end)
+	while #list > 10 do table.remove(list) end
+	return list
 end
 
 local AuraVFX = {}
 AuraVFX.__index = AuraVFX
 
-function AuraVFX.Build(character: Model, auraName: string)
-	local preset = PRESETS[auraName]
-	local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+function AuraVFX.Build(character, auraName)
+	local P = PRESETS[auraName]
+	local hrp = character:FindFirstChild("HumanoidRootPart")
 	local hum = character:FindFirstChildOfClass("Humanoid")
-	if not preset or not hrp or not hum then return nil end
+	if not P or not hrp or not hum then return nil end
 
-	-- character size -> one scale number (a default R15 is ~5 studs tall)
 	local ext = character:GetExtentsSize()
 	local s = math.max(ext.Y / 5, 0.5)
-	local accent = preset.accent or preset.core
-	local glowLE = preset.dark and 0.3 or 0.8
-	local flameLE = preset.dark and 0 or 0.7
-	-- never let the hot colour go pure white (that's what washed out the body before)
-	local hot = preset.core:Lerp(preset.main, 0.45)
-	-- push body-volume particles BEHIND the character so they only show around the silhouette
-	local behind = -(ext.Z * 0.5 + 1.5 * s)
+	local accent = P.accent or P.hot
+	local dark = P.dark == true
+	local style = P.style
 
-	local folder = Instance.new("Folder")
-	folder.Name = "AuraVFX"
+	local self = setmetatable({ _layers = {}, _power = 0, _lod = 0, _owned = {}, _conns = {}, _mobile = 1 }, AuraVFX)
+	local function own(x) table.insert(self._owned, x); return x end
+	local function layer(name, e, share) table.insert(self._layers, { name = name, e = e, share = share }); return e end
 
-	-- invisible volume around the body that flames/streaks emit from
-	local vol = Instance.new("Part")
-	vol.Name = "AuraVolume"
-	vol.Size = Vector3.new(ext.X * 0.7, ext.Y * 0.75, ext.Z * 0.7)
-	vol.Transparency = 1
-	vol.CanCollide, vol.CanQuery, vol.CanTouch, vol.Massless = false, false, false, true
-	vol.CastShadow = false
-	vol.CFrame = hrp.CFrame
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0, weld.Part1 = hrp, vol
-	weld.Parent = vol
-	vol.Parent = folder
+	-- phones / low graphics get fewer particles
+	if UserInputService.TouchEnabled then self._mobile = 0.6 end
+	local ok, q = pcall(function() return UserSettings().GameSettings.SavedQualityLevel.Value end)
+	if ok and q > 0 and q <= 3 then self._mobile = math.min(self._mobile, 0.45) end
 
-	-- ground ring lives in Terrain (world-aligned) so it stays flat on the floor even when the
-	-- character lies on a bench or tilts. Its position is updated every frame from a raycast.
-	local feet = Instance.new("Attachment")
-	feet.Name = "AuraFeet_" .. character.Name
+	local parts = bodyParts(character)
+	local totalArea = 0
+	for _, part in parts do
+		local z = part.Size
+		totalArea += z.X * z.Y + z.Y * z.Z + z.X * z.Z
+	end
+
+	local BOX, VOL, SURF, OUT = Enum.ParticleEmitterShape.Box, Enum.ParticleEmitterShapeStyle.Volume,
+		Enum.ParticleEmitterShapeStyle.Surface, Enum.ParticleEmitterShapeInOut.Outward
+	local GRID = Enum.ParticleFlipbookLayout.Grid4x4
+
+	for _, part in parts do
+		local z = part.Size
+		local share = (z.X * z.Y + z.Y * z.Z + z.X * z.Z) / math.max(totalArea, 1e-3)
+		local m = z.Magnitude
+		local depth = -(math.max(z.X, z.Z) * 0.5 + 0.25) -- draw just behind this part
+
+		-- RIM GLOW: soft halo hugging the part, behind it (every style)
+		layer("rim", own(emitter(part, {
+			Texture = TEX.rim, LightEmission = dark and 0.15 or 1, Brightness = dark and 1 or 1.6,
+			LockedToPart = true, Shape = BOX, ShapeStyle = VOL,
+			Color = ColorSequence.new(dark and P.smoke or P.main),
+			Size = NS({ {0, m * 0.55}, {1, m * 0.7} }),
+			Transparency = NS({ {0, 1}, {0.3, dark and 0.55 or 0.72}, {1, 1} }),
+			Lifetime = NumberRange.new(0.25, 0.45), Speed = NumberRange.new(0),
+			Rotation = NumberRange.new(0, 360), ZOffset = depth,
+		})), share)
+
+		if style == "flame" then
+			layer("flame", own(emitter(part, {
+				Texture = TEX.flame, LightEmission = 0.8, Brightness = 1.4,
+				FlipbookLayout = GRID, FlipbookMode = Enum.ParticleFlipbookMode.Loop,
+				FlipbookFramerate = NumberRange.new(20, 28), FlipbookStartRandom = true,
+				Shape = BOX, ShapeStyle = SURF, ShapeInOut = OUT,
+				Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+				Color = CS3(P.hot, P.main, P.tail),
+				Size = NS({ {0, 0.35 * s}, {0.35, 0.75 * s}, {1, 0.15 * s} }),
+				Squash = NS({ {0, -0.4}, {1, -0.6} }),
+				Transparency = NS({ {0, 1}, {0.15, 0.1}, {0.75, 0.4}, {1, 1} }),
+				Lifetime = NumberRange.new(0.35, 0.55), Speed = NumberRange.new(0.6 * s, 1.4 * s),
+				Acceleration = Vector3.new(0, 8 * s, 0), Drag = 2, ZOffset = depth * 0.6,
+			})), share)
+		end
+
+		if style == "flame" or style == "glow" then
+			layer("wisp", own(emitter(part, {
+				Texture = TEX.wisp, LightEmission = 1, Brightness = 1.6,
+				FlipbookLayout = GRID, FlipbookMode = Enum.ParticleFlipbookMode.Random,
+				Shape = BOX, ShapeStyle = SURF, ShapeInOut = OUT,
+				Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+				Color = ColorSequence.new(P.hot, P.main),
+				Size = NS({ {0, 0.5 * s}, {1, 0.9 * s} }),
+				Transparency = NS({ {0, 1}, {0.2, 0.2}, {1, 1} }),
+				Lifetime = NumberRange.new(0.4, 0.7), Speed = NumberRange.new(0.5 * s, 1.2 * s),
+				Acceleration = Vector3.new(0, 5 * s, 0), ZOffset = depth * 0.5,
+			})), share)
+		end
+
+		if not dark then
+			layer("ember", own(emitter(part, {
+				Texture = TEX.ember, LightEmission = 1, Brightness = 3,
+				Shape = BOX, ShapeStyle = SURF, ShapeInOut = OUT,
+				Color = ColorSequence.new(accent),
+				Size = NS({ {0, 0.14 * s}, {1, 0} }),
+				Lifetime = NumberRange.new(0.8, 1.5), Speed = NumberRange.new(0.8 * s, 2.4 * s),
+				Acceleration = Vector3.new(0, 2.5 * s, 0), Drag = 1.2,
+				SpreadAngle = Vector2.new(25, 25),
+			})), share)
+		end
+
+		if style == "lightning" then
+			layer("lightning", own(emitter(part, {
+				Texture = TEX.lightning, LightEmission = 1, Brightness = 4,
+				FlipbookLayout = GRID, FlipbookMode = Enum.ParticleFlipbookMode.Random,
+				LockedToPart = true, Shape = BOX, ShapeStyle = VOL,
+				Color = ColorSequence.new(P.hot, P.main),
+				Size = NS({ {0, m * 0.55}, {1, m * 0.65} }),
+				Transparency = NS({ {0, 0}, {1, 0.4} }),
+				Lifetime = NumberRange.new(0.07, 0.14), Speed = NumberRange.new(0),
+				Rotation = NumberRange.new(0, 360), ZOffset = 0.2,
+			})), share)
+		end
+
+		if style == "smoke" or P.smoke then
+			local main = style == "smoke"
+			layer(main and "smoke" or "smokeLight", own(emitter(part, {
+				Texture = TEX.smoke, LightEmission = 0, Brightness = main and 1.2 or 0.9,
+				FlipbookLayout = GRID, FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
+				Shape = BOX, ShapeStyle = SURF, ShapeInOut = OUT,
+				Color = ColorSequence.new(P.smoke or P.tail),
+				Size = NS({ {0, m * 0.45}, {1, m * 1.0} }),
+				Transparency = NS({ {0, 1}, {0.2, main and 0.15 or 0.55}, {1, 1} }),
+				Lifetime = NumberRange.new(0.9, 1.5), Speed = NumberRange.new(0.4 * s, 1.1 * s),
+				Acceleration = Vector3.new(0, 1.6 * s, 0), Drag = 1,
+				Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-40, 40),
+				ZOffset = depth,
+			})), share)
+		end
+
+		if style == "mist" then
+			layer("mist", own(emitter(part, {
+				Texture = TEX.smoke, LightEmission = 0.35, Brightness = 1.4,
+				FlipbookLayout = GRID, FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
+				Shape = BOX, ShapeStyle = SURF, ShapeInOut = OUT,
+				Color = CS3(P.hot, P.main, P.tail),
+				Size = NS({ {0, m * 0.35}, {1, m * 0.8} }),
+				Transparency = NS({ {0, 1}, {0.2, 0.35}, {1, 1} }),
+				Lifetime = NumberRange.new(0.6, 1.0), Speed = NumberRange.new(0.3 * s, 0.9 * s),
+				Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-30, 30), ZOffset = depth * 0.7,
+			})), share)
+			layer("droplet", own(emitter(part, {
+				Texture = TEX.droplet, LightEmission = 0.3, Brightness = 1.5,
+				Shape = BOX, ShapeStyle = SURF, ShapeInOut = OUT,
+				Orientation = Enum.ParticleOrientation.VelocityParallel,
+				Color = ColorSequence.new(P.main),
+				Size = NS({ {0, 0.12 * s}, {1, 0.08 * s} }),
+				Lifetime = NumberRange.new(0.6, 1.0), Speed = NumberRange.new(1 * s, 3 * s),
+				SpreadAngle = Vector2.new(60, 60), Acceleration = Vector3.new(0, -30 * s, 0),
+			})), share)
+		end
+	end
+
+	-- twinkles from the head for glow auras
+	local head = character:FindFirstChild("Head")
+	if style == "glow" and head then
+		local att = own(Instance.new("Attachment"))
+		att.Parent = head
+		layer("twinkle", own(emitter(att, {
+			Texture = TEX.spark, LightEmission = 1, Brightness = 3,
+			Color = ColorSequence.new(P.hot),
+			Size = NS({ {0, 0}, {0.5, 0.35 * s}, {1, 0} }),
+			Lifetime = NumberRange.new(0.5, 1), Speed = NumberRange.new(2 * s, 5 * s),
+			SpreadAngle = Vector2.new(180, 180), Drag = 3, Rotation = NumberRange.new(0, 90),
+		})), 1)
+	end
+
+	-- ground ring: world-aligned in Terrain, raycast to the floor (stays flat on benches)
+	local feet = own(Instance.new("Attachment"))
+	feet.Name = "AuraFeet"
 	feet.Parent = workspace.Terrain
-	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	rayParams.FilterDescendantsInstances = { character }
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Exclude
+	rp.FilterDescendantsInstances = { character }
 	local function placeFeet()
-		local origin = hrp.Position
-		local hit = workspace:Raycast(origin, Vector3.new(0, -(ext.Y + 6), 0), rayParams)
-		local y = hit and hit.Position.Y or (origin.Y - ext.Y * 0.5)
-		feet.WorldCFrame = CFrame.new(origin.X, y + 0.08, origin.Z)
+		local o = hrp.Position
+		local hit = workspace:Raycast(o, Vector3.new(0, -(ext.Y + 6), 0), rp)
+		feet.WorldCFrame = CFrame.new(o.X, (hit and hit.Position.Y or o.Y - ext.Y * 0.5) + 0.08, o.Z)
 	end
 	placeFeet()
-	local core = Instance.new("Attachment")
-	core.Name = "AuraCore"
-	core.Parent = hrp
-
-	local L: { [string]: any } = {}
-
-	-- LAYER 1: inner glow + ground circle + light (always on while equipped)
-	L.glow = emitter(core, {
-		Texture = TEX.glow, LightEmission = glowLE, LockedToPart = true,
-		Color = ColorSequence.new(preset.main),
-		Size = NS({ {0, 2.0 * s}, {1, 2.4 * s} }),
-		Transparency = NS({ {0, 1}, {0.4, 0.86}, {1, 1} }),
-		Lifetime = NumberRange.new(0.8, 1.2), Speed = NumberRange.new(0),
-		Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-20, 20),
-		ZOffset = behind,
-	})
-	L.ground = emitter(feet, {
-		Texture = TEX.ground, LightEmission = glowLE, LockedToPart = true,
+	self._ground = emitter(feet, {
+		Texture = TEX.ground, LightEmission = dark and 0.3 or 0.8, LockedToPart = true,
 		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
 		EmissionDirection = Enum.NormalId.Top, Speed = NumberRange.new(0.01),
-		Color = ColorSequence.new(accent),
+		Color = ColorSequence.new(dark and P.hot or P.main),
 		Size = NS({ {0, 1.6 * s}, {1, 2.4 * s} }),
-		Transparency = NS({ {0, 1}, {0.25, 0.55}, {1, 1} }),
+		Transparency = NS({ {0, 1}, {0.25, 0.6}, {1, 1} }),
 		Lifetime = NumberRange.new(1.4), RotSpeed = NumberRange.new(35), Rotation = NumberRange.new(0, 360),
 	})
-	local light = Instance.new("PointLight")
-	light.Color = preset.main
-	light.Range = 10 * s
-	light.Brightness = 0
-	light.Shadows = false
-	light.Parent = core
-	L.light = light
-
-	-- LAYER 2: rising flames + energy streaks (from 40% power)
-	L.flame = emitter(vol, {
-		Texture = TEX.flame, LightEmission = flameLE, Brightness = preset.dark and 1 or 1.3,
-		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
-		FlipbookMode = Enum.ParticleFlipbookMode.Loop,
-		FlipbookFramerate = NumberRange.new(18, 26), FlipbookStartRandom = true,
-		Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = CS(hot, preset.main, preset.tail),
-		Size = NS({ {0, 0.7 * s}, {0.35, 1.25 * s}, {1, 0.35 * s} }),
-		Squash = NS({ {0, -0.35}, {1, -0.55} }), -- tall thin tongues
-		Transparency = NS({ {0, 1}, {0.12, 0.05}, {0.7, 0.35}, {1, 1} }),
-		Lifetime = NumberRange.new(0.45, 0.7),
-		Speed = NumberRange.new(1.5 * s, 3 * s), EmissionDirection = Enum.NormalId.Top,
-		Acceleration = Vector3.new(0, 7 * s, 0), Drag = 1.5,
-		SpreadAngle = Vector2.new(6, 6), Rotation = NumberRange.new(-6, 6),
-		ZOffset = behind,
-	})
-	L.streak = emitter(vol, {
-		Texture = TEX.streak, LightEmission = 1,
-		Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = ColorSequence.new(hot, preset.main),
-		ZOffset = behind,
-		Size = NS({ {0, 0.3 * s}, {1, 0.12 * s} }),
-		Squash = NS({ {0, -1.6}, {1, -2.2} }),
-		Transparency = NS({ {0, 1}, {0.2, 0.1}, {1, 1} }),
-		Lifetime = NumberRange.new(0.35, 0.6),
-		Speed = NumberRange.new(9 * s, 14 * s), EmissionDirection = Enum.NormalId.Top,
-	})
-	if preset.smoke then
-		L.smoke = emitter(vol, {
-			Texture = TEX.smoke, LightEmission = 0, Brightness = 1,
-			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
-			FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
-			Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-			Color = ColorSequence.new(preset.smoke),
-			Size = NS({ {0, 1.4 * s}, {1, 3.2 * s} }),
-			Transparency = NS({ {0, 1}, {0.2, 0.35}, {1, 1} }),
-			Lifetime = NumberRange.new(1.1, 1.6),
-			Speed = NumberRange.new(1 * s, 2 * s), EmissionDirection = Enum.NormalId.Top,
-			Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-30, 30),
-			ZOffset = behind - 0.5,
-		})
-	end
-
-	-- LAYER 3: sparks / stars / lightning (from 85% power)
-	L.spark = emitter(vol, {
-		Texture = TEX.spark, LightEmission = 1, Brightness = 3,
-		Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-		Color = ColorSequence.new(accent),
-		Size = NS({ {0, 0.35 * s}, {1, 0} }),
-		Transparency = NS({ {0, 0}, {1, 0.3} }),
-		Lifetime = NumberRange.new(0.5, 0.9),
-		Speed = NumberRange.new(4 * s, 8 * s), SpreadAngle = Vector2.new(70, 70),
-		EmissionDirection = Enum.NormalId.Top, Acceleration = Vector3.new(0, -6 * s, 0), Drag = 2,
-		Rotation = NumberRange.new(0, 90),
-	})
-	if preset.stars then
-		L.stars = emitter(vol, {
-			Texture = TEX.spark, LightEmission = 1, Brightness = 2,
-			Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-			Color = ColorSequence.new(preset.core),
-			Size = NS({ {0, 0}, {0.5, 0.45 * s}, {1, 0} }),
-			Lifetime = NumberRange.new(0.6, 1.1), Speed = NumberRange.new(0.3 * s),
-			Rotation = NumberRange.new(0, 90), RotSpeed = NumberRange.new(-60, 60),
-		})
-	end
-	-- one-shot burst pieces
-	L.ring = emitter(feet, {
+	self._ring = emitter(feet, {
 		Texture = TEX.ring, LightEmission = 1, LockedToPart = true,
 		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
 		EmissionDirection = Enum.NormalId.Top, Speed = NumberRange.new(0.01),
 		Color = ColorSequence.new(accent),
-		Size = NS({ {0, 0.5 * s}, {1, 9 * s} }),
-		Transparency = NS({ {0, 0}, {1, 1} }),
+		Size = NS({ {0, 0.5 * s}, {1, 9 * s} }), Transparency = NS({ {0, 0}, {1, 1} }),
 		Lifetime = NumberRange.new(0.5),
 	})
-
-	-- lightning beams (storm / neon), only animated at high power + full LOD
-	local beams: { Beam } = {}
-	local beamAtts: { Attachment } = {}
-	if preset.lightning then
-		for i = 1, 3 do
-			local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
-			a0.Parent, a1.Parent = hrp, hrp
-			local b = Instance.new("Beam")
-			b.Attachment0, b.Attachment1 = a0, a1
-			b.Texture = TEX.lightning
-			b.TextureMode = Enum.TextureMode.Stretch
-			b.LightEmission, b.LightInfluence = 1, 0
-			b.FaceCamera = true
-			b.Segments = 1
-			b.Width0, b.Width1 = 0.6 * s, 0.6 * s
-			b.Color = ColorSequence.new(accent)
-			b.Enabled = false
-			b.Parent = hrp
-			table.insert(beams, b)
-			table.insert(beamAtts, a0)
-			table.insert(beamAtts, a1)
-		end
-	end
-
-	folder.Parent = character
-
-	local self = setmetatable({
-		_L = L, _beams = beams, _atts = { feet, core }, _beamAtts = beamAtts,
-		_folder = folder, _power = 0, _lod = 0, _s = s, _ext = ext, _conn = nil :: RBXScriptConnection?,
-		_mobile = 1,
-	}, AuraVFX)
-
-	-- fewer particles on phones / low graphics
-	local ok, q = pcall(function() return UserSettings().GameSettings.SavedQualityLevel.Value end)
-	if game:GetService("UserInputService").TouchEnabled then self._mobile = 0.6 end
-	if ok and q > 0 and q <= 3 then self._mobile = math.min(self._mobile, 0.45) end
-
-	if #beams > 0 then
-		local acc = 0
-		self._conn = RunService.Heartbeat:Connect(function(dt)
-			acc += dt
-			if acc < 0.07 then return end
-			acc = 0
-			local on = self._lod == 0 and self._power >= 0.85
-			for i, b in beams do
-				local flick = on and math.random() < 0.6
-				b.Enabled = flick
-				if flick then
-					local hx, hy = ext.X * 0.6, ext.Y * 0.45
-					beamAtts[i * 2 - 1].Position = Vector3.new((math.random() - 0.5) * 2 * hx, (math.random() - 0.5) * 2 * hy, (math.random() - 0.5) * hx)
-					beamAtts[i * 2].Position = Vector3.new((math.random() - 0.5) * 2 * hx, (math.random() - 0.5) * 2 * hy, (math.random() - 0.5) * hx)
-				end
-			end
-		end)
-	end
-
-	-- keep the ground ring under the player (world-aligned, on the floor)
-	self._feetConn = RunService.Heartbeat:Connect(function()
+	table.insert(self._conns, RunService.Heartbeat:Connect(function()
 		if self._lod < 2 and hrp.Parent then placeFeet() end
-	end)
+	end))
 
 	self:SetPower(0.15)
 	return self
 end
 
 function AuraVFX:_apply()
-	local L, p, m = self._L, self._power, self._mobile
-	local lod = self._lod
-	local function rate(e: ParticleEmitter?, r: number)
-		if e then e.Rate = r * m end
+	local p, lod, m = self._power, self._lod, self._mobile
+	local k = smooth(0.15, 1, p)
+	for _, L in self._layers do
+		local r = 0
+		local def = RATES[L.name]
+		if def and (lod == 0 or (lod == 1 and L.name == "rim")) then
+			r = (def[1] + (def[2] - def[1]) * k) * L.share * m
+			if lod == 1 then r *= 0.5 end
+		end
+		L.e.Rate = r
 	end
-	if lod >= 2 then
-		for _, e in L do if typeof(e) == "Instance" and e:IsA("ParticleEmitter") then e.Rate = 0 end end
-		L.light.Brightness = 0
-		return
-	end
-	-- layer 1
-	rate(L.glow, 2 + 3 * p)
-	rate(L.ground, 0.8 + 0.8 * p)
-	L.light.Brightness = 0.6 + 1.6 * p
-	if lod >= 1 then
-		rate(L.flame, 0); rate(L.streak, 0); rate(L.smoke, 0); rate(L.spark, 0); rate(L.stars, 0)
-		return
-	end
-	-- layer 2 (fades in from 40% to 70% power)
-	local l2 = smooth(0.4, 0.7, p)
-	rate(L.flame, 5 + 30 * l2)          -- a few small flames even at idle
-	rate(L.streak, 8 * l2)
-	rate(L.smoke, 2 + 8 * l2)
-	-- layer 3 (85% -> 100%)
-	local l3 = smooth(0.85, 1, p)
-	rate(L.spark, 18 * l3)
-	rate(L.stars, 3 + 10 * l3)
+	self._ground.Rate = lod < 2 and (0.8 + 0.8 * p) or 0
 end
 
-function AuraVFX:SetPower(p: number)
+function AuraVFX:SetPower(p)
 	self._power = math.clamp(p, 0, 1)
 	self:_apply()
 end
 
-function AuraVFX:SetLOD(level: number)
+function AuraVFX:SetLOD(level)
 	if level == self._lod then return end
 	self._lod = level
 	self:_apply()
 end
 
+local BURST = { ember = 10, lightning = 4, flame = 6, wisp = 4, smoke = 3, mist = 4, droplet = 6, twinkle = 10 }
 function AuraVFX:Burst()
 	if self._lod >= 2 then return end
-	local L = self._L
-	L.ring:Emit(1)
-	L.glow:Emit(3)
-	if self._lod == 0 then
-		L.flame:Emit(math.floor(24 * self._mobile))
-		L.spark:Emit(math.floor(40 * self._mobile))
-		L.streak:Emit(math.floor(16 * self._mobile))
+	self._ring:Emit(1)
+	if self._lod > 0 then return end
+	for _, L in self._layers do
+		local n = BURST[L.name]
+		if n then L.e:Emit(math.max(1, math.floor(n * L.share * 4 * self._mobile))) end
 	end
 end
 
 function AuraVFX:Destroy()
-	if self._conn then self._conn:Disconnect() end
-	if self._feetConn then self._feetConn:Disconnect() end
-	for _, b in self._beams do b:Destroy() end
-	for _, a in self._beamAtts do a:Destroy() end
-	for _, a in self._atts do a:Destroy() end
-	self._folder:Destroy()
+	for _, c in self._conns do c:Disconnect() end
+	for _, x in self._owned do if x.Parent then x:Destroy() end end
+	if self._ground then self._ground:Destroy() end
+	if self._ring then self._ring:Destroy() end
 end
 
 AuraVFX.Presets = PRESETS
