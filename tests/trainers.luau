@@ -4,7 +4,7 @@ print("Trainers")
 H.check(#T.List == 4, "four trainers")
 local kinds = {}
 for _, t in T.List do
-	H.check(t.price > 0 and t.coachName and t.perkText and t.look and t.look.hair, t.id .. " is complete")
+	H.check(t.price > 0 and t.coachName and t.perkText and t.look and t.look.skin and t.look.shirt and t.look.pants and t.look.faceTexture, t.id .. " is complete (skin, clothes, face)")
 	for k in t.perk do kinds[k] = true end
 end
 H.check(kinds.gains and kinds.regen and kinds.coins and kinds.pump, "one perk each: EXP, refill, coins, pump")
