@@ -8,7 +8,11 @@ H.check(E.LoginDay(99, 7, 100) == 1, "after day 7 the calendar starts over")
 H.check(E.LoginDay(97, 5, 100) == 1, "missed a day: back to day 1")
 local c7, t7 = E.LoginReward(7)
 local c1 = E.LoginReward(1)
-H.check(c7 > c1 and t7 == nil, "day 7 is the big one (coins only: no DNA tokens, Config/DNA)")
+H.check(c7 > c1 and t7 == 1, "day 7 is the big one (and a DNA token)")
+local tokens = {}
+for day = 1, 7 do tokens[day] = select(2, E.LoginReward(day)) end
+H.check(tokens[4] == 1 and tokens[7] == 1 and tokens[1] + tokens[2] + tokens[3] + tokens[5] + tokens[6] == 0,
+	"a DNA token on days 4 and 7 only")
 for day = 2, 7 do H.check(E.LoginReward(day) >= E.LoginReward(day - 1), "day " .. day .. " pays at least day " .. (day - 1)) end
 print("Offline")
 H.check(E.OfflineCoins(5 * 60) == 0, "short break: nothing")

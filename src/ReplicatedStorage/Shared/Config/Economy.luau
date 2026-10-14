@@ -3,10 +3,11 @@ local Economy = {}
 
 -- Login streak (owner's feature run, task 2; replaces the old automatic streak): a 7-day calendar. Join each UTC day and
 -- press Claim for that day's reward (a popup on join, or the Daily pill). Missing a day starts again at day 1; after day 7
--- the calendar starts over. Day 7 is the big one: the most coins and (the first time) the "Dedicated" title. (No DNA
--- tokens: owner, 14 Oct, see Config/DNA.)
+-- the calendar starts over. Day 7 is the big one: the most coins, a DNA token and (the first time) the "Dedicated" title.
+-- Day 4 also gives a DNA token (owner, 14 Oct: an allowed DNA token source, see Config/DNA; keep it).
 Economy.Login = {
 	Coins = { 25, 35, 50, 70, 90, 120, 300 }, -- day 1..7
+	DnaTokens = { [4] = 1, [7] = 1 },         -- DNA tokens on top of that day's coins
 }
 
 -- Offline coins: for time away, capped.
@@ -49,9 +50,9 @@ function Economy.LoginDay(lastDay, calendarDay, today)
 	return 1 -- first claim ever, or a missed day: back to day 1
 end
 
--- The reward for a calendar day: coins.
+-- The reward for a calendar day: coins, DNA tokens.
 function Economy.LoginReward(calendarDay)
-	return Economy.Login.Coins[calendarDay] or Economy.Login.Coins[1]
+	return Economy.Login.Coins[calendarDay] or Economy.Login.Coins[1], Economy.Login.DnaTokens[calendarDay] or 0
 end
 
 function Economy.OfflineCoins(secondsAway)

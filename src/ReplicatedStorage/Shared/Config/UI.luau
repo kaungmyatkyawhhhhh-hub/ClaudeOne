@@ -58,6 +58,9 @@ UI.ShopIcons = { -- shop items that aren't a real pass / product (those read the
 	product_coins_large = "rbxassetid://89371119234841",
 	product_coins_medium = "rbxassetid://90925282294067",
 	product_coins_small = "rbxassetid://119709746715062",
+	-- (these two were uploaded from Studio on 14 Oct, so they're in the owner's own inventory, not the group)
+	product_dna_token = "rbxassetid://87375007150587",
+	product_quest_reroll = "rbxassetid://124460070314904",
 	product_shake_bundle = "rbxassetid://107883030118451",
 	product_skip_growth_cooldown = "rbxassetid://113267233802315",
 	product_stamina_refill = "rbxassetid://136768220289914",

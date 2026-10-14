@@ -7,8 +7,9 @@
 --     the reroll happens only in ProcessReceipt (DailyService.PaidReroll); a paid reroll that has no quest left to swap is
 --     kept as a credit (stats.questRerollCredits) and used by the next reroll. DailyQuests.SwapFor never gives the same
 --     quest, one of the other two, or one that needs another player.
---   * Login calendar: one claim per UTC day; the next calendar day if you claimed yesterday, else day 1. Day 7 adds a DNA
---     token and counts a week (stat loginWeeks: the "Dedicated" title).
+--   * Login calendar: one claim per UTC day; the next calendar day if you claimed yesterday, else day 1. Days 4 and 7 add a
+--     DNA token (Config/Economy.Login.DnaTokens); day 7 counts a week (stat loginWeeks: the "Dedicated" title). The claim
+--     day is saved before anything is paid, so a claim can't be paid twice (rejoining, another server).
 -- Studio: Workspace attribute TestLoginDay = n (see Start); TestDayOffset = n days added to today (fake the date).
 -- Remote "Daily": client -> server "ClaimLogin" | "Claim", index | "ClaimBonus" | "Swap", index.
 --                 server -> client (kind, info): "LoginClaimed", "QuestDone", "Claimed", "Swapped", "BuyReroll" (prompt the
@@ -220,15 +221,16 @@ local function claimLogin(player: Player)
 	local day = today()
 	local calendarDay = Economy.LoginDay(daily.lastDay or 0, daily.calendarDay or 0, day)
 	if not calendarDay then return end -- already claimed today
-	local coins = Economy.LoginReward(calendarDay)
+	local coins, tokens = Economy.LoginReward(calendarDay)
 	local streak = (daily.lastDay == day - 1) and (daily.streak or 0) + 1 or 1
 	PlayerData.SetTable(player, "daily", { lastDay = day, streak = streak, best = math.max(daily.best or 0, streak), calendarDay = calendarDay })
 	PlayerData.AddCoins(player, coins)
+	if tokens > 0 then PlayerData.AddDnaTokens(player, tokens) end
 	if calendarDay == #Economy.Login.Coins then
 		PlayerData.SetStat(player, "loginWeeks", (data.stats.loginWeeks or 0) + 1)
 		TitleService.Check(player) -- "Dedicated"
 	end
-	send(player, "LoginClaimed", { day = calendarDay, coins = coins })
+	send(player, "LoginClaimed", { day = calendarDay, coins = coins, tokens = tokens })
 end
 
 ------------------------------------------------------------------------

@@ -205,6 +205,11 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   under windows; outdoors only. Press 0.92 + bounce + click; start = whoosh + dust puff; one-time hint after 10 s walking
   outdoors (settings.skateHintSeen); new last tutorial step "Skate" (8 s). Old right-column button removed. Checked on
   PC (on / off / Q); touch placement not checked (the emulator can't be switched from here).
+- Daily rewards DNA tokens (owner): Economy.Login.DnaTokens = { [4] = 1, [7] = 1 } on top of the coins (an allowed source:
+  Config/DNA now lists 4 sources). DailyService pays it with the claim (the claim day is saved first: once per claim);
+  "+1 DNA Token" toast; the grid shows the DNA token icon (Config/UI.ShopIcons.product_dna_token, uploaded from Studio =
+  the owner's inventory 87375007150587; not in the group) with "+1" beside the coin on days 4 and 7. Tested with
+  TestLoginDay 1..7 (claiming twice each day): +1 token on days 4 and 7 only, coins once per day.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

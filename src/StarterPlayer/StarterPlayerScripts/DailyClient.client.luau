@@ -262,10 +262,18 @@ local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: n
 	})
 	local cards = {}
 	for day = 1, DAYS do
-		local coins = Economy.LoginReward(day)
+		local coins, tokens = Economy.LoginReward(day)
 		local card = Kit.Card({ Name = "Day" .. day, LayoutOrder = day, Parent = grid }, {})
 		local label = Kit.Text({ Name = "Day", Text = "DAY " .. day, Font = "Title", TextSize = 12, Position = UDim2.fromOffset(0, 3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
-		local coin = Kit.Coin(math.floor(cell.Y * 0.34), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = card })
+		local iconSize = math.floor(cell.Y * 0.34)
+		local coin = Kit.Coin(iconSize, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(if tokens > 0 then 0.32 else 0.5, 0.5), Parent = card })
+		-- days with a DNA token (4 and 7): its icon next to the coin, "+1" on it
+		if tokens > 0 then
+			local dna = Theme.New("ImageLabel", { Name = "Dna", Image = require(Shared.Config.UI).ShopIcons.product_dna_token, BackgroundTransparency = 1,
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.68, 0.5), Size = UDim2.fromOffset(iconSize + 4, iconSize + 4), Parent = card })
+			Kit.Text({ Name = "Plus", Text = "+" .. tokens, Font = "Number", TextSize = 11, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 6, 1, 4),
+				Size = UDim2.fromOffset(20, 12), TextXAlignment = Enum.TextXAlignment.Right, Parent = dna })
+		end
 		local amount = Kit.Text({ Name = "Amount", Text = Kit.Short(coins), Font = "Number", TextSize = 12,
 			AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
 		local check = Pieces.Icon("check", Colors.Green, { Name = "Check", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3), Size = UDim2.fromOffset(13, 13), Visible = false, Parent = card })
@@ -289,7 +297,7 @@ end
 local bigCal = makeCalendar(pages.Rewards, Vector2.new(72, 70), DAYS, 17)
 bigCal.frame.Size = UDim2.fromScale(1, 1)
 bigCal.grid.Size = UDim2.new(1, 0, 0, 76)
-Kit.Text({ Name = "Rules", Text = "Log in every day to keep your streak. Day " .. DAYS .. " also gives the Dedicated title. Missing a day starts again at day 1.",
+Kit.Text({ Name = "Rules", Text = "Log in every day to keep your streak. Days 4 and " .. DAYS .. " give a DNA token, day " .. DAYS .. " the Dedicated title too. Missing a day starts again at day 1.",
 	Font = "Body", TextSize = 13, TextColor3 = Colors.Muted, TextWrapped = true, Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 40),
 	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = bigCal.frame })
 bigCal.claim.AnchorPoint = Vector2.new(0.5, 1)
@@ -589,6 +597,9 @@ remote.OnClientEvent:Connect(function(kind, info)
 		local sub = "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins"
 		Notify.Toast("Day " .. tostring(info.day) .. " reward", sub, "gift", Colors.Gold)
 		Audio.PlayUI("StreakClaim")
+		if (tonumber(info.tokens) or 0) > 0 then
+			Notify.Toast("+" .. tostring(info.tokens) .. " DNA Token", "Reroll your genetics on the Genetics screen", "sparkles", Colors.Gold, "dailydna")
+		end
 	end
 end)
 
