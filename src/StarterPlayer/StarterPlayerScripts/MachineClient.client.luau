@@ -1611,9 +1611,14 @@ local function canUnlock(machine, tier)
 	return mainLevel(machine) >= tier.unlockLevel
 end
 
--- Unavailable step buttons hide (their spot stays: the panel is laid out by position).
-local function setStepButton(button, shown)
-	button.Visible = shown
+-- - and + are always there (owner, 14 Oct: the weight stays centred between them); one that can't go further is greyed
+-- out and does nothing (it still takes the tap, so a tap on it never lifts).
+local function setStepButton(button, enabled)
+	button.Visible = true
+	button:SetAttribute("Enabled", enabled)
+	Theme.SetButtonStyle(button, enabled and "Quiet" or "Disabled")
+	local icon = button:FindFirstChild("Icon")
+	if icon then icon.ImageTransparency = enabled and 0 or 0.65 end
 end
 
 local function refreshTier()
@@ -1628,7 +1633,8 @@ local function refreshTier()
 	local levelOk = mainLevel(machine) >= tier.unlockLevel
 	-- bought tiers still need the level (again after a Growth Spurt)
 	local locked = viewTier > unlocked or not levelOk
-	weightNumber.Text = tier.label or tostring(tier.weight)
+	-- (bodyweight machines label their added weight "+25": the panel shows just "25 LB", owner 14 Oct; "BW" stays)
+	weightNumber.Text = if tier.label and string.sub(tier.label, 1, 1) ~= "+" then tier.label else tostring(tier.weight)
 	weightNumber.TextColor3 = locked and Colors.Muted or Colors.Text
 	hud.weightUnit.Text = string.upper(tier.unit or (tier.weight > 0 and "lb" or ""))
 	hud.weightUnit.Visible = hud.weightUnit.Text ~= ""
@@ -1641,6 +1647,9 @@ local function refreshTier()
 	needsLabel.Visible = not levelOk
 	hud.tierTag.Visible = not unlockButton.Visible and levelOk
 	hud.maxButton.Visible = not unlockButton.Visible
+	-- BEST WEIGHT / AT BEST: already on the heaviest weight the level allows?
+	local best = Machines.UsableTier(machine, ClientData.Get().machines[machine.id], mainLevel(machine))
+	hud.setAtBest(viewTier == best)
 	-- (free weights: the unlock button never shows now; the next weight just needs the level)
 	if not levelOk then
 		needsLabel.Text = "Needs " .. main.name .. " " .. Muscles.FormatExp(Muscles.Shown(tier.unlockLevel)) .. " exp"
@@ -2410,12 +2419,12 @@ local function stepTier(delta)
 	refreshTier()
 end
 
-minusButton.Activated:Connect(function() stepTier(-1) end)
-plusButton.Activated:Connect(function() stepTier(1) end)
+minusButton.Activated:Connect(function() if minusButton:GetAttribute("Enabled") ~= false then stepTier(-1) end end)
+plusButton.Activated:Connect(function() if plusButton:GetAttribute("Enabled") ~= false then stepTier(1) end end)
 do
 	local maxButton = plusButton.Parent:FindFirstChild("Max") :: GuiButton
 	maxButton.Activated:Connect(function()
-		if not current then return end
+		if not current or maxButton:GetAttribute("AtBest") then return end
 		local machine = current.machine
 		-- the same rule as the server (MachineService maxWeight), so the panel jumps there at once; the data confirms it
 		local best = Machines.UsableTier(machine, ClientData.Get().machines[machine.id], mainLevel(machine))

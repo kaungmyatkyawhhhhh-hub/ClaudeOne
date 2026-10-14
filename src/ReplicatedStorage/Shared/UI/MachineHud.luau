@@ -1,10 +1,14 @@
 -- MachineHud: the look of the HUD while on a machine (owner's final kit "BLACK + GOLD", mockup gym_arc_ui_final/02_lifting;
 -- owner's mobile fixes, 14 Oct). MachineClient owns all the logic; this only builds the widgets (mockup px inside a
 -- Kit.Root) and returns them. Nothing sits in the middle of the screen:
---   right, top:    the WEIGHT CARD just under Roblox's top bar: the machine name + its muscle group in a red tag,
---                  - / "45 LB" / +, "Tier 1 / 12" and BEST WEIGHT in gold on one line; when the weight needs a higher
---                  level, that requirement gets its own line (small, cut with "...") and BEST WEIGHT moves under it.
---                  AUTO TRAIN under the card (only while Auto Lift is on sale)
+--   right:         the WEIGHT CARD a bit above the middle of the screen (owner, 14 Oct: centre at 40% of the height,
+--                  16 px from the right safe edge): the machine name + its muscle group in a red tag, - / "45 LB" / + (both
+--                  steps always there, greyed when they can't go further), then "Tier 1 / 12" on the left and the BEST
+--                  WEIGHT button on the right on one line (a real gold button with an up-arrow icon; "AT BEST" with a check,
+--                  flat and dark, when you're on it). When the weight needs a higher level, that requirement gets its own
+--                  line and the Tier / BEST WEIGHT line moves under it. AUTO TRAIN under the card (only while Auto Lift is on
+--                  sale). The card, PUMP and REP never overlap (10 px apart): on short screens the card shrinks to 0.9 and,
+--                  only if it still doesn't fit, moves up just enough.
 --   right, bottom: the red REP CTA ("REP x9", 150x46) with the PUMP panel right above it (same width; full = it glows and
 --                  says "TAP TO PUMP!", a tap or Space starts PUMPED x2 and the bar drains with the seconds left).
 --                  ONE fixed spot (owner, 14 Oct: it must never move during play): on touch screens directly above
@@ -26,7 +30,10 @@ local New, Colors = Theme.New, Theme.Colors
 
 local MachineHud = {}
 
-MachineHud.PanelSize = Vector2.new(184, 86) -- the weight card (it grows by NeedsLine while a requirement shows)
+MachineHud.PanelSize = Vector2.new(184, 92) -- the weight card (it grows by NeedsLine while a requirement shows)
+MachineHud.PanelCenterY = 0.40 -- the card's centre, as a share of the screen height (owner, 14 Oct)
+MachineHud.PanelRight = 16     -- px from the right safe edge
+MachineHud.Gap = 10            -- between the card, PUMP and REP
 MachineHud.NeedsLine = 16
 MachineHud.PanelTop = 52 -- (set from Kit.UnderTopbar: just under Roblox's top bar)
 MachineHud.Edge = 12
@@ -92,8 +99,9 @@ function MachineHud.Build()
 	local panelSlot = frame({ Name = "PanelSlot", Size = UDim2.fromScale(1, 1), Position = MachineHud.PanelHidden, Parent = root })
 	hud.panelSlot = panelSlot
 	local panel = Theme.Panel({ Name = "Panel", Piece = "hud_box", Clickable = true, -- (taps on it don't lift)
-		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -edge, 0, MachineHud.PanelTop), Size = UDim2.fromOffset(size.X, size.Y),
+		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -MachineHud.PanelRight, MachineHud.PanelCenterY, 0), Size = UDim2.fromOffset(size.X, size.Y),
 		Parent = panelSlot })
+	local panelScale = New("UIScale", { Name = "Fit", Parent = panel })
 	hud.panel = panel
 	-- the machine name and its muscle group (a red tag)
 	hud.titleLabel = Kit.Text({ Name = "MachineName", Text = "", Font = "Title", TextSize = 14, Upper = true, Position = UDim2.fromOffset(10, 6),
@@ -113,22 +121,39 @@ function MachineHud.Build()
 		Size = UDim2.fromOffset(0, 24), AutomaticSize = Enum.AutomaticSize.X, Parent = weightRow })
 	-- line 1: "Tier 1 / 12" left, BEST WEIGHT right; while a requirement shows it takes line 1 (full width) and BEST
 	-- WEIGHT drops to line 2
-	local lineY = 66
-	hud.tierTag = frame({ Name = "Tier", Position = UDim2.fromOffset(10, lineY), Size = UDim2.new(1, -110, 0, 16), Parent = panel })
+	-- the bottom line: "Tier 1 / 12" left and BEST WEIGHT right, both centred on the same line (rowY = the line's centre)
+	local rowY = 75
+	local needsY = 64
+	hud.tierTag = frame({ Name = "Tier", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromOffset(10, rowY), Size = UDim2.new(1, -112, 0, 16), Parent = panel })
 	Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Size = UDim2.fromScale(1, 1),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = hud.tierTag })
-	hud.needsLabel = Kit.Text({ Name = "Needs", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(10, lineY),
-		Size = UDim2.new(1, -20, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Visible = false, Parent = panel })
-	-- BEST WEIGHT (the owner's MAX: the heaviest weight the level allows) as gold text, a sibling of + (MachineClient finds it)
-	hud.maxButton = New("TextButton", { Name = "Max", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -8, 0, lineY - 4), Size = UDim2.fromOffset(100, 24), Parent = panel })
-	Kit.GoldText(Kit.Text({ Name = "Label", Text = "BEST WEIGHT", Font = "Title", TextSize = 13, Size = UDim2.fromScale(1, 1),
-		TextXAlignment = Enum.TextXAlignment.Right, Parent = hud.maxButton }))
+	hud.needsLabel = Kit.Text({ Name = "Needs", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.fromOffset(10, needsY), Size = UDim2.new(1, -20, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
+		Visible = false, Parent = panel })
+	-- BEST WEIGHT (the heaviest weight the level allows): a real gold button (no ring: not the screen's main CTA) with an
+	-- up-arrow icon. `hud.maxButton` is its tap area, 44 px tall (bigger than the 26 px button inside it), a sibling of +
+	-- (MachineClient finds it as "Max"); the gold button itself doesn't take input, so every tap lands on the tap area.
+	hud.maxButton = New("TextButton", { Name = "Max", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -6, 0, rowY), Size = UDim2.fromOffset(104, 44), Parent = panel })
+	hud.maxVisual = Kit.Button("Green", "Best weight", { Name = "Visual", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Parent = hud.maxButton }, { width = 100, height = 26, textSize = 11, icon = "arrow-big-up", iconColor = Colors.Ink })
+	hud.maxVisual.Interactable = false
 	Theme.BindPress(hud.maxButton)
+	-- AT BEST: flat and dark, muted text, a check; it can't be pressed
+	function hud.setAtBest(atBest: boolean)
+		local icon = hud.maxVisual:FindFirstChild("Icon")
+		Kit.SetButton(hud.maxVisual, atBest and "Disabled" or "Green", atBest and "At best" or "Best weight")
+		if icon then
+			icon.Image = UIConfig.Icons[atBest and "check" or "arrow-big-up"]
+			icon.ImageColor3 = atBest and Colors.Faint or Colors.Ink
+		end
+		hud.maxButton:SetAttribute("AtBest", atBest) -- (MachineClient ignores the tap; it still takes it, so it never lifts)
+	end
 	local function fitNeeds()
 		local extra = hud.needsLabel.Visible and MachineHud.NeedsLine or 0
 		panel.Size = UDim2.fromOffset(size.X, size.Y + extra)
-		hud.maxButton.Position = UDim2.new(1, -8, 0, lineY - 4 + extra)
+		hud.maxButton.Position = UDim2.new(1, -6, 0, rowY + extra)
+		hud.tierTag.Position = UDim2.fromOffset(10, rowY + extra)
 	end
 	hud.needsLabel:GetPropertyChangedSignal("Visible"):Connect(fitNeeds)
 	-- UNLOCK (weights are free now: never shown, kept for MachineClient)
@@ -139,7 +164,7 @@ function MachineHud.Build()
 	hud.costLabel = Kit.Text({ Name = "Cost", Text = "", Font = "Number", TextSize = 14, Visible = false, Parent = unlock })
 	-- AUTO TRAIN under the card (only while Auto Lift is on sale)
 	hud.autoButton, hud.autoLabel = Kit.Button("Quiet", "Auto train", { Name = "Auto", AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -edge, 0, MachineHud.PanelTop + size.Y + 8), Visible = false, Parent = panelSlot }, { width = size.X, height = 30, icon = "lock", textSize = 13 })
+		Position = UDim2.new(1, 0, 1, 8), Visible = false, Parent = panel }, { width = size.X, height = 30, icon = "lock", textSize = 13 })
 
 	-- (kept for MachineClient, not shown: the muscle split is on the machine's sign, the barbell drawing and the stamina
 	-- segments are gone, stamina is the bar at the bottom)
@@ -168,7 +193,7 @@ function MachineHud.Build()
 
 	-- the PUMP panel: a gold flame, PUMP, the % on the right, a metallic gold bar (the whole panel is the button)
 	local pump = Theme.Panel({ Name = "Pump", Piece = "hud_box", Clickable = true, AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -corner, 1, -(corner + MachineHud.RepSize.Y + 8)), Size = UDim2.fromOffset(MachineHud.PumpSize.X, MachineHud.PumpSize.Y), Parent = stack })
+		Position = UDim2.new(1, -corner, 1, -(corner + MachineHud.RepSize.Y + MachineHud.Gap)), Size = UDim2.fromOffset(MachineHud.PumpSize.X, MachineHud.PumpSize.Y), Parent = stack })
 	Pieces.Icon("flame", Colors.Gold, { Name = "Flame", Position = UDim2.fromOffset(10, 5), Size = UDim2.fromOffset(14, 14), Parent = pump }):SetAttribute("KeepColor", true)
 	hud.pumpLabel = Kit.Text({ Name = "Label", Text = "PUMP", Font = "Title", TextSize = 12, Position = UDim2.fromOffset(28, 3), Size = UDim2.new(1, -78, 0, 18),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = pump })
@@ -190,16 +215,17 @@ function MachineHud.Build()
 		Size = UDim2.new(1, 0, 0, 16), ZIndex = 6, Parent = banner })
 	hud.prBanner = banner
 
-	-- the weight card and the record banner start just under Roblox's top bar
+	-- the record banner starts just under Roblox's top bar
+	local placePanel -- (below)
 	local function placeUnderTopbar()
 		local top = Kit.UnderTopbar(root)
 		MachineHud.PanelTop = top
-		panel.Position = UDim2.new(1, -edge, 0, top)
-		hud.autoButton.Position = UDim2.new(1, -edge, 0, top + panel.Size.Y.Offset + 8)
 		banner.Position = UDim2.new(0.5, 0, 0, top)
+		if placePanel then placePanel() end
 	end
 	Kit.OnTopbar(placeUnderTopbar)
 	panel:GetPropertyChangedSignal("Size"):Connect(placeUnderTopbar)
+	hud.autoButton:GetPropertyChangedSignal("Visible"):Connect(placeUnderTopbar)
 	gui:GetPropertyChangedSignal("Enabled"):Connect(function() task.defer(placeUnderTopbar) end)
 
 	-- REP / PUMP directly above Roblox's jump button and STOP above the thumbstick on touch screens; the corners on a PC.
@@ -231,11 +257,30 @@ function MachineHud.Build()
 		end
 		return result
 	end
+	-- The weight card: centre at PanelCenterY of the height; if it would come within Gap of PUMP it shrinks to 0.9, and
+	-- only if it still doesn't fit it moves up just enough (never above the top bar).
+	function placePanel()
+		local s = Kit.Scale()
+		local rootH = root.AbsoluteSize.Y / math.max(s, 0.01)
+		if rootH < 1 then return end
+		local repBottom = placed and placed.repBottom or corner
+		local pumpTop = rootH - (repBottom + MachineHud.RepSize.Y + MachineHud.Gap + MachineHud.PumpSize.Y)
+		local height = panel.Size.Y.Offset + (hud.autoButton.Visible and 38 or 0)
+		local centre = rootH * MachineHud.PanelCenterY
+		local scale = 1
+		local function bottom() return centre - panel.Size.Y.Offset * scale / 2 + height * scale end
+		if bottom() + MachineHud.Gap > pumpTop then scale = 0.9 end
+		if bottom() + MachineHud.Gap > pumpTop then centre -= bottom() + MachineHud.Gap - pumpTop end
+		centre = math.max(centre, MachineHud.PanelTop + panel.Size.Y.Offset * scale / 2)
+		panelScale.Scale = scale
+		panel.Position = UDim2.new(1, -MachineHud.PanelRight, 0, centre)
+	end
 	local function apply()
 		if not placed then return end
 		rep.Position = UDim2.new(1, -placed.repRight, 1, -placed.repBottom)
-		pump.Position = UDim2.new(1, -placed.repRight, 1, -(placed.repBottom + MachineHud.RepSize.Y + 8))
+		pump.Position = UDim2.new(1, -placed.repRight, 1, -(placed.repBottom + MachineHud.RepSize.Y + MachineHud.Gap))
 		hud.exitButton.Position = UDim2.new(0, corner, 1, -placed.stopBottom)
+		placePanel()
 	end
 	-- the first measurement from the real controls (on a PC: the corners) is kept for good
 	local function placeForInput()
@@ -316,7 +361,10 @@ function MachineHud.Build()
 
 	-- the weight card slides in from the right (the bottom widgets come up with `stack`)
 	function hud.show(on: boolean)
-		if on then placeForInput() end
+		if on then
+			placeForInput()
+			placePanel()
+		end
 		Theme.Tween(panelSlot, { Position = on and UDim2.new() or MachineHud.PanelHidden })
 	end
 

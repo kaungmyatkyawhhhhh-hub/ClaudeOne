@@ -178,6 +178,13 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   Red = the main CTA with the ring. No pulse on the 3 quest-row CLAIMs. Arm wrestle opponents: one dark card style (a
   rival too), difficulty colored under the name. Checked: menu, Store, arm wrestle picker, Titles, Physique, Quests,
   Genetics (Studio emulator 974x584; it can't be switched to 844x390 / PC from here).
+- Machine panel (owner): the weight card is centred at 40% of the screen height, 16 px from the right safe edge
+  (MachineHud.PanelCenterY / PanelRight; DeviceSafeInsets), PUMP / REP 10 px apart; if the card would come within 10 px of
+  PUMP it shrinks to 0.9 and only then moves up just enough. - and + always show (greyed + ignored at the ends, they still
+  take the tap so it never lifts). "+100" tiers (bodyweight machines) show "100 LB". BEST WEIGHT is a real gold button
+  (no ring, up-arrow icon, 26 px visual inside a 44 px tap area) on the Tier line; AT BEST (flat, check, muted) when on the
+  heaviest usable weight. Checked: Crunch Bench at 12/12 (AT BEST) and 10/12, Squat Rack, Flat Bench (974x584; the other
+  emulator sizes can't be switched from here).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
