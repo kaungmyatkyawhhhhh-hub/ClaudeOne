@@ -162,6 +162,14 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   and no token, REROLL opens "25,000" / "R$ 99" (nothing spent without a tap). Studio hook: Workspace TestReceipt =
   "<productId>:<purchaseId>". Tested: spurt 0->1 gave exactly 1, coin buy 30,000 -> 5,000 (+1), second buy failed
   (toast + shake), test receipt +1 once, same id again and after rejoin: no second grant.
+- Quest rerolls (owner): DailyQuests.FreeRerollsPerDay = 1 free a day (dq.swaps, saved with the day), then the "Quest
+  Reroll" product 3718500732 (R$ 19, Config/Products). The picked quest is saved (dq.pendingReroll) before the client
+  prompts; the reroll happens only in ProcessReceipt (DailyService.PaidReroll, once per PurchaseId); nothing left to swap =
+  a credit (stats.questRerollCredits) used by the next reroll. Never the same quest or one of the other two; done /
+  claimed quests can't be rerolled. Quests window: REROLL - FREE (gold) / REROLL - R$ 19 + "Free reroll in 5h 12m" in the
+  bonus card; tap it, then a quest (its pill says REROLL). Studio: TestDayOffset = n days. Tested on the owner's save:
+  claimed quest refused, free once, then BuyReroll, test receipt swapped exactly the picked quest once (sent twice),
+  rejoin kept the free one used, next (fake) day the free one came back.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

@@ -79,6 +79,8 @@ end
 local function grantProduct(player, product)
 	if product.key == "DnaToken" then
 		return PlayerData.AddDnaTokens(player, 1)
+	elseif product.key == "QuestReroll" then
+		return require(script.Parent.DailyService).PaidReroll(player)
 	elseif product.key == "ShakePack" then
 		return PlayerData.AddShakes(player, Effects.ShakePackSize)
 	elseif product.key == "ServerBoost" then

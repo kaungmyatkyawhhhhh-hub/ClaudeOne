@@ -2,12 +2,17 @@
 -- (Config.Economy.Login). Everything is decided and paid here; the client only asks.
 --   * Daily quests: PerDay quests a UTC day, picked per player. Progress comes from GameEvents (reps, treadmill metres,
 --     spots, posing entries, arm wrestling wins). Claim each finished quest for coins; claiming them all unlocks a bonus.
---     One swap a day replaces a quest (DailyQuests.SwapFor never gives one that needs another player).
+--     Rerolls (owner, 14 Oct): DailyQuests.FreeRerollsPerDay free a day (dq.swaps, saved with the day), then each one is the
+--     "Quest Reroll" product: the quest picked is remembered (dq.pendingReroll) BEFORE the client prompts the purchase, and
+--     the reroll happens only in ProcessReceipt (DailyService.PaidReroll); a paid reroll that has no quest left to swap is
+--     kept as a credit (stats.questRerollCredits) and used by the next reroll. DailyQuests.SwapFor never gives the same
+--     quest, one of the other two, or one that needs another player.
 --   * Login calendar: one claim per UTC day; the next calendar day if you claimed yesterday, else day 1. Day 7 adds a DNA
 --     token and counts a week (stat loginWeeks: the "Dedicated" title).
--- Studio: Workspace attribute TestLoginDay = n (see Start).
+-- Studio: Workspace attribute TestLoginDay = n (see Start); TestDayOffset = n days added to today (fake the date).
 -- Remote "Daily": client -> server "ClaimLogin" | "Claim", index | "ClaimBonus" | "Swap", index.
---                 server -> client (kind, info): "LoginClaimed", "QuestDone", "Claimed", "Swapped".
+--                 server -> client (kind, info): "LoginClaimed", "QuestDone", "Claimed", "Swapped", "BuyReroll" (prompt the
+--                 Quest Reroll purchase), "RerollFailed".
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -25,8 +30,10 @@ local DailyService = {}
 
 local remote: RemoteEvent
 
+local IS_STUDIO = game:GetService("RunService"):IsStudio()
 local function today(): number
-	return Economy.Day(os.time())
+	local offset = if IS_STUDIO then tonumber(game:GetService("Workspace"):GetAttribute("TestDayOffset")) or 0 else 0
+	return Economy.Day(os.time() + offset * 86400)
 end
 
 local function send(player: Player, kind: string, info)
@@ -127,16 +134,18 @@ local function claimBonus(player: Player)
 	send(player, "Claimed", { coins = DailyQuests.BonusCoins, bonus = true })
 end
 
-local function swap(player: Player, index: any)
-	local dq = ensure(player)
-	if not dq or type(index) ~= "number" or dq.swaps >= DailyQuests.SwapsPerDay then return end
-	local entry = dq.list[index]
-	if not entry or entry.done then return end
+-- Can this quest be rerolled? (there, not finished, not claimed)
+local function rerollable(dq, index: any): boolean
+	local entry = type(index) == "number" and dq.list[index]
+	return type(entry) == "table" and not entry.done and not entry.claimed
+end
+
+-- Swaps quest `index` for a new one. Returns whether it happened.
+local function reroll(player: Player, dq, index: number): boolean
 	local current = {}
 	for i, e in ipairs(dq.list) do current[i] = e.id end
-	local id = DailyQuests.SwapFor(dq.day, player.UserId, current, dq.swaps)
-	if not id then return end
-	dq.swaps += 1
+	local id = DailyQuests.SwapFor(dq.day, player.UserId, current, (dq.swaps or 0) + (dq.paidRerolls or 0))
+	if not id then return false end
 	dq.list[index] = { id = id, progress = 0, done = false, claimed = false }
 	-- a swapped-in "groups" quest counts the groups already trained today
 	local quest = DailyQuests.ById[id]
@@ -146,8 +155,59 @@ local function swap(player: Player, index: any)
 		dq.list[index].progress = math.min(n, quest.count)
 		dq.list[index].done = n >= quest.count
 	end
+	dq.pendingReroll = nil
 	save(player, dq)
 	send(player, "Swapped", { text = quest and quest.text or "" })
+	return true
+end
+
+-- The player asks to reroll quest `index`: free while today's free one is left, then a saved credit, else remember the
+-- quest and ask the client to prompt the purchase (the reroll itself happens in PaidReroll, after the receipt).
+local function swap(player: Player, index: any)
+	local dq = ensure(player)
+	if not dq or not rerollable(dq, index) then
+		send(player, "RerollFailed", {})
+		return
+	end
+	local data = PlayerData.Get(player)
+	if (dq.swaps or 0) < DailyQuests.FreeRerollsPerDay then
+		dq.swaps = (dq.swaps or 0) + 1
+		if not reroll(player, dq, index) then dq.swaps -= 1 end
+		return
+	end
+	local credits = data and data.stats.questRerollCredits or 0
+	if credits > 0 then
+		if reroll(player, dq, index) then PlayerData.SetStat(player, "questRerollCredits", credits - 1) end
+		return
+	end
+	dq.pendingReroll = { index = index, id = dq.list[index].id }
+	save(player, dq)
+	send(player, "BuyReroll", { index = index })
+end
+
+-- ProcessReceipt for the "Quest Reroll" product (MonetizationService): rerolls the remembered quest (or, if that one was
+-- finished meanwhile, the first unfinished one); with nothing left to reroll it becomes a credit, so a purchase is never
+-- lost. Returns true once granted.
+function DailyService.PaidReroll(player: Player): boolean
+	local dq = ensure(player)
+	if not dq then return false end
+	local pending = dq.pendingReroll
+	local index = nil
+	if type(pending) == "table" and rerollable(dq, pending.index) and dq.list[pending.index].id == pending.id then
+		index = pending.index
+	else
+		for i in ipairs(dq.list) do
+			if rerollable(dq, i) then index = i break end
+		end
+	end
+	dq.paidRerolls = (dq.paidRerolls or 0) + 1
+	if index and reroll(player, dq, index) then return true end
+	dq.pendingReroll = nil
+	save(player, dq)
+	local data = PlayerData.Get(player)
+	PlayerData.SetStat(player, "questRerollCredits", (data and data.stats.questRerollCredits or 0) + 1)
+	send(player, "RerollCredit", {})
+	return true
 end
 
 ------------------------------------------------------------------------

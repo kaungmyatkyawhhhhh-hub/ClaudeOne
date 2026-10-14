@@ -4,8 +4,10 @@
 -- Daily quests card in the right column. Tabs in the header:
 --   Daily   today's 3 quests: an icon tile, the quest (big italic caps), a teal bar, the coin reward in gold, and on the
 --           right: a claimable row gets a gold border + glow, a gold icon tile and the red CLAIM; one in progress shows a
---           dark "1 / 2" pill (tap = where to go); a claimed one is faded with a teal DONE. A small swap button once a day
---           for an unfinished one. On the right the ALL 3 BONUS card: a big gold "2 / 3", a gold bar, the bonus coins,
+--           dark "1 / 2" pill (tap = where to go); a claimed one is faded with a teal DONE. Quest reroll (owner, 14 Oct): the
+--           REROLL button in the bonus card ("REROLL - FREE" gold while today's free one is left, then "REROLL - R$ 19",
+--           "Free reroll in 5h 12m" under it); tap it, then tap an unfinished quest (its pill says REROLL). The server
+--           decides free / paid and asks for the purchase. On the right the ALL 3 BONUS card: a big gold "2 / 3", a gold bar, the bonus coins,
 --           CLAIM when all are claimed, "Resets in 6h 12m".
 --   Streak  (id "Rewards") the 7-day login streak, its rules and CLAIM DAY N.
 --   Goals   (id "Achievements") the Coach's quest chain in order: done ones DONE, the current one with its bar (GO =
@@ -14,6 +16,7 @@
 -- It pops up by itself on the Daily tab after Play (and after the genetics screen) when today's reward is waiting.
 -- Badges: the Quests tile and pill show how many things are ready to claim; the Daily Reward pill a dot.
 local Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -128,6 +131,8 @@ local function paintTile(tile, icon, gold: boolean, iconName: string)
 end
 
 local rows = {}
+-- quest reroll state (one table: picking = waiting for the player to tap a quest)
+local REROLL = { picking = false, refresh = function() end }
 for index = 1, DailyQuests.PerDay do
 	local card = Kit.Card({ Name = "Quest" .. index, LayoutOrder = index, Size = UDim2.new(1, 0, 0, ROW_H), Parent = questCol }, {})
 	local tile, icon = iconTile(card)
@@ -145,12 +150,8 @@ for index = 1, DailyQuests.PerDay do
 		Parent = New("Folder", { Name = "Hit", Parent = pill }) })
 	local doneLabel = Kit.Text({ Name = "Done", Text = "DONE", Font = "Title", TextSize = 17, TextColor3 = Colors.Teal, AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(96, 24), Visible = false, Parent = card })
-	-- one swap a day for an unfinished quest (e.g. spotting on an empty server): a small badge on the icon tile's corner
-	local swap = Theme.Button("Quiet", { Name = "Swap", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 50, 1, -12), Size = UDim2.fromOffset(22, 22),
-		ZIndex = 3, Parent = card }, {})
-	Pieces.Icon("repeat", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(12, 12), ZIndex = 3, Parent = swap })
 	local row = { card = card, tile = tile, icon = icon, text = text, bar = bar, setBar = setBar, amount = amount, coin = coin, button = button, pill = pill,
-		pillText = pillText, doneLabel = doneLabel, swap = swap, state = "go", quest = nil }
+		pillText = pillText, doneLabel = doneLabel, state = "go", quest = nil }
 	button.Activated:Connect(function()
 		if row.state == "claim" then
 			Kit.CoinBurst(button)
@@ -158,12 +159,17 @@ for index = 1, DailyQuests.PerDay do
 		end
 	end)
 	pillButton.Activated:Connect(function()
+		if REROLL.picking and row.state == "go" then
+			REROLL.picking = false
+			remote:FireServer("Swap", index)
+			REROLL.refresh()
+			return
+		end
 		if row.state == "go" and row.quest then
 			modal.close()
 			Notify.Hint(goHint(row.quest), "questgo")
 		end
 	end)
-	swap.Activated:Connect(function() remote:FireServer("Swap", index) end)
 	rows[index] = row
 end
 
@@ -191,6 +197,56 @@ bonusClaim.Activated:Connect(function()
 end)
 local resetLabel = Kit.Text({ Name = "Reset", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, 12, 1, -10), Size = UDim2.new(1, -24, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = bonus })
+-- REROLL: "REROLL - FREE" (gold) / "REROLL - R$ 19", the free one's countdown under it (hidden while the bonus CLAIM shows)
+REROLL.button = Kit.Button("Gold", "Reroll - Free", { Name = "Reroll", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -44), Parent = bonus },
+	{ width = 150, height = 30, textSize = 13 })
+REROLL.note = Kit.Text({ Name = "RerollNote", Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -28), Size = UDim2.new(1, -24, 0, 14), Parent = bonus })
+REROLL.robux = DailyQuests.RerollRobux
+for _, product in ipairs(require(Shared.Config.Monetization).Products) do
+	if product.key == "QuestReroll" then REROLL.product = product.id end
+end
+if REROLL.product then
+	task.spawn(function() -- (Roblox's real price)
+		local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, REROLL.product, Enum.InfoType.Product)
+		if ok and info and info.PriceInRobux then
+			REROLL.robux = info.PriceInRobux
+			REROLL.refresh()
+		end
+	end)
+end
+function REROLL.freeLeft(): boolean
+	local dq = ClientData.Get().dailyQuests
+	local valid = type(dq) == "table" and dq.day == today()
+	return not valid or (dq.swaps or 0) < DailyQuests.FreeRerollsPerDay
+end
+function REROLL.refresh()
+	local free = REROLL.freeLeft()
+	local any = false
+	for _, row in ipairs(rows) do
+		if row.card.Visible and row.state == "go" then any = true end
+		-- while picking, each quest that can be rerolled says REROLL on its pill
+		if row.quest and row.state == "go" then
+			row.pillText.Text = if REROLL.picking then "REROLL" else row.progress or row.pillText.Text
+		end
+	end
+	if not any then REROLL.picking = false end
+	REROLL.button.Visible = any and not bonusClaim.Visible
+	if REROLL.picking then
+		Kit.SetButton(REROLL.button, "Quiet", "Cancel")
+	elseif free then
+		Kit.SetButton(REROLL.button, "Gold", "Reroll - Free")
+	else
+		Kit.SetButton(REROLL.button, "Red", "Reroll - R$ " .. REROLL.robux)
+	end
+	REROLL.note.Visible = REROLL.button.Visible
+	REROLL.note.Text = if REROLL.picking then "Tap a quest to reroll it" elseif free then "1 free reroll a day" else "Free reroll in " .. untilReset()
+end
+REROLL.button.Activated:Connect(function()
+	REROLL.picking = not REROLL.picking
+	Audio.PlayUI("Click")
+	REROLL.refresh()
+end)
 
 ------------------------------------------------------------------------
 -- Daily reward grids (the small one on the Daily tab, the big one on the Rewards tab)
@@ -422,7 +478,8 @@ local function refreshQuests(): number
 			row.button.Visible = state == "claim"
 			if state == "claim" then Theme.Pulse(row.button, function() return modal.isOpen() and row.state == "claim" end) end
 			row.pill.Visible = state == "go"
-			row.pillText.Text = progressText(quest, progress, true)
+			row.progress = progressText(quest, progress, true)
+			row.pillText.Text = row.progress
 			row.doneLabel.Visible = state == "done"
 			-- a claimed quest fades back (DONE stays bright)
 			local faded = state == "done"
@@ -432,7 +489,6 @@ local function refreshQuests(): number
 			row.icon.ImageTransparency = faded and 0.5 or 0
 			row.bar.BackgroundTransparency = faded and 0.4 or 0
 			allClaimed = allClaimed and entry.claimed == true
-			row.swap.Visible = not entry.done and (dq.swaps or 0) < DailyQuests.SwapsPerDay
 		end
 	end
 	local bonusDone = valid and dq.bonus == true
@@ -446,6 +502,7 @@ local function refreshQuests(): number
 	if bonusReady then claimable += 1 end
 	refreshTracker(dq, valid)
 	resetLabel.Text = "Resets in " .. untilReset()
+	REROLL.refresh()
 	return claimable
 end
 
@@ -520,6 +577,13 @@ remote.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "Claimed" then
 		Notify.Toast(info.bonus and "Daily bonus" or "Quest reward", "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins", "coin", Colors.Gold)
 		Audio.PlayUI("QuestClaim")
+	elseif kind == "BuyReroll" then
+		-- (the server remembered which quest; the reroll happens after the purchase)
+		if REROLL.product then MarketplaceService:PromptProductPurchase(player, REROLL.product) end
+	elseif kind == "RerollFailed" then
+		Notify.Show("That quest can't be rerolled.", nil, "rerollfail")
+	elseif kind == "RerollCredit" then
+		Notify.Toast("Quest reroll saved", "Your next reroll is free", "repeat", Colors.Gold)
 	elseif kind == "Swapped" then
 		Notify.Toast("New quest", tostring(info.text), "repeat", Colors.Blue)
 	elseif kind == "LoginClaimed" then
@@ -540,7 +604,10 @@ RunService.Heartbeat:Connect(function(dt)
 	acc += dt
 	if acc < 1 then return end
 	acc = 0
-	if modal.isOpen() then resetLabel.Text = "Resets in " .. untilReset() end
+	if modal.isOpen() then
+		resetLabel.Text = "Resets in " .. untilReset()
+		REROLL.refresh()
+	end
 	local day = today()
 	if day ~= lastDay then
 		lastDay = day

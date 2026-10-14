@@ -20,6 +20,8 @@ Monetization.Passes = {
 
 Monetization.Products = {
 	{ key = "DnaToken", id = productId(Products.DNAToken), name = "DNA Token", text = "One genetics reroll." },
+	-- (bought from the Quests window only, after picking the quest: store = false keeps it out of the Store)
+	{ key = "QuestReroll", id = productId(Products.QuestReroll), name = "Quest Reroll", text = "Swap one daily quest for a new one.", store = false },
 	{ key = "ShakePack", id = nil, name = "Shake Pack", text = "5 Energy Shakes." },
 	{ key = "ServerBoost", id = nil, name = "Server Boost", text = "2x gains for everyone in the server for 30 minutes. Your name goes on the board." },
 }

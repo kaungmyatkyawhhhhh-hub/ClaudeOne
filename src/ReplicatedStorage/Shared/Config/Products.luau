@@ -3,5 +3,6 @@
 local Products = {}
 
 Products.DNAToken = 3718499538 -- "DNA Token", 99 Robux, 1 token (owner, 14 Oct)
+Products.QuestReroll = 3718500732 -- "Quest Reroll", 19 Robux, rerolls one daily quest (owner, 14 Oct)
 
 return Products

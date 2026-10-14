@@ -95,7 +95,7 @@ for _, pass in ipairs(Monetization.Passes) do
 	if pass.id or preview then table.insert(items, { item = pass, isPass = true, tab = "Passes" }) end
 end
 for _, product in ipairs(Monetization.Products) do
-	if product.id or preview then table.insert(items, { item = product, isPass = false, tab = "Items" }) end
+	if (product.id or preview) and product.store ~= false then table.insert(items, { item = product, isPass = false, tab = "Items" }) end
 end
 local tabs = {}
 local hasTab = {}

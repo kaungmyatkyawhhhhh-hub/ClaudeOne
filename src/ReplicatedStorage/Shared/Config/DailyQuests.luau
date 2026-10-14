@@ -1,7 +1,7 @@
 -- Daily quests (owner's feature run, task 2): every player gets PerDay quests from the Pool each UTC day (reset at 00:00
 -- UTC), tracked automatically on the server (DailyService) from what the game already counts. Claim each one for coins;
 -- finishing all of them pays a bonus. A quest that needs another player (needsOther) can be swapped for another one,
--- SwapsPerDay times a day, so an empty server never blocks the bonus.
+-- FreeRerollsPerDay times a day free (then paid), so an empty server never blocks the bonus.
 -- Types:
 --   reps       validated reps on any machine (not the treadmill)
 --   groupReps  reps on machines whose MAIN muscle is in `group`
@@ -15,7 +15,11 @@ local DailyQuests = {}
 
 DailyQuests.PerDay = 3
 DailyQuests.BonusCoins = 150 -- for claiming all of the day's quests
-DailyQuests.SwapsPerDay = 1
+-- Quest rerolls (owner, 14 Oct): this many FREE rerolls per daily reset (saved in the day's quests, so rejoining or another
+-- server doesn't give more); after that each reroll is the "Quest Reroll" product (Config/Products.QuestReroll, R$ 19).
+-- A reroll swaps one unfinished quest for a new random one (never the same one, never one of the other two).
+DailyQuests.FreeRerollsPerDay = 1
+DailyQuests.RerollRobux = 19 -- shown on the button until Roblox's real price has loaded
 
 DailyQuests.Pool = {
 	{ id = "ChestReps", text = "Do 50 reps on chest machines", type = "groupReps", group = "Chest", count = 50, coins = 60 },
@@ -55,6 +59,7 @@ function DailyQuests.Pick(day: number, userId: number, exclude: { [string]: bool
 end
 
 -- One replacement quest for a swap: not one of today's, never one that needs another player.
+-- (`swaps` = rerolls done today, free and paid: a new seed for each)
 function DailyQuests.SwapFor(day: number, userId: number, current: { string }, swaps: number): string?
 	local rng = Random.new(day * 7919 + userId % 7919 + swaps * 104729)
 	local options = {}
