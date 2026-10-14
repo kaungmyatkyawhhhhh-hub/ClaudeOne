@@ -235,6 +235,9 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
 - Trainers don't collide with players (owner): TrainerFollowClient puts every trainer part in the "Trainers" collision
   group (registered by TrainerService, collides with nothing) + CanCollide / CanTouch / CanQuery off.
 - Settings: "Others' Auras" row (11 rows: the grid scrolls).
+- Stats overlay (owner): the "turn to face the camera" is gone (no AutoRotate toggling, no root CFrame, no camera change);
+  lines to far-side body points are dashed (a stepped UIGradient) and fainter. Tested from behind and side-on after
+  walking: the character never turns by itself.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

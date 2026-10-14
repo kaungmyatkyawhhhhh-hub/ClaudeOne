@@ -9,7 +9,7 @@
 --    centre, Shoulders = the top of the upper arm on the left column's side, Arms = that arm's bicep, Legs = the middle
 --    of the thigh on the right column's side; on the muscle mesh's surface when the body wears one (MuscleMeshes),
 --    else the R15 part's. A point on the far side of the body (Back while you face the camera) still gets its line,
---    faded. While the labels are open and you stand still, your character turns to face the camera.
+--    dashed and faded. Opening the labels never turns the character or touches the camera (owner, 14 Oct).
 --    A maxed group just shows its EXP (no "Max" text). The set stays close to the body (about 40% of the screen height) and keeps
 --    the same size on screen at any camera distance.
 --  * A 2D layer placed from the character's projected position, so it is always visible (never hidden behind walls or
@@ -40,6 +40,19 @@ local MuscleRig = require(Shared.MuscleRig)
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
+-- a dashed line (far-side body points): 5 dashes as hard steps of a gradient's transparency (20 keypoints at most)
+local DASHES = (function()
+	local keys, n = {}, 5
+	for i = 0, n - 1 do
+		local a, b = i / n, (i + 0.55) / n
+		table.insert(keys, NumberSequenceKeypoint.new(a, 0))
+		table.insert(keys, NumberSequenceKeypoint.new(b - 0.001, 0))
+		table.insert(keys, NumberSequenceKeypoint.new(b, 1))
+		table.insert(keys, NumberSequenceKeypoint.new(math.min((i + 1) / n - 0.001, 1), 1))
+	end
+	keys[#keys] = NumberSequenceKeypoint.new(1, 1)
+	return NumberSequence.new(keys)
+end)()
 
 local SIZES = {
 	Normal = { Width = 92, Height = 40, Number = "Body", TopWidth = 118, TopHeight = 48, Top = "Large" },
@@ -126,6 +139,7 @@ for _, spec in ipairs(GROUPS) do
 	entry.spec = spec
 	entry.dot = New("Frame", { Name = spec.id .. "Dot", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(LAYOUT.Dot, LAYOUT.Dot), BackgroundColor3 = Colors.Text, ZIndex = 2, Parent = layer }, { Theme.Round("Round") })
 	entry.line = New("Frame", { Name = spec.id .. "Line", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
+	New("UIGradient", { Name = "Dash", Enabled = false, Transparency = DASHES, Parent = entry.line })
 	entry.tail = New("Frame", { Name = spec.id .. "Tail", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, BorderSizePixel = 0, ZIndex = 1, Parent = lineLayer })
 	table.insert(labels, entry)
 end
@@ -659,9 +673,11 @@ local function place(dt)
 				entry.dot.Visible = true
 				entry.line.Visible = true
 				entry.dot.Position = UDim2.fromOffset(dot.X, dot.Y)
-				local fade = away and 0.65 or 0
-				entry.line.BackgroundTransparency = fade
-				entry.dot.BackgroundTransparency = fade
+				-- (far side: a dashed, fainter line; owner, 14 Oct)
+				local dash = entry.line:FindFirstChild("Dash")
+				if dash then dash.Enabled = away end
+				entry.line.BackgroundTransparency = if away then 0.25 else 0
+				entry.dot.BackgroundTransparency = if away then 0.65 else 0
 				-- the line meets a short horizontal segment under the label (like the reference)
 				local textW = entry.back.Size.X.Offset > 0 and entry.back.Size.X.Offset or (entry.backWidth or size.Width)
 				local x0 = at.X + (size.Width - textW) / 2
@@ -704,44 +720,6 @@ local function place(dt)
 end
 
 ------------------------------------------------------------------------
--- While the labels are open and you stand still (not seated, not on a skateboard), your character turns to face the
--- camera so the chest, core and arms show (owner, 14 Oct). Moving gives turning back to Roblox (AutoRotate).
-------------------------------------------------------------------------
-local FACE = { Rate = 6, Still = 0.1 }
-local facingOn = false -- we switched AutoRotate off
-local function faceCamera(dt)
-	local character = player.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if not humanoid or not root then return end
-	local still = humanoid.MoveDirection.Magnitude < FACE.Still and not humanoid.Sit and humanoid.SeatPart == nil
-		and player:GetAttribute("Skating") ~= true
-	if not still then
-		if facingOn then
-			humanoid.AutoRotate = true
-			facingOn = false
-		end
-		return
-	end
-	if not facingOn then
-		if not humanoid.AutoRotate then return end -- (something else owns the turning)
-		humanoid.AutoRotate = false
-		facingOn = true
-	end
-	local toCamera = (camera.CFrame.Position - root.Position) * Vector3.new(1, 0, 1)
-	if toCamera.Magnitude < 0.5 then return end
-	local goal = CFrame.lookAt(root.Position, root.Position + toCamera.Unit)
-	root.CFrame = root.CFrame:Lerp(goal, math.min(1, dt * FACE.Rate))
-end
-local function stopFacing()
-	if not facingOn then return end
-	facingOn = false
-	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if humanoid then humanoid.AutoRotate = true end
-end
-player.CharacterAdded:Connect(function() facingOn = false end)
-
-------------------------------------------------------------------------
 -- Show / hide
 ------------------------------------------------------------------------
 local wanted = false -- the Stats button is on
@@ -762,10 +740,7 @@ local function update()
 		cameraLast = nil
 		gui.Enabled = true
 		if not renderConnection then
-			renderConnection = RunService.RenderStepped:Connect(function(dt)
-				faceCamera(dt)
-				place(dt)
-			end)
+			renderConnection = RunService.RenderStepped:Connect(place)
 		end
 		place(0)
 		Theme.Fade(layer, true, 0.2)
@@ -775,7 +750,6 @@ local function update()
 		leaveAt = nil
 		for _, entry in ipairs(labels) do entry.held, entry.releaseAt, entry.overCount = nil, nil, 0 end
 		setHighlight(nil, false)
-		stopFacing()
 		local tween = Theme.Fade(layer, false, 0.2)
 		local function stop()
 			if shown then return end
