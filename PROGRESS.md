@@ -117,6 +117,15 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   regular (anchored, idle, no pathfinding) while no player is within 120 studs, checks every 2 s; a regular on a machine
   or held isn't parked; NPC roots stay server-owned. Same scene: tiers near 1 / mid 3 / far 12, 8 of 9 playing tracks
   frozen, draw calls ~211 (was ~249), triangles ~1.41 M (was ~1.78 M), fps 30-37 (Studio noise).
+- Step 2, LOD: MuscleRig.SetLowDetail (every region "covered": the stage meshes hide, kept, the plain body shows; no
+  clone / destroy) + MuscleClient: an NPC further than 60 studs goes low detail and hides its accessories
+  (LocalTransparencyModifier), back under 50 (gap: no flicker). Never your character, other players, the statue or an
+  arm wrestling opponent. (Replaces the 13 Oct "never a visible change by distance" for NPCs, owner's call.) Map pass in
+  Studio (saved with the place): 238 meshes RenderFidelity Precise -> Automatic (+ TrainerModels / GeneticsSet),
+  non-colliding meshes CollisionFidelity Box, CastShadow off on 491 small props (< 4 studs; machines, the arm table and
+  characters keep theirs) and 15 NPC accessories. No aura VFX exist yet (nothing to cap). Same scene: fps 46.9 / 48.0
+  (was 30-40), worst frame 24-26 ms (was 81-142), draw calls 125-146 (was ~249), triangles 476-682 k (was ~1.78 M);
+  3 NPCs with muscles, 13 plain. Shadow draw calls still ~700: the gym's shadow-casting lights (next lever).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

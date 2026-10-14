@@ -107,6 +107,10 @@ local REALLOCATE_EVERY = 0.4
 local OWN_ORDER = { Torso = 1, Snatched = 2, UpperArms = 3, UpperLegs = 4, Forearms = 6, Calves = 7 }
 
 -- Layered (3D) clothing can't be painted onto muscles: the muscles of the body parts it covers are hidden under it.
+-- Low detail (owner, 14 Oct: LOD for far NPCs, MuscleClient): every region counts as covered, so the stage meshes hide
+-- (kept, never re-cloned) and the plain body parts show, like under layered clothing
+local LOW_DETAIL_COVERS = { UpperTorso = true, LowerTorso = true, RightUpperArm = true, LeftUpperArm = true, RightLowerArm = true,
+	LeftLowerArm = true, RightUpperLeg = true, LeftUpperLeg = true, RightLowerLeg = true, LeftLowerLeg = true }
 local LAYERED_COVERS = {
 	[Enum.AccessoryType.TShirt] = { UpperTorso = true, RightUpperArm = true, LeftUpperArm = true },
 	[Enum.AccessoryType.Shirt] = { UpperTorso = true, RightUpperArm = true, LeftUpperArm = true, RightLowerArm = true, LeftLowerArm = true },
@@ -641,6 +645,15 @@ function MuscleRig.Pulse(self, ids: { string }, amount: number?, duration: numbe
 		self.pulseAmounts[id] = amount
 		self.pulseTimes[id] = duration
 	end
+	self.dirty = true
+end
+
+-- Low detail on / off (another character far away): the stage meshes hide and the plain body shows, without destroying
+-- anything, so coming back is instant. (MuscleClient only uses it for NPCs, never your own character.)
+function MuscleRig.SetLowDetail(self, on: boolean)
+	if self.lowDetail == on then return end
+	self.lowDetail = on
+	self.coveredAt = 0 -- (re-check at the next update)
 	self.dirty = true
 end
 
@@ -1428,14 +1441,18 @@ local function step(self, dt: number)
 		end
 		self.dirty = true
 	end
-	-- layered (3D) clothing: hide the muscles under it (checked about once a second)
+	-- layered (3D) clothing: hide the muscles under it (checked about once a second); low detail covers everything
 	if now - (self.coveredAt or 0) > 1 then
 		self.coveredAt = now
 		local covered = {}
-		for _, item in ipairs(self.model:GetChildren()) do
-			local handle = item:IsA("Accessory") and item:FindFirstChild("Handle")
-			local covers = handle and handle:FindFirstChildOfClass("WrapLayer") and LAYERED_COVERS[item.AccessoryType]
-			if covers then for name in pairs(covers) do covered[name] = true end end
+		if self.lowDetail then
+			for name in pairs(LOW_DETAIL_COVERS) do covered[name] = true end
+		else
+			for _, item in ipairs(self.model:GetChildren()) do
+				local handle = item:IsA("Accessory") and item:FindFirstChild("Handle")
+				local covers = handle and handle:FindFirstChildOfClass("WrapLayer") and LAYERED_COVERS[item.AccessoryType]
+				if covers then for name in pairs(covers) do covered[name] = true end end
+			end
 		end
 		self.covered = covered
 	end

@@ -7,6 +7,10 @@
 --  * NPCs (Workspace.NPCs) and the statue carry the same attribute (a preset share), so everyone shows muscles.
 --  * Muscles are only built for characters within ~180 studs of the camera and are removed beyond ~210, so a crowded server
 --    stays smooth (only your own character keeps live meshes: MuscleRig bakes everyone else's). A muscle is only built once it has growth (level 0 = the plain Robloxian 2.0 body).
+--  * LOD (owner, 14 Oct: performance, replaces the 13 Oct "never a visible change by distance" for NPCs): an NPC further
+--    than LOD_FAR studs shows its plain body (MuscleRig low detail: the stage meshes hide, kept for coming back) and no
+--    accessories; back to full detail nearer than LOD_NEAR (a gap, so it never flickers). Never your own character, other
+--    players, the statue or an arm wrestling opponent (tag ArmWrestleRookie).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,6 +27,7 @@ local player = Players.LocalPlayer
 -- (others wear static stage meshes, no EditableMesh budget: drawn out to 180 studs so the switch to the plain body happens
 -- where a body is only a few pixels tall; owner, 13 Oct: never a visible change by distance)
 local RANGE, DROP = 180, 210
+local LOD_FAR, LOD_NEAR = 60, 50 -- studs from the camera: an NPC goes low detail past LOD_FAR, back under LOD_NEAR
 local SCAN_EVERY = 0.5
 -- the client holds only a few muscle meshes: other characters wait until my own muscles are built (or this long), so NPCs
 -- never grab the meshes first and make mine wait for them to be taken back
@@ -103,9 +108,27 @@ local function priorityFor(info, distance)
 	return math.max(20 - distance / 10, 1)
 end
 
+-- an NPC's accessories (hair, hats) hide on low detail (LocalTransparencyModifier: only on this client, nothing replicated)
+local function showAccessories(model: Model, on: boolean)
+	for _, item in ipairs(model:GetChildren()) do
+		local handle = item:IsA("Accessory") and item:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then handle.LocalTransparencyModifier = if on then 0 else 1 end
+	end
+end
+
 local function refreshInfo(model, info, distance)
 	local rig = info.rig
 	rig.priority = priorityFor(info, distance or 0)
+	-- LOD: NPCs only, with a gap between going low and coming back
+	if info.kind == "npc" and distance and not CollectionService:HasTag(model, "ArmWrestleRookie") then
+		local low = info.low == true
+		if not low and distance > LOD_FAR then low = true elseif low and distance < LOD_NEAR then low = false end
+		if low ~= (info.low == true) then
+			info.low = low
+			rig:SetLowDetail(low)
+			showAccessories(model, not low)
+		end
+	end
 	rig:SetGrowth(targetsFor(info.source, info.mine))
 	local until_ = info.source:GetAttribute("PumpedUntil")
 	rig:SetPumped(type(until_) == "number" and until_ > Workspace:GetServerTimeNow())
