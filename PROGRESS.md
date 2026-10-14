@@ -1298,3 +1298,10 @@ next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's mo
   Tested: 2 buys = 30 min, same PurchaseId again = no change, 40 lift requests (27 reps) kept stamina 250/250, leave +
   rejoin 27 s later kept the time (1746 -> 1736 s), cap at 60.0 min. NOTE: the owner's own save got 60 min from the test
   receipts. Screenshots: screenshots/endless_stamina/.
+- AURA VFX v2 (owner's updated AuraVFX.lua + new flame_flipbook_4x4, 14 Oct): the module is the owner's file unchanged
+  except the TEX ids (new flame 90041400001838, the other 7 kept). Flames / glow / smoke sit behind the body (ZOffset), the
+  ground ring lives in Terrain and raycasts to the floor (flat under the bench). My earlier extras inside the module are
+  gone (the shadow tint, the Textures export): the preload list moved to Config/Auras.VFXTextures (keep in step with TEX).
+  Nothing else adds aura effects: the gold PUMPED Highlight on the trained muscles (MachineClient) is skipped while an
+  aura is worn or previewed. Screenshots: screenshots/auras_v3/ (8 auras x front / side / bench at full power, + bench
+  without an aura: the pale skin there is the bench light, not the aura). Shadow stays very faint in the dark gym.

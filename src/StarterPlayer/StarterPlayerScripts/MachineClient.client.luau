@@ -1725,6 +1725,8 @@ local function setPumpGlow(on)
 	table.clear(glows)
 	local character = player.Character
 	if not on or not character or not current then return end
+	-- (owner, 14 Oct: an aura is the only effect on the body; with one on, the aura shows PUMPED instead of this glow)
+	if character:GetAttribute("EquippedAura") or player:GetAttribute("AuraPreview") then return end
 	local seen = {}
 	for _, entry in ipairs(current.machine.muscles) do
 		for _, partName in ipairs(Muscles.Body[entry.id].pump) do

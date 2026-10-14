@@ -9,13 +9,13 @@
 --   handle:SetLOD(l)     -- 0 = full, 1 = mid (glow + ground only), 2 = off
 --   handle:Destroy()
 --
--- Textures: the owner's PNGs from Downloads\gym_arc_aura_vfx (uploaded from Studio 14 Oct, so they're in the owner's own
--- inventory, not the Myanmar Builders Club group; Studio can only upload there). The flipbooks are 1024x1024 4x4 grids.
+-- Textures: upload every PNG from Downloads\gym_arc_aura_vfx to the Myanmar Builders Club
+-- group, find each ID with search_asset by exact name, and fill TEX below.
 
 local RunService = game:GetService("RunService")
 
 local TEX = {
-	flame     = "rbxassetid://91013788221828", -- flame_flipbook_4x4.png (1024, Grid4x4)
+	flame     = "rbxassetid://90041400001838", -- flame_flipbook_4x4.png (1024, Grid4x4)
 	smoke     = "rbxassetid://105468903616816", -- smoke_flipbook_4x4.png (1024, Grid4x4)
 	glow      = "rbxassetid://108461610476976", -- glow_soft.png
 	spark     = "rbxassetid://82372237523631", -- spark_star.png
@@ -48,8 +48,7 @@ local PRESETS: { [string]: Preset } = {
 	galaxy     = { core = C(220,230,255), main = C(80,110,255),  tail = C(150,70,255), stars = true },
 	royal      = { core = C(255,255,255), main = C(255,215,110), tail = C(255,170,40), stars = true },
 	toxic      = { core = C(230,255,170), main = C(120,255,40),  tail = C(30,110,10),  smoke = C(40,90,10) },
-	-- (14 Oct tuning: shadow was nearly invisible in the dark gym; main / tail / smoke a little lighter)
-	shadow     = { core = C(140,140,160), main = C(70,70,84),    tail = C(22,22,28),   accent = C(170,170,190), dark = true, smoke = C(18,18,22) },
+	shadow     = { core = C(120,120,140), main = C(45,45,55),    tail = C(10,10,12),   accent = C(170,170,190), dark = true, smoke = C(8,8,10) },
 }
 
 local function NS(pts: { { number } }): NumberSequence
@@ -94,8 +93,12 @@ function AuraVFX.Build(character: Model, auraName: string)
 	local ext = character:GetExtentsSize()
 	local s = math.max(ext.Y / 5, 0.5)
 	local accent = preset.accent or preset.core
-	local glowLE = preset.dark and 0.35 or 1
-	local flameLE = preset.dark and 0 or 0.9
+	local glowLE = preset.dark and 0.3 or 0.8
+	local flameLE = preset.dark and 0 or 0.7
+	-- never let the hot colour go pure white (that's what washed out the body before)
+	local hot = preset.core:Lerp(preset.main, 0.45)
+	-- push body-volume particles BEHIND the character so they only show around the silhouette
+	local behind = -(ext.Z * 0.5 + 1.5 * s)
 
 	local folder = Instance.new("Folder")
 	folder.Name = "AuraVFX"
@@ -113,10 +116,21 @@ function AuraVFX.Build(character: Model, auraName: string)
 	weld.Parent = vol
 	vol.Parent = folder
 
+	-- ground ring lives in Terrain (world-aligned) so it stays flat on the floor even when the
+	-- character lies on a bench or tilts. Its position is updated every frame from a raycast.
 	local feet = Instance.new("Attachment")
-	feet.Name = "AuraFeet"
-	feet.Position = Vector3.new(0, -(hrp.Size.Y / 2 + hum.HipHeight) + 0.1, 0)
-	feet.Parent = hrp
+	feet.Name = "AuraFeet_" .. character.Name
+	feet.Parent = workspace.Terrain
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = { character }
+	local function placeFeet()
+		local origin = hrp.Position
+		local hit = workspace:Raycast(origin, Vector3.new(0, -(ext.Y + 6), 0), rayParams)
+		local y = hit and hit.Position.Y or (origin.Y - ext.Y * 0.5)
+		feet.WorldCFrame = CFrame.new(origin.X, y + 0.08, origin.Z)
+	end
+	placeFeet()
 	local core = Instance.new("Attachment")
 	core.Name = "AuraCore"
 	core.Parent = hrp
@@ -127,19 +141,19 @@ function AuraVFX.Build(character: Model, auraName: string)
 	L.glow = emitter(core, {
 		Texture = TEX.glow, LightEmission = glowLE, LockedToPart = true,
 		Color = ColorSequence.new(preset.main),
-		Size = NS({ {0, 2.6 * s}, {1, 3.2 * s} }),
-		Transparency = NS({ {0, 1}, {0.3, 0.72}, {1, 1} }),
+		Size = NS({ {0, 2.0 * s}, {1, 2.4 * s} }),
+		Transparency = NS({ {0, 1}, {0.4, 0.86}, {1, 1} }),
 		Lifetime = NumberRange.new(0.8, 1.2), Speed = NumberRange.new(0),
 		Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-20, 20),
-		ZOffset = -1,
+		ZOffset = behind,
 	})
 	L.ground = emitter(feet, {
 		Texture = TEX.ground, LightEmission = glowLE, LockedToPart = true,
 		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
 		EmissionDirection = Enum.NormalId.Top, Speed = NumberRange.new(0.01),
 		Color = ColorSequence.new(accent),
-		Size = NS({ {0, 1.6 * s}, {1, 2.6 * s} }),
-		Transparency = NS({ {0, 1}, {0.25, 0.45}, {1, 1} }),
+		Size = NS({ {0, 1.6 * s}, {1, 2.4 * s} }),
+		Transparency = NS({ {0, 1}, {0.25, 0.55}, {1, 1} }),
 		Lifetime = NumberRange.new(1.4), RotSpeed = NumberRange.new(35), Rotation = NumberRange.new(0, 360),
 	})
 	local light = Instance.new("PointLight")
@@ -152,28 +166,29 @@ function AuraVFX.Build(character: Model, auraName: string)
 
 	-- LAYER 2: rising flames + energy streaks (from 40% power)
 	L.flame = emitter(vol, {
-		Texture = TEX.flame, LightEmission = flameLE, Brightness = preset.dark and 1 or 2,
+		Texture = TEX.flame, LightEmission = flameLE, Brightness = preset.dark and 1 or 1.3,
 		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
 		FlipbookMode = Enum.ParticleFlipbookMode.Loop,
 		FlipbookFramerate = NumberRange.new(18, 26), FlipbookStartRandom = true,
 		Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = CS(preset.core, preset.main, preset.tail),
-		Size = NS({ {0, 0.9 * s}, {0.3, 1.7 * s}, {1, 0.4 * s} }),
-		Squash = NS({ {0, -0.15}, {1, -0.35} }), -- taller than wide
-		Transparency = NS({ {0, 1}, {0.12, 0.15}, {0.7, 0.45}, {1, 1} }),
-		Lifetime = NumberRange.new(0.55, 0.85),
+		Color = CS(hot, preset.main, preset.tail),
+		Size = NS({ {0, 0.7 * s}, {0.35, 1.25 * s}, {1, 0.35 * s} }),
+		Squash = NS({ {0, -0.35}, {1, -0.55} }), -- tall thin tongues
+		Transparency = NS({ {0, 1}, {0.12, 0.05}, {0.7, 0.35}, {1, 1} }),
+		Lifetime = NumberRange.new(0.45, 0.7),
 		Speed = NumberRange.new(1.5 * s, 3 * s), EmissionDirection = Enum.NormalId.Top,
 		Acceleration = Vector3.new(0, 7 * s, 0), Drag = 1.5,
-		SpreadAngle = Vector2.new(8, 8), Rotation = NumberRange.new(-8, 8),
-		ZOffset = 0.5,
+		SpreadAngle = Vector2.new(6, 6), Rotation = NumberRange.new(-6, 6),
+		ZOffset = behind,
 	})
 	L.streak = emitter(vol, {
 		Texture = TEX.streak, LightEmission = 1,
 		Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = ColorSequence.new(preset.core, preset.main),
-		Size = NS({ {0, 0.35 * s}, {1, 0.15 * s} }),
+		Color = ColorSequence.new(hot, preset.main),
+		ZOffset = behind,
+		Size = NS({ {0, 0.3 * s}, {1, 0.12 * s} }),
 		Squash = NS({ {0, -1.6}, {1, -2.2} }),
 		Transparency = NS({ {0, 1}, {0.2, 0.1}, {1, 1} }),
 		Lifetime = NumberRange.new(0.35, 0.6),
@@ -191,7 +206,7 @@ function AuraVFX.Build(character: Model, auraName: string)
 			Lifetime = NumberRange.new(1.1, 1.6),
 			Speed = NumberRange.new(1 * s, 2 * s), EmissionDirection = Enum.NormalId.Top,
 			Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-30, 30),
-			ZOffset = -0.5,
+			ZOffset = behind - 0.5,
 		})
 	end
 
@@ -284,6 +299,11 @@ function AuraVFX.Build(character: Model, auraName: string)
 		end)
 	end
 
+	-- keep the ground ring under the player (world-aligned, on the floor)
+	self._feetConn = RunService.Heartbeat:Connect(function()
+		if self._lod < 2 and hrp.Parent then placeFeet() end
+	end)
+
 	self:SetPower(0.15)
 	return self
 end
@@ -300,7 +320,7 @@ function AuraVFX:_apply()
 		return
 	end
 	-- layer 1
-	rate(L.glow, 3 + 5 * p)
+	rate(L.glow, 2 + 3 * p)
 	rate(L.ground, 0.8 + 0.8 * p)
 	L.light.Brightness = 0.6 + 1.6 * p
 	if lod >= 1 then
@@ -309,12 +329,12 @@ function AuraVFX:_apply()
 	end
 	-- layer 2 (fades in from 40% to 70% power)
 	local l2 = smooth(0.4, 0.7, p)
-	rate(L.flame, 4 + 36 * l2)          -- a few tiny flames even at idle
-	rate(L.streak, 14 * l2)
+	rate(L.flame, 5 + 30 * l2)          -- a few small flames even at idle
+	rate(L.streak, 8 * l2)
 	rate(L.smoke, 2 + 8 * l2)
 	-- layer 3 (85% -> 100%)
 	local l3 = smooth(0.85, 1, p)
-	rate(L.spark, 30 * l3)
+	rate(L.spark, 18 * l3)
 	rate(L.stars, 3 + 10 * l3)
 end
 
@@ -343,6 +363,7 @@ end
 
 function AuraVFX:Destroy()
 	if self._conn then self._conn:Disconnect() end
+	if self._feetConn then self._feetConn:Disconnect() end
 	for _, b in self._beams do b:Destroy() end
 	for _, a in self._beamAtts do a:Destroy() end
 	for _, a in self._atts do a:Destroy() end
@@ -350,5 +371,4 @@ function AuraVFX:Destroy()
 end
 
 AuraVFX.Presets = PRESETS
-AuraVFX.Textures = TEX
 return AuraVFX

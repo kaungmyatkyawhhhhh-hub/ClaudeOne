@@ -25,7 +25,7 @@ local player = Players.LocalPlayer
 -- load the effect textures once at start, so the first aura doesn't show blank cards while they download
 task.spawn(function()
 	local list = {}
-	for _, id in pairs(AuraVFX.Textures) do
+	for _, id in ipairs(Auras.VFXTextures) do
 		local decal = Instance.new("Decal")
 		decal.Texture = id
 		table.insert(list, decal)
