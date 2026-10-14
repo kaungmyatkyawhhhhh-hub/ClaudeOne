@@ -4,11 +4,13 @@
 --   * train: a free machine in their gym that no player is on, near, or walking toward; 2-3 sets of 6-10 reps with
 --     the same rep animation players get (MachineService.NpcLift), resting between sets. Pro regulars lift heavy.
 --   * drink water at the fountain, or chat with another regular (they face each other), or stand and rest.
--- A player who walks up to a machine an NPC is using gets it: the NPC finishes the rep and steps off (and tapping Use
--- takes it at once, see MachineService). Coach Dex and visiting legends stand still but play an idle animation and
+-- A player who walks up to a machine an NPC is using gets it: the NPC finishes the rep and steps off (meanwhile the
+-- machine's prompt reads OCCUPIED and can't be used, owner 15 Oct). Coach Dex: makeCoach (posed by CoachDexClient).
+-- Visiting legends stand still but play an idle animation and
 -- turn toward the nearest player.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
 local PathfindingService = game:GetService("PathfindingService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,6 +20,7 @@ local BodyService = require(script.Parent.BodyService)
 local Body = require(ReplicatedStorage.Shared.Config.Body)
 local GrowthSpurts = require(ReplicatedStorage.Shared.Config.GrowthSpurts)
 local Muscles = require(ReplicatedStorage.Shared.Config.Muscles)
+local Quests = require(ReplicatedStorage.Shared.Config.Quests)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 local NpcService = require(script.Parent.NpcService)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
@@ -380,18 +383,53 @@ local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
 -- monster widths: shoulders, hips, arms, legs and torso depth; the V-Taper frame, the widest shoulders; the golden ratio
 -- proportions like everyone).
 local GIANT = { name = "Dante", heightInches = 96, spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black", shoes = Color3.fromHex("#2B2B2B") }
-local function giantData()
-	local goal = GrowthSpurts.GetGoal(GIANT.spurts)
+-- Coach Dex (owner, 14-15 Oct: built like Dante, clearly the boss): 7'6" (about 1.2x a grown player), the same mass monster
+-- physique, shirtless in black gym shorts, bald, warm brown skin, our own stern bearded face (a classic head with the
+-- face image: the body's dynamic head has none). Posed leaning on his counter by CoachDexClient.
+local COACH = { heightInches = 90, spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black", shoes = Color3.fromHex("#2B2B2B"),
+	skin = Color3.fromHex("#7A4A25"), face = "rbxassetid://116883309844476" }
+local function giantData(spec)
+	local goal = GrowthSpurts.GetGoal(spec.spurts)
 	local level = math.ceil(Muscles.LevelFromXp(Muscles.Look.MonsterAt * 1.1 * Muscles.CumXp(goal)))
 	local muscles = {}
 	for _, muscle in ipairs(Muscles.List) do muscles[muscle.id] = { level = level, xp = 0 } end
 	-- heightInches: the same width formula as players (BodyService.WidthFactors), at his own height, with no cap
-	return { growthSpurts = GIANT.spurts, heightInches = GIANT.heightInches, muscles = muscles, genetics = { frame = GIANT.frame } }
+	return { growthSpurts = spec.spurts, heightInches = spec.heightInches, muscles = muscles, genetics = { frame = spec.frame } }
 end
 
-local function makeGiant(npc)
-	local data = giantData()
-	NpcService.ApplyBody(npc, GIANT.heightInches / BodyShape.BaseHeight)
+-- a face image on a classic Roblox head welded over the dynamic head (like the trainers, TrainerService)
+local function classicFace(npc, texture: string)
+	local head = npc:FindFirstChild("Head")
+	if not head or not head:IsA("BasePart") or npc:FindFirstChild("ClassicHead") then return end
+	local old = head:FindFirstChild("face")
+	if old then old:Destroy() end
+	head.Transparency = 1
+	local classic = Instance.new("Part")
+	classic.Name = "ClassicHead"
+	classic.Size = Vector3.new(2, 1, 1)
+	classic.Color = head.Color
+	classic.Material = Enum.Material.SmoothPlastic
+	classic.CanCollide, classic.CanQuery, classic.CanTouch, classic.Massless, classic.CastShadow = false, false, false, true, false
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Head
+	mesh.Scale = Vector3.new(1.25, 1.25, 1.25) * (head.Size.Y / 1.2)
+	mesh.Parent = classic
+	local face = Instance.new("Decal")
+	face.Name = "face"
+	face.Face = Enum.NormalId.Front
+	face.Texture = texture
+	face.Parent = classic
+	classic.CFrame = head.CFrame
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0, weld.Part1 = head, classic
+	weld.Parent = classic
+	classic.Parent = npc
+end
+
+local function makeGiant(npc, spec)
+	spec = spec or GIANT
+	local data = giantData(spec)
+	NpcService.ApplyBody(npc, spec.heightInches / BodyShape.BaseHeight)
 	BodyService.ApplyFrame(npc, data)
 	-- (ApplyBody turned the NPC's automatic scaling off, so no client rebuilds him from his height scale; MuscleClient still
 	-- puts the server's exact sizes back if anything does)
@@ -413,13 +451,14 @@ local function makeGiant(npc)
 		end
 	end
 	local head = npc:FindFirstChild("Head")
+	if spec.skin and head and head:IsA("BasePart") then head.Color = spec.skin end
 	local skin = head and head:IsA("BasePart") and head.Color or Color3.fromHex("#8D5524")
-	local shorts = Body.ShortsColor(GIANT.shorts)
+	local shorts = Body.ShortsColor(spec.shorts)
 	local paint = {
 		UpperTorso = skin, RightUpperArm = skin, LeftUpperArm = skin, RightLowerArm = skin, LeftLowerArm = skin,
 		RightHand = skin, LeftHand = skin, RightLowerLeg = skin, LeftLowerLeg = skin,
 		LowerTorso = shorts, RightUpperLeg = shorts, LeftUpperLeg = shorts,
-		RightFoot = GIANT.shoes, LeftFoot = GIANT.shoes,
+		RightFoot = spec.shoes, LeftFoot = spec.shoes,
 	}
 	for name, color in pairs(paint) do
 		local part = npc:FindFirstChild(name)
@@ -427,7 +466,37 @@ local function makeGiant(npc)
 	end
 	npc:SetAttribute("SkinColor", skin)
 	npc:SetAttribute("Top", "Shirtless")
-	npc:SetAttribute("Shorts", GIANT.shorts)
+	npc:SetAttribute("Shorts", spec.shorts)
+	if spec.face then classicFace(npc, spec.face) end
+	for _, item in ipairs(npc:GetChildren()) do
+		local handle = item:IsA("Accessory") and item:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then handle.CanCollide, handle.CanQuery, handle.CanTouch = false, false, false end
+	end
+end
+
+-- Coach Dex: the giant's body at his own height, anchored behind his counter (Quests.CoachSpot); no animation track:
+-- every client poses him (CoachDexClient: leaning, breathing, looking at you, nod, point)
+local function makeCoach(npc)
+	makeGiant(npc, COACH)
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if root then root.Anchored = true end
+	local spot = Quests.CoachSpot
+	npc:PivotTo(CFrame.new(spot.Position.X, npc:GetPivot().Position.Y, spot.Position.Z) * spot.Rotation)
+	-- anchored, so no physics stands him up after the new body: put his soles on the floor under him (a few frames
+	-- later: the parts under an anchored root only move to their new joints on the next physics steps)
+	for _ = 1, 3 do RunService.Heartbeat:Wait() end
+	local lowest = math.huge
+	for _, name in ipairs({ "LeftFoot", "RightFoot" }) do
+		local foot = npc:FindFirstChild(name)
+		if foot and foot:IsA("BasePart") then lowest = math.min(lowest, foot.Position.Y - foot.Size.Y / 2) end
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { npc }
+	params.RespectCanCollide = true
+	local hit = workspace:Raycast(spot.Position + Vector3.new(0, 6, 0), Vector3.new(0, -14, 0), params)
+	local floorY = if hit then hit.Position.Y else spot.Position.Y
+	if lowest < math.huge then npc:PivotTo(npc:GetPivot() + Vector3.new(0, floorY - lowest, 0)) end
 end
 
 local function dressNpc(npc, gym)
@@ -452,6 +521,10 @@ local function dressNpc(npc, gym)
 	CollectionService:AddTag(npc, "Poser")
 	if npc.Name == GIANT.name and CollectionService:HasTag(npc, "GymNpc") then
 		makeGiant(npc)
+		return
+	end
+	if CollectionService:HasTag(npc, "Coach") then
+		makeCoach(npc)
 		return
 	end
 	NpcService.FreezeScale(npc) -- (no automatic rescale on any client: the server's shape is the only one)
@@ -495,7 +568,12 @@ function GymGoerService.Start()
 			loop(state, all)
 		end)
 	end
-	for _, coach in ipairs(CollectionService:GetTagged("Coach")) do task.spawn(pcall, dressNpc, coach, "Pro"); lookAtPlayers(coach) end
+	for _, coach in ipairs(CollectionService:GetTagged("Coach")) do
+		task.spawn(function()
+			local ok, err = pcall(dressNpc, coach, "Pro")
+			if not ok then warn("[GymGoerService] Coach Dex:", err) end
+		end)
+	end
 	CollectionService:GetInstanceAddedSignal("Legend"):Connect(lookAtPlayers)
 end
 

@@ -1,5 +1,5 @@
 -- NpcLookClient: how the NPCs (Workspace.NPCs) behave on YOUR screen (client only).
---  * Coach Dex and the visiting legends turn to face you, smoothly, every frame (each player sees them looking at
+--  * The visiting legends turn to face you (Coach Dex: CoachDexClient), smoothly, every frame (each player sees them looking at
 --    themselves). Doing this on the server only updated a few times a second and looked laggy.
 --  * NPCs are not solid here: the Roblox camera zooms in front of anything solid, so a gym regular standing behind your
 --    bench pushed the camera into your arm. You also walk through them instead of getting stuck at a machine.
@@ -12,7 +12,7 @@ local Workspace = game:GetService("Workspace")
 local LOOK_RANGE = 14   -- studs: they notice you this close
 local MAX_TURN = 70     -- degrees away from where they normally face (never turn toward the wall)
 local TURN_SPEED = 14   -- higher = snappier (exponential smoothing per second)
-local TAGS = { "Coach", "Legend" }
+local TAGS = { "Legend" } -- (Coach Dex: CoachDexClient, owner 15 Oct: he leans on his counter and turns his head)
 
 local player = Players.LocalPlayer
 local npcs = {} -- [model] = { root, homeYaw, yaw }

@@ -17,6 +17,12 @@
 --  * Arm wrestling tables (tag "ArmWrestleTable") are not lifting machines (owner, 14 Oct): no diamond, only a small
 --    simple label (the name in gold on a dark pill, final kit) and the OCCUPY prompt. Sitting at one hides it.
 --  * Every sign here: AlwaysOnTop off, MaxDistance 40, sized in studs; the diamond only within SIGN.Near (15) studs.
+--  * (owner, 15 Oct) The floor outline's height is worked out ONCE per machine when its anchor is built: a ray straight
+--    down that ignores every character (players, NPCs, trainers), the machine and the signs, and only hits collidable
+--    floor; the strips are anchored there and never follow the occupant or the moving bar. The diamond keeps a fixed
+--    height over the machine and drops lower when anything above (a ceiling lamp, a duct) would cut it.
+--  * Someone on the machine (a player: the model's UserId attribute; an NPC: its "Occupant" value): the prompt shows
+--    "OCCUPIED" in red with a dimmed key and does nothing.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -47,7 +53,9 @@ local SIGN = {
 	Edge = Color3.fromRGB(255, 255, 255), EdgeWidth = 0.07,
 	Bob = 0.12, BobSpeed = 1.7, TurnRate = 5, -- studs, radians/s of the bob, how fast it turns toward the camera
 	Red = Color3.fromRGB(255, 70, 70),
-	Floor = 0.05,         -- studs: the floor outline's height
+	Floor = 0.05,         -- studs: the floor outline's height above the floor
+	ClearAbove = 0.25,    -- studs kept between the diamond's top corner and anything above it
+	MinLift = 0.9,        -- studs: the lowest the diamond's centre may sit over the machine's top
 	FloorPad = 0.5,       -- studs around the machine's footprint
 }
 -- (owner, 14 Oct: the floating "!" markers only show when you're close: Far 25 studs)
@@ -209,7 +217,7 @@ ProximityPromptService.PromptHidden:Connect(function(prompt)
 end)
 keyButton.Activated:Connect(function()
 	local entry = shown.model and shownPrompts[shown.model]
-	if not entry then return end
+	if not entry or not entry.prompt.Enabled then return end
 	entry.prompt:InputHoldBegin()
 	task.defer(function() entry.prompt:InputHoldEnd() end)
 end)
@@ -270,24 +278,61 @@ local function setAlpha(alpha: number)
 	nameGui.Enabled, inside.Enabled = a > 0, a > 0
 end
 
--- the floor outline: 4 strips around the footprint, at the floor under the machine
-local function placeFloor(model)
-	local boxCf, boxSize = model:GetBoundingBox()
+-- everything a sign ray must ignore: every character (players, NPCs, personal trainers) and the signs themselves
+local function ignoreList(model): { Instance }
+	local list = { model, folder }
+	for _, other in ipairs(Players:GetPlayers()) do if other.Character then table.insert(list, other.Character) end end
+	for _, name in ipairs({ "NPCs", "LocalTrainers" }) do
+		local holder = Workspace:FindFirstChild(name)
+		if holder then table.insert(list, holder) end
+	end
+	return list
+end
+
+-- the floor outline's place, worked out once per machine: the footprint (the machine's box, padded) flat on the floor
+local function measureFloor(model, boxCf: CFrame, boxSize: Vector3)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	local exclude = { model, folder }
-	for _, other in ipairs(Players:GetPlayers()) do if other.Character then table.insert(exclude, other.Character) end end
-	params.FilterDescendantsInstances = exclude
+	params.FilterDescendantsInstances = ignoreList(model)
+	params.RespectCanCollide = true -- (the floor, not a mat or a decal part lying on it)
 	local bottom = boxCf.Position.Y - boxSize.Y / 2
-	local hit = Workspace:Raycast(boxCf.Position + Vector3.new(0, 0.5, 0), Vector3.new(0, -boxSize.Y - 2, 0), params)
+	local hit = Workspace:Raycast(Vector3.new(boxCf.Position.X, bottom + 1.5, boxCf.Position.Z), Vector3.new(0, -6, 0), params)
 	local floorY = if hit then hit.Position.Y else bottom
-	local flat = CFrame.new(boxCf.Position.X, floorY + SIGN.Floor / 2 + 0.02, boxCf.Position.Z) * (boxCf - boxCf.Position)
-	local w, d = boxSize.X + SIGN.FloorPad * 2, boxSize.Z + SIGN.FloorPad * 2
+	local flat = CFrame.new(boxCf.Position.X, floorY + SIGN.Floor + SIGN.Floor / 2, boxCf.Position.Z) * (boxCf - boxCf.Position)
+	return { cf = flat, w = boxSize.X + SIGN.FloorPad * 2, d = boxSize.Z + SIGN.FloorPad * 2 }
+end
+
+-- the floor outline: 4 anchored strips around the footprint (from the machine's anchor: never moves with the occupant)
+local function placeFloor(model)
+	local anchor = anchors[model]
+	local fp = anchor and anchor.floor
+	if not fp then return end
+	local flat, w, d = fp.cf, fp.w, fp.d
 	floorStrips[1].Size, floorStrips[1].CFrame = Vector3.new(w + 0.08, SIGN.Floor, 0.08), flat * CFrame.new(0, 0, -d / 2)
 	floorStrips[2].Size, floorStrips[2].CFrame = Vector3.new(w + 0.08, SIGN.Floor, 0.08), flat * CFrame.new(0, 0, d / 2)
 	floorStrips[3].Size, floorStrips[3].CFrame = Vector3.new(0.08, SIGN.Floor, d), flat * CFrame.new(-w / 2, 0, 0)
 	floorStrips[4].Size, floorStrips[4].CFrame = Vector3.new(0.08, SIGN.Floor, d), flat * CFrame.new(w / 2, 0, 0)
-	shown.footprint = { cf = flat, w = w, d = d }
+	shown.footprint = fp
+end
+
+-- the lowest bottom of anything visible above the machine within the diamond's column (lamps and ducts are often
+-- CanQuery off, so a ray would miss them: their boxes are checked instead)
+local function clearanceAbove(model, centre: Vector3, top: number, reach: number): number?
+	local column = Vector3.new(SIGN.Side * 1.6, reach, SIGN.Side * 1.6)
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = ignoreList(model)
+	local lowest = nil
+	local region = CFrame.new(centre.X, top + reach / 2, centre.Z)
+	for _, part in ipairs(Workspace:GetPartBoundsInBox(region, column, params)) do
+		if part.Transparency < 1 then
+			local cf, size = part.CFrame, part.Size
+			local halfY = math.abs(cf.RightVector.Y) * size.X / 2 + math.abs(cf.UpVector.Y) * size.Y / 2 + math.abs(cf.LookVector.Y) * size.Z / 2
+			local bottomY = cf.Position.Y - halfY
+			if bottomY > top + 0.2 and (not lowest or bottomY < lowest) then lowest = bottomY end
+		end
+	end
+	return lowest
 end
 local function setFloorAlpha(a: number, bright: boolean)
 	local visible = if bright then a else a * 0.55
@@ -303,13 +348,11 @@ local function build(model)
 	if not machine then return nil end
 	local boxCf, boxSize = model:GetBoundingBox()
 	local top = boxCf.Position.Y + boxSize.Y / 2
-	-- under a low ceiling the sign sits just under it
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { model, folder }
+	-- a fixed height over the machine, lower when something above (ceiling, lamp, duct) would cut the diamond or its name
+	local diagonal = SIGN.Side * math.sqrt(2) / 2
 	local lift = SIGN.Lift
-	local hit = Workspace:Raycast(Vector3.new(boxCf.Position.X, top + 0.05, boxCf.Position.Z), Vector3.new(0, lift + 3.2, 0), params)
-	if hit then lift = math.min(lift, math.max(1.2, hit.Position.Y - top - 3)) end
+	local above = clearanceAbove(model, boxCf.Position, top, SIGN.Lift + diagonal + 1.6)
+	if above then lift = math.clamp(above - top - diagonal - SIGN.ClearAbove, SIGN.MinLift, SIGN.Lift) end
 	local part = Instance.new("Part")
 	part.Name = model.Name .. "Sign"
 	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = true, false, false, false, false
@@ -317,7 +360,8 @@ local function build(model)
 	part.Size = Vector3.new(0.1, 0.1, 0.1)
 	part.CFrame = CFrame.new(boxCf.Position.X, top + lift, boxCf.Position.Z)
 	part.Parent = folder
-	local anchor = { part = part, machine = machine, top = top, bangAlpha = 0, phase = math.random() * math.pi * 2 }
+	local anchor = { part = part, machine = machine, top = top, bangAlpha = 0, phase = math.random() * math.pi * 2,
+		floor = measureFloor(model, boxCf, boxSize) }
 	anchor.bang = New("BillboardGui", {
 		Size = UDim2.fromOffset(46, 62),
 		StudsOffset = Vector3.new(0, -0.6, 0),
@@ -493,11 +537,19 @@ RunService.RenderStepped:Connect(function(dt)
 	local floorWant = if anchor and nearest == shown.model then 1 else 0
 	shown.floorAlpha = approach(shown.floorAlpha or 0, floorWant, dt)
 	setFloorAlpha(shown.floorAlpha, shown.inside)
-	-- the prompt: while Roblox shows this machine's prompt (it decides distance / exclusivity)
+	-- the prompt: while Roblox shows this machine's prompt (it decides distance / exclusivity); someone on it: OCCUPIED
 	local entry = shown.model and shownPrompts[shown.model]
-	local promptOn = entry ~= nil and shown.alpha > 0.5 and entry.prompt.Enabled
+	local occupied = shown.model ~= nil and (shown.model:GetAttribute("UserId") ~= nil or shown.model:FindFirstChild("Occupant") ~= nil)
+	local promptOn = shown.alpha > 0.5 and (occupied or (entry ~= nil and entry.prompt.Enabled))
 	promptGui.Enabled = promptOn
-	if promptOn then
+	keyButton.BackgroundTransparency = if occupied then 0.6 else 0.25
+	keyLabel.TextTransparency = if occupied then 0.6 else 0
+	actionLabel.TextColor3 = if occupied then SIGN.Red else Color3.new(1, 1, 1)
+	if occupied then
+		actionLabel.Text = "OCCUPIED"
+		tapIcon.Visible = false
+		keyLabel.Visible = true
+	elseif promptOn and entry then
 		local touch = entry.inputType == Enum.ProximityPromptInputType.Touch
 		local gamepad = entry.inputType == Enum.ProximityPromptInputType.Gamepad
 		tapIcon.Visible = touch

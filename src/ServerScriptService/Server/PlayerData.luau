@@ -730,6 +730,7 @@ function PlayerData.SetSettings(player, settings)
 	-- (UI v2, 13 Oct) the left menu folded away; Settings toggles: tutorial / coach hints, other players' scream sounds and
 	-- auras, low graphics; (final kit, 14 Oct) reduce motion: the UI's looping pulses / shines stop
 	if type(settings.menuCollapsed) == "boolean" then new.menuCollapsed = settings.menuCollapsed end
+	if type(settings.rightCollapsed) == "boolean" then new.rightCollapsed = settings.rightCollapsed end -- (the right cards folded)
 	-- the Inventory window's last tab (owner, 14 Oct: remembered)
 	if INVENTORY_TABS[settings.inventoryTab] then new.inventoryTab = settings.inventoryTab end
 	-- the newest update notes the player opened (main menu UPDATES red dot; a short stamp like "14 Oct")

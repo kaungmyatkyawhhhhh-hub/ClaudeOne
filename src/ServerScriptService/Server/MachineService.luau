@@ -324,6 +324,10 @@ function MachineService.NpcEnter(npc, model, tierIndex)
 	marker.Name = "Occupant"
 	marker.Value = npc
 	marker.Parent = model
+	-- (owner, 15 Oct: someone on it = OCCUPIED, the prompt can't be used; a player who waits by it still gets it:
+	-- GymGoerService steps the NPC off)
+	local prompt = getPrompt(model)
+	if prompt then prompt.Enabled = false end
 	root.Anchored = true
 	npc:PivotTo(bodyCFrame(npc, humanoid, root, model, Poses[machine.pose]))
 	updatePlates(model, machine.tiers[math.clamp(tierIndex or 1, 1, #machine.tiers)])
@@ -341,6 +345,8 @@ function MachineService.NpcLeave(npc, model)
 	occupants[model] = nil
 	local marker = model:FindFirstChild("Occupant")
 	if marker then marker:Destroy() end
+	local prompt = getPrompt(model)
+	if prompt then prompt.Enabled = true end
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	updatePlates(model, displayTier(machine))
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")

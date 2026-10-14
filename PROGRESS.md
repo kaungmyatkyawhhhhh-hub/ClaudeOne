@@ -1425,3 +1425,21 @@ thigh skin (14 x 6,676) and shorts (14 x 4,498). NPC Robloxian 2.0 parts are 108
   parts behind it, and clothed stage pieces are 2% see-through (their skin shows through the shirt image's gaps). The 56
   see-through Glass parts (windows, doors, the pro gym glass wall, jars, bottles...) are SmoothPlastic now (+ a little
   reflectance; attribute WasGlassMaterial). Mirrors (5% see-through) and solid glass kept Glass.
+
+## 15 Oct: the queued requests (in progress)
+- Machine signs (MachineSignsClient): the floor outline's height is measured ONCE per machine (a ray down ignoring all
+  characters, NPCs, trainers and signs, collidable floor only), anchored; the diamond keeps a fixed height and drops
+  under anything above it (part boxes, since lamps are often not queryable). OCCUPIED (red, dimmed key, does nothing)
+  while a player (UserId) or an NPC (Occupant) is on it; MachineService now disables the prompt while an NPC lifts.
+  NOT YET PLAY-TESTED (Studio's Play got stuck).
+- Coach Dex: built like Dante (GymGoerService.makeCoach: 7'6", mass monster, V-taper, shirtless, black shorts, bald,
+  warm brown skin, our own stern bearded face on a classic head: 116883309844476, drawn by
+  scratchpad dex_face.py), anchored with his soles on the floor. CoachDexClient poses him: leaning on the counter
+  (lean 40, shoulders 55, elbows 75), breathing, weight shift, shoulder roll / neck crack every ~10 s, head tracking within
+  15 studs (clamped 70 / 30, eases back), nod at 8 studs, pointing on Talk; culled past 100 studs / off screen.
+  NpcLookClient no longer turns him. Booth (tools/builders/CoachDesk.luau, run in Studio): protein tub, shaker,
+  clipboard, whistle, a hanging gold COACH DEX sign under the desk lamp, a warm spotlight (no shadows). Pose checked
+  in play; head tracking / nod / point not yet seen in play.
+- Right-side cards (RightColumn): a drawer with a graphite tab (gold chevron) on its left edge; folds right (0.25 s Quad
+  Out), saved as settings.rightCollapsed; red dot + one pulse when a ready card appears while folded; folds on a
+  machine (tab hidden if it would touch the weight panel). NOT YET PLAY-TESTED.
