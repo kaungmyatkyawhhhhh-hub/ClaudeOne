@@ -82,9 +82,9 @@ local function grantProduct(player, product)
 	if product.coins then -- the coin packs
 		PlayerData.AddCoins(player, product.coins)
 		return true
-	elseif product.key == "StaminaRefill" then
-		PlayerData.SetStamina(player, PlayerData.GetMaxStamina(player))
-		return true
+	elseif product.key == "EndlessStamina" then
+		-- 15 min of no stamina drain, stacking up to 60 (the time left is saved; it runs only while in the game)
+		return PlayerData.AddEndlessStamina(player, Effects.EndlessStaminaMinutes * 60, Effects.EndlessStaminaMaxMinutes * 60)
 	elseif product.key == "DnaToken" then
 		return PlayerData.AddDnaTokens(player, 1)
 	elseif product.key == "QuestReroll" then

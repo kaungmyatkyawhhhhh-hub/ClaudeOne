@@ -28,6 +28,7 @@ function DataTemplate.new()
 		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0, cardioMeters = 0, posingWins = 0, posingEntries = 0, loginWeeks = 0, armKingWins = 0, beatBenny = 0, beatCoral = 0, beatDante = 0 },
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
 		shakes = 0, -- Energy Shakes in the bag
+		endlessStamina = 0, -- Endless Stamina seconds left (bought; counts down only while in the game; PlayerData)
 		daily = { lastDay = 0, streak = 0, best = 0, calendarDay = 0 }, -- login streak calendar (Config.Economy.Login): last claimed day + calendar day
 		-- today's quests (Config.DailyQuests, DailyService): list = { { id, progress, done, claimed } }, groups trained today
 		dailyQuests = { day = 0, list = {}, bonus = false, swaps = 0, groups = {} },

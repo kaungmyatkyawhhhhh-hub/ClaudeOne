@@ -12,8 +12,12 @@
 -- on a machine (lifting, the treadmill, Auto Lift) and fades out (0.4 s) 1.5 s after you leave. Off a machine it stays
 -- hidden (it refills in the background), except a jump up (a shake, a refill) shows it for 3 s so you see it fill. It
 -- never moves, and the boost icons above it keep their own spot whether it shows or not.
+-- Endless Stamina (owner, 14 Oct; the player's "EndlessStaminaUntil" attribute, PlayerData): a gold lightning chip with
+-- its countdown ("14:32") first in the boosts row, and the bar turns gold with a slow shine sweeping along it and an
+-- infinity sign before the number.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
 local UIBus = require(script.Parent.UIBus)
@@ -31,6 +35,7 @@ HudBottom.FadeIn, HudBottom.FadeOut = 0.2, 0.4
 HudBottom.HideAfterLeave = 1.5 -- seconds after getting off a machine
 HudBottom.ShowOnRefill = 3     -- seconds a refill (shake, product, trainer) shows the bar while not exercising
 HudBottom.RefillJump = 0.1     -- a stamina rise of at least this share of the max at once counts as a refill
+HudBottom.ShineEvery = 2.6     -- Endless Stamina: seconds per shine sweep along the gold bar
 
 local gui, root, row, setBar, barTrack, fill, staminaNow, staminaMaxText, group
 local training = false
@@ -38,6 +43,13 @@ local shownUntil = 0   -- os.clock() until which a refill keeps the bar up
 local shown = false
 local lastStamina = nil
 local hidden = {}
+local endlessChip, infinity, shine, shineTween
+local endless = false
+
+local function endlessLeft(): number
+	local untilTime = Players.LocalPlayer:GetAttribute("EndlessStaminaUntil")
+	return if type(untilTime) == "number" then math.max(0, untilTime - Workspace:GetServerTimeNow()) else 0
+end
 
 local function staminaMax()
 	local max = Players.LocalPlayer:GetAttribute("MaxStamina")
@@ -67,7 +79,7 @@ local function refresh()
 	staminaNow.Text = tostring(math.floor(stamina + 0.5))
 	staminaMaxText.Text = "/ " .. math.floor(max + 0.5)
 	local gloss = fill:FindFirstChild("Gloss")
-	local color = ratio < HudBottom.LowStamina and Colors.NeedsWork or Colors.Teal
+	local color = if endless then Colors.Gold elseif ratio < HudBottom.LowStamina then Colors.NeedsWork else Colors.Teal
 	if gloss then gloss.Color = Kit.Metal(color) end
 	-- a jump up while not exercising (a shake, a refill): show it for a few seconds; the slow refill stays hidden
 	if lastStamina and not training and stamina - lastStamina >= HudBottom.RefillJump * max then
@@ -106,11 +118,21 @@ local function ensure()
 		TextXAlignment = Enum.TextXAlignment.Left, Parent = barTrack })
 	local numbers = New("Frame", { Name = "Numbers", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 2),
 		Size = UDim2.fromOffset(110, 16), Parent = barTrack }, { Theme.List(Enum.FillDirection.Horizontal, 3, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
+	infinity = Kit.Text({ Name = "Infinity", LayoutOrder = 0, Text = "\u{221E}", Font = "Number", TextSize = 15, TextColor3 = Colors.Gold,
+		Size = UDim2.fromOffset(0, 16), AutomaticSize = Enum.AutomaticSize.X, Visible = false, Parent = numbers })
 	staminaNow = Kit.Text({ Name = "Now", LayoutOrder = 1, Text = "0", Font = "Number", TextSize = 12, Size = UDim2.fromOffset(0, 16), AutomaticSize = Enum.AutomaticSize.X, Parent = numbers })
 	staminaMaxText = Kit.Text({ Name = "Max", LayoutOrder = 2, Text = "/ 100", Font = "Number", TextSize = 12, TextColor3 = Colors.Muted, Size = UDim2.fromOffset(0, 16),
 		AutomaticSize = Enum.AutomaticSize.X, Parent = numbers })
 	local _
 	_, setBar, fill = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(10, 20), Size = UDim2.new(1, -20, 0, 8), Parent = barTrack }, { outline = 1 })
+	-- Endless Stamina's shine: a soft white band that sweeps along the fill (hidden otherwise)
+	shine = New("Frame", { Name = "Shine", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.25, Size = UDim2.fromScale(1, 1),
+		Visible = false, ZIndex = (fill.ZIndex or 1) + 1, Parent = fill }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIGradient", { Name = "Sweep", Rotation = 0, Offset = Vector2.new(-1, 0), Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 1), NumberSequenceKeypoint.new(0.5, 0.2),
+			NumberSequenceKeypoint.new(0.6, 1), NumberSequenceKeypoint.new(1, 1) }) }),
+	})
 	row = New("Frame", { Name = "Boosts", AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.fromOffset(0, HudBottom.ChipSize + 16),
 		AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = root }, {
 		Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom),
@@ -126,6 +148,37 @@ local function ensure()
 	end)
 	Players.LocalPlayer:GetAttributeChangedSignal("MaxStamina"):Connect(refresh)
 	UIBus.MenuClosed.Event:Connect(refreshVisible)
+	-- Endless Stamina: the chip's countdown and the gold bar
+	endlessChip = HudBottom.Chip("zap", Colors.Gold, 0)
+	local function setEndless(on: boolean)
+		if endless == on then return end
+		endless = on
+		endlessChip:SetVisible(on)
+		infinity.Visible = on
+		shine.Visible = on
+		local zapIcon = barTrack:FindFirstChild("Zap")
+		if zapIcon and zapIcon:IsA("ImageLabel") then zapIcon.ImageColor3 = on and Colors.Gold or Colors.Teal end
+		if shineTween then shineTween:Cancel() shineTween = nil end
+		if on then
+			local sweep = shine:FindFirstChild("Sweep") :: UIGradient
+			sweep.Offset = Vector2.new(-1, 0)
+			shineTween = game:GetService("TweenService"):Create(sweep, TweenInfo.new(HudBottom.ShineEvery, Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut, -1), { Offset = Vector2.new(1, 0) })
+			shineTween:Play()
+		end
+		refresh()
+	end
+	task.spawn(function()
+		while true do
+			local left = endlessLeft()
+			setEndless(left > 0)
+			if left > 0 then
+				local s = math.ceil(left)
+				endlessChip:SetText("", string.format("%d:%02d", s // 60, s % 60))
+			end
+			task.wait(0.25)
+		end
+	end)
 	UIBus.GeneticsVisible.Event:Connect(function(open) HudBottom.SetHidden("genetics", open) end)
 	task.spawn(function()
 		while true do

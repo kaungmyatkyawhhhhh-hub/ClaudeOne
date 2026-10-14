@@ -62,7 +62,8 @@ UI.ShopIcons = { -- shop items that aren't a real pass / product (those read the
 	product_dna_token = "rbxassetid://87375007150587",
 	product_quest_reroll = "rbxassetid://124460070314904",
 	product_shake_bundle = "rbxassetid://107883030118451",
-	product_stamina_refill = "rbxassetid://136768220289914",
+	-- (owner's Downloads\gym_arc_shop_icons\product_endless_stamina.png, uploaded from Studio 14 Oct: owner's inventory)
+	product_endless_stamina = "rbxassetid://96813280646116",
 }
 
 UI.MenuIcons = { -- 3D menu icons: NOT USED (owner, 13 Oct: keep the old left menu tiles); kept only as a record

@@ -465,13 +465,52 @@ function PlayerData.SetStamina(player, value)
 	replicate(player, { "stamina" }, value)
 end
 
--- Spends stamina if there is enough. Returns success.
+-- Spends stamina if there is enough. Returns success. (Endless Stamina: costs nothing and stays full.)
 function PlayerData.UseStamina(player, amount)
 	local data = PlayerData.Get(player)
-	if not data or data.stamina < amount then return false end
+	if not data then return false end
+	if (data.endlessStamina or 0) > 0 then
+		PlayerData.SetStamina(player, PlayerData.GetMaxStamina(player))
+		return true
+	end
+	if data.stamina < amount then return false end
 	PlayerData.SetStamina(player, data.stamina - amount)
 	lastStaminaUse[player] = os.clock()
 	return true
+end
+
+-- Endless Stamina (owner, 14 Oct; product 3718306417): data.endlessStamina = seconds left. It counts down only while
+-- the player is in a server (StaminaService calls TickEndlessStamina every second) and is saved with the rest, so leaving
+-- keeps the rest. While it's above 0 reps cost nothing and stamina stays full (UseStamina). The client reads the
+-- player's "EndlessStaminaUntil" attribute (the server time it ends) for its timer and the gold stamina bar.
+local function showEndless(player, data)
+	local left = data.endlessStamina or 0
+	player:SetAttribute("EndlessStaminaUntil", if left > 0 then workspace:GetServerTimeNow() + left else nil)
+end
+
+function PlayerData.EndlessStaminaLeft(player): number
+	local data = PlayerData.Get(player)
+	return data and data.endlessStamina or 0
+end
+
+-- adds time (a purchase), at most maxSeconds in all
+function PlayerData.AddEndlessStamina(player, seconds, maxSeconds)
+	local data = PlayerData.Get(player)
+	if not data or type(seconds) ~= "number" or seconds <= 0 then return false end
+	data.endlessStamina = math.min((data.endlessStamina or 0) + seconds, maxSeconds)
+	showEndless(player, data)
+	PlayerData.SetStamina(player, PlayerData.GetMaxStamina(player))
+	return true
+end
+
+function PlayerData.TickEndlessStamina(player, dt)
+	local data = PlayerData.Get(player)
+	local left = data and data.endlessStamina or 0
+	if left <= 0 then return end
+	left = math.max(0, left - dt)
+	data.endlessStamina = left
+	if left <= 0 or not player:GetAttribute("EndlessStaminaUntil") then showEndless(player, data) end -- (ended / just joined)
+	if left > 0 then PlayerData.SetStamina(player, PlayerData.GetMaxStamina(player)) end
 end
 
 -- Natural refill; waits Stamina.RegenDelay after the last rep. `multiplier` = recovery stations and boosts.

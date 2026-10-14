@@ -114,7 +114,7 @@ for _, id in ipairs({ "Passes", "Coins", "Boosts", "Auras" }) do
 end
 local currentTab = tabs[1].id
 
-local refresh, select -- (below)
+local refresh, select, endlessFull -- (below)
 local modal = Kit.Modal({ name = "Store", title = "Store", width = W, height = H, displayOrder = 25, tabs = tabs, coins = true,
 	onTab = function(id)
 		currentTab = id
@@ -202,6 +202,9 @@ Kit.Text({ Name = "Text", Text = "BEST SELLER", Font = "Title", TextSize = 11, T
 	AutomaticSize = Enum.AutomaticSize.X, ZIndex = 3, Parent = bestTag })
 local heroName = Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Title", TextSize = 22, Upper = true, Position = UDim2.fromOffset(12, 122),
 	Size = UDim2.new(1, -24, 0, 26), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = hero }))
+-- (a long name like ENDLESS STAMINA shrinks to fit instead of being cut off)
+heroName.TextScaled = true
+Theme.New("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = 14, Parent = heroName })
 local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, TextWrapped = true, Position = UDim2.fromOffset(12, 148),
 	Size = UDim2.new(1, -24, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = hero })
 local buy = Kit.Button("Red", "", { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Parent = hero },
@@ -301,11 +304,26 @@ function refresh()
 		local price = priceOf(picked)
 		if picked.isAura then
 			Kit.SetButton(buy, "Gold", "View auras")
+		elseif endlessFull(picked) then
+			Kit.SetButton(buy, "Quiet", "Full: 60 min")
 		else
 			Kit.SetButton(buy, isOwned and "Quiet" or "Red", isOwned and "Owned" or (price and ("R$ " .. Kit.Format(price)) or "Buy"))
 		end
 	end
 end
+
+-- Endless Stamina can't be bought while another 15 minutes wouldn't fit under the 60-minute cap (the server caps it too)
+function endlessFull(entry): boolean
+	if not entry or entry.item.key ~= "EndlessStamina" then return false end
+	local untilTime = player:GetAttribute("EndlessStaminaUntil")
+	local left = if type(untilTime) == "number" then untilTime - workspace:GetServerTimeNow() else 0
+	local fx = Monetization.Effects
+	return left > (fx.EndlessStaminaMaxMinutes - fx.EndlessStaminaMinutes) * 60
+end
+
+player:GetAttributeChangedSignal("EndlessStaminaUntil"):Connect(function()
+	if modal.isOpen() then refresh() end
+end)
 
 -- an aura: the Titles window's Auras tab, on that aura
 local function openAura(entry)
@@ -318,6 +336,7 @@ buy.Activated:Connect(function()
 		return
 	end
 	if not picked or not picked.item.id then return end
+	if endlessFull(picked) then return end
 	if picked.isPass then
 		if owned(picked) then return end
 		MarketplaceService:PromptGamePassPurchase(player, picked.item.id)

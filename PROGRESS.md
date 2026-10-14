@@ -1286,3 +1286,15 @@ next reroll), `TestGeneticsHold` (n = freeze the genetics reveal at plate n's mo
   cards). Tuned: shadow preset a bit lighter (invisible in the dark gym). Checked all 13 at 100%, golden at idle / 50% /
   burst, 7'0" and a 6-stud NPC. Screenshots: screenshots/auras_v2/. FPS: Studio driven over MCP runs ~11 fps either way,
   so no meaningful number; budget instead ~90 live particles per full aura (x0.6 on phones), others past 40 studs ~10.
+- ENDLESS STAMINA (owner, 14 Oct; was Stamina Refill, same product 3718306417, renamed in the Creator Hub): 15 min of no
+  stamina drain per purchase, stacking to 60 (Monetization.Effects.EndlessStaminaMinutes / MaxMinutes). Saved as
+  data.endlessStamina = seconds left; StaminaService counts it down every second only for players in the game, so leaving
+  keeps the rest. While > 0 PlayerData.UseStamina costs nothing and keeps stamina full (lifting, treadmills, Auto Rep).
+  Granted only in ProcessReceipt (the same step that records the PurchaseId and saves before answering Granted; a repeated
+  id grants nothing). UI: a gold lightning chip with the countdown first in the boosts row; the stamina bar turns gold with
+  a slow shine and an infinity sign before the number (HudBottom, "EndlessStaminaUntil" attribute). Store: new name, text,
+  icon (96813280646116, uploaded from Studio; search_asset can't see the owner's own uploads), BOOSTS tab; the buy button
+  reads "Full: 60 min" when another 15 min wouldn't fit (the server caps it too). Hero name in the Store shrinks to fit.
+  Tested: 2 buys = 30 min, same PurchaseId again = no change, 40 lift requests (27 reps) kept stamina 250/250, leave +
+  rejoin 27 s later kept the time (1746 -> 1736 s), cap at 60.0 min. NOTE: the owner's own save got 60 min from the test
+  receipts. Screenshots: screenshots/endless_stamina/.

@@ -1,4 +1,4 @@
--- Stamina extras: buying Energy Shakes at the shake machine by the door, drinking them (full stamina + bonus gains
+-- Stamina extras: the Endless Stamina countdown (every second, only for players in the game; PlayerData), buying Energy Shakes at the shake machine by the door, drinking them (full stamina + bonus gains
 -- through BoostService), and Plates the gym cat by the front desk (pet = a tiny refill). All checks on the server.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -117,6 +117,20 @@ function StaminaService.Start()
 	setupShakeMachine()
 	task.spawn(wireCat)
 	ActionService.Register("DrinkShake", drink)
+	-- Endless Stamina: count the bought time down for everyone here (and keep their stamina full meanwhile)
+	task.spawn(function()
+		local last = os.clock()
+		while true do
+			task.wait(1)
+			local t = os.clock()
+			local dt = t - last
+			last = t
+			for _, player in ipairs(Players:GetPlayers()) do
+				local ok, err = pcall(PlayerData.TickEndlessStamina, player, dt)
+				if not ok then warn("[StaminaService] endless stamina:", err) end
+			end
+		end
+	end)
 	Players.PlayerRemoving:Connect(function(player)
 		lastPet[player], lastBuy[player], lastDrink[player] = nil, nil, nil
 	end)
