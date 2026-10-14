@@ -35,6 +35,8 @@ local PLAYER_NEAR = 9        -- studs: a machine with a player this close is not
 local PLAYER_HEADING = 22    -- studs: ...or a player this close and walking toward it
 local YIELD_AFTER = 1.2      -- seconds a player has to stand by an NPC's machine before it steps off
 local LOOK_RANGE = 14        -- Coach and legends turn toward players this close
+local ACTIVE_RANGE = 120     -- studs (owner, 14 Oct: performance): a regular only thinks / walks with a player this close;
+local PARKED_CHECK = 2       -- otherwise it is parked (anchored, idle, no pathfinding) and checks again this often
 
 local reserved = {} -- [machine model] = npc walking to it
 local states = {}   -- [npc] = its state (GymGoerService.Hold)
@@ -299,9 +301,38 @@ local function poseNow(state)
 	return true
 end
 
+-- Is any player within ACTIVE_RANGE of this NPC?
+local function playerNear(npc): boolean
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not root then return false end
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		local other = character and character:FindFirstChild("HumanoidRootPart")
+		if other and (other.Position - root.Position).Magnitude <= ACTIVE_RANGE then return true end
+	end
+	return false
+end
+
+-- Parked: nobody near, so no AI, no pathfinding, no physics (the root is anchored; the server keeps owning it), just the
+-- idle animation (each client also freezes far NPCs' animations, NpcCullingClient).
+local function park(state)
+	if state.parked then return end
+	state.parked = true
+	local root = state.npc:FindFirstChild("HumanoidRootPart")
+	if root then root.Anchored = true end
+	play(state, "Idle")
+end
+
 local function loop(state, all)
 	task.wait(rng:NextNumber(0.5, 4)) -- don't all start at once
 	while state.npc.Parent do
+		-- nobody near (and not on a machine or held): parked until someone comes within ACTIVE_RANGE
+		if not state.machine and os.clock() >= (state.holdUntil or 0) and not playerNear(state.npc) then
+			park(state)
+			task.wait(PARKED_CHECK)
+			continue
+		end
+		state.parked = false
 		-- never stay on the floor: stand back up
 		local humState = state.humanoid:GetState()
 		if humState == Enum.HumanoidStateType.FallingDown or humState == Enum.HumanoidStateType.Ragdoll or humState == Enum.HumanoidStateType.Physics then

@@ -102,6 +102,21 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   faded line. Standing still with the labels open turns you to face the camera. The real offset bug: on devices with
   insets (the emulator's phone) the full-screen gui is bigger than the 3D viewport, so the drawing layer is now placed
   over the viewport each frame. Top row never over the top bar. Studio hook TestOpenPanel = "Stats".
+- PERFORMANCE baseline (14 Oct, BEFORE culling / LOD / streaming changes). Studio Play solo (1 player: Studio can't add
+  more), Device Emulator view 974x584 (the emulator had been switched off the phone; no touch controls), quality
+  Automatic, starter gym floor (0, 4, -20) looking down the gym, 16 NPCs, 5 s samples:
+  - fps 26.5 / 40.8 / 29.8 (Studio is noisy), worst frame 81-142 ms, scene draw calls ~249, shadow draw calls ~720,
+    triangles ~1.78 M, render CPU 23-36 ms, heartbeat 1.2 ms, physics 1.0 ms, instances ~109.8 k, primitives 24.5 k,
+    moving 211-339, memory ~4.3 GB (Studio's own memory included), ping 1 ms (local).
+  - the same frame with the NPCs hidden: fps 48.3, draw calls 114, shadow 615, triangles 411 k: the 16 NPCs are 77 %
+    of the triangles (~86 k each) and 54 % of the draw calls.
+- Step 1, culling: NpcCullingClient = ONE client manager, round-robin (max 4 NPCs a frame): Near (< 40 studs, on
+  screen) every 0.1 s, everything on; Mid (40-100) every 0.5 s, particles at 35 %; Far (> 100 or off screen, 15 % viewport
+  margin) every 2 s, animations frozen (AdjustSpeed 0, restored after), particles / beams / trails off. Arm wrestling
+  opponents always Near; trainers stay TrainerFollowClient's (yours never freezes). Server: GymGoerService parks a
+  regular (anchored, idle, no pathfinding) while no player is within 120 studs, checks every 2 s; a regular on a machine
+  or held isn't parked; NPC roots stay server-owned. Same scene: tiers near 1 / mid 3 / far 12, 8 of 9 playing tracks
+  frozen, draw calls ~211 (was ~249), triangles ~1.41 M (was ~1.78 M), fps 30-37 (Studio noise).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
