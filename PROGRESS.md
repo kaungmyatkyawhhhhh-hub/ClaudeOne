@@ -1404,3 +1404,24 @@ thigh skin (14 x 6,676) and shorts (14 x 4,498). NPC Robloxian 2.0 parts are 108
   Studio-only Workspace attribute TestHoldLoading = true keeps it up (screenshots).
 - Checked at 844x390, 667x375, iPad 1024x768, 1920x1080 (Workspace TestPhoneSize): screenshots/menu_art_v2/. Play
   fades both away, HUD in, no errors. Note: the 1024x576 art is a little soft on a 1920x1080 PC.
+
+## 15 Oct: LOW-POLY BODY STAGES (owner's Blender meshes, imported by the owner)
+- The 91 imported models (Workspace) gave the new MeshIds; 84 stage templates (ReplicatedStorage.BodyStages torso /
+  arms / leg skin / shorts, LimbStages forearms / calves) now use them via MeshPart:ApplyMesh (a script can't write
+  MeshId). Size, Box collision, Automatic render, colour, no texture: unchanged (checked). BS_Waist stays old; your own
+  live muscle meshes untouched. The 7 BS_UpperTraps meshes have no template in the game (the torso grows the traps),
+  so they're only recorded. The imported copies in Workspace are deleted.
+- Roll back: Config/StageMeshBackup (old + new MeshId per template, how to apply).
+- Triangles per body (stage meshes): ~123k before (torso 19,950 x2, arm 13,728 x2, leg skin 6,676 + shorts 4,498 x2,
+  forearm / calf 8,256 x4) -> 30.9k after (torso 4,986 x2, arm 3,432 x2, leg skin ~2,000 + shorts ~1,350 x2, forearm /
+  calf ~1,800 x4), about 4x fewer. Body triangles drawn at the spawn view: 200k for 4 bodies before (55.5k each in that
+  view) -> 286k for 10 bodies after (30.9k each); more NPCs were in range in the second run.
+- FPS / frame time (Studio, MCP-driven, ~15 fps either way: no meaningful change measurable here): before 15.0 fps,
+  render CPU 16.5 ms, GPU 9-12 ms; after 14.8 fps, render CPU 23 ms, GPU 12-16 ms (10 NPC bodies drawn vs 4). Draw
+  calls can't be read by a script. A phone test is the real check.
+- Look: every stage g000 .. gmon front + back on an NPC copy (Kai: shirt + shorts): clothing and skin map the same, no
+  seam gaps; very slightly flatter shading. Screenshots: screenshots/lowpoly_stages/ (before_* / after_*).
+- Owner's bug "everyone's clothes disappear when I look through the glass": a Glass-material part hides see-through
+  parts behind it, and clothed stage pieces are 2% see-through (their skin shows through the shirt image's gaps). The 56
+  see-through Glass parts (windows, doors, the pro gym glass wall, jars, bottles...) are SmoothPlastic now (+ a little
+  reflectance; attribute WasGlassMaterial). Mirrors (5% see-through) and solid glass kept Glass.
