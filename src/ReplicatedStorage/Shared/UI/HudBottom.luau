@@ -8,6 +8,10 @@
 --   HudBottom.BarTop()                   root-relative y (mockup px from the bottom) of the bar's top edge
 -- Hidden on the main menu, the genetics screen and full-width screens. Stamina: ClientData.stamina against the player's
 -- MaxStamina attribute (Iron Lungs, treadmill training) or Config/Stamina.Max.
+-- Only while exercising (owner, 14 Oct): the bar sits in a CanvasGroup that fades in (GroupTransparency, 0.2 s) while you're
+-- on a machine (lifting, the treadmill, Auto Lift) and fades out (0.4 s) 1.5 s after you leave. Off a machine it stays
+-- hidden (it refills in the background), except a jump up (a shake, a refill) shows it for 3 s so you see it fill. It
+-- never moves, and the boost icons above it keep their own spot whether it shows or not.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
@@ -23,9 +27,16 @@ HudBottom.Bottom = 10         -- bar's gap to the screen bottom (mockup px)
 HudBottom.ChipSize = 28
 HudBottom.TrainingRowLift = 0 -- (owner's final kit: STOP sits bottom-left now, nothing above the stamina panel)
 HudBottom.LowStamina = 0.15
+HudBottom.FadeIn, HudBottom.FadeOut = 0.2, 0.4
+HudBottom.HideAfterLeave = 1.5 -- seconds after getting off a machine
+HudBottom.ShowOnRefill = 3     -- seconds a refill (shake, product, trainer) shows the bar while not exercising
+HudBottom.RefillJump = 0.1     -- a stamina rise of at least this share of the max at once counts as a refill
 
-local gui, root, row, setBar, barTrack, fill, staminaNow, staminaMaxText
+local gui, root, row, setBar, barTrack, fill, staminaNow, staminaMaxText, group
 local training = false
+local shownUntil = 0   -- os.clock() until which a refill keeps the bar up
+local shown = false
+local lastStamina = nil
 local hidden = {}
 
 local function staminaMax()
@@ -33,6 +44,16 @@ local function staminaMax()
 	if type(max) == "number" and max > 0 then return max end
 	local ok, Stamina = pcall(function() return require(ReplicatedStorage.Shared.Config.Stamina) end)
 	return ok and Stamina.Max or 100
+end
+
+-- show / hide the bar (a GroupTransparency tween, never a move)
+local function setShown(on: boolean)
+	if not group or shown == on then return end
+	shown = on
+	Theme.Tween(group, { GroupTransparency = on and 0 or 1 }, on and HudBottom.FadeIn or HudBottom.FadeOut)
+end
+local function updateShown()
+	setShown(training or os.clock() < shownUntil)
 end
 
 local function refresh()
@@ -48,6 +69,13 @@ local function refresh()
 	local gloss = fill:FindFirstChild("Gloss")
 	local color = ratio < HudBottom.LowStamina and Colors.NeedsWork or Colors.Teal
 	if gloss then gloss.Color = Kit.Metal(color) end
+	-- a jump up while not exercising (a shake, a refill): show it for a few seconds; the slow refill stays hidden
+	if lastStamina and not training and stamina - lastStamina >= HudBottom.RefillJump * max then
+		shownUntil = os.clock() + HudBottom.ShowOnRefill
+		updateShown()
+		task.delay(HudBottom.ShowOnRefill + 0.05, updateShown)
+	end
+	lastStamina = stamina
 end
 
 local function placeRow()
@@ -68,9 +96,10 @@ local function ensure()
 	gui = Theme.ScreenGui({ Name = "HudBottom", DisplayOrder = 4, Parent = playerGui })
 	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	root = Kit.Root(gui)
-	-- the panel: header (icon, STAMINA, "82 / 100") over the teal bar
-	barTrack = Theme.Panel({ Name = "Stamina", Piece = "hud_box", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -HudBottom.Bottom),
-		Size = UDim2.fromOffset(HudBottom.BarSize.X, HudBottom.BarSize.Y), Parent = root })
+	-- the panel: header (icon, STAMINA, "82 / 100") over the teal bar, in its CanvasGroup (hidden until you exercise)
+	group = New("CanvasGroup", { Name = "StaminaGroup", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -HudBottom.Bottom),
+		Size = UDim2.fromOffset(HudBottom.BarSize.X, HudBottom.BarSize.Y), BackgroundTransparency = 1, GroupTransparency = 1, Parent = root })
+	barTrack = Theme.Panel({ Name = "Stamina", Piece = "hud_box", Size = UDim2.fromScale(1, 1), Parent = group })
 	local zap = require(script.Parent.Pieces).Icon("zap", Colors.Teal, { Name = "Zap", Position = UDim2.fromOffset(10, 4), Size = UDim2.fromOffset(12, 12), Parent = barTrack })
 	zap:SetAttribute("KeepColor", true)
 	Kit.Text({ Name = "Title", Text = "STAMINA", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(26, 2), Size = UDim2.fromOffset(100, 16),
@@ -129,6 +158,12 @@ function HudBottom.SetTraining(on: boolean)
 	training = on
 	placeRow()
 	refresh()
+	if on then
+		updateShown()
+	else
+		-- a moment after getting off, then it fades (unless you got back on meanwhile)
+		task.delay(HudBottom.HideAfterLeave, updateShown)
+	end
 end
 
 function HudBottom.SetHidden(reason: string, on: boolean)

@@ -10,14 +10,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local Town = require(Config.Town)
 local Cosmetics = require(Config.Cosmetics)
+local Skate = require(Config.Skate)
 local ActionService = require(script.Parent.ActionService)
 local PlayerData = require(script.Parent.PlayerData)
 
 local SkateService = {}
 
 local SKATE = {
-	WalkSpeed = 32,   -- top speed without upgraded wheels (walking is 16); SkateClient drives the board
-	Lift = 0.4,       -- studs the board raises the character (wheels + deck: the deck top)
+	Lift = 0.4,       -- studs the board raises the character (wheels + deck: the deck top), at board scale 1
 	DeckColor = Color3.fromHex("#C99A62"), -- natural maple (the grip on top is black)
 	GripColor = Color3.fromHex("#1A1A1C"),
 	WheelColor = Color3.fromHex("#F4F1EA"),
@@ -42,7 +42,8 @@ local function allowed(player)
 end
 
 -- The deck and wheels the player uses (Config.Cosmetics slots Board and Wheels, bought at the clothing store):
--- { deck, stripe, wheel, speed }. Without them: the plain black board at the normal speed.
+-- { deck, stripe, wheel, speed, scale }. Without them: the plain board at the normal speed. Speed and board size grow with
+-- the rider's height (Config.Skate: a 7'0" rider is as quick and the board fits under them).
 local function lookOf(player)
 	local data = PlayerData.Get(player)
 	local equipped = data and data.cosmetics and data.cosmetics.equipped or {}
@@ -53,11 +54,14 @@ local function lookOf(player)
 		return found and found.slot == slot and found or nil
 	end
 	local deck, wheels = item("Board"), item("Wheels")
+	local heightScale = Skate.HeightScale(data and data.growthSpurts or 0)
 	return {
 		deck = deck and deck.color or SKATE.DeckColor,
 		stripe = deck and deck.color2 or nil,
 		wheel = wheels and wheels.color or SKATE.WheelColor,
-		speed = wheels and wheels.speed or SKATE.WalkSpeed,
+		speed = Skate.TopSpeed(wheels and wheels.speed or Skate.BaseSpeed, heightScale),
+		factor = Skate.SpeedFactor(heightScale),
+		scale = Skate.BoardScale(heightScale),
 	}
 end
 
@@ -69,8 +73,10 @@ local function makeBoard(root, hipHeight, look)
 	board.Name = "Skateboard"
 	-- hipHeight includes the lift, so this is the ground; the wheels stand on it and the deck top ends up right under the
 	-- lifted feet (deck centre 0.33 up: wheel radius 0.13 + axle 0.2)
+	-- (built at scale 1 around the deck, then the whole model is scaled to the rider: look.scale)
+	local scale = look.scale or 1
 	local groundY = -(root.Size.Y / 2 + hipHeight)
-	local deckCFrame = root.CFrame * CFrame.new(0, groundY + 0.33, 0) * CFrame.Angles(0, math.rad(90), 0)
+	local deckCFrame = root.CFrame * CFrame.new(0, groundY + 0.33 * scale, 0) * CFrame.Angles(0, math.rad(90), 0)
 	local deck
 	local function piece(name, size, offset, color, material, shape, shadow)
 		local p = Instance.new("Part")
@@ -113,10 +119,12 @@ local function makeBoard(root, hipHeight, look)
 			piece("Bearing", Vector3.new(0.15, 0.1, 0.1), CFrame.new(x, -0.2, z) * CFrame.Angles(0, math.rad(90), 0), TRUCK, metal, Enum.PartType.Cylinder)
 		end
 	end
+	board.PrimaryPart = deck
+	if scale ~= 1 then board:ScaleTo(scale) end -- (around the deck: it stays where it is)
 	local joint = Instance.new("Motor6D")
 	joint.Name = "BoardJoint"
 	joint.Part0, joint.Part1 = root, deck
-	joint.C0 = root.CFrame:ToObjectSpace(deckCFrame)
+	joint.C0 = root.CFrame:ToObjectSpace(deck.CFrame)
 	joint.Parent = deck
 	return board
 end
@@ -130,6 +138,7 @@ function SkateService.Stop(player)
 	if humanoid then humanoid.HipHeight = rider.hipHeight end
 	-- (SkateClient gives the player their walk speed and turning back)
 	player:SetAttribute("SkateSpeed", nil)
+	player:SetAttribute("SkateFactor", nil)
 	player:SetAttribute("Skating", nil)
 end
 
@@ -140,13 +149,14 @@ local function start(player)
 	if poseOk and ShowOffService.ReleasePose then ShowOffService.ReleasePose(player) end
 	local character, humanoid, root = parts(player)
 	local rider = { hipHeight = humanoid.HipHeight }
-	humanoid.HipHeight = rider.hipHeight + SKATE.Lift
 	local look = lookOf(player)
+	humanoid.HipHeight = rider.hipHeight + SKATE.Lift * look.scale
 	local board = makeBoard(root, humanoid.HipHeight, look)
 	board.Parent = character
 	rider.board = board
 	riders[player] = rider
 	player:SetAttribute("SkateSpeed", look.speed) -- the top speed; SkateClient drives the board (the server only checks the rules)
+	player:SetAttribute("SkateFactor", look.factor) -- push / brake / turning scale with it (the same feel at every size)
 	player:SetAttribute("Skating", true)
 end
 

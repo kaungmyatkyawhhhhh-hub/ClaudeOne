@@ -686,6 +686,7 @@ function PlayerData.SetSettings(player, settings)
 		if entry.id == settings.shorts then new.shorts = entry.id end
 	end
 	if settings.pumpHintSeen == true then new.pumpHintSeen = true end -- one-way: the "Tap to pump" hint never comes back
+	if settings.skateHintSeen == true then new.skateHintSeen = true end -- one-way: the "Tap to skate" hint, once per player
 	-- (UI v2, 13 Oct) the left menu folded away; Settings toggles: tutorial / coach hints, other players' scream sounds and
 	-- auras, low graphics; (final kit, 14 Oct) reduce motion: the UI's looping pulses / shines stop
 	if type(settings.menuCollapsed) == "boolean" then new.menuCollapsed = settings.menuCollapsed end

@@ -1,10 +1,19 @@
--- SkateClient: the Skate button in the right column, shown only outdoors in the town hub (Config.Town). Tapping it
--- asks the server for the board (SkateService validates and builds it). Riding (momentum, carving, braking, ollies) and the
+-- SkateClient: the SKATE button, shown only outdoors in the town hub (Config.Town). Tapping it (or Q on a keyboard) asks
+-- the server for the board (SkateService validates and builds it). Riding (momentum, carving, braking, ollies) and the
 -- skater pose are below; steering is the normal movement controls, so phones use the usual thumbstick.
+-- The button (owner, 14 Oct: easy to find): the owner's round skate art (Config/UI.SkateButton: circle, gold ring and
+-- background are in the image) in a square ImageButton, "SKATE" under it. On phones it sits just left of Roblox's jump
+-- button, the same size, centred on the same height (measured from TouchControlFrame.JumpButton, again only when the
+-- screen size changes); on a PC bottom right with a "Q" key chip. Skating: the same art with a slowly pulsing gold ring
+-- and "SKATING"; tap again to stop. Press = scale 0.92 + bounce + click. Hidden on a machine, on the menu and while a
+-- window is open. The first time a player walks outdoors for 10 s, one hint bubble points at it (settings.skateHintSeen).
+-- Starting to skate: a whoosh and a small dust puff.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Town = require(Shared.Config.Town)
@@ -18,32 +27,192 @@ local player = Players.LocalPlayer
 local Horizontal = Enum.FillDirection.Horizontal
 
 local Kit = require(Shared.UI.Kit)
-local button, label = Kit.Button("Secondary", "Skate", { Name = "Skate", Visible = false }, { height = 30, width = RightColumn.Width, icon = "footprints", textSize = 12 })
-RightColumn.Add(button, 0, true) -- top of the idle group: hidden while lifting
+local UIConfig = require(Shared.Config.UI)
+local ClientData = require(Shared.ClientData)
+local _ = RightColumn -- (the old Skate button in the right column is gone)
+
+local BUTTON = {
+	PcSize = 64,     -- mockup px on a PC / console
+	PcEdge = 16,     -- from the bottom right corner
+	Gap = 10,        -- left of the jump button
+	Label = 14,      -- the SKATE / SKATING label under it
+	HintAfter = 10,  -- seconds of walking outdoors before the one-time hint
+}
+local playerGui = player:WaitForChild("PlayerGui")
+local gui = Theme.ScreenGui({ Name = "SkateButton", DisplayOrder = 6, Enabled = false, Parent = playerGui })
+gui.ScreenInsets = Enum.ScreenInsets.None
+gui.IgnoreGuiInset = true -- (the jump button's AbsolutePosition is in the same space)
+local root = Kit.Root(gui)
+local holder = Theme.New("Frame", { Name = "Holder", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -BUTTON.PcEdge, 1, -BUTTON.PcEdge), Size = UDim2.fromOffset(BUTTON.PcSize, BUTTON.PcSize + BUTTON.Label), Parent = root })
+local button = Theme.New("ImageButton", { Name = "Skate", Image = UIConfig.SkateButton, BackgroundTransparency = 1, AutoButtonColor = false,
+	Size = UDim2.new(1, 0, 1, -BUTTON.Label), Parent = holder }, {
+	Theme.New("UIAspectRatioConstraint", { AspectRatio = 1 }),
+	Theme.New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+})
+-- skating: a gold ring just outside the art that pulses slowly (off = no stroke at all)
+local ring = Theme.New("UIStroke", { Name = "Ring", Color = Theme.Colors.Gold, Thickness = 3, Transparency = 0.2, Enabled = false,
+	ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = button })
+local label = Kit.Text({ Name = "Label", Text = "SKATE", Font = "Title", TextSize = 11, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0),
+	Size = UDim2.new(1, 24, 0, BUTTON.Label), Parent = holder })
+-- the Q key chip (keyboards only)
+local keyChip = Theme.Panel({ Name = "Key", Piece = "well", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(20, 20),
+	Visible = false, ZIndex = 3, Parent = holder })
+Kit.Text({ Name = "Q", Text = "Q", Font = "Title", TextSize = 12, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = keyChip })
 
 local function skating()
 	return player:GetAttribute("Skating") == true
 end
-
-local function refresh()
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	local outdoors = root ~= nil and not UIBus.MenuOpen and Town.IsOutdoors(root.Position)
-	button.Visible = outdoors or skating()
-	label.Text = skating() and "Stop skating" or "Skate"
+local function toggle()
+	Remotes.PlayerAction:FireServer("Skate", not skating())
 end
 
+-- press: 0.92 and bounce back (the art's one UIScale), a click
+do
+	local press = Theme.ButtonScale(button).press
+	local function isPress(input)
+		return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+	end
+	button.InputBegan:Connect(function(input)
+		if isPress(input) then Theme.Tween(press, { Value = 0.92 }, 0.08) end
+	end)
+	button.InputEnded:Connect(function(input)
+		if isPress(input) then Theme.Tween(press, { Value = 1 }, 0.25, Enum.EasingStyle.Back) end
+	end)
+end
 button.Activated:Connect(function()
-	Remotes.PlayerAction:FireServer("Skate", not skating())
 	Audio.PlayUI("Click")
+	toggle()
 end)
+
+-- Where: left of the jump button on touch screens (its size, its height), else the bottom right corner. Measured once per
+-- screen size (only a jump button in the lower half of the screen counts: right after spawning it isn't placed yet).
+local placedFor = nil -- the viewport size the touch spot was measured for
+local function place()
+	local camera = workspace.CurrentCamera
+	local view = camera and camera.ViewportSize or Vector2.zero
+	local touchGui = playerGui:FindFirstChild("TouchGui")
+	local controls = touchGui and touchGui:FindFirstChild("TouchControlFrame")
+	local jump = controls and controls:FindFirstChild("JumpButton")
+	local touch = UserInputService.TouchEnabled and jump ~= nil and jump:IsA("GuiObject") and jump.AbsoluteSize.X > 0
+		and jump.AbsolutePosition.Y > root.AbsolutePosition.Y + root.AbsoluteSize.Y / 2
+	keyChip.Visible = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
+	if not touch then
+		holder.AnchorPoint = Vector2.new(1, 1)
+		holder.Position = UDim2.new(1, -BUTTON.PcEdge, 1, -BUTTON.PcEdge)
+		holder.Size = UDim2.fromOffset(BUTTON.PcSize, BUTTON.PcSize + BUTTON.Label)
+		return
+	end
+	if placedFor == view then return end
+	local s = math.max(Kit.Scale(), 0.01)
+	local size = jump.AbsoluteSize.X / s
+	local centreY = (jump.AbsolutePosition.Y + jump.AbsoluteSize.Y / 2 - root.AbsolutePosition.Y) / s
+	local right = (jump.AbsolutePosition.X - root.AbsolutePosition.X) / s - BUTTON.Gap
+	holder.AnchorPoint = Vector2.new(1, 0)
+	holder.Size = UDim2.fromOffset(size, size + BUTTON.Label)
+	holder.Position = UDim2.fromOffset(right, centreY - size / 2)
+	placedFor = view
+end
+do
+	local camera = workspace.CurrentCamera
+	if camera then camera:GetPropertyChangedSignal("ViewportSize"):Connect(function() placedFor = nil end) end
+end
+
+-- ON / OFF look; the ring pulses slowly while skating
+local function refreshLook()
+	local on = skating()
+	ring.Enabled = on
+	label.Text = if on then "SKATING" else "SKATE"
+	label.TextColor3 = if on then Theme.Colors.Gold else Theme.Colors.Text
+end
+task.spawn(function()
+	while true do
+		if ring.Enabled and not Theme.ReducedMotion() then
+			Theme.Tween(ring, { Transparency = 0.65, Thickness = 5 }, 0.9, Enum.EasingStyle.Sine)
+			task.wait(0.9)
+			Theme.Tween(ring, { Transparency = 0.15, Thickness = 3 }, 0.9, Enum.EasingStyle.Sine)
+			task.wait(0.9)
+		else
+			task.wait(0.3)
+		end
+	end
+end)
+
+-- Q toggles it (while the button is there)
+ContextActionService:BindAction("SkateToggle", function(_, state)
+	if state == Enum.UserInputState.Begin and gui.Enabled then toggle() end
+	return Enum.ContextActionResult.Pass
+end, false, Enum.KeyCode.Q)
+
+-- shown outdoors (or while skating), never on a machine, on the menu or under a window
+local function refresh()
+	local character = player.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	local outdoors = rootPart ~= nil and Town.IsOutdoors(rootPart.Position)
+	local blocked = UIBus.MenuOpen or UIBus.Training or UIBus.CoverOpen(playerGui)
+	gui.Enabled = (outdoors or skating()) and not blocked
+	if gui.Enabled then place() end
+	refreshLook()
+end
 player:GetAttributeChangedSignal("Skating"):Connect(refresh)
 
+-- the one-time hint: after 10 s of walking outdoors, a small bubble above the button (saved, never again)
+local hint = Theme.Panel({ Name = "Hint", Piece = "hud_box", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 0, -8), Size = UDim2.fromOffset(0, 30),
+	AutomaticSize = Enum.AutomaticSize.X, Visible = false, ZIndex = 4, Parent = holder }, {
+	Theme.New("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }),
+})
+Kit.Text({ Name = "Text", Text = "Tap to skate - get around faster!", Font = "Body", TextSize = 12, Size = UDim2.fromOffset(0, 30), AutomaticSize = Enum.AutomaticSize.X,
+	ZIndex = 4, Parent = hint })
+local walked = 0
+local hintDone = false
+local function showHint()
+	hintDone = true
+	Remotes.PlayerAction:FireServer("SetSettings", { skateHintSeen = true })
+	hint.Visible = true
+	Theme.Fade(hint, true, 0.25)
+	task.delay(6, function()
+		local tween = Theme.Fade(hint, false, 0.4)
+		if tween then tween.Completed:Connect(function() hint.Visible = false end) else hint.Visible = false end
+	end)
+end
+
 task.spawn(function()
+	local data = ClientData.Get()
+	hintDone = (data.settings or {}).skateHintSeen == true
 	while true do
 		task.wait(0.5)
 		refresh()
+		if not hintDone and gui.Enabled and not skating() then
+			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.MoveDirection.Magnitude > 0.1 then walked += 0.5 end
+			if walked >= BUTTON.HintAfter then showHint() end
+		end
 	end
+end)
+
+-- starting to skate: a whoosh and a little dust puff at the feet
+player:GetAttributeChangedSignal("Skating"):Connect(function()
+	if not skating() then return end
+	Audio.PlayUI("Whoosh")
+	local character = player.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not rootPart or not humanoid then return end
+	local attachment = Instance.new("Attachment")
+	attachment.Position = Vector3.new(0, -(humanoid.HipHeight + rootPart.Size.Y / 2), 0)
+	local dust = Instance.new("ParticleEmitter")
+	dust.Color = ColorSequence.new(Color3.fromRGB(205, 196, 180))
+	dust.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) })
+	dust.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 1.4) })
+	dust.Lifetime = NumberRange.new(0.4, 0.7)
+	dust.Speed = NumberRange.new(3, 6)
+	dust.SpreadAngle = Vector2.new(180, 10)
+	dust.Drag = 4
+	dust.Rate = 0
+	dust.Parent = attachment
+	attachment.Parent = rootPart
+	dust:Emit(14)
+	task.delay(1, function() attachment:Destroy() end)
 end)
 
 local function angleTo(from: number, to: number): number
@@ -187,7 +356,9 @@ local function startRide(humanoid, root)
 	mover.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
 	mover.PrimaryTangentAxis = Vector3.xAxis
 	mover.SecondaryTangentAxis = Vector3.zAxis
-	mover.MaxForce = 60000
+	-- no force cap (owner's bug, 14 Oct: a fixed 60000 lost to the Humanoid's own grip on big characters, a 7'0" rider
+	-- topped out at ~14 studs/s instead of 32); walls still stop the board (the "a wall stops you" check below)
+	mover.ForceLimitsEnabled = false
 	mover.PlaneVelocity = Vector2.zero
 	mover.Parent = root
 	ride.mover, ride.attachment = mover, attachment
@@ -222,6 +393,9 @@ RunService:BindToRenderStep("SkateRide", Enum.RenderPriority.Input.Value + 1, fu
 	dt = math.min(dt, 0.1)
 	local top = player:GetAttribute("SkateSpeed")
 	top = if type(top) == "number" then top else 32
+	-- taller riders go faster, so they also push, brake and turn faster (Config.Skate): the same feel at every size
+	local factor = player:GetAttribute("SkateFactor")
+	factor = if type(factor) == "number" then factor else 1
 	local velocity = root.AssemblyLinearVelocity
 	local now = os.clock()
 	-- grinding: let go of the bar, or lock onto one
@@ -258,19 +432,19 @@ RunService:BindToRenderStep("SkateRide", Enum.RenderPriority.Input.Value + 1, fu
 		local agree = want:Dot(forward)
 		if agree < -0.55 and ride.speed > 3 then
 			-- holding the opposite way: brake (the board keeps pointing where it goes)
-			ride.speed = math.max(ride.speed - RIDE.Brake * dt, 0)
+			ride.speed = math.max(ride.speed - RIDE.Brake * factor * dt, 0)
 		else
 			-- carve toward the input: the turn rate falls with speed
-			local rate = RIDE.TurnSlow + (RIDE.TurnFast - RIDE.TurnSlow) * math.clamp(ride.speed / top, 0, 1)
+			local rate = (RIDE.TurnSlow + (RIDE.TurnFast - RIDE.TurnSlow) * math.clamp(ride.speed / top, 0, 1)) * factor
 			local delta = angleTo(ride.heading, math.atan2(-want.X, -want.Z))
 			ride.heading += math.clamp(delta, -rate * dt, rate * dt)
 			if agree > 0.3 and ride.speed < top then
-				ride.speed = math.min(ride.speed + RIDE.Push * dt, top)
+				ride.speed = math.min(ride.speed + RIDE.Push * factor * dt, top)
 				ride.pushing = true
 			end
 		end
 	else
-		ride.speed = math.max(ride.speed - RIDE.Coast * dt, 0)
+		ride.speed = math.max(ride.speed - RIDE.Coast * factor * dt, 0)
 	end
 	-- hills: going down speeds you up, climbing slows you down
 	if humanoid.FloorMaterial ~= Enum.Material.Air and not ride.grind then

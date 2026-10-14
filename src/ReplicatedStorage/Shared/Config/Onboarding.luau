@@ -42,6 +42,9 @@ Onboarding.Steps = {
 		done = { type = "statsOpenFor", count = 6 },
 		coach = { "Open Muscles in the menu to see your Growth Spurt goal.",
 			"Get every muscle group to its goal and you grow taller, with bigger gains forever!" } },
+	-- (owner, 14 Oct: so new players know the SKATE button; added at the end, so nobody's saved step moves)
+	{ id = "Skate", text = "Outside the gym, tap SKATE next to jump to get around faster.", done = { type = "seconds", count = 8 },
+		coach = { "One more thing: outside the gym, tap the SKATE button next to jump. Skating gets you around town way faster!" } },
 }
 
 -- The saved step number once every step is finished. Fixed (not #Steps + 1), so adding steps later never sends

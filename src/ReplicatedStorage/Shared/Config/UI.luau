@@ -84,6 +84,10 @@ UI.Trainers = { -- portraits shown in the Trainers panel (by Config/Trainers id 
 UI.MenuArt = "rbxassetid://99238211044120" -- main menu + loading screen (right side, fading into the dark)
 -- the GYM ARC logo image (Downloads\gym_arc_ui_3d_icons\logo.png, 1182x286, uploaded from Studio 14 Oct): loading screen + menu
 UI.Logo = "rbxassetid://84167052331251"
+-- The SKATE button (owner's Downloads\gym_arc_ui_3d_icons\skate_button.png: the whole round button, ring and background
+-- included). Uploaded 14 Oct from Studio, so it sits in the owner's own inventory, not the group: to use a group copy,
+-- upload it to Myanmar Builders Club and put its id here.
+UI.SkateButton = "rbxassetid://117777612617836"
 
 -- Loading screen tips (one at a time, rotating)
 UI.LoadingTips = {

@@ -185,6 +185,26 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   (no ring, up-arrow icon, 26 px visual inside a 44 px tap area) on the Tier line; AT BEST (flat, check, muted) when on the
   heaviest usable weight. Checked: Crunch Bench at 12/12 (AT BEST) and 10/12, Squat Rack, Flat Bench (974x584; the other
   emulator sizes can't be switched from here).
+- Skating speed (owner's bug): the skate LinearVelocity had MaxForce 60000, which lost to the Humanoid's own grip on big
+  characters (7'0" mass monster: 13.8 studs/s of 32). Now ForceLimitsEnabled = false (walls still stop the board).
+  Config/Skate: top = (wheels speed or BaseSpeed 32) x (1 + 0.35 x (height / 4'0" - 1)), max 54; push / brake / coast /
+  turn x the same factor (SkateFactor attribute); the board and its lift scale 0.85 (4'0") -> 1.3 (7'0"). No WalkSpeed
+  slowdown by size exists; board parts don't collide (wheels sit on the ground at every size). Measured (flat road):
+  | size | mass | target | reached | 95% at | 90-deg carve |
+  | 7'0" mass monster, before | 29 | 32 | 13.8 | never | - |
+  | 4'0" (spurt 0) | 10 | 32.0 | 32.0 | 2.02 s | 0.63 s |
+  | 5'6" (spurt 3) | 15 | 36.2 | 35.6 | 1.93 s | 0.56 s |
+  | 7'0" mass monster (spurt 6) | 29 | 40.4 | 40.7 | 1.93 s | 0.57 s |
+- Stamina bar only while exercising (owner): HudBottom's bar sits in a CanvasGroup, GroupTransparency fades in 0.2 s on a
+  machine (SetTraining), out 0.4 s 1.5 s after leaving; off a machine a jump of 10%+ of max (shake / refill) shows it 3 s.
+  Never moves; the boost row keeps its own spot. Tested: walking hidden, on (0.00), off at 1.85 s, refill shown ~3 s.
+- SKATE button (owner): Config/UI.SkateButton (the owner's skate_button.png, uploaded from Studio = the owner's own
+  inventory 117777612617836; not found in Myanmar Builders Club). Square ImageButton, no background / stroke, "SKATE"
+  label; skating: a slowly pulsing gold UIStroke ring + "SKATING". Touch: left of Roblox's jump button, its size, same
+  centre height (measured per screen size); PC: bottom right + a "Q" chip (Q toggles). Hidden on a machine, the menu and
+  under windows; outdoors only. Press 0.92 + bounce + click; start = whoosh + dust puff; one-time hint after 10 s walking
+  outdoors (settings.skateHintSeen); new last tutorial step "Skate" (8 s). Old right-column button removed. Checked on
+  PC (on / off / Q); touch placement not checked (the emulator can't be switched from here).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.
