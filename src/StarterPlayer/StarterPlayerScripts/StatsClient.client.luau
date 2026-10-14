@@ -94,7 +94,7 @@ local labelsButton
 local function setLabels(on: boolean)
 	labelsOn = on
 	statsButton:SetActive(on)
-	Kit.SetButton(labelsButton, on and "Gold" or "Quiet", "")
+	Kit.SetButton(labelsButton, on and "Green" or "Quiet", "") -- (gold without the ring: a toggle, not the main CTA)
 	UIBus.StatsLabels:Fire(on)
 	UIBus.StatsVisible:Fire(on) -- (the tutorial's "open Stats" step)
 end

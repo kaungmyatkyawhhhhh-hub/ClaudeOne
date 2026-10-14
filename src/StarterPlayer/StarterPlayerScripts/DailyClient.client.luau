@@ -476,7 +476,6 @@ local function refreshQuests(): number
 			paintTile(row.tile, row.icon, state == "claim", TYPE_ICON[quest.type] or "dumbbell")
 			Theme.SetPiece(row.card, state == "claim" and "card_gold" or "card")
 			row.button.Visible = state == "claim"
-			if state == "claim" then Theme.Pulse(row.button, function() return modal.isOpen() and row.state == "claim" end) end
 			row.pill.Visible = state == "go"
 			row.progress = progressText(quest, progress, true)
 			row.pillText.Text = row.progress

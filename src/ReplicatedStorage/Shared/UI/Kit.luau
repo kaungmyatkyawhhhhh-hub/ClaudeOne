@@ -433,11 +433,11 @@ end
 -- ON / OFF button (mockup 10): green ON, gray OFF. Returns button, set(on).
 function Kit.Toggle(on: boolean, onChanged: (boolean) -> (), props: { [string]: any }?)
 	props = props or {}
-	local button = Kit.Button(on and "Gold" or "Quiet", on and "On" or "Off", props, { width = props.Size and props.Size.X.Offset or 60, height = props.Size and props.Size.Y.Offset or 30 })
+	local button = Kit.Button(on and "Green" or "Quiet", on and "On" or "Off", props, { width = props.Size and props.Size.X.Offset or 60, height = props.Size and props.Size.Y.Offset or 30 })
 	local state = on
 	local function set(value: boolean)
 		state = value
-		Kit.SetButton(button, value and "Gold" or "Quiet", value and "On" or "Off")
+		Kit.SetButton(button, value and "Green" or "Quiet", value and "On" or "Off")
 	end
 	button.Activated:Connect(function()
 		set(not state)
@@ -498,7 +498,7 @@ function Kit.Tabs(tabs, onSelect: (string) -> (), props: { [string]: any }?)
 	local items = {}
 	local function select(id: string)
 		for _, item in ipairs(items) do
-			Theme.SetButtonStyle(item.button, item.id == id and "Gold" or "Flat")
+			Theme.SetButtonStyle(item.button, item.id == id and "Tab" or "Flat") -- (active = gold fill only, no ring)
 		end
 	end
 	for order, tab in ipairs(tabs) do

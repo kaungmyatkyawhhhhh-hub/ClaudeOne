@@ -96,7 +96,7 @@ function refresh()
 		c.rarity.TextTransparency = has and 0 or 0.35
 		c.button.Visible = has
 		c.lock.Visible = not has
-		if has then Kit.SetButton(c.button, equipped and "Gold" or "Green", equipped and "Equipped" or "Equip") end
+		if has then Kit.SetButton(c.button, "Green", equipped and "Equipped" or "Equip") end
 		Theme.SetPiece(c.card, equipped and "card_gold" or "card")
 	end
 	countLabel.Text = owned .. " / " .. #Titles.List

@@ -170,6 +170,14 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   bonus card; tap it, then a quest (its pill says REROLL). Studio: TestDayOffset = n days. Tested on the owner's save:
   claimed quest refused, free once, then BuyReroll, test receipt swapped exactly the picked quest once (sent twice),
   rejoin kept the free one used, next (fake) day the free one came back.
+- Button ghost outline (owner's bug): the Depth layers (glow ring, top gloss, shine, hairline) sat inside the button's
+  UIPadding (12 px sides + the bottom lip), so they were pushed off-centre. Theme.fitLayer now places every layer on the
+  button itself (AnchorPoint 0.5, sizes from the full button: ring +6 px with corner +3, gloss / shine 2 px inside),
+  re-fitted when padding changes. Press + pulse share ONE UIScale (Theme.ButtonScale: press x pulse NumberValues).
+  Styles: Tab = active tab, gold fill only; Green = gold without the ring (EQUIP, buy tiles, toggles, choices); Gold /
+  Red = the main CTA with the ring. No pulse on the 3 quest-row CLAIMs. Arm wrestle opponents: one dark card style (a
+  rival too), difficulty colored under the name. Checked: menu, Store, arm wrestle picker, Titles, Physique, Quests,
+  Genetics (Studio emulator 974x584; it can't be switched to 844x390 / PC from here).
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

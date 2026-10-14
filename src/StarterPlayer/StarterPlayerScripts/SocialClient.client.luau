@@ -85,7 +85,9 @@ leaveButton.Activated:Connect(function() remote:FireServer("Leave") end)
 -- one button per opponent the server offers (Social.ArmWrestle.Npcs, plus an NPC rival whose challenge you accepted)
 local npcButtons = {}
 local shownChoices = ""
-local NPC_STYLE = { Easy = "Green", Medium = "Gold", Hard = "Red" }
+-- every opponent (a rival too) is the same dark card, the same size; the difficulty line under the name carries the color
+-- (owner, 14 Oct: no glow rings on cards that come in a row)
+local NPC_COLOR = { Easy = Colors.Green, Medium = Colors.Gold, Hard = Colors.Red }
 local function buildChoices(list)
 	local key = ""
 	for _, npc in ipairs(list) do key ..= tostring(npc.id) .. "," end
@@ -95,7 +97,7 @@ local function buildChoices(list)
 	npcButtons = {}
 	for order, npc in ipairs(list) do
 		local sub = npc.coins and (tostring(npc.label) .. " · " .. npc.coins .. " coins") or tostring(npc.label)
-		local button = Kit.Button(NPC_STYLE[npc.label] or "Blue", tostring(npc.name), { Name = tostring(npc.id), LayoutOrder = order, Parent = npcRow },
+		local button = Kit.Button("Quiet", tostring(npc.name), { Name = tostring(npc.id), LayoutOrder = order, Parent = npcRow },
 			{ width = math.floor((470 - 24 - 8 * (#list - 1)) / #list), height = 46, textSize = 15, upper = false })
 		-- the difficulty and the coins under the name (the button's row stacks them)
 		local list = button:FindFirstChildOfClass("UIListLayout")
@@ -105,7 +107,9 @@ local function buildChoices(list)
 		end
 		local label = button:FindFirstChild("Label")
 		if label then label.Size = UDim2.fromOffset(0, 20) end
-		Kit.Text({ Name = "Sub", LayoutOrder = 3, Text = sub, Font = "Body", TextSize = 11, Size = UDim2.new(1, 0, 0, 13), Parent = button })
+		local subLabel = Kit.Text({ Name = "Sub", LayoutOrder = 3, Text = sub, Font = "Body", TextSize = 11, Size = UDim2.new(1, 0, 0, 13), Parent = button })
+		subLabel.TextColor3 = NPC_COLOR[npc.label] or Theme.RankColors.S -- (a rival: coral)
+		subLabel:SetAttribute("KeepColor", true)
 		button.Activated:Connect(function()
 			remote:FireServer("Npc", npc.id)
 		end)

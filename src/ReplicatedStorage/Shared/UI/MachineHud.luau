@@ -307,11 +307,11 @@ function MachineHud.Build()
 		end
 	end
 
-	-- every tap: REP pops a little (its press scale is a UIScale named PressScale, made by Theme.Button)
+	-- every tap: REP pops a little (the pulse part of its one UIScale, Theme.ButtonScale)
 	function hud.tapPop()
-		local scale = rep:FindFirstChild("PressScale") or New("UIScale", { Name = "PressScale", Parent = rep })
-		scale.Scale = 1.06
-		Theme.Tween(scale, { Scale = 1 }, 0.14)
+		local pop = Theme.ButtonScale(rep).pulse
+		pop.Value = 1.06
+		Theme.Tween(pop, { Value = 1 }, 0.14)
 	end
 
 	-- the weight card slides in from the right (the bottom widgets come up with `stack`)

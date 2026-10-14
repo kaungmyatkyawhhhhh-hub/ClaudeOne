@@ -87,10 +87,12 @@ Theme.Gradients = {
 	Teal = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
 	Dark = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
 }
--- button style names -> look. Red / Primary / Main = the red CTA; Gold / Green = the gold CTA; Flat = an inactive tab;
+-- button style names -> look. Red / Primary / Main = the red CTA; Gold = the gold CTA; Green = the same gold without the
+-- glow ring (buttons that come in rows: EQUIP, buy tiles, choices); Tab = the active tab; Flat = an inactive tab;
 -- Disabled; everything else (Gray, Secondary, Dark, Blue, Purple, Orange, Teal, White) = a quiet dark button.
 Theme.ButtonGradients = {
 	Primary = "Red", Main = "Red", Red = "Red", Gold = "Gold", Green = "Gold", Flat = "Flat", Disabled = "Disabled",
+	Tab = "Gold", -- the active tab: the gold fill only (no glow ring, no gloss / shine; owner, 14 Oct)
 	Secondary = "Quiet", Gray = "Quiet", Dark = "Quiet", Blue = "Quiet", Purple = "Quiet", Orange = "Quiet", Teal = "Quiet",
 	White = "Quiet", Quiet = "Quiet",
 }
@@ -434,6 +436,23 @@ function Theme.Fade(root, visible, time)
 	return lastTween
 end
 
+-- A button's ONE UIScale ("Scale", from its centre): press x pulse, two NumberValues tweened separately (owner, 14 Oct:
+-- press and pulse never tween Size or Position, and a gui uses only one UIScale).
+function Theme.ButtonScale(button)
+	local scale = button:FindFirstChild("Scale")
+	local press = scale and scale:FindFirstChild("Press")
+	local pulse = scale and scale:FindFirstChild("Pulse")
+	if not (scale and press and pulse) then
+		scale = Theme.New("UIScale", { Name = "Scale", Parent = button })
+		press = Theme.New("NumberValue", { Name = "Press", Value = 1, Parent = scale })
+		pulse = Theme.New("NumberValue", { Name = "Pulse", Value = 1, Parent = scale })
+		local function update() scale.Scale = press.Value * pulse.Value end
+		press.Changed:Connect(update)
+		pulse.Changed:Connect(update)
+	end
+	return { scale = scale, press = press, pulse = pulse }
+end
+
 -- Hover grows a button to 1.04, pressing shrinks it to 0.96 and it bounces back on release. A very soft click.
 local audio -- Shared.Audio, loaded on first press (client only)
 function Theme.BindPress(button)
@@ -442,11 +461,11 @@ function Theme.BindPress(button)
 	end
 	local down, hover = false, false
 	local function apply()
-		local scale = button:FindFirstChild("PressScale") or Theme.New("UIScale", { Name = "PressScale", Parent = button })
+		local press = Theme.ButtonScale(button).press
 		if down then
-			Theme.Tween(scale, { Scale = Theme.Motion.PressScale }, Theme.Motion.PressTime)
+			Theme.Tween(press, { Value = Theme.Motion.PressScale }, Theme.Motion.PressTime)
 		else
-			Theme.Tween(scale, { Scale = hover and Theme.Motion.HoverScale or 1 }, 0.2, Theme.Motion.Bounce)
+			Theme.Tween(press, { Value = hover and Theme.Motion.HoverScale or 1 }, 0.2, Theme.Motion.Bounce)
 		end
 	end
 	button.InputBegan:Connect(function(input)
@@ -531,8 +550,63 @@ local function outlineOf(gui)
 	return stroke
 end
 
+-- The Depth folder's layers (hairline, glow ring, top gloss, shine) are laid out by the gui's UIPadding like any child (a
+-- Folder doesn't stop padding), which pushed them off-centre on padded buttons (owner's bug, 14 Oct: a ghost ring above
+-- the button). fitLayer undoes the padding: every layer is placed on the gui itself (centred, AnchorPoint 0.5), sized
+-- from the gui's full size. Layer attributes: FitExtra = px added to both sizes (ring +6, inner -4), FitTop = share of
+-- the height from the top (gloss, shine), FitInset = the hairline's side inset.
+local function padOf(gui)
+	local pad = gui:FindFirstChildOfClass("UIPadding")
+	if not pad then return 0, 0, 0, 0 end
+	return pad.PaddingLeft.Offset, pad.PaddingRight.Offset, pad.PaddingTop.Offset, pad.PaddingBottom.Offset
+end
+local function fitLayer(gui, layer)
+	local l, r, t, b = padOf(gui)
+	local cx, cy = (r - l) / 2, (b - t) / 2 -- the gui's own centre, from the padded box's centre
+	local inset = layer:GetAttribute("FitInset")
+	if inset then -- the 1px top line
+		layer.AnchorPoint = Vector2.new(0.5, 0)
+		layer.Position = UDim2.new(0.5, cx, 0, 1 - t)
+		layer.Size = UDim2.new(1, l + r - inset * 2, 0, 1)
+		return
+	end
+	local extra = layer:GetAttribute("FitExtra") or 0
+	local top = layer:GetAttribute("FitTop")
+	if top then -- a band from the top edge (a share of the gui's height), `extra` / 2 in from the edges
+		layer.AnchorPoint = Vector2.new(0.5, 0)
+		layer.Position = UDim2.new(0.5, cx, 0, -t - extra / 2)
+		layer.Size = UDim2.new(1, l + r + extra, top, (t + b) * top)
+		return
+	end
+	layer.AnchorPoint = Vector2.new(0.5, 0.5)
+	layer.Position = UDim2.new(0.5, cx, 0.5, cy)
+	layer.Size = UDim2.new(1, l + r + extra, 1, t + b + extra)
+end
+local function fitLayers(gui)
+	local depth = gui:FindFirstChild("Depth")
+	if not depth then return end
+	for _, layer in ipairs(depth:GetChildren()) do
+		if layer:IsA("GuiObject") and (layer:GetAttribute("FitExtra") or layer:GetAttribute("FitTop") or layer:GetAttribute("FitInset")) then
+			fitLayer(gui, layer)
+		end
+	end
+end
+Theme.FitLayers = fitLayers
+
 local function depthOf(gui)
-	return gui:FindFirstChild("Depth") or Theme.New("Folder", { Name = "Depth", Parent = gui })
+	local depth = gui:FindFirstChild("Depth")
+	if depth then return depth end
+	depth = Theme.New("Folder", { Name = "Depth", Parent = gui })
+	-- (padding added or changed later moves the layers back onto the gui)
+	local function watch(pad)
+		if pad:IsA("UIPadding") then
+			task.defer(fitLayers, gui)
+			pad.Changed:Connect(function() fitLayers(gui) end)
+		end
+	end
+	for _, child in ipairs(gui:GetChildren()) do watch(child) end
+	gui.ChildAdded:Connect(watch)
+	return depth
 end
 
 -- the 1px light line along the top edge (inset past the corners)
@@ -546,9 +620,8 @@ local function setHairline(gui, alpha: number?, corner: number)
 	if not line then
 		line = Theme.New("Frame", { Name = "Hairline", BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = gui.ZIndex, Parent = depth })
 	end
-	local inset = math.max(4, math.floor(corner * 0.8))
-	line.Position = UDim2.fromOffset(inset, 1)
-	line.Size = UDim2.new(1, -inset * 2, 0, 1)
+	line:SetAttribute("FitInset", math.max(4, math.floor(corner * 0.8)))
+	fitLayer(gui, line)
 	line.BackgroundTransparency = alpha
 	line.Visible = true
 end
@@ -562,13 +635,15 @@ local function setGlow(gui, color: Color3?, alpha: number?, corner: number)
 		return
 	end
 	if not glow then
-		glow = Theme.New("Frame", { Name = "Glow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 8, 1, 8), ZIndex = gui.ZIndex, Parent = depth }, {
+		glow = Theme.New("Frame", { Name = "Glow", BackgroundTransparency = 1, ZIndex = gui.ZIndex, Parent = depth }, {
 			Theme.New("UICorner", { Name = "Corner" }),
 			Theme.New("UIStroke", { Name = "Stroke", Thickness = 4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		})
 	end
-	glow.Corner.CornerRadius = UDim.new(0, corner + 4)
+	-- the ring just outside the border: 3 px each side, the corner 3 px rounder so the curves stay parallel
+	glow:SetAttribute("FitExtra", 6)
+	fitLayer(gui, glow)
+	glow.Corner.CornerRadius = UDim.new(0, corner + 3)
 	glow.Stroke.Color = color
 	glow.Stroke.Transparency = alpha or 0.7
 	glow.Visible = true
@@ -659,18 +734,23 @@ local function ctaLayers(button, on: boolean)
 	local gloss = depth:FindFirstChild("TopGloss")
 	local streak = depth:FindFirstChild("Streak")
 	if on and not gloss then
-		gloss = Theme.New("Frame", { Name = "TopGloss", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, 0, 0.44, 0),
-			ZIndex = button.ZIndex, Parent = depth }, {
+		gloss = Theme.New("Frame", { Name = "TopGloss", BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = button.ZIndex, Parent = depth }, {
 			Theme.New("UICorner", { CornerRadius = Theme.Corner.Button }),
 			Theme.New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0.93) }) }),
 		})
-		streak = Theme.New("Frame", { Name = "Streak", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, 0, 1 - Theme.LipHeight, 0),
-			ZIndex = button.ZIndex, Parent = depth }, {
+		streak = Theme.New("Frame", { Name = "Streak", BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = button.ZIndex, Parent = depth }, {
 			Theme.New("UICorner", { CornerRadius = Theme.Corner.Button }),
 			Theme.New("UIGradient", { Name = "Band", Rotation = 25, Offset = Vector2.new(-0.28, 0), Transparency = NumberSequence.new({
 				NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 1), NumberSequenceKeypoint.new(0.45, 0.78),
 				NumberSequenceKeypoint.new(0.52, 0.78), NumberSequenceKeypoint.new(0.57, 1), NumberSequenceKeypoint.new(1, 1) }) }),
 		})
+		-- inside the button: the gloss on the top 44% and the shine above the lip, 2 px in from the border
+		gloss:SetAttribute("FitTop", 0.44)
+		gloss:SetAttribute("FitExtra", -4)
+		streak:SetAttribute("FitTop", 1 - Theme.LipHeight)
+		streak:SetAttribute("FitExtra", -4)
+		fitLayer(button, gloss)
+		fitLayer(button, streak)
 	end
 	if gloss then gloss.Visible = on end
 	if streak then streak.Visible = on end
@@ -679,7 +759,7 @@ end
 function Theme.SetButtonStyle(button, style)
 	button:SetAttribute("Style", style)
 	local look = lookOf(style)
-	local cta = look == "Red" or look == "Gold"
+	local cta = (look == "Red" or look == "Gold") and style ~= "Tab"
 	button.BackgroundColor3 = Color3.new(1, 1, 1)
 	button.BackgroundTransparency = 0
 	if button:IsA("ImageButton") or button:IsA("ImageLabel") then button.Image = "" end
@@ -691,9 +771,13 @@ function Theme.SetButtonStyle(button, style)
 	if cta then
 		-- the dark edge, and the soft colored glow just outside it
 		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.2, true
-		setGlow(button, Theme.CTA[look], 0.55, 10)
+		-- (the colored ring only on the main CTAs: "Green", the gold of repeated buttons such as EQUIP / BUY tiles, has none)
+		setGlow(button, if style ~= "Green" then Theme.CTA[look] else nil, 0.55, 10)
 	elseif look == "Flat" or look == "Disabled" then
 		stroke.Enabled = false
+		setGlow(button, nil, nil, 10)
+	elseif style == "Tab" then
+		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.2, true
 		setGlow(button, nil, nil, 10)
 	else
 		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.25, true
@@ -702,9 +786,11 @@ function Theme.SetButtonStyle(button, style)
 	setHairline(button, (look == "Quiet") and 0.84 or nil, 10)
 	ctaLayers(button, cta)
 	local color = Theme.ButtonText[style] or Theme.ButtonText[look] or Theme.Colors.Text
+	if style == "Tab" then color = Theme.Colors.Ink end
 	for _, item in ipairs(button:GetDescendants()) do
 		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then
 			item.TextColor3 = color
+			item.TextYAlignment = Enum.TextYAlignment.Center -- (centred in the button's padded box, above the lip)
 			local outline = item:FindFirstChild("TextStroke")
 			if outline then outline.Transparency = (look == "Gold") and 1 or Theme.Alpha.TextShadow end
 		end
@@ -763,26 +849,29 @@ function Theme.ShineAll(root)
 end
 
 -- A featured CTA pulses: scale 1 -> 1.03 and its glow a little brighter, every 1.6 s, while `alive()` says so (default:
--- while it's in the game). Reduced motion stops it.
+-- while it's in the game). Reduced motion stops it. Only the ONE main CTA of a screen pulses (KEEP, BUY, PLAY, a bonus
+-- CLAIM), never tabs, EQUIP buttons, opponent cards or anything with many copies (owner, 14 Oct).
 function Theme.Pulse(button, alive: (() -> boolean)?)
 	if button:GetAttribute("Pulsing") then return end
 	button:SetAttribute("Pulsing", true)
-	local scale = button:FindFirstChild("PulseScale") or Theme.New("UIScale", { Name = "PulseScale", Parent = button })
+	local pulse = Theme.ButtonScale(button).pulse
 	task.spawn(function()
 		while button.Parent and (not alive or alive()) do
 			if not Theme.ReducedMotion() and button.Visible then
+				-- (the ring is centred on the button, so it grows from the centre with the button's one UIScale)
 				local glow = button:FindFirstChild("Depth") and button.Depth:FindFirstChild("Glow")
-				Theme.Tween(scale, { Scale = 1.03 }, 0.5, Enum.EasingStyle.Sine)
+				Theme.Tween(pulse, { Value = 1.03 }, 0.5, Enum.EasingStyle.Sine)
 				if glow and glow.Visible then Theme.Tween(glow.Stroke, { Transparency = 0.3 }, 0.5, Enum.EasingStyle.Sine) end
 				task.wait(0.5)
-				Theme.Tween(scale, { Scale = 1 }, 0.6, Enum.EasingStyle.Sine)
+				Theme.Tween(pulse, { Value = 1 }, 0.6, Enum.EasingStyle.Sine)
 				if glow and glow.Visible then Theme.Tween(glow.Stroke, { Transparency = 0.55 }, 0.6, Enum.EasingStyle.Sine) end
 				task.wait(1.1)
 			else
-				scale.Scale = 1
+				pulse.Value = 1
 				task.wait(1)
 			end
 		end
+		pulse.Value = 1
 		button:SetAttribute("Pulsing", nil)
 	end)
 end
