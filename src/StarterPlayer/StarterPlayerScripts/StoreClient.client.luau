@@ -2,12 +2,15 @@
 -- the reference frame for every window), the server boost chip and purchase notes. Only items with ids in
 -- Config.Monetization are shown; with none the Shop tile never appears, and it only appears after the tutorial plus a few minutes of play (Workspace attribute TestStore = true skips the wait in
 -- Studio). No purchase prompt ever opens by itself: only the red price button opens one.
--- Window: STORE + tabs Passes / Items (only the tabs that have something) + its own coins pill and X. On the left the
+-- Window: STORE + tabs Passes / Coins / Boosts (each item's `tab` in Config.Monetization; only tabs that have something)
+-- + its own coins pill and X. On the left the
 -- HERO tile: the picked item big (thick gold border + soft gold glow, BEST SELLER tag on Monetization.BestSeller, the art,
 -- the name in gold, what it does, the red "R$ 249" CTA that pulses). On the right a 3-column grid of dark tiles (art,
 -- name, the price in a dark pill); a tap puts that item in the hero tile. OWNED = a rotated gold stamp over the tile's
 -- dimmed art and name. Studio only: Workspace attribute TestStoreAll = true previews every item (no ids, can't be bought).
--- (The mockup's Coins / Boosts / Auras tabs: the game sells no coins and has no auras; products go under Items.)
+-- Names, prices and icons (owner's bug, 14 Oct: one bad item must never break the shop): every item's Roblox info is
+-- fetched ONCE when the game starts (pcall, 3 tries, cached); until it arrives, or if it never does, the item shows
+-- Config's fallback name / price / art. Items with id 0 are skipped with a warning. Owned passes keep their OWNED stamp.
 -- DNA Token (owner, 14 Oct, Config/DNA): its hero tile has two buttons, the Robux price and "25,000" coins (the server
 -- checks and takes the coins; not enough = a shake + "Not enough coins").
 local Players = game:GetService("Players")
@@ -38,14 +41,8 @@ local W, H = 566, 290 -- the window (mockup px; Kit shows it at Kit.PanelScale)
 local HERO_W = 178
 local GAP = 10
 
--- the shop art for each item (Config/UI.ShopIcons); items without art use their Roblox icon
-local ART = {
-	DoubleGains = "pass_2x_exp", AutoLift = "pass_auto_rep", VIP = "pass_vip", ExtraTrainer = "pass_extra_trainer",
-	ShakePack = "product_shake_bundle", ShakeFridge = "product_shake_bundle",
-}
--- Studio preview only (TestStoreAll): prices to show for items that have no id yet
-local PREVIEW_PRICES = { DoubleGains = 249, AutoLift = 249, VIP = 299, IronLungs = 199, FastRecovery = 149, ShakeFridge = 199,
-	GeneLock = 99, ExtraTrainer = 99, DnaToken = 49, ShakePack = 79, ServerBoost = 199 }
+-- (each item's shop art is its `art` in Config.Monetization, a Config/UI.ShopIcons name; else its Roblox icon)
+-- Studio preview only (TestStoreAll): items that have no id yet show too (their Config price, can't be bought)
 local preview = game:GetService("RunService"):IsStudio() and Workspace:GetAttribute("TestStoreAll") == true
 
 ------------------------------------------------------------------------
@@ -91,17 +88,23 @@ if not Monetization.AnyConfigured() then
 end
 
 local items = {} -- { item, isPass, tab }
-for _, pass in ipairs(Monetization.Passes) do
-	if pass.id or preview then table.insert(items, { item = pass, isPass = true, tab = "Passes" }) end
+local function consider(item, isPass)
+	if item.id == 0 then
+		warn("[Store] " .. tostring(item.key) .. " has the placeholder id 0: not shown")
+		return
+	end
+	if Monetization.ForSale(item) or (preview and item.store ~= false and not item.hidden) then
+		table.insert(items, { item = item, isPass = isPass, tab = if isPass then "Passes" else (item.tab or "Boosts") })
+	end
 end
-for _, product in ipairs(Monetization.Products) do
-	if (product.id or preview) and product.store ~= false then table.insert(items, { item = product, isPass = false, tab = "Items" }) end
-end
+for _, pass in ipairs(Monetization.Passes) do consider(pass, true) end
+for _, product in ipairs(Monetization.Products) do consider(product, false) end
 local tabs = {}
 local hasTab = {}
 for _, entry in ipairs(items) do hasTab[entry.tab] = true end
-if hasTab.Passes then table.insert(tabs, { id = "Passes", text = "Passes" }) end
-if hasTab.Items then table.insert(tabs, { id = "Items", text = "Items" }) end
+for _, id in ipairs({ "Passes", "Coins", "Boosts" }) do
+	if hasTab[id] then table.insert(tabs, { id = id, text = id }) end
+end
 local currentTab = tabs[1].id
 
 local refresh, select -- (below)
@@ -111,45 +114,41 @@ local modal = Kit.Modal({ name = "Store", title = "Store", width = W, height = H
 		refresh()
 	end })
 
--- prices and icons from Roblox (once per item)
+-- Roblox's info for every item, fetched ONCE in the background when the game starts (each item on its own, in a
+-- pcall, up to 3 tries): one item that fails never stops the others; it just keeps Config's fallback.
 local info = {}
-local function infoFor(entry)
-	local key = entry.item.key
-	if info[key] ~= nil then return info[key] end
-	info[key] = false
-	if not entry.item.id then return false end
-	task.spawn(function()
-		local ok, result = pcall(function()
-			return MarketplaceService:GetProductInfo(entry.item.id, entry.isPass and Enum.InfoType.GamePass or Enum.InfoType.Product)
-		end)
-		if ok and result then
-			info[key] = result
-			if refresh then refresh() end
+task.spawn(function()
+	for _, entry in ipairs(items) do
+		local id = entry.item.id
+		if id then
+			task.spawn(function()
+				for attempt = 1, 3 do
+					local ok, result = pcall(function()
+						return MarketplaceService:GetProductInfo(id, if entry.isPass then Enum.InfoType.GamePass else Enum.InfoType.Product)
+					end)
+					if ok and type(result) == "table" then
+						info[entry.item.key] = result
+						if refresh then refresh() end
+						return
+					end
+					if attempt == 3 then warn("[Store] no Roblox info for " .. tostring(entry.item.key) .. ": " .. tostring(result)) end
+					task.wait(attempt * 2)
+				end
+			end)
 		end
-	end)
-	return false
+	end
+end)
+local function infoFor(entry)
+	return info[entry.item.key] or false
 end
 local function priceOf(entry): number?
 	local data = info[entry.item.key]
 	if data and data.PriceInRobux then return data.PriceInRobux end
-	return preview and PREVIEW_PRICES[entry.item.key] or nil
+	return entry.item.price -- (Config's fallback)
 end
 
 local function artFor(image: ImageLabel, entry)
-	local name = ART[entry.item.key]
-	-- the DNA token has no shop art: our own DNA line icon in gold
-	local dnaArt = image:FindFirstChild("DnaArt")
-	if entry.item.key == "DnaToken" then
-		image.Image = ""
-		if not dnaArt then
-			dnaArt = Icons.DNA(Colors.Gold)
-			dnaArt.Name = "DnaArt"
-			dnaArt.Parent = image
-		end
-		return
-	elseif dnaArt then
-		dnaArt:Destroy()
-	end
+	local name = entry.item.art
 	if name then
 		Pieces.Apply(image, name)
 	else

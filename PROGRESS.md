@@ -210,6 +210,15 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   "+1 DNA Token" toast; the grid shows the DNA token icon (Config/UI.ShopIcons.product_dna_token, uploaded from Studio =
   the owner's inventory 87375007150587; not in the group) with "+1" beside the coin on days 4 and 7. Tested with
   TestLoginDay 1..7 (claiming twice each day): +1 token on days 4 and 7 only, coins once per day.
+- Store only showed Extra Trainer (owner's bug): no error and no broken loop; every other pass / product still had
+  id = nil in Config/Monetization (the Store hides items without an id). Added the owner's ids with Roblox's names / prices
+  as fallbacks (`price`), shop art (`art`) and tabs: PASSES 2x EXP, 2x Coins (new: BoostService coins x2), VIP, Aura Pack,
+  Auto Rep, Extra Trainer; COINS Small / Medium / Large (+1,000 / +5,000 / +15,000, from their Roblox listings); BOOSTS
+  Shake Bundle (3 shakes), Stamina Refill (to max), DNA Token. Skip Growth Cooldown has its id but stays hidden (`hidden`:
+  the game has no Growth Spurt wait yet); Quest Reroll stays in the Quests window only. StoreClient: Roblox info fetched
+  once at start per item (pcall, 3 tries, cached), Config fallbacks otherwise, id 0 = warning + skipped, OWNED passes
+  stay listed with their stamp. Tested: all 12 items on 3 tabs with art + prices; test receipts: coins +1,000 once
+  (same purchase id twice), shakes +3.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

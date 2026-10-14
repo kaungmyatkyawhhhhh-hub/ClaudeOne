@@ -29,6 +29,8 @@ local function applyPass(player, key)
 	player:SetAttribute("Pass_" .. key, true)
 	if key == "DoubleGains" then
 		BoostService.SetPlayer(player, "PassDoubleGains", { gains = Effects.DoubleGains })
+	elseif key == "DoubleCoins" then
+		BoostService.SetPlayer(player, "PassDoubleCoins", { coins = Effects.DoubleCoins })
 	elseif key == "IronLungs" then
 		PlayerData.RefreshMaxStamina(player) -- (reads the Pass_IronLungs attribute set above)
 	elseif key == "FastRecovery" then
@@ -36,7 +38,7 @@ local function applyPass(player, key)
 	elseif key == "VIP" then
 		BoostService.SetPlayer(player, "PassVIP", { coins = Effects.VIPCoins })
 	end
-	-- AutoLift, GeneLock, ShakeFridge are read from the attribute where they're used
+	-- AutoLift, GeneLock, ShakeFridge, AuraPack (AuraService) are read from the attribute where they're used
 end
 
 local function checkPasses(player)
@@ -77,7 +79,13 @@ local function serverBoost(buyer)
 end
 
 local function grantProduct(player, product)
-	if product.key == "DnaToken" then
+	if product.coins then -- the coin packs
+		PlayerData.AddCoins(player, product.coins)
+		return true
+	elseif product.key == "StaminaRefill" then
+		PlayerData.SetStamina(player, PlayerData.GetMaxStamina(player))
+		return true
+	elseif product.key == "DnaToken" then
 		return PlayerData.AddDnaTokens(player, 1)
 	elseif product.key == "QuestReroll" then
 		return require(script.Parent.DailyService).PaidReroll(player)

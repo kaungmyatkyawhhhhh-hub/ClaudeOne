@@ -2,38 +2,53 @@
 -- HOW TO TURN ON: create each pass/product on the Roblox website (Creator Hub → your experience → Monetization),
 -- then paste its id below. Items with id = nil stay hidden; with no ids at all, the Store button never shows.
 -- No purchase prompt ever opens by itself, and the Store button only appears after the tutorial plus 5 minutes.
+-- Store (owner, 14 Oct): each item has its Store `tab` (Passes / Coins / Boosts), its shop art (`art`, Config/UI.ShopIcons)
+-- and a fallback `price` (Robux) shown until Roblox's real price has loaded (or if it can't load). An id of 0 is a
+-- placeholder: hidden, with a warning. `store = false` = never in the Store (sold somewhere else). `hidden` = has an id
+-- but isn't sold yet, with the reason.
 local Monetization = {}
 local Products = require(script.Parent.Products)
 local function productId(id: number): number? return if id ~= 0 then id else nil end
 
 Monetization.Passes = {
-	{ key = "DoubleGains", id = nil, name = "2x Gains", text = "Every rep gives double gains." },
-	{ key = "AutoLift", id = nil, name = "Auto Lift", text = "Lifts for you while you're on a machine (toggle it any time)." },
+	{ key = "DoubleGains", id = 2032508303, name = "2x EXP", text = "Double all training EXP forever.", price = 249, art = "pass_2x_exp" },
+	{ key = "DoubleCoins", id = 2032286316, name = "2x Coins", text = "Double all coins you earn forever.", price = 149, art = "pass_2x_coins" },
+	{ key = "VIP", id = 2032988308, name = "VIP", text = "+10% coins, a VIP tag and the Royal aura.", price = 299, art = "pass_vip" },
+	{ key = "AuraPack", id = 2033954299, name = "Aura Pack", text = "Unlocks 5 auras: Inferno, Blood Moon, Void, Neon and Galaxy.", price = 199, art = "pass_aura_pack" },
+	{ key = "AutoLift", id = 2033558291, name = "Auto Rep", text = "Lifts for you while you're on a machine (toggle it any time).", price = 249, art = "pass_auto_rep" },
+	{ key = "ExtraTrainer", id = 2032496303, -- (owner, 13 Oct: the "2nd slot" pass)
+		name = "Extra Trainer", text = "A second personal trainer follows you and their perks stack.", price = 99, art = "pass_extra_trainer" },
+	-- (no ids yet: not for sale)
 	{ key = "IronLungs", id = nil, name = "Iron Lungs", text = "50% more stamina." },
 	{ key = "FastRecovery", id = nil, name = "Fast Recovery", text = "Stamina refills 50% faster." },
 	{ key = "ShakeFridge", id = nil, name = "Shake Fridge", text = "A free Energy Shake every 10 minutes you play." },
 	{ key = "GeneLock", id = nil, name = "Gene Lock", text = "Rerolling keeps your best muscle group's grade." },
-	{ key = "VIP", id = nil, name = "VIP Gym", text = "+10% coins and a VIP tag on your player card." },
-	{ key = "ExtraTrainer", id = 2032496303, -- (owner, 13 Oct: the "2nd slot" pass)
-		name = "Extra Trainer", text = "A second personal trainer follows you and their perks stack." },
 }
 
 Monetization.Products = {
-	{ key = "DnaToken", id = productId(Products.DNAToken), name = "DNA Token", text = "One genetics reroll." },
+	{ key = "CoinsSmall", id = 3718306241, tab = "Coins", name = "Small Coins", text = "+1,000 coins.", coins = 1000, price = 25, art = "product_coins_small" },
+	{ key = "CoinsMedium", id = 3718306326, tab = "Coins", name = "Medium Coins", text = "+5,000 coins.", coins = 5000, price = 99, art = "product_coins_medium" },
+	{ key = "CoinsLarge", id = 3718306360, tab = "Coins", name = "Large Coins", text = "+15,000 coins. Best value!", coins = 15000, price = 249, art = "product_coins_large" },
+	{ key = "ShakePack", id = 3718306390, tab = "Boosts", name = "Shake Bundle", text = "3 Energy Shakes.", price = 49, art = "product_shake_bundle" },
+	{ key = "StaminaRefill", id = 3718306417, tab = "Boosts", name = "Stamina Refill", text = "Instantly refill your stamina to full.", price = 15, art = "product_stamina_refill" },
+	{ key = "DnaToken", id = productId(Products.DNAToken), tab = "Boosts", name = "DNA Token", text = "One genetics reroll.", price = 99, art = "product_dna_token" },
+	-- (14 Oct: the game has no wait between Growth Spurts yet, so there is nothing to skip: not sold until there is)
+	{ key = "SkipGrowthCooldown", id = 3718306447, tab = "Boosts", name = "Skip Growth Cooldown", text = "Skip the wait for your next Growth Spurt.",
+		price = 35, art = "product_skip_growth_cooldown", hidden = "no Growth Spurt cooldown in the game yet" },
 	-- (bought from the Quests window only, after picking the quest: store = false keeps it out of the Store)
-	{ key = "QuestReroll", id = productId(Products.QuestReroll), name = "Quest Reroll", text = "Swap one daily quest for a new one.", store = false },
-	{ key = "ShakePack", id = nil, name = "Shake Pack", text = "5 Energy Shakes." },
-	{ key = "ServerBoost", id = nil, name = "Server Boost", text = "2x gains for everyone in the server for 30 minutes. Your name goes on the board." },
+	{ key = "QuestReroll", id = productId(Products.QuestReroll), name = "Quest Reroll", text = "Swap one daily quest for a new one.", store = false, price = 19 },
+	{ key = "ServerBoost", id = nil, tab = "Boosts", name = "Server Boost", text = "2x gains for everyone in the server for 30 minutes. Your name goes on the board." },
 }
 
 -- What the passes do (read by MonetizationService).
 Monetization.Effects = {
 	DoubleGains = 2,
+	DoubleCoins = 2,         -- x coins (2x Coins pass)
 	IronLungsMax = 1.5,      -- x max stamina
 	FastRecovery = 1.5,      -- x refill speed
 	ShakeFridgeMinutes = 10,
 	VIPCoins = 1.1,
-	ShakePackSize = 5,
+	ShakePackSize = 3,       -- the Shake Bundle (its Roblox listing says 3)
 	ServerBoostGains = 2,
 	ServerBoostMinutes = 30,
 }
@@ -47,6 +62,11 @@ Monetization.BestSeller = "AutoLift"
 Monetization.PassByKey, Monetization.ProductByKey = {}, {}
 for _, pass in ipairs(Monetization.Passes) do Monetization.PassByKey[pass.key] = pass end
 for _, product in ipairs(Monetization.Products) do Monetization.ProductByKey[product.key] = product end
+
+-- Is this item for sale in the Store? (a real id, not hidden, not sold elsewhere)
+function Monetization.ForSale(item): boolean
+	return item.id ~= nil and item.id ~= 0 and not item.hidden and item.store ~= false
+end
 
 -- True when at least one item has an id (otherwise the Store stays hidden).
 function Monetization.AnyConfigured()
