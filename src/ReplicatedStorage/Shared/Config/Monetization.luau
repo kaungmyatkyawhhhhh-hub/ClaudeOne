@@ -32,9 +32,6 @@ Monetization.Products = {
 	{ key = "ShakePack", id = 3718306390, tab = "Boosts", name = "Shake Bundle", text = "3 Energy Shakes.", price = 49, art = "product_shake_bundle" },
 	{ key = "StaminaRefill", id = 3718306417, tab = "Boosts", name = "Stamina Refill", text = "Instantly refill your stamina to full.", price = 15, art = "product_stamina_refill" },
 	{ key = "DnaToken", id = productId(Products.DNAToken), tab = "Boosts", name = "DNA Token", text = "One genetics reroll.", price = 99, art = "product_dna_token" },
-	-- (14 Oct: the game has no wait between Growth Spurts yet, so there is nothing to skip: not sold until there is)
-	{ key = "SkipGrowthCooldown", id = 3718306447, tab = "Boosts", name = "Skip Growth Cooldown", text = "Skip the wait for your next Growth Spurt.",
-		price = 35, art = "product_skip_growth_cooldown", hidden = "no Growth Spurt cooldown in the game yet" },
 	-- (bought from the Quests window only, after picking the quest: store = false keeps it out of the Store)
 	{ key = "QuestReroll", id = productId(Products.QuestReroll), name = "Quest Reroll", text = "Swap one daily quest for a new one.", store = false, price = 19 },
 	{ key = "ServerBoost", id = nil, tab = "Boosts", name = "Server Boost", text = "2x gains for everyone in the server for 30 minutes. Your name goes on the board." },

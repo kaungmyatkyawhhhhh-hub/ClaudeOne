@@ -62,7 +62,6 @@ UI.ShopIcons = { -- shop items that aren't a real pass / product (those read the
 	product_dna_token = "rbxassetid://87375007150587",
 	product_quest_reroll = "rbxassetid://124460070314904",
 	product_shake_bundle = "rbxassetid://107883030118451",
-	product_skip_growth_cooldown = "rbxassetid://113267233802315",
 	product_stamina_refill = "rbxassetid://136768220289914",
 }
 
