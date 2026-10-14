@@ -1340,8 +1340,10 @@ here and runs slower while scripts drive it, so treat fps as rough):
   13.4 ms, GPU 1.6 -> 1.0 ms on this PC; on a phone GPU this is the big one.
 - **The map is draw calls, not triangles:** 21,859 parts (Town 16,844: Buildings 4,634, Street 2,815, BeachGym 2,237,
   Greenery 1,777, Beach 1,222; Gym 2,541; ProGym 2,165), only 240 MeshParts (all NPC bodies), 294 lights (5 with
-  shadows), 424 SurfaceGuis. StreamingEnabled is on but the client still holds 23,736 parts (the whole town): the
-  streaming radius settings (owner's Properties job, open since 14 Oct) are what would trim this.
+  shadows), 424 SurfaceGuis. Streaming is set (owner: target radius 256 etc., done earlier; scripts
+  can't read those properties), but the town is compact: 20,265 of the 21,859 parts are within 256 studs of the spawn,
+  so the client still holds ~23.7k parts. Parts within 192 / 160 / 128 studs: 15,490 / 12,005 / 9,494: a lower
+  StreamingTargetRadius (128-160) would about halve the parts drawn, with farther buildings popping in later.
 - Memory (Studio, client + server together): total 2,034 MB, Lua heap 1,372 MB, PhysicsParts 1,428 MB, Gui 305 MB,
   Script 262 MB, textures 168 + 66 MB. Instances 109,354.
 
