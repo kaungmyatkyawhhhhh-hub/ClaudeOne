@@ -238,6 +238,16 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
 - Stats overlay (owner): the "turn to face the camera" is gone (no AutoRotate toggling, no root CFrame, no camera change);
   lines to far-side body points are dashed (a stepped UIGradient) and fainter. Tested from behind and side-on after
   walking: the character never turns by itself.
+- Trainers remake (owner): built from a HumanoidDescription (R15) with Roblox's free catalog hair (Brown Charmer, Lavender
+  Updo; Lou buzz under a cap, Rex bald), a classic head carrying a Roblox face image (the description's dynamic head has
+  a blank face and face images map wrong on it), our own clothing templates (tracksuit + joggers, tank + shorts, polo +
+  black pants, stringer + shorts; drawn by scratchpad trainer_clothes.py, every template area filled), part-built props
+  (whistle, headband + bottle, cap + clipboard, belt + wrist wraps), the static muscle stages ("MuscleG": 0.9 / 0.7 / 0.8
+  / 1.8). TrainerFollowClient: coach idle drawn on the joints (breathing, weight shift; arms crossed / hands on hips /
+  clipboard check; Motor6D or AnimationConstraint joints), a clap or fist pump every 3 reps, bubbles at most one per 10 s,
+  other players' trainers frozen past 60 studs, the stages' skin layer hidden (it poked through the clothes at the lats).
+  Portraits re-rendered (dark booth, same camera) and uploaded (Config/UI.Trainers). Not done: a "cheering while you lift"
+  screenshot.
 - Arm wrestling: one body per stool (owner). An NPC opponent's stool is reserved (Seat.Disabled, prompt off) while the
   NPC is on its way, sitting and doing the win slam; NPCs only go onto an empty stool; any non-player that gets onto a
   stool is unseated (SeatWeld broken). Prompts refresh when someone stands up late.

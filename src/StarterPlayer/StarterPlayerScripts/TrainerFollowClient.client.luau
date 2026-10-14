@@ -8,7 +8,11 @@
 --     in a spotter's way), facing you.
 --   * Cheers: during a set a short line in a bubble now and then ("Push it!", CheerCooldown / CheerChance); claps and a
 --     "Great set!" line at the end of every set (10 reps), and "New record!" on your personal records.
---   * Other players' trainers past RenderDistance aren't drawn.
+--   * Other players' trainers past RenderDistance aren't drawn; past FarAnimation they stand still (no animation).
+--   * Coach idle (owner, 14 Oct: never a stiff stand): a pose drawn on the joints over Roblox's idle: breathing (chest
+--     and shoulders rise), a slow weight shift, and his own stance (IDLE_STYLE: arms crossed, clipboard check, hands on
+--     hips). While you lift he faces you and every Trainers.CheerEvery reps claps or pumps a fist ("come on!"); speech
+--     bubbles at most one per Trainers.CheerCooldown seconds.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -25,6 +29,8 @@ local templates = ReplicatedStorage:WaitForChild("TrainerModels", 60)
 if not templates then return end -- the trainer service didn't start
 
 local ANIM = { Idle = "rbxassetid://507766388", Walk = "rbxassetid://507777826" } -- Roblox's default R15 idle / walk
+-- each coach's own stance while standing (drawn over the idle animation, see coachIdle)
+local IDLE_STYLE = { RookieCoach = "crossed", CardioCoach = "hips", MoneyCoach = "clipboard", PumpCoach = "crossed" }
 local HYPE_SPOTS = { "Hype_5", "Hype_4", "Hype_3", "Hype_2", "Hype_1" } -- tried in this order (spotters fill from Hype_1)
 
 local folder = Instance.new("Folder")
@@ -80,6 +86,10 @@ end
 local function bubble(state, text)
 	local head = state.model:FindFirstChild("Head")
 	if not head then return end
+	-- (owner, 14 Oct: at most one bubble per CheerCooldown seconds, whatever asked for it)
+	local now = os.clock()
+	if now - (state.lastBubble or -math.huge) < Trainers.CheerCooldown then return end
+	state.lastBubble = now
 	local entry = state.bubble
 	if not entry then
 		local bill = Theme.New("BillboardGui", { Name = "TrainerBubble", Adornee = head, Size = UDim2.fromOffset(200, 40), StudsOffset = Vector3.new(0, 2.6, 0),
@@ -117,8 +127,22 @@ local function makeTrainer(id: string, slot: number)
 			part.CollisionGroup = "Trainers"
 		end
 	end
-	for _, part in ipairs(model:GetDescendants()) do ghost(part) end
-	model.DescendantAdded:Connect(ghost)
+	-- (owner, 14 Oct: torn-looking clothes) the muscle stages' separate skin layer sits under the clothing mesh and pokes
+	-- through it where the muscles bulge (the lats); a trainer is fully dressed in Shirt / Pants images, and the clothing mesh
+	-- already shows his skin color through their see-through parts, so the skin layer is hidden on him
+	local function skinLayer(part)
+		if part:IsA("BasePart") and part.Name == "Skin" and part.Parent and part.Parent.Parent and part.Parent.Parent.Name == "MuscleMeshes" then
+			part.LocalTransparencyModifier = 1
+		end
+	end
+	for _, part in ipairs(model:GetDescendants()) do
+		ghost(part)
+		skinLayer(part)
+	end
+	model.DescendantAdded:Connect(function(part)
+		ghost(part)
+		skinLayer(part)
+	end)
 	local tracks = {}
 	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
 	for name, animId in pairs(ANIM) do
@@ -133,7 +157,8 @@ local function makeTrainer(id: string, slot: number)
 	end
 	return {
 		id = id, slot = slot, model = model, root = root, humanoid = humanoid, tracks = tracks, playing = nil,
-		position = nil, lastProgress = os.clock(), lastCheer = 0, clapUntil = 0,
+		position = nil, lastProgress = os.clock(), lastCheer = 0, clapUntil = 0, pumpUntil = 0, cheerTurn = 0,
+		style = IDLE_STYLE[id] or "crossed", phase = rng:NextNumber() * 10,
 		rootHeight = humanoid.HipHeight + root.Size.Y / 2,
 	}
 end
@@ -201,9 +226,16 @@ local function onRep(player)
 			state.clapUntil = now + Trainers.ClapSeconds
 			bubble(state, Trainers.SetDoneLines[rng:NextInteger(1, #Trainers.SetDoneLines)])
 			state.lastCheer = now
-		elseif now - state.lastCheer > Trainers.CheerCooldown and rng:NextNumber() < Trainers.CheerChance then
-			bubble(state, Trainers.Cheers[rng:NextInteger(1, #Trainers.Cheers)])
-			state.lastCheer = now
+		else
+			-- every few reps a cheer: a clap or a fist pump ("come on!"), taking turns
+			if w.count % Trainers.CheerEvery == 0 then
+				state.cheerTurn += 1
+				if state.cheerTurn % 2 == 0 then state.clapUntil = now + Trainers.ClapSeconds else state.pumpUntil = now + Trainers.ClapSeconds end
+			end
+			if now - state.lastCheer > Trainers.CheerCooldown and rng:NextNumber() < Trainers.CheerChance then
+				bubble(state, Trainers.Cheers[rng:NextInteger(1, #Trainers.Cheers)])
+				state.lastCheer = now
+			end
 		end
 	end
 end
@@ -332,19 +364,90 @@ local function clap(state, now)
 	for _, side in ipairs({ { "Right", 1 }, { "Left", -1 } }) do
 		local arm = state.model:FindFirstChild(side[1] .. "UpperArm")
 		local shoulder = arm and arm:FindFirstChild(side[1] .. "Shoulder")
-		if shoulder and shoulder:IsA("Motor6D") then
+		if shoulder and (shoulder:IsA("Motor6D") or shoulder:IsA("AnimationConstraint")) then
 			shoulder.Transform = CFrame.Angles(math.rad(80), 0, 0) * CFrame.Angles(0, 0, side[2] * -swing)
 		end
 		local lower = state.model:FindFirstChild(side[1] .. "LowerArm")
 		local elbow = lower and lower:FindFirstChild(side[1] .. "Elbow")
-		if elbow and elbow:IsA("Motor6D") then elbow.Transform = CFrame.Angles(math.rad(35), 0, 0) end
+		if elbow and (elbow:IsA("Motor6D") or elbow:IsA("AnimationConstraint")) then elbow.Transform = CFrame.Angles(math.rad(35), 0, 0) end
 	end
 end
+-- joints by name (cached per trainer: no lookups every frame)
+local JOINT_PATH = {
+	Waist = { "UpperTorso", "Waist" }, Neck = { "Head", "Neck" },
+	RShoulder = { "RightUpperArm", "RightShoulder" }, LShoulder = { "LeftUpperArm", "LeftShoulder" },
+	RElbow = { "RightLowerArm", "RightElbow" }, LElbow = { "LeftLowerArm", "LeftElbow" },
+	RWrist = { "RightHand", "RightWrist" }, LWrist = { "LeftHand", "LeftWrist" },
+}
+local function joints(state)
+	if state.joints then return state.joints end
+	local found = {}
+	for key, path in pairs(JOINT_PATH) do
+		local part = state.model:FindFirstChild(path[1])
+		local motor = part and part:FindFirstChild(path[2])
+		-- (Motor6D, or the AnimationConstraint joints of newer rigs: both have Transform)
+		if motor and (motor:IsA("Motor6D") or motor:IsA("AnimationConstraint")) then found[key] = motor end
+	end
+	state.joints = found
+	return found
+end
+local rad, Angles = math.rad, CFrame.Angles
+
+-- "come on!": the right fist pumps up twice, the left fist at the hip
+local function fistPump(state, now)
+	local j = joints(state)
+	local up = 0.5 + 0.5 * math.sin(now * 12)
+	if j.RShoulder then j.RShoulder.Transform = Angles(rad(150 + 15 * up), 0, rad(-10)) end
+	if j.RElbow then j.RElbow.Transform = Angles(rad(40 + 50 * (1 - up)), 0, 0) end
+	if j.LShoulder then j.LShoulder.Transform = Angles(rad(10), 0, rad(10)) end
+	if j.LElbow then j.LElbow.Transform = Angles(rad(70), 0, 0) end
+	if j.Waist then j.Waist.Transform = Angles(rad(-4 * up), 0, 0) end
+end
+
+-- the coach idle: breathing, a slow weight shift and his stance
+local function coachIdle(state, now)
+	local j = joints(state)
+	local t = now + state.phase
+	local breath = math.sin(t * 2.1)          -- ~3 s a breath
+	local shift = math.sin(t * 0.45)          -- a slow sway from one foot to the other
+	if j.Waist then j.Waist.Transform = Angles(rad(-1.5 - 1.5 * breath), rad(3 * shift), rad(1.5 * shift)) end
+	if j.Neck then j.Neck.Transform = Angles(rad(2 * breath), rad(8 * math.sin(t * 0.3)), 0) end
+	local lift = rad(2.5 * breath) -- the shoulders rise with each breath
+	if state.style == "crossed" then
+		-- forearms folded across the chest, each hand in front of the other side (right over left); angles found by
+		-- solving the joint chain for those hand spots on the trainer rig
+		if j.RShoulder then j.RShoulder.Transform = Angles(rad(65) + lift, rad(30), rad(-60)) end
+		if j.LShoulder then j.LShoulder.Transform = Angles(rad(55) + lift, rad(-30), rad(60)) end
+		if j.RElbow then j.RElbow.Transform = Angles(rad(40), rad(60), 0) end
+		if j.LElbow then j.LElbow.Transform = Angles(rad(40), 0, 0) end
+	elseif state.style == "clipboard" then
+		-- reading the clipboard in his right hand, left hand on the hip
+		if j.RShoulder then j.RShoulder.Transform = Angles(rad(40) + lift, rad(-15), 0) end
+		if j.RElbow then j.RElbow.Transform = Angles(rad(70), 0, 0) end
+		if j.LShoulder then j.LShoulder.Transform = Angles(lift, 0, rad(-28)) end
+		if j.LElbow then j.LElbow.Transform = Angles(rad(85), rad(40), 0) end
+		if j.Neck then j.Neck.Transform = Angles(rad(-14 + 2 * breath), rad(-6), 0) end
+	else -- hands on the hips (the bottle in the left hand)
+		if j.RShoulder then j.RShoulder.Transform = Angles(lift, 0, rad(28)) end
+		if j.LShoulder then j.LShoulder.Transform = Angles(lift, 0, rad(-28)) end
+		if j.RElbow then j.RElbow.Transform = Angles(rad(85), rad(-40), 0) end
+		if j.LElbow then j.LElbow.Transform = Angles(rad(85), rad(40), 0) end
+	end
+end
+
 RunService.Stepped:Connect(function()
 	local now = os.clock()
 	for _, list in pairs(followers) do
 		for _, state in pairs(list) do
-			if now < state.clapUntil and state.model.Parent then clap(state, now) end
+			if state.model.Parent and not state.frozen then
+				if now < state.clapUntil then
+					clap(state, now)
+				elseif now < state.pumpUntil then
+					fistPump(state, now)
+				elseif state.playing == "Idle" then
+					coachIdle(state, now)
+				end
+			end
 		end
 	end
 end)
@@ -381,6 +484,14 @@ RunService.Heartbeat:Connect(function(dt)
 					state.model.Parent = folder
 				end
 				step(player, state, root, dt, now)
+				-- other players' trainers far away stand still: no animation, no pose (owner, 14 Oct: performance)
+				local far = player ~= localPlayer and (root.Position - eye).Magnitude > Trainers.FarAnimation
+				if far ~= (state.frozen == true) then
+					state.frozen = far
+					for _, track in pairs(state.tracks) do
+						if far then track:AdjustSpeed(0) else track:AdjustSpeed(1) end
+					end
+				end
 			elseif state.model.Parent then
 				state.model.Parent = nil
 				state.playing = nil

@@ -77,11 +77,12 @@ UI.MenuIcons = { -- 3D menu icons: NOT USED (owner, 13 Oct: keep the old left me
 	menu_settings = "rbxassetid://100011256897276",
 }
 
-UI.Trainers = { -- portraits shown in the Trainers panel (by Config/Trainers id order: exp, stamina, coins, pump)
-	trainer_exp = "rbxassetid://108489802167979",
-	trainer_stamina = "rbxassetid://93869050690348",
-	trainer_coins = "rbxassetid://117668445111854",
-	trainer_pump = "rbxassetid://130549873400301",
+UI.Trainers = { -- portraits shown in the Trainers panel (by Config/Trainers id order: exp, stamina, coins, pump); re-rendered
+	-- 14 Oct from the new trainer models (same camera, dark backdrop), uploaded from Studio = the owner's own inventory
+	trainer_exp = "rbxassetid://123149177753009",
+	trainer_stamina = "rbxassetid://73804538355114",
+	trainer_coins = "rbxassetid://100097169445664",
+	trainer_pump = "rbxassetid://86536100657185",
 }
 
 UI.MenuArt = "rbxassetid://99238211044120" -- main menu + loading screen (right side, fading into the dark)

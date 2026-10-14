@@ -9,18 +9,34 @@ local Trainers = {}
 
 -- perk: gains = EXP x, regen = stamina refill x, coins = coins x, pump = the Pump meter fills this much faster and PUMPED
 -- lasts this much longer (Gains.Pump). perkShort = the tile's line (owner's UI v2, mockup 06: perk and price only, no
--- names anywhere). picture = the portrait (Config/UI.Trainers). look = what the follower wears so he matches his picture:
--- skin, shirt (torso + upper arms painted), pants, hair color and a hat built from parts by TrainerService
--- ("cap" / "headband" / "visor" / "headphones") in hatColor. (name / coachName are kept for the code only.)
+-- names anywhere). picture = the portrait (Config/UI.Trainers).
+-- look (owner, 14 Oct: real gym coaches, built from a HumanoidDescription by TrainerService):
+--   skin, hairIds (Roblox's own free catalog hair, none = buzz / bald), faceTexture (the image of one of Roblox's own
+--   faces, worn on a classic head: TrainerService), shirt / pants = our own clothing templates (images, Downloads-free, no brands; drawn by
+--   scratchpad trainer_clothes.py: tracksuit, tank, polo, stringer, joggers, shorts), muscle = how built he looks (the
+--   static muscle stages, share of the goal: 1 = fit; the Pump coach the biggest), extras = small part-built props
+--   ("whistle", "headband", "bottle", "cap", "clipboard", "belt", "wraps"), extraColor = their color.
 Trainers.List = {
 	{ id = "RookieCoach", name = "Rookie Coach", coachName = "Coach Sam", price = 300, perk = { gains = 1.05 }, perkText = "+5% EXP", perkShort = "+5% EXP",
-		picture = "trainer_exp", look = { skin = "#EED3B6", shirt = "#E5413F", pants = "#2B2B30", hair = "#5A3A26", hat = "cap", hatColor = "#D9302E" }, color = "#E5413F" },
+		picture = "trainer_exp", color = "#E5413F",
+		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
+			shirt = "rbxassetid://77771516278632", pants = "rbxassetid://128469919503097", muscle = 0.9,
+			extras = { "whistle" }, extraColor = "#C8262C", tint = "#C8262C" } },
 	{ id = "CardioCoach", name = "Cardio Coach", coachName = "Coach Nia", price = 450, perk = { regen = 1.1 }, perkText = "+10% stamina refill", perkShort = "+10% Stamina",
-		picture = "trainer_stamina", look = { skin = "#C89A70", shirt = "#5CC46B", pants = "#2B2B30", hair = "#4A3426", hat = "headband", hatColor = "#F4F1EA" }, color = "#5CC46B" },
+		picture = "trainer_stamina", color = "#5CC46B",
+		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
+			shirt = "rbxassetid://133899993895115", pants = "rbxassetid://130320955859264", muscle = 0.7,
+			extras = { "headband", "bottle" }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
 	{ id = "MoneyCoach", name = "Money Coach", coachName = "Coach Lou", price = 600, perk = { coins = 1.05 }, perkText = "+5% coins", perkShort = "+5% Coins",
-		picture = "trainer_coins", look = { skin = "#EED3B6", shirt = "#F2C64A", pants = "#2B2B30", hair = "#7A5A3A", hat = "visor", hatColor = "#E2B85A" }, color = "#F2C64A" },
+		picture = "trainer_coins", color = "#F2C64A",
+		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
+			shirt = "rbxassetid://139453050856567", pants = "rbxassetid://114585739101845", muscle = 0.8,
+			extras = { "cap", "clipboard" }, extraColor = "#16161A", tint = "#E0B23A" } },
 	{ id = "PumpCoach", name = "Pump Coach", coachName = "Coach Rex", price = 800, perk = { pump = 1.25 }, perkText = "Pump fills 25% faster and lasts 25% longer", perkShort = "+25% Pump",
-		picture = "trainer_pump", look = { skin = "#EED3B6", shirt = "#A06BE6", pants = "#2B2B30", hair = "#1E1E22", hat = "headphones", hatColor = "#1E1E22" }, color = "#A06BE6" },
+		picture = "trainer_pump", color = "#A06BE6",
+		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
+			shirt = "rbxassetid://92108312308529", pants = "rbxassetid://98021423122639", muscle = 1.8,
+			extras = { "belt", "wraps" }, extraColor = "#7A3FC8", tint = "#7A3FC8" } },
 }
 Trainers.ById = {}
 for _, trainer in ipairs(Trainers.List) do Trainers.ById[trainer.id] = trainer end
@@ -35,8 +51,10 @@ Trainers.WalkSpeed = 15           -- studs a second (a running player gets caugh
 Trainers.CatchUpSpeed = 26
 Trainers.TeleportDistance = 45    -- farther than this from his spot (or stuck for StuckSeconds): he pops back beside you
 Trainers.StuckSeconds = 2.5
-Trainers.CheerCooldown = 9        -- seconds between two cheers from the same trainer
+Trainers.CheerCooldown = 10       -- seconds between two speech bubbles from the same trainer (owner, 14 Oct: at most one per 10 s)
 Trainers.CheerChance = 0.35       -- chance to cheer on a rep once the cooldown is over
+Trainers.CheerEvery = 3          -- the cheer animation (clap / fist pump) every this many reps
+Trainers.FarAnimation = 60       -- other players' trainers past this many studs stand still (no animation)
 Trainers.BubbleSeconds = 3
 Trainers.ClapSeconds = 1.4
 Trainers.Cheers = { "One more rep!", "Push it!", "Good form!", "Breathe out!", "Nice and slow!", "You got this!",

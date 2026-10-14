@@ -6,9 +6,11 @@
 --     "Open" | "Hired" | "Failed". Saved in data.trainers = { owned = { ids }, equipped = { ids } }.
 --   * The equipped trainers' perks are BoostService sources ("Trainer_<id>": gains / regen / coins / pump), and the player
 --     attribute "Trainers" lists them ("RookieCoach,PumpCoach") so every client can draw them following that player.
---   * The trainer models: one template per trainer, built here at start (NpcService: the Robloxian body painted in his
---     picture's colors, a hat from parts, a clipboard in the right hand, no name tag; nothing collides) into
---     ReplicatedStorage.TrainerModels; clients clone them.
+--   * The trainer models (owner, 14 Oct: real gym coaches): one template per trainer, built here at start from a
+--     HumanoidDescription (NpcService: the Robloxian R15 body, Roblox's own free catalog hair and face), our own clothing
+--     templates (Shirt / Pants images), small part-built props (look.extras) and the static muscle stages ("MuscleG",
+--     MuscleClient; the Pump coach the biggest); no name tag, nothing collides. Into ReplicatedStorage.TrainerModels;
+--     clients clone them.
 -- Slots: Config.Trainers.Slots, +1 with the Extra Trainer pass (player attribute Pass_ExtraTrainer, MonetizationService).
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -19,6 +21,7 @@ local Trainers = require(ReplicatedStorage.Shared.Config.Trainers)
 local PlayerData = require(script.Parent.PlayerData)
 local BoostService = require(script.Parent.BoostService)
 local NpcService = require(script.Parent.NpcService)
+local BodyService = require(script.Parent.BodyService)
 local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
@@ -92,71 +95,75 @@ end
 ------------------------------------------------------------------------
 -- Templates
 ------------------------------------------------------------------------
-local function clipboard(model)
-	local hand = model:FindFirstChild("RightHand")
-	if not hand or not hand:IsA("BasePart") then return end
-	local function piece(name, size, offset, color, material)
-		local p = Instance.new("Part")
-		p.Name = name
-		p.Size = size
-		p.Color = color
-		p.Material = material
-		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
-		-- held flat against the forearm side, in front of the hand
-		p.CFrame = hand.CFrame * CFrame.new(0, -0.35, -0.35) * CFrame.Angles(math.rad(-20), 0, 0) * CFrame.new(offset)
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0, weld.Part1 = hand, p
-		weld.Parent = p
-		p.Parent = model
-	end
-	piece("Clipboard", Vector3.new(0.75, 1, 0.06), Vector3.zero, Color3.fromHex("#7A5230"), Enum.Material.Wood)
-	piece("Paper", Vector3.new(0.62, 0.78, 0.02), Vector3.new(0, -0.06, -0.04), Color3.fromHex("#F4F1EA"), Enum.Material.SmoothPlastic)
-	piece("Clip", Vector3.new(0.34, 0.12, 0.08), Vector3.new(0, 0.46, -0.03), Color3.fromHex("#C9CCD2"), Enum.Material.Metal)
+-- The small props each trainer carries (Config/Trainers look.extras), built from parts welded to his body. Kept small
+-- and close to the body so nothing floats or clips: a whistle on a cord, a headband, a water bottle in the left hand,
+-- a cap, a clipboard in the right hand, a lifting belt round the waist, wrist wraps.
+local function prop(model, partName, name, shape, size, offset: CFrame, hex, material)
+	local base = model:FindFirstChild(partName)
+	if not base or not base:IsA("BasePart") then return nil end
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Shape = shape or Enum.PartType.Block
+	p.Size = size
+	p.Color = Color3.fromHex(hex)
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
+	p.CFrame = base.CFrame * offset
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0, weld.Part1 = base, p
+	weld.Parent = p
+	p.Parent = model
+	return p
 end
 
--- The hat from his picture, from parts welded to the head (short hair under it): "cap" (crown + brim + button),
--- "headband" (a band round the forehead), "visor" (a band + brim, no crown), "headphones" (a band over the top + ear cups).
-local function hat(model, look)
+local UPRIGHT = CFrame.Angles(0, 0, math.rad(90)) -- a cylinder standing up (its axis is X)
+local function extras(model, look)
+	local color = look.extraColor or "#1E1E22"
+	local cyl, ball = Enum.PartType.Cylinder, Enum.PartType.Ball
 	local head = model:FindFirstChild("Head")
-	if not head or not head:IsA("BasePart") then return end
-	local size = head.Size
-	local d = math.max(size.X, size.Z) -- head width
-	local top = size.Y / 2
-	local function piece(name, shape, partSize, offset: CFrame, hex)
-		local p = Instance.new("Part")
-		p.Name = name
-		p.Shape = shape
-		p.Size = partSize
-		p.Color = Color3.fromHex(hex)
-		p.Material = Enum.Material.SmoothPlastic
-		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
-		p.CFrame = head.CFrame * offset
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0, weld.Part1 = head, p
-		weld.Parent = p
-		p.Parent = model
-		return p
-	end
-	local upright = CFrame.Angles(0, 0, math.rad(90)) -- a cylinder standing up (its axis is X)
-	local cylinder, block = Enum.PartType.Cylinder, Enum.PartType.Block
-	local color = look.hatColor or "#1E1E22"
-	-- short hair: a flat cap of hair on the top of the head (under the cap / visor it barely shows)
-	piece("Hair", cylinder, Vector3.new(0.22, d * 1.03, d * 1.03), CFrame.new(0, top - 0.08, 0.02) * upright, look.hair or "#2B2B30")
-	if look.hat == "cap" then
-		piece("CapCrown", cylinder, Vector3.new(0.42, d * 1.07, d * 1.07), CFrame.new(0, top - 0.02, 0.02) * upright, color)
-		piece("CapTop", Enum.PartType.Ball, Vector3.new(d * 0.98, d * 0.98, d * 0.98) * Vector3.new(1, 0.4, 1), CFrame.new(0, top + 0.2, 0.02), color)
-		piece("CapBrim", block, Vector3.new(d * 0.78, 0.07, d * 0.42), CFrame.new(0, top - 0.18, -d * 0.62) * CFrame.Angles(math.rad(-8), 0, 0), color)
-		piece("CapButton", Enum.PartType.Ball, Vector3.new(0.14, 0.14, 0.14), CFrame.new(0, top + 0.3, 0.02), color)
-	elseif look.hat == "headband" then
-		piece("Headband", cylinder, Vector3.new(0.2, d * 1.06, d * 1.06), CFrame.new(0, top - 0.32, 0) * upright, color)
-	elseif look.hat == "visor" then
-		piece("VisorBand", cylinder, Vector3.new(0.2, d * 1.06, d * 1.06), CFrame.new(0, top - 0.24, 0) * upright, color)
-		piece("VisorBrim", block, Vector3.new(d * 0.8, 0.07, d * 0.44), CFrame.new(0, top - 0.3, -d * 0.62) * CFrame.Angles(math.rad(-10), 0, 0), color)
-	elseif look.hat == "headphones" then
-		piece("PhonesBand", block, Vector3.new(d * 1.1, 0.12, 0.2), CFrame.new(0, top + 0.12, 0.04), color)
-		for _, side in ipairs({ -1, 1 }) do
-			piece("PhonesSide", block, Vector3.new(0.12, 0.42, 0.2), CFrame.new(side * d * 0.55, top - 0.12, 0.04), color)
-			piece("PhonesCup", cylinder, Vector3.new(0.18, 0.42, 0.42), CFrame.new(side * d * 0.56, -size.Y * 0.05, 0.04), color)
+	local torso = model:FindFirstChild("UpperTorso")
+	local waist = model:FindFirstChild("LowerTorso")
+	local hs = head and head.Size or Vector3.new(1.2, 1.2, 1.2)
+	local ts = torso and torso.Size or Vector3.new(2, 1.6, 1)
+	local ws = waist and waist.Size or Vector3.new(2, 0.4, 1)
+	local d = math.max(hs.X, hs.Z)
+	for _, kind in ipairs(look.extras or {}) do
+		if kind == "whistle" then
+			-- a thin cord from the neck down the chest to a small silver whistle
+			for _, side in ipairs({ -1, 1 }) do
+				prop(model, "UpperTorso", "WhistleCord", nil, Vector3.new(0.05, ts.Y * 0.45, 0.05),
+					CFrame.new(side * ts.X * 0.12, ts.Y * 0.22, -ts.Z * 0.62) * CFrame.Angles(0, 0, side * math.rad(-14)), color)
+			end
+			prop(model, "UpperTorso", "Whistle", cyl, Vector3.new(0.34, 0.2, 0.2), CFrame.new(0, -ts.Y * 0.02, -ts.Z * 0.66), "#D9DCE0", Enum.Material.Metal)
+			prop(model, "UpperTorso", "WhistleRing", cyl, Vector3.new(0.06, 0.14, 0.14), CFrame.new(-0.16, -ts.Y * 0.02 + 0.04, -ts.Z * 0.66), "#9EA3AA", Enum.Material.Metal)
+		elseif kind == "headband" then
+			prop(model, "Head", "Headband", cyl, Vector3.new(0.2, d * 1.06, d * 1.06), CFrame.new(0, hs.Y * 0.18, 0) * UPRIGHT, color, Enum.Material.Fabric)
+		elseif kind == "bottle" then
+			local hand = "LeftHand"
+			prop(model, hand, "Bottle", cyl, Vector3.new(0.7, 0.32, 0.32), CFrame.new(0, -0.18, -0.12) * UPRIGHT, "#2FAE55")
+			prop(model, hand, "BottleCap", cyl, Vector3.new(0.14, 0.26, 0.26), CFrame.new(0, 0.24, -0.12) * UPRIGHT, color)
+		elseif kind == "cap" then
+			prop(model, "Head", "CapCrown", cyl, Vector3.new(0.42, d * 1.07, d * 1.07), CFrame.new(0, hs.Y / 2 - 0.02, 0.02) * UPRIGHT, color)
+			prop(model, "Head", "CapTop", ball, Vector3.new(d * 0.98, d * 0.4, d * 0.98), CFrame.new(0, hs.Y / 2 + 0.2, 0.02), color)
+			prop(model, "Head", "CapBrim", nil, Vector3.new(d * 0.78, 0.07, d * 0.42), CFrame.new(0, hs.Y / 2 - 0.18, -d * 0.62) * CFrame.Angles(math.rad(-8), 0, 0), color)
+			prop(model, "Head", "CapLogo", nil, Vector3.new(d * 0.3, 0.16, 0.04), CFrame.new(0, hs.Y / 2 + 0.06, -d * 0.53), "#E0B23A") -- (a plain gold patch, no brand)
+		elseif kind == "clipboard" then
+			local o = CFrame.new(0, -0.35, -0.35) * CFrame.Angles(math.rad(-20), 0, 0)
+			prop(model, "RightHand", "Clipboard", nil, Vector3.new(0.75, 1, 0.06), o, "#7A5230", Enum.Material.Wood)
+			prop(model, "RightHand", "Paper", nil, Vector3.new(0.62, 0.78, 0.02), o * CFrame.new(0, -0.06, -0.04), "#F4F1EA")
+			prop(model, "RightHand", "Clip", nil, Vector3.new(0.34, 0.12, 0.08), o * CFrame.new(0, 0.46, -0.03), "#C9CCD2", Enum.Material.Metal)
+		elseif kind == "belt" then
+			-- a wide leather lifting belt round the waist (over the muscle meshes: a little wider than the waist) + a buckle
+			local w = math.max(ws.X, ws.Z) * 1.22
+			prop(model, "LowerTorso", "Belt", cyl, Vector3.new(ws.Y * 0.95, w, w * 0.62), CFrame.new(0, ws.Y * 0.15, 0) * UPRIGHT, "#3A2414", Enum.Material.Leather)
+			prop(model, "LowerTorso", "Buckle", nil, Vector3.new(0.5, ws.Y * 0.7, 0.08), CFrame.new(0, ws.Y * 0.15, -w * 0.31 - 0.03), "#C9CCD2", Enum.Material.Metal)
+		elseif kind == "wraps" then
+			for _, side in ipairs({ "Left", "Right" }) do
+				local arm = model:FindFirstChild(side .. "LowerArm")
+				local s = arm and arm.Size or Vector3.new(0.6, 1, 0.6)
+				prop(model, side .. "LowerArm", "WristWrap", cyl, Vector3.new(s.Y * 0.28, math.max(s.X, s.Z) * 1.18, math.max(s.X, s.Z) * 1.18),
+					CFrame.new(0, -s.Y * 0.34, 0) * UPRIGHT, color, Enum.Material.Fabric)
+			end
 		end
 	end
 end
@@ -194,13 +201,55 @@ local function buildTemplates()
 	folder.Name = "TrainerModels"
 	for _, trainer in ipairs(Trainers.List) do
 		local look = trainer.look
-		local spec = { name = trainer.id, skin = look.skin, shirt = look.shirt, pants = look.pants, animated = true, noLabel = true }
+		-- (the body under the clothes is skin colored: the clothing templates have bare parts, arms in a tank, legs in shorts)
+		local spec = { name = trainer.id, skin = look.skin, shirt = look.skin, pants = look.skin, hairIds = look.hairIds, faceId = look.faceId,
+			animated = true, noLabel = true }
 		local ok, model = pcall(NpcService.Build, spec, CFrame.new(0, -500, 0))
 		if ok and model then
 			model.Name = trainer.id
-			clipboard(model)
-			hat(model, look)
+			-- our own clothes (image templates), a face texture when he has one, his props
+			for _, old in ipairs(model:GetChildren()) do
+				if old:IsA("Shirt") or old:IsA("Pants") or old:IsA("ShirtGraphic") then old:Destroy() end
+			end
+			local shirt = Instance.new("Shirt")
+			shirt.ShirtTemplate = look.shirt
+			shirt.Parent = model
+			local pants = Instance.new("Pants")
+			pants.PantsTemplate = look.pants
+			pants.Parent = model
+			-- his face: the description's head is a dynamic head whose own face is blank, and face images map wrongly onto
+			-- it, so it is hidden under a classic Roblox head (the "Head" mesh) carrying the face image, welded in its place
+			local head = model:FindFirstChild("Head")
+			if look.faceTexture and head and head:IsA("BasePart") then
+				local old = head:FindFirstChild("face")
+				if old then old:Destroy() end
+				head.Transparency = 1
+				local classic = Instance.new("Part")
+				classic.Name = "ClassicHead"
+				classic.Size = Vector3.new(2, 1, 1)
+				classic.Color = head.Color
+				classic.Material = Enum.Material.SmoothPlastic
+				classic.CanCollide, classic.CanQuery, classic.CanTouch, classic.Massless = false, false, false, true
+				local mesh = Instance.new("SpecialMesh")
+				mesh.MeshType = Enum.MeshType.Head
+				mesh.Scale = Vector3.new(1.25, 1.25, 1.25) * (head.Size.Y / 1.2)
+				mesh.Parent = classic
+				local face = Instance.new("Decal")
+				face.Name = "face"
+				face.Face = Enum.NormalId.Front
+				face.Texture = look.faceTexture
+				face.Parent = classic
+				classic.CFrame = head.CFrame
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0, weld.Part1 = head, classic
+				weld.Parent = classic
+				classic.Parent = model
+			end
+			extras(model, look)
 			attachAccessories(model)
+			-- his muscles: the static muscle stages, like every NPC (MuscleClient reads this; Pump coach the biggest)
+			model:SetAttribute("MuscleG", BodyService.EncodeShare(look.muscle or 1))
+			model:SetAttribute("Trainer", trainer.id)
 			for _, part in ipairs(model:GetDescendants()) do
 				if part:IsA("BasePart") then
 					-- never blocks a player, a machine or a click

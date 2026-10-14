@@ -54,7 +54,8 @@ local function fallbackModel(spec)
 	return model
 end
 
--- spec: { name, skin = hex, shirt = hex, pants = hex, scale = { height, width, depth, head } (optional),
+-- spec: { name, skin = hex, shirt = hex, pants = hex, scale = { height, width, depth, head } (optional), faceId (a catalog
+--         face, optional),
 --         shirtId / pantsId = catalog clothing ids, hairIds = { accessory ids } (optional; when a shirt is given the
 --         torso isn't painted with the shirt color),
 --         prompt = { action, object, distance } (optional), tag = CollectionService tag (optional),
@@ -74,6 +75,7 @@ function NpcService.Build(spec, cframe)
 			desc.DepthScale = spec.scale.depth or 1
 			desc.HeadScale = spec.scale.head or 1
 		end
+		if spec.faceId then desc.Face = spec.faceId end -- (a catalog face)
 		if spec.shirtId then desc.Shirt = spec.shirtId end
 		if spec.pantsId then desc.Pants = spec.pantsId end
 		if spec.hairIds then

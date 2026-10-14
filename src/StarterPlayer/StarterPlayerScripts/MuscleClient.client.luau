@@ -185,6 +185,15 @@ local function candidates()
 			end
 		end
 	end
+	-- personal trainers (TrainerFollowClient's local clones; owner, 14 Oct: they wear the muscle stages too)
+	local trainers = Workspace:FindFirstChild("LocalTrainers")
+	if trainers then
+		for _, trainer in ipairs(trainers:GetChildren()) do
+			if trainer:IsA("Model") and trainer:GetAttribute("MuscleG") and trainer:FindFirstChild("UpperTorso") then
+				table.insert(list, { model = trainer, source = trainer, mine = false, kind = "npc" })
+			end
+		end
+	end
 	local statue = Workspace:FindFirstChild("Statue")
 	if statue and statue:IsA("Model") and statue:GetAttribute("MuscleG") and statue:FindFirstChild("UpperTorso") then
 		table.insert(list, { model = statue, source = statue, mine = false, kind = "statue" })
