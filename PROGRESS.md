@@ -2,6 +2,10 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
+## Rules
+- No growth spurt cooldown. (Owner, 14 Oct: a player can do the next Growth Spurt as soon as they've earned it; checked:
+  there is no timer, time check or config value for it anywhere, and the Skip Growth Cooldown product is removed.)
+
 ## 14 Oct: FINAL UI KIT "BLACK + GOLD" (owner's GYM_ARC_UI_final.md + gym_arc_ui_final mockups), screen by screen
 - 1. Store (the reference frame) + the shared kit. Theme: graphite panels (vertical gradient #252226 -> #18161A ->
   #0D0C0E, 1px top hairline, soft dark edge, 14px), cards #232023 -> #141215 with a top highlight and a darker lip (11px),
