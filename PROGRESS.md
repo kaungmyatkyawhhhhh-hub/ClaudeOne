@@ -1523,3 +1523,30 @@ Ctrl+F6 MicroProfiler, F9 Developer Console).
 | 13 | 13. Tutorial finished or skipped | tutorial done, or SKIP TUTORIAL |
 | 14 | 14. Growth Spurt goal reached | every muscle group at its goal (checked every 5 s) |
 | 15 | 15. First Growth Spurt done | the first Growth Spurt (+ custom event FirstGrowthSpurt = minutes since first join) |
+
+## 15 Oct: MACHINE HUD phone vs PC layout (owner: some phones got the PC layout)
+- Cause (MachineHud.measure): the layout came from ONE read of UserInputService.TouchEnabled, and on a touch screen the
+  REP / STOP spots came only from Roblox's jump button; with no jump button found (hidden, not made yet, a custom
+  control scheme) the PC corner values were used.
+- Now `MachineHud.LayoutMode()`: short side under 500 points = always phone; else PreferredInput (Touch = phone, else
+  pc); without PreferredInput: TouchEnabled and not KeyboardEnabled = phone. Re-checked live (PreferredInput,
+  LastInputType, screen size). A phone with no jump button uses a fixed bottom-right spot (TouchLift 150) and keeps
+  checking for the real button. If the weight card still overlaps PUMP it shrinks (to 0.6 at least); ScreenInsets =
+  DeviceSafeInsets. F9 shows `[GYM ARC] HUD layout = phone, reason = ...` once per change.
+- Studio-only test switches (Workspace): TestInput = "Touch" / "TouchKeyboard" / "KeyboardAndMouse", TestNoJump = true,
+  TestPhoneSize (Vector2). Tested on the Flat Bench: touch with no jump button (phone, fixed spot), PC (corners),
+  844x390 + keyboard (phone, small screen), 1024x768 tablet touch (phone). Screenshots: screenshots/2026-10-15_hud_*.
+  A real phone with a jump button still needs the owner's check (Studio has no TouchGui).
+
+## 15 Oct: ROBUX STORE slow on a phone (owner: about 10 minutes)
+- Cause: not the window. The Shop tile only appeared after the tutorial AND `StoreAfterMinutes` (5) minutes of play,
+  counted again in EVERY session from the menu, so every player waited 5+ minutes each time they joined (with the menu
+  and the loading screen that is easily ~10 minutes on a phone). Also the server checked the passes one after another.
+- Fix: the 5 minutes count from the player's FIRST join only (data.meta.firstJoin), so only a brand-new player waits;
+  the window still builds once from Config (name, text, price, art) and opens / closes with show / hide; GetProductInfo
+  runs in the background, all at once, at most 1 retry after 5 s, only to update a changed price; the server checks
+  every pass in parallel at join and sets `PassesChecked`; until then only a PASS shows "..." on its buy button;
+  the shop pictures are preloaded (ContentProvider:PreloadAsync) once the game has loaded.
+- Measured in Studio (owner's save): before = Shop tile after 300 s of play every session (+ up to 5 s polling);
+  after = Shop tile 0.0 s after PLAY, Store open 0.10 s (the open pop), second open 0.10 s. Pending "..." checked
+  (screenshots/2026-10-15_store_pass_pending.jpg). A slow-network phone test is still the owner's (Studio can't throttle).

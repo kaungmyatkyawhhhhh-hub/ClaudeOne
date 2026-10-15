@@ -121,29 +121,45 @@ local modal = Kit.Modal({ name = "Store", title = "Store", width = W, height = H
 		refresh()
 	end })
 
--- Roblox's info for every item, fetched ONCE in the background when the game starts (each item on its own, in a
--- pcall, up to 3 tries): one item that fails never stops the others; it just keeps Config's fallback.
+-- Roblox's info for every item, fetched ONCE in the background when the game starts, all at once, each in a pcall with
+-- at most one retry after 5 s (owner, 15 Oct): the Store never waits for it; Config's name / price / art show meanwhile,
+-- and only a changed price is taken from Roblox.
 local info = {}
 task.spawn(function()
 	for _, entry in ipairs(items) do
 		local id = entry.item.id
 		if id then
 			task.spawn(function()
-				for attempt = 1, 3 do
+				for attempt = 1, 2 do
 					local ok, result = pcall(function()
 						return MarketplaceService:GetProductInfo(id, if entry.isPass then Enum.InfoType.GamePass else Enum.InfoType.Product)
 					end)
 					if ok and type(result) == "table" then
 						info[entry.item.key] = result
-						if refresh then refresh() end
+						if refresh and modal.isOpen() then refresh() end
 						return
 					end
-					if attempt == 3 then warn("[Store] no Roblox info for " .. tostring(entry.item.key) .. ": " .. tostring(result)) end
-					task.wait(attempt * 2)
+					if attempt == 2 then warn("[Store] no Roblox info for " .. tostring(entry.item.key) .. ": " .. tostring(result)) end
+					task.wait(5)
 				end
 			end)
 		end
 	end
+end)
+-- the shop pictures load in the background once the game is in, so the Store opens with them already there
+task.spawn(function()
+	if not game:IsLoaded() then game.Loaded:Wait() end
+	local list = {}
+	for _, entry in ipairs(items) do
+		local art = entry.item.art and require(Shared.Config.UI).ShopIcons[entry.item.art]
+		local image = art or (entry.isAura and entry.item.icon) or nil
+		if image then
+			local label = Instance.new("ImageLabel")
+			label.Image = image
+			table.insert(list, label)
+		end
+	end
+	pcall(function() game:GetService("ContentProvider"):PreloadAsync(list) end)
 end)
 local function infoFor(entry)
 	return info[entry.item.key] or false
@@ -306,6 +322,8 @@ function refresh()
 			Kit.SetButton(buy, "Gold", "View auras")
 		elseif endlessFull(picked) then
 			Kit.SetButton(buy, "Quiet", "Full: 60 min")
+		elseif picked.isPass and not player:GetAttribute("PassesChecked") then
+			Kit.SetButton(buy, "Quiet", "...") -- (ownership not known yet: this pass only)
 		else
 			Kit.SetButton(buy, isOwned and "Quiet" or "Red", isOwned and "Owned" or (price and ("R$ " .. Kit.Format(price)) or "Buy"))
 		end
@@ -337,6 +355,7 @@ buy.Activated:Connect(function()
 	end
 	if not picked or not picked.item.id then return end
 	if endlessFull(picked) then return end
+	if picked.isPass and not player:GetAttribute("PassesChecked") then return end
 	if picked.isPass then
 		if owned(picked) then return end
 		MarketplaceService:PromptGamePassPurchase(player, picked.item.id)
@@ -368,7 +387,7 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind == "DnaTokenBought" and type(info) == "table" and info.failed and coinBuy.Visible then shake(coinBuy) end
 end)
 player.AttributeChanged:Connect(function(name)
-	if name:sub(1, 5) == "Pass_" and modal.isOpen() then refresh() end
+	if (name:sub(1, 5) == "Pass_" or name == "PassesChecked") and modal.isOpen() then refresh() end
 end)
 
 local menuButton = nil
@@ -395,16 +414,21 @@ UIBus.OpenShop.Event:Connect(function(tab)
 	if not modal.isOpen() then UIBus.PanelOpened("Store") open() end
 end)
 
--- The Shop tile: after the tutorial and a few minutes of play, never before.
+-- The Shop tile: after the tutorial and the player's first few minutes in the game, never before. (owner, 15 Oct: the
+-- few minutes counted again in EVERY session, so a returning player waited 5+ minutes for the Store each time they
+-- joined; now they count from the player's first join only.)
 task.spawn(function()
 	local data = ClientData.Get()
 	UIBus.WaitForMenu()
 	started = true
-	local playStart = os.clock()
+	local firstJoin = data.meta and tonumber(data.meta.firstJoin) or 0
+	local function newPlayerMinutes(): boolean
+		local now = Workspace:GetServerTimeNow()
+		return firstJoin > 0 and now - firstJoin < Monetization.StoreAfterMinutes * 60
+	end
 	-- (TestStore: a Studio-only test switch, never in a live game)
 	local testStore = game:GetService("RunService"):IsStudio() and Workspace:GetAttribute("TestStore") == true
-	while not testStore and ((data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done
-		or os.clock() - playStart < Monetization.StoreAfterMinutes * 60) do
+	while not testStore and ((ClientData.Get().onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done or newPlayerMinutes()) do
 		task.wait(5)
 	end
 	menuButton = SideMenu.Add("Store", "Shop", Icons.Plate, 8)

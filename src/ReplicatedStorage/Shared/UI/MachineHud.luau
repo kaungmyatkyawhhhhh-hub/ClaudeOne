@@ -15,6 +15,11 @@
 --                  Roblox's jump button (12 px gap, right edges lined up), worked out once from TouchGui's JumpButton
 --                  (its size and place are there even while Roblox hides it on a seat) and again only when the screen
 --                  size changes; on a PC / console the bottom right corner.
+--                  Phone or PC (owner, 15 Oct: a phone with no jump button got the PC layout): MachineHud.LayoutMode() =
+--                  "phone" when the screen's short side is under PhoneShortSide points (whatever the input), else from
+--                  UserInputService.PreferredInput (Touch = phone) or, without it, TouchEnabled and not KeyboardEnabled.
+--                  Re-checked live (PreferredInput / LastInputType changes). A phone without a visible jump button uses a
+--                  fixed bottom-right spot (TouchLift) instead of the PC corner. The F9 console says which layout and why.
 --   left, bottom:  a quiet "x STOP" button (on touch screens above the thumbstick)
 --   bottom center: the slim STAMINA bar (Shared/UI/HudBottom)
 --   top center:    NEW PERSONAL RECORD! (gold) + "315 LB Bench Press"
@@ -45,6 +50,7 @@ MachineHud.Corner = 12   -- gap to the screen edges (PC)
 MachineHud.TouchLift = 150 -- touch screen before Roblox has made its jump button / thumbstick: this far up from the bottom
 MachineHud.TouchGap = 12   -- REP above the jump button, STOP above the thumbstick
 MachineHud.BarHeight = 46
+MachineHud.PhoneShortSide = 500 -- points: a screen whose short side is under this is always the phone layout
 MachineHud.PlateWidth = 6
 
 local function frame(props, children)
@@ -62,9 +68,40 @@ local function stepButton(name, icon, props)
 	return button
 end
 
+-- "phone" or "pc", and why (the rule above)
+-- (Studio-only test switches on Workspace: TestPhoneSize (Vector2) = that screen size; TestInput = "Touch",
+-- "TouchKeyboard" or "KeyboardAndMouse" = that input; TestNoJump = true acts as if Roblox's jump button were hidden)
+local IS_STUDIO = game:GetService("RunService"):IsStudio()
+local function testSwitch(name)
+	return if IS_STUDIO then workspace:GetAttribute(name) else nil
+end
+
+function MachineHud.LayoutMode(): (string, string)
+	local camera = workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+	local testSize = testSwitch("TestPhoneSize")
+	if typeof(testSize) == "Vector2" then viewport = testSize end
+	local short = math.min(viewport.X, viewport.Y)
+	if short > 1 and short < MachineHud.PhoneShortSide then
+		return "phone", string.format("small screen (%dx%d)", viewport.X, viewport.Y)
+	end
+	local testInput = testSwitch("TestInput")
+	if testInput == "Touch" then return "phone", "PreferredInput = Touch (test)" end
+	if testInput == "TouchKeyboard" then return "pc", "PreferredInput = KeyboardAndMouse, touch + keyboard (test)" end
+	if testInput == "KeyboardAndMouse" then return "pc", "PreferredInput = KeyboardAndMouse (test)" end
+	local ok, preferred = pcall(function() return (UserInputService :: any).PreferredInput end)
+	if ok and typeof(preferred) == "EnumItem" then
+		if preferred.Name == "Touch" then return "phone", "PreferredInput = Touch" end
+		return "pc", "PreferredInput = " .. preferred.Name
+	end
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then return "phone", "touch, no keyboard" end
+	return "pc", if UserInputService.TouchEnabled then "touch + keyboard" else "no touch"
+end
+
 -- Roblox's touch controls (nil on a PC / console): the jump button and the thumbstick's resting place. Their size and
 -- place are read even while Roblox hides them (on a seat), so the answer never changes during play.
 local function touchControls(playerGui)
+	if testSwitch("TestNoJump") == true then return nil, nil end
 	local touchGui = playerGui:FindFirstChild("TouchGui")
 	local controls = touchGui and touchGui:FindFirstChild("TouchControlFrame")
 	if not controls then return nil, nil end
@@ -242,8 +279,12 @@ function MachineHud.Build()
 		local half = rootTop + rootH / 2
 		if jump and jump.AbsolutePosition.Y < half then jump = nil end
 		if stick and stick.AbsolutePosition.Y < half then stick = nil end
-		local touch = UserInputService.TouchEnabled
-		local result = { repRight = corner, repBottom = corner, stopBottom = corner, final = not touch or (jump ~= nil and stick ~= nil) }
+		local mode = MachineHud.LayoutMode()
+		local touch = mode == "phone"
+		if not touch then jump, stick = nil, nil end -- (a PC layout never follows touch controls)
+		-- (final on a phone once the real controls were read; with none shown, the fixed spot is kept and looked at again
+		-- each second in case they appear)
+		local result = { repRight = corner, repBottom = corner, stopBottom = corner, mode = mode, final = not touch or (jump ~= nil and stick ~= nil) }
 		if jump then
 			result.repRight = math.max(corner, (rootRight - (jump.AbsolutePosition.X + jump.AbsoluteSize.X)) / s)
 			result.repBottom = (rootTop + rootH - jump.AbsolutePosition.Y) / s + MachineHud.TouchGap
@@ -272,6 +313,12 @@ function MachineHud.Build()
 		if bottom() + MachineHud.Gap > pumpTop then scale = 0.9 end
 		if bottom() + MachineHud.Gap > pumpTop then centre -= bottom() + MachineHud.Gap - pumpTop end
 		centre = math.max(centre, MachineHud.PanelTop + panel.Size.Y.Offset * scale / 2)
+		-- (owner, 15 Oct: nothing cut off) still overlapping PUMP / off the bottom at the top bar: shrink until it fits
+		if bottom() + MachineHud.Gap > pumpTop then
+			local room = pumpTop - MachineHud.Gap - MachineHud.PanelTop
+			scale = math.max(0.6, math.min(scale, room / math.max(height, 1)))
+			centre = MachineHud.PanelTop + panel.Size.Y.Offset * scale / 2
+		end
 		panelScale.Scale = scale
 		panel.Position = UDim2.new(1, -MachineHud.PanelRight, 0, centre)
 	end
@@ -283,8 +330,9 @@ function MachineHud.Build()
 		placePanel()
 	end
 	-- the first measurement from the real controls (on a PC: the corners) is kept for good
+	local lastLogged = nil
 	local function placeForInput()
-		if placed and placed.final then
+		if placed and placed.final and placed.mode == MachineHud.LayoutMode() then
 			apply()
 			return
 		end
@@ -292,6 +340,13 @@ function MachineHud.Build()
 		if result then
 			placed = result
 			apply()
+			-- the F9 console line (once per change), so testers can say which layout they got
+			local mode, reason = MachineHud.LayoutMode()
+			local line = mode .. ", reason = " .. reason .. (if mode == "phone" and not (placed.final) then " (no jump button: fixed spot)" else "")
+			if line ~= lastLogged then
+				lastLogged = line
+				print("[GYM ARC] HUD layout = " .. line)
+			end
 		end
 	end
 	hud.placeForInput = placeForInput
@@ -302,6 +357,20 @@ function MachineHud.Build()
 	local camera = workspace.CurrentCamera
 	if camera then camera:GetPropertyChangedSignal("ViewportSize"):Connect(screenChanged) end
 	Kit.OnScale(screenChanged)
+	-- the input changed (a phone player plugs in a keyboard or a controller, or back): lay out again when the mode changes
+	local function inputChanged()
+		if placed and placed.mode ~= MachineHud.LayoutMode() then screenChanged() end
+	end
+	pcall(function() UserInputService:GetPropertyChangedSignal("PreferredInput"):Connect(inputChanged) end)
+	UserInputService.LastInputTypeChanged:Connect(inputChanged)
+	if IS_STUDIO then
+		for _, name in ipairs({ "TestInput", "TestNoJump", "TestPhoneSize" }) do
+			workspace:GetAttributeChangedSignal(name):Connect(function()
+				placed = nil
+				screenChanged()
+			end)
+		end
+	end
 	task.spawn(function() -- (until Roblox has made its touch controls; checks once a second, never while a spot is final)
 		while true do
 			if not (placed and placed.final) then placeForInput() end

@@ -41,13 +41,22 @@ local function applyPass(player, key)
 	-- AutoLift, GeneLock, ShakeFridge, AuraPack (AuraService) are read from the attribute where they're used
 end
 
+-- every pass at once (owner, 15 Oct: one after another took long on slow phones); "PassesChecked" tells the Store the
+-- OWNED stamps are known (until then a pass's buy button shows "...")
 local function checkPasses(player)
+	local pending = 0
 	for _, pass in ipairs(Monetization.Passes) do
 		if pass.id then
-			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
-			if ok and owns then applyPass(player, pass.key) end
+			pending += 1
+			task.spawn(function()
+				local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
+				if ok and owns and player.Parent then applyPass(player, pass.key) end
+				pending -= 1
+				if pending == 0 and player.Parent then player:SetAttribute("PassesChecked", true) end
+			end)
 		end
 	end
+	if pending == 0 then player:SetAttribute("PassesChecked", true) end
 end
 
 local function passById(id)
