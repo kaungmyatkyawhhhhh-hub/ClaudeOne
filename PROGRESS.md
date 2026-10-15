@@ -1449,3 +1449,31 @@ thigh skin (14 x 6,676) and shorts (14 x 4,498). NPC Robloxian 2.0 parts are 108
   Head follows you within 15 studs, nod when you come close, right arm points when you Talk. Tutorial portrait waits for
   his finished body (classic head + muscle meshes) and frames head + shoulders from further back. Screenshots:
   screenshots/coach_dex/ (front, 3/4, head following, nod, point, next to Dante, portrait).
+
+## 15 Oct: PERFORMANCE PART 2 (measured first)
+Measured in a Studio play session at the starter gym (client and server in one Studio; MCP-driven Studio is pinned near
+15 fps and timings swing about +-2 ms, so only big effects can be seen; a phone test is still the real check).
+Baseline: render CPU 10.3 ms, GPU 6.0 ms, script heartbeat 1.1 ms, physics 1.1 ms; server 60 Hz, 0.34 ms of work;
+network ~0.1 KB/s; 23,686 parts, 1,690 shadow casters, 140 lights on (5 with shadows), 689 SurfaceGuis, 36 emitting
+particle emitters, 38 ScreenGuis (12 shown, 3,162 GUI objects), 18 sounds (2 playing).
+
+Top 10 costs (largest first), and what happened:
+1. Body mesh triangles (~123k per body): DONE 15 Oct, owner's low-poly meshes (~31k).
+2. Shadows: switching GlobalShadows off cut render CPU 10.8 -> 7.4 ms (the one clear signal). CastShadow off on 314
+   more parts (under 5 studs, or see-through) outside the NPCs: 1,690 -> 1,376 casters. Buildings keep theirs (look).
+3. Part count / draw calls (Town 16,790 parts; hiding it: render CPU -1.4 ms): NOT changed. Merging parts changes the
+   build (owner's art rule) and the whole town sits within 256 studs of the spawn; the lever is StreamingTargetRadius
+   128-160 (owner's call, Studio Properties).
+4. All 46 client scripts together: heartbeat 1.22 -> 0.53 ms and render CPU -2.4 ms when all were switched off; per-frame
+   callbacks already exit early when idle (part 1). Nothing worth splitting out.
+5. SurfaceGuis (689): switching all off showed no clear change; 65 had no draw distance -> MaxDistance 100.
+6. Lights (140): no measurable change switched off; only 5 cast shadows. Not changed.
+7. Particles (36 emitting): no clear change; auras already have distance LOD. Not changed.
+8. Post effects (Bloom, ColorCorrection, Blur): no clear change. Not changed (owner's lighting look).
+9. Memory: Lua heap ~1.2 GB and GUI ~300 MB in Studio (client + server + Studio in one process; not a phone number).
+   Not changed without a phone reading.
+10. Network / server / data: server 0.34 ms a frame, ~0.1 KB/s; reps rate-limited on the server (Gains.RepCooldown);
+   saves: UpdateAsync once a minute per player, spread out and budget-aware, plus leave + BindToClose. Not changed
+   (the brief says 3-5 min; one a minute is within DataStore limits and loses less on a crash).
+Not done here: a 10-player test and real phone numbers (needs the owner's device or Studio's Device emulator by hand:
+Ctrl+F6 MicroProfiler, F9 Developer Console).
