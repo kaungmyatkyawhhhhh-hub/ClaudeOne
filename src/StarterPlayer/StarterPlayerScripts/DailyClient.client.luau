@@ -625,16 +625,19 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 end)
 
--- after Play (and the genetics screen for new players): the window opens on the Daily tab when today's reward is waiting
+-- after Play (and the genetics screen): the window opens on the reward calendar when today's reward is waiting. Not
+-- during the tutorial (owner's brief: no pop-ups in a new player's first minutes): it waits until the tutorial is done.
+local Onboarding = require(Shared.Config.Onboarding)
 task.spawn(function()
 	ClientData.Get()
 	refreshAll()
 	UIBus.WaitForMenu()
 	task.wait(1.5)
 	while playerGui:FindFirstChild("GeneticsScreen") and playerGui.GeneticsScreen.Enabled do task.wait(0.5) end
+	while ((ClientData.Get().onboarding or {}).tutorialStep or Onboarding.Done) < Onboarding.Done do task.wait(2) end
 	local _, claimed = calendarState()
-	if not claimed and not modal.isOpen() then
+	if not claimed and not modal.isOpen() and not UIBus.Training then
 		UIBus.PanelOpened("DailyQuests")
-		open("Daily")
+		open("Rewards")
 	end
 end)

@@ -1481,3 +1481,10 @@ Ctrl+F6 MicroProfiler, F9 Developer Console).
   the Stats panel button were hidden, and below the cap the card lost to Today's Quest (one card at a time, lowest
   priority). Now the card always shows under the current card; at the cap it reads "MAX GROWTH SPURT / Reached · 7'0""
   greyed (the brief), and the Stats panel shows a greyed "Max Growth Spurt reached" button that does nothing.
+- Fresh-player test (15 Oct, FreshPlayer): genetics -> KEEP -> HUD with "GROWTH SPURT 1 · 0%"; with TestMuscleShare 1 the
+  card turns gold TAP TO GROW, one tap = Growth Spurt 1 (4'6", +1 DNA token, Late Bloomer, card "GROWTH SPURT 2 · 0%").
+  Fixed on the way: (1) the Quests window opened by itself on join (the unclaimed daily reward), on the Daily quests tab
+  and during the tutorial: it now waits for the tutorial to be done and opens the Streak (reward) tab, never while
+  lifting. (2) A leftover Studio test switch (Workspace TestStore = true) showed the Shop to brand-new players; cleared,
+  and TestStore / TestBrokenStage now only work in Studio. Leftover TestAuraFull cleared.
+  Noticed, not changed: the genetics screen is still the 3D stage, not the 14 Oct single-panel design in the brief.

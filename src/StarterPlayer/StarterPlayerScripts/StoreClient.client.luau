@@ -401,7 +401,9 @@ task.spawn(function()
 	UIBus.WaitForMenu()
 	started = true
 	local playStart = os.clock()
-	while not Workspace:GetAttribute("TestStore") and ((data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done
+	-- (TestStore: a Studio-only test switch, never in a live game)
+	local testStore = game:GetService("RunService"):IsStudio() and Workspace:GetAttribute("TestStore") == true
+	while not testStore and ((data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done
 		or os.clock() - playStart < Monetization.StoreAfterMinutes * 60) do
 		task.wait(5)
 	end

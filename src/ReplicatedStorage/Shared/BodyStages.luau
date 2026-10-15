@@ -98,7 +98,7 @@ end
 if not available or not RunService:IsClient() then ready = true end
 if available and RunService:IsClient() then
 	-- Studio test hook: Workspace attribute TestBrokenStage = a template name acts as a failed download that never repairs
-	local test = workspace:GetAttribute("TestBrokenStage")
+	local test = RunService:IsStudio() and workspace:GetAttribute("TestBrokenStage")
 	local testPart = type(test) == "string" and templates:FindFirstChild(test) or nil
 	-- the templates whose mesh is not (or no longer) loaded, checked in batches; `count` moves the loading bar
 	local function scan(count: boolean): { MeshPart }
