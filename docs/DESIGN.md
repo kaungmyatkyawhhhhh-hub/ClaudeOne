@@ -183,14 +183,16 @@ Bought with coins (smoothie bar) or earned. Refill stamina + 50% gains for 30s. 
 - Body type: Lean (abs/detail show earlier, 33%), Balanced (+5% all, 34%), Stocky (abs later, +15% Legs/Back/Traps, 33%).
 - Overall grade D-S shown on player card. One free reroll at start; +1 DNA Token per Growth Spurt.
 - Reroll changes everything at once. Odds must be reachable on the reroll screen ("VIEW ODDS" panel).
-- Screen (owner, 14 Oct, replaces the 3D stage below, which is kept here only as history): ONE centered panel in the
+- (Owner, 15 Oct: KEEP the 3D stage below as the genetics screen; the single-panel design in the next point is NOT
+  to be built.)
+- Screen (owner, 14 Oct, planned, then dropped on 15 Oct): ONE centered panel in the
   final black + gold kit, at most 600 mockup px wide (UIScale: fits 844x390 and 667x375), the gym visible around it with a
   soft dark backing only behind it, the HUD hidden. Header GENETICS / NEW GENETICS + the DNA token chip; left OVERALL, the
   gold grade plate and the word (gold heavy italic), "View odds"; right a 2-column grid of the six groups (full names,
   gold grade plate, "x1.50", UP / DOWN after a reroll) with fixed row heights, then Frame and Body chips (they wrap); the
   bottom row REROLL (quiet) + KEEP (red CTA), the good-roll confirm in the same row. Reveal: rows pop in best first with
   a clank, S rows shine, the overall plate drops in with a thud; tap / Space skips.
-- (History, before 14 Oct) Opened from the Genetics side menu button (and automatically on first join). Its own dark 3D stage (client only,
+- (The genetics screen in use, owner 15 Oct) Opened from the Genetics side menu button (and automatically on first join). Its own dark 3D stage (client only,
   far above the town) seen by the real camera, so plates are real 3D parts with SurfaceGui letters and real shadows;
   movement is frozen and the side menu, top bar and right column step aside while it's open.
 - Look: plates are wide and thin (all the same thickness; better grade a little wider), stepped bevel edge, raised

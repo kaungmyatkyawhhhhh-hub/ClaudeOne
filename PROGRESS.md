@@ -1487,4 +1487,4 @@ Ctrl+F6 MicroProfiler, F9 Developer Console).
   and during the tutorial: it now waits for the tutorial to be done and opens the Streak (reward) tab, never while
   lifting. (2) A leftover Studio test switch (Workspace TestStore = true) showed the Shop to brand-new players; cleared,
   and TestStore / TestBrokenStage now only work in Studio. Leftover TestAuraFull cleared.
-  Noticed, not changed: the genetics screen is still the 3D stage, not the 14 Oct single-panel design in the brief.
+  Genetics screen: owner, 15 Oct: keep the 3D stage (the 14 Oct single-panel design is dropped; DESIGN.md updated).
