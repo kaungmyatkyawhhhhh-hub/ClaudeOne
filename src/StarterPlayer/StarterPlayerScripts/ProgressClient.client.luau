@@ -4,7 +4,8 @@
 --    the wide gold TAP TO GROW CTA ("GROWTH SPURT 2 READY" under it) with a glow that pulses, the first card to show; a
 --    tap does the Growth Spurt (same action as the Physique screen's button). Before that it is a quiet dark card
 --    "GROWTH SPURT 2" with how far you are ("62%"), shown only when no other card wants the spot; a tap opens Physique.
---    At 7'0" there is no card (owner, 14 Oct: the top bar's height reads "7'0" MAX").
+--    At 7'0" there is no card (owner, 14 Oct and again 15 Oct: the top bar's height reads "7'0" MAX", Stats has the greyed
+--    "Max Growth Spurt reached" button).
 --  * The next small goal (a new weight a few reps away, coins for the next weight, which group to train) is a hint in the
 --    top band now and then (Notify.Hint), not text on the HUD.
 local Players = game:GetService("Players")
@@ -117,10 +118,10 @@ local function refresh()
 	local progress, have, need = spurtProgress(data)
 	ready = progress.ready and not progress.maxed
 	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
-	holder.Visible = started
+	-- (owner, 15 Oct, later: at the 7'0" cap NO card on the HUD; the top bar's "7'0" MAX" and the Stats panel's greyed
+	-- button show it)
+	holder.Visible = started and not progress.maxed
 	if progress.maxed then
-		-- (the brief: at the cap the Growth Spurt button stays, greyed, "MAX GROWTH SPURT REACHED"; owner, 15 Oct: it had
-		-- disappeared)
 		tileText.Text = "MAX GROWTH SPURT"
 		tileLabel.Text = "Reached · " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)
 		Theme.SetButtonStyle(tile, "Disabled")

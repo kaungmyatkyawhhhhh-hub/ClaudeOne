@@ -240,7 +240,9 @@ Players start at Growth Spurt 0, short (4'0"; owner, 9 Oct release). When all 6 
 permanent gains bonus. Example: 1 → 4'6" lvl 50 1.25x; 2 → 5'0" lvl 100 1.5x; 3 → 5'6" lvl 175 1.75x;
 4 → 6'0" lvl 275 2x; 5 → 6'6" lvl 400 2.5x. Height caps at exactly 7'0" (owner, 13 Oct: `GrowthSpurts.MaxHeightInches`
 = 84): the spurt that reaches it is the last one (no overshoot, no more spurts; muscles keep growing). Then the Growth
-Spurt button reads "MAX GROWTH SPURT REACHED" (greyed, not pressable, nothing charged) and heights show "7'0" (MAX)".
+Spurt button in the Stats / Physique panel reads "MAX GROWTH SPURT REACHED" (greyed, not pressable, nothing charged)
+and heights show "7'0" (MAX)". The HUD has NO Growth Spurt card at the cap (owner, 15 Oct): the top bar's "7'0" MAX"
+says it.
 First Growth Spurt should be reachable in ~15-20 minutes.
 
 ## 8. Stats (final design)
@@ -351,9 +353,10 @@ shareable before/after snapshot.
   once, faded by the layer's transparency); the thighs' gym shorts are on that layer too (matte Fabric).
 - Shorts: under the shorts the thigh / glute muscles grow like fabric over muscle (about half the bulge; full growth on
   the bare lower thigh, one smooth curve so the hem sits flush). No ring, no puffy tube.
-- Progress mirror (live reflection on the glass + the before / after card): shows YOUR front, facing you, flipped
-  left / right like a real mirror, with your exact muscles (copies of your live muscle meshes), skin color and stage,
-  clothing and accessories, moving with your pose and animation. While it shows, your meshes' vertex colors are opaque
+- Mirrors (owner, 15 Oct): plain glass, NO live reflection (it cost ~40 ms of render time a frame near the mirror):
+  light grey-blue SmoothPlastic (#7D8B98) with Reflectance 0.2 and a thin dark frame, no scripts. The progress mirror
+  keeps only its before / after card (opened from its prompt): your day-one body and your body now, the "Now" one with
+  your exact muscles (copies of your live muscle meshes). While the card shows, your meshes' vertex colors are opaque
   ("mirror mode": skin tints pause), because a ViewportFrame would draw the color layer's see-through alpha.
 - The look (`Muscles.LookG`, by EXP compared with the current Growth Spurt goal): reaching the goal does not max the
   look (about two thirds); 2x the goal's EXP = the full aesthetic look; from 2x to 5x the muscles grow on to their mass
@@ -420,7 +423,9 @@ Start (owner's UI v2, 13 Oct, mockups 00): a loading screen from the first frame
 removed): black with the menu art (`Config/UI.MenuArt`) on the right fading into the dark, the GYM ARC logo (GYM white,
 ARC red) and "Everyone starts tiny.", a rotating "TIP:" line (`Config/UI.LoadingTips`), a red progress bar with the step
 ("Loading muscles... 64%": the game, ContentProvider:PreloadAsync of the UI images, the save data and the world around
-you, the other players' body meshes), SKIP top right after 5 s, then it fades into the menu. Menu (owner, 14 Oct: the NEW
+you, the other players' body meshes), SKIP top right after 5 s, then it fades into the menu. (Owner, 15 Oct: the loading screen and menu backgrounds
+cover the whole screen by scale with the art on Crop, never a pixel size; the logo starts under the top bar,
+TopbarInset.Max.Y + 8, so Roblox's top-left buttons never cover it.) Menu (owner, 14 Oct: the NEW
 mockup 00_main_menu, clean and dark, not a simulator: no thick text outlines, no glossy buttons): the art on the right
 fading into the dark plus a soft dark copy over the whole screen; on the left, vertically centered: SEASON 1 · NOW LIVE
 (gold, spaced), the GYM ARC logo (Luckiest Guy, GYM white, ARC red, a small soft drop shadow), a short red rule +

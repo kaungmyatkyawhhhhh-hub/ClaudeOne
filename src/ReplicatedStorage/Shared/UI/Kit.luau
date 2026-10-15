@@ -98,10 +98,20 @@ function Kit.OnScale(fn) table.insert(scaleListeners, fn); task.spawn(fn, curren
 
 -- Under Roblox's top bar (owner, 14 Oct: TopbarPlus icons sit on it; everything under it starts at TopbarInset.Max.Y + 8).
 -- AbsolutePosition is measured from under the GUI inset, so the object's screen y is AbsolutePosition.Y + the inset.
+-- A frame placed straight in its ScreenGui (every Kit.Root) is NOT measured: its screen y comes from the gui's insets
+-- (owner, 15 Oct: right after a gui is made its AbsolutePosition still reads 0, so on phones the right cards were placed
+-- at 8 px and sat over the top bar until something else re-measured them).
 Kit.TopbarGap = 8
 function Kit.UnderTopbar(guiObject: GuiObject, gap: number?): number
 	local inset = GuiService:GetGuiInset()
-	local screenY = guiObject.AbsolutePosition.Y + inset.Y
+	local screenGui = guiObject:FindFirstAncestorOfClass("ScreenGui")
+	local screenY
+	if screenGui and guiObject.Parent == screenGui then
+		-- (only CoreUISafeInsets starts under the top bar; DeviceSafeInsets / None start at the top of the screen)
+		screenY = (if screenGui.ScreenInsets == Enum.ScreenInsets.CoreUISafeInsets then inset.Y else 0) + guiObject.Position.Y.Offset
+	else
+		screenY = guiObject.AbsolutePosition.Y + inset.Y
+	end
 	return math.max(0, (GuiService.TopbarInset.Max.Y + (gap or Kit.TopbarGap) - screenY) / currentScale)
 end
 function Kit.OnTopbar(fn)

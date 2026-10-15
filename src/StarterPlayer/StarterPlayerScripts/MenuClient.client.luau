@@ -50,7 +50,6 @@ local NOT_HUD = { MenuScreen = true, MenuBackground = true, LoadingScreen = true
 ------------------------------------------------------------------------
 local COL_W = 172          -- the column's width (mockup px): PLAY and the buttons under it, left of the plate on phones
 local LEFT = 24            -- left margin (inside the safe area)
-local ART_SIZE = Vector2.new(1920, 1080) -- the art's own shape
 
 -- the area the background fills: the whole screen, or in Studio the TestPhoneSize phone in the top left (like Kit)
 local function stageSize(): Vector2
@@ -65,24 +64,28 @@ end
 
 local bgGui = Theme.ScreenGui({ Name = "MenuBackground", DisplayOrder = 19, IgnoreGuiInset = true, Parent = playerGui })
 bgGui.ScreenInsets = Enum.ScreenInsets.None
+-- (owner, 15 Oct: a gap on the right showed the game: the background was sized in pixels from the camera once, and missed
+-- later size changes. Now it is the whole screen by scale, and the art covers it by Crop: nothing to recalculate.)
 local back = New("Frame", { Name = "Back", BackgroundColor3 = Color3.fromHex("#0C0A0C"), BorderSizePixel = 0, ClipsDescendants = true, Active = true,
-	Parent = bgGui })
+	Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = bgGui })
 local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = UI.MenuArt, ScaleType = Enum.ScaleType.Crop,
-	ResampleMode = Enum.ResamplerMode.Default, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Parent = back })
+	ResampleMode = Enum.ResamplerMode.Default, Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = back })
 -- the dark gradient over the left 40% (black, fading out to the right)
 New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.4, 1), ZIndex = 2, Parent = back }, {
 	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(0.55, 0.55),
 		NumberSequenceKeypoint.new(1, 1) }) }),
 })
+-- (Studio only: the TestPhoneSize phone in the top left, like Kit; a live game always uses the full-screen scale size)
 local function placeArt()
-	local size = stageSize()
-	back.Size = UDim2.fromOffset(size.X, size.Y)
-	-- cover the stage (no bars), pinned right: the crop comes off the empty left side
-	local k = math.max(size.X / ART_SIZE.X, size.Y / ART_SIZE.Y)
-	art.Size = UDim2.fromOffset(math.ceil(ART_SIZE.X * k), math.ceil(ART_SIZE.Y * k))
+	local phone = RunService:IsStudio() and Workspace:GetAttribute("TestPhoneSize")
+	if typeof(phone) == "Vector2" and phone.X > 0 then
+		local size = stageSize()
+		back.Size = UDim2.fromOffset(size.X, size.Y)
+	else
+		back.Size = UDim2.fromScale(1, 1)
+	end
 end
 placeArt()
-if Workspace.CurrentCamera then Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placeArt) end
 Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(placeArt)
 task.spawn(function() -- (load the art first, so the menu never shows a plain dark screen)
 	pcall(function() game:GetService("ContentProvider"):PreloadAsync({ art }) end)
@@ -93,6 +96,7 @@ gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 local root = Kit.Root(gui)
 
 -- the 3D logo, ~32% of the screen height, with a soft red glow behind it
+-- (placed by layoutMenu below: always under Roblox's top bar, so never under its top-left buttons)
 local logo = New("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = UI.Logo3D, ScaleType = Enum.ScaleType.Fit, ZIndex = 2,
 	Position = UDim2.new(0, LEFT - 6, 0.02, 0), Size = UDim2.fromScale(0.6, 0.32), Parent = root }, {
 	New("UIAspectRatioConstraint", { AspectRatio = 432 / 354, DominantAxis = Enum.DominantAxis.Height }),
@@ -149,8 +153,37 @@ Kit.Coin(16, { LayoutOrder = 1, Parent = coinRow })
 local coinText = Kit.Text({ Name = "Amount", LayoutOrder = 2, Text = "0", Font = "Number", TextSize = 15, Size = UDim2.fromOffset(0, 24),
 	AutomaticSize = Enum.AutomaticSize.X, Parent = coinRow })
 
+-- Logo, column and card from the top bar down (owner, 15 Oct: the logo sat under Roblox's top-left buttons): the logo
+-- starts at TopbarInset.Max.Y + 8, the column right under it; the logo shrinks (down to 60 mockup px) so everything
+-- fits, and when the card has no room under the column it moves beside it (bottom). Again on every scale / top bar change.
+local LOGO_ASPECT = 432 / 354
+local function layoutMenu()
+	local s = math.max(Kit.Scale(), 0.01)
+	local rootH = root.AbsoluteSize.Y / s
+	if rootH < 10 then return end
+	local top = Kit.UnderTopbar(root)
+	local list = column:FindFirstChildOfClass("UIListLayout")
+	local colH = list and list.AbsoluteContentSize.Y / s or 180
+	if colH < 10 then colH = 180 end
+	local cardH, logoMax = 48, math.max(60, rootH * 0.32)
+	local stacked = rootH - top - 4 - colH - 10 - cardH - 12
+	local beside = stacked < math.min(logoMax, 100)
+	local logoH = math.clamp(if beside then rootH - top - 4 - colH - 12 else stacked, 60, logoMax)
+	logo.Size = UDim2.fromOffset(logoH * LOGO_ASPECT, logoH)
+	logo.Position = UDim2.new(0, LEFT - 6, 0, top)
+	column.Position = UDim2.new(0, LEFT, 0, top + logoH + 4)
+	card.Position = if beside then UDim2.new(0, LEFT + COL_W + 12, 1, -12) else UDim2.new(0, LEFT, 1, -12)
+end
+Kit.OnTopbar(layoutMenu)
+root:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutMenu)
+do
+	local list = column:FindFirstChildOfClass("UIListLayout")
+	if list then list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(layoutMenu) end
+end
+
 -- The logo, the column and the card slide in from a little to the left, fading in (no CanvasGroup: text stays crisp)
 local function reveal()
+	layoutMenu()
 	for index, piece in ipairs({ logo, column, card }) do
 		if piece.Visible then
 			local goal = piece.Position

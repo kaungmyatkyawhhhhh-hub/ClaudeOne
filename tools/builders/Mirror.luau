@@ -18,8 +18,9 @@ function Mirror.Build(Workspace)
 		return p
 	end
 	piece("Back", Vector3.new(4.4, 7.4, 0.2), CFrame.new(0, 0, 0.1), frame, Enum.Material.Metal)
-	local glass = piece("Glass", Vector3.new(4, 7, 0.1), CFrame.new(0, 0, -0.05), Kit.hex("#C9D3D8"), Enum.Material.Glass,
-		{ Reflectance = 0.55, Transparency = 0.1, CanCollide = false })
+	-- plain mirror (owner, 15 Oct: no live reflection, no scripts): light grey-blue, a little Reflectance
+	local glass = piece("Glass", Vector3.new(4, 7, 0.1), CFrame.new(0, 0, -0.05), Kit.hex("#7D8B98"), Enum.Material.SmoothPlastic,
+		{ Reflectance = 0.2, Transparency = 0, CanCollide = false })
 	for _, x in ipairs({ -2.15, 2.15 }) do
 		piece("Side", Vector3.new(0.15, 7.4, 0.3), CFrame.new(x, 0, -0.05), frame, Enum.Material.Metal, { CanCollide = false })
 	end

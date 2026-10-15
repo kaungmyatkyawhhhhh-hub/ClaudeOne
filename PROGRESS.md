@@ -1550,3 +1550,29 @@ Ctrl+F6 MicroProfiler, F9 Developer Console).
 - Measured in Studio (owner's save): before = Shop tile after 300 s of play every session (+ up to 5 s polling);
   after = Shop tile 0.0 s after PLAY, Store open 0.10 s (the open pop), second open 0.10 s. Pending "..." checked
   (screenshots/2026-10-15_store_pass_pending.jpg). A slow-network phone test is still the owner's (Studio can't throttle).
+
+## 15 Oct: THREE FIXES (owner): menu fill, right cards under the top bar, plain mirrors
+- Menu / loading screen. Causes: the background was sized in PIXELS from the camera (974 of 974.4 here; on a phone that
+  resized or rotated after joining, more), and the size listener was tied to the first camera object; the logo started
+  at the very top, under Roblox's top-left buttons; the loading screen gui had no ScreenInsets set. Now: both
+  backgrounds (Frame + art) are UDim2.fromScale(1, 1) at (0, 0), ScaleType Crop, ScreenInsets None, IgnoreGuiInset;
+  the logo starts at TopbarInset.Max.Y + 8 with the column (tagline, PLAY, buttons) under it; the logo shrinks to fit
+  and the player card moves beside the buttons when there's no room under them; re-laid out on every size / top bar
+  change (and the loading screen follows a replaced camera). Checked 10 screen sizes in a row (844x390, 667x375,
+  932x430, 1024x768, 800x360, 1180x820, 740x360, 896x414, 1366x1024, back): covered every time, logo at 66 under the
+  58 px top bar, no overlaps. (A first-frame crash in the new loading-screen code was caught and fixed in testing.)
+- Right cards. Cause: Kit.UnderTopbar measured the column's AbsolutePosition, which reads 0 before the gui is laid out;
+  when nothing re-measured it afterwards (no scale change, as on phones) the cards sat at ~8 px, over Daily / Quests /
+  the gear. Now a frame placed straight in its ScreenGui (every Kit.Root) is measured from the gui's ScreenInsets, not
+  its position: the drawer starts at TopbarInset.Max.Y + 8 (66 px) on PC and at 844x390; the tab moves with it. The
+  "MAX GROWTH SPURT · Reached 7'0"" card is gone from the HUD at the cap (ProgressClient); Stats keeps its greyed button.
+- Mirrors. The live reflection (MirrorClient: SurfaceGui + ViewportFrame + mirrored copies + a render-step loop) is
+  deleted. Every mirror (the progress mirror's Glass, the MirrorPanel mirrors in the starter gym, pro gym and clothing
+  store) is plain: SmoothPlastic #7D8B98, Reflectance 0.2, no transparency, no scripts (builders Mirror / GymKit match).
+  The progress mirror's before / after card still works (it builds its own bodies; lit like the gym when it opens).
+  Measured at the progress mirror (Studio, same spot): reflection ON render CPU 49 ms + GPU 16-20 ms a frame, ~11.5
+  FPS; OFF render CPU 7.3 ms + GPU 2.4-7 ms, 15 FPS (Studio's window caps the FPS number; the render times are the
+  real saving).
+- Screenshots: screenshots/2026-10-15_{menu_before_logo_under_buttons, loading_pc_after, loading_phone_after,
+  menu_phone_after, hud_before_max_card, hud_pc_right_after, hud_phone_right_after, mirror_card_still_works,
+  mirror_wall_plain, mirror_progress_plain}.jpg. Still to check on a real phone: join several times and rotate.

@@ -2,9 +2,9 @@
 --  * Before/after screen (opened from the mirror's Look prompt): two 3D views side by side, your day-one body and your
 --    body now (rigs built by MirrorService from your avatar), each with height and level underneath. Made for
 --    screenshots.
---  * Live reflection: the glass shows a mirrored copy of you while you're near it (client only, see the bottom).
+--  (The live reflection on the glass was removed, owner 15 Oct: the mirrors are plain glass now, no scripts, for
+--  performance. The card never needed it: it builds its own two bodies.)
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local AssetService = game:GetService("AssetService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -43,14 +43,13 @@ local closeButton = Theme.Button("Secondary", { Name = "Close", LayoutOrder = 3,
 	Theme.Text({ Text = "Close", Font = "SemiBold", TextSize = "Body", Size = UDim2.fromScale(1, 1) }),
 })
 
--- The gym's own light at the mirror (so the reflection and the before / after card look like the room around them): the
+-- The gym's own light at the mirror (so the before / after card looks like the room around it): the
 -- nearby lamps (each weighted by how much of it reaches the spot in front of the glass) give the key light's color and
 -- direction, the place's Ambient gives the fill. Tune with MIRROR_LIGHT.
 local MIRROR_LIGHT = {
 	Reach = 40,      -- studs: lamps further than this from the glass are ignored
 	Key = 0.8,       -- key light strength (the ViewportFrame light has no falloff, so it needs toning down; 0.55 left the muscles flat)
 	Ambient = 0.8,   -- share of Lighting.Ambient used as the fill
-	Glow = 1.45,     -- SurfaceGui brightness of the reflection (it is not lit by the world: LightInfluence 0)
 }
 local function gymLight(point: Vector3)
 	local Lighting = game:GetService("Lighting")
@@ -88,7 +87,7 @@ local function column(order)
 		Size = UDim2.fromScale(1, 0),
 		BackgroundColor3 = Colors.Panel,
 		BackgroundTransparency = Theme.Alpha.Panel,
-		-- (lit like the gym around the mirror: gymLight, set once the mirror is found)
+		-- (lit like the gym around the mirror: lightCard when it opens)
 		Ambient = Color3.fromRGB(110, 96, 82),
 		LightColor = Color3.fromRGB(140, 110, 76),
 		LightDirection = Vector3.new(0.3, -0.9, -0.3),
@@ -144,13 +143,27 @@ local function copyLiveMesh(source: MeshPart): MeshPart?
 	if skin then skin:Clone().Parent = part end
 	return part
 end
--- Mirror mode (MuscleRig.SetMirrorMode) while the reflection or the before / after card shows your muscles: a ViewportFrame
--- honours the meshes' vertex alpha (the color layer's), so they are made opaque meanwhile.
-local mirrorUsers = { reflection = false, card = false }
+-- Mirror mode (MuscleRig.SetMirrorMode) while the before / after card shows your muscles: a ViewportFrame honours the
+-- meshes' vertex alpha (the color layer's), so they are made opaque meanwhile.
+local mirrorUsers = { card = false }
 local function setMirrorUser(name: string, on: boolean)
 	mirrorUsers[name] = on
 	local character = player.Character
-	if character then MuscleRig.SetMirrorMode(character, mirrorUsers.reflection or mirrorUsers.card) end
+	if character then MuscleRig.SetMirrorMode(character, mirrorUsers.card) end
+end
+
+-- the card lit like the gym in front of the mirror (looking into the glass: its normal -> +Z, your right -> +X)
+local function lightCard()
+	local mirrorModel = workspace:FindFirstChild("ProgressMirror")
+	local glass = mirrorModel and mirrorModel:FindFirstChild("Glass")
+	if not (glass and glass:IsA("BasePart")) then return end
+	local normal, up = glass.CFrame.LookVector, Vector3.yAxis
+	local right = up:Cross(normal)
+	local ambient, keyColor, keyDir = gymLight(glass.Position + normal * (glass.Size.Z / 2 + 3) + up)
+	local cardDir = Vector3.new(keyDir:Dot(right), keyDir:Dot(up), keyDir:Dot(normal))
+	for _, card in ipairs(cardViewports) do
+		card.Ambient, card.LightColor, card.LightDirection = ambient, keyColor, cardDir
+	end
 end
 
 -- The muscles of the "Now" body: parts that show the SAME live meshes as your character's muscles (like the reflection on
@@ -245,6 +258,7 @@ end
 local isOpen = false
 local function open(rigs)
 	if isOpen or UIBus.MenuOpen or type(rigs) ~= "table" then return end
+	pcall(lightCard)
 	local data = ClientData.Get()
 	local dayOne = data.dayOne or { height = GrowthSpurts.StartHeight, level = 0 }
 	local nowHeight = GrowthSpurts.GetHeight(data.growthSpurts)
@@ -302,320 +316,4 @@ closeButton.Activated:Connect(close)
 
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, payload)
 	if kind == "OpenMirror" then open(payload) end
-end)
-
-------------------------------------------------------------------------
--- Live reflection on the glass: a ViewportFrame on a SurfaceGui shows a mirrored copy of your character (and of the
--- room in front of the mirror), rendered from your camera through the glass. Only runs within REFLECT_RANGE studs.
--- How: everything is reflected across the glass plane; the viewport camera sits at your camera and looks straight
--- into the glass (perpendicular), so the glass rectangle maps onto the image with a plain scale + offset, and the
--- ViewportFrame is sized and placed on the glass so that rectangle lines up exactly.
-------------------------------------------------------------------------
-local REFLECT_RANGE = 25 -- studs from the glass
-local ROOM_DEPTH = 26    -- studs of room in front of the glass that get a static reflected copy
-local PPS = 120          -- SurfaceGui pixels per stud (40 drew the whole glass at ~160 x 280 pixels: a blur, no muscle detail)
-
--- Reflect a CFrame across the plane (point p0, unit normal n): position mirrored, rotation M*R*F, F = the part's own X
--- flipped (M*R alone is a reflection, not a rotation; M*R*F is a proper rotation that puts every part where its mirror image
--- is, facing the way its mirror image faces: you see your FRONT, facing you, your right hand on the right of the glass like a
--- real mirror. Each part's own shape is shown un-flipped, the same for left / right symmetric parts.) The old M*R*M kept
--- every part facing the way you face, so the glass showed your back.
-local function reflector(p0, n)
-	local nx, ny, nz = n.X, n.Y, n.Z
-	local m = { -- M = I - 2nn^T
-		{ 1 - 2 * nx * nx, -2 * nx * ny, -2 * nx * nz },
-		{ -2 * ny * nx, 1 - 2 * ny * ny, -2 * ny * nz },
-		{ -2 * nz * nx, -2 * nz * ny, 1 - 2 * nz * nz },
-	}
-	return function(cf)
-		local p = cf.Position
-		local q = p - 2 * (p - p0):Dot(n) * n
-		local _, _, _, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
-		local r = { { r00, r01, r02 }, { r10, r11, r12 }, { r20, r21, r22 } }
-		local mr, o = {}, {}
-		for i = 1, 3 do
-			mr[i] = {}
-			for j = 1, 3 do mr[i][j] = m[i][1] * r[1][j] + m[i][2] * r[2][j] + m[i][3] * r[3][j] end
-		end
-		for i = 1, 3 do
-			o[i] = { -mr[i][1], mr[i][2], mr[i][3] }
-		end
-		return CFrame.new(q.X, q.Y, q.Z, o[1][1], o[1][2], o[1][3], o[2][1], o[2][2], o[2][3], o[3][1], o[3][2], o[3][3])
-	end
-end
-
-local function startReflection(mirrorModel, glass)
-	local normal = glass.CFrame.LookVector -- the front face looks into the room
-	local planePoint = glass.Position + normal * (glass.Size.Z / 2)
-	local reflect = reflector(planePoint, normal)
-	local up = Vector3.yAxis
-	local right = up:Cross(normal) -- your right when you look into the glass (= the canvas X direction)
-
-	local surface = New("SurfaceGui", {
-		Name = "MirrorReflection",
-		Face = Enum.NormalId.Front,
-		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
-		PixelsPerStud = PPS,
-		LightInfluence = 0,
-		Brightness = MIRROR_LIGHT.Glow,
-		ClipsDescendants = true,
-		Enabled = false,
-		ResetOnSpawn = false,
-		Adornee = glass,
-		Parent = player:WaitForChild("PlayerGui"),
-	})
-	local clip = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(78, 66, 58), ClipsDescendants = true, Parent = surface })
-	-- lit like the gym: the room's light at the spot in front of the glass, its direction mirrored (the copies inside are
-	-- reflected, so their light must come from the mirrored side too)
-	local spot = planePoint + normal * 3 + up * 1
-	local ambient, keyColor, keyDir = gymLight(spot)
-	local viewport = New("ViewportFrame", {
-		BackgroundTransparency = 1,
-		Ambient = ambient,
-		LightColor = keyColor,
-		LightDirection = keyDir - 2 * keyDir:Dot(normal) * normal,
-		Parent = clip,
-	})
-	-- the before / after card: the same light, turned into the card's view (it looks at the models from +Z, like you look
-	-- into the glass: normal -> +Z, your right -> +X)
-	local cardDir = Vector3.new(keyDir:Dot(right), keyDir:Dot(up), keyDir:Dot(normal))
-	for _, card in ipairs(cardViewports) do
-		card.Ambient, card.LightColor, card.LightDirection = ambient, keyColor, cardDir
-	end
-	-- a faint cool sheen on top so it reads as glass, not a screen
-	New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(235, 245, 255), BackgroundTransparency = 0.94, ZIndex = 2, Parent = clip })
-	local world = New("WorldModel", { Parent = viewport })
-	local camera = New("Camera", { Parent = viewport })
-	viewport.CurrentCamera = camera
-
-	local roomBuilt = false
-	local mirrored = nil -- { model, pairs = { { source, copy } }, character }
-
-	local function isCharacterPart(part)
-		local model = part:FindFirstAncestorWhichIsA("Model")
-		while model do
-			if model:FindFirstChildOfClass("Humanoid") then return true end
-			model = model.Parent and model.Parent:FindFirstAncestorWhichIsA("Model")
-		end
-		return false
-	end
-
-	-- the room in front of the glass, reflected once (static parts only; characters and the mirror itself left out)
-	local function buildRoom()
-		roomBuilt = true
-		local center = planePoint + normal * (ROOM_DEPTH / 2) + Vector3.new(0, 4, 0)
-		local params = OverlapParams.new()
-		params.FilterType = Enum.RaycastFilterType.Exclude
-		params.FilterDescendantsInstances = { mirrorModel }
-		params.MaxParts = 500
-		local box = CFrame.fromMatrix(center, right, up, -normal)
-		for _, part in ipairs(workspace:GetPartBoundsInBox(box, Vector3.new(ROOM_DEPTH * 1.6, 18, ROOM_DEPTH), params)) do
-			if part.Transparency < 0.95 and not isCharacterPart(part) then
-				local wasArchivable = part.Archivable
-				part.Archivable = true
-				local copy = part:Clone()
-				part.Archivable = wasArchivable
-				if copy then
-					for _, child in ipairs(copy:GetChildren()) do
-						if not (child:IsA("DataModelMesh") or child:IsA("Decal") or child:IsA("SurfaceAppearance")) then child:Destroy() end
-					end
-					copy.Anchored = true
-					copy.CFrame = reflect(part.CFrame)
-					copy.Parent = world
-				end
-			end
-		end
-	end
-
-	local function buildCharacter(character)
-		if mirrored then mirrored.model:Destroy() end
-		mirrored = nil
-		local wasArchivable = character.Archivable
-		character.Archivable = true
-		local copy = character:Clone()
-		character.Archivable = wasArchivable
-		if not copy then return end
-		-- pair every part with its copy by its path inside the model (never by position in a list: that went wrong when children
-		-- were ordered differently, which left the copy frozen like a statue)
-		local function pathOf(item, root)
-			local names = {}
-			while item and item ~= root do
-				table.insert(names, 1, item.Name)
-				item = item.Parent
-			end
-			return names
-		end
-		local list = {}
-		for _, source in ipairs(character:GetDescendants()) do
-			if source:IsA("BasePart") then
-				local item = copy
-				for _, name in ipairs(pathOf(source, character)) do item = item and item:FindFirstChild(name) end
-				if item and item:IsA("BasePart") then
-					item.Anchored = true
-					item.CanCollide = false
-					table.insert(list, { source, item })
-				end
-			end
-		end
-		for _, item in ipairs(copy:GetDescendants()) do
-			if item:IsA("BaseScript") or item:IsA("Sound") or item:IsA("BillboardGui") or item:IsA("ParticleEmitter") then item:Destroy() end
-		end
-		local sources = character:GetDescendants()
-		-- the copy has NO Humanoid, Animator or joints: they could play a pose of their own. Every part is placed from your real
-		-- part each frame, so it can only ever show exactly what you do.
-		for _, item in ipairs(copy:GetDescendants()) do
-			if item:IsA("Humanoid") or item:IsA("Animator") or item:IsA("Motor6D") or item:IsA("AnimationConstraint") or item:IsA("BallSocketConstraint") or item:IsA("Weld") or item:IsA("WeldConstraint") or item:IsA("RigidConstraint") then item:Destroy() end
-		end
-		-- the muscles: the cloned muscle MeshParts have no shape, so they are replaced by parts that show the SAME live meshes
-		local sourceFolder, copyFolder = character:FindFirstChild("MuscleMeshes"), copy:FindFirstChild("MuscleMeshes")
-		if copyFolder then
-			for index = #list, 1, -1 do
-				local pair = list[index]
-				if pair[2]:IsDescendantOf(copyFolder) and liveMeshOf(pair[1]) then table.remove(list, index) pair[2]:Destroy() end
-			end
-		end
-		setMirrorUser("reflection", true)
-		copy.Parent = world
-		mirrored = { model = copy, pairs = list, character = character, count = #sources, version = character:GetAttribute("BodyVersion") }
-		if sourceFolder and copyFolder then
-			local pairsList = list
-			task.spawn(function()
-				for _, source in ipairs(sourceFolder:GetChildren()) do
-					if liveMeshOf(source) then
-						local part = copyLiveMesh(source :: MeshPart)
-						if part and copyFolder.Parent then
-							part.Parent = copyFolder
-							table.insert(pairsList, { source, part })
-						elseif part then
-							part:Destroy()
-						end
-					end
-				end
-			end)
-		end
-	end
-
-	local lastSignatureCheck = 0
-	-- what changes the look of the copy: the body version (outfit, Growth Spurt), what is worn or carried (direct children) and
-	-- which muscle parts exist
-	local function signatureOf(character)
-		local folder = character:FindFirstChild("MuscleMeshes")
-		return tostring(character:GetAttribute("BodyVersion")) .. ":" .. #character:GetChildren() .. ":" .. (folder and #folder:GetChildren() or 0)
-	end
-
-	local active = false
-	RunService:BindToRenderStep("MirrorReflection", Enum.RenderPriority.Camera.Value + 1, function()
-		local character = player.Character
-		local root = character and character:FindFirstChild("HumanoidRootPart")
-		local eye = workspace.CurrentCamera.CFrame.Position
-		local distance = (eye - planePoint):Dot(normal)
-		local near = root ~= nil and (root.Position - glass.Position).Magnitude < REFLECT_RANGE and distance > 0.2
-		-- (and only while the glass is on the screen: a reflection nobody looks at costs nothing)
-		if near then
-			local _, visible = workspace.CurrentCamera:WorldToViewportPoint(glass.Position)
-			local corners = false
-			for _, sx in ipairs({ -1, 1 }) do
-				for _, sy in ipairs({ -1, 1 }) do
-					local _, on = workspace.CurrentCamera:WorldToViewportPoint(glass.Position + right * glass.Size.X / 2 * sx + up * glass.Size.Y / 2 * sy)
-					corners = corners or on
-				end
-			end
-			near = visible or corners
-		end
-		if near ~= active then
-			active = near
-			surface.Enabled = near
-			if not near then
-				if mirrored then
-					mirrored.model:Destroy()
-					mirrored = nil
-				end
-				setMirrorUser("reflection", false)
-			end
-		end
-		if not near then return end
-		if not roomBuilt then buildRoom() end
-		-- rebuild the copy when the character changes (respawn, new gear)
-		-- (checked a few times a second on a cheap signature: gain popups, chalk and lights come and go all the time and must
-		-- not rebuild the whole copy)
-		local now = os.clock()
-		if not mirrored or mirrored.character ~= character or (now - lastSignatureCheck > 0.25 and mirrored.signature ~= signatureOf(character)) then
-			lastSignatureCheck = now
-			buildCharacter(character)
-			if mirrored then mirrored.signature = signatureOf(character) end
-		elseif now - lastSignatureCheck > 0.25 then
-			lastSignatureCheck = now
-		end
-		if not mirrored then return end
-		-- (Size only when it really changed since we last set it: a mesh part's Size never reads back exactly equal, and
-		-- setting it re-processes the mesh; on the muscle parts every frame that cost ~30 ms a frame, the lag by the gym
-		-- entrance, 8 Oct)
-		for _, pair in ipairs(mirrored.pairs) do
-			local source, copy = pair[1], pair[2]
-			copy.CFrame = reflect(source.CFrame)
-			-- (what shows and hides on you shows and hides in the glass: covered body parts, the color layers, clothing)
-			if copy.Transparency ~= source.Transparency then copy.Transparency = source.Transparency end
-			-- (and the tints: the color layer's pulse multiplier, the stage meshes' skin color)
-			if copy.Color ~= source.Color then copy.Color = source.Color end
-			if pair[4] == nil then
-				pair[4] = source:FindFirstChild("SkinStage") or false
-				pair[5] = copy:FindFirstChild("SkinStage") or false
-			end
-			if pair[4] and pair[5] and pair[4].Parent == source and (pair[5] :: any).Color ~= (pair[4] :: any).Color then
-				(pair[5] :: any).Color = (pair[4] :: any).Color
-			end
-			local size = source.Size
-			if not pair[3] or (size - pair[3]).Magnitude > 1e-3 then
-				pair[3] = size
-				copy.Size = if liveMeshOf(source) then copySize(source, copy) else size
-			end
-		end
-		-- camera at your eye, looking straight into the glass; size and place the image so the glass lines up
-		local foot = eye - normal * distance
-		camera.CFrame = CFrame.fromMatrix(eye, right, up, normal)
-		local half = glass.Size / 2
-		local reach = 0
-		for _, sx in ipairs({ -1, 1 }) do
-			for _, sy in ipairs({ -1, 1 }) do
-				local offset = glass.Position + right * half.X * sx + up * half.Y * sy - foot
-				reach = math.max(reach, math.abs(offset:Dot(right)), math.abs(offset:Dot(up)))
-			end
-		end
-		local tanHalf = math.min(reach * 1.02 / distance, 5.6)
-		camera.FieldOfView = math.deg(2 * math.atan(tanHalf))
-		local sizePx = 2 * distance * tanHalf * PPS
-		local canvas = surface.AbsoluteSize
-		local cx = canvas.X / 2 + (foot - glass.Position):Dot(right) * PPS
-		local cy = canvas.Y / 2 - (foot - glass.Position):Dot(up) * PPS
-		viewport.Size = UDim2.fromOffset(sizePx, sizePx)
-		viewport.Position = UDim2.fromOffset(cx - sizePx / 2, cy - sizePx / 2)
-	end)
-	-- stop: the glass streamed out (or a new one came in)
-	return function()
-		RunService:UnbindFromRenderStep("MirrorReflection")
-		if mirrored then
-			mirrored.model:Destroy()
-			mirrored = nil
-		end
-		if active then setMirrorUser("reflection", false) end
-		surface:Destroy()
-	end
-end
-
--- (owner, 14 Oct: instance streaming) The mirror's glass is only on this device while you're near, and it's a NEW part each
--- time it streams back in: the reflection starts on whichever glass is here and starts again on a new one.
-task.spawn(function()
-	local glassNow, stop = nil, nil
-	while true do
-		local mirrorModel = workspace:FindFirstChild("ProgressMirror")
-		local glass = mirrorModel and mirrorModel:FindFirstChild("Glass")
-		if glass and not glass:IsA("BasePart") then glass = nil end
-		if glass ~= glassNow then
-			if stop then stop() end
-			stop = nil
-			glassNow = glass
-			if glass then stop = startReflection(mirrorModel, glass) end
-		end
-		task.wait(1)
-	end
 end)

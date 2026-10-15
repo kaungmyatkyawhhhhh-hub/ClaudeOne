@@ -1077,10 +1077,11 @@ function GymKit.poster(parent, cframe, lines, w, h, accent)
 	return m
 end
 
--- Wall mirror panel with a metal frame (faces local -Z). Glass reflects a little.
+-- Wall mirror panel with a metal frame (faces local -Z). Plain mirror (owner, 15 Oct): light grey-blue SmoothPlastic with a
+-- little Reflectance, no reflection system.
 function GymKit.mirror(parent, cframe, w, h)
 	local m = model(parent, "MirrorPanel", cframe)
-	local glass = p(m, "Mirror", Vector3.new(w, h, 0.08), cframe, hex("#42464A"), M.Glass, false, { Reflectance = 0.35, Transparency = 0.05 })
+	local glass = p(m, "Mirror", Vector3.new(w, h, 0.08), cframe, hex("#7D8B98"), M.SmoothPlastic, false, { Reflectance = 0.2, Transparency = 0 })
 	glass.CanQuery = false
 	local frame = hex("#28282C")
 	p(m, "FrameTop", Vector3.new(w + 0.3, 0.18, 0.2), cframe * CFrame.new(0, h / 2, -0.04), frame, M.Metal)

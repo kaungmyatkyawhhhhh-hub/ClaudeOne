@@ -102,18 +102,20 @@ music:Play()
 
 local gui = new("ScreenGui", { Name = "LoadingScreen", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 100,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = playerGui })
+gui.ScreenInsets = Enum.ScreenInsets.None -- (the whole screen, under Roblox's top bar too)
 local back = new("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), BackgroundColor3 = LOOK.Background, BorderSizePixel = 0, Parent = gui })
 back.ClipsDescendants = true
--- the art covering the screen, pinned right (sized in rescale below); the dark gradient over the left 40%
+-- the art covering the whole screen by scale + Crop (owner, 15 Oct: never a pixel size worked out once, which left a gap
+-- on the right when a phone changed size); the dark gradient over the left 40%
 local art = new("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop,
-	ResampleMode = Enum.ResamplerMode.Default, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromScale(1, 0.5), Parent = back })
+	ResampleMode = Enum.ResamplerMode.Default, Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = back })
 new("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.4, 1), Parent = back }, {
 	new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(0.55, 0.55),
 		NumberSequenceKeypoint.new(1, 1) }) }),
 })
-local ART_SIZE = Vector2.new(1920, 1080)
 
 -- everything else in mockup px (scaled like Kit.Root: the shorter side / 390, never wider than the 844px layout)
+local placeTop -- (set below, once the logo exists)
 local root = new("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = gui })
 local scale = new("UIScale", { Parent = root })
 local function rescale()
@@ -128,15 +130,18 @@ local function rescale()
 	local s = math.max(0.5, math.min(size.Y / BASE.Y, size.X / BASE.X))
 	scale.Scale = s * blow
 	root.Size = UDim2.fromOffset(size.X / s, size.Y / s)
-	-- the art: cover the screen, pinned right
-	local screen = size * blow
-	back.Size = UDim2.fromOffset(screen.X, screen.Y)
-	local k = math.max(screen.X / ART_SIZE.X, screen.Y / ART_SIZE.Y)
-	art.Size = UDim2.fromOffset(math.ceil(ART_SIZE.X * k), math.ceil(ART_SIZE.Y * k))
+	-- the background: the whole screen (Studio's TestPhoneSize phone: that rectangle)
+	back.Size = if blow ~= 1 or typeof(phone) == "Vector2" then UDim2.fromOffset(size.X * blow, size.Y * blow) else UDim2.fromScale(1, 1)
+	if placeTop then placeTop(size.Y / s, s * blow) end
 end
-rescale()
-if Workspace.CurrentCamera then Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale) end
-Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(rescale)
+-- (the camera can be replaced while joining: follow the current one's ViewportSize)
+local viewportConnection
+local function watchCamera()
+	if viewportConnection then viewportConnection:Disconnect() end
+	local camera = Workspace.CurrentCamera
+	if camera then viewportConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale) end
+	rescale()
+end
 
 -- the logo and the tagline
 local logo = new("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = LOOK.Logo, ScaleType = Enum.ScaleType.Fit, ZIndex = 2,
@@ -145,8 +150,25 @@ local logo = new("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Imag
 })
 new("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = LOOK.Glow, ImageColor3 = Color3.fromRGB(255, 45, 40), ImageTransparency = 0.35,
 	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromScale(1.55, 1.45), ZIndex = 1, Parent = logo })
-text({ Name = "Tagline", Text = "Everyone starts tiny.", FontFace = LOOK.Body, TextSize = 14, TextColor3 = Color3.fromHex("#E7DEDF"),
+local tagline = text({ Name = "Tagline", Text = "Everyone starts tiny.", FontFace = LOOK.Body, TextSize = 14, TextColor3 = Color3.fromHex("#E7DEDF"),
 	Position = UDim2.new(0, 24, 0.34, 4), Size = UDim2.fromOffset(300, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
+-- the logo starts under Roblox's top bar (owner, 15 Oct: it sat under the top-left buttons), the tagline under it; the
+-- logo shrinks so both stay above the tip tile
+local GuiService = game:GetService("GuiService")
+local lastRootH, lastScale = BASE.Y, 1
+placeTop = function(rootH: number, screenScale: number)
+	lastRootH, lastScale = rootH, screenScale
+	local top = (GuiService.TopbarInset.Max.Y + 8) / math.max(screenScale, 0.01)
+	local logoMax = math.max(60, rootH * 0.32) -- (the first frame can report a tiny screen: never an empty range)
+	local logoH = math.clamp(math.min(rootH * 0.32, rootH - 130 - 28 - top), 60, logoMax)
+	logo.Size = UDim2.fromOffset(logoH * 432 / 354, logoH)
+	logo.Position = UDim2.new(0, 18, 0, top)
+	tagline.Position = UDim2.new(0, 24, 0, top + logoH + 4)
+end
+GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(function() placeTop(lastRootH, lastScale) end)
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(watchCamera)
+Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(rescale)
+watchCamera()
 
 -- the tip: a graphite tile with a small gold TIP tag
 local tipTile = graphite(new("Frame", { Name = "TipTile", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -78), Size = UDim2.fromOffset(BAR_W, 0),
