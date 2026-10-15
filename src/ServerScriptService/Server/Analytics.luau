@@ -1,75 +1,123 @@
 -- Analytics: Roblox AnalyticsService onboarding funnel, so the Creator Dashboard shows where new players quit.
--- Funnel steps (in order): Joined, Genetics kept, the tutorial steps from Config.Onboarding (one each), Tutorial done,
--- First Growth Spurt. Only players who haven't finished the tutorial are in the funnel; each step is sent once per
--- session (Roblox also counts each funnel step once per player). The first Growth Spurt also sends a custom event
--- with the minutes since first join. Calls are protected: analytics can never break gameplay.
+-- (owner, 15 Oct) The steps are a FIXED list with unique numbered names, never built from Config.Onboarding: adding a
+-- tutorial step on 14 Oct (Skate) shifted every number after it, so the dashboard showed "First Growth Spurt" on both
+-- step 13 (really "Tutorial done") and step 14. Add new steps only at the END of this list.
+-- Each step is logged once per player EVER and in order: the highest step logged is saved (data.analytics.funnel) and a
+-- step is only logged when its number is higher. A tutorial step counts when it is COMPLETED (reaching step n completes
+-- step n-1); skipping the tutorial logs "Tutorial finished or skipped" without the skipped steps. The first Growth Spurt
+-- also sends a custom event with the minutes since first join. Calls are protected: analytics can never break gameplay.
 local Players = game:GetService("Players")
 local AnalyticsService = game:GetService("AnalyticsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local IS_STUDIO = game:GetService("RunService"):IsStudio()
 
-local Onboarding = require(ReplicatedStorage.Shared.Config.Onboarding)
+local Config = ReplicatedStorage.Shared.Config
+local Onboarding = require(Config.Onboarding)
+local GrowthSpurts = require(Config.GrowthSpurts)
+local Muscles = require(Config.Muscles)
+local Machines = require(Config.Machines)
 
 local Analytics = {}
 
--- Funnel step names in order; the step number is the position in this list.
-local FUNNEL = { "Joined", "Genetics kept" }
-for _, step in ipairs(Onboarding.Steps) do
-	table.insert(FUNNEL, "Tutorial: " .. step.id)
+-- step number = position; `tutorial` = the Config.Onboarding step id whose COMPLETION this is
+local FUNNEL = {
+	{ name = "01. Joined (new player)" },
+	{ name = "02. Genetics kept" },
+	{ name = "03. Tutorial: walked to the Flat Bench", tutorial = "GoBench" },
+	{ name = "04. Tutorial: first rep", tutorial = "FirstLift" },
+	{ name = "05. Tutorial: stamina ran low", tutorial = "Stamina" },
+	{ name = "06. Tutorial: drank the free shake", tutorial = "Shake" },
+	{ name = "07. Tutorial: got on the Squat Rack", tutorial = "GoSquat" },
+	{ name = "08. Tutorial: 3 squats", tutorial = "SquatLift" },
+	{ name = "09. Tutorial: opened Stats", tutorial = "OpenStats" },
+	{ name = "10. Tutorial: talked to Coach Dex", tutorial = "Coach" },
+	{ name = "11. Tutorial: saw the Growth Spurt goal", tutorial = "Goal" },
+	{ name = "12. Tutorial: skate tip", tutorial = "Skate" },
+	{ name = "13. Tutorial finished or skipped" },
+	{ name = "14. Growth Spurt goal reached" },
+	{ name = "15. First Growth Spurt done" },
+}
+local NUMBER = {}           -- [name] = step number
+local BY_TUTORIAL = {}      -- [Onboarding step id] = step number
+for index, step in ipairs(FUNNEL) do
+	NUMBER[step.name] = index
+	if step.tutorial then BY_TUTORIAL[step.tutorial] = index end
 end
-table.insert(FUNNEL, "Tutorial done")
-table.insert(FUNNEL, "First Growth Spurt")
-local STEP = {}
-for index, name in ipairs(FUNNEL) do STEP[name] = index end
 Analytics.Funnel = FUNNEL
+local TUTORIAL_DONE, GOAL_REACHED, FIRST_SPURT = 13, 14, 15
 
-local inFunnel = {} -- [player] = { [stepNumber] = true } for players still onboarding
-local logged = {}
+local tracked = {} -- [player] = data (players still in the funnel this session)
 
-local function log(player, name)
-	local funnel = inFunnel[player]
-	local number = STEP[name]
-	if not funnel or not number or funnel[number] then return end
-	funnel[number] = true
-	pcall(AnalyticsService.LogOnboardingFunnelStepEvent, AnalyticsService, player, number, name)
+local function saved(data): number
+	if type(data.analytics) ~= "table" then data.analytics = { funnel = 0 } end
+	return tonumber(data.analytics.funnel) or 0
+end
+
+-- log step `number` once ever, only past the highest step already logged (in order; a skipped step stays unlogged)
+local function log(player, number: number)
+	local data = tracked[player]
+	if not data or not FUNNEL[number] or number <= saved(data) then return end
+	data.analytics.funnel = number -- (saved with the rest of the data)
+	pcall(AnalyticsService.LogOnboardingFunnelStepEvent, AnalyticsService, player, number, FUNNEL[number].name)
+	if IS_STUDIO then print("[Analytics] funnel step " .. FUNNEL[number].name) end
 end
 
 -- Called when a player's data has loaded.
 function Analytics.Joined(player, data)
 	local step = data.onboarding and data.onboarding.tutorialStep or Onboarding.Done
-	if step >= Onboarding.Done and (data.growthSpurts or 0) > 0 then return end -- not a new player
-	inFunnel[player] = {}
-	log(player, "Joined")
-	-- a returning player who stopped mid-tutorial picks up where they were (Roblox ignores repeats)
-	if data.onboarding and data.onboarding.geneticsRevealed then log(player, "Genetics kept") end
+	-- a player who already had their first Growth Spurt is out of the funnel
+	if (data.growthSpurts or 0) > 0 then return end
+	tracked[player] = data
+	log(player, 1)
+	if data.onboarding and data.onboarding.geneticsRevealed then log(player, 2) end
+	if step >= Onboarding.Done then log(player, TUTORIAL_DONE) end
 end
 
 function Analytics.GeneticsKept(player)
-	log(player, "Genetics kept")
+	log(player, 2)
 end
 
--- The tutorial reached step `step` (Config.Onboarding index, or Onboarding.Done when finished).
-function Analytics.TutorialStep(player, step)
-	if step >= Onboarding.Done then
-		log(player, "Tutorial done")
-		return
+-- The tutorial reached step `step` (Config.Onboarding index, or Onboarding.Done). Reaching step n completes the steps
+-- before it; Done completes all of them unless `skipped`.
+function Analytics.TutorialStep(player, step, skipped: boolean?)
+	local last = if step >= Onboarding.Done then (if skipped then 0 else #Onboarding.Steps) else step - 1
+	for index = 1, math.min(last, #Onboarding.Steps) do
+		local number = BY_TUTORIAL[Onboarding.Steps[index].id]
+		if number then log(player, number) end
 	end
-	-- reaching step n means steps 1..n-1 are done; log every step up to the one reached
-	for index = 1, math.min(step, #Onboarding.Steps) do
-		log(player, "Tutorial: " .. Onboarding.Steps[index].id)
-	end
+	if step >= Onboarding.Done then log(player, TUTORIAL_DONE) end
 end
 
--- After every Growth Spurt; only the first one is logged.
+-- the Growth Spurt goal is reached (checked every few seconds for players still in the funnel)
+local function goalReached(data): boolean
+	local progress = GrowthSpurts.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
+	return progress.ready == true
+end
+
+-- After every Growth Spurt; only the first one counts.
 function Analytics.GrowthSpurt(player, data)
-	if data.growthSpurts ~= 1 or logged[player] then return end
-	logged[player] = true
-	log(player, "First Growth Spurt")
+	if data.growthSpurts ~= 1 then return end
+	log(player, GOAL_REACHED) -- (it had to be reached to grow)
+	log(player, FIRST_SPURT)
 	local minutes = data.meta and data.meta.firstJoin and data.meta.firstJoin > 0 and (os.time() - data.meta.firstJoin) / 60 or 0
 	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, "FirstGrowthSpurt", math.floor(minutes + 0.5))
+	tracked[player] = nil
 end
 
+task.spawn(function()
+	while true do
+		task.wait(5)
+		for player, data in pairs(tracked) do
+			if player.Parent and data.growthSpurts == 0 and saved(data) < GOAL_REACHED then
+				local ok, ready = pcall(goalReached, data)
+				if ok and ready then log(player, GOAL_REACHED) end
+			end
+		end
+	end
+end)
+
 Players.PlayerRemoving:Connect(function(player)
-	inFunnel[player], logged[player] = nil, nil
+	tracked[player] = nil
 end)
 
 return Analytics

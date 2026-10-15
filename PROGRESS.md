@@ -1488,3 +1488,38 @@ Ctrl+F6 MicroProfiler, F9 Developer Console).
   lifting. (2) A leftover Studio test switch (Workspace TestStore = true) showed the Shop to brand-new players; cleared,
   and TestStore / TestBrokenStage now only work in Studio. Leftover TestAuraFull cleared.
   Genetics screen: owner, 15 Oct: keep the 3D stage (the 14 Oct single-panel design is dropped; DESIGN.md updated).
+
+## 15 Oct: ONBOARDING FUNNEL (owner: steps 13 and 14 both "First Growth Spurt")
+- Cause: the funnel was built from Config.Onboarding's step list, and on 14 Oct the Skate step was added. Before that,
+  step 13 was "First Growth Spurt"; after it, 13 = "Tutorial done" and 14 = "First Growth Spurt". The dashboard kept the
+  old name for 13, so "13: 77" was mostly players finishing (or skipping) the tutorial and "14: 11" the real first Growth
+  Spurts. Old code: Analytics.luau (FUNNEL built from Onboarding.Steps), step 13 logged from ActionService
+  TutorialStep / SkipTutorial (Analytics.TutorialStep(Done)), step 14 from ActionService GrowthSpurt (line 23,
+  Analytics.GrowthSpurt when growthSpurts becomes 1).
+- Now (ServerScriptService/Server/Analytics.luau): a FIXED numbered list (new steps only at the end); each step logged
+  once per player EVER and in order (data.analytics.funnel = highest step logged, saved); a tutorial step counts when
+  completed; SKIP logs step 13 without the skipped steps; new step 14 "Growth Spurt goal reached" (so the gap between
+  reaching the goal and pressing the button shows). Checked with a fresh player: 1-5, 13, 14, 15 in order, repeats
+  (going back, a second skip, a second spurt) log nothing. Renamed steps start a fresh funnel in the dashboard.
+- Why few reach the first Growth Spurt: it needs every muscle group at its goal (~15-20 min of training, by design),
+  costs nothing, no errors seen. Until today the Growth Spurt card was hidden behind Today's Quest until ready (now always
+  shown with its %); once ready it's the gold TAP TO GROW card on the right (and in Stats). Step 14 vs 15 will now show
+  whether players reach the goal but don't press.
+
+| # | Step name | What triggers it |
+|---|---|---|
+| 1 | 01. Joined (new player) | data loaded for a player with no Growth Spurt yet |
+| 2 | 02. Genetics kept | KEEP on the genetics screen (GeneticsSeen) |
+| 3 | 03. Tutorial: walked to the Flat Bench | tutorial step 1 (GoBench) completed |
+| 4 | 04. Tutorial: first rep | step 2 (FirstLift) completed |
+| 5 | 05. Tutorial: stamina ran low | step 3 (Stamina) completed |
+| 6 | 06. Tutorial: drank the free shake | step 4 (Shake) completed |
+| 7 | 07. Tutorial: got on the Squat Rack | step 5 (GoSquat) completed |
+| 8 | 08. Tutorial: 3 squats | step 6 (SquatLift) completed |
+| 9 | 09. Tutorial: opened Stats | step 7 (OpenStats) completed |
+| 10 | 10. Tutorial: talked to Coach Dex | step 8 (Coach) completed |
+| 11 | 11. Tutorial: saw the Growth Spurt goal | step 9 (Goal) completed |
+| 12 | 12. Tutorial: skate tip | step 10 (Skate) completed |
+| 13 | 13. Tutorial finished or skipped | tutorial done, or SKIP TUTORIAL |
+| 14 | 14. Growth Spurt goal reached | every muscle group at its goal (checked every 5 s) |
+| 15 | 15. First Growth Spurt done | the first Growth Spurt (+ custom event FirstGrowthSpurt = minutes since first join) |

@@ -84,7 +84,7 @@ end
 -- SKIP TUTORIAL: straight to the end (no reward, no gifts)
 handlers.SkipTutorial = function(player)
 	if PlayerData.SetTutorialStep(player, Onboarding.Done) then
-		Analytics.TutorialStep(player, Onboarding.Done)
+		Analytics.TutorialStep(player, Onboarding.Done, true)
 	end
 end
 
