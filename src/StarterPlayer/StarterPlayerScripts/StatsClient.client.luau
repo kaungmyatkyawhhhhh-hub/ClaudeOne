@@ -293,11 +293,16 @@ function refreshScreen()
 		drawFigure()
 		-- a Growth Spurt is ready: TAP TO GROW replaces the number
 		local ready = progress.ready and not progress.maxed
-		spurtButton.Visible = ready
-		sizeLabel.Parent.Visible = not ready
-		physiqueLabel.Visible = not ready
-		tallerNote.Visible = not ready and GrowthSpurts.GetHeight(data.growthSpurts or 0) > GrowthSpurts.GetHeight(0)
-		bodyCard:FindFirstChild("PhysiqueWord").Visible = not ready
+		-- at the cap the button stays, greyed and not pressable: "MAX GROWTH SPURT REACHED" (the brief; owner, 15 Oct)
+		local maxed = progress.maxed == true
+		local shown = ready or maxed
+		spurtButton.Visible = shown
+		spurtButton.Active = ready
+		Kit.SetButton(spurtButton, if maxed then "Disabled" else "Gold", if maxed then "Max Growth Spurt reached" else "Tap to grow")
+		sizeLabel.Parent.Visible = not shown
+		physiqueLabel.Visible = not shown
+		tallerNote.Visible = not shown and GrowthSpurts.GetHeight(data.growthSpurts or 0) > GrowthSpurts.GetHeight(0)
+		bodyCard:FindFirstChild("PhysiqueWord").Visible = not shown
 		if ready then Theme.Pulse(spurtButton, function() return modal.isOpen() and spurtButton.Visible end) end
 	elseif currentTab == "Lifts" then
 		for _, row in pairs(liftRows) do

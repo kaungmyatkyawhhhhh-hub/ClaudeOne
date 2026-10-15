@@ -1477,3 +1477,7 @@ Top 10 costs (largest first), and what happened:
    (the brief says 3-5 min; one a minute is within DataStore limits and loses less on a crash).
 Not done here: a 10-player test and real phone numbers (needs the owner's device or Studio's Device emulator by hand:
 Ctrl+F6 MicroProfiler, F9 Developer Console).
+- Bug (owner, 15 Oct: "the growth spurt button disappeared"): at the 7'0" cap both the right-side Growth Spurt card and
+  the Stats panel button were hidden, and below the cap the card lost to Today's Quest (one card at a time, lowest
+  priority). Now the card always shows under the current card; at the cap it reads "MAX GROWTH SPURT / Reached · 7'0""
+  greyed (the brief), and the Stats panel shows a greyed "Max Growth Spurt reached" button that does nothing.

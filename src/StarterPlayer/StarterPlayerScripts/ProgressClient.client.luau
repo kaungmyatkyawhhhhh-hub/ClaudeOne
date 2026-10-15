@@ -35,9 +35,11 @@ local UIBus = require(Shared.UI.UIBus)
 local TILE_H = 44
 local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6), BackgroundTransparency = 1, Visible = false })
 local tile = Theme.Button("Gold", { Name = "Tile", Size = UDim2.new(1, 0, 0, TILE_H), Parent = holder }, {})
-local tileText = Kit.Text({ Name = "Grow", Text = "TAP TO GROW", Font = "Title", TextSize = 18, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 22), Parent = tile })
+local tileText = Kit.Text({ Name = "Grow", Text = "TAP TO GROW", Font = "Title", TextSize = 18, Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0, 22), Parent = tile })
+Kit.Fit(tileText, 18, 11) -- ("MAX GROWTH SPURT" fits the card)
 local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize = 10, Upper = true, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 12), Parent = tile })
-RightColumn.Add(holder, 9, "bottom", RightColumn.Priority.Grow)
+-- (owner, 15 Oct: always shown under the one priority card; it had vanished behind Today's Quest)
+RightColumn.Add(holder, 9, "bottom")
 local started = false -- (shown after the data is in)
 
 ------------------------------------------------------------------------
@@ -115,12 +117,13 @@ local function refresh()
 	local progress, have, need = spurtProgress(data)
 	ready = progress.ready and not progress.maxed
 	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
-	holder.Visible = started and not progress.maxed
+	holder.Visible = started
 	if progress.maxed then
-		-- (no card at the cap: the top bar's height says "7'0" MAX")
-		tileText.Text = "MAX HEIGHT"
-		tileLabel.Text = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)
-		Theme.SetButtonStyle(tile, "Quiet")
+		-- (the brief: at the cap the Growth Spurt button stays, greyed, "MAX GROWTH SPURT REACHED"; owner, 15 Oct: it had
+		-- disappeared)
+		tileText.Text = "MAX GROWTH SPURT"
+		tileLabel.Text = "Reached · " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)
+		Theme.SetButtonStyle(tile, "Disabled")
 	elseif ready then
 		tileText.Text = "TAP TO GROW"
 		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
