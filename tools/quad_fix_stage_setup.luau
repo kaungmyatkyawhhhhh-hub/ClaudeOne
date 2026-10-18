@@ -56,6 +56,4 @@ for name, size in pairs(SIZES) do
 	holder:Destroy()
 end
 table.sort(lines)
-return table.concat(lines, "
-") .. (if #missing > 0 then "
-MISSING: " .. table.concat(missing, ", ") else "")
+return table.concat(lines, "\n") .. (if #missing > 0 then "\nMISSING: " .. table.concat(missing, ", ") else "")

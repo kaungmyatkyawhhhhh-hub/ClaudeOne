@@ -32,6 +32,9 @@ local remote -- RemoteEvent "Crew": client -> server (action, ...); server -> cl
 local crewStore = DataStoreService:GetDataStore("CrewsV1") -- (V1: fresh for the release, 9 Oct)
 local scoreStore = DataStoreService:GetOrderedDataStore("CrewLeaderboardV1")
 local inboxStore = DataStoreService:GetDataStore("CrewInboxV1") -- [userId] = crewId of an accepted join request
+-- Unique crew names and tags (owner, 19 Oct; case-insensitive): "tag:<TAG>" / "name:<name>" = the crew id that holds it,
+-- claimed with UpdateAsync when a crew is made, let go when it's deleted (its last member leaves). (Crews can't be renamed.)
+local namesStore = DataStoreService:GetDataStore("CrewNamesV1")
 local cache = {}   -- [crewId] = record (as last read or written by this server)
 local invites = {} -- [player] = { [crewId] = inviterName }
 local names = {}   -- [userId] = name
@@ -84,6 +87,59 @@ local function updateCrew(crewId, change)
 	end)
 	if ok and newRecord then cache[crewId] = newRecord end
 	return ok, newRecord
+end
+
+local function nameKey(kind: string, text: string): string
+	return kind .. ":" .. (if kind == "tag" then text:upper() else text:lower())
+end
+
+-- Claims a crew name / tag for crewId. Returns "ok", "taken" (another crew with members holds it) or "error" (try
+-- later). A claim left by a crew that no longer exists (or has no members) is taken over.
+local function claim(kind: string, text: string, crewId: string): string
+	local key = nameKey(kind, text)
+	local holder = nil
+	local ok = pcall(namesStore.UpdateAsync, namesStore, key, function(current)
+		if current == nil or current == crewId then return crewId end
+		holder = current
+		return nil
+	end)
+	if not ok then return "error" end
+	if holder == nil then return "ok" end
+	local okRead, record = pcall(crewStore.GetAsync, crewStore, holder)
+	if not okRead then return "error" end
+	if record and count(record.members) > 0 then return "taken" end
+	local took = false
+	local okTake = pcall(namesStore.UpdateAsync, namesStore, key, function(current)
+		took = current == holder or current == nil
+		return if took then crewId else nil
+	end)
+	if not okTake then return "error" end
+	return if took then "ok" else "taken"
+end
+
+-- Lets go of a name / tag (only when crewId is the one holding it).
+local function unclaim(kind: string, text: string, crewId: string)
+	local key = nameKey(kind, text)
+	local ok, current = pcall(namesStore.GetAsync, namesStore, key)
+	if ok and current == crewId then pcall(namesStore.RemoveAsync, namesStore, key) end
+end
+
+-- A crew with no members is deleted: its record, its leaderboard score (so it leaves TOP CREWS) and its name / tag.
+local function deleteCrew(crewId: string, record)
+	if isTest(crewId) then return end
+	pcall(crewStore.RemoveAsync, crewStore, crewId)
+	pcall(scoreStore.RemoveAsync, scoreStore, crewId)
+	cache[crewId] = nil
+	if type(record.tag) == "string" then unclaim("tag", record.tag, crewId) end
+	if type(record.name) == "string" then unclaim("name", record.name, crewId) end
+	local ok, top = pcall(HttpService.JSONDecode, HttpService, ReplicatedStorage:GetAttribute("CrewTop") or "[]")
+	if ok and type(top) == "table" then
+		local kept = {}
+		for _, entry in ipairs(top) do
+			if entry.crewId ~= crewId then table.insert(kept, entry) end
+		end
+		ReplicatedStorage:SetAttribute("CrewTop", HttpService:JSONEncode(kept))
+	end
 end
 
 -- Filtered for everyone to see; nil if it was blocked or the filter failed.
@@ -291,15 +347,31 @@ actions.Create = function(player, name, tag)
 	end
 	local cleanName, cleanTag = filter(name, player), filter(tag, player)
 	if not cleanName or not cleanTag then result(player, "That name isn't allowed. Try another one.") return end
+	local crewId = HttpService:GenerateGUID(false)
+	-- the tag and the name are claimed first (unique across all crews, any capitals)
+	local tagClaim = claim("tag", cleanTag, crewId)
+	if tagClaim ~= "ok" then
+		result(player, if tagClaim == "taken" then "That tag is already taken." else "Couldn't save the crew right now. Try again in a minute.")
+		return
+	end
+	local nameClaim = claim("name", cleanName, crewId)
+	if nameClaim ~= "ok" then
+		unclaim("tag", cleanTag, crewId)
+		result(player, if nameClaim == "taken" then "That crew name is already taken." else "Couldn't save the crew right now. Try again in a minute.")
+		return
+	end
 	if CREW.CreateCost > 0 and not PlayerData.SpendCoins(player, CREW.CreateCost) then
+		unclaim("tag", cleanTag, crewId)
+		unclaim("name", cleanName, crewId)
 		result(player, "Creating a crew costs " .. CREW.CreateCost .. " coins.") return
 	end
-	local crewId = HttpService:GenerateGUID(false)
 	local record = { name = cleanName, tag = cleanTag, owner = player.UserId, members = { [tostring(player.UserId)] = { score = 0, name = player.DisplayName } },
 		created = os.time(), joinMode = "request" }
 	local ok = pcall(crewStore.SetAsync, crewStore, crewId, record)
 	if not ok then
 		if CREW.CreateCost > 0 then PlayerData.AddCoins(player, CREW.CreateCost) end -- (the coins were taken above)
+		unclaim("tag", cleanTag, crewId)
+		unclaim("name", cleanName, crewId)
 		result(player, "Couldn't save the crew right now. Try again in a minute.")
 		return
 	end
@@ -456,6 +528,8 @@ actions.Leave = function(player)
 	end)
 	-- (a failed write must not leave the player gone on their side but still listed in the crew)
 	if not left then result(player, "Couldn't leave right now. Try again in a minute.") return end
+	local record = cache[crewId]
+	if record and count(record.members) == 0 then deleteCrew(crewId, record) end
 	setCrew(player, nil)
 	updateTag(player)
 	result(player, "You left the crew.")
@@ -566,6 +640,15 @@ local function onJoin(player)
 				setCrew(player, nil)
 			elseif record then
 				updateTag(player)
+				-- a one-time message for the leader (e.g. their tag was changed because another crew had it first)
+				if type(record.notice) == "string" and tostring(record.owner) == tostring(player.UserId) then
+					local notice = record.notice
+					task.delay(20, function() result(player, notice) end) -- (after the loading screen and menu)
+					updateCrew(crewId, function(stored)
+						if stored then stored.notice = nil end
+						return stored
+					end)
+				end
 			end
 		end
 		if not crewIdOf(player) then checkInbox(player) end

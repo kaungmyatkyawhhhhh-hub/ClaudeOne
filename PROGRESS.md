@@ -16,8 +16,17 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   copy and anything made from the data are fixed. Stage meshes: tools/quad_fix_stage_corrections.luau (exact rebuild of the
   old stages, max error 0) + tools/quad_fix_lowpoly.py moved the owner's low-poly thighs -> 24 OBJs in
   Downloads\gym_arc_meshes_lowpoly_quadfix\other_player_stages (g000 unchanged). WAITING: owner imports them; then run
-  tools/quad_fix_stage_setup.luau + tools/quad_fix_patch_config.py <bounds.json>, add the MeshIds to StageMeshBackup.
+  tools/quad_fix_stage_setup.luau + tools/quad_fix_patch_config.py <bounds.json>, add the MeshIds to StageMeshBackup (DONE 19 Oct).
   Found: at mass monster the hamstrings (owner's 2.8) push a lump between the knees (owner decides).
+- PROMPTS 2-5 (19 Oct afternoon): (2) owner imported the fixed thighs; tools/quad_fix_stage_setup.luau applied 24, Config/
+  BodyStages + StageMeshBackup (new / lowpoly) updated: DONE. (3) MirrorService + ShowOffService build the "Now" rig / statue
+  with BodyService.ApplyFrame (saved values; statue via new PlayerData.Peek, champion's copy kept); Studio TestStatueMe.
+  Crews: CrewNamesV1 claims (unique name / tag, any case), empty crews deleted (record, score, claims), leader notice on
+  join; tools/crew_names_backfill.luau ran: ARAQ313 -> [SRT1] (mosa_ali; SRT313 by cort keeps SRT9). (4) MuscleMeshes
+  UPPER_TRAPS slope on the Traps growth (live body done); 12 fixed low-poly torso OBJs in
+  Downloads\gym_arc_meshes_lowpoly_trapsfix\other_player_stages: WAITING for the owner's import, then
+  tools/upper_traps_stage_setup.luau + tools/quad_fix_patch_config.py <that bounds.json>. (5) Top crews view tested phone +
+  PC; deleted crew header keeps its name.
 - Queue (owner, 19 Oct, vault Prompts 2-5): inner quad bulge, mirror / statue width + duplicate crew tags, upper traps
   missing, top crews member view test.
 

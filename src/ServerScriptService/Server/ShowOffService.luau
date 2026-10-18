@@ -158,7 +158,17 @@ local function refreshStatue()
 		spurts = entry and entry.value // 1000000 or 0
 		kind = "strongest"
 	end
-	local key = kind .. userId
+	-- their saved values (owner, 19 Oct: the statue gets the same body as the real player, not only the muscles): the
+	-- champion's copy from the competition, else a read-only look at the strongest player's save
+	local data = if champion then champion.data elseif userId > 0 then PlayerData.Peek(userId) else nil
+	if data then spurts = data.growthSpurts or spurts end
+	local muscleG = if champion then champion.muscleG elseif data then BodyService.EncodeLevels(BodyService.LevelsOf(data)) else BodyService.EncodeShare(1)
+	local widths = ""
+	if data then
+		local f = BodyService.WidthFactors(data)
+		widths = string.format("%.3f,%.3f,%.3f,%.3f,%.3f", f.shoulders, f.hips, f.arms, f.legs, f.depth)
+	end
+	local key = kind .. userId .. "|" .. widths .. "|" .. muscleG
 	if userId == statueUserId and spurts == statueSpurts and key == statueKey and statue and statue.Parent then return end
 	local desc = nil
 	if userId > 0 then
@@ -183,6 +193,9 @@ local function refreshStatue()
 	local scaling = model:FindFirstChildOfClass("Humanoid")
 	if scaling then scaling.AutomaticScalingEnabled = false end
 	BodyShape.EnsureJoints(model)
+	-- the same widths as the real body (BodyService.ApplyFrame: genetics shoulders, widths that grow with height and
+	-- muscle), then the golden ratio proportions, in the real body's order
+	if data then BodyService.ApplyFrame(model, data) end
 	BodyShape.ApplyProportions(model, true)
 	local cfg = ShowOff.Statue
 	for _, item in ipairs(model:GetDescendants()) do
@@ -217,9 +230,9 @@ local function refreshStatue()
 	end
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model.Parent = Workspace
-	-- the clients draw the marble muscles from these attributes (static body stage meshes, like any other body): full
-	-- grown for the strongest lifter, the champion's own muscles for the posing champion
-	model:SetAttribute("MuscleG", champion and champion.muscleG or BodyService.EncodeShare(1))
+	-- the clients draw the marble muscles from these attributes (static body stage meshes, like any other body): that
+	-- player's own muscles (full grown only while there's no saved body to read)
+	model:SetAttribute("MuscleG", muscleG)
 	model:SetAttribute("MuscleMarble", true)
 	if plaque then
 		if champion then
@@ -303,7 +316,12 @@ function ShowOffService.SetChampion(player)
 	local data = player and PlayerData.Get(player)
 	if data then
 		local levels, goal = BodyService.LevelsOf(data)
-		champion = { userId = player.UserId, name = player.DisplayName, spurts = data.growthSpurts or 0, muscleG = BodyService.EncodeLevels(levels, goal) }
+		champion = { userId = player.UserId, name = player.DisplayName, spurts = data.growthSpurts or 0, muscleG = BodyService.EncodeLevels(levels, goal),
+			-- (what the body is built from, kept as it was when they won)
+			data = { growthSpurts = data.growthSpurts, genetics = table.clone(data.genetics or {}), muscles = {} } }
+		for id, entry in pairs(data.muscles or {}) do
+			champion.data.muscles[id] = if type(entry) == "table" then table.clone(entry) else entry
+		end
 	else
 		champion = nil
 	end
@@ -379,6 +397,12 @@ function ShowOffService.Start()
 		emoteRemote.Parent = Remotes
 	end
 	Guard.Remote(emoteRemote, "Emote", 4, 6, onEmote)
+	-- Studio testing: Workspace attribute "TestStatueMe" = true makes the first player the statue (as the posing champion)
+	if game:GetService("RunService"):IsStudio() then
+		Workspace:GetAttributeChangedSignal("TestStatueMe"):Connect(function()
+			ShowOffService.SetChampion(if Workspace:GetAttribute("TestStatueMe") == true then Players:GetPlayers()[1] else nil)
+		end)
+	end
 	Players.PlayerAdded:Connect(function(player)
 		player.CharacterRemoving:Connect(function() posed[player] = nil end)
 	end)

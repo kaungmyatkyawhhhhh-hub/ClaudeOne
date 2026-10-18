@@ -37,6 +37,7 @@ local menuButton = SideMenu.Add("Crew", "Crew", Icons.People, 5)
 local pages = {}
 local currentTab = "Mine"
 local viewing = nil -- crewId of the top crew shown over the Top Crews list
+local viewingEntry = nil -- its Top Crews row ({ name, tag, score, members })
 local showTab
 local modal = Kit.Modal({ name = "Crew", title = "Crew", icon = "users", width = 520, height = 272, displayOrder = 24,
 	tabs = { { id = "Mine", text = "My Crew", icon = "users" }, { id = "Top", text = "Top Crews", icon = "trophy" } },
@@ -323,7 +324,9 @@ end
 local function renderView(view, rank)
 	clearPage(pages.View)
 	if view.gone then
-		crewHeader(pages.View, { name = "Crew", tag = "-", members = {}, max = CREW.MaxMembers }, backToList)
+		-- (its name and tag from the Top Crews row that was tapped)
+		local entry = viewingEntry or {}
+		crewHeader(pages.View, { name = entry.name or "Crew", tag = entry.tag or "-", members = {}, max = CREW.MaxMembers }, backToList)
 		line("This crew no longer exists.", Colors.Text, pages.View)
 		return
 	end
@@ -364,6 +367,7 @@ function openCrew(crewId: string, rank: number?, entry)
 		return
 	end
 	viewing = crewId
+	viewingEntry = entry
 	showTab("Top")
 	pages.View.CanvasPosition = Vector2.zero
 	local cached = viewCache[crewId]

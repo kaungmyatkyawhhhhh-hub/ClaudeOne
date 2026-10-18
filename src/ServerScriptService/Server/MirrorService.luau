@@ -51,8 +51,10 @@ local function avatarDescription(player)
 end
 
 -- One preview rig: heightScale = absolute height scale. Built from your avatar (head, hair, skin color) with the Robloxian
--- body; the muscles are blobs added after the rig is parented (see openFor).
-local function buildRig(player, name, heightScale, poseName)
+-- body; the muscles are blobs added after the rig is parented (see openFor). data = your save: the rig gets the same body
+-- widths as your character (BodyService.ApplyFrame: the genetics shoulders, the widths that grow with height and muscle)
+-- before the golden ratio proportions, like the real body (owner, 19 Oct); nil = the plain starting body (day one).
+local function buildRig(player, name, heightScale, poseName, data)
 	local desc = avatarDescription(player)
 	BodyService.PrepareDescription(desc, nil, heightScale)
 	local ok, rig = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
@@ -66,6 +68,7 @@ local function buildRig(player, name, heightScale, poseName)
 	local scaling = rig:FindFirstChildOfClass("Humanoid")
 	if scaling then scaling.AutomaticScalingEnabled = false end
 	BodyShape.EnsureJoints(rig)
+	if data then BodyService.ApplyFrame(rig, data) end
 	BodyShape.ApplyProportions(rig)
 	for _, item in ipairs(rig:GetDescendants()) do
 		if item:IsA("BaseScript") then item:Destroy() end
@@ -94,7 +97,7 @@ local function openFor(player)
 	if old then old:Destroy() end
 	local dayOne = data.dayOne or {}
 	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight)
-	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, "FrontDoubleBiceps")
+	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, "FrontDoubleBiceps", data)
 	if not before or not after then return end
 	local folder = Instance.new("Folder")
 	folder.Name = "MirrorRigs"

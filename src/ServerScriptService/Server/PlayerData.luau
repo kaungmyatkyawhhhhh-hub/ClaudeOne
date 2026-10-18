@@ -396,6 +396,17 @@ function PlayerData.WaitFor(player, timeout)
 	return PlayerData.Get(player)
 end
 
+-- A read-only look at any player's save, for copies of their body (the statue): their live data when they're in this
+-- server, else the stored copy (no session lock, never written; nil when there's none or the read failed).
+function PlayerData.Peek(userId: number)
+	local player = Players:GetPlayerByUserId(userId)
+	local live = player and PlayerData.Get(player)
+	if live then return live end
+	local ok, stored = withRetries(function() return store:GetAsync("Player_" .. userId) end)
+	if ok and type(stored) == "table" then return stored end
+	return nil
+end
+
 -- Max stamina: trained by cardio (Stamina.MaxFor the distance run) x Iron Lungs; kept on the player's "MaxStamina"
 -- attribute so clients read the same number.
 function PlayerData.GetMaxStamina(player)

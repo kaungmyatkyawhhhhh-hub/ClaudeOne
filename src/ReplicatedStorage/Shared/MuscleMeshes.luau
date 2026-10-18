@@ -85,6 +85,47 @@ MuscleMeshes.TintRows = 4
 local unifiedCache: { [string]: any } = {}
 -- The whole unified mesh of one body part (parsed once): base, uv, vein, morph, nbase (Vector3 / Vector2 lists), tris
 -- (0-based), muscles[name] = { idx = { vertex (1-based) }, disp = { Vector3 }, nidx, ndisp }.
+-- The upper traps (owner, 19 Oct: "the upper traps don't show at all"): the data only lifted a narrow strip right beside the
+-- neck (hidden under the head and hair), so the line from the neck to the shoulder stayed flat. The Traps muscle also
+-- lifts the top of the torso as a slope: full Height (studs at the full look, part-local) from NeckTo to PeakTo out from the
+-- middle, easing in from NeckFrom (the neck stays as it is) and out to none at ShoulderTo (the delts); only the top Depth
+-- of the torso (easing in over Edge); the front of the top gets FrontShare of it, the back all (the traps sit behind).
+-- Back = a little backward push with it. The body stage meshes are made from this same data (tools/gen_body_stages).
+local UPPER_TRAPS = { Height = 0.16, Back = 0.03, NeckFrom = 0.18, NeckTo = 0.35, PeakTo = 0.55, ShoulderTo = 0.95, Depth = 0.3, Edge = 0.15, FrontShare = 0.35 }
+local function addUpperTraps(data)
+	local traps = data.muscles.Traps
+	if not traps then return end
+	local function ease(t: number): number
+		t = math.clamp(t, 0, 1)
+		return t * t * (3 - 2 * t)
+	end
+	local top = -math.huge
+	for _, p in ipairs(data.base) do top = math.max(top, p.Y) end
+	local at = {}
+	for j, v in ipairs(traps.idx) do at[v] = j end
+	local U = UPPER_TRAPS
+	data.upperTraps = {} -- [vertex] = the slope added to its Traps growth (for tools/upper_traps_stage_corrections)
+	for v, p in ipairs(data.base) do
+		local ax = math.abs(p.X)
+		local across = ease((ax - U.NeckFrom) / (U.NeckTo - U.NeckFrom)) * (1 - ease((ax - U.PeakTo) / (U.ShoulderTo - U.PeakTo)))
+		local down = ease((p.Y - (top - U.Depth)) / U.Edge)
+		local side = U.FrontShare + (1 - U.FrontShare) * ease((p.Z + 0.3) / 0.5)
+		local w = across * down * side
+		if w > 0.001 then
+			local bump = Vector3.new(0, U.Height, U.Back) * w
+			data.upperTraps[v] = bump
+			local j = at[v]
+			if j then
+				traps.disp[j] += bump
+			else
+				table.insert(traps.idx, v)
+				table.insert(traps.disp, bump)
+				at[v] = #traps.idx
+			end
+		end
+	end
+end
+
 function MuscleMeshes.LoadUnified(name: string): any
 	local found = unifiedCache[name]
 	if found then return found end
@@ -107,6 +148,7 @@ function MuscleMeshes.LoadUnified(name: string): any
 		for i, v in ipairs(nidx) do nidx[i] = v + 1 end
 		data.muscles[muscle] = { idx = idx, disp = vectors(numbers(record, "disp_" .. muscle)), nidx = nidx, ndisp = vectors(numbers(record, "ndisp_" .. muscle)) }
 	end
+	if record.part == "UpperTorso" then addUpperTraps(data) end
 	unifiedCache[name] = data
 	return data
 end
