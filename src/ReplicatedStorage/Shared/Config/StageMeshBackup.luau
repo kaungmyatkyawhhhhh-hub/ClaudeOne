@@ -115,4 +115,47 @@ StageMeshBackup.UpperTraps = {
 	BS_UpperTraps_monster = "rbxassetid://90001749312581",
 }
 
+
+-- Body reshape (19 Oct night, prompts 4 / 7 / 8: traps yoke, round delts, full back, adductors): these templates moved on
+-- to the meshes in Downloads\gym_arc_meshes_lowpoly_backfix (tools/body_stage_setup.luau). before = the mesh just before
+-- (the 15 Oct low-poly one, or the quad fix one for the thigh skin), now = the mesh in use. The shorts didn't change.
+StageMeshBackup.Reshape19Oct = {
+	BS_LeftArm_Arm_g020 = { before = "rbxassetid://82997383246501", now = "rbxassetid://103918398058559" },
+	BS_LeftArm_Arm_g040 = { before = "rbxassetid://137063530441922", now = "rbxassetid://89836856556486" },
+	BS_LeftArm_Arm_g060 = { before = "rbxassetid://108098538672131", now = "rbxassetid://79699767643312" },
+	BS_LeftArm_Arm_g080 = { before = "rbxassetid://111969693701459", now = "rbxassetid://80332962173252" },
+	BS_LeftArm_Arm_g100 = { before = "rbxassetid://124395796905943", now = "rbxassetid://131027393268193" },
+	BS_LeftArm_Arm_gmon = { before = "rbxassetid://77355834840399", now = "rbxassetid://116675130572626" },
+	BS_LeftLeg_Skin_g020 = { before = "rbxassetid://95371685613440", now = "rbxassetid://135643020038775" },
+	BS_LeftLeg_Skin_g040 = { before = "rbxassetid://103054472229421", now = "rbxassetid://74548175545582" },
+	BS_LeftLeg_Skin_g060 = { before = "rbxassetid://120843090366726", now = "rbxassetid://105122819638989" },
+	BS_LeftLeg_Skin_g080 = { before = "rbxassetid://128464485942693", now = "rbxassetid://80863350150354" },
+	BS_LeftLeg_Skin_g100 = { before = "rbxassetid://120184836229898", now = "rbxassetid://71537841020024" },
+	BS_LeftLeg_Skin_gmon = { before = "rbxassetid://113699311575844", now = "rbxassetid://108486226655576" },
+	BS_RightArm_Arm_g020 = { before = "rbxassetid://125837032727101", now = "rbxassetid://125359782847800" },
+	BS_RightArm_Arm_g040 = { before = "rbxassetid://93460523165968", now = "rbxassetid://115313132490523" },
+	BS_RightArm_Arm_g060 = { before = "rbxassetid://129007918935625", now = "rbxassetid://78648938566789" },
+	BS_RightArm_Arm_g080 = { before = "rbxassetid://120358399425548", now = "rbxassetid://105185469322167" },
+	BS_RightArm_Arm_g100 = { before = "rbxassetid://74232603715335", now = "rbxassetid://82920947841808" },
+	BS_RightArm_Arm_gmon = { before = "rbxassetid://115818980200733", now = "rbxassetid://81741638433145" },
+	BS_RightLeg_Skin_g020 = { before = "rbxassetid://117054224462656", now = "rbxassetid://132486289037432" },
+	BS_RightLeg_Skin_g040 = { before = "rbxassetid://127448161275731", now = "rbxassetid://131176206825880" },
+	BS_RightLeg_Skin_g060 = { before = "rbxassetid://116402123503416", now = "rbxassetid://105910507856702" },
+	BS_RightLeg_Skin_g080 = { before = "rbxassetid://100481713983676", now = "rbxassetid://116991975927955" },
+	BS_RightLeg_Skin_g100 = { before = "rbxassetid://98997116630648", now = "rbxassetid://87390683294012" },
+	BS_RightLeg_Skin_gmon = { before = "rbxassetid://96957524349873", now = "rbxassetid://100911612187528" },
+	BS_Torso_Back_g020 = { before = "rbxassetid://126020541687675", now = "rbxassetid://97898535216056" },
+	BS_Torso_Back_g040 = { before = "rbxassetid://103046087403600", now = "rbxassetid://102491442306472" },
+	BS_Torso_Back_g060 = { before = "rbxassetid://75585781773987", now = "rbxassetid://90956905217606" },
+	BS_Torso_Back_g080 = { before = "rbxassetid://101298954475998", now = "rbxassetid://127397613205324" },
+	BS_Torso_Back_g100 = { before = "rbxassetid://111854413713632", now = "rbxassetid://128962545089850" },
+	BS_Torso_Back_gmon = { before = "rbxassetid://93390908028069", now = "rbxassetid://94071588838794" },
+	BS_Torso_Front_g020 = { before = "rbxassetid://136640633782674", now = "rbxassetid://104358190023825" },
+	BS_Torso_Front_g040 = { before = "rbxassetid://126225948705175", now = "rbxassetid://101123251436565" },
+	BS_Torso_Front_g060 = { before = "rbxassetid://126170145479105", now = "rbxassetid://121548890232461" },
+	BS_Torso_Front_g080 = { before = "rbxassetid://71845562651020", now = "rbxassetid://106850232048936" },
+	BS_Torso_Front_g100 = { before = "rbxassetid://113412519585730", now = "rbxassetid://91880892812280" },
+	BS_Torso_Front_gmon = { before = "rbxassetid://138062624323780", now = "rbxassetid://125656187945201" },
+}
+
 return StageMeshBackup

@@ -40,8 +40,8 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   applyRange / gen_body_stages: straight inward only, fades out 62-90% of the bare thigh). Owner mid-task: arms / upper
   chest looked weird -> DELTS cap smaller (CapFrom -0.12, Down 0.46), yoke FrontShare 0.15. Stage meshes: 48 low-poly OBJs
   in Downloads\gym_arc_meshes_lowpoly_backfix (torso, arms from the owner's low-poly; thighs from the quadfix set; every
-  fix of the day; trapsfix / shoulderfix folders outdated). WAITING: owner imports, then tools/body_stage_setup.luau +
-  tools/quad_fix_patch_config.py <that bounds.json>.
+  fix of the day). DONE 19 Oct night: owner imported; tools/body_stage_setup.luau +
+  tools/quad_fix_patch_config.py ran, StageMeshBackup.Reshape19Oct.
 - Queue (owner, 19 Oct, vault Prompts 2-5): inner quad bulge, mirror / statue width + duplicate crew tags, upper traps
   missing, top crews member view test.
 
