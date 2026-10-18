@@ -46,6 +46,13 @@ LimbStages.Muscles = { Forearms = true, Calves = true }
 
 local CLOTH_TRANSPARENCY = 0.02 -- the clothed stage part (see the header)
 local SKIN_SCALE = 0.97        -- the skin part just inside it
+-- Joint fillers (owner, 19 Oct: "see-through holes at the elbows and knees"): the upper and lower limb meshes are open at the
+-- joint, so a bent elbow / knee opened a gap you could see through. Each forearm / calf stage gets a skin-colored ball on
+-- its joint (the elbow / knee rig attachment of its LowerArm / LowerLeg, so it follows the pose), sized from the stage's
+-- girth (JOINT_SIZE x its smaller width, so it grows with the muscle; inside the limb while it's straight). Cheap: one Ball
+-- part per limb, resized only when the stage or the body size changes.
+local JOINT_SIZE = { Forearms = 0.74, Calves = 0.78 }
+local JOINT_DROP = { Forearms = 0.04, Calves = 0.04 } -- studs the ball sits below the joint (into the lower limb), unscaled
 
 local function nearestStage(stages, g: number): number
 	local best, bestDistance = 1, math.huge
@@ -118,6 +125,54 @@ local function makePart(self, limb, body: BasePart, stage): MeshPart?
 	return part
 end
 
+-- the joint ball of one limb: made once, then placed / sized from the stage part
+local function jointAttachment(body: BasePart): Attachment?
+	for _, child in ipairs(body:GetChildren()) do
+		if child:IsA("Attachment") and (child.Name:find("ElbowRigAttachment") or child.Name:find("KneeRigAttachment")) then return child end
+	end
+	return nil
+end
+local function updateJoint(self, limb, body: BasePart, part: MeshPart?, color: Color3, material: Enum.Material, hidden: boolean)
+	local attachment = jointAttachment(body)
+	local ball = limb.joint
+	if not (attachment and part) then
+		if ball then ball.Transparency = 1 end
+		return
+	end
+	if not ball then
+		ball = Instance.new("Part")
+		ball.Name = limb.def.part .. "JointFill"
+		ball.Shape = Enum.PartType.Ball
+		ball.Anchored = self.static
+		ball.CanCollide, ball.CanQuery, ball.CanTouch, ball.CastShadow = false, false, false, false
+		ball.Massless = true
+		ball.TopSurface, ball.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		if not self.static then
+			local weld = Instance.new("Weld")
+			weld.Part0, weld.Part1 = body, ball
+			weld.Parent = ball
+		end
+		ball.Parent = self.folder
+		limb.joint = ball
+	end
+	local muscle = limb.def.muscle
+	local size = math.min(part.Size.X, part.Size.Z) * (JOINT_SIZE[muscle] or 0.75)
+	local scaleY = body.Size.Y / ((PARTS[limb.def.part] and PARTS[limb.def.part].size or body.Size).Y)
+	local offset = CFrame.new(attachment.Position - Vector3.new(0, (JOINT_DROP[muscle] or 0) * scaleY, 0))
+	if math.abs(ball.Size.X - size) > 0.002 then ball.Size = Vector3.new(size, size, size) end
+	if self.static then
+		ball.CFrame = body.CFrame * offset
+	else
+		local weld = ball:FindFirstChildOfClass("Weld")
+		if weld and weld.Part0 ~= body then weld.Part0 = body end
+		if weld and weld.C0 ~= offset then weld.C0 = offset end
+	end
+	if ball.Color ~= color then ball.Color = color end
+	if ball.Material ~= material then ball.Material = material end
+	local t = if hidden then 1 else 0
+	if ball.Transparency ~= t then ball.Transparency = t end
+end
+
 local function fade(part: Instance, to: number, time: number, done: (() -> ())?)
 	local tween = TweenService:Create(part, TweenInfo.new(time, Enum.EasingStyle.Sine), { Transparency = to })
 	if done then tween.Completed:Connect(done) end
@@ -134,7 +189,8 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		-- an outfit change can swap the body parts: start again on the new one
 		if limb.part and limb.body ~= body then
 			limb.part:Destroy()
-			limb.part, limb.stage = nil, nil
+			if limb.joint then limb.joint:Destroy() end
+			limb.part, limb.stage, limb.joint = nil, nil, nil
 			if limb.body and limb.body.Parent then limb.body.Transparency = 0 end
 		end
 		limb.body = body
@@ -192,6 +248,10 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		if hidden and part.Transparency < 1 then part.Transparency = 1 end
 		if not hidden and part.Transparency >= 1 and limb.shownHidden then part.Transparency = 0 end
 		limb.shownHidden = hidden
+		-- the ball that closes the elbow / knee (skin colored; the clothing color under a sleeve or pants leg doesn't matter:
+		-- it only shows inside a bent joint)
+		local skinColor = if marble then Color3.fromHex("#C9C6BF") else (style.skin or body.Color)
+		updateJoint(self, limb, body, part, tint(def.muscle, skinColor), if marble then Enum.Material.Marble else Enum.Material.SmoothPlastic, hidden)
 		-- the stage replaces the plain body part (shown again under layered clothing)
 		local bodyTransparency = if hidden then 0 else 1
 		if body.Transparency ~= bodyTransparency then body.Transparency = bodyTransparency end
@@ -201,7 +261,8 @@ end
 function LimbStages.Destroy(self)
 	for _, limb in pairs(self.limbs) do
 		if limb.part then limb.part:Destroy() end
-		limb.part = nil
+		if limb.joint then limb.joint:Destroy() end
+		limb.part, limb.joint = nil, nil
 		if limb.body and limb.body.Parent then limb.body.Transparency = 0 end
 	end
 end

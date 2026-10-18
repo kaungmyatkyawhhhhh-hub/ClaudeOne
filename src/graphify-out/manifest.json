@@ -174,9 +174,9 @@
     "semantic_hash": "11716d55bb288db429b36045f84cc650"
   },
   "ReplicatedStorage/Shared/Config/BodyStages.luau": {
-    "mtime": 1792361085.287619,
-    "seen": 1792362262.2572794,
-    "ast_hash": "18dcc82813bb614b889c8e241d0db923",
+    "mtime": 1792366850.7790494,
+    "seen": 1792367768.9351873,
+    "ast_hash": "578b58ffcbce8e1c378e0afa178b3af4",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Config/CoachNotes.luau": {
@@ -378,9 +378,9 @@
     "semantic_hash": "3c41e1f6cf1daf814e924395cd7d2fc4"
   },
   "ReplicatedStorage/Shared/Config/StageMeshBackup.luau": {
-    "mtime": 1792361085.3674707,
-    "seen": 1792362262.2572794,
-    "ast_hash": "12dacaa3df89d0be410bd61f2efa2028",
+    "mtime": 1792366875.5101168,
+    "seen": 1792367768.935709,
+    "ast_hash": "3347975450e70eae97bf3daaf16e36d0",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Config/Stamina.luau": {
@@ -414,10 +414,10 @@
     "semantic_hash": "98c20b6abb25eef44ff55fb66b02a6c1"
   },
   "ReplicatedStorage/Shared/LimbStages.luau": {
-    "mtime": 1792359453.3293455,
-    "seen": 1792360819.0316818,
-    "ast_hash": "131bb5e44eca8ef94c6cdec130a8cb14",
-    "semantic_hash": "131bb5e44eca8ef94c6cdec130a8cb14"
+    "mtime": 1792367498.251719,
+    "seen": 1792367768.935709,
+    "ast_hash": "c46efb66e32edc7e8233af5844a8811e",
+    "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/MuscleMeshes.luau": {
     "mtime": 1792366021.3066244,
@@ -1014,10 +1014,10 @@
     "semantic_hash": "ed062ed77b61f8443e78c6d2ce501699"
   },
   "StarterPlayer/StarterPlayerScripts/TrainerFollowClient.client.luau": {
-    "mtime": 1792359459.845417,
-    "seen": 1792360819.0316818,
-    "ast_hash": "3800a9511815471a02b1304ba20658e6",
-    "semantic_hash": "3800a9511815471a02b1304ba20658e6"
+    "mtime": 1792367686.7878072,
+    "seen": 1792367768.935709,
+    "ast_hash": "c79906ca887c6c3386db95c8148a27ba",
+    "semantic_hash": ""
   },
   "StarterPlayer/StarterPlayerScripts/TutorialClient.client.luau": {
     "mtime": 1792359459.2966363,

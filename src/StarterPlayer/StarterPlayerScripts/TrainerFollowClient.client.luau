@@ -28,7 +28,14 @@ local localPlayer = Players.LocalPlayer
 local templates = ReplicatedStorage:WaitForChild("TrainerModels", 60)
 if not templates then return end -- the trainer service didn't start
 
-local ANIM = { Idle = "rbxassetid://507766388", Walk = "rbxassetid://507777826" } -- Roblox's default R15 idle / walk
+-- Roblox's default R15 idle / walk / run (the player rig's own Animate set). Owner, 19 Oct: trainers slid without moving
+-- their legs: they're moved by PivotTo (no Humanoid movement), so the speed is measured from the position change and the
+-- animation picked from it: idle under IDLE_BELOW studs/s, walk under RUN_FROM, run above; 0.2 s crossfades; the walk / run
+-- play at speed / their own pace (WALK_PACE / RUN_PACE studs a second at playback speed 1, x the trainer's size) so the feet
+-- don't skate.
+local ANIM = { Idle = "rbxassetid://507766388", Walk = "rbxassetid://913402848", Run = "rbxassetid://913376220" }
+local IDLE_BELOW, RUN_FROM = 0.5, 12
+local WALK_PACE, RUN_PACE = 8, 16
 -- each coach's own stance while standing (drawn over the idle animation, see coachIdle)
 local IDLE_STYLE = { RookieCoach = "crossed", CardioCoach = "hips", MoneyCoach = "clipboard", PumpCoach = "crossed" }
 local HYPE_SPOTS = { "Hype_5", "Hype_4", "Hype_3", "Hype_2", "Hype_1" } -- tried in this order (spotters fill from Hype_1)
@@ -143,31 +150,48 @@ local function makeTrainer(id: string, slot: number)
 		ghost(part)
 		skinLayer(part)
 	end)
-	local tracks = {}
-	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+	if not humanoid:FindFirstChildOfClass("Animator") then Instance.new("Animator", humanoid) end
+	-- (the animation tracks are loaded the first time he's in the Workspace: see loadTracks. Loaded while the model was
+	-- still outside it they never played, so trainers slid without moving their legs: owner's bug, 19 Oct)
+	return {
+		id = id, slot = slot, model = model, root = root, humanoid = humanoid, tracks = {}, playing = nil,
+		position = nil, lastProgress = os.clock(), lastCheer = 0, clapUntil = 0, pumpUntil = 0, cheerTurn = 0,
+		style = IDLE_STYLE[id] or "crossed", phase = rng:NextNumber() * 10,
+		rootHeight = humanoid.HipHeight + root.Size.Y / 2,
+		scale = math.max((humanoid.HipHeight + root.Size.Y / 2) / 3, 0.5), -- (his size next to a standard 5-stud rig: pace)
+	}
+end
+
+local function loadTracks(state)
+	if state.tracksLoaded or not state.model:IsDescendantOf(Workspace) then return end
+	state.tracksLoaded = true
+	local animator = state.humanoid:FindFirstChildOfClass("Animator")
+	if not animator then return end
 	for name, animId in pairs(ANIM) do
 		local a = Instance.new("Animation")
 		a.AnimationId = animId
 		local ok, track = pcall(function() return animator:LoadAnimation(a) end)
 		if ok and track then
 			track.Looped = true
-			track.Priority = name == "Walk" and Enum.AnimationPriority.Movement or Enum.AnimationPriority.Idle
-			tracks[name] = track
+			track.Priority = if name == "Idle" then Enum.AnimationPriority.Idle else Enum.AnimationPriority.Movement
+			state.tracks[name] = track
 		end
 	end
-	return {
-		id = id, slot = slot, model = model, root = root, humanoid = humanoid, tracks = tracks, playing = nil,
-		position = nil, lastProgress = os.clock(), lastCheer = 0, clapUntil = 0, pumpUntil = 0, cheerTurn = 0,
-		style = IDLE_STYLE[id] or "crossed", phase = rng:NextNumber() * 10,
-		rootHeight = humanoid.HipHeight + root.Size.Y / 2,
-	}
 end
 
-local function play(state, name)
-	if state.playing == name then return end
-	state.playing = name
-	for key, track in pairs(state.tracks) do
-		if key == name then track:Play(0.2) elseif track.IsPlaying then track:Stop(0.2) end
+local function play(state, name, rate: number?)
+	loadTracks(state)
+	if state.playing ~= name then
+		state.playing = name
+		for key, track in pairs(state.tracks) do
+			if key == name then track:Play(0.2) elseif track.IsPlaying then track:Stop(0.2) end
+		end
+	end
+	-- (the playback speed follows the move speed; frozen far-away trainers stay at 0)
+	local track = state.tracks[name]
+	if track and not state.frozen then
+		local want = rate or 1
+		if math.abs(track.Speed - want) > 0.03 then track:AdjustSpeed(want) end
 	end
 end
 
@@ -326,10 +350,13 @@ local function step(player, state, root: BasePart, dt: number, now: number)
 	local floor = floorAt(target) or (root.Position.Y - 3)
 	target = Vector3.new(target.X, floor + state.rootHeight, target.Z)
 	local pos = state.position
+	local popped = false
 	if not pos or (pos - target).Magnitude > Trainers.TeleportDistance or now - state.lastProgress > Trainers.StuckSeconds then
 		pos = target
 		state.lastProgress = now
+		popped = true
 	end
+	local before = pos
 	local offset = (target - pos) * Vector3.new(1, 0, 1)
 	local distance = offset.Magnitude
 	local moving = false
@@ -354,7 +381,18 @@ local function step(player, state, root: BasePart, dt: number, now: number)
 	end
 	state.position = pos
 	place(state, pos, face)
-	play(state, moving and "Walk" or "Idle")
+	-- the speed he really moved (studs a second, flat), smoothed over a few frames; a pop doesn't count
+	local moved = if popped or not moving then 0 else ((pos - before) * Vector3.new(1, 0, 1)).Magnitude / math.max(dt, 1 / 240)
+	state.speed = (state.speed or 0) + (moved - (state.speed or 0)) * math.min(dt * 10, 1)
+	local speed = state.speed
+	local scale = state.scale or 1
+	if speed < IDLE_BELOW then
+		play(state, "Idle")
+	elseif speed < RUN_FROM or not state.tracks.Run then
+		play(state, "Walk", math.clamp(speed / (WALK_PACE * scale), 0.3, 2.5))
+	else
+		play(state, "Run", math.clamp(speed / (RUN_PACE * scale), 0.5, 2.5))
+	end
 end
 
 -- the clap (arms forward, hands meeting), before physics so it wins over the idle animation (as EmoteClient)
