@@ -39,3 +39,14 @@ Short on purpose: it is loaded every session. Read other files only when the tas
 - Owner's new prompt: save it to `GYM ARC\Prompts\YYYY-MM-DD GYM ARC Prompt - <title>.md` first.
 - When done: update only the notes for what changed (Feature/Bug/Config + today's Progress note + Home status), add new notes to the Index, commit the vault's `GYM ARC/` folder only. Never touch other games in the vault.
 - Keep reports to the owner short and in plain English; list only what changed, what to test, and what needs his decision.
+
+## graphify
+
+This project has a knowledge graph of `src/` ONLY, at `src/graphify-out/` (owner, 19 Oct: never build one at the repo root), with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- Run `graphify query "<question>" --graph src/graphify-out/graph.json` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>" --graph src/graphify-out/graph.json` for relationships and `graphify explain "<concept>" --graph src/graphify-out/graph.json` for focused concepts.
+- Read `src/graphify-out/GRAPH_REPORT.md` only for broad architecture review or when query/path/explain do not surface enough context.
+- After exporting scripts to src/, run `graphify update src` (AST-only, no API cost). Never `graphify update .`. When deleting src/ files whose script no longer exists, keep `src/graphify-out/`.
+- The graph misses Luau handlers written as `actions.X = function` and only partly reads files with type annotations: if it doesn't find something, fall back to a targeted grep.
+- A committed graph.json is rewritten whole on every build, so a large diff to it is expected.
