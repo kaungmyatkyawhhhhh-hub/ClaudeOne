@@ -811,6 +811,11 @@ local function rangeChanged(self, group, range): boolean
 	for _, key in ipairs(range.blendKeys) do
 		if not others or math.abs(meshShown(self, key, MuscleMeshes.MuscleId(key)) - (others[key] or 0)) > MIN_CHANGE then return true end
 	end
+	-- (the thigh's shape layer, the adductors: MuscleMeshes.LoadGroup)
+	if range.hasShape and group.data.shapeMuscle then
+		local muscle = group.data.shapeMuscle
+		if math.abs(meshShown(self, muscle .. "@shape", muscle) - (group.appliedShape[range] or 0)) > MIN_CHANGE then return true end
+	end
 	return group.data.vein ~= nil and veinFor(self, range.id) ~= group.appliedVein[range]
 end
 
@@ -825,6 +830,8 @@ local function applyRange(self, group, range): number
 	local v = if vein then veinFor(self, range.id) else 0
 	local w = waistProgress(self)
 	local waistOff = 1 - w
+	local shape, nshape = data.shape, data.nshape
+	local sg = if shape and range.hasShape then meshShown(self, data.shapeMuscle .. "@shape", data.shapeMuscle) else 0
 	for i = range.first, range.first + range.count - 1 do
 		local gv = g
 		local list = blends[i]
@@ -839,15 +846,18 @@ local function applyRange(self, group, range): number
 		-- (the shorts: fabric over the muscle, MuscleMeshes.LoadGroup)
 		if hug and hug[i] then gv *= hug[i] end
 		local position = base[i] + delta[i] * gv
+		if sg ~= 0 and shape[i] then position += shape[i] * sg end
 		if morph and morph[i] then position += morph[i] * waistOff end
 		if v > 0 then position += vein[i] * v end
 		if taper then position = Vector3.new(position.X * taper[i], position.Y, position.Z) end
 		mesh:SetPosition(ids[i], position)
 		if normalIds then
 			local normal = nbase[i] + ndelta[i] * gv
+			if sg ~= 0 and nshape and nshape[i] then normal += nshape[i] * sg end
 			if normal.Magnitude > 1e-6 then mesh:SetNormal(normalIds[i], normal.Unit) end
 		end
 	end
+	group.appliedShape[range] = sg
 	group.applied[range] = g
 	group.appliedOthers[range] = others
 	group.appliedVein[range] = v
@@ -1068,8 +1078,10 @@ local function buildGroup(self, state, group): boolean
 				local monster = MuscleMeshes.MonsterG(range.key) * (1 + MONSTER_EXTRA)
 				for i = range.first, range.first + range.count - 1 do buildG[i] = monster end
 			end
+			local shapeG = if data.shape then MuscleMeshes.MonsterG(data.shapeMuscle .. "@shape") * (1 + MONSTER_EXTRA) else 0
 			for i = 1, data.verts do
 				local built = data.base[i] + data.delta[i] * buildG[i]
+				if data.shape and data.shape[i] then built += data.shape[i] * shapeG end
 				if data.morph and data.morph[i] then built += data.morph[i] end
 				if group.taper then built = Vector3.new(built.X * group.taper[i], built.Y, built.Z) end
 				vertexIds[i] = mesh:AddVertex(built)
@@ -1087,7 +1099,7 @@ local function buildGroup(self, state, group): boolean
 				tick()
 			end
 			group.vertexIds, group.normalIds = vertexIds, normalIds
-			group.applied, group.appliedOthers, group.appliedVein, group.appliedW = {}, {}, {}, {}
+			group.applied, group.appliedOthers, group.appliedVein, group.appliedW, group.appliedShape = {}, {}, {}, {}, {}
 		end
 	end)
 	if not ok then

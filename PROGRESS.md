@@ -33,8 +33,15 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   normals of reshaped areas recomputed (fitNormals). Index monsterG SideDelts 0.8 -> 1.5. Stage meshes: tools/
   reshape_stage_corrections.luau (exact rebuild, error 0) -> 24 low-poly OBJs in Downloads\gym_arc_meshes_lowpoly_shoulderfix
   (torso + arms, same triangle counts; includes the upper traps fix, the trapsfix folder is outdated). WAITING: owner
-  imports, then tools/shoulder_fix_stage_setup.luau + tools/quad_fix_patch_config.py <that bounds.json>. Seen: owner's
+  imports (superseded by the backfix set, prompt 8). Seen: owner's
   Rhomboids 3.2 makes pointed flaps at mass monster (not changed).
+- BACK FILL + ADDUCTORS (prompt 8, 19 Oct night): MuscleMeshes BACK (Rhomboids / LowerBack shape layers filling the back
+  to its smoothed ridge minus a spine groove) and ADDUCTORS (LoadGroup merged.shape, drawn with Quads@shape by MuscleRig
+  applyRange / gen_body_stages: straight inward only, fades out 62-90% of the bare thigh). Owner mid-task: arms / upper
+  chest looked weird -> DELTS cap smaller (CapFrom -0.12, Down 0.46), yoke FrontShare 0.15. Stage meshes: 48 low-poly OBJs
+  in Downloads\gym_arc_meshes_lowpoly_backfix (torso, arms from the owner's low-poly; thighs from the quadfix set; every
+  fix of the day; trapsfix / shoulderfix folders outdated). WAITING: owner imports, then tools/body_stage_setup.luau +
+  tools/quad_fix_patch_config.py <that bounds.json>.
 - Queue (owner, 19 Oct, vault Prompts 2-5): inner quad bulge, mirror / statue width + duplicate crew tags, upper traps
   missing, top crews member view test.
 

@@ -96,6 +96,8 @@ local function shellObjects(groupDef, g: number)
 			end
 			if data.hug and data.hug[i] then gv *= data.hug[i] end
 			local p = data.base[i] + data.delta[i] * gv
+			-- (the thigh's shape layer, the adductors: Shared.MuscleMeshes LoadGroup)
+			if data.shape and data.shape[i] then p += data.shape[i] * shown(data.shapeMuscle .. "@shape", g) end
 			if data.morph and data.morph[i] then p += data.morph[i] * (1 - w) end
 			if v > 0 and data.vein and data.vein[i] then p += data.vein[i] * v end
 			pos[i] = p

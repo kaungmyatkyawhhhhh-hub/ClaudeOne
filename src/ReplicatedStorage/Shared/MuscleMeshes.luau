@@ -37,7 +37,7 @@ local MONSTER_DEFAULT: number = Index.monsterDefaultG or 1.35
 -- The shape layers (the traps yoke, the round delt caps; see addUpperTraps / addRoundDelts) grow with their muscle's level
 -- but have their own, gentler mass monster size (key "<muscle>@shape"): times the data's own monster sizes they made
 -- horns and folded wings.
-MuscleMeshes.ShapeMonsterG = { Traps = 1.35, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6 } :: { [string]: number }
+MuscleMeshes.ShapeMonsterG = { Traps = 1.35, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6, Rhomboids = 1.7, LowerBack = 1.7, Quads = 1.3 } :: { [string]: number }
 function MuscleMeshes.MonsterG(key: string): number
 	local muscle = string.match(key, "^(.-)@shape$")
 	if muscle then return MuscleMeshes.ShapeMonsterG[muscle] or 1.3 end
@@ -207,7 +207,7 @@ end
 -- the back all; Back = a backward push with it (thick from behind). In that top band the data's own Traps growth fades out
 -- (fully above Top - Depth + Edge): at the mass monster it stood up as two horns beside the neck. The mid traps (the
 -- diamond between the shoulder blades) below it stay the data's.
-local UPPER_TRAPS = { Height = 0.26, Back = 0.08, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.32, ShoulderTo = 1.3, Depth = 0.45, Edge = 0.25, FrontShare = 0.5 }
+local UPPER_TRAPS = { Height = 0.26, Back = 0.08, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.32, ShoulderTo = 1.3, Depth = 0.45, Edge = 0.25, FrontShare = 0.15 }
 local function addUpperTraps(data)
 	if not data.muscles.Traps then return end
 	local top = -math.huge
@@ -224,6 +224,69 @@ local function addUpperTraps(data)
 	end
 end
 
+-- A full back (owner, 19 Oct prompt 8: "the back looks hollow"; at the full look the middle of the back sat up to 0.2 studs
+-- lower than the muscles beside it, a deep spine valley and a dip between the rhomboids and the lats). At each height the
+-- back is filled up to its ridge (the most the back sticks out within Ridge studs of the middle, smoothed over the
+-- neighbouring heights) minus a shallow spine Groove (GrooveWidth wide): the mid traps / rhomboids become a raised
+-- diamond, the lower back two thick columns beside a shallow groove. Only within Width of the middle (easing out over
+-- WidthEdge), from Bottom to Top (easing over Edge), on the back-facing surface, at most Max studs at the full look. The
+-- fill is a shape layer: Rhomboids above Split, LowerBack below it (blended over SplitEdge).
+local BACK = { Ridge = 0.5, Groove = 0.04, GrooveWidth = 0.08, Width = 0.38, WidthEdge = 0.2, Bottom = -0.88, Top = 0.62, Edge = 0.18, Max = 0.25, Split = -0.05, SplitEdge = 0.25 }
+local function addBackFill(data)
+	if not (data.muscles.Rhomboids and data.muscles.LowerBack) then return end
+	local B = BACK
+	-- every vertex at the full look (every muscle's own growth)
+	local full = table.clone(data.base)
+	for _, m in pairs(data.muscles) do
+		for j, v in ipairs(m.idx) do full[v] += m.disp[j] end
+	end
+	local BIN = 0.05
+	local ridge = {}
+	for v, p in ipairs(full) do
+		local b = data.base[v]
+		if b.Z > 0.1 and math.abs(b.X) < B.Ridge then
+			local k = math.floor(b.Y / BIN + 0.5)
+			ridge[k] = math.max(ridge[k] or -math.huge, p.Z)
+		end
+	end
+	-- smoothed over the neighbouring heights (a plain step per bin made stripes across the back), then blended between bins
+	local smooth = {}
+	for k in pairs(ridge) do
+		local sum, weight = 0, 0
+		for o = -3, 3 do
+			local r = ridge[k + o]
+			if r then
+				local w = 4 - math.abs(o)
+				sum += r * w
+				weight += w
+			end
+		end
+		smooth[k] = sum / weight
+	end
+	local function ridgeAt(y: number): number
+		local f = y / BIN
+		local k = math.floor(f)
+		local a, b = smooth[k], smooth[k + 1]
+		if a and b then return a + (b - a) * (f - k) end
+		return a or b or -math.huge
+	end
+	for v, b in ipairs(data.base) do
+		local n = data.nbase[v]
+		if b.Z <= 0.05 or not n or n.Z <= 0.2 then continue end
+		local wx = 1 - ease((math.abs(b.X) - B.Width) / B.WidthEdge)
+		local wy = ease((b.Y - B.Bottom) / B.Edge) * (1 - ease((b.Y - B.Top) / B.Edge))
+		local wn = ease((n.Z - 0.2) / 0.3)
+		local w = wx * wy * wn
+		if w <= 0.001 then continue end
+		local target = ridgeAt(b.Y) - B.Groove * math.exp(-(b.X / B.GrooveWidth) ^ 2)
+		local fill = math.clamp(target - full[v].Z, 0, B.Max) * w
+		if fill <= 0.001 then continue end
+		local upper = ease((b.Y - B.Split) / B.SplitEdge + 0.5)
+		addShape(data, "Rhomboids", v, Vector3.new(0, 0, fill * upper))
+		addShape(data, "LowerBack", v, Vector3.new(0, 0, fill * (1 - upper)))
+	end
+end
+
 -- Round delts (owner, 19 Oct: "big round caps like half-balls sitting on the outside of the shoulder"; the data's delts
 -- were lumpy, folded and pointy on top). On the top of the upper arm (fully from CapFull, easing in from CapFrom, part-local
 -- height) the data's delts fade out and the three delt heads grow as ONE smooth cap (their shape layers): at the full look
@@ -231,7 +294,9 @@ end
 -- with the semi-axes Out (away from the body), Inner (toward it), Up, Down (into the arm) and Depth (front / back); the
 -- front, side and rear delts each take the part that faces their way (FrontFrom .. FrontTo of the vertex's Z), so each still
 -- grows with its own level. Below the cap the data's own delts stay.
-local DELTS = { CapFrom = -0.48, CapFull = 0.02, Center = Vector3.new(-0.02, 0.16, 0), Out = 0.62, Inner = 0.36, Up = 0.58, Down = 0.85, Depth = 0.56, FrontFrom = 0.04, FrontTo = 0.28 }
+-- (owner, 19 Oct: "the triceps, biceps look very weird": the first cap reached down to the elbow and swallowed the arm into
+-- one ball; now it is only the top of the arm, the biceps and triceps show below it)
+local DELTS = { CapFrom = -0.12, CapFull = 0.2, Center = Vector3.new(-0.02, 0.24, 0), Out = 0.56, Inner = 0.36, Up = 0.44, Down = 0.46, Depth = 0.5, FrontFrom = 0.04, FrontTo = 0.28 }
 local function addRoundDelts(data, outward: number)
 	local D = DELTS
 	for v, p in ipairs(data.base) do
@@ -277,7 +342,10 @@ function MuscleMeshes.LoadUnified(name: string): any
 		for i, v in ipairs(nidx) do nidx[i] = v + 1 end
 		data.muscles[muscle] = { idx = idx, disp = vectors(numbers(record, "disp_" .. muscle)), nidx = nidx, ndisp = vectors(numbers(record, "ndisp_" .. muscle)) }
 	end
-	if record.part == "UpperTorso" then addUpperTraps(data) end
+	if record.part == "UpperTorso" then
+		addUpperTraps(data)
+		addBackFill(data)
+	end
 	if record.part == "RightUpperArm" then addRoundDelts(data, 1) end
 	if record.part == "LeftUpperArm" then addRoundDelts(data, -1) end
 	fitNormals(data)
@@ -534,6 +602,14 @@ local SHORTS = { Hug = 0.5, HemBelow = 0.16, HemAbove = 0.08 }
 -- the thigh's middle (part-local X, away from the body) blend back to full growth. One smooth curve over the skin and the
 -- shorts meshes (they still meet at the hem). The body stage meshes are made from this same data (tools/gen_body_stages).
 local QUADS = { FadeFrom = 0.25, FadeTo = 0.6, OuterFrom = 0.05, OuterTo = 0.25 }
+-- The adductors (owner, 19 Oct prompt 8: "the inner thighs look empty"; the inner side was flat from mid thigh up). A shape
+-- layer on the thigh (merged.shape, drawn with the Quads level and MonsterG("Quads@shape")) fills the INNER SIDE only, pushing
+-- straight inward (never forward): up to an inner surface Target studs from the thigh's middle (part-local X; KneeTarget
+-- at the knee, reached by RiseTo of the bare thigh's height), at most Max at the full look; only on the inner side
+-- (InnerFrom .. InnerTo studs inward of the middle) and not on the front (FrontFrom .. FrontTo studs toward the front it
+-- fades out); it fades out from FadeFrom to FadeTo of the bare thigh's height, so the top of the inner thigh near the
+-- groin and everything under the shorts stays as it is (the quad fix above).
+local ADDUCTORS = { Target = 0.47, KneeTarget = 0.4, RiseTo = 0.3, FadeFrom = 0.62, FadeTo = 0.9, InnerFrom = 0.1, InnerTo = 0.24, FrontFrom = 0.06, FrontTo = 0.22, Max = 0.16 }
 local function smoothstep(t: number): number
 	t = math.clamp(t, 0, 1)
 	return t * t * (3 - 2 * t)
@@ -624,10 +700,53 @@ function MuscleMeshes.LoadGroup(group: any): any
 			end
 		end
 	end
+	local shape, nshape = nil, nil
+	if hemY < math.huge and (group.part == "LeftUpperLeg" or group.part == "RightUpperLeg") then
+		local A = ADDUCTORS
+		local bottomY = math.huge
+		for i = 1, vertexCount do bottomY = math.min(bottomY, base[i].Y) end
+		local inward = if group.part == "LeftUpperLeg" then 1 else -1 -- (part-local X pointing toward the other leg)
+		for i = 1, vertexCount do
+			local p = base[i]
+			local h = (p.Y - bottomY) / math.max(hemY - bottomY, 0.01)
+			local wh = smoothstep(h / 0.08) * (1 - smoothstep((h - A.FadeFrom) / (A.FadeTo - A.FadeFrom)))
+			local wi = smoothstep((p.X * inward - A.InnerFrom) / (A.InnerTo - A.InnerFrom))
+			local wf = 1 - smoothstep((-p.Z - A.FrontFrom) / (A.FrontTo - A.FrontFrom))
+			local w = wh * wi * wf
+			if w <= 0.001 then continue end
+			local grown = (p.X + delta[i].X * (if hasHug and hug[i] then hug[i] else 1)) * inward
+			local target = A.KneeTarget + (A.Target - A.KneeTarget) * smoothstep(h / A.RiseTo)
+			local fill = math.clamp(target - grown, 0, A.Max) * w
+			if fill > 0.001 then
+				shape = shape or {}
+				shape[i] = Vector3.new(fill * inward, 0, 0)
+			end
+		end
+		if shape and hasNormals then
+			-- the light follows the filled shape (the geometric normal change, like the unified reshapes)
+			local plainPos, filledPos = table.create(vertexCount), table.create(vertexCount)
+			for i = 1, vertexCount do
+				local g = if hasHug and hug[i] then hug[i] else 1
+				plainPos[i] = base[i] + delta[i] * g
+				filledPos[i] = plainPos[i] + (shape[i] or Vector3.zero)
+			end
+			local probe = { base = base, tris = tris }
+			local plainN, filledN = vertexNormals(probe, plainPos), vertexNormals(probe, filledPos)
+			nshape = {}
+			for i in pairs(shape) do nshape[i] = filledN[i] - plainN[i] end
+		end
+	end
 	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, bands = bands,
 		morph = if hasMorph then morph else nil, nbase = hasNormals and nbase or nil, ndelta = hasNormals and ndelta or nil,
 		vein = hasVeins and vein or nil, clothing = MuscleMeshes.ByName[group.records[1]].clothing or "Shirt", ranges = ranges,
-		triCount = triCount, hug = if hasHug then hug else nil }
+		triCount = triCount, hug = if hasHug then hug else nil, shape = shape, nshape = nshape, shapeMuscle = if shape then "Quads" else nil }
+	if shape then
+		for _, range in ipairs(ranges) do
+			for i = range.first, range.first + range.count - 1 do
+				if shape[i] then range.hasShape = true break end
+			end
+		end
+	end
 	groupCache[key] = merged
 	return merged
 end
