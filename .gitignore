@@ -27,3 +27,7 @@ poses.zip
 limb_stages/
 muscle_v9_unified.zip
 src/_push.json
+
+# Graphify (code graph of src/): keep GRAPH_REPORT.md and graph.json, not the big HTML view or the local cache
+**/graphify-out/graph.html
+**/graphify-out/cache/

@@ -9,6 +9,8 @@ Short on purpose: it is loaded every session. Read other files only when the tas
 - `PROGRESS.md`: read only the top "Current" section. Old entries live in `docs/PROGRESS_archive.md`; don't read it unless asked.
 - The old long rules file is `docs/CLAUDE_full_old.md` (vault writing format, export, checks). Open it only when you need those details.
 - If the owner says "do the prompt X", read `GYM ARC\Prompts\<X>.md` instead of asking them to paste it.
+- To find code: query the Graphify graph (graphify-out/) first, then open only the files it points to. (It lives in `src/graphify-out/`: `graphify query "<question>" --graph src/graphify-out/graph.json`, also `explain` / `path`; summary in `src/graphify-out/GRAPH_REPORT.md`.)
+- After exporting scripts to src/, run graphify update src.
 
 ## Hard rules
 - Studio is the source of truth (edit via MCP). No Rojo, never suggest it. GitHub `src/` is backup: export changed scripts (`tools/export`), commit, push.
