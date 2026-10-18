@@ -755,6 +755,26 @@ local function applyUnified(self, group, full: boolean?): number
 			end
 		end
 	end
+	-- the shape layers (traps yoke, round delt caps: MuscleMeshes addShape): their muscle's level, their own monster size
+	for _, muscle in ipairs(piece.shapeNames or {}) do
+		local key = muscle .. "@shape"
+		local g = meshShown(self, key, muscle)
+		local dg = g - (applied[key] or 0)
+		if math.abs(dg) > MIN_CHANGE then
+			applied[key] = g
+			local s = piece.shapes[muscle]
+			for j = 1, #s.idx do
+				local l = s.idx[j]
+				acc[l] += s.disp[j] * dg
+				if not all and not dirty[l] then dirty[l] = true table.insert(list, l) end
+			end
+			for j = 1, #s.nidx do
+				local l = s.nidx[j]
+				nacc[l] += s.ndisp[j] * dg
+				if not all and not dirty[l] then dirty[l] = true table.insert(list, l) end
+			end
+		end
+	end
 	if all then
 		list = table.create(piece.verts)
 		for l = 1, piece.verts do list[l] = l end
@@ -972,6 +992,11 @@ local function buildGroup(self, state, group): boolean
 				local m = piece.muscles[muscle]
 				local g = MuscleMeshes.MonsterG(muscle) * (1 + MONSTER_EXTRA)
 				for j, l in ipairs(m.idx) do big[l] += m.disp[j] * g end
+			end
+			for _, muscle in ipairs(piece.shapeNames or {}) do
+				local s = piece.shapes[muscle]
+				local g = MuscleMeshes.MonsterG(muscle .. "@shape") * (1 + MONSTER_EXTRA)
+				for j, l in ipairs(s.idx) do big[l] += s.disp[j] * g end
 			end
 			local ids, uvIds, normalIds = table.create(piece.verts), table.create(piece.verts), table.create(piece.verts)
 			for l = 1, piece.verts do

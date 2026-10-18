@@ -27,6 +27,14 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   Downloads\gym_arc_meshes_lowpoly_trapsfix\other_player_stages: WAITING for the owner's import, then
   tools/upper_traps_stage_setup.luau + tools/quad_fix_patch_config.py <that bounds.json>. (5) Top crews view tested phone +
   PC; deleted crew header keeps its name.
+- TRAPS YOKE + ROUND DELTS (prompt 7, 19 Oct evening): MuscleMeshes shape layers (data.shapes[muscle], drawn by MuscleRig
+  applyUnified + gen_body_stages with MonsterG("<muscle>@shape") = ShapeMonsterG: Traps 1.35, delts 1.6): UPPER_TRAPS yoke
+  (the data's Traps fade in the top band) and DELTS ellipsoid caps on the arm tops (the data's delts fade under the cap);
+  normals of reshaped areas recomputed (fitNormals). Index monsterG SideDelts 0.8 -> 1.5. Stage meshes: tools/
+  reshape_stage_corrections.luau (exact rebuild, error 0) -> 24 low-poly OBJs in Downloads\gym_arc_meshes_lowpoly_shoulderfix
+  (torso + arms, same triangle counts; includes the upper traps fix, the trapsfix folder is outdated). WAITING: owner
+  imports, then tools/shoulder_fix_stage_setup.luau + tools/quad_fix_patch_config.py <that bounds.json>. Seen: owner's
+  Rhomboids 3.2 makes pointed flaps at mass monster (not changed).
 - Queue (owner, 19 Oct, vault Prompts 2-5): inner quad bulge, mirror / statue width + duplicate crew tags, upper traps
   missing, top crews member view test.
 

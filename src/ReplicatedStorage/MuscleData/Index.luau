@@ -49,7 +49,7 @@ return {
 		Quads = 0.6,
 		RearDelts = 1.9,
 		Rhomboids = 3.2,
-		SideDelts = 0.8,
+		SideDelts = 1.5, -- (owner, 19 Oct prompt 7: the shoulders keep growing to the mass monster; was 0.8)
 		Traps = 2.625,
 		Triceps = 2.083,
 		UpperChest = 1.522,

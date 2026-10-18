@@ -56,6 +56,12 @@ local function unifiedObject(piece, g: number)
 		local s = shown(muscle, g)
 		for j, l in ipairs(m.idx) do pos[l] += m.disp[j] * s end
 	end
+	-- the shape layers (traps yoke, round delt caps; Shared.MuscleMeshes addShape)
+	for _, muscle in ipairs(piece.shapeNames or {}) do
+		local sh = piece.shapes[muscle]
+		local s = shown(muscle .. "@shape", g)
+		for j, l in ipairs(sh.idx) do pos[l] += sh.disp[j] * s end
+	end
 	local waistOff = 1 - waistOf(g)
 	if piece.morph then for l = 1, piece.verts do pos[l] += piece.morph[l] * waistOff end end
 	local v = veinOf(g)

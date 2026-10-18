@@ -34,7 +34,13 @@ end
 -- The mass monster size of a mesh / muscle (manifest mass_monster.g by name).
 local MONSTER_G: { [string]: number } = Index.monsterG or {}
 local MONSTER_DEFAULT: number = Index.monsterDefaultG or 1.35
+-- The shape layers (the traps yoke, the round delt caps; see addUpperTraps / addRoundDelts) grow with their muscle's level
+-- but have their own, gentler mass monster size (key "<muscle>@shape"): times the data's own monster sizes they made
+-- horns and folded wings.
+MuscleMeshes.ShapeMonsterG = { Traps = 1.35, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6 } :: { [string]: number }
 function MuscleMeshes.MonsterG(key: string): number
+	local muscle = string.match(key, "^(.-)@shape$")
+	if muscle then return MuscleMeshes.ShapeMonsterG[muscle] or 1.3 end
 	return MONSTER_G[key] or MONSTER_DEFAULT
 end
 
@@ -85,43 +91,166 @@ MuscleMeshes.TintRows = 4
 local unifiedCache: { [string]: any } = {}
 -- The whole unified mesh of one body part (parsed once): base, uv, vein, morph, nbase (Vector3 / Vector2 lists), tris
 -- (0-based), muscles[name] = { idx = { vertex (1-based) }, disp = { Vector3 }, nidx, ndisp }.
--- The upper traps (owner, 19 Oct: "the upper traps don't show at all"): the data only lifted a narrow strip right beside the
--- neck (hidden under the head and hair), so the line from the neck to the shoulder stayed flat. The Traps muscle also
--- lifts the top of the torso as a slope: full Height (studs at the full look, part-local) from NeckTo to PeakTo out from the
--- middle, easing in from NeckFrom (the neck stays as it is) and out to none at ShoulderTo (the delts); only the top Depth
--- of the torso (easing in over Edge); the front of the top gets FrontShare of it, the back all (the traps sit behind).
--- Back = a little backward push with it. The body stage meshes are made from this same data (tools/gen_body_stages).
-local UPPER_TRAPS = { Height = 0.16, Back = 0.03, NeckFrom = 0.18, NeckTo = 0.35, PeakTo = 0.55, ShoulderTo = 0.95, Depth = 0.3, Edge = 0.15, FrontShare = 0.35 }
-local function addUpperTraps(data)
-	local traps = data.muscles.Traps
-	if not traps then return end
-	local function ease(t: number): number
-		t = math.clamp(t, 0, 1)
-		return t * t * (3 - 2 * t)
+-- Shape changes on top of the muscle data (owner, 19 Oct). Two kinds, both per vertex and per muscle:
+--   data.shapes[muscle] = { idx, disp, nidx, ndisp }: a SHAPE LAYER that grows with the muscle's level but has its own mass
+--     monster size (MuscleMeshes.MonsterG("<muscle>@shape")); drawn by MuscleRig / tools/gen_body_stages next to the muscle
+--   data.reshape[muscle][vertex] = the change made to the muscle's own growth (Vector3 at the full look; under the delt
+--     caps the data's delts fade out)
+-- tools/reshape_stage_corrections moves the owner's low-poly body stage meshes by both.
+local function ease(t: number): number
+	t = math.clamp(t, 0, 1)
+	return t * t * (3 - 2 * t)
+end
+local function indexOf(list)
+	local at = {}
+	for j, v in ipairs(list) do at[v] = j end
+	return at
+end
+-- adds to a muscle's shape layer at one vertex
+local function addShape(data, muscle: string, v: number, value: Vector3)
+	if not data.muscles[muscle] or value.Magnitude < 1e-6 then return end
+	data.shapes = data.shapes or {}
+	local s = data.shapes[muscle]
+	if not s then
+		s = { idx = {}, disp = {}, nidx = {}, ndisp = {}, at = {} }
+		data.shapes[muscle] = s
 	end
+	local j = s.at[v]
+	if j then
+		s.disp[j] += value
+	else
+		table.insert(s.idx, v)
+		table.insert(s.disp, value)
+		s.at[v] = #s.idx
+	end
+end
+-- scales a muscle's own growth at one vertex (recorded in data.reshape)
+local function scaleMuscle(data, muscle: string, v: number, factor: number)
+	local m = data.muscles[muscle]
+	if not m then return end
+	m.at = m.at or indexOf(m.idx)
+	local j = m.at[v]
+	if not j or factor == 1 then return end
+	local old = m.disp[j]
+	m.disp[j] = old * factor
+	data.reshape = data.reshape or {}
+	data.reshape[muscle] = data.reshape[muscle] or {}
+	data.reshape[muscle][v] = m.disp[j] - old
+end
+
+-- After a reshape the data's normal changes no longer fit the new shape (the light would still show the old lumps): at the
+-- vertices a muscle's growth changed and for every shape layer, the normal change becomes the geometric one (the smooth
+-- vertex normals of base + that growth minus those of base; vertices at the same spot, e.g. along a UV seam, share one).
+local function vertexNormals(data, positions)
+	local byKey, keyOf = {}, table.create(#positions)
+	for i in ipairs(positions) do
+		local p = data.base[i]
+		local key = math.floor(p.X * 1e4 + 0.5) .. "," .. math.floor(p.Y * 1e4 + 0.5) .. "," .. math.floor(p.Z * 1e4 + 0.5)
+		keyOf[i] = key
+		byKey[key] = byKey[key] or Vector3.zero
+	end
+	local t = data.tris
+	for k = 1, #t, 3 do
+		local a, b, c = t[k] + 1, t[k + 1] + 1, t[k + 2] + 1
+		local n = (positions[b] - positions[a]):Cross(positions[c] - positions[a]) -- (area weighted)
+		byKey[keyOf[a]] += n
+		byKey[keyOf[b]] += n
+		byKey[keyOf[c]] += n
+	end
+	local out = table.create(#positions)
+	for i = 1, #positions do
+		local n = byKey[keyOf[i]]
+		out[i] = if n.Magnitude > 1e-9 then n.Unit else Vector3.yAxis
+	end
+	return out
+end
+local function normalsFor(data, plain, idx, disp, vertices)
+	local positions = table.clone(data.base)
+	for j, v in ipairs(idx) do positions[v] += disp[j] end
+	local grown = vertexNormals(data, positions)
+	local out = {}
+	for v in pairs(vertices) do out[v] = grown[v] - plain[v] end
+	return out
+end
+local function fitNormals(data)
+	if not data.reshape and not data.shapes then return end
+	local plain = vertexNormals(data, data.base)
+	for muscle, changed in pairs(data.reshape or {}) do
+		local m = data.muscles[muscle]
+		local fitted = normalsFor(data, plain, m.idx, m.disp, changed)
+		local nat = indexOf(m.nidx)
+		for v, d in pairs(fitted) do
+			local j = nat[v]
+			if j then
+				m.ndisp[j] = d
+			else
+				table.insert(m.nidx, v)
+				table.insert(m.ndisp, d)
+				nat[v] = #m.nidx
+			end
+		end
+	end
+	for _, s in pairs(data.shapes or {}) do
+		local fitted = normalsFor(data, plain, s.idx, s.disp, s.at)
+		for v, d in pairs(fitted) do
+			table.insert(s.nidx, v)
+			table.insert(s.ndisp, d)
+		end
+	end
+end
+
+-- The traps yoke (owner, 19 Oct: "one wide, smooth slope from the base of the neck all the way out to the top of each
+-- shoulder"; the data only lifted a thin strip beside the neck). A Traps shape layer lifts the top of the torso: Height
+-- (studs at the full look, part-local) from NeckTo to PeakTo out from the middle (rising from NeckFrom, so the base of the
+-- neck lifts too: one mound, no horns), sloping down from there to none at ShoulderTo (past the torso's edge: some is left
+-- where the delts start); only the top Depth of the torso (easing in over Edge); the front of the top gets FrontShare of it,
+-- the back all; Back = a backward push with it (thick from behind). In that top band the data's own Traps growth fades out
+-- (fully above Top - Depth + Edge): at the mass monster it stood up as two horns beside the neck. The mid traps (the
+-- diamond between the shoulder blades) below it stay the data's.
+local UPPER_TRAPS = { Height = 0.26, Back = 0.08, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.32, ShoulderTo = 1.3, Depth = 0.45, Edge = 0.25, FrontShare = 0.5 }
+local function addUpperTraps(data)
+	if not data.muscles.Traps then return end
 	local top = -math.huge
 	for _, p in ipairs(data.base) do top = math.max(top, p.Y) end
-	local at = {}
-	for j, v in ipairs(traps.idx) do at[v] = j end
 	local U = UPPER_TRAPS
-	data.upperTraps = {} -- [vertex] = the slope added to its Traps growth (for tools/upper_traps_stage_corrections)
 	for v, p in ipairs(data.base) do
 		local ax = math.abs(p.X)
 		local across = ease((ax - U.NeckFrom) / (U.NeckTo - U.NeckFrom)) * (1 - ease((ax - U.PeakTo) / (U.ShoulderTo - U.PeakTo)))
 		local down = ease((p.Y - (top - U.Depth)) / U.Edge)
 		local side = U.FrontShare + (1 - U.FrontShare) * ease((p.Z + 0.3) / 0.5)
 		local w = across * down * side
-		if w > 0.001 then
-			local bump = Vector3.new(0, U.Height, U.Back) * w
-			data.upperTraps[v] = bump
-			local j = at[v]
-			if j then
-				traps.disp[j] += bump
-			else
-				table.insert(traps.idx, v)
-				table.insert(traps.disp, bump)
-				at[v] = #traps.idx
-			end
+		if down > 0.001 then scaleMuscle(data, "Traps", v, 1 - down) end
+		if w > 0.001 then addShape(data, "Traps", v, Vector3.new(0, U.Height, U.Back) * w) end
+	end
+end
+
+-- Round delts (owner, 19 Oct: "big round caps like half-balls sitting on the outside of the shoulder"; the data's delts
+-- were lumpy, folded and pointy on top). On the top of the upper arm (fully from CapFull, easing in from CapFrom, part-local
+-- height) the data's delts fade out and the three delt heads grow as ONE smooth cap (their shape layers): at the full look
+-- every vertex sits on an ellipsoid around Center (the box-like arm's corners pull in, its sides swell out: a half-ball),
+-- with the semi-axes Out (away from the body), Inner (toward it), Up, Down (into the arm) and Depth (front / back); the
+-- front, side and rear delts each take the part that faces their way (FrontFrom .. FrontTo of the vertex's Z), so each still
+-- grows with its own level. Below the cap the data's own delts stay.
+local DELTS = { CapFrom = -0.48, CapFull = 0.02, Center = Vector3.new(-0.02, 0.16, 0), Out = 0.62, Inner = 0.36, Up = 0.58, Down = 0.85, Depth = 0.56, FrontFrom = 0.04, FrontTo = 0.28 }
+local function addRoundDelts(data, outward: number)
+	local D = DELTS
+	for v, p in ipairs(data.base) do
+		local q = Vector3.new(p.X * outward, p.Y, p.Z) -- (+X = away from the body, either arm)
+		local cap = ease((q.Y - D.CapFrom) / (D.CapFull - D.CapFrom))
+		if cap <= 0.001 then continue end
+		local offset = q - D.Center
+		local dir = if offset.Magnitude > 1e-6 then offset.Unit else Vector3.yAxis
+		local ax = if dir.X > 0 then D.Out else D.Inner
+		local ay = if dir.Y > 0 then D.Up else D.Down
+		local radius = 1 / math.sqrt((dir.X / ax) ^ 2 + (dir.Y / ay) ^ 2 + (dir.Z / D.Depth) ^ 2)
+		local grow = D.Center + dir * radius - q
+		grow = Vector3.new(grow.X * outward, grow.Y, grow.Z)
+		local front = ease((-q.Z - D.FrontFrom) / (D.FrontTo - D.FrontFrom))
+		local rear = ease((q.Z - D.FrontFrom) / (D.FrontTo - D.FrontFrom))
+		local shares = { FrontDelts = front, RearDelts = rear, SideDelts = math.max(1 - front - rear, 0) }
+		for muscle, share in pairs(shares) do
+			scaleMuscle(data, muscle, v, 1 - cap)
+			addShape(data, muscle, v, grow * share * cap)
 		end
 	end
 end
@@ -149,6 +278,9 @@ function MuscleMeshes.LoadUnified(name: string): any
 		data.muscles[muscle] = { idx = idx, disp = vectors(numbers(record, "disp_" .. muscle)), nidx = nidx, ndisp = vectors(numbers(record, "ndisp_" .. muscle)) }
 	end
 	if record.part == "UpperTorso" then addUpperTraps(data) end
+	if record.part == "RightUpperArm" then addRoundDelts(data, 1) end
+	if record.part == "LeftUpperArm" then addRoundDelts(data, -1) end
+	fitNormals(data)
 	unifiedCache[name] = data
 	return data
 end
@@ -230,6 +362,34 @@ function MuscleMeshes.LoadPiece(name: string, half: string?): any
 			table.insert(piece.muscleNames, muscle)
 		end
 	end
+	-- the shape layers (see addShape), in this piece's vertex ids; they count for their muscle's tint too
+	piece.shapes, piece.shapeNames = {}, {}
+	for muscle, s in pairs(data.shapes or {}) do
+		local biggest = 0
+		for _, d in ipairs(s.disp) do biggest = math.max(biggest, d.Magnitude) end
+		local idx, disp, nidx, ndisp = {}, {}, {}, {}
+		for j, v in ipairs(s.idx) do
+			local l = localOf[v]
+			if l then
+				table.insert(idx, l)
+				table.insert(disp, s.disp[j])
+				local w = if biggest > 0 then s.disp[j].Magnitude / biggest else 0
+				if piece.muscles[muscle] and w > weight[l] then weight[l], dominant[l] = w, muscle end
+			end
+		end
+		for j, v in ipairs(s.nidx) do
+			local l = localOf[v]
+			if l then
+				table.insert(nidx, l)
+				table.insert(ndisp, s.ndisp[j])
+			end
+		end
+		if #idx > 0 then
+			piece.shapes[muscle] = { idx = idx, disp = disp, nidx = nidx, ndisp = ndisp }
+			table.insert(piece.shapeNames, muscle)
+		end
+	end
+	table.sort(piece.shapeNames)
 	local top = MuscleMeshes.TintBands
 	for i = 1, n do
 		local t = math.clamp(weight[i], 0, 1)

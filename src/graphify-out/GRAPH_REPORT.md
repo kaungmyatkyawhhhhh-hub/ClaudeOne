@@ -1,7 +1,7 @@
 # Graph Report - src  (2026-10-19)
 
 ## Corpus Check
-- 172 files · ~265,681 words
+- 172 files · ~267,061 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `14feeb8b`
+- Built from commit: `2a0799b9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -442,13 +442,13 @@ Nodes (5): Theme.PlateDisc(), Theme.Round(), Theme.Stroke(), column(), swatch()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Icon.new()` connect `Icon.new` to `Icon/init.luau`, `Icon.getIconByUID`, `Icon:refreshAppearance`, `Janitor.luau`, `TopBar.luau`, `Icon:getInstance`?**
-  _High betweenness centrality (0.108) - this node is a cross-community bridge._
+  _High betweenness centrality (0.106) - this node is a cross-community bridge._
 - **Are the 44 inferred relationships involving `ClientData.Get()` (e.g. with `ensure()` and `refresh()`) actually correct?**
   _`ClientData.Get()` has 44 INFERRED edges - model-reasoned connections that need verification._
 - **Should `SpotService.luau` be split into smaller, more focused modules?**
   _Cohesion score 0.0545308740978348 - nodes in this community are weakly interconnected._
 - **Why does `TopBar.AddPill()` connect `TopBar.luau` to `Icon.new`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
 - **Are the 35 inferred relationships involving `Theme.Tween()` (e.g. with `setShown()` and `Kit.CoinBurst()`) actually correct?**
   _`Theme.Tween()` has 35 INFERRED edges - model-reasoned connections that need verification._
 - **Should `MachineClient.client.luau` be split into smaller, more focused modules?**
