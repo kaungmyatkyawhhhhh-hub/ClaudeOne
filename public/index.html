@@ -159,6 +159,13 @@
   .tooltip .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 1px 0; }
   .tooltip .row span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
   .tooltip .row b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg[hidden] { display: none; }
+  .seg button { height: 26px; border: 0; border-radius: 0; padding: 0 10px; font-size: 12px; color: var(--ink-3); background: transparent; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--bg); color: var(--ink); }
+  .head-right { display: flex; align-items: center; gap: 12px; }
+  body.static .topbar form .field, body.static .topbar form .primary { display: none; }
   .empty { color: var(--ink-3); padding: 48px 16px; text-align: center; }
 
   /* table */
@@ -254,7 +261,10 @@
   <section class="panel">
     <div class="panel-head">
       <h2>Concurrent users</h2>
-      <span class="meta">Last 24 hours · 1-minute samples</span>
+      <div class="head-right">
+        <span class="meta" id="chart-meta"></span>
+        <div class="seg" id="range" hidden><button type="button" data-range="24">24h</button><button type="button" data-range="168">7d</button></div>
+      </div>
     </div>
     <div class="chart-wrap" id="chart"></div>
   </section>
@@ -275,6 +285,7 @@ const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat();
 const compact = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
 const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric' });
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
@@ -282,6 +293,9 @@ let data = null;
 let sort = { key: 'playing', dir: -1 };
 let filter = '';
 let timer = null;
+let staticMode = false; // true when served as a static site with a published data.json
+let rangeHours = 24;
+const DAY = 24 * 60 * 60 * 1000;
 
 // ---- settings: URL query wins, then localStorage ----
 function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} }
@@ -316,6 +330,10 @@ function mountDashboard() {
   if ($('kpis')) return;
   $('main').replaceChildren($('dashboard').content.cloneNode(true));
   $('filter').oninput = (e) => { filter = e.target.value.trim().toLowerCase(); render(); };
+  $('range').hidden = !staticMode;
+  $('range').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { rangeHours = Number(b.dataset.range); render(); };
+  });
 }
 
 function setSync(text, isError) {
@@ -325,6 +343,27 @@ function setSync(text, isError) {
   }
   $('sync-text').textContent = text;
   $('sync').classList.toggle('err', !!isError);
+}
+
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)}h ago`;
+}
+
+async function loadStatic() {
+  try {
+    const res = await fetch(`data.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return false;
+    data = await res.json();
+  } catch { return false; }
+  staticMode = true;
+  document.body.classList.add('static');
+  mountDashboard();
+  $('owner').innerHTML = data.owners.map((o) => esc(o.type === 'group' ? o.name : o.displayName || o.name)).join(' · ');
+  setSync(`Updated ${ago(data.fetchedAt)} · refreshes every ${data.intervalMinutes || 15} min`);
+  render();
+  timer = setTimeout(loadStatic, 5 * 60 * 1000);
+  return true;
 }
 
 async function refresh(showLoading) {
@@ -351,15 +390,17 @@ async function refresh(showLoading) {
 
 // ---- derived numbers ----
 const rating = (g) => (g.upVotes + g.downVotes ? g.upVotes / (g.upVotes + g.downVotes) : null);
-const peak = (g) => Math.max(g.playing, ...g.history.map((h) => h[1]));
-const visitsGained = (g) => (g.history.length ? g.visits - g.history[0][2] : 0);
+const within = (g, hours) => g.history.filter((h) => h[0] >= data.fetchedAt - hours * 3600000);
+const last24 = (g) => within(g, 24);
+const peak = (g) => Math.max(g.playing, ...last24(g).map((h) => h[1]));
+const visitsGained = (g) => { const h = last24(g); return h.length ? g.visits - h[0][2] : 0; };
 
 // Sum player counts across games, bucketed to the minute.
-function totalSeries(games) {
+function totalSeries(games, hours = 24) {
   const buckets = new Map();
   for (const g of games) {
     const seen = new Map();
-    for (const [t, p] of g.history) seen.set(Math.round(t / 60000) * 60000, p);
+    for (const [t, p] of within(g, hours)) seen.set(Math.round(t / 60000) * 60000, p);
     for (const [t, p] of seen) buckets.set(t, (buckets.get(t) || 0) + p);
   }
   return [...buckets].sort((a, b) => a[0] - b[0]);
@@ -418,17 +459,22 @@ function renderChart(games, top, colorOf) {
   const box = $('chart');
   const topIds = new Set(top.map((g) => g.universeId));
   const others = games.filter((g) => !topIds.has(g.universeId));
-  const series = top.filter((g) => g.history.length).map((g) => ({
-    name: g.name, color: cssVar(colorOf.get(g.universeId)), points: g.history.map((h) => [h[0], h[1]]),
+  $('range').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.range) === rangeHours));
+  const step = staticMode ? `${data.intervalMinutes || 15}-minute` : '1-minute';
+  $('chart-meta').textContent = `${rangeHours === 24 ? 'Last 24 hours' : 'Last 7 days'} · ${step} samples`;
+  const series = top.filter((g) => within(g, rangeHours).length).map((g) => ({
+    name: g.name, color: cssVar(colorOf.get(g.universeId)), points: within(g, rangeHours).map((h) => [h[0], h[1]]),
   }));
   if (others.length) {
-    const pts = totalSeries(others);
+    const pts = totalSeries(others, rangeHours);
     if (pts.length) series.push({ name: `All others (${others.length})`, color: cssVar('--series-other'), points: pts });
   }
   const all = series.flatMap((s) => s.points);
   const t0 = Math.min(...all.map((p) => p[0])), t1 = Math.max(...all.map((p) => p[0]));
   if (!series.length || t1 - t0 < 60000) {
-    box.innerHTML = `<div class="empty">Collecting samples. The chart appears after a couple of minutes and covers up to 24 hours while the server runs.</div>`;
+    box.innerHTML = staticMode
+      ? `<div class="empty">Collecting samples. The chart appears after the next couple of updates and builds up to 7 days of history.</div>`
+      : `<div class="empty">Collecting samples. The chart appears after a couple of minutes and covers up to 24 hours while the server runs.</div>`;
     return;
   }
 
@@ -436,13 +482,13 @@ function renderChart(games, top, colorOf) {
   const m = { l: 40, r: 4, t: 12, b: 26 };
   const iw = W - m.l - m.r, ih = H - m.t - m.b;
   const rawMax = Math.max(1, ...all.map((p) => p[1]));
-  const step = niceStep(rawMax / 4);
-  const yMax = Math.ceil(rawMax / step) * step;
+  const yStep = niceStep(rawMax / 4);
+  const yMax = Math.ceil(rawMax / yStep) * yStep;
   const x = (t) => m.l + ((t - t0) / (t1 - t0)) * iw;
   const y = (v) => m.t + ih - (v / yMax) * ih;
 
   let grid = '';
-  for (let v = 0; v <= yMax; v += step) {
+  for (let v = 0; v <= yMax; v += yStep) {
     grid += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line-soft)"${v === 0 ? ' style="stroke:var(--line)"' : ''}/>`;
     grid += `<text x="${m.l - 10}" y="${y(v) + 4}" text-anchor="end">${compact.format(v)}</text>`;
   }
@@ -450,8 +496,9 @@ function renderChart(games, top, colorOf) {
   let lastLabel = '';
   for (let i = 0; i <= ticks; i++) {
     const t = t0 + ((t1 - t0) * i) / ticks;
-    if (timeFmt.format(t) === lastLabel) continue;
-    lastLabel = timeFmt.format(t);
+    const label = t1 - t0 > 1.5 * DAY ? dayFmt.format(t) : timeFmt.format(t);
+    if (label === lastLabel) continue;
+    lastLabel = label;
     grid += `<text x="${x(t)}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === ticks ? 'end' : 'middle'}">${lastLabel}</text>`;
   }
   const lines = series.map((s) => {
@@ -480,7 +527,8 @@ function renderChart(games, top, colorOf) {
     const px = x(rows[0].p[0]);
     xh.setAttribute('x1', px); xh.setAttribute('x2', px); xh.setAttribute('visibility', 'visible');
     dots.innerHTML = rows.map(({ s, p }) => `<circle cx="${x(p[0])}" cy="${y(p[1])}" r="4" fill="${s.color}" stroke="var(--panel)" stroke-width="2"/>`).join('');
-    tip.innerHTML = `<div class="when">${timeFmt.format(rows[0].p[0])}</div>` +
+    const when = new Date(rows[0].p[0]);
+    tip.innerHTML = `<div class="when">${t1 - t0 > 1.5 * DAY ? `${dayFmt.format(when)}, ` : ''}${timeFmt.format(when)}</div>` +
       rows.map(({ s, p }) => `<div class="row"><span><i class="key" style="background:${s.color}"></i>${esc(s.name)}</span><b>${fmt.format(p[1])}</b></div>`).join('');
     tip.style.display = 'block';
     const bx = box.getBoundingClientRect();
@@ -511,7 +559,7 @@ const COLUMNS = [
   { key: 'updated', label: 'Updated', get: (g) => Date.parse(g.updated) || 0 },
 ];
 
-function ago(iso) {
+function agoIso(iso) {
   const s = (Date.now() - Date.parse(iso)) / 1000;
   if (!isFinite(s)) return '—';
   if (s < 3600) return `${Math.max(1, Math.round(s / 60))}m ago`;
@@ -545,12 +593,12 @@ function renderTable(games, colorOf, rankOf) {
       </div></td>
       <td><span class="ccu${g.playing ? '' : ' idle'}"><span class="dot"></span>${fmt.format(g.playing)}</span></td>
       <td>${fmt.format(peak(g))}</td>
-      <td>${sparkline(g.history, 88, 22, color)}</td>
+      <td>${sparkline(last24(g), 88, 22, color)}</td>
       <td>${fmt.format(g.visits)}</td>
       <td>${gained ? `<span class="pos">+${fmt.format(gained)}</span>` : '<span class="faint">—</span>'}</td>
       <td>${fmt.format(g.favorites)}</td>
       <td>${r == null ? '<span class="faint">—</span>' : `<span class="ratio">${(r * 100).toFixed(1)}%<span class="bar"><i style="width:${(r * 100).toFixed(1)}%"></i></span></span>`}</td>
-      <td class="faint">${ago(g.updated)}</td>
+      <td class="faint">${agoIso(g.updated)}</td>
     </tr>`;
   }).join('');
   const emptyMsg = filter ? 'No experiences match that filter.' : 'No public experiences found for this account.';
@@ -567,7 +615,7 @@ function renderTable(games, colorOf, rankOf) {
 let resizeTimer;
 addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
-refresh(true);
+loadStatic().then((ok) => { if (!ok) refresh(true); });
 </script>
 </body>
 </html>
