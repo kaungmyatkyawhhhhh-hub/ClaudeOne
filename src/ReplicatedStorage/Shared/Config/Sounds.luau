@@ -96,16 +96,16 @@ return {
 
 	-- Music (2D, low in the background, plays the tracks in order and loops). The owner's own tracks (14 Oct); this list
 	-- plays wherever an area below has no list of its own.
-	Music = { ids = { 118959016267248, 131532099124744, 139266399633943, 86451874359343, 113417603188158, 1840007392 }, volume = 0.7, pitch = 0, group = "Music" },
+	Music = { ids = { 118959016267248, 99979837873059, 131532099124744, 139266399633943, 86451874359343, 113417603188158, 1840007392 }, volume = 0.7, pitch = 0, group = "Music" },
 
 	-- Area music: which tracks play where (Audio.SetArea; SettingsClient picks the area). Put as many ids in an area's
 	-- list as you like, separated by commas: they play one after another in that order, then start again from the first.
 	-- e.g. Starter = { 86451874359343, 131532099124744, 139266399633943 },
 	AreaMusic = {
 		-- (owner, 14 Oct: several songs in every area: each area's own song first, then the owner's other tracks)
-		Starter = { 86451874359343 }, -- the starter gym
-		Pro = { 118959016267248 },    -- the pro gym
-		Beach = { 1837324500 },         -- the beach, beach gym, posing stage, skate park
+		Starter = { 86451874359343, 131532099124744, 135822443550596 }, -- the starter gym
+		Pro = { 118959016267248, 113417603188158, 139777823649977 },    -- the pro gym
+		Beach = { 1837324500, 95854242246323, 102866809292046 },         -- the beach, beach gym, posing stage, skate park
 		Town = { 1840007392 },         -- the streets, plaza and shops
 	},
 }

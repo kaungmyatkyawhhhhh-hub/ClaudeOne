@@ -2,12 +2,19 @@
 -- servers. Create one, invite players in your server, accept invites, leave. Every name and tag goes through
 -- Roblox's text filter before anyone else sees it. A crew's score (its members' muscle levels) feeds the top
 -- crews list shown in the Crew panel. Scores are EXP (Muscles.TotalExp), like every number the player sees.
--- Records: DataStore "Crews", key = crew id -> { name, tag, owner, members = { [userId] = { score } } }.
+-- Records: DataStore "Crews", key = crew id -> { name, tag, owner, members = { [userId] = { score, level, spurts, seen,
+-- name } }, officers? = { [userId] = true }, joinMode? = "request" | "open", requests? = { [userId] = { name, at } } }.
+-- Top crews (owner, 15 Oct): tapping a crew opens its members (action "View": read from the DataStore, kept 60 s per
+-- crew on this server). Joining from there: "open" crews are joined at once (JOIN), the others get a join request
+-- (REQUEST TO JOIN) that the leader (or an officer) accepts in MY CREW. An accepted player who isn't in this server is
+-- told through the "CrewInboxV1" DataStore (key = userId -> crewId), read when they join and on every score refresh.
+-- "Online" = the member's server wrote their score in the last two refreshes (any server: no extra calls).
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
 local TextService = game:GetService("TextService")
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Config = ReplicatedStorage.Shared.Config
 local Social = require(Config.Social)
@@ -21,13 +28,17 @@ local CREW = Social.Crew
 
 local CrewService = {}
 
-local remote -- RemoteEvent "Crew": client -> server (action, ...); server -> client ("Info", info) / ("Result", text)
+local remote -- RemoteEvent "Crew": client -> server (action, ...); server -> client ("Info", info) / ("View", view) / ("Result", text)
 local crewStore = DataStoreService:GetDataStore("CrewsV1") -- (V1: fresh for the release, 9 Oct)
 local scoreStore = DataStoreService:GetOrderedDataStore("CrewLeaderboardV1")
+local inboxStore = DataStoreService:GetDataStore("CrewInboxV1") -- [userId] = crewId of an accepted join request
 local cache = {}   -- [crewId] = record (as last read or written by this server)
 local invites = {} -- [player] = { [crewId] = inviterName }
 local names = {}   -- [userId] = name
 local busy = {}    -- [player] = true while an action runs
+local viewed = {}  -- [crewId] = os.clock() of the last DataStore read for "View" (VIEW_CACHE seconds)
+local VIEW_CACHE = 60
+local MAX_REQUESTS = 20
 
 ------------------------------------------------------------------------
 -- Helpers
@@ -52,8 +63,14 @@ local function count(members)
 	return n
 end
 
+-- Studio test crews (Workspace attribute TestCrews = true): never read from or written to the DataStore
+local function isTest(crewId): boolean
+	return type(crewId) == "string" and crewId:sub(1, 5) == "test-"
+end
+
 local function readCrew(crewId)
 	if not crewId then return nil end
+	if isTest(crewId) then return cache[crewId] end
 	local ok, record = pcall(crewStore.GetAsync, crewStore, crewId)
 	if ok then cache[crewId] = record end
 	return ok and record or cache[crewId]
@@ -61,6 +78,7 @@ end
 
 -- Change a crew record safely (UpdateAsync). `change(record)` returns the new record or nil to cancel.
 local function updateCrew(crewId, change)
+	if isTest(crewId) then return false, nil end
 	local ok, newRecord = pcall(crewStore.UpdateAsync, crewStore, crewId, function(record)
 		return change(record)
 	end)
@@ -85,6 +103,31 @@ end
 
 local function setCrew(player, crewId)
 	PlayerData.SetTable(player, "crew", { id = crewId })
+end
+
+local function roleOf(record, userId): string
+	userId = tostring(userId)
+	if tostring(record.owner) == userId then return "Leader" end
+	if type(record.officers) == "table" and record.officers[userId] then return "Officer" end
+	return "Member"
+end
+
+local function canManage(record, userId): boolean
+	local role = roleOf(record, userId)
+	return role == "Leader" or role == "Officer"
+end
+
+-- average muscle level (the top bar's "LVL n")
+local function levelOf(data): number
+	local total, n = 0, 0
+	for _, muscle in ipairs(Muscles.List) do
+		local entry = data.muscles and data.muscles[muscle.id]
+		if entry then
+			total += Muscles.ExactLevel(entry)
+			n += 1
+		end
+	end
+	return n > 0 and math.floor(total / n) or 0
 end
 
 ------------------------------------------------------------------------
@@ -123,23 +166,74 @@ local function updateTag(player)
 end
 
 ------------------------------------------------------------------------
--- Info for the Crew panel
+-- What the panels show
 ------------------------------------------------------------------------
+local function topList()
+	local topJson = ReplicatedStorage:GetAttribute("CrewTop")
+	local top = {}
+	if type(topJson) == "string" then
+		local ok, decoded = pcall(HttpService.JSONDecode, HttpService, topJson)
+		if ok and type(decoded) == "table" then top = decoded end
+	end
+	if RunService:IsStudio() and workspace:GetAttribute("TestCrews") == true then
+		local test = {}
+		for _, id in ipairs({ "test-full", "test-solo", "test-gone" }) do
+			local record = cache[id]
+			local total = 0
+			if record then for _, member in pairs(record.members) do total += member.score or 0 end end
+			table.insert(test, { crewId = id, name = record and record.name or "Gone Crew", tag = record and record.tag or "GONE",
+				score = total, members = record and count(record.members) or 3 })
+		end
+		for _, entry in ipairs(top) do table.insert(test, entry) end
+		top = test
+	end
+	return top
+end
+
+-- The crew as both panels show it (the same shape for MY CREW and a top crew): name, tag, rank, score, members
+-- (leader first, then by contribution) with role, level, Growth Spurts (the height), score, online / here.
+local function crewView(crewId, record)
+	local members, total = {}, 0
+	local now = os.time()
+	for userId, member in pairs(record.members) do
+		local here = Players:GetPlayerByUserId(tonumber(userId)) ~= nil
+		total += member.score or 0
+		table.insert(members, {
+			userId = tonumber(userId), name = member.name or nameOf(userId), role = roleOf(record, userId),
+			score = member.score or 0, level = member.level, spurts = member.spurts or 0, here = here,
+			online = here or (member.seen ~= nil and now - member.seen < CREW.Refresh * 2 + 30),
+		})
+	end
+	table.sort(members, function(a, b)
+		if (a.role == "Leader") ~= (b.role == "Leader") then return a.role == "Leader" end
+		if a.score ~= b.score then return a.score > b.score end
+		return a.name < b.name
+	end)
+	local rank = nil
+	for index, entry in ipairs(topList()) do
+		if entry.crewId == crewId then rank = index break end
+	end
+	return { crewId = crewId, name = record.name, tag = record.tag, rank = rank, score = total, members = members,
+		max = CREW.MaxMembers, joinMode = record.joinMode or "request" }
+end
+
 local function sendInfo(player)
 	if not player.Parent then return end
-	local info = { invites = {}, eligible = {}, top = {} }
+	local info = { invites = {}, eligible = {}, top = topList() }
 	local crewId = crewIdOf(player)
 	local record = crewId and cache[crewId]
 	if record then
-		local members = {}
-		for userId, member in pairs(record.members) do
-			table.insert(members, {
-				name = nameOf(userId), userId = tonumber(userId), score = member.score or 0, -- (userId: the headshot)
-				here = Players:GetPlayerByUserId(tonumber(userId)) ~= nil, owner = tostring(record.owner) == userId,
-			})
+		info.crew = crewView(crewId, record)
+		info.crew.manage = canManage(record, player.UserId)
+		info.crew.leader = roleOf(record, player.UserId) == "Leader"
+		-- join requests (leader / officers)
+		if info.crew.manage then
+			info.crew.requests = {}
+			for userId, request in pairs(record.requests or {}) do
+				table.insert(info.crew.requests, { userId = tonumber(userId), name = request.name or nameOf(userId), at = request.at or 0 })
+			end
+			table.sort(info.crew.requests, function(a, b) return a.at < b.at end)
 		end
-		table.sort(members, function(a, b) return a.score > b.score end)
-		info.crew = { name = record.name, tag = record.tag, members = members, max = CREW.MaxMembers }
 		-- players here without a crew can be invited
 		for _, other in ipairs(Players:GetPlayers()) do
 			if other ~= player and not crewIdOf(other) and PlayerData.Get(other) then
@@ -151,12 +245,31 @@ local function sendInfo(player)
 		local invite = cache[id]
 		if invite then table.insert(info.invites, { crewId = id, name = invite.name, tag = invite.tag, from = from }) end
 	end
-	local topJson = ReplicatedStorage:GetAttribute("CrewTop")
-	if type(topJson) == "string" then
-		local ok, top = pcall(HttpService.JSONDecode, HttpService, topJson)
-		if ok then info.top = top end
-	end
 	remote:FireClient(player, "Info", info)
+end
+
+-- A top crew's members for the viewer (read-only). gone = the crew no longer exists.
+local function sendView(player, crewId)
+	if type(crewId) ~= "string" or #crewId > 64 then return end
+	local record = cache[crewId]
+	if not isTest(crewId) and (not record or not viewed[crewId] or os.clock() - viewed[crewId] > VIEW_CACHE) then
+		local ok, stored = pcall(crewStore.GetAsync, crewStore, crewId)
+		if ok then
+			cache[crewId] = stored
+			viewed[crewId] = os.clock()
+			record = stored
+		end
+	end
+	if not record or count(record.members) == 0 then
+		remote:FireClient(player, "View", { crewId = crewId, gone = true })
+		return
+	end
+	local view = crewView(crewId, record)
+	local mine = crewIdOf(player)
+	view.mine = mine == crewId
+	view.inCrew = mine ~= nil
+	view.requested = type(record.requests) == "table" and record.requests[tostring(player.UserId)] ~= nil
+	remote:FireClient(player, "View", view)
 end
 
 ------------------------------------------------------------------------
@@ -182,7 +295,8 @@ actions.Create = function(player, name, tag)
 		result(player, "Creating a crew costs " .. CREW.CreateCost .. " coins.") return
 	end
 	local crewId = HttpService:GenerateGUID(false)
-	local record = { name = cleanName, tag = cleanTag, owner = player.UserId, members = { [tostring(player.UserId)] = { score = 0 } }, created = os.time() }
+	local record = { name = cleanName, tag = cleanTag, owner = player.UserId, members = { [tostring(player.UserId)] = { score = 0, name = player.DisplayName } },
+		created = os.time(), joinMode = "request" }
 	local ok = pcall(crewStore.SetAsync, crewStore, crewId, record)
 	if not ok then
 		if CREW.CreateCost > 0 then PlayerData.AddCoins(player, CREW.CreateCost) end -- (the coins were taken above)
@@ -208,20 +322,18 @@ actions.Invite = function(player, userId)
 	sendInfo(target)
 end
 
-actions.Accept = function(player, crewId)
-	if type(crewId) ~= "string" or not (invites[player] and invites[player][crewId]) then return end
-	if not PlayerData.IsPersistent(player) then result(player, "Crews can't be joined in a test session (progress isn't saved).") return end
-	if crewIdOf(player) then result(player, "Leave your crew first.") return end
+-- Puts `player` (in this server) into the crew: checks it's not full, writes the record, sets their crew, tells the crew.
+local function joinCrew(player, crewId): boolean
 	local full = false
 	local ok, record = updateCrew(crewId, function(stored)
-		if not stored then return nil end
+		if not stored or count(stored.members) == 0 then return nil end
 		if count(stored.members) >= CREW.MaxMembers then full = true return nil end
-		stored.members[tostring(player.UserId)] = { score = 0 }
+		stored.members[tostring(player.UserId)] = { score = 0, name = player.DisplayName }
+		if stored.requests then stored.requests[tostring(player.UserId)] = nil end
 		return stored
 	end)
-	invites[player][crewId] = nil
-	if full then result(player, "That crew is full now.") return end
-	if not ok or not record then result(player, "Couldn't join right now. Try again in a minute.") return end
+	if full then result(player, "That crew is full now.") return false end
+	if not ok or not record then result(player, "Couldn't join right now. Try again in a minute.") return false end
 	setCrew(player, crewId)
 	updateTag(player)
 	result(player, "You joined " .. record.name .. " [" .. record.tag .. "].")
@@ -230,10 +342,103 @@ actions.Accept = function(player, crewId)
 			Remotes.PlayerEvent:FireClient(other, "CrewJoined", { name = player.DisplayName })
 		end
 	end
+	return true
+end
+
+actions.Accept = function(player, crewId)
+	if type(crewId) ~= "string" or not (invites[player] and invites[player][crewId]) then return end
+	if not PlayerData.IsPersistent(player) then result(player, "Crews can't be joined in a test session (progress isn't saved).") return end
+	if crewIdOf(player) then result(player, "Leave your crew first.") return end
+	invites[player][crewId] = nil
+	joinCrew(player, crewId)
 end
 
 actions.Decline = function(player, crewId)
 	if invites[player] and type(crewId) == "string" then invites[player][crewId] = nil end
+end
+
+-- From a top crew's member view: JOIN (open crews) or REQUEST TO JOIN (the others).
+actions.Request = function(player, crewId)
+	if type(crewId) ~= "string" or #crewId > 64 then return end
+	if isTest(crewId) then result(player, "That's a Studio test crew.") return end
+	if not PlayerData.IsPersistent(player) then result(player, "Crews can't be joined in a test session (progress isn't saved).") return end
+	if crewIdOf(player) then result(player, "Leave your crew first.") return end
+	local record = readCrew(crewId)
+	if not record or count(record.members) == 0 then result(player, "This crew no longer exists.") return end
+	if count(record.members) >= CREW.MaxMembers then result(player, "That crew is full.") return end
+	if (record.joinMode or "request") == "open" then
+		joinCrew(player, crewId)
+	else
+		local ok, stored = updateCrew(crewId, function(current)
+			if not current or count(current.members) == 0 then return nil end
+			current.requests = current.requests or {}
+			current.requests[tostring(player.UserId)] = { name = player.DisplayName, at = os.time() }
+			-- (the oldest go past MAX_REQUESTS)
+			local list = {}
+			for userId, request in pairs(current.requests) do table.insert(list, { userId = userId, at = request.at or 0 }) end
+			table.sort(list, function(a, b) return a.at > b.at end)
+			for index = MAX_REQUESTS + 1, #list do current.requests[list[index].userId] = nil end
+			return current
+		end)
+		if not ok or not stored then result(player, "Couldn't send the request right now. Try again in a minute.") return end
+		result(player, "Join request sent to " .. stored.name .. ".")
+		for _, other in ipairs(Players:GetPlayers()) do
+			if crewIdOf(other) == crewId and canManage(stored, other.UserId) then
+				Remotes.PlayerEvent:FireClient(other, "CrewRequest", { name = player.DisplayName })
+			end
+		end
+	end
+	viewed[crewId] = nil
+	sendView(player, crewId)
+end
+
+-- MY CREW, leader / officers: accept or decline a join request.
+actions.AnswerRequest = function(player, userId, accept)
+	local crewId = crewIdOf(player)
+	local record = crewId and cache[crewId]
+	if type(userId) ~= "number" or not record or not canManage(record, player.UserId) then return end
+	local key = tostring(userId)
+	local full = false
+	local ok, stored = updateCrew(crewId, function(current)
+		if not current or not (current.requests and current.requests[key]) then return nil end
+		local request = current.requests[key]
+		current.requests[key] = nil
+		if accept == true then
+			if count(current.members) >= CREW.MaxMembers then full = true return current end
+			current.members[key] = { score = 0, name = request.name }
+		end
+		return current
+	end)
+	if full then result(player, "Your crew is full.") return end
+	if not ok or not stored then return end
+	if accept ~= true then return end
+	local target = Players:GetPlayerByUserId(userId)
+	if target then
+		if crewIdOf(target) then -- (joined another crew meanwhile: take them back out)
+			updateCrew(crewId, function(current) if current then current.members[key] = nil end return current end)
+			result(player, (stored.members[key] and stored.members[key].name or "They") .. " is already in a crew.")
+			return
+		end
+		setCrew(target, crewId)
+		updateTag(target)
+		result(target, "You joined " .. stored.name .. " [" .. stored.tag .. "].")
+		sendInfo(target)
+	else
+		pcall(inboxStore.SetAsync, inboxStore, key, crewId) -- (told when they next join, or within a refresh in their server)
+	end
+	result(player, "Request accepted.")
+end
+
+-- MY CREW, leader: join requests (default) or open to all.
+actions.SetJoinMode = function(player, mode)
+	local crewId = crewIdOf(player)
+	local record = crewId and cache[crewId]
+	if (mode ~= "request" and mode ~= "open") or not record or roleOf(record, player.UserId) ~= "Leader" then return end
+	updateCrew(crewId, function(current)
+		if not current then return nil end
+		current.joinMode = mode
+		return current
+	end)
 end
 
 actions.Leave = function(player)
@@ -242,6 +447,7 @@ actions.Leave = function(player)
 	local left = updateCrew(crewId, function(stored)
 		if not stored then return nil end
 		stored.members[tostring(player.UserId)] = nil
+		if stored.officers then stored.officers[tostring(player.UserId)] = nil end
 		if tostring(stored.owner) == tostring(player.UserId) then
 			stored.owner = nil
 			for userId in pairs(stored.members) do stored.owner = tonumber(userId) break end
@@ -253,6 +459,27 @@ actions.Leave = function(player)
 	setCrew(player, nil)
 	updateTag(player)
 	result(player, "You left the crew.")
+end
+
+------------------------------------------------------------------------
+-- Accepted join requests from another server
+------------------------------------------------------------------------
+local function checkInbox(player)
+	if not PlayerData.IsPersistent(player) then return end
+	local key = tostring(player.UserId)
+	local ok, crewId = pcall(inboxStore.GetAsync, inboxStore, key)
+	if not ok or type(crewId) ~= "string" then return end
+	pcall(inboxStore.RemoveAsync, inboxStore, key)
+	local record = readCrew(crewId)
+	if not record or not record.members[key] then return end
+	if crewIdOf(player) and crewIdOf(player) ~= crewId then
+		-- already in another crew: leave the accepted one's list
+		updateCrew(crewId, function(current) if current then current.members[key] = nil end return current end)
+		return
+	end
+	setCrew(player, crewId)
+	updateTag(player)
+	result(player, "Your join request was accepted: you're in " .. record.name .. " [" .. record.tag .. "].")
 end
 
 ------------------------------------------------------------------------
@@ -270,14 +497,21 @@ local function refreshScores()
 		local crewId = data and data.crew and data.crew.id
 		if crewId and PlayerData.IsPersistent(player) then
 			byCrew[crewId] = byCrew[crewId] or {}
-			byCrew[crewId][tostring(player.UserId)] = levelSum(data)
+			byCrew[crewId][tostring(player.UserId)] = { score = levelSum(data), level = levelOf(data), spurts = data.growthSpurts or 0,
+				name = player.DisplayName }
+		elseif data and not crewId then
+			task.spawn(checkInbox, player)
 		end
 	end
+	local now = os.time()
 	for crewId, scores in pairs(byCrew) do
 		local ok, record = updateCrew(crewId, function(stored)
 			if not stored then return nil end
-			for userId, score in pairs(scores) do
-				if stored.members[userId] then stored.members[userId].score = score end
+			for userId, fresh in pairs(scores) do
+				local member = stored.members[userId]
+				if member then
+					member.score, member.level, member.spurts, member.name, member.seen = fresh.score, fresh.level, fresh.spurts, fresh.name, now
+				end
 			end
 			return stored
 		end)
@@ -294,11 +528,29 @@ local function refreshScores()
 		for _, entry in ipairs(pages:GetCurrentPage()) do
 			local record = cache[entry.key] or readCrew(entry.key)
 			if record and count(record.members) > 0 then
-				table.insert(top, { name = record.name, tag = record.tag, score = entry.value, members = count(record.members) })
+				table.insert(top, { crewId = entry.key, name = record.name, tag = record.tag, score = entry.value, members = count(record.members) })
 			end
 		end
 		ReplicatedStorage:SetAttribute("CrewTop", HttpService:JSONEncode(top))
 	end
+end
+
+------------------------------------------------------------------------
+-- Studio test crews (Workspace attribute TestCrews = true): a full crew with long names, a crew of one, and a deleted
+-- crew in the top list. Read-only: never saved.
+------------------------------------------------------------------------
+local function makeTestCrews()
+	local now = os.time()
+	local full = { name = "The Extremely Long Crew Name", tag = "LONG", owner = 1, joinMode = "request", officers = { ["2"] = true }, members = {} }
+	local longNames = { "Captain_Gainsworth_The_Unstoppable", "Officer_Broccoli_Muncher_9000", "SquatQueenWithAVeryLongName", "Pump",
+		"DeadliftDestroyerXXL_2014", "Reps", "Lat_Spread_Larry_The_Third", "Tiny" }
+	for index, name in ipairs(longNames) do
+		full.members[tostring(index)] = { name = name, score = 2500000 - index * 180000, level = 60 - index * 4, spurts = 6 - (index % 4),
+			seen = if index % 3 == 0 then now else now - 3600 }
+	end
+	cache["test-full"] = full
+	cache["test-solo"] = { name = "Solo", tag = "ONE", owner = 9, joinMode = "open", members = { ["9"] = { name = "LoneLifter", score = 12000, level = 4, spurts = 0, seen = now } } }
+	cache["test-gone"] = nil
 end
 
 ------------------------------------------------------------------------
@@ -316,6 +568,7 @@ local function onJoin(player)
 				updateTag(player)
 			end
 		end
+		if not crewIdOf(player) then checkInbox(player) end
 	end)
 	player.CharacterAdded:Connect(function(character)
 		character:WaitForChild("Head", 10)
@@ -330,9 +583,19 @@ function CrewService.Start()
 		remote.Name = "Crew"
 		remote.Parent = Remotes
 	end
+	if RunService:IsStudio() then
+		if workspace:GetAttribute("TestCrews") == true then makeTestCrews() end
+		workspace:GetAttributeChangedSignal("TestCrews"):Connect(function()
+			if workspace:GetAttribute("TestCrews") == true then makeTestCrews() end
+		end)
+	end
 	remote.OnServerEvent:Connect(function(player, action, a, b)
 		if action == "Info" then
 			if Guard.Allow(player, "crew:info", 2, 4) then sendInfo(player) end
+			return
+		end
+		if action == "View" then
+			if Guard.Allow(player, "crew:view", 2, 4) then sendView(player, a) end
 			return
 		end
 		local handler = type(action) == "string" and actions[action]

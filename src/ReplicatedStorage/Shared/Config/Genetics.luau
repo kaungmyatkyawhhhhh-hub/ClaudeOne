@@ -18,8 +18,8 @@ Genetics.Grades = {
 Genetics.Frames = {
 	{ id = "Narrow", name = "Narrow", weight = 25, shoulders = 0.9, bonus = { groups = { Arms = 0.10 } } },
 	{ id = "Average", name = "Average", weight = 35, shoulders = 1.0, bonus = { all = 0.05 } },
-	{ id = "Wide", name = "Wide", weight = 25, shoulders = 1.1, bonus = { groups = { Back = 0.10, Legs = 0.10 } } },
-	{ id = "VTaper", name = "V-Taper", weight = 15, shoulders = 1.2, bonus = { groups = { Shoulders = 0.10 }, muscles = { Lats = 0.10 } } },
+	{ id = "Wide", name = "Wide", weight = 25, shoulders = 1.05, bonus = { groups = { Back = 0.10, Legs = 0.10 } } },
+	{ id = "VTaper", name = "V-Taper", weight = 15, shoulders = 1.1, bonus = { groups = { Shoulders = 0.10 }, muscles = { Lats = 0.10 } } },
 }
 
 -- detailLevelMult scales the level at which abs/detail start showing (lower = earlier).

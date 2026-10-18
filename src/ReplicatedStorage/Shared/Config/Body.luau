@@ -33,8 +33,8 @@ Body.Proportions = { Stretch = 1.08, Shrink = 0.893, Navel = 0.4, LowerTorsoRef 
 -- widths and thickness, depth = the torso's front-to-back depth. (BodyShape.ApplyWidths, BodyService.WidthFactors)
 Body.Widths = {
 	Skinny = { shoulders = 0.4, hips = 0.2, arms = 0.08, legs = 0.06, depth = 0.35 },
-	Maxed = { shoulders = 1.15, hips = 0.7, arms = 0.5, legs = 0.5, depth = 0.45 },
-	MassMonster = { shoulders = 1.4, hips = 1.2, arms = 0.9, legs = 0.9, depth = 0.9, muscle_extra = 0.12 },
+	Maxed = { shoulders = 0.85, hips = 0.65, arms = 0.5, legs = 0.5, depth = 0.45 },
+	MassMonster = { shoulders = 1.05, hips = 1.1, arms = 0.9, legs = 0.9, depth = 0.9, muscle_extra = 0.12 },
 	Step = 0.002, -- factors are rounded to this (fine enough that the hips widen smoothly, no visible jumps)
 	-- the shoulders always stay wider than the hips: the UpperTorso (1.9966 studs at factor 1) at least this much wider than
 	-- the LowerTorso (1.3752): shoulders factor >= hips factor * 1.3752 / 1.9966 * ShouldersOverHips

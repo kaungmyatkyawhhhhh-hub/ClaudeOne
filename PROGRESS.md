@@ -2,6 +2,18 @@
 
 Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code map: `docs/GAME_OVERVIEW.md`.
 
+## Current (19 Oct)
+- OWNER CHANGES (made by hand in Studio, documented, not changed; vault: Progress "2026-10-19 GYM ARC Owner changes"):
+  MuscleData/Index monsterG (own live muscles' mass monster size, e.g. Rhomboids 3.2, Quads 0.6, SideDelts 0.8; the
+  static gmon stage meshes and Config/Muscles Look.MonsterG keep the old sizes; the file is generated, so
+  tools/gen_muscle_data would overwrite it); Config/Body.Widths Maxed shoulders 0.85 hips 0.65, MassMonster shoulders
+  1.05 hips 1.1; Config/Genetics frames Wide 1.05x, V-Taper 1.1x; Config/Titles Beat Benny Rare, Beat Coral Epic,
+  Beat Dante Legendary; Config/Sounds three songs per area + new ids; CLAUDE.md shortened (old: docs/CLAUDE_full_old.md).
+- Unchanged: UI, MuscleRig / BodyStages / LimbStages code, the 84 low-poly stage MeshIds (match StageMeshBackup.new).
+- Committed with it: the 15 Oct Top crews member view (CrewService / CrewClient), never committed before.
+- Queue (owner, 19 Oct, vault Prompts 2-5): inner quad bulge, mirror / statue width + duplicate crew tags, upper traps
+  missing, top crews member view test.
+
 ## Rules
 - No growth spurt cooldown. (Owner, 14 Oct: a player can do the next Growth Spurt as soon as they've earned it; checked:
   there is no timer, time check or config value for it anywhere, and the Skip Growth Cooldown product is removed.)
