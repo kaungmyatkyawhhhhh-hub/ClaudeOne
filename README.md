@@ -6,19 +6,9 @@ A single-screen analytics dashboard for every Roblox experience owned by the acc
 - **Concurrent users chart:** the last 24 hours or 7 days for your top 5 experiences, plus all others combined. Hover for exact values.
 - **Experiences table:** CCU, 24h peak, trend, visits, 24h visits, favorites, like ratio, and last update for every experience. You can sort by any column and filter by name.
 
-## Hosted automatically (GitHub Pages)
+## Hosted version
 
-The [Update dashboard](.github/workflows/dashboard.yml) workflow runs every 15 minutes. It takes a snapshot of every experience, adds it to 7 days of history stored on the `stats` branch, and publishes the dashboard to GitHub Pages:
-
-**https://kaungmyatkyawhhhhh-hub.github.io/ClaudeOne/**
-
-One-time setup: open **Settings → Pages** and set **Source** to **GitHub Actions**. After that, nothing needs to be running on your computer.
-
-To track different games, edit `config.json`. Set `"user"` to a Roblox username or user ID, and `"groups"` to a list of group IDs. The next run picks up the change.
-
-Notes:
-- GitHub can start scheduled runs a few minutes late, and it pauses schedules on repositories with no commits for 60 days. Any commit to `main` turns them back on.
-- To refresh right away, open **Actions → Update dashboard → Run workflow**.
+The always-on hosted version lives in its own repository, [roblox-dashboard](https://github.com/kaungmyatkyawhhhhh-hub/roblox-dashboard). It has its own GitHub Pages site, so this repository's Pages site is never touched.
 
 ## Run it locally (optional)
 
