@@ -11,6 +11,13 @@ Short and current (13 Oct 2026). Full history: `git log -p -- PROGRESS.md`. Code
   Beat Dante Legendary; Config/Sounds three songs per area + new ids; CLAUDE.md shortened (old: docs/CLAUDE_full_old.md).
 - Unchanged: UI, MuscleRig / BodyStages / LimbStages code, the 84 low-poly stage MeshIds (match StageMeshBackup.new).
 - Committed with it: the 15 Oct Top crews member view (CrewService / CrewClient), never committed before.
+- INNER QUAD BULGE (prompt 2): Shared/MuscleMeshes QUADS shapes the quad growth in LoadGroup (inner / front quads: full
+  up to 25% of the bare thigh, none from 60% up and under the shorts; the outer sweep kept), so your live body, the mirror
+  copy and anything made from the data are fixed. Stage meshes: tools/quad_fix_stage_corrections.luau (exact rebuild of the
+  old stages, max error 0) + tools/quad_fix_lowpoly.py moved the owner's low-poly thighs -> 24 OBJs in
+  Downloads\gym_arc_meshes_lowpoly_quadfix\other_player_stages (g000 unchanged). WAITING: owner imports them; then run
+  tools/quad_fix_stage_setup.luau + tools/quad_fix_patch_config.py <bounds.json>, add the MeshIds to StageMeshBackup.
+  Found: at mass monster the hamstrings (owner's 2.8) push a lump between the knees (owner decides).
 - Queue (owner, 19 Oct, vault Prompts 2-5): inner quad bulge, mirror / statue width + duplicate crew tags, upper traps
   missing, top crews member view test.
 

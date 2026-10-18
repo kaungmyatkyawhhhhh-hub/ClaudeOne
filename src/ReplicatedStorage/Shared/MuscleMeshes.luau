@@ -325,6 +325,13 @@ local SKIN_LIFT = 0.02
 -- full growth on the lower thigh, easing to SHORTS.Hug from HemBelow under the hem to HemAbove over it. (Not less at the
 -- waistband: the waist piece above is wider than the bare thigh tops, so less growth there opened a lip.)
 local SHORTS = { Hug = 0.5, HemBelow = 0.16, HemAbove = 0.08 }
+-- The inner / front quads (owner, 19 Oct: kids' game): at big sizes the inner quad grew a round lump forward from the top of
+-- the bare thigh, right under the shorts. By height on the BARE thigh (0 = its bottom, 1 = the shorts' hem): full growth up
+-- to FadeFrom (the inner teardrop sits low, just above the knee), easing to none at FadeTo and above (the top of the bare
+-- thigh and everything under the shorts stay flat). The outer sweep keeps its growth: OuterFrom .. OuterTo studs out from
+-- the thigh's middle (part-local X, away from the body) blend back to full growth. One smooth curve over the skin and the
+-- shorts meshes (they still meet at the hem). The body stage meshes are made from this same data (tools/gen_body_stages).
+local QUADS = { FadeFrom = 0.25, FadeTo = 0.6, OuterFrom = 0.05, OuterTo = 0.25 }
 local function smoothstep(t: number): number
 	t = math.clamp(t, 0, 1)
 	return t * t * (3 - 2 * t)
@@ -394,6 +401,25 @@ function MuscleMeshes.LoadGroup(group: any): any
 			local y = base[i].Y
 			local up = smoothstep((y - (hemY - SHORTS.HemBelow)) / (SHORTS.HemBelow + SHORTS.HemAbove)) -- 0 low on the thigh .. 1 over the hem
 			hug[i] = 1 - (1 - SHORTS.Hug) * up
+		end
+	end
+	if hemY < math.huge and (group.part == "LeftUpperLeg" or group.part == "RightUpperLeg") then
+		local bottomY = math.huge
+		for i = 1, vertexCount do bottomY = math.min(bottomY, base[i].Y) end
+		local outward = if group.part == "LeftUpperLeg" then -1 else 1 -- (part-local X pointing away from the body)
+		for _, range in ipairs(ranges) do
+			if range.id ~= "Quads" then continue end
+			for i = range.first, range.first + range.count - 1 do
+				local p = base[i]
+				local fade = smoothstep(((p.Y - bottomY) / math.max(hemY - bottomY, 0.01) - QUADS.FadeFrom) / (QUADS.FadeTo - QUADS.FadeFrom))
+				local outer = smoothstep((p.X * outward - QUADS.OuterFrom) / (QUADS.OuterTo - QUADS.OuterFrom))
+				local w = 1 - fade * (1 - outer)
+				if w < 1 then
+					delta[i] *= w
+					if hasNormals and ndelta[i] then ndelta[i] *= w end
+					if vein[i] then vein[i] *= w end
+				end
+			end
 		end
 	end
 	local merged = { verts = vertexCount, base = base, delta = delta, uv = uv, tris = tris, blends = blends, bands = bands,

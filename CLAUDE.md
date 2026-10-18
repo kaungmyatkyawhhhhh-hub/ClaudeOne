@@ -6,11 +6,9 @@ Short on purpose: it is loaded every session. Read other files only when the tas
 - Game overview + status: Obsidian `C:\ObsidianOne\Claude+Obsidian\GYM ARC\00 GYM ARC Home.md` (the Index at its bottom lists every note).
 - For a task, read ONLY the Feature / Bug / Config note(s) for that system (e.g. `Features\GYM ARC - Crews.md`). Never read the whole vault.
 - `docs/DESIGN.md` (owner's full brief, big): read only the section you need, never the whole file.
-- `PROGRESS.md`: read only the top "Current" section. Old entries live in `docs/PROGRESS_archive.md`; don't read it unless asked.
+- `PROGRESS.md`: never read it whole (it's very long). Search it (grep) for the section you need. Old entries go in `docs/PROGRESS_archive.md`; don't read that unless asked.
 - The old long rules file is `docs/CLAUDE_full_old.md` (vault writing format, export, checks). Open it only when you need those details.
 - If the owner says "do the prompt X", read `GYM ARC\Prompts\<X>.md` instead of asking them to paste it.
-- To find code: query the Graphify graph (graphify-out/) first, then open only the files it points to. (It lives in `src/graphify-out/`: `graphify query "<question>" --graph src/graphify-out/graph.json`, also `explain` / `path`; summary in `src/graphify-out/GRAPH_REPORT.md`.)
-- After exporting scripts to src/, run graphify update src.
 
 ## Hard rules
 - Studio is the source of truth (edit via MCP). No Rojo, never suggest it. GitHub `src/` is backup: export changed scripts (`tools/export`), commit, push.
@@ -40,13 +38,7 @@ Short on purpose: it is loaded every session. Read other files only when the tas
 - When done: update only the notes for what changed (Feature/Bug/Config + today's Progress note + Home status), add new notes to the Index, commit the vault's `GYM ARC/` folder only. Never touch other games in the vault.
 - Keep reports to the owner short and in plain English; list only what changed, what to test, and what needs his decision.
 
-## graphify
-
-This project has a knowledge graph of `src/` ONLY, at `src/graphify-out/` (owner, 19 Oct: never build one at the repo root), with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- Run `graphify query "<question>" --graph src/graphify-out/graph.json` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>" --graph src/graphify-out/graph.json` for relationships and `graphify explain "<concept>" --graph src/graphify-out/graph.json` for focused concepts.
-- Read `src/graphify-out/GRAPH_REPORT.md` only for broad architecture review or when query/path/explain do not surface enough context.
-- After exporting scripts to src/, run `graphify update src` (AST-only, no API cost). Never `graphify update .`. When deleting src/ files whose script no longer exists, keep `src/graphify-out/`.
-- The graph misses Luau handlers written as `actions.X = function` and only partly reads files with type annotations: if it doesn't find something, fall back to a targeted grep.
-- A committed graph.json is rewritten whole on every build, so a large diff to it is expected.
+## One-time job (do it at the start of the next session, then delete this section)
+- PROGRESS.md is 1,500+ lines. Move every section older than 15 Oct into `docs/PROGRESS_archive.md` (unchanged, newest first). Keep in PROGRESS.md only: Rules, Workflow, "Waiting on you", "Known issues", "Decisions (still in force)", "Studio test hooks", and the 15 Oct+ sections. Target under 300 lines.
+- Then update anything outdated in `00 GYM ARC Home.md` "Current status" (monetization is ON, final UI is Black + Gold, owner's own body changes).
+- Commit both repos, then delete this "One-time job" section from CLAUDE.md.
