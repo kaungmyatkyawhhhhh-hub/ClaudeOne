@@ -132,10 +132,10 @@
     "semantic_hash": "b655bb983a9c8754e3daea64a4739176"
   },
   "ReplicatedStorage/PoseData.luau": {
-    "mtime": 1792359453.17273,
-    "seen": 1792360819.0316818,
-    "ast_hash": "e1ed111ef287d4a341c8f37f8ea26f8a",
-    "semantic_hash": "e1ed111ef287d4a341c8f37f8ea26f8a"
+    "mtime": 1792368860.1549757,
+    "seen": 1792369066.0062492,
+    "ast_hash": "048e344a08886b0804d1c2dcdb00443f",
+    "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Audio.luau": {
     "mtime": 1792359453.2328508,
@@ -402,10 +402,10 @@
     "semantic_hash": "9db351941ce961acb034415af9e753cc"
   },
   "ReplicatedStorage/Shared/Config/Trainers.luau": {
-    "mtime": 1792359453.9295323,
-    "seen": 1792360819.0316818,
-    "ast_hash": "db2d388a100f5a864e2a6a3062ed20e6",
-    "semantic_hash": "db2d388a100f5a864e2a6a3062ed20e6"
+    "mtime": 1792368959.668128,
+    "seen": 1792369066.0062492,
+    "ast_hash": "6d94d9d5af4a1ab15b427b327a88967a",
+    "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Config/UI.luau": {
     "mtime": 1792359453.9453564,
@@ -756,10 +756,10 @@
     "semantic_hash": "942605310a6dbbbeee5d0351ae286fdc"
   },
   "ServerScriptService/Server/TrainerService.luau": {
-    "mtime": 1792359453.1345336,
-    "seen": 1792360819.0316818,
-    "ast_hash": "9fc6f6a22760a33ef039daa7d219a112",
-    "semantic_hash": "9fc6f6a22760a33ef039daa7d219a112"
+    "mtime": 1792368968.5494914,
+    "seen": 1792369066.0068107,
+    "ast_hash": "b986db771fb4d5e9039fd9bc65cc2ec2",
+    "semantic_hash": ""
   },
   "StarterPlayer/StarterPlayerScripts/AreaSignsClient.client.luau": {
     "mtime": 1792359459.545472,
@@ -900,10 +900,10 @@
     "semantic_hash": "4e3c1336fcb085c56deba92cf87a6420"
   },
   "StarterPlayer/StarterPlayerScripts/PoseController.client.luau": {
-    "mtime": 1792359459.629116,
-    "seen": 1792360819.0316818,
-    "ast_hash": "6bfee7bb3ff12fb0458835e79a8a8ccf",
-    "semantic_hash": "6bfee7bb3ff12fb0458835e79a8a8ccf"
+    "mtime": 1792368877.9033482,
+    "seen": 1792369066.0068107,
+    "ast_hash": "1818a65d1c7816dab560dcf4094df90d",
+    "semantic_hash": ""
   },
   "StarterPlayer/StarterPlayerScripts/PosingCompClient.client.luau": {
     "mtime": 1792359459.7131696,

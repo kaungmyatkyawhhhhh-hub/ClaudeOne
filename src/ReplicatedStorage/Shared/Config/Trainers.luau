@@ -17,23 +17,25 @@ local Trainers = {}
 --   clothes, so the images have no see-through parts: TrainerFollowClient hides the muscle stages' skin layer), muscle = how built he looks (the
 --   static muscle stages, share of the goal: 1 = fit; the Pump coach the biggest), extras = small part-built props
 --   ("whistle", "headband", "bottle", "cap", "clipboard", "belt", "wraps"), extraColor = their color.
+-- heightInches (owner, 19 Oct): his height, the players' height system (inches; 60 = 5'0"; GrowthSpurts caps players at 84 = 7'0"):
+-- 1st in the shop 5'0", 2nd 5'5", 3rd 6'0", 4th 6'6". TrainerService scales his whole rig (NpcService.ApplyBody), widths kept.
 Trainers.List = {
-	{ id = "RookieCoach", name = "Rookie Coach", coachName = "Coach Sam", price = 300, perk = { gains = 1.05 }, perkText = "+5% EXP", perkShort = "+5% EXP",
+	{ id = "RookieCoach", name = "Rookie Coach", coachName = "Coach Sam", heightInches = 60, price = 300, perk = { gains = 1.05 }, perkText = "+5% EXP", perkShort = "+5% EXP",
 		picture = "trainer_exp", color = "#E5413F",
 		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
 			shirt = "rbxassetid://102959678094397", pants = "rbxassetid://72439591969493", muscle = 0.9,
 			extras = { "whistle" }, extraColor = "#C8262C", tint = "#C8262C" } },
-	{ id = "CardioCoach", name = "Cardio Coach", coachName = "Coach Nia", price = 450, perk = { regen = 1.1 }, perkText = "+10% stamina refill", perkShort = "+10% Stamina",
+	{ id = "CardioCoach", name = "Cardio Coach", coachName = "Coach Nia", heightInches = 65, price = 450, perk = { regen = 1.1 }, perkText = "+10% stamina refill", perkShort = "+10% Stamina",
 		picture = "trainer_stamina", color = "#5CC46B",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
 			shirt = "rbxassetid://75627226847033", pants = "rbxassetid://132200798598308", muscle = 0.7,
 			extras = { "headband", "bottle" }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
-	{ id = "MoneyCoach", name = "Money Coach", coachName = "Coach Lou", price = 600, perk = { coins = 1.05 }, perkText = "+5% coins", perkShort = "+5% Coins",
+	{ id = "MoneyCoach", name = "Money Coach", coachName = "Coach Lou", heightInches = 72, price = 600, perk = { coins = 1.05 }, perkText = "+5% coins", perkShort = "+5% Coins",
 		picture = "trainer_coins", color = "#F2C64A",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
 			shirt = "rbxassetid://115347278747243", pants = "rbxassetid://82450924223675", muscle = 0.8,
 			extras = { "cap", "clipboard" }, extraColor = "#16161A", tint = "#E0B23A" } },
-	{ id = "PumpCoach", name = "Pump Coach", coachName = "Coach Rex", price = 800, perk = { pump = 1.25 }, perkText = "Pump fills 25% faster and lasts 25% longer", perkShort = "+25% Pump",
+	{ id = "PumpCoach", name = "Pump Coach", coachName = "Coach Rex", heightInches = 78, price = 800, perk = { pump = 1.25 }, perkText = "Pump fills 25% faster and lasts 25% longer", perkShort = "+25% Pump",
 		picture = "trainer_pump", color = "#A06BE6",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
 			shirt = "rbxassetid://102922865828545", pants = "rbxassetid://92479669230797", muscle = 1.8,

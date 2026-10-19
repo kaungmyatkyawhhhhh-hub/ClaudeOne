@@ -22,6 +22,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local BoostService = require(script.Parent.BoostService)
 local NpcService = require(script.Parent.NpcService)
 local BodyService = require(script.Parent.BodyService)
+local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
@@ -207,6 +208,11 @@ local function buildTemplates()
 		local ok, model = pcall(NpcService.Build, spec, CFrame.new(0, -500, 0))
 		if ok and model then
 			model.Name = trainer.id
+			-- his height (owner, 19 Oct: Config/Trainers heightInches, the players' height system; the whole rig scales with
+			-- the same body, proportions and widths; clients put his feet on the floor from his hip height)
+			if trainer.heightInches then
+				NpcService.ApplyBody(model, math.min(trainer.heightInches, 84) / BodyShape.BaseHeight)
+			end
 			-- our own clothes (image templates), a face texture when he has one, his props
 			for _, old in ipairs(model:GetChildren()) do
 				if old:IsA("Shirt") or old:IsA("Pants") or old:IsA("ShirtGraphic") then old:Destroy() end

@@ -1,16 +1,16 @@
 # Graph Report - src  (2026-10-19)
 
 ## Corpus Check
-- 172 files · ~269,489 words
+- 172 files · ~269,887 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1768 nodes · 4051 edges · 117 communities (89 shown, 28 thin omitted)
-- Extraction: 83% EXTRACTED · 17% INFERRED · 0% AMBIGUOUS · INFERRED: 688 edges (avg confidence: 0.85)
+- 1768 nodes · 4053 edges · 116 communities (88 shown, 28 thin omitted)
+- Extraction: 83% EXTRACTED · 17% INFERRED · 0% AMBIGUOUS · INFERRED: 689 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `74b8eb78`
+- Built from commit: `05c4a6c3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -56,7 +56,6 @@
 - TrainerService.luau
 - Icon.new
 - Guard.OnTriggered
-- MuscleClient.client.luau
 - RightColumn.luau
 - StoreClient.client.luau
 - GymGoerService.luau
@@ -137,7 +136,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (117 total, 28 thin omitted)
+## Communities (116 total, 28 thin omitted)
 
 ### Community 0 - "SpotService.luau"
 Cohesion: 0.05
@@ -160,8 +159,8 @@ Cohesion: 0.06
 Nodes (24): Icon:bindEvent(), Icon:bindToggleItem(), Icon:bindToggleKey(), Icon:clearNotices(), Icon:destroy(), Icon:freezeMenu(), Icon:leave(), Icon:modifyTheme() (+16 more)
 
 ### Community 5 - "StatsLabelsClient.client.luau"
-Cohesion: 0.07
-Nodes (44): GrowthSpurts.FormatHeight(), Muscles.CumXp(), Muscles.EntryXp(), Muscles.ExactLevel(), Muscles.GroupExp(), Muscles.LevelFromXp(), Muscles.LookG(), Muscles.MonsterG() (+36 more)
+Cohesion: 0.05
+Nodes (61): GrowthSpurts.FormatHeight(), Muscles.CumXp(), Muscles.EntryXp(), Muscles.ExactLevel(), Muscles.GroupExp(), Muscles.LevelFromXp(), Muscles.LookG(), Muscles.LooksFromLevels() (+53 more)
 
 ### Community 6 - "Theme.Tween"
 Cohesion: 0.15
@@ -303,10 +302,6 @@ Nodes (13): Themes.modify(), Icon:deselect(), Icon.new(), Icon:oneClick(), Icon:
 Cohesion: 0.29
 Nodes (10): BoostService.Pump(), Guard.Allow(), Guard.Near(), Guard.OnTriggered(), Guard.Remote(), positionOf(), pumpNow(), serverNow() (+2 more)
 
-### Community 41 - "MuscleClient.client.luau"
-Cohesion: 0.21
-Nodes (16): MuscleRig.Decode(), candidates(), distanceTo(), far(), isStatic(), myTargets(), priorityFor(), pulseMine() (+8 more)
-
 ### Community 42 - "RightColumn.luau"
 Cohesion: 0.29
 Nodes (11): container(), ensure(), noticeReady(), pickCard(), RightColumn.Add(), RightColumn.Bottom(), RightColumn.Layout(), RightColumn.SetCollapsed() (+3 more)
@@ -420,8 +415,8 @@ Cohesion: 0.36
 Nodes (6): Overflow.getAvailableIcons(), Overflow.getWidth(), Overflow.start(), Overflow.updateAvailableIcons(), Utility.createStagger(), Utility.round()
 
 ### Community 71 - "Muscles.LooksFromLevels"
-Cohesion: 0.20
-Nodes (6): Muscles.LooksFromLevels(), PosingComp.TapValue(), PosingComp.VoteBonus(), BodyService.EncodeLevels(), results(), ShowOffService.SetChampion()
+Cohesion: 0.22
+Nodes (5): PosingComp.TapValue(), PosingComp.VoteBonus(), BodyService.EncodeLevels(), results(), ShowOffService.SetChampion()
 
 ### Community 72 - "CoachDexClient.client.luau"
 Cohesion: 0.38
@@ -502,16 +497,16 @@ Nodes (3): GrowthSpurts.GetGoal(), judge(), onStage()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Icon.new()` connect `Icon.new` to `Icon/init.luau`, `Icon.getIconByUID`, `Icon:refreshAppearance`, `Janitor.luau`, `TopBar.luau`, `Icon:getInstance`?**
-  _High betweenness centrality (0.103) - this node is a cross-community bridge._
+  _High betweenness centrality (0.107) - this node is a cross-community bridge._
 - **Are the 44 inferred relationships involving `ClientData.Get()` (e.g. with `ensure()` and `refresh()`) actually correct?**
   _`ClientData.Get()` has 44 INFERRED edges - model-reasoned connections that need verification._
 - **Should `SpotService.luau` be split into smaller, more focused modules?**
   _Cohesion score 0.0545308740978348 - nodes in this community are weakly interconnected._
-- **Why does `Theme.Tween()` connect `Theme.Tween` to `MachineClient.client.luau`, `GeneticsClient.client.luau`, `WardrobeClient.client.luau`, `PosingCompClient.client.luau`, `Theme.Text`, `Kit.Text`, `RightColumn.luau`, `Theme.luau`, `StoreClient.client.luau`, `ClientData.Get`, `HudBottom.luau`, `Audio.luau`, `shared_ui_kit`, `Notify.luau`, `BodyMapClient.client.luau`, `SideMenu.luau`, `shared_clientdata`?**
-  _High betweenness centrality (0.052) - this node is a cross-community bridge._
+- **Why does `Icon.setTopbarEnabled()` connect `TopBar.luau` to `Icon/init.luau`?**
+  _High betweenness centrality (0.054) - this node is a cross-community bridge._
 - **Are the 35 inferred relationships involving `Theme.Tween()` (e.g. with `setShown()` and `Kit.CoinBurst()`) actually correct?**
   _`Theme.Tween()` has 35 INFERRED edges - model-reasoned connections that need verification._
 - **Should `MachineClient.client.luau` be split into smaller, more focused modules?**
   _Cohesion score 0.05875706214689266 - nodes in this community are weakly interconnected._
-- **Why does `TopBar.AddPill()` connect `TopBar.luau` to `Icon.new`?**
-  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+- **Are the 20 inferred relationships involving `Kit.Text()` (e.g. with `ensure()` and `HudBottom.Chip()`) actually correct?**
+  _`Kit.Text()` has 20 INFERRED edges - model-reasoned connections that need verification._
