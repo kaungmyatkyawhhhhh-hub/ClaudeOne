@@ -44,13 +44,15 @@ local row = New("Frame", { Name = "Tiles", BackgroundTransparency = 1, Position 
 	Theme.List(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 })
 
+local function slots(): number
+	return Trainers.SlotsFor(player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) == true)
+end
+-- (the save can hold one more than your slots, for the Extra Trainer pass: only the ones that follow you show as coaching)
 local function state()
 	local data = ClientData.Get()
 	local t = type(data.trainers) == "table" and data.trainers or {}
-	return type(t.owned) == "table" and t.owned or {}, type(t.equipped) == "table" and t.equipped or {}
-end
-local function slots(): number
-	return Trainers.SlotsFor(player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) == true)
+	local owned = type(t.owned) == "table" and t.owned or {}
+	return owned, Trainers.CleanEquipped(type(t.equipped) == "table" and t.equipped or {}, owned, slots())
 end
 
 -- a short side-to-side shake (not enough coins)

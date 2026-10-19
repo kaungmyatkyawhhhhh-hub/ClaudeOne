@@ -23,6 +23,7 @@ local BoostService = require(script.Parent.BoostService)
 local NpcService = require(script.Parent.NpcService)
 local BodyService = require(script.Parent.BodyService)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
+local Genetics = require(ReplicatedStorage.Shared.Config.Genetics)
 local Guard = require(script.Parent.Guard)
 
 local Remotes = ReplicatedStorage.Remotes
@@ -48,14 +49,18 @@ end
 
 -- write the state, the perks and the attribute everyone reads
 local function apply(player, state)
-	state.equipped = Trainers.CleanEquipped(state.equipped, state.owned, slotsOf(player))
+	-- (owner's bug, 19 Oct: "when I rejoin my trainer disappears". At join the Extra Trainer pass isn't known yet: the list was
+	-- cut to 1 slot and SAVED that way, so the second trainer was gone for good. The save keeps up to the most slots anyone
+	-- can have; only the trainers that follow you now are capped to your slots.)
+	state.equipped = Trainers.CleanEquipped(state.equipped, state.owned, Trainers.SlotsFor(true))
 	if PlayerData.Get(player) then PlayerData.SetTable(player, "trainers", state) end
+	local active = Trainers.CleanEquipped(state.equipped, state.owned, slotsOf(player))
 	local on = {}
-	for _, id in ipairs(state.equipped) do on[id] = true end
+	for _, id in ipairs(active) do on[id] = true end
 	for _, trainer in ipairs(Trainers.List) do
 		BoostService.SetPlayer(player, "Trainer_" .. trainer.id, on[trainer.id] and trainer.perk or nil)
 	end
-	player:SetAttribute("Trainers", table.concat(state.equipped, ","))
+	player:SetAttribute("Trainers", table.concat(active, ","))
 end
 
 local function hire(player, id)
@@ -78,7 +83,10 @@ local function equip(player, id)
 	local trainer = type(id) == "string" and Trainers.ById[id]
 	if not trainer then return end
 	local state = stateOf(player)
-	if not table.find(state.owned, trainer.id) or table.find(state.equipped, trainer.id) then return end
+	if not table.find(state.owned, trainer.id) then return end
+	-- (only the trainers that follow now count: a saved one past your slots is dropped when you pick another)
+	state.equipped = Trainers.CleanEquipped(state.equipped, state.owned, slotsOf(player))
+	if table.find(state.equipped, trainer.id) then return end
 	-- all slots full: he takes the last slot's place
 	if #state.equipped >= slotsOf(player) then table.remove(state.equipped) end
 	table.insert(state.equipped, trainer.id)
@@ -211,7 +219,16 @@ local function buildTemplates()
 			-- his height (owner, 19 Oct: Config/Trainers heightInches, the players' height system; the whole rig scales with
 			-- the same body, proportions and widths; clients put his feet on the floor from his hip height)
 			if trainer.heightInches then
-				NpcService.ApplyBody(model, math.min(trainer.heightInches, 84) / BodyShape.BaseHeight)
+				local scale = math.min(trainer.heightInches, 84) / BodyShape.BaseHeight
+				NpcService.ApplyBody(model, scale)
+				-- (owner, 19 Oct: width grows with height, no thin stick frames) every width and depth by the same amount as the
+				-- height, the frame's shoulders and the full-look shoulder bonus on top
+				local shoulders = scale * Genetics.ShoulderWidth(trainer.frame) * (trainer.shoulderBonus or 1)
+				local f = { shoulders = shoulders, hips = scale, arms = scale, legs = scale, depth = scale }
+				BodyShape.ApplyWidths(model, f)
+				model:SetAttribute("BodyWidths", string.format("%.3f,%.3f,%.3f,%.3f,%.3f", f.shoulders, f.hips, f.arms, f.legs, f.depth))
+				model:SetAttribute("FrameWidth", f.shoulders)
+				model:SetAttribute("WaistWidth", f.hips)
 			end
 			-- our own clothes (image templates), a face texture when he has one, his props
 			for _, old in ipairs(model:GetChildren()) do

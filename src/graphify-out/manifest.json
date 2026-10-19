@@ -132,9 +132,9 @@
     "semantic_hash": "b655bb983a9c8754e3daea64a4739176"
   },
   "ReplicatedStorage/PoseData.luau": {
-    "mtime": 1792368860.1549757,
-    "seen": 1792369066.0062492,
-    "ast_hash": "048e344a08886b0804d1c2dcdb00443f",
+    "mtime": 1792369790.6486323,
+    "seen": 1792369838.3386652,
+    "ast_hash": "82c4738f1cd32d397082de74747cfb94",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Audio.luau": {
@@ -402,9 +402,9 @@
     "semantic_hash": "9db351941ce961acb034415af9e753cc"
   },
   "ReplicatedStorage/Shared/Config/Trainers.luau": {
-    "mtime": 1792368959.668128,
-    "seen": 1792369066.0062492,
-    "ast_hash": "6d94d9d5af4a1ab15b427b327a88967a",
+    "mtime": 1792369388.4275424,
+    "seen": 1792369838.3386652,
+    "ast_hash": "b15129b6088d39a69c8fce2bc368b4b1",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Config/UI.luau": {
@@ -756,9 +756,9 @@
     "semantic_hash": "942605310a6dbbbeee5d0351ae286fdc"
   },
   "ServerScriptService/Server/TrainerService.luau": {
-    "mtime": 1792368968.5494914,
-    "seen": 1792369066.0068107,
-    "ast_hash": "b986db771fb4d5e9039fd9bc65cc2ec2",
+    "mtime": 1792369390.0446844,
+    "seen": 1792369838.3386652,
+    "ast_hash": "e062fd16370fa4cd00c0c51051182502",
     "semantic_hash": ""
   },
   "StarterPlayer/StarterPlayerScripts/AreaSignsClient.client.luau": {
@@ -1008,10 +1008,10 @@
     "semantic_hash": "8e249d23a43860fb844bbc63d7dec28a"
   },
   "StarterPlayer/StarterPlayerScripts/TrainerClient.client.luau": {
-    "mtime": 1792359459.8276083,
-    "seen": 1792360819.0316818,
-    "ast_hash": "ed062ed77b61f8443e78c6d2ce501699",
-    "semantic_hash": "ed062ed77b61f8443e78c6d2ce501699"
+    "mtime": 1792369338.992749,
+    "seen": 1792369838.3386652,
+    "ast_hash": "33ba21a19774110cc47baed4e6154a31",
+    "semantic_hash": ""
   },
   "StarterPlayer/StarterPlayerScripts/TrainerFollowClient.client.luau": {
     "mtime": 1792367686.7878072,

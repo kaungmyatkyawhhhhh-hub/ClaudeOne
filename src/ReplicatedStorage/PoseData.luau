@@ -16,17 +16,17 @@ return {
 		RightElbow = {8, 0, 0},
 		LeftElbow = {8, 0, 0},
 	},
-	-- facing front: upper arms out just above the shoulders, elbows a little back, fists at head height curled in; feet a bit
-	-- wide, toes out, knees almost straight
+	-- facing front: upper arms out level with the shoulders, the forearms folded back in toward the head (owner, 19 Oct: with the
+	-- forearm straight up, big arms read as one straight column), fists at head height curled in; feet a bit wide, toes out
 	FrontDoubleBiceps = {
 		Waist = {6, 0, 0},
 		Neck = {-2, 0, 0},
-		RightShoulder = {7, 0, 72},
-		LeftShoulder = {7, 0, -72},
-		RightElbow = {-8, 0, 96},
-		LeftElbow = {-8, 0, -96},
-		RightWrist = {0, 0, 28},
-		LeftWrist = {0, 0, -28},
+		RightShoulder = {0, 0, 70},
+		LeftShoulder = {0, 0, -70},
+		RightElbow = {0, 0, 150},
+		LeftElbow = {0, 0, -150},
+		RightWrist = {0, 0, 30},
+		LeftWrist = {0, 0, -30},
 		RightHip = {0, -12, 10},
 		LeftHip = {0, 12, -10},
 		RightKnee = {-4, 0, 0},
@@ -45,15 +45,17 @@ return {
 		LeftHip = {0, 0, -7},
 	},
 	-- turned 70 degrees (the right side to the camera), the chest twisted back toward it, head to the camera; the front (right)
-	-- forearm flat across the stomach, the back (left) hand gripping its wrist; the front knee bent in, on its toes
+	-- forearm across the lower chest with the elbow forward (owner, 19 Oct: across the stomach it went through the chest of
+	-- bigger bodies: 0.84 studs deep at the full look; now in front of a slim chest, resting on a full one), the back (left)
+	-- hand over its wrist; the front knee bent in, on its toes
 	SideChest = {
 		Root = {0, 70, 0},
 		Waist = {-4, -22, 0},
 		Neck = {0, -40, 0},
-		RightShoulder = {0, 95, 4},
-		RightElbow = {92, 0, 0},
-		LeftShoulder = {30, 0, 80},
-		LeftElbow = {20, 0, 0},
+		RightShoulder = {45, 80, 20},
+		RightElbow = {70, 0, 0},
+		LeftShoulder = {90, 0, 70},
+		LeftElbow = {0, 0, 0},
 		RightHip = {32, 0, -10},
 		RightKnee = {-20, 0, 0},
 		RightAnkle = {-30, 0, 0},
@@ -91,12 +93,12 @@ return {
 		Root = {0, 180, 0},
 		Waist = {8, 0, 0},
 		Neck = {-6, 0, 0},
-		RightShoulder = {7, 0, 72},
-		LeftShoulder = {7, 0, -72},
-		RightElbow = {-8, 0, 96},
-		LeftElbow = {-8, 0, -96},
-		RightWrist = {0, 0, 28},
-		LeftWrist = {0, 0, -28},
+		RightShoulder = {0, 0, 70},
+		LeftShoulder = {0, 0, -70},
+		RightElbow = {0, 0, 150},
+		LeftElbow = {0, 0, -150},
+		RightWrist = {0, 0, 30},
+		LeftWrist = {0, 0, -30},
 		RightHip = {0, 0, 6},
 		LeftHip = {-14, 0, -6},
 		LeftKnee = {-12, 0, 0},
