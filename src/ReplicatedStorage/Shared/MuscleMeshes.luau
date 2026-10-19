@@ -207,8 +207,9 @@ end
 -- the back all; Back = a backward push with it (thick from behind). In that top band the data's own Traps growth fades out
 -- (fully above Top - Depth + Edge): at the mass monster it stood up as two horns beside the neck. The mid traps (the
 -- diamond between the shoulder blades) below it stay the data's.
--- (owner, 19 Oct: "make the upper traps way bigger": Height 0.26 -> 0.52, Back 0.08 -> 0.16, Depth 0.45 -> 0.6, monster 1.35 -> 1.6)
-local UPPER_TRAPS = { Height = 0.52, Back = 0.16, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.36, ShoulderTo = 1.3, Depth = 0.6, Edge = 0.3, FrontShare = 0.15 }
+-- (owner, 19 Oct: "make the upper traps way bigger" (Height 0.52), then "smaller, like 0.32 at full look": Height 0.32, Back
+-- 0.1, Depth 0.6, monster 1.6)
+local UPPER_TRAPS = { Height = 0.32, Back = 0.1, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.36, ShoulderTo = 1.3, Depth = 0.6, Edge = 0.3, FrontShare = 0.15 }
 local function addUpperTraps(data)
 	if not data.muscles.Traps then return end
 	local top = -math.huge
