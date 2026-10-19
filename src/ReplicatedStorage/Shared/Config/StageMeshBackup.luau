@@ -158,4 +158,22 @@ StageMeshBackup.Reshape19Oct = {
 	BS_Torso_Front_gmon = { before = "rbxassetid://138062624323780", now = "rbxassetid://125656187945201" },
 }
 
+
+-- Upper traps 0.32 (19 Oct, owner): these torso templates moved on to Downloads\gym_arc_meshes_lowpoly_trapsbig (tools/
+-- torso_stage_setup.luau). before = the Reshape19Oct mesh, now = the mesh in use. BS_Torso_Front_g080 still waits for its
+-- re-import (the first import of it was the 0.52 file).
+StageMeshBackup.Traps032 = {
+	BS_Torso_Back_g020 = { before = "rbxassetid://97898535216056", now = "rbxassetid://94704063607444" },
+	BS_Torso_Back_g040 = { before = "rbxassetid://102491442306472", now = "rbxassetid://70919335997032" },
+	BS_Torso_Back_g060 = { before = "rbxassetid://90956905217606", now = "rbxassetid://86143810073258" },
+	BS_Torso_Back_g080 = { before = "rbxassetid://127397613205324", now = "rbxassetid://83153539035807" },
+	BS_Torso_Back_g100 = { before = "rbxassetid://128962545089850", now = "rbxassetid://84276414515116" },
+	BS_Torso_Back_gmon = { before = "rbxassetid://94071588838794", now = "rbxassetid://120357357726811" },
+	BS_Torso_Front_g020 = { before = "rbxassetid://104358190023825", now = "rbxassetid://92316936059138" },
+	BS_Torso_Front_g040 = { before = "rbxassetid://101123251436565", now = "rbxassetid://88445268664318" },
+	BS_Torso_Front_g060 = { before = "rbxassetid://121548890232461", now = "rbxassetid://92176089541718" },
+	BS_Torso_Front_g100 = { before = "rbxassetid://91880892812280", now = "rbxassetid://112232130944828" },
+	BS_Torso_Front_gmon = { before = "rbxassetid://125656187945201", now = "rbxassetid://90093114065457" },
+}
+
 return StageMeshBackup
