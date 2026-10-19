@@ -603,7 +603,10 @@ local SHORTS = { Hug = 0.5, HemBelow = 0.16, HemAbove = 0.08 }
 -- thigh and everything under the shorts stay flat). The outer sweep keeps its growth: OuterFrom .. OuterTo studs out from
 -- the thigh's middle (part-local X, away from the body) blend back to full growth. One smooth curve over the skin and the
 -- shorts meshes (they still meet at the hem). The body stage meshes are made from this same data (tools/gen_body_stages).
-local QUADS = { FadeFrom = 0.25, FadeTo = 0.6, OuterFrom = 0.05, OuterTo = 0.25 }
+-- (owner, 19 Oct, second pass: "the ball bump on the inner quads is still there, remove it": the low inner teardrop kept
+-- above the knee read as a ball. The inner side now gets no quad growth at any height: from InnerFrom to InnerTo studs
+-- inward of the thigh's middle the growth eases out; the adductor fill below keeps the inner thigh smooth and full.)
+local QUADS = { FadeFrom = 0.25, FadeTo = 0.6, OuterFrom = 0.05, OuterTo = 0.25, InnerFrom = 0.02, InnerTo = 0.16 }
 -- The adductors (owner, 19 Oct prompt 8: "the inner thighs look empty"; the inner side was flat from mid thigh up). A shape
 -- layer on the thigh (merged.shape, drawn with the Quads level and MonsterG("Quads@shape")) fills the INNER SIDE only, pushing
 -- straight inward (never forward): up to an inner surface Target studs from the thigh's middle (part-local X; KneeTarget
@@ -688,12 +691,15 @@ function MuscleMeshes.LoadGroup(group: any): any
 		for i = 1, vertexCount do bottomY = math.min(bottomY, base[i].Y) end
 		local outward = if group.part == "LeftUpperLeg" then -1 else 1 -- (part-local X pointing away from the body)
 		for _, range in ipairs(ranges) do
-			if range.id ~= "Quads" then continue end
+			-- (the hamstrings' inner side too: at big sizes it made a round lump between the knees; owner, 19 Oct)
+			if range.id ~= "Quads" and range.id ~= "Hamstrings" then continue end
+			local quads = range.id == "Quads"
 			for i = range.first, range.first + range.count - 1 do
 				local p = base[i]
-				local fade = smoothstep(((p.Y - bottomY) / math.max(hemY - bottomY, 0.01) - QUADS.FadeFrom) / (QUADS.FadeTo - QUADS.FadeFrom))
+				local fade = if quads then smoothstep(((p.Y - bottomY) / math.max(hemY - bottomY, 0.01) - QUADS.FadeFrom) / (QUADS.FadeTo - QUADS.FadeFrom)) else 0
 				local outer = smoothstep((p.X * outward - QUADS.OuterFrom) / (QUADS.OuterTo - QUADS.OuterFrom))
-				local w = 1 - fade * (1 - outer)
+				local inner = smoothstep((-p.X * outward - QUADS.InnerFrom) / (QUADS.InnerTo - QUADS.InnerFrom))
+				local w = (1 - fade * (1 - outer)) * (1 - inner)
 				if w < 1 then
 					delta[i] *= w
 					if hasNormals and ndelta[i] then ndelta[i] *= w end

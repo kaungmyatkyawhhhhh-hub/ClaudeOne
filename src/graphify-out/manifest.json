@@ -174,9 +174,9 @@
     "semantic_hash": "11716d55bb288db429b36045f84cc650"
   },
   "ReplicatedStorage/Shared/Config/BodyStages.luau": {
-    "mtime": 1792366850.7790494,
-    "seen": 1792367768.9351873,
-    "ast_hash": "578b58ffcbce8e1c378e0afa178b3af4",
+    "mtime": 1792370687.5846698,
+    "seen": 1792370958.2249515,
+    "ast_hash": "4b0988268c3864abc0125f8ecf6af298",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Config/CoachNotes.luau": {
@@ -378,9 +378,9 @@
     "semantic_hash": "3c41e1f6cf1daf814e924395cd7d2fc4"
   },
   "ReplicatedStorage/Shared/Config/StageMeshBackup.luau": {
-    "mtime": 1792366875.5101168,
-    "seen": 1792367768.935709,
-    "ast_hash": "3347975450e70eae97bf3daaf16e36d0",
+    "mtime": 1792370687.6618521,
+    "seen": 1792370958.2249515,
+    "ast_hash": "8437310a2de52e17aaae5841e622d224",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/Config/Stamina.luau": {
@@ -414,15 +414,15 @@
     "semantic_hash": "98c20b6abb25eef44ff55fb66b02a6c1"
   },
   "ReplicatedStorage/Shared/LimbStages.luau": {
-    "mtime": 1792367498.251719,
-    "seen": 1792367768.935709,
-    "ast_hash": "c46efb66e32edc7e8233af5844a8811e",
+    "mtime": 1792370812.5359428,
+    "seen": 1792370958.2249515,
+    "ast_hash": "61fe0f7f67d9bc41b7fbd69c6c070dd5",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/MuscleMeshes.luau": {
-    "mtime": 1792370117.3022697,
-    "seen": 1792370233.326285,
-    "ast_hash": "dbb8fa884b383c04884e97bb505bbd2b",
+    "mtime": 1792370787.0486896,
+    "seen": 1792370958.2249515,
+    "ast_hash": "972916057e90a1fe3d525522aaf6a03d",
     "semantic_hash": ""
   },
   "ReplicatedStorage/Shared/MuscleRig.luau": {

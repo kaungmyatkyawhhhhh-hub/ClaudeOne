@@ -7,7 +7,7 @@
 -- Run in Studio (Edit mode) with a receiver on localhost:34995 (POST /?f=<file>&mode=w|a) and HttpService on.
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local MuscleMeshes = require(ReplicatedStorage.Shared.MuscleMeshes)
+local MuscleMeshes = require(ReplicatedStorage.Shared.MuscleMeshes:Clone()) -- (a fresh copy: the command bar keeps an old one)
 local Body = require(ReplicatedStorage.Shared.Config.Body)
 
 local URL = "http://127.0.0.1:34995/"
@@ -88,6 +88,8 @@ local function run()
 					end
 					oldPos[i] = p
 					fix[i] = (data.delta[i] - rawDelta[i]) * gv + veinFix
+					-- (19 Oct: the adductor fill, the thigh's shape layer)
+					if data.shape and data.shape[i] then fix[i] += data.shape[i] * shown(data.shapeMuscle .. "@shape", stage.g) end
 				end
 			end
 			-- the same split and vertex order as tools/gen_body_stages (first use in the triangle list)

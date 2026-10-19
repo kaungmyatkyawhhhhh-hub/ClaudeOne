@@ -53,6 +53,9 @@ local SKIN_SCALE = 0.97        -- the skin part just inside it
 -- part per limb, resized only when the stage or the body size changes.
 local JOINT_SIZE = { Forearms = 0.74, Calves = 0.78 }
 local JOINT_DROP = { Forearms = 0.04, Calves = 0.04 } -- studs the ball sits below the joint (into the lower limb), unscaled
+-- (owner, 19 Oct: at big sizes the balls stuck out of straight knees as pale bumps) a ball only shows while its joint is bent:
+-- hidden under BEND_FROM degrees between the upper and lower limb, fully shown from BEND_FULL (the gap only opens when bent)
+local BEND_FROM, BEND_FULL = 30, 50
 
 local function nearestStage(stages, g: number): number
 	local best, bestDistance = 1, math.huge
@@ -169,8 +172,17 @@ local function updateJoint(self, limb, body: BasePart, part: MeshPart?, color: C
 	end
 	if ball.Color ~= color then ball.Color = color end
 	if ball.Material ~= material then ball.Material = material end
-	local t = if hidden then 1 else 0
-	if ball.Transparency ~= t then ball.Transparency = t end
+	-- how far the joint is bent: the angle between the upper limb (the joint's other part) and this lower limb
+	local upperName = string.gsub(limb.def.part, "Lower", "Upper")
+	local upper = self.model:FindFirstChild(upperName)
+	local bend = 0
+	if upper and upper:IsA("BasePart") then
+		local dot = math.clamp(upper.CFrame.UpVector:Dot(body.CFrame.UpVector), -1, 1)
+		bend = math.deg(math.acos(dot))
+	end
+	local shown = math.clamp((bend - BEND_FROM) / (BEND_FULL - BEND_FROM), 0, 1)
+	local t = if hidden then 1 else 1 - shown
+	if math.abs(ball.Transparency - t) > 0.02 then ball.Transparency = t end
 end
 
 local function fade(part: Instance, to: number, time: number, done: (() -> ())?)
