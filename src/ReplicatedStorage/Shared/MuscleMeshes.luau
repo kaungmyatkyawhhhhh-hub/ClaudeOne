@@ -37,7 +37,7 @@ local MONSTER_DEFAULT: number = Index.monsterDefaultG or 1.35
 -- The shape layers (the traps yoke, the round delt caps; see addUpperTraps / addRoundDelts) grow with their muscle's level
 -- but have their own, gentler mass monster size (key "<muscle>@shape"): times the data's own monster sizes they made
 -- horns and folded wings.
-MuscleMeshes.ShapeMonsterG = { Traps = 1.35, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6, Rhomboids = 1.7, LowerBack = 1.7, Quads = 1.3 } :: { [string]: number }
+MuscleMeshes.ShapeMonsterG = { Traps = 1.6, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6, Rhomboids = 1.7, LowerBack = 1.7, Quads = 1.3 } :: { [string]: number }
 function MuscleMeshes.MonsterG(key: string): number
 	local muscle = string.match(key, "^(.-)@shape$")
 	if muscle then return MuscleMeshes.ShapeMonsterG[muscle] or 1.3 end
@@ -207,7 +207,8 @@ end
 -- the back all; Back = a backward push with it (thick from behind). In that top band the data's own Traps growth fades out
 -- (fully above Top - Depth + Edge): at the mass monster it stood up as two horns beside the neck. The mid traps (the
 -- diamond between the shoulder blades) below it stay the data's.
-local UPPER_TRAPS = { Height = 0.26, Back = 0.08, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.32, ShoulderTo = 1.3, Depth = 0.45, Edge = 0.25, FrontShare = 0.15 }
+-- (owner, 19 Oct: "make the upper traps way bigger": Height 0.26 -> 0.52, Back 0.08 -> 0.16, Depth 0.45 -> 0.6, monster 1.35 -> 1.6)
+local UPPER_TRAPS = { Height = 0.52, Back = 0.16, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.36, ShoulderTo = 1.3, Depth = 0.6, Edge = 0.3, FrontShare = 0.15 }
 local function addUpperTraps(data)
 	if not data.muscles.Traps then return end
 	local top = -math.huge
