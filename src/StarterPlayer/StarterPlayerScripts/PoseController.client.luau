@@ -11,7 +11,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 
 local PoseData = require(ReplicatedStorage:WaitForChild("PoseData"))
-local BLEND_IN, BLEND_OUT = 0.35, 0.25
+local BLEND_IN, BLEND_OUT = 0.3, 0.3
+-- while a pose is held: a slow breath so it isn't frozen (owner, 19 Oct): degrees added on top, one breath per BREATH seconds
+local BREATH = 3.6
+local SWAY = { Waist = {1.2, 0, 0}, Neck = {-0.8, 0, 0}, RightShoulder = {0, 0, 1.5}, LeftShoulder = {0, 0, -1.5} }
 local JOINTS = {"Root","Waist","Neck","RightShoulder","RightElbow","RightWrist","LeftShoulder","LeftElbow","LeftWrist",
 	"RightHip","RightKnee","RightAnkle","LeftHip","LeftKnee","LeftAnkle"}
 local REST = { 0, 0, 0 }
@@ -130,10 +133,15 @@ RunService.PreSimulation:Connect(function(dt)
 			end
 			st.muted = nil
 		end
+		-- (each character breathes on its own beat)
+		st.phase = st.phase or math.random() * BREATH
+		local breath = math.sin((os.clock() + st.phase) / BREATH * math.pi * 2) * a
 		for _, jn in ipairs(JOINTS) do
 			local m = st.motors[jn]
 			if m then
 				local ang = (st.pose and st.pose[jn]) or REST
+				local sway = SWAY[jn]
+				if sway and st.pose then ang = { ang[1] + sway[1] * breath, ang[2] + sway[2] * breath, ang[3] + sway[3] * breath } end
 				m.Transform = m.Transform:Lerp(poseCFrame(m, ang), a)
 			end
 		end
