@@ -177,4 +177,22 @@ StageMeshBackup.Traps032 = {
 	BS_Torso_Front_g080 = { before = "rbxassetid://106850232048936", now = "rbxassetid://85012572987286" },
 }
 
+
+-- Inner quad ball removed (19 Oct, owner): the thigh skin templates moved on to Downloads\gym_arc_meshes_lowpoly_innerfix
+-- (tools/legs_stage_setup.luau). before = the Reshape19Oct mesh, now = the mesh in use. The shorts came out the same.
+StageMeshBackup.InnerFix19Oct = {
+	BS_LeftLeg_Skin_g020 = { before = "rbxassetid://135643020038775", now = "rbxassetid://138715751091038" },
+	BS_LeftLeg_Skin_g040 = { before = "rbxassetid://74548175545582", now = "rbxassetid://132629930842423" },
+	BS_LeftLeg_Skin_g060 = { before = "rbxassetid://105122819638989", now = "rbxassetid://79672396204953" },
+	BS_LeftLeg_Skin_g080 = { before = "rbxassetid://80863350150354", now = "rbxassetid://136275433859222" },
+	BS_LeftLeg_Skin_g100 = { before = "rbxassetid://71537841020024", now = "rbxassetid://132850158581914" },
+	BS_LeftLeg_Skin_gmon = { before = "rbxassetid://108486226655576", now = "rbxassetid://109834016053290" },
+	BS_RightLeg_Skin_g020 = { before = "rbxassetid://132486289037432", now = "rbxassetid://87532877335382" },
+	BS_RightLeg_Skin_g040 = { before = "rbxassetid://131176206825880", now = "rbxassetid://114922077391797" },
+	BS_RightLeg_Skin_g060 = { before = "rbxassetid://105910507856702", now = "rbxassetid://92429194758414" },
+	BS_RightLeg_Skin_g080 = { before = "rbxassetid://116991975927955", now = "rbxassetid://106436012729017" },
+	BS_RightLeg_Skin_g100 = { before = "rbxassetid://87390683294012", now = "rbxassetid://99469538505201" },
+	BS_RightLeg_Skin_gmon = { before = "rbxassetid://100911612187528", now = "rbxassetid://81207391672284" },
+}
+
 return StageMeshBackup
