@@ -1,5 +1,5 @@
 -- RetentionClient: the rush hour pill at the top of the right column (with a countdown), and corner notes for
--- offline coins, re-racked plates and DNA tokens bought at the front desk.
+-- offline coins, re-racked plates, DNA tokens bought at the front desk and the BETA TESTER badge.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -55,6 +55,13 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind == "SoftShutdown" then
 		-- (ShutdownService: this server is closing for an update; the teleport follows in a second)
 		Notify.Show("The gym is updating. Moving you to the new version, your progress is saved.", nil, "shutdown")
+	elseif kind == "BetaBadge" then
+		-- (BetaBadgeService: the BETA TESTER badge was just awarded, once per player; shown after the menu)
+		task.spawn(function()
+			UIBus.WaitForMenu()
+			Notify.Toast("BETA TESTER badge earned!", "Thanks for testing GYM ARC", "sparkles", Colors.Gold, "betabadge")
+			Audio.PlayUI("TitleUnlocked")
+		end)
 	elseif kind == "Reracked" then
 		Notify.Show("Plate re-racked. +" .. tostring(info.coins) .. " coins.", nil, "rerack")
 		Audio.PlayUI("Click")

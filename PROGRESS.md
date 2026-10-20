@@ -58,6 +58,10 @@ Short and current. Older sections (before 15 Oct): `docs/PROGRESS_archive.md`. F
   Shadows off on phone / low-end). Place already had only 5 shadow lights (main spots). Graphics level 1 draws no shadows
   at all; on PC most shadow draws are the sun (GlobalShadows, not changed: owner decides).
 
+- BETA TESTER BADGE (20 Oct, prompt 16): BetaBadgeService (OPTIONAL_SERVICES in Main): PlayerAdded -> UserHasBadgeAsync,
+  then AwardBadge (pcall, one retry after 5 s, own thread, skipped in Studio); on award PlayerEvent "BetaBadge" ->
+  RetentionClient gold toast after the menu. Config/Titles BETA_BADGE_ENABLED = true, BETA_BADGE_ID = 471600537426484.
+
 ## Rules
 - No growth spurt cooldown. (Owner, 14 Oct: a player can do the next Growth Spurt as soon as they've earned it; checked:
   there is no timer, time check or config value for it anywhere, and the Skip Growth Cooldown product is removed.)

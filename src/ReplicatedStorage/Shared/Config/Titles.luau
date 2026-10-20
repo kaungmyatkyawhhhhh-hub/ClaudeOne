@@ -101,6 +101,11 @@ for _, season in ipairs(Seasons.List) do
 	})
 end
 
+-- The BETA TESTER badge (owner, 20 Oct; BetaBadgeService): every player who joins during the beta gets it. Set
+-- BETA_BADGE_ENABLED = false when the beta ends.
+Titles.BETA_BADGE_ENABLED = true
+Titles.BETA_BADGE_ID = 471600537426484
+
 Titles.ById = {}
 for _, title in ipairs(Titles.List) do
 	Titles.ById[title.id] = title
