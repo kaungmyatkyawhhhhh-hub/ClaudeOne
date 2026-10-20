@@ -108,7 +108,7 @@ local function goalText(data, progress)
 	end
 	if not lowest then return "" end
 	for _, machine in ipairs(Machines.List) do
-		local open = data.growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.gym ~= "Seasonal"
+		local open = data.growthSpurts >= Machines.OpenAt(machine) and machine.gym ~= "Seasonal" and not machine.dumbbell
 		if open and machine.trains ~= "Stamina" and Muscles.ById[machine.muscles[1].id].group == lowest.id then
 			return "Next: " .. lowest.name .. " on the " .. machine.name
 		end
@@ -149,7 +149,7 @@ end
 local function machinesFor(data, groupId)
 	local list, seen = {}, {}
 	for _, machine in ipairs(Machines.List) do
-		local open = data.growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.gym ~= "Seasonal"
+		local open = data.growthSpurts >= Machines.OpenAt(machine) and machine.gym ~= "Seasonal" and not machine.dumbbell
 		if open and machine.trains ~= "Stamina" and not seen[machine.id] and Muscles.ById[machine.muscles[1].id].group == groupId then
 			seen[machine.id] = true
 			table.insert(list, machine)

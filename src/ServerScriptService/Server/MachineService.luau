@@ -87,8 +87,79 @@ local function updateStack(model, bar, index)
 	model:SetAttribute("StackCount", count)
 end
 
+-- Dumbbells (prompt 16): the pair (or one) in the lifter's hands, welded on (so every client's arm animation carries
+-- them), sized by the weight: a chrome handle and two dark rubber heads that grow with the weight (the heaviest about
+-- 1.75x the lightest across), and with the hand (a big body's hands are bigger). Taken away again when they leave ("back on the rack").
+local HELD = "HeldDumbbells"
+local function dropDumbbells(character)
+	local held = character and character:FindFirstChild(HELD)
+	if held then held:Destroy() end
+end
+local function dumbbellModel(weight: number, scale: number): Model
+	local t = math.clamp((weight - 10) / 90, 0, 1)
+	local model = Instance.new("Model")
+	model.Name = "Dumbbell"
+	local function piece(name, size, x, color, material)
+		local part = Instance.new("Part")
+		part.Name = name
+		part.Shape = Enum.PartType.Cylinder -- (along X: the handle's axis)
+		part.Size = size * scale
+		part.Color, part.Material = color, material
+		part.CFrame = CFrame.new(x * scale, 0, 0)
+		part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow, part.Massless = false, false, false, false, false, true
+		part.Parent = model
+		return part
+	end
+	local grip, headL, headD = 0.5, 0.18 + 0.2 * t, 0.4 + 0.3 * t
+	local handle = piece("Handle", Vector3.new(grip + 0.12, 0.13, 0.13), 0, Color3.fromHex("#B9BCC2"), Enum.Material.Metal)
+	for _, side in ipairs({ 1, -1 }) do
+		piece("Head", Vector3.new(headL, headD, headD), side * (grip / 2 + headL / 2), Color3.fromHex("#1C1C20"), Enum.Material.SmoothPlastic)
+		piece("Ring", Vector3.new(0.035, headD * 1.02, headD * 1.02), side * (grip / 2 + 0.03), Color3.fromHex("#C98A12"), Enum.Material.Metal)
+	end
+	model.PrimaryPart = handle
+	-- (a Weld with its offset, not a WeldConstraint: the heads stay put on the handle wherever it is placed)
+	for _, part in ipairs(model:GetChildren()) do
+		if part ~= handle then
+			local weld = Instance.new("Weld")
+			weld.Part0, weld.Part1 = handle, part
+			weld.C0 = handle.CFrame:ToObjectSpace(part.CFrame)
+			weld.Parent = part
+		end
+	end
+	return model
+end
+local function holdDumbbells(player, machine, tier)
+	local character = player and player.Character
+	if not character then return end
+	dropDumbbells(character)
+	local folder = Instance.new("Folder")
+	folder.Name = HELD
+	for index, long in ipairs({ "Right", "Left" }) do
+		if index > (machine.hands or 2) then break end
+		local hand = character:FindFirstChild(long .. "Hand")
+		if not (hand and hand:IsA("BasePart")) then continue end
+		-- (a bigger body has bigger hands: the dumbbells keep their look in the hand)
+		local scale = math.clamp(math.max(hand.Size.X, hand.Size.Z) / 0.42, 0.8, 1.7)
+		local model = dumbbellModel(tier.weight, scale)
+		local turn = if machine.grip == "Z" then CFrame.Angles(0, math.rad(90), 0) else CFrame.identity
+		local weld = Instance.new("Weld")
+		weld.Part0, weld.Part1 = hand, model.PrimaryPart
+		weld.C0 = CFrame.new(0, -hand.Size.Y * 0.18, 0) * turn
+		weld.Parent = model.PrimaryPart
+		model:PivotTo(hand.CFrame * weld.C0)
+		model.Parent = folder
+	end
+	folder.Parent = character
+end
+
 local function updatePlates(model, tier)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
+	if machine and machine.dumbbell then
+		model:SetAttribute("Tier", table.find(machine.tiers, tier) or 1)
+		local lifter = occupants[model]
+		if typeof(lifter) == "Instance" and lifter:IsA("Player") then holdDumbbells(lifter, machine, tier) end
+		return
+	end
 	local bar = machine and model:FindFirstChild(machine.load or "Bar")
 	if not bar then return end
 	local folder = model:FindFirstChild("Plates")
@@ -274,6 +345,7 @@ local function leave(player)
 
 	-- free the character first, so nothing after this can leave them anchored
 	local character = player.Character
+	if session.machine.dumbbell then dropDumbbells(character) end -- (back on the rack)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if humanoid and root and humanoid.Health > 0 then
@@ -318,6 +390,7 @@ end
 function MachineService.NpcEnter(npc, model, tierIndex)
 	if occupants[model] then return false end
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
+	if machine and machine.dumbbell then return false end -- (the dumbbell spots are for players)
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")
 	local root = npc:FindFirstChild("HumanoidRootPart")
 	if not machine or not humanoid or not root then return false end
@@ -604,7 +677,30 @@ local function maxWeight(player)
 	updatePlates(session.model, machine.tiers[best])
 end
 
+-- Dumbbells (prompt 16): the picker's choice for a spot ({ spot = model, id = exercise id }). A free spot within reach:
+-- it becomes that exercise and you step on; your own spot: you switch exercise (off and straight back on).
+local function pickDumbbell(player, arg)
+	if type(arg) ~= "table" then return end
+	local spot, id = arg.spot, arg.id
+	local exercise = type(id) == "string" and Machines.ById[id]
+	if not exercise or not exercise.dumbbell or typeof(spot) ~= "Instance" or not spot:IsA("Model") or not spot:GetAttribute("Dumbbell")
+		or not CollectionService:HasTag(spot, "Machine") then return end
+	local session = sessions[player]
+	if session then
+		if session.model ~= spot then return end
+		if session.machine.id == id then return end
+		leave(player)
+	else
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not root or (root.Position - spot:GetPivot().Position).Magnitude > 14 then return end
+		if occupants[spot] then return end
+	end
+	spot:SetAttribute("MachineId", id)
+	enter(player, spot)
+end
+
 local actions = {
+	Dumbbell = pickDumbbell,
 	Lift = lift,
 	Tap = tap,
 	Pump = pumpNow,
@@ -624,6 +720,19 @@ local function setupMachine(model)
 	-- plates and the bar need all of it); machines out of range aren't on a client at all
 	if model:IsA("Model") then model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end
 	local prompt = getPrompt(model)
+	if prompt and machine.dumbbell then
+		-- a dumbbell spot: the prompt opens the exercise picker (MachineClient), the choice comes back as "Dumbbell"
+		prompt.ActionText = "Train"
+		prompt.ObjectText = "Dumbbells"
+		prompt.Style = Enum.ProximityPromptStyle.Custom
+		prompt.MaxActivationDistance = 8
+		Guard.OnTriggered(prompt, function(player)
+			if sessions[player] or occupants[model] then return end
+			Remotes.MachineState:FireClient(player, "Pick", model)
+		end)
+		updatePlates(model, displayTier(machine))
+		return
+	end
 	if prompt then
 		prompt.ActionText = "Occupy"
 		prompt.ObjectText = machine.name -- each client adds its own next-weight line (MachineClient)

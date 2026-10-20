@@ -77,6 +77,11 @@ Machines.TierSets = {
 		{ 35, { 35 }, "+35" }, { 45, { 45 }, "+45" }, { 55, { 55 }, "+55" }, { 70, { 55, 10, 5 }, "+70" },
 		{ 80, { 55, 25 }, "+80" }, { 90, { 55, 35 }, "+90" }, { 100, { 55, 45 }, "+100" },
 	}, "Bodyweight"),
+	-- Dumbbells (prompt 16): one dumbbell's weight; drawn in the hands (no plates), bigger with the weight.
+	Dumbbell = tierSet({
+		{ 10, {} }, { 15, {} }, { 20, {} }, { 25, {} }, { 30, {} }, { 35, {} }, { 40, {} }, { 50, {} }, { 60, {} },
+		{ 70, {} }, { 85, {} }, { 100, {} },
+	}),
 	-- Treadmill: speeds instead of weights (weight = mph, unit shown instead of "lb").
 	Treadmill = (function()
 		local rows = {}
@@ -223,7 +228,45 @@ for _, machine in ipairs(PRO) do
 	machine.gym = "Pro"
 	machine.layout = "Center"
 	machine.tiers = Machines.TierSets[machine.tiers]
+	-- (prompt 16, 21 Oct) the starter gym has a copy of every pro machine (tools/builders/StarterProMachines): these
+	-- exercises are open from the start (the pro gym's own copies still sit behind its door)
+	machine.openAt = 0
 	table.insert(Machines.List, machine)
+end
+
+-- Dumbbells (prompt 16, 21 Oct): every gym's dumbbell rack has "Train" spots (small machine models with Dumbbell = true,
+-- tools/builders/DumbbellSpots); a tap opens the exercise picker and the spot becomes that exercise (its MachineId), so
+-- reps, stamina, EXP, weight tiers and the machine HUD work exactly like a machine. dumbbell = true; about 85% of the
+-- matching machine's EXP (gainScale). Poses DB_* (Config/Poses, MachineClient's moves); MachineService welds the
+-- dumbbells to the hands (hands = 1: one dumbbell in the right hand; grip = the hand's axis the handle lies along, "X" or
+-- "Z", measured on the poses so the handle runs the right way: across for curls and presses, front-back for neutral grips,
+-- upright for the overhead extension).
+Machines.DumbbellGain = 0.85
+local DUMBBELLS = {
+	{ id = "DBCurl", name = "Bicep Curl", pose = "DB_Curl", grip = "X", muscles = { { id = "Biceps", share = 1 }, { id = "Forearms", share = 0.4 } } },
+	{ id = "DBHammerCurl", name = "Hammer Curl", pose = "DB_HammerCurl", grip = "Z", muscles = { { id = "Forearms", share = 1 }, { id = "Biceps", share = 0.6 } } },
+	{ id = "DBShoulderPress", name = "Shoulder Press", pose = "DB_ShoulderPress", grip = "Z",
+		muscles = { { id = "FrontDelts", share = 1 }, { id = "SideDelts", share = 0.5 }, { id = "Triceps", share = 0.4 } } },
+	{ id = "DBLateralRaise", name = "Lateral Raise", pose = "DB_LateralRaise", grip = "X", muscles = { { id = "SideDelts", share = 1 } } },
+	{ id = "DBRearDeltFly", name = "Rear Delt Fly", pose = "DB_RearDeltFly", grip = "X", muscles = { { id = "RearDelts", share = 1 }, { id = "Rhomboids", share = 0.5 } } },
+	{ id = "DBTricepExtension", name = "Overhead Tricep Extension", pose = "DB_TricepExtension", grip = "Z", hands = 1, muscles = { { id = "Triceps", share = 1 } } },
+	{ id = "DBShrugs", name = "Dumbbell Shrugs", pose = "DB_Shrug", grip = "Z", muscles = { { id = "Traps", share = 1 }, { id = "Forearms", share = 0.4 } } },
+	{ id = "DBRow", name = "One-Arm Row", pose = "DB_Row", grip = "Z", hands = 1, muscles = { { id = "Lats", share = 1 }, { id = "Rhomboids", share = 0.5 }, { id = "Biceps", share = 0.3 } } },
+	{ id = "DBGobletSquat", name = "Goblet Squat", pose = "DB_GobletSquat", grip = "X", hands = 1, muscles = { { id = "Quads", share = 1 }, { id = "Glutes", share = 0.5 } } },
+	{ id = "DBLunges", name = "Lunges", pose = "DB_Lunge", grip = "Z", muscles = { { id = "Glutes", share = 1 }, { id = "Quads", share = 0.6 }, { id = "Hamstrings", share = 0.4 } } },
+	{ id = "DBCalfRaise", name = "Standing Calf Raise", pose = "DB_CalfRaise", grip = "Z", muscles = { { id = "Calves", share = 1 } } },
+}
+Machines.Dumbbells = {}
+for _, exercise in ipairs(DUMBBELLS) do
+	exercise.gym = "Dumbbell"
+	exercise.dumbbell = true
+	exercise.layout = "Center"
+	exercise.tiers = Machines.TierSets.Dumbbell
+	exercise.staminaCost = 4
+	exercise.gainScale = Machines.DumbbellGain
+	exercise.openAt = 0
+	table.insert(Machines.List, exercise)
+	table.insert(Machines.Dumbbells, exercise)
 end
 
 -- Beach gym (town hub, opens at Growth Spurt 1): no machines of its own (owner, 8 Oct night): it has copies of the REAL
@@ -255,7 +298,12 @@ for _, machine in ipairs(Machines.List) do
 end
 
 -- Gyms open by Growth Spurt count (the pro gym opens at Growth Spurt 2).
-Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 2, Seasonal = 0 }
+Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 2, Seasonal = 0, Dumbbell = 0 }
+
+-- The Growth Spurts an exercise is open at anywhere (a copy in an earlier gym counts: openAt).
+function Machines.OpenAt(machine): number
+	return machine.openAt or Machines.GymUnlock[machine.gym] or 0
+end
 
 -- The Growth Spurt count a machine MODEL opens at: its config's gym, or the gym it stands in (the model attribute "Gym",
 -- e.g. a real Bicep Curl in the beach gym opens with the beach gym) when that opens earlier.
@@ -263,6 +311,7 @@ function Machines.GymOpenAt(machine, model: Instance?): (number, string)
 	local gym = machine.gym
 	local need = Machines.GymUnlock[gym] or 0
 	local placed = model and model:GetAttribute("Gym")
+	if machine.dumbbell then return 0, "Dumbbell" end -- (every gym's rack: open from the start)
 	if type(placed) == "string" and Machines.GymUnlock[placed] and Machines.GymUnlock[placed] < need then
 		return Machines.GymUnlock[placed], placed
 	end
@@ -290,7 +339,7 @@ Machines.GoalShare = 0.2
 function Machines.TrainableMuscles(growthSpurts)
 	local set = {}
 	for _, machine in ipairs(Machines.List) do
-		if growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.trains ~= "Stamina" then
+		if growthSpurts >= Machines.OpenAt(machine) and machine.trains ~= "Stamina" then
 			for _, entry in ipairs(machine.muscles) do
 				if (entry.share or 1) >= Machines.GoalShare then set[entry.id] = true end
 			end
@@ -303,7 +352,7 @@ end
 function Machines.ExercisesFor(groupId: string, growthSpurts: number, muscleGroup: (string) -> string): { string }
 	local names, seen = {}, {}
 	for _, machine in ipairs(Machines.List) do
-		local open = growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.gym ~= "Seasonal"
+		local open = growthSpurts >= Machines.OpenAt(machine) and machine.gym ~= "Seasonal"
 		if open and machine.trains ~= "Stamina" and muscleGroup(machine.muscles[1].id) == groupId and not seen[machine.name] then
 			seen[machine.name] = true
 			table.insert(names, machine.name)

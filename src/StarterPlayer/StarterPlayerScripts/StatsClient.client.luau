@@ -181,7 +181,7 @@ for index, machine in ipairs(Machines.List) do
 	Kit.IconTile("dumbbell", Color3.fromHex("#2A262B"), 30, { Name = "Tile", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Parent = card })
 	Kit.Text({ Name = "Name", Text = machine.name, Font = "Title", TextSize = 13, Position = UDim2.fromOffset(44, 5), Size = UDim2.new(1, -120, 0, 17),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
-	Kit.Text({ Name = "Muscle", Text = mainId and Muscles.ById[mainId].name or "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted,
+	Kit.Text({ Name = "Muscle", Text = (if machine.dumbbell then "Dumbbells · " else "") .. (mainId and Muscles.ById[mainId].name or ""), Font = "Body", TextSize = 11, TextColor3 = Colors.Muted,
 		Position = UDim2.fromOffset(44, 23), Size = UDim2.new(1, -120, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
 	local best = Kit.Text({ Name = "Best", Text = "", Font = "Number", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 5),
 		Size = UDim2.fromOffset(80, 17), TextXAlignment = Enum.TextXAlignment.Right, Parent = card })

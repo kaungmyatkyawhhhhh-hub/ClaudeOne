@@ -926,6 +926,147 @@ bars.props.CalfRaise = function(model, character)
 	for part, cframe in pairs(rest) do part.CFrame = cframe + lift end
 end
 
+-- Dumbbells (prompt 16): standing on the spot's mat, the dumbbells welded in the hands (MachineService). d = 1 the start,
+-- 0 the top of the rep. Directions are in the standing body's space (the root part: x outward for that arm, y up, z
+-- back), so a bent-over torso keeps the arms hanging straight down. Each arm is a shoulder -> elbow direction (upper) and
+-- an elbow -> hand direction (fore); the arm IK puts the hand there (any body size, big arms included).
+function bars.dbArm(character, frame, side, upper: Vector3, fore: Vector3, pole: Vector3)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local arm = bars.arm(character, side)
+	if not (root and arm) then return end
+	local sign = side == "R" and 1 or -1
+	local function dir(v) return root.CFrame:VectorToWorldSpace(Vector3.new(v.X * sign, v.Y, v.Z).Unit) end
+	local s = (frame * bars.c0(arm.shoulder)).Position
+	bars.armIK(character, side, frame, s + dir(upper) * arm.a + dir(fore) * arm.b * 0.98, dir(pole))
+end
+function bars.dbBoth(character, frame, upper: Vector3, fore: Vector3, pole: Vector3)
+	for _, side in ipairs(SIDES) do bars.dbArm(character, frame, side[1], upper, fore, pole) end
+end
+-- arms hanging at the sides (holding the dumbbells), a little out from the thighs
+local DB_HANG = Vector3.new(0.2, -1, 0.02)
+
+-- Curl: elbows at the sides, the forearms come up (palms up).
+POSE_ANIMS.DB_Curl = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local bend = rad(8 + 132 * c) + jitter
+	bars.dbBoth(character, frame, Vector3.new(0.16, -1, 0.06), Vector3.new(0.14, -math.cos(bend), -math.sin(bend)), Vector3.new(0, -0.4, 1))
+end
+-- Hammer curl: the same with the thumbs up (the dumbbell held upright: grip Z), a little less high.
+POSE_ANIMS.DB_HammerCurl = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local bend = rad(8 + 108 * c) + jitter
+	bars.dbBoth(character, frame, Vector3.new(0.22, -1, 0.04), Vector3.new(0.12, -math.cos(bend), -math.sin(bend)), Vector3.new(0, -0.4, 1))
+end
+-- Shoulder press: from the shoulders (upper arms out to the sides, forearms up) to straight overhead.
+POSE_ANIMS.DB_ShoulderPress = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local upper = Vector3.new(1, -0.05, -0.2):Lerp(Vector3.new(0.45, 1, -0.05), c)
+	local fore = Vector3.new(0.06, 1, -0.06):Lerp(Vector3.new(0.04, 1, 0), c)
+	bars.dbBoth(character, frame, upper, fore + Vector3.new(0, 0, jitter), Vector3.new(0.6, -1, 0))
+end
+-- Lateral raise: the arms from the sides up and out to shoulder height, elbows soft.
+POSE_ANIMS.DB_LateralRaise = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local v = DB_HANG:Lerp(Vector3.new(1, -0.06 + jitter, -0.12), c)
+	bars.dbBoth(character, frame, v, v + Vector3.new(0, -0.12, -0.05), Vector3.new(0, -1, 0.3))
+end
+-- Rear delt fly: bent over at the hips (knees soft), the arms swing from hanging down out to the sides.
+POSE_ANIMS.DB_RearDeltFly = function(character, d, jitter)
+	local c = 1 - d
+	lowerBody(character, rad(14), rad(48))
+	setJoint(character, "Waist", Angles(-rad(8), 0, 0))
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local v = Vector3.new(0.12, -1, -0.05):Lerp(Vector3.new(1, -0.2 + jitter, 0.05), c)
+	bars.dbBoth(character, frame, v, v + Vector3.new(0, -0.15, 0), Vector3.new(0, 1, 0.4))
+end
+-- Overhead tricep extension: one dumbbell overhead (right hand, the left hand beside it); it drops behind the head, a
+-- little to the side so it clears a big head, and presses back up.
+POSE_ANIMS.DB_TricepExtension = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local bend = rad(140 - 135 * c) + jitter
+	bars.dbBoth(character, frame, Vector3.new(0.3, 1, -0.05), Vector3.new(-0.04, math.cos(bend), math.sin(bend)), Vector3.new(0.3, 1, -0.6))
+end
+-- Shrugs: arms hang holding the dumbbells; the shoulders lift.
+POSE_ANIMS.DB_Shrug = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character)
+	bars.legs(character, 0, 0, 0)
+	local _, frame = bars.frames(character)
+	local torso = character:FindFirstChild("UpperTorso")
+	if not (frame and torso) then return end
+	bars.reachBoth(character, frame, Vector3.new(0.2, -0.97, 0.02), Vector3.new(0, 0, 1), torso.Size.Y * 0.17 * c + jitter * 0.05)
+end
+-- One-arm row: bent over, the left hand braced on the left knee; the right arm rows the dumbbell up to the hip.
+POSE_ANIMS.DB_Row = function(character, d, jitter)
+	local c = 1 - d
+	lowerBody(character, rad(18), rad(52))
+	setJoint(character, "Waist", Angles(-rad(8), 0, 0))
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	local upper = Vector3.new(0.1, -1, -0.04):Lerp(Vector3.new(0.14, -0.3, 1), c)
+	local fore = Vector3.new(0.02, -1, -0.04):Lerp(Vector3.new(0.02, -1, -0.12 + jitter), c)
+	bars.dbArm(character, frame, "R", upper, fore, Vector3.new(0, 0.2, 1))
+	bars.dbArm(character, frame, "L", Vector3.new(0.1, -0.8, -0.6), Vector3.new(0.04, -1, -0.15), Vector3.new(1, 0, 0))
+end
+-- Goblet squat: one dumbbell held upright against the chest (elbows down), sit down until the thighs are parallel.
+POSE_ANIMS.DB_GobletSquat = function(character, d, jitter)
+	local c = 1 - d
+	lowerBody(character, rad(68 * d), rad(14 * d))
+	setJoint(character, "Waist", Angles(-rad(6 * d), 0, 0))
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	bars.dbBoth(character, frame, Vector3.new(0.16, -0.95, -0.3), Vector3.new(-0.6, 0.32, -0.72 + jitter * c), Vector3.new(0.4, -1, 0))
+end
+-- Lunges: a long step forward with the right leg, both knees bend down; the dumbbells hang at the sides.
+POSE_ANIMS.DB_Lunge = function(character, d, jitter)
+	local legLength = limbLength(character, "RightUpperLeg", "RightLowerLeg") / 2
+	setJoint(character, "Root", CFrame.new(0, -legLength * 0.55 * d, 0))
+	setJoint(character, "Waist", CFrame.identity)
+	setJoint(character, "RHip", Angles(rad(30 + 52 * d) + jitter, 0, 0))
+	setJoint(character, "RKnee", Angles(-rad(10 + 80 * d), 0, 0))
+	setJoint(character, "RAnkle", Angles(rad(10 * d), 0, 0))
+	setJoint(character, "LHip", Angles(-rad(14 + 12 * d), 0, 0))
+	setJoint(character, "LKnee", Angles(-rad(14 + 76 * d), 0, 0))
+	setJoint(character, "LAnkle", Angles(rad(40 * d), 0, 0))
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	bars.dbBoth(character, frame, DB_HANG, DB_HANG + Vector3.new(0, 0, -0.04), Vector3.new(0, 0, 1))
+end
+-- Standing calf raise: the dumbbells hang at the sides; up on the toes at the top.
+POSE_ANIMS.DB_CalfRaise = function(character, d, jitter)
+	local c = 1 - d
+	bars.base(character, CFrame.new(0, 0.35 * c, 0))
+	for _, side in ipairs(SIDES) do
+		setJoint(character, side[1] .. "Hip", CFrame.identity)
+		setJoint(character, side[1] .. "Knee", CFrame.identity)
+		setJoint(character, side[1] .. "Ankle", Angles(-rad(35 * c) - jitter, 0, 0))
+	end
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	bars.dbBoth(character, frame, DB_HANG, DB_HANG, Vector3.new(0, 0, 1))
+end
+
 -- Sled push (winter): leaning into the sled's handles, legs driving in a lunge that switches each rep.
 -- Treadmill belts: while someone runs on one (the machine's UserId attribute), its slats slide back along the belt at the
 -- tier's speed and wrap around, and a pro treadmill's readout (Screen.Readout) counts speed / time / distance for the run
@@ -2271,6 +2412,19 @@ task.spawn(function()
 	end
 end)
 
+-- Dumbbells (prompt 16): a spot's Train prompt (the server answers "Pick") or the HUD's EXERCISE button opens the
+-- picker; the choice goes to the server ("Dumbbell"), which puts you on the spot as that exercise (or switches it).
+local DumbbellPicker = require(Shared.UI.DumbbellPicker)
+local function pickFor(spot)
+	DumbbellPicker.Open(spot:GetAttribute("MachineId"), current ~= nil and current.model == spot, function(id)
+		Remotes.MachineAction:FireServer("Dumbbell", { spot = spot, id = id })
+		Remotes.PlayerAction:FireServer("SetSettings", { dumbbellLast = id })
+	end)
+end
+hud.changeButton.Activated:Connect(function()
+	if current and current.machine.dumbbell then pickFor(current.model) end
+end)
+
 local function onLiftAction(_, state)
 	if state == Enum.UserInputState.Begin then tryLift() end
 	return Enum.ContextActionResult.Sink
@@ -2342,6 +2496,7 @@ local function open(model)
 	lastStamina = nil
 
 	titleLabel.Text = machine.name
+	hud.changeButton.Visible = machine.dumbbell == true
 	do -- the main muscle's group tag ("CHEST"); none on cardio
 		local muscle = Muscles.ById[machine.muscles[1].id]
 		local group = muscle and Muscles.GroupById[muscle.group]
@@ -2406,6 +2561,7 @@ local function close()
 		end
 	end
 	current = nil
+	DumbbellPicker.Close()
 	setPumpGlow(false)
 	prBanner.Visible = false
 	hidePumpHint(false)
@@ -2495,6 +2651,8 @@ Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 		open(model)
 	elseif state == "Exit" then
 		close()
+	elseif state == "Pick" and typeof(model) == "Instance" then
+		pickFor(model)
 	end
 end)
 

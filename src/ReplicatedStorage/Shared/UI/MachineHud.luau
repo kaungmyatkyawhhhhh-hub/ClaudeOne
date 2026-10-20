@@ -242,6 +242,9 @@ function MachineHud.Build()
 
 	hud.exitButton = Kit.Button("Quiet", "Stop", { Name = "Exit", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, corner, 1, -corner), Parent = stack },
 		{ width = 92, height = 40, textSize = 15, icon = "x" })
+	-- (prompt 16) dumbbells only: EXERCISE reopens the exercise picker (right above STOP: beside it is the shake button)
+	hud.changeButton = Kit.Button("Quiet", "Exercise", { Name = "ChangeExercise", AnchorPoint = Vector2.new(0, 1), Visible = false,
+		Position = UDim2.new(0, corner, 1, -(corner + 48)), Parent = stack }, { width = 124, height = 40, textSize = 15, icon = "dumbbell" })
 
 	------------------------------------------------------------ NEW PERSONAL RECORD! (top center)
 	local banner = frame({ Name = "PersonalRecord", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 44), Size = UDim2.fromOffset(420, 52),
@@ -327,6 +330,7 @@ function MachineHud.Build()
 		rep.Position = UDim2.new(1, -placed.repRight, 1, -placed.repBottom)
 		pump.Position = UDim2.new(1, -placed.repRight, 1, -(placed.repBottom + MachineHud.RepSize.Y + MachineHud.Gap))
 		hud.exitButton.Position = UDim2.new(0, corner, 1, -placed.stopBottom)
+		hud.changeButton.Position = UDim2.new(0, corner, 1, -(placed.stopBottom + 48))
 		placePanel()
 	end
 	-- the first measurement from the real controls (on a PC: the corners) is kept for good

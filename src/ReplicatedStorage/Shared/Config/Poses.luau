@@ -74,4 +74,11 @@ local Poses = {
 	LegRaise = { kind = "Hang", position = Vector3.new(0, 0, 0), barHeight = 9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
 }
 
+-- Dumbbells (prompt 16): standing on the spot's mat with the rack behind (the spot faces +Z, into the room); off one step
+-- forward. Every one is a contract pose: d = 1 the start position, 0 the top of the rep (MachineClient DB_* moves).
+for _, name in ipairs({ "DB_Curl", "DB_HammerCurl", "DB_ShoulderPress", "DB_LateralRaise", "DB_RearDeltFly", "DB_TricepExtension",
+	"DB_Shrug", "DB_Row", "DB_GobletSquat", "DB_Lunge", "DB_CalfRaise" }) do
+	Poses[name] = { kind = "Stand", position = Vector3.new(0, 0.12, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, 2.6), follow = "None", contract = true }
+end
+
 return Poses

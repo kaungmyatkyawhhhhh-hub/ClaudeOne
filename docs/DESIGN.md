@@ -159,6 +159,19 @@ Pro gym (unlocks at Growth Spurt 2): Dips (Mid Chest; Triceps, Front Delts), Lat
 Reverse Fly (Rear Delts; Rhomboids; on a pec deck, not a cable), Shrugs (Traps; Forearms), Leg Curl (Hamstrings), Hip Thrust (Glutes; Hamstrings),
 Calf Raise (Calves), Bicep Curl (Biceps; Forearms), Tricep Pushdown (Triceps), Hanging Leg Raise (Abs; Forearms),
 Cable Woodchop (Obliques; Abs).
+(Owner, prompt 16, 21 Oct) The starter gym also has one copy of each of these 11 pro machines (the beach gym's copy
+system: same model, config, tiers, EXP and MachineId; model attribute Gym = "Starter"), in two columns in the middle of
+the room with an 8-stud walkway, so every exercise is open from the start (`machine.openAt = 0`). The pro gym's own
+copies still sit behind its door (Growth Spurt 2); the pro gym needs its own reason to unlock (owner to pick: heavier
+top tiers only there, a gains bonus there, or pro-only machines / cosmetics). Because the Growth Spurt goal now has
+every muscle from the start, Growth Spurt 2 needs level 52 (was 56) to keep its ~15 minutes.
+Dumbbells (prompt 16): every dumbbell rack (starter 6 spots, beach 6, pro 4) has Train spots, one lifter each
+(`tools/builders/DumbbellSpots`). Train opens a Black + Gold picker (3 cards per row, scrolls; icon, name, muscles; the
+last exercise first): Bicep Curl, Hammer Curl, Shoulder Press, Lateral Raise, Rear Delt Fly, Overhead Tricep Extension,
+Dumbbell Shrugs, One-Arm Row, Goblet Squat, Lunges, Standing Calf Raise (`Machines.Dumbbells`). The spot then works like
+a machine (reps, stamina, EXP, weight tiers 10 to 100 lb, the machine HUD) at 85% of a machine's EXP; the dumbbells sit
+in the hands sized by the weight, each exercise has its own move, EXERCISE on the HUD reopens the picker, and leaving
+puts them back.
 Players only see muscle names on machines, never percentages.
 Each machine has weight tiers (empty bar → max) unlocked by muscle level; plates visibly stack.
 
@@ -418,7 +431,8 @@ Town hub: starter gym, pro gym, beach gym + posing stage, skate park, smoothie b
 The beach gym (opens at Growth Spurt 1) has NO machines of its own (owner, 8 Oct night): copies of the real machines
 (same model, name, config, tiers, EXP and MachineId, so unlocked weights, the "NEW" tag and quests are shared with every
 gym); only the surroundings are beachy. A copy opens with the beach gym, never later than its own gym
-(`Machines.GymOpenAt`, model attribute `Gym`). No "Pro" copies in the pro gym either.
+(`Machines.GymOpenAt`, model attribute `Gym`). No "Pro" copies in the pro gym either. (Prompt 16, 21 Oct) The starter
+gym has a copy of every pro machine, and every gym's dumbbell rack has Train spots (section 2).
 Start (owner's UI v2, 13 Oct, mockups 00): a loading screen from the first frame (ReplicatedFirst; Roblox's default is
 removed): black with the menu art (`Config/UI.MenuArt`) on the right fading into the dark, the GYM ARC logo (GYM white,
 ARC red) and "Everyone starts tiny.", a rotating "TIP:" line (`Config/UI.LoadingTips`), a red progress bar with the step
@@ -439,7 +453,8 @@ avatar headshot in a plain dark #1D191B circle with a 1 px white border at 88% t
 name if it can't load. Play: the menu fades, the camera is behind the character at
 a distance that fits their height, the HUD fades in.
 New players get a simplified menu (PLAY and UPDATES only).
-First 5 minutes: genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack
+First 5 minutes (the path from the door to the Flat Bench stays clear: the new pro machine copies stand to the sides of
+the middle walkway): genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack
 → stats (inspect mode) → first quest → Growth Spurt goal shown. Taught with glowing paths and one-line coach messages.
 No shop/gamepass prompts in the first 5 minutes.
 

@@ -15,7 +15,7 @@ GrowthSpurts.MaxHeight = GrowthSpurts.MaxHeightInches -- (older name, kept for c
 -- 47 / 72 / 103 / 135 / 157 -> 58 / 92 / 132 / 164 / 178.
 GrowthSpurts.Stages = {
 	{ height = 54, requiredLevel = 9, bonus = 1.25 }, -- (prompt 20, 21 Oct: 15 -> 9, first Growth Spurt in ~5 min)
-	{ height = 60, requiredLevel = 56, bonus = 1.5 }, -- (prompt 20: 58 -> 56, keeps its 15 min with the new stamina)
+	{ height = 60, requiredLevel = 52, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52, every machine opens from the start so the goal has more muscles)
 	{ height = 66, requiredLevel = 92, bonus = 1.75 },
 	{ height = 72, requiredLevel = 132, bonus = 2 },
 	{ height = 78, requiredLevel = 164, bonus = 2.5 },

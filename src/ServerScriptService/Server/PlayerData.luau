@@ -787,6 +787,10 @@ function PlayerData.SetSettings(player, settings)
 	if INVENTORY_TABS[settings.inventoryTab] then new.inventoryTab = settings.inventoryTab end
 	-- the newest update notes the player opened (main menu UPDATES red dot; a short stamp like "14 Oct")
 	if type(settings.updatesSeen) == "string" and #settings.updatesSeen <= 24 then new.updatesSeen = settings.updatesSeen end
+	-- (prompt 16) the dumbbell picker's last exercise (shown first)
+	if type(settings.dumbbellLast) == "string" and #settings.dumbbellLast <= 24 and string.match(settings.dumbbellLast, "^DB%w+$") then
+		new.dumbbellLast = settings.dumbbellLast
+	end
 	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "lowGraphics", "reduceMotion" }) do
 		if ON_OFF[settings[key]] then new[key] = settings[key] end
 	end

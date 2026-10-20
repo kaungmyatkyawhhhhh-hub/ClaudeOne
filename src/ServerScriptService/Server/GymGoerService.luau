@@ -88,7 +88,7 @@ local function gymMachines(gym)
 	local list = {}
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 		local machine = Machines.ById[model:GetAttribute("MachineId")]
-		if machine and model:IsA("Model") then
+		if machine and not machine.dumbbell and model:IsA("Model") then
 			local proGym = Workspace:FindFirstChild("ProGym")
 			local inPro = proGym ~= nil and model:IsDescendantOf(proGym)
 			local inStarter = model:IsDescendantOf(Workspace:FindFirstChild("Gym") or proGym or Workspace)

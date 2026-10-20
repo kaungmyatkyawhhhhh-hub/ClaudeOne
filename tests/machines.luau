@@ -45,11 +45,10 @@ for _, m in Machines.List do
 		end
 	end
 end
-H.check(not Machines.TrainableMuscles(0).Calves, "the hack squat's light calf work doesn't open Calves for the goal")
+-- (prompt 16) the starter gym has a copy of every pro machine: everything is trainable from the start
+H.check(Machines.TrainableMuscles(0).Calves and Machines.TrainableMuscles(0).SideDelts, "every muscle trainable from the start (starter gym copies)")
 local all = Machines.TrainableMuscles(2)
 H.check(all.Calves and all.Obliques, "Calves and Obliques trainable at Growth Spurt 2")
-local starter = Machines.TrainableMuscles(1)
-H.check(not starter.Calves, "...Calves not before")
 H.check(Machines.TrainableMuscles(0).Obliques, "Obliques trainable from the start (the Crunch Bench)")
 H.check(builder:find('cyl%(m, "HangBar"') ~= nil, "hanging leg raise has its bar")
 -- the treadmill trains stamina (8 Oct): no muscle EXP, the distance run raises max stamina, never a muscle goal machine

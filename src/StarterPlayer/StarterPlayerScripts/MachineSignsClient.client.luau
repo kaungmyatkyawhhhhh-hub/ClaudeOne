@@ -74,6 +74,8 @@ local localUsed = {} -- machine ids you did a rep on this session (the data catc
 
 -- the arm wrestling tables' "machine" for the sign (not a real machine: no MachineId, no "!" / NEW)
 local ARM_TABLE = { id = "ArmWrestle", name = "Arm Wrestling", armWrestle = true, muscles = {} }
+-- (prompt 16) a dumbbell spot: the same simple label ("DUMBBELLS"), TRAIN, no "!" / NEW (the spot changes exercise)
+local DUMBBELL_SPOT = { id = "Dumbbells", name = "Dumbbells", armWrestle = true, action = "TRAIN", muscles = {} }
 local SIGNED_TAGS = { "Machine", "ArmWrestleTable" }
 local function signedModels()
 	local list = CollectionService:GetTagged("Machine")
@@ -355,6 +357,7 @@ end
 local function build(model)
 	local machine = Machines.ById[model:GetAttribute("MachineId")]
 	if not machine and CollectionService:HasTag(model, "ArmWrestleTable") then machine = ARM_TABLE end
+	if machine and machine.dumbbell then machine = DUMBBELL_SPOT end
 	if not machine then return nil end
 	local boxCf, boxSize = model:GetBoundingBox()
 	local top = boxCf.Position.Y + boxSize.Y / 2
@@ -470,7 +473,7 @@ RunService.RenderStepped:Connect(function(dt)
 		-- the "!" + "NEW" (not on the machine whose sign shows: one thing per machine)
 		local id = model:GetAttribute("MachineId")
 		local signed = model == shown.model and shown.alpha > 0
-		local wantBang = if not mine and not signed and id ~= nil and distance <= BANG.Far and (isNew(id) or hasNewWeight(id)) then 1 else 0
+		local wantBang = if not mine and not signed and id ~= nil and not anchor.machine.action and distance <= BANG.Far and (isNew(id) or hasNewWeight(id)) then 1 else 0
 		local before = anchor.bangAlpha
 		anchor.bangAlpha = approach(anchor.bangAlpha, wantBang, dt)
 		local b = anchor.bangAlpha
@@ -565,7 +568,7 @@ RunService.RenderStepped:Connect(function(dt)
 		tapIcon.Visible = touch
 		keyLabel.Visible = not touch
 		keyLabel.Text = if gamepad then string.gsub(entry.prompt.GamepadKeyCode.Name, "^Button", "") else entry.prompt.KeyboardKeyCode.Name
-		actionLabel.Text = "OCCUPY" -- (machines are free, owner 14 Oct: never a price on the sign)
+		actionLabel.Text = shown.machine and shown.machine.action or "OCCUPY" -- (machines are free, owner 14 Oct: never a price on the sign)
 	end
 	if shown.alpha <= 0 and want == 0 and (shown.floorAlpha or 0) <= 0 then shown.model = nil end
 end)
