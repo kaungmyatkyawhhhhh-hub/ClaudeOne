@@ -14,7 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ShowOff = require(Shared.Config.ShowOff)
-local MuscleRig = require(Shared.MuscleRig)
+local BodyPump = require(Shared.VFX.BodyPump)
 local Theme = require(Shared.UI.Theme)
 local Notify = require(Shared.UI.Notify)
 local Audio = require(Shared.Audio)
@@ -29,7 +29,6 @@ if not remote then return end -- the show-off service didn't start
 
 local BLEND_IN = 0.35  -- PoseController's blend; the hit lands when the pose has settled
 local GRACE = 0.6      -- seconds after the pose starts before moving cancels it (so the button press itself doesn't)
-local PUMP = 0.04      -- the muscles shown off get this much bigger at the peak of the hit
 local punchBase, punchToken = nil, 0 -- field of view before the current camera punch
 
 local emoteByPose = {}
@@ -71,7 +70,7 @@ flash.Parent = flashGui
 -- The pose hit
 ------------------------------------------------------------------------
 local function hit(character: Model, emote)
-	MuscleRig.PulseModel(character, emote.muscles, PUMP)
+	BodyPump.Play(character) -- (the body pumps up and back with a gold flash and sparks; owner, 20 Oct)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if character == player.Character then
 		Audio.Play2D("CrowdOoh")

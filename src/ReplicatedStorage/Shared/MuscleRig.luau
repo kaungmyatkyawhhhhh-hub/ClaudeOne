@@ -25,7 +25,6 @@
 --   local rig = MuscleRig.new(model, { static = false, style = { skin, shorts, top, shirt, pants }, marble = false, priority = 100 })
 --   rig:SetGrowth({ Biceps = 0.4, ... })   -- written in the next round (no tween since 20 Oct)
 --   rig:Snap(targets)
---   rig:Pulse({ "Biceps" })                -- (no mesh pump since 20 Oct: a write each time; kept for the callers)
 --   rig:SetFarLook(true)                   -- your own body as the low-poly stage meshes (low-end devices, camera far)
 --   rig:SetPumped(true)                    -- PUMPED: a little bigger
 --   rig:SetStyle(style)
@@ -67,7 +66,6 @@ local BUILD_CHECK = 250    -- API calls between clock checks
 local MIN_SHOW = 0.02      -- a unit is only built once one of its muscles has at least this much growth
 local VEIN_PUMPED = 0.4    -- veins while PUMPED at the full look
 local PUMPED = 1.04
-local PULSE_TIME = 0.55
 local MIN_CHANGE = 0.0015
 local MARBLE = Color3.fromHex("#C9C6BF")
 -- Tints on the muscles (a tint, not paint: the color blended part of the way toward the tint, on the normal lit surface):
@@ -157,7 +155,6 @@ function MuscleRig.new(model: Model, opts: any?)
 		style = opts.style or {},
 		target = {}, from = {}, t0 = {}, current = {},
 		pumped = false,
-		pulses = {}, pulseAmounts = {}, pulseTimes = {},
 		highlightSet = nil, highlightAmount = {},
 		trainSet = MuscleRig.TrainingOf(model), trainWeights = MuscleRig.TrainingOf(model), trainAmount = 0, pulseStart = nil, pulseStrength = 0, pulse = 0, bodyTint = {},
 		tintWasLive = false,
@@ -633,16 +630,6 @@ function MuscleRig.Snap(self, targets: { [string]: number })
 	self.dirty = true
 end
 
-function MuscleRig.Pulse(self, ids: { string }, amount: number?, duration: number?)
-	local now = os.clock()
-	for _, id in ipairs(ids) do
-		self.pulses[id] = now
-		self.pulseAmounts[id] = amount
-		self.pulseTimes[id] = duration
-	end
-	self.dirty = true
-end
-
 -- Low detail on / off (another character far away): the stage meshes hide and the plain body shows, without destroying
 -- anything, so coming back is instant. (MuscleClient only uses it for NPCs, never your own character.)
 function MuscleRig.SetLowDetail(self, on: boolean)
@@ -669,7 +656,6 @@ end
 
 local function currentShown(self, id: string): number
 	local g = self.current[id] or 0
-	-- (no pump from rig:Pulse since 20 Oct: it wrote the meshes ~10 times per pump)
 	return math.min(g * (self.pumped and PUMPED or 1), Muscles.MaxLookG * 1.06)
 end
 
@@ -1448,9 +1434,6 @@ local function step(self, dt: number)
 			moving = true
 		end
 	end
-	for id, started in pairs(self.pulses) do
-		if now - started > (self.pulseTimes[id] or PULSE_TIME) then self.pulses[id] = nil end
-	end
 	local slowNow = now - (self.lastSlow or 0) >= 1 / SLOW_HZ
 	if slowNow then self.lastSlow = now end
 	-- the torso width changed (the frame, a Growth Spurt): every UpperTorso mesh gets the new taper
@@ -1792,12 +1775,6 @@ function MuscleRig.Flash(model: Model, weights: { [string]: number }?, big: bool
 			rig.pulseSlow = slow
 			rig.pulseStrength = if big then TINT.BigPulse else TINT.PulseStrength
 		end
-	end
-end
-
-function MuscleRig.PulseModel(model: Model, ids: { string }, amount: number?)
-	for rig in pairs(active) do
-		if rig.model == model then rig:Pulse(ids, amount) end
 	end
 end
 

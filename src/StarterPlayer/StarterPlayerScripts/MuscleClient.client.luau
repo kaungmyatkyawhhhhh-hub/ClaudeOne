@@ -14,7 +14,6 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -22,6 +21,8 @@ local MuscleRig = require(Shared.MuscleRig)
 local Muscles = require(Shared.Config.Muscles)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local ClientData = require(Shared.ClientData)
+local LowEnd = require(Shared.LowEnd)
+local BodyPump = require(Shared.VFX.BodyPump)
 
 local player = Players.LocalPlayer
 
@@ -36,34 +37,10 @@ local OTHERS_WAIT = 12
 
 local tracked = {} -- [model] = { rig, source, mine }
 
--- Low-end devices (owner, 20 Oct: lag on phones): once the frame rate stays under LOW_FPS for LOW_FOR seconds in a row (or the
--- player set Roblox's graphics quality to 1-3), your own body shows the low-poly stage meshes (MuscleRig far look) while the
--- camera is further than FAR_LOOK studs from it, and its live meshes again nearer than NEAR_LOOK (a gap, so it never flickers).
--- Stays on for the session. Studio: Workspace attribute "TestLowEnd" = true turns it on (Studio's frame rate is no guide).
-local LOW_FPS, LOW_FOR = 40, 5
+-- Low-end devices (owner, 20 Oct: lag on phones; Shared.LowEnd): your own body shows the low-poly stage meshes (MuscleRig far
+-- look) while the camera is further than FAR_LOOK studs from it, and its live meshes again nearer than NEAR_LOOK (a gap, so it
+-- never flickers).
 local FAR_LOOK, NEAR_LOOK = 15, 12
-local lowEnd = false
-do
-	local frames, elapsed, slowSeconds = 0, 0, 0
-	local watch
-	watch = RunService.Heartbeat:Connect(function(dt)
-		frames += 1
-		elapsed += dt
-		if elapsed < 1 then return end
-		slowSeconds = if frames / elapsed < LOW_FPS then slowSeconds + 1 else 0
-		frames, elapsed = 0, 0
-		if slowSeconds >= LOW_FOR and not RunService:IsStudio() then
-			lowEnd = true
-			watch:Disconnect()
-		end
-	end)
-end
-local function isLowEnd(): boolean
-	if RunService:IsStudio() and Workspace:GetAttribute("TestLowEnd") == true then return true end
-	if lowEnd then return true end
-	local ok, quality = pcall(function() return UserSettings():GetService("UserGameSettings").SavedQualityLevel end)
-	return ok and quality ~= Enum.SavedQualitySetting.Automatic and quality.Value <= 3
-end
 
 -- the growth numbers of my own muscles, from ClientData
 local function myTargets()
@@ -162,7 +139,7 @@ local function refreshInfo(model, info, distance)
 	rig:SetGrowth(targetsFor(info.source, info.mine))
 	if info.mine and distance then
 		local far = if info.far then distance > NEAR_LOOK else distance > FAR_LOOK
-		info.far = far and isLowEnd()
+		info.far = far and LowEnd.IsLowEnd()
 		rig:SetFarLook(info.far)
 	end
 	local until_ = info.source:GetAttribute("PumpedUntil")
@@ -177,7 +154,8 @@ local function refreshInfo(model, info, distance)
 	end
 end
 
--- the small pump when one of MY muscles passes a multiple of 10 levels
+-- the pump (Shared.VFX.BodyPump: the body scales up and back, a gold flash and sparks) when one of MY muscles passes a
+-- multiple of 10 levels
 local lastLevels = nil
 local function pulseMine()
 	local data = ClientData.Get()
@@ -191,7 +169,7 @@ local function pulseMine()
 			local before = lastLevels[id] or 0
 			if level > before and math.floor(level / 10) > math.floor(before / 10) then table.insert(list, id) end
 		end
-		if #list > 0 then mine.rig:Pulse(list) end
+		if #list > 0 then BodyPump.Play(player.Character) end
 	end
 	lastLevels = levels
 end

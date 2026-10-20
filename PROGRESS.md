@@ -51,6 +51,12 @@ Short and current. Older sections (before 15 Oct): `docs/PROGRESS_archive.md`. F
   (FPS < 40 for 5 s, or graphics quality 1-3; Studio: Workspace TestLowEnd) -> own body shows the BodyStages meshes past
   15 studs (MuscleRig SetFarLook; back under 12). All 90 stage templates low-poly (no wrong-folder imports), now Box
   collision. Left: gym light shadows (~700 shadow draw calls). Vault: Progress "2026-10-20 GYM ARC Body lag".
+- PROMPT 15 (20 Oct): Shared/VFX/BodyPump (own character Model:ScaleTo +3.5%, 0.15 s up / 0.4 s down, gold Highlight
+  flash + spark burst; others: flash + sparks only) on the 10-level pump (MuscleClient) and pose hits (PoseClient);
+  MuscleRig Pulse / PulseModel removed. BlobShadowClient: soft blob (rbxassetid://76083127218780) under every body,
+  raycast to the floor. Shared/LowEnd (IsLowEnd / IsPhone) used by MuscleClient + new LightShadowsClient (all light
+  Shadows off on phone / low-end). Place already had only 5 shadow lights (main spots). Graphics level 1 draws no shadows
+  at all; on PC most shadow draws are the sun (GlobalShadows, not changed: owner decides).
 
 ## Rules
 - No growth spurt cooldown. (Owner, 14 Oct: a player can do the next Growth Spurt as soon as they've earned it; checked:
