@@ -51,6 +51,11 @@ Body.ShortsColors = {
 	{ id = "Red", name = "Red", color = Color3.fromHex("#B3262D") },
 	{ id = "Gray", name = "Gray", color = Color3.fromHex("#6E6E76") },
 	{ id = "Teal", name = "Teal", color = Color3.fromHex("#2E8E8E") },
+	-- (prompt 19) sold in the PUMP SHOP's Apparel section (shop = true: only once owned, cosmetics.owned["Shorts_<id>"])
+	{ id = "Gold", name = "Gold", color = Color3.fromHex("#D9A82E"), shop = true },
+	{ id = "Purple", name = "Purple", color = Color3.fromHex("#6B3FA0"), shop = true },
+	{ id = "Pink", name = "Pink", color = Color3.fromHex("#E86FA3"), shop = true },
+	{ id = "Camo", name = "Camo green", color = Color3.fromHex("#5B6B3A"), shop = true },
 }
 Body.DefaultShorts = "Black"
 
@@ -60,6 +65,11 @@ Body.Tops = {
 	{ id = "Shirtless", name = "Shirtless" },
 	{ id = "Tank", name = "Tank top", color = Color3.fromHex("#F4F1EA") },
 	{ id = "Sports", name = "Sports top", color = Color3.fromHex("#26262A") },
+	-- (prompt 19) PUMP SHOP tank tops (shop = true: only once owned, cosmetics.owned["Top_<id>"])
+	{ id = "TankRed", name = "Red tank top", color = Color3.fromHex("#B3262D"), shop = true },
+	{ id = "TankBlue", name = "Blue tank top", color = Color3.fromHex("#1F5FBF"), shop = true },
+	{ id = "TankGold", name = "Gold tank top", color = Color3.fromHex("#D9A82E"), shop = true },
+	{ id = "TankBlack", name = "Black tank top", color = Color3.fromHex("#1E1E22"), shop = true },
 }
 Body.DefaultTop = "Shirtless"
 

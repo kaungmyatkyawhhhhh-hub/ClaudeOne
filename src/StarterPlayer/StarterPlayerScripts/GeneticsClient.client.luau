@@ -1398,10 +1398,20 @@ function BUY.shake(gui: GuiObject)
 		gui.Position = base
 	end)
 end
+-- (prompt 19) each DNA token bought this week costs 10% more (Config/PumpShop.DnaPriceFor)
+local function dnaPrice(): number
+	return require(Shared.Config.PumpShop).DnaPriceFor(ClientData.Get(), BUY.DNA.CoinPrice)
+end
+local function refreshDnaPrice()
+	local label = BUY.coins:FindFirstChild("Label")
+	if label then label.Text = Kit.Format(dnaPrice()) end
+end
+refreshDnaPrice()
+ClientData.Changed:Connect(function(path) if path[1] == "dnaWeek" then refreshDnaPrice() end end)
 BUY.coins.Activated:Connect(function()
-	if (ClientData.Get().coins or 0) < BUY.DNA.CoinPrice then
+	if (ClientData.Get().coins or 0) < dnaPrice() then
 		BUY.shake(BUY.coins)
-		require(Shared.UI.Notify).Toast("Not enough coins", "A DNA token costs " .. Kit.Format(BUY.DNA.CoinPrice) .. " coins", "coin", Colors.Red, "dnacoins")
+		require(Shared.UI.Notify).Toast("Not enough coins", "A DNA token costs " .. Kit.Format(dnaPrice()) .. " coins", "coin", Colors.Red, "dnacoins")
 		return
 	end
 	Remotes.PlayerAction:FireServer("BuyDnaToken") -- (the server checks and takes the coins)

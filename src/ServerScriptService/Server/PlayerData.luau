@@ -750,7 +750,7 @@ local REP_FLASH = { On = true, Off = true }
 local EXP_POPUPS = { On = true, Off = true }
 local SPOT_REQUESTS = { On = true, Off = true }
 local ON_OFF = { On = true, Off = true }
-local INVENTORY_TABS = { Boosts = true, Titles = true, Auras = true, Items = true }
+local INVENTORY_TABS = { Boosts = true, Gear = true, Titles = true, Auras = true, Items = true }
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
 -- repFlash On/Off, expPopups On/Off.
@@ -769,11 +769,13 @@ function PlayerData.SetSettings(player, settings)
 	if EXP_POPUPS[settings.expPopups] then new.expPopups = settings.expPopups end
 	if SPOT_REQUESTS[settings.spotRequests] then new.spotRequests = settings.spotRequests end
 	new.statsLabels = nil -- the world stats labels are gone; drop the old saved choice
+	-- (prompt 19) PUMP SHOP colors (shop = true) only once bought: cosmetics.owned["Top_<id>"] / ["Shorts_<id>"]
+	local owned = type(data.cosmetics) == "table" and type(data.cosmetics.owned) == "table" and data.cosmetics.owned or {}
 	for _, entry in ipairs(Body.Tops) do -- wardrobe: Shirtless / Tank top / Sports top
-		if entry.id == settings.top then new.top = entry.id end
+		if entry.id == settings.top and (not entry.shop or owned["Top_" .. entry.id]) then new.top = entry.id end
 	end
 	for _, entry in ipairs(Body.ShortsColors) do
-		if entry.id == settings.shorts then new.shorts = entry.id end
+		if entry.id == settings.shorts and (not entry.shop or owned["Shorts_" .. entry.id]) then new.shorts = entry.id end
 	end
 	if settings.pumpHintSeen == true then new.pumpHintSeen = true end -- one-way: the "Tap to pump" hint never comes back
 	if settings.skateHintSeen == true then new.skateHintSeen = true end -- one-way: the "Tap to skate" hint, once per player

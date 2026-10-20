@@ -71,7 +71,7 @@ local function stepPump(pump, dt, tapping)
 end
 
 -- Plays from the current state to the next Growth Spurt and does it. Returns the minutes it took.
-local function playOneSpurt(data, overhead)
+local function playOneSpurt(data, overhead, limitSeconds)
 	motdGroup = Muscles.Groups[(data.seed + data.growthSpurts) % #Muscles.Groups + 1].id
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	local required = GrowthSpurts.Get(data.growthSpurts + 1).requiredLevel
@@ -123,7 +123,8 @@ local function playOneSpurt(data, overhead)
 
 	while true do
 		local p = progress()
-		if p.ready then break end
+		if p.ready and not limitSeconds then break end
+		if limitSeconds and time >= limitSeconds then break end
 		local machine = pick(p, current)
 		if machine ~= current then time += PLAY.Walk; current = machine end
 		local tier = tierFor(machine)
@@ -157,6 +158,7 @@ local function playOneSpurt(data, overhead)
 		end
 		if time > 6 * 3600 then break end -- safety
 	end
+	if limitSeconds then return time / 60 end -- (timed play: no Growth Spurt)
 	-- the Growth Spurt itself (same as PlayerData.GrowthSpurt)
 	for _, muscle in Muscles.List do data.muscles[muscle.id] = { level = 0, xp = 0 } end
 	data.growthSpurts += 1
@@ -187,6 +189,32 @@ local function simulate(spurts)
 		end
 	end
 	return perSpurt, firstByGrade
+end
+
+-- Coins per minute of active play (prompt 19: PUMP SHOP prices come from these): while playing toward each Growth
+-- Spurt, and at 7'0" with grown muscles (10 minutes). Base rate: no 2x Coins pass, VIP, rush hour or event bonus.
+--   lune run tests/pacing coins
+if process.args[1] == "coins" then
+	local rates = {}
+	for seed = 1, PLAYERS do
+		local data = newPlayer(seed)
+		for n = 1, SPURTS do
+			local before = data.coins
+			local minutes = playOneSpurt(data, 0)
+			rates[n - 1] = rates[n - 1] or {}
+			table.insert(rates[n - 1], (data.coins - before) / minutes)
+		end
+		-- at 7'0": muscles grown past the last goal, 10 minutes of play
+		for _, muscle in Muscles.List do data.muscles[muscle.id] = { level = 250, xp = 0 } end
+		local before = data.coins
+		local minutes = playOneSpurt(data, 0, 600)
+		rates.max = rates.max or {}
+		table.insert(rates.max, (data.coins - before) / minutes)
+	end
+	print("Coins per minute of active play (median of " .. PLAYERS .. " players; base, no boosts)")
+	for n = 0, SPURTS - 1 do print(string.format("  Growth Spurt %d: %.0f", n, (median(rates[n])))) end
+	print(string.format("  7'0\" max: %.0f", (median(rates.max))))
+	return
 end
 
 if process.args[1] == "tune" then

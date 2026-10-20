@@ -37,6 +37,9 @@ end
 local function publish(player)
 	player:SetAttribute("GainsBoost", product(player, "gains"))
 	player:SetAttribute("CoinsBoost", product(player, "coins"))
+	-- (prompt 19) Pre-Workout: how much faster reps go (MachineService allows it, MachineClient animates it)
+	local repSpeed = product(player, "repSpeed")
+	player:SetAttribute("RepSpeed", if repSpeed ~= 1 then repSpeed else nil)
 	local shake = playerSources[player] and playerSources[player].Shake
 	player:SetAttribute("ShakeEnds", alive(shake, now()) and shake.untilTime or nil)
 	player:SetAttribute("Recovery", BoostService.StationOf(player)) -- the station you stand in (a small note, ShakeClient)
@@ -76,6 +79,11 @@ end
 -- treadmill distance multiplier (Coconut Water, Config.Meals)
 function BoostService.Cardio(player)
 	return product(player, "cardio")
+end
+
+-- Rep speed (Pre-Workout, Config.Boosts): reps go this much faster
+function BoostService.RepSpeed(player)
+	return product(player, "repSpeed")
 end
 
 -- Pump perk (the Pump Coach, Config.Trainers): the Pump meter fills this much faster and PUMPED lasts this much longer

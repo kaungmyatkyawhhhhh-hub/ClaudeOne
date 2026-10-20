@@ -28,6 +28,7 @@ local Machines = require(Shared.Config.Machines)
 local Poses = require(Shared.Config.Poses)
 local Muscles = require(Shared.Config.Muscles)
 local Stamina = require(Shared.Config.Stamina)
+local PumpShop = require(Shared.Config.PumpShop)
 local Gains = require(Shared.Config.Gains)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local CoachNotes = require(Shared.Config.CoachNotes)
@@ -99,15 +100,16 @@ local plateOffsets = {} -- [plate] = offset from the racked bar
 local repState = {}     -- [model] = { start, lower, press, hold, shake, tier, lockedOut }
 local posed = {}        -- [model] = character currently posed
 
--- Heavier tiers are a little slower (capped, so tier 12 is still snappy); PUMPED reps are faster.
-local function repDurations(tier, lowStamina, pumped)
+-- Heavier tiers are a little slower (capped, so tier 12 is still snappy); PUMPED reps are faster; so is a Pre-Workout
+-- (repSpeed, the local player's "RepSpeed" attribute, prompt 19).
+local function repDurations(tier, lowStamina, pumped, repSpeed)
 	local heavy = 1 + FEEL.HeavyPerTier * math.min((tier or 1) - 1, 6)
-	local speed = pumped and Gains.Pump.Speed or 1
+	local speed = (pumped and Gains.Pump.Speed or 1) / (repSpeed or 1)
 	return FEEL.Lower * heavy * speed, FEEL.Press * heavy * speed * (lowStamina and FEEL.LowPressMult or 1), FEEL.Hold * speed
 end
 
-local function startRep(model, tier, lowStamina, pumped)
-	local lower, press, hold = repDurations(tier, lowStamina, pumped)
+local function startRep(model, tier, lowStamina, pumped, repSpeed)
+	local lower, press, hold = repDurations(tier, lowStamina, pumped, repSpeed)
 	repState[model] = { start = os.clock(), lower = lower, press = press, hold = hold, shake = lowStamina, tier = tier or 1 }
 	return lower + press + hold
 end
@@ -1946,7 +1948,7 @@ local function beginRep(auto)
 			setNote(noteSituation())
 		end
 	end
-	local duration = startRep(current.model, liftTier(current.machine), staminaRatio() < FEEL.LowStamina, isPumped())
+	local duration = startRep(current.model, liftTier(current.machine), staminaRatio() < FEEL.LowStamina, isPumped(), player:GetAttribute("RepSpeed"))
 	-- this rep's BIG REP roll came with the last rep's result
 	repState[current.model].big = current.nextBig
 	repState[current.model].pumped = isPumped()
@@ -1972,7 +1974,7 @@ RunService.Heartbeat:Connect(function()
 	if not current then return end
 	local now = os.clock()
 	refreshPump(now)
-	if current.repEnd and now < current.repEnd + Gains.AutoRepGap then return end
+	if current.repEnd and now < current.repEnd + Gains.AutoRepGap / (player:GetAttribute("RepSpeed") or 1) then return end
 	if current.queued then return end
 	if not canAffordRep(current.machine) then return end -- (recovering: it waits for a full bar, HudBottom shows the countdown)
 	beginRep(true)
@@ -1994,7 +1996,10 @@ local function localLockout(state)
 	local main = machine.muscles[1].id
 	local quality = (state.pumped and Gains.Pump.Multiplier or 1) * (state.big and Gains.BigRep.Multiplier or 1)
 	local cardio = machine.trains == "Stamina" -- (the treadmill trains stamina: its numbers are the distance run)
-	local xp = if cardio then {} else Gains.PerRep(ClientData.Get(), machine, state.tier, player:GetAttribute("GainsBoost"), quality)
+	-- (worn PUMP SHOP gear, as on the server: Config/PumpShop.GearMultiplier)
+	local cosmetics = ClientData.Get().cosmetics
+	local gear = PumpShop.GearMultiplier(cosmetics and cosmetics.equipped, machine, Muscles.ById[machine.muscles[1].id].group)
+	local xp = if cardio then {} else Gains.PerRep(ClientData.Get(), machine, state.tier, (player:GetAttribute("GainsBoost") or 1) * gear, quality)
 	local shown = if cardio then machine.tiers[state.tier].weight * Machines.Cardio.MetersPerMph else math.max(1, Muscles.ShownXp(xp[main] or 0))
 	current.setGain = (current.setGain or 0) + shown
 	local mode = gainNumbersMode()

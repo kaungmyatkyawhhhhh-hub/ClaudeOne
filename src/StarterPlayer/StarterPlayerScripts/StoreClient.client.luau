@@ -312,6 +312,7 @@ function refresh()
 	if picked then
 		local isDna = picked.item.key == "DnaToken"
 		coinBuy.Visible = isDna
+		if isDna then Kit.SetButton(coinBuy, nil, Kit.Format(require(Shared.Config.PumpShop).DnaPriceFor(ClientData.Get(), DNA.CoinPrice))) end
 		buy.Size = UDim2.fromOffset(if isDna then HALF_W else HERO_W - 22, 40)
 		buy.AnchorPoint = if isDna then Vector2.new(0, 1) else Vector2.new(0.5, 1)
 		buy.Position = if isDna then UDim2.new(0, 11, 1, -10) else UDim2.new(0.5, 0, 1, -10)
@@ -377,9 +378,10 @@ local function shake(gui: GuiObject)
 end
 coinBuy.Activated:Connect(function()
 	if not picked or picked.item.key ~= "DnaToken" then return end
-	if (ClientData.Get().coins or 0) < DNA.CoinPrice then
+	local dnaPrice = require(Shared.Config.PumpShop).DnaPriceFor(ClientData.Get(), DNA.CoinPrice) -- (prompt 19: +10% a token each week)
+	if (ClientData.Get().coins or 0) < dnaPrice then
 		shake(coinBuy)
-		Notify.Toast("Not enough coins", "A DNA token costs " .. Kit.Format(DNA.CoinPrice) .. " coins", "coin", Colors.Red, "dnacoins")
+		Notify.Toast("Not enough coins", "A DNA token costs " .. Kit.Format(dnaPrice) .. " coins", "coin", Colors.Red, "dnacoins")
 		return
 	end
 	Remotes.PlayerAction:FireServer("BuyDnaToken") -- (the server checks and takes the coins)

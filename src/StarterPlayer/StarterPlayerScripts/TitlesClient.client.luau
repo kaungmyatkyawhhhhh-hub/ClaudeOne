@@ -1,6 +1,7 @@
 -- TitlesClient: the INVENTORY tile and window (owner, 14 Oct: was the Titles window), and the unlock toasts.
--- Tabs BOOSTS | TITLES | AURAS | ITEMS; the last one opened is remembered (settings.inventoryTab).
+-- Tabs BOOSTS | GEAR | TITLES | AURAS | ITEMS; the last one opened is remembered (settings.inventoryTab).
 --   BOOSTS (prompt 14, 21 Oct): the boost items you own (Config.Boosts) with USE and EQUIP (Shared/UI/BoostsPanel).
+--   GEAR (prompt 19): what you own to wear (PUMP SHOP gear and apparel, the clothing store's gear) (Shared/UI/GearPanel).
 --   TITLES: a 4-column grid of cards (it scrolls): the rarity word in its color (COMMON gray, UNCOMMON green, RARE blue,
 --     EPIC purple, LEGENDARY gold, SECRET red), the title's name, and
 --       owned:  EQUIPPED (gold, tap = take it off) or EQUIP (green, tap = wear it above your head)
@@ -48,14 +49,14 @@ local RARITY_COLOR = {
 }
 local CARD = Vector2.new(124, 78)
 local PAD = 8 -- every label keeps this far from its card's edges
-local TABS = { Boosts = true, Titles = true, Auras = true, Items = true }
+local TABS = { Boosts = true, Gear = true, Titles = true, Auras = true, Items = true }
 
 local menuButton = SideMenu.Add("Inventory", "Inventory", nil, 2)
 
 local tab = "Boosts"
 local refresh -- (below)
-local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 560, height = 248, displayOrder = 25,
-	tabs = { { id = "Boosts", text = "Boosts", icon = "zap" }, { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
+local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 650, height = 248, displayOrder = 25,
+	tabs = { { id = "Boosts", text = "Boosts", icon = "zap" }, { id = "Gear", text = "Gear", icon = "dumbbell" }, { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
 	onTab = function(id)
 		if tab ~= id then
 			tab = id
@@ -371,6 +372,7 @@ end
 -- BOOSTS tab (Shared/UI/BoostsPanel)
 ------------------------------------------------------------------------
 local BOOSTS_TAB = require(Shared.UI.BoostsPanel).Build(modal.body)
+local GEAR_TAB = require(Shared.UI.GearPanel).Build(modal.body)
 
 ------------------------------------------------------------------------
 function refresh()
@@ -379,8 +381,13 @@ function refresh()
 	AURA.frame.Visible = tab == "Auras"
 	ITEMS.frame.Visible = tab == "Items"
 	BOOSTS_TAB.frame.Visible = tab == "Boosts"
+	GEAR_TAB.frame.Visible = tab == "Gear"
 	AURA.preview()
-	if tab == "Boosts" then
+	if tab == "Gear" then
+		GEAR_TAB.refresh()
+		countLabel.Text = ""
+		return
+	elseif tab == "Boosts" then
 		BOOSTS_TAB.refresh()
 		countLabel.Text = ""
 		return

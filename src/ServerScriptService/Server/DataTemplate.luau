@@ -21,6 +21,7 @@ function DataTemplate.new()
 		genetics = nil, -- rolled on first join
 		freeReroll = true, -- the brief's one free reroll at start
 		dnaTokens = 0,
+		dnaWeek = { week = 0, bought = 0 }, -- DNA tokens bought with coins this week (each costs 10% more; Config/PumpShop)
 		growthSpurts = 0, -- (owner, 9 Oct, release) new players start at Growth Spurt 0 (4'0")
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest bought tier, selected = tier index, best = heaviest tier lifted }

@@ -68,6 +68,7 @@ local function band(folder, bodyPart, name, height, y, extra, color, material)
 end
 
 local BUILD = {}
+local tryOn = {} -- [player] = { id } (a PUMP SHOP try-on, prompt 19)
 BUILD.Belt = function(folder, character, item)
 	local waist = character:FindFirstChild("LowerTorso")
 	if not waist then return end
@@ -103,6 +104,33 @@ BUILD.Shaker = function(folder, character, item)
 	piece(folder, waist, "ShakerCap", Vector3.new(0.16, 0.44, 0.44), side * CFrame.new(0, 0.48, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromHex("#2B2B2B"), Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
 end
 
+-- (prompt 19) PUMP SHOP gear and apparel
+BUILD.Straps = function(folder, character, item)
+	-- a strap band at the wrist and a tail hanging over the hand
+	for _, name in ipairs({ "LeftLowerArm", "RightLowerArm" }) do
+		local arm = character:FindFirstChild(name)
+		if arm then
+			band(folder, arm, "Strap", arm.Size.Y * 0.14, -arm.Size.Y * 0.44, 0.06, item.color, Enum.Material.Fabric)
+			piece(folder, arm, "StrapTail", Vector3.new(0.12, arm.Size.Y * 0.32, arm.Size.Z * 0.5), CFrame.new(arm.Size.X / 2 + 0.06, -arm.Size.Y * 0.55, 0),
+				item.color, Enum.Material.Fabric)
+		end
+	end
+end
+BUILD.Sleeves = function(folder, character, item)
+	for _, name in ipairs({ "LeftLowerLeg", "RightLowerLeg" }) do
+		local leg = character:FindFirstChild(name)
+		if leg then band(folder, leg, "Sleeve", leg.Size.Y * 0.32, leg.Size.Y * 0.3, 0.1, item.color, Enum.Material.Fabric) end
+	end
+end
+BUILD.Bag = function(folder, character, item)
+	local torso = character:FindFirstChild("UpperTorso")
+	if not torso then return end
+	local s = torso.Size
+	-- a duffel bag on the back with its strap across the chest
+	piece(folder, torso, "Bag", Vector3.new(s.X * 0.75, s.Y * 0.38, 0.55), CFrame.new(0, -s.Y * 0.12, s.Z / 2 + 0.3), item.color, Enum.Material.Fabric)
+	piece(folder, torso, "BagStrap", Vector3.new(0.18, s.Y * 1.25, s.Z + 0.12), CFrame.Angles(0, 0, math.rad(35)), item.color, Enum.Material.Fabric)
+end
+
 local function build(player)
 	local character = player.Character
 	local data = PlayerData.Get(player)
@@ -129,11 +157,14 @@ local function build(player)
 	elseif shirt then
 		shirt:Destroy()
 	end
-	for _, itemId in pairs(stateOf(data).equipped) do
+	-- a PUMP SHOP try-on (prompt 19): that item instead of whatever is worn in its slot, for a few seconds
+	local trying = tryOn[player] and Cosmetics.ById[tryOn[player].id]
+	for slot, itemId in pairs(stateOf(data).equipped) do
 		local item = Cosmetics.ById[itemId]
 		local builder = item and BUILD[item.style]
-		if builder then pcall(builder, folder, character, item) end
+		if builder and not (trying and trying.slot == slot) then pcall(builder, folder, character, item) end
 	end
+	if trying and BUILD[trying.style] then pcall(BUILD[trying.style], folder, character, trying) end
 end
 
 -- Rebuild (debounced) whenever a body part the gear sits on changes size.
@@ -176,7 +207,7 @@ end
 local function watchCharacter(player, character)
 	-- BodyService swaps the body parts (muscle body tiers): rebuild the gear on the new parts
 	character:GetAttributeChangedSignal("BodyVersion"):Connect(function() scheduleBuild(player) end)
-	for _, name in ipairs({ "LowerTorso", "Head", "LeftLowerArm", "RightLowerArm" }) do
+	for _, name in ipairs({ "LowerTorso", "Head", "LeftLowerArm", "RightLowerArm", "UpperTorso", "LeftLowerLeg", "RightLowerLeg" }) do
 		local bodyPart = character:WaitForChild(name, 10)
 		if bodyPart and bodyPart:IsA("BasePart") then
 			bodyPart:GetPropertyChangedSignal("Size"):Connect(function() scheduleBuild(player) end)
@@ -234,6 +265,39 @@ local function equip(player, itemId)
 	refreshBoard(player, item)
 end
 
+-- PUMP SHOP (prompt 19): give an item (bought there; the shop checks the coins and the place), worn right away.
+function CosmeticService.Grant(player, itemId, wear)
+	local item = Cosmetics.ById[itemId]
+	local data = PlayerData.Get(player)
+	if not item or not data then return false end
+	local state = stateOf(data)
+	state.owned[item.id] = true
+	if wear then state.equipped[item.slot] = item.id end
+	PlayerData.SetTable(player, "cosmetics", state)
+	build(player)
+	return true
+end
+
+function CosmeticService.Owns(player, itemId): boolean
+	local data = PlayerData.Get(player)
+	return data ~= nil and stateOf(data).owned[itemId] == true
+end
+
+-- A try-on: the item shows on the character for `seconds` (itemId nil = stop now).
+function CosmeticService.TryOn(player, itemId, seconds)
+	local mine = if itemId then { id = itemId } else nil
+	tryOn[player] = mine
+	build(player)
+	if mine then
+		task.delay(seconds or 10, function()
+			if tryOn[player] == mine then
+				tryOn[player] = nil
+				if player.Parent then build(player) end
+			end
+		end)
+	end
+end
+
 function CosmeticService.Start()
 	ActionService.Register("BuyCosmetic", buy)
 	ActionService.Register("EquipCosmetic", equip)
@@ -244,7 +308,10 @@ function CosmeticService.Start()
 	end
 	Players.PlayerAdded:Connect(hook)
 	for _, player in ipairs(Players:GetPlayers()) do hook(player) end
-	Players.PlayerRemoving:Connect(function(player) pending[player] = nil end)
+	Players.PlayerRemoving:Connect(function(player)
+		pending[player] = nil
+		tryOn[player] = nil
+	end)
 end
 
 return CosmeticService

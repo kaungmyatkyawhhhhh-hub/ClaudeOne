@@ -84,6 +84,12 @@ end)
 local function showAdded(id: string, count: number)
 	local item = Boosts.ById[id]
 	if not item then return end
+	-- (bought in the PUMP SHOP window: a toast, the window is busy at the top)
+	local shop = player.PlayerGui:FindFirstChild("PumpShop")
+	if shop and shop.Enabled then
+		Notify.Toast("Added to inventory", "+" .. count .. " " .. item.name, item.icon, Color3.fromHex(item.color), "itemsadded")
+		return
+	end
 	shownId = id
 	token += 1
 	local mine = token

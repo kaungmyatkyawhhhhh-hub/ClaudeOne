@@ -106,6 +106,7 @@ end
 
 for _, item in ipairs(Cosmetics.Items) do
 	if item.slot == "Fit" and not Features.Wardrobe then continue end
+	if item.pumpShop then continue end -- (prompt 19: sold only in the PUMP SHOP)
 	local outline = Theme.Stroke(Colors.Border, 1, Theme.Alpha.ButtonBorder)
 	local card = New("TextButton", {
 		Name = item.id,

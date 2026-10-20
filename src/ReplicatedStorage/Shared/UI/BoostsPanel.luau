@@ -101,7 +101,7 @@ function BoostsPanel.Build(parent: Instance)
 		text.Text = item.text
 		local ends = player:GetAttribute("Item_" .. item.id)
 		local left = if type(ends) == "number" then ends - Workspace:GetServerTimeNow() else 0
-		duration.Text = (if item.shake then "Lasts " .. item.duration else item.duration .. " per use, up to 60 min")
+		duration.Text = (if item.shake then "Lasts " .. item.duration .. " (stacks to 90 s)" else item.duration .. " per use, up to 60 min")
 			.. (if left > 0 then " · " .. Boosts.Clock(left) .. " left" else "")
 		Kit.SetButton(useButton, if n > 0 then "Green" else "Disabled", "Use")
 		Kit.SetButton(equipButton, if n > 0 or player:GetAttribute("Equipped_" .. item.id) then "Quiet" else "Disabled",

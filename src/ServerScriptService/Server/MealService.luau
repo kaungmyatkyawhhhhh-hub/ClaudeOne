@@ -159,7 +159,8 @@ local function addStall(part: Instance)
 		prompt = created
 	end
 	Guard.OnTriggered(prompt, function(player)
-		if PlayerData.Get(player) then send(player, "Open", { shop = shopId }) end
+		-- (prompt 19: the smoothie bar's shop moved to the PUMP SHOP; its stalls open the Supplements section)
+		if PlayerData.Get(player) then require(script.Parent.PumpShopService).OpenFor(player, "Supplements") end
 	end)
 end
 

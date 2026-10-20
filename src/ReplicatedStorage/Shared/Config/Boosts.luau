@@ -20,7 +20,7 @@ Boosts.MaxChips = 4         -- active boost timers shown by the stamina bar at o
 
 Boosts.Items = {
 	{ id = "Shake", name = "Protein Shake", shake = true, icon = "cup-soda", color = "#8E5CF0",
-		text = "Fills your stamina and gives +50% EXP for 30 s.", duration = "30 s" },
+		text = "Fills your stamina and gives +50% EXP.", duration = "30 s" },
 	{ id = "CoconutWater", name = "Coconut Water", refill = 0.5, seconds = 2 * 60, effects = { regen = 1.5 }, icon = "heart-pulse", color = "#3F8CFF",
 		text = "Refills half your stamina, then stamina refills 50% faster.", duration = "2 min" },
 	{ id = "Creatine", name = "Creatine", seconds = 10 * 60, effects = { gains = 1.25 }, icon = "zap", color = "#E8343C",
@@ -29,6 +29,9 @@ Boosts.Items = {
 		text = "+25% Growth Spurt progress.", duration = "10 min" },
 	{ id = "Supplements", name = "Supplements", seconds = 15 * 60, effects = { gains = 1.1 }, icon = "heart-pulse", color = "#36C26B",
 		text = "+10% to all training gains.", duration = "15 min" },
+	-- (prompt 19, sold in the PUMP SHOP) reps go 25% faster: the rep animation and the auto-rep pace
+	{ id = "PreWorkout", name = "Pre-Workout", seconds = 5 * 60, effects = { repSpeed = 1.25 }, icon = "timer", color = "#36C2C2",
+		text = "+25% rep speed.", duration = "5 min" },
 }
 Boosts.ById = {}
 for _, item in ipairs(Boosts.Items) do Boosts.ById[item.id] = item end

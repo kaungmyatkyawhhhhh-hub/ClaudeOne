@@ -11,6 +11,7 @@ local Machines = require(Config.Machines)
 local Poses = require(Config.Poses)
 local Gains = require(Config.Gains)
 local Stamina = require(Config.Stamina)
+local PumpShop = require(Config.PumpShop)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 local TitleService = require(script.Parent.TitleService)
@@ -471,8 +472,10 @@ local function lift(player)
 	local session = sessions[player]
 	if not session then return end
 	local now = os.clock()
-	if now - session.lastRep < Gains.RepCooldown then return end
-	if not Guard.Allow(player, "lift", Gains.MaxRepsPerSecond, Gains.RepBurst) then return end
+	-- (Pre-Workout makes reps faster: the limits follow it)
+	local repSpeed = BoostService.RepSpeed(player)
+	if now - session.lastRep < Gains.RepCooldown / repSpeed then return end
+	if not Guard.Allow(player, "lift", Gains.MaxRepsPerSecond * repSpeed, Gains.RepBurst) then return end
 	local data = PlayerData.Get(player)
 	if not data then return end
 
@@ -492,7 +495,9 @@ local function lift(player)
 	local big = session.nextBig
 	session.nextBig = math.random() < Gains.BigRep.Chance
 	local quality = (pumped and Pump.Multiplier or 1) * (big and Gains.BigRep.Multiplier or 1)
-	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player), quality) -- (none on cardio: it trains stamina)
+	-- worn PUMP SHOP gear helps the machines in its area (prompt 19, Config/PumpShop.GearMultiplier)
+	local gear = PumpShop.GearMultiplier(data.cosmetics and data.cosmetics.equipped, machine, Muscles.ById[machine.muscles[1].id].group)
+	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player) * gear, quality) -- (none on cardio: it trains stamina)
 
 	local mainId = machine.muscles[1].id
 	local usableBefore = Machines.UsableTier(machine, progress, data.muscles[mainId].level)

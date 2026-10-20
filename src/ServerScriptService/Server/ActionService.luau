@@ -46,10 +46,17 @@ handlers.Reroll = function(player)
 end
 
 -- Buy one DNA token with coins (Config/DNA.CoinPrice); the coins are checked and taken here. (PlayerAction is rate
--- limited by Guard.)
+-- limited by Guard.) (prompt 19) Every token bought in the same week costs 10% more (Config/PumpShop.DnaPrice; saved in
+-- data.dnaWeek = { week, bought }), from the Genetics screen, the Store and the PUMP SHOP's DNA Lab alike.
 handlers.BuyDnaToken = function(player)
-	local price = require(Config.DNA).CoinPrice
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local PumpShop = require(Config.PumpShop)
+	local week = PumpShop.Week()
+	local state = type(data.dnaWeek) == "table" and data.dnaWeek.week == week and data.dnaWeek or { week = week, bought = 0 }
+	local price = PumpShop.DnaPrice(require(Config.DNA).CoinPrice, state.bought)
 	if PlayerData.SpendCoins(player, price) then
+		PlayerData.SetTable(player, "dnaWeek", { week = week, bought = (state.bought or 0) + 1 })
 		PlayerData.AddDnaTokens(player, 1)
 		Remotes.PlayerEvent:FireClient(player, "DnaTokenBought", {})
 	else

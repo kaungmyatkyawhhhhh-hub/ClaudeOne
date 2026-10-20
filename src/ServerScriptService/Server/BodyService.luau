@@ -95,8 +95,9 @@ function BodyService.PublishData(target, data)
 	local settings = data.settings or {}
 	local g = BodyService.EncodeLevels(levelsOf(data), goalOf(data))
 	if target:GetAttribute("MuscleG") ~= g then target:SetAttribute("MuscleG", g) end
-	local top = settings.top or Body.DefaultTop
-	local shorts = settings.shorts or Body.DefaultShorts
+	-- (prompt 19) a PUMP SHOP try-on wins for a few seconds (PumpShopService sets TryOnTop / TryOnShorts on the player)
+	local top = target:GetAttribute("TryOnTop") or settings.top or Body.DefaultTop
+	local shorts = target:GetAttribute("TryOnShorts") or settings.shorts or Body.DefaultShorts
 	if target:GetAttribute("Top") ~= top then target:SetAttribute("Top", top) end
 	if target:GetAttribute("Shorts") ~= shorts then target:SetAttribute("Shorts", shorts) end
 end

@@ -15,6 +15,10 @@ Cosmetics.Slots = {
 	{ id = "Hip", name = "Shaker" },
 	{ id = "Board", name = "Skateboard", verb = "Using" },
 	{ id = "Wheels", name = "Skate wheels", verb = "Using" },
+	-- (prompt 19) PUMP SHOP gear and apparel
+	{ id = "Hands", name = "Lifting straps" },
+	{ id = "Knees", name = "Knee sleeves" },
+	{ id = "Back", name = "Gym bag" },
 }
 
 local function hex(value) return Color3.fromHex(value) end
@@ -82,6 +86,34 @@ for _, fit in ipairs(Cosmetics.Fits) do
 			id = fit.id .. entry[1], name = entry[1] .. " " .. fit.name, slot = "Fit", style = "Shirt",
 			color = hex(entry[2]), shirt = Cosmetics.FitTemplates[key], price = fit.price,
 		})
+	end
+end
+
+-- PUMP SHOP (prompt 19; Config/PumpShop): gear with a perk (3 levels per piece, `gear` + `level`) and coin apparel.
+-- pumpShop = true: sold only in the PUMP SHOP (the clothing store doesn't list them).
+do
+	local PumpShop = require(script.Parent.PumpShop)
+	for _, gear in ipairs(PumpShop.Gear) do
+		for _, level in ipairs(PumpShop.GearLevels) do
+			table.insert(Cosmetics.Items, { id = PumpShop.GearItemId(gear.id, level.id), name = level.name .. " " .. gear.name, slot = gear.slot,
+				style = gear.style, color = hex(level.color), price = level.price, gear = gear.id, level = level.id, pumpShop = true })
+		end
+	end
+	local apparel = {
+		{ id = "BandRed", name = "Red headband", slot = "Head", style = "Headband", color = hex("#B3262D") },
+		{ id = "BandGold", name = "Gold headband", slot = "Head", style = "Headband", color = hex("#D9A82E") },
+		{ id = "ShakerTeal", name = "Teal shaker", slot = "Hip", style = "Shaker", color = hex("#2E8E8E") },
+		{ id = "ShakerGold", name = "Gold shaker", slot = "Hip", style = "Shaker", color = hex("#D9A82E") },
+		{ id = "BagBlack", name = "Black gym bag", slot = "Back", style = "Bag", color = hex("#1E1E22") },
+		{ id = "BagRed", name = "Red gym bag", slot = "Back", style = "Bag", color = hex("#B3262D") },
+		{ id = "BagGold", name = "Gold gym bag", slot = "Back", style = "Bag", color = hex("#D9A82E") },
+	}
+	for _, item in ipairs(apparel) do
+		for _, entry in ipairs(PumpShop.Apparel) do
+			if entry.kind == "Cosmetic" and entry.id == item.id then item.price = entry.price end
+		end
+		item.pumpShop = true
+		table.insert(Cosmetics.Items, item)
 	end
 end
 

@@ -21,6 +21,8 @@ HudIcons.Tiles = {
 	Emotes = { order = 6, label = "Poses", accent = Color3.fromHex("#E96BA8"), icon = "Pose", image = "" },        -- poses + emotes panel
 	Crew = { order = 7, label = "Crew", accent = Color3.fromHex("#4C8DE0"), icon = "People", image = "" },
 	-- (Quests: no tile, owner 14 Oct: one entry point, the QUESTS icon on the top bar)
+	-- (prompt 19) PUMP SHOP: shown once the shop has opened; a tap takes you to its entrance
+	PumpShop = { order = 8, label = "Pump Shop", accent = Color3.fromHex("#C98A12"), uiIcon = "dumbbell", image = "" },
 	Trainers = { order = 9, label = "Trainers", accent = Color3.fromHex("#D9823B"), icon = "Clipboard", image = "" }, -- personal trainers
 	Wardrobe = { order = 10, label = "Wardrobe", accent = Color3.fromHex("#9B6BDF"), icon = "Hanger", image = "" }, -- hidden: Config/Features.Wardrobe
 }
