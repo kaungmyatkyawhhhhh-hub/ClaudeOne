@@ -37,8 +37,3 @@ Short on purpose: it is loaded every session. Read other files only when the tas
 - Owner's new prompt: save it to `GYM ARC\Prompts\YYYY-MM-DD GYM ARC Prompt - <title>.md` first.
 - When done: update only the notes for what changed (Feature/Bug/Config + today's Progress note + Home status), add new notes to the Index, commit the vault's `GYM ARC/` folder only. Never touch other games in the vault.
 - Keep reports to the owner short and in plain English; list only what changed, what to test, and what needs his decision.
-
-## One-time job (do it at the start of the next session, then delete this section)
-- PROGRESS.md is 1,500+ lines. Move every section older than 15 Oct into `docs/PROGRESS_archive.md` (unchanged, newest first). Keep in PROGRESS.md only: Rules, Workflow, "Waiting on you", "Known issues", "Decisions (still in force)", "Studio test hooks", and the 15 Oct+ sections. Target under 300 lines.
-- Then update anything outdated in `00 GYM ARC Home.md` "Current status" (monetization is ON, final UI is Black + Gold, owner's own body changes).
-- Commit both repos, then delete this "One-time job" section from CLAUDE.md.
