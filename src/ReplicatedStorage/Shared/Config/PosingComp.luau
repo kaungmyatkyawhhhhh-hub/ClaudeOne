@@ -1,87 +1,92 @@
--- Posing Competition (owner's feature run, task 1): a round on the posing stage on the beach (Config.Town.Stage) every
--- Interval seconds. Everyone in the server is told when it starts; whoever stands on the stage when the countdown ends is in.
--- Three poses: tap the pose button when the ring closes, then hold the pose until the judges score it. Score per pose =
--- muscle size + balance between the groups + timing, shown as the judges' card (1 to 10) above each contestant. Players
--- watching vote during the last pose. Top 3 stand on the podium; the winner gets "Posing Champion" and the statue.
+-- Posing show (owner's feature run, task 1; reworked for prompt 18, 21 Oct: "posing show every 5 minutes", gameplay plan
+-- "Posing shows and judging"). A server-wide show every Interval seconds on the beach stage (Config.Town.Stage). Players
+-- who have had a Growth Spurt see a small timer; in the last JoinWindow seconds it glows with a JOIN button. Whoever stands
+-- on the stage when it ends is in. Contestants are split into divisions by height and each division runs on its own,
+-- smallest first: the judges call the poses, everyone hits them together, then the judges score size, balance and
+-- stage presence, and the top 3 go on the podium. Nobody is ever pulled out of training.
 -- (PosingCompService on the server, PosingCompClient on every client, stage pieces from tools/builders/PosingComp.)
+-- NO purchase, aura, pass or boost changes a score: only the saved muscles and the height.
 local PosingComp = {}
 
-PosingComp.Interval = 12 * 60   -- seconds from one round's start to the next
-PosingComp.FirstDelay = 3 * 60  -- seconds after the server starts before the first round's countdown
-PosingComp.Countdown = 60       -- seconds of "Posing Competition starts in ..." before the round
-PosingComp.MaxPlayers = 6       -- contestants (players + NPCs) on stage at most
-PosingComp.MinPlayers = 2       -- fewer contestants than this: NPC bodybuilders join (so a solo player can still compete)
-PosingComp.NpcFillTo = 3        -- ...until there are this many contestants
-PosingComp.StageMargin = 1      -- studs around the stage top that still count as "on the stage"
+PosingComp.Interval = 300      -- ShowInterval: seconds from one show's start to the next
+PosingComp.FirstDelay = 90     -- seconds after the server starts before the first show
+PosingComp.JoinWindow = 30     -- the last seconds before a show: the timer glows gold and shows JOIN
+PosingComp.UnlockSpurts = 1    -- Growth Spurts needed to see the timer and to compete
+PosingComp.MaxPerDivision = 8  -- contestants (players + NPCs) in one division
+PosingComp.MaxPlayers = 6      -- (the marks tools/builders/PosingComp puts on the stage; contestants spread along them)
+PosingComp.StageMargin = 1     -- studs around the stage top that still count as "on the stage"
+PosingComp.JoinTeleport = 80   -- JOIN from further than this (or from another gym) puts you on the stage; closer = a path
 
--- The three poses of a round (ids from Config.ShowOff.Emotes).
-PosingComp.Poses = { "FrontDoubleBiceps", "FrontLatSpread", "MostMuscular" }
+-- Divisions by height (inches, Config.GrowthSpurts heights), smallest first. At 7'0" everyone is "Open" until Body Alters
+-- exist; then `alterTier` will split them (code reads it, nothing sets it yet).
+PosingComp.Divisions = {
+	{ id = "Bantam", name = "Bantam", maxHeight = 59 },  -- under 5'0"
+	{ id = "Middle", name = "Middle", maxHeight = 72 },  -- 5'0" to 6'0"
+	{ id = "Heavy", name = "Heavy", maxHeight = 83 },    -- over 6'0"
+	{ id = "Open", name = "Open", maxHeight = math.huge }, -- 7'0" (by alter tier later)
+}
 
--- One pose: the ring closes over CueTime, tap when it closes. Then hold until the judges score it HoldTime later.
-PosingComp.Intro = 4        -- seconds between "contestants, take your marks" and the first pose
-PosingComp.CueTime = 2.4    -- seconds the timing ring takes to close
-PosingComp.Perfect = 0.2    -- seconds either side of the ring closing that count as a perfect tap
-PosingComp.Good = 0.55      -- ...a good tap
-PosingComp.LateLimit = 1.2  -- after the ring closed, a tap this late still poses (no timing bonus); later = missed (auto pose)
-PosingComp.HoldTime = 3     -- seconds from the ring closing to the judges' score; moving before it = the hold bonus is lost
-PosingComp.ScoreShow = 2.5  -- seconds the score cards stay up
-PosingComp.Gap = 1.5        -- seconds between the cards going down and the next pose
-PosingComp.MaxPing = 0.3    -- seconds of network delay forgiven on a tap (the server times every tap)
-PosingComp.Timing = { Perfect = 1, Good = 0.6, Late = 0.15, Missed = 0 } -- timing value of each tap
-PosingComp.HoldLost = 0.5   -- timing value x this if the pose was let go before the judges scored it
+-- The four poses the judges call, about 5 s each (ids from Config.ShowOff.Emotes).
+PosingComp.Poses = { "SideChest", "FrontDoubleBiceps", "BackDoubleBiceps", "AbsAndThigh" }
+PosingComp.PoseTime = 5    -- seconds per pose
+PosingComp.Intro = 3       -- seconds for "contestants, take your marks"
+PosingComp.ScoreShow = 6   -- seconds the judges' panel (every score) stays up
+PosingComp.PodiumTime = 8  -- seconds on the podium
+PosingComp.Between = 2     -- seconds between two divisions
 
--- Score of one pose (0..1, shown as a card from 1 to 10 in halves).
-PosingComp.Weights = { Size = 0.55, Balance = 0.25, Timing = 0.2 }
-PosingComp.SizeFull = 1     -- average muscle look (Muscles.LookG: 1 = the full aesthetic look) that counts as full size
--- Balance: 1 when every muscle group looks the same size, 0 when the smallest group is BalanceZero x the biggest or less.
-PosingComp.BalanceZero = 0.25
+-- Score out of 100. Size is compared to the best size in the division, so a small player can win their division.
+PosingComp.Weights = { Size = 60, Balance = 25, Presence = 15 }
+PosingComp.SizeFull = 1          -- (an NPC's size from its share: Muscles.LookG, 1 = the full aesthetic look)
+PosingComp.BalanceZero = 0.25    -- balance 1 when every group looks the same size, 0 when the smallest is this x the biggest
+PosingComp.PresenceHeight = 84   -- stage presence: height / this (7'0" = full), plus AlterPresence per alter tier later
+PosingComp.AlterPresence = 0.05
 
--- Audience vote during the last pose (players not on the stage, within VoteRange studs of it).
-PosingComp.VoteRange = 150
-PosingComp.VotePoints = 0.5 -- points added to the contestant's total per vote (the total is the sum of the 3 cards)
-PosingComp.VoteMax = 2      -- most points votes can add
+-- Show ladder: players compete in the highest show they've unlocked (by Growth Spurts). Only the label, the prizes and
+-- the backdrop change for now. coins = 1st / 2nd / 3rd, enter = everyone else who finished; 1st also gets a trophy.
+PosingComp.Shows = {
+	{ id = "Local", name = "Local Show", fromSpurt = 1, coins = { 150, 90, 60 }, enter = 25 },
+	{ id = "Regional", name = "Regional Show", fromSpurt = 2, coins = { 300, 180, 120 }, enter = 50 },
+	{ id = "National", name = "National Show", fromSpurt = 4, coins = { 700, 420, 280 }, enter = 100 },
+	{ id = "ProQualifier", name = "Pro Card Qualifier", fromSpurt = 5, coins = { 1200, 720, 480 }, enter = 160 },
+	{ id = "Universe", name = "Universe Championship", fromSpurt = 6, coins = { 2000, 1200, 800 }, enter = 250 },
+}
 
--- Results: the podium (top 3) for PodiumTime seconds, coins, the title for the winner (Config.Titles "PosingChampion").
-PosingComp.PodiumTime = 10
-PosingComp.Coins = { 150, 90, 50 } -- 1st, 2nd, 3rd
-PosingComp.EnterCoins = 10        -- every other contestant who finished the round
-
--- NPC bodybuilders who fill the stage (original characters). share = how grown they are (Muscles.LookG, 1 = the full look);
--- skill = their timing value range per pose.
+-- NPC competitors (original characters) so a division never feels empty: with fewer than NpcFillTo contestants, NPCs
+-- fill up (at least NpcMin when there are any players). Their size (share, Muscles.LookG) is scaled to the division.
+PosingComp.NpcFillTo = 4
+PosingComp.NpcMin = 2
+PosingComp.NpcShare = { Bantam = { 0.3, 0.6 }, Middle = { 0.6, 1 }, Heavy = { 1, 1.6 }, Open = { 1.6, 2.4 } }
+PosingComp.NpcHeight = { Bantam = 54, Middle = 66, Heavy = 78, Open = 84 } -- inches (stage presence)
 PosingComp.Npcs = {
-	{ name = "Marco Vance", skin = "#C68642", shorts = "Navy", share = 0.45, skill = { 0.3, 0.8 } },
-	{ name = "Jade Rivers", skin = "#F1C27D", shorts = "Red", share = 0.6, skill = { 0.4, 0.9 } },
-	{ name = "Theo Banks", skin = "#8D5524", shorts = "Black", share = 0.75, skill = { 0.5, 1 } },
-	{ name = "Kai Summers", skin = "#E0AC69", shorts = "Teal", share = 0.35, skill = { 0.2, 0.7 } },
-	{ name = "Nina Cruz", skin = "#A0662F", shorts = "Gray", share = 0.55, skill = { 0.3, 0.9 } },
+	{ name = "Marco Vance", skin = "#C68642", shorts = "Navy" },
+	{ name = "Jade Rivers", skin = "#F1C27D", shorts = "Red" },
+	{ name = "Theo Banks", skin = "#8D5524", shorts = "Black" },
+	{ name = "Kai Summers", skin = "#E0AC69", shorts = "Teal" },
+	{ name = "Nina Cruz", skin = "#A0662F", shorts = "Gray" },
 }
 
 -- Sounds (Config.Sounds slots; the owner picks the ids).
-PosingComp.Sounds = { Start = "PosingStart", Cue = "PosingCue", Score = "PosingScore", Win = "PosingWin" }
+PosingComp.Sounds = { Start = "PosingStart", Cue = "PosingCue", Score = "PosingScore", Win = "PosingWin", Crowd = "CrowdOoh" }
 
--- One pose's score (0..1) from the size, balance and timing values (each 0..1).
-function PosingComp.PoseScore(size, balance, timing)
-	local w = PosingComp.Weights
-	return math.clamp(w.Size * size + w.Balance * balance + w.Timing * timing, 0, 1)
+-- The division for a height (inches).
+function PosingComp.DivisionFor(height: number, _alterTier: number?)
+	for _, division in ipairs(PosingComp.Divisions) do
+		if height <= division.maxHeight then return division end
+	end
+	return PosingComp.Divisions[#PosingComp.Divisions]
 end
 
--- The judges' card for a 0..1 score: 1 to 10 in halves.
-function PosingComp.Card(score)
-	return math.floor((1 + 9 * score) * 2 + 0.5) / 2
-end
-
--- Timing value of a tap `offset` seconds from the ring closing (nil = no tap).
-function PosingComp.TapValue(offset)
-	if offset == nil then return PosingComp.Timing.Missed end
-	local a = math.abs(offset)
-	if a <= PosingComp.Perfect then return PosingComp.Timing.Perfect, "Perfect" end
-	if a <= PosingComp.Good then return PosingComp.Timing.Good, "Good" end
-	if offset < 0 then return PosingComp.Timing.Late, "Early" end
-	if offset <= PosingComp.LateLimit then return PosingComp.Timing.Late, "Late" end
-	return PosingComp.Timing.Missed, "Missed"
+-- The highest show a player with `spurts` Growth Spurts has unlocked (nil = none yet).
+function PosingComp.ShowFor(spurts: number)
+	local pick = nil
+	for _, show in ipairs(PosingComp.Shows) do
+		if (spurts or 0) >= show.fromSpurt then pick = show end
+	end
+	return pick
 end
 
 -- Size and balance values (0..1) from a body's per-muscle looks ({ [muscleId] = look g }) and the muscle groups.
+-- size = the average look (not capped: compared to the division's best).
 function PosingComp.SizeAndBalance(looks, groups)
 	local total, count = 0, 0
 	local low, high = math.huge, 0
@@ -97,7 +102,7 @@ function PosingComp.SizeAndBalance(looks, groups)
 		low = math.min(low, avg)
 		high = math.max(high, avg)
 	end
-	local size = math.clamp((count > 0 and total / count or 0) / PosingComp.SizeFull, 0, 1)
+	local size = (count > 0 and total / count or 0) / PosingComp.SizeFull
 	local balance = 0
 	if high > 0.001 then
 		balance = math.clamp((low / high - PosingComp.BalanceZero) / (1 - PosingComp.BalanceZero), 0, 1)
@@ -105,9 +110,15 @@ function PosingComp.SizeAndBalance(looks, groups)
 	return size, balance
 end
 
--- Points the audience votes add to a total.
-function PosingComp.VoteBonus(votes)
-	return math.min(PosingComp.VoteMax, (votes or 0) * PosingComp.VotePoints)
+-- The judges' breakdown for one contestant: { size, balance, presence, total } (whole points out of 100).
+-- bestSize = the biggest size in the division.
+function PosingComp.Score(size: number, balance: number, height: number, bestSize: number, alterTier: number?)
+	local w = PosingComp.Weights
+	local sizePoints = math.floor(w.Size * math.clamp(bestSize > 0 and size / bestSize or 0, 0, 1) + 0.5)
+	local balancePoints = math.floor(w.Balance * math.clamp(balance, 0, 1) + 0.5)
+	local presence = math.clamp(height / PosingComp.PresenceHeight + (alterTier or 0) * PosingComp.AlterPresence, 0, 1)
+	local presencePoints = math.floor(w.Presence * presence + 0.5)
+	return { size = sizePoints, balance = balancePoints, presence = presencePoints, total = sizePoints + balancePoints + presencePoints }
 end
 
 return PosingComp

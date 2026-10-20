@@ -1,27 +1,31 @@
--- PosingCompService: the posing competition on the beach stage (Config.PosingComp; owner's feature run, task 1).
--- Every Interval seconds a countdown starts for the whole server; whoever stands on the stage when it ends is in (up to
--- MaxPlayers; NPC bodybuilders fill up when there are fewer than MinPlayers, so a solo player can still compete). Three
--- poses: each one the ring closes over CueTime and the contestant taps (the server times every tap), then holds the pose
--- until the judges score it: size + balance + timing -> a card from 1 to 10 above their head. Players watching vote
--- during the last pose. Top 3 go on the podium; coins for everyone who finished, "Posing Champion" (a posingWins stat
--- title) for a winning player, who also becomes the statue until the next round. Leaving the stage, dying or leaving
--- the game during a round = out, no reward.
--- Studio: Workspace attribute TestPosingComp = true starts a countdown now (TestPosingCountdown = its seconds);
--- TestPosingWatch = true makes that round NPCs only, so a solo tester watches and votes.
--- Remote "PosingComp": server -> clients (kind, info); clients -> server "Tap" | "Vote", index.
+-- PosingCompService: the posing show on the beach stage (Config.PosingComp; owner's feature run, task 1, reworked for
+-- prompt 18, 21 Oct: a show every 5 minutes with height divisions).
+-- Every Interval seconds a show starts. Whoever (Growth Spurt 1+) stands on the stage at the start is in; the last
+-- JoinWindow seconds the clients show JOIN (action "Join": a far player is put on the stage, a near one gets a path).
+-- Contestants are split into divisions by height (Config.PosingComp.Divisions) and each division runs on its own, smallest
+-- first, with NPC competitors filling up a small division: line up on the marks, the judges call 4 poses (everyone hits
+-- each one together), then the judges score each contestant out of 100 (size against the division's best + balance +
+-- stage presence) and every breakdown is shown ("Size 52 / Balance 21 / Presence 11 = 84"). The top 3 go on the podium.
+-- Rewards by the player's own show level (Config.PosingComp.Shows): coins for every place, a trophy for 1st. Stats:
+-- posingEntries, posingWins, posingTrophies, posingBest. The winner of the last division (a player) becomes the statue.
+-- Leaving the stage, dying or leaving the game during your division = out, no reward. Nobody else is interrupted.
+-- Studio: Workspace attribute TestPosingComp = true starts a show in TestPosingCountdown seconds (default 10);
+-- TestPosingWatch = true runs an NPC-only Middle division (to watch).
+-- Remote "PosingComp": server -> clients (kind, info); clients -> server "Join" | "Seen" | "State".
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local AnalyticsService = game:GetService("AnalyticsService")
 
 local Config = ReplicatedStorage.Shared.Config
 local PosingComp = require(Config.PosingComp)
 local ShowOff = require(Config.ShowOff)
 local Muscles = require(Config.Muscles)
+local GrowthSpurts = require(Config.GrowthSpurts)
 local Town = require(Config.Town)
 local Body = require(Config.Body)
-local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local PlayerData = require(script.Parent.PlayerData)
 local BodyService = require(script.Parent.BodyService)
 local NpcService = require(script.Parent.NpcService)
@@ -36,13 +40,19 @@ local PosingCompService = {}
 
 local remote: RemoteEvent
 local rng = Random.new()
-local pieces = nil   -- { marks = { BasePart }, podium = { BasePart }, board = { title, status, rows } }
-local round: any = nil -- the running round (nil between rounds)
-local countdownEndsAt = nil -- server time the current countdown ends (nil = no countdown)
-local nextCountdownAt = 0   -- server time the next countdown starts
-local lastResults = nil     -- { { name, total } } of the last round, for the scoreboard
+local pieces = nil     -- { marks = { BasePart }, podium = { BasePart }, board = { title, status, rows } }
+local show: any = nil  -- the running show (nil between shows)
+local nextShowAt = 0   -- server time the next show starts
+local lastResults = nil -- { { name, total } } of the last division, for the scoreboard
+local seen = {}        -- [player] = true once the timer was logged as seen this session
 
 local function now() return Workspace:GetServerTimeNow() end
+
+-- Analytics (prompt 18): custom events; never breaks the show
+local function logEvent(player: Player, name: string, value: number?)
+	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, name, value or 1)
+	if RunService:IsStudio() then print(string.format("[Analytics] %s %s = %s", player.Name, name, tostring(value or 1))) end
+end
 
 ------------------------------------------------------------------------
 -- Stage pieces (tools/builders/PosingComp)
@@ -120,33 +130,55 @@ local function onMachine(player: Player): boolean
 	return false
 end
 
--- Stand a character on a part's top centre, facing the crowd (-Z).
-local function standOn(model: Model, part: BasePart)
+local function spurtsOf(player: Player): number
+	local data = PlayerData.Get(player)
+	return data and data.growthSpurts or 0
+end
+
+-- Stand a character at `feet` (a point on a top surface), facing the crowd (-Z).
+local function standAt(model: Model, feet: Vector3)
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if not root or not root:IsA("BasePart") then return end
-	local topY = part.Position.Y + part.Size.Y / 2
-	local feet = Vector3.new(part.Position.X, topY, part.Position.Z)
 	local height = (humanoid and humanoid.HipHeight or 2) + root.Size.Y / 2
 	model:PivotTo(CFrame.lookAt(feet, feet - Vector3.zAxis) + Vector3.new(0, height, 0))
+end
+local function topOf(part: BasePart): Vector3
+	return Vector3.new(part.Position.X, part.Position.Y + part.Size.Y / 2, part.Position.Z)
+end
+
+-- n spots evenly along the line of marks (the builder made MaxPlayers marks; up to MaxPerDivision stand along them)
+local function lineSpots(n: number): { Vector3 }
+	local first, last = topOf(pieces.marks[1]), topOf(pieces.marks[#pieces.marks])
+	local spots = {}
+	if n <= 1 then
+		spots[1] = first:Lerp(last, 0.5)
+		return spots
+	end
+	-- (a few contestants: a little closer together around the middle; names over heads need the room)
+	local spread = math.min(1, 0.4 + 0.15 * n)
+	for i = 1, n do
+		local t = 0.5 + (((i - 1) / (n - 1)) - 0.5) * spread
+		spots[i] = first:Lerp(last, t)
+	end
+	return spots
 end
 
 ------------------------------------------------------------------------
 -- Contestants
 ------------------------------------------------------------------------
--- A player's size and balance values (0..1) from their saved muscles.
 local function bodyValues(data)
 	local levels, goal = BodyService.LevelsOf(data)
 	local looks = Muscles.LooksFromLevels(levels, goal)
 	return PosingComp.SizeAndBalance(looks, Muscles.Groups)
 end
 
-local function buildNpc(spec, mark: BasePart)
+local function buildNpc(spec, share: number, feet: Vector3)
 	local skin = Color3.fromHex(spec.skin)
 	local shorts = Body.ShortsColor(spec.shorts)
 	local model = NpcService.Build({
 		name = spec.name, skin = spec.skin, shirt = spec.skin, pants = shorts:ToHex(), animated = true, tag = "Poser",
-	}, CFrame.lookAt(mark.Position, mark.Position - Vector3.zAxis))
+	}, CFrame.lookAt(feet, feet - Vector3.zAxis))
 	-- shirtless in gym shorts: bare lower legs, dark shoes (the muscles take their colors from the body parts)
 	for _, name in ipairs({ "RightLowerLeg", "LeftLowerLeg" }) do
 		local part = model:FindFirstChild(name)
@@ -156,12 +188,12 @@ local function buildNpc(spec, mark: BasePart)
 		local part = model:FindFirstChild(name)
 		if part and part:IsA("BasePart") then part.Color = Color3.fromHex("#1E1E22") end
 	end
-	model:SetAttribute("MuscleG", BodyService.EncodeShare(spec.share))
+	model:SetAttribute("MuscleG", BodyService.EncodeShare(share))
 	model:SetAttribute("SkinColor", skin)
 	model:SetAttribute("Top", "Shirtless")
 	model:SetAttribute("Shorts", spec.shorts)
 	model:SetAttribute("PosingNpc", true)
-	standOn(model, mark)
+	standAt(model, feet)
 	return model
 end
 
@@ -170,46 +202,16 @@ local function contestantModel(c)
 	return c.model
 end
 
-local function contestantList()
+local function contestantList(division)
 	local list = {}
-	for i, c in ipairs(round.contestants) do
-		list[i] = { name = c.name, userId = c.player and c.player.UserId or 0, npc = c.player == nil, out = c.out, total = c.total }
+	for i, c in ipairs(division.contestants) do
+		list[i] = { name = c.name, userId = c.player and c.player.UserId or 0, npc = c.player == nil, out = c.out, score = c.score }
 	end
 	return list
 end
 
 local function broadcast(kind, info)
 	remote:FireAllClients(kind, info)
-end
-
-------------------------------------------------------------------------
--- The judges' card above a contestant's head (a world BillboardGui, sized in studs)
-------------------------------------------------------------------------
-local function showCard(model: Model?, card: number, label: string?)
-	local head = model and model:FindFirstChild("Head")
-	if not head then return end
-	local old = head:FindFirstChild("PoseCard")
-	if old then old:Destroy() end
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "PoseCard"
-	gui.Size = UDim2.new(2.6, 0, 1.7, 0)
-	gui.StudsOffsetWorldSpace = Vector3.new(0, 3.1, 0) -- (above the name and the title)
-	gui.MaxDistance = 40
-	gui.LightInfluence = 0
-	gui.Parent = head
-	local panel = Theme.New("Frame", {
-		Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Colors.Panel, BackgroundTransparency = 0.25, Parent = gui,
-	}, { Theme.New("UICorner", { CornerRadius = UDim.new(0.12, 0) }), Theme.New("UIStroke", { Color = Theme.Colors.Border, Transparency = 0.6, Thickness = 2 }) })
-	Theme.New("TextLabel", {
-		Text = string.format(card % 1 == 0 and "%d" or "%.1f", card), FontFace = Theme.Fonts.SemiBold, TextScaled = true, -- (world-space UI)
-		TextColor3 = card >= 9 and Theme.Colors.Gold or Theme.Colors.Text, BackgroundTransparency = 1,
-		Size = UDim2.fromScale(0.9, 0.62), Position = UDim2.fromScale(0.05, 0.06), Parent = panel,
-	})
-	Theme.New("TextLabel", {
-		Text = string.upper(label or "Judges"), FontFace = Theme.Fonts.Regular, TextScaled = true, TextColor3 = Theme.Colors.Muted,
-		BackgroundTransparency = 1, Size = UDim2.fromScale(0.9, 0.24), Position = UDim2.fromScale(0.05, 0.7), Parent = panel,
-	})
-	task.delay(PosingComp.ScoreShow, function() if gui.Parent then gui:Destroy() end end)
 end
 
 ------------------------------------------------------------------------
@@ -223,302 +225,292 @@ local function release(c)
 	end
 end
 
-local function dropOut(c, reason)
+local function dropOut(division, c, reason)
 	if c.out then return end
 	c.out = true
 	release(c)
 	if c.player and c.player.Parent then c.player:SetAttribute("PosingComp", nil) end
-	broadcast("Out", { name = c.name, reason = reason, contestants = contestantList() })
+	broadcast("Out", { name = c.name, userId = c.player and c.player.UserId or 0, reason = reason, contestants = contestantList(division) })
 end
 
-local function checkContestants()
-	if not round then return end
-	for _, c in ipairs(round.contestants) do
+local function checkContestants(division)
+	for _, c in ipairs(division.contestants) do
 		if not c.out and c.player then
 			local root = c.player.Parent and rootOf(c.player)
 			if not c.player.Parent then
-				dropOut(c, "left")
+				dropOut(division, c, "left")
 			elseif not root then
-				dropOut(c, "reset")
+				dropOut(division, c, "reset")
 			elseif not onStage(root.Position) then
-				dropOut(c, "stage")
+				dropOut(division, c, "stage")
 			end
 		end
 	end
 end
 
 ------------------------------------------------------------------------
--- One pose
+-- One division
 ------------------------------------------------------------------------
-local function scoreboardRows()
-	local rows = {}
-	for i, c in ipairs(round.contestants) do
-		rows[i] = { c.name, c.out and "OUT" or string.format("%.1f", c.total) }
+local function setPose(c, emote)
+	if c.out then return end
+	if c.player then
+		ShowOffService.SetPose(c.player, emote)
+	elseif c.model and c.model.Parent then
+		c.model:SetAttribute("Pose", emote.poseData)
 	end
-	return rows
 end
 
-local function npcTap(c, pose)
-	-- an NPC strikes the pose a little before or after the ring closes, by its skill
-	local skill = c.spec.skill
-	local quality = rng:NextNumber(skill[1], skill[2])
-	local spread = (1 - quality) * PosingComp.Good * 2
-	local offset = rng:NextNumber(-spread, spread)
-	task.delay(math.max(0, pose.cueAt - now() + offset), function()
-		if round and round.pose == pose and not c.out and c.model and c.model.Parent then
-			c.model:SetAttribute("Pose", pose.emote.poseData)
-		end
-	end)
-	c.tap = { offset = offset, value = PosingComp.TapValue(offset) }
-end
-
-local function runPose(index: number)
-	local emote = ShowOff.EmoteById[PosingComp.Poses[index]]
-	local pose = { index = index, emote = emote, cueAt = now() + PosingComp.CueTime }
-	round.pose = pose
-	local last = index == #PosingComp.Poses
-	for _, c in ipairs(round.contestants) do
-		c.tap = nil
-		if not c.out and not c.player then npcTap(c, pose) end
+local function results(division)
+	-- the judges: size against the division's best (only who's still in), balance, stage presence
+	local best = 0
+	for _, c in ipairs(division.contestants) do
+		if not c.out then best = math.max(best, c.size) end
 	end
-	broadcast("Pose", {
-		index = index, count = #PosingComp.Poses, poseId = emote.id, name = emote.name, cueAt = pose.cueAt,
-		cueTime = PosingComp.CueTime, holdUntil = pose.cueAt + PosingComp.HoldTime, vote = last, contestants = contestantList(),
-	})
-	if last then round.voting = true end
-	-- players who never tapped strike the pose anyway once the late window closes (no timing bonus)
-	task.wait(math.max(0, pose.cueAt + PosingComp.LateLimit - now()))
-	for _, c in ipairs(round.contestants) do
-		if not c.out and c.player and not c.tap then
-			c.tap = { value = PosingComp.Timing.Missed, label = "Missed" }
-			ShowOffService.SetPose(c.player, emote)
-			remote:FireClient(c.player, "Tapped", { label = "Missed" })
-		end
-	end
-	-- the judges score at the end of the hold
-	task.wait(math.max(0, pose.cueAt + PosingComp.HoldTime - now()))
-	checkContestants()
-	local cards = {}
-	for i, c in ipairs(round.contestants) do
-		if not c.out then
-			local model = contestantModel(c)
-			local held = model ~= nil and model:GetAttribute("Pose") == emote.poseData
-			local timing = (c.tap and c.tap.value or 0) * (held and 1 or PosingComp.HoldLost)
-			local card = PosingComp.Card(PosingComp.PoseScore(c.size, c.balance, timing))
-			c.cards[index] = card
-			c.total += card
-			cards[i] = card
-			showCard(model, card, held and "Judges" or "Held too short")
-		end
-	end
-	broadcast("Scores", { index = index, cards = cards, contestants = contestantList() })
-	setBoard(string.format("Pose %d of %d: %s", index, #PosingComp.Poses, emote.name), scoreboardRows())
-	task.wait(PosingComp.ScoreShow)
-	for _, c in ipairs(round.contestants) do
-		if not c.out then release(c) end
-	end
-	round.pose = nil
-	if not last then task.wait(PosingComp.Gap) end
-end
-
-------------------------------------------------------------------------
--- Taps and votes from clients
-------------------------------------------------------------------------
-local function onTap(player: Player)
-	local pose = round and round.pose
-	if not pose then return end
-	local c = nil
-	for _, entry in ipairs(round.contestants) do
-		if entry.player == player and not entry.out then c = entry end
-	end
-	if not c or c.tap then return end
-	-- the server times the tap; the player's own network delay (capped) is forgiven
-	local ping = math.clamp(player:GetNetworkPing(), 0, PosingComp.MaxPing)
-	local offset = (now() - ping) - pose.cueAt
-	if offset < -PosingComp.CueTime then return end -- (a tap from before this pose's ring even started)
-	local value, label = PosingComp.TapValue(offset)
-	c.tap = { offset = offset, value = value, label = label }
-	ShowOffService.SetPose(player, pose.emote)
-	remote:FireClient(player, "Tapped", { label = label })
-end
-
-local function onVote(player: Player, index: any)
-	if not round or not round.voting or round.voted[player] or type(index) ~= "number" then return end
-	local c = round.contestants[index]
-	if not c or c.out or c.player == player then return end -- never for yourself
-	for _, entry in ipairs(round.contestants) do
-		if entry.player == player then return end -- contestants don't vote
-	end
-	local root = rootOf(player)
-	if not root or (root.Position - Town.Stage.Center).Magnitude > PosingComp.VoteRange + 20 then return end
-	round.voted[player] = true
-	c.votes += 1
-	remote:FireClient(player, "Voted", { name = c.name })
-end
-
-------------------------------------------------------------------------
--- A whole round
-------------------------------------------------------------------------
-local function cleanupRound()
-	if not round then return end
-	for _, c in ipairs(round.contestants) do
-		if c.player then
-			if c.player.Parent then
-				ShowOffService.ReleasePose(c.player)
-				c.player:SetAttribute("PosingComp", nil)
-			end
-		elseif c.model then
-			c.model:Destroy()
-		end
-	end
-	if round.watcher then round.watcher:Disconnect() end
-	round = nil
-	broadcast("Ended", {})
-	ShowOffService.SetStageJudging(true)
-end
-
-local function results()
 	local ranked = {}
-	for _, c in ipairs(round.contestants) do
+	for _, c in ipairs(division.contestants) do
 		if not c.out then
-			c.total += PosingComp.VoteBonus(c.votes)
+			c.score = PosingComp.Score(c.size, c.balance, c.height, best, c.alterTier)
 			table.insert(ranked, c)
 		end
 	end
 	table.sort(ranked, function(a, b)
-		if a.total ~= b.total then return a.total > b.total end
+		if a.score.total ~= b.score.total then return a.score.total > b.score.total end
 		return a.order < b.order
 	end)
+	broadcast("Scores", { division = division.def.name, contestants = contestantList(division) })
+	local rows = {}
+	for place, c in ipairs(ranked) do
+		if place <= 6 then rows[place] = { place .. ". " .. c.name, tostring(c.score.total) } end
+	end
+	setBoard(division.def.name .. ": the judges' scores", rows)
+	task.wait(PosingComp.ScoreShow)
+
 	local list = {}
 	for place, c in ipairs(ranked) do
-		list[place] = { name = c.name, total = math.floor(c.total * 10 + 0.5) / 10, votes = c.votes, npc = c.player == nil }
+		list[place] = { name = c.name, total = c.score.total, npc = c.player == nil, userId = c.player and c.player.UserId or 0 }
 		local model = contestantModel(c)
-		if place <= 3 and model and pieces.podium[place] then standOn(model, pieces.podium[place]) end
+		if place <= 3 and model and pieces.podium[place] then standAt(model, topOf(pieces.podium[place])) end
 		if c.player and c.player.Parent then
-			local coins = PosingComp.Coins[place] or PosingComp.EnterCoins
+			local data = PlayerData.Get(c.player)
+			local level = PosingComp.ShowFor(data and data.growthSpurts or 0) or PosingComp.Shows[1]
+			local coins = level.coins[place] or level.enter
 			PlayerData.AddCoins(c.player, coins)
-			if place == 1 then
-				local data = PlayerData.Get(c.player)
-				if data then PlayerData.SetStat(c.player, "posingWins", (data.stats.posingWins or 0) + 1) end
-				TitleService.Check(c.player) -- "Posing Champion"
-				GameEvents.Fire("PosingWon", c.player, 1)
+			if data then
+				local stats = data.stats
+				PlayerData.SetStat(c.player, "posingBest", math.max(stats.posingBest or 0, c.score.total))
+				if place == 1 then
+					PlayerData.SetStat(c.player, "posingWins", (stats.posingWins or 0) + 1)
+					PlayerData.SetStat(c.player, "posingTrophies", (stats.posingTrophies or 0) + 1)
+					GameEvents.Fire("PosingWon", c.player, 1)
+				end
 			end
-			remote:FireClient(c.player, "Reward", { place = place, coins = coins })
+			TitleService.Check(c.player) -- (first show, first win, 10 wins, 50 wins)
+			logEvent(c.player, "PosingPlaced", if place <= 3 then place else 4)
+			remote:FireClient(c.player, "Reward", { place = place, coins = coins, trophy = place == 1, show = level.name, division = division.def.name,
+				score = c.score })
 		end
 	end
-	-- the winner (a player) becomes the statue until the next round; an NPC win gives it back to the strongest lifter
-	local winner = ranked[1]
-	ShowOffService.SetChampion(winner and winner.player and winner.player.Parent and winner.player or nil)
 	lastResults = list
-	broadcast("Results", { ranking = list })
-	local rows = {}
-	for place, entry in ipairs(list) do rows[place] = { place .. ". " .. entry.name, string.format("%.1f", entry.total) } end
-	setBoard(winner and ("Winner: " .. winner.name) or "No winner", rows)
+	broadcast("Results", { division = division.def.name, show = division.show and division.show.name or "", ranking = list })
+	local board = {}
+	for place, entry in ipairs(list) do
+		if place <= 6 then board[place] = { place .. ". " .. entry.name, tostring(entry.total) } end
+	end
+	setBoard(ranked[1] and (division.def.name .. " winner: " .. ranked[1].name) or "No winner", board)
+	task.wait(PosingComp.PodiumTime)
+	return ranked[1]
 end
 
-local function startRound(entrants: { Player }, npcsOnly: boolean?)
-	round = { contestants = {}, voted = {}, pose = nil, voting = false }
-	ShowOffService.SetStageJudging(false) -- (the stage's everyday judges stay quiet during a round)
-	-- the marks in use: as many as there are contestants, centred on the stage
-	local npcCount = 0
-	if #entrants < PosingComp.MinPlayers then
-		npcCount = math.max(0, math.min(PosingComp.NpcFillTo, #pieces.marks, #entrants + #PosingComp.Npcs) - #entrants)
-	end
-	local first = (#pieces.marks - (#entrants + npcCount)) // 2
-	local function markFor(i) return pieces.marks[first + i] or pieces.marks[i] end
-	-- players on the marks, in the order they were found (closest to the stage centre first)
-	for i, player in ipairs(entrants) do
-		local data = PlayerData.Get(player)
-		local size, balance = 0, 0
-		if data then size, balance = bodyValues(data) end
-		table.insert(round.contestants, { player = player, name = player.DisplayName, size = size, balance = balance,
-			cards = {}, total = 0, votes = 0, out = false, order = i })
-		local character = player.Character
-		if character and markFor(i) then standOn(character, markFor(i)) end
-		player:SetAttribute("PosingComp", true) -- (PoseClient hides its everyday pose panel meanwhile)
-		local stats = data and data.stats
-		if stats then PlayerData.SetStat(player, "posingEntries", (stats.posingEntries or 0) + 1) end
-		GameEvents.Fire("PosingEntered", player, 1)
-	end
-	-- NPC bodybuilders fill the stage when too few players joined
-	if npcCount > 0 then
-		local pool = table.clone(PosingComp.Npcs)
-		for _ = 1, npcCount do
-			if #pool == 0 then break end
-			local spec = table.remove(pool, rng:NextInteger(1, #pool))
-			local i = #round.contestants + 1
-			local ok, model = pcall(buildNpc, spec, markFor(i))
-			if ok and model then
-				table.insert(round.contestants, { model = model, spec = spec, name = spec.name, size = math.clamp(spec.share / PosingComp.SizeFull, 0, 1),
-					balance = 1, cards = {}, total = 0, votes = 0, out = false, order = i })
-			else
-				warn("[PosingCompService] could not build an NPC bodybuilder:", model)
+local function runDivision(division)
+	-- line up: players first (in the order they stood closest to the middle), then the NPCs, spread along the marks
+	local spots = lineSpots(#division.contestants)
+	for i, c in ipairs(division.contestants) do
+		local model = contestantModel(c)
+		if c.player then
+			if model then standAt(model, spots[i]) end
+			c.player:SetAttribute("PosingComp", true) -- (PoseClient hides its everyday pose panel meanwhile)
+		else
+			local ok, built = pcall(buildNpc, c.spec, c.share, spots[i])
+			if ok then c.model = built else
+				warn("[PosingCompService] could not build an NPC competitor:", built)
+				c.out = true
 			end
 		end
 	end
-	-- watch for anyone dropping out (left the stage, died, left the game)
-	local acc = 0
-	round.watcher = RunService.Heartbeat:Connect(function(dt)
-		acc += dt
-		if acc < 0.25 then return end
-		acc = 0
-		checkContestants()
+	local watcher = RunService.Heartbeat:Connect(function()
+		checkContestants(division)
 	end)
-	broadcast("Start", { contestants = contestantList(), intro = PosingComp.Intro })
-	setBoard("Contestants, take your marks", scoreboardRows())
+	broadcast("Division", { division = division.def.name, show = division.show and division.show.name or "", index = division.index,
+		count = division.count, contestants = contestantList(division), intro = PosingComp.Intro })
+	setBoard(division.def.name .. " division: take your marks", nil)
 	task.wait(PosingComp.Intro)
-	for index = 1, #PosingComp.Poses do
-		if not round then return end
-		local anyIn = false
-		for _, c in ipairs(round.contestants) do
-			if not c.out and c.player then anyIn = true end
+	local winner = nil
+	for index, poseId in ipairs(PosingComp.Poses) do
+		local anyPlayer = false
+		for _, c in ipairs(division.contestants) do
+			if not c.out and c.player then anyPlayer = true end
 		end
-		if not anyIn and not npcsOnly then break end -- every player dropped out: no round left to judge
-		runPose(index)
+		if not anyPlayer and not division.npcsOnly then break end -- every player dropped out: nothing left to judge
+		local emote = ShowOff.EmoteById[poseId]
+		broadcast("Pose", { division = division.def.name, index = index, count = #PosingComp.Poses, poseId = poseId, name = emote.name,
+			endsAt = now() + PosingComp.PoseTime, contestants = contestantList(division) })
+		setBoard(string.format("%s: %s (%d/%d)", division.def.name, emote.name, index, #PosingComp.Poses), nil)
+		for _, c in ipairs(division.contestants) do setPose(c, emote) end
+		task.wait(PosingComp.PoseTime)
+		checkContestants(division)
 	end
-	if not round then return end
-	round.voting = false
-	results()
-	task.wait(PosingComp.PodiumTime)
-	cleanupRound()
+	watcher:Disconnect()
+	local anyIn = false
+	for _, c in ipairs(division.contestants) do
+		if not c.out and (c.player or division.npcsOnly) then anyIn = true end
+	end
+	if anyIn then winner = results(division) end
+	-- off the stage: players stay where they are, NPCs go
+	for _, c in ipairs(division.contestants) do
+		release(c)
+		if c.player and c.player.Parent then c.player:SetAttribute("PosingComp", nil) end
+		if c.model then c.model:Destroy() end
+	end
+	return winner
 end
 
-local function runCountdown(seconds: number)
-	countdownEndsAt = now() + seconds
-	broadcast("Countdown", { endsAt = countdownEndsAt, stage = Town.Stage.Center + Vector3.new(0, stageTop(), 0) })
-	while now() < countdownEndsAt do
-		setBoard("Starts in " .. clock(countdownEndsAt - now()) .. ". Step on the stage!", nil)
-		task.wait(1)
+------------------------------------------------------------------------
+-- A whole show
+------------------------------------------------------------------------
+local function npcsFor(def, players: number)
+	local count = 0
+	if players < PosingComp.NpcFillTo then count = math.max(PosingComp.NpcFillTo - players, if players > 0 then PosingComp.NpcMin else 0) end
+	count = math.min(count, PosingComp.MaxPerDivision - players, #PosingComp.Npcs)
+	local pool = table.clone(PosingComp.Npcs)
+	local range = PosingComp.NpcShare[def.id] or { 0.5, 1 }
+	local list = {}
+	for _ = 1, count do
+		local spec = table.remove(pool, rng:NextInteger(1, #pool))
+		local share = rng:NextNumber(range[1], range[2])
+		table.insert(list, { spec = spec, name = spec.name, share = share, size = share / PosingComp.SizeFull, balance = rng:NextNumber(0.75, 1),
+			height = PosingComp.NpcHeight[def.id] or 66, out = false })
 	end
-	countdownEndsAt = nil
-	-- who's in: alive players standing on the stage, not lifting, closest to the middle first
+	return list
+end
+
+local function cleanupShow()
+	if not show then return end
+	for _, division in ipairs(show.divisions) do
+		for _, c in ipairs(division.contestants) do
+			if c.player and c.player.Parent then
+				ShowOffService.ReleasePose(c.player)
+				c.player:SetAttribute("PosingComp", nil)
+			elseif c.model then
+				c.model:Destroy()
+			end
+		end
+	end
+	show = nil
+	broadcast("Ended", { nextAt = nextShowAt })
+	ShowOffService.SetStageJudging(true)
+end
+
+local function runShow(npcsOnly: boolean?)
+	-- who's in: alive players (Growth Spurt 1+) standing on the stage, not lifting or skating, closest to the middle first
 	local entrants = {}
 	for _, player in ipairs(Players:GetPlayers()) do
 		local root = rootOf(player)
-		if root and onStage(root.Position) and not onMachine(player) and player:GetAttribute("Skating") ~= true then
+		if root and onStage(root.Position) and spurtsOf(player) >= PosingComp.UnlockSpurts and not onMachine(player)
+			and player:GetAttribute("Skating") ~= true then
 			table.insert(entrants, { player = player, d = (root.Position - Town.Stage.Center).Magnitude })
 		end
 	end
 	table.sort(entrants, function(a, b) return a.d < b.d end)
-	local list = {}
-	for i = 1, math.min(#entrants, PosingComp.MaxPlayers) do list[i] = entrants[i].player end
-	local npcsOnly = RunService:IsStudio() and Workspace:GetAttribute("TestPosingWatch") == true
-	if npcsOnly then list = {} end
-	if #list == 0 and not npcsOnly then
-		broadcast("NoShow", {})
-		setBoard("Nobody stepped up. Next round in " .. clock(nextCountdownAt - now()), nil)
+	if npcsOnly then entrants = {} end
+	-- divisions by height, smallest first
+	local byDivision = {}
+	for _, entry in ipairs(entrants) do
+		local data = PlayerData.Get(entry.player)
+		if data then
+			local height = GrowthSpurts.GetHeight(data.growthSpurts)
+			local def = PosingComp.DivisionFor(height, nil)
+			byDivision[def.id] = byDivision[def.id] or {}
+			if #byDivision[def.id] < PosingComp.MaxPerDivision then
+				local size, balance = bodyValues(data)
+				table.insert(byDivision[def.id], { player = entry.player, name = entry.player.DisplayName, size = size, balance = balance,
+					height = height, out = false })
+			end
+		end
+	end
+	if npcsOnly then byDivision.Middle = {} end
+	show = { divisions = {} }
+	for _, def in ipairs(PosingComp.Divisions) do
+		local players = byDivision[def.id]
+		if players then
+			local contestants = table.clone(players)
+			for _, npc in ipairs(npcsFor(def, if npcsOnly then 0 else #players)) do table.insert(contestants, npc) end
+			if npcsOnly and #contestants == 0 then
+				for _, npc in ipairs(npcsFor(def, 1)) do table.insert(contestants, npc) end
+			end
+			for i, c in ipairs(contestants) do c.order = i end
+			-- the show's label: the highest show any player in it has unlocked
+			local level = nil
+			for _, c in ipairs(players) do
+				local s = PosingComp.ShowFor(spurtsOf(c.player))
+				if s and (not level or s.fromSpurt > level.fromSpurt) then level = s end
+			end
+			table.insert(show.divisions, { def = def, contestants = contestants, show = level or PosingComp.Shows[1], npcsOnly = npcsOnly })
+		end
+	end
+	if #show.divisions == 0 then
+		show = nil
+		broadcast("NoShow", { nextAt = nextShowAt })
+		setBoard("Nobody stepped up. Next show in " .. clock(nextShowAt - now()), nil)
 		return
 	end
-	local ok, err = pcall(startRound, list, npcsOnly)
-	if not ok then
-		warn("[PosingCompService] round failed:", err)
-		broadcast("Cancelled", {})
-		cleanupRound()
+	ShowOffService.SetStageJudging(false) -- (the stage's everyday judges stay quiet during a show)
+	for index, division in ipairs(show.divisions) do
+		division.index, division.count = index, #show.divisions
+		for _, c in ipairs(division.contestants) do
+			if c.player then
+				local data = PlayerData.Get(c.player)
+				if data then PlayerData.SetStat(c.player, "posingEntries", (data.stats.posingEntries or 0) + 1) end
+				GameEvents.Fire("PosingEntered", c.player, 1)
+				logEvent(c.player, "PosingCompeted", 1)
+			end
+		end
 	end
+	broadcast("Start", { divisions = (function()
+		local names = {}
+		for _, division in ipairs(show.divisions) do table.insert(names, division.def.name) end
+		return names
+	end)() })
+	local lastWinner = nil
+	for index, division in ipairs(show.divisions) do
+		local winner = runDivision(division)
+		if winner then lastWinner = winner end
+		if index < #show.divisions then task.wait(PosingComp.Between) end
+	end
+	-- the winner of the biggest division (a player) becomes the statue until the next show; an NPC win gives it back
+	ShowOffService.SetChampion(lastWinner and lastWinner.player and lastWinner.player.Parent and lastWinner.player or nil)
+	cleanupShow()
+end
+
+------------------------------------------------------------------------
+-- JOIN (the last JoinWindow seconds): a far player goes straight onto the stage; a near one walks (the client draws a path)
+------------------------------------------------------------------------
+local function onJoin(player: Player)
+	if show or spurtsOf(player) < PosingComp.UnlockSpurts then return end
+	local left = nextShowAt - now()
+	if left > PosingComp.JoinWindow + 1 or left < 0 then return end
+	logEvent(player, "PosingJoinTapped", 1)
+	local root = rootOf(player)
+	if not root or onMachine(player) then return end
+	local far = (root.Position - Town.Stage.Center).Magnitude > PosingComp.JoinTeleport
+	if far then
+		local spot = Town.Stage.Center + Vector3.new(rng:NextNumber(-3, 3), stageTop() - Town.Stage.Center.Y, rng:NextNumber(-2, 2))
+		standAt(player.Character, spot)
+	end
+	remote:FireClient(player, "Joined", { teleported = far })
 end
 
 function PosingCompService.IsRunning(): boolean
-	return round ~= nil or countdownEndsAt ~= nil
+	return show ~= nil
 end
 
 function PosingCompService.Start()
@@ -536,37 +528,49 @@ function PosingCompService.Start()
 		warn("[PosingCompService] Workspace.Town.PosingStage.Feature_PosingComp is missing: build it with tools/builders/PosingComp.luau")
 		return
 	end
-	Guard.Remote(remote, "PosingComp", 6, 8, function(player, action, arg)
-		if action == "Tap" then
-			onTap(player)
-		elseif action == "Vote" then
-			onVote(player, arg)
-		elseif action == "State" then
-			-- a client that joined mid-way asks what is going on
-			if countdownEndsAt then
-				remote:FireClient(player, "Countdown", { endsAt = countdownEndsAt, stage = Town.Stage.Center + Vector3.new(0, stageTop(), 0) })
+	Guard.Remote(remote, "PosingComp", 6, 8, function(player, action)
+		if action == "Join" then
+			onJoin(player)
+		elseif action == "Seen" then
+			if not seen[player] then
+				seen[player] = true
+				logEvent(player, "PosingTimerSeen", 1)
 			end
+		elseif action == "State" then
+			-- a client that joined mid-way asks when the next show is
+			remote:FireClient(player, "Schedule", { nextAt = nextShowAt, running = show ~= nil })
 		end
 	end)
-	nextCountdownAt = now() + PosingComp.FirstDelay
-	setBoard("Next round in " .. clock(PosingComp.FirstDelay), nil)
+	Players.PlayerRemoving:Connect(function(player) seen[player] = nil end)
+	nextShowAt = now() + PosingComp.FirstDelay
+	broadcast("Schedule", { nextAt = nextShowAt })
 	local testing = RunService:IsStudio()
 	task.spawn(function()
 		while true do
-			local test = testing and Workspace:GetAttribute("TestPosingComp") == true
-			if test or now() >= nextCountdownAt then
-				if test then Workspace:SetAttribute("TestPosingComp", nil) end
-				local seconds = test and (tonumber(Workspace:GetAttribute("TestPosingCountdown")) or 10) or PosingComp.Countdown
-				nextCountdownAt = now() + PosingComp.Interval
-				local ok, err = pcall(runCountdown, seconds)
-				if not ok then warn("[PosingCompService] countdown failed:", err) end
-			elseif not round then
+			if testing and Workspace:GetAttribute("TestPosingComp") == true and not show then
+				Workspace:SetAttribute("TestPosingComp", nil)
+				nextShowAt = now() + (tonumber(Workspace:GetAttribute("TestPosingCountdown")) or 10)
+				broadcast("Schedule", { nextAt = nextShowAt })
+			end
+			if not show and now() >= nextShowAt then
+				nextShowAt = now() + PosingComp.Interval
+				local npcsOnly = testing and Workspace:GetAttribute("TestPosingWatch") == true
+				local ok, err = pcall(runShow, npcsOnly)
+				if not ok then
+					warn("[PosingCompService] show failed:", err)
+					broadcast("Cancelled", {})
+					cleanupShow()
+				end
+				broadcast("Schedule", { nextAt = nextShowAt })
+			elseif not show then
 				local rows = nil
 				if lastResults then
 					rows = {}
-					for place, entry in ipairs(lastResults) do rows[place] = { place .. ". " .. entry.name, string.format("%.1f", entry.total) } end
+					for place, entry in ipairs(lastResults) do
+						if place <= 6 then rows[place] = { place .. ". " .. entry.name, tostring(entry.total) } end
+					end
 				end
-				setBoard("Next round in " .. clock(nextCountdownAt - now()), rows)
+				setBoard("Next show in " .. clock(nextShowAt - now()), rows)
 			end
 			task.wait(1)
 		end

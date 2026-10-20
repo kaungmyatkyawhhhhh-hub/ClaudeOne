@@ -58,7 +58,7 @@ local function ensure(player: Player)
 	local dq = data.dailyQuests
 	local day = today()
 	if type(dq) ~= "table" or dq.day ~= day or type(dq.list) ~= "table" or #dq.list == 0 then
-		dq = { day = day, list = freshList(DailyQuests.Pick(day, player.UserId)), bonus = false, swaps = 0, groups = {} }
+		dq = { day = day, list = freshList(DailyQuests.Pick(day, player.UserId, nil, data.growthSpurts or 0)), bonus = false, swaps = 0, groups = {} }
 		PlayerData.SetTable(player, "dailyQuests", dq)
 		return dq, true
 	end
@@ -146,7 +146,8 @@ end
 local function reroll(player: Player, dq, index: number): boolean
 	local current = {}
 	for i, e in ipairs(dq.list) do current[i] = e.id end
-	local id = DailyQuests.SwapFor(dq.day, player.UserId, current, (dq.swaps or 0) + (dq.paidRerolls or 0))
+	local data = PlayerData.Get(player)
+	local id = DailyQuests.SwapFor(dq.day, player.UserId, current, (dq.swaps or 0) + (dq.paidRerolls or 0), data and data.growthSpurts or 0)
 	if not id then return false end
 	dq.list[index] = { id = id, progress = 0, done = false, claimed = false }
 	-- a swapped-in "groups" quest counts the groups already trained today

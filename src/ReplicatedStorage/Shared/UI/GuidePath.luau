@@ -1,7 +1,8 @@
 -- GuidePath: a glowing path of dots on the floor to a machine (or the Coach), and an outline on it. Roblox pathfinding, so
 -- it walks around equipment. Used by the tutorial (TutorialClient) and the Growth Spurt's "Go" buttons (ProgressClient).
 -- Moved out of TutorialClient (prompt 20, 21 Oct). Client only.
---   GuidePath.Show(target, owner?)  target = a MachineId (the nearest free one) or "Coach"; owner = who asked (a string)
+--   GuidePath.Show(target, owner?)  target = a MachineId (the nearest free one), "Coach", or a Vector3 (a spot on the
+--                                   floor, e.g. the posing stage: no outline); owner = who asked (a string)
 --   GuidePath.Hide(owner?)          hides it (with an owner: only if that owner's path is showing)
 --   GuidePath.Target()              the MachineId / "Coach" being shown, and its owner (nil when hidden)
 local Players = game:GetService("Players")
@@ -220,6 +221,13 @@ end
 local wantedTarget, wantedOwner = nil, nil
 local function showPath(machineId)
 	wantedTarget = machineId
+	if typeof(machineId) == "Vector3" then -- (a spot, not a model: no outline, nothing to look up again)
+		targetModel, targetPoint = nil, machineId
+		dotFolder.Parent = Workspace.CurrentCamera
+		lastFrom = nil
+		refreshPath(true)
+		return
+	end
 	targetModel = machineModel(machineId)
 	if not targetModel then return end
 	targetPoint = approachPoint(targetModel)
@@ -244,7 +252,7 @@ end
 local refreshClock, retryClock = 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	-- the step's machine not here yet, or streamed out: look again once a second
-	if wantedTarget and (not targetModel or not targetModel:IsDescendantOf(Workspace)) then
+	if wantedTarget and typeof(wantedTarget) ~= "Vector3" and (not targetModel or not targetModel:IsDescendantOf(Workspace)) then
 		retryClock += dt
 		if retryClock >= 1 then
 			retryClock = 0
@@ -267,7 +275,7 @@ RunService.Heartbeat:Connect(function(dt)
 	highlight.OutlineTransparency = 0.15 + 0.35 * (0.5 + 0.5 * math.sin(os.clock() * 3))
 end)
 
-function GuidePath.Show(target: string, owner: string?)
+function GuidePath.Show(target: any, owner: string?)
 	if wantedTarget == target and targetPoint then
 		wantedOwner = owner
 		return
@@ -282,7 +290,7 @@ function GuidePath.Hide(owner: string?)
 	hidePath()
 end
 
-function GuidePath.Target(): (string?, string?)
+function GuidePath.Target(): (any, string?)
 	return wantedTarget, wantedOwner
 end
 

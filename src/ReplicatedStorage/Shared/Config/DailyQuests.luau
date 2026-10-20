@@ -10,7 +10,8 @@
 --   spots      spot sessions where the lifter did at least one rep while you spotted
 --   posing     posing competitions entered
 --   armWins    arm wrestling wins (against a player or a practice opponent)
--- Adding a quest = adding an entry (unique id).
+-- Adding a quest = adding an entry (unique id). minSpurts = only for players with that many Growth Spurts (posing shows
+-- open at Growth Spurt 1, prompt 18).
 local DailyQuests = {}
 
 DailyQuests.PerDay = 3
@@ -32,7 +33,7 @@ DailyQuests.Pool = {
 	{ id = "ThreeGroups", text = "Train 3 different muscle groups", type = "groups", count = 3, coins = 50 },
 	{ id = "RunOneK", text = "Run 1 km on the treadmill", type = "cardio", count = 1000, coins = 60 },
 	{ id = "SpotTwice", text = "Spot another player 2 times", type = "spots", count = 2, coins = 80, needsOther = true },
-	{ id = "Posing", text = "Enter a posing competition", type = "posing", count = 1, coins = 80 },
+	{ id = "Posing", text = "Enter a posing show", type = "posing", count = 1, coins = 80, minSpurts = 1 },
 	{ id = "ArmWin", text = "Win an arm wrestle", type = "armWins", count = 1, coins = 70 },
 }
 
@@ -41,11 +42,11 @@ for _, quest in ipairs(DailyQuests.Pool) do DailyQuests.ById[quest.id] = quest e
 
 -- Today's quests for one player: the same list all day (seeded by the day and the player), different quests, at most one
 -- that needs another player. `exclude` (optional): ids to leave out (a swap).
-function DailyQuests.Pick(day: number, userId: number, exclude: { [string]: boolean }?): { string }
+function DailyQuests.Pick(day: number, userId: number, exclude: { [string]: boolean }?, spurts: number?): { string }
 	local rng = Random.new(day * 1000003 + (userId % 1000003))
 	local pool = {}
 	for _, quest in ipairs(DailyQuests.Pool) do
-		if not (exclude and exclude[quest.id]) then table.insert(pool, quest) end
+		if not (exclude and exclude[quest.id]) and (spurts or math.huge) >= (quest.minSpurts or 0) then table.insert(pool, quest) end
 	end
 	local picked, social = {}, false
 	while #picked < DailyQuests.PerDay and #pool > 0 do
@@ -60,11 +61,11 @@ end
 
 -- One replacement quest for a swap: not one of today's, never one that needs another player.
 -- (`swaps` = rerolls done today, free and paid: a new seed for each)
-function DailyQuests.SwapFor(day: number, userId: number, current: { string }, swaps: number): string?
+function DailyQuests.SwapFor(day: number, userId: number, current: { string }, swaps: number, spurts: number?): string?
 	local rng = Random.new(day * 7919 + userId % 7919 + swaps * 104729)
 	local options = {}
 	for _, quest in ipairs(DailyQuests.Pool) do
-		if not table.find(current, quest.id) and not quest.needsOther then table.insert(options, quest.id) end
+		if not table.find(current, quest.id) and not quest.needsOther and (spurts or math.huge) >= (quest.minSpurts or 0) then table.insert(options, quest.id) end
 	end
 	if #options == 0 then return nil end
 	return options[rng:NextInteger(1, #options)]

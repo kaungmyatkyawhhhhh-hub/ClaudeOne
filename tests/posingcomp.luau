@@ -2,29 +2,44 @@ local H = require("./harness")
 local P = H.module("ReplicatedStorage/Shared/Config/PosingComp")
 local ShowOff = H.module("ReplicatedStorage/Shared/Config/ShowOff")
 local Muscles = H.module("ReplicatedStorage/Shared/Config/Muscles")
+local GrowthSpurts = H.module("ReplicatedStorage/Shared/Config/GrowthSpurts")
 
-print("Poses")
+print("Schedule and poses")
+H.check(P.Interval == 300, "a show every 5 minutes")
+H.check(P.JoinWindow < P.Interval, "the join window fits between shows")
 for _, id in P.Poses do
 	local emote = ShowOff.EmoteById[id]
 	H.check(emote ~= nil and emote.poseData ~= nil, id .. " is a held pose")
 end
+H.check(P.Intro + #P.Poses * P.PoseTime + P.ScoreShow + P.PodiumTime < 60, "a division takes under 60 s")
 
-print("Cards")
-H.check(P.Card(0) == 1 and P.Card(1) == 10, "cards go from 1 to 10")
-H.check(P.Card(0.5) == 5.5, "a middle score is 5.5")
-local c = P.Card(0.37)
-H.check(c * 2 == math.floor(c * 2), "cards are in halves")
+print("Divisions")
+H.check(P.DivisionFor(48).id == "Bantam" and P.DivisionFor(59).id == "Bantam", "under 5'0\" = Bantam")
+H.check(P.DivisionFor(60).id == "Middle" and P.DivisionFor(72).id == "Middle", "5'0\" to 6'0\" = Middle")
+H.check(P.DivisionFor(78).id == "Heavy", "over 6'0\" = Heavy")
+H.check(P.DivisionFor(84).id == "Open", "7'0\" = Open")
+for spurts = 0, GrowthSpurts.MaxSpurts() do
+	H.check(P.DivisionFor(GrowthSpurts.GetHeight(spurts)) ~= nil, "every height has a division (spurt " .. spurts .. ")")
+end
+
+print("Show ladder")
+H.check(P.ShowFor(0) == nil, "no show before the first Growth Spurt")
+H.check(P.ShowFor(1).id == "Local" and P.ShowFor(2).id == "Regional" and P.ShowFor(4).id == "National", "Local / Regional / National")
+H.check(P.ShowFor(5).id == "ProQualifier" and P.ShowFor(GrowthSpurts.MaxSpurts()).id == "Universe", "Pro Card Qualifier, Universe at 7'0\"")
+for _, show in P.Shows do
+	H.check(show.coins[1] > show.coins[2] and show.coins[2] > show.coins[3] and show.coins[3] > show.enter, show.name .. ": 1st > 2nd > 3rd > the rest")
+end
+
+print("Judging")
 local w = P.Weights
-H.check(math.abs(w.Size + w.Balance + w.Timing - 1) < 1e-6, "weights add up to 1")
-H.check(P.PoseScore(1, 1, 1) == 1 and P.PoseScore(0, 0, 0) == 0, "score from 0 to 1")
-
-print("Timing")
-H.check(P.TapValue(0) == P.Timing.Perfect, "on the cue = perfect")
-H.check(P.TapValue(P.Perfect + 0.01) == P.Timing.Good, "a bit off = good")
-H.check(P.TapValue(-(P.Good + 0.1)) == P.Timing.Late, "too early = small value")
-H.check(P.TapValue(P.LateLimit + 0.1) == P.Timing.Missed, "much too late = missed")
-H.check(P.TapValue(nil) == P.Timing.Missed, "no tap = missed")
-H.check(P.HoldTime > P.LateLimit, "the judges score after the late window closes")
+H.check(w.Size + w.Balance + w.Presence == 100, "out of 100")
+local best = P.Score(1, 1, 84, 1)
+H.check(best.total == 100, "the biggest, balanced, 7'0\" = 100")
+local small = P.Score(0.4, 1, 54, 0.4)
+H.check(small.size == w.Size, "the biggest in a small division gets full size points")
+local behind = P.Score(0.2, 1, 54, 0.4)
+H.check(behind.size < small.size, "smaller than the division's best = fewer size points")
+H.check(behind.total == behind.size + behind.balance + behind.presence, "the breakdown adds up")
 
 print("Size and balance")
 local function looks(value, overrides)
@@ -41,20 +56,11 @@ local lopsided = {}
 for _, m in Muscles.Groups[1].muscles do lopsided[m.id] = 1 end
 size, balance = P.SizeAndBalance(looks(0.1, lopsided), Muscles.Groups)
 H.check(balance == 0, "one big group, the rest tiny = no balance")
--- a balanced smaller body can beat a lopsided bigger one only on balance, never on size
-local s1 = P.SizeAndBalance(looks(0.5), Muscles.Groups)
-local s2 = P.SizeAndBalance(looks(0.9), Muscles.Groups)
-H.check(s2 > s1, "bigger muscles = more size")
 
-print("Votes")
-H.check(P.VoteBonus(0) == 0, "no votes, no bonus")
-H.check(P.VoteBonus(1000) == P.VoteMax, "votes are capped")
-
-print("Rewards and NPCs")
-H.check(#P.Coins == 3 and P.Coins[1] > P.Coins[2] and P.Coins[2] > P.Coins[3] and P.Coins[3] > P.EnterCoins, "1st > 2nd > 3rd > the rest")
-H.check(P.NpcFillTo >= P.MinPlayers and P.NpcFillTo <= P.MaxPlayers, "NPC fill fits the stage")
-H.check(#P.Npcs >= P.NpcFillTo - 1, "enough NPC bodybuilders for a solo player")
-for _, npc in P.Npcs do
-	H.check(npc.share > 0 and npc.share <= 1 and npc.skill[1] <= npc.skill[2], npc.name .. " ok")
+print("NPCs")
+H.check(#P.Npcs >= P.NpcFillTo - 1, "enough NPC competitors for a solo player")
+for _, division in P.Divisions do
+	local range = P.NpcShare[division.id]
+	H.check(range ~= nil and range[1] <= range[2] and P.NpcHeight[division.id] ~= nil, division.name .. " has NPC sizes")
 end
 H.done()
