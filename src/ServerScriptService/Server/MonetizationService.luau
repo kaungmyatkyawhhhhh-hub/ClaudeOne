@@ -99,7 +99,10 @@ local function grantProduct(player, product)
 	elseif product.key == "QuestReroll" then
 		return require(script.Parent.DailyService).PaidReroll(player)
 	elseif product.key == "ShakePack" then
-		return PlayerData.AddShakes(player, Effects.ShakePackSize)
+		-- (prompt 14: into the inventory, not drunk; the client offers USE NOW)
+		local ok = PlayerData.AddShakes(player, Effects.ShakePackSize)
+		if ok then Remotes.PlayerEvent:FireClient(player, "ItemsAdded", { id = "Shake", count = Effects.ShakePackSize }) end
+		return ok
 	elseif product.key == "ServerBoost" then
 		serverBoost(player)
 		return true
@@ -182,7 +185,7 @@ function MonetizationService.Start()
 			task.wait(Effects.ShakeFridgeMinutes * 60)
 			for _, player in ipairs(Players:GetPlayers()) do
 				local data = PlayerData.Get(player)
-				if data and player:GetAttribute("Pass_ShakeFridge") and data.shakes < Stamina.Shake.MaxCarry then
+				if data and player:GetAttribute("Pass_ShakeFridge") and PlayerData.ShakeCount(player) < Stamina.Shake.MaxCarry then
 					PlayerData.AddShakes(player, 1)
 					event(player, "ShakeFridge", {})
 				end

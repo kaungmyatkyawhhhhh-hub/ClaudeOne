@@ -446,7 +446,8 @@ task.spawn(function()
 			if step.done.type == "shake" then
 				if waited >= step.timeout and not autoDrank then
 					autoDrank = true
-					if (ClientData.Get().shakes or 0) > 0 then Remotes.PlayerAction:FireServer("DrinkShake") end
+					local items = ClientData.Get().items
+					if items and (tonumber(items.Shake) or 0) > 0 then Remotes.PlayerAction:FireServer("DrinkShake") end
 				elseif autoDrank and waited >= step.timeout + 3 then
 					advance()
 				end

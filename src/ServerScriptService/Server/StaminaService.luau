@@ -34,8 +34,8 @@ local function buy(player)
 	lastBuy[player] = now
 	local data = PlayerData.Get(player)
 	if not data then return end
-	if data.shakes >= Stamina.Shake.MaxCarry then
-		event(player, "ShakeResult", { text = "Your bag is full of shakes." })
+	if PlayerData.ShakeCount(player) >= Stamina.Shake.MaxCarry then
+		event(player, "ShakeResult", { text = "You have as many shakes as you can carry." })
 		return
 	end
 	if not PlayerData.SpendCoins(player, Stamina.Shake.Cost) then
@@ -43,22 +43,25 @@ local function buy(player)
 		return
 	end
 	PlayerData.AddShakes(player, 1)
-	event(player, "ShakeResult", { text = "Bought an Energy Shake.", bought = true })
+	event(player, "ShakeResult", { text = "Bought a Protein Shake. It is in your inventory.", bought = true })
 end
 
+-- (prompt 14: the shakes are the inventory's Protein Shakes; ItemService calls this for "Shake", and the quick button's
+-- "DrinkShake" action still lands here)
 local function drink(player)
 	local now = os.clock()
-	if now - (lastDrink[player] or 0) < 1 then return end
+	if now - (lastDrink[player] or 0) < 1 then return false end
 	lastDrink[player] = now
-	local data = PlayerData.Get(player)
-	if not data or data.shakes <= 0 then return end
+	if not PlayerData.Get(player) or PlayerData.ShakeCount(player) <= 0 then return false end
 	PlayerData.AddShakes(player, -1)
 	PlayerData.SetStamina(player, PlayerData.GetMaxStamina(player))
 	BoostService.AddShake(player)
 	local flavor = Stamina.Shake.Flavors[rng:NextInteger(1, #Stamina.Shake.Flavors)]
 	event(player, "ShakeDrunk", { flavor = flavor })
 	ShowOffService.PlayEmote(player, "Chug") -- everyone sees the chug (skipped while on a machine)
+	return true
 end
+StaminaService.DrinkShake = drink
 
 -- A free shake (tutorial gift, quest rewards use PlayerData.AddShakes directly).
 function StaminaService.GiveShake(player, amount)

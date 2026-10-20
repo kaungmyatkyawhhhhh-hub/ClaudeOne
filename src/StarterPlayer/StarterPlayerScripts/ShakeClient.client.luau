@@ -1,4 +1,5 @@
--- ShakeClient: the "Drink shake" button left of the stamina bar (shown while you have shakes), the shake boost
+-- ShakeClient: the quick "Drink shake" button left of the stamina bar (it uses one Protein Shake from the inventory,
+-- Config.Boosts; always there, "0" and grey when you have none, prompt 14), the shake boost
 -- countdown, notes for buying/drinking shakes and petting the cat, and the gym cat's tail wag (local only).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -28,7 +29,7 @@ local Colors = Theme.Colors
 -- shake step.) It now sits left of the stamina bar (HudBottom.AddSide), a full 44 px tall, on screen on and off machines.
 local Kit = require(Shared.UI.Kit)
 local HudBottom = require(Shared.UI.HudBottom)
-local button, label = Kit.Button("Secondary", "Drink shake", { Name = "DrinkShake", Visible = false },
+local button, label = Kit.Button("Secondary", "Drink shake", { Name = "DrinkShake" },
 	{ height = HudBottom.SideHeight, width = 136, icon = "sparkles", iconColor = Colors.Purple, textSize = 13 })
 HudBottom.AddSide(button, 1)
 local chip = RightColumn.Chip("sparkles", Colors.Purple, 10)
@@ -41,12 +42,17 @@ local function boostLeft()
 	return math.max(0, ends - Workspace:GetServerTimeNow())
 end
 
+local function shakeCount(): number
+	local items = ClientData.Get().items
+	return items and tonumber(items.Shake) or 0
+end
+
 local function refresh()
 	if not started then return end
-	local shakes = ClientData.Get().shakes or 0
+	local shakes = shakeCount()
 	local left = boostLeft()
-	button.Visible = shakes > 0
-	label.Text = shakes == 1 and "Drink shake" or ("Drink shake · " .. shakes)
+	label.Text = "Drink shake · " .. shakes
+	Theme.SetButtonStyle(button, if shakes > 0 then "Secondary" else "Disabled")
 	chip:SetVisible(left > 0)
 	if left > 0 then
 		local s = math.ceil(left)
@@ -55,12 +61,15 @@ local function refresh()
 end
 
 button.Activated:Connect(function()
-	if (ClientData.Get().shakes or 0) <= 0 then return end
+	if shakeCount() <= 0 then
+		Notify.Toast("No Protein Shakes", "Buy one at the shake machine by the door.", "cup-soda", Colors.Muted, "noshake")
+		return
+	end
 	Remotes.PlayerAction:FireServer("DrinkShake")
 end)
 
 ClientData.Changed:Connect(function(path)
-	if path[1] == "shakes" then refresh() end
+	if path[1] == "items" then refresh() end
 end)
 player:GetAttributeChangedSignal("ShakeEnds"):Connect(refresh)
 

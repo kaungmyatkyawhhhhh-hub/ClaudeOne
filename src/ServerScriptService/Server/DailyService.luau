@@ -20,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local DailyQuests = require(Config.DailyQuests)
 local Economy = require(Config.Economy)
+local Boosts = require(Config.Boosts)
 local PlayerData = require(script.Parent.PlayerData)
 local TitleService = require(script.Parent.TitleService)
 local GameEvents = require(script.Parent.GameEvents)
@@ -226,11 +227,14 @@ local function claimLogin(player: Player)
 	PlayerData.SetTable(player, "daily", { lastDay = day, streak = streak, best = math.max(daily.best or 0, streak), calendarDay = calendarDay })
 	PlayerData.AddCoins(player, coins)
 	if tokens > 0 then PlayerData.AddDnaTokens(player, tokens) end
+	-- (prompt 14) boosts on some days, into the inventory (Config.Boosts.LoginItems)
+	local items = Boosts.LoginItems[calendarDay]
+	for id, amount in pairs(items or {}) do PlayerData.AddItem(player, id, amount) end
 	if calendarDay == #Economy.Login.Coins then
 		PlayerData.SetStat(player, "loginWeeks", (data.stats.loginWeeks or 0) + 1)
 		TitleService.Check(player) -- "Dedicated"
 	end
-	send(player, "LoginClaimed", { day = calendarDay, coins = coins, tokens = tokens })
+	send(player, "LoginClaimed", { day = calendarDay, coins = coins, tokens = tokens, items = items })
 end
 
 ------------------------------------------------------------------------

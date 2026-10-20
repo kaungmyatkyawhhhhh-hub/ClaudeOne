@@ -2,7 +2,8 @@
 -- very bottom center, 10 px above the edge, at most 280 wide (a small dark panel: a teal lightning icon, "STAMINA",
 -- "82 / 100" on the right, a thin teal bar under it; soft red when nearly empty), and the row of active boost icons above
 -- it (a colored icon tile with its timer or value under it).
---   HudBottom.Chip(icon, color, order)   -> chip api { frame, SetText(main, sub?), SetVisible(on) } (sub = the timer)
+--   HudBottom.Chip(icon, color, order)   -> chip api { frame, SetText(main, sub?), SetVisible(on), OnTap(fn) } (sub = the timer);
+--                                        at most MaxChips show, the rest behind a "+2" tile that also folds the row
 --   HudBottom.SetTraining(on)            the bar reads "Stamina 60/100" and the row moves above STOP TRAINING
 --   HudBottom.SetHidden(reason, on)      hide it while a screen needs the bottom (posing, arm wrestling)
 --   HudBottom.BarTop()                   root-relative y (mockup px from the bottom) of the bar's top edge
@@ -225,20 +226,69 @@ local function ensure()
 	refreshVisible()
 end
 
+-- (prompt 14, 21 Oct) At most MaxChips boost icons show at once; with more, a small "+2" tile follows them. Tapping that
+-- tile folds the row away (it then shows "+5", all of them) and tapping again brings it back.
+HudBottom.MaxChips = 4
+local chipList = {} -- { { frame, wanted } } in creation order (LayoutOrder sorts them on screen)
+local chipsFolded = false
+local moreTile, moreText
+local function layoutChips()
+	local wanted = {}
+	for _, entry in ipairs(chipList) do
+		if entry.wanted then table.insert(wanted, entry) end
+	end
+	table.sort(wanted, function(a, b) return a.frame.LayoutOrder < b.frame.LayoutOrder end)
+	local shown = 0
+	for _, entry in ipairs(chipList) do entry.frame.Visible = false end
+	for _, entry in ipairs(wanted) do
+		if not chipsFolded and shown < HudBottom.MaxChips then
+			entry.frame.Visible = true
+			shown += 1
+		end
+	end
+	local hidden = #wanted - shown
+	if moreTile then
+		moreTile.Visible = hidden > 0 or (chipsFolded and #wanted > 0)
+		moreText.Text = "+" .. hidden
+	end
+end
+
 -- A boost icon: a 28px colored tile with a white icon, the timer (or the value) under it.
+--   api:SetText(main, sub?)  api:SetVisible(on)  api:OnTap(fn) (a tap on the icon, e.g. to say what it is)
 function HudBottom.Chip(icon: string, color: Color3, order: number?)
 	ensure()
+	if not moreTile then
+		moreTile = New("TextButton", { Name = "MoreBoosts", Text = "", AutoButtonColor = false, LayoutOrder = 1000, BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(40, HudBottom.ChipSize + 16), Visible = false, Parent = row })
+		local face = Theme.Panel({ Name = "Face", Piece = "hud_box", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0),
+			Size = UDim2.fromOffset(HudBottom.ChipSize, HudBottom.ChipSize), Parent = moreTile })
+		moreText = Kit.Text({ Name = "Count", Text = "+0", Font = "Number", TextSize = 12, Size = UDim2.fromScale(1, 1), Parent = face })
+		moreTile.Activated:Connect(function()
+			chipsFolded = not chipsFolded
+			layoutChips()
+		end)
+	end
 	local chip = New("Frame", { Name = "Boost_" .. icon, LayoutOrder = order or 1, Size = UDim2.fromOffset(40, HudBottom.ChipSize + 16),
 		BackgroundTransparency = 1, Visible = false, Parent = row })
 	Kit.IconTile(icon, color, HudBottom.ChipSize, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Parent = chip })
 	local label = Kit.Text({ Name = "Value", Text = "", Font = "Number", TextSize = 12, AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.fromScale(0.5, 1), Size = UDim2.new(2, 0, 0, 16), Parent = chip })
+	local entry = { frame = chip, wanted = false }
+	table.insert(chipList, entry)
 	local api = { frame = chip }
 	function api.SetText(_, main, sub)
 		-- the timer when there is one ("4:12"), else the value ("+5%")
 		label.Text = (sub and sub ~= "") and sub or (main or "")
 	end
-	function api.SetVisible(_, on) chip.Visible = on end
+	function api.SetVisible(_, on)
+		if entry.wanted == (on == true) then return end
+		entry.wanted = on == true
+		layoutChips()
+	end
+	function api.OnTap(_, fn)
+		local hit = New("TextButton", { Name = "Tap", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = chip })
+		hit.Activated:Connect(fn)
+	end
 	return api
 end
 

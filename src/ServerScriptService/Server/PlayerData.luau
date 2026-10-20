@@ -299,6 +299,11 @@ local function onPlayerAdded(player)
 		data.onboarding.tutorialVersion = Onboarding.Version
 	end
 	data.sessionLock = nil
+	-- (prompt 14, 21 Oct) the Energy Shakes in the bag are the inventory's Protein Shakes now: moved over, nothing lost
+	if type(data.shakes) == "number" and data.shakes > 0 then
+		data.items.Shake = (tonumber(data.items.Shake) or 0) + data.shakes
+		data.shakes = 0
+	end
 	-- 7'0" cap (owner, 13 Oct): height comes from the spurt count (GrowthSpurts.GetHeight clamps it). A save from before
 	-- the cap with MORE spurts than the last one (owner, 14 Oct): once, +OVER_CAP_EXP shown EXP on every muscle, and the
 	-- spurt count goes back to the last one (6). The count then isn't past the cap any more, so this never runs twice.
@@ -707,13 +712,26 @@ function PlayerData.SetQuests(player, quests)
 	replicate(player, { "quests" }, quests)
 end
 
-function PlayerData.AddShakes(player, amount)
+-- Inventory items (Config.Boosts; ItemService uses them): add `amount` (negative = use). Returns false when there aren't
+-- enough, or for an unknown item.
+function PlayerData.AddItem(player, id, amount)
 	local data = PlayerData.Get(player)
-	if not data or type(amount) ~= "number" then return false end
-	if data.shakes + amount < 0 then return false end
-	data.shakes += amount
-	replicate(player, { "shakes" }, data.shakes)
+	local Boosts = require(Config.Boosts)
+	if not data or not Boosts.ById[id] or type(amount) ~= "number" or amount % 1 ~= 0 then return false end
+	local now = tonumber(data.items[id]) or 0
+	if now + amount < 0 then return false end
+	data.items[id] = math.min(now + amount, Boosts.MaxCount)
+	replicate(player, { "items", id }, data.items[id])
 	return true
+end
+
+-- Protein Shakes (the old Energy Shakes): the inventory's "Shake" item (prompt 14)
+function PlayerData.AddShakes(player, amount)
+	return PlayerData.AddItem(player, "Shake", amount)
+end
+function PlayerData.ShakeCount(player): number
+	local data = PlayerData.Get(player)
+	return data and tonumber(data.items.Shake) or 0
 end
 
 -- Tutorial progress only moves forward (any step up to Onboarding.Done); no rewards hang on it.
@@ -732,7 +750,7 @@ local REP_FLASH = { On = true, Off = true }
 local EXP_POPUPS = { On = true, Off = true }
 local SPOT_REQUESTS = { On = true, Off = true }
 local ON_OFF = { On = true, Off = true }
-local INVENTORY_TABS = { Titles = true, Auras = true, Items = true }
+local INVENTORY_TABS = { Boosts = true, Titles = true, Auras = true, Items = true }
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
 -- repFlash On/Off, expPopups On/Off.

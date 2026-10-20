@@ -27,7 +27,9 @@ function DataTemplate.new()
 		machinesUsed = {}, -- machineId -> true once you did a rep on it (the machine signs' "NEW" tag)
 		stats = { totalReps = 0, bestSet = 0, spotReps = 0, togetherReps = 0, armWins = 0, cardioMeters = 0, posingWins = 0, posingEntries = 0, loginWeeks = 0, armKingWins = 0, beatBenny = 0, beatCoral = 0, beatDante = 0 },
 		quests = { index = 1, active = nil }, -- index: next Config.Quests slot; active: { id, progress, goal, ready }
-		shakes = 0, -- Energy Shakes in the bag
+		shakes = 0, -- (old: Energy Shakes in the bag; moved to items.Shake on load, prompt 14)
+		items = {}, -- boosts in the inventory: [Config.Boosts id] = how many (ItemService)
+		boostLeft = {}, -- inventory boosts running: [id] = seconds left (paused while away; ItemService)
 		endlessStamina = 0, -- Endless Stamina seconds left (bought; counts down only while in the game; PlayerData)
 		daily = { lastDay = 0, streak = 0, best = 0, calendarDay = 0 }, -- login streak calendar (Config.Economy.Login): last claimed day + calendar day
 		-- today's quests (Config.DailyQuests, DailyService): list = { { id, progress, done, claimed } }, groups trained today
@@ -46,7 +48,7 @@ function DataTemplate.new()
 		welcome = { offlineCoins = 0, streakCoins = 0, streakToken = false }, -- what this join paid out (menu info)
 		onboarding = { geneticsRevealed = false, tutorialStep = 1, tutorialVersion = 2 }, -- Config.Onboarding (Done = finished)
 		-- Settings menu: volumes, gain popups On/Minimal/Off, the per-rep EXP popups On/Off; one-time hints; wardrobe top + shorts color
-		settings = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On", spotRequests = "On", pumpHintSeen = false, menuCollapsed = false, rightCollapsed = false, hints = "On", otherScreams = "On", otherAuras = "On", lowGraphics = "Off", inventoryTab = "Titles", top = "Shirtless", shorts = "Black" },
+		settings = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On", spotRequests = "On", pumpHintSeen = false, menuCollapsed = false, rightCollapsed = false, hints = "On", otherScreams = "On", otherAuras = "On", lowGraphics = "Off", inventoryTab = "Boosts", top = "Shirtless", shorts = "Black" },
 		meta = { firstJoin = 0, lastSeen = 0, sessions = 0 },
 	}
 end

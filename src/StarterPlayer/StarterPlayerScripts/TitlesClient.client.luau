@@ -1,5 +1,6 @@
 -- TitlesClient: the INVENTORY tile and window (owner, 14 Oct: was the Titles window), and the unlock toasts.
--- Tabs TITLES | AURAS | ITEMS; the last one opened is remembered (settings.inventoryTab).
+-- Tabs BOOSTS | TITLES | AURAS | ITEMS; the last one opened is remembered (settings.inventoryTab).
+--   BOOSTS (prompt 14, 21 Oct): the boost items you own (Config.Boosts) with USE and EQUIP (Shared/UI/BoostsPanel).
 --   TITLES: a 4-column grid of cards (it scrolls): the rarity word in its color (COMMON gray, UNCOMMON green, RARE blue,
 --     EPIC purple, LEGENDARY gold, SECRET red), the title's name, and
 --       owned:  EQUIPPED (gold, tap = take it off) or EQUIP (green, tap = wear it above your head)
@@ -10,9 +11,9 @@
 --     a coin price / AURA PACK or VIP (opens that pass's purchase) / how to earn it). The preview is your own character
 --     behind the window wearing the picked aura at full power (Roblox doesn't draw particles inside a ViewportFrame;
 --     AURA.preview).
---   ITEMS: what you own and can use: Energy Shakes (count + DRINK), DNA Tokens (count + "Use in Genetics", which opens
---     the Genetics screen) and the boosts running now with their timers (2x EXP, 2x Coins, VIP, Endless Stamina, the
---     shake boost, smoothie bar drinks, a Server Boost).
+--   ITEMS: DNA Tokens (count + "Use in Genetics", which opens the Genetics screen) and the boosts running now with their
+--     timers (2x EXP, 2x Coins, VIP, Endless Stamina, the shake boost, smoothie bar drinks, inventory boosts, a Server
+--     Boost). (The shakes moved to BOOSTS.)
 -- Text fit (owner, 14 Oct): every label stays inside its card with 8 px each side; names and rarity words shrink to fit
 -- one line (Kit.Fit), how-to-unlock text is the body font in sentence case, up to 2 lines.
 -- UIBus.OpenInventory(tab, auraId?) opens it on a tab (the Store's Auras tab, toasts).
@@ -25,6 +26,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Titles = require(Shared.Config.Titles)
 local Auras = require(Shared.Config.Auras)
 local Meals = require(Shared.Config.Meals)
+local Boosts = require(Shared.Config.Boosts)
 local Monetization = require(Shared.Config.Monetization)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
@@ -46,14 +48,14 @@ local RARITY_COLOR = {
 }
 local CARD = Vector2.new(124, 78)
 local PAD = 8 -- every label keeps this far from its card's edges
-local TABS = { Titles = true, Auras = true, Items = true }
+local TABS = { Boosts = true, Titles = true, Auras = true, Items = true }
 
 local menuButton = SideMenu.Add("Inventory", "Inventory", nil, 2)
 
-local tab = "Titles"
+local tab = "Boosts"
 local refresh -- (below)
 local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 560, height = 248, displayOrder = 25,
-	tabs = { { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
+	tabs = { { id = "Boosts", text = "Boosts", icon = "zap" }, { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
 	onTab = function(id)
 		if tab ~= id then
 			tab = id
@@ -281,18 +283,8 @@ local function itemCard(order: number, name: string, sub: string, buttonText: st
 	return { card = card, count = count, button = button }
 end
 
-ITEMS.shakes = itemCard(1, "Energy Shakes", "Full stamina, +50% gains", "Drink", 86, function(card)
-	Kit.IconTile("cup-soda", Colors.Teal, 44, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = card })
-end)
-ITEMS.dna = itemCard(2, "DNA Tokens", "Reroll your genetics", "Use in Genetics", 112, function(card)
+ITEMS.dna = itemCard(1, "DNA Tokens", "Reroll your genetics", "Use in Genetics", 112, function(card)
 	Pieces.ShopIcon("product_dna_token", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(48, 48), Parent = card })
-end)
-ITEMS.shakes.button.Activated:Connect(function()
-	if (ClientData.Get().shakes or 0) <= 0 then
-		Notify.Toast("No Energy Shakes", "Buy one at the shake machine by the door.", "cup-soda", Colors.Muted, "noshake")
-		return
-	end
-	Remotes.PlayerAction:FireServer("DrinkShake")
 end)
 ITEMS.dna.button.Activated:Connect(function()
 	modal.close()
@@ -329,10 +321,16 @@ local BOOSTS = {
 	{ id = "VIP", name = "VIP", icon = "star", color = Colors.Purple, sub = "+10% coins", ends = function() return passOn("VIP") end },
 	{ id = "EndlessStamina", name = "Endless Stamina", icon = "zap", color = Colors.Gold, sub = "No stamina drain",
 		ends = function() return untilAttr(player, "EndlessStaminaUntil") end },
-	{ id = "Shake", name = "Energy Shake", icon = "cup-soda", color = Colors.Teal, sub = "+50% gains", ends = function() return untilAttr(player, "ShakeEnds") end },
+	{ id = "Shake", name = "Protein Shake", icon = "cup-soda", color = Colors.Teal, sub = "+50% gains", ends = function() return untilAttr(player, "ShakeEnds") end },
 	{ id = "ServerBoost", name = "Server Boost", icon = "users", color = Colors.Red, sub = "2x gains for all",
 		ends = function() return untilAttr(ReplicatedStorage, "ServerBoostEnds") end },
 }
+for _, item in ipairs(Boosts.Items) do
+	if not item.shake then
+		table.insert(BOOSTS, { id = "Item_" .. item.id, name = item.name, icon = item.icon, color = Color3.fromHex(item.color), sub = item.text,
+			ends = function() return untilAttr(player, "Item_" .. item.id) end })
+	end
+end
 for _, item in ipairs(Meals.Items) do
 	table.insert(BOOSTS, { id = "Meal_" .. item.id, name = item.name, icon = item.uiIcon or "cup-soda", color = Color3.fromHex(item.uiColor or item.color),
 		sub = string.gsub(item.sub or item.short or "", " · %d+ min$", ""), ends = function() return untilAttr(player, "Meal_" .. item.id) end })
@@ -354,10 +352,8 @@ end
 
 function ITEMS.refresh()
 	local data = ClientData.Get()
-	local shakes, tokens = data.shakes or 0, data.dnaTokens or 0
-	ITEMS.shakes.count.Text = "x" .. Kit.Format(shakes)
+	local tokens = data.dnaTokens or 0
 	ITEMS.dna.count.Text = "x" .. Kit.Format(tokens)
-	Kit.SetButton(ITEMS.shakes.button, if shakes > 0 then "Green" else "Disabled", "Drink")
 	local running = 0
 	for _, entry in pairs(ITEMS.boostCards) do
 		local ends = entry.boost.ends()
@@ -372,13 +368,23 @@ function ITEMS.refresh()
 end
 
 ------------------------------------------------------------------------
+-- BOOSTS tab (Shared/UI/BoostsPanel)
+------------------------------------------------------------------------
+local BOOSTS_TAB = require(Shared.UI.BoostsPanel).Build(modal.body)
+
+------------------------------------------------------------------------
 function refresh()
 	local data = ClientData.Get()
 	grid.Visible = tab == "Titles"
 	AURA.frame.Visible = tab == "Auras"
 	ITEMS.frame.Visible = tab == "Items"
+	BOOSTS_TAB.frame.Visible = tab == "Boosts"
 	AURA.preview()
-	if tab == "Auras" then
+	if tab == "Boosts" then
+		BOOSTS_TAB.refresh()
+		countLabel.Text = ""
+		return
+	elseif tab == "Auras" then
 		AURA.refresh()
 		return
 	elseif tab == "Items" then
@@ -408,6 +414,7 @@ task.spawn(function()
 	while true do
 		task.wait(0.5)
 		if modal.isOpen() and tab == "Items" then ITEMS.refresh() end
+		if modal.isOpen() and tab == "Boosts" then BOOSTS_TAB.refresh() end
 	end
 end)
 
@@ -451,7 +458,7 @@ end)
 
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
-	if (key == "titles" or key == "auras" or key == "coins" or key == "shakes" or key == "dnaTokens") and modal.isOpen() then refresh() end
+	if (key == "titles" or key == "auras" or key == "coins" or key == "items" or key == "dnaTokens") and modal.isOpen() then refresh() end
 end)
 player.AttributeChanged:Connect(function(name)
 	if (string.sub(name, 1, 5) == "Pass_" or name == "Aura") and modal.isOpen() then refresh() end

@@ -26,6 +26,7 @@ local DailyQuests = require(Shared.Config.DailyQuests)
 local Quests = require(Shared.Config.Quests)
 local Muscles = require(Shared.Config.Muscles)
 local Economy = require(Shared.Config.Economy)
+local Boosts = require(Shared.Config.Boosts)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
@@ -266,7 +267,16 @@ local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: n
 		local card = Kit.Card({ Name = "Day" .. day, LayoutOrder = day, Parent = grid }, {})
 		local label = Kit.Text({ Name = "Day", Text = "DAY " .. day, Font = "Title", TextSize = 12, Position = UDim2.fromOffset(0, 3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
 		local iconSize = math.floor(cell.Y * 0.34)
-		local coin = Kit.Coin(iconSize, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(if tokens > 0 then 0.32 else 0.5, 0.5), Parent = card })
+		-- (prompt 14) days with a boost item (Config.Boosts.LoginItems): its tile next to the coin, "+1" on it
+		local boostId, boostAmount = next(Boosts.LoginItems[day] or {})
+		local extra = tokens > 0 or boostId ~= nil
+		local coin = Kit.Coin(iconSize, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(if extra then 0.32 else 0.5, 0.5), Parent = card })
+		if boostId and tokens == 0 then
+			local item = Boosts.ById[boostId]
+			local tile = Kit.IconTile(item.icon, Color3.fromHex(item.color), iconSize, { Name = "Boost", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.68, 0.5), Parent = card })
+			Kit.Text({ Name = "Plus", Text = "+" .. boostAmount, Font = "Number", TextSize = 11, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 8, 1, 6),
+				Size = UDim2.fromOffset(20, 12), TextXAlignment = Enum.TextXAlignment.Right, Parent = tile })
+		end
 		-- days with a DNA token (4 and 7): its icon next to the coin, "+1" on it
 		if tokens > 0 then
 			local dna = Theme.New("ImageLabel", { Name = "Dna", Image = require(Shared.Config.UI).ShopIcons.product_dna_token, BackgroundTransparency = 1,
@@ -599,6 +609,10 @@ remote.OnClientEvent:Connect(function(kind, info)
 		Audio.PlayUI("StreakClaim")
 		if (tonumber(info.tokens) or 0) > 0 then
 			Notify.Toast("+" .. tostring(info.tokens) .. " DNA Token", "Reroll your genetics on the Genetics screen", "sparkles", Colors.Gold, "dailydna")
+		end
+		for id, amount in pairs(type(info.items) == "table" and info.items or {}) do
+			local item = Boosts.ById[id]
+			if item then Notify.Toast("+" .. tostring(amount) .. " " .. item.name, "Added to your inventory (Boosts)", item.icon, Color3.fromHex(item.color), "dailyitem") end
 		end
 	end
 end)
