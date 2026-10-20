@@ -13,6 +13,7 @@ local Genetics = H.module("ReplicatedStorage/Shared/Config/Genetics")
 local GrowthSpurts = H.module("ReplicatedStorage/Shared/Config/GrowthSpurts")
 local Stamina = H.module("ReplicatedStorage/Shared/Config/Stamina")
 local MuscleOfTheDay = H.module("ReplicatedStorage/Shared/Config/MuscleOfTheDay")
+local Alters = H.module("ReplicatedStorage/Shared/Config/Alters")
 
 -- Muscle of the Day depends on the date; each simulated player gets their own 2x group for each spurt (a typical
 -- day), so results don't change from day to day.
@@ -71,10 +72,11 @@ local function stepPump(pump, dt, tapping)
 end
 
 -- Plays from the current state to the next Growth Spurt and does it. Returns the minutes it took.
-local function playOneSpurt(data, overhead, limitSeconds)
+-- alterGoal (prompt 21): at 7'0", play to that Body Alter goal instead and do the alter (keep Alters.KeepShare).
+local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 	motdGroup = Muscles.Groups[(data.seed + data.growthSpurts) % #Muscles.Groups + 1].id
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
-	local required = GrowthSpurts.Get(data.growthSpurts + 1).requiredLevel
+	local required = alterGoal or GrowthSpurts.Get(data.growthSpurts + 1).requiredLevel
 	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
 	local open = {}
 	for _, machine in Machines.List do
@@ -87,6 +89,15 @@ local function playOneSpurt(data, overhead, limitSeconds)
 	local stamina = Stamina.Max -- (carried from set to set: a player who switches machines keeps what's left)
 
 	local function progress()
+		if alterGoal then
+			local p = { groups = {}, met = 0 }
+			for _, group in Muscles.Groups do
+				p.groups[group.id] = GrowthSpurts.GoalLevel(data.muscles, group, trainable)
+				if p.groups[group.id] >= required then p.met += 1 end
+			end
+			p.ready = p.met == #Muscles.Groups
+			return p
+		end
 		return GrowthSpurts.Progress(data, Muscles.Groups, trainable)
 	end
 	-- buy the next weight tiers while the level and coins allow; lift the heaviest usable tier (bought + level)
@@ -159,6 +170,11 @@ local function playOneSpurt(data, overhead, limitSeconds)
 		if time > 6 * 3600 then break end -- safety
 	end
 	if limitSeconds then return time / 60 end -- (timed play: no Growth Spurt)
+	if alterGoal then -- the alter (same as PlayerData.Alter)
+		for _, muscle in Muscles.List do data.muscles[muscle.id] = Alters.Kept(data.muscles[muscle.id]) end
+		data.alter = { highest = (data.alter and data.alter.highest or 0) + 1 }
+		return time / 60
+	end
 	-- the Growth Spurt itself (same as PlayerData.GrowthSpurt)
 	for _, muscle in Muscles.List do data.muscles[muscle.id] = { level = 0, xp = 0 } end
 	data.growthSpurts += 1
@@ -214,6 +230,26 @@ if process.args[1] == "coins" then
 	print("Coins per minute of active play (median of " .. PLAYERS .. " players; base, no boosts)")
 	for n = 0, SPURTS - 1 do print(string.format("  Growth Spurt %d: %.0f", n, (median(rates[n])))) end
 	print(string.format("  7'0\" max: %.0f", (median(rates.max))))
+	return
+end
+
+-- Body Alters (prompt 21): players play up to 7'0", then through ALTERS alters; minutes per alter against
+-- Alters.TargetMinutes.   lune run tests/pacing alters
+if process.args[1] == "alters" then
+	local ALTERS = 10
+	local per = {}
+	for n = 1, ALTERS do per[n] = {} end
+	for seed = 1, PLAYERS // 2 do
+		local data = newPlayer(seed)
+		for _ = 1, SPURTS do playOneSpurt(data, 0) end
+		for n = 1, ALTERS do table.insert(per[n], playOneSpurt(data, 30, nil, Alters.Goal(n))) end
+	end
+	print("Body Alter pacing (minutes of play per alter, median of " .. (PLAYERS // 2) .. " players)")
+	for n = 1, ALTERS do
+		local mid, sorted = median(per[n])
+		print(string.format("  alter %d (goal %d, bonus x%.2f before it): median %.1f, fastest 10%% %.1f, slowest 10%% %.1f",
+			n, Alters.Goal(n), Alters.Bonus(n - 1), mid, at(sorted, 0.1), at(sorted, 0.9)))
+	end
 	return
 end
 

@@ -33,8 +33,12 @@ end
 print("Judging")
 local w = P.Weights
 H.check(w.Size + w.Balance + w.Presence == 100, "out of 100")
-local best = P.Score(1, 1, 84, 1)
-H.check(best.total == 100, "the biggest, balanced, 7'0\" = 100")
+local best = P.Score(1, 1, 84, 1, P.AlterFull)
+H.check(best.total == 100, "the biggest, balanced, 7'0\" with every alter = 100")
+-- (prompt 21) at 7'0" stage presence comes from the alter number; divisions by alter tier
+H.check(P.Score(1, 1, 84, 1, 0).presence < P.Score(1, 1, 84, 1, 5).presence, "a higher alter = more stage presence")
+H.check(P.DivisionFor(84, 0).id == "Open" and P.DivisionFor(84, 1).id == "Alter1" and P.DivisionFor(84, 6).id == "Alter6", "7'0\" divisions by alter tier")
+H.check(P.DivisionFor(78, 1).id == "Heavy", "below 7'0\" the alter doesn't matter")
 local small = P.Score(0.4, 1, 54, 0.4)
 H.check(small.size == w.Size, "the biggest in a small division gets full size points")
 local behind = P.Score(0.2, 1, 54, 0.4)

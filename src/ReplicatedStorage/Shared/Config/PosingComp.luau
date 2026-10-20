@@ -17,13 +17,19 @@ PosingComp.MaxPlayers = 6      -- (the marks tools/builders/PosingComp puts on t
 PosingComp.StageMargin = 1     -- studs around the stage top that still count as "on the stage"
 PosingComp.JoinTeleport = 80   -- JOIN from further than this (or from another gym) puts you on the stage; closer = a path
 
--- Divisions by height (inches, Config.GrowthSpurts heights), smallest first. At 7'0" everyone is "Open" until Body Alters
--- exist; then `alterTier` will split them (code reads it, nothing sets it yet).
+-- Divisions by height (inches, Config.GrowthSpurts heights), smallest first. At 7'0" (prompt 21) by Body Alter tier:
+-- "Open" = Natural (no alter yet), then one division per alter tier (Config.Alters.Tiers).
 PosingComp.Divisions = {
 	{ id = "Bantam", name = "Bantam", maxHeight = 59 },  -- under 5'0"
 	{ id = "Middle", name = "Middle", maxHeight = 72 },  -- 5'0" to 6'0"
 	{ id = "Heavy", name = "Heavy", maxHeight = 83 },    -- over 6'0"
-	{ id = "Open", name = "Open", maxHeight = math.huge }, -- 7'0" (by alter tier later)
+	{ id = "Open", name = "Open", maxHeight = math.huge, alterTier = 0 }, -- 7'0", Natural
+	{ id = "Alter1", name = "Human", maxHeight = math.huge, alterTier = 1 },
+	{ id = "Alter2", name = "Stone", maxHeight = math.huge, alterTier = 2 },
+	{ id = "Alter3", name = "Metal", maxHeight = math.huge, alterTier = 3 },
+	{ id = "Alter4", name = "Gem", maxHeight = math.huge, alterTier = 4 },
+	{ id = "Alter5", name = "Elements", maxHeight = math.huge, alterTier = 5 },
+	{ id = "Alter6", name = "Legend", maxHeight = math.huge, alterTier = 6 },
 }
 
 -- The four poses the judges call, about 5 s each (ids from Config.ShowOff.Emotes).
@@ -38,8 +44,10 @@ PosingComp.Between = 2     -- seconds between two divisions
 PosingComp.Weights = { Size = 60, Balance = 25, Presence = 15 }
 PosingComp.SizeFull = 1          -- (an NPC's size from its share: Muscles.LookG, 1 = the full aesthetic look)
 PosingComp.BalanceZero = 0.25    -- balance 1 when every group looks the same size, 0 when the smallest is this x the biggest
-PosingComp.PresenceHeight = 84   -- stage presence: height / this (7'0" = full), plus AlterPresence per alter tier later
-PosingComp.AlterPresence = 0.05
+PosingComp.PresenceHeight = 84   -- stage presence below 7'0": height / this
+-- (prompt 21) at 7'0" stage presence comes from the Body Alter number: AlterBase + the rest by alter / AlterFull
+PosingComp.AlterBase = 0.5
+PosingComp.AlterFull = 30
 
 -- Show ladder: players compete in the highest show they've unlocked (by Growth Spurts). Only the label, the prizes and
 -- the backdrop change for now. coins = 1st / 2nd / 3rd, enter = everyone else who finished; 1st also gets a trophy.
@@ -57,6 +65,10 @@ PosingComp.NpcFillTo = 4
 PosingComp.NpcMin = 2
 PosingComp.NpcShare = { Bantam = { 0.3, 0.6 }, Middle = { 0.6, 1 }, Heavy = { 1, 1.6 }, Open = { 1.6, 2.4 } }
 PosingComp.NpcHeight = { Bantam = 54, Middle = 66, Heavy = 78, Open = 84 } -- inches (stage presence)
+for tier = 1, 6 do -- (the alter divisions: 7'0" mass monsters, bigger with each tier)
+	PosingComp.NpcShare["Alter" .. tier] = { 1.6 + 0.1 * tier, 2.4 + 0.1 * tier }
+	PosingComp.NpcHeight["Alter" .. tier] = 84
+end
 PosingComp.Npcs = {
 	{ name = "Marco Vance", skin = "#C68642", shorts = "Navy" },
 	{ name = "Jade Rivers", skin = "#F1C27D", shorts = "Red" },
@@ -68,10 +80,10 @@ PosingComp.Npcs = {
 -- Sounds (Config.Sounds slots; the owner picks the ids).
 PosingComp.Sounds = { Start = "PosingStart", Cue = "PosingCue", Score = "PosingScore", Win = "PosingWin", Crowd = "CrowdOoh" }
 
--- The division for a height (inches).
-function PosingComp.DivisionFor(height: number, _alterTier: number?)
+-- The division for a height (inches) and, at 7'0", the Body Alter tier (0 = Natural).
+function PosingComp.DivisionFor(height: number, alterTier: number?)
 	for _, division in ipairs(PosingComp.Divisions) do
-		if height <= division.maxHeight then return division end
+		if height <= division.maxHeight and (division.alterTier == nil or division.alterTier == (alterTier or 0)) then return division end
 	end
 	return PosingComp.Divisions[#PosingComp.Divisions]
 end
@@ -111,12 +123,15 @@ function PosingComp.SizeAndBalance(looks, groups)
 end
 
 -- The judges' breakdown for one contestant: { size, balance, presence, total } (whole points out of 100).
--- bestSize = the biggest size in the division.
-function PosingComp.Score(size: number, balance: number, height: number, bestSize: number, alterTier: number?)
+-- bestSize = the biggest size in the division; alter = the Body Alter number (counts at 7'0").
+function PosingComp.Score(size: number, balance: number, height: number, bestSize: number, alter: number?)
 	local w = PosingComp.Weights
 	local sizePoints = math.floor(w.Size * math.clamp(bestSize > 0 and size / bestSize or 0, 0, 1) + 0.5)
 	local balancePoints = math.floor(w.Balance * math.clamp(balance, 0, 1) + 0.5)
-	local presence = math.clamp(height / PosingComp.PresenceHeight + (alterTier or 0) * PosingComp.AlterPresence, 0, 1)
+	local presence = math.clamp(height / PosingComp.PresenceHeight, 0, 1)
+	if height >= PosingComp.PresenceHeight then
+		presence = PosingComp.AlterBase + (1 - PosingComp.AlterBase) * math.clamp((alter or 0) / PosingComp.AlterFull, 0, 1)
+	end
 	local presencePoints = math.floor(w.Presence * presence + 0.5)
 	return { size = sizePoints, balance = balancePoints, presence = presencePoints, total = sizePoints + balancePoints + presencePoints }
 end

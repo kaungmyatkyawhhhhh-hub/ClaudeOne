@@ -100,6 +100,12 @@ function BodyService.PublishData(target, data)
 	local shorts = target:GetAttribute("TryOnShorts") or settings.shorts or Body.DefaultShorts
 	if target:GetAttribute("Top") ~= top then target:SetAttribute("Top", top) end
 	if target:GetAttribute("Shorts") ~= shorts then target:SetAttribute("Shorts", shorts) end
+	-- (prompt 21) the Body Alter skin worn ("Alter_<id>", MuscleRig: it replaces the skin stages), and the alter number
+	local Alters = require(ReplicatedStorage.Shared.Config.Alters)
+	local state = Alters.State(data)
+	local skin = Alters.SkinName(state.equipped or 0)
+	if target:GetAttribute("Alter") ~= skin then target:SetAttribute("Alter", skin) end
+	if target:GetAttribute("AlterNumber") ~= (state.highest or 0) then target:SetAttribute("AlterNumber", state.highest or 0) end
 end
 
 -- The player's muscle levels and goal (for rigs that show them: the progress mirror).

@@ -20,7 +20,34 @@ function Builder.Build()
 		sa.AlphaMode = Enum.AlphaMode.Overlay
 		sa.Parent = folder
 	end
+	Builder.BuildAlters()
 	return folder
+end
+
+-- (prompt 21) The Body Alter skins next to the stages: one SurfaceAppearance "Alter_<id>" per alter with textures
+-- (Config.Alters). Replaces only those, the stages stay as they are.
+-- Usage: require(game.ServerStorage._Builders.SkinStages).BuildAlters()
+function Builder.BuildAlters()
+	local Alters = require(ReplicatedStorage.Shared.Config.Alters)
+	local folder = ReplicatedStorage:FindFirstChild("SkinStages")
+	assert(folder, "ReplicatedStorage.SkinStages is missing: run Build() first")
+	local made = 0
+	for _, alter in ipairs(Alters.List) do
+		local name = "Alter_" .. alter.id
+		local old = folder:FindFirstChild(name)
+		if old then old:Destroy() end
+		if alter.textures then
+			local sa = Instance.new("SurfaceAppearance")
+			sa.Name = name
+			sa.ColorMap = alter.textures.color
+			sa.NormalMap = alter.textures.normal
+			sa.RoughnessMap = alter.textures.roughness
+			sa.AlphaMode = Enum.AlphaMode.Overlay
+			sa.Parent = folder
+			made += 1
+		end
+	end
+	return made
 end
 
 return Builder

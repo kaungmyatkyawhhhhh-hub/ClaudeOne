@@ -210,12 +210,20 @@ local function templateFor(self, kind: string?): string?
 	return if type(template) == "string" and template ~= "" then template else nil
 end
 
--- The skin stage templates (ReplicatedStorage.SkinStages.Stage1..5, built in Studio by tools/builders/SkinStages).
+-- The skin stage templates (ReplicatedStorage.SkinStages.Stage1..5, built in Studio by tools/builders/SkinStages), and
+-- the Body Alter skins next to them ("Alter_<id>", Config.Alters): a stage is a number, an alter skin its name.
 local stageFolder = ReplicatedStorage:FindFirstChild("SkinStages")
-local function stageTemplate(index: number): SurfaceAppearance?
+local function stageTemplate(index: number | string): SurfaceAppearance?
 	if not stageFolder then stageFolder = ReplicatedStorage:FindFirstChild("SkinStages") end
-	local template = stageFolder and stageFolder:FindFirstChild("Stage" .. index)
+	local template = stageFolder and stageFolder:FindFirstChild(if type(index) == "string" then index else "Stage" .. index)
 	return if template and template:IsA("SurfaceAppearance") then template else nil
+end
+-- (prompt 21) the skin a body wears: its Body Alter's (the style's `alter`, from the "Alter" attribute) at every muscle
+-- size, else the stage for its look
+local function skinKey(self, index: number): number | string
+	local alter = self.style.alter
+	if type(alter) == "string" and stageTemplate(alter) then return alter end
+	return index
 end
 
 -- every stage's textures load at the start, so a stage change never shows a blank (white) skin while its maps load
@@ -228,7 +236,7 @@ end)
 
 -- Puts the skin stage on a part (a clone named "SkinStage", tinted to `color`: SurfaceAppearance.Color is the tint, the
 -- part's own Color doesn't show under it), or takes it off (index nil).
-local function setSkin(part: BasePart, index: number?, color: Color3)
+local function setSkin(part: BasePart, index: (number | string)?, color: Color3)
 	local current = part:FindFirstChild("SkinStage")
 	if index == nil then
 		if current then current:Destroy() end
@@ -286,7 +294,8 @@ end
 -- keep their painted clothes) and the inner muscle parts (whose color is the skin).
 local function skinPass(self)
 	if self.marble then return end
-	local index = SkinStages.Pick(overallLook(self), self.skinStage)
+	local stage = SkinStages.Pick(overallLook(self), self.skinStage)
+	local index = skinKey(self, stage)
 	local skin = colorsOf(self)
 	local function skinned(part: BasePart, isSkin: boolean, kind: string?)
 		local covered = kind ~= nil and templateFor(self, kind) ~= nil
@@ -321,7 +330,8 @@ local function skinPass(self)
 			end
 		end
 	end
-	self.skinStage = index
+	self.skinStage = stage
+	self.skinKey = index
 	self.skinColor = skin
 end
 
@@ -604,6 +614,7 @@ function MuscleRig.SetStyle(self, style)
 		for _, group in ipairs(state.groups) do recolor(self, group) end
 	end
 	self.skinStage = nil
+	self.skinKey = nil
 end
 
 ------------------------------------------------------------------------
@@ -1605,8 +1616,9 @@ local function step(self, dt: number)
 	-- the skin texture stage (and its color) when the look moved into another stage or the style changed
 	if not self.marble and (now - (self.skinCheckedAt or 0) > 0.5 or self.skinStage == nil) then
 		self.skinCheckedAt = now
-		local index = SkinStages.Pick(overallLook(self), self.skinStage)
-		if index ~= self.skinStage or colorsOf(self) ~= self.skinColor or self.skinParts ~= #self.folder:GetChildren() then
+		local forced = self.skinStage == nil -- (cleared: a full pass even when the skin itself didn't change)
+		local index = skinKey(self, SkinStages.Pick(overallLook(self), self.skinStage))
+		if forced or index ~= self.skinKey or colorsOf(self) ~= self.skinColor or self.skinParts ~= #self.folder:GetChildren() then
 			skinPass(self)
 			self.skinParts = #self.folder:GetChildren()
 		end
@@ -1875,6 +1887,7 @@ function MuscleRig.StyleFrom(source: Instance, model: Model): any
 		top = if shirt and shirt.ShirtTemplate ~= "" then nil else Body.TopColor(source:GetAttribute("Top")),
 		shirt = if shirt and shirt.ShirtTemplate ~= "" then shirt.ShirtTemplate else nil,
 		pants = if pants and pants.PantsTemplate ~= "" then pants.PantsTemplate else nil,
+		alter = source:GetAttribute("Alter"), -- (prompt 21) the Body Alter skin ("Alter_<id>"), nil = the stages
 	}
 end
 

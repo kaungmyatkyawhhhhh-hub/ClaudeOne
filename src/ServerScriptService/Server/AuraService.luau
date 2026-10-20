@@ -51,6 +51,7 @@ local function earnedNow(aura, data): boolean
 	if unlock.type == "level" then return averageLevel(data) >= unlock.level end
 	if unlock.type == "height" then return GrowthSpurts.IsMaxed(data.growthSpurts) end
 	if unlock.type == "achievements" then return (data.quests and data.quests.index or 1) > #Quests.Chain end
+	if unlock.type == "alter" then return type(data.alter) == "table" and (data.alter.highest or 0) >= unlock.alter end
 	return false
 end
 

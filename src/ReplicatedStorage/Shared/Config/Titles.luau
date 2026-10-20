@@ -10,6 +10,7 @@
 --   maxedGrade: a group with this genetics grade has reached the mastery mark (130% of the Growth Spurt goal; there is no level cap)
 --   legend:    finished legend `id`'s challenge (Config.Legends adds these automatically)
 --   season:    `min` reps during seasonal event `id` (Config.Seasons adds these automatically)
+--   alter:     the highest Body Alter >= min (Config.Alters; a tier's title at its 5th alter)
 --   never:     not obtainable yet (shows as ??? in the book)
 -- badgeId: optional Roblox badge awarded with the title (create the badge on the website, paste the id).
 local Muscles = require(script.Parent.Muscles)
@@ -87,6 +88,19 @@ Titles.List = {
 		description = "Claim all 7 days of the login calendar in a row.", condition = { type = "stat", stat = "loginWeeks", min = 1 } },
 	{ id = "NoDaysOff", name = "No Days Off", rarity = "Secret", category = "Secret",
 		description = "Do 500 reps in one visit.", condition = { type = "stat", stat = "sessionReps", min = 500 } },
+	-- Body Alters (prompt 21): one per finished tier
+	{ id = "AlterHuman", name = "Peak Human", rarity = "Epic", category = "Alter",
+		description = "Finish the Human alters (Alter 5).", condition = { type = "alter", min = 5 } },
+	{ id = "AlterStone", name = "Stone Cold", rarity = "Epic", category = "Alter",
+		description = "Finish the Stone alters (Alter 10).", condition = { type = "alter", min = 10 } },
+	{ id = "AlterMetal", name = "Heavy Metal", rarity = "Legendary", category = "Alter",
+		description = "Finish the Metal alters (Alter 15).", condition = { type = "alter", min = 15 } },
+	{ id = "AlterGem", name = "Crown Jewel", rarity = "Legendary", category = "Alter",
+		description = "Finish the Gem alters (Alter 20).", condition = { type = "alter", min = 20 } },
+	{ id = "AlterElements", name = "Force of Nature", rarity = "Legendary", category = "Alter",
+		description = "Finish the Elements alters (Alter 25).", condition = { type = "alter", min = 25 } },
+	{ id = "AlterLegend", name = "Living Legend", rarity = "Legendary", category = "Alter",
+		description = "Finish the Legend alters (Alter 30).", condition = { type = "alter", min = 30 } },
 }
 
 -- One title per legend NPC (Config.Legends), earned by finishing that legend's challenge.
@@ -155,6 +169,8 @@ function Titles.Check(title, ctx)
 		return data.genetics.overall == c.grade
 	elseif c.type == "season" then
 		return data.seasons ~= nil and (data.seasons[c.id] or 0) >= c.min
+	elseif c.type == "alter" then
+		return type(data.alter) == "table" and (data.alter.highest or 0) >= c.min
 	elseif c.type == "legend" then
 		return data.legends ~= nil and data.legends.met[c.id] == true
 	elseif c.type == "maxedGrade" then

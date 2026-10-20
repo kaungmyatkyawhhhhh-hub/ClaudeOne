@@ -3,6 +3,7 @@ local Muscles = require(script.Parent.Muscles)
 local Genetics = require(script.Parent.Genetics)
 local GrowthSpurts = require(script.Parent.GrowthSpurts)
 local MuscleOfTheDay = require(script.Parent.MuscleOfTheDay)
+local Alters = require(script.Parent.Alters)
 
 local Gains = {}
 
@@ -57,11 +58,14 @@ function Gains.PerRep(data, machine, tierIndex, boost, quality)
 		* (boost or 1)
 		* (Gains.IsBalanced(data) and Gains.BalancedBonus or 1)
 
+	-- (prompt 21) the Body Alter bonus (the highest alter's): outside the cap, like quality, so it still counts at 7'0"
+	local alterBonus = Alters.Bonus(Alters.State(data).highest or 0)
+
 	local result = {}
 	for _, entry in ipairs(machine.muscles) do
 		local multiplier = math.min(Genetics.GetMultiplier(data.genetics, entry.id) * shared * MuscleOfTheDay.MultiplierFor(entry.id), Gains.MaxMultiplier)
 		local diminish = 1 / (1 + data.muscles[entry.id].level / Gains.DiminishLevel)
-		result[entry.id] = Gains.BaseXp * tier.gains * entry.share * multiplier * diminish * (quality or 1) * (machine.gainScale or 1)
+		result[entry.id] = Gains.BaseXp * tier.gains * entry.share * multiplier * diminish * (quality or 1) * (machine.gainScale or 1) * alterBonus
 	end
 	return result
 end

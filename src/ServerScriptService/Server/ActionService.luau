@@ -31,6 +31,33 @@ handlers.GrowthSpurt = function(player)
 	end
 end
 
+-- (prompt 21) Body Alter: the goal is checked in PlayerData.Alter (saves before and after). A finished tier (every 5th
+-- alter) adds its DNA tokens; its title and aura come from TitleService / AuraService.
+handlers.Alter = function(player)
+	local n = PlayerData.Alter(player)
+	if not n then return end
+	local Alters = require(Config.Alters)
+	local alter = Alters.Get(n)
+	local reward = nil
+	if n % 5 == 0 then
+		reward = Alters.TierRewards[Alters.TierOf(n)]
+		if reward and (reward.dnaTokens or 0) > 0 then PlayerData.AddDnaTokens(player, reward.dnaTokens) end
+	end
+	BodyService.Rebuild(player)
+	TitleService.Check(player)
+	local okAura, AuraService = pcall(require, script.Parent.AuraService)
+	if okAura and AuraService.CheckEarned then AuraService.CheckEarned(player) end
+	Analytics.Event(player, "BodyAlter", n)
+	Remotes.PlayerEvent:FireClient(player, "Altered", {
+		alter = n, name = alter.name, tier = Alters.TierOf(n), bonus = Alters.Bonus(n),
+		reward = reward and { title = reward.title, aura = reward.aura, dnaTokens = reward.dnaTokens } or nil,
+	})
+end
+
+handlers.EquipAlter = function(player, n)
+	if PlayerData.EquipAlter(player, n) then BodyService.Rebuild(player) end
+end
+
 handlers.EquipTitle = function(player, titleId)
 	if titleId == nil or (type(titleId) == "string" and Titles.ById[titleId]) then
 		TitleService.Equip(player, titleId)

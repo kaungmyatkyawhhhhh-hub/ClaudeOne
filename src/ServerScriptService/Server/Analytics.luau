@@ -94,6 +94,11 @@ local function goalReached(data): boolean
 	return progress.ready == true
 end
 
+-- (prompt 21) one custom event with a value (e.g. "BodyAlter", the alter number)
+function Analytics.Event(player, name: string, value: number?)
+	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, name, value or 1)
+end
+
 -- After every Growth Spurt; only the first one counts.
 function Analytics.GrowthSpurt(player, data)
 	if data.growthSpurts ~= 1 then return end

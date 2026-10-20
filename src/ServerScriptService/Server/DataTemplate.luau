@@ -23,6 +23,9 @@ function DataTemplate.new()
 		dnaTokens = 0,
 		dnaWeek = { week = 0, bought = 0 }, -- DNA tokens bought with coins this week (each costs 10% more; Config/PumpShop)
 		growthSpurts = 0, -- (owner, 9 Oct, release) new players start at Growth Spurt 0 (4'0")
+		-- Body Alters (prompt 21, Config.Alters): highest done, the skin worn (any up to highest), the biggest physique ever
+		-- (best = { muscles = { [id] = level }, spurts, alter, exp }: the statue and the Total board use it)
+		alter = { highest = 0, equipped = 0 },
 		titles = { owned = {}, equipped = nil }, -- owned: titleId -> unix time earned
 		machines = {}, -- machineId -> { unlocked = highest bought tier, selected = tier index, best = heaviest tier lifted }
 		machinesUsed = {}, -- machineId -> true once you did a rep on it (the machine signs' "NEW" tag)

@@ -77,9 +77,23 @@ local function store(key)
 	return stores[key]
 end
 
+-- (prompt 21) A save's biggest physique (data.alter.best) as a data table with those muscles, when it's bigger than the
+-- body now (after a Body Alter the muscles keep only 25%): the boards and the statue never shrink.
+local function bestData(data)
+	local best = type(data) == "table" and type(data.alter) == "table" and data.alter.best
+	if type(best) ~= "table" or type(best.muscles) ~= "table" then return data end
+	if (best.spurts or 0) < (data.growthSpurts or 0) or (best.exp or 0) <= Muscles.TotalExp(data.muscles or {}) then return data end
+	local copy = table.clone(data)
+	copy.muscles = {}
+	for _, muscle in ipairs(Muscles.List) do copy.muscles[muscle.id] = { level = best.muscles[muscle.id] or 0, xp = 0 } end
+	copy.growthSpurts = math.max(best.spurts or 0, data.growthSpurts or 0)
+	return copy
+end
+
 local function writeScores(player)
 	local data = PlayerData.Get(player)
 	if not data then return end
+	data = bestData(data)
 	-- a Studio test (FreshPlayer) or failed-load session must never overwrite the real leaderboards
 	if not PlayerData.IsPersistent(player) then return end
 	-- a local reference: the player can leave (and their entry be cleared) while a SetAsync below is in flight
@@ -160,7 +174,7 @@ local function refreshStatue()
 	end
 	-- their saved values (owner, 19 Oct: the statue gets the same body as the real player, not only the muscles): the
 	-- champion's copy from the competition, else a read-only look at the strongest player's save
-	local data = if champion then champion.data elseif userId > 0 then PlayerData.Peek(userId) else nil
+	local data = if champion then champion.data elseif userId > 0 then bestData(PlayerData.Peek(userId)) else nil
 	if data then spurts = data.growthSpurts or spurts end
 	local muscleG = if champion then champion.muscleG elseif data then BodyService.EncodeLevels(BodyService.LevelsOf(data)) else BodyService.EncodeShare(1)
 	local widths = ""

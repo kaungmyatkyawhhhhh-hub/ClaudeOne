@@ -145,6 +145,23 @@ local function releaseLock(player)
 	savesInFlight -= 1
 end
 
+-- (prompt 21) Best physique: the biggest body this player ever had (more Growth Spurts, or the same and more EXP), so a
+-- Body Alter (muscles back to 25%) never makes the statue or the Total board smaller. Kept up to date on every save and
+-- right before an alter.
+local function updateBest(data)
+	if type(data.alter) ~= "table" or type(data.muscles) ~= "table" then return end
+	local exp = Muscles.TotalExp(data.muscles)
+	local best = data.alter.best
+	local spurts = data.growthSpurts or 0
+	if type(best) == "table" and ((best.spurts or 0) > spurts or ((best.spurts or 0) == spurts and (best.exp or 0) >= exp)) then
+		return
+	end
+	local levels = {}
+	for id, entry in pairs(data.muscles) do levels[id] = entry.level or 0 end
+	data.alter.best = { muscles = levels, spurts = spurts, alter = data.alter.highest or 0, exp = exp }
+end
+PlayerData.UpdateBest = updateBest
+
 local function save(player, release)
 	local profile = profiles[player]
 	if not profile or profile.released then return false end
@@ -160,6 +177,7 @@ local function save(player, release)
 
 	local data = profile.data
 	data.meta.lastSeen = os.time()
+	pcall(updateBest, data)
 	local lostLock = false
 	local ok, err = withRetries(function()
 		return store:UpdateAsync(storeKey(player), function(stored)
@@ -681,6 +699,44 @@ function PlayerData.GrowthSpurt(player)
 	return true
 end
 
+-- (prompt 21) A Body Alter, when its goal is met (Config.Alters.Progress: at 7'0", the next alter has textures): every
+-- muscle keeps Alters.KeepShare of its EXP, the alter count goes up and the new skin is worn. Never loses progress: the
+-- save is written first (if that fails, nothing changes) and again right after. Returns the new alter number or nil.
+function PlayerData.Alter(player): number?
+	local data = PlayerData.Get(player)
+	if not data then return nil end
+	local Machines = require(Config.Machines)
+	local Alters = require(Config.Alters)
+	local progress = Alters.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
+	if not progress.ready then return nil end
+	updateBest(data)
+	if PlayerData.IsPersistent(player) and not save(player, false) then return nil end
+	if not PlayerData.Get(player) then return nil end -- (left while saving)
+	local kept = {}
+	for _, muscle in ipairs(Muscles.List) do kept[muscle.id] = Alters.Kept(data.muscles[muscle.id]) end
+	data.muscles = kept
+	local state = Alters.State(data)
+	data.alter = { highest = progress.next, equipped = progress.next, best = state.best }
+	replicate(player, { "muscles" }, data.muscles)
+	replicate(player, { "alter" }, data.alter)
+	task.spawn(function()
+		if PlayerData.IsPersistent(player) then save(player, false) end
+	end)
+	return progress.next
+end
+
+-- (prompt 21) Wear any alter skin up to the highest one (0 = Natural); the gains bonus stays the highest's.
+function PlayerData.EquipAlter(player, n): boolean
+	local data = PlayerData.Get(player)
+	if not data or type(n) ~= "number" or n % 1 ~= 0 then return false end
+	local Alters = require(Config.Alters)
+	local state = Alters.State(data)
+	if n < 0 or n > (state.highest or 0) then return false end
+	data.alter = { highest = state.highest or 0, equipped = n, best = state.best }
+	replicate(player, { "alter" }, data.alter)
+	return true
+end
+
 function PlayerData.SetStat(player, stat, value)
 	local data = PlayerData.Get(player)
 	if not data then return end
@@ -750,7 +806,7 @@ local REP_FLASH = { On = true, Off = true }
 local EXP_POPUPS = { On = true, Off = true }
 local SPOT_REQUESTS = { On = true, Off = true }
 local ON_OFF = { On = true, Off = true }
-local INVENTORY_TABS = { Boosts = true, Gear = true, Titles = true, Auras = true, Items = true }
+local INVENTORY_TABS = { Boosts = true, Gear = true, Alters = true, Titles = true, Auras = true, Items = true }
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
 -- repFlash On/Off, expPopups On/Off.

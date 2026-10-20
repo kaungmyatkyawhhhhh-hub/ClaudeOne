@@ -24,6 +24,7 @@ local PosingComp = require(Config.PosingComp)
 local ShowOff = require(Config.ShowOff)
 local Muscles = require(Config.Muscles)
 local GrowthSpurts = require(Config.GrowthSpurts)
+local Alters = require(Config.Alters) -- (prompt 21: divisions by alter tier at 7'0", c.alterTier = the alter number)
 local Town = require(Config.Town)
 local Body = require(Config.Body)
 local PlayerData = require(script.Parent.PlayerData)
@@ -382,13 +383,15 @@ local function npcsFor(def, players: number)
 	if players < PosingComp.NpcFillTo then count = math.max(PosingComp.NpcFillTo - players, if players > 0 then PosingComp.NpcMin else 0) end
 	count = math.min(count, PosingComp.MaxPerDivision - players, #PosingComp.Npcs)
 	local pool = table.clone(PosingComp.Npcs)
-	local range = PosingComp.NpcShare[def.id] or { 0.5, 1 }
+	local range = PosingComp.NpcShare[def.id] or (if def.alterTier then PosingComp.NpcShare.Open else { 0.5, 1 })
 	local list = {}
 	for _ = 1, count do
 		local spec = table.remove(pool, rng:NextInteger(1, #pool))
 		local share = rng:NextNumber(range[1], range[2])
 		table.insert(list, { spec = spec, name = spec.name, share = share, size = share / PosingComp.SizeFull, balance = rng:NextNumber(0.75, 1),
-			height = PosingComp.NpcHeight[def.id] or 66, out = false })
+			height = PosingComp.NpcHeight[def.id] or (if def.alterTier then 84 else 66), out = false,
+			-- (an NPC in an alter division has an alter in that tier)
+			alterTier = if def.alterTier and def.alterTier > 0 then rng:NextInteger(def.alterTier * 5 - 4, def.alterTier * 5) else nil })
 	end
 	return list
 end
@@ -428,12 +431,13 @@ local function runShow(npcsOnly: boolean?)
 		local data = PlayerData.Get(entry.player)
 		if data then
 			local height = GrowthSpurts.GetHeight(data.growthSpurts)
-			local def = PosingComp.DivisionFor(height, nil)
+			local alter = type(data.alter) == "table" and data.alter.highest or 0
+			local def = PosingComp.DivisionFor(height, Alters.TierOf(alter))
 			byDivision[def.id] = byDivision[def.id] or {}
 			if #byDivision[def.id] < PosingComp.MaxPerDivision then
 				local size, balance = bodyValues(data)
 				table.insert(byDivision[def.id], { player = entry.player, name = entry.player.DisplayName, size = size, balance = balance,
-					height = height, out = false })
+					height = height, out = false, alterTier = alter })
 			end
 		end
 	end

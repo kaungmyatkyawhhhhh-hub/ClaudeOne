@@ -19,6 +19,10 @@ local Boosts = require(Shared.Config.Boosts)
 local Body = require(Shared.Config.Body)
 local Cosmetics = require(Shared.Config.Cosmetics)
 local DNA = require(Shared.Config.DNA)
+local GrowthSpurts = require(Shared.Config.GrowthSpurts)
+local Alters = require(Shared.Config.Alters)
+local Muscles = require(Shared.Config.Muscles)
+local Machines = require(Shared.Config.Machines)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
@@ -34,7 +38,7 @@ if not remote then return end
 local player = Players.LocalPlayer
 local New, Colors = Theme.New, Theme.Colors
 
-local W, H = 700, 262 -- (wide enough for the title, four tabs and the coins pill)
+local W, H = 770, 262 -- (wide enough for the title, five tabs and the coins pill; 693 px on a 667 x 375 phone)
 local HERO_W = 214
 local TILE = Vector2.new(112, 78)
 
@@ -49,7 +53,10 @@ local function sectionOpen(id: string): boolean
 	local open = player:GetAttribute("PumpShop")
 	if not open then return false end
 	for _, section in ipairs(PumpShop.Sections) do
-		if section.id == id then return spurts() >= (section.fromSpurt or 0) end
+		if section.id == id then
+			if section.atMax then return GrowthSpurts.IsMaxed(spurts()) end
+			return spurts() >= (section.fromSpurt or 0)
+		end
 	end
 	return false
 end
@@ -62,7 +69,40 @@ local function bodyEntry(list, id)
 	return nil
 end
 
-local entries = { Supplements = {}, Gear = {}, Apparel = {}, DnaLab = {} }
+local entries = { Supplements = {}, Gear = {}, Apparel = {}, DnaLab = {}, Alters = {} }
+
+-- (prompt 21) ALTERS: the alters of the tier you're in (the next one picked first), each with its state; nothing is sold
+local function alterProgress()
+	local d = data()
+	return Alters.Progress(d, Muscles.Groups, Machines.TrainableMuscles(d.growthSpurts or 0))
+end
+local function alterEntries()
+	local progress = alterProgress()
+	local tier = math.max(1, Alters.TierOf(math.min(progress.next, #Alters.List)))
+	local list = {}
+	for _, alter in ipairs(Alters.List) do
+		if alter.tier == tier then
+			table.insert(list, { key = alter.id, section = "Alters", alter = alter, name = alter.name, icon = "flame",
+				color = if alter.textures then Colors.Gold else Colors.Muted, price = function() return nil end })
+		end
+	end
+	return list, progress
+end
+local function alterStatus(entry, progress): (string, Color3)
+	local n = entry.alter.number
+	if n < progress.next then return "DONE", Colors.Green end
+	if not entry.alter.textures or n > Alters.LastAvailable() then return "SOON", Colors.Muted end
+	if n == progress.next then
+		if progress.ready then return "READY", Colors.Gold end
+		local have, need = 0, 0
+		for _, group in ipairs(Muscles.Groups) do
+			have += Muscles.Shown(math.min(progress.groups[group.id] or 0, progress.required))
+			need += Muscles.Shown(progress.required)
+		end
+		return math.floor(need > 0 and have / need * 100 or 0) .. "%", Colors.Teal
+	end
+	return "ALTER " .. n, Colors.Muted
+end
 for _, supplement in ipairs(PumpShop.Supplements) do
 	local item = Boosts.ById[supplement.id]
 	table.insert(entries.Supplements, { key = item.id, section = "Supplements", name = item.name, sub = item.text .. " Lasts " .. item.duration .. ".",
@@ -225,6 +265,33 @@ local function showHero(entry)
 				remote:FireServer("Buy", "Apparel", entry.id, entry.kind)
 			end)
 		end
+	elseif entry.section == "Alters" then
+		local progress = alterProgress()
+		local status, color = alterStatus(entry, progress)
+		local n = entry.alter.number
+		heroName.Text = "Alter " .. n .. ": " .. entry.alter.name
+		heroPrice.Text = status
+		heroPrice.TextColor3 = color
+		if n == progress.next and not progress.locked then
+			heroText.Text = string.format("Goal: %s exp in every group. Keeps 25%% of your EXP. Gains x%.2f after.",
+				Muscles.FormatExpShort(Muscles.Shown(Alters.Goal(n))), Alters.Bonus(n))
+		elseif n < progress.next then
+			heroText.Text = "Done. Wear this skin from Inventory > Alters."
+		elseif status == "SOON" then
+			heroText.Text = "Coming soon in an update."
+		else
+			heroText.Text = string.format("Goal: %s exp in every group. Gains x%.2f after.", Muscles.FormatExpShort(Muscles.Shown(Alters.Goal(n))), Alters.Bonus(n))
+		end
+		addButton(secondRow, "Quiet", "My skins", 180, function()
+			modal.close()
+			UIBus.OpenInventory:Fire("Alters")
+		end)
+		if n == progress.next and progress.ready then
+			addButton(buttonRow, "Gold", "Alter now", 180, function()
+				modal.close()
+				Remotes.PlayerAction:FireServer("Alter")
+			end)
+		end
 	elseif entry.section == "DnaLab" then
 		local state = data().dnaWeek
 		local bought = if type(state) == "table" and state.week == PumpShop.Week() then state.bought or 0 else 0
@@ -248,11 +315,19 @@ function refresh()
 	lockNote.Visible = not open
 	grid.Visible = open
 	if not open then
-		lockNote.Text = "Gear and Apparel open at Growth Spurt 2. Keep training!"
+		lockNote.Text = if tab == "Alters" then "Body Alters open at 7'0\". Keep growing!" else "Gear and Apparel open at Growth Spurt 2. Keep training!"
 		hero.Visible = false
 		return
 	end
 	local list = entries[tab]
+	local altersNow = nil
+	if tab == "Alters" then
+		list, altersNow = alterEntries()
+		-- (the next alter first)
+		local nextAlter = Alters.Get(altersNow.next)
+		if not picked.Alters or not bodyEntry(list, picked.Alters) then picked.Alters = nextAlter and nextAlter.id or (list[1] and list[1].key) end
+		for _, entry in ipairs(list) do entry.id = entry.key end
+	end
 	if not picked[tab] and list[1] then picked[tab] = list[1].key end
 	for order, entry in ipairs(list) do
 		local card = Kit.Card({ Name = entry.key, LayoutOrder = order, Clickable = true, Parent = grid }, {})
@@ -262,6 +337,10 @@ function refresh()
 		local label = Kit.Text({ Text = if isOwned(entry) then "OWNED" elseif price then Kit.Format(price) else "", Font = "Number", TextSize = 12,
 			Position = UDim2.fromOffset(4, 56), Size = UDim2.new(1, -8, 0, 16), Parent = card })
 		label.TextColor3 = if isOwned(entry) then Colors.Green elseif price and coins() >= price then Colors.Gold else Colors.Muted
+		if entry.section == "Alters" then
+			local status, color = alterStatus(entry, altersNow)
+			label.Text, label.TextColor3 = status, color
+		end
 		if entry.section == "Gear" then
 			local have = gearLevels(entry.gear)
 			if have then label.Text = have.name .. " · next " .. (if price then Kit.Format(price) else "max") end

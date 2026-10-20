@@ -54,13 +54,49 @@ local function styleTag(tag)
 	end
 end
 
+-- (prompt 21) a small gold "ALTER 3" pill over the title of anyone with a Body Alter (the player's AlterNumber attribute,
+-- BodyService); my own is smaller and faded like my title
+local BADGE = { Width = 1.7, Height = 0.4, Offset = 3.4, MaxDistance = 60 }
+local function updateBadge(other)
+	local head = other.Character and other.Character:FindFirstChild("Head")
+	if not head then return end
+	local n = other:GetAttribute("AlterNumber")
+	local badge = head:FindFirstChild("AlterBadge")
+	if type(n) ~= "number" or n <= 0 then
+		if badge then badge:Destroy() end
+		return
+	end
+	if not badge then
+		local mine = other == player
+		local scale = if mine then OWN.Scale else 1
+		badge = Theme.New("BillboardGui", { Name = "AlterBadge", Size = UDim2.fromScale(BADGE.Width * scale, BADGE.Height * scale),
+			StudsOffset = Vector3.new(0, BADGE.Offset, 0), MaxDistance = BADGE.MaxDistance, LightInfluence = 0, Enabled = not (mine and UIBus.MenuOpen),
+			Parent = head })
+		local pill = Theme.New("Frame", { Name = "Pill", BackgroundColor3 = Theme.Colors.Shadow, BackgroundTransparency = if mine then 0.55 else 0.25,
+			Size = UDim2.fromScale(1, 1), Parent = badge }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.5, 0) }),
+			Theme.New("UIStroke", { Color = Theme.Colors.Gold, Thickness = 1, Transparency = if mine then 0.6 else 0.2 }) })
+		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), TextScaled = true, FontFace = Theme.Fonts.Heading,
+			TextColor3 = Theme.Colors.Gold, TextTransparency = if mine then OWN.Transparency else 0, Text = "", Parent = pill },
+			{ Theme.New("UIPadding", { PaddingTop = UDim.new(0.12, 0), PaddingBottom = UDim.new(0.12, 0) }) })
+	end
+	badge.Pill.Text.Text = "ALTER " .. n
+end
+
 local function watchCharacter(character)
 	character.DescendantAdded:Connect(styleTag)
 	for _, d in ipairs(character:GetDescendants()) do styleTag(d) end
 end
 local function watchPlayer(other)
-	other.CharacterAdded:Connect(watchCharacter)
-	if other.Character then watchCharacter(other.Character) end
+	other.CharacterAdded:Connect(function(character)
+		watchCharacter(character)
+		character:WaitForChild("Head", 10)
+		updateBadge(other)
+	end)
+	if other.Character then
+		watchCharacter(other.Character)
+		task.spawn(updateBadge, other)
+	end
+	other:GetAttributeChangedSignal("AlterNumber"):Connect(function() updateBadge(other) end)
 end
 Players.PlayerAdded:Connect(watchPlayer)
 for _, other in ipairs(Players:GetPlayers()) do watchPlayer(other) end
@@ -70,6 +106,6 @@ UIBus.MenuClosed.Event:Connect(function()
 	local head = player.Character and player.Character:FindFirstChild("Head")
 	if not head then return end
 	for _, tag in ipairs(head:GetChildren()) do
-		if tag.Name == "TitleTag" and tag:IsA("BillboardGui") then tag.Enabled = true end
+		if (tag.Name == "TitleTag" or tag.Name == "AlterBadge") and tag:IsA("BillboardGui") then tag.Enabled = true end
 	end
 end)

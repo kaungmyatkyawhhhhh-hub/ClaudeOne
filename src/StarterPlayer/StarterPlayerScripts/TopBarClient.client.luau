@@ -17,6 +17,7 @@ local Kit = require(Shared.UI.Kit)
 local UI = require(Shared.Config.UI)
 local Muscles = require(Shared.Config.Muscles)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
+local Alters = require(Shared.Config.Alters)
 local ClientData = require(Shared.ClientData)
 local Notify = require(Shared.UI.Notify)
 
@@ -38,6 +39,9 @@ local function refresh()
 	local inches = GrowthSpurts.GetHeight(data.growthSpurts or 0)
 	local text = GrowthSpurts.FormatHeight(inches, true)
 	if inches >= GrowthSpurts.MaxHeightInches then text ..= ' <font color="' .. GOLD .. '">MAX</font>' end
+	-- (prompt 21) "7'0" MAX · Alter 3 Tanned"
+	local alter = type(data.alter) == "table" and data.alter.highest or 0
+	if inches >= GrowthSpurts.MaxHeightInches and alter > 0 then text ..= " · Alter " .. alter .. " " .. Alters.Get(alter).name end
 	height:setLabel(text)
 	local total, count = 0, 0
 	for _, muscle in ipairs(Muscles.List) do
@@ -52,10 +56,11 @@ local function refresh()
 	level:setLabel("LVL " .. whole)
 	level:setCaption(string.format("%d%% to LVL %d", math.floor((average - whole) * 100), whole + 1))
 	-- LVL up (prompt 20, 21 Oct): a reward popup. Not on the first read, and not after a Growth Spurt (the level starts over)
-	if shownLevel and whole > shownLevel and (data.growthSpurts or 0) == shownSpurts then
+	local stage = (data.growthSpurts or 0) * 100 + (type(data.alter) == "table" and data.alter.highest or 0) -- (a Body Alter starts the level over too)
+	if shownLevel and whole > shownLevel and stage == shownSpurts then
 		Notify.Reward("LVL UP", "You are LVL " .. whole .. " now", "arrow-big-up", Theme.Colors.Gold, "LevelUp", "lvl")
 	end
-	shownLevel, shownSpurts = whole, data.growthSpurts or 0
+	shownLevel, shownSpurts = whole, stage
 end
 
 -- Height goes first when the left and right icons would meet (checked after every change of size)
@@ -82,7 +87,7 @@ task.spawn(function()
 	refresh()
 	ClientData.Changed:Connect(function(path)
 		local key = path[1]
-		if key == "coins" or key == "muscles" or key == "growthSpurts" then
+		if key == "coins" or key == "muscles" or key == "growthSpurts" or key == "alter" then
 			refresh()
 			task.defer(fit)
 		end

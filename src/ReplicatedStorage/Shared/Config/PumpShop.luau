@@ -1,6 +1,6 @@
 -- PUMP SHOP (owner, prompt 19, 21 Oct): one big store in the town hub that sells everything worth buying with coins.
 -- Coins only (no Robux here), no random rolls. Four sections, each with its own counter and clerk: SUPPLEMENTS, GEAR,
--- APPAREL, DNA LAB (room is left for ALTERS later). PumpShopService (server) sells, PumpShopClient shows the panel.
+-- APPAREL, DNA LAB, ALTERS (prompt 21: the next Body Alter, its goal and bonus; open at 7'0", nothing for sale). PumpShopService (server) sells, PumpShopClient shows the panel.
 --
 -- HOW THE PRICES WERE CHOSEN: coins per minute of active play, measured with the real formulas (tests/pacing coins, 60
 -- simulated players, base rate: no 2x Coins pass, VIP, rush hour or event bonus):
@@ -26,7 +26,7 @@ PumpShop.Sections = {
 	{ id = "Gear", name = "Gear", icon = "dumbbell", fromSpurt = 2 },
 	{ id = "Apparel", name = "Apparel", icon = "star", fromSpurt = 2 },
 	{ id = "DnaLab", name = "DNA Lab", icon = "sparkles" },
-	-- { id = "Alters", name = "Alters" } (later: Body Alters after 7'0")
+	{ id = "Alters", name = "Alters", icon = "flame", atMax = true }, -- (prompt 21: at 7'0"; Body Alters are never bought)
 }
 
 ------------------------------------------------------------------------

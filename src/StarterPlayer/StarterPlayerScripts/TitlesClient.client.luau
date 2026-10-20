@@ -49,14 +49,14 @@ local RARITY_COLOR = {
 }
 local CARD = Vector2.new(124, 78)
 local PAD = 8 -- every label keeps this far from its card's edges
-local TABS = { Boosts = true, Gear = true, Titles = true, Auras = true, Items = true }
+local TABS = { Boosts = true, Gear = true, Alters = true, Titles = true, Auras = true, Items = true }
 
 local menuButton = SideMenu.Add("Inventory", "Inventory", nil, 2)
 
 local tab = "Boosts"
 local refresh -- (below)
-local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 650, height = 248, displayOrder = 25,
-	tabs = { { id = "Boosts", text = "Boosts", icon = "zap" }, { id = "Gear", text = "Gear", icon = "dumbbell" }, { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
+local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 740, -- (740: six tabs, prompt 21) height = 248, displayOrder = 25,
+	tabs = { { id = "Boosts", text = "Boosts", icon = "zap" }, { id = "Gear", text = "Gear", icon = "dumbbell" }, { id = "Alters", text = "Alters", icon = "flame" }, { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
 	onTab = function(id)
 		if tab ~= id then
 			tab = id
@@ -373,6 +373,7 @@ end
 ------------------------------------------------------------------------
 local BOOSTS_TAB = require(Shared.UI.BoostsPanel).Build(modal.body)
 local GEAR_TAB = require(Shared.UI.GearPanel).Build(modal.body)
+local ALTERS_TAB = require(Shared.UI.AltersPanel).Build(modal.body) -- (prompt 21) the Body Alter skins
 
 ------------------------------------------------------------------------
 function refresh()
@@ -382,8 +383,13 @@ function refresh()
 	ITEMS.frame.Visible = tab == "Items"
 	BOOSTS_TAB.frame.Visible = tab == "Boosts"
 	GEAR_TAB.frame.Visible = tab == "Gear"
+	ALTERS_TAB.frame.Visible = tab == "Alters"
 	AURA.preview()
-	if tab == "Gear" then
+	if tab == "Alters" then
+		ALTERS_TAB.refresh()
+		countLabel.Text = ""
+		return
+	elseif tab == "Gear" then
 		GEAR_TAB.refresh()
 		countLabel.Text = ""
 		return
@@ -465,7 +471,7 @@ end)
 
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
-	if (key == "titles" or key == "auras" or key == "coins" or key == "items" or key == "dnaTokens") and modal.isOpen() then refresh() end
+	if (key == "titles" or key == "auras" or key == "coins" or key == "items" or key == "dnaTokens" or key == "alter") and modal.isOpen() then refresh() end
 end)
 player.AttributeChanged:Connect(function(name)
 	if (string.sub(name, 1, 5) == "Pass_" or name == "Aura") and modal.isOpen() then refresh() end
