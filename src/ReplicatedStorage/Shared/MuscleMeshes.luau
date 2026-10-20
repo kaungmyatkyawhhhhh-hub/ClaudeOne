@@ -37,7 +37,7 @@ local MONSTER_DEFAULT: number = Index.monsterDefaultG or 1.35
 -- The shape layers (the traps yoke, the round delt caps; see addUpperTraps / addRoundDelts) grow with their muscle's level
 -- but have their own, gentler mass monster size (key "<muscle>@shape"): times the data's own monster sizes they made
 -- horns and folded wings.
-MuscleMeshes.ShapeMonsterG = { Traps = 1.6, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6, Rhomboids = 1.7, LowerBack = 1.7, Quads = 1.3 } :: { [string]: number }
+MuscleMeshes.ShapeMonsterG = { Traps = 1.6, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6, Rhomboids = 1.7, LowerBack = 1.7, Lats = 1.3, Quads = 1.3 } :: { [string]: number }
 function MuscleMeshes.MonsterG(key: string): number
 	local muscle = string.match(key, "^(.-)@shape$")
 	if muscle then return MuscleMeshes.ShapeMonsterG[muscle] or 1.3 end
@@ -135,7 +135,74 @@ local function scaleMuscle(data, muscle: string, v: number, factor: number)
 	m.disp[j] = old * factor
 	data.reshape = data.reshape or {}
 	data.reshape[muscle] = data.reshape[muscle] or {}
-	data.reshape[muscle][v] = m.disp[j] - old
+	data.reshape[muscle][v] = (data.reshape[muscle][v] or Vector3.zero) + m.disp[j] - old -- (a vertex can be scaled twice)
+end
+
+-- A re-meshed part of the generated data (MuscleData.<name>__cap, made by tools/torso_patches/cap.py): the torso's top cap
+-- with its inner vertices spread evenly (the generator closed the neck opening with one ring and a fan of long thin
+-- triangles: the raised traps showed them as facets and lumps beside the neck). Same vertex ids and triangle slots, so
+-- nothing else changes; its vertices take the patch's position, normal, waist morph, veins and muscle growth.
+local function applyCapPatch(data, name: string)
+	local module = Data:FindFirstChild(name .. "__cap")
+	if not (module and module:IsA("ModuleScript")) then return end
+	local patch = (require(module) :: any)
+	if patch.verts ~= data.verts or (patch.triStart + patch.triCount) * 3 > #data.tris then
+		warn("[MuscleMeshes] " .. module.Name .. " doesn't fit the muscle data; left out")
+		return
+	end
+	local function vec(list, i) return Vector3.new(list[i * 3 - 2], list[i * 3 - 1], list[i * 3]) end
+	local isCap = {}
+	for i, id in ipairs(patch.ids) do
+		local v = id + 1
+		isCap[v] = true
+		data.base[v] = vec(patch.base, i)
+		data.nbase[v] = vec(patch.nbase, i)
+		if data.morph and patch.morph then data.morph[v] = vec(patch.morph, i) end
+		if data.vein and patch.vein then data.vein[v] = vec(patch.vein, i) end
+	end
+	for k, value in ipairs(patch.tris) do data.tris[patch.triStart * 3 + k] = value end
+	-- each muscle: its old entries on the cap go, the patch's come in
+	local function replace(idx, disp, list)
+		local keepIdx, keepDisp = {}, {}
+		for j, v in ipairs(idx) do
+			if not isCap[v] then
+				table.insert(keepIdx, v)
+				table.insert(keepDisp, disp[j])
+			end
+		end
+		for k = 1, #(list or {}), 4 do
+			table.insert(keepIdx, list[k] + 1)
+			table.insert(keepDisp, Vector3.new(list[k + 1], list[k + 2], list[k + 3]))
+		end
+		return keepIdx, keepDisp
+	end
+	for muscle, m in pairs(data.muscles) do
+		m.idx, m.disp = replace(m.idx, m.disp, patch.muscles[muscle])
+		m.nidx, m.ndisp = replace(m.nidx, m.ndisp, patch.normals[muscle])
+	end
+end
+
+-- New texture coordinates for the generated data (MuscleData.<name>__uvfix, made by tools/torso_patches/torso_uv_patch.py;
+-- owner, 20 Oct: "the upper traps texture is smeared, stretched and shiny"). The old map was the plain shirt layout by height, so the
+-- raised traps and the sculpted back stretched one strip of texture over a long slope, and the seam rule (MuscleRig
+-- faceUVs) squashed the cap's big triangles to one point. Now the texture runs along the surface (the same density as
+-- the chest) and blends into an even map near the neck. uv = every vertex's coordinate; faces = the triangles that keep
+-- their own three corners (data.faceUV[triangle] = { Vector2 x3 }; the seam rule leaves them alone).
+local function applyUVPatch(data, name: string)
+	local module = Data:FindFirstChild(name .. "__uvfix")
+	if not (module and module:IsA("ModuleScript")) then return end
+	local patch = (require(module) :: any)
+	if patch.verts ~= data.verts or patch.triCount * 3 ~= #data.tris then
+		warn("[MuscleMeshes] " .. module.Name .. " doesn't fit the muscle data; left out")
+		return
+	end
+	local list = patch.uv
+	for i = 1, data.verts do data.uv[i] = Vector2.new(list[i * 2 - 1], list[i * 2]) end
+	local faceUV, faces = {}, patch.faces
+	for k = 1, #faces, 7 do
+		faceUV[faces[k] + 1] = { Vector2.new(faces[k + 1], faces[k + 2]), Vector2.new(faces[k + 3], faces[k + 4]), Vector2.new(faces[k + 5], faces[k + 6]) }
+	end
+	data.faceUV = faceUV
 end
 
 -- After a reshape the data's normal changes no longer fit the new shape (the light would still show the old lumps): at the
@@ -164,20 +231,65 @@ local function vertexNormals(data, positions)
 	end
 	return out
 end
-local function normalsFor(data, plain, idx, disp, vertices)
-	local positions = table.clone(data.base)
-	for j, v in ipairs(idx) do positions[v] += disp[j] end
-	local grown = vertexNormals(data, positions)
-	local out = {}
-	for v in pairs(vertices) do out[v] = grown[v] - plain[v] end
+-- The same smooth normals, but only at the given vertices (only the triangles around them: a shape layer covers part of
+-- the mesh; working out the whole mesh for each of them cost ~30 ms a layer). Each spot's triangles are listed once.
+local function normalsAt(data, positions, vertices)
+	local topo = data.topology
+	if not topo then
+		local keyOf, trisAt = table.create(data.verts), {}
+		for i, p in ipairs(data.base) do
+			keyOf[i] = math.floor(p.X * 1e4 + 0.5) .. "," .. math.floor(p.Y * 1e4 + 0.5) .. "," .. math.floor(p.Z * 1e4 + 0.5)
+		end
+		local t = data.tris
+		for k = 1, #t, 3 do
+			for o = 0, 2 do
+				local key = keyOf[t[k + o] + 1]
+				local list = trisAt[key]
+				if not list then
+					list = {}
+					trisAt[key] = list
+				end
+				table.insert(list, k)
+			end
+		end
+		topo = { keyOf = keyOf, trisAt = trisAt }
+		data.topology = topo
+	end
+	local t, sums, out = data.tris, {}, {}
+	for v in pairs(vertices) do
+		local key = topo.keyOf[v]
+		local n = sums[key]
+		if not n then
+			n = Vector3.zero
+			for _, k in ipairs(topo.trisAt[key]) do
+				local a, b, c = t[k] + 1, t[k + 1] + 1, t[k + 2] + 1
+				n += (positions[b] - positions[a]):Cross(positions[c] - positions[a])
+			end
+			sums[key] = n
+		end
+		out[v] = if n.Magnitude > 1e-9 then n.Unit else Vector3.yAxis
+	end
 	return out
 end
 local function fitNormals(data)
 	if not data.reshape and not data.shapes then return end
-	local plain = vertexNormals(data, data.base)
+	data.topology = nil -- (the triangles are final now)
+	local plainAt = {}
+	local function normalsFor(idx, disp, vertices)
+		local need = {}
+		for v in pairs(vertices) do
+			if not plainAt[v] then need[v] = true end
+		end
+		for v, n in pairs(normalsAt(data, data.base, need)) do plainAt[v] = n end
+		local positions = table.clone(data.base)
+		for j, v in ipairs(idx) do positions[v] += disp[j] end
+		local out = {}
+		for v, n in pairs(normalsAt(data, positions, vertices)) do out[v] = n - plainAt[v] end
+		return out
+	end
 	for muscle, changed in pairs(data.reshape or {}) do
 		local m = data.muscles[muscle]
-		local fitted = normalsFor(data, plain, m.idx, m.disp, changed)
+		local fitted = normalsFor(m.idx, m.disp, changed)
 		local nat = indexOf(m.nidx)
 		for v, d in pairs(fitted) do
 			local j = nat[v]
@@ -191,7 +303,7 @@ local function fitNormals(data)
 		end
 	end
 	for _, s in pairs(data.shapes or {}) do
-		local fitted = normalsFor(data, plain, s.idx, s.disp, s.at)
+		local fitted = normalsFor(s.idx, s.disp, s.at)
 		for v, d in pairs(fitted) do
 			table.insert(s.nidx, v)
 			table.insert(s.ndisp, d)
@@ -209,7 +321,10 @@ end
 -- diamond between the shoulder blades) below it stay the data's.
 -- (owner, 19 Oct: "make the upper traps way bigger" (Height 0.52), then "smaller, like 0.32 at full look": Height 0.32, Back
 -- 0.1, Depth 0.6, monster 1.6)
-local UPPER_TRAPS = { Height = 0.32, Back = 0.1, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.36, ShoulderTo = 1.3, Depth = 0.6, Edge = 0.3, FrontShare = 0.15 }
+-- (owner, 20 Oct: "from behind the upper back is flat, puffy blocks": the backward push has no dip at the neck any more (the
+-- dip made a crack down the middle of the traps from behind) and is half as much, Back 0.05: the back sculpt (addBackSculpt)
+-- gives the upper traps their thickness from behind now)
+local UPPER_TRAPS = { Height = 0.32, Back = 0.05, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.36, ShoulderTo = 1.3, Depth = 0.6, Edge = 0.3, FrontShare = 0.15 }
 local function addUpperTraps(data)
 	if not data.muscles.Traps then return end
 	local top = -math.huge
@@ -217,75 +332,149 @@ local function addUpperTraps(data)
 	local U = UPPER_TRAPS
 	for v, p in ipairs(data.base) do
 		local ax = math.abs(p.X)
-		local across = ease((ax - U.NeckFrom) / (U.NeckTo - U.NeckFrom)) * (1 - ease((ax - U.PeakTo) / (U.ShoulderTo - U.PeakTo)))
+		local fall = 1 - ease((ax - U.PeakTo) / (U.ShoulderTo - U.PeakTo))
+		local across = ease((ax - U.NeckFrom) / (U.NeckTo - U.NeckFrom)) * fall
 		local down = ease((p.Y - (top - U.Depth)) / U.Edge)
 		local side = U.FrontShare + (1 - U.FrontShare) * ease((p.Z + 0.3) / 0.5)
 		local w = across * down * side
+		local wBack = fall * down * side
 		if down > 0.001 then scaleMuscle(data, "Traps", v, 1 - down) end
-		if w > 0.001 then addShape(data, "Traps", v, Vector3.new(0, U.Height, U.Back) * w) end
+		if w > 0.001 or wBack > 0.001 then addShape(data, "Traps", v, Vector3.new(0, U.Height * w, U.Back * wBack)) end
 	end
 end
 
--- A full back (owner, 19 Oct prompt 8: "the back looks hollow"; at the full look the middle of the back sat up to 0.2 studs
--- lower than the muscles beside it, a deep spine valley and a dip between the rhomboids and the lats). At each height the
--- back is filled up to its ridge (the most the back sticks out within Ridge studs of the middle, smoothed over the
--- neighbouring heights) minus a shallow spine Groove (GrooveWidth wide): the mid traps / rhomboids become a raised
--- diamond, the lower back two thick columns beside a shallow groove. Only within Width of the middle (easing out over
--- WidthEdge), from Bottom to Top (easing over Edge), on the back-facing surface, at most Max studs at the full look. The
--- fill is a shape layer: Rhomboids above Split, LowerBack below it (blended over SplitEdge).
-local BACK = { Ridge = 0.5, Groove = 0.04, GrooveWidth = 0.08, Width = 0.38, WidthEdge = 0.2, Bottom = -0.88, Top = 0.62, Edge = 0.18, Max = 0.25, Split = -0.05, SplitEdge = 0.25 }
-local function addBackFill(data)
-	if not (data.muscles.Rhomboids and data.muscles.LowerBack) then return end
-	local B = BACK
-	-- every vertex at the full look (every muscle's own growth)
-	local full = table.clone(data.base)
-	for _, m in pairs(data.muscles) do
-		for j, v in ipairs(m.idx) do full[v] += m.disp[j] end
-	end
-	local BIN = 0.05
-	local ridge = {}
-	for v, p in ipairs(full) do
-		local b = data.base[v]
-		if b.Z > 0.1 and math.abs(b.X) < B.Ridge then
-			local k = math.floor(b.Y / BIN + 0.5)
-			ridge[k] = math.max(ridge[k] or -math.huge, p.Z)
+-- The back sculpt (owner, 20 Oct: "from behind the upper back is made of flat, puffy blocks with no trap shape"; replaces
+-- the 19 Oct back fill, which filled the back flat up to its ridge). The data's own Traps / Rhomboids / LowerBack growth
+-- gives way on the back-facing surface (times the owner's big mass monster sizes it made the blocks and the pointed flaps
+-- at the shoulder corners), and so do the data's lats there (they stay on the sides: the V from the front). Instead the back
+-- is sculpted from muscle bellies (BACK_BELLIES: centre, radii, tilt, height at the full look, part-local; mirrored left /
+-- right): the upper traps behind the neck, the mid traps lobes, the lower traps narrowing to a point at the bottom of the
+-- shoulder blades (together the trapezius diamond), the infraspinatus and teres on each shoulder blade, the lats, the
+-- erector columns, and a thin sheet under the upper / lower back so no flat gap is left between them. The bellies join in
+-- a smooth union (BACK_UNION: neighbouring bellies meet in a soft crease, they don't pile up) minus a spine groove, pushed
+-- out along the back's smoothed normals (the base torso is a faceted box: its own normals folded the relief), fading out
+-- at the bottom edge (the waist mesh meets it there). Each belly is its muscle's shape layer, so it grows with that
+-- muscle's level (none at level 0) and its own mass monster size (ShapeMonsterG). The lats also sweep out sideways under
+-- the arms (BACK_LAT_FLARE).
+local BACK_BELLIES = {
+	{ muscle = "Traps", x = 0.4, y = 0.78, rx = 0.45, ry = 0.16, tilt = -0.15, h = 0.09 }, -- upper traps
+	{ muscle = "Traps", x = 0.2, y = 0.52, rx = 0.26, ry = 0.36, tilt = 0.1, h = 0.08 }, -- mid traps lobe
+	{ muscle = "Traps", x = 0.12, y = 0.15, rx = 0.17, ry = 0.42, tilt = 0.3, h = 0.06 }, -- lower traps
+	{ muscle = "Rhomboids", x = 0.5, y = 0.25, rx = 0.24, ry = 0.26, tilt = 0.2, h = 0.085 }, -- infraspinatus
+	{ muscle = "Rhomboids", x = 0.74, y = 0.02, rx = 0.18, ry = 0.13, tilt = -0.5, h = 0.065 }, -- teres major
+	{ muscle = "Lats", x = 0.62, y = -0.3, rx = 0.38, ry = 0.55, tilt = 0.35, h = 0.09 }, -- lats
+	{ muscle = "LowerBack", x = 0.14, y = -0.5, rx = 0.13, ry = 0.42, tilt = 0, h = 0.085 }, -- erector columns
+	{ muscle = "Rhomboids", x = 0, y = 0.4, rx = 1, ry = 0.62, tilt = 0, h = 0.045 }, -- sheet under the upper back
+	{ muscle = "LowerBack", x = 0, y = -0.45, rx = 0.62, ry = 0.52, tilt = 0, h = 0.04 }, -- sheet under the lower back
+}
+local BACK_UNION = 28                      -- 1 / studs: how soft the creases between bellies are
+local BACK_GROOVE = { Depth = 0.03, Width = 0.05 }
+local BACK_BOTTOM = { From = -0.86, Over = 0.18 }
+local BACK_LAT_FLARE = { Flare = 0.08, From = 0.5, Top = 0.35, Peak = 0, Bottom = -0.75 }
+local BACK_NORMAL_SMOOTHING = 30          -- neighbour-average passes over the base normals
+
+-- the base normals averaged with their neighbours (vertices at the same spot count as one), only where z > minZ
+local function smoothedNormals(data, minZ: number, passes: number): { Vector3 }
+	-- one slot per spot (where z > minZ)
+	local slotOf, keySlot, count = table.create(data.verts, 0), {}, 0
+	local sum = {}
+	for i, p in ipairs(data.base) do
+		if p.Z > minZ then
+			local key = math.floor(p.X * 1e4 + 0.5) .. "," .. math.floor(p.Y * 1e4 + 0.5) .. "," .. math.floor(p.Z * 1e4 + 0.5)
+			local slot = keySlot[key]
+			if not slot then
+				count += 1
+				slot = count
+				keySlot[key] = slot
+				sum[slot] = Vector3.zero
+			end
+			slotOf[i] = slot
+			sum[slot] += data.nbase[i]
 		end
 	end
-	-- smoothed over the neighbouring heights (a plain step per bin made stripes across the back), then blended between bins
-	local smooth = {}
-	for k in pairs(ridge) do
-		local sum, weight = 0, 0
-		for o = -3, 3 do
-			local r = ridge[k + o]
-			if r then
-				local w = 4 - math.abs(o)
-				sum += r * w
-				weight += w
+	-- neighbour pairs (both ends in the region), each edge once per triangle side
+	local from, to = {}, {}
+	local t = data.tris
+	for k = 1, #t, 3 do
+		local a, b, c = slotOf[t[k] + 1], slotOf[t[k + 1] + 1], slotOf[t[k + 2] + 1]
+		if a > 0 and b > 0 and a ~= b then table.insert(from, a); table.insert(to, b) end
+		if b > 0 and c > 0 and b ~= c then table.insert(from, b); table.insert(to, c) end
+		if c > 0 and a > 0 and c ~= a then table.insert(from, c); table.insert(to, a) end
+	end
+	local cur = table.create(count)
+	for slot = 1, count do
+		local n = sum[slot]
+		cur[slot] = if n.Magnitude > 1e-9 then n.Unit else Vector3.zAxis
+	end
+	local edges = #from
+	for _ = 1, passes do
+		local acc = table.clone(cur)
+		for e = 1, edges do
+			local a, b = from[e], to[e]
+			acc[a] += cur[b]
+			acc[b] += cur[a]
+		end
+		for slot = 1, count do
+			local n = acc[slot]
+			cur[slot] = if n.Magnitude > 1e-9 then n.Unit else cur[slot]
+		end
+	end
+	local out = table.create(data.verts)
+	for i = 1, data.verts do
+		local slot = slotOf[i]
+		out[i] = if slot > 0 then cur[slot] else data.nbase[i]
+	end
+	return out
+end
+
+local function addBackSculpt(data)
+	if not (data.muscles.Traps and data.muscles.Rhomboids and data.muscles.LowerBack and data.muscles.Lats) then return end
+	local ns = smoothedNormals(data, -0.2, BACK_NORMAL_SMOOTHING)
+	local count = #BACK_BELLIES
+	local cosT, sinT = table.create(count), table.create(count)
+	for i, bl in ipairs(BACK_BELLIES) do cosT[i], sinT[i] = math.cos(bl.tilt), math.sin(bl.tilt) end
+	local zeroMax = math.log(count) / BACK_UNION -- (the smooth max of all-zero bellies)
+	local L = BACK_LAT_FLARE
+	for v, b in ipairs(data.base) do
+		local n = ns[v]
+		-- the data's back growth gives way on the back
+		local giveWay = ease((n.Z + 0.2) / 0.4)
+		if giveWay > 0 then
+			for _, muscle in ipairs({ "Traps", "Rhomboids", "LowerBack" }) do scaleMuscle(data, muscle, v, 1 - giveWay) end
+		end
+		local latsGive = ease((n.Z - 0.1) / 0.5)
+		if latsGive > 0 then scaleMuscle(data, "Lats", v, 1 - latsGive) end
+		local ax, y = math.abs(b.X), b.Y
+		local back = ease(n.Z / 0.5) * ease((y - BACK_BOTTOM.From) / BACK_BOTTOM.Over)
+		if back > 0.001 then
+			local heights, biggest, sumExp = table.create(count), 0, 0
+			for i, bl in ipairs(BACK_BELLIES) do
+				local dx, dy = ax - bl.x, y - bl.y
+				local c, s = cosT[i], sinT[i]
+				local u, w = (dx * c + dy * s) / bl.rx, (-dx * s + dy * c) / bl.ry
+				local h = bl.h * math.clamp(1 - (u * u + w * w), 0, 1) ^ 2
+				heights[i] = h
+				biggest = math.max(biggest, h)
+				sumExp += math.exp(BACK_UNION * h)
+			end
+			local total = math.log(sumExp) / BACK_UNION - zeroMax * (1 - math.clamp(biggest / 0.03, 0, 1))
+			total = math.max(total, 0) * math.clamp(biggest / 0.005, 0, 1)
+			local groove = BACK_GROOVE.Depth * math.exp(-(b.X / BACK_GROOVE.Width) ^ 2)
+			local relief = math.max(total - (if total > 0.005 then groove else 0), 0) * back
+			if relief > 1e-5 then
+				for i, bl in ipairs(BACK_BELLIES) do
+					local amount = relief * math.exp(BACK_UNION * heights[i]) / sumExp
+					if amount > 1e-4 then addShape(data, bl.muscle, v, n * amount) end
+				end
 			end
 		end
-		smooth[k] = sum / weight
-	end
-	local function ridgeAt(y: number): number
-		local f = y / BIN
-		local k = math.floor(f)
-		local a, b = smooth[k], smooth[k + 1]
-		if a and b then return a + (b - a) * (f - k) end
-		return a or b or -math.huge
-	end
-	for v, b in ipairs(data.base) do
-		local n = data.nbase[v]
-		if b.Z <= 0.05 or not n or n.Z <= 0.2 then continue end
-		local wx = 1 - ease((math.abs(b.X) - B.Width) / B.WidthEdge)
-		local wy = ease((b.Y - B.Bottom) / B.Edge) * (1 - ease((b.Y - B.Top) / B.Edge))
-		local wn = ease((n.Z - 0.2) / 0.3)
-		local w = wx * wy * wn
-		if w <= 0.001 then continue end
-		local target = ridgeAt(b.Y) - B.Groove * math.exp(-(b.X / B.GrooveWidth) ^ 2)
-		local fill = math.clamp(target - full[v].Z, 0, B.Max) * w
-		if fill <= 0.001 then continue end
-		local upper = ease((b.Y - B.Split) / B.SplitEdge + 0.5)
-		addShape(data, "Rhomboids", v, Vector3.new(0, 0, fill * upper))
-		addShape(data, "LowerBack", v, Vector3.new(0, 0, fill * (1 - upper)))
+		-- the lats sweep out under the arms
+		local sideW = ease((ax - L.From) / 0.3)
+		if sideW > 0 then
+			local prof = if y > L.Peak then 1 - ease((y - L.Peak) / (L.Top - L.Peak)) else 1 - ease((L.Peak - y) / (L.Peak - L.Bottom))
+			local flare = L.Flare * sideW * prof * ease((n.Z + 0.5) / 0.6)
+			if flare > 1e-5 then addShape(data, "Lats", v, Vector3.new(if b.X > 0 then flare else -flare, 0, 0)) end
+		end
 	end
 end
 
@@ -345,8 +534,10 @@ function MuscleMeshes.LoadUnified(name: string): any
 		data.muscles[muscle] = { idx = idx, disp = vectors(numbers(record, "disp_" .. muscle)), nidx = nidx, ndisp = vectors(numbers(record, "ndisp_" .. muscle)) }
 	end
 	if record.part == "UpperTorso" then
+		applyCapPatch(data, name)
+		applyUVPatch(data, name)
 		addUpperTraps(data)
-		addBackFill(data)
+		addBackSculpt(data)
 	end
 	if record.part == "RightUpperArm" then addRoundDelts(data, 1) end
 	if record.part == "LeftUpperArm" then addRoundDelts(data, -1) end
@@ -359,7 +550,8 @@ local pieceCache: { [string]: any } = {}
 -- One drawn piece of a unified mesh: the whole mesh (half = nil) or the torso's front / back half (half = "Front" / "Back").
 -- Its own vertex list (local ids), and per muscle only its vertices in this piece:
 --   { verts, global = { global index }, base, uv, vein, morph, nbase (local), tris (local, 0-based), muscles[name] = { idx,
---     disp, nidx, ndisp } (local), dominant[v] = muscle name or false, band[v] = tint band, center / normal per muscle }
+--     disp, nidx, ndisp } (local), dominant[v] = muscle name or false, band[v] = tint band, center / normal per muscle,
+--     faceUV[local triangle] = its own three texture corners (see applyUVPatch) }
 function MuscleMeshes.LoadPiece(name: string, half: string?): any
 	local key = name .. ":" .. (half or "All")
 	local found = pieceCache[key]
@@ -368,6 +560,7 @@ function MuscleMeshes.LoadPiece(name: string, half: string?): any
 	local tris = data.tris
 	local localOf, global = {}, {}
 	local outTris = {}
+	local faceUV = if data.faceUV then {} else nil
 	for k = 1, #tris, 3 do
 		local a, b, c = tris[k] + 1, tris[k + 1] + 1, tris[k + 2] + 1
 		local keep = true
@@ -376,6 +569,7 @@ function MuscleMeshes.LoadPiece(name: string, half: string?): any
 			keep = if half == "Front" then z < 0 else z >= 0
 		end
 		if keep then
+			if faceUV then faceUV[#outTris // 3 + 1] = data.faceUV[(k + 2) // 3] end
 			for _, v in ipairs({ a, b, c }) do
 				if not localOf[v] then
 					table.insert(global, v)
@@ -386,7 +580,7 @@ function MuscleMeshes.LoadPiece(name: string, half: string?): any
 		end
 	end
 	local n = #global
-	local piece = { name = name, half = half, verts = n, global = global, tris = outTris, triCount = #outTris // 3,
+	local piece = { name = name, half = half, verts = n, global = global, tris = outTris, triCount = #outTris // 3, faceUV = faceUV,
 		base = table.create(n), uv = table.create(n), nbase = table.create(n), vein = if data.vein then table.create(n) else nil,
 		morph = if data.morph then table.create(n) else nil, muscles = {}, muscleNames = {} }
 	for i, v in ipairs(global) do

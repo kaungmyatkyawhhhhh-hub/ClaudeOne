@@ -57,6 +57,14 @@ Short and current. Older sections (before 15 Oct): `docs/PROGRESS_archive.md`. F
   raycast to the floor. Shared/LowEnd (IsLowEnd / IsPhone) used by MuscleClient + new LightShadowsClient (all light
   Shadows off on phone / low-end). Place already had only 5 shadow lights (main spots). Graphics level 1 draws no shadows
   at all; on PC most shadow draws are the sun (GlobalShadows, not changed: owner decides).
+- TRAPS TEXTURE + BACK SHAPE (20 Oct, prompt 15b): MuscleMeshes applyCapPatch (MuscleData UpperTorso__Unified__cap: top
+  cap re-meshed, same 51 ids / 300 tri slots) + applyUVPatch (UpperTorso__Unified__uvfix + _1.._5: surface-following
+  texture map, per-face corners in data.faceUV, MuscleRig draws them without the seam rule) + addBackSculpt (BACK_BELLIES
+  smooth union, spine groove, lat flare; data Traps / Rhomboids / LowerBack / Lats give way on the back; old back fill
+  removed; ShapeMonsterG Lats 1.3). Torso load ~340-470 ms (was ~215). 14 low-poly torso OBJs (g000..gmon, same counts)
+  in Downloads\gym_arc_meshes_lowpoly_trapsback (tools/torso_back_stage_corrections.luau + torso_back_lowpoly.py).
+  WAITING: owner imports, then tools/torso_back_stage_setup.luau + quad_fix_patch_config.py <bounds.json> --with-g000.
+  Vault: Progress "2026-10-20 GYM ARC Traps texture and back".
 
 - BETA TESTER BADGE (20 Oct, prompt 16): BetaBadgeService (OPTIONAL_SERVICES in Main): PlayerAdded -> UserHasBadgeAsync,
   then AwardBadge (pcall, one retry after 5 s, own thread, skipped in Studio); on award PlayerEvent "BetaBadge" ->

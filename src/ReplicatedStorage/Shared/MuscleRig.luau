@@ -1005,7 +1005,7 @@ local function buildGroup(self, state, group): boolean
 				normalIds[l] = mesh:AddNormal(piece.nbase[l])
 				tick()
 			end
-			local tris, dominant, band = piece.tris, piece.dominant, piece.band
+			local tris, dominant, band, own = piece.tris, piece.dominant, piece.band, piece.faceUV
 			local function colorOf(l)
 				local m = dominant[l]
 				return if m then group.colorIds[m][band[l]] else group.baseColorId
@@ -1013,7 +1013,13 @@ local function buildGroup(self, state, group): boolean
 			for k = 1, #tris, 3 do
 				local a, b, c = tris[k] + 1, tris[k + 1] + 1, tris[k + 2] + 1
 				local face = mesh:AddTriangle(ids[a], ids[b], ids[c])
-				mesh:SetFaceUVs(face, faceUVs(mesh, uvIds, piece.uv, a, b, c))
+				local corners = own and own[(k + 2) // 3]
+				if corners then
+					-- (a triangle with its own texture corners, MuscleMeshes applyUVPatch)
+					mesh:SetFaceUVs(face, { mesh:AddUV(corners[1]), mesh:AddUV(corners[2]), mesh:AddUV(corners[3]) })
+				else
+					mesh:SetFaceUVs(face, faceUVs(mesh, uvIds, piece.uv, a, b, c))
+				end
 				mesh:SetFaceNormals(face, { normalIds[a], normalIds[b], normalIds[c] })
 				mesh:SetFaceColors(face, { colorOf(a), colorOf(b), colorOf(c) })
 				tick()
