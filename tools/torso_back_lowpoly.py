@@ -5,7 +5,8 @@
 # low-poly OBJs now in the game (g000 from Downloads\gym_arc_meshes_lowpoly, g020..gmon from ..._trapsbig).
 #   * position: each low-poly vertex moves by the inverse-distance mix of its 4 nearest high-res vertices' change (the
 #     low-poly mesh is a decimation of the high-res one, so it lies on the same surface). The old top cap had other vertices
-#     (a fan), so a low-poly vertex there moves with the cap's rim sideways and takes the new cap's height there.
+#     (a fan; since the dense re-mesh it also has more vertices), so a low-poly vertex there moves with the cap's rim
+#     sideways and takes the new cap's height there.
 #   * texture: each triangle corner takes the new map of the high-res surface under it (the nearest high-res triangle on the
 #     same texture panel as the low-poly triangle's middle), so the low-poly torso shows the shirt / skin like the live one.
 #   * normals: the new high-res surface's smooth normals (both halves share them, so the front / back split stays seamless).
@@ -89,7 +90,10 @@ def main(export_dir, g000_dir, stage_dir, out_dir):
     FUV = rows[:, 3:].reshape(-1, 3, 2)
     old0 = np.loadtxt(os.path.join(export_dir, "old_g000.txt"))
     new0 = np.loadtxt(os.path.join(export_dir, "new_g000.txt"))
-    cap = np.linalg.norm(new0 - old0, axis=1) > 1e-4  # (the re-meshed cap's vertices)
+    n_old = len(old0)
+    # the re-meshed lid's vertices: the old ids that moved, and every vertex the lid added after them
+    cap = np.ones(len(new0), bool)
+    cap[:n_old] = np.linalg.norm(new0[:n_old] - old0, axis=1) > 1e-4
     cap_faces = cap[T].any(1)
     rim = np.zeros(len(cap), bool)
     rim[np.unique(T[cap_faces])] = True
@@ -98,8 +102,8 @@ def main(export_dir, g000_dir, stage_dir, out_dir):
     for tag in STAGES:
         O = np.loadtxt(os.path.join(export_dir, "old_%s.txt" % tag))
         N = np.loadtxt(os.path.join(export_dir, "new_%s.txt" % tag))
-        D = N - O
-        keep = np.where(~cap)[0]
+        D = N[:n_old] - O
+        keep = np.where(~cap[:n_old])[0]
         tree_old = tree = cKDTree(O[keep])
         rim_ids = np.where(rim)[0]
         rim_tree = cKDTree(O[rim_ids][:, [0, 2]])

@@ -65,6 +65,11 @@ Short and current. Older sections (before 15 Oct): `docs/PROGRESS_archive.md`. F
   in Downloads\gym_arc_meshes_lowpoly_trapsback (tools/torso_back_stage_corrections.luau + torso_back_lowpoly.py).
   WAITING: owner imports, then tools/torso_back_stage_setup.luau + quad_fix_patch_config.py <bounds.json> --with-g000.
   Vault: Progress "2026-10-20 GYM ARC Traps texture and back".
+  PART 3 (owner: "flat picture, no depth"): tools/torso_patches/cap2.py re-meshes the whole top lid (300 -> 3,212 tris,
+  +1,456 verts appended; applyCapPatch addVerts, data.lidFrom) drawn as a third torso piece half = "Top" (halves 19,800
+  each); UPPER_TRAPS is now a height profile (high behind the neck, concave slope to the shoulder, crest back by the neck,
+  rolls into the back; tube / union and smoothTop tries dropped); uvfix rebaked (42,812 tris); SkinStages Stage4 / 5 color
+  + normal replaced by softer copies (tools/skin_soften.py; old ids in a comment). 14 low-poly OBJs rebuilt.
 
 - BETA TESTER BADGE (20 Oct, prompt 16): BetaBadgeService (OPTIONAL_SERVICES in Main): PlayerAdded -> UserHasBadgeAsync,
   then AwardBadge (pcall, one retry after 5 s, own thread, skipped in Studio); on award PlayerEvent "BetaBadge" ->

@@ -26,14 +26,17 @@ SkinStages.List = {
 	},
 	{
 		name = "Stage4", -- early mass monster: rock starting to show
-		color = "rbxassetid://105462181766151",
-		normal = "rbxassetid://85365682861871",
+		-- (owner, 20 Oct, prompt 15 part 3 "the muscle detail looks painted on": softer copies, tools/skin_soften.py; were
+		-- color rbxassetid://105462181766151, normal rbxassetid://85365682861871)
+		color = "rbxassetid://103256232724080",
+		normal = "rbxassetid://77093332274396",
 		roughness = "rbxassetid://85256387782133",
 	},
 	{
 		name = "Stage5", -- full mass monster: lumpy stone, faint cracks, darker patches
-		color = "rbxassetid://93591374798341",
-		normal = "rbxassetid://109473935703799",
+		-- (softer copies, see Stage4; were color rbxassetid://93591374798341, normal rbxassetid://109473935703799)
+		color = "rbxassetid://79562723801012",
+		normal = "rbxassetid://114724905486934",
 		roughness = "rbxassetid://71521978552485",
 	},
 }

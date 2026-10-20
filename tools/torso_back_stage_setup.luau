@@ -6,20 +6,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- the fixed meshes' bounding-box sizes (part-local studs, from bounds.json)
 local SIZES = {
-	BS_Torso_Back_g000 = Vector3.new(2.0214, 1.8086, 0.6154),
-	BS_Torso_Back_g020 = Vector3.new(2.1653, 1.8437, 0.6390),
-	BS_Torso_Back_g040 = Vector3.new(2.3081, 1.9061, 0.6588),
-	BS_Torso_Back_g060 = Vector3.new(2.4547, 1.9774, 0.6828),
-	BS_Torso_Back_g080 = Vector3.new(2.6043, 2.0495, 0.7182),
-	BS_Torso_Back_g100 = Vector3.new(2.7538, 2.1216, 0.7533),
-	BS_Torso_Back_gmon = Vector3.new(3.1296, 2.4207, 0.9719),
-	BS_Torso_Front_g000 = Vector3.new(2.0215, 1.8085, 0.6016),
-	BS_Torso_Front_g020 = Vector3.new(2.1366, 1.8436, 0.6137),
-	BS_Torso_Front_g040 = Vector3.new(2.2520, 1.8787, 0.6645),
-	BS_Torso_Front_g060 = Vector3.new(2.3659, 1.9138, 0.7216),
-	BS_Torso_Front_g080 = Vector3.new(2.4829, 1.9488, 0.7809),
-	BS_Torso_Front_g100 = Vector3.new(2.6084, 1.9932, 0.8222),
-	BS_Torso_Front_gmon = Vector3.new(2.9201, 2.1536, 1.0238),
+	BS_Torso_Back_g000 = Vector3.new(2.0214, 1.8143, 0.6154),
+	BS_Torso_Back_g020 = Vector3.new(2.1653, 1.8658, 0.6346),
+	BS_Torso_Back_g040 = Vector3.new(2.3081, 1.9196, 0.6513),
+	BS_Torso_Back_g060 = Vector3.new(2.4547, 1.9756, 0.6726),
+	BS_Torso_Back_g080 = Vector3.new(2.6043, 2.0337, 0.7052),
+	BS_Torso_Back_g100 = Vector3.new(2.7538, 2.0938, 0.7371),
+	BS_Torso_Back_gmon = Vector3.new(3.1296, 2.3609, 0.8616),
+	BS_Torso_Front_g000 = Vector3.new(2.0215, 1.8142, 0.6016),
+	BS_Torso_Front_g020 = Vector3.new(2.1366, 1.8658, 0.6146),
+	BS_Torso_Front_g040 = Vector3.new(2.2520, 1.9196, 0.6635),
+	BS_Torso_Front_g060 = Vector3.new(2.3659, 1.9756, 0.7186),
+	BS_Torso_Front_g080 = Vector3.new(2.4829, 2.0337, 0.7772),
+	BS_Torso_Front_g100 = Vector3.new(2.6084, 2.0938, 0.8346),
+	BS_Torso_Front_gmon = Vector3.new(2.9201, 2.3609, 1.0516),
 }
 
 local templates = ReplicatedStorage:WaitForChild("BodyStages")

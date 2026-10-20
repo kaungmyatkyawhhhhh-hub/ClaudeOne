@@ -138,29 +138,41 @@ local function scaleMuscle(data, muscle: string, v: number, factor: number)
 	data.reshape[muscle][v] = (data.reshape[muscle][v] or Vector3.zero) + m.disp[j] - old -- (a vertex can be scaled twice)
 end
 
--- A re-meshed part of the generated data (MuscleData.<name>__cap, made by tools/torso_patches/cap.py): the torso's top cap
--- with its inner vertices spread evenly (the generator closed the neck opening with one ring and a fan of long thin
--- triangles: the raised traps showed them as facets and lumps beside the neck). Same vertex ids and triangle slots, so
--- nothing else changes; its vertices take the patch's position, normal, waist morph, veins and muscle growth.
+-- A re-meshed part of the generated data (MuscleData.<name>__cap, made by tools/torso_patches/cap2.py): the torso's top
+-- lid (the generator closed the whole top, shoulder to shoulder, with 300 big triangles and a fan of long thin ones by the
+-- neck: the raised traps showed them as facets, lumps and flat planes) as an even grid. Its first vertices keep the old
+-- lid's ids, the rest (addVerts) come after the data's last vertex; its first triangles fill the old lid's slots (the
+-- data's last triCount triangles), the rest are added at the end. data.lidFrom = the first lid triangle (0-based): those
+-- triangles are the torso's "Top" piece (LoadPiece), since both halves are at the 20,000 triangle limit. Every lid
+-- vertex takes the patch's position, normal, texture coordinate, waist morph, veins and muscle growth.
 local function applyCapPatch(data, name: string)
 	local module = Data:FindFirstChild(name .. "__cap")
 	if not (module and module:IsA("ModuleScript")) then return end
 	local patch = (require(module) :: any)
-	if patch.verts ~= data.verts or (patch.triStart + patch.triCount) * 3 > #data.tris then
+	if patch.verts ~= data.verts or (patch.triStart + patch.triCount) * 3 ~= #data.tris then
 		warn("[MuscleMeshes] " .. module.Name .. " doesn't fit the muscle data; left out")
 		return
 	end
 	local function vec(list, i) return Vector3.new(list[i * 3 - 2], list[i * 3 - 1], list[i * 3]) end
+	local added = patch.addVerts or 0
+	for v = data.verts + 1, data.verts + added do
+		data.base[v], data.nbase[v], data.uv[v] = Vector3.zero, Vector3.yAxis, Vector2.zero
+		if data.morph then data.morph[v] = Vector3.zero end
+		if data.vein then data.vein[v] = Vector3.zero end
+	end
+	data.verts += added
 	local isCap = {}
 	for i, id in ipairs(patch.ids) do
 		local v = id + 1
 		isCap[v] = true
 		data.base[v] = vec(patch.base, i)
 		data.nbase[v] = vec(patch.nbase, i)
+		if patch.uv then data.uv[v] = Vector2.new(patch.uv[i * 2 - 1], patch.uv[i * 2]) end
 		if data.morph and patch.morph then data.morph[v] = vec(patch.morph, i) end
 		if data.vein and patch.vein then data.vein[v] = vec(patch.vein, i) end
 	end
 	for k, value in ipairs(patch.tris) do data.tris[patch.triStart * 3 + k] = value end
+	data.lidFrom = patch.triStart
 	-- each muscle: its old entries on the cap go, the patch's come in
 	local function replace(idx, disp, list)
 		local keepIdx, keepDisp = {}, {}
@@ -311,68 +323,6 @@ local function fitNormals(data)
 	end
 end
 
--- The traps yoke (owner, 19 Oct: "one wide, smooth slope from the base of the neck all the way out to the top of each
--- shoulder"; the data only lifted a thin strip beside the neck). A Traps shape layer lifts the top of the torso: Height
--- (studs at the full look, part-local) from NeckTo to PeakTo out from the middle (rising from NeckFrom, so the base of the
--- neck lifts too: one mound, no horns), sloping down from there to none at ShoulderTo (past the torso's edge: some is left
--- where the delts start); only the top Depth of the torso (easing in over Edge); the front of the top gets FrontShare of it,
--- the back all; Back = a backward push with it (thick from behind). In that top band the data's own Traps growth fades out
--- (fully above Top - Depth + Edge): at the mass monster it stood up as two horns beside the neck. The mid traps (the
--- diamond between the shoulder blades) below it stay the data's.
--- (owner, 19 Oct: "make the upper traps way bigger" (Height 0.52), then "smaller, like 0.32 at full look": Height 0.32, Back
--- 0.1, Depth 0.6, monster 1.6)
--- (owner, 20 Oct: "from behind the upper back is flat, puffy blocks": the backward push has no dip at the neck any more (the
--- dip made a crack down the middle of the traps from behind) and is half as much, Back 0.05: the back sculpt (addBackSculpt)
--- gives the upper traps their thickness from behind now)
-local UPPER_TRAPS = { Height = 0.32, Back = 0.05, NeckFrom = -0.2, NeckTo = 0.2, PeakTo = 0.36, ShoulderTo = 1.3, Depth = 0.6, Edge = 0.3, FrontShare = 0.15 }
-local function addUpperTraps(data)
-	if not data.muscles.Traps then return end
-	local top = -math.huge
-	for _, p in ipairs(data.base) do top = math.max(top, p.Y) end
-	local U = UPPER_TRAPS
-	for v, p in ipairs(data.base) do
-		local ax = math.abs(p.X)
-		local fall = 1 - ease((ax - U.PeakTo) / (U.ShoulderTo - U.PeakTo))
-		local across = ease((ax - U.NeckFrom) / (U.NeckTo - U.NeckFrom)) * fall
-		local down = ease((p.Y - (top - U.Depth)) / U.Edge)
-		local side = U.FrontShare + (1 - U.FrontShare) * ease((p.Z + 0.3) / 0.5)
-		local w = across * down * side
-		local wBack = fall * down * side
-		if down > 0.001 then scaleMuscle(data, "Traps", v, 1 - down) end
-		if w > 0.001 or wBack > 0.001 then addShape(data, "Traps", v, Vector3.new(0, U.Height * w, U.Back * wBack)) end
-	end
-end
-
--- The back sculpt (owner, 20 Oct: "from behind the upper back is made of flat, puffy blocks with no trap shape"; replaces
--- the 19 Oct back fill, which filled the back flat up to its ridge). The data's own Traps / Rhomboids / LowerBack growth
--- gives way on the back-facing surface (times the owner's big mass monster sizes it made the blocks and the pointed flaps
--- at the shoulder corners), and so do the data's lats there (they stay on the sides: the V from the front). Instead the back
--- is sculpted from muscle bellies (BACK_BELLIES: centre, radii, tilt, height at the full look, part-local; mirrored left /
--- right): the upper traps behind the neck, the mid traps lobes, the lower traps narrowing to a point at the bottom of the
--- shoulder blades (together the trapezius diamond), the infraspinatus and teres on each shoulder blade, the lats, the
--- erector columns, and a thin sheet under the upper / lower back so no flat gap is left between them. The bellies join in
--- a smooth union (BACK_UNION: neighbouring bellies meet in a soft crease, they don't pile up) minus a spine groove, pushed
--- out along the back's smoothed normals (the base torso is a faceted box: its own normals folded the relief), fading out
--- at the bottom edge (the waist mesh meets it there). Each belly is its muscle's shape layer, so it grows with that
--- muscle's level (none at level 0) and its own mass monster size (ShapeMonsterG). The lats also sweep out sideways under
--- the arms (BACK_LAT_FLARE).
-local BACK_BELLIES = {
-	{ muscle = "Traps", x = 0.4, y = 0.78, rx = 0.45, ry = 0.16, tilt = -0.15, h = 0.09 }, -- upper traps
-	{ muscle = "Traps", x = 0.2, y = 0.52, rx = 0.26, ry = 0.36, tilt = 0.1, h = 0.08 }, -- mid traps lobe
-	{ muscle = "Traps", x = 0.12, y = 0.15, rx = 0.17, ry = 0.42, tilt = 0.3, h = 0.06 }, -- lower traps
-	{ muscle = "Rhomboids", x = 0.5, y = 0.25, rx = 0.24, ry = 0.26, tilt = 0.2, h = 0.085 }, -- infraspinatus
-	{ muscle = "Rhomboids", x = 0.74, y = 0.02, rx = 0.18, ry = 0.13, tilt = -0.5, h = 0.065 }, -- teres major
-	{ muscle = "Lats", x = 0.62, y = -0.3, rx = 0.38, ry = 0.55, tilt = 0.35, h = 0.09 }, -- lats
-	{ muscle = "LowerBack", x = 0.14, y = -0.5, rx = 0.13, ry = 0.42, tilt = 0, h = 0.085 }, -- erector columns
-	{ muscle = "Rhomboids", x = 0, y = 0.4, rx = 1, ry = 0.62, tilt = 0, h = 0.045 }, -- sheet under the upper back
-	{ muscle = "LowerBack", x = 0, y = -0.45, rx = 0.62, ry = 0.52, tilt = 0, h = 0.04 }, -- sheet under the lower back
-}
-local BACK_UNION = 28                      -- 1 / studs: how soft the creases between bellies are
-local BACK_GROOVE = { Depth = 0.03, Width = 0.05 }
-local BACK_BOTTOM = { From = -0.86, Over = 0.18 }
-local BACK_LAT_FLARE = { Flare = 0.08, From = 0.5, Top = 0.35, Peak = 0, Bottom = -0.75 }
-local BACK_NORMAL_SMOOTHING = 30          -- neighbour-average passes over the base normals
-
 -- the base normals averaged with their neighbours (vertices at the same spot count as one), only where z > minZ
 local function smoothedNormals(data, minZ: number, passes: number): { Vector3 }
 	-- one slot per spot (where z > minZ)
@@ -426,6 +376,108 @@ local function smoothedNormals(data, minZ: number, passes: number): { Vector3 }
 	end
 	return out
 end
+
+-- The traps yoke (owner, 19 Oct: "one wide, smooth slope from the base of the neck all the way out to the top of each
+-- shoulder"; the data only lifted a thin strip beside the neck). A Traps shape layer lifts the top of the torso: Height
+-- (studs at the full look, part-local) from NeckTo to PeakTo out from the middle (rising from NeckFrom, so the base of the
+-- neck lifts too: one mound, no horns), sloping down from there to none at ShoulderTo (past the torso's edge: some is left
+-- where the delts start); only the top Depth of the torso (easing in over Edge); the front of the top gets FrontShare of it,
+-- the back all; Back = a backward push with it (thick from behind). In that top band the data's own Traps growth fades out
+-- (fully above Top - Depth + Edge): at the mass monster it stood up as two horns beside the neck. The mid traps (the
+-- diamond between the shoulder blades) below it stay the data's.
+-- (owner, 19 Oct: "make the upper traps way bigger" (Height 0.52), then "smaller, like 0.32 at full look": Height 0.32, Back
+-- 0.1, Depth 0.6, monster 1.6)
+-- (owner, 20 Oct: "from behind the upper back is flat, puffy blocks": the backward push has no dip at the neck any more (the
+-- dip made a crack down the middle of the traps from behind) and is half as much, Back 0.05: the back sculpt (addBackSculpt)
+-- gives the upper traps their thickness from behind now)
+-- (owner, 20 Oct, prompt 15 part 3: "from the side the traps are a pile of round blobs with no slope; from behind it reads
+-- as a flat picture"; the anatomy references: one smooth slope from the base of the skull to the shoulder tip, thickest
+-- halfway): the torso's top lid is now a dense grid (applyCapPatch), and the yoke is a smooth height profile on it instead
+-- of a straight lift of a flat box top (that made a shelf with a hard crease at its back edge):
+--   across: Height (part-local studs at the full look) beside the neck (to NeckTo, under the head), sloping down to
+--     ShoulderShare of it at the shoulder tip (ShoulderAt) in a slightly concave curve (Concave: the references' slope from
+--     the base of the skull to the shoulder, not a dome);
+--   front to back on the top: FrontShare at the front edge, rising to all of it at the crest (CrestNeck by the neck, well
+--     behind the middle: the thick back of the neck; CrestShoulder at the shoulder), BackNeck .. BackShare at the back edge, where it rolls over: the top's back edge moves back by BackPush of it, and the
+--     back face below by the same, fading out over BackDrop down the back (into the mid traps of the back sculpt).
+-- The data's own Traps growth fades out in the top band (Depth / Edge).
+local UPPER_TRAPS = {
+	Height = 0.34, NeckTo = 0.12, ShoulderAt = 1.1, ShoulderShare = 0.4, Concave = 1.5,
+	FrontEdge = -0.5, FrontShare = 0.08, CrestNeck = 0.3, CrestShoulder = 0.1, BackEdge = 0.52, BackShare = 0.45, BackNeck = 0.8,
+	BackPush = 0.2, BackDrop = 0.5,
+	Depth = 0.6, Edge = 0.3,
+}
+local function addUpperTraps(data)
+	if not data.muscles.Traps then return end
+	local top = -math.huge
+	for _, p in ipairs(data.base) do top = math.max(top, p.Y) end
+	local U = UPPER_TRAPS
+	local ns = smoothedNormals(data, -10, 8)
+	local edgeY = top - 0.07 -- (the box's top edge, under the dome by the neck)
+	for v, p in ipairs(data.base) do
+		local down = ease((p.Y - (top - U.Depth)) / U.Edge)
+		if down > 0.001 then scaleMuscle(data, "Traps", v, 1 - down) end
+		local ax = math.abs(p.X)
+		local t = math.clamp((ax - U.NeckTo) / (U.ShoulderAt - U.NeckTo), 0, 1)
+		local across = U.ShoulderShare + (1 - U.ShoulderShare) * (1 - t) ^ U.Concave
+		if ax > U.ShoulderAt then across *= 1 - ease((ax - U.ShoulderAt) / 0.15) end
+		local h = U.Height * across
+		local n = ns[v]
+		local onTop = ease((n.Y - 0.3) / 0.4)
+		local onBack = ease((n.Z - 0.3) / 0.4)
+		if onTop + onBack > 1 then -- (the rounded back edge counts once)
+			onTop, onBack = onTop / (onTop + onBack), onBack / (onTop + onBack)
+		end
+		local lift, back = 0, 0
+		-- (by the neck the crest sits further back and the back edge stays high: the thick back of the neck, seen behind the
+		-- head from the side; out at the shoulder the crest comes forward)
+		local crest = U.CrestNeck + (U.CrestShoulder - U.CrestNeck) * t
+		local backShare = U.BackNeck + (U.BackShare - U.BackNeck) * t
+		if onTop > 0 then
+			local z = p.Z
+			local profile = if z < crest
+				then U.FrontShare + (1 - U.FrontShare) * ease((z - U.FrontEdge) / (crest - U.FrontEdge))
+				else 1 - (1 - backShare) * ease((z - crest) / (U.BackEdge - crest))
+			lift += onTop * h * profile
+			back += onTop * h * U.BackPush * ease((z - (U.BackEdge - 0.2)) / 0.2)
+		end
+		if onBack > 0 and p.Y > edgeY - U.BackDrop then
+			local fall = ease((p.Y - (edgeY - U.BackDrop)) / U.BackDrop)
+			back += onBack * h * U.BackPush * fall
+			lift += onBack * h * backShare * ease((p.Y - (edgeY - 0.15)) / 0.15)
+		end
+		if lift > 1e-4 or back > 1e-4 then addShape(data, "Traps", v, Vector3.new(0, lift, back)) end
+	end
+end
+
+-- The back sculpt (owner, 20 Oct: "from behind the upper back is made of flat, puffy blocks with no trap shape"; replaces
+-- the 19 Oct back fill, which filled the back flat up to its ridge). The data's own Traps / Rhomboids / LowerBack growth
+-- gives way on the back-facing surface (times the owner's big mass monster sizes it made the blocks and the pointed flaps
+-- at the shoulder corners), and so do the data's lats there (they stay on the sides: the V from the front). Instead the back
+-- is sculpted from muscle bellies (BACK_BELLIES: centre, radii, tilt, height at the full look, part-local; mirrored left /
+-- right): the mid traps lobes, the lower traps narrowing to a point at the bottom of the
+-- shoulder blades (together the trapezius diamond), the infraspinatus and teres on each shoulder blade, the lats, the
+-- erector columns, and a thin sheet under the upper / lower back so no flat gap is left between them. The bellies join in
+-- a smooth union (BACK_UNION: neighbouring bellies meet in a soft crease, they don't pile up) minus a spine groove, pushed
+-- out along the back's smoothed normals (the base torso is a faceted box: its own normals folded the relief), fading out
+-- at the bottom edge (the waist mesh meets it there). Each belly is its muscle's shape layer, so it grows with that
+-- muscle's level (none at level 0) and its own mass monster size (ShapeMonsterG). The lats also sweep out sideways under
+-- the arms (BACK_LAT_FLARE).
+local BACK_BELLIES = {
+	{ muscle = "Traps", x = 0.2, y = 0.52, rx = 0.26, ry = 0.36, tilt = 0.1, h = 0.08 }, -- mid traps lobe
+	{ muscle = "Traps", x = 0.12, y = 0.15, rx = 0.17, ry = 0.42, tilt = 0.3, h = 0.06 }, -- lower traps
+	{ muscle = "Rhomboids", x = 0.5, y = 0.25, rx = 0.24, ry = 0.26, tilt = 0.2, h = 0.085 }, -- infraspinatus
+	{ muscle = "Rhomboids", x = 0.74, y = 0.02, rx = 0.18, ry = 0.13, tilt = -0.5, h = 0.065 }, -- teres major
+	{ muscle = "Lats", x = 0.62, y = -0.3, rx = 0.38, ry = 0.55, tilt = 0.35, h = 0.09 }, -- lats
+	{ muscle = "LowerBack", x = 0.14, y = -0.5, rx = 0.13, ry = 0.42, tilt = 0, h = 0.085 }, -- erector columns
+	{ muscle = "Rhomboids", x = 0, y = 0.4, rx = 1, ry = 0.62, tilt = 0, h = 0.045 }, -- sheet under the upper back
+	{ muscle = "LowerBack", x = 0, y = -0.45, rx = 0.62, ry = 0.52, tilt = 0, h = 0.04 }, -- sheet under the lower back
+}
+local BACK_UNION = 28                      -- 1 / studs: how soft the creases between bellies are
+local BACK_GROOVE = { Depth = 0.03, Width = 0.05 }
+local BACK_BOTTOM = { From = -0.86, Over = 0.18 }
+local BACK_LAT_FLARE = { Flare = 0.08, From = 0.5, Top = 0.35, Peak = 0, Bottom = -0.75 }
+local BACK_NORMAL_SMOOTHING = 30          -- neighbour-average passes over the base normals
 
 local function addBackSculpt(data)
 	if not (data.muscles.Traps and data.muscles.Rhomboids and data.muscles.LowerBack and data.muscles.Lats) then return end
@@ -547,7 +599,8 @@ function MuscleMeshes.LoadUnified(name: string): any
 end
 
 local pieceCache: { [string]: any } = {}
--- One drawn piece of a unified mesh: the whole mesh (half = nil) or the torso's front / back half (half = "Front" / "Back").
+-- One drawn piece of a unified mesh: the whole mesh (half = nil) or the torso's front / back half (half = "Front" / "Back")
+-- or its re-meshed top lid (half = "Top", see applyCapPatch; then the halves leave the lid out).
 -- Its own vertex list (local ids), and per muscle only its vertices in this piece:
 --   { verts, global = { global index }, base, uv, vein, morph, nbase (local), tris (local, 0-based), muscles[name] = { idx,
 --     disp, nidx, ndisp } (local), dominant[v] = muscle name or false, band[v] = tint band, center / normal per muscle,
@@ -565,8 +618,9 @@ function MuscleMeshes.LoadPiece(name: string, half: string?): any
 		local a, b, c = tris[k] + 1, tris[k + 1] + 1, tris[k + 2] + 1
 		local keep = true
 		if half then
+			local lid = data.lidFrom ~= nil and (k - 1) // 3 >= data.lidFrom
 			local z = data.base[a].Z + data.base[b].Z + data.base[c].Z
-			keep = if half == "Front" then z < 0 else z >= 0
+			keep = if half == "Top" then lid elseif lid then false elseif half == "Front" then z < 0 else z >= 0
 		end
 		if keep then
 			if faceUV then faceUV[#outTris // 3 + 1] = data.faceUV[(k + 2) // 3] end
@@ -1001,6 +1055,8 @@ MuscleMeshes.Units = {
 	{ id = "Torso", alwaysWanted = true, groups = {
 		{ kind = "unified", part = "UpperTorso", mesh = "UpperTorso__Unified", half = "Front" },
 		{ kind = "unified", part = "UpperTorso", mesh = "UpperTorso__Unified", half = "Back" },
+		-- (the re-meshed top lid, MuscleMeshes applyCapPatch: both halves are at the 20,000 triangle limit)
+		{ kind = "unified", part = "UpperTorso", mesh = "UpperTorso__Unified", half = "Top" },
 	} },
 	{ id = "Snatched", alwaysWanted = true, groups = { { kind = "snatched", part = "LowerTorso" } } },
 	-- (the arms and legs from level 0 too: without them the plain blocky Robloxian parts show)
