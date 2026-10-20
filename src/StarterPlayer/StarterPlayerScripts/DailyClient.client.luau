@@ -579,8 +579,8 @@ end
 remote.OnClientEvent:Connect(function(kind, info)
 	info = type(info) == "table" and info or {}
 	if kind == "QuestDone" then
-		Notify.Toast("Daily quest done!", tostring(info.text), "list-checks", Colors.Green, "dailyquest")
-		Audio.PlayUI("QuestComplete")
+		-- (prompt 20: a reward popup, queued with the others)
+		Notify.Reward("QUEST DONE", tostring(info.text), "list-checks", Colors.Green, "QuestComplete")
 	elseif kind == "Claimed" then
 		Notify.Toast(info.bonus and "Daily bonus" or "Quest reward", "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins", "coin", Colors.Gold)
 		Audio.PlayUI("QuestClaim")

@@ -366,7 +366,8 @@ local function play(thenShop: boolean?)
 		bgGui.Enabled = false
 	end)
 	if thenShop then
-		task.delay(TIMING.Fade + 0.2, function() UIBus.OpenShop:Fire("Passes") end)
+		-- (prompt 20: the Store's own first tab, Auras, not the Robux passes)
+		task.delay(TIMING.Fade + 0.2, function() UIBus.OpenShop:Fire() end)
 	end
 end
 

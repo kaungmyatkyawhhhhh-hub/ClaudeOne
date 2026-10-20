@@ -673,6 +673,13 @@ function Kit.Modal(spec)
 	-- the group: the panel, centred a little below the middle (under the top bar)
 	local group = New("Frame", { Name = "Group", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 8), Size = UDim2.fromOffset(width, height), Parent = root })
+	-- (prompt 20, 21 Oct) centred in the room UNDER Roblox's top bar: on a phone the header (tabs, X) sat under the top bar's
+	-- icons (coins, LVL, Daily), which took the taps
+	Kit.OnTopbar(function()
+		local offset = math.max(8, Kit.UnderTopbar(root) / 2)
+		group.Position = UDim2.new(0.5, 0, 0.5, offset)
+		shade.Position = UDim2.new(0.5, 0, 0.5, offset)
+	end)
 	local pop = New("UIScale", { Parent = group })
 	local panel = Theme.Panel({ Name = "Panel", Size = UDim2.fromScale(1, 1), Active = true, Parent = group })
 	-- header: TITLE, then the tabs

@@ -1555,6 +1555,15 @@ local function staminaRatio()
 	return math.clamp(ClientData.Get().stamina / (type(max) == "number" and max or Stamina.Max), 0, 1)
 end
 
+-- Enough stamina for a rep on this machine (Config/Stamina.Pacing: the cost by Growth Spurt; none while recovering).
+-- Endless Stamina keeps the bar full, so it always passes.
+local function canAffordRep(machine): boolean
+	if machine.staminaCost <= 0 then return true end
+	if player:GetAttribute("StaminaRecovering") then return false end
+	local data = ClientData.Get()
+	return data.stamina >= Stamina.RepCost(machine.staminaCost, data.growthSpurts)
+end
+
 local function refreshCoins()
 	-- (the coins show in the top bar now; the unlock button's price is refreshed by refreshTier)
 end
@@ -1912,7 +1921,7 @@ local function outOfStamina()
 		back.BackgroundColor3, back.BackgroundTransparency = Colors.NeedsWork, 0.4
 		Theme.Tween(back, { BackgroundColor3 = Colors.Text, BackgroundTransparency = SEGMENT_BACK }, Theme.Motion.Time * 2)
 	end
-	Notify.Show("Out of stamina. Catch your breath.", nil, "stamina")
+	-- (prompt 20: no "Out of stamina" toast any more; HudBottom shows "Recovering... 6s" until the bar is full)
 	-- one breath per empty-tank moment, not one per tap
 	if os.clock() - lastOutOfStaminaSound > 2.5 then
 		lastOutOfStaminaSound = os.clock()
@@ -1923,8 +1932,7 @@ end
 -- auto = started by the slow automatic pace (no tap): no out-of-stamina warning, it just waits for the refill
 local function beginRep(auto)
 	if not current then return end
-	local data = ClientData.Get()
-	if data.stamina < current.machine.staminaCost then
+	if not canAffordRep(current.machine) then
 		if not auto then outOfStamina() end
 		return
 	end
@@ -1966,7 +1974,7 @@ RunService.Heartbeat:Connect(function()
 	refreshPump(now)
 	if current.repEnd and now < current.repEnd + Gains.AutoRepGap then return end
 	if current.queued then return end
-	if ClientData.Get().stamina < current.machine.staminaCost then return end
+	if not canAffordRep(current.machine) then return end -- (recovering: it waits for a full bar, HudBottom shows the countdown)
 	beginRep(true)
 end)
 
@@ -2253,7 +2261,7 @@ task.spawn(function()
 		if current and player:GetAttribute("Pass_AutoLift") and player:GetAttribute("AutoLiftOn") then
 			local data = ClientData.Get()
 			if pumpReady() then tryPump() end -- (Auto Lift pumps as soon as the bar is full)
-			if data.stamina >= current.machine.staminaCost then tryLift() end
+			if canAffordRep(current.machine) then tryLift() end
 		end
 	end
 end)
@@ -2493,6 +2501,10 @@ Remotes.RepResult.OnClientEvent:Connect(function(result)
 	end
 	if current then current.nextBig = result.nextBig == true end
 	if result.pr and current then showPersonalRecord(result.pr) end
+	-- a heavier weight unlocked (the server moved you up to it when you were on your heaviest): a reward popup
+	if type(result.weightUnlocked) == "string" and current then
+		Notify.Reward("NEW WEIGHT UNLOCKED", string.upper(result.weightUnlocked) .. " · " .. current.machine.name, "dumbbell", Theme.Colors.Gold, "TierUnlocked", "weight")
+	end
 	if type(result.staminaUp) == "number" then
 		flashLevel(nil, nil, "Max stamina · " .. Muscles.FormatExp(result.staminaUp))
 		Audio.Play2D("LevelUp")
@@ -2561,6 +2573,11 @@ ClientData.Changed:Connect(function(path)
 				if current.machine.trains == "Stamina" then Audio.Play2D("LevelUp") else Audio.PlayAt("TierUnlocked", barOf(current.model)) end
 			end
 			current.knownUnlocked = unlocked
+			-- the server moved you up to a weight that just unlocked (prompt 20): the card follows when it showed your weight
+			local _, nowSelected = progressFor(current.machine.id)
+			local before = current.knownSelected or viewTier
+			if nowSelected ~= before and viewTier == before then viewTier = nowSelected end
+			current.knownSelected = nowSelected
 			if current.maxPending then
 				-- the MAX button's purchases arrived: show the plate the server picked
 				current.maxPending = nil

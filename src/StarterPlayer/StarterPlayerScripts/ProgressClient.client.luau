@@ -8,6 +8,10 @@
 --    "Max Growth Spurt reached" button).
 --  * The next small goal (a new weight a few reps away, coins for the next weight, which group to train) is a hint in the
 --    top band now and then (Notify.Hint), not text on the HUD.
+--  * (prompt 20, 21 Oct) What the spurt still needs: "62% · Needs LEGS" on the card; a tap opens "Train next" (the
+--    machines for those groups, GO = a glowing path there). On a machine a small card at the top left shows the same (the
+--    right column folds there), and a hint says when the machine doesn't help ("Your legs are holding you back. Try the
+--    Squat Rack."). When the spurt is ready a big READY TO GROW popup shows over everything, once.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -18,6 +22,7 @@ local Muscles = require(Config.Muscles)
 local Machines = require(Config.Machines)
 local Gains = require(Config.Gains)
 local GrowthSpurts = require(Config.GrowthSpurts)
+local Onboarding = require(Config.Onboarding)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
@@ -111,12 +116,244 @@ local function goalText(data, progress)
 	return "Next: train " .. lowest.name
 end
 
+------------------------------------------------------------------------
+-- What the Growth Spurt still needs (prompt 20, 21 Oct: the bar got stuck at 78% / 96% and nothing said which muscles
+-- were missing). The groups under the goal, furthest behind first; the card, the machine strip and the stamina bar's
+-- "Recovering" line name the first two ("Needs LEGS, BACK"), and the Body Map colors them red.
+------------------------------------------------------------------------
+local NEEDS_SHOWN = 2
+local function missingGroups(progress)
+	local list = {}
+	if progress.maxed or progress.ready then return list end
+	for _, group in ipairs(Muscles.Groups) do
+		local level = progress.groups[group.id] or 0
+		if level < progress.required then table.insert(list, { group = group, share = level / math.max(progress.required, 1) }) end
+	end
+	table.sort(list, function(a, b) return a.share < b.share end)
+	return list
+end
+
+-- Only groups clearly behind the best one are named (at the start of a spurt every group is at 0%: nothing to single out).
+local BEHIND = 0.15
+local function needsText(missing, progress): string
+	local best = 0
+	for _, group in ipairs(Muscles.Groups) do best = math.max(best, math.min((progress.groups[group.id] or 0) / math.max(progress.required, 1), 1)) end
+	local names = {}
+	for _, item in ipairs(missing) do
+		if #names < NEEDS_SHOWN and item.share <= best - BEHIND then table.insert(names, string.upper(item.group.name)) end
+	end
+	return table.concat(names, ", ")
+end
+
+-- The open machines that train a group (their main muscle is in it), one per machine type.
+local function machinesFor(data, groupId)
+	local list, seen = {}, {}
+	for _, machine in ipairs(Machines.List) do
+		local open = data.growthSpurts >= (Machines.GymUnlock[machine.gym] or 0) and machine.gym ~= "Seasonal"
+		if open and machine.trains ~= "Stamina" and not seen[machine.id] and Muscles.ById[machine.muscles[1].id].group == groupId then
+			seen[machine.id] = true
+			table.insert(list, machine)
+		end
+	end
+	return list
+end
+
+-- does this machine train any of these groups (main or a real secondary muscle)?
+local function helps(machine, missing): boolean
+	for _, entry in ipairs(machine.muscles) do
+		if (entry.share or 1) >= Machines.GoalShare then
+			local group = Muscles.ById[entry.id].group
+			for _, item in ipairs(missing) do
+				if item.group.id == group then return true end
+			end
+		end
+	end
+	return false
+end
+
+------------------------------------------------------------------------
+-- The "what to train" window: the missing groups, their machines, and a GO button each (a glowing path to the nearest
+-- free one, Shared/UI/GuidePath; it goes away when you get on that machine). (No dumbbell exercises exist yet.)
+------------------------------------------------------------------------
+local GuidePath = require(Shared.UI.GuidePath)
+local needsModal = Kit.Modal({ name = "SpurtNeeds", title = "Train next", width = 520, height = 262, displayOrder = 26, icon = "dumbbell" })
+local needsIntro = Kit.Text({ Name = "Intro", Text = "", Font = "Strong", TextSize = 14, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left,
+	Parent = needsModal.body })
+local needsList = New("ScrollingFrame", { Name = "List", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 26),
+	Size = UDim2.new(1, 0, 1, -76), CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4,
+	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = needsModal.body }, {
+	Theme.List(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+})
+local physiqueButton = Kit.Button("Quiet", "See your physique", { Name = "Physique", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1),
+	Parent = needsModal.body }, { height = 44, textSize = 14 })
+physiqueButton.Activated:Connect(function()
+	needsModal.close()
+	UIBus.OpenStats:Fire("Muscles")
+end)
+
+local function goTo(machine)
+	needsModal.close()
+	Audio.PlayUI("Click")
+	GuidePath.Show(machine.id, "Needs")
+	if currentMachine then
+		Notify.Hint("Tap STOP, then follow the glowing dots to the " .. machine.name .. ".")
+	else
+		Notify.Hint("Follow the glowing dots to the " .. machine.name .. ".")
+	end
+	local shownAt = os.clock()
+	task.delay(120, function() -- (never left on forever)
+		if os.clock() - shownAt >= 119 then GuidePath.Hide("Needs") end
+	end)
+end
+
+local function openNeeds()
+	local data = ClientData.Get()
+	if not data or not data.muscles then return end
+	local progress = spurtProgress(data)
+	local missing = missingGroups(progress)
+	for _, child in ipairs(needsList:GetChildren()) do
+		if child:IsA("GuiObject") then child:Destroy() end
+	end
+	needsModal.setTitle("Growth Spurt " .. (data.growthSpurts + 1))
+	if #missing == 0 then
+		needsIntro.Text = if progress.ready then "Every muscle group is ready. Tap TAP TO GROW!" else "Nothing left to train for now."
+	else
+		local names = {}
+		for i = 1, math.min(NEEDS_SHOWN, #missing) do table.insert(names, string.lower(missing[i].group.name)) end
+		needsIntro.Text = "Your " .. table.concat(names, " and ") .. (#names == 1 and " is" or " are") .. " furthest behind. Train:"
+	end
+	local order = 0
+	for i = 1, math.min(NEEDS_SHOWN, #missing) do
+		local group = missing[i].group
+		for _, machine in ipairs(machinesFor(data, group.id)) do
+			order += 1
+			local row = Theme.Panel({ Name = machine.id, LayoutOrder = order, Piece = "hud_box", Size = UDim2.new(1, -8, 0, 50), Parent = needsList })
+			Kit.Tag(string.upper(group.name), Colors.Red, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(0, 18), Parent = row })
+			Kit.Text({ Text = machine.name, Font = "Title", TextSize = 15, Position = UDim2.fromOffset(90, 0), Size = UDim2.new(1, -200, 1, 0),
+				TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
+			local go = Kit.Button("Green", "Go", { Name = "Go", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Parent = row },
+				{ height = 44, width = 90, textSize = 16 })
+			go.Activated:Connect(function() goTo(machine) end)
+		end
+	end
+	UIBus.PanelOpened("SpurtNeeds")
+	needsModal.open()
+end
+UIBus.RegisterPanel("SpurtNeeds", function() needsModal.close() end)
+
+------------------------------------------------------------------------
+-- On a machine (the right column folds away there): a small Growth Spurt card at the top left, under the top bar, with
+-- the % and what it needs; when every group is ready it turns into the gold TAP TO GROW button.
+------------------------------------------------------------------------
+local stripGui = Theme.ScreenGui({ Name = "SpurtStrip", DisplayOrder = 6, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
+stripGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+local stripRoot = Kit.Root(stripGui)
+local strip = Theme.Button("Quiet", { Name = "Strip", Position = UDim2.fromOffset(12, 52), Size = UDim2.fromOffset(196, 50), Parent = stripRoot }, {})
+local stripTitle = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 13, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 18),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = strip })
+local _, setStripBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(10, 23), Size = UDim2.new(1, -20, 0, 6), Parent = strip }, { outline = 1 })
+local stripNeeds = Kit.Text({ Name = "Needs", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Red, Position = UDim2.fromOffset(10, 31),
+	Size = UDim2.new(1, -20, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = strip })
+Kit.OnTopbar(function() strip.Position = UDim2.fromOffset(12, Kit.UnderTopbar(stripRoot)) end)
+
+-- the Growth Spurt from a machine: off the machine first (the body grows), then grow
+local function growNow()
+	if currentMachine then
+		Remotes.MachineAction:FireServer("Leave")
+		task.delay(0.6, function() Remotes.PlayerAction:FireServer("GrowthSpurt") end)
+	else
+		Remotes.PlayerAction:FireServer("GrowthSpurt")
+	end
+end
+strip.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	if ready then growNow() else openNeeds() end
+end)
+
+------------------------------------------------------------------------
+-- READY TO GROW: a big popup with a sound and a glowing button, on top of everything (the machine HUD too), once each time
+-- the Growth Spurt becomes ready. It stays until tapped (or "Later").
+------------------------------------------------------------------------
+local readyGui = Theme.ScreenGui({ Name = "GrowReady", DisplayOrder = 45, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
+readyGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+local readyRoot = Kit.Root(readyGui)
+local readyCard = Theme.Panel({ Name = "Card", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.fromOffset(340, 150),
+	Parent = readyRoot }, { New("UIStroke", { Color = Colors.Gold, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
+local readyTitle = Kit.Text({ Name = "Title", Text = "READY TO GROW!", Font = "Title", TextSize = 30, Position = UDim2.fromOffset(0, 10), Size = UDim2.new(1, 0, 0, 36),
+	Parent = readyCard })
+Kit.GoldText(readyTitle)
+local readySub = Kit.Text({ Name = "Sub", Text = "", Font = "Strong", TextSize = 13, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 18), Parent = readyCard })
+local readyGo = Kit.Button("Gold", "Tap to grow", { Name = "Grow", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, -40, 1, -14), Parent = readyCard },
+	{ height = 48, width = 190, textSize = 18 })
+local readyLater = Kit.Button("Quiet", "Later", { Name = "Later", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 112, 1, -14), Parent = readyCard },
+	{ height = 48, width = 84, textSize = 14 })
+local readyScale = New("UIScale", { Parent = readyCard })
+local readyShownFor = -1 -- the Growth Spurt number the popup was shown for
+local function hideReady()
+	readyGui.Enabled = false
+end
+local function showReady(data)
+	readySub.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. ": grow to " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts + 1), true)
+	readyGui.Enabled = true
+	readyScale.Scale = 0.5
+	Theme.Tween(readyScale, { Scale = 1 }, 0.35, Enum.EasingStyle.Back)
+	Theme.Pulse(readyGo, function() return readyGui.Enabled end)
+	Audio.Play2D("TitleUnlocked")
+end
+readyGo.Activated:Connect(function()
+	hideReady()
+	growNow()
+end)
+readyLater.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	hideReady()
+end)
+
 local lastGoal, lastGoalAt = "", 0
+local hintedMachine = nil -- the machine session the "holding you back" hint was shown for
 local function refresh()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
 	local progress, have, need = spurtProgress(data)
 	ready = progress.ready and not progress.maxed
+	local missing = missingGroups(progress)
+	local needs = needsText(missing, progress)
+	player:SetAttribute("SpurtNeeds", if needs ~= "" then needs else nil)
+	local percent = math.floor((need > 0 and have / need or 0) * 100)
+	-- the machine strip
+	stripGui.Enabled = started and currentMachine ~= nil and not progress.maxed
+	if ready then
+		stripTitle.Text = "TAP TO GROW"
+		stripNeeds.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
+		stripNeeds.TextColor3 = Colors.Text
+		setStripBar(1)
+		Theme.SetButtonStyle(strip, "Gold")
+		Theme.Pulse(strip, function() return ready and stripGui.Enabled end)
+	else
+		stripTitle.Text = "GROWTH SPURT " .. (data.growthSpurts + 1) .. " · " .. percent .. "%"
+		stripNeeds.Text = if needs ~= "" then "Needs " .. needs else ""
+		stripNeeds.TextColor3 = Colors.Red
+		setStripBar(percent / 100)
+		Theme.SetButtonStyle(strip, "Quiet")
+	end
+	-- READY TO GROW: once per spurt
+	if ready and started and readyShownFor ~= data.growthSpurts then
+		readyShownFor = data.growthSpurts
+		showReady(data)
+	elseif not ready and readyGui.Enabled then
+		hideReady()
+	end
+	-- on a machine that doesn't help the groups that are behind: one hint per machine session
+	-- (no hints while the tutorial runs: its own line is in the same band, and two different "next" steps confuse; prompt 20)
+	local inTutorial = (data.onboarding and data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done
+	if not inTutorial and currentMachine and not ready and #missing > 0 and hintedMachine ~= currentMachine and not helps(currentMachine, missing) then
+		hintedMachine = currentMachine
+		local first = missing[1].group
+		local suggestion = machinesFor(data, first.id)[1]
+		Notify.Hint("Your " .. string.lower(first.name) .. " " .. (string.sub(first.name, -1) == "s" and "are" or "is") .. " holding you back."
+			.. (suggestion and (" Try the " .. suggestion.name .. ".") or ""))
+		lastGoalAt = os.clock()
+	end
 	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
 	-- (owner, 15 Oct, later: at the 7'0" cap NO card on the HUD; the top bar's "7'0" MAX" and the Stats panel's greyed
 	-- button show it)
@@ -132,12 +369,12 @@ local function refresh()
 		Theme.Pulse(tile, function() return ready end)
 	else
 		tileText.Text = "GROWTH SPURT " .. (data.growthSpurts + 1)
-		tileLabel.Text = math.floor((need > 0 and have / need or 0) * 100) .. "% · tap for your physique"
+		tileLabel.Text = percent .. "%" .. (if needs ~= "" then " · Needs " .. needs else " · tap for your physique")
 		Theme.SetButtonStyle(tile, "Quiet")
 	end
 	-- the next small goal: a hint now and then (never more than one a minute, and only a new one)
 	local goal = goalText(data, progress)
-	if goal ~= "" and goal ~= lastGoal and os.clock() - lastGoalAt > 60 then
+	if not inTutorial and goal ~= "" and goal ~= lastGoal and os.clock() - lastGoalAt > 60 then
 		lastGoal, lastGoalAt = goal, os.clock()
 		Notify.Hint(goal)
 	end
@@ -145,17 +382,20 @@ end
 
 tile.Activated:Connect(function()
 	if ready then
-		Remotes.PlayerAction:FireServer("GrowthSpurt")
+		growNow()
 	else
-		UIBus.OpenStats:Fire("Muscles")
+		openNeeds() -- (prompt 20: what to train, with GO buttons; the window links to the physique)
 	end
 end)
 
 Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	if state == "Enter" and typeof(model) == "Instance" then
 		currentMachine = Machines.ById[model:GetAttribute("MachineId")]
+		-- arrived where a GO button led: the path is done
+		if currentMachine and GuidePath.Target() == currentMachine.id then GuidePath.Hide("Needs") end
 	elseif state == "Exit" then
 		currentMachine = nil
+		hintedMachine = nil
 	end
 	refresh()
 end)

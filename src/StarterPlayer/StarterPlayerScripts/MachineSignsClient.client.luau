@@ -11,7 +11,8 @@
 --  * A glowing white rectangle on the floor around the machine's footprint (thin Neon strips), brighter while you stand
 --    inside it.
 --  * Only the nearest machine within SIGN.Near studs shows all this; from there to BANG.Far studs, machines you never
---    did a rep on show the bouncing yellow "!" + "NEW" (the save's `machinesUsed`); nothing beyond. While you're on a
+--    did a rep on, or that have a heavier weight ready you never lifted (prompt 20), show the bouncing yellow "!" + "NEW"
+--    (the save's `machinesUsed` / `machines`); nothing beyond. While you're on a
 --    machine the diamond, prompt and outline are hidden. Hidden too while the camera is within SIGN.CameraMin studs.
 --  * Cheap: one set of sign parts moved to the nearest machine; one invisible anchor part per machine for its "!".
 --  * Arm wrestling tables (tag "ArmWrestleTable") are not lifting machines (owner, 14 Oct): no diamond, only a small
@@ -95,6 +96,15 @@ local function isNew(machineId: string): boolean
 	if data.machinesUsed and data.machinesUsed[machineId] then return false end
 	if data.machines and data.machines[machineId] then return false end -- (used before the tag existed)
 	return true
+end
+-- (prompt 20, 21 Oct) a heavier weight is ready on a machine you used, but you haven't lifted it yet: the same "!" + "NEW"
+local function hasNewWeight(machineId: string): boolean
+	local data = ClientData.Get()
+	local machine = Machines.ById[machineId]
+	local progress = data.machines and data.machines[machineId]
+	if not machine or not progress or machine.trains == "Stamina" or not data.muscles then return false end
+	local level = data.muscles[machine.muscles[1].id].level
+	return Machines.UsableTier(machine, progress, level) > math.max(progress.selected or 1, progress.best or 1)
 end
 
 ------------------------------------------------------------------------
@@ -460,7 +470,7 @@ RunService.RenderStepped:Connect(function(dt)
 		-- the "!" + "NEW" (not on the machine whose sign shows: one thing per machine)
 		local id = model:GetAttribute("MachineId")
 		local signed = model == shown.model and shown.alpha > 0
-		local wantBang = if not mine and not signed and id ~= nil and isNew(id) and distance <= BANG.Far then 1 else 0
+		local wantBang = if not mine and not signed and id ~= nil and distance <= BANG.Far and (isNew(id) or hasNewWeight(id)) then 1 else 0
 		local before = anchor.bangAlpha
 		anchor.bangAlpha = approach(anchor.bangAlpha, wantBang, dt)
 		local b = anchor.bangAlpha

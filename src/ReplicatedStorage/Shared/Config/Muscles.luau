@@ -91,8 +91,9 @@ end
 -- Growth Spurt asks for exactly Muscles.FirstSpurtExp (50,000) in every group. A rep's gain popup is the same unit.
 --   xp for level L = sum of XpToNext = L*L + 19*L   (also fine for a fractional level)
 ------------------------------------------------------------------------
-Muscles.FirstSpurtExp = 50000 -- EXP a group needs for the first Growth Spurt
-Muscles.FirstSpurtLevel = 15  -- = GrowthSpurts stage 1 requiredLevel (tests/muscles checks they agree)
+Muscles.FirstSpurtExp = 50000 -- EXP at FirstSpurtLevel (the EXP scale)
+Muscles.FirstSpurtLevel = 15  -- the EXP scale: level 15 = 50,000 EXP. (It was the first Growth Spurt's goal; that goal is level 9
+-- since prompt 20, 21 Oct, about 24,700 EXP. The scale stays so no EXP number on screen or on a leaderboard changes.)
 
 -- xp earned in total to be at `level` (levels may be fractional)
 function Muscles.CumXp(level)

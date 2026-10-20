@@ -1,7 +1,8 @@
 -- TopBarClient: the left-hand icons on Roblox's top bar (owner, 14 Oct: TopbarPlus, see Shared/UI/TopBar):
 --   Coins   the gold coin + the live amount ("28,859")
 --   Height  the ruler + "6'4"" (at the cap "7'0" MAX", MAX in gold)
---   Level   "LVL 60" (the average exact level of the 18 muscles); its caption shows the way to the next level
+--   Level   "LVL 60" (the average exact level of the 18 muscles); its caption shows the way to the next level; a new LVL
+--           shows the LVL UP reward popup (Notify.Reward)
 -- The right-hand icons (Daily, Quests, Settings) come from their own scripts through TopBar.AddPill.
 -- Small screens: when the icons don't fit beside Roblox's buttons, Height goes first (TopbarPlus' overflow menu takes
 -- anything else). The coins icon steps aside while a window is open (the window shows its own coins).
@@ -17,6 +18,7 @@ local UI = require(Shared.Config.UI)
 local Muscles = require(Shared.Config.Muscles)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local ClientData = require(Shared.ClientData)
+local Notify = require(Shared.UI.Notify)
 
 local player = Players.LocalPlayer
 local GOLD = "#" .. Theme.Colors.Gold:ToHex()
@@ -28,6 +30,7 @@ local height = TopBar.NewIcon("Height", 2):setImage(UI.Icons.ruler):setLabel("")
 local level = TopBar.NewIcon("Level", 3):setLabel("LVL 0")
 
 local heightRoom = true -- false = Height is folded away for room
+local shownLevel, shownSpurts = nil, 0 -- the LVL shown last (for the LVL UP popup)
 local function refresh()
 	local data = ClientData.Get()
 	if not data then return end
@@ -48,6 +51,11 @@ local function refresh()
 	local whole = math.floor(average)
 	level:setLabel("LVL " .. whole)
 	level:setCaption(string.format("%d%% to LVL %d", math.floor((average - whole) * 100), whole + 1))
+	-- LVL up (prompt 20, 21 Oct): a reward popup. Not on the first read, and not after a Growth Spurt (the level starts over)
+	if shownLevel and whole > shownLevel and (data.growthSpurts or 0) == shownSpurts then
+		Notify.Reward("LVL UP", "You are LVL " .. whole .. " now", "arrow-big-up", Theme.Colors.Gold, "LevelUp", "lvl")
+	end
+	shownLevel, shownSpurts = whole, data.growthSpurts or 0
 end
 
 -- Height goes first when the left and right icons would meet (checked after every change of size)

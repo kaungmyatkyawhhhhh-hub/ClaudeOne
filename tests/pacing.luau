@@ -84,6 +84,7 @@ local function playOneSpurt(data, overhead)
 	end
 	local time, current = overhead, nil
 	local pump = { meter = 0, left = 0 }
+	local stamina = Stamina.Max -- (carried from set to set: a player who switches machines keeps what's left)
 
 	local function progress()
 		return GrowthSpurts.Progress(data, Muscles.Groups, trainable)
@@ -128,9 +129,16 @@ local function playOneSpurt(data, overhead)
 		local tier = tierFor(machine)
 		-- one set: tapped or on auto reps, until stamina runs out; then rest until it's full again
 		local tapping = math.random() < PLAY.TapShare
-		local stamina = Stamina.Max
-		while stamina >= machine.staminaCost do
-			stamina -= machine.staminaCost
+		local cost = Stamina.RepCost(machine.staminaCost, data.growthSpurts)
+		local reps, switch = 0, false
+		while stamina >= cost do
+			-- every 10 reps a look at the Growth Spurt card ("Needs LEGS", prompt 20): done here, or a better machine now?
+			reps += 1
+			if reps % 10 == 0 then
+				local now = progress()
+				if now.ready or pick(now, machine) ~= machine then switch = true break end
+			end
+			stamina -= cost
 			local pumped = pump.left > 0
 			local quality = (pumped and Gains.Pump.Multiplier or 1)
 				* (math.random() < Gains.BigRep.Chance and Gains.BigRep.Multiplier or 1)
@@ -140,9 +148,13 @@ local function playOneSpurt(data, overhead)
 			stepPump(pump, rep, tapping)
 			time += rep
 		end
-		local rest = Stamina.RegenDelay + (Stamina.Max - stamina) / Stamina.RegenPerSecond
-		stepPump(pump, rest, false)
-		time += rest
+		if not switch then
+			-- recovering: empty to full in the pacing's refillSeconds, on the machine (Config/Stamina.Pacing)
+			local rest = Stamina.PacingFor(data.growthSpurts).refillSeconds * (Stamina.Max - stamina) / Stamina.Max
+			stepPump(pump, rest, false)
+			time += rest
+			stamina = Stamina.Max
+		end
 		if time > 6 * 3600 then break end -- safety
 	end
 	-- the Growth Spurt itself (same as PlayerData.GrowthSpurt)

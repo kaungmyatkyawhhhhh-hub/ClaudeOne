@@ -471,8 +471,8 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind == "TitleUnlocked" then
 		local title = Titles.ById[info.id]
 		if title then
-			Notify.Toast("New title!", title.name, "medal", RARITY_COLOR[title.rarity] or Colors.Gold)
-			Audio.PlayUI("TitleUnlocked")
+			-- (prompt 20: a reward popup, queued with the others)
+			Notify.Reward("NEW TITLE", title.name, "medal", RARITY_COLOR[title.rarity] or Colors.Gold, "TitleUnlocked")
 			if not modal.isOpen() then menuButton:SetDot(true) end
 		end
 	end

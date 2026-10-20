@@ -8,6 +8,7 @@
 --                                                  hint (also gone after HintSeconds; the coach dialog keeps the words)
 --   Notify.BandBottom()                            mockup px from the top to the bottom of the band (0 when empty)
 --   Notify.Reserve(px)                             keeps px free under the band (toasts stack below it)
+--   Notify.Reward(title, sub?, icon?, color?, sound?, key?) a big reward popup, queued (see below)
 -- Toasts stack under the top bar at the top center (newest on top, at most Notify.MaxVisible), below the band, so they
 -- never cover each other, the band or the machine panel (which sits on the right). key throttles repeats of a message.
 -- While the genetics screen is up they wait.
@@ -185,6 +186,82 @@ end
 function Notify.BandBottom()
 	ensure()
 	return bandVisible() and (Notify.Top + Notify.BandHeight) or 0
+end
+
+-- Reward popups (prompt 20, 21 Oct: rewards were easy to miss): a bigger card with a gold edge in the upper middle of the
+-- screen, over the machine HUD too, for the moments that matter (a new weight, a quest done, LVL up, a new title). One at
+-- a time: when several come at once they wait in line, RewardGap seconds apart. sound = a Config/Sounds name (optional).
+Notify.RewardGap = 1.5
+Notify.RewardSeconds = 2.6
+Notify.RewardY = 0.6 -- the card's centre, as a share of the screen height (under the PR banner and hints, above the stamina bar)
+local rewardQueue, rewardBusy = {}, false
+local rewardHolder = nil
+
+local function showReward(entry)
+	ensure()
+	if not rewardHolder then
+		rewardHolder = New("Frame", { Name = "Rewards", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = root })
+	end
+	local tint = entry.color or Colors.Gold
+	local card = Theme.Panel({ Name = "Reward", Piece = "hud_box", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, Notify.RewardY),
+		Size = UDim2.fromOffset(0, 58), AutomaticSize = Enum.AutomaticSize.X, Parent = rewardHolder }, {
+		New("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 18) }),
+		Theme.List(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+		New("UIStroke", { Color = tint, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	New("UISizeConstraint", { MaxSize = Vector2.new(520, 80), Parent = card })
+	Kit.IconTile(entry.icon or "sparkles", tint, 40, { LayoutOrder = 1, Parent = card })
+	local texts = New("Frame", { LayoutOrder = 2, Size = UDim2.fromOffset(0, 46), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = card },
+		{ Theme.List(Enum.FillDirection.Vertical, 0, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
+	Kit.Text({ LayoutOrder = 1, Text = entry.title, Font = "Title", TextSize = 20, TextColor3 = tint, Size = UDim2.fromOffset(0, 26),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
+	if entry.sub and entry.sub ~= "" then
+		Kit.Text({ LayoutOrder = 2, Text = entry.sub, Font = "Strong", TextSize = 13, Size = UDim2.fromOffset(0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = texts })
+	end
+	local pop = New("UIScale", { Scale = 0.6, Parent = card })
+	Theme.Tween(pop, { Scale = 1 }, 0.25, Enum.EasingStyle.Back)
+	Theme.Fade(card, true, 0.15)
+	if entry.sound then
+		local ok, Audio = pcall(function() return require(script.Parent.Parent.Audio) end)
+		if ok then pcall(Audio.Play2D, entry.sound) end
+	end
+	return card
+end
+
+local function runRewards()
+	if rewardBusy then return end
+	rewardBusy = true
+	task.spawn(function()
+		while #rewardQueue > 0 do
+			if held then task.wait(0.3) continue end -- (the genetics screen is up)
+			local card = showReward(table.remove(rewardQueue, 1))
+			local started = os.clock()
+			-- stay up RewardSeconds, or only RewardGap when the next one is waiting
+			while os.clock() - started < Notify.RewardSeconds and not (#rewardQueue > 0 and os.clock() - started >= Notify.RewardGap) do
+				task.wait(0.1)
+			end
+			local tween = Theme.Fade(card, false, 0.2)
+			task.delay(0.25, function() card:Destroy() end)
+			if tween and #rewardQueue == 0 then tween.Completed:Wait() end
+		end
+		rewardBusy = false
+	end)
+end
+
+-- key (optional): a newer reward with the same key replaces one still waiting in line (LVL 4, LVL 5, LVL 6 in a row
+-- show once, as the latest), so fast early levels and weights don't pile up.
+function Notify.Reward(title: string, sub: string?, icon: string?, color: Color3?, sound: string?, key: string?)
+	local entry = { title = tostring(title), sub = sub, icon = icon, color = color, sound = sound, key = key }
+	if key then
+		for i, waiting in ipairs(rewardQueue) do
+			if waiting.key == key then
+				rewardQueue[i] = entry
+				return
+			end
+		end
+	end
+	table.insert(rewardQueue, entry)
+	runRewards()
 end
 
 UIBus.GeneticsVisible.Event:Connect(function(visible)

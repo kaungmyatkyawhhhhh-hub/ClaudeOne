@@ -3,12 +3,11 @@
 -- under it (tap twice: the first tap asks "Tap again to skip"), and the step's coach pages show in a dialog at the bottom
 -- (a live portrait of the Coach NPC, "Coach Dex · Reward (coin) 50", the words, "Tap to continue (1/3)"). On a machine
 -- there is no dialog, so it never covers the machine HUD (the band has the step's line). Steps that lead to a machine
--- draw a glowing path of dots on the floor (Roblox pathfinding, so it walks around equipment) and outline the machine.
+-- draw a glowing path of dots on the floor (Shared/UI/GuidePath: Roblox pathfinding, so it walks around equipment) and
+-- outline the machine.
 -- Progress is saved through the server, so a player who leaves mid-tutorial picks up where they were.
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
-local PathfindingService = game:GetService("PathfindingService")
 local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -30,16 +29,6 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors, Spacing = Theme.New, Theme.Colors, Theme.Spacing
 
-local PATH = {
-	Spacing = 2.5,       -- studs between dots
-	SkipNear = 3,        -- no dots this close to the player
-	MaxDots = 40,
-	Refresh = 0.25,      -- seconds between path recomputes (only if the player moved); the dots themselves move every frame
-	MoveThreshold = 1,   -- studs the player must move before the path is recomputed
-	Approach = 2.5,      -- the path ends this far outside the machine, on the side facing the room
-	DotSize = 0.7,
-	WaveSpeed = 4,       -- the pulse runs along the path toward the machine
-}
 
 ------------------------------------------------------------------------
 -- Wait for the menu, the data, and the genetics reveal
@@ -212,239 +201,11 @@ dialog.Activated:Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- Machines: find them, and the spot just outside each one facing the room
+-- The glowing path + outline to the step's machine (Shared/UI/GuidePath; the Growth Spurt's Go buttons use it too)
 ------------------------------------------------------------------------
--- A target is a MachineId, or "Coach" (the Coach NPC, tagged "Coach").
-local function machineModel(machineId)
-	if machineId == "Coach" then
-		return CollectionService:GetTagged("Coach")[1]
-	end
-	-- the gym has several of each machine: the nearest one nobody is using (any one if all are busy)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	local from = root and root.Position or Vector3.zero
-	local best, bestScore = nil, math.huge
-	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:IsA("Model") and model:GetAttribute("MachineId") == machineId then
-			local busy = model:GetAttribute("UserId") ~= nil or model:FindFirstChild("Occupant") ~= nil
-			local score = (model:GetPivot().Position - from).Magnitude + (busy and 1000 or 0)
-			if score < bestScore then best, bestScore = model, score end
-		end
-	end
-	return best
-end
-
--- The middle of the gym the target is in (machines in the same room, within 60 studs of it).
-local function gymCenter(near, room)
-	local sum, count = Vector3.zero, 0
-	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:IsA("Model") and (not room or model.Parent == room) then
-			local position = model:GetPivot().Position
-			if not near or (position - near).Magnitude < 60 then
-				sum += position
-				count += 1
-			end
-		end
-	end
-	return count > 0 and sum / count or nil
-end
-
--- From the machine's prompt, head toward the middle of the gym until leaving the machine's box, then a bit more.
-local function approachPoint(model)
-	local boxCFrame, size = model:GetBoundingBox()
-	local prompt = model:FindFirstChildWhichIsA("ProximityPrompt", true) -- Use or Spot: both sit on the same part
-	local holder = prompt and prompt.Parent
-	local start = (holder and holder:IsA("BasePart") and holder.Position)
-		or (holder and holder:IsA("Attachment") and holder.WorldPosition)
-		or boxCFrame.Position
-	local center = gymCenter(boxCFrame.Position, model.Parent) or boxCFrame.Position
-	local localStart = boxCFrame:PointToObjectSpace(start)
-	local localDir = boxCFrame:VectorToObjectSpace((center - start) * Vector3.new(1, 0, 1))
-	if localDir.Magnitude < 0.01 then localDir = Vector3.new(0, 0, -1) end
-	localDir = localDir.Unit
-	local half = size / 2
-	local exit = math.huge
-	for _, axis in ipairs({ "X", "Z" }) do
-		local d = localDir[axis]
-		if math.abs(d) > 1e-4 then
-			local bound = d > 0 and half[axis] or -half[axis]
-			exit = math.min(exit, (bound - localStart[axis]) / d)
-		end
-	end
-	if exit == math.huge then exit = 0 end
-	local localPoint = localStart + localDir * (math.max(exit, 0) + PATH.Approach)
-	local world = boxCFrame:PointToWorldSpace(localPoint)
-	local floorY = boxCFrame.Position.Y - half.Y
-	return Vector3.new(world.X, floorY, world.Z)
-end
-
-------------------------------------------------------------------------
--- Glowing path + outline
-------------------------------------------------------------------------
-local dotFolder = New("Folder", { Name = "TutorialPath" })
-local dots = {}
-for i = 1, PATH.MaxDots do
-	dots[i] = New("Part", {
-		Name = "Dot",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.08, PATH.DotSize, PATH.DotSize),
-		Material = Enum.Material.Neon,
-		Color = Colors.Text,
-		Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-		Transparency = 1,
-		Parent = dotFolder,
-	})
-end
-local activeDots = 0
-
-local highlight = New("Highlight", {
-	Name = "TutorialOutline",
-	FillTransparency = 1,
-	OutlineColor = Colors.Text,
-	OutlineTransparency = 0.2,
-	DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
-	Enabled = false,
-})
-
-local agent = PathfindingService:CreatePath({ AgentRadius = 1.5, AgentHeight = 5, AgentCanJump = false, WaypointSpacing = 2 })
-local FLAT = CFrame.Angles(0, 0, math.rad(90)) -- cylinder axis up: a flat disc on the floor
-
--- The dots live on the last computed path (a polyline) and are re-placed EVERY frame from the player's current spot: they
--- sit at fixed distances measured back from the target (so they do not swim when the path is recomputed) and only the ones
--- ahead of the player show, so they never lag behind a running player.
-local polyline, cumulative, pathLength = nil, nil, 0
-local function placeDots(points)
-	polyline = points
-	cumulative = { 0 }
-	for i = 2, #points do cumulative[i] = cumulative[i - 1] + (points[i] - points[i - 1]).Magnitude end
-	pathLength = cumulative[#points] or 0
-end
-
-local function pointAt(s)
-	for i = 1, #polyline - 1 do
-		if s <= cumulative[i + 1] then
-			local seg = cumulative[i + 1] - cumulative[i]
-			local t = seg > 0 and (s - cumulative[i]) / seg or 0
-			return polyline[i]:Lerp(polyline[i + 1], t)
-		end
-	end
-	return polyline[#polyline]
-end
-
-local function renderDots(feet)
-	if not polyline or #polyline < 2 then
-		activeDots = 0
-		for i = 1, PATH.MaxDots do dots[i].Transparency = 1 end
-		return
-	end
-	-- where along the path the player is (closest point on any segment)
-	local playerS, best = 0, math.huge
-	for i = 1, #polyline - 1 do
-		local a, b = polyline[i], polyline[i + 1]
-		local ab = b - a
-		local len2 = ab:Dot(ab)
-		local t = len2 > 0 and math.clamp((feet - a):Dot(ab) / len2, 0, 1) or 0
-		local d = (feet - (a + ab * t)).Magnitude
-		if d < best then
-			best = d
-			playerS = cumulative[i] + t * math.sqrt(len2)
-		end
-	end
-	local count, k = 0, 0
-	while count < PATH.MaxDots do
-		local s = pathLength - k * PATH.Spacing
-		if s <= playerS + PATH.SkipNear then break end
-		count += 1
-		dots[count].CFrame = CFrame.new(pointAt(s) + Vector3.new(0, 0.07, 0)) * FLAT
-		k += 1
-	end
-	for i = count + 1, PATH.MaxDots do dots[i].Transparency = 1 end
-	activeDots = count
-end
-
-local targetModel, targetPoint = nil, nil
-local lastFrom = nil
-local computing = false
-
-local function rootPart()
-	local character = player.Character
-	return character and character:FindFirstChild("HumanoidRootPart")
-end
-
-local function refreshPath(force)
-	local root = rootPart()
-	if not root or not targetPoint or computing then return end
-	local from = root.Position
-	if not force and lastFrom and (from - lastFrom).Magnitude < PATH.MoveThreshold then return end
-	lastFrom = from
-	computing = true
-	local target = targetPoint -- (the step can end while the path is computing: targetPoint turns nil)
-	task.spawn(function()
-		local feet = from - Vector3.new(0, 2.5, 0)
-		local ok = pcall(function() agent:ComputeAsync(feet, target) end)
-		local points
-		if ok and agent.Status == Enum.PathStatus.Success then
-			points = {}
-			for _, waypoint in ipairs(agent:GetWaypoints()) do table.insert(points, waypoint.Position) end
-		else
-			points = { Vector3.new(from.X, target.Y, from.Z), target } -- straight line fallback
-		end
-		computing = false
-		if targetPoint == target then placeDots(points) end
-	end)
-end
-
--- (owner, 14 Oct: instance streaming) the target machine may not be on this device yet, or stream out and back in as a
--- new instance: the step's machine is remembered (wantedTarget) and looked up again until it's here; the highlight lives
--- under the camera and only points at it, so it never leaves with a streamed-out model
-local wantedTarget = nil
-local function showPath(machineId)
-	wantedTarget = machineId
-	targetModel = machineModel(machineId)
-	if not targetModel then return end
-	targetPoint = approachPoint(targetModel)
-	highlight.Adornee = targetModel
-	highlight.Parent = Workspace.CurrentCamera
-	highlight.Enabled = true
-	dotFolder.Parent = Workspace.CurrentCamera
-	lastFrom = nil
-	refreshPath(true)
-end
-
-local function hidePath()
-	wantedTarget = nil
-	targetModel, targetPoint = nil, nil
-	polyline = nil
-	highlight.Enabled = false
-	highlight.Parent = nil
-	dotFolder.Parent = nil
-	activeDots = 0
-end
-
-local refreshClock, retryClock = 0, 0
-RunService.Heartbeat:Connect(function(dt)
-	-- the step's machine not here yet, or streamed out: look again once a second
-	if wantedTarget and (not targetModel or not targetModel:IsDescendantOf(Workspace)) then
-		retryClock += dt
-		if retryClock >= 1 then
-			retryClock = 0
-			targetModel, targetPoint = nil, nil
-			showPath(wantedTarget)
-		end
-	end
-	if not targetPoint then return end
-	refreshClock += dt
-	local rootNow = rootPart()
-	if rootNow then renderDots(rootNow.Position - Vector3.new(0, 2.5, 0)) end
-	if refreshClock >= PATH.Refresh then
-		refreshClock = 0
-		refreshPath(false)
-	end
-	local t = os.clock() * PATH.WaveSpeed
-	for i = 1, activeDots do
-		dots[i].Transparency = 0.15 + 0.55 * (0.5 + 0.5 * math.sin(i * 0.7 - t))
-	end
-	highlight.OutlineTransparency = 0.15 + 0.35 * (0.5 + 0.5 * math.sin(os.clock() * 3))
-end)
+local GuidePath = require(Shared.UI.GuidePath)
+local function showPath(machineId) GuidePath.Show(machineId, "Tutorial") end
+local function hidePath() GuidePath.Hide("Tutorial") end
 
 ------------------------------------------------------------------------
 -- What the player is doing
@@ -457,9 +218,47 @@ local stepReps = 0
 local stepStarted = os.clock()
 
 local advance -- forward declaration
+local pointAtShake, hideShakeArrow -- (below)
+local autoDrank = false -- the shake step's safety net already drank the shake for the player
 
 local function stepDef()
 	return Onboarding.Steps[stepIndex]
+end
+
+-- (prompt 20, 21 Oct) A gold arrow over the DRINK SHAKE button, bouncing, pointing down at it. It lives inside the button,
+-- so it shows exactly when the button does (once the free shake has arrived).
+local shakeArrow = nil
+function hideShakeArrow()
+	if shakeArrow then shakeArrow:Destroy() shakeArrow = nil end
+end
+function pointAtShake()
+	if shakeArrow and shakeArrow.Parent then return end
+	local hud = playerGui:FindFirstChild("HudBottom")
+	local button = hud and hud:FindFirstChild("DrinkShake", true)
+	if not button then
+		task.delay(0.5, function()
+			local step = stepDef()
+			if step and step.done.type == "shake" then pointAtShake() end
+		end)
+		return
+	end
+	-- (in a Folder, so the button's list layout leaves it alone: it floats above the button)
+	local holder = button:FindFirstChild("TutorialArrowHolder") or New("Folder", { Name = "TutorialArrowHolder", Parent = button })
+	shakeArrow = New("Frame", { Name = "TutorialArrow", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -4), Size = UDim2.fromOffset(34, 34),
+		BackgroundTransparency = 1, ZIndex = 20, Parent = holder })
+	local icon = Pieces.Icon("arrow-big-up", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1),
+		Rotation = 180, ZIndex = 20, Parent = shakeArrow })
+	icon:SetAttribute("KeepColor", true)
+	local token = shakeArrow
+	task.spawn(function()
+		while shakeArrow == token and token.Parent do
+			Theme.Tween(token, { Position = UDim2.new(0.5, 0, 0, -14) }, 0.35, Enum.EasingStyle.Sine)
+			task.wait(0.35)
+			if shakeArrow ~= token then break end
+			Theme.Tween(token, { Position = UDim2.new(0.5, 0, 0, -4) }, 0.35, Enum.EasingStyle.Sine)
+			task.wait(0.35)
+		end
+	end)
 end
 
 local coachShownFor = nil
@@ -475,10 +274,12 @@ local function refreshStep()
 		placeDialog()
 	end
 	if step.target and onMachine ~= step.target then
-		if not targetPoint then showPath(step.target) end
+		if GuidePath.Target() ~= step.target then showPath(step.target) end
 	else
 		hidePath()
 	end
+	-- the shake step: a bouncing arrow on the DRINK SHAKE button (left of the stamina bar), on a machine or not
+	if step.done.type == "shake" then pointAtShake() else hideShakeArrow() end
 	-- point at the Stats button (a dot on it until stats is opened)
 	if step.done.type == "statsOpen" then
 		local hud = playerGui:FindFirstChild("MainHud")
@@ -515,6 +316,7 @@ end
 
 local function finish(skipped: boolean?)
 	hidePath()
+	hideShakeArrow()
 	shownText = nil
 	pages = nil
 	Notify.SetBand(nil)
@@ -551,6 +353,7 @@ function advance()
 	statsOpenTime = 0
 	statsSeenThisStep = statsOpen
 	drankShake = false
+	autoDrank = false
 	Remotes.PlayerAction:FireServer("TutorialStep", stepIndex)
 	hidePath()
 	if stepIndex >= Onboarding.Done then
@@ -635,6 +438,22 @@ task.spawn(function()
 		local step = stepDef()
 		if statsOpen then statsOpenTime += dt end
 		if step and (step.done.type == "seconds" or step.done.type == "statsOpenFor") then check() end
+		-- the safety net (prompt 20): a step with a `timeout` never holds the player. The shake step drinks the free shake for
+		-- them (the server checks they have one) and moves on when it lands, or a few seconds later anyway.
+		step = stepDef()
+		if step and step.timeout and stepIndex < Onboarding.Done then
+			local waited = os.clock() - stepStarted
+			if step.done.type == "shake" then
+				if waited >= step.timeout and not autoDrank then
+					autoDrank = true
+					if (ClientData.Get().shakes or 0) > 0 then Remotes.PlayerAction:FireServer("DrinkShake") end
+				elseif autoDrank and waited >= step.timeout + 3 then
+					advance()
+				end
+			elseif waited >= step.timeout then
+				advance()
+			end
+		end
 	end
 end)
 

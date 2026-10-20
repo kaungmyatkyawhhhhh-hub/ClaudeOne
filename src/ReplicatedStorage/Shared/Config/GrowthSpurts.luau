@@ -14,8 +14,8 @@ GrowthSpurts.MaxHeight = GrowthSpurts.MaxHeightInches -- (older name, kept for c
 -- faster per level, so the goals climb slowly). Re-tuned 14 Oct when weights became free (heavier weights sooner):
 -- 47 / 72 / 103 / 135 / 157 -> 58 / 92 / 132 / 164 / 178.
 GrowthSpurts.Stages = {
-	{ height = 54, requiredLevel = 15, bonus = 1.25 },
-	{ height = 60, requiredLevel = 58, bonus = 1.5 },
+	{ height = 54, requiredLevel = 9, bonus = 1.25 }, -- (prompt 20, 21 Oct: 15 -> 9, first Growth Spurt in ~5 min)
+	{ height = 60, requiredLevel = 56, bonus = 1.5 }, -- (prompt 20: 58 -> 56, keeps its 15 min with the new stamina)
 	{ height = 66, requiredLevel = 92, bonus = 1.75 },
 	{ height = 72, requiredLevel = 132, bonus = 2 },
 	{ height = 78, requiredLevel = 164, bonus = 2.5 },
@@ -30,7 +30,7 @@ GrowthSpurts.ExtraPerStage = { height = 6, requiredLevel = 18, bonus = 0.5 }
 -- one ("normal play with some tapping": half the sets tapped, see tests/pacing).
 -- The requiredLevel values above are tuned to these with tests/pacing, which plays simulated players through the
 -- spurts with the real gains formula. If gains, tiers, stamina or bonuses change, rerun it and retune the levels.
-GrowthSpurts.Targets = { 8, 15, 25, 35, 45 }
+GrowthSpurts.Targets = { 5, 15, 25, 35, 45 }
 
 function GrowthSpurts.TargetMinutes(n)
 	local targets = GrowthSpurts.Targets
@@ -88,7 +88,7 @@ end
 
 -- A group's level for the spurt goal: the average EXP of its muscles you can train right now (so a group never waits on a
 -- muscle no open machine trains), expressed as a (fractional) level. A group meets the goal exactly when its average EXP
--- reaches the goal EXP shown on screen (50,000 for the first spurt).
+-- reaches the goal EXP shown on screen (about 24,700 for the first spurt).
 function GrowthSpurts.GoalLevel(muscleData, group, trainable)
 	local total, count = 0, 0
 	for _, muscle in ipairs(group.muscles) do

@@ -2,7 +2,7 @@
 -- the reference frame for every window), the server boost chip and purchase notes. Only items with ids in
 -- Config.Monetization are shown; with none the Shop tile never appears. The Shop tile is in the menu from the start
 -- (owner, 20 Oct). No purchase prompt ever opens by itself: only the red price button opens one.
--- Window: STORE + tabs Passes / Coins / Boosts (each item's `tab` in Config.Monetization; only tabs that have something)
+-- Window: STORE + tabs Auras / Boosts / Coins / Passes (each item's `tab` in Config.Monetization; only tabs that have something)
 -- + its own coins pill and X. On the left the
 -- HERO tile: the picked item big (thick gold border + soft gold glow, BEST SELLER tag on Monetization.BestSeller, the art,
 -- the name in gold, what it does, the red "R$ 249" CTA that pulses). On the right a 3-column grid of dark tiles (art,
@@ -108,7 +108,9 @@ end
 local tabs = {}
 local hasTab = {}
 for _, entry in ipairs(items) do hasTab[entry.tab] = true end
-for _, id in ipairs({ "Passes", "Coins", "Boosts", "Auras" }) do
+-- (prompt 20, 21 Oct: the Store opened on the Robux passes. Auras come first now: most of them are earned by playing or
+-- bought with coins, so a new player sees things they can get for free first.)
+for _, id in ipairs({ "Auras", "Boosts", "Coins", "Passes" }) do
 	if hasTab[id] then table.insert(tabs, { id = id, text = id }) end
 end
 local currentTab = tabs[1].id

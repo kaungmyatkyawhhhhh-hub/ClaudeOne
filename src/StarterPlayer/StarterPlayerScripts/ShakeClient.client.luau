@@ -1,4 +1,4 @@
--- ShakeClient: the "Drink shake" button in the right column (shown while you have shakes), the shake boost
+-- ShakeClient: the "Drink shake" button left of the stamina bar (shown while you have shakes), the shake boost
 -- countdown, notes for buying/drinking shakes and petting the cat, and the gym cat's tail wag (local only).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -22,12 +22,15 @@ local Colors = Theme.Colors
 ------------------------------------------------------------------------
 -- Button
 ------------------------------------------------------------------------
--- (owner's UI redesign) the bag shake keeps its own look, never the smoothies': purple "sparkles". A small DRINK SHAKE
--- button with the count, and a chip with the boost's time left.
+-- (owner's UI redesign) the bag shake keeps its own look, never the smoothies': purple "sparkles". A DRINK SHAKE button
+-- with the count, and a chip with the boost's time left.
+-- (prompt 20, 21 Oct: it sat in the right column, which folds away on a machine, so new players got stuck on the tutorial's
+-- shake step.) It now sits left of the stamina bar (HudBottom.AddSide), a full 44 px tall, on screen on and off machines.
 local Kit = require(Shared.UI.Kit)
+local HudBottom = require(Shared.UI.HudBottom)
 local button, label = Kit.Button("Secondary", "Drink shake", { Name = "DrinkShake", Visible = false },
-	{ height = 30, width = RightColumn.Width, icon = "sparkles", iconColor = Colors.Purple, textSize = 12 })
-RightColumn.Add(button, 1)
+	{ height = HudBottom.SideHeight, width = 136, icon = "sparkles", iconColor = Colors.Purple, textSize = 13 })
+HudBottom.AddSide(button, 1)
 local chip = RightColumn.Chip("sparkles", Colors.Purple, 10)
 
 local started = false

@@ -149,8 +149,8 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "NpcSays" then
 		coachSays(info.text, info.npc)
 	elseif kind == "QuestReady" then
-		Notify.Show("Quest done. Talk to " .. Quests.CoachName .. ".", nil, "quest")
-		Audio.PlayUI("LevelUp")
+		-- (prompt 20: a reward popup, queued with the others)
+		Notify.Reward("QUEST DONE", "Talk to " .. Quests.CoachName .. " for your reward", "list-checks", Colors.Green, "QuestComplete")
 	elseif kind == "QuestDone" then
 		Notify.Show("Quest reward: " .. tostring(info.reward))
 	end

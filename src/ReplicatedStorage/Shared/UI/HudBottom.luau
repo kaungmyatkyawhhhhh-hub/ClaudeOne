@@ -6,6 +6,10 @@
 --   HudBottom.SetTraining(on)            the bar reads "Stamina 60/100" and the row moves above STOP TRAINING
 --   HudBottom.SetHidden(reason, on)      hide it while a screen needs the bottom (posing, arm wrestling)
 --   HudBottom.BarTop()                   root-relative y (mockup px from the bottom) of the bar's top edge
+--   HudBottom.AddSide(frame, order?)     a button left of the bar (DRINK SHAKE), shown on and off machines
+-- Recovering (prompt 20, the player's "StaminaRecovering" attribute, PlayerData): the bar shows (on a machine or not), turns
+-- red and reads "RECOVERING 6s", and a line above says what the Growth Spurt needs (the local "SpurtNeeds" attribute set
+-- by ProgressClient) or a tip.
 -- Hidden on the main menu, the genetics screen and full-width screens. Stamina: ClientData.stamina against the player's
 -- MaxStamina attribute (Iron Lungs, treadmill training) or Config/Stamina.Max.
 -- Only while exercising (owner, 14 Oct): the bar sits in a CanvasGroup that fades in (GroupTransparency, 0.2 s) while you're
@@ -36,8 +40,9 @@ HudBottom.HideAfterLeave = 1.5 -- seconds after getting off a machine
 HudBottom.ShowOnRefill = 3     -- seconds a refill (shake, product, trainer) shows the bar while not exercising
 HudBottom.RefillJump = 0.1     -- a stamina rise of at least this share of the max at once counts as a refill
 HudBottom.ShineEvery = 2.6     -- Endless Stamina: seconds per shine sweep along the gold bar
+HudBottom.SideHeight = 44      -- the button left of the stamina bar (the shake): a full thumb target
 
-local gui, root, row, setBar, barTrack, fill, staminaNow, staminaMaxText, group
+local gui, root, row, setBar, barTrack, fill, staminaNow, staminaMaxText, group, titleText, tipText, side
 local training = false
 local shownUntil = 0   -- os.clock() until which a refill keeps the bar up
 local shown = false
@@ -64,8 +69,11 @@ local function setShown(on: boolean)
 	shown = on
 	Theme.Tween(group, { GroupTransparency = on and 0 or 1 }, on and HudBottom.FadeIn or HudBottom.FadeOut)
 end
+local function recovering(): boolean
+	return Players.LocalPlayer:GetAttribute("StaminaRecovering") == true
+end
 local function updateShown()
-	setShown(training or os.clock() < shownUntil)
+	setShown(training or recovering() or os.clock() < shownUntil)
 end
 
 local function refresh()
@@ -79,8 +87,22 @@ local function refresh()
 	staminaNow.Text = tostring(math.floor(stamina + 0.5))
 	staminaMaxText.Text = "/ " .. math.floor(max + 0.5)
 	local gloss = fill:FindFirstChild("Gloss")
-	local color = if endless then Colors.Gold elseif ratio < HudBottom.LowStamina then Colors.NeedsWork else Colors.Teal
+	local isRecovering = recovering() and not endless
+	local color = if endless then Colors.Gold elseif isRecovering or ratio < HudBottom.LowStamina then Colors.NeedsWork else Colors.Teal
 	if gloss then gloss.Color = Kit.Metal(color) end
+	-- recovering (Config/Stamina.Pacing): "RECOVERING 6s" in the title, and what to train next above the bar
+	if isRecovering then
+		local okS, Stamina = pcall(function() return require(ReplicatedStorage.Shared.Config.Stamina) end)
+		local seconds = okS and Stamina.PacingFor(data and data.growthSpurts).refillSeconds or 10
+		local left = math.max(0, math.ceil((max - stamina) / max * seconds))
+		titleText.Text = "RECOVERING " .. left .. "s"
+		local needs = Players.LocalPlayer:GetAttribute("SpurtNeeds")
+		tipText.Text = if type(needs) == "string" and needs ~= "" then "Growth Spurt needs " .. needs else "Catch your breath. Reps start again when it's full."
+		tipText.Visible = true
+	else
+		titleText.Text = "STAMINA"
+		tipText.Visible = false
+	end
 	-- a jump up while not exercising (a shake, a refill): show it for a few seconds; the slow refill stays hidden
 	if lastStamina and not training and stamina - lastStamina >= HudBottom.RefillJump * max then
 		shownUntil = os.clock() + HudBottom.ShowOnRefill
@@ -114,7 +136,7 @@ local function ensure()
 	barTrack = Theme.Panel({ Name = "Stamina", Piece = "hud_box", Size = UDim2.fromScale(1, 1), Parent = group })
 	local zap = require(script.Parent.Pieces).Icon("zap", Colors.Teal, { Name = "Zap", Position = UDim2.fromOffset(10, 4), Size = UDim2.fromOffset(12, 12), Parent = barTrack })
 	zap:SetAttribute("KeepColor", true)
-	Kit.Text({ Name = "Title", Text = "STAMINA", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(26, 2), Size = UDim2.fromOffset(100, 16),
+	titleText = Kit.Text({ Name = "Title", Text = "STAMINA", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(26, 2), Size = UDim2.fromOffset(140, 16),
 		TextXAlignment = Enum.TextXAlignment.Left, Parent = barTrack })
 	local numbers = New("Frame", { Name = "Numbers", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 2),
 		Size = UDim2.fromOffset(110, 16), Parent = barTrack }, { Theme.List(Enum.FillDirection.Horizontal, 3, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
@@ -138,6 +160,20 @@ local function ensure()
 		Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom),
 	})
 	placeRow()
+	-- while recovering: what to train next (or a tip), above the boost icons
+	tipText = Kit.Text({ Name = "RecoverTip", Text = "", Font = "Strong", TextSize = 13, AnchorPoint = Vector2.new(0.5, 1), Visible = false,
+		Position = UDim2.new(0.5, 0, 1, -(HudBottom.Bottom + HudBottom.BarSize.Y + 8 + HudBottom.ChipSize + 18)), Size = UDim2.fromOffset(420, 18), Parent = root })
+	-- (prompt 20) the left of the stamina bar: the DRINK SHAKE button (ShakeClient), in the same spot on and off a machine
+	side = New("Frame", { Name = "Side", AnchorPoint = Vector2.new(1, 1), BackgroundTransparency = 1,
+		Position = UDim2.new(0.5, -(HudBottom.BarSize.X / 2 + 8), 1, -HudBottom.Bottom), Size = UDim2.fromOffset(0, HudBottom.SideHeight),
+		AutomaticSize = Enum.AutomaticSize.X, Parent = root }, {
+		Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Bottom),
+	})
+	Players.LocalPlayer:GetAttributeChangedSignal("StaminaRecovering"):Connect(function()
+		refresh()
+		updateShown()
+	end)
+	Players.LocalPlayer:GetAttributeChangedSignal("SpurtNeeds"):Connect(refresh)
 	task.spawn(function()
 		local ClientData = require(ReplicatedStorage.Shared.ClientData)
 		ClientData.Get()
@@ -204,6 +240,14 @@ function HudBottom.Chip(icon: string, color: Color3, order: number?)
 	end
 	function api.SetVisible(_, on) chip.Visible = on end
 	return api
+end
+
+-- A button left of the stamina bar (the DRINK SHAKE button): always on screen, on a machine or not.
+function HudBottom.AddSide(frame: GuiObject, order: number?)
+	ensure()
+	frame.LayoutOrder = order or 1
+	frame.Parent = side
+	return frame
 end
 
 function HudBottom.SetTraining(on: boolean)

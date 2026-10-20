@@ -10,6 +10,7 @@ local Config = ReplicatedStorage.Shared.Config
 local Machines = require(Config.Machines)
 local Poses = require(Config.Poses)
 local Gains = require(Config.Gains)
+local Stamina = require(Config.Stamina)
 local PlayerData = require(script.Parent.PlayerData)
 local Guard = require(script.Parent.Guard)
 local TitleService = require(script.Parent.TitleService)
@@ -406,6 +407,14 @@ local function enter(player, model)
 
 	local progress = PlayerData.GetMachine(player, machine.id)
 	local level = PlayerData.Get(player).muscles[machine.muscles[1].id].level
+	-- (prompt 20) a machine you never used starts on the heaviest weight your level allows, not the empty bar
+	if not PlayerData.Get(player).machines[machine.id] and machine.trains ~= "Stamina" then
+		local usable = Machines.UsableTier(machine, progress, level)
+		if usable > 1 then
+			PlayerData.SetMachine(player, machine.id, usable, usable)
+			progress = PlayerData.GetMachine(player, machine.id)
+		end
+	end
 	updatePlates(model, machine.tiers[Machines.LiftTier(machine, progress, level)])
 	Remotes.MachineState:FireClient(player, "Enter", model)
 end
@@ -469,7 +478,7 @@ local function lift(player)
 
 	local machine = session.machine
 	-- (cardio costs nothing and doesn't pause the refill: UseStamina would reset its delay)
-	if machine.staminaCost > 0 and not PlayerData.UseStamina(player, machine.staminaCost) then
+	if machine.staminaCost > 0 and not PlayerData.UseStamina(player, Stamina.RepCost(machine.staminaCost, data.growthSpurts)) then
 		Remotes.RepResult:FireClient(player, { noStamina = true })
 		return
 	end
@@ -485,11 +494,24 @@ local function lift(player)
 	local quality = (pumped and Pump.Multiplier or 1) * (big and Gains.BigRep.Multiplier or 1)
 	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player), quality) -- (none on cardio: it trains stamina)
 
+	local mainId = machine.muscles[1].id
+	local usableBefore = Machines.UsableTier(machine, progress, data.muscles[mainId].level)
 	local levels = {}
 	for muscleId, amount in pairs(xp) do
 		if PlayerData.AddMuscleXp(player, muscleId, amount) > 0 then
 			local level = data.muscles[muscleId].level
 			levels[muscleId] = level
+		end
+	end
+	-- a heavier weight just unlocked on this machine (prompt 20, 21 Oct: it used to unlock silently): tell the player, and
+	-- when they were lifting their heaviest weight, move them up to the new one
+	local weightUnlocked = nil
+	local usableAfter = Machines.UsableTier(machine, progress, data.muscles[mainId].level)
+	if usableAfter > usableBefore and machine.trains ~= "Stamina" then
+		weightUnlocked = Machines.WeightText(machine.tiers[usableAfter])
+		if tierIndex >= usableBefore then
+			PlayerData.SetMachine(player, machine.id, math.max(progress.unlocked, usableAfter), usableAfter)
+			updatePlates(session.model, machine.tiers[usableAfter])
 		end
 	end
 	local coins = math.max(1, math.floor(tier.coins * BoostService.Coins(player) + 0.5))
@@ -518,14 +540,15 @@ local function lift(player)
 	-- personal record: the heaviest weight ever lifted on this machine
 	local pr = nil
 	if tierIndex > (progress.best or 1) then
-		PlayerData.SetMachine(player, machine.id, progress.unlocked, progress.selected, tierIndex)
+		local now = PlayerData.GetMachine(player, machine.id) -- (the weight unlock above may have just moved `selected`)
+		PlayerData.SetMachine(player, machine.id, now.unlocked, now.selected, tierIndex)
 		pr = Machines.WeightText(tier)
 		player:SetAttribute("AuraBurst", workspace:GetServerTimeNow()) -- (every client bursts this player's aura once: AuraClient)
 	end
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
 	Remotes.RepResult:FireClient(player, { levels = levels, coins = coins, big = big,
-		nextBig = session.nextBig, pumped = pumped, pr = pr, staminaUp = staminaUp })
+		nextBig = session.nextBig, pumped = pumped, pr = pr, staminaUp = staminaUp, weightUnlocked = weightUnlocked })
 end
 
 local function isTierIndex(value)

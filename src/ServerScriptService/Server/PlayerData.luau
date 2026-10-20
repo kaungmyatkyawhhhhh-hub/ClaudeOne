@@ -470,7 +470,10 @@ end
 function PlayerData.SetStamina(player, value)
 	local data = PlayerData.Get(player)
 	if not data then return end
-	value = math.clamp(value, 0, PlayerData.GetMaxStamina(player))
+	local max = PlayerData.GetMaxStamina(player)
+	value = math.clamp(value, 0, max)
+	-- (a full bar ends recovering: a shake, Endless Stamina, a refill)
+	if value >= max and player:GetAttribute("StaminaRecovering") then player:SetAttribute("StaminaRecovering", nil) end
 	if value == data.stamina then return end
 	data.stamina = value
 	replicate(player, { "stamina" }, value)
@@ -484,7 +487,12 @@ function PlayerData.UseStamina(player, amount)
 		PlayerData.SetStamina(player, PlayerData.GetMaxStamina(player))
 		return true
 	end
-	if data.stamina < amount then return false end
+	-- recovering (Stamina.Pacing): no reps until the bar is full again; running out starts it
+	if player:GetAttribute("StaminaRecovering") then return false end
+	if data.stamina < amount then
+		player:SetAttribute("StaminaRecovering", true)
+		return false
+	end
 	PlayerData.SetStamina(player, data.stamina - amount)
 	lastStaminaUse[player] = os.clock()
 	return true
@@ -525,9 +533,22 @@ function PlayerData.TickEndlessStamina(player, dt)
 end
 
 -- Natural refill; waits Stamina.RegenDelay after the last rep. `multiplier` = recovery stations and boosts.
+-- Recovering (the player's "StaminaRecovering" attribute): refills from empty to full in the pacing's refillSeconds with no
+-- delay, then reps work again.
 function PlayerData.RegenStamina(player, dt, multiplier)
 	local data = PlayerData.Get(player)
-	if not data or data.stamina >= PlayerData.GetMaxStamina(player) then return end
+	if not data then return end
+	local max = PlayerData.GetMaxStamina(player)
+	if data.stamina >= max then
+		if player:GetAttribute("StaminaRecovering") then player:SetAttribute("StaminaRecovering", nil) end
+		return
+	end
+	if player:GetAttribute("StaminaRecovering") then
+		local rate = max / Stamina.PacingFor(data.growthSpurts).refillSeconds
+		PlayerData.SetStamina(player, data.stamina + rate * dt * (multiplier or 1))
+		if data.stamina >= max then player:SetAttribute("StaminaRecovering", nil) end
+		return
+	end
 	if os.clock() - (lastStaminaUse[player] or 0) < Stamina.RegenDelay then return end
 	PlayerData.SetStamina(player, data.stamina + Stamina.RegenPerSecond * dt * (multiplier or 1))
 end

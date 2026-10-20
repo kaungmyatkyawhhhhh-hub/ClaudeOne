@@ -3,8 +3,9 @@ local M = H.module("ReplicatedStorage/Shared/Config/Muscles")
 local G = H.module("ReplicatedStorage/Shared/Config/GrowthSpurts")
 
 print("EXP shown on screen")
-H.check(M.FirstSpurtLevel == G.Get(1).requiredLevel, "the EXP scale is tied to the first Growth Spurt's level goal")
-H.check(M.Shown(G.Get(1).requiredLevel) == 50000, "the first Growth Spurt needs exactly 50,000 EXP")
+-- (prompt 20, 21 Oct: the first goal went 15 -> 9; the EXP scale stays at level 15 = 50,000 so no shown number changes)
+H.check(M.Shown(M.FirstSpurtLevel) == 50000, "the EXP scale: level 15 shows exactly 50,000 EXP")
+H.check(M.Shown(G.Get(1).requiredLevel) < 50000, "the first Growth Spurt needs less than 50,000 EXP now")
 H.check(M.Shown(0) == 0, "level 0 = 0 EXP")
 H.check(M.Shown(G.Get(2).requiredLevel) > 50000, "later goals need more EXP")
 
@@ -34,7 +35,7 @@ end
 local goal = G.Get(1).requiredLevel
 H.check(G.GoalLevel(dataAt(goal, 0), group, trainable) >= goal - 1e-9, "all muscles at the goal level meet the goal")
 H.check(G.GoalLevel(dataAt(goal - 1, 5), group, trainable) < goal, "just under the goal does not")
-H.check(M.GroupExp(dataAt(goal, 0), "Chest") == 50000 * #M.GroupById.Chest.muscles, "a group at the goal shows 50,000 EXP per muscle, added up")
+H.check(M.GroupExp(dataAt(M.FirstSpurtLevel, 0), "Chest") == 50000 * #M.GroupById.Chest.muscles, "a group at level 15 shows 50,000 EXP per muscle, added up")
 H.check(M.GroupShown("Chest", goal) == M.GroupExp(dataAt(goal, 0), "Chest"), "the group goal is the same sum")
 H.check(math.abs(M.LookG("Biceps", goal, goal) - 0.67) < 0.02, "the goal is not the full look")
 local function levelAtExp(times) return M.LevelFromXp(times * M.CumXp(goal)) end

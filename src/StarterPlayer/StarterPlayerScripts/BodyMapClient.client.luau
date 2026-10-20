@@ -1,7 +1,7 @@
 -- BodyMapClient: the small body-map widget that slides in while you're on a machine (and out when you leave).
 --  * Front and back silhouettes made of muscle shapes, shaped like the real body (wide shoulders, a V down to the waist,
 --    the player's genetics frame widening the shoulders and moving the arms out). Each muscle glows by its level toward
---    the next Growth Spurt goal. On every rep the muscles the machine trains flash warm (~0.15s in, ~0.35s out; the main
+--    the next Growth Spurt goal; the groups the spurt still needs glow red (prompt 20). On every rep the muscles the machine trains flash warm (~0.15s in, ~0.35s out; the main
 --    muscle strongest), like the rep flash on the character (UIBus.RepFlash from MachineClient).
 --  * Under the figures: your level, the Growth Spurt (next / ready) and a small segmented bar. Tapping the widget opens
 --    the "Your muscles" panel. The "-" button folds it into a small "Stats" chip (and the chip unfolds it again).
@@ -261,18 +261,34 @@ end
 local function shownTransparency(frame)
 	return training[frame] and math.min(restFor(frame), MAP.Training) or restFor(frame)
 end
+-- (prompt 20, 21 Oct) the groups the Growth Spurt still needs (ProgressClient's local "SpurtNeeds" attribute,
+-- "LEGS, BACK") glow red
+local needed = {} -- [frame] = true
+local function baseColor(frame)
+	return needed[frame] and Colors.Red or Colors.Text
+end
 
 local function refreshMap()
 	local data = ClientData.Get()
 	if not data or not data.muscles then return end
 	local goalLevel = GrowthSpurts.GetGoal(data.growthSpurts)
+	local needs = {}
+	local text = player:GetAttribute("SpurtNeeds")
+	if type(text) == "string" then
+		for _, name in ipairs(string.split(text, ", ")) do needs[name] = true end
+	end
 	for muscleId, frames in pairs(shapes) do
 		local level = data.muscles[muscleId].level
 		local share = math.clamp(level / goalLevel, 0, 1)
 		local transparency = MAP.Dim + (MAP.Bright - MAP.Dim) * share
+		local group = Muscles.GroupById[Muscles.ById[muscleId].group]
+		local isNeeded = group ~= nil and needs[string.upper(group.name)] == true
 		for _, frame in ipairs(frames) do
 			rest[frame] = transparency
-			Theme.Tween(frame, { BackgroundTransparency = shownTransparency(frame) }, 0.4)
+			needed[frame] = isNeeded or nil
+			-- (a needed muscle stays clearly visible even at level 0)
+			if isNeeded then rest[frame] = math.min(transparency, 0.35) end
+			Theme.Tween(frame, { BackgroundTransparency = shownTransparency(frame), BackgroundColor3 = baseColor(frame) }, 0.4)
 		end
 	end
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
@@ -331,7 +347,7 @@ local function flash(weights: { [string]: number }, strong: boolean?)
 			Theme.Tween(frame, { BackgroundTransparency = math.min(peak, shownTransparency(frame)), BackgroundColor3 = FLASH.Color }, FLASH.In)
 			task.delay(FLASH.In, function()
 				if flashToken[frame] ~= token or not frame.Parent then return end
-				Theme.Tween(frame, { BackgroundTransparency = shownTransparency(frame), BackgroundColor3 = Colors.Text }, strong and FLASH.Out * 1.5 or FLASH.Out)
+				Theme.Tween(frame, { BackgroundTransparency = shownTransparency(frame), BackgroundColor3 = baseColor(frame) }, strong and FLASH.Out * 1.5 or FLASH.Out)
 			end)
 		end
 	end
@@ -387,6 +403,7 @@ ClientData.Changed:Connect(function(path)
 	end
 	if key == "muscles" or key == "growthSpurts" or key == "genetics" then refreshMap() end
 end)
+player:GetAttributeChangedSignal("SpurtNeeds"):Connect(refreshMap)
 task.spawn(function()
 	local data = ClientData.Get()
 	buildFigures(Genetics.ShoulderWidth(data and data.genetics and data.genetics.frame))
