@@ -288,7 +288,7 @@ task.spawn(function()
 	player:SetAttribute("MenuLoad", 1)
 
 	local returning = (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done
-	shopButton.Visible = returning and Monetization.AnyConfigured()
+	shopButton.Visible = Monetization.AnyConfigured() -- (owner, 20 Oct: the Shop always shows, new players too)
 	card.Visible = returning
 	newsDot.Visible = UI.UpdatesStamp ~= nil and (data.settings and data.settings.updatesSeen) ~= UI.UpdatesStamp
 	refreshPill(data)

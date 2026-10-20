@@ -1,7 +1,7 @@
 -- StoreClient: the Shop tile and the Store window (owner's final kit "BLACK + GOLD", mockup gym_arc_ui_final/04_store:
 -- the reference frame for every window), the server boost chip and purchase notes. Only items with ids in
--- Config.Monetization are shown; with none the Shop tile never appears, and it only appears after the tutorial plus a few minutes of play (Workspace attribute TestStore = true skips the wait in
--- Studio). No purchase prompt ever opens by itself: only the red price button opens one.
+-- Config.Monetization are shown; with none the Shop tile never appears. The Shop tile is in the menu from the start
+-- (owner, 20 Oct). No purchase prompt ever opens by itself: only the red price button opens one.
 -- Window: STORE + tabs Passes / Coins / Boosts (each item's `tab` in Config.Monetization; only tabs that have something)
 -- + its own coins pill and X. On the left the
 -- HERO tile: the picked item big (thick gold border + soft gold glow, BEST SELLER tag on Monetization.BestSeller, the art,
@@ -23,7 +23,6 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Monetization = require(Shared.Config.Monetization)
 local Auras = require(Shared.Config.Auras)
-local Onboarding = require(Shared.Config.Onboarding)
 local DNA = require(Shared.Config.DNA)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
@@ -414,23 +413,11 @@ UIBus.OpenShop.Event:Connect(function(tab)
 	if not modal.isOpen() then UIBus.PanelOpened("Store") open() end
 end)
 
--- The Shop tile: after the tutorial and the player's first few minutes in the game, never before. (owner, 15 Oct: the
--- few minutes counted again in EVERY session, so a returning player waited 5+ minutes for the Store each time they
--- joined; now they count from the player's first join only.)
+-- The Shop tile: in the menu from the start, for every player (owner, 20 Oct: "make shop appear always, not just after 5
+-- mins"; it used to wait for the end of the tutorial plus the player's first 5 minutes).
 task.spawn(function()
-	local data = ClientData.Get()
 	UIBus.WaitForMenu()
 	started = true
-	local firstJoin = data.meta and tonumber(data.meta.firstJoin) or 0
-	local function newPlayerMinutes(): boolean
-		local now = Workspace:GetServerTimeNow()
-		return firstJoin > 0 and now - firstJoin < Monetization.StoreAfterMinutes * 60
-	end
-	-- (TestStore: a Studio-only test switch, never in a live game)
-	local testStore = game:GetService("RunService"):IsStudio() and Workspace:GetAttribute("TestStore") == true
-	while not testStore and ((ClientData.Get().onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done or newPlayerMinutes()) do
-		task.wait(5)
-	end
 	menuButton = SideMenu.Add("Store", "Shop", Icons.Plate, 8)
 	menuButton.Activated:Connect(function()
 		if modal.isOpen() then modal.close() else UIBus.PanelOpened("Store") open() end

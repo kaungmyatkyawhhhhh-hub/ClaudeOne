@@ -54,9 +54,6 @@ Monetization.Effects = {
 	EndlessStaminaMaxMinutes = 60, -- buying again adds time, up to this
 }
 
--- The Store button waits until the tutorial is done and this much play time in the session.
-Monetization.StoreAfterMinutes = 5
-
 -- The Store's hero tile shows a small BEST SELLER tag on this item (owner's final kit, mockup 04_store).
 Monetization.BestSeller = "AutoLift"
 
