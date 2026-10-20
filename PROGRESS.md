@@ -45,6 +45,13 @@ Short and current. Older sections (before 15 Oct): `docs/PROGRESS_archive.md`. F
 - Queue (owner, 19 Oct, vault Prompts 2-5): inner quad bulge, mirror / statue width + duplicate crew tags, upper traps
   missing, top crews member view test.
 
+- BODY LAG (20 Oct, prompt 13): cause = your own live body rewritten up to 20x/s during the 0.4 s growth tween on every
+  level-up (fresh player training: 8-26 writes/s, each a 65-90 ms frame, ~33 FPS on PC). MuscleRig: one write round at most
+  every WRITE_EVERY = 1 s, no tween, rig:Pulse no longer pumps the mesh -> 0-5 writes/s, ~46 FPS. MuscleClient: low-end
+  (FPS < 40 for 5 s, or graphics quality 1-3; Studio: Workspace TestLowEnd) -> own body shows the BodyStages meshes past
+  15 studs (MuscleRig SetFarLook; back under 12). All 90 stage templates low-poly (no wrong-folder imports), now Box
+  collision. Left: gym light shadows (~700 shadow draw calls). Vault: Progress "2026-10-20 GYM ARC Body lag".
+
 ## Rules
 - No growth spurt cooldown. (Owner, 14 Oct: a player can do the next Growth Spurt as soon as they've earned it; checked:
   there is no timer, time check or config value for it anywhere, and the Skip Growth Cooldown product is removed.)

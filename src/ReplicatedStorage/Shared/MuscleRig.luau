@@ -8,8 +8,8 @@
 --
 -- COST RULES (8 Oct, the lag pass):
 --   * vertices are only written when a look, the pump, the waist, the veins or the torso width actually changed, and only the
---     vertices of the muscle that changed (each muscle's idx list; a running sum per vertex), at most UPDATE_HZ times a
---     second per rig; when nothing changes nothing is written;
+--     vertices of the muscle that changed (each muscle's idx list; a running sum per vertex), in one round at most every
+--     WRITE_EVERY seconds per rig (20 Oct); when nothing changes nothing is written;
 --   * the hover highlight and the rep flash are a handful of vertex-color writes per muscle, only while a fade runs;
 --   * only YOUR character gets EditableMeshes. Measured in Studio (8 Oct): a play client holds at most 8 EditableMeshes (even
 --     empty ones), and a mesh's MeshPart shows nothing once its EditableMesh is gone (no baking, also not via ApplyMesh). Your
@@ -23,9 +23,10 @@
 -- (1) on the thigh meshes, and the hover / flash tint while one runs (drawn only while it has something to show).
 --
 --   local rig = MuscleRig.new(model, { static = false, style = { skin, shorts, top, shirt, pants }, marble = false, priority = 100 })
---   rig:SetGrowth({ Biceps = 0.4, ... })   -- tweens ~0.4s
---   rig:Snap(targets)                      -- no tween
---   rig:Pulse({ "Biceps" })                -- the small pump on every 10th level
+--   rig:SetGrowth({ Biceps = 0.4, ... })   -- written in the next round (no tween since 20 Oct)
+--   rig:Snap(targets)
+--   rig:Pulse({ "Biceps" })                -- (no mesh pump since 20 Oct: a write each time; kept for the callers)
+--   rig:SetFarLook(true)                   -- your own body as the low-poly stage meshes (low-end devices, camera far)
 --   rig:SetPumped(true)                    -- PUMPED: a little bigger
 --   rig:SetStyle(style)
 --   MuscleRig.SetHighlight(model, { Biceps = true })        -- the red hover tint (only on muscles facing the camera)
@@ -51,22 +52,21 @@ end
 local MuscleRig = {}
 MuscleRig.__index = MuscleRig
 
-local UPDATE_HZ = 20       -- mesh writes per second per rig, at most (the numbers tween every frame)
+-- Mesh writes (owner, 20 Oct: "the game started lagging"): measured on a fresh player training, 8-26 mesh writes a second
+-- (a 0.4 s tween written 20 times a second on every level-up), each one a 65-90 ms frame: 15-33 FPS on PC. Now a rig writes
+-- one round (each changed unit once, one unit a frame) at most every WRITE_EVERY seconds; changes in between are batched.
+local WRITE_EVERY = 1
 -- Writing a mesh is expensive (measured 8 Oct: all 8 meshes in one frame = 90-130 ms): a frame writes at most one unit (a
 -- body region: the torso's two halves always together, so their shared edge never cracks), the units take turns.
--- A look only moves once it changed by GROWTH_STEP (every rep adds a little EXP: invisible steps cost a full write each), and
--- a small change is written once instead of tweened; a big one (a Growth Spurt, a test value) still tweens.
+-- A look only moves once it changed by GROWTH_STEP (every rep adds a little EXP: invisible steps cost a full write each).
 local GROWTH_STEP = 0.015
-local SNAP_BELOW = 0.05
 local SLOW_HZ = 10         -- the rest (parts swapped, sizes, visibility, garments, limb stages) when nothing moves
 local BUILD_MS = 0.004     -- seconds of mesh building per frame per build
 local MAX_BUILDS = 2       -- units built at once (CreateMeshPartAsync waits on the engine; side by side the waits overlap)
 local BUILD_CHECK = 250    -- API calls between clock checks
 local MIN_SHOW = 0.02      -- a unit is only built once one of its muscles has at least this much growth
 local VEIN_PUMPED = 0.4    -- veins while PUMPED at the full look
-local TWEEN = 0.4          -- seconds a growth change takes
 local PUMPED = 1.04
-local PUMP_STEP = 0.03     -- the small pulse
 local PULSE_TIME = 0.55
 local MIN_CHANGE = 0.0015
 local MARBLE = Color3.fromHex("#C9C6BF")
@@ -613,17 +613,12 @@ end
 -- Growth numbers
 ------------------------------------------------------------------------
 function MuscleRig.SetGrowth(self, targets: { [string]: number })
-	local now = os.clock()
 	for _, muscle in ipairs(Muscles.List) do
 		local id = muscle.id
 		local g = math.clamp(targets[id] or 0, 0, Muscles.MaxLookG)
 		if math.abs(g - self.target[id]) >= GROWTH_STEP or (g == 0 and self.target[id] ~= 0) then
-			if math.abs(g - self.current[id]) < SNAP_BELOW then
-				self.from[id], self.current[id], self.t0[id] = g, g, 0 -- (small: one write, no tween)
-			else
-				self.from[id] = self.current[id]
-				self.t0[id] = now
-			end
+			-- (no tween: the meshes are written at most once a second, 20 Oct)
+			self.from[id], self.current[id], self.t0[id] = g, g, 0
 			self.target[id] = g
 			self.dirty = true
 		end
@@ -662,15 +657,20 @@ function MuscleRig.SetPumped(self, pumped: boolean)
 	self.pumped = pumped
 end
 
+-- The far look (owner, 20 Oct: lag on phones; MuscleClient, low-end devices with the camera far away): your own body shows the
+-- low-poly stage meshes like everyone else's, and the live meshes hide (kept, not written, so coming back costs one round of
+-- writes, no rebuild).
+function MuscleRig.SetFarLook(self, on: boolean)
+	if (self.farLook == true) == on then return end
+	self.farLook = on
+	self.coveredAt = 0
+	self.dirty = true
+end
+
 local function currentShown(self, id: string): number
 	local g = self.current[id] or 0
-	local pulseStart = self.pulses[id]
-	local pulse = 1
-	if pulseStart then
-		local t = (os.clock() - pulseStart) / (self.pulseTimes[id] or PULSE_TIME)
-		if t < 1 then pulse = 1 + (self.pulseAmounts[id] or PUMP_STEP) * math.sin(t * math.pi) end
-	end
-	return math.min(g * (self.pumped and PUMPED or 1) * pulse, Muscles.MaxLookG * 1.06)
+	-- (no pump from rig:Pulse since 20 Oct: it wrote the meshes ~10 times per pump)
+	return math.min(g * (self.pumped and PUMPED or 1), Muscles.MaxLookG * 1.06)
 end
 
 local function monsterT(id: string, g: number): number
@@ -1443,18 +1443,13 @@ local function step(self, dt: number)
 	-- (idle bodies cost almost nothing: the vertex checks run only while something moves or changed, the rest at SLOW_HZ)
 	local moving = false
 	for id, target in pairs(self.target) do
-		local t = (now - self.t0[id]) / TWEEN
-		if t < 1 then
-			self.current[id] = self.from[id] + (target - self.from[id]) * smooth(t)
-			moving = true
-		elseif self.current[id] ~= target then
+		if self.current[id] ~= target then
 			self.current[id] = target
 			moving = true
 		end
 	end
 	for id, started in pairs(self.pulses) do
 		if now - started > (self.pulseTimes[id] or PULSE_TIME) then self.pulses[id] = nil end
-		moving = true
 	end
 	local slowNow = now - (self.lastSlow or 0) >= 1 / SLOW_HZ
 	if slowNow then self.lastSlow = now end
@@ -1493,8 +1488,9 @@ local function step(self, dt: number)
 		end
 		self.covered = covered
 	end
-	-- mesh writes: at most UPDATE_HZ a second, only while something moves or changed, only for groups with something to write
-	local writeNow = (moving or self.dirty) and now - self.lastWrite >= 1 / UPDATE_HZ
+	-- mesh writes: one round at most every WRITE_EVERY seconds, only while something changed, only for groups with something
+	-- to write; none while the far look shows (they wait for its end)
+	local writeNow = (moving or self.dirty) and not self.farLook and now - self.lastWrite >= WRITE_EVERY
 	local checkWrites = writeNow
 	local wrote = false
 	local pending = false -- (a unit that has something to write but waits for its turn)
@@ -1517,7 +1513,7 @@ local function step(self, dt: number)
 			for _, group in ipairs(state.groups) do
 				local body = group.body
 				if not (group.part and group.part.Parent and body and body.Parent) then continue end
-				local hidden = self.covered and self.covered[body.Name] == true or false
+				local hidden = self.farLook == true or (self.covered and self.covered[body.Name] == true) or false
 				local want = if hidden then 1 else 0
 				if group.part.Transparency ~= want then
 					group.part.Transparency = want
@@ -1556,7 +1552,7 @@ local function step(self, dt: number)
 		end
 	end
 	for _, state in ipairs(units) do state.writing = nil end
-	-- (a unit still waiting writes next frame, not after the UPDATE_HZ gap)
+	-- (a unit still waiting writes next frame, not after the WRITE_EVERY gap)
 	if wrote and not pending then self.lastWrite = now end
 	-- nothing moved and nothing was left to write: quiet until the next change
 	if checkWrites and not wrote and not pending and not moving then self.dirty = false end
@@ -1603,7 +1599,7 @@ local function step(self, dt: number)
 					tintGroup(self, group, cameraPosition)
 					-- (the color layer shows at once when a tint starts, and goes away with it)
 					if group.layer and group.body then
-						local hidden = self.covered and self.covered[group.body.Name] == true
+						local hidden = self.farLook == true or (self.covered and self.covered[group.body.Name] == true)
 						local opacity = group.layerOpacity or 0
 						local layerT = if hidden or not (group.hasShorts or group.layerLive) then 1
 							elseif opacity > 0 and group.hasShorts then 0
@@ -1834,8 +1830,17 @@ local function ensureLimbs(rig)
 		rig.limbs = nil
 	end
 	-- everyone but your own character: the static body stages (BodyStages; they can't have live meshes)
-	if not isLive(rig) and BodyStages.IsOn() and not rig.bodyStages then
+	if (not isLive(rig) or rig.farLook) and BodyStages.IsOn() and not rig.bodyStages then
 		rig.bodyStages = BodyStages.new(rig.model, rig.folder, rig.static)
+		rig.dirty = true
+		rig.skinStage = nil
+	elseif isLive(rig) and not rig.farLook and rig.bodyStages then
+		-- (the far look ended: the live meshes show again; the stages' Destroy shows the plain body parts, hide those again)
+		rig.bodyStages:Destroy()
+		rig.bodyStages = nil
+		for body in pairs(rig.hidden) do
+			if body.Parent then body.Transparency = 1 end
+		end
 		rig.dirty = true
 		rig.skinStage = nil
 	end
