@@ -4,8 +4,9 @@
 -- The button (owner, 14 Oct: easy to find): the owner's round skate art (Config/UI.SkateButton: circle, gold ring and
 -- background are in the image) in a square ImageButton, "SKATE" under it. On phones it sits just left of Roblox's jump
 -- button, the same size, centred on the same height (measured from TouchControlFrame.JumpButton, again only when the
--- screen size changes); on a PC bottom right with a "Q" key chip. Skating: the same art with a slowly pulsing gold ring
--- and "SKATING"; tap again to stop. Press = scale 0.92 + bounce + click. Hidden on a machine, on the menu and while a
+-- screen size changes); on a PC bottom right with a "Q" key chip. Skating: the same art with a slowly pulsing gold ring,
+-- a soft gold glow and spinning wheels, and "SKATING"; tap again to stop. Press = a squash and bounce + click; idle, a
+-- bob and a shine every few seconds (MOTION below). Hidden on a machine, on the menu and while a
 -- window is open. The first time a player walks outdoors for 10 s, one hint bubble points at it (settings.skateHintSeen).
 -- Starting to skate: a whoosh and a small dust puff.
 local Players = game:GetService("Players")
@@ -67,18 +68,66 @@ local function toggle()
 	Remotes.PlayerAction:FireServer("Skate", not skating())
 end
 
--- press: 0.92 and bounce back (the art's one UIScale), a click
+-- Motion (owner, 21 Oct; all TweenService, subtle):
+--  * idle (not skating): every IdleEvery seconds a gentle bob (up a few px and back) with a shine sweeping across the art;
+--    off with Reduced Motion
+--  * tap: a squash (0.86) and a bounce (1.1, then back to 1), a click
+--  * skating: the art's four wheels spin (drawn over the art's white wheels, faster the faster you go) and a soft gold
+--    glow pulses around it (with the ring below)
+local MOTION = {
+	IdleEvery = 4.5, Bob = 3, Squash = 0.86, Bounce = 1.1,
+	-- the art's wheels (centres as a share of the image, diameter as a share of its width), measured on the art
+	Wheels = { { 0.59, 0.426 }, { 0.755, 0.557 }, { 0.299, 0.6 }, { 0.411, 0.72 } }, WheelSize = 0.115,
+	SpinPerStud = 40, MinSpin = 120, MaxSpin = 900, -- degrees a second (per stud a second of speed)
+}
 do
 	local press = Theme.ButtonScale(button).press
 	local function isPress(input)
 		return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
 	end
 	button.InputBegan:Connect(function(input)
-		if isPress(input) then Theme.Tween(press, { Value = 0.92 }, 0.08) end
+		if isPress(input) then Theme.Tween(press, { Value = MOTION.Squash }, 0.07) end
 	end)
 	button.InputEnded:Connect(function(input)
-		if isPress(input) then Theme.Tween(press, { Value = 1 }, 0.25, Enum.EasingStyle.Back) end
+		if not isPress(input) then return end
+		Theme.Tween(press, { Value = MOTION.Bounce }, 0.1, Enum.EasingStyle.Quad)
+		task.delay(0.1, function() Theme.Tween(press, { Value = 1 }, 0.35, Enum.EasingStyle.Back) end)
 	end)
+end
+-- the shine: a soft white band swept across the round art
+local shine = Theme.New("Frame", { Name = "Shine", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0, Size = UDim2.fromScale(1, 1),
+	Visible = false, ZIndex = 3, Parent = button }, {
+	Theme.New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	Theme.New("UIGradient", { Name = "Sweep", Rotation = 25, Offset = Vector2.new(-1, 0), Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.42, 1), NumberSequenceKeypoint.new(0.5, 0.6),
+		NumberSequenceKeypoint.new(0.58, 1), NumberSequenceKeypoint.new(1, 1) }) }),
+})
+-- the glow while skating: soft gold circles behind the art (in a frame the art's size, under it: a child would draw on top)
+local glowHolder = Theme.New("Frame", { Name = "Glow", BackgroundTransparency = 1, Size = button.Size, ZIndex = 0, Parent = holder }, {
+	Theme.New("UIAspectRatioConstraint", { AspectRatio = 1 }),
+})
+local glows = {}
+for i, grow in ipairs({ 1.12, 1.24, 1.36 }) do
+	glows[i] = Theme.New("Frame", { Name = "Glow" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(grow, grow), BackgroundColor3 = Theme.Colors.Gold, BackgroundTransparency = 1, ZIndex = 0, Parent = glowHolder }, {
+		Theme.New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	})
+end
+-- the wheels: a white disc, a grey hub and two dark spokes that turn (the spokes are their own frames, each turned)
+local spokes = {}
+local wheelFrames = {}
+for _, at in ipairs(MOTION.Wheels) do
+	local wheel = Theme.New("Frame", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(at[1], at[2]),
+		Size = UDim2.fromScale(MOTION.WheelSize, MOTION.WheelSize), BackgroundColor3 = Color3.fromHex("#EDE6DA"), Visible = false, ZIndex = 2, Parent = button }, {
+		Theme.New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	})
+	for k = 0, 1 do
+		table.insert(spokes, { frame = Theme.New("Frame", { Name = "Spoke", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.78, 0.2), BackgroundColor3 = Color3.fromHex("#6B6258"), BorderSizePixel = 0, ZIndex = 2, Parent = wheel }), offset = k * 90 })
+	end
+	Theme.New("Frame", { Name = "Hub", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.38, 0.38),
+		BackgroundColor3 = Color3.fromHex("#9A938A"), ZIndex = 2, Parent = wheel }, { Theme.New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	table.insert(wheelFrames, wheel)
 end
 button.Activated:Connect(function()
 	Audio.PlayUI("Click")
@@ -124,7 +173,51 @@ local function refreshLook()
 	ring.Enabled = on
 	label.Text = if on then "SKATING" else "SKATE"
 	label.TextColor3 = if on then Theme.Colors.Gold else Theme.Colors.Text
+	for _, wheel in ipairs(wheelFrames) do wheel.Visible = on end
+	for i, glow in ipairs(glows) do
+		Theme.Tween(glow, { BackgroundTransparency = if on then 0.62 + i * 0.1 else 1 }, 0.3)
+	end
 end
+-- the wheels turn while skating, faster with speed
+local spin = 0
+RunService.RenderStepped:Connect(function(dt)
+	if not (gui.Enabled and skating()) then return end
+	local character = player.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	local speed = rootPart and (rootPart.AssemblyLinearVelocity * Vector3.new(1, 0, 1)).Magnitude or 0
+	spin = (spin + dt * math.clamp(speed * MOTION.SpinPerStud, MOTION.MinSpin, MOTION.MaxSpin)) % 360
+	for _, spoke in ipairs(spokes) do spoke.frame.Rotation = spin + spoke.offset end
+end)
+-- the glow breathes while skating (not with Reduced Motion)
+task.spawn(function()
+	while true do
+		if skating() and gui.Enabled and not Theme.ReducedMotion() then
+			for i, glow in ipairs(glows) do Theme.Tween(glow, { BackgroundTransparency = 0.5 + i * 0.1 }, 0.9, Enum.EasingStyle.Sine) end
+			task.wait(0.9)
+			for i, glow in ipairs(glows) do
+				if skating() then Theme.Tween(glow, { BackgroundTransparency = 0.7 + i * 0.09 }, 0.9, Enum.EasingStyle.Sine) end
+			end
+			task.wait(0.9)
+		else
+			task.wait(0.3)
+		end
+	end
+end)
+-- idle: a bob and a shine every few seconds (not while skating, not with Reduced Motion)
+task.spawn(function()
+	local sweep = shine:FindFirstChild("Sweep") :: UIGradient
+	while true do
+		task.wait(MOTION.IdleEvery)
+		if gui.Enabled and not skating() and not Theme.ReducedMotion() then
+			Theme.Tween(button, { Position = UDim2.fromOffset(0, -MOTION.Bob) }, 0.35, Enum.EasingStyle.Sine)
+			task.delay(0.35, function() Theme.Tween(button, { Position = UDim2.fromOffset(0, 0) }, 0.45, Enum.EasingStyle.Sine) end)
+			sweep.Offset = Vector2.new(-1, 0)
+			shine.Visible = true
+			Theme.Tween(sweep, { Offset = Vector2.new(1, 0) }, 0.8, Enum.EasingStyle.Sine)
+			task.delay(0.85, function() shine.Visible = false end)
+		end
+	end
+end)
 task.spawn(function()
 	while true do
 		if ring.Enabled and not Theme.ReducedMotion() then
