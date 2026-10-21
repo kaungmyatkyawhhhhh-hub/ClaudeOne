@@ -359,7 +359,14 @@ for day = 1, DAYS do
 				New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 				New("UIStroke", { Name = "Edge", Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 			})
-			local glyph = Pieces.Icon(item.icon, Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(13, 13), Parent = circle })
+			local isArt = string.sub(item.icon, 1, 13) == "rbxassetid://"
+			if isArt then -- (owner, 22 Oct: the item's picture, a bit bigger, no circle behind it)
+				circle.BackgroundTransparency = 1
+				circle.Edge.Enabled = false
+				circle.Size = UDim2.fromOffset(iconSize + 10, iconSize + 10)
+			end
+			local glyph = Pieces.Icon(item.icon, Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+				Size = if isArt then UDim2.fromScale(1, 1) else UDim2.fromOffset(13, 13), Parent = circle })
 			glyph:SetAttribute("KeepColor", true)
 			table.insert(icons, glyph)
 			bonusTag = Kit.GoldText(Kit.Text({ Name = "Plus", Text = "+" .. boostAmount, Font = "Chunky", TextSize = 10, AnchorPoint = Vector2.new(0, 0.5),
@@ -449,7 +456,7 @@ local function refreshCalendars()
 		for _, icon in ipairs(c.icons) do
 			if icon:IsA("ImageLabel") then icon.ImageTransparency = dim end
 		end
-		if c.icons.circle then c.icons.circle.BackgroundTransparency = dim; c.icons.circle.Edge.Transparency = dim end
+		if c.icons.circle and c.icons.circle.Edge.Enabled then c.icons.circle.BackgroundTransparency = dim; c.icons.circle.Edge.Transparency = dim end
 		c.amount.TextTransparency = dim
 		c.label.TextTransparency = if got then DIM else 0
 		if c.bonusTag then

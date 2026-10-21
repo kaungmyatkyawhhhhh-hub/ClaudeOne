@@ -40,6 +40,13 @@ function Pieces.Icon(name: string, color: Color3?, props: { [string]: any }?): I
 	image.BackgroundTransparency = 1
 	image.BorderSizePixel = 0
 	image.ScaleType = Enum.ScaleType.Fit
+	-- (owner, 22 Oct) a picture's id instead of an icon name (an item's art, Config/Boosts.Art): shown as it is, never tinted
+	if type(name) == "string" and string.sub(name, 1, 13) == "rbxassetid://" then
+		image.Image = name
+		image:SetAttribute("KeepColor", true)
+		image:SetAttribute("Art", true)
+		return set(image, props)
+	end
 	image.Image = UI.Icons[name] or ""
 	if not UI.Icons[name] then warn("[Pieces] unknown icon " .. tostring(name)) end
 	image.ImageColor3 = color or Color3.new(1, 1, 1)

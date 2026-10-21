@@ -551,6 +551,14 @@ end
 function Kit.IconTile(icon: string, color: Color3, size: number, props: { [string]: any }?)
 	props = props or {}
 	props.Size = UDim2.fromOffset(size, size)
+	-- (owner, 22 Oct) an item picture: just the picture, as big as the tile (no coloured tile behind it)
+	if type(icon) == "string" and string.sub(icon, 1, 13) == "rbxassetid://" then
+		props.BackgroundTransparency = 1
+		props.ImageColor3 = nil
+		local holder = New("Frame", props)
+		Pieces.Icon(icon, nil, { Size = UDim2.fromScale(1, 1), Parent = holder })
+		return holder
+	end
 	props.BackgroundColor3 = Color3.new(1, 1, 1)
 	props.ImageColor3 = nil
 	local tile = New("Frame", props, {

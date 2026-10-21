@@ -35,8 +35,19 @@ Boosts.Items = {
 	{ id = "PreWorkout", name = "Pre-Workout", seconds = 5 * 60, effects = { repSpeed = 1.25 }, icon = "timer", color = "#36C2C2",
 		text = "+25% rep speed.", duration = "5 min" },
 }
+-- (owner, 22 Oct) item pictures (Downloads\gym_arc_reward_icons, uploaded to the Myanmar Builders Club group): with one,
+-- the item shows its picture everywhere instead of the line icon in a coloured tile (Pieces.Icon / Kit.IconTile take a
+-- picture's id). "" = not uploaded yet: the line icon stays.
+Boosts.Art = {
+	CoconutWater = "", -- coconut_water.png
+	Creatine = "", -- creatine.png
+}
 Boosts.ById = {}
-for _, item in ipairs(Boosts.Items) do Boosts.ById[item.id] = item end
+for _, item in ipairs(Boosts.Items) do
+	Boosts.ById[item.id] = item
+	local art = Boosts.Art[item.id]
+	if art and art ~= "" then item.icon = art end
+end
 
 -- Extra items on login calendar days (Config/Economy.Login), so players meet the new boosts.
 Boosts.LoginItems = { [2] = { CoconutWater = 1 }, [5] = { Creatine = 1 } }
