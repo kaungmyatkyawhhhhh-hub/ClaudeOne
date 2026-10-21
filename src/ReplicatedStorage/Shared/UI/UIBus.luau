@@ -78,4 +78,29 @@ function UIBus.WaitForGameplay(extra: number?)
 	task.wait(extra or 3)
 end
 
+-- (22 Oct, owner: "hide the non-tutorial UI during the tutorial") The tutorial's state for the rest of the HUD.
+--   UIBus.InTutorial()        true while the tutorial runs (the save's tutorial step, so it's right from the first frame)
+--   UIBus.TutorialTarget      the current step's MachineId / "Coach", or nil (TutorialClient keeps it); the machine signs
+--                             show only on it
+--   UIBus.TutorialChanged     fires when the step or its target changes, and when the tutorial ends
+--   UIBus.AfterTutorial(fn)   runs fn now, or once the tutorial is over (season / Muscle of the Day notices)
+UIBus.TutorialTarget = nil
+UIBus.TutorialChanged = signal()
+function UIBus.InTutorial(): boolean
+	local Shared = script.Parent.Parent
+	local ok, ClientData = pcall(require, Shared.ClientData)
+	if not ok or not ClientData.IsLoaded() then return false end
+	local Onboarding = require(Shared.Config.Onboarding)
+	local data = ClientData.Get()
+	return (data.onboarding and data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done
+end
+function UIBus.AfterTutorial(fn)
+	task.spawn(function()
+		local Shared = script.Parent.Parent
+		require(Shared.ClientData).Get()
+		while UIBus.InTutorial() do task.wait(1) end
+		fn()
+	end)
+end
+
 return UIBus

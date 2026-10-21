@@ -99,7 +99,10 @@ task.spawn(function()
 	task.wait(3.5)
 	local season = Seasons.ById[ReplicatedStorage:GetAttribute("Season") or ""]
 	if season then
-		Notify.Show(season.name .. " is on: +" .. math.floor((season.coins - 1) * 100 + 0.5) .. "% coins, and " .. season.title.reps .. " reps earn the " .. season.title.name .. " title.")
+		-- (22 Oct, owner: no non-tutorial popups during the tutorial: after it)
+		UIBus.AfterTutorial(function()
+			Notify.Show(season.name .. " is on: +" .. math.floor((season.coins - 1) * 100 + 0.5) .. "% coins, and " .. season.title.reps .. " reps earn the " .. season.title.name .. " title.")
+		end)
 	end
 	local welcome = data.welcome or {}
 	if (welcome.offlineCoins or 0) > 0 then

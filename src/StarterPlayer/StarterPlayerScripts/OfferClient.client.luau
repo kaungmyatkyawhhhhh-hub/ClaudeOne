@@ -93,7 +93,7 @@ close.Activated:Connect(function()
 end)
 
 local function inTutorial(data): boolean
-	return (data.onboarding and data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done
+	return (data.onboarding and data.onboarding.tutorialStep or Onboarding.Done) < Onboarding.Done or UIBus.InTutorial()
 end
 
 -- no card over a window, the menu, the genetics screen or another card

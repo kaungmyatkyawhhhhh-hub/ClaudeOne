@@ -36,6 +36,7 @@ local Config = Shared:WaitForChild("Config")
 local Machines = require(Config.Machines)
 local Muscles = require(Config.Muscles)
 local ClientData = require(Shared.ClientData)
+local UIBus = require(Shared.UI.UIBus)
 local Theme = require(Shared.UI.Theme)
 local Icons = require(Shared.UI.Icons)
 local BodyFigure = require(Shared.UI.BodyFigure)
@@ -424,6 +425,7 @@ local function sweepStreamedOut()
 	end
 end
 
+local tutorial, tutorialCheckedAt = false, -math.huge
 RunService.RenderStepped:Connect(function(dt)
 	sweepClock += dt
 	if sweepClock >= 0.5 then
@@ -442,6 +444,10 @@ RunService.RenderStepped:Connect(function(dt)
 	if typeof(testView) == "Vector3" then cameraPosition = testView end
 	local nearest, nearestDistance = nil, SIGN.Near
 	local onMachine = false
+	if now - tutorialCheckedAt > 1 then -- (the save's step: once a second is plenty)
+		tutorialCheckedAt = now
+		tutorial = UIBus.InTutorial()
+	end
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
 		if model:GetAttribute("UserId") == player.UserId then onMachine = true end
 	end
@@ -469,11 +475,13 @@ RunService.RenderStepped:Connect(function(dt)
 			anchors[model] = anchor
 		end
 		local mine = model:GetAttribute("UserId") == player.UserId
-		if not onMachine and distance < nearestDistance then nearest, nearestDistance = model, distance end
+		-- (22 Oct, owner: no machine labels during the tutorial) only its target machine signs, no "!" anywhere
+		local tutorialOff = tutorial and model:GetAttribute("MachineId") ~= UIBus.TutorialTarget
+		if not onMachine and not tutorialOff and distance < nearestDistance then nearest, nearestDistance = model, distance end
 		-- the "!" + "NEW" (not on the machine whose sign shows: one thing per machine)
 		local id = model:GetAttribute("MachineId")
 		local signed = model == shown.model and shown.alpha > 0
-		local wantBang = if not mine and not signed and id ~= nil and not anchor.machine.action and distance <= BANG.Far and (isNew(id) or hasNewWeight(id)) then 1 else 0
+		local wantBang = if not tutorial and not mine and not signed and id ~= nil and not anchor.machine.action and distance <= BANG.Far and (isNew(id) or hasNewWeight(id)) then 1 else 0
 		local before = anchor.bangAlpha
 		anchor.bangAlpha = approach(anchor.bangAlpha, wantBang, dt)
 		local b = anchor.bangAlpha

@@ -229,19 +229,21 @@ physiqueButton.Activated:Connect(function()
 	UIBus.OpenStats:Fire("Muscles")
 end)
 
+-- (22 Oct, owner: every GO TO button teleports) a short fade, the server puts you in front of the nearest free one (off
+-- your machine first; GoToService), its gold outline for a few seconds. If the teleport can't happen: the glowing path.
 local function goTo(machine)
 	needsModal.close()
 	Audio.PlayUI("Click")
-	GuidePath.Show(machine.id, "Needs")
-	local place = if machine.dumbbell then "dumbbells (" .. machine.name .. ")" else machine.name
-	if currentMachine then
-		Notify.Hint("Tap STOP, then follow the glowing dots to the " .. place .. ".")
-	else
-		Notify.Hint("Follow the glowing dots to the " .. place .. ".")
-	end
-	local shownAt = os.clock()
-	task.delay(120, function() -- (never left on forever)
-		if os.clock() - shownAt >= 119 then GuidePath.Hide("Needs") end
+	task.spawn(function()
+		local moved = GuidePath.Teleport(machine.id)
+		GuidePath.Show(machine.id, "Needs")
+		local place = if machine.dumbbell then "dumbbells (" .. machine.name .. ")" else machine.name
+		if not moved then Notify.Hint("Follow the glowing dots to the " .. place .. ".") end
+		local shownAt = os.clock()
+		local keep = if moved then 8 else 120
+		task.delay(keep, function() -- (never left on forever)
+			if os.clock() - shownAt >= keep - 1 then GuidePath.Hide("Needs") end
+		end)
 	end)
 end
 

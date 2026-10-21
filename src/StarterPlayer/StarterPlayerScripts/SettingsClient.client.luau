@@ -10,6 +10,7 @@
 --   Gain Numbers                On / Minimal / Off (tap cycles; MachineClient reads it every rep)
 --   Rep Flash, EXP Popups, Spot Requests   On / Off
 -- "Others' Auras" (owner, 14 Oct): other players' auras On / Off (AuraClient; Low Graphics also turns them off).
+-- "Lifting Voices" (owner, 22 Oct): the grunts on heavy reps On / Off, everyone's (ScreamClient). On by default.
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -43,7 +44,7 @@ local grid = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, 
 })
 
 local values = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On", spotRequests = "On",
-	hints = "On", otherScreams = "On", otherAuras = "On", otherTrainers = "On", lowGraphics = "Off", reduceMotion = "Off" }
+	hints = "On", otherScreams = "On", otherAuras = "On", otherTrainers = "On", lowGraphics = "Off", reduceMotion = "Off", liftingVoices = "On" }
 
 local function save(changes)
 	Remotes.PlayerAction:FireServer("SetSettings", changes)
@@ -122,6 +123,7 @@ row(9, "spotRequests", "Spot Requests", "hand", ONOFF)
 row(10, "reduceMotion", "Reduce Motion", "timer", { "Off", "On" }) -- (stops the UI's looping pulses and shines; Theme.ReducedMotion)
 row(11, "otherAuras", "Others' Auras", "sparkles", ONOFF)
 row(12, "otherTrainers", "Others' Trainers", "users", ONOFF) -- (prompt 29: other players' following trainers; off on Low Graphics)
+row(13, "liftingVoices", "Lifting Voices", "volume-2", ONOFF) -- (owner, 22 Oct: the grunts on heavy reps, ScreamClient)
 
 local function refreshAll()
 	for _, show in pairs(rows) do show() end
@@ -167,6 +169,7 @@ task.spawn(function()
 	values.otherTrainers = if settings.otherTrainers == "Off" then "Off" else "On"
 	values.lowGraphics = if settings.lowGraphics == "On" then "On" else "Off"
 	values.reduceMotion = if settings.reduceMotion == "On" then "On" else "Off"
+	values.liftingVoices = if settings.liftingVoices == "Off" then "Off" else "On"
 	refreshAll()
 	Audio.SetVolumes(values.music, values.effects)
 	Audio.OthersMuted = values.otherScreams == "Off"

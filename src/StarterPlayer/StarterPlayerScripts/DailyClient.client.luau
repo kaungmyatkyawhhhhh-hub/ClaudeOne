@@ -439,6 +439,14 @@ end
 -- (one card at a time on the right, RightColumn.Priority: today's quest; once all are done it steps back for the coach)
 local tracker = RightColumn.Tracker({ name = "DailyTracker", title = "Today's quest", color = Colors.Teal, order = 2, idleOnly = true, clickable = true,
 	priority = RightColumn.Priority.Daily })
+-- (22 Oct, owner: no quest card during the tutorial; it comes back when the tutorial ends)
+task.spawn(function()
+	ClientData.Get()
+	if UIBus.InTutorial() then
+		tracker.frame.Visible = false
+		UIBus.AfterTutorial(function() tracker.frame.Visible = true end)
+	end
+end)
 local function refreshTracker(dq, valid)
 	local done, total = 0, DailyQuests.PerDay
 	local current, currentQuest = nil, nil

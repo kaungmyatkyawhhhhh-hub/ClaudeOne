@@ -71,10 +71,6 @@ local function ownsAny(id: string): boolean
 	local s = state()
 	return (s.owned[id] or 0) > 0 or (s.golden[id] or 0) > 0
 end
-local function chanceText(chance: number): string
-	if chance >= 1 then return string.format("%g%%", chance) end
-	return string.format("%g%% · 1 in %s", chance, Kit.Format(math.floor(100 / chance + 0.5)))
-end
 local function rarityOf(trainer) return Trainers.RarityById[trainer.rarity] end
 
 ------------------------------------------------------------------------
@@ -109,8 +105,9 @@ end
 -- (prompt 27, 22 Oct: the kit design kit_agency_stand.png) LEFT: the odds grid, 2 rows of 4 rarity slots. A slot: a dark tile
 -- with a deep radial glow and faint light rays in the rarity color, a thin border in a darker rarity color, the trainer's
 -- portrait (Config/Trainers icon); one you haven't owned yet is a black silhouette with a thin rim in the rarity color on a
--- brighter burst (the Secret one a black "?" until you own him). Under it the rarity name (loud, its color) and the chance
--- (small, gray: "50%", "1 IN 167"). Owned: a small gold check; a count "x2" bottom-right. A tap (or hover) shows his boost.
+-- brighter burst (owner, 22 Oct: the hidden rarities, Secret and Eternal, too, and their name is "???" until you own
+-- them). Under it the rarity name (loud, its color) and the chance (small, gray: Trainers.ChanceText, "50%", "0.035%").
+-- Owned: a small gold check; a count "x2" bottom-right. A tap (or hover) shows his name and boost.
 local GRID_W = 384
 local CELL_GAP = 8
 local SLOT_TEXT = 34 -- the rarity name + the chance under the tile
@@ -134,7 +131,7 @@ local function hideTip() tooltip.Visible = false end
 local function showTip(slot)
 	local hidden = rarityOf(slot.trainer).hidden == true and not ownsAny(slot.trainer.id)
 	tipName.Text = if hidden then "???" else slot.trainer.name
-	tipPerk.Text = if hidden then "A secret trainer. Who is it?" else slot.trainer.perkText
+	tipPerk.Text = if hidden then "Hidden until you own one. Who is it?" else slot.trainer.perkText
 	-- (over the lower part of the slot's own tile, in mockup px: the cell's column / row times its size)
 	local cell = slot.cell
 	local column, row = (slot.order - 1) % 4, (slot.order - 1) // 4
@@ -189,7 +186,7 @@ for order, trainer in ipairs(Trainers.List) do
 		Position = UDim2.new(0.5, 0, 1, -13), Size = UDim2.new(1, 4, 0, 17), Parent = cell })
 	Kit.Fit(name, 13, 9)
 	local chance = rarity.chance
-	Kit.Text({ Name = "Chance", Text = if chance >= 1 then string.format("%g%%", chance) else "1 IN " .. Kit.Format(math.floor(100 / chance + 0.5)),
+	Kit.Text({ Name = "Chance", Text = Trainers.ChanceText(chance),
 		Font = "Strong", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, 0, 0, 13), Parent = cell })
 	local slot = { cell = cell, tile = tile, border = border, glow = glow, rays = rays, rimArt = rimArt, art = art, check = check, count = count,
 		trainer = trainer, order = order }
@@ -211,11 +208,10 @@ local function refreshRows()
 	for id, slot in pairs(slots) do
 		local rarity = rarityOf(slot.trainer)
 		local owned = ownsAny(id)
-		local secret = rarity.hidden == true and not owned
-		-- not owned yet: a black silhouette with a rim in the rarity color on a brighter burst; the Secret one a black "?"
-		slot.art.Image = if secret then Trainers.SilhouetteIcon else (slot.trainer.icon or "")
-		slot.art.ImageColor3 = if owned or secret then Color3.new(1, 1, 1) else Color3.new(0, 0, 0)
-		slot.rimArt.Visible = not owned and not secret
+		-- not owned yet: a black silhouette with a rim in the rarity color on a brighter burst (Secret and Eternal too)
+		slot.art.Image = slot.trainer.icon or ""
+		slot.art.ImageColor3 = if owned then Color3.new(1, 1, 1) else Color3.new(0, 0, 0)
+		slot.rimArt.Visible = not owned
 		slot.glow.ImageTransparency = if owned then 0.5 else 0.25
 		for _, ray in ipairs(slot.rays:GetChildren()) do ray.BackgroundTransparency = if owned then 0.84 else 0.7 end
 		slot.check.Visible = owned
@@ -833,7 +829,9 @@ local function announce(info)
 	local trainer = Trainers.ById[info.trainer]
 	if not rarity or not trainer then return end
 	local who = if info.userId == player.UserId then "You" else tostring(info.name)
-	local text = who .. " pulled " .. (if rarity.id == "Eternal" or rarity.id == "Epic" then "an " else "a ") .. string.upper(rarity.name) .. " trainer: " .. trainer.name .. "!"
+	-- (owner, 22 Oct: a hidden trainer's name stays "???" for players who don't own him)
+	local name = if rarity.hidden and info.userId ~= player.UserId and not ownsAny(trainer.id) then "???" else trainer.name
+	local text = who .. " pulled " .. (if rarity.id == "Eternal" or rarity.id == "Epic" then "an " else "a ") .. string.upper(rarity.name) .. " trainer: " .. name .. "!"
 	-- a chat-style line for everyone
 	pcall(function()
 		local channels = TextChatService:FindFirstChild("TextChannels")

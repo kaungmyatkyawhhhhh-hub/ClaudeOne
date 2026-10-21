@@ -94,10 +94,12 @@ end
 ------------------------------------------------------------------------
 gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets -- the same top as Notify's band and toasts, so they line up
 local root = Kit.Root(gui)
-local SKIP_Y = Notify.Top + Notify.BandHeight + 4
-local skip = Kit.Button("Green", "Skip tutorial", { Name = "Skip", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, SKIP_Y), Parent = root },
-	{ width = 170, height = 30, textSize = 15 })
-Notify.Reserve(38) -- toasts stack under the skip button
+-- (22 Oct, owner) a small dark SKIP pill top-right, under the top bar and left of the right column's cards (was a big green
+-- SKIP TUTORIAL bar under the band). Tap twice: the first tap asks "Sure?".
+local RightColumn = require(Shared.UI.RightColumn)
+local skip = Kit.Button("Quiet", "Skip", { Name = "Skip", AnchorPoint = Vector2.new(1, 0), Parent = root }, { width = 92, height = 40, textSize = 14 })
+skip.Position = UDim2.new(1, -(RightColumn.Width + 60), 0, 56) -- (clear of the column's collapse arrow)
+Kit.OnTopbar(function() skip.Position = UDim2.new(1, -(RightColumn.Width + 60), 0, Kit.UnderTopbar(root)) end)
 local skipArmed = 0
 -- (owner, 21 Oct) SKIP TUTORIAL only after the player has been in the game for SkipAfter seconds: counted from when the
 -- menu is gone and the genetics screen has closed, so a new player sees the first step before the way out
@@ -236,21 +238,27 @@ end)
 local GuidePath = require(Shared.UI.GuidePath)
 local function showPath(machineId) GuidePath.Show(machineId, "Tutorial") end
 local function hidePath() GuidePath.Hide("Tutorial") GuidePath.StopWalk() end
+local markedTarget = nil -- (22 Oct) the target the gold marker + arrow are on
 
--- (prompt 11, 21 Oct) "Go to Flat Bench": walks the player there along the gold path (GuidePath.Walk); any key / stick
--- input takes over again. Above the coach dialog, only while a step leads to a machine the player isn't on.
+-- (prompt 11, 21 Oct) "GO TO FLAT BENCH" above the coach dialog, only while a step leads to a machine the player isn't on.
+-- (22 Oct, owner) It TELEPORTS: a short fade to black, the server puts the player in front of the target facing it (off a
+-- machine first; GoToService), the fade back in (GuidePath.Teleport); the gold marker + arrow are on the target.
+-- (the owner asked for prompt 37's gold ChunkyButton style: that kit isn't built yet, so it's the kit's gold button)
 local goButton = Kit.Button("Gold", "Go to bench", { Name = "GoTo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -112), Visible = false,
-	Parent = root }, { width = 200, height = 46, textSize = 16 })
-local walking = false
+	Parent = root }, { width = 220, height = 46, textSize = 16 })
+local walking = false -- (a teleport is running)
+local arrivedAt = nil -- the target the last teleport put the player at (its GO TO button stays hidden)
 goButton.Activated:Connect(function()
-	if walking then return end
+	local target = goButton:GetAttribute("Target")
+	if walking or not target then return end
 	walking = true
 	Audio.PlayUI("Click")
-	Kit.SetButton(goButton, "Gold", "Walking...")
 	task.spawn(function()
-		GuidePath.Walk()
+		-- (there: the button steps aside, it sat over the machine and its Occupy prompt)
+		if GuidePath.Teleport(target) then arrivedAt = target end
 		walking = false
 		if goButton.Parent then Kit.SetButton(goButton, "Gold", goButton:GetAttribute("Label") or "Go") end
+		if arrivedAt == goButton:GetAttribute("Target") then goButton.Visible = false end
 	end)
 end)
 local function goLabel(target): string
@@ -331,14 +339,32 @@ local function refreshStep()
 	if step.target and onMachine ~= step.target then
 		if GuidePath.Target() ~= step.target then showPath(step.target) end
 		local label = goLabel(step.target)
+		goButton:SetAttribute("Target", step.target)
 		if goButton:GetAttribute("Label") ~= label then
 			goButton:SetAttribute("Label", label)
 			if not walking then Kit.SetButton(goButton, "Gold", label) end
 		end
-		goButton.Visible = true
+		goButton.Visible = arrivedAt ~= step.target
+		-- (22 Oct) the glowing gold marker + arrow on the target, the only machine sign shown (MachineSignsClient)
+		if markedTarget ~= step.target then
+			markedTarget = step.target
+			GuidePath.Mark(step.target)
+		end
+		if UIBus.TutorialTarget ~= step.target then
+			UIBus.TutorialTarget = step.target
+			UIBus.TutorialChanged:Fire()
+		end
 	else
 		hidePath()
 		goButton.Visible = false
+		if markedTarget then
+			markedTarget = nil
+			GuidePath.Unmark()
+		end
+		if UIBus.TutorialTarget ~= nil then
+			UIBus.TutorialTarget = nil
+			UIBus.TutorialChanged:Fire()
+		end
 	end
 	-- the shake step: a bouncing arrow on hotbar slot 1 (the shake), on a machine or not
 	if step.done.type == "shake" then pointAtShake() else hideShakeArrow() end
@@ -378,6 +404,10 @@ end
 
 local function finish(skipped: boolean?)
 	hidePath()
+	markedTarget = nil
+	GuidePath.Unmark()
+	UIBus.TutorialTarget = nil
+	UIBus.TutorialChanged:Fire()
 	hideShakeArrow()
 	shownText = nil
 	pages = nil
@@ -396,9 +426,9 @@ skip.Activated:Connect(function()
 	if os.clock() - skipArmed > 3 then
 		-- the first tap only asks (a stray tap never wipes the tutorial)
 		skipArmed = os.clock()
-		Kit.SetButton(skip, "Gold", "Tap again to skip")
+		Kit.SetButton(skip, "Gold", "Sure?")
 		task.delay(3, function()
-			if skip.Parent and os.clock() - skipArmed >= 3 then Kit.SetButton(skip, "Green", "Skip tutorial") end
+			if skip.Parent and os.clock() - skipArmed >= 3 then Kit.SetButton(skip, "Quiet", "Skip") end
 		end)
 		return
 	end

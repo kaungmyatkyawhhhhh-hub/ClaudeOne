@@ -14,6 +14,7 @@ local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
 local Notify = require(Shared.UI.Notify)
 local HudBottom = require(Shared.UI.HudBottom)
+local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -119,12 +120,14 @@ end
 
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if type(info) ~= "table" then return end
+	-- (22 Oct, owner: no boost popups during the tutorial; its shake step says what the shake does)
+	local quiet = UIBus.InTutorial()
 	if kind == "ItemsAdded" and type(info.id) == "string" then
-		showAdded(info.id, tonumber(info.count) or 1)
+		if not quiet then showAdded(info.id, tonumber(info.count) or 1) end
 	elseif kind == "ItemUsed" and type(info.id) == "string" then
 		local item = Boosts.ById[info.id]
 		if item then
-			Notify.Show(item.name .. ": " .. item.text)
+			if not quiet then Notify.Show(item.name .. ": " .. item.text) end
 			Audio.Play2D("DrinkShake")
 		end
 	end

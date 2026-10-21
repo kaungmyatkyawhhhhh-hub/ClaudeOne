@@ -381,6 +381,13 @@ function MachineService.LeaveModel(model)
 	if occupant and typeof(occupant) == "Instance" and occupant:IsA("Player") then leave(occupant) end
 end
 
+-- (22 Oct) Gets this player off their machine, if they're on one (GoToService: a GO TO teleport). True if they were on one.
+function MachineService.LeavePlayer(player): boolean
+	if not sessions[player] then return false end
+	leave(player)
+	return true
+end
+
 function MachineService.IsFree(model)
 	return occupants[model] == nil
 end
@@ -644,7 +651,7 @@ local function lift(player)
 	if tier.unit ~= "mph" then
 		local heaviest = machine.tiers[usableAfter]
 		local heavy = heaviest ~= nil and heaviest.weight > 0 and tier.weight >= Screams.HeavyShare * heaviest.weight
-		ScreamService.OnRep(player, { pr = pr ~= nil, lastOfSet = session.reps % Screams.SetSize == 0, heavy = heavy })
+		ScreamService.OnRep(player, { pr = pr ~= nil, heavy = heavy }) -- (22 Oct: grunts on heavy reps only, Config/Screams)
 	end
 	Remotes.RepResult:FireClient(player, { levels = levels, coins = coins, big = big,
 		nextBig = session.nextBig, pumped = pumped, pr = pr, staminaUp = staminaUp, weightUnlocked = weightUnlocked })

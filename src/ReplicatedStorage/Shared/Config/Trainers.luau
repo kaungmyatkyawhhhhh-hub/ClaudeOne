@@ -23,7 +23,7 @@ Trainers.Rarities = {
 	{ id = "Legendary", name = "Legendary", chance = 2, color = "#F6C75A", reveal = "explosion", announce = "chat" },
 	{ id = "Mythic", name = "Mythic", chance = 0.6, color = "#E8345A", color2 = "#9A4AD8", reveal = "lightning", announce = "chat" },
 	{ id = "Secret", name = "Secret", chance = 0.15, color = "#2A2A30", color2 = "#8E8E9A", reveal = "dark", announce = "banner", hidden = true },
-	{ id = "Eternal", name = "Eternal", chance = 0.035, color = "#FFF3C4", color2 = "#F6C75A", reveal = "cosmic", announce = "banner" },
+	{ id = "Eternal", name = "Eternal", chance = 0.035, color = "#FFF3C4", color2 = "#F6C75A", reveal = "cosmic", announce = "banner", hidden = true }, -- (owner, 22 Oct: hidden until owned, like Secret)
 }
 Trainers.RarityById = {}
 for index, rarity in ipairs(Trainers.Rarities) do
@@ -62,6 +62,14 @@ end
 -- 122323729220125 / 115748213011909 / 129640648829938 / 97574058899490 / 75461569868523.
 Trainers.MaxHeightInches = 90
 Trainers.SilhouetteIcon = "rbxassetid://137156947592087" -- (the Secret one before you own him: a black "???" silhouette)
+
+-- (owner, 22 Oct) A chance as the players see it: always a percentage, never "1 in 1000". 1% and up as a whole number
+-- ("50%", Common's 50.215 too), below 1% up to 3 decimals without trailing zeros ("0.6%", "0.15%", "0.035%").
+function Trainers.ChanceText(chance: number): string
+	if chance >= 1 then return string.format("%d%%", math.floor(chance + 0.5)) end
+	local text = string.format("%.3f", chance):gsub("0+$", ""):gsub("%.$", "")
+	return text .. "%"
+end
 
 -- The trainers' own materials (look.marble.variant): MaterialVariants in MaterialService, made in Studio by
 -- tools/builders/SkinStages BuildTrainerSkins() (a game script can't set the maps). The stage muscle meshes of NPCs take no

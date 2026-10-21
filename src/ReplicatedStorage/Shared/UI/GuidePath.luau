@@ -7,6 +7,12 @@
 --   GuidePath.Target()              the MachineId / "Coach" being shown, and its owner (nil when hidden)
 --   GuidePath.Walk()                (prompt 11) walks the player along the path (Humanoid:MoveTo); stops when the path is
 --                                   hidden, the player steers themselves or gets stuck. Returns true if they arrived.
+--   GuidePath.Teleport(target)      (22 Oct, owner: the GO TO buttons teleport) a 0.3 s fade to black with a whoosh, the
+--                                   server moves the player in front of the target (GoToService: checks it, 3 s cooldown,
+--                                   off a machine first), the fade back in. Yields; returns true if the player was moved.
+--   GuidePath.Mark(target, seconds?) a glowing gold marker on the target (a soft gold glow over it) and a gold arrow
+--                                   bouncing above it, for `seconds` (nil = until Unmark / the next Mark): the tutorial
+--   GuidePath.Unmark()
 -- (prompt 11, 21 Oct) Under the dots a glowing gold ribbon (Beams lying flat on the floor) runs from the player to the target.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -37,77 +43,15 @@ local PATH = {
 ------------------------------------------------------------------------
 -- Machines: find them, and the spot just outside each one facing the room
 ------------------------------------------------------------------------
--- A target is a MachineId, or "Coach" (the Coach NPC, tagged "Coach").
+-- A target is a MachineId, or "Coach" (the Coach NPC, tagged "Coach"). (22 Oct: finding it and the spot in front of it
+-- moved to Shared/GoTo, so the server's teleport picks the same machine and spot.)
+local GoTo = require(script.Parent.Parent.GoTo)
 local function machineModel(machineId)
-	if machineId == "Coach" then
-		return CollectionService:GetTagged("Coach")[1]
-	end
-	-- the gym has several of each machine: the nearest one nobody is using (any one if all are busy)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	local from = root and root.Position or Vector3.zero
-	-- (only machines in a gym the player has opened: the nearest deadlift can be in the locked pro gym)
-	local Machines = require(script.Parent.Parent.Config.Machines)
 	local ClientData = require(script.Parent.Parent.ClientData)
-	local machine = Machines.ById[machineId]
-	local spurts = ClientData.Get().growthSpurts or 0
-	local best, bestScore = nil, math.huge
-	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		-- (prompt 32) a dumbbell exercise: any dumbbell Train spot (it becomes the exercise you pick) in a gym you've opened
-		local match = if machine and machine.dumbbell
-			then model:GetAttribute("Dumbbell") == true and (Machines.GymUnlock[model:GetAttribute("Gym")] or 0) <= spurts
-			else model:GetAttribute("MachineId") == machineId and (not machine or Machines.GymOpenAt(machine, model) <= spurts)
-		if model:IsA("Model") and match then
-			local busy = model:GetAttribute("UserId") ~= nil or model:FindFirstChild("Occupant") ~= nil
-			local score = (model:GetPivot().Position - from).Magnitude + (busy and 1000 or 0)
-			if score < bestScore then best, bestScore = model, score end
-		end
-	end
-	return best
+	return GoTo.Find(machineId, if root then root.Position else Vector3.zero, ClientData.Get().growthSpurts or 0)
 end
-
--- The middle of the gym the target is in (machines in the same room, within 60 studs of it).
-local function gymCenter(near, room)
-	local sum, count = Vector3.zero, 0
-	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:IsA("Model") and (not room or model.Parent == room) then
-			local position = model:GetPivot().Position
-			if not near or (position - near).Magnitude < 60 then
-				sum += position
-				count += 1
-			end
-		end
-	end
-	return count > 0 and sum / count or nil
-end
-
--- From the machine's prompt, head toward the middle of the gym until leaving the machine's box, then a bit more.
-local function approachPoint(model)
-	local boxCFrame, size = model:GetBoundingBox()
-	local prompt = model:FindFirstChildWhichIsA("ProximityPrompt", true) -- Use or Spot: both sit on the same part
-	local holder = prompt and prompt.Parent
-	local start = (holder and holder:IsA("BasePart") and holder.Position)
-		or (holder and holder:IsA("Attachment") and holder.WorldPosition)
-		or boxCFrame.Position
-	local center = gymCenter(boxCFrame.Position, model.Parent) or boxCFrame.Position
-	local localStart = boxCFrame:PointToObjectSpace(start)
-	local localDir = boxCFrame:VectorToObjectSpace((center - start) * Vector3.new(1, 0, 1))
-	if localDir.Magnitude < 0.01 then localDir = Vector3.new(0, 0, -1) end
-	localDir = localDir.Unit
-	local half = size / 2
-	local exit = math.huge
-	for _, axis in ipairs({ "X", "Z" }) do
-		local d = localDir[axis]
-		if math.abs(d) > 1e-4 then
-			local bound = d > 0 and half[axis] or -half[axis]
-			exit = math.min(exit, (bound - localStart[axis]) / d)
-		end
-	end
-	if exit == math.huge then exit = 0 end
-	local localPoint = localStart + localDir * (math.max(exit, 0) + PATH.Approach)
-	local world = boxCFrame:PointToWorldSpace(localPoint)
-	local floorY = boxCFrame.Position.Y - half.Y
-	return Vector3.new(world.X, floorY, world.Z)
-end
+local approachPoint = GoTo.Spot
 
 ------------------------------------------------------------------------
 -- Glowing path + outline
@@ -151,7 +95,7 @@ end
 local highlight = New("Highlight", {
 	Name = "GuideOutline",
 	FillTransparency = 1,
-	OutlineColor = Colors.Text,
+	OutlineColor = Colors.Gold, -- (22 Oct: gold, like the path; was white)
 	OutlineTransparency = 0.2,
 	DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
 	Enabled = false,
@@ -378,6 +322,97 @@ function GuidePath.Walk(): boolean
 end
 function GuidePath.StopWalk()
 	walkToken += 1
+end
+
+------------------------------------------------------------------------
+-- (22 Oct) Teleport: fade to black, the server moves the player (GoToService), fade back in
+------------------------------------------------------------------------
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local FADE = 0.3
+local COOLDOWN = 3 -- (the server checks it too)
+local fadeGui = New("ScreenGui", { Name = "GoToFade", DisplayOrder = 90, IgnoreGuiInset = true, ResetOnSpawn = false, Enabled = false })
+fadeGui.ScreenInsets = Enum.ScreenInsets.None
+local fade = New("Frame", { Name = "Fade", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = fadeGui })
+local lastTeleport = -math.huge
+local teleporting = false
+function GuidePath.Teleport(target: any): boolean
+	if teleporting or os.clock() - lastTeleport < COOLDOWN then return false end
+	teleporting = true
+	lastTeleport = os.clock()
+	GuidePath.StopWalk()
+	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+	pcall(function() require(script.Parent.Parent.Audio).PlayUI("Whoosh") end)
+	fadeGui.Parent = player:WaitForChild("PlayerGui")
+	fadeGui.Enabled = true
+	TweenService:Create(fade, TweenInfo.new(FADE), { BackgroundTransparency = 0 }):Play()
+	-- the server's answer (or give up after 2 s: the screen never stays black)
+	local done, moved, at = false, false, nil
+	local connection = Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
+		if kind == "GoTo" then
+			done, moved = true, type(info) == "table" and info.ok == true
+			at = if type(info) == "table" and typeof(info.at) == "Vector3" then info.at else nil
+		end
+	end)
+	task.wait(FADE)
+	Remotes.PlayerAction:FireServer("GoTo", target)
+	local t0 = os.clock()
+	while not done and os.clock() - t0 < 2 do task.wait() end
+	connection:Disconnect()
+	-- the camera behind the player, looking at the target (it kept its old direction and could end up behind a rack)
+	local root = rootPart()
+	local camera = Workspace.CurrentCamera
+	if moved and at and root and camera then
+		local flat = (at - root.Position) * Vector3.new(1, 0, 1)
+		if flat.Magnitude > 0.1 then
+			local from = root.Position - flat.Unit * 9 + Vector3.new(0, 4, 0)
+			camera.CFrame = CFrame.lookAt(from, at + Vector3.new(0, 1, 0))
+		end
+	end
+	task.wait(0.05)
+	local out = TweenService:Create(fade, TweenInfo.new(FADE), { BackgroundTransparency = 1 })
+	out:Play()
+	out.Completed:Wait()
+	fadeGui.Enabled = false
+	teleporting = false
+	return moved
+end
+
+-- A gold arrow over the target, bouncing, pointing down at it, for `seconds`.
+local markToken = 0
+function GuidePath.Mark(target: any, seconds: number?)
+	markToken += 1
+	local token = markToken
+	local model = if typeof(target) == "Instance" then target else (targetModel or machineModel(target))
+	if not model or not model:IsA("Model") then return end
+	-- (anchored on an attachment over the model's box, above the machine sign's diamond and name)
+	local boxCFrame, size = model:GetBoundingBox()
+	local anchor = New("Attachment", { Name = "GoToMarkAnchor", WorldPosition = boxCFrame.Position + Vector3.new(0, size.Y / 2 + 5.2, 0), Parent = Workspace.Terrain })
+	local gui = New("BillboardGui", { Name = "GoToMark", AlwaysOnTop = true, LightInfluence = 0, Size = UDim2.fromOffset(64, 64), Adornee = anchor,
+		Parent = player:WaitForChild("PlayerGui") })
+	local glow = New("Highlight", { Name = "GoToGlow", Adornee = model, FillColor = Colors.Gold, FillTransparency = 0.75, OutlineTransparency = 1,
+		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = Workspace.CurrentCamera })
+	gui.Destroying:Connect(function()
+		anchor:Destroy()
+		glow:Destroy()
+	end)
+	local Pieces = require(script.Parent.Pieces)
+	local arrow = Pieces.Icon("arrow-big-up", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0.8, 0.8), Rotation = 180, Parent = gui })
+	arrow:SetAttribute("KeepColor", true)
+	task.spawn(function()
+		local t0 = os.clock()
+		while gui.Parent and token == markToken and model.Parent and os.clock() - t0 < (seconds or math.huge) do
+			local t = os.clock() - t0
+			arrow.Position = UDim2.new(0.5, 0, 0.5, math.sin(t * 6) * 8)
+			glow.FillTransparency = 0.68 + 0.14 * math.sin(t * 3)
+			task.wait()
+		end
+		gui:Destroy()
+	end)
+end
+function GuidePath.Unmark()
+	markToken += 1
 end
 
 return GuidePath
