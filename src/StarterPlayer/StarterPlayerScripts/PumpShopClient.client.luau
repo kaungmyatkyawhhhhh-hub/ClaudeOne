@@ -21,6 +21,7 @@ local Cosmetics = require(Shared.Config.Cosmetics)
 local DNA = require(Shared.Config.DNA)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local Alters = require(Shared.Config.Alters)
+local AlterThemes = require(Shared.Config.AlterThemes)
 local Muscles = require(Shared.Config.Muscles)
 local Machines = require(Shared.Config.Machines)
 local ClientData = require(Shared.ClientData)
@@ -83,7 +84,7 @@ local function alterEntries()
 	for _, alter in ipairs(Alters.List) do
 		if alter.tier == tier then
 			table.insert(list, { key = alter.id, section = "Alters", alter = alter, name = alter.name, icon = "flame",
-				color = if alter.textures then Colors.Gold else Colors.Muted, price = function() return nil end })
+				color = AlterThemes.Get(alter.number).accent, price = function() return nil end })
 		end
 	end
 	return list, progress
@@ -289,7 +290,7 @@ local function showHero(entry)
 		if n == progress.next and progress.ready then
 			addButton(buttonRow, "Gold", "Alter now", 180, function()
 				modal.close()
-				Remotes.PlayerAction:FireServer("Alter")
+				UIBus.StartAlter:Fire() -- (prompt 22: the themed transformation fires the action at its flash)
 			end)
 		end
 	elseif entry.section == "DnaLab" then
@@ -331,6 +332,18 @@ function refresh()
 	if not picked[tab] and list[1] then picked[tab] = list[1].key end
 	for order, entry in ipairs(list) do
 		local card = Kit.Card({ Name = entry.key, LayoutOrder = order, Clickable = true, Parent = grid }, {})
+		if entry.section == "Alters" then
+			-- (prompt 22) a strip of the alter's popup art (or its theme colors) behind the icon, a line in its accent color
+			local theme = AlterThemes.Get(entry.alter.number)
+			local strip = New(if theme.bg then "ImageLabel" else "Frame", { Name = "Strip", BackgroundColor3 = Color3.new(1, 1, 1),
+				Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 0, 34), Parent = card }, { New("UICorner", { CornerRadius = UDim.new(0, 8) }) })
+			if theme.bg then
+				strip.Image, strip.ScaleType, strip.BackgroundTransparency = theme.bg, Enum.ScaleType.Crop, 1
+			else
+				New("UIGradient", { Rotation = -90, Color = ColorSequence.new(theme.accent:Lerp(theme.base, 0.4), theme.base), Parent = strip })
+			end
+			New("Frame", { Name = "Accent", BackgroundColor3 = theme.accent, Position = UDim2.fromOffset(3, 37), Size = UDim2.new(1, -6, 0, 2), Parent = card })
+		end
 		Kit.IconTile(entry.icon, entry.color, 30, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Parent = card })
 		Kit.Fit(Kit.Text({ Text = entry.name, Font = "Title", Position = UDim2.fromOffset(4, 38), Size = UDim2.new(1, -8, 0, 16), Parent = card }), 12, 9)
 		local price = priceOf(entry)

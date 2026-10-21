@@ -15,6 +15,8 @@
 --  * (prompt 21) At 7'0" the same card, strip, "Train next" window and popup are for the next Body Alter (Config.Alters):
 --    "NEXT: VASCULAR · 62% · Needs LEGS", BODY ALTER READY with an ALTER button, then the transformation moment (camera
 --    on you, a flash, the new skin, "ALTER 3: TANNED"). Past the last alter with textures: "MORE ALTERS SOON".
+--    (prompt 22) The popup and the transformation are themed per alter: Shared.UI.AlterPopup and Shared.VFX.AlterFX
+--    (Config.AlterThemes); nearby players see the flash ("AlterBurst").
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -26,6 +28,7 @@ local Machines = require(Config.Machines)
 local Gains = require(Config.Gains)
 local GrowthSpurts = require(Config.GrowthSpurts)
 local Alters = require(Config.Alters)
+local AlterThemes = require(Config.AlterThemes)
 local Onboarding = require(Config.Onboarding)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
@@ -42,6 +45,8 @@ local New, Colors = Theme.New, Theme.Colors
 -- The card
 ------------------------------------------------------------------------
 local UIBus = require(Shared.UI.UIBus)
+local AlterPopup = require(Shared.UI.AlterPopup)
+local AlterFX = require(Shared.VFX.AlterFX)
 local TILE_H = 44
 local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6), BackgroundTransparency = 1, Visible = false })
 local tile = Theme.Button("Gold", { Name = "Tile", Size = UDim2.new(1, 0, 0, TILE_H), Parent = holder }, {})
@@ -269,13 +274,45 @@ Kit.OnTopbar(function() strip.Position = UDim2.fromOffset(12, Kit.UnderTopbar(st
 
 -- the Growth Spurt (or at 7'0" the Body Alter) from a machine: off the machine first (the body changes), then grow
 local alterMode = false
-local function growNow()
-	local action = if alterMode then "Alter" else "GrowthSpurt"
+local alterController = nil -- (prompt 22) the transformation playing (its title card takes the "Altered" reward)
+local lastLocalAlter = -math.huge
+local function alterInfo(n: number)
+	local alter = Alters.Get(n)
+	local tier = Alters.Tiers[Alters.TierOf(n)]
+	return { alter = n, name = alter and alter.name or "", bonus = Alters.Bonus(n), tier = Alters.TierOf(n), tierName = tier and tier.name }
+end
+-- (prompt 22) the Body Alter: the themed transformation (AlterFX); the ALTER action goes to the server at its flash, so the
+-- new skin appears under the white
+local function startAlter()
+	if AlterFX.Running() then return end
+	local data = ClientData.Get()
+	local progress = Alters.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
+	if not progress.ready or progress.locked then return end
+	local n = progress.next
+	lastLocalAlter = os.clock()
+	local function go()
+		alterController = AlterFX.Transform(AlterThemes.Get(n), alterInfo(n), {
+			onFlash = function() Remotes.PlayerAction:FireServer("Alter") end,
+			onDone = function() alterController = nil end,
+		})
+	end
 	if currentMachine then
 		Remotes.MachineAction:FireServer("Leave")
-		task.delay(0.6, function() Remotes.PlayerAction:FireServer(action) end)
+		task.delay(0.6, go)
 	else
-		Remotes.PlayerAction:FireServer(action)
+		go()
+	end
+end
+local function growNow()
+	if alterMode then
+		startAlter()
+		return
+	end
+	if currentMachine then
+		Remotes.MachineAction:FireServer("Leave")
+		task.delay(0.6, function() Remotes.PlayerAction:FireServer("GrowthSpurt") end)
+	else
+		Remotes.PlayerAction:FireServer("GrowthSpurt")
 	end
 end
 strip.Activated:Connect(function()
@@ -304,13 +341,13 @@ local readyScale = New("UIScale", { Parent = readyCard })
 local readyShownFor = nil -- the Growth Spurt ("S2") or alter ("A3") the popup was shown for
 local function hideReady()
 	readyGui.Enabled = false
+	AlterPopup.Hide()
 end
 local function showReady(data, progress)
 	if progress.alter then
-		local alter = Alters.Get(progress.next)
-		readyTitle.Text = "BODY ALTER READY"
-		readySub.Text = "Alter " .. progress.next .. ": " .. alter.name .. " · gains x" .. string.format("%.2f", Alters.Bonus(progress.next))
-		Kit.SetButton(readyGo, nil, "Alter")
+		-- (prompt 22) the alter's own popup (Shared.UI.AlterPopup), themed per alter
+		AlterPopup.Show(progress.next, alterInfo(progress.next), { onAlter = startAlter })
+		return
 	else
 		readyTitle.Text = "READY TO GROW!"
 		readySub.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. ": grow to " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts + 1), true)
@@ -365,7 +402,7 @@ local function refresh()
 	if ready and started and readyShownFor ~= readyKey then
 		readyShownFor = readyKey
 		showReady(data, progress)
-	elseif not ready and readyGui.Enabled then
+	elseif not ready and (readyGui.Enabled or AlterPopup.IsOpen()) then
 		hideReady()
 	end
 	-- on a machine that doesn't help the groups that are behind: one hint per machine session
@@ -467,66 +504,28 @@ local function grewMoment(tier)
 	Notify.Show("You grew! Muscle tier " .. tier)
 end
 
-------------------------------------------------------------------------
--- (prompt 21) The Body Alter moment: the camera swings to the front of you, a white flash (the new skin is on under it),
--- a sound and the gold title card "ALTER 3: TANNED" with the new bonus; a finished tier also names its rewards.
-------------------------------------------------------------------------
-local alterGui = Theme.ScreenGui({ Name = "AlterMoment", DisplayOrder = 46, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
-alterGui.ScreenInsets = Enum.ScreenInsets.None
-local flash = New("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = alterGui })
-local alterRoot = Kit.Root(alterGui)
-local alterTitle = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 40, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.7),
-	Size = UDim2.fromOffset(700, 48), Parent = alterRoot })
-Kit.GoldText(alterTitle)
-local alterSub = Kit.Text({ Name = "Sub", Text = "", Font = "Strong", TextSize = 16, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.7, 28),
-	Size = UDim2.fromOffset(700, 40), TextWrapped = true, Parent = alterRoot })
-local alterScale = New("UIScale", { Parent = alterTitle })
-
-local function alterMoment(info)
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	local camera = Workspace.CurrentCamera
-	alterGui.Enabled = true
-	alterTitle.Text = "ALTER " .. info.alter .. ": " .. string.upper(info.name)
-	local sub = "Gains x" .. string.format("%.2f", info.bonus or 1)
-	if type(info.reward) == "table" then
-		sub ..= " · Tier complete: title, aura" .. ((info.reward.dnaTokens or 0) > 0 and (" and " .. info.reward.dnaTokens .. " DNA") or "")
-	end
-	alterSub.Text = sub
-	alterTitle.TextTransparency, alterSub.TextTransparency = 1, 1
-	-- the camera: in front of you, slowly closer (put back after)
-	local oldType = camera.CameraType
-	if root then
-		camera.CameraType = Enum.CameraType.Scriptable
-		local size = character:GetExtentsSize()
-		local focus = root.Position + Vector3.new(0, size.Y * 0.15, 0)
-		local from = root.CFrame * CFrame.new(0, size.Y * 0.1, -size.Y * 1.6)
-		camera.CFrame = CFrame.lookAt(from.Position, focus)
-		Theme.Tween(camera, { CFrame = CFrame.lookAt((root.CFrame * CFrame.new(size.Y * 0.25, size.Y * 0.05, -size.Y * 1.2)).Position, focus) }, 3.2, Enum.EasingStyle.Sine)
-	end
-	task.wait(0.5)
-	flash.BackgroundTransparency = 0
-	Audio.Play2D("GrowthSpurt")
-	Theme.Tween(flash, { BackgroundTransparency = 1 }, 0.9)
-	alterScale.Scale = 0.6
-	Theme.Tween(alterScale, { Scale = 1 }, 0.4, Enum.EasingStyle.Back)
-	Theme.Tween(alterTitle, { TextTransparency = 0 }, 0.3)
-	Theme.Tween(alterSub, { TextTransparency = 0 }, 0.3)
-	task.wait(2.8)
-	Theme.Tween(alterTitle, { TextTransparency = 1 }, 0.4)
-	Theme.Tween(alterSub, { TextTransparency = 1 }, 0.4)
-	camera.CameraType = if oldType == Enum.CameraType.Scriptable then Enum.CameraType.Custom else oldType
-	task.wait(0.45)
-	alterGui.Enabled = false
-end
-
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, payload)
 	if kind == "Grew" and type(payload) == "table" and type(payload.tier) == "number" then
 		grewMoment(payload.tier)
 	elseif kind == "Altered" and type(payload) == "table" and type(payload.alter) == "number" then
 		hideReady()
-		task.spawn(alterMoment, payload)
+		if alterController then
+			alterController.setReward(payload.reward)
+		elseif os.clock() - lastLocalAlter > 8 then
+			-- (an alter that didn't start here: the flash at once, the skin is already on)
+			local info = alterInfo(payload.alter)
+			info.instant = true
+			AlterFX.Transform(AlterThemes.Get(payload.alter), info).setReward(payload.reward)
+		end
+	elseif kind == "AlterBurst" and type(payload) == "table" and type(payload.userId) == "number" and type(payload.alter) == "number" then
+		-- (prompt 22) someone nearby altered: their flash, shockwave and particles (no camera move)
+		local other = Players:GetPlayerByUserId(payload.userId)
+		if other and other ~= player and other.Character then AlterFX.Burst(other.Character, AlterThemes.Get(payload.alter), false) end
 	end
+end)
+UIBus.StartAlter.Event:Connect(function()
+	hideReady()
+	startAlter()
 end)
 
 ------------------------------------------------------------------------

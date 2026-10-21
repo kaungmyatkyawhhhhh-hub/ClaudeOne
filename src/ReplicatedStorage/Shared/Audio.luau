@@ -4,6 +4,8 @@
 --   Audio.StartMusic()                                 background music, low, loops the playlist (waits for the menu's track)
 --   Audio.AdoptMenuMusic() / Audio.StopMenuMusic(t)    the loading screen / menu track: into the Music volume, faded out
 --   Audio.SetVolumes(music, effects)                   player settings, 0-1 each
+--   Audio.Duck(factor, fade) / Audio.Muffle(on, fade)   (prompt 22) music + gym sounds quieter / highs cut (Body Alter moments)
+--   Audio.Group(name)                                  a SoundGroup ("AlterFX": the Body Alter layers, at the effects volume)
 -- opts (optional): { volume = multiplier, pitch = multiplier }
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
@@ -15,8 +17,13 @@ local Sounds = require(script.Parent:WaitForChild("Config"):WaitForChild("Sounds
 local Audio = {}
 
 -- Balanced mix: gameplay loudest, UI quieter, music low in the background.
-local GROUP_VOLUME = { Gameplay = 0.9, UI = 0.55, Music = 0.22 }
+local GROUP_VOLUME = { Gameplay = 0.9, UI = 0.55, Music = 0.22, AlterFX = 0.9 }
 local volumes = { music = 1, effects = 1 }
+local duck = 1 -- (Audio.Duck) music and gym sounds times this
+local function groupVolume(name)
+	local d = if name == "Music" or name == "Gameplay" then duck else 1
+	return GROUP_VOLUME[name] * (name == "Music" and volumes.music or volumes.effects) * d
+end
 local groups = {}
 local rng = Random.new()
 
@@ -29,14 +36,14 @@ local function getGroup(name)
 		group.Name = name
 		group.Parent = SoundService
 	end
-	group.Volume = GROUP_VOLUME[name] * (name == "Music" and volumes.music or volumes.effects)
+	group.Volume = groupVolume(name)
 	groups[name] = group
 	return group
 end
 
 local function applyVolumes()
-	for name, base in pairs(GROUP_VOLUME) do
-		getGroup(name).Volume = base * (name == "Music" and volumes.music or volumes.effects)
+	for name in pairs(GROUP_VOLUME) do
+		getGroup(name).Volume = groupVolume(name)
 	end
 end
 
@@ -134,6 +141,33 @@ function Audio.SetVolumes(music, effects)
 	volumes.music = math.clamp(tonumber(music) or 1, 0, 1)
 	volumes.effects = math.clamp(tonumber(effects) or 1, 0, 1)
 	applyVolumes()
+end
+
+function Audio.Group(name)
+	return getGroup(name)
+end
+
+-- (prompt 22) the music and gym sounds go to `factor` of their volume (1 = back), over `fade` seconds
+function Audio.Duck(factor: number, fade: number?)
+	duck = math.clamp(factor, 0, 1)
+	for _, name in ipairs({ "Music", "Gameplay" }) do
+		TweenService:Create(getGroup(name), TweenInfo.new(fade or 0.3), { Volume = groupVolume(name) }):Play()
+	end
+end
+
+-- (prompt 22) slow motion: the highs of the music and gym sounds cut (an EqualizerSoundEffect on their groups)
+function Audio.Muffle(on: boolean, fade: number?)
+	for _, name in ipairs({ "Music", "Gameplay" }) do
+		local group = getGroup(name)
+		local eq = group:FindFirstChild("Muffle")
+		if not eq then
+			eq = Instance.new("EqualizerSoundEffect")
+			eq.Name = "Muffle"
+			eq.LowGain, eq.MidGain, eq.HighGain = 0, 0, 0
+			eq.Parent = group
+		end
+		TweenService:Create(eq, TweenInfo.new(fade or 0.3), { HighGain = if on then -40 else 0, MidGain = if on then -12 else 0 }):Play()
+	end
 end
 
 function Audio.GetVolumes()

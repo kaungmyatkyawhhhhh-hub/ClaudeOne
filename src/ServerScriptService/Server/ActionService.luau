@@ -1,6 +1,7 @@
 -- Player intents outside of machines (Growth Spurt, titles, genetics, tutorial). Every action is
 -- validated here; the client only asks.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
@@ -52,6 +53,23 @@ handlers.Alter = function(player)
 		alter = n, name = alter.name, tier = Alters.TierOf(n), bonus = Alters.Bonus(n),
 		reward = reward and { title = reward.title, aura = reward.aura, dnaTokens = reward.dnaTokens } or nil,
 	})
+	-- (prompt 22) the reveal: the new body flexes (front double biceps, everyone sees it) and players nearby see the flash
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if character and root then
+		if character:GetAttribute("Pose") == nil then
+			character:SetAttribute("Pose", "FrontDoubleBiceps")
+			task.delay(2.6, function()
+				if character.Parent and character:GetAttribute("Pose") == "FrontDoubleBiceps" then character:SetAttribute("Pose", nil) end
+			end)
+		end
+		for _, other in ipairs(Players:GetPlayers()) do
+			local otherRoot = other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart")
+			if otherRoot and (otherRoot.Position - root.Position).Magnitude < 150 then
+				Remotes.PlayerEvent:FireClient(other, "AlterBurst", { userId = player.UserId, alter = n })
+			end
+		end
+	end
 end
 
 handlers.EquipAlter = function(player, n)

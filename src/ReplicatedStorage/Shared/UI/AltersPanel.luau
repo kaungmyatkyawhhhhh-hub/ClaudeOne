@@ -3,6 +3,8 @@
 -- skin color), the name and the tier. Unlocked: WEAR (the one you wear: a gold WORN, gold border). The next one: a dark
 -- swatch and its goal. Later ones: a dark swatch and "Alter n". No textures yet: the placeholder color, "Coming soon".
 -- The line on top: your gains bonus (always the highest alter's, whatever skin you wear).
+-- (prompt 22) Each card has a strip of its alter's popup art (or its theme colors) on top and a line in its accent color
+-- (Config.AlterThemes), dimmed until it is the next one or unlocked.
 -- AltersPanel.Build(parent) -> { frame, refresh() }.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -12,6 +14,7 @@ local Audio = require(script.Parent.Parent.Audio)
 local ClientData = require(script.Parent.Parent.ClientData)
 local Config = script.Parent.Parent.Config
 local Alters = require(Config.Alters)
+local AlterThemes = require(Config.AlterThemes)
 local Muscles = require(Config.Muscles)
 local GrowthSpurts = require(Config.GrowthSpurts)
 
@@ -39,8 +42,26 @@ function AltersPanel.Build(parent: Instance)
 	local cards = {}
 	local function makeCard(alter)
 		local card = Kit.Card({ Name = alter.id, LayoutOrder = alter.number, Parent = grid }, {})
+		-- the theme strip (art or colors) and the accent line
+		local strip = nil
+		if alter.number > 0 then
+			local theme = AlterThemes.Get(alter.number)
+			strip = New(if theme.bg then "ImageLabel" else "Frame", { Name = "Strip", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0,
+				Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 0, 32), ZIndex = 1, Parent = card }, {
+				New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+			})
+			if theme.bg then
+				strip.Image = theme.bg
+				strip.ScaleType = Enum.ScaleType.Crop
+				strip.BackgroundTransparency = 1
+			else
+				New("UIGradient", { Rotation = -90, Color = ColorSequence.new(theme.accent:Lerp(theme.base, 0.4), theme.base), Parent = strip })
+			end
+			New("Frame", { Name = "Accent", BackgroundColor3 = theme.accent, BorderSizePixel = 0, Position = UDim2.fromOffset(3, 35), Size = UDim2.new(1, -6, 0, 2),
+				ZIndex = 1, Parent = card })
+		end
 		local swatch = New("ImageLabel", { Name = "Swatch", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = UDim2.fromOffset(SWATCH, SWATCH),
-			BackgroundColor3 = Colors.Panel, ScaleType = Enum.ScaleType.Crop, Parent = card }, {
+			BackgroundColor3 = Colors.Panel, ScaleType = Enum.ScaleType.Crop, ZIndex = 2, Parent = card }, {
 			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 			New("UIStroke", { Color = Colors.Outline, Thickness = 2 }),
 		})
@@ -57,7 +78,7 @@ function AltersPanel.Build(parent: Instance)
 				remotes.PlayerAction:FireServer("EquipAlter", alter.number)
 			end
 		end)
-		cards[alter.number] = { card = card, swatch = swatch, name = name, sub = sub, button = button, alter = alter }
+		cards[alter.number] = { card = card, swatch = swatch, name = name, sub = sub, button = button, alter = alter, strip = strip }
 	end
 	makeCard(Alters.Natural)
 	for _, alter in ipairs(Alters.List) do makeCard(alter) end
@@ -92,6 +113,10 @@ function AltersPanel.Build(parent: Instance)
 				c.swatch.BackgroundColor3 = Color3.fromHex(alter.placeholder):Lerp(Color3.fromHex("#1B1B20"), 0.55)
 			end
 			c.name.TextTransparency = if unlocked or n == highest + 1 then 0 else 0.4
+			if c.strip then
+				local dim = if unlocked or n == highest + 1 then 0 else 0.65
+				if c.strip:IsA("ImageLabel") then c.strip.ImageTransparency = dim else c.strip.BackgroundTransparency = dim end
+			end
 			local tierName = if n == 0 then "Natural" else Alters.Tiers[alter.tier].name .. " tier"
 			if unlocked then
 				c.sub.Text = tierName
