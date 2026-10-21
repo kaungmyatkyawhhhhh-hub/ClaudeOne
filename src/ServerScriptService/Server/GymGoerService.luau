@@ -26,6 +26,7 @@ local NpcService = require(script.Parent.NpcService)
 local Poses = require(ReplicatedStorage.Shared.Config.Poses)
 local ShowOff = require(ReplicatedStorage.Shared.Config.ShowOff)
 local MachineService = require(script.Parent.MachineService)
+local Gear = require(ReplicatedStorage.Shared.Gear)
 
 local GymGoerService = {}
 
@@ -516,6 +517,14 @@ local function dressNpc(npc, gym)
 		for _, part in ipairs(npc:GetDescendants()) do
 			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Name ~= "UpperTorso" and part.Name ~= "LowerTorso" then part.CanCollide = false end
 		end
+	end
+	-- (prompt 35) sneakers on his feet (Shared/Gear, once the model is imported): black, a stripe in one of a few colors
+	if Gear.Has("Sneakers") and not npc:FindFirstChild("GearSneakersLeftFoot") then
+		local accents = { "#F4F1EA", "#D8283E", "#3F8CFF", "#2FAE55", "#F6C75A", "#36C2C2" }
+		local pick = 0
+		for i = 1, #npc.Name do pick += string.byte(npc.Name, i) end
+		local trim = if CollectionService:HasTag(npc, "Coach") then "#D8283E" else accents[pick % #accents + 1]
+		pcall(Gear.Build, npc, "Sneakers", { color = "#16161A", trim = trim })
 	end
 	-- PoseController poses every character tagged "Poser" that gets the "Pose" attribute (regulars strike poses now and then)
 	CollectionService:AddTag(npc, "Poser")

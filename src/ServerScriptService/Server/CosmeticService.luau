@@ -135,6 +135,17 @@ local function build(player)
 		if builder and not (trying and trying.slot == slot) then pcall(builder, folder, character, item) end
 	end
 	if trying and BUILD[trying.style] then pcall(BUILD[trying.style], folder, character, trying) end
+	-- (prompt 35) sneakers, black and white (Shared/Gear, once the model is imported), unless the player wears their own
+	-- Roblox shoes (then theirs show and the feet stay)
+	if Gear.Has("Sneakers") then
+		local ownShoes = false
+		for _, child in ipairs(character:GetChildren()) do
+			if child:IsA("Accessory") and (child.AccessoryType == Enum.AccessoryType.LeftShoe or child.AccessoryType == Enum.AccessoryType.RightShoe) then
+				ownShoes = true
+			end
+		end
+		if not ownShoes then pcall(Gear.Build, character, "Sneakers", { color = "#16161A", trim = "#F4F1EA" }, folder) end
+	end
 end
 
 -- Rebuild (debounced) whenever a body part the gear sits on changes size.
@@ -177,7 +188,7 @@ end
 local function watchCharacter(player, character)
 	-- BodyService swaps the body parts (muscle body tiers): rebuild the gear on the new parts
 	character:GetAttributeChangedSignal("BodyVersion"):Connect(function() scheduleBuild(player) end)
-	for _, name in ipairs({ "LowerTorso", "Head", "LeftLowerArm", "RightLowerArm", "UpperTorso", "LeftLowerLeg", "RightLowerLeg" }) do
+	for _, name in ipairs({ "LowerTorso", "Head", "LeftLowerArm", "RightLowerArm", "UpperTorso", "LeftLowerLeg", "RightLowerLeg", "LeftFoot", "RightFoot" }) do
 		local bodyPart = character:WaitForChild(name, 10)
 		if bodyPart and bodyPart:IsA("BasePart") then
 			bodyPart:GetPropertyChangedSignal("Size"):Connect(function() scheduleBuild(player) end)

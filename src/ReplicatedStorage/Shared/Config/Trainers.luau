@@ -87,23 +87,23 @@ Trainers.List = {
 		picture = "trainer_exp", idle = "crossed", pose = "FrontDoubleBiceps", line = "Let's warm up!",
 		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
 			outfit = { shirt = "rbxassetid://139862937769412", pants = "rbxassetid://110347260992708", sleeves = "long", legs = "long", shoes = "rbxassetid://134411403634005", shirtColor = "#C8262C", pantsColor = "#1E1E22" },
-			muscle = 0.9, extras = {}, gear = { { kind = "Whistle", color = "#C8262C" } }, extraColor = "#C8262C", tint = "#C8262C" } },
+			muscle = 0.9, extras = {}, gear = { { kind = "Whistle", color = "#C8262C" }, { kind = "Sneakers", color = "#C8262C" } }, extraColor = "#C8262C", tint = "#C8262C" } },
 	-- (owner, prompt 25: +15% stamina regen on top of the coins, the old Cardio Coach's refill)
 	{ id = "CardioCoach", rarity = "Uncommon", name = "Coach Nia", heightInches = 65, perk = { coins = 0.10, staminaRegen = 0.15 },
 		perkText = "+10% coins, +15% stamina regen", picture = "trainer_stamina", idle = "hips", pose = "AbsAndThigh", line = "Drink water, then go!",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
 			outfit = { shirt = "rbxassetid://122244133593957", pants = "rbxassetid://122244133593957", sleeves = "none", legs = "shorts", shoes = "rbxassetid://130682660705057", shirtColor = "#2FAE55", pantsColor = "#2FAE55" },
-			muscle = 0.7, extras = { "headband", "bottle" }, gear = { { kind = "Whistle", color = "#2FAE55" } }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
+			muscle = 0.7, extras = { "headband", "bottle" }, gear = { { kind = "Whistle", color = "#2FAE55" }, { kind = "Sneakers", color = "#2FAE55" } }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
 	{ id = "MoneyCoach", rarity = "Rare", name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.15, maxStamina = 0.10 },
 		perkText = "+15% EXP, +10% max stamina", picture = "trainer_coins", idle = "clipboard", pose = "SideChest", line = "Form first, then weight.",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
 			outfit = { shirt = "rbxassetid://71165572097233", pants = "rbxassetid://110347260992708", sleeves = "short", legs = "long", shoes = "rbxassetid://73930285993287", shirtColor = "#E8C21C", pantsColor = "#1E1E22" },
-			muscle = 0.8, extras = { "cap", "clipboard" }, gear = { { kind = "Whistle", color = "#16161A" } }, extraColor = "#16161A", tint = "#E0B23A" } },
+			muscle = 0.8, extras = { "cap", "clipboard" }, gear = { { kind = "Whistle", color = "#16161A" }, { kind = "Sneakers", color = "#E8C21C" } }, extraColor = "#16161A", tint = "#E0B23A" } },
 	{ id = "PumpCoach", rarity = "Epic", name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.25, coins = 0.25 },
 		perkText = "+25% EXP and coins", picture = "trainer_pump", idle = "crossed", pose = "FrontLatSpread", line = "Time to grow!",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
 			outfit = { shirt = "rbxassetid://106691440081103", pants = "rbxassetid://110347260992708", sleeves = "none", legs = "shorts", shoes = "rbxassetid://101444393193455", shirtColor = "#7A3FC8", pantsColor = "#1E1E22" },
-			muscle = 1.8, extras = {}, gear = { { kind = "Whistle", color = "#7A3FC8" }, { kind = "Belt" }, { kind = "Wraps", color = "#7A3FC8" } },
+			muscle = 1.8, extras = {}, gear = { { kind = "Whistle", color = "#7A3FC8" }, { kind = "Belt" }, { kind = "Wraps", color = "#7A3FC8" }, { kind = "Sneakers", color = "#7A3FC8" } },
 			extraColor = "#7A3FC8", tint = "#7A3FC8" } },
 	-- 5) LEGENDARY: a veteran powerlifting coach, 6'9", very wide and thick (huge traps, thick waist, big forearms), a grey
 	-- short beard and buzz cut; a black sleeveless hoodie with gold trim, a thick leather belt, chalk on his hands, wrist wraps
@@ -114,7 +114,8 @@ Trainers.List = {
 		look = { skin = "#D29A72", faceTexture = "rbxassetid://83017053", -- Man Face, under a grey beard
 			outfit = { shirt = "rbxassetid://92310450517732", pants = "rbxassetid://92310450517732", sleeves = "none", legs = "shorts", shirtColor = "#16161A", pantsColor = "#16161A" },
 			muscle = 2.4, hair = "#8E8E94", extras = { "buzzcut", "beard", "hoodback", "chalk", "shoes" },
-			gear = { { kind = "Belt", color = "#2A1A10", trim = "#F6C75A" }, { kind = "Wraps", color = "#16161A", trim = "#F6C75A" } },
+			gear = { { kind = "Belt", color = "#2A1A10", trim = "#F6C75A" }, { kind = "Wraps", color = "#16161A", trim = "#F6C75A" },
+				{ kind = "Sneakers", color = "#16161A", trim = "#F6C75A" } },
 			extraColor = "#F6C75A", tint = "#F6C75A",
 			aura = "duke" } },
 	-- 6) MYTHIC: an energetic strongwoman coach, 6'10", athletic and very muscular, a long high ponytail; a red and purple
@@ -126,7 +127,8 @@ Trainers.List = {
 		look = { skin = "#A86B45", faceTexture = "rbxassetid://7074749", -- Chill
 			outfit = { shirt = "rbxassetid://140621946283610", pants = "rbxassetid://140621946283610", sleeves = "none", legs = "shorts", shirtColor = "#141418", pantsColor = "#141418" },
 			muscle = 2.5, hair = "#2A1A14", extras = { "ponytail", "shoes" },
-			gear = { { kind = "Belt", color = "#16161A", trim = "#D8283E" }, { kind = "Sleeves", color = "#D8283E", trim = "#8A3AD0" } },
+			gear = { { kind = "Belt", color = "#16161A", trim = "#D8283E" }, { kind = "Sleeves", color = "#D8283E", trim = "#8A3AD0" },
+				{ kind = "Sneakers", color = "#16161A", trim = "#D8283E" } },
 			extraColor = "#D8283E", extraColor2 = "#8A3AD0", tint = "#E8345A",
 			aura = "volta" } },
 	-- 7) SECRET: a mysterious mass monster, 7'2", a deep black hood hiding the face in shadow with two calm glowing white eyes;
@@ -137,7 +139,7 @@ Trainers.List = {
 		idle = "watch", pose = "Crossed", line = "...", lines = { "...", "Train." },
 		look = { skin = "#7A5A48", faceTexture = nil,
 			outfit = { shirt = "rbxassetid://105247065422618", pants = "rbxassetid://105247065422618", sleeves = "long", legs = "shorts", shirtColor = "#0E0E11", pantsColor = "#0E0E11" },
-			muscle = 3.0, extras = { "deephood", "shoes" }, extraColor = "#0E0E11", extraColor2 = "#6E3FB0", tint = "#6E3FB0",
+			muscle = 3.0, extras = { "deephood", "shoes" }, gear = { { kind = "Sneakers", color = "#0E0E11", trim = "#6E3FB0", sole = "#2A2A30" } }, extraColor = "#0E0E11", extraColor2 = "#6E3FB0", tint = "#6E3FB0",
 			aura = "shadow" } },
 	-- 8) ETERNAL: a living statue, the top rank: 7'6", the biggest, golden ratio proportions at mass monster size, polished
 	-- white marble skin with gold veins (marble: the statue's marble with our MaterialVariant), a gold laurel wreath, white and gold training shorts,
@@ -149,7 +151,8 @@ Trainers.List = {
 		look = { skin = "#F7F3EC", faceTexture = "rbxassetid://7074749", -- Chill (calm, like a statue)
 			marble = { color = "#F7F3EC", variant = "GymArc_GoldVeinMarble" }, material = "Marble",
 			outfit = { pants = "rbxassetid://112751620100083", legs = "shorts", pantsColor = "#F4F1EA" },
-			muscle = 3.2, extras = { "laurel" }, gear = { { kind = "Cuffs", color = "#F6C75A", trim = "#FFF3C4", shiny = true }, { kind = "Waistband", color = "#F6C75A", shiny = true } },
+			muscle = 3.2, extras = { "laurel" }, gear = { { kind = "Cuffs", color = "#F6C75A", trim = "#FFF3C4", shiny = true }, { kind = "Waistband", color = "#F6C75A", shiny = true },
+				{ kind = "Sneakers", color = "#F7F3EC", trim = "#F6C75A" } },
 			extraColor = "#F6C75A", tint = "#FFF3C4", aura = "atlas" } },
 }
 Trainers.ById = {}

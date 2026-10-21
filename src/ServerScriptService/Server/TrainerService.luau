@@ -244,7 +244,8 @@ local function extras(model, look)
 			prop(model, "UpperTorso", "CapeCollar", nil, Vector3.new(ts.X * 0.9, 0.22, 0.3), CFrame.new(0, ts.Y * 0.42, ts.Z * 0.5), color, Enum.Material.Metal)
 			prop(model, "UpperTorso", "Cape", nil, Vector3.new(ts.X * 0.8, ts.Y * 2.2, 0.08), CFrame.new(0, -ts.Y * 0.68, ts.Z * 0.62) * CFrame.Angles(math.rad(-8), 0, 0),
 				color, Enum.Material.Fabric)
-		elseif kind == "shoes" then
+		elseif kind == "shoes" and not Gear.Has("Sneakers") then
+			-- (prompt 35: the planner's sneakers replace these block shoes once the model is imported, Shared/Gear)
 			for _, side in ipairs({ "Left", "Right" }) do
 				local foot = model:FindFirstChild(side .. "Foot")
 				local s = foot and foot.Size or Vector3.new(0.8, 0.3, 1)
