@@ -688,7 +688,8 @@ function Theme.SetHex(gui, alpha: number?, radius: number, color: Color3?, big: 
 	end
 	if hex then
 		hex.Visible = alpha ~= nil
-		hex.ImageTransparency = if alpha == nil then 1 elseif alpha > 0.9 then 0.86 else Theme.HexAlpha
+		-- (owner, 22 Oct: the main frames' mesh 50% weaker: 0.14 -> 0.07 opacity)
+		hex.ImageTransparency = if alpha == nil then 1 elseif big then 0.93 elseif alpha > 0.9 then 0.86 else Theme.HexAlpha
 		hex.ImageColor3 = color or Color3.new(1, 1, 1)
 		hex.TileSize = if big then Theme.HexTileBig else Theme.HexTile
 		hex.Corner.CornerRadius = UDim.new(0, math.max(radius - 1, 0))

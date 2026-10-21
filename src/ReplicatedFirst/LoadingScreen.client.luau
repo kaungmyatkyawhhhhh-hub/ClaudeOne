@@ -183,7 +183,7 @@ local tipTile = graphite(new("Frame", { Name = "TipTile", AnchorPoint = Vector2.
 	AutomaticSize = Enum.AutomaticSize.Y, Parent = root }), LOOK.PanelTop, LOOK.PanelBottom, 10)
 -- (prompt 40) the hex mesh and a thin gold edge
 new("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = LOOK.Hex, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(78, 45),
-	ImageTransparency = 0.82, ImageColor3 = LOOK.Gold, Size = UDim2.fromScale(1, 1), Parent = tipTile }, { new("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+	ImageTransparency = 0.91, ImageColor3 = LOOK.Gold, -- (owner: 50% weaker) Size = UDim2.fromScale(1, 1), Parent = tipTile }, { new("UICorner", { CornerRadius = UDim.new(0, 10) }) })
 new("UIStroke", { Name = "GoldEdge", Color = LOOK.Gold, Thickness = 1.5, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tipTile })
 -- (the padding sits on an inner frame, so the tile's hairline stays on its top edge)
 local tipBody = new("Frame", { Name = "Body", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = tipTile }, {
