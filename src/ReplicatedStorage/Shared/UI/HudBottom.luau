@@ -292,6 +292,21 @@ function HudBottom.Chip(icon: string, color: Color3, order: number?)
 	return api
 end
 
+-- (prompt 29) A chip showing an image instead of an icon (a trainer's portrait: your equipped trainers that don't follow
+-- you in the world). Same API as Chip, plus SetImage.
+function HudBottom.ImageChip(image: string, order: number?)
+	local api = HudBottom.Chip("users", Theme.Colors.Gold, order)
+	local chip = api.frame
+	for _, child in ipairs(chip:GetChildren()) do
+		if child:IsA("GuiObject") and child.Name ~= "Value" then child.Visible = false end
+	end
+	local picture = New("ImageLabel", { Name = "Portrait", Image = image, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(HudBottom.ChipSize, HudBottom.ChipSize), ScaleType = Enum.ScaleType.Fit,
+		Parent = chip })
+	function api.SetImage(_, id: string) picture.Image = id end
+	return api
+end
+
 -- A button left of the stamina bar (the DRINK SHAKE button): always on screen, on a machine or not.
 function HudBottom.AddSide(frame: GuiObject, order: number?)
 	ensure()

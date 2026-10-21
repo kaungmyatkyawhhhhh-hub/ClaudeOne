@@ -25,7 +25,9 @@ local function NS(points)
 end
 local function CS(a, b) return ColorSequence.new(a, b or a) end
 
--- particles alive at once = Rate x Lifetime (kept under ~15 per trainer, the bursts included)
+-- particles alive at once = Rate x Lifetime (kept under ~15 per trainer, the bursts included; prompt 29: Build scales the
+-- rates down so at most MAX_PARTICLES are alive)
+local MAX_PARTICLES = 10
 local PRESETS = {
 	duke = { light = C("#FFC45A"), range = 10, brightness = 1.2, feet = C("#F6C75A"),
 		emit = { { part = "UpperTorso", tex = "ember", color = CS(C("#FFE6A0"), C("#E8A020")), light = 1, rate = 3, life = { 2.6, 3.4 },
@@ -156,6 +158,15 @@ function TrainerAura.Build(model: Model, presetName: string)
 			beam.Parent = root
 			table.insert(self._rays, beam)
 		end
+	end
+	-- (prompt 29: trainer lag) at most MAX_PARTICLES alive at once: the emitters' rates scaled down to fit (the feet glow
+	-- counts too; the chalk puff is a short burst)
+	local alive = self._ground.Rate * self._ground.Lifetime.Max
+	local emitted = 0
+	for _, e in ipairs(self._emitters) do emitted += e.Rate * e.Lifetime.Max end
+	if emitted > 0 and alive + emitted > MAX_PARTICLES then
+		local f = math.max(MAX_PARTICLES - alive, 1) / emitted
+		for _, e in ipairs(self._emitters) do e.Rate *= f end
 	end
 	-- Duke's chalk puff (Burst only)
 	if presetName == "duke" then

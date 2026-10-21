@@ -9,6 +9,12 @@
 --   * Cheers: during a set a short line in a bubble now and then ("Push it!", CheerCooldown / CheerChance); claps and a
 --     "Great set!" line at the end of every set (10 reps), and "New record!" on your personal records.
 --   * Other players' trainers past RenderDistance aren't drawn; past FarAnimation they stand still (no animation).
+--   * (prompt 29, trainer lag) Only ONE trainer follows each player in the world: the rarest equipped one (all of them still
+--     give their boosts). Your other equipped trainers are portrait chips in the boosts row (HudBottom.ImageChip). Settings
+--     "Others' Trainers" Off, or Low Graphics On, draws no other player's trainer at all. Followers are stepped OWN_HZ (yours)
+--     / OTHER_HZ (others) times a second and eased in between (others farther than SNAP_BEYOND just jump); no Humanoid state
+--     machine (anchored, moved by PivotTo); the idle poses pause off-screen; auras only within AURA_RANGE studs of the camera
+--     and never on Low Graphics (Shared.VFX.TrainerAura keeps each under ~10 particles). One loop for all of them.
 --   * Coach idle (owner, 14 Oct: never a stiff stand): a pose drawn on the joints over Roblox's idle: breathing (chest
 --     and shoulders rise), a slow weight shift, and his own stance (Config/Trainers idle: arms crossed, clipboard check, hands on
 --     hips). While you lift he faces you and every Trainers.CheerEvery reps claps or pumps a fist ("come on!"); speech
@@ -29,6 +35,9 @@ local Theme = require(Shared.UI.Theme)
 local AuraVFX = require(Shared.VFX.AuraVFX)
 local TrainerAura = require(Shared.VFX.TrainerAura)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local ClientData = require(Shared.ClientData)
+local HudBottom = require(Shared.UI.HudBottom)
+local Notify = require(Shared.UI.Notify)
 
 local localPlayer = Players.LocalPlayer
 local templates = ReplicatedStorage:WaitForChild("TrainerModels", 60)
@@ -45,6 +54,7 @@ local WALK_PACE, RUN_PACE = 8, 16
 -- each coach's own stance while standing (Config/Trainers idle; drawn over the idle animation, see coachIdle)
 local CHALK_EVERY, FLEX_EVERY, FLEX_HOLD = 9, 8, 2.6 -- seconds (Duke's chalk + neck crack, Atlas's double biceps)
 local HYPE_SPOTS = { "Hype_5", "Hype_4", "Hype_3", "Hype_2", "Hype_1" } -- tried in this order (spotters fill from Hype_1)
+local OWN_HZ, OTHER_HZ, SNAP_BEYOND, AURA_RANGE = 30, 15, 40, 40 -- (prompt 29, see the header)
 
 local folder = Instance.new("Folder")
 folder.Name = "LocalTrainers"
@@ -160,6 +170,8 @@ local function makeTrainer(entry: string, slot: number)
 		skinLayer(part)
 	end)
 	if not humanoid:FindFirstChildOfClass("Animator") then Instance.new("Animator", humanoid) end
+	-- (prompt 29) no Humanoid physics or states: he is anchored and moved by PivotTo; the Animator still plays
+	pcall(function() humanoid.EvaluateStateMachine = false end)
 	if golden then
 		local glow = Instance.new("Highlight")
 		glow.Name = "GoldenGlow"
@@ -256,15 +268,68 @@ local function waitForTemplate(entry: string)
 	end
 end
 
+-- (prompt 29) other players' trainers: Settings "Others' Trainers" On and Low Graphics Off
+local function othersShown(): boolean
+	local settings = ClientData.IsLoaded() and ClientData.Get().settings or {}
+	return settings.otherTrainers ~= "Off" and settings.lowGraphics ~= "On"
+end
+local function lowGraphics(): boolean
+	local settings = ClientData.IsLoaded() and ClientData.Get().settings or {}
+	return settings.lowGraphics == "On"
+end
+local RARITY_RANK = {}
+for index, rarity in ipairs(Trainers.Rarities) do RARITY_RANK[rarity.id] = index end
+-- the one that follows: the rarest equipped (Golden first on a tie, then the first slot)
+local function bestEntry(list: { string }): string?
+	local best, bestRank = nil, -1
+	for _, entry in ipairs(list) do
+		local id, golden = Trainers.ParseEntry(entry)
+		local rank = (RARITY_RANK[Trainers.ById[id].rarity] or 0) * 2 + (if golden then 1 else 0)
+		if rank > bestRank then best, bestRank = entry, rank end
+	end
+	return best
+end
+-- your other equipped trainers: portrait chips in the boosts row (tap: the name and the boost)
+local portraitChips = {}
+local function showPortraits(list: { string }, shown: string?)
+	local index = 0
+	for _, entry in ipairs(list) do
+		if entry ~= shown then
+			index += 1
+			local id, golden = Trainers.ParseEntry(entry)
+			local trainer = Trainers.ById[id]
+			local chip = portraitChips[index]
+			if not chip then
+				chip = HudBottom.ImageChip(trainer.icon or "", 10 + index)
+				local slot = index
+				chip:OnTap(function()
+					local t = portraitChips[slot] and portraitChips[slot].trainer
+					if t then Notify.Toast(t.name, t.perkText, "users", Theme.Colors.Gold, "trainerchip" .. slot) end
+				end)
+				portraitChips[index] = chip
+			end
+			chip.trainer = trainer
+			chip:SetImage(trainer.icon or "")
+			chip:SetText(if golden then "GOLD" else "")
+			chip:SetVisible(true)
+		end
+	end
+	for i = index + 1, #portraitChips do portraitChips[i]:SetVisible(false) end
+end
+
 local syncToken = {} -- [player] = the newest sync (an older one still waiting for templates gives way)
 local function sync(player)
-	local list = {}
+	local all = {}
 	local value = player:GetAttribute("Trainers")
 	if type(value) == "string" then
 		for entry in string.gmatch(value, "[^,]+") do
-			if Trainers.ParseEntry(entry) then table.insert(list, entry) end
+			if Trainers.ParseEntry(entry) then table.insert(all, entry) end
 		end
 	end
+	-- (prompt 29) only the rarest one follows in the world; none of another player's when they're switched off
+	local best = bestEntry(all)
+	local list = if best and (player == localPlayer or othersShown()) then { best } else {}
+	if player == localPlayer then showPortraits(all, best) end
 	local token = (syncToken[player] or 0) + 1
 	syncToken[player] = token
 	for _, entry in ipairs(list) do waitForTemplate(entry) end
@@ -412,10 +477,19 @@ local function targetOf(player, state, root: BasePart): (Vector3, Vector3)
 	return spot, root.Position + root.CFrame.LookVector * 6
 end
 
+-- (prompt 29) step() sets where he should stand (state.goal); apply() moves him there, eased (alpha < 1) or at once
 local function place(state, position: Vector3, face: Vector3)
 	local flat = Vector3.new(face.X, position.Y, face.Z)
 	if (flat - position).Magnitude < 0.1 then flat = position + state.root.CFrame.LookVector end
-	state.model:PivotTo(CFrame.lookAt(position, flat) * state.root.CFrame:ToObjectSpace(state.model:GetPivot()))
+	state.goal = CFrame.lookAt(position, flat)
+end
+local function apply(state, alpha: number)
+	local goal = state.goal
+	if not goal then return end
+	local current = state.root.CFrame
+	if (current.Position - goal.Position).Magnitude < 0.002 and current.LookVector:Dot(goal.LookVector) > 0.99999 then return end
+	local target = if alpha >= 1 then goal else current:Lerp(goal, alpha)
+	state.model:PivotTo(target * current:ToObjectSpace(state.model:GetPivot()))
 end
 
 local function step(player, state, root: BasePart, dt: number, now: number)
@@ -428,6 +502,7 @@ local function step(player, state, root: BasePart, dt: number, now: number)
 		pos = target
 		state.lastProgress = now
 		popped = true
+		state.snap = true -- (a pop jumps, never eases across the map)
 	end
 	local before = pos
 	local offset = (target - pos) * Vector3.new(1, 0, 1)
@@ -638,7 +713,7 @@ RunService.Stepped:Connect(function()
 	local now = os.clock()
 	for _, list in pairs(followers) do
 		for _, state in pairs(list) do
-			if state.model.Parent and not state.frozen then
+			if state.model.Parent and not state.frozen and not state.offscreen then
 				if now < state.clapUntil then
 					clap(state, now)
 				elseif now < state.pumpUntil then
@@ -652,11 +727,21 @@ RunService.Stepped:Connect(function()
 end)
 
 local filterAt, machineAt = 0, 0
+local othersWere, lowNow = true, false
 RunService.Heartbeat:Connect(function(dt)
 	local now = os.clock()
 	if now - filterAt > 1 then
 		filterAt = now
 		refreshFilter()
+		-- (prompt 29) Settings "Others' Trainers" / Low Graphics changed: other players' trainers come or go
+		local shown = othersShown()
+		if shown ~= othersWere then
+			othersWere = shown
+			for _, other in ipairs(Players:GetPlayers()) do
+				if other ~= localPlayer then task.spawn(sync, other) end
+			end
+		end
+		lowNow = lowGraphics()
 	end
 	-- who is on which machine (MachineService puts the lifter's UserId on the model)
 	if now - machineAt > 0.3 then
@@ -680,24 +765,42 @@ RunService.Heartbeat:Connect(function(dt)
 			if show and root then
 				if state.model.Parent ~= folder then
 					state.position = nil -- (pops in beside the player)
+					state.goal = nil
 					state.model.Parent = folder
-					-- (prompt 24) the rarity aura of the rare ones (prompt 25: their own small auras, Shared.VFX.TrainerAura;
-					-- any other name is an AuraVFX preset)
-					if state.auraName and not state.aura then
-						if TrainerAura.Presets[state.auraName] then
-							local ok, handle = pcall(TrainerAura.Build, state.model, state.auraName)
-							if ok and handle then state.aura = handle end
-						else
-							local ok, handle = pcall(AuraVFX.Build, state.model, state.auraName)
-							if ok and handle then
-								state.aura = handle
-								pcall(function() handle:SetPower(0.15) end)
-							end
-						end
+				end
+				-- (prompt 29) stepped OWN_HZ / OTHER_HZ times a second, eased toward his spot every frame in between
+				local own = player == localPlayer
+				state.acc = (state.acc or 0) + dt
+				if not state.goal or state.acc >= 1 / (if own then OWN_HZ else OTHER_HZ) then
+					step(player, state, root, state.acc, now)
+					state.acc = 0
+					if camera then
+						local _, onScreen = camera:WorldToViewportPoint(state.root.Position)
+						state.offscreen = not onScreen
 					end
 				end
-				step(player, state, root, dt, now)
-				if state.aura and state.aura.Update and not state.frozen then state.aura:Update(now) end
+				local fromEye = (state.root.Position - eye).Magnitude
+				apply(state, if state.snap or (not own and fromEye > SNAP_BEYOND) then 1 else 1 - math.exp(-dt * 20))
+				state.snap = nil
+				-- (prompt 24/25) the rarity aura of the rare ones (Shared.VFX.TrainerAura; any other name is an AuraVFX preset);
+				-- prompt 29: only within AURA_RANGE studs of the camera and never on Low Graphics
+				local auraOn = state.auraName ~= nil and not lowNow and fromEye <= AURA_RANGE
+				if auraOn and not state.aura then
+					if TrainerAura.Presets[state.auraName] then
+						local ok, handle = pcall(TrainerAura.Build, state.model, state.auraName)
+						if ok and handle then state.aura = handle end
+					else
+						local ok, handle = pcall(AuraVFX.Build, state.model, state.auraName)
+						if ok and handle then
+							state.aura = handle
+							pcall(function() handle:SetPower(0.15) end)
+						end
+					end
+				elseif not auraOn and state.aura then
+					pcall(function() state.aura:Destroy() end)
+					state.aura = nil
+				end
+				if state.aura and state.aura.Update and not state.frozen and not state.offscreen then state.aura:Update(now) end
 				-- other players' trainers far away stand still: no animation, no pose (owner, 14 Oct: performance)
 				local far = player ~= localPlayer and (root.Position - eye).Magnitude > Trainers.FarAnimation
 				if far ~= (state.frozen == true) then

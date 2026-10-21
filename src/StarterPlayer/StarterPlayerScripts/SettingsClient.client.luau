@@ -43,7 +43,7 @@ local grid = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, 
 })
 
 local values = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On", spotRequests = "On",
-	hints = "On", otherScreams = "On", otherAuras = "On", lowGraphics = "Off", reduceMotion = "Off" }
+	hints = "On", otherScreams = "On", otherAuras = "On", otherTrainers = "On", lowGraphics = "Off", reduceMotion = "Off" }
 
 local function save(changes)
 	Remotes.PlayerAction:FireServer("SetSettings", changes)
@@ -121,6 +121,7 @@ row(8, "expPopups", "EXP Popups", "sparkles", ONOFF)
 row(9, "spotRequests", "Spot Requests", "hand", ONOFF)
 row(10, "reduceMotion", "Reduce Motion", "timer", { "Off", "On" }) -- (stops the UI's looping pulses and shines; Theme.ReducedMotion)
 row(11, "otherAuras", "Others' Auras", "sparkles", ONOFF)
+row(12, "otherTrainers", "Others' Trainers", "users", ONOFF) -- (prompt 29: other players' following trainers; off on Low Graphics)
 
 local function refreshAll()
 	for _, show in pairs(rows) do show() end
@@ -163,6 +164,7 @@ task.spawn(function()
 	values.hints = if settings.hints == "Off" then "Off" else "On"
 	values.otherScreams = if settings.otherScreams == "Off" then "Off" else "On"
 	values.otherAuras = if settings.otherAuras == "Off" then "Off" else "On"
+	values.otherTrainers = if settings.otherTrainers == "Off" then "Off" else "On"
 	values.lowGraphics = if settings.lowGraphics == "On" then "On" else "Off"
 	values.reduceMotion = if settings.reduceMotion == "On" then "On" else "Off"
 	refreshAll()
