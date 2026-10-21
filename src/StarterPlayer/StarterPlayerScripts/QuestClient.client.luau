@@ -50,7 +50,7 @@ local function refresh()
 	tracker:SetText(quest.text)
 	tracker:SetProgress(active.goal > 0 and active.progress / active.goal or 0,
 		active.ready and "Done" or (Muscles.FormatExp(active.progress) .. "/" .. Muscles.FormatExp(active.goal)))
-	tracker:SetFooter(active.ready and ("Done. Talk to " .. Quests.CoachName) or "")
+	tracker:SetFooter(active.ready and "Done. Claim it in Quests > Goals" or "") -- (prompt 31)
 	tracker:SetCount(active.ready and "Ready" or "")
 end
 

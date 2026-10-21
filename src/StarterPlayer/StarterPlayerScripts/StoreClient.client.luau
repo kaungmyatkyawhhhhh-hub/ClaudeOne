@@ -277,9 +277,18 @@ pumpLink.Activated:Connect(function()
 	modal.close()
 	UIBus.GoPumpShop:Fire()
 end)
+-- (prompt 31) "Coach Dex": to his counter in the Starter Gym, the main shop (10 s cooldown)
+local coachLink = Kit.Button("Quiet", "Coach Dex", { Name = "CoachLink", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -176, 1, 0),
+	Visible = false, Parent = modal.body }, { height = LINK_H, width = 130, textSize = 12, icon = "shopping-cart" })
+coachLink.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	modal.close()
+	UIBus.GoCoach:Fire()
+end)
 local function refreshPumpLink()
 	local on = player:GetAttribute("PumpShop") ~= nil
 	pumpLink.Visible = on
+	coachLink.Visible = on
 	grid.Size = UDim2.new(1, -(HERO_W + GAP), 1, if on then -(LINK_H + 6) else 0)
 end
 player:GetAttributeChangedSignal("PumpShop"):Connect(refreshPumpLink)

@@ -1,5 +1,9 @@
--- PumpShopClient (owner, prompt 19, 21 Oct): the PUMP SHOP window and its HUD bits (PumpShopService sells; numbers in
+-- PumpShopClient (owner, prompt 19, 21 Oct): the shop window and its HUD bits (PumpShopService sells; numbers in
 -- Config.PumpShop). Coins only.
+-- (prompt 31, 22 Oct) ONE window for the three shops (Config.PumpShop.Shops): Coach Dex (normal supplements, Basic / Pro
+-- gear, ALTERS), the PUMP SHOP (specials, Elite / Champion gear, DNA LAB) and the coconut stand (Coconut Water x1 / x5).
+-- The title and tabs follow the shop that opened it; tabs are always SUPPLEMENTS / GEAR (+ ALTERS / DNA LAB). Apparel
+-- is off sale (no try-on any more).
 --   * The window (a counter's "Shop" prompt opens it on that section; every section has a tab): on the left the picked
 --     item big (art, name, what it does, price, buttons), on the right the section's tiles.
 --       SUPPLEMENTS  the boosts (Config.Boosts): BUY x1 / x5 / x10 (into the inventory)
@@ -39,7 +43,9 @@ if not remote then return end
 local player = Players.LocalPlayer
 local New, Colors = Theme.New, Theme.Colors
 
-local W, H = 770, 262 -- (wide enough for the title, five tabs and the coins pill; 693 px on a 667 x 375 phone)
+local W, H = 770, 262 -- (wide enough for the title, the tabs and the coins pill; 693 px on a 667 x 375 phone)
+local shopId = "Pump" -- the shop the window shows (PumpShop.Shops)
+local function shop() return PumpShop.Shops[shopId] or PumpShop.Shops.Pump end
 local HERO_W = 214
 local TILE = Vector2.new(112, 78)
 
@@ -70,7 +76,7 @@ local function bodyEntry(list, id)
 	return nil
 end
 
-local entries = { Supplements = {}, Gear = {}, Apparel = {}, DnaLab = {}, Alters = {} }
+local entries = { Supplements = {}, Gear = {}, DnaLab = {}, Alters = {} }
 
 -- (prompt 21) ALTERS: the alters of the tier you're in (the next one picked first), each with its state; nothing is sold
 local function alterProgress()
@@ -113,21 +119,6 @@ for _, gear in ipairs(PumpShop.Gear) do
 	table.insert(entries.Gear, { key = gear.id, section = "Gear", gear = gear, name = gear.name, icon = "dumbbell",
 		color = Color3.fromHex("#C98A12"), sub = "Worn: more EXP on " .. gear.area .. "." })
 end
-for _, entry in ipairs(PumpShop.Apparel) do
-	local name, color, icon
-	if entry.kind == "Shorts" then
-		local shorts = bodyEntry(Body.ShortsColors, entry.id)
-		name, color, icon = shorts.name .. " shorts", shorts.color, "star"
-	elseif entry.kind == "Top" then
-		local top = bodyEntry(Body.Tops, entry.id)
-		name, color, icon = top.name, top.color, "star"
-	else
-		local item = Cosmetics.ById[entry.id]
-		name, color, icon = item.name, item.color, if item.slot == "Hip" then "cup-soda" elseif item.slot == "Back" then "backpack" else "star"
-	end
-	table.insert(entries.Apparel, { key = entry.kind .. "_" .. entry.id, section = "Apparel", kind = entry.kind, id = entry.id, name = name,
-		icon = icon, color = color, sub = "Looks only.", price = function() return entry.price end })
-end
 table.insert(entries.DnaLab, { key = "DnaToken", section = "DnaLab", name = "DNA Token", icon = "sparkles", color = Colors.Gold,
 	sub = "One genetics reroll.", price = function() return PumpShop.DnaPriceFor(data(), DNA.CoinPrice) end })
 
@@ -141,9 +132,7 @@ local function gearLevels(gear)
 end
 
 local function isOwned(entry): boolean
-	if entry.section == "Apparel" then
-		return owned()[if entry.kind == "Cosmetic" then entry.id else entry.key] == true
-	elseif entry.section == "Gear" then
+	if entry.section == "Gear" then
 		local _, nextLevel = gearLevels(entry.gear)
 		return nextLevel == nil
 	end
@@ -162,8 +151,6 @@ end
 -- The window
 ------------------------------------------------------------------------
 local tab = "Supplements"
-local tryingOn = nil -- the apparel entry being tried on (the window steps aside so you can see it)
-local startTryOn -- (below)
 local picked = {} -- [section] = entry key
 local refresh -- (below)
 local openOn -- (below)
@@ -173,9 +160,16 @@ local modal = Kit.Modal({ name = "PumpShop", title = "Pump Shop", icon = "dumbbe
 	onTab = function(id)
 		tab = id
 		refresh()
-	end, onClose = function()
-		if not tryingOn then remote:FireServer("TryOff") end
 	end })
+-- (prompt 31) only the shop's own tabs show
+local tabRow = modal.panel:FindFirstChild("Tabs", true)
+local function showShopTabs()
+	for _, section in ipairs(PumpShop.Sections) do
+		local button = tabRow and tabRow:FindFirstChild(section.id)
+		if button then button.Visible = table.find(shop().tabs, section.id) ~= nil end
+	end
+	modal.setTitle(shop().title)
+end
 
 local hero = Kit.Card({ Name = "Hero", Size = UDim2.new(0, HERO_W, 1, 0), Parent = modal.body }, {})
 local heroTile = New("Frame", { Name = "Art", BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(52, 52), Parent = hero })
@@ -236,9 +230,9 @@ local function showHero(entry)
 	if entry.section == "Supplements" then
 		local have = (data().items or {})[entry.key] or 0
 		heroText.Text = entry.sub .. "\nYou have " .. have .. "."
-		for _, quantity in ipairs(PumpShop.Quantities) do
+		for _, quantity in ipairs(shop().quantities or PumpShop.Quantities) do
 			addButton(buttonRow, if coins() >= (price or 0) * quantity then "Gold" else "Disabled", "x" .. quantity, 60, function()
-				remote:FireServer("Buy", "Supplements", entry.key, quantity)
+				remote:FireServer("Buy", shopId, "Supplements", entry.key, quantity)
 			end)
 		end
 	elseif entry.section == "Gear" then
@@ -250,20 +244,18 @@ local function showHero(entry)
 		end
 		heroText.Text = table.concat(lines, "\n")
 		heroText.Size = UDim2.new(1, -20, 0, 70)
-		if nextLevel then
+		if nextLevel and table.find(shop().gear, nextLevel.id) then
 			addButton(buttonRow, if afford then "Gold" else "Disabled", "Buy " .. nextLevel.name, 180, function()
-				remote:FireServer("Buy", "Gear", entry.gear.id)
+				remote:FireServer("Buy", shopId, "Gear", entry.gear.id)
 			end)
-		end
-	elseif entry.section == "Apparel" then
-		heroText.Text = entry.sub
-		if isOwned(entry) then
-			heroPrice.Text = "Owned: wear it from Inventory > Gear"
-			heroPrice.TextColor3 = Colors.Green
-		else
-			addButton(secondRow, "Quiet", "Try on", 180, function() startTryOn(entry) end)
-			addButton(buttonRow, if afford then "Gold" else "Disabled", "Buy", 180, function()
-				remote:FireServer("Buy", "Apparel", entry.id, entry.kind)
+		elseif nextLevel then
+			-- (prompt 31) sold in the other shop: Basic / Pro at Coach Dex, Elite / Champion at the PUMP SHOP
+			local atCoach = table.find(PumpShop.Shops.Coach.gear, nextLevel.id) ~= nil
+			heroPrice.Text = "Next: " .. nextLevel.name
+			heroPrice.TextColor3 = Colors.Muted
+			addButton(buttonRow, "Quiet", if atCoach then "Go to Coach Dex" else "Go to Pump Shop", 180, function()
+				modal.close()
+				if atCoach then UIBus.GoCoach:Fire() else UIBus.GoPumpShop:Fire() end
 			end)
 		end
 	elseif entry.section == "Alters" then
@@ -316,11 +308,23 @@ function refresh()
 	lockNote.Visible = not open
 	grid.Visible = open
 	if not open then
-		lockNote.Text = if tab == "Alters" then "Body Alters open at 7'0\". Keep growing!" else "Gear and Apparel open at Growth Spurt 2. Keep training!"
+		lockNote.Text = if tab == "Alters" then "Body Alters open at 7'0\". Keep growing!" else "Gear opens at Growth Spurt 2. Keep training!"
 		hero.Visible = false
 		return
 	end
 	local list = entries[tab]
+	if tab == "Supplements" then
+		-- (prompt 31) only this shop's supplements, in its order
+		local mine = {}
+		for _, id in ipairs(shop().supplements) do
+			for _, entry in ipairs(entries.Supplements) do
+				if entry.key == id then table.insert(mine, entry) end
+			end
+		end
+		list = mine
+		if picked.Supplements and not bodyEntry(list, picked.Supplements) then picked.Supplements = nil end
+		for _, entry in ipairs(list) do entry.id = entry.key end
+	end
 	local altersNow = nil
 	if tab == "Alters" then
 		list, altersNow = alterEntries()
@@ -372,53 +376,11 @@ function refresh()
 	showHero(current)
 end
 
-------------------------------------------------------------------------
--- Trying on: the window steps aside and a small bar says what you wear, with BUY and BACK (it ends by itself after
--- TryOnSeconds, like on the server)
-------------------------------------------------------------------------
-local tryGui = Theme.ScreenGui({ Name = "PumpShopTryOn", DisplayOrder = 26, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
-tryGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
-local tryRoot = Kit.Root(tryGui)
-local tryBar = Theme.Panel({ Name = "Bar", Piece = "hud_box", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.fromOffset(470, 60),
-	Parent = tryRoot }, { New("UIStroke", { Color = Colors.Gold, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
-local tryText = Kit.Text({ Name = "Text", Text = "", Font = "Title", TextSize = 15, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -230, 1, 0),
-	TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Parent = tryBar })
-local tryBuy = Kit.Button("Gold", "Buy", { Name = "Buy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -112, 0.5, 0), Parent = tryBar }, { width = 100, height = 44, textSize = 15 })
-local tryBack = Kit.Button("Quiet", "Back", { Name = "Back", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = tryBar }, { width = 96, height = 44, textSize = 15 })
-local tryToken = 0
-local function endTryOn(reopen: boolean)
-	local entry = tryingOn
-	tryingOn = nil
-	tryGui.Enabled = false
-	remote:FireServer("TryOff")
-	if reopen and entry then openOn("Apparel") end
-end
-function startTryOn(entry)
-	tryingOn = entry
-	remote:FireServer("TryOn", entry.kind, entry.id)
-	modal.close()
-	tryText.Text = "Trying on: " .. entry.name .. " (" .. Kit.Format(entry.price()) .. ")"
-	tryGui.Enabled = true
-	tryToken += 1
-	local mine = tryToken
-	task.delay(PumpShop.TryOnSeconds, function()
-		if tryToken == mine and tryingOn then endTryOn(false) end
-	end)
-end
-tryBuy.Activated:Connect(function()
-	local entry = tryingOn
-	if not entry then return end
-	Audio.PlayUI("Click")
-	remote:FireServer("Buy", "Apparel", entry.id, entry.kind)
-	tryingOn = nil
-	tryGui.Enabled = false
-end)
-tryBack.Activated:Connect(function()
-	Audio.PlayUI("Click")
-	endTryOn(true)
-end)
 
-function openOn(section: string?)
+function openOn(section: string?, newShop: string?)
+	if newShop and PumpShop.Shops[newShop] then shopId = newShop end
+	showShopTabs()
+	if section and not table.find(shop().tabs, section) then section = "Supplements" end
 	if section then
 		tab = section
 		modal.selectTab(section)
@@ -440,7 +402,7 @@ end)
 remote.OnClientEvent:Connect(function(kind, info)
 	info = type(info) == "table" and info or {}
 	if kind == "Open" then
-		openOn(info.section)
+		openOn(info.section, info.shop)
 	elseif kind == "Failed" then
 		Notify.Toast("Can't buy that", tostring(info.text or ""), "coin", Colors.Red, "pumpfail")
 	elseif kind == "Bought" then
@@ -448,12 +410,19 @@ remote.OnClientEvent:Connect(function(kind, info)
 		if info.section == "Gear" then
 			local item = Cosmetics.ById[info.id]
 			Notify.Reward("NEW GEAR", (item and item.name or "Gear") .. " · wearing it now", "dumbbell", Colors.Gold)
-		elseif info.section == "Apparel" then
-			Notify.Toast("Bought!", "Wearing it now. Change it in Inventory > Gear.", "star", Colors.Gold, "pumpapparel")
 		end
 		if modal.isOpen() then refresh() end
 	elseif kind == "Teleported" then
-		Notify.Hint("Welcome to the PUMP SHOP! Walk up to a counter.")
+		Notify.Hint("Welcome to the PUMP SHOP! Walk up to the counter.")
+	elseif kind == "TeleportedCoach" then
+		-- the camera behind you, looking at him (it kept its old angle and could end up inside the gym's front wall)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local camera = workspace.CurrentCamera
+		if root and camera then
+			local look = root.CFrame.LookVector
+			camera.CFrame = CFrame.lookAt(root.Position - look * 10 + Vector3.new(0, 4, 0), root.Position + look * 6)
+		end
+		Notify.Hint("Talk to Coach Dex to shop.")
 	end
 end)
 
@@ -470,6 +439,16 @@ local function goToShop()
 	remote:FireServer("Teleport")
 end
 UIBus.GoPumpShop.Event:Connect(goToShop)
+-- (prompt 31) the Shop window's "Coach Dex" link: to his counter in the Starter Gym (10 s cooldown, checked on the server)
+local lastCoach = -math.huge
+UIBus.GoCoach.Event:Connect(function()
+	if os.clock() - lastCoach < PumpShop.CoachTeleportCooldown then
+		Notify.Show(string.format("Wait %d s to go to Coach Dex again.", math.ceil(PumpShop.CoachTeleportCooldown - (os.clock() - lastCoach))), nil, "coachwait")
+		return
+	end
+	lastCoach = os.clock()
+	remote:FireServer("TeleportCoach")
+end)
 
 ------------------------------------------------------------------------
 -- "You can afford: ..." (a newly affordable gear level or apparel item; at most every AffordEvery seconds)
@@ -483,15 +462,16 @@ Kit.OnTopbar(function() affordButton.Position = UDim2.new(0.5, 0, 0, Kit.UnderTo
 local announced = {} -- [key] = true (this session)
 local lastAfford = -math.huge
 local affordToken = 0
+local affordAtCoach = false -- (prompt 31) the newly affordable level is sold by Coach Dex (Basic / Pro), not the PUMP SHOP
 affordButton.Activated:Connect(function()
 	affordGui.Enabled = false
-	goToShop()
+	if affordAtCoach then UIBus.GoCoach:Fire() else goToShop() end
 end)
 
 local function checkAfford()
 	if not player:GetAttribute("PumpShop") or os.clock() - lastAfford < PumpShop.AffordEvery or UIBus.MenuOpen then return end
 	local best = nil
-	for _, section in ipairs({ "Gear", "Apparel" }) do
+	for _, section in ipairs({ "Gear" }) do
 		if sectionOpen(section) then
 			for _, entry in ipairs(entries[section]) do
 				local price = priceOf(entry)
@@ -506,9 +486,11 @@ local function checkAfford()
 	announced[best.key] = true
 	lastAfford = os.clock()
 	local name = best.entry.name
+	affordAtCoach = false
 	if best.entry.section == "Gear" then
 		local _, nextLevel = gearLevels(best.entry.gear)
 		name = (nextLevel and nextLevel.name .. " " or "") .. name
+		affordAtCoach = nextLevel ~= nil and table.find(PumpShop.Shops.Coach.gear, nextLevel.id) ~= nil
 	end
 	Kit.SetButton(affordButton, nil, "You can afford: " .. name .. "!")
 	affordGui.Enabled = true
@@ -521,7 +503,7 @@ task.spawn(function()
 	ClientData.Get()
 	-- (things already affordable when you join don't all pop up at once: only what becomes affordable later)
 	task.wait(20)
-	for _, section in ipairs({ "Gear", "Apparel" }) do
+	for _, section in ipairs({ "Gear" }) do
 		for _, entry in ipairs(entries[section]) do
 			local price = priceOf(entry)
 			if price and coins() >= price then announced[entry.key .. "@" .. tostring(price)] = true end

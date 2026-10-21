@@ -31,7 +31,7 @@ Town.Plaza = { MinX = -34, MaxX = 34, MinZ = 50, MaxZ = 92 }                    
 Town.Park = { MinX = -34, MaxX = 34, MinZ = 92, MaxZ = 145 }                    -- grass, paths, fountain, playground
 Town.Parking = { MinX = -150, MaxX = -58, MinZ = 96, MaxZ = 142 }
 Town.SportsCourt = { MinX = 60, MaxX = 110, MinZ = 96, MaxZ = 140 }
-Town.SmoothieBar = { Center = Vector3.new(-82, 0, 63), Size = Vector3.new(22, 12, 18) }
+-- (prompt 31, 22 Oct: the smoothie bar building is gone; a small park, outdoors, is there now)
 Town.ClothingStore = { Center = Vector3.new(82, 0, 63), Size = Vector3.new(22, 12, 18) }
 Town.Beach = { MinX = -176, MaxX = 200, MinZ = 167 }
 Town.SkatePark = { Center = Vector3.new(-122, 0, 206), Size = Vector3.new(84, 0, 64) } -- x -164..-80, z 174..238
@@ -58,7 +58,7 @@ Town.Lawns = {
 function Town.IsOutdoors(position)
 	local a = Town.SkateArea
 	if position.X < a.MinX or position.X > a.MaxX or position.Z < a.MinZ or position.Z > a.MaxZ then return false end
-	for _, building in ipairs({ Town.SmoothieBar, Town.ClothingStore, Town.Hall }) do
+	for _, building in ipairs({ Town.ClothingStore, Town.Hall }) do
 		local half = building.Size / 2
 		local d = position - building.Center
 		if math.abs(d.X) <= half.X and math.abs(d.Z) <= half.Z then return false end

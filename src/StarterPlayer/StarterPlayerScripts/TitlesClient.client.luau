@@ -19,6 +19,10 @@
 --             it says how to earn it. Titles are kept forever and never bought.
 -- Text fit (owner, 14 Oct): every label stays inside its card with 8 px each side; names and rarity words shrink to fit
 -- one line (Kit.Fit), how-to-unlock text is the body font in sentence case, up to 2 lines.
+-- (prompt 31) UNDISCOVERED (Shared/UI/Discovery): auras you can't see yet, titles that aren't yours or next in their
+-- category (secret ones until yours) and alters after the next one show a dark "?" tile, "???" and UNDISCOVERED; each
+-- list counts "x / y DISCOVERED"; something new turns over with a gold burst the first time you open its list, and its
+-- tab (and chip) has a red dot until then.
 -- UIBus.OpenInventory(tab, auraId?) opens it on a tab; the old tab names still work ("Boosts" -> ITEMS, "Titles" / "Auras"
 -- / "Alters" -> LOOKS on that chip, "Trainers" -> the TRAINERS window).
 local Players = game:GetService("Players")
@@ -40,6 +44,8 @@ local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
+local Discovery = require(Shared.UI.Discovery)
+local AltersPanel = require(Shared.UI.AltersPanel)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local New, Colors = Theme.New, Theme.Colors
@@ -74,14 +80,14 @@ local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backp
 		refresh()
 	end })
 local countLabel = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 14, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -56, 0, 14), Size = UDim2.fromOffset(90, 20), TextXAlignment = Enum.TextXAlignment.Right, Parent = modal.panel })
+	Position = UDim2.new(1, -56, 0, 14), Size = UDim2.fromOffset(200, 20), TextXAlignment = Enum.TextXAlignment.Right, Parent = modal.panel })
 
 ------------------------------------------------------------------------
 -- LOOKS tab: the chips, and the place the four views share under them
 ------------------------------------------------------------------------
 local LOOKS = {}
 LOOKS.frame = New("Frame", { Name = "Looks", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = modal.body })
-local _chips, selectChip = Kit.Tabs({ { id = "Alters", text = "Alters", lock = "Looks/Alters" }, { id = "Titles", text = "Titles" } },
+local chipRow, selectChip = Kit.Tabs({ { id = "Alters", text = "Alters", lock = "Looks/Alters" }, { id = "Titles", text = "Titles" } },
 	function(id)
 		look = id
 		Audio.PlayUI("Click")
@@ -136,11 +142,12 @@ for index, title in ipairs(ordered) do
 	local lock = Pieces.Icon("lock", Colors.Text, { Name = "Lock", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 5), Size = UDim2.fromOffset(15, 15),
 		ZIndex = 5, Parent = card })
 	lock:SetAttribute("KeepColor", true)
-	cards[title.id] = { card = card, api = api, bar = bar, lock = lock, title = title }
+	cards[title.id] = { card = card, api = api, bar = bar, lock = lock, title = title, overlay = Discovery.Overlay(card) }
 	card.Activated:Connect(function()
 		local data = ClientData.Get()
 		if not data.titles.owned[title.id] then
-			Notify.Toast(title.rarity == "Secret" and "Secret title" or title.name, title.rarity == "Secret" and "Keep playing to find it." or ("How to get: " .. title.description),
+			local hidden = cards[title.id].overlay.Visible
+			Notify.Toast(if hidden then "Undiscovered" else title.name, if hidden then "Keep playing to find it." else ("How to get: " .. title.description),
 				"lock", color, "titleinfo")
 			return
 		end
@@ -238,6 +245,14 @@ function AURA.look(): { [string]: string }
 	end
 	return looks
 end
+-- (prompt 31) the auras you can see (not "???"), for the reveal and the tab's red dot
+function AURA.discovered(): { string }
+	local ids = {}
+	for id, kind in pairs(AURA.look()) do
+		if kind ~= "hidden" then table.insert(ids, id) end
+	end
+	return ids
+end
 function AURA.act(aura, button)
 	local kind = AURA.state(aura)
 	if kind == "equip" then
@@ -298,7 +313,7 @@ for index, aura in ipairs(Auras.List) do
 		{ New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 	local question = Kit.Text({ Name = "Question", Text = "???", Font = "Chunky", TextSize = 15, TextColor3 = color, AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, -10, 0, 17), Visible = false, ZIndex = 3, Parent = tile })
-	AURA.tiles[aura.id] = { tile = tile, api = api, aura = aura, ring = ring, spark = spark, question = question }
+	AURA.tiles[aura.id] = { tile = tile, api = api, aura = aura, ring = ring, spark = spark, question = question, overlay = Discovery.Overlay(tile) }
 	tile.Activated:Connect(function()
 		AURA.picked = aura.id
 		refresh()
@@ -322,16 +337,18 @@ AURA.action.Activated:Connect(function()
 end)
 
 function AURA.refresh()
-	local owned = 0
 	local looks = AURA.look()
+	local discovered = AURA.discovered()
+	local fresh = Discovery.New("Auras", discovered)
 	for _, aura in ipairs(Auras.List) do
 		local t = AURA.tiles[aura.id]
 		local kind, text = AURA.state(aura)
 		local look = looks[aura.id]
-		if look == "owned" then owned += 1 end
 		local hidden = look == "hidden"
-		t.ring.Visible = hidden
-		t.question.Visible = hidden
+		t.ring.Visible = false
+		t.question.Visible = false
+		t.overlay.Visible = hidden
+		if fresh[aura.id] then Discovery.Reveal(t.tile, t.overlay) end
 		t.api.art.Visible = not hidden
 		t.api.name.Visible = not hidden
 		t.api.sub.Visible = not hidden
@@ -354,8 +371,8 @@ function AURA.refresh()
 	AURA.bigIcon.ImageColor3 = if look == "owned" then Color3.new(1, 1, 1) else Color3.fromRGB(80, 78, 86)
 	AURA.bigIcon.Visible = not hidden
 	AURA.bigName.Text = if hidden then "???" else aura.name
-	AURA.bigRarity.Text = if hidden then "" else string.upper(aura.rarity)
-	AURA.bigRarity.TextColor3 = RARITY_TABLE[aura.rarity] or Colors.Muted
+	AURA.bigRarity.Text = if hidden then "UNDISCOVERED" else string.upper(aura.rarity)
+	AURA.bigRarity.TextColor3 = if hidden then Discovery.Gray else RARITY_TABLE[aura.rarity] or Colors.Muted
 	-- the benefit pill when the aura has one (Config/Auras `bonus`, e.g. "+15% Coins"), else how to get it
 	local bonus = aura.bonus
 	AURA.benefit.Visible = bonus ~= nil and not hidden
@@ -366,8 +383,9 @@ function AURA.refresh()
 	Kit.SetButton(AURA.action, if kind == "locked" then "Disabled" else style, text)
 	local settings = ClientData.Get().settings or {}
 	setShowToggle(settings.myAura ~= "Off")
-	AURA.header.Text = "OWNED " .. owned .. " / " .. #Auras.List
+	AURA.header.Text = "AURAS " .. #discovered .. " / " .. #Auras.List .. " DISCOVERED"
 	countLabel.Text = ""
+	Discovery.Seen("Auras", discovered)
 end
 
 -- the try-on: while the AURAS tab is open, your character wears the picked aura at full power (AuraClient reads the
@@ -423,9 +441,44 @@ local ITEMS_TAB = require(Shared.UI.BoostsPanel).Build(modal.body, {
 		end,
 	},
 })
+-- (prompt 31) the titles you can see: yours, and the next one in each category (list order); secret ones only once yours
+local function titlesDiscovered(data): ({ string }, { [string]: boolean })
+	local owned = data.titles and data.titles.owned or {}
+	local ids, set, nextOf = {}, {}, {}
+	for _, title in ipairs(Titles.List) do
+		local has = owned[title.id] ~= nil
+		local shown = has
+		if not has and title.rarity ~= "Secret" and not nextOf[title.category] then
+			nextOf[title.category] = true
+			shown = true
+		end
+		if shown then
+			table.insert(ids, title.id)
+			set[title.id] = true
+		end
+	end
+	return ids, set
+end
+local aurasDiscovered = AURA.discovered
+-- the red dots: the AURAS and LOOKS tabs, the ALTERS and TITLES chips
+local tabRow = modal.panel:FindFirstChild("Tabs", true)
+local function refreshDots()
+	if not ClientData.IsLoaded() then return end
+	local data = ClientData.Get()
+	local newAuras = Discovery.HasNew("Auras", aurasDiscovered())
+	local newTitles = Discovery.HasNew("Titles", (titlesDiscovered(data)))
+	local newAlters = Discovery.HasNew("Alters", AltersPanel.Discovered(data))
+	if tabRow then
+		if tabRow:FindFirstChild("Auras") then Discovery.Dot(tabRow.Auras, newAuras) end
+		if tabRow:FindFirstChild("Looks") then Discovery.Dot(tabRow.Looks, newTitles or newAlters) end
+	end
+	if chipRow:FindFirstChild("Alters") then Discovery.Dot(chipRow.Alters, newAlters) end
+	if chipRow:FindFirstChild("Titles") then Discovery.Dot(chipRow.Titles, newTitles) end
+end
+
 local GearPanel = require(Shared.UI.GearPanel)
 local GEAR_TAB = GearPanel.Build(modal.body)
-local ALTERS_TAB = require(Shared.UI.AltersPanel).Build(LOOKS.body) -- (prompt 21) the Body Alter skins
+local ALTERS_TAB = AltersPanel.Build(LOOKS.body) -- (prompt 21) the Body Alter skins
 
 -- (prompt 39b: the ALL view that used Config/Alters here is gone)
 
@@ -460,17 +513,21 @@ function refresh()
 		return
 	elseif tab == "Auras" then
 		AURA.refresh()
+		refreshDots()
 		return
 	elseif look == "Alters" then
 		ALTERS_TAB.refresh()
+		refreshDots()
 		return
 	end
-	local owned = 0
+	local discoveredIds, discovered = titlesDiscovered(data)
+	local fresh = Discovery.New("Titles", discoveredIds)
 	for _, title in ipairs(Titles.List) do
 		local c = cards[title.id]
 		local has = data.titles.owned[title.id] ~= nil
 		local equipped = data.titles.equipped == title.id
-		if has then owned += 1 end
+		c.overlay.Visible = not discovered[title.id]
+		if fresh[title.id] then Discovery.Reveal(c.card, c.overlay) end
 		local secret = title.rarity == "Secret"
 		c.api.name.Text = string.upper((secret and not has) and "???" or title.name)
 		c.lock.Visible = not has
@@ -488,8 +545,10 @@ function refresh()
 		end
 		c.api.pill.Size = UDim2.new(1, -14, 0, 22)
 	end
-	-- (prompt 40) the header beside the chips
-	countLabel.Text = "OWNED " .. owned .. " / " .. #Titles.List
+	-- (prompt 40) the header beside the chips (prompt 31: discovered)
+	countLabel.Text = #discoveredIds .. " / " .. #Titles.List .. " DISCOVERED"
+	Discovery.Seen("Titles", discoveredIds)
+	refreshDots()
 end
 
 -- the timers tick while the Items tab is open
@@ -553,6 +612,11 @@ ClientData.Changed:Connect(function(path)
 	local key = path[1]
 	if (key == "titles" or key == "auras" or key == "coins" or key == "items" or key == "dnaTokens" or key == "alter" or key == "cosmetics"
 		or key == "growthSpurts") and modal.isOpen() then refresh() end
+	if key == "titles" or key == "auras" or key == "alter" or key == "settings" then refreshDots() end
+end)
+task.spawn(function()
+	ClientData.Get()
+	refreshDots()
 end)
 player.AttributeChanged:Connect(function(name)
 	if (string.sub(name, 1, 5) == "Pass_" or name == "Aura") and modal.isOpen() then refresh() end

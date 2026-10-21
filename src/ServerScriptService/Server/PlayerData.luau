@@ -907,6 +907,15 @@ function PlayerData.SetSettings(player, settings)
 	if type(settings.dumbbellLast) == "string" and #settings.dumbbellLast <= 24 and string.match(settings.dumbbellLast, "^DB%w+$") then
 		new.dumbbellLast = settings.dumbbellLast
 	end
+	-- (prompt 31) the UNDISCOVERED items the player has seen revealed, per list: "id,id,..." (Shared/UI/Discovery)
+	if type(settings.revealed) == "table" then
+		local revealed = type(new.revealed) == "table" and table.clone(new.revealed) or {}
+		for _, list in ipairs({ "Alters", "Auras", "Titles", "Trainers" }) do
+			local text = settings.revealed[list]
+			if type(text) == "string" and #text <= 2000 and string.match(text, "^[%w_,]*$") then revealed[list] = text end
+		end
+		new.revealed = revealed
+	end
 	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "otherTrainers", "lowGraphics", "reduceMotion", "liftingVoices", "myAura" }) do
 		if ON_OFF[settings[key]] then new[key] = settings[key] end
 	end

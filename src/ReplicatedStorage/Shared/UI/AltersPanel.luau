@@ -5,7 +5,9 @@
 --   reached   the alter's banner (Config.AlterThemes bg, else its colours) behind the whole tile, the skin swatch big
 --             (the alter's colour map tinted with your skin), the name; the one you wear: gold edge + gold check
 --   next      the banner dimmed, a dark swatch, the progress bar (muscle groups at the goal) and a NEXT ALTER pill
---   later     smaller dim "???" tiles with one small spark going round
+--   later     (prompt 31) UNDISCOVERED (Shared/UI/Discovery): a dark tile, "?", "???", a small gray UNDISCOVERED. Tiers
+--             with no textures yet aren't shown at all. Header: "ALTERS 3 / 30 DISCOVERED" (yours + the next one); one
+--             that's new since you last looked turns over with a gold burst.
 -- A tap shows it in the detail panel (right): banner, swatch, name, "GAINS X1.15", "ALTER 1 · HUMAN TIER", WEAR / WORN.
 -- (no body renders per alter yet: the tile shows the skin swatch; swap in art when it exists)
 -- AltersPanel.Build(parent) -> { frame, refresh() }.
@@ -21,10 +23,29 @@ local AlterThemes = require(Config.AlterThemes)
 local Muscles = require(Config.Muscles)
 local Machines = require(Config.Machines)
 local GrowthSpurts = require(Config.GrowthSpurts)
+local Discovery = require(script.Parent.Discovery)
 
 local New, Colors = Theme.New, Theme.Colors
 
 local AltersPanel = {}
+
+-- (prompt 31) a tier shows only once one of its alters has textures
+local function tierShown(tier: number): boolean
+	for _, alter in ipairs(Alters.List) do
+		if alter.tier == tier and alter.textures then return true end
+	end
+	return false
+end
+
+-- the discovered alters' ids (the ones you've reached + the next one), for the reveal and the tab's red dot
+function AltersPanel.Discovered(data): { string }
+	local highest = (Alters.State(data).highest or 0)
+	local ids = {}
+	for _, alter in ipairs(Alters.List) do
+		if alter.number <= highest + 1 and tierShown(alter.tier) then table.insert(ids, alter.id) end
+	end
+	return ids
+end
 
 local TILE = Vector2.new(140, 92)
 local GAP = 8
@@ -39,9 +60,9 @@ function AltersPanel.Build(parent: Instance)
 	local panel = {}
 	local picked = nil -- the alter number shown in the detail panel (nil = the one you wear)
 	local holder = New("Frame", { Name = "Alters", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = parent })
-	local count = Kit.GoldText(Kit.Text({ Name = "Count", Text = "", Font = "Chunky", TextSize = 17, Size = UDim2.fromOffset(110, 20),
+	local count = Kit.GoldText(Kit.Text({ Name = "Count", Text = "", Font = "Chunky", TextSize = 15, Size = UDim2.fromOffset(196, 20),
 		TextXAlignment = Enum.TextXAlignment.Left, Parent = holder }))
-	local header = Kit.Text({ Name = "Bonus", Text = "", Font = "Chunky", TextSize = 12, Position = UDim2.fromOffset(116, 0), Size = UDim2.new(1, -(116 + DETAIL_W + 10), 0, 20),
+	local header = Kit.Text({ Name = "Bonus", Text = "", Font = "Chunky", TextSize = 12, Position = UDim2.fromOffset(200, 0), Size = UDim2.new(1, -(200 + DETAIL_W + 10), 0, 20),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = holder })
 	local path = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 24),
 		Size = UDim2.new(1, -(DETAIL_W + 10), 1, -24), ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, CanvasSize = UDim2.new(),
@@ -91,7 +112,9 @@ function AltersPanel.Build(parent: Instance)
 
 	local tiles = {}
 	local all = { Alters.Natural }
-	for _, alter in ipairs(Alters.List) do table.insert(all, alter) end
+	for _, alter in ipairs(Alters.List) do
+		if tierShown(alter.tier) then table.insert(all, alter) end
+	end
 	for index, alter in ipairs(all) do
 		local n = alter.number or (index - 1)
 		local row, col = (index - 1) // COLUMNS, (index - 1) % COLUMNS
@@ -128,8 +151,9 @@ function AltersPanel.Build(parent: Instance)
 		})
 		require(script.Parent.Pieces).Icon("check", Colors.Ink, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(12, 12),
 			ZIndex = 7, Parent = check }):SetAttribute("KeepColor", true)
+		local overlay = Discovery.Overlay(tile)
 		tiles[n] = { tile = tile, bg = bg, swatch = swatch, name = name, bar = bar, setBar = setBar, nextPill = nextPill, question = question, spark = spark,
-			check = check, alter = alter }
+			check = check, alter = alter, overlay = overlay }
 		tile.Activated:Connect(function()
 			Audio.PlayUI("Click")
 			picked = n
@@ -187,7 +211,8 @@ function AltersPanel.Build(parent: Instance)
 		local highest, worn = state.highest or 0, state.equipped or 0
 		local maxed = GrowthSpurts.IsMaxed(data.growthSpurts or 0)
 		local progress = Alters.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
-		count.Text = "ALTER " .. highest .. " / " .. #Alters.List
+		local discovered = AltersPanel.Discovered(data)
+		count.Text = "ALTERS " .. #discovered .. " / " .. #Alters.List .. " DISCOVERED"
 		header.Text = if maxed then string.upper(string.format("%s is your highest · gains x%.2f", Alters.Get(highest).name, Alters.Bonus(highest)))
 			else "BODY ALTERS OPEN AT 7'0\". EACH ONE ADDS +15% GAINS."
 		for n, t in pairs(tiles) do
@@ -200,8 +225,9 @@ function AltersPanel.Build(parent: Instance)
 			paintSwatch(t.swatch, t.alter, n, reached)
 			t.swatch.Visible = true
 			t.name.Visible = not later
-			t.question.Visible = later
-			t.spark.Visible = later
+			t.question.Visible = false
+			t.spark.Visible = false
+			t.overlay.Visible = later
 			t.bar.Visible = isNext and maxed
 			t.nextPill.Visible = isNext
 			if isNext then t.setBar(if progress.total > 0 then progress.met / progress.total else 0) end
@@ -229,12 +255,20 @@ function AltersPanel.Build(parent: Instance)
 		gains.Visible = not later
 		gains.Edge.Color = if theme then theme.accent else Colors.Muted
 		gainsText.Text = string.format("GAINS X%.2f", Alters.Bonus(n))
-		tierText.Text = if later then "KEEP GROWING TO FIND IT" elseif n == 0 then "YOUR OWN SKIN"
+		tierText.Text = if later then "UNDISCOVERED · KEEP GROWING" elseif n == 0 then "YOUR OWN SKIN"
 			else string.upper("Alter " .. n .. " · " .. Alters.Tiers[alter.tier].name .. " tier")
 		detail.Border.Color = if reached and n == worn then Colors.Gold elseif theme and not later then theme.accent else Colors.Outline
 		wear.Visible = reached
 		if reached then
 			if n == worn then Kit.SetButton(wear, "Quiet", "Worn") else Kit.SetButton(wear, "Green", "Wear") end
+		end
+		-- (prompt 31) new since you last looked: it turns over with a gold burst (only while the tab is on screen)
+		if holder.Visible then
+			local fresh = Discovery.New("Alters", discovered)
+			for _, t in pairs(tiles) do
+				if t.alter.id and fresh[t.alter.id] then Discovery.Reveal(t.tile, t.overlay) end
+			end
+			Discovery.Seen("Alters", discovered)
 		end
 	end
 

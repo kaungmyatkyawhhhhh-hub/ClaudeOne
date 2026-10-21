@@ -1,6 +1,9 @@
--- Coach quests (Config.Quests) and the Coach NPC at the front desk. Talking to the Coach (ProximityPrompt,
--- handled here on the server) gives a quest, or pays out a finished one and gives the next. Progress is tracked
--- on the server only: rep counters from MachineService, everything else checked against the player's data.
+-- Coach quests (Config.Quests) and the Coach NPC at the front desk. Progress is tracked on the server only: rep counters
+-- from MachineService, everything else checked against the player's data.
+-- (prompt 31, owner 22 Oct: Coach Dex is the main shop now, not a quest NPC.) Talking to him: no quest yet (the tutorial)
+-- = he gives the first one; a finished one = he pays it out and gives the next; then his shop opens (PumpShopService
+-- "Coach"). Finished quests are also claimed from Quests > Goals (action "ClaimCoachQuest", anywhere); with no quest a
+-- new one is given by itself.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -97,6 +100,20 @@ local function giveNext(player, data, prefix)
 	say(player, (prefix and prefix .. " " or "") .. pick(Quests.Lines.give) .. " " .. quest.text .. ".")
 end
 
+-- pays out a finished quest and gives the next; true when it did
+local function claim(player, data): boolean
+	local active = data.quests.active
+	local quest = active and Quests.ById[active.id]
+	if not quest then return false end
+	refresh(player, data, false)
+	if not active.ready then return false end
+	grant(player, quest.reward)
+	Remotes.PlayerEvent:FireClient(player, "QuestDone", { id = quest.id, reward = Quests.RewardText(quest.reward) })
+	data.quests.index += 1
+	giveNext(player, data, pick(Quests.Lines.done))
+	return true
+end
+
 local function talk(player)
 	local now = os.clock()
 	if now - (lastTalk[player] or 0) < TALK_COOLDOWN then return end
@@ -104,20 +121,18 @@ local function talk(player)
 	local data = PlayerData.Get(player)
 	if not data then return end
 	local active = data.quests.active
-	local quest = active and Quests.ById[active.id]
-	if not quest then
-		giveNext(player, data)
+	if not (active and Quests.ById[active.id]) then
+		giveNext(player, data) -- (the tutorial's "talk to Coach Dex" step)
 		return
 	end
-	refresh(player, data, false)
-	if active.ready then
-		grant(player, quest.reward)
-		Remotes.PlayerEvent:FireClient(player, "QuestDone", { id = quest.id, reward = Quests.RewardText(quest.reward) })
-		data.quests.index += 1
-		giveNext(player, data, pick(Quests.Lines.done))
-	else
-		say(player, pick(Quests.Lines.notDone) .. " " .. quest.text .. " (" .. active.progress .. "/" .. active.goal .. ").")
-	end
+	claim(player, data)
+	require(script.Parent.PumpShopService).OpenFor(player, "Coach")
+end
+
+-- Quests > Goals: CLAIM (from anywhere)
+function QuestService.Claim(player)
+	local data = PlayerData.Get(player)
+	if data then claim(player, data) end
 end
 
 -- Called by MachineService for every validated rep.
@@ -148,14 +163,23 @@ function QuestService.Start()
 		end
 	end)
 
-	-- state quests (levels, tiers, titles, Growth Spurts) can finish outside of reps too
+	require(script.Parent.ActionService).Register("ClaimCoachQuest", function(player) QuestService.Claim(player) end)
+	-- state quests (levels, tiers, titles, Growth Spurts) can finish outside of reps too; a player past the tutorial with
+	-- no quest gets the next one by itself (Coach Dex doesn't hand them out any more)
 	task.spawn(function()
+		local Onboarding = require(Config.Onboarding)
 		while true do
 			task.wait(2)
 			for _, player in ipairs(Players:GetPlayers()) do
 				local data = PlayerData.Get(player)
 				if data and data.quests.active and not data.quests.active.ready then
 					refresh(player, data, false)
+				elseif data and not data.quests.active and (data.onboarding.tutorialStep or 0) >= Onboarding.Done then
+					local quest = Quests.ForIndex(data.quests.index)
+					if quest then
+						data.quests.active = newActive(data, quest)
+						refresh(player, data, true)
+					end
 				end
 			end
 		end

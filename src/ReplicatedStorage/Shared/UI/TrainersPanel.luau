@@ -5,6 +5,8 @@
 -- Below every trainer you own (rarest first; Golden ones as their own cards): a 3D portrait, name, rarity, boost, how many
 -- ("x3"), EQUIP (into the first free slot, or the last slot when all are full; duplicates can fill several slots) and
 -- "3/5 to Golden" or MAKE GOLDEN (5 of the same -> 1 Golden with 1.5x his boost). Nothing yet: a button to the Agency.
+-- (prompt 31) After yours, every trainer you haven't had yet is an UNDISCOVERED card (Shared/UI/Discovery; the Secret one
+-- too); "x / y DISCOVERED" beside the slots; a new one turns over with a gold burst the first time you look.
 -- TrainersPanel.Build(parent) -> { frame, refresh() }. Every change goes to the server (remote "Trainers").
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,10 +17,21 @@ local TrainerPortrait = require(script.Parent.TrainerPortrait)
 local Audio = require(script.Parent.Parent.Audio)
 local ClientData = require(script.Parent.Parent.ClientData)
 local Trainers = require(script.Parent.Parent.Config.Trainers)
+local Discovery = require(script.Parent.Discovery)
 
 local New, Colors = Theme.New, Theme.Colors
 
 local TrainersPanel = {}
+
+-- (prompt 31) the trainers you've had (any count, Golden too), for the reveal and the tab's red dot
+function TrainersPanel.Discovered(trainersData): { string }
+	local s = Trainers.Migrate(trainersData)
+	local ids = {}
+	for _, trainer in ipairs(Trainers.List) do
+		if (s.owned[trainer.id] or 0) > 0 or (s.golden[trainer.id] or 0) > 0 then table.insert(ids, trainer.id) end
+	end
+	return ids
+end
 
 local CARD = Vector2.new(160, 128)
 local SLOT = Vector2.new(126, 44)
@@ -73,9 +86,12 @@ function TrainersPanel.Build(parent: Instance)
 
 	local function clear(frame)
 		for _, child in ipairs(frame:GetChildren()) do
-			if child:IsA("GuiObject") and child.Name ~= "Label" then child:Destroy() end
+			if child:IsA("GuiObject") and child.Name ~= "Label" and child.Name ~= "Discovered" then child:Destroy() end
 		end
 	end
+	-- (prompt 31) "x / y DISCOVERED" after the slots
+	local count = Kit.Text({ Name = "Discovered", LayoutOrder = 100, Text = "", Font = "Number", TextSize = 12, TextColor3 = Colors.Muted,
+		Size = UDim2.fromOffset(140, SLOT.Y), TextXAlignment = Enum.TextXAlignment.Right, Parent = top })
 
 	function panel.refresh()
 		local s = state()
@@ -124,11 +140,24 @@ function TrainersPanel.Build(parent: Instance)
 		grid.Visible = #cards > 0
 		local used = {}
 		for _, entry in ipairs(list) do used[entry] = (used[entry] or 0) + 1 end
+		-- (prompt 31) the ones you haven't had: UNDISCOVERED, after yours
+		local discovered = TrainersPanel.Discovered((ClientData.Get() or {}).trainers)
+		local fresh = if holder.Visible then Discovery.New("Trainers", discovered) else {}
+		local have = {}
+		for _, id in ipairs(discovered) do have[id] = true end
+		for order, trainer in ipairs(Trainers.List) do
+			if not have[trainer.id] then
+				local card = Kit.Card({ Name = trainer.id .. "_Undiscovered", LayoutOrder = 1000 + order, Parent = grid }, {})
+				Discovery.Overlay(card).Visible = true
+			end
+		end
+		count.Text = #discovered .. " / " .. #Trainers.List .. " DISCOVERED"
 		for order, c in ipairs(cards) do
 			local trainer = c.trainer
 			local rarity = Trainers.RarityById[trainer.rarity]
 			local color = if c.golden then Colors.Gold elseif rarity.hidden then hex(rarity.color2 or rarity.color) else hex(rarity.color)
 			local card = Kit.Card({ Name = trainer.id .. (if c.golden then "_Golden" else ""), LayoutOrder = order, Parent = grid }, {})
+			if fresh[trainer.id] and not c.golden then Discovery.Reveal(card, Discovery.Overlay(card)) end
 			New("UIStroke", { Name = "Rarity", Color = color, Thickness = if c.golden then 2.5 else 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = card })
 			local box = New("Frame", { Name = "PortraitBox", BackgroundColor3 = Color3.fromHex("#141417"), Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(46, 46),
 				ClipsDescendants = true, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(0, 8) }) })
@@ -164,6 +193,7 @@ function TrainersPanel.Build(parent: Instance)
 				end
 			end
 		end
+		if holder.Visible then Discovery.Seen("Trainers", discovered) end
 	end
 
 	-- live: a roll, an equip, a new slot

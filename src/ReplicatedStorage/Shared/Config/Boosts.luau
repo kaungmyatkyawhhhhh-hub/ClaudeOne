@@ -34,6 +34,15 @@ Boosts.Items = {
 	-- (prompt 19, sold in the PUMP SHOP) reps go 25% faster: the rep animation and the auto-rep pace
 	{ id = "PreWorkout", name = "Pre-Workout", seconds = 5 * 60, effects = { repSpeed = 1.25 }, icon = "timer", color = "#36C2C2",
 		text = "+25% rep speed.", duration = "5 min" },
+	-- (prompt 31) the PUMP SHOP's specials: stronger, rarer, pricier (all numbers here and in Config/PumpShop)
+	{ id = "MassGainer", name = "Mass Gainer", seconds = 10 * 60, effects = { gains = 1.5 }, icon = "arrow-big-up", color = "#C98A12",
+		text = "+50% Growth Spurt and alter progress.", duration = "10 min", special = true },
+	{ id = "ElitePreWorkout", name = "Elite Pre-Workout", seconds = 10 * 60, effects = { repSpeed = 1.5 }, icon = "timer", color = "#AA50FF",
+		text = "+50% rep speed.", duration = "10 min", special = true },
+	{ id = "WheyIsolate", name = "Whey Isolate", seconds = 15 * 60, effects = { gains = 1.5 }, icon = "zap", color = "#F5BE28",
+		text = "+50% EXP on every rep.", duration = "15 min", special = true },
+	{ id = "BcaaRecovery", name = "BCAA Recovery", seconds = 15 * 60, effects = { regen = 2 }, icon = "heart-pulse", color = "#3CC8B4",
+		text = "Stamina refills twice as fast.", duration = "15 min", special = true },
 }
 -- (owner, 22 Oct) item pictures (Downloads\gym_arc_reward_icons, uploaded to the Myanmar Builders Club group): with one,
 -- the item shows its picture everywhere instead of the line icon in a coloured tile (Pieces.Icon / Kit.IconTile take a

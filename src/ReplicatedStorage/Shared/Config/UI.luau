@@ -105,7 +105,7 @@ UI.LoadingTips = {
 	"Tap fast while lifting to fill PUMP: pumped reps grow twice as much.",
 	"Weak muscles grow fastest. Train the group that needs work.",
 	"Every Growth Spurt makes you taller and grows your gains for good.",
-	"Drinks at the smoothie bar give short boosts. Check the timers above your stamina bar.",
+	"Coach Dex sells shakes and boosts. Check the timers above your stamina bar.",
 	"Claim your Daily Reward every day: day 7 is the big one.",
 	"Trainers follow you around and give a small boost while they do.",
 	"Titles are earned, never bought. Some of them are secret.",

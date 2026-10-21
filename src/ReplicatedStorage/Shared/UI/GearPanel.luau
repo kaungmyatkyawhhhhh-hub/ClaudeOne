@@ -71,12 +71,13 @@ function GearPanel.Build(parent: Instance)
 	local line = Kit.Text({ Name = "Line", Text = "Lifting belts, wraps, straps and sleeves make your lifts stronger.", Font = "Body", TextSize = 13, TextColor3 = Colors.Muted,
 		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 20), Size = UDim2.new(1, -20, 0, 16), Parent = empty })
 	line.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Medium, Enum.FontStyle.Italic)
-	local goShop = Kit.Button("Gold", "Go to Pump Shop", { Name = "GoPumpShop", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 56), Parent = empty },
+	-- (prompt 31) Basic gear is sold by Coach Dex now
+	local goShop = Kit.Button("Gold", "Go to Coach Dex", { Name = "GoCoach", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 56), Parent = empty },
 		{ width = 190, height = 36, textSize = 16 })
 	goShop.Activated:Connect(function()
 		local UIBus = require(script.Parent.UIBus)
 		UIBus.CloseAllPanels()
-		UIBus.GoPumpShop:Fire()
+		UIBus.GoCoach:Fire()
 	end)
 
 	local function card(order, name, sub, color, wearing, onTap)

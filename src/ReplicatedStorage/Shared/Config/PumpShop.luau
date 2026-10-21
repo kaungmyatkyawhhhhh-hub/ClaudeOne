@@ -1,3 +1,9 @@
+-- (prompt 31, owner 21 Oct: three shops, each sells its own things; the tabs are always called SUPPLEMENTS / GEAR, plus
+-- ALTERS or DNA LAB) PumpShop.Shops below:
+--   Coach    COACH DEX at his counter in the Starter Gym (the main shop): normal supplements, Basic / Pro gear, ALTERS
+--   Pump     the PUMP SHOP in town (specials only): special supplements, Elite / Champion gear, DNA LAB
+--   Coconut  the COCONUT STAND at the beach gym: Coconut Water only (x1 / x5)
+-- Apparel is off sale (players keep what they own; PumpShop.Apparel still defines those items).
 -- PUMP SHOP (owner, prompt 19, 21 Oct): one big store in the town hub that sells everything worth buying with coins.
 -- Coins only (no Robux here), no random rolls. Four sections, each with its own counter and clerk: SUPPLEMENTS, GEAR,
 -- APPAREL, DNA LAB, ALTERS (prompt 21: the next Body Alter, its goal and bonus; open at 7'0", nothing for sale). PumpShopService (server) sells, PumpShopClient shows the panel.
@@ -24,10 +30,21 @@ PumpShop.TryOnSeconds = 12      -- a try-on (apparel) lasts this long, or until 
 PumpShop.Sections = {
 	{ id = "Supplements", name = "Supplements", icon = "cup-soda" },
 	{ id = "Gear", name = "Gear", icon = "dumbbell", fromSpurt = 2 },
-	{ id = "Apparel", name = "Apparel", icon = "star", fromSpurt = 2 },
 	{ id = "DnaLab", name = "DNA Lab", icon = "sparkles" },
 	{ id = "Alters", name = "Alters", icon = "flame", atMax = true }, -- (prompt 21: at 7'0"; Body Alters are never bought)
 }
+PumpShop.SectionById = {}
+for _, section in ipairs(PumpShop.Sections) do PumpShop.SectionById[section.id] = section end
+
+-- (prompt 31) the three shops: their title, tabs, the supplements and gear levels they sell, and how many at once
+PumpShop.Shops = {
+	Coach = { title = "Coach Dex", tabs = { "Supplements", "Gear", "Alters" },
+		supplements = { "Shake", "Creatine", "ProteinPowder", "Supplements", "PreWorkout" }, gear = { "Basic", "Pro" } },
+	Pump = { title = "Pump Shop", tabs = { "Supplements", "Gear", "DnaLab" },
+		supplements = { "MassGainer", "ElitePreWorkout", "WheyIsolate", "BcaaRecovery" }, gear = { "Elite", "Champion" } },
+	Coconut = { title = "Coconut Stand", tabs = { "Supplements" }, supplements = { "CoconutWater" }, gear = {}, quantities = { 1, 5 } },
+}
+PumpShop.CoachTeleportCooldown = 10 -- seconds between two uses of the Shop window's "Coach Dex" link
 
 ------------------------------------------------------------------------
 -- SUPPLEMENTS: the boost items (Config.Boosts) into the inventory. price = Minutes x the coins a minute at your stage.
@@ -39,6 +56,11 @@ PumpShop.Supplements = {
 	{ id = "ProteinPowder", minutes = 5 },
 	{ id = "Supplements", minutes = 4 },
 	{ id = "PreWorkout", minutes = 4 },
+	-- (prompt 31) the PUMP SHOP's specials
+	{ id = "MassGainer", minutes = 14 },
+	{ id = "ElitePreWorkout", minutes = 12 },
+	{ id = "WheyIsolate", minutes = 16 },
+	{ id = "BcaaRecovery", minutes = 12 },
 }
 PumpShop.Quantities = { 1, 5, 10 }
 
@@ -68,6 +90,7 @@ PumpShop.GearLevels = {
 	{ id = "Basic", name = "Basic", bonus = 0.05, price = 750, color = "#2B2B30" },
 	{ id = "Pro", name = "Pro", bonus = 0.10, price = 4000, color = "#B3262D" },
 	{ id = "Elite", name = "Elite", bonus = 0.15, price = 25000, color = "#C9CCD2" }, -- (prompt 34: silver; gold is for Champion, prompt 31)
+	{ id = "Champion", name = "Champion", bonus = 0.20, price = 150000, color = "#F2C14E" }, -- (prompt 31: the top level, gold)
 }
 -- machines = MachineIds it helps; groups = every machine whose main muscle is in these groups
 PumpShop.Gear = {

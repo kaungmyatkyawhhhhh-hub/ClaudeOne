@@ -67,6 +67,39 @@ local function setReadyLook(on: boolean)
 	tileLabel.TextSize = if on then 13 else 11
 	tileLabel.Size = UDim2.new(1, 0, 0, if on then 15 else 13)
 end
+-- (prompt 31) "NEXT: TANNED" wears the next alter's theme (Config.AlterThemes, prompt 22): a dark base in its colour, its
+-- accent edge, a thin strip of its background art along the bottom, the name in its title gradient; the progress "55%"
+-- in white top-right and "TAP FOR WHAT TO TRAIN" small and gray. It changes by itself for each next alter.
+local alterStrip = New("ImageLabel", { Name = "AlterStrip", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+	AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -3), Size = UDim2.new(1, -10, 0, 6), ZIndex = tile.ZIndex + 2, Visible = false, Parent = tile },
+	{ New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+local alterPct = Kit.Text({ Name = "Pct", Text = "", Font = "Number", TextSize = 15, TextColor3 = Colors.Text, AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -8, 0, 4), Size = UDim2.fromOffset(46, 22), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = tile })
+alterPct:SetAttribute("KeepColor", true)
+local titleGradient = New("UIGradient", { Name = "AlterTitle", Rotation = 90, Enabled = false, Parent = tileText })
+local function setAlterLook(theme, percent: number?)
+	local on = theme ~= nil
+	titleGradient.Enabled = on
+	alterStrip.Visible = on
+	alterPct.Visible = on
+	tileText.Size = UDim2.new(1, if on then -62 else -16, 0, 22)
+	tileText.TextXAlignment = if on then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
+	if not on then return end
+	local gloss = tile:FindFirstChild("Gloss")
+	if gloss then gloss.Color = ColorSequence.new(theme.base:Lerp(Color3.new(0, 0, 0), 0.15), theme.base:Lerp(Color3.new(0, 0, 0), 0.6)) end
+	local edge = tile:FindFirstChildOfClass("UIStroke")
+	if edge then edge.Color, edge.Transparency = theme.accent, 0 end
+	if theme.bg then
+		alterStrip.Image, alterStrip.BackgroundTransparency = theme.bg, 1
+	else
+		alterStrip.Image, alterStrip.BackgroundTransparency, alterStrip.BackgroundColor3 = "", 0, theme.accent
+	end
+	tileText.TextColor3 = Color3.new(1, 1, 1)
+	titleGradient.Color = ColorSequence.new(theme.title[1], theme.title[2])
+	alterPct.Text = (percent or 0) .. "%"
+	tileLabel.TextColor3 = Color3.fromHex("#9A97A0")
+end
+
 -- (owner, 15 Oct: always shown under the one priority card; it had vanished behind Today's Quest)
 RightColumn.Add(holder, 9, "bottom")
 local started = false -- (shown after the data is in)
@@ -475,6 +508,7 @@ local function refresh()
 	-- (owner, 15 Oct, later: at the 7'0" cap NO card on the HUD; the top bar's "7'0" MAX" and the Stats panel's greyed
 	-- button show it)
 	holder.Visible = started and (alterMode or not progress.maxed)
+	setAlterLook(nil)
 	if alterMode and progress.maxed then
 		-- (the next alter has no textures yet)
 		tileText.Text = "MORE ALTERS SOON"
@@ -488,8 +522,9 @@ local function refresh()
 		Theme.Pulse(tile, function() return ready end)
 	elseif alterMode then
 		tileText.Text = "NEXT: " .. string.upper(nextName)
-		tileLabel.Text = percent .. "%" .. (if needs ~= "" then " · Needs " .. needs else " · tap for what to train")
+		tileLabel.Text = if needs ~= "" then "Needs " .. needs else "Tap for what to train"
 		Theme.SetButtonStyle(tile, "Quiet")
+		setAlterLook(AlterThemes.Get(progress.next), percent)
 	elseif progress.maxed then
 		tileText.Text = "MAX GROWTH SPURT"
 		tileLabel.Text = "Reached · " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)

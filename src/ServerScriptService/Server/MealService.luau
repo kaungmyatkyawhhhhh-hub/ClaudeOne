@@ -141,29 +141,6 @@ local function buy(player: Player, shopId: any, itemId: any)
 	send(player, "Bought", { id = item.id, seconds = left })
 end
 
-local function addStall(part: Instance)
-	if not part:IsA("BasePart") or stalls[part] then return end
-	local shopId = part:GetAttribute("MealShop")
-	local shop = shopId and Meals.Shops[shopId]
-	if not shop then return end
-	stalls[part] = shopId
-	local prompt = part:FindFirstChild("MealPrompt")
-	if not prompt then
-		local created = Instance.new("ProximityPrompt")
-		created.Name = "MealPrompt"
-		created.ActionText = "Order"
-		created.ObjectText = shop.name
-		created.MaxActivationDistance = Meals.PromptDistance
-		created.RequiresLineOfSight = false
-		created.Parent = part
-		prompt = created
-	end
-	Guard.OnTriggered(prompt, function(player)
-		-- (prompt 19: the smoothie bar's shop moved to the PUMP SHOP; its stalls open the Supplements section)
-		if PlayerData.Get(player) then require(script.Parent.PumpShopService).OpenFor(player, "Supplements") end
-	end)
-end
-
 function MealService.Start()
 	local existing = Remotes:FindFirstChild("Meals")
 	if existing and existing:IsA("RemoteEvent") then
@@ -177,12 +154,8 @@ function MealService.Start()
 	Guard.Remote(remote, "Meals", 3, 4, function(player, action, shopId, itemId)
 		if action == "Buy" then buy(player, shopId, itemId) end
 	end)
-	-- the stalls: invisible OrderPoint parts in front of each counter (tools/builders/SmoothieCarts)
-	if #CollectionService:GetTagged("MealShop") == 0 then
-		warn("[MealService] no meal stalls (tag MealShop): build them with tools/builders/SmoothieCarts.luau")
-	end
-	for _, part in ipairs(CollectionService:GetTagged("MealShop")) do addStall(part) end
-	CollectionService:GetInstanceAddedSignal("MealShop"):Connect(addStall)
+	-- (prompt 31, owner 22 Oct: the smoothie stands are gone everywhere; this service only keeps the meal boosts players
+	-- already had running, paused and restored like before. The beach gym's coconut stand is a shop now: PumpShopService.)
 
 	PlayerData.Loaded:Connect(function(player) restore(player) end)
 	for _, player in ipairs(Players:GetPlayers()) do

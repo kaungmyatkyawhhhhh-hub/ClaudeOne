@@ -93,6 +93,25 @@ local modal = Kit.Modal({ name = "Trainers", title = "Trainers", width = W, heig
 	end })
 agencyFrame = New("Frame", { Name = "Agency", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = modal.body })
 myPanel = require(Shared.UI.TrainersPanel).Build(modal.body)
+-- (prompt 31) a red dot on MY TRAINERS while there's a trainer you haven't seen there yet
+do
+	local Discovery = require(Shared.UI.Discovery)
+	local TrainersPanel = require(Shared.UI.TrainersPanel)
+	local myTab = modal.panel:FindFirstChild("Tabs", true)
+	myTab = myTab and myTab:FindFirstChild("My")
+	local function dot()
+		if myTab and ClientData.IsLoaded() then
+			Discovery.Dot(myTab, Discovery.HasNew("Trainers", TrainersPanel.Discovered(ClientData.Get().trainers)))
+		end
+	end
+	ClientData.Changed:Connect(function(path)
+		if path[1] == "trainers" or path[1] == "settings" then dot() end
+	end)
+	task.spawn(function()
+		ClientData.Get()
+		dot()
+	end)
+end
 local function showTab(id: string)
 	tab = id
 	modal.selectTab(id)

@@ -491,9 +491,13 @@ local function chainRow(order: number)
 	local bar, setBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(46, 24), Size = UDim2.new(1, -150, 0, 13), Parent = card }, { text = true, textSize = 10 })
 	local button = Kit.Button("Gray", "Done", { Name = "Action", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = card },
 		{ width = 84, height = 28, textSize = 13 })
-	local row = { card = card, tile = tile, text = text, sub = sub, bar = bar, setBar = setBar, button = button, go = nil }
+	local row = { card = card, tile = tile, text = text, sub = sub, bar = bar, setBar = setBar, button = button, go = nil, claim = false }
 	button.Activated:Connect(function()
-		if row.go then
+		if row.claim then
+			-- (prompt 31) finished quests are claimed here now (Coach Dex is a shop)
+			Audio.PlayUI("Click")
+			Remotes.PlayerAction:FireServer("ClaimCoachQuest")
+		elseif row.go then
 			modal.close()
 			Notify.Hint(row.go, "questgo")
 		end
@@ -533,16 +537,16 @@ local function refreshChain()
 		row.bar.Visible = isCurrent and not active.ready
 		row.sub.Visible = not row.bar.Visible
 		row.sub.Text = Quests.RewardText(quest.reward)
-		row.go = nil
+		row.go, row.claim = nil, false
 		Theme.SetPiece(row.card, (isCurrent and active.ready) and "card_gold" or "card")
 		if isDone then
 			setTile(row.tile, "check", Colors.Teal)
 			Kit.SetButton(row.button, "Flat", "Done")
 		elseif isCurrent and active.ready then
 			setTile(row.tile, "trophy", Colors.Gold)
-			row.sub.Text = "Done! Talk to " .. Quests.CoachName .. ": " .. Quests.RewardText(quest.reward)
-			row.go = "Talk to " .. Quests.CoachName .. " at the front desk"
-			Kit.SetButton(row.button, "Red", "Go")
+			row.sub.Text = "Done! " .. Quests.RewardText(quest.reward)
+			row.claim = true
+			Kit.SetButton(row.button, "Red", "Claim")
 		elseif isCurrent then
 			setTile(row.tile, "trophy", Color3.fromHex("#2A262B"))
 			row.setBar(active.goal > 0 and active.progress / active.goal or 0, Muscles.FormatExp(active.progress) .. "/" .. Muscles.FormatExp(active.goal))
@@ -550,8 +554,8 @@ local function refreshChain()
 			Kit.SetButton(row.button, "Dark", "Go")
 		elseif isActive then
 			setTile(row.tile, "trophy", Color3.fromHex("#2A262B"))
-			row.go = "Talk to " .. Quests.CoachName .. " at the front desk for your next quest"
-			Kit.SetButton(row.button, "Dark", "Go")
+			row.sub.Text = "Your next quest is on its way."
+			Kit.SetButton(row.button, "Dark", "Soon")
 		else
 			setTile(row.tile, "lock", Colors.Faint)
 			Kit.SetButton(row.button, "Dark", "Locked")
