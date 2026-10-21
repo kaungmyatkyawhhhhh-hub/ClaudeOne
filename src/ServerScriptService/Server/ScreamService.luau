@@ -10,7 +10,7 @@ local GameEvents = require(script.Parent.GameEvents)
 
 local ScreamService = {}
 
-local remote: RemoteEvent
+local remote: UnreliableRemoteEvent -- (cosmetic: a lost scream doesn't matter, 14 Oct performance brief)
 local last = {} -- [player] = os.clock() of the last scream
 
 function ScreamService.Scream(player: Player, big: boolean?)
@@ -37,7 +37,7 @@ end
 function ScreamService.Start()
 	remote = ReplicatedStorage.Remotes:FindFirstChild("Scream")
 	if not remote then
-		remote = Instance.new("RemoteEvent")
+		remote = Instance.new("UnreliableRemoteEvent")
 		remote.Name = "Scream"
 		remote.Parent = ReplicatedStorage.Remotes
 	end

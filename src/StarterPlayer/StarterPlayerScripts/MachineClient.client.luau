@@ -1566,15 +1566,64 @@ do
 		Main = { TextSize = "Popup", Color = Color3.fromRGB(255, 122, 72), Chip = 20, Width = 130 },
 		Helper = { TextSize = "Medium", Color = Color3.fromRGB(112, 224, 132), Chip = 14, Width = 100 },
 	}
-	local expPops = {} -- live popups, oldest first: { billboard }
-	local function dropExpPop(pop)
-		local index = table.find(expPops, pop)
+	-- (14 Oct performance brief, done 21 Oct) the popups are pooled: each style's billboards are built once and reused,
+	-- never an Instance.new per rep; a live one's tweens are cancelled when it goes back to the pool
+	local expPops = {} -- live popups, oldest first: entries from the pool
+	local pool = { Main = {}, Helper = {} } -- [style] = idle entries
+	local function buildExpPop(styleKey: string)
+		local style = EXP_POP[styleKey]
+		local billboard = New("BillboardGui", {
+			Size = UDim2.fromOffset(style.Width, Theme.TextSize[style.TextSize] + 10),
+			AlwaysOnTop = true,
+			LightInfluence = 0,
+			MaxDistance = 80,
+			ResetOnSpawn = false,
+			Enabled = false,
+			Parent = waitFor(player, "PlayerGui"),
+		})
+		local holder = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = billboard },
+			{ Theme.List(Enum.FillDirection.Horizontal, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+		local pop = New("UIScale", { Scale = 0.3, Parent = holder })
+		local chipStroke = New("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.45, Thickness = 1.5 })
+		local chip = New("Frame", {
+			LayoutOrder = 1,
+			Size = UDim2.fromOffset(style.Chip, style.Chip),
+			Parent = holder,
+		}, { Theme.Round("Round"), chipStroke })
+		local label = Theme.Text({
+			LayoutOrder = 2,
+			Text = "",
+			Font = "SemiBold",
+			TextSize = style.TextSize,
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.fromScale(0, 1),
+			Parent = holder,
+		})
+		local stroke = Theme.TextShadow(label, 0.4)
+		return { style = styleKey, billboard = billboard, pop = pop, chip = chip, chipStroke = chipStroke, label = label, stroke = stroke,
+			tweens = {}, token = 0 }
+	end
+	local function dropExpPop(entry)
+		local index = table.find(expPops, entry)
 		if index then table.remove(expPops, index) end
-		if pop.billboard then pop.billboard:Destroy() end
+		entry.token += 1
+		for _, tween in ipairs(entry.tweens) do tween:Cancel() end
+		table.clear(entry.tweens)
+		if entry.billboard.Parent then
+			entry.billboard.Enabled = false
+			table.insert(pool[entry.style], entry)
+		end
+	end
+	local function play(entry, object, info, goal)
+		local tween = TweenService:Create(object, info, goal)
+		table.insert(entry.tweens, tween)
+		tween:Play()
 	end
 	local function expPopup(torso: BasePart, muscleId: string, amount: number, main: boolean, gold: boolean, order: number)
 		while #expPops >= EXP_POP.Max do dropExpPop(expPops[1]) end
-		local style = if main then EXP_POP.Main else EXP_POP.Helper
+		local styleKey = if main then "Main" else "Helper"
+		local style = EXP_POP[styleKey]
+		local entry = table.remove(pool[styleKey]) or buildExpPop(styleKey)
 		local muscle = Muscles.ById[muscleId]
 		local group = HudIcons.MuscleGroups[muscle and muscle.group or ""]
 		-- where it starts and where it drifts: around the chest, a random way out (alternating sides)
@@ -1582,54 +1631,37 @@ do
 		local angle = math.rad(math.random(15, 70))
 		local start = Vector3.new(side * (torso.Size.X * 0.55 + math.random() * 0.3), torso.Size.Y * (0.1 + math.random() * 0.3), 0)
 		local drift = Vector3.new(side * math.cos(angle) * EXP_POP.Spread, math.sin(angle) * EXP_POP.Spread * 0.4 + EXP_POP.Rise, 0)
-		local billboard = New("BillboardGui", {
-			Adornee = torso,
-			Size = UDim2.fromOffset(style.Width, Theme.TextSize[style.TextSize] + 10),
-			StudsOffset = start,
-			AlwaysOnTop = true,
-			LightInfluence = 0,
-			MaxDistance = 80,
-			ResetOnSpawn = false,
-			Parent = waitFor(player, "PlayerGui"),
-		})
-		local holder = New("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = billboard },
-			{ Theme.List(Enum.FillDirection.Horizontal, "XS", Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
-		local pop = New("UIScale", { Scale = 0.3, Parent = holder })
-		local chip = New("Frame", {
-			LayoutOrder = 1,
-			Size = UDim2.fromOffset(style.Chip, style.Chip),
-			BackgroundColor3 = group and group.accent or HudIcons.DefaultAccent,
-			Parent = holder,
-		}, { Theme.Round("Round"), New("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.45, Thickness = 1.5 }) })
-		local label = Theme.Text({
-			LayoutOrder = 2,
-			Text = "+" .. Muscles.FormatExpShort(amount),
-			Font = "SemiBold",
-			TextSize = style.TextSize,
-			AutomaticSize = Enum.AutomaticSize.X,
-			Size = UDim2.fromScale(0, 1),
-			TextColor3 = if gold then Colors.Gold else style.Color,
-			Parent = holder,
-		})
-		local stroke = Theme.TextShadow(label, 0.4)
+		local billboard = entry.billboard
+		billboard.Adornee = torso
+		billboard.StudsOffset = start
+		entry.pop.Scale = 0.3
+		entry.chip.BackgroundColor3 = group and group.accent or HudIcons.DefaultAccent
+		entry.chip.BackgroundTransparency = 0
+		entry.chipStroke.Transparency = 0.45
+		entry.label.Text = "+" .. Muscles.FormatExpShort(amount)
+		entry.label.TextColor3 = if gold then Colors.Gold else style.Color
+		entry.label.TextTransparency = 0
+		entry.stroke.Transparency = 0.4
+		billboard.Enabled = true
 		-- Studio test hook: Workspace attribute "TestPopupSlow" = n makes them live n times longer (for screenshots)
 		local slow = if RunService:IsStudio() then workspace:GetAttribute("TestPopupSlow") else nil
 		local life = EXP_POP.Life * (if type(slow) == "number" and slow > 0 then slow else 1)
-		local entry = { billboard = billboard }
 		table.insert(expPops, entry)
+		local token = entry.token
 		-- pop in with a bounce, drift up and out, fade in the second half
-		Theme.Tween(pop, { Scale = 1 }, 0.18, Theme.Motion.Bounce)
-		TweenService:Create(billboard, TweenInfo.new(life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = start + drift }):Play()
+		play(entry, entry.pop, TweenInfo.new(0.18, Theme.Motion.Bounce, Theme.Motion.Direction), { Scale = 1 })
+		play(entry, billboard, TweenInfo.new(life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = start + drift })
 		task.delay(life * 0.45, function()
-			if not billboard.Parent then return end
+			if entry.token ~= token then return end
 			local fade = TweenInfo.new(life * 0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-			TweenService:Create(label, fade, { TextTransparency = 1 }):Play()
-			TweenService:Create(stroke, fade, { Transparency = 1 }):Play()
-			TweenService:Create(chip, fade, { BackgroundTransparency = 1 }):Play()
-			local chipStroke = chip:FindFirstChildOfClass("UIStroke")
-			if chipStroke then TweenService:Create(chipStroke, fade, { Transparency = 1 }):Play() end
+			play(entry, entry.label, fade, { TextTransparency = 1 })
+			play(entry, entry.stroke, fade, { Transparency = 1 })
+			play(entry, entry.chip, fade, { BackgroundTransparency = 1 })
+			play(entry, entry.chipStroke, fade, { Transparency = 1 })
 		end)
-		task.delay(life, function() dropExpPop(entry) end)
+		task.delay(life, function()
+			if entry.token == token then dropExpPop(entry) end
+		end)
 	end
 	-- All of one rep's popups (xp = Gains.PerRep: raw xp per muscle).
 	function ExpPops.Show(character, machine, xp, gold: boolean)

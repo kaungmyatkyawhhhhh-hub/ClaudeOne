@@ -113,9 +113,21 @@ local function othersSound(where): boolean
 	return false
 end
 
+-- (14 Oct performance brief, done 21 Oct) other players' 3D sounds (lift sounds, screams): only within OTHERS_RANGE studs
+-- of the camera, and at most OTHERS_MAX of them playing at once (a full gym never piles up dozens of clips)
+local OTHERS_RANGE, OTHERS_MAX = 50, 6
+local othersPlaying = 0
+
 -- where: a BasePart, an Attachment or a Vector3
 function Audio.PlayAt(name, where, opts)
-	if Audio.OthersMuted and typeof(where) == "Instance" and othersSound(where) then return nil end
+	local others = typeof(where) == "Instance" and othersSound(where)
+	if others and Audio.OthersMuted then return nil end
+	if others then
+		local camera = Workspace.CurrentCamera
+		local position = if where:IsA("Attachment") then where.WorldPosition elseif where:IsA("BasePart") then where.Position else nil
+		if othersPlaying >= OTHERS_MAX then return nil end
+		if camera and position and (camera.CFrame.Position - position).Magnitude > OTHERS_RANGE then return nil end
+	end
 	if typeof(where) == "Vector3" then
 		local attachment = Instance.new("Attachment")
 		attachment.WorldPosition = where
@@ -124,7 +136,19 @@ function Audio.PlayAt(name, where, opts)
 		where = attachment
 	end
 	if not where or not where.Parent then return nil end
-	return create(name, where, opts)
+	local sound = create(name, where, opts)
+	if sound and others then
+		othersPlaying += 1
+		local done = false
+		local function release()
+			if done then return end
+			done = true
+			othersPlaying -= 1
+		end
+		sound.Ended:Once(release)
+		sound.AncestryChanged:Once(release)
+	end
+	return sound
 end
 
 -- A looping sound on `where` (a BasePart or an Attachment) until Audio.StopLoop; nil when its slot is empty.

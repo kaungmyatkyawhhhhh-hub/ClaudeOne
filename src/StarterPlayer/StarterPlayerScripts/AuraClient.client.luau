@@ -172,7 +172,10 @@ RunService.Heartbeat:Connect(function(dt)
 	elapsed = 0
 	local data = ClientData.IsLoaded() and ClientData.Get() or nil
 	local settings = data and data.settings or {}
-	local othersOn = settings.otherAuras ~= "Off" and settings.lowGraphics ~= "On"
+	-- (14 Oct performance brief, done 21 Oct) also off while the player's Roblox graphics level is set low (1-3 of 10)
+	local quality = UserSettings().GameSettings.SavedQualityLevel
+	local lowQuality = quality ~= Enum.SavedQualitySetting.Automatic and quality.Value <= 3
+	local othersOn = settings.otherAuras ~= "Off" and settings.lowGraphics ~= "On" and not lowQuality
 	local camera = Workspace.CurrentCamera
 	local eye = camera and camera.CFrame.Position or Vector3.zero
 	for other, entry in pairs(handles) do
