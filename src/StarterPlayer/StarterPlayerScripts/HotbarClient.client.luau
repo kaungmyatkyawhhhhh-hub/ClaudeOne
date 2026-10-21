@@ -12,13 +12,15 @@
 --  * (prompt 28) Pinned to the bottom centre like Roblox's own toolbar (10 px above the safe area, never moving with the
 --    character); the stamina bar and the boost timers (HudBottom.SetLift) move up above it while it shows. STOP / EXERCISE
 --    (bottom left) and REP / PUMP (bottom right) stay in the corners. Hidden whenever HudBottom is (menus, full screens,
---    posing) and when it's empty.
+--    posing) and when it's empty. (Owner, 21 Oct) Hidden on a machine too, and whatever you hold is put away (the server
+--    does it as well); it shows again when you get off.
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Boosts = require(Shared.Config.Boosts)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
@@ -232,12 +234,24 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	if tool then toggle(tool) end
 end)
 
+-- on a machine (MachineState Enter / Exit): hidden, hands empty
+local onMachine = false
+Remotes.MachineState.OnClientEvent:Connect(function(state)
+	if state == "Enter" then
+		onMachine = true
+		local h = humanoid()
+		if h then h:UnequipTools() end
+	elseif state == "Exit" then
+		onMachine = false
+	end
+end)
+
 -- shown with HudBottom (same menus / full screens / posing), only when there is something to hold
 task.spawn(function()
 	local playerGui = player:WaitForChild("PlayerGui")
 	while true do
 		local hud = playerGui:FindFirstChild("HudBottom")
-		gui.Enabled = #order > 0 and hud ~= nil and hud.Enabled
+		gui.Enabled = #order > 0 and hud ~= nil and hud.Enabled and not onMachine
 		-- (prompt 28) the stamina bar and the boost icons sit above the slots while they show
 		if gui.Enabled then fitRow() end
 		HudBottom.SetLift(if gui.Enabled then math.ceil((SLOT + LIFT) * fit.Scale) + 6 else 0)

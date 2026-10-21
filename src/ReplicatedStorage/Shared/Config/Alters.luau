@@ -35,16 +35,21 @@ Alters.Tiers = {
 	{ id = "Legend", name = "Legend" },
 }
 
+-- (prompt 38, 21 Oct) Shredded and Peak: the maps repeated 2x2 inside the image, bumps 1.5x / 2x stronger (Peak 2x color
+-- contrast); Vascular keeps its scale (thin veins) with 2.5x bumps and 3x color contrast
+-- (Downloads\gym_arc_alters\tier1_human_tiled): the body's UVs spread one texture over 10-14 studs, so the striations and
+-- veins came out about twice too big and soft. Old ids: Shredded 119513312479015 / 103766752198769 / 71101897859940,
+-- Vascular 103109392852988 / 72861088552312 / 121431954405592, Peak 128233798561844 / 127999198166079 / 89748828998136.
 -- textures: rbxassetid ids of the color / normal / roughness maps (uploaded 21 Oct); placeholder = the color shown for an
 -- alter that has no textures yet (the Alters tab's "Coming soon" card).
 local function t(color, normal, roughness) return { color = color, normal = normal, roughness = roughness } end
 Alters.List = {
 	-- Tier 1: Human
 	{ id = "Pumped", name = "Pumped", tier = 1, textures = t("rbxassetid://118652537566937", "rbxassetid://77670612429230", "rbxassetid://109400263905498") },
-	{ id = "Shredded", name = "Shredded", tier = 1, textures = t("rbxassetid://119513312479015", "rbxassetid://103766752198769", "rbxassetid://71101897859940") },
+	{ id = "Shredded", name = "Shredded", tier = 1, textures = t("rbxassetid://80449661881061", "rbxassetid://112368353705678", "rbxassetid://135284888816077") },
 	{ id = "Tanned", name = "Tanned", tier = 1, textures = t("rbxassetid://124927923688709", "rbxassetid://95570134134448", "rbxassetid://74028606958342") },
-	{ id = "Vascular", name = "Vascular", tier = 1, textures = t("rbxassetid://103109392852988", "rbxassetid://72861088552312", "rbxassetid://121431954405592") },
-	{ id = "Peak", name = "Peak", tier = 1, textures = t("rbxassetid://128233798561844", "rbxassetid://127999198166079", "rbxassetid://89748828998136") },
+	{ id = "Vascular", name = "Vascular", tier = 1, textures = t("rbxassetid://138226447249744", "rbxassetid://134369961190395", "rbxassetid://79671580983023") },
+	{ id = "Peak", name = "Peak", tier = 1, textures = t("rbxassetid://88467569632374", "rbxassetid://74285776621086", "rbxassetid://122443770392636") },
 	-- Tier 2: Stone
 	{ id = "Clay", name = "Clay", tier = 2, placeholder = "#A0664A" },
 	{ id = "Sandstone", name = "Sandstone", tier = 2, placeholder = "#C9A46B" },

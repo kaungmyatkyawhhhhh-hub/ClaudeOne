@@ -135,6 +135,9 @@ local function startDrink(player, tool: Tool, id: string)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not humanoid or humanoid.Health <= 0 or tool.Parent ~= character or count(player, id) <= 0 then return end
+	-- (not on a machine: the lifter's root is anchored there)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root and root.Anchored then return end
 	drinkStart[player] = clock
 	local token = {}
 	drinking[player] = { token = token, tool = tool }

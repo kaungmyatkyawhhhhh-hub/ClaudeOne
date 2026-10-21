@@ -177,6 +177,8 @@ function MuscleRig.new(model: Model, opts: any?)
 	folder.Name = "MuscleMeshes"
 	folder.Parent = model
 	self.folder = folder
+	-- (prompt 38) a new piece (a stage swap, a rebuilt mesh): the skin pass puts the skin (or the Body Alter's maps) on it
+	folder.ChildAdded:Connect(function() self.skinDirty = true end)
 	for _, unit in ipairs(MuscleMeshes.Units) do
 		local state = { unit = unit, groups = {}, wanted = false, built = false, building = false }
 		for _, group in ipairs(unit.groups) do table.insert(state.groups, { def = group }) end
@@ -245,11 +247,25 @@ local function skinKey(self, index: number): number | string
 	return index
 end
 
--- every stage's textures load at the start, so a stage change never shows a blank (white) skin while its maps load
+-- every stage's textures load at the start, so a stage change never shows a blank (white) skin while its maps load.
+-- (prompt 38: PreloadAsync on the SurfaceAppearances themselves loads nothing, so a first-time Body Alter showed only its
+-- tint for a few seconds; each map is preloaded through an image instead)
 task.spawn(function()
 	local folder = ReplicatedStorage:WaitForChild("SkinStages", 30)
 	if folder and RunService:IsClient() then
-		pcall(function() game:GetService("ContentProvider"):PreloadAsync(folder:GetChildren()) end)
+		local images = {}
+		for _, sa in ipairs(folder:GetChildren()) do
+			if sa:IsA("SurfaceAppearance") then
+				for _, map in ipairs({ sa.ColorMap, sa.NormalMap, sa.RoughnessMap }) do
+					if map ~= "" then
+						local image = Instance.new("ImageLabel")
+						image.Image = map
+						table.insert(images, image)
+					end
+				end
+			end
+		end
+		pcall(function() game:GetService("ContentProvider"):PreloadAsync(images) end)
 	end
 end)
 
@@ -1642,9 +1658,14 @@ local function step(self, dt: number)
 		self.skinCheckedAt = now
 		local forced = self.skinStage == nil -- (cleared: a full pass even when the skin itself didn't change)
 		local index = skinKey(self, SkinStages.Pick(overallLook(self), self.skinStage))
-		if forced or index ~= self.skinKey or colorsOf(self) ~= self.skinColor or self.skinParts ~= #self.folder:GetChildren() then
+		-- (prompt 38: also on any new piece and every 2 s; a swapped mesh with the same piece count kept a plain skin, so a
+		-- worn alter showed only its color there. setSkin keeps a piece that already wears the right skin, so this is cheap.)
+		if forced or self.skinDirty or index ~= self.skinKey or colorsOf(self) ~= self.skinColor or self.skinParts ~= #self.folder:GetChildren()
+			or now - (self.skinFullAt or 0) > 2 then
 			skinPass(self)
 			self.skinParts = #self.folder:GetChildren()
+			self.skinDirty = false
+			self.skinFullAt = now
 		end
 	end
 	-- the game's gym shorts on the thighs, unless the character wears its own Pants (or layered clothing on the legs)

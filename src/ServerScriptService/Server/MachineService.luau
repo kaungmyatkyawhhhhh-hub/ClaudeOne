@@ -473,6 +473,11 @@ local function enter(player, model)
 	local prompt = getPrompt(model)
 	if prompt then prompt.Enabled = false end
 
+	-- (owner, 21 Oct) on a machine nobody holds an item: put away now, and anything taken out meanwhile goes back
+	humanoid:UnequipTools()
+	table.insert(session.connections, character.ChildAdded:Connect(function(child)
+		if child:IsA("Tool") then task.defer(function() if humanoid.Parent then humanoid:UnequipTools() end end) end
+	end))
 	humanoid.PlatformStand = true
 	root.Anchored = true
 	character:PivotTo(bodyCFrame(character, humanoid, root, model, Poses[machine.pose]))
