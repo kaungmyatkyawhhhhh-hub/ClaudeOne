@@ -222,8 +222,8 @@ function MachineHud.Build()
 	local repRow = frame({ Name = "Content", Size = UDim2.new(1, 0, 1 - Theme.LipHeight, 0), Parent = rep }, {
 		Theme.List(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
-	Kit.Text({ Name = "Label", LayoutOrder = 1, Text = "REP", Font = "Title", TextSize = 24, Size = UDim2.fromOffset(0, 30), AutomaticSize = Enum.AutomaticSize.X, Parent = repRow })
-	hud.repsLabel = Kit.Text({ Name = "Count", LayoutOrder = 2, Text = "x0", Font = "Number", TextSize = 14, Size = UDim2.fromOffset(0, 20),
+	Kit.Text({ Name = "Label", LayoutOrder = 1, Text = "REP", Font = "Chunky", TextSize = 30, Size = UDim2.fromOffset(0, 34), AutomaticSize = Enum.AutomaticSize.X, Parent = repRow })
+	hud.repsLabel = Kit.Text({ Name = "Count", LayoutOrder = 2, Text = "x0", Font = "Chunky", TextSize = 18, Size = UDim2.fromOffset(0, 22),
 		AutomaticSize = Enum.AutomaticSize.X, Parent = repRow })
 	hud.repsScale = New("UIScale", { Parent = hud.repsLabel })
 	hud.repButton = rep

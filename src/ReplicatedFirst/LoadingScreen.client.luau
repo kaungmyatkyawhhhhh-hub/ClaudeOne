@@ -40,6 +40,8 @@ local LOOK = {
 	Dot = Color3.fromHex("#3A363B"),
 	Display = Font.new(MONTSERRAT, Enum.FontWeight.Heavy, Enum.FontStyle.Italic), -- UIFonts.Display
 	Body = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
+	Chunky = Font.fromEnum(Enum.Font.LuckiestGuy), -- UIFonts.Chunky (prompt 40: the loading words, mockup real/loading)
+	Hex = "rbxassetid://133971863105248", -- Theme.HexImage
 	Art = "rbxassetid://124549460345839", -- Config/UI.MenuArt (owner, 15 Oct)
 	Logo = "rbxassetid://86034269506160", -- Config/UI.Logo3D
 	Glow = "rbxassetid://108461610476976", -- Config/UI.SoftGlow
@@ -58,7 +60,7 @@ local TIPS = {
 	"Weak muscles grow fastest. Train the group that needs work.",
 }
 local BASE = Vector2.new(844, 390) -- the mockups' phone screen (Kit.Base)
-local BAR_W = 320 -- the tip tile and the bar along the bottom left (mockup px): left of the character
+local BAR_W = 320 -- (no longer used for the bar: prompt 40 made it full width)
 
 local function new(class, props, children)
 	local instance = Instance.new(class)
@@ -74,9 +76,15 @@ local function text(props)
 	props.FontFace = props.FontFace or LOOK.Display
 	props.TextColor3 = props.TextColor3 or LOOK.Text
 	local label = new("TextLabel", props)
-	-- the kit's soft dark outline on text
-	new("UIStroke", { Color = LOOK.Outline, Thickness = 1, Transparency = 0.55, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
+	-- the kit's soft dark outline on text (chunky words: a solid one)
+	local chunky = props.FontFace == LOOK.Chunky
+	new("UIStroke", { Color = LOOK.Outline, Thickness = if chunky then 1.6 else 1, Transparency = if chunky then 0 else 0.55,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, Parent = label })
 	return label
+end
+local function hex(parent, tile)
+	new("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = LOOK.Hex, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(tile, tile * 0.87),
+		ImageTransparency = 0.88, Size = UDim2.fromScale(1, 1), Parent = parent }, { new("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 end
 -- a graphite surface (top -> bottom gradient, a dark edge, the light hairline along the top)
 local function graphite(frame, top, bottom, radius)
@@ -171,35 +179,42 @@ Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(rescale)
 watchCamera()
 
 -- the tip: a graphite tile with a small gold TIP tag
-local tipTile = graphite(new("Frame", { Name = "TipTile", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -78), Size = UDim2.fromOffset(BAR_W, 0),
+local tipTile = graphite(new("Frame", { Name = "TipTile", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -78), Size = UDim2.new(0.46, 0, 0, 0),
 	AutomaticSize = Enum.AutomaticSize.Y, Parent = root }), LOOK.PanelTop, LOOK.PanelBottom, 10)
+-- (prompt 40) the hex mesh and a thin gold edge
+new("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = LOOK.Hex, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(26, 23),
+	ImageTransparency = 0.88, Size = UDim2.fromScale(1, 1), Parent = tipTile }, { new("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+new("UIStroke", { Name = "GoldEdge", Color = LOOK.Gold, Thickness = 1.5, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tipTile })
 -- (the padding sits on an inner frame, so the tile's hairline stays on its top edge)
 local tipBody = new("Frame", { Name = "Body", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = tipTile }, {
 	new("UIPadding", { PaddingTop = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 14) }),
 })
-local tag = new("Frame", { Name = "Tag", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromOffset(32, 16), Parent = tipBody }, {
-	new("UICorner", { CornerRadius = UDim.new(0, 4) }),
+local tag = new("Frame", { Name = "Tag", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromOffset(36, 18), Parent = tipBody }, {
+	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	new("UIStroke", { Color = LOOK.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	new("UIGradient", { Rotation = 90, Color = GOLD }),
 })
-new("TextLabel", { Name = "Text", BackgroundTransparency = 1, Text = "TIP", FontFace = LOOK.Display, TextSize = 11, TextColor3 = LOOK.Ink,
+new("TextLabel", { Name = "Text", BackgroundTransparency = 1, Text = "TIP", FontFace = LOOK.Chunky, TextSize = 12, TextColor3 = LOOK.Ink,
 	Size = UDim2.fromScale(1, 1), Parent = tag })
-local tip = text({ Name = "Tip", Text = "", FontFace = LOOK.Body, TextSize = 13, TextWrapped = true, Position = UDim2.fromOffset(42, 0),
-	Size = UDim2.new(1, -42, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left,
+local tip = text({ Name = "Tip", Text = "", FontFace = LOOK.Chunky, TextSize = 13, TextWrapped = true, Position = UDim2.fromOffset(46, 1),
+	Size = UDim2.new(1, -46, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.1, Parent = tipBody })
 
 -- the step and the percent, the bar, the page dots
-local status = text({ Name = "Status", Text = "LOADING THE GAME", TextSize = 13, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -52),
-	Size = UDim2.fromOffset(BAR_W - 70, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
-local percent = text({ Name = "Percent", Text = "0%", TextSize = 19, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(0, 24 + BAR_W, 1, -50),
+-- (prompt 40, mockup real/loading) the words chunky, the bar the full width under them
+local status = text({ Name = "Status", Text = "LOADING THE GAME", FontFace = LOOK.Chunky, TextSize = 16, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -52),
+	Size = UDim2.new(1, -140, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
+local percent = text({ Name = "Percent", Text = "0%", FontFace = LOOK.Chunky, TextSize = 20, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -50),
 	Size = UDim2.fromOffset(70, 22), TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
 new("UIGradient", { Rotation = 90, Color = GOLD, Parent = percent })
-local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -32), Size = UDim2.fromOffset(BAR_W, 14),
+local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -30), Size = UDim2.new(1, -48, 0, 16),
 	BackgroundColor3 = LOOK.Well, BorderSizePixel = 0, Parent = root }, {
 	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
-	new("UIStroke", { Color = Color3.fromHex("#2A262B"), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	new("UIStroke", { Color = LOOK.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	new("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2) }),
 })
 -- metallic red: a bright band near the top, a dark bottom
+hex(bar, 14)
 local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = bar }, {
 	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({
@@ -230,7 +245,7 @@ end
 local skip = new("TextButton", { Name = "Skip", Text = "", AutoButtonColor = true, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 14),
 	Size = UDim2.fromOffset(64, 34), Visible = false, Parent = root })
 graphite(skip, LOOK.QuietTop, LOOK.QuietBottom, 9)
-text({ Name = "Label", Text = "SKIP", TextSize = 14, Size = UDim2.fromScale(1, 1), Parent = skip })
+text({ Name = "Label", Text = "SKIP", FontFace = LOOK.Chunky, TextSize = 16, Size = UDim2.fromScale(1, 1), Parent = skip })
 
 ------------------------------------------------------------------------
 -- Progress
