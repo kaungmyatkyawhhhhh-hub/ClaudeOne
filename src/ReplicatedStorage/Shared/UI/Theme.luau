@@ -78,8 +78,9 @@ Theme.Gradients = {
 	Quiet = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
 	Flat = { Color3.fromHex("#1C1A1D"), Color3.fromHex("#1C1A1D") },
 	Disabled = { Color3.fromHex("#1A181B"), Color3.fromHex("#1A181B") },
+	-- (prompt 37 / 40: the ChunkyButton's green: EQUIP, CLAIM, WEAR, USE, KEEP, OWNED)
+	Green = { Color3.fromHex("#7BE38F"), Color3.fromHex("#23A047") },
 	-- (older names some screens still pass; they all draw as a quiet or CTA button)
-	Green = { Color3.fromHex("#FFE9A6"), Color3.fromHex("#D69B22") },
 	Blue = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
 	Gray = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
 	Purple = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
@@ -91,12 +92,21 @@ Theme.Gradients = {
 -- glow ring (buttons that come in rows: EQUIP, buy tiles, choices); Tab = the active tab; Flat = an inactive tab;
 -- Disabled; everything else (Gray, Secondary, Dark, Blue, Purple, Orange, Teal, White) = a quiet dark button.
 Theme.ButtonGradients = {
-	Primary = "Red", Main = "Red", Red = "Red", Gold = "Gold", Green = "Gold", Flat = "Flat", Disabled = "Disabled",
+	Primary = "Red", Main = "Red", Red = "Red", Gold = "Gold", Green = "Green", Flat = "Flat", Disabled = "Disabled",
 	Tab = "Gold", -- the active tab: the gold fill only (no glow ring, no gloss / shine; owner, 14 Oct)
 	Secondary = "Quiet", Gray = "Quiet", Dark = "Quiet", Blue = "Quiet", Purple = "Quiet", Orange = "Quiet", Teal = "Quiet",
 	White = "Quiet", Quiet = "Quiet",
 }
-Theme.CTA = { Red = Color3.fromHex("#FF4A52"), Gold = Color3.fromHex("#FFD36B") } -- each CTA's glow color
+Theme.CTA = { Red = Color3.fromHex("#FF4A52"), Gold = Color3.fromHex("#FFD36B"), Green = Color3.fromHex("#5BE07A") } -- each CTA's glow color
+
+-- (prompt 37 / 40, 22 Oct) the ONE rarity colour table: text, outlines and tile tints everywhere (Theme.Rarity below is
+-- the older bumper-plate table some screens still use for plates)
+Theme.RarityColor = {
+	Common = Color3.fromHex("#AAAAB2"), Uncommon = Color3.fromHex("#50D264"), Rare = Color3.fromHex("#468CFF"),
+	Epic = Color3.fromHex("#AA50FF"), Legendary = Color3.fromHex("#F5BE28"), Mythic = Color3.fromHex("#FF5AC8"),
+	Eternal = Color3.fromHex("#F0F0FF"), Secret = Color3.fromHex("#8E8E9A"),
+}
+Theme.HexImage = "rbxassetid://133971863105248" -- (prompt 39b) the faint hex mesh, tiled
 
 -- Real bumper plate colors (plate fill + darker rim). Used for grades, rarity and plates.
 local function plate(hex, textOnPlate)
@@ -138,6 +148,7 @@ Theme.Fonts.Medium = UIFonts.Display
 Theme.Fonts.Heading = UIFonts.Display
 Theme.Fonts.Display = UIFonts.Display
 Theme.Fonts.Label = Theme.Fonts.Regular
+Theme.Fonts.Chunky = UIFonts.Chunky -- (prompt 40: buttons, numbers, names, labels)
 Theme.Fonts.Small = Theme.Fonts.Regular
 
 Theme.TileFont = UIFonts.Display
@@ -358,6 +369,12 @@ function Theme.Text(props)
 	if stroke ~= false and not BODY_FONTS[fontKey] then
 		local outline = Theme.TextShadow(label)
 		outline.Thickness = Theme.StrokeFor(props.TextSize)
+		-- (prompt 40) chunky words wear a solid dark stroke (mockups 05 / 06)
+		if props.FontFace == Theme.Fonts.Chunky then
+			outline.Color = Theme.Colors.Outline
+			outline.Transparency = 0
+			outline.Thickness = math.max(1.5, props.TextSize / 11)
+		end
 	end
 	if upper == true then Theme.Uppercase(label) end
 	if upper == false then label:SetAttribute("Upper", true) end -- (so a button can't make it upper either)
@@ -530,9 +547,11 @@ local PANEL_SHEEN = sequence({ { 0, "#252226" }, { 0.5, "#18161A" }, { 1, "#0D0C
 local CARD_SHEEN = sequence({ { 0, "#232023" }, { 0.9, "#141215" }, { 0.905, "#0E0C0F" }, { 1, "#0E0C0F" } })
 local PILL_SHEEN = sequence({ { 0, "#211E22" }, { 1, "#121013" } })
 Theme.Surfaces = {
-	panel = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline },
-	hud_box = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 12, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline },
-	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88 },
+	panel = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
+		hex = 0.95 },
+	hud_box = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 12, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
+		hex = 0.86, goldLine = 0.3 }, -- (prompt 40: the HUD cards, mockup 05: hex mesh + a gold inner line)
+	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88, hex = 0.88 },
 	card_selected = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.72 },
 	card_gold = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.6 },
 	well = { color = Theme.Colors.Well, alpha = 0, corner = 8, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.2 },
@@ -650,6 +669,23 @@ local function setGlow(gui, color: Color3?, alpha: number?, corner: number)
 end
 Theme.SetGlow = setGlow
 
+-- (prompt 40) the faint hex mesh inside a gui (alpha = its ImageTransparency, nil = none)
+function Theme.SetHex(gui, alpha: number?, radius: number)
+	local depth = depthOf(gui)
+	local hex = depth:FindFirstChild("Hex")
+	if alpha and not hex then
+		hex = Theme.New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile,
+			TileSize = UDim2.fromOffset(30, 26), ZIndex = gui.ZIndex, Parent = depth }, { Theme.New("UICorner", { Name = "Corner" }) })
+		hex:SetAttribute("FitExtra", -2)
+		fitLayer(gui, hex)
+	end
+	if hex then
+		hex.Visible = alpha ~= nil
+		hex.ImageTransparency = alpha or 1
+		hex.Corner.CornerRadius = UDim.new(0, math.max(radius - 1, 0))
+	end
+end
+
 function Theme.SetPiece(gui, name)
 	local surface = Theme.Surfaces[name] or Theme.Surfaces.card
 	local sheen = gui:FindFirstChild("Sheen")
@@ -674,6 +710,23 @@ function Theme.SetPiece(gui, name)
 	local radius = surface.corner >= 999 and 12 or surface.corner
 	setHairline(gui, surface.hairline, radius)
 	setGlow(gui, surface.glow and Theme.Colors.Gold or nil, surface.glow, radius)
+	-- (prompt 40) the hex mesh and the gold inner line (mockups 05 / 06)
+	local depth = depthOf(gui)
+	Theme.SetHex(gui, surface.hex, radius)
+	local inner = depth:FindFirstChild("GoldLine")
+	if surface.goldLine and not inner then
+		inner = Theme.New("Frame", { Name = "GoldLine", BackgroundTransparency = 1, ZIndex = gui.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { Name = "Corner" }),
+			Theme.New("UIStroke", { Name = "Stroke", Color = Theme.Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		inner:SetAttribute("FitExtra", -6)
+		fitLayer(gui, inner)
+	end
+	if inner then
+		inner.Visible = surface.goldLine ~= nil
+		inner.Stroke.Transparency = surface.goldLine or 1
+		inner.Corner.CornerRadius = UDim.new(0, math.max(radius - 3, 0))
+	end
 	gui:SetAttribute("Piece", name)
 	return gui
 end
@@ -697,7 +750,7 @@ end
 -- Labels: the display font, UPPERCASE; dark ink on gold, white on red / quiet. Theme.SetButtonStyle switches it.
 ------------------------------------------------------------------------
 Theme.ButtonText = { Gold = Theme.Colors.Ink, Green = Theme.Colors.Ink, Flat = Theme.Colors.Muted, Disabled = Theme.Colors.Faint }
-Theme.LipHeight = 0.14 -- share of the button's height that is the darker bottom lip
+Theme.LipHeight = 0.18 -- share of the button's height that is the darker bottom lip (prompt 40: the ChunkyButton's thick edge)
 
 local function lookOf(style)
 	return Theme.ButtonGradients[style] or "Quiet"
@@ -718,7 +771,7 @@ local function gradientFor(style)
 	local g = Theme.Gradients[look]
 	local top, bottom = g[1], g[2]
 	if look == "Flat" or look == "Disabled" then return ColorSequence.new(top) end
-	local lip = bottom:Lerp(Color3.new(0, 0, 0), 0.45)
+	local lip = bottom:Lerp(Color3.new(0, 0, 0), 0.5)
 	local edge = 1 - Theme.LipHeight
 	return ColorSequence.new({
 		ColorSequenceKeypoint.new(0, top),
@@ -759,7 +812,7 @@ end
 function Theme.SetButtonStyle(button, style)
 	button:SetAttribute("Style", style)
 	local look = lookOf(style)
-	local cta = (look == "Red" or look == "Gold") and style ~= "Tab"
+	local cta = (look == "Red" or look == "Gold" or look == "Green") and style ~= "Tab"
 	button.BackgroundColor3 = Color3.new(1, 1, 1)
 	button.BackgroundTransparency = 0
 	if button:IsA("ImageButton") or button:IsA("ImageLabel") then button.Image = "" end
@@ -769,10 +822,10 @@ function Theme.SetButtonStyle(button, style)
 	corner.CornerRadius = Theme.Corner.Button
 	local stroke = outlineOf(button)
 	if cta then
-		-- the dark edge, and the soft colored glow just outside it
-		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.2, true
-		-- (the colored ring only on the main CTAs: "Green", the gold of repeated buttons such as EQUIP / BUY tiles, has none)
-		setGlow(button, if style ~= "Green" then Theme.CTA[look] else nil, 0.55, 10)
+		-- (prompt 40, the ChunkyButton) a 3 px near-black outline; the soft glow in its colour only on a screen's main
+		-- button (attribute "Glow" = true; the pulsing CTAs set it)
+		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 3, 0, true
+		setGlow(button, if button:GetAttribute("Glow") == true then Theme.CTA[look] else nil, 0.55, 10)
 	elseif look == "Flat" or look == "Disabled" then
 		stroke.Enabled = false
 		setGlow(button, nil, nil, 10)
@@ -780,19 +833,33 @@ function Theme.SetButtonStyle(button, style)
 		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.2, true
 		setGlow(button, nil, nil, 10)
 	else
-		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, 1.5, 0.25, true
+		-- (prompt 40) Dark: graphite with a grey outline
+		stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Color3.fromHex("#4E4A52"), 2, 0.1, true
 		setGlow(button, nil, nil, 10)
 	end
-	setHairline(button, (look == "Quiet") and 0.84 or nil, 10)
+	setHairline(button, (look == "Quiet") and 0.8 or nil, 10)
+	Theme.SetHex(button, if look == "Quiet" then 0.88 else nil, 10) -- (prompt 40: dark buttons carry the hex mesh)
 	ctaLayers(button, cta)
 	local color = Theme.ButtonText[style] or Theme.ButtonText[look] or Theme.Colors.Text
 	if style == "Tab" then color = Theme.Colors.Ink end
+	-- (prompt 40) a ChunkyButton's words: LuckiestGuy, white, a dark stroke (tabs keep the italic font: TabButton)
+	local chunky = not button:GetAttribute("TabButton") and look ~= "Flat"
+	if chunky then color = if look == "Disabled" then Theme.Colors.Faint else Theme.Colors.Text end
 	for _, item in ipairs(button:GetDescendants()) do
 		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then
 			item.TextColor3 = color
 			item.TextYAlignment = Enum.TextYAlignment.Center -- (centred in the button's padded box, above the lip)
-			local outline = item:FindFirstChild("TextStroke")
-			if outline then outline.Transparency = (look == "Gold") and 1 or Theme.Alpha.TextShadow end
+			local display = item.FontFace.Family == Theme.Fonts.Display.Family and item.FontFace.Weight == Theme.Fonts.Display.Weight
+			if chunky and (display or item.FontFace.Family == UIFonts.Chunky.Family) and not item:GetAttribute("KeepFont") then
+				item.FontFace = UIFonts.Chunky
+				local outline = Theme.TextShadow(item)
+				outline.Color = Theme.Colors.Outline
+				outline.Transparency = 0
+				outline.Thickness = math.max(1.5, item.TextSize / 11)
+			else
+				local outline = item:FindFirstChild("TextStroke")
+				if outline then outline.Transparency = (look == "Gold") and 1 or Theme.Alpha.TextShadow end
+			end
 		end
 		if item:IsA("ImageLabel") and item.Name == "Icon" and not item:GetAttribute("KeepColor") then item.ImageColor3 = color end
 	end
@@ -854,6 +921,11 @@ end
 function Theme.Pulse(button, alive: (() -> boolean)?)
 	if button:GetAttribute("Pulsing") then return end
 	button:SetAttribute("Pulsing", true)
+	-- (prompt 40) the pulsing button is the screen's main one: it gets the soft glow in its colour
+	if button:GetAttribute("Glow") ~= true and button:GetAttribute("Style") then
+		button:SetAttribute("Glow", true)
+		Theme.SetButtonStyle(button, button:GetAttribute("Style"))
+	end
 	local pulse = Theme.ButtonScale(button).pulse
 	task.spawn(function()
 		while button.Parent and (not alive or alive()) do

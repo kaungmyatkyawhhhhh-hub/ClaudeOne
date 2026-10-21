@@ -140,12 +140,17 @@ end
 -- Text
 ------------------------------------------------------------------------
 local FONTS = {
-	Title = "SemiBold", Number = "SemiBold", Body = "Regular", Strong = "Strong", Label = "SemiBold",
+	-- (prompt 40, the 2-font rule: numbers and labels are LuckiestGuy, "Chunky"; titles / tabs / body stay Montserrat)
+	Title = "SemiBold", Number = "Chunky", Body = "Regular", Strong = "Strong", Label = "Chunky", Chunky = "Chunky",
 }
 -- props.Font: Title / Number / Label (the heavy italic display font with a soft dark outline; Label is small and gray),
 -- Body (Montserrat Medium), Strong (Montserrat Bold). props.TextSize: mockup px. props.Upper = true makes it UPPERCASE.
 function Kit.Text(props)
 	local kind = props.Font or "Body"
+	-- (prompt 40, the 2-font rule) small "Title" text (tile names, labels, DAY 1, card titles: 16 px and under) is chunky;
+	-- the big screen titles and headers stay the italic font
+	if kind == "Title" and type(props.TextSize) == "number" and props.TextSize <= 16 and not props.KeepItalic then kind = "Chunky" end
+	props.KeepItalic = nil
 	props.Font = FONTS[kind] or kind
 	if kind == "Label" then
 		props.TextColor3 = props.TextColor3 or Colors.Muted
@@ -270,9 +275,11 @@ function Kit.Button(style: string, text: string, props: { [string]: any }?, opts
 		icon.LayoutOrder = 1
 		icon.Parent = button
 	end
-	local label = Kit.Text({ Name = "Label", LayoutOrder = 2, Text = text, Font = "Title", TextSize = textSize,
+	local label = Kit.Text({ Name = "Label", LayoutOrder = 2, Text = text, Font = "Title", TextSize = textSize, KeepItalic = opts.tab, -- (tabs stay italic)
 		Upper = opts.upper ~= false and true or false,
 		Size = UDim2.fromOffset(0, height - lip), AutomaticSize = Enum.AutomaticSize.X, Parent = button })
+	-- (prompt 40) tabs keep the italic font; every other button gets the chunky one (Theme.SetButtonStyle)
+	if opts.tab then button:SetAttribute("TabButton", true) end
 	Theme.SetButtonStyle(button, style)
 	return button, label
 end
@@ -333,17 +340,23 @@ function Kit.Bar(color: Color3, props: { [string]: any }?, opts: { [string]: any
 	props = props or {}
 	opts = opts or {}
 	props.Size = props.Size or UDim2.new(1, 0, 0, 14)
-	props.BackgroundColor3 = Colors.Well
+	props.BackgroundColor3 = Color3.fromHex("#0C0B0D")
 	props.BackgroundTransparency = 0
+	-- (prompt 37 / 40, the ChunkyBar) a dark hex track, a dark outline, the fill a gradient with a top highlight; the fill is
+	-- the real share (empty = no fill)
 	local track = New("Frame", props, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = opts.outline or 2, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = opts.outline or 2, Transparency = 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		New("UIPadding", { Name = "Inset", PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }),
+		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(16, 14),
+			ImageTransparency = 0.9, Size = UDim2.fromScale(1, 1) }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
 	})
 	local fill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), Parent = track }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 		New("UIGradient", { Name = "Gloss", Rotation = 90, Color = Kit.Metal(color) }),
 	})
+	New("Frame", { Name = "Highlight", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.6, Position = UDim2.new(0, 3, 0, 1),
+		Size = UDim2.new(1, -6, 0.3, 0), ZIndex = fill.ZIndex, Parent = fill }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 	local label
 	if opts.text then
 		label = Kit.Text({ Name = "Text", Text = "", Font = "Number", TextSize = opts.textSize or math.max(10, math.floor(props.Size.Y.Offset * 0.72)),
@@ -410,6 +423,122 @@ function Kit.Tag(text: string, color: Color3, props: { [string]: any }?)
 	Kit.Text({ Name = "Text", Text = text, Font = "Title", TextSize = math.floor(props.Size.Y.Offset * 0.66), TextColor3 = color,
 		Size = UDim2.new(0, 0, 1, 0), AutomaticSize = Enum.AutomaticSize.X, Parent = tag })
 	return tag
+end
+
+-- (prompt 37 / 40) RewardTile: the trainer tile formula. A tile tinted in the item's colour with the hex mesh, a 4 px
+-- outline in that colour + a 2 px dark inner ring + a soft outer glow, the art BIG, the name in white stroked chunky
+-- text, an optional small line (rarity / requirement) in the colour, and a chunky pill at the bottom (price / state).
+-- Returns tile (a button), api: { art, name, sub, pill, pillText, check, SetColor(c), SetState(state, text?), SetPill(text, color?) }
+-- States: "normal", "equipped" (gold glow + gold check), "owned" (dimmed ~50%, a small green OWNED pill + check),
+-- "locked" (dark, the art a black silhouette with a rim in the colour, the requirement as a dark pill).
+function Kit.RewardTile(color: Color3, props: { [string]: any }?)
+	props = props or {}
+	props.BackgroundColor3 = Color3.new(1, 1, 1)
+	props.BackgroundTransparency = 0
+	props.AutoButtonColor = false
+	props.Text = ""
+	local tile = New("TextButton", props, {
+		New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+		New("UIStroke", { Name = "Border", Thickness = 3.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Name = "Tint", Rotation = 90 }),
+	})
+	local ring = New("Frame", { Name = "Ring", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, -4, 1, -4), Parent = tile }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 2, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	local _ = ring
+	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(30, 26),
+		ImageTransparency = 0.82, Size = UDim2.fromScale(1, 1), Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+	local glow = New("Frame", { Name = "Glow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, 8, 1, 8), Parent = tile }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 15) }),
+		New("UIStroke", { Name = "Stroke", Thickness = 4, Transparency = 0.7, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4),
+		Size = UDim2.new(0.82, 0, 0.6, 0), ScaleType = Enum.ScaleType.Fit, ZIndex = 2, Parent = tile })
+	local name = Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 15, Upper = true, AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -30), Size = UDim2.new(1, -10, 0, 17), ZIndex = 3, Parent = tile })
+	Kit.Fit(name, 15, 11)
+	local sub = Kit.Text({ Name = "Sub", Text = "", Font = "Chunky", TextSize = 11, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -46),
+		Size = UDim2.new(1, -10, 0, 12), Visible = false, ZIndex = 3, Parent = tile })
+	local pill = New("Frame", { Name = "Pill", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(0.8, 0, 0, 22),
+		BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 3, Parent = tile }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 7) }),
+		New("UIStroke", { Name = "Edge", Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Name = "Gloss", Rotation = 90 }),
+	})
+	local pillText = Kit.Text({ Name = "Text", Text = "", Font = "Chunky", TextSize = 14, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = pill })
+	Kit.Fit(pillText, 14, 10)
+	local check = New("Frame", { Name = "Check", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -5, 0, 5), Size = UDim2.fromOffset(18, 18),
+		BackgroundColor3 = Colors.Green, Visible = false, ZIndex = 5, Parent = tile }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 1.5 }),
+	})
+	Pieces.Icon("check", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(12, 12), ZIndex = 6, Parent = check })
+		:SetAttribute("KeepColor", true)
+	local api = { art = art, name = name, sub = sub, pill = pill, pillText = pillText, check = check, color = color, state = "normal" }
+	local function paintPill(c: Color3)
+		pill.Gloss.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, c:Lerp(Color3.new(1, 1, 1), 0.35)),
+			ColorSequenceKeypoint.new(0.75, c),
+			ColorSequenceKeypoint.new(0.76, c:Lerp(Color3.new(0, 0, 0), 0.4)),
+			ColorSequenceKeypoint.new(1, c:Lerp(Color3.new(0, 0, 0), 0.4)),
+		})
+	end
+	local function paint()
+		local c, state = api.color, api.state
+		local dark = state == "locked"
+		local base = if dark then Color3.fromHex("#151316") else c:Lerp(Color3.fromHex("#141215"), 0.72)
+		tile.Tint.Color = ColorSequence.new(base:Lerp(Color3.new(1, 1, 1), 0.06), base:Lerp(Color3.new(0, 0, 0), 0.35))
+		local edge = if state == "equipped" then Colors.Gold elseif dark then c:Lerp(Color3.fromHex("#2A272B"), 0.6) else c
+		tile.Border.Color = edge
+		glow.Stroke.Color = edge
+		glow.Visible = not dark and state ~= "owned"
+		glow.Stroke.Transparency = if state == "equipped" then 0.45 else 0.72
+		art.ImageColor3 = if dark then Color3.new(0, 0, 0) else Color3.new(1, 1, 1)
+		art.ImageTransparency = if state == "owned" then 0.5 else 0
+		name.TextTransparency = if state == "owned" then 0.4 else 0
+		sub.TextColor3 = c
+		check.Visible = state == "owned" or state == "equipped"
+		check.BackgroundColor3 = if state == "equipped" then Colors.Gold else Colors.Green
+	end
+	function api.SetColor(_, c: Color3)
+		api.color = c
+		paint()
+	end
+	-- the pill: text on a colour (a price in the tile's colour, OWNED green, EQUIPPED grey, a requirement dark)
+	function api.SetPill(_, text: string, c: Color3?)
+		pillText.Text = string.upper(text)
+		paintPill(c or api.color)
+		pill.Edge.Color = Colors.Outline
+		pill.Visible = text ~= ""
+	end
+	-- a requirement ("ALTER 5", "LVL 25"): a dark pill with an outline in the tile's colour
+	function api.SetRequirement(_, text: string)
+		api:SetPill(text, Color3.fromHex("#1E1B20"))
+		pill.Edge.Color = api.color
+	end
+	function api.SetState(_, state: string, text: string?)
+		api.state = state
+		paint()
+		if state == "owned" then
+			api:SetPill(text or "Owned", Colors.Green)
+			pill.Size = UDim2.new(0.6, 0, 0, 20)
+		elseif state == "equipped" then
+			api:SetPill(text or "Equipped", Color3.fromHex("#55525A"))
+			pill.Size = UDim2.new(0.8, 0, 0, 22)
+		elseif state == "locked" then
+			api:SetPill(text or "Locked", Color3.fromHex("#2A272B"))
+			pill.Size = UDim2.new(0.86, 0, 0, 22)
+		else
+			pill.Size = UDim2.new(0.8, 0, 0, 22)
+			if text then api:SetPill(text) end
+		end
+	end
+	Theme.BindPress(tile)
+	paint()
+	return tile, api
 end
 
 function Kit.Card(props: { [string]: any }?, children: { Instance }?)
@@ -610,7 +739,7 @@ function Kit.Tabs(tabs, onSelect: (string) -> (), props: { [string]: any }?)
 	end
 	for order, tab in ipairs(tabs) do
 		local button, label = Kit.Button("Flat", tab.text, { Name = tab.id, LayoutOrder = order, Parent = row },
-			{ height = h, textSize = math.floor(h * 0.5) })
+			{ height = h, textSize = math.floor(h * 0.5), tab = true })
 		local padlock = Pieces.Icon("lock", Color3.fromHex("#8A878F"), { Name = "Padlock", LayoutOrder = 0, Size = UDim2.fromOffset(math.floor(h * 0.45), math.floor(h * 0.45)),
 			Visible = false, Parent = button })
 		padlock:SetAttribute("KeepColor", true)

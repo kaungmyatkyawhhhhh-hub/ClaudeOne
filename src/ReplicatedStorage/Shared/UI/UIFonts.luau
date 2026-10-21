@@ -15,6 +15,9 @@ local UIFonts = {
 	Number = display,
 	Body = Font.new(MONTSERRAT, Enum.FontWeight.Medium),
 	BodyBold = Font.new(MONTSERRAT, Enum.FontWeight.Bold),
+	-- (prompt 37 / 40, 22 Oct: the 2-font rule) LuckiestGuy for buttons, numbers, names and labels; Montserrat (the italic
+	-- display + its body weights) for screen titles, tabs and body text
+	Chunky = Font.fromEnum(Enum.Font.LuckiestGuy),
 }
 
 return UIFonts

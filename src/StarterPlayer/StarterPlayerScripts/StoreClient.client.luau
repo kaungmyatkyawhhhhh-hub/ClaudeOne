@@ -2,7 +2,9 @@
 -- the reference frame for every window), the server boost chip and purchase notes. Only items with ids in
 -- Config.Monetization are shown; with none the Shop tile never appears. The Shop tile is in the menu from the start
 -- (owner, 20 Oct). No purchase prompt ever opens by itself: only the red price button opens one.
--- Window: STORE + tabs Auras / Boosts / Coins / Passes (each item's `tab` in Config.Monetization; only tabs that have something)
+-- Window: STORE + tabs Passes / Auras / Boosts / Coins (prompt 40 order; each item's `tab` in Config.Monetization; only tabs
+-- that have something). It opens on PASSES (before Growth Spurt 1: BOOSTS). (prompt 40) The grid tiles are Kit.RewardTile
+-- in each item's colour (ITEM_COLOR); owned = dimmed with a small green OWNED pill + check (no big stamp).
 -- + its own coins pill and X. On the left the
 -- HERO tile: the picked item big (thick gold border + soft gold glow, BEST SELLER tag on Monetization.BestSeller, the art,
 -- the name in gold, what it does, the red "R$ 249" CTA that pulses). On the right a 3-column grid of dark tiles (art,
@@ -111,10 +113,30 @@ local hasTab = {}
 for _, entry in ipairs(items) do hasTab[entry.tab] = true end
 -- (prompt 20, 21 Oct: the Store opened on the Robux passes. Auras come first now: most of them are earned by playing or
 -- bought with coins, so a new player sees things they can get for free first.)
-for _, id in ipairs({ "Auras", "Boosts", "Coins", "Passes" }) do
+-- (prompt 40, owner: PASSES · AURAS · BOOSTS · COINS; it opens on PASSES, new players before Growth Spurt 1 on BOOSTS)
+for _, id in ipairs({ "Passes", "Auras", "Boosts", "Coins" }) do
 	if hasTab[id] then table.insert(tabs, { id = id, text = id }) end
 end
 local currentTab = tabs[1].id
+local function startTab(): string
+	local data = ClientData.IsLoaded() and ClientData.Get()
+	local wanted = if data and (data.growthSpurts or 0) < 1 then "Boosts" else "Passes"
+	return if hasTab[wanted] then wanted else tabs[1].id
+end
+-- (prompt 40) each item's tile colour (mockup 01_store_A); the rest by their tab
+local Rarity = Theme.RarityColor
+local ITEM_COLOR = {
+	DoubleGains = Rarity.Rare, VIP = Rarity.Legendary, DoubleCoins = Rarity.Uncommon, AuraPack = Rarity.Epic, AutoLift = Colors.Red,
+	ExtraTrainer = Colors.Red, CoinsSmall = Rarity.Legendary, CoinsMedium = Rarity.Legendary, CoinsLarge = Rarity.Legendary,
+	ShakePack = Rarity.Rare, EndlessStamina = Colors.Teal, DnaToken = Rarity.Mythic, ServerBoost = Rarity.Legendary,
+}
+local function colorOf(entry): Color3
+	if entry.isAura then
+		local aura = Auras.ById[entry.item.auraId]
+		return (aura and Rarity[aura.rarity]) or Rarity.Common
+	end
+	return ITEM_COLOR[entry.item.key] or Rarity.Common
+end
 
 local refresh, select, endlessFull -- (below)
 local modal = Kit.Modal({ name = "Store", title = "Store", width = W, height = H, displayOrder = 25, tabs = tabs, coins = true,
@@ -208,7 +230,8 @@ end
 -- The hero tile (left): the picked item, big
 ------------------------------------------------------------------------
 local hero = Kit.Card({ Name = "Hero", Piece = "card_gold", Size = UDim2.new(0, HERO_W, 1, 0), Parent = modal.body }, {})
-hero:FindFirstChild("Border").Thickness = 2.5
+hero:FindFirstChild("Border").Thickness = 3.5
+Theme.SetHex(hero, 0.8, 11) -- (prompt 40: the hero card is hex too)
 -- a warm red glow behind the art (the art's own backdrop in the mockup)
 New("Frame", { Name = "ArtGlow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(100, 100),
 	BackgroundColor3 = Color3.fromHex("#3A1214"), BackgroundTransparency = 0.2, Parent = hero }, {
@@ -225,13 +248,13 @@ local bestTag = New("Frame", { Name = "BestSeller", Position = UDim2.fromOffset(
 })
 Kit.Text({ Name = "Text", Text = "BEST SELLER", Font = "Title", TextSize = 11, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.new(0, 0, 1, 0),
 	AutomaticSize = Enum.AutomaticSize.X, ZIndex = 3, Parent = bestTag })
-local heroName = Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Title", TextSize = 22, Upper = true, Position = UDim2.fromOffset(12, 122),
-	Size = UDim2.new(1, -24, 0, 26), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = hero }))
+local heroName = Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 22, Upper = true, Position = UDim2.fromOffset(12, 122),
+	Size = UDim2.new(1, -24, 0, 26), TextTruncate = Enum.TextTruncate.AtEnd, Parent = hero }))
 -- (a long name like ENDLESS STAMINA shrinks to fit instead of being cut off)
 heroName.TextScaled = true
 Theme.New("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = 14, Parent = heroName })
-local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, TextWrapped = true, Position = UDim2.fromOffset(12, 148),
-	Size = UDim2.new(1, -24, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = hero })
+local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Text, TextWrapped = true, Position = UDim2.fromOffset(12, 148),
+	Size = UDim2.new(1, -24, 0, 28), TextYAlignment = Enum.TextYAlignment.Top, Parent = hero })
 local buy = Kit.Button("Red", "", { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Parent = hero },
 	{ width = HERO_W - 22, height = 40, textSize = 20 })
 -- (DNA token only) the coin price beside the Robux button (each half the width)
@@ -266,26 +289,11 @@ end
 player:GetAttributeChangedSignal("PumpShop"):Connect(refreshPumpLink)
 refreshPumpLink()
 
--- OWNED: a rotated gold stamp
-local function ownedStamp(parent)
-	local stamp = New("Frame", { Name = "Owned", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 40), Size = UDim2.fromOffset(96, 28),
-		Rotation = -12, BackgroundColor3 = Color3.fromHex("#120F08"), BackgroundTransparency = 0.1, ZIndex = 4, Visible = false, Parent = parent }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 7) }),
-		New("UIStroke", { Color = Colors.Gold, Thickness = 2.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-	})
-	Kit.GoldText(Kit.Text({ Name = "Text", Text = "OWNED", Font = "Title", TextSize = 17, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = stamp }))
-	return stamp
-end
-
 local cards = {}
 for index, entry in ipairs(items) do
-	local card = Kit.Card({ Name = entry.item.key, LayoutOrder = index, Clickable = true, Parent = grid }, {})
-	local art = Pieces.Image("art", { Name = "Art", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(52, 52), Parent = card })
-	local name = Kit.Text({ Name = "Name", Text = entry.item.name, Font = "Title", TextSize = 13, Upper = true, AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 62), Size = UDim2.new(1, -8, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
-	local pill, price = Kit.PricePill("", { Name = "Price", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -7), Size = UDim2.fromOffset(0, 24), Parent = card })
-	local stamp = ownedStamp(card)
-	cards[entry.item.key] = { card = card, art = art, name = name, pill = pill, price = price, stamp = stamp, entry = entry }
+	local card, tile = Kit.RewardTile(colorOf(entry), { Name = entry.item.key, LayoutOrder = index, Parent = grid })
+	cards[entry.item.key] = { card = card, tile = tile, art = tile.art, entry = entry }
+	tile.name.Text = string.upper(entry.item.name)
 	card.Activated:Connect(function()
 		Audio.PlayUI("Click")
 		select(entry)
@@ -296,13 +304,9 @@ local picked = nil
 function select(entry)
 	picked = entry
 	for key, c in pairs(cards) do
-		-- the picked tile gets a thin gold edge (the hero tile shows it big)
-		local border = c.card:FindFirstChild("Border")
-		if border then
-			local on = key == entry.item.key
-			border.Color = on and Colors.Gold or Colors.Outline
-			border.Transparency = on and 0.25 or 0.3
-		end
+		-- the picked tile is a little bigger (the hero tile shows it big)
+		local scale = c.card:FindFirstChild("PickScale") or New("UIScale", { Name = "PickScale", Parent = c.card })
+		scale.Scale = if key == entry.item.key then 1 else 0.96
 	end
 	artFor(heroArt, entry)
 	heroName.Text = entry.item.name
@@ -321,12 +325,17 @@ function refresh()
 		artFor(c.art, entry)
 		local isOwned = owned(entry)
 		local price = priceOf(entry)
-		c.stamp.Visible = isOwned
-		c.pill.Visible = not isOwned
-		c.price.Text = if entry.isAura then entry.item.short elseif price then "R$ " .. Kit.Format(price) else "..."
-		-- owned: the stamp is the only bright thing on the tile
-		c.art.ImageTransparency = isOwned and 0.65 or 0
-		c.name.TextColor3 = isOwned and Colors.Faint or Colors.Text
+		-- (prompt 40) owned: dimmed, a small green OWNED pill + check; else its price on a pill in its colour
+		if isOwned then
+			c.tile:SetState("owned")
+		else
+			c.tile:SetState("normal")
+			if entry.isAura then
+				c.tile:SetRequirement(entry.item.short) -- (how to get it: a dark pill in its colour)
+			else
+				c.tile:SetPill(if price then "R$ " .. Kit.Format(price) else "...")
+			end
+		end
 	end
 	if (not picked or picked.tab ~= currentTab) and first then
 		-- the hero tile starts on the best seller when it's in this tab
@@ -438,6 +447,7 @@ UIBus.RegisterPanel("Store", function() modal.close() end)
 -- (tab id, item key?) (prompt 12: an item key opens the Store on that item, e.g. the Growth Spurt card's "Finish faster")
 UIBus.OpenShop.Event:Connect(function(tab, itemKey)
 	if UIBus.IsLocked and UIBus.IsLocked("Store") then UIBus.ShowLocked("Store") return end -- (prompt 39: still locked, GuideClient)
+	if not hasTab[tab] and not modal.isOpen() then tab = startTab() end -- (prompt 40: PASSES, or BOOSTS before Growth Spurt 1)
 	if hasTab[tab] then
 		currentTab = tab
 		modal.selectTab(tab)
@@ -454,6 +464,10 @@ task.spawn(function()
 	started = true
 	menuButton = SideMenu.Add("Store", "Shop", Icons.Plate, 8)
 	menuButton.Activated:Connect(function()
-		if modal.isOpen() then modal.close() else UIBus.PanelOpened("Store") open() end
+		if modal.isOpen() then modal.close() return end
+		currentTab = startTab() -- (prompt 40: PASSES, or BOOSTS before Growth Spurt 1)
+		modal.selectTab(currentTab)
+		UIBus.PanelOpened("Store")
+		open()
 	end)
 end)

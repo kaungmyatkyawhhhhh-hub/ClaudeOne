@@ -302,6 +302,30 @@ local function makeTile(id, labelText, iconFactory)
 	return entry
 end
 
+function SideMenu.Column()
+	return ensure()
+end
+
+-- Screen px of the menu's right edge (the tab included), for panels that open beside it.
+function SideMenu.Right()
+	ensure()
+	local s = Kit.Scale()
+	if folded() then return math.floor((SideMenu.Left + SideMenu.Arrow.X) * s) end
+	return math.floor((SideMenu.Left + bar.Size.X.Offset + SideMenu.Gap + SideMenu.Arrow.X) * s)
+end
+
+function SideMenu.VisibleRight()
+	ensure()
+	if hiddenAll then return 0 end
+	return SideMenu.Right()
+end
+
+-- Screen px (from the top of the safe area) of the grid's bottom edge.
+function SideMenu.Bottom()
+	ensure()
+	return math.floor((gridTop + bar.Size.Y.Offset) * Kit.Scale())
+end
+
 function SideMenu.Add(id, labelText, iconFactory, _order)
 	ensure()
 	local isTile = HudIcons.Tiles[id] ~= nil

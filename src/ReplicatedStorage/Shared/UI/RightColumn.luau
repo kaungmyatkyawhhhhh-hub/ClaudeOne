@@ -300,10 +300,10 @@ function RightColumn.Tracker(props)
 	local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#E9E3E5"), Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 	New("UISizeConstraint", { MaxSize = Vector2.new(math.huge, 28), Parent = text }) -- (two lines at most)
-	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 10), BackgroundTransparency = 1, Parent = card })
+	local barRow = New("Frame", { Name = "BarRow", LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 13), BackgroundTransparency = 1, Parent = card })
 	-- (owner's final kit: progress is teal; a gold tracker keeps its gold)
 	local barColor = (props.color == Colors.Gold) and Colors.Gold or Colors.Teal
-	local _, setBar, fill = Kit.Bar(barColor, { Size = UDim2.new(1, 0, 0, 7), Position = UDim2.fromOffset(0, 2), Parent = barRow }, { outline = 1 })
+	local _, setBar, fill = Kit.Bar(barColor, { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 2), Parent = barRow }, { outline = 1 })
 	local footer = Kit.Text({ Name = "Footer", LayoutOrder = 4, Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Visible = false,
 		Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 	RightColumn.Add(card, props.order or 2, props.idleOnly, props.priority or RightColumn.Priority.Daily)
