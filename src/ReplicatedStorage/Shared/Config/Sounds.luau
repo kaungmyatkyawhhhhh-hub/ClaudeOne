@@ -113,6 +113,7 @@ return {
 		Starter = { 86451874359343, 131532099124744, 135822443550596 }, -- the starter gym
 		Pro = { 118959016267248, 113417603188158, 139777823649977 },    -- the pro gym
 		Beach = { 1837324500, 95854242246323, 102866809292046 },         -- the beach, beach gym, posing stage, skate park
-		Town = { 1840007392 },         -- the streets, plaza and shops
+		-- the streets, plaza and shops (21 Oct: + APM Hit The Street, City Lights (A) from Roblox's licensed library; swap freely)
+		Town = { 1840007392, 1840558258, 1840517437 },
 	},
 }
