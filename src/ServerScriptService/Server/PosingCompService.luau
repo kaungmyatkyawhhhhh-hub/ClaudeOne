@@ -295,6 +295,8 @@ local function results(division)
 			local data = PlayerData.Get(c.player)
 			local level = PosingComp.ShowFor(data and data.growthSpurts or 0) or PosingComp.Shows[1]
 			local coins = level.coins[place] or level.enter
+			-- (prompt 45) the worn aura's show prize perk: the prize only, never the score
+			coins = math.floor(coins * (1 + require(game:GetService("ReplicatedStorage").Shared.Config.Auras).Perk(c.player:GetAttribute("Aura"), "showPrize")) + 0.5)
 			PlayerData.AddCoins(c.player, coins)
 			if data then
 				local stats = data.stats

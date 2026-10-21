@@ -280,6 +280,7 @@ for index, aura in ipairs(Auras.List) do
 		label.Size = UDim2.new(1, -78, 0, 17)
 	end
 	api.name.Position = UDim2.fromOffset(72, 10)
+	api.name.Size = UDim2.new(1, -98, 0, 17) -- (clear of the check in the corner)
 	api.name.Text = string.upper(aura.name)
 	api.sub.Position = UDim2.fromOffset(72, 32)
 	api.sub.Size = UDim2.new(1, -78, 0, 13)

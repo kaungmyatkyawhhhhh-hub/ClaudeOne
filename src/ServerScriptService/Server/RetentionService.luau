@@ -38,6 +38,13 @@ local function welcome(player, data)
 	local lastSeen = data.meta.lastSeen or 0
 	if lastSeen > 0 and data.meta.sessions > 1 then
 		offlineCoins = Economy.OfflineCoins(now - lastSeen)
+		-- (prompt 45) the equipped aura's offline perk (an aura from a pass only while the pass is owned)
+		local auras = type(data.auras) == "table" and data.auras or {}
+		local worn = auras.equipped
+		local Auras = require(game:GetService("ReplicatedStorage").Shared.Config.Auras)
+		local aura = worn and Auras.ById[worn]
+		local has = aura and (if aura.unlock.type == "pass" then player:GetAttribute("Pass_" .. aura.unlock.pass) == true else (auras.owned or {})[worn] ~= nil)
+		if has then offlineCoins = math.floor(offlineCoins * (1 + Auras.Perk(worn, "offline")) + 0.5) end
 		if offlineCoins > 0 then PlayerData.AddCoins(player, offlineCoins) end
 	end
 

@@ -70,6 +70,15 @@ local function replicateWorn(player)
 	local worn = auras.equipped
 	if worn and not AuraService.Has(player, worn) then worn = nil end
 	if player:GetAttribute("Aura") ~= worn then player:SetAttribute("Aura", worn) end
+	-- (prompt 45) its perk, only while worn: EXP / coins / rep speed as a boost source, max stamina refreshed
+	local BoostService = require(script.Parent.BoostService)
+	if worn and Auras.Perks[worn] then
+		BoostService.SetPlayer(player, "Aura", { gains = 1 + Auras.Perk(worn, "exp"), coins = 1 + Auras.Perk(worn, "coins"),
+			repSpeed = 1 + Auras.Perk(worn, "autoRep") })
+	else
+		BoostService.SetPlayer(player, "Aura", nil)
+	end
+	PlayerData.RefreshMaxStamina(player)
 	-- the effect's preset name on the character too ("EquippedAura", AuraVFX: every client builds it from this)
 	local character = player.Character
 	local preset = worn and Auras.ById[worn] and Auras.ById[worn].vfx or nil

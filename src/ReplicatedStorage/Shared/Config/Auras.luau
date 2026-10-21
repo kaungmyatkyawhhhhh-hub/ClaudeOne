@@ -81,4 +81,46 @@ Auras.VFXTextures = {
 	"rbxassetid://138347218007327", "rbxassetid://136758735885193", "rbxassetid://90041400001838", "rbxassetid://76009392745145", "rbxassetid://80590302550492", "rbxassetid://113405238797101", "rbxassetid://137490039482038", "rbxassetid://82372237523631", "rbxassetid://131893925782949", "rbxassetid://74138882329945",
 }
 
+-- (prompt 45, owner 22 Oct, from the gameplay plan) Each aura's perk, on only while it's the one equipped (one at a time),
+-- checked on the server. Never on posing show scores. Keys (a share: 0.10 = +10%):
+--   exp         training EXP (BoostService "Aura" gains; under the Config/Gains cap like every gains boost)
+--   coins       coins from reps (BoostService coins)
+--   maxStamina  max stamina (PlayerData.RefreshMaxStamina)
+--   autoRep     reps may come this much faster (BoostService repSpeed: Auto Rep uses it, a tapping hand rarely does)
+--   boostTime   boost items and the Energy Shake last this much longer (ItemService, BoostService.AddShake)
+--   offline     offline coins on joining (RetentionService)
+--   showPrize   coins from a posing show's prize (PosingCompService), never the score
+--   progress    Growth Spurt / Body Alter goals need this much less EXP (GrowthSpurts.ProgressBoost, like the trainers')
+--   all         adds to every one of the above
+-- text = the gold pill in Inventory > Auras.
+Auras.Perks = {
+	Ember = { exp = 0.05, text = "+5% EXP" },
+	Frost = { maxStamina = 0.10, text = "+10% Max Stamina" },
+	Neon = { coins = 0.10, text = "+10% Coins" },
+	Storm = { autoRep = 0.10, text = "+10% Faster Auto Reps" },
+	Toxic = { boostTime = 0.10, text = "Boosts +10% Longer" },
+	Shadow = { offline = 0.15, text = "+15% Offline Coins" },
+	Inferno = { exp = 0.10, text = "+10% EXP" },
+	Golden = { coins = 0.15, text = "+15% Coins" },
+	Royal = { showPrize = 0.20, text = "+20% Show Prizes" },
+	BloodMoon = { progress = 0.10, text = "+10% Spurt Progress" },
+	Titan = { exp = 0.15, text = "+15% EXP" },
+	Galaxy = { all = 0.05, text = "+5% Everything" },
+	Void = { all = 0.10, text = "+10% Everything" },
+}
+for id, perk in pairs(Auras.Perks) do
+	local aura = Auras.ById[id]
+	if aura then
+		aura.perk = perk
+		aura.bonus = perk.text
+	end
+end
+
+-- An aura's perk for one key (its own + its "all"), 0 for none / no aura.
+function Auras.Perk(auraId: string?, key: string): number
+	local perk = auraId and Auras.Perks[auraId]
+	if not perk then return 0 end
+	return (perk[key] or 0) + (perk.all or 0)
+end
+
 return Auras

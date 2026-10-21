@@ -104,7 +104,11 @@ end
 -- more, so the level a goal asks for drops a little (+10% progress: 10% less EXP to reach it).
 function GrowthSpurts.ProgressBoost(data): number
 	local t = type(data) == "table" and data.trainers
-	return math.max(0, type(t) == "table" and type(t.bonus) == "table" and tonumber(t.bonus.progress) or 0)
+	local trainers = math.max(0, type(t) == "table" and type(t.bonus) == "table" and tonumber(t.bonus.progress) or 0)
+	-- (prompt 45) + the equipped aura's progress perk (Blood Moon, Galaxy, Void)
+	local auras = type(data) == "table" and data.auras
+	local worn = type(auras) == "table" and auras.equipped or nil
+	return trainers + require(script.Parent.Auras).Perk(worn, "progress")
 end
 function GrowthSpurts.BoostedLevel(level: number, boost: number): number
 	if boost <= 0 then return level end

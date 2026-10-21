@@ -95,7 +95,9 @@ end
 function BoostService.AddShake(player)
 	local current = BoostService.GetPlayer(player, "Shake")
 	local start = current and current.untilTime or now()
-	local untilTime = math.min(start + Stamina.Shake.Duration, now() + Stamina.Shake.MaxDuration)
+	-- (prompt 45) the worn aura's boost time perk
+	local longer = 1 + require(ReplicatedStorage.Shared.Config.Auras).Perk(player:GetAttribute("Aura"), "boostTime")
+	local untilTime = math.min(start + Stamina.Shake.Duration * longer, now() + Stamina.Shake.MaxDuration * longer)
 	BoostService.SetPlayer(player, "Shake", { gains = Stamina.Shake.GainsBoost, untilTime = untilTime })
 end
 

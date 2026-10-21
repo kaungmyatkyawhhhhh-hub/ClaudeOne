@@ -106,7 +106,11 @@ local function use(player, id, quiet: boolean?): boolean
 			local data = PlayerData.Get(player)
 			PlayerData.SetStamina(player, data.stamina + PlayerData.GetMaxStamina(player) * item.refill)
 		end
-		if item.seconds then apply(player, item, Boosts.Extend(item, secondsLeft(player, id))) end
+		if item.seconds then
+			-- (prompt 45) the worn aura's boost time perk lengthens this use (the 60 min cap stays)
+			local extra = (item.seconds or 0) * require(game:GetService("ReplicatedStorage").Shared.Config.Auras).Perk(player:GetAttribute("Aura"), "boostTime")
+			apply(player, item, math.min(Boosts.Extend(item, secondsLeft(player, id)) + extra, Boosts.MaxSeconds))
+		end
 		saveTimes(player)
 		if not quiet then ShowOffService.PlayEmote(player, "Chug") end
 		event(player, "ItemUsed", { id = id })

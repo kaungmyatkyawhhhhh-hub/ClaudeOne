@@ -461,7 +461,9 @@ function PlayerData.RefreshMaxStamina(player)
 	local lungs = if player:GetAttribute("Pass_IronLungs") then Monetization.Effects.IronLungsMax else 1
 	-- (prompt 24) the equipped trainers' max stamina boost (TrainerService writes data.trainers.bonus)
 	local bonus = type(data.trainers) == "table" and type(data.trainers.bonus) == "table" and tonumber(data.trainers.bonus.maxStamina) or 0
-	player:SetAttribute("MaxStamina", Stamina.MaxFor(data.stats.cardioMeters) * lungs * (1 + bonus))
+	-- (prompt 45) the worn aura's max stamina perk (the "Aura" attribute: AuraService, only an aura the player has)
+	local auraBonus = require(ReplicatedStorage.Shared.Config.Auras).Perk(player:GetAttribute("Aura"), "maxStamina")
+	player:SetAttribute("MaxStamina", Stamina.MaxFor(data.stats.cardioMeters) * lungs * (1 + bonus) * (1 + auraBonus))
 end
 
 function PlayerData.GetLevelCap(player)
