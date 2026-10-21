@@ -40,16 +40,19 @@ Alters.Tiers = {
 -- (Downloads\gym_arc_alters\tier1_human_tiled): the body's UVs spread one texture over 10-14 studs, so the striations and
 -- veins came out about twice too big and soft. Old ids: Shredded 119513312479015 / 103766752198769 / 71101897859940,
 -- Vascular 103109392852988 / 72861088552312 / 121431954405592, Peak 128233798561844 / 127999198166079 / 89748828998136.
+-- (prompt 38b) Peak's normal map re-uploaded as 99012039750322: the first upload (74285776621086) never loaded in game.
 -- textures: rbxassetid ids of the color / normal / roughness maps (uploaded 21 Oct); placeholder = the color shown for an
 -- alter that has no textures yet (the Alters tab's "Coming soon" card).
+-- mean: the color map's average color (its tint math, Alters.Tint); tone: a bronze tan (Alters.Tint) instead of the plain
+-- skin tint (prompt 38b).
 local function t(color, normal, roughness) return { color = color, normal = normal, roughness = roughness } end
 Alters.List = {
 	-- Tier 1: Human
-	{ id = "Pumped", name = "Pumped", tier = 1, textures = t("rbxassetid://118652537566937", "rbxassetid://77670612429230", "rbxassetid://109400263905498") },
-	{ id = "Shredded", name = "Shredded", tier = 1, textures = t("rbxassetid://80449661881061", "rbxassetid://112368353705678", "rbxassetid://135284888816077") },
-	{ id = "Tanned", name = "Tanned", tier = 1, textures = t("rbxassetid://124927923688709", "rbxassetid://95570134134448", "rbxassetid://74028606958342") },
-	{ id = "Vascular", name = "Vascular", tier = 1, textures = t("rbxassetid://138226447249744", "rbxassetid://134369961190395", "rbxassetid://79671580983023") },
-	{ id = "Peak", name = "Peak", tier = 1, textures = t("rbxassetid://88467569632374", "rbxassetid://74285776621086", "rbxassetid://122443770392636") },
+	{ id = "Pumped", name = "Pumped", tier = 1, textures = t("rbxassetid://118652537566937", "rbxassetid://77670612429230", "rbxassetid://109400263905498"), mean = { 242, 207, 189 } },
+	{ id = "Shredded", name = "Shredded", tier = 1, textures = t("rbxassetid://80449661881061", "rbxassetid://112368353705678", "rbxassetid://135284888816077"), mean = { 242, 235, 225 } },
+	{ id = "Tanned", name = "Tanned", tier = 1, textures = t("rbxassetid://124927923688709", "rbxassetid://95570134134448", "rbxassetid://74028606958342"), mean = { 194, 136, 94 }, tone = "Tan" },
+	{ id = "Vascular", name = "Vascular", tier = 1, textures = t("rbxassetid://138226447249744", "rbxassetid://134369961190395", "rbxassetid://79671580983023"), mean = { 232, 215, 203 } },
+	{ id = "Peak", name = "Peak", tier = 1, textures = t("rbxassetid://88467569632374", "rbxassetid://99012039750322", "rbxassetid://122443770392636"), mean = { 178, 123, 80 }, tone = "Tan" },
 	-- Tier 2: Stone
 	{ id = "Clay", name = "Clay", tier = 2, placeholder = "#A0664A" },
 	{ id = "Sandstone", name = "Sandstone", tier = 2, placeholder = "#C9A46B" },
@@ -116,6 +119,46 @@ end
 function Alters.SkinName(n: number): string?
 	local alter = Alters.Get(n)
 	return if alter and alter.textures then "Alter_" .. alter.id else nil
+end
+
+-- (prompt 38b, owner: "a deep bronze, not orange-red") The tan alters' (Tanned, Peak) color maps are orange-brown; times
+-- a light skin tint they came out orange-red, times a dark one muddy. Their tint is worked out from the skin instead: hue
+-- moved toward bronze, saturation kept between SatMin and SatMax, a light skin darkened a lot and a dark one only a bit
+-- (Depth: { at value <= 0.35, at value >= 0.85 }, the color's brightness times this).
+Alters.Tan = { Hue = 31 / 360, HueMove = 0.7, SatMin = 0.36, SatAdd = 0.12, SatMax = 0.5, Depth = { 0.84, 0.6 } }
+-- the normal skin stages' color maps' average (Downloads/skin_textures, Stage1-3): what the plain skin is shown as
+Alters.NaturalMean = { 243, 236, 226 }
+
+local function meanOf(rgb): Color3 return Color3.fromRGB(rgb[1], rgb[2], rgb[3]) end
+
+-- The bronze a tan alter's body shows (on average) for a skin color.
+function Alters.TanColor(skin: Color3): Color3
+	local tan = Alters.Tan
+	local h, s, v = skin:ToHSV()
+	if h > 0.5 then h -= 1 end -- (a reddish hue just under 360 deg: toward bronze the short way)
+	h = (h + (tan.Hue - h) * tan.HueMove) % 1
+	s = math.clamp(s + tan.SatAdd, tan.SatMin, tan.SatMax)
+	local light = math.clamp((v - 0.35) / 0.5, 0, 1)
+	v *= tan.Depth[1] + (tan.Depth[2] - tan.Depth[1]) * light
+	return Color3.fromHSV(h, s, v)
+end
+
+-- The SurfaceAppearance.Color (tint) for alter `id` on a skin color: the skin itself, or for a tan alter the tint that makes
+-- its color map average to TanColor.
+function Alters.Tint(id: string?, skin: Color3): Color3
+	local alter = id and Alters.ById[id]
+	if not alter or alter.tone ~= "Tan" or not alter.mean then return skin end
+	local want, mean = Alters.TanColor(skin), meanOf(alter.mean)
+	return Color3.new(math.min(want.R / mean.R, 1), math.min(want.G / mean.G, 1), math.min(want.B / mean.B, 1))
+end
+
+-- The plain color that matches alter `id`'s body on a skin color (the head, which wears no alter maps; the elbow / knee
+-- balls; the flat skin under a tint): the alter's average over the plain skin's (Natural = the skin).
+function Alters.PlainSkin(id: string?, skin: Color3): Color3
+	local alter = id and Alters.ById[id]
+	if not alter or not alter.mean then return skin end
+	local tint, mean, natural = Alters.Tint(id, skin), meanOf(alter.mean), meanOf(Alters.NaturalMean)
+	return Color3.new(math.min(tint.R * mean.R / natural.R, 1), math.min(tint.G * mean.G / natural.G, 1), math.min(tint.B * mean.B / natural.B, 1))
 end
 
 -- the last alter anyone can reach now (the last one in a row with textures)

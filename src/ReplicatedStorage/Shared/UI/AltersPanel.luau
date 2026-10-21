@@ -107,8 +107,8 @@ function AltersPanel.Build(parent: Instance)
 				c.swatch.ImageColor3 = Color3.new(1, 1, 1)
 			elseif alter.textures then
 				c.swatch.Image = alter.textures.color
-				c.swatch.ImageColor3 = if unlocked then skin else Color3.fromHex("#1B1B20")
-				c.swatch.BackgroundColor3 = if unlocked then skin else Color3.fromHex("#1B1B20")
+				c.swatch.ImageColor3 = if unlocked then Alters.Tint(alter.id, skin) else Color3.fromHex("#1B1B20") -- (prompt 38b: a tan's bronze)
+				c.swatch.BackgroundColor3 = if unlocked then Alters.PlainSkin(alter.id, skin) else Color3.fromHex("#1B1B20")
 			else
 				c.swatch.Image = ""
 				c.swatch.BackgroundColor3 = Color3.fromHex(alter.placeholder):Lerp(Color3.fromHex("#1B1B20"), 0.55)

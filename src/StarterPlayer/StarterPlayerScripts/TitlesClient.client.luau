@@ -384,7 +384,7 @@ function ALL.refresh()
 				-- (its skin: the alter's color map tinted with your skin color, like the Alters view)
 				local skin = player:GetAttribute("SkinColor")
 				if typeof(skin) ~= "Color3" then skin = Color3.fromHex("#E0A878") end
-				New("ImageLabel", { Name = "Swatch", Image = alter.textures and alter.textures.color or "", ImageColor3 = skin, ScaleType = Enum.ScaleType.Crop,
+				New("ImageLabel", { Name = "Swatch", Image = alter.textures and alter.textures.color or "", ImageColor3 = Alters.Tint(alter.id, skin), ScaleType = Enum.ScaleType.Crop,
 					BackgroundColor3 = if alter.textures then skin else Color3.fromHex(alter.placeholder or "#C98A12"), Size = UDim2.fromScale(1, 1), Parent = holder },
 					{ New("UICorner", { CornerRadius = UDim.new(1, 0) }), New("UIStroke", { Color = Colors.Outline, Thickness = 2 }) })
 			end, function() openChip("Alters") end)

@@ -42,6 +42,7 @@ local Muscles = require(script.Parent.Config.Muscles)
 local Body = require(script.Parent.Config.Body)
 local SkinStages = require(script.Parent.Config.SkinStages)
 local Cosmetics = require(script.Parent.Config.Cosmetics)
+local Alters = require(script.Parent.Config.Alters)
 local Outfit = require(script.Parent.Outfit)
 -- a gym fit's Shirt image -> its main color (the waist band under a fit wears it: see recolor)
 local FIT_COLOR = {}
@@ -199,11 +200,24 @@ end
 ------------------------------------------------------------------------
 local BODY_PARTS = { "RightUpperArm", "LeftUpperArm", "RightLowerArm", "LeftLowerArm", "RightHand", "LeftHand", "RightUpperLeg", "LeftUpperLeg", "RightLowerLeg", "LeftLowerLeg", "RightFoot", "LeftFoot" }
 
+-- (prompt 38b) the worn Body Alter's id ("Tanned"), nil = Natural
+local function alterOf(self): string?
+	local alter = self.style.alter
+	if type(alter) ~= "string" or string.sub(alter, 1, 6) ~= "Alter_" then return nil end
+	return string.sub(alter, 7)
+end
+
+-- (the skin is the plain color that matches the worn alter, Alters.PlainSkin: the Natural skin without one)
 local function colorsOf(self)
 	local style = self.style
 	if self.marble then return Color3.new(1, 1, 1), Color3.new(1, 1, 1), Color3.new(1, 1, 1) end
-	local skin = style.skin or Color3.fromHex("#E0A878")
+	local skin = Alters.PlainSkin(alterOf(self), style.skin or Color3.fromHex("#E0A878"))
 	return skin, style.shorts or Color3.fromHex("#1E1E22"), style.top or skin
+end
+
+-- (prompt 38b) the skin maps' tint (SurfaceAppearance.Color): the skin, or a tan alter's bronze tint (Alters.Tint)
+local function skinTint(self): Color3
+	return Alters.Tint(alterOf(self), self.style.skin or Color3.fromHex("#E0A878"))
 end
 
 local function smoothMaterial(material: Enum.Material): Enum.Material
@@ -249,24 +263,23 @@ end
 
 -- every stage's textures load at the start, so a stage change never shows a blank (white) skin while its maps load.
 -- (prompt 38: PreloadAsync on the SurfaceAppearances themselves loads nothing, so a first-time Body Alter showed only its
--- tint for a few seconds; each map is preloaded through an image instead)
+-- tint for a few seconds; each map is preloaded through an image instead. prompt 38b: the ids come from the configs, a
+-- game script can't read a SurfaceAppearance's maps)
 task.spawn(function()
-	local folder = ReplicatedStorage:WaitForChild("SkinStages", 30)
-	if folder and RunService:IsClient() then
-		local images = {}
-		for _, sa in ipairs(folder:GetChildren()) do
-			if sa:IsA("SurfaceAppearance") then
-				for _, map in ipairs({ sa.ColorMap, sa.NormalMap, sa.RoughnessMap }) do
-					if map ~= "" then
-						local image = Instance.new("ImageLabel")
-						image.Image = map
-						table.insert(images, image)
-					end
-				end
-			end
+	if not RunService:IsClient() then return end
+	local images = {}
+	local function add(map: string?)
+		if type(map) == "string" and map ~= "" then
+			local image = Instance.new("ImageLabel")
+			image.Image = map
+			table.insert(images, image)
 		end
-		pcall(function() game:GetService("ContentProvider"):PreloadAsync(images) end)
 	end
+	for _, stage in ipairs(SkinStages.List) do add(stage.color); add(stage.normal); add(stage.roughness) end
+	for _, alter in ipairs(Alters.List) do
+		if alter.textures then add(alter.textures.color); add(alter.textures.normal); add(alter.textures.roughness) end
+	end
+	pcall(function() game:GetService("ContentProvider"):PreloadAsync(images) end)
 end)
 
 -- Puts the skin stage on a part (a clone named "SkinStage", tinted to `color`: SurfaceAppearance.Color is the tint, the
@@ -332,10 +345,10 @@ local function skinPass(self)
 	if self.marble then return end
 	local stage = SkinStages.Pick(overallLook(self), self.skinStage)
 	local index = skinKey(self, stage)
-	local skin = colorsOf(self)
+	local skin, tint = colorsOf(self), skinTint(self)
 	local function skinned(part: BasePart, isSkin: boolean, kind: string?)
 		local covered = kind ~= nil and templateFor(self, kind) ~= nil
-		setSkin(part, if isSkin and not covered then index else nil, skin)
+		setSkin(part, if isSkin and not covered then index else nil, tint)
 	end
 	local model = self.model
 	if not self.keepBody then
@@ -343,15 +356,30 @@ local function skinPass(self)
 			local part = model:FindFirstChild(name)
 			if part and part:IsA("BasePart") then skinned(part, true, CLOTHING_OF[name]) end
 		end
+		-- (prompt 38b) with a Body Alter the head wears no alter maps: its color takes the body's alter tone (its own
+		-- SurfaceAppearance keeps the face; its AlphaMode Overlay shows the part color as the skin). Natural: the skin stage
+		-- and its own color back.
 		local head = model:FindFirstChild("Head")
-		if head and head:IsA("BasePart") then skinned(head, true, nil) end
+		if head and head:IsA("BasePart") then
+			local alter = alterOf(self) ~= nil
+			skinned(head, not alter, nil)
+			-- (NaturalColor: the head was tinted; the style's skin IS the head's own color, StyleFrom)
+			local natural = head:GetAttribute("NaturalColor")
+			if alter and self.style.skin then
+				if natural == nil then head:SetAttribute("NaturalColor", head.Color) end
+				if head.Color ~= skin then head.Color = skin end
+			elseif typeof(natural) == "Color3" then
+				head.Color = self.style.skin or natural
+				head:SetAttribute("NaturalColor", nil)
+			end
+		end
 		local torso = model:FindFirstChild("UpperTorso")
 		if torso and torso:IsA("BasePart") then skinned(torso, self.style.top == nil, "Shirt") end
 	end
 	for _, state in ipairs(self.units) do
 		for _, group in ipairs(state.groups) do
 			local part = group.part
-			if part and part.Parent then setSkin(part, if group.skinned then index else nil, skin) end
+			if part and part.Parent then setSkin(part, if group.skinned then index else nil, tint) end
 		end
 	end
 	-- the stage meshes of other characters: the forearms / calves, and the body stages (BodyStages: their kind and clothing on
@@ -363,7 +391,7 @@ local function skinPass(self)
 			local isSkin = if kind then kind == "skin" or (kind == "top" and self.style.top == nil) else true
 			-- (prompt 34: the pieces that really wear the clothing image, Outfit: a trainer's tank top leaves his arms bare)
 			local worn = Outfit.Template(self.style, clothing, child:GetAttribute("BodyPart"), kind, self.marble) ~= ""
-			setSkin(child, if isSkin and not worn then index else nil, skin)
+			setSkin(child, if isSkin and not worn then index else nil, tint)
 		end
 	end
 	self.skinStage = stage
@@ -1451,7 +1479,7 @@ local function tintBody(self)
 			for _, name in ipairs(BODY_OF[id] or {}) do wanted[name] = math.max(wanted[name] or 0, w) end
 		end
 	end
-	local skin = colorsOf(self)
+	local skin = skinTint(self)
 	for name, w in pairs(wanted) do
 		local part = self.model:FindFirstChild(name)
 		if part and part:IsA("BasePart") and part.Transparency < 1 then
@@ -1472,7 +1500,7 @@ local function tintBody(self)
 	for part, entry in pairs(self.bodyTint) do
 		if not wanted[part.Name] then
 			local sa = part:FindFirstChild("SkinStage")
-			if sa then (sa :: any).Color = colorsOf(self) elseif part.Parent then part.Color = entry.base end
+			if sa then (sa :: any).Color = skinTint(self) elseif part.Parent then part.Color = entry.base end
 			self.bodyTint[part] = nil
 		end
 	end
@@ -1598,7 +1626,7 @@ local function step(self, dt: number)
 	local stagesNow = moving or self.dirty or tintLive or self.tintWasLive or slowNow
 	if self.limbs and stagesNow then
 		self.limbs:Update(function(id, key) return meshShown(self, key, id) end, {
-			skin = (self.style and self.style.skin) or nil, shirt = outfitImage(self, "Shirt"), pants = outfitImage(self, "Pants"),
+			skin = if self.style and self.style.skin then (colorsOf(self)) else nil, shirt = outfitImage(self, "Shirt"), pants = outfitImage(self, "Pants"),
 			sleeves = self.style.sleeves, legs = self.style.legs, outfit = self.style.outfit,
 			shirtColor = self.style.shirtColor, pantsColor = self.style.pantsColor,
 		}, function(id, base)
@@ -1623,9 +1651,19 @@ local function step(self, dt: number)
 		end, self.covered, marbleSpec(self))
 	end
 	if (self.limbs or self.bodyStages) and stagesNow then
+		-- (prompt 38b) a stage mesh's Color is the plain skin (Alters.PlainSkin, with any training tint); its skin maps' tint
+		-- is that times the alter's tint over the plain skin (1 without a tan alter)
+		local plain, tint = colorsOf(self), skinTint(self)
+		local function ratio(a: number, b: number) return if self.marble or a < 1e-3 then 1 else b / a end
+		local rr, rg, rb = ratio(plain.R, tint.R), ratio(plain.G, tint.G), ratio(plain.B, tint.B)
 		for _, child in ipairs(self.folder:GetChildren()) do
 			local sa = child:IsA("MeshPart") and child:FindFirstChild("SkinStage")
-			if sa and string.sub(child.Name, -5) == "Stage" and (sa :: any).Color ~= child.Color then (sa :: any).Color = child.Color end
+			if sa and string.sub(child.Name, -5) == "Stage" then
+				local c = child.Color
+				local want = Color3.new(math.min(c.R * rr, 1), math.min(c.G * rg, 1), math.min(c.B * rb, 1))
+				local now = (sa :: any).Color
+				if math.abs(now.R - want.R) + math.abs(now.G - want.G) + math.abs(now.B - want.B) > 0.004 then (sa :: any).Color = want end
+			end
 		end
 	end
 	-- (every frame while a tint shows: the fade is the color layer's Transparency, the mesh changes only with the mask)
@@ -1923,7 +1961,8 @@ end
 function MuscleRig.StyleFrom(source: Instance, model: Model): any
 	local head = model:FindFirstChild("Head")
 	local skin = source:GetAttribute("SkinColor")
-	if typeof(skin) ~= "Color3" then skin = head and head:IsA("BasePart") and head.Color or Color3.fromHex("#E0A878") end
+	-- (prompt 38b: an alter tints the head; NaturalColor keeps its own color)
+	if typeof(skin) ~= "Color3" then skin = head and head:IsA("BasePart") and (head:GetAttribute("NaturalColor") or head.Color) or Color3.fromHex("#E0A878") end
 	local shirt = model:FindFirstChildOfClass("Shirt")
 	local pants = model:FindFirstChildOfClass("Pants")
 	-- (prompt 34) a trainer's outfit: images made for the stage meshes, on attributes, never a classic Shirt / Pants (Outfit)
