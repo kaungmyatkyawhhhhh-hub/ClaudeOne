@@ -228,9 +228,7 @@ for _, machine in ipairs(PRO) do
 	machine.gym = "Pro"
 	machine.layout = "Center"
 	machine.tiers = Machines.TierSets[machine.tiers]
-	-- (prompt 16, 21 Oct) the starter gym has a copy of every pro machine (tools/builders/StarterProMachines): these
-	-- exercises are open from the start (the pro gym's own copies still sit behind its door)
-	machine.openAt = 0
+	-- (prompt 32, 21 Oct: the starter gym's copies of these from prompt 16 are gone again, so they open with the pro gym)
 	table.insert(Machines.List, machine)
 end
 

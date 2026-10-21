@@ -109,6 +109,22 @@ local function machineGoal(data, machine)
 	return weight .. " is ready: press + on the panel" -- (weights are free, owner 14 Oct)
 end
 
+-- The open machines that train a group (their main muscle is in it), one per machine type; then up to 2 dumbbell
+-- exercises (prompt 32: before Growth Spurt 2 the arms only have dumbbells).
+local DUMBBELLS_SHOWN = 2
+local function machinesFor(data, groupId)
+	local list, dumbbells, seen = {}, {}, {}
+	for _, machine in ipairs(Machines.List) do
+		local open = data.growthSpurts >= Machines.OpenAt(machine) and machine.gym ~= "Seasonal"
+		if open and machine.trains ~= "Stamina" and not seen[machine.id] and Muscles.ById[machine.muscles[1].id].group == groupId then
+			seen[machine.id] = true
+			table.insert(machine.dumbbell and dumbbells or list, machine)
+		end
+	end
+	for i = 1, math.min(DUMBBELLS_SHOWN, #dumbbells) do table.insert(list, dumbbells[i]) end
+	return list
+end
+
 local function goalText(data, progress)
 	if progress.maxed or progress.ready then return "" end
 	if currentMachine then
@@ -122,11 +138,9 @@ local function goalText(data, progress)
 		if level < progress.required and level < lowestLevel then lowest, lowestLevel = group, level end
 	end
 	if not lowest then return "" end
-	for _, machine in ipairs(Machines.List) do
-		local open = data.growthSpurts >= Machines.OpenAt(machine) and machine.gym ~= "Seasonal" and not machine.dumbbell
-		if open and machine.trains ~= "Stamina" and Muscles.ById[machine.muscles[1].id].group == lowest.id then
-			return "Next: " .. lowest.name .. " on the " .. machine.name
-		end
+	local machine = machinesFor(data, lowest.id)[1]
+	if machine then
+		return "Next: " .. lowest.name .. (machine.dumbbell and (" with the " .. machine.name .. " (dumbbells)") or (" on the " .. machine.name))
 	end
 	return "Next: train " .. lowest.name
 end
@@ -160,18 +174,6 @@ local function needsText(missing, progress): string
 	return table.concat(names, ", ")
 end
 
--- The open machines that train a group (their main muscle is in it), one per machine type.
-local function machinesFor(data, groupId)
-	local list, seen = {}, {}
-	for _, machine in ipairs(Machines.List) do
-		local open = data.growthSpurts >= Machines.OpenAt(machine) and machine.gym ~= "Seasonal" and not machine.dumbbell
-		if open and machine.trains ~= "Stamina" and not seen[machine.id] and Muscles.ById[machine.muscles[1].id].group == groupId then
-			seen[machine.id] = true
-			table.insert(list, machine)
-		end
-	end
-	return list
-end
 
 -- does this machine train any of these groups (main or a real secondary muscle)?
 local function helps(machine, missing): boolean
@@ -188,7 +190,8 @@ end
 
 ------------------------------------------------------------------------
 -- The "what to train" window: the missing groups, their machines, and a GO button each (a glowing path to the nearest
--- free one, Shared/UI/GuidePath; it goes away when you get on that machine). (No dumbbell exercises exist yet.)
+-- free one, Shared/UI/GuidePath; it goes away when you get on that machine; a dumbbell exercise leads to the nearest free
+-- dumbbell Train spot).
 ------------------------------------------------------------------------
 local GuidePath = require(Shared.UI.GuidePath)
 local needsModal = Kit.Modal({ name = "SpurtNeeds", title = "Train next", width = 520, height = 262, displayOrder = 26, icon = "dumbbell" })
@@ -210,10 +213,11 @@ local function goTo(machine)
 	needsModal.close()
 	Audio.PlayUI("Click")
 	GuidePath.Show(machine.id, "Needs")
+	local place = if machine.dumbbell then "dumbbells (" .. machine.name .. ")" else machine.name
 	if currentMachine then
-		Notify.Hint("Tap STOP, then follow the glowing dots to the " .. machine.name .. ".")
+		Notify.Hint("Tap STOP, then follow the glowing dots to the " .. place .. ".")
 	else
-		Notify.Hint("Follow the glowing dots to the " .. machine.name .. ".")
+		Notify.Hint("Follow the glowing dots to the " .. place .. ".")
 	end
 	local shownAt = os.clock()
 	task.delay(120, function() -- (never left on forever)
@@ -245,7 +249,7 @@ local function openNeeds()
 			order += 1
 			local row = Theme.Panel({ Name = machine.id, LayoutOrder = order, Piece = "hud_box", Size = UDim2.new(1, -8, 0, 50), Parent = needsList })
 			Kit.Tag(string.upper(group.name), Colors.Red, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(0, 18), Parent = row })
-			Kit.Text({ Text = machine.name, Font = "Title", TextSize = 15, Position = UDim2.fromOffset(90, 0), Size = UDim2.new(1, -200, 1, 0),
+			Kit.Text({ Text = if machine.dumbbell then machine.name .. " (dumbbells)" else machine.name, Font = "Title", TextSize = 15, Position = UDim2.fromOffset(90, 0), Size = UDim2.new(1, -200, 1, 0),
 				TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
 			local go = Kit.Button("Green", "Go", { Name = "Go", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Parent = row },
 				{ height = 44, width = 90, textSize = 16 })
@@ -471,7 +475,10 @@ Remotes.MachineState.OnClientEvent:Connect(function(state, model)
 	if state == "Enter" and typeof(model) == "Instance" then
 		currentMachine = Machines.ById[model:GetAttribute("MachineId")]
 		-- arrived where a GO button led: the path is done
-		if currentMachine and GuidePath.Target() == currentMachine.id then GuidePath.Hide("Needs") end
+		local target = Machines.ById[GuidePath.Target() or ""]
+		if currentMachine and (GuidePath.Target() == currentMachine.id or (target and target.dumbbell and model:GetAttribute("Dumbbell"))) then
+			GuidePath.Hide("Needs")
+		end
 	elseif state == "Exit" then
 		currentMachine = nil
 		hintedMachine = nil

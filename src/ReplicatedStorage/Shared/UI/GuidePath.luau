@@ -52,7 +52,11 @@ local function machineModel(machineId)
 	local spurts = ClientData.Get().growthSpurts or 0
 	local best, bestScore = nil, math.huge
 	for _, model in ipairs(CollectionService:GetTagged("Machine")) do
-		if model:IsA("Model") and model:GetAttribute("MachineId") == machineId and (not machine or Machines.GymOpenAt(machine, model) <= spurts) then
+		-- (prompt 32) a dumbbell exercise: any dumbbell Train spot (it becomes the exercise you pick) in a gym you've opened
+		local match = if machine and machine.dumbbell
+			then model:GetAttribute("Dumbbell") == true and (Machines.GymUnlock[model:GetAttribute("Gym")] or 0) <= spurts
+			else model:GetAttribute("MachineId") == machineId and (not machine or Machines.GymOpenAt(machine, model) <= spurts)
+		if model:IsA("Model") and match then
 			local busy = model:GetAttribute("UserId") ~= nil or model:FindFirstChild("Occupant") ~= nil
 			local score = (model:GetPivot().Position - from).Magnitude + (busy and 1000 or 0)
 			if score < bestScore then best, bestScore = model, score end

@@ -1,3 +1,5 @@
+-- UNDONE (prompt 32, 21 Oct): the owner went back to the old starter gym. StarterGymBackup.Before was put back in
+-- Studio; this layout is kept in StarterGymBackup.LayoutV2 (untagged). Don't run this again unless the owner asks.
 -- StarterLayout builder (prompt 26, 21 Oct): the starter gym re-laid out so it feels open and organised, like a real gym.
 -- Run ONCE in Studio (Edit mode) on the 21 Oct starter gym (done 21 Oct; the first run moved the west wall's rotated
 -- parts and the wall decor by hand afterwards, fixed here); each step can be run on its own:

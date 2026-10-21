@@ -1,3 +1,5 @@
+-- UNDONE (prompt 32, 21 Oct): the owner went back to the old starter gym; the 11 copies are in
+-- ServerStorage.StarterGymBackup.ProCopies (untagged). Don't run this again unless the owner asks.
 -- StarterProMachines builder (prompt 16, 21 Oct; run once in Studio, Edit mode): one copy of every pro gym machine in the
 -- starter gym, the same copy system as the beach gym: a clone of the pro gym's model (same MachineId, config, tiers, EXP,
 -- so unlocks, the NEW tag and quests are shared) with the model attribute Gym = "Starter" (Machines.GymOpenAt opens it

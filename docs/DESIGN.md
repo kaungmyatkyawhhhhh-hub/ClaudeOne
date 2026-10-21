@@ -159,12 +159,10 @@ Pro gym (unlocks at Growth Spurt 2): Dips (Mid Chest; Triceps, Front Delts), Lat
 Reverse Fly (Rear Delts; Rhomboids; on a pec deck, not a cable), Shrugs (Traps; Forearms), Leg Curl (Hamstrings), Hip Thrust (Glutes; Hamstrings),
 Calf Raise (Calves), Bicep Curl (Biceps; Forearms), Tricep Pushdown (Triceps), Hanging Leg Raise (Abs; Forearms),
 Cable Woodchop (Obliques; Abs).
-(Owner, prompt 16, 21 Oct) The starter gym also has one copy of each of these 11 pro machines (the beach gym's copy
-system: same model, config, tiers, EXP and MachineId; model attribute Gym = "Starter"), in two columns in the middle of
-the room with an 8-stud walkway, so every exercise is open from the start (`machine.openAt = 0`). The pro gym's own
-copies still sit behind its door (Growth Spurt 2); the pro gym needs its own reason to unlock (owner to pick: heavier
-top tiers only there, a gains bonus there, or pro-only machines / cosmetics). Because the Growth Spurt goal now has
-every muscle from the start, Growth Spurt 2 needs level 52 (was 56) to keep its ~15 minutes.
+(Owner, prompt 32, 21 Oct; replaces prompt 16 part 1) These 11 open with the pro gym (Growth Spurt 2; the beach gym's
+copies of Bicep Curl, Lateral Raise and Shrugs at Growth Spurt 1). The starter gym is back to its old layout with only the
+starter machines: every pro machine in the starter gym was too much for new players. Before Growth Spurt 2 the arms are
+trained with dumbbells (the "Train next" window suggests dumbbell exercises too).
 Dumbbells (prompt 16): every dumbbell rack (starter 6 spots, beach 6, pro 4) has Train spots, one lifter each
 (`tools/builders/DumbbellSpots`). Train opens a Black + Gold picker (3 cards per row, scrolls; icon, name, muscles; the
 last exercise first): Bicep Curl, Hammer Curl, Shoulder Press, Lateral Raise, Rear Delt Fly, Overhead Tricep Extension,
@@ -431,8 +429,8 @@ Town hub: starter gym, pro gym, beach gym + posing stage, skate park, smoothie b
 The beach gym (opens at Growth Spurt 1) has NO machines of its own (owner, 8 Oct night): copies of the real machines
 (same model, name, config, tiers, EXP and MachineId, so unlocked weights, the "NEW" tag and quests are shared with every
 gym); only the surroundings are beachy. A copy opens with the beach gym, never later than its own gym
-(`Machines.GymOpenAt`, model attribute `Gym`). No "Pro" copies in the pro gym either. (Prompt 16, 21 Oct) The starter
-gym has a copy of every pro machine, and every gym's dumbbell rack has Train spots (section 2).
+(`Machines.GymOpenAt`, model attribute `Gym`). No "Pro" copies in the pro gym either. (Prompt 16, 21 Oct) Every
+gym's dumbbell rack has Train spots (section 2); the starter gym's pro machine copies were removed again (prompt 32).
 Start (owner's UI v2, 13 Oct, mockups 00): a loading screen from the first frame (ReplicatedFirst; Roblox's default is
 removed): black with the menu art (`Config/UI.MenuArt`) on the right fading into the dark, the GYM ARC logo (GYM white,
 ARC red) and "Everyone starts tiny.", a rotating "TIP:" line (`Config/UI.LoadingTips`), a red progress bar with the step
