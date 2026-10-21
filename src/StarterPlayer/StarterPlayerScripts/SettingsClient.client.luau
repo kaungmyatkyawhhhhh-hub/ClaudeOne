@@ -6,7 +6,8 @@
 --   Others' Sounds              Off = sounds on other players and their machines stay quiet here (Audio.OthersMuted);
 --                               (the mockup's "Other Screams": other players' lift sounds and screams, ScreamClient)
 --   Low Graphics                On = no shadows and no bloom / depth of field / sun rays on this device
---   Tutorial Hints              the hints and coach lines in the top band (Notify.Hint; the tutorial itself always shows)
+--   Show Tips                   the hints and coach lines in the top band (Notify.Hint) and the unlock guides (GuideClient,
+--                               prompt 39); the tutorial itself always shows. (Was "Tutorial Hints".)
 --   Gain Numbers                On / Minimal / Off (tap cycles; MachineClient reads it every rep)
 --   Rep Flash, EXP Popups, Spot Requests   On / Off
 -- "Others' Auras" (owner, 14 Oct): other players' auras On / Off (AuraClient; Low Graphics also turns them off).
@@ -115,7 +116,7 @@ row(1, "music", "Music", "music", ONOFF)
 row(2, "effects", "Sound Effects", "volume-2", ONOFF)
 row(3, "otherScreams", "Others' Sounds", "users", ONOFF)
 row(4, "lowGraphics", "Low Graphics", "eye", { "Off", "On" })
-row(5, "hints", "Tutorial Hints", "bell", ONOFF)
+row(5, "hints", "Show Tips", "bell", ONOFF) -- (prompt 39: also the unlock guides, GuideClient; was "Tutorial Hints")
 row(6, "gainNumbers", "Gain Numbers", "zap", { "On", "Minimal", "Off" })
 row(7, "repFlash", "Rep Flash", "heart-pulse", ONOFF)
 row(8, "expPopups", "EXP Popups", "sparkles", ONOFF)

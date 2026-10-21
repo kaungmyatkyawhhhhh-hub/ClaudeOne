@@ -64,16 +64,19 @@ local function teleport(player, target)
 		answer(player, false)
 		return
 	end
-	local model = GoTo.Find(target, root.Position, data.growthSpurts or 0)
-	if not model or not model:IsDescendantOf(Workspace) then
+	-- (prompt 39) a place with no model (the posing stage): its spot, facing it
+	local point = GoTo.Point(target)
+	local model = if point then nil else GoTo.Find(target, root.Position, data.growthSpurts or 0)
+	if not point and (not model or not model:IsDescendantOf(Workspace)) then
 		answer(player, false)
 		return
 	end
 	last[player] = now
 	MachineService.LeavePlayer(player) -- (off a machine first)
 	-- the spot in front of it, or around it
-	local center = model:GetBoundingBox().Position
-	local first = GoTo.Spot(model)
+	local Town = require(ReplicatedStorage.Shared.Config.Town)
+	local center = if model then model:GetBoundingBox().Position else Town.Stage.Center
+	local first = if model then GoTo.Spot(model) else point :: Vector3
 	local floor = standAt(first, character)
 	if not floor then
 		local offset = (first - center) * Vector3.new(1, 0, 1)

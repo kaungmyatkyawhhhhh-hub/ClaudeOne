@@ -146,6 +146,17 @@ function Analytics.ShopEvent(player, info)
 	if IS_STUDIO then print("[Analytics] " .. name) end
 end
 
+-- (prompt 39) the unlock guides: "Guide_<shown|done|skip|timeout>_<id>" and taps on a locked menu tile
+-- "Locked_Tap_<tile>" (the value = the player's LVL), spaced like the shop events
+function Analytics.GuideEvent(player, name: string, value: number?)
+	local last = lastShopEvent[player] or {}
+	lastShopEvent[player] = last
+	if last[name] and os.clock() - last[name] < ShopEventGap then return end
+	last[name] = os.clock()
+	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, name, value or 1)
+	if IS_STUDIO then print("[Analytics] " .. name .. " " .. tostring(value or 1)) end
+end
+
 function Analytics.ProductBought(player, key: string, robux: number?)
 	local name = "Product_Bought_" .. key
 	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, name, robux or 0)

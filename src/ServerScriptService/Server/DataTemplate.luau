@@ -53,6 +53,9 @@ function DataTemplate.new()
 		legends = { met = {}, active = nil }, -- met: legendId -> true; active: { id, progress, goal } (Config.Legends)
 		welcome = { offlineCoins = 0, streakCoins = 0, streakToken = false }, -- what this join paid out (menu info)
 		onboarding = { geneticsRevealed = false, tutorialStep = 1, tutorialVersion = 2 }, -- Config.Onboarding (Done = finished)
+		-- (prompt 39) the unlock guides seen (Config/Guides: [save id] = true; "New:<tile>" = its NEW glow tapped);
+		-- version 0 = not set up yet (PlayerData: an existing player's already-open features count as seen)
+		guides = { seen = {}, version = 0 },
 		-- Settings menu: volumes, gain popups On/Minimal/Off, the per-rep EXP popups On/Off; one-time hints; wardrobe top + shorts color
 		settings = { music = 1, effects = 1, gainNumbers = "On", repFlash = "On", expPopups = "On", spotRequests = "On", pumpHintSeen = false, menuCollapsed = false, rightCollapsed = false, hints = "On", otherScreams = "On", otherAuras = "On", otherTrainers = "On", lowGraphics = "Off", inventoryTab = "Items", top = "Shirtless", shorts = "Black" },
 		meta = { firstJoin = 0, lastSeen = 0, sessions = 0 },

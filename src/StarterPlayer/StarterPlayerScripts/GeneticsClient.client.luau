@@ -1454,7 +1454,10 @@ if CAMERA.Rig then CAMERA.Rig.AttributeChanged:Connect(CAMERA.Reframe) end
 menuButton.Activated:Connect(function()
 	if isOpen then keep() else open() end
 end)
-UIBus.OpenGenetics.Event:Connect(open)
+UIBus.OpenGenetics.Event:Connect(function(...)
+	if UIBus.IsLocked and UIBus.IsLocked("Genetics") then UIBus.ShowLocked("Genetics") return end -- (prompt 39: still locked, GuideClient)
+	open(...)
+end)
 
 -- First join: reveal right after the player presses Play on the menu screen.
 task.spawn(function()

@@ -380,6 +380,16 @@ local function onPlayerAdded(player)
 		data.meta.firstJoin = os.time()
 	end
 	data.meta.sessions += 1
+	-- (prompt 39) the unlock guides, once: a player who already played gets no guides (and no NEW glows) for what's open to
+	-- them already; a new player (still in the tutorial) gets every one
+	if type(data.guides) ~= "table" then data.guides = { seen = {}, version = 0 } end
+	if type(data.guides.seen) ~= "table" then data.guides.seen = {} end
+	if data.guides.version ~= 1 then
+		data.guides.version = 1
+		if (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done then
+			pcall(function() PlayerData.MarkOpenGuidesSeen(data) end)
+		end
+	end
 
 	profiles[player] = { data = data, canSave = canSave, ownsLock = ownsLock }
 	PlayerData.RefreshMaxStamina(player)
@@ -803,6 +813,33 @@ end
 function PlayerData.ShakeCount(player): number
 	local data = PlayerData.Get(player)
 	return data and tonumber(data.items.Shake) or 0
+end
+
+-- (prompt 39) every guide and NEW glow for what's open to this player now counts as seen (an existing player after the
+-- update: no spam). The "ready" guides: seen once they've had that Growth Spurt / alter.
+function PlayerData.MarkOpenGuidesSeen(data)
+	local Guides = require(Config.Guides)
+	local seen = data.guides.seen
+	local state = { spurtReady = (data.growthSpurts or 0) >= 1, alterReady = type(data.alter) == "table" and (data.alter.highest or 0) >= 1 }
+	for _, guide in ipairs(Guides.List) do
+		if not guide.every and Guides.Met(guide.need, data, state) then seen[guide.id] = true end
+	end
+	for _, lock in ipairs(Guides.Locks) do
+		if Guides.Met(lock.need, data) then seen["New:" .. lock.tile] = true end
+	end
+end
+
+-- (prompt 39) an unlock guide finished (or skipped / timed out), or a NEW glow tapped: saved once. Returns true the first
+-- time (the caller pays a first-time reward).
+function PlayerData.SetGuideSeen(player, id: string): boolean
+	local data = PlayerData.Get(player)
+	if not data or type(id) ~= "string" or #id > 40 then return false end
+	data.guides = type(data.guides) == "table" and data.guides or { seen = {}, version = 1 }
+	data.guides.seen = type(data.guides.seen) == "table" and data.guides.seen or {}
+	if data.guides.seen[id] then return false end
+	data.guides.seen[id] = true
+	replicate(player, { "guides", "seen", id }, true)
+	return true
 end
 
 -- Tutorial progress only moves forward (any step up to Onboarding.Done); no rewards hang on it.

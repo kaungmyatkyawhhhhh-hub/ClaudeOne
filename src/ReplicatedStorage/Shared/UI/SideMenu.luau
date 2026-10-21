@@ -15,6 +15,12 @@
 --  * The Wardrobe tile is hidden while Config/Features.Wardrobe is false (no gap). Ids that aren't tiles any more (the
 --    top bar's pills) get a hidden placeholder with the same api.
 -- SideMenu.Add returns { button, SetActive(on), SetDot(on), SetBadge(n), SetText, SetShown(on), Activated }.
+-- (prompt 39, 22 Oct) Tiles that open later (Config/Guides.Locks, GuideClient):
+--   SideMenu.SetLocked(id, locked, onLockedTap)  locked: the tile stays (owner: never hidden), dimmed with a small gold
+--                                                padlock; a tap shakes it and calls onLockedTap() instead of Activated.
+--                                                Unlocked after being locked: the padlock pops off with a sparkle.
+--   SideMenu.SetNew(id, on, onTapped)            the gold NEW glow (a pulsing gold border + "NEW") until it's tapped once
+--   SideMenu.Button(id)                          the tile's button (the unlock guides point at it)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
@@ -212,12 +218,15 @@ local function makeTile(id, labelText, iconFactory)
 	})
 	local badgeText = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 11, Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = badge })
 
-	local entry = { id = id, order = cfg.order or 50, button = button, label = label, count = 0, dot = false, active = false, hover = false }
+	local entry = { id = id, order = cfg.order or 50, button = button, label = label, count = 0, dot = false, active = false, hover = false,
+		face = face, border = border }
 	function entry.paint()
 		-- lighter glass on hover / while its panel is open; the open one gets a gold border
 		Theme.Tween(face, { BackgroundTransparency = (entry.active or entry.hover) and 0 or 0.08,
 			BackgroundColor3 = (entry.active or entry.hover) and Color3.fromRGB(255, 245, 235) or Color3.new(1, 1, 1) }, 0.15)
-		Theme.Tween(border, { Color = entry.active and Colors.Gold or Color3.new(1, 1, 1), Transparency = entry.active and 0.1 or (entry.hover and 0.7 or 0.86) }, 0.15)
+		if not entry.isNew then -- (the NEW glow drives the border while it's on)
+			Theme.Tween(border, { Color = entry.active and Colors.Gold or Color3.new(1, 1, 1), Transparency = entry.active and 0.1 or (entry.hover and 0.7 or 0.86) }, 0.15)
+		end
 		Theme.Tween(grow, { Scale = entry.hover and 1.08 or 1 }, 0.22, Theme.Motion.Bounce)
 	end
 	function entry.paintBadge()
@@ -276,7 +285,25 @@ function SideMenu.Add(id, labelText, iconFactory, _order)
 	if isTile then
 		entry = makeTile(id, labelText, iconFactory)
 		if id == "Wardrobe" and not Features.Wardrobe then entry.hidden = true end
-		entry.button.Activated:Connect(function() activated:Fire() end)
+		entry.button.Activated:Connect(function()
+			-- (prompt 39) a locked tile: a shake and the "locked" toast instead
+			if entry.locked then
+				local face = entry.face
+				task.spawn(function()
+					for _, dx in ipairs({ -5, 5, -4, 4, -2, 2, 0 }) do
+						face.Position = UDim2.fromOffset(dx, 0)
+						task.wait(0.035)
+					end
+				end)
+				if entry.onLockedTap then entry.onLockedTap() end
+				return
+			end
+			if entry.isNew then
+				SideMenu.SetNew(id, false)
+				if entry.onNewTapped then entry.onNewTapped() end
+			end
+			activated:Fire()
+		end)
 	else
 		local button = New("TextButton", { Name = id, Text = "", Visible = false, Parent = bar })
 		entry = { id = id, order = 99, button = button, placeholder = true, count = 0, dot = false,
@@ -304,6 +331,80 @@ function SideMenu.Add(id, labelText, iconFactory, _order)
 	end
 	layout()
 	return api
+end
+
+local function entryOf(id)
+	for _, entry in ipairs(entries) do
+		if entry.id == id and not entry.placeholder then return entry end
+	end
+	return nil
+end
+
+function SideMenu.Button(id): GuiObject?
+	local entry = entryOf(id)
+	return entry and entry.button
+end
+
+function SideMenu.SetLocked(id, locked: boolean, onLockedTap)
+	local entry = entryOf(id)
+	if not entry then return end
+	entry.onLockedTap = onLockedTap
+	local wasLocked = entry.locked == true
+	entry.locked = locked
+	local shade = entry.face:FindFirstChild("LockShade")
+	if locked and not shade then
+		shade = New("Frame", { Name = "LockShade", BackgroundColor3 = Color3.fromHex("#0B0A0C"), BackgroundTransparency = 0.45, Size = UDim2.fromScale(1, 1),
+			ZIndex = 5, Parent = entry.face }, { New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
+		local padlock = New("Frame", { Name = "Padlock", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -8, 0, 8),
+			Size = UDim2.fromOffset(20, 20), ZIndex = 7, Parent = entry.button }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = Color3.fromHex("#141417"), Thickness = 1.5 }),
+		})
+		local icon = Pieces.Icon("lock", Color3.fromHex("#141417"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.62, 0.62), ZIndex = 8, Parent = padlock })
+		icon:SetAttribute("KeepColor", true)
+	elseif not locked and shade then
+		shade:Destroy()
+		local padlock = entry.button:FindFirstChild("Padlock")
+		if padlock and wasLocked then
+			-- the padlock pops off: it grows, fades and is gone
+			local scale = New("UIScale", { Parent = padlock })
+			Theme.Tween(scale, { Scale = 1.8 }, 0.35)
+			Theme.Fade(padlock, false, 0.35)
+			task.delay(0.4, function() padlock:Destroy() end)
+		elseif padlock then
+			padlock:Destroy()
+		end
+	end
+end
+
+function SideMenu.SetNew(id, on: boolean, onTapped)
+	local entry = entryOf(id)
+	if not entry then return end
+	if onTapped then entry.onNewTapped = onTapped end
+	if entry.isNew == on then return end
+	entry.isNew = on
+	local tag = entry.button:FindFirstChild("NewTag")
+	if on then
+		if not tag then
+			tag = New("Frame", { Name = "NewTag", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 0),
+				Size = UDim2.fromOffset(32, 14), ZIndex = 7, Parent = entry.button }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+			Kit.Text({ Text = "NEW", Font = "Title", TextSize = 10, TextColor3 = Color3.fromHex("#141417"), Size = UDim2.fromScale(1, 1), ZIndex = 8, Parent = tag })
+		end
+		task.spawn(function()
+			while entry.isNew and entry.button.Parent do
+				local t = os.clock()
+				entry.border.Color = Colors.Gold
+				entry.border.Thickness = 2
+				entry.border.Transparency = 0.15 + 0.35 * (0.5 + 0.5 * math.sin(t * 4))
+				task.wait()
+			end
+		end)
+	else
+		if tag then tag:Destroy() end
+		entry.border.Thickness = 1.2
+		entry.paint()
+	end
 end
 
 -- SetHidden(true) hides the whole menu (a screen that needs the full width, like Genetics).

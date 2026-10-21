@@ -6,6 +6,9 @@
 --       the gym has several of each machine: the nearest one nobody is using (any one if all are busy), only in gyms the
 --       player has opened (spurts = their Growth Spurts); a dumbbell exercise = any dumbbell Train spot
 --   GoTo.Spot(model) -> Vector3   on the floor, just outside the machine on the side facing the middle of its gym
+-- (prompt 39) Places too, for the unlock guides: "Gym:<Beach|Pro>" (the nearest free machine in that gym, once it's open),
+-- "Tag:<tag>" (the nearest model with that tag: TrainerDesk = the Trainer Agency, ArmWrestleTable, PumpShopCounter; a
+-- tagged part counts as its model) and "Stage" (the posing stage: GoTo.Point gives its spot, there's no model).
 local CollectionService = game:GetService("CollectionService")
 
 local Machines = require(script.Parent.Config.Machines)
@@ -14,13 +17,57 @@ local GoTo = {}
 
 GoTo.Approach = 2.5 -- studs outside the machine's box
 
+local PLACE_TAGS = { TrainerDesk = true, ArmWrestleTable = true, PumpShopCounter = true }
+
 function GoTo.Valid(target: any): boolean
-	return target == "Coach" or (type(target) == "string" and Machines.ById[target] ~= nil)
+	if type(target) ~= "string" then return false end
+	if target == "Coach" or target == "Stage" or Machines.ById[target] ~= nil then return true end
+	local gym = string.match(target, "^Gym:(%a+)$")
+	if gym then return Machines.GymUnlock[gym] ~= nil end
+	local tag = string.match(target, "^Tag:(%a+)$")
+	return tag ~= nil and PLACE_TAGS[tag] == true
+end
+
+-- (prompt 39) a target with no model: its spot on the floor (the posing stage: in front of it), else nil
+function GoTo.Point(target: string): Vector3?
+	if target == "Stage" then
+		local Town = require(script.Parent.Config.Town)
+		local stage = Town.Stage
+		return stage.Center - Vector3.new(0, 0, stage.Size.Z / 2 + 4)
+	end
+	return nil
 end
 
 function GoTo.Find(target: string, from: Vector3, spurts: number): Model?
 	if target == "Coach" then
 		return CollectionService:GetTagged("Coach")[1]
+	end
+	local nearest = function(models)
+		local best, bestScore = nil, math.huge
+		for _, model in ipairs(models) do
+			local busy = model:GetAttribute("UserId") ~= nil or model:FindFirstChild("Occupant") ~= nil
+			local score = (model:GetPivot().Position - from).Magnitude + (if busy then 1000 else 0)
+			if score < bestScore then best, bestScore = model, score end
+		end
+		return best
+	end
+	local gym = string.match(target, "^Gym:(%a+)$")
+	if gym then
+		if (Machines.GymUnlock[gym] or math.huge) > spurts then return nil end
+		local list = {}
+		for _, model in ipairs(CollectionService:GetTagged("Machine")) do
+			if model:IsA("Model") and model:GetAttribute("Gym") == gym then table.insert(list, model) end
+		end
+		return nearest(list)
+	end
+	local tag = string.match(target, "^Tag:(%a+)$")
+	if tag then
+		local list = {}
+		for _, tagged in ipairs(CollectionService:GetTagged(tag)) do
+			local model = if tagged:IsA("Model") then tagged else tagged:FindFirstAncestorWhichIsA("Model")
+			if model and model:IsDescendantOf(workspace) then table.insert(list, model) end
+		end
+		return nearest(list)
 	end
 	local machine = Machines.ById[target]
 	local best, bestScore = nil, math.huge

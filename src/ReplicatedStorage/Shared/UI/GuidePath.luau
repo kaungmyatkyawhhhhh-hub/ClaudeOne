@@ -10,8 +10,9 @@
 --   GuidePath.Teleport(target)      (22 Oct, owner: the GO TO buttons teleport) a 0.3 s fade to black with a whoosh, the
 --                                   server moves the player in front of the target (GoToService: checks it, 3 s cooldown,
 --                                   off a machine first), the fade back in. Yields; returns true if the player was moved.
---   GuidePath.Mark(target, seconds?) a glowing gold marker on the target (a soft gold glow over it) and a gold arrow
---                                   bouncing above it, for `seconds` (nil = until Unmark / the next Mark): the tutorial
+--   GuidePath.Mark(target, seconds?, label?) a glowing gold marker on the target (a soft gold glow over it) and a gold
+--                                   arrow bouncing above it (with `label`, its name in gold over the arrow: the unlock
+--                                   guides' places), for `seconds` (nil = until Unmark / the next Mark): the tutorial
 --   GuidePath.Unmark()
 -- (prompt 11, 21 Oct) Under the dots a glowing gold ribbon (Beams lying flat on the floor) runs from the player to the target.
 local Players = game:GetService("Players")
@@ -273,6 +274,8 @@ RunService.Heartbeat:Connect(function(dt)
 end)
 
 function GuidePath.Show(target: any, owner: string?)
+	-- (prompt 39) a place with no model (the posing stage): its spot
+	if type(target) == "string" and GoTo.Point(target) then target = GoTo.Point(target) end
 	if wantedTarget == target and targetPoint then
 		wantedOwner = owner
 		return
@@ -380,16 +383,27 @@ end
 
 -- A gold arrow over the target, bouncing, pointing down at it, for `seconds`.
 local markToken = 0
-function GuidePath.Mark(target: any, seconds: number?)
+function GuidePath.Mark(target: any, seconds: number?, label: string?)
 	markToken += 1
 	local token = markToken
-	local model = if typeof(target) == "Instance" then target else (targetModel or machineModel(target))
-	if not model or not model:IsA("Model") then return end
-	-- (anchored on an attachment over the model's box, above the machine sign's diamond and name)
-	local boxCFrame, size = model:GetBoundingBox()
-	local anchor = New("Attachment", { Name = "GoToMarkAnchor", WorldPosition = boxCFrame.Position + Vector3.new(0, size.Y / 2 + 5.2, 0), Parent = Workspace.Terrain })
-	local gui = New("BillboardGui", { Name = "GoToMark", AlwaysOnTop = true, LightInfluence = 0, Size = UDim2.fromOffset(64, 64), Adornee = anchor,
-		Parent = player:WaitForChild("PlayerGui") })
+	local point = if type(target) == "string" then GoTo.Point(target) else nil
+	local model = if point then nil elseif typeof(target) == "Instance" then target else (targetModel or machineModel(target))
+	if not point and (not model or not model:IsA("Model")) then return end
+	-- (anchored on an attachment over the model's box, above the machine sign's diamond and name; a place with no model:
+	-- over its spot)
+	local top
+	if model then
+		local boxCFrame, size = model:GetBoundingBox()
+		top = boxCFrame.Position + Vector3.new(0, size.Y / 2 + 5.2, 0)
+	else
+		top = (point :: Vector3) + Vector3.new(0, 7, 0)
+	end
+	local anchor = New("Attachment", { Name = "GoToMarkAnchor", WorldPosition = top, Parent = Workspace.Terrain })
+	local gui = New("BillboardGui", { Name = "GoToMark", AlwaysOnTop = true, LightInfluence = 0, Size = UDim2.fromOffset(if label then 220 else 64, if label then 100 else 64),
+		Adornee = anchor, Parent = player:WaitForChild("PlayerGui") })
+	if label then
+		require(script.Parent.Kit).Text({ Name = "Label", Text = label, Font = "Title", TextSize = 24, TextColor3 = Colors.Gold, Size = UDim2.new(1, 0, 0, 30), Parent = gui })
+	end
 	local glow = New("Highlight", { Name = "GoToGlow", Adornee = model, FillColor = Colors.Gold, FillTransparency = 0.75, OutlineTransparency = 1,
 		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = Workspace.CurrentCamera })
 	gui.Destroying:Connect(function()
@@ -397,14 +411,15 @@ function GuidePath.Mark(target: any, seconds: number?)
 		glow:Destroy()
 	end)
 	local Pieces = require(script.Parent.Pieces)
-	local arrow = Pieces.Icon("arrow-big-up", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.8, 0.8), Rotation = 180, Parent = gui })
+	local arrow = Pieces.Icon("arrow-big-up", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, if label then 0.66 else 0.5),
+		Size = if label then UDim2.fromOffset(52, 52) else UDim2.fromScale(0.8, 0.8), Rotation = 180, Parent = gui })
 	arrow:SetAttribute("KeepColor", true)
 	task.spawn(function()
 		local t0 = os.clock()
-		while gui.Parent and token == markToken and model.Parent and os.clock() - t0 < (seconds or math.huge) do
+		local baseY = if label then 0.66 else 0.5
+		while gui.Parent and token == markToken and (not model or model.Parent) and os.clock() - t0 < (seconds or math.huge) do
 			local t = os.clock() - t0
-			arrow.Position = UDim2.new(0.5, 0, 0.5, math.sin(t * 6) * 8)
+			arrow.Position = UDim2.new(0.5, 0, baseY, math.sin(t * 6) * 8)
 			glow.FillTransparency = 0.68 + 0.14 * math.sin(t * 3)
 			task.wait()
 		end

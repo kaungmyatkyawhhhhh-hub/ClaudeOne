@@ -542,6 +542,7 @@ modal.closeButton.Activated:Connect(function()
 	UIBus.MenuPanelVisible:Fire(false)
 end)
 UIBus.OpenInventory.Event:Connect(function(openTab, auraId)
+	if openTab ~= "Trainers" and UIBus.IsLocked and UIBus.IsLocked("Inventory") then UIBus.ShowLocked("Inventory") return end -- (prompt 39: still locked, GuideClient)
 	-- (the Store's Auras tab opens the Auras tab, with that aura picked)
 	if openTab == "Auras" and type(auraId) == "string" and Auras.ById[auraId] then AURA.picked = auraId end
 	-- (prompt 28) trainers live in the TRAINERS window now

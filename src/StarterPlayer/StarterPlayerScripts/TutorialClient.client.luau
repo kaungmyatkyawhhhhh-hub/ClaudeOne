@@ -115,8 +115,10 @@ task.spawn(function()
 	if skip.Parent then skip.Visible = true end
 end)
 
-local dialog = Theme.Panel({ Name = "CoachDialog", Clickable = true, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
-	Size = UDim2.fromOffset(540, 92), Visible = false, Parent = root }, {})
+-- (prompt 39) the Coach Dex dialog lives in Shared/UI/CoachDialog now (the unlock guides use the same box), unchanged
+local CoachDialog = require(Shared.UI.CoachDialog)
+local coachDialog = CoachDialog.new(root, Onboarding.FinishCoins or 0)
+local dialog = coachDialog.frame
 -- (prompt 28) the dialog and the GO TO button above the hotbar while it shows (HotbarClient: 10 px gap + a 54 px slot): on
 -- a phone the dialog sat on the shake slot the shake step asks you to tap
 task.spawn(function()
@@ -134,103 +136,13 @@ task.spawn(function()
 		task.wait(0.3)
 	end
 end)
-local portrait = New("ViewportFrame", { Name = "Portrait", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(72, 72),
-	BackgroundColor3 = Colors.Blue, Ambient = Color3.fromRGB(190, 190, 190), LightColor = Color3.new(1, 1, 1), LightDirection = Vector3.new(-0.4, -0.6, -1),
-	Parent = dialog }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-	New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 170)) }),
-})
-local nameRow = New("Frame", { Name = "NameRow", BackgroundTransparency = 1, Position = UDim2.fromOffset(94, 7), Size = UDim2.new(1, -104, 0, 22), Parent = dialog }, {
-	Theme.List(Enum.FillDirection.Horizontal, 4, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
-})
-Kit.Text({ LayoutOrder = 1, Text = Quests.CoachName .. " · Reward", Font = "Title", TextSize = 17, TextColor3 = Colors.Gold, Size = UDim2.fromOffset(0, 22),
-	AutomaticSize = Enum.AutomaticSize.X, Parent = nameRow })
-Kit.Coin(17, { LayoutOrder = 2, Parent = nameRow })
-Kit.Text({ LayoutOrder = 3, Text = tostring(Onboarding.FinishCoins or 0), Font = "Title", TextSize = 17, TextColor3 = Colors.Gold, Size = UDim2.fromOffset(0, 22),
-	AutomaticSize = Enum.AutomaticSize.X, Parent = nameRow })
-local dialogText = Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 14, TextWrapped = true, Position = UDim2.fromOffset(94, 30), Size = UDim2.new(1, -106, 0, 38),
-	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = dialog })
-local dialogFoot = Kit.Text({ Name = "Continue", Text = "", Font = "Body", TextSize = 12, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(94, 70), Size = UDim2.new(1, -106, 0, 16),
-	TextXAlignment = Enum.TextXAlignment.Left, Parent = dialog })
-
--- the Coach's face: a copy of the Coach NPC in the portrait (no scripts, prompts or labels)
-task.spawn(function()
-	local coach = CollectionService:GetTagged("Coach")[1]
-	local waited = 0
-	while not coach and waited < 15 do
-		task.wait(0.5)
-		waited += 0.5
-		coach = CollectionService:GetTagged("Coach")[1]
-	end
-	-- (owner, 15 Oct: Dex's body is rebuilt by the server after he loads; copy him once his face head and his muscle
-	-- meshes are there, so the portrait shows the new Dex, not the plain body)
-	waited = 0
-	while coach and (not coach:FindFirstChild("ClassicHead") or not coach:FindFirstChild("MuscleMeshes")) and waited < 30 do
-		task.wait(0.5)
-		waited += 0.5
-	end
-	if coach then task.wait(1) end
-	local head = coach and coach:FindFirstChild("Head")
-	if not head then
-		Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait })
-		return
-	end
-	local ok = pcall(function()
-		coach.Archivable = true
-		for _, d in ipairs(coach:GetDescendants()) do d.Archivable = true end
-		local copy = coach:Clone()
-		for _, d in ipairs(copy:GetDescendants()) do
-			if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("Sound") then d:Destroy() end
-		end
-		local world = New("WorldModel", { Parent = portrait })
-		copy.Parent = world
-		local copyHead = copy:FindFirstChild("Head") :: BasePart
-		local camera = New("Camera", { FieldOfView = 30, Parent = portrait })
-		local face = copyHead.CFrame
-		-- head and his huge shoulders (owner, 15 Oct: the new Dex is far wider, so the camera sits further back)
-		camera.CFrame = CFrame.lookAt(face.Position + face.LookVector * 9 + Vector3.new(0, 0.6, 0), face.Position - Vector3.new(0, 0.9, 0))
-		portrait.CurrentCamera = camera
-	end)
-	if not ok then Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait }) end
-end)
-
-local pages, pageIndex = nil, 0
-local showPage -- (below)
+-- on a machine the machine HUD owns the screen: no dialog (the band shows the step's line)
 local function placeDialog()
-	-- on a machine the machine HUD owns the screen: no dialog (the band shows the step's line)
-	if onMachine and pages then
-		pages = nil
-		showPage()
-	end
-end
-function showPage()
-	if not pages or pageIndex > #pages then
-		if dialog.Visible then
-			local tween = Theme.Fade(dialog, false, 0.2)
-			if tween then tween.Completed:Connect(function() if not pages then dialog.Visible = false end end) else dialog.Visible = false end
-		end
-		pages = nil
-		return
-	end
-	dialogText.Text = pages[pageIndex]
-	dialogFoot.Text = string.format("Tap to continue (%d/%d)", pageIndex, #pages)
-	if not dialog.Visible then
-		dialog.Visible = true
-		Theme.Fade(dialog, true, 0.2)
-	end
+	if onMachine and coachDialog.IsShowing() then coachDialog.Hide() end
 end
 local function showCoach(step)
-	pages = (step and not onMachine) and step.coach or nil
-	pageIndex = 1
-	showPage()
+	if step and not onMachine and step.coach then coachDialog.Show(step.coach) else coachDialog.Hide() end
 end
-dialog.Activated:Connect(function()
-	if not pages then return end
-	Audio.PlayUI("Click")
-	pageIndex += 1
-	showPage()
-end)
 
 ------------------------------------------------------------------------
 -- The glowing path + outline to the step's machine (Shared/UI/GuidePath; the Growth Spurt's Go buttons use it too)
@@ -333,7 +245,7 @@ local function refreshStep()
 	if coachShownFor ~= stepIndex then
 		coachShownFor = stepIndex
 		showCoach(step)
-	elseif pages then
+	elseif coachDialog.IsShowing() then
 		placeDialog()
 	end
 	if step.target and onMachine ~= step.target then
@@ -410,7 +322,7 @@ local function finish(skipped: boolean?)
 	UIBus.TutorialChanged:Fire()
 	hideShakeArrow()
 	shownText = nil
-	pages = nil
+	coachDialog.Hide()
 	Notify.SetBand(nil)
 	Notify.Reserve(0)
 	gui:Destroy()

@@ -812,6 +812,7 @@ end)
 UIBus.RegisterPanel("Trainers", function() modal.close() end)
 -- (tab "My" = MY TRAINERS; nothing = the Agency)
 UIBus.OpenAgency.Event:Connect(function(openTab)
+	if UIBus.IsLocked and UIBus.IsLocked("Trainers") then UIBus.ShowLocked("Trainers") return end -- (prompt 39: still locked, GuideClient)
 	if not modal.isOpen() then UIBus.PanelOpened("Trainers") end
 	showTab(if openTab == "My" then "My" else "Agency")
 	open()
@@ -852,6 +853,7 @@ end
 remote.OnClientEvent:Connect(function(kind, info)
 	info = type(info) == "table" and info or {}
 	if kind == "Open" then
+		if UIBus.IsLocked and UIBus.IsLocked("Trainers") then UIBus.ShowLocked("Trainers") return end -- (prompt 39: still locked, GuideClient)
 		if not modal.isOpen() then UIBus.PanelOpened("Trainers") end
 		showTab("Agency") -- (the Agency desk's prompt)
 		open()

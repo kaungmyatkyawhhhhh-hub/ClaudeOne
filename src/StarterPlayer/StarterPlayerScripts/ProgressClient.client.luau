@@ -445,6 +445,7 @@ local function refresh()
 	end
 	-- (prompt 12) "Finish faster" at 75%+
 	local finish = not ready and not progress.maxed and percent >= FINISH_AT and not inTutorial
+		and not (UIBus.IsLocked and UIBus.IsLocked("Store")) -- (prompt 39: not into a locked Shop)
 		and Monetization.ProductByKey.ShakePack ~= nil and Monetization.ForSale(Monetization.ProductByKey.ShakePack)
 	cardLink.Visible, stripLink.Visible = finish, finish
 	holder.Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6 + (if finish then LINK_H - 18 else 0))

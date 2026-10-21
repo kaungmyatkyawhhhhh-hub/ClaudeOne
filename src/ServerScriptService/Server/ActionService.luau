@@ -174,6 +174,70 @@ handlers.ShopEvent = function(player, info)
 	Analytics.ShopEvent(player, info)
 end
 
+-- (prompt 39) the unlock guides. { id = save id ("BeachGym", "SpurtReadyAgain:3", "New:Store"), how = "shown" | "done" |
+-- "skip" | "timeout" | "tap" }. Checked: a real guide (Config/Guides) whose condition is met now (or a real locked tile);
+-- saved once; a first-time guide DONE pays its reward once (the gold "+25" pill on the client).
+handlers.Guide = function(player, info)
+	if type(info) ~= "table" or type(info.id) ~= "string" then return end
+	local how = info.how
+	if how ~= "shown" and how ~= "done" and how ~= "skip" and how ~= "timeout" and how ~= "tap" then return end
+	local Guides = require(Config.Guides)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local tile = string.match(info.id, "^New:(%a+)$")
+	if tile then
+		local lock = Guides.LockByTile[tile]
+		if lock and how == "tap" and Guides.Met(lock.need, data) then PlayerData.SetGuideSeen(player, info.id) end
+		return
+	end
+	local baseId, n = string.match(info.id, "^(%a+):(%d+)$")
+	local guide = Guides.ById[baseId or info.id]
+	if not guide or (baseId ~= nil) ~= (guide.every ~= nil) then return end
+	if Guides.SaveId(guide, data) ~= info.id then return end
+	local _ = n
+	-- the condition, as the server sees it
+	local Alters = require(Config.Alters)
+	local Muscles = require(Config.Muscles)
+	local Machines = require(Config.Machines)
+	local trainable = Machines.TrainableMuscles(data.growthSpurts)
+	local spurt = GrowthSpurts.Progress(data, Muscles.Groups, trainable)
+	local state = {}
+	if spurt.maxed then
+		local alter = Alters.Progress(data, Muscles.Groups, trainable)
+		state.alterReady = alter.ready == true and not alter.locked
+		local highest = type(data.alter) == "table" and data.alter.highest or 0
+		state.alterTier = state.alterReady and Alters.TierOf(highest + 1) > Alters.TierOf(highest)
+	else
+		state.spurtReady = spurt.ready == true
+	end
+	-- (a "ready" guide may finish after the player already grew: then the spurt / alter they did counts)
+	local highest = type(data.alter) == "table" and data.alter.highest or 0
+	local met = Guides.Met(guide.need, data, state)
+		or (guide.need.ready == "spurt" and (data.growthSpurts or 0) >= 1)
+		or ((guide.need.ready == "alter" or guide.need.alterTier) and highest >= 1)
+	if not met then return end
+	Analytics.GuideEvent(player, "Guide_" .. how .. "_" .. guide.id)
+	if how == "shown" then return end
+	if PlayerData.SetGuideSeen(player, info.id) then
+		-- its reminder (`after`) never also plays for the same Growth Spurt / alter
+		for _, other in ipairs(Guides.List) do
+			if other.after == guide.id then PlayerData.SetGuideSeen(player, Guides.SaveId(other, data)) end
+		end
+		if how == "done" and guide.reward and not guide.every then
+			PlayerData.AddCoins(player, guide.reward)
+			Remotes.PlayerEvent:FireClient(player, "GuideReward", { coins = guide.reward })
+		end
+	end
+end
+
+-- (prompt 39) a tap on a locked menu tile (analytics only: what players are curious about)
+handlers.LockedTap = function(player, tile)
+	local Guides = require(Config.Guides)
+	if type(tile) ~= "string" or not Guides.LockByTile[tile] then return end
+	local data = PlayerData.Get(player)
+	Analytics.GuideEvent(player, "Locked_Tap_" .. tile, data and Guides.Level(data) or 0)
+end
+
 -- Other services add handlers.
 function ActionService.Register(action, handler)
 	handlers[action] = handler

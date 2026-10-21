@@ -437,6 +437,7 @@ end)
 UIBus.RegisterPanel("Store", function() modal.close() end)
 -- (tab id, item key?) (prompt 12: an item key opens the Store on that item, e.g. the Growth Spurt card's "Finish faster")
 UIBus.OpenShop.Event:Connect(function(tab, itemKey)
+	if UIBus.IsLocked and UIBus.IsLocked("Store") then UIBus.ShowLocked("Store") return end -- (prompt 39: still locked, GuideClient)
 	if hasTab[tab] then
 		currentTab = tab
 		modal.selectTab(tab)
