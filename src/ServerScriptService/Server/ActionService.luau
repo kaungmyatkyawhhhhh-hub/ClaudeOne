@@ -168,6 +168,12 @@ handlers.SetSettings = function(player, settings)
 	end
 end
 
+-- (prompt 12) shop analytics from the client: { event = "ShopOpened" | "OfferShown" | "OfferTapped", offer = id }
+-- (Analytics.ShopEvent checks the names and spacing)
+handlers.ShopEvent = function(player, info)
+	Analytics.ShopEvent(player, info)
+end
+
 -- Other services add handlers.
 function ActionService.Register(action, handler)
 	handlers[action] = handler

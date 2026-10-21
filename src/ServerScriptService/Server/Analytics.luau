@@ -121,6 +121,37 @@ function Analytics.Event(player, name: string, value: number?)
 	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, name, value or 1)
 end
 
+-- (prompt 12) The shop funnel, so the dashboard shows where buyers drop off: "Shop_Opened", "Offer_Shown_<offer>" and
+-- "Offer_Tapped_<offer>" (the client asks through PlayerAction "ShopEvent"; only these names, and each at most once per
+-- ShopEventGap seconds per player, so a script can't flood the dashboard) and "Product_Bought_<key>" (MonetizationService,
+-- after the receipt is given and saved; the value is the Robux spent).
+local OFFERS = { Stamina = true, ShakeOut = true, AfterSpurt = true, FinishFaster = true }
+local ShopEventGap = 3
+local lastShopEvent = {} -- [player] = { [name] = os.clock() }
+function Analytics.ShopEvent(player, info)
+	if type(info) ~= "table" then return end
+	local name
+	if info.event == "ShopOpened" then
+		name = "Shop_Opened"
+	elseif (info.event == "OfferShown" or info.event == "OfferTapped") and type(info.offer) == "string" and OFFERS[info.offer] then
+		name = (if info.event == "OfferShown" then "Offer_Shown_" else "Offer_Tapped_") .. info.offer
+	else
+		return
+	end
+	local last = lastShopEvent[player] or {}
+	lastShopEvent[player] = last
+	if last[name] and os.clock() - last[name] < ShopEventGap then return end
+	last[name] = os.clock()
+	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, name, 1)
+	if IS_STUDIO then print("[Analytics] " .. name) end
+end
+
+function Analytics.ProductBought(player, key: string, robux: number?)
+	local name = "Product_Bought_" .. key
+	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, name, robux or 0)
+	if IS_STUDIO then print("[Analytics] " .. name .. " " .. tostring(robux)) end
+end
+
 -- After every Growth Spurt; only the first one counts.
 function Analytics.GrowthSpurt(player, data)
 	if data.growthSpurts ~= 1 then return end
@@ -145,6 +176,7 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	tracked[player] = nil
+	lastShopEvent[player] = nil
 end)
 
 return Analytics

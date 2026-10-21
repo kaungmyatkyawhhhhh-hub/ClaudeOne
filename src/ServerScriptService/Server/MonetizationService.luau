@@ -12,6 +12,7 @@ local Monetization = require(Config.Monetization)
 local Stamina = require(Config.Stamina)
 local PlayerData = require(script.Parent.PlayerData)
 local BoostService = require(script.Parent.BoostService)
+local Analytics = require(script.Parent.Analytics)
 
 local Remotes = ReplicatedStorage.Remotes
 local Effects = Monetization.Effects
@@ -139,6 +140,7 @@ local function processReceipt(receipt)
 	-- would lose a paid item. If the save fails, Roblox retries later; the receipt id above stops a double grant.
 	if not PlayerData.SaveNow(player) then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	event(player, "Purchased", { name = product.name })
+	Analytics.ProductBought(player, product.key, receipt.CurrencySpent) -- (prompt 12)
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 

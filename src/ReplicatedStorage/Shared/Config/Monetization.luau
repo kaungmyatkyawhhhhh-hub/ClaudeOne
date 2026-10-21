@@ -32,7 +32,7 @@ Monetization.Products = {
 	{ key = "ShakePack", id = 3718306390, tab = "Boosts", name = "Shake Bundle", text = "3 Energy Shakes.", price = 49, art = "product_shake_bundle" },
 	-- (owner, 14 Oct: was "Stamina Refill", same id, renamed in the Creator Hub; MonetizationService / PlayerData)
 	{ key = "EndlessStamina", id = 3718306417, tab = "Boosts", name = "Endless Stamina", text = "15 min of stamina that never runs out. Stacks up to 60 min.",
-		price = 15, art = "product_endless_stamina" },
+		price = 49, art = "product_endless_stamina" }, -- (prompt 12: was 15 here while Roblox sells it for 49; the Store showed 15 until Roblox's info came)
 	{ key = "DnaToken", id = productId(Products.DNAToken), tab = "Boosts", name = "DNA Token", text = "One genetics reroll.", price = 99, art = "product_dna_token" },
 	-- (bought from the Quests window only, after picking the quest: store = false keeps it out of the Store)
 	{ key = "QuestReroll", id = productId(Products.QuestReroll), name = "Quest Reroll", text = "Swap one daily quest for a new one.", store = false, price = 19 },

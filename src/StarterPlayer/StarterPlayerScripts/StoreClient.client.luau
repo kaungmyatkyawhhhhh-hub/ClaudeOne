@@ -25,6 +25,7 @@ local Monetization = require(Shared.Config.Monetization)
 local Auras = require(Shared.Config.Auras)
 local DNA = require(Shared.Config.DNA)
 local ClientData = require(Shared.ClientData)
+local ShopPrices = require(Shared.ShopPrices)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
 local Pieces = require(Shared.UI.Pieces)
@@ -138,10 +139,15 @@ task.spawn(function()
 					end)
 					if ok and type(result) == "table" then
 						info[entry.item.key] = result
+						ShopPrices.Set(entry.item.key, result.PriceInRobux) -- (prompt 12: the offer cards show the same price)
+						modal.gui:SetAttribute("Price_" .. entry.item.key, result.PriceInRobux) -- (to check it in a test)
 						if refresh and modal.isOpen() then refresh() end
 						return
 					end
-					if attempt == 2 then warn("[Store] no Roblox info for " .. tostring(entry.item.key) .. ": " .. tostring(result)) end
+					if attempt == 2 then
+						warn("[Store] no Roblox info for " .. tostring(entry.item.key) .. ": " .. tostring(result))
+						modal.gui:SetAttribute("Price_" .. entry.item.key, "failed")
+					end
 					task.wait(5)
 				end
 			end)
@@ -420,6 +426,7 @@ local function open()
 	modal.open()
 	Theme.Pulse(buy, function() return modal.isOpen() end) -- (the featured CTA pulses while the window is open)
 	Audio.PlayUI("Whoosh")
+	Remotes.PlayerAction:FireServer("ShopEvent", { event = "ShopOpened" }) -- (prompt 12: analytics)
 end
 modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 	if not modal.isOpen() then
@@ -428,11 +435,14 @@ modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 	end
 end)
 UIBus.RegisterPanel("Store", function() modal.close() end)
-UIBus.OpenShop.Event:Connect(function(tab)
+-- (tab id, item key?) (prompt 12: an item key opens the Store on that item, e.g. the Growth Spurt card's "Finish faster")
+UIBus.OpenShop.Event:Connect(function(tab, itemKey)
 	if hasTab[tab] then
 		currentTab = tab
 		modal.selectTab(tab)
 	end
+	local card = type(itemKey) == "string" and cards[itemKey]
+	if card and card.entry.tab == currentTab then select(card.entry) end
 	if not modal.isOpen() then UIBus.PanelOpened("Store") open() end
 end)
 

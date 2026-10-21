@@ -99,6 +99,19 @@ local skip = Kit.Button("Green", "Skip tutorial", { Name = "Skip", AnchorPoint =
 	{ width = 170, height = 30, textSize = 15 })
 Notify.Reserve(38) -- toasts stack under the skip button
 local skipArmed = 0
+-- (owner, 21 Oct) SKIP TUTORIAL only after the player has been in the game for SkipAfter seconds: counted from when the
+-- menu is gone and the genetics screen has closed, so a new player sees the first step before the way out
+local SkipAfter = 5
+skip.Visible = false
+task.spawn(function()
+	UIBus.WaitForMenu()
+	task.wait(1.5) -- (the genetics screen opens a moment after Play)
+	while UIBus.GeneticsUp do
+		UIBus.GeneticsVisible.Event:Wait()
+	end
+	task.wait(SkipAfter)
+	if skip.Parent then skip.Visible = true end
+end)
 
 local dialog = Theme.Panel({ Name = "CoachDialog", Clickable = true, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
 	Size = UDim2.fromOffset(540, 92), Visible = false, Parent = root }, {})

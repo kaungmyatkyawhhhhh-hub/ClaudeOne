@@ -57,6 +57,26 @@ local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize
 RightColumn.Add(holder, 9, "bottom")
 local started = false -- (shown after the data is in)
 
+-- (prompt 12) "Finish faster": at 75%+ of the goal (not ready yet, not in the tutorial) a small link under the card (and
+-- under the machine strip) opens the Store on the Shake Bundle. Small text on a full 44 px tap row.
+local Monetization = require(Config.Monetization)
+local FINISH_AT = 75
+local LINK_H = 44
+local function finishLink(parent: Instance, y: number, width: number): TextButton
+	local link = New("TextButton", { Name = "FinishFaster", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Visible = false,
+		Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(width, LINK_H), Parent = parent })
+	Kit.Text({ Name = "Label", Text = "Finish faster: Shake Bundle >", Font = "Strong", TextSize = 11, TextColor3 = Colors.Gold,
+		AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 16), Parent = link })
+	link.Activated:Connect(function()
+		Audio.PlayUI("Click")
+		Remotes.PlayerAction:FireServer("ShopEvent", { event = "OfferTapped", offer = "FinishFaster" })
+		UIBus.OpenShop:Fire("Boosts", "ShakePack")
+	end)
+	return link
+end
+local cardLink = finishLink(holder, TILE_H + 2, RightColumn.Width)
+local finishShown = false -- (logged once per session)
+
 ------------------------------------------------------------------------
 -- Progress + goals
 ------------------------------------------------------------------------
@@ -275,6 +295,7 @@ local _, setStripBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fro
 local stripNeeds = Kit.Text({ Name = "Needs", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Red, Position = UDim2.fromOffset(10, 31),
 	Size = UDim2.new(1, -20, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = strip })
 Kit.OnTopbar(function() strip.Position = UDim2.fromOffset(12, Kit.UnderTopbar(stripRoot)) end)
+local stripLink = finishLink(strip, 52, 196) -- (prompt 12, under the strip)
 
 -- the Growth Spurt (or at 7'0" the Body Alter) from a machine: off the machine first (the body changes), then grow
 local alterMode = false
@@ -419,6 +440,15 @@ local function refresh()
 		Notify.Hint("Your " .. string.lower(first.name) .. " " .. (string.sub(first.name, -1) == "s" and "are" or "is") .. " holding you back."
 			.. (suggestion and (" Try the " .. suggestion.name .. ".") or ""))
 		lastGoalAt = os.clock()
+	end
+	-- (prompt 12) "Finish faster" at 75%+
+	local finish = not ready and not progress.maxed and percent >= FINISH_AT and not inTutorial
+		and Monetization.ProductByKey.ShakePack ~= nil and Monetization.ForSale(Monetization.ProductByKey.ShakePack)
+	cardLink.Visible, stripLink.Visible = finish, finish
+	holder.Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6 + (if finish then LINK_H - 18 else 0))
+	if finish and not finishShown and started then
+		finishShown = true
+		Remotes.PlayerAction:FireServer("ShopEvent", { event = "OfferShown", offer = "FinishFaster" })
 	end
 	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
 	-- (owner, 15 Oct, later: at the 7'0" cap NO card on the HUD; the top bar's "7'0" MAX" and the Stats panel's greyed
