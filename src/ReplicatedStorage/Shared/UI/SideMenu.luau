@@ -81,12 +81,16 @@ local function refreshArrowDot()
 	arrowDot.Visible = folded() and any
 end
 
+-- (prompt 43) rows under the grid (SideMenu.AddFooter): { frame, height, order }
+local footers = {}
 local function layout(animate: boolean?)
 	if not bar then return end
 	local list = shownEntries()
 	local size, gap = SideMenu.TileSize, SideMenu.Gap
-	-- (room for the centered grid: clear of the top bar at the top and the same at the bottom)
-	local room = math.max(size, root.AbsoluteSize.Y / Kit.Scale() - 2 * math.max(SideMenu.Top, SideMenu.BottomRoom))
+	local footH = 0
+	for _, f in ipairs(footers) do if f.frame.Visible then footH += gap + f.height end end
+	-- (room for the centered grid: clear of the top bar at the top and the same at the bottom; the footer rows too)
+	local room = math.max(size, root.AbsoluteSize.Y / Kit.Scale() - 2 * math.max(SideMenu.Top, SideMenu.BottomRoom) - footH)
 	local maxRows = math.max(1, math.floor((room + gap) / (size + gap)))
 	columns = math.max(2, math.ceil(#list / maxRows))
 	local rows = math.max(1, math.ceil(#list / columns))
@@ -100,6 +104,15 @@ local function layout(animate: boolean?)
 		if entry.hidden or entry.placeholder then entry.button.Visible = false end
 	end
 	local gridW, gridH = columns * size + (columns - 1) * gap, rows * size + (rows - 1) * gap
+	-- the footer rows, as wide as the grid
+	for _, f in ipairs(footers) do
+		if f.frame.Visible then
+			gridH += gap
+			f.frame.Position = UDim2.fromOffset(0, gridH)
+			f.frame.Size = UDim2.fromOffset(gridW, f.height)
+			gridH += f.height
+		end
+	end
 	bar.Size = UDim2.fromOffset(gridW, gridH)
 	local isFolded = folded()
 	-- vertically centered on the screen (the rows above make sure it fits); folding only moves it sideways
@@ -297,6 +310,17 @@ local function makeTile(id, labelText, iconFactory)
 	button.MouseLeave:Connect(function() entry.hover = false; entry.paint() end)
 	entry.paint()
 	return entry
+end
+
+-- (prompt 43) a row under the tiles, as wide as them (the LVL pill, the gear), lower order first
+function SideMenu.AddFooter(frame: GuiObject, height: number, order: number?)
+	ensure()
+	frame.Parent = bar
+	table.insert(footers, { frame = frame, height = height, order = order or 1 })
+	table.sort(footers, function(a, b) return a.order < b.order end)
+	frame:GetPropertyChangedSignal("Visible"):Connect(function() layout() end)
+	layout()
+	return frame
 end
 
 function SideMenu.Column()

@@ -409,6 +409,30 @@ local function calendarState()
 	return daily.calendarDay or 1, true
 end
 
+-- (prompt 43, owner 22 Oct: no Daily icon on the top bar) a small DAILY REWARD card at the top of the right-side stack
+-- while today's streak reward can be claimed (gold edge, the red "!" chip); a tap opens the STREAK tab. Gone once claimed.
+local rewardCard = Theme.Panel({ Name = "DailyReward", Piece = "hud_box", Clickable = true, Size = UDim2.fromOffset(RightColumn.Width, 30), Visible = false })
+do
+	local edge = rewardCard:FindFirstChild("Border")
+	if edge then edge.Color, edge.Thickness, edge.Transparency = Colors.Gold, 2, 0 end
+	Pieces.Icon("gift", Colors.Gold, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(16, 16), Parent = rewardCard })
+		:SetAttribute("KeepColor", true)
+	Kit.Text({ Name = "Title", Text = "DAILY REWARD", Font = "Chunky", TextSize = 13, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 30, 0.5, 0),
+		Size = UDim2.new(1, -60, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = rewardCard })
+	local chip = New("Frame", { Name = "Chip", BackgroundColor3 = Colors.Red, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -7, 0.5, 0),
+		Size = UDim2.fromOffset(17, 17), Parent = rewardCard }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Color3.fromHex("#2A0505"), Thickness = 1.5 }),
+	})
+	Kit.Text({ Name = "Bang", Text = "!", Font = "Chunky", TextSize = 13, Size = UDim2.fromScale(1, 1), Parent = chip })
+end
+RightColumn.Add(rewardCard, 1, true)
+local rewardWanted = false
+local function showRewardCard()
+	rewardCard.Visible = rewardWanted and not UIBus.InTutorial()
+end
+UIBus.AfterTutorial(showRewardCard)
+
 local function refreshCalendars()
 	fitWindow()
 	local current, claimed = calendarState()
@@ -437,6 +461,8 @@ local function refreshCalendars()
 	local best = (ClientData.Get().daily or {}).best or 0
 	streak.record.Text = "STREAK RECORD: " .. best .. (if best == 1 then " DAY" else " DAYS")
 	dailyPill:SetDot(not claimed)
+	rewardWanted = not claimed
+	showRewardCard()
 end
 
 ------------------------------------------------------------------------
@@ -680,6 +706,10 @@ questTile.Activated:Connect(function() toggle("Daily") end)
 questPill.Activated:Connect(function() toggle("Daily") end)
 dailyPill.Activated:Connect(function() toggle("Rewards") end)
 tracker.Activated:Connect(function() if not modal.isOpen() then UIBus.PanelOpened("DailyQuests") open("Daily") end end)
+rewardCard.Activated:Connect(function()
+	if not modal.isOpen() then UIBus.PanelOpened("DailyQuests") end
+	open("Rewards")
+end)
 if UIBus.OpenQuests then
 	UIBus.OpenQuests.Event:Connect(function(tab)
 		if not modal.isOpen() then UIBus.PanelOpened("DailyQuests") end

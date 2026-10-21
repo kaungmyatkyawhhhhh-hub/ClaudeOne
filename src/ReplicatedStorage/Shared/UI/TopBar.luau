@@ -6,8 +6,8 @@
 --   right (TopBar.AddPill): Daily | Quests | Settings
 -- Hidden on the main menu, the genetics screen and full-width screens (Icon.setTopbarEnabled; Roblox's own buttons
 -- stay). Anything under the top bar starts at GuiService.TopbarInset.Max.Y + 8 (Kit.UnderTopbar).
--- TopBar.AddPill(id, text, iconFactory, order): "Daily", "Quests" and "Settings" make a right-hand icon; any other id
--- gets an inert stand-in. Returns { button, icon, SetActive(on), SetDot(on), SetBadge(n), SetText(text), Activated }.
+-- TopBar.AddPill(id, text, iconFactory, order): (prompt 43) an inert stand-in for every id: nothing on the top bar but
+-- the coins. Returns { button, icon, SetActive(on), SetDot(on), SetBadge(n), SetText(text), Activated }.
 -- TopBar.NewIcon(name, order): a left-hand icon (TopBarClient).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIBus = require(script.Parent.UIBus)
@@ -68,7 +68,10 @@ function TopBar.NewIcon(name: string, order: number)
 end
 
 function TopBar.AddPill(id, labelText, _iconFactory, _order)
-	local cfg = PILLS[id]
+	-- (prompt 43, owner 22 Oct: the top bar holds only the coins; Daily / Quests / Settings moved to the right-side cards
+	-- and the left menu's gear) every pill is an inert stand-in now
+	local cfg = nil
+	local _ = PILLS[id]
 	local activated = Instance.new("BindableEvent")
 	local api = { Activated = activated.Event }
 	if not cfg then
