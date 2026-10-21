@@ -42,6 +42,7 @@ local Muscles = require(script.Parent.Config.Muscles)
 local Body = require(script.Parent.Config.Body)
 local SkinStages = require(script.Parent.Config.SkinStages)
 local Cosmetics = require(script.Parent.Config.Cosmetics)
+local Outfit = require(script.Parent.Outfit)
 -- a gym fit's Shirt image -> its main color (the waist band under a fit wears it: see recolor)
 local FIT_COLOR = {}
 for _, item in ipairs(Cosmetics.Items) do
@@ -221,6 +222,13 @@ local function templateFor(self, kind: string?): string?
 	return if type(template) == "string" and template ~= "" then template else nil
 end
 
+-- (prompt 34) the image the stage modules get: a trainer's outfit image as it is (Outfit decides what it covers, his
+-- shorts even on marble), else the character's own classic clothing
+local function outfitImage(self, kind: string): string?
+	if self.style.outfit then return if kind == "Pants" then self.style.pants else self.style.shirt end
+	return templateFor(self, kind)
+end
+
 -- The skin stage templates (ReplicatedStorage.SkinStages.Stage1..5, built in Studio by tools/builders/SkinStages), and
 -- the Body Alter skins next to them ("Alter_<id>", Config.Alters): a stage is a number, an alter skin its name.
 local stageFolder = ReplicatedStorage:FindFirstChild("SkinStages")
@@ -335,11 +343,11 @@ local function skinPass(self)
 	for _, child in ipairs(self.folder:GetChildren()) do
 		if child:IsA("MeshPart") and string.sub(child.Name, -5) == "Stage" then
 			local kind = child:GetAttribute("BodyStageKind")
-			if kind then
-				skinned(child, kind == "skin" or (kind == "top" and self.style.top == nil), child:GetAttribute("Clothing"))
-			else
-				skinned(child, true, if string.find(child.Name, "Calves") then "Pants" else "Shirt")
-			end
+			local clothing = child:GetAttribute("Clothing") or (if string.find(child.Name, "Calves") then "Pants" else "Shirt")
+			local isSkin = if kind then kind == "skin" or (kind == "top" and self.style.top == nil) else true
+			-- (prompt 34: the pieces that really wear the clothing image, Outfit: a trainer's tank top leaves his arms bare)
+			local worn = Outfit.Template(self.style, clothing, child:GetAttribute("BodyPart"), kind, self.marble) ~= ""
+			setSkin(child, if isSkin and not worn then index else nil, skin)
 		end
 	end
 	self.skinStage = stage
@@ -1574,7 +1582,9 @@ local function step(self, dt: number)
 	local stagesNow = moving or self.dirty or tintLive or self.tintWasLive or slowNow
 	if self.limbs and stagesNow then
 		self.limbs:Update(function(id, key) return meshShown(self, key, id) end, {
-			skin = (self.style and self.style.skin) or nil, shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
+			skin = (self.style and self.style.skin) or nil, shirt = outfitImage(self, "Shirt"), pants = outfitImage(self, "Pants"),
+			sleeves = self.style.sleeves, legs = self.style.legs, outfit = self.style.outfit,
+			shirtColor = self.style.shirtColor, pantsColor = self.style.pantsColor,
 		}, function(id, base)
 			return tinted(self, id, base, 1, templateFor(self, if id == "Calves" then "Pants" else "Shirt") ~= nil)
 		end, self.covered, marbleSpec(self))
@@ -1585,7 +1595,8 @@ local function step(self, dt: number)
 		-- (the stage comes from the look itself, never the PUMPED / pulse bump: a pump must not swap a body to a bigger stage)
 		self.bodyStages:Update(function(id) return self.current[id] or 0 end, {
 			skin = skin, shorts = shorts, top = self.style.top and top or nil,
-			shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
+			shirt = outfitImage(self, "Shirt"), pants = outfitImage(self, "Pants"),
+			sleeves = self.style.sleeves, legs = self.style.legs, outfit = self.style.outfit,
 		}, function(ids, base, clothed)
 			local bestColor, bestStrength = nil, 0
 			for _, id in ipairs(if ids == "all" then {} else ids) do
@@ -1894,6 +1905,21 @@ function MuscleRig.StyleFrom(source: Instance, model: Model): any
 	if typeof(skin) ~= "Color3" then skin = head and head:IsA("BasePart") and head.Color or Color3.fromHex("#E0A878") end
 	local shirt = model:FindFirstChildOfClass("Shirt")
 	local pants = model:FindFirstChildOfClass("Pants")
+	-- (prompt 34) a trainer's outfit: images made for the stage meshes, on attributes, never a classic Shirt / Pants (Outfit)
+	local outfitShirt, outfitPants = model:GetAttribute("OutfitShirt"), model:GetAttribute("OutfitPants")
+	if type(outfitShirt) == "string" or type(outfitPants) == "string" then
+		return {
+			skin = skin,
+			shorts = Body.ShortsColor(source:GetAttribute("Shorts")),
+			shirt = if type(outfitShirt) == "string" and outfitShirt ~= "" then outfitShirt else nil,
+			pants = if type(outfitPants) == "string" and outfitPants ~= "" then outfitPants else nil,
+			sleeves = model:GetAttribute("OutfitSleeves") or "none",
+			legs = model:GetAttribute("OutfitLegs") or "long",
+			outfit = true,
+			shirtColor = model:GetAttribute("OutfitShirtColor"), pantsColor = model:GetAttribute("OutfitPantsColor"),
+			alter = source:GetAttribute("Alter"),
+		}
+	end
 	return {
 		skin = skin,
 		shorts = Body.ShortsColor(source:GetAttribute("Shorts")),

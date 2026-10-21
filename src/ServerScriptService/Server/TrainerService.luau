@@ -11,7 +11,7 @@
 --     The player attribute "Trainers" lists the following entries ("PumpCoach,RookieCoach@g") for every client to draw;
 --     "TrainerSlots" the slots.
 --   * The trainer models: one template per trainer, built here at start from a HumanoidDescription (NpcService), our own
---     clothing templates (none on the rare ones: they show their muscles), part-built props (look.extras) and the static
+--     outfit (prompt 34: images on the muscle stage pieces, Shared/Outfit, never a classic Shirt / Pants), part-built props (look.extras) and the static
 --     muscle stages; no name tag, nothing collides. Into ReplicatedStorage.TrainerModels; clients clone them.
 -- Slots: Config.Trainers.SlotsFor (1, 2 at Growth Spurt 2, 3 at the first alter, +1 with the Extra Trainer pass).
 local Players = game:GetService("Players")
@@ -28,6 +28,7 @@ local NpcService = require(script.Parent.NpcService)
 local BodyService = require(script.Parent.BodyService)
 local Analytics = require(script.Parent.Analytics)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
+local Gear = require(ReplicatedStorage.Shared.Gear)
 local Genetics = require(ReplicatedStorage.Shared.Config.Genetics)
 local Guard = require(script.Parent.Guard)
 
@@ -191,8 +192,9 @@ end
 -- Templates
 ------------------------------------------------------------------------
 -- The small props each trainer carries (Config/Trainers look.extras), built from parts welded to his body. Kept small
--- and close to the body so nothing floats or clips: a whistle on a cord, a headband, a water bottle in the left hand,
--- a cap, a clipboard in the right hand, a lifting belt round the waist, wrist wraps.
+-- and close to the body so nothing floats or clips: a headband, a water bottle in the left hand, a cap, a clipboard in
+-- the right hand. (prompt 34: whistles, belts, wraps, knee sleeves and cuffs are the gear meshes, Shared/Gear; the box
+-- shorts and Volta's tied jacket are gone, the outfit is on the muscle pieces)
 local function prop(model, partName, name, shape, size, offset: CFrame, hex, material)
 	local base = model:FindFirstChild(partName)
 	if not base or not base:IsA("BasePart") then return nil end
@@ -217,21 +219,11 @@ local function extras(model, look)
 	local cyl, ball = Enum.PartType.Cylinder, Enum.PartType.Ball
 	local head = model:FindFirstChild("Head")
 	local torso = model:FindFirstChild("UpperTorso")
-	local waist = model:FindFirstChild("LowerTorso")
 	local hs = head and head.Size or Vector3.new(1.2, 1.2, 1.2)
 	local ts = torso and torso.Size or Vector3.new(2, 1.6, 1)
-	local ws = waist and waist.Size or Vector3.new(2, 0.4, 1)
 	local d = math.max(hs.X, hs.Z)
 	for _, kind in ipairs(look.extras or {}) do
-		if kind == "whistle" then
-			-- a thin cord from the neck down the chest to a small silver whistle
-			for _, side in ipairs({ -1, 1 }) do
-				prop(model, "UpperTorso", "WhistleCord", nil, Vector3.new(0.05, ts.Y * 0.45, 0.05),
-					CFrame.new(side * ts.X * 0.12, ts.Y * 0.22, -ts.Z * 0.62) * CFrame.Angles(0, 0, side * math.rad(-14)), color)
-			end
-			prop(model, "UpperTorso", "Whistle", cyl, Vector3.new(0.34, 0.2, 0.2), CFrame.new(0, -ts.Y * 0.02, -ts.Z * 0.66), "#D9DCE0", Enum.Material.Metal)
-			prop(model, "UpperTorso", "WhistleRing", cyl, Vector3.new(0.06, 0.14, 0.14), CFrame.new(-0.16, -ts.Y * 0.02 + 0.04, -ts.Z * 0.66), "#9EA3AA", Enum.Material.Metal)
-		elseif kind == "headband" then
+		if kind == "headband" then
 			prop(model, "Head", "Headband", cyl, Vector3.new(0.2, d * 1.06, d * 1.06), CFrame.new(0, hs.Y * 0.18, 0) * UPRIGHT, color, Enum.Material.Fabric)
 		elseif kind == "bottle" then
 			local hand = "LeftHand"
@@ -247,25 +239,11 @@ local function extras(model, look)
 			prop(model, "RightHand", "Clipboard", nil, Vector3.new(0.75, 1, 0.06), o, "#7A5230", Enum.Material.Wood)
 			prop(model, "RightHand", "Paper", nil, Vector3.new(0.62, 0.78, 0.02), o * CFrame.new(0, -0.06, -0.04), "#F4F1EA")
 			prop(model, "RightHand", "Clip", nil, Vector3.new(0.34, 0.12, 0.08), o * CFrame.new(0, 0.46, -0.03), "#C9CCD2", Enum.Material.Metal)
-		elseif kind == "belt" then
-			-- a wide leather lifting belt round the waist (over the muscle meshes: a little wider than the waist) + a buckle
-			local w = math.max(ws.X, ws.Z) * 1.22
-			prop(model, "LowerTorso", "Belt", cyl, Vector3.new(ws.Y * 0.95, w, w * 0.62), CFrame.new(0, ws.Y * 0.15, 0) * UPRIGHT, "#3A2414", Enum.Material.Leather)
-			prop(model, "LowerTorso", "Buckle", nil, Vector3.new(0.5, ws.Y * 0.7, 0.08), CFrame.new(0, ws.Y * 0.15, -w * 0.31 - 0.03), "#C9CCD2", Enum.Material.Metal)
 		elseif kind == "cape" then
 			-- (prompt 24) a cape from the shoulders down the back (narrower than the shoulders), a collar bar across the top
 			prop(model, "UpperTorso", "CapeCollar", nil, Vector3.new(ts.X * 0.9, 0.22, 0.3), CFrame.new(0, ts.Y * 0.42, ts.Z * 0.5), color, Enum.Material.Metal)
 			prop(model, "UpperTorso", "Cape", nil, Vector3.new(ts.X * 0.8, ts.Y * 2.2, 0.08), CFrame.new(0, -ts.Y * 0.68, ts.Z * 0.62) * CFrame.Angles(math.rad(-8), 0, 0),
 				color, Enum.Material.Fabric)
-		elseif kind == "shorts" then
-			-- (prompt 24) part-built shorts: round the waist and the top of each leg
-			local shorts = look.shorts or "#1E1E22"
-			prop(model, "LowerTorso", "Shorts", nil, Vector3.new(ws.X * 1.1, ws.Y * 1.2, ws.Z * 1.14), CFrame.new(0, -ws.Y * 0.05, 0), shorts, Enum.Material.Fabric)
-			for _, side in ipairs({ "Left", "Right" }) do
-				local leg = model:FindFirstChild(side .. "UpperLeg")
-				local s = leg and leg.Size or Vector3.new(0.8, 1.2, 0.8)
-				prop(model, side .. "UpperLeg", "ShortsLeg", nil, Vector3.new(s.X * 1.14, s.Y * 0.6, s.Z * 1.14), CFrame.new(0, s.Y * 0.2, 0), shorts, Enum.Material.Fabric)
-			end
 		elseif kind == "shoes" then
 			for _, side in ipairs({ "Left", "Right" }) do
 				local foot = model:FindFirstChild(side .. "Foot")
@@ -293,14 +271,6 @@ local function extras(model, look)
 				prop(model, "UpperTorso", "ShoulderPad", ball, Vector3.new(ts.X * 0.42, ts.Y * 0.32, ts.Z * 1.15), CFrame.new(side * ts.X * 0.5, ts.Y * 0.42, 0),
 					color, Enum.Material.Metal)
 			end
-		elseif kind == "wraps" then
-			for _, side in ipairs({ "Left", "Right" }) do
-				local arm = model:FindFirstChild(side .. "LowerArm")
-				local s = arm and arm.Size or Vector3.new(0.6, 1, 0.6)
-				prop(model, side .. "LowerArm", "WristWrap", cyl, Vector3.new(s.Y * 0.28, math.max(s.X, s.Z) * 1.18, math.max(s.X, s.Z) * 1.18),
-					CFrame.new(0, -s.Y * 0.34, 0) * UPRIGHT, color, Enum.Material.Fabric)
-			end
-		-- (prompt 25) the new trainers' props
 		elseif kind == "buzzcut" then
 			-- short grey hair: a thin shell over the top and the back of the head (the face stays clear)
 			local hair = look.hair or "#2A2A2E"
@@ -315,13 +285,6 @@ local function extras(model, look)
 			-- the hoodie's hood, down, bunched behind the neck (gold edge)
 			prop(model, "UpperTorso", "HoodDown", ball, Vector3.new(ts.X * 0.55, ts.Y * 0.32, ts.Z * 0.62), CFrame.new(0, ts.Y * 0.46, ts.Z * 0.52), "#141418", Enum.Material.Fabric)
 			prop(model, "UpperTorso", "HoodEdge", cyl, Vector3.new(0.08, ts.X * 0.5, ts.Z * 0.5), CFrame.new(0, ts.Y * 0.58, ts.Z * 0.52) * UPRIGHT, color, Enum.Material.Fabric)
-		elseif kind == "bigbelt" then
-			-- a thick leather powerlifting belt with a big steel buckle (wider and taller than the plain belt)
-			local w = math.max(ws.X, ws.Z) * 1.3
-			prop(model, "LowerTorso", "Belt", cyl, Vector3.new(ws.Y * 1.35, w, w * 0.66), CFrame.new(0, ws.Y * 0.2, 0) * UPRIGHT, "#4A2A16", Enum.Material.Leather)
-			prop(model, "LowerTorso", "BeltStitch", cyl, Vector3.new(ws.Y * 1.05, w * 1.01, w * 0.665), CFrame.new(0, ws.Y * 0.2, 0) * UPRIGHT, "#6B4022", Enum.Material.Leather)
-			prop(model, "LowerTorso", "Buckle", nil, Vector3.new(0.7, ws.Y * 1.05, 0.1), CFrame.new(0, ws.Y * 0.2, -w * 0.33 - 0.03), "#C9CCD2", Enum.Material.Metal)
-			prop(model, "LowerTorso", "BuckleBar", nil, Vector3.new(0.12, ws.Y * 0.95, 0.12), CFrame.new(0, ws.Y * 0.2, -w * 0.33 - 0.1), color, Enum.Material.Metal)
 		elseif kind == "chalk" then
 			-- chalk on his hands: a white dusting over each hand
 			-- (a white haze of chalk round each hand; TrainerFollowClient's puff of chalk when he claps)
@@ -345,38 +308,6 @@ local function extras(model, look)
 			-- loose locks down the sides of the face
 			for _, side in ipairs({ -1, 1 }) do
 				prop(model, "Head", "HairLock", ball, Vector3.new(d * 0.2, hs.Y * 0.8, d * 0.36), CFrame.new(side * d * 0.5, -hs.Y * 0.02, -d * 0.12), hair, Enum.Material.SmoothPlastic)
-			end
-		elseif kind == "kneesleeves" then
-			for _, side in ipairs({ "Left", "Right" }) do
-				local leg = model:FindFirstChild(side .. "LowerLeg")
-				local s = leg and leg.Size or Vector3.new(0.7, 1.2, 0.7)
-				prop(model, side .. "LowerLeg", "KneeSleeve", cyl, Vector3.new(s.Y * 0.34, math.max(s.X, s.Z) * 1.24, math.max(s.X, s.Z) * 1.24),
-					CFrame.new(0, s.Y * 0.36, 0) * UPRIGHT, look.extraColor or "#D8283E", Enum.Material.Fabric)
-			end
-		elseif kind == "tiedjacket" then
-			-- a red and purple tracksuit top tied round the waist: the sleeves knotted in front (lightning bolts on them),
-			-- the jacket hanging down the back
-			local red, purple, bolt = look.extraColor or "#D8283E", look.extraColor2 or "#8A3AD0", "#FFD23A"
-			local w = math.max(ws.X, ws.Z) * 1.26
-			prop(model, "LowerTorso", "JacketWaist", cyl, Vector3.new(ws.Y * 0.8, w, w * 0.64), CFrame.new(0, ws.Y * 0.25, 0) * UPRIGHT, red, Enum.Material.Fabric)
-			prop(model, "LowerTorso", "JacketStripe", cyl, Vector3.new(ws.Y * 0.2, w * 1.01, w * 0.645), CFrame.new(0, ws.Y * 0.25, 0) * UPRIGHT, purple, Enum.Material.Fabric)
-			local back = prop(model, "LowerTorso", "JacketBack", nil, Vector3.new(ws.X * 1.2, ws.Y * 3.4, 0.14), CFrame.new(0, -ws.Y * 1.35, ws.Z * 0.62) * CFrame.Angles(math.rad(-6), 0, 0),
-				red, Enum.Material.Fabric)
-			if back then
-				prop(model, "LowerTorso", "JacketBackStripe", nil, Vector3.new(ws.X * 1.21, ws.Y * 0.3, 0.15), CFrame.new(0, -ws.Y * 2.6, ws.Z * 0.75) * CFrame.Angles(math.rad(-6), 0, 0),
-					purple, Enum.Material.Fabric)
-			end
-			prop(model, "LowerTorso", "JacketKnot", ball, Vector3.new(0.5, 0.42, 0.36), CFrame.new(0, ws.Y * 0.2, -w * 0.33), red, Enum.Material.Fabric)
-			for _, side in ipairs({ -1, 1 }) do
-				-- (the two sleeves hang from the knot in a V)
-				local o = CFrame.new(side * 0.34, -ws.Y * 0.85, -w * 0.34) * CFrame.Angles(math.rad(-6), 0, side * math.rad(-22))
-				prop(model, "LowerTorso", "JacketSleeve", nil, Vector3.new(0.36, ws.Y * 2.3, 0.22), o, red, Enum.Material.Fabric)
-				prop(model, "LowerTorso", "SleeveCuff", nil, Vector3.new(0.38, 0.12, 0.24), o * CFrame.new(0, -ws.Y * 1.1, 0), purple, Enum.Material.Fabric)
-				-- a little lightning bolt: three short slanted strokes in a zigzag
-				for i, step in ipairs({ { 0.06, 25 }, { -0.04, -35 }, { 0.05, 25 } }) do
-					prop(model, "LowerTorso", "SleeveBolt", nil, Vector3.new(0.06, 0.2, 0.02), o * CFrame.new(step[1], ws.Y * 0.5 - i * 0.15, -0.12) * CFrame.Angles(0, 0, math.rad(step[2])),
-						bolt, Enum.Material.SmoothPlastic)
-				end
 			end
 		elseif kind == "deephood" then
 			-- a deep black hood that hides the face in shadow, two calm glowing white eyes, faint purple seams, the hood's cloth
@@ -407,24 +338,6 @@ local function extras(model, look)
 				prop(model, "Head", "LaurelLeaf", nil, Vector3.new(0.07, d * 0.13, d * 0.28),
 					CFrame.new(x, hs.Y * 0.27 + (i % 2) * 0.05, z) * CFrame.Angles(0, a + math.pi / 2, 0) * CFrame.Angles(side * math.rad(28), 0, 0), color, Enum.Material.Metal)
 			end
-		elseif kind == "cuffs" then
-			for _, side in ipairs({ "Left", "Right" }) do
-				local arm = model:FindFirstChild(side .. "LowerArm")
-				local s = arm and arm.Size or Vector3.new(0.6, 1, 0.6)
-				prop(model, side .. "LowerArm", "Cuff", cyl, Vector3.new(s.Y * 0.24, math.max(s.X, s.Z) * 1.22, math.max(s.X, s.Z) * 1.22),
-					CFrame.new(0, -s.Y * 0.32, 0) * UPRIGHT, color, Enum.Material.Metal)
-				prop(model, side .. "LowerArm", "CuffRim", cyl, Vector3.new(s.Y * 0.05, math.max(s.X, s.Z) * 1.26, math.max(s.X, s.Z) * 1.26),
-					CFrame.new(0, -s.Y * 0.21, 0) * UPRIGHT, "#FFF3C4", Enum.Material.Metal)
-			end
-		end
-	end
-	-- (prompt 25) a trim on the part-built shorts (Atlas: a gold waistband and hems)
-	if look.shortsTrim and table.find(look.extras or {}, "shorts") then
-		prop(model, "LowerTorso", "ShortsTrim", nil, Vector3.new(ws.X * 1.13, ws.Y * 0.24, ws.Z * 1.17), CFrame.new(0, ws.Y * 0.46, 0), look.shortsTrim, Enum.Material.Metal)
-		for _, side in ipairs({ "Left", "Right" }) do
-			local leg = model:FindFirstChild(side .. "UpperLeg")
-			local s = leg and leg.Size or Vector3.new(0.8, 1.2, 0.8)
-			prop(model, side .. "UpperLeg", "ShortsHem", nil, Vector3.new(s.X * 1.17, s.Y * 0.07, s.Z * 1.17), CFrame.new(0, -s.Y * 0.08, 0), look.shortsTrim, Enum.Material.Metal)
 		end
 	end
 end
@@ -490,18 +403,25 @@ local function buildTemplates()
 			for _, old in ipairs(model:GetChildren()) do
 				if old:IsA("Shirt") or old:IsA("Pants") or old:IsA("ShirtGraphic") then old:Destroy() end
 			end
-			-- (prompt 24: the rare ones have no shirt, they show their muscles)
-			if look.shirt then
-				local shirt = Instance.new("Shirt")
-				shirt.ShirtTemplate = look.shirt
-				shirt.Parent = model
+			-- (prompt 34) his outfit is not a classic Shirt / Pants (those tore on the muscle meshes): clean images made for the
+			-- stage meshes, worn by the muscle pieces themselves (Shared/Outfit; MuscleRig.StyleFrom reads these attributes)
+			local outfit = look.outfit or {}
+			model:SetAttribute("OutfitShirt", outfit.shirt)
+			model:SetAttribute("OutfitPants", outfit.pants)
+			model:SetAttribute("OutfitSleeves", outfit.sleeves)
+			model:SetAttribute("OutfitLegs", outfit.legs)
+			model:SetAttribute("OutfitShirtColor", if outfit.shirtColor then Color3.fromHex(outfit.shirtColor) else nil)
+			model:SetAttribute("OutfitPantsColor", if outfit.pantsColor then Color3.fromHex(outfit.pantsColor) else nil)
+			if not outfit.shirt then model:SetAttribute("BareChest", true) end
+			-- his shoes (coaches 1-4): a shoes-only classic Pants image (tools/trainer_outfits.py: only the feet of the classic
+			-- layout), because the clients draw the feet with the avatar's composited texture, whatever their Color says. The
+			-- muscle pieces never wear it (Shared/Outfit reads his outfit attributes, not his Pants)
+			if outfit.shoes then
+				local shoes = Instance.new("Pants")
+				shoes.Name = "Shoes"
+				shoes.PantsTemplate = outfit.shoes
+				shoes.Parent = model
 			end
-			if look.pants then
-				local pants = Instance.new("Pants")
-				pants.PantsTemplate = look.pants
-				pants.Parent = model
-			end
-			if not look.shirt then model:SetAttribute("BareChest", true) end
 			-- his face: the description's head is a dynamic head whose own face is blank, and face images map wrongly onto
 			-- it, so it is hidden under a classic Roblox head (the "Head" mesh) carrying the face image, welded in its place
 			local head = model:FindFirstChild("Head")
@@ -532,6 +452,10 @@ local function buildTemplates()
 				classic.Parent = model
 			end
 			extras(model, look)
+			-- (prompt 34) his gear: the planner's meshes, fitted to his body (Shared/Gear; GearClient re-fits them to his muscles)
+			for _, gear in ipairs(look.gear or {}) do
+				Gear.Build(model, gear.kind, gear)
+			end
 			attachAccessories(model)
 			-- (prompt 25) a marble body (Atlas): his muscles (MuscleRig marble mode, MuscleClient reads these attributes) and his own
 			-- body parts in white marble with gold veins (the MaterialVariant, Config/Trainers Materials)
@@ -563,6 +487,13 @@ local function buildTemplates()
 			end
 			local humanoid = model:FindFirstChildOfClass("Humanoid")
 			if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+			-- (prompt 34) how many parts he has, so a client clones him only once he has fully arrived (a clone made while he
+			-- was still replicating had no right leg, hair or gear)
+			local parts = 0
+			for _, d in ipairs(model:GetDescendants()) do
+				if d:IsA("BasePart") then parts += 1 end
+			end
+			model:SetAttribute("Parts", parts)
 			model.Parent = folder
 		else
 			warn("[TrainerService] couldn't build " .. trainer.id .. ": " .. tostring(model))

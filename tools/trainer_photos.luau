@@ -9,6 +9,9 @@
 -- rarity color), the reveal pictures and the Secret silhouette; upload them and put the ids in Config/Trainers icon / art.
 -- _G.PhotoCam = nil ends the photo camera. (A raised pose: wait a frame, then frame it from the posed bounding box.)
 -- Key colors used: green for most, blue for Coach Nia (green clothes, pink hair).
+-- (prompt 34) _G.Shoot(id, shot, pose, yaw): yaw = the camera's angle round him (90 = his right side). The light is soft
+-- and even (no shadows, no bloom, little shine; client only, gone when the test stops). It can also run as a ModuleScript
+-- (require it once in the client).
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -39,11 +42,17 @@ for _, x in ipairs({ -30, 0, 30 }) do
 	lamp.Anchored, lamp.Transparency, lamp.CanCollide, lamp.Size = true, 1, false, Vector3.one
 	lamp.CFrame = CFrame.lookAt(Vector3.new(x, 418, 22), Vector3.new(x, 404, 0))
 	local s = Instance.new("SpotLight")
-	s.Brightness, s.Range, s.Angle, s.Shadows, s.Color = 4, 45, 80, false, Color3.fromRGB(255, 246, 232)
+	s.Brightness, s.Range, s.Angle, s.Shadows, s.Color = 3, 45, 80, false, Color3.fromRGB(255, 246, 232)
 	s.Parent = lamp
 	lamp.Parent = stage
 end
 stage.Parent = workspace
+local Lighting = game:GetService("Lighting")
+Lighting.GlobalShadows = false
+Lighting.EnvironmentSpecularScale = 0.15
+for _, effect in ipairs(Lighting:GetChildren()) do
+	if effect:IsA("BloomEffect") then effect.Enabled = false end
+end
 
 local models = {}
 for i, t in ipairs(Trainers.List) do
@@ -63,14 +72,12 @@ for i, t in ipairs(Trainers.List) do
 end
 _G.PhotoModels = models
 
--- the muscle stages' skin layer under clothes is hidden on clothed trainers (as TrainerFollowClient does)
+-- the muscle stages' skin layer under clothes is hidden on every trainer (as TrainerFollowClient does)
 _G.HideSkin = function()
 	for _, m in pairs(models) do
-		if m:GetAttribute("BareChest") ~= true then
-			for _, d in ipairs(m:GetDescendants()) do
-				if d:IsA("BasePart") and d.Name == "Skin" and d.Parent and d.Parent.Parent and d.Parent.Parent.Name == "MuscleMeshes" then
-					d.LocalTransparencyModifier = 1
-				end
+		for _, d in ipairs(m:GetDescendants()) do
+			if d:IsA("BasePart") and d.Name == "Skin" and d.Parent and d.Parent.Parent and d.Parent.Parent.Name == "MuscleMeshes" then
+				d.LocalTransparencyModifier = 1
 			end
 		end
 	end
@@ -87,7 +94,7 @@ local CUSTOM = {
 	Guard = { RightShoulder = { 55, 0, -28 }, LeftShoulder = { 70, 0, 22 }, RightElbow = { 115, 0, 0 }, LeftElbow = { 100, 0, 0 }, Waist = { -4, -12, 0 },
 		RightHip = { 0, 0, 6 }, LeftHip = { 0, 0, -6 } },
 }
-_G.Shoot = function(id: string, shot: string, poseName: string?)
+_G.Shoot = function(id: string, shot: string, poseName: string?, yaw: number?)
 	for n, m in pairs(models) do
 		local root = m:FindFirstChild("HumanoidRootPart")
 		local x = if n == id then 0 else -200 - #n * 7
@@ -104,14 +111,16 @@ _G.Shoot = function(id: string, shot: string, poseName: string?)
 		PoseApply.Apply(m, PoseData[poseName or "Relaxed"], 1)
 	end
 	_G.HideSkin()
-	local _, size = m:GetBoundingBox()
-	local top = 400 + size.Y + 0.15
+	task.wait()
+	local cf, size = m:GetBoundingBox()
+	local top = cf.Position.Y + size.Y / 2 + 0.1
 	local waist = m:FindFirstChild("LowerTorso")
-	local bottom = if shot == "bust" then waist.Position.Y - waist.Size.Y else 400
-	local mid, span, fov = (top + bottom) / 2, (top - bottom) * 1.1, 18
+	local bottom = if shot == "bust" then waist.Position.Y - 1.2 else 400 - 0.1
+	local mid, span, fov = (top + bottom) / 2, (top - bottom) * 1.04, 18
 	local dist = (span / 2) / math.tan(math.rad(fov / 2))
+	local a = math.rad(yaw or 0)
 	_G.PhotoFov = fov
-	_G.PhotoCam = CFrame.lookAt(Vector3.new(0, mid, dist), Vector3.new(0, mid, 0))
+	_G.PhotoCam = CFrame.lookAt(Vector3.new(math.sin(a) * dist, mid, math.cos(a) * dist), Vector3.new(0, mid, 0))
 	return string.format("%s %s top %.1f bottom %.1f", id, shot, top, bottom)
 end
 

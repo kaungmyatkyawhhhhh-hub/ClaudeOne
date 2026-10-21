@@ -1,6 +1,6 @@
 -- CosmeticService: the clothing store's gear (Config.Cosmetics). Buying (only at the store counter, coins checked
--- here), wearing (one item per slot, only owned items) and building the gear on characters from simple parts welded
--- to the body. Gear is rebuilt when a body part changes size (muscle growth, Growth Spurts). Cosmetic only.
+-- here), wearing (one item per slot, only owned items) and building the gear on characters: belts, wraps, straps and
+-- knee sleeves are the planner's gear meshes (Shared/Gear, prompt 34), the rest simple parts welded to the body. Gear is rebuilt when a body part changes size (muscle growth, Growth Spurts). Cosmetic only.
 -- Save data: cosmetics = { owned = { [itemId] = true }, equipped = { [slot] = itemId }, fitsRefunded = true? }.
 -- While Config/Features.Wardrobe is false (owner, 13 Oct) the tops (slot "Fit") can't be bought or worn, and on join a
 -- player who owns any gets them taken back with their coins refunded, once (fitsRefunded). The cause of the "broken
@@ -15,6 +15,7 @@ local Features = require(Config.Features)
 local PlayerData = require(script.Parent.PlayerData)
 local ActionService = require(script.Parent.ActionService)
 local Guard = require(script.Parent.Guard)
+local Gear = require(ReplicatedStorage.Shared.Gear)
 
 local Remotes = ReplicatedStorage.Remotes
 
@@ -60,26 +61,17 @@ local function piece(folder, bodyPart, name, size, offset, color, material, shap
 	return p
 end
 
--- A band around a box-shaped body part: a slightly bigger box, short in height. The inside is hidden by the body,
--- so only the band shows.
-local function band(folder, bodyPart, name, height, y, extra, color, material)
-	local s = bodyPart.Size
-	return piece(folder, bodyPart, name, Vector3.new(s.X + extra, height, s.Z + extra), CFrame.new(0, y, 0), color, material)
-end
-
 local BUILD = {}
 local tryOn = {} -- [player] = { id } (a PUMP SHOP try-on, prompt 19)
-BUILD.Belt = function(folder, character, item)
-	local waist = character:FindFirstChild("LowerTorso")
-	if not waist then return end
-	-- around the waist joint (the narrowest part of the body), as wide as the waist there
-	local joint = waist:FindFirstChild("WaistRigAttachment")
-	local y = joint and joint.Position.Y or 0
-	local s = waist.Size
-	local w, d, h = s.X * 0.9, s.Z * 0.9, math.min(0.36, s.Y * 0.3)
-	piece(folder, waist, "Belt", Vector3.new(w, h, d), CFrame.new(0, y, 0), item.color, Enum.Material.Leather)
-	piece(folder, waist, "Buckle", Vector3.new(w * 0.26, h * 0.8, 0.08), CFrame.new(0, y, -(d / 2 + 0.04)), Color3.fromHex("#C9CCD2"), Enum.Material.Metal)
+-- (prompt 34) belts, wraps, straps and knee sleeves are the planner's gear meshes (Shared/Gear), fitted to the body each
+-- client sees (GearClient); a PUMP SHOP level's trim and metal go with its color (Gear.LevelColors)
+local function gearMesh(kind)
+	return function(folder, character, item)
+		local level = item.level and Gear.LevelColors[item.level] or {}
+		Gear.Build(character, kind, { color = item.color, trim = level.trim, metal = level.metal }, folder)
+	end
 end
+BUILD.Belt = gearMesh("Belt")
 BUILD.Headband = function(folder, character, item)
 	local head = character:FindFirstChild("Head")
 	if not head then return end
@@ -87,14 +79,7 @@ BUILD.Headband = function(folder, character, item)
 	-- a flat round band around the forehead (the head hides its middle)
 	piece(folder, head, "Headband", Vector3.new(s.Y * 0.16, s.X * 1.06, s.Z * 1.06), CFrame.new(0, s.Y * 0.22, 0) * CFrame.Angles(0, 0, math.rad(90)), item.color, Enum.Material.Fabric, Enum.PartType.Cylinder)
 end
-BUILD.Wraps = function(folder, character, item)
-	for _, name in ipairs({ "LeftLowerArm", "RightLowerArm" }) do
-		local arm = character:FindFirstChild(name)
-		if arm then
-			band(folder, arm, "Wrap", arm.Size.Y * 0.22, -arm.Size.Y * 0.36, 0.08, item.color, Enum.Material.Fabric)
-		end
-	end
-end
+BUILD.Wraps = gearMesh("Wraps")
 BUILD.Shaker = function(folder, character, item)
 	local waist = character:FindFirstChild("LowerTorso")
 	if not waist then return end
@@ -105,23 +90,8 @@ BUILD.Shaker = function(folder, character, item)
 end
 
 -- (prompt 19) PUMP SHOP gear and apparel
-BUILD.Straps = function(folder, character, item)
-	-- a strap band at the wrist and a tail hanging over the hand
-	for _, name in ipairs({ "LeftLowerArm", "RightLowerArm" }) do
-		local arm = character:FindFirstChild(name)
-		if arm then
-			band(folder, arm, "Strap", arm.Size.Y * 0.14, -arm.Size.Y * 0.44, 0.06, item.color, Enum.Material.Fabric)
-			piece(folder, arm, "StrapTail", Vector3.new(0.12, arm.Size.Y * 0.32, arm.Size.Z * 0.5), CFrame.new(arm.Size.X / 2 + 0.06, -arm.Size.Y * 0.55, 0),
-				item.color, Enum.Material.Fabric)
-		end
-	end
-end
-BUILD.Sleeves = function(folder, character, item)
-	for _, name in ipairs({ "LeftLowerLeg", "RightLowerLeg" }) do
-		local leg = character:FindFirstChild(name)
-		if leg then band(folder, leg, "Sleeve", leg.Size.Y * 0.32, leg.Size.Y * 0.3, 0.1, item.color, Enum.Material.Fabric) end
-	end
-end
+BUILD.Straps = gearMesh("Straps")
+BUILD.Sleeves = gearMesh("Sleeves")
 BUILD.Bag = function(folder, character, item)
 	local torso = character:FindFirstChild("UpperTorso")
 	if not torso then return end

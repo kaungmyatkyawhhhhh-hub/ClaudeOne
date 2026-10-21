@@ -25,6 +25,7 @@ local TweenService = game:GetService("TweenService")
 
 local Config = require(script.Parent.Config.BodyStages)
 local Muscles = require(script.Parent.Config.Muscles)
+local Outfit = require(script.Parent.Outfit)
 -- the body part reference sizes the mesh data was made for
 local PARTS = (require(ReplicatedStorage:WaitForChild("MuscleData"):WaitForChild("Index")) :: any).parts
 
@@ -249,6 +250,7 @@ local function makePart(self, region, piece, object, body: BasePart, scale: Vect
 	part.Name = region.part .. piece.key .. "Stage"
 	part:SetAttribute("BodyStageKind", piece.kind)
 	part:SetAttribute("Clothing", piece.clothing)
+	part:SetAttribute("BodyPart", region.part)
 	part.Anchored = self.static
 	part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = false, false, false, false
 	part.Massless = true
@@ -339,10 +341,12 @@ function BodyStages.Update(self, getLook, style, tint, covered, marble)
 				if skinPart then skinPart.CFrame = part.CFrame end
 			end
 			-- clothing and color (the skin shows where the clothing image is see-through)
-			local template = if marble then "" else ((if piece.clothing == "Pants" then style.pants else style.shirt) or "")
+			-- (prompt 34: Outfit decides which pieces a trainer's outfit covers; a player's Shirt / Pants cover them all)
+			local template = Outfit.Template(style, piece.clothing, region.part, piece.kind, marble)
 			if part.TextureID ~= template then part.TextureID = template end
+			local stone = marble and template == "" -- (Atlas's shorts are cloth on his marble body)
 			local base
-			if marble then
+			if stone then
 				base = if type(marble) == "table" then marble.color else MARBLE -- (prompt 25: { color, variant }, Atlas the trainer)
 			elseif template ~= "" then
 				base = skin
@@ -354,11 +358,12 @@ function BodyStages.Update(self, getLook, style, tint, covered, marble)
 				base = skin
 			end
 			part.Color = tint(region.muscles, base, template ~= "")
-			local material = if marble then Enum.Material.Marble
+			local material = if stone then Enum.Material.Marble
+				elseif template ~= "" and style.outfit then Enum.Material.Fabric -- (a trainer's outfit: matte cloth, not shiny plastic)
 				elseif piece.kind == "shorts" and template == "" then Enum.Material.Fabric
 				else Enum.Material.SmoothPlastic
 			if part.Material ~= material then part.Material = material end
-			local variant = if type(marble) == "table" and marble.variant then marble.variant else ""
+			local variant = if stone and type(marble) == "table" and marble.variant then marble.variant else ""
 			if part.MaterialVariant ~= variant then part.MaterialVariant = variant end
 			-- layered clothing on this part hides it (not while a fade runs)
 			if hidden and part.Transparency < 1 then part.Transparency = 1 end

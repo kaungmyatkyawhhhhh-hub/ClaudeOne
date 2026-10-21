@@ -67,7 +67,7 @@ end
 PumpShop.GearLevels = {
 	{ id = "Basic", name = "Basic", bonus = 0.05, price = 750, color = "#2B2B30" },
 	{ id = "Pro", name = "Pro", bonus = 0.10, price = 4000, color = "#B3262D" },
-	{ id = "Elite", name = "Elite", bonus = 0.15, price = 25000, color = "#E8B23A" },
+	{ id = "Elite", name = "Elite", bonus = 0.15, price = 25000, color = "#C9CCD2" }, -- (prompt 34: silver; gold is for Champion, prompt 31)
 }
 -- machines = MachineIds it helps; groups = every machine whose main muscle is in these groups
 PumpShop.Gear = {

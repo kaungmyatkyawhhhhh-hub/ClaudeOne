@@ -143,22 +143,21 @@ local function makeTrainer(entry: string, slot: number)
 		end
 	end
 	-- (owner, 14 Oct: torn-looking clothes) the muscle stages' separate skin layer sits under the clothing mesh and pokes
-	-- through it where the muscles bulge (the lats); a trainer's Shirt / Pants images have his skin color painted under the
-	-- clothes (no see-through parts), so the clothing mesh shows his bare skin too and the skin layer is hidden on him
+	-- through it where the muscles bulge (the lats), so it is hidden on trainers
 	local function skinLayer(part)
 		if part:IsA("BasePart") and part.Name == "Skin" and part.Parent and part.Parent.Parent and part.Parent.Parent.Name == "MuscleMeshes" then
 			part.LocalTransparencyModifier = 1
 		end
 	end
-	-- (prompt 24: the bare-chested rare trainers keep their skin layer: it IS their chest)
-	local bare = template:GetAttribute("BareChest") == true
+	-- (prompt 34: on every trainer now. Their outfits are fully solid wherever they're worn (tools/trainer_outfits.py), so
+	-- the skin layer never has anything to show; a bare chest is the piece itself, not this layer)
 	for _, part in ipairs(model:GetDescendants()) do
 		ghost(part)
-		if not bare then skinLayer(part) end
+		skinLayer(part)
 	end
 	model.DescendantAdded:Connect(function(part)
 		ghost(part)
-		if not bare then skinLayer(part) end
+		skinLayer(part)
 	end)
 	if not humanoid:FindFirstChildOfClass("Animator") then Instance.new("Animator", humanoid) end
 	if golden then
@@ -238,6 +237,26 @@ local function sayLine(state)
 end
 local synced = {} -- [player] = true after the first sync (the trainers you join with don't talk)
 
+-- (prompt 34) waits until a trainer's template has fully replicated (TrainerService's "Parts" count; a few seconds at
+-- most): a clone made earlier missed body parts, hair and gear
+local function waitForTemplate(entry: string)
+	local id = Trainers.ParseEntry(entry)
+	local template = id and templates:FindFirstChild(id)
+	local want = template and template:GetAttribute("Parts")
+	local function count()
+		local n = 0
+		for _, d in ipairs(template:GetDescendants()) do
+			if d:IsA("BasePart") then n += 1 end
+		end
+		return n
+	end
+	local waited = 0
+	while type(want) == "number" and count() < want and waited < 8 do
+		waited += task.wait(0.2)
+	end
+end
+
+local syncToken = {} -- [player] = the newest sync (an older one still waiting for templates gives way)
 local function sync(player)
 	local list = {}
 	local value = player:GetAttribute("Trainers")
@@ -246,6 +265,10 @@ local function sync(player)
 			if Trainers.ParseEntry(entry) then table.insert(list, entry) end
 		end
 	end
+	local token = (syncToken[player] or 0) + 1
+	syncToken[player] = token
+	for _, entry in ipairs(list) do waitForTemplate(entry) end
+	if syncToken[player] ~= token or not player.Parent then return end
 	local current = followers[player] or {}
 	local nextSet = {}
 	for slot, entry in ipairs(list) do
@@ -279,6 +302,7 @@ Players.PlayerRemoving:Connect(function(player)
 	followers[player] = nil
 	machineOf[player] = nil
 	synced[player] = nil
+	syncToken[player] = nil
 end)
 
 ------------------------------------------------------------------------

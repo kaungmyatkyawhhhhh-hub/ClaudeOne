@@ -7,7 +7,22 @@ for _, r in T.Rarities do total += r.chance end
 H.check(math.abs(total - 100) < 1e-9, "the chances add up to 100% (" .. total .. ")")
 for i, t in T.List do
 	H.check(t.rarity == T.Rarities[i].id and T.ByRarity[t.rarity] == t, t.id .. " is the " .. T.Rarities[i].id .. " one")
-	H.check(t.name and t.perkText and t.look and t.look.skin and (t.look.faceTexture or table.find(t.look.extras, "deephood")) and (t.look.pants or t.look.shorts) and next(t.perk) ~= nil, t.id .. " is complete")
+	H.check(t.name and t.perkText and t.look and t.look.skin and (t.look.faceTexture or table.find(t.look.extras, "deephood")) and t.look.outfit and t.look.outfit.pants and next(t.perk) ~= nil, t.id .. " is complete")
+end
+-- (prompt 34) outfits: images on the muscle pieces (never a classic Shirt / Pants), shorts or long legs, real gear meshes
+for _, t in T.List do
+	local o = t.look.outfit
+	H.check(t.look.shirt == nil and t.look.pants == nil and (o.legs == "shorts" or o.legs == "long")
+		and (o.shirt == nil or o.sleeves == "none" or o.sleeves == "short" or o.sleeves == "long"), t.id .. " wears an outfit, no classic clothing")
+	for _, kind in { "belt", "bigbelt", "wraps", "kneesleeves", "tiedjacket", "shorts", "whistle", "cuffs" } do
+		H.check(not table.find(t.look.extras or {}, kind), t.id .. " has no part-built " .. kind)
+	end
+end
+for i = 1, 4 do
+	local gear = T.List[i].look.gear or {}
+	local whistle = false
+	for _, g in gear do whistle = whistle or g.kind == "Whistle" end
+	H.check(whistle, T.List[i].id .. " wears a whistle")
 end
 H.check(T.ById.RookieCoach.perk.gains == 0.05 and T.ById.CardioCoach.perk.coins == 0.10, "Common +5% EXP, Uncommon +10% coins")
 H.check(T.ById.CardioCoach.perk.staminaRegen == 0.15 and T.Bonus({ "CardioCoach" }).staminaRegen == 0.15, "Uncommon +15% stamina regen (owner, prompt 25)")

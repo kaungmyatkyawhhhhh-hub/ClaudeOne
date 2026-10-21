@@ -19,6 +19,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Config = require(script.Parent.Config.LimbStages)
+local Outfit = require(script.Parent.Outfit)
 -- the body part reference sizes the mesh data was made for (MuscleData.Index; not MuscleMeshes, which requires this module)
 local PARTS = (require(ReplicatedStorage:WaitForChild("MuscleData"):WaitForChild("Index")) :: any).parts
 
@@ -101,6 +102,8 @@ local function makePart(self, limb, body: BasePart, stage): MeshPart?
 	local part = template:Clone() :: MeshPart
 	part.Name = limb.def.part .. limb.def.muscle .. "Stage"
 	part:SetAttribute("Stage", stage.file)
+	part:SetAttribute("Clothing", limb.def.clothing)
+	part:SetAttribute("BodyPart", limb.def.part)
 	part.Anchored = self.static
 	part.CanCollide, part.CanQuery, part.CanTouch, part.CastShadow = false, false, false, false
 	part.Massless = true
@@ -238,7 +241,8 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 			if skin then skin.CFrame = part.CFrame end
 		end
 		-- clothing and color (the skin part shows where the clothing image is see-through)
-		local template = if marble then "" else (if def.clothing == "Pants" then style.pants else style.shirt) or ""
+		-- (prompt 34: Outfit decides which limbs a trainer's outfit covers: forearms only with long sleeves)
+		local template = Outfit.Template(style, def.clothing, def.part, nil, marble)
 		if part.TextureID ~= template then part.TextureID = template end
 		-- (prompt 25: marble = true, the statue's grey, or { color, variant }, Atlas the trainer)
 		local marbleColor = if type(marble) == "table" then marble.color else Color3.fromHex("#C9C6BF")
@@ -258,8 +262,10 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 			local skinT = if clothed and not hidden and part.Transparency < 0.5 then 0 else 1
 			if skin.Transparency ~= skinT then skin.Transparency = skinT end
 		end
-		if marble and part.Material ~= Enum.Material.Marble then part.Material = Enum.Material.Marble end
-		if not marble and part.Material ~= Enum.Material.SmoothPlastic then part.Material = Enum.Material.SmoothPlastic end
+		local material = if marble then Enum.Material.Marble
+			elseif clothed and style.outfit then Enum.Material.Fabric -- (a trainer's outfit: matte cloth)
+			else Enum.Material.SmoothPlastic
+		if part.Material ~= material then part.Material = material end
 		-- layered clothing on this part hides it (not while a fade runs)
 		if hidden and part.Transparency < 1 then part.Transparency = 1 end
 		if not hidden and part.Transparency >= 1 and limb.shownHidden then part.Transparency = 0 end
@@ -267,6 +273,9 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		-- the ball that closes the elbow / knee (skin colored; the clothing color under a sleeve or pants leg doesn't matter:
 		-- it only shows inside a bent joint)
 		local skinColor = if marble then marbleColor else (style.skin or body.Color)
+		-- (prompt 34: under a trainer's sleeve or pants leg the ball shows when the joint bends: the outfit's color)
+		local clothColor = if def.clothing == "Pants" then style.pantsColor else style.shirtColor
+		if clothed and typeof(clothColor) == "Color3" then skinColor = clothColor end
 		updateJoint(self, limb, body, part, tint(def.muscle, skinColor), if marble then Enum.Material.Marble else Enum.Material.SmoothPlastic, hidden)
 		-- the stage replaces the plain body part (shown again under layered clothing)
 		local bodyTransparency = if hidden then 0 else 1
