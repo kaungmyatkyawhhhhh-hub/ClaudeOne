@@ -786,6 +786,16 @@ function PlayerData.AddItem(player, id, amount)
 	return true
 end
 
+-- (prompt 28b) whether an item sits in the hotbar: true / false (the player took it out; it stays out, also after a rejoin)
+function PlayerData.SetItemEquipped(player, id, on: boolean)
+	local data = PlayerData.Get(player)
+	local Boosts = require(Config.Boosts)
+	if not data or not Boosts.ById[id] or type(on) ~= "boolean" then return false end
+	data.itemsEquipped = data.itemsEquipped or {}
+	data.itemsEquipped[id] = on
+	return true
+end
+
 -- Protein Shakes (the old Energy Shakes): the inventory's "Shake" item (prompt 14)
 function PlayerData.AddShakes(player, amount)
 	return PlayerData.AddItem(player, "Shake", amount)

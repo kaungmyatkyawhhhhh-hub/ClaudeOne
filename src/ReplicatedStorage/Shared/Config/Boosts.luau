@@ -15,6 +15,8 @@ local Boosts = {}
 Boosts.MaxSeconds = 60 * 60 -- one boost holds at most 60 min
 Boosts.MaxCount = 99        -- most of one item in the inventory
 Boosts.UseCooldown = 1      -- seconds between two uses (any item)
+Boosts.DrinkSeconds = 1     -- (prompt 28b) a held boost: the drink takes this long, the item counts at its end
+Boosts.HotbarSlots = 9      -- a new item type goes in the hotbar by itself only while a slot is free
 Boosts.SaveEvery = 5        -- seconds between updates of the saved time left
 Boosts.MaxChips = 4         -- active boost timers shown by the stamina bar at once (the rest: "+2")
 

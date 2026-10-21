@@ -37,9 +37,9 @@ Onboarding.Steps = {
 		coach = { "Every rep uses stamina, the blue bar. Keep lifting until it runs low." } },
 	-- (prompt 20, 21 Oct: the button used to be off-screen on a machine; now an arrow points at it wherever it is, and after
 	-- `timeout` seconds the shake is drunk for the player so the tutorial never gets stuck)
-	{ id = "Shake", text = "Here's a free Energy Shake. Tap the shake!",
+	{ id = "Shake", text = "Here's a free Energy Shake. Tap it, then tap the screen to drink!",
 		gift = { shakes = 1 }, done = { type = "shake" }, timeout = 15,
-		coach = { "Stamina refills when you rest. Here's a free Energy Shake on me!", "Tap the shake (the arrow shows it) to fill up right away." } },
+		coach = { "Stamina refills when you rest. Here's a free Energy Shake on me!", "Tap the shake (the arrow shows it) to hold it, then tap the screen to drink it." } },
 	{ id = "GoSquat", text = "Head to the Squat Rack.", onMachineText = "Tap STOP, then head to the Squat Rack.",
 		target = "SquatRack", done = { type = "onMachine" },
 		coach = { "Nice work! Now head to the Squat Rack. Legs need love too." } },

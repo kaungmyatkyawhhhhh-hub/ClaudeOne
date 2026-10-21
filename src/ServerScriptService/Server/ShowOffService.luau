@@ -367,13 +367,14 @@ function ShowOffService.SetPose(player, emote)
 	return true
 end
 
-function ShowOffService.PlayEmote(player, emoteId)
+-- (seconds: how long, nil = the emote's own; 0 stops it, prompt 28b)
+function ShowOffService.PlayEmote(player, emoteId, seconds: number?)
 	local emote = ShowOff.EmoteById[emoteId]
 	if not emote or not emoteRemote or busy(player) then return false end
 	if player:GetAttribute("Skating") == true then return false end -- (a skater's joints belong to the skate pose)
 	if emote.poseData then return ShowOffService.SetPose(player, emote) end
 	ShowOffService.ReleasePose(player)
-	emoteRemote:FireAllClients(player, emote.id, emote.seconds)
+	emoteRemote:FireAllClients(player, emote.id, seconds or emote.seconds)
 	return true
 end
 

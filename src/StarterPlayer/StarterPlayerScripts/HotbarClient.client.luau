@@ -3,9 +3,12 @@
 --  * One slot per Tool in your backpack / hand, in the order they arrived: the number (1-9) top left, the item's icon,
 --    the count you own bottom right (Boosts items: "BoostItem" attribute on the Tool, ItemService). A tool that isn't a
 --    boost shows its name.
---  * (prompt 28) A boost slot: tap it or press its number to USE one (the Protein Shake: drink it; it replaces the old
---    DRINK SHAKE button, and ItemService always puts the shake in slot 1). Any other Tool: tap / number to hold it, again
---    to put it away; the one in your hand has a gold border and sits a little higher.
+--  * (prompt 28b) Tap a slot or press its number to hold it (the bottle in your hand); again to put it away. The one in
+--    your hand has a gold border and sits a little higher. While you hold a boost, tap / click the screen (Roblox's own
+--    Tool activate: a drag still turns the camera, a tap on a button never drinks) = the drink: ~1 s (ItemService checks
+--    the cooldown and uses the item at the end); the slot shows a radial sweep meanwhile (the DrinkItem / DrinkUntil
+--    player attributes). The first time you hold one: "Tap the screen to drink it." The shake is slot 1 (it replaces
+--    the old DRINK SHAKE button).
 --  * (prompt 28) Pinned to the bottom centre like Roblox's own toolbar (10 px above the safe area, never moving with the
 --    character); the stamina bar and the boost timers (HudBottom.SetLift) move up above it while it shows. STOP / EXERCISE
 --    (bottom left) and REP / PUMP (bottom right) stay in the corners. Hidden whenever HudBottom is (menus, full screens,
@@ -58,7 +61,9 @@ local function fitRow()
 	end
 	local natural = count * SLOT + math.max(0, count - 1) * GAP
 	local room = root.AbsoluteSize.X / math.max(Kit.Scale(), 0.01) - CORNERS
-	fit.Scale = if natural > room and natural > 0 then math.max(0.6, room / natural) else 1
+	-- (never under ~44 px a slot: a thumb still hits it)
+	local minScale = math.min(1, 44 / (SLOT * math.max(Kit.Scale(), 0.01)))
+	fit.Scale = if natural > room and natural > 0 then math.max(minScale, room / natural) else 1
 end
 
 local order = {} -- Tools: the shake first, then in the order they arrived
@@ -79,25 +84,47 @@ local function countOf(tool: Tool): number?
 	return if type(id) == "string" and type(items) == "table" then tonumber(items[id]) or 0 else nil
 end
 
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local Notify = require(Shared.UI.Notify)
+local hinted = false
 local function toggle(tool: Tool)
 	local h = humanoid()
 	if not h or h.Health <= 0 then return end
-	-- (prompt 28) a boost: one tap uses one (the server checks the count and the cooldown)
-	local id = tool:GetAttribute("BoostItem")
-	if type(id) == "string" and Boosts.ById[id] then
-		if (countOf(tool) or 0) > 0 then
-			Remotes.PlayerAction:FireServer(if id == "Shake" then "DrinkShake" else "UseItem", id)
-			Audio.PlayUI("Click")
-		end
-		return
-	end
 	if held(tool) then
 		h:UnequipTools()
 	else
 		h:EquipTool(tool)
+		-- (prompt 28b) the first boost you hold this session: how to drink it
+		if not hinted and tool:GetAttribute("BoostItem") then
+			hinted = true
+			Notify.Hint(if UserInputService.TouchEnabled then "Tap the screen to drink it." else "Click to drink it.")
+		end
 	end
 	Audio.PlayUI("Click")
+end
+
+-- (prompt 28b) the radial sweep over a slot while its drink runs: two half discs, each a hard-edged UIGradient that
+-- turns (the right half covers 12 -> 6 o'clock, then the left half 6 -> 12)
+local HARD = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(0.501, 1),
+	NumberSequenceKeypoint.new(1, 1) })
+local function makeSweep(face: GuiObject)
+	local sweep = New("CanvasGroup", { Name = "Sweep", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), GroupTransparency = 0.35,
+		Visible = false, ZIndex = 4, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+	local halves = {}
+	for i, side in ipairs({ "Right", "Left" }) do
+		local clip = New("Frame", { Name = side, BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 4,
+			Position = UDim2.fromScale(if side == "Right" then 0.5 else 0, 0), Size = UDim2.fromScale(0.5, 1), Parent = sweep })
+		local disc = New("Frame", { Name = "Disc", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 4,
+			Position = UDim2.fromScale(if side == "Right" then -1 else 0, 0), Size = UDim2.fromScale(2, 1), Parent = clip })
+		halves[i] = New("UIGradient", { Transparency = HARD, Rotation = if side == "Right" then 0 else 180, Parent = disc })
+	end
+	return { frame = sweep, right = halves[1], left = halves[2] }
+end
+local function setSweep(sweep, share: number?)
+	sweep.frame.Visible = share ~= nil
+	if not share then return end
+	local angle = math.clamp(share, 0, 1) * 360
+	sweep.right.Rotation = math.min(angle, 180)
+	sweep.left.Rotation = math.max(angle, 180)
 end
 
 local function render()
@@ -139,7 +166,7 @@ local function render()
 			local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 11, AnchorPoint = Vector2.new(1, 1),
 				Position = UDim2.new(1, -4, 1, -2), Size = UDim2.fromOffset(30, 12), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 3, Parent = face })
 			face.Activated:Connect(function() toggle(tool) end)
-			slot = { frame = frame, face = face, stroke = stroke, number = number, count = count }
+			slot = { frame = frame, face = face, stroke = stroke, number = number, count = count, sweep = makeSweep(face) }
 			slots[tool] = slot
 		end
 		slot.frame.LayoutOrder = index
@@ -183,6 +210,18 @@ task.spawn(function()
 	ClientData.Changed:Connect(function(path)
 		if path[1] == "items" then render() end
 	end)
+end)
+
+-- (prompt 28b) the drink's sweep: the slot of the item being drunk fills clockwise until the drink ends
+local DRINK = Boosts.DrinkSeconds or 1
+game:GetService("RunService").RenderStepped:Connect(function()
+	local id = player:GetAttribute("DrinkItem")
+	local untilTime = player:GetAttribute("DrinkUntil")
+	local left = if type(untilTime) == "number" then untilTime - workspace:GetServerTimeNow() else 0
+	for tool, slot in pairs(slots) do
+		local on = id ~= nil and tool:GetAttribute("BoostItem") == id and left > 0
+		setSweep(slot.sweep, if on then 1 - left / DRINK else nil)
+	end
 end)
 
 -- 1-9 hold / put away the item in that slot (not while typing)

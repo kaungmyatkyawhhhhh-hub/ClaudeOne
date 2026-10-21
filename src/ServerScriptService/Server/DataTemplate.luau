@@ -34,6 +34,7 @@ function DataTemplate.new()
 		shakes = 0, -- (old: Energy Shakes in the bag; moved to items.Shake on load, prompt 14)
 		items = {}, -- boosts in the inventory: [Config.Boosts id] = how many (ItemService)
 		boostLeft = {}, -- inventory boosts running: [id] = seconds left (paused while away; ItemService)
+		itemsEquipped = {}, -- (prompt 28b) [id] = true in the hotbar / false taken out by the player (kept); nil = never had it
 		endlessStamina = 0, -- Endless Stamina seconds left (bought; counts down only while in the game; PlayerData)
 		daily = { lastDay = 0, streak = 0, best = 0, calendarDay = 0 }, -- login streak calendar (Config.Economy.Login): last claimed day + calendar day
 		-- today's quests (Config.DailyQuests, DailyService): list = { { id, progress, done, claimed } }, groups trained today

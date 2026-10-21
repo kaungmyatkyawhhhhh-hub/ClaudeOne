@@ -48,7 +48,7 @@ end
 
 -- (prompt 14: the shakes are the inventory's Protein Shakes; ItemService calls this for "Shake", and the quick button's
 -- "DrinkShake" action still lands here)
-local function drink(player)
+local function drink(player, quiet: boolean?)
 	local now = os.clock()
 	if now - (lastDrink[player] or 0) < 1 then return false end
 	lastDrink[player] = now
@@ -58,7 +58,8 @@ local function drink(player)
 	BoostService.AddShake(player)
 	local flavor = Stamina.Shake.Flavors[rng:NextInteger(1, #Stamina.Shake.Flavors)]
 	event(player, "ShakeDrunk", { flavor = flavor })
-	ShowOffService.PlayEmote(player, "Chug") -- everyone sees the chug (skipped while on a machine)
+	-- everyone sees the chug (skipped while on a machine; quiet = the hotbar's drink already played it, prompt 28b)
+	if not quiet then ShowOffService.PlayEmote(player, "Chug") end
 	return true
 end
 StaminaService.DrinkShake = drink

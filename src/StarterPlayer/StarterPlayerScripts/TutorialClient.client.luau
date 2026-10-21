@@ -102,16 +102,19 @@ local skipArmed = 0
 
 local dialog = Theme.Panel({ Name = "CoachDialog", Clickable = true, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
 	Size = UDim2.fromOffset(540, 92), Visible = false, Parent = root }, {})
--- (prompt 28) above the hotbar while it shows (HotbarClient: 10 px gap + a 54 px slot): on a phone the dialog sat on the
--- shake slot the shake step asks you to tap
+-- (prompt 28) the dialog and the GO TO button above the hotbar while it shows (HotbarClient: 10 px gap + a 54 px slot): on
+-- a phone the dialog sat on the shake slot the shake step asks you to tap
 task.spawn(function()
 	local lifted = nil
 	while true do
 		local hotbar = playerGui:FindFirstChild("Hotbar")
 		local want = hotbar ~= nil and hotbar.Enabled
-		if want ~= lifted then
+		local go = root:FindFirstChild("GoTo")
+		if want ~= lifted and go then
 			lifted = want
-			dialog.Position = UDim2.new(0.5, 0, 1, if want then -(10 + 64) else -10)
+			local lift = if want then 64 else 0
+			dialog.Position = UDim2.new(0.5, 0, 1, -(10 + lift))
+			go.Position = UDim2.new(0.5, 0, 1, -(112 + lift))
 		end
 		task.wait(0.3)
 	end
