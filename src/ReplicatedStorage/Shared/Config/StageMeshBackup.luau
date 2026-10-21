@@ -195,4 +195,24 @@ StageMeshBackup.InnerFix19Oct = {
 	BS_RightLeg_Skin_gmon = { before = "rbxassetid://100911612187528", now = "rbxassetid://81207391672284" },
 }
 
+-- Fuller chest + traps / back (21 Oct, owner's prompts 9 and 15): all 14 torso templates moved on to
+-- Downloads\gym_arc_meshes_lowpoly_chestfix (tools/chest_lowpoly.py + tools/chest_stage_setup.luau). before = the mesh
+-- in use until then, now = the new one.
+StageMeshBackup.ChestFix21Oct = {
+	BS_Torso_Back_g000 = { before = "rbxassetid://106155780353047", now = "rbxassetid://94081114438428" },
+	BS_Torso_Back_g020 = { before = "rbxassetid://94704063607444", now = "rbxassetid://116752990388191" },
+	BS_Torso_Back_g040 = { before = "rbxassetid://70919335997032", now = "rbxassetid://84566551676218" },
+	BS_Torso_Back_g060 = { before = "rbxassetid://86143810073258", now = "rbxassetid://102745959589739" },
+	BS_Torso_Back_g080 = { before = "rbxassetid://83153539035807", now = "rbxassetid://118132714177495" },
+	BS_Torso_Back_g100 = { before = "rbxassetid://84276414515116", now = "rbxassetid://93919865981184" },
+	BS_Torso_Back_gmon = { before = "rbxassetid://120357357726811", now = "rbxassetid://97250390800690" },
+	BS_Torso_Front_g000 = { before = "rbxassetid://126560604612924", now = "rbxassetid://109132146471418" },
+	BS_Torso_Front_g020 = { before = "rbxassetid://92316936059138", now = "rbxassetid://115361261631040" },
+	BS_Torso_Front_g040 = { before = "rbxassetid://88445268664318", now = "rbxassetid://104053428492379" },
+	BS_Torso_Front_g060 = { before = "rbxassetid://92176089541718", now = "rbxassetid://80940304872173" },
+	BS_Torso_Front_g080 = { before = "rbxassetid://85012572987286", now = "rbxassetid://109848541679623" },
+	BS_Torso_Front_g100 = { before = "rbxassetid://112232130944828", now = "rbxassetid://89986353425480" },
+	BS_Torso_Front_gmon = { before = "rbxassetid://90093114065457", now = "rbxassetid://118777667421185" },
+}
+
 return StageMeshBackup
