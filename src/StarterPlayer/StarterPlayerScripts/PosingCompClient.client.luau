@@ -92,19 +92,38 @@ local function stageCamera(on: boolean)
 end
 
 ------------------------------------------------------------------------
--- The timer pill (right column, above the cards)
+-- The timer pill (prompt 46, owner 22 Oct: in Roblox's top bar with TopbarPlus, left of DAILY, like the HUD mockup 05):
+-- "POSING SHOW 0:27", and in the join window a small gold JOIN icon right after it. Only while a show starts within
+-- SOON seconds (or one is on). On a narrow screen it says "SHOW 0:27".
 ------------------------------------------------------------------------
-local pill = Theme.Panel({ Name = "PosingTimer", Piece = "hud_box", Clickable = true, Size = UDim2.fromOffset(RightColumn.Width, 30), Visible = false }, {})
-local pillText = Kit.Text({ Name = "Text", Text = "", Font = "Title", TextSize = 13, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -20, 1, 0),
-	TextXAlignment = Enum.TextXAlignment.Left, Parent = pill })
-local pillStroke = New("UIStroke", { Color = Colors.Gold, Thickness = 2, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = pill })
-local joinButton = Kit.Button("Gold", "Join", { Name = "Join", Visible = false }, { width = RightColumn.Width, height = 44, textSize = 18 })
-local holder = New("Frame", { Name = "PosingShow", BackgroundTransparency = 1, Size = UDim2.fromOffset(RightColumn.Width, 0), AutomaticSize = Enum.AutomaticSize.Y }, {
-	Theme.List(Enum.FillDirection.Vertical, 4, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Top),
-})
-pill.LayoutOrder, joinButton.LayoutOrder = 1, 2
-pill.Parent, joinButton.Parent = holder, holder
-RightColumn.Add(holder, 0)
+local TopBar = require(Shared.UI.TopBar)
+local UIConfig = require(Shared.Config.UI)
+local SOON = 90 -- seconds before a show the pill comes up
+local timerIcon = TopBar.Style(TopBar.Icon.new():setName("PosingShow"):align("Right"):setOrder(0):oneClick(true))
+timerIcon:setImage(UIConfig.Icons.trophy)
+timerIcon:modifyTheme({ "IconImage", "ImageColor3", Colors.Gold })
+timerIcon:modifyTheme({ "IconLabel", "FontFace", require(Shared.UI.UIFonts).Chunky })
+timerIcon:setEnabled(false)
+local joinIcon = TopBar.Icon.new():setName("PosingJoin"):align("Right"):setOrder(1):oneClick(true):setLabel("JOIN")
+joinIcon:modifyTheme({ "IconButton", "BackgroundColor3", Colors.Gold })
+joinIcon:modifyTheme({ "IconButton", "BackgroundTransparency", 0 })
+joinIcon:modifyTheme({ "IconLabel", "TextColor3", Colors.Ink })
+joinIcon:modifyTheme({ "IconLabel", "FontFace", require(Shared.UI.UIFonts).Chunky })
+joinIcon:setEnabled(false)
+-- (the old names the code below uses)
+local pill = { Visible = false }
+local joinButton = { Visible = false }
+local pillStroke = { Transparency = 1 }
+local function setPillText(text: string)
+	-- shortened when the screen is narrow (a phone): "SHOW 0:27"
+	local camera = Workspace.CurrentCamera
+	local narrow = camera ~= nil and camera.ViewportSize.X < 900
+	timerIcon:setLabel(if narrow then (string.gsub(text, "^POSING SHOW", "SHOW")) else text)
+end
+local function applyPill()
+	timerIcon:setEnabled(pill.Visible == true)
+	joinIcon:setEnabled(pill.Visible == true and joinButton.Visible == true)
+end
 
 local nextAt = nil   -- server time of the next show
 local running = false -- a show is on
@@ -112,13 +131,13 @@ local inDivision = false -- I'm in the division on stage now
 local joining = false
 local seenSent = false
 
-pill.Activated:Connect(function()
+timerIcon:bindEvent("selected", function()
 	Audio.PlayUI("Click")
 	local stats = (ClientData.Get() or {}).stats or {}
 	Notify.Toast("Your posing shows", string.format("Entered %d · Wins %d · Trophies %d · Best %d", stats.posingEntries or 0, stats.posingWins or 0,
 		stats.posingTrophies or 0, stats.posingBest or 0), "trophy", Colors.Gold, "posingstats")
 end)
-joinButton.Activated:Connect(function()
+joinIcon:bindEvent("selected", function()
 	Audio.PlayUI("Click")
 	joining = true
 	remote:FireServer("Join")
@@ -139,12 +158,12 @@ do
 end
 
 local function refreshPill()
-	local show = unlocked() and nextAt ~= nil and not UIBus.MenuOpen and not geneticsUp
-	holder.Visible = show
+	local soon = nextAt ~= nil and (running or nextAt - now() <= SOON)
+	local show = unlocked() and soon and not UIBus.MenuOpen and not geneticsUp
 	pill.Visible = show
 	if not show then
-		joinButton.Visible = false
 		glow.Parent = nil
+		applyPill()
 		return
 	end
 	if not seenSent then
@@ -152,21 +171,23 @@ local function refreshPill()
 		remote:FireServer("Seen")
 	end
 	if running then
-		pillText.Text = "POSING SHOW · ON NOW"
+		setPillText("POSING SHOW · ON NOW")
 		joinButton.Visible = false
-		pillStroke.Transparency = 1
+		pillStroke.Transparency = 0.35
 		glow.Parent = nil
+		applyPill()
 		return
 	end
 	local left = nextAt - now()
-	pillText.Text = "POSING SHOW " .. clock(left)
 	local window = left <= PosingComp.JoinWindow and left > 0
 	local here = onStage()
+	-- (the small gold JOIN is in the pill while it can be used: in the join window, not joined yet)
 	joinButton.Visible = window and not joining and not here
-	pillText.Text = if window and here then "ON STAGE · " .. clock(left) else pillText.Text
+	setPillText(if window and here then "ON STAGE · " .. clock(left) else "POSING SHOW " .. clock(left))
 	glow.Parent = if window then Workspace else nil
 	-- the gold glow pulses in the join window
-	pillStroke.Transparency = if window then 0.2 + 0.6 * (0.5 + 0.5 * math.sin(os.clock() * 5)) else 1
+	pillStroke.Transparency = if window then 0.6 * (0.5 + 0.5 * math.sin(os.clock() * 5)) else 0.35
+	applyPill()
 end
 
 ------------------------------------------------------------------------

@@ -6,8 +6,10 @@
 --   right (TopBar.AddPill): Daily | Quests | Settings
 -- Hidden on the main menu, the genetics screen and full-width screens (Icon.setTopbarEnabled; Roblox's own buttons
 -- stay). Anything under the top bar starts at GuiService.TopbarInset.Max.Y + 8 (Kit.UnderTopbar).
--- TopBar.AddPill(id, text, iconFactory, order): (prompt 43) an inert stand-in for every id: nothing on the top bar but
--- the coins. Returns { button, icon, SetActive(on), SetDot(on), SetBadge(n), SetText(text), Activated }.
+-- TopBar.AddPill(id, text, iconFactory, order): (prompt 46, owner 22 Oct: the HUD mockup 05 again) "Daily" (calendar +
+-- DAILY, a red "!" chip for a reward) and "Settings" (the gear) are right-hand icons; any other id ("Quests") gets an
+-- inert stand-in (the Today's Quest card opens Quests). The icons keep TopbarPlus' own look (no outlines).
+-- The POSING SHOW pill (PosingCompClient) sits in the same row, left of DAILY (TopBar.RightEdge). Returns { button, icon, SetActive(on), SetDot(on), SetBadge(n), SetText(text), Activated }.
 -- TopBar.NewIcon(name, order): a left-hand icon (TopBarClient).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIBus = require(script.Parent.UIBus)
@@ -18,16 +20,60 @@ local Icon = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ic
 local TopBar = {}
 TopBar.Icon = Icon
 
--- the right-hand icons: id -> look (order counts from the screen's right edge)
+-- the right-hand icons: id -> look (left to right)
 local PILLS = {
-	Daily = { order = 1, text = "Daily", icon = "calendar-days" },
-	Quests = { order = 2, text = "Quests", icon = "list-checks" },
+	Daily = { order = 2, text = "DAILY", icon = "calendar-days" },
 	Settings = { order = 3, icon = "settings" },
 }
 
+-- (owner, 22 Oct: no outlines on the top bar; the icons keep Roblox's / TopbarPlus' own look) kept so callers still work
+function TopBar.Style(icon)
+	return icon
+end
+
+-- (prompt 46) the small red "!" chip in an icon's top-right corner (the side menu's badge)
+local function chip(icon)
+	local chipFrame = Instance.new("Frame")
+	chipFrame.Name = "AlertChip"
+	chipFrame.AnchorPoint = Vector2.new(1, 0)
+	chipFrame.Position = UDim2.new(1, 3, 0, -3)
+	chipFrame.Size = UDim2.fromOffset(16, 16)
+	chipFrame.BackgroundColor3 = Color3.fromHex("#E8343C")
+	chipFrame.ZIndex = 20
+	chipFrame.Visible = false
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = chipFrame
+	local edge = Instance.new("UIStroke")
+	edge.Color = Color3.fromHex("#2A0505")
+	edge.Thickness = 1.5
+	edge.Parent = chipFrame
+	local bang = Instance.new("TextLabel")
+	bang.BackgroundTransparency = 1
+	bang.Size = UDim2.fromScale(1, 1)
+	bang.Text = "!"
+	bang.TextColor3 = Color3.new(1, 1, 1)
+	bang.TextSize = 13
+	bang.FontFace = require(script.Parent.UIFonts).Chunky
+	bang.ZIndex = 21
+	bang.Parent = chipFrame
+	chipFrame.Parent = icon.widget
+	return chipFrame
+end
+
+-- Screen px of the left edge of the right-hand icons (the POSING SHOW pill ends here), or nil while they're hidden.
+function TopBar.RightEdge(): number?
+	local daily = Icon.getIcon("Daily")
+	local widget = daily and daily.widget
+	if widget and widget.AbsoluteSize.X > 0 and widget.Visible then
+		local gui = widget:FindFirstAncestorWhichIsA("ScreenGui")
+		if gui and gui.Enabled then return widget.AbsolutePosition.X end
+	end
+	return nil
+end
+
 local geneticsOpen = false
 local shown = nil
-local never = Instance.new("BindableEvent") -- notices only clear when the game says so (not on a click)
 
 local function refreshVisible()
 	local on = not UIBus.MenuOpen and not geneticsOpen and not SideMenu.IsHidden()
@@ -50,28 +96,13 @@ task.spawn(function() -- (MenuClient raises UIBus.MenuOpen when it starts, which
 	end
 end)
 
--- A badge with a number (0 = none) on an icon (TopbarPlus notices)
-local function noticeSetter(icon)
-	local count = 0
-	return function(n: number)
-		n = math.max(0, math.floor(n))
-		if n == count then return end
-		count = n
-		icon:clearNotices()
-		for _ = 1, math.min(n, 9) do icon:notify(never.Event) end
-	end
-end
-
 -- A left-hand icon (TopBarClient: coins, height, level). Not selectable.
 function TopBar.NewIcon(name: string, order: number)
-	return Icon.new():setName(name):setOrder(order):lock()
+	return TopBar.Style(Icon.new():setName(name):setOrder(order):lock())
 end
 
 function TopBar.AddPill(id, labelText, _iconFactory, _order)
-	-- (prompt 43, owner 22 Oct: the top bar holds only the coins; Daily / Quests / Settings moved to the right-side cards
-	-- and the left menu's gear) every pill is an inert stand-in now
-	local cfg = nil
-	local _ = PILLS[id]
+	local cfg = PILLS[id]
 	local activated = Instance.new("BindableEvent")
 	local api = { Activated = activated.Event }
 	if not cfg then
@@ -86,12 +117,13 @@ function TopBar.AddPill(id, labelText, _iconFactory, _order)
 	icon:setImage(UIConfig.Icons[cfg.icon])
 	if cfg.text then icon:setLabel(cfg.text or labelText) end
 	icon:bindEvent("selected", function() activated:Fire() end)
-	local setNotices = noticeSetter(icon)
+	TopBar.Style(icon)
+	local alert = chip(icon)
 	api.icon = icon
 	api.button = icon.widget
 	function api.SetActive() end
-	function api.SetDot(_, on) setNotices(on and 1 or 0) end
-	function api.SetBadge(_, n) setNotices(tonumber(n) or 0) end
+	function api.SetDot(_, on) alert.Visible = on == true end
+	function api.SetBadge(_, n) alert.Visible = (tonumber(n) or 0) > 0 end
 	function api.SetText() end -- (the icons keep their own words)
 	return api
 end

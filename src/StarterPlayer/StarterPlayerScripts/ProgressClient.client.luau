@@ -47,14 +47,14 @@ local New, Colors = Theme.New, Theme.Colors
 local UIBus = require(Shared.UI.UIBus)
 local AlterPopup = require(Shared.UI.AlterPopup)
 local AlterFX = require(Shared.VFX.AlterFX)
-local TILE_H = 44
+local TILE_H = 48 -- (owner, 22 Oct: 10% taller)
 local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6), BackgroundTransparency = 1, Visible = false })
 local tile = Theme.Button("Gold", { Name = "Tile", Size = UDim2.new(1, 0, 0, TILE_H), Parent = holder }, {})
 local tileText = Kit.Text({ Name = "Grow", Text = "TAP TO GROW", Font = "Title", TextSize = 18, Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0, 22), Parent = tile })
 Kit.Fit(tileText, 18, 11) -- ("MAX GROWTH SPURT" fits the card)
-local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize = 10, Upper = true, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 12), Parent = tile })
+local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize = 11, Upper = true, Position = UDim2.fromOffset(0, 26), Size = UDim2.new(1, 0, 0, 13), Parent = tile })
 -- (prompt 45, mockup 05_hud_dark_chunky) ready: a taller card, TAP TO GROW big and chunky with the line under it
-local READY_H = 62
+local READY_H = 68 -- (owner, 22 Oct: 10% taller)
 local bigText = Kit.Text({ Name = "Big", Text = "TAP TO GROW", Font = "Chunky", TextSize = 28, Position = UDim2.fromOffset(6, 7), Size = UDim2.new(1, -12, 0, 32),
 	Visible = false, Parent = tile })
 Kit.Fit(bigText, 28, 16)
@@ -63,9 +63,9 @@ local function setReadyLook(on: boolean)
 	tileText.Visible = not on
 	tile.Size = UDim2.new(1, 0, 0, if on then READY_H else TILE_H)
 	holder.Size = UDim2.fromOffset(RightColumn.Width, (if on then READY_H else TILE_H) + 6)
-	tileLabel.Position = UDim2.fromOffset(0, if on then 40 else 24)
-	tileLabel.TextSize = if on then 12 else 10
-	tileLabel.Size = UDim2.new(1, 0, 0, if on then 14 else 12)
+	tileLabel.Position = UDim2.fromOffset(0, if on then 40 else 26)
+	tileLabel.TextSize = if on then 13 else 11
+	tileLabel.Size = UDim2.new(1, 0, 0, if on then 15 else 13)
 end
 -- (owner, 15 Oct: always shown under the one priority card; it had vanished behind Today's Quest)
 RightColumn.Add(holder, 9, "bottom")
@@ -231,13 +231,15 @@ local GuidePath = require(Shared.UI.GuidePath)
 local needsModal = Kit.Modal({ name = "SpurtNeeds", title = "Train next", width = 520, height = 262, displayOrder = 26, icon = "dumbbell" })
 local needsIntro = Kit.Text({ Name = "Intro", Text = "", Font = "Strong", TextSize = 14, Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left,
 	Parent = needsModal.body })
+-- (owner, 22 Oct) the rows scroll in a fixed-height list; SEE YOUR PHYSIQUE has its own strip under it (never over a row)
+local STRIP_H = 44
 local needsList = New("ScrollingFrame", { Name = "List", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 26),
-	Size = UDim2.new(1, 0, 1, -76), CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4,
+	Size = UDim2.new(1, 0, 1, -(26 + STRIP_H + 10)), ClipsDescendants = true, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4,
 	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = needsModal.body }, {
 	Theme.List(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
 local physiqueButton = Kit.Button("Quiet", "See your physique", { Name = "Physique", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1),
-	Parent = needsModal.body }, { height = 44, textSize = 14 })
+	Parent = needsModal.body }, { height = STRIP_H, textSize = 14 })
 physiqueButton.Activated:Connect(function()
 	needsModal.close()
 	UIBus.OpenStats:Fire("Muscles")
@@ -287,8 +289,9 @@ local function openNeeds()
 			Kit.Tag(string.upper(group.name), Colors.Red, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(0, 18), Parent = row })
 			Kit.Text({ Text = if machine.dumbbell then machine.name .. " (dumbbells)" else machine.name, Font = "Title", TextSize = 15, Position = UDim2.fromOffset(90, 0), Size = UDim2.new(1, -200, 1, 0),
 				TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-			local go = Kit.Button("Green", "Go", { Name = "Go", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Parent = row },
-				{ height = 44, width = 90, textSize = 16 })
+			-- (owner, 22 Oct) GO fits inside the row: 36 tall, centred, 12 px from the right
+			local go = Kit.Button("Green", "Go", { Name = "Go", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Parent = row },
+				{ height = 36, width = 80, textSize = 15 })
 			go.Activated:Connect(function() goTo(machine) end)
 		end
 	end

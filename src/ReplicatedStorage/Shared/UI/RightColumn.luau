@@ -257,8 +257,15 @@ end
 
 -- Parent `frame` into the column; lower `order` sits higher. `idleOnly` = true: idle items; "bottom": the bottom ones.
 -- With a `priority` it is a card (one card at a time, see above).
+-- (prompt 46, owner 22 Oct: "only TODAY'S QUEST, then TAP TO GROW under it. Nothing else stacked there.") Anything else
+-- asked for is kept out of the column (its script can still change it; it just never shows).
+RightColumn.Allowed = { DailyTracker = true, GrowthSpurt = true }
 function RightColumn.Add(frame, order, idleOnly, priority: number?)
 	ensure()
+	if not RightColumn.Allowed[frame.Name] then
+		frame.Parent = nil
+		return frame
+	end
 	local parent = idleOnly == "bottom" and bottom or (idleOnly and idle or always)
 	if priority then
 		local slot = New("Frame", { Name = frame.Name .. "Slot", LayoutOrder = order or 1, Size = UDim2.fromOffset(WIDTH, 0), AutomaticSize = Enum.AutomaticSize.Y,

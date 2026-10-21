@@ -35,7 +35,10 @@ local New, Colors = Theme.New, Theme.Colors
 local SideMenu = {}
 
 SideMenu.TileSize = 54
-SideMenu.Gap = 8
+-- (owner, 22 Oct) every tile measure is a share of the tile: gap 9%, corner 12%, icon 55% (8% from the top), label 20%
+-- tall with 6% under it
+SideMenu.Shape = { Gap = 0.09, Corner = 0.12, Icon = 0.55, IconTop = 0.08, Label = 0.20, LabelBottom = 0.06 }
+SideMenu.Gap = SideMenu.TileSize * SideMenu.Shape.Gap
 SideMenu.Left = 12
 SideMenu.Top = 52      -- never higher than this: under Roblox's top bar (set from Kit.UnderTopbar)
 SideMenu.BottomRoom = 12 -- room left at the bottom of the screen
@@ -207,27 +210,31 @@ local Icons = require(script.Parent.Icons)
 local function makeTile(id, labelText, iconFactory)
 	local cfg = HudIcons.Tiles[id] or {}
 	local size = SideMenu.TileSize
+	local shape = SideMenu.Shape
+	local radius = math.floor(size * shape.Corner + 0.5)
 	local button = New("TextButton", { Name = id, Text = "", AutoButtonColor = false, BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(size, size), Parent = bar })
+		Size = UDim2.fromOffset(size, size), Parent = bar }, { New("UIAspectRatioConstraint", { AspectRatio = 1 }) }) -- (always square)
 	New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("#060507"), BackgroundTransparency = 0.05, Parent = button },
-		{ New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
-	local border = New("UIStroke", { Color = GOLD, Thickness = 1.2, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+		{ New("UICorner", { CornerRadius = UDim.new(0, radius) }) })
+	local border = New("UIStroke", { Color = GOLD, Thickness = 1, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local face = New("Frame", { Name = "Face", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0,
 		ZIndex = 2, Parent = button }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 11) }),
+		New("UICorner", { CornerRadius = UDim.new(0, radius) }),
+		New("UIStroke", { Name = "Outline", Color = Color3.fromHex("#060507"), Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }), -- (2 px dark outline)
 		New("UIGradient", { Name = "Glass", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A272D"), Color3.fromHex("#18161A")) }),
 	})
 	-- the hex mesh (its own rounded corners clip it to the tile)
 	-- (owner, 22 Oct: no mesh on the nav tiles)
 	-- the thin gold inner outline (inset 2 px)
 	New("Frame", { Name = "Inner", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(1, -4, 1, -4), ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 9) }), border })
+		Size = UDim2.new(1, -4, 1, -4), ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, math.max(radius - 2, 0)) }), border })
 	local shade = New("Frame", { Name = "LockShade", BackgroundColor3 = Color3.fromHex("#050406"), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1),
-		ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
+		ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, radius) }) })
 	local content = New("Frame", { Name = "Content", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundTransparency = 1, ZIndex = 4, Parent = face })
 	local grow = New("UIScale", { Parent = content })
-	local iconSize = math.floor(size * 0.46)
-	local iconSlot = New("Frame", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6),
+	local iconSize = math.floor(size * shape.Icon)
+	local iconTop = math.floor(size * shape.IconTop + 0.5)
+	local iconSlot = New("Frame", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, iconTop),
 		Size = UDim2.fromOffset(iconSize, iconSize), BackgroundTransparency = 1, ZIndex = 4, Parent = content })
 	-- the icon, gold: an image, a ui icon, one of Shared/UI/Icons by name (Config/HudIcons), or the caller's
 	if cfg.image and cfg.image ~= "" then
@@ -241,13 +248,13 @@ local function makeTile(id, labelText, iconFactory)
 		local icon = iconFactory(GOLD)
 		icon.Parent = iconSlot
 	end
-	local padlock = Pieces.Icon("lock", LOCK_GREY, { Name = "Padlock", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6),
+	local padlock = Pieces.Icon("lock", LOCK_GREY, { Name = "Padlock", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, iconTop),
 		Size = UDim2.fromOffset(iconSize, iconSize), Visible = false, ZIndex = 4, Parent = content })
 	padlock:SetAttribute("KeepColor", true)
 	local label = New("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = string.upper(cfg.label or labelText), FontFace = CHUNKY, TextSize = 11,
-		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -3), Size = UDim2.new(1, -4, 0, 14), ZIndex = 4,
-		Parent = content })
-	local labelStroke = New("UIStroke", { Color = Color3.fromHex("#0A090B"), Thickness = 1.5, Parent = label })
+		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, SideMenu.Lip - math.floor(size * shape.LabelBottom + 0.5)),
+		Size = UDim2.new(1, -4, 0, math.floor(size * shape.Label + 0.5)), ZIndex = 4, Parent = content })
+	local labelStroke = New("UIStroke", { Color = Color3.fromHex("#0A090B"), Thickness = 3, Parent = label }) -- (owner: 3 px dark)
 	Kit.Fit(label, 11, 8)
 	-- the one badge, inside the top-right corner
 	local newTag = New("Frame", { Name = "NewTag", BackgroundColor3 = GOLD, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3),
