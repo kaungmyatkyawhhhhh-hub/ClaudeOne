@@ -44,7 +44,7 @@ local function tint(gui: GuiObject, color: Color3?, edge: Color3?)
 		border.Thickness = if color then 3 else 1.5
 		border.Transparency = if color then 0 else 0.3
 	end
-	Theme.SetHex(gui, 0.86, 11)
+	Theme.SetHex(gui, 0.86, 11, color) -- (prompt 44: the mesh in the item colour)
 end
 local DETAIL_W = 206
 local PAD = 8

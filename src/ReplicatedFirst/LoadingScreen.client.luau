@@ -41,7 +41,7 @@ local LOOK = {
 	Display = Font.new(MONTSERRAT, Enum.FontWeight.Heavy, Enum.FontStyle.Italic), -- UIFonts.Display
 	Body = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
 	Chunky = Font.fromEnum(Enum.Font.LuckiestGuy), -- UIFonts.Chunky (prompt 40: the loading words, mockup real/loading)
-	Hex = "rbxassetid://133971863105248", -- Theme.HexImage
+	Hex = "rbxassetid://117814833566275", -- Theme.HexImage (prompt 44)
 	Art = "rbxassetid://124549460345839", -- Config/UI.MenuArt (owner, 15 Oct)
 	Logo = "rbxassetid://86034269506160", -- Config/UI.Logo3D
 	Glow = "rbxassetid://108461610476976", -- Config/UI.SoftGlow
@@ -83,8 +83,8 @@ local function text(props)
 	return label
 end
 local function hex(parent, tile)
-	new("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = LOOK.Hex, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(tile, tile * 0.87),
-		ImageTransparency = 0.88, Size = UDim2.fromScale(1, 1), Parent = parent }, { new("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	new("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = LOOK.Hex, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(tile, tile * 30 / 52),
+		ImageTransparency = 0.84, Size = UDim2.fromScale(1, 1), Parent = parent }, { new("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 end
 -- a graphite surface (top -> bottom gradient, a dark edge, the light hairline along the top)
 local function graphite(frame, top, bottom, radius)
@@ -182,8 +182,8 @@ watchCamera()
 local tipTile = graphite(new("Frame", { Name = "TipTile", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -78), Size = UDim2.new(0.46, 0, 0, 0),
 	AutomaticSize = Enum.AutomaticSize.Y, Parent = root }), LOOK.PanelTop, LOOK.PanelBottom, 10)
 -- (prompt 40) the hex mesh and a thin gold edge
-new("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = LOOK.Hex, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(26, 23),
-	ImageTransparency = 0.88, Size = UDim2.fromScale(1, 1), Parent = tipTile }, { new("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+new("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = LOOK.Hex, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(78, 45),
+	ImageTransparency = 0.82, ImageColor3 = LOOK.Gold, Size = UDim2.fromScale(1, 1), Parent = tipTile }, { new("UICorner", { CornerRadius = UDim.new(0, 10) }) })
 new("UIStroke", { Name = "GoldEdge", Color = LOOK.Gold, Thickness = 1.5, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tipTile })
 -- (the padding sits on an inner frame, so the tile's hairline stays on its top edge)
 local tipBody = new("Frame", { Name = "Body", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = tipTile }, {
@@ -214,7 +214,7 @@ local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, 1), Positi
 	new("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2) }),
 })
 -- metallic red: a bright band near the top, a dark bottom
-hex(bar, 14)
+hex(bar, 26)
 local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = bar }, {
 	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({

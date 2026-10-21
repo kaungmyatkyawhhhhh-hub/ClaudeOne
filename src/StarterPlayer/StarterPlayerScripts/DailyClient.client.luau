@@ -276,13 +276,15 @@ local streak = { cards = {} }
 local page = pages.Rewards
 streak.title = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 17, RichText = true, Size = UDim2.new(1, 0, 0, TITLE_H),
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = page })
-local row = New("Frame", { Name = "Days", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, ROW_Y), Size = UDim2.new(1, 0, 0, BIG_H), Parent = page }, {
+-- (prompt 44: 6 px in from each side so the glow and the TODAY ring are never cut off by the window's edge)
+local row = New("Frame", { Name = "Days", BackgroundTransparency = 1, Position = UDim2.fromOffset(6, ROW_Y), Size = UDim2.new(1, -12, 0, BIG_H), Parent = page }, {
 	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(GAP, 0), HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
 })
-local function hexOn(parent: Instance, corner: number)
-	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(22, 19),
-		ImageTransparency = 0.86, Size = UDim2.fromScale(1, 1), Parent = parent }, { New("UICorner", { CornerRadius = UDim.new(0, corner) }) })
+local function hexOn(parent: Instance, corner: number, color: Color3?)
+	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
+		ImageTransparency = Theme.HexAlpha, ImageColor3 = color or Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), Parent = parent },
+		{ New("UICorner", { CornerRadius = UDim.new(0, corner) }) })
 end
 for day = 1, DAYS do
 	local coins, tokens = Economy.LoginReward(day)
@@ -295,10 +297,10 @@ for day = 1, DAYS do
 		Size = UDim2.new(1, 0, 0, h), Parent = slot }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
 		New("UIStroke", { Name = "Border", Color = if dnaDay then Colors.Gold else Colors.Outline, Thickness = if dnaDay then 2.5 else 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-		New("UIGradient", { Rotation = 90, Color = if dnaDay then ColorSequence.new(Color3.fromHex("#3E2D0E"), Color3.fromHex("#1A1309"))
+		New("UIGradient", { Rotation = 90, Color = if dnaDay then ColorSequence.new(Color3.fromHex("#6A4E16"), Color3.fromHex("#2E220C")) -- (prompt 44: brighter)
 			else ColorSequence.new(Color3.fromHex("#232023"), Color3.fromHex("#141215")) }),
 	})
-	hexOn(card, 10)
+	hexOn(card, 10, if dnaDay then Color3.fromHex("#FFE9A6") else nil)
 	-- the thin muted inner line
 	New("Frame", { Name = "Inner", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -4, 1, -4),
 		Parent = card }, {
@@ -335,7 +337,7 @@ for day = 1, DAYS do
 		local size = if big then 62 else 48
 		local dna = New("ImageLabel", { Name = "Dna", Image = DNA_CUTOUT, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.new(0.5, 0, 0.5, -2), Size = UDim2.fromOffset(size, size), ScaleType = Enum.ScaleType.Fit, Parent = card })
-		table.insert(icons, dna)
+		icons.dna = dna -- (prompt 44: the DNA token is never dimmed)
 		bonusTag = New("Frame", { Name = "PlusPill", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, -20),
 			Size = UDim2.fromOffset(24, 15), ZIndex = 3, Parent = card }, {
 			New("UICorner", { CornerRadius = UDim.new(1, 0) }),

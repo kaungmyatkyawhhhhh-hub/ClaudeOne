@@ -231,7 +231,7 @@ end
 ------------------------------------------------------------------------
 local hero = Kit.Card({ Name = "Hero", Piece = "card_gold", Size = UDim2.new(0, HERO_W, 1, 0), Parent = modal.body }, {})
 hero:FindFirstChild("Border").Thickness = 3.5
-Theme.SetHex(hero, 0.8, 11) -- (prompt 40: the hero card is hex too)
+Theme.SetHex(hero, 0.8, 11, Colors.Gold) -- (prompt 40: the hero card is hex too; prompt 44: gold)
 -- a warm red glow behind the art (the art's own backdrop in the mockup)
 New("Frame", { Name = "ArtGlow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(100, 100),
 	BackgroundColor3 = Color3.fromHex("#3A1214"), BackgroundTransparency = 0.2, Parent = hero }, {

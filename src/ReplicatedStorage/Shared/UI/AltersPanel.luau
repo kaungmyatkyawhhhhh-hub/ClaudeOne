@@ -61,8 +61,9 @@ function AltersPanel.Build(parent: Instance)
 			local accent = if theme then theme.accent else Color3.fromHex("#3A363D")
 			New("UIGradient", { Rotation = -90, Color = ColorSequence.new(accent:Lerp(base, 0.55), base), Parent = bg })
 		end
-		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(30, 26),
-			ImageTransparency = 0.88, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = parent }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
+			ImageTransparency = Theme.HexAlpha, ImageColor3 = if theme then theme.accent else Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = parent },
+			{ New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
 		return bg
 	end
 	local function swatchOf(parent: Instance, size: number, y: number): ImageLabel

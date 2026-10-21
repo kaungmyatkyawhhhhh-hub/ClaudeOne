@@ -106,7 +106,13 @@ Theme.RarityColor = {
 	Epic = Color3.fromHex("#AA50FF"), Legendary = Color3.fromHex("#F5BE28"), Mythic = Color3.fromHex("#FF5AC8"),
 	Eternal = Color3.fromHex("#F0F0FF"), Secret = Color3.fromHex("#8E8E9A"),
 }
-Theme.HexImage = "rbxassetid://133971863105248" -- (prompt 39b) the faint hex mesh, tiled
+-- (prompt 44, owner: the old mesh was too fine to see) Downloads\gym_arc_textures\hex_tile.png (seamless, white lines on
+-- transparent, 156x90), always ScaleType Tile at a fixed size (never scaled with the tile), tinted, ~0.8 transparent
+Theme.HexImage = "rbxassetid://117814833566275"
+Theme.HexTile = UDim2.fromOffset(52, 30)    -- normal tiles (cards, nav tiles, reward tiles)
+Theme.HexTileBig = UDim2.fromOffset(78, 45) -- big panels
+Theme.HexTileBar = UDim2.fromOffset(26, 15) -- bars (they're only ~10 px tall)
+Theme.HexAlpha = 0.65 -- (tested 22 Oct: at 52x30 the lines are ~1 px, 0.8 vanished on phones)
 
 -- Real bumper plate colors (plate fill + darker rim). Used for grades, rarity and plates.
 local function plate(hex, textOnPlate)
@@ -669,19 +675,22 @@ local function setGlow(gui, color: Color3?, alpha: number?, corner: number)
 end
 Theme.SetGlow = setGlow
 
--- (prompt 40) the faint hex mesh inside a gui (alpha = its ImageTransparency, nil = none)
-function Theme.SetHex(gui, alpha: number?, radius: number)
+-- (prompt 40 / 44) the hex mesh inside a gui: nil alpha = none, else shown at Theme.HexAlpha (a number above 0.9 = a
+-- quieter one); color tints it (white by default); big = the panel size
+function Theme.SetHex(gui, alpha: number?, radius: number, color: Color3?, big: boolean?)
 	local depth = depthOf(gui)
 	local hex = depth:FindFirstChild("Hex")
 	if alpha and not hex then
 		hex = Theme.New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile,
-			TileSize = UDim2.fromOffset(30, 26), ZIndex = gui.ZIndex, Parent = depth }, { Theme.New("UICorner", { Name = "Corner" }) })
+			TileSize = Theme.HexTile, ZIndex = gui.ZIndex, Parent = depth }, { Theme.New("UICorner", { Name = "Corner" }) })
 		hex:SetAttribute("FitExtra", -2)
 		fitLayer(gui, hex)
 	end
 	if hex then
 		hex.Visible = alpha ~= nil
-		hex.ImageTransparency = alpha or 1
+		hex.ImageTransparency = if alpha == nil then 1 elseif alpha > 0.9 then 0.86 else Theme.HexAlpha
+		hex.ImageColor3 = color or Color3.new(1, 1, 1)
+		hex.TileSize = if big then Theme.HexTileBig else Theme.HexTile
 		hex.Corner.CornerRadius = UDim.new(0, math.max(radius - 1, 0))
 	end
 end
@@ -712,7 +721,7 @@ function Theme.SetPiece(gui, name)
 	setGlow(gui, surface.glow and Theme.Colors.Gold or nil, surface.glow, radius)
 	-- (prompt 40) the hex mesh and the gold inner line (mockups 05 / 06)
 	local depth = depthOf(gui)
-	Theme.SetHex(gui, surface.hex, radius)
+	Theme.SetHex(gui, surface.hex, radius, nil, name == "panel")
 	local inner = depth:FindFirstChild("GoldLine")
 	if surface.goldLine and not inner then
 		inner = Theme.New("Frame", { Name = "GoldLine", BackgroundTransparency = 1, ZIndex = gui.ZIndex, Parent = depth }, {

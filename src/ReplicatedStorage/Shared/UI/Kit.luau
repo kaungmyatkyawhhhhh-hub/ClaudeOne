@@ -348,8 +348,8 @@ function Kit.Bar(color: Color3, props: { [string]: any }?, opts: { [string]: any
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = opts.outline or 2, Transparency = 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		New("UIPadding", { Name = "Inset", PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }),
-		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(16, 14),
-			ImageTransparency = 0.9, Size = UDim2.fromScale(1, 1) }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
+		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTileBar,
+			ImageTransparency = 0.86, Size = UDim2.fromScale(1, 1) }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
 	})
 	local fill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), Parent = track }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
@@ -448,8 +448,8 @@ function Kit.RewardTile(color: Color3, props: { [string]: any }?)
 		New("UIStroke", { Color = Colors.Outline, Thickness = 2, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	local _ = ring
-	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(30, 26),
-		ImageTransparency = 0.82, Size = UDim2.fromScale(1, 1), Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+	local hex = New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
+		ImageTransparency = Theme.HexAlpha, Size = UDim2.fromScale(1, 1), Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
 	local glow = New("Frame", { Name = "Glow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.new(1, 8, 1, 8), Parent = tile }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 15) }),
@@ -491,6 +491,7 @@ function Kit.RewardTile(color: Color3, props: { [string]: any }?)
 		local dark = state == "locked"
 		local base = if dark then Color3.fromHex("#151316") else c:Lerp(Color3.fromHex("#141215"), 0.72)
 		tile.Tint.Color = ColorSequence.new(base:Lerp(Color3.new(1, 1, 1), 0.06), base:Lerp(Color3.new(0, 0, 0), 0.35))
+		hex.ImageColor3 = if dark then Color3.fromHex("#8A868F") else c -- (prompt 44: the mesh in the tile's colour)
 		local edge = if state == "equipped" then Colors.Gold elseif dark then c:Lerp(Color3.fromHex("#2A272B"), 0.6) else c
 		tile.Border.Color = edge
 		glow.Stroke.Color = edge
