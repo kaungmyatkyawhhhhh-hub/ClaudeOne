@@ -1,16 +1,15 @@
 -- TitlesClient: the INVENTORY tile and window (owner, 14 Oct: was the Titles window), and the unlock toasts.
--- (prompt 28, 21 Oct: 7 tabs -> 3) Tabs ITEMS | GEAR | LOOKS; the last one opened is remembered (settings.inventoryTab).
--- A tab shows once its feature is open for you: GEAR when you own something to wear (or from Growth Spurt 2, the PUMP
--- SHOP's gear), LOOKS when you own a title, an aura or an alter (or from Growth Spurt 1). ITEMS is always there.
+-- (prompt 28, 21 Oct: 7 tabs -> 3; prompt 39b, 22 Oct: 4) Tabs ITEMS | GEAR | AURAS | LOOKS, all there from the start; the
+-- last one opened is remembered (settings.inventoryTab). (prompt 39b) Not open yet = a padlock and a teaser on tap
+-- (Config/Guides.TabLocks: GEAR from Growth Spurt 2 or once you own something to wear, AURAS from Growth Spurt 3 or once
+-- you own an aura); the window opens on the first open tab (Kit.OpenTab), never an empty page.
 -- Trainers are not here: they live in the TRAINERS window (TrainerClient, its MY TRAINERS tab).
 --   ITEMS (Shared/UI/BoostsPanel): the boost items you own with USE and EQUIP, DNA Tokens ("Genetics"), and the boosts
 --     running now (passes, Endless Stamina, drinks, a Server Boost) with their timers. Empty: "Get boosts at the PUMP SHOP".
 --   GEAR (Shared/UI/GearPanel): what you own to wear (PUMP SHOP gear and apparel, the clothing store's gear).
---   LOOKS: filter chips on top (All / Alters / Auras / Titles):
---     ALL     everything you own, one big tile each (art, name, ALTER / AURA / TITLE in its rarity color; the ones you
---             wear say WORN in gold on a gold card); a tap opens its chip.
+--   LOOKS: chips on top (ALTERS / TITLES; prompt 39b: the ALL chip is gone, AURAS is its own tab; ALTERS locked before 7'0"):
 --     ALTERS  Shared/UI/AltersPanel.
---     AURAS   on the left the picked aura big (its art, name, rarity, how to get it, the action button) and "Aura: Off"; on
+--   AURAS: on the left the picked aura big (its art, name, rarity, how to get it, the action button) and "Aura: Off"; on
 --             the right a grid of aura tiles (art, name, rarity, and its state: EQUIP / EQUIPPED / a coin price / AURA PACK
 --             or VIP (opens that pass's purchase) / how to earn it). The preview is your own character behind the window
 --             wearing the picked aura at full power (Roblox doesn't draw particles inside a ViewportFrame; AURA.preview).
@@ -54,18 +53,21 @@ local RARITY_COLOR = {
 local CARD = Vector2.new(152, 84) -- (prompt 28: bigger, 5 a row)
 local PAD = 8 -- every label keeps this far from its card's edges
 -- (prompt 28) a tab name, old or new -> the tab, and the LOOKS chip
-local TAB_OF = { Items = "Items", Boosts = "Items", Gear = "Gear", Looks = "Looks", Alters = "Looks", Auras = "Looks", Titles = "Looks" }
-local LOOK_OF = { Alters = "Alters", Auras = "Auras", Titles = "Titles" }
+local TAB_OF = { Items = "Items", Boosts = "Items", Gear = "Gear", Auras = "Auras", Looks = "Looks", Alters = "Looks", Titles = "Looks" }
+local LOOK_OF = { Alters = "Alters", Titles = "Titles" }
+local TABS = { "Items", "Gear", "Auras", "Looks" }
+local LOOKS_CHIPS = { "Alters", "Titles" }
 local CHIP_H = Kit.TabHeight
 
 local menuButton = SideMenu.Add("Inventory", "Inventory", nil, 2)
 
 local tab = "Items"
-local look = "All" -- the LOOKS chip
+local look = "Alters" -- the LOOKS chip
 local refresh -- (below)
 -- (840 x 290: room for 5 big tiles a row, and the LOOKS chips over the Auras preview card; it still fits a 667 x 375 phone)
 local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 840, height = 290, displayOrder = 25,
-	tabs = { { id = "Items", text = "Items", icon = "zap" }, { id = "Gear", text = "Gear", icon = "dumbbell" }, { id = "Looks", text = "Looks", icon = "sparkles" } },
+	tabs = { { id = "Items", text = "Items" }, { id = "Gear", text = "Gear", lock = "Inventory/Gear" }, { id = "Auras", text = "Auras", lock = "Inventory/Auras" },
+		{ id = "Looks", text = "Looks" } },
 	onTab = function(id)
 		if tab ~= id then
 			tab = id
@@ -82,7 +84,7 @@ local countLabel = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSi
 ------------------------------------------------------------------------
 local LOOKS = {}
 LOOKS.frame = New("Frame", { Name = "Looks", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = modal.body })
-local _chips, selectChip = Kit.Tabs({ { id = "All", text = "All" }, { id = "Alters", text = "Alters" }, { id = "Auras", text = "Auras" }, { id = "Titles", text = "Titles" } },
+local _chips, selectChip = Kit.Tabs({ { id = "Alters", text = "Alters", lock = "Looks/Alters" }, { id = "Titles", text = "Titles" } },
 	function(id)
 		look = id
 		Audio.PlayUI("Click")
@@ -140,7 +142,7 @@ end
 ------------------------------------------------------------------------
 local AURA = { tiles = {}, picked = Auras.List[1].id }
 local TILE = Vector2.new(120, 104) -- (prompt 28: bigger, 5 a row)
-AURA.frame = New("Frame", { Name = "Auras", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = LOOKS.body })
+AURA.frame = New("Frame", { Name = "Auras", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = modal.body }) -- (prompt 39b: its own tab)
 -- the preview card (left)
 AURA.preview = Kit.Card({ Name = "Preview", Piece = "card_gold", Size = UDim2.new(0, 156, 1, 0), Parent = AURA.frame }, {})
 -- (prompt 28: a little shorter, the LOOKS chips sit above it)
@@ -277,7 +279,7 @@ end
 -- the try-on: while the AURAS tab is open, your character wears the picked aura at full power (AuraClient reads the
 -- local "AuraPreview" attribute; nothing is equipped or sent to the server)
 function AURA.preview()
-	local aura = modal.isOpen() and tab == "Looks" and look == "Auras" and Auras.ById[AURA.picked] or nil
+	local aura = modal.isOpen() and tab == "Auras" and Auras.ById[AURA.picked] or nil
 	local want = aura and aura.vfx or nil
 	if player:GetAttribute("AuraPreview") ~= want then player:SetAttribute("AuraPreview", want) end
 end
@@ -331,133 +333,28 @@ local GearPanel = require(Shared.UI.GearPanel)
 local GEAR_TAB = GearPanel.Build(modal.body)
 local ALTERS_TAB = require(Shared.UI.AltersPanel).Build(LOOKS.body) -- (prompt 21) the Body Alter skins
 
-------------------------------------------------------------------------
--- LOOKS > ALL: everything you own, one tile each; a tap opens its chip
-------------------------------------------------------------------------
-local Alters = require(Shared.Config.Alters)
-local ALL = {}
-local ALL_TILE = Vector2.new(152, 96)
-ALL.grid = New("ScrollingFrame", { Name = "All", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false,
-	ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(),
-	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = LOOKS.body }, {
-	New("UIGridLayout", { CellSize = UDim2.fromOffset(ALL_TILE.X, ALL_TILE.Y), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
-	New("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingBottom = UDim.new(0, 4) }),
-})
-ALL.empty = Kit.Text({ Name = "Empty", Text = "No looks yet. Earn titles by training, and get auras in the <font color=\"#F6C75A\">SHOP</font>.", RichText = true,
-	Font = "Strong", TextSize = 15, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.new(1, -20, 0, 22), Visible = false, Parent = LOOKS.body })
-
--- one tile: the art on top, the name, the kind in its color; worn = a gold card with WORN
-local function lookTile(order: number, kind: string, kindColor: Color3, label: string, worn: boolean, makeArt: (Instance) -> (), onTap: () -> ())
-	local tile = Kit.Card({ Name = kind .. "_" .. label, LayoutOrder = order, Clickable = true, Parent = ALL.grid }, {})
-	Theme.SetPiece(tile, if worn then "card_gold" else "card")
-	local art = New("Frame", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8),
-		Size = UDim2.fromOffset(40, 40), Parent = tile })
-	makeArt(art)
-	Kit.Fit(Kit.Text({ Name = "LookName", Text = label, Font = "Title", Upper = true, Position = UDim2.fromOffset(PAD, 52), Size = UDim2.new(1, -2 * PAD, 0, 18),
-		Parent = tile }), 14, 9)
-	Kit.Fit(Kit.Text({ Name = "Kind", Text = if worn then string.upper(kind) .. " · WORN" else string.upper(kind), Font = "Title",
-		TextColor3 = if worn then Colors.Gold else kindColor, Position = UDim2.fromOffset(PAD, 72), Size = UDim2.new(1, -2 * PAD, 0, 14), Parent = tile }), 11, 9)
-	tile.Activated:Connect(function()
-		Audio.PlayUI("Click")
-		onTap()
-	end)
-end
-local function openChip(id: string)
-	look = id
-	selectChip(id)
-	refresh()
-end
-
-function ALL.refresh()
-	for _, child in ipairs(ALL.grid:GetChildren()) do
-		if child:IsA("GuiObject") then child:Destroy() end
-	end
-	local data = ClientData.Get()
-	local n = 0
-	-- the alters you've reached
-	local state = Alters.State(data)
-	for _, alter in ipairs(Alters.List) do
-		if alter.number <= (state.highest or 0) then
-			n += 1
-			lookTile(alter.number, "Alter", Colors.Red, alter.name, alter.number == (state.equipped or 0), function(holder)
-				-- (its skin: the alter's color map tinted with your skin color, like the Alters view)
-				local skin = player:GetAttribute("SkinColor")
-				if typeof(skin) ~= "Color3" then skin = Color3.fromHex("#E0A878") end
-				New("ImageLabel", { Name = "Swatch", Image = alter.textures and alter.textures.color or "", ImageColor3 = Alters.Tint(alter.id, skin), ScaleType = Enum.ScaleType.Crop,
-					BackgroundColor3 = if alter.textures then skin else Color3.fromHex(alter.placeholder or "#C98A12"), Size = UDim2.fromScale(1, 1), Parent = holder },
-					{ New("UICorner", { CornerRadius = UDim.new(1, 0) }), New("UIStroke", { Color = Colors.Outline, Thickness = 2 }) })
-			end, function() openChip("Alters") end)
-		end
-	end
-	for index, aura in ipairs(Auras.List) do
-		if AURA.has(aura) then
-			n += 1
-			lookTile(1000 + index, "Aura", RARITY_COLOR[aura.rarity] or Colors.Muted, aura.name, AURA.equipped() == aura.id, function(holder)
-				New("ImageLabel", { Name = "Icon", Image = aura.Icon, BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromScale(1, 1), Parent = holder })
-			end, function()
-				AURA.picked = aura.id
-				openChip("Auras")
-			end)
-		end
-	end
-	for index, title in ipairs(ordered) do
-		if data.titles.owned[title.id] then
-			n += 1
-			lookTile(2000 + index, "Title", RARITY_COLOR[title.rarity] or Colors.Muted, title.name, data.titles.equipped == title.id, function(holder)
-				local icon = Pieces.Icon("medal", RARITY_COLOR[title.rarity] or Colors.Gold, { Size = UDim2.fromScale(1, 1), Parent = holder })
-				icon:SetAttribute("KeepColor", true)
-			end, function() openChip("Titles") end)
-		end
-	end
-	ALL.empty.Visible = n == 0
-	ALL.grid.Visible = n > 0
-	countLabel.Text = if n > 0 then n .. " owned" else ""
-end
-
-------------------------------------------------------------------------
--- Which tabs show (prompt 28: hidden until their feature is open for you)
-------------------------------------------------------------------------
-local function ownsLooks(data): boolean
-	if data.titles and data.titles.owned and next(data.titles.owned) ~= nil then return true end
-	if data.auras and data.auras.owned and next(data.auras.owned) ~= nil then return true end
-	for _, aura in ipairs(Auras.List) do
-		if aura.unlock.type == "pass" and AURA.has(aura) then return true end
-	end
-	return (Alters.State(data).highest or 0) > 0
-end
-local function tabShown(id: string): boolean
-	if not ClientData.IsLoaded() then return id == "Items" end
-	local data = ClientData.Get()
-	local spurts = data.growthSpurts or 0
-	if id == "Gear" then return spurts >= 2 or GearPanel.Count(data) > 0 end
-	if id == "Looks" then return spurts >= 1 or ownsLooks(data) end
-	return true
-end
-local tabRow = modal.panel:FindFirstChild("Tabs", true)
-local function refreshTabs()
-	for _, id in ipairs({ "Items", "Gear", "Looks" }) do
-		local button = tabRow and tabRow:FindFirstChild(id)
-		if button then button.Visible = tabShown(id) end
-	end
-end
+-- (prompt 39b: the ALL view that used Config/Alters here is gone)
 
 ------------------------------------------------------------------------
 function refresh()
 	local data = ClientData.Get()
-	refreshTabs()
-	if not tabShown(tab) then
-		tab = "Items"
+	-- (prompt 39b) never on a locked tab or chip (one that locks again can't happen, but a stale saved one can)
+	local openTab = Kit.OpenTab("Inventory", TABS, tab)
+	if openTab ~= tab then
+		tab = openTab
 		modal.selectTab(tab)
+	end
+	local openLook = Kit.OpenTab("Looks", LOOKS_CHIPS, look)
+	if openLook ~= look then
+		look = openLook
+		selectChip(look)
 	end
 	local looks = tab == "Looks"
 	LOOKS.frame.Visible = looks
 	ITEMS_TAB.frame.Visible = tab == "Items"
 	GEAR_TAB.frame.Visible = tab == "Gear"
-	ALL.grid.Visible = looks and look == "All"
-	ALL.empty.Visible = false
 	grid.Visible = looks and look == "Titles"
-	AURA.frame.Visible = looks and look == "Auras"
+	AURA.frame.Visible = tab == "Auras"
 	ALTERS_TAB.frame.Visible = looks and look == "Alters"
 	AURA.preview()
 	countLabel.Text = ""
@@ -467,14 +364,11 @@ function refresh()
 	elseif tab == "Gear" then
 		GEAR_TAB.refresh()
 		return
-	elseif look == "All" then
-		ALL.refresh()
+	elseif tab == "Auras" then
+		AURA.refresh()
 		return
 	elseif look == "Alters" then
 		ALTERS_TAB.refresh()
-		return
-	elseif look == "Auras" then
-		AURA.refresh()
 		return
 	end
 	local owned = 0
@@ -528,8 +422,7 @@ local function openOn(wanted: string?)
 		look = LOOK_OF[wanted :: string]
 		selectChip(look)
 	end
-	tab = TAB_OF[wanted :: string] or "Items"
-	if not tabShown(tab) then tab = "Items" end
+	tab = Kit.OpenTab("Inventory", TABS, TAB_OF[wanted :: string] or "Items") -- (prompt 39b: the first open tab)
 	modal.selectTab(tab)
 	if not modal.isOpen() then UIBus.PanelOpened("Inventory") open() else refresh() end
 end
@@ -566,7 +459,7 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	if kind == "AuraUnlocked" and type(info) == "table" then
 		local aura = Auras.ById[info.id]
 		if aura then
-			Notify.Toast("New aura!", aura.name .. (if info.bought then " is yours. Wearing it now." else ". Wear it in Inventory > Looks."), "sparkles",
+			Notify.Toast("New aura!", aura.name .. (if info.bought then " is yours. Wearing it now." else ". Wear it in Inventory > Auras."), "sparkles",
 				RARITY_COLOR[aura.rarity] or Colors.Gold, "aura" .. aura.id)
 			Audio.PlayUI("TitleUnlocked")
 		end

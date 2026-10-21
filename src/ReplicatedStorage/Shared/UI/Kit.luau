@@ -586,22 +586,69 @@ function Kit.Tabs(tabs, onSelect: (string) -> (), props: { [string]: any }?)
 	props.BackgroundTransparency = 1
 	local row = New("Frame", props, { Theme.List(Horizontal, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	local items = {}
+	-- (prompt 39b) a tab with `lock` ("<menu>/<tab>", Config/Guides.TabLocks) stays visible; while it's locked (UIBus.IsLocked,
+	-- GuideClient) it's dimmed with a grey padlock and a tap shakes it and shows the teaser instead of opening it
+	local UIBus = require(script.Parent:WaitForChild("UIBus"))
+	local function isLocked(item): boolean
+		return item.lock ~= nil and UIBus.IsLocked ~= nil and UIBus.IsLocked(item.lock) == true
+	end
+	local selected = nil
+	local function paintLocks()
+		for _, item in ipairs(items) do
+			local locked = isLocked(item)
+			item.padlock.Visible = locked
+			if item.label then item.label.TextTransparency = if locked then 0.45 else 0 end
+			item.button.BackgroundTransparency = if locked then 0.35 else 0
+		end
+	end
 	local function select(id: string)
+		selected = id
 		for _, item in ipairs(items) do
 			Theme.SetButtonStyle(item.button, item.id == id and "Tab" or "Flat") -- (active = gold fill only, no ring)
 		end
+		paintLocks()
 	end
 	for order, tab in ipairs(tabs) do
-		local button = Kit.Button("Flat", tab.text, { Name = tab.id, LayoutOrder = order, Parent = row },
+		local button, label = Kit.Button("Flat", tab.text, { Name = tab.id, LayoutOrder = order, Parent = row },
 			{ height = h, textSize = math.floor(h * 0.5) })
-		table.insert(items, { id = tab.id, button = button })
+		local padlock = Pieces.Icon("lock", Color3.fromHex("#8A878F"), { Name = "Padlock", LayoutOrder = 0, Size = UDim2.fromOffset(math.floor(h * 0.45), math.floor(h * 0.45)),
+			Visible = false, Parent = button })
+		padlock:SetAttribute("KeepColor", true)
+		local item = { id = tab.id, button = button, label = label, padlock = padlock, lock = tab.lock }
+		table.insert(items, item)
 		button.Activated:Connect(function()
+			if isLocked(item) then
+				local base = button.Position
+				task.spawn(function()
+					for _, dx in ipairs({ -4, 4, -3, 3, -1, 1, 0 }) do
+						button.Position = base + UDim2.fromOffset(dx, 0)
+						task.wait(0.035)
+					end
+					button.Position = base
+				end)
+				if UIBus.ShowLocked then UIBus.ShowLocked(item.lock) end
+				return
+			end
 			select(tab.id)
 			onSelect(tab.id)
 		end)
 	end
+	if UIBus.LocksChanged then UIBus.LocksChanged.Event:Connect(paintLocks) end
 	if tabs[1] then select(tabs[1].id) end
 	return row, select
+end
+
+-- (prompt 39b) the first of `ids` that isn't locked ("<menu>/" .. id), or `wanted` when it's open: a menu opens there
+function Kit.OpenTab(menu: string, ids: { string }, wanted: string?): string
+	local UIBus = require(script.Parent:WaitForChild("UIBus"))
+	local function open(id: string): boolean
+		return not (UIBus.IsLocked and UIBus.IsLocked(menu .. "/" .. id))
+	end
+	if wanted and open(wanted) then return wanted end
+	for _, id in ipairs(ids) do
+		if open(id) then return id end
+	end
+	return wanted or ids[1]
 end
 
 ------------------------------------------------------------------------

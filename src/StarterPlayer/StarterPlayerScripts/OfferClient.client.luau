@@ -99,6 +99,7 @@ end
 -- no card over a window, the menu, the genetics screen or another card
 local function free(): boolean
 	return current == nil and not UIBus.MenuOpen and not UIBus.GeneticsUp and not UIBus.CoverOpen(player.PlayerGui)
+		and not UIBus.GuideRunning -- (prompt 39b: never at the same time as an unlock guide)
 end
 
 -- spec: { id, art, title, text, buy = { { key, label? } } } (one buy = a red button on the right; several = a row of

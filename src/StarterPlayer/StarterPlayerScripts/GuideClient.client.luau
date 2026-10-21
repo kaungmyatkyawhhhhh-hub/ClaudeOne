@@ -70,22 +70,36 @@ end
 ------------------------------------------------------------------------
 -- Locked tiles
 ------------------------------------------------------------------------
-local lockedNow = {} -- [tile] = true while locked
-local function showLocked(tile: string)
-	local lock = Guides.LockByTile[tile]
+local lockedNow = {} -- [tile id or "<menu>/<tab>"] = true while locked
+local function showLocked(key: string)
+	local lock = Guides.LockOf(key)
 	if not lock then return end
 	local title, sub = Guides.LockedLines(lock, data, readyState().share)
 	Audio.PlayUI("Click", { pitch = 0.7 })
-	Notify.Toast(title, sub, "lock", Colors.Gold, "locked" .. tile)
-	Remotes.PlayerAction:FireServer("LockedTap", tile)
+	Notify.Toast(title, sub, "lock", Colors.Gold, "locked" .. key)
+	Remotes.PlayerAction:FireServer("LockedTap", key)
 end
--- (the panels' other ways in check these: UIBus.OpenShop, the Agency desk, the Inventory / Genetics links)
+-- (the panels' other ways in check these: UIBus.OpenShop, the Agency desk, the Inventory / Genetics links; and every
+-- menu tab with a lock, Kit.Tabs / Kit.OpenTab)
 UIBus.IsLocked = function(tile: string): boolean return lockedNow[tile] == true end
 UIBus.ShowLocked = showLocked
 
+local function lockState()
+	-- (a pass's auras count as owning an aura: the AURAS tab opens for a pass owner)
+	return { passAura = player:GetAttribute("Pass_AuraPack") == true or player:GetAttribute("Pass_VIP") == true }
+end
 local function refreshLocks(first: boolean)
+	local state = lockState()
+	local changedAny = first
+	-- (prompt 39b) the tabs inside menus
+	for _, lock in ipairs(Guides.TabLocks) do
+		local locked = not Guides.Met(lock.need, data, state)
+		if (lockedNow[lock.key] == true) ~= locked then changedAny = true end
+		lockedNow[lock.key] = locked or nil
+	end
 	for _, lock in ipairs(Guides.Locks) do
-		local locked = not Guides.Met(lock.need, data)
+		local locked = not Guides.Met(lock.need, data, state)
+		if (lockedNow[lock.tile] == true) ~= locked then changedAny = true end
 		local was = lockedNow[lock.tile]
 		lockedNow[lock.tile] = locked or nil
 		SideMenu.SetLocked(lock.tile, locked, function() showLocked(lock.tile) end)
@@ -98,6 +112,7 @@ local function refreshLocks(first: boolean)
 			Remotes.PlayerAction:FireServer("Guide", { id = newId, how = "tap" })
 		end)
 	end
+	if changedAny then UIBus.LocksChanged:Fire() end
 end
 
 ------------------------------------------------------------------------
@@ -207,7 +222,7 @@ local onMachine = false
 Remotes.MachineState.OnClientEvent:Connect(function(state)
 	if state == "Enter" then onMachine = true elseif state == "Exit" then onMachine = false end
 end)
-local BUSY_GUIS = { "TrainerRoll", "GrowReady", "AlterPopup", "Tutorial" }
+local BUSY_GUIS = { "TrainerRoll", "GrowReady", "AlterReady", "Tutorial", "Offer" } -- (prompt 39b: not with an offer card; AlterReady = AlterPopup's)
 local function free(): boolean
 	if UIBus.MenuOpen or UIBus.GeneticsUp or UIBus.InTutorial() or onMachine then return false end
 	if player:GetAttribute("WindowOpen") or UIBus.CoverOpen(playerGui) then return false end
@@ -230,6 +245,7 @@ local function finish(how: string)
 	if not run or run.done then return end
 	run.done = true
 	running = nil
+	UIBus.GuideRunning = false
 	dialog.Hide()
 	pointAt(nil)
 	goButton.Visible = false
@@ -292,6 +308,7 @@ end
 local function start(guide, id: string)
 	local run = { guide = guide, id = id, done = false }
 	running = run
+	UIBus.GuideRunning = true
 	Remotes.PlayerAction:FireServer("Guide", { id = id, how = "shown" })
 	dialog.SetReward(guide.reward)
 	skip.Visible = true
@@ -354,8 +371,10 @@ task.spawn(function()
 		elseif tipsOn() and free() and os.clock() - startedAt >= Guides.StartDelay then
 			local guide, id = nextGuide()
 			if guide then
-				local gap = if guide.big then Guides.BigGap else Guides.Gap
-				if os.clock() - lastEnd >= Guides.Gap and os.clock() - lastBigEnd >= gap then
+				-- (Studio: a "TestGuideGap" number on Workspace = the gaps, to check a queue quickly)
+				local testGap = if RunService:IsStudio() then tonumber(workspace:GetAttribute("TestGuideGap")) else nil
+				local gap = testGap or (if guide.big then Guides.BigGap else Guides.Gap)
+				if os.clock() - lastEnd >= (testGap or Guides.Gap) and os.clock() - lastBigEnd >= gap then
 					gui.Enabled = true
 					start(guide, id)
 				end

@@ -108,7 +108,9 @@ function GoTo.Spot(model: Model): Vector3
 	local start = (holder and holder:IsA("BasePart") and holder.Position)
 		or (holder and holder:IsA("Attachment") and holder.WorldPosition)
 		or boxCFrame.Position
-	local center = gymCenter(boxCFrame.Position, model.Parent) or boxCFrame.Position
+	-- (a desk or a table has no machines in its own folder: then the machines near it, so the spot is on the room side,
+	-- never through the wall behind it)
+	local center = gymCenter(boxCFrame.Position, model.Parent) or gymCenter(boxCFrame.Position, nil) or boxCFrame.Position
 	local localStart = boxCFrame:PointToObjectSpace(start)
 	local localDir = boxCFrame:VectorToObjectSpace((center - start) * Vector3.new(1, 0, 1))
 	if localDir.Magnitude < 0.01 then localDir = Vector3.new(0, 0, -1) end

@@ -233,9 +233,9 @@ end
 -- (prompt 39) a tap on a locked menu tile (analytics only: what players are curious about)
 handlers.LockedTap = function(player, tile)
 	local Guides = require(Config.Guides)
-	if type(tile) ~= "string" or not Guides.LockByTile[tile] then return end
+	if type(tile) ~= "string" or not Guides.LockOf(tile) then return end
 	local data = PlayerData.Get(player)
-	Analytics.GuideEvent(player, "Locked_Tap_" .. tile, data and Guides.Level(data) or 0)
+	Analytics.GuideEvent(player, "Locked_Tap_" .. string.gsub(tile, "/", "_"), data and Guides.Level(data) or 0)
 end
 
 -- Other services add handlers.

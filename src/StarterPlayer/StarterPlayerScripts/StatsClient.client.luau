@@ -79,7 +79,7 @@ local pages = {}
 local currentTab = "Muscles"
 local refreshScreen -- (below)
 local modal = Kit.Modal({ name = "MusclesScreen", title = "Physique", width = W, height = H, displayOrder = 27,
-	tabs = { { id = "Muscles", text = "Muscles" }, { id = "Lifts", text = "Lifts" }, { id = "Genetics", text = "Genes" } },
+	tabs = { { id = "Muscles", text = "Muscles" }, { id = "Lifts", text = "Lifts" }, { id = "Genetics", text = "Genes", lock = "Physique/Genetics" } }, -- (prompt 39b)
 	onTab = function(id)
 		currentTab = id
 		for name, page in pairs(pages) do page.Visible = name == id end
@@ -342,6 +342,7 @@ end
 local function openTab(tab: string?)
 	if UIBus.MenuOpen then return end
 	tab = if tab and pages[tab] then tab else currentTab
+	tab = Kit.OpenTab("Physique", { "Muscles", "Lifts", "Genetics" }, tab) -- (prompt 39b: never a locked tab)
 	modal.selectTab(tab)
 	currentTab = tab
 	for name, page in pairs(pages) do page.Visible = name == tab end

@@ -256,6 +256,12 @@ local function onPlayerAdded(player)
 		-- optional "TestSpurts" (number) attribute: start after that many Growth Spurts (to test the pro gym)
 		local testSpurts = workspace:GetAttribute("TestSpurts")
 		if type(testSpurts) == "number" then data.growthSpurts = math.clamp(math.floor(testSpurts), 0, 20) end
+		-- (prompt 39b) optional "TestExisting" (true): play as a player from before the unlock guides (tutorial done, genetics
+		-- seen): what's open to them counts as seen at once (below), to check there's no guide spam on their first join
+		if workspace:GetAttribute("TestExisting") == true then
+			data.onboarding.tutorialStep = Onboarding.Done
+			data.onboarding.geneticsRevealed = true
+		end
 		-- optional "TestMuscleShare" (0 to 6 times the goal's EXP; there is no level cap; 2 = full look, 5 = mass monster) and "TestMuscleIds" ("Biceps,Triceps", default all): start with those muscles at that
 		-- share of the Growth Spurt goal (to test the muscle blobs). Changing TestMuscleShare while playing updates the muscles.
 		-- An entry can carry its own share ("Abs=0.7,MidChest=0.7"): those muscles get that, the rest of the list TestMuscleShare.

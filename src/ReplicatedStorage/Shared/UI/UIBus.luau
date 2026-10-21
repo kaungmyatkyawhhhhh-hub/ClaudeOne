@@ -84,6 +84,9 @@ end
 --                             show only on it
 --   UIBus.TutorialChanged     fires when the step or its target changes, and when the tutorial ends
 --   UIBus.AfterTutorial(fn)   runs fn now, or once the tutorial is over (season / Muscle of the Day notices)
+-- (prompt 39b) locks (GuideClient): UIBus.IsLocked(key) / UIBus.ShowLocked(key) for a side menu tile id or a menu tab
+-- ("Inventory/Gear"); LocksChanged fires when one opens (Kit.Tabs repaints its padlocks)
+UIBus.LocksChanged = signal()
 UIBus.TutorialTarget = nil
 UIBus.TutorialChanged = signal()
 function UIBus.InTutorial(): boolean

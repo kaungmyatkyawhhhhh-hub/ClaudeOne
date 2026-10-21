@@ -16,10 +16,11 @@
 --    top bar's pills) get a hidden placeholder with the same api.
 -- SideMenu.Add returns { button, SetActive(on), SetDot(on), SetBadge(n), SetText, SetShown(on), Activated }.
 -- (prompt 39, 22 Oct) Tiles that open later (Config/Guides.Locks, GuideClient):
---   SideMenu.SetLocked(id, locked, onLockedTap)  locked: the tile stays (owner: never hidden), dimmed with a small gold
---                                                padlock; a tap shakes it and calls onLockedTap() instead of Activated.
---                                                Unlocked after being locked: the padlock pops off with a sparkle.
---   SideMenu.SetNew(id, on, onTapped)            the gold NEW glow (a pulsing gold border + "NEW") until it's tapped once
+--   SideMenu.SetLocked(id, locked, onLockedTap)  locked: the tile stays (owner: never hidden), darker, a grey outline, a
+--                                                GREY padlock in place of its icon, the label grey (prompt 39b); a tap
+--                                                shakes it and calls onLockedTap() instead of Activated. Unlocked: it pops.
+--   SideMenu.SetNew(id, on, onTapped)            the small gold "NEW" tag in its top-right corner until it's tapped once
+--   (one badge per tile: LOCKED > NEW > the red "!" of SetDot / SetBadge)
 --   SideMenu.Button(id)                          the tile's button (the unlock guides point at it)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -182,59 +183,107 @@ local function ensure()
 end
 
 -- One tile (the old look): lip, face, border, icon, outlined label, badge.
+-- (prompt 39b, 22 Oct: the owner's earlier tile style, Downloads\gym_arc_ui_style_match\real\left_nav_badges.png) A dark
+-- graphite tile with a faint hex mesh, a thin gold inner outline, a thick dark bottom edge, a GOLD line icon and a white
+-- chunky label with a dark stroke. Locked: darker, the outline grey, a GREY padlock in place of the icon, the label grey.
+-- One badge inside the top-right corner, LOCKED > NEW (a small gold "NEW" tag) > "!" (a small red chip, gentle pulse).
+local HEX = "rbxassetid://133971863105248" -- hex_mesh_tile.png (Downloads\gym_arc_ui_hex), faint, tiled
+local GOLD = Color3.fromHex("#F2C14E")
+local LOCK_GREY = Color3.fromHex("#6C6A70")
+local CHUNKY = Font.fromEnum(Enum.Font.LuckiestGuy)
+local Icons = require(script.Parent.Icons)
 local function makeTile(id, labelText, iconFactory)
 	local cfg = HudIcons.Tiles[id] or {}
 	local size = SideMenu.TileSize
-	local iconColor = id == "Store" and Colors.Gold or Colors.Text -- (the Shop's icon is gold)
 	local button = New("TextButton", { Name = id, Text = "", AutoButtonColor = false, BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(size, size), Parent = bar })
-	New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("#08070A"), BackgroundTransparency = 0.1, Parent = button },
+	New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("#060507"), BackgroundTransparency = 0.05, Parent = button },
 		{ New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
-	local border = New("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 1.2, Transparency = 0.86, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-	local face = New("Frame", { Name = "Face", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.08,
+	local border = New("UIStroke", { Color = GOLD, Thickness = 1.2, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local face = New("Frame", { Name = "Face", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0,
 		ZIndex = 2, Parent = button }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 11) }),
-		border,
-		New("UIGradient", { Name = "Glass", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A262B"), Color3.fromHex("#141215")) }),
+		New("UIGradient", { Name = "Glass", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A272D"), Color3.fromHex("#18161A")) }),
 	})
-	local content = New("Frame", { Name = "Content", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundTransparency = 1, ZIndex = 3, Parent = face })
+	-- the hex mesh (its own rounded corners clip it to the tile)
+	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = HEX, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(30, 26),
+		ImageColor3 = Color3.new(1, 1, 1), ImageTransparency = 0.86, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = face },
+		{ New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
+	-- the thin gold inner outline (inset 2 px)
+	New("Frame", { Name = "Inner", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, -4, 1, -4), ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 9) }), border })
+	local shade = New("Frame", { Name = "LockShade", BackgroundColor3 = Color3.fromHex("#050406"), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1),
+		ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
+	local content = New("Frame", { Name = "Content", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundTransparency = 1, ZIndex = 4, Parent = face })
 	local grow = New("UIScale", { Parent = content })
 	local iconSize = math.floor(size * 0.46)
 	local iconSlot = New("Frame", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6),
-		Size = UDim2.fromOffset(iconSize, iconSize), BackgroundTransparency = 1, ZIndex = 3, Parent = content })
+		Size = UDim2.fromOffset(iconSize, iconSize), BackgroundTransparency = 1, ZIndex = 4, Parent = content })
+	-- the icon, gold: an image, a ui icon, one of Shared/UI/Icons by name (Config/HudIcons), or the caller's
 	if cfg.image and cfg.image ~= "" then
-		New("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Image = cfg.image, ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Parent = iconSlot })
+		New("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Image = cfg.image, ScaleType = Enum.ScaleType.Fit, ZIndex = 4, Parent = iconSlot })
 	elseif cfg.uiIcon then
-		Pieces.Icon(cfg.uiIcon, iconColor, { Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = iconSlot }):SetAttribute("KeepColor", true)
+		Pieces.Icon(cfg.uiIcon, GOLD, { Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = iconSlot }):SetAttribute("KeepColor", true)
+	elseif cfg.icon and (Icons :: any)[cfg.icon] then
+		local icon = (Icons :: any)[cfg.icon](GOLD)
+		icon.Parent = iconSlot
 	elseif iconFactory then
-		local icon = iconFactory(iconColor)
+		local icon = iconFactory(GOLD)
 		icon.Parent = iconSlot
 	end
-	local label = Kit.Text({ Name = "Label", Text = string.upper(cfg.label or labelText), Font = "Title", TextSize = 10, TextColor3 = Color3.fromHex("#D9D2D5"),
-		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, 4, 0, 14), ZIndex = 4, Parent = content })
-	local badge = New("Frame", { Name = "Badge", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -7, 0, 7), Size = UDim2.fromOffset(18, 18),
-		BackgroundColor3 = Colors.Red, Visible = false, ZIndex = 6, Parent = button }, {
+	local padlock = Pieces.Icon("lock", LOCK_GREY, { Name = "Padlock", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6),
+		Size = UDim2.fromOffset(iconSize, iconSize), Visible = false, ZIndex = 4, Parent = content })
+	padlock:SetAttribute("KeepColor", true)
+	local label = New("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = string.upper(cfg.label or labelText), FontFace = CHUNKY, TextSize = 11,
+		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -3), Size = UDim2.new(1, -4, 0, 14), ZIndex = 4,
+		Parent = content })
+	local labelStroke = New("UIStroke", { Color = Color3.fromHex("#0A090B"), Thickness = 1.5, Parent = label })
+	Kit.Fit(label, 11, 8)
+	-- the one badge, inside the top-right corner
+	local newTag = New("Frame", { Name = "NewTag", BackgroundColor3 = GOLD, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3),
+		Size = UDim2.fromOffset(26, 12), Visible = false, ZIndex = 6, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 4) }) })
+	New("TextLabel", { BackgroundTransparency = 1, Text = "NEW", FontFace = CHUNKY, TextSize = 9, TextColor3 = Color3.fromHex("#1A1408"), Size = UDim2.fromScale(1, 1),
+		ZIndex = 7, Parent = newTag })
+	local badge = New("Frame", { Name = "Badge", BackgroundColor3 = Colors.Red, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3),
+		Size = UDim2.fromOffset(15, 15), Visible = false, ZIndex = 6, Parent = face }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Color3.fromHex("#2A0505"), Thickness = 1 }),
 	})
-	local badgeText = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 11, Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = badge })
+	New("TextLabel", { Name = "Bang", BackgroundTransparency = 1, Text = "!", FontFace = CHUNKY, TextSize = 12, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1),
+		ZIndex = 7, Parent = badge })
+	local badgeScale = New("UIScale", { Parent = badge })
 
 	local entry = { id = id, order = cfg.order or 50, button = button, label = label, count = 0, dot = false, active = false, hover = false,
-		face = face, border = border }
+		face = face, border = border, isNew = false, locked = false }
 	function entry.paint()
-		-- lighter glass on hover / while its panel is open; the open one gets a gold border
-		Theme.Tween(face, { BackgroundTransparency = (entry.active or entry.hover) and 0 or 0.08,
-			BackgroundColor3 = (entry.active or entry.hover) and Color3.fromRGB(255, 245, 235) or Color3.new(1, 1, 1) }, 0.15)
-		if not entry.isNew then -- (the NEW glow drives the border while it's on)
-			Theme.Tween(border, { Color = entry.active and Colors.Gold or Color3.new(1, 1, 1), Transparency = entry.active and 0.1 or (entry.hover and 0.7 or 0.86) }, 0.15)
-		end
+		-- lighter glass on hover / while its panel is open; the open one's outline brighter
+		Theme.Tween(face, { BackgroundColor3 = (entry.active or entry.hover) and Color3.fromRGB(255, 245, 235) or Color3.new(1, 1, 1) }, 0.15)
+		Theme.Tween(border, { Color = if entry.locked then LOCK_GREY else GOLD,
+			Transparency = if entry.locked then 0.3 elseif entry.active then 0 else (if entry.hover then 0.15 else 0.35),
+			Thickness = if entry.active and not entry.locked then 2 else 1.2 }, 0.15)
 		Theme.Tween(grow, { Scale = entry.hover and 1.08 or 1 }, 0.22, Theme.Motion.Bounce)
 	end
+	function entry.paintLock()
+		shade.BackgroundTransparency = if entry.locked then 0.45 else 1
+		iconSlot.Visible = not entry.locked
+		padlock.Visible = entry.locked
+		label.TextColor3 = if entry.locked then Color3.fromHex("#77757B") else Color3.new(1, 1, 1)
+		labelStroke.Transparency = if entry.locked then 0.4 else 0
+		entry.paint()
+	end
 	function entry.paintBadge()
-		badge.Visible = entry.count > 0 or entry.dot
-		badgeText.Text = entry.count > 0 and tostring(math.min(entry.count, 9)) or ""
-		badge.Size = entry.count > 0 and UDim2.fromOffset(18, 18) or UDim2.fromOffset(11, 11)
+		-- one badge: LOCKED (the padlock is the badge) > NEW > "!"
+		newTag.Visible = entry.isNew and not entry.locked
+		badge.Visible = not entry.locked and not entry.isNew and (entry.count > 0 or entry.dot)
 		refreshArrowDot()
 	end
+	-- the "!" breathes gently
+	task.spawn(function()
+		while button.Parent do
+			if badge.Visible then badgeScale.Scale = 1 + 0.08 * math.sin(os.clock() * 4) end
+			task.wait(0.05)
+		end
+	end)
 	-- press: the face sinks onto its edge; letting go springs back
 	Theme.BindPress(button)
 	button.InputBegan:Connect(function(input)
@@ -251,30 +300,6 @@ local function makeTile(id, labelText, iconFactory)
 	button.MouseLeave:Connect(function() entry.hover = false; entry.paint() end)
 	entry.paint()
 	return entry
-end
-
-function SideMenu.Column()
-	return ensure()
-end
-
--- Screen px of the menu's right edge (the tab included), for panels that open beside it.
-function SideMenu.Right()
-	ensure()
-	local s = Kit.Scale()
-	if folded() then return math.floor((SideMenu.Left + SideMenu.Arrow.X) * s) end
-	return math.floor((SideMenu.Left + bar.Size.X.Offset + SideMenu.Gap + SideMenu.Arrow.X) * s)
-end
-
-function SideMenu.VisibleRight()
-	ensure()
-	if hiddenAll then return 0 end
-	return SideMenu.Right()
-end
-
--- Screen px (from the top of the safe area) of the grid's bottom edge.
-function SideMenu.Bottom()
-	ensure()
-	return math.floor((gridTop + bar.Size.Y.Offset) * Kit.Scale())
 end
 
 function SideMenu.Add(id, labelText, iconFactory, _order)
@@ -350,61 +375,26 @@ function SideMenu.SetLocked(id, locked: boolean, onLockedTap)
 	if not entry then return end
 	entry.onLockedTap = onLockedTap
 	local wasLocked = entry.locked == true
+	if wasLocked == locked then return end
 	entry.locked = locked
-	local shade = entry.face:FindFirstChild("LockShade")
-	if locked and not shade then
-		shade = New("Frame", { Name = "LockShade", BackgroundColor3 = Color3.fromHex("#0B0A0C"), BackgroundTransparency = 0.45, Size = UDim2.fromScale(1, 1),
-			ZIndex = 5, Parent = entry.face }, { New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
-		local padlock = New("Frame", { Name = "Padlock", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -8, 0, 8),
-			Size = UDim2.fromOffset(20, 20), ZIndex = 7, Parent = entry.button }, {
-			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-			New("UIStroke", { Color = Color3.fromHex("#141417"), Thickness = 1.5 }),
-		})
-		local icon = Pieces.Icon("lock", Color3.fromHex("#141417"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(0.62, 0.62), ZIndex = 8, Parent = padlock })
-		icon:SetAttribute("KeepColor", true)
-	elseif not locked and shade then
-		shade:Destroy()
-		local padlock = entry.button:FindFirstChild("Padlock")
-		if padlock and wasLocked then
-			-- the padlock pops off: it grows, fades and is gone
-			local scale = New("UIScale", { Parent = padlock })
-			Theme.Tween(scale, { Scale = 1.8 }, 0.35)
-			Theme.Fade(padlock, false, 0.35)
-			task.delay(0.4, function() padlock:Destroy() end)
-		elseif padlock then
-			padlock:Destroy()
-		end
+	entry.paintLock()
+	entry.paintBadge()
+	if wasLocked and not locked then
+		-- the padlock breaks open: the tile pops
+		local scale = entry.face:FindFirstChildOfClass("UIScale") or New("UIScale", { Parent = entry.face })
+		scale.Scale = 1.15
+		Theme.Tween(scale, { Scale = 1 }, 0.35, Theme.Motion.Bounce)
 	end
 end
 
+-- the gold NEW tag inside the top-right corner until the tile is tapped once (not while it's locked)
 function SideMenu.SetNew(id, on: boolean, onTapped)
 	local entry = entryOf(id)
 	if not entry then return end
 	if onTapped then entry.onNewTapped = onTapped end
 	if entry.isNew == on then return end
 	entry.isNew = on
-	local tag = entry.button:FindFirstChild("NewTag")
-	if on then
-		if not tag then
-			tag = New("Frame", { Name = "NewTag", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 0),
-				Size = UDim2.fromOffset(32, 14), ZIndex = 7, Parent = entry.button }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
-			Kit.Text({ Text = "NEW", Font = "Title", TextSize = 10, TextColor3 = Color3.fromHex("#141417"), Size = UDim2.fromScale(1, 1), ZIndex = 8, Parent = tag })
-		end
-		task.spawn(function()
-			while entry.isNew and entry.button.Parent do
-				local t = os.clock()
-				entry.border.Color = Colors.Gold
-				entry.border.Thickness = 2
-				entry.border.Transparency = 0.15 + 0.35 * (0.5 + 0.5 * math.sin(t * 4))
-				task.wait()
-			end
-		end)
-	else
-		if tag then tag:Destroy() end
-		entry.border.Thickness = 1.2
-		entry.paint()
-	end
+	entry.paintBadge()
 end
 
 -- SetHidden(true) hides the whole menu (a screen that needs the full width, like Genetics).
