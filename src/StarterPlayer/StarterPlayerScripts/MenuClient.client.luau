@@ -144,14 +144,6 @@ bang:SetAttribute("KeepColor", true)
 -- the player card, bottom left: headshot, name, level and height, coins
 local card = Theme.Panel({ Name = "Card", Piece = "hud_box", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, LEFT, 1, -12),
 	Size = UDim2.fromOffset(236, 48), Visible = false, Parent = root })
--- (owner, 22 Oct) its mesh at 8% with half the cell size
-do
-	local hex = card:FindFirstChild("Depth") and card.Depth:FindFirstChild("Hex")
-	if hex then
-		hex.ImageTransparency = 0.92
-		hex.TileSize = UDim2.fromOffset(26, 15)
-	end
-end
 Kit.Headshot(player.UserId, player.DisplayName, 34, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = card })
 Kit.Text({ Name = "PlayerName", Text = player.DisplayName, Font = "Strong", TextSize = 14, Position = UDim2.fromOffset(50, 7), Size = UDim2.fromOffset(110, 18),
 	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })

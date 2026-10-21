@@ -348,8 +348,6 @@ function Kit.Bar(color: Color3, props: { [string]: any }?, opts: { [string]: any
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = opts.outline or 2, Transparency = 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		New("UIPadding", { Name = "Inset", PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }),
-		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTileBar,
-			ImageTransparency = 0.86, Size = UDim2.fromScale(1, 1) }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
 	})
 	local fill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), Parent = track }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),

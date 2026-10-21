@@ -283,7 +283,7 @@ local row = New("Frame", { Name = "Days", BackgroundTransparency = 1, Position =
 })
 local function hexOn(parent: Instance, corner: number, color: Color3?)
 	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
-		ImageTransparency = Theme.HexAlpha, ImageColor3 = color or Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), Parent = parent },
+		ImageTransparency = Theme.HexStreak, ImageColor3 = color or Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), Parent = parent },
 		{ New("UICorner", { CornerRadius = UDim.new(0, corner) }) })
 end
 for day = 1, DAYS do

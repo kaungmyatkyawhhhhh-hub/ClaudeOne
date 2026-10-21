@@ -48,7 +48,7 @@ function AltersPanel.Build(parent: Instance)
 		ScrollingDirection = Enum.ScrollingDirection.Y, Parent = holder })
 
 	-- one tile's look: a banner (image or colours) behind everything
-	local function banner(parent: Instance, n: number): GuiObject
+	local function banner(parent: Instance, n: number, noHex: boolean?): GuiObject
 		local theme = if n > 0 then AlterThemes.Get(n) else nil
 		local bg = New(if theme and theme.bg then "ImageLabel" else "Frame", { Name = "Banner", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0,
 			Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = parent }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
@@ -61,9 +61,9 @@ function AltersPanel.Build(parent: Instance)
 			local accent = if theme then theme.accent else Color3.fromHex("#3A363D")
 			New("UIGradient", { Rotation = -90, Color = ColorSequence.new(accent:Lerp(base, 0.55), base), Parent = bg })
 		end
-		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
+		if not noHex then New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
 			ImageTransparency = Theme.HexAlpha, ImageColor3 = if theme then theme.accent else Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = parent },
-			{ New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+			{ New("UICorner", { CornerRadius = UDim.new(0, 10) }) }) end
 		return bg
 	end
 	local function swatchOf(parent: Instance, size: number, y: number): ImageLabel
@@ -222,7 +222,7 @@ function AltersPanel.Build(parent: Instance)
 		local reached = n <= highest
 		local later = n > highest + 1
 		detailArt:ClearAllChildren()
-		if not later then banner(detailArt, n) end
+		if not later then banner(detailArt, n, true) end -- (no mesh on the detail panel)
 		paintSwatch(bigSwatch, alter, n, reached)
 		bigName.Text = if later then "???" else string.upper(alter.name)
 		local theme = if n > 0 then AlterThemes.Get(n) else nil

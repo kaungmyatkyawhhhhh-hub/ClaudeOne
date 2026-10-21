@@ -187,7 +187,6 @@ end
 -- graphite tile with a faint hex mesh, a thin gold inner outline, a thick dark bottom edge, a GOLD line icon and a white
 -- chunky label with a dark stroke. Locked: darker, the outline grey, a GREY padlock in place of the icon, the label grey.
 -- One badge inside the top-right corner, LOCKED > NEW (a small gold "NEW" tag) > "!" (a small red chip, gentle pulse).
-local HEX = Theme.HexImage -- (prompt 44) Downloads\gym_arc_textures\hex_tile.png
 local GOLD = Color3.fromHex("#F2C14E")
 local LOCK_GREY = Color3.fromHex("#6C6A70")
 local CHUNKY = Font.fromEnum(Enum.Font.LuckiestGuy)
@@ -206,9 +205,7 @@ local function makeTile(id, labelText, iconFactory)
 		New("UIGradient", { Name = "Glass", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A272D"), Color3.fromHex("#18161A")) }),
 	})
 	-- the hex mesh (its own rounded corners clip it to the tile)
-	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = HEX, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
-		ImageColor3 = GOLD, ImageTransparency = 0.7, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = face },
-		{ New("UICorner", { CornerRadius = UDim.new(0, 11) }) })
+	-- (owner, 22 Oct: no mesh on the nav tiles)
 	-- the thin gold inner outline (inset 2 px)
 	New("Frame", { Name = "Inner", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.new(1, -4, 1, -4), ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 9) }), border })

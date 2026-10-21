@@ -171,7 +171,7 @@ AURA.grid = New("ScrollingFrame", { Name = "Grid", Position = UDim2.fromOffset(0
 -- the detail panel (right)
 AURA.detail = Kit.Card({ Name = "Detail", Piece = "card_gold", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, DETAIL_W, 1, 0),
 	Parent = AURA.frame }, {})
-Theme.SetHex(AURA.detail, 0.95, 11, Colors.Gold) -- (a panel: quiet mesh)
+-- (owner, 22 Oct: no mesh on the detail panel: the window panel has it)
 AURA.bigIcon = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4),
 	Size = UDim2.fromOffset(78, 78), ScaleType = Enum.ScaleType.Fit, Parent = AURA.detail })
 AURA.bigName = Kit.Fit(Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", Upper = true, Position = UDim2.fromOffset(PAD, 82),

@@ -44,7 +44,7 @@ local function tint(gui: GuiObject, color: Color3?, edge: Color3?)
 		border.Thickness = if color then 3 else 1.5
 		border.Transparency = if color then 0 else 0.3
 	end
-	Theme.SetHex(gui, 0.86, 11, color) -- (prompt 44: the mesh in the item colour)
+	Theme.SetHex(gui, nil, 11) -- (owner, 22 Oct: item tiles are cards, solid)
 end
 local DETAIL_W = 206
 local PAD = 8
@@ -142,7 +142,7 @@ function BoostsPanel.Build(parent: Instance, opts: { [string]: any }?)
 	for i = 1, SLOTS do
 		local slot = New("Frame", { Name = "Slot" .. i, LayoutOrder = 1000 + i, BackgroundColor3 = Color3.new(1, 1, 1), Parent = grid })
 		Theme.SetPiece(slot, "card")
-		Theme.SetHex(slot, 0.9, 11)
+		Theme.SetHex(slot, nil, 11)
 		slots[i] = slot
 	end
 	for order, item in ipairs(Boosts.Items) do

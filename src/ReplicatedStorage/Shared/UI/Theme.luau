@@ -109,11 +109,14 @@ Theme.RarityColor = {
 -- (prompt 44, owner: the old mesh was too fine to see) Downloads\gym_arc_textures\hex_tile.png (seamless, white lines on
 -- transparent, 156x90), always ScaleType Tile at a fixed size (never scaled with the tile), tinted, ~0.8 transparent
 Theme.HexImage = "rbxassetid://117814833566275"
-Theme.HexTile = UDim2.fromOffset(52, 30)    -- normal tiles (cards, nav tiles, reward tiles)
-Theme.HexTileBig = UDim2.fromOffset(78, 45) -- big panels
-Theme.HexTileBar = UDim2.fromOffset(26, 15) -- bars (they're only ~10 px tall)
-Theme.HexAlpha = 0.65 -- collectible tiles (tested 22 Oct: at 52x30 the lines are ~1 px, 0.8 vanished on phones)
-Theme.HexQuiet = 0.91 -- (owner, 22 Oct) panels, cards, HUD boxes: 8-10%
+-- (owner, 22 Oct, final) one cell size (~25 px) everywhere, and the mesh only on: window panels 5%, streak day tiles 10%,
+-- collectible tiles (trainers, alters, auras, titles, store tiles) ~18%. Nothing else (cards, quest rows, HUD boxes, nav
+-- tiles, buttons, bars): solid graphite. Never on a child of something that already has it (detail / hero panels).
+Theme.HexTile = UDim2.fromOffset(26, 15)
+Theme.HexTileBig = Theme.HexTile
+Theme.HexPanel = 0.95
+Theme.HexStreak = 0.9
+Theme.HexAlpha = 0.82 -- collectible tiles
 
 -- Real bumper plate colors (plate fill + darker rim). Used for grades, rarity and plates.
 local function plate(hex, textOnPlate)
@@ -555,10 +558,10 @@ local CARD_SHEEN = sequence({ { 0, "#232023" }, { 0.9, "#141215" }, { 0.905, "#0
 local PILL_SHEEN = sequence({ { 0, "#211E22" }, { 1, "#121013" } })
 Theme.Surfaces = {
 	panel = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
-		hex = 0.95 },
+		hex = Theme.HexPanel }, -- (owner, 22 Oct: window panels 5%)
 	hud_box = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 12, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
-		hex = 0.95, goldLine = 0.3 }, -- (prompt 40: the HUD cards, mockup 05: hex mesh + a gold inner line; owner 22 Oct: quiet mesh)
-	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88, hex = 0.95 },
+		goldLine = 0.3 }, -- (prompt 40: the HUD cards, mockup 05: a gold inner line; owner 22 Oct: no mesh on cards)
+	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88 },
 	card_selected = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.72 },
 	card_gold = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.6 },
 	well = { color = Theme.Colors.Well, alpha = 0, corner = 8, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.2 },
@@ -689,10 +692,9 @@ function Theme.SetHex(gui, alpha: number?, radius: number, color: Color3?, big: 
 	end
 	if hex then
 		hex.Visible = alpha ~= nil
-		-- (owner, 22 Oct) full strength only on collectible tiles (alpha 0.9 or less); panels, cards and HUD boxes ~9%
-		hex.ImageTransparency = if alpha == nil then 1 elseif big or alpha > 0.9 then Theme.HexQuiet else Theme.HexAlpha
+		hex.ImageTransparency = alpha or 1 -- (owner, 22 Oct: the caller says how strong)
 		hex.ImageColor3 = color or Color3.new(1, 1, 1)
-		hex.TileSize = if big then Theme.HexTileBig else Theme.HexTile
+		hex.TileSize = Theme.HexTile
 		hex.Corner.CornerRadius = UDim.new(0, math.max(radius - 1, 0))
 	end
 end
