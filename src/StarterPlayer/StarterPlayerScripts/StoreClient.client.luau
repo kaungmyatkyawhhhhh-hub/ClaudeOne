@@ -243,6 +243,23 @@ local grid = New("ScrollingFrame", { Name = "Grid", AnchorPoint = Vector2.new(1,
 	New("UIPadding", { PaddingTop = UDim.new(0, 1), PaddingBottom = UDim.new(0, 1), PaddingLeft = UDim.new(0, 1), PaddingRight = UDim.new(0, 1) }),
 })
 
+-- (prompt 28) "Go to PUMP SHOP": a small link under the grid once the PUMP SHOP is open for you (it was a left menu tile)
+local LINK_H = 30
+local pumpLink = Kit.Button("Quiet", "Go to Pump Shop", { Name = "PumpShopLink", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1),
+	Visible = false, Parent = modal.body }, { height = LINK_H, width = 170, textSize = 12, icon = "shopping-cart" })
+pumpLink.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	modal.close()
+	UIBus.GoPumpShop:Fire()
+end)
+local function refreshPumpLink()
+	local on = player:GetAttribute("PumpShop") ~= nil
+	pumpLink.Visible = on
+	grid.Size = UDim2.new(1, -(HERO_W + GAP), 1, if on then -(LINK_H + 6) else 0)
+end
+player:GetAttributeChangedSignal("PumpShop"):Connect(refreshPumpLink)
+refreshPumpLink()
+
 -- OWNED: a rotated gold stamp
 local function ownedStamp(parent)
 	local stamp = New("Frame", { Name = "Owned", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 40), Size = UDim2.fromOffset(96, 28),

@@ -2,6 +2,7 @@
 -- Everything you own to wear: PUMP SHOP gear (belt, wraps, straps, sleeves, with their perk), apparel (shorts and tank
 -- top colors, headbands, shakers, gym bags) and the clothing store's gear. Each card: a color tile, the name, what it
 -- does (or "Looks only"), and WEAR / TAKE OFF. (Tops from the clothing store stay hidden while the Wardrobe is off.)
+-- (prompt 28) Bigger cards, 5 a row; GearPanel.Count(data) = how many you own (the GEAR tab shows once you have any).
 -- GearPanel.Build(parent) -> { frame, refresh() }.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
@@ -18,7 +19,7 @@ local New, Colors = Theme.New, Theme.Colors
 
 local GearPanel = {}
 
-local CARD = Vector2.new(166, 84)
+local CARD = Vector2.new(154, 96)
 
 local function gearInfo(item)
 	for _, gear in ipairs(PumpShop.Gear) do
@@ -29,6 +30,22 @@ local function gearInfo(item)
 		end
 	end
 	return nil
+end
+
+-- how many things you own to wear (as the tab lists them)
+function GearPanel.Count(data): number
+	local owned = (data and data.cosmetics and data.cosmetics.owned) or {}
+	local n = 0
+	for _, item in ipairs(Cosmetics.Items) do
+		if owned[item.id] and not (item.slot == "Fit" and not Features.Wardrobe) then n += 1 end
+	end
+	for _, entry in ipairs(Body.ShortsColors) do
+		if entry.shop and owned["Shorts_" .. entry.id] then n += 1 end
+	end
+	for _, entry in ipairs(Body.Tops) do
+		if entry.shop and owned["Top_" .. entry.id] then n += 1 end
+	end
+	return n
 end
 
 function GearPanel.Build(parent: Instance)
@@ -42,17 +59,17 @@ function GearPanel.Build(parent: Instance)
 		New("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingBottom = UDim.new(0, 4) }),
 	})
 	panel.frame = holder
-	local empty = Kit.Text({ Name = "Empty", Text = "Nothing to wear yet. The PUMP SHOP sells gear and apparel (Growth Spurt 2).", Font = "Body",
-		TextSize = 13, TextColor3 = Colors.Faint, TextWrapped = true, Size = UDim2.new(1, -8, 0, 40), TextXAlignment = Enum.TextXAlignment.Left,
-		Visible = false, Parent = holder })
+	local empty = Kit.Text({ Name = "Empty", Text = "Nothing to wear yet. Get gear at the <font color=\"#F6C75A\">PUMP SHOP</font>.", RichText = true,
+		Font = "Strong", TextSize = 15, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, -20, 0, 22), Visible = false, Parent = holder })
 
 	local function card(order, name, sub, color, wearing, onTap)
 		local c = Kit.Card({ Name = name, LayoutOrder = order, Parent = frame }, {})
-		New("Frame", { Name = "Swatch", BackgroundColor3 = color, Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(26, 26), Parent = c },
+		New("Frame", { Name = "Swatch", BackgroundColor3 = color, Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(30, 30), Parent = c },
 			{ New("UICorner", { CornerRadius = UDim.new(0, 6) }), New("UIStroke", { Color = Colors.Outline, Thickness = 1.5 }) })
-		Kit.Fit(Kit.Text({ Name = "Name", Text = name, Font = "Title", Position = UDim2.fromOffset(40, 6), Size = UDim2.new(1, -48, 0, 16),
-			TextXAlignment = Enum.TextXAlignment.Left, Parent = c }), 13, 9)
-		Kit.Fit(Kit.Text({ Name = "Sub", Text = sub, Font = "Body", TextColor3 = Colors.Muted, Position = UDim2.fromOffset(40, 22), Size = UDim2.new(1, -48, 0, 14),
+		Kit.Fit(Kit.Text({ Name = "Name", Text = name, Font = "Title", Position = UDim2.fromOffset(44, 7), Size = UDim2.new(1, -52, 0, 16),
+			TextXAlignment = Enum.TextXAlignment.Left, Parent = c }), 14, 9)
+		Kit.Fit(Kit.Text({ Name = "Sub", Text = sub, Font = "Body", TextColor3 = Colors.Muted, Position = UDim2.fromOffset(44, 24), Size = UDim2.new(1, -52, 0, 14),
 			TextXAlignment = Enum.TextXAlignment.Left, Parent = c }), 11, 8)
 		local button = Kit.Button(if wearing then "Gold" else "Quiet", if wearing then "Take off" else "Wear",
 			{ Name = "Wear", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Parent = c }, { width = CARD.X - 16, height = 40, textSize = 13 })

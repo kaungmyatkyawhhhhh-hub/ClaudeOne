@@ -7,7 +7,8 @@
 --   HudBottom.SetTraining(on)            the bar reads "Stamina 60/100" and the row moves above STOP TRAINING
 --   HudBottom.SetHidden(reason, on)      hide it while a screen needs the bottom (posing, arm wrestling)
 --   HudBottom.BarTop()                   root-relative y (mockup px from the bottom) of the bar's top edge
---   HudBottom.AddSide(frame, order?)     a button left of the bar (DRINK SHAKE), shown on and off machines
+--   HudBottom.AddSide(frame, order?)     a button left of the bar, shown on and off machines (unused since prompt 28)
+--   HudBottom.SetLift(px)                (prompt 28) everything moves up by px: the hotbar (HotbarClient) sits under it
 -- Recovering (prompt 20, the player's "StaminaRecovering" attribute, PlayerData): the bar shows (on a machine or not), turns
 -- red and reads "RECOVERING 6s", and a line above says what the Growth Spurt needs (the local "SpurtNeeds" attribute set
 -- by ProgressClient) or a tip.
@@ -51,6 +52,8 @@ local lastStamina = nil
 local hidden = {}
 local endlessChip, infinity, shine, shineTween
 local endless = false
+local lift = 0 -- (prompt 28) the hotbar's room under the bar
+local function base(): number return HudBottom.Bottom + lift end
 
 local function endlessLeft(): number
 	local untilTime = Players.LocalPlayer:GetAttribute("EndlessStaminaUntil")
@@ -115,8 +118,16 @@ end
 
 local function placeRow()
 	if not row then return end
-	local lift = training and HudBottom.TrainingRowLift or 0
-	row.Position = UDim2.new(0.5, 0, 1, -(HudBottom.Bottom + HudBottom.BarSize.Y + 8 + lift))
+	local rowLift = training and HudBottom.TrainingRowLift or 0
+	row.Position = UDim2.new(0.5, 0, 1, -(base() + HudBottom.BarSize.Y + 8 + rowLift))
+end
+-- everything at the bottom, from base() up
+local function placeAll()
+	if not group then return end
+	group.Position = UDim2.new(0.5, 0, 1, -base())
+	placeRow()
+	tipText.Position = UDim2.new(0.5, 0, 1, -(base() + HudBottom.BarSize.Y + 8 + HudBottom.ChipSize + 18))
+	side.Position = UDim2.new(0.5, -(HudBottom.BarSize.X / 2 + 8), 1, -base())
 end
 
 local function refreshVisible()
@@ -164,7 +175,7 @@ local function ensure()
 	-- while recovering: what to train next (or a tip), above the boost icons
 	tipText = Kit.Text({ Name = "RecoverTip", Text = "", Font = "Strong", TextSize = 13, AnchorPoint = Vector2.new(0.5, 1), Visible = false,
 		Position = UDim2.new(0.5, 0, 1, -(HudBottom.Bottom + HudBottom.BarSize.Y + 8 + HudBottom.ChipSize + 18)), Size = UDim2.fromOffset(420, 18), Parent = root })
-	-- (prompt 20) the left of the stamina bar: the DRINK SHAKE button (ShakeClient), in the same spot on and off a machine
+	-- (prompt 20) the left of the stamina bar: buttons in the same spot on and off a machine (was DRINK SHAKE, gone in prompt 28)
 	side = New("Frame", { Name = "Side", AnchorPoint = Vector2.new(1, 1), BackgroundTransparency = 1,
 		Position = UDim2.new(0.5, -(HudBottom.BarSize.X / 2 + 8), 1, -HudBottom.Bottom), Size = UDim2.fromOffset(0, HudBottom.SideHeight),
 		AutomaticSize = Enum.AutomaticSize.X, Parent = root }, {
@@ -307,7 +318,7 @@ function HudBottom.ImageChip(image: string, order: number?)
 	return api
 end
 
--- A button left of the stamina bar (the DRINK SHAKE button): always on screen, on a machine or not.
+-- A button left of the stamina bar: always on screen, on a machine or not.
 function HudBottom.AddSide(frame: GuiObject, order: number?)
 	ensure()
 	frame.LayoutOrder = order or 1
@@ -336,7 +347,15 @@ end
 
 -- mockup px from the screen bottom to the top of the stamina bar
 function HudBottom.BarTop(): number
-	return HudBottom.Bottom + HudBottom.BarSize.Y
+	return base() + HudBottom.BarSize.Y
+end
+
+-- (prompt 28) the hotbar sits at the very bottom: the bar, the boost icons and the tip move up by px (0 = back down)
+function HudBottom.SetLift(px: number)
+	ensure()
+	if lift == px then return end
+	lift = px
+	placeAll()
 end
 
 function HudBottom.Refresh()

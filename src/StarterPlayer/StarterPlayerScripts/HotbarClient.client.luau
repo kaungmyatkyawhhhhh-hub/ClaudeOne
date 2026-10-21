@@ -3,10 +3,13 @@
 --  * One slot per Tool in your backpack / hand, in the order they arrived: the number (1-9) top left, the item's icon,
 --    the count you own bottom right (Boosts items: "BoostItem" attribute on the Tool, ItemService). A tool that isn't a
 --    boost shows its name.
---  * Tap a slot or press its number to hold it; again to put it away. The one in your hand has a gold border and sits a
---    little higher.
---  * Bottom centre, above the boost timers row (HudBottom), so it never covers the stamina bar, STOP / EXERCISE (bottom
---    left) or REP / PUMP (bottom right). Hidden whenever HudBottom is (menus, full screens, posing) and when it's empty.
+--  * (prompt 28) A boost slot: tap it or press its number to USE one (the Protein Shake: drink it; it replaces the old
+--    DRINK SHAKE button, and ItemService always puts the shake in slot 1). Any other Tool: tap / number to hold it, again
+--    to put it away; the one in your hand has a gold border and sits a little higher.
+--  * (prompt 28) Pinned to the bottom centre like Roblox's own toolbar (10 px above the safe area, never moving with the
+--    character); the stamina bar and the boost timers (HudBottom.SetLift) move up above it while it shows. STOP / EXERCISE
+--    (bottom left) and REP / PUMP (bottom right) stay in the corners. Hidden whenever HudBottom is (menus, full screens,
+--    posing) and when it's empty.
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService("UserInputService")
@@ -17,6 +20,7 @@ local Boosts = require(Shared.Config.Boosts)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
+local HudBottom = require(Shared.UI.HudBottom)
 local Audio = require(Shared.Audio)
 
 local New, Colors = Theme.New, Theme.Colors
@@ -24,7 +28,7 @@ local player = Players.LocalPlayer
 
 local SLOT = 50
 local GAP = 6
-local BOTTOM = 10 + 34 + 8 + 44 + 6 -- HudBottom: its gap + the stamina bar + 8 + the boost timers row + 6
+local BOTTOM = 10                    -- above the bottom safe area (prompt 28: was above the stamina bar, mid-screen)
 local LIFT = 4                       -- the slot in your hand sits this much higher
 local KEYS = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five,
 	Enum.KeyCode.Six, Enum.KeyCode.Seven, Enum.KeyCode.Eight, Enum.KeyCode.Nine }
@@ -44,8 +48,22 @@ local bar = New("Frame", { Name = "Slots", AnchorPoint = Vector2.new(0.5, 1), Po
 	Size = UDim2.fromOffset(0, SLOT + LIFT), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, Parent = root }, {
 	Theme.List(Enum.FillDirection.Horizontal, GAP, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom),
 })
+-- (prompt 28) many slots on a small phone: the row shrinks so it stays between STOP (bottom left) and REP (bottom right)
+local CORNERS = 2 * 175 -- mockup px kept free for the machine HUD's corners (MachineHud: corner + REP 150 wide)
+local fit = New("UIScale", { Parent = bar })
+local function fitRow()
+	local count = 0
+	for _, child in ipairs(bar:GetChildren()) do
+		if child:IsA("GuiObject") then count += 1 end
+	end
+	local natural = count * SLOT + math.max(0, count - 1) * GAP
+	local room = root.AbsoluteSize.X / math.max(Kit.Scale(), 0.01) - CORNERS
+	fit.Scale = if natural > room and natural > 0 then math.max(0.6, room / natural) else 1
+end
 
-local order = {} -- Tools in the order they arrived
+local order = {} -- Tools: the shake first, then in the order they arrived
+local arrived = {} -- [Tool] = arrival number
+local watchTool -- (below)
 local slots = {} -- [Tool] = { frame, face, stroke, count }
 
 local function humanoid()
@@ -61,9 +79,19 @@ local function countOf(tool: Tool): number?
 	return if type(id) == "string" and type(items) == "table" then tonumber(items[id]) or 0 else nil
 end
 
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local function toggle(tool: Tool)
 	local h = humanoid()
 	if not h or h.Health <= 0 then return end
+	-- (prompt 28) a boost: one tap uses one (the server checks the count and the cooldown)
+	local id = tool:GetAttribute("BoostItem")
+	if type(id) == "string" and Boosts.ById[id] then
+		if (countOf(tool) or 0) > 0 then
+			Remotes.PlayerAction:FireServer(if id == "Shake" then "DrinkShake" else "UseItem", id)
+			Audio.PlayUI("Click")
+		end
+		return
+	end
 	if held(tool) then
 		h:UnequipTools()
 	else
@@ -80,12 +108,20 @@ local function render()
 		if not inBag then
 			table.remove(order, i)
 			if slots[tool] then slots[tool].frame:Destroy() slots[tool] = nil end
+			arrived[tool] = nil
 		end
 	end
+	-- the shake first (slot 1: the tutorial points at it), then the order they arrived
+	table.sort(order, function(a, b)
+		local sa, sb = a:GetAttribute("BoostItem") == "Shake", b:GetAttribute("BoostItem") == "Shake"
+		if sa ~= sb then return sa end
+		return (arrived[a] or 0) < (arrived[b] or 0)
+	end)
 	for index, tool in ipairs(order) do
 		local slot = slots[tool]
 		if not slot then
-			local frame = New("Frame", { Name = "Slot", BackgroundTransparency = 1, Size = UDim2.fromOffset(SLOT, SLOT + LIFT), Parent = bar })
+			local boostId = tool:GetAttribute("BoostItem")
+			local frame = New("Frame", { Name = if type(boostId) == "string" then "Slot_" .. boostId else "Slot", BackgroundTransparency = 1, Size = UDim2.fromOffset(SLOT, SLOT + LIFT), Parent = bar })
 			local face = Theme.Panel({ Name = "Face", Piece = "hud_box", Clickable = true, AnchorPoint = Vector2.new(0.5, 1),
 				Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.fromOffset(SLOT, SLOT), Parent = frame })
 			local stroke = New("UIStroke", { Name = "Held", Color = Colors.Gold, Thickness = 2, Enabled = false,
@@ -116,8 +152,11 @@ local function render()
 	end
 end
 
-local function watchTool(tool)
+local arrival = 0
+function watchTool(tool)
 	if not tool:IsA("Tool") or table.find(order, tool) then return end
+	arrival += 1
+	arrived[tool] = arrival
 	table.insert(order, tool)
 	render()
 end
@@ -160,6 +199,9 @@ task.spawn(function()
 	while true do
 		local hud = playerGui:FindFirstChild("HudBottom")
 		gui.Enabled = #order > 0 and hud ~= nil and hud.Enabled
+		-- (prompt 28) the stamina bar and the boost icons sit above the slots while they show
+		if gui.Enabled then fitRow() end
+		HudBottom.SetLift(if gui.Enabled then math.ceil((SLOT + LIFT) * fit.Scale) + 6 else 0)
 		task.wait(0.3)
 	end
 end)

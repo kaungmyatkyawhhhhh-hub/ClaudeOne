@@ -12,7 +12,8 @@ UIBus.StatsVisible = signal()    -- fired with true/false when the Stats button 
 UIBus.StatsLabels = signal()     -- same moment, for StatsLabelsClient (true = show the labels)
 UIBus.MusclesVisible = signal()  -- fired with true/false when the "Your muscles" panel opens/closes
 UIBus.OpenMuscles = signal()     -- any screen can ask for the "Your muscles" panel (the machine body map taps it)
-UIBus.OpenAgency = signal()      -- (prompt 24) open the Trainer Agency window (Inventory > Trainers' empty state)
+UIBus.GoPumpShop = signal()     -- (prompt 28) go to the PUMP SHOP (the Shop window's link; was a side menu tile)
+UIBus.OpenAgency = signal()      -- (tab? "My") open the TRAINERS window (prompt 24; prompt 28: "My" = its MY TRAINERS tab)
 UIBus.StartAlter = signal()      -- (prompt 22) start the Body Alter transformation (the PUMP SHOP's ALTER NOW)
 UIBus.OpenInventory = signal()   -- (tab "Titles" / "Auras" / "Items", auraId?) open the Inventory window on a tab
 UIBus.OpenTitles = UIBus.OpenInventory -- (the old name: the Inventory window was the Titles window)

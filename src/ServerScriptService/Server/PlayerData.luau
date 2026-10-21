@@ -44,6 +44,8 @@ local PlayerData = {}
 
 local loadedEvent = Instance.new("BindableEvent")
 PlayerData.Loaded = loadedEvent.Event -- (player, data)
+local itemChangedEvent = Instance.new("BindableEvent")
+PlayerData.ItemChanged = itemChangedEvent.Event -- (player, itemId, newCount, oldCount): AddItem (prompt 28, ItemService)
 
 local profiles = {} -- [player] = { data, canSave, released }
 local lastStaminaUse = {} -- [player] = os.clock() of the last rep
@@ -780,6 +782,7 @@ function PlayerData.AddItem(player, id, amount)
 	if now + amount < 0 then return false end
 	data.items[id] = math.min(now + amount, Boosts.MaxCount)
 	replicate(player, { "items", id }, data.items[id])
+	itemChangedEvent:Fire(player, id, data.items[id], now)
 	return true
 end
 
@@ -808,7 +811,7 @@ local REP_FLASH = { On = true, Off = true }
 local EXP_POPUPS = { On = true, Off = true }
 local SPOT_REQUESTS = { On = true, Off = true }
 local ON_OFF = { On = true, Off = true }
-local INVENTORY_TABS = { Boosts = true, Gear = true, Alters = true, Titles = true, Auras = true, Items = true }
+local INVENTORY_TABS = { Items = true, Gear = true, Looks = true, Boosts = true, Alters = true, Titles = true, Auras = true } -- (prompt 28: Items, Gear, Looks; the old names still load)
 
 -- Settings menu. Each field is optional and checked on its own: music/effects 0-1, gainNumbers On/Minimal/Off,
 -- repFlash On/Off, expPopups On/Off.

@@ -102,6 +102,20 @@ local skipArmed = 0
 
 local dialog = Theme.Panel({ Name = "CoachDialog", Clickable = true, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
 	Size = UDim2.fromOffset(540, 92), Visible = false, Parent = root }, {})
+-- (prompt 28) above the hotbar while it shows (HotbarClient: 10 px gap + a 54 px slot): on a phone the dialog sat on the
+-- shake slot the shake step asks you to tap
+task.spawn(function()
+	local lifted = nil
+	while true do
+		local hotbar = playerGui:FindFirstChild("Hotbar")
+		local want = hotbar ~= nil and hotbar.Enabled
+		if want ~= lifted then
+			lifted = want
+			dialog.Position = UDim2.new(0.5, 0, 1, if want then -(10 + 64) else -10)
+		end
+		task.wait(0.3)
+	end
+end)
 local portrait = New("ViewportFrame", { Name = "Portrait", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(72, 72),
 	BackgroundColor3 = Colors.Blue, Ambient = Color3.fromRGB(190, 190, 190), LightColor = Color3.new(1, 1, 1), LightDirection = Vector3.new(-0.4, -0.6, -1),
 	Parent = dialog }, {
@@ -248,16 +262,18 @@ local function stepDef()
 	return Onboarding.Steps[stepIndex]
 end
 
--- (prompt 20, 21 Oct) A gold arrow over the DRINK SHAKE button, bouncing, pointing down at it. It lives inside the button,
--- so it shows exactly when the button does (once the free shake has arrived).
+-- (prompt 20, 21 Oct) A gold arrow over the shake, bouncing, pointing down at it. Prompt 28: the shake is hotbar slot 1
+-- (HotbarClient "Slot_Shake"; the DRINK SHAKE button is gone). It lives inside the slot, so it shows exactly when the slot
+-- does (once the free shake has arrived).
 local shakeArrow = nil
 function hideShakeArrow()
 	if shakeArrow then shakeArrow:Destroy() shakeArrow = nil end
 end
 function pointAtShake()
 	if shakeArrow and shakeArrow.Parent then return end
-	local hud = playerGui:FindFirstChild("HudBottom")
-	local button = hud and hud:FindFirstChild("DrinkShake", true)
+	local hotbar = playerGui:FindFirstChild("Hotbar")
+	local slot = hotbar and hotbar:FindFirstChild("Slot_Shake", true)
+	local button = slot and slot:FindFirstChild("Face")
 	if not button then
 		task.delay(0.5, function()
 			local step = stepDef()
@@ -308,7 +324,7 @@ local function refreshStep()
 		hidePath()
 		goButton.Visible = false
 	end
-	-- the shake step: a bouncing arrow on the DRINK SHAKE button (left of the stamina bar), on a machine or not
+	-- the shake step: a bouncing arrow on hotbar slot 1 (the shake), on a machine or not
 	if step.done.type == "shake" then pointAtShake() else hideShakeArrow() end
 	-- point at the Stats button (a dot on it until stats is opened)
 	if step.done.type == "statsOpen" then

@@ -1,4 +1,5 @@
--- AltersPanel (prompt 21, 21 Oct): the Inventory window's ALTERS tab (TitlesClient builds the window and calls this).
+-- AltersPanel (prompt 21, 21 Oct): the Inventory window's LOOKS > Alters (prompt 28; was the ALTERS tab; TitlesClient builds the
+-- window and calls this).
 -- Every Body Alter (Config.Alters) as a card, Natural first: a round skin swatch (the alter's color map tinted with your
 -- skin color), the name and the tier. Unlocked: WEAR (the one you wear: a gold WORN, gold border). The next one: a dark
 -- swatch and its goal. Later ones: a dark swatch and "Alter n". No textures yet: the placeholder color, "Coming soon".
@@ -22,7 +23,7 @@ local New, Colors = Theme.New, Theme.Colors
 
 local AltersPanel = {}
 
-local CARD = Vector2.new(124, 112)
+local CARD = Vector2.new(152, 112) -- (prompt 28: bigger, 5 a row)
 local SWATCH = 44
 
 function AltersPanel.Build(parent: Instance)

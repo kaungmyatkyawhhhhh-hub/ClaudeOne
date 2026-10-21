@@ -1,4 +1,5 @@
--- TrainersPanel (prompt 24, 21 Oct): the Inventory window's TRAINERS tab (TitlesClient builds the window and calls this).
+-- TrainersPanel (prompt 24, 21 Oct): the TRAINERS window's MY TRAINERS tab (prompt 28; it was the Inventory's Trainers tab;
+-- TrainerClient builds the window and calls this).
 -- On top the following slots (1 at start, 2 at Growth Spurt 2, 3 at the first alter, +1 with the pass; a locked slot says
 -- what opens it): each shows the trainer in it (rarity color, name; Golden in gold), tap = he stops following.
 -- Below every trainer you own (rarest first; Golden ones as their own cards): a 3D portrait, name, rarity, boost, how many
@@ -44,7 +45,7 @@ function TrainersPanel.Build(parent: Instance)
 		Parent = holder })
 	Kit.Text({ Text = "No trainers yet. Roll for one at the Trainer Agency (the desk at the front of each gym).", Font = "Strong", TextSize = 13, TextWrapped = true,
 		Size = UDim2.new(1, 0, 0, 36), Parent = empty })
-	local openAgency = Kit.Button("Gold", "Trainer Agency", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 42), Parent = empty },
+	local openAgency = Kit.Button("Gold", "Roll trainers", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 42), Parent = empty },
 		{ width = 200, height = 44, textSize = 15 })
 	openAgency.Activated:Connect(function()
 		Audio.PlayUI("Click")

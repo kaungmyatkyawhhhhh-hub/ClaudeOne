@@ -6,6 +6,8 @@
 --   EquipItem(id)  puts the item in the player's backpack as a Tool (the Roblox hotbar); activating it uses one, and the
 --                  Tool goes away when the last one is used. EquipItem again (UNEQUIP) takes it out. The player attribute
 --                  "Equipped_<id>" says it's there.
+--                  (prompt 28) The Protein Shake goes in by itself (on join, respawn and when you get shakes while you have
+--                  none): the DRINK SHAKE button is gone, hotbar slot 1 is the shake. UNEQUIP keeps it out until you get more.
 -- Boost time pauses while away: data.boostLeft[id] = seconds left, saved every few seconds and picked up on join.
 -- Studio test (only the place owner): type "/give creatine 5" in chat.
 local Players = game:GetService("Players")
@@ -199,6 +201,11 @@ function ItemService.Give(player, id: string, amount: number?)
 	return false
 end
 
+-- (prompt 28) the shake in the hotbar unless it's there already
+local function autoShake(player)
+	if count(player, "Shake") > 0 and not (tools[player] and tools[player].Shake) then equip(player, "Shake") end
+end
+
 function ItemService.Start()
 	ActionService.Register("UseItem", function(player, id)
 		if type(id) == "string" then use(player, id) end
@@ -207,6 +214,10 @@ function ItemService.Start()
 		if type(id) == "string" then equip(player, id) end
 	end)
 	PlayerData.Loaded:Connect(restore)
+	PlayerData.Loaded:Connect(function(player) task.delay(1, autoShake, player) end)
+	PlayerData.ItemChanged:Connect(function(player, id, new, old)
+		if id == "Shake" and old <= 0 and new > 0 then autoShake(player) end
+	end)
 	for _, player in ipairs(Players:GetPlayers()) do
 		if PlayerData.Get(player) then restore(player) end
 		watchChat(player)
@@ -217,12 +228,16 @@ function ItemService.Start()
 		player.CharacterAdded:Connect(function()
 			task.wait(0.5)
 			local list = tools[player]
-			if not list then return end
+			if not list then
+				autoShake(player)
+				return
+			end
 			for id in pairs(list) do
 				tools[player][id] = nil
 				player:SetAttribute("Equipped_" .. id, nil)
 				equip(player, id)
 			end
+			autoShake(player)
 		end)
 	end)
 	Players.PlayerRemoving:Connect(function(player)

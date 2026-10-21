@@ -4,15 +4,17 @@
 --     list (all 8 trainers: rarity color, 3D portrait, name, boost, chance; Secret is a black "???" until you own him); on
 --     the right the pity counter ("Epic guaranteed in 37 rolls"), ROLL x1 and ROLL x3 (x3 from Growth Spurt 2) with the
 --     price, AUTO ROLL (keeps rolling while you have coins, stops on Epic or better or when you tap Stop), auto-delete
---     toggles (Common, Uncommon duplicates become coins), MY TRAINERS (the Inventory's Trainers tab) and the +1 slot pass.
+--     toggles (Common, Uncommon duplicates become coins), MY TRAINERS (the window's second tab) and the +1 slot pass.
+--   * (prompt 28) Two tabs: AGENCY (the above) and MY TRAINERS (Shared/UI/TrainersPanel: slots, the trainers you own; it
+--     was the Inventory's Trainers tab). UIBus.OpenAgency("My") opens it on MY TRAINERS.
 --   * The roll (~1.5 s, tap to skip): a capsule card drops in, shakes and glows in the rarity color, cracks open, the trainer
 --     appears in 3D in a pose with his name and rarity banner. Rarer = bigger: Epic a purple burst, Legendary a gold
 --     explosion and a slower build, Mythic a screen shake and red-purple lightning, Secret goes dark first, Eternal a white
 --     flash, stars and a swell. Layered sounds (Config.AlterThemes.Sounds).
 --   * Legendary and better: the whole server is told (a chat line + a toast); Secret and Eternal: a big banner too.
---   * The odds boards over the Agency desks (tag AgencyBoard, tools/builders/TrainerAgency) are filled here from the config.
--- The trainers themselves are drawn by TrainerFollowClient; owning / equipping / Golden: Inventory > Trainers
--- (Shared/UI/TrainersPanel).
+--   * The signs over the Agency desks (tag AgencyBoard, tools/builders/TrainerAgency): TRAINER AGENCY + the trainers'
+--     pictures (prompt 28; the odds are only in the window).
+-- The trainers themselves are drawn by TrainerFollowClient; owning / equipping: the MY TRAINERS tab (Shared/UI/TrainersPanel).
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -76,12 +78,32 @@ local function rarityOf(trainer) return Trainers.RarityById[trainer.rarity] end
 -- The window
 ------------------------------------------------------------------------
 local menuButton = SideMenu.Add("Trainers", "Trainers", Icons.Clipboard, 7.5)
-local modal = Kit.Modal({ name = "Trainers", title = "Trainer Agency", width = W, height = H, displayOrder = 25, coins = true })
+local tab = "Agency"
+local myPanel -- (below: MY TRAINERS)
+local agencyFrame -- (below: the AGENCY tab's content)
+local modal = Kit.Modal({ name = "Trainers", title = "Trainers", width = W, height = H, displayOrder = 25, coins = true,
+	tabs = { { id = "Agency", text = "Agency" }, { id = "My", text = "My trainers" } },
+	onTab = function(id)
+		tab = id
+		Audio.PlayUI("Click")
+		agencyFrame.Visible = id == "Agency"
+		myPanel.frame.Visible = id == "My"
+		if id == "My" then myPanel.refresh() end
+	end })
+agencyFrame = New("Frame", { Name = "Agency", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = modal.body })
+myPanel = require(Shared.UI.TrainersPanel).Build(modal.body)
+local function showTab(id: string)
+	tab = id
+	modal.selectTab(id)
+	agencyFrame.Visible = id == "Agency"
+	myPanel.frame.Visible = id == "My"
+	if id == "My" then myPanel.refresh() end
+end
 
 -- the odds list
 local odds = New("ScrollingFrame", { Name = "Odds", BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(0, LEFT_W, 1, 0),
 	ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(),
-	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = modal.body }, {
+	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = agencyFrame }, {
 	Theme.List(Enum.FillDirection.Vertical, 2, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
 local rows = {}
@@ -126,7 +148,7 @@ end
 
 -- the right side
 local right = New("Frame", { Name = "Right", BackgroundTransparency = 1, Position = UDim2.fromOffset(LEFT_W + 10, 0), Size = UDim2.new(1, -(LEFT_W + 10), 1, 0),
-	Parent = modal.body })
+	Parent = agencyFrame })
 local pity = Kit.Text({ Name = "Pity", Text = "", Font = "Title", TextSize = 14, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left,
 	Parent = right })
 Kit.GoldText(pity)
@@ -180,8 +202,7 @@ slotButton.Activated:Connect(function()
 end)
 myTrainers.Activated:Connect(function()
 	Audio.PlayUI("Click")
-	modal.close()
-	UIBus.OpenInventory:Fire("Trainers")
+	showTab("My")
 end)
 
 local function refresh()
@@ -532,11 +553,13 @@ modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 	end
 end)
 menuButton.Activated:Connect(function()
-	if modal.isOpen() then modal.close() else UIBus.PanelOpened("Trainers") open() end
+	if modal.isOpen() then modal.close() else UIBus.PanelOpened("Trainers") showTab(tab) open() end
 end)
 UIBus.RegisterPanel("Trainers", function() modal.close() end)
-UIBus.OpenAgency.Event:Connect(function()
+-- (tab "My" = MY TRAINERS; nothing = the Agency)
+UIBus.OpenAgency.Event:Connect(function(openTab)
 	if not modal.isOpen() then UIBus.PanelOpened("Trainers") end
+	showTab(if openTab == "My" then "My" else "Agency")
 	open()
 end)
 ClientData.Changed:Connect(function(path)
@@ -574,6 +597,7 @@ remote.OnClientEvent:Connect(function(kind, info)
 	info = type(info) == "table" and info or {}
 	if kind == "Open" then
 		if not modal.isOpen() then UIBus.PanelOpened("Trainers") end
+		showTab("Agency") -- (the Agency desk's prompt)
 		open()
 	elseif kind == "Rolled" then
 		resultSignal:Fire()
@@ -597,7 +621,9 @@ remote.OnClientEvent:Connect(function(kind, info)
 end)
 
 ------------------------------------------------------------------------
--- The odds boards over the Agency desks (tag AgencyBoard): filled from the config, Secret "???" until you own him
+-- The signs over the Agency desks (tag AgencyBoard; prompt 28: was a table of names and odds, too much small text): the
+-- gold "TRAINER AGENCY" on black and the trainers' pictures in a row in their rarity color (the Secret one a black
+-- silhouette until you own him). The odds stay in the Agency window.
 ------------------------------------------------------------------------
 local boards = {}
 local function fillBoard(part: BasePart)
@@ -610,41 +636,35 @@ local function fillBoard(part: BasePart)
 	gui.Brightness = 1.3
 	gui:ClearAllChildren()
 	gui.Parent = part
-	local root = New("Frame", { BackgroundColor3 = Color3.fromHex("#141417"), Size = UDim2.fromScale(1, 1), Parent = gui }, {
-		New("UIPadding", { PaddingTop = UDim.new(0.03, 0), PaddingBottom = UDim.new(0.03, 0), PaddingLeft = UDim.new(0.03, 0), PaddingRight = UDim.new(0.03, 0) }),
+	local root = New("Frame", { BackgroundColor3 = Color3.fromHex("#0E0E11"), Size = UDim2.fromScale(1, 1), Parent = gui }, {
+		New("UIPadding", { PaddingTop = UDim.new(0.06, 0), PaddingBottom = UDim.new(0.08, 0), PaddingLeft = UDim.new(0.04, 0), PaddingRight = UDim.new(0.04, 0) }),
 	})
 	local title = New("TextLabel", { BackgroundTransparency = 1, Text = "TRAINER AGENCY", FontFace = LUCKIEST, TextScaled = true, TextColor3 = Color3.new(1, 1, 1),
-		Size = UDim2.fromScale(1, 0.13), Parent = root })
-	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#FFF3C4"), Color3.fromHex("#C98A12")), Parent = title })
-	New("TextLabel", { BackgroundTransparency = 1, Text = "Roll for a coach with coins · odds always shown · Epic guaranteed every " .. Trainers.Pity .. " rolls",
-		FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium), TextScaled = true, TextColor3 = Color3.fromHex("#B8B8BE"),
-		Position = UDim2.fromScale(0, 0.13), Size = UDim2.fromScale(1, 0.05), Parent = root })
-	local list = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromScale(0, 0.2), Size = UDim2.fromScale(1, 0.8), Parent = root }, {
-		New("UIListLayout", { Padding = UDim.new(0.012, 0), SortOrder = Enum.SortOrder.LayoutOrder }),
+		Size = UDim2.fromScale(1, 0.34), Parent = root })
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromHex("#FFF3C4")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("#F6C75A")), ColorSequenceKeypoint.new(1, Color3.fromHex("#C98A12")),
+	}), Parent = title })
+	New("Frame", { BackgroundColor3 = Color3.fromHex("#C98A12"), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.39),
+		Size = UDim2.fromScale(0.6, 0.012), Parent = root })
+	local row = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromScale(0, 0.47), Size = UDim2.fromScale(1, 0.53), Parent = root }, {
+		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0.012, 0), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
-	local rowH = 1 / #Trainers.List - 0.013
+	local size = 1 / #Trainers.List - 0.014
 	for order, trainer in ipairs(Trainers.List) do
 		local rarity = rarityOf(trainer)
 		local hidden = rarity.hidden and not ownsAny(trainer.id)
-		local row = New("Frame", { LayoutOrder = order, BackgroundColor3 = Color3.fromHex("#1F1F25"), Size = UDim2.fromScale(1, rowH), Parent = list }, {
-			New("UICorner", { CornerRadius = UDim.new(0.2, 0) }),
+		local frame = New("Frame", { LayoutOrder = order, BackgroundColor3 = Color3.fromHex("#1F1F25"), Size = UDim2.fromScale(size, 1), Parent = row }, {
+			New("UIAspectRatioConstraint", { AspectRatio = 1 }),
+			New("UICorner", { CornerRadius = UDim.new(0.14, 0) }),
+			New("UIStroke", { Color = if rarity.hidden then hex(rarity.color2) else hex(rarity.color), Thickness = 3 }),
 		})
-		New("Frame", { BackgroundColor3 = hex(rarity.color), Size = UDim2.fromScale(0.015, 0.8), Position = UDim2.fromScale(0.01, 0.1), Parent = row })
-		local function cell(text, x, w, color, align)
-			return New("TextLabel", { BackgroundTransparency = 1, Text = text, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold),
-				TextScaled = true, TextColor3 = color, TextXAlignment = align or Enum.TextXAlignment.Left, Position = UDim2.fromScale(x, 0.12),
-				Size = UDim2.fromScale(w, 0.76), Parent = row })
-		end
 		-- (prompt 25) his icon (the Secret one a black "???" silhouette until you own him)
 		local picture = if hidden then Trainers.SilhouetteIcon else trainer.icon
 		if picture and picture ~= "" then
-			New("ImageLabel", { BackgroundTransparency = 1, Image = picture, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromScale(0.03, 0.04),
-				Size = UDim2.fromScale(0.07, 0.92), Parent = row }, { New("UIAspectRatioConstraint", { AspectRatio = 1 }) })
+			New("ImageLabel", { BackgroundTransparency = 1, Image = picture, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromScale(1, 1), Parent = frame },
+				{ New("UICorner", { CornerRadius = UDim.new(0.14, 0) }) })
 		end
-		cell(string.upper(rarity.name), 0.1, 0.17, if rarity.hidden then hex(rarity.color2) else hex(rarity.color))
-		cell(if hidden then "???" else trainer.name, 0.28, 0.22, Color3.new(1, 1, 1))
-		cell(if hidden then "???" else trainer.perkText, 0.51, 0.31, Color3.fromHex("#B8B8BE"))
-		cell(chanceText(rarity.chance), 0.83, 0.15, Color3.fromHex("#F6C75A"), Enum.TextXAlignment.Right)
 	end
 end
 local function addBoard(part)

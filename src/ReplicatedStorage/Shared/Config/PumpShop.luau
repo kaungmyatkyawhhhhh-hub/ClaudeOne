@@ -17,7 +17,7 @@ PumpShop.CoinsPerMinute = { [0] = 57, [1] = 110, [2] = 152, [3] = 200, [4] = 220
 -- Supplements only; Gear and Apparel open at Growth Spurt 2.
 PumpShop.OpenAfterMinutes = 8
 PumpShop.GearAtSpurt = 2
-PumpShop.TeleportCooldown = 10 -- seconds between two uses of the HUD's PUMP SHOP button
+PumpShop.TeleportCooldown = 10 -- seconds between two uses of the Shop window's "Go to Pump Shop" link (prompt 28)
 PumpShop.AffordEvery = 5 * 60   -- seconds: at most one "You can afford: ..." toast this often
 PumpShop.TryOnSeconds = 12      -- a try-on (apparel) lasts this long, or until the panel closes
 

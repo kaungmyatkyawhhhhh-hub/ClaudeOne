@@ -1,6 +1,6 @@
--- ShakeClient: the quick "Drink shake" button left of the stamina bar (it uses one Protein Shake from the inventory,
--- Config.Boosts; always there, "0" and grey when you have none, prompt 14), the shake boost
--- countdown, notes for buying/drinking shakes and petting the cat, and the gym cat's tail wag (local only).
+-- ShakeClient: the shake boost countdown chip, notes for buying/drinking shakes and petting the cat, and the gym cat's
+-- tail wag (local only). (Prompt 28: the DRINK SHAKE button left of the stamina bar is gone: the shake sits in hotbar slot 1,
+-- ItemService puts it there.)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -21,17 +21,8 @@ local player = Players.LocalPlayer
 local Colors = Theme.Colors
 
 ------------------------------------------------------------------------
--- Button
+-- The shake boost's chip (time left)
 ------------------------------------------------------------------------
--- (owner's UI redesign) the bag shake keeps its own look, never the smoothies': purple "sparkles". A DRINK SHAKE button
--- with the count, and a chip with the boost's time left.
--- (prompt 20, 21 Oct: it sat in the right column, which folds away on a machine, so new players got stuck on the tutorial's
--- shake step.) It now sits left of the stamina bar (HudBottom.AddSide), a full 44 px tall, on screen on and off machines.
-local Kit = require(Shared.UI.Kit)
-local HudBottom = require(Shared.UI.HudBottom)
-local button, label = Kit.Button("Secondary", "Drink shake", { Name = "DrinkShake" },
-	{ height = HudBottom.SideHeight, width = 136, icon = "sparkles", iconColor = Colors.Purple, textSize = 13 })
-HudBottom.AddSide(button, 1)
 local chip = RightColumn.Chip("sparkles", Colors.Purple, 10)
 
 local started = false
@@ -42,17 +33,9 @@ local function boostLeft()
 	return math.max(0, ends - Workspace:GetServerTimeNow())
 end
 
-local function shakeCount(): number
-	local items = ClientData.Get().items
-	return items and tonumber(items.Shake) or 0
-end
-
 local function refresh()
 	if not started then return end
-	local shakes = shakeCount()
 	local left = boostLeft()
-	label.Text = "Drink shake · " .. shakes
-	Theme.SetButtonStyle(button, if shakes > 0 then "Secondary" else "Disabled")
 	chip:SetVisible(left > 0)
 	if left > 0 then
 		local s = math.ceil(left)
@@ -60,17 +43,6 @@ local function refresh()
 	end
 end
 
-button.Activated:Connect(function()
-	if shakeCount() <= 0 then
-		Notify.Toast("No Protein Shakes", "Buy one at the shake machine by the door.", "cup-soda", Colors.Muted, "noshake")
-		return
-	end
-	Remotes.PlayerAction:FireServer("DrinkShake")
-end)
-
-ClientData.Changed:Connect(function(path)
-	if path[1] == "items" then refresh() end
-end)
 player:GetAttributeChangedSignal("ShakeEnds"):Connect(refresh)
 
 -- countdown

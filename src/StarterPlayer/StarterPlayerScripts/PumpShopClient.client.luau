@@ -7,7 +7,8 @@
 --       APPAREL      shorts and tank top colors, headbands, shakers, gym bags: TRY ON (a few seconds) and BUY
 --       DNA LAB      a DNA token (this week's price: +10% for each one bought this week) and "Reroll genetics"
 --     Gear and Apparel show a lock until Growth Spurt 2.
---   * The PUMP SHOP tile in the left menu (once the shop is open): a tap goes to the entrance (10 s cooldown).
+--   * Going there (10 s cooldown): the Shop window's "Go to PUMP SHOP" link (UIBus.GoPumpShop; prompt 28: it was a tile in
+--     the left menu, the menu keeps 8 buttons).
 --   * "You can afford: Pro Lifting Belt!": a small gold note once a newly affordable thing appears (at most every 5 min);
 --     tapping it goes to the shop.
 local Players = game:GetService("Players")
@@ -28,7 +29,6 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
 local Notify = require(Shared.UI.Notify)
-local SideMenu = require(Shared.UI.SideMenu)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -277,7 +277,7 @@ local function showHero(entry)
 			heroText.Text = string.format("Goal: %s exp in every group. Keeps 25%% of your EXP. Gains x%.2f after.",
 				Muscles.FormatExpShort(Muscles.Shown(Alters.Goal(n))), Alters.Bonus(n))
 		elseif n < progress.next then
-			heroText.Text = "Done. Wear this skin from Inventory > Alters."
+			heroText.Text = "Done. Wear this skin from Inventory > Looks."
 		elseif status == "SOON" then
 			heroText.Text = "Coming soon in an update."
 		else
@@ -458,9 +458,8 @@ remote.OnClientEvent:Connect(function(kind, info)
 end)
 
 ------------------------------------------------------------------------
--- The left menu tile: go to the shop (10 s cooldown)
+-- Go to the shop (10 s cooldown): the Shop window's link (prompt 28; was a left menu tile)
 ------------------------------------------------------------------------
-local tile = SideMenu.Add("PumpShop", "Pump Shop", nil, 8)
 local lastGo = -math.huge
 local function goToShop()
 	if os.clock() - lastGo < PumpShop.TeleportCooldown then
@@ -470,12 +469,7 @@ local function goToShop()
 	lastGo = os.clock()
 	remote:FireServer("Teleport")
 end
-tile.Activated:Connect(goToShop)
-local function refreshTile()
-	tile:SetShown(player:GetAttribute("PumpShop") ~= nil)
-end
-player:GetAttributeChangedSignal("PumpShop"):Connect(refreshTile)
-refreshTile()
+UIBus.GoPumpShop.Event:Connect(goToShop)
 
 ------------------------------------------------------------------------
 -- "You can afford: ..." (a newly affordable gear level or apparel item; at most every AffordEvery seconds)
