@@ -21,6 +21,8 @@ local SocialService = require(script.Parent.SocialService)
 local LegendService = require(script.Parent.LegendService)
 local SeasonService = require(script.Parent.SeasonService)
 local GameEvents = require(script.Parent.GameEvents)
+local ScreamService = require(script.Parent.ScreamService)
+local Screams = require(Config.Screams)
 local Muscles = require(Config.Muscles)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme) -- bumper plate colors
 
@@ -632,6 +634,13 @@ local function lift(player)
 	end
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
+	-- lift screams (ScreamService): a PR, the last rep of a set, a heavy rep (not on the treadmill)
+	session.reps = (session.reps or 0) + 1
+	if tier.unit ~= "mph" then
+		local heaviest = machine.tiers[usableAfter]
+		local heavy = heaviest ~= nil and heaviest.weight > 0 and tier.weight >= Screams.HeavyShare * heaviest.weight
+		ScreamService.OnRep(player, { pr = pr ~= nil, lastOfSet = session.reps % Screams.SetSize == 0, heavy = heavy })
+	end
 	Remotes.RepResult:FireClient(player, { levels = levels, coins = coins, big = big,
 		nextBig = session.nextBig, pumped = pumped, pr = pr, staminaUp = staminaUp, weightUnlocked = weightUnlocked })
 end

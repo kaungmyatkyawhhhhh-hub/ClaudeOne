@@ -4,7 +4,7 @@
 -- (SetSettings). Rows:
 --   Music, Sound Effects        On = full volume, Off = silent (Audio.SetVolumes)
 --   Others' Sounds              Off = sounds on other players and their machines stay quiet here (Audio.OthersMuted);
---                               (the mockup's "Other Screams": the game has no screams)
+--                               (the mockup's "Other Screams": other players' lift sounds and screams, ScreamClient)
 --   Low Graphics                On = no shadows and no bloom / depth of field / sun rays on this device
 --   Tutorial Hints              the hints and coach lines in the top band (Notify.Hint; the tutorial itself always shows)
 --   Gain Numbers                On / Minimal / Off (tap cycles; MachineClient reads it every rep)

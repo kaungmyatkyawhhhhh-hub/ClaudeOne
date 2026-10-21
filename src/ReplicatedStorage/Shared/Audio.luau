@@ -58,7 +58,11 @@ local function create(name, parent, opts)
 	local spread = def.pitch or 0
 	local sound = Instance.new("Sound")
 	sound.Name = name
-	sound.SoundId = "rbxassetid://" .. def.ids[rng:NextInteger(1, #def.ids)]
+	-- (opts.avoid: an index not to pick again, so a clip never plays twice in a row; the pick is on the IdIndex attribute)
+	local index = rng:NextInteger(1, #def.ids)
+	if opts.avoid and #def.ids > 1 and index == opts.avoid then index = index % #def.ids + 1 end
+	sound.SoundId = "rbxassetid://" .. def.ids[index]
+	sound:SetAttribute("IdIndex", index)
 	sound.Volume = def.volume * (opts.volume or 1)
 	sound.PlaybackSpeed = (def.basePitch or 1) * (opts.pitch or 1) * (1 + rng:NextNumber(-spread, spread))
 	sound.SoundGroup = getGroup(def.group or "Gameplay")

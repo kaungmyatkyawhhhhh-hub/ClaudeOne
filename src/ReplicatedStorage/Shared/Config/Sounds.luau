@@ -16,6 +16,13 @@ return {
 	FloorThud = { ids = { 9113479635 }, volume = 0.45, pitch = 0.05, group = "Gameplay", range = { 10, 60 }, maxLength = 0.9 },   -- Body Falls on Carpet, low thuddy: rubber floor thud
 	Breath = { ids = { 9113585730, 9113586280 }, volume = 0.6, pitch = 0.05, group = "Gameplay", range = { 12, 45 }, maxLength = 1.6 }, -- Breath Exhale 11/20: heavy tiers / low stamina only
 
+	-- Lift screams (3D from the screamer's head; Config/Screams, ScreamService / ScreamClient; picked 21 Oct from Roblox's
+	-- licensed library, swap any id): short effort yells, and bigger throaty shouts for a PR or a win
+	ScreamNormal = { ids = { 9120415730, 9120415788, 9120415873, 9120417141, 9120417581 }, volume = 0.45, pitch = 0.06, group = "Gameplay",
+		range = { 12, 60 }, maxLength = 1.2 }, -- PSE Video Game Effects 1 / 2 / 4 / 21 / 23 (fight vocals: yells, grunts)
+	ScreamBig = { ids = { 9125650883, 9125651373, 9125652432 }, volume = 0.55, pitch = 0.04, group = "Gameplay", range = { 14, 80 },
+		maxLength = 1.6 }, -- PSE Male Scream Short Yelling Bursts 1 / 10 / 5 (throaty shouts)
+
 	-- Treadmill (3D, on the belt; owner, 14 Oct: the treadmill never uses the lifting sounds). EMPTY on purpose: the owner
 	-- picks these ids (Roblox's licensed library only); an empty slot is silent.
 	TreadmillLoop = { ids = {}, volume = 0.18, pitch = 0, group = "Gameplay", range = { 6, 30 } }, -- looping belt / running hum while someone runs (fades out over 0.3 s)
