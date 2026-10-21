@@ -40,6 +40,7 @@ function DataTemplate.new()
 		dailyQuests = { day = 0, list = {}, bonus = false, swaps = 0, groups = {} },
 		repsToday = { day = 0, count = 0 }, -- reps on the current UTC day (the "Most reps today" board, LeaderboardService)
 		trainers = { owned = {}, golden = {}, equipped = {}, rolls = 0, pity = 0, autoDelete = {} }, -- personal trainers (Config.Trainers, TrainerService; prompt 24: rolls)
+		spurtMilestones = { spurt = -1, got = 0 }, -- (prompt 11) the 25 / 50 / 75% Growth Spurt rewards paid for this spurt (SpurtMilestoneService)
 		rivals = {}, -- NPC rivals: [rival id] = "active" (challenge accepted) | "beaten" (Config.Rivals, RivalService)
 		meals = {}, -- smoothie bar boosts: [item id] = seconds left (paused while away; Config.Meals, MealService)
 		seasons = {}, -- seasonId -> reps done during that event (Config.Seasons)

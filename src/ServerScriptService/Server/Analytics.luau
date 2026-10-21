@@ -46,6 +46,17 @@ end
 Analytics.Funnel = FUNNEL
 local TUTORIAL_DONE, GOAL_REACHED, FIRST_SPURT = 13, 14, 15
 
+-- (prompt 11, 21 Oct) The way from "tutorial finished" to the goal in more detail, as its own Roblox funnel (the 15 steps
+-- above stay as they are, so the onboarding funnel stays comparable): 13, 13a goal 25%, 13b 50%, 13c 75%, 14.
+local SPURT_FUNNEL = "FirstGrowthSpurt"
+local SPURT_STEPS = { "13. Tutorial finished or skipped", "13a. Growth Spurt goal 25%", "13b. Growth Spurt goal 50%",
+	"13c. Growth Spurt goal 75%", "14. Growth Spurt goal reached" }
+local SPURT_STEP_OF = { [25] = 2, [50] = 3, [75] = 4 }
+local function spurtStep(player, step: number)
+	pcall(AnalyticsService.LogFunnelStepEvent, AnalyticsService, player, SPURT_FUNNEL, tostring(player.UserId), step, SPURT_STEPS[step])
+	if IS_STUDIO then print("[Analytics] " .. SPURT_FUNNEL .. " step " .. SPURT_STEPS[step]) end
+end
+
 local tracked = {} -- [player] = data (players still in the funnel this session)
 
 local function saved(data): number
@@ -60,6 +71,7 @@ local function log(player, number: number)
 	data.analytics.funnel = number -- (saved with the rest of the data)
 	pcall(AnalyticsService.LogOnboardingFunnelStepEvent, AnalyticsService, player, number, FUNNEL[number].name)
 	if IS_STUDIO then print("[Analytics] funnel step " .. FUNNEL[number].name) end
+	if number == TUTORIAL_DONE then spurtStep(player, 1) elseif number == GOAL_REACHED then spurtStep(player, #SPURT_STEPS) end
 end
 
 -- Called when a player's data has loaded.
@@ -92,6 +104,16 @@ end
 local function goalReached(data): boolean
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
 	return progress.ready == true
+end
+
+-- (prompt 11) the first Growth Spurt's goal bar passed 25 / 50 / 75% (SpurtMilestoneService): steps 13a / 13b / 13c
+function Analytics.SpurtMilestone(player, percent: number)
+	local data = tracked[player]
+	local step = SPURT_STEP_OF[percent]
+	if not data or not step or saved(data) >= GOAL_REACHED then return end
+	if type(data.analytics.milestone) == "number" and data.analytics.milestone >= percent then return end -- (once ever)
+	data.analytics.milestone = percent
+	spurtStep(player, step)
 end
 
 -- (prompt 21) one custom event with a value (e.g. "BodyAlter", the alter number)

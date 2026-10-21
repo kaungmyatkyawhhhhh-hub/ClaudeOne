@@ -115,10 +115,24 @@ handlers.BuyDnaToken = function(player)
 	end
 end
 
+-- (prompt 11, 21 Oct) A new player starts the tutorial inside the starter gym, a short walk from the Flat Bench
+-- (Config.Onboarding StartSpot, under 5 s), not at the spawn by the street door.
+local function placeAtStart(player)
+	local data = PlayerData.Get(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not data or not root or data.onboarding.tutorialStep ~= 1 or not Onboarding.StartSpot then return end
+	local spot, face = Onboarding.StartSpot, Onboarding.StartFacing or Onboarding.StartSpot + Vector3.new(0, 0, -1)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local lift = humanoid and (humanoid.HipHeight + root.Size.Y / 2) or 3
+	character:PivotTo(CFrame.lookAt(spot + Vector3.new(0, lift, 0), Vector3.new(face.X, spot.Y + lift, face.Z)))
+end
+
 -- The player has seen their genetics reveal (first join).
 handlers.GeneticsSeen = function(player)
 	PlayerData.SetFlag(player, "geneticsRevealed", true)
 	Analytics.GeneticsKept(player)
+	placeAtStart(player)
 end
 
 -- Tutorial: the client reports the step it reached (validated in PlayerData).

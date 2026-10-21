@@ -5,6 +5,9 @@
 --                                   floor, e.g. the posing stage: no outline); owner = who asked (a string)
 --   GuidePath.Hide(owner?)          hides it (with an owner: only if that owner's path is showing)
 --   GuidePath.Target()              the MachineId / "Coach" being shown, and its owner (nil when hidden)
+--   GuidePath.Walk()                (prompt 11) walks the player along the path (Humanoid:MoveTo); stops when the path is
+--                                   hidden, the player steers themselves or gets stuck. Returns true if they arrived.
+-- (prompt 11, 21 Oct) Under the dots a glowing gold ribbon (Beams lying flat on the floor) runs from the player to the target.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -26,6 +29,9 @@ local PATH = {
 	Approach = 2.5,      -- the path ends this far outside the machine, on the side facing the room
 	DotSize = 0.7,
 	WaveSpeed = 4,       -- the pulse runs along the path toward the machine
+	RibbonWidth = 0.9,   -- (prompt 11) the gold ribbon under the dots
+	RibbonStep = 3,      -- studs per ribbon segment
+	MaxSegments = 40,
 }
 
 ------------------------------------------------------------------------
@@ -110,13 +116,33 @@ for i = 1, PATH.MaxDots do
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.08, PATH.DotSize, PATH.DotSize),
 		Material = Enum.Material.Neon,
-		Color = Colors.Text,
+		Color = Color3.fromHex("#FFF3C4"), -- (prompt 11: a pale gold over the gold ribbon; was white)
 		Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
 		Transparency = 1,
 		Parent = dotFolder,
 	})
 end
 local activeDots = 0
+
+-- (prompt 11) the gold ribbon: a pool of flat Beams between attachment pairs on one invisible anchored part. A Beam's width
+-- runs along its attachments' Y axis, so each attachment's Y points sideways (flat on the floor).
+local ribbonHolder = New("Part", { Name = "Ribbon", Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 1,
+	Size = Vector3.one, CFrame = CFrame.new(), Parent = dotFolder })
+local ribbon = {}
+for i = 1, PATH.MaxSegments do
+	local a0 = New("Attachment", { Parent = ribbonHolder })
+	local a1 = New("Attachment", { Parent = ribbonHolder })
+	local beam = New("Beam", { Attachment0 = a0, Attachment1 = a1, Width0 = PATH.RibbonWidth, Width1 = PATH.RibbonWidth, FaceCamera = false,
+		Segments = 1, LightEmission = 1, LightInfluence = 0, Color = ColorSequence.new(Colors.Gold), Transparency = NumberSequence.new(0.35),
+		Enabled = false, Parent = ribbonHolder })
+	ribbon[i] = { a0 = a0, a1 = a1, beam = beam }
+end
+local activeSegments = 0
+local function flatAt(point: Vector3, dir: Vector3): CFrame
+	local side = Vector3.new(-dir.Z, 0, dir.X)
+	if side.Magnitude < 1e-3 then side = Vector3.xAxis end
+	return CFrame.fromMatrix(point, dir, side.Unit)
+end
 
 local highlight = New("Highlight", {
 	Name = "GuideOutline",
@@ -156,6 +182,8 @@ local function renderDots(feet)
 	if not polyline or #polyline < 2 then
 		activeDots = 0
 		for i = 1, PATH.MaxDots do dots[i].Transparency = 1 end
+		for i = 1, activeSegments do ribbon[i].beam.Enabled = false end
+		activeSegments = 0
 		return
 	end
 	-- where along the path the player is (closest point on any segment)
@@ -181,6 +209,25 @@ local function renderDots(feet)
 	end
 	for i = count + 1, PATH.MaxDots do dots[i].Transparency = 1 end
 	activeDots = count
+	-- the gold ribbon from just ahead of the player to the target
+	local segments = 0
+	local s = playerS + PATH.SkipNear * 0.5
+	while s < pathLength - 0.2 and segments < PATH.MaxSegments do
+		local e = math.min(s + PATH.RibbonStep, pathLength)
+		local p0, p1 = pointAt(s) + Vector3.new(0, 0.06, 0), pointAt(e) + Vector3.new(0, 0.06, 0)
+		local dir = (p1 - p0) * Vector3.new(1, 0, 1)
+		if dir.Magnitude > 0.05 then
+			segments += 1
+			local seg = ribbon[segments]
+			dir = dir.Unit
+			seg.a0.WorldCFrame = flatAt(p0, dir)
+			seg.a1.WorldCFrame = flatAt(p1, dir)
+			seg.beam.Enabled = true
+		end
+		s = e
+	end
+	for i = segments + 1, activeSegments do ribbon[i].beam.Enabled = false end
+	activeSegments = segments
 end
 
 local targetModel, targetPoint = nil, nil
@@ -272,6 +319,8 @@ RunService.Heartbeat:Connect(function(dt)
 	for i = 1, activeDots do
 		dots[i].Transparency = 0.15 + 0.55 * (0.5 + 0.5 * math.sin(i * 0.7 - t))
 	end
+	local glow = 0.3 + 0.15 * math.sin(os.clock() * 3)
+	for i = 1, activeSegments do ribbon[i].beam.Transparency = NumberSequence.new(glow) end
 	highlight.OutlineTransparency = 0.15 + 0.35 * (0.5 + 0.5 * math.sin(os.clock() * 3))
 end)
 
@@ -292,6 +341,39 @@ end
 
 function GuidePath.Target(): (any, string?)
 	return wantedTarget, wantedOwner
+end
+
+-- (prompt 11) Walk the player to the target along a fresh path (the "Go to bench" button). Stops when the path is hidden,
+-- another walk starts, the player steers (keys / thumbstick: MoveDirection away from the next waypoint) or is stuck.
+local walkToken = 0
+function GuidePath.Walk(): boolean
+	walkToken += 1
+	local token = walkToken
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = rootPart()
+	local target = targetPoint
+	if not humanoid or not root or not target then return false end
+	local walker = PathfindingService:CreatePath({ AgentRadius = 1.5, AgentHeight = 5, AgentCanJump = false, WaypointSpacing = 4 })
+	local ok = pcall(function() walker:ComputeAsync(root.Position - Vector3.new(0, 2.5, 0), target) end)
+	if not ok or walker.Status ~= Enum.PathStatus.Success then return false end
+	for _, waypoint in ipairs(walker:GetWaypoints()) do
+		if token ~= walkToken or targetPoint ~= target or not humanoid.Parent or humanoid.Health <= 0 then return false end
+		humanoid:MoveTo(waypoint.Position)
+		local arrived = false
+		local started = os.clock()
+		local conn = humanoid.MoveToFinished:Connect(function(reached) arrived = reached end)
+		while not arrived and os.clock() - started < 3 do
+			task.wait(0.05)
+			if token ~= walkToken or targetPoint ~= target then break end
+		end
+		conn:Disconnect()
+		if not arrived then return false end
+	end
+	return token == walkToken
+end
+function GuidePath.StopWalk()
+	walkToken += 1
 end
 
 return GuidePath

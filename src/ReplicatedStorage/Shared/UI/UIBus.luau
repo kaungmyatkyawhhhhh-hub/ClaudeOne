@@ -63,4 +63,18 @@ function UIBus.WaitForMenu()
 	end
 end
 
+-- (prompt 11, 21 Oct) Yields until the player is really playing: the menu is gone, the genetics screen (first join) is
+-- closed and `extra` seconds (3) have passed. Heavy things that aren't needed to start (the shop's Roblox prices and
+-- pictures, other preloads) wait for this, so joining and the tutorial's first steps never stall on them.
+UIBus.GeneticsUp = false
+UIBus.GeneticsVisible.Event:Connect(function(visible) UIBus.GeneticsUp = visible == true end)
+function UIBus.WaitForGameplay(extra: number?)
+	UIBus.WaitForMenu()
+	task.wait(1.5) -- (the genetics screen opens a moment after Play)
+	while UIBus.GeneticsUp do
+		UIBus.GeneticsVisible.Event:Wait()
+	end
+	task.wait(extra or 3)
+end
+
 return UIBus

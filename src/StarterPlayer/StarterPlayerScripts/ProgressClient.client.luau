@@ -528,6 +528,19 @@ UIBus.StartAlter.Event:Connect(function()
 	startAlter()
 end)
 
+-- (prompt 11) the 25 / 50 / 75% rewards on the way to a Growth Spurt (SpurtMilestoneService): a popup with the coins and a
+-- sound; at 75% "Almost there!"
+task.spawn(function()
+	local remote = Remotes:WaitForChild("SpurtMilestone", 30)
+	if not remote then return end
+	remote.OnClientEvent:Connect(function(info)
+		if type(info) ~= "table" or type(info.percent) ~= "number" then return end
+		local title = "GROWTH SPURT " .. tostring(info.spurt or "") .. ": " .. info.percent .. "%"
+		local sub = "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins · " .. (if info.last then "Almost there!" else "You're growing. Keep going!")
+		Notify.Reward(title, sub, "arrow-big-up", Colors.Gold, if info.last then "LevelUp" else "QuestClaim", "spurtmilestone")
+	end)
+end)
+
 ------------------------------------------------------------------------
 task.spawn(function()
 	ClientData.Get() -- waits for the data snapshot

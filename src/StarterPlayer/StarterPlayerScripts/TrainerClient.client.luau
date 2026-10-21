@@ -170,6 +170,7 @@ local slotsLine = Kit.Text({ Name = "Slots", Text = "", Font = "Body", TextSize 
 slotButton.Visible = PASS ~= nil and PASS.id ~= nil
 if PASS and PASS.id then
 	task.spawn(function()
+		UIBus.WaitForGameplay() -- (prompt 11: once the player is playing, not on join)
 		local ok, info = pcall(function() return MarketplaceService:GetProductInfo(PASS.id, Enum.InfoType.GamePass) end)
 		if ok and info and info.PriceInRobux then Kit.SetButton(slotButton, nil, "R$ " .. Kit.Format(info.PriceInRobux) .. " · +1 slot") end
 	end)

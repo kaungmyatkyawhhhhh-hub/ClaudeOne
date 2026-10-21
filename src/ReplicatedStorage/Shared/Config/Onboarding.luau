@@ -19,6 +19,12 @@
 -- SKIP TUTORIAL (tap it twice) jumps to the end without the reward; finishing it the normal way pays FinishCoins.
 local Onboarding = {}
 
+-- (prompt 11, 21 Oct) where a new player stands when the tutorial starts (after keeping their genetics): inside the starter
+-- gym's front strip, facing the free weights, ~22 studs (under 2 s) from the Flat Bench; the street door spawn was ~58
+-- studs away. (ActionService GeneticsSeen; floor level, the character is lifted by its hip height.)
+Onboarding.StartSpot = Vector3.new(-28, 0.2, -13)
+Onboarding.StartFacing = Vector3.new(-51, 0.2, -24)
+
 Onboarding.Steps = {
 	{ id = "GoBench", text = "Walk to the Flat Bench and tap Occupy.", onMachineText = "Tap STOP, then walk to the Flat Bench.",
 		target = "FlatBench", done = { type = "onMachine" },

@@ -25,8 +25,10 @@ local Audio = require(Shared.Audio)
 
 local player = Players.LocalPlayer
 
--- load the effect textures once at start, so the first aura doesn't show blank cards while they download
+-- load the effect textures once the player is playing (prompt 11: not on join), so the first aura doesn't show blank
+-- cards while they download
 task.spawn(function()
+	require(Shared.UI.UIBus).WaitForGameplay(8)
 	local list = {}
 	for _, id in ipairs(Auras.VFXTextures) do
 		local decal = Instance.new("Decal")

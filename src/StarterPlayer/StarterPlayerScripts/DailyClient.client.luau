@@ -208,7 +208,8 @@ for _, product in ipairs(require(Shared.Config.Monetization).Products) do
 	if product.key == "QuestReroll" then REROLL.product = product.id end
 end
 if REROLL.product then
-	task.spawn(function() -- (Roblox's real price)
+	task.spawn(function() -- (Roblox's real price; prompt 11: once the player is playing, not on join)
+		UIBus.WaitForGameplay()
 		local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, REROLL.product, Enum.InfoType.Product)
 		if ok and info and info.PriceInRobux then
 			REROLL.robux = info.PriceInRobux

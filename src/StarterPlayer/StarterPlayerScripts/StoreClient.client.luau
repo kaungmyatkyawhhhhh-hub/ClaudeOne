@@ -122,11 +122,12 @@ local modal = Kit.Modal({ name = "Store", title = "Store", width = W, height = H
 		refresh()
 	end })
 
--- Roblox's info for every item, fetched ONCE in the background when the game starts, all at once, each in a pcall with
+-- Roblox's info for every item, fetched ONCE in the background once the player is playing (prompt 11: not on join), all at once, each in a pcall with
 -- at most one retry after 5 s (owner, 15 Oct): the Store never waits for it; Config's name / price / art show meanwhile,
 -- and only a changed price is taken from Roblox.
 local info = {}
 task.spawn(function()
+	UIBus.WaitForGameplay() -- (prompt 11: after the tutorial has started, not on join)
 	for _, entry in ipairs(items) do
 		local id = entry.item.id
 		if id then
@@ -150,6 +151,7 @@ end)
 -- the shop pictures load in the background once the game is in, so the Store opens with them already there
 task.spawn(function()
 	if not game:IsLoaded() then game.Loaded:Wait() end
+	UIBus.WaitForGameplay(6) -- (prompt 11: after the tutorial has started)
 	local list = {}
 	for _, entry in ipairs(items) do
 		local art = entry.item.art and require(Shared.Config.UI).ShopIcons[entry.item.art]

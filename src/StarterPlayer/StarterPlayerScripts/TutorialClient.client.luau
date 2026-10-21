@@ -205,7 +205,30 @@ end)
 ------------------------------------------------------------------------
 local GuidePath = require(Shared.UI.GuidePath)
 local function showPath(machineId) GuidePath.Show(machineId, "Tutorial") end
-local function hidePath() GuidePath.Hide("Tutorial") end
+local function hidePath() GuidePath.Hide("Tutorial") GuidePath.StopWalk() end
+
+-- (prompt 11, 21 Oct) "Go to Flat Bench": walks the player there along the gold path (GuidePath.Walk); any key / stick
+-- input takes over again. Above the coach dialog, only while a step leads to a machine the player isn't on.
+local goButton = Kit.Button("Gold", "Go to bench", { Name = "GoTo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -112), Visible = false,
+	Parent = root }, { width = 200, height = 46, textSize = 16 })
+local walking = false
+goButton.Activated:Connect(function()
+	if walking then return end
+	walking = true
+	Audio.PlayUI("Click")
+	Kit.SetButton(goButton, "Gold", "Walking...")
+	task.spawn(function()
+		GuidePath.Walk()
+		walking = false
+		if goButton.Parent then Kit.SetButton(goButton, "Gold", goButton:GetAttribute("Label") or "Go") end
+	end)
+end)
+local function goLabel(target): string
+	if target == "Coach" then return "Go to " .. Quests.CoachName end
+	local Machines = require(Shared.Config.Machines)
+	local machine = Machines.ById[target]
+	return "Go to " .. (if machine then machine.name else "it")
+end
 
 ------------------------------------------------------------------------
 -- What the player is doing
@@ -275,8 +298,15 @@ local function refreshStep()
 	end
 	if step.target and onMachine ~= step.target then
 		if GuidePath.Target() ~= step.target then showPath(step.target) end
+		local label = goLabel(step.target)
+		if goButton:GetAttribute("Label") ~= label then
+			goButton:SetAttribute("Label", label)
+			if not walking then Kit.SetButton(goButton, "Gold", label) end
+		end
+		goButton.Visible = true
 	else
 		hidePath()
+		goButton.Visible = false
 	end
 	-- the shake step: a bouncing arrow on the DRINK SHAKE button (left of the stamina bar), on a machine or not
 	if step.done.type == "shake" then pointAtShake() else hideShakeArrow() end

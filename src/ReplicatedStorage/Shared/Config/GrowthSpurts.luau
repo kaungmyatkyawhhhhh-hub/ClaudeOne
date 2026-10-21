@@ -125,6 +125,24 @@ function GrowthSpurts.Progress(data, groups, trainable)
 	return result
 end
 
+-- (prompt 11, 21 Oct) Small rewards on the way to each Growth Spurt: at these shares of the goal bar a popup, a sound and
+-- a few coins (MilestoneCoinMinutes minutes of coins at your stage, Config.PumpShop.Rate), so players see progress.
+-- Server/SpurtMilestoneService; the first spurt's milestones are the funnel steps 13a / 13b / 13c (Server/Analytics).
+GrowthSpurts.Milestones = { 25, 50, 75 }
+GrowthSpurts.MilestoneCoinMinutes = 0.5
+
+-- The goal bar's share (0..1), exactly as the HUD shows it (ProgressClient): the shown levels of every group, each
+-- capped at the goal, against the goal in every group.
+function GrowthSpurts.Share(progress, groups): number
+	local have, need = 0, 0
+	for _, group in ipairs(groups) do
+		local level = progress.groups[group.id] or 0
+		have += Muscles.Shown(math.min(level, progress.required))
+		need += Muscles.Shown(progress.required)
+	end
+	return if need > 0 then math.clamp(have / need, 0, 1) else 0
+end
+
 -- "5'6\""; a player at the cap reads "7'0\" (MAX)". `plain` skips the MAX tag (NPCs like Dante, who are no player).
 function GrowthSpurts.FormatHeight(inches, plain)
 	local text = string.format("%d'%d\"", inches // 12, inches % 12)
