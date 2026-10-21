@@ -251,77 +251,152 @@ REROLL.button.Activated:Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- Daily reward grids (the small one on the Daily tab, the big one on the Rewards tab)
+-- STREAK tab (prompt 42, 22 Oct, mockup real/quests_streak): "DAILY STREAK DAY X", the 7 day tiles across the full width
+-- (equal Scale widths, day 7 1.25x wider and 25% taller), one grey line, CLAIM DAY X (green) / COME BACK TOMORROW
+-- (dark), "STREAK RECORD: X DAYS" (data.daily.best). The window shrinks to fit this tab (STREAK_H).
+-- Tiles: dark hex, a dark outline + a thin muted inner line; the coin and the reward in gold; bonus items (Config.Boosts
+-- LoginItems) a gold line icon on a dark gold-edged circle + "+1"; DNA days (4, 7) gold-edged with a glow, the DNA token
+-- big (a cut-out, Downloads\gym_arc_ui_dna) and a gold "+1" pill. Today: a thin white ring, lifted 6 px, a white TODAY
+-- tag above it. Claimed: dimmed + a green check. Not reached yet: the coin and the bonus icon dimmed alike.
 ------------------------------------------------------------------------
-local calendars = {}
-local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: number)
-	local frame = New("Frame", { Name = "Calendar", BackgroundTransparency = 1, Parent = parent })
-	local title = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = titleSize, RichText = true, Size = UDim2.new(1, 0, 0, titleSize + 4),
-		TextXAlignment = Enum.TextXAlignment.Left, Parent = frame })
-	local grid = New("Frame", { Name = "Days", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, titleSize + 8),
-		Size = UDim2.new(1, 0, 0, math.ceil(DAYS / columns) * (cell.Y + 6)), Parent = frame }, {
-		New("UIGridLayout", { CellSize = UDim2.fromOffset(cell.X, cell.Y), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
-	})
-	local cards = {}
-	for day = 1, DAYS do
-		local coins, tokens = Economy.LoginReward(day)
-		local card = Kit.Card({ Name = "Day" .. day, LayoutOrder = day, Parent = grid }, {})
-		local label = Kit.Text({ Name = "Day", Text = "DAY " .. day, Font = "Title", TextSize = 12, Position = UDim2.fromOffset(0, 3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
-		local iconSize = math.floor(cell.Y * 0.34)
-		-- (prompt 14) days with a boost item (Config.Boosts.LoginItems): its tile next to the coin, "+1" on it
-		local boostId, boostAmount = next(Boosts.LoginItems[day] or {})
-		local extra = tokens > 0 or boostId ~= nil
-		local coin = Kit.Coin(iconSize, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(if extra then 0.32 else 0.5, 0.5), Parent = card })
-		coin.Visible = tokens == 0 -- (prompt 40: a DNA day shows the DNA token big instead)
-		if boostId and tokens == 0 then
-			local item = Boosts.ById[boostId]
-			local tile = Kit.IconTile(item.icon, Color3.fromHex(item.color), iconSize, { Name = "Boost", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.68, 0.5), Parent = card })
-			Kit.Text({ Name = "Plus", Text = "+" .. boostAmount, Font = "Number", TextSize = 11, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 8, 1, 6),
-				Size = UDim2.fromOffset(20, 12), TextXAlignment = Enum.TextXAlignment.Right, Parent = tile })
-		end
-		-- days with a DNA token (4 and 7): its icon next to the coin, "+1" on it
-		-- (prompt 40, mockup quests_streak) DNA days (4 and 7): a gold-outlined glowing tile, the DNA token big, a "+1" pill
-		if tokens > 0 then
-			local big = math.floor(cell.Y * 0.56)
-			local dna = Theme.New("ImageLabel", { Name = "Dna", Image = require(Shared.Config.UI).ShopIcons.product_dna_token, BackgroundTransparency = 1,
-				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromOffset(big, big), Parent = card })
-			local plus = New("Frame", { Name = "PlusPill", BackgroundColor3 = Color3.fromHex("#141215"), AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, -16),
-				Size = UDim2.fromOffset(22, 14), ZIndex = 3, Parent = card }, {
-				New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-				New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-			})
-			Kit.Text({ Name = "Plus", Text = "+" .. tokens, Font = "Chunky", TextSize = 10, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = plus })
-			local _ = dna
-		end
-		local amount = Kit.Text({ Name = "Amount", Text = Kit.Short(coins), Font = "Number", TextSize = 12,
-			AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
-		local check = Pieces.Icon("check", Colors.Green, { Name = "Check", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3), Size = UDim2.fromOffset(13, 13), Visible = false, Parent = card })
-		check:SetAttribute("KeepColor", true)
-		cards[day] = { card = card, label = label, coin = coin, amount = amount, check = check, dnaDay = tokens > 0 }
-	end
-	local claim = Kit.Button("Green", "Claim", { Name = "Claim", Parent = frame }, { height = 32, textSize = 15 })
-	claim.AutomaticSize = Enum.AutomaticSize.None
-	claim.Activated:Connect(function()
-		if claim:GetAttribute("CanClaim") then
-			claim:SetAttribute("CanClaim", false)
-			Kit.CoinBurst(claim)
-			remote:FireServer("ClaimLogin")
-		end
-	end)
-	local entry = { frame = frame, title = title, grid = grid, cards = cards, claim = claim }
-	table.insert(calendars, entry)
-	return entry
-end
+local DNA_CUTOUT = "rbxassetid://88290636191617"
+local GAP = 0.012 -- (Scale gap between tiles)
+local UNIT = (1 - GAP * (DAYS - 1)) / (DAYS - 1 + 1.25)
+local TILE_H, BIG_H = 74, 92
+local TITLE_H, TAG_ROOM = 21, 22
+local ROW_Y = TITLE_H + TAG_ROOM
+local DESC_Y = ROW_Y + BIG_H + 8
+local CLAIM_Y = DESC_Y + 18
+local RECORD_Y = CLAIM_Y + 42
+local STREAK_H = RECORD_Y + 14 + 40 -- (the body's content: it ends 40 px under the record line)
+local MUTED = Color3.fromHex("#3A363D")
+local DIM, AHEAD = 0.5, 0.3 -- (claimed / not reached yet: everything in a tile dims alike)
 
-local bigCal = makeCalendar(pages.Rewards, Vector2.new(72, 70), DAYS, 17)
-bigCal.frame.Size = UDim2.fromScale(1, 1)
-bigCal.grid.Size = UDim2.new(1, 0, 0, 76)
-Kit.Text({ Name = "Rules", Text = "Log in every day to keep your streak. Days 4 and " .. DAYS .. " give a DNA token, day " .. DAYS .. " the Dedicated title too. Missing a day starts again at day 1.",
-	Font = "Body", TextSize = 13, TextColor3 = Colors.Muted, TextWrapped = true, Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 40),
-	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = bigCal.frame })
-bigCal.claim.AnchorPoint = Vector2.new(0.5, 1)
-bigCal.claim.Position = UDim2.new(0.5, 0, 1, 0)
-bigCal.claim.Size = UDim2.fromOffset(260, 36)
+local streak = { cards = {} }
+local page = pages.Rewards
+streak.title = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 17, RichText = true, Size = UDim2.new(1, 0, 0, TITLE_H),
+	TextXAlignment = Enum.TextXAlignment.Left, Parent = page })
+local row = New("Frame", { Name = "Days", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, ROW_Y), Size = UDim2.new(1, 0, 0, BIG_H), Parent = page }, {
+	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(GAP, 0), HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+local function hexOn(parent: Instance, corner: number)
+	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(22, 19),
+		ImageTransparency = 0.86, Size = UDim2.fromScale(1, 1), Parent = parent }, { New("UICorner", { CornerRadius = UDim.new(0, corner) }) })
+end
+for day = 1, DAYS do
+	local coins, tokens = Economy.LoginReward(day)
+	local big = day == DAYS
+	local dnaDay = tokens > 0
+	local h = if big then BIG_H else TILE_H
+	local slot = New("Frame", { Name = "Day" .. day, LayoutOrder = day, BackgroundTransparency = 1, Size = UDim2.new(if big then UNIT * 1.25 else UNIT, 0, 0, BIG_H),
+		Parent = row })
+	local card = New("Frame", { Name = "Tile", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, 0, 0, h), Parent = slot }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		New("UIStroke", { Name = "Border", Color = if dnaDay then Colors.Gold else Colors.Outline, Thickness = if dnaDay then 2.5 else 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Rotation = 90, Color = if dnaDay then ColorSequence.new(Color3.fromHex("#3E2D0E"), Color3.fromHex("#1A1309"))
+			else ColorSequence.new(Color3.fromHex("#232023"), Color3.fromHex("#141215")) }),
+	})
+	hexOn(card, 10)
+	-- the thin muted inner line
+	New("Frame", { Name = "Inner", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -4, 1, -4),
+		Parent = card }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Color = if dnaDay then Color3.fromHex("#8A6418") else MUTED, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	-- DNA days glow (day 7 stronger)
+	local glow = nil
+	if dnaDay then
+		glow = New("Frame", { Name = "Glow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(1, 8, 1, 8), Parent = card }, {
+			New("UICorner", { CornerRadius = UDim.new(0, 14) }),
+			New("UIStroke", { Name = "Stroke", Color = Colors.Gold, Thickness = if big then 5 else 4, Transparency = if big then 0.45 else 0.62, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+	end
+	-- today: a thin white ring (off until it's today)
+	local ring = New("Frame", { Name = "TodayRing", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, 4, 1, 4), Visible = false, Parent = card }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+		New("UIStroke", { Color = Colors.Text, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	local tag = New("Frame", { Name = "TodayTag", BackgroundColor3 = Colors.Text, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -6),
+		Size = UDim2.fromOffset(46, 15), Visible = false, ZIndex = 3, Parent = card }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	Kit.Text({ Name = "Text", Text = "TODAY", Font = "Chunky", TextSize = 10, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = tag })
+	local label = Kit.Text({ Name = "Day", Text = "DAY " .. day, Font = "Chunky", TextSize = if big then 13 else 11, Position = UDim2.fromOffset(0, 4),
+		Size = UDim2.new(1, 0, 0, 14), Parent = card })
+	local icons = {} -- the coin / bonus / DNA art (dimmed together)
+	local coin = nil
+	local bonusTag = nil
+	if dnaDay then
+		local size = if big then 62 else 48
+		local dna = New("ImageLabel", { Name = "Dna", Image = DNA_CUTOUT, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, -2), Size = UDim2.fromOffset(size, size), ScaleType = Enum.ScaleType.Fit, Parent = card })
+		table.insert(icons, dna)
+		bonusTag = New("Frame", { Name = "PlusPill", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, -20),
+			Size = UDim2.fromOffset(24, 15), ZIndex = 3, Parent = card }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
+		})
+		Kit.Text({ Name = "Plus", Text = "+" .. tokens, Font = "Chunky", TextSize = 11, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.fromScale(1, 1), ZIndex = 4,
+			Parent = bonusTag })
+	else
+		local boostId, boostAmount = next(Boosts.LoginItems[day] or {})
+		local iconSize = 20 -- (prompt 42: ~15% smaller than before)
+		coin = Kit.Coin(iconSize, { Name = "Coin", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(if boostId then 0.33 else 0.5, 0, 0.5, -1), Parent = card })
+		coin.ImageColor3 = Color3.fromHex("#E6C27A") -- (muted gold)
+		table.insert(icons, coin)
+		if boostId then
+			local item = Boosts.ById[boostId]
+			local circle = New("Frame", { Name = "Bonus", BackgroundColor3 = Color3.fromHex("#141215"), AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.67, 0, 0.5, -1), Size = UDim2.fromOffset(iconSize + 2, iconSize + 2), Parent = card }, {
+				New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+				New("UIStroke", { Name = "Edge", Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			})
+			local glyph = Pieces.Icon(item.icon, Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(13, 13), Parent = circle })
+			glyph:SetAttribute("KeepColor", true)
+			table.insert(icons, glyph)
+			bonusTag = Kit.GoldText(Kit.Text({ Name = "Plus", Text = "+" .. boostAmount, Font = "Chunky", TextSize = 10, AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.new(1, -1, 1, -2), Size = UDim2.fromOffset(16, 12), TextXAlignment = Enum.TextXAlignment.Left, Parent = circle }))
+			icons.circle = circle
+		end
+	end
+	local amount = Kit.GoldText(Kit.Text({ Name = "Amount", Text = Kit.Short(coins), Font = "Chunky", TextSize = if big then 17 elseif dnaDay then 14 else 12,
+		AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -4), Size = UDim2.new(1, 0, 0, if big then 19 else 15), Parent = card }))
+	-- (GoldText fades the outline for a clean gradient; the reward keeps a stroke)
+	local stroke = amount:FindFirstChild("TextStroke")
+	if stroke then stroke.Transparency, stroke.Color = 0.2, Colors.Outline end
+	local check = New("Frame", { Name = "Check", BackgroundColor3 = Colors.Green, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3),
+		Size = UDim2.fromOffset(15, 15), Visible = false, ZIndex = 5, Parent = card }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 1.5 }),
+	})
+	Pieces.Icon("check", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(10, 10), ZIndex = 6, Parent = check })
+		:SetAttribute("KeepColor", true)
+	streak.cards[day] = { card = card, ring = ring, tag = tag, label = label, amount = amount, icons = icons, bonusTag = bonusTag, check = check, glow = glow }
+end
+Kit.Text({ Name = "Rules", Text = "Days 4 and " .. DAYS .. " give a DNA token. Miss a day and it starts over.", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted,
+	Position = UDim2.fromOffset(0, DESC_Y), Size = UDim2.new(1, 0, 0, 12), Parent = page })
+streak.claim = Kit.Button("Green", "Claim", { Name = "Claim", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, CLAIM_Y), Parent = page },
+	{ width = 260, height = 36, textSize = 15 })
+streak.claim.Activated:Connect(function()
+	if streak.claim:GetAttribute("CanClaim") then
+		streak.claim:SetAttribute("CanClaim", false)
+		Kit.CoinBurst(streak.claim)
+		remote:FireServer("ClaimLogin")
+	end
+end)
+streak.record = Kit.Text({ Name = "Record", Text = "", Font = "Chunky", TextSize = 12, TextColor3 = Color3.fromHex("#D8D4DA"), Position = UDim2.fromOffset(0, RECORD_Y),
+	Size = UDim2.new(1, 0, 0, 14), Parent = page })
+-- the window shrinks to fit the STREAK tab (and grows back for the others)
+local FULL_SIZE = modal.group.Size
+local function fitWindow()
+	modal.group.Size = if currentTab == "Rewards" then UDim2.fromOffset(FULL_SIZE.X.Offset, Kit.TitleHeight + STREAK_H) else FULL_SIZE
+end
 
 -- Which calendar day is today's, and has it been claimed?
 local function calendarState()
@@ -333,31 +408,32 @@ local function calendarState()
 end
 
 local function refreshCalendars()
+	fitWindow()
 	local current, claimed = calendarState()
-	for _, cal in ipairs(calendars) do
-		cal.title.Text = "DAILY STREAK <font color=\"#" .. Colors.Gold:ToHex() .. "\">DAY " .. current .. "</font>"
-		for day, c in ipairs(cal.cards) do
-			local got = day < current or (day == current and claimed)
-			local isToday = day == current and not claimed
-			-- (prompt 40) DNA days gold and glowing; today a gold edge; the rest quiet; claimed days dimmed with a green check
-			Theme.SetPiece(c.card, if c.dnaDay then "card_gold" elseif isToday then "card_selected" else "card")
-			if c.dnaDay then
-				local sheen = c.card:FindFirstChild("Sheen")
-				if sheen then sheen.Color = ColorSequence.new(Color3.fromHex("#4A3510"), Color3.fromHex("#1E1608")) end
-				Theme.SetHex(c.card, 0.8, 11)
-				Kit.GoldText(c.amount)
-			end
-			local dim = if got then 0.5 else 0
-			c.label.TextTransparency = dim
-			c.amount.TextTransparency = dim
-			c.coin.ImageTransparency = dim
-			local dna = c.card:FindFirstChild("Dna")
-			if dna then dna.ImageTransparency = dim end
-			c.check.Visible = got
+	streak.title.Text = "DAILY STREAK <font color=\"#" .. Colors.Gold:ToHex() .. "\">DAY " .. current .. "</font>"
+	for day, c in ipairs(streak.cards) do
+		local got = day < current or (day == current and claimed)
+		local isToday = day == current
+		local future = day > current
+		c.ring.Visible = isToday and not claimed
+		c.tag.Visible = isToday
+		c.card.Position = UDim2.new(0.5, 0, 0.5, if isToday then -6 else 0)
+		c.check.Visible = got
+		local dim = if got then DIM elseif future then AHEAD else 0
+		for _, icon in ipairs(c.icons) do
+			if icon:IsA("ImageLabel") then icon.ImageTransparency = dim end
 		end
-		cal.claim:SetAttribute("CanClaim", not claimed)
-		Kit.SetButton(cal.claim, claimed and "Quiet" or "Green", claimed and "Come back tomorrow" or ("Claim day " .. current))
+		if c.icons.circle then c.icons.circle.BackgroundTransparency = dim; c.icons.circle.Edge.Transparency = dim end
+		c.amount.TextTransparency = dim
+		c.label.TextTransparency = if got then DIM else 0
+		if c.bonusTag then
+			if c.bonusTag:IsA("TextLabel") then c.bonusTag.TextTransparency = dim else c.bonusTag.BackgroundTransparency = dim end
+		end
 	end
+	streak.claim:SetAttribute("CanClaim", not claimed)
+	Kit.SetButton(streak.claim, claimed and "Quiet" or "Green", claimed and "Come back tomorrow" or ("Claim day " .. current))
+	local best = (ClientData.Get().daily or {}).best or 0
+	streak.record.Text = "STREAK RECORD: " .. best .. (if best == 1 then " DAY" else " DAYS")
 	dailyPill:SetDot(not claimed)
 end
 
