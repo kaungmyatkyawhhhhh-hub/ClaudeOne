@@ -142,7 +142,7 @@ for index = 1, DailyQuests.PerDay do
 	local bar, setBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(62, 40), Size = UDim2.new(1, -250, 0, 12), Parent = card })
 	local _, amount, coin = coinAmount({ Name = "Reward", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -112, 0.5, 0), Size = UDim2.fromOffset(76, 24), Parent = card })
 	-- right: the red CLAIM, a dark progress pill ("1 / 2"; tap = where to go) or a teal DONE
-	local button = Kit.Button("Red", "Claim", { Name = "Action", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = card },
+	local button = Kit.Button("Green", "Claim", { Name = "Action", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Parent = card },
 		{ width = 96, height = 36, textSize = 16 })
 	local pill, pillText = Kit.PricePill("", { Name = "Progress", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(96, 30),
 		AutomaticSize = Enum.AutomaticSize.None, Parent = card })
@@ -189,8 +189,8 @@ end)
 local _, setBonusBar = Kit.Bar(Colors.Gold, { Name = "Bar", Position = UDim2.fromOffset(12, 92), Size = UDim2.new(1, -24, 0, 14), Parent = bonus })
 local bonusReward = coinAmount({ Name = "Reward", Position = UDim2.fromOffset(12, 114), Size = UDim2.new(1, -24, 0, 26), Parent = bonus })
 bonusReward:FindFirstChildOfClass("UIListLayout").HorizontalAlignment = Enum.HorizontalAlignment.Left
-bonusReward:FindFirstChild("Amount").Text = Kit.Format(DailyQuests.BonusCoins)
-local bonusClaim = Kit.Button("Red", "Claim", { Name = "Claim", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -30), Visible = false, Parent = bonus },
+bonusReward:FindFirstChild("Amount").Text = "+" .. Kit.Format(DailyQuests.BonusCoins) -- (prompt 40: "+150")
+local bonusClaim = Kit.Button("Green", "Claim", { Name = "Claim", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -30), Visible = false, Parent = bonus },
 	{ width = 130, height = 34, textSize = 15 })
 bonusClaim.Activated:Connect(function()
 	Kit.CoinBurst(bonusClaim)
@@ -272,6 +272,7 @@ local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: n
 		local boostId, boostAmount = next(Boosts.LoginItems[day] or {})
 		local extra = tokens > 0 or boostId ~= nil
 		local coin = Kit.Coin(iconSize, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(if extra then 0.32 else 0.5, 0.5), Parent = card })
+		coin.Visible = tokens == 0 -- (prompt 40: a DNA day shows the DNA token big instead)
 		if boostId and tokens == 0 then
 			local item = Boosts.ById[boostId]
 			local tile = Kit.IconTile(item.icon, Color3.fromHex(item.color), iconSize, { Name = "Boost", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.68, 0.5), Parent = card })
@@ -279,19 +280,26 @@ local function makeCalendar(parent, cell: Vector2, columns: number, titleSize: n
 				Size = UDim2.fromOffset(20, 12), TextXAlignment = Enum.TextXAlignment.Right, Parent = tile })
 		end
 		-- days with a DNA token (4 and 7): its icon next to the coin, "+1" on it
+		-- (prompt 40, mockup quests_streak) DNA days (4 and 7): a gold-outlined glowing tile, the DNA token big, a "+1" pill
 		if tokens > 0 then
+			local big = math.floor(cell.Y * 0.56)
 			local dna = Theme.New("ImageLabel", { Name = "Dna", Image = require(Shared.Config.UI).ShopIcons.product_dna_token, BackgroundTransparency = 1,
-				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.68, 0.5), Size = UDim2.fromOffset(iconSize + 4, iconSize + 4), Parent = card })
-			Kit.Text({ Name = "Plus", Text = "+" .. tokens, Font = "Number", TextSize = 11, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 6, 1, 4),
-				Size = UDim2.fromOffset(20, 12), TextXAlignment = Enum.TextXAlignment.Right, Parent = dna })
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromOffset(big, big), Parent = card })
+			local plus = New("Frame", { Name = "PlusPill", BackgroundColor3 = Color3.fromHex("#141215"), AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -3, 1, -16),
+				Size = UDim2.fromOffset(22, 14), ZIndex = 3, Parent = card }, {
+				New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+				New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			})
+			Kit.Text({ Name = "Plus", Text = "+" .. tokens, Font = "Chunky", TextSize = 10, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = plus })
+			local _ = dna
 		end
 		local amount = Kit.Text({ Name = "Amount", Text = Kit.Short(coins), Font = "Number", TextSize = 12,
 			AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -3), Size = UDim2.new(1, 0, 0, 14), Parent = card })
 		local check = Pieces.Icon("check", Colors.Green, { Name = "Check", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3), Size = UDim2.fromOffset(13, 13), Visible = false, Parent = card })
 		check:SetAttribute("KeepColor", true)
-		cards[day] = { card = card, label = label, coin = coin, amount = amount, check = check }
+		cards[day] = { card = card, label = label, coin = coin, amount = amount, check = check, dnaDay = tokens > 0 }
 	end
-	local claim = Kit.Button("Red", "Claim", { Name = "Claim", Parent = frame }, { height = 32, textSize = 15 })
+	local claim = Kit.Button("Green", "Claim", { Name = "Claim", Parent = frame }, { height = 32, textSize = 15 })
 	claim.AutomaticSize = Enum.AutomaticSize.None
 	claim.Activated:Connect(function()
 		if claim:GetAttribute("CanClaim") then
@@ -331,15 +339,24 @@ local function refreshCalendars()
 		for day, c in ipairs(cal.cards) do
 			local got = day < current or (day == current and claimed)
 			local isToday = day == current and not claimed
-			Theme.SetPiece(c.card, isToday and "card_gold" or "card")
-			local future = day > current
-			c.label.TextTransparency = future and 0.45 or 0
-			c.amount.TextTransparency = future and 0.45 or 0
-			c.coin.ImageTransparency = future and 0.5 or 0
+			-- (prompt 40) DNA days gold and glowing; today a gold edge; the rest quiet; claimed days dimmed with a green check
+			Theme.SetPiece(c.card, if c.dnaDay then "card_gold" elseif isToday then "card_selected" else "card")
+			if c.dnaDay then
+				local sheen = c.card:FindFirstChild("Sheen")
+				if sheen then sheen.Color = ColorSequence.new(Color3.fromHex("#4A3510"), Color3.fromHex("#1E1608")) end
+				Theme.SetHex(c.card, 0.8, 11)
+				Kit.GoldText(c.amount)
+			end
+			local dim = if got then 0.5 else 0
+			c.label.TextTransparency = dim
+			c.amount.TextTransparency = dim
+			c.coin.ImageTransparency = dim
+			local dna = c.card:FindFirstChild("Dna")
+			if dna then dna.ImageTransparency = dim end
 			c.check.Visible = got
 		end
 		cal.claim:SetAttribute("CanClaim", not claimed)
-		Kit.SetButton(cal.claim, claimed and "Quiet" or "Red", claimed and "Come back tomorrow" or ("Claim day " .. current))
+		Kit.SetButton(cal.claim, claimed and "Quiet" or "Green", claimed and "Come back tomorrow" or ("Claim day " .. current))
 	end
 	dailyPill:SetDot(not claimed)
 end
@@ -489,7 +506,7 @@ local function refreshQuests(): number
 			local progress = math.min(entry.progress or 0, quest.count)
 			row.text.Text = quest.text
 			row.setBar(progress / quest.count)
-			row.amount.Text = Kit.Format(quest.coins)
+			row.amount.Text = "+" .. Kit.Format(quest.coins) -- (prompt 40: "+60")
 			if entry.claimed then
 				row.state = "done"
 				claimed += 1

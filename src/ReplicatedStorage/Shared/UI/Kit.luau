@@ -632,22 +632,57 @@ end
 Kit.GradeColors = {
 	S = Colors.Red, A = Color3.fromHex("#2F7BEA"), B = Color3.fromHex("#F2B51F"), C = Color3.fromHex("#3DBA4A"), D = Color3.fromHex("#5A5A66"),
 }
+-- (prompt 37 / 40) RankBadge: a small chunky square with the rank letter: a metal face (S gold, A silver, B bronze,
+-- C grey, D dark iron), a dark outline, a thicker darker bottom edge, the letter white chunky with a dark stroke, a soft
+-- glow in its colour on S and A.
+local RANK_METAL = {
+	S = { Color3.fromHex("#FFE58A"), Color3.fromHex("#E3A51C") },
+	A = { Color3.fromHex("#F4F6FA"), Color3.fromHex("#9EA6B4") },
+	B = { Color3.fromHex("#F0A877"), Color3.fromHex("#A4592C") },
+	C = { Color3.fromHex("#BFC0C6"), Color3.fromHex("#6C6D74") },
+	D = { Color3.fromHex("#6A6A72"), Color3.fromHex("#2E2E34") },
+}
+local function paintRank(badge, grade: string)
+	local metal = RANK_METAL[string.sub(grade, 1, 1)] or RANK_METAL.C
+	local top, bottom = metal[1], metal[2]
+	local lip = bottom:Lerp(Color3.new(0, 0, 0), 0.45)
+	badge.Gloss.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, top),
+		ColorSequenceKeypoint.new(0.799, bottom),
+		ColorSequenceKeypoint.new(0.8, lip),
+		ColorSequenceKeypoint.new(1, lip),
+	})
+	local glow = badge:FindFirstChild("RankGlow")
+	if glow then
+		local first = string.sub(grade, 1, 1)
+		glow.Visible = first == "S" or first == "A"
+		glow.Stroke.Color = top
+	end
+end
 function Kit.GradeBadge(grade: string, size: number, props: { [string]: any }?)
 	props = props or {}
 	props.Size = UDim2.fromOffset(size, size)
 	props.BackgroundColor3 = Color3.new(1, 1, 1)
+	local radius = math.max(5, math.floor(size * 0.22))
 	local badge = New("Frame", props, {
-		New("UICorner", { CornerRadius = UDim.new(0, math.max(5, math.floor(size * 0.2))) }),
-		New("UIStroke", { Name = "Border", Color = Color3.fromHex("#6B4A06"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-		New("UIGradient", { Name = "Gloss", Rotation = 90, Color = Theme.GoldSequence }),
+		New("UICorner", { CornerRadius = UDim.new(0, radius) }),
+		New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Name = "Gloss", Rotation = 90 }),
 	})
-	Kit.Text({ Name = "Letter", Text = grade, Font = "Title", TextSize = math.floor(size * 0.66), TextColor3 = Colors.Ink, Stroke = false,
+	New("Frame", { Name = "RankGlow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, 6, 1, 6), Visible = false, Parent = badge }, {
+		New("UICorner", { CornerRadius = UDim.new(0, radius + 3) }),
+		New("UIStroke", { Name = "Stroke", Thickness = 3, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	Kit.Text({ Name = "Letter", Text = grade, Font = "Chunky", TextSize = math.floor(size * 0.62), Position = UDim2.fromOffset(0, -math.floor(size * 0.06)),
 		Size = UDim2.fromScale(1, 1), Parent = badge })
+	paintRank(badge, grade)
 	return badge
 end
 function Kit.SetGrade(badge, grade: string)
 	local letter = badge:FindFirstChild("Letter")
 	if letter then letter.Text = grade end
+	if badge:FindFirstChild("Gloss") then paintRank(badge, grade) end
 end
 
 -- ON / OFF button (mockup 10): green ON, gray OFF. Returns button, set(on).

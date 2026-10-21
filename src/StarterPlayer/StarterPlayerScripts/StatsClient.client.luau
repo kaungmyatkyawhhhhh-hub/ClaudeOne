@@ -51,7 +51,8 @@ local CARDS = {
 	{ id = "Arms", group = "Arms" }, { id = "Legs", group = "Legs" }, { id = "Core", group = "Core" },
 }
 -- the bar colors by grade (mockup 07: S red, A gold, B teal, C steel, D dark gray)
-local BAR_COLORS = { S = Color3.fromHex("#E8343C"), A = Color3.fromHex("#F2B640"), B = Color3.fromHex("#3CC8B4"), C = Color3.fromHex("#8E9AA6"), D = Color3.fromHex("#4A4548") }
+-- (prompt 40, mockup phys_muscles) each bar in its rank's metal (the RankBadge colours)
+local BAR_COLORS = { S = Color3.fromHex("#F2C14E"), A = Color3.fromHex("#D6DAE2"), B = Color3.fromHex("#D0814A"), C = Color3.fromHex("#B4B6BE"), D = Color3.fromHex("#7A7A84") }
 -- a group's grade from its % (owner, 14 Oct)
 local GRADE_FROM = { { 90, "S" }, { 75, "A" }, { 55, "B" }, { 35, "C" } }
 local function gradeFor(pct: number): string
@@ -299,6 +300,19 @@ function refreshScreen()
 		spurtButton.Visible = shown
 		spurtButton.Active = ready
 		Kit.SetButton(spurtButton, if maxed then "Disabled" else "Gold", if maxed then "Max Growth Spurt reached" else "Tap to grow")
+		-- (prompt 40) at the cap: a dark pill with a gold edge and gold words
+		local edge = spurtButton:FindFirstChild("Border")
+		if edge and maxed then
+			edge.Enabled, edge.Color, edge.Thickness, edge.Transparency = true, Colors.Gold, 2, 0
+		end
+		local words = spurtButton:FindFirstChild("Label", true)
+		if words then
+			words.TextColor3 = if maxed then Colors.Gold else Colors.Text
+			if maxed and not words:GetAttribute("Fitted") then
+				words:SetAttribute("Fitted", true)
+				Kit.Fit(words, words.TextSize, 9) -- (the chunky words are wider: shrink to fit the pill)
+			end
+		end
 		sizeLabel.Parent.Visible = not shown
 		physiqueLabel.Visible = not shown
 		tallerNote.Visible = not shown and GrowthSpurts.GetHeight(data.growthSpurts or 0) > GrowthSpurts.GetHeight(0)

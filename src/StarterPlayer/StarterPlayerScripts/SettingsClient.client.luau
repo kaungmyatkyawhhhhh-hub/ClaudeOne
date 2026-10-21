@@ -79,7 +79,7 @@ local function row(order, key, labelText, icon, modes)
 	local card = Kit.Card({ Name = key, LayoutOrder = order, Parent = grid }, {})
 	Pieces.Icon(icon, Colors.Gold, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(20, 20), Parent = card })
 		:SetAttribute("KeepColor", true)
-	Kit.Text({ Name = "Label", Text = labelText, Font = "Title", TextSize = 15, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 38, 0.5, 0),
+	Kit.Text({ Name = "Label", Text = labelText, Font = "Title", KeepItalic = true, TextSize = 15, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 38, 0.5, 0),
 		Size = UDim2.new(1, -112, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
 	local button = Kit.Button("Green", "On", { Name = "Choice", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Parent = card },
 		{ width = 64, height = 28, textSize = 14 })

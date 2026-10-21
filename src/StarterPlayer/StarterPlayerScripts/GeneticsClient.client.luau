@@ -229,7 +229,7 @@ local cellsRow = New("Frame", { Name = "Cells", LayoutOrder = 1, Size = UDim2.ne
 })
 local CELL_W = (PANEL_W - 20 - 6 * 6) / 7
 -- Overall (first): "OVERALL", the gold plate and the word in gold
-local heroLabels = Kit.Card({ Name = "Overall", LayoutOrder = 0, Size = UDim2.fromOffset(CELL_W, 44), Visible = false, Parent = cellsRow })
+local heroLabels = Kit.Card({ Name = "Overall", Piece = "card_gold", LayoutOrder = 0, Size = UDim2.fromOffset(CELL_W, 44), Visible = false, Parent = cellsRow }) -- (prompt 40: gold-outlined)
 Kit.Text({ Name = "Label", Text = "OVERALL", Font = "Label", TextSize = 10, Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0, 12),
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = heroLabels })
 local overallBadge = Kit.GradeBadge("B", 20, { Name = "Grade", Position = UDim2.fromOffset(8, 19), Parent = heroLabels })
@@ -279,8 +279,9 @@ local function setCard(label, name, bonus)
 end
 local buttons = New("Frame", { Name = "Buttons", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.fromOffset(292, 40), BackgroundTransparency = 1, Parent = row2 },
 	{ Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
-local rerollButton = Kit.Button("Quiet", "Reroll · free", { Name = "Reroll", LayoutOrder = 1, Parent = buttons }, { width = 178, height = 40, textSize = 13 })
-local keepButton = Kit.Button("Red", "Keep", { Name = "Keep", LayoutOrder = 2, Parent = buttons }, { width = 104, height = 40, textSize = 17 })
+-- (prompt 40, mockup genetics) REROLL red, KEEP green
+local rerollButton = Kit.Button("Red", "Reroll · free", { Name = "Reroll", LayoutOrder = 1, Parent = buttons }, { width = 178, height = 40, textSize = 14 })
+local keepButton = Kit.Button("Green", "Keep", { Name = "Keep", LayoutOrder = 2, Parent = buttons }, { width = 104, height = 40, textSize = 18 })
 -- Reroll confirm (a good roll is about to be replaced): replaces the chips and the buttons
 local confirm = New("Frame", { Name = "Confirm", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = row2 },
 	{ Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
@@ -956,6 +957,9 @@ local function makeColumn(entry)
 	c.cell.LayoutOrder = entry.slot -- (best first, like the plates on the bar)
 	Kit.SetGrade(c.badge, entry.grade)
 	c.mult.Text = string.format("x%.2f", multOf(entry.grade))
+	-- (prompt 40) above x1 in gold, under it grey
+	local m = multOf(entry.grade)
+	c.mult.TextColor3 = if m > 1 then Colors.Gold elseif m < 1 then Colors.Muted else Colors.Text
 	-- after a reroll: green UP for a better grade, gray DOWN for a worse one
 	local changed = entry.prev ~= nil and entry.prev ~= entry.grade
 	c.change.Visible = changed
@@ -1100,7 +1104,7 @@ end
 local function refreshButtons()
 	local data = ClientData.Get()
 	-- (with no token the button still works: it opens the choice how to get one)
-	Kit.SetButton(rerollButton, "Quiet", data.freeReroll and "Reroll · free" or "Reroll · 1 DNA token")
+	Kit.SetButton(rerollButton, "Red", data.freeReroll and "Reroll · free" or "Reroll · 1 DNA token")
 	rerollButton.Active = not revealing
 	rerollButton.AutoButtonColor = false
 	tokensLabel.Text = data.dnaTokens .. (data.dnaTokens == 1 and " DNA TOKEN" or " DNA TOKENS")
