@@ -1,19 +1,21 @@
 -- TrainerClient (prompt 24, 21 Oct; was the COACHES hire window): the TRAINER AGENCY. Trainers come from coin rolls, like
 -- eggs in pet games (Config/Trainers; every roll is made on the server, TrainerService). Coins only, the odds always shown.
---   * The window (the Trainers tile in the side menu, or the Agency desk's "Roll trainers" prompt): on the left the odds
---     list (all 8 trainers: rarity color, 3D portrait, name, boost, chance; Secret is a black "???" until you own him); on
---     the right the pity counter ("Epic guaranteed in 37 rolls"), ROLL x1 and ROLL x3 (x3 from Growth Spurt 2) with the
---     price, AUTO ROLL (keeps rolling while you have coins, stops on Epic or better or when you tap Stop), auto-delete
---     toggles (Common, Uncommon duplicates become coins), MY TRAINERS (the window's second tab) and the +1 slot pass.
+--   * The window (the Trainers tile in the side menu, or the Agency desk's "Roll trainers" prompt). (prompt 27, 22 Oct, the
+--     kit design kit_agency_stand.png) On the left the odds grid: 8 rarity slots (the trainer's portrait on a rarity glow,
+--     the rarity name and chance; not owned yet = a black silhouette with a rim, Secret a black "?"); on the right the pity
+--     counter ("EPIC GUARANTEED IN 37 ROLLS"), the red ROLL (E), flat X3 (R, from Growth Spurt 2) and AUTO (T: keeps
+--     rolling while you have coins, stops on Epic or better), a gear (auto-delete toggles: Common, Uncommon duplicates
+--     become coins), MY TRAINERS (the window's second tab) and the +1 slot pass.
 --   * (prompt 28) Two tabs: AGENCY (the above) and MY TRAINERS (Shared/UI/TrainersPanel: slots, the trainers you own; it
 --     was the Inventory's Trainers tab). UIBus.OpenAgency("My") opens it on MY TRAINERS.
---   * The roll (~1.5 s, tap to skip): a capsule card drops in, shakes and glows in the rarity color, cracks open, the trainer
---     appears in 3D in a pose with his name and rarity banner. Rarer = bigger: Epic a purple burst, Legendary a gold
+--   * The roll (~1.5 s, tap to skip; prompt 27: a black + gold card that shakes and flips to the trainer's full body, his
+--     name, rarity and boost, see "The roll reveal" below). Rarer = bigger: Epic a purple burst, Legendary a gold
 --     explosion and a slower build, Mythic a screen shake and red-purple lightning, Secret goes dark first, Eternal a white
 --     flash, stars and a swell. Layered sounds (Config.AlterThemes.Sounds).
 --   * Legendary and better: the whole server is told (a chat line + a toast); Secret and Eternal: a big banner too.
---   * The signs over the Agency desks (tag AgencyBoard, tools/builders/TrainerAgency): TRAINER AGENCY + the trainers'
---     pictures (prompt 28; the odds are only in the window).
+--   * The signs over the Agency desks (tag AgencyBoard): TRAINER AGENCY + the trainers' pictures (prompt 28). (prompt 27,
+--     22 Oct: the one stand left, in the starter gym, is an old-school desk with a cork board of photo cards built in Studio,
+--     tools/builders/TrainerAgency; no AgencyBoard is tagged now, the code below stays for a sign that gets the tag.)
 -- The trainers themselves are drawn by TrainerFollowClient; owning / equipping: the MY TRAINERS tab (Shared/UI/TrainersPanel).
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -30,6 +32,7 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
 local Icons = require(Shared.UI.Icons)
+local Pieces = require(Shared.UI.Pieces)
 local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local UIBus = require(Shared.UI.UIBus)
@@ -81,6 +84,7 @@ local menuButton = SideMenu.Add("Trainers", "Trainers", Icons.Clipboard, 7.5)
 local tab = "Agency"
 local myPanel -- (below: MY TRAINERS)
 local agencyFrame -- (below: the AGENCY tab's content)
+local bindKeys, keyboard -- (below: E / R / T while the Agency tab is open)
 local modal = Kit.Modal({ name = "Trainers", title = "Trainers", width = W, height = H, displayOrder = 25, coins = true,
 	tabs = { { id = "Agency", text = "Agency" }, { id = "My", text = "My trainers" } },
 	onTab = function(id)
@@ -89,6 +93,7 @@ local modal = Kit.Modal({ name = "Trainers", title = "Trainers", width = W, heig
 		agencyFrame.Visible = id == "Agency"
 		myPanel.frame.Visible = id == "My"
 		if id == "My" then myPanel.refresh() end
+		if bindKeys then bindKeys(keyboard and id == "Agency") end
 	end })
 agencyFrame = New("Frame", { Name = "Agency", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = modal.body })
 myPanel = require(Shared.UI.TrainersPanel).Build(modal.body)
@@ -98,97 +103,222 @@ local function showTab(id: string)
 	agencyFrame.Visible = id == "Agency"
 	myPanel.frame.Visible = id == "My"
 	if id == "My" then myPanel.refresh() end
+	if bindKeys then bindKeys(keyboard and id == "Agency" and modal.isOpen()) end
 end
 
--- the odds list
-local odds = New("ScrollingFrame", { Name = "Odds", BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(0, LEFT_W, 1, 0),
-	ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(),
-	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = agencyFrame }, {
-	Theme.List(Enum.FillDirection.Vertical, 2, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+-- (prompt 27, 22 Oct: the kit design kit_agency_stand.png) LEFT: the odds grid, 2 rows of 4 rarity slots. A slot: a dark tile
+-- with a deep radial glow and faint light rays in the rarity color, a thin border in a darker rarity color, the trainer's
+-- portrait (Config/Trainers icon); one you haven't owned yet is a black silhouette with a thin rim in the rarity color on a
+-- brighter burst (the Secret one a black "?" until you own him). Under it the rarity name (loud, its color) and the chance
+-- (small, gray: "50%", "1 IN 167"). Owned: a small gold check; a count "x2" bottom-right. A tap (or hover) shows his boost.
+local GRID_W = 384
+local CELL_GAP = 8
+local SLOT_TEXT = 34 -- the rarity name + the chance under the tile
+local DARK_TILE = Color3.fromHex("#16161A")
+local grid = New("Frame", { Name = "Odds", BackgroundTransparency = 1, Size = UDim2.new(0, GRID_W, 1, 0), Parent = agencyFrame }, {
+	New("UIGridLayout", { CellSize = UDim2.new(0.25, -CELL_GAP * 3 / 4, 0.5, -CELL_GAP / 2), CellPadding = UDim2.fromOffset(CELL_GAP, CELL_GAP),
+		SortOrder = Enum.SortOrder.LayoutOrder, FillDirection = Enum.FillDirection.Horizontal }),
 })
-local rows = {}
+local slots = {}
+local tooltip = New("Frame", { Name = "Tooltip", BackgroundColor3 = Color3.fromHex("#0E0E11"), BackgroundTransparency = 0.05, AnchorPoint = Vector2.new(0.5, 1),
+	Size = UDim2.fromOffset(150, 40), Visible = false, ZIndex = 20, Parent = agencyFrame }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+	New("UIStroke", { Color = Colors.Gold, Thickness = 1, Transparency = 0.3 }),
+})
+local tipName = Kit.Text({ Name = "Name", Text = "", Font = "Title", TextSize = 12, Position = UDim2.fromOffset(8, 3), Size = UDim2.new(1, -16, 0, 15),
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = tooltip })
+local tipPerk = Kit.Text({ Name = "Perk", Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, TextWrapped = true, Position = UDim2.fromOffset(8, 18),
+	Size = UDim2.new(1, -16, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 21, Parent = tooltip })
+local tipShownAt = 0
+local function hideTip() tooltip.Visible = false end
+local function showTip(slot)
+	local hidden = rarityOf(slot.trainer).hidden == true and not ownsAny(slot.trainer.id)
+	tipName.Text = if hidden then "???" else slot.trainer.name
+	tipPerk.Text = if hidden then "A secret trainer. Who is it?" else slot.trainer.perkText
+	-- (over the lower part of the slot's own tile, in mockup px: the cell's column / row times its size)
+	local cell = slot.cell
+	local column, row = (slot.order - 1) % 4, (slot.order - 1) // 4
+	local cellW = (GRID_W - CELL_GAP * 3) / 4
+	local px = math.max(cell.AbsoluteSize.X / cellW, 0.01) -- (pixels per mockup px)
+	local cellH = cell.AbsoluteSize.Y / px
+	local x = math.clamp(column * (cellW + CELL_GAP) + cellW / 2, 75, GRID_W - 75)
+	tooltip.Position = UDim2.fromOffset(x, row * (cellH + CELL_GAP) + cellH - SLOT_TEXT - 3)
+	tooltip.Visible = true
+	tipShownAt = os.clock()
+	local at = tipShownAt
+	task.delay(2.5, function() if tipShownAt == at then hideTip() end end)
+end
+
 for order, trainer in ipairs(Trainers.List) do
 	local rarity = rarityOf(trainer)
-	local row = New("Frame", { Name = trainer.id, LayoutOrder = order, BackgroundColor3 = Color3.fromHex("#1C1C21"), Size = UDim2.new(1, -8, 0, 28),
-		Parent = odds }, { New("UICorner", { CornerRadius = UDim.new(0, 8) }) })
-	New("Frame", { Name = "Chip", BackgroundColor3 = hex(rarity.color), Size = UDim2.new(0, 5, 1, -8), Position = UDim2.fromOffset(4, 4), Parent = row },
-		{ New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
-	local portraitHolder = New("Frame", { Name = "PortraitHolder", BackgroundColor3 = Color3.fromHex("#141417"), Position = UDim2.fromOffset(13, 2),
-		Size = UDim2.fromOffset(24, 24), ClipsDescendants = true, Parent = row }, { New("UICorner", { CornerRadius = UDim.new(0, 6) }) })
-	local rarityLabel = Kit.Text({ Name = "Rarity", Text = string.upper(rarity.name), Font = "Title", TextSize = 10, TextColor3 = hex(rarity.color),
-		Position = UDim2.fromOffset(44, 1), Size = UDim2.fromOffset(84, 13), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
-	if rarity.id == "Secret" then rarityLabel.TextColor3 = hex(rarity.color2) end
-	local nameLabel = Kit.Text({ Name = "Name", Text = trainer.name, Font = "Strong", TextSize = 12, Position = UDim2.fromOffset(44, 13),
-		Size = UDim2.fromOffset(110, 14), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-	local perkLabel = Kit.Text({ Name = "Perk", Text = trainer.perkText, Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(150, 0),
-		Size = UDim2.new(1, -258, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Parent = row })
-	local chanceLabel = Kit.Text({ Name = "Chance", Text = chanceText(rarity.chance), Font = "Number", TextSize = 11, AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(100, 16), TextXAlignment = Enum.TextXAlignment.Right, Parent = row })
-	rows[trainer.id] = { row = row, holder = portraitHolder, name = nameLabel, perk = perkLabel, chance = chanceLabel, trainer = trainer, shownAs = nil }
+	local color = hex(rarity.color)
+	local rim = if rarity.hidden then hex(rarity.color2) else color
+	local cell = New("Frame", { Name = trainer.id, LayoutOrder = order, BackgroundTransparency = 1, Parent = grid })
+	local tile = New("ImageButton", { Name = "Tile", AutoButtonColor = false, BackgroundColor3 = DARK_TILE, Size = UDim2.new(1, 0, 1, -SLOT_TEXT),
+		ClipsDescendants = true, Parent = cell }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+	})
+	local border = New("UIStroke", { Name = "Border", Color = rim:Lerp(Color3.new(0, 0, 0), 0.35), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tile })
+	-- the radial glow and faint rays in the rarity color
+	local glow = AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.fromScale(1.5, 1.5),
+		ImageColor3 = rim, ImageTransparency = 0.45, ZIndex = 1 })
+	local rays = New("Frame", { Name = "Rays", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55),
+		Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = tile })
+	for i = 0, 5 do
+		New("Frame", { BackgroundColor3 = rim, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.07, 1.8), Rotation = i * 30, BackgroundTransparency = 0.82, ZIndex = 1, Parent = rays }, {
+			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.2),
+				NumberSequenceKeypoint.new(1, 1) }) }),
+		})
+	end
+	-- the portrait (and a copy behind it in the rarity color: the rim of an unrevealed one)
+	local rimArt = New("ImageLabel", { Name = "Rim", BackgroundTransparency = 1, Image = trainer.icon or "", ScaleType = Enum.ScaleType.Fit, ImageColor3 = rim,
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.02), Size = UDim2.fromScale(0.97, 0.9), Visible = false, ZIndex = 2, Parent = tile })
+	local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = trainer.icon or "", ScaleType = Enum.ScaleType.Fit,
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromScale(0.92, 0.86), ZIndex = 3, Parent = tile })
+	-- owned: a gold check; a count
+	local check = New("Frame", { Name = "Check", BackgroundColor3 = Colors.Gold, Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(18, 18), Visible = false,
+		ZIndex = 5, Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }), New("UIStroke", { Color = Color3.fromHex("#141417"), Thickness = 1.5 }) })
+	local tick = Pieces.Icon("check", Color3.fromHex("#141417"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0.7, 0.7), ZIndex = 6, Parent = check })
+	tick:SetAttribute("KeepColor", true)
+	local count = Kit.Text({ Name = "Count", Text = "", Font = "Title", TextSize = 13, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -5, 1, -2),
+		Size = UDim2.fromOffset(40, 16), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 6, Parent = tile })
+	-- the rarity name (loud, its color) and the chance (small, gray)
+	local name = Kit.Text({ Name = "Rarity", Text = string.upper(rarity.name), Font = "Title", TextSize = 13, TextColor3 = rim, AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -13), Size = UDim2.new(1, 4, 0, 17), Parent = cell })
+	Kit.Fit(name, 13, 9)
+	local chance = rarity.chance
+	Kit.Text({ Name = "Chance", Text = if chance >= 1 then string.format("%g%%", chance) else "1 IN " .. Kit.Format(math.floor(100 / chance + 0.5)),
+		Font = "Strong", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, 0, 0, 13), Parent = cell })
+	local slot = { cell = cell, tile = tile, border = border, glow = glow, rays = rays, rimArt = rimArt, art = art, check = check, count = count,
+		trainer = trainer, order = order }
+	slots[trainer.id] = slot
+	tile.Activated:Connect(function()
+		Audio.PlayUI("Click")
+		if tooltip.Visible and tipName.Text ~= "" and os.clock() - tipShownAt < 2.5 and tooltip:GetAttribute("For") == trainer.id then hideTip() return end
+		tooltip:SetAttribute("For", trainer.id)
+		showTip(slot)
+	end)
+	tile.MouseEnter:Connect(function()
+		tooltip:SetAttribute("For", trainer.id)
+		showTip(slot)
+	end)
+	tile.MouseLeave:Connect(function() if tooltip:GetAttribute("For") == trainer.id then hideTip() end end)
 end
 local function refreshRows()
-	for id, r in pairs(rows) do
-		local hidden = rarityOf(r.trainer).hidden == true and not ownsAny(id)
-		r.name.Text = if hidden then "???" else r.trainer.name
-		r.perk.Text = if hidden then "???" else r.trainer.perkText
-		local s = state()
-		local count = (s.owned[id] or 0) + (s.golden[id] or 0)
-		if count > 0 then r.name.Text ..= "  x" .. count end
-		local want = if hidden then "silhouette" else "full"
-		if r.shownAs ~= want then
-			r.shownAs = want
-			for _, child in ipairs(r.holder:GetChildren()) do
-				if child:IsA("ViewportFrame") then child:Destroy() end
-			end
-			-- (prompt 25: his rendered icon; the Secret one a black silhouette until you own him)
-			TrainerPortrait.Icon(id, { Size = UDim2.fromScale(1, 1), silhouette = hidden, Parent = r.holder })
-		end
+	local s = state()
+	for id, slot in pairs(slots) do
+		local rarity = rarityOf(slot.trainer)
+		local owned = ownsAny(id)
+		local secret = rarity.hidden == true and not owned
+		-- not owned yet: a black silhouette with a rim in the rarity color on a brighter burst; the Secret one a black "?"
+		slot.art.Image = if secret then Trainers.SilhouetteIcon else (slot.trainer.icon or "")
+		slot.art.ImageColor3 = if owned or secret then Color3.new(1, 1, 1) else Color3.new(0, 0, 0)
+		slot.rimArt.Visible = not owned and not secret
+		slot.glow.ImageTransparency = if owned then 0.5 else 0.25
+		for _, ray in ipairs(slot.rays:GetChildren()) do ray.BackgroundTransparency = if owned then 0.84 else 0.7 end
+		slot.check.Visible = owned
+		local n = (s.owned[id] or 0) + (s.golden[id] or 0)
+		slot.count.Text = if n >= 2 then "x" .. n else ""
 	end
 end
 
--- the right side
-local right = New("Frame", { Name = "Right", BackgroundTransparency = 1, Position = UDim2.fromOffset(LEFT_W + 10, 0), Size = UDim2.new(1, -(LEFT_W + 10), 1, 0),
+-- RIGHT (kit_agency_stand.png): the pity counter in a dark pill with a thin teal bar, then the red ROLL CTA ("525 COINS",
+-- the only red thing here), flat X3 and AUTO (teal edge when on), a flat gear (the auto-delete toggles), then MY TRAINERS,
+-- "Following 1 / 3" and the +1 slot pass. On a keyboard: E / R / T keycaps (and keys) while the Agency tab is open.
+local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
+local FLAT = Color3.fromHex("#1A1A1F")
+local FLAT_EDGE = Color3.fromHex("#2E2E36")
+local TEAL = Color3.fromHex("#2FD4C4")
+local right = New("Frame", { Name = "Right", BackgroundTransparency = 1, Position = UDim2.fromOffset(GRID_W + 14, 0), Size = UDim2.new(1, -(GRID_W + 14), 1, 0),
 	Parent = agencyFrame })
-local pity = Kit.Text({ Name = "Pity", Text = "", Font = "Title", TextSize = 14, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left,
-	Parent = right })
-Kit.GoldText(pity)
-local _pityBar, setPity = Kit.Bar(hex(Trainers.RarityById.Epic.color), { Name = "PityBar", Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -4, 0, 10), Parent = right })
-local rollOne = Kit.Button("Gold", "Roll x1", { Name = "RollOne", Position = UDim2.fromOffset(0, 42), Parent = right }, { width = 180, height = 52, textSize = 18, icon = "coin" })
-local rollThree = Kit.Button("Gold", "Roll x3", { Name = "RollThree", Position = UDim2.fromOffset(190, 42), Parent = right }, { width = 180, height = 52, textSize = 18, icon = "coin" })
-local priceLine = Kit.Text({ Name = "PriceLine", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, 96),
-	Size = UDim2.new(1, -4, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, Parent = right })
--- auto roll
-Kit.Text({ Name = "AutoLabel", Text = "AUTO ROLL", Font = "Title", TextSize = 13, Position = UDim2.fromOffset(0, 116), Size = UDim2.fromOffset(110, 30),
-	TextXAlignment = Enum.TextXAlignment.Left, Parent = right })
-local autoOn = false
-local autoLoop -- (below)
-local _autoToggle, setAutoToggle = Kit.Toggle(false, function(on)
-	autoOn = on
-	if on then task.spawn(autoLoop) end
-end, { Name = "AutoToggle", Position = UDim2.fromOffset(104, 116), Size = UDim2.fromOffset(66, 30), Parent = right })
-local autoHint = Kit.Text({ Name = "AutoHint", Text = "Stops on Epic or better", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted,
-	Position = UDim2.fromOffset(180, 116), Size = UDim2.new(1, -184, 0, 30), TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Parent = right })
--- auto-delete toggles
-Kit.Text({ Name = "DeleteLabel", Text = "AUTO-DELETE DUPLICATES", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, 0, 0, 14),
-	TextXAlignment = Enum.TextXAlignment.Left, Parent = right })
+local pityPill = New("Frame", { Name = "PityPill", BackgroundColor3 = Color3.fromHex("#111114"), Size = UDim2.new(1, 0, 0, 44), Parent = right }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+	New("UIStroke", { Color = FLAT_EDGE, Thickness = 1 }),
+})
+local pity = Kit.Text({ Name = "Pity", Text = "", Font = "Title", TextSize = 13, Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -24, 0, 18), Parent = pityPill })
+local _pityBar, setPity = Kit.Bar(TEAL, { Name = "PityBar", Position = UDim2.fromOffset(14, 27), Size = UDim2.new(1, -28, 0, 8), Parent = pityPill })
+
+keyboard = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
+local function keycap(parent: GuiObject, key: string)
+	local cap = New("Frame", { Name = "Key", BackgroundColor3 = Color3.fromHex("#0B0B0D"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4),
+		Size = UDim2.fromOffset(20, 20), Visible = keyboard, ZIndex = 8, Parent = parent }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 5) }),
+		New("UIStroke", { Color = Color3.fromHex("#4A4A54"), Thickness = 1 }),
+	})
+	Kit.Text({ Text = key, Font = "Title", TextSize = 12, Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = cap })
+	return cap
+end
+-- two lines on a button: the big word and the small value under it
+local function twoLines(button: GuiObject, big: string, small: string, bigSize: number)
+	local top = Kit.Text({ Name = "Big", Text = big, Font = "Title", TextSize = bigSize, Position = UDim2.new(0, 0, 0, 6), Size = UDim2.new(1, 0, 0.55, -4),
+		ZIndex = 6, Parent = button })
+	local bottom = Kit.Text({ Name = "Small", Text = small, Font = "Strong", TextSize = 11, Position = UDim2.new(0, 0, 0.55, 0), Size = UDim2.new(1, 0, 0.35, 0),
+		ZIndex = 6, Parent = button })
+	return top, bottom
+end
+-- a FLAT button (no bevel, no gloss, darker): X3, AUTO, the gear
+local function flatButton(name: string, width: number)
+	local b = New("TextButton", { Name = name, Text = "", AutoButtonColor = false, BackgroundColor3 = FLAT, Size = UDim2.fromOffset(width, 64), Parent = right }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+	})
+	local edge = New("UIStroke", { Name = "Edge", Color = FLAT_EDGE, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = b })
+	Theme.BindPress(b)
+	return b, edge
+end
+local ROW_Y = 54
+local rollButton = Theme.Button("Red", { Name = "Roll", Position = UDim2.fromOffset(0, ROW_Y), Size = UDim2.fromOffset(150, 64), Parent = right }, {})
+local _rollBig, rollSmall = twoLines(rollButton, "ROLL", "", 24)
+keycap(rollButton, "E")
+local x3Button, x3Edge = flatButton("X3", 66)
+x3Button.Position = UDim2.fromOffset(158, ROW_Y)
+local x3Big, x3Small = twoLines(x3Button, "X3", "", 18)
+keycap(x3Button, "R")
+local autoButton, autoEdge = flatButton("Auto", 66)
+autoButton.Position = UDim2.fromOffset(232, ROW_Y)
+local _autoBig, autoSmall = twoLines(autoButton, "AUTO", "OFF", 16)
+keycap(autoButton, "T")
+local gearButton = flatButton("Gear", 44)
+gearButton.Position = UDim2.fromOffset(306, ROW_Y)
+local gearIcon = Pieces.Icon("settings", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(24, 24),
+	ZIndex = 6, Parent = gearButton })
+gearIcon:SetAttribute("KeepColor", true)
+local priceLine = Kit.Text({ Name = "PriceLine", Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, ROW_Y + 70),
+	Size = UDim2.new(1, -4, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Parent = right })
+-- the gear's popover: the auto-delete toggles
+local popover = New("Frame", { Name = "AutoDelete", BackgroundColor3 = Color3.fromHex("#0E0E11"), AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, 0, 0, ROW_Y + 70), Size = UDim2.fromOffset(250, 84), Visible = false, ZIndex = 15, Parent = right }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+	New("UIStroke", { Color = Colors.Gold, Thickness = 1, Transparency = 0.3 }),
+})
+Kit.Text({ Name = "Title", Text = "AUTO-DELETE DUPLICATES", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -20, 0, 14),
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 16, Parent = popover })
+Kit.Text({ Name = "Hint", Text = "They turn into coins.", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(10, 20),
+	Size = UDim2.new(1, -20, 0, 12), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 16, Parent = popover })
 local deleteToggles = {}
 for i, rarityId in ipairs(Trainers.AutoDeleteRarities) do
-	local x = (i - 1) * 150
-	Kit.Text({ Text = Trainers.RarityById[rarityId].name, Font = "Strong", TextSize = 12, TextColor3 = hex(Trainers.RarityById[rarityId].color),
-		Position = UDim2.fromOffset(x, 166), Size = UDim2.fromOffset(78, 30), TextXAlignment = Enum.TextXAlignment.Left, Parent = right })
+	local x = 10 + (i - 1) * 120
+	Kit.Text({ Text = Trainers.RarityById[rarityId].name, Font = "Strong", TextSize = 11, TextColor3 = hex(Trainers.RarityById[rarityId].color),
+		Position = UDim2.fromOffset(x, 40), Size = UDim2.fromOffset(62, 36), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 16, Parent = popover })
 	local toggle, set = Kit.Toggle(false, function(on)
 		Audio.PlayUI("Click")
 		remote:FireServer("AutoDelete", rarityId, on)
-	end, { Name = "Delete" .. rarityId, Position = UDim2.fromOffset(x + 78, 166), Size = UDim2.fromOffset(60, 30), Parent = right })
+	end, { Name = "Delete" .. rarityId, Position = UDim2.fromOffset(x + 62, 40), Size = UDim2.fromOffset(52, 36), ZIndex = 16, Parent = popover })
 	deleteToggles[rarityId] = { button = toggle, set = set }
 end
+gearButton.Activated:Connect(function()
+	Audio.PlayUI("Click")
+	popover.Visible = not popover.Visible
+end)
 -- bottom: my trainers, slots, the +1 slot pass
 local myTrainers = Kit.Button("Quiet", "My trainers", { Name = "MyTrainers", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Parent = right },
-	{ width = 150, height = 44, textSize = 14 })
+	{ width = 130, height = 44, textSize = 13 })
 local slotButton = Kit.Button("Quiet", "+1 slot", { Name = "ExtraSlot", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, 0), Parent = right },
-	{ width = 120, height = 44, textSize = 14 })
+	{ width = 118, height = 44, textSize = 12 })
 local slotsLine = Kit.Text({ Name = "Slots", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 158, 1, -14), Size = UDim2.fromOffset(110, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = right })
+	Position = UDim2.new(0, 136, 1, -14), Size = UDim2.fromOffset(90, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = right })
 slotButton.Visible = PASS ~= nil and PASS.id ~= nil
 if PASS and PASS.id then
 	task.spawn(function()
@@ -205,6 +335,16 @@ myTrainers.Activated:Connect(function()
 	showTab("My")
 end)
 
+local autoOn = false
+local autoLoop -- (below)
+local function setAuto(on: boolean)
+	autoOn = on
+	autoSmall.Text = if on then "ON" else "OFF"
+	autoSmall.TextColor3 = if on then TEAL else Colors.Text
+	autoEdge.Color = if on then TEAL else FLAT_EDGE
+	autoEdge.Thickness = if on then 2.5 else 1.5
+end
+
 local function refresh()
 	local s = state()
 	local p = price()
@@ -212,41 +352,61 @@ local function refresh()
 	pity.Text = string.upper(Trainers.PityRarity) .. " GUARANTEED IN " .. left .. " ROLL" .. (if left == 1 then "" else "S")
 	setPity((s.pity or 0) / Trainers.Pity)
 	local coins = data().coins or 0
-	Kit.SetButton(rollOne, if coins >= p then "Gold" else "Disabled", "Roll x1 · " .. Kit.Short(p))
+	rollSmall.Text = Kit.Format(p) .. " COINS"
+	Theme.SetButtonStyle(rollButton, if coins >= p then "Red" else "Disabled")
 	if multiOpen() then
-		Kit.SetButton(rollThree, if coins >= p * Trainers.MultiRoll then "Gold" else "Disabled", "Roll x3 · " .. Kit.Short(p * Trainers.MultiRoll))
+		x3Big.Text = "X3"
+		x3Small.Text = Kit.Format(p * Trainers.MultiRoll)
+		x3Big.TextColor3 = if coins >= p * Trainers.MultiRoll then Colors.Text else Colors.Muted
 	else
-		Kit.SetButton(rollThree, "Disabled", "x3 at Spurt " .. Trainers.MultiRollFromSpurt)
+		x3Big.Text = "X3"
+		x3Small.Text = "SPURT " .. Trainers.MultiRollFromSpurt
+		x3Big.TextColor3 = Colors.Muted
 	end
-	priceLine.Text = "One roll = " .. Kit.Format(p) .. " coins (about " .. Trainers.RollMinutes .. " min of training). Coins only."
+	x3Edge.Color = FLAT_EDGE
+	priceLine.Text = "One roll = " .. Kit.Format(p) .. " coins (about " .. Trainers.RollMinutes .. " min of training). Coins only. Auto stops on "
+		.. Trainers.AutoStopRarity .. " or better."
 	for rarityId, t in pairs(deleteToggles) do t.set(s.autoDelete[rarityId] == true) end
-	local slots = player:GetAttribute("TrainerSlots") or 1
+	local slotsCount = player:GetAttribute("TrainerSlots") or 1
 	local following = player:GetAttribute("Trainers")
 	local n = 0
 	if type(following) == "string" then for _ in string.gmatch(following, "[^,]+") do n += 1 end end
-	slotsLine.Text = "Following " .. n .. " / " .. slots
+	slotsLine.Text = "Following " .. n .. " / " .. slotsCount
 	slotButton.Visible = PASS ~= nil and PASS.id ~= nil and player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) ~= true
 	refreshRows()
 end
 
 ------------------------------------------------------------------------
--- The roll animation
+-- The roll reveal (prompt 27, 22 Oct; trimmed: card flip + rarity color + sound, the rarity extras kept). A full-screen dark
+-- backdrop hides the Agency, a soft spotlight in the middle. Each card's BACK is black + gold (a gold border pattern, the
+-- dumbbell emblem, "GYM ARC"); it drops in, shakes, then FLIPS to its front: the trainer's full body big on the rarity glow
+-- with light rays, the rarity pill, his NAME (Luckiest Guy, white with the rarity color outline), his boost, his line in a
+-- speech bubble, and "NEW!" (gold) or "x2 · 2/5 to Golden" with a small bar. "Tap to continue" pulses at the bottom.
+-- X3: 3 cards side by side, flipped left to right. Auto Roll: a quick reveal unless Epic or better (the full one, and auto
+-- roll stops).
+-- TODO (prompt 27, owner's full version): the escalating build-up (the card's glow climbing grey -> green -> blue -> purple ->
+-- gold and stopping at the rolled rarity, a rising sound per step), the aura VFX sparks (Downloads\gym_arc_aura_vfx) and a
+-- turning 3D trainer in a ViewportFrame instead of the picture.
 ------------------------------------------------------------------------
 local overlay = Theme.ScreenGui({ Name = "TrainerRoll", DisplayOrder = 47, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
 overlay.ScreenInsets = Enum.ScreenInsets.None
 overlay.IgnoreGuiInset = true
-local dim = New("Frame", { Name = "Dim", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = overlay })
-local fxLayer = New("Frame", { Name = "FX", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, Parent = overlay })
+local dim = New("Frame", { Name = "Dim", BackgroundColor3 = Color3.fromHex("#07070A"), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = overlay })
+local spotlight = AlterFX.Image(overlay, "ember", { Name = "Spotlight", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46),
+	Size = UDim2.fromScale(0.9, 1.3), ImageColor3 = Color3.fromHex("#FFF3C4"), ImageTransparency = 1, ZIndex = 1 })
+local fxLayer = New("Frame", { Name = "FX", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, ZIndex = 2, Parent = overlay })
 local whiteFlash = New("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20,
 	Parent = overlay })
 local tapCatcher = New("TextButton", { Name = "Tap", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 30,
 	Parent = overlay })
 local rollRoot = Kit.Root(overlay)
 rollRoot.ZIndex = 5
-local continueText = Kit.Text({ Name = "Continue", Text = "Tap to continue", Font = "Strong", TextSize = 14, AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -24), Size = UDim2.fromOffset(300, 20), Visible = false, Parent = rollRoot })
+local continueText = Kit.Text({ Name = "Continue", Text = "TAP TO CONTINUE", Font = "Title", TextSize = 15, AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.fromOffset(300, 20), Visible = false, ZIndex = 9, Parent = rollRoot })
 
-local CARD = Vector2.new(170, 236)
+local CARD_ONE = Vector2.new(236, 330) -- one card: the trainer about half the screen high
+local CARD_THREE = Vector2.new(184, 258)
+local GOLD = Color3.fromHex("#F6C75A")
 local busy = false
 local skip = false
 local closeWanted = false
@@ -275,109 +435,175 @@ local function fxTheme(rarity)
 	return { accent = accent, particle = { texture = texture, color = accent, motion = if rarity.reveal == "cosmic" then "drift" else "rise" } }
 end
 
+-- the card back: black + gold, a border pattern, the dumbbell emblem, "GYM ARC"
+local function cardBack(parent: GuiObject)
+	local back = New("Frame", { Name = "Back", BackgroundColor3 = Color3.fromHex("#0E0E11"), Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = parent }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 16) }),
+		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A2A31"), Color3.fromHex("#0B0B0D")) }),
+	})
+	local inner = New("Frame", { Name = "Inner", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, -18, 1, -18), ZIndex = 9, Parent = back }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 11) }),
+		New("UIStroke", { Color = GOLD, Thickness = 1.5, Transparency = 0.25 }),
+	})
+	-- the pattern: gold corner diamonds and a dashed line
+	for _, corner in ipairs({ Vector2.new(0, 0), Vector2.new(1, 0), Vector2.new(0, 1), Vector2.new(1, 1) }) do
+		New("Frame", { BackgroundColor3 = GOLD, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(corner.X, corner.Y), Size = UDim2.fromOffset(10, 10),
+			Rotation = 45, ZIndex = 10, Parent = inner })
+	end
+	local emblem = New("Frame", { Name = "Emblem", BackgroundColor3 = Color3.fromHex("#141417"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.44),
+		Size = UDim2.fromScale(0.52, 0.52), ZIndex = 10, Parent = back }, {
+		New("UIAspectRatioConstraint", { AspectRatio = 1 }),
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = GOLD, Thickness = 2.5 }),
+	})
+	local bell = Pieces.Icon("dumbbell", GOLD, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.62, 0.62),
+		ZIndex = 11, Parent = emblem })
+	bell:SetAttribute("KeepColor", true)
+	local logo = New("TextLabel", { BackgroundTransparency = 1, Text = "GYM ARC", FontFace = LUCKIEST, TextScaled = true, TextColor3 = GOLD, AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0.74), Size = UDim2.fromScale(0.62, 0.1), ZIndex = 10, Parent = back })
+	New("UIStroke", { Thickness = 2, Color = Color3.fromHex("#141417"), Parent = logo })
+	return back
+end
+
 local function makeCard(result, index: number, total: number)
 	local trainer = Trainers.ById[result.id]
 	local rarity = rarityOf(trainer)
-	local x = (index - (total + 1) / 2) * (CARD.X + 16)
+	local size = if total > 1 then CARD_THREE else CARD_ONE
+	local accent = hex(rarity.color)
+	local outline = hex(rarity.color2 or rarity.color)
+	local x = (index - (total + 1) / 2) * (size.X + 18)
 	local holder = New("Frame", { Name = "Card" .. index, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, x, -0.6, 0),
-		Size = UDim2.fromOffset(CARD.X, CARD.Y), ZIndex = 5, Parent = rollRoot })
+		Size = UDim2.fromOffset(size.X, size.Y), ZIndex = 5, Parent = rollRoot })
 	local scale = New("UIScale", { Parent = holder })
-	local body = New("Frame", { Name = "Body", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 5, ClipsDescendants = true,
-		Parent = holder }, { New("UICorner", { CornerRadius = UDim.new(0, 16) }) })
-	local stroke = New("UIStroke", { Color = Color3.fromHex("#55555E"), Thickness = 2, Parent = body })
-	local glow = AlterFX.Image(holder, "rim", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 90, 1, 90),
-		ImageColor3 = Color3.fromHex("#55555E"), ImageTransparency = 0.6, ZIndex = 4 })
-	-- the content (hidden until the card cracks open)
-	local content = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 6, Parent = body })
-	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(hex(rarity.color):Lerp(Color3.fromHex("#1C1C21"), 0.55), Color3.fromHex("#141417")), Parent = body })
-	-- (prompt 25) his own pose (the rendered reveal picture) and his line
-	TrainerPortrait.Art(trainer.id, { Size = UDim2.new(1, 0, 0, 150), ZIndex = 6, Parent = content })
-	local line = trainer.line
-	if line then
-		local quote = Kit.Text({ Name = "Line", Text = "\"" .. line .. "\"", Font = "Strong", TextSize = 11, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, 146),
-			Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 8, Parent = content })
-		quote.BackgroundTransparency = 0.25
-		quote.BackgroundColor3 = Color3.fromHex("#141417")
-		New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = quote })
-		New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = quote })
+	-- the flip turns this frame's width to 0 and back
+	local flip = New("Frame", { Name = "Flip", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = holder })
+	local glow = AlterFX.Image(holder, "rim", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 110, 1, 110),
+		ImageColor3 = GOLD, ImageTransparency = 0.7, ZIndex = 4 })
+	-- the FRONT (hidden until the flip)
+	local front = New("Frame", { Name = "Front", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 5, ClipsDescendants = true,
+		Parent = flip }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 16) }),
+		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(accent:Lerp(Color3.fromHex("#1C1C21"), 0.5), Color3.fromHex("#101013")) }),
+	})
+	local stroke = New("UIStroke", { Color = outline, Thickness = 3, Parent = front })
+	AlterFX.Image(front, "ember", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36), Size = UDim2.fromScale(1.4, 0.95),
+		ImageColor3 = accent, ImageTransparency = 0.25, ZIndex = 5 })
+	local rays = New("Frame", { Name = "Rays", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36),
+		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = front })
+	for i = 0, 5 do
+		New("Frame", { BackgroundColor3 = accent, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.08, 1.6), Rotation = i * 30, BackgroundTransparency = 0.7, ZIndex = 5, Parent = rays }, {
+			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.15),
+				NumberSequenceKeypoint.new(1, 1) }) }),
+		})
 	end
-	local banner = New("Frame", { Name = "Banner", BackgroundColor3 = hex(rarity.color), Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, 0, 0, 22), ZIndex = 7,
-		Parent = content })
-	if rarity.color2 then New("UIGradient", { Color = ColorSequence.new(hex(rarity.color), hex(rarity.color2)), Parent = banner }) end
-	local bannerText = Kit.Text({ Text = string.upper(rarity.name), Font = "Title", TextSize = 14, Size = UDim2.fromScale(1, 1), ZIndex = 8, Parent = banner })
-	bannerText.TextColor3 = if rarity.id == "Common" or rarity.id == "Eternal" or rarity.id == "Legendary" then Color3.fromHex("#141417") else Color3.new(1, 1, 1)
+	-- the rows (mockup px): his full body big on top, then the rarity pill, the name, the boost, NEW! / the count at the bottom
+	local small = total > 1
+	local pillY = math.floor(size.Y * (if small then 0.55 else 0.62))
+	local nameY, nameH = pillY + 24, if small then 24 else 32
+	local perkY, perkH = nameY + nameH + 2, if small then 24 else 26
+	TrainerPortrait.Art(trainer.id, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.new(1, -16, 0, pillY - 10), ZIndex = 6, Parent = front })
+	local pill = New("Frame", { Name = "Rarity", BackgroundColor3 = accent, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, pillY),
+		Size = UDim2.new(0.62, 0, 0, 22), ZIndex = 7, Parent = front }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	if rarity.color2 then New("UIGradient", { Color = ColorSequence.new(accent, hex(rarity.color2)), Parent = pill }) end
+	local pillText = Kit.Text({ Text = string.upper(rarity.name), Font = "Title", TextSize = 13, Size = UDim2.fromScale(1, 1), ZIndex = 8, Parent = pill })
+	pillText.TextColor3 = if rarity.id == "Common" or rarity.id == "Eternal" or rarity.id == "Legendary" then Color3.fromHex("#141417") else Color3.new(1, 1, 1)
 	local nameLabel = New("TextLabel", { BackgroundTransparency = 1, Text = string.upper(trainer.name), FontFace = LUCKIEST, TextScaled = true, TextColor3 = Color3.new(1, 1, 1),
-		Position = UDim2.fromOffset(6, 174), Size = UDim2.new(1, -12, 0, 26), ZIndex = 7, Parent = content })
-	New("UIStroke", { Thickness = 2, Parent = nameLabel })
-	local tag = if result.deleted then "Duplicate: +" .. Kit.Format(math.floor(price() * Trainers.AutoDeleteRefund)) .. " coins"
-		elseif result.count == 1 then "NEW! " .. trainer.perkText
-		else "x" .. result.count .. " · " .. math.min(result.count, Trainers.GoldenCount) .. "/" .. Trainers.GoldenCount .. " to Golden"
-	Kit.Text({ Text = tag, Font = "Strong", TextSize = 11, TextColor3 = if result.deleted then Colors.Muted else Colors.Gold, Position = UDim2.fromOffset(6, 202),
-		Size = UDim2.new(1, -12, 0, 28), TextWrapped = true, ZIndex = 7, Parent = content })
-	-- the cover: a capsule with a big "?" and two halves that fly apart
-	local cover = New("Frame", { Name = "Cover", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = body })
-	local halves = {}
-	for i, y in ipairs({ 0, 0.5 }) do
-		local half = New("Frame", { Name = "Half" .. i, BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromScale(0, y), Size = UDim2.fromScale(1, 0.5),
-			ZIndex = 9, Parent = cover }, { New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#4A4A54"), Color3.fromHex("#25252B")) }) })
-		halves[i] = half
+		AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, nameY), Size = UDim2.new(1, -16, 0, nameH), ZIndex = 7, Parent = front })
+	New("UIStroke", { Thickness = 2.5, Color = if rarity.id == "Secret" then outline else accent:Lerp(Color3.new(0, 0, 0), 0.25), Parent = nameLabel })
+	Kit.Text({ Name = "Perk", Text = trainer.perkText, Font = "Strong", TextSize = if small then 10 else 12, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, perkY), Size = UDim2.new(1, -16, 0, perkH), ZIndex = 7, Parent = front })
+	local tagY = UDim2.new(0.5, 0, 1, -10)
+	if result.deleted then
+		Kit.Text({ Text = "Duplicate: +" .. Kit.Format(math.floor(price() * Trainers.AutoDeleteRefund)) .. " coins", Font = "Strong", TextSize = 11, TextColor3 = Colors.Muted,
+			AnchorPoint = Vector2.new(0.5, 1), Position = tagY, Size = UDim2.new(1, -12, 0, 16), ZIndex = 7, Parent = front })
+	elseif result.count == 1 then
+		local new = Kit.Text({ Name = "New", Text = "NEW!", Font = "Title", TextSize = 18, AnchorPoint = Vector2.new(0.5, 1), Position = tagY, Size = UDim2.new(1, -12, 0, 22),
+			ZIndex = 8, Parent = front })
+		Kit.GoldText(new)
+	else
+		local have = math.min(result.count, Trainers.GoldenCount)
+		Kit.Text({ Text = "x" .. result.count .. " · " .. have .. "/" .. Trainers.GoldenCount .. " to Golden", Font = "Strong", TextSize = 11, TextColor3 = GOLD,
+			AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.new(1, -12, 0, 14), ZIndex = 7, Parent = front })
+		local _bar, setBar = Kit.Bar(GOLD, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.new(0.6, 0, 0, 6), ZIndex = 7, Parent = front })
+		setBar(have / Trainers.GoldenCount)
 	end
-	New("Frame", { Name = "Seam", BackgroundColor3 = Color3.fromHex("#F6C75A"), AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5),
-		Size = UDim2.new(1, 0, 0, 3), ZIndex = 10, Parent = cover })
-	local question = New("TextLabel", { BackgroundTransparency = 1, Text = "?", FontFace = LUCKIEST, TextScaled = true, TextColor3 = Color3.fromHex("#F6C75A"),
-		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(90, 110), ZIndex = 11, Parent = cover })
-	New("UIStroke", { Thickness = 3, Parent = question })
-	return { holder = holder, scale = scale, body = body, stroke = stroke, glow = glow, content = content, cover = cover, halves = halves, question = question,
-		rarity = rarity, trainer = trainer, result = result, x = x, revealed = false }
+	-- his line in a small speech bubble over the card's top edge (one card only: three get crowded)
+	local bubble = nil
+	if trainer.line and total == 1 then
+		bubble = Kit.Text({ Name = "Line", Text = "\"" .. trainer.line .. "\"", Font = "Strong", TextSize = 12, AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 0, -8), Size = UDim2.new(0, 0, 0, 24), AutomaticSize = Enum.AutomaticSize.X, Visible = false, ZIndex = 9, Parent = holder })
+		bubble.BackgroundTransparency = 0.05
+		bubble.BackgroundColor3 = Color3.fromHex("#F4F1EA")
+		bubble.TextColor3 = Color3.fromHex("#141417")
+		New("UICorner", { CornerRadius = UDim.new(0, 10), Parent = bubble })
+		New("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = bubble })
+	end
+	local back = cardBack(flip)
+	return { holder = holder, scale = scale, flip = flip, front = front, back = back, stroke = stroke, glow = glow, bubble = bubble, rays = rays,
+		rarity = rarity, trainer = trainer, result = result, x = x, size = size, revealed = false }
 end
 
--- the crack: the cover splits, the content shows, the rarity's extras play
+-- the flip: the back turns away (width to 0), the front turns in, then the rarity's extras play
 local function reveal(card, instant: boolean)
 	if card.revealed then return end
 	card.revealed = true
 	local rarity = card.rarity
 	local accent = hex(rarity.color)
-	card.content.Visible = true
-	card.stroke.Color = accent
-	card.stroke.Thickness = 3
 	card.glow.ImageColor3 = accent
-	card.glow.ImageTransparency = 0.2
+	card.glow.ImageTransparency = 0.15
+	local function showFront()
+		card.back.Visible = false
+		card.front.Visible = true
+		if card.bubble then card.bubble.Visible = true end
+	end
 	if instant then
-		card.cover.Visible = false
+		showFront()
+		card.flip.Size = UDim2.fromScale(1, 1)
 		return
 	end
-	-- the halves fly apart, a flash on the card, a ring
-	tween(card.halves[1], { Position = UDim2.fromScale(0, -0.6), Rotation = -8 }, 0.35, Enum.EasingStyle.Quart)
-	tween(card.halves[2], { Position = UDim2.fromScale(0, 1.1), Rotation = 8 }, 0.35, Enum.EasingStyle.Quart)
-	tween(card.question, { TextTransparency = 1 }, 0.15)
-	task.delay(0.36, function() card.cover.Visible = false end)
-	card.scale.Scale = 0.85
-	tween(card.scale, { Scale = 1 }, 0.3, Enum.EasingStyle.Back)
+	local half = 0.14
+	tween(card.flip, { Size = UDim2.fromScale(0, 1) }, half, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	task.delay(half, function()
+		showFront()
+		tween(card.flip, { Size = UDim2.fromScale(1, 1) }, half, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	end)
+	card.scale.Scale = 0.9
+	tween(card.scale, { Scale = 1.04 }, half * 2, Enum.EasingStyle.Back)
+	task.delay(half * 2 + 0.05, function() tween(card.scale, { Scale = 1 }, 0.2) end)
+	-- the rays behind his picture turn slowly
+	task.spawn(function()
+		while card.holder.Parent do
+			card.rays.Rotation += 0.4
+			task.wait(1 / 30)
+		end
+	end)
 	AlterFX.Ring(fxLayer, accent, 120, 700, 0.6, UDim2.new(0.5, card.x * rollRoot:FindFirstChildOfClass("UIScale").Scale, 0.5, 0))
 	AlterFX.Sound("ImpactPunch", { volume = 0.7 })
 	AlterFX.Sound("Chime", { pitch = 0.85 + rarity.index * 0.06 })
 	local theme = fxTheme(rarity)
-	local reveal_ = rarity.reveal
-	if reveal_ == "burst" or reveal_ == "explosion" or reveal_ == "lightning" or reveal_ == "dark" or reveal_ == "cosmic" then
+	local kind = rarity.reveal
+	if kind == "burst" or kind == "explosion" or kind == "lightning" or kind == "dark" or kind == "cosmic" then
 		AlterFX.Sound("Shimmer")
-		AlterFX.UIParticles(fxLayer, theme, if reveal_ == "burst" then 12 else 20, 0.1, { burst = true, peak = true, scale = 1.3 })
+		AlterFX.UIParticles(fxLayer, theme, if kind == "burst" then 12 else 20, 0.1, { burst = true, peak = true, scale = 1.3 })
 	end
-	if reveal_ == "explosion" then
+	if kind == "explosion" then
 		AlterFX.Sound("Brass")
 		AlterFX.Sound("ImpactSub")
 		for i = 1, 3 do task.delay(i * 0.12, function() AlterFX.Ring(fxLayer, accent, 100, 900 + i * 200, 0.7) end) end
 		AlterFX.ScreenFX(fxLayer, { accent = accent, particle = theme.particle }, "rise", 1.5)
-	elseif reveal_ == "lightning" then
+	elseif kind == "lightning" then
 		AlterFX.Sound("Thunder")
 		AlterFX.Sound("Crackle", { delay = 0.05 })
 		AlterFX.Sound("ImpactSub")
 		shakeCamera(0.6, 0.45)
 		AlterFX.ScreenFX(fxLayer, { accent = hex(rarity.color2 or rarity.color), particle = theme.particle }, "storm", 1.4)
-	elseif reveal_ == "dark" then
+	elseif kind == "dark" then
 		AlterFX.Sound("FlashBoom")
 		AlterFX.Sound("ImpactSub")
-		tween(dim, { BackgroundTransparency = 0.45 }, 0.6)
-	elseif reveal_ == "cosmic" then
+	elseif kind == "cosmic" then
 		whiteFlash.BackgroundTransparency = 0
 		tween(whiteFlash, { BackgroundTransparency = 1 }, 0.8)
 		AlterFX.Sound("FlashBoom")
@@ -388,7 +614,7 @@ local function reveal(card, instant: boolean)
 	end
 end
 
--- results = the server's list; quick = auto roll (shorter, closes by itself unless something big came)
+-- results = the server's list; quick = auto roll (a quick reveal and it closes by itself, unless Epic or better came)
 local function play(results, quick: boolean)
 	busy = true
 	skip = false
@@ -399,7 +625,9 @@ local function play(results, quick: boolean)
 	overlay.Enabled = true
 	continueText.Visible = false
 	dim.BackgroundTransparency = 1
-	tween(dim, { BackgroundTransparency = 0.35 }, 0.25)
+	spotlight.ImageTransparency = 1
+	tween(dim, { BackgroundTransparency = 0 }, 0.2) -- (hides the Agency behind it)
+	tween(spotlight, { ImageTransparency = 0.82 }, 0.3)
 	local best = 0
 	for i, result in ipairs(results) do
 		local card = makeCard(result, i, #results)
@@ -407,10 +635,9 @@ local function play(results, quick: boolean)
 		best = math.max(best, card.rarity.index)
 	end
 	local bigFrom = Trainers.RarityById[Trainers.AutoStopRarity].index
-	local speed = if quick then 0.55 else 1
+	local fast = quick and best < bigFrom
+	local speed = if fast then 0.45 else 1
 	AlterFX.Sound("Riser", { fadeIn = 0.2 })
-	-- the build-up: longer for the rare ones (Legendary+ "slow-mo")
-	local build = (if best >= Trainers.RarityById.Legendary.index then 1.05 else 0.45) * speed
 	local function wait_(t)
 		local t0 = os.clock()
 		while os.clock() - t0 < t and not skip do task.wait() end
@@ -418,54 +645,62 @@ local function play(results, quick: boolean)
 	-- drop in
 	for i, card in ipairs(cards) do
 		task.delay((i - 1) * 0.08 * speed, function()
-			tween(card.holder, { Position = UDim2.new(0.5, card.x, 0.5, 8) }, 0.35 * speed, Enum.EasingStyle.Back)
+			tween(card.holder, { Position = UDim2.new(0.5, card.x, 0.47, 0) }, 0.35 * speed, Enum.EasingStyle.Back)
 		end)
 	end
 	wait_((0.38 + 0.08 * (#cards - 1)) * speed)
-	-- Secret: the screen goes dark first
-	if best == Trainers.RarityById.Secret.index and not skip then tween(dim, { BackgroundTransparency = 0.03 }, 0.3 * speed) end
-	-- shake + glow toward the rarity color (Secret keeps its mystery: gray)
+	-- Secret: the screen goes all dark first
+	if best == Trainers.RarityById.Secret.index and not skip then tween(dim, { BackgroundTransparency = 0 }, 0.3 * speed) end
+	-- the shake (longer for Legendary and better); the glow stays gold until the flip
+	local build = (if best >= Trainers.RarityById.Legendary.index then 0.9 else 0.45) * speed
 	local t0 = os.clock()
 	while os.clock() - t0 < build and not skip do
 		local k = (os.clock() - t0) / build
 		for _, card in ipairs(cards) do
-			local target = if card.rarity.hidden then Color3.fromHex("#55555E") else hex(card.rarity.color)
-			card.holder.Rotation = math.sin(os.clock() * 55) * (2 + k * 5)
-			card.stroke.Color = Color3.fromHex("#55555E"):Lerp(target, k)
-			card.stroke.Thickness = 2 + k * 3
-			card.glow.ImageColor3 = card.stroke.Color
-			card.glow.ImageTransparency = 0.6 - k * 0.4
+			card.holder.Rotation = math.sin(os.clock() * 55) * (1.5 + k * 4)
+			card.glow.ImageTransparency = 0.7 - k * 0.35
 		end
 		AlterFX.Sound("Stamp", { volume = 0.15 + k * 0.2, pitch = 1 + k * 0.4 })
 		task.wait(0.12)
 	end
 	for _, card in ipairs(cards) do card.holder.Rotation = 0 end
-	-- crack open, one after another
+	-- flip, left to right
 	for i, card in ipairs(cards) do
 		if skip then
 			reveal(card, true)
 		else
 			reveal(card, false)
-			if i < #cards then wait_(0.22 * speed) end
+			if i < #cards then wait_(0.3 * speed) end
 		end
 	end
 	if skip then
 		for _, card in ipairs(cards) do
-			card.holder.Position = UDim2.new(0.5, card.x, 0.5, 8)
+			card.holder.Position = UDim2.new(0.5, card.x, 0.47, 0)
 			reveal(card, true)
 		end
 	end
 	-- done: wait for a tap (auto roll: closes by itself unless something big came)
 	busy = false
-	continueText.Visible = true
 	skip = false
-	if quick and best < bigFrom then
+	continueText.Visible = true
+	task.spawn(function()
+		while continueText.Visible do
+			tween(continueText, { TextTransparency = 0.5 }, 0.6)
+			task.wait(0.6)
+			tween(continueText, { TextTransparency = 0 }, 0.6)
+			task.wait(0.6)
+		end
+		continueText.TextTransparency = 0
+	end)
+	if fast then
 		local t1 = os.clock()
-		while os.clock() - t1 < 0.7 and not closeWanted do task.wait() end
+		while os.clock() - t1 < 0.6 and not closeWanted do task.wait() end
 		closeWanted = true
 	end
 	while not closeWanted do task.wait() end
+	continueText.Visible = false
 	tween(dim, { BackgroundTransparency = 1 }, 0.2)
+	tween(spotlight, { ImageTransparency = 1 }, 0.2)
 	for _, card in ipairs(cards) do tween(card.scale, { Scale = 0.85 }, 0.15) end
 	task.wait(0.2)
 	overlay.Enabled = false
@@ -502,7 +737,6 @@ local function requestRoll(count: number, auto: boolean): boolean
 end
 
 function autoLoop()
-	autoHint.Text = "Rolling... tap Off to stop"
 	while autoOn do
 		if (data().coins or 0) < price() then
 			Notify.Toast("Auto Roll stopped", "Out of coins", "coin", Colors.Red, "trainerauto")
@@ -516,23 +750,43 @@ function autoLoop()
 		end
 		task.wait(0.15)
 	end
-	autoOn = false
-	setAutoToggle(false)
-	autoHint.Text = "Stops on Epic or better"
+	setAuto(false)
 end
 
-rollOne.Activated:Connect(function()
+local function rollOnce()
 	Audio.PlayUI("Click")
 	task.spawn(requestRoll, 1, false)
-end)
-rollThree.Activated:Connect(function()
+end
+local function rollThree()
 	if not multiOpen() then
 		Notify.Toast("Roll x3", "Opens at Growth Spurt " .. Trainers.MultiRollFromSpurt, "lock", Colors.Muted, "trainerx3")
 		return
 	end
 	Audio.PlayUI("Click")
 	task.spawn(requestRoll, Trainers.MultiRoll, false)
-end)
+end
+local function toggleAuto()
+	Audio.PlayUI("Click")
+	setAuto(not autoOn)
+	if autoOn then task.spawn(autoLoop) end
+end
+rollButton.Activated:Connect(rollOnce)
+x3Button.Activated:Connect(rollThree)
+autoButton.Activated:Connect(toggleAuto)
+-- E / R / T while the Agency tab is open (a keyboard; ContextActionService so they win over the world's E prompts)
+function bindKeys(on: boolean)
+	if on then
+		ContextActionService:BindActionAtPriority("AgencyKeys", function(_, inputState, input)
+			if inputState ~= Enum.UserInputState.Begin then return Enum.ContextActionResult.Pass end
+			if input.KeyCode == Enum.KeyCode.E then rollOnce()
+			elseif input.KeyCode == Enum.KeyCode.R then rollThree()
+			elseif input.KeyCode == Enum.KeyCode.T then toggleAuto() end
+			return Enum.ContextActionResult.Sink
+		end, false, Enum.ContextActionPriority.High.Value + 10, Enum.KeyCode.E, Enum.KeyCode.R, Enum.KeyCode.T)
+	else
+		ContextActionService:UnbindAction("AgencyKeys")
+	end
+end
 
 ------------------------------------------------------------------------
 -- Open / close
@@ -543,13 +797,17 @@ local function open()
 	menuButton:SetActive(true)
 	UIBus.MenuPanelVisible:Fire(true)
 	modal.open()
-	Theme.Pulse(rollOne, function() return modal.isOpen() end)
+	Theme.Pulse(rollButton, function() return modal.isOpen() and tab == "Agency" end)
 	Audio.PlayUI("Whoosh")
+	bindKeys(keyboard and tab == "Agency")
 end
 modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 	if not modal.isOpen() then
 		menuButton:SetActive(false)
 		UIBus.MenuPanelVisible:Fire(false)
+		bindKeys(false)
+		popover.Visible = false
+		hideTip()
 	end
 end)
 menuButton.Activated:Connect(function()
@@ -609,7 +867,7 @@ remote.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "Failed" then
 		resultSignal:Fire()
 		Notify.Toast(tostring(info.text), nil, "coin", Colors.Red, "trainerfail")
-		if info.auto then autoOn = false end
+		if info.auto then setAuto(false) end
 	elseif kind == "Golden" then
 		local trainer = Trainers.ById[info.id]
 		if trainer then
