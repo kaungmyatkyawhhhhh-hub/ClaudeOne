@@ -9,6 +9,11 @@
 -- area around your character (Player:RequestStreamAroundAsync), then sets the LocalPlayer attribute "MenuReady";
 -- "MenuLoad" (0..1) feeds its bar. Movement is frozen and the HUD hidden while the menu is up.
 -- Play: the menu fades, the camera is behind your character, the HUD fades in (UIBus.MenuClosed).
+-- (prompt 41, 22 Oct) The live gym behind the menu (no art: the camera frames the doorway and your character in the right
+-- two-thirds), a black-to-clear gradient over the left 45%, one column holding everything: logo, tagline, PLAY, SHOP,
+-- SETTINGS, NEWS, the player card. Desktop / tablet: the column centred top to bottom, 12 px gaps. Phone (touch and a
+-- screen under 500 px tall; Studio: TestPhoneSize): 38% of the width, logo 120, no tagline, PLAY 56, SHOP 44, SETTINGS and
+-- NEWS as two 44 px icon squares on one row, a 40 px card (avatar, name, coins). Every other screen is hidden until PLAY.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -24,6 +29,7 @@ local Monetization = require(Shared.Config.Monetization)
 local Muscles = require(Shared.Config.Muscles)
 local GrowthSpurts = require(Shared.Config.GrowthSpurts)
 local UI = require(Shared.Config.UI)
+local UserInputService = game:GetService("UserInputService")
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
@@ -51,45 +57,22 @@ local NOT_HUD = { MenuScreen = true, MenuBackground = true, LoadingScreen = true
 local COL_W = 172          -- the column's width (mockup px): PLAY and the buttons under it, left of the plate on phones
 local LEFT = 24            -- left margin (inside the safe area)
 
--- the area the background fills: the whole screen, or in Studio the TestPhoneSize phone in the top left (like Kit)
-local function stageSize(): Vector2
-	local camera = Workspace.CurrentCamera
-	local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
-	local phone = RunService:IsStudio() and Workspace:GetAttribute("TestPhoneSize")
-	if typeof(phone) == "Vector2" and phone.X > 0 then
-		return phone * math.min(viewport.X / phone.X, viewport.Y / phone.Y)
-	end
-	return viewport
-end
 
 local bgGui = Theme.ScreenGui({ Name = "MenuBackground", DisplayOrder = 19, IgnoreGuiInset = true, Parent = playerGui })
 bgGui.ScreenInsets = Enum.ScreenInsets.None
 -- (owner, 15 Oct: a gap on the right showed the game: the background was sized in pixels from the camera once, and missed
 -- later size changes. Now it is the whole screen by scale, and the art covers it by Crop: nothing to recalculate.)
-local back = New("Frame", { Name = "Back", BackgroundColor3 = Color3.fromHex("#0C0A0C"), BorderSizePixel = 0, ClipsDescendants = true, Active = true,
-	Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = bgGui })
-local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = UI.MenuArt, ScaleType = Enum.ScaleType.Crop,
-	ResampleMode = Enum.ResamplerMode.Default, Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = back })
--- the dark gradient over the left 40% (black, fading out to the right)
-New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.4, 1), ZIndex = 2, Parent = back }, {
-	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(0.55, 0.55),
+-- (prompt 41) the live gym shows through (the art is off: Visible false, kept for the fade code)
+local back = New("Frame", { Name = "Back", BackgroundColor3 = Color3.fromHex("#0C0A0C"), BackgroundTransparency = 1, BorderSizePixel = 0, ClipsDescendants = true,
+	Active = true, Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = bgGui })
+local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = "", Visible = false, ScaleType = Enum.ScaleType.Crop,
+	Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = back })
+-- the dark gradient: black ~80% at the left edge to clear at 45% of the width
+New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.45, 1), ZIndex = 2, Parent = back }, {
+	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.5, 0.55),
 		NumberSequenceKeypoint.new(1, 1) }) }),
 })
--- (Studio only: the TestPhoneSize phone in the top left, like Kit; a live game always uses the full-screen scale size)
-local function placeArt()
-	local phone = RunService:IsStudio() and Workspace:GetAttribute("TestPhoneSize")
-	if typeof(phone) == "Vector2" and phone.X > 0 then
-		local size = stageSize()
-		back.Size = UDim2.fromOffset(size.X, size.Y)
-	else
-		back.Size = UDim2.fromScale(1, 1)
-	end
-end
-placeArt()
-Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(placeArt)
-task.spawn(function() -- (load the art first, so the menu never shows a plain dark screen)
-	pcall(function() game:GetService("ContentProvider"):PreloadAsync({ art }) end)
-end)
+-- (prompt 41: always the whole screen; the Studio phone sizing read the camera too early and left it 1 x 0)
 
 local gui = Theme.ScreenGui({ Name = "MenuScreen", DisplayOrder = 20, IgnoreGuiInset = true, Parent = playerGui })
 gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
@@ -97,18 +80,17 @@ local root = Kit.Root(gui)
 
 -- the 3D logo, ~32% of the screen height, with a soft red glow behind it
 -- (placed by layoutMenu below: always under Roblox's top bar, so never under its top-left buttons)
-local logo = New("ImageLabel", { Name = "Logo", BackgroundTransparency = 1, Image = UI.Logo3D, ScaleType = Enum.ScaleType.Fit, ZIndex = 2,
-	Position = UDim2.new(0, LEFT - 6, 0.02, 0), Size = UDim2.fromScale(0.6, 0.32), Parent = root }, {
-	New("UIAspectRatioConstraint", { AspectRatio = 432 / 354, DominantAxis = Enum.DominantAxis.Height }),
-})
+local logo = New("ImageLabel", { Name = "Logo", LayoutOrder = 0, BackgroundTransparency = 1, Image = UI.Logo3D, ScaleType = Enum.ScaleType.Fit, ZIndex = 2,
+	Size = UDim2.fromOffset(150, 123) })
 New("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = UI.SoftGlow, ImageColor3 = Color3.fromRGB(255, 45, 40), ImageTransparency = 0.35,
 	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromScale(1.55, 1.45), ZIndex = 1, Parent = logo })
 
 -- the column: tagline, PLAY, then SHOP / SETTINGS / NEWS stacked
-local column = New("Frame", { Name = "Column", BackgroundTransparency = 1, Position = UDim2.new(0, LEFT, 0.34, 4), Size = UDim2.fromOffset(COL_W, 180),
-	Parent = root }, {
-	Theme.List(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
+local column = New("Frame", { Name = "Column", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, LEFT, 0.5, 0),
+	Size = UDim2.fromOffset(COL_W, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = root }, {
+	Theme.List(Enum.FillDirection.Vertical, 12, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top),
 })
+logo.Parent = column
 Kit.Text({ Name = "Tagline", LayoutOrder = 1, Text = "Everyone starts tiny.", Font = "Strong", TextSize = 13, TextColor3 = Color3.fromHex("#E7DEDF"),
 	Size = UDim2.fromOffset(COL_W, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = column })
 
@@ -141,9 +123,25 @@ local newsDot = New("Frame", { Name = "NewsDot", BackgroundColor3 = Colors.Red, 
 local bang = Kit.Text({ Name = "Bang", Text = "!", Font = "Chunky", TextSize = 13, Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = newsDot })
 bang:SetAttribute("KeepColor", true)
 
+-- (prompt 41) phones: SETTINGS and NEWS as two 44 px icon squares on one row (NEWS keeps its "!" chip)
+local iconRow = New("Frame", { Name = "IconRow", LayoutOrder = 6, BackgroundTransparency = 1, Size = UDim2.fromOffset(96, 44), Visible = false, Parent = column }, {
+	Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
+})
+local function squareButton(name: string, icon: string, order: number)
+	local b = Theme.Button("Quiet", { Name = name, LayoutOrder = order, Size = UDim2.fromOffset(44, 44), Parent = iconRow }, {})
+	require(Shared.UI.Pieces).Icon(icon, Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -3), Size = UDim2.fromOffset(20, 20),
+		ZIndex = b.ZIndex + 2, Parent = b })
+	return b
+end
+local settingsSquare = squareButton("SettingsIcon", "settings", 1)
+local newsSquare = squareButton("NewsIcon", "bell", 2)
+local newsSquareDot = newsDot:Clone()
+newsSquareDot.AnchorPoint = Vector2.new(1, 0)
+newsSquareDot.Position = UDim2.new(1, 4, 0, -4)
+newsSquareDot.Parent = New("Folder", { Name = "Dot", Parent = newsSquare })
+
 -- the player card, bottom left: headshot, name, level and height, coins
-local card = Theme.Panel({ Name = "Card", Piece = "hud_box", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, LEFT, 1, -12),
-	Size = UDim2.fromOffset(236, 48), Visible = false, Parent = root })
+local card = Theme.Panel({ Name = "Card", Piece = "hud_box", LayoutOrder = 7, Size = UDim2.fromOffset(236, 48), Visible = false, Parent = column })
 Kit.Headshot(player.UserId, player.DisplayName, 34, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = card })
 Kit.Text({ Name = "PlayerName", Text = player.DisplayName, Font = "Strong", TextSize = 14, Position = UDim2.fromOffset(50, 7), Size = UDim2.fromOffset(110, 18),
 	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
@@ -157,38 +155,77 @@ Kit.Coin(16, { LayoutOrder = 1, Parent = coinRow })
 local coinText = Kit.Text({ Name = "Amount", LayoutOrder = 2, Text = "0", Font = "Number", TextSize = 15, Size = UDim2.fromOffset(0, 24),
 	AutomaticSize = Enum.AutomaticSize.X, Parent = coinRow })
 
--- Logo, column and card from the top bar down (owner, 15 Oct: the logo sat under Roblox's top-left buttons): the logo
--- starts at TopbarInset.Max.Y + 8, the column right under it; the logo shrinks (down to 60 mockup px) so everything
--- fits, and when the card has no room under the column it moves beside it (bottom). Again on every scale / top bar change.
+-- (prompt 41) the layout: desktop / tablet or phone, again on every size / top bar change
+local function isPhone(): boolean
+	local phone = RunService:IsStudio() and Workspace:GetAttribute("TestPhoneSize")
+	if typeof(phone) == "Vector2" and phone.X > 0 then return phone.Y < 500 end
+	local camera = Workspace.CurrentCamera
+	return UserInputService.TouchEnabled and camera ~= nil and camera.ViewportSize.Y < 500
+end
+-- a Kit button resized: its bottom lip padding and its label follow
+local function sizeButton(button: GuiObject, width: number, height: number, textSize: number?)
+	button.Size = UDim2.fromOffset(width, height)
+	local lip = math.floor(height * Theme.LipHeight)
+	local pad = button:FindFirstChildOfClass("UIPadding")
+	if pad then pad.PaddingBottom = UDim.new(0, lip) end
+	local label = button:FindFirstChild("Label")
+	if label and label:IsA("TextLabel") then
+		label.Size = UDim2.fromOffset(0, height - lip)
+		if textSize then label.TextSize = textSize end
+	end
+end
 local LOGO_ASPECT = 432 / 354
 local function layoutMenu()
 	local s = math.max(Kit.Scale(), 0.01)
-	local rootH = root.AbsoluteSize.Y / s
+	local rootW, rootH = root.AbsoluteSize.X / s, root.AbsoluteSize.Y / s
 	if rootH < 10 then return end
 	local top = Kit.UnderTopbar(root)
+	local phone = isPhone()
 	local list = column:FindFirstChildOfClass("UIListLayout")
-	local colH = list and list.AbsoluteContentSize.Y / s or 180
-	if colH < 10 then colH = 180 end
-	local cardH, logoMax = 48, math.max(60, rootH * 0.32)
-	local stacked = rootH - top - 4 - colH - 10 - cardH - 12
-	local beside = stacked < math.min(logoMax, 100)
-	local logoH = math.clamp(if beside then rootH - top - 4 - colH - 12 else stacked, 60, logoMax)
+	local gap = if phone then 8 else 12
+	if list then list.Padding = UDim.new(0, gap) end
+	local colW = if phone then math.max(170, math.floor(rootW * 0.38)) else 236
+	column.Size = UDim2.fromOffset(colW, 0)
+	column.Position = UDim2.new(0, if phone then 16 else LEFT, 0.5, top / 2)
+	local tagline = column:FindFirstChild("Tagline")
+	if tagline then tagline.Visible = not phone; tagline.Size = UDim2.fromOffset(colW, 18) end
+	-- the buttons
+	playButton.Size = UDim2.fromOffset(colW, if phone then 56 else 60)
+	local playLabel = playButton:FindFirstChild("Label", true)
+	if playLabel then playLabel.TextSize = if phone then 30 else 34 end
+	sizeButton(shopButton, colW, if phone then 44 else 36, if phone then 17 else 15)
+	sizeButton(settingsButton, colW, 36, 15)
+	sizeButton(updatesButton, colW, 36, 15)
+	settingsButton.Visible = not phone
+	updatesButton.Visible = not phone
+	iconRow.Visible = phone
+	-- the card: 40 px avatar + name + coins on a phone, 48 with level and height otherwise
+	card.Size = UDim2.fromOffset(colW, if phone then 40 else 48)
+	cardSub.Visible = not phone
+	local name = card:FindFirstChild("PlayerName")
+	if name then name.Position = UDim2.fromOffset(50, if phone then 11 else 7) end
+	local headshot = card:FindFirstChild("Headshot")
+	if headshot then headshot.Size = UDim2.fromOffset(if phone then 30 else 34, if phone then 30 else 34) end
+	-- the logo: 30% bigger than before on desktop, 120 on a phone; smaller when the column wouldn't fit under the top bar
+	local logoH = if phone then 120 else math.min(rootH * 0.4, 190)
 	logo.Size = UDim2.fromOffset(logoH * LOGO_ASPECT, logoH)
-	logo.Position = UDim2.new(0, LEFT - 6, 0, top)
-	column.Position = UDim2.new(0, LEFT, 0, top + logoH + 4)
-	card.Position = if beside then UDim2.new(0, LEFT + COL_W + 12, 1, -12) else UDim2.new(0, LEFT, 1, -12)
+	task.defer(function()
+		local content = list and list.AbsoluteContentSize.Y / s or 0
+		local room = rootH - top - 16
+		if content > room then
+			local shrink = math.max(60, logoH - (content - room))
+			logo.Size = UDim2.fromOffset(shrink * LOGO_ASPECT, shrink)
+		end
+	end)
 end
 Kit.OnTopbar(layoutMenu)
 root:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutMenu)
-do
-	local list = column:FindFirstChildOfClass("UIListLayout")
-	if list then list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(layoutMenu) end
-end
+Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(function() task.defer(layoutMenu) end)
 
 -- The logo, the column and the card slide in from a little to the left, fading in (no CanvasGroup: text stays crisp)
 local function reveal()
 	layoutMenu()
-	for index, piece in ipairs({ logo, column, card }) do
+	for index, piece in ipairs({ column }) do
 		if piece.Visible then
 			local goal = piece.Position
 			piece.Position = goal - UDim2.fromOffset(24, 0)
@@ -202,14 +239,24 @@ local function reveal()
 end
 
 -- PLAY pulses (the featured CTA) while the menu is up
+local playGlow = New("ImageLabel", { Name = "SoftGlow", BackgroundTransparency = 1, Image = UI.SoftGlow, ImageColor3 = Color3.fromRGB(255, 50, 45),
+	ImageTransparency = 0.55, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1.35, 0, 2.2, 0), ZIndex = 0 })
+playGlow.Parent = playButton
 local function playAlive()
 	Theme.Pulse(playButton, function() return UIBus.MenuOpen end)
+	-- (prompt 41) a clean dark outline and a soft red glow only: the coloured ring goes
+	task.defer(function()
+		local ring = playButton:FindFirstChild("Depth") and playButton.Depth:FindFirstChild("Glow")
+		if ring then ring.Visible = false; ring:SetAttribute("Off", true) end
+	end)
 end
 
-settingsButton.Activated:Connect(function()
+local function openSettings()
 	Audio.PlayUI("Click")
 	UIBus.OpenSettings:Fire()
-end)
+end
+settingsButton.Activated:Connect(openSettings)
+settingsSquare.Activated:Connect(openSettings)
 
 ------------------------------------------------------------------------
 -- UPDATES: the latest update notes
@@ -234,14 +281,17 @@ for order, entry in ipairs(UI.Updates or {}) do
 			AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 	end
 end
-updatesButton.Activated:Connect(function()
+local function openNews()
 	Audio.PlayUI("Click")
 	updates.open()
 	if newsDot.Visible then
 		newsDot.Visible = false
+		newsSquareDot.Visible = false
 		ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("PlayerAction"):FireServer("SetSettings", { updatesSeen = UI.UpdatesStamp })
 	end
-end)
+end
+updatesButton.Activated:Connect(openNews)
+newsSquare.Activated:Connect(openNews)
 
 ------------------------------------------------------------------------
 -- Freeze movement and hide the HUD while the menu is up
@@ -258,6 +308,76 @@ task.spawn(function()
 	mainHud = playerGui:WaitForChild("MainHud", 10)
 	if mainHud and UIBus.MenuOpen then mainHud.Enabled = false end
 end)
+
+-- (prompt 41) every other screen (HUD, tooltips, popups) stays hidden until PLAY; the ones it hid come back after
+local MENU_SCREENS = { MenuScreen = true, MenuBackground = true, LoadingScreen = true, Updates = true, Settings = true, Freecam = true }
+local hiddenByMenu = {}
+RunService.Heartbeat:Connect(function()
+	if not UIBus.MenuOpen then return end
+	for _, screen in ipairs(playerGui:GetChildren()) do
+		if screen:IsA("LayerCollector") and screen.Enabled and not MENU_SCREENS[screen.Name] and string.sub(screen.Name, 1, 6) ~= "Topbar"
+			and screen.Name ~= "MainHud" then
+			screen.Enabled = false
+			hiddenByMenu[screen] = true
+		end
+	end
+end)
+local function restoreScreens()
+	for screen in pairs(hiddenByMenu) do
+		if screen.Parent then screen.Enabled = true end
+	end
+	hiddenByMenu = {}
+end
+-- (prompt 41) your own trainers (Workspace.LocalTrainers, TrainerFollowClient) stand behind you, in the camera's way: hidden
+-- for you while the menu is up
+local function hideFollowers(hide: boolean)
+	local trainers = Workspace:FindFirstChild("LocalTrainers")
+	if not trainers then return end
+	for _, item in ipairs(trainers:GetDescendants()) do
+		if item:IsA("BasePart") or item:IsA("Decal") then item.LocalTransparencyModifier = if hide then 1 else 0 end
+	end
+end
+task.spawn(function()
+	while UIBus.MenuOpen do
+		hideFollowers(true)
+		task.wait(0.25)
+	end
+end)
+
+-- (prompt 41) the camera frames the gym doorway and your character in the right part of the screen (no ceiling lamp)
+local function frameCamera()
+	local character = player.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	local camera = Workspace.CurrentCamera
+	if not (rootPart and rootPart:IsA("BasePart") and camera) then return end
+	local height = character:GetExtentsSize().Y
+	local phone = isPhone()
+	local cf = rootPart.CFrame
+	local back = math.max(10, height * 1.9) * (if phone then 1.25 else 1)
+	-- behind and a little left of the character, looking ahead, left and a little down: the character and the doorway sit
+	-- right of centre, the ceiling lamp above the frame
+	local eye = cf * Vector3.new(-height * 0.15, height * 0.08, back)
+	local aim = cf * Vector3.new(-height * 0.75, -height * 0.4, -height * 3)
+	-- never through a wall: the corridor behind the spawn is narrow, so the camera stops 1 stud inside the first wall
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character, Workspace:FindFirstChild("LocalTrainers") }
+	local origin = cf * Vector3.new(0, height * 0.22, 0)
+	local hit = Workspace:Raycast(origin, eye - origin, params)
+	if hit then eye = hit.Position - (eye - origin).Unit * 1 end
+	local framed = CFrame.lookAt(eye, aim)
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CFrame = framed
+	-- (other scripts set the camera back to Custom while loading: the framing is held every frame until PLAY)
+	RunService:BindToRenderStep("MenuCamera", Enum.RenderPriority.Camera.Value + 1, function()
+		if not UIBus.MenuOpen then return end
+		local cam = Workspace.CurrentCamera
+		if cam then
+			cam.CameraType = Enum.CameraType.Scriptable
+			cam.CFrame = framed
+		end
+	end)
+end
 
 ------------------------------------------------------------------------
 -- Load: the save data and the world around you, then let the loading screen go
@@ -295,11 +415,13 @@ task.spawn(function()
 	shopButton.Visible = Monetization.AnyConfigured() -- (owner, 20 Oct: the Shop always shows, new players too)
 	card.Visible = returning
 	newsDot.Visible = UI.UpdatesStamp ~= nil and (data.settings and data.settings.updatesSeen) ~= UI.UpdatesStamp
+	newsSquareDot.Visible = newsDot.Visible
 	refreshPill(data)
 	Audio.AdoptMenuMusic() -- (the loading screen's track keeps playing here, now at the player's music volume)
 	ClientData.Changed:Connect(function(path)
 		if UIBus.MenuOpen and (path[1] == "coins" or path[1] == "muscles" or path[1] == "growthSpurts") then refreshPill(ClientData.Get()) end
 	end)
+	frameCamera()
 	player:SetAttribute("MenuReady", true)
 
 	-- the column slides in as the loading screen fades
@@ -329,6 +451,7 @@ end
 local function play(thenShop: boolean?)
 	if not UIBus.MenuOpen or not playButton.Active then return end
 	playButton.Active = false
+	pcall(function() RunService:UnbindFromRenderStep("MenuCamera") end)
 	updates.close()
 	Audio.PlayUI("Whoosh")
 	Audio.StopMenuMusic(1.2) -- (the area music starts under the fade)
@@ -348,6 +471,8 @@ local function play(thenShop: boolean?)
 	ContextActionService:UnbindAction("MenuFreeze")
 	if mainHud then mainHud.Enabled = true end
 	UIBus.MenuOpen = false
+	restoreScreens()
+	hideFollowers(false)
 	UIBus.MenuClosed:Fire()
 	task.spawn(fadeInHud)
 	-- the menu fades away over the gym
@@ -359,9 +484,7 @@ local function play(thenShop: boolean?)
 	end
 	game:GetService("TweenService"):Create(art, info, { ImageTransparency = 1 }):Play()
 	game:GetService("TweenService"):Create(back, info, { BackgroundTransparency = 1 }):Play()
-	Theme.Fade(logo, false, TIMING.Fade)
 	Theme.Fade(column, false, TIMING.Fade)
-	Theme.Fade(card, false, TIMING.Fade)
 	for _, item in ipairs(back:GetDescendants()) do
 		if item:IsA("Frame") then game:GetService("TweenService"):Create(item, info, { BackgroundTransparency = 1 }):Play() end
 	end
