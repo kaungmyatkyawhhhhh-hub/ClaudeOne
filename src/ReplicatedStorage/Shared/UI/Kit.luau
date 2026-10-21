@@ -14,7 +14,7 @@
 --   Kit.Card(props?, children?)               #28282F card (props.Piece = "card_selected" (green) / "card_gold")
 --   Kit.IconTile(icon, color, size, props?)   glossy colored rounded square with a white icon
 --   Kit.GradeBadge(grade, size, props?)       S / A / B / C / D badge
---   Kit.Toggle(on, onChanged, props?)         ON (green) / OFF (gray) button -> button, set(on)
+--   Kit.Toggle(on, onChanged, props?)         ON (gold) / OFF (dark) button -> button, set(on)
 --   Kit.Slider(value, onChanged, props?)      -> frame, set(value) (0..100)
 --   Kit.Tabs(tabs, onSelect, props?)          tab buttons in a row (active gold, the rest flat) -> row, select(id)
 --   Kit.Modal(spec)                           a window: TITLE + tabs in its header, coins + X on the right, a vignette behind
@@ -496,7 +496,8 @@ function Kit.RewardTile(color: Color3, props: { [string]: any }?)
 		glow.Stroke.Color = edge
 		glow.Visible = not dark and state ~= "owned"
 		glow.Stroke.Transparency = if state == "equipped" then 0.45 else 0.72
-		art.ImageColor3 = if dark then Color3.new(0, 0, 0) else Color3.new(1, 1, 1)
+		-- (locked: the art dimmed dark; the shop / aura art has its own square backdrop, so a pure black silhouette would be a box)
+		art.ImageColor3 = if dark then Color3.fromRGB(80, 78, 86) else Color3.new(1, 1, 1)
 		art.ImageTransparency = if state == "owned" then 0.5 else 0
 		name.TextTransparency = if state == "owned" then 0.4 else 0
 		sub.TextColor3 = c
@@ -652,11 +653,12 @@ end
 -- ON / OFF button (mockup 10): green ON, gray OFF. Returns button, set(on).
 function Kit.Toggle(on: boolean, onChanged: (boolean) -> (), props: { [string]: any }?)
 	props = props or {}
-	local button = Kit.Button(on and "Green" or "Quiet", on and "On" or "Off", props, { width = props.Size and props.Size.X.Offset or 60, height = props.Size and props.Size.Y.Offset or 30 })
+	-- (prompt 40, mockup settings: ON is gold, OFF dark)
+	local button = Kit.Button(on and "Gold" or "Quiet", on and "On" or "Off", props, { width = props.Size and props.Size.X.Offset or 60, height = props.Size and props.Size.Y.Offset or 30 })
 	local state = on
 	local function set(value: boolean)
 		state = value
-		Kit.SetButton(button, value and "Green" or "Quiet", value and "On" or "Off")
+		Kit.SetButton(button, value and "Gold" or "Quiet", value and "On" or "Off")
 	end
 	button.Activated:Connect(function()
 		set(not state)

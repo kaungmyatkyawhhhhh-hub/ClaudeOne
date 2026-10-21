@@ -905,7 +905,7 @@ function PlayerData.SetSettings(player, settings)
 	if type(settings.dumbbellLast) == "string" and #settings.dumbbellLast <= 24 and string.match(settings.dumbbellLast, "^DB%w+$") then
 		new.dumbbellLast = settings.dumbbellLast
 	end
-	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "otherTrainers", "lowGraphics", "reduceMotion", "liftingVoices" }) do
+	for _, key in ipairs({ "hints", "otherScreams", "otherAuras", "otherTrainers", "lowGraphics", "reduceMotion", "liftingVoices", "myAura" }) do
 		if ON_OFF[settings[key]] then new[key] = settings[key] end
 	end
 	data.settings = new

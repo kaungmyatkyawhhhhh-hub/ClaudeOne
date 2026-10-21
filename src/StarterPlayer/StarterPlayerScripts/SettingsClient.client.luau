@@ -87,7 +87,7 @@ local function row(order, key, labelText, icon, modes)
 		local value = values[key]
 		local on = value ~= "Off" and value ~= 0
 		local text = if type(value) == "number" then (on and "On" or "Off") else value
-		Kit.SetButton(button, if text == "Minimal" then "Gold" elseif on then "Green" else "Gray", text)
+		Kit.SetButton(button, if on then "Gold" else "Quiet", text) -- (prompt 40, mockup settings: ON gold, OFF dark)
 	end
 	button.Activated:Connect(function()
 		local value = values[key]

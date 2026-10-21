@@ -10,6 +10,9 @@
 --   a boost item: USE (ItemService: the drink + its boost) and EQUIP / UNEQUIP (a Tool in the hotbar, HotbarClient)
 --   DNA Tokens:   GENETICS (opts.dna.onUse: the Genetics screen)
 --   a running boost: no buttons
+-- (prompt 40, mockup inv_items) tiles tinted in the item's colour with the hex mesh and an "xN" gold badge, empty dark
+-- slots fill the rows (10 at least), the picked one has a gold edge; the detail panel is tinted too: the icon big,
+-- the name, a gold "YOU HAVE n" pill, what it does, a big USE and a small EQUIP / UNEQUIP under it.
 -- BoostsPanel.Build(parent, opts?) -> { frame, refresh(), pick(key?) }. Placeholder icons: Config/UI icons in the item's color.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,6 +29,23 @@ local New, Colors = Theme.New, Theme.Colors
 local BoostsPanel = {}
 
 local CELL = Vector2.new(112, 104)
+local SLOTS = 10 -- (prompt 40: empty slots fill the grid to at least this many)
+-- (prompt 40) a tile / panel in a colour: a dark tint of it, the hex mesh, a 3 px edge in it
+local function tint(gui: GuiObject, color: Color3?, edge: Color3?)
+	Theme.SetPiece(gui, "card")
+	local sheen = gui:FindFirstChild("Sheen")
+	if sheen and color then
+		local base = color:Lerp(Color3.fromHex("#141215"), 0.72)
+		sheen.Color = ColorSequence.new(base:Lerp(Color3.new(1, 1, 1), 0.05), base:Lerp(Color3.new(0, 0, 0), 0.4))
+	end
+	local border = gui:FindFirstChild("Border")
+	if border then
+		border.Color = edge or color or Colors.Outline
+		border.Thickness = if color then 3 else 1.5
+		border.Transparency = if color then 0 else 0.3
+	end
+	Theme.SetHex(gui, 0.86, 11)
+end
 local DETAIL_W = 206
 local PAD = 8
 local ICON = 44
@@ -61,44 +81,73 @@ function BoostsPanel.Build(parent: Instance, opts: { [string]: any }?)
 
 	-- the picked tile
 	local detail = Kit.Card({ Name = "Detail", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, DETAIL_W, 1, 0), Parent = frame }, {})
-	local tileHolder = New("Frame", { Name = "Icon", BackgroundTransparency = 1, Position = UDim2.fromOffset(PAD, PAD), Size = UDim2.fromOffset(40, 40), Parent = detail })
-	local name = Kit.Fit(Kit.Text({ Name = "Name", Text = "", Font = "Title", Position = UDim2.fromOffset(PAD + 48, PAD), Size = UDim2.new(1, -(2 * PAD + 48), 0, 20),
-		TextXAlignment = Enum.TextXAlignment.Left, Parent = detail }), 16, 10)
-	local owned = Kit.GoldText(Kit.Text({ Name = "Owned", Text = "", Font = "Number", TextSize = 13, Position = UDim2.fromOffset(PAD + 48, PAD + 22),
-		Size = UDim2.new(1, -(2 * PAD + 48), 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = detail }))
-	local text = Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 12, TextWrapped = true, Position = UDim2.fromOffset(PAD, 54),
-		Size = UDim2.new(1, -2 * PAD, 0, 32), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = detail })
-	local duration = Kit.Text({ Name = "Duration", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(PAD, 88),
-		Size = UDim2.new(1, -2 * PAD, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, Parent = detail })
-	local half = (DETAIL_W - 3 * PAD) / 2
-	local useButton = Kit.Button("Green", "Use", { Name = "Use", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, PAD, 1, -PAD), Parent = detail },
-		{ width = half, height = 40, textSize = 15 })
-	local equipButton = Kit.Button("Quiet", "Equip", { Name = "Equip", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -PAD, 1, -PAD), Parent = detail },
-		{ width = half, height = 40, textSize = 14 })
+	local tileHolder = New("Frame", { Name = "Icon", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, PAD),
+		Size = UDim2.fromOffset(56, 56), Parent = detail })
+	local name = Kit.Fit(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", Upper = true, Position = UDim2.fromOffset(PAD, 68), Size = UDim2.new(1, -2 * PAD, 0, 20),
+		Parent = detail }), 18, 11)
+	local ownedPill = New("Frame", { Name = "OwnedPill", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 90),
+		Size = UDim2.fromOffset(112, 18), Parent = detail }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
+	})
+	local owned = Kit.Text({ Name = "Owned", Text = "", Font = "Chunky", TextSize = 12, Upper = true, Size = UDim2.fromScale(1, 1), Parent = ownedPill })
+	local text = Kit.Text({ Name = "Text", Text = "", Font = "Body", TextSize = 12, TextWrapped = true, Position = UDim2.fromOffset(PAD, 112),
+		Size = UDim2.new(1, -2 * PAD, 0, 30), TextYAlignment = Enum.TextYAlignment.Top, Parent = detail })
+	text.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Medium, Enum.FontStyle.Italic)
+	local duration = Kit.Text({ Name = "Duration", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(PAD, 142),
+		Size = UDim2.new(1, -2 * PAD, 0, 14), Parent = detail })
+	local useButton = Kit.Button("Green", "Use", { Name = "Use", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -32), Parent = detail },
+		{ width = DETAIL_W - 2 * PAD, height = 32, textSize = 17 })
+	local equipButton = Kit.Button("Quiet", "Equip", { Name = "Equip", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Parent = detail },
+		{ width = DETAIL_W - 2 * PAD, height = 22, textSize = 12 })
 	local wideButton = Kit.Button("Green", "Genetics", { Name = "Genetics", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -PAD),
-		Visible = false, Parent = detail }, { width = DETAIL_W - 2 * PAD, height = 40, textSize = 15 })
+		Visible = false, Parent = detail }, { width = DETAIL_W - 2 * PAD, height = 34, textSize = 16 })
 
 	-- a tile: the icon on top, the name, and a gold line (the count or the time left); a small teal timer in the corner
 	local tiles = {} -- [key] = { card, line, timer }
 	local function makeTile(key: string, order: number, label: string, makeIcon: (Instance) -> ())
 		local card = Kit.Card({ Name = key, LayoutOrder = order, Clickable = true, Visible = false, Parent = grid }, {})
-		local icon = New("Frame", { Name = "IconHolder", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10),
-			Size = UDim2.fromOffset(ICON, ICON), Parent = card })
+		local icon = New("Frame", { Name = "IconHolder", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12),
+			Size = UDim2.fromOffset(ICON + 8, ICON + 8), Parent = card })
 		makeIcon(icon)
-		Kit.Fit(Kit.Text({ Name = "Name", Text = label, Font = "Title", Position = UDim2.fromOffset(PAD, ICON + 16), Size = UDim2.new(1, -2 * PAD, 0, 16), Parent = card }), 14, 9)
-		local line = Kit.GoldText(Kit.Text({ Name = "Line", Text = "", Font = "Number", TextSize = 14, Position = UDim2.fromOffset(PAD, ICON + 34),
-			Size = UDim2.new(1, -2 * PAD, 0, 18), Parent = card }))
+		Kit.Fit(Kit.Text({ Name = "Name", Text = string.upper(label), Font = "Chunky", Position = UDim2.fromOffset(PAD, ICON + 24), Size = UDim2.new(1, -2 * PAD, 0, 16), Parent = card }), 13, 10)
+		-- the count: a small gold badge top-right ("x2"); a running boost's time left
+		local badge = New("Frame", { Name = "Count", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -5, 0, 5),
+			Size = UDim2.fromOffset(0, 16), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 3, Parent = card }, {
+			New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+			New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
+			New("UIPadding", { PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5) }),
+		})
+		local line = Kit.Text({ Name = "Line", Text = "", Font = "Chunky", TextSize = 11, Size = UDim2.fromOffset(0, 16), AutomaticSize = Enum.AutomaticSize.X,
+			ZIndex = 4, Parent = badge })
 		local timer = Kit.Text({ Name = "Timer", Text = "", Font = "Number", TextSize = 11, TextColor3 = Colors.Teal, AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -6, 0, 4), Size = UDim2.fromOffset(48, 14), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = card })
+			Position = UDim2.new(1, -6, 0, 4), Size = UDim2.fromOffset(48, 14), TextXAlignment = Enum.TextXAlignment.Left, Visible = false, Parent = card })
+		timer.AnchorPoint = Vector2.new(0, 0)
+		timer.Position = UDim2.fromOffset(6, 5)
 		card.Activated:Connect(function()
 			Audio.PlayUI("Click")
 			panel.pick(key)
 		end)
 		tiles[key] = { card = card, line = line, timer = timer }
 	end
+	-- the item colour of each tile key
+	local colorOf = {}
+	for _, item in ipairs(Boosts.Items) do colorOf["item:" .. item.id] = Color3.fromHex(item.color) end
+	colorOf.dna = Theme.RarityColor.Mythic
+	for _, boost in ipairs(running) do colorOf["run:" .. boost.id] = boost.color end
+	-- the empty slots (dark, quiet)
+	local slots = {}
+	for i = 1, SLOTS do
+		local slot = New("Frame", { Name = "Slot" .. i, LayoutOrder = 1000 + i, BackgroundColor3 = Color3.new(1, 1, 1), Parent = grid })
+		Theme.SetPiece(slot, "card")
+		Theme.SetHex(slot, 0.9, 11)
+		slots[i] = slot
+	end
 	for order, item in ipairs(Boosts.Items) do
 		makeTile("item:" .. item.id, order, item.name, function(holder)
-			Kit.IconTile(item.icon, Color3.fromHex(item.color), ICON, { Parent = holder })
+			Kit.IconTile(item.icon, Color3.fromHex(item.color), ICON + 8, { Parent = holder })
 		end)
 	end
 	if dna then
@@ -108,7 +157,7 @@ function BoostsPanel.Build(parent: Instance, opts: { [string]: any }?)
 	end
 	for order, boost in ipairs(running) do
 		makeTile("run:" .. boost.id, 200 + order, boost.name, function(holder)
-			Kit.IconTile(boost.icon, boost.color, ICON, { Parent = holder })
+			Kit.IconTile(boost.icon, boost.color, ICON + 8, { Parent = holder })
 		end)
 	end
 
@@ -166,7 +215,12 @@ function BoostsPanel.Build(parent: Instance, opts: { [string]: any }?)
 				first = first or key
 			end
 		end
-		for key, t in pairs(tiles) do Theme.SetPiece(t.card, if panel.picked == key then "card_gold" else "card") end
+		local count = 0
+		for key, t in pairs(tiles) do
+			tint(t.card, colorOf[key], if panel.picked == key then Colors.Gold else nil)
+			if t.card.Visible then count += 1 end
+		end
+		for i, slot in ipairs(slots) do slot.Visible = count + i <= math.max(SLOTS, count) end
 		empty.Visible = first == nil
 		grid.Visible = first ~= nil
 		-- the picked one is gone (used up, ran out) or nothing picked yet: the first one there is
@@ -179,11 +233,12 @@ function BoostsPanel.Build(parent: Instance, opts: { [string]: any }?)
 		for _, child in ipairs(tileHolder:GetChildren()) do child:Destroy() end
 		local key = panel.picked
 		local kind, id = string.match(key, "^(%a+):?(.*)$")
+		tint(detail, colorOf[key])
 		useButton.Visible, equipButton.Visible, wideButton.Visible = false, false, false
 		if kind == "item" then
 			local item = Boosts.ById[id]
 			if not item then return end
-			Kit.IconTile(item.icon, Color3.fromHex(item.color), 40, { Parent = tileHolder })
+			Kit.IconTile(item.icon, Color3.fromHex(item.color), 56, { Parent = tileHolder })
 			name.Text = item.name
 			local n = countOf(item.id)
 			owned.Text = "You have " .. Kit.Format(n)
@@ -205,7 +260,7 @@ function BoostsPanel.Build(parent: Instance, opts: { [string]: any }?)
 		elseif kind == "run" then
 			local boost = runningById[id]
 			if not boost then return end
-			Kit.IconTile(boost.icon, boost.color, 40, { Parent = tileHolder })
+			Kit.IconTile(boost.icon, boost.color, 56, { Parent = tileHolder })
 			name.Text = boost.name
 			local ends = boost.ends()
 			owned.Text = if ends then (if ends == math.huge then "Always on" else clock(ends) .. " left") else ""
@@ -213,6 +268,9 @@ function BoostsPanel.Build(parent: Instance, opts: { [string]: any }?)
 			duration.Text = "Running now"
 		end
 	end
+
+	-- (the gold pill only when it has words)
+	owned:GetPropertyChangedSignal("Text"):Connect(function() ownedPill.Visible = owned.Text ~= "" end)
 
 	function panel.pick(key: string?)
 		panel.picked = key

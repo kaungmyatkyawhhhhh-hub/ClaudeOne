@@ -188,7 +188,9 @@ RunService.Heartbeat:Connect(function(dt)
 			drop(other)
 			refresh(other)
 		elseif other == player then
-			entry.handle:SetLOD(0)
+			-- (prompt 40) Inventory > Auras "SHOW EFFECT" off hides your own aura for you (the try-on still shows)
+			local hide = settings.myAura == "Off" and player:GetAttribute("AuraPreview") == nil
+			entry.handle:SetLOD(if hide then 2 else 0)
 		else
 			local root = entry.character:FindFirstChild("HumanoidRootPart")
 			local distance = root and (root.Position - eye).Magnitude or math.huge

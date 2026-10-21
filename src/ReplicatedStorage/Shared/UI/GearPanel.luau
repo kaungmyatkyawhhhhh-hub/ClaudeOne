@@ -59,9 +59,25 @@ function GearPanel.Build(parent: Instance)
 		New("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingBottom = UDim.new(0, 4) }),
 	})
 	panel.frame = holder
-	local empty = Kit.Text({ Name = "Empty", Text = "Nothing to wear yet. Get gear at the <font color=\"#F6C75A\">PUMP SHOP</font>.", RichText = true,
-		Font = "Strong", TextSize = 15, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(1, -20, 0, 22), Visible = false, Parent = holder })
+	-- (prompt 40, mockup inv_gear_empty) nothing yet: a big gold dumbbell, NOTHING TO WEAR YET, what gear does, GO TO PUMP SHOP
+	local empty = New("Frame", { Name = "Empty", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = holder })
+	local glow = New("Frame", { Name = "Glow", BackgroundColor3 = Colors.Gold, BackgroundTransparency = 0.82, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, -52), Size = UDim2.fromOffset(110, 70), Parent = empty }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	local _ = glow
+	require(script.Parent.Pieces).Icon("dumbbell", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -52), Size = UDim2.fromOffset(64, 64),
+		Parent = empty }):SetAttribute("KeepColor", true)
+	Kit.Text({ Name = "Title", Text = "NOTHING TO WEAR YET", Font = "Chunky", TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -6),
+		Size = UDim2.new(1, -20, 0, 26), Parent = empty })
+	local line = Kit.Text({ Name = "Line", Text = "Lifting belts, wraps, straps and sleeves make your lifts stronger.", Font = "Body", TextSize = 13, TextColor3 = Colors.Muted,
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 20), Size = UDim2.new(1, -20, 0, 16), Parent = empty })
+	line.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Medium, Enum.FontStyle.Italic)
+	local goShop = Kit.Button("Gold", "Go to Pump Shop", { Name = "GoPumpShop", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 56), Parent = empty },
+		{ width = 190, height = 36, textSize = 16 })
+	goShop.Activated:Connect(function()
+		local UIBus = require(script.Parent.UIBus)
+		UIBus.CloseAllPanels()
+		UIBus.GoPumpShop:Fire()
+	end)
 
 	local function card(order, name, sub, color, wearing, onTap)
 		local c = Kit.Card({ Name = name, LayoutOrder = order, Parent = frame }, {})
