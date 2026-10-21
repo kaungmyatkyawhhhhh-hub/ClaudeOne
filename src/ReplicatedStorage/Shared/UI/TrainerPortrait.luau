@@ -4,6 +4,8 @@
 --   TrainerPortrait.New(id, opts) -> ViewportFrame
 --     opts: Size / Position / AnchorPoint / ZIndex / Parent, pose ("FrontDoubleBiceps"; "Relaxed"), shot ("full" | "bust"),
 --           silhouette (a black shape: Secret before you own him), golden (a gold light), background (Color3; nil = clear)
+--   TrainerPortrait.Icon(id, opts) / TrainerPortrait.Art(id, opts) -> ImageLabel: (prompt 25) the rendered pictures
+--     (Config/Trainers icon / art; the Secret silhouette), or this 3D portrait when a trainer has none
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = script.Parent.Parent
@@ -80,6 +82,55 @@ function TrainerPortrait.New(id: string, opts)
 	end
 	if opts.Parent then frame.Parent = opts.Parent end
 	return frame
+end
+
+-- (prompt 25) The rendered pictures (Config/Trainers icon / art: made in Studio from a fixed camera with their muscles,
+-- tools/trainer_photos.luau + tools/trainer_icons.py); without one, the 3D portrait above.
+local function image(name: string, picture: string, opts)
+	local label = Instance.new("ImageLabel")
+	label.Name = name
+	label.BackgroundTransparency = 1
+	label.Image = picture
+	label.ScaleType = Enum.ScaleType.Fit
+	label.Size = opts.Size or UDim2.fromOffset(80, 80)
+	label.Position = opts.Position or UDim2.new()
+	label.AnchorPoint = opts.AnchorPoint or Vector2.zero
+	label.ZIndex = opts.ZIndex or 1
+	if opts.Parent then label.Parent = opts.Parent end
+	return label
+end
+
+-- The icon: chest up in his Black + Gold frame in the rarity color (the Agency odds list, the Trainers tab, the boards).
+-- opts as New, plus silhouette (the Secret one's black "???" picture) and golden (a gold rim).
+function TrainerPortrait.Icon(id: string, opts)
+	opts = opts or {}
+	local Trainers = require(Shared.Config.Trainers)
+	local trainer = Trainers.ById[id]
+	local picture = if opts.silhouette then Trainers.SilhouetteIcon else trainer and trainer.icon
+	if not picture or picture == "" then
+		return TrainerPortrait.New(id, { Size = opts.Size, Position = opts.Position, AnchorPoint = opts.AnchorPoint, ZIndex = opts.ZIndex, Parent = opts.Parent,
+			shot = "bust", pose = "Relaxed", silhouette = opts.silhouette, golden = opts.golden })
+	end
+	local label = image("Icon", picture, opts)
+	if opts.golden then
+		local rim = Instance.new("UIStroke")
+		rim.Color, rim.Thickness = Color3.fromHex("#F6C75A"), 2
+		rim.Parent = label
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.12, 0)
+		corner.Parent = label
+	end
+	return label
+end
+
+-- The reveal picture: full body in his own pose (Config/Trainers pose), on a clear background (the roll reveal card).
+function TrainerPortrait.Art(id: string, opts)
+	opts = opts or {}
+	local Trainers = require(Shared.Config.Trainers)
+	local trainer = Trainers.ById[id]
+	if trainer and trainer.art and trainer.art ~= "" then return image("Art", trainer.art, opts) end
+	return TrainerPortrait.New(id, { Size = opts.Size, Position = opts.Position, AnchorPoint = opts.AnchorPoint, ZIndex = opts.ZIndex, Parent = opts.Parent,
+		pose = if trainer and trainer.pose and trainer.pose ~= "Crossed" and trainer.pose ~= "Guard" then trainer.pose else "FrontDoubleBiceps" })
 end
 
 return TrainerPortrait

@@ -19,5 +19,9 @@ for _, machine in Machines.List do
 		H.check(amount > 0 and amount <= Gains.BaseXp * machine.tiers[1].gains * Gains.MaxMultiplier, machine.id .. " " .. id .. " xp in range (" .. string.format("%.2f", amount) .. ")")
 	end
 end
+-- (owner, prompt 25) the cap: x5 until the first Body Alter, then +1 per alter tier; MAX BOOST when the boosts pass it
+H.check(Gains.Cap({ alter = { highest = 0 } }) == Gains.MaxMultiplier and Gains.Cap({}) == Gains.MaxMultiplier, "the cap is x" .. Gains.MaxMultiplier .. " before 7'0\"")
+H.check(Gains.Cap({ alter = { highest = 1 } }) == Gains.MaxMultiplier + 1 and Gains.Cap({ alter = { highest = 6 } }) == Gains.MaxMultiplier + 2, "+1 per alter tier (alter 1: tier 1, alter 6: tier 2)")
+H.check(Gains.IsCapped(data, 50) and not Gains.IsCapped(data, 1), "a huge boost is capped (MAX BOOST), none isn't")
 H.done()
 

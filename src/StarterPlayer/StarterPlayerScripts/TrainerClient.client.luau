@@ -118,7 +118,8 @@ local function refreshRows()
 			for _, child in ipairs(r.holder:GetChildren()) do
 				if child:IsA("ViewportFrame") then child:Destroy() end
 			end
-			TrainerPortrait.New(id, { Size = UDim2.fromScale(1, 1), shot = "bust", pose = "Relaxed", silhouette = hidden, Parent = r.holder })
+			-- (prompt 25: his rendered icon; the Secret one a black silhouette until you own him)
+			TrainerPortrait.Icon(id, { Size = UDim2.fromScale(1, 1), silhouette = hidden, Parent = r.holder })
 		end
 	end
 end
@@ -267,7 +268,17 @@ local function makeCard(result, index: number, total: number)
 	-- the content (hidden until the card cracks open)
 	local content = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 6, Parent = body })
 	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(hex(rarity.color):Lerp(Color3.fromHex("#1C1C21"), 0.55), Color3.fromHex("#141417")), Parent = body })
-	TrainerPortrait.New(trainer.id, { Size = UDim2.new(1, 0, 0, 150), ZIndex = 6, pose = "FrontDoubleBiceps", Parent = content })
+	-- (prompt 25) his own pose (the rendered reveal picture) and his line
+	TrainerPortrait.Art(trainer.id, { Size = UDim2.new(1, 0, 0, 150), ZIndex = 6, Parent = content })
+	local line = trainer.line
+	if line then
+		local quote = Kit.Text({ Name = "Line", Text = "\"" .. line .. "\"", Font = "Strong", TextSize = 11, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, 146),
+			Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 8, Parent = content })
+		quote.BackgroundTransparency = 0.25
+		quote.BackgroundColor3 = Color3.fromHex("#141417")
+		New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = quote })
+		New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = quote })
+	end
 	local banner = New("Frame", { Name = "Banner", BackgroundColor3 = hex(rarity.color), Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, 0, 0, 22), ZIndex = 7,
 		Parent = content })
 	if rarity.color2 then New("UIGradient", { Color = ColorSequence.new(hex(rarity.color), hex(rarity.color2)), Parent = banner }) end
@@ -623,10 +634,16 @@ local function fillBoard(part: BasePart)
 				TextScaled = true, TextColor3 = color, TextXAlignment = align or Enum.TextXAlignment.Left, Position = UDim2.fromScale(x, 0.12),
 				Size = UDim2.fromScale(w, 0.76), Parent = row })
 		end
-		cell(string.upper(rarity.name), 0.04, 0.2, if rarity.hidden then hex(rarity.color2) else hex(rarity.color))
-		cell(if hidden then "???" else trainer.name, 0.25, 0.23, Color3.new(1, 1, 1))
-		cell(if hidden then "???" else trainer.perkText, 0.49, 0.33, Color3.fromHex("#B8B8BE"))
-		cell(chanceText(rarity.chance), 0.8, 0.18, Color3.fromHex("#F6C75A"), Enum.TextXAlignment.Right)
+		-- (prompt 25) his icon (the Secret one a black "???" silhouette until you own him)
+		local picture = if hidden then Trainers.SilhouetteIcon else trainer.icon
+		if picture and picture ~= "" then
+			New("ImageLabel", { BackgroundTransparency = 1, Image = picture, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromScale(0.03, 0.04),
+				Size = UDim2.fromScale(0.07, 0.92), Parent = row }, { New("UIAspectRatioConstraint", { AspectRatio = 1 }) })
+		end
+		cell(string.upper(rarity.name), 0.1, 0.17, if rarity.hidden then hex(rarity.color2) else hex(rarity.color))
+		cell(if hidden then "???" else trainer.name, 0.28, 0.22, Color3.new(1, 1, 1))
+		cell(if hidden then "???" else trainer.perkText, 0.51, 0.31, Color3.fromHex("#B8B8BE"))
+		cell(chanceText(rarity.chance), 0.83, 0.15, Color3.fromHex("#F6C75A"), Enum.TextXAlignment.Right)
 	end
 end
 local function addBoard(part)

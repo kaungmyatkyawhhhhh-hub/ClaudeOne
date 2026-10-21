@@ -240,8 +240,12 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		-- clothing and color (the skin part shows where the clothing image is see-through)
 		local template = if marble then "" else (if def.clothing == "Pants" then style.pants else style.shirt) or ""
 		if part.TextureID ~= template then part.TextureID = template end
-		local base = if marble then Color3.fromHex("#C9C6BF") else (style.skin or body.Color)
+		-- (prompt 25: marble = true, the statue's grey, or { color, variant }, Atlas the trainer)
+		local marbleColor = if type(marble) == "table" then marble.color else Color3.fromHex("#C9C6BF")
+		local base = if marble then marbleColor else (style.skin or body.Color)
 		part.Color = tint(def.muscle, base)
+		local variant = if type(marble) == "table" and marble.variant then marble.variant else ""
+		if part.MaterialVariant ~= variant then part.MaterialVariant = variant end
 		local clothed = template ~= ""
 		-- (a clothed part is a hair see-through, so the image's see-through pixels show the skin part instead of black)
 		if part.Transparency < 0.5 then
@@ -262,7 +266,7 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		limb.shownHidden = hidden
 		-- the ball that closes the elbow / knee (skin colored; the clothing color under a sleeve or pants leg doesn't matter:
 		-- it only shows inside a bent joint)
-		local skinColor = if marble then Color3.fromHex("#C9C6BF") else (style.skin or body.Color)
+		local skinColor = if marble then marbleColor else (style.skin or body.Color)
 		updateJoint(self, limb, body, part, tint(def.muscle, skinColor), if marble then Enum.Material.Marble else Enum.Material.SmoothPlastic, hidden)
 		-- the stage replaces the plain body part (shown again under layered clothing)
 		local bodyTransparency = if hidden then 0 else 1

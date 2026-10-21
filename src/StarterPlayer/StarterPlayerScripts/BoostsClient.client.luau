@@ -35,6 +35,20 @@ for order, item in ipairs(Boosts.Items) do
 	end
 end
 
+-- (owner, prompt 25) MAX BOOST: your boosts are past the gains cap (player attribute "MaxBoost", MachineService); the cap
+-- goes up with each Body Alter tier (Config.Gains.Cap)
+local maxChip = HudBottom.Chip("arrow-big-up", Colors.Gold, 19)
+maxChip:SetText("MAX BOOST")
+maxChip:OnTap(function()
+	Audio.PlayUI("Click")
+	local cap = player:GetAttribute("GainsCap")
+	Notify.Toast("MAX BOOST", "Your boosts are at the cap" .. (if type(cap) == "number" then " (x" .. cap .. ")" else "")
+		.. ". More boosts won't add EXP. Each Body Alter tier raises the cap.", "arrow-big-up", Colors.Gold, "maxboost")
+end)
+local function refreshMax() maxChip:SetVisible(player:GetAttribute("MaxBoost") == true) end
+player:GetAttributeChangedSignal("MaxBoost"):Connect(refreshMax)
+refreshMax()
+
 local function refreshChips()
 	local t = Workspace:GetServerTimeNow()
 	for id, chip in pairs(chips) do

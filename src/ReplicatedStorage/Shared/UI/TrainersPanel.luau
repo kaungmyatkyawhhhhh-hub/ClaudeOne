@@ -131,7 +131,7 @@ function TrainersPanel.Build(parent: Instance)
 			New("UIStroke", { Name = "Rarity", Color = color, Thickness = if c.golden then 2.5 else 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = card })
 			local box = New("Frame", { Name = "PortraitBox", BackgroundColor3 = Color3.fromHex("#141417"), Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(46, 46),
 				ClipsDescendants = true, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(0, 8) }) })
-			TrainerPortrait.New(trainer.id, { Size = UDim2.fromScale(1, 1), shot = "bust", pose = "Relaxed", golden = c.golden, Parent = box })
+			TrainerPortrait.Icon(trainer.id, { Size = UDim2.fromScale(1, 1), golden = c.golden, Parent = box })
 			Kit.Text({ Text = (if c.golden then "GOLDEN " else "") .. string.upper(rarity.name), Font = "Title", TextSize = 10, TextColor3 = color,
 				Position = UDim2.fromOffset(58, 6), Size = UDim2.new(1, -64, 0, 13), TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 			Kit.Text({ Text = trainer.name .. "  x" .. c.count, Font = "Strong", TextSize = 12, Position = UDim2.fromOffset(58, 20), Size = UDim2.new(1, -64, 0, 16),

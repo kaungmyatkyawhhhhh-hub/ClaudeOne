@@ -346,4 +346,5 @@ function AuraVFX:Destroy()
 end
 
 AuraVFX.Presets = PRESETS
+AuraVFX.Textures = TEX -- (prompt 25: the trainers' auras use the same textures, Shared.VFX.TrainerAura)
 return AuraVFX

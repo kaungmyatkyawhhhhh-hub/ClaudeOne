@@ -10,9 +10,13 @@
 --     "Great set!" line at the end of every set (10 reps), and "New record!" on your personal records.
 --   * Other players' trainers past RenderDistance aren't drawn; past FarAnimation they stand still (no animation).
 --   * Coach idle (owner, 14 Oct: never a stiff stand): a pose drawn on the joints over Roblox's idle: breathing (chest
---     and shoulders rise), a slow weight shift, and his own stance (IDLE_STYLE: arms crossed, clipboard check, hands on
+--     and shoulders rise), a slow weight shift, and his own stance (Config/Trainers idle: arms crossed, clipboard check, hands on
 --     hips). While you lift he faces you and every Trainers.CheerEvery reps claps or pumps a fist ("come on!"); speech
 --     bubbles at most one per Trainers.CheerCooldown seconds.
+--   * (prompt 25) The new trainers' own idles (Config/Trainers idle): Duke claps chalk off his hands and cracks his neck,
+--     Volta bounces on her toes and shadow-boxes, The Shadow crosses his arms and slowly turns his head to watch you, Atlas
+--     strikes a front double biceps every ~8 s. Their auras (Shared.VFX.TrainerAura). The line a trainer says when you
+--     equip him (Config/Trainers line / lines: The Shadow says "..." and, once a session, "Train.").
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -23,6 +27,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Trainers = require(Shared.Config.Trainers)
 local Theme = require(Shared.UI.Theme)
 local AuraVFX = require(Shared.VFX.AuraVFX)
+local TrainerAura = require(Shared.VFX.TrainerAura)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local localPlayer = Players.LocalPlayer
@@ -37,9 +42,8 @@ if not templates then return end -- the trainer service didn't start
 local ANIM = { Idle = "rbxassetid://507766388", Walk = "rbxassetid://913402848", Run = "rbxassetid://913376220" }
 local IDLE_BELOW, RUN_FROM = 0.5, 12
 local WALK_PACE, RUN_PACE = 8, 16
--- each coach's own stance while standing (drawn over the idle animation, see coachIdle)
-local IDLE_STYLE = { RookieCoach = "crossed", CardioCoach = "hips", MoneyCoach = "clipboard", PumpCoach = "crossed",
-	AtlasCoach = "crossed", BlazeCoach = "hips", ShadeCoach = "crossed", AeonCoach = "hips" }
+-- each coach's own stance while standing (Config/Trainers idle; drawn over the idle animation, see coachIdle)
+local CHALK_EVERY, FLEX_EVERY, FLEX_HOLD = 9, 8, 2.6 -- seconds (Duke's chalk + neck crack, Atlas's double biceps)
 local HYPE_SPOTS = { "Hype_5", "Hype_4", "Hype_3", "Hype_2", "Hype_1" } -- tried in this order (spotters fill from Hype_1)
 
 local folder = Instance.new("Folder")
@@ -92,12 +96,12 @@ local function blocked(from: Vector3, to: Vector3): boolean
 	return hit ~= nil and hit.Instance.CanCollide
 end
 
-local function bubble(state, text)
+local function bubble(state, text, force: boolean?)
 	local head = state.model:FindFirstChild("Head")
 	if not head then return end
-	-- (owner, 14 Oct: at most one bubble per CheerCooldown seconds, whatever asked for it)
+	-- (owner, 14 Oct: at most one bubble per CheerCooldown seconds, whatever asked for it; prompt 25: the equip line always)
 	local now = os.clock()
-	if now - (state.lastBubble or -math.huge) < Trainers.CheerCooldown then return end
+	if not force and now - (state.lastBubble or -math.huge) < Trainers.CheerCooldown then return end
 	state.lastBubble = now
 	local entry = state.bubble
 	if not entry then
@@ -172,7 +176,7 @@ local function makeTrainer(entry: string, slot: number)
 	return {
 		id = id, entry = entry, golden = golden, slot = slot, model = model, auraName = Trainers.ById[id].look.aura, root = root, humanoid = humanoid, tracks = {}, playing = nil,
 		position = nil, lastProgress = os.clock(), lastCheer = 0, clapUntil = 0, pumpUntil = 0, cheerTurn = 0,
-		style = IDLE_STYLE[id] or "crossed", phase = rng:NextNumber() * 10,
+		style = Trainers.ById[id].idle or "crossed", phase = rng:NextNumber() * 10, look = 0,
 		rootHeight = humanoid.HipHeight + root.Size.Y / 2,
 		scale = math.max((humanoid.HipHeight + root.Size.Y / 2) / 3, 0.5), -- (his size next to a standard 5-stud rig: pace)
 	}
@@ -216,6 +220,24 @@ local function destroyTrainer(state)
 	if state.model then state.model:Destroy() end
 end
 
+-- (prompt 25) what he says when you equip him: his line, or his lines one after another (the later ones once a session)
+local saidOnce = {}
+local function sayLine(state)
+	local trainer = Trainers.ById[state.id]
+	local lines = trainer.lines or (trainer.line and { trainer.line })
+	if not lines then return end
+	bubble(state, lines[1], true)
+	for i = 2, #lines do
+		if not saidOnce[state.id .. i] then
+			saidOnce[state.id .. i] = true
+			task.delay((i - 1) * (Trainers.BubbleSeconds + 0.4), function()
+				if state.model.Parent then bubble(state, lines[i], true) end
+			end)
+		end
+	end
+end
+local synced = {} -- [player] = true after the first sync (the trainers you join with don't talk)
+
 local function sync(player)
 	local list = {}
 	local value = player:GetAttribute("Trainers")
@@ -233,10 +255,17 @@ local function sync(player)
 			current[slot] = nil
 		else
 			nextSet[slot] = makeTrainer(entry, slot)
+			-- (a trainer you just equipped says his line; one moved to another slot doesn't)
+			local moved = false
+			for _, old in pairs(current) do
+				if old.entry == entry then moved = true end
+			end
+			if player == localPlayer and synced[player] and nextSet[slot] and not moved then sayLine(nextSet[slot]) end
 		end
 	end
 	for _, state in pairs(current) do destroyTrainer(state) end
 	followers[player] = next(nextSet) and nextSet or nil
+	synced[player] = true
 end
 
 local function watch(player)
@@ -249,6 +278,7 @@ Players.PlayerRemoving:Connect(function(player)
 	for _, state in pairs(followers[player] or {}) do destroyTrainer(state) end
 	followers[player] = nil
 	machineOf[player] = nil
+	synced[player] = nil
 end)
 
 ------------------------------------------------------------------------
@@ -399,7 +429,10 @@ local function step(player, state, root: BasePart, dt: number, now: number)
 		pos = Vector3.new(pos.X, target.Y, pos.Z)
 	end
 	state.position = pos
-	place(state, pos, face)
+	-- (prompt 25) Volta bounces on her toes while she stands
+	local bob = if state.style == "boxer" and state.playing == "Idle" and not state.frozen
+		then math.abs(math.sin(now * 6.5 + state.phase)) * 0.13 * (state.scale or 1) else 0
+	place(state, pos + Vector3.new(0, bob, 0), face)
 	-- the speed he really moved (studs a second, flat), smoothed over a few frames; a pop doesn't count
 	local moved = if popped or not moving then 0 else ((pos - before) * Vector3.new(1, 0, 1)).Magnitude / math.max(dt, 1 / 240)
 	state.speed = (state.speed or 0) + (moved - (state.speed or 0)) * math.min(dt * 10, 1)
@@ -450,6 +483,28 @@ local function joints(state)
 end
 local rad, Angles = math.rad, CFrame.Angles
 
+-- (prompt 25) a PoseData pose on his joints, w = 0..1 (Atlas's double biceps; the same math as Shared.PoseApply, with the
+-- joints looked up once)
+local poseData = nil
+local function strike(state, poseName: string, w: number)
+	poseData = poseData or require(ReplicatedStorage:WaitForChild("PoseData"))
+	local pose = poseData[poseName]
+	if not pose then return end
+	if not state.poseJoints then
+		state.poseJoints = {}
+		for _, joint in ipairs(state.model:GetDescendants()) do
+			if (joint:IsA("Motor6D") or joint:IsA("AnimationConstraint")) and joint.Name ~= "Root" then state.poseJoints[joint.Name] = joint end
+		end
+	end
+	for name, angles in pairs(pose) do
+		local joint = state.poseJoints[name]
+		if joint then
+			local q = joint.C0.Rotation
+			joint.Transform = CFrame.identity:Lerp(q:Inverse() * Angles(rad(angles[1]), rad(angles[2]), rad(angles[3])) * q, w)
+		end
+	end
+end
+
 -- "come on!": the right fist pumps up twice, the left fist at the hip
 local function fistPump(state, now)
 	local j = joints(state)
@@ -470,14 +525,77 @@ local function coachIdle(state, now)
 	if j.Waist then j.Waist.Transform = Angles(rad(-1.5 - 1.5 * breath), rad(3 * shift), rad(1.5 * shift)) end
 	if j.Neck then j.Neck.Transform = Angles(rad(2 * breath), rad(8 * math.sin(t * 0.3)), 0) end
 	local lift = rad(2.5 * breath) -- the shoulders rise with each breath
-	if state.style == "crossed" then
+	local style = state.style
+	if style == "chalk" then
+		-- Duke: hands on his hips; every CHALK_EVERY s he claps the chalk off his hands (a puff), then cracks his neck
+		local cycle = math.floor(t / CHALK_EVERY)
+		local into = t - cycle * CHALK_EVERY
+		if into < 1.2 then
+			if state.chalkCycle ~= cycle then
+				state.chalkCycle = cycle
+				if state.aura and state.aura.Burst then pcall(function() state.aura:Burst("chalk") end) end
+			end
+			clap(state, now)
+			return
+		elseif into < 2.6 then
+			local k = (into - 1.2) / 1.4
+			local tilt = if k < 0.5 then -math.sin(k * 2 * math.pi) else math.sin((k - 0.5) * 2 * math.pi)
+			if j.Neck then j.Neck.Transform = Angles(rad(-4), 0, rad(22 * tilt)) end
+		end
+		style = "hips"
+	elseif style == "boxer" then
+		-- Volta: guard up, quick jabs left and right, a twist of the waist with each (the bounce is in step)
+		local beat = (t * 2.2) % 2
+		local right = beat < 1
+		local punch = math.max(0, 1 - math.abs((beat % 1) - 0.2) / 0.2) -- (a quick out and back at the start of each beat)
+		local function arm(shoulder, elbow, side, out)
+			if shoulder then shoulder.Transform = Angles(rad(55 + 33 * out), 0, rad(side * (-28 + 20 * out))) end
+			if elbow then elbow.Transform = Angles(rad(115 - 105 * out), 0, 0) end
+		end
+		arm(j.RShoulder, j.RElbow, 1, if right then punch else 0)
+		arm(j.LShoulder, j.LElbow, -1, if right then 0 else punch)
+		if j.Waist then j.Waist.Transform = Angles(rad(-4), rad((if right then -1 else 1) * 10 * punch), 0) end
+		if j.Neck then j.Neck.Transform = Angles(rad(6), 0, 0) end
+		return
+	elseif style == "watch" then
+		-- The Shadow: arms crossed, his head slowly turning to watch you
+		local character = localPlayer.Character
+		local head = character and character:FindFirstChild("Head")
+		local want = 0
+		if head and head:IsA("BasePart") then
+			local rel = state.root.CFrame:PointToObjectSpace(head.Position)
+			want = math.clamp(math.atan2(-rel.X, -rel.Z), rad(-60), rad(60))
+		end
+		local dt = math.min(now - (state.lookAt or now), 0.1)
+		state.lookAt = now
+		state.look += (want - state.look) * math.min(dt * 1.2, 1)
+		if j.Neck then j.Neck.Transform = Angles(rad(-3), state.look, 0) end
+		style = "crossed"
+		if j.Waist then j.Waist.Transform = Angles(rad(-1.5 - 1.5 * breath), 0, 0) end
+	elseif style == "flex" then
+		-- Atlas: hands on his hips; every FLEX_EVERY s a slow front double biceps (FLEX_HOLD s, blended in and out)
+		local into = t % FLEX_EVERY
+		if into < FLEX_HOLD then
+			local w = math.min(into / 0.5, 1, (FLEX_HOLD - into) / 0.5)
+			w = w * w * (3 - 2 * w)
+			if w > 0.98 then
+				strike(state, "FrontDoubleBiceps", 1)
+				return
+			end
+			-- (blending: the hips stance under it, the pose on top)
+			strike(state, "FrontDoubleBiceps", w)
+			return
+		end
+		style = "hips"
+	end
+	if style == "crossed" then
 		-- forearms folded across the chest, each hand in front of the other side (right over left); angles found by
 		-- solving the joint chain for those hand spots on the trainer rig
 		if j.RShoulder then j.RShoulder.Transform = Angles(rad(65) + lift, rad(30), rad(-60)) end
 		if j.LShoulder then j.LShoulder.Transform = Angles(rad(55) + lift, rad(-30), rad(60)) end
 		if j.RElbow then j.RElbow.Transform = Angles(rad(40), rad(60), 0) end
 		if j.LElbow then j.LElbow.Transform = Angles(rad(40), 0, 0) end
-	elseif state.style == "clipboard" then
+	elseif style == "clipboard" then
 		-- reading the clipboard in his right hand, left hand on the hip
 		if j.RShoulder then j.RShoulder.Transform = Angles(rad(40) + lift, rad(-15), 0) end
 		if j.RElbow then j.RElbow.Transform = Angles(rad(70), 0, 0) end
@@ -539,16 +657,23 @@ RunService.Heartbeat:Connect(function(dt)
 				if state.model.Parent ~= folder then
 					state.position = nil -- (pops in beside the player)
 					state.model.Parent = folder
-					-- (prompt 24) the rarity aura of the rare ones (Legendary gold, Mythic red-purple, Secret shadow, Eternal white-gold)
+					-- (prompt 24) the rarity aura of the rare ones (prompt 25: their own small auras, Shared.VFX.TrainerAura;
+					-- any other name is an AuraVFX preset)
 					if state.auraName and not state.aura then
-						local ok, handle = pcall(AuraVFX.Build, state.model, state.auraName)
-						if ok and handle then
-							state.aura = handle
-							pcall(function() handle:SetPower(0.15) end)
+						if TrainerAura.Presets[state.auraName] then
+							local ok, handle = pcall(TrainerAura.Build, state.model, state.auraName)
+							if ok and handle then state.aura = handle end
+						else
+							local ok, handle = pcall(AuraVFX.Build, state.model, state.auraName)
+							if ok and handle then
+								state.aura = handle
+								pcall(function() handle:SetPower(0.15) end)
+							end
 						end
 					end
 				end
 				step(player, state, root, dt, now)
+				if state.aura and state.aura.Update and not state.frozen then state.aura:Update(now) end
 				-- other players' trainers far away stand still: no animation, no pose (owner, 14 Oct: performance)
 				local far = player ~= localPlayer and (root.Position - eye).Magnitude > Trainers.FarAnimation
 				if far ~= (state.frozen == true) then

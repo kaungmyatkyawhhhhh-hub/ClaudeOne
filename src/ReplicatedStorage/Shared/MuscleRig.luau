@@ -150,6 +150,10 @@ function MuscleRig.new(model: Model, opts: any?)
 		model = model,
 		static = opts.static == true,
 		marble = opts.marble == true,
+		-- (prompt 25) a marble body's own color and MaterialVariant (Atlas the trainer: white marble with gold veins);
+		-- nil = the statue's grey marble
+		marbleColor = if typeof(opts.marbleColor) == "Color3" then opts.marbleColor else nil,
+		marbleVariant = if type(opts.marbleVariant) == "string" then opts.marbleVariant else nil,
 		keepBody = opts.keepBody == true,
 		priority = opts.priority or 0,
 		style = opts.style or {},
@@ -201,6 +205,13 @@ end
 
 local function smoothMaterial(material: Enum.Material): Enum.Material
 	return if material == Enum.Material.Plastic then Enum.Material.SmoothPlastic else material
+end
+
+-- (prompt 25) what the stage modules get for marble: false, true (the statue's grey) or { color, variant } (Atlas the trainer)
+local function marbleSpec(self): any
+	if not self.marble then return false end
+	if self.marbleColor or self.marbleVariant then return { color = self.marbleColor or MARBLE, variant = self.marbleVariant } end
+	return true
 end
 
 -- The character's own classic clothing image for a kind ("Shirt" / "Pants"), or nil.
@@ -280,8 +291,9 @@ function MuscleRig.DressBody(self)
 			for _, child in ipairs(part:GetChildren()) do
 				if child:IsA("SurfaceAppearance") and child.Name ~= "SkinStage" then child:Destroy() end
 			end
-			part.Color = self.marble and MARBLE or color
+			part.Color = self.marble and (self.marbleColor or MARBLE) or color
 			part.Material = mat or material
+			if self.marble and self.marbleVariant then part.MaterialVariant = self.marbleVariant end
 		end
 	end
 	for _, name in ipairs(BODY_PARTS) do paint(name, skin) end
@@ -590,7 +602,8 @@ local function recolor(self, group)
 		dropLayer(group)
 	end
 	if self.marble then
-		part.Color, part.Material = MARBLE, Enum.Material.Marble
+		part.Color, part.Material = self.marbleColor or MARBLE, Enum.Material.Marble
+		if self.marbleVariant then part.MaterialVariant = self.marbleVariant end
 		template = nil
 	elseif group.def.kind == "snatched" or group.def.kind == "unified" or group.def.hidePart or template then
 		-- it stands in for the body part: the body part's own color and material
@@ -1564,7 +1577,7 @@ local function step(self, dt: number)
 			skin = (self.style and self.style.skin) or nil, shirt = templateFor(self, "Shirt"), pants = templateFor(self, "Pants"),
 		}, function(id, base)
 			return tinted(self, id, base, 1, templateFor(self, if id == "Calves" then "Pants" else "Shirt") ~= nil)
-		end, self.covered, self.marble)
+		end, self.covered, marbleSpec(self))
 	end
 	-- the other characters' body regions (BodyStages): the stage from the region's look, the strongest tint of its muscles
 	if self.bodyStages and stagesNow then
@@ -1580,7 +1593,7 @@ local function step(self, dt: number)
 				if strength > bestStrength then bestColor, bestStrength = color, strength end
 			end
 			return if bestColor then base:Lerp(bestColor, bestStrength) else base
-		end, self.covered, self.marble)
+		end, self.covered, marbleSpec(self))
 	end
 	if (self.limbs or self.bodyStages) and stagesNow then
 		for _, child in ipairs(self.folder:GetChildren()) do

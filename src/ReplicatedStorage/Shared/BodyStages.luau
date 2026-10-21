@@ -343,7 +343,7 @@ function BodyStages.Update(self, getLook, style, tint, covered, marble)
 			if part.TextureID ~= template then part.TextureID = template end
 			local base
 			if marble then
-				base = MARBLE
+				base = if type(marble) == "table" then marble.color else MARBLE -- (prompt 25: { color, variant }, Atlas the trainer)
 			elseif template ~= "" then
 				base = skin
 			elseif piece.kind == "shorts" then
@@ -358,6 +358,8 @@ function BodyStages.Update(self, getLook, style, tint, covered, marble)
 				elseif piece.kind == "shorts" and template == "" then Enum.Material.Fabric
 				else Enum.Material.SmoothPlastic
 			if part.Material ~= material then part.Material = material end
+			local variant = if type(marble) == "table" and marble.variant then marble.variant else ""
+			if part.MaterialVariant ~= variant then part.MaterialVariant = variant end
 			-- layered clothing on this part hides it (not while a fade runs)
 			if hidden and part.Transparency < 1 then part.Transparency = 1 end
 			if not hidden and part.Transparency >= 1 and state.wasHidden then part.Transparency = 0 end

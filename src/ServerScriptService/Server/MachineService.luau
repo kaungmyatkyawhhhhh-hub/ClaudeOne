@@ -571,6 +571,13 @@ local function lift(player)
 	-- worn PUMP SHOP gear helps the machines in its area (prompt 19, Config/PumpShop.GearMultiplier)
 	local gear = PumpShop.GearMultiplier(data.cosmetics and data.cosmetics.equipped, machine, Muscles.ById[machine.muscles[1].id].group)
 	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player) * gear, quality) -- (none on cardio: it trains stamina)
+	-- (prompt 25) the boosts past the gains cap: the HUD's MAX BOOST tag (BoostsClient)
+	if machine.trains ~= "Stamina" then
+		local capped = Gains.IsCapped(data, BoostService.Gains(player) * gear)
+		if player:GetAttribute("MaxBoost") ~= capped then player:SetAttribute("MaxBoost", capped) end
+		local cap = Gains.Cap(data)
+		if player:GetAttribute("GainsCap") ~= cap then player:SetAttribute("GainsCap", cap) end
+	end
 
 	local mainId = machine.muscles[1].id
 	local usableBefore = Machines.UsableTier(machine, progress, data.muscles[mainId].level)

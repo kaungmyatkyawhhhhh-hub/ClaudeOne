@@ -21,6 +21,7 @@ function Builder.Build()
 		sa.Parent = folder
 	end
 	Builder.BuildAlters()
+	Builder.BuildTrainerSkins()
 	return folder
 end
 
@@ -46,6 +47,30 @@ function Builder.BuildAlters()
 			sa.Parent = folder
 			made += 1
 		end
+	end
+	return made
+end
+
+-- (prompt 25) The trainers' own materials (Config/Trainers Materials: Atlas's white marble with gold veins) as
+-- MaterialVariants in MaterialService. Replaces only those.
+-- Usage: require(game.ServerStorage._Builders.SkinStages).BuildTrainerSkins()
+function Builder.BuildTrainerSkins()
+	local Trainers = require(ReplicatedStorage.Shared.Config.Trainers)
+	local MaterialService = game:GetService("MaterialService")
+	local made = 0
+	for name, maps in pairs(Trainers.Materials) do
+		local old = MaterialService:FindFirstChild(name)
+		if old then old:Destroy() end
+		local variant = Instance.new("MaterialVariant")
+		variant.Name = name
+		variant.BaseMaterial = Enum.Material[maps.base]
+		variant.ColorMap = maps.color
+		variant.NormalMap = maps.normal
+		variant.RoughnessMap = maps.roughness
+		if maps.metalness then variant.MetalnessMap = maps.metalness end
+		variant.StudsPerTile = maps.studsPerTile or 4
+		variant.Parent = MaterialService
+		made += 1
 	end
 	return made
 end

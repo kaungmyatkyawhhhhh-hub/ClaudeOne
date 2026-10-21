@@ -7,19 +7,28 @@ for _, r in T.Rarities do total += r.chance end
 H.check(math.abs(total - 100) < 1e-9, "the chances add up to 100% (" .. total .. ")")
 for i, t in T.List do
 	H.check(t.rarity == T.Rarities[i].id and T.ByRarity[t.rarity] == t, t.id .. " is the " .. T.Rarities[i].id .. " one")
-	H.check(t.name and t.perkText and t.look and t.look.skin and t.look.faceTexture and (t.look.pants or t.look.shorts) and next(t.perk) ~= nil, t.id .. " is complete")
+	H.check(t.name and t.perkText and t.look and t.look.skin and (t.look.faceTexture or table.find(t.look.extras, "deephood")) and (t.look.pants or t.look.shorts) and next(t.perk) ~= nil, t.id .. " is complete")
 end
 H.check(T.ById.RookieCoach.perk.gains == 0.05 and T.ById.CardioCoach.perk.coins == 0.10, "Common +5% EXP, Uncommon +10% coins")
+H.check(T.ById.CardioCoach.perk.staminaRegen == 0.15 and T.Bonus({ "CardioCoach" }).staminaRegen == 0.15, "Uncommon +15% stamina regen (owner, prompt 25)")
 H.check(T.ById.MoneyCoach.perk.gains == 0.15 and T.ById.MoneyCoach.perk.maxStamina == 0.10, "Rare +15% EXP +10% max stamina")
 H.check(T.ById.PumpCoach.perk.gains == 0.25 and T.ById.PumpCoach.perk.coins == 0.25, "Epic +25% EXP and coins")
 H.check(T.ById.AeonCoach.perk.gains == 1.5 and T.ById.AeonCoach.perk.progress == 0.5, "Eternal +150% and +50% progress")
 H.check(T.ById.AtlasCoach.look.aura and T.ById.BlazeCoach.look.aura and T.ById.ShadeCoach.look.aura and T.ById.AeonCoach.look.aura, "the rare ones have auras")
 H.check(T.RarityById.Secret.hidden == true, "Secret is hidden until owned")
+-- (prompt 25) the new 5-8: each taller than the one below, an idle, a line and a reveal pose
+H.check(T.ById.AtlasCoach.name == "Duke Ironside" and T.ById.BlazeCoach.name == "Volta" and T.ById.ShadeCoach.name == "The Shadow" and T.ById.AeonCoach.name == "Atlas", "5-8: Duke Ironside, Volta, The Shadow, Atlas")
+for i = 2, #T.List do
+	H.check(T.List[i].heightInches > T.List[i - 1].heightInches and T.List[i].heightInches <= T.MaxHeightInches, T.List[i].id .. " is taller than the one below (" .. T.List[i].heightInches .. " in)")
+	H.check(T.List[i].idle ~= nil and (T.List[i].line ~= nil) and T.List[i].pose ~= nil, T.List[i].id .. " has an idle, a line and a pose")
+end
+H.check(T.List[8].heightInches == 90 and T.List[7].heightInches == 86, "The Shadow 7'2\", Atlas 7'6\"")
+H.check(T.Materials[T.ById.AeonCoach.look.marble.variant] ~= nil, "Atlas's marble material has its maps")
 
 print("Rolls")
 -- the boundaries of the odds
-H.check(T.Roll(0, 0) == "Common" and T.Roll(0.4999, 0) == "Common" and T.Roll(0.5, 0) == "Uncommon", "0-50% Common, then Uncommon")
-H.check(T.Roll(0.9999999, 0) == "Eternal", "the last 0.05% is Eternal")
+H.check(T.Roll(0, 0) == "Common" and T.Roll(0.5021, 0) == "Common" and T.Roll(0.50216, 0) == "Uncommon", "0-50.215% Common, then Uncommon")
+H.check(T.Roll(0.99997, 0) == "Eternal" and T.Roll(0.9996, 0) == "Secret", "the last 0.035% is Eternal")
 -- pity: 99 low rolls, the 100th is an Epic
 local pity, last = 0, nil
 for _ = 1, T.Pity - 1 do last, pity = T.Roll(0.1, pity) end
@@ -47,7 +56,8 @@ end
 
 print("Price and pacing (minutes of coins at your stage per roll: " .. T.RollMinutes .. ")")
 H.check(T.RollPrice(57) >= T.MinPrice and T.RollPrice(328) % 5 == 0, "prices round to 5 and never below the minimum")
--- average minutes of coins until the first of each rarity (or better), with pity, no auto-delete refunds
+-- average minutes of coins until the first of each rarity (or better), with pity, no auto-delete refunds (owner, prompt 25:
+-- Mythic ~3-4 h, Secret ~15 h)
 local runs = 20000
 local function avgRollsTo(index)
 	local sum = 0
@@ -63,7 +73,7 @@ local function avgRollsTo(index)
 	end
 	return sum / runs
 end
-for _, spec in { { "Epic", 15, 25 }, { "Legendary", 40, 75 }, { "Mythic", 150, 280 }, { "Secret", 500, 1100 }, { "Eternal", 2000, 4500 } } do
+for _, spec in { { "Epic", 15, 25 }, { "Legendary", 40, 75 }, { "Mythic", 180, 240 }, { "Secret", 780, 1080 }, { "Eternal", 3600, 5400 } } do
 	local rolls = avgRollsTo(T.RarityById[spec[1]].index)
 	local minutes = rolls * T.RollMinutes
 	H.check(minutes >= spec[2] and minutes <= spec[3], string.format("first %s or better: %.0f rolls, %.0f min (%.1f h)", spec[1], rolls, minutes, minutes / 60))

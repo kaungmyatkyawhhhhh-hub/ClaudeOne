@@ -83,6 +83,8 @@ local function track(model: Model, source: Instance, mine: boolean, kind: string
 	local rig = MuscleRig.new(model, {
 		static = isStatic(model),
 		marble = source:GetAttribute("MuscleMarble") == true,
+		marbleColor = source:GetAttribute("MarbleColor"), -- (prompt 25: Atlas the trainer)
+		marbleVariant = source:GetAttribute("MarbleVariant"),
 		style = style,
 		keepBody = keepBody,
 	})
