@@ -530,6 +530,59 @@ local function addBackSculpt(data)
 	end
 end
 
+-- The fuller chest (owner's prompt 9 part 3, done 21 Oct: "make the chest look more full"). Like the back sculpt: muscle
+-- bellies on the front of the torso (CHEST_BELLIES, part-local, mirrored left / right), joined in a smooth union minus the
+-- sternum line, pushed out along the front's smoothed normals. Wide, shallow bellies (a kids' game: an athletic shape, no
+-- nipple or bust detail): the clavicular head filling the dip under the collarbone, the pec mass (a little more forward
+-- projection), a rounder lower pec line, and the upper chest wrapping out into the front delts (no flat gap at the
+-- armpit). Each belly is its muscle's shape layer, so it grows with UpperChest / MidChest (none at level 0, most at the mass
+-- monster). Fades out on the top lid and the sides, so the seams with the back, traps and arms don't move.
+local CHEST_BELLIES = {
+	{ muscle = "UpperChest", x = 0.4, y = 0.6, rx = 0.46, ry = 0.2, tilt = 0, h = 0.05 },     -- under the collarbone
+	{ muscle = "UpperChest", x = 0.76, y = 0.5, rx = 0.26, ry = 0.26, tilt = -0.45, h = 0.04 }, -- wraps into the front delts
+	{ muscle = "MidChest", x = 0.42, y = 0.32, rx = 0.44, ry = 0.3, tilt = 0, h = 0.045 },     -- the pec mass, more projection
+	{ muscle = "MidChest", x = 0.46, y = 0.1, rx = 0.38, ry = 0.15, tilt = 0.12, h = 0.028 },   -- a rounder lower pec line
+}
+local CHEST_UNION = 30
+local CHEST_STERNUM = { Depth = 0.022, Width = 0.055 }
+local CHEST_NORMAL_SMOOTHING = 30
+
+local function addChestSculpt(data)
+	if not (data.muscles.UpperChest and data.muscles.MidChest) then return end
+	local ns = smoothedNormals(data, -10, CHEST_NORMAL_SMOOTHING)
+	local count = #CHEST_BELLIES
+	local cosT, sinT = table.create(count), table.create(count)
+	for i, bl in ipairs(CHEST_BELLIES) do cosT[i], sinT[i] = math.cos(bl.tilt), math.sin(bl.tilt) end
+	local zeroMax = math.log(count) / CHEST_UNION
+	for v, b in ipairs(data.base) do
+		local n = ns[v]
+		-- the front of the torso only (-Z), fading out toward the sides and the top lid
+		local front = ease((-n.Z - 0.15) / 0.45)
+		if front <= 0.001 then continue end
+		local ax, y = math.abs(b.X), b.Y
+		local heights, biggest, sumExp = table.create(count), 0, 0
+		for i, bl in ipairs(CHEST_BELLIES) do
+			local dx, dy = ax - bl.x, y - bl.y
+			local c, sn = cosT[i], sinT[i]
+			local u, w = (dx * c + dy * sn) / bl.rx, (-dx * sn + dy * c) / bl.ry
+			local h = bl.h * math.clamp(1 - (u * u + w * w), 0, 1) ^ 2
+			heights[i] = h
+			biggest = math.max(biggest, h)
+			sumExp += math.exp(CHEST_UNION * h)
+		end
+		local total = math.log(sumExp) / CHEST_UNION - zeroMax * (1 - math.clamp(biggest / 0.03, 0, 1))
+		total = math.max(total, 0) * math.clamp(biggest / 0.005, 0, 1)
+		local sternum = CHEST_STERNUM.Depth * math.exp(-(b.X / CHEST_STERNUM.Width) ^ 2)
+		local relief = math.max(total - (if total > 0.005 then sternum else 0), 0) * front
+		if relief > 1e-5 then
+			for i, bl in ipairs(CHEST_BELLIES) do
+				local amount = relief * math.exp(CHEST_UNION * heights[i]) / sumExp
+				if amount > 1e-4 then addShape(data, bl.muscle, v, n * amount) end
+			end
+		end
+	end
+end
+
 -- Round delts (owner, 19 Oct: "big round caps like half-balls sitting on the outside of the shoulder"; the data's delts
 -- were lumpy, folded and pointy on top). On the top of the upper arm (fully from CapFull, easing in from CapFrom, part-local
 -- height) the data's delts fade out and the three delt heads grow as ONE smooth cap (their shape layers): at the full look
@@ -590,6 +643,7 @@ function MuscleMeshes.LoadUnified(name: string): any
 		applyUVPatch(data, name)
 		addUpperTraps(data)
 		addBackSculpt(data)
+		addChestSculpt(data)
 	end
 	if record.part == "RightUpperArm" then addRoundDelts(data, 1) end
 	if record.part == "LeftUpperArm" then addRoundDelts(data, -1) end
