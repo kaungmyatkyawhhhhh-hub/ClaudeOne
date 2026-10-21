@@ -250,7 +250,7 @@ local function keycap(parent: GuiObject, key: string)
 end
 -- two lines on a button: the big word and the small value under it
 local function twoLines(button: GuiObject, big: string, small: string, bigSize: number)
-	local top = Kit.Text({ Name = "Big", Text = big, Font = "Title", TextSize = bigSize, Position = UDim2.new(0, 0, 0, 6), Size = UDim2.new(1, 0, 0.55, -4),
+	local top = Kit.Text({ Name = "Big", Text = big, Font = "Chunky", TextSize = bigSize, -- (prompt 45: the chunky font, like ROLL) Position = UDim2.new(0, 0, 0, 6), Size = UDim2.new(1, 0, 0.55, -4),
 		ZIndex = 6, Parent = button })
 	local bottom = Kit.Text({ Name = "Small", Text = small, Font = "Strong", TextSize = 11, Position = UDim2.new(0, 0, 0.55, 0), Size = UDim2.new(1, 0, 0.35, 0),
 		ZIndex = 6, Parent = button })

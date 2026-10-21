@@ -53,6 +53,20 @@ local tile = Theme.Button("Gold", { Name = "Tile", Size = UDim2.new(1, 0, 0, TIL
 local tileText = Kit.Text({ Name = "Grow", Text = "TAP TO GROW", Font = "Title", TextSize = 18, Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0, 22), Parent = tile })
 Kit.Fit(tileText, 18, 11) -- ("MAX GROWTH SPURT" fits the card)
 local tileLabel = Kit.Text({ Name = "Label", Text = "", Font = "Title", TextSize = 10, Upper = true, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 12), Parent = tile })
+-- (prompt 45, mockup 05_hud_dark_chunky) ready: a taller card, TAP TO GROW big and chunky with the line under it
+local READY_H = 62
+local bigText = Kit.Text({ Name = "Big", Text = "TAP TO GROW", Font = "Chunky", TextSize = 28, Position = UDim2.fromOffset(6, 7), Size = UDim2.new(1, -12, 0, 32),
+	Visible = false, Parent = tile })
+Kit.Fit(bigText, 28, 16)
+local function setReadyLook(on: boolean)
+	bigText.Visible = on
+	tileText.Visible = not on
+	tile.Size = UDim2.new(1, 0, 0, if on then READY_H else TILE_H)
+	holder.Size = UDim2.fromOffset(RightColumn.Width, (if on then READY_H else TILE_H) + 6)
+	tileLabel.Position = UDim2.fromOffset(0, if on then 40 else 24)
+	tileLabel.TextSize = if on then 12 else 10
+	tileLabel.Size = UDim2.new(1, 0, 0, if on then 14 else 12)
+end
 -- (owner, 15 Oct: always shown under the one priority card; it had vanished behind Today's Quest)
 RightColumn.Add(holder, 9, "bottom")
 local started = false -- (shown after the data is in)
@@ -454,6 +468,7 @@ local function refresh()
 		Remotes.PlayerAction:FireServer("ShopEvent", { event = "OfferShown", offer = "FinishFaster" })
 	end
 	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
+	setReadyLook(ready)
 	-- (owner, 15 Oct, later: at the 7'0" cap NO card on the HUD; the top bar's "7'0" MAX" and the Stats panel's greyed
 	-- button show it)
 	holder.Visible = started and (alterMode or not progress.maxed)
@@ -465,6 +480,7 @@ local function refresh()
 	elseif alterMode and ready then
 		tileText.Text = "ALTER NOW"
 		tileLabel.Text = "Alter " .. progress.next .. ": " .. nextName .. " ready"
+		bigText.Text = "ALTER NOW"
 		Theme.SetButtonStyle(tile, "Gold")
 		Theme.Pulse(tile, function() return ready end)
 	elseif alterMode then
@@ -477,6 +493,7 @@ local function refresh()
 		Theme.SetButtonStyle(tile, "Disabled")
 	elseif ready then
 		tileText.Text = "TAP TO GROW"
+		bigText.Text = "TAP TO GROW"
 		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
 		Theme.SetButtonStyle(tile, "Gold")
 		Theme.Pulse(tile, function() return ready end)

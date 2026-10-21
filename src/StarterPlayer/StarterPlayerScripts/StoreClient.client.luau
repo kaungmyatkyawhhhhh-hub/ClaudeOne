@@ -232,13 +232,8 @@ end
 local hero = Kit.Card({ Name = "Hero", Piece = "card_gold", Size = UDim2.new(0, HERO_W, 1, 0), Parent = modal.body }, {})
 hero:FindFirstChild("Border").Thickness = 3.5
 -- (owner, 22 Oct: no mesh: it sits on the window panel, which has it)
--- a warm red glow behind the art (the art's own backdrop in the mockup)
-New("Frame", { Name = "ArtGlow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(100, 100),
-	BackgroundColor3 = Color3.fromHex("#3A1214"), BackgroundTransparency = 0.2, Parent = hero }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 18) }),
-	New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.7) }) }),
-})
-local heroArt = Pieces.Image("art", { Name = "Art", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 24), Size = UDim2.fromOffset(96, 96), Parent = hero })
+-- (prompt 45, mockup 01_store_A) the transparent art big, straight on the tile (tinted in the item's colour: select)
+local heroArt = Pieces.Image("art", { Name = "Art", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 14), Size = UDim2.fromOffset(112, 112), Parent = hero })
 -- BEST SELLER: a small gold tag in the top-left corner
 local bestTag = New("Frame", { Name = "BestSeller", Position = UDim2.fromOffset(10, 9), Size = UDim2.fromOffset(0, 18), AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 3, Visible = false, Parent = hero }, {
@@ -246,15 +241,16 @@ local bestTag = New("Frame", { Name = "BestSeller", Position = UDim2.fromOffset(
 	New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
 	New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
 })
-Kit.Text({ Name = "Text", Text = "BEST SELLER", Font = "Title", TextSize = 11, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.new(0, 0, 1, 0),
+Kit.Text({ Name = "Text", Text = "BEST SELLER", Font = "Chunky", TextSize = 11, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.new(0, 0, 1, 0),
 	AutomaticSize = Enum.AutomaticSize.X, ZIndex = 3, Parent = bestTag })
-local heroName = Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 22, Upper = true, Position = UDim2.fromOffset(12, 122),
-	Size = UDim2.new(1, -24, 0, 26), TextTruncate = Enum.TextTruncate.AtEnd, Parent = hero }))
+local heroName = Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 26, Upper = true, Position = UDim2.fromOffset(10, 124),
+	Size = UDim2.new(1, -20, 0, 28), TextTruncate = Enum.TextTruncate.AtEnd, Parent = hero }))
 -- (a long name like ENDLESS STAMINA shrinks to fit instead of being cut off)
 heroName.TextScaled = true
-Theme.New("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = 14, Parent = heroName })
-local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Text, TextWrapped = true, Position = UDim2.fromOffset(12, 148),
-	Size = UDim2.new(1, -24, 0, 28), TextYAlignment = Enum.TextYAlignment.Top, Parent = hero })
+Theme.New("UITextSizeConstraint", { MaxTextSize = 26, MinTextSize = 14, Parent = heroName })
+local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Chunky", TextSize = 11, TextColor3 = Colors.Text, TextWrapped = true, Position = UDim2.fromOffset(10, 153),
+	Size = UDim2.new(1, -20, 0, 28), TextYAlignment = Enum.TextYAlignment.Top, Parent = hero })
+Kit.Fit(heroText, 11, 8, 2) -- (two lines at most: it shrinks instead of being cut)
 local buy = Kit.Button("Red", "", { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Parent = hero },
 	{ width = HERO_W - 22, height = 40, textSize = 20 })
 -- (DNA token only) the coin price beside the Robux button (each half the width)
@@ -309,6 +305,12 @@ function select(entry)
 		scale.Scale = if key == entry.item.key then 1 else 0.96
 	end
 	artFor(heroArt, entry)
+	-- (prompt 45, mockup 01_store_A) the hero tile tinted in the item's colour, the gold edge stays
+	local sheen = hero:FindFirstChild("Sheen")
+	if sheen then
+		local base = colorOf(entry):Lerp(Color3.fromHex("#141215"), 0.6)
+		sheen.Color = ColorSequence.new(base:Lerp(Color3.new(1, 1, 1), 0.06), base:Lerp(Color3.new(0, 0, 0), 0.45))
+	end
 	heroName.Text = entry.item.name
 	heroText.Text = entry.item.text
 	bestTag.Visible = entry.item.key == Monetization.BestSeller
