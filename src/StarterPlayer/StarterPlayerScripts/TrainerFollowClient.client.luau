@@ -22,6 +22,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Trainers = require(Shared.Config.Trainers)
 local Theme = require(Shared.UI.Theme)
+local AuraVFX = require(Shared.VFX.AuraVFX)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local localPlayer = Players.LocalPlayer
@@ -37,7 +38,8 @@ local ANIM = { Idle = "rbxassetid://507766388", Walk = "rbxassetid://913402848",
 local IDLE_BELOW, RUN_FROM = 0.5, 12
 local WALK_PACE, RUN_PACE = 8, 16
 -- each coach's own stance while standing (drawn over the idle animation, see coachIdle)
-local IDLE_STYLE = { RookieCoach = "crossed", CardioCoach = "hips", MoneyCoach = "clipboard", PumpCoach = "crossed" }
+local IDLE_STYLE = { RookieCoach = "crossed", CardioCoach = "hips", MoneyCoach = "clipboard", PumpCoach = "crossed",
+	AtlasCoach = "crossed", BlazeCoach = "hips", ShadeCoach = "crossed", AeonCoach = "hips" }
 local HYPE_SPOTS = { "Hype_5", "Hype_4", "Hype_3", "Hype_2", "Hype_1" } -- tried in this order (spotters fill from Hype_1)
 
 local folder = Instance.new("Folder")
@@ -119,8 +121,10 @@ end
 ------------------------------------------------------------------------
 -- Trainers
 ------------------------------------------------------------------------
-local function makeTrainer(id: string, slot: number)
-	local template = templates:FindFirstChild(id)
+-- (prompt 24) entry = "PumpCoach" or "PumpCoach@g" (Golden: a gold glow on him)
+local function makeTrainer(entry: string, slot: number)
+	local id, golden = Trainers.ParseEntry(entry)
+	local template = id and templates:FindFirstChild(id)
 	if not template then return nil end
 	local model = template:Clone()
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -142,19 +146,31 @@ local function makeTrainer(id: string, slot: number)
 			part.LocalTransparencyModifier = 1
 		end
 	end
+	-- (prompt 24: the bare-chested rare trainers keep their skin layer: it IS their chest)
+	local bare = template:GetAttribute("BareChest") == true
 	for _, part in ipairs(model:GetDescendants()) do
 		ghost(part)
-		skinLayer(part)
+		if not bare then skinLayer(part) end
 	end
 	model.DescendantAdded:Connect(function(part)
 		ghost(part)
-		skinLayer(part)
+		if not bare then skinLayer(part) end
 	end)
 	if not humanoid:FindFirstChildOfClass("Animator") then Instance.new("Animator", humanoid) end
+	if golden then
+		local glow = Instance.new("Highlight")
+		glow.Name = "GoldenGlow"
+		glow.FillColor = Color3.fromHex("#F6C75A")
+		glow.OutlineColor = Color3.fromHex("#FFF3C4")
+		glow.FillTransparency = 0.72
+		glow.OutlineTransparency = 0.25
+		glow.DepthMode = Enum.HighlightDepthMode.Occluded
+		glow.Parent = model
+	end
 	-- (the animation tracks are loaded the first time he's in the Workspace: see loadTracks. Loaded while the model was
 	-- still outside it they never played, so trainers slid without moving their legs: owner's bug, 19 Oct)
 	return {
-		id = id, slot = slot, model = model, root = root, humanoid = humanoid, tracks = {}, playing = nil,
+		id = id, entry = entry, golden = golden, slot = slot, model = model, auraName = Trainers.ById[id].look.aura, root = root, humanoid = humanoid, tracks = {}, playing = nil,
 		position = nil, lastProgress = os.clock(), lastCheer = 0, clapUntil = 0, pumpUntil = 0, cheerTurn = 0,
 		style = IDLE_STYLE[id] or "crossed", phase = rng:NextNumber() * 10,
 		rootHeight = humanoid.HipHeight + root.Size.Y / 2,
@@ -196,6 +212,7 @@ local function play(state, name, rate: number?)
 end
 
 local function destroyTrainer(state)
+	if state.aura then pcall(function() state.aura:Destroy() end) end
 	if state.model then state.model:Destroy() end
 end
 
@@ -203,19 +220,19 @@ local function sync(player)
 	local list = {}
 	local value = player:GetAttribute("Trainers")
 	if type(value) == "string" then
-		for id in string.gmatch(value, "[^,]+") do
-			if Trainers.ById[id] then table.insert(list, id) end
+		for entry in string.gmatch(value, "[^,]+") do
+			if Trainers.ParseEntry(entry) then table.insert(list, entry) end
 		end
 	end
 	local current = followers[player] or {}
 	local nextSet = {}
-	for slot, id in ipairs(list) do
+	for slot, entry in ipairs(list) do
 		local existing = current[slot]
-		if existing and existing.id == id then
+		if existing and existing.entry == entry then
 			nextSet[slot] = existing
 			current[slot] = nil
 		else
-			nextSet[slot] = makeTrainer(id, slot)
+			nextSet[slot] = makeTrainer(entry, slot)
 		end
 	end
 	for _, state in pairs(current) do destroyTrainer(state) end
@@ -334,8 +351,10 @@ local function targetOf(player, state, root: BasePart): (Vector3, Vector3)
 		if state.spot then return state.spot, root.Position end
 	end
 	state.spotFor = nil
-	local side = state.slot == 1 and 1 or -1
-	local spot = root.Position - root.CFrame.LookVector * Trainers.FollowBehind + root.CFrame.RightVector * side * Trainers.FollowSide
+	-- (slot 1 right, 2 left; prompt 24: slots 3 and 4 a row further back)
+	local side = if state.slot % 2 == 1 then 1 else -1
+	local behind = Trainers.FollowBehind + (if state.slot > 2 then 3.5 else 0)
+	local spot = root.Position - root.CFrame.LookVector * behind + root.CFrame.RightVector * side * Trainers.FollowSide
 	return spot, root.Position + root.CFrame.LookVector * 6
 end
 
@@ -520,12 +539,21 @@ RunService.Heartbeat:Connect(function(dt)
 				if state.model.Parent ~= folder then
 					state.position = nil -- (pops in beside the player)
 					state.model.Parent = folder
+					-- (prompt 24) the rarity aura of the rare ones (Legendary gold, Mythic red-purple, Secret shadow, Eternal white-gold)
+					if state.auraName and not state.aura then
+						local ok, handle = pcall(AuraVFX.Build, state.model, state.auraName)
+						if ok and handle then
+							state.aura = handle
+							pcall(function() handle:SetPower(0.15) end)
+						end
+					end
 				end
 				step(player, state, root, dt, now)
 				-- other players' trainers far away stand still: no animation, no pose (owner, 14 Oct: performance)
 				local far = player ~= localPlayer and (root.Position - eye).Magnitude > Trainers.FarAnimation
 				if far ~= (state.frozen == true) then
 					state.frozen = far
+					if state.aura then pcall(function() state.aura:SetLOD(if far then 1 else 0) end) end
 					for _, track in pairs(state.tracks) do
 						if far then track:AdjustSpeed(0) else track:AdjustSpeed(1) end
 					end

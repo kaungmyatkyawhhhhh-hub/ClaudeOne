@@ -1,27 +1,32 @@
--- TrainerService (owner's feature run, task 7B): personal trainers (Config/Trainers).
---   * Trainer Desks: invisible TrainerPoint parts in front of each desk (tag "TrainerDesk", tools/builders/TrainerDesks)
---     with the "Trainers" prompt; it opens the Trainers window.
---   * Remote "Trainers": client -> server "Hire" (anywhere, owner's UI v2: tapping a tile buys it; coins taken once),
---     "Equip", "Unequip"; server -> client
---     "Open" | "Hired" | "Failed". Saved in data.trainers = { owned = { ids }, equipped = { ids } }.
---   * The equipped trainers' perks are BoostService sources ("Trainer_<id>": gains / regen / coins / pump), and the player
---     attribute "Trainers" lists them ("RookieCoach,PumpCoach") so every client can draw them following that player.
---   * The trainer models (owner, 14 Oct: real gym coaches): one template per trainer, built here at start from a
---     HumanoidDescription (NpcService: the Robloxian R15 body, Roblox's own free catalog hair and face), our own clothing
---     templates (Shirt / Pants images), small part-built props (look.extras) and the static muscle stages ("MuscleG",
---     MuscleClient; the Pump coach the biggest); no name tag, nothing collides. Into ReplicatedStorage.TrainerModels;
---     clients clone them.
--- Slots: Config.Trainers.Slots, +1 with the Extra Trainer pass (player attribute Pass_ExtraTrainer, MonetizationService).
+-- TrainerService (owner's feature run, task 7B; coin rolls since prompt 24, 21 Oct): personal trainers (Config/Trainers).
+--   * The Trainer Agency: the desks at the front of each gym (invisible TrainerPoint parts, tag "TrainerDesk",
+--     tools/builders/TrainerDesks; the odds boards: tools/builders/TrainerAgency) with the "Roll trainers" prompt; it opens
+--     the Agency window (TrainerClient).
+--   * Remote "Trainers": client -> server "Roll" (count 1 / 3, auto), "Equip" (slot, entry), "Unequip" (slot), "Golden" (id),
+--     "AutoDelete" (rarity, on); server -> client "Open" | "Rolled" | "Failed" | "Golden", and to everyone "Pulled"
+--     (Legendary or better: the whole server is told). Every roll is made HERE (Config.Trainers.Roll with the pity counter);
+--     coins only. Saved in data.trainers (see Config/Trainers); old saves (a list of hired ids) become one of each.
+--   * The equipped trainers' total boost (Trainers.Bonus, capped) is one BoostService source "Trainers" (gains, coins);
+--     max stamina (PlayerData.RefreshMaxStamina) and progress (Config.GrowthSpurts / Config.Alters) read data.trainers.bonus.
+--     The player attribute "Trainers" lists the following entries ("PumpCoach,RookieCoach@g") for every client to draw;
+--     "TrainerSlots" the slots.
+--   * The trainer models: one template per trainer, built here at start from a HumanoidDescription (NpcService), our own
+--     clothing templates (none on the rare ones: they show their muscles), part-built props (look.extras) and the static
+--     muscle stages; no name tag, nothing collides. Into ReplicatedStorage.TrainerModels; clients clone them.
+-- Slots: Config.Trainers.SlotsFor (1, 2 at Growth Spurt 2, 3 at the first alter, +1 with the Extra Trainer pass).
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Trainers = require(ReplicatedStorage.Shared.Config.Trainers)
+local PumpShop = require(ReplicatedStorage.Shared.Config.PumpShop)
+local Alters = require(ReplicatedStorage.Shared.Config.Alters)
 local PlayerData = require(script.Parent.PlayerData)
 local BoostService = require(script.Parent.BoostService)
 local NpcService = require(script.Parent.NpcService)
 local BodyService = require(script.Parent.BodyService)
+local Analytics = require(script.Parent.Analytics)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
 local Genetics = require(ReplicatedStorage.Shared.Config.Genetics)
 local Guard = require(script.Parent.Guard)
@@ -32,72 +37,151 @@ local TrainerService = {}
 
 local remote: RemoteEvent
 local desks = {} -- TrainerPoint parts
+local rng = Random.new()
 
 local function send(player, kind, info)
 	remote:FireClient(player, kind, info or {})
 end
 
 local function slotsOf(player): number
-	return Trainers.SlotsFor(player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) == true)
+	local data = PlayerData.Get(player)
+	local alter = data and Alters.State(data).highest or 0
+	return Trainers.SlotsFor(player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) == true, data and data.growthSpurts or 0, alter)
 end
 
+-- a copy of the saved state (old saves migrated), safe to change
 local function stateOf(player)
 	local data = PlayerData.Get(player)
-	local t = data and type(data.trainers) == "table" and data.trainers or {}
-	return { owned = type(t.owned) == "table" and table.clone(t.owned) or {}, equipped = type(t.equipped) == "table" and table.clone(t.equipped) or {} }
+	local t = Trainers.Migrate(data and data.trainers)
+	return { owned = table.clone(t.owned), golden = table.clone(t.golden), equipped = table.clone(t.equipped), rolls = t.rolls, pity = t.pity,
+		autoDelete = table.clone(t.autoDelete) }
 end
 
--- write the state, the perks and the attribute everyone reads
+-- write the state, the boosts and the attributes everyone reads
 local function apply(player, state)
-	-- (owner's bug, 19 Oct: "when I rejoin my trainer disappears". At join the Extra Trainer pass isn't known yet: the list was
-	-- cut to 1 slot and SAVED that way, so the second trainer was gone for good. The save keeps up to the most slots anyone
-	-- can have; only the trainers that follow you now are capped to your slots.)
-	state.equipped = Trainers.CleanEquipped(state.equipped, state.owned, Trainers.SlotsFor(true))
+	-- (owner's bug, 19 Oct: the save keeps up to the most slots anyone can have; only the trainers that follow you now are
+	-- capped to your slots, so a slot that isn't known yet at join, like the pass, never loses its trainer)
+	state.equipped = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, Trainers.MaxSlots)
+	local active = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slotsOf(player))
+	local bonus = Trainers.Bonus(active)
+	state.bonus = bonus
 	if PlayerData.Get(player) then PlayerData.SetTable(player, "trainers", state) end
-	local active = Trainers.CleanEquipped(state.equipped, state.owned, slotsOf(player))
-	local on = {}
-	for _, id in ipairs(active) do on[id] = true end
-	for _, trainer in ipairs(Trainers.List) do
-		BoostService.SetPlayer(player, "Trainer_" .. trainer.id, on[trainer.id] and trainer.perk or nil)
-	end
+	BoostService.SetPlayer(player, "Trainers", if bonus.gains > 0 or bonus.coins > 0 then { gains = 1 + bonus.gains, coins = 1 + bonus.coins } else nil)
+	for _, trainer in ipairs(Trainers.List) do BoostService.SetPlayer(player, "Trainer_" .. trainer.id, nil) end -- (the old per-trainer sources)
+	PlayerData.RefreshMaxStamina(player)
 	player:SetAttribute("Trainers", table.concat(active, ","))
+	player:SetAttribute("TrainerSlots", slotsOf(player))
 end
 
-local function hire(player, id)
-	local trainer = type(id) == "string" and Trainers.ById[id]
-	if not trainer or not PlayerData.Get(player) then return end
-	local state = stateOf(player)
-	if table.find(state.owned, trainer.id) then return end
-	if not PlayerData.SpendCoins(player, trainer.price) then
-		send(player, "Failed", { text = "Not enough coins", id = trainer.id })
+-- Growth Spurts and alters can add a slot (ActionService calls this after them)
+function TrainerService.Refresh(player)
+	if PlayerData.Get(player) then apply(player, stateOf(player)) end
+end
+
+local function rollPrice(player): number
+	local data = PlayerData.Get(player)
+	return Trainers.RollPrice(PumpShop.Rate(data and data.growthSpurts or 0))
+end
+TrainerService.RollPrice = rollPrice
+
+local lastRoll = {} -- [player] = os.clock() (one roll request at a time)
+local function roll(player, count, auto)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	if os.clock() - (lastRoll[player] or 0) < 0.35 then return end
+	lastRoll[player] = os.clock()
+	count = if count == Trainers.MultiRoll then Trainers.MultiRoll else 1
+	if count > 1 and (data.growthSpurts or 0) < Trainers.MultiRollFromSpurt then
+		send(player, "Failed", { text = "Roll x" .. Trainers.MultiRoll .. " opens at Growth Spurt " .. Trainers.MultiRollFromSpurt .. "." })
 		return
 	end
-	table.insert(state.owned, trainer.id)
-	-- a free slot: he starts following right away
-	if #state.equipped < slotsOf(player) then table.insert(state.equipped, trainer.id) end
+	local each = rollPrice(player)
+	if not PlayerData.SpendCoins(player, each * count) then
+		send(player, "Failed", { text = "Not enough coins", need = each * count, auto = auto == true })
+		return
+	end
+	local state = stateOf(player)
+	local slots = slotsOf(player)
+	local results, refund = {}, 0
+	local announceFrom = Trainers.RarityById[Trainers.AnnounceFrom].index
+	for _ = 1, count do
+		local rarityId
+		rarityId, state.pity = Trainers.Roll(rng:NextNumber(), state.pity)
+		-- Studio: Workspace attribute TestRollRarity = "Mythic" makes every roll that rarity (to see the reveals)
+		local forced = if game:GetService("RunService"):IsStudio() then Workspace:GetAttribute("TestRollRarity") else nil
+		if type(forced) == "string" and Trainers.RarityById[forced] then rarityId = forced end
+		state.rolls += 1
+		local trainer = Trainers.ByRarity[rarityId]
+		local deleted = state.autoDelete[rarityId] == true and (state.owned[trainer.id] or 0) >= 1
+		if deleted then
+			refund += math.floor(each * Trainers.AutoDeleteRefund)
+		else
+			state.owned[trainer.id] = (state.owned[trainer.id] or 0) + 1
+			-- a free slot: he starts following right away
+			if #Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slots) < slots then table.insert(state.equipped, trainer.id) end
+		end
+		table.insert(results, { id = trainer.id, rarity = rarityId, deleted = deleted, count = state.owned[trainer.id] or 0 })
+		Analytics.Event(player, "TrainerRoll", Trainers.RarityById[rarityId].index)
+		if Trainers.RarityById[rarityId].index >= announceFrom then
+			remote:FireAllClients("Pulled", { userId = player.UserId, name = player.DisplayName, rarity = rarityId, trainer = trainer.id })
+		end
+	end
+	if auto then Analytics.Event(player, "TrainerAutoRoll", count) end
+	if refund > 0 then PlayerData.AddCoins(player, refund) end
 	apply(player, state)
-	send(player, "Hired", { id = trainer.id })
+	send(player, "Rolled", { results = results, pity = state.pity, rolls = state.rolls, refund = refund, auto = auto == true })
 end
 
-local function equip(player, id)
-	local trainer = type(id) == "string" and Trainers.ById[id]
-	if not trainer then return end
+local function equip(player, slot, entry)
+	local id, golden = Trainers.ParseEntry(entry)
+	slot = tonumber(slot)
+	if not id or not slot then return end
+	local slots = slotsOf(player)
+	slot = math.floor(slot)
+	if slot < 1 or slot > slots then return end
 	local state = stateOf(player)
-	if not table.find(state.owned, trainer.id) then return end
-	-- (only the trainers that follow now count: a saved one past your slots is dropped when you pick another)
-	state.equipped = Trainers.CleanEquipped(state.equipped, state.owned, slotsOf(player))
-	if table.find(state.equipped, trainer.id) then return end
-	-- all slots full: he takes the last slot's place
-	if #state.equipped >= slotsOf(player) then table.remove(state.equipped) end
-	table.insert(state.equipped, trainer.id)
+	local list = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slots)
+	local key = Trainers.Entry(id, golden)
+	-- enough of him for one more slot (duplicates can fill several slots)?
+	local have = if golden then (state.golden[id] or 0) else (state.owned[id] or 0)
+	local used = 0
+	for i, e in ipairs(list) do
+		if e == key and i ~= slot then used += 1 end
+	end
+	if used >= have then return end
+	if slot > #list then table.insert(list, key) else list[slot] = key end
+	state.equipped = list
 	apply(player, state)
 end
 
-local function unequip(player, id)
+local function unequip(player, slot)
+	slot = tonumber(slot)
+	if not slot then return end
 	local state = stateOf(player)
-	local index = type(id) == "string" and table.find(state.equipped, id)
-	if not index then return end
-	table.remove(state.equipped, index)
+	local list = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slotsOf(player))
+	if not list[math.floor(slot)] then return end
+	table.remove(list, math.floor(slot))
+	state.equipped = list
+	apply(player, state)
+end
+
+-- 5 of the same trainer -> 1 Golden (1.5x his boost)
+local function makeGolden(player, id)
+	if type(id) ~= "string" or not Trainers.ById[id] then return end
+	local state = stateOf(player)
+	if (state.owned[id] or 0) < Trainers.GoldenCount then return end
+	state.owned[id] -= Trainers.GoldenCount
+	if state.owned[id] <= 0 then state.owned[id] = nil end
+	state.golden[id] = (state.golden[id] or 0) + 1
+	apply(player, state)
+	Analytics.Event(player, "TrainerGolden", Trainers.ById[id].index)
+	send(player, "Golden", { id = id })
+end
+
+local function setAutoDelete(player, rarity, on)
+	if type(rarity) ~= "string" or not table.find(Trainers.AutoDeleteRarities, rarity) then return end
+	local state = stateOf(player)
+	state.autoDelete[rarity] = if on == true then true else nil
 	apply(player, state)
 end
 
@@ -166,6 +250,47 @@ local function extras(model, look)
 			local w = math.max(ws.X, ws.Z) * 1.22
 			prop(model, "LowerTorso", "Belt", cyl, Vector3.new(ws.Y * 0.95, w, w * 0.62), CFrame.new(0, ws.Y * 0.15, 0) * UPRIGHT, "#3A2414", Enum.Material.Leather)
 			prop(model, "LowerTorso", "Buckle", nil, Vector3.new(0.5, ws.Y * 0.7, 0.08), CFrame.new(0, ws.Y * 0.15, -w * 0.31 - 0.03), "#C9CCD2", Enum.Material.Metal)
+		elseif kind == "cape" then
+			-- (prompt 24) a cape from the shoulders down the back (narrower than the shoulders), a collar bar across the top
+			prop(model, "UpperTorso", "CapeCollar", nil, Vector3.new(ts.X * 0.9, 0.22, 0.3), CFrame.new(0, ts.Y * 0.42, ts.Z * 0.5), color, Enum.Material.Metal)
+			prop(model, "UpperTorso", "Cape", nil, Vector3.new(ts.X * 0.8, ts.Y * 2.2, 0.08), CFrame.new(0, -ts.Y * 0.68, ts.Z * 0.62) * CFrame.Angles(math.rad(-8), 0, 0),
+				color, Enum.Material.Fabric)
+		elseif kind == "shorts" then
+			-- (prompt 24) part-built shorts: round the waist and the top of each leg
+			local shorts = look.shorts or "#1E1E22"
+			prop(model, "LowerTorso", "Shorts", nil, Vector3.new(ws.X * 1.1, ws.Y * 1.2, ws.Z * 1.14), CFrame.new(0, -ws.Y * 0.05, 0), shorts, Enum.Material.Fabric)
+			for _, side in ipairs({ "Left", "Right" }) do
+				local leg = model:FindFirstChild(side .. "UpperLeg")
+				local s = leg and leg.Size or Vector3.new(0.8, 1.2, 0.8)
+				prop(model, side .. "UpperLeg", "ShortsLeg", nil, Vector3.new(s.X * 1.14, s.Y * 0.6, s.Z * 1.14), CFrame.new(0, s.Y * 0.2, 0), shorts, Enum.Material.Fabric)
+			end
+		elseif kind == "shoes" then
+			for _, side in ipairs({ "Left", "Right" }) do
+				local foot = model:FindFirstChild(side .. "Foot")
+				local s = foot and foot.Size or Vector3.new(0.8, 0.3, 1)
+				prop(model, side .. "Foot", "Shoe", nil, Vector3.new(s.X * 1.15, s.Y * 1.25, s.Z * 1.12), CFrame.new(0, 0.02, -0.03), "#1E1E22", Enum.Material.SmoothPlastic)
+			end
+		elseif kind == "hood" then
+			-- (prompt 24) a hood over the back and top of the head (the face stays open)
+			prop(model, "Head", "Hood", nil, Vector3.new(d * 1.22, hs.Y * 1.2, d * 0.75), CFrame.new(0, hs.Y * 0.08, d * 0.3), color, Enum.Material.Fabric)
+			prop(model, "Head", "HoodTop", nil, Vector3.new(d * 1.22, 0.22, d * 1.05), CFrame.new(0, hs.Y * 0.62, 0.05), color, Enum.Material.Fabric)
+			for _, side in ipairs({ -1, 1 }) do
+				prop(model, "Head", "HoodSide", nil, Vector3.new(0.14, hs.Y * 1.05, d * 0.7), CFrame.new(side * d * 0.58, hs.Y * 0.05, -d * 0.05), color, Enum.Material.Fabric)
+			end
+		elseif kind == "crown" then
+			-- (prompt 24) a small gold crown: a band and five points
+			prop(model, "Head", "CrownBand", cyl, Vector3.new(0.28, d * 0.92, d * 0.92), CFrame.new(0, hs.Y / 2 + 0.12, 0) * UPRIGHT, color, Enum.Material.Metal)
+			for i = 0, 4 do
+				local a = math.rad(i * 72)
+				prop(model, "Head", "CrownPoint", nil, Vector3.new(0.14, 0.34, 0.14),
+					CFrame.new(math.cos(a) * d * 0.4, hs.Y / 2 + 0.38, math.sin(a) * d * 0.4) * CFrame.Angles(0, -a, 0), color, Enum.Material.Metal)
+			end
+		elseif kind == "shoulderpads" then
+			-- (prompt 24) gold shoulder plates
+			for _, side in ipairs({ -1, 1 }) do
+				prop(model, "UpperTorso", "ShoulderPad", ball, Vector3.new(ts.X * 0.42, ts.Y * 0.32, ts.Z * 1.15), CFrame.new(side * ts.X * 0.5, ts.Y * 0.42, 0),
+					color, Enum.Material.Metal)
+			end
 		elseif kind == "wraps" then
 			for _, side in ipairs({ "Left", "Right" }) do
 				local arm = model:FindFirstChild(side .. "LowerArm")
@@ -234,12 +359,18 @@ local function buildTemplates()
 			for _, old in ipairs(model:GetChildren()) do
 				if old:IsA("Shirt") or old:IsA("Pants") or old:IsA("ShirtGraphic") then old:Destroy() end
 			end
-			local shirt = Instance.new("Shirt")
-			shirt.ShirtTemplate = look.shirt
-			shirt.Parent = model
-			local pants = Instance.new("Pants")
-			pants.PantsTemplate = look.pants
-			pants.Parent = model
+			-- (prompt 24: the rare ones have no shirt, they show their muscles)
+			if look.shirt then
+				local shirt = Instance.new("Shirt")
+				shirt.ShirtTemplate = look.shirt
+				shirt.Parent = model
+			end
+			if look.pants then
+				local pants = Instance.new("Pants")
+				pants.PantsTemplate = look.pants
+				pants.Parent = model
+			end
+			if not look.shirt then model:SetAttribute("BareChest", true) end
 			-- his face: the description's head is a dynamic head whose own face is blank, and face images map wrongly onto
 			-- it, so it is hidden under a classic Roblox head (the "Head" mesh) carrying the face image, welded in its place
 			local head = model:FindFirstChild("Head")
@@ -302,8 +433,8 @@ local function addDesk(part)
 	if not prompt then
 		local created = Instance.new("ProximityPrompt")
 		created.Name = "TrainerPrompt"
-		created.ActionText = "Trainers"
-		created.ObjectText = "Trainer Desk"
+		created.ActionText = "Roll trainers"
+		created.ObjectText = "Trainer Agency"
 		created.MaxActivationDistance = Trainers.DeskDistance
 		created.RequiresLineOfSight = false
 		created.Parent = part
@@ -333,17 +464,22 @@ function TrainerService.Start()
 		created.Parent = Remotes
 		remote = created
 	end
-	Guard.Remote(remote, "Trainers", 3, 4, function(player, action, id)
-		if action == "Hire" then
-			hire(player, id)
+	Guard.Remote(remote, "Trainers", 8, 4, function(player, action, a, b)
+		if action == "Roll" then
+			roll(player, tonumber(a), b == true)
 		elseif action == "Equip" then
-			equip(player, id)
+			equip(player, a, b)
 		elseif action == "Unequip" then
-			unequip(player, id)
+			unequip(player, a)
+		elseif action == "Golden" then
+			makeGolden(player, a)
+		elseif action == "AutoDelete" then
+			setAutoDelete(player, a, b)
 		end
 	end)
 
 	task.spawn(buildTemplates)
+	Players.PlayerRemoving:Connect(function(player) lastRoll[player] = nil end)
 
 	if #CollectionService:GetTagged("TrainerDesk") == 0 then
 		warn("[TrainerService] no Trainer Desks (tag TrainerDesk): build them with tools/builders/TrainerDesks.luau")
@@ -361,7 +497,7 @@ function TrainerService.Start()
 		if PlayerData.Get(player) then ready(player) end
 	end
 
-	-- Studio: Workspace attribute TestTrainers = "RookieCoach,PumpCoach" gives every player those trainers and equips them
+	-- Studio: Workspace attribute TestTrainers = "RookieCoach,PumpCoach@g" gives every player those trainers and equips them
 	-- (TestTrainerSlots = 2 acts out the Extra Trainer pass)
 	if game:GetService("RunService"):IsStudio() then
 		local function test()
@@ -371,10 +507,12 @@ function TrainerService.Start()
 				if Workspace:GetAttribute("TestTrainerSlots") == 2 then player:SetAttribute("Pass_" .. Trainers.ExtraSlotPass, true) end
 				local state = stateOf(player)
 				state.equipped = {}
-				for id in string.gmatch(list, "[^,]+") do
-					if Trainers.ById[id] then
-						if not table.find(state.owned, id) then table.insert(state.owned, id) end
-						table.insert(state.equipped, id)
+				for entry in string.gmatch(list, "[^,]+") do
+					local id, golden = Trainers.ParseEntry(entry)
+					if id then
+						local bag = if golden then state.golden else state.owned
+						bag[id] = math.max(bag[id] or 0, 1)
+						table.insert(state.equipped, entry)
 					end
 				end
 				apply(player, state)

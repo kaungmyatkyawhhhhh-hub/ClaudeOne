@@ -49,14 +49,14 @@ local RARITY_COLOR = {
 }
 local CARD = Vector2.new(124, 78)
 local PAD = 8 -- every label keeps this far from its card's edges
-local TABS = { Boosts = true, Gear = true, Alters = true, Titles = true, Auras = true, Items = true }
+local TABS = { Boosts = true, Gear = true, Trainers = true, Alters = true, Titles = true, Auras = true, Items = true }
 
 local menuButton = SideMenu.Add("Inventory", "Inventory", nil, 2)
 
 local tab = "Boosts"
 local refresh -- (below)
-local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 740, -- (740: six tabs, prompt 21) height = 248, displayOrder = 25,
-	tabs = { { id = "Boosts", text = "Boosts", icon = "zap" }, { id = "Gear", text = "Gear", icon = "dumbbell" }, { id = "Alters", text = "Alters", icon = "flame" }, { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
+local modal = Kit.Modal({ name = "Inventory", title = "Inventory", icon = "backpack", width = 840, -- (840: seven tabs, prompt 24; 756 px on a 667 x 375 phone) height = 248, displayOrder = 25,
+	tabs = { { id = "Boosts", text = "Boosts", icon = "zap" }, { id = "Gear", text = "Gear", icon = "dumbbell" }, { id = "Trainers", text = "Trainers", icon = "users" }, { id = "Alters", text = "Alters", icon = "flame" }, { id = "Titles", text = "Titles", icon = "medal" }, { id = "Auras", text = "Auras", icon = "sparkles" }, { id = "Items", text = "Items", icon = "gift" } },
 	onTab = function(id)
 		if tab ~= id then
 			tab = id
@@ -374,6 +374,7 @@ end
 local BOOSTS_TAB = require(Shared.UI.BoostsPanel).Build(modal.body)
 local GEAR_TAB = require(Shared.UI.GearPanel).Build(modal.body)
 local ALTERS_TAB = require(Shared.UI.AltersPanel).Build(modal.body) -- (prompt 21) the Body Alter skins
+local TRAINERS_TAB = require(Shared.UI.TrainersPanel).Build(modal.body) -- (prompt 24) owned trainers, slots, Golden
 
 ------------------------------------------------------------------------
 function refresh()
@@ -384,8 +385,13 @@ function refresh()
 	BOOSTS_TAB.frame.Visible = tab == "Boosts"
 	GEAR_TAB.frame.Visible = tab == "Gear"
 	ALTERS_TAB.frame.Visible = tab == "Alters"
+	TRAINERS_TAB.frame.Visible = tab == "Trainers"
 	AURA.preview()
-	if tab == "Alters" then
+	if tab == "Trainers" then
+		TRAINERS_TAB.refresh()
+		countLabel.Text = ""
+		return
+	elseif tab == "Alters" then
 		ALTERS_TAB.refresh()
 		countLabel.Text = ""
 		return

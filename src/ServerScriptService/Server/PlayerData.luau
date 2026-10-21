@@ -441,7 +441,9 @@ function PlayerData.RefreshMaxStamina(player)
 	local data = PlayerData.Get(player)
 	if not data then return end
 	local lungs = if player:GetAttribute("Pass_IronLungs") then Monetization.Effects.IronLungsMax else 1
-	player:SetAttribute("MaxStamina", Stamina.MaxFor(data.stats.cardioMeters) * lungs)
+	-- (prompt 24) the equipped trainers' max stamina boost (TrainerService writes data.trainers.bonus)
+	local bonus = type(data.trainers) == "table" and type(data.trainers.bonus) == "table" and tonumber(data.trainers.bonus.maxStamina) or 0
+	player:SetAttribute("MaxStamina", Stamina.MaxFor(data.stats.cardioMeters) * lungs * (1 + bonus))
 end
 
 function PlayerData.GetLevelCap(player)

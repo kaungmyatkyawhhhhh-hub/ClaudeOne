@@ -144,7 +144,7 @@ end
 function Alters.Progress(data, groups, trainable)
 	local state = Alters.State(data)
 	local nextN = (state.highest or 0) + 1
-	local required = Alters.Goal(nextN)
+	local required = GrowthSpurts.BoostedLevel(Alters.Goal(nextN), GrowthSpurts.ProgressBoost(data)) -- (prompt 24: trainers' progress boost)
 	local result = { next = nextN, required = required, met = 0, total = #groups, groups = {} }
 	for _, group in ipairs(groups) do
 		local level = GrowthSpurts.GoalLevel(data.muscles, group, trainable)

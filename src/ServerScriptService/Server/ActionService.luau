@@ -24,6 +24,9 @@ handlers.GrowthSpurt = function(player)
 		Analytics.GrowthSpurt(player, data)
 		BodyService.Rebuild(player)
 		TitleService.Check(player)
+		-- (prompt 24) Growth Spurt 2 adds a trainer slot
+		local okTrainers, TrainerService = pcall(require, script.Parent.TrainerService)
+		if okTrainers and TrainerService.Refresh then TrainerService.Refresh(player) end
 		Remotes.PlayerEvent:FireClient(player, "GrowthSpurt", {
 			spurts = data.growthSpurts,
 			height = GrowthSpurts.GetHeight(data.growthSpurts),
@@ -46,6 +49,9 @@ handlers.Alter = function(player)
 	end
 	BodyService.Rebuild(player)
 	TitleService.Check(player)
+	-- (prompt 24) the first alter adds a trainer slot
+	local okTrainers, TrainerService = pcall(require, script.Parent.TrainerService)
+	if okTrainers and TrainerService.Refresh then TrainerService.Refresh(player) end
 	local okAura, AuraService = pcall(require, script.Parent.AuraService)
 	if okAura and AuraService.CheckEarned then AuraService.CheckEarned(player) end
 	Analytics.Event(player, "BodyAlter", n)

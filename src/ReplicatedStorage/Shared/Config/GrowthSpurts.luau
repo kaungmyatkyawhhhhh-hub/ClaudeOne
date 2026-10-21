@@ -100,9 +100,20 @@ function GrowthSpurts.GoalLevel(muscleData, group, trainable)
 	return count > 0 and Muscles.LevelFromXp(total / count) or 0
 end
 
+-- (prompt 24) The equipped trainers' progress boost (data.trainers.bonus.progress, TrainerService): the goal's EXP counts that much
+-- more, so the level a goal asks for drops a little (+10% progress: 10% less EXP to reach it).
+function GrowthSpurts.ProgressBoost(data): number
+	local t = type(data) == "table" and data.trainers
+	return math.max(0, type(t) == "table" and type(t.bonus) == "table" and tonumber(t.bonus.progress) or 0)
+end
+function GrowthSpurts.BoostedLevel(level: number, boost: number): number
+	if boost <= 0 then return level end
+	return Muscles.LevelFromXp(Muscles.CumXp(level) / (1 + boost))
+end
+
 -- Progress toward the next Growth Spurt: { required, met, total, ready, groups = { [groupId] = goalLevel } }
 function GrowthSpurts.Progress(data, groups, trainable)
-	local required = GrowthSpurts.Get(data.growthSpurts + 1).requiredLevel
+	local required = GrowthSpurts.BoostedLevel(GrowthSpurts.Get(data.growthSpurts + 1).requiredLevel, GrowthSpurts.ProgressBoost(data))
 	local result = { required = required, met = 0, total = #groups, groups = {} }
 	for _, group in ipairs(groups) do
 		local level = GrowthSpurts.GoalLevel(data.muscles, group, trainable)
