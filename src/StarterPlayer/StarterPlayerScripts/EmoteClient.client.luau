@@ -34,6 +34,8 @@ local JOINTS = {
 	RShoulder = { "RightUpperArm", "RightShoulder" },
 	LShoulder = { "LeftUpperArm", "LeftShoulder" },
 	RElbow = { "RightLowerArm", "RightElbow" },
+	RWrist = { "RightHand", "RightWrist" },
+	Neck = { "Head", "Neck" },
 	LElbow = { "LeftLowerArm", "LeftElbow" },
 	Root = { "LowerTorso", "Root" },
 	RHip = { "RightUpperLeg", "RightHip" },
@@ -55,21 +57,29 @@ local function sideArm(character, side, forward, raise, bend)
 	setJoint(character, side[1] .. "Elbow", Angles(bend, 0, 0))
 end
 
-local function frontArm(character, side, flex, flare, bend)
-	setJoint(character, side[1] .. "Shoulder", Angles(flex, 0, side[2] * flare))
-	setJoint(character, side[1] .. "Elbow", Angles(bend, 0, 0))
-end
-
--- w = 0..1 (ease in/out)
+-- w = 0..1 (ease in/out), p = 0..1 how far through the emote
 local POSES = {}
+local function smooth(x: number): number
+	x = math.clamp(x, 0, 1)
+	return x * x * (3 - 2 * x)
+end
 
 POSES.HighFive = function(character, w)
 	sideArm(character, SIDES[1], -rad(15) * w, rad(160) * w, rad(15) * w)
 end
-POSES.Chug = function(character, w)
-	-- shaker to the mouth, head back a little
-	frontArm(character, SIDES[1], rad(80) * w, rad(15) * w, rad(140) * w)
-	setJoint(character, "Waist", Angles(rad(8) * w, 0, 0))
+-- (prompt 28b, owner: "it looked like throwing") a real drink: the elbow comes up in front of the chest and the bottle to
+-- the mouth (first quarter), then it tips up further and the head goes back with a few small gulps, then it comes down
+-- (last 15%). Angles checked on a character in Studio (front, side, behind): shoulder in front + across, the wrist tips
+-- the bottle's bottom up and out, Neck + = looking up.
+POSES.Chug = function(character, _w, p)
+	p = p or 0.5
+	local up = smooth(p / 0.25) * smooth((1 - p) / 0.15) -- the arm: up to the mouth, hold, down
+	local tip = smooth((p - 0.2) / 0.45)                  -- the bottle empties: tips up, head back
+	local gulp = (math.sin(p * math.pi * 8) * 0.5 + 0.5) * tip
+	setJoint(character, "RShoulder", Angles(rad(85) * up, 0, -rad(50) * up))
+	setJoint(character, "RElbow", Angles(rad(115) * up, 0, 0))
+	setJoint(character, "RWrist", Angles(-rad(20 + 35 * tip) * up, 0, rad(25 + 20 * tip) * up))
+	setJoint(character, "Neck", Angles(rad(8 + 20 * tip + 4 * gulp) * up, 0, 0))
 end
 
 -- the victory wave: waving to a crowd, the right arm high over the head and the hand swinging side to side (about 2
@@ -82,7 +92,7 @@ end
 
 -- the joints each small pose writes (only those are reset when it ends, so it never wipes a machine or skate pose)
 local POSE_JOINTS = {
-	HighFive = { "RShoulder", "RElbow" }, Chug = { "RShoulder", "RElbow", "Waist" },
+	HighFive = { "RShoulder", "RElbow" }, Chug = { "RShoulder", "RElbow", "RWrist", "Neck" },
 	VictoryWave = { "RShoulder", "RElbow", "Waist" },
 }
 
@@ -115,7 +125,7 @@ RunService.Stepped:Connect(function()
 		else
 			local w = math.min(1, t / EASE, (state.seconds - t) / EASE)
 			w = w * w * (3 - 2 * w) -- smoothstep
-			state.pose(character, w)
+			state.pose(character, w, t / state.seconds)
 		end
 	end
 end)
