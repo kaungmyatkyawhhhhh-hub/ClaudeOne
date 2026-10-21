@@ -112,7 +112,8 @@ Theme.HexImage = "rbxassetid://117814833566275"
 Theme.HexTile = UDim2.fromOffset(52, 30)    -- normal tiles (cards, nav tiles, reward tiles)
 Theme.HexTileBig = UDim2.fromOffset(78, 45) -- big panels
 Theme.HexTileBar = UDim2.fromOffset(26, 15) -- bars (they're only ~10 px tall)
-Theme.HexAlpha = 0.65 -- (tested 22 Oct: at 52x30 the lines are ~1 px, 0.8 vanished on phones)
+Theme.HexAlpha = 0.65 -- collectible tiles (tested 22 Oct: at 52x30 the lines are ~1 px, 0.8 vanished on phones)
+Theme.HexQuiet = 0.91 -- (owner, 22 Oct) panels, cards, HUD boxes: 8-10%
 
 -- Real bumper plate colors (plate fill + darker rim). Used for grades, rarity and plates.
 local function plate(hex, textOnPlate)
@@ -556,8 +557,8 @@ Theme.Surfaces = {
 	panel = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
 		hex = 0.95 },
 	hud_box = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 12, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
-		hex = 0.86, goldLine = 0.3 }, -- (prompt 40: the HUD cards, mockup 05: hex mesh + a gold inner line)
-	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88, hex = 0.88 },
+		hex = 0.95, goldLine = 0.3 }, -- (prompt 40: the HUD cards, mockup 05: hex mesh + a gold inner line; owner 22 Oct: quiet mesh)
+	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88, hex = 0.95 },
 	card_selected = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.72 },
 	card_gold = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.6 },
 	well = { color = Theme.Colors.Well, alpha = 0, corner = 8, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.2 },
@@ -688,8 +689,8 @@ function Theme.SetHex(gui, alpha: number?, radius: number, color: Color3?, big: 
 	end
 	if hex then
 		hex.Visible = alpha ~= nil
-		-- (owner, 22 Oct: the main frames' mesh 50% weaker: 0.14 -> 0.07 opacity)
-		hex.ImageTransparency = if alpha == nil then 1 elseif big then 0.93 elseif alpha > 0.9 then 0.86 else Theme.HexAlpha
+		-- (owner, 22 Oct) full strength only on collectible tiles (alpha 0.9 or less); panels, cards and HUD boxes ~9%
+		hex.ImageTransparency = if alpha == nil then 1 elseif big or alpha > 0.9 then Theme.HexQuiet else Theme.HexAlpha
 		hex.ImageColor3 = color or Color3.new(1, 1, 1)
 		hex.TileSize = if big then Theme.HexTileBig else Theme.HexTile
 		hex.Corner.CornerRadius = UDim.new(0, math.max(radius - 1, 0))
@@ -848,7 +849,19 @@ function Theme.SetButtonStyle(button, style)
 		setGlow(button, nil, nil, 10)
 	end
 	setHairline(button, (look == "Quiet") and 0.8 or nil, 10)
-	Theme.SetHex(button, if look == "Quiet" then 0.88 else nil, 10) -- (prompt 40: dark buttons carry the hex mesh)
+	-- (owner, 22 Oct) no mesh on any button; a dark button is solid graphite with its outline, bottom edge and a thin gold inner line
+	Theme.SetHex(button, nil, 10)
+	local gold = depthOf(button):FindFirstChild("GoldLine")
+	local wantGold = look == "Quiet" and style ~= "Tab" and not button:GetAttribute("TabButton")
+	if wantGold and not gold then
+		gold = Theme.New("Frame", { Name = "GoldLine", BackgroundTransparency = 1, ZIndex = button.ZIndex, Parent = depthOf(button) }, {
+			Theme.New("UICorner", { Name = "Corner", CornerRadius = UDim.new(0, 8) }),
+			Theme.New("UIStroke", { Name = "Stroke", Color = Theme.Colors.Gold, Thickness = 1, Transparency = 0.55, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		gold:SetAttribute("FitExtra", -5)
+		fitLayer(button, gold)
+	end
+	if gold then gold.Visible = wantGold end
 	ctaLayers(button, cta)
 	local color = Theme.ButtonText[style] or Theme.ButtonText[look] or Theme.Colors.Text
 	if style == "Tab" then color = Theme.Colors.Ink end
