@@ -56,12 +56,11 @@ end
 -- session). pose: his roll reveal pose (PoseData, or "Crossed" / "Guard": tools/trainer_photos.luau). icon / art: the
 -- rendered pictures (portrait, reveal), made in Studio from a fixed camera (tools/trainer_photos.luau + tools/trainer_icons.py);
 -- nil = the 3D portrait (Shared.UI.TrainerPortrait).
--- (prompt 27, 22 Oct) icon = the owner's waist-up portrait, art = his full body (Downloads\gym_arc_trainer_portraits, cropped
--- to the visible pixels). Old renders, in List order: icon 86466880073442 / 129465909046082 / 92192772625761 / 92179967724810 /
--- 113681452937688 / 114074076872071 / 79347691775252 / 91786313487049; art 125829932471956 / 138377614470876 / 131053188064620 /
--- 122323729220125 / 115748213011909 / 129640648829938 / 97574058899490 / 75461569868523.
+-- (owner, 22 Oct) NO pictures of trainers: the account got a warning and a ban for body pictures, so every trainer shows
+-- as his live 3D rig (Shared.UI.TrainerPortrait). Never put icon / art ids back. The old ones to archive are listed in the
+-- vault note "GYM ARC - Uploaded images 21-22 Oct".
 Trainers.MaxHeightInches = 90
-Trainers.SilhouetteIcon = "rbxassetid://137156947592087" -- (the Secret one before you own him: a black "???" silhouette)
+Trainers.SilhouetteIcon = nil -- (owner, 22 Oct: no picture; the 3D rig in black instead)
 
 -- (owner, 22 Oct) A chance as the players see it: always a percentage, never "1 in 1000". 1% and up as a whole number
 -- ("50%", Common's 50.215 too), below 1% up to 3 decimals without trailing zeros ("0.6%", "0.15%", "0.035%").
@@ -86,26 +85,22 @@ Trainers.Materials = {
 Trainers.List = {
 	{ id = "RookieCoach", rarity = "Common", name = "Coach Sam", heightInches = 60, perk = { gains = 0.05 }, perkText = "+5% EXP",
 		picture = "trainer_exp", idle = "crossed", pose = "FrontDoubleBiceps", line = "Let's warm up!",
-		icon = "rbxassetid://111996233150308", art = "rbxassetid://133631360699790",
 		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
 			outfit = { shirt = "rbxassetid://139862937769412", pants = "rbxassetid://110347260992708", sleeves = "long", legs = "long", shoes = "rbxassetid://134411403634005", shirtColor = "#C8262C", pantsColor = "#1E1E22" },
 			muscle = 0.9, extras = {}, gear = { { kind = "Whistle", color = "#C8262C" } }, extraColor = "#C8262C", tint = "#C8262C" } },
 	-- (owner, prompt 25: +15% stamina regen on top of the coins, the old Cardio Coach's refill)
 	{ id = "CardioCoach", rarity = "Uncommon", name = "Coach Nia", heightInches = 65, perk = { coins = 0.10, staminaRegen = 0.15 },
 		perkText = "+10% coins, +15% stamina regen", picture = "trainer_stamina", idle = "hips", pose = "AbsAndThigh", line = "Drink water, then go!",
-		icon = "rbxassetid://74140288375328", art = "rbxassetid://103527138019682",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
 			outfit = { shirt = "rbxassetid://122244133593957", pants = "rbxassetid://122244133593957", sleeves = "none", legs = "shorts", shoes = "rbxassetid://130682660705057", shirtColor = "#2FAE55", pantsColor = "#2FAE55" },
 			muscle = 0.7, extras = { "headband", "bottle" }, gear = { { kind = "Whistle", color = "#2FAE55" } }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
 	{ id = "MoneyCoach", rarity = "Rare", name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.15, maxStamina = 0.10 },
 		perkText = "+15% EXP, +10% max stamina", picture = "trainer_coins", idle = "clipboard", pose = "SideChest", line = "Form first, then weight.",
-		icon = "rbxassetid://129899333760066", art = "rbxassetid://81355892884003",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
 			outfit = { shirt = "rbxassetid://71165572097233", pants = "rbxassetid://110347260992708", sleeves = "short", legs = "long", shoes = "rbxassetid://73930285993287", shirtColor = "#E8C21C", pantsColor = "#1E1E22" },
 			muscle = 0.8, extras = { "cap", "clipboard" }, gear = { { kind = "Whistle", color = "#16161A" } }, extraColor = "#16161A", tint = "#E0B23A" } },
 	{ id = "PumpCoach", rarity = "Epic", name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.25, coins = 0.25 },
 		perkText = "+25% EXP and coins", picture = "trainer_pump", idle = "crossed", pose = "FrontLatSpread", line = "Time to grow!",
-		icon = "rbxassetid://109521843426253", art = "rbxassetid://83568357420697",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
 			outfit = { shirt = "rbxassetid://106691440081103", pants = "rbxassetid://110347260992708", sleeves = "none", legs = "shorts", shoes = "rbxassetid://101444393193455", shirtColor = "#7A3FC8", pantsColor = "#1E1E22" },
 			muscle = 1.8, extras = {}, gear = { { kind = "Whistle", color = "#7A3FC8" }, { kind = "Belt" }, { kind = "Wraps", color = "#7A3FC8" } },
@@ -116,7 +111,6 @@ Trainers.List = {
 		widths = { hips = 1.2, arms = 1.16, legs = 1.1, depth = 1.12 },
 		perk = { gains = 0.40, coins = 0.40, progress = 0.10 }, perkText = "+40% EXP and coins, +10% progress",
 		idle = "chalk", pose = "MostMuscular", line = "Lock in. No excuses.",
-		icon = "rbxassetid://135032054415213", art = "rbxassetid://131905642086129",
 		look = { skin = "#D29A72", faceTexture = "rbxassetid://83017053", -- Man Face, under a grey beard
 			outfit = { shirt = "rbxassetid://92310450517732", pants = "rbxassetid://92310450517732", sleeves = "none", legs = "shorts", shirtColor = "#16161A", pantsColor = "#16161A" },
 			muscle = 2.4, hair = "#8E8E94", extras = { "buzzcut", "beard", "hoodback", "chalk", "shoes" },
@@ -129,7 +123,6 @@ Trainers.List = {
 		widths = { hips = 1.04, arms = 1.05, legs = 1.14, depth = 1.04 },
 		perk = { gains = 0.70, coins = 0.70, progress = 0.20 }, perkText = "+70% EXP and coins, +20% progress",
 		idle = "boxer", pose = "Guard", line = "Faster! Stronger! Again!",
-		icon = "rbxassetid://96891532200424", art = "rbxassetid://119113066569801",
 		look = { skin = "#A86B45", faceTexture = "rbxassetid://7074749", -- Chill
 			outfit = { shirt = "rbxassetid://140621946283610", pants = "rbxassetid://140621946283610", sleeves = "none", legs = "shorts", shirtColor = "#141418", pantsColor = "#141418" },
 			muscle = 2.5, hair = "#2A1A14", extras = { "ponytail", "shoes" },
@@ -142,7 +135,6 @@ Trainers.List = {
 		widths = { hips = 1.1, arms = 1.12, legs = 1.12, depth = 1.12 },
 		perk = { gains = 1.10, coins = 1.10, progress = 0.30 }, perkText = "+110% EXP and coins, +30% progress",
 		idle = "watch", pose = "Crossed", line = "...", lines = { "...", "Train." },
-		icon = "rbxassetid://120093887679988", art = "rbxassetid://75559340067116",
 		look = { skin = "#7A5A48", faceTexture = nil,
 			outfit = { shirt = "rbxassetid://105247065422618", pants = "rbxassetid://105247065422618", sleeves = "long", legs = "shorts", shirtColor = "#0E0E11", pantsColor = "#0E0E11" },
 			muscle = 3.0, extras = { "deephood", "shoes" }, extraColor = "#0E0E11", extraColor2 = "#6E3FB0", tint = "#6E3FB0",
@@ -154,7 +146,6 @@ Trainers.List = {
 		widths = { hips = 1.06, arms = 1.12, legs = 1.12, depth = 1.12 },
 		perk = { gains = 1.50, coins = 1.50, progress = 0.50 }, perkText = "+150% EXP and coins, +50% progress",
 		idle = "flex", pose = "FrontDoubleBiceps", line = "Strength is forever.",
-		icon = "rbxassetid://105948301268005", art = "rbxassetid://128216581907404",
 		look = { skin = "#F7F3EC", faceTexture = "rbxassetid://7074749", -- Chill (calm, like a statue)
 			marble = { color = "#F7F3EC", variant = "GymArc_GoldVeinMarble" }, material = "Marble",
 			outfit = { pants = "rbxassetid://112751620100083", legs = "shorts", pantsColor = "#F4F1EA" },

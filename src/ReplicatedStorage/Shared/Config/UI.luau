@@ -48,23 +48,23 @@ UI.Icons = { -- white on transparent, 128x128 (tint with ImageColor3)
 	["zap"] = "rbxassetid://75531954798825",
 }
 
+-- (prompt 45, 22 Oct) the owner's transparent icons, Downloads\gym_arc_transparent_icons\shop (no dark squares); the Aura
+-- Pack keeps the three-orbs icon (the transparent folder's one is the old body art: never upload it)
 UI.ShopIcons = { -- shop items that aren't a real pass / product (those read their icon from GetProductInfo)
-	pass_2x_coins = "rbxassetid://117458912009974",
-	pass_2x_exp = "rbxassetid://107654800854539",
+	pass_2x_coins = "rbxassetid://139439539739456",
+	pass_2x_exp = "rbxassetid://137970570833539",
 	pass_aura_pack = "rbxassetid://96266064858389", -- (owner, 22 Oct: the three-orbs icon; never put the old body art back, it got the account warned)
-	pass_auto_rep = "rbxassetid://81453886607037",
-	pass_extra_pet_slot = "rbxassetid://101817661114755",
-	pass_extra_trainer = "rbxassetid://122731883610191",
-	pass_vip = "rbxassetid://125824576729448",
-	product_coins_large = "rbxassetid://89371119234841",
-	product_coins_medium = "rbxassetid://90925282294067",
-	product_coins_small = "rbxassetid://119709746715062",
-	-- (these two were uploaded from Studio on 14 Oct, so they're in the owner's own inventory, not the group)
-	product_dna_token = "rbxassetid://87375007150587",
-	product_quest_reroll = "rbxassetid://124460070314904",
-	product_shake_bundle = "rbxassetid://107883030118451",
-	-- (owner's Downloads\gym_arc_shop_icons\product_endless_stamina.png, uploaded from Studio 14 Oct: owner's inventory)
-	product_endless_stamina = "rbxassetid://96813280646116",
+	pass_auto_rep = "rbxassetid://130822231832547",
+	pass_extra_pet_slot = "rbxassetid://126251085640637",
+	pass_extra_trainer = "rbxassetid://109848179089518",
+	pass_vip = "rbxassetid://117186665302232",
+	product_coins_large = "rbxassetid://137118465714551",
+	product_coins_medium = "rbxassetid://109576862777341",
+	product_coins_small = "rbxassetid://72419777964449",
+	product_dna_token = "rbxassetid://79070513529244",
+	product_quest_reroll = "rbxassetid://83529030902372",
+	product_shake_bundle = "rbxassetid://134456065661684",
+	product_endless_stamina = "rbxassetid://110376857651697",
 }
 
 UI.MenuIcons = { -- 3D menu icons: NOT USED (owner, 13 Oct: keep the old left menu tiles); kept only as a record

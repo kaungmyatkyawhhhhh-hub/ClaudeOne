@@ -300,7 +300,7 @@ local function showPortraits(list: { string }, shown: string?)
 			local trainer = Trainers.ById[id]
 			local chip = portraitChips[index]
 			if not chip then
-				chip = HudBottom.ImageChip(trainer.icon or "", 10 + index)
+				chip = HudBottom.ImageChip("", 10 + index)
 				local slot = index
 				chip:OnTap(function()
 					local t = portraitChips[slot] and portraitChips[slot].trainer
@@ -309,7 +309,7 @@ local function showPortraits(list: { string }, shown: string?)
 				portraitChips[index] = chip
 			end
 			chip.trainer = trainer
-			chip:SetImage(trainer.icon or "")
+			chip:SetTrainer(trainer.id) -- (owner, 22 Oct: his 3D rig, no picture)
 			chip:SetText(if golden then "GOLD" else "")
 			chip:SetVisible(true)
 		end

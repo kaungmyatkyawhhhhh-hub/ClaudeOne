@@ -315,6 +315,14 @@ function HudBottom.ImageChip(image: string, order: number?)
 		Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(HudBottom.ChipSize, HudBottom.ChipSize), ScaleType = Enum.ScaleType.Fit,
 		Parent = chip })
 	function api.SetImage(_, id: string) picture.Image = id end
+	-- (owner, 22 Oct: no trainer pictures) a trainer's live 3D rig in the chip
+	function api.SetTrainer(_, trainerId: string)
+		if picture:GetAttribute("Trainer") == trainerId then return end
+		picture:SetAttribute("Trainer", trainerId)
+		picture.Image = ""
+		picture:ClearAllChildren()
+		require(script.Parent.TrainerPortrait).New(trainerId, { Size = UDim2.fromScale(1, 1), Parent = picture, shot = "bust", pose = "Relaxed" })
+	end
 	return api
 end
 

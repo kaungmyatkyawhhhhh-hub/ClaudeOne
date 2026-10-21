@@ -169,10 +169,12 @@ for order, trainer in ipairs(Trainers.List) do
 		})
 	end
 	-- the portrait (and a copy behind it in the rarity color: the rim of an unrevealed one)
-	local rimArt = New("ImageLabel", { Name = "Rim", BackgroundTransparency = 1, Image = trainer.icon or "", ScaleType = Enum.ScaleType.Fit, ImageColor3 = rim,
-		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.02), Size = UDim2.fromScale(0.97, 0.9), Visible = false, ZIndex = 2, Parent = tile })
-	local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = trainer.icon or "", ScaleType = Enum.ScaleType.Fit,
-		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromScale(0.92, 0.86), ZIndex = 3, Parent = tile })
+	-- (owner, 22 Oct: no pictures) his live 3D rig, and a black one for before you own him
+	local art = TrainerPortrait.New(trainer.id, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromScale(0.92, 0.86),
+		ZIndex = 3, Parent = tile, shot = "bust", pose = "Relaxed" })
+	local rimArt = TrainerPortrait.New(trainer.id, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromScale(0.92, 0.86),
+		ZIndex = 3, Parent = tile, shot = "bust", pose = "Relaxed", silhouette = true })
+	rimArt.Visible = false
 	-- owned: a gold check; a count
 	local check = New("Frame", { Name = "Check", BackgroundColor3 = Colors.Gold, Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(18, 18), Visible = false,
 		ZIndex = 5, Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }), New("UIStroke", { Color = Color3.fromHex("#141417"), Thickness = 1.5 }) })
@@ -209,8 +211,7 @@ local function refreshRows()
 		local rarity = rarityOf(slot.trainer)
 		local owned = ownsAny(id)
 		-- not owned yet: a black silhouette with a rim in the rarity color on a brighter burst (Secret and Eternal too)
-		slot.art.Image = slot.trainer.icon or ""
-		slot.art.ImageColor3 = if owned then Color3.new(1, 1, 1) else Color3.new(0, 0, 0)
+		slot.art.Visible = owned
 		slot.rimArt.Visible = not owned
 		slot.glow.ImageTransparency = if owned then 0.5 else 0.25
 		for _, ray in ipairs(slot.rays:GetChildren()) do ray.BackgroundTransparency = if owned then 0.84 else 0.7 end
@@ -918,11 +919,8 @@ local function fillBoard(part: BasePart)
 			New("UIStroke", { Color = if rarity.hidden then hex(rarity.color2) else hex(rarity.color), Thickness = 3 }),
 		})
 		-- (prompt 25) his icon (the Secret one a black "???" silhouette until you own him)
-		local picture = if hidden then Trainers.SilhouetteIcon else trainer.icon
-		if picture and picture ~= "" then
-			New("ImageLabel", { BackgroundTransparency = 1, Image = picture, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromScale(1, 1), Parent = frame },
-				{ New("UICorner", { CornerRadius = UDim.new(0.14, 0) }) })
-		end
+		-- (owner, 22 Oct: no pictures) his 3D rig, black until you own the Secret one
+		TrainerPortrait.Icon(trainer.id, { Size = UDim2.fromScale(1, 1), Parent = frame, silhouette = hidden })
 	end
 end
 local function addBoard(part)
