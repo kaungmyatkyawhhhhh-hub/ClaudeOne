@@ -172,6 +172,9 @@ local function ensure()
 		Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom),
 	})
 	placeRow()
+	-- (prompt 47, 22 Oct) the running boosts moved to their own row in the bottom-left corner (ActiveBoostsClient): this
+	-- row above the stamina bar is hidden (its chips still work, nobody sees them)
+	row.Visible = false
 	-- while recovering: what to train next (or a tip), above the boost icons
 	tipText = Kit.Text({ Name = "RecoverTip", Text = "", Font = "Strong", TextSize = 13, AnchorPoint = Vector2.new(0.5, 1), Visible = false,
 		Position = UDim2.new(0.5, 0, 1, -(HudBottom.Bottom + HudBottom.BarSize.Y + 8 + HudBottom.ChipSize + 18)), Size = UDim2.fromOffset(420, 18), Parent = root })

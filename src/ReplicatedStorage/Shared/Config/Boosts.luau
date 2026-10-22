@@ -21,35 +21,44 @@ Boosts.SaveEvery = 5        -- seconds between updates of the saved time left
 Boosts.MaxChips = 4         -- active boost timers shown by the stamina bar at once (the rest: "+2")
 
 Boosts.Items = {
-	{ id = "Shake", name = "Protein Shake", shake = true, icon = "cup-soda", color = "#8E5CF0",
+	{ id = "Shake", short = "+50% EXP", name = "Protein Shake", shake = true, icon = "cup-soda", color = "#8E5CF0",
 		text = "Fills your stamina and gives +50% EXP.", duration = "30 s" },
-	{ id = "CoconutWater", name = "Coconut Water", refill = 0.5, seconds = 2 * 60, effects = { regen = 1.5 }, icon = "heart-pulse", color = "#3F8CFF",
+	{ id = "CoconutWater", short = "+50% STAMINA REGEN", name = "Coconut Water", refill = 0.5, seconds = 2 * 60, effects = { regen = 1.5 }, icon = "heart-pulse", color = "#3F8CFF",
 		text = "Refills half your stamina, then stamina refills 50% faster.", duration = "2 min" },
-	{ id = "Creatine", name = "Creatine", seconds = 10 * 60, effects = { gains = 1.25 }, icon = "zap", color = "#E8343C",
+	{ id = "Creatine", short = "+25% EXP", name = "Creatine", seconds = 10 * 60, effects = { gains = 1.25 }, icon = "zap", color = "#E8343C",
 		text = "+25% EXP on every rep.", duration = "10 min" },
-	{ id = "ProteinPowder", name = "Protein Powder", seconds = 10 * 60, effects = { gains = 1.25 }, icon = "arrow-big-up", color = "#F0882A",
+	{ id = "ProteinPowder", short = "+25% PROGRESS", name = "Protein Powder", seconds = 10 * 60, effects = { gains = 1.25 }, icon = "arrow-big-up", color = "#F0882A",
 		text = "+25% Growth Spurt progress.", duration = "10 min" },
-	{ id = "Supplements", name = "Supplements", seconds = 15 * 60, effects = { gains = 1.1 }, icon = "heart-pulse", color = "#36C26B",
+	{ id = "Supplements", short = "+10% GAINS", name = "Supplements", seconds = 15 * 60, effects = { gains = 1.1 }, icon = "heart-pulse", color = "#36C26B",
 		text = "+10% to all training gains.", duration = "15 min" },
 	-- (prompt 19, sold in the PUMP SHOP) reps go 25% faster: the rep animation and the auto-rep pace
-	{ id = "PreWorkout", name = "Pre-Workout", seconds = 5 * 60, effects = { repSpeed = 1.25 }, icon = "timer", color = "#36C2C2",
+	{ id = "PreWorkout", short = "+25% REP SPEED", name = "Pre-Workout", seconds = 5 * 60, effects = { repSpeed = 1.25 }, icon = "timer", color = "#36C2C2",
 		text = "+25% rep speed.", duration = "5 min" },
 	-- (prompt 31) the PUMP SHOP's specials: stronger, rarer, pricier (all numbers here and in Config/PumpShop)
-	{ id = "MassGainer", name = "Mass Gainer", seconds = 10 * 60, effects = { gains = 1.5 }, icon = "arrow-big-up", color = "#C98A12",
+	{ id = "MassGainer", short = "+50% PROGRESS", name = "Mass Gainer", seconds = 10 * 60, effects = { gains = 1.5 }, icon = "arrow-big-up", color = "#C98A12",
 		text = "+50% Growth Spurt and alter progress.", duration = "10 min", special = true },
-	{ id = "ElitePreWorkout", name = "Elite Pre-Workout", seconds = 10 * 60, effects = { repSpeed = 1.5 }, icon = "timer", color = "#AA50FF",
+	{ id = "ElitePreWorkout", short = "+50% REP SPEED", name = "Elite Pre-Workout", seconds = 10 * 60, effects = { repSpeed = 1.5 }, icon = "timer", color = "#AA50FF",
 		text = "+50% rep speed.", duration = "10 min", special = true },
-	{ id = "WheyIsolate", name = "Whey Isolate", seconds = 15 * 60, effects = { gains = 1.5 }, icon = "zap", color = "#F5BE28",
+	{ id = "WheyIsolate", short = "+50% EXP", name = "Whey Isolate", seconds = 15 * 60, effects = { gains = 1.5 }, icon = "zap", color = "#F5BE28",
 		text = "+50% EXP on every rep.", duration = "15 min", special = true },
-	{ id = "BcaaRecovery", name = "BCAA Recovery", seconds = 15 * 60, effects = { regen = 2 }, icon = "heart-pulse", color = "#3CC8B4",
+	{ id = "BcaaRecovery", short = "+100% STAMINA REGEN", name = "BCAA Recovery", seconds = 15 * 60, effects = { regen = 2 }, icon = "heart-pulse", color = "#3CC8B4",
 		text = "Stamina refills twice as fast.", duration = "15 min", special = true },
 }
 -- (owner, 22 Oct) item pictures (Downloads\gym_arc_reward_icons, uploaded to the Myanmar Builders Club group): with one,
 -- the item shows its picture everywhere instead of the line icon in a coloured tile (Pieces.Icon / Kit.IconTile take a
 -- picture's id). "" = not uploaded yet: the line icon stays.
+-- (prompt 47, 22 Oct: the owner's new boost icons, Downloads\gym_arc_boost_icons, in the group; one per item id)
 Boosts.Art = {
-	CoconutWater = "", -- coconut_water.png
-	Creatine = "", -- creatine.png
+	Shake = "rbxassetid://129050154863447", -- protein_shake.png
+	ProteinPowder = "rbxassetid://133862686508046", -- protein_powder.png
+	Creatine = "rbxassetid://117668276542516", -- creatine.png
+	PreWorkout = "rbxassetid://94468652154061", -- pre_workout.png
+	Supplements = "rbxassetid://82069287679166", -- supplements.png
+	CoconutWater = "rbxassetid://95025554736760", -- coconut_water.png
+	MassGainer = "rbxassetid://137700404645036", -- mass_gainer.png
+	ElitePreWorkout = "rbxassetid://107384756746794", -- elite_pre_workout.png
+	WheyIsolate = "rbxassetid://116352481754144", -- whey_isolate.png
+	BcaaRecovery = "rbxassetid://108996566644383", -- bcaa.png
 }
 Boosts.ById = {}
 for _, item in ipairs(Boosts.Items) do

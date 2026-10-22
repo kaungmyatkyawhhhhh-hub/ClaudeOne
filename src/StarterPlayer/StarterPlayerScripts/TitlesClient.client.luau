@@ -415,7 +415,7 @@ local BOOSTS = {
 	{ id = "VIP", name = "VIP", icon = "star", color = Colors.Purple, sub = "+10% coins", ends = function() return passOn("VIP") end },
 	{ id = "EndlessStamina", name = "Endless Stamina", icon = "zap", color = Colors.Gold, sub = "No stamina drain",
 		ends = function() return untilAttr(player, "EndlessStaminaUntil") end },
-	{ id = "Shake", name = "Protein Shake", icon = "cup-soda", color = Colors.Teal, sub = "+50% gains", ends = function() return untilAttr(player, "ShakeEnds") end },
+	{ id = "Shake", name = "Protein Shake", icon = Boosts.ById.Shake.icon, color = Colors.Teal, sub = "+50% gains", ends = function() return untilAttr(player, "ShakeEnds") end },
 	{ id = "ServerBoost", name = "Server Boost", icon = "users", color = Colors.Red, sub = "2x gains for all",
 		ends = function() return untilAttr(ReplicatedStorage, "ServerBoostEnds") end },
 }

@@ -150,9 +150,12 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 		coachSays(info.text, info.npc)
 	elseif kind == "QuestReady" then
 		-- (prompt 20: a reward popup, queued with the others)
-		Notify.Reward("QUEST DONE", "Talk to " .. Quests.CoachName .. " for your reward", "list-checks", Colors.Green, "QuestComplete")
+		Notify.Reward("QUEST DONE", "Claim your reward in Quests > Goals", "list-checks", Colors.Green, "QuestComplete") -- (prompt 31)
 	elseif kind == "QuestDone" then
-		Notify.Show("Quest reward: " .. tostring(info.reward))
+		-- (prompt 47) the reward with the shake's picture when it gives shakes
+		local reward = tostring(info.reward)
+		local shake = require(ReplicatedStorage.Shared.Config.Boosts).ById.Shake
+		Notify.Reward("QUEST REWARD", reward, if string.find(reward, "shake") then shake.icon else "coin", Colors.Gold, "QuestClaim")
 	end
 end)
 
