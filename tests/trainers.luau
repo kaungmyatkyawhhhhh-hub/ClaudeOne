@@ -152,7 +152,7 @@ local m = T.Migrate({ owned = { "RookieCoach", "PumpCoach" }, equipped = { "Pump
 H.check(#m.copies == 2 and T.CopyByUid(m)[m.equipped[1]].id == "PumpCoach" and m.pity == 0, "a list of hired coaches becomes one of each")
 m = T.Migrate({ owned = { RookieCoach = 3 }, golden = { PumpCoach = 1 }, equipped = { "PumpCoach@g", "RookieCoach" }, pity = 12, copies = {} })
 local golden = T.CopyByUid(m)[m.equipped[1]]
-H.check(#m.copies == 4 and golden.id == "PumpCoach" and golden.s == 2 and m.discovered.IronBorn and m.pity == 12,
+H.check(#m.copies == 4 and golden.id == "PumpCoach" and golden.s == 2 and m.pity == 12,
 	"counts become copies, a Golden becomes IRON-BORN (even with an empty copies list from the template)")
 m = T.Migrate({ copies = { { u = 7, id = "PumpCoach", s = 9, l = 99, x = -3 } } })
 H.check(m.copies[1].s == 5 and m.copies[1].l == T.MaxLevel and m.copies[1].x == 0 and m.nextUid == 8, "bad numbers clamped, the next uid after the highest")

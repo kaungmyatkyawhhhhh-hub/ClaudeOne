@@ -9,14 +9,14 @@
 --   * The stack: his name (white chunky) -> him -> the stage name in its color (BASE white) -> "LV 20". A 4 px border in the
 --     stage color (it only ever means the stage), a 2 px near-black ring inside it, a soft glow outside; EQUIPPED = a
 --     thicker gold glow (gently pulsing) and a gold check badge on the right under the name.
---   * hidden = a stage you haven't discovered: a dark glitching version, "???" and "COMBINE 3 TO DISCOVER".
 -- (prompt 47, 22 Oct) The owner's pictures are in the group now: his portrait (Config/Trainers Portraits) instead of the
 -- 3D rig (a not-owned one = the portrait in black with a rim), the planner's backgrounds per stage (Trainers.StageArt:
 -- hex = the base, evo = the stage effect on top, animated: IRON-BORN pulses, BEAST-MODE / LIMITLESS turn, COLOSSUS
 -- flashes with its lightning), and a highlight that runs round the border. Rarity mode (the Agency): the rarity's colors,
 -- the rarity name and the chance instead of the stage and LV, a gold check when owned.
 --   TrainerTile.New({ Name, LayoutOrder, Size, Position, AnchorPoint, Parent, px = its width in mockup px }) -> tile
---   tile:Set({ id, s, l, equipped, hidden, noLevel, caption }); tile.cell (the frame to place), tile.button (taps)
+--   tile:Set({ id, s, l, equipped, noLevel, caption }); tile.cell (the frame to place), tile.button (taps)
+-- (owner, prompt 48: the "hidden" undiscovered stage, dark and glitching, is gone: every stage shows)
 local RunService = game:GetService("RunService")
 
 local Shared = script.Parent.Parent
@@ -218,14 +218,13 @@ function TrainerTile.New(props)
 	return self
 end
 
--- info = { id, s, l, equipped, hidden (a stage not discovered yet), noLevel, caption (instead of "LV n"), mini (no words: the
+-- info = { id, s, l, equipped, noLevel, caption (instead of "LV n"), mini (no words: the
 -- small tiles of the needs line) }
 function Tile:Set(info)
 	local stage = Trainers.Stages[info.s or 1] or Trainers.Stages[1]
 	local trainer = Trainers.ById[info.id]
 	self.info = info
 	self.stageInfo = stage
-	local hidden = info.hidden == true
 	local rarityMode = info.rarity == true
 	local rarity = trainer and Trainers.RarityById[trainer.rarity]
 	-- the tile's color: the stage's (or, on the Agency, the rarity's)
@@ -233,7 +232,7 @@ function Tile:Set(info)
 	if rarityMode and rarity and rarity.id ~= "Secret" then color = C(rarity.color) end
 	self.color = color
 	local art = Trainers.StageArt[stage.id]
-	local useArt = art ~= nil and not rarityMode and not hidden
+	local useArt = art ~= nil and not rarityMode
 	self.bgImage.Visible = useArt
 	self.evoImage.Visible = useArt
 	if useArt then
@@ -244,13 +243,13 @@ function Tile:Set(info)
 		self.evoImage.SizeConstraint = Enum.SizeConstraint.RelativeXY
 	end
 	self.hex.Visible = not useArt
-	self.button.BackgroundColor3 = if hidden then C("#070608") elseif rarityMode then color:Lerp(Color3.new(0, 0, 0), 0.82) else C(stage.base)
-	self.hex.ImageColor3 = if hidden then C("#2A2830") elseif rarityMode then color:Lerp(Color3.new(1, 1, 1), 0.1) else C(stage.hex):Lerp(Color3.new(1, 1, 1), 0.15)
+	self.button.BackgroundColor3 = if rarityMode then color:Lerp(Color3.new(0, 0, 0), 0.82) else C(stage.base)
+	self.hex.ImageColor3 = if rarityMode then color:Lerp(Color3.new(1, 1, 1), 0.1) else C(stage.hex):Lerp(Color3.new(1, 1, 1), 0.15)
 	self.hex.ImageTransparency = if rarityMode then 0.7 else 0.6
 	self.hexTop.ImageColor3 = self.hex.ImageColor3
-	self.radial.ImageColor3 = if hidden then C("#3A3640") else color
-	self.radial.ImageTransparency = if hidden then 0.6 elseif useArt then 0.7 else 0.35
-	self.spin.Color = borderColors(if hidden then C("#3A3640") else color)
+	self.radial.ImageColor3 = color
+	self.radial.ImageTransparency = if useArt then 0.7 else 0.35
+	self.spin.Color = borderColors(color)
 	local nameHidden = rarityMode and info.silhouette and rarity and rarity.hidden
 	self.name.Text = if nameHidden then "???" else string.upper(trainer and trainer.name or "")
 	if rarityMode then
@@ -259,18 +258,18 @@ function Tile:Set(info)
 		self.level.Text = info.caption or ""
 		self.level.TextColor3 = Color3.new(1, 1, 1)
 	else
-		self.stage.Text = if hidden then "???" else stage.name
-		self.stage.TextColor3 = if hidden then C("#8A878F") elseif stage.index == 1 then Color3.new(1, 1, 1) else color
-		self.level.Text = if hidden then "COMBINE 3 TO DISCOVER" elseif info.caption then info.caption elseif info.noLevel then "" else "LV " .. (info.l or 1)
-		self.level.TextColor3 = if hidden then C("#8A878F") else Color3.new(1, 1, 1)
+		self.stage.Text = stage.name
+		self.stage.TextColor3 = if stage.index == 1 then Color3.new(1, 1, 1) else color
+		self.level.Text = if info.caption then info.caption elseif info.noLevel then "" else "LV " .. (info.l or 1)
+		self.level.TextColor3 = Color3.new(1, 1, 1)
 	end
-	self.check.Visible = (info.equipped == true or (rarityMode and info.owned == true)) and not hidden
+	self.check.Visible = info.equipped == true or (rarityMode and info.owned == true)
 	self.name.Visible, self.stage.Visible, self.level.Visible = not info.mini, not info.mini, not info.mini
 	self.artHolder.Position = if info.mini then UDim2.fromScale(0.5, 0.04) else UDim2.fromScale(0.5, 0.12)
 	self.artHolder.Size = if info.mini then UDim2.fromScale(1.05, 0.96) else UDim2.fromScale(1.02, 0.62)
 	self.hexTop.Visible = useArt and (stage.id == "BeastMode" or stage.id == "Limitless")
 	-- the art and the effect only change when he, the stage or the mode does
-	local silhouette = hidden or info.silhouette == true
+	local silhouette = info.silhouette == true
 	local key = tostring(info.id) .. "|" .. stage.id .. "|" .. tostring(silhouette) .. "|" .. tostring(rarityMode)
 	if key ~= self.key then
 		self.key = key
@@ -287,24 +286,18 @@ function Tile:Paint(t: number)
 	local info, stage = self.info, self.stageInfo
 	if not info then return end
 	local color = self.color or C(stage.color)
-	local hidden = info.hidden == true
 	-- the highlight runs round the border
 	self.spin.Rotation = (t * 80) % 360
-	if info.equipped and not hidden then
+	if info.equipped then
 		self.glowStroke.Color = GOLD
 		self.glowStroke.Thickness = math.max(4, self.px * 0.07)
 		self.glowStroke.Transparency = 0.35 + 0.2 * math.sin(t * 3)
 	else
-		self.glowStroke.Color = if hidden then C("#3A3640") else color
+		self.glowStroke.Color = color
 		self.glowStroke.Thickness = math.max(3, self.px * 0.05)
 		self.glowStroke.Transparency = 0.55
 	end
 	local fx = self.fx
-	if hidden then
-		-- the glitch: the effect flickers dark
-		self.fxLayer.Visible = math.floor(t * 9) % 5 == 0
-		return
-	end
 	self.fxLayer.Visible = true
 	-- the planner's stage effect moves too
 	if self.evoImage.Visible then

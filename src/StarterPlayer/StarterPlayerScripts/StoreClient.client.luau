@@ -73,7 +73,7 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 		Notify.Toast("Thank you!", tostring(info.name) .. " is yours.", "star", Colors.Gold)
 		Audio.PlayUI("TitleUnlocked")
 	elseif kind == "ServerBoost" then
-		Notify.Toast("Server boost!", tostring(info.name) .. ": 2x gains for " .. tostring(info.minutes) .. " minutes", "zap", Colors.Gold)
+		Notify.Toast("Server boost!", "2x gains for everyone for " .. tostring(info.minutes) .. " minutes. Thank you!", "zap", Colors.Gold)
 		Audio.PlayUI("SetComplete")
 	elseif kind == "ShakeFridge" then
 		Notify.Toast("Shake Fridge", "+1 Energy Shake", "cup-soda", Colors.Blue, "fridge")

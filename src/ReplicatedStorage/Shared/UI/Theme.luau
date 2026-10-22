@@ -344,11 +344,16 @@ end
 
 -- Button labels are UPPERCASE (titles keep their case in this style: "Gym Store", "Bench Press").
 -- props.Upper = false keeps a label's own case even inside a button.
+-- (prompt 48) a RichText label keeps its tags as they are (<font color="#FF8A2A">IRON-BORN</font>): only the words change
+local function upperOutsideTags(text: string): string
+	if not string.find(text, "<", 1, true) then return string.upper(text) end
+	return (string.gsub(text, "([^<]*)(<?[^>]*>?)", function(plain, tag) return string.upper(plain) .. tag end))
+end
 function Theme.Uppercase(label)
 	if label:GetAttribute("Upper") then return end
 	label:SetAttribute("Upper", true)
 	local function apply()
-		local upper = string.upper(label.Text)
+		local upper = if label.RichText then upperOutsideTags(label.Text) else string.upper(label.Text)
 		if upper ~= label.Text then label.Text = upper end
 	end
 	apply()

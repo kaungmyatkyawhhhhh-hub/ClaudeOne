@@ -7,7 +7,7 @@
 --     with a bar running down its 5 s. You hit it automatically, with everyone.
 --   * The judges' panel (contestants, and anyone near the stage): every contestant's breakdown, "Size 52 / Balance 21 /
 --     Presence 11 = 84", best first.
---   * Results: confetti and a fanfare at the podium, the winner told to the whole server, your place and prize (a reward
+--   * Results: confetti and a fanfare at the podium, your place and prize (a reward
 --     popup; everyone who finished gets coins and "Good effort!").
 -- Light on phones: a few confetti and flash lights, no shadows.
 local Players = game:GetService("Players")
@@ -356,15 +356,11 @@ remote.OnClientEvent:Connect(function(kind, info)
 			Audio.Play2D(PosingComp.Sounds.Score)
 		end
 	elseif kind == "Results" then
-		local ranking = info.ranking or {}
-		local winner = ranking[1]
 		if inDivision or nearStage() then
 			Audio.Play2D(PosingComp.Sounds.Win)
 			confetti()
 		end
-		if winner then
-			Notify.Show(string.format("%s won the %s division (%s)!", winner.name, tostring(info.division), tostring(info.show)), Colors.Gold, "PosingWinner")
-		end
+		-- (owner, prompt 48: no server-wide winner toast; the placed players get their own reward popup)
 		hideJudges()
 		if inDivision then poseName.Text = "THE PODIUM" end
 	elseif kind == "Reward" then

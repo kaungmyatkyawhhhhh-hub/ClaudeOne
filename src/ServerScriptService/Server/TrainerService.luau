@@ -58,7 +58,7 @@ local function stateOf(player)
 	local t = Trainers.Migrate(data and data.trainers)
 	local copies = {}
 	for _, copy in ipairs(t.copies) do table.insert(copies, table.clone(copy)) end
-	return { copies = copies, equipped = table.clone(t.equipped), discovered = table.clone(t.discovered), nextUid = t.nextUid,
+	return { copies = copies, equipped = table.clone(t.equipped), discovered = t.discovered and table.clone(t.discovered), nextUid = t.nextUid,
 		rolls = t.rolls, pity = t.pity, autoDelete = table.clone(t.autoDelete), freeRolls = t.freeRolls, rebalance = t.rebalance }
 end
 
@@ -132,7 +132,6 @@ local function roll(player, count, auto)
 	end
 	local slots = slotsOf(player)
 	local results, refund = {}, 0
-	local announceFrom = Trainers.RarityById[Trainers.AnnounceFrom].index
 	for _ = 1, count do
 		local rarityId
 		rarityId, state.pity = Trainers.Roll(rng:NextNumber(), state.pity)
@@ -160,7 +159,8 @@ local function roll(player, count, auto)
 		end
 		table.insert(results, { id = trainer.id, rarity = rarityId, deleted = deleted, count = same, new = not deleted and any == 1 })
 		Analytics.Event(player, "TrainerRoll", Trainers.RarityById[rarityId].index)
-		if Trainers.RarityById[rarityId].index >= announceFrom then
+		-- (owner, prompt 48: only Secret and Eternal are told to the whole server)
+		if Trainers.RarityById[rarityId].announce == "banner" then
 			remote:FireAllClients("Pulled", { userId = player.UserId, name = player.DisplayName, rarity = rarityId, trainer = trainer.id })
 		end
 	end
@@ -198,15 +198,6 @@ local function unequip(player, slot)
 	apply(player, state)
 end
 
--- (prompt 33) the first time a player reaches a stage: everyone in the server hears it
-local function discover(player, state, stage: number): boolean
-	local id = Trainers.Stages[stage].id
-	if state.discovered[id] then return false end
-	state.discovered[id] = true
-	remote:FireAllClients("Discovered", { userId = player.UserId, name = player.DisplayName, stage = stage })
-	return true
-end
-
 -- 3 of the same trainer at the same stage -> 1 at the next, keeping the highest level; it takes the slot of one that was following
 local function combine(state, set)
 	local first = set[1]
@@ -242,10 +233,9 @@ local function evolve(player, uid)
 	local set = Trainers.EvolveSet(state, copy)
 	if #set < Trainers.EvolveCount then return end
 	local made = combine(state, set)
-	local first = discover(player, state, made.s)
 	apply(player, state)
 	Analytics.Event(player, "TrainerEvolve", made.s)
-	send(player, "Evolved", { results = { { id = made.id, stage = made.s, level = made.l, u = made.u } }, first = first })
+	send(player, "Evolved", { results = { { id = made.id, stage = made.s, level = made.l, u = made.u } } })
 end
 
 -- every set there is, lowest stages first (so a fresh IRON-BORN set goes on to BEAST-MODE in the same go)
@@ -254,7 +244,7 @@ local function evolveAll(player)
 	lastEvolve[player] = os.clock()
 	flushXp(player)
 	local state = stateOf(player)
-	local results, firstAny = {}, false
+	local results = {}
 	for stage = 1, #Trainers.Stages - 1 do
 		for _, trainer in ipairs(Trainers.List) do
 			while true do
@@ -266,7 +256,6 @@ local function evolveAll(player)
 				-- (the highest levels together: each new one keeps the best level of its 3)
 				table.sort(group, function(a, b) return a.l > b.l end)
 				local made = combine(state, { group[1], group[2], group[3] })
-				if discover(player, state, made.s) then firstAny = true end
 				table.insert(results, { id = made.id, stage = made.s, level = made.l, u = made.u })
 			end
 		end
@@ -274,7 +263,7 @@ local function evolveAll(player)
 	if #results == 0 then return end
 	apply(player, state)
 	Analytics.Event(player, "TrainerEvolveAll", #results)
-	send(player, "Evolved", { results = results, first = firstAny, all = true })
+	send(player, "Evolved", { results = results, all = true })
 end
 
 local function setAutoDelete(player, rarity, on)

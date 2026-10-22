@@ -11,7 +11,8 @@
 --   * The roll (tap to skip; prompt 27b: rarity-scaled, see "The roll reveal" below): Common / Uncommon a quick drop (~0.6 s),
 --     Rare an orb that bursts into the card (~1.2 s), Epic bigger pulses and a purple tint (~1.8 s), Legendary and better
 --     the darkening, a white flash, rays, a shockwave and the name slamming in (~3 s). Layered sounds (Config.AlterThemes.Sounds).
---   * Legendary and better: the whole server is told (a chat line + a toast); Secret and Eternal: a big banner too.
+--   * (owner, prompt 48) Only a Secret or Eternal roll is told to the whole server: a short gold banner at the top (~4 s),
+--     a chat line in the rarity's color and a small sound. Nothing else goes server-wide.
 --   * The signs over the Agency desks (tag AgencyBoard): TRAINER AGENCY + the trainers' pictures (prompt 28). (prompt 27,
 --     22 Oct: the one stand left, in the starter gym, is an old-school desk with a cork board of photo cards built in Studio,
 --     tools/builders/TrainerAgency; no AgencyBoard is tagged now, the code below stays for a sign that gets the tag.)
@@ -1056,29 +1057,62 @@ player:GetAttributeChangedSignal("TrainerSlots"):Connect(function() if modal.isO
 ------------------------------------------------------------------------
 -- Server events
 ------------------------------------------------------------------------
+-- (owner, prompt 48) the only server-wide message: someone rolled the Secret or Eternal trainer. "Rong rolled ATLAS!
+-- (Eternal)" as a chat line in the rarity's color for everyone; for everyone else also a short gold banner at the top
+-- (~4 s, under the top bar) and a small sound (the roller has the reveal).
+local bannerGui = Theme.ScreenGui({ Name = "RarePullBanner", DisplayOrder = 46, Parent = player:WaitForChild("PlayerGui") })
+local bannerRoot = Kit.Root(bannerGui)
+local BANNER_Y = 64 -- (mockup px: under the top bar's chips)
+local banner = New("Frame", { Name = "Banner", BackgroundColor3 = Color3.fromHex("#141417"), AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 0, -10), Size = UDim2.fromOffset(440, 52), Visible = false, Parent = bannerRoot }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A2A31"), Color3.fromHex("#0E0E11")) }),
+})
+local bannerEdge = New("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 2.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = banner }, {
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("#FFF3C4")),
+		ColorSequenceKeypoint.new(0.5, Color3.fromHex("#F6C75A")), ColorSequenceKeypoint.new(1, Color3.fromHex("#C98A12")) }) }),
+})
+local bannerTitle = Kit.Text({ Name = "Title", Text = "", Font = "Chunky", TextSize = 20, Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -24, 0, 26),
+	Parent = banner })
+Kit.Fit(bannerTitle, 20, 12)
+Kit.GoldText(bannerTitle)
+local bannerSub = Kit.Text({ Name = "Rarity", Text = "", Font = "Chunky", TextSize = 13, Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 16),
+	Parent = banner })
+local bannerShownAt = 0
+local function showBanner(title: string, sub: string, color: Color3)
+	bannerTitle.Text = title
+	bannerSub.Text = sub
+	bannerSub.TextColor3 = color
+	bannerEdge.Enabled = true
+	banner.Visible = true
+	banner.Position = UDim2.new(0.5, 0, 0, -10)
+	tween(banner, { Position = UDim2.new(0.5, 0, 0, BANNER_Y + 52) }, 0.35, Enum.EasingStyle.Back)
+	bannerShownAt = os.clock()
+	local at = bannerShownAt
+	task.delay(4, function()
+		if bannerShownAt ~= at then return end
+		tween(banner, { Position = UDim2.new(0.5, 0, 0, -10) }, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		task.delay(0.32, function() if bannerShownAt == at then banner.Visible = false end end)
+	end)
+end
+
 local function announce(info)
 	local rarity = Trainers.RarityById[info.rarity]
 	local trainer = Trainers.ById[info.trainer]
-	if not rarity or not trainer then return end
-	local who = if info.userId == player.UserId then "You" else tostring(info.name)
-	-- (owner, 22 Oct: a hidden trainer's name stays "???" for players who don't own him)
-	local name = if rarity.hidden and info.userId ~= player.UserId and not ownsAny(trainer.id) then "???" else trainer.name
-	local text = who .. " pulled " .. (if rarity.id == "Eternal" or rarity.id == "Epic" then "an " else "a ") .. string.upper(rarity.name) .. " trainer: " .. name .. "!"
-	-- a chat-style line for everyone
+	if not rarity or not trainer or rarity.announce ~= "banner" then return end
+	local mine = info.userId == player.UserId
+	local who = if mine then "You" else tostring(info.name)
+	local color = hex(if rarity.id == "Secret" then rarity.color2 else rarity.color)
+	local text = who .. " rolled " .. string.upper(trainer.name) .. "! (" .. rarity.name .. ")"
 	pcall(function()
 		local channels = TextChatService:FindFirstChild("TextChannels")
 		local general = channels and channels:FindFirstChild("RBXGeneral")
-		if general then
-			general:DisplaySystemMessage(string.format('<font color="#%s"><b>%s</b></font>', hex(rarity.color2 or rarity.color):ToHex(), text))
-		end
+		if general then general:DisplaySystemMessage(string.format('<font color="#%s"><b>%s</b></font>', color:ToHex(), text)) end
 	end)
-	-- (your own pull: the reveal is the celebration; only the chat line)
-	if info.userId == player.UserId then return end
-	if rarity.announce == "banner" then
-		Notify.Reward(string.upper(rarity.name) .. " PULL!", text, "star", hex(rarity.color2 or rarity.color), "TitleUnlocked", "trainerpull")
-	else
-		Notify.Toast(string.upper(rarity.name) .. " pull", text, "star", hex(rarity.color), "trainerpull")
-	end
+	if mine then return end
+	showBanner(who .. " rolled " .. string.upper(trainer.name) .. "!", string.upper(rarity.name) .. " TRAINER", color)
+	AlterFX.Sound("Chime", { pitch = 1.15, volume = 0.8 })
+	AlterFX.Sound("Sparkle", { delay = 0.08, volume = 0.6 })
 end
 
 remote.OnClientEvent:Connect(function(kind, info)
@@ -1119,19 +1153,6 @@ remote.OnClientEvent:Connect(function(kind, info)
 					task.delay(1, function() glow:Destroy() end)
 				end
 			end
-		end
-	elseif kind == "Discovered" then
-		-- (prompt 33) a player reached a stage for the first time: "Rong discovered COLOSSUS!" for everyone
-		local stage = Trainers.Stages[tonumber(info.stage) or 0]
-		if stage then
-			local who = if info.userId == player.UserId then "You" else tostring(info.name)
-			local text = who .. " discovered " .. stage.name .. "!"
-			pcall(function()
-				local channels = TextChatService:FindFirstChild("TextChannels")
-				local general = channels and channels:FindFirstChild("RBXGeneral")
-				if general then general:DisplaySystemMessage(string.format('<font color="#%s"><b>%s</b></font>', hex(stage.color):ToHex(), text)) end
-			end)
-			if info.userId ~= player.UserId then Notify.Toast("New evolution", text, "star", hex(stage.color), "trainerdiscover") end
 		end
 	elseif kind == "Pulled" then
 		announce(info)

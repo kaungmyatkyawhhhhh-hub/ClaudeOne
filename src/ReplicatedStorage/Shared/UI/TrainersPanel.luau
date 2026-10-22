@@ -5,11 +5,11 @@
 --   * RIGHT, the picked one: his tile big; the EXP bar (LV 18 . 7.2K / 10K EXP . LV 19); his boost (stage x level) in a
 --     framed box ("+120% EXP", "+60% COINS", "+40% PROGRESS"); "NEEDS 3x BEAST-MODE . 2/3" with the 3 copies as mini
 --     tiles (the missing one dim); EQUIP (green; red UNEQUIP while he follows you) and the EVOLVE preview (the next stage's
---     colors and name, "LV x"; dim until 3 copies, grey "MAX EVO" at LIMITLESS); EQUIPPED x / y and OWNED n; EVOLUTIONS
---     (the chart: the same tile five times, BASE -> LIMITLESS, chevrons, FROM ROLLS / 3x BASE ...; a stage nobody of
---     yours has reached yet is "???").
+--     colors and name, "LV x"; dim until 3 copies, grey "MAX STAGE" at LIMITLESS); EQUIPPED x / y and OWNED n; EVOLUTIONS
+--     (the chart: the same tile five times, BASE -> LIMITLESS, chevrons, FROM ROLLS / 3x BASE ...). (owner, prompt 48:
+--     every stage's real name shows, no "???" stages.)
 --   * The evolve moment (panel.evolved): the 3 fly together, shake, a white flash, the new one slams in with its name
---     stamp, confetti in the stage color, a big sound. A first discovery: "COLOSSUS DISCOVERED!".
+--     stamp, confetti in the stage color, a big sound.
 --   * (prompt 31) a trainer you haven't seen here yet turns over with a gold burst; "5/8 FOUND".
 -- (prompt 47, 22 Oct) Restyled with the chunky kit: the big tile with the EQUIPPED / OWNED pills under it; on the right his
 -- name, rarity and LV (gold), the EXP bar, his boosts as stat pills, the evolve bar (copies 2 / 3 + the mini tiles), a
@@ -384,7 +384,7 @@ function TrainersPanel.Build(parent: Instance)
 		local ready = not maxed and #currentSet >= Trainers.EvolveCount
 		local nextStage = Trainers.Stages[current.s + 1]
 		local have = math.min(#currentSet, Trainers.EvolveCount)
-		needs.Text = if maxed then "MAX EVOLUTION" else string.format("%d/%d  ·  3x %s", have, Trainers.EvolveCount, stage.name)
+		needs.Text = if maxed then "MAX STAGE" else string.format("%d/%d  ·  3x %s", have, Trainers.EvolveCount, stage.name)
 		local k = if maxed then 1 else have / Trainers.EvolveCount
 		evoFill.Size = UDim2.new(k, -8 * k, 1, -8)
 		for i, mini in ipairs(minis) do
@@ -397,22 +397,29 @@ function TrainersPanel.Build(parent: Instance)
 			end
 			mini.button.BackgroundTransparency = if got then 0 else 0.6
 		end
-		local known = nextStage and s.discovered[nextStage.id] == true
+		-- (owner, prompt 48) "EVOLVE > IRON-BORN": the next stage's real name in its color (a 3 px dark stroke); "MAX STAGE"
+		-- at LIMITLESS
+		local evolveLabel = evolveButton:FindFirstChild("Label")
+		if evolveLabel then evolveLabel.RichText = true end -- (set before the text: Theme.Uppercase leaves the tags alone)
+		local nextText = if nextStage then string.format('<font color="#%s">%s</font>', C(nextStage.color):ToHex(), nextStage.name) else ""
 		if maxed then
-			Kit.SetButton(evolveButton, "Disabled", "Max evo")
+			Kit.SetButton(evolveButton, "Disabled", "Max stage")
 		elseif ready then
 			local bestLevel = 1
 			for _, c in ipairs(currentSet) do bestLevel = math.max(bestLevel, c.l) end
-			Kit.SetButton(evolveButton, "Gold", "Evolve > " .. (if known then nextStage.name else "???") .. " · LV " .. bestLevel)
+			Kit.SetButton(evolveButton, "Gold", "Evolve > " .. nextText .. " · LV " .. bestLevel)
 		else
-			Kit.SetButton(evolveButton, "Disabled", "Evolve > " .. (if known then nextStage.name else "???"))
+			Kit.SetButton(evolveButton, "Disabled", "Evolve > " .. nextText)
+		end
+		local evolveStroke = evolveLabel and evolveLabel:FindFirstChildOfClass("UIStroke")
+		if evolveStroke and not maxed then
+			evolveStroke.Color, evolveStroke.Thickness, evolveStroke.Transparency = INK, 3, 0
 		end
 		local isEquipped = equippedSet[current.u] == true
 		Kit.SetButton(equipButton, "Quiet", if isEquipped then "Unequip" else "Equip")
 		-- the chart: this trainer at every stage
 		for i, tile in ipairs(chartTiles) do
-			local st = Trainers.Stages[i]
-			tile:Set({ id = current.id, s = i, l = 1, hidden = s.discovered[st.id] ~= true })
+			tile:Set({ id = current.id, s = i, l = 1 })
 		end
 	end
 
@@ -487,7 +494,7 @@ function TrainersPanel.Build(parent: Instance)
 		TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 		TweenService:Create(flash, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
 		-- the name stamp and the confetti in the stage color
-		local stamp = chunky(root, { Name = "Stamp", Text = if info.first then stage.name .. " DISCOVERED!" else stage.name .. "!", AnchorPoint = Vector2.new(0.5, 0),
+		local stamp = chunky(root, { Name = "Stamp", Text = stage.name .. "!", AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.new(0.5, 0, 0.45, 100), Size = UDim2.fromOffset(420, 40), TextColor3 = Color3.fromHex(stage.color), ZIndex = 40 }, 30)
 		local stampScale = New("UIScale", { Scale = 2.2, Parent = stamp })
 		TweenService:Create(stampScale, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 }):Play()

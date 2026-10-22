@@ -83,9 +83,8 @@ local function serverBoost(buyer)
 	local start = current and current.untilTime or now
 	BoostService.SetGlobal("ServerBoost", { gains = Effects.ServerBoostGains, untilTime = start + Effects.ServerBoostMinutes * 60 })
 	ReplicatedStorage:SetAttribute("ServerBoostBy", buyer.DisplayName)
-	for _, player in ipairs(Players:GetPlayers()) do
-		event(player, "ServerBoost", { name = buyer.DisplayName, minutes = Effects.ServerBoostMinutes })
-	end
+	-- (owner, prompt 48: no server-wide messages; the buyer is thanked, everyone sees the boost in their boosts row)
+	event(buyer, "ServerBoost", { name = buyer.DisplayName, minutes = Effects.ServerBoostMinutes })
 end
 
 local function grantProduct(player, product)

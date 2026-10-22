@@ -11,8 +11,9 @@ local Trainers = {}
 
 ------------------------------------------------------------------------
 -- Rarities (a 9th rank later = one more entry here: its colors, odds and effects; the rolls, odds list, animation and
--- announcements all read this list). chance in % (they add up to 100). announce = everyone in the server is told
--- ("chat": a chat line + a toast; "banner": a big banner too). reveal = the roll animation's extra beat.
+-- announcements all read this list). chance in % (they add up to 100). announce = "banner": everyone else in the server
+-- is told (a short gold banner, a chat line, a small sound; owner, prompt 48: ONLY Secret and Eternal, the rest of the
+-- server-wide messages are gone). reveal = the roll animation's extra beat.
 ------------------------------------------------------------------------
 -- (owner, prompt 25: Mythic 0.6%, Secret 0.15%, Eternal 0.035%, Common takes the difference; tests/trainers measures the
 -- times: Mythic ~3-4 h, Secret ~15 h at RollMinutes 1.6)
@@ -21,8 +22,8 @@ Trainers.Rarities = {
 	{ id = "Uncommon", name = "Uncommon", chance = 30, color = "#5CC46B", reveal = "plain" },
 	{ id = "Rare", name = "Rare", chance = 12, color = "#3F8CFF", reveal = "plain" },
 	{ id = "Epic", name = "Epic", chance = 5, color = "#A06BE6", reveal = "burst" },
-	{ id = "Legendary", name = "Legendary", chance = 2, color = "#F6C75A", reveal = "explosion", announce = "chat" },
-	{ id = "Mythic", name = "Mythic", chance = 0.6, color = "#E8345A", color2 = "#9A4AD8", reveal = "lightning", announce = "chat" },
+	{ id = "Legendary", name = "Legendary", chance = 2, color = "#F6C75A", reveal = "explosion" },
+	{ id = "Mythic", name = "Mythic", chance = 0.6, color = "#E8345A", color2 = "#9A4AD8", reveal = "lightning" },
 	{ id = "Secret", name = "Secret", chance = 0.15, color = "#2A2A30", color2 = "#8E8E9A", reveal = "dark", announce = "banner", hidden = true },
 	{ id = "Eternal", name = "Eternal", chance = 0.035, color = "#FFF3C4", color2 = "#F6C75A", reveal = "cosmic", announce = "banner", hidden = true }, -- (owner, 22 Oct: hidden until owned, like Secret)
 }
@@ -194,7 +195,6 @@ Trainers.AutoStopRarity = "Epic"   -- Auto Roll stops on this or better
 Trainers.AutoDeleteRarities = { "Common", "Uncommon" } -- toggles: a duplicate of these turns into coins instead
 Trainers.AutoDeleteRefund = 0.1    -- ...this share of the roll price
 Trainers.BoostCap = 4              -- the equipped trainers' total boost is capped at +400% (per kind)
-Trainers.AnnounceFrom = "Legendary"
 
 -- The price of one roll at a stage (Growth Spurts; 6 = 7'0").
 function Trainers.RollPrice(coinsPerMinute: number): number
@@ -263,7 +263,7 @@ end
 --   x1.25, x1.5, x1.75, x2; it was x1 .. x16 until prompt 27b), keeping the highest level of the 3. No level needed. One
 --   LIMITLESS = 81 BASE copies.
 -- * So one LIMITLESS LV 20 = x2.2 his BASE boost: Atlas +165% EXP and coins, Coach Sam +11% EXP.
--- * A player only knows the names of the stages they've reached (discovered); the next one is "???" until then.
+-- * (owner, prompt 48) Every stage's name shows (the "???" undiscovered stages of prompt 33 are gone).
 ------------------------------------------------------------------------
 -- color = the stage's bright color (border, name); base = the tile's dark base; hex = the hex mesh tint
 Trainers.Stages = {
@@ -317,7 +317,7 @@ local function cleanCopy(c)
 	}
 end
 
--- The saved state, from any version: { copies, equipped = { u }, discovered = { [stage id] = true }, nextUid, rolls, pity,
+-- The saved state, from any version: { copies, equipped = { u }, discovered (unused since prompt 48), nextUid, rolls, pity,
 -- autoDelete, bonus, freeRolls, rebalance }. Before prompt 33: owned = { [id] = count } (before prompt 24: a list of ids), golden = { [id] = count }
 -- (each Golden -> one IRON-BORN), equipped = { "PumpCoach" | "PumpCoach@g" }.
 function Trainers.Migrate(t)
@@ -376,15 +376,9 @@ function Trainers.Migrate(t)
 			end
 		end
 	end
-	local discovered = { Base = true }
-	if type(t.discovered) == "table" then
-		for id in pairs(t.discovered) do
-			if Trainers.StageById[id] then discovered[id] = true end
-		end
-	end
-	for _, copy in ipairs(copies) do discovered[Trainers.Stages[copy.s].id] = true end
 	return {
-		copies = copies, equipped = equipped, discovered = discovered, nextUid = nextUid,
+		-- (prompt 48: the "discovered" stages are gone; an old save's list is kept as it was, unused)
+		copies = copies, equipped = equipped, discovered = if type(t.discovered) == "table" then t.discovered else nil, nextUid = nextUid,
 		rolls = tonumber(t.rolls) or 0, pity = tonumber(t.pity) or 0,
 		freeRolls = math.max(0, math.floor(tonumber(t.freeRolls) or 0)), rebalance = math.clamp(math.floor(tonumber(t.rebalance) or 0), 0, 2),
 		autoDelete = type(t.autoDelete) == "table" and t.autoDelete or {},
