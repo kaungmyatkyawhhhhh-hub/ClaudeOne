@@ -124,11 +124,8 @@ local alterPct = Kit.Text({ Name = "Pct", Text = "", Font = "Number", TextSize =
 	Position = UDim2.new(1, -8, 0, 4), Size = UDim2.fromOffset(46, 22), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = tile })
 alterPct:SetAttribute("KeepColor", true)
 local titleGradient = New("UIGradient", { Name = "AlterTitle", Rotation = 90, Enabled = false, Parent = tileText })
--- (prompt 54) the next alter's bicep icon on the card's left
-local AlterIcon = require(Shared.UI.AlterIcon)
+-- (owner, 23 Oct: no bicep icon on this pill, only the alter's art and the words; the icons stay in the panels)
 for _, words in ipairs({ tileText, tileLabel, bigText, alterPct }) do words.ZIndex = tile.ZIndex + 4 end
-local alterIcon = AlterIcon.New({ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 5, 0.5, -2), Size = UDim2.fromOffset(32, 32), ZIndex = tile.ZIndex + 3,
-	Visible = false, Parent = tile })
 local function setAlterLook(theme, percent: number?, ready: boolean?)
 	local on = theme ~= nil
 	alterReadyColor = if on and ready then theme.accent else nil
@@ -136,12 +133,10 @@ local function setAlterLook(theme, percent: number?, ready: boolean?)
 	titleGradient.Enabled = on and not ready
 	alterStrip.Visible = on
 	alterPct.Visible = on and not ready
-	alterIcon.Visible = on
-	if on then AlterIcon.Set(alterIcon, theme.number) end
-	tileText.Position = UDim2.fromOffset(if on then 40 else 8, 4)
-	tileLabel.Position = UDim2.fromOffset(if on then 36 else 0, tileLabel.Position.Y.Offset)
-	tileLabel.Size = UDim2.new(1, if on then -36 else 0, 0, tileLabel.Size.Y.Offset)
-	tileText.Size = UDim2.new(1, if on then -92 else -16, 0, 22)
+	tileText.Position = UDim2.fromOffset(8, 4)
+	tileLabel.Position = UDim2.fromOffset(if on then 4 else 0, tileLabel.Position.Y.Offset)
+	tileLabel.Size = UDim2.new(1, if on then -4 else 0, 0, tileLabel.Size.Y.Offset)
+	tileText.Size = UDim2.new(1, if on then -60 else -16, 0, 22)
 	tileText.TextXAlignment = if on then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
 	if not on then return end
 	-- (owner, 23 Oct, chrome reset) the card stays dark graphite with the screen's one gold outline (was the alter's own

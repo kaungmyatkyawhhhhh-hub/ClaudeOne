@@ -23,6 +23,7 @@ local Workspace = game:GetService("Workspace")
 local Trainers = require(ReplicatedStorage.Shared.Config.Trainers)
 local PumpShop = require(ReplicatedStorage.Shared.Config.PumpShop)
 local Alters = require(ReplicatedStorage.Shared.Config.Alters)
+local RollReveal = require(ReplicatedStorage.Shared.Config.RollReveal)
 local PlayerData = require(script.Parent.PlayerData)
 local BoostService = require(script.Parent.BoostService)
 local NpcService = require(script.Parent.NpcService)
@@ -173,6 +174,26 @@ local function roll(player, count, auto)
 		end
 	end
 	if auto then Analytics.Event(player, "TrainerAutoRoll", count) end
+	-- (prompt 55) players near him see the beam and the shockwave beside him, about when his cinematic peaks (his reveal:
+	-- the setup, the cards before the best one, the roller, the Secret's blackout, then the cinematic up to its peak)
+	local best = nil
+	for _, r in ipairs(results) do
+		local rarity = Trainers.RarityById[r.rarity]
+		if rarity and (not best or rarity.index > best.index) then best = rarity end
+	end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if best and root and best.index >= Trainers.RarityById.Legendary.index then
+		local C, RL, RT = RollReveal.Cinematic, RollReveal.Roller, RollReveal.Time
+		local look = C[best.id] or C.Mythic
+		local delay = RT.setup + (#results - 1) * (RT.gapBetweenCards + RL.time + RL.holdAfter + RT.cardIn + RT.dress) + RL.time
+			+ (if look.blackout then look.blackout + 0.9 else 0) + look.length * C.peakAt
+		for _, other in ipairs(Players:GetPlayers()) do
+			local otherRoot = other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart")
+			if otherRoot and (otherRoot.Position - root.Position).Magnitude <= C.observerRange then
+				send(other, "Beam", { userId = player.UserId, rarity = best.id, delay = delay })
+			end
+		end
+	end
 	if refund > 0 then PlayerData.AddCoins(player, refund) end
 	apply(player, state)
 	send(player, "Rolled", { results = results, pity = state.pity, rolls = state.rolls, refund = refund, auto = auto == true })

@@ -446,17 +446,21 @@ end
 --     its color, his NAME (white chunky, dark stroke), his boost (gold, stroked), for a dupe a pill "X2 · 2/3 TO IRON-BORN"
 --     with a bar, for a new one a tilted gold NEW! sticker on the top-left corner. Size by rarity (Common 90% ... Mythic+
 --     115%, lifted, a glow past the edge). Everything is scaled to fit between the top bar and the bottom bar.
---   * Per card: the orb drops into its slot (the glow's size is the first tell) -> pulses (Common 1 ... Legendary+ 4, each
---     slower; Epic tints the edges, Legendary+ darkens everything else and holds the last beat) -> the burst (Common /
---     Uncommon small, the rest a hard white flash; the card snaps in 0 -> 1.15 -> 1; Legendary+ in slow motion with a
---     shockwave and turning rays) -> the dress (pill, name slam, boost, NEW!, dupe bar; a shimmer over Legendary+ names)
---     -> the hold (it floats, the glow breathes, a quiet hum).
+--   * (prompt 55, 23 Oct; it replaces prompt 49's orb, pulses and spinning sunburst) The background: the world stays
+--     visible but dark (a vignette, blur, a haze in the rarity colour from the bottom, a few slow particles drifting up).
+--   * Per card: the ROLLER, trainer names flicking past in their rarity colours (fast, then slowing like a slot machine,
+--     a tick each, the last few hovering on rarer ones) lands on the result (a pop 1.2 -> 1 and its sound; the Secret
+--     one stops dead on "???") -> Legendary+: the CINEMATIC in the world (Shared/VFX/RollCinematic; nearby players see
+--     the beam and the shockwave) -> the card slides up into place -> the dress (pill, name slam, boost, NEW!, dupe bar; a
+--     shimmer over Legendary+ names) -> the hold (it floats, the glow breathes, a quiet hum).
 --   * Batch: dashed dark slots in a row, revealed lowest to highest; the revealed ones dim to 80% while the next plays,
 --     then all brighten. Then a 0.4 s beat, a fanfare and the bar slides up: "1 NEW · 2 DUPES", ROLL AGAIN (red, its
 --     price) and CLOSE; TAP TO CONTINUE pulses.
---   * A tap during a reveal finishes every card at once (a quick pop each) and shows the bar; the next tap closes.
---   * Auto Roll: the cards snap in and it closes by itself, unless Epic or better (the full reveal; auto roll stops).
---   * Reduced Motion: no shakes, no slow motion, a shorter, softer flash (the pulses stay).
+--   * A tap during a reveal finishes every card at once (a quick pop each) and shows the bar; the next tap closes. A
+--     player's first-ever Mythic / Secret can't be skipped for its first 2 s.
+--   * Auto Roll: the fast roller (0.6 s) and it closes by itself, unless Legendary or better (the full reveal and the
+--     cinematic; auto roll stops).
+--   * Reduced Motion: no shakes, no camera orbit, no flicker; fades instead.
 ------------------------------------------------------------------------
 local RunService = game:GetService("RunService")
 local RollReveal = require(Shared.Config.RollReveal)
@@ -486,11 +490,11 @@ local skip = false
 local closeWanted = false
 local cards = {}
 local slots = {}
-local transient = {} -- orbs, edge tints, screen rays (cleared on a skip and at the end)
 local holdConnection = nil
 local humSound = nil
 local menuWasHidden = false
 local againCount = 1
+local skipLockUntil = 0 -- (prompt 55) a tap can't skip before this
 local requestRoll -- (below: Rolling)
 
 -- the reveal tier: 1 Common, 2 Uncommon / Rare, 3 Epic, 4 Legendary and better
@@ -503,11 +507,6 @@ end
 -- the rarity's light (outline, orb, rays, rings): its own color (Secret's is near black, so its grey)
 local function fxColor(rarity): Color3
 	return hex(if rarity.id == "Secret" then rarity.color2 else rarity.color)
-end
-local function fxTheme(rarity)
-	local accent = fxColor(rarity)
-	local texture = if rarity.reveal == "lightning" then "lightning" elseif rarity.reveal == "dark" then "smoke" else "spark"
-	return { accent = accent, particle = { texture = texture, color = accent, motion = if rarity.reveal == "cosmic" then "drift" else "rise" } }
 end
 -- a sound: louder for rarer (up to RollReveal.LoudestGain, about +4 dB over Common), cut to OneShotMax
 local function sfx(key: string, rarity, volume: number?, opts)
@@ -530,74 +529,63 @@ local function wait_(t: number): boolean
 	end
 	return not skip
 end
--- the middle of a GUI object in the FX layer's pixels, and as a share of the screen
-local function centerOf(gui: GuiObject): (UDim2, number, number)
-	local size = fxLayer.AbsoluteSize
-	local p = gui.AbsolutePosition + gui.AbsoluteSize / 2 - fxLayer.AbsolutePosition
-	return UDim2.fromOffset(p.X, p.Y), p.X / math.max(size.X, 1), p.Y / math.max(size.Y, 1)
+-- (prompt 55) the calm background: the world dark but visible (a black wash, a vignette, blur), a haze in the rarity
+-- colour from the bottom and a few slow particles drifting up. Made at the start of a reveal, gone at the close.
+local BG = RollReveal.Background
+local background = nil
+local function removeBackground()
+	if not background then return end
+	background.connection:Disconnect()
+	background.layer:Destroy()
+	local blur = background.blur
+	tween(blur, { Size = 0 }, 0.2)
+	task.delay(0.25, function() blur:Destroy() end)
+	background = nil
 end
--- a small UI shake (Reduced Motion: none)
-local function shakeUI(objects: { GuiObject }, strength: number, time: number)
-	if Theme.ReducedMotion() then return end
-	local bases = {}
-	for i, o in ipairs(objects) do bases[i] = o.Position end
-	task.spawn(function()
-		local t0 = os.clock()
-		while os.clock() - t0 < time do
-			local k = strength * (1 - (os.clock() - t0) / time)
-			for i, o in ipairs(objects) do
-				if o.Parent then o.Position = bases[i] + UDim2.fromOffset(math.random(-10, 10) / 10 * k, math.random(-10, 10) / 10 * k) end
-			end
-			task.wait(0.03)
-		end
-		for i, o in ipairs(objects) do if o.Parent then o.Position = bases[i] end end
-	end)
-end
--- a tint that creeps in from the 4 screen edges (Epic: its color; Legendary+: black)
-local function edgeTint(color: Color3, depth: number, time: number, transparency: number): { Frame }
-	local frames = {}
+local function makeBackground()
+	removeBackground() -- (never two at once)
+	for _, old in ipairs(game:GetService("Lighting"):GetChildren()) do
+		if old.Name == "RollBlur" then old:Destroy() end
+	end
+	local layer = New("Frame", { Name = "Background", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = overlay })
 	for _, side in ipairs({ "Top", "Bottom", "Left", "Right" }) do
 		local vertical = side == "Top" or side == "Bottom"
-		local f = New("Frame", { Name = "Tint" .. side, BackgroundColor3 = color, BorderSizePixel = 0, BackgroundTransparency = transparency,
+		New("Frame", { Name = "Vignette" .. side, BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0,
 			AnchorPoint = Vector2.new(if side == "Right" then 1 else 0, if side == "Bottom" then 1 else 0),
 			Position = UDim2.fromScale(if side == "Right" then 1 else 0, if side == "Bottom" then 1 else 0),
-			Size = if vertical then UDim2.fromScale(1, 0) else UDim2.fromScale(0, 1), ZIndex = 3, Parent = fxLayer }, {
-			New("UIGradient", { Rotation = ({ Top = 90, Bottom = 270, Left = 0, Right = 180 })[side], Transparency = NumberSequence.new(0, 1) }),
+			Size = if vertical then UDim2.fromScale(1, BG.vignette) else UDim2.fromScale(BG.vignette, 1), ZIndex = 1, Parent = layer }, {
+			New("UIGradient", { Rotation = ({ Top = 90, Bottom = 270, Left = 0, Right = 180 })[side], Transparency = NumberSequence.new(0.05, 1) }),
 		})
-		tween(f, { Size = if vertical then UDim2.fromScale(1, depth) else UDim2.fromScale(depth, 1) }, time, Enum.EasingStyle.Sine)
-		table.insert(frames, f)
-		table.insert(transient, f)
 	end
-	return frames
-end
--- light rays over the screen behind a card, fading in and turning (~10 degrees a second)
-local function screenRays(at: UDim2, color: Color3)
-	local rays = New("Frame", { Name = "Rays", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(1500, 1500),
-		ZIndex = 2, Parent = fxLayer })
-	table.insert(transient, rays)
-	for i = 0, 7 do
-		local ray = New("Frame", { BackgroundColor3 = color, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, if i % 2 == 0 then 70 else 40, 1, 0), Rotation = i * 22.5, BackgroundTransparency = 1, ZIndex = 2, Parent = rays }, {
-			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.1),
-				NumberSequenceKeypoint.new(1, 1) }) }),
-		})
-		tween(ray, { BackgroundTransparency = 0.5 }, 0.6)
+	local haze = New("Frame", { Name = "Haze", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1),
+		Size = UDim2.fromScale(1, BG.hazeHeight), BackgroundTransparency = 1, ZIndex = 1, Parent = layer }, {
+		New("UIGradient", { Rotation = 270, Transparency = NumberSequence.new(BG.haze, 1) }),
+	})
+	local dots = {}
+	for i = 1, BG.particles do
+		local dot = New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(math.random(3, 6), math.random(3, 6)),
+			BackgroundTransparency = 1, ZIndex = 1, Parent = layer }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+		dots[i] = { f = dot, x = math.random(), speed = 0.04 + math.random() * 0.05, phase = math.random() }
 	end
-	task.spawn(function()
-		local last = os.clock()
-		while rays.Parent do
-			local now = os.clock()
-			rays.Rotation += RT.raysDegPerSecond * (now - last)
-			last = now
-			task.wait(1 / 30)
+	local blur = New("BlurEffect", { Name = "RollBlur", Size = 0, Parent = game:GetService("Lighting") })
+	tween(blur, { Size = BG.blur }, RT.setup)
+	local t0 = os.clock()
+	local connection = RunService.Heartbeat:Connect(function()
+		local t = os.clock() - t0
+		for _, d in ipairs(dots) do
+			local k = (t * d.speed + d.phase) % 1
+			d.f.Position = UDim2.fromScale(d.x + 0.015 * math.sin(t * 0.8 + d.phase * 9), 1.02 - k * 0.75)
+			d.f.BackgroundTransparency = 0.35 + 0.65 * k
 		end
 	end)
+	background = { layer = layer, haze = haze, dots = dots, blur = blur, connection = connection }
 end
-local function clearTransient()
-	for _, o in ipairs(transient) do
-		if o.Parent then o:Destroy() end
-	end
-	table.clear(transient)
+-- the haze and the particles take the rarity's colour
+local function backgroundColor(color: Color3)
+	if not background then return end
+	background.haze.BackgroundTransparency = 0
+	tween(background.haze, { BackgroundColor3 = color }, 0.4)
+	for _, d in ipairs(background.dots) do tween(d.f, { BackgroundColor3 = color:Lerp(Color3.new(1, 1, 1), 0.3) }, 0.4) end
 end
 
 ------------------------------------------------------------------------
@@ -890,18 +878,17 @@ local function dress(card, instant: boolean)
 	end)
 end
 
--- the hold: every revealed card floats (+-4 px, 2 s), its glow breathes, Legendary+ rays keep turning
+-- the hold: every revealed card floats (+-4 px, 2 s), its glow breathes (prompt 55: nothing turns)
 local function startHold()
 	if holdConnection then return end
 	local t0 = os.clock()
-	holdConnection = RunService.Heartbeat:Connect(function(dt)
+	holdConnection = RunService.Heartbeat:Connect(function()
 		local t = os.clock() - t0
 		for i, card in ipairs(cards) do
 			if card.settled and card.holder.Parent then
 				local phase = i * 0.7
 				card.holder.Position = card.pos + UDim2.fromOffset(0, math.sin((t + phase) * 2 * math.pi / RT.floatPeriod) * RT.floatPx)
 				card.glow.ImageTransparency = card.glowBase + 0.12 * (0.5 + 0.5 * math.sin((t + phase) * 2.4))
-				if card.tier == 4 then card.rays.Rotation += RT.raysDegPerSecond * dt end
 			end
 		end
 	end)
@@ -920,132 +907,101 @@ local function shadeCard(card, amount: number)
 end
 
 ------------------------------------------------------------------------
--- One card's reveal: the orb, the pulses, the burst. false = skipped
+-- (prompt 55) One card's reveal: the roller, then (Legendary+) the cinematic, then the card slides up. false = skipped
 ------------------------------------------------------------------------
-local function dropOrb(card)
-	local rarity = card.rarity
-	local color = fxColor(rarity)
-	local size = RollReveal.OrbSize
-	local orb = New("Frame", { Name = "Orb", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = card.pos - UDim2.fromOffset(0, 240),
-		Size = UDim2.fromOffset(size, size), ZIndex = 6, Parent = rollRoot })
-	table.insert(transient, orb)
-	local scale = New("UIScale", { Parent = orb })
-	local glowSize = RollReveal.OrbGlow[rarity.id] or 2
-	local halo = AlterFX.Image(orb, "rim", { Name = "Halo", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(glowSize, glowSize),
-		ImageColor3 = color, ImageTransparency = 0.4, ZIndex = 6 })
-	New("Frame", { Name = "Core", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(1, 1), ZIndex = 7, Parent = orb }, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIGradient", { Rotation = 45, Color = ColorSequence.new(Color3.new(1, 1, 1), color) }),
-		New("UIStroke", { Color = color, Thickness = 3 }),
-	})
-	local star = AlterFX.Image(orb, "spark", { Name = "Star", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.6, 1.6),
-		ImageColor3 = Color3.new(1, 1, 1), ImageTransparency = 0.3, ZIndex = 8 })
-	task.spawn(function()
-		while orb.Parent do
-			star.Rotation += 3
-			task.wait(1 / 30)
-		end
-	end)
-	tween(orb, { Position = card.pos }, RT.orbDrop, Enum.EasingStyle.Bounce)
-	-- the trail
-	task.spawn(function()
-		for _ = 1, 6 do
-			if not orb.Parent then return end
-			local at = centerOf(orb)
-			local dot = AlterFX.Image(fxLayer, "spark", { AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(16, 16), ImageColor3 = color,
-				ImageTransparency = 0.2, ZIndex = 3 })
-			tween(dot, { ImageTransparency = 1, Size = UDim2.fromOffset(4, 4) }, 0.4)
-			task.delay(0.42, function() dot:Destroy() end)
-			task.wait(RT.orbDrop / 6)
-		end
-	end)
-	task.delay(RT.orbDrop * 0.7, function()
-		sfx("Stamp", nil, RV.orbThud, { pitch = 0.6 })
-		sfx("Shimmer", nil, RV.orbShimmer)
-	end)
-	return { frame = orb, scale = scale, halo = halo, color = color }
+local RollCinematic = require(Shared.VFX.RollCinematic)
+local RL = RollReveal.Roller
+local rollerText = Kit.Text({ Name = "Roller", Text = "", Font = "Chunky", TextSize = RL.textSize, AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, RL.y), Size = UDim2.new(1, -40, 0, RL.textSize + 12), Visible = false, ZIndex = 8, Parent = rollRoot })
+Kit.Fit(rollerText, RL.textSize, 18)
+local rollerStroke = strokeOf(rollerText)
+rollerStroke.Color, rollerStroke.Thickness = INK, 3
+local rollerScale = New("UIScale", { Parent = rollerText })
+local rollerGlow = AlterFX.Image(rollRoot, "ember", { Name = "RollerGlow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, RL.y),
+	Size = UDim2.fromOffset(420, 150), ImageTransparency = 1, Visible = false, ZIndex = 7 })
+-- what the roller shows for a trainer: his name in his rarity's colour (the Secret one, not owned yet: "???")
+local function rollerLook(trainer): (string, Color3)
+	local rarity = rarityOf(trainer)
+	if rarity.hidden and not ownsAny(trainer.id) then return "???", Color3.fromHex("#D9D6DE") end
+	return string.upper(trainer.name), fxColor(rarity)
 end
-
-local function pulses(card, orb): boolean
-	local rarity = card.rarity
-	local tier = card.tier
-	local spec = RollReveal.Pulses[rarity.id] or RollReveal.Pulses.Common
-	local tones = RollReveal.Tones[rarity.id] or RollReveal.Tones.Legendary
-	local swell = nil
-	if tier == 3 then
-		edgeTint(fxColor(rarity), 0.3, 1.2, 0.4)
-		swell = sfx("Swell", rarity, RV.swell, { fadeIn = 0.4, pitch = 0.8 })
-	elseif tier == 4 then
-		-- everything else goes dark
-		tween(dim, { BackgroundTransparency = 0 }, 0.5)
-		tween(spotlight, { ImageTransparency = 1 }, 0.5)
-		edgeTint(Color3.new(0, 0, 0), 0.45, 1.5, 0)
-		for _, other in ipairs(cards) do
-			if other ~= card and other.settled then shadeCard(other, 0.45) end
-		end
-		swell = sfx("Swell", rarity, RV.swell, { fadeIn = 0.6, pitch = 0.75, maxLength = 4 })
-	end
-	for i, time in ipairs(spec.times) do
-		local up = spec.scale + (i - 1) * 0.04
-		tween(orb.scale, { Scale = up }, time * 0.45, Enum.EasingStyle.Sine)
-		tween(orb.halo, { ImageTransparency = math.max(0, 0.3 - i * 0.08) }, time * 0.45)
-		if tier == 1 then
-			Audio.PlayUI("Click", { volume = RV.tick, pitch = 0.8 })
-		else
-			sfx("Chime", rarity, RV.tone, { pitch = 0.8 * (tones[i] or tones[#tones]) })
-		end
-		AlterFX.Ring(fxLayer, orb.color, 30, 110 + up * 60, time, (centerOf(orb.frame)))
-		if not wait_(time * 0.45) then return false end
-		tween(orb.scale, { Scale = 1 }, time * 0.55, Enum.EasingStyle.Sine)
-		if not wait_(time * 0.55) then return false end
-	end
-	if tier == 4 then
-		-- the held beat: the orb almost still, the swell down to near silence, a tiny heartbeat; then a shake tick
-		if swell then tween(swell, { Volume = swell.Volume * 0.08 }, RT.hold) end
-		sfx("Heartbeat", nil, RV.heartbeat, { maxLength = 0.6 })
-		tween(orb.scale, { Scale = 0.9 }, RT.hold, Enum.EasingStyle.Sine)
-		if not wait_(RT.hold) then return false end
-		shakeUI({ orb.frame }, 4, 0.1)
-	end
-	if swell then AlterFX.FadeOut(swell, 0.3) end
-	return true
+local function showName(trainer, scale: number?)
+	local text, color = rollerLook(trainer)
+	rollerText.Text = text
+	rollerText.TextColor3 = color
+	rollerGlow.ImageColor3 = color
+	rollerScale.Scale = scale or 1
 end
-
-local function burst(card, orb)
-	local rarity = card.rarity
+local function hideRoller(time: number)
+	if time <= 0 then
+		rollerText.Visible, rollerGlow.Visible = false, false
+		return
+	end
+	tween(rollerText, { Position = UDim2.fromScale(0.5, RL.y - 0.08) }, time)
+	textAlpha(rollerText, 1, time)
+	tween(rollerGlow, { ImageTransparency = 1 }, time)
+	task.delay(time, function()
+		rollerText.Visible, rollerGlow.Visible = false, false
+		rollerText.Position = UDim2.fromScale(0.5, RL.y)
+	end)
+end
+-- the names before the result: random (never the same twice in a row), the last few rarer than him where there are
+-- any (the tension), then him
+local function rollerNames(result, count: number)
+	local list, last = {}, nil
+	for _ = 1, count - RL.tease do
+		local pick
+		repeat pick = Trainers.List[math.random(#Trainers.List)] until pick ~= last
+		table.insert(list, pick)
+		last = pick
+	end
+	local rarer = {}
+	for _, t in ipairs(Trainers.List) do
+		if rarityOf(t).index > rarityOf(result).index then table.insert(rarer, t) end
+	end
+	if #rarer == 0 then
+		for _, t in ipairs(Trainers.List) do
+			if t ~= result and rarityOf(t).index >= Trainers.RarityById.Legendary.index then table.insert(rarer, t) end
+		end
+	end
+	for _ = 1, RL.tease do
+		local pick
+		repeat pick = rarer[math.random(#rarer)] until pick ~= last or #rarer == 1
+		table.insert(list, pick)
+		last = pick
+	end
+	return list
+end
+-- the roller for one card; fast = Auto Roll. false = skipped
+local function roll(card, fast: boolean): boolean
+	local trainer, rarity = card.trainer, card.rarity
+	local count = if fast then RL.fastNames else RL.names
+	local total = if fast then RL.fastTime else RL.time
+	local names = rollerNames(trainer, count)
+	local secret = rarity.hidden == true
+	-- the gaps grow (ease-out) and add up to the roll's time; the Secret one never slows: it stops dead
+	local weights, sum = {}, 0
+	for i = 1, count do
+		weights[i] = if secret then 1 else 1 + (i / count) ^ RL.slowdown * 6
+		sum += weights[i]
+	end
+	rollerText.Visible, rollerGlow.Visible = true, true
+	rollerText.Position = UDim2.fromScale(0.5, RL.y)
+	textAlpha(rollerText, 0)
+	rollerGlow.ImageTransparency = 0.55
+	backgroundColor(fxColor(rarity))
+	for i, t in ipairs(names) do
+		showName(t, 1.06)
+		tween(rollerScale, { Scale = 1 }, 0.06)
+		Audio.PlayUI("Click", { volume = RL.tick, pitch = 0.8 + 0.5 * i / count })
+		if not wait_(total * weights[i] / sum) then return false end
+	end
+	-- the landing: his name pops 1.2 -> 1 with its sound
+	showName(trainer, RL.land)
+	tween(rollerScale, { Scale = 1 }, RL.landTime, Enum.EasingStyle.Back)
+	rollerGlow.ImageTransparency = 0.25
+	tween(rollerGlow, { ImageTransparency = 0.5 }, 0.5)
 	local tier = card.tier
-	local reduced = Theme.ReducedMotion()
-	local slow = tier == 4 and not reduced
-	local time = RT.burst * (if slow then RT.burstSlow else 1)
-	local small = rarity.index <= Trainers.RarityById.Uncommon.index
-	local color = fxColor(rarity)
-	local at, x, y = centerOf(orb.frame)
-	orb.frame:Destroy()
-	if not small then
-		whiteFlash.BackgroundTransparency = if reduced then 0.5 else 0
-		task.delay(if reduced then RT.flashReduced else RT.flash, function() tween(whiteFlash, { BackgroundTransparency = 1 }, 0.25) end)
-	end
-	local count = if small then 8 elseif tier == 2 then 14 elseif tier == 3 then 22 else 30
-	AlterFX.UIParticles(fxLayer, fxTheme(rarity), count, 0.1, { burst = true, peak = true, scale = if small then 0.9 else 1.3, x = x, y = y })
-	AlterFX.Ring(fxLayer, color, 40, if small then 260 else 420, 0.45, at)
-	if tier == 4 then
-		dim.BackgroundTransparency = Screen.dim
-		tween(spotlight, { ImageTransparency = 0.8 }, 0.6)
-		AlterFX.Ring(fxLayer, color, 80, 1000, 0.9 * (if slow then 1.5 else 1), at)
-		task.delay(0.12, function() AlterFX.Ring(fxLayer, Color3.new(1, 1, 1), 60, 700, 0.7, at) end)
-		screenRays(at, color)
-		if not reduced then shakeUI({ card.holder }, 8, 0.3) end
-	elseif tier >= 2 and not reduced then
-		shakeUI({ card.holder }, if tier == 3 then 6 else 3, 0.2)
-	end
-	-- the card snaps in: 0 -> 1.15 -> 1
-	card.holder.Visible = true
-	card.popScale.Scale = 0
-	tween(card.popScale, { Scale = 1.15 }, time * 0.55, Enum.EasingStyle.Quad)
-	task.delay(time * 0.55, function() tween(card.popScale, { Scale = 1 }, time * 0.45, Enum.EasingStyle.Back) end)
-	tween(card.glow, { ImageTransparency = card.glowBase }, time)
-	-- the sound
 	if tier == 1 then
 		Audio.PlayUI("GeneticsPop", { volume = RV.pop })
 	elseif tier == 2 then
@@ -1054,25 +1010,35 @@ local function burst(card, orb)
 	elseif tier == 3 then
 		sfx("WarmWhoosh", rarity, RV.whoosh)
 		sfx("Chime", rarity, RV.chime, { pitch = 1.1 })
-		sfx("ImpactSub", rarity, RV.thump, { maxLength = 1 })
-	else
-		sfx("ImpactPunch", rarity, RV.impact)
-		sfx("FlashBoom", rarity, RV.sub)
-		sfx("CosmicSwell", rarity, RV.shine, { delay = 0.1, maxLength = 3 }) -- (the long shine: the one sound past 1.5 s)
-		sfx("WarmWhoosh", rarity, RV.whoosh, { pitch = 0.6, delay = 0.15 })
-		sfx("TitleHit", rarity, RV.ringBoom, { delay = 0.05 })
-		-- the rarity's own extras (prompt 24): Mythic lightning, Eternal stars, Legendary a brass stab
-		local theme = fxTheme(rarity)
-		if rarity.reveal == "lightning" then
-			AlterFX.Sound("Crackle", { delay = 0.2 })
-			AlterFX.ScreenFX(fxLayer, { accent = hex(rarity.color2 or rarity.color), particle = theme.particle }, "storm", 1.4)
-		elseif rarity.reveal == "cosmic" then
-			AlterFX.ScreenFX(fxLayer, { accent = theme.accent, particle = { texture = "spark", color = Color3.new(1, 1, 1), motion = "drift" } }, "legend", 2)
-		elseif rarity.reveal == "explosion" then
-			sfx("Brass", rarity, 0.6, { delay = 0.2 })
-		end
+	elseif not secret then
+		sfx("Stamp", rarity, RV.nameStamp, { pitch = 0.7 })
+		sfx("ChargeUp", rarity, RV.swell, { maxLength = 1 })
 	end
-	wait_(time)
+	if secret then
+		-- (the Secret one: "???" and a dead stop; the cinematic's blackout follows at once)
+		Audio.Duck(0, 0.05)
+		return wait_(0.25)
+	end
+	return wait_(if fast then 0.15 else RL.holdAfter)
+end
+-- the card slides up into place (from where the roller's name was)
+local function cardIn(card, instant: boolean)
+	card.holder.Visible = true
+	tween(card.glow, { ImageTransparency = card.glowBase }, RT.cardIn)
+	if instant then
+		card.popScale.Scale = 1
+		return
+	end
+	card.holder.Position = card.pos + UDim2.fromOffset(0, 70)
+	card.popScale.Scale = 0.85
+	tween(card.holder, { Position = card.pos }, RT.cardIn, Enum.EasingStyle.Back)
+	tween(card.popScale, { Scale = 1 }, RT.cardIn, Enum.EasingStyle.Back)
+	if card.tier == 4 then
+		whiteFlash.BackgroundTransparency = if Theme.ReducedMotion() then 0.6 else 0.2
+		tween(whiteFlash, { BackgroundTransparency = 1 }, 0.35)
+		sfx("ImpactSub", card.rarity, RV.thump, { maxLength = 1 })
+	end
+	Audio.PlayUI("Whoosh", { volume = RV.swoosh * 0.7 })
 end
 
 -- the fanfare after the last card: two notes, or a four-note sting when the batch has Legendary+
@@ -1167,7 +1133,6 @@ local function play(results, quick: boolean)
 	for _, c in ipairs(cards) do c.holder:Destroy() end
 	for _, s in ipairs(slots) do s:Destroy() end
 	cards, slots = {}, {}
-	clearTransient()
 	for _, child in ipairs(fxLayer:GetChildren()) do child:Destroy() end
 	-- lowest to highest (the best last)
 	local order = {}
@@ -1181,16 +1146,17 @@ local function play(results, quick: boolean)
 		return 0
 	end
 	local bestRarity = order[#order].rarity
-	local fast = quick and bestRarity.index < Trainers.RarityById[Trainers.AutoStopRarity].index
+	local fast = quick and bestRarity.index < Trainers.RarityById[Trainers.AutoStopRarity].index -- (the fast roller, then it closes)
 	againCount = #results
-	-- the setup: ~90% black, the HUD and the Agency step aside
+	-- the setup: the calm dark background (prompt 55), the HUD and the Agency step aside
 	overlay.Enabled = true
 	bar.Visible = false
 	whiteFlash.BackgroundTransparency = 1
 	dim.BackgroundTransparency = 1
 	spotlight.ImageTransparency = 1
-	tween(dim, { BackgroundTransparency = Screen.dim }, RT.setup)
-	tween(spotlight, { ImageTransparency = 0.85 }, RT.setup)
+	tween(dim, { BackgroundTransparency = RollReveal.Background.dim }, RT.setup)
+	tween(spotlight, { ImageTransparency = 0.9 }, RT.setup)
+	makeBackground()
 	menuWasHidden = SideMenu.IsHidden()
 	SideMenu.SetHidden(true)
 	if modal.root then modal.root.Visible = false end
@@ -1200,13 +1166,15 @@ local function play(results, quick: boolean)
 		if #order > 1 then dashedSlot(entry.slotPos, slotSize) end
 		cards[i] = makeCard(entry, i)
 	end
-	if fast then
-		skip = true
-	else
-		Audio.Duck(RollReveal.MusicDuck, 0.3)
-		wait_(RT.setup)
+	Audio.Duck(RollReveal.MusicDuck, 0.3)
+	if not fast then wait_(RT.setup) end
+	-- (a first-ever Mythic / Secret can't be skipped for its first seconds)
+	local firstRare = false
+	for _, entry in ipairs(order) do
+		if entry.rarity.index >= Trainers.RarityById.Mythic.index and isNewResult(entry.result) then firstRare = true end
 	end
-	-- one card at a time, left to right
+	if firstRare then skipLockUntil = os.clock() + RollReveal.Cinematic.unskippable end
+	-- one card at a time, left to right (lowest first): the roller, the cinematic (Legendary+), the card
 	for i, card in ipairs(cards) do
 		if skip then break end
 		if i > 1 then
@@ -1214,12 +1182,19 @@ local function play(results, quick: boolean)
 			for j = 1, i - 1 do shadeCard(cards[j], 0.2) end
 			if not wait_(RT.gapBetweenCards) then break end
 		end
-		local orb = dropOrb(card)
-		if not wait_(RT.orbDrop) then break end
-		if not pulses(card, orb) then break end
-		clearTransient()
-		burst(card, orb)
-		if skip then break end
+		if not roll(card, fast) then break end
+		if card.tier == 4 then
+			-- the cinematic in the world (the overlay hides itself while it plays)
+			hideRoller(0)
+			local played = RollCinematic.Play({ trainer = card.trainer, rarity = card.rarity, color = fxColor(card.rarity),
+				chanceText = Trainers.ChanceText(card.trainer.chance or card.rarity.chance), skipped = function() return skip end,
+				onTap = function() if os.clock() >= skipLockUntil then skip = true end end })
+			Audio.Duck(RollReveal.MusicDuck, 0.3)
+			if not played or skip then break end
+		else
+			hideRoller(0.2)
+		end
+		cardIn(card, false)
 		dress(card, false)
 		settle(card)
 		if i < #cards then
@@ -1228,10 +1203,11 @@ local function play(results, quick: boolean)
 	end
 	if skip then
 		-- every card not done yet: a quick pop each (one combined pop-pop-pop)
-		clearTransient()
+		RollCinematic.Stop()
+		hideRoller(0)
 		whiteFlash.BackgroundTransparency = 1
-		dim.BackgroundTransparency = Screen.dim
-		spotlight.ImageTransparency = 0.85
+		dim.BackgroundTransparency = RollReveal.Background.dim
+		spotlight.ImageTransparency = 0.9
 		local n = 0
 		for _, card in ipairs(cards) do
 			if not card.settled then
@@ -1255,6 +1231,7 @@ local function play(results, quick: boolean)
 		end
 	end
 	skip = false
+	skipLockUntil = 0
 	if fast then
 		busy = false
 		local t1 = os.clock()
@@ -1269,6 +1246,9 @@ local function play(results, quick: boolean)
 	while not closeWanted do task.wait() end
 	-- close
 	busy = true
+	RollCinematic.Stop()
+	hideRoller(0)
+	removeBackground()
 	tween(dim, { BackgroundTransparency = 1 }, 0.2)
 	tween(spotlight, { ImageTransparency = 1 }, 0.2)
 	if bar.Visible then tween(bar, { Position = UDim2.new(0.5, 0, 1, 10) }, 0.2) end
@@ -1282,14 +1262,18 @@ local function play(results, quick: boolean)
 	for _, c in ipairs(cards) do c.holder:Destroy() end
 	for _, s in ipairs(slots) do s:Destroy() end
 	cards, slots = {}, {}
-	clearTransient()
 	SideMenu.SetHidden(menuWasHidden)
 	if modal.root then modal.root.Visible = true end
 	busy = false
 	return bestRarity.index
 end
 tapCatcher.Activated:Connect(function()
-	if busy then skip = true else closeWanted = true end
+	if busy then
+		if os.clock() < skipLockUntil then return end -- (a first-ever Mythic / Secret: not yet)
+		skip = true
+	else
+		closeWanted = true
+	end
 end)
 
 ------------------------------------------------------------------------
@@ -1484,6 +1468,20 @@ remote.OnClientEvent:Connect(function(kind, info)
 			lastBest = play(results, info.auto == true) or 0
 			if modal.isOpen() then refresh() end
 		end)
+	elseif kind == "Beam" then
+		-- (prompt 55) someone near me rolled a Legendary+: the beam and the shockwave beside them (no letterbox, no camera)
+		local who = Players:GetPlayerByUserId(tonumber(info.userId) or 0)
+		local rarity = Trainers.RarityById[tostring(info.rarity)]
+		if who and who ~= player and rarity then
+			task.delay(math.clamp(tonumber(info.delay) or 0, 0, 20), function()
+				local root = who.Character and who.Character:FindFirstChild("HumanoidRootPart")
+				if not root then return end
+				local look = RollReveal.Cinematic[rarity.id] or {}
+				local right = root.CFrame.RightVector * Vector3.new(1, 0, 1)
+				local color = if look.color then Color3.fromHex(look.color) else fxColor(rarity)
+				require(Shared.VFX.RollCinematic).Beam(root.Position + right * RollReveal.Cinematic.beamSide, color, look.light)
+			end)
+		end
 	elseif kind == "Gift" then
 		-- (owner, 23 Oct) the group perks welcome gift: a toast, then his normal reveal ("NEW!" or a dupe), once the player is
 		-- really playing (after the menu and the genetics screen) and the tutorial is over (only the tutorial shows during it)
