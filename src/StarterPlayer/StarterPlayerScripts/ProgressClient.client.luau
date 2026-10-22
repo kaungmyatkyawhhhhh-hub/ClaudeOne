@@ -87,22 +87,27 @@ New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSiz
 -- (owner, 23 Oct) READY: the same pill and the art drifts a bit faster (alterReadyColor set by setAlterLook; nil =
 -- progressing). (prompt 57) The pill's outline is the HUD cards' own (chrome: 1.5 px, solid) tinted in the next alter's
 -- colour, no gold; READY = that outline does the ready glow (Shared/UI/ReadyGlow: a soft glow breathing behind the pill
--- and a highlight travelling round the outline), still in the alter's colour.
+-- and a highlight travelling round the outline), still in the alter's colour. (prompt 58) The GROWTH SPURT card the same,
+-- in GROW_ACCENT (the gold of the TAP TO GROW button).
 local alterReadyColor: Color3? = nil
-local alterGlow = nil -- (made on first use: the outline is the tile's own Border, from its style)
-local function alterOutline(color: Color3?, ready: boolean)
-	local edge = tile:FindFirstChild("Border")
-	if not (edge and edge:IsA("UIStroke")) then return end
-	if not alterGlow then
-		if not color then return end
-		alterGlow = ReadyGlow.New(tile, { stroke = edge, pad = 16 })
-	end
-	if color then
-		alterGlow:Set(ready, color)
-	else
-		alterGlow:Set(false, Colors.Outline)
+local GROW_ACCENT = Colors.Gold
+-- a card's outline in `color` (nil = the plain chrome outline), glowing when ready; the glow is made on first use (the
+-- outline is the card's own Border, from its style). (prompt 58: the machine strip uses it too)
+local function outliner(target: GuiObject, pad: number)
+	local glow = nil
+	return function(color: Color3?, ready: boolean)
+		local edge = target:FindFirstChild("Border")
+		if not (edge and edge:IsA("UIStroke")) then return end
+		if not glow then
+			if not color then return end
+			-- (the glow goes one layer under the card: at layer 1 they'd tie and the glow could cover the card)
+			if target.ZIndex < 2 then target.ZIndex = 2 end
+			glow = ReadyGlow.New(target, { stroke = edge, pad = pad })
+		end
+		glow:Set(color ~= nil and ready, color or Colors.Outline)
 	end
 end
+local cardOutline = outliner(tile, 16)
 task.spawn(function()
 	local phase, last = 0, os.clock()
 	while alterStrip.Parent do
@@ -140,7 +145,7 @@ local function setAlterLook(theme, percent: number?, ready: boolean?)
 	titleGradient.Enabled = on and not ready
 	alterStrip.Visible = on
 	alterPct.Visible = on and not ready
-	alterOutline(if on then theme.accent else nil, ready == true)
+	cardOutline(if on then theme.accent else nil, ready == true)
 	tileText.Position = UDim2.fromOffset(8, 4)
 	tileLabel.Position = UDim2.fromOffset(if on then 4 else 0, tileLabel.Position.Y.Offset)
 	tileLabel.Size = UDim2.new(1, if on then -4 else 0, 0, tileLabel.Size.Y.Offset)
@@ -148,7 +153,7 @@ local function setAlterLook(theme, percent: number?, ready: boolean?)
 	tileText.TextXAlignment = if on then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
 	if not on then return end
 	-- (owner, 23 Oct, chrome reset) the card stays dark graphite (prompt 57: its chrome outline in the alter's colour,
-	-- alterOutline above); the name keeps its alter gradient, the strip its art
+	-- cardOutline above); the name keeps its alter gradient, the strip its art
 	local shade = theme.pillShade or { 0.45, 0.75 }
 	alterShade.Transparency = NumberSequence.new(shade[1], shade[2])
 	alterWash.BackgroundColor3, alterWash.BackgroundTransparency = theme.accent, theme.pillWash or 1
@@ -166,16 +171,12 @@ local function setAlterLook(theme, percent: number?, ready: boolean?)
 	tileLabel.TextColor3 = if ready then Color3.new(1, 1, 1) else Color3.fromHex("#9A97A0")
 end
 
--- (owner, 23 Oct, chrome reset) the card's look: while it's waiting (NEXT / GROWTH SPURT) it's chrome, dark graphite, clean
--- italic words, with the one gold outline on the screen; MAX is chrome without it; ready (TAP TO GROW / ALTER NOW) is the
--- loud gold button (a claim)
-local function styleTile(style: string, chrome: boolean, goldEdge: boolean?)
+-- (owner, 23 Oct, chrome reset) the card's look: chrome, dark graphite, clean italic words. (prompts 57 / 58) No gold
+-- outline any more: the HUD cards' own outline tinted in the card's colour (cardOutline: the next alter's, or GROW_ACCENT
+-- for a Growth Spurt), and READY = that outline glows (TAP TO GROW is the same card, taller, its words in GROW_ACCENT).
+local function styleTile(style: string, chrome: boolean)
 	tile:SetAttribute("Chrome", chrome or nil)
 	Theme.SetButtonStyle(tile, style)
-	if chrome and goldEdge then
-		local edge = tile:FindFirstChild("Border")
-		if edge and edge:IsA("UIStroke") then edge.Color, edge.Thickness, edge.Transparency = Colors.Gold, 2, 0 end
-	end
 end
 tileLabel.RichText = true
 local GOLD_HEX = "#" .. Colors.Gold:ToHex()
@@ -416,12 +417,15 @@ UIBus.RegisterPanel("SpurtNeeds", function() needsModal.close() end)
 
 ------------------------------------------------------------------------
 -- On a machine (the right column folds away there): a small Growth Spurt card at the top left, under the top bar, with
--- the % and what it needs; when every group is ready it turns into the gold TAP TO GROW button.
+-- the % and what it needs; when every group is ready it says TAP TO GROW (ALTER NOW). (prompt 58) Chrome like the right
+-- column's card: its outline in the card's colour (GROW_ACCENT, or the next alter's), glowing when ready (no gold button).
 ------------------------------------------------------------------------
 local stripGui = Theme.ScreenGui({ Name = "SpurtStrip", DisplayOrder = 6, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
 stripGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 local stripRoot = Kit.Root(stripGui)
 local strip = Theme.Button("Quiet", { Name = "Strip", Position = UDim2.fromOffset(12, 52), Size = UDim2.fromOffset(196, 50), Parent = stripRoot }, {})
+Theme.SetChrome(strip)
+local stripOutline = outliner(strip, 14)
 local stripTitle = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 13, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 18),
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = strip })
 local _, setStripBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fromOffset(10, 23), Size = UDim2.new(1, -20, 0, 6), Parent = strip }, { outline = 1 })
@@ -546,15 +550,17 @@ local function refresh()
 		stripNeeds.Text = if alterMode then "Alter " .. progress.next .. ": " .. nextName .. " ready" else "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
 		stripNeeds.TextColor3 = Colors.Text
 		setStripBar(1)
-		Theme.SetButtonStyle(strip, "Gold")
-		Theme.Pulse(strip, function() return ready and stripGui.Enabled end)
 	else
 		stripTitle.Text = (if alterMode then "NEXT: " .. string.upper(nextName) else "GROWTH SPURT " .. (data.growthSpurts + 1)) .. " · " .. percent .. "%"
 		stripNeeds.Text = if needs ~= "" then "Needs " .. needs else ""
 		stripNeeds.TextColor3 = Colors.Red
 		setStripBar(percent / 100)
-		Theme.SetButtonStyle(strip, "Quiet")
 	end
+	local stripTheme = if alterMode then AlterThemes.Get(progress.next) else nil
+	local stripColor = if stripTheme then stripTheme.accent else GROW_ACCENT
+	Theme.SetButtonStyle(strip, "Quiet")
+	stripOutline(stripColor, ready)
+	stripTitle.TextColor3 = if ready then stripColor else Colors.Text
 	-- READY TO GROW / BODY ALTER READY: once per spurt / alter
 	local readyKey = if alterMode then "A" .. progress.next else "S" .. data.growthSpurts
 	if ready and started and readyShownFor ~= readyKey then
@@ -615,12 +621,15 @@ local function refresh()
 		tileText.Text = "TAP TO GROW"
 		bigText.Text = "TAP TO GROW"
 		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
-		styleTile("Gold", false)
-		Theme.Pulse(tile, function() return ready end)
+		styleTile("Quiet", true)
+		cardOutline(GROW_ACCENT, true) -- (prompt 58: the outline glows; it was the loud gold button pulsing)
+		bigText.TextColor3 = GROW_ACCENT
+		Kit.Fit(bigText, 28, 16) -- (the chrome style changed its font: measured again)
 	else
 		tileText.Text = "GROWTH SPURT " .. (data.growthSpurts + 1)
 		tileLabel.Text = '<font color="' .. GOLD_HEX .. '">' .. percent .. "%</font>" .. (if needs ~= "" then " · Needs " .. needs else " · tap for your physique")
-		styleTile("Quiet", true, true)
+		styleTile("Quiet", true)
+		cardOutline(GROW_ACCENT, false)
 	end
 	-- the next small goal: a hint now and then (never more than one a minute, and only a new one)
 	local goal = goalText(data, progress)

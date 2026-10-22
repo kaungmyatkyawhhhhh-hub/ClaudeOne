@@ -4,7 +4,7 @@
 --   * Shown: the boost items you drank (Config/Boosts, "Item_<id>"), the Protein Shake ("ShakeEnds"), the old smoothie
 --     drinks still running ("Meal_<id>"), Endless Stamina ("EndlessStaminaUntil"), the Server Boost and Rush Hour
 --     (ReplicatedStorage "ServerBoostEnds" / "RushHourEnds"), and MAX BOOST while your boosts pass the gains cap.
---   * A tile: ~50 px dark graphite, a thin gold outline, the boost's icon filling it, the time left under it in white
+--   * A tile: ~50 px dark graphite, the HUD cards' outline (prompt 58: it was thin gold), the boost's icon filling it, the time left under it in white
 --     stroked chunky text; under a minute the timer turns red and pulses. More time than one dose = one tile with a
 --     gold "x2" tag. Longest time left first; more than 6 = 5 tiles + a "+3" tile.
 --   * Hover (PC) / tap (phone): the tile lifts 4 px with a gold glow and an info card pops up above it (icon, NAME, a gold
@@ -154,7 +154,7 @@ local function makeTile(source)
 	local lift = New("TextButton", { Name = "Tile", Text = "", AutoButtonColor = false, BackgroundColor3 = GRAPHITE, AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(TILE, TILE), Parent = frame }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 9) }),
-		New("UIStroke", { Name = "Edge", Color = Colors.Gold, Thickness = 1.5, Transparency = 0.15, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIStroke", { Name = "Edge", Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	local glow = New("UIStroke", { Name = "Glow", Color = Colors.Gold, Thickness = 5, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local glowFrame = New("Frame", { Name = "GlowRing", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = lift }, {
@@ -265,7 +265,7 @@ local function step()
 		if not more then
 			more = New("Frame", { Name = "More", BackgroundColor3 = GRAPHITE, Size = UDim2.fromOffset(TILE, TILE), Parent = row }, {
 				New("UICorner", { CornerRadius = UDim.new(0, 9) }),
-				New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, Transparency = 0.15, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+				New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 			})
 			chunky(more, "Text", 18, { Size = UDim2.fromScale(1, 1) })
 		end

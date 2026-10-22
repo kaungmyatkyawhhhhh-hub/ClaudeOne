@@ -73,7 +73,7 @@ local gui = Theme.ScreenGui({ Name = "ItemsAdded", DisplayOrder = 48, Enabled = 
 gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 local root = Kit.Root(gui)
 local card = Theme.Panel({ Name = "Card", Piece = "hud_box", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 60), Size = UDim2.fromOffset(330, 60),
-	Parent = root }, { New("UIStroke", { Color = Colors.Gold, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
+	Parent = root }, { New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) }) -- (prompt 58: no gold edge)
 local tileHolder = New("Frame", { Name = "Icon", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0),
 	Size = UDim2.fromOffset(38, 38), Parent = card })
 local title = Kit.Text({ Name = "Title", Text = "Added to inventory", Font = "Title", TextSize = 15, TextColor3 = Colors.Gold, Position = UDim2.fromOffset(56, 9),

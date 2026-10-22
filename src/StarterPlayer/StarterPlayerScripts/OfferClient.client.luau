@@ -55,7 +55,7 @@ local gui = Theme.ScreenGui({ Name = "Offer", DisplayOrder = 8, Enabled = false,
 gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 local root = Kit.Root(gui)
 local card = Theme.Panel({ Name = "Card", AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.fromOffset(CARD_W, 72), Parent = root },
-	{ New("UIStroke", { Color = Colors.Gold, Thickness = 2, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
+	{ New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) }) -- (prompt 58: the HUD cards' outline, no gold)
 local art = Pieces.ShopIcon("", { Name = "Art", Position = UDim2.fromOffset(10, 12), Size = UDim2.fromOffset(48, 48), Parent = card })
 local title = Kit.Text({ Name = "Title", Text = "", Font = "Title", TextSize = 15, Position = UDim2.fromOffset(66, 8), Size = UDim2.new(1, -66, 0, 20),
 	TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
