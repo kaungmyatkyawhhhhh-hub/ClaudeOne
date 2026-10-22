@@ -32,6 +32,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Trainers = require(Shared.Config.Trainers)
 local Theme = require(Shared.UI.Theme)
+local Kit = require(Shared.UI.Kit)
 local AuraVFX = require(Shared.VFX.AuraVFX)
 local TrainerAura = require(Shared.VFX.TrainerAura)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -135,9 +136,10 @@ end
 ------------------------------------------------------------------------
 -- Trainers
 ------------------------------------------------------------------------
--- (prompt 24) entry = "PumpCoach" or "PumpCoach@g" (Golden: a gold glow on him)
+-- (prompt 24) entry = "PumpCoach" or (prompt 33) "PumpCoach@3": his stage (3% bigger a stage, a glow and a light in the
+-- stage's color, LIMITLESS cycling through the rainbow, a small stage tag over his head)
 local function makeTrainer(entry: string, slot: number)
-	local id, golden = Trainers.ParseEntry(entry)
+	local id, stage = Trainers.ParseEntry(entry)
 	local template = id and templates:FindFirstChild(id)
 	if not template then return nil end
 	local model = template:Clone()
@@ -172,20 +174,39 @@ local function makeTrainer(entry: string, slot: number)
 	if not humanoid:FindFirstChildOfClass("Animator") then Instance.new("Animator", humanoid) end
 	-- (prompt 29) no Humanoid physics or states: he is anchored and moved by PivotTo; the Animator still plays
 	pcall(function() humanoid.EvaluateStateMachine = false end)
-	if golden then
-		local glow = Instance.new("Highlight")
-		glow.Name = "GoldenGlow"
-		glow.FillColor = Color3.fromHex("#F6C75A")
-		glow.OutlineColor = Color3.fromHex("#FFF3C4")
-		glow.FillTransparency = 0.72
-		glow.OutlineTransparency = 0.25
-		glow.DepthMode = Enum.HighlightDepthMode.Occluded
-		glow.Parent = model
+	local stageInfo = Trainers.Stages[stage] or Trainers.Stages[1]
+	local stageGlow = nil
+	if stage > 1 then
+		pcall(function() model:ScaleTo(model:GetScale() * (1 + Trainers.FollowerScalePerStage * (stage - 1))) end)
+		local color = Color3.fromHex(stageInfo.color)
+		stageGlow = Instance.new("Highlight")
+		stageGlow.Name = "StageGlow"
+		stageGlow.FillColor = color
+		stageGlow.OutlineColor = color:Lerp(Color3.new(1, 1, 1), 0.4)
+		stageGlow.FillTransparency = 0.82
+		stageGlow.OutlineTransparency = 0.3
+		stageGlow.DepthMode = Enum.HighlightDepthMode.Occluded
+		stageGlow.Parent = model
+		local torso = model:FindFirstChild("UpperTorso")
+		if torso then
+			local light = Instance.new("PointLight")
+			light.Name = "StageLight"
+			light.Color, light.Range, light.Brightness, light.Shadows = color, 9, 1.4, false
+			light.Parent = torso
+		end
+		-- the stage tag over his head
+		local head = model:FindFirstChild("Head")
+		if head then
+			local tag = Theme.New("BillboardGui", { Name = "StageTag", Adornee = head, Size = UDim2.fromOffset(120, 22), StudsOffset = Vector3.new(0, 2.1, 0),
+				AlwaysOnTop = false, LightInfluence = 0, MaxDistance = 60, Parent = head })
+			local text = Kit.Text({ Name = "Text", Text = stageInfo.name, Font = "Chunky", TextSize = 16, TextColor3 = color, Size = UDim2.fromScale(1, 1), Parent = tag })
+			text.TextScaled = false
+		end
 	end
 	-- (the animation tracks are loaded the first time he's in the Workspace: see loadTracks. Loaded while the model was
 	-- still outside it they never played, so trainers slid without moving their legs: owner's bug, 19 Oct)
 	return {
-		id = id, entry = entry, golden = golden, slot = slot, model = model, auraName = Trainers.ById[id].look.aura, root = root, humanoid = humanoid, tracks = {}, playing = nil,
+		id = id, entry = entry, stage = stage, stageGlow = stageGlow, slot = slot, model = model, auraName = Trainers.ById[id].look.aura, root = root, humanoid = humanoid, tracks = {}, playing = nil,
 		position = nil, lastProgress = os.clock(), lastCheer = 0, clapUntil = 0, pumpUntil = 0, cheerTurn = 0,
 		style = Trainers.ById[id].idle or "crossed", phase = rng:NextNumber() * 10, look = 0,
 		rootHeight = humanoid.HipHeight + root.Size.Y / 2,
@@ -279,12 +300,12 @@ local function lowGraphics(): boolean
 end
 local RARITY_RANK = {}
 for index, rarity in ipairs(Trainers.Rarities) do RARITY_RANK[rarity.id] = index end
--- the one that follows: the rarest equipped (Golden first on a tie, then the first slot)
+-- the one that follows: the rarest equipped (the higher stage first on a tie, then the first slot)
 local function bestEntry(list: { string }): string?
 	local best, bestRank = nil, -1
 	for _, entry in ipairs(list) do
-		local id, golden = Trainers.ParseEntry(entry)
-		local rank = (RARITY_RANK[Trainers.ById[id].rarity] or 0) * 2 + (if golden then 1 else 0)
+		local id, stage = Trainers.ParseEntry(entry)
+		local rank = (RARITY_RANK[Trainers.ById[id].rarity] or 0) * 10 + stage
 		if rank > bestRank then best, bestRank = entry, rank end
 	end
 	return best
@@ -296,7 +317,7 @@ local function showPortraits(list: { string }, shown: string?)
 	for _, entry in ipairs(list) do
 		if entry ~= shown then
 			index += 1
-			local id, golden = Trainers.ParseEntry(entry)
+			local id, stage = Trainers.ParseEntry(entry)
 			local trainer = Trainers.ById[id]
 			local chip = portraitChips[index]
 			if not chip then
@@ -310,7 +331,7 @@ local function showPortraits(list: { string }, shown: string?)
 			end
 			chip.trainer = trainer
 			chip:SetTrainer(trainer.id) -- (owner, 22 Oct: his 3D rig, no picture)
-			chip:SetText(if golden then "GOLD" else "")
+			chip:SetText(if stage > 1 then Trainers.Stages[stage].name else "")
 			chip:SetVisible(true)
 		end
 	end
@@ -801,6 +822,11 @@ RunService.Heartbeat:Connect(function(dt)
 					state.aura = nil
 				end
 				if state.aura and state.aura.Update and not state.frozen and not state.offscreen then state.aura:Update(now) end
+				-- (prompt 33) LIMITLESS cycles through the rainbow
+				if state.stageGlow and Trainers.Stages[state.stage].rainbow and not state.offscreen then
+					local color = Color3.fromHSV((now * 0.15) % 1, 0.7, 1)
+					state.stageGlow.FillColor, state.stageGlow.OutlineColor = color, color:Lerp(Color3.new(1, 1, 1), 0.4)
+				end
 				-- other players' trainers far away stand still: no animation, no pose (owner, 14 Oct: performance)
 				local far = player ~= localPlayer and (root.Position - eye).Magnitude > Trainers.FarAnimation
 				if far ~= (state.frozen == true) then

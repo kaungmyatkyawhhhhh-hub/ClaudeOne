@@ -68,8 +68,18 @@ local function spurts() return data().growthSpurts or 0 end
 local function price(): number return Trainers.RollPrice(PumpShop.Rate(spurts())) end
 local function multiOpen(): boolean return spurts() >= Trainers.MultiRollFromSpurt end
 local function ownsAny(id: string): boolean
-	local s = state()
-	return (s.owned[id] or 0) > 0 or (s.golden[id] or 0) > 0
+	for _, copy in ipairs(state().copies) do
+		if copy.id == id then return true end
+	end
+	return false
+end
+-- (prompt 33) how many copies of him you have (any stage)
+local function copiesOf(id: string): number
+	local n = 0
+	for _, copy in ipairs(state().copies) do
+		if copy.id == id then n += 1 end
+	end
+	return n
 end
 local function rarityOf(trainer) return Trainers.RarityById[trainer.rarity] end
 
@@ -235,7 +245,7 @@ local function refreshRows()
 		slot.glow.ImageTransparency = if owned then 0.5 else 0.25
 		for _, ray in ipairs(slot.rays:GetChildren()) do ray.BackgroundTransparency = if owned then 0.84 else 0.7 end
 		slot.check.Visible = owned
-		local n = (s.owned[id] or 0) + (s.golden[id] or 0)
+		local n = copiesOf(id)
 		slot.count.Text = if n >= 2 then "x" .. n else ""
 	end
 end
@@ -397,7 +407,7 @@ end
 -- backdrop hides the Agency, a soft spotlight in the middle. Each card's BACK is black + gold (a gold border pattern, the
 -- dumbbell emblem, "GYM ARC"); it drops in, shakes, then FLIPS to its front: the trainer's full body big on the rarity glow
 -- with light rays, the rarity pill, his NAME (Luckiest Guy, white with the rarity color outline), his boost, his line in a
--- speech bubble, and "NEW!" (gold) or "x2 · 2/5 to Golden" with a small bar. "Tap to continue" pulses at the bottom.
+-- speech bubble, and "NEW!" (gold) or "x2 · 2/3 to IRON-BORN" with a small bar (prompt 33). "Tap to continue" pulses at the bottom.
 -- X3: 3 cards side by side, flipped left to right. Auto Roll: a quick reveal unless Epic or better (the full one, and auto
 -- roll stops).
 -- TODO (prompt 27, owner's full version): the escalating build-up (the card's glow climbing grey -> green -> blue -> purple ->
@@ -540,11 +550,14 @@ local function makeCard(result, index: number, total: number)
 			ZIndex = 8, Parent = front })
 		Kit.GoldText(new)
 	else
-		local have = math.min(result.count, Trainers.GoldenCount)
-		Kit.Text({ Text = "x" .. result.count .. " · " .. have .. "/" .. Trainers.GoldenCount .. " to Golden", Font = "Strong", TextSize = 11, TextColor3 = GOLD,
+		-- (prompt 33) BASE copies toward the next evolution: 3 make an IRON-BORN
+		local need = Trainers.EvolveCount
+		local have = math.min(result.count, need)
+		local nextName = if state().discovered[Trainers.Stages[2].id] then Trainers.Stages[2].name else "???"
+		Kit.Text({ Text = "x" .. result.count .. " · " .. have .. "/" .. need .. " to " .. nextName, Font = "Strong", TextSize = 11, TextColor3 = GOLD,
 			AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.new(1, -12, 0, 14), ZIndex = 7, Parent = front })
 		local _bar, setBar = Kit.Bar(GOLD, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.new(0.6, 0, 0, 6), ZIndex = 7, Parent = front })
-		setBar(have / Trainers.GoldenCount)
+		setBar(have / need)
 	end
 	-- his line in a small speech bubble over the card's top edge (one card only: three get crowded)
 	local bubble = nil
@@ -888,10 +901,39 @@ remote.OnClientEvent:Connect(function(kind, info)
 		resultSignal:Fire()
 		Notify.Toast(tostring(info.text), nil, "coin", Colors.Red, "trainerfail")
 		if info.auto then setAuto(false) end
-	elseif kind == "Golden" then
+	elseif kind == "Evolved" then
+		-- (prompt 33) the evolve moment (MY TRAINERS)
+		task.spawn(myPanel.evolved, info)
+	elseif kind == "LevelUp" then
+		-- (prompt 33) "COACH LOU LV 12!" with a ding, and a quick glow on him
 		local trainer = Trainers.ById[info.id]
 		if trainer then
-			Notify.Reward("GOLDEN TRAINER", "Golden " .. trainer.name .. " · " .. Trainers.PerkText(trainer, true), "star", Colors.Gold, "TitleUnlocked")
+			Notify.Reward(string.upper(trainer.name) .. " LV " .. tostring(info.level) .. "!", Trainers.PerkText(trainer, { id = trainer.id, s = info.stage or 1, l = info.level or 1 }),
+				"users", Colors.Gold, "QuestClaim", "trainerlevel")
+			local folder = workspace:FindFirstChild("LocalTrainers")
+			for _, model in ipairs(folder and folder:GetChildren() or {}) do
+				if model:IsA("Model") and string.find(model.Name, trainer.id, 1, true) then
+					local glow = Instance.new("Highlight")
+					glow.FillColor, glow.OutlineColor = Colors.Gold, Color3.new(1, 1, 1)
+					glow.FillTransparency, glow.OutlineTransparency = 0.4, 0
+					glow.Parent = model
+					TweenService:Create(glow, TweenInfo.new(0.9), { FillTransparency = 1, OutlineTransparency = 1 }):Play()
+					task.delay(1, function() glow:Destroy() end)
+				end
+			end
+		end
+	elseif kind == "Discovered" then
+		-- (prompt 33) a player reached a stage for the first time: "Rong discovered COLOSSUS!" for everyone
+		local stage = Trainers.Stages[tonumber(info.stage) or 0]
+		if stage then
+			local who = if info.userId == player.UserId then "You" else tostring(info.name)
+			local text = who .. " discovered " .. stage.name .. "!"
+			pcall(function()
+				local channels = TextChatService:FindFirstChild("TextChannels")
+				local general = channels and channels:FindFirstChild("RBXGeneral")
+				if general then general:DisplaySystemMessage(string.format('<font color="#%s"><b>%s</b></font>', hex(stage.color):ToHex(), text)) end
+			end)
+			if info.userId ~= player.UserId then Notify.Toast("New evolution", text, "star", hex(stage.color), "trainerdiscover") end
 		end
 	elseif kind == "Pulled" then
 		announce(info)

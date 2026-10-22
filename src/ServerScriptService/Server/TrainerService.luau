@@ -2,13 +2,14 @@
 --   * The Trainer Agency: the desks at the front of each gym (invisible TrainerPoint parts, tag "TrainerDesk",
 --     tools/builders/TrainerDesks; the odds boards: tools/builders/TrainerAgency) with the "Roll trainers" prompt; it opens
 --     the Agency window (TrainerClient).
---   * Remote "Trainers": client -> server "Roll" (count 1 / 3, auto), "Equip" (slot, entry), "Unequip" (slot), "Golden" (id),
---     "AutoDelete" (rarity, on); server -> client "Open" | "Rolled" | "Failed" | "Golden", and to everyone "Pulled"
+--   * Remote "Trainers": client -> server "Roll" (count 1 / 3, auto), "Equip" (slot, copy uid), "Unequip" (slot), "Evolve"
+--     (copy uid), "EvolveAll", "AutoDelete" (rarity, on); server -> client "Open" | "Rolled" | "Failed" | "Evolved" |
+--     "LevelUp", and to everyone "Pulled" and (prompt 33) "Discovered" (a player reached a stage for the first time)
 --     (Legendary or better: the whole server is told). Every roll is made HERE (Config.Trainers.Roll with the pity counter);
 --     coins only. Saved in data.trainers (see Config/Trainers); old saves (a list of hired ids) become one of each.
 --   * The equipped trainers' total boost (Trainers.Bonus, capped) is one BoostService source "Trainers" (gains, coins);
 --     max stamina (PlayerData.RefreshMaxStamina) and progress (Config.GrowthSpurts / Config.Alters) read data.trainers.bonus.
---     The player attribute "Trainers" lists the following entries ("PumpCoach,RookieCoach@g") for every client to draw;
+--     The player attribute "Trainers" lists the following entries ("PumpCoach,RookieCoach@3": @stage) for every client to draw;
 --     "TrainerSlots" the slots.
 --   * The trainer models: one template per trainer, built here at start from a HumanoidDescription (NpcService), our own
 --     outfit (prompt 34: images on the muscle stage pieces, Shared/Outfit, never a classic Shirt / Pants), part-built props (look.extras) and the static
@@ -39,6 +40,7 @@ local TrainerService = {}
 local remote: RemoteEvent
 local desks = {} -- TrainerPoint parts
 local rng = Random.new()
+local flushXp -- (below: trainer levels)
 
 local function send(player, kind, info)
 	remote:FireClient(player, kind, info or {})
@@ -50,20 +52,25 @@ local function slotsOf(player): number
 	return Trainers.SlotsFor(player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) == true, data and data.growthSpurts or 0, alter)
 end
 
--- a copy of the saved state (old saves migrated), safe to change
+-- a copy of the saved state (old saves migrated: Trainers.Migrate), safe to change
 local function stateOf(player)
 	local data = PlayerData.Get(player)
 	local t = Trainers.Migrate(data and data.trainers)
-	return { owned = table.clone(t.owned), golden = table.clone(t.golden), equipped = table.clone(t.equipped), rolls = t.rolls, pity = t.pity,
-		autoDelete = table.clone(t.autoDelete) }
+	local copies = {}
+	for _, copy in ipairs(t.copies) do table.insert(copies, table.clone(copy)) end
+	return { copies = copies, equipped = table.clone(t.equipped), discovered = table.clone(t.discovered), nextUid = t.nextUid,
+		rolls = t.rolls, pity = t.pity, autoDelete = table.clone(t.autoDelete) }
 end
+
+-- (prompt 33) trainer EXP from reps waits here ([player] = { [uid] = exp }) and is saved every FlushSeconds or on a level up
+local pendingXp = {}
 
 -- write the state, the boosts and the attributes everyone reads
 local function apply(player, state)
 	-- (owner's bug, 19 Oct: the save keeps up to the most slots anyone can have; only the trainers that follow you now are
 	-- capped to your slots, so a slot that isn't known yet at join, like the pass, never loses its trainer)
-	state.equipped = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, Trainers.MaxSlots)
-	local active = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slotsOf(player))
+	state.equipped = Trainers.CleanEquipped(state, Trainers.MaxSlots)
+	local _, active = Trainers.CleanEquipped(state, slotsOf(player))
 	local bonus = Trainers.Bonus(active)
 	state.bonus = bonus
 	if PlayerData.Get(player) then PlayerData.SetTable(player, "trainers", state) end
@@ -72,7 +79,10 @@ local function apply(player, state)
 		then { gains = 1 + bonus.gains, coins = 1 + bonus.coins, regen = 1 + bonus.staminaRegen } else nil)
 	for _, trainer in ipairs(Trainers.List) do BoostService.SetPlayer(player, "Trainer_" .. trainer.id, nil) end -- (the old per-trainer sources)
 	PlayerData.RefreshMaxStamina(player)
-	player:SetAttribute("Trainers", table.concat(active, ","))
+	-- every client draws them from these: "PumpCoach,VoltaCoach@3" (prompt 33: @stage)
+	local entries = {}
+	for _, copy in ipairs(active) do table.insert(entries, Trainers.Entry(copy.id, copy.s)) end
+	player:SetAttribute("Trainers", table.concat(entries, ","))
 	player:SetAttribute("TrainerSlots", slotsOf(player))
 end
 
@@ -86,6 +96,19 @@ local function rollPrice(player): number
 	return Trainers.RollPrice(PumpShop.Rate(data and data.growthSpurts or 0))
 end
 TrainerService.RollPrice = rollPrice
+
+local function newCopy(state, id: string, stage: number, level: number?)
+	local copy = { u = state.nextUid, id = id, s = stage, l = level or 1, x = 0 }
+	state.nextUid += 1
+	table.insert(state.copies, copy)
+	return copy
+end
+local function hasTrainer(state, id: string): boolean
+	for _, copy in ipairs(state.copies) do
+		if copy.id == id then return true end
+	end
+	return false
+end
 
 local lastRoll = {} -- [player] = os.clock() (one roll request at a time)
 local function roll(player, count, auto)
@@ -115,15 +138,20 @@ local function roll(player, count, auto)
 		if type(forced) == "string" and Trainers.RarityById[forced] then rarityId = forced end
 		state.rolls += 1
 		local trainer = Trainers.ByRarity[rarityId]
-		local deleted = state.autoDelete[rarityId] == true and (state.owned[trainer.id] or 0) >= 1
+		-- (auto-delete only the rarities the player picked, and only a duplicate; a full collection pays out too)
+		local deleted = (state.autoDelete[rarityId] == true and hasTrainer(state, trainer.id)) or #state.copies >= Trainers.MaxCopies
 		if deleted then
 			refund += math.floor(each * Trainers.AutoDeleteRefund)
 		else
-			state.owned[trainer.id] = (state.owned[trainer.id] or 0) + 1
+			local copy = newCopy(state, trainer.id, 1)
 			-- a free slot: he starts following right away
-			if #Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slots) < slots then table.insert(state.equipped, trainer.id) end
+			if #Trainers.CleanEquipped(state, slots) < slots then table.insert(state.equipped, copy.u) end
 		end
-		table.insert(results, { id = trainer.id, rarity = rarityId, deleted = deleted, count = state.owned[trainer.id] or 0 })
+		local same = 0
+		for _, c in ipairs(state.copies) do
+			if c.id == trainer.id and c.s == 1 then same += 1 end
+		end
+		table.insert(results, { id = trainer.id, rarity = rarityId, deleted = deleted, count = same })
 		Analytics.Event(player, "TrainerRoll", Trainers.RarityById[rarityId].index)
 		if Trainers.RarityById[rarityId].index >= announceFrom then
 			remote:FireAllClients("Pulled", { userId = player.UserId, name = player.DisplayName, rarity = rarityId, trainer = trainer.id })
@@ -135,24 +163,19 @@ local function roll(player, count, auto)
 	send(player, "Rolled", { results = results, pity = state.pity, rolls = state.rolls, refund = refund, auto = auto == true })
 end
 
-local function equip(player, slot, entry)
-	local id, golden = Trainers.ParseEntry(entry)
-	slot = tonumber(slot)
-	if not id or not slot then return end
+-- (prompt 33) equip a copy into a slot (an empty slot past the list = add it; a copy already following moves there)
+local function equip(player, slot, uid)
+	slot, uid = tonumber(slot), tonumber(uid)
+	if not slot or not uid then return end
 	local slots = slotsOf(player)
 	slot = math.floor(slot)
 	if slot < 1 or slot > slots then return end
 	local state = stateOf(player)
-	local list = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slots)
-	local key = Trainers.Entry(id, golden)
-	-- enough of him for one more slot (duplicates can fill several slots)?
-	local have = if golden then (state.golden[id] or 0) else (state.owned[id] or 0)
-	local used = 0
-	for i, e in ipairs(list) do
-		if e == key and i ~= slot then used += 1 end
-	end
-	if used >= have then return end
-	if slot > #list then table.insert(list, key) else list[slot] = key end
+	if not Trainers.CopyByUid(state)[uid] then return end
+	local list = Trainers.CleanEquipped(state, slots)
+	local at = table.find(list, uid)
+	if at then table.remove(list, at) end
+	if slot > #list then table.insert(list, uid) else list[slot] = uid end
 	state.equipped = list
 	apply(player, state)
 end
@@ -161,24 +184,90 @@ local function unequip(player, slot)
 	slot = tonumber(slot)
 	if not slot then return end
 	local state = stateOf(player)
-	local list = Trainers.CleanEquipped(state.equipped, state.owned, state.golden, slotsOf(player))
+	local list = Trainers.CleanEquipped(state, slotsOf(player))
 	if not list[math.floor(slot)] then return end
 	table.remove(list, math.floor(slot))
 	state.equipped = list
 	apply(player, state)
 end
 
--- 5 of the same trainer -> 1 Golden (1.5x his boost)
-local function makeGolden(player, id)
-	if type(id) ~= "string" or not Trainers.ById[id] then return end
+-- (prompt 33) the first time a player reaches a stage: everyone in the server hears it
+local function discover(player, state, stage: number): boolean
+	local id = Trainers.Stages[stage].id
+	if state.discovered[id] then return false end
+	state.discovered[id] = true
+	remote:FireAllClients("Discovered", { userId = player.UserId, name = player.DisplayName, stage = stage })
+	return true
+end
+
+-- 3 of the same trainer at the same stage -> 1 at the next, keeping the highest level; it takes the slot of one that was following
+local function combine(state, set)
+	local first = set[1]
+	local level = 1
+	local slot = nil
+	for _, c in ipairs(set) do
+		level = math.max(level, c.l)
+		local at = table.find(state.equipped, c.u)
+		if at and (not slot or at < slot) then slot = at end
+	end
+	local remove = {}
+	for _, c in ipairs(set) do remove[c.u] = true end
+	for i = #state.copies, 1, -1 do
+		if remove[state.copies[i].u] then table.remove(state.copies, i) end
+	end
+	for i = #state.equipped, 1, -1 do
+		if remove[state.equipped[i]] then table.remove(state.equipped, i) end
+	end
+	local made = newCopy(state, first.id, first.s + 1, level)
+	if slot then table.insert(state.equipped, math.min(slot, #state.equipped + 1), made.u) end
+	return made
+end
+
+local lastEvolve = {}
+local function evolve(player, uid)
+	uid = tonumber(uid)
+	if not uid or os.clock() - (lastEvolve[player] or 0) < 0.4 then return end
+	lastEvolve[player] = os.clock()
+	flushXp(player)
 	local state = stateOf(player)
-	if (state.owned[id] or 0) < Trainers.GoldenCount then return end
-	state.owned[id] -= Trainers.GoldenCount
-	if state.owned[id] <= 0 then state.owned[id] = nil end
-	state.golden[id] = (state.golden[id] or 0) + 1
+	local copy = Trainers.CopyByUid(state)[uid]
+	if not copy or copy.s >= #Trainers.Stages then return end
+	local set = Trainers.EvolveSet(state, copy)
+	if #set < Trainers.EvolveCount then return end
+	local made = combine(state, set)
+	local first = discover(player, state, made.s)
 	apply(player, state)
-	Analytics.Event(player, "TrainerGolden", Trainers.ById[id].index)
-	send(player, "Golden", { id = id })
+	Analytics.Event(player, "TrainerEvolve", made.s)
+	send(player, "Evolved", { results = { { id = made.id, stage = made.s, level = made.l, u = made.u } }, first = first })
+end
+
+-- every set there is, lowest stages first (so a fresh IRON-BORN set goes on to BEAST-MODE in the same go)
+local function evolveAll(player)
+	if os.clock() - (lastEvolve[player] or 0) < 0.4 then return end
+	lastEvolve[player] = os.clock()
+	flushXp(player)
+	local state = stateOf(player)
+	local results, firstAny = {}, false
+	for stage = 1, #Trainers.Stages - 1 do
+		for _, trainer in ipairs(Trainers.List) do
+			while true do
+				local group = {}
+				for _, c in ipairs(state.copies) do
+					if c.id == trainer.id and c.s == stage then table.insert(group, c) end
+				end
+				if #group < Trainers.EvolveCount then break end
+				-- (the highest levels together: each new one keeps the best level of its 3)
+				table.sort(group, function(a, b) return a.l > b.l end)
+				local made = combine(state, { group[1], group[2], group[3] })
+				if discover(player, state, made.s) then firstAny = true end
+				table.insert(results, { id = made.id, stage = made.s, level = made.l, u = made.u })
+			end
+		end
+	end
+	if #results == 0 then return end
+	apply(player, state)
+	Analytics.Event(player, "TrainerEvolveAll", #results)
+	send(player, "Evolved", { results = results, first = firstAny, all = true })
 end
 
 local function setAutoDelete(player, rarity, on)
@@ -186,6 +275,55 @@ local function setAutoDelete(player, rarity, on)
 	local state = stateOf(player)
 	state.autoDelete[rarity] = if on == true then true else nil
 	apply(player, state)
+end
+
+------------------------------------------------------------------------
+-- (prompt 33) Trainer levels: every equipped trainer gains trainer EXP from your reps
+------------------------------------------------------------------------
+-- puts the waiting EXP into the save (level ups included); -> the level ups { { id, level } }
+function flushXp(player)
+	local pending = pendingXp[player]
+	if not pending or next(pending) == nil then return {} end
+	pendingXp[player] = {}
+	local state = stateOf(player)
+	local map = Trainers.CopyByUid(state)
+	local ups = {}
+	for u, xp in pairs(pending) do
+		local copy = map[u]
+		if copy and copy.l < Trainers.MaxLevel then
+			copy.x += xp
+			while copy.l < Trainers.MaxLevel and copy.x >= Trainers.LevelXp(copy.l, copy.s) do
+				copy.x -= Trainers.LevelXp(copy.l, copy.s)
+				copy.l += 1
+				table.insert(ups, { id = copy.id, level = copy.l, stage = copy.s, u = copy.u })
+			end
+			if copy.l >= Trainers.MaxLevel then copy.x = 0 end
+		end
+	end
+	apply(player, state)
+	return ups
+end
+
+-- MachineService calls this on every rep (gains = the weight tier's multiplier)
+function TrainerService.OnRep(player, gains: number?)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local t = Trainers.Migrate(data.trainers)
+	local _, active = Trainers.CleanEquipped(t, slotsOf(player))
+	if #active == 0 then return end
+	local pending = pendingXp[player] or {}
+	pendingXp[player] = pending
+	local xp = Trainers.RepXp(gains)
+	local levelUp = false
+	for _, copy in ipairs(active) do
+		if copy.l < Trainers.MaxLevel then
+			pending[copy.u] = (pending[copy.u] or 0) + xp
+			if copy.x + pending[copy.u] >= Trainers.LevelXp(copy.l, copy.s) then levelUp = true end
+		end
+	end
+	if levelUp then
+		for _, up in ipairs(flushXp(player)) do send(player, "LevelUp", up) end
+	end
 end
 
 ------------------------------------------------------------------------
@@ -551,15 +689,32 @@ function TrainerService.Start()
 			equip(player, a, b)
 		elseif action == "Unequip" then
 			unequip(player, a)
-		elseif action == "Golden" then
-			makeGolden(player, a)
+		elseif action == "Evolve" then
+			evolve(player, a)
+		elseif action == "EvolveAll" then
+			evolveAll(player)
 		elseif action == "AutoDelete" then
 			setAutoDelete(player, a, b)
 		end
 	end)
 
 	task.spawn(buildTemplates)
-	Players.PlayerRemoving:Connect(function(player) lastRoll[player] = nil end)
+	Players.PlayerRemoving:Connect(function(player)
+		pcall(flushXp, player)
+		lastRoll[player], lastEvolve[player], pendingXp[player] = nil, nil, nil
+	end)
+	-- (prompt 33) the waiting trainer EXP goes into the save every FlushSeconds
+	task.spawn(function()
+		while true do
+			task.wait(Trainers.FlushSeconds)
+			for _, player in ipairs(Players:GetPlayers()) do
+				if pendingXp[player] and next(pendingXp[player]) then
+					local ok, ups = pcall(flushXp, player)
+					if ok then for _, up in ipairs(ups) do send(player, "LevelUp", up) end end
+				end
+			end
+		end
+	end)
 
 	if #CollectionService:GetTagged("TrainerDesk") == 0 then
 		warn("[TrainerService] no Trainer Desks (tag TrainerDesk): build them with tools/builders/TrainerDesks.luau")
@@ -577,7 +732,8 @@ function TrainerService.Start()
 		if PlayerData.Get(player) then ready(player) end
 	end
 
-	-- Studio: Workspace attribute TestTrainers = "RookieCoach,PumpCoach@g" gives every player those trainers and equips them
+	-- Studio: Workspace attribute TestTrainers = "RookieCoach,PumpCoach@3" gives every player those trainers (stage 3 =
+	-- BEAST-MODE) and equips them
 	-- (TestTrainerSlots = 2 acts out the Extra Trainer pass)
 	if game:GetService("RunService"):IsStudio() then
 		local function test()
@@ -588,11 +744,14 @@ function TrainerService.Start()
 				local state = stateOf(player)
 				state.equipped = {}
 				for entry in string.gmatch(list, "[^,]+") do
-					local id, golden = Trainers.ParseEntry(entry)
-					if id then
-						local bag = if golden then state.golden else state.owned
-						bag[id] = math.max(bag[id] or 0, 1)
-						table.insert(state.equipped, entry)
+					local id, stage = Trainers.ParseEntry(entry)
+					if id then table.insert(state.equipped, newCopy(state, id, stage).u) end
+				end
+				-- (prompt 33) TestTrainerCopies = "RookieCoach:9,VoltaCoach:3" adds that many BASE copies (to evolve)
+				local extra = Workspace:GetAttribute("TestTrainerCopies")
+				if type(extra) == "string" then
+					for id, n in string.gmatch(extra, "([%w_]+):(%d+)") do
+						if Trainers.ById[id] then for _ = 1, math.min(tonumber(n) or 0, 200) do newCopy(state, id, 1) end end
 					end
 				end
 				apply(player, state)

@@ -25,7 +25,7 @@ for i = 1, 4 do
 	H.check(whistle, T.List[i].id .. " wears a whistle")
 end
 H.check(T.ById.RookieCoach.perk.gains == 0.05 and T.ById.CardioCoach.perk.coins == 0.10, "Common +5% EXP, Uncommon +10% coins")
-H.check(T.ById.CardioCoach.perk.staminaRegen == 0.15 and T.Bonus({ "CardioCoach" }).staminaRegen == 0.15, "Uncommon +15% stamina regen (owner, prompt 25)")
+H.check(T.ById.CardioCoach.perk.staminaRegen == 0.15 and math.abs(T.Bonus({ { id = "CardioCoach", s = 1, l = 0 } }).staminaRegen - 0.15) < 1e-9, "Uncommon +15% stamina regen (owner, prompt 25)")
 H.check(T.ById.MoneyCoach.perk.gains == 0.15 and T.ById.MoneyCoach.perk.maxStamina == 0.10, "Rare +15% EXP +10% max stamina")
 H.check(T.ById.PumpCoach.perk.gains == 0.25 and T.ById.PumpCoach.perk.coins == 0.25, "Epic +25% EXP and coins")
 H.check(T.ById.AeonCoach.perk.gains == 1.5 and T.ById.AeonCoach.perk.progress == 0.5, "Eternal +150% and +50% progress")
@@ -96,25 +96,48 @@ end
 
 print("Slots")
 H.check(T.SlotsFor(false, 0, 0) == 1 and T.SlotsFor(false, 2, 0) == 2 and T.SlotsFor(false, 6, 1) == 3 and T.SlotsFor(true, 6, 1) == 4, "1, 2 at spurt 2, 3 at the first alter, +1 pass")
-local list = T.CleanEquipped({ "PumpCoach", "PumpCoach", "RookieCoach@g", "Nope" }, { PumpCoach = 1 }, { RookieCoach = 1 }, 4)
-H.check(#list == 2 and list[1] == "PumpCoach" and list[2] == "RookieCoach@g", "only as many copies as you own (duplicates need copies)")
-list = T.CleanEquipped({ "PumpCoach", "PumpCoach" }, { PumpCoach = 2 }, {}, 4)
-H.check(#list == 2, "two copies can fill two slots")
-H.check(#T.CleanEquipped({ "PumpCoach", "RookieCoach" }, { PumpCoach = 1, RookieCoach = 1 }, {}, 1) == 1, "never more than the slots")
-H.check(#T.CleanEquipped(nil, nil, nil, 2) == 0, "bad data: nothing")
+local st = T.Migrate({ copies = { { u = 1, id = "PumpCoach", s = 1, l = 1, x = 0 }, { u = 2, id = "RookieCoach", s = 2, l = 5, x = 0 } },
+	equipped = { 1, 1, 2, 99 } })
+local uids = T.CleanEquipped(st, 4)
+H.check(#uids == 2 and uids[1] == 1 and uids[2] == 2, "equipped copies: each once, only ones you have")
+H.check(#T.CleanEquipped(st, 1) == 1, "never more than the slots")
+H.check(#T.CleanEquipped(T.Migrate(nil), 2) == 0, "bad data: nothing")
 
-print("Boosts")
-local b = T.Bonus({ "PumpCoach", "RookieCoach@g" })
-H.check(math.abs(b.gains - (0.25 + 0.075)) < 1e-9 and math.abs(b.coins - 0.25) < 1e-9, "boosts add up, Golden is 1.5x")
-b = T.Bonus({ "AeonCoach@g", "AeonCoach@g", "AeonCoach@g", "AeonCoach@g" })
+print("Boosts (prompt 33: stage x level)")
+local b = T.Bonus({ { id = "PumpCoach", s = 1, l = 1 }, { id = "RookieCoach", s = 2, l = 20 } })
+H.check(math.abs(b.gains - (0.25 * 1.01 + 0.05 * 2 * 1.2)) < 1e-9, "boosts add up: stage x2 per step, +1% per level")
+b = T.Bonus({ { id = "AeonCoach", s = 5, l = 20 } })
 H.check(b.gains == T.BoostCap and b.progress <= T.BoostCap, "the total is capped at +" .. (T.BoostCap * 100) .. "%")
-H.check(T.PerkText(T.ById.PumpCoach, true) == "+38% EXP and coins", "Golden perk text: " .. T.PerkText(T.ById.PumpCoach, true))
+H.check(T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }) == "+55% EXP, +55% coins", "perk text: " .. T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }))
+H.check(T.Stages[5].mult == 16 and #T.Stages == 5 and T.EvolveCount == 3, "5 stages x1 .. x16, 3 to evolve")
+H.check(T.ParseEntry("PumpCoach@3") == "PumpCoach" and select(2, T.ParseEntry("PumpCoach@3")) == 3 and select(2, T.ParseEntry("PumpCoach@g")) == 2
+	and select(2, T.ParseEntry("PumpCoach")) == 1 and T.ParseEntry("Nope") == nil and T.Entry("PumpCoach", 1) == "PumpCoach" and T.Entry("PumpCoach", 4) == "PumpCoach@4",
+	"entries: PumpCoach@stage (old @g = IRON-BORN)")
+
+print("Evolving")
+local e = T.Migrate({ copies = { { u = 1, id = "RookieCoach", s = 1, l = 3 }, { u = 2, id = "RookieCoach", s = 1, l = 9 }, { u = 3, id = "RookieCoach", s = 1, l = 1 },
+	{ u = 4, id = "RookieCoach", s = 2, l = 1 }, { u = 5, id = "PumpCoach", s = 1, l = 1 } }, equipped = { 3 } })
+local set = T.EvolveSet(e, T.CopyByUid(e)[3])
+H.check(#set == 3 and set[1].u == 3 and set[2].u == 2 and set[3].u == 1, "the set: the picked copy, then the best others at the same stage")
+H.check(#T.EvolveSet(e, T.CopyByUid(e)[5]) == 1 and #T.EvolveSet(e, T.CopyByUid(e)[4]) == 1, "not enough copies: no set")
+
+print("Levels")
+local total, per = 0, 0
+for level = 1, T.MaxLevel - 1 do total += T.LevelXp(level, 1) end
+-- (a typical BASE player lifts around x3-x4 gains at 1.05 s a rep)
+local minutes = total / T.RepXp(3.5) * 1.05 / 60
+H.check(minutes >= 18 and minutes <= 32, string.format("Lv 1 -> 20 at BASE in about 20-30 min of reps (%.1f)", minutes))
+H.check(T.LevelXp(5, 3) > T.LevelXp(5, 1), "higher stages level a bit slower")
 
 print("Old saves")
 local m = T.Migrate({ owned = { "RookieCoach", "PumpCoach" }, equipped = { "PumpCoach" } })
-H.check(m.owned.RookieCoach == 1 and m.owned.PumpCoach == 1 and m.equipped[1] == "PumpCoach" and m.pity == 0, "a list of hired coaches becomes one of each")
-m = T.Migrate({ owned = { RookieCoach = 3 }, golden = { PumpCoach = 1 }, pity = 12 })
-H.check(m.owned.RookieCoach == 3 and m.golden.PumpCoach == 1 and m.pity == 12, "a new save stays as it is")
+H.check(#m.copies == 2 and T.CopyByUid(m)[m.equipped[1]].id == "PumpCoach" and m.pity == 0, "a list of hired coaches becomes one of each")
+m = T.Migrate({ owned = { RookieCoach = 3 }, golden = { PumpCoach = 1 }, equipped = { "PumpCoach@g", "RookieCoach" }, pity = 12, copies = {} })
+local golden = T.CopyByUid(m)[m.equipped[1]]
+H.check(#m.copies == 4 and golden.id == "PumpCoach" and golden.s == 2 and m.discovered.IronBorn and m.pity == 12,
+	"counts become copies, a Golden becomes IRON-BORN (even with an empty copies list from the template)")
+m = T.Migrate({ copies = { { u = 7, id = "PumpCoach", s = 9, l = 99, x = -3 } } })
+H.check(m.copies[1].s == 5 and m.copies[1].l == T.MaxLevel and m.copies[1].x == 0 and m.nextUid == 8, "bad numbers clamped, the next uid after the highest")
 
 print("Following")
 H.check(#T.Cheers >= 3 and T.CheerCooldown > 0 and T.RenderDistance > 0, "cheers, cooldown and render distance set")

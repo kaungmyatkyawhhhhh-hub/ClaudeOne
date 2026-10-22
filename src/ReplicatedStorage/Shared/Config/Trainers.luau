@@ -3,9 +3,10 @@
 -- odds always shown, a pity counter. Everything about trainers is in this module.
 -- A trainer is a coach who follows you and stands beside your machine while you train. Every client draws every trainer
 -- itself (TrainerFollowClient) from the player attribute "Trainers" (the equipped entries, "PumpCoach,RookieCoach@g").
--- Saved per player (data.trainers, TrainerService): { owned = { [id] = count }, golden = { [id] = count }, equipped = { entry },
--- rolls, pity, autoDelete = { [rarity] = true }, bonus = { gains, coins, maxStamina, progress } (the equipped total,
--- written by TrainerService: Config.GrowthSpurts / Config.Alters and PlayerData read it) }.
+-- Saved per player (data.trainers, TrainerService; prompt 33): { copies = { copy }, equipped = { copy uid }, discovered,
+-- nextUid, rolls, pity, autoDelete = { [rarity] = true }, bonus = { gains, coins, maxStamina, progress } (the equipped total,
+-- written by TrainerService: Config.GrowthSpurts / Config.Alters and PlayerData read it) }. Trainers.Migrate reads every
+-- older version.
 local Trainers = {}
 
 ------------------------------------------------------------------------
@@ -175,8 +176,6 @@ Trainers.PityRarity = "Epic"
 Trainers.AutoStopRarity = "Epic"   -- Auto Roll stops on this or better
 Trainers.AutoDeleteRarities = { "Common", "Uncommon" } -- toggles: a duplicate of these turns into coins instead
 Trainers.AutoDeleteRefund = 0.1    -- ...this share of the roll price
-Trainers.GoldenCount = 5           -- 5 of the same trainer make 1 Golden...
-Trainers.GoldenMultiplier = 1.5    -- ...with 1.5x the boost
 Trainers.BoostCap = 4              -- the equipped trainers' total boost is capped at +400% (per kind)
 Trainers.AnnounceFrom = "Legendary"
 
@@ -221,95 +220,231 @@ function Trainers.SlotsFor(hasPass: boolean, spurts: number?, alter: number?): n
 end
 
 ------------------------------------------------------------------------
--- Equipped entries: "PumpCoach" or "PumpCoach@g" (Golden)
-------------------------------------------------------------------------
-function Trainers.Entry(id: string, golden: boolean?): string
-	return if golden then id .. "@g" else id
+-- Equipped entries (what every client reads from the player attribute "Trainers"): "PumpCoach" = BASE, "PumpCoach@3" = his
+-- 3rd stage (BEAST-MODE). (Old saves: "PumpCoach@g" = a Golden = IRON-BORN.)
+function Trainers.Entry(id: string, stage: number?): string
+	stage = math.clamp(math.floor(tonumber(stage) or 1), 1, #Trainers.Stages)
+	return if stage <= 1 then id else id .. "@" .. stage
 end
-function Trainers.ParseEntry(entry: string): (string?, boolean)
-	if type(entry) ~= "string" then return nil, false end
-	local id, tag = string.match(entry, "^([%w_]+)(@?g?)$")
-	if not id or not Trainers.ById[id] then return nil, false end
-	return id, tag == "@g"
+-- -> id (nil = not a trainer), stage (1 = BASE)
+function Trainers.ParseEntry(entry: string): (string?, number)
+	if type(entry) ~= "string" then return nil, 1 end
+	local id, tag = string.match(entry, "^([%w_]+)@?(%w*)$")
+	if not id or not Trainers.ById[id] then return nil, 1 end
+	if tag == "g" then return id, 2 end
+	local stage = tonumber(tag) or 1
+	return id, math.clamp(math.floor(stage), 1, #Trainers.Stages)
 end
 
--- The equipped list cleaned up: known entries the player owns enough of (duplicates can fill several slots), at most `slots`.
-function Trainers.CleanEquipped(equipped, owned, golden, slots: number)
-	local list = {}
-	local used = {}
-	owned = type(owned) == "table" and owned or {}
-	golden = type(golden) == "table" and golden or {}
-	for _, entry in ipairs(type(equipped) == "table" and equipped or {}) do
-		if #list >= slots then break end
-		local id, isGolden = Trainers.ParseEntry(entry)
-		if id then
-			local have = if isGolden then (tonumber(golden[id]) or 0) else (tonumber(owned[id]) or 0)
-			local key = Trainers.Entry(id, isGolden)
-			if (used[key] or 0) < have then
-				used[key] = (used[key] or 0) + 1
-				table.insert(list, key)
+------------------------------------------------------------------------
+-- (prompt 33, 22 Oct) LEVELS and EVOLUTIONS. They replace Golden (anyone who made a Golden has that trainer as IRON-BORN).
+-- Every trainer you own is its own copy with its own stage and level:
+--   copy = { u = a number unique for you, id = the trainer, s = stage (1 BASE .. 5 LIMITLESS), l = level (1-20), x = EXP into it }
+-- * Levels: the EQUIPPED (following) trainers gain trainer EXP from your reps (RepXp: more on heavier weights); every level
+--   adds LevelBonus to that trainer's boost (Lv 20 = +20%). Lv 1 -> 20 again at every stage.
+-- * Evolutions: 3 copies of the same trainer at the same stage -> 1 at the next stage (x2 the boost each stage), keeping the
+--   highest level of the 3. No level needed. One LIMITLESS = 81 BASE copies.
+-- * A player only knows the names of the stages they've reached (discovered); the next one is "???" until then.
+------------------------------------------------------------------------
+-- color = the stage's bright color (border, name); base = the tile's dark base; hex = the hex mesh tint
+Trainers.Stages = {
+	{ id = "Base", name = "BASE", mult = 1, color = "#5A9BFF", base = "#0B1638", hex = "#2C4F9A", from = "FROM ROLLS" },
+	{ id = "IronBorn", name = "IRON-BORN", mult = 2, color = "#FF8A2A", base = "#2A1006", hex = "#8A3A12", from = "3x BASE" },
+	{ id = "BeastMode", name = "BEAST-MODE", mult = 4, color = "#6BFF4F", base = "#062010", hex = "#1F7A2A", from = "3x IRON-BORN" },
+	{ id = "Colossus", name = "COLOSSUS", mult = 8, color = "#5CC8FF", base = "#061A36", hex = "#1F5A9A", from = "3x BEAST-MODE" },
+	{ id = "Limitless", name = "LIMITLESS", mult = 16, color = "#E070FF", base = "#1A0830", hex = "#6A2A9A", from = "3x COLOSSUS", rainbow = true },
+}
+Trainers.StageById = {}
+for index, stage in ipairs(Trainers.Stages) do
+	stage.index = index
+	Trainers.StageById[stage.id] = stage
+end
+Trainers.EvolveCount = 3          -- copies of the same trainer at the same stage that make one of the next
+Trainers.MaxLevel = 20
+Trainers.LevelBonus = 0.01        -- +1% of his boost per level
+Trainers.MaxCopies = 400          -- trainers kept (a roll past this pays out like an auto-deleted one)
+Trainers.FollowerScalePerStage = 0.03 -- the follower is 3% bigger per stage
+Trainers.FlushSeconds = 10        -- trainer EXP is saved this often (and on every level up)
+
+-- Trainer EXP from `level` to the next one, at a stage. Lv 1 -> 20 in about 20-30 minutes of reps at BASE (tests/trainers),
+-- a bit slower at higher stages.
+function Trainers.LevelXp(level: number, stage: number?): number
+	return math.floor((100 + 20 * level) * (1 + 0.2 * ((stage or 1) - 1)) + 0.5)
+end
+-- Trainer EXP from one rep at a weight tier (its gains multiplier: x1 empty bar ... x21.7 the top Pro tier)
+function Trainers.RepXp(gains: number?): number
+	return 2 * math.sqrt(math.max(tonumber(gains) or 1, 0))
+end
+
+local function cleanCopy(c)
+	if type(c) ~= "table" or type(c.id) ~= "string" or not Trainers.ById[c.id] or type(c.u) ~= "number" then return nil end
+	return {
+		u = math.floor(c.u), id = c.id,
+		s = math.clamp(math.floor(tonumber(c.s) or 1), 1, #Trainers.Stages),
+		l = math.clamp(math.floor(tonumber(c.l) or 1), 1, Trainers.MaxLevel),
+		x = math.max(0, tonumber(c.x) or 0),
+	}
+end
+
+-- The saved state, from any version: { copies, equipped = { u }, discovered = { [stage id] = true }, nextUid, rolls, pity,
+-- autoDelete, bonus }. Before prompt 33: owned = { [id] = count } (before prompt 24: a list of ids), golden = { [id] = count }
+-- (each Golden -> one IRON-BORN), equipped = { "PumpCoach" | "PumpCoach@g" }.
+function Trainers.Migrate(t)
+	t = type(t) == "table" and t or {}
+	local copies, nextUid = {}, math.max(1, math.floor(tonumber(t.nextUid) or 1))
+	local equipped = {}
+	local function add(id, stage)
+		local copy = { u = nextUid, id = id, s = stage, l = 1, x = 0 }
+		nextUid += 1
+		table.insert(copies, copy)
+		return copy
+	end
+	-- (an old save may also get an empty `copies` from the data template: the old counts win while it's empty)
+	local function hasOld()
+		for _, key in ipairs({ "owned", "golden" }) do
+			if type(t[key]) == "table" and next(t[key]) ~= nil then return true end
+		end
+		return false
+	end
+	if type(t.copies) == "table" and (#t.copies > 0 or not hasOld()) then
+		local seen = {}
+		for _, raw in ipairs(t.copies) do
+			local copy = cleanCopy(raw)
+			if copy and not seen[copy.u] then
+				seen[copy.u] = true
+				table.insert(copies, copy)
+				nextUid = math.max(nextUid, copy.u + 1)
+			end
+		end
+		for _, u in ipairs(type(t.equipped) == "table" and t.equipped or {}) do
+			if type(u) == "number" and seen[u] then table.insert(equipped, u) end
+		end
+	else
+		local owned = t.owned
+		if type(owned) == "table" and #owned > 0 then
+			local map = {}
+			for _, id in ipairs(owned) do
+				if Trainers.ById[id] then map[id] = (map[id] or 0) + 1 end
+			end
+			owned = map
+		end
+		-- (in the trainers' list order, so the uids come out the same every time)
+		for _, trainer in ipairs(Trainers.List) do
+			for _ = 1, math.min(math.floor(tonumber(type(owned) == "table" and owned[trainer.id]) or 0), Trainers.MaxCopies) do add(trainer.id, 1) end
+			for _ = 1, math.min(math.floor(tonumber(type(t.golden) == "table" and t.golden[trainer.id]) or 0), Trainers.MaxCopies) do add(trainer.id, 2) end
+		end
+		local used = {}
+		for _, entry in ipairs(type(t.equipped) == "table" and t.equipped or {}) do
+			local id, stage = Trainers.ParseEntry(entry)
+			for _, copy in ipairs(copies) do
+				if id and copy.id == id and copy.s == stage and not used[copy.u] then
+					used[copy.u] = true
+					table.insert(equipped, copy.u)
+					break
+				end
 			end
 		end
 	end
-	return list
+	local discovered = { Base = true }
+	if type(t.discovered) == "table" then
+		for id in pairs(t.discovered) do
+			if Trainers.StageById[id] then discovered[id] = true end
+		end
+	end
+	for _, copy in ipairs(copies) do discovered[Trainers.Stages[copy.s].id] = true end
+	return {
+		copies = copies, equipped = equipped, discovered = discovered, nextUid = nextUid,
+		rolls = tonumber(t.rolls) or 0, pity = tonumber(t.pity) or 0,
+		autoDelete = type(t.autoDelete) == "table" and t.autoDelete or {},
+		bonus = type(t.bonus) == "table" and t.bonus or nil,
+	}
 end
 
--- The total boost of a list of equipped entries, each kind capped: { gains, coins, maxStamina, staminaRegen, progress }
--- (shares, 0.25 = +25%)
-function Trainers.Bonus(entries)
+-- [u] = copy
+function Trainers.CopyByUid(state): { [number]: any }
+	local map = {}
+	for _, copy in ipairs(state.copies) do map[copy.u] = copy end
+	return map
+end
+
+-- The equipped list cleaned up: copies you still have, each once, at most `slots`; -> uids, copies
+function Trainers.CleanEquipped(state, slots: number): ({ number }, { any })
+	local map = Trainers.CopyByUid(state)
+	local uids, list, used = {}, {}, {}
+	for _, u in ipairs(state.equipped or {}) do
+		if #uids >= slots then break end
+		local copy = map[u]
+		if copy and not used[u] then
+			used[u] = true
+			table.insert(uids, u)
+			table.insert(list, copy)
+		end
+	end
+	return uids, list
+end
+
+-- A copy's boost multiplier: its stage times its level bonus
+function Trainers.CopyMultiplier(copy): number
+	local stage = Trainers.Stages[copy.s or 1] or Trainers.Stages[1]
+	return stage.mult * (1 + Trainers.LevelBonus * (copy.l or 1))
+end
+
+-- The total boost of the equipped copies, each kind capped: { gains, coins, maxStamina, staminaRegen, progress } (0.25 = +25%)
+function Trainers.Bonus(copies)
 	local total = { gains = 0, coins = 0, maxStamina = 0, staminaRegen = 0, progress = 0 }
-	for _, entry in ipairs(entries or {}) do
-		local id, isGolden = Trainers.ParseEntry(entry)
-		local trainer = id and Trainers.ById[id]
+	for _, copy in ipairs(copies or {}) do
+		local trainer = Trainers.ById[copy.id]
 		if trainer then
-			for kind, amount in pairs(trainer.perk) do
-				total[kind] = (total[kind] or 0) + amount * (if isGolden then Trainers.GoldenMultiplier else 1)
-			end
+			local m = Trainers.CopyMultiplier(copy)
+			for kind, amount in pairs(trainer.perk) do total[kind] = (total[kind] or 0) + amount * m end
 		end
 	end
 	for kind, amount in pairs(total) do total[kind] = math.min(amount, Trainers.BoostCap) end
 	return total
 end
 
--- The perk line of a trainer (Golden: 1.5x)
-function Trainers.PerkText(trainer, golden: boolean?): string
-	if not golden then return trainer.perkText end
-	local parts = {}
-	local p = trainer.perk
-	local m = Trainers.GoldenMultiplier
-	local function pct(x) return string.format("%d%%", math.floor(x * m * 100 + 0.5)) end
-	if p.gains and p.coins and p.gains == p.coins then
-		table.insert(parts, "+" .. pct(p.gains) .. " EXP and coins")
-	else
-		if p.gains then table.insert(parts, "+" .. pct(p.gains) .. " EXP") end
-		if p.coins then table.insert(parts, "+" .. pct(p.coins) .. " coins") end
+-- One copy's boost as lines: { { kind, pct } } in the order EXP, coins, progress, max stamina, stamina regen
+function Trainers.PerkLines(trainer, copy): { { kind: string, pct: number } }
+	local m = if copy then Trainers.CopyMultiplier(copy) else 1
+	local out = {}
+	for _, kind in ipairs({ "gains", "coins", "progress", "maxStamina", "staminaRegen" }) do
+		local amount = trainer.perk[kind]
+		if amount then table.insert(out, { kind = kind, pct = math.floor(amount * m * 100 + 0.5) }) end
 	end
-	if p.maxStamina then table.insert(parts, "+" .. pct(p.maxStamina) .. " max stamina") end
-	if p.staminaRegen then table.insert(parts, "+" .. pct(p.staminaRegen) .. " stamina regen") end
-	if p.progress then table.insert(parts, "+" .. pct(p.progress) .. " progress") end
+	return out
+end
+
+-- The perk line of a trainer (a copy: with its stage and level)
+function Trainers.PerkText(trainer, copy): string
+	if not copy then return trainer.perkText end
+	local names = { gains = "EXP", coins = "coins", progress = "progress", maxStamina = "max stamina", staminaRegen = "stamina regen" }
+	local parts = {}
+	for _, line in ipairs(Trainers.PerkLines(trainer, copy)) do table.insert(parts, "+" .. line.pct .. "% " .. names[line.kind]) end
 	return table.concat(parts, ", ")
 end
 
--- (before prompt 24) data.trainers.owned was a list of hired ids: each becomes one of that trainer (same id, now its rarity)
-function Trainers.Migrate(t)
-	t = type(t) == "table" and t or {}
-	local owned = t.owned
-	if type(owned) == "table" and #owned > 0 then
-		local map = {}
-		for _, id in ipairs(owned) do
-			if Trainers.ById[id] then map[id] = (map[id] or 0) + 1 end
-		end
-		owned = map
+-- The other copies a copy evolves with: the same trainer at the same stage (it first), -> list (up to EvolveCount)
+function Trainers.EvolveSet(state, copy): { any }
+	local set = { copy }
+	if copy.s >= #Trainers.Stages then return set end
+	local equippedSet = {}
+	for _, u in ipairs(state.equipped or {}) do equippedSet[u] = true end
+	local others = {}
+	for _, c in ipairs(state.copies) do
+		if c ~= copy and c.u ~= copy.u and c.id == copy.id and c.s == copy.s then table.insert(others, c) end
 	end
-	return {
-		owned = type(owned) == "table" and owned or {},
-		golden = type(t.golden) == "table" and t.golden or {},
-		equipped = type(t.equipped) == "table" and t.equipped or {},
-		rolls = tonumber(t.rolls) or 0,
-		pity = tonumber(t.pity) or 0,
-		autoDelete = type(t.autoDelete) == "table" and t.autoDelete or {},
-		bonus = type(t.bonus) == "table" and t.bonus or nil,
-	}
+	-- (the ones not following you first, then the highest levels)
+	table.sort(others, function(a, b)
+		local ea, eb = equippedSet[a.u] == true, equippedSet[b.u] == true
+		if ea ~= eb then return not ea end
+		if a.l ~= b.l then return a.l > b.l end
+		return a.u < b.u
+	end)
+	for _, c in ipairs(others) do
+		if #set >= Trainers.EvolveCount then break end
+		table.insert(set, c)
+	end
+	return set
 end
 
 ------------------------------------------------------------------------
