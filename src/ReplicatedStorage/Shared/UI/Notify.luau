@@ -61,7 +61,7 @@ local function ensure()
 	gui = Theme.ScreenGui({ Name = "Notifications", DisplayOrder = 50, Parent = Players.LocalPlayer:WaitForChild("PlayerGui") })
 	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	root = Kit.Root(gui)
-	-- the band (prompt 52): a dark pill as wide as its line (up to BandMaxWidth, then two lines), white chunky text
+	-- the band (prompt 53a): a dark pill as wide as its line (up to BandMaxWidth, then two lines), white chunky text
 	band = Theme.Panel({ Name = "Band", Piece = "pill", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, Notify.Top),
 		Size = UDim2.fromOffset(120, Notify.BandHeight), Visible = false, Parent = root }, {})
 	band.BackgroundTransparency = 0.12

@@ -6,7 +6,7 @@
 -- draw a glowing path of dots on the floor (Shared/UI/GuidePath: Roblox pathfinding, so it walks around equipment) and
 -- outline the machine.
 -- Progress is saved through the server, so a player who leaves mid-tutorial picks up where they were.
--- Prompt 52 (23 Oct): the new UI. The dialog (Shared/UI/CoachDialog), the gold marker with the target's name over it
+-- Prompt 53a (23 Oct): the new UI. The dialog (Shared/UI/CoachDialog), the gold marker with the target's name over it
 -- (GuidePath.Mark), the band (a dark pill, Notify), SKIP (dark pill; "TAP AGAIN TO SKIP" in gold) and, for a button on
 -- screen (the shake slot, STOP, Stats, Muscles), the Spotlight (Shared/UI/Spotlight: the rest dims, a gold glow and a
 -- bouncing gold arrow). The steps and rewards are unchanged.
@@ -199,7 +199,7 @@ local function stepDef()
 	return Onboarding.Steps[stepIndex]
 end
 
--- (prompt 52) the Spotlight on the button the step needs (prompt 20's arrow over the shake, now for every button): on a
+-- (prompt 53a) the Spotlight on the button the step needs (prompt 20's arrow over the shake, now for every button): on a
 -- machine with a "Tap STOP, then..." line, STOP; the shake step, hotbar slot 1 (HotbarClient "Slot_Shake", once the free
 -- shake has arrived); Open Stats / Open Muscles, that menu tile until it's open. Re-checked every half second (a button
 -- can appear later), never while a window or the genetics screen is up.

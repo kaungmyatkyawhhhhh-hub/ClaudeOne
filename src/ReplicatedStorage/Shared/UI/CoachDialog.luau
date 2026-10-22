@@ -1,7 +1,7 @@
 -- CoachDialog (prompt 39, 22 Oct): the tutorial's Coach Dex dialog box, moved out of TutorialClient so the unlock guides
 -- (GuideClient) use the same box: a live portrait of the Coach NPC, "COACH DEX", a gold "+50" coin pill, the words,
 -- "Tap to continue (1/3)".
--- Prompts 52 / 53 + the owner's spacing brief (23 Oct): a dark graphite box with the hex mesh, a thin gold outline and a
+-- Prompts 53a / 53 + the owner's spacing brief (23 Oct): a dark graphite box with the hex mesh, a thin gold outline and a
 -- thick dark bottom edge; at most ~55% of the screen wide (CoachDialog.Width), centred at the bottom, clear of the left
 -- nav; as tall as its words need. 12-14 px padding everywhere: the portrait (gold frame) on the left; "COACH DEX" in gold
 -- chunky with the "+50" coin pill on the same row at the top right (the words start under that row, so they never run

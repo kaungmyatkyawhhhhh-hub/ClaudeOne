@@ -1,4 +1,4 @@
--- SkipPill (prompt 52 / 53, 23 Oct): the tutorial's and the unlock guides' SKIP. One small dark pill, always in the same
+-- SkipPill (prompt 53a / 53, 23 Oct): the tutorial's and the unlock guides' SKIP. One small dark pill, always in the same
 -- spot: top right, just under Roblox's top bar, left of the right-hand column (the machine controls, the Growth Spurt
 -- card), on and off machines. "SKIP" in white chunky. Tap twice: the first tap turns it gold, "TAP AGAIN TO SKIP", for
 -- 3 s; the second calls onSkip. confirm = false: one tap skips (the unlock guides).

@@ -140,7 +140,7 @@ task.spawn(function()
 	end
 end)
 
--- the pointer (prompt 52: Shared/UI/Spotlight, the tutorial's too): the rest of the screen dims, a gold glow on the tile and
+-- the pointer (prompt 53a: Shared/UI/Spotlight, the tutorial's too): the rest of the screen dims, a gold glow on the tile and
 -- a gold arrow bouncing next to it
 local Spotlight = require(Shared.UI.Spotlight)
 local onScreen = Spotlight.Shown

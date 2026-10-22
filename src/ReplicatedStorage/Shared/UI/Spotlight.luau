@@ -1,4 +1,4 @@
--- Spotlight (prompt 52, 23 Oct): points at a button on screen, for the tutorial and the unlock guides (GuideClient's
+-- Spotlight (prompt 53a, 23 Oct): points at a button on screen, for the tutorial and the unlock guides (GuideClient's
 -- pointer, moved here so both use one look, mockup tutorial2.png): the rest of the screen dims (four dark frames around
 -- the button, so the button itself stays bright), the button gets a pulsing gold glow, and a gold arrow bounces next to it
 -- pointing at it, with an optional gold word ("TAP STOP"). Taps pass through the dim (nothing here is Active).

@@ -12,7 +12,7 @@
 --                                   off a machine first), the fade back in. Yields; returns true if the player was moved.
 --   GuidePath.Mark(target, seconds?, label?) a glowing gold marker on the target (a soft gold glow over it): above it its
 --                                   name in gold chunky (`label`), the distance ("8m"), a bobbing gold diamond and chevron
---                                   (prompt 52), for `seconds` (nil = until Unmark / the next Mark): the tutorial and the
+--                                   (prompt 53a), for `seconds` (nil = until Unmark / the next Mark): the tutorial and the
 --                                   unlock guides
 --   GuidePath.Unmark()
 -- (prompt 11, 21 Oct) Under the dots a glowing gold ribbon (Beams lying flat on the floor) runs from the player to the target.
@@ -402,7 +402,7 @@ function GuidePath.Mark(target: any, seconds: number?, label: string?)
 		top = (point :: Vector3) + Vector3.new(0, 7, 0)
 	end
 	local anchor = New("Attachment", { Name = "GoToMarkAnchor", WorldPosition = top, Parent = Workspace.Terrain })
-	-- (prompt 52, 23 Oct: the new UI, mockup tutorial.png) the name in gold chunky with a dark stroke, the distance under it
+	-- (prompt 53a, 23 Oct: the new UI, mockup tutorial.png) the name in gold chunky with a dark stroke, the distance under it
 	-- ("8m"), then a gold diamond and a gold chevron pointing down at the target, bobbing
 	local Kit = require(script.Parent.Kit)
 	local Pieces = require(script.Parent.Pieces)
