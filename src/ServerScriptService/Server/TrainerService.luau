@@ -101,6 +101,9 @@ local function newCopy(state, id: string, stage: number, level: number?)
 	local copy = { u = state.nextUid, id = id, s = stage, l = level or 1, x = 0 }
 	state.nextUid += 1
 	table.insert(state.copies, copy)
+	-- (owner, 23 Oct) the stage counts as discovered from now on (the evolutions chart), even after this copy is gone
+	state.discovered = state.discovered or { Base = true }
+	if Trainers.Stages[stage] then state.discovered[Trainers.Stages[stage].id] = true end
 	return copy
 end
 local function hasTrainer(state, id: string): boolean

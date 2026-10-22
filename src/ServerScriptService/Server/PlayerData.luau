@@ -934,7 +934,7 @@ function PlayerData.SetSettings(player, settings)
 	-- (prompt 31) the UNDISCOVERED items the player has seen revealed, per list: "id,id,..." (Shared/UI/Discovery)
 	if type(settings.revealed) == "table" then
 		local revealed = type(new.revealed) == "table" and table.clone(new.revealed) or {}
-		for _, list in ipairs({ "Alters", "Auras", "Titles", "Trainers" }) do
+		for _, list in ipairs({ "Alters", "Auras", "Titles", "Trainers", "TrainerStages" }) do -- (TrainerStages: the evolutions chart, 23 Oct)
 			local text = settings.revealed[list]
 			if type(text) == "string" and #text <= 2000 and string.match(text, "^[%w_,]*$") then revealed[list] = text end
 		end

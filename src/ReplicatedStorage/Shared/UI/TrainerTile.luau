@@ -15,7 +15,9 @@
 -- flashes with its lightning), and a highlight that runs round the border. Rarity mode (the Agency): the rarity's colors,
 -- the rarity name and the chance instead of the stage and LV, a gold check when owned.
 --   TrainerTile.New({ Name, LayoutOrder, Size, Position, AnchorPoint, Parent, px = its width in mockup px }) -> tile
---   tile:Set({ id, s, l, equipped, noLevel, caption }); tile.cell (the frame to place), tile.button (taps)
+--   tile:Set({ id, s, l, equipped, noLevel, caption, hidden }); tile.cell (the frame to place), tile.button (taps)
+-- (owner, 23 Oct) hidden = a stage the player has never had (the evolutions chart): him as a black silhouette, "???" for the
+-- stage, no LV, the background at ~35% with its effect off, a gray border.
 -- (owner, prompt 48: the "hidden" undiscovered stage, dark and glitching, is gone: every stage shows)
 -- (prompt 52, 23 Oct: the owner's references ref_agency / ref_my_trainers / ref_evolutions) the one tile of all three
 -- screens: a 4 px border in the stage (or rarity) color with a soft glow, the background filling the whole tile (the
@@ -213,6 +215,9 @@ function TrainerTile.New(props)
 	self.hexTop.ZIndex = 4
 	self.hexTop.Visible = false
 	self.hexTop.Parent = self.button
+	-- (hidden stage) the background darkened to ~35%
+	self.shade = New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.35, Size = UDim2.fromScale(1, 1), ZIndex = 4,
+		Visible = false, Parent = self.button }, { New("UICorner", { CornerRadius = UDim.new(0, radius) }) })
 	self.artHolder = New("Frame", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.12),
 		Size = UDim2.fromScale(1.02, 0.62), ZIndex = 5, Parent = self.button })
 	self.name = chunky(self.button, "Name", "", px * 0.115, nil, { Position = UDim2.fromScale(0.5, 0.025), Size = UDim2.fromScale(0.94, 0.13) })
@@ -252,15 +257,18 @@ function Tile:Set(info)
 	self.info = info
 	self.stageInfo = stage
 	local rarityMode = info.rarity == true
+	local hidden = info.hidden == true and not rarityMode
 	local rarity = trainer and Trainers.RarityById[trainer.rarity]
 	-- the tile's color: the stage's (or, on the Agency, the rarity's)
 	local color = if rarityMode and rarity then C(rarity.color2 or rarity.color) else C(stage.color)
 	if rarityMode and rarity and rarity.id ~= "Secret" then color = C(rarity.color) end
+	if hidden then color = C("#5A5860") end
 	self.color = color
+	self.shade.Visible = hidden
 	local art = Trainers.StageArt[stage.id]
 	local useArt = art ~= nil and not rarityMode
 	self.bgImage.Visible = useArt
-	self.evoImage.Visible = useArt
+	self.evoImage.Visible = useArt and not hidden -- (a hidden stage: its effect off)
 	if useArt then
 		self.bgImage.Image = art.hex
 		self.evoImage.Image = art.evo
@@ -276,7 +284,7 @@ function Tile:Set(info)
 	self.hex.ImageTransparency = if rarityMode then 0.5 else 0.6
 	self.hexTop.ImageColor3 = self.hex.ImageColor3
 	self.radial.ImageColor3 = if rarityMode then color:Lerp(Color3.new(1, 1, 1), 0.2) else color
-	self.radial.ImageTransparency = if useArt then 0.7 elseif rarityMode then (if info.silhouette then 0 else 0.15) else 0.35
+	self.radial.ImageTransparency = if hidden then 1 elseif useArt then 0.7 elseif rarityMode then (if info.silhouette then 0 else 0.15) else 0.35
 	self.rays.Visible = rarityMode
 	if rarityMode then
 		for _, ray in ipairs(self.rayBars) do
@@ -297,9 +305,12 @@ function Tile:Set(info)
 	else
 		self.stage.Text = stage.name
 		self.stage.TextColor3 = if stage.index == 1 then Color3.new(1, 1, 1) else color
-		self.level.Text = if info.caption then info.caption elseif info.noLevel then "" else "LV " .. (info.l or 1)
+		self.level.Text = if info.caption then info.caption elseif info.noLevel or hidden then "" else "LV " .. (info.l or 1)
 		self.level.TextColor3 = Color3.new(1, 1, 1)
-		if stage.rainbow then
+		if hidden then
+			self.stage.Text = "???"
+			self.stage.TextColor3 = Color3.new(1, 1, 1)
+		elseif stage.rainbow then
 			local keys = {}
 			local hues = { 0.95, 0.08, 0.15, 0.33, 0.52, 0.72 }
 			for i, h in ipairs(hues) do keys[i] = ColorSequenceKeypoint.new((i - 1) / (#hues - 1), Color3.fromHSV(h, 0.6, 1)) end
@@ -315,15 +326,15 @@ function Tile:Set(info)
 	self.name.Visible, self.stage.Visible, self.level.Visible = not info.mini, not info.mini, not info.mini
 	self.artHolder.Position = if info.mini then UDim2.fromScale(0.5, 0.04) else UDim2.fromScale(0.5, 0.12)
 	self.artHolder.Size = if info.mini then UDim2.fromScale(1.05, 0.96) else UDim2.fromScale(1.02, 0.62)
-	self.hexTop.Visible = useArt and (stage.id == "BeastMode" or stage.id == "Limitless")
-	-- the art and the effect only change when he, the stage or the mode does
-	local silhouette = info.silhouette == true
-	local key = tostring(info.id) .. "|" .. stage.id .. "|" .. tostring(silhouette) .. "|" .. tostring(rarityMode)
+	self.hexTop.Visible = useArt and not hidden and (stage.id == "BeastMode" or stage.id == "Limitless")
+	-- the art and the effect only change when he, the stage, the mode or hidden does
+	local silhouette = info.silhouette == true or hidden
+	local key = tostring(info.id) .. "|" .. stage.id .. "|" .. tostring(silhouette) .. "|" .. tostring(rarityMode) .. "|" .. tostring(hidden)
 	if key ~= self.key then
 		self.key = key
 		if trainer then placeArt(self.artHolder, trainer, silhouette, color) end
 		self.fxLayer:ClearAllChildren()
-		local build = (not rarityMode) and FX[stage.id] or nil
+		local build = (not rarityMode and not hidden) and FX[stage.id] or nil
 		self.fx = build and build(self.fxLayer, self.rng) or nil
 	end
 	self:Paint(os.clock())

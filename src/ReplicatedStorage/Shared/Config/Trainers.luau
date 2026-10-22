@@ -260,7 +260,8 @@ end
 --   x1.25, x1.5, x1.75, x2; it was x1 .. x16 until prompt 27b), keeping the highest level of the 3. No level needed. One
 --   LIMITLESS = 81 BASE copies.
 -- * So one LIMITLESS LV 20 = x2.2 his BASE boost: Atlas +165% EXP and coins, Coach Sam +11% EXP.
--- * (owner, prompt 48) Every stage's name shows (the "???" undiscovered stages of prompt 33 are gone).
+-- * (owner, prompt 48) Every stage's name shows (the "???" undiscovered stages of prompt 33 are gone), except (owner,
+--   23 Oct) on the TRAINER EVOLUTIONS chart: a stage you've never had a trainer at is "???" there (state.discovered).
 ------------------------------------------------------------------------
 -- color = the stage's bright color (border, name); base = the tile's dark base; hex = the hex mesh tint
 Trainers.Stages = {
@@ -314,7 +315,7 @@ local function cleanCopy(c)
 	}
 end
 
--- The saved state, from any version: { copies, equipped = { u }, discovered (unused since prompt 48), nextUid, rolls, pity,
+-- The saved state, from any version: { copies, equipped = { u }, discovered = { [stage id] = true }, nextUid, rolls, pity,
 -- autoDelete, bonus, freeRolls, rebalance }. Before prompt 33: owned = { [id] = count } (before prompt 24: a list of ids), golden = { [id] = count }
 -- (each Golden -> one IRON-BORN), equipped = { "PumpCoach" | "PumpCoach@g" }.
 function Trainers.Migrate(t)
@@ -373,9 +374,20 @@ function Trainers.Migrate(t)
 			end
 		end
 	end
+	-- (owner, 23 Oct: the evolutions chart hides the stages you haven't had yet) the stages you've ever had a trainer at:
+	-- BASE always, the saved ones (TrainerService adds a stage when a copy reaches it) and every stage you own now
+	local discovered = { Base = true }
+	if type(t.discovered) == "table" then
+		for id, on in pairs(t.discovered) do
+			if on == true and Trainers.StageById[id] then discovered[id] = true end
+		end
+	end
+	for _, copy in ipairs(copies) do
+		local stage = Trainers.Stages[copy.s]
+		if stage then discovered[stage.id] = true end
+	end
 	return {
-		-- (prompt 48: the "discovered" stages are gone; an old save's list is kept as it was, unused)
-		copies = copies, equipped = equipped, discovered = if type(t.discovered) == "table" then t.discovered else nil, nextUid = nextUid,
+		copies = copies, equipped = equipped, discovered = discovered, nextUid = nextUid,
 		rolls = tonumber(t.rolls) or 0, pity = tonumber(t.pity) or 0,
 		freeRolls = math.max(0, math.floor(tonumber(t.freeRolls) or 0)), rebalance = math.clamp(math.floor(tonumber(t.rebalance) or 0), 0, 2),
 		autoDelete = type(t.autoDelete) == "table" and t.autoDelete or {},

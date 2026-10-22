@@ -44,6 +44,7 @@ local Notify = require(Shared.UI.Notify)
 local SideMenu = require(Shared.UI.SideMenu)
 local UIBus = require(Shared.UI.UIBus)
 local Audio = require(Shared.Audio)
+local AlterFX = require(Shared.VFX.AlterFX)
 local Discovery = require(Shared.UI.Discovery)
 local AltersPanel = require(Shared.UI.AltersPanel)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -162,6 +163,12 @@ end
 -- off hides your own aura's look for you, "Boost stays active when hidden."). Tiles: owned = in its colour; the next
 -- one to earn and the store auras (coins / a pass) = dark with its requirement; the rest = dark "???" tiles with a
 -- small spark going round.
+-- (owner, 23 Oct) The detail panel is the ALTERS one's twin (same width, padding and spacing; premium, not chunky): the
+-- aura's own moving background (Shared/UI/AuraBackdrop) with the outline in its colour, the orb centred with its glow, the
+-- name white and stroked like "PUMPED", the benefit in a slim dark pill outlined in its colour ("BOOSTS +10% LONGER"),
+-- "RARE · AURA" small and gray (the rarity in its colour), a graphite button (EQUIP / EQUIPPED: thin gold outline and
+-- gold words; a price or the pass when it's for sale), and a slim SHOW EFFECT switch in its colour. A "???" aura: the same
+-- panel, its theme dark and still, the orb a silhouette, "???".
 ------------------------------------------------------------------------
 local AURA = { tiles = {}, picked = Auras.List[1].id }
 local DETAIL_W = 196
@@ -175,33 +182,92 @@ AURA.grid = New("ScrollingFrame", { Name = "Grid", Position = UDim2.fromOffset(0
 	New("UIGridLayout", { CellSize = UDim2.fromOffset(AURA_TILE.X, AURA_TILE.Y), CellPadding = UDim2.fromOffset(8, 10), SortOrder = Enum.SortOrder.LayoutOrder }),
 	New("UIPadding", { PaddingTop = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingBottom = UDim.new(0, 6), PaddingRight = UDim.new(0, 5) }),
 })
--- the detail panel (right)
-AURA.detail = Kit.Card({ Name = "Detail", Piece = "card_gold", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, DETAIL_W, 1, 0),
-	Parent = AURA.frame }, {})
--- (owner, 22 Oct: no mesh on the detail panel: the window panel has it)
-AURA.bigIcon = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4),
-	Size = UDim2.fromOffset(78, 78), ScaleType = Enum.ScaleType.Fit, Parent = AURA.detail })
-AURA.bigName = Kit.Fit(Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", Upper = true, Position = UDim2.fromOffset(PAD, 82),
-	Size = UDim2.new(1, -2 * PAD, 0, 24), Parent = AURA.detail })), 22, 14)
-AURA.bigRarity = Kit.Text({ Name = "Rarity", Text = "", Font = "Chunky", TextSize = 13, Position = UDim2.fromOffset(PAD, 106), Size = UDim2.new(1, -2 * PAD, 0, 15),
-	Parent = AURA.detail })
--- the benefit ("+15% COINS"): a big gold pill, bright even when the effect is hidden (only when the aura has one)
-AURA.benefit = Kit.Button("Gold", "", { Name = "Benefit", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 124), Active = false, Parent = AURA.detail },
-	{ width = DETAIL_W - 40, height = 28, textSize = 17 })
-AURA.bigHow = Kit.Fit(Kit.Text({ Name = "How", Text = "", Font = "Chunky", TextColor3 = Colors.Muted, Position = UDim2.fromOffset(PAD, 126),
-	Size = UDim2.new(1, -2 * PAD, 0, 24), Parent = AURA.detail }), 13, 11, 2)
-AURA.action = Kit.Button("Green", "Equip", { Name = "Action", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -44), Parent = AURA.detail },
-	{ width = DETAIL_W - 2 * PAD - 4, height = 34, textSize = 16 })
--- SHOW EFFECT: off = your own aura's look is hidden for you (settings.myAura; AuraClient), the aura stays equipped
-local showRow = New("Frame", { Name = "ShowEffect", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18),
-	Size = UDim2.new(1, -2 * PAD, 0, 24), Parent = AURA.detail })
-Kit.Text({ Name = "Label", Text = "SHOW EFFECT", Font = "Chunky", TextSize = 13, Size = UDim2.new(1, -66, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = showRow })
-local _, setShowToggle = Kit.Toggle(true, function(on)
-	Remotes.PlayerAction:FireServer("SetSettings", { myAura = if on then "On" else "Off" })
-end, { Name = "Toggle", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(60, 24), Parent = showRow })
-Kit.Text({ Name = "Note", Text = "Boost stays active when hidden.", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -3), Size = UDim2.new(1, -2 * PAD, 0, 13), Parent = AURA.detail }).FontFace =
-	Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Medium, Enum.FontStyle.Italic)
+-- the detail panel (right): the ALTERS detail's twin (AltersPanel: 196 wide, the same rows)
+local AuraBackdrop = require(Shared.UI.AuraBackdrop)
+AURA.detail = New("Frame", { Name = "Detail", BackgroundColor3 = Color3.fromHex("#1B1B20"), AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0),
+	Size = UDim2.new(0, DETAIL_W, 1, 0), Parent = AURA.frame }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+	New("UIStroke", { Name = "Border", Color = Colors.Outline, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+})
+AURA.backdrop = AuraBackdrop.New(AURA.detail, 12, UDim2.new(0.5, 0, 0, 34))
+-- the orb, centred, with its own glow (a gray rim behind its silhouette for a "???" aura)
+AURA.glow = AlterFX.Image(AURA.detail, "ember", { Name = "OrbGlow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 34), Size = UDim2.fromOffset(104, 104),
+	ImageTransparency = 0.35, ZIndex = 3 })
+AURA.bigRim = New("ImageLabel", { Name = "Rim", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 34),
+	Size = UDim2.fromOffset(67, 67), ScaleType = Enum.ScaleType.Fit, ImageColor3 = Color3.fromHex("#8A878F"), Visible = false, ZIndex = 4, Parent = AURA.detail })
+AURA.bigIcon = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 34),
+	Size = UDim2.fromOffset(60, 60), ScaleType = Enum.ScaleType.Fit, ZIndex = 5, Parent = AURA.detail })
+-- the name: white and stroked, the size and font of the alters' "PUMPED"
+AURA.bigName = Kit.Fit(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 22, Position = UDim2.fromOffset(PAD, 66), Size = UDim2.new(1, -2 * PAD, 0, 24),
+	ZIndex = 6, Parent = AURA.detail }), 22, 14)
+-- the benefit: a slim dark pill outlined in the aura's colour, white words (like "GAINS X1.15")
+AURA.benefit = New("Frame", { Name = "Benefit", BackgroundColor3 = Color3.fromHex("#1E1B20"), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 91),
+	Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 6, Parent = AURA.detail }, {
+	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	New("UIStroke", { Name = "Edge", Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }),
+})
+AURA.benefitText = Kit.Text({ Name = "Text", Text = "", Font = "Chunky", TextSize = 14, Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 7,
+	Parent = AURA.benefit })
+-- "RARE · AURA": small and gray, the rarity word in its colour (like "ALTER 1 · HUMAN TIER")
+AURA.bigRarity = Kit.Text({ Name = "Rarity", Text = "", Font = "Chunky", TextSize = 12, TextColor3 = Colors.Muted, RichText = true, Position = UDim2.fromOffset(PAD, 114),
+	Size = UDim2.new(1, -2 * PAD, 0, 14), ZIndex = 6, Parent = AURA.detail }) -- (no Kit.Fit: it would count the colour tags as letters)
+-- how to get it (not yours yet)
+AURA.bigHow = Kit.Fit(Kit.Text({ Name = "How", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#D9D2D5"), TextWrapped = true,
+	Position = UDim2.fromOffset(PAD, 131), Size = UDim2.new(1, -2 * PAD, 0, 26), ZIndex = 6, Parent = AURA.detail }), 11, 9, 2)
+-- the button: graphite with a thin outline (like the alters' WORN); EQUIPPED = a thin gold outline and gold words
+AURA.action = New("TextButton", { Name = "Action", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromHex("#232027"), AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -38), Size = UDim2.new(1, -20, 0, 30), ZIndex = 6, Parent = AURA.detail }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+})
+AURA.actionEdge = New("UIStroke", { Name = "Edge", Color = Color3.fromHex("#4A4652"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = AURA.action })
+AURA.actionText = Kit.Text({ Name = "Label", Text = "", Font = "Title", KeepItalic = true, TextSize = 15, Upper = true, Size = UDim2.fromScale(1, 1), ZIndex = 7,
+	Parent = AURA.action })
+Theme.BindPress(AURA.action)
+-- SHOW EFFECT: one slim line, the label left and a sleek pill switch right (in the aura's colour when on). Off = your own
+-- aura's look is hidden for you (settings.myAura; AuraClient), the aura stays equipped
+local showRow = New("Frame", { Name = "ShowEffect", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -17),
+	Size = UDim2.new(1, -2 * PAD - 4, 0, 18), ZIndex = 6, Parent = AURA.detail })
+Kit.Text({ Name = "Label", Text = "Show effect", Font = "Strong", TextSize = 12, TextColor3 = Color3.fromHex("#D9D6DE"), Size = UDim2.new(1, -44, 1, 0),
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6, Parent = showRow })
+local switch = New("TextButton", { Name = "Switch", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromHex("#2A2730"), AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(34, 18), ZIndex = 6, Parent = showRow }, {
+	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	New("UIStroke", { Color = Color3.fromHex("#3A3640"), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+})
+-- (a bigger invisible hit area around the small switch: touch targets stay >= 44 px with the window's scale)
+New("TextButton", { Name = "Hit", Text = "", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.new(1, 24, 1, 22), ZIndex = 8, Parent = switch }).Activated:Connect(function() switch:SetAttribute("Tap", (switch:GetAttribute("Tap") or 0) + 1) end)
+local knob = New("Frame", { Name = "Knob", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 2, 0.5, 0),
+	Size = UDim2.fromOffset(14, 14), ZIndex = 7, Parent = switch }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+local showOn, showColor = true, Colors.Green
+local function paintSwitch(animate: boolean?)
+	local goal = { BackgroundColor3 = if showOn then showColor else Color3.fromHex("#2A2730") }
+	local knobAt = if showOn then UDim2.new(1, -16, 0.5, 0) else UDim2.new(0, 2, 0.5, 0)
+	if animate then
+		Theme.Tween(switch, goal, 0.15)
+		Theme.Tween(knob, { Position = knobAt }, 0.15)
+	else
+		switch.BackgroundColor3 = goal.BackgroundColor3
+		knob.Position = knobAt
+	end
+end
+local function setShowToggle(on: boolean, color: Color3?)
+	showOn = on
+	if color then showColor = color end
+	paintSwitch(false)
+end
+local function flipShow()
+	showOn = not showOn
+	paintSwitch(true)
+	Audio.PlayUI("Click")
+	Remotes.PlayerAction:FireServer("SetSettings", { myAura = if showOn then "On" else "Off" })
+end
+switch.Activated:Connect(flipShow)
+switch:GetAttributeChangedSignal("Tap"):Connect(flipShow)
+local note = Kit.Text({ Name = "Note", Text = "Boost stays active when hidden.", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -3), Size = UDim2.new(1, -2 * PAD, 0, 12), ZIndex = 6, Parent = AURA.detail })
+note.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Medium, Enum.FontStyle.Italic)
 
 function AURA.has(aura): boolean
 	if aura.unlock.type == "pass" then return player:GetAttribute("Pass_" .. aura.unlock.pass) == true end
@@ -367,24 +433,47 @@ function AURA.refresh()
 	end
 	local aura = Auras.ById[AURA.picked] or Auras.List[1]
 	local look = looks[aura.id]
-	local kind, text, style = AURA.state(aura)
+	local kind, text = AURA.state(aura)
 	local hidden = look == "hidden"
+	local color = aura.colors[1]
+	do
+		local _, _, value = color:ToHSV()
+		if value < 0.25 then color = aura.colors[2] or color end -- (a near-black first colour: the brighter one)
+	end
+	-- the theme (dark and still for "???"), the outline in the aura's colour
+	AURA.backdrop:Set(aura, hidden)
+	AURA.detail.Border.Color = if hidden then Color3.fromHex("#2E2A30") else color
+	-- the orb: lit when it's yours, dimmer when it isn't yet, a black silhouette with a gray rim for "???"
 	AURA.bigIcon.Image = aura.Icon
-	AURA.bigIcon.ImageColor3 = if look == "owned" then Color3.new(1, 1, 1) else Color3.fromRGB(80, 78, 86)
-	AURA.bigIcon.Visible = not hidden
-	AURA.bigName.Text = if hidden then "???" else aura.name
-	AURA.bigRarity.Text = if hidden then "UNDISCOVERED" else string.upper(aura.rarity)
-	AURA.bigRarity.TextColor3 = if hidden then Discovery.Gray else RARITY_TABLE[aura.rarity] or Colors.Muted
-	-- the benefit pill when the aura has one (Config/Auras `bonus`, e.g. "+15% Coins"), else how to get it
+	AURA.bigRim.Image = aura.Icon
+	AURA.bigRim.Visible = hidden
+	AURA.bigIcon.ImageColor3 = if hidden then Color3.new(0, 0, 0) elseif look == "owned" then Color3.new(1, 1, 1) else Color3.fromRGB(150, 148, 156)
+	AURA.glow.Visible = not hidden
+	AURA.glow.ImageColor3 = color
+	AURA.bigName.Text = if hidden then "???" else string.upper(aura.name)
+	AURA.bigName.TextColor3 = Color3.new(1, 1, 1)
+	-- the benefit pill when the aura has one (Config/Auras `bonus`, e.g. "Boosts +10% Longer")
 	local bonus = aura.bonus
 	AURA.benefit.Visible = bonus ~= nil and not hidden
-	if bonus then Kit.SetButton(AURA.benefit, "Gold", bonus) end
-	AURA.bigHow.Visible = not AURA.benefit.Visible
-	AURA.bigHow.Text = if hidden then "Keep playing to find it." elseif look == "owned" then "Yours" else aura.how
+	AURA.benefit.Edge.Color = color
+	AURA.benefitText.Text = string.upper(bonus or "")
+	-- "RARE · AURA" (the rarity in its colour)
+	local rarityColor = RARITY_TABLE[aura.rarity] or Colors.Muted
+	AURA.bigRarity.Text = if hidden then "UNDISCOVERED" else string.format('<font color="#%s">%s</font> · AURA', rarityColor:ToHex(), string.upper(aura.rarity))
+	-- the rows close up when there's no benefit pill
+	AURA.bigRarity.Position = UDim2.fromOffset(PAD, if AURA.benefit.Visible then 114 else 92)
+	AURA.bigHow.Position = UDim2.fromOffset(PAD, if AURA.benefit.Visible then 131 else 109)
+	AURA.bigHow.Visible = look ~= "owned" and kind ~= "coins" and kind ~= "pass" -- (for sale: the button says it)
+	AURA.bigHow.Text = if hidden then "Keep playing to find it." else aura.how
+	-- the button: EQUIP / EQUIPPED (gold) / the price / the pass / LOCKED
 	AURA.action.Visible = not hidden
-	Kit.SetButton(AURA.action, if kind == "locked" then "Disabled" else style, text)
+	local words = if kind == "coins" then text .. " coins" else text
+	AURA.actionText.Text = string.upper(words)
+	AURA.actionText.TextColor3 = if kind == "equipped" then Colors.Gold elseif kind == "locked" then Colors.Faint else Colors.Text
+	AURA.actionEdge.Color = if kind == "equipped" then Colors.Gold else Color3.fromHex("#4A4652")
+	AURA.action.Active = kind ~= "locked"
 	local settings = ClientData.Get().settings or {}
-	setShowToggle(settings.myAura ~= "Off")
+	setShowToggle(settings.myAura ~= "Off", if hidden then Color3.fromHex("#6A676F") else color) -- (a "???" aura's colour stays secret)
 	AURA.header.Text = "AURAS " .. #discovered .. " / " .. #Auras.List .. " DISCOVERED"
 	countLabel.Text = ""
 	Discovery.Seen("Auras", discovered)

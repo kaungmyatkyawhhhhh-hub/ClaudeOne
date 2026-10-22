@@ -16,7 +16,11 @@
 --     the boosts and the needs line next to it, the bar and the buttons under); on a PC 4 rows and the detail stacked
 --     like the reference. panel.layout(bodyHeight, maxWidth) -> the width it needs.
 --   * The evolutions chart (EVOLUTIONS): a wide gold-edged panel over the window, TRAINER EVOLUTIONS, the picked trainer
---     5 times (BASE > ... > LIMITLESS, LV 1), FROM ROLLS / 3x BASE ... under them in gray italic.
+--     5 times (BASE > ... > LIMITLESS, LV 1), FROM ROLLS / 3x BASE ... under them in gray italic. (owner, 23 Oct) A stage
+--     you've never had a trainer at (state.discovered; BASE always) is hidden there: his silhouette, "???", no LV, a dark
+--     background with no effect, a gray border (the caption stays). The first time the chart opens after you reach a new
+--     stage, its tile flips over with a gold burst and a sparkle (Discovery list "TrainerStages"). Only the chart: the
+--     next-stage button always names the real stage.
 --   * The evolve moment (panel.evolved): the 3 fly together, shake, a white flash, the new one slams in with its name
 --     stamp, confetti in the stage color, a big sound.
 --   * (prompt 31) a trainer you haven't seen here yet turns over with a gold burst.
@@ -463,6 +467,7 @@ function TrainersPanel.Build(parent: Instance, header)
 	local chartRow = New("Frame", { Name = "Row", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70),
 		Size = UDim2.fromOffset(5 * CHART_TILE + 4 * CHEVRON, CHART_TILE + 30), ZIndex = 44, Parent = chart })
 	local chartTiles = {}
+	local revealing = {} -- [stage id] = true: newly discovered, still "???" until its flip plays
 	for i, stage in ipairs(Trainers.Stages) do
 		local x = (i - 1) * (CHART_TILE + CHEVRON)
 		chartTiles[i] = TrainerTile.New({ Name = stage.id, px = CHART_TILE, Size = UDim2.fromOffset(CHART_TILE, CHART_TILE), Position = UDim2.fromOffset(x, 0), Parent = chartRow })
@@ -648,8 +653,10 @@ function TrainersPanel.Build(parent: Instance, header)
 		local isEquipped = equippedSet[current.u] == true
 		Kit.SetButton(equipButton, if isEquipped then "Dark" else "Green", if isEquipped then "Unequip" else "Equip")
 		-- the chart and the question: this trainer
+		local discovered = s.discovered or { Base = true }
 		for i, tile in ipairs(chartTiles) do
-			tile:Set({ id = current.id, s = i, l = 1 })
+			local stageId = Trainers.Stages[i].id
+			tile:Set({ id = current.id, s = i, l = 1, hidden = i > 1 and (not discovered[stageId] or revealing[stageId] == true) })
 		end
 		if ready then
 			askLine.Text = string.format('%d %s <font color="#%s">%s</font> make 1 <font color="#%s">%s</font> · LV %d', Trainers.EvolveCount,
@@ -698,10 +705,40 @@ function TrainersPanel.Build(parent: Instance, header)
 		remote:FireServer("Evolve", current.u)
 	end)
 	askNo.Activated:Connect(function() Audio.PlayUI("Click") showAsk(false) end)
+	-- a newly discovered stage's tile turns over (folds to nothing, comes back revealed) with the gold burst
+	local function flip(index: number, stageId: string)
+		local cell = chartTiles[index].cell
+		local home, size = cell.Position, cell.Size
+		TweenService:Create(cell, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{ Size = UDim2.fromOffset(0, size.Y.Offset), Position = home + UDim2.fromOffset(size.X.Offset / 2, 0) }):Play()
+		task.delay(0.15, function()
+			revealing[stageId] = nil
+			panel.refresh()
+			TweenService:Create(cell, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = size, Position = home }):Play()
+			Discovery.Reveal(chartTiles[index].button)
+			pcall(function() AlterFX.Sound("Sparkle", { volume = 0.7 }) end)
+		end)
+	end
 	chartButton.Activated:Connect(function()
 		Audio.PlayUI("Click")
+		-- the stages reached since the chart was last open (none the first time: what you have then counts as seen)
+		local ids = {}
+		local discovered = state().discovered or {}
+		for i, stage in ipairs(Trainers.Stages) do
+			if i > 1 and discovered[stage.id] then table.insert(ids, stage.id) end
+		end
+		local fresh = Discovery.New("TrainerStages", ids)
+		for id in pairs(fresh) do revealing[id] = true end
 		panel.refresh()
 		showChart(true)
+		Discovery.Seen("TrainerStages", ids)
+		local after = 0.45
+		for i, stage in ipairs(Trainers.Stages) do
+			if fresh[stage.id] then
+				task.delay(after, function() if chart.Visible then flip(i, stage.id) else revealing[stage.id] = nil end end)
+				after += 0.3
+			end
+		end
 	end)
 
 	------------------------------------------------------------------------
