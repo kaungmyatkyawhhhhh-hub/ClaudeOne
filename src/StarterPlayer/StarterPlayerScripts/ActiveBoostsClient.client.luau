@@ -10,6 +10,10 @@
 --   * Hover (PC) / tap (phone): the tile lifts 4 px with a gold glow and an info card pops up above it (icon, NAME, a gold
 --     pill with the effect, "14:52 left · 2 stacked"); it hides when the mouse leaves, or 3 s after a tap.
 --   * A new boost pops in (0 -> 1.1 -> 1) with a short sparkle; an ended one shrinks away.
+--   * (prompt 59, 23 Oct) Half the size (SIZE): the tile, its icon, outline, corner and the gap between tiles ("x2" tag:
+--     as small as the 10 px text minimum allows);
+--     the timer never smaller than the HUD's smallest label (Theme.TextSize.Label); each tile has an invisible tap area of
+--     at least 32 px on screen around it (HIT). The info card keeps its size.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -34,8 +38,13 @@ local INK = Color3.fromHex("#0A090B")
 local GRAPHITE = Color3.fromHex("#1A191E")
 local RED = Color3.fromHex("#FF4A4A")
 
-local TILE = 50
-local GAP = 6
+local SIZE = 0.5 -- (prompt 59: the tiles at half their first size, 50 px)
+local TILE = 50 * SIZE
+local GAP = 6 * SIZE
+local LABEL = Theme.TextSize.Label -- (the smallest HUD label: no tile text under it)
+local TIMER = math.max(13 * SIZE, LABEL)
+local TIMER_H = TIMER + 3 -- (under the tile)
+local HIT_PX = 32 -- the tap area on screen (px), whatever the HUD's scale
 local MAX_SHOWN = 6
 local TAP_HIDE = 3
 
@@ -78,7 +87,10 @@ local gui = Theme.ScreenGui({ Name = "ActiveBoosts", DisplayOrder = 6, Parent = 
 gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 local root = Kit.Root(gui)
 local row = New("Frame", { Name = "Row", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -10),
-	Size = UDim2.fromOffset(MAX_SHOWN * (TILE + GAP), TILE + 14), Parent = root })
+	Size = UDim2.fromOffset(MAX_SHOWN * (TILE + GAP), TILE + TIMER_H), Parent = root })
+-- the tap area in mockup px (32 px on screen at this scale; never smaller than the tile)
+local hitUnits = HIT_PX
+Kit.OnScale(function(s) hitUnits = math.max(TILE, math.ceil(HIT_PX / math.max(s, 0.01))) end) -- (rounded up: sizes go to whole units)
 
 local function chunky(parent, name, size, props)
 	local label = Kit.Text({ Name = name, Text = "", Font = "Chunky", TextSize = size, Parent = parent })
@@ -135,7 +147,7 @@ end
 local function showCard(tile)
 	if cardFor and cardFor ~= tile then hideCard() end
 	cardFor = tile
-	TweenService:Create(tile.lift, TweenInfo.new(0.12), { Position = UDim2.new(0.5, 0, 0, -4) }):Play()
+	TweenService:Create(tile.lift, TweenInfo.new(0.12), { Position = UDim2.new(0.5, 0, 0, -4 * SIZE) }):Play()
 	tile.glow.Transparency = 0.25
 	iconInto(cardIcon, tile.source.icon, UDim2.fromScale(1, 1))
 	cardName.Text = string.upper(tile.source.name)
@@ -143,33 +155,39 @@ local function showCard(tile)
 	pill.Visible = tile.source.pill ~= ""
 	-- above the tile, never over it (and inside the screen)
 	local x = tile.frame.AbsolutePosition.X - row.AbsolutePosition.X + 12
-	card.Position = UDim2.new(0, math.max(8, x - 6), 1, -(10 + TILE + 22))
+	card.Position = UDim2.new(0, math.max(8, x - 6), 1, -(10 + TILE + TIMER_H + 8))
 	card.Visible = true
 	tile.updateCard()
 end
 
 local function makeTile(source)
-	local frame = New("Frame", { Name = source.key, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE, TILE + 14), Parent = row })
+	local frame = New("Frame", { Name = source.key, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE, TILE + TIMER_H), Parent = row })
 	local scale = New("UIScale", { Scale = 0, Parent = frame })
-	local lift = New("TextButton", { Name = "Tile", Text = "", AutoButtonColor = false, BackgroundColor3 = GRAPHITE, AnchorPoint = Vector2.new(0.5, 0),
+	local lift = New("Frame", { Name = "Tile", BackgroundColor3 = GRAPHITE, AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(TILE, TILE), Parent = frame }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 9) }),
-		New("UIStroke", { Name = "Edge", Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UICorner", { CornerRadius = UDim.new(0, 9 * SIZE) }),
+		New("UIStroke", { Name = "Edge", Color = Colors.Outline, Thickness = math.max(1, 1.5 * SIZE), ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
-	local glow = New("UIStroke", { Name = "Glow", Color = Colors.Gold, Thickness = 5, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local glow = New("UIStroke", { Name = "Glow", Color = Colors.Gold, Thickness = 5 * SIZE, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local glowFrame = New("Frame", { Name = "GlowRing", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = lift }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 9) }), glow,
+		New("UICorner", { CornerRadius = UDim.new(0, 9 * SIZE) }), glow,
 	})
+	-- (prompt 59) the tap / hover area: invisible, centred on the tile, at least 32 px on screen (it may reach a little past
+	-- the small gap between tiles)
+	local hit = New("TextButton", { Name = "Hit", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0, TILE / 2), Size = UDim2.fromOffset(hitUnits, hitUnits), ZIndex = 8, Parent = frame })
 	local iconHolder = New("Frame", { Name = "Icon", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = lift })
 	iconInto(iconHolder, source.icon, UDim2.fromScale(if string.sub(source.icon, 1, 13) == "rbxassetid://" then 0.92 else 0.62, if string.sub(source.icon, 1, 13) == "rbxassetid://" then 0.92 else 0.62))
-	local timer = chunky(frame, "Timer", 13, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.new(1, 10, 0, 17), ZIndex = 4 })
-	local tag = New("Frame", { Name = "Stack", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 4, 0, -4), Size = UDim2.fromOffset(22, 14),
-		Visible = false, ZIndex = 5, Parent = lift }, {
+	local timer = chunky(frame, "Timer", TIMER, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.new(1, 16, 0, TIMER_H), ZIndex = 4 })
+	local tag = New("Frame", { Name = "Stack", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 4 * SIZE, 0, -4 * SIZE),
+		Size = UDim2.fromOffset(math.max(22 * SIZE, 16), math.max(14 * SIZE, 11)), Visible = false, ZIndex = 5, Parent = lift }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-		New("UIStroke", { Color = INK, Thickness = 1.2 }),
+		New("UIStroke", { Color = INK, Thickness = math.max(1, 1.2 * SIZE) }),
 	})
-	local tagText = chunky(tag, "Text", 9, { Size = UDim2.fromScale(1, 1), ZIndex = 6 })
-	local tile = { source = source, frame = frame, scale = scale, lift = lift, glow = glow, glowFrame = glowFrame, timer = timer, tag = tag, tagText = tagText,
+	-- (the "x2" can't go under the game's 10 px text minimum, Theme.MinTextSize: the tag is as small as that allows)
+	local tagText = chunky(tag, "Text", Theme.MinTextSize, { Size = UDim2.fromScale(1, 1), ZIndex = 6 })
+	tagText:FindFirstChildOfClass("UIStroke").Thickness = 1 -- (a thick outline would swallow letters this small)
+	local tile = { source = source, frame = frame, scale = scale, lift = lift, hit = hit, glow = glow, glowFrame = glowFrame, timer = timer, tag = tag, tagText = tagText,
 		left = 0, stacks = 1, leaving = false }
 	function tile.updateCard()
 		if cardFor ~= tile then return end
@@ -178,14 +196,14 @@ local function makeTile(source)
 		if tile.stacks > 1 then table.insert(parts, tile.stacks .. " stacked") end
 		cardLine.Text = table.concat(parts, "  ·  ")
 	end
-	-- PC: hover; phone: tap (3 s)
-	lift.MouseEnter:Connect(function()
+	-- PC: hover; phone: tap (3 s) (on the tap area)
+	hit.MouseEnter:Connect(function()
 		if not UserInputService.TouchEnabled then showCard(tile) end
 	end)
-	lift.MouseLeave:Connect(function()
+	hit.MouseLeave:Connect(function()
 		if not UserInputService.TouchEnabled then hideCard(tile) end
 	end)
-	lift.Activated:Connect(function()
+	hit.Activated:Connect(function()
 		if cardFor == tile then hideCard(tile) return end
 		Audio.PlayUI("Click")
 		showCard(tile)
@@ -242,6 +260,7 @@ local function step()
 			tile.stacks = if entry.source.dose and entry.left < math.huge then math.max(1, math.ceil(entry.left / entry.source.dose - 0.001)) else 1
 			tile.frame.LayoutOrder = i
 			tile.frame.Position = UDim2.fromOffset((i - 1) * (TILE + GAP), 0)
+			tile.hit.Size = UDim2.fromOffset(hitUnits, hitUnits)
 			if entry.left == math.huge then
 				tile.timer.Text = if entry.source.key == "MaxBoost" then "MAX" else ""
 				tile.timer.TextColor3 = Colors.Gold
@@ -264,10 +283,10 @@ local function step()
 	if hidden > 0 then
 		if not more then
 			more = New("Frame", { Name = "More", BackgroundColor3 = GRAPHITE, Size = UDim2.fromOffset(TILE, TILE), Parent = row }, {
-				New("UICorner", { CornerRadius = UDim.new(0, 9) }),
-				New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+				New("UICorner", { CornerRadius = UDim.new(0, 9 * SIZE) }),
+				New("UIStroke", { Color = Colors.Outline, Thickness = math.max(1, 1.5 * SIZE), ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 			})
-			chunky(more, "Text", 18, { Size = UDim2.fromScale(1, 1) })
+			chunky(more, "Text", math.max(18 * SIZE, LABEL), { Size = UDim2.fromScale(1, 1) })
 		end
 		more.Visible = true
 		more.Position = UDim2.fromOffset(shownCount * (TILE + GAP), 0)
