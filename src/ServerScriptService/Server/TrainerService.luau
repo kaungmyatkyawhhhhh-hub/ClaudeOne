@@ -59,7 +59,7 @@ local function stateOf(player)
 	local copies = {}
 	for _, copy in ipairs(t.copies) do table.insert(copies, table.clone(copy)) end
 	return { copies = copies, equipped = table.clone(t.equipped), discovered = table.clone(t.discovered), nextUid = t.nextUid,
-		rolls = t.rolls, pity = t.pity, autoDelete = table.clone(t.autoDelete) }
+		rolls = t.rolls, pity = t.pity, autoDelete = table.clone(t.autoDelete), freeRolls = t.freeRolls, rebalance = t.rebalance }
 end
 
 -- (prompt 33) trainer EXP from reps waits here ([player] = { [uid] = exp }) and is saved every FlushSeconds or on a level up
@@ -122,11 +122,14 @@ local function roll(player, count, auto)
 		return
 	end
 	local each = rollPrice(player)
-	if not PlayerData.SpendCoins(player, each * count) then
+	local state = stateOf(player)
+	-- (prompt 27c) a free roll (the rebalance gift) goes before coins, one roll at a time
+	if count == 1 and state.freeRolls > 0 then
+		state.freeRolls -= 1
+	elseif not PlayerData.SpendCoins(player, each * count) then
 		send(player, "Failed", { text = "Not enough coins", need = each * count, auto = auto == true })
 		return
 	end
-	local state = stateOf(player)
 	local slots = slotsOf(player)
 	local results, refund = {}, 0
 	local announceFrom = Trainers.RarityById[Trainers.AnnounceFrom].index
@@ -729,6 +732,13 @@ function TrainerService.Start()
 			teleportAgency(player)
 		elseif action == "AutoDelete" then
 			setAutoDelete(player, a, b)
+		elseif action == "SeenRebalance" then
+			-- (prompt 27c) the popup was shown: never again
+			local state = stateOf(player)
+			if state.rebalance == 1 then
+				state.rebalance = 2
+				apply(player, state)
+			end
 		end
 	end)
 
@@ -756,8 +766,23 @@ function TrainerService.Start()
 	for _, part in ipairs(CollectionService:GetTagged("TrainerDesk")) do addDesk(part) end
 	CollectionService:GetInstanceAddedSignal("TrainerDesk"):Connect(addDesk)
 
+	-- (owner, prompt 27c) the boosts were rebalanced (lowered): anyone who already owned trainers gets a gift once, with a
+	-- popup; everyone else is just marked done (a new player's later trainers already have the new numbers)
+	local function rebalanceGift(player, state)
+		if state.rebalance ~= 0 then return end
+		if #state.copies > 0 then
+			state.rebalance = 1
+			state.freeRolls += Trainers.RebalanceGift.rolls
+			PlayerData.AddCoins(player, Trainers.RebalanceGift.coins)
+			Analytics.Event(player, "TrainerRebalanceGift", 1)
+		else
+			state.rebalance = 2
+		end
+	end
 	local function ready(player)
-		apply(player, stateOf(player))
+		local state = stateOf(player)
+		rebalanceGift(player, state)
+		apply(player, state)
 		-- the pass (bought later, or found at join) adds a slot
 		player:GetAttributeChangedSignal("Pass_" .. Trainers.ExtraSlotPass):Connect(function() apply(player, stateOf(player)) end)
 	end
@@ -768,7 +793,7 @@ function TrainerService.Start()
 
 	-- Studio: Workspace attribute TestTrainers = "RookieCoach,PumpCoach@3" gives every player those trainers (stage 3 =
 	-- BEAST-MODE) and equips them; "AeonCoach@5#20" = at LV 20
-	-- (TestTrainerSlots = 2 acts out the Extra Trainer pass)
+	-- (TestTrainerSlots = 2 acts out the Extra Trainer pass; TestRebalanceGift = true gives the prompt 27c gift again)
 	if game:GetService("RunService"):IsStudio() then
 		local function test()
 			local list = Workspace:GetAttribute("TestTrainers")
@@ -788,6 +813,10 @@ function TrainerService.Start()
 					for id, n in string.gmatch(extra, "([%w_]+):(%d+)") do
 						if Trainers.ById[id] then for _ = 1, math.min(tonumber(n) or 0, 200) do newCopy(state, id, 1) end end
 					end
+				end
+				if Workspace:GetAttribute("TestRebalanceGift") == true then
+					state.rebalance = 0
+					rebalanceGift(player, state)
 				end
 				apply(player, state)
 			end

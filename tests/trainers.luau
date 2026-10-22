@@ -24,12 +24,13 @@ for i = 1, 4 do
 	for _, g in gear do whistle = whistle or g.kind == "Whistle" end
 	H.check(whistle, T.List[i].id .. " wears a whistle")
 end
--- (prompt 27b: the BASE LV 1 boosts, a max LIMITLESS is x5)
-H.check(T.ById.RookieCoach.perk.gains == 0.05 and T.ById.CardioCoach.perk.coins == 0.07, "Common +5% EXP, Uncommon +7% coins")
-H.check(T.ById.CardioCoach.perk.staminaRegen == 0.10 and math.abs(T.Bonus({ { id = "CardioCoach", s = 1, l = 1 } }).staminaRegen - 0.10) < 1e-9, "Uncommon +10% stamina regen (owner, prompt 25)")
-H.check(T.ById.MoneyCoach.perk.gains == 0.09 and T.ById.MoneyCoach.perk.maxStamina == 0.06, "Rare +9% EXP +6% max stamina")
-H.check(T.ById.PumpCoach.perk.gains == 0.12 and T.ById.PumpCoach.perk.coins == 0.12, "Epic +12% EXP and coins")
-H.check(T.ById.AeonCoach.perk.gains == 0.3 and T.ById.AeonCoach.perk.progress == 0.1, "Eternal +30% and +10% progress (x5 = +150% / +50% at LIMITLESS LV 20)")
+-- (owner, prompt 27c: the BASE LV 1 boosts by rarity 5, 8, 12, 20, 35, 50, 65, 75%; a max LIMITLESS is x2.2)
+local base = { 0.05, 0.08, 0.12, 0.20, 0.35, 0.50, 0.65, 0.75 }
+for i, trainer in ipairs(T.List) do
+	H.check(math.abs((trainer.perk.gains or trainer.perk.coins) - base[i]) < 1e-9, string.format("%s (%s) BASE +%d%%", trainer.name, trainer.rarity, base[i] * 100))
+end
+H.check(T.ById.CardioCoach.perk.staminaRegen == 0.12 and math.abs(T.Bonus({ { id = "CardioCoach", s = 1, l = 1 } }).staminaRegen - 0.12) < 1e-9, "Uncommon +12% stamina regen (owner, prompt 25)")
+H.check(T.ById.AeonCoach.perk.progress == 0.25, "Eternal +25% progress")
 for _, trainer in ipairs(T.List) do
 	H.check(T.PerkText(trainer, { id = trainer.id, s = 1, l = 1 }) ~= "" and trainer.perkText:find(tostring(math.floor(trainer.perk[next(trainer.perk)] * 100 + 0.5)) .. "%", 1, true) ~= nil,
 		trainer.name .. ": perkText matches the perk")
@@ -108,22 +109,25 @@ H.check(#uids == 2 and uids[1] == 1 and uids[2] == 2, "equipped copies: each onc
 H.check(#T.CleanEquipped(st, 1) == 1, "never more than the slots")
 H.check(#T.CleanEquipped(T.Migrate(nil), 2) == 0, "bad data: nothing")
 
-print("Boosts (prompt 33: stage x level; prompt 27b: a max LIMITLESS = x5 his BASE)")
+print("Boosts (prompt 33: stage x level; prompt 27c: LIMITLESS x2, LV 20 +10%)")
 local b = T.Bonus({ { id = "PumpCoach", s = 1, l = 1 }, { id = "RookieCoach", s = 2, l = 20 } })
-H.check(math.abs(b.gains - (0.12 * 1 + 0.05 * 1.5 * 1.25)) < 1e-9, "boosts add up: BASE LV 1 = his boost, x1.5 at IRON-BORN, +25% at LV 20")
+H.check(math.abs(b.gains - (0.20 * 1 + 0.05 * 1.25 * 1.1)) < 1e-9, "boosts add up: BASE LV 1 = his boost, x1.25 at IRON-BORN, +10% at LV 20")
+H.check(T.Stages[2].mult == 1.25 and T.Stages[3].mult == 1.5 and T.Stages[4].mult == 1.75, "stages spread evenly up to x2")
 for _, trainer in ipairs(T.List) do
 	local top = 0
 	for _, amount in pairs(trainer.perk) do top = math.max(top, amount * T.CopyMultiplier({ id = trainer.id, s = 5, l = 20 })) end
-	H.check(top <= 1.5 + 1e-9, string.format("%s at LIMITLESS LV 20: +%d%% (never past +150%%)", trainer.name, math.floor(top * 100 + 0.5)))
+	H.check(top <= 1.65 + 1e-9, string.format("%s at LIMITLESS LV 20: +%d%% (never past +165%%)", trainer.name, math.floor(top * 100 + 0.5)))
 end
 local atlas = T.CopyMultiplier({ id = "AeonCoach", s = 5, l = 20 }) * T.ById.AeonCoach.perk.gains
-H.check(atlas >= 1.0 and atlas <= 1.5, "one max LIMITLESS Atlas is +100-150%")
-b = T.Bonus({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })
+H.check(atlas >= 1.5 and atlas <= 1.65 + 1e-9, "one max LIMITLESS Atlas is about +150-165%")
+b = T.Bonus({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })
 H.check(b.gains == T.BoostCap and b.progress <= T.BoostCap, "the total is capped at +" .. (T.BoostCap * 100) .. "%")
-local lines = T.TotalLines({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })
+local lines = T.TotalLines({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })
 H.check(lines[1].pct == 400 and lines[1].capped and lines[#lines].kind == "progress", "the shown total: capped at +400%, biggest first")
-H.check(T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }) == "+20% EXP, +20% coins", "perk text: " .. T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }))
-H.check(T.Stages[5].mult == 4 and #T.Stages == 5 and T.EvolveCount == 3, "5 stages x1 .. x4, 3 to evolve")
+H.check(T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }) == "+26% EXP, +26% coins", "perk text: " .. T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }))
+H.check(T.Stages[5].mult == 2 and #T.Stages == 5 and T.EvolveCount == 3, "5 stages x1 .. x2, 3 to evolve")
+local m = T.Migrate({ copies = { { u = 1, id = "PumpCoach", s = 1, l = 1 } }, freeRolls = 1, rebalance = 1 })
+H.check(m.freeRolls == 1 and m.rebalance == 1 and T.Migrate(nil).rebalance == 0 and T.Migrate(nil).freeRolls == 0, "free rolls and the rebalance flag are kept")
 H.check(T.ParseEntry("PumpCoach@3") == "PumpCoach" and select(2, T.ParseEntry("PumpCoach@3")) == 3 and select(2, T.ParseEntry("PumpCoach@g")) == 2
 	and select(2, T.ParseEntry("PumpCoach")) == 1 and T.ParseEntry("Nope") == nil and T.Entry("PumpCoach", 1) == "PumpCoach" and T.Entry("PumpCoach", 4) == "PumpCoach@4",
 	"entries: PumpCoach@stage (old @g = IRON-BORN)")

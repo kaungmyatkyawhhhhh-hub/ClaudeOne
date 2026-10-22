@@ -366,9 +366,11 @@ local function refresh()
 	pity.Text = string.upper(Trainers.PityRarity) .. " GUARANTEED IN " .. left .. " ROLL" .. (if left == 1 then "" else "S")
 	setPity((s.pity or 0) / Trainers.Pity)
 	local coins = data().coins or 0
-	rollSmall.Text = Kit.Format(p)
+	-- (prompt 27c) a free roll from the rebalance gift: "FREE" instead of the price
+	local free = (s.freeRolls or 0) > 0
+	rollSmall.Text = if free then "FREE" else Kit.Format(p)
 	rollSmall.TextColor3 = Colors.Gold
-	Theme.SetButtonStyle(rollButton, if coins >= p then "Red" else "Disabled")
+	Theme.SetButtonStyle(rollButton, if free or coins >= p then "Red" else "Disabled")
 	if multiOpen() then
 		x3Big.Text = "X3"
 		x3Small.Text = Kit.Format(p * Trainers.MultiRoll)
@@ -945,7 +947,8 @@ local resultSignal = Instance.new("BindableEvent")
 local function requestRoll(count: number, auto: boolean): boolean
 	if waiting or busy or overlay.Enabled then return false end
 	local cost = price() * count
-	if (data().coins or 0) < cost then
+	local free = count == 1 and (state().freeRolls or 0) > 0
+	if not free and (data().coins or 0) < cost then
 		Notify.Toast("Not enough coins", "A roll costs " .. Kit.Format(cost) .. " coins", "coin", Colors.Red, "trainercoins")
 		return false
 	end
@@ -962,7 +965,7 @@ end
 
 function autoLoop()
 	while autoOn do
-		if (data().coins or 0) < price() then
+		if (data().coins or 0) < price() and (state().freeRolls or 0) == 0 then
 			Notify.Toast("Auto Roll stopped", "Out of coins", "coin", Colors.Red, "trainerauto")
 			break
 		end
@@ -1199,3 +1202,27 @@ task.spawn(function()
 		end
 	end)
 end)
+
+-- (owner, prompt 27c) the trainer boosts were rebalanced (lowered): a player who already owned trainers sees this once,
+-- after the menu, with the gift (TrainerService gives it at join; state.rebalance 1 = given, not seen yet)
+do
+	local shown = false
+	local function check()
+		if shown or not ClientData.IsLoaded() or state().rebalance ~= 1 then return end
+		shown = true
+		task.spawn(function()
+			UIBus.WaitForMenu()
+			local gift = Trainers.RebalanceGift
+			Notify.Reward("TRAINER BOOSTS WERE REBALANCED", "A gift for you: +" .. Kit.Format(gift.coins) .. " coins and " .. gift.rolls .. " free roll",
+				"gift", Colors.Gold, "TitleUnlocked", "trainerrebalance")
+			remote:FireServer("SeenRebalance")
+		end)
+	end
+	ClientData.Changed:Connect(function(path)
+		if path[1] == "trainers" then check() end
+	end)
+	task.spawn(function()
+		ClientData.Get()
+		check()
+	end)
+end

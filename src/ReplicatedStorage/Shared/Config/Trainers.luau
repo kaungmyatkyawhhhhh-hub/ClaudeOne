@@ -34,8 +34,9 @@ end
 
 ------------------------------------------------------------------------
 -- The trainers: one per rarity. perk (while equipped; added up over all equipped trainers, then capped by BoostCap) = his
--- boost at BASE, LV 1; stages and levels multiply it, up to x5 at LIMITLESS LV 20 (CopyMultiplier; prompt 27b, 22 Oct: the
--- old x16 stages made a LIMITLESS Atlas +2424%; the old BASE boosts were 5, 10, 15, 25, 40, 70, 110, 150%):
+-- boost at BASE, LV 1; stages and levels multiply it, up to x2.2 at LIMITLESS LV 20 (CopyMultiplier; prompt 27b, 22 Oct: the
+-- old x16 stages made a LIMITLESS Atlas +2424%; owner, prompt 27c: BASE by rarity 5, 8, 12, 20, 35, 50, 65, 75%, the
+-- second boosts in the same proportion as prompt 25's table):
 --   gains = +EXP share, coins = +coins share, maxStamina = +max stamina share, staminaRegen = +stamina refill speed share,
 --   progress = +Growth Spurt / alter progress share (the goal's EXP counts that much more: Config.GrowthSpurts / Config.Alters).
 -- 1-4 are the four original coaches (ordered by their old strength: price), 5-8 (prompt 25: Duke Ironside, Volta, The
@@ -93,18 +94,18 @@ Trainers.List = {
 			outfit = { shirt = "rbxassetid://139862937769412", pants = "rbxassetid://110347260992708", sleeves = "long", legs = "long", shoes = "rbxassetid://134411403634005", shirtColor = "#C8262C", pantsColor = "#1E1E22" },
 			muscle = 0.9, extras = {}, gear = { { kind = "Whistle", color = "#C8262C" }, { kind = "Sneakers", color = "#C8262C" } }, extraColor = "#C8262C", tint = "#C8262C" } },
 	-- (owner, prompt 25: stamina regen on top of the coins, the old Cardio Coach's refill)
-	{ id = "CardioCoach", rarity = "Uncommon", name = "Coach Nia", heightInches = 65, perk = { coins = 0.07, staminaRegen = 0.10 },
-		perkText = "+7% coins, +10% stamina regen", picture = "trainer_stamina", idle = "hips", pose = "AbsAndThigh", line = "Drink water, then go!",
+	{ id = "CardioCoach", rarity = "Uncommon", name = "Coach Nia", heightInches = 65, perk = { coins = 0.08, staminaRegen = 0.12 },
+		perkText = "+8% coins, +12% stamina regen", picture = "trainer_stamina", idle = "hips", pose = "AbsAndThigh", line = "Drink water, then go!",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
 			outfit = { shirt = "rbxassetid://122244133593957", pants = "rbxassetid://122244133593957", sleeves = "none", legs = "shorts", shoes = "rbxassetid://130682660705057", shirtColor = "#2FAE55", pantsColor = "#2FAE55" },
 			muscle = 0.7, extras = { "headband", "bottle" }, gear = { { kind = "Whistle", color = "#2FAE55" }, { kind = "Sneakers", color = "#2FAE55" } }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
-	{ id = "MoneyCoach", rarity = "Rare", name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.09, maxStamina = 0.06 },
-		perkText = "+9% EXP, +6% max stamina", picture = "trainer_coins", idle = "clipboard", pose = "SideChest", line = "Form first, then weight.",
+	{ id = "MoneyCoach", rarity = "Rare", name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.12, maxStamina = 0.08 },
+		perkText = "+12% EXP, +8% max stamina", picture = "trainer_coins", idle = "clipboard", pose = "SideChest", line = "Form first, then weight.",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
 			outfit = { shirt = "rbxassetid://71165572097233", pants = "rbxassetid://110347260992708", sleeves = "short", legs = "long", shoes = "rbxassetid://73930285993287", shirtColor = "#E8C21C", pantsColor = "#1E1E22" },
 			muscle = 0.8, extras = { "cap", "clipboard" }, gear = { { kind = "Whistle", color = "#16161A" }, { kind = "Sneakers", color = "#E8C21C" } }, extraColor = "#16161A", tint = "#E0B23A" } },
-	{ id = "PumpCoach", rarity = "Epic", name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.12, coins = 0.12 },
-		perkText = "+12% EXP and coins", picture = "trainer_pump", idle = "crossed", pose = "FrontLatSpread", line = "Time to grow!",
+	{ id = "PumpCoach", rarity = "Epic", name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.20, coins = 0.20 },
+		perkText = "+20% EXP and coins", picture = "trainer_pump", idle = "crossed", pose = "FrontLatSpread", line = "Time to grow!",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
 			outfit = { shirt = "rbxassetid://106691440081103", pants = "rbxassetid://110347260992708", sleeves = "none", legs = "shorts", shoes = "rbxassetid://101444393193455", shirtColor = "#7A3FC8", pantsColor = "#1E1E22" },
 			muscle = 1.8, extras = {}, gear = { { kind = "Whistle", color = "#7A3FC8" }, { kind = "Belt" }, { kind = "Wraps", color = "#7A3FC8" }, { kind = "Sneakers", color = "#7A3FC8" } },
@@ -113,7 +114,7 @@ Trainers.List = {
 	-- short beard and buzz cut; a black sleeveless hoodie with gold trim, a thick leather belt, chalk on his hands, wrist wraps
 	{ id = "AtlasCoach", rarity = "Legendary", name = "Duke Ironside", heightInches = 81, frame = "Wide", shoulderBonus = 1.12,
 		widths = { hips = 1.2, arms = 1.16, legs = 1.1, depth = 1.12 },
-		perk = { gains = 0.15, coins = 0.15, progress = 0.04 }, perkText = "+15% EXP and coins, +4% progress",
+		perk = { gains = 0.35, coins = 0.35, progress = 0.09 }, perkText = "+35% EXP and coins, +9% progress",
 		idle = "chalk", pose = "MostMuscular", line = "Lock in. No excuses.",
 		look = { skin = "#D29A72", faceTexture = "rbxassetid://83017053", -- Man Face, under a grey beard
 			outfit = { shirt = "rbxassetid://92310450517732", pants = "rbxassetid://92310450517732", sleeves = "none", legs = "shorts", shirtColor = "#16161A", pantsColor = "#16161A" },
@@ -126,7 +127,7 @@ Trainers.List = {
 	-- tracksuit top tied at the waist over a black training top, red knee sleeves, lightning bolts on the sleeves
 	{ id = "BlazeCoach", rarity = "Mythic", name = "Volta", heightInches = 82, frame = "VTaper", shoulderBonus = 1.12,
 		widths = { hips = 1.04, arms = 1.05, legs = 1.14, depth = 1.04 },
-		perk = { gains = 0.19, coins = 0.19, progress = 0.06 }, perkText = "+19% EXP and coins, +6% progress",
+		perk = { gains = 0.50, coins = 0.50, progress = 0.14 }, perkText = "+50% EXP and coins, +14% progress",
 		idle = "boxer", pose = "Guard", line = "Faster! Stronger! Again!",
 		look = { skin = "#A86B45", faceTexture = "rbxassetid://7074749", -- Chill
 			outfit = { shirt = "rbxassetid://140621946283610", pants = "rbxassetid://140621946283610", sleeves = "none", legs = "shorts", shirtColor = "#141418", pantsColor = "#141418" },
@@ -139,7 +140,7 @@ Trainers.List = {
 	-- a black outfit with faint purple seams. "???" (a black silhouette) on the odds lists until you own him
 	{ id = "ShadeCoach", rarity = "Secret", name = "The Shadow", heightInches = 86, frame = "VTaper", shoulderBonus = 1.25,
 		widths = { hips = 1.1, arms = 1.12, legs = 1.12, depth = 1.12 },
-		perk = { gains = 0.24, coins = 0.24, progress = 0.08 }, perkText = "+24% EXP and coins, +8% progress",
+		perk = { gains = 0.65, coins = 0.65, progress = 0.18 }, perkText = "+65% EXP and coins, +18% progress",
 		idle = "watch", pose = "Crossed", line = "...", lines = { "...", "Train." },
 		look = { skin = "#7A5A48", faceTexture = nil,
 			outfit = { shirt = "rbxassetid://105247065422618", pants = "rbxassetid://105247065422618", sleeves = "long", legs = "shorts", shirtColor = "#0E0E11", pantsColor = "#0E0E11" },
@@ -150,7 +151,7 @@ Trainers.List = {
 	-- gold wrist cuffs, bare feet
 	{ id = "AeonCoach", rarity = "Eternal", name = "Atlas", heightInches = 90, frame = "VTaper", shoulderBonus = 1.3,
 		widths = { hips = 1.06, arms = 1.12, legs = 1.12, depth = 1.12 },
-		perk = { gains = 0.30, coins = 0.30, progress = 0.10 }, perkText = "+30% EXP and coins, +10% progress",
+		perk = { gains = 0.75, coins = 0.75, progress = 0.25 }, perkText = "+75% EXP and coins, +25% progress",
 		idle = "flex", pose = "FrontDoubleBiceps", line = "Strength is forever.",
 		look = { skin = "#F7F3EC", faceTexture = "rbxassetid://7074749", -- Chill (calm, like a statue)
 			marble = { color = "#F7F3EC", variant = "GymArc_GoldVeinMarble" }, material = "Marble",
@@ -257,19 +258,20 @@ end
 -- Every trainer you own is its own copy with its own stage and level:
 --   copy = { u = a number unique for you, id = the trainer, s = stage (1 BASE .. 5 LIMITLESS), l = level (1-20), x = EXP into it }
 -- * Levels: the EQUIPPED (following) trainers gain trainer EXP from your reps (RepXp: more on heavier weights); every level
---   adds a share of MaxLevelBonus to that trainer's boost (LV 1 +0%, LV 20 +25%). Lv 1 -> 20 again at every stage.
--- * Evolutions: 3 copies of the same trainer at the same stage -> 1 at the next stage (the boost x1, x1.5, x2, x3, x4;
---   prompt 27b: it was x1 .. x16), keeping the highest level of the 3. No level needed. One LIMITLESS = 81 BASE copies.
--- * So one LIMITLESS LV 20 = x5 his BASE boost: Atlas +150% EXP and coins, Coach Sam +25% EXP.
+--   adds a share of MaxLevelBonus to that trainer's boost (LV 1 +0%, LV 20 +10%). Lv 1 -> 20 again at every stage.
+-- * Evolutions: 3 copies of the same trainer at the same stage -> 1 at the next stage (owner, prompt 27c: the boost x1,
+--   x1.25, x1.5, x1.75, x2; it was x1 .. x16 until prompt 27b), keeping the highest level of the 3. No level needed. One
+--   LIMITLESS = 81 BASE copies.
+-- * So one LIMITLESS LV 20 = x2.2 his BASE boost: Atlas +165% EXP and coins, Coach Sam +11% EXP.
 -- * A player only knows the names of the stages they've reached (discovered); the next one is "???" until then.
 ------------------------------------------------------------------------
 -- color = the stage's bright color (border, name); base = the tile's dark base; hex = the hex mesh tint
 Trainers.Stages = {
 	{ id = "Base", name = "BASE", mult = 1, color = "#5A9BFF", base = "#0B1638", hex = "#2C4F9A", from = "FROM ROLLS" },
-	{ id = "IronBorn", name = "IRON-BORN", mult = 1.5, color = "#FF8A2A", base = "#2A1006", hex = "#8A3A12", from = "3x BASE" },
-	{ id = "BeastMode", name = "BEAST-MODE", mult = 2, color = "#6BFF4F", base = "#062010", hex = "#1F7A2A", from = "3x IRON-BORN" },
-	{ id = "Colossus", name = "COLOSSUS", mult = 3, color = "#5CC8FF", base = "#061A36", hex = "#1F5A9A", from = "3x BEAST-MODE" },
-	{ id = "Limitless", name = "LIMITLESS", mult = 4, color = "#E070FF", base = "#1A0830", hex = "#6A2A9A", from = "3x COLOSSUS", rainbow = true },
+	{ id = "IronBorn", name = "IRON-BORN", mult = 1.25, color = "#FF8A2A", base = "#2A1006", hex = "#8A3A12", from = "3x BASE" },
+	{ id = "BeastMode", name = "BEAST-MODE", mult = 1.5, color = "#6BFF4F", base = "#062010", hex = "#1F7A2A", from = "3x IRON-BORN" },
+	{ id = "Colossus", name = "COLOSSUS", mult = 1.75, color = "#5CC8FF", base = "#061A36", hex = "#1F5A9A", from = "3x BEAST-MODE" },
+	{ id = "Limitless", name = "LIMITLESS", mult = 2, color = "#E070FF", base = "#1A0830", hex = "#6A2A9A", from = "3x COLOSSUS", rainbow = true },
 }
 -- (prompt 47) the planner's backgrounds (group images): hex = the tile's base (dark hue, hex mesh, glow), evo = the stage's
 -- effect layered on top (BASE: the radial light rays)
@@ -287,10 +289,13 @@ for index, stage in ipairs(Trainers.Stages) do
 end
 Trainers.EvolveCount = 3          -- copies of the same trainer at the same stage that make one of the next
 Trainers.MaxLevel = 20
-Trainers.MaxLevelBonus = 0.25     -- LV 20 = +25% of his boost (LV 1 +0%, in even steps)
+Trainers.MaxLevelBonus = 0.10     -- LV 20 = +10% of his boost (LV 1 +0%, in even steps; owner, prompt 27c)
 Trainers.MaxCopies = 400          -- trainers kept (a roll past this pays out like an auto-deleted one)
 Trainers.FollowerScalePerStage = 0.03 -- the follower is 3% bigger per stage
 Trainers.FlushSeconds = 10        -- trainer EXP is saved this often (and on every level up)
+-- (owner, prompt 27c) the rebalance gift: players who owned trainers before the boosts were lowered get this once, with a
+-- popup (state.rebalance: 0 = not checked yet, 1 = given, popup not seen, 2 = done). A free roll is used before coins.
+Trainers.RebalanceGift = { coins = 500, rolls = 1 }
 
 -- Trainer EXP from `level` to the next one, at a stage. Lv 1 -> 20 in about 20-30 minutes of reps at BASE (tests/trainers),
 -- a bit slower at higher stages.
@@ -313,7 +318,7 @@ local function cleanCopy(c)
 end
 
 -- The saved state, from any version: { copies, equipped = { u }, discovered = { [stage id] = true }, nextUid, rolls, pity,
--- autoDelete, bonus }. Before prompt 33: owned = { [id] = count } (before prompt 24: a list of ids), golden = { [id] = count }
+-- autoDelete, bonus, freeRolls, rebalance }. Before prompt 33: owned = { [id] = count } (before prompt 24: a list of ids), golden = { [id] = count }
 -- (each Golden -> one IRON-BORN), equipped = { "PumpCoach" | "PumpCoach@g" }.
 function Trainers.Migrate(t)
 	t = type(t) == "table" and t or {}
@@ -381,6 +386,7 @@ function Trainers.Migrate(t)
 	return {
 		copies = copies, equipped = equipped, discovered = discovered, nextUid = nextUid,
 		rolls = tonumber(t.rolls) or 0, pity = tonumber(t.pity) or 0,
+		freeRolls = math.max(0, math.floor(tonumber(t.freeRolls) or 0)), rebalance = math.clamp(math.floor(tonumber(t.rebalance) or 0), 0, 2),
 		autoDelete = type(t.autoDelete) == "table" and t.autoDelete or {},
 		bonus = type(t.bonus) == "table" and t.bonus or nil,
 	}
@@ -409,7 +415,7 @@ function Trainers.CleanEquipped(state, slots: number): ({ number }, { any })
 	return uids, list
 end
 
--- A copy's boost multiplier: its stage times its level bonus (BASE LV 1 = x1, LIMITLESS LV 20 = x5)
+-- A copy's boost multiplier: its stage times its level bonus (BASE LV 1 = x1, LIMITLESS LV 20 = x2.2)
 function Trainers.CopyMultiplier(copy): number
 	local stage = Trainers.Stages[copy.s or 1] or Trainers.Stages[1]
 	local level = math.clamp(copy.l or 1, 1, Trainers.MaxLevel)
