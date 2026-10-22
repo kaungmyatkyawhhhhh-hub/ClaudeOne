@@ -59,7 +59,7 @@ local function stateOf(player)
 	local copies = {}
 	for _, copy in ipairs(t.copies) do table.insert(copies, table.clone(copy)) end
 	return { copies = copies, equipped = table.clone(t.equipped), discovered = t.discovered and table.clone(t.discovered), nextUid = t.nextUid,
-		rolls = t.rolls, pity = t.pity, autoDelete = table.clone(t.autoDelete), freeRolls = t.freeRolls, rebalance = t.rebalance }
+		rolls = t.rolls, pity = t.pity, autoDelete = table.clone(t.autoDelete), freeRolls = t.freeRolls, rebalance = t.rebalance, rebalance2 = t.rebalance2 }
 end
 
 -- (prompt 33) trainer EXP from reps waits here ([player] = { [uid] = exp }) and is saved every FlushSeconds or on a level up
@@ -138,11 +138,16 @@ local function roll(player, count, auto)
 	for _ = 1, count do
 		local rarityId
 		rarityId, state.pity = Trainers.Roll(rng:NextNumber(), state.pity)
-		-- Studio: Workspace attribute TestRollRarity = "Mythic" makes every roll that rarity (to see the reveals)
-		local forced = if game:GetService("RunService"):IsStudio() then Workspace:GetAttribute("TestRollRarity") else nil
+		-- Studio: Workspace attribute TestRollRarity = "Mythic" makes every roll that rarity, TestRollTrainer = "BlazeCoach" that
+		-- trainer (to see the reveals)
+		local studio = game:GetService("RunService"):IsStudio()
+		local forced = if studio then Workspace:GetAttribute("TestRollRarity") else nil
 		if type(forced) == "string" and Trainers.RarityById[forced] then rarityId = forced end
 		state.rolls += 1
-		local trainer = Trainers.ByRarity[rarityId]
+		-- (owner, 23 Oct) the rarity's trainer, each by his own chance (Legendary has two)
+		local trainer = Trainers.PickTrainer(rarityId, rng:NextNumber())
+		local forcedTrainer = if studio then Trainers.ById[Workspace:GetAttribute("TestRollTrainer") or ""] else nil
+		if forcedTrainer then trainer, rarityId = forcedTrainer, forcedTrainer.rarity end
 		-- (auto-delete only the rarities the player picked, and only a duplicate; a full collection pays out too)
 		local deleted = (state.autoDelete[rarityId] == true and hasTrainer(state, trainer.id)) or #state.copies >= Trainers.MaxCopies
 		if deleted then
@@ -162,7 +167,7 @@ local function roll(player, count, auto)
 		end
 		table.insert(results, { id = trainer.id, rarity = rarityId, deleted = deleted, count = same, new = not deleted and any == 1 })
 		Analytics.Event(player, "TrainerRoll", Trainers.RarityById[rarityId].index)
-		-- (owner, prompt 48: only Secret and Eternal are told to the whole server)
+		-- (owner, prompt 48 / 23 Oct: only The Shadow (Mythic) and Atlas (Secret) are told to the whole server)
 		if Trainers.RarityById[rarityId].announce == "banner" then
 			remote:FireAllClients("Pulled", { userId = player.UserId, name = player.DisplayName, rarity = rarityId, trainer = trainer.id })
 		end
@@ -171,6 +176,34 @@ local function roll(player, count, auto)
 	if refund > 0 then PlayerData.AddCoins(player, refund) end
 	apply(player, state)
 	send(player, "Rolled", { results = results, pity = state.pity, rolls = state.rolls, refund = refund, auto = auto == true })
+end
+
+-- (owner, 23 Oct) the group welcome gift's trainer part (GroupGiftService): free rolls and a copy of `id` at BASE LV 1, with
+-- the normal reveal on the client ("NEW!" or a dupe); the client waits for the menu before it plays
+function TrainerService.Gift(player, id: string, freeRolls: number?)
+	local trainer = Trainers.ById[id]
+	if not trainer or not PlayerData.Get(player) then return false end
+	local state = stateOf(player)
+	-- (a player with no trainers yet never owned the old ones: no rebalance gift for them, even if this runs before the
+	-- join check)
+	if #state.copies == 0 then
+		if state.rebalance == 0 then state.rebalance = 2 end
+		if state.rebalance2 == 0 then state.rebalance2 = 1 end
+	end
+	state.freeRolls += math.max(0, math.floor(freeRolls or 0))
+	local copy = newCopy(state, id, 1)
+	local slots = slotsOf(player)
+	if #Trainers.CleanEquipped(state, slots) < slots then table.insert(state.equipped, copy.u) end
+	local same, any = 0, 0
+	for _, c in ipairs(state.copies) do
+		if c.id == id then
+			any += 1
+			if c.s == 1 then same += 1 end
+		end
+	end
+	apply(player, state)
+	send(player, "Gift", { results = { { id = id, rarity = trainer.rarity, deleted = false, count = same, new = any == 1 } }, rolls = freeRolls or 0 })
+	return true
 end
 
 -- (prompt 33) equip a copy into a slot (an empty slot past the list = add it; a copy already following moves there)
@@ -756,9 +789,26 @@ function TrainerService.Start()
 			state.rebalance = 2
 		end
 	end
+	-- (owner, 23 Oct) the second rebalance: Volta, The Shadow and Atlas moved down a rarity (their boosts went down): their
+	-- owners get the same popup and gift once more (not twice on the same join as the first one)
+	local function rebalanceGift2(player, state)
+		if state.rebalance2 ~= 0 then return end
+		state.rebalance2 = 1
+		if state.rebalance ~= 2 then return end
+		local owns = false
+		for _, copy in ipairs(state.copies) do
+			if table.find(Trainers.RebalanceIds2, copy.id) then owns = true break end
+		end
+		if not owns then return end
+		state.rebalance = 1
+		state.freeRolls += Trainers.RebalanceGift.rolls
+		PlayerData.AddCoins(player, Trainers.RebalanceGift.coins)
+		Analytics.Event(player, "TrainerRebalanceGift", 2)
+	end
 	local function ready(player)
 		local state = stateOf(player)
 		rebalanceGift(player, state)
+		rebalanceGift2(player, state)
 		apply(player, state)
 		-- the pass (bought later, or found at join) adds a slot
 		player:GetAttributeChangedSignal("Pass_" .. Trainers.ExtraSlotPass):Connect(function() apply(player, stateOf(player)) end)

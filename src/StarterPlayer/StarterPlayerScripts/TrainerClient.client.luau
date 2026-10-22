@@ -11,7 +11,7 @@
 --   * The roll (prompt 49: see "The roll reveal" below; Config.RollReveal): per card an orb drops into its slot, pulses
 --     (more and slower for rarer), bursts into the card (Legendary+ in slow motion with rays and a shockwave), the card
 --     dresses itself; then a bottom bar with the summary, ROLL AGAIN and CLOSE. A tap skips to the end.
---   * (owner, prompt 48) Only a Secret or Eternal roll is told to the whole server: a short gold banner at the top (~4 s),
+--   * (owner, prompt 48; 23 Oct) Only a roll of The Shadow (Mythic) or Atlas (Secret) is told to the whole server: a short gold banner at the top (~4 s),
 --     a chat line in the rarity's color and a small sound. Nothing else goes server-wide.
 --   * The signs over the Agency desks (tag AgencyBoard): TRAINER AGENCY + the trainers' pictures (prompt 28). (prompt 27,
 --     22 Oct: the one stand left, in the starter gym, is an old-school desk with a cork board of photo cards built in Studio,
@@ -145,7 +145,7 @@ end
 
 -- (prompt 52, 23 Oct: rebuilt to the owner's reference ref_agency.png) ONE panel: TRAINER AGENCY with the gold underline,
 -- the 8 rarities as 2 rows of 4 big trainer tiles (Shared/UI/TrainerTile in rarity mode: his name, his portrait (a black
--- silhouette with a rim on a bright burst until you own him; Secret and Eternal "???" too), the rarity name in its color,
+-- silhouette with a rim on a bright burst until you own him; the Secret one, Atlas, "???" too), the rarity name in its color,
 -- the chance as a percentage; "x2" bottom-right; owner, 23 Oct: no check, his art says he's owned). A tap (or hover) shows his name and boost.
 -- UNDER the panel, centred: the pity pill ("EPIC GUARANTEED IN 63 ROLLS" and a thin teal bar), then one row: the red ROLL
 -- ("525 COINS"), flat X3 (its price) and AUTO (OFF / ON), MY TRAINERS and the gear (the auto-delete toggles).
@@ -200,7 +200,8 @@ local function refreshRows()
 	for id, slot in pairs(slots) do
 		local rarity = rarityOf(slot.trainer)
 		local owned = ownsAny(id)
-		slot.tile:Set({ id = id, rarity = true, silhouette = not owned, owned = owned, caption = Trainers.ChanceText(rarity.chance) })
+		-- (owner, 23 Oct: each trainer's own chance; Legendary has two)
+		slot.tile:Set({ id = id, rarity = true, silhouette = not owned, owned = owned, caption = Trainers.ChanceText(slot.trainer.chance or rarity.chance) })
 		local n = copiesOf(id)
 		slot.count.Text = if n >= 2 then "x" .. n else ""
 	end
@@ -1411,7 +1412,7 @@ player:GetAttributeChangedSignal("TrainerSlots"):Connect(function() if modal.isO
 ------------------------------------------------------------------------
 -- Server events
 ------------------------------------------------------------------------
--- (owner, prompt 48) the only server-wide message: someone rolled the Secret or Eternal trainer. "Rong rolled ATLAS!
+-- (owner, prompt 48; 23 Oct) the only server-wide message: someone rolled The Shadow (Mythic) or Atlas (Secret). "Rong rolled ATLAS!
 -- (Eternal)" as a chat line in the rarity's color for everyone; for everyone else also a short gold banner at the top
 -- (~4 s, under the top bar) and a small sound (the roller has the reveal).
 local bannerGui = Theme.ScreenGui({ Name = "RarePullBanner", DisplayOrder = 46, Parent = player:WaitForChild("PlayerGui") })
@@ -1481,6 +1482,20 @@ remote.OnClientEvent:Connect(function(kind, info)
 		local results = type(info.results) == "table" and info.results or {}
 		task.spawn(function()
 			lastBest = play(results, info.auto == true) or 0
+			if modal.isOpen() then refresh() end
+		end)
+	elseif kind == "Gift" then
+		-- (owner, 23 Oct) the group perks welcome gift: a toast, then his normal reveal ("NEW!" or a dupe), once the player is
+		-- really playing (after the menu and the genetics screen) and the tutorial is over (only the tutorial shows during it)
+		local results = type(info.results) == "table" and info.results or {}
+		task.spawn(function()
+			UIBus.WaitForGameplay(1)
+			while UIBus.InTutorial and UIBus.InTutorial() do task.wait(1) end
+			local gift = Trainers.GroupGift
+			Notify.Reward("WELCOME, CREW MEMBER!", "+" .. Kit.Format(gift.coins) .. " coins, " .. gift.rolls .. " free roll, the CREW MEMBER title and Coach Lou",
+				"gift", Colors.Gold, "TitleUnlocked", "groupgift")
+			task.wait(1.5)
+			play(results, false)
 			if modal.isOpen() then refresh() end
 		end)
 	elseif kind == "Failed" then

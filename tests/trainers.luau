@@ -1,12 +1,22 @@
 local H = require("./harness")
 local T = H.module("ReplicatedStorage/Shared/Config/Trainers")
 print("Trainers")
-H.check(#T.List == 8 and #T.Rarities == 8, "eight trainers, eight rarities")
-local total = 0
+-- (owner, 23 Oct) 8 trainers in 7 rarities (two Legendary), each with his own chance; a rarity's chance = its trainers'
+H.check(#T.List == 8 and #T.Rarities == 7, "eight trainers, seven rarities")
+local total, trainerTotal = 0, 0
 for _, r in T.Rarities do total += r.chance end
-H.check(math.abs(total - 100) < 1e-9, "the chances add up to 100% (" .. total .. ")")
-for i, t in T.List do
-	H.check(t.rarity == T.Rarities[i].id and T.ByRarity[t.rarity] == t, t.id .. " is the " .. T.Rarities[i].id .. " one")
+for _, t in T.List do trainerTotal += t.chance end
+H.check(math.abs(total - 100) < 1e-9 and math.abs(trainerTotal - 100) < 1e-9, "the chances add up to 100% (" .. total .. ", trainers " .. trainerTotal .. ")")
+for _, r in T.Rarities do
+	local sum = 0
+	for _, t in T.InRarity[r.id] or {} do sum += t.chance end
+	H.check(math.abs(sum - r.chance) < 1e-9 and T.ByRarity[r.id] == T.InRarity[r.id][1], r.id .. " = its trainers' chances (" .. sum .. "%)")
+end
+local odds = { RookieCoach = 30, CardioCoach = 25, MoneyCoach = 20, PumpCoach = 17, AtlasCoach = 5.75, BlazeCoach = 1.5, ShadeCoach = 0.6, AeonCoach = 0.15 }
+local rarityOf = { RookieCoach = "Common", CardioCoach = "Uncommon", MoneyCoach = "Rare", PumpCoach = "Epic", AtlasCoach = "Legendary", BlazeCoach = "Legendary",
+	ShadeCoach = "Mythic", AeonCoach = "Secret" }
+for _, t in T.List do
+	H.check(t.chance == odds[t.id] and t.rarity == rarityOf[t.id], string.format("%s: %s %s", t.name, t.rarity, T.ChanceText(t.chance)))
 	H.check(t.name and t.perkText and t.look and t.look.skin and (t.look.faceTexture or table.find(t.look.extras, "deephood")) and t.look.outfit and t.look.outfit.pants and next(t.perk) ~= nil, t.id .. " is complete")
 end
 -- (prompt 34) outfits: images on the muscle pieces (never a classic Shirt / Pants), shorts or long legs, real gear meshes
@@ -24,19 +34,25 @@ for i = 1, 4 do
 	for _, g in gear do whistle = whistle or g.kind == "Whistle" end
 	H.check(whistle, T.List[i].id .. " wears a whistle")
 end
--- (owner, prompt 27c: the BASE LV 1 boosts by rarity 5, 8, 12, 20, 35, 50, 65, 75%; a max LIMITLESS is x2.2)
-local base = { 0.05, 0.08, 0.12, 0.20, 0.35, 0.50, 0.65, 0.75 }
-for i, trainer in ipairs(T.List) do
-	H.check(math.abs((trainer.perk.gains or trainer.perk.coins) - base[i]) < 1e-9, string.format("%s (%s) BASE +%d%%", trainer.name, trainer.rarity, base[i] * 100))
+-- (owner, prompt 27c: the BASE LV 1 boosts by rarity 5, 8, 12, 20, 35, 50, 65%; a max LIMITLESS is x2.2; 23 Oct: the boost
+-- follows the trainer's rarity)
+local base = { Common = 0.05, Uncommon = 0.08, Rare = 0.12, Epic = 0.20, Legendary = 0.35, Mythic = 0.50, Secret = 0.65 }
+for _, trainer in ipairs(T.List) do
+	H.check(math.abs((trainer.perk.gains or trainer.perk.coins) - base[trainer.rarity]) < 1e-9, string.format("%s (%s) BASE +%d%%", trainer.name, trainer.rarity, base[trainer.rarity] * 100))
 end
 H.check(T.ById.CardioCoach.perk.staminaRegen == 0.12 and math.abs(T.Bonus({ { id = "CardioCoach", s = 1, l = 1 } }).staminaRegen - 0.12) < 1e-9, "Uncommon +12% stamina regen (owner, prompt 25)")
-H.check(T.ById.AeonCoach.perk.progress == 0.25, "Eternal +25% progress")
+H.check(T.ById.AeonCoach.perk.progress == 0.18 and T.ById.BlazeCoach.perk.progress == T.ById.AtlasCoach.perk.progress, "Atlas (Secret) +18% progress, Volta = Duke (Legendary)")
+H.check(T.ChanceText(30) == "30%" and T.ChanceText(5.75) == "5.75%" and T.ChanceText(1.5) == "1.5%" and T.ChanceText(0.6) == "0.6%" and T.ChanceText(0.15) == "0.15%",
+	"chances as percentages: 30%, 5.75%, 1.5%, 0.6%, 0.15%")
 for _, trainer in ipairs(T.List) do
 	H.check(T.PerkText(trainer, { id = trainer.id, s = 1, l = 1 }) ~= "" and trainer.perkText:find(tostring(math.floor(trainer.perk[next(trainer.perk)] * 100 + 0.5)) .. "%", 1, true) ~= nil,
 		trainer.name .. ": perkText matches the perk")
 end
 H.check(T.ById.AtlasCoach.look.aura and T.ById.BlazeCoach.look.aura and T.ById.ShadeCoach.look.aura and T.ById.AeonCoach.look.aura, "the rare ones have auras")
-H.check(T.RarityById.Secret.hidden == true, "Secret is hidden until owned")
+H.check(T.RarityById.Secret.hidden == true and not T.RarityById.Mythic.hidden, "Secret (Atlas) is hidden until owned, Mythic (The Shadow) isn't")
+H.check(T.RarityById.Mythic.announce == "banner" and T.RarityById.Secret.announce == "banner" and not T.RarityById.Legendary.announce, "the server is told about The Shadow and Atlas only")
+H.check(T.PityRarity == "Legendary" and T.AutoStopRarity == "Legendary", "pity and auto-roll stop: Legendary or better")
+H.check(T.GroupGift.groupId == 33151111 and T.ById[T.GroupGift.trainer].rarity == "Rare", "the group gift: Coach Lou (Rare)")
 -- (prompt 25) the new 5-8: each taller than the one below, an idle, a line and a reveal pose
 H.check(T.ById.AtlasCoach.name == "Duke Ironside" and T.ById.BlazeCoach.name == "Volta" and T.ById.ShadeCoach.name == "The Shadow" and T.ById.AeonCoach.name == "Atlas", "5-8: Duke Ironside, Volta, The Shadow, Atlas")
 for i = 2, #T.List do
@@ -48,16 +64,19 @@ H.check(T.Materials[T.ById.AeonCoach.look.marble.variant] ~= nil, "Atlas's marbl
 
 print("Rolls")
 -- the boundaries of the odds
-H.check(T.Roll(0, 0) == "Common" and T.Roll(0.5021, 0) == "Common" and T.Roll(0.50216, 0) == "Uncommon", "0-50.215% Common, then Uncommon")
-H.check(T.Roll(0.99997, 0) == "Eternal" and T.Roll(0.9996, 0) == "Secret", "the last 0.035% is Eternal")
--- pity: 99 low rolls, the 100th is an Epic
+H.check(T.Roll(0, 0) == "Common" and T.Roll(0.2999, 0) == "Common" and T.Roll(0.3001, 0) == "Uncommon", "0-30% Common, then Uncommon")
+H.check(T.Roll(0.9999, 0) == "Secret" and T.Roll(0.998, 0) == "Mythic" and T.Roll(0.95, 0) == "Legendary", "the last 0.15% is Secret, the 0.6% before it Mythic")
+-- (owner, 23 Oct) which Legendary: Duke Ironside 5.75 of 7.25, Volta 1.5 of 7.25
+H.check(T.PickTrainer("Legendary", 0).id == "AtlasCoach" and T.PickTrainer("Legendary", 0.79).id == "AtlasCoach" and T.PickTrainer("Legendary", 0.8).id == "BlazeCoach"
+	and T.PickTrainer("Secret", 0.5).id == "AeonCoach", "Legendary: Duke Ironside up to 79.3%, then Volta")
+-- pity: 99 low rolls, the 100th is a Legendary
 local pity, last = 0, nil
 for _ = 1, T.Pity - 1 do last, pity = T.Roll(0.1, pity) end
 H.check(last == "Common" and pity == T.Pity - 1, "99 commons in a row: pity 99")
 last, pity = T.Roll(0.1, pity)
-H.check(last == "Epic" and pity == 0, "the 100th is an Epic and the pity resets")
-local _, p2 = T.Roll(0.999, 40)
-H.check(p2 == 0, "a natural Epic or better resets the pity too")
+H.check(last == "Legendary" and pity == 0, "the 100th is a Legendary and the pity resets")
+local _, p2 = T.Roll(0.95, 40)
+H.check(p2 == 0, "a natural Legendary or better resets the pity too")
 -- the odds over many rolls (with pity) are close to the config
 math.randomseed(7)
 local rng = { NextNumber = function() return math.random() end }
@@ -94,7 +113,8 @@ local function avgRollsTo(index)
 	end
 	return sum / runs
 end
-for _, spec in { { "Epic", 15, 25 }, { "Legendary", 40, 75 }, { "Mythic", 180, 240 }, { "Secret", 780, 1080 }, { "Eternal", 3600, 5400 } } do
+-- (owner, 23 Oct odds: Legendary ~20 min, The Shadow ~3.5 h, Atlas ~18 h)
+for _, spec in { { "Epic", 3, 12 }, { "Legendary", 12, 32 }, { "Mythic", 170, 270 }, { "Secret", 850, 1350 } } do
 	local rolls = avgRollsTo(T.RarityById[spec[1]].index)
 	local minutes = rolls * T.RollMinutes
 	H.check(minutes >= spec[2] and minutes <= spec[3], string.format("first %s or better: %.0f rolls, %.0f min (%.1f h)", spec[1], rolls, minutes, minutes / 60))
@@ -119,7 +139,7 @@ for _, trainer in ipairs(T.List) do
 	H.check(top <= 1.65 + 1e-9, string.format("%s at LIMITLESS LV 20: +%d%% (never past +165%%)", trainer.name, math.floor(top * 100 + 0.5)))
 end
 local atlas = T.CopyMultiplier({ id = "AeonCoach", s = 5, l = 20 }) * T.ById.AeonCoach.perk.gains
-H.check(atlas >= 1.5 and atlas <= 1.65 + 1e-9, "one max LIMITLESS Atlas is about +150-165%")
+H.check(atlas >= 1.35 and atlas <= 1.45, "one max LIMITLESS Atlas (Secret) is about +143%")
 b = T.Bonus({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })
 H.check(b.gains == T.BoostCap and b.progress <= T.BoostCap, "the total is capped at +" .. (T.BoostCap * 100) .. "%")
 local lines = T.TotalLines({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })

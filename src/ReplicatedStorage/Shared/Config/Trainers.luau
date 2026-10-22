@@ -12,20 +12,23 @@ local Trainers = {}
 ------------------------------------------------------------------------
 -- Rarities (a 9th rank later = one more entry here: its colors, odds and effects; the rolls, odds list, animation and
 -- announcements all read this list). chance in % (they add up to 100). announce = "banner": everyone else in the server
--- is told (a short gold banner, a chat line, a small sound; owner, prompt 48: ONLY Secret and Eternal, the rest of the
+-- is told (a short gold banner, a chat line, a small sound; owner, prompt 48: ONLY The Shadow and Atlas, the rest of the
 -- server-wide messages are gone). reveal = the roll animation's extra beat.
+-- (owner, 23 Oct) New odds, and each trainer has his own chance (two are Legendary): a rarity's chance = its trainers' chances
+-- added up (Trainers.PickTrainer picks one of them by his share). Volta is Legendary now, The Shadow Mythic, Atlas the
+-- Secret ("???" until owned); the Eternal rarity is gone. Their boosts follow their new rarity (prompt 27c's table).
+--   Coach Sam Common 30% · Coach Nia Uncommon 25% · Coach Lou Rare 20% · Coach Rex Epic 17% · Duke Ironside Legendary 5.75%
+--   · Volta Legendary 1.5% · The Shadow Mythic 0.6% · Atlas Secret 0.15% (= 100%)
 ------------------------------------------------------------------------
--- (owner, prompt 25: Mythic 0.6%, Secret 0.15%, Eternal 0.035%, Common takes the difference; tests/trainers measures the
--- times: Mythic ~3-4 h, Secret ~15 h at RollMinutes 1.6)
+-- (tests/trainers checks they add up to 100% and measures the times at RollMinutes)
 Trainers.Rarities = {
-	{ id = "Common", name = "Common", chance = 50.215, color = "#B9BCC4", reveal = "plain" },
-	{ id = "Uncommon", name = "Uncommon", chance = 30, color = "#5CC46B", reveal = "plain" },
-	{ id = "Rare", name = "Rare", chance = 12, color = "#3F8CFF", reveal = "plain" },
-	{ id = "Epic", name = "Epic", chance = 5, color = "#A06BE6", reveal = "burst" },
-	{ id = "Legendary", name = "Legendary", chance = 2, color = "#F6C75A", reveal = "explosion" },
-	{ id = "Mythic", name = "Mythic", chance = 0.6, color = "#E8345A", color2 = "#9A4AD8", reveal = "lightning" },
-	{ id = "Secret", name = "Secret", chance = 0.15, color = "#2A2A30", color2 = "#8E8E9A", reveal = "dark", announce = "banner", hidden = true },
-	{ id = "Eternal", name = "Eternal", chance = 0.035, color = "#FFF3C4", color2 = "#F6C75A", reveal = "cosmic", announce = "banner", hidden = true }, -- (owner, 22 Oct: hidden until owned, like Secret)
+	{ id = "Common", name = "Common", chance = 30, color = "#B9BCC4", reveal = "plain" },
+	{ id = "Uncommon", name = "Uncommon", chance = 25, color = "#5CC46B", reveal = "plain" },
+	{ id = "Rare", name = "Rare", chance = 20, color = "#3F8CFF", reveal = "plain" },
+	{ id = "Epic", name = "Epic", chance = 17, color = "#A06BE6", reveal = "burst" },
+	{ id = "Legendary", name = "Legendary", chance = 7.25, color = "#F6C75A", reveal = "explosion" }, -- (Duke Ironside 5.75 + Volta 1.5)
+	{ id = "Mythic", name = "Mythic", chance = 0.6, color = "#E8345A", color2 = "#9A4AD8", reveal = "lightning", announce = "banner" }, -- (The Shadow: the server is told)
+	{ id = "Secret", name = "Secret", chance = 0.15, color = "#2A2A30", color2 = "#8E8E9A", reveal = "dark", announce = "banner", hidden = true }, -- (Atlas: "???" until owned)
 }
 Trainers.RarityById = {}
 for index, rarity in ipairs(Trainers.Rarities) do
@@ -68,11 +71,10 @@ end
 Trainers.MaxHeightInches = 90
 Trainers.SilhouetteIcon = nil -- (owner, 22 Oct: no picture; the 3D rig in black instead)
 
--- (owner, 22 Oct) A chance as the players see it: always a percentage, never "1 in 1000". 1% and up as a whole number
--- ("50%", Common's 50.215 too), below 1% up to 3 decimals without trailing zeros ("0.6%", "0.15%", "0.035%").
+-- (owner, 22 Oct) A chance as the players see it: always a percentage, never "1 in 1000", without trailing zeros: up to 2
+-- decimals from 1% ("30%", "5.75%", "1.5%"), up to 3 below 1% ("0.6%", "0.15%").
 function Trainers.ChanceText(chance: number): string
-	if chance >= 1 then return string.format("%d%%", math.floor(chance + 0.5)) end
-	local text = string.format("%.3f", chance):gsub("0+$", ""):gsub("%.$", "")
+	local text = string.format(if chance >= 1 then "%.2f" else "%.3f", chance):gsub("0+$", ""):gsub("%.$", "")
 	return text .. "%"
 end
 
@@ -89,23 +91,23 @@ Trainers.Materials = {
 }
 ------------------------------------------------------------------------
 Trainers.List = {
-	{ id = "RookieCoach", rarity = "Common", name = "Coach Sam", heightInches = 60, perk = { gains = 0.05 }, perkText = "+5% EXP",
+	{ id = "RookieCoach", rarity = "Common", chance = 30, name = "Coach Sam", heightInches = 60, perk = { gains = 0.05 }, perkText = "+5% EXP",
 		picture = "trainer_exp", idle = "crossed", pose = "FrontDoubleBiceps", line = "Let's warm up!",
 		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
 			outfit = { shirt = "rbxassetid://139862937769412", pants = "rbxassetid://110347260992708", sleeves = "long", legs = "long", shirtColor = "#C8262C", pantsColor = "#1E1E22" },
 			muscle = 0.9, extras = {}, gear = { { kind = "Whistle", color = "#C8262C" } }, extraColor = "#C8262C", tint = "#C8262C" } },
 	-- (owner, prompt 25: stamina regen on top of the coins, the old Cardio Coach's refill)
-	{ id = "CardioCoach", rarity = "Uncommon", name = "Coach Nia", heightInches = 65, perk = { coins = 0.08, staminaRegen = 0.12 },
+	{ id = "CardioCoach", rarity = "Uncommon", chance = 25, name = "Coach Nia", heightInches = 65, perk = { coins = 0.08, staminaRegen = 0.12 },
 		perkText = "+8% coins, +12% stamina regen", picture = "trainer_stamina", idle = "hips", pose = "AbsAndThigh", line = "Drink water, then go!",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
 			outfit = { shirt = "rbxassetid://122244133593957", pants = "rbxassetid://122244133593957", sleeves = "none", legs = "shorts", shirtColor = "#2FAE55", pantsColor = "#2FAE55" },
 			muscle = 0.7, extras = { "headband", "bottle" }, gear = { { kind = "Whistle", color = "#2FAE55" } }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
-	{ id = "MoneyCoach", rarity = "Rare", name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.12, maxStamina = 0.08 },
+	{ id = "MoneyCoach", rarity = "Rare", chance = 20, name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.12, maxStamina = 0.08 },
 		perkText = "+12% EXP, +8% max stamina", picture = "trainer_coins", idle = "clipboard", pose = "SideChest", line = "Form first, then weight.",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
 			outfit = { shirt = "rbxassetid://71165572097233", pants = "rbxassetid://110347260992708", sleeves = "short", legs = "long", shirtColor = "#E8C21C", pantsColor = "#1E1E22" },
 			muscle = 0.8, extras = { "cap", "clipboard" }, gear = { { kind = "Whistle", color = "#16161A" } }, extraColor = "#16161A", tint = "#E0B23A" } },
-	{ id = "PumpCoach", rarity = "Epic", name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.20, coins = 0.20 },
+	{ id = "PumpCoach", rarity = "Epic", chance = 17, name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.20, coins = 0.20 },
 		perkText = "+20% EXP and coins", picture = "trainer_pump", idle = "crossed", pose = "FrontLatSpread", line = "Time to grow!",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
 			outfit = { shirt = "rbxassetid://106691440081103", pants = "rbxassetid://110347260992708", sleeves = "none", legs = "shorts", shirtColor = "#7A3FC8", pantsColor = "#1E1E22" },
@@ -113,7 +115,7 @@ Trainers.List = {
 			extraColor = "#7A3FC8", tint = "#7A3FC8" } },
 	-- 5) LEGENDARY: a veteran powerlifting coach, 6'9", very wide and thick (huge traps, thick waist, big forearms), a grey
 	-- short beard and buzz cut; a black sleeveless hoodie with gold trim, a thick leather belt, chalk on his hands, wrist wraps
-	{ id = "AtlasCoach", rarity = "Legendary", name = "Duke Ironside", heightInches = 81, frame = "Wide", shoulderBonus = 1.12,
+	{ id = "AtlasCoach", rarity = "Legendary", chance = 5.75, name = "Duke Ironside", heightInches = 81, frame = "Wide", shoulderBonus = 1.12,
 		widths = { hips = 1.2, arms = 1.16, legs = 1.1, depth = 1.12 },
 		perk = { gains = 0.35, coins = 0.35, progress = 0.09 }, perkText = "+35% EXP and coins, +9% progress",
 		idle = "chalk", pose = "MostMuscular", line = "Lock in. No excuses.",
@@ -125,9 +127,10 @@ Trainers.List = {
 			aura = "duke" } },
 	-- 6) MYTHIC: an energetic strongwoman coach, 6'10", athletic and very muscular, a long high ponytail; a red and purple
 	-- tracksuit top tied at the waist over a black training top, red knee sleeves, lightning bolts on the sleeves
-	{ id = "BlazeCoach", rarity = "Mythic", name = "Volta", heightInches = 82, frame = "VTaper", shoulderBonus = 1.12,
+	-- (owner, 23 Oct: Legendary, was Mythic; the Legendary boost)
+	{ id = "BlazeCoach", rarity = "Legendary", chance = 1.5, name = "Volta", heightInches = 82, frame = "VTaper", shoulderBonus = 1.12,
 		widths = { hips = 1.04, arms = 1.05, legs = 1.14, depth = 1.04 },
-		perk = { gains = 0.50, coins = 0.50, progress = 0.14 }, perkText = "+50% EXP and coins, +14% progress",
+		perk = { gains = 0.35, coins = 0.35, progress = 0.09 }, perkText = "+35% EXP and coins, +9% progress",
 		idle = "boxer", pose = "Guard", line = "Faster! Stronger! Again!",
 		look = { skin = "#A86B45", faceTexture = "rbxassetid://7074749", -- Chill
 			outfit = { shirt = "rbxassetid://140621946283610", pants = "rbxassetid://140621946283610", sleeves = "none", legs = "shorts", shirtColor = "#141418", pantsColor = "#141418" },
@@ -137,9 +140,10 @@ Trainers.List = {
 			aura = "volta" } },
 	-- 7) SECRET: a mysterious mass monster, 7'2", a deep black hood hiding the face in shadow with two calm glowing white eyes;
 	-- a black outfit with faint purple seams. "???" (a black silhouette) on the odds lists until you own him
-	{ id = "ShadeCoach", rarity = "Secret", name = "The Shadow", heightInches = 86, frame = "VTaper", shoulderBonus = 1.25,
+	-- (owner, 23 Oct: Mythic, was Secret; the Mythic boost; his name shows, like the other trainers you don't have)
+	{ id = "ShadeCoach", rarity = "Mythic", chance = 0.6, name = "The Shadow", heightInches = 86, frame = "VTaper", shoulderBonus = 1.25,
 		widths = { hips = 1.1, arms = 1.12, legs = 1.12, depth = 1.12 },
-		perk = { gains = 0.65, coins = 0.65, progress = 0.18 }, perkText = "+65% EXP and coins, +18% progress",
+		perk = { gains = 0.50, coins = 0.50, progress = 0.14 }, perkText = "+50% EXP and coins, +14% progress",
 		idle = "watch", pose = "Crossed", line = "...", lines = { "...", "Train." },
 		look = { skin = "#7A5A48", faceTexture = nil,
 			outfit = { shirt = "rbxassetid://105247065422618", pants = "rbxassetid://105247065422618", sleeves = "long", legs = "shorts", shirtColor = "#0E0E11", pantsColor = "#0E0E11" },
@@ -148,9 +152,10 @@ Trainers.List = {
 	-- 8) ETERNAL: a living statue, the top rank: 7'6", the biggest, golden ratio proportions at mass monster size, polished
 	-- white marble skin with gold veins (marble: the statue's marble with our MaterialVariant), a gold laurel wreath, white and gold training shorts,
 	-- gold wrist cuffs, bare feet
-	{ id = "AeonCoach", rarity = "Eternal", name = "Atlas", heightInches = 90, frame = "VTaper", shoulderBonus = 1.3,
+	-- (owner, 23 Oct: the Secret, was Eternal; the Secret boost; "???" until owned)
+	{ id = "AeonCoach", rarity = "Secret", chance = 0.15, name = "Atlas", heightInches = 90, frame = "VTaper", shoulderBonus = 1.3,
 		widths = { hips = 1.06, arms = 1.12, legs = 1.12, depth = 1.12 },
-		perk = { gains = 0.75, coins = 0.75, progress = 0.25 }, perkText = "+75% EXP and coins, +25% progress",
+		perk = { gains = 0.65, coins = 0.65, progress = 0.18 }, perkText = "+65% EXP and coins, +18% progress",
 		idle = "flex", pose = "FrontDoubleBiceps", line = "Strength is forever.",
 		look = { skin = "#F7F3EC", faceTexture = "rbxassetid://7074749", -- Chill (calm, like a statue)
 			marble = { color = "#F7F3EC", variant = "GymArc_GoldVeinMarble" }, material = "Marble",
@@ -159,7 +164,8 @@ Trainers.List = {
 			extraColor = "#F6C75A", tint = "#FFF3C4", aura = "atlas" } },
 }
 Trainers.ById = {}
-Trainers.ByRarity = {}
+Trainers.ByRarity = {} -- [rarity] = its first (most common) trainer
+Trainers.InRarity = {} -- [rarity] = { trainers } (owner, 23 Oct: Legendary has two)
 -- (prompt 47) the owner's portraits (group images): icon = waist-up (tiles, chips), art = full body (the roll reveal)
 Trainers.Portraits = {
 	RookieCoach = { icon = "rbxassetid://85368805560994", art = "rbxassetid://127629178928260" }, -- 01_coach_sam
@@ -176,7 +182,23 @@ for index, trainer in ipairs(Trainers.List) do
 	if portrait then trainer.icon, trainer.art = portrait.icon, portrait.art end
 	trainer.index = index
 	Trainers.ById[trainer.id] = trainer
-	Trainers.ByRarity[trainer.rarity] = trainer
+	Trainers.ByRarity[trainer.rarity] = Trainers.ByRarity[trainer.rarity] or trainer
+	Trainers.InRarity[trainer.rarity] = Trainers.InRarity[trainer.rarity] or {}
+	table.insert(Trainers.InRarity[trainer.rarity], trainer)
+end
+
+-- (owner, 23 Oct) which trainer of a rolled rarity: each by his own chance (roll01 = a uniform random number in [0, 1))
+function Trainers.PickTrainer(rarityId: string, roll01: number)
+	local list = Trainers.InRarity[rarityId]
+	if not list or #list == 0 then return nil end
+	local total = 0
+	for _, trainer in ipairs(list) do total += trainer.chance or 0 end
+	local x, acc = roll01 * total, 0
+	for _, trainer in ipairs(list) do
+		acc += trainer.chance or 0
+		if x < acc then return trainer end
+	end
+	return list[#list]
 end
 
 ------------------------------------------------------------------------
@@ -187,8 +209,8 @@ Trainers.MinPrice = 60             -- (never below)
 Trainers.MultiRoll = 3             -- Roll x3...
 Trainers.MultiRollFromSpurt = 2    -- ...from Growth Spurt 2
 Trainers.Pity = 100                -- this many rolls in a row without PityRarity or better: the next one is PityRarity
-Trainers.PityRarity = "Epic"
-Trainers.AutoStopRarity = "Epic"   -- Auto Roll stops on this or better
+Trainers.PityRarity = "Legendary" -- (owner, 23 Oct: was Epic; Epic is common now; everyone's pity count is kept)
+Trainers.AutoStopRarity = "Legendary" -- Auto Roll stops on this or better (owner, 23 Oct: was Epic)
 Trainers.AutoDeleteRarities = { "Common", "Uncommon" } -- toggles: a duplicate of these turns into coins instead
 Trainers.AutoDeleteRefund = 0.1    -- ...this share of the roll price
 Trainers.BoostCap = 4              -- the equipped trainers' total boost is capped at +400% (per kind)
@@ -294,6 +316,14 @@ Trainers.FlushSeconds = 10        -- trainer EXP is saved this often (and on eve
 -- (owner, prompt 27c) the rebalance gift: players who owned trainers before the boosts were lowered get this once, with a
 -- popup (state.rebalance: 0 = not checked yet, 1 = given, popup not seen, 2 = done). A free roll is used before coins.
 Trainers.RebalanceGift = { coins = 500, rolls = 1 }
+-- (owner, 23 Oct) the second time: Volta, The Shadow and Atlas moved down a rarity, their boosts with it; their owners get
+-- the same popup and gift once more (state.rebalance2: 0 = not checked yet, 1 = done)
+Trainers.RebalanceIds2 = { "BlazeCoach", "ShadeCoach", "AeonCoach" }
+
+-- (owner, 23 Oct) The group perks welcome gift (GroupGiftService): a member of the group that owns GYM ARC gets once
+-- (saved: data.groupGift) 1,000 coins, 1 free roll, the CREW MEMBER title and a free COACH LOU (Rare) at BASE LV 1 with
+-- the normal roll reveal ("NEW!" or a dupe).
+Trainers.GroupGift = { groupId = 33151111, coins = 1000, rolls = 1, title = "CrewMember", trainer = "MoneyCoach" }
 
 -- Trainer EXP from `level` to the next one, at a stage. Lv 1 -> 20 in about 20-30 minutes of reps at BASE (tests/trainers),
 -- a bit slower at higher stages.
@@ -390,6 +420,7 @@ function Trainers.Migrate(t)
 		copies = copies, equipped = equipped, discovered = discovered, nextUid = nextUid,
 		rolls = tonumber(t.rolls) or 0, pity = tonumber(t.pity) or 0,
 		freeRolls = math.max(0, math.floor(tonumber(t.freeRolls) or 0)), rebalance = math.clamp(math.floor(tonumber(t.rebalance) or 0), 0, 2),
+		rebalance2 = math.clamp(math.floor(tonumber(t.rebalance2) or 0), 0, 1),
 		autoDelete = type(t.autoDelete) == "table" and t.autoDelete or {},
 		bonus = type(t.bonus) == "table" and t.bonus or nil,
 	}

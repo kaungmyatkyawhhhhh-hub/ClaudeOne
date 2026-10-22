@@ -12,6 +12,7 @@
 --   season:    `min` reps during seasonal event `id` (Config.Seasons adds these automatically)
 --   alter:     the highest Body Alter >= min (Config.Alters; a tier's title at its 5th alter)
 --   never:     not obtainable yet (shows as ??? in the book)
+--   groupGift: got the group perks welcome gift (data.groupGift.given; GroupGiftService)
 -- badgeId: optional Roblox badge awarded with the title (create the badge on the website, paste the id).
 local Muscles = require(script.Parent.Muscles)
 local function exp(level) return Muscles.FormatExp(Muscles.Shown(level)) .. " exp" end -- levels are shown as EXP
@@ -66,6 +67,9 @@ Titles.List = {
 		description = "Do 100 reps while someone lifts nearby.", condition = { type = "stat", stat = "togetherReps", min = 100 } },
 	{ id = "IronGrip", name = "Iron Grip", rarity = "Rare", category = "Social",
 		description = "Win 10 arm wrestling matches.", condition = { type = "stat", stat = "armWins", min = 10 } },
+	-- (owner, 23 Oct) the group perks welcome gift (GroupGiftService: members of the group that owns GYM ARC)
+	{ id = "CrewMember", name = "Crew Member", rarity = "Rare", category = "Social",
+		description = "Join the GYM ARC group.", condition = { type = "groupGift" } },
 	{ id = "ArmWrestlingKing", name = "Arm Wrestling King", rarity = "Epic", category = "Social",
 		description = "Beat Big Lou, the strongest arm wrestler.", condition = { type = "stat", stat = "armKingWins", min = 1 } },
 	-- NPC rivals (Config/Rivals, RivalService)
@@ -173,6 +177,8 @@ function Titles.Check(title, ctx)
 		return type(data.alter) == "table" and (data.alter.highest or 0) >= c.min
 	elseif c.type == "legend" then
 		return data.legends ~= nil and data.legends.met[c.id] == true
+	elseif c.type == "groupGift" then
+		return type(data.groupGift) == "table" and data.groupGift.given == true
 	elseif c.type == "maxedGrade" then
 		for groupId, grade in pairs(data.genetics.grades) do
 			if grade == c.grade and (ctx.goalGroups[groupId] or 0) >= ctx.mastery then return true end
