@@ -839,10 +839,27 @@ end
 Theme.ChromeLip = 5
 local CHROME_RED = { Color3.fromHex("#E8323C"), Color3.fromHex("#8E1219") }
 local CHROME_GOLD = { Color3.fromHex("#FFE7A0"), Color3.fromHex("#F2C14E"), Color3.fromHex("#C98A12") }
--- (owner, 23 Oct) "Hero" = true (the title menu's PLAY and SHOP): 14 px corners, a 3 px dark outline, a 6 px darker bottom
--- edge, a 2 px pale line along the top edge, the heavy italic words (white with a 2 px dark stroke on red, dark on gold),
--- at the attribute "HeroText" size
+-- (owner, 23 Oct) "Hero" = true (the title menu's PLAY and SHOP): 18 px corners, a 4 px dark outline (#1A0A0A), a 6 px
+-- darker bottom edge, a soft white band over the top third (25%), the heavy italic words (white with a 2 px dark stroke on
+-- red, dark on gold) at the attribute "HeroText" size. PLAY: #FF4A4A -> #D9262B, edge #8E1A1F, an outer 2 px ring
+-- (#3A0F12) and a soft red glow outside it. SHOP: #FFD75A -> #E0A825, edge #9A6A0E, no ring or glow.
 Theme.HeroLip = 6
+Theme.HeroCorner = 18
+local HERO = {
+	Red = { top = Color3.fromHex("#FF4A4A"), bottom = Color3.fromHex("#D9262B"), lip = Color3.fromHex("#8E1A1F"), ring = Color3.fromHex("#3A0F12"),
+		glow = Color3.fromHex("#FF4A4A") },
+	Gold = { top = Color3.fromHex("#FFD75A"), bottom = Color3.fromHex("#E0A825"), lip = Color3.fromHex("#9A6A0E") },
+}
+HERO.Green = HERO.Gold
+local HERO_OUTLINE = Color3.fromHex("#1A0A0A")
+local function heroGradient(look, height: number)
+	local c = HERO[look] or HERO.Red
+	local edge = math.clamp(1 - Theme.HeroLip / math.max(height, 1), 0.5, 0.98)
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, c.top), ColorSequenceKeypoint.new(edge - 0.001, c.bottom),
+		ColorSequenceKeypoint.new(edge, c.lip), ColorSequenceKeypoint.new(1, c.lip),
+	})
+end
 local function chromeGradient(look, height: number, lipPx: number?)
 	if look == "Red" then
 		local edge = math.clamp(1 - (lipPx or Theme.ChromeLip) / math.max(height, 1), 0.5, 0.98)
@@ -866,19 +883,63 @@ local function setChromeStyle(button, style)
 	local look = lookOf(style)
 	local hero = button:GetAttribute("Hero") == true and look ~= "Quiet"
 	local lipPx = if hero then Theme.HeroLip elseif look == "Red" then Theme.ChromeLip else 0
-	local radius = if hero then 14 else 10
+	local radius = if hero then Theme.HeroCorner else 10
 	local gradient = button:FindFirstChild("Gloss") or Theme.New("UIGradient", { Name = "Gloss", Rotation = 90, Parent = button })
-	gradient.Color = chromeGradient(look, button.Size.Y.Offset, if hero then lipPx else nil) -- (mockup px)
+	gradient.Color = if hero then heroGradient(look, button.Size.Y.Offset) else chromeGradient(look, button.Size.Y.Offset) -- (mockup px)
 	local corner = button:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = button })
 	corner.CornerRadius = UDim.new(0, radius)
 	local stroke = outlineOf(button)
-	stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, if hero then 3 elseif look == "Red" then 2 else 1.5, 0, true
+	stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = if hero then HERO_OUTLINE else Theme.Colors.Outline,
+		if hero then 4 elseif look == "Red" then 2 else 1.5, 0, true
 	setGlow(button, nil, nil, radius)
-	setHairline(button, if hero then 0.35 elseif look == "Quiet" or look == "Flat" then 0.86 else 0.55, radius)
-	local hairline = depthOf(button):FindFirstChild("Hairline")
-	if hairline then
-		hairline:SetAttribute("FitHeight", if hero then 2 else nil)
-		fitLayer(button, hairline)
+	setHairline(button, if hero then nil elseif look == "Quiet" or look == "Flat" then 0.86 else 0.55, radius)
+	-- the hero layers: the soft top-third band, and on red the outer ring + soft glow (outside the 4 px outline)
+	local depth = depthOf(button)
+	local band, ring, halo = depth:FindFirstChild("HeroBand"), depth:FindFirstChild("HeroRing"), depth:FindFirstChild("HeroGlow")
+	if hero and not band then
+		band = Theme.New("Frame", { Name = "HeroBand", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0, ZIndex = button.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { Name = "Corner" }),
+			Theme.New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.75), NumberSequenceKeypoint.new(0.6, 0.82),
+				NumberSequenceKeypoint.new(1, 1) }) }),
+		})
+		band:SetAttribute("FitTop", 1 / 3)
+		band:SetAttribute("FitExtra", -6)
+		ring = Theme.New("Frame", { Name = "HeroRing", BackgroundTransparency = 1, ZIndex = button.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { Name = "Corner" }),
+			Theme.New("UIStroke", { Name = "Stroke", Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		ring:SetAttribute("FitExtra", 8) -- (just outside the 4 px outline)
+		halo = Theme.New("Frame", { Name = "HeroGlow", BackgroundTransparency = 1, ZIndex = button.ZIndex, Parent = depth }, {
+			Theme.New("UICorner", { Name = "Corner" }),
+			Theme.New("UIStroke", { Name = "Stroke", Thickness = 4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		halo:SetAttribute("FitExtra", 12)
+		-- (the button's own content goes back on top of the new layers, like Theme.Button does)
+		for _, child in ipairs(button:GetChildren()) do
+			if child:IsA("GuiObject") then
+				child.Parent = nil
+				child.Parent = button
+			end
+		end
+	end
+	if band then
+		band.Visible = hero
+		fitLayer(button, band)
+		band.Corner.CornerRadius = UDim.new(0, radius - 3)
+	end
+	local c = HERO[look]
+	local red = hero and c ~= nil and c.ring ~= nil
+	if ring then
+		ring.Visible = red
+		fitLayer(button, ring)
+		ring.Corner.CornerRadius = UDim.new(0, radius + 4)
+		if c and c.ring then ring.Stroke.Color = c.ring end
+	end
+	if halo then
+		halo.Visible = red
+		fitLayer(button, halo)
+		halo.Corner.CornerRadius = UDim.new(0, radius + 6)
+		if c and c.glow then halo.Stroke.Color, halo.Stroke.Transparency = c.glow, 0.86 end
 	end
 	Theme.SetHex(button, nil, 10)
 	local gold = depthOf(button):FindFirstChild("GoldLine")
@@ -916,7 +977,7 @@ local function setChromeStyle(button, style)
 			if not button:GetAttribute("Chrome") then return end
 			local nowLook = lookOf(button:GetAttribute("Style"))
 			local nowHero = button:GetAttribute("Hero") == true and nowLook ~= "Quiet"
-			gradient.Color = chromeGradient(nowLook, button.Size.Y.Offset, if nowHero then Theme.HeroLip else nil)
+			gradient.Color = if nowHero then heroGradient(nowLook, button.Size.Y.Offset) else chromeGradient(nowLook, button.Size.Y.Offset)
 		end)
 	end
 end
