@@ -606,7 +606,7 @@ local function fitLayer(gui, layer)
 	if inset then -- the 1px top line
 		layer.AnchorPoint = Vector2.new(0.5, 0)
 		layer.Position = UDim2.new(0.5, cx, 0, 1 - t)
-		layer.Size = UDim2.new(1, l + r - inset * 2, 0, 1)
+		layer.Size = UDim2.new(1, l + r - inset * 2, 0, layer:GetAttribute("FitHeight") or 1)
 		return
 	end
 	local extra = layer:GetAttribute("FitExtra") or 0
@@ -839,43 +839,67 @@ end
 Theme.ChromeLip = 5
 local CHROME_RED = { Color3.fromHex("#E8323C"), Color3.fromHex("#8E1219") }
 local CHROME_GOLD = { Color3.fromHex("#FFE7A0"), Color3.fromHex("#F2C14E"), Color3.fromHex("#C98A12") }
-local function chromeGradient(look, height: number)
+-- (owner, 23 Oct) "Hero" = true (the title menu's PLAY and SHOP): 14 px corners, a 3 px dark outline, a 6 px darker bottom
+-- edge, a 2 px pale line along the top edge, the heavy italic words (white with a 2 px dark stroke on red, dark on gold),
+-- at the attribute "HeroText" size
+Theme.HeroLip = 6
+local function chromeGradient(look, height: number, lipPx: number?)
 	if look == "Red" then
-		local edge = math.clamp(1 - Theme.ChromeLip / math.max(height, 1), 0.5, 0.98)
+		local edge = math.clamp(1 - (lipPx or Theme.ChromeLip) / math.max(height, 1), 0.5, 0.98)
 		local lip = CHROME_RED[2]:Lerp(Color3.new(0, 0, 0), 0.45)
 		return ColorSequence.new({
 			ColorSequenceKeypoint.new(0, CHROME_RED[1]), ColorSequenceKeypoint.new(edge - 0.001, CHROME_RED[2]),
 			ColorSequenceKeypoint.new(edge, lip), ColorSequenceKeypoint.new(1, lip),
 		})
 	elseif look == "Gold" or look == "Green" then
+		if lipPx then
+			local edge = math.clamp(1 - lipPx / math.max(height, 1), 0.5, 0.98)
+			local lip = Color3.fromHex("#8A5A08")
+			return ColorSequence.new({ ColorSequenceKeypoint.new(0, CHROME_GOLD[1]), ColorSequenceKeypoint.new(0.45 * edge, CHROME_GOLD[2]),
+				ColorSequenceKeypoint.new(edge - 0.001, CHROME_GOLD[3]), ColorSequenceKeypoint.new(edge, lip), ColorSequenceKeypoint.new(1, lip) })
+		end
 		return ColorSequence.new({ ColorSequenceKeypoint.new(0, CHROME_GOLD[1]), ColorSequenceKeypoint.new(0.45, CHROME_GOLD[2]), ColorSequenceKeypoint.new(1, CHROME_GOLD[3]) })
 	end
 	return ColorSequence.new(Theme.Gradients.Quiet[1], Theme.Gradients.Quiet[2])
 end
 local function setChromeStyle(button, style)
 	local look = lookOf(style)
+	local hero = button:GetAttribute("Hero") == true and look ~= "Quiet"
+	local lipPx = if hero then Theme.HeroLip elseif look == "Red" then Theme.ChromeLip else 0
+	local radius = if hero then 14 else 10
 	local gradient = button:FindFirstChild("Gloss") or Theme.New("UIGradient", { Name = "Gloss", Rotation = 90, Parent = button })
-	gradient.Color = chromeGradient(look, button.Size.Y.Offset) -- (mockup px)
+	gradient.Color = chromeGradient(look, button.Size.Y.Offset, if hero then lipPx else nil) -- (mockup px)
 	local corner = button:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = button })
-	corner.CornerRadius = UDim.new(0, 10)
+	corner.CornerRadius = UDim.new(0, radius)
 	local stroke = outlineOf(button)
-	stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, if look == "Red" then 2 else 1.5, 0, true
-	setGlow(button, nil, nil, 10)
-	setHairline(button, if look == "Quiet" or look == "Flat" then 0.86 else 0.55, 10)
+	stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, if hero then 3 elseif look == "Red" then 2 else 1.5, 0, true
+	setGlow(button, nil, nil, radius)
+	setHairline(button, if hero then 0.35 elseif look == "Quiet" or look == "Flat" then 0.86 else 0.55, radius)
+	local hairline = depthOf(button):FindFirstChild("Hairline")
+	if hairline then
+		hairline:SetAttribute("FitHeight", if hero then 2 else nil)
+		fitLayer(button, hairline)
+	end
 	Theme.SetHex(button, nil, 10)
 	local gold = depthOf(button):FindFirstChild("GoldLine")
 	if gold then gold.Visible = false end
 	ctaLayers(button, false)
 	-- the words sit centred above the bottom edge (only red has one)
 	local pad = button:FindFirstChildOfClass("UIPadding")
-	if pad then pad.PaddingBottom = UDim.new(0, if look == "Red" then Theme.ChromeLip else 0) end
+	if pad then pad.PaddingBottom = UDim.new(0, lipPx) end
 	local color = if look == "Gold" or look == "Green" then Theme.Colors.Ink else Theme.Colors.Text
 	for _, item in ipairs(button:GetDescendants()) do
 		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then
 			item.TextColor3 = color
 			item.TextYAlignment = Enum.TextYAlignment.Center
 			local outline = Theme.TextShadow(item)
-			if look == "Red" then
+			if hero then
+				item.FontFace = Theme.Fonts.Display
+				local size = button:GetAttribute("HeroText")
+				if type(size) == "number" then item.TextSize = size end
+				outline.Color, outline.Thickness = Theme.Colors.Outline, 2
+				outline.Transparency = if look == "Red" then 0 else 1
+			elseif look == "Red" then
 				item.FontFace = UIFonts.Chunky
 				outline.Color, outline.Transparency, outline.Thickness = Theme.Colors.Outline, 0, math.max(1.5, item.TextSize / 11)
 			else
@@ -885,11 +909,14 @@ local function setChromeStyle(button, style)
 		end
 		if item:IsA("ImageLabel") and item.Name == "Icon" and not item:GetAttribute("KeepColor") then item.ImageColor3 = color end
 	end
-	-- (the red one's bottom edge stays 5 px when the button is resized)
-	if look == "Red" and not button:GetAttribute("ChromeWatch") then
+	-- (the bottom edge keeps its px height when the button is resized)
+	if lipPx > 0 and not button:GetAttribute("ChromeWatch") then
 		button:SetAttribute("ChromeWatch", true)
 		button:GetPropertyChangedSignal("Size"):Connect(function()
-			if button:GetAttribute("Chrome") and lookOf(button:GetAttribute("Style")) == "Red" then gradient.Color = chromeGradient("Red", button.Size.Y.Offset) end
+			if not button:GetAttribute("Chrome") then return end
+			local nowLook = lookOf(button:GetAttribute("Style"))
+			local nowHero = button:GetAttribute("Hero") == true and nowLook ~= "Quiet"
+			gradient.Color = chromeGradient(nowLook, button.Size.Y.Offset, if nowHero then Theme.HeroLip else nil)
 		end)
 	end
 end

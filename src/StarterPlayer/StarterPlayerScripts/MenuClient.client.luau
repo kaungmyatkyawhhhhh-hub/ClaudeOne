@@ -99,10 +99,11 @@ Kit.Text({ Name = "Tagline", LayoutOrder = 1, Text = "Everyone starts tiny.", Fo
 -- 10 px corners; PLAY keeps the chunky stroked word on a deep red with a 5 px darker bottom edge, SHOP clean heavy italic
 -- dark words on metallic gold, SETTINGS / NEWS clean heavy italic white on dark graphite with a thin dark outline
 local playButton = Theme.Button("Red", { Name = "Play", LayoutOrder = 2, Size = UDim2.fromOffset(COL_W, 50), Parent = column }, {})
-local playRow = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -Theme.ChromeLip), Parent = playButton }, {
+local playRow = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -Theme.HeroLip), Parent = playButton }, {
 	Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 })
-local triangle = New("Frame", { Name = "Triangle", LayoutOrder = 1, BackgroundTransparency = 1, Size = UDim2.fromOffset(12, 15), Parent = playRow })
+local triangle = New("Frame", { Name = "Triangle", LayoutOrder = 1, BackgroundTransparency = 1, Size = UDim2.fromOffset(12, 15), Parent = playRow },
+	{ New("UIScale", { Scale = 1.5 }) }) -- (owner, 23 Oct: sized to the ~44 px PLAY)
 for row = 0, 14 do
 	local width = 12 * (1 - math.abs(row - 7) / 7.5)
 	New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Position = UDim2.fromOffset(0, row), Size = UDim2.fromOffset(width, 1), Parent = triangle })
@@ -110,6 +111,11 @@ end
 Kit.Text({ Name = "Label", LayoutOrder = 2, Text = "Play", Font = "Title", TextSize = 30, Upper = true, Size = UDim2.fromOffset(0, 40),
 	AutomaticSize = Enum.AutomaticSize.X, Parent = playRow })
 playButton.Active = false
+-- (owner, 23 Oct) PLAY and SHOP are the menu's hero buttons (Theme "Hero"): the heavy italic words (PLAY white ~44 px with
+-- a 2 px dark stroke, SHOP dark ~28 px), 14 px corners, a 3 px dark outline, a 6 px darker bottom edge, a 2 px pale top
+-- line, no glow or halo
+playButton:SetAttribute("Hero", true)
+playButton:SetAttribute("HeroText", 44)
 Theme.SetChrome(playButton)
 
 local shopButton = Kit.Button("Gold", "Shop", { Name = "Shop", LayoutOrder = 3, Visible = false, Parent = column },
@@ -118,6 +124,8 @@ local settingsButton = Kit.Button("Quiet", "Settings", { Name = "Settings", Layo
 	{ width = COL_W, height = 30, textSize = 14, icon = "settings" })
 local updatesButton = Kit.Button("Quiet", "News", { Name = "Updates", LayoutOrder = 5, Parent = column },
 	{ width = COL_W, height = 30, textSize = 14, icon = "bell" })
+shopButton:SetAttribute("Hero", true)
+shopButton:SetAttribute("HeroText", 28)
 for _, b in ipairs({ shopButton, settingsButton, updatesButton }) do Theme.SetChrome(b) end
 -- (owner, 22 Oct) the news badge: the small red "!" chip (as on the side menu tiles), inside the top-right corner
 local newsDot = New("Frame", { Name = "NewsDot", BackgroundColor3 = Colors.Red, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0.5),
@@ -170,13 +178,19 @@ end
 -- a Kit button resized: its bottom lip padding and its label follow
 local function sizeButton(button: GuiObject, width: number, height: number, textSize: number?)
 	button.Size = UDim2.fromOffset(width, height)
-	local lip = if button:GetAttribute("Chrome") then 0 else math.floor(height * Theme.LipHeight) -- (chrome: no bottom edge on these)
+	local lip = if button:GetAttribute("Hero") then Theme.HeroLip elseif button:GetAttribute("Chrome") then 0 else math.floor(height * Theme.LipHeight) -- (chrome: no bottom edge on these)
 	local pad = button:FindFirstChildOfClass("UIPadding")
 	if pad then pad.PaddingBottom = UDim.new(0, lip) end
 	local label = button:FindFirstChild("Label")
 	if label and label:IsA("TextLabel") then
 		label.Size = UDim2.fromOffset(0, height - lip)
 		if textSize then label.TextSize = textSize end
+	end
+	-- (a hero button's icon follows its bigger words: SHOP's cart)
+	local icon = button:FindFirstChild("Icon")
+	if icon and icon:IsA("GuiObject") and textSize and button:GetAttribute("Hero") then
+		local px = math.floor(textSize * 0.8)
+		icon.Size = UDim2.fromOffset(px, px)
 	end
 end
 local LOGO_ASPECT = 432 / 354
@@ -197,8 +211,8 @@ local function layoutMenu()
 	-- the buttons
 	playButton.Size = UDim2.fromOffset(colW, if phone then 56 else 60)
 	local playLabel = playButton:FindFirstChild("Label", true)
-	if playLabel then playLabel.TextSize = if phone then 30 else 34 end
-	sizeButton(shopButton, colW, if phone then 44 else 36, if phone then 17 else 15)
+	if playLabel then playLabel.TextSize = 44 end
+	sizeButton(shopButton, colW, if phone then 44 else 36, 28)
 	sizeButton(settingsButton, colW, 36, 15)
 	sizeButton(updatesButton, colW, 36, 15)
 	settingsButton.Visible = not phone
