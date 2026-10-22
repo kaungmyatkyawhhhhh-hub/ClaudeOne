@@ -7,11 +7,6 @@
 --   Sleeves: Sleeve (radius 1 = the knee, height 1.6), Sleeve_Band (2)
 --   Straps: Strap_Loop (radius 1 = the wrist), Strap_Tail, Strap_Stripe
 --   Whistle: Whistle_Body, Whistle_Mouth, Whistle_Ring, Lanyard
---   Sneaker (prompt 35): Shoe_Upper, Shoe_Midsole, Shoe_Outsole, Shoe_Collar, Shoe_Opening, Shoe_Tongue, Shoe_Lace (4),
---     Shoe_Stripe (2), Shoe_HeelTab; sole at the bottom. Fitted to each foot as one piece (one size for the whole shoe),
---     never smaller than the foot, the sole on the foot's bottom, the toe forward (the heel tab says which end is the
---     heel, so the import's facing doesn't matter); the block foot under it is hidden. Gear.Has("Sneakers") = the model is
---     there (until then everyone keeps their old feet).
 -- (The .glb import keeps Blender's front, -Y, as the body's front, -Z: the buckle, the strap tails and the whistle face
 -- forward as they are. Each import was a "Scene" of Models holding one MeshPart each: moved into one Model per kind with
 -- every MeshPart named after its piece, centred on the main piece.)
@@ -47,9 +42,6 @@ Gear.Kinds = {
 		colors = { color = "#2B2B30", trim = "#16161A" } },
 	Whistle = { mesh = "Whistle", main = "Whistle_Body", fit = "chest", parts = { "UpperTorso" },
 		colors = { color = "#C8262C", metal = "#D9DCE0" } },
-	-- (prompt 35) color = the upper, trim = the stripes and heel tab, sole = midsole and laces, outsole = the tread
-	Sneakers = { mesh = "Sneaker", main = "Shoe_Midsole", fit = "foot", parts = { "LeftFoot", "RightFoot" },
-		colors = { color = "#16161A", trim = "#F4F1EA", sole = "#F4F1EA", outsole = "#2B2B30" } },
 }
 
 -- each piece's color: the gear's color, its trim or metal (".001" copies count as their first)
@@ -59,8 +51,6 @@ local ROLE = {
 	Sleeve = "color", Sleeve_Band = "trim",
 	Strap_Loop = "color", Strap_Tail = "color", Strap_Stripe = "trim",
 	Whistle_Body = "metal", Whistle_Mouth = "metal", Whistle_Ring = "metal", Lanyard = "color",
-	Shoe_Upper = "color", Shoe_Collar = "color", Shoe_Tongue = "color", Shoe_Opening = "outsole", Shoe_Midsole = "sole", Shoe_Lace = "sole",
-	Shoe_Outsole = "outsole", Shoe_Stripe = "trim", Shoe_HeelTab = "trim",
 }
 local function baseName(name: string): string
 	return (string.gsub(name, "%.%d+$", ""))
@@ -70,35 +60,6 @@ local function templateOf(def)
 	local folder = ReplicatedStorage:FindFirstChild("GearMeshes")
 	return folder and folder:FindFirstChild(def.mesh)
 end
--- (prompt 35) is this gear kind's model there? (the sneaker is imported by hand: until then nobody wears it)
-function Gear.Has(kind: string): boolean
-	local def = Gear.Kinds[kind]
-	return def ~= nil and templateOf(def) ~= nil
-end
-
--- the whole template's box in its main piece's space, and where the heel tab sits along Z (cached per template)
-local boxes = {}
-local function templateBox(template: Instance, main: BasePart): (Vector3, Vector3, number?)
-	local hit = boxes[template]
-	if hit and hit.main == main then return hit.lo, hit.hi, hit.heel end
-	local lo, hi, heel
-	for _, part in ipairs(template:GetDescendants()) do
-		if not part:IsA("BasePart") then continue end
-		local cf = main.CFrame:ToObjectSpace(part.CFrame)
-		local h = part.Size / 2
-		for _, c in ipairs({ Vector3.new(1, 1, 1), Vector3.new(1, 1, -1), Vector3.new(1, -1, 1), Vector3.new(1, -1, -1),
-			Vector3.new(-1, 1, 1), Vector3.new(-1, 1, -1), Vector3.new(-1, -1, 1), Vector3.new(-1, -1, -1) }) do
-			local p = cf * (h * c)
-			lo = if lo then lo:Min(p) else p
-			hi = if hi then hi:Max(p) else p
-		end
-		if string.gsub(part.Name, "%.%d+$", "") == "Shoe_HeelTab" then heel = cf.Position.Z end
-	end
-	lo, hi = lo or -main.Size / 2, hi or main.Size / 2
-	boxes[template] = { main = main, lo = lo, hi = hi, heel = heel }
-	return lo, hi, heel
-end
-
 local function mainOf(template, def): BasePart?
 	local main = template:FindFirstChild(def.main, true)
 	if main and main:IsA("BasePart") then return main end
@@ -165,19 +126,6 @@ local function fitTarget(model: Model, body: BasePart, def): (CFrame, Vector3)
 		local r = math.max(math.max(s.X, s.Z) * 1.16, (if seen then math.max(size.X, size.Z) * 0.92 else 0))
 		local h = s.Y * 0.46
 		return CFrame.new(mid.X, hi.Y - h * 0.58, mid.Z), Vector3.new(r, h, r)
-	elseif def.fit == "foot" then
-		-- (prompt 35) the sneaker's length and width: the foot's, but a big calf (the muscle stage meshes on the lower leg)
-		-- gets a big shoe under it (a mass monster's), never smaller than the foot
-		local w, l = s.X * 0.95, s.Z * 1.1
-		local leg = model:FindFirstChild((string.gsub(body.Name, "Foot$", "LowerLeg")))
-		if leg and leg:IsA("BasePart") then
-			local llo, lhi, legSeen = boundsOf(model, leg)
-			if legSeen then
-				local calf = math.max(lhi.X - llo.X, lhi.Z - llo.Z)
-				w, l = math.max(w, calf * 0.8), math.max(l, calf * 1.35)
-			end
-		end
-		return CFrame.new(mid), Vector3.new(w, 0, l)
 	else -- chest: the whistle at the front of the chest (Fit draws the lanyard round the neck)
 		return CFrame.new(0, hi.Y - size.Y * 0.42, lo.Z - 0.04), size
 	end
@@ -199,35 +147,6 @@ local function fitOne(model: Model, gear: Model)
 	if gear:GetAttribute("FitKey") == key then return end
 	gear:SetAttribute("FitKey", key)
 	local turn = TURN * (def.turn or CFrame.new())
-	if def.fit == "foot" then
-		-- (prompt 35) the sneaker: one size for the whole shoe, long and wide enough to cover the foot (bigger feet on a
-		-- mass monster = a bigger shoe), the sole on the foot's bottom, the toe forward (-Z), the heel at the back
-		local lo, hi = boundsOf(model, body)
-		local size, mid = hi - lo, (hi + lo) / 2
-		local tlo, thi, heel = templateBox(template, main)
-		local tsize = thi - tlo
-		local shoeTurn = if heel and heel < (tlo.Z + thi.Z) / 2 then CFrame.Angles(0, math.pi, 0) else CFrame.new()
-		-- the length (and height) from fitTarget's length; the width from its width (a Robloxian foot is wide for its
-		-- length), never narrower than the shoe's own shape. The block foot is hidden, so nothing pokes out.
-		local u = target.Z / math.max(tsize.Z, 0.01)
-		local sx = math.max(u, target.X / math.max(tsize.X, 0.01))
-		local S = Vector3.new(sx, u, u)
-		local offset = shoeTurn:VectorToWorldSpace(Vector3.new((tlo.X + thi.X) / 2, 0, (tlo.Z + thi.Z) / 2) * S)
-		-- (a touch forward: the ankle sits over the back half of a real foot)
-		local place = CFrame.new(mid.X - offset.X, lo.Y - tlo.Y * u, mid.Z - offset.Z - size.Z * 0.04)
-		for _, part in ipairs(gear:GetChildren()) do
-			local from = part:IsA("BasePart") and template:FindFirstChild(part:GetAttribute("From") or "", true)
-			local weld = part:FindFirstChild("GearWeld")
-			if not (from and weld) then continue end
-			local rel = main.CFrame:ToObjectSpace(from.CFrame)
-			-- each of the piece's own axes stretched by how much the shoe stretches along it (exact for straight and
-			-- quarter-turned pieces, close for the tilted stripes and tongue)
-			local function along(axis: Vector3): number return (axis * S).Magnitude end
-			part.Size = from.Size * Vector3.new(along(rel.RightVector), along(rel.UpVector), along(-rel.LookVector))
-			weld.C0 = place * shoeTurn * CFrame.new(rel.Position * S) * rel.Rotation
-		end
-		return
-	end
 	if def.fit == "chest" then
 		-- the whistle a size that suits the head, the lanyard from it up and round the back of the neck
 		local head = model:FindFirstChild("Head")
@@ -325,7 +244,6 @@ function Gear.Build(model: Model, kind: string, colors: any?, parent: Instance?)
 			part.Color = toColor(hex)
 			part.Material = if role == "metal" or colors.shiny then Enum.Material.Metal
 				elseif role == "color" and def.material then def.material
-				elseif role == "sole" or role == "outsole" then Enum.Material.SmoothPlastic
 				else Enum.Material.Fabric
 			part.Anchored = false
 			part.CanCollide, part.CanTouch, part.CanQuery, part.CastShadow, part.Massless = false, false, false, false, true
@@ -337,8 +255,6 @@ function Gear.Build(model: Model, kind: string, colors: any?, parent: Instance?)
 		end
 		gear.Parent = parent or model
 		table.insert(built, gear)
-		-- (prompt 35) the block foot hides under its sneaker
-		if def.fit == "foot" then body.Transparency = 1 end
 	end
 	Gear.Fit(model)
 	return built

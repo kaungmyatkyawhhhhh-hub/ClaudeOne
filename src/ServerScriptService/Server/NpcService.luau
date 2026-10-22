@@ -9,7 +9,6 @@ local Workspace = game:GetService("Workspace")
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local Body = require(ReplicatedStorage.Shared.Config.Body)
 local BodyShape = require(ReplicatedStorage.Shared.BodyShape)
-local Gear = require(ReplicatedStorage.Shared.Gear)
 
 local NpcService = {}
 
@@ -155,9 +154,6 @@ function NpcService.Build(spec, cframe)
 		prompt.RequiresLineOfSight = false
 		prompt.Parent = root
 	end
-
-	-- (prompt 35) sneakers (Shared/Gear, once the model is imported): black, the stripe in his shirt color
-	if Gear.Has("Sneakers") then pcall(Gear.Build, model, "Sneakers", { color = "#16161A", trim = spec.shirt or "#F4F1EA" }) end
 
 	-- Workspace streaming (owner, 14 Oct: performance): NPCs stream in and out whole (Atomic), never half a body
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
