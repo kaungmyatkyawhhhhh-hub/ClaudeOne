@@ -26,6 +26,9 @@
 --   * GEAR (prompt 59, Coach Dex only): two rows, LIFTING BELT (lower body) and WRIST WRAPS (upper body), each with its
 --     BASIC and PRO tiles side by side (the gear pictures, the boost, the price or OWNED). Only the level right above your
 --     best can be bought. The one-time "Gear got simpler!" note after the gear migration (PlayerEvent GearSimpler).
+--   * (prompt 61) STYLE (PUMP SHOP): name tag and title colours, colours for the auras you own, tints for the alters you
+--     reached (Config/Style; fixed coin prices, bought once). The strip previews it (your name in the colour), TRY shows an
+--     aura colour / alter tint on you for a few seconds, then BUY; owned: WEAR / TAKE OFF (StyleService).
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -42,6 +45,8 @@ local AlterThemes = require(Shared.Config.AlterThemes)
 local Muscles = require(Shared.Config.Muscles)
 local Machines = require(Shared.Config.Machines)
 local Monetization = require(Shared.Config.Monetization)
+local Style = require(Shared.Config.Style)
+local Auras = require(Shared.Config.Auras)
 local UIConfig = require(Shared.Config.UI)
 local ShopPrices = require(Shared.ShopPrices)
 local ClientData = require(Shared.ClientData)
@@ -90,7 +95,7 @@ local function bodyEntry(list, id)
 	return nil
 end
 
-local entries = { Supplements = {}, Gear = {}, DnaLab = {}, Alters = {} }
+local entries = { Supplements = {}, Gear = {}, DnaLab = {}, Alters = {}, Style = {} }
 
 -- (prompt 21) ALTERS: the alters of the tier you're in (the next one picked first), each with its state; nothing is sold
 local function alterProgress()
@@ -151,6 +156,58 @@ for _, gear in ipairs(PumpShop.Gear) do
 		end
 	end
 end
+-- (prompt 61) STYLE: every item for the auras you have and the alters you reached
+local STYLE_KIND = { Name = "NAME TAG", Title = "TITLE", Aura = "AURA", Alter = "ALTER" }
+local STYLE_ICON = { Name = "sparkles", Title = "medal", Alter = "biceps-flexed" }
+local function styleState()
+	local state = data().style
+	return type(state) == "table" and state or {}
+end
+local function styleEntries()
+	local d = data()
+	local auras = {}
+	for _, aura in ipairs(Auras.List) do
+		local has = if aura.unlock.type == "pass" then player:GetAttribute("Pass_" .. aura.unlock.pass) == true
+			else type(d.auras) == "table" and type(d.auras.owned) == "table" and d.auras.owned[aura.id] ~= nil
+		if has then table.insert(auras, aura) end
+	end
+	local alters = {}
+	for n = 1, Alters.State(d).highest or 0 do
+		local alter = Alters.Get(n)
+		if alter then table.insert(alters, alter) end
+	end
+	local list = {}
+	for _, item in ipairs(Style.Items(auras, alters)) do
+		table.insert(list, { key = item.id, id = item.id, section = "Style", style = item, name = item.name, color = Color3.fromHex(item.colors[1]),
+			icon = if item.aura then (item.aura.Icon or "sparkles") else STYLE_ICON[item.kind], price = function() return item.price end })
+	end
+	return list
+end
+-- is it the one worn (its kind / target)?
+local function styleWorn(item): boolean
+	local state = styleState()
+	if item.kind == "Name" then return state.name == item.variant end
+	if item.kind == "Title" then return state.title == item.variant end
+	if item.kind == "Aura" then return type(state.aura) == "table" and state.aura[item.aura.id] == item.variant end
+	if item.kind == "Alter" then return type(state.alter) == "table" and state.alter[item.alter.id] == item.variant end
+	return false
+end
+local tryToken = 0
+local function tryStyle(item)
+	tryToken += 1
+	local mine = tryToken
+	if item.kind == "Aura" then
+		player:SetAttribute("AuraPreview", item.aura.vfx .. "@" .. item.variant)
+	elseif item.kind == "Alter" then
+		player:SetAttribute("AlterTintPreview", Color3.fromHex(Style.AlterTints[item.variant]))
+	end
+	task.delay(10, function()
+		if tryToken ~= mine then return end
+		player:SetAttribute("AuraPreview", nil)
+		player:SetAttribute("AlterTintPreview", nil)
+	end)
+end
+
 table.insert(entries.DnaLab, { key = "DnaToken", section = "DnaLab", name = "DNA Token", icon = DNA_ART, color = Colors.Gold,
 	sub = DNA.TokenLine or "One genetics reroll.", price = function() return PumpShop.DnaPriceFor(data(), DNA.CoinPrice) end })
 
@@ -190,6 +247,10 @@ local function gearBest(gear)
 end
 
 local function isOwned(entry): boolean
+	if entry.section == "Style" then
+		local owned_ = styleState().owned
+		return type(owned_) == "table" and owned_[entry.key] == true
+	end
 	if entry.section == "Gear" then
 		local best = gearBest(entry.gear)
 		return best ~= nil and best.index >= entry.level.index
@@ -325,6 +386,8 @@ local function effectText(entry): string
 		local short = string.gsub(item.short or item.text, "^%+100%%", "2x")
 		local full = short .. (if item.duration then " · " .. string.upper(item.duration) else "")
 		return if #full > 20 then short else full
+	elseif entry.section == "Style" then
+		return STYLE_KIND[entry.style.kind] or ""
 	elseif entry.section == "Gear" then
 		return PumpShop.GearBoostText(entry.gear, entry.level)
 	elseif entry.product then
@@ -403,6 +466,7 @@ local function showStrip(entry)
 		return
 	end
 	strip.Visible = true
+	stripLine.RichText = false
 	setIcon(stripIcon, entry)
 	stripName.Text = string.upper(entry.name)
 	local color = tileColor(entry)
@@ -464,6 +528,36 @@ local function showStrip(entry)
 			addButton(if afford then "Green" else "Disabled", "Buy " .. level.name, 210, function()
 				buy(entry, "Gear", entry.key)
 			end, 1, level.price)
+		end
+	elseif entry.section == "Style" then
+		-- (prompt 61) the preview in its colour, TRY (aura / alter), BUY; owned: WEAR / TAKE OFF
+		local item = entry.style
+		local hex = "#" .. Color3.fromHex(item.colors[1]):ToHex()
+		local function painted(text) return '<font color="' .. hex .. '">' .. text .. "</font>" end
+		stripLine.RichText = true
+		if item.kind == "Name" then
+			stripLine.Text = "Your name over your head: " .. painted(player.DisplayName) .. (if #item.colors > 1 then " (a two-colour gradient)" else "")
+		elseif item.kind == "Title" then
+			stripLine.Text = "Your title's words in " .. painted(item.variant) .. (if #item.colors > 1 then " (a two-colour gradient)" else "") .. "."
+		elseif item.kind == "Aura" then
+			stripLine.Text = "Your " .. item.aura.name .. " aura in " .. painted(item.variant) .. ". Same effect, new colour."
+		else
+			stripLine.Text = "Your " .. item.alter.name .. " skin tinted " .. painted(item.variant) .. " (while you wear that alter)."
+		end
+		local function wearIt(variant)
+			Remotes.PlayerAction:FireServer("WearStyle", { kind = item.kind, target = item.aura and item.aura.id or item.alter and item.alter.id, variant = variant })
+		end
+		if isOwned(entry) then
+			if styleWorn(item) then
+				addButton("Quiet", "Take off", 150, function() wearIt(nil) end, 1)
+			else
+				addButton("Gold", "Wear", 150, function() wearIt(item.variant) end, 1)
+			end
+		else
+			if item.kind == "Aura" or item.kind == "Alter" then
+				addButton("Quiet", "Try", 100, function() tryStyle(item) end, 1)
+			end
+			addButton(if afford then "Green" else "Disabled", "Buy", 170, function() buy(entry, "Style", entry.key) end, 2, item.price)
 		end
 	elseif entry.product then
 		-- (prompts 57 / 60) a Robux product: BUY opens Roblox's purchase prompt
@@ -657,6 +751,11 @@ function refresh()
 		list = mine
 		if picked.Supplements and not bodyEntry(list, picked.Supplements) then picked.Supplements = nil end
 		for _, entry in ipairs(list) do entry.id = entry.key end
+	elseif tab == "Style" then
+		-- (prompt 61) STYLE: built fresh (your auras and alters can change)
+		list = styleEntries()
+		entries.Style = list
+		if picked.Style and not bodyEntry(list, picked.Style) then picked.Style = nil end
 	elseif tab == "DnaLab" then
 		-- the coin token and the Robux x1 / x3 side by side (prompt 60)
 		list = table.clone(entries.DnaLab)
@@ -746,6 +845,9 @@ function refresh()
 		if entry.section == "Alters" then
 			local status = alterStatus(entry, altersNow)
 			priceButton = slimButton(tile, priceProps, status, nil, if entry.alter.number < altersNow.next then "owned" else "plain", 12)
+		elseif isOwned(entry) then
+			local worn = entry.section == "Style" and styleWorn(entry.style)
+			priceButton = slimButton(tile, priceProps, if worn then "Worn" else "Owned", nil, "owned", 13)
 		elseif entry.product or entry.packs then
 			-- (prompts 57 / 60) Robux: the Robux icon and the price (a special: its x1 price; not set up yet: SOON)
 			local product = entry.product or entry.packs[1]
@@ -816,7 +918,8 @@ UIBus.RegisterPanel("PumpShop", function() modal.close() end)
 
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
-	if modal.isOpen() and (key == "coins" or key == "items" or key == "cosmetics" or key == "dnaWeek" or key == "dnaTokens" or key == "growthSpurts") then refresh() end
+	if modal.isOpen() and (key == "coins" or key == "items" or key == "cosmetics" or key == "dnaWeek" or key == "dnaTokens" or key == "growthSpurts"
+		or key == "style" or key == "auras" or key == "alter") then refresh() end
 end)
 
 -- (prompt 59) once, after the gear migration: what changed, and the coins given back for straps / sleeves
@@ -844,6 +947,10 @@ remote.OnClientEvent:Connect(function(kind, info)
 			end
 		end
 		if entry then pcall(flyToInventory, entry, lastBuyTile) end
+		if info.section == "Style" then
+			local found = bodyEntry(entries.Style, info.id)
+			Notify.Reward("NEW STYLE", (found and found.name or "Style") .. " · wearing it now", "sparkles", Colors.Gold)
+		end
 		if info.section == "Gear" then
 			local item = Cosmetics.ById[info.id]
 			Notify.Reward("NEW GEAR", (item and item.name or "Gear") .. " · wearing it now", "dumbbell", Colors.Gold)

@@ -315,6 +315,25 @@ function TrainersPanel.Build(parent: Instance, header)
 	end
 	-- the two big buttons: EQUIP (green; dark UNEQUIP) and the next stage on its own background
 	local equipButton = Kit.Button("Green", "Equip", { Name = "Equip", Parent = detail }, { width = 100, height = BUTTON_H, textSize = 20 })
+	-- (prompt 61) FEED: a trainer snack (Config/Style.Snacks, bought at the Agency) for the picked trainer's EXP; a small
+	-- popover with the three and how many you have
+	-- (a slim pill at the end of the EXP bar, with a 44 px tap area round it)
+	local feed = { size = 56 }
+	feed.button = New("TextButton", { Name = "Feed", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromHex("#232027"), Size = UDim2.fromOffset(feed.size, 22),
+		ZIndex = 6, Parent = detail }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Color3.fromHex("#4A4652"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	Kit.Text({ Name = "Label", Text = "FEED", Font = "Chunky", TextSize = 12, Size = UDim2.fromScale(1, 1), ZIndex = 7, Parent = feed.button })
+	local feedHit = New("TextButton", { Name = "Hit", Text = "", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, 8, 0, 44), ZIndex = 8, Parent = feed.button })
+	feed.pop = New("Frame", { Name = "FeedPop", BackgroundColor3 = Color3.fromHex("#0E0E11"), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(250, 58),
+		Visible = false, ZIndex = 30, Parent = detail }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 1.5 }),
+		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
 	local nextCell = New("Frame", { Name = "NextCell", BackgroundTransparency = 1, Parent = detail })
 	local nextStageButton = New("TextButton", { Name = "NextStage", Text = "", AutoButtonColor = false, BackgroundColor3 = C("#1A181B"), ClipsDescendants = true,
 		Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = nextCell }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
@@ -375,6 +394,9 @@ function TrainersPanel.Build(parent: Instance, header)
 			local by = b + 46
 			local bw = math.floor((w - 24) / 2)
 			at(equipButton, 8, by, bw, BUTTON_H)
+			at(expBar, 8, 16 + b, w - 22 - feed.size, 22)
+			at(feed.button, w - 8 - feed.size, 16 + b)
+			at(feed.pop, math.max(8, w - 8 - 250), 12 + b)
 			at(nextCell, 16 + bw, by, w - 24 - bw, BUTTON_H)
 			at(totalMain, 8, by + BUTTON_H + 6, w - 16, 14)
 		else
@@ -387,6 +409,9 @@ function TrainersPanel.Build(parent: Instance, header)
 			local by = b + 174
 			local bw = math.floor((w - 24) / 2)
 			at(equipButton, 8, by, bw, BUTTON_H)
+			at(expBar, 8, 16 + b, w - 22 - feed.size, 22)
+			at(feed.button, w - 8 - feed.size, 16 + b)
+			at(feed.pop, math.max(8, w - 8 - 250), 12 + b)
 			at(nextCell, 16 + bw, by, w - 24 - bw, BUTTON_H)
 			at(totalMain, 8, by + BUTTON_H + 6, w - 16, 14)
 		end
@@ -663,6 +688,39 @@ function TrainersPanel.Build(parent: Instance, header)
 				string.upper(trainer.name), stageColor:ToHex(), stage.name, C(nextStage.color):ToHex(), nextStage.name, bestLevel)
 		end
 	end
+
+	-- (prompt 61) FEED: the popover with the snacks you have; a tap feeds one to this trainer
+	local function openFeed()
+		if not current then return end
+		Audio.PlayUI("Click")
+		local Style = require(script.Parent.Parent.Config.Style)
+		local data = ClientData.Get()
+		local snacks = type(data.snacks) == "table" and data.snacks or {}
+		for _, child in ipairs(feed.pop:GetChildren()) do
+			if child:IsA("GuiButton") then child:Destroy() end
+		end
+		local any = false
+		for order, snack in ipairs(Style.Snacks) do
+			local have = tonumber(snacks[snack.id]) or 0
+			any = any or have > 0
+			local b = Kit.Button(if have > 0 then "Dark" else "Disabled", string.upper(snack.id) .. " x" .. have, { Name = snack.id, LayoutOrder = order, ZIndex = 31,
+				Parent = feed.pop }, { width = 74, height = 44, textSize = 12 })
+			b.Activated:Connect(function()
+				if have <= 0 or not current then return end
+				Audio.PlayUI("Click")
+				remote:FireServer("Feed", current.u, snack.id)
+				feed.pop.Visible = false
+			end)
+		end
+		if not any then
+			feed.pop.Visible = false
+			require(script.Parent.Notify).Hint("Buy trainer snacks at the Trainer Agency (SNACKS).")
+			return
+		end
+		feed.pop.Visible = not feed.pop.Visible
+	end
+	feed.button.Activated:Connect(openFeed)
+	feedHit.Activated:Connect(openFeed)
 
 	equipButton.Activated:Connect(function()
 		if not current then return end

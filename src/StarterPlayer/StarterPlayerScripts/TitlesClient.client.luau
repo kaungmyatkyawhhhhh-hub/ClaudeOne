@@ -215,6 +215,9 @@ AURA.bigRarity = Kit.Text({ Name = "Rarity", Text = "", Font = "Chunky", TextSiz
 -- how to get it (not yours yet)
 AURA.bigHow = Kit.Fit(Kit.Text({ Name = "How", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#D9D2D5"), TextWrapped = true,
 	Position = UDim2.fromOffset(PAD, 131), Size = UDim2.new(1, -2 * PAD, 0, 26), ZIndex = 6, Parent = AURA.detail }), 11, 9, 2)
+-- (prompt 61) the aura's STYLE colours (ORIGINAL + two), where "how to get it" is for an aura you don't have yet
+AURA.chips = require(Shared.UI.StyleChips).New(AURA.detail, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 131),
+	Size = UDim2.new(1, -2 * PAD, 0, 26), ZIndex = 6 })
 -- the button: graphite with a thin outline (like the alters' WORN); EQUIPPED = a thin gold outline and gold words
 AURA.action = New("TextButton", { Name = "Action", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromHex("#232027"), AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -38), Size = UDim2.new(1, -20, 0, 30), ZIndex = 6, Parent = AURA.detail }, {
@@ -465,6 +468,12 @@ function AURA.refresh()
 	AURA.bigHow.Position = UDim2.fromOffset(PAD, if AURA.benefit.Visible then 131 else 109)
 	AURA.bigHow.Visible = look ~= "owned" and kind ~= "coins" and kind ~= "pass" -- (for sale: the button says it)
 	AURA.bigHow.Text = if hidden then "Keep playing to find it." else aura.how
+	-- (prompt 61) an aura you have: its colours
+	local Style = require(Shared.Config.Style)
+	AURA.chips.frame.Position = UDim2.new(0.5, 0, 0, if AURA.benefit.Visible then 131 else 109)
+	AURA.chips:Set(if look == "owned" and AURA.has(aura) then "Aura" else nil, aura.id, Style.AuraColors(aura), function(name)
+		return Style.AuraHues[name] and Style.AuraHues[name].color or "#FFFFFF"
+	end)
 	-- the button: EQUIP / EQUIPPED (gold) / the price / the pass / LOCKED
 	AURA.action.Visible = not hidden
 	local words = if kind == "coins" then text .. " coins" else text
@@ -702,7 +711,7 @@ end)
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
 	if (key == "titles" or key == "auras" or key == "coins" or key == "items" or key == "dnaTokens" or key == "alter" or key == "cosmetics"
-		or key == "growthSpurts") and modal.isOpen() then refresh() end
+		or key == "growthSpurts" or key == "style") and modal.isOpen() then refresh() end -- (prompt 61: STYLE colours)
 	if key == "titles" or key == "auras" or key == "alter" or key == "settings" then refreshDots() end
 end)
 task.spawn(function()

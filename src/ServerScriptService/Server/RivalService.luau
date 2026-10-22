@@ -16,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Rivals = require(ReplicatedStorage.Shared.Config.Rivals)
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local TitleService = require(script.Parent.TitleService)
 local ArmWrestleService = require(script.Parent.ArmWrestleService)
 local GameEvents = require(script.Parent.GameEvents)
@@ -90,9 +91,9 @@ end
 local function beat(player, rival)
 	if stateOf(player, rival) ~= "active" then return end
 	setState(player, rival, "beaten")
-	PlayerData.AddCoins(player, rival.reward.coins)
-	local stat = "beat" .. rival.id
 	local data = PlayerData.Get(player)
+	PlayerData.AddCoins(player, Economy.Reward(data and data.growthSpurts, Economy.Rewards.Rivals[rival.id] or 5, rival.reward.coins)) -- (prompt 61)
+	local stat = "beat" .. rival.id
 	PlayerData.SetStat(player, stat, ((data and data.stats[stat]) or 0) + 1)
 	TitleService.Check(player)
 	GameEvents.Fire("RivalBeaten", player, 1, { rival = rival.id })

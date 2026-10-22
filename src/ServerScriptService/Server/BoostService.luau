@@ -34,9 +34,18 @@ local function product(player, key)
 	return total
 end
 
+-- (prompt 61) every coin multiplier together, capped at Economy.CoinBoostCap (x8); the second value = it was capped
+local function coinBoost(player): (number, boolean)
+	local cap = require(game:GetService("ReplicatedStorage").Shared.Config.Economy).CoinBoostCap
+	local raw = product(player, "coins")
+	return math.min(raw, cap), raw > cap
+end
+
 local function publish(player)
 	player:SetAttribute("GainsBoost", product(player, "gains"))
-	player:SetAttribute("CoinsBoost", product(player, "coins"))
+	local coins, capped = coinBoost(player)
+	player:SetAttribute("CoinsBoost", coins)
+	player:SetAttribute("CoinsBoostMax", capped or nil)
 	-- (prompt 19) Pre-Workout: how much faster reps go (MachineService allows it, MachineClient animates it)
 	local repSpeed = product(player, "repSpeed")
 	player:SetAttribute("RepSpeed", if repSpeed ~= 1 then repSpeed else nil)
@@ -72,8 +81,9 @@ function BoostService.Gains(player)
 	return product(player, "gains")
 end
 
+-- the coin multiplier every coin payout from reps uses (prompt 61: capped at x8 here, the one place)
 function BoostService.Coins(player)
-	return product(player, "coins")
+	return (coinBoost(player))
 end
 
 -- treadmill distance multiplier (Coconut Water, Config.Meals)

@@ -96,7 +96,11 @@ local function buildChoices(list)
 	for _, button in pairs(npcButtons) do button:Destroy() end
 	npcButtons = {}
 	for order, npc in ipairs(list) do
-		local sub = npc.coins and (tostring(npc.label) .. " · " .. npc.coins .. " coins") or tostring(npc.label)
+		-- (prompt 61) the win coins at your stage, as the server pays them
+		local Economy = require(Shared.Config.Economy)
+		local data = require(Shared.ClientData).Get()
+		local winCoins = npc.coins and Economy.Reward(data and data.growthSpurts, Economy.Rewards.ArmWin, npc.coins)
+		local sub = winCoins and (tostring(npc.label) .. " · " .. Kit.Format(winCoins) .. " coins") or tostring(npc.label)
 		local button = Kit.Button("Quiet", tostring(npc.name), { Name = tostring(npc.id), LayoutOrder = order, Parent = npcRow },
 			{ width = math.floor((470 - 24 - 8 * (#list - 1)) / #list), height = 46, textSize = 15, upper = false })
 		-- the difficulty and the coins under the name (the button's row stacks them)

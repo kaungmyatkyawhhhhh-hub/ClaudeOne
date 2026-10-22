@@ -20,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Spotting = require(ReplicatedStorage.Shared.Config.Spotting)
 local Machines = require(ReplicatedStorage.Shared.Config.Machines)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local Guard = require(script.Parent.Guard)
 local BoostService = require(script.Parent.BoostService)
 local TitleService = require(script.Parent.TitleService)
@@ -279,7 +280,8 @@ function SpotService.OnRep(lifter)
 			local paid = nil
 			if record.reps >= Spotting.RewardEvery then
 				record.reps = 0
-				paid = Spotting.RewardCoins + (if clicking then Spotting.RewardClickingCoins else 0)
+				local spotter = PlayerData.Get(player)
+				paid = Economy.Reward(spotter and spotter.growthSpurts, Economy.Rewards.Spot, Spotting.RewardCoins) + (if clicking then Spotting.RewardClickingCoins else 0) -- (prompt 61)
 				PlayerData.AddCoins(player, paid)
 				record.totalCoins = (record.totalCoins or 0) + paid
 			end

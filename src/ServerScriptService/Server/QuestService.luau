@@ -89,7 +89,9 @@ local function refresh(player, data, forceReplicate)
 end
 
 local function grant(player, reward)
-	if reward.coins then PlayerData.AddCoins(player, reward.coins) end
+	-- (prompt 61) the coins at the player's stage (Quests.CoinsFor; the old amount is the floor)
+	local data = PlayerData.Get(player)
+	if reward.coins then PlayerData.AddCoins(player, Quests.CoinsFor(reward, data and data.growthSpurts)) end
 	if reward.shakes then PlayerData.AddShakes(player, reward.shakes) end
 end
 
@@ -108,7 +110,7 @@ local function claim(player, data): boolean
 	refresh(player, data, false)
 	if not active.ready then return false end
 	grant(player, quest.reward)
-	Remotes.PlayerEvent:FireClient(player, "QuestDone", { id = quest.id, reward = Quests.RewardText(quest.reward) })
+	Remotes.PlayerEvent:FireClient(player, "QuestDone", { id = quest.id, reward = Quests.RewardText(quest.reward, data.growthSpurts) })
 	data.quests.index += 1
 	giveNext(player, data, pick(Quests.Lines.done))
 	return true

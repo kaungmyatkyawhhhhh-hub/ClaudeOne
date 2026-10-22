@@ -16,6 +16,15 @@ local DailyQuests = {}
 
 DailyQuests.PerDay = 3
 DailyQuests.BonusCoins = 150 -- for claiming all of the day's quests
+-- (prompt 61) the coins at the player's stage (Config/Economy.Rewards; each quest's `coins` and BonusCoins are the floors)
+function DailyQuests.CoinsFor(quest, spurts: number?): number
+	local Economy = require(script.Parent.Economy)
+	return Economy.Reward(spurts, Economy.Rewards.DailyQuest, quest and quest.coins or 0)
+end
+function DailyQuests.BonusFor(spurts: number?): number
+	local Economy = require(script.Parent.Economy)
+	return Economy.Reward(spurts, Economy.Rewards.DailyBonus, DailyQuests.BonusCoins)
+end
 -- Quest rerolls (owner, 14 Oct): this many FREE rerolls per daily reset (saved in the day's quests, so rejoining or another
 -- server doesn't give more); after that each reroll is the "Quest Reroll" product (Config/Products.QuestReroll, R$ 19).
 -- A reroll swaps one unfinished quest for a new random one (never the same one, never one of the other two).

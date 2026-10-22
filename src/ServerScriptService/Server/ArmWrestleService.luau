@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Social = require(ReplicatedStorage.Shared.Config.Social)
 local Muscles = require(ReplicatedStorage.Shared.Config.Muscles)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local BodyService = require(script.Parent.BodyService)
 local Guard = require(script.Parent.Guard)
 local TitleService = require(script.Parent.TitleService)
@@ -183,8 +184,11 @@ local function finish(t, winnerIndex, reason)
 		local player = t.seats[index].player
 		if player then
 			local won = index == winnerIndex
-			local coins = Config.LoseCoins
-			if won then coins = npc and npc.coins or Config.WinCoins end
+			-- (prompt 61) at the player's stage (the old amounts are the floors)
+			local data = PlayerData.Get(player)
+			local spurts = data and data.growthSpurts
+			local coins = Economy.Reward(spurts, Economy.Rewards.ArmLose, Config.LoseCoins)
+			if won then coins = Economy.Reward(spurts, Economy.Rewards.ArmWin, npc and npc.coins or Config.WinCoins) end
 			PlayerData.AddCoins(player, coins)
 			giveXp(player, won and Config.Xp.Win or Config.Xp.Lose)
 			if won then

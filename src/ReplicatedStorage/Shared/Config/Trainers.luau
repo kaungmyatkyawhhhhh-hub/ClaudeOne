@@ -214,6 +214,7 @@ Trainers.AutoStopRarity = "Legendary" -- Auto Roll stops on this or better (owne
 Trainers.AutoDeleteRarities = { "Common", "Uncommon" } -- toggles: a duplicate of these turns into coins instead
 Trainers.AutoDeleteRefund = 0.1    -- ...this share of the roll price
 Trainers.BoostCap = 4              -- the equipped trainers' total boost is capped at +400% (per kind)
+Trainers.KindCaps = { coins = 1 }  -- (prompt 61) ...except coins: +100% at most (the other kinds keep BoostCap)
 
 -- The price of one roll at a stage (Growth Spurts; 6 = 7'0").
 function Trainers.RollPrice(coinsPerMinute: number): number
@@ -468,7 +469,8 @@ function Trainers.TotalLines(copies): { { kind: string, pct: number, capped: boo
 	local out = {}
 	for order, kind in ipairs({ "gains", "coins", "progress", "maxStamina", "staminaRegen" }) do
 		if raw[kind] > 0 then
-			table.insert(out, { kind = kind, order = order, pct = math.floor(math.min(raw[kind], Trainers.BoostCap) * 100 + 0.5), capped = raw[kind] >= Trainers.BoostCap })
+			local cap = Trainers.KindCaps[kind] or Trainers.BoostCap
+			table.insert(out, { kind = kind, order = order, pct = math.floor(math.min(raw[kind], cap) * 100 + 0.5), capped = raw[kind] >= cap })
 		end
 	end
 	table.sort(out, function(a, b) return if a.pct ~= b.pct then a.pct > b.pct else a.order < b.order end)
@@ -485,7 +487,7 @@ function Trainers.Bonus(copies)
 			for kind, amount in pairs(trainer.perk) do total[kind] = (total[kind] or 0) + amount * m end
 		end
 	end
-	for kind, amount in pairs(total) do total[kind] = math.min(amount, Trainers.BoostCap) end
+	for kind, amount in pairs(total) do total[kind] = math.min(amount, Trainers.KindCaps[kind] or Trainers.BoostCap) end
 	return total
 end
 

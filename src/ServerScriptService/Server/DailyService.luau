@@ -119,9 +119,11 @@ local function claim(player: Player, index: any)
 	local quest = entry and DailyQuests.ById[entry.id]
 	if not quest or not entry.done or entry.claimed then return end
 	entry.claimed = true
-	PlayerData.AddCoins(player, quest.coins)
+	local data = PlayerData.Get(player)
+	local coins = DailyQuests.CoinsFor(quest, data and data.growthSpurts) -- (prompt 61)
+	PlayerData.AddCoins(player, coins)
 	save(player, dq)
-	send(player, "Claimed", { coins = quest.coins })
+	send(player, "Claimed", { coins = coins })
 end
 
 local function claimBonus(player: Player)
@@ -131,9 +133,11 @@ local function claimBonus(player: Player)
 		if not entry.claimed then return end
 	end
 	dq.bonus = true
-	PlayerData.AddCoins(player, DailyQuests.BonusCoins)
+	local data = PlayerData.Get(player)
+	local coins = DailyQuests.BonusFor(data and data.growthSpurts) -- (prompt 61)
+	PlayerData.AddCoins(player, coins)
 	save(player, dq)
-	send(player, "Claimed", { coins = DailyQuests.BonusCoins, bonus = true })
+	send(player, "Claimed", { coins = coins, bonus = true })
 end
 
 -- Can this quest be rerolled? (there, not finished, not claimed)
@@ -223,7 +227,7 @@ local function claimLogin(player: Player)
 	local day = today()
 	local calendarDay = Economy.LoginDay(daily.lastDay or 0, daily.calendarDay or 0, day)
 	if not calendarDay then return end -- already claimed today
-	local coins, tokens = Economy.LoginReward(calendarDay)
+	local coins, tokens = Economy.LoginReward(calendarDay, data.growthSpurts) -- (prompt 61: at the player's stage)
 	local streak = (daily.lastDay == day - 1) and (daily.streak or 0) + 1 or 1
 	PlayerData.SetTable(player, "daily", { lastDay = day, streak = streak, best = math.max(daily.best or 0, streak), calendarDay = calendarDay })
 	PlayerData.AddCoins(player, coins)

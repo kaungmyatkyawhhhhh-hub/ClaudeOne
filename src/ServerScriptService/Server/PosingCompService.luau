@@ -28,6 +28,7 @@ local Alters = require(Config.Alters) -- (prompt 21: divisions by alter tier at 
 local Town = require(Config.Town)
 local Body = require(Config.Body)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local BodyService = require(script.Parent.BodyService)
 local NpcService = require(script.Parent.NpcService)
 local ShowOffService = require(script.Parent.ShowOffService)
@@ -291,7 +292,9 @@ local function results(division)
 		if c.player and c.player.Parent then
 			local data = PlayerData.Get(c.player)
 			local level = PosingComp.ShowFor(data and data.growthSpurts or 0) or PosingComp.Shows[1]
-			local coins = level.coins[place] or level.enter
+			-- (prompt 61) the prize at the player's stage (Config/Economy.Rewards.Posing; the show's own amount is the floor)
+			local minutes = Economy.Rewards.Posing[place] or Economy.Rewards.PosingEnter
+			local coins = Economy.Reward(data and data.growthSpurts, minutes, level.coins[place] or level.enter)
 			-- (prompt 45) the worn aura's show prize perk: the prize only, never the score
 			coins = math.floor(coins * (1 + require(game:GetService("ReplicatedStorage").Shared.Config.Auras).Perk(c.player:GetAttribute("Aura"), "showPrize")) + 0.5)
 			PlayerData.AddCoins(c.player, coins)

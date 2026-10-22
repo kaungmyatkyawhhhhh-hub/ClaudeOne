@@ -82,7 +82,16 @@ local function replicateWorn(player)
 	-- the effect's preset name on the character too ("EquippedAura", AuraVFX: every client builds it from this)
 	local character = player.Character
 	local preset = worn and Auras.ById[worn] and Auras.ById[worn].vfx or nil
+	-- (prompt 61) a colour bought in the PUMP SHOP's STYLE tab: "<effect>@<colour>" (AuraVFX turns it to that hue)
+	local data = PlayerData.Get(player)
+	local colour = preset and data and type(data.style) == "table" and type(data.style.aura) == "table" and data.style.aura[worn]
+	if type(colour) == "string" then preset = preset .. "@" .. colour end
 	if character and character:GetAttribute("EquippedAura") ~= preset then character:SetAttribute("EquippedAura", preset) end
+end
+
+-- (prompt 61) the worn aura again (its STYLE colour changed: StyleService)
+function AuraService.Refresh(player)
+	replicateWorn(player)
 end
 
 local function save(player)

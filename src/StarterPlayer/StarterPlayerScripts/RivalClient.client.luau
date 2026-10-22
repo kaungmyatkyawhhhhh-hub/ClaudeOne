@@ -142,7 +142,11 @@ local function showCard(info)
 	disc.BackgroundColor3 = (Theme.Rarity[title and title.rarity or "Common"] or Theme.Rarity.Common).Fill
 	local rim = disc:FindFirstChildOfClass("UIStroke")
 	if rim then rim.Color = (Theme.Rarity[title and title.rarity or "Common"] or Theme.Rarity.Common).Rim end
-	rewardText.Text = (title and title.name or "") .. " title · " .. rival.reward.coins .. " coins"
+	-- (prompt 61) the coins at your stage, as the server pays them
+	local Economy = require(Shared.Config.Economy)
+	local data = require(Shared.ClientData).Get()
+	local coins = Economy.Reward(data and data.growthSpurts, Economy.Rewards.Rivals[rival.id] or 5, rival.reward.coins)
+	rewardText.Text = (title and title.name or "") .. " title · " .. require(Shared.UI.Kit).Format(coins) .. " coins"
 	accept.Visible = state == "new"
 	if state == "new" then
 		status.Text = ""

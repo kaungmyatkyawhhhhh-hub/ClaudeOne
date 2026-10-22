@@ -37,7 +37,7 @@ local function welcome(player, data)
 	local offlineCoins = 0
 	local lastSeen = data.meta.lastSeen or 0
 	if lastSeen > 0 and data.meta.sessions > 1 then
-		offlineCoins = Economy.OfflineCoins(now - lastSeen)
+		offlineCoins = Economy.OfflineCoins(now - lastSeen, data.growthSpurts) -- (prompt 61: at the player's stage)
 		-- (prompt 45) the equipped aura's offline perk (an aura from a pass only while the pass is owned)
 		local auras = type(data.auras) == "table" and data.auras or {}
 		local worn = auras.equipped
@@ -92,7 +92,7 @@ local function spawnPlate()
 	plate.CanQuery = true
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Re-rack"
-	prompt.ObjectText = "+" .. Economy.Rerack.Coins .. " coins"
+	prompt.ObjectText = "Coins" -- (prompt 61: the coins depend on who re-racks it; the toast shows the number)
 	prompt.MaxActivationDistance = 7
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = plate
@@ -100,8 +100,10 @@ local function spawnPlate()
 	Guard.OnTriggered(prompt, function(player)
 		if claimed or not PlayerData.Get(player) then return end
 		claimed = true
-		PlayerData.AddCoins(player, Economy.Rerack.Coins)
-		event(player, "Reracked", { coins = Economy.Rerack.Coins })
+		local data = PlayerData.Get(player)
+		local coins = Economy.Reward(data and data.growthSpurts, Economy.Rewards.Rerack, Economy.Rerack.Coins) -- (prompt 61)
+		PlayerData.AddCoins(player, coins)
+		event(player, "Reracked", { coins = coins })
 		model:Destroy()
 		loose[index] = nil
 	end)

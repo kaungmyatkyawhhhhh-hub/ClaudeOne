@@ -106,6 +106,12 @@ function BodyService.PublishData(target, data)
 	local skin = Alters.SkinName(state.equipped or 0)
 	if target:GetAttribute("Alter") ~= skin then target:SetAttribute("Alter", skin) end
 	if target:GetAttribute("AlterNumber") ~= (state.highest or 0) then target:SetAttribute("AlterNumber", state.highest or 0) end
+	-- (prompt 61) the worn alter's STYLE tint (Config/Style; MuscleRig leans the skin toward it), nil = its own colours
+	local worn = Alters.Get(state.equipped or 0)
+	local tintId = worn and type(data.style) == "table" and type(data.style.alter) == "table" and data.style.alter[worn.id]
+	local Style = require(ReplicatedStorage.Shared.Config.Style)
+	local tint = if type(tintId) == "string" and Style.AlterTints[tintId] then Color3.fromHex(Style.AlterTints[tintId]) else nil
+	if target:GetAttribute("AlterTint") ~= tint then target:SetAttribute("AlterTint", tint) end
 end
 
 -- The player's muscle levels and goal (for rigs that show them: the progress mirror).

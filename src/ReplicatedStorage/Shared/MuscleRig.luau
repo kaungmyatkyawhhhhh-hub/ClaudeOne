@@ -217,7 +217,12 @@ end
 
 -- (prompt 38b) the skin maps' tint (SurfaceAppearance.Color): the skin, or a tan alter's bronze tint (Alters.Tint)
 local function skinTint(self): Color3
-	return Alters.Tint(alterOf(self), self.style.skin or Color3.fromHex("#E0A878"))
+	local tint = Alters.Tint(alterOf(self), self.style.skin or Color3.fromHex("#E0A878"))
+	-- (prompt 61) a STYLE tint of the worn alter: the skin leans toward it (Config/Style.AlterTintStrength)
+	if alterOf(self) and typeof(self.style.alterTint) == "Color3" then
+		tint = tint:Lerp(self.style.alterTint, require(script.Parent.Config.Style).AlterTintStrength)
+	end
+	return tint
 end
 
 local function smoothMaterial(material: Enum.Material): Enum.Material
@@ -1987,6 +1992,8 @@ function MuscleRig.StyleFrom(source: Instance, model: Model): any
 		shirt = if shirt and shirt.ShirtTemplate ~= "" then shirt.ShirtTemplate else nil,
 		pants = if pants and pants.PantsTemplate ~= "" then pants.PantsTemplate else nil,
 		alter = source:GetAttribute("Alter"), -- (prompt 21) the Body Alter skin ("Alter_<id>"), nil = the stages
+		-- (prompt 61) its STYLE tint (BodyService "AlterTint"; your own try-on in the shop: "AlterTintPreview")
+		alterTint = source:GetAttribute("AlterTintPreview") or source:GetAttribute("AlterTint"),
 	}
 end
 

@@ -45,6 +45,29 @@ function Economy.Minutes(spurts: number?, minutes: number): number
 	return PumpShop.Round(minutes * PumpShop.Rate(spurts))
 end
 
+-- (prompt 61) Rewards grow with the player: minutes of coins at their stage (Economy.Minutes). The old fixed amount of
+-- each reward is its floor: a reward never pays less than it did before. Economy.Reward(spurts, minutes, floor).
+Economy.Rewards = {
+	Login = { 2, 2, 3, 4, 5, 6, 15 },  -- days 1..7 (Economy.Login.Coins are the floors; the DNA tokens stay as they are)
+	DailyQuest = 3, DailyBonus = 10,   -- each daily quest; all of them done
+	CoachFirst = 1, CoachLast = 5,     -- Coach Dex's quests, in their order: the first ones 1 min up to 5 for the late ones
+	CoachRepeat = 4,                   -- his repeatable quests (after the chain)
+	Posing = { 8, 5, 3 }, PosingEnter = 1, -- posing show: 1st / 2nd / 3rd, everyone else
+	Rivals = { Benny = 5, Coral = 8, Dante = 12 },
+	Legend = 3, Guide = 1,
+	OfflineShare = 0.02,               -- offline coins a minute = 2% of the stage's coins a minute (at least the old 0.5)
+	Rerack = 0.1, Spot = 0.1, ArmWin = 0.5, ArmLose = 0.15,
+	GroupGift = 15, RebalanceGift = 5,
+}
+
+-- (prompt 61) every coin multiplier together (2x Coins pass, VIP, trainers, auras, rush hour, events, boosts) is capped at
+-- this, in ONE place: BoostService.Coins (the coins every rep pays). Stats shows "COIN BOOST x5.2" / "x8 (MAX)".
+Economy.CoinBoostCap = 8
+
+function Economy.Reward(spurts: number?, minutes: number, floor: number?): number
+	return math.max(floor or 0, Economy.Minutes(spurts, minutes))
+end
+
 -- Day number (UTC) for a unix time.
 function Economy.Day(now)
 	return math.floor((now or os.time()) / 86400)
@@ -58,16 +81,19 @@ function Economy.LoginDay(lastDay, calendarDay, today)
 	return 1 -- first claim ever, or a missed day: back to day 1
 end
 
--- The reward for a calendar day: coins, DNA tokens.
-function Economy.LoginReward(calendarDay)
-	return Economy.Login.Coins[calendarDay] or Economy.Login.Coins[1], Economy.Login.DnaTokens[calendarDay] or 0
+-- The reward for a calendar day: coins (prompt 61: at the player's stage), DNA tokens.
+function Economy.LoginReward(calendarDay, spurts: number?)
+	local day = if Economy.Login.Coins[calendarDay] then calendarDay else 1
+	return Economy.Reward(spurts, Economy.Rewards.Login[day], Economy.Login.Coins[day]), Economy.Login.DnaTokens[calendarDay] or 0
 end
 
-function Economy.OfflineCoins(secondsAway)
+-- (prompt 61) a minute away pays OfflineShare of the stage's coins a minute (never less than the old CoinsPerMinute)
+function Economy.OfflineCoins(secondsAway, spurts: number?)
 	local minutes = secondsAway / 60
 	if minutes < Economy.Offline.MinMinutes then return 0 end
 	minutes = math.min(minutes, Economy.Offline.CapHours * 60)
-	return math.floor(minutes * Economy.Offline.CoinsPerMinute)
+	local rate = math.max(Economy.Offline.CoinsPerMinute, Economy.Rewards.OfflineShare * require(script.Parent.PumpShop).Rate(spurts))
+	return math.floor(minutes * rate)
 end
 
 -- Rush hour window for a unix time: returns active, secondsLeft (if active) or secondsUntil (if not).

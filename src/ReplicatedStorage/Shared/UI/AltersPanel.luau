@@ -177,6 +177,9 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 		Size = UDim2.new(1, -16, 0, 14), ZIndex = 4, Parent = detail }), 12, 10)
 	local wear = Kit.Button("Green", "Wear", { Name = "Wear", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), ZIndex = 4, Visible = not shop,
 		Parent = detail }, { width = DETAIL_W - 20, height = 30, textSize = 16 })
+	-- (prompt 61) the Inventory: the alter's STYLE tints (ORIGINAL + two) above WEAR
+	local chips = if shop then nil else require(script.Parent.StyleChips).New(detail, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -42),
+		Size = UDim2.new(1, -16, 0, 26), ZIndex = 4 })
 	wear.Activated:Connect(function()
 		local state = Alters.State(ClientData.Get())
 		local n = picked or state.equipped or 0
@@ -283,6 +286,11 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 			wear.Visible = reached
 			if reached then
 				if n == worn then Kit.SetButton(wear, "Quiet", "Worn") else Kit.SetButton(wear, "Green", "Wear") end
+			end
+			if chips then
+				local Style = require(script.Parent.Parent.Config.Style)
+				local colours = alter and alter.id and Style.AlterVariants[alter.id]
+				chips:Set(if reached and n > 0 and colours then "Alter" else nil, alter and alter.id, colours, function(name) return Style.AlterTints[name] or "#FFFFFF" end)
 			end
 		else
 			local share = if reached then 1 elseif isNext then nextShare(progress) else 0

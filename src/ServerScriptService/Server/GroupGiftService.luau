@@ -12,6 +12,7 @@ local Workspace = game:GetService("Workspace")
 
 local Trainers = require(ReplicatedStorage.Shared.Config.Trainers)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local Analytics = require(script.Parent.Analytics)
 
 local GroupGiftService = {}
@@ -38,7 +39,7 @@ local function give(player: Player)
 	local gift = Trainers.GroupGift
 	-- saved first: it's given once, whatever happens next
 	PlayerData.SetTable(player, "groupGift", { given = true, at = os.time() })
-	PlayerData.AddCoins(player, gift.coins)
+	PlayerData.AddCoins(player, Economy.Reward(data.growthSpurts, Economy.Rewards.GroupGift, gift.coins)) -- (prompt 61)
 	require(script.Parent.TitleService).Check(player) -- (the CREW MEMBER title: condition "groupGift")
 	local ok, err = pcall(function() require(script.Parent.TrainerService).Gift(player, gift.trainer, gift.rolls) end)
 	if not ok then warn("[GroupGiftService] the trainer gift failed for " .. player.Name .. ": " .. tostring(err)) end

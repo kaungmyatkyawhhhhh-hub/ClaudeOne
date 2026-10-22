@@ -69,10 +69,25 @@ for _, list in ipairs({ Quests.Chain, Quests.Repeatable }) do
 	for _, quest in ipairs(list) do Quests.ById[quest.id] = quest end
 end
 
--- Short reward text, e.g. "+40 coins, +1 shake".
-function Quests.RewardText(reward)
+-- (prompt 61) each quest's coins in minutes of coins at the player's stage, in their order: the chain from CoachFirst up to
+-- CoachLast, the repeatables CoachRepeat (Config/Economy.Rewards); the `coins` above are the floors
+do
+	local Economy = require(script.Parent.Economy)
+	local r = Economy.Rewards
+	for i, quest in ipairs(Quests.Chain) do
+		quest.reward.minutes = r.CoachFirst + (r.CoachLast - r.CoachFirst) * (i - 1) / math.max(#Quests.Chain - 1, 1)
+	end
+	for _, quest in ipairs(Quests.Repeatable) do quest.reward.minutes = r.CoachRepeat end
+end
+function Quests.CoinsFor(reward, spurts: number?): number
+	if not reward or not reward.coins then return 0 end
+	return require(script.Parent.Economy).Reward(spurts, reward.minutes or 0, reward.coins)
+end
+
+-- Short reward text, e.g. "+40 coins, +1 shake" (prompt 61: the coins at the player's stage)
+function Quests.RewardText(reward, spurts: number?)
 	local parts = {}
-	if reward.coins then table.insert(parts, "+" .. reward.coins .. " coins") end
+	if reward.coins then table.insert(parts, "+" .. Quests.CoinsFor(reward, spurts) .. " coins") end
 	if reward.shakes then table.insert(parts, "+" .. reward.shakes .. (reward.shakes == 1 and " shake" or " shakes")) end
 	return table.concat(parts, ", ")
 end

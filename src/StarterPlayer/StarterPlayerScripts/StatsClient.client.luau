@@ -89,6 +89,17 @@ local modal = Kit.Modal({ name = "MusclesScreen", title = "Physique", width = W,
 for _, id in ipairs({ "Muscles", "Lifts", "Genetics" }) do
 	pages[id] = New("Frame", { Name = id, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = id == "Muscles", Parent = modal.body })
 end
+-- (prompt 61) every coin boost together, in the header: "COIN BOOST x5.2", or "x8 (MAX)" at the cap (BoostService)
+local coinBoost = Kit.Text({ Name = "CoinBoost", Text = "", Font = "Chunky", TextSize = 13, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -62, 0, 20), Size = UDim2.fromOffset(170, 18), TextXAlignment = Enum.TextXAlignment.Right, Parent = modal.panel })
+local function refreshCoinBoost()
+	local value = tonumber(player:GetAttribute("CoinsBoost")) or 1
+	local text = if value >= 10 then string.format("x%d", math.floor(value + 0.5)) else string.format("x%.1f", value)
+	coinBoost.Text = "COIN BOOST " .. text .. (if player:GetAttribute("CoinsBoostMax") then " (MAX)" else "")
+end
+player:GetAttributeChangedSignal("CoinsBoost"):Connect(refreshCoinBoost)
+player:GetAttributeChangedSignal("CoinsBoostMax"):Connect(refreshCoinBoost)
+refreshCoinBoost()
 
 -- the stats labels switch (the Stats tile does the same): a small eye button in the body card's corner (made below)
 local labelsButton

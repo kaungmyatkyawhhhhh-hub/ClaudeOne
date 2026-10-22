@@ -189,7 +189,7 @@ end)
 local _, setBonusBar = Kit.Bar(Colors.Gold, { Name = "Bar", Position = UDim2.fromOffset(12, 92), Size = UDim2.new(1, -24, 0, 14), Parent = bonus })
 local bonusReward = coinAmount({ Name = "Reward", Position = UDim2.fromOffset(12, 114), Size = UDim2.new(1, -24, 0, 26), Parent = bonus })
 bonusReward:FindFirstChildOfClass("UIListLayout").HorizontalAlignment = Enum.HorizontalAlignment.Left
-bonusReward:FindFirstChild("Amount").Text = "+" .. Kit.Format(DailyQuests.BonusCoins) -- (prompt 40: "+150")
+bonusReward:FindFirstChild("Amount").Text = "+" .. Kit.Format(DailyQuests.BonusCoins) -- (prompt 40: "+150"; prompt 61: refreshQuests sets it at your stage)
 local bonusClaim = Kit.Button("Green", "Claim", { Name = "Claim", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -30), Visible = false, Parent = bonus },
 	{ width = 130, height = 34, textSize = 15 })
 bonusClaim.Activated:Connect(function()
@@ -283,8 +283,13 @@ local row = New("Frame", { Name = "Days", BackgroundTransparency = 1, Position =
 })
 -- (owner, 23 Oct, chrome reset: no mesh on a child of a panel that has it: the day tiles are solid now)
 local function hexOn(_parent: Instance, _corner: number, _color: Color3?) end
+local amountByDay = {} -- (prompt 61) each day's coin label: the real number at your stage (refreshCalendars)
+local function spurtsNow(): number
+	local data = ClientData.IsLoaded() and ClientData.Get()
+	return data and data.growthSpurts or 0
+end
 for day = 1, DAYS do
-	local coins, tokens = Economy.LoginReward(day)
+	local coins, tokens = Economy.LoginReward(day, spurtsNow())
 	local big = day == DAYS
 	local dnaDay = tokens > 0
 	local h = if big then BIG_H else TILE_H
@@ -374,6 +379,7 @@ for day = 1, DAYS do
 	local amount = Kit.GoldText(Kit.Text({ Name = "Amount", Text = Kit.Short(coins), Font = "Chunky", TextSize = if big then 17 elseif dnaDay then 14 else 12,
 		AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -4), Size = UDim2.new(1, 0, 0, if big then 19 else 15), Parent = card }))
 	-- (GoldText fades the outline for a clean gradient; the reward keeps a stroke)
+	amountByDay[day] = amount
 	local stroke = amount:FindFirstChild("TextStroke")
 	if stroke then stroke.Transparency, stroke.Color = 0.2, Colors.Outline end
 	local check = New("Frame", { Name = "Check", BackgroundColor3 = Colors.Green, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3),
@@ -439,6 +445,7 @@ UIBus.AfterTutorial(showRewardCard)
 
 local function refreshCalendars()
 	fitWindow()
+	for day, label in pairs(amountByDay) do label.Text = Kit.Short((Economy.LoginReward(day, spurtsNow()))) end
 	local current, claimed = calendarState()
 	streak.title.Text = "DAILY STREAK <font color=\"#" .. Colors.Gold:ToHex() .. "\">DAY " .. current .. "</font>"
 	for day, c in ipairs(streak.cards) do
@@ -533,7 +540,7 @@ local function refreshChain()
 		row.text.TextTransparency = (isDone or isActive) and 0 or 0.45
 		row.bar.Visible = isCurrent and not active.ready
 		row.sub.Visible = not row.bar.Visible
-		row.sub.Text = Quests.RewardText(quest.reward)
+		row.sub.Text = Quests.RewardText(quest.reward, spurtsNow())
 		row.go, row.claim = nil, false
 		Theme.SetPiece(row.card, (isCurrent and active.ready) and "card_gold" or "card")
 		if isDone then
@@ -541,7 +548,7 @@ local function refreshChain()
 			Kit.SetButton(row.button, "Flat", "Done")
 		elseif isCurrent and active.ready then
 			setTile(row.tile, "trophy", Colors.Gold)
-			row.sub.Text = "Done! " .. Quests.RewardText(quest.reward)
+			row.sub.Text = "Done! " .. Quests.RewardText(quest.reward, spurtsNow())
 			row.claim = true
 			Kit.SetButton(row.button, "Red", "Claim")
 		elseif isCurrent then
@@ -605,6 +612,7 @@ local function progressText(quest, value: number, spaced: boolean?): string
 end
 
 local function refreshQuests(): number
+	bonusReward:FindFirstChild("Amount").Text = "+" .. Kit.Format(DailyQuests.BonusFor(spurtsNow())) -- (prompt 61)
 	local data = ClientData.Get()
 	local dq = data.dailyQuests
 	local valid = type(dq) == "table" and type(dq.list) == "table" and dq.day == today()
@@ -618,7 +626,7 @@ local function refreshQuests(): number
 			local progress = math.min(entry.progress or 0, quest.count)
 			row.text.Text = quest.text
 			row.setBar(progress / quest.count)
-			row.amount.Text = "+" .. Kit.Format(quest.coins) -- (prompt 40: "+60")
+			row.amount.Text = "+" .. Kit.Format(DailyQuests.CoinsFor(quest, spurtsNow())) -- (prompt 40: "+60"; prompt 61: at your stage)
 			if entry.claimed then
 				row.state = "done"
 				claimed += 1

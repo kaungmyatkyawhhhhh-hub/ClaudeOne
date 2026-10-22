@@ -313,6 +313,73 @@ Kit.Text({ Name = "Title", Text = "AUTO-DELETE DUPLICATES", Font = "Title", Text
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 16, Parent = popover })
 Kit.Text({ Name = "Hint", Text = "They turn into coins.", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(10, 20),
 	Size = UDim2.new(1, -20, 0, 12), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 16, Parent = popover })
+-- (prompt 61) TRAINER SNACKS: a SNACKS button in the row opens a small popover (upward) with the three snacks: what each
+-- gives, its price at your stage, how many you have; BUY one. Feed them from MY TRAINERS (FEED). (one do-block: this
+-- script is near Luau's local limit)
+do
+	local Style = require(Shared.Config.Style)
+	local snackButton = flatButton("Snacks", 70, 6)
+	local _snackBig, snackSmall = twoLines(snackButton, "SNACKS", "", 15)
+	local pop = New("Frame", { Name = "Snacks", BackgroundColor3 = Color3.fromHex("#0E0E11"), AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 0, 28),
+		Size = UDim2.fromOffset(330, 92), Visible = false, ZIndex = 15, Parent = controls }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 1.5 }),
+	})
+	Kit.Text({ Name = "Title", Text = "TRAINER SNACKS", Font = "Title", TextSize = 11, Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -20, 0, 14),
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 16, Parent = pop })
+	Kit.Text({ Name = "Hint", Text = "Trainer EXP. Feed them in MY TRAINERS.", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(10, 20),
+		Size = UDim2.new(1, -20, 0, 12), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 16, Parent = pop })
+	local labels = {}
+	for i, snack in ipairs(Style.Snacks) do
+		local b = New("TextButton", { Name = snack.id, Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromHex("#1A191E"),
+			Position = UDim2.fromOffset(10 + (i - 1) * 104, 38), Size = UDim2.fromOffset(98, 46), ZIndex = 16, Parent = pop }, {
+			New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+			New("UIStroke", { Color = hex(snack.color), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		local top = Kit.Text({ Name = "Name", Text = string.upper(snack.id) .. " +" .. snack.xp .. " EXP", Font = "Chunky", TextSize = 11, Position = UDim2.fromOffset(4, 4),
+			Size = UDim2.new(1, -8, 0, 14), ZIndex = 17, Parent = b })
+		local bottom = Kit.Text({ Name = "Price", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Gold, Position = UDim2.fromOffset(4, 22),
+			Size = UDim2.new(1, -8, 0, 18), ZIndex = 17, Parent = b })
+		labels[snack.id] = { top = top, bottom = bottom }
+		b.Activated:Connect(function()
+			Audio.PlayUI("Click")
+			remote:FireServer("BuySnack", snack.id)
+		end)
+	end
+	local function paint()
+		local d = data()
+		local snacks = type(d.snacks) == "table" and d.snacks or {}
+		local total = 0
+		for _, snack in ipairs(Style.Snacks) do
+			local have = tonumber(snacks[snack.id]) or 0
+			total += have
+			labels[snack.id].bottom.Text = Kit.Format(Style.SnackPrice(snack, d.growthSpurts)) .. " · YOU HAVE " .. have
+		end
+		snackSmall.Text = if total > 0 then "x" .. total else ""
+	end
+	snackButton.Activated:Connect(function()
+		Audio.PlayUI("Click")
+		paint()
+		pop.Visible = not pop.Visible
+	end)
+	ClientData.Changed:Connect(function(path)
+		if path[1] == "snacks" or path[1] == "growthSpurts" then paint() end
+	end)
+	remote.OnClientEvent:Connect(function(kind, info)
+		info = type(info) == "table" and info or {}
+		if kind == "SnackBought" then
+			Audio.PlayUI("ShopBuy")
+		elseif kind == "Fed" then
+			local levels = tonumber(info.levels) or 0
+			Notify.Reward("SNACK TIME!", if levels > 0 then "+" .. levels .. " LV · now LV " .. tostring(info.level) else "Trainer EXP added", "star", Colors.Gold, "QuestClaim", "trainerfed")
+		end
+	end)
+	task.spawn(function()
+		ClientData.Get()
+		paint()
+	end)
+end
+
 local deleteToggles = {}
 for i, rarityId in ipairs(Trainers.AutoDeleteRarities) do
 	local x = 10 + (i - 1) * 120
@@ -1704,7 +1771,9 @@ remote.OnClientEvent:Connect(function(kind, info)
 			UIBus.WaitForGameplay(1)
 			while UIBus.InTutorial and UIBus.InTutorial() do task.wait(1) end
 			local gift = Trainers.GroupGift
-			Notify.Reward("WELCOME, CREW MEMBER!", "+" .. Kit.Format(gift.coins) .. " coins, " .. gift.rolls .. " free roll, the CREW MEMBER title and Coach Lou",
+			local Economy = require(Shared.Config.Economy) -- (prompt 61: at your stage, as the server paid it)
+			local giftCoins = Economy.Reward(ClientData.Get().growthSpurts, Economy.Rewards.GroupGift, gift.coins)
+			Notify.Reward("WELCOME, CREW MEMBER!", "+" .. Kit.Format(giftCoins) .. " coins, " .. gift.rolls .. " free roll, the CREW MEMBER title and Coach Lou",
 				"gift", Colors.Gold, "TitleUnlocked", "groupgift")
 			task.wait(1.5)
 			play(results, false)
@@ -1815,7 +1884,9 @@ do
 		task.spawn(function()
 			UIBus.WaitForMenu()
 			local gift = Trainers.RebalanceGift
-			Notify.Reward("TRAINER BOOSTS WERE REBALANCED", "A gift for you: +" .. Kit.Format(gift.coins) .. " coins and " .. gift.rolls .. " free roll",
+			local Economy = require(Shared.Config.Economy) -- (prompt 61: at your stage, as the server paid it)
+			local giftCoins = Economy.Reward(ClientData.Get().growthSpurts, Economy.Rewards.RebalanceGift, gift.coins)
+			Notify.Reward("TRAINER BOOSTS WERE REBALANCED", "A gift for you: +" .. Kit.Format(giftCoins) .. " coins and " .. gift.rolls .. " free roll",
 				"gift", Colors.Gold, "TitleUnlocked", "trainerrebalance")
 			remote:FireServer("SeenRebalance")
 		end)

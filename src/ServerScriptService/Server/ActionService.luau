@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local Config = ReplicatedStorage.Shared.Config
 local GrowthSpurts = require(Config.GrowthSpurts)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local Guard = require(script.Parent.Guard)
 local Analytics = require(script.Parent.Analytics)
 local BodyService = require(script.Parent.BodyService)
@@ -224,8 +225,9 @@ handlers.Guide = function(player, info)
 			if other.after == guide.id then PlayerData.SetGuideSeen(player, Guides.SaveId(other, data)) end
 		end
 		if how == "done" and guide.reward and not guide.every then
-			PlayerData.AddCoins(player, guide.reward)
-			Remotes.PlayerEvent:FireClient(player, "GuideReward", { coins = guide.reward })
+			local coins = Economy.Reward(data.growthSpurts, Economy.Rewards.Guide, guide.reward) -- (prompt 61)
+			PlayerData.AddCoins(player, coins)
+			Remotes.PlayerEvent:FireClient(player, "GuideReward", { coins = coins })
 		end
 	end
 end

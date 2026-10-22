@@ -25,6 +25,7 @@ local PumpShop = require(ReplicatedStorage.Shared.Config.PumpShop)
 local Alters = require(ReplicatedStorage.Shared.Config.Alters)
 local RollReveal = require(ReplicatedStorage.Shared.Config.RollReveal)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local BoostService = require(script.Parent.BoostService)
 local NpcService = require(script.Parent.NpcService)
 local BodyService = require(script.Parent.BodyService)
@@ -355,6 +356,57 @@ function flushXp(player)
 	end
 	apply(player, state)
 	return ups
+end
+
+-- (prompt 61) TRAINER SNACKS (Config/Style.Snacks): bought with coins at the Agency (price = minutes of coins at your
+-- stage), saved in data.snacks; FEED one to a trainer you own (MY TRAINERS) for its trainer EXP. Levels stop at the max
+-- level: a snack never evolves anyone (that still needs 3 copies). No coin fee for evolving (owner).
+local lastSnack = {}
+local function buySnack(player, snackId)
+	local Style = require(ReplicatedStorage.Shared.Config.Style)
+	local snack = type(snackId) == "string" and Style.SnackById[snackId]
+	local data = PlayerData.Get(player)
+	if not snack or not data then return end
+	if os.clock() - (lastSnack[player] or 0) < 0.3 then return end
+	lastSnack[player] = os.clock()
+	local price = Style.SnackPrice(snack, data.growthSpurts)
+	if not PlayerData.SpendCoins(player, price) then
+		send(player, "Failed", { text = "Not enough coins: a " .. snack.name .. " costs " .. price .. "." })
+		return
+	end
+	local snacks = type(data.snacks) == "table" and data.snacks or {}
+	snacks[snack.id] = (tonumber(snacks[snack.id]) or 0) + 1
+	PlayerData.SetTable(player, "snacks", snacks)
+	send(player, "SnackBought", { id = snack.id })
+end
+local function feed(player, uid, snackId)
+	local Style = require(ReplicatedStorage.Shared.Config.Style)
+	local snack = type(snackId) == "string" and Style.SnackById[snackId]
+	local data = PlayerData.Get(player)
+	if not snack or not data then return end
+	local snacks = type(data.snacks) == "table" and data.snacks or {}
+	if (tonumber(snacks[snack.id]) or 0) <= 0 then return end
+	for _, up in ipairs(flushXp(player)) do send(player, "LevelUp", up) end -- (the rep EXP waiting first)
+	local state = stateOf(player)
+	local copy = Trainers.CopyByUid(state)[uid]
+	if not copy then return end
+	if copy.l >= Trainers.MaxLevel then
+		send(player, "Failed", { text = "Already max level. Evolve it with " .. Trainers.EvolveCount .. " copies." })
+		return
+	end
+	snacks[snack.id] -= 1
+	PlayerData.SetTable(player, "snacks", snacks)
+	copy.x += snack.xp
+	local ups = {}
+	while copy.l < Trainers.MaxLevel and copy.x >= Trainers.LevelXp(copy.l, copy.s) do
+		copy.x -= Trainers.LevelXp(copy.l, copy.s)
+		copy.l += 1
+		table.insert(ups, { id = copy.id, level = copy.l, stage = copy.s, u = copy.u })
+	end
+	if copy.l >= Trainers.MaxLevel then copy.x = 0 end
+	apply(player, state)
+	send(player, "Fed", { id = snack.id, u = copy.u, level = copy.l, levels = #ups })
+	for _, up in ipairs(ups) do send(player, "LevelUp", up) end
 end
 
 -- MachineService calls this on every rep (gains = the weight tier's multiplier)
@@ -763,6 +815,10 @@ function TrainerService.Start()
 			teleportAgency(player)
 		elseif action == "AutoDelete" then
 			setAutoDelete(player, a, b)
+		elseif action == "BuySnack" then
+			buySnack(player, a) -- (prompt 61)
+		elseif action == "Feed" then
+			feed(player, a, b) -- (prompt 61)
 		elseif action == "SeenRebalance" then
 			-- (prompt 27c) the popup was shown: never again
 			local state = stateOf(player)
@@ -799,12 +855,17 @@ function TrainerService.Start()
 
 	-- (owner, prompt 27c) the boosts were rebalanced (lowered): anyone who already owned trainers gets a gift once, with a
 	-- popup; everyone else is just marked done (a new player's later trainers already have the new numbers)
+	-- (prompt 61) the gift's coins at the player's stage (its 500 is the floor)
+	local function rebalanceCoins(player): number
+		local data = PlayerData.Get(player)
+		return Economy.Reward(data and data.growthSpurts, Economy.Rewards.RebalanceGift, Trainers.RebalanceGift.coins)
+	end
 	local function rebalanceGift(player, state)
 		if state.rebalance ~= 0 then return end
 		if #state.copies > 0 then
 			state.rebalance = 1
 			state.freeRolls += Trainers.RebalanceGift.rolls
-			PlayerData.AddCoins(player, Trainers.RebalanceGift.coins)
+			PlayerData.AddCoins(player, rebalanceCoins(player))
 			Analytics.Event(player, "TrainerRebalanceGift", 1)
 		else
 			state.rebalance = 2
@@ -823,7 +884,7 @@ function TrainerService.Start()
 		if not owns then return end
 		state.rebalance = 1
 		state.freeRolls += Trainers.RebalanceGift.rolls
-		PlayerData.AddCoins(player, Trainers.RebalanceGift.coins)
+		PlayerData.AddCoins(player, rebalanceCoins(player))
 		Analytics.Event(player, "TrainerRebalanceGift", 2)
 	end
 	local function ready(player)

@@ -254,7 +254,9 @@ local function start(guide, id: string)
 	running = run
 	UIBus.GuideRunning = true
 	Remotes.PlayerAction:FireServer("Guide", { id = id, how = "shown" })
-	dialog.SetReward(guide.reward)
+	-- (prompt 61) the reward at your stage, as the server pays it
+	local Economy = require(Shared.Config.Economy)
+	dialog.SetReward(if guide.reward then Economy.Reward(ClientData.Get().growthSpurts, Economy.Rewards.Guide, guide.reward) else nil)
 	skip.SetShown(true)
 	Audio.PlayUI("Whoosh")
 	dialog.Show(guide.lines, function()

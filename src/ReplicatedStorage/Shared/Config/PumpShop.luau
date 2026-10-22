@@ -31,6 +31,7 @@ PumpShop.TryOnSeconds = 12      -- a try-on (apparel) lasts this long, or until 
 PumpShop.Sections = {
 	{ id = "Supplements", name = "Supplements", icon = "cup-soda" },
 	{ id = "Gear", name = "Gear", icon = "dumbbell", fromSpurt = 2 },
+	{ id = "Style", name = "Style", icon = "sparkles" }, -- (prompt 61: name tag / title / aura / alter colours, Config/Style)
 	{ id = "DnaLab", name = "DNA Lab", icon = "sparkles" },
 	{ id = "Alters", name = "Alters", icon = "flame", atMax = true }, -- (prompt 21: at 7'0"; Body Alters are never bought)
 }
@@ -44,7 +45,7 @@ PumpShop.Shops = {
 	Coach = { title = "Coach Dex", tabs = { "Supplements", "Gear", "Alters" },
 		supplements = { "Shake", "Creatine", "ProteinPowder", "Supplements", "PreWorkout" }, gear = { "Basic", "Pro" },
 		robux = { "ShakePack", "DnaToken", "DnaTokenPack" } },
-	Pump = { title = "Pump Shop", tabs = { "Supplements", "DnaLab" },
+	Pump = { title = "Pump Shop", tabs = { "Supplements", "Style", "DnaLab" }, -- (prompt 61: STYLE)
 		supplements = { "MassGainer", "ElitePreWorkout", "WheyIsolate", "BcaaRecovery" }, gear = {},
 		robuxDna = { "DnaToken", "DnaTokenPack" } },
 	Coconut = { title = "Coconut Stand", tabs = { "Supplements" }, supplements = { "CoconutWater" }, gear = {}, quantities = { 1, 5 } },

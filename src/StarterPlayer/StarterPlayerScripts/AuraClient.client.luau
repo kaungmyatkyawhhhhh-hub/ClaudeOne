@@ -48,11 +48,11 @@ local handles = {} -- [Player] = { handle, character, preset, power, maxed }
 local function presetFor(other: Player): string?
 	if other == player then
 		local preview = player:GetAttribute("AuraPreview")
-		if type(preview) == "string" and AuraVFX.Presets[preview] then return preview end
+		if AuraVFX.Valid(preview) then return preview end -- (prompt 61: a STYLE colour try-on is "<effect>@<colour>")
 	end
 	local character = other.Character
 	local preset = character and character:GetAttribute("EquippedAura")
-	return if type(preset) == "string" and AuraVFX.Presets[preset] then preset else nil
+	return if AuraVFX.Valid(preset) then preset else nil
 end
 
 -- the power for a player right now (the preview is always full)

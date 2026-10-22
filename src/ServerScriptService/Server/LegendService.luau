@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local Legends = require(Config.Legends)
 local PlayerData = require(script.Parent.PlayerData)
+local Economy = require(game:GetService("ReplicatedStorage").Shared.Config.Economy) -- (prompt 61: rewards at the player's stage)
 local Guard = require(script.Parent.Guard)
 local NpcService = require(script.Parent.NpcService)
 local TitleService = require(script.Parent.TitleService)
@@ -39,9 +40,11 @@ local function complete(player, data, legend)
 	data.legends.met[legend.id] = true
 	data.legends.active = nil
 	save(player, data)
-	if Legends.Reward.coins then PlayerData.AddCoins(player, Legends.Reward.coins) end
+	-- (prompt 61) the coins at the player's stage (Legends.Reward.coins is the floor)
+	local coins = if Legends.Reward.coins then Economy.Reward(data.growthSpurts, Economy.Rewards.Legend, Legends.Reward.coins) else nil
+	if coins then PlayerData.AddCoins(player, coins) end
 	TitleService.Check(player)
-	event(player, "LegendDone", { name = legend.name, title = legend.title, coins = Legends.Reward.coins })
+	event(player, "LegendDone", { name = legend.name, title = legend.title, coins = coins })
 end
 
 local function talk(player, legend, model)

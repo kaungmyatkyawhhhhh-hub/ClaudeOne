@@ -66,6 +66,30 @@ local RATES = {
 	twinkle    = { 2, 14 },
 }
 
+-- (prompt 61) "<preset>@<colour>": the preset with every colour turned to that colour's hue (Config/Style.AuraHues; a
+-- STYLE aura colour). Made once per name.
+local variants = {}
+local function resolve(name: any)
+	if PRESETS[name] then return PRESETS[name] end
+	if variants[name] then return variants[name] end
+	local presetName, colour = string.match(tostring(name), "^(.-)@(%a+)$")
+	local P = presetName and PRESETS[presetName]
+	local Style = require(script.Parent.Parent.Config.Style)
+	local hue = colour and Style.AuraHues[colour]
+	if not P or not hue then return nil end
+	local out = {}
+	for key, value in pairs(P) do
+		if typeof(value) == "Color3" then
+			local _, s, v = value:ToHSV()
+			out[key] = Color3.fromHSV(hue.hue, s, v)
+		else
+			out[key] = value
+		end
+	end
+	variants[name] = out
+	return out
+end
+
 local function NS(pts)
 	local k = {}
 	for _, p in pts do table.insert(k, NumberSequenceKeypoint.new(p[1], p[2], p[3] or 0)) end
@@ -107,7 +131,7 @@ local AuraVFX = {}
 AuraVFX.__index = AuraVFX
 
 function AuraVFX.Build(character, auraName)
-	local P = PRESETS[auraName]
+	local P = resolve(auraName)
 	local hrp = character:FindFirstChild("HumanoidRootPart")
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	if not P or not hrp or not hum then return nil end
@@ -346,5 +370,9 @@ function AuraVFX:Destroy()
 end
 
 AuraVFX.Presets = PRESETS
+-- (prompt 61) a preset name the client can build: a preset, or "<preset>@<colour>"
+function AuraVFX.Valid(name: any): boolean
+	return type(name) == "string" and resolve(name) ~= nil
+end
 AuraVFX.Textures = TEX -- (prompt 25: the trainers' auras use the same textures, Shared.VFX.TrainerAura)
 return AuraVFX

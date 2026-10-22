@@ -212,7 +212,11 @@ local function buy(player, shopId, section, id, quantity)
 	if not data or not shop or type(section) ~= "string" or type(id) ~= "string" then return end
 	if not table.find(shop.tabs, section) or not PumpShopService.IsOpen(data) or not sectionOpen(data, section) then return end
 	if not atShop(player, shopId) then return end
-	if section == "Supplements" then
+	if section == "Style" then
+		-- (prompt 61) a STYLE item (StyleService checks it and the coins)
+		local ok, failText = require(script.Parent.StyleService).Buy(player, id)
+		if ok then send(player, "Bought", { section = "Style", id = id }) elseif failText then send(player, "Failed", { text = failText }) end
+	elseif section == "Supplements" then
 		buySupplement(player, data, shop, id, tonumber(quantity) or 1)
 	elseif section == "Gear" then
 		buyGear(player, data, shop, id)

@@ -149,7 +149,7 @@ local function refreshInfo(model, info, distance)
 	if info.kind == "player" then
 		local style = MuscleRig.StyleFrom(info.source, model)
 		local old = info.style
-		if not old or old.skin ~= style.skin or old.shorts ~= style.shorts or old.top ~= style.top or old.shirt ~= style.shirt or old.pants ~= style.pants or old.alter ~= style.alter then
+		if not old or old.skin ~= style.skin or old.shorts ~= style.shorts or old.top ~= style.top or old.shirt ~= style.shirt or old.pants ~= style.pants or old.alter ~= style.alter or old.alterTint ~= style.alterTint then
 			info.style = style
 			rig:SetStyle(style)
 		end
