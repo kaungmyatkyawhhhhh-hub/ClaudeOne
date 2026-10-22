@@ -156,6 +156,7 @@ local markedTarget = nil -- (22 Oct) the target the gold marker + arrow are on
 -- (prompt 53) the gold ChunkyButton at its normal size (~30% of a phone screen), placed by the loop above
 local goButton = Kit.Button("Gold", "Go to bench", { Name = "GoTo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -130), Visible = false,
 	Parent = root }, { width = 240, height = 38, textSize = 15 })
+Theme.SetChrome(goButton) -- (owner, 23 Oct, chrome reset: clean italic dark words on metallic gold, no shine)
 local walking = false -- (a teleport is running)
 local arrivedAt = nil -- the target the last teleport put the player at (its GO TO button stays hidden)
 goButton.Activated:Connect(function()

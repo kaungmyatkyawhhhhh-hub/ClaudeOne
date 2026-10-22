@@ -65,7 +65,7 @@ local function ensure()
 	band = Theme.Panel({ Name = "Band", Piece = "pill", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, Notify.Top),
 		Size = UDim2.fromOffset(120, Notify.BandHeight), Visible = false, Parent = root }, {})
 	band.BackgroundTransparency = 0.12
-	bandText = Kit.Text({ Name = "Text", Text = "", Font = "Chunky", TextSize = 14, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0.5),
+	bandText = Kit.Text({ Name = "Text", Text = "", Font = "Title", KeepItalic = true, Stroke = false, TextSize = 14, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -28, 1, -6), Parent = band })
 	lane = New("Frame", { Name = "Lane", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(Notify.CardMaxWidth, 60), BackgroundTransparency = 1,
 		Parent = root })
@@ -113,7 +113,7 @@ end
 local TITLE_ROOM = Notify.CardMaxWidth - 70 -- the card minus its padding and icon
 local function needsTwoLines(text: string): boolean
 	local params = Instance.new("GetTextBoundsParams")
-	params.Text, params.Font, params.Size, params.Width = string.upper(text), Theme.Fonts.Chunky, 15, 1e5
+	params.Text, params.Font, params.Size, params.Width = string.upper(text), Theme.Fonts.Display, 15, 1e5
 	local ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
 	return ok and bounds.X > TITLE_ROOM
 end
@@ -134,19 +134,20 @@ local function card(entry)
 		New("UISizeConstraint", { MaxSize = Vector2.new(Notify.CardMaxWidth, height) }),
 	})
 	face.BackgroundTransparency = 0.04
+	-- (owner, 23 Oct, chrome reset: a toast is chrome: a thin dark outline, no mesh, clean italic words)
 	local border = face:FindFirstChild("Border") :: UIStroke
-	if border then border.Color, border.Thickness, border.Transparency = Colors.Gold, 1.5, 0 end
-	Theme.SetHex(face, Theme.HexAlpha, 12)
+	if border then border.Color, border.Thickness, border.Transparency = Colors.Outline, 1.5, 0 end
+	Theme.SetHex(face, nil, 12)
 	local icon = Pieces.Icon(entry.icon or "bell", tint, { Name = "Icon", LayoutOrder = 1, Size = UDim2.fromOffset(if entry.sub then 28 else 22, if entry.sub then 28 else 22),
 		Parent = face })
 	icon:SetAttribute("KeepColor", true)
 	local texts = New("Frame", { Name = "Texts", LayoutOrder = 2, Size = UDim2.fromOffset(0, height - 8), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1,
 		Parent = face }, { Theme.List(Enum.FillDirection.Vertical, 0, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	if wrap then
-		Kit.Text({ Name = "Title", LayoutOrder = 1, Text = entry.title, Font = "Chunky", Upper = true, TextSize = 14, TextWrapped = true,
+		Kit.Text({ Name = "Title", LayoutOrder = 1, Text = entry.title, Font = "Title", KeepItalic = true, Stroke = false, Upper = true, TextSize = 14, TextWrapped = true,
 			Size = UDim2.fromOffset(TITLE_ROOM, 38), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = texts })
 	else
-		Kit.Text({ Name = "Title", LayoutOrder = 1, Text = entry.title, Font = "Chunky", Upper = true, TextSize = if entry.sub then 16 else 15, Size = UDim2.fromOffset(0, 20),
+		Kit.Text({ Name = "Title", LayoutOrder = 1, Text = entry.title, Font = "Title", KeepItalic = true, Stroke = false, Upper = true, TextSize = if entry.sub then 16 else 15, Size = UDim2.fromOffset(0, 20),
 			AutomaticSize = Enum.AutomaticSize.X, TextTruncate = Enum.TextTruncate.AtEnd, Parent = texts })
 	end
 	if entry.sub and entry.sub ~= "" then

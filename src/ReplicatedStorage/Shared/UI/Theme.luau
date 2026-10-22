@@ -109,10 +109,11 @@ Theme.RarityColor = {
 -- (prompt 44, owner: the old mesh was too fine to see) Downloads\gym_arc_textures\hex_tile.png (seamless, white lines on
 -- transparent, 156x90), always ScaleType Tile at a fixed size (never scaled with the tile), tinted, ~0.8 transparent
 Theme.HexImage = "rbxassetid://117814833566275"
--- (owner, 22 Oct, final) one cell size (~25 px) everywhere, and the mesh only on: window panels 5%, streak day tiles 10%,
--- collectible tiles (trainers, alters, auras, titles, store tiles) ~18%. Nothing else (cards, quest rows, HUD boxes, nav
--- tiles, buttons, bars): solid graphite. Never on a child of something that already has it (detail / hero panels).
-Theme.HexTile = UDim2.fromOffset(26, 15)
+-- (owner, 22 Oct, final) one cell size everywhere, and the mesh only on: window panels 5%, collectible tiles (trainers,
+-- alters, auras, titles, store tiles) ~18%. Nothing else (cards, quest rows, HUD boxes, nav tiles, buttons, bars, toasts):
+-- solid graphite. Never on a child of something that already has it (detail / hero panels, streak days).
+-- (owner, 23 Oct, chrome reset: ~18 px cells, was ~25)
+Theme.HexTile = UDim2.fromOffset(18, 10)
 Theme.HexTileBig = Theme.HexTile
 Theme.HexPanel = 0.95
 Theme.HexStreak = 0.9
@@ -564,8 +565,12 @@ local PILL_SHEEN = sequence({ { 0, "#211E22" }, { 1, "#121013" } })
 Theme.Surfaces = {
 	panel = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.Panel, corner = 14, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
 		hex = Theme.HexPanel }, -- (owner, 22 Oct: window panels 5%)
-	hud_box = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 12, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
-		goldLine = 0.3 }, -- (prompt 40: the HUD cards, mockup 05: a gold inner line; owner 22 Oct: no mesh on cards)
+	-- (owner, 23 Oct, chrome reset) the HUD cards: dark graphite, a thin dark outline, a 1 px top highlight, 10 px corners;
+	-- no gold line (gold is for numbers, progress and one highlighted element), no mesh
+	hud_box = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 10, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0, hairline = Theme.Alpha.Hairline },
+	-- (the hotbar slots keep the earlier look: owner, "hotbar items unchanged")
+	hud_box_gold = { sheen = PANEL_SHEEN, alpha = Theme.Alpha.HudCard, corner = 12, outline = 2, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.35, hairline = Theme.Alpha.Hairline,
+		goldLine = 0.3 },
 	card = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 1.5, outlineColor = Theme.Colors.Outline, outlineAlpha = 0.3, hairline = 0.88 },
 	card_selected = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.72 },
 	card_gold = { sheen = CARD_SHEEN, alpha = 0, corner = 11, outline = 2.5, outlineColor = Theme.Colors.Gold, outlineAlpha = 0, hairline = 0.88, glow = 0.6 },
@@ -827,8 +832,77 @@ local function ctaLayers(button, on: boolean)
 	if streak then streak.Visible = on end
 end
 
+-- (owner, 23 Oct, chrome reset) a button with the attribute "Chrome" = true is quiet chrome: no diagonal shine, no gloss,
+-- a 1 px top highlight, a thin dark outline, 10 px corners, no gold line, no glow. Its words: the clean heavy italic font
+-- (dark on gold, white on dark), except a red one (PLAY), which keeps the chunky stroked font on a deep red with a 5 px
+-- darker bottom edge. Gold and dark ones have no bottom edge.
+Theme.ChromeLip = 5
+local CHROME_RED = { Color3.fromHex("#E8323C"), Color3.fromHex("#8E1219") }
+local CHROME_GOLD = { Color3.fromHex("#FFE7A0"), Color3.fromHex("#F2C14E"), Color3.fromHex("#C98A12") }
+local function chromeGradient(look, height: number)
+	if look == "Red" then
+		local edge = math.clamp(1 - Theme.ChromeLip / math.max(height, 1), 0.5, 0.98)
+		local lip = CHROME_RED[2]:Lerp(Color3.new(0, 0, 0), 0.45)
+		return ColorSequence.new({
+			ColorSequenceKeypoint.new(0, CHROME_RED[1]), ColorSequenceKeypoint.new(edge - 0.001, CHROME_RED[2]),
+			ColorSequenceKeypoint.new(edge, lip), ColorSequenceKeypoint.new(1, lip),
+		})
+	elseif look == "Gold" or look == "Green" then
+		return ColorSequence.new({ ColorSequenceKeypoint.new(0, CHROME_GOLD[1]), ColorSequenceKeypoint.new(0.45, CHROME_GOLD[2]), ColorSequenceKeypoint.new(1, CHROME_GOLD[3]) })
+	end
+	return ColorSequence.new(Theme.Gradients.Quiet[1], Theme.Gradients.Quiet[2])
+end
+local function setChromeStyle(button, style)
+	local look = lookOf(style)
+	local gradient = button:FindFirstChild("Gloss") or Theme.New("UIGradient", { Name = "Gloss", Rotation = 90, Parent = button })
+	gradient.Color = chromeGradient(look, button.Size.Y.Offset) -- (mockup px)
+	local corner = button:FindFirstChildOfClass("UICorner") or Theme.New("UICorner", { Parent = button })
+	corner.CornerRadius = UDim.new(0, 10)
+	local stroke = outlineOf(button)
+	stroke.Color, stroke.Thickness, stroke.Transparency, stroke.Enabled = Theme.Colors.Outline, if look == "Red" then 2 else 1.5, 0, true
+	setGlow(button, nil, nil, 10)
+	setHairline(button, if look == "Quiet" or look == "Flat" then 0.86 else 0.55, 10)
+	Theme.SetHex(button, nil, 10)
+	local gold = depthOf(button):FindFirstChild("GoldLine")
+	if gold then gold.Visible = false end
+	ctaLayers(button, false)
+	-- the words sit centred above the bottom edge (only red has one)
+	local pad = button:FindFirstChildOfClass("UIPadding")
+	if pad then pad.PaddingBottom = UDim.new(0, if look == "Red" then Theme.ChromeLip else 0) end
+	local color = if look == "Gold" or look == "Green" then Theme.Colors.Ink else Theme.Colors.Text
+	for _, item in ipairs(button:GetDescendants()) do
+		if item:IsA("TextLabel") and not item:GetAttribute("KeepColor") then
+			item.TextColor3 = color
+			item.TextYAlignment = Enum.TextYAlignment.Center
+			local outline = Theme.TextShadow(item)
+			if look == "Red" then
+				item.FontFace = UIFonts.Chunky
+				outline.Color, outline.Transparency, outline.Thickness = Theme.Colors.Outline, 0, math.max(1.5, item.TextSize / 11)
+			else
+				item.FontFace = Theme.Fonts.Display
+				outline.Transparency = 1
+			end
+		end
+		if item:IsA("ImageLabel") and item.Name == "Icon" and not item:GetAttribute("KeepColor") then item.ImageColor3 = color end
+	end
+	-- (the red one's bottom edge stays 5 px when the button is resized)
+	if look == "Red" and not button:GetAttribute("ChromeWatch") then
+		button:SetAttribute("ChromeWatch", true)
+		button:GetPropertyChangedSignal("Size"):Connect(function()
+			if button:GetAttribute("Chrome") and lookOf(button:GetAttribute("Style")) == "Red" then gradient.Color = chromeGradient("Red", button.Size.Y.Offset) end
+		end)
+	end
+end
+
 function Theme.SetButtonStyle(button, style)
 	button:SetAttribute("Style", style)
+	if button:GetAttribute("Chrome") then
+		button.BackgroundColor3 = Color3.new(1, 1, 1)
+		button.BackgroundTransparency = 0
+		if button:IsA("ImageButton") or button:IsA("ImageLabel") then button.Image = "" end
+		setChromeStyle(button, style)
+		return
+	end
 	local look = lookOf(style)
 	local cta = (look == "Red" or look == "Gold" or look == "Green") and style ~= "Tab"
 	button.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -893,6 +967,13 @@ function Theme.SetButtonStyle(button, style)
 		end
 		if item:IsA("ImageLabel") and item.Name == "Icon" and not item:GetAttribute("KeepColor") then item.ImageColor3 = color end
 	end
+end
+
+-- (owner, 23 Oct, chrome reset) makes a button quiet chrome (see setChromeStyle) and restyles it now
+function Theme.SetChrome(button)
+	button:SetAttribute("Chrome", true)
+	Theme.SetButtonStyle(button, button:GetAttribute("Style") or "Quiet")
+	return button
 end
 
 function Theme.Button(style, props, children)

@@ -92,10 +92,8 @@ end
 local card = New("Frame", { Name = "Info", BackgroundColor3 = Color3.fromHex("#141317"), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(224, 82), Visible = false,
 	ZIndex = 20, Parent = root }, {
 	New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-	New("UIStroke", { Color = Colors.Gold, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }), -- (owner, 23 Oct, chrome reset: no gold edge, no mesh)
 })
-New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile, ImageTransparency = 0.88,
-	Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
 local cardIcon = New("Frame", { Name = "Icon", BackgroundTransparency = 1, Position = UDim2.fromOffset(8, 10), Size = UDim2.fromOffset(46, 46), ZIndex = 21, Parent = card })
 local cardName = chunky(card, "Name", 15, { Position = UDim2.fromOffset(62, 6), Size = UDim2.new(1, -70, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21 })
 Kit.Fit(cardName, 15, 10)

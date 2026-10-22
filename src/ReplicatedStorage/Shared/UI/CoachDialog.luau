@@ -123,9 +123,9 @@ function CoachDialog.new(parent: Instance, reward: number?)
 	})
 	local face = Theme.Panel({ Name = "Face", Size = UDim2.new(1, 0, 1, -CoachDialog.Lip), ZIndex = 2, Parent = dialog }, {})
 	face.BackgroundTransparency = 0.04
+	-- (owner, 23 Oct, chrome reset: chrome, a thin dark outline; the panel's own 5% mesh)
 	local border = face:FindFirstChild("Border") :: UIStroke
-	if border then border.Color, border.Thickness, border.Transparency = Colors.Gold, 2, 0 end
-	Theme.SetHex(face, Theme.HexAlpha, 14)
+	if border then border.Color, border.Thickness, border.Transparency = Colors.Outline, 1.5, 0 end
 	lip.ZIndex = 1
 
 	-- his live portrait in a gold frame, on the light backdrop of tutorial2.png (a gradient on a ViewportFrame tints the
@@ -134,14 +134,12 @@ function CoachDialog.new(parent: Instance, reward: number?)
 		BackgroundColor3 = Colors.Blue, Ambient = Color3.fromRGB(200, 200, 200), LightColor = Color3.new(1, 1, 1), LightDirection = Vector3.new(-0.4, -0.6, -1),
 		Parent = face }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-		New("UIStroke", { Color = Colors.Gold, Thickness = 2.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 170)) }),
 	})
 	local pill, amount = rewardPill(face)
-	local who = Kit.GoldText(Kit.Text({ Name = "Name", Text = Quests.CoachName, Font = "Chunky", Upper = true, TextSize = 16, Position = UDim2.fromOffset(TEXT_LEFT, PAD),
-		Size = UDim2.new(1, -TEXT_LEFT - PAD - 76, 0, NAME_ROW), TextXAlignment = Enum.TextXAlignment.Left, Parent = face }))
-	local whoStroke = who:FindFirstChild("TextStroke")
-	if whoStroke then whoStroke.Transparency = 0 end
+	Kit.Text({ Name = "Name", Text = Quests.CoachName, Font = "Title", KeepItalic = true, Stroke = false, TextColor3 = Colors.Gold, Upper = true, TextSize = 16,
+		Position = UDim2.fromOffset(TEXT_LEFT, PAD), Size = UDim2.new(1, -TEXT_LEFT - PAD - 76, 0, NAME_ROW), TextXAlignment = Enum.TextXAlignment.Left, Parent = face })
 	local text = Kit.Text({ Name = "Text", Text = "", Font = "Strong", TextSize = TEXT_SIZE, TextWrapped = true, LineHeight = LINE_HEIGHT,
 		Position = UDim2.fromOffset(TEXT_LEFT, PAD + NAME_ROW + 4), Size = UDim2.new(1, -TEXT_LEFT - PAD, 0, 40),
 		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = face })

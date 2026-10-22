@@ -306,10 +306,11 @@ function RightColumn.Tracker(props)
 	local head = New("Frame", { Name = "Head", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Parent = card })
 	local titleX = 0
 	if props.icon then
-		require(script.Parent.Pieces).Icon(props.icon, props.iconColor or Colors.Gold, { Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(0, 1), Parent = head })
+		require(script.Parent.Pieces).Icon(props.icon, props.iconColor or Colors.Text, { Size = UDim2.fromOffset(13, 13), Position = UDim2.fromOffset(0, 1), Parent = head })
 		titleX = 17
 	end
-	local title = Kit.Text({ Name = "Title", Text = props.title or "", Font = "Title", TextSize = 12, Upper = true, Position = UDim2.fromOffset(titleX, 0),
+	-- (owner, 23 Oct, chrome reset: clean italic words, no stroke; gold only on the count and the bar)
+	local title = Kit.Text({ Name = "Title", Text = props.title or "", Font = "Title", KeepItalic = true, Stroke = false, TextSize = 12, Upper = true, Position = UDim2.fromOffset(titleX, 0),
 		Size = UDim2.new(1, -titleX - 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = head })
 	local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 12, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 44, 1, 0), TextXAlignment = Enum.TextXAlignment.Right, Parent = head })

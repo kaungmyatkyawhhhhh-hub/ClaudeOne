@@ -129,6 +129,7 @@ local skip = require(Shared.UI.SkipPill).new("GuideSkip", function()
 end, false)
 local goButton = Kit.Button("Gold", "Go", { Name = "GoTo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -130), Visible = false, Parent = root },
 	{ width = 240, height = 38, textSize = 15 })
+Theme.SetChrome(goButton) -- (owner, 23 Oct, chrome reset)
 -- (the dialog and the GO TO button sit above the hotbar / stamina bar like the tutorial's, GO TO 12 px above the dialog)
 task.spawn(function()
 	while true do

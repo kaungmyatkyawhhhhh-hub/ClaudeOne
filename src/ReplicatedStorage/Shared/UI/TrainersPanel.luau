@@ -72,8 +72,7 @@ local function framed(parent, props, color: Color3)
 		New("UIStroke", { Color = color, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	for k, v in pairs(props) do box[k] = v end
-	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile, ImageTransparency = 0.82,
-		Size = UDim2.fromScale(1, 1), Parent = box }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+	-- (owner, 23 Oct, chrome reset: no mesh on a bar inside the panel)
 	New("Frame", { Name = "InnerRing", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = 3, Parent = box }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 7) }),
 		New("UIStroke", { Color = INK, Thickness = 1.5 }),

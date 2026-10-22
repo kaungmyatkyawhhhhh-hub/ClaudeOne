@@ -29,6 +29,7 @@ local GOLD = "#" .. Colors.Gold:ToHex()
 ------------------------------------------------------------------------
 local coins = TopBar.NewIcon("Coins", 1):setImage(UI.Icons.coin):setLabel("0")
 coins:modifyTheme({ "IconImage", "ImageColor3", Colors.Gold }) -- (the one gold accent)
+coins:modifyTheme({ "IconLabel", "TextColor3", Colors.Gold }) -- (owner, 23 Oct, chrome reset: the coin count in gold)
 local shownCoins = Instance.new("NumberValue")
 shownCoins.Changed:Connect(function(value) coins:setLabel(Kit.Format(math.floor(value + 0.5))) end)
 local firstCoins = true
@@ -97,7 +98,8 @@ local function refresh()
 	end
 	local average = count > 0 and total / count or 0
 	local whole = math.floor(average)
-	level:setLabel("LVL " .. whole .. " · " .. heightText)
+	-- (owner, 23 Oct, chrome reset: the LVL number in gold)
+	level:setLabel('LVL <font color="' .. GOLD .. '">' .. whole .. "</font> · " .. heightText)
 	if barFill then barFill.Size = UDim2.fromScale(math.clamp(average - whole, 0, 1), 1) end
 	-- LVL up (prompt 20, 21 Oct): a reward popup. Not on the first read, and not after a Growth Spurt (the level starts over)
 	local stage = (data.growthSpurts or 0) * 100 + (type(data.alter) == "table" and data.alter.highest or 0) -- (a Body Alter starts the level over too)

@@ -281,11 +281,8 @@ local row = New("Frame", { Name = "Days", BackgroundTransparency = 1, Position =
 	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(GAP, 0), HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
 })
-local function hexOn(parent: Instance, corner: number, color: Color3?)
-	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile,
-		ImageTransparency = Theme.HexStreak, ImageColor3 = color or Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), Parent = parent },
-		{ New("UICorner", { CornerRadius = UDim.new(0, corner) }) })
-end
+-- (owner, 23 Oct, chrome reset: no mesh on a child of a panel that has it: the day tiles are solid now)
+local function hexOn(_parent: Instance, _corner: number, _color: Color3?) end
 for day = 1, DAYS do
 	local coins, tokens = Economy.LoginReward(day)
 	local big = day == DAYS
@@ -418,13 +415,13 @@ end
 
 -- (prompt 43, owner 22 Oct: no Daily icon on the top bar) a small DAILY REWARD card at the top of the right-side stack
 -- while today's streak reward can be claimed (gold edge, the red "!" chip); a tap opens the STREAK tab. Gone once claimed.
+-- (owner, 23 Oct, chrome reset: chrome like the other HUD cards, a thin dark outline, a white icon, clean italic words; the
+-- red "!" chip says it's waiting)
 local rewardCard = Theme.Panel({ Name = "DailyReward", Piece = "hud_box", Clickable = true, Size = UDim2.fromOffset(RightColumn.Width, 30), Visible = false })
 do
-	local edge = rewardCard:FindFirstChild("Border")
-	if edge then edge.Color, edge.Thickness, edge.Transparency = Colors.Gold, 2, 0 end
-	Pieces.Icon("gift", Colors.Gold, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(16, 16), Parent = rewardCard })
+	Pieces.Icon("gift", Colors.Text, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(16, 16), Parent = rewardCard })
 		:SetAttribute("KeepColor", true)
-	Kit.Text({ Name = "Title", Text = "DAILY REWARD", Font = "Chunky", TextSize = 13, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 30, 0.5, 0),
+	Kit.Text({ Name = "Title", Text = "DAILY REWARD", Font = "Title", KeepItalic = true, Stroke = false, TextSize = 13, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 30, 0.5, 0),
 		Size = UDim2.new(1, -60, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = rewardCard })
 	local chip = New("Frame", { Name = "Chip", BackgroundColor3 = Colors.Red, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -7, 0.5, 0),
 		Size = UDim2.fromOffset(17, 17), Parent = rewardCard }, {

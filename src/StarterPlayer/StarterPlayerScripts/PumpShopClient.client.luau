@@ -195,8 +195,7 @@ local strip = New("Frame", { Name = "Detail", BackgroundColor3 = Color3.fromHex(
 	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
 	New("UIStroke", { Name = "Edge", Color = Colors.Gold, Thickness = 2, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 })
-New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile, ImageTransparency = 0.88,
-	Size = UDim2.fromScale(1, 1), Parent = strip }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+-- (owner, 23 Oct, chrome reset: no mesh on a child of the panel)
 local stripIcon = New("Frame", { Name = "Icon", BackgroundTransparency = 1, Position = UDim2.fromOffset(8, 6), Size = UDim2.fromOffset(52, 52), Parent = strip })
 local stripName = Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 18, Position = UDim2.fromOffset(68, 8), Size = UDim2.new(1, -340, 0, 22),
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = strip })

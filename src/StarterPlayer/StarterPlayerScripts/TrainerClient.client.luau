@@ -231,8 +231,7 @@ local pityPill = New("Frame", { Name = "PityPill", BackgroundColor3 = Color3.fro
 })
 -- (prompt 47, mockup 02b_roll_closeup) one thick bar: a dark hex track, the teal fill, the words on it
 pityPill.Size = UDim2.new(1, 0, 0, 40)
-New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile, ImageTransparency = 0.8,
-	Size = UDim2.fromScale(1, 1), Parent = pityPill }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+-- (owner, 23 Oct, chrome reset: no mesh on a bar inside the panel)
 local pityFill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(4, 4), Size = UDim2.new(0, 0, 1, -8), ZIndex = 2,
 	Parent = pityPill }, {
 	New("UICorner", { CornerRadius = UDim.new(0, 9) }),

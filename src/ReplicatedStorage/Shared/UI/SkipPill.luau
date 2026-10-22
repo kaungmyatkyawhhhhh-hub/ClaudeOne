@@ -21,6 +21,7 @@ function SkipPill.new(name: string, onSkip: () -> (), confirm: boolean?)
 	local root = Kit.Root(gui)
 	local button = Kit.Button("Quiet", "Skip", { Name = "Skip", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -SkipPill.Right, 0, 52), Parent = root },
 		{ width = SkipPill.Width, height = SkipPill.Height, textSize = 12 })
+	Theme.SetChrome(button) -- (owner, 23 Oct, chrome reset: no gold line, clean italic words)
 	Kit.OnTopbar(function() button.Position = UDim2.new(1, -SkipPill.Right, 0, Kit.UnderTopbar(root)) end)
 	local armedAt = -math.huge
 	local function disarm()

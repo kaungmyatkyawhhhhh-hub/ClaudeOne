@@ -95,8 +95,11 @@ Kit.Text({ Name = "Tagline", LayoutOrder = 1, Text = "Everyone starts tiny.", Fo
 	Size = UDim2.fromOffset(COL_W, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = column })
 
 -- PLAY: the red CTA with a play triangle (drawn from thin strips: no glyph, no emoji)
+-- (owner, 23 Oct, chrome reset) every menu button is chrome (Theme.SetChrome): no diagonal shine, a 1 px top highlight,
+-- 10 px corners; PLAY keeps the chunky stroked word on a deep red with a 5 px darker bottom edge, SHOP clean heavy italic
+-- dark words on metallic gold, SETTINGS / NEWS clean heavy italic white on dark graphite with a thin dark outline
 local playButton = Theme.Button("Red", { Name = "Play", LayoutOrder = 2, Size = UDim2.fromOffset(COL_W, 50), Parent = column }, {})
-local playRow = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1 - Theme.LipHeight, 0), Parent = playButton }, {
+local playRow = New("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -Theme.ChromeLip), Parent = playButton }, {
 	Theme.List(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 })
 local triangle = New("Frame", { Name = "Triangle", LayoutOrder = 1, BackgroundTransparency = 1, Size = UDim2.fromOffset(12, 15), Parent = playRow })
@@ -107,6 +110,7 @@ end
 Kit.Text({ Name = "Label", LayoutOrder = 2, Text = "Play", Font = "Title", TextSize = 30, Upper = true, Size = UDim2.fromOffset(0, 40),
 	AutomaticSize = Enum.AutomaticSize.X, Parent = playRow })
 playButton.Active = false
+Theme.SetChrome(playButton)
 
 local shopButton = Kit.Button("Gold", "Shop", { Name = "Shop", LayoutOrder = 3, Visible = false, Parent = column },
 	{ width = COL_W, height = 30, textSize = 14, icon = "shopping-cart" })
@@ -114,6 +118,7 @@ local settingsButton = Kit.Button("Quiet", "Settings", { Name = "Settings", Layo
 	{ width = COL_W, height = 30, textSize = 14, icon = "settings" })
 local updatesButton = Kit.Button("Quiet", "News", { Name = "Updates", LayoutOrder = 5, Parent = column },
 	{ width = COL_W, height = 30, textSize = 14, icon = "bell" })
+for _, b in ipairs({ shopButton, settingsButton, updatesButton }) do Theme.SetChrome(b) end
 -- (owner, 22 Oct) the news badge: the small red "!" chip (as on the side menu tiles), inside the top-right corner
 local newsDot = New("Frame", { Name = "NewsDot", BackgroundColor3 = Colors.Red, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0.5),
 	Position = UDim2.new(1, -6, 0.5, -1), Size = UDim2.fromOffset(17, 17), Visible = false, ZIndex = 4, Parent = New("Folder", { Name = "Dot", Parent = updatesButton }) }, {
@@ -128,8 +133,8 @@ local iconRow = New("Frame", { Name = "IconRow", LayoutOrder = 6, BackgroundTran
 	Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
 })
 local function squareButton(name: string, icon: string, order: number)
-	local b = Theme.Button("Quiet", { Name = name, LayoutOrder = order, Size = UDim2.fromOffset(44, 44), Parent = iconRow }, {})
-	require(Shared.UI.Pieces).Icon(icon, Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -3), Size = UDim2.fromOffset(20, 20),
+	local b = Theme.SetChrome(Theme.Button("Quiet", { Name = name, LayoutOrder = order, Size = UDim2.fromOffset(44, 44), Parent = iconRow }, {}))
+	require(Shared.UI.Pieces).Icon(icon, Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.fromOffset(20, 20),
 		ZIndex = b.ZIndex + 2, Parent = b })
 	return b
 end
@@ -165,7 +170,7 @@ end
 -- a Kit button resized: its bottom lip padding and its label follow
 local function sizeButton(button: GuiObject, width: number, height: number, textSize: number?)
 	button.Size = UDim2.fromOffset(width, height)
-	local lip = math.floor(height * Theme.LipHeight)
+	local lip = if button:GetAttribute("Chrome") then 0 else math.floor(height * Theme.LipHeight) -- (chrome: no bottom edge on these)
 	local pad = button:FindFirstChildOfClass("UIPadding")
 	if pad then pad.PaddingBottom = UDim.new(0, lip) end
 	local label = button:FindFirstChild("Label")
@@ -235,7 +240,7 @@ local function reveal()
 			end)
 		end
 	end
-	task.delay(TIMING.Slide, function() Theme.ShineAll(column) end) -- (the PLAY shine sweeps across once)
+	-- (owner, 23 Oct, chrome reset: no diagonal shine on the menu buttons)
 end
 
 -- PLAY pulses (the featured CTA) while the menu is up

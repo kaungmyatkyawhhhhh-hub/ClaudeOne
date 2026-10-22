@@ -85,10 +85,8 @@ local function setAlterLook(theme, percent: number?)
 	tileText.Size = UDim2.new(1, if on then -62 else -16, 0, 22)
 	tileText.TextXAlignment = if on then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
 	if not on then return end
-	local gloss = tile:FindFirstChild("Gloss")
-	if gloss then gloss.Color = ColorSequence.new(theme.base:Lerp(Color3.new(0, 0, 0), 0.15), theme.base:Lerp(Color3.new(0, 0, 0), 0.6)) end
-	local edge = tile:FindFirstChildOfClass("UIStroke")
-	if edge then edge.Color, edge.Transparency = theme.accent, 0 end
+	-- (owner, 23 Oct, chrome reset) the card stays dark graphite with the screen's one gold outline (was the alter's own
+	-- base colour and accent edge); the name keeps its alter gradient, the strip its art
 	if theme.bg then
 		alterStrip.Image, alterStrip.BackgroundTransparency = theme.bg, 1
 	else
@@ -97,8 +95,23 @@ local function setAlterLook(theme, percent: number?)
 	tileText.TextColor3 = Color3.new(1, 1, 1)
 	titleGradient.Color = ColorSequence.new(theme.title[1], theme.title[2])
 	alterPct.Text = (percent or 0) .. "%"
+	alterPct.TextColor3 = Colors.Gold
 	tileLabel.TextColor3 = Color3.fromHex("#9A97A0")
 end
+
+-- (owner, 23 Oct, chrome reset) the card's look: while it's waiting (NEXT / GROWTH SPURT) it's chrome, dark graphite, clean
+-- italic words, with the one gold outline on the screen; MAX is chrome without it; ready (TAP TO GROW / ALTER NOW) is the
+-- loud gold button (a claim)
+local function styleTile(style: string, chrome: boolean, goldEdge: boolean?)
+	tile:SetAttribute("Chrome", chrome or nil)
+	Theme.SetButtonStyle(tile, style)
+	if chrome and goldEdge then
+		local edge = tile:FindFirstChild("Border")
+		if edge and edge:IsA("UIStroke") then edge.Color, edge.Thickness, edge.Transparency = Colors.Gold, 2, 0 end
+	end
+end
+tileLabel.RichText = true
+local GOLD_HEX = "#" .. Colors.Gold:ToHex()
 
 -- (owner, 15 Oct: always shown under the one priority card; it had vanished behind Today's Quest)
 RightColumn.Add(holder, 9, "bottom")
@@ -112,7 +125,8 @@ local LINK_H = 44
 local function finishLink(parent: Instance, y: number, width: number): TextButton
 	local link = New("TextButton", { Name = "FinishFaster", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Visible = false,
 		Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(width, LINK_H), Parent = parent })
-	Kit.Text({ Name = "Label", Text = "Finish faster: Shake Bundle >", Font = "Strong", TextSize = 11, TextColor3 = Colors.Gold,
+	-- (owner, 23 Oct, chrome reset: small gold italic)
+	Kit.Text({ Name = "Label", Text = "Finish faster: Shake Bundle >", Font = "Title", KeepItalic = true, Stroke = false, TextSize = 11, TextColor3 = Colors.Gold,
 		AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 16), Parent = link })
 	link.Activated:Connect(function()
 		Audio.PlayUI("Click")
@@ -513,32 +527,32 @@ local function refresh()
 		-- (the next alter has no textures yet)
 		tileText.Text = "MORE ALTERS SOON"
 		tileLabel.Text = Alters.Label(Alters.State(data).highest or 0)
-		Theme.SetButtonStyle(tile, "Disabled")
+		styleTile("Disabled", true)
 	elseif alterMode and ready then
 		tileText.Text = "ALTER NOW"
 		tileLabel.Text = "Alter " .. progress.next .. ": " .. nextName .. " ready"
 		bigText.Text = "ALTER NOW"
-		Theme.SetButtonStyle(tile, "Gold")
+		styleTile("Gold", false)
 		Theme.Pulse(tile, function() return ready end)
 	elseif alterMode then
 		tileText.Text = "NEXT: " .. string.upper(nextName)
 		tileLabel.Text = if needs ~= "" then "Needs " .. needs else "Tap for what to train"
-		Theme.SetButtonStyle(tile, "Quiet")
+		styleTile("Quiet", true, true)
 		setAlterLook(AlterThemes.Get(progress.next), percent)
 	elseif progress.maxed then
 		tileText.Text = "MAX GROWTH SPURT"
 		tileLabel.Text = "Reached · " .. GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts), true)
-		Theme.SetButtonStyle(tile, "Disabled")
+		styleTile("Disabled", true)
 	elseif ready then
 		tileText.Text = "TAP TO GROW"
 		bigText.Text = "TAP TO GROW"
 		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
-		Theme.SetButtonStyle(tile, "Gold")
+		styleTile("Gold", false)
 		Theme.Pulse(tile, function() return ready end)
 	else
 		tileText.Text = "GROWTH SPURT " .. (data.growthSpurts + 1)
-		tileLabel.Text = percent .. "%" .. (if needs ~= "" then " · Needs " .. needs else " · tap for your physique")
-		Theme.SetButtonStyle(tile, "Quiet")
+		tileLabel.Text = '<font color="' .. GOLD_HEX .. '">' .. percent .. "%</font>" .. (if needs ~= "" then " · Needs " .. needs else " · tap for your physique")
+		styleTile("Quiet", true, true)
 	end
 	-- the next small goal: a hint now and then (never more than one a minute, and only a new one)
 	local goal = goalText(data, progress)

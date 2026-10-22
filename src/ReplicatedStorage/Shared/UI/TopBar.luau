@@ -26,8 +26,10 @@ local PILLS = {
 	Settings = { order = 3, icon = "settings" },
 }
 
--- (owner, 22 Oct: no outlines on the top bar; the icons keep Roblox's / TopbarPlus' own look) kept so callers still work
+-- (owner, 22 Oct: no outlines on the top bar; the icons keep Roblox's / TopbarPlus' own look) kept so callers still work.
+-- (owner, 23 Oct, chrome reset) their words in the clean heavy italic font
 function TopBar.Style(icon)
+	icon:modifyTheme({ "IconLabel", "FontFace", require(script.Parent.UIFonts).Display })
 	return icon
 end
 

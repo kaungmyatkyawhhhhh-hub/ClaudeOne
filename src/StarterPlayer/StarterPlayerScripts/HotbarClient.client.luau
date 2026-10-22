@@ -151,7 +151,8 @@ local function render()
 		if not slot then
 			local boostId = tool:GetAttribute("BoostItem")
 			local frame = New("Frame", { Name = if type(boostId) == "string" then "Slot_" .. boostId else "Slot", BackgroundTransparency = 1, Size = UDim2.fromOffset(SLOT, SLOT + LIFT), Parent = bar })
-			local face = Theme.Panel({ Name = "Face", Piece = "hud_box", Clickable = true, AnchorPoint = Vector2.new(0.5, 1),
+			-- (owner, 23 Oct, chrome reset: the hotbar keeps its look)
+			local face = Theme.Panel({ Name = "Face", Piece = "hud_box_gold", Clickable = true, AnchorPoint = Vector2.new(0.5, 1),
 				Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.fromOffset(SLOT, SLOT), Parent = frame })
 			local stroke = New("UIStroke", { Name = "Held", Color = Colors.Gold, Thickness = 2, Enabled = false,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = face })

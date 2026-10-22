@@ -34,11 +34,11 @@ local New, Colors = Theme.New, Theme.Colors
 
 local SideMenu = {}
 
-SideMenu.TileSize = 54
--- (owner, 22 Oct) every tile measure is a share of the tile: gap 9%, corner 12%, icon 55% (8% from the top), label 20%
--- tall with 6% under it
-SideMenu.Shape = { Gap = 0.09, Corner = 0.12, Icon = 0.55, IconTop = 0.08, Label = 0.20, LabelBottom = 0.06 }
-SideMenu.Gap = SideMenu.TileSize * SideMenu.Shape.Gap
+-- (owner, 23 Oct, chrome reset: back to the earlier tiles, larger with more spacing) every tile measure is a share of the
+-- tile: icon 46% (10% from the top), label 20% tall with 7% under it; 10 px corners, 10 px between tiles
+SideMenu.TileSize = 58
+SideMenu.Shape = { Gap = 10 / 58, Corner = 10 / 58, Icon = 0.46, IconTop = 0.10, Label = 0.20, LabelBottom = 0.07 }
+SideMenu.Gap = 10
 SideMenu.Left = 12
 SideMenu.Top = 52      -- never higher than this: under Roblox's top bar (set from Kit.UnderTopbar)
 SideMenu.BottomRoom = 12 -- room left at the bottom of the screen
@@ -198,13 +198,14 @@ local function ensure()
 	return bar
 end
 
--- One tile (the old look): lip, face, border, icon, outlined label, badge.
--- (prompt 39b, 22 Oct: the owner's earlier tile style, Downloads\gym_arc_ui_style_match\real\left_nav_badges.png) A dark
--- graphite tile with a faint hex mesh, a thin gold inner outline, a thick dark bottom edge, a GOLD line icon and a white
--- chunky label with a dark stroke. Locked: darker, the outline grey, a GREY padlock in place of the icon, the label grey.
--- One badge inside the top-right corner, LOCKED > NEW (a small gold "NEW" tag) > "!" (a small red chip, gentle pulse).
+-- One tile. (owner, 23 Oct, chrome reset: the earlier tile, chrome) A dark graphite rounded square, a thin dark outline,
+-- a 1 px top highlight, a darker bottom edge, a WHITE line icon and a clean heavy italic white label (no stroke, no mesh).
+-- Gold only on the active tile (its panel is open) or a notified one (a "!" or NEW): a gold outline. Locked: dimmed, a
+-- grey padlock in place of the icon, the label dimmed but readable. One badge inside the top-right corner, LOCKED > NEW (a
+-- small gold "NEW" tag) > "!" (a small red chip, gentle pulse).
 local GOLD = Color3.fromHex("#F2C14E")
 local LOCK_GREY = Color3.fromHex("#6C6A70")
+local WHITE = Color3.fromHex("#F2EEF0")
 local CHUNKY = Font.fromEnum(Enum.Font.LuckiestGuy)
 local Icons = require(script.Parent.Icons)
 local function makeTile(id, labelText, iconFactory)
@@ -216,18 +217,17 @@ local function makeTile(id, labelText, iconFactory)
 		Size = UDim2.fromOffset(size, size), Parent = bar }, { New("UIAspectRatioConstraint", { AspectRatio = 1 }) }) -- (always square)
 	New("Frame", { Name = "Lip", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromHex("#060507"), BackgroundTransparency = 0.05, Parent = button },
 		{ New("UICorner", { CornerRadius = UDim.new(0, radius) }) })
-	local border = New("UIStroke", { Color = GOLD, Thickness = 1, Transparency = 0.35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	-- the outline: thin and dark, gold on the active / notified tile
+	local border = New("UIStroke", { Name = "Outline", Color = Color3.fromHex("#060507"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local face = New("Frame", { Name = "Face", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0,
 		ZIndex = 2, Parent = button }, {
 		New("UICorner", { CornerRadius = UDim.new(0, radius) }),
-		New("UIStroke", { Name = "Outline", Color = Color3.fromHex("#060507"), Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }), -- (2 px dark outline)
-		New("UIGradient", { Name = "Glass", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2A272D"), Color3.fromHex("#18161A")) }),
+		border,
+		New("UIGradient", { Name = "Glass", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#2C292E"), Color3.fromHex("#18161A")) }),
 	})
-	-- the hex mesh (its own rounded corners clip it to the tile)
-	-- (owner, 22 Oct: no mesh on the nav tiles)
-	-- the thin gold inner outline (inset 2 px)
-	New("Frame", { Name = "Inner", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(1, -4, 1, -4), ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, math.max(radius - 2, 0)) }), border })
+	-- the 1 px top highlight
+	New("Frame", { Name = "Highlight", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.86, BorderSizePixel = 0, Position = UDim2.fromOffset(radius - 2, 1),
+		Size = UDim2.new(1, -2 * (radius - 2), 0, 1), ZIndex = 3, Parent = face })
 	local shade = New("Frame", { Name = "LockShade", BackgroundColor3 = Color3.fromHex("#050406"), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1),
 		ZIndex = 3, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, radius) }) })
 	local content = New("Frame", { Name = "Content", Size = UDim2.new(1, 0, 1, -SideMenu.Lip), BackgroundTransparency = 1, ZIndex = 4, Parent = face })
@@ -236,30 +236,29 @@ local function makeTile(id, labelText, iconFactory)
 	local iconTop = math.floor(size * shape.IconTop + 0.5)
 	local iconSlot = New("Frame", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, iconTop),
 		Size = UDim2.fromOffset(iconSize, iconSize), BackgroundTransparency = 1, ZIndex = 4, Parent = content })
-	-- the icon, gold: an image, a ui icon, one of Shared/UI/Icons by name (Config/HudIcons), or the caller's
+	-- the icon, white: an image, a ui icon, one of Shared/UI/Icons by name (Config/HudIcons), or the caller's
 	if cfg.image and cfg.image ~= "" then
 		New("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Image = cfg.image, ScaleType = Enum.ScaleType.Fit, ZIndex = 4, Parent = iconSlot })
 	elseif cfg.uiIcon then
-		Pieces.Icon(cfg.uiIcon, GOLD, { Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = iconSlot }):SetAttribute("KeepColor", true)
+		Pieces.Icon(cfg.uiIcon, WHITE, { Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = iconSlot }):SetAttribute("KeepColor", true)
 	elseif cfg.icon and (Icons :: any)[cfg.icon] then
-		local icon = (Icons :: any)[cfg.icon](GOLD)
+		local icon = (Icons :: any)[cfg.icon](WHITE)
 		icon.Parent = iconSlot
 	elseif iconFactory then
-		local icon = iconFactory(GOLD)
+		local icon = iconFactory(WHITE)
 		icon.Parent = iconSlot
 	end
 	local padlock = Pieces.Icon("lock", LOCK_GREY, { Name = "Padlock", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, iconTop),
 		Size = UDim2.fromOffset(iconSize, iconSize), Visible = false, ZIndex = 4, Parent = content })
 	padlock:SetAttribute("KeepColor", true)
-	local label = New("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = string.upper(cfg.label or labelText), FontFace = CHUNKY, TextSize = 11,
-		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, SideMenu.Lip - math.floor(size * shape.LabelBottom + 0.5)),
-		Size = UDim2.new(1, -4, 0, math.floor(size * shape.Label + 0.5)), ZIndex = 4, Parent = content })
-	local labelStroke = New("UIStroke", { Color = Color3.fromHex("#0A090B"), Thickness = 3, Parent = label }) -- (owner: 3 px dark)
-	Kit.Fit(label, 11, 8)
+	local label = New("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = string.upper(cfg.label or labelText), FontFace = Theme.Fonts.Display, TextSize = 10,
+		TextColor3 = WHITE, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, SideMenu.Lip - math.floor(size * shape.LabelBottom + 0.5)),
+		Size = UDim2.new(1, -6, 0, math.floor(size * shape.Label + 0.5)), ZIndex = 4, Parent = content })
+	Kit.Fit(label, 10, 8)
 	-- the one badge, inside the top-right corner
 	local newTag = New("Frame", { Name = "NewTag", BackgroundColor3 = GOLD, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3),
 		Size = UDim2.fromOffset(26, 12), Visible = false, ZIndex = 6, Parent = face }, { New("UICorner", { CornerRadius = UDim.new(0, 4) }) })
-	New("TextLabel", { BackgroundTransparency = 1, Text = "NEW", FontFace = CHUNKY, TextSize = 9, TextColor3 = Color3.fromHex("#1A1408"), Size = UDim2.fromScale(1, 1),
+	New("TextLabel", { BackgroundTransparency = 1, Text = "NEW", FontFace = Theme.Fonts.Display, TextSize = 8, TextColor3 = Color3.fromHex("#1A1408"), Size = UDim2.fromScale(1, 1),
 		ZIndex = 7, Parent = newTag })
 	local badge = New("Frame", { Name = "Badge", BackgroundColor3 = Colors.Red, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3),
 		Size = UDim2.fromOffset(15, 15), Visible = false, ZIndex = 6, Parent = face }, {
@@ -273,25 +272,26 @@ local function makeTile(id, labelText, iconFactory)
 	local entry = { id = id, order = cfg.order or 50, button = button, label = label, count = 0, dot = false, active = false, hover = false,
 		face = face, border = border, isNew = false, locked = false }
 	function entry.paint()
-		-- lighter glass on hover / while its panel is open; the open one's outline brighter
+		-- lighter glass on hover / while its panel is open; gold outline only on the active or a notified tile
+		local notified = not entry.locked and (entry.isNew or entry.count > 0 or entry.dot)
+		local gold = not entry.locked and (entry.active or notified)
 		Theme.Tween(face, { BackgroundColor3 = (entry.active or entry.hover) and Color3.fromRGB(255, 245, 235) or Color3.new(1, 1, 1) }, 0.15)
-		Theme.Tween(border, { Color = if entry.locked then LOCK_GREY else GOLD,
-			Transparency = if entry.locked then 0.3 elseif entry.active then 0 else (if entry.hover then 0.15 else 0.35),
-			Thickness = if entry.active and not entry.locked then 2 else 1.2 }, 0.15)
+		Theme.Tween(border, { Color = if gold then GOLD else Color3.fromHex("#060507"), Transparency = if gold and not entry.active then 0.15 else 0,
+			Thickness = if gold then 2 else 1.5 }, 0.15)
 		Theme.Tween(grow, { Scale = entry.hover and 1.08 or 1 }, 0.22, Theme.Motion.Bounce)
 	end
 	function entry.paintLock()
 		shade.BackgroundTransparency = if entry.locked then 0.45 else 1
 		iconSlot.Visible = not entry.locked
 		padlock.Visible = entry.locked
-		label.TextColor3 = if entry.locked then Color3.fromHex("#77757B") else Color3.new(1, 1, 1)
-		labelStroke.Transparency = if entry.locked then 0.4 else 0
+		label.TextColor3 = if entry.locked then Color3.fromHex("#8E8B92") else WHITE
 		entry.paint()
 	end
 	function entry.paintBadge()
 		-- one badge: LOCKED (the padlock is the badge) > NEW > "!"
 		newTag.Visible = entry.isNew and not entry.locked
 		badge.Visible = not entry.locked and not entry.isNew and (entry.count > 0 or entry.dot)
+		entry.paint()
 		refreshArrowDot()
 	end
 	-- the "!" breathes gently
