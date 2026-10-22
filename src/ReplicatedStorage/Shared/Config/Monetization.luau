@@ -56,6 +56,8 @@ Monetization.Effects = {
 
 -- The Store's hero tile shows a small BEST SELLER tag on this item (owner's final kit, mockup 04_store).
 Monetization.BestSeller = "AutoLift"
+-- (prompt 61) the Store's hero card on PASSES features the first of these you don't own yet (most popular first; edit freely)
+Monetization.PopularPasses = { "AutoLift", "DoubleGains", "VIP", "DoubleCoins", "AuraPack", "ExtraTrainer" }
 
 Monetization.PassByKey, Monetization.ProductByKey = {}, {}
 for _, pass in ipairs(Monetization.Passes) do Monetization.PassByKey[pass.key] = pass end

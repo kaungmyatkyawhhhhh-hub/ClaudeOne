@@ -187,10 +187,9 @@ end
 local STRIP_H = 64
 local TILE_W, TILE_H = 132, 146
 local TILE_GLOW = 8 -- (the picked tile's glow reaches this far: the row leaves room for it)
-local GRAPHITE = Color3.fromHex("#232027")
-local GRAPHITE_EDGE = Color3.fromHex("#4A4652")
-local PILL_DARK = Color3.fromHex("#1E1B20")
-local NEED_RED = Color3.fromHex("#FF5A5F")
+-- (prompt 61: the premium pieces live in Shared/UI/PremiumKit, shared with the Store)
+local PremiumKit = require(Shared.UI.PremiumKit)
+local PILL_DARK = PremiumKit.PILL_DARK
 local ReadyGlow = require(Shared.UI.ReadyGlow)
 local grid = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 1, -(STRIP_H + 4)),
 	ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new(),
@@ -202,55 +201,8 @@ local grid = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, 
 local lockNote = Kit.Text({ Name = "Locked", Text = "", Font = "Chunky", TextSize = 18, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4),
 	Size = UDim2.new(0.8, 0, 0, 60), Visible = false, Parent = modal.body })
 
--- a soft themed background in `color` (a dark gradient, faint rings round `center`), rounded; returns a function to recolour it
-local function themedBackground(parent: GuiObject, corner: number, center: UDim2, ringSizes: { number })
-	local base = New("Frame", { Name = "Theme", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = parent }, {
-		New("UICorner", { CornerRadius = UDim.new(0, corner) }),
-	})
-	local gradient = New("UIGradient", { Rotation = 90, Parent = base })
-	-- (the rings in a frame inset by ~0.3 of the corner radius: ClipsDescendants clips square, no corner pokes out)
-	local inset = math.ceil(corner * 0.3)
-	local clip = New("Frame", { Name = "Rings", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(inset, inset),
-		Size = UDim2.new(1, -2 * inset, 1, -2 * inset), ZIndex = 1, Parent = parent })
-	local strokes = {}
-	for _, size in ipairs(ringSizes) do
-		local ring = New("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = center - UDim2.fromOffset(inset, inset), Size = UDim2.fromOffset(size, size),
-			ZIndex = 1, Parent = clip }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
-		table.insert(strokes, New("UIStroke", { Thickness = 1.5, Transparency = 0.72, Parent = ring }))
-	end
-	return function(color: Color3)
-		gradient.Color = ColorSequence.new(color:Lerp(Color3.new(0, 0, 0), 0.66), color:Lerp(Color3.new(0, 0, 0), 0.86))
-		for _, stroke in ipairs(strokes) do stroke.Color = color end
-	end
-end
-
--- a slim graphite button with a thin outline (like the alters' WORN): an optional label ("x1"), a coin and a number, or
--- just words. look = "buy" (gold outline), "plain" (gray outline), "need" (the price red), "owned" (gold words), "off"
-local function slimButton(parent, props, label: string?, price: number?, look: string, textSize: number?)
-	local size = textSize or 14
-	local button = New("TextButton", { Name = props.Name or "Button", Text = "", AutoButtonColor = false, BackgroundColor3 = GRAPHITE, Parent = parent }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
-		New("UIStroke", { Name = "Edge", Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Color = if look == "buy" or look == "owned" then Colors.Gold else GRAPHITE_EDGE }),
-	})
-	for k, v in pairs(props) do if k ~= "Name" then button[k] = v end end
-	local row = New("Frame", { Name = "Row", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = button.ZIndex + 1, Parent = button }, {
-		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
-	})
-	local color = if look == "owned" then Colors.Gold elseif look == "need" then NEED_RED elseif look == "off" then Colors.Faint else Colors.Text
-	if label then
-		Kit.Text({ Name = "Label", LayoutOrder = 1, Text = label, Font = "Title", KeepItalic = true, TextSize = size, Upper = true, TextColor3 = color,
-			Size = UDim2.fromOffset(0, size + 4), AutomaticSize = Enum.AutomaticSize.X, ZIndex = button.ZIndex + 2, Parent = row })
-	end
-	if price then
-		Kit.Coin(math.floor(size * 1.05), { LayoutOrder = 2, ZIndex = button.ZIndex + 2, Parent = row })
-		Kit.Text({ Name = "Price", LayoutOrder = 3, Text = Kit.Format(price), Font = "Title", KeepItalic = true, TextSize = size, TextColor3 = color,
-			Size = UDim2.fromOffset(0, size + 4), AutomaticSize = Enum.AutomaticSize.X, ZIndex = button.ZIndex + 2, Parent = row })
-	end
-	Theme.BindPress(button)
-	return button
-end
+local themedBackground = PremiumKit.ThemedBackground
+local slimButton = PremiumKit.SlimButton
 
 -- the detail strip: the picked item's background behind it
 local strip = New("Frame", { Name = "Detail", BackgroundColor3 = Color3.fromHex("#141317"), AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1),

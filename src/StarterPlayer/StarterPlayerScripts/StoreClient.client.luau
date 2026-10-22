@@ -4,7 +4,8 @@
 -- (owner, 20 Oct). No purchase prompt ever opens by itself: only the red price button opens one.
 -- Window: STORE + tabs Passes / Auras / Boosts / Coins (prompt 40 order; each item's `tab` in Config.Monetization; only tabs
 -- that have something). It opens on PASSES (before Growth Spurt 1: BOOSTS). (prompt 40) The grid tiles are Kit.RewardTile
--- in each item's colour (ITEM_COLOR); owned = dimmed with a small green OWNED pill + check (no big stamp).
+-- in each item's colour (ITEM_COLOR); owned = dimmed with a small green OWNED pill + check (no big stamp). (prompt 61, 23 Oct:
+-- the premium tiles below instead, "The premium look": no checkmarks, owned at full brightness with a gold OWNED.)
 -- + its own coins pill and X. On the left the
 -- HERO tile: the picked item big (thick gold border + soft gold glow, BEST SELLER tag on Monetization.BestSeller, the art,
 -- the name in gold, what it does, the red "R$ 249" CTA that pulses). On the right a 3-column grid of dark tiles (art,
@@ -127,7 +128,7 @@ end
 local Rarity = Theme.RarityColor
 local ITEM_COLOR = {
 	DoubleGains = Rarity.Rare, VIP = Rarity.Legendary, DoubleCoins = Rarity.Uncommon, AuraPack = Rarity.Epic, AutoLift = Colors.Red,
-	ExtraTrainer = Colors.Red, CoinsSmall = Rarity.Legendary, CoinsMedium = Rarity.Legendary, CoinsLarge = Rarity.Legendary,
+	ExtraTrainer = Color3.fromHex("#FF8A2A"), CoinsSmall = Rarity.Legendary, CoinsMedium = Rarity.Legendary, CoinsLarge = Rarity.Legendary,
 	ShakePack = Rarity.Rare, EndlessStamina = Colors.Teal, DnaToken = Rarity.Mythic, ServerBoost = Rarity.Legendary,
 }
 local function colorOf(entry): Color3
@@ -227,59 +228,115 @@ local function owned(entry): boolean
 end
 
 ------------------------------------------------------------------------
--- The hero tile (left): the picked item, big
+-- (prompt 61, 23 Oct) The premium look of the Alters / Auras panels and the PUMP SHOP (Shared/UI/PremiumKit): every
+-- tile and the hero card have a soft background in the item's colour with faint rings behind the icon and a thin outline
+-- in that colour; the icon on a glow in the top part, the name UNDER it (white, stroked, one line); the price on a slim
+-- graphite button with the Robux icon; owned = a slim dark pill with a thin gold outline and gold OWNED, the tile at full
+-- brightness (no checkmarks anywhere). The picked tile: a gold outline.
+--   * The hero (left): on PASSES it features a pass you don't own yet (Monetization.PopularPasses order); own them all =
+--     "THANK YOU FOR SUPPORTING GYM ARC" on gold with a gold glow. A tap on a tile shows that item there. One title (the
+--     icons' baked words are cropped: ART_CROP), the short description, the red buy button (Robux icon + price) or OWNED.
+--   * The grid (right): equal tiles, 3 across, 2 rows.
+--   * COACH DEX and GO TO PUMP SHOP: two slim graphite buttons in a row under the hero and the grid (full width), once
+--     the PUMP SHOP is open for you.
 ------------------------------------------------------------------------
-local hero = Kit.Card({ Name = "Hero", Piece = "card_gold", Size = UDim2.new(0, HERO_W, 1, 0), Parent = modal.body }, {})
-hero:FindFirstChild("Border").Thickness = 3.5
--- (owner, 22 Oct: no mesh: it sits on the window panel, which has it)
--- (prompt 45, mockup 01_store_A) the transparent art big, straight on the tile (tinted in the item's colour: select)
-local heroArt = Pieces.Image("art", { Name = "Art", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 14), Size = UDim2.fromOffset(112, 112), Parent = hero })
--- BEST SELLER: a small gold tag in the top-left corner
-local bestTag = New("Frame", { Name = "BestSeller", Position = UDim2.fromOffset(10, 9), Size = UDim2.fromOffset(0, 18), AutomaticSize = Enum.AutomaticSize.X,
-	BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 3, Visible = false, Parent = hero }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 5) }),
-	New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
-	New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
-})
-Kit.Text({ Name = "Text", Text = "BEST SELLER", Font = "Chunky", TextSize = 11, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.new(0, 0, 1, 0),
-	AutomaticSize = Enum.AutomaticSize.X, ZIndex = 3, Parent = bestTag })
-local heroName = Kit.GoldText(Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 26, Upper = true, Position = UDim2.fromOffset(10, 124),
-	Size = UDim2.new(1, -20, 0, 28), TextTruncate = Enum.TextTruncate.AtEnd, Parent = hero }))
--- (a long name like ENDLESS STAMINA shrinks to fit instead of being cut off)
-heroName.TextScaled = true
-Theme.New("UITextSizeConstraint", { MaxTextSize = 26, MinTextSize = 14, Parent = heroName })
-local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Chunky", TextSize = 11, TextColor3 = Colors.Text, TextWrapped = true, Position = UDim2.fromOffset(10, 153),
-	Size = UDim2.new(1, -20, 0, 28), TextYAlignment = Enum.TextYAlignment.Top, Parent = hero })
-Kit.Fit(heroText, 11, 8, 2) -- (two lines at most: it shrinks instead of being cut)
-local buy = Kit.Button("Red", "", { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Parent = hero },
-	{ width = HERO_W - 22, height = 40, textSize = 20 })
--- (DNA token only) the coin price beside the Robux button (each half the width)
-local HALF_W = (HERO_W - 22 - 6) / 2
-local coinBuy = Kit.Button("Gold", Kit.Format(DNA.CoinPrice), { Name = "BuyCoins", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -11, 1, -10),
-	Visible = false, Parent = hero }, { width = HALF_W, height = 40, textSize = 14, icon = "coin" })
+local PremiumKit = require(Shared.UI.PremiumKit)
+local ReadyGlow = require(Shared.UI.ReadyGlow)
+local AlterFX = require(Shared.VFX.AlterFX)
+local LINK_H = 30
+local LINK_GAP = 6
+-- (prompt 61) icons with a word baked in under the art (it would repeat the title): only the art's part is shown
+-- (the source pictures are 512 x 512; Downloads\gym_arc_transparent_icons\shop)
+local ART_CROP = {
+	pass_auto_rep = { Vector2.new(0, 0), Vector2.new(512, 404) }, -- ("AUTO" under the dumbbell)
+	pass_vip = { Vector2.new(0, 0), Vector2.new(512, 350) }, -- ("VIP" under the crown)
+}
+local function cropArt(image: ImageLabel, entry)
+	local crop = entry.item.art and ART_CROP[entry.item.art]
+	image.ImageRectOffset = if crop then crop[1] else Vector2.zero
+	image.ImageRectSize = if crop then crop[2] else Vector2.zero
+end
 
 ------------------------------------------------------------------------
--- The grid (right): dark tiles with art, name and a price pill
+-- The hero card (left): the featured / picked item, big
+------------------------------------------------------------------------
+local hero = New("Frame", { Name = "Hero", BackgroundColor3 = Color3.fromHex("#141317"), Size = UDim2.new(0, HERO_W, 1, 0), Parent = modal.body }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+})
+local heroEdge = New("UIStroke", { Name = "Edge", Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = hero })
+local paintHero = PremiumKit.ThemedBackground(hero, 12, UDim2.new(0.5, 0, 0, 50), { 84, 136 })
+local heroGlowDot = AlterFX.Image(hero, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 50), Size = UDim2.fromOffset(130, 130),
+	ImageTransparency = 0.4, ZIndex = 2 })
+local heroArt = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 50), Size = UDim2.fromOffset(84, 84),
+	ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Parent = hero })
+-- BEST SELLER: a small gold tag in the top-left corner
+local bestTag = New("Frame", { Name = "BestSeller", Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(0, 16), AutomaticSize = Enum.AutomaticSize.X,
+	BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 5, Visible = false, Parent = hero }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 5) }),
+	New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
+	New("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 7) }),
+})
+Kit.Text({ Name = "Text", Text = "BEST SELLER", Font = "Chunky", TextSize = 10, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.new(0, 0, 1, 0),
+	AutomaticSize = Enum.AutomaticSize.X, ZIndex = 5, Parent = bestTag })
+-- the one title: white, stroked, one line (it shrinks to fit)
+local heroName = Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 22, Upper = true, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 94),
+	Size = UDim2.new(1, -16, 0, 24), ZIndex = 4, Parent = hero })
+heroName.TextWrapped = false
+Kit.Fit(heroName, 22, 12)
+local heroText = Kit.Text({ Name = "Text", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#C9C5CF"), TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 119), Size = UDim2.new(1, -16, 0, 28), TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 4, Parent = hero })
+Kit.Fit(heroText, 11, 8, 2) -- (two lines at most: it shrinks instead of being cut)
+-- the buy button: the red CTA with the Robux icon and the price; owned: the slim gold OWNED pill
+local buy = Kit.Button("Red", "", { Name = "Buy", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), ZIndex = 4, Parent = hero },
+	{ width = HERO_W - 20, height = 36, textSize = 18, icon = "robux", iconColor = Color3.new(1, 1, 1) })
+local heroOwned = PremiumKit.SlimButton(hero, { Name = "Owned", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.new(1, -36, 0, 28),
+	Visible = false, ZIndex = 4 }, "Owned", nil, "owned", 14)
+heroOwned.Active = false
+-- (DNA token only) the coin price beside the Robux button (each half the width)
+local HALF_W = (HERO_W - 20 - 6) / 2
+local coinBuy = Kit.Button("Gold", Kit.Format(DNA.CoinPrice), { Name = "BuyCoins", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -8),
+	Visible = false, ZIndex = 4, Parent = hero }, { width = HALF_W, height = 36, textSize = 14, icon = "coin" })
+-- every pass owned: THANK YOU on gold with a gold glow
+local thanks = New("Frame", { Name = "Thanks", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 4, Parent = hero })
+local thanksStar = Pieces.Icon("star", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 48), Size = UDim2.fromOffset(46, 46), ZIndex = 5, Parent = thanks })
+thanksStar:SetAttribute("KeepColor", true)
+local thanksText = Kit.GoldText(Kit.Text({ Name = "Text", Text = "THANK YOU FOR SUPPORTING GYM ARC", Font = "Chunky", TextSize = 20, TextWrapped = true,
+	AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 84), Size = UDim2.new(1, -18, 0, 70), ZIndex = 5, Parent = thanks }))
+Kit.Fit(thanksText, 20, 12, 3)
+local thanksSub = Kit.Text({ Name = "Sub", Text = "You own every pass.", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#C9C5CF"), AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(1, -16, 0, 14), ZIndex = 5, Parent = thanks })
+hero.ZIndex = 2 -- (its glow goes one layer under it: at layer 1 they'd tie and the glow could cover the card)
+local heroGlow = ReadyGlow.New(hero, { stroke = heroEdge, pad = 14 })
+
+------------------------------------------------------------------------
+-- The grid (right): equal tiles, 3 across, 2 rows
 ------------------------------------------------------------------------
 local grid = New("ScrollingFrame", { Name = "Grid", AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(1, -(HERO_W + GAP), 1, 0),
 	BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	CanvasSize = UDim2.new(), ScrollingDirection = Enum.ScrollingDirection.Y, Parent = modal.body }, {
-	New("UIGridLayout", { CellSize = UDim2.new(1 / 3, -6, 0.5, -4), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
-	New("UIPadding", { PaddingTop = UDim.new(0, 1), PaddingBottom = UDim.new(0, 1), PaddingLeft = UDim.new(0, 1), PaddingRight = UDim.new(0, 1) }),
+	-- (two rows fill the height exactly with the padding: no scrollbar on PASSES)
+	New("UIGridLayout", { CellSize = UDim2.new(1 / 3, -6, 0.5, -6), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+	New("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2) }),
 })
 
--- (prompt 28) "Go to PUMP SHOP": a small link under the grid once the PUMP SHOP is open for you (it was a left menu tile)
-local LINK_H = 30
-local pumpLink = Kit.Button("Quiet", "Go to Pump Shop", { Name = "PumpShopLink", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1),
-	Visible = false, Parent = modal.body }, { height = LINK_H, width = 170, textSize = 12, icon = "shopping-cart" })
+-- COACH DEX / GO TO PUMP SHOP: two slim graphite buttons in a row under everything (once the PUMP SHOP is open for you)
+local links = New("Frame", { Name = "Links", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, LINK_H),
+	Visible = false, Parent = modal.body })
+local function linkButton(name: string, label: string, x: number)
+	local button = PremiumKit.SlimButton(links, { Name = name, Position = UDim2.new(x, if x > 0 then LINK_GAP / 2 else 0, 0, 0), Size = UDim2.new(0.5, -LINK_GAP / 2, 1, 0) },
+		label, nil, "plain", 13)
+	Pieces.Icon("shopping-cart", Colors.Text, { Name = "Icon", LayoutOrder = 0, Size = UDim2.fromOffset(15, 15), ZIndex = button.ZIndex + 2, Parent = button.Row })
+		:SetAttribute("KeepColor", true)
+	return button
+end
+local coachLink = linkButton("CoachLink", "Coach Dex", 0)
+local pumpLink = linkButton("PumpShopLink", "Go to Pump Shop", 0.5)
 pumpLink.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	modal.close()
 	UIBus.GoPumpShop:Fire()
 end)
 -- (prompt 31) "Coach Dex": to his counter in the Starter Gym, the main shop (10 s cooldown)
-local coachLink = Kit.Button("Quiet", "Coach Dex", { Name = "CoachLink", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -176, 1, 0),
-	Visible = false, Parent = modal.body }, { height = LINK_H, width = 130, textSize = 12, icon = "shopping-cart" })
 coachLink.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	modal.close()
@@ -287,94 +344,191 @@ coachLink.Activated:Connect(function()
 end)
 local function refreshPumpLink()
 	local on = player:GetAttribute("PumpShop") ~= nil
-	pumpLink.Visible = on
-	coachLink.Visible = on
-	grid.Size = UDim2.new(1, -(HERO_W + GAP), 1, if on then -(LINK_H + 6) else 0)
+	links.Visible = on
+	local room = if on then -(LINK_H + LINK_GAP) else 0
+	grid.Size = UDim2.new(1, -(HERO_W + GAP), 1, room)
+	hero.Size = UDim2.new(0, HERO_W, 1, room)
 end
 player:GetAttributeChangedSignal("PumpShop"):Connect(refreshPumpLink)
 refreshPumpLink()
 
+-- a tile: the soft background in its colour, rings and a glow behind the icon (top part), the name under it, the price /
+-- OWNED / how-to-get at the bottom
 local cards = {}
-for index, entry in ipairs(items) do
-	local card, tile = Kit.RewardTile(colorOf(entry), { Name = entry.item.key, LayoutOrder = index, Parent = grid })
-	cards[entry.item.key] = { card = card, tile = tile, art = tile.art, entry = entry }
-	tile.name.Text = string.upper(entry.item.name)
-	card.Activated:Connect(function()
-		-- (prompt 54: the tile's bounce + select sound come from Kit.RewardTile; the hero tile slides in)
+local function makeTile(entry, index: number)
+	local color = colorOf(entry)
+	local cell = New("Frame", { Name = entry.item.key, LayoutOrder = index, BackgroundTransparency = 1, Parent = grid })
+	local tile = New("TextButton", { Name = "Tile", Text = "", AutoButtonColor = false, BackgroundColor3 = color:Lerp(Color3.new(0, 0, 0), 0.85), Size = UDim2.fromScale(1, 1),
+		ZIndex = 2, Parent = cell }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+	local border = New("UIStroke", { Name = "Border", Color = color, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tile })
+	-- (the icon's middle: the top part of the tile, above the name and the price)
+	local iconCenter = UDim2.new(0.5, 0, 0.5, -22)
+	PremiumKit.ThemedBackground(tile, 12, iconCenter, { 56, 92 })(color)
+	New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0.5),
+		ZIndex = 1, Parent = tile }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+		New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(1, 0.3) }),
+	})
+	AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = iconCenter, Size = UDim2.fromOffset(84, 84), ImageColor3 = color,
+		ImageTransparency = 0.45, ZIndex = 2 })
+	local art = New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4), Size = UDim2.new(0.8, 0, 1, -47),
+		ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Parent = tile })
+	local name = Kit.Text({ Name = "Name", Text = string.upper(entry.item.name), Font = "Chunky", TextSize = 13, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -26),
+		Size = UDim2.new(1, -10, 0, 15), ZIndex = 4, Parent = tile })
+	name.TextWrapped = false
+	Kit.Fit(name, 13, 9)
+	local foot = New("Frame", { Name = "Foot", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -5), Size = UDim2.new(1, -16, 0, 19),
+		ZIndex = 4, Parent = tile })
+	local card = { cell = cell, tile = tile, border = border, art = art, foot = foot, entry = entry, color = color }
+	cards[entry.item.key] = card
+	local function pick()
 		select(entry)
+		Kit.SelectFeedback(tile)
 		Kit.DetailIn(hero)
-	end)
+	end
+	tile.Activated:Connect(pick)
+	card.pick = pick
+	return card
 end
+for index, entry in ipairs(items) do makeTile(entry, index) end
 local picked = nil
+local showThanks = false
+local pickedByTap = false -- (a tapped item stays in the hero; one the hero featured by itself moves on once it's owned)
+
+-- the foot of a tile: OWNED (gold), the price (Robux), or how to get it (an aura)
+local function setFoot(card, isOwned: boolean, price: number?)
+	for _, child in ipairs(card.foot:GetChildren()) do child:Destroy() end
+	local props = { Name = "Button", Size = UDim2.fromScale(1, 1), ZIndex = 5 }
+	local button
+	if isOwned then
+		button = PremiumKit.SlimButton(card.foot, props, "Owned", nil, "owned", 12)
+	elseif card.entry.isAura then
+		button = PremiumKit.SlimButton(card.foot, props, card.entry.item.short, nil, "plain", 10)
+	else
+		button = if price then PremiumKit.SlimButton(card.foot, props, nil, price, "plain", 12, "robux") else PremiumKit.SlimButton(card.foot, props, "...", nil, "off", 12)
+	end
+	local label = button:FindFirstChild("Label", true)
+	if label then
+		label.TextWrapped = false
+		Kit.Fit(label, label.TextSize, 8)
+	end
+	-- (the button picks the tile too: buying is in the hero)
+	button.Activated:Connect(card.pick)
+end
+
+local function passesOwned(): boolean
+	if not player:GetAttribute("PassesChecked") then return false end
+	for _, entry in ipairs(items) do
+		if entry.isPass and not owned(entry) then return false end
+	end
+	return true
+end
+-- the pass the hero features: the first you don't own in Monetization.PopularPasses order (then the rest)
+local function featuredPass()
+	local order = Monetization.PopularPasses or {}
+	for _, key in ipairs(order) do
+		local card = cards[key]
+		if card and card.entry.isPass and not owned(card.entry) then return card.entry end
+	end
+	for _, entry in ipairs(items) do
+		if entry.isPass and not owned(entry) then return entry end
+	end
+	return nil
+end
 
 function select(entry)
 	picked = entry
-	for key, c in pairs(cards) do
-		-- the picked tile is a little bigger (the hero tile shows it big)
-		local scale = c.card:FindFirstChild("PickScale") or New("UIScale", { Name = "PickScale", Parent = c.card })
-		scale.Scale = if key == entry.item.key then 1 else 0.96
-	end
-	artFor(heroArt, entry)
-	-- (prompt 45, mockup 01_store_A) the hero tile tinted in the item's colour, the gold edge stays
-	local sheen = hero:FindFirstChild("Sheen")
-	if sheen then
-		local base = colorOf(entry):Lerp(Color3.fromHex("#141215"), 0.6)
-		sheen.Color = ColorSequence.new(base:Lerp(Color3.new(1, 1, 1), 0.06), base:Lerp(Color3.new(0, 0, 0), 0.45))
-	end
-	heroName.Text = entry.item.name
-	heroText.Text = entry.item.text
-	bestTag.Visible = entry.item.key == Monetization.BestSeller
+	showThanks = false
+	pickedByTap = true
 	refresh()
 end
 
+local function paintHeroFor(entry)
+	local color = colorOf(entry)
+	paintHero(color)
+	heroEdge.Color = color
+	heroGlowDot.ImageColor3 = color
+	artFor(heroArt, entry)
+	cropArt(heroArt, entry)
+	heroName.Text = string.upper(entry.item.name)
+	heroText.Text = entry.item.text
+	bestTag.Visible = entry.item.key == Monetization.BestSeller
+end
+
 function refresh()
+	-- (THANK YOU, but a pass isn't owned any more / ownership arrived late: feature one again)
+	if showThanks and currentTab == "Passes" and not passesOwned() then picked = nil end
+	-- (the pass the hero featured by itself is owned now: the next one, or THANK YOU)
+	if picked and not pickedByTap and not showThanks and picked.isPass and owned(picked) then picked = nil end
 	local first = nil
 	for _, c in pairs(cards) do
 		local entry = c.entry
-		c.card.Visible = entry.tab == currentTab
-		if c.card.Visible and (not first or c.card.LayoutOrder < first.card.LayoutOrder) then first = c end
+		c.cell.Visible = entry.tab == currentTab
+		if c.cell.Visible and (not first or c.cell.LayoutOrder < first.cell.LayoutOrder) then first = c end
 		infoFor(entry)
 		artFor(c.art, entry)
-		local isOwned = owned(entry)
-		local price = priceOf(entry)
-		-- (prompt 40) owned: dimmed, a small green OWNED pill + check; else its price on a pill in its colour
-		if isOwned then
-			c.tile:SetState("owned")
-		else
-			c.tile:SetState("normal")
-			if entry.isAura then
-				c.tile:SetRequirement(entry.item.short) -- (how to get it: a dark pill in its colour)
-			else
-				c.tile:SetPill(if price then "R$ " .. Kit.Format(price) else "...")
-			end
-		end
+		cropArt(c.art, entry)
+		setFoot(c, owned(entry), priceOf(entry))
+		-- the picked tile: a gold outline (the rest: their own colour)
+		local isPicked = picked == entry and not showThanks
+		c.border.Color = if isPicked then Colors.Gold else c.color
+		c.border.Thickness = if isPicked then 2 else 1.5
 	end
-	if (not picked or picked.tab ~= currentTab) and first then
-		-- the hero tile starts on the best seller when it's in this tab
-		local best = cards[Monetization.BestSeller]
-		select((best and best.card.Visible) and best.entry or first.entry)
+	if not picked or picked.tab ~= currentTab then
+		-- (prompt 61) PASSES: the hero features a pass you don't own yet; own them all = THANK YOU. Other tabs: the best
+		-- seller when it's in this tab, else the first
+		pickedByTap = false
+		if currentTab == "Passes" then
+			local featured = featuredPass()
+			if featured then
+				picked, showThanks = featured, false
+			elseif passesOwned() then
+				picked, showThanks = first and first.entry, true
+			else
+				picked, showThanks = first and first.entry, false
+			end
+		else
+			local best = cards[Monetization.BestSeller]
+			picked = if best and best.cell.Visible then best.entry elseif first then first.entry else nil
+			showThanks = false
+		end
+		if picked then return refresh() end
+	end
+	if not picked then return end
+	thanks.Visible = showThanks
+	for _, part in ipairs({ heroArt, heroGlowDot, heroName, heroText }) do part.Visible = not showThanks end
+	if showThanks then
+		paintHero(Colors.Gold)
+		heroGlow:Set(true, Colors.Gold)
+		bestTag.Visible = false
+		buy.Visible, coinBuy.Visible, heroOwned.Visible = false, false, false
 		return
 	end
-	if picked then
-		local isDna = picked.item.key == "DnaToken"
-		coinBuy.Visible = isDna
-		if isDna then Kit.SetButton(coinBuy, nil, Kit.Format(require(Shared.Config.PumpShop).DnaPriceFor(ClientData.Get(), DNA.CoinPrice))) end
-		buy.Size = UDim2.fromOffset(if isDna then HALF_W else HERO_W - 22, 40)
-		buy.AnchorPoint = if isDna then Vector2.new(0, 1) else Vector2.new(0.5, 1)
-		buy.Position = if isDna then UDim2.new(0, 11, 1, -10) else UDim2.new(0.5, 0, 1, -10)
-		local buyLabel = buy:FindFirstChild("Label")
-		if buyLabel then buyLabel.TextSize = if isDna then 15 else 20 end
-		local isOwned = owned(picked)
-		local price = priceOf(picked)
-		if picked.isAura then
-			Kit.SetButton(buy, "Gold", "View auras")
-		elseif endlessFull(picked) then
-			Kit.SetButton(buy, "Quiet", "Full: 60 min")
-		elseif picked.isPass and not player:GetAttribute("PassesChecked") then
-			Kit.SetButton(buy, "Quiet", "...") -- (ownership not known yet: this pass only)
-		else
-			Kit.SetButton(buy, isOwned and "Quiet" or "Red", isOwned and "Owned" or (price and ("R$ " .. Kit.Format(price)) or "Buy"))
-		end
+	heroGlow:Set(false, colorOf(picked))
+	paintHeroFor(picked)
+	local isDna = picked.item.key == "DnaToken"
+	coinBuy.Visible = isDna
+	if isDna then Kit.SetButton(coinBuy, nil, Kit.Format(require(Shared.Config.PumpShop).DnaPriceFor(ClientData.Get(), DNA.CoinPrice))) end
+	buy.Size = UDim2.fromOffset(if isDna then HALF_W else HERO_W - 20, 36)
+	buy.AnchorPoint = if isDna then Vector2.new(0, 1) else Vector2.new(0.5, 1)
+	buy.Position = if isDna then UDim2.new(0, 10, 1, -8) else UDim2.new(0.5, 0, 1, -8)
+	local buyLabel = buy:FindFirstChild("Label")
+	if buyLabel then buyLabel.TextSize = if isDna then 15 else 18 end
+	local isOwned = owned(picked)
+	local price = priceOf(picked)
+	local robux = buy:FindFirstChild("Icon")
+	heroOwned.Visible = isOwned and not picked.isAura
+	buy.Visible = not heroOwned.Visible
+	if robux then robux.Visible = false end
+	if picked.isAura then
+		Kit.SetButton(buy, "Gold", "View auras")
+	elseif endlessFull(picked) then
+		Kit.SetButton(buy, "Quiet", "Full: 60 min")
+	elseif picked.isPass and not player:GetAttribute("PassesChecked") then
+		Kit.SetButton(buy, "Quiet", "...") -- (ownership not known yet: this pass only)
+	elseif not isOwned then
+		Kit.SetButton(buy, "Red", if price then Kit.Format(price) else "Buy")
+		if robux then robux.Visible = price ~= nil end
 	end
 end
 
@@ -478,6 +632,7 @@ task.spawn(function()
 	menuButton.Activated:Connect(function()
 		if modal.isOpen() then modal.close() return end
 		currentTab = startTab() -- (prompt 40: PASSES, or BOOSTS before Growth Spurt 1)
+		picked = nil -- (prompt 61: the hero features again what you don't own yet)
 		modal.selectTab(currentTab)
 		UIBus.PanelOpened("Store")
 		open()
