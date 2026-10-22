@@ -57,9 +57,10 @@ end
 -- session). pose: his roll reveal pose (PoseData, or "Crossed" / "Guard": tools/trainer_photos.luau). icon / art: the
 -- rendered pictures (portrait, reveal), made in Studio from a fixed camera (tools/trainer_photos.luau + tools/trainer_icons.py);
 -- nil = the 3D portrait (Shared.UI.TrainerPortrait).
--- (owner, 22 Oct) NO pictures of trainers: the account got a warning and a ban for body pictures, so every trainer shows
--- as his live 3D rig (Shared.UI.TrainerPortrait). Never put icon / art ids back. The old ones to archive are listed in the
--- vault note "GYM ARC - Uploaded images 21-22 Oct".
+-- (owner, 22 Oct) For a while there were NO pictures of trainers (the account got a warning and a ban for body pictures):
+-- every trainer showed as his live 3D rig. (prompt 47, 22 Oct) The owner uploaded the planner's portraits himself, to
+-- the Myanmar Builders Club group (Downloads\gym_arc_trainer_portraits): they're used again, set below by Portraits.
+-- Never upload trainer pictures from here; the old ones to archive are in the vault note "GYM ARC - Uploaded images 21-22 Oct".
 Trainers.MaxHeightInches = 90
 Trainers.SilhouetteIcon = nil -- (owner, 22 Oct: no picture; the 3D rig in black instead)
 
@@ -158,7 +159,20 @@ Trainers.List = {
 }
 Trainers.ById = {}
 Trainers.ByRarity = {}
+-- (prompt 47) the owner's portraits (group images): icon = waist-up (tiles, chips), art = full body (the roll reveal)
+Trainers.Portraits = {
+	RookieCoach = { icon = "rbxassetid://85368805560994", art = "rbxassetid://127629178928260" }, -- 01_coach_sam
+	CardioCoach = { icon = "rbxassetid://136952307979554", art = "rbxassetid://113229850140237" }, -- 02_coach_nia
+	MoneyCoach = { icon = "rbxassetid://136196635327153", art = "rbxassetid://90927356355240" }, -- 03_coach_lou
+	PumpCoach = { icon = "rbxassetid://115354782548847", art = "rbxassetid://105901662457784" }, -- 04_coach_rex
+	AtlasCoach = { icon = "rbxassetid://119463367552625", art = "rbxassetid://79742447995436" }, -- 05_duke_ironside
+	BlazeCoach = { icon = "rbxassetid://113071892213133", art = "rbxassetid://80006635174776" }, -- 06_volta
+	ShadeCoach = { icon = "rbxassetid://94430068464539", art = "rbxassetid://85156645624080" }, -- 07_the_shadow
+	AeonCoach = { icon = "rbxassetid://78669611530685", art = "rbxassetid://80184899472119" }, -- 08_atlas
+}
 for index, trainer in ipairs(Trainers.List) do
+	local portrait = Trainers.Portraits[trainer.id]
+	if portrait then trainer.icon, trainer.art = portrait.icon, portrait.art end
 	trainer.index = index
 	Trainers.ById[trainer.id] = trainer
 	Trainers.ByRarity[trainer.rarity] = trainer
@@ -253,6 +267,15 @@ Trainers.Stages = {
 	{ id = "BeastMode", name = "BEAST-MODE", mult = 4, color = "#6BFF4F", base = "#062010", hex = "#1F7A2A", from = "3x IRON-BORN" },
 	{ id = "Colossus", name = "COLOSSUS", mult = 8, color = "#5CC8FF", base = "#061A36", hex = "#1F5A9A", from = "3x BEAST-MODE" },
 	{ id = "Limitless", name = "LIMITLESS", mult = 16, color = "#E070FF", base = "#1A0830", hex = "#6A2A9A", from = "3x COLOSSUS", rainbow = true },
+}
+-- (prompt 47) the planner's backgrounds (group images): hex = the tile's base (dark hue, hex mesh, glow), evo = the stage's
+-- effect layered on top (BASE: the radial light rays)
+Trainers.StageArt = {
+	Base = { hex = "rbxassetid://98357224346088", evo = "rbxassetid://86921753694454" },
+	IronBorn = { hex = "rbxassetid://87942072991382", evo = "rbxassetid://101316695673258" },
+	BeastMode = { hex = "rbxassetid://88569472894025", evo = "rbxassetid://121075153778167" },
+	Colossus = { hex = "rbxassetid://135689867753297", evo = "rbxassetid://85358058900127" },
+	Limitless = { hex = "rbxassetid://87579663515335", evo = "rbxassetid://78744780144225" },
 }
 Trainers.StageById = {}
 for index, stage in ipairs(Trainers.Stages) do

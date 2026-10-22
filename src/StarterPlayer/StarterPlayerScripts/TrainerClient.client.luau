@@ -139,7 +139,7 @@ end
 -- Owned: a small gold check; a count "x2" bottom-right. A tap (or hover) shows his name and boost.
 local GRID_W = 384
 local CELL_GAP = 8
-local SLOT_TEXT = 34 -- the rarity name + the chance under the tile
+local SLOT_TEXT = 0 -- (prompt 47: the rarity name and the chance are inside the tile now)
 local DARK_TILE = Color3.fromHex("#16161A")
 local grid = New("Frame", { Name = "Odds", BackgroundTransparency = 1, Size = UDim2.new(0, GRID_W, 1, 0), Parent = agencyFrame }, {
 	New("UIGridLayout", { CellSize = UDim2.new(0.25, -CELL_GAP * 3 / 4, 0.5, -CELL_GAP / 2), CellPadding = UDim2.fromOffset(CELL_GAP, CELL_GAP),
@@ -175,76 +175,41 @@ local function showTip(slot)
 	task.delay(2.5, function() if tipShownAt == at then hideTip() end end)
 end
 
+-- (prompt 47, 22 Oct) the slots are the one trainer tile (Shared/UI/TrainerTile) in rarity mode: his name, his portrait (a
+-- black silhouette with a rim in the rarity color until you own him; Secret and Eternal "???" too), the rarity name and
+-- the chance; a gold check when owned, "x2" bottom-right
+local TrainerTile = require(Shared.UI.TrainerTile)
+-- (prompt 47) the portraits and stage backgrounds load once at join, so the first reveal never shows an empty card
+task.spawn(function()
+	local ids = {}
+	for _, portrait in pairs(Trainers.Portraits or {}) do table.insert(ids, portrait.icon) table.insert(ids, portrait.art) end
+	for _, art in pairs(Trainers.StageArt or {}) do table.insert(ids, art.hex) table.insert(ids, art.evo) end
+	pcall(function() game:GetService("ContentProvider"):PreloadAsync(ids) end)
+end)
 for order, trainer in ipairs(Trainers.List) do
-	local rarity = rarityOf(trainer)
-	local color = hex(rarity.color)
-	local rim = if rarity.hidden then hex(rarity.color2) else color
 	local cell = New("Frame", { Name = trainer.id, LayoutOrder = order, BackgroundTransparency = 1, Parent = grid })
-	local tile = New("ImageButton", { Name = "Tile", AutoButtonColor = false, BackgroundColor3 = DARK_TILE, Size = UDim2.new(1, 0, 1, -SLOT_TEXT),
-		ClipsDescendants = true, Parent = cell }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-	})
-	local border = New("UIStroke", { Name = "Border", Color = rim:Lerp(Color3.new(0, 0, 0), 0.35), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tile })
-	-- the radial glow and faint rays in the rarity color
-	local glow = AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.fromScale(1.5, 1.5),
-		ImageColor3 = rim, ImageTransparency = 0.45, ZIndex = 1 })
-	local rays = New("Frame", { Name = "Rays", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55),
-		Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = tile })
-	for i = 0, 5 do
-		New("Frame", { BackgroundColor3 = rim, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(0.07, 1.8), Rotation = i * 30, BackgroundTransparency = 0.82, ZIndex = 1, Parent = rays }, {
-			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.2),
-				NumberSequenceKeypoint.new(1, 1) }) }),
-		})
-	end
-	-- the portrait (and a copy behind it in the rarity color: the rim of an unrevealed one)
-	-- (owner, 22 Oct: no pictures) his live 3D rig, and a black one for before you own him
-	local art = TrainerPortrait.New(trainer.id, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromScale(0.92, 0.86),
-		ZIndex = 3, Parent = tile, shot = "bust", pose = "Relaxed" })
-	local rimArt = TrainerPortrait.New(trainer.id, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.fromScale(0.92, 0.86),
-		ZIndex = 3, Parent = tile, shot = "bust", pose = "Relaxed", silhouette = true })
-	rimArt.Visible = false
-	-- owned: a gold check; a count
-	local check = New("Frame", { Name = "Check", BackgroundColor3 = Colors.Gold, Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(18, 18), Visible = false,
-		ZIndex = 5, Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }), New("UIStroke", { Color = Color3.fromHex("#141417"), Thickness = 1.5 }) })
-	local tick = Pieces.Icon("check", Color3.fromHex("#141417"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.7, 0.7), ZIndex = 6, Parent = check })
-	tick:SetAttribute("KeepColor", true)
-	local count = Kit.Text({ Name = "Count", Text = "", Font = "Title", TextSize = 13, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -5, 1, -2),
-		Size = UDim2.fromOffset(40, 16), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 6, Parent = tile })
-	-- the rarity name (loud, its color) and the chance (small, gray)
-	local name = Kit.Text({ Name = "Rarity", Text = string.upper(rarity.name), Font = "Title", TextSize = 13, TextColor3 = rim, AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -13), Size = UDim2.new(1, 4, 0, 17), Parent = cell })
-	Kit.Fit(name, 13, 9)
-	local chance = rarity.chance
-	Kit.Text({ Name = "Chance", Text = Trainers.ChanceText(chance),
-		Font = "Strong", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, 0, 0, 13), Parent = cell })
-	local slot = { cell = cell, tile = tile, border = border, glow = glow, rays = rays, rimArt = rimArt, art = art, check = check, count = count,
-		trainer = trainer, order = order }
+	local tile = TrainerTile.New({ Name = "Tile", px = 92, Size = UDim2.fromScale(1, 1), Parent = cell })
+	local count = Kit.Text({ Name = "Count", Text = "", Font = "Chunky", TextSize = 12, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -6, 1, -4),
+		Size = UDim2.fromOffset(40, 15), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 12, Parent = tile.button })
+	local slot = { cell = cell, tile = tile, count = count, trainer = trainer, order = order }
 	slots[trainer.id] = slot
-	tile.Activated:Connect(function()
+	tile.button.Activated:Connect(function()
 		Audio.PlayUI("Click")
 		if tooltip.Visible and tipName.Text ~= "" and os.clock() - tipShownAt < 2.5 and tooltip:GetAttribute("For") == trainer.id then hideTip() return end
 		tooltip:SetAttribute("For", trainer.id)
 		showTip(slot)
 	end)
-	tile.MouseEnter:Connect(function()
+	tile.button.MouseEnter:Connect(function()
 		tooltip:SetAttribute("For", trainer.id)
 		showTip(slot)
 	end)
-	tile.MouseLeave:Connect(function() if tooltip:GetAttribute("For") == trainer.id then hideTip() end end)
+	tile.button.MouseLeave:Connect(function() if tooltip:GetAttribute("For") == trainer.id then hideTip() end end)
 end
 local function refreshRows()
-	local s = state()
 	for id, slot in pairs(slots) do
 		local rarity = rarityOf(slot.trainer)
 		local owned = ownsAny(id)
-		-- not owned yet: a black silhouette with a rim in the rarity color on a brighter burst (Secret and Eternal too)
-		slot.art.Visible = owned
-		slot.rimArt.Visible = not owned
-		slot.glow.ImageTransparency = if owned then 0.5 else 0.25
-		for _, ray in ipairs(slot.rays:GetChildren()) do ray.BackgroundTransparency = if owned then 0.84 else 0.7 end
-		slot.check.Visible = owned
+		slot.tile:Set({ id = id, rarity = true, silhouette = not owned, owned = owned, caption = Trainers.ChanceText(rarity.chance) })
 		local n = copiesOf(id)
 		slot.count.Text = if n >= 2 then "x" .. n else ""
 	end
@@ -264,8 +229,24 @@ local pityPill = New("Frame", { Name = "PityPill", BackgroundColor3 = Color3.fro
 	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
 	New("UIStroke", { Color = FLAT_EDGE, Thickness = 1 }),
 })
-local pity = Kit.Text({ Name = "Pity", Text = "", Font = "Title", TextSize = 13, Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -24, 0, 18), Parent = pityPill })
-local _pityBar, setPity = Kit.Bar(TEAL, { Name = "PityBar", Position = UDim2.fromOffset(14, 27), Size = UDim2.new(1, -28, 0, 8), Parent = pityPill })
+-- (prompt 47, mockup 02b_roll_closeup) one thick bar: a dark hex track, the teal fill, the words on it
+pityPill.Size = UDim2.new(1, 0, 0, 40)
+New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile, ImageTransparency = 0.8,
+	Size = UDim2.fromScale(1, 1), Parent = pityPill }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+local pityFill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(4, 4), Size = UDim2.new(0, 0, 1, -8), ZIndex = 2,
+	Parent = pityPill }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 9) }),
+	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#6FF0E2"), Color3.fromHex("#1FB5A6")) }),
+})
+local function setPity(k: number)
+	k = math.clamp(k, 0, 1)
+	pityFill.Size = UDim2.new(k, -8 * k, 1, -8)
+end
+local pity = Kit.Text({ Name = "Pity", Text = "", Font = "Chunky", TextSize = 14, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = pityPill })
+do
+	local stroke = pity:FindFirstChildOfClass("UIStroke") or New("UIStroke", { Parent = pity })
+	stroke.Color, stroke.Thickness = Color3.fromHex("#0A090B"), 1.8
+end
 
 keyboard = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
 local function keycap(parent: GuiObject, key: string)
@@ -279,10 +260,17 @@ local function keycap(parent: GuiObject, key: string)
 end
 -- two lines on a button: the big word and the small value under it
 local function twoLines(button: GuiObject, big: string, small: string, bigSize: number)
-	local top = Kit.Text({ Name = "Big", Text = big, Font = "Chunky", TextSize = bigSize, -- (prompt 45: the chunky font, like ROLL) Position = UDim2.new(0, 0, 0, 6), Size = UDim2.new(1, 0, 0.55, -4),
+	-- (prompt 45: the chunky font, like ROLL; prompt 47: its position was lost inside that comment, so the word floated
+	-- above the button. Both lines chunky with a dark stroke, like mockup 02b_roll_closeup)
+	local top = Kit.Text({ Name = "Big", Text = big, Font = "Chunky", TextSize = bigSize, Position = UDim2.new(0, 0, 0, 5), Size = UDim2.new(1, 0, 0.55, -3),
 		ZIndex = 6, Parent = button })
-	local bottom = Kit.Text({ Name = "Small", Text = small, Font = "Strong", TextSize = 11, Position = UDim2.new(0, 0, 0.55, 0), Size = UDim2.new(1, 0, 0.35, 0),
+	local bottom = Kit.Text({ Name = "Small", Text = small, Font = "Chunky", TextSize = 13, Position = UDim2.new(0, 0, 0.55, 0), Size = UDim2.new(1, 0, 0.35, 0),
 		ZIndex = 6, Parent = button })
+	for _, label in ipairs({ top, bottom }) do
+		top:SetAttribute("KeepFont", true)
+		local stroke = label:FindFirstChildOfClass("UIStroke") or New("UIStroke", { Parent = label })
+		stroke.Color, stroke.Thickness = Color3.fromHex("#0A090B"), if label == top then 2.2 else 1.5
+	end
 	return top, bottom
 end
 -- a FLAT button (no bevel, no gloss, darker): X3, AUTO, the gear
@@ -366,8 +354,9 @@ local autoLoop -- (below)
 local function setAuto(on: boolean)
 	autoOn = on
 	autoSmall.Text = if on then "ON" else "OFF"
-	autoSmall.TextColor3 = if on then TEAL else Colors.Text
-	autoEdge.Color = if on then TEAL else FLAT_EDGE
+	-- (prompt 47) AUTO ON: green
+	autoSmall.TextColor3 = if on then Color3.fromHex("#4BE07A") else Colors.Text
+	autoEdge.Color = if on then Color3.fromHex("#4BE07A") else FLAT_EDGE
 	autoEdge.Thickness = if on then 2.5 else 1.5
 end
 
@@ -378,11 +367,13 @@ local function refresh()
 	pity.Text = string.upper(Trainers.PityRarity) .. " GUARANTEED IN " .. left .. " ROLL" .. (if left == 1 then "" else "S")
 	setPity((s.pity or 0) / Trainers.Pity)
 	local coins = data().coins or 0
-	rollSmall.Text = Kit.Format(p) .. " COINS"
+	rollSmall.Text = Kit.Format(p)
+	rollSmall.TextColor3 = Colors.Gold
 	Theme.SetButtonStyle(rollButton, if coins >= p then "Red" else "Disabled")
 	if multiOpen() then
 		x3Big.Text = "X3"
 		x3Small.Text = Kit.Format(p * Trainers.MultiRoll)
+		x3Small.TextColor3 = Colors.Gold
 		x3Big.TextColor3 = if coins >= p * Trainers.MultiRoll then Colors.Text else Colors.Muted
 	else
 		x3Big.Text = "X3"

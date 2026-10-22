@@ -106,12 +106,14 @@ function TrainerPortrait.Icon(id: string, opts)
 	opts = opts or {}
 	local Trainers = require(Shared.Config.Trainers)
 	local trainer = Trainers.ById[id]
-	local picture = if opts.silhouette then Trainers.SilhouetteIcon else trainer and trainer.icon
+	-- (prompt 47) a silhouette = his own portrait in black
+	local picture = if opts.silhouette then (Trainers.SilhouetteIcon or (trainer and trainer.icon)) else trainer and trainer.icon
 	if not picture or picture == "" then
 		return TrainerPortrait.New(id, { Size = opts.Size, Position = opts.Position, AnchorPoint = opts.AnchorPoint, ZIndex = opts.ZIndex, Parent = opts.Parent,
 			shot = "bust", pose = "Relaxed", silhouette = opts.silhouette, golden = opts.golden })
 	end
 	local label = image("Icon", picture, opts)
+	if opts.silhouette then label.ImageColor3 = Color3.new(0, 0, 0) end
 	if opts.golden then
 		local rim = Instance.new("UIStroke")
 		rim.Color, rim.Thickness = Color3.fromHex("#F6C75A"), 2

@@ -11,6 +11,10 @@
 --   * The evolve moment (panel.evolved): the 3 fly together, shake, a white flash, the new one slams in with its name
 --     stamp, confetti in the stage color, a big sound. A first discovery: "COLOSSUS DISCOVERED!".
 --   * (prompt 31) a trainer you haven't seen here yet turns over with a gold burst; "5/8 FOUND".
+-- (prompt 47, 22 Oct) Restyled with the chunky kit: the big tile with the EQUIPPED / OWNED pills under it; on the right his
+-- name, rarity and LV (gold), the EXP bar, his boosts as stat pills, the evolve bar (copies 2 / 3 + the mini tiles), a
+-- big gold EVOLVE button and a quiet EQUIP / UNEQUIP. Nothing yet: "NO TRAINERS YET" and a red GO TO TRAINER AGENCY
+-- button that takes you there (a fade; 10 s cooldown, checked on the server).
 -- TrainersPanel.Build(parent) -> { frame, refresh(), evolved(info) }. Every change goes to the server (remote "Trainers").
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -133,15 +137,34 @@ function TrainersPanel.Build(parent: Instance)
 		remote:FireServer("EvolveAll")
 	end)
 
-	-- nothing yet: a line and a button to the Agency
-	local empty = New("Frame", { Name = "Empty", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 90), Visible = false, Parent = holder })
-	Kit.Text({ Text = "No trainers yet. Roll for one at the Trainer Agency (the desk at the front of each gym).", Font = "Strong", TextSize = 13, TextWrapped = true,
-		Size = UDim2.new(1, 0, 0, 36), Parent = empty })
-	local openAgency = Kit.Button("Gold", "Roll trainers", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 42), Parent = empty },
-		{ width = 200, height = 44, textSize = 15 })
-	openAgency.Activated:Connect(function()
+	-- nothing yet: NO TRAINERS YET + a red button that takes you to the Agency (a fade; 10 s cooldown)
+	local empty = New("Frame", { Name = "Empty", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = holder })
+	chunky(empty, { Name = "Title", Text = "NO TRAINERS YET", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.new(1, -20, 0, 36) }, 30)
+	Kit.Text({ Name = "Line", Text = "Roll for one at the Trainer Agency: they follow you, cheer you on and boost your gains.", Font = "Strong", TextSize = 13,
+		TextColor3 = Colors.Muted, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 44), Size = UDim2.new(0.8, 0, 0, 36), Parent = empty })
+	local goAgency = Kit.Button("Red", "Go to Trainer Agency", { Name = "GoAgency", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 92), Parent = empty },
+		{ width = 280, height = 56, textSize = 20 })
+	local lastGo = -math.huge
+	goAgency.Activated:Connect(function()
+		if os.clock() - lastGo < 10 then
+			require(script.Parent.Notify).Show(string.format("Wait %d s.", math.ceil(10 - (os.clock() - lastGo))), nil, "agencywait")
+			return
+		end
+		lastGo = os.clock()
 		Audio.PlayUI("Click")
-		UIBus.OpenAgency:Fire()
+		-- a quick fade to black and back while you move
+		local fadeGui = Theme.ScreenGui({ Name = "AgencyFade", DisplayOrder = 90, Parent = player:WaitForChild("PlayerGui") })
+		fadeGui.IgnoreGuiInset = true
+		fadeGui.ScreenInsets = Enum.ScreenInsets.None
+		local black = New("Frame", { BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = fadeGui })
+		TweenService:Create(black, TweenInfo.new(0.25), { BackgroundTransparency = 0 }):Play()
+		task.delay(0.27, function()
+			remote:FireServer("TeleportAgency")
+			UIBus.CloseAllPanels()
+			task.wait(0.35)
+			TweenService:Create(black, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+			task.delay(0.4, function() fadeGui:Destroy() end)
+		end)
 	end)
 
 	------------------------------------------------------------------------
@@ -149,60 +172,74 @@ function TrainersPanel.Build(parent: Instance)
 	------------------------------------------------------------------------
 	local side = New("Frame", { Name = "Detail", BackgroundTransparency = 1, Position = UDim2.fromOffset(SIDE_X, 0), Size = UDim2.new(1, -SIDE_X, 1, 0), Parent = holder })
 	local big = TrainerTile.New({ Name = "Big", px = BIG, Size = UDim2.fromOffset(BIG, BIG), Parent = side })
-	local counts = chunky(side, { Name = "Counts", Position = UDim2.fromOffset(0, BIG + 6), Size = UDim2.fromOffset(BIG, 16), TextXAlignment = Enum.TextXAlignment.Left }, 10)
-	Kit.Fit(counts, 10, 7)
-	local chartButton = Kit.Button("Dark", "Evolutions", { Name = "Chart", Position = UDim2.fromOffset(0, BIG + 26), Parent = side }, { width = BIG, height = 30, textSize = 12 })
+	-- under the big tile: the two pills, and the evolutions chart button
+	local function pillFrame(name, x)
+		local pill = New("Frame", { Name = name, BackgroundColor3 = C("#141317"), Position = UDim2.fromOffset(x, BIG + 6), Size = UDim2.fromOffset(BIG / 2 - 3, 22), Parent = side }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		return chunky(pill, { Name = "Text", Size = UDim2.fromScale(1, 1) }, 10)
+	end
+	local equippedPill = pillFrame("Equipped", 0)
+	local ownedPill = pillFrame("Owned", BIG / 2 + 3)
+	local chartButton = Kit.Button("Dark", "Evolutions", { Name = "Chart", Position = UDim2.fromOffset(0, BIG + 34), Parent = side }, { width = BIG, height = 30, textSize = 12 })
 	local COL_X = BIG + 10
 	local col = New("Frame", { Name = "Column", BackgroundTransparency = 1, Position = UDim2.fromOffset(COL_X, 0), Size = UDim2.new(1, -COL_X, 1, 0), Parent = side })
+	-- his name, the rarity, LV in gold
+	local nameText = chunky(col, { Name = "Name", Size = UDim2.new(1, -70, 0, 22), TextXAlignment = Enum.TextXAlignment.Left }, 19)
+	Kit.Fit(nameText, 19, 11)
+	local rarityText = chunky(col, { Name = "Rarity", Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -70, 0, 14), TextXAlignment = Enum.TextXAlignment.Left }, 11)
+	local levelText = chunky(col, { Name = "Level", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(70, 30),
+		TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Colors.Gold }, 22)
 	-- the EXP bar
-	local bar = framed(col, { Name = "ExpBar", Size = UDim2.new(1, 0, 0, 30) }, C("#5AA8FF"))
+	local bar = framed(col, { Name = "ExpBar", Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 0, 26) }, C("#5AA8FF"))
 	local fill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(4, 4), Size = UDim2.new(0, 0, 1, -8), ZIndex = 2, Parent = bar }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
 		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(C("#9AD8FF"), C("#2F7BFF")) }),
 	})
-	local lvLeft = chunky(bar, { Name = "Left", Position = UDim2.fromOffset(6, 0), Size = UDim2.fromOffset(40, 30), ZIndex = 4, TextXAlignment = Enum.TextXAlignment.Left }, 10)
-	local lvRight = chunky(bar, { Name = "Right", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(40, 30), ZIndex = 4,
-		TextXAlignment = Enum.TextXAlignment.Right }, 10)
-	local expText = chunky(bar, { Name = "Exp", Position = UDim2.fromOffset(44, 0), Size = UDim2.new(1, -88, 1, 0), ZIndex = 4 }, 13)
-	-- the boost box
-	local stats = framed(col, { Name = "Stats", Position = UDim2.fromOffset(0, 36), Size = UDim2.new(1, 0, 0, 86) }, C("#3A3640"))
-	local statRows = {}
+	local expText = chunky(bar, { Name = "Exp", Size = UDim2.fromScale(1, 1), ZIndex = 4 }, 12)
+	-- the boosts as stat pills
+	local pillsRow = New("Frame", { Name = "Stats", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 72), Size = UDim2.new(1, 0, 0, 56), Parent = col }, {
+		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Wraps = true, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
 	local STAT = { gains = { "zap", C("#5AA8FF"), "EXP" }, coins = { "coin", C("#F6C75A"), "COINS" }, progress = { "arrow-big-up", C("#5CE07A"), "PROGRESS" },
 		maxStamina = { "heart-pulse", C("#FF6A7A"), "MAX STAMINA" }, staminaRegen = { "heart-pulse", C("#36C2C2"), "STAMINA REGEN" } }
+	local statPills = {}
 	for i = 1, 3 do
-		local row = New("Frame", { Name = "Row" .. i, BackgroundTransparency = 1, Position = UDim2.fromOffset(8, 6 + (i - 1) * 26), Size = UDim2.new(1, -16, 0, 24), ZIndex = 4,
-			Parent = stats })
-		local badge = New("Frame", { Name = "Badge", BackgroundColor3 = Colors.Gold, Size = UDim2.fromOffset(22, 22), ZIndex = 4, Parent = row }, {
+		local pill = New("Frame", { Name = "Stat" .. i, LayoutOrder = i, BackgroundColor3 = C("#141317"), Size = UDim2.fromOffset(0, 25), AutomaticSize = Enum.AutomaticSize.X,
+			Parent = pillsRow }, {
 			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-			New("UIStroke", { Color = INK, Thickness = 1.5 }),
+			New("UIStroke", { Name = "Edge", Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), VerticalAlignment = Enum.VerticalAlignment.Center }),
+			New("UIPadding", { PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 9) }),
 		})
-		local icon = Pieces.Icon("zap", INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.7, 0.7), ZIndex = 5, Parent = badge })
+		local badge = New("Frame", { Name = "Badge", BackgroundColor3 = Colors.Gold, Size = UDim2.fromOffset(19, 19), Parent = pill }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = INK, Thickness = 1.2 }),
+		})
+		local icon = Pieces.Icon("zap", INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.68, 0.68), Parent = badge })
 		icon:SetAttribute("KeepColor", true)
-		local text = chunky(row, { Name = "Text", Position = UDim2.fromOffset(30, 0), Size = UDim2.new(1, -30, 1, 0), ZIndex = 4, TextXAlignment = Enum.TextXAlignment.Left }, 15)
-		statRows[i] = { row = row, badge = badge, icon = icon, text = text }
+		local text = chunky(pill, { Name = "Text", LayoutOrder = 2, Size = UDim2.fromOffset(0, 25), AutomaticSize = Enum.AutomaticSize.X }, 13)
+		statPills[i] = { pill = pill, badge = badge, icon = icon, text = text }
 	end
-	-- NEEDS 3x BEAST-MODE . 2/3 + the 3 mini tiles
-	local needs = chunky(col, { Name = "Needs", Position = UDim2.fromOffset(0, 128), Size = UDim2.new(1, -110, 0, 34), TextXAlignment = Enum.TextXAlignment.Left,
-		TextWrapped = true }, 11)
-	Kit.Fit(needs, 11, 8, 2)
+	-- the evolve bar: copies 2 / 3 toward the next stage, the 3 mini tiles
+	local evoBar = framed(col, { Name = "EvolveBar", Position = UDim2.fromOffset(0, 130), Size = UDim2.new(1, -112, 0, 30) }, C("#3A3640"))
+	local evoFill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(4, 4), Size = UDim2.new(0, 0, 1, -8), ZIndex = 2, Parent = evoBar }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(C("#FFE38A"), C("#C98A12")) }),
+	})
+	local needs = chunky(evoBar, { Name = "Needs", Size = UDim2.new(1, -8, 1, 0), Position = UDim2.fromOffset(4, 0), ZIndex = 4 }, 10)
+	Kit.Fit(needs, 10, 7)
 	local minis = {}
 	for i = 1, Trainers.EvolveCount do
 		minis[i] = TrainerTile.New({ Name = "Mini" .. i, px = 32, Size = UDim2.fromOffset(32, 32), AnchorPoint = Vector2.new(1, 0),
 			Position = UDim2.new(1, -(Trainers.EvolveCount - i) * 36, 0, 129), Parent = col })
 	end
-	-- the two buttons
-	local equipButton = Kit.Button("Green", "Equip", { Name = "Equip", Position = UDim2.fromOffset(0, 168), Parent = col }, { width = 128, height = 46, textSize = 18 })
-	equipButton.Size = UDim2.new(0.5, -5, 0, 46)
-	local evolveButton = New("TextButton", { Name = "Evolve", Text = "", AutoButtonColor = false, BackgroundColor3 = C("#141317"), AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 168), Size = UDim2.new(0.5, -5, 0, 46), ClipsDescendants = true, Parent = col }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-	})
-	local evolveStroke = New("UIStroke", { Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = evolveButton })
-	local evolveHex = New("ImageLabel", { BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = Theme.HexTile, ImageTransparency = 0.55,
-		Size = UDim2.fromScale(1, 1), Parent = evolveButton })
-	local evolveName = chunky(evolveButton, { Name = "Stage", Position = UDim2.fromOffset(4, 3), Size = UDim2.new(1, -8, 0, 24), ZIndex = 3 }, 16)
-	Kit.Fit(evolveName, 16, 9)
-	local evolveSub = chunky(evolveButton, { Name = "Sub", Position = UDim2.fromOffset(4, 26), Size = UDim2.new(1, -8, 0, 16), ZIndex = 3 }, 11)
+	-- the gold EVOLVE button (the next stage's name on it) and the quiet EQUIP / UNEQUIP
+	local evolveButton = Kit.Button("Gold", "Evolve", { Name = "Evolve", Position = UDim2.fromOffset(0, 166), Parent = col }, { width = 200, height = 40, textSize = 18 })
+	evolveButton.Size = UDim2.new(1, 0, 0, 40)
+	local equipButton = Kit.Button("Quiet", "Equip", { Name = "Equip", Position = UDim2.fromOffset(0, 212), Parent = col }, { width = 200, height = 30, textSize = 13 })
+	equipButton.Size = UDim2.new(1, 0, 0, 30)
 
 	------------------------------------------------------------------------
 	-- The evolutions chart (over the panel)
@@ -285,33 +322,39 @@ function TrainersPanel.Build(parent: Instance)
 			end
 		end
 		Kit.SetButton(evolveAll, if canAny then "Gold" else "Disabled", "Evolve all")
-		counts.Text = string.format("EQUIPPED %d/%d  ·  OWNED %d  ·  %d/%d FOUND", #equippedUids, slotCount, #s.copies, #discovered, #Trainers.List)
+		equippedPill.Text = string.format("EQUIPPED %d/%d", #equippedUids, slotCount)
+		ownedPill.Text = string.format("OWNED %d/%d", #s.copies, Trainers.MaxCopies)
 		-- the picked one
 		current = map[pickedUid]
 		local trainer = Trainers.ById[current.id]
 		local stage = Trainers.Stages[current.s]
+		local rarity = Trainers.RarityById[trainer.rarity]
 		big:Set({ id = current.id, s = current.s, l = current.l, equipped = equippedSet[current.u] })
+		nameText.Text = string.upper(trainer.name)
+		rarityText.Text = string.upper(rarity.name) .. "  ·  " .. stage.name
+		rarityText.TextColor3 = C(if rarity.id == "Secret" then rarity.color2 else rarity.color)
+		levelText.Text = "LV " .. current.l
 		if current.l >= Trainers.MaxLevel then
-			lvLeft.Text, lvRight.Text, expText.Text = "LV " .. current.l, "", "MAX LEVEL"
+			expText.Text = "MAX LEVEL"
 			fill.Size = UDim2.new(1, -8, 1, -8)
 		else
 			local need = Trainers.LevelXp(current.l, current.s)
 			local k = math.clamp(current.x / need, 0, 1)
-			lvLeft.Text, lvRight.Text = "LV " .. current.l, "LV " .. (current.l + 1)
-			expText.Text = shortNumber(current.x) .. " / " .. shortNumber(need) .. " EXP"
+			expText.Text = shortNumber(current.x) .. " / " .. shortNumber(need) .. " EXP  ·  LV " .. (current.l + 1)
 			fill.Size = UDim2.new(k, -8 * k, 1, -8)
 		end
 		local lines = Trainers.PerkLines(trainer, current)
 		local icons = require(script.Parent.Parent.Config.UI).Icons
-		for i, row in ipairs(statRows) do
+		for i, sp in ipairs(statPills) do
 			local line = lines[i]
-			row.row.Visible = line ~= nil
+			sp.pill.Visible = line ~= nil
 			if line then
 				local look = STAT[line.kind]
-				row.badge.BackgroundColor3 = look[2]
-				row.icon.Image = icons[look[1]] or row.icon.Image
-				row.text.Text = "+" .. line.pct .. "% " .. look[3]
-				row.text.TextColor3 = look[2]
+				sp.badge.BackgroundColor3 = look[2]
+				sp.icon.Image = icons[look[1]] or sp.icon.Image
+				sp.text.Text = "+" .. line.pct .. "% " .. look[3]
+				sp.text.TextColor3 = look[2]
+				sp.pill:FindFirstChild("Edge").Color = look[2]
 			end
 		end
 		-- evolving
@@ -319,36 +362,32 @@ function TrainersPanel.Build(parent: Instance)
 		local maxed = current.s >= #Trainers.Stages
 		local ready = not maxed and #currentSet >= Trainers.EvolveCount
 		local nextStage = Trainers.Stages[current.s + 1]
-		needs.Text = if maxed then "MAX EVOLUTION" else string.format("NEEDS %dx %s  ·  %d/%d", Trainers.EvolveCount, stage.name, math.min(#currentSet, Trainers.EvolveCount),
-			Trainers.EvolveCount)
+		local have = math.min(#currentSet, Trainers.EvolveCount)
+		needs.Text = if maxed then "MAX EVOLUTION" else string.format("%d/%d  ·  3x %s", have, Trainers.EvolveCount, stage.name)
+		local k = if maxed then 1 else have / Trainers.EvolveCount
+		evoFill.Size = UDim2.new(k, -8 * k, 1, -8)
 		for i, mini in ipairs(minis) do
-			local have = currentSet[i] ~= nil
+			local got = currentSet[i] ~= nil
 			mini.cell.Visible = not maxed
 			mini:Set({ id = current.id, s = current.s, l = 1, mini = true })
 			for _, d in ipairs(mini.cell:GetDescendants()) do
-				if d:IsA("ViewportFrame") then d.ImageTransparency = if have then 0 else 0.75 end
+				if d:IsA("ImageLabel") and d.Name == "Portrait" then d.ImageTransparency = if got then 0 else 0.7 end
+				if d:IsA("ViewportFrame") then d.ImageTransparency = if got then 0 else 0.75 end
 			end
-			mini.button.BackgroundTransparency = if have then 0 else 0.6
+			mini.button.BackgroundTransparency = if got then 0 else 0.6
 		end
-		local isEquipped = equippedSet[current.u] == true
-		Kit.SetButton(equipButton, if isEquipped then "Red" else "Green", if isEquipped then "Unequip" else "Equip")
+		local known = nextStage and s.discovered[nextStage.id] == true
 		if maxed then
-			evolveButton.BackgroundColor3 = C("#2A282E")
-			evolveStroke.Color = C("#55525A")
-			evolveHex.ImageColor3 = C("#55525A")
-			evolveName.Text, evolveName.TextColor3 = "MAX EVO", C("#9A97A0")
-			evolveSub.Text = ""
-		else
-			local known = s.discovered[nextStage.id] == true
+			Kit.SetButton(evolveButton, "Disabled", "Max evo")
+		elseif ready then
 			local bestLevel = 1
 			for _, c in ipairs(currentSet) do bestLevel = math.max(bestLevel, c.l) end
-			evolveButton.BackgroundColor3 = if ready then C(nextStage.base) else C("#1A191D")
-			evolveStroke.Color = if ready then C(nextStage.color) else C("#3A3640")
-			evolveHex.ImageColor3 = C(nextStage.hex)
-			evolveName.Text = if known then nextStage.name else "???"
-			evolveName.TextColor3 = if ready then C(nextStage.color) else C("#8A878F")
-			evolveSub.Text = if ready then "EVOLVE · LV " .. bestLevel else "NEEDS " .. Trainers.EvolveCount
+			Kit.SetButton(evolveButton, "Gold", "Evolve > " .. (if known then nextStage.name else "???") .. " · LV " .. bestLevel)
+		else
+			Kit.SetButton(evolveButton, "Disabled", "Evolve > " .. (if known then nextStage.name else "???"))
 		end
+		local isEquipped = equippedSet[current.u] == true
+		Kit.SetButton(equipButton, "Quiet", if isEquipped then "Unequip" else "Equip")
 		-- the chart: this trainer at every stage
 		for i, tile in ipairs(chartTiles) do
 			local st = Trainers.Stages[i]

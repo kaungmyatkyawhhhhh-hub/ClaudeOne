@@ -10,6 +10,11 @@
 --     stage color (it only ever means the stage), a 2 px near-black ring inside it, a soft glow outside; EQUIPPED = a
 --     thicker gold glow (gently pulsing) and a gold check badge on the right under the name.
 --   * hidden = a stage you haven't discovered: a dark glitching version, "???" and "COMBINE 3 TO DISCOVER".
+-- (prompt 47, 22 Oct) The owner's pictures are in the group now: his portrait (Config/Trainers Portraits) instead of the
+-- 3D rig (a not-owned one = the portrait in black with a rim), the planner's backgrounds per stage (Trainers.StageArt:
+-- hex = the base, evo = the stage effect on top, animated: IRON-BORN pulses, BEAST-MODE / LIMITLESS turn, COLOSSUS
+-- flashes with its lightning), and a highlight that runs round the border. Rarity mode (the Agency): the rarity's colors,
+-- the rarity name and the chance instead of the stage and LV, a gold check when owned.
 --   TrainerTile.New({ Name, LayoutOrder, Size, Position, AnchorPoint, Parent, px = its width in mockup px }) -> tile
 --   tile:Set({ id, s, l, equipped, hidden, noLevel, caption }); tile.cell (the frame to place), tile.button (taps)
 local RunService = game:GetService("RunService")
@@ -118,6 +123,29 @@ FX.Limitless = function(layer, rng)
 	return fx
 end
 
+-- the border: its color with a brighter streak (it turns: Paint)
+local function borderColors(color: Color3): ColorSequence
+	local bright = color:Lerp(Color3.new(1, 1, 1), 0.7)
+	return ColorSequence.new({ ColorSequenceKeypoint.new(0, color), ColorSequenceKeypoint.new(0.4, color), ColorSequenceKeypoint.new(0.5, bright),
+		ColorSequenceKeypoint.new(0.6, color), ColorSequenceKeypoint.new(1, color) })
+end
+
+-- his picture (the portrait, or the 3D rig when there is none); silhouette = black with a rim in `rim`
+local function placeArt(holder: Frame, trainer, silhouette: boolean, rim: Color3)
+	holder:ClearAllChildren()
+	if trainer.icon and trainer.icon ~= "" then
+		if silhouette then
+			New("ImageLabel", { Name = "Rim", BackgroundTransparency = 1, Image = trainer.icon, ScaleType = Enum.ScaleType.Fit, ImageColor3 = rim, AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.07, 1.07), ZIndex = 5, Parent = holder })
+		end
+		New("ImageLabel", { Name = "Portrait", BackgroundTransparency = 1, Image = trainer.icon, ScaleType = Enum.ScaleType.Fit,
+			ImageColor3 = if silhouette then Color3.new(0, 0, 0) else Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = holder })
+		return
+	end
+	local art = TrainerPortrait.New(trainer.id, { Size = UDim2.fromScale(1, 1), shot = "bust", pose = "Relaxed", ZIndex = 5, Parent = holder, silhouette = silhouette })
+	art.LightColor = if silhouette then Color3.new(0, 0, 0) else Color3.new(1, 1, 1)
+end
+
 ------------------------------------------------------------------------
 -- A tile
 ------------------------------------------------------------------------
@@ -141,9 +169,17 @@ function TrainerTile.New(props)
 		ZIndex = 2, Parent = self.cell }, {
 		New("UICorner", { CornerRadius = UDim.new(0, radius) }),
 	})
-	self.border = New("UIStroke", { Name = "Border", Thickness = math.max(2, px * 0.03), ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.button })
+	self.border = New("UIStroke", { Name = "Border", Color = Color3.new(1, 1, 1), Thickness = math.max(2, px * 0.03), ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = self.button })
+	-- (prompt 47) the highlight that runs round the border (the border's color is this gradient)
+	self.spin = New("UIGradient", { Name = "Spin", Parent = self.border })
 	self.hex = New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile,
 		TileSize = UDim2.fromOffset(math.floor(px * 0.2), math.floor(px * 0.115)), ImageTransparency = 0.6, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = self.button })
+	-- (prompt 47) the planner's stage backgrounds (hex = the base, evo = the effect)
+	self.bgImage = New("ImageLabel", { Name = "HexArt", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Size = UDim2.fromScale(1, 1), ZIndex = 2,
+		Visible = false, Parent = self.button }, { New("UICorner", { CornerRadius = UDim.new(0, radius) }) })
+	self.evoImage = New("ImageLabel", { Name = "EvoArt", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 3, Visible = false, Parent = self.button })
 	self.radial = AlterFX.Image(self.button, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36),
 		Size = UDim2.fromScale(1.25, 1.25), SizeConstraint = Enum.SizeConstraint.RelativeXX, ImageTransparency = 0.35, ZIndex = 2 })
 	self.fxLayer = New("Frame", { Name = "Fx", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = self.button })
@@ -189,36 +225,58 @@ function Tile:Set(info)
 	local trainer = Trainers.ById[info.id]
 	self.info = info
 	self.stageInfo = stage
-	local color = C(stage.color)
 	local hidden = info.hidden == true
-	self.button.BackgroundColor3 = if hidden then C("#070608") else C(stage.base)
-	self.hex.ImageColor3 = if hidden then C("#2A2830") else C(stage.hex):Lerp(Color3.new(1, 1, 1), 0.15)
+	local rarityMode = info.rarity == true
+	local rarity = trainer and Trainers.RarityById[trainer.rarity]
+	-- the tile's color: the stage's (or, on the Agency, the rarity's)
+	local color = if rarityMode and rarity then C(rarity.color2 or rarity.color) else C(stage.color)
+	if rarityMode and rarity and rarity.id ~= "Secret" then color = C(rarity.color) end
+	self.color = color
+	local art = Trainers.StageArt[stage.id]
+	local useArt = art ~= nil and not rarityMode and not hidden
+	self.bgImage.Visible = useArt
+	self.evoImage.Visible = useArt
+	if useArt then
+		self.bgImage.Image = art.hex
+		self.evoImage.Image = art.evo
+		self.evoImage.ImageTransparency = if stage.index == 1 then 0.35 else 0.12
+		self.evoImage.Size, self.evoImage.Rotation = UDim2.fromScale(1, 1), 0
+		self.evoImage.SizeConstraint = Enum.SizeConstraint.RelativeXY
+	end
+	self.hex.Visible = not useArt
+	self.button.BackgroundColor3 = if hidden then C("#070608") elseif rarityMode then color:Lerp(Color3.new(0, 0, 0), 0.82) else C(stage.base)
+	self.hex.ImageColor3 = if hidden then C("#2A2830") elseif rarityMode then color:Lerp(Color3.new(1, 1, 1), 0.1) else C(stage.hex):Lerp(Color3.new(1, 1, 1), 0.15)
+	self.hex.ImageTransparency = if rarityMode then 0.7 else 0.6
 	self.hexTop.ImageColor3 = self.hex.ImageColor3
 	self.radial.ImageColor3 = if hidden then C("#3A3640") else color
-	self.radial.ImageTransparency = if hidden then 0.6 else 0.35
-	self.border.Color = if hidden then C("#3A3640") else color
-	self.name.Text = string.upper(trainer and trainer.name or "")
-	self.stage.Text = if hidden then "???" else stage.name
-	self.stage.TextColor3 = if hidden then C("#8A878F") elseif stage.index == 1 then Color3.new(1, 1, 1) else color
-	self.level.Text = if hidden then "COMBINE 3 TO DISCOVER" elseif info.caption then info.caption elseif info.noLevel then "" else "LV " .. (info.l or 1)
-	self.level.TextColor3 = if hidden then C("#8A878F") else Color3.new(1, 1, 1)
-	self.check.Visible = info.equipped == true and not hidden
+	self.radial.ImageTransparency = if hidden then 0.6 elseif useArt then 0.7 else 0.35
+	self.spin.Color = borderColors(if hidden then C("#3A3640") else color)
+	local nameHidden = rarityMode and info.silhouette and rarity and rarity.hidden
+	self.name.Text = if nameHidden then "???" else string.upper(trainer and trainer.name or "")
+	if rarityMode then
+		self.stage.Text = string.upper(rarity and rarity.name or "")
+		self.stage.TextColor3 = color
+		self.level.Text = info.caption or ""
+		self.level.TextColor3 = Color3.new(1, 1, 1)
+	else
+		self.stage.Text = if hidden then "???" else stage.name
+		self.stage.TextColor3 = if hidden then C("#8A878F") elseif stage.index == 1 then Color3.new(1, 1, 1) else color
+		self.level.Text = if hidden then "COMBINE 3 TO DISCOVER" elseif info.caption then info.caption elseif info.noLevel then "" else "LV " .. (info.l or 1)
+		self.level.TextColor3 = if hidden then C("#8A878F") else Color3.new(1, 1, 1)
+	end
+	self.check.Visible = (info.equipped == true or (rarityMode and info.owned == true)) and not hidden
 	self.name.Visible, self.stage.Visible, self.level.Visible = not info.mini, not info.mini, not info.mini
 	self.artHolder.Position = if info.mini then UDim2.fromScale(0.5, 0.04) else UDim2.fromScale(0.5, 0.12)
 	self.artHolder.Size = if info.mini then UDim2.fromScale(1.05, 0.96) else UDim2.fromScale(1.02, 0.62)
-	self.hexTop.Visible = not hidden and (stage.id == "BeastMode" or stage.id == "Limitless")
-	-- the art and the effect only change when he or the stage does
-	local key = tostring(info.id) .. "|" .. stage.id .. "|" .. tostring(hidden)
+	self.hexTop.Visible = useArt and (stage.id == "BeastMode" or stage.id == "Limitless")
+	-- the art and the effect only change when he, the stage or the mode does
+	local silhouette = hidden or info.silhouette == true
+	local key = tostring(info.id) .. "|" .. stage.id .. "|" .. tostring(silhouette) .. "|" .. tostring(rarityMode)
 	if key ~= self.key then
 		self.key = key
-		self.artHolder:ClearAllChildren()
-		if trainer then
-			local art = TrainerPortrait.New(trainer.id, { Size = UDim2.fromScale(1, 1), shot = "bust", pose = "Relaxed", ZIndex = 5, Parent = self.artHolder,
-				silhouette = hidden })
-			art.LightColor = if hidden then Color3.new(0, 0, 0) else Color3.new(1, 1, 1):Lerp(color, 0.25)
-		end
+		if trainer then placeArt(self.artHolder, trainer, silhouette, color) end
 		self.fxLayer:ClearAllChildren()
-		local build = FX[stage.id]
+		local build = (not rarityMode) and FX[stage.id] or nil
 		self.fx = build and build(self.fxLayer, self.rng) or nil
 	end
 	self:Paint(os.clock())
@@ -228,8 +286,10 @@ end
 function Tile:Paint(t: number)
 	local info, stage = self.info, self.stageInfo
 	if not info then return end
-	local color = C(stage.color)
+	local color = self.color or C(stage.color)
 	local hidden = info.hidden == true
+	-- the highlight runs round the border
+	self.spin.Rotation = (t * 80) % 360
 	if info.equipped and not hidden then
 		self.glowStroke.Color = GOLD
 		self.glowStroke.Thickness = math.max(4, self.px * 0.07)
@@ -246,6 +306,16 @@ function Tile:Paint(t: number)
 		return
 	end
 	self.fxLayer.Visible = true
+	-- the planner's stage effect moves too
+	if self.evoImage.Visible then
+		if stage.id == "IronBorn" then
+			self.evoImage.ImageTransparency = 0.08 + 0.25 * (0.5 + 0.5 * math.sin(t * 2.6))
+		elseif stage.id == "BeastMode" or stage.id == "Limitless" then
+			self.evoImage.Size = UDim2.fromScale(1.45, 1.45)
+			self.evoImage.SizeConstraint = Enum.SizeConstraint.RelativeXX
+			self.evoImage.Rotation = (t * (if stage.id == "Limitless" then 22 else 14)) % 360
+		end
+	end
 	if not fx then return end
 	if stage.id == "IronBorn" then
 		for _, c in ipairs(fx.cracks) do c.f.BackgroundTransparency = 0.25 + 0.55 * (0.5 + 0.5 * math.sin(t * 2.4 + c.phase)) end
@@ -278,11 +348,12 @@ function Tile:Paint(t: number)
 		local on = since < 0.06 or (since > 0.12 and since < 0.18)
 		fx.bolt.ImageTransparency = if on then 0.05 elseif since < 0.3 then 0.6 else 1
 		fx.flash.BackgroundTransparency = if on then 0.55 else 1
+		if self.evoImage.Visible then self.evoImage.ImageTransparency = if on then 0 else 0.22 end
 	elseif stage.id == "Limitless" then
 		fx.spiral.Rotation = (t * 40) % 360
 		for _, s in ipairs(fx.stars) do s.f.BackgroundTransparency = 0.5 + 0.5 * math.sin(t * 4 + s.phase) end
 		local hue = Color3.fromHSV((t * 0.12) % 1, 0.65, 1)
-		self.border.Color = hue
+		self.spin.Color = borderColors(hue)
 		if not info.equipped then self.glowStroke.Color = hue end
 	end
 end

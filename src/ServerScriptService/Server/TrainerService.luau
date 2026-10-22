@@ -644,6 +644,34 @@ end
 ------------------------------------------------------------------------
 -- Desks
 ------------------------------------------------------------------------
+-- (prompt 47) MY TRAINERS' "GO TO TRAINER AGENCY": in front of the nearest Agency desk (10 s cooldown)
+local lastAgencyTeleport = {}
+local function teleportAgency(player)
+	local clock = os.clock()
+	if clock - (lastAgencyTeleport[player] or -math.huge) < 10 then return end
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root or humanoid.Health <= 0 or humanoid.SeatPart or player:GetAttribute("PosingComp") then return end
+	local best, bestDistance = nil, math.huge
+	for _, desk in ipairs(desks) do
+		if desk.Parent then
+			local d = (desk.Position - root.Position).Magnitude
+			if d < bestDistance then best, bestDistance = desk, d end
+		end
+	end
+	if not best then return end
+	lastAgencyTeleport[player] = clock
+	local spot = (best.CFrame * CFrame.new(0, 0, -5)).Position
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character }
+	local hit = Workspace:Raycast(spot + Vector3.new(0, 4, 0), Vector3.new(0, -20, 0), params)
+	local floorY = if hit then hit.Position.Y else best.Position.Y - best.Size.Y / 2
+	local at = Vector3.new(spot.X, floorY + humanoid.HipHeight + root.Size.Y / 2, spot.Z)
+	character:PivotTo(CFrame.lookAt(at, Vector3.new(best.Position.X, at.Y, best.Position.Z)))
+end
+
 local function addDesk(part)
 	if not part:IsA("BasePart") or table.find(desks, part) then return end
 	table.insert(desks, part)
@@ -693,6 +721,8 @@ function TrainerService.Start()
 			evolve(player, a)
 		elseif action == "EvolveAll" then
 			evolveAll(player)
+		elseif action == "TeleportAgency" then
+			teleportAgency(player)
 		elseif action == "AutoDelete" then
 			setAutoDelete(player, a, b)
 		end
@@ -701,7 +731,7 @@ function TrainerService.Start()
 	task.spawn(buildTemplates)
 	Players.PlayerRemoving:Connect(function(player)
 		pcall(flushXp, player)
-		lastRoll[player], lastEvolve[player], pendingXp[player] = nil, nil, nil
+		lastRoll[player], lastEvolve[player], pendingXp[player], lastAgencyTeleport[player] = nil, nil, nil, nil
 	end)
 	-- (prompt 33) the waiting trainer EXP goes into the save every FlushSeconds
 	task.spawn(function()
