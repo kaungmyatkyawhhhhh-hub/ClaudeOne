@@ -13,7 +13,8 @@ local UI = require(script.Parent.Parent.Config.UI)
 local ReadyGlow = {}
 ReadyGlow.__index = ReadyGlow
 
-local SOURCE_EDGE = 64 -- (the texture: 256 px, the rounded rectangle's edge 64 px in, the blur fading out past it)
+local SOURCE_EDGE = 84 -- (the texture: 256 px, the rounded rectangle 64 px in with the blur fading out past it; the target's edge
+-- goes 84 px in, where the glow is still ~85% bright, so the halo starts strong right at the outline and fades out)
 local SLICE = Rect.new(110, 110, 146, 146)
 local BREATHE = TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true) -- (there and back: 1.6 s)
 local LAP = TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
