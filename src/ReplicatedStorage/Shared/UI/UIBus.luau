@@ -27,7 +27,7 @@ UIBus.OpenStats = signal()       -- (tab id) open the Stats panel on a tab ("Mus
 UIBus.RepFlash = signal()        -- a rep landed: (weights { [muscleId] = 0..1 }, strong) for the body-map widget's flash
 
 -- Screens that cover the middle of the view: the Stats labels and the Muscles button step aside while any is open.
-UIBus.CoverGuis = { "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle", "Settings", "Inventory", "Store", "GeneticsScreen", "MusclesScreen", "DailyQuests", "Trainers", "MealShop", "PosingRound" }
+UIBus.CoverGuis = { "Wardrobe", "Emotes", "Crew", "ClothingStore", "ProgressMirror", "ArmWrestle", "Settings", "Inventory", "Store", "GeneticsScreen", "MusclesScreen", "DailyQuests", "Trainers", "MealShop", "PosingRound", "TrainerRoll" } -- (prompt 49: the roll reveal)
 function UIBus.CoverOpen(playerGui)
 	for _, name in ipairs(UIBus.CoverGuis) do
 		local gui = playerGui:FindFirstChild(name)
