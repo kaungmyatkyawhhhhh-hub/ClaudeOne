@@ -378,12 +378,6 @@ local function extras(model, look)
 			prop(model, "UpperTorso", "CapeCollar", nil, Vector3.new(ts.X * 0.9, 0.22, 0.3), CFrame.new(0, ts.Y * 0.42, ts.Z * 0.5), color, Enum.Material.Metal)
 			prop(model, "UpperTorso", "Cape", nil, Vector3.new(ts.X * 0.8, ts.Y * 2.2, 0.08), CFrame.new(0, -ts.Y * 0.68, ts.Z * 0.62) * CFrame.Angles(math.rad(-8), 0, 0),
 				color, Enum.Material.Fabric)
-		elseif kind == "shoes" then
-			for _, side in ipairs({ "Left", "Right" }) do
-				local foot = model:FindFirstChild(side .. "Foot")
-				local s = foot and foot.Size or Vector3.new(0.8, 0.3, 1)
-				prop(model, side .. "Foot", "Shoe", nil, Vector3.new(s.X * 1.15, s.Y * 1.25, s.Z * 1.12), CFrame.new(0, 0.02, -0.03), "#1E1E22", Enum.Material.SmoothPlastic)
-			end
 		elseif kind == "hood" then
 			-- (prompt 24) a hood over the back and top of the head (the face stays open)
 			prop(model, "Head", "Hood", nil, Vector3.new(d * 1.22, hs.Y * 1.2, d * 0.75), CFrame.new(0, hs.Y * 0.08, d * 0.3), color, Enum.Material.Fabric)
@@ -547,15 +541,7 @@ local function buildTemplates()
 			model:SetAttribute("OutfitShirtColor", if outfit.shirtColor then Color3.fromHex(outfit.shirtColor) else nil)
 			model:SetAttribute("OutfitPantsColor", if outfit.pantsColor then Color3.fromHex(outfit.pantsColor) else nil)
 			if not outfit.shirt then model:SetAttribute("BareChest", true) end
-			-- his shoes (coaches 1-4): a shoes-only classic Pants image (tools/trainer_outfits.py: only the feet of the classic
-			-- layout), because the clients draw the feet with the avatar's composited texture, whatever their Color says. The
-			-- muscle pieces never wear it (Shared/Outfit reads his outfit attributes, not his Pants)
-			if outfit.shoes then
-				local shoes = Instance.new("Pants")
-				shoes.Name = "Shoes"
-				shoes.PantsTemplate = outfit.shoes
-				shoes.Parent = model
-			end
+			-- (owner, 23 Oct: no shoes on anyone; his feet are bare, in his skin color)
 			-- his face: the description's head is a dynamic head whose own face is blank, and face images map wrongly onto
 			-- it, so it is hidden under a classic Roblox head (the "Head" mesh) carrying the face image, welded in its place
 			local head = model:FindFirstChild("Head")

@@ -382,11 +382,11 @@ local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
 -- mass monster physique, built like a maxed player (every muscle at 5.5x that Growth Spurt's goal, so every muscle is at its mass monster size; the
 -- monster widths: shoulders, hips, arms, legs and torso depth; the V-Taper frame, the widest shoulders; the golden ratio
 -- proportions like everyone).
-local GIANT = { name = "Dante", heightInches = 96, spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black", shoes = Color3.fromHex("#2B2B2B") }
+local GIANT = { name = "Dante", heightInches = 96, spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black" }
 -- Coach Dex (owner, 14-15 Oct: built like Dante, clearly the boss): 7'6" (about 1.2x a grown player), the same mass monster
 -- physique, shirtless in black gym shorts, bald, warm brown skin, our own stern bearded face (a classic head with the
 -- face image: the body's dynamic head has none). Posed leaning on his counter by CoachDexClient.
-local COACH = { heightInches = 90, spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black", shoes = Color3.fromHex("#2B2B2B"),
+local COACH = { heightInches = 90, spurts = #GrowthSpurts.Stages, frame = "VTaper", shorts = "Black",
 	skin = Color3.fromHex("#7A4A25"), face = "rbxassetid://116883309844476" }
 local function giantData(spec)
 	local goal = GrowthSpurts.GetGoal(spec.spurts)
@@ -442,7 +442,8 @@ local function makeGiant(npc, spec)
 	npc:SetAttribute("Giant", true)
 	-- shirtless in the game's black gym shorts, bald (owner, 9 Oct). NPC muscles take their colors from the body parts
 	-- (MuscleClient): the torso and arms in the skin color (so every muscle wears the skin texture stage: the mass monster
-	-- one at his look), the hips and thighs in the shorts color, bare calves, dark shoes.
+	-- one at his look), the hips and thighs in the shorts color, bare calves and
+	-- bare feet (owner, 23 Oct: no shoes).
 	for _, item in ipairs(npc:GetChildren()) do
 		if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
 			item:Destroy()
@@ -456,9 +457,8 @@ local function makeGiant(npc, spec)
 	local shorts = Body.ShortsColor(spec.shorts)
 	local paint = {
 		UpperTorso = skin, RightUpperArm = skin, LeftUpperArm = skin, RightLowerArm = skin, LeftLowerArm = skin,
-		RightHand = skin, LeftHand = skin, RightLowerLeg = skin, LeftLowerLeg = skin,
+		RightHand = skin, LeftHand = skin, RightLowerLeg = skin, LeftLowerLeg = skin, RightFoot = skin, LeftFoot = skin,
 		LowerTorso = shorts, RightUpperLeg = shorts, LeftUpperLeg = shorts,
-		RightFoot = spec.shoes, LeftFoot = spec.shoes,
 	}
 	for name, color in pairs(paint) do
 		local part = npc:FindFirstChild(name)

@@ -45,11 +45,11 @@ end
 -- (5-8 keep their prompt 24 ids, AtlasCoach .. AeonCoach, so saves stay the same: only the names and looks changed.)
 -- look: skin, hairIds (Roblox's own free catalog hair), faceTexture (one of Roblox's own faces, on a classic head; nil = none,
 -- the hood hides it), outfit (prompt 34: { shirt, pants = images made for the muscle stage meshes by
--- tools/trainer_outfits.py, sleeves = "none" | "short" | "long", legs = "shorts" | "long", shoes = a shoes-only classic Pants image for the feet, shirtColor / pantsColor = the images'
+-- tools/trainer_outfits.py, sleeves = "none" | "short" | "long", legs = "shorts" | "long", shirtColor / pantsColor = the images'
 -- colors, for the elbow / knee balls under a sleeve or pants leg }, worn
 -- by the muscle pieces themselves, Shared/Outfit; no shirt = bare: they show their muscles), muscle (the static muscle
 -- stages, share of the goal), extras (part-built props, TrainerService: headband, bottle, cap, clipboard, chalk, cape, hood,
--- deephood, hoodback, crown, laurel, shoulderpads, shoes, buzzcut, beard, ponytail), gear (prompt 34: the planner's gear
+-- deephood, hoodback, crown, laurel, shoulderpads, buzzcut, beard, ponytail; no shoes: bare feet, owner 23 Oct), gear (prompt 34: the planner's gear
 -- meshes, Shared/Gear, fitted to the body: { kind = "Belt" | "Waistband" | "Wraps" | "Cuffs" | "Sleeves" | "Straps" | "Whistle", color,
 -- trim, metal (a color), shiny = all metal }), extraColor, aura (TrainerAura preset), marble ({ color, variant }: a marble body, Atlas: white with gold veins,
 -- Materials below), material (the classic head's material).
@@ -92,23 +92,23 @@ Trainers.List = {
 	{ id = "RookieCoach", rarity = "Common", name = "Coach Sam", heightInches = 60, perk = { gains = 0.05 }, perkText = "+5% EXP",
 		picture = "trainer_exp", idle = "crossed", pose = "FrontDoubleBiceps", line = "Let's warm up!",
 		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
-			outfit = { shirt = "rbxassetid://139862937769412", pants = "rbxassetid://110347260992708", sleeves = "long", legs = "long", shoes = "rbxassetid://134411403634005", shirtColor = "#C8262C", pantsColor = "#1E1E22" },
+			outfit = { shirt = "rbxassetid://139862937769412", pants = "rbxassetid://110347260992708", sleeves = "long", legs = "long", shirtColor = "#C8262C", pantsColor = "#1E1E22" },
 			muscle = 0.9, extras = {}, gear = { { kind = "Whistle", color = "#C8262C" } }, extraColor = "#C8262C", tint = "#C8262C" } },
 	-- (owner, prompt 25: stamina regen on top of the coins, the old Cardio Coach's refill)
 	{ id = "CardioCoach", rarity = "Uncommon", name = "Coach Nia", heightInches = 65, perk = { coins = 0.08, staminaRegen = 0.12 },
 		perkText = "+8% coins, +12% stamina regen", picture = "trainer_stamina", idle = "hips", pose = "AbsAndThigh", line = "Drink water, then go!",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
-			outfit = { shirt = "rbxassetid://122244133593957", pants = "rbxassetid://122244133593957", sleeves = "none", legs = "shorts", shoes = "rbxassetid://130682660705057", shirtColor = "#2FAE55", pantsColor = "#2FAE55" },
+			outfit = { shirt = "rbxassetid://122244133593957", pants = "rbxassetid://122244133593957", sleeves = "none", legs = "shorts", shirtColor = "#2FAE55", pantsColor = "#2FAE55" },
 			muscle = 0.7, extras = { "headband", "bottle" }, gear = { { kind = "Whistle", color = "#2FAE55" } }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
 	{ id = "MoneyCoach", rarity = "Rare", name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.12, maxStamina = 0.08 },
 		perkText = "+12% EXP, +8% max stamina", picture = "trainer_coins", idle = "clipboard", pose = "SideChest", line = "Form first, then weight.",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
-			outfit = { shirt = "rbxassetid://71165572097233", pants = "rbxassetid://110347260992708", sleeves = "short", legs = "long", shoes = "rbxassetid://73930285993287", shirtColor = "#E8C21C", pantsColor = "#1E1E22" },
+			outfit = { shirt = "rbxassetid://71165572097233", pants = "rbxassetid://110347260992708", sleeves = "short", legs = "long", shirtColor = "#E8C21C", pantsColor = "#1E1E22" },
 			muscle = 0.8, extras = { "cap", "clipboard" }, gear = { { kind = "Whistle", color = "#16161A" } }, extraColor = "#16161A", tint = "#E0B23A" } },
 	{ id = "PumpCoach", rarity = "Epic", name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.20, coins = 0.20 },
 		perkText = "+20% EXP and coins", picture = "trainer_pump", idle = "crossed", pose = "FrontLatSpread", line = "Time to grow!",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
-			outfit = { shirt = "rbxassetid://106691440081103", pants = "rbxassetid://110347260992708", sleeves = "none", legs = "shorts", shoes = "rbxassetid://101444393193455", shirtColor = "#7A3FC8", pantsColor = "#1E1E22" },
+			outfit = { shirt = "rbxassetid://106691440081103", pants = "rbxassetid://110347260992708", sleeves = "none", legs = "shorts", shirtColor = "#7A3FC8", pantsColor = "#1E1E22" },
 			muscle = 1.8, extras = {}, gear = { { kind = "Whistle", color = "#7A3FC8" }, { kind = "Belt" }, { kind = "Wraps", color = "#7A3FC8" } },
 			extraColor = "#7A3FC8", tint = "#7A3FC8" } },
 	-- 5) LEGENDARY: a veteran powerlifting coach, 6'9", very wide and thick (huge traps, thick waist, big forearms), a grey
@@ -119,7 +119,7 @@ Trainers.List = {
 		idle = "chalk", pose = "MostMuscular", line = "Lock in. No excuses.",
 		look = { skin = "#D29A72", faceTexture = "rbxassetid://83017053", -- Man Face, under a grey beard
 			outfit = { shirt = "rbxassetid://92310450517732", pants = "rbxassetid://92310450517732", sleeves = "none", legs = "shorts", shirtColor = "#16161A", pantsColor = "#16161A" },
-			muscle = 2.4, hair = "#8E8E94", extras = { "buzzcut", "beard", "hoodback", "chalk", "shoes" },
+			muscle = 2.4, hair = "#8E8E94", extras = { "buzzcut", "beard", "hoodback", "chalk" },
 			gear = { { kind = "Belt", color = "#2A1A10", trim = "#F6C75A" }, { kind = "Wraps", color = "#16161A", trim = "#F6C75A" } },
 			extraColor = "#F6C75A", tint = "#F6C75A",
 			aura = "duke" } },
@@ -131,7 +131,7 @@ Trainers.List = {
 		idle = "boxer", pose = "Guard", line = "Faster! Stronger! Again!",
 		look = { skin = "#A86B45", faceTexture = "rbxassetid://7074749", -- Chill
 			outfit = { shirt = "rbxassetid://140621946283610", pants = "rbxassetid://140621946283610", sleeves = "none", legs = "shorts", shirtColor = "#141418", pantsColor = "#141418" },
-			muscle = 2.5, hair = "#2A1A14", extras = { "ponytail", "shoes" },
+			muscle = 2.5, hair = "#2A1A14", extras = { "ponytail" },
 			gear = { { kind = "Belt", color = "#16161A", trim = "#D8283E" }, { kind = "Sleeves", color = "#D8283E", trim = "#8A3AD0" } },
 			extraColor = "#D8283E", extraColor2 = "#8A3AD0", tint = "#E8345A",
 			aura = "volta" } },
@@ -143,7 +143,7 @@ Trainers.List = {
 		idle = "watch", pose = "Crossed", line = "...", lines = { "...", "Train." },
 		look = { skin = "#7A5A48", faceTexture = nil,
 			outfit = { shirt = "rbxassetid://105247065422618", pants = "rbxassetid://105247065422618", sleeves = "long", legs = "shorts", shirtColor = "#0E0E11", pantsColor = "#0E0E11" },
-			muscle = 3.0, extras = { "deephood", "shoes" }, extraColor = "#0E0E11", extraColor2 = "#6E3FB0", tint = "#6E3FB0",
+			muscle = 3.0, extras = { "deephood" }, extraColor = "#0E0E11", extraColor2 = "#6E3FB0", tint = "#6E3FB0",
 			aura = "shadow" } },
 	-- 8) ETERNAL: a living statue, the top rank: 7'6", the biggest, golden ratio proportions at mass monster size, polished
 	-- white marble skin with gold veins (marble: the statue's marble with our MaterialVariant), a gold laurel wreath, white and gold training shorts,

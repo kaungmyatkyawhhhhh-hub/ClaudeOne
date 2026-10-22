@@ -180,14 +180,11 @@ local function buildNpc(spec, share: number, feet: Vector3)
 	local model = NpcService.Build({
 		name = spec.name, skin = spec.skin, shirt = spec.skin, pants = shorts:ToHex(), animated = true, tag = "Poser",
 	}, CFrame.lookAt(feet, feet - Vector3.zAxis))
-	-- shirtless in gym shorts: bare lower legs, dark shoes (the muscles take their colors from the body parts)
-	for _, name in ipairs({ "RightLowerLeg", "LeftLowerLeg" }) do
+	-- shirtless in gym shorts: bare lower legs and bare feet (owner, 23 Oct: no shoes; the muscles take their colors from
+	-- the body parts)
+	for _, name in ipairs({ "RightLowerLeg", "LeftLowerLeg", "RightFoot", "LeftFoot" }) do
 		local part = model:FindFirstChild(name)
 		if part and part:IsA("BasePart") then part.Color = skin end
-	end
-	for _, name in ipairs({ "RightFoot", "LeftFoot" }) do
-		local part = model:FindFirstChild(name)
-		if part and part:IsA("BasePart") then part.Color = Color3.fromHex("#1E1E22") end
 	end
 	model:SetAttribute("MuscleG", BodyService.EncodeShare(share))
 	model:SetAttribute("SkinColor", skin)
