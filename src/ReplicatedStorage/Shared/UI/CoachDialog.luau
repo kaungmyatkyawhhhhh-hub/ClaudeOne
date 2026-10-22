@@ -104,7 +104,9 @@ end
 -- the words' height at the dialog's width (wrapped, 1.2 line height)
 local function wordsHeight(label: TextLabel, text: string): number
 	local params = Instance.new("GetTextBoundsParams")
-	params.Text, params.Font, params.Size, params.Width = text, label.FontFace, TEXT_SIZE, CoachDialog.Width - TEXT_LEFT - PAD
+	-- (8 px narrower than the label: the screen's scale rounds, and a line that only just fits was measured as one line
+	-- but wrapped on screen, so the box was a line short and the last word was cut)
+	params.Text, params.Font, params.Size, params.Width = text, label.FontFace, TEXT_SIZE, CoachDialog.Width - TEXT_LEFT - PAD - 8
 	local ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
 	local lines = if ok then math.max(1, math.floor(bounds.Y / TEXT_SIZE + 0.3)) else 2
 	return math.ceil(lines * TEXT_SIZE * LINE_HEIGHT)
