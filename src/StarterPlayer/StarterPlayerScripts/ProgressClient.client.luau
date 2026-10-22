@@ -80,17 +80,46 @@ local alterArt = New("ImageLabel", { Name = "Art", BackgroundColor3 = Color3.new
 New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = alterStrip }, {
 	New("UIGradient", { Transparency = NumberSequence.new(0.45, 0.75) }),
 })
+-- (owner, 23 Oct) READY: the same pill; the outline glows and pulses gently in the alter's colour and the art drifts a bit
+-- faster (alterReadyColor set by setAlterLook; nil = progressing)
+local alterReadyColor: Color3? = nil
+local readyGlow = New("Frame", { Name = "ReadyGlow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.new(1, 8, 1, 8), Visible = false, ZIndex = tile.ZIndex, Parent = tile }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 14) }),
+	New("UIStroke", { Name = "Stroke", Thickness = 4, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+})
 task.spawn(function()
-	local t0 = os.clock()
+	local phase, last = 0, os.clock()
 	while alterStrip.Parent do
-		if alterStrip.Visible and holder.Parent and not Theme.ReducedMotion() then
-			alterArt.Position = UDim2.fromScale(0.5 + 0.07 * math.sin((os.clock() - t0) * 2 * math.pi / 20), 0.5)
+		local now = os.clock()
+		local dt = now - last
+		last = now
+		local still = Theme.ReducedMotion()
+		phase += dt * 2 * math.pi / (if alterReadyColor then 9 else 20)
+		if alterStrip.Visible and holder.Parent and not still then
+			alterArt.Position = UDim2.fromScale(0.5 + 0.07 * math.sin(phase), 0.5)
 		else
 			alterArt.Position = UDim2.fromScale(0.5, 0.5)
+		end
+		readyGlow.Visible = alterReadyColor ~= nil and alterStrip.Visible
+		if alterReadyColor and alterStrip.Visible then
+			local wave = if still then 0.5 else 0.5 + 0.5 * math.sin(now * 3)
+			readyGlow.Stroke.Color = alterReadyColor
+			readyGlow.Stroke.Transparency = 0.75 - 0.4 * wave
+			local edge = tile:FindFirstChild("Border")
+			if edge and edge:IsA("UIStroke") then edge.Color = Colors.Gold:Lerp(alterReadyColor, 0.35 + 0.4 * wave) end
 		end
 		task.wait(1 / 20)
 	end
 end)
+-- the small gold "!" chip in the %'s place when ready
+local readyChip = New("Frame", { Name = "ReadyChip", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -9, 0, 6), Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = Colors.Gold, Visible = false, ZIndex = tile.ZIndex + 4, Parent = tile }, {
+	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	New("UIStroke", { Color = Colors.Outline, Thickness = 1.5 }),
+})
+Kit.Text({ Name = "Bang", Text = "!", Font = "Chunky", TextSize = 13, TextColor3 = Colors.Ink, Stroke = false, Size = UDim2.fromScale(1, 1), ZIndex = tile.ZIndex + 5,
+	Parent = readyChip }):SetAttribute("KeepColor", true)
 local alterPct = Kit.Text({ Name = "Pct", Text = "", Font = "Number", TextSize = 15, TextColor3 = Colors.Text, AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -8, 0, 4), Size = UDim2.fromOffset(46, 22), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = tile })
 alterPct:SetAttribute("KeepColor", true)
@@ -100,11 +129,13 @@ local AlterIcon = require(Shared.UI.AlterIcon)
 for _, words in ipairs({ tileText, tileLabel, bigText, alterPct }) do words.ZIndex = tile.ZIndex + 4 end
 local alterIcon = AlterIcon.New({ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 5, 0.5, -2), Size = UDim2.fromOffset(32, 32), ZIndex = tile.ZIndex + 3,
 	Visible = false, Parent = tile })
-local function setAlterLook(theme, percent: number?)
+local function setAlterLook(theme, percent: number?, ready: boolean?)
 	local on = theme ~= nil
-	titleGradient.Enabled = on
+	alterReadyColor = if on and ready then theme.accent else nil
+	readyChip.Visible = on and ready == true
+	titleGradient.Enabled = on and not ready
 	alterStrip.Visible = on
-	alterPct.Visible = on
+	alterPct.Visible = on and not ready
 	alterIcon.Visible = on
 	if on then AlterIcon.Set(alterIcon, theme.number) end
 	tileText.Position = UDim2.fromOffset(if on then 40 else 8, 4)
@@ -120,11 +151,13 @@ local function setAlterLook(theme, percent: number?)
 	else
 		alterArt.Image, alterArt.BackgroundTransparency, alterArt.BackgroundColor3 = "", 0, theme.accent:Lerp(theme.base, 0.4)
 	end
-	tileText.TextColor3 = Color3.new(1, 1, 1)
+	tileText.TextColor3 = if ready then theme.accent else Color3.new(1, 1, 1)
+	local stroke = tileText:FindFirstChild("TextStroke")
+	if stroke then stroke.Color, stroke.Transparency, stroke.Thickness = Colors.Outline, if ready then 0 else 0.5, if ready then 1.5 else 1 end
 	titleGradient.Color = ColorSequence.new(theme.title[1], theme.title[2])
 	alterPct.Text = (percent or 0) .. "%"
 	alterPct.TextColor3 = Colors.Gold
-	tileLabel.TextColor3 = Color3.fromHex("#9A97A0")
+	tileLabel.TextColor3 = if ready then Color3.new(1, 1, 1) else Color3.fromHex("#9A97A0")
 end
 
 -- (owner, 23 Oct, chrome reset) the card's look: while it's waiting (NEXT / GROWTH SPURT) it's chrome, dark graphite, clean
@@ -546,7 +579,7 @@ local function refresh()
 		Remotes.PlayerAction:FireServer("ShopEvent", { event = "OfferShown", offer = "FinishFaster" })
 	end
 	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
-	setReadyLook(ready)
+	setReadyLook(ready and not alterMode) -- (an alter keeps the same pill when ready)
 	-- (owner, 15 Oct, later: at the 7'0" cap NO card on the HUD; the top bar's "7'0" MAX" and the Stats panel's greyed
 	-- button show it)
 	holder.Visible = started and (alterMode or not progress.maxed)
@@ -557,11 +590,12 @@ local function refresh()
 		tileLabel.Text = Alters.Label(Alters.State(data).highest or 0)
 		styleTile("Disabled", true)
 	elseif alterMode and ready then
-		tileText.Text = "ALTER NOW"
-		tileLabel.Text = "Alter " .. progress.next .. ": " .. nextName .. " ready"
-		bigText.Text = "ALTER NOW"
-		styleTile("Gold", false)
-		Theme.Pulse(tile, function() return ready end)
+		-- (owner, 23 Oct) the same pill as while progressing: "PUMPED READY" in the alter's colour, "TAP TO ALTER", a gold
+		-- "!" chip; the outline pulses in the alter's colour; a tap opens the BODY ALTER READY popup
+		tileText.Text = string.upper(nextName) .. " READY"
+		tileLabel.Text = "Tap to alter"
+		styleTile("Quiet", true, true)
+		setAlterLook(AlterThemes.Get(progress.next), percent, true)
 	elseif alterMode then
 		tileText.Text = "NEXT: " .. string.upper(nextName)
 		tileLabel.Text = if needs ~= "" then "Needs " .. needs else "Tap for what to train"
@@ -596,7 +630,11 @@ tile.Activated:Connect(function()
 	if alterMode and not ready and Alters.Progress(ClientData.Get(), Muscles.Groups, Machines.TrainableMuscles(ClientData.Get().growthSpurts)).locked then
 		return
 	end
-	if ready then
+	if ready and alterMode then
+		-- (owner, 23 Oct) the ready alter pill opens the BODY ALTER READY popup
+		local data = ClientData.Get()
+		showReady(data, spurtProgress(data))
+	elseif ready then
 		growNow()
 	else
 		openNeeds() -- (prompt 20: what to train, with GO buttons; the window links to the physique)

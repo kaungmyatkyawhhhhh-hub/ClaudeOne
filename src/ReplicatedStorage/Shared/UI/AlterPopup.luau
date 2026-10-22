@@ -17,13 +17,21 @@ local Shared = script.Parent.Parent
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
 local AlterThemes = require(Shared.Config.AlterThemes)
-local AlterIcon = require(script.Parent.AlterIcon)
 local AlterFX = require(Shared.VFX.AlterFX)
 local Audio = require(Shared.Audio)
 
 local AlterPopup = {}
 
-local W, H = 520, 208 -- mockup px (2.5 : 1 like the art); fits 667 x 375
+local W, H = 442, 208 -- mockup px (owner, 23 Oct: 15% narrower than the 520 it was); fits 667 x 375
+-- (owner, 23 Oct) the two buttons: ChunkyButtons, a 3 px dark outline and a 6 px darker bottom edge they press down into
+local BTN_H, LIP, PRESS = 46, 6, 3
+local OUTLINE = Color3.fromHex("#120A0C")
+local function lipGradient(top: Color3, bottom: Color3, lip: number): ColorSequence
+	local edge = 1 - lip / BTN_H
+	local dark = bottom:Lerp(Color3.new(0, 0, 0), 0.45)
+	return ColorSequence.new({ ColorSequenceKeypoint.new(0, top), ColorSequenceKeypoint.new(edge - 0.001, bottom),
+		ColorSequenceKeypoint.new(edge, dark), ColorSequenceKeypoint.new(1, dark) })
+end
 local GOTHAM_BOLD = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
 
 local function tween(instance, props, time, style, direction)
@@ -85,8 +93,8 @@ local function build()
 		TextColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 18), ZIndex = 6 }, panel)
 	new("UIStroke", { Thickness = 1.5, Transparency = 0.4 }, kicker)
 	-- the name: a shadow copy, the gradient copy, and a white shine copy swept by a gradient
-	local nameBox = new("Frame", { Name = "NameBox", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 76),
-		Size = UDim2.new(1, -40, 0, 66), ZIndex = 6 }, panel)
+	local nameBox = new("Frame", { Name = "NameBox", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 70),
+		Size = UDim2.new(1, -40, 0, 58), ZIndex = 6 }, panel)
 	local nameScale = new("UIScale", {}, nameBox)
 	local shadow = new("TextLabel", { Name = "Shadow", BackgroundTransparency = 1, FontFace = AlterFX.TitleFont, TextScaled = true, Text = "",
 		TextColor3 = Color3.new(0, 0, 0), TextTransparency = 0.45, Position = UDim2.fromOffset(3, 5), Size = UDim2.fromScale(1, 1), ZIndex = 6 }, nameBox)
@@ -102,39 +110,69 @@ local function build()
 	-- the wipe (Shredded: the name wipes in left to right)
 	local wipe = new("UIGradient", { Name = "Wipe", Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.49, 0),
 		NumberSequenceKeypoint.new(0.51, 1), NumberSequenceKeypoint.new(1, 1) }), Offset = Vector2.new(0.5, 0), Enabled = false }, nameBox)
-	local sub = new("TextLabel", { Name = "Sub", BackgroundTransparency = 1, Text = "", FontFace = GOTHAM_BOLD, TextSize = 16, TextColor3 = Color3.new(1, 1, 1),
-		Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 20), ZIndex = 6 }, panel)
+	-- (owner, 23 Oct) "ALTER 1" small and white, then "x1.15 GAINS" as a stroked gold pill
+	local sub = new("TextLabel", { Name = "Sub", BackgroundTransparency = 1, Text = "", FontFace = GOTHAM_BOLD, TextSize = 13, TextColor3 = Color3.new(1, 1, 1),
+		Position = UDim2.fromOffset(0, 100), Size = UDim2.new(1, 0, 0, 16), ZIndex = 6 }, panel)
 	new("UIStroke", { Thickness = 1.5, Transparency = 0.3 }, sub)
-	-- the buttons
-	local alterButton = new("TextButton", { Name = "Alter", Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0.5, -166, 1, -16), Size = UDim2.fromOffset(222, 50), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 8 }, panel)
-	new("UICorner", { CornerRadius = UDim.new(0, 14) }, alterButton)
-	local alterGradient = new("UIGradient", { Rotation = 90 }, alterButton)
-	local alterStroke = new("UIStroke", { Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, alterButton)
+	local gains = new("Frame", { Name = "Gains", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 119), Size = UDim2.fromOffset(0, 22),
+		AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 6 }, panel)
+	new("UICorner", { CornerRadius = UDim.new(1, 0) }, gains)
+	new("UIStroke", { Thickness = 2, Color = OUTLINE, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, gains)
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#FFE9A6"), Color3.fromHex("#E0A825")) }, gains)
+	new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }, gains)
+	local gainsText = new("TextLabel", { Name = "Text", BackgroundTransparency = 1, Text = "", FontFace = AlterFX.TitleFont, TextSize = 15,
+		TextColor3 = Color3.fromHex("#2A1C05"), Size = UDim2.fromOffset(0, 22), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 7 }, gains)
+	-- the buttons: ALTER (the alter's colour, a faint texture of its art inside, a soft glow) and LATER (graphite)
+	local function chunkyButton(name: string, x: number, width: number, text: string)
+		local button = new("TextButton", { Name = name, Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.new(0.5, x, 1, -12), Size = UDim2.fromOffset(width, BTN_H), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 8 }, panel)
+		new("UICorner", { CornerRadius = UDim.new(0, 12) }, button)
+		local gradient = new("UIGradient", { Rotation = 90 }, button)
+		local stroke = new("UIStroke", { Thickness = 3, Color = OUTLINE, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, button)
+		local label = new("TextLabel", { Name = "Label", BackgroundTransparency = 1, Text = text, FontFace = AlterFX.TitleFont, TextSize = 24,
+			TextColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, 0, 1, -LIP), ZIndex = 10 }, button)
+		new("UIStroke", { Thickness = 2, Color = OUTLINE }, label)
+		return button, gradient, stroke, label
+	end
+	local alterButton, alterGradient, alterStroke, alterText = chunkyButton("Alter", -156, 200, "ALTER  >")
 	local alterScale = new("UIScale", {}, alterButton)
-	local gloss = new("Frame", { Name = "Gloss", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.72, BorderSizePixel = 0,
-		Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0.38, 0), ZIndex = 9 }, alterButton)
-	new("UICorner", { CornerRadius = UDim.new(0, 10) }, gloss)
-	local alterText = new("TextLabel", { BackgroundTransparency = 1, Text = "ALTER  >", FontFace = AlterFX.TitleFont, TextSize = 26, Size = UDim2.fromScale(1, 1),
-		ZIndex = 10 }, alterButton)
+	local alterTexture = new("ImageLabel", { Name = "Texture", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, ImageTransparency = 0.82,
+		Size = UDim2.new(1, 0, 1, -LIP), ZIndex = 9 }, alterButton)
+	new("UICorner", { CornerRadius = UDim.new(0, 12) }, alterTexture)
 	local alterGlow = new("ImageLabel", { Name = "ButtonGlow", BackgroundTransparency = 1, Image = AlterFX.TEX.rim, AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 60, 1, 50), ImageTransparency = 0.6, ZIndex = 7 }, alterButton)
-	local laterButton = new("TextButton", { Name = "Later", Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0.5, 70, 1, -16), Size = UDim2.fromOffset(110, 50), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 8 }, panel)
-	new("UICorner", { CornerRadius = UDim.new(0, 14) }, laterButton)
-	new("UIStroke", { Thickness = 2, Color = Color3.fromHex("#55555E"), ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, laterButton)
-	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#5A5A62"), Color3.fromHex("#2A2A30")) }, laterButton)
-	new("TextLabel", { BackgroundTransparency = 1, Text = "LATER", FontFace = AlterFX.TitleFont, TextSize = 22, TextColor3 = Color3.fromHex("#E6E6EA"),
-		Size = UDim2.fromScale(1, 1), ZIndex = 10 }, laterButton)
-	Theme.BindPress(alterButton)
-	Theme.BindPress(laterButton)
-	-- (prompt 54) the alter's bicep icon (Shared/UI/AlterIcon), top left of the panel
-	local icon = AlterIcon.New({ Name = "AlterIcon", Position = UDim2.fromOffset(14, 10), Size = UDim2.fromOffset(62, 62), ZIndex = 7, Parent = panel })
+		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 50, 1, 40), ImageTransparency = 0.6, ZIndex = 7 }, alterButton)
+	local laterButton, laterGradient = chunkyButton("Later", 56, 100, "LATER")
+	laterGradient.Color = lipGradient(Color3.fromHex("#3A3740"), Color3.fromHex("#201E24"), LIP)
+	-- pressing: the face sinks into its bottom edge; letting go springs back
+	local accentNow = Color3.fromHex("#E8323C")
+	local function pressable(button: GuiButton, gradient: UIGradient, colors)
+		local home = button.Position
+		local function set(down: boolean)
+			local top, bottom = colors()
+			gradient.Color = lipGradient(top, bottom, if down then LIP - PRESS else LIP)
+			button.Position = home + UDim2.fromOffset(0, if down then PRESS else 0)
+		end
+		button.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then set(true) end
+		end)
+		button.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then set(false) end
+		end)
+	end
+	local function alterColors() return accentNow:Lerp(Color3.new(1, 1, 1), 0.2), accentNow:Lerp(Color3.new(0, 0, 0), 0.25) end
+	pressable(alterButton, alterGradient, alterColors)
+	pressable(laterButton, laterGradient, function() return Color3.fromHex("#3A3740"), Color3.fromHex("#201E24") end)
+	local function setAccent(color: Color3)
+		accentNow = color
+		local top, bottom = alterColors()
+		alterGradient.Color = lipGradient(top, bottom, LIP)
+	end
 
 	built = { gui = gui, dim = dim, vignette = vignette, fx = fx, bars = bars, group = group, pop = pop, panel = panel, border = border, glow = glow,
 		art = art, wash = wash, washGradient = washGradient, overlay = overlay, nameBox = nameBox, nameScale = nameScale, shadow = shadow, name = name, nameGradient = nameGradient, shine = shine,
 		shineGradient = shineGradient, wipe = wipe, sub = sub, alterButton = alterButton, alterGradient = alterGradient, alterStroke = alterStroke,
-		alterScale = alterScale, alterText = alterText, alterGlow = alterGlow, laterButton = laterButton, kicker = kicker, icon = icon }
+		alterScale = alterScale, alterText = alterText, alterGlow = alterGlow, laterButton = laterButton, kicker = kicker, gainsText = gainsText,
+		alterTexture = alterTexture, setAccent = setAccent }
 
 	alterButton.Activated:Connect(function()
 		if not open then return end
@@ -259,16 +297,15 @@ function AlterPopup.Show(n: number, info, cbs)
 		ColorSequenceKeypoint.new(0.55, theme.base), ColorSequenceKeypoint.new(1, theme.base:Lerp(Color3.new(0, 0, 0), 0.3)) })
 	b.border.Color = theme.accent
 	b.glow.ImageColor3 = theme.accent
-	AlterIcon.Set(b.icon, n)
 	b.nameGradient.Color = ColorSequence.new(theme.title[1], theme.title[2])
 	local display = string.upper(info.name or "")
 	b.name.Text, b.shadow.Text, b.shine.Text = display, display, display
-	local subText = "Alter " .. n .. " · gains x" .. string.format("%.2f", info.bonus or 1)
+	local subText = "ALTER " .. n
 	if theme.finale then subText ..= " · TIER " .. tostring(info.tier or math.ceil(n / 5)) .. " COMPLETE" end
 	b.sub.Text = subText
-	b.alterGradient.Color = ColorSequence.new(theme.accent:Lerp(Color3.new(1, 1, 1), 0.35), theme.accent:Lerp(Color3.new(0, 0, 0), 0.2))
-	b.alterStroke.Color = theme.accent:Lerp(Color3.new(1, 1, 1), 0.5)
-	b.alterText.TextColor3 = theme.buttonText
+	b.gainsText.Text = string.format("x%.2f GAINS", info.bonus or 1)
+	b.setAccent(theme.accent)
+	b.alterTexture.Image = theme.bg or ""
 	b.alterGlow.ImageColor3 = theme.accent
 
 	-- the entrance
