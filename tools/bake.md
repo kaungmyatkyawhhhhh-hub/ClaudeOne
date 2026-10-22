@@ -28,6 +28,7 @@ the recipes that made the code-made areas into real parts, kept so an area can b
 | `GeneticsSet` | `ReplicatedStorage.GeneticsSet`: the genetics screen's gym (`Room`: tiles, back wall, squat rack, dumbbell rack, wall plates; `Platform`; `HookGrip` / `HookSleeve` J-hooks; `PlateTree`). Its bar height must match GeneticsClient's FLOOR_Y | GeneticsClient clones it onto the client-only stage |
 | `Decor` | `Decor` folders in `StarterGym` (lockers, rolling whiteboard, sign-in clipboard), `ProGym` (wall TVs, smoothie counter, wood platform) and `Town.Plaza` (fountain); each area's Decor folder can be deleted on its own | (decoration) |
 | `GymFrontPoster` | `Workspace.Town.GymFront.PosterBox`: framed, lit tagline poster with a planter on the starter gym's front wall | (decoration) |
+| `MenuCameraPath` | `Workspace.MenuCameraPath` (Model, streaming Persistent): the title screen flyover's 6 shots (`Shot1_Town` .. `Shot6_TownRise`, each a Folder with invisible `Start` / `End` parts the camera glides between, looking out of their front faces; `Seconds` attribute). Move / turn the parts in Studio to change a shot | Shared/UI/MenuFlyover (MenuClient) |
 | `SkinStages` | `ReplicatedStorage.SkinStages`: one SurfaceAppearance per skin texture stage (Stage1..Stage5, maps from `Config/SkinStages`). A game script can't set SurfaceAppearance maps, so run this in the command bar once after changing the ids | MuscleRig (clones them onto the skin) |
 
 Visiting legends are still created by LegendService while they visit (they come and go).

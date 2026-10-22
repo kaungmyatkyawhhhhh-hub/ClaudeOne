@@ -14,6 +14,10 @@
 -- SETTINGS, NEWS, the player card. Desktop / tablet: the column centred top to bottom, 12 px gaps. Phone (touch and a
 -- screen under 500 px tall; Studio: TestPhoneSize): 38% of the width, logo 120, no tagline, PLAY 56, SHOP 44, SETTINGS and
 -- NEWS as two 44 px icon squares on one row, a 40 px card (avatar, name, coins). Every other screen is hidden until PLAY.
+-- (prompt 60, 23 Oct) Behind the menu the camera flies slowly round the map (Shared/UI/MenuFlyover: shots from
+-- Workspace.MenuCameraPath, a light depth of field, a dip through dark between shots), your character hidden; a soft dark
+-- vignette keeps the buttons readable. PLAY: the camera swoops down to your character (~1 s) and hands control back.
+-- Without a MenuCameraPath the prompt 41 framing (the doorway and your character) is used.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -34,12 +38,13 @@ local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
 local Audio = require(Shared.Audio)
+local MenuFlyover = require(Shared.UI.MenuFlyover)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local New, Colors = Theme.New, Theme.Colors
 
-local TIMING = { StreamTimeout = 8, Fade = 0.4, HudFade = 0.35, Slide = 0.35 }
+local TIMING = { StreamTimeout = 8, Fade = 0.4, HudFade = 0.35, Slide = 0.35, FlyDown = 1 }
 -- full-screen and menu UIs that are not part of the HUD fade-in after Play
 local NOT_HUD = { MenuScreen = true, MenuBackground = true, LoadingScreen = true, GeneticsScreen = true, Updates = true }
 
@@ -72,6 +77,19 @@ New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSiz
 	New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.5, 0.55),
 		NumberSequenceKeypoint.new(1, 1) }) }),
 })
+-- (prompt 60) a soft dark vignette round the other three edges (the flyover behind stays readable under the buttons)
+for _, side in ipairs({ "Top", "Bottom", "Right" }) do
+	local vertical = side ~= "Right"
+	New("Frame", { Name = "Vignette" .. side, BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(if side == "Right" then 1 else 0, if side == "Bottom" then 1 else 0),
+		Position = UDim2.fromScale(if side == "Right" then 1 else 0, if side == "Bottom" then 1 else 0),
+		Size = if vertical then UDim2.fromScale(1, 0.28) else UDim2.fromScale(0.22, 1), ZIndex = 2, Parent = back }, {
+		New("UIGradient", { Rotation = ({ Top = 90, Bottom = 270, Right = 180 })[side], Transparency = NumberSequence.new(0.45, 1) }),
+	})
+end
+-- (prompt 60) the flyover's dip through dark between shots (MenuFlyover fades it)
+local dip = New("Frame", { Name = "Dip", BackgroundColor3 = Color3.fromHex("#050406"), BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
+	ZIndex = 3, Parent = back })
 -- (prompt 41: always the whole screen; the Studio phone sizing read the camera too early and left it 1 x 0)
 
 local gui = Theme.ScreenGui({ Name = "MenuScreen", DisplayOrder = 20, IgnoreGuiInset = true, Parent = playerGui })
@@ -356,9 +374,27 @@ local function hideFollowers(hide: boolean)
 		if item:IsA("BasePart") or item:IsA("Decal") then item.LocalTransparencyModifier = if hide then 1 else 0 end
 	end
 end
+-- (prompt 60) while the camera flies round the map your own character is hidden (its parts, and its name tags)
+local hiddenTags = {}
+local function hideCharacter(hide: boolean)
+	local character = player.Character
+	if not character then return end
+	for _, item in ipairs(character:GetDescendants()) do
+		if item:IsA("BasePart") or item:IsA("Decal") then
+			item.LocalTransparencyModifier = if hide then 1 else 0
+		elseif item:IsA("BillboardGui") then
+			if hide and item.Enabled then item.Enabled = false hiddenTags[item] = true end
+		end
+	end
+	if not hide then
+		for tag in pairs(hiddenTags) do if tag.Parent then tag.Enabled = true end end
+		hiddenTags = {}
+	end
+end
 task.spawn(function()
 	while UIBus.MenuOpen do
 		hideFollowers(true)
+		if MenuFlyover.Running() then hideCharacter(true) end
 		task.wait(0.25)
 	end
 end)
@@ -440,7 +476,13 @@ task.spawn(function()
 	ClientData.Changed:Connect(function(path)
 		if UIBus.MenuOpen and (path[1] == "coins" or path[1] == "muscles" or path[1] == "growthSpurts") then refreshPill(ClientData.Get()) end
 	end)
-	frameCamera()
+	-- (prompt 60) the flyover round the map (its first shot streamed in while loading); without its path, the framing
+	if MenuFlyover.Prepare() then
+		MenuFlyover.Start(dip)
+		hideCharacter(true)
+	else
+		frameCamera()
+	end
 	player:SetAttribute("MenuReady", true)
 
 	-- the column slides in as the loading screen fades
@@ -479,14 +521,28 @@ local function play(thenShop: boolean?)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	local behindView = nil
 	if rootPart and rootPart:IsA("BasePart") then
 		local height = character:GetExtentsSize().Y
 		local behind = rootPart.CFrame * CFrame.new(0, height * 0.45, math.max(11, height * 1.9))
-		camera.CameraType = Enum.CameraType.Scriptable
-		camera.CFrame = CFrame.lookAt(behind.Position, rootPart.Position + Vector3.new(0, height * 0.25, 0))
+		behindView = CFrame.lookAt(behind.Position, rootPart.Position + Vector3.new(0, height * 0.25, 0))
 	end
-	camera.CameraType = Enum.CameraType.Custom
-	if humanoid then camera.CameraSubject = humanoid end
+	local function handBack()
+		if behindView then
+			camera.CameraType = Enum.CameraType.Scriptable
+			camera.CFrame = behindView
+		end
+		camera.CameraType = Enum.CameraType.Custom
+		if humanoid then camera.CameraSubject = humanoid end
+	end
+	hideCharacter(false)
+	if MenuFlyover.Running() and behindView then
+		-- (prompt 60) the camera swoops down from the flyover to behind your character, then it's yours
+		MenuFlyover.FlyTo(behindView, TIMING.FlyDown, handBack)
+	else
+		MenuFlyover.Stop()
+		handBack()
+	end
 	ContextActionService:UnbindAction("MenuFreeze")
 	if mainHud then mainHud.Enabled = true end
 	UIBus.MenuOpen = false
