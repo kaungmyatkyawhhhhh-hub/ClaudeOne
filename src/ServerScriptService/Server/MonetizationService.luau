@@ -10,6 +10,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local Monetization = require(Config.Monetization)
 local Stamina = require(Config.Stamina)
+local PumpShop = require(Config.PumpShop)
+local DNA = require(Config.DNA)
 local PlayerData = require(script.Parent.PlayerData)
 local BoostService = require(script.Parent.BoostService)
 local Analytics = require(script.Parent.Analytics)
@@ -87,9 +89,44 @@ local function serverBoost(buyer)
 	event(buyer, "ServerBoost", { name = buyer.DisplayName, minutes = Effects.ServerBoostMinutes })
 end
 
+-- (prompt 60) once per player: coins, Protein Shakes, a DNA token, the 2x EXP item and the STARTER title (all saved in the
+-- same receipt). Bought again somehow: its value in coins (the coins + the shakes and the token at their coin prices),
+-- never a second title.
+local function grantStarterPack(player)
+	local data = PlayerData.Get(player)
+	if not data then return false end
+	local pack = Monetization.StarterPack
+	local coins = Monetization.StarterCoins(data.growthSpurts)
+	if type(data.starterPack) == "table" and data.starterPack.bought then
+		local value = coins + pack.Shakes * (PumpShop.SupplementPrice("Shake", data.growthSpurts) or 0) + pack.DnaTokens * DNA.CoinPrice
+		PlayerData.AddCoins(player, value)
+		event(player, "StarterPack", { again = true, coins = value })
+		return true
+	end
+	PlayerData.SetTable(player, "starterPack", { bought = true, at = os.time() })
+	PlayerData.AddCoins(player, coins)
+	PlayerData.AddItem(player, "Shake", pack.Shakes, true)
+	PlayerData.AddDnaTokens(player, pack.DnaTokens)
+	PlayerData.AddItem(player, pack.BoostItem, 1, true)
+	require(script.Parent.TitleService).Check(player) -- (the STARTER title: condition "starterPack")
+	event(player, "StarterPack", { coins = coins, shakes = pack.Shakes, dnaTokens = pack.DnaTokens, boost = pack.BoostItem, title = pack.Title })
+	return true
+end
+
 local function grantProduct(player, product)
-	if product.coins then -- the coin packs
-		PlayerData.AddCoins(player, product.coins)
+	if product.supplement then
+		-- (prompt 57) a PUMP SHOP special (paid: never cut by the carry limit)
+		local ok = PlayerData.AddItem(player, product.supplement, product.count or 1, true)
+		if ok then Remotes.PlayerEvent:FireClient(player, "ItemsAdded", { id = product.supplement, count = product.count or 1 }) end
+		return ok
+	elseif product.dnaTokens then
+		-- (prompt 60) DNA tokens x3
+		return PlayerData.AddDnaTokens(player, product.dnaTokens)
+	elseif product.key == "StarterPack" then
+		return grantStarterPack(player)
+	elseif product.coins then -- the coin packs (prompt 61: their size at this player's stage, worked out now)
+		local data = PlayerData.Get(player)
+		PlayerData.AddCoins(player, Monetization.PackCoins(product, data and data.growthSpurts))
 		return true
 	elseif product.key == "EndlessStamina" then
 		-- 15 min of no stamina drain, stacking up to 60 (the time left is saved; it runs only while in the game)

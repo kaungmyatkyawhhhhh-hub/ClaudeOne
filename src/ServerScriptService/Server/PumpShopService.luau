@@ -7,8 +7,9 @@
 --   * Buying (remote "PumpShop", action "Buy", shop, section, id, quantity): the shop sells it, the section is open for you,
 --     you're at that shop, coins checked here.
 --       Supplements  boost items into the inventory (Config.Boosts), price = minutes of coins at your stage
---       Gear         each level needs the one before (Basic, Pro at Coach Dex; Elite, Champion at the PUMP SHOP), worn
---                    right away (CosmeticService), its perk while worn
+--       Gear         (prompt 59) the belt and the wraps: the level right above your best (BASIC / PRO at Coach Dex; ELITE /
+--                    CHAMPION off sale), worn right away (CosmeticService); the best level owned counts
+--       (prompt 57) the PUMP SHOP's specials are Robux only (MonetizationService); a coin buy of them is refused
 --       DNA Lab      the usual "BuyDnaToken" action (+10% per token each week, ActionService)
 --   * "Teleport": to the PUMP SHOP entrance; "TeleportCoach": to Coach Dex's counter (both every 10 s at most).
 --   * Unlocks: the shops open after OpenAfterMinutes of play or the first Growth Spurt; Gear at GearAtSpurt; Alters at 7'0".
@@ -118,6 +119,7 @@ local function buySupplement(player, data, shop, id, quantity)
 	local item = Boosts.ById[id]
 	local price = PumpShop.SupplementPrice(id, data.growthSpurts)
 	if not item or not price or not table.find(shop.supplements, id) or not table.find(shop.quantities or PumpShop.Quantities, quantity) then return end
+	if PumpShop.RobuxSupplements[id] then return end -- (prompt 57: Robux only, MonetizationService)
 	local have = tonumber(data.items[id]) or 0
 	if have + quantity > Boosts.MaxCount then
 		send(player, "Failed", { text = "You can carry " .. Boosts.MaxCount .. " " .. item.name .. " at most." })
@@ -132,22 +134,75 @@ local function buySupplement(player, data, shop, id, quantity)
 	send(player, "Bought", { section = "Supplements", id = id, quantity = quantity })
 end
 
-local function buyGear(player, data, shop, gearId)
+-- (prompt 59) a gear level: only the one right above the best you own, only where it's sold (BASIC / PRO at Coach Dex,
+-- never an off-sale level); worn at once (the best level counts, worn or not)
+local function buyGear(player, data, shop, itemId)
 	local state = cosmeticsState(data)
-	for index, level in ipairs(PumpShop.GearLevels) do
-		local itemId = PumpShop.GearItemId(gearId, level.id)
-		if not state.owned[itemId] then
-			-- the next level up (each needs the one before), and only where it's sold
-			if not Cosmetics.ById[itemId] or not table.find(shop.gear, level.id) then return end
-			if index > 1 and not state.owned[PumpShop.GearItemId(gearId, PumpShop.GearLevels[index - 1].id)] then return end
-			if not PlayerData.SpendCoins(player, level.price) then
-				send(player, "Failed", { text = "Not enough coins: " .. Cosmetics.ById[itemId].name .. " costs " .. level.price .. "." })
-				return
+	local gear = nil
+	for _, g in ipairs(PumpShop.Gear) do
+		if type(itemId) == "string" and string.sub(itemId, 1, #g.id + 1) == g.id .. "_" then gear = g end
+	end
+	local level = gear and PumpShop.GearLevelById[string.sub(itemId, #gear.id + 2)]
+	if not gear or not level or level.offSale or not Cosmetics.ById[itemId] or not table.find(shop.gear, level.id) then return end
+	local best = PumpShop.GearBest(state.owned, gear.id)
+	if (best and best.index or 0) + 1 ~= level.index then return end
+	if not PlayerData.SpendCoins(player, level.price) then
+		send(player, "Failed", { text = "Not enough coins: " .. Cosmetics.ById[itemId].name .. " costs " .. level.price .. "." })
+		return
+	end
+	CosmeticService.Grant(player, itemId, true)
+	send(player, "Bought", { section = "Gear", id = itemId })
+end
+
+-- (prompt 59) Once per player (flag cosmetics.gear59): LIFTING STRAPS and KNEE SLEEVES are gone. Straps count toward the
+-- WRIST WRAPS, sleeves toward the LIFTING BELT: a higher level than the matching piece you own = that level of it; else
+-- the coins paid for the removed piece come back (Config prices; gear was never sold for Robux). The removed pieces leave
+-- the save, and the best belt and wraps are worn. A player who owned any gear gets the one-time "Gear got simpler!" note.
+local function migrateGear(player)
+	local data = PlayerData.WaitFor(player)
+	if not data or not player.Parent then return end
+	local state = cosmeticsState(data)
+	if state.gear59 then return end
+	local hadGear, refund = false, 0
+	for _, removed in ipairs(PumpShop.RemovedGear) do
+		local best, paid = nil, 0
+		for _, level in ipairs(PumpShop.GearLevels) do
+			local oldId = PumpShop.GearItemId(removed.id, level.id)
+			if state.owned[oldId] then
+				best = level
+				paid += level.price
+				state.owned[oldId] = nil
 			end
-			CosmeticService.Grant(player, itemId, true)
-			send(player, "Bought", { section = "Gear", id = itemId })
-			return
 		end
+		if state.equipped[removed.slot] and string.sub(tostring(state.equipped[removed.slot]), 1, #removed.id + 1) == removed.id .. "_" then
+			state.equipped[removed.slot] = nil
+		end
+		if best then
+			hadGear = true
+			local into = PumpShop.GearBest(state.owned, removed.into)
+			if not into or best.index > into.index then
+				-- the matching piece at that level (and the levels under it, so the ladder stays whole)
+				for _, level in ipairs(PumpShop.GearLevels) do
+					if level.index <= best.index then state.owned[PumpShop.GearItemId(removed.into, level.id)] = true end
+				end
+			else
+				refund += paid
+			end
+		end
+	end
+	for _, gear in ipairs(PumpShop.Gear) do
+		local best = PumpShop.GearBest(state.owned, gear.id)
+		if best then
+			hadGear = true
+			state.equipped[gear.slot] = PumpShop.GearItemId(gear.id, best.id)
+		end
+	end
+	state.gear59 = true
+	PlayerData.SetTable(player, "cosmetics", state)
+	if refund > 0 then PlayerData.AddCoins(player, refund) end
+	if hadGear then
+		Remotes.PlayerEvent:FireClient(player, "GearSimpler", { refund = refund })
+		CosmeticService.Rebuild(player)
 	end
 end
 
@@ -321,6 +376,9 @@ function PumpShopService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		lastTeleport[player], lastCoachTeleport[player] = nil, nil
 	end)
+	-- (prompt 59) the gear migration, once per player
+	Players.PlayerAdded:Connect(function(player) task.spawn(migrateGear, player) end)
+	for _, player in ipairs(Players:GetPlayers()) do task.spawn(migrateGear, player) end
 	-- the unlock lines (Coach Dex, once each) and the shops' open state for the HUD (player attribute "PumpShop":
 	-- nil = closed, "Supplements" = open, "All" = gear too)
 	task.spawn(function()

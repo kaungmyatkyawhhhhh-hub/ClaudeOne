@@ -43,6 +43,9 @@ Boosts.Items = {
 		text = "+50% EXP on every rep.", duration = "15 min", special = true },
 	{ id = "BcaaRecovery", short = "+100% STAMINA REGEN", name = "BCAA Recovery", seconds = 15 * 60, effects = { regen = 2 }, icon = "heart-pulse", color = "#3CC8B4",
 		text = "Stamina refills twice as fast.", duration = "15 min", special = true },
+	-- (prompt 60) from the STARTER PACK only (never sold on its own): 2x EXP for 30 minutes when you use it
+	{ id = "StarterBoost", short = "2x EXP", name = "2x EXP Boost", seconds = 30 * 60, effects = { gains = 2 }, icon = "zap", color = "#F6C75A",
+		text = "Double EXP on every rep.", duration = "30 min", special = true },
 }
 -- (owner, 22 Oct) item pictures (Downloads\gym_arc_reward_icons, uploaded to the Myanmar Builders Club group): with one,
 -- the item shows its picture everywhere instead of the line icon in a coloured tile (Pieces.Icon / Kit.IconTile take a

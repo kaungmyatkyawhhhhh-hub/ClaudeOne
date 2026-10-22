@@ -45,6 +45,7 @@ function DataTemplate.new()
 		dailyQuests = { day = 0, list = {}, bonus = false, swaps = 0, groups = {} },
 		repsToday = { day = 0, count = 0 }, -- reps on the current UTC day (the "Most reps today" board, LeaderboardService)
 		trainers = { copies = {}, equipped = {}, discovered = { Base = true }, nextUid = 1, rolls = 0, pity = 0, autoDelete = {} },
+		starterPack = { bought = false }, -- (prompt 60) the STARTER PACK, bought once (MonetizationService)
 		groupGift = { given = false }, -- (owner, 23 Oct) the group perks welcome gift, once (GroupGiftService) -- personal trainers (Config.Trainers, TrainerService; prompt 24: rolls)
 		spurtMilestones = { spurt = -1, got = 0 }, -- (prompt 11) the 25 / 50 / 75% Growth Spurt rewards paid for this spurt (SpurtMilestoneService)
 		rivals = {}, -- NPC rivals: [rival id] = "active" (challenge accepted) | "beaten" (Config.Rivals, RivalService)

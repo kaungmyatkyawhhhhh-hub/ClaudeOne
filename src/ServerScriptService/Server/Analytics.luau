@@ -125,7 +125,8 @@ end
 -- "Offer_Tapped_<offer>" (the client asks through PlayerAction "ShopEvent"; only these names, and each at most once per
 -- ShopEventGap seconds per player, so a script can't flood the dashboard) and "Product_Bought_<key>" (MonetizationService,
 -- after the receipt is given and saved; the value is the Robux spent).
-local OFFERS = { Stamina = true, ShakeOut = true, AfterSpurt = true, FinishFaster = true }
+local OFFERS = { Stamina = true, ShakeOut = true, AfterSpurt = true, FinishFaster = true,
+	AutoRep = true, AutoRepChip = true, StarterPack = true, DnaNeed = true } -- (prompt 60)
 local ShopEventGap = 3
 local lastShopEvent = {} -- [player] = { [name] = os.clock() }
 function Analytics.ShopEvent(player, info)

@@ -4,6 +4,9 @@
 -- does (or "Looks only"), and WEAR / TAKE OFF. (Tops from the clothing store stay hidden while the Wardrobe is off.)
 -- (prompt 28) Bigger cards, 5 a row; GearPanel.Count(data) = how many you own (the GEAR tab shows once you have any).
 -- GearPanel.Build(parent) -> { frame, refresh() }.
+-- (prompt 59, 23 Oct) First two tiles: your LIFTING BELT and WRIST WRAPS (the best level you own, its picture and boost,
+-- "+10% LOWER BODY"; it always counts, worn or not), or "NO BELT YET" with GET AT COACH DEX (goes there). From Growth
+-- Spurt 2 (when gear opens) the tab always shows. Straps and knee sleeves are gone.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
@@ -21,16 +24,6 @@ local GearPanel = {}
 
 local CARD = Vector2.new(154, 96)
 
-local function gearInfo(item)
-	for _, gear in ipairs(PumpShop.Gear) do
-		if gear.id == item.gear then
-			for _, level in ipairs(PumpShop.GearLevels) do
-				if level.id == item.level then return string.format("+%d%% EXP on %s", math.floor(level.bonus * 100 + 0.5), gear.area) end
-			end
-		end
-	end
-	return nil
-end
 
 -- how many things you own to wear (as the tab lists them)
 function GearPanel.Count(data): number
@@ -45,6 +38,8 @@ function GearPanel.Count(data): number
 	for _, entry in ipairs(Body.Tops) do
 		if entry.shop and owned["Top_" .. entry.id] then n += 1 end
 	end
+	-- (prompt 59) the belt and wraps tiles, from when gear opens
+	if (data and data.growthSpurts or 0) >= PumpShop.GearAtSpurt then n += #PumpShop.Gear end
 	return n
 end
 
@@ -68,7 +63,7 @@ function GearPanel.Build(parent: Instance)
 		Parent = empty }):SetAttribute("KeepColor", true)
 	Kit.Text({ Name = "Title", Text = "NOTHING TO WEAR YET", Font = "Chunky", TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -6),
 		Size = UDim2.new(1, -20, 0, 26), Parent = empty })
-	local line = Kit.Text({ Name = "Line", Text = "Lifting belts, wraps, straps and sleeves make your lifts stronger.", Font = "Body", TextSize = 13, TextColor3 = Colors.Muted,
+	local line = Kit.Text({ Name = "Line", Text = "A lifting belt and wrist wraps make your lifts stronger.", Font = "Body", TextSize = 13, TextColor3 = Colors.Muted,
 		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 20), Size = UDim2.new(1, -20, 0, 16), Parent = empty })
 	line.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Medium, Enum.FontStyle.Italic)
 	-- (prompt 31) Basic gear is sold by Coach Dex now
@@ -96,6 +91,43 @@ function GearPanel.Build(parent: Instance)
 		end)
 	end
 
+	-- (prompt 59) a gear tile: the picture, "PRO BELT", "+10% LOWER BODY" (it counts worn or not; WEAR only shows when
+	-- something else is worn in its place); none yet: "NO BELT YET" and GET AT COACH DEX
+	local function gearCard(order, gear, level, equipped)
+		local c = Kit.Card({ Name = gear.id, LayoutOrder = order, Parent = frame }, {})
+		local itemId = level and PumpShop.GearItemId(gear.id, level.id)
+		local icon = PumpShop.GearIcons[itemId or PumpShop.GearItemId(gear.id, "Basic")]
+		New("ImageLabel", { Name = "Icon", BackgroundTransparency = 1, Image = icon, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(6, 4),
+			Size = UDim2.fromOffset(40, 40), ImageTransparency = if level then 0 else 0.6, ImageColor3 = if level then Color3.new(1, 1, 1) else Color3.fromRGB(120, 120, 120), Parent = c })
+		local title = if level then string.upper(level.name .. " " .. gear.short) else "NO " .. string.upper(gear.short) .. " YET"
+		Kit.Fit(Kit.Text({ Name = "Name", Text = title, Font = "Title", Position = UDim2.fromOffset(50, 7), Size = UDim2.new(1, -56, 0, 16),
+			TextXAlignment = Enum.TextXAlignment.Left, Parent = c }), 14, 9)
+		local sub = if level then PumpShop.GearBoostText(gear, level) else string.upper(gear.half) .. " BOOST"
+		Kit.Fit(Kit.Text({ Name = "Sub", Text = sub, Font = "Chunky", TextColor3 = if level then Colors.Gold else Colors.Muted, Position = UDim2.fromOffset(50, 25),
+			Size = UDim2.new(1, -56, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, Parent = c }), 11, 8)
+		local button = nil
+		if not level then
+			button = Kit.Button("Gold", "Get at Coach Dex", { Name = "Get", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Parent = c },
+				{ width = CARD.X - 16, height = 40, textSize = 12 })
+			button.Activated:Connect(function()
+				Audio.PlayUI("Click")
+				local UIBus = require(script.Parent.UIBus)
+				UIBus.CloseAllPanels()
+				UIBus.GoCoach:Fire()
+			end)
+		elseif equipped[gear.slot] ~= itemId then
+			button = Kit.Button("Quiet", "Wear", { Name = "Wear", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Parent = c },
+				{ width = CARD.X - 16, height = 40, textSize = 13 })
+			button.Activated:Connect(function()
+				Audio.PlayUI("Click")
+				remotes.PlayerAction:FireServer("EquipCosmetic", itemId)
+			end)
+		else
+			Kit.Text({ Name = "Active", Text = "ALWAYS ON", Font = "Chunky", TextSize = 12, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.new(1, -16, 0, 16), Parent = c })
+		end
+	end
+
 	function panel.refresh()
 		for _, child in ipairs(frame:GetChildren()) do
 			if child:IsA("GuiObject") then child:Destroy() end
@@ -105,12 +137,17 @@ function GearPanel.Build(parent: Instance)
 		local owned, equipped = state.owned or {}, state.equipped or {}
 		local settings = data.settings or {}
 		local order = 0
-		-- worn items first: gear (with the perk), then apparel and the rest, in Config order
+		-- (prompt 59) the belt and the wraps first: the best level you own, or where to get one
+		for _, gear in ipairs(PumpShop.Gear) do
+			order += 1
+			gearCard(order, gear, PumpShop.GearBest(owned, gear.id), equipped)
+		end
+		-- then apparel and the rest, in Config order
 		for _, item in ipairs(Cosmetics.Items) do
-			if owned[item.id] and not (item.slot == "Fit" and not Features.Wardrobe) then
+			if owned[item.id] and not item.gear and not (item.slot == "Fit" and not Features.Wardrobe) then
 				order += 1
 				local wearing = equipped[item.slot] == item.id
-				card(if item.gear then order else order + 100, item.name, gearInfo(item) or "Looks only", item.color, wearing, function()
+				card(order + 100, item.name, "Looks only", item.color, wearing, function()
 					remotes.PlayerAction:FireServer("EquipCosmetic", item.id)
 				end)
 			end

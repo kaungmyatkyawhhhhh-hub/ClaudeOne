@@ -59,11 +59,15 @@ local READY_H = 68 -- (owner, 22 Oct: 10% taller)
 local bigText = Kit.Text({ Name = "Big", Text = "TAP TO GROW", Font = "Chunky", TextSize = 28, Position = UDim2.fromOffset(6, 7), Size = UDim2.new(1, -12, 0, 32),
 	Visible = false, Parent = tile })
 Kit.Fit(bigText, 28, 16)
+local growArt -- (below)
 local function setReadyLook(on: boolean)
 	bigText.Visible = on
 	tileText.Visible = not on
+	if growArt then growArt.Visible = on end
 	tile.Size = UDim2.new(1, 0, 0, if on then READY_H else TILE_H)
 	holder.Size = UDim2.fromOffset(RightColumn.Width, (if on then READY_H else TILE_H) + 6)
+	bigText.Position = UDim2.fromOffset(6, if on then 12 else 7)
+	bigText.Size = UDim2.new(1, -12, 0, if on then 26 else 32)
 	tileLabel.Position = UDim2.fromOffset(0, if on then 40 else 26)
 	tileLabel.TextSize = if on then 13 else 11
 	tileLabel.Size = UDim2.new(1, 0, 0, if on then 15 else 13)
@@ -185,26 +189,15 @@ local GOLD_HEX = "#" .. Colors.Gold:ToHex()
 RightColumn.Add(holder, 9, "bottom")
 local started = false -- (shown after the data is in)
 
--- (prompt 12) "Finish faster": at 75%+ of the goal (not ready yet, not in the tutorial) a small link under the card (and
--- under the machine strip) opens the Store on the Shake Bundle. Small text on a full 44 px tap row.
-local Monetization = require(Config.Monetization)
-local FINISH_AT = 75
-local LINK_H = 44
-local function finishLink(parent: Instance, y: number, width: number): TextButton
-	local link = New("TextButton", { Name = "FinishFaster", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Visible = false,
-		Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(width, LINK_H), Parent = parent })
-	-- (owner, 23 Oct, chrome reset: small gold italic)
-	Kit.Text({ Name = "Label", Text = "Finish faster: Shake Bundle >", Font = "Title", KeepItalic = true, Stroke = false, TextSize = 11, TextColor3 = Colors.Gold,
-		AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 16), Parent = link })
-	link.Activated:Connect(function()
-		Audio.PlayUI("Click")
-		Remotes.PlayerAction:FireServer("ShopEvent", { event = "OfferTapped", offer = "FinishFaster" })
-		UIBus.OpenShop:Fire("Boosts", "ShakePack")
-	end)
-	return link
-end
-local cardLink = finishLink(holder, TILE_H + 2, RightColumn.Width)
-local finishShown = false -- (logged once per session)
+-- (prompt 57, owner 23 Oct) no "Finish faster: Shake Bundle >" upsell lines on the HUD any more (they were under this card
+-- and the machine strip, prompt 12)
+
+-- (prompt 57) READY: the same dark card, taller: "GROWTH SPURT 2" big white stroked, "TAP TO GROW" small in the growth colour
+-- under it, both upright (not italic), fixed sizes that fit on a 667x375 phone; a faint upward arrow fills the right side
+local UPRIGHT = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Heavy, Enum.FontStyle.Normal)
+growArt = New("ImageLabel", { Name = "GrowArt", BackgroundTransparency = 1, Image = require(Config.UI).Icons["arrow-big-up"] or "", ImageColor3 = Colors.Gold,
+	ImageTransparency = 0.82, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -4, 0.5, 0), Size = UDim2.fromOffset(58, 58), Visible = false,
+	ZIndex = tile.ZIndex + 1, Parent = tile })
 
 ------------------------------------------------------------------------
 -- Progress + goals
@@ -432,7 +425,6 @@ local _, setStripBar = Kit.Bar(Colors.Teal, { Name = "Bar", Position = UDim2.fro
 local stripNeeds = Kit.Text({ Name = "Needs", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Colors.Red, Position = UDim2.fromOffset(10, 31),
 	Size = UDim2.new(1, -20, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = strip })
 Kit.OnTopbar(function() strip.Position = UDim2.fromOffset(12, Kit.UnderTopbar(stripRoot)) end)
-local stripLink = finishLink(strip, 52, 196) -- (prompt 12, under the strip)
 
 -- the Growth Spurt (or at 7'0" the Body Alter) from a machine: off the machine first (the body changes), then grow
 local alterMode = false
@@ -586,16 +578,6 @@ local function refresh()
 			.. (suggestion and (" Try the " .. suggestion.name .. ".") or ""))
 		lastGoalAt = os.clock()
 	end
-	-- (prompt 12) "Finish faster" at 75%+
-	local finish = not ready and not progress.maxed and percent >= FINISH_AT and not inTutorial
-		and not (UIBus.IsLocked and UIBus.IsLocked("Store")) -- (prompt 39: not into a locked Shop)
-		and Monetization.ProductByKey.ShakePack ~= nil and Monetization.ForSale(Monetization.ProductByKey.ShakePack)
-	cardLink.Visible, stripLink.Visible = finish, finish
-	holder.Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6 + (if finish then LINK_H - 18 else 0))
-	if finish and not finishShown and started then
-		finishShown = true
-		Remotes.PlayerAction:FireServer("ShopEvent", { event = "OfferShown", offer = "FinishFaster" })
-	end
 	holder:SetAttribute("CardPriority", ready and RightColumn.Priority.GrowReady or RightColumn.Priority.Grow)
 	setReadyLook(ready and not alterMode) -- (an alter keeps the same pill when ready)
 	-- (owner, 15 Oct, later: at the 7'0" cap NO card on the HUD; the top bar's "7'0" MAX" and the Stats panel's greyed
@@ -625,12 +607,16 @@ local function refresh()
 		styleTile("Disabled", true)
 	elseif ready then
 		tileText.Text = "TAP TO GROW"
-		bigText.Text = "TAP TO GROW"
-		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready" .. (if nextGym then " · " .. nextGym else "")
 		styleTile("Quiet", true)
 		cardOutline(GROW_ACCENT, true) -- (prompt 58: the outline glows; it was the loud gold button pulsing)
-		bigText.TextColor3 = GROW_ACCENT
-		Kit.Fit(bigText, 28, 16) -- (the chrome style changed its font: measured again)
+		-- (prompt 57) the spurt big and white, TAP TO GROW small in the growth colour (fonts set after the style: it resets them)
+		bigText.Text = "GROWTH SPURT " .. (data.growthSpurts + 1)
+		bigText.FontFace, bigText.TextColor3, bigText.TextSize = UPRIGHT, Color3.new(1, 1, 1), 22
+		local bigStroke = bigText:FindFirstChild("TextStroke")
+		if bigStroke then bigStroke.Color, bigStroke.Transparency, bigStroke.Thickness = Colors.Outline, 0, 2 end
+		Kit.Fit(bigText, 22, 15)
+		tileLabel.Text = "TAP TO GROW" .. (if nextGym then " · " .. string.upper(nextGym) else "")
+		tileLabel.FontFace, tileLabel.TextColor3 = UPRIGHT, GROW_ACCENT
 	else
 		tileText.Text = "GROWTH SPURT " .. (data.growthSpurts + 1)
 		tileLabel.Text = '<font color="' .. GOLD_HEX .. '">' .. percent .. "%</font>" .. (if nextGym then " · Next: " .. nextGym elseif needs ~= "" then " · Needs " .. needs else " · tap for your physique")

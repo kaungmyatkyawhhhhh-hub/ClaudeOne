@@ -201,10 +201,11 @@ end
 
 -- The players' gear levels (Config/PumpShop GearLevels: the level's color is the gear's color): the trim and metal
 -- that go with it.
+-- (prompt 57 / 59: like the gear pictures: Basic brown leather, Pro black + silver, Elite purple + silver, Champion gold)
 Gear.LevelColors = {
-	Basic = { trim = "#9A9AA2", metal = "#C9CCD2" },
-	Pro = { trim = "#F4F1EA", metal = "#C9CCD2" },
-	Elite = { trim = "#2B2B30", metal = "#E8EAEE" },
+	Basic = { trim = "#C9A46A", metal = "#C9CCD2" },
+	Pro = { trim = "#C9CCD2", metal = "#C9CCD2" },
+	Elite = { trim = "#C9CCD2", metal = "#E8EAEE" },
 	Champion = { trim = "#FFF3C4", metal = "#F6C75A" },
 }
 

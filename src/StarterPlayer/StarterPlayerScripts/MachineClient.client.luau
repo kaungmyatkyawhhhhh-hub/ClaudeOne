@@ -83,6 +83,11 @@ local PARTICLE_SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local PARTICLE_DROP = "rbxasset://textures/particles/sparkles_main.dds"
 
 local current = nil -- local session: { model, machine, reps, setsSinceNote, repEnd, queued, ... }
+-- (prompt 60) reps tapped by hand this session (not Auto Rep, not the slow passive reps): 150+ when a set ends = the one
+-- soft Auto Rep offer (UIBus.AutoRepOffer, OfferClient decides)
+local lastHandTap = -math.huge
+local handReps = 0
+local HAND_OFFER_AT = 150
 
 ------------------------------------------------------------------------
 -- Sounds
@@ -2182,6 +2187,7 @@ local function localLockout(state)
 	local character = player.Character
 	current.lastLockout = os.clock()
 	current.reps += 1
+	if os.clock() - lastHandTap < 1.5 and not player:GetAttribute("AutoLiftOn") then handReps += 1 end
 	refreshReps()
 	bounceReps()
 	Audio.Play2D("RepTick")
@@ -2194,7 +2200,7 @@ local function localLockout(state)
 	local cardio = machine.trains == "Stamina" -- (the treadmill trains stamina: its numbers are the distance run)
 	-- (worn PUMP SHOP gear, as on the server: Config/PumpShop.GearMultiplier)
 	local cosmetics = ClientData.Get().cosmetics
-	local gear = PumpShop.GearMultiplier(cosmetics and cosmetics.equipped, machine, Muscles.ById[machine.muscles[1].id].group)
+	local gear = PumpShop.GearMultiplier(cosmetics, machine, Muscles.ById[machine.muscles[1].id].group)
 	local xp = if cardio then {} else Gains.PerRep(ClientData.Get(), machine, state.tier, (player:GetAttribute("GainsBoost") or 1) * gear, quality)
 	local shown = if cardio then machine.tiers[state.tier].weight * Machines.Cardio.MetersPerMph else math.max(1, Muscles.ShownXp(xp[main] or 0))
 	current.setGain = (current.setGain or 0) + shown
@@ -2245,6 +2251,13 @@ local function localLockout(state)
 	if setDone then
 		Audio.Play2D("SetComplete")
 		if character then chalkPuff(character, 20) end
+		-- (prompt 60) only once the set is really over: no new rep for the set break (or off the machine)
+		if handReps >= HAND_OFFER_AT then
+			local session, at = current, current.lastLockout
+			task.delay(FEEL.SetBreak + 0.2, function()
+				if current ~= session or session.lastLockout == at then UIBus.AutoRepOffer:Fire() end
+			end)
+		end
 	end
 end
 
@@ -2414,13 +2427,17 @@ CollectionService:GetInstanceAddedSignal("Machine"):Connect(setupMachine)
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or not current then return end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		lastHandTap = os.clock()
 		tryLift()
 	end
 end)
 
 -- REP: a press counts at once (not on release), like a tap on the world. The PUMP bar: PUMPED when it's full (otherwise
 -- a tap on it is a rep like anywhere else). Space while the bar is full pumps (otherwise Space gets you off).
-hud.repButton.MouseButton1Down:Connect(function() tryLift() end)
+hud.repButton.MouseButton1Down:Connect(function()
+	lastHandTap = os.clock()
+	tryLift()
+end)
 hud.pumpButton.MouseButton1Down:Connect(function()
 	if not tryPump() then tryLift() end
 end)
@@ -2430,16 +2447,32 @@ ContextActionService:BindActionAtPriority("MachinePump", function(_, state)
 	return Enum.ContextActionResult.Sink
 end, false, Enum.ContextActionPriority.High.Value + 100, Enum.KeyCode.Space)
 
--- AUTO (mockups 02 / 03): Auto Lift owners switch it on / off (green AUTO ON); others see it locked (opens the shop's
--- passes) while the shop exists; hidden when nothing is for sale.
+-- AUTO (mockups 02 / 03): Auto Lift owners switch it on / off (green AUTO ON). (prompt 60) Others: a small quiet "AUTO"
+-- chip in the REP button's corner (while Auto Rep is for sale) that opens the Auto Rep card (OfferClient); the button
+-- under the weight card is only the owners' toggle now.
 do
 	local Monetization = require(Shared.Config.Monetization)
+	-- the chip: small to see, a 44 px tap area round it
+	local chip = New("TextButton", { Name = "AutoChip", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 14, 0, -16), Size = UDim2.fromOffset(52, 44), Visible = false, ZIndex = hud.repButton.ZIndex + 10, Parent = hud.repButton })
+	local face = New("Frame", { Name = "Face", BackgroundColor3 = Color3.fromHex("#1A191E"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(44, 20), ZIndex = chip.ZIndex + 1, Parent = chip }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	Kit.Text({ Name = "Text", Text = "AUTO", Font = "Chunky", TextSize = 11, Size = UDim2.fromScale(1, 1), ZIndex = chip.ZIndex + 2, Parent = face })
+	chip.Activated:Connect(function()
+		Audio.PlayUI("Click")
+		UIBus.AutoRepCard:Fire()
+	end)
 	local function refreshAuto()
+		local forSale = Monetization.PassByKey.AutoLift and Monetization.PassByKey.AutoLift.id
 		if player:GetAttribute("Pass_AutoLift") == true then
 			hud.setAuto(player:GetAttribute("AutoLiftOn") and "on" or "off")
+			chip.Visible = false
 		else
-			-- (locked only while Auto Lift is actually for sale)
-			hud.setAuto(Monetization.PassByKey.AutoLift and Monetization.PassByKey.AutoLift.id and "locked" or "hidden")
+			hud.setAuto("hidden")
+			chip.Visible = forSale ~= nil
 		end
 	end
 	hud.autoButton.Activated:Connect(function()
@@ -2482,7 +2515,10 @@ hud.changeButton.Activated:Connect(function()
 end)
 
 local function onLiftAction(_, state)
-	if state == Enum.UserInputState.Begin then tryLift() end
+	if state == Enum.UserInputState.Begin then
+		lastHandTap = os.clock()
+		tryLift()
+	end
 	return Enum.ContextActionResult.Sink
 end
 

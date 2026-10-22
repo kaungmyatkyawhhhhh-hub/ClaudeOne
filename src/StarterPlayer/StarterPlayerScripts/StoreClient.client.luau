@@ -130,6 +130,7 @@ local ITEM_COLOR = {
 	DoubleGains = Rarity.Rare, VIP = Rarity.Legendary, DoubleCoins = Rarity.Uncommon, AuraPack = Rarity.Epic, AutoLift = Colors.Red,
 	ExtraTrainer = Color3.fromHex("#FF8A2A"), CoinsSmall = Rarity.Legendary, CoinsMedium = Rarity.Legendary, CoinsLarge = Rarity.Legendary,
 	ShakePack = Rarity.Rare, EndlessStamina = Colors.Teal, DnaToken = Rarity.Mythic, ServerBoost = Rarity.Legendary,
+	DnaTokenPack = Rarity.Mythic, StarterPack = Rarity.Legendary, -- (prompt 60)
 }
 local function colorOf(entry): Color3
 	if entry.isAura then
@@ -139,7 +140,9 @@ local function colorOf(entry): Color3
 	return ITEM_COLOR[entry.item.key] or Rarity.Common
 end
 
-local refresh, select, endlessFull -- (below)
+local refresh, select, endlessFull, soldOut, itemText -- (below)
+local starterTurn = false -- (prompt 60) the PASSES hero shows the Starter Pack this turn
+local heroFrom = nil      -- the tab whose hero was picked by itself
 local modal = Kit.Modal({ name = "Store", title = "Store", width = W, height = H, displayOrder = 25, tabs = tabs, coins = true,
 	onTab = function(id)
 		currentTab = id
@@ -390,7 +393,8 @@ local function makeTile(entry, index: number)
 	card.pick = pick
 	return card
 end
-for index, entry in ipairs(items) do makeTile(entry, index) end
+-- (prompt 60) the STARTER PACK is pinned at the top of BOOSTS
+for index, entry in ipairs(items) do makeTile(entry, if entry.item.key == "StarterPack" then -1 else index) end
 local picked = nil
 local showThanks = false
 local pickedByTap = false -- (a tapped item stays in the hero; one the hero featured by itself moves on once it's owned)
@@ -436,6 +440,52 @@ local function featuredPass()
 	return nil
 end
 
+-- (prompt 60) a one-time item that was bought: gone from the Store
+function soldOut(entry): boolean
+	if not entry.item.once then return false end
+	local data = ClientData.Get()
+	return type(data.starterPack) == "table" and data.starterPack.bought == true
+end
+
+-- (prompts 60 / 61) what an item says: a coin pack its exact coins for you, the DNA x3 its saving, the Starter Pack its
+-- contents, "ONE-TIME OFFER" and what it's worth by our own prices (only when that really is more than its price)
+function itemText(entry): string
+	local item = entry.item
+	local data = ClientData.Get()
+	local spurts = data.growthSpurts or 0
+	if item.coins then
+		return "+" .. Kit.Format(Monetization.PackCoins(item, spurts)) .. " COINS. " .. item.text
+	end
+	if item.dnaTokens then
+		local single = cards.DnaToken and priceOf(cards.DnaToken.entry)
+		local mine = priceOf(entry)
+		local text = DNA.TokenLine .. " x" .. item.dnaTokens .. "."
+		if single and mine and mine / item.dnaTokens < single then
+			text ..= " SAVE " .. math.floor((1 - mine / (single * item.dnaTokens)) * 100) .. "%."
+		end
+		return text
+	end
+	if item.key == "DnaToken" then return DNA.TokenLine end
+	if item.key == "StarterPack" then
+		local pack = Monetization.StarterPack
+		local coins = Monetization.StarterCoins(spurts)
+		local text = string.format("ONE-TIME OFFER. +%s coins, %d Protein Shakes, a DNA Token, 30 min 2x EXP and the STARTER title.", Kit.Format(coins), pack.Shakes)
+		local medium, shakes, token = cards.CoinsMedium, cards.ShakePack, cards.DnaToken
+		if medium and shakes and token then
+			local mediumPrice, shakePrice, tokenPrice = priceOf(medium.entry), priceOf(shakes.entry), priceOf(token.entry)
+			local mediumCoins = Monetization.PackCoins(medium.entry.item, spurts)
+			if mediumPrice and shakePrice and tokenPrice and mediumCoins > 0 then
+				local worth = coins * mediumPrice / mediumCoins + shakePrice * pack.Shakes / (Monetization.Effects.ShakePackSize or 3) + tokenPrice * pack.DnaTokens
+				worth = math.floor(worth / 5) * 5
+				local price = priceOf(entry)
+				if price and worth > price then text = "WORTH " .. worth .. " R$! " .. text end
+			end
+		end
+		return text
+	end
+	return item.text
+end
+
 function select(entry)
 	picked = entry
 	showThanks = false
@@ -451,7 +501,7 @@ local function paintHeroFor(entry)
 	artFor(heroArt, entry)
 	cropArt(heroArt, entry)
 	heroName.Text = string.upper(entry.item.name)
-	heroText.Text = entry.item.text
+	heroText.Text = itemText(entry)
 	bestTag.Visible = entry.item.key == Monetization.BestSeller
 end
 
@@ -463,7 +513,7 @@ function refresh()
 	local first = nil
 	for _, c in pairs(cards) do
 		local entry = c.entry
-		c.cell.Visible = entry.tab == currentTab
+		c.cell.Visible = entry.tab == currentTab and not soldOut(entry)
 		if c.cell.Visible and (not first or c.cell.LayoutOrder < first.cell.LayoutOrder) then first = c end
 		infoFor(entry)
 		artFor(c.art, entry)
@@ -474,13 +524,17 @@ function refresh()
 		c.border.Color = if isPicked then Colors.Gold else c.color
 		c.border.Thickness = if isPicked then 2 else 1.5
 	end
-	if not picked or picked.tab ~= currentTab then
+	if not picked or (picked.tab ~= currentTab and heroFrom ~= currentTab) or soldOut(picked) then
 		-- (prompt 61) PASSES: the hero features a pass you don't own yet; own them all = THANK YOU. Other tabs: the best
 		-- seller when it's in this tab, else the first
 		pickedByTap = false
 		if currentTab == "Passes" then
 			local featured = featuredPass()
-			if featured then
+			local starter = cards.StarterPack
+			if starterTurn and starter and not soldOut(starter.entry) then
+				-- (prompt 60) the Starter Pack takes turns with the featured pass in the PASSES hero, until bought
+				picked, showThanks = starter.entry, false
+			elseif featured then
 				picked, showThanks = featured, false
 			elseif passesOwned() then
 				picked, showThanks = first and first.entry, true
@@ -489,10 +543,14 @@ function refresh()
 			end
 		else
 			local best = cards[Monetization.BestSeller]
-			picked = if best and best.cell.Visible then best.entry elseif first then first.entry else nil
+			local starter = cards.StarterPack
+			picked = if starter and starter.cell.Visible then starter.entry elseif best and best.cell.Visible then best.entry elseif first then first.entry else nil
 			showThanks = false
 		end
-		if picked then return refresh() end
+		if picked then
+			heroFrom = currentTab
+			return refresh()
+		end
 	end
 	if not picked then return end
 	thanks.Visible = showThanks
@@ -621,6 +679,24 @@ UIBus.OpenShop.Event:Connect(function(tab, itemKey)
 	local card = type(itemKey) == "string" and cards[itemKey]
 	if card and card.entry.tab == currentTab then select(card.entry) end
 	if not modal.isOpen() then UIBus.PanelOpened("Store") open() end
+end)
+
+-- (prompt 60) the PASSES hero takes turns: the featured pass, then the Starter Pack (until it's bought; a tapped tile stays)
+task.spawn(function()
+	while true do
+		task.wait(6)
+		if modal.isOpen() and currentTab == "Passes" and not pickedByTap and cards.StarterPack and not soldOut(cards.StarterPack.entry) then
+			starterTurn = not starterTurn
+			picked = nil
+			refresh()
+		end
+	end
+end)
+ClientData.Changed:Connect(function(path)
+	if path[1] == "starterPack" and modal.isOpen() then
+		picked = nil
+		refresh()
+	end
 end)
 
 -- The Shop tile: in the menu from the start, for every player (owner, 20 Oct: "make shop appear always, not just after 5

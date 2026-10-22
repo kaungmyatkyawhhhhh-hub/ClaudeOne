@@ -10,6 +10,13 @@
 -- (The Growth Spurt card's "Finish faster" link at 75%+ is in ProgressClient.) A Buy button opens Roblox's purchase
 -- prompt itself (2 taps: Buy, then Roblox's confirm); the item is given in ProcessReceipt on the server.
 -- Analytics (server, Analytics.ShopEvent): "Offer_Shown_<id>" and "Offer_Tapped_<id>".
+-- (prompt 60, 23 Oct)
+--   * AUTO REP: the REP button's AUTO chip (non-owners, MachineClient) opens the Auto Rep card here (UIBus.AutoRepCard; it
+--     stays until closed). One soft offer a session (UIBus.AutoRepOffer, fired by MachineClient after a set ENDS once 150+
+--     reps were tapped by hand this session): "Tired of tapping?", not in the tutorial, not for owners, gone after 12 s.
+--   * STARTER PACK: once, after the FIRST Growth Spurt's celebration (instead of the coins card; not in the tutorial or the
+--     first FirstMinutes): "ONE-TIME OFFER" with the exact coins for you. Bought: the reward note, the items flying to their
+--     places (coins to the coins counter, the shakes to the hotbar, the token and the title to Inventory).
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +29,7 @@ local Stamina = require(Shared.Config.Stamina)
 local ClientData = require(Shared.ClientData)
 local ShopPrices = require(Shared.ShopPrices)
 local Theme = require(Shared.UI.Theme)
+local Notify = require(Shared.UI.Notify)
 local Kit = require(Shared.UI.Kit)
 local Pieces = require(Shared.UI.Pieces)
 local UIBus = require(Shared.UI.UIBus)
@@ -38,11 +46,12 @@ local StaminaEvery = 10 * 60  -- the stamina card: at most once per 10 minutes
 local SpurtDelay = 6          -- after a Growth Spurt: the celebration (StatsClient) first
 
 local Products = Monetization.ProductByKey
+local Passes = Monetization.PassByKey
 local function forSale(key: string): boolean
-	local item = Products[key]
+	local item = Products[key] or Passes[key]
 	return item ~= nil and Monetization.ForSale(item)
 end
-if not (forSale("EndlessStamina") or forSale("ShakePack") or forSale("CoinsSmall")) then return end
+if not (forSale("EndlessStamina") or forSale("ShakePack") or forSale("CoinsSmall") or forSale("AutoLift") or forSale("StarterPack")) then return end
 
 local function log(event: string, offer: string)
 	Remotes.PlayerAction:FireServer("ShopEvent", { event = event, offer = offer })
@@ -102,8 +111,8 @@ local function free(): boolean
 		and not UIBus.GuideRunning -- (prompt 39b: never at the same time as an unlock guide)
 end
 
--- spec: { id, art, title, text, buy = { { key, label? } } } (one buy = a red button on the right; several = a row of
--- quiet buttons under the text)
+-- spec: { id, art, title, text, buy = { { key, label?, pass? } }, stay? } (one buy = a red button on the right; several = a
+-- row of quiet buttons under the text; pass = a game pass; stay = no auto-hide: opened by the player)
 local function show(spec)
 	for _, child in ipairs(buttons:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
@@ -123,7 +132,7 @@ local function show(spec)
 	local layout = buttons:FindFirstChildOfClass("UIListLayout")
 	if layout then layout.HorizontalAlignment = if single then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Center end
 	for order, entry in ipairs(spec.buy) do
-		local item = Products[entry.key]
+		local item = if entry.pass then Passes[entry.key] else Products[entry.key]
 		local price = ShopPrices.Get(item)
 		local text = (if entry.label then entry.label .. "  " else "") .. (if price then "R$ " .. Kit.Format(price) else "Buy")
 		local button = Kit.Button(if single then "Red" else "Quiet", text, { Name = entry.key, LayoutOrder = order },
@@ -132,7 +141,11 @@ local function show(spec)
 		button.Activated:Connect(function()
 			log("OfferTapped", spec.id)
 			Audio.PlayUI("Click")
-			MarketplaceService:PromptProductPurchase(player, item.id)
+			if entry.pass then
+				MarketplaceService:PromptGamePassPurchase(player, item.id)
+			else
+				MarketplaceService:PromptProductPurchase(player, item.id)
+			end
 			hide()
 		end)
 	end
@@ -144,6 +157,7 @@ local function show(spec)
 	Audio.PlayUI("Whoosh")
 	log("OfferShown", spec.id)
 	local id = spec.id
+	if spec.stay then return end
 	task.delay(CardSeconds, function()
 		if current == id and os.clock() - shownAt >= CardSeconds - 0.1 then hide() end
 	end)
@@ -198,9 +212,74 @@ task.spawn(function()
 	end)
 end)
 
+-- (prompt 60) the Starter Pack can be offered: for sale, not bought, past the first few minutes
+local function starterOpen(data): boolean
+	if not forSale("StarterPack") or (type(data.starterPack) == "table" and data.starterPack.bought) then return false end
+	local first = data.meta and data.meta.firstJoin or 0
+	return first > 0 and os.time() - first >= Monetization.StarterPack.FirstMinutes * 60
+end
+local function starterText(data): string
+	return string.format("+%s coins, %d Protein Shakes, a DNA Token, 30 min 2x EXP and the STARTER title.",
+		Kit.Format(Monetization.StarterCoins(data.growthSpurts)), Monetization.StarterPack.Shakes)
+end
+
+-- (prompt 60) AUTO REP: the REP button's chip opens the card; one soft offer a session after a set
+local AUTO_TEXT = "Lifts for you while you're on a machine. Toggle it any time."
+UIBus.AutoRepCard.Event:Connect(function()
+	if player:GetAttribute("Pass_AutoLift") == true or not forSale("AutoLift") then return end
+	current = nil
+	show({ id = "AutoRepChip", art = Passes.AutoLift.art, title = "AUTO REP", text = AUTO_TEXT, buy = { { key = "AutoLift", pass = true } }, stay = true })
+end)
+local autoOffered = false
+UIBus.AutoRepOffer.Event:Connect(function()
+	if autoOffered or player:GetAttribute("Pass_AutoLift") == true or not forSale("AutoLift") then return end
+	if inTutorial(ClientData.Get()) or not free() then return end
+	autoOffered = true
+	show({ id = "AutoRep", art = Passes.AutoLift.art, title = "Tired of tapping?", text = "AUTO REP lifts for you.", buy = { { key = "AutoLift", pass = true } } })
+end)
+
+-- (prompt 60) the Starter Pack bought: the items fly to their places
+local function flyIcon(image: string, from: Vector2, target: GuiObject?, delay: number)
+	if not target or target.AbsoluteSize.X <= 0 or image == "" then return end
+	task.delay(delay, function()
+		local icon = New("ImageLabel", { BackgroundTransparency = 1, Image = image, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(from.X, from.Y),
+			Size = UDim2.fromOffset(44, 44), ZIndex = 20, Parent = gui })
+		local goal = target.AbsolutePosition + target.AbsoluteSize / 2 - gui.AbsolutePosition
+		Theme.Tween(icon, { Position = UDim2.fromOffset(goal.X, goal.Y), Size = UDim2.fromOffset(22, 22) }, 0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		task.delay(0.65, function() icon:Destroy() end)
+	end)
+end
+Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
+	if kind ~= "StarterPack" or type(info) ~= "table" then return end
+	if info.again then
+		Notify.Reward("+" .. Kit.Format(info.coins or 0) .. " COINS", "You already had the Starter Pack: its value in coins.", "coin", Colors.Gold, "QuestClaim", "starter")
+		return
+	end
+	Notify.Reward("STARTER PACK!", "+" .. Kit.Format(info.coins or 0) .. " coins, " .. (info.shakes or 0) .. " shakes, a DNA Token, 2x EXP and the STARTER title.",
+		"gift", Colors.Gold, "QuestClaim", "starter")
+	gui.Enabled = true
+	local center = gui.AbsoluteSize / 2
+	local pg = player.PlayerGui
+	local hud = pg:FindFirstChild("MainHud")
+	local inventory = hud and hud:FindFirstChild("Inventory", true)
+	local hotbar = pg:FindFirstChild("Hotbar")
+	local slot = hotbar and hotbar:FindFirstChildWhichIsA("GuiButton", true)
+	local burst = New("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromOffset(60, 60), Parent = gui })
+	pcall(Kit.CoinBurst, burst)
+	local Boosts = require(Shared.Config.Boosts)
+	local UIConfig = require(Shared.Config.UI)
+	flyIcon(Boosts.ById.Shake.icon, center, slot, 0.3)
+	flyIcon(UIConfig.ShopIcons.product_dna_token, center, inventory, 0.5)
+	flyIcon(UIConfig.Icons.medal or "", center, inventory, 0.7)
+	task.delay(2, function()
+		burst:Destroy()
+		if not current then gui.Enabled = false end
+	end)
+end)
+
 -- After a Growth Spurt (its celebration first)
 Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
-	if kind ~= "GrowthSpurt" or type(info) ~= "table" or not forSale("CoinsSmall") then return end
+	if kind ~= "GrowthSpurt" or type(info) ~= "table" or not (forSale("CoinsSmall") or forSale("StarterPack")) then return end
 	local spurt = tonumber(info.spurts) or 0
 	if spurtShown[spurt] then return end
 	spurtShown[spurt] = true
@@ -214,9 +293,16 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 			waited += 1
 		end
 		if not free() then return end
+		-- (prompt 60) the first Growth Spurt: the STARTER PACK, once (it can only be bought once)
+		if spurt == 1 and starterOpen(data) then
+			show({ id = "StarterPack", art = Products.StarterPack.art, title = "STARTER PACK · ONE-TIME OFFER", text = starterText(data),
+				buy = { { key = "StarterPack" } } })
+			return
+		end
+		if not forSale("CoinsSmall") then return end
 		local buy = {}
 		for _, key in ipairs({ "CoinsSmall", "CoinsMedium", "CoinsLarge" }) do
-			if forSale(key) then table.insert(buy, { key = key, label = Kit.Short(Products[key].coins) }) end
+			if forSale(key) then table.insert(buy, { key = key, label = Kit.Short(Monetization.PackCoins(Products[key], data.growthSpurts)) }) end
 		end
 		if #buy == 0 then return end
 		show({ id = "AfterSpurt", art = Products.CoinsMedium.art, title = "Boost your next spurt",

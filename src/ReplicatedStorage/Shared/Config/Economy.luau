@@ -37,6 +37,14 @@ Economy.RushHour = {
 	Coins = 2,              -- x coins per rep during rush hour
 }
 
+-- (prompt 61) `minutes` of coins at a player's stage (spurts = their Growth Spurts): the BASE coins a minute
+-- (Config/PumpShop.CoinsPerMinute: no passes, trainers, auras, rush hour or events, so boosts never change a price or a
+-- reward's size), rounded like the shop's prices. The UI always shows the real number, never "minutes".
+function Economy.Minutes(spurts: number?, minutes: number): number
+	local PumpShop = require(script.Parent.PumpShop)
+	return PumpShop.Round(minutes * PumpShop.Rate(spurts))
+end
+
 -- Day number (UTC) for a unix time.
 function Economy.Day(now)
 	return math.floor((now or os.time()) / 86400)

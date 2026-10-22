@@ -619,8 +619,8 @@ local function lift(player)
 	-- (prompt 58) the Powerlifting Gym's MEET: more on the competition platform while it runs (PowerliftingService)
 	local plOk, PowerliftingService = pcall(require, script.Parent.PowerliftingService)
 	if plOk and PowerliftingService.ExpBonus then quality *= PowerliftingService.ExpBonus(session.model) end
-	-- worn PUMP SHOP gear helps the machines in its area (prompt 19, Config/PumpShop.GearMultiplier)
-	local gear = PumpShop.GearMultiplier(data.cosmetics and data.cosmetics.equipped, machine, Muscles.ById[machine.muscles[1].id].group)
+	-- the best belt / wraps owned help their half of the body (prompt 59, Config/PumpShop.GearMultiplier)
+	local gear = PumpShop.GearMultiplier(data.cosmetics, machine, Muscles.ById[machine.muscles[1].id].group)
 	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player) * gear, quality) -- (none on cardio: it trains stamina)
 	-- (prompt 25) the boosts past the gains cap: the HUD's MAX BOOST tag (BoostsClient)
 	if machine.trains ~= "Stamina" then

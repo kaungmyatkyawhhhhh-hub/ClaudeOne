@@ -16,7 +16,18 @@
 --     the left menu, the menu keeps 8 buttons).
 --   * "You can afford: Pro Lifting Belt!": a small gold note once a newly affordable thing appears (at most every 5 min);
 --     tapping it goes to the shop.
+-- (prompts 57 / 59 / 60, 23 Oct)
+--   * Robux items (Config.Monetization products; an item whose product isn't set up yet is hidden): Coach Dex's
+--     SUPPLEMENTS end with SHAKE BUNDLE, DNA TOKEN and DNA TOKEN x3; the PUMP SHOP's DNA LAB shows the coin DNA token next to
+--     the two Robux ones (the DNA token picture on all). Their price button has the Robux icon; BUY opens Roblox's purchase
+--     prompt (ProcessReceipt gives the item on the server). DNA x3 shows "SAVE n%" only when it really is cheaper per token.
+--   * The PUMP SHOP's specials (Mass Gainer, Elite Pre-Workout, Whey Isolate, BCAA) cost Robux: x1 and x5 (no coin price);
+--     a product not set up yet shows SOON. You can't buy past the carry limit (MAX).
+--   * GEAR (prompt 59, Coach Dex only): two rows, LIFTING BELT (lower body) and WRIST WRAPS (upper body), each with its
+--     BASIC and PRO tiles side by side (the gear pictures, the boost, the price or OWNED). Only the level right above your
+--     best can be bought. The one-time "Gear got simpler!" note after the gear migration (PlayerEvent GearSimpler).
 local Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -30,6 +41,9 @@ local Alters = require(Shared.Config.Alters)
 local AlterThemes = require(Shared.Config.AlterThemes)
 local Muscles = require(Shared.Config.Muscles)
 local Machines = require(Shared.Config.Machines)
+local Monetization = require(Shared.Config.Monetization)
+local UIConfig = require(Shared.Config.UI)
+local ShopPrices = require(Shared.ShopPrices)
 local ClientData = require(Shared.ClientData)
 local Theme = require(Shared.UI.Theme)
 local Kit = require(Shared.UI.Kit)
@@ -110,40 +124,82 @@ local function alterStatus(entry, progress): (string, Color3)
 	end
 	return "ALTER " .. n, Colors.Muted
 end
+-- (prompt 57) a shop picture of Config/UI.ShopIcons
+local DNA_ART = UIConfig.ShopIcons.product_dna_token
+local function productArt(product): string?
+	return product and product.art and UIConfig.ShopIcons[product.art] or nil
+end
+-- the PUMP SHOP's specials: their Robux products by count ({ [1] = product, [5] = product })
+local function robuxPacks(id: string)
+	if not PumpShop.RobuxSupplements[id] then return nil end
+	return { [1] = Monetization.ProductByKey["Supp_" .. id .. "_1"], [5] = Monetization.ProductByKey["Supp_" .. id .. "_5"] }
+end
 for _, supplement in ipairs(PumpShop.Supplements) do
 	local item = Boosts.ById[supplement.id]
 	table.insert(entries.Supplements, { key = item.id, section = "Supplements", name = item.name, sub = item.text .. " Lasts " .. item.duration .. ".",
-		icon = item.icon, color = Color3.fromHex(item.color), price = function() return PumpShop.SupplementPrice(item.id, spurts()) end })
+		icon = item.icon, color = Color3.fromHex(item.color), packs = robuxPacks(item.id),
+		price = function() return PumpShop.SupplementPrice(item.id, spurts()) end })
 end
+-- (prompt 59) gear: a tile per piece and level Coach Dex sells (BASIC / PRO)
 for _, gear in ipairs(PumpShop.Gear) do
-	table.insert(entries.Gear, { key = gear.id, section = "Gear", gear = gear, name = gear.name, icon = "dumbbell",
-		color = Color3.fromHex("#C98A12"), sub = "Worn: more EXP on " .. gear.area .. "." })
-end
-table.insert(entries.DnaLab, { key = "DnaToken", section = "DnaLab", name = "DNA Token", icon = "sparkles", color = Colors.Gold,
-	sub = "One genetics reroll.", price = function() return PumpShop.DnaPriceFor(data(), DNA.CoinPrice) end })
-
--- gear: the next level to buy (nil = all owned) and the highest owned
-local function gearLevels(gear)
-	local have, nextLevel = nil, nil
 	for _, level in ipairs(PumpShop.GearLevels) do
-		if owned()[PumpShop.GearItemId(gear.id, level.id)] then have = level elseif not nextLevel then nextLevel = level end
+		if not level.offSale then
+			local itemId = PumpShop.GearItemId(gear.id, level.id)
+			table.insert(entries.Gear, { key = itemId, section = "Gear", gear = gear, level = level, name = level.name .. " " .. gear.short,
+				icon = PumpShop.GearIcons[itemId] or "dumbbell", color = Color3.fromHex(level.color),
+				sub = PumpShop.GearBoostText(gear, level) .. " EXP." })
+		end
 	end
-	return have, nextLevel
+end
+table.insert(entries.DnaLab, { key = "DnaToken", section = "DnaLab", name = "DNA Token", icon = DNA_ART, color = Colors.Gold,
+	sub = DNA.TokenLine or "One genetics reroll.", price = function() return PumpShop.DnaPriceFor(data(), DNA.CoinPrice) end })
+
+-- (prompts 57 / 60) a Robux product as a tile (nil while its product isn't set up: hidden)
+local ROBUX_COLORS = { ShakePack = "#2F8FE8", DnaToken = "#36C2C2", DnaTokenPack = "#8E5CF0" }
+local robuxEntries = {}
+local function robuxEntry(key: string, section: string)
+	local product = Monetization.ProductByKey[key]
+	if not product or not product.id then return nil end
+	robuxEntries[key] = robuxEntries[key] or { key = "R_" .. key, section = section, product = product, name = product.name,
+		sub = if key == "DnaToken" or key == "DnaTokenPack" then (DNA.TokenLine or product.text) else product.text,
+		icon = productArt(product) or "sparkles", color = Color3.fromHex(ROBUX_COLORS[key] or "#36C2C2") }
+	return robuxEntries[key]
+end
+
+-- a product's Robux price: Roblox's (fetched once, ShopPrices), else Config's
+local refresh -- (the window's, below)
+local fetching = {}
+local function robuxPrice(product): number?
+	if not product then return nil end
+	if product.id and not fetching[product.key] then
+		fetching[product.key] = true
+		task.spawn(function()
+			local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, product.id, Enum.InfoType.Product)
+			if ok and info and type(info.PriceInRobux) == "number" then
+				ShopPrices.Set(product.key, info.PriceInRobux)
+				if refresh then refresh() end
+			end
+		end)
+	end
+	return ShopPrices.Get(product)
+end
+
+-- gear: the best level of a piece you own (nil = none)
+local function gearBest(gear)
+	return PumpShop.GearBest(owned(), gear.id)
 end
 
 local function isOwned(entry): boolean
 	if entry.section == "Gear" then
-		local _, nextLevel = gearLevels(entry.gear)
-		return nextLevel == nil
+		local best = gearBest(entry.gear)
+		return best ~= nil and best.index >= entry.level.index
 	end
 	return false
 end
 
 local function priceOf(entry): number?
-	if entry.section == "Gear" then
-		local _, nextLevel = gearLevels(entry.gear)
-		return nextLevel and nextLevel.price
-	end
+	if entry.section == "Gear" then return entry.level.price end
+	if entry.product or entry.packs then return nil end -- (Robux: robuxPrice)
 	return entry.price and entry.price()
 end
 
@@ -152,7 +208,6 @@ end
 ------------------------------------------------------------------------
 local tab = "Supplements"
 local picked = {} -- [section] = entry key
-local refresh -- (below)
 local openOn -- (below)
 local tileColor -- (below)
 local tabs = {}
@@ -230,13 +285,15 @@ local function clearButtons()
 end
 -- style: "Green" (a buy you can afford: gold outline), "Disabled" (can't afford: the price red), "Gold" (gold outline,
 -- gold words), "Quiet" (gray outline); price = coins shown with a coin (nil = words only); best = the small BEST tag
-local function addButton(style, text, width, onTap, order, price, best)
+-- (prompt 57) currency = "robux": the Robux icon on the price; best = true ("BEST") or the tag's own words ("SAVE 16%")
+local function addButton(style, text, width, onTap, order, price, best, currency)
 	local look = if style == "Green" then "buy" elseif style == "Disabled" then (if price then "need" else "off") elseif style == "Gold" then "owned" else "plain"
-	local button = slimButton(buttonRow, { Name = "Buy" .. (order or 1), LayoutOrder = order or 1, Size = UDim2.fromOffset(width, 40), ZIndex = 4 }, text, price, look, 15)
+	local button = slimButton(buttonRow, { Name = "Buy" .. (order or 1), LayoutOrder = order or 1, Size = UDim2.fromOffset(width, 40), ZIndex = 4 }, text, price, look, 15, currency)
 	if best then
-		local tag = New("Frame", { Name = "Best", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 4, 0, 0), Size = UDim2.fromOffset(38, 14),
-			ZIndex = 8, Parent = button }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
-		Kit.Text({ Name = "Text", Text = "BEST", Font = "Chunky", TextSize = 10, TextColor3 = Colors.Ink, Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = tag })
+		local words = if type(best) == "string" then best else "BEST"
+		local tag = New("Frame", { Name = "Best", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 4, 0, 0),
+			Size = UDim2.fromOffset(if #words > 4 then 64 else 38, 14), ZIndex = 8, Parent = button }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+		Kit.Text({ Name = "Text", Text = words, Font = "Chunky", TextSize = 10, TextColor3 = Colors.Ink, Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = tag })
 	end
 	button.Activated:Connect(function()
 		if style == "Disabled" then return end
@@ -263,15 +320,18 @@ end
 -- the effect pill text: "+50% EXP · 15 MIN" (owner, 23 Oct: short enough for the tile: "+100%" -> "2x", and a long effect
 -- drops the time, which the strip still says)
 local function effectText(entry): string
-	if entry.section == "Supplements" then
+	if entry.section == "Supplements" and not entry.product then
 		local item = Boosts.ById[entry.key]
 		local short = string.gsub(item.short or item.text, "^%+100%%", "2x")
 		local full = short .. (if item.duration then " · " .. string.upper(item.duration) else "")
 		return if #full > 20 then short else full
 	elseif entry.section == "Gear" then
-		local _, nextLevel = gearLevels(entry.gear)
-		local level = nextLevel or PumpShop.GearLevels[#PumpShop.GearLevels]
-		return "+" .. math.floor(level.bonus * 100 + 0.5) .. "% EXP · " .. string.upper(level.name)
+		return PumpShop.GearBoostText(entry.gear, entry.level)
+	elseif entry.product then
+		local p = entry.product
+		if p.key == "ShakePack" then return Monetization.Effects.ShakePackSize .. " SHAKES" end
+		if p.dnaTokens then return p.dnaTokens .. " REROLLS" end
+		return "1 REROLL"
 	elseif entry.section == "DnaLab" then
 		return "1 REROLL"
 	end
@@ -305,11 +365,7 @@ end
 -- an item's colour (gear: its next level's, or the one you have)
 function tileColor(entry): Color3
 	local color = entry.color or Colors.Gold
-	if entry.section == "Gear" then
-		local have, nextLevel = gearLevels(entry.gear)
-		local level = nextLevel or have
-		if level then color = Color3.fromHex(level.color) end
-	elseif entry.section == "Alters" then
+	if entry.section == "Alters" then
 		color = AlterThemes.Get(entry.alter.number).accent
 	end
 	if color == Color3.fromHex("#2B2B30") then color = Color3.fromHex("#8A8790") end -- (Basic black: readable)
@@ -322,6 +378,24 @@ local function buy(entry, ...)
 	lastBuyTile = tilesByKey[entry.key]
 	remote:FireServer("Buy", shopId, ...)
 end
+
+-- (prompts 57 / 60) a Robux buy: Roblox's purchase prompt; when Roblox says it went through, the item flies to the
+-- Inventory (ProcessReceipt gives it on the server)
+local pendingRobux = nil -- { entry, tile, id }
+local function promptRobux(entry, product)
+	if not product or not product.id then return end
+	pendingRobux = { entry = entry, tile = tilesByKey[entry.key], id = product.id }
+	MarketplaceService:PromptProductPurchase(player, product.id)
+end
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, purchased)
+	local pending = pendingRobux
+	if userId ~= player.UserId or not pending or pending.id ~= productId then return end
+	pendingRobux = nil
+	if purchased then
+		Audio.PlayUI("ShopBuy")
+		pcall(flyToInventory, pending.entry, pending.tile)
+	end
+end)
 
 local function showStrip(entry)
 	if not entry then
@@ -338,10 +412,27 @@ local function showStrip(entry)
 	clearButtons()
 	local price = priceOf(entry)
 	local afford = price ~= nil and coins() >= price
-	if entry.section == "Supplements" then
+	if entry.section == "Supplements" and not entry.product then
 		local item = Boosts.ById[entry.key]
 		local have = (data().items or {})[entry.key] or 0
 		stripLine.Text = item.text .. " Lasts " .. item.duration .. ". You have " .. have .. "."
+		if entry.packs then
+			-- (prompt 57) Robux: x1 and x5 (BEST only when x5 is cheaper per item)
+			local single = robuxPrice(entry.packs[1])
+			for i, count in ipairs({ 1, 5 }) do
+				local product = entry.packs[count]
+				local cost = robuxPrice(product)
+				if not product or not product.id then
+					addButton("Disabled", "x" .. count .. " soon", 128, function() end, i)
+				elseif have + count > Boosts.MaxCount then
+					addButton("Disabled", "x" .. count .. " max", 128, function() end, i)
+				else
+					local best = count > 1 and cost ~= nil and single ~= nil and cost / count < single
+					addButton("Green", "x" .. count, 128, function() promptRobux(entry, product) end, i, cost, best, "robux")
+				end
+			end
+			return
+		end
 		for i, quantity in ipairs(shop().quantities or { 1, 5 }) do
 			if quantity <= 5 then
 				local cost = (price or 0) * quantity
@@ -353,23 +444,43 @@ local function showStrip(entry)
 			end
 		end
 	elseif entry.section == "Gear" then
-		local have, nextLevel = gearLevels(entry.gear)
-		local parts = { "Worn: more EXP on " .. entry.gear.area .. "." }
-		if have then table.insert(parts, "You have " .. have.name .. ".") end
+		-- (prompt 59) the level's boost on its half of the body; the best level you own is the one that counts
+		local best = gearBest(entry.gear)
+		local level = entry.level
+		local groups = string.lower(table.concat(entry.gear.groups, ", "))
+		local parts = { string.format("+%d%% EXP on the %s (%s).", math.floor(level.bonus * 100 + 0.5), string.lower(entry.gear.half), groups) }
+		if best then table.insert(parts, "You have " .. best.name .. ".") elseif level.index > 1 then table.insert(parts, "Replaces Basic.") end
 		stripLine.Text = table.concat(parts, " ")
-		if nextLevel and table.find(shop().gear, nextLevel.id) then
-			addButton(if afford then "Green" else "Disabled", "Buy " .. nextLevel.name, 210, function()
-				buy(entry, "Gear", entry.gear.id)
-			end, 1, nextLevel.price)
-		elseif nextLevel then
-			local atCoach = table.find(PumpShop.Shops.Coach.gear, nextLevel.id) ~= nil
-			addButton("Quiet", if atCoach then "Go to Coach Dex" else "Go to Pump Shop", 200, function()
+		if isOwned(entry) then
+			addButton("Gold", "Owned", 150, function() end, 1)
+		elseif not table.find(shop().gear, level.id) then
+			addButton("Quiet", "Go to Coach Dex", 200, function()
 				modal.close()
-				if atCoach then UIBus.GoCoach:Fire() else UIBus.GoPumpShop:Fire() end
+				UIBus.GoCoach:Fire()
 			end)
+		elseif (best and best.index or 0) + 1 ~= level.index then
+			addButton("Disabled", "Buy " .. PumpShop.GearLevels[(best and best.index or 0) + 1].name .. " first", 210, function() end, 1)
 		else
-			stripLine.Text = stripLine.Text .. " Every level owned."
+			addButton(if afford then "Green" else "Disabled", "Buy " .. level.name, 210, function()
+				buy(entry, "Gear", entry.key)
+			end, 1, level.price)
 		end
+	elseif entry.product then
+		-- (prompts 57 / 60) a Robux product: BUY opens Roblox's purchase prompt
+		local product = entry.product
+		local cost = robuxPrice(product)
+		local line = entry.sub
+		if product.key == "DnaToken" or product.dnaTokens then line ..= " You have " .. (data().dnaTokens or 0) .. "." end
+		if product.key == "ShakePack" then line ..= " You have " .. ((data().items or {}).Shake or 0) .. " shakes." end
+		stripLine.Text = line
+		local save = nil
+		if product.dnaTokens then
+			local single = robuxPrice(Monetization.ProductByKey.DnaToken)
+			if single and cost and cost / product.dnaTokens < single then
+				save = math.floor((1 - cost / (single * product.dnaTokens)) * 100)
+			end
+		end
+		addButton("Green", "Buy", 170, function() promptRobux(entry, product) end, 1, cost, save and save > 0 and ("SAVE " .. save .. "%") or nil, "robux")
 	elseif entry.section == "Alters" then
 		local progress = alterProgress()
 		local status = alterStatus(entry, progress)
@@ -427,12 +538,91 @@ local AltersPanel = require(Shared.UI.AltersPanel)
 local altersPanel = AltersPanel.Build(modal.body, { mode = "shop", columns = 3, onClose = function() modal.close() end })
 local altersWasShown = false
 
+-- (prompt 59) GEAR: two rows, LIFTING BELT and WRIST WRAPS: the piece's name and its half of the body on the left, then its
+-- BASIC and PRO tiles side by side (picture, name, the boost in a slim pill, the price or OWNED; picked = the gold glow)
+local GEAR_LABEL_W, GEAR_TILE_W = 128, 212
+local gearRows = New("Frame", { Name = "GearRows", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -(STRIP_H + 4)), Visible = false, Parent = modal.body }, {
+	New("UIListLayout", { FillDirection = Enum.FillDirection.Vertical, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+	New("UIPadding", { PaddingLeft = UDim.new(0, TILE_GLOW), PaddingRight = UDim.new(0, TILE_GLOW), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }),
+})
+local function gearTile(row: Instance, entry, order: number)
+	local color = tileColor(entry)
+	local isPicked = picked.Gear == entry.key
+	local cell = New("Frame", { Name = entry.key, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.new(0, GEAR_TILE_W, 1, 0), Parent = row })
+	local tile = New("TextButton", { Name = "Tile", Text = "", AutoButtonColor = false, BackgroundColor3 = color:Lerp(Color3.new(0, 0, 0), 0.85), Size = UDim2.fromScale(1, 1),
+		ZIndex = 2, Parent = cell }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+	local border = New("UIStroke", { Name = "Border", Color = if isPicked then Colors.Gold else color, Thickness = if isPicked then 2 else 1.5,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tile })
+	tilesByKey[entry.key] = tile
+	themedBackground(tile, 12, UDim2.new(0, 34, 0.5, 0), { 52, 84 })(color)
+	AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 34, 0.5, 0), Size = UDim2.fromOffset(78, 78),
+		ImageColor3 = color, ImageTransparency = 0.45, ZIndex = 2 })
+	New("ImageLabel", { Name = "Icon", BackgroundTransparency = 1, Image = entry.icon, ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0, 34, 0.5, 0), Size = UDim2.fromOffset(52, 52), ZIndex = 3, Parent = tile })
+	local name = Kit.Text({ Name = "Name", Text = string.upper(entry.name), Font = "Chunky", TextSize = 15, Position = UDim2.fromOffset(70, 6), Size = UDim2.new(1, -78, 0, 17),
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4, Parent = tile })
+	name.TextWrapped = false
+	Kit.Fit(name, 15, 9)
+	local pill = New("Frame", { Name = "Effect", BackgroundColor3 = PILL_DARK, Position = UDim2.fromOffset(70, 25), Size = UDim2.new(1, -78, 0, 16), ZIndex = 4, Parent = tile }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = color, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	local effect = Kit.Text({ Name = "Text", Text = effectText(entry), Font = "Chunky", TextSize = 11, Position = UDim2.fromOffset(6, 0), Size = UDim2.new(1, -12, 1, 0), ZIndex = 5, Parent = pill })
+	effect.TextWrapped = false
+	Kit.Fit(effect, 11, 7)
+	local props = { Name = "Price", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 70, 1, -6), Size = UDim2.new(1, -78, 0, 20), ZIndex = 4 }
+	local priceButton
+	if isOwned(entry) then
+		priceButton = slimButton(tile, props, "Owned", nil, "owned", 12)
+	else
+		local price = entry.level.price
+		priceButton = slimButton(tile, props, nil, price, if coins() >= price then "plain" else "need", 12)
+	end
+	priceButton.Activated:Connect(function() tile:SetAttribute("Tap", (tile:GetAttribute("Tap") or 0) + 1) end)
+	if isPicked then ReadyGlow.New(tile, { stroke = border, pad = TILE_GLOW }):Set(true, Colors.Gold) end
+	local scale = New("UIScale", { Name = "PickScale", Scale = if isPicked then 1 else 0.97, Parent = tile })
+	local _ = scale
+	local function pick()
+		picked.Gear = entry.key
+		refresh()
+		local now = tilesByKey[entry.key]
+		if now then Kit.SelectFeedback(now, strip) end
+	end
+	tile.Activated:Connect(pick)
+	tile:GetAttributeChangedSignal("Tap"):Connect(pick)
+end
+local function renderGear()
+	for _, child in ipairs(gearRows:GetChildren()) do
+		if child:IsA("GuiObject") then child:Destroy() end
+	end
+	for order, gear in ipairs(PumpShop.Gear) do
+		local row = New("Frame", { Name = gear.id, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0.5, -3), Parent = gearRows }, {
+			New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center }),
+		})
+		local label = New("Frame", { Name = "Label", LayoutOrder = 0, BackgroundTransparency = 1, Size = UDim2.new(0, GEAR_LABEL_W, 1, 0), Parent = row })
+		local title = Kit.Text({ Name = "Title", Text = string.upper(gear.name), Font = "Title", KeepItalic = true, TextSize = 16, AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.new(0, 0, 0.5, 0), Size = UDim2.new(1, 0, 0, 20), TextXAlignment = Enum.TextXAlignment.Left, Parent = label })
+		Kit.Fit(title, 16, 10)
+		Kit.Text({ Name = "Half", Text = string.upper(gear.half), Font = "Chunky", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.new(0, 0, 0.5, 2),
+			Size = UDim2.new(1, 0, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, Parent = label })
+		local n = 0
+		for _, entry in ipairs(entries.Gear) do
+			if entry.gear == gear then
+				n += 1
+				gearTile(row, entry, n)
+			end
+		end
+	end
+end
+
 function refresh()
 	for _, child in ipairs(grid:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	table.clear(tilesByKey)
 	table.clear(spinning)
+	gearRows.Visible = false
 	local open = sectionOpen(tab)
 	lockNote.Visible = not open
 	local altersShown = open and tab == "Alters"
@@ -459,9 +649,41 @@ function refresh()
 				if entry.key == id then table.insert(mine, entry) end
 			end
 		end
+		-- (prompts 57 / 60) the shop's Robux products after its supplements (Coach Dex: Shake Bundle, DNA tokens)
+		for _, key in ipairs(shop().robux or {}) do
+			local entry = robuxEntry(key, "Supplements")
+			if entry then table.insert(mine, entry) end
+		end
 		list = mine
 		if picked.Supplements and not bodyEntry(list, picked.Supplements) then picked.Supplements = nil end
 		for _, entry in ipairs(list) do entry.id = entry.key end
+	elseif tab == "DnaLab" then
+		-- the coin token and the Robux x1 / x3 side by side (prompt 60)
+		list = table.clone(entries.DnaLab)
+		for _, key in ipairs(shop().robuxDna or {}) do
+			local entry = robuxEntry(key, "DnaLab")
+			if entry then table.insert(list, entry) end
+		end
+		for _, entry in ipairs(list) do entry.id = entry.key end
+		if picked.DnaLab and not bodyEntry(list, picked.DnaLab) then picked.DnaLab = nil end
+	elseif tab == "Gear" then
+		-- (prompt 59) two rows instead of the tile row
+		grid.Visible = false
+		gearRows.Visible = true
+		for _, entry in ipairs(entries.Gear) do entry.id = entry.key end
+		if not picked.Gear or not bodyEntry(entries.Gear, picked.Gear) then
+			-- the first level you can buy next, else the first tile
+			picked.Gear = entries.Gear[1] and entries.Gear[1].key
+			for _, entry in ipairs(entries.Gear) do
+				if not isOwned(entry) then
+					picked.Gear = entry.key
+					break
+				end
+			end
+		end
+		renderGear()
+		showStrip(bodyEntry(entries.Gear, picked.Gear))
+		return
 	end
 	local altersNow = nil
 	if tab == "Alters" then
@@ -473,12 +695,7 @@ function refresh()
 	if not picked[tab] and list[1] then picked[tab] = list[1].key end
 	for order, entry in ipairs(list) do
 		local color = tileColor(entry)
-		local champion = false
-		if entry.section == "Gear" then
-			local have, nextLevel = gearLevels(entry.gear)
-			local level = nextLevel or have
-			champion = level ~= nil and level.id == "Champion"
-		end
+		local champion = false -- (prompt 59: no Champion gear on sale; its running gold border is kept for later)
 		local isPicked = picked[tab] == entry.key
 		-- (a cell per tile: the picked tile's glow sits beside it, outside the list layout)
 		local cell = New("Frame", { Name = entry.key, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE_W, TILE_H), Parent = grid })
@@ -529,12 +746,14 @@ function refresh()
 		if entry.section == "Alters" then
 			local status = alterStatus(entry, altersNow)
 			priceButton = slimButton(tile, priceProps, status, nil, if entry.alter.number < altersNow.next then "owned" else "plain", 12)
-		elseif isOwned(entry) then
-			priceButton = slimButton(tile, priceProps, "Owned", nil, "owned", 13)
-		elseif entry.section == "Gear" and price and not table.find(shop().gear, (select(2, gearLevels(entry.gear))).id) then
-			-- (sold in the other shop)
-			local _, nextLevel = gearLevels(entry.gear)
-			priceButton = slimButton(tile, priceProps, if table.find(PumpShop.Shops.Coach.gear, nextLevel.id) then "At Coach Dex" else "At Pump Shop", nil, "plain", 11)
+		elseif entry.product or entry.packs then
+			-- (prompts 57 / 60) Robux: the Robux icon and the price (a special: its x1 price; not set up yet: SOON)
+			local product = entry.product or entry.packs[1]
+			if product and product.id then
+				priceButton = slimButton(tile, priceProps, nil, robuxPrice(product), "plain", 13, "robux")
+			else
+				priceButton = slimButton(tile, priceProps, "Soon", nil, "off", 12)
+			end
 		elseif price then
 			local afford = coins() >= price
 			priceButton = slimButton(tile, priceProps, nil, price, if afford then "plain" else "need", 13)
@@ -598,6 +817,15 @@ UIBus.RegisterPanel("PumpShop", function() modal.close() end)
 ClientData.Changed:Connect(function(path)
 	local key = path[1]
 	if modal.isOpen() and (key == "coins" or key == "items" or key == "cosmetics" or key == "dnaWeek" or key == "dnaTokens" or key == "growthSpurts") then refresh() end
+end)
+
+-- (prompt 59) once, after the gear migration: what changed, and the coins given back for straps / sleeves
+local playerEvent = Remotes:WaitForChild("PlayerEvent") :: RemoteEvent
+playerEvent.OnClientEvent:Connect(function(kind, info)
+	if kind ~= "GearSimpler" then return end
+	local refund = type(info) == "table" and tonumber(info.refund) or 0
+	Notify.Reward("GEAR GOT SIMPLER!", "Belt = lower body, Wraps = upper body." .. (if refund > 0 then " +" .. Kit.Format(refund) .. " COINS refunded." else ""),
+		"dumbbell", Colors.Gold, "QuestClaim", "gear59")
 end)
 
 remote.OnClientEvent:Connect(function(kind, info)
@@ -685,7 +913,9 @@ local function checkAfford()
 			for _, entry in ipairs(entries[section]) do
 				local price = priceOf(entry)
 				local key = entry.key .. "@" .. tostring(price)
-				if price and not isOwned(entry) and not announced[key] and coins() >= price and (not best or price > best.price) then
+				local mine = gearBest(entry.gear)
+				local nextUp = (mine and mine.index or 0) + 1 == entry.level.index -- (prompt 59: only the next level)
+				if price and nextUp and not isOwned(entry) and not announced[key] and coins() >= price and (not best or price > best.price) then
 					best = { entry = entry, price = price, key = key }
 				end
 			end
@@ -694,13 +924,8 @@ local function checkAfford()
 	if not best then return end
 	announced[best.key] = true
 	lastAfford = os.clock()
-	local name = best.entry.name
-	affordAtCoach = false
-	if best.entry.section == "Gear" then
-		local _, nextLevel = gearLevels(best.entry.gear)
-		name = (nextLevel and nextLevel.name .. " " or "") .. name
-		affordAtCoach = nextLevel ~= nil and table.find(PumpShop.Shops.Coach.gear, nextLevel.id) ~= nil
-	end
+	local name = best.entry.level.name .. " " .. best.entry.gear.name
+	affordAtCoach = table.find(PumpShop.Shops.Coach.gear, best.entry.level.id) ~= nil
 	Kit.SetButton(affordButton, nil, "You can afford: " .. name .. "!")
 	affordGui.Enabled = true
 	Audio.PlayUI("QuestClaim")

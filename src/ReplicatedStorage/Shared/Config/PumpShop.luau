@@ -1,7 +1,8 @@
 -- (prompt 31, owner 21 Oct: three shops, each sells its own things; the tabs are always called SUPPLEMENTS / GEAR, plus
 -- ALTERS or DNA LAB) PumpShop.Shops below:
---   Coach    COACH DEX at his counter in the Starter Gym (the main shop): normal supplements, Basic / Pro gear, ALTERS
---   Pump     the PUMP SHOP in town (specials only): special supplements, Elite / Champion gear, DNA LAB
+--   Coach    COACH DEX at his counter in the Starter Gym (the main shop): normal supplements (+ Shake Bundle and DNA tokens
+--            for Robux, prompts 57 / 60), BASIC / PRO belt and wraps (prompt 59), ALTERS
+--   Pump     the PUMP SHOP in town (specials only): special supplements (Robux, prompt 57), DNA LAB
 --   Coconut  the COCONUT STAND at the beach gym: Coconut Water only (x1 / x5)
 -- Apparel is off sale (players keep what they own; PumpShop.Apparel still defines those items).
 -- PUMP SHOP (owner, prompt 19, 21 Oct): one big store in the town hub that sells everything worth buying with coins.
@@ -37,13 +38,20 @@ PumpShop.SectionById = {}
 for _, section in ipairs(PumpShop.Sections) do PumpShop.SectionById[section.id] = section end
 
 -- (prompt 31) the three shops: their title, tabs, the supplements and gear levels they sell, and how many at once
+-- (prompt 57) robux = Robux products (Config.Monetization keys) shown after a shop's supplements / on its DNA LAB tab.
+-- (prompt 59) all gear is at Coach Dex (BASIC / PRO); the PUMP SHOP has no GEAR tab.
 PumpShop.Shops = {
 	Coach = { title = "Coach Dex", tabs = { "Supplements", "Gear", "Alters" },
-		supplements = { "Shake", "Creatine", "ProteinPowder", "Supplements", "PreWorkout" }, gear = { "Basic", "Pro" } },
-	Pump = { title = "Pump Shop", tabs = { "Supplements", "Gear", "DnaLab" },
-		supplements = { "MassGainer", "ElitePreWorkout", "WheyIsolate", "BcaaRecovery" }, gear = { "Elite", "Champion" } },
+		supplements = { "Shake", "Creatine", "ProteinPowder", "Supplements", "PreWorkout" }, gear = { "Basic", "Pro" },
+		robux = { "ShakePack", "DnaToken", "DnaTokenPack" } },
+	Pump = { title = "Pump Shop", tabs = { "Supplements", "DnaLab" },
+		supplements = { "MassGainer", "ElitePreWorkout", "WheyIsolate", "BcaaRecovery" }, gear = {},
+		robuxDna = { "DnaToken", "DnaTokenPack" } },
 	Coconut = { title = "Coconut Stand", tabs = { "Supplements" }, supplements = { "CoconutWater" }, gear = {}, quantities = { 1, 5 } },
 }
+-- (prompt 57) the PUMP SHOP's specials cost Robux, not coins: Config.Monetization products "Supp_<id>_1" / "Supp_<id>_5"
+-- (x1 / x5). Their coin price below isn't sold any more (PumpShopService refuses it).
+PumpShop.RobuxSupplements = { MassGainer = true, ElitePreWorkout = true, WheyIsolate = true, BcaaRecovery = true }
 PumpShop.CoachTeleportCooldown = 10 -- seconds between two uses of the Shop window's "Coach Dex" link
 
 ------------------------------------------------------------------------
@@ -68,6 +76,7 @@ local function round(n: number): number
 	if n >= 1000 then return math.floor(n / 50 + 0.5) * 50 end
 	return math.max(5, math.floor(n / 5 + 0.5) * 5)
 end
+PumpShop.Round = round -- (prompt 61: Config/Economy.Minutes rounds the same way)
 
 function PumpShop.Rate(spurts: number?): number
 	local s = math.clamp(spurts or 0, 0, 6)
@@ -83,24 +92,38 @@ function PumpShop.SupplementPrice(id: string, spurts: number?): number?
 end
 
 ------------------------------------------------------------------------
--- GEAR: worn on the character (Config.Cosmetics items with a `perk`), a small permanent bonus while worn. Three levels;
--- each level needs the one before. bonus = extra EXP on the machines it helps.
+-- GEAR (prompt 59, owner 23 Oct: "too many gear pieces"): only TWO items, the LIFTING BELT (lower body: legs, back, core)
+-- and the WRIST WRAPS (upper body: chest, shoulders, arms). Each has levels; only the best level you own counts (no
+-- stacking, no slots to manage: bought = worn). BASIC and PRO are sold by Coach Dex (coins); ELITE and CHAMPION are off
+-- sale for now (owners keep theirs: they still work and show in the Inventory). bonus = extra EXP on that half of the body.
+-- color = the level's colour on the body and its tiles (prompt 57: Basic brown leather, Pro black + silver, Elite purple +
+-- silver, Champion gold, like the pictures).
 ------------------------------------------------------------------------
 PumpShop.GearLevels = {
-	{ id = "Basic", name = "Basic", bonus = 0.05, price = 750, color = "#2B2B30" },
-	{ id = "Pro", name = "Pro", bonus = 0.10, price = 4000, color = "#B3262D" },
-	{ id = "Elite", name = "Elite", bonus = 0.15, price = 25000, color = "#C9CCD2" }, -- (prompt 34: silver; gold is for Champion, prompt 31)
-	{ id = "Champion", name = "Champion", bonus = 0.20, price = 150000, color = "#F2C14E" }, -- (prompt 31: the top level, gold)
+	{ id = "Basic", name = "Basic", bonus = 0.05, price = 750, color = "#7A4E2C" },
+	{ id = "Pro", name = "Pro", bonus = 0.10, price = 4000, color = "#2B2B30" },
+	{ id = "Elite", name = "Elite", bonus = 0.15, price = 25000, color = "#8E44E0", offSale = true },
+	{ id = "Champion", name = "Champion", bonus = 0.20, price = 150000, color = "#F2C14E", offSale = true },
 }
--- machines = MachineIds it helps; groups = every machine whose main muscle is in these groups
+-- half = what it says on the tiles; groups = the muscle groups it helps (a machine counts by its main muscle's group)
 PumpShop.Gear = {
-	{ id = "Belt", name = "Lifting Belt", slot = "Waist", style = "Belt", area = "squats and deadlifts",
-		machines = { "SquatRack", "Deadlift", "HackSquat", "LegPress", "HipThrust" } },
-	{ id = "Wraps", name = "Wrist Wraps", slot = "Wrists", style = "Wraps", area = "pressing",
-		machines = { "FlatBench", "InclineBench", "OverheadPress", "Dips", "TricepPushdown" } },
-	{ id = "Straps", name = "Lifting Straps", slot = "Hands", style = "Straps", area = "pulling",
-		machines = { "Deadlift", "BarbellRow", "PullUpBar", "Shrugs", "BicepCurl", "ReverseFly" } },
-	{ id = "Sleeves", name = "Knee Sleeves", slot = "Knees", style = "Sleeves", area = "legs", groups = { "Legs" } },
+	{ id = "Belt", name = "Lifting Belt", short = "Belt", slot = "Waist", style = "Belt", half = "Lower body", groups = { "Legs", "Back", "Core" } },
+	{ id = "Wraps", name = "Wrist Wraps", short = "Wraps", slot = "Wrists", style = "Wraps", half = "Upper body", groups = { "Chest", "Shoulders", "Arms" } },
+}
+-- (prompt 59) taken out of the game: owners got the matching piece at their level, or their coins back, once
+-- (PumpShopService, flag cosmetics.gear59). The old ids stay valid in saves until then.
+--   { id = "Straps", name = "Lifting Straps", slot = "Hands", style = "Straps" }  -> Wrist Wraps
+--   { id = "Sleeves", name = "Knee Sleeves", slot = "Knees", style = "Sleeves" }  -> Lifting Belt
+PumpShop.RemovedGear = {
+	{ id = "Straps", slot = "Hands", into = "Wraps" },
+	{ id = "Sleeves", slot = "Knees", into = "Belt" },
+}
+-- the pictures (Downloads\gym_arc_gear_icons, uploaded 23 Oct)
+PumpShop.GearIcons = {
+	Belt_Basic = "rbxassetid://137957055337154", Belt_Pro = "rbxassetid://100507399379128",
+	Belt_Elite = "rbxassetid://126157947517117", Belt_Champion = "rbxassetid://113017264592588",
+	Wraps_Basic = "rbxassetid://111378028413393", Wraps_Pro = "rbxassetid://84347399168698",
+	Wraps_Elite = "rbxassetid://103576228159688", Wraps_Champion = "rbxassetid://84896815397095",
 }
 
 -- The Cosmetics item id of a gear piece at a level ("Belt_Pro").
@@ -109,19 +132,37 @@ function PumpShop.GearItemId(gearId: string, levelId: string): string
 end
 
 local LEVEL = {}
-for _, level in ipairs(PumpShop.GearLevels) do LEVEL[level.id] = level end
--- The EXP multiplier the worn gear gives on `machine` (1 = none). equipped = cosmetics.equipped ([slot] = item id),
--- mainGroup = the machine's main muscle group id.
-function PumpShop.GearMultiplier(equipped, machine, mainGroup: string?): number
-	if type(equipped) ~= "table" or not machine then return 1 end
+for index, level in ipairs(PumpShop.GearLevels) do
+	LEVEL[level.id] = level
+	level.index = index
+end
+PumpShop.GearLevelById = LEVEL
+PumpShop.GearById = {}
+for _, gear in ipairs(PumpShop.Gear) do PumpShop.GearById[gear.id] = gear end
+
+-- The best level of a gear piece in `owned` (cosmetics.owned), or nil.
+function PumpShop.GearBest(owned, gearId: string)
+	if type(owned) ~= "table" then return nil end
+	local best = nil
+	for _, level in ipairs(PumpShop.GearLevels) do
+		if owned[PumpShop.GearItemId(gearId, level.id)] then best = level end
+	end
+	return best
+end
+
+-- The tile text for a level: "+10% LOWER BODY".
+function PumpShop.GearBoostText(gear, level): string
+	return "+" .. math.floor(level.bonus * 100 + 0.5) .. "% " .. string.upper(gear.half)
+end
+
+-- The EXP multiplier gear gives on `machine` (1 = none): the best level OWNED of each piece (worn or not; prompt 59),
+-- when the machine's main muscle group (mainGroup) is in that piece's half of the body. cosmetics = data.cosmetics.
+function PumpShop.GearMultiplier(cosmetics, machine, mainGroup: string?): number
+	if type(cosmetics) ~= "table" or not machine or not mainGroup then return 1 end
 	local total = 1
 	for _, gear in ipairs(PumpShop.Gear) do
-		local itemId = equipped[gear.slot]
-		if type(itemId) == "string" and string.sub(itemId, 1, #gear.id + 1) == gear.id .. "_" then
-			local level = LEVEL[string.sub(itemId, #gear.id + 2)]
-			local helps = (gear.machines and table.find(gear.machines, machine.base or machine.id) ~= nil) or (gear.groups and mainGroup ~= nil and table.find(gear.groups, mainGroup) ~= nil)
-			if level and helps then total *= 1 + level.bonus end
-		end
+		local level = PumpShop.GearBest(cosmetics.owned, gear.id)
+		if level and table.find(gear.groups, mainGroup) then total *= 1 + level.bonus end
 	end
 	return total
 end

@@ -1,6 +1,6 @@
 -- CosmeticService: the clothing store's gear (Config.Cosmetics). Buying (only at the store counter, coins checked
--- here), wearing (one item per slot, only owned items) and building the gear on characters: belts, wraps, straps and
--- knee sleeves are the planner's gear meshes (Shared/Gear, prompt 34), the rest simple parts welded to the body. Gear is rebuilt when a body part changes size (muscle growth, Growth Spurts). Cosmetic only.
+-- here), wearing (one item per slot, only owned items) and building the gear on characters: belts and wraps are the
+-- planner's gear meshes (Shared/Gear, prompt 34; straps and knee sleeves were taken out, prompt 59), the rest simple parts welded to the body. Gear is rebuilt when a body part changes size (muscle growth, Growth Spurts). Cosmetic only.
 -- Save data: cosmetics = { owned = { [itemId] = true }, equipped = { [slot] = itemId }, fitsRefunded = true? }.
 -- While Config/Features.Wardrobe is false (owner, 13 Oct) the tops (slot "Fit") can't be bought or worn, and on join a
 -- player who owns any gets them taken back with their coins refunded, once (fitsRefunded). The cause of the "broken
@@ -89,9 +89,7 @@ BUILD.Shaker = function(folder, character, item)
 	piece(folder, waist, "ShakerCap", Vector3.new(0.16, 0.44, 0.44), side * CFrame.new(0, 0.48, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromHex("#2B2B2B"), Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
 end
 
--- (prompt 19) PUMP SHOP gear and apparel
-BUILD.Straps = gearMesh("Straps")
-BUILD.Sleeves = gearMesh("Sleeves")
+-- (prompt 19) PUMP SHOP apparel
 BUILD.Bag = function(folder, character, item)
 	local torso = character:FindFirstChild("UpperTorso")
 	if not torso then return end
@@ -246,6 +244,11 @@ function CosmeticService.Grant(player, itemId, wear)
 	PlayerData.SetTable(player, "cosmetics", state)
 	build(player)
 	return true
+end
+
+-- (prompt 59) build the worn gear again now (after a change made outside this service, e.g. the gear migration)
+function CosmeticService.Rebuild(player)
+	build(player)
 end
 
 function CosmeticService.Owns(player, itemId): boolean

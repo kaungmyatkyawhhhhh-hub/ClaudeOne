@@ -70,6 +70,9 @@ Titles.List = {
 	-- (owner, 23 Oct) the group perks welcome gift (GroupGiftService: members of the group that owns GYM ARC)
 	{ id = "CrewMember", name = "Crew Member", rarity = "Rare", category = "Social",
 		description = "Join the GYM ARC group.", condition = { type = "groupGift" } },
+	-- (prompt 60) only from the STARTER PACK (exclusive)
+	{ id = "Starter", name = "Starter", rarity = "Rare", category = "Social",
+		description = "Get the Starter Pack.", condition = { type = "starterPack" } },
 	{ id = "ArmWrestlingKing", name = "Arm Wrestling King", rarity = "Epic", category = "Social",
 		description = "Beat Big Lou, the strongest arm wrestler.", condition = { type = "stat", stat = "armKingWins", min = 1 } },
 	-- NPC rivals (Config/Rivals, RivalService)
@@ -179,6 +182,8 @@ function Titles.Check(title, ctx)
 		return data.legends ~= nil and data.legends.met[c.id] == true
 	elseif c.type == "groupGift" then
 		return type(data.groupGift) == "table" and data.groupGift.given == true
+	elseif c.type == "starterPack" then
+		return type(data.starterPack) == "table" and data.starterPack.bought == true
 	elseif c.type == "maxedGrade" then
 		for groupId, grade in pairs(data.genetics.grades) do
 			if grade == c.grade and (ctx.goalGroups[groupId] or 0) >= ctx.mastery then return true end

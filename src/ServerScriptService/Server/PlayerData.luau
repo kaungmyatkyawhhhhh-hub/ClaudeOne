@@ -843,14 +843,14 @@ function PlayerData.SetQuests(player, quests)
 end
 
 -- Inventory items (Config.Boosts; ItemService uses them): add `amount` (negative = use). Returns false when there aren't
--- enough, or for an unknown item.
-function PlayerData.AddItem(player, id, amount)
+-- enough, or for an unknown item. uncapped (prompt 57): a paid item is never cut by Boosts.MaxCount.
+function PlayerData.AddItem(player, id, amount, uncapped)
 	local data = PlayerData.Get(player)
 	local Boosts = require(Config.Boosts)
 	if not data or not Boosts.ById[id] or type(amount) ~= "number" or amount % 1 ~= 0 then return false end
 	local now = tonumber(data.items[id]) or 0
 	if now + amount < 0 then return false end
-	data.items[id] = math.min(now + amount, Boosts.MaxCount)
+	data.items[id] = if uncapped then now + amount else math.min(now + amount, Boosts.MaxCount)
 	replicate(player, { "items", id }, data.items[id])
 	itemChangedEvent:Fire(player, id, data.items[id], now)
 	return true

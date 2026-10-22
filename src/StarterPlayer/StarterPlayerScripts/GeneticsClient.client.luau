@@ -292,24 +292,34 @@ local confirmYes = Kit.Button("Red", "Reroll", { Name = "Yes", LayoutOrder = 2, 
 -- No DNA token: the choice how to get one (replaces the chips and the buttons, like the confirm)
 -- (one table: this script is near Luau's 200 locals limit)
 local BUY = { DNA = require(Config.DNA), market = game:GetService("MarketplaceService") }
+-- (prompt 60) "Need a DNA Token": what a token does, the coin price, x1 and x3 for Robux (x3 only once that product is
+-- set up), and an X. Only after you tap REROLL with no token (never by itself).
 for _, product in ipairs(require(Config.Monetization).Products) do
 	if product.key == "DnaToken" then BUY.product = product.id end
+	if product.key == "DnaTokenPack" then BUY.pack, BUY.packPrice = product.id, product.price end
 end
 BUY.frame = New("Frame", { Name = "BuyToken", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = row2 },
 	{ Theme.List(Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
-Kit.Text({ Name = "Text", LayoutOrder = 0, Text = "You need a DNA token to reroll.", Font = "Body", TextSize = 12, TextWrapped = true,
-	Size = UDim2.new(1, -364, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = BUY.frame })
-BUY.cancel = Kit.Button("Quiet", "Cancel", { Name = "Cancel", LayoutOrder = 1, Parent = BUY.frame }, { width = 90, height = 40, textSize = 14 })
+Kit.Text({ Name = "Text", LayoutOrder = 0, Text = "Need a DNA Token. " .. BUY.DNA.TokenLine, Font = "Body", TextSize = 12, TextWrapped = true,
+	Size = UDim2.new(1, -(if BUY.pack then 470 else 344), 1, 0), TextXAlignment = Enum.TextXAlignment.Left, Parent = BUY.frame })
 BUY.coins = Kit.Button("Gold", Kit.Format(BUY.DNA.CoinPrice), { Name = "Coins", LayoutOrder = 2, Parent = BUY.frame },
-	{ width = 136, height = 40, textSize = 16, icon = "coin" })
-BUY.robux, BUY.robuxLabel = Kit.Button("Red", "R$ " .. BUY.DNA.RobuxPrice, { Name = "Robux", LayoutOrder = 3, Parent = BUY.frame },
-	{ width = 106, height = 40, textSize = 16 })
-if BUY.product then
-	task.spawn(function() -- (Roblox's real price)
-		local ok, info = pcall(BUY.market.GetProductInfo, BUY.market, BUY.product, Enum.InfoType.Product)
-		if ok and info and info.PriceInRobux then BUY.robuxLabel.Text = "R$ " .. Kit.Format(info.PriceInRobux) end
-	end)
+	{ width = 130, height = 40, textSize = 16, icon = "coin" })
+BUY.robux, BUY.robuxLabel = Kit.Button("Red", "x1 R$ " .. BUY.DNA.RobuxPrice, { Name = "Robux", LayoutOrder = 3, Parent = BUY.frame },
+	{ width = 118, height = 40, textSize = 15 })
+if BUY.pack then
+	BUY.robux3, BUY.robux3Label = Kit.Button("Red", "x3 R$ " .. BUY.packPrice, { Name = "Robux3", LayoutOrder = 4, Parent = BUY.frame },
+		{ width = 118, height = 40, textSize = 15 })
+	BUY.robux3.Activated:Connect(function() BUY.market:PromptProductPurchase(player, BUY.pack) end)
 end
+BUY.cancel = Kit.CloseButton({ Name = "Cancel", LayoutOrder = 5, Size = UDim2.fromOffset(44, 44), Parent = BUY.frame })
+task.spawn(function() -- (Roblox's real prices)
+	for _, entry in ipairs({ { BUY.product, BUY.robuxLabel, "x1 R$ " }, { BUY.pack, BUY.robux3Label, "x3 R$ " } }) do
+		if entry[1] and entry[2] then
+			local ok, info = pcall(BUY.market.GetProductInfo, BUY.market, entry[1], Enum.InfoType.Product)
+			if ok and info and info.PriceInRobux then entry[2].Text = entry[3] .. Kit.Format(info.PriceInRobux) end
+		end
+	end
+end)
 
 local skipHint = Kit.Text({ Name = "SkipHint", Text = "Tap to skip", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.fromOffset(200, 16), Visible = false, Parent = root })
@@ -1372,6 +1382,7 @@ rerollButton.Activated:Connect(function()
 		buttons.Visible, cardsRow.Visible, confirm.Visible, BUY.frame.Visible = false, false, false, true
 		Theme.Fade(BUY.frame, true, 0.2)
 		Audio.PlayUI("Click")
+		Remotes.PlayerAction:FireServer("ShopEvent", { event = "OfferShown", offer = "DnaNeed" }) -- (prompt 60)
 		return
 	end
 	if needsConfirm() then

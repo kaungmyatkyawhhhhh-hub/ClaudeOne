@@ -135,7 +135,7 @@ Trainers.List = {
 		look = { skin = "#A86B45", faceTexture = "rbxassetid://7074749", -- Chill
 			outfit = { shirt = "rbxassetid://140621946283610", pants = "rbxassetid://140621946283610", sleeves = "none", legs = "shorts", shirtColor = "#141418", pantsColor = "#141418" },
 			muscle = 2.5, hair = "#2A1A14", extras = { "ponytail" },
-			gear = { { kind = "Belt", color = "#16161A", trim = "#D8283E" }, { kind = "Sleeves", color = "#D8283E", trim = "#8A3AD0" } },
+			gear = { { kind = "Belt", color = "#16161A", trim = "#D8283E" }, { kind = "Wraps", color = "#D8283E", trim = "#8A3AD0" } }, -- (prompt 59: knee sleeves are gone: wraps)
 			extraColor = "#D8283E", extraColor2 = "#8A3AD0", tint = "#E8345A",
 			aura = "volta" } },
 	-- 7) SECRET: a mysterious mass monster, 7'2", a deep black hood hiding the face in shadow with two calm glowing white eyes;
