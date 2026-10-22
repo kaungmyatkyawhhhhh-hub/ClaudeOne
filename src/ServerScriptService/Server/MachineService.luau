@@ -55,6 +55,7 @@ local Assets = ReplicatedStorage:WaitForChild("GymAssets", 10)
 local SLEEVE_START = 3.0 -- the collar sits at the end of the bar shaft (shaft = 6 studs); a machine model's SleeveStart
 -- attribute overrides it (the leg press / hack squat horns sit closer in)
 
+local GOLD_PLATE = Color3.fromHex("#D4A93A") -- (prompt 47) the Pro Gym's plates
 local function plateModel(lb)
 	local template = Assets and Assets.Plates:FindFirstChild("Plate" .. lb)
 	if template then return template:Clone() end
@@ -179,6 +180,9 @@ local function updatePlates(model, tier)
 	end
 
 	local centered = machine.layout == "Center"
+	-- (prompt 47) every machine in the Pro Gym loads gold plates (the starter and beach ones keep their colors)
+	local proGym = workspace:FindFirstChild("ProGym")
+	local gold = proGym ~= nil and model:IsDescendantOf(proGym)
 	local sleeveStart = model:GetAttribute("SleeveStart")
 	sleeveStart = if type(sleeveStart) == "number" then sleeveStart else SLEEVE_START
 	local start = sleeveStart + 0.2
@@ -200,6 +204,14 @@ local function updatePlates(model, tier)
 			local spec = Machines.Plates[lb]
 			local plate = plateModel(lb)
 			plate.Name = "Plate" .. lb
+			if gold then
+				for _, part in ipairs(plate:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.Color = GOLD_PLATE:Lerp(Color3.new(0, 0, 0), if part.Name == "Body" then 0 else 0.25)
+						part.Material = Enum.Material.Metal
+					end
+				end
+			end
 			-- turned around on the left sleeve, so the plate's +X face always looks outward
 			plate:PivotTo(bar.CFrame * CFrame.new(side * (x + spec.thickness / 2), 0, 0) * (side < 0 and CFrame.Angles(0, math.pi, 0) or CFrame.identity))
 			if i == #tier.plates then

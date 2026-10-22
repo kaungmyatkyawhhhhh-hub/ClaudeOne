@@ -238,7 +238,15 @@ end)
 -- the content for this machine: body icon, main muscle, share
 local function fill(model, machine)
 	shown.model, shown.machine = model, machine
-	nameLabel.Text = string.upper(machine.name)
+	-- (prompt 47) every machine in the Pro Gym: a gold PRO before its name
+	local proGym = workspace:FindFirstChild("ProGym")
+	if proGym and model:IsDescendantOf(proGym) then
+		nameLabel.RichText = true
+		nameLabel.Text = '<font color="#F6C75A">PRO</font> ' .. (string.gsub(string.upper(machine.name), "^PRO ", ""))
+	else
+		nameLabel.RichText = false
+		nameLabel.Text = string.upper(machine.name)
+	end
 	for _, child in ipairs(figureSlot:GetChildren()) do
 		if not child:IsA("UIAspectRatioConstraint") then child:Destroy() end
 	end
