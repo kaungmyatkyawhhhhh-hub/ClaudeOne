@@ -18,8 +18,8 @@ GrowthSpurts.Stages = {
 	{ height = 60, requiredLevel = 52, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52; prompt 32: pro machines back behind Spurt 2, still 15.9 min in tests/pacing)
 	{ height = 66, requiredLevel = 92, bonus = 1.75 },
 	{ height = 72, requiredLevel = 132, bonus = 2 },
-	{ height = 78, requiredLevel = 164, bonus = 2.5 },
-	{ height = 84, requiredLevel = 178, bonus = 3 },
+	{ height = 78, requiredLevel = 191, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191, the Pro Gym's heavier tiers; 45 min again)
+	{ height = 84, requiredLevel = 216, bonus = 3 }, -- (prompt 36: 178 -> 216)
 }
 
 -- Beyond the table: keep growing until MaxHeight, and keep adding level + bonus. (From here the bonus mostly runs

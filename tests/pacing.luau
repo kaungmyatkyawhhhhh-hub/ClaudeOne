@@ -117,6 +117,8 @@ local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 	local function pick(p, stay)
 		local best, bestScore, stayScore = nil, -1, -1
 		for _, machine in open do
+			-- (prompt 36) a Pro copy of a starter machine stays locked below its first weight's level (MachineService)
+			if machine.base and data.muscles[machine.muscles[1].id].level < machine.tiers[1].unlockLevel then continue end
 			local xp = Gains.PerRep(data, machine, tierFor(machine))
 			local score = 0
 			for id, amount in xp do
@@ -255,10 +257,13 @@ end
 
 if process.args[1] == "tune" then
 	-- one stage at a time: the earlier stages are already tuned, so only this stage's level moves its time
+	-- (lune run tests/pacing tune 5: only from stage 5 on, searching near the current levels: much faster)
 	local stages = GrowthSpurts.Stages
-	for n = 1, #stages do
+	local from = tonumber(process.args[2]) or 1
+	for n = from, #stages do
 		local target = GrowthSpurts.TargetMinutes(n)
 		local lo, hi = (n > 1 and stages[n - 1].requiredLevel or 1), 600
+		if from > 1 then lo, hi = math.max(lo, stages[n].requiredLevel - 10), stages[n].requiredLevel + 120 end
 		while hi - lo > 1 do
 			local mid = (lo + hi) // 2
 			stages[n].requiredLevel = mid

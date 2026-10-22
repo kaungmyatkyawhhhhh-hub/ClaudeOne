@@ -76,10 +76,14 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "GymLocked" then
 		local names = { Beach = "The beach gym", Pro = "The pro gym" }
 		Notify.Show((names[info.gym] or "This gym") .. " opens at Growth Spurt " .. tostring(info.spurts) .. ".", nil, "gymlocked")
+	elseif kind == "MachineLocked" then
+		-- (prompt 36) a Pro copy of a starter machine: it starts where the starter one ends
+		Notify.Show(string.format("%s starts at %s. Needs %s level %d: train on the starter machines first.", tostring(info.name), tostring(info.weight),
+			tostring(info.muscle), tonumber(info.level) or 0), nil, "machinelocked")
 	elseif kind == "ProGymLocked" then
 		Notify.Show("Reach Growth Spurt " .. tostring(info.spurts) .. " to enter the Pro Gym", nil, "progym")
 	elseif kind == "ProGymEntered" then
-		Notify.Show("Welcome to the pro gym. 11 new machines, including Calves and Obliques.", nil, "progym")
+		Notify.Show("Welcome to the pro gym: new machines for every muscle, and Pro versions of the starter ones with heavier weights.", nil, "progym")
 		Audio.PlayUI("Whoosh")
 	elseif kind == "RushHour" then
 		if info.active then

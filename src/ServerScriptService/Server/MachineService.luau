@@ -464,6 +464,15 @@ local function enter(player, model)
 		Remotes.PlayerEvent:FireClient(player, "GymLocked", { gym = gym, spurts = openAt })
 		return
 	end
+	-- (prompt 36) a Pro copy starts at the starter top weight: below its first weight's level it stays locked
+	local first = machine.tiers[1]
+	local mainLevel = PlayerData.Get(player).muscles[machine.muscles[1].id].level
+	if machine.base and first and mainLevel < first.unlockLevel then
+		local muscle = Muscles.ById[machine.muscles[1].id]
+		Remotes.PlayerEvent:FireClient(player, "MachineLocked", { name = machine.name, muscle = muscle and muscle.name or "", level = first.unlockLevel,
+			weight = Machines.WeightText(first) })
+		return
+	end
 
 	-- off the skateboard first (it changes the hip height the pose is placed from)
 	local skateOk, SkateService = pcall(require, script.Parent.SkateService)
@@ -582,6 +591,8 @@ local function lift(player)
 	local big = session.nextBig
 	session.nextBig = math.random() < Gains.BigRep.Chance
 	local quality = (pumped and Pump.Multiplier or 1) * (big and Gains.BigRep.Multiplier or 1)
+	-- (prompt 36) a newer gym's machines give a little more (Machines.GymGains: the Pro Gym +10%)
+	quality *= Machines.GymGains[machine.gym] or 1
 	-- worn PUMP SHOP gear helps the machines in its area (prompt 19, Config/PumpShop.GearMultiplier)
 	local gear = PumpShop.GearMultiplier(data.cosmetics and data.cosmetics.equipped, machine, Muscles.ById[machine.muscles[1].id].group)
 	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player) * gear, quality) -- (none on cardio: it trains stamina)
@@ -624,16 +635,19 @@ local function lift(player)
 	end
 	TitleService.OnRep(player)
 	PlayerData.MarkMachineUsed(player, machine.id)
-	QuestService.OnRep(player, machine.id)
-	SocialService.OnRep(player, machine.id)
-	LegendService.OnRep(player, machine.id)
+	QuestService.OnRep(player, machine.base or machine.id) -- (prompt 36: a Pro copy counts as its starter machine)
+	-- (prompt 33) the following trainers level up from your reps (more on heavier weights)
+	local trainerOk, TrainerService = pcall(require, script.Parent.TrainerService)
+	if trainerOk then pcall(TrainerService.OnRep, player, tier.gains) end
+	SocialService.OnRep(player, machine.base or machine.id)
+	LegendService.OnRep(player, machine.base or machine.id)
 	SeasonService.OnRep(player)
 	-- (daily quests count these: a rep by its main muscle's group, or the distance run)
 	if tier.unit == "mph" then
 		GameEvents.Fire("CardioMeters", player, tier.weight * Machines.Cardio.MetersPerMph * BoostService.Cardio(player))
 	else
 		local main = Muscles.ById[machine.muscles[1].id]
-		GameEvents.Fire("Rep", player, 1, { machineId = machine.id, group = main and main.group, weight = tier.weight })
+		GameEvents.Fire("Rep", player, 1, { machineId = machine.base or machine.id, group = main and main.group, weight = tier.weight })
 	end
 
 	-- personal record: the heaviest weight ever lifted on this machine
@@ -713,6 +727,8 @@ local function pickDumbbell(player, arg)
 	local exercise = type(id) == "string" and Machines.ById[id]
 	if not exercise or not exercise.dumbbell or typeof(spot) ~= "Instance" or not spot:IsA("Model") or not spot:GetAttribute("Dumbbell")
 		or not CollectionService:HasTag(spot, "Machine") then return end
+	-- (prompt 36) a Pro rack's spots (DumbbellSet = "Pro") take the Pro exercises, every other rack the normal ones
+	if (spot:GetAttribute("DumbbellSet") == "Pro") ~= (exercise.base ~= nil) then return end
 	local session = sessions[player]
 	if session then
 		if session.model ~= spot then return end

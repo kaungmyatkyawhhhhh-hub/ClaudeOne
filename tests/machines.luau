@@ -10,7 +10,9 @@ local pro = 0
 for _, m in Machines.List do
 	H.check(Poses[m.pose] ~= nil, m.id .. " pose " .. m.pose .. " exists")
 	H.check(client:find("POSE_ANIMS%." .. m.pose .. " =") ~= nil, m.id .. " has a client animation")
-	H.check(type(m.tiers) == "table" and #m.tiers == 12, m.id .. " has 12 tiers")
+	-- (prompt 36: the Pro copies of the starter machines have 8 tiers that go on from the starter top)
+	local tierCount = if m.base then #Machines.ProProgression.gains else 12
+	H.check(type(m.tiers) == "table" and #m.tiers == tierCount, m.id .. " has " .. tierCount .. " tiers")
 	for i, tier in m.tiers do
 		local prev = m.tiers[i - 1]
 		if prev then
@@ -24,10 +26,17 @@ for _, m in Machines.List do
 		end
 		if m.tiers == Machines.TierSets.Barbell or m.tiers == Machines.TierSets.HeavyBarbell then
 			H.check(45 + 2 * perSide == tier.weight, m.id .. " tier " .. i .. " plates add up to " .. tier.weight)
+		elseif m.tiers == Machines.TierSets.ProBarbell or m.tiers == Machines.TierSets.ProHeavyBarbell or m.tiers == Machines.TierSets.ProSled then
+			H.check(45 + 2 * perSide == tier.weight, m.id .. " tier " .. i .. " plates add up to " .. tier.weight)
 		end
 	end
 	for _, e in m.muscles do H.check(Muscles.ById[e.id] ~= nil and Muscles.Body[e.id] ~= nil, m.id .. " muscle " .. e.id) end
-	if m.gym == "Pro" then
+	if m.base then
+		-- (prompt 36) a Pro copy: its starter machine's pose and muscles, its first tier the starter top weight
+		local base = Machines.ById[m.base]
+		H.check(base ~= nil and base.pose == m.pose and base.muscles == m.muscles, m.id .. " is a copy of " .. tostring(m.base))
+		H.check(base ~= nil and (m.tiers[1].weight >= base.tiers[#base.tiers].weight or m.tiers[1].unit ~= nil), m.id .. " starts at the starter top weight")
+	elseif m.gym == "Pro" then
 		pro += 1
 		H.check(m.layout == "Center", m.id .. " stacks plates centered")
 		H.check((Poses[m.pose].follow or "Hands") == "None", m.id .. " keeps hands free")

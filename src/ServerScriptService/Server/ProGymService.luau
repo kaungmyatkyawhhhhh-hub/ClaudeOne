@@ -76,6 +76,11 @@ function ProGymService.Start()
 		local b = ProGymService.Bounds
 		b.MinX, b.MaxX = floor.Position.X - floor.Size.X / 2, floor.Position.X + floor.Size.X / 2
 		b.MinZ, b.MaxZ = floor.Position.Z - floor.Size.Z / 2, floor.Position.Z + floor.Size.Z / 2
+		-- (prompt 36) the new hall east of it (ShellEast, through the opening under the GYM ARC PRO sign) is inside too
+		local eastFloor = Workspace.ProGym:FindFirstChild("ShellEast") and Workspace.ProGym.ShellEast:FindFirstChild("Floor")
+		if eastFloor and eastFloor:IsA("BasePart") then
+			b.MaxX = math.max(b.MaxX, eastFloor.Position.X + eastFloor.Size.X / 2)
+		end
 	end
 	local door = Workspace.ProGym:FindFirstChild("GlassWall") and Workspace.ProGym.GlassWall:FindFirstChild("GlassDoor")
 	local blocker = door and door:FindFirstChild("Blocker")

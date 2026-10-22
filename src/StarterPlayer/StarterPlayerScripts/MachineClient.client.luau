@@ -2450,8 +2450,9 @@ local DumbbellPicker = require(Shared.UI.DumbbellPicker)
 local function pickFor(spot)
 	DumbbellPicker.Open(spot:GetAttribute("MachineId"), current ~= nil and current.model == spot, function(id)
 		Remotes.MachineAction:FireServer("Dumbbell", { spot = spot, id = id })
-		Remotes.PlayerAction:FireServer("SetSettings", { dumbbellLast = id })
-	end)
+		local exercise = Machines.ById[id]
+		Remotes.PlayerAction:FireServer("SetSettings", { dumbbellLast = exercise and exercise.base or id })
+	end, spot:GetAttribute("DumbbellSet") == "Pro") -- (prompt 36: the Pro Gym's heavy rack)
 end
 hud.changeButton.Activated:Connect(function()
 	if current and current.machine.dumbbell then pickFor(current.model) end

@@ -37,9 +37,18 @@ end
 Machines.Brand = "M WEIGHTS" -- printed on every plate face (the owner's gym brand)
 Machines.PlateOrder = { 55, 45, 35, 25, 10, 5 } -- heaviest first (inside on the sleeve, bottom of a stack)
 
+-- (prompt 36) the Pro Gym's copies of the starter machines go on from the starter top weight: 8 more tiers, the same
+-- step from one tier to the next (+15% EXP), the same rule (the main muscle's level; the first one is the starter top's)
+Machines.ProProgression = {
+	gains = { 8.2, 9.4, 10.8, 12.4, 14.3, 16.4, 18.9, 21.7 },
+	unlockLevel = { 95, 106, 118, 130, 142, 154, 166, 178 },
+	cost = { 0, 0, 0, 0, 0, 0, 0, 0 },
+	coins = { 9, 10, 11, 12, 13, 14, 15, 16 },
+}
+
 -- rows: { weight, plates per side, label? }; the first row is the empty bar / bodyweight / lightest stack
-local function tierSet(rows, firstName)
-	local p = Machines.Progression
+local function tierSet(rows, firstName, progression)
+	local p = progression or Machines.Progression
 	local set = {}
 	for i, row in ipairs(rows) do
 		local plates = row[2]
@@ -87,6 +96,33 @@ Machines.TierSets = {
 		local rows = {}
 		for i = 1, 12 do rows[i] = { i + 1, {} } end
 		local set = tierSet(rows, "Walk")
+		for _, tier in ipairs(set) do tier.unit = "mph" end
+		return set
+	end)(),
+	-- (prompt 36) the Pro copies of the starter machines: from the starter top weight on, about the same steps
+	ProBarbell = tierSet({
+		{ 315, { 55, 55, 25 } }, { 335, { 55, 55, 35 } }, { 355, { 55, 55, 45 } }, { 375, { 55, 55, 55 } }, { 395, { 55, 55, 55, 10 } },
+		{ 415, { 55, 55, 55, 10, 10 } }, { 435, { 55, 55, 55, 25, 5 } }, { 455, { 55, 55, 55, 35, 5 } },
+	}, nil, Machines.ProProgression),
+	ProHeavyBarbell = tierSet({
+		{ 455, { 55, 55, 55, 35, 5 } }, { 485, { 55, 55, 55, 55 } }, { 515, { 55, 55, 55, 55, 10, 5 } }, { 545, { 55, 55, 55, 55, 25, 5 } },
+		{ 575, { 55, 55, 55, 55, 45 } }, { 605, { 55, 55, 55, 55, 55, 5 } }, { 635, { 55, 55, 55, 55, 55, 10, 10 } }, { 665, { 55, 55, 55, 55, 55, 35 } },
+	}, nil, Machines.ProProgression),
+	ProSled = tierSet({
+		{ 455, { 55, 55, 55, 35, 5 } }, { 485, { 55, 55, 55, 55 } }, { 515, { 55, 55, 55, 55, 10, 5 } }, { 545, { 55, 55, 55, 55, 25, 5 } },
+		{ 575, { 55, 55, 55, 55, 45 } }, { 605, { 55, 55, 55, 55, 55, 5 } }, { 635, { 55, 55, 55, 55, 55, 10, 10 } }, { 665, { 55, 55, 55, 55, 55, 35 } },
+	}, nil, Machines.ProProgression),
+	ProBodyweight = tierSet({
+		{ 100, { 55, 45 }, "+100" }, { 115, { 55, 55, 5 }, "+115" }, { 130, { 55, 55, 10, 10 }, "+130" }, { 145, { 55, 55, 35 }, "+145" },
+		{ 160, { 55, 55, 45, 5 }, "+160" }, { 175, { 55, 55, 55, 10 }, "+175" }, { 190, { 55, 55, 55, 25 }, "+190" }, { 205, { 55, 55, 55, 35, 5 }, "+205" },
+	}, nil, Machines.ProProgression),
+	ProDumbbell = tierSet({
+		{ 100, {} }, { 105, {} }, { 110, {} }, { 115, {} }, { 120, {} }, { 130, {} }, { 140, {} }, { 150, {} },
+	}, nil, Machines.ProProgression),
+	ProTreadmill = (function()
+		local rows = {}
+		for i = 1, 8 do rows[i] = { 12 + i, {} } end
+		local set = tierSet(rows, nil, Machines.ProProgression)
 		for _, tier in ipairs(set) do tier.unit = "mph" end
 		return set
 	end)(),
@@ -267,6 +303,50 @@ for _, exercise in ipairs(DUMBBELLS) do
 	table.insert(Machines.Dumbbells, exercise)
 end
 
+-- (prompt 36, owner 21 Oct) The Pro Gym's own copy of every starter machine and a Pro dumbbell rack: the same exercise,
+-- pose and muscles, a Pro look (chrome, black, gold: built in Studio from the starter models), heavier tiers that start
+-- at the starter top weight (Machines.ProProgression). id = "Pro" .. the starter id, base = the starter id (quests, gear
+-- perks, rivals and spotting treat it as that machine). Below the first tier's level the machine stays locked (it says
+-- which level it needs; MachineService). The starter machines are unchanged.
+local PRO_TIERS = { Barbell = "ProBarbell", HeavyBarbell = "ProHeavyBarbell", Sled = "ProSled", Bodyweight = "ProBodyweight",
+	Treadmill = "ProTreadmill", Dumbbell = "ProDumbbell" }
+local function proCopy(machine)
+	local setName = nil
+	for name, set in pairs(Machines.TierSets) do
+		if set == machine.tiers then setName = name end
+	end
+	local copy = table.clone(machine)
+	copy.id = "Pro" .. machine.id
+	copy.name = "Pro " .. machine.name
+	copy.base = machine.id
+	copy.tiers = Machines.TierSets[PRO_TIERS[setName or ""] or ""] or machine.tiers
+	return copy
+end
+local STARTER_IDS = { "FlatBench", "InclineBench", "SquatRack", "Deadlift", "OverheadPress", "PullUpBar", "BarbellRow", "CrunchBench", "LegPress",
+	"HackSquat", "Treadmill" }
+Machines.ProCopies = {}
+for _, id in ipairs(STARTER_IDS) do
+	for _, machine in ipairs(Machines.List) do
+		if machine.id == id then
+			local copy = proCopy(machine)
+			copy.gym = "Pro"
+			table.insert(Machines.ProCopies, copy)
+		end
+	end
+end
+for _, copy in ipairs(Machines.ProCopies) do table.insert(Machines.List, copy) end
+-- the Pro dumbbell rack's exercises (its spots carry the attribute DumbbellSet = "Pro"; MachineService / MachineClient)
+Machines.ProDumbbells = {}
+for _, exercise in ipairs(Machines.Dumbbells) do
+	local copy = proCopy(exercise)
+	copy.name = exercise.name -- (the picker's title says PRO DUMBBELLS)
+	copy.gym, copy.openAt = "Pro", 2 -- (the rack stands in the Pro Gym: its +10%, open with it)
+	table.insert(Machines.ProDumbbells, copy)
+	table.insert(Machines.List, copy)
+end
+-- (prompt 36) a small gains bonus for training in a newer gym (gameplay plan: +10% per gym), on that gym's machines
+Machines.GymGains = { Pro = 1.1 }
+
 -- Beach gym (town hub, opens at Growth Spurt 1): no machines of its own (owner, 8 Oct night): it has copies of the REAL
 -- machines (same models, configs, tiers, EXP; the same MachineId, so unlocked weights, "NEW" tags and quests are shared
 -- with every gym). A copy carries the model attribute Gym = "Beach": it opens with the beach gym but never later than its
@@ -286,7 +366,7 @@ table.insert(Machines.List, {
 local HANDS_SPOT = { FlatBench = true, InclineBench = true, SquatRack = true, OverheadPress = true }
 for _, machine in ipairs(Machines.List) do
 	if machine.spotType == nil and machine.trains ~= "Stamina" then
-		machine.spotType = if HANDS_SPOT[machine.id] then "hands" else "hype"
+		machine.spotType = if HANDS_SPOT[machine.base or machine.id] then "hands" else "hype"
 	end
 end
 
@@ -351,7 +431,7 @@ function Machines.ExercisesFor(groupId: string, growthSpurts: number, muscleGrou
 	local names, seen = {}, {}
 	for _, machine in ipairs(Machines.List) do
 		local open = growthSpurts >= Machines.OpenAt(machine) and machine.gym ~= "Seasonal"
-		if open and machine.trains ~= "Stamina" and muscleGroup(machine.muscles[1].id) == groupId and not seen[machine.name] then
+		if open and machine.trains ~= "Stamina" and not machine.base and muscleGroup(machine.muscles[1].id) == groupId and not seen[machine.name] then
 			seen[machine.name] = true
 			table.insert(names, machine.name)
 		end

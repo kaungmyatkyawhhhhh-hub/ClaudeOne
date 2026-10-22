@@ -119,7 +119,7 @@ function PumpShop.GearMultiplier(equipped, machine, mainGroup: string?): number
 		local itemId = equipped[gear.slot]
 		if type(itemId) == "string" and string.sub(itemId, 1, #gear.id + 1) == gear.id .. "_" then
 			local level = LEVEL[string.sub(itemId, #gear.id + 2)]
-			local helps = (gear.machines and table.find(gear.machines, machine.id) ~= nil) or (gear.groups and mainGroup ~= nil and table.find(gear.groups, mainGroup) ~= nil)
+			local helps = (gear.machines and table.find(gear.machines, machine.base or machine.id) ~= nil) or (gear.groups and mainGroup ~= nil and table.find(gear.groups, mainGroup) ~= nil)
 			if level and helps then total *= 1 + level.bonus end
 		end
 	end
