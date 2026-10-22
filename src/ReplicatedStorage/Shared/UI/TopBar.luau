@@ -75,11 +75,21 @@ end
 local geneticsOpen = false
 local shown = nil
 
+-- (prompt 53) while the tutorial runs only coins and LVL stay in the bar: DAILY and settings come back when it ends
+local tutorialShown = nil
 local function refreshVisible()
 	local on = not UIBus.MenuOpen and not geneticsOpen and not SideMenu.IsHidden()
 	if on ~= shown then
 		shown = on
 		Icon.setTopbarEnabled(on)
+	end
+	local tutorial = UIBus.InTutorial()
+	if tutorial ~= tutorialShown then
+		tutorialShown = tutorial
+		for id in pairs(PILLS) do
+			local icon = Icon.getIcon(id)
+			if icon then icon:setEnabled(not tutorial) else tutorialShown = nil end -- (not made yet: try again)
+		end
 	end
 end
 

@@ -38,7 +38,9 @@ local MachineHud = {}
 MachineHud.PanelSize = Vector2.new(184, 92) -- the weight card (it grows by NeedsLine while a requirement shows)
 MachineHud.PanelCenterY = 0.40 -- the card's centre, as a share of the screen height (owner, 14 Oct)
 MachineHud.PanelRight = 16     -- px from the right safe edge
-MachineHud.Gap = 10            -- between the card, PUMP and REP
+MachineHud.Gap = 8             -- between the card, AUTO TRAIN, PUMP and REP (owner, 23 Oct: one ~8 px gap)
+MachineHud.StackCorner = 12    -- (owner, 23 Oct) the four in the stack share one corner radius
+MachineHud.AutoHeight = 30     -- AUTO TRAIN's height on screen
 MachineHud.NeedsLine = 16
 MachineHud.PanelTop = 52 -- (set from Kit.UnderTopbar: just under Roblox's top bar)
 MachineHud.Edge = 12
@@ -135,8 +137,10 @@ function MachineHud.Build()
 	local edge = MachineHud.Edge
 	local panelSlot = frame({ Name = "PanelSlot", Size = UDim2.fromScale(1, 1), Position = MachineHud.PanelHidden, Parent = root })
 	hud.panelSlot = panelSlot
+	-- (owner, 23 Oct) the card is drawn at PanelSize and scaled to REP's width (placePanel), its top-right corner on the
+	-- stack's right edge, so the card, AUTO TRAIN, PUMP and REP are one width with the same edges
 	local panel = Theme.Panel({ Name = "Panel", Piece = "hud_box", Clickable = true, -- (taps on it don't lift)
-		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -MachineHud.PanelRight, MachineHud.PanelCenterY, 0), Size = UDim2.fromOffset(size.X, size.Y),
+		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -MachineHud.PanelRight, 0, 60), Size = UDim2.fromOffset(size.X, size.Y),
 		Parent = panelSlot })
 	local panelScale = New("UIScale", { Name = "Fit", Parent = panel })
 	hud.panel = panel
@@ -200,8 +204,10 @@ function MachineHud.Build()
 	hud.unlockIcon = Kit.Coin(15, { Visible = false, Parent = unlock })
 	hud.costLabel = Kit.Text({ Name = "Cost", Text = "", Font = "Number", TextSize = 14, Visible = false, Parent = unlock })
 	-- AUTO TRAIN under the card (only while Auto Lift is on sale)
+	-- (sizes in the card's own px: placePanel sets its gap and height so that, scaled with the card, they're Gap and
+	-- AutoHeight on screen)
 	hud.autoButton, hud.autoLabel = Kit.Button("Quiet", "Auto train", { Name = "Auto", AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 1, 8), Visible = false, Parent = panel }, { width = size.X, height = 30, icon = "lock", textSize = 13 })
+		Position = UDim2.new(1, 0, 1, 8), Visible = false, Parent = panel }, { width = size.X, height = 34, icon = "lock", textSize = 14 })
 
 	-- (kept for MachineClient, not shown: the muscle split is on the machine's sign, the barbell drawing and the stamina
 	-- segments are gone, stamina is the bar at the bottom)
@@ -301,33 +307,58 @@ function MachineHud.Build()
 		end
 		return result
 	end
-	-- The weight card: centre at PanelCenterY of the height; if it would come within Gap of PUMP it shrinks to 0.9, and
-	-- only if it still doesn't fit it moves up just enough (never above the top bar).
+	-- (owner, 23 Oct: one even stack) The weight card, AUTO TRAIN, PUMP and REP are REP's width, with the same right and
+	-- left edges and Gap between each, built up from REP: the card is scaled to REP's width (its - / + at the two ends,
+	-- the weight in the middle, as drawn), its outline and corners kept as thick and round as PUMP's. Only when the stack
+	-- wouldn't fit under the top bar does the card shrink further (owner, 15 Oct: nothing cut off), its right edge kept.
+	local lookScale = nil
+	local function keepLook(scale: number)
+		if lookScale == scale then return end
+		lookScale = scale
+		local radius = MachineHud.StackCorner
+		local corner = panel:FindFirstChildOfClass("UICorner")
+		if corner then corner.CornerRadius = UDim.new(0, radius / scale) end
+		local border = panel:FindFirstChild("Border")
+		if border and border:IsA("UIStroke") then border.Thickness = 2 / scale end
+		local depth = panel:FindFirstChild("Depth")
+		local goldLine = depth and depth:FindFirstChild("GoldLine")
+		if goldLine then
+			goldLine.Stroke.Thickness = 1.5 / scale
+			goldLine.Corner.CornerRadius = UDim.new(0, (radius - 3) / scale)
+		end
+		local hex = depth and depth:FindFirstChild("Hex")
+		if hex then hex.Corner.CornerRadius = UDim.new(0, (radius - 1) / scale) end
+		local auto = hud.autoButton
+		local autoCorner = auto:FindFirstChildOfClass("UICorner")
+		if autoCorner then autoCorner.CornerRadius = UDim.new(0, radius / scale) end
+		auto.Size = UDim2.fromOffset(size.X, MachineHud.AutoHeight / scale)
+		auto.Position = UDim2.new(1, 0, 1, MachineHud.Gap / scale)
+	end
 	function placePanel()
 		local s = Kit.Scale()
 		local rootH = root.AbsoluteSize.Y / math.max(s, 0.01)
 		if rootH < 1 then return end
+		local right = placed and placed.repRight or corner
 		local repBottom = placed and placed.repBottom or corner
-		local pumpTop = rootH - (repBottom + MachineHud.RepSize.Y + MachineHud.Gap + MachineHud.PumpSize.Y)
-		local height = panel.Size.Y.Offset + (hud.autoButton.Visible and 38 or 0)
-		local centre = rootH * MachineHud.PanelCenterY
-		local scale = 1
-		local function bottom() return centre - panel.Size.Y.Offset * scale / 2 + height * scale end
-		if bottom() + MachineHud.Gap > pumpTop then scale = 0.9 end
-		if bottom() + MachineHud.Gap > pumpTop then centre -= bottom() + MachineHud.Gap - pumpTop end
-		centre = math.max(centre, MachineHud.PanelTop + panel.Size.Y.Offset * scale / 2)
-		-- (owner, 15 Oct: nothing cut off) still overlapping PUMP / off the bottom at the top bar: shrink until it fits
-		if bottom() + MachineHud.Gap > pumpTop then
-			local room = pumpTop - MachineHud.Gap - MachineHud.PanelTop
-			scale = math.max(0.6, math.min(scale, room / math.max(height, 1)))
-			centre = MachineHud.PanelTop + panel.Size.Y.Offset * scale / 2
+		local gap = MachineHud.Gap
+		local pumpTop = rootH - (repBottom + MachineHud.RepSize.Y + gap + MachineHud.PumpSize.Y)
+		local autoRoom = if hud.autoButton.Visible then MachineHud.AutoHeight + gap else 0
+		local scale = MachineHud.RepSize.X / size.X
+		local top = pumpTop - gap - autoRoom - panel.Size.Y.Offset * scale
+		if top < MachineHud.PanelTop then
+			local room = pumpTop - gap - autoRoom - MachineHud.PanelTop
+			scale = math.max(0.45, room / math.max(panel.Size.Y.Offset, 1))
+			top = pumpTop - gap - autoRoom - panel.Size.Y.Offset * scale
 		end
 		panelScale.Scale = scale
-		panel.Position = UDim2.new(1, -MachineHud.PanelRight, 0, centre)
+		keepLook(scale)
+		panel.Position = UDim2.new(1, -right, 0, top)
 	end
 	local function apply()
 		if not placed then return end
 		rep.Position = UDim2.new(1, -placed.repRight, 1, -placed.repBottom)
+		local repCorner = rep:FindFirstChildOfClass("UICorner")
+		if repCorner then repCorner.CornerRadius = UDim.new(0, MachineHud.StackCorner) end
 		pump.Position = UDim2.new(1, -placed.repRight, 1, -(placed.repBottom + MachineHud.RepSize.Y + MachineHud.Gap))
 		hud.exitButton.Position = UDim2.new(0, corner, 1, -placed.stopBottom)
 		hud.changeButton.Position = UDim2.new(0, corner, 1, -(placed.stopBottom + 48))
@@ -354,6 +385,11 @@ function MachineHud.Build()
 		end
 	end
 	hud.placeForInput = placeForInput
+	-- (owner, 23 Oct) while the controls show, the card checks its spot every frame (AUTO TRAIN, the needs line and the
+	-- controls settle a moment after you sit down; unchanged values cost nothing)
+	game:GetService("RunService").Heartbeat:Connect(function()
+		if gui.Enabled then placePanel() end
+	end)
 	local function screenChanged()
 		placed = nil -- (a new screen size: work it out again)
 		task.defer(placeForInput)

@@ -122,88 +122,31 @@ local gui = Theme.ScreenGui({ Name = "Guide", DisplayOrder = 23, Parent = player
 gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 local root = Kit.Root(gui)
 local dialog = CoachDialog.new(root, nil)
-local RightColumn = require(Shared.UI.RightColumn)
-local skip = Kit.Button("Quiet", "Skip", { Name = "Skip", AnchorPoint = Vector2.new(1, 0), Visible = false, Parent = root }, { width = 92, height = 40, textSize = 14 })
-skip.Position = UDim2.new(1, -(RightColumn.Width + 60), 0, 56)
-Kit.OnTopbar(function() skip.Position = UDim2.new(1, -(RightColumn.Width + 60), 0, Kit.UnderTopbar(root)) end)
-local goButton = Kit.Button("Gold", "Go", { Name = "GoTo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -112), Visible = false, Parent = root },
-	{ width = 240, height = 46, textSize = 16 })
--- (the dialog and the GO TO button sit above the hotbar while it shows, like the tutorial's)
+-- (prompt 53) SKIP: the tutorial's small dark pill (Shared/UI/SkipPill), one tap here
+local finish -- (below)
+local skip = require(Shared.UI.SkipPill).new("GuideSkip", function()
+	finish("skip") -- (nothing when no guide is running)
+end, false)
+local goButton = Kit.Button("Gold", "Go", { Name = "GoTo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -130), Visible = false, Parent = root },
+	{ width = 240, height = 38, textSize = 15 })
+-- (the dialog and the GO TO button sit above the hotbar / stamina bar like the tutorial's, GO TO 12 px above the dialog)
 task.spawn(function()
-	local lifted = nil
 	while true do
-		local hotbar = playerGui:FindFirstChild("Hotbar")
-		local want = hotbar ~= nil and hotbar.Enabled
-		if want ~= lifted then
-			lifted = want
-			local lift = if want then 64 else 0
-			dialog.frame.Position = UDim2.new(0.5, 0, 1, -(10 + lift))
-			goButton.Position = UDim2.new(0.5, 0, 1, -(112 + lift))
-		end
-		task.wait(0.3)
+		local clear = CoachDialog.BottomClear(root)
+		dialog.frame.Position = UDim2.new(0.5, 0, 1, -clear)
+		local above = dialog.Height()
+		goButton.Position = UDim2.new(0.5, 0, 1, -(clear + (if above > 0 then above + CoachDialog.Gap else 0)))
+		task.wait(0.2)
 	end
 end)
 
--- the pointer: a gold glow around the tile and a gold arrow bouncing next to it; the rest of the screen dims a little
-local pointGui = New("ScreenGui", { Name = "GuidePoint", DisplayOrder = 60, ResetOnSpawn = false, IgnoreGuiInset = true, Enabled = false, Parent = playerGui })
-pointGui.ScreenInsets = Enum.ScreenInsets.None -- (whole-screen pixels: the target's position is converted below)
-local dimGui = New("ScreenGui", { Name = "GuideDim", ResetOnSpawn = false, IgnoreGuiInset = true, Enabled = false, Parent = playerGui })
-dimGui.ScreenInsets = Enum.ScreenInsets.None
-New("Frame", { Name = "Dim", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.72, Size = UDim2.fromScale(1, 1), Parent = dimGui })
-local glow = New("Frame", { Name = "Glow", BackgroundTransparency = 1, Parent = pointGui }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
-	New("UIStroke", { Name = "Stroke", Color = Colors.Gold, Thickness = 3 }),
-})
-local arrow = Pieces.Icon("arrow-big-up", Colors.Gold, { Name = "Arrow", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(40, 40), Parent = pointGui })
-arrow:SetAttribute("KeepColor", true)
-local pointed: GuiObject? = nil
-local function onScreen(object: GuiObject?): boolean
-	if not object or not object:IsDescendantOf(playerGui) or object.AbsoluteSize.X < 2 then return false end
-	local node: Instance? = object
-	while node and node ~= playerGui do
-		if node:IsA("GuiObject") and not node.Visible then return false end
-		if node:IsA("LayerCollector") and not node.Enabled then return false end
-		node = node.Parent
-	end
-	return true
-end
+-- the pointer (prompt 52: Shared/UI/Spotlight, the tutorial's too): the rest of the screen dims, a gold glow on the tile and
+-- a gold arrow bouncing next to it
+local Spotlight = require(Shared.UI.Spotlight)
+local onScreen = Spotlight.Shown
 local function pointAt(object: GuiObject?)
-	pointed = object
-	local targetGui = object and object:FindFirstAncestorWhichIsA("ScreenGui")
-	pointGui.Enabled = object ~= nil
-	dimGui.Enabled = object ~= nil
-	if targetGui then
-		pointGui.DisplayOrder = targetGui.DisplayOrder + 1
-		dimGui.DisplayOrder = targetGui.DisplayOrder - 1
-	end
+	Spotlight.Point(object)
 end
-RunService.RenderStepped:Connect(function()
-	if not pointed then return end
-	if not pointed.Parent then pointAt(nil) return end
-	-- (AbsolutePositions share one screen space; this gui's own origin sits at its AbsolutePosition, so subtract it)
-	local position = pointed.AbsolutePosition - pointGui.AbsolutePosition
-	local size = pointed.AbsoluteSize
-	glow.Position = UDim2.fromOffset(position.X - 4, position.Y - 4)
-	glow.Size = UDim2.fromOffset(size.X + 8, size.Y + 8)
-	local stroke = glow:FindFirstChild("Stroke") :: UIStroke
-	local t = os.clock()
-	stroke.Transparency = 0.1 + 0.4 * (0.5 + 0.5 * math.sin(t * 5))
-	local bounce = math.sin(t * 6) * 6
-	local center = position + size / 2
-	local width = pointGui.AbsoluteSize.X
-	if center.X < width * 0.35 then -- (a tile on the left: the arrow on its right, pointing at it; outside the side menu)
-		local bar = pointed:FindFirstAncestor("MenuBar") :: GuiObject?
-		local right = if bar and bar:IsA("GuiObject") then bar.AbsolutePosition.X + bar.AbsoluteSize.X - pointGui.AbsolutePosition.X else position.X + size.X
-		arrow.Rotation = -90
-		arrow.Position = UDim2.fromOffset(math.max(position.X + size.X, right) + 26 + bounce, center.Y)
-	elseif center.X > width * 0.65 then
-		arrow.Rotation = 90
-		arrow.Position = UDim2.fromOffset(position.X - 28 - bounce, center.Y)
-	else
-		arrow.Rotation = 180
-		arrow.Position = UDim2.fromOffset(center.X, position.Y - 28 - bounce)
-	end
-end)
 
 -- what a guide's `tile` is on screen
 local function tileButton(tile: string): GuiObject?
@@ -240,7 +183,7 @@ local running = nil -- { guide, id, finish(how) }
 local lastEnd, lastBigEnd = -math.huge, -math.huge
 local startedAt = os.clock()
 
-local function finish(how: string)
+function finish(how: string)
 	local run = running
 	if not run or run.done then return end
 	run.done = true
@@ -249,7 +192,7 @@ local function finish(how: string)
 	dialog.Hide()
 	pointAt(nil)
 	goButton.Visible = false
-	skip.Visible = false
+	skip.SetShown(false)
 	if run.guide.place then
 		GuidePath.Hide("Guide")
 		GuidePath.Unmark()
@@ -311,7 +254,7 @@ local function start(guide, id: string)
 	UIBus.GuideRunning = true
 	Remotes.PlayerAction:FireServer("Guide", { id = id, how = "shown" })
 	dialog.SetReward(guide.reward)
-	skip.Visible = true
+	skip.SetShown(true)
 	Audio.PlayUI("Whoosh")
 	dialog.Show(guide.lines, function()
 		if running == run then point(run) end
@@ -328,11 +271,6 @@ goButton.Activated:Connect(function()
 	task.spawn(function()
 		if GuidePath.Teleport(run.guide.place) and running == run then finish("done") end
 	end)
-end)
-skip.Activated:Connect(function()
-	if not running then return end
-	Audio.PlayUI("Click")
-	finish("skip")
 end)
 
 -- the next guide that's due, if any

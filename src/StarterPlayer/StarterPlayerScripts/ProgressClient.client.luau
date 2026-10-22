@@ -458,8 +458,8 @@ local function refresh()
 	local needs = needsText(missing, progress)
 	player:SetAttribute("SpurtNeeds", if needs ~= "" then needs else nil)
 	local percent = math.floor((need > 0 and have / need or 0) * 100)
-	-- the machine strip
-	stripGui.Enabled = started and currentMachine ~= nil and not progress.maxed
+	-- the machine strip (prompt 53: not while the tutorial runs, only the tutorial on screen)
+	stripGui.Enabled = started and currentMachine ~= nil and not progress.maxed and not UIBus.InTutorial()
 	if ready then
 		stripTitle.Text = if alterMode then "ALTER NOW" else "TAP TO GROW"
 		stripNeeds.Text = if alterMode then "Alter " .. progress.next .. ": " .. nextName .. " ready" else "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
@@ -547,6 +547,7 @@ local function refresh()
 		Notify.Hint(goal)
 	end
 end
+UIBus.TutorialChanged.Event:Connect(function() refresh() end)
 
 tile.Activated:Connect(function()
 	if alterMode and not ready and Alters.Progress(ClientData.Get(), Muscles.Groups, Machines.TrainableMuscles(ClientData.Get().growthSpurts)).locked then

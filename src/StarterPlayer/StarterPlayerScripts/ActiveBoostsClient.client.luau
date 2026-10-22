@@ -284,8 +284,14 @@ task.spawn(function()
 	UIBus.WaitForMenu()
 	started = true
 end)
+-- (prompt 53) hidden while the tutorial runs (only the tutorial on screen); it fades back in when the tutorial ends
 task.spawn(function()
 	while true do
+		local tutorial = UIBus.InTutorial()
+		if row.Visible == tutorial then
+			row.Visible = not tutorial
+			if not tutorial then Theme.Fade(row, true, 0.4) end
+		end
 		local ok, err = pcall(step)
 		if not ok then warn("[ActiveBoostsClient]", err) end
 		task.wait(0.1)

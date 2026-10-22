@@ -1361,7 +1361,8 @@ end
 
 ------------------------------------------------------------------------
 -- 3D gain popup: ONE at a time, just to the side of the chest. Per rep "+12" (the main muscle's gain, no name);
--- every set "Set done · +120 Chest", slightly bigger. A new popup replaces the old one (never stacked).
+-- every set "Set done · +120 Chest", slightly bigger. A new popup replaces the old one (never stacked). (Prompt 53: the set
+-- and BIG REP lines are a small screen line beside REP now, POPUP.ScreenText.)
 -- Settings → Gain numbers: On (both), Minimal (set popups only), Off (none).
 ------------------------------------------------------------------------
 local POPUP = {
@@ -1683,6 +1684,28 @@ end
 -- HUD (the look lives in Shared/UI/MachineHud: owner's UI redesign, mockups 02 / 03)
 ------------------------------------------------------------------------
 local hud = MachineHud.Build()
+-- (prompt 53, 23 Oct) "Set done" and BIG REP: a short chunky line ("+80.5K CHEST", about the PUMP label's size) that rises
+-- from beside the REP button and fades, left of the button stack, so it never covers a button, a toast or the lift.
+-- (a field of POPUP: this script is near Luau's 200-locals limit)
+function POPUP.ScreenText(text: string, color: Color3?)
+	local old = hud.stack:FindFirstChild("SetPopup")
+	if old then old:Destroy() end
+	-- (REP's real spot: on a phone it sits above Roblox's jump button, MachineHud.placeForInput)
+	local repAt = hud.repButton.Position
+	local x, y = repAt.X.Offset - MachineHud.RepSize.X - 10, repAt.Y.Offset - MachineHud.RepSize.Y / 2
+	local label = Kit.Text({ Name = "SetPopup", Text = text, Font = "Chunky", Upper = true, TextSize = 15, TextColor3 = color or Colors.Text,
+		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, x, 1, y), Size = UDim2.fromOffset(220, 20),
+		TextXAlignment = Enum.TextXAlignment.Right, Parent = hud.stack })
+	local stroke = label:FindFirstChild("TextStroke")
+	local pop = New("UIScale", { Scale = 0.6, Parent = label })
+	Theme.Tween(pop, { Scale = 1 }, 0.18, Enum.EasingStyle.Back)
+	task.delay(0.5, function()
+		if not label.Parent then return end
+		Theme.Tween(label, { Position = UDim2.new(1, x, 1, y - 30), TextTransparency = 1 }, 1, Enum.EasingStyle.Quad)
+		if stroke then Theme.Tween(stroke, { Transparency = 1 }, 1, Enum.EasingStyle.Quad) end
+		task.delay(1, function() label:Destroy() end)
+	end)
+end
 local gui, stack, HIDDEN_OFFSET = hud.gui, hud.stack, MachineHud.HiddenOffset
 local titleLabel, musclesLabel, noteLabel = hud.titleLabel, hud.musclesLabel, hud.noteLabel
 local minusButton, plusButton, weightNumber = hud.minusButton, hud.plusButton, hud.weightNumber
@@ -2181,17 +2204,17 @@ local function localLockout(state)
 	-- (a BIG REP on the last rep of a set still ends in the "Set done" popup: its total already includes the big rep)
 	if character and cardio then
 		if setDone and showSet then
-			gainPopup(character, "Set done · " .. Muscles.FormatExp(current.setGain) .. " m run", POPUP.SetScale, machineModel)
+			POPUP.ScreenText("+" .. Muscles.FormatExpShort(current.setGain) .. " m run")
 		elseif not setDone and showRep then
 			gainPopup(character, "+" .. Muscles.FormatExp(shown) .. " m", 1, machineModel)
 		end
 	elseif character and setDone and showSet then
 		local group = Muscles.GroupById[Muscles.ById[main].group]
-		gainPopup(character, "Set done · +" .. Muscles.FormatExp(current.setGain) .. " " .. group.name, POPUP.SetScale, machineModel)
+		POPUP.ScreenText("+" .. Muscles.FormatExpShort(current.setGain) .. " " .. group.name)
 		if state.big then Audio.Play2D("BigRep") end
 	elseif character and state.big and showSet then
 		-- BIG REP: gold and bigger; Minimal still shows it
-		gainPopup(character, "BIG REP +" .. Muscles.FormatExp(shown), POPUP.SetScale * 1.1, machineModel, Colors.Gold)
+		POPUP.ScreenText("Big rep +" .. Muscles.FormatExpShort(shown), Colors.Gold)
 		Audio.Play2D("BigRep")
 	elseif character and not setDone and showRep and not ExpPops.On() then
 		gainPopup(character, "+" .. Muscles.FormatExp(shown), 1, machineModel, state.pumped and Colors.Gold or nil)

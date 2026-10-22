@@ -455,6 +455,9 @@ First 5 minutes (the path from the door to the Flat Bench stays clear: the new p
 the middle walkway): genetics reveal → first lift (bench) → Beginner Gains title → stamina + free shake → squat rack
 → stats (inspect mode) → first quest → Growth Spurt goal shown. Taught with glowing paths and one-line coach messages.
 No shop/gamepass prompts in the first 5 minutes.
+SHOP is never locked (owner, 23 Oct): the SHOP button in the left nav is open from the very first join (no padlock, no
+NEW badge, no unlock guide) and every Store tab stays usable; if a single item needs a level, only that item is locked.
+The 5-minute rule above means no popups pushing purchases; the button itself is just there.
 
 ## 16. Monetization (fair, never forced)
 Gamepasses: 2x Gains, Auto Lift, Iron Lungs (bigger stamina), Fast Recovery, Shake Fridge, Gene Lock, VIP Gym.

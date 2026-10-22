@@ -64,7 +64,8 @@ local playing = false -- after Play
 local function updateVisible()
 	local data = ClientData.Get()
 	local step = data.onboarding and data.onboarding.tutorialStep or Onboarding.Done
-	local show = playing and (step >= COACH_STEP or (data.quests and data.quests.active) ~= nil)
+	-- (prompt 53) never while the tutorial runs (only the tutorial on screen); it fades in when the tutorial ends
+	local show = playing and not UIBus.InTutorial() and (step >= COACH_STEP or (data.quests and data.quests.active) ~= nil)
 	if show and not panel.Visible then
 		refresh()
 		panel.Visible = true
@@ -74,6 +75,7 @@ local function updateVisible()
 	end
 end
 
+UIBus.TutorialChanged.Event:Connect(function() updateVisible() end)
 ClientData.Changed:Connect(function(path)
 	if path[1] == "quests" and panel.Visible then refresh() end
 	if path[1] == "onboarding" or path[1] == "quests" then updateVisible() end

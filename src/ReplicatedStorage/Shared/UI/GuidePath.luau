@@ -10,9 +10,10 @@
 --   GuidePath.Teleport(target)      (22 Oct, owner: the GO TO buttons teleport) a 0.3 s fade to black with a whoosh, the
 --                                   server moves the player in front of the target (GoToService: checks it, 3 s cooldown,
 --                                   off a machine first), the fade back in. Yields; returns true if the player was moved.
---   GuidePath.Mark(target, seconds?, label?) a glowing gold marker on the target (a soft gold glow over it) and a gold
---                                   arrow bouncing above it (with `label`, its name in gold over the arrow: the unlock
---                                   guides' places), for `seconds` (nil = until Unmark / the next Mark): the tutorial
+--   GuidePath.Mark(target, seconds?, label?) a glowing gold marker on the target (a soft gold glow over it): above it its
+--                                   name in gold chunky (`label`), the distance ("8m"), a bobbing gold diamond and chevron
+--                                   (prompt 52), for `seconds` (nil = until Unmark / the next Mark): the tutorial and the
+--                                   unlock guides
 --   GuidePath.Unmark()
 -- (prompt 11, 21 Oct) Under the dots a glowing gold ribbon (Beams lying flat on the floor) runs from the player to the target.
 local Players = game:GetService("Players")
@@ -20,6 +21,7 @@ local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
 local Workspace = game:GetService("Workspace")
+local GuiService = game:GetService("GuiService")
 local Theme = require(script.Parent.Theme)
 
 local player = Players.LocalPlayer
@@ -382,6 +384,7 @@ function GuidePath.Teleport(target: any): boolean
 end
 
 -- A gold arrow over the target, bouncing, pointing down at it, for `seconds`.
+local MARK_NEAR = 15 -- studs: closer than this the marker hides (MachineSignsClient's sign shows within 15)
 local markToken = 0
 function GuidePath.Mark(target: any, seconds: number?, label: string?)
 	markToken += 1
@@ -399,28 +402,65 @@ function GuidePath.Mark(target: any, seconds: number?, label: string?)
 		top = (point :: Vector3) + Vector3.new(0, 7, 0)
 	end
 	local anchor = New("Attachment", { Name = "GoToMarkAnchor", WorldPosition = top, Parent = Workspace.Terrain })
-	local gui = New("BillboardGui", { Name = "GoToMark", AlwaysOnTop = true, LightInfluence = 0, Size = UDim2.fromOffset(if label then 220 else 64, if label then 100 else 64),
+	-- (prompt 52, 23 Oct: the new UI, mockup tutorial.png) the name in gold chunky with a dark stroke, the distance under it
+	-- ("8m"), then a gold diamond and a gold chevron pointing down at the target, bobbing
+	local Kit = require(script.Parent.Kit)
+	local Pieces = require(script.Parent.Pieces)
+	local gui = New("BillboardGui", { Name = "GoToMark", AlwaysOnTop = true, LightInfluence = 0, Size = UDim2.fromOffset(240, 124),
 		Adornee = anchor, Parent = player:WaitForChild("PlayerGui") })
-	if label then
-		require(script.Parent.Kit).Text({ Name = "Label", Text = label, Font = "Title", TextSize = 24, TextColor3 = Colors.Gold, Size = UDim2.new(1, 0, 0, 30), Parent = gui })
-	end
+	local name = Kit.GoldText(Kit.Text({ Name = "Label", Text = label or "", Font = "Chunky", Upper = true, TextSize = 26, Size = UDim2.new(1, 0, 0, 32),
+		Visible = label ~= nil, Parent = gui }))
+	local nameStroke = name:FindFirstChild("TextStroke")
+	if nameStroke then nameStroke.Transparency, nameStroke.Thickness = 0, 3 end
+	local distance = Kit.Text({ Name = "Distance", Text = "", Font = "Chunky", TextSize = 15, Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 18), Parent = gui })
+	local marker = New("Frame", { Name = "Marker", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 50), Size = UDim2.fromOffset(44, 72),
+		BackgroundTransparency = 1, Parent = gui })
+	New("Frame", { Name = "Diamond", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 20), Size = UDim2.fromOffset(28, 28), Rotation = 45,
+		BackgroundColor3 = Color3.new(1, 1, 1), Parent = marker }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 4) }),
+		New("UIStroke", { Color = Colors.Outline, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("UIGradient", { Rotation = 45, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("#FFF3C4")),
+			ColorSequenceKeypoint.new(0.5, Color3.fromHex("#F6C75A")), ColorSequenceKeypoint.new(1, Color3.fromHex("#C98A12")) }) }),
+	})
+	local edge = Pieces.Icon("chevron-left", Colors.Outline, { Name = "ChevronEdge", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 56),
+		Size = UDim2.fromOffset(42, 42), Rotation = -90, Parent = marker })
+	edge:SetAttribute("KeepColor", true)
+	local chevron = Pieces.Icon("chevron-left", Colors.Gold, { Name = "Chevron", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 55),
+		Size = UDim2.fromOffset(34, 34), Rotation = -90, ZIndex = 2, Parent = marker })
+	chevron:SetAttribute("KeepColor", true)
 	local glow = New("Highlight", { Name = "GoToGlow", Adornee = model, FillColor = Colors.Gold, FillTransparency = 0.75, OutlineTransparency = 1,
 		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = Workspace.CurrentCamera })
 	gui.Destroying:Connect(function()
 		anchor:Destroy()
 		glow:Destroy()
 	end)
-	local Pieces = require(script.Parent.Pieces)
-	local arrow = Pieces.Icon("arrow-big-up", Colors.Gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, if label then 0.66 else 0.5),
-		Size = if label then UDim2.fromOffset(52, 52) else UDim2.fromScale(0.8, 0.8), Rotation = 180, Parent = gui })
-	arrow:SetAttribute("KeepColor", true)
 	task.spawn(function()
 		local t0 = os.clock()
-		local baseY = if label then 0.66 else 0.5
 		while gui.Parent and token == markToken and (not model or model.Parent) and os.clock() - t0 < (seconds or math.huge) do
 			local t = os.clock() - t0
-			arrow.Position = UDim2.new(0.5, 0, baseY, math.sin(t * 6) * 8)
+			marker.Position = UDim2.new(0.5, 0, 0, 50 + math.sin(t * 6) * 5)
 			glow.FillTransparency = 0.68 + 0.14 * math.sin(t * 3)
+			-- the distance in metres (a stud is 0.28 m), from your feet to the target, flat. (Prompt 53) Right next to it
+			-- (MARK_NEAR) the marker steps aside: the machine's own sign shows its name there.
+			local feet = rootPart()
+			if feet then
+				local flat = Vector3.new(top.X - feet.Position.X, 0, top.Z - feet.Position.Z).Magnitude
+				local metres = math.floor(flat * 0.28 + 0.5)
+				distance.Text = if metres >= 2 then metres .. "m" else ""
+				gui.Enabled = flat > MARK_NEAR
+			end
+			-- (prompt 53) never under the top bar: when its name would reach above the bar (+ 8 px), the marker hangs lower
+			local camera = Workspace.CurrentCamera
+			if camera and gui.Enabled then
+				local screen, onScreen = camera:WorldToViewportPoint(top)
+				local limit = GuiService.TopbarInset.Max.Y + 8 + gui.AbsoluteSize.Y / 2
+				local drop = 0
+				if onScreen and screen.Y < limit then
+					local studsPerPx = 2 * screen.Z * math.tan(math.rad(camera.FieldOfView) / 2) / camera.ViewportSize.Y
+					drop = (limit - screen.Y) * studsPerPx
+				end
+				anchor.WorldPosition = top - Vector3.new(0, drop, 0)
+			end
 			task.wait()
 		end
 		gui:Destroy()

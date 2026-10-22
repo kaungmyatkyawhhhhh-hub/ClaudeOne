@@ -27,8 +27,9 @@ Guides.StartDelay = 8 -- seconds of play before the first guide (after the menu 
 -- the side menu tiles that open later (SideMenu ids). `when` is the condition in words; `progress` = show "54% there"
 -- toward that Growth Spurt.
 -- (prompt 39b, owner: plain, short, like a gym friend talking to a kid; no slogans, no "legend" / "secret", no "...")
+-- (owner, 23 Oct: SHOP is never locked: open from the first join, no padlock, no NEW badge, no unlock guide. Inside the
+-- Store only a single item may need a level, never a whole tab.)
 Guides.Locks = {
-	{ tile = "Store", need = { spurts = 1 }, when = "Growth Spurt 1", progress = 1, tease = "Spend your coins on boosts and gear." },
 	{ tile = "Emotes", need = { spurts = 1 }, when = "Growth Spurt 1", progress = 1, tease = "Get on stage and flex in front of everyone." },
 	{ tile = "Crew", need = { spurts = 1 }, when = "Growth Spurt 1", progress = 1, tease = "Make a crew with your friends and win shows together." },
 	{ tile = "Trainers", need = { spurts = 2 }, when = "Growth Spurt 2", progress = 2, tease = "Hire a coach who lifts with you. Some are really rare." },
@@ -69,8 +70,6 @@ Guides.List = {
 	-- Growth Spurt 1
 	{ id = "BeachGym", need = { spurts = 1 }, big = true, reward = 25, place = "Gym:Beach", label = "BEACH GYM",
 		lines = { "The BEACH GYM is open! New machines out in the sun.", "Let's go take a look." } },
-	{ id = "Store", need = { spurts = 1 }, tile = "Store", reward = 25,
-		lines = { "The SHOP is open: auras, boosts and coins." } },
 	{ id = "Emotes", need = { spurts = 1 }, tile = "Emotes", reward = 25,
 		lines = { "POSES are open! Learn flexes and show off your muscles." } },
 	{ id = "PosingStage", need = { spurts = 1 }, big = true, reward = 25, place = "Stage", label = "POSING STAGE",

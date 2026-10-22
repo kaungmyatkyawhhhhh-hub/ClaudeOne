@@ -10,6 +10,7 @@ local UIBus = require(ReplicatedStorage.Shared.UI.UIBus)
 local player = Players.LocalPlayer
 local SHINE = { Every = 4, Time = 0.9, Light = Color3.fromRGB(255, 196, 196) }
 local OWN = { Scale = 0.75, Transparency = 0.4 }
+local onMachine = false -- (prompt 53: my own title hides while I'm on a machine)
 
 local function shine(tag, label)
 	local base = Theme.Rarity.Legendary.Fill
@@ -41,7 +42,7 @@ local function styleTag(tag)
 	if not label then return end
 	if tag:GetAttribute("Rarity") == "Legendary" then shine(tag, label) end
 	if tag:GetAttribute("Owner") == player.UserId then
-		tag.Enabled = not UIBus.MenuOpen
+		tag.Enabled = not UIBus.MenuOpen and not onMachine
 		tag.Size = UDim2.fromScale(tag.Size.X.Scale * OWN.Scale, tag.Size.Y.Scale * OWN.Scale)
 		label.TextTransparency = OWN.Transparency
 		local stroke = label:FindFirstChildOfClass("UIStroke")
@@ -101,11 +102,18 @@ end
 Players.PlayerAdded:Connect(watchPlayer)
 for _, other in ipairs(Players:GetPlayers()) do watchPlayer(other) end
 
--- Play: my title comes back
-UIBus.MenuClosed.Event:Connect(function()
+-- Play: my title comes back. (prompt 53, 23 Oct) My own title and ALTER pill hide while I'm on a machine (they showed
+-- through the bar and plates); everyone else still sees them.
+local function applyOwn()
 	local head = player.Character and player.Character:FindFirstChild("Head")
 	if not head then return end
 	for _, tag in ipairs(head:GetChildren()) do
-		if (tag.Name == "TitleTag" or tag.Name == "AlterBadge") and tag:IsA("BillboardGui") then tag.Enabled = true end
+		if (tag.Name == "TitleTag" or tag.Name == "AlterBadge") and tag:IsA("BillboardGui") then tag.Enabled = not UIBus.MenuOpen and not onMachine end
 	end
+end
+UIBus.MenuClosed.Event:Connect(applyOwn)
+ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("MachineState").OnClientEvent:Connect(function(state)
+	if state == "Enter" then onMachine = true elseif state == "Exit" then onMachine = false else return end
+	applyOwn()
 end)
+player.CharacterAdded:Connect(function() onMachine = false end)

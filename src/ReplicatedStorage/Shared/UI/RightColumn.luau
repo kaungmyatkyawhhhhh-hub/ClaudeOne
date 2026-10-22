@@ -121,8 +121,17 @@ local function ensure()
 	-- big screens step aside: the genetics screen and the full-width screens (UIBus.CoverGuis)
 	local playerGui = gui.Parent
 	local geneticsUp = false
+	-- (prompt 53) and while the tutorial runs (only the tutorial on screen); it fades back in when the tutorial ends
+	local tutorialHid = false
 	local function refreshCovered()
-		gui.Enabled = not geneticsUp and not UIBus.MenuOpen and not UIBus.CoverOpen(playerGui)
+		local tutorial = UIBus.InTutorial()
+		local was = gui.Enabled
+		gui.Enabled = not geneticsUp and not UIBus.MenuOpen and not UIBus.CoverOpen(playerGui) and not tutorial
+		if tutorial then tutorialHid = true
+		elseif tutorialHid and gui.Enabled and not was then
+			tutorialHid = false
+			Theme.Fade(column, true, 0.4)
+		end
 	end
 	-- (hidden behind the main menu: MenuClient raises UIBus.MenuOpen when it starts, which can be after this runs)
 	UIBus.MenuClosed.Event:Connect(refreshCovered)

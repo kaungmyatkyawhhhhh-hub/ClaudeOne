@@ -28,6 +28,8 @@ Short on purpose: it is loaded every session. Read other files only when the tas
 - Graphite panels, GothamBlack heavy italic titles, gold gradient (#FFF3C4 > #F6C75A > #C98A12), red only for the main CTA, teal for progress.
 - One pulsing CTA per screen max. Owned = gold stamp. Use `Shared.UI.Theme` / `Shared.UI.Kit`, never hardcoded styles. UI is built in code.
 - Top bar uses TopbarPlus. Left menu: vertically centered on the left, collapsible. Right cards: below the top bar, collapsible.
+- Screen layout (owner, prompt 53): top bar = coins / LVL / daily / settings; under it on the right = SKIP; top centre = the one toast lane (toasts queue, one at a time); bottom centre = GO TO / Coach Dex dialog / stamina; right side = machine controls (one width, even gaps); left = left nav. Nothing in the middle of the screen except the world marker. While the tutorial runs only the tutorial shows (plus coins, LVL, left nav, machine controls).
+- SHOP is never locked (owner, 23 Oct).
 
 ## Bodies
 - Muscle/body system: read `Features\GYM ARC - Muscles and Bodies.md` before touching anything body-related (the owner changed the body himself in Oct; the note may need updating first).
