@@ -461,10 +461,28 @@ end
 --   * Auto Roll: the fast roller (0.6 s) and it closes by itself, unless Legendary or better (the full reveal and the
 --     cinematic; auto roll stops).
 --   * Reduced Motion: no shakes, no camera orbit, no flicker; fades instead.
+--   * (prompt 56, 23 Oct) The card comes alive: no sunburst; each trainer's own animated background (Volta a storm, Duke a
+--     forge, The Shadow smoke and eyes, Atlas clouds, beams and a laurel; Common-Epic the hex in the rarity colour) and a
+--     faint version on the screen behind (Shared/UI/RollCardFX); the art breathes; ReadyGlow's soft glow and travelling
+--     highlight on the outline; it floats and leans toward the mouse / finger; Legendary+ lets particles escape its
+--     edges. The rarity pill glows, the NAME is bigger with a shimmer, the boosts are stat rows (icon + "+35% EXP")
+--     popping in with a tick, NEW! stamps in with a bounce, a dupe's bar fills. The bar: "1 NEW" as a sticker, TAP TO
+--     CONTINUE pulsing, ROLL AGAIN with a coin and a soft red glow; it slides up after the stat rows.
 ------------------------------------------------------------------------
 local RunService = game:GetService("RunService")
 local RollReveal = require(Shared.Config.RollReveal)
+local RollCardFX = require(Shared.UI.RollCardFX)
+local ReadyGlow = require(Shared.UI.ReadyGlow)
+local UIConfig = require(Shared.Config.UI)
+local UserInputService = game:GetService("UserInputService")
 local RR, RT, RV, Screen = RollReveal.Card, RollReveal.Time, RollReveal.Volume, RollReveal.Screen
+-- (prompt 56) the boosts' rows, as in MY TRAINERS: an icon in a colored badge and "+35% EXP" in that color
+local STAT = { gains = { "zap", hex("#5AA8FF"), "EXP" }, coins = { "coin", hex("#F6C75A"), "COINS" }, progress = { "arrow-big-up", hex("#5CE07A"), "PROGRESS" },
+	maxStamina = { "heart-pulse", hex("#FF6A7A"), "MAX STAMINA" }, staminaRegen = { "heart-pulse", hex("#36C2C2"), "STAMINA REGEN" } }
+local function statsHeight(trainer): number
+	local n = math.max(1, #Trainers.PerkLines(trainer))
+	return n * RR.stat + (n - 1) * RR.statGap + 2 * RR.statPad
+end
 
 -- (over the Notifications gui, 50: the tutorial band and toasts wait under it)
 local overlay = Theme.ScreenGui({ Name = "TrainerRoll", DisplayOrder = 52, Enabled = false, Parent = player:WaitForChild("PlayerGui") })
@@ -533,7 +551,9 @@ end
 -- colour from the bottom and a few slow particles drifting up. Made at the start of a reveal, gone at the close.
 local BG = RollReveal.Background
 local background = nil
+local screenTheme = nil -- (prompt 56) the card's theme, faint, on the screen behind (setScreenTheme, below)
 local function removeBackground()
+	if screenTheme then screenTheme:Destroy() screenTheme = nil end
 	if not background then return end
 	background.connection:Disconnect()
 	background.layer:Destroy()
@@ -592,7 +612,7 @@ end
 -- Layout: every card fits between the top bar and the bottom bar (one shared scale for the batch)
 ------------------------------------------------------------------------
 local function cardHeight(result): number
-	local h = RR.pad + RR.art + RR.pill + 2 + RR.name + 2 + RR.perk + RR.bottom
+	local h = RR.pad + RR.art + RR.pill + 2 + RR.name + 2 + statsHeight(Trainers.ById[result.id]) + RR.bottom
 	if result.deleted then
 		h += 4 + RR.dupe
 	elseif not isNewResult(result) then
@@ -631,7 +651,9 @@ local function layout(order): Vector2
 		entry.pos = UDim2.new(0.5, entry.x, 0, centerY - (RollReveal.RarityLift[entry.rarity.id] or 0) * fit)
 		entry.bubble = bubble
 	end
-	return Vector2.new(RR.width * fit, (RR.pad + RR.art + RR.pill + RR.name + RR.perk + RR.bottom) * fit)
+	local tallestSlot = 0
+	for _, entry in ipairs(order) do tallestSlot = math.max(tallestSlot, cardHeight(entry.result)) end
+	return Vector2.new(RR.width * fit, tallestSlot * fit)
 end
 -- a dark slot with a faint dashed outline
 local function dashedSlot(at: UDim2, size: Vector2)
@@ -676,9 +698,11 @@ local function textAlpha(label: TextLabel, alpha: number, time: number?)
 end
 local function makeCard(entry, index: number)
 	local result, trainer, rarity = entry.result, entry.trainer, entry.rarity
-	local accent = hex(rarity.color)
 	local edge = fxColor(rarity)
 	local tier = tierOf(rarity)
+	-- (prompt 56) his theme: the card's background, its glow and highlight, the screen behind (Shared/UI/RollCardFX)
+	local theme = RollCardFX.ThemeFor(trainer, rarity)
+	local themeColor = hex(theme.color)
 	local h = cardHeight(result)
 	local holder = New("Frame", { Name = "Card" .. index, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = entry.pos,
 		Size = UDim2.fromOffset(RR.width, h), Visible = false, ZIndex = 5, Parent = rollRoot })
@@ -687,12 +711,12 @@ local function makeCard(entry, index: number)
 	local pop = New("Frame", { Name = "Pop", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = holder })
 	local popScale = New("UIScale", { Parent = pop })
-	local glowBleed = if rarity.index >= Trainers.RarityById.Mythic.index then 170 elseif tier == 4 then 140 else 100
-	local glow = AlterFX.Image(pop, "rim", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(1, glowBleed, 1, glowBleed), ImageColor3 = edge, ImageTransparency = 1, ZIndex = 4 })
 	local card = New("Frame", { Name = "Card", BackgroundColor3 = Color3.fromHex("#141317"), Size = UDim2.fromScale(1, 1), ZIndex = 5, ClipsDescendants = true,
 		Parent = pop }, { New("UICorner", { CornerRadius = UDim.new(0, RR.corner) }) })
-	New("UIStroke", { Color = edge, Thickness = RR.outline, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = card })
+	local cardEdge = New("UIStroke", { Color = themeColor, Thickness = RR.outline, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = card })
+	-- (prompt 56) the evolve button's glow (Shared/UI/ReadyGlow): a soft glow in the theme colour past the edge and a
+	-- bright highlight travelling round the outline; on when the card comes in
+	local glow = ReadyGlow.New(card, { stroke = cardEdge, pad = if tier == 4 then 30 else 22 })
 	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile,
 		TileSize = UDim2.fromOffset(RR.hexTile.X, RR.hexTile.Y), ImageColor3 = edge:Lerp(Color3.new(1, 1, 1), 0.35), ImageTransparency = RR.hexTransparency,
 		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(0, RR.corner) }) })
@@ -701,52 +725,66 @@ local function makeCard(entry, index: number)
 	local cardInset = math.ceil(RR.corner * 0.3)
 	local cardClip = New("Frame", { Name = "Clip", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(cardInset, cardInset),
 		Size = UDim2.new(1, -2 * cardInset, 1, -2 * cardInset), ZIndex = 5, Parent = card })
-	-- the sunburst from his chest (turning on Legendary+)
-	local artMid = (RR.pad + RR.art * 0.42) / h
-	local rays = New("Frame", { Name = "Rays", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, artMid),
-		Size = UDim2.fromOffset(RR.width * 2.2, RR.width * 2.2), ZIndex = 5, Parent = cardClip })
-	for i = 0, RR.rays - 1 do
-		New("Frame", { BackgroundColor3 = edge, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, 22, 1, 0), Rotation = i * 180 / RR.rays, BackgroundTransparency = RR.raysTransparency, ZIndex = 5, Parent = rays }, {
-			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0),
-				NumberSequenceKeypoint.new(1, 1) }) }),
-		})
-	end
-	AlterFX.Image(cardClip, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, artMid), Size = UDim2.new(1.3, 0, 0, RR.art * 1.05),
-		ImageColor3 = accent, ImageTransparency = 0.55, ZIndex = 5 })
-	TrainerPortrait.Art(trainer.id, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, RR.pad), Size = UDim2.new(RR.artWidth, 0, 0, RR.art),
+	-- (prompt 56: no more sunburst) his art (it breathes) on his theme's animated background (Shared/UI/RollCardFX)
+	local art = TrainerPortrait.Art(trainer.id, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, RR.pad), Size = UDim2.new(RR.artWidth, 0, 0, RR.art),
 		ZIndex = 6, Parent = card })
+	local fx = RollCardFX.Card({ card = card, clip = cardClip, pop = pop, art = art, size = Vector2.new(RR.width, h), artTop = RR.pad, artHeight = RR.art,
+		artWidth = RR.artWidth, theme = theme, escape = tier == 4 })
 	local y = RR.pad + RR.art
 	-- the rarity pill: near black, the rarity name in its color
 	local pillPos = UDim2.new(0.5, 0, 0, y)
 	local pill = New("Frame", { Name = "Rarity", BackgroundColor3 = Color3.fromHex("#0B0A0D"), AnchorPoint = Vector2.new(0.5, 0), Position = pillPos,
 		Size = UDim2.new(0.62, 0, 0, RR.pill), ZIndex = 7, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 	local pillEdge = New("UIStroke", { Color = edge, Thickness = 1.5, Parent = pill })
+	-- (prompt 56) the pill glows in its colour (a soft glow just behind it, breathing in the hold)
+	local pillGlow = New("ImageLabel", { Name = "RarityGlow", BackgroundTransparency = 1, Image = UIConfig.SoftGlow, ImageColor3 = edge, ImageTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, y + RR.pill / 2), Size = UDim2.new(0.62, 46, 0, RR.pill + 30), ZIndex = 6, Parent = card })
 	local pillText = Kit.Text({ Name = "Text", Text = string.upper(rarity.name), Font = "Chunky", TextSize = RR.textSizes.pill, TextColor3 = edge, Size = UDim2.fromScale(1, 1),
 		ZIndex = 8, Parent = pill })
 	strokeOf(pillText).Color = INK
 	y += RR.pill + 2
 	-- the NAME: white chunky with a dark stroke (on the pop, so the slam isn't clipped)
 	local nameLabel = New("TextLabel", { Name = "Name", BackgroundTransparency = 1, Text = string.upper(trainer.name), FontFace = LUCKIEST, TextScaled = true,
-		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, y + RR.name / 2), Size = UDim2.new(1, -16, 0, RR.name),
+		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, y + RR.name / 2), Size = UDim2.new(1, -12, 0, RR.name),
 		ZIndex = 9, Parent = pop })
-	local nameStroke = New("UIStroke", { Thickness = 2.5, Color = INK, Parent = nameLabel })
+	local nameStroke = New("UIStroke", { Thickness = 3, Color = INK, Parent = nameLabel })
 	local nameScale = New("UIScale", { Parent = nameLabel })
-	local shimmer = nil
-	if tier == 4 then
-		shimmer = New("UIGradient", { Name = "Shimmer", Offset = Vector2.new(-1.2, 0), Rotation = 20, Parent = nameLabel,
-			Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(0.42, Color3.new(1, 1, 1)),
-				ColorSequenceKeypoint.new(0.5, GOLD), ColorSequenceKeypoint.new(0.58, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)) }) })
-	end
+	-- (prompt 56) every name: a shimmer sweeps across once (gold on Legendary+, his theme colour below)
+	local band = if tier == 4 then GOLD else themeColor:Lerp(Color3.new(1, 1, 1), 0.35)
+	local shimmer = New("UIGradient", { Name = "Shimmer", Offset = Vector2.new(-1.2, 0), Rotation = 20, Parent = nameLabel,
+		Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(0.42, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(0.5, band), ColorSequenceKeypoint.new(0.58, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)) }) })
 	y += RR.name + 2
-	-- his boost: gold, stroked
-	local perk = Kit.Text({ Name = "Perk", Text = trainer.perkText, Font = "Chunky", TextSize = RR.textSizes.perk, AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, y), Size = UDim2.new(1, -14, 0, RR.perk), ZIndex = 8, Parent = card })
-	Kit.Fit(perk, RR.textSizes.perk, 9)
-	Kit.GoldText(perk)
-	y += RR.perk
+	-- (prompt 56) his boosts: one row per stat (an icon in a colored badge, "+35% EXP" in that color) in a dark box
+	local statsH = statsHeight(trainer)
+	local statBox = New("Frame", { Name = "Boosts", BackgroundColor3 = Color3.fromHex("#0B0A0D"), BackgroundTransparency = 0.25, AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, y), Size = UDim2.new(0.86, 0, 0, statsH), ZIndex = 7, Parent = card }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Color = Color3.fromHex("#2E2B33"), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	local statRows = {}
+	for i, line in ipairs(Trainers.PerkLines(trainer)) do
+		local look = STAT[line.kind] or STAT.gains
+		local row = New("Frame", { Name = "Row" .. i, BackgroundTransparency = 1, Position = UDim2.fromOffset(8, RR.statPad + (i - 1) * (RR.stat + RR.statGap)),
+			Size = UDim2.new(1, -16, 0, RR.stat), Visible = false, ZIndex = 8, Parent = statBox })
+		local rowScale = New("UIScale", { Parent = row })
+		local badge = New("Frame", { Name = "Badge", BackgroundColor3 = look[2], AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5),
+			Size = UDim2.fromOffset(RR.stat - 3, RR.stat - 3), ZIndex = 8, Parent = row }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = INK, Thickness = 1.2 }),
+		})
+		local icon = Pieces.Icon(look[1], INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.68, 0.68), ZIndex = 9,
+			Parent = badge })
+		icon:SetAttribute("KeepColor", true)
+		local text = Kit.Text({ Name = "Text", Text = "+" .. line.pct .. "% " .. look[3], Font = "Chunky", TextSize = RR.textSizes.stat, TextColor3 = look[2],
+			Position = UDim2.fromOffset(RR.stat + 3, 0), Size = UDim2.new(1, -(RR.stat + 3), 1, 0), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9, Parent = row })
+		Kit.Fit(text, RR.textSizes.stat, 9)
+		strokeOf(text).Color = INK
+		statRows[i] = { row = row, scale = rowScale }
+	end
+	y += statsH
 	-- a dupe: "X2 · 2/3 TO IRON-BORN" in a small pill with a bar under it (the next evolution, always its real name)
-	local dupePill, setDupe, dupeShare = nil, nil, 0
+	local dupePill, setDupe, dupeShare, dupeFill = nil, nil, 0, nil
 	if result.deleted or not isNewResult(result) then
 		local text
 		if result.deleted then
@@ -768,7 +806,7 @@ local function makeCard(entry, index: number)
 		Kit.Fit(t, RR.textSizes.dupe, 7)
 		if not result.deleted then
 			local _bar
-			_bar, setDupe = Kit.Bar(GOLD, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, y + 4 + RR.dupe + 3), Size = UDim2.new(0.6, 0, 0, RR.dupeBar),
+			_bar, setDupe, dupeFill = Kit.Bar(GOLD, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, y + 4 + RR.dupe + 3), Size = UDim2.new(0.6, 0, 0, RR.dupeBar),
 				ZIndex = 7, Parent = card })
 			setDupe(0)
 		end
@@ -807,96 +845,178 @@ local function makeCard(entry, index: number)
 	textAlpha(pillText, 1)
 	pill.Position = pillPos - UDim2.fromOffset(30, 0)
 	nameLabel.Visible = false
-	textAlpha(perk, 1)
+	statBox.BackgroundTransparency = 1
 	if dupePill then dupePill.Visible = false end
-	return { entry = entry, holder = holder, pop = pop, popScale = popScale, glow = glow, card = card, rays = rays, pill = pill, pillPos = pillPos, pillEdge = pillEdge,
-		pillText = pillText, name = nameLabel, nameStroke = nameStroke, nameScale = nameScale, shimmer = shimmer, perk = perk, dupePill = dupePill, setDupe = setDupe,
-		dupeShare = dupeShare, sticker = sticker, shade = shade, bubble = bubble, rarity = rarity, trainer = trainer, tier = tier, pos = entry.pos,
-		glowBase = if rarity.index >= Trainers.RarityById.Mythic.index then 0.05 elseif tier == 4 then 0.12 else 0.25 }
+	return { entry = entry, holder = holder, pop = pop, popScale = popScale, glow = glow, card = card, pill = pill, pillPos = pillPos, pillEdge = pillEdge,
+		pillText = pillText, pillGlow = pillGlow, name = nameLabel, nameStroke = nameStroke, nameScale = nameScale, shimmer = shimmer, statBox = statBox, statRows = statRows,
+		dupePill = dupePill, setDupe = setDupe, dupeFill = dupeFill, dupeShare = dupeShare, sticker = sticker, shade = shade, bubble = bubble, rarity = rarity,
+		trainer = trainer, tier = tier, pos = entry.pos, fx = fx, theme = theme, themeColor = themeColor, tiltX = 0, tiltY = 0 }
 end
 
--- the rows come in top to bottom (instant = all at once: a skip)
-local function dress(card, instant: boolean)
-	if card.dressed then return end
+-- the rows come in top to bottom (instant = all at once: a skip; quick = Auto Roll, at 40% of the time). -> how long it takes
+-- (prompt 56) pill (its glow on), the NAME slams in and a shimmer sweeps across it once, the NEW! sticker stamps in with a
+-- bounce, the stat rows pop in one by one with a tick each, then a dupe's bar fills
+local function dress(card, instant: boolean, quick: boolean?): number
+	if card.dressed then return 0 end
 	card.dressed = true
+	card.dressedAt = os.clock()
 	local rarity = card.rarity
+	local k = if quick then 0.4 else 1
 	local function pillIn(t)
 		tween(card.pill, { Position = card.pillPos, BackgroundTransparency = 0 }, t, Enum.EasingStyle.Back)
 		tween(card.pillEdge, { Transparency = 0 }, t)
 		textAlpha(card.pillText, 0, t)
 	end
-	local function perkIn(t)
-		local at = card.perk.Position
-		card.perk.Position = at + UDim2.fromOffset(0, 6)
-		tween(card.perk, { Position = at }, t)
-		textAlpha(card.perk, 0, t)
+	local function rowIn(row, t)
+		row.row.Visible = true
+		if t <= 0 then
+			row.scale.Scale = 1
+			return
+		end
+		row.scale.Scale = 0.3
+		tween(row.scale, { Scale = 1 }, t, Enum.EasingStyle.Back)
 	end
 	local function dupeIn(t)
 		if card.dupePill then card.dupePill.Visible = true end
-		if card.setDupe then card.setDupe(card.dupeShare) end
+		if not card.setDupe then return end
+		card.setDupe(card.dupeShare)
+		if t > 0 and card.dupeFill and card.dupeShare > 0 then
+			card.dupeFill.Size = UDim2.new(0, 0, 1, 0)
+			tween(card.dupeFill, { Size = UDim2.new(card.dupeShare, 0, 1, 0) }, t, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+		end
 	end
 	if instant then
+		card.dressedAt = os.clock() - 1
 		pillIn(0.05)
 		card.name.Visible = true
 		card.nameScale.Scale = 1
-		perkIn(0.05)
+		card.statBox.BackgroundTransparency = 0.25
+		for _, row in ipairs(card.statRows) do rowIn(row, 0) end
 		if card.sticker then card.sticker.Visible = true end
 		dupeIn(0)
-		return
+		return 0
 	end
-	local stagger = RT.dressStagger
-	pillIn(0.18)
+	pillIn(0.18 * k)
 	Audio.PlayUI("Click", { volume = RV.pillClick })
-	task.delay(stagger, function()
-		-- the name slams in with a stroke flash
+	task.delay(RT.nameAt * k, function()
+		-- the name slams in with a stroke flash, then the shimmer sweeps across once
 		card.name.Visible = true
 		card.nameScale.Scale = 1.3
 		card.nameStroke.Color = Color3.new(1, 1, 1)
 		tween(card.nameScale, { Scale = 1 }, 0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 		task.delay(0.14, function() tween(card.nameStroke, { Color = INK }, 0.2) end)
 		sfx("Stamp", rarity, RV.nameStamp, { pitch = 0.9 + rarity.index * 0.05 })
-		if card.shimmer then
-			task.delay(0.25, function() tween(card.shimmer, { Offset = Vector2.new(1.2, 0) }, 0.6, Enum.EasingStyle.Sine) end)
-		end
+		task.delay(0.2, function() tween(card.shimmer, { Offset = Vector2.new(1.2, 0) }, 0.7, Enum.EasingStyle.Sine) end)
 	end)
-	task.delay(stagger * 2, function() perkIn(0.25) end)
-	task.delay(stagger * 3, function()
+	task.delay(RT.stickerAt * k, function()
 		if not card.sticker then return end
+		-- NEW! stamps in: from nothing, overshooting, a little bounce back
 		local scale = card.sticker:FindFirstChildOfClass("UIScale")
 		card.sticker.Visible = true
-		card.sticker.Rotation = -32
-		scale.Scale = 2
-		tween(scale, { Scale = 1 }, 0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		tween(card.sticker, { Rotation = -12 }, 0.16)
-		task.delay(0.15, function() sfx("Stamp", rarity, RV.sticker, { pitch = 0.75 }) end)
+		card.sticker.Rotation = -40
+		scale.Scale = 0
+		tween(scale, { Scale = 1 }, 0.4, Enum.EasingStyle.Back)
+		tween(card.sticker, { Rotation = -12 }, 0.4, Enum.EasingStyle.Back)
+		task.delay(0.08, function() sfx("Stamp", rarity, RV.sticker, { pitch = 0.75 }) end)
 	end)
-	task.delay(stagger * 4, function()
-		dupeIn()
+	local rowsAt = RT.rowsAt * k
+	task.delay(math.max(0, rowsAt - 0.1), function() tween(card.statBox, { BackgroundTransparency = 0.25 }, 0.2) end)
+	for i, row in ipairs(card.statRows) do
+		task.delay(rowsAt + (i - 1) * RT.rowStagger * k, function()
+			rowIn(row, 0.22)
+			Audio.PlayUI("Click", { volume = RV.rowTick, pitch = 1.05 + i * 0.12 })
+		end)
+	end
+	local rowsEnd = rowsAt + #card.statRows * RT.rowStagger * k
+	if not card.dupePill then return rowsEnd end
+	task.delay(rowsEnd, function()
+		dupeIn(RT.dupeFill * k)
 		if card.setDupe then
-			for i = 1, 3 do task.delay((i - 1) * 0.07, function() Audio.PlayUI("Click", { volume = RV.barTick, pitch = 1.2 + i * 0.1 }) end) end
+			for i = 1, 3 do task.delay((i - 1) * 0.12 * k, function() Audio.PlayUI("Click", { volume = RV.barTick, pitch = 1.2 + i * 0.1 }) end) end
 		end
 	end)
+	return rowsEnd + RT.dupeFill * k
 end
 
--- the hold: every revealed card floats (+-4 px, 2 s), its glow breathes (prompt 55: nothing turns)
+-- (prompt 56) the screen behind takes the theme of the card that came in last (a batch: the best), faintly
+-- (Shared/UI/RollCardFX: Volta's lightning lights up the dark world, The Shadow's smoke ...)
+local function setScreenTheme(theme)
+	if not background then return end
+	if screenTheme then screenTheme:Destroy() end
+	screenTheme = RollCardFX.Screen(background.layer, theme, { flash = function(light: number)
+		dim.BackgroundTransparency = BG.dim + (1 - BG.dim) * 0.4 * light
+	end })
+	backgroundColor(hex(theme.color))
+end
+
+-- the hold: every revealed card floats (+-4 px, 2 s); (prompt 56) it leans a little toward the mouse / finger (a slow
+-- sway when there's none: phones), its theme moves, the pill's glow breathes, the screen's theme moves. Reduced Motion:
+-- no lean, no sway.
+local pointer, pointerAt = nil, 0
+local pointerConnections = {}
+local function trackPointer(input: InputObject)
+	local kind = input.UserInputType
+	if kind == Enum.UserInputType.MouseMovement or kind == Enum.UserInputType.Touch then
+		-- (input positions start under the top bar; the reveal's gui ignores it)
+		pointer, pointerAt = Vector2.new(input.Position.X, input.Position.Y + game:GetService("GuiService"):GetGuiInset().Y), os.clock()
+	end
+end
+local function stopHold()
+	if holdConnection then holdConnection:Disconnect() holdConnection = nil end
+	for _, c in ipairs(pointerConnections) do c:Disconnect() end
+	table.clear(pointerConnections)
+	pointer = nil
+end
 local function startHold()
 	if holdConnection then return end
+	local AL = RollReveal.Alive
+	local reduced = Theme.ReducedMotion()
+	table.insert(pointerConnections, UserInputService.InputChanged:Connect(trackPointer))
+	table.insert(pointerConnections, UserInputService.InputBegan:Connect(trackPointer))
 	local t0 = os.clock()
+	local last = t0
 	holdConnection = RunService.Heartbeat:Connect(function()
-		local t = os.clock() - t0
+		local now = os.clock()
+		local t, dt = now - t0, now - last
+		last = now
+		local follow = math.min(1, dt * AL.tiltSpeed)
+		local half = rollRoot.AbsoluteSize / 2
 		for i, card in ipairs(cards) do
 			if card.settled and card.holder.Parent then
 				local phase = i * 0.7
-				card.holder.Position = card.pos + UDim2.fromOffset(0, math.sin((t + phase) * 2 * math.pi / RT.floatPeriod) * RT.floatPx)
-				card.glow.ImageTransparency = card.glowBase + 0.12 * (0.5 + 0.5 * math.sin((t + phase) * 2.4))
+				local tx, ty = 0, 0
+				if not reduced then
+					if pointer and now - pointerAt < 4 then
+						local c = card.holder.AbsolutePosition + card.holder.AbsoluteSize / 2
+						tx = math.clamp((pointer.X - c.X) / math.max(half.X, 1), -1, 1)
+						ty = math.clamp((pointer.Y - c.Y) / math.max(half.Y, 1), -1, 1)
+					else
+						tx = AL.idleSway * math.sin(t * 0.6 + phase)
+						ty = AL.idleSway * 0.5 * math.sin(t * 0.45 + phase * 1.3)
+					end
+				end
+				card.tiltX += (tx - card.tiltX) * follow
+				card.tiltY += (ty - card.tiltY) * follow
+				local float = math.sin((t + phase) * 2 * math.pi / RT.floatPeriod) * RT.floatPx
+				card.holder.Position = card.pos + UDim2.fromOffset(card.tiltX * AL.tiltPx, float + card.tiltY * AL.tiltPx * 0.6)
+				card.fx:Tilt(card.tiltX, card.tiltY)
+				card.fx:Step(t, dt)
+				-- the pill's glow fades in with the pill, then breathes
+				if card.dressedAt then
+					local on = math.clamp((now - card.dressedAt) / 0.4, 0, 1)
+					local breathe = AL.pillGlow + 0.25 * (0.5 + 0.5 * math.sin(t * 2.2 + phase))
+					card.pillGlow.ImageTransparency = 1 - on * (1 - breathe)
+				end
 			end
 		end
+		if screenTheme then screenTheme:Step(t) end
 	end)
 end
 local function settle(card)
 	card.settled = true
 	card.holder.Visible = true
 	if card.bubble then card.bubble.Visible = true end
+	setScreenTheme(card.theme)
 	startHold()
 	-- the hum in this card's mood
 	if humSound then AlterFX.FadeOut(humSound, 0.3) end
@@ -1024,7 +1144,7 @@ end
 -- the card slides up into place (from where the roller's name was)
 local function cardIn(card, instant: boolean)
 	card.holder.Visible = true
-	tween(card.glow, { ImageTransparency = card.glowBase }, RT.cardIn)
+	card.glow:Set(true, card.themeColor)
 	if instant then
 		card.popScale.Scale = 1
 		return
@@ -1056,14 +1176,43 @@ local bar = New("Frame", { Name = "Bar", BackgroundColor3 = Color3.fromHex("#141
 	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
 	New("UIStroke", { Color = GOLD, Thickness = 1.5, Transparency = 0.45 }),
 })
-local summary = Kit.Text({ Name = "Summary", Text = "", Font = "Chunky", TextSize = 18, Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -300, 0, 24),
-	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 41, Parent = bar })
-Kit.Fit(summary, 18, 10)
-local continueText = Kit.Text({ Name = "Continue", Text = "TAP TO CONTINUE", Font = "Title", TextSize = 12, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(14, 31),
+-- (prompt 56) "1 NEW" in the NEW! sticker's style (gold, white stroked words, tilted), then "· 2 DUPES" in white
+local summary = New("Frame", { Name = "Summary", BackgroundTransparency = 1, Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -300, 0, 26), ZIndex = 41,
+	Parent = bar }, {
+	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+local summarySticker = New("Frame", { Name = "NewSticker", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(0, 22), AutomaticSize = Enum.AutomaticSize.X,
+	Rotation = -6, LayoutOrder = 1, ZIndex = 41, Parent = summary }, {
+	New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+	New("UIGradient", { Rotation = 90, Color = Theme.GoldSequence }),
+	New("UIStroke", { Color = INK, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+})
+local summaryNew = Kit.Text({ Name = "Text", Text = "", Font = "Chunky", TextSize = 16, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.new(0, 0, 1, 0),
+	AutomaticSize = Enum.AutomaticSize.X, ZIndex = 42, Parent = summarySticker })
+strokeOf(summaryNew).Color = INK
+local summaryDupes = Kit.Text({ Name = "Dupes", Text = "", Font = "Chunky", TextSize = 16, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.new(0, 0, 1, 0),
+	AutomaticSize = Enum.AutomaticSize.X, LayoutOrder = 2, ZIndex = 41, Parent = summary })
+strokeOf(summaryDupes).Color = INK
+-- (prompt 56) TAP TO CONTINUE in white, pulsing gently
+local continueText = Kit.Text({ Name = "Continue", Text = "TAP TO CONTINUE", Font = "Title", TextSize = 12, TextColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(14, 32),
 	Size = UDim2.new(1, -300, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 41, Parent = bar })
 local againButton = Theme.Button("Red", { Name = "Again", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -128, 0.5, 0), Size = UDim2.fromOffset(150, 44),
 	ZIndex = 41, Parent = bar }, {})
 local _againBig, againSmall = twoLines(againButton, "ROLL AGAIN", "", 15)
+-- (prompt 56) the price with a coin in front, a soft red glow round the button (the screen's one pulsing CTA; it presses
+-- in like every button, Theme.BindPress)
+local againPrice = New("Frame", { Name = "Price", BackgroundTransparency = 1, Position = againSmall.Position, Size = againSmall.Size, ZIndex = 6, Parent = againButton }, {
+	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+local againCoin = Kit.Coin(13, { LayoutOrder = 1, ZIndex = 7, Parent = againPrice })
+againSmall.Size = UDim2.new(0, 0, 1, 0)
+againSmall.AutomaticSize = Enum.AutomaticSize.X
+againSmall.LayoutOrder = 2
+againSmall.Parent = againPrice
+local againGlow = ReadyGlow.New(againButton, { pad = 14 })
 local closeButton = Kit.Button("Dark", "Close", { Name = "Close", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), ZIndex = 41, Parent = bar },
 	{ width = 112, height = 44, textSize = 15 })
 New("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 1.5, Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = closeButton })
@@ -1080,26 +1229,35 @@ local function showBar(order)
 	for _, entry in ipairs(order) do
 		if isNewResult(entry.result) then new += 1 else dupes += 1 end
 	end
-	local parts = {}
-	if new > 0 then table.insert(parts, new .. " NEW") end
-	if dupes > 0 then table.insert(parts, dupes .. (if dupes == 1 then " DUPE" else " DUPES")) end
-	summary.Text = table.concat(parts, " · ")
+	summarySticker.Visible = new > 0
+	summaryNew.Text = new .. " NEW"
+	summaryDupes.Visible = dupes > 0
+	summaryDupes.Text = (if new > 0 then "· " else "") .. dupes .. (if dupes == 1 then " DUPE" else " DUPES")
 	local ok, priceText = againState()
 	againSmall.Text = priceText
 	againSmall.TextColor3 = GOLD
+	againCoin.Visible = priceText ~= "FREE" and string.sub(priceText, 1, 5) ~= "SPURT" -- (a price: the coin; FREE / SPURT 2: none)
 	Theme.SetButtonStyle(againButton, if ok then "Red" else "Disabled")
+	againGlow:Set(ok, Colors.Red)
 	bar.Visible = true
 	bar.Position = UDim2.new(0.5, 0, 1, 10)
 	tween(bar, { Position = UDim2.new(0.5, 0, 1, -(Screen.barHeight + 8)) }, 0.3, Enum.EasingStyle.Back)
 	Audio.PlayUI("Whoosh", { volume = RV.swoosh })
+	if ok then Theme.Shine(againButton, 0.35) end
 	task.spawn(function()
+		local reduced = Theme.ReducedMotion()
 		while bar.Visible do
-			tween(continueText, { TextTransparency = 0.6 }, 0.6)
-			task.wait(0.6)
-			tween(continueText, { TextTransparency = 0 }, 0.6)
-			task.wait(0.6)
+			if reduced then
+				continueText.TextTransparency = 0.1
+				task.wait(0.3)
+			else
+				tween(continueText, { TextTransparency = 0.55 }, 0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+				task.wait(0.9)
+				tween(continueText, { TextTransparency = 0.05 }, 0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+				task.wait(0.9)
+			end
 		end
-		continueText.TextTransparency = 0
+		continueText.TextTransparency = 0.05
 	end)
 end
 againButton.Activated:Connect(function()
@@ -1174,6 +1332,7 @@ local function play(results, quick: boolean)
 		if entry.rarity.index >= Trainers.RarityById.Mythic.index and isNewResult(entry.result) then firstRare = true end
 	end
 	if firstRare then skipLockUntil = os.clock() + RollReveal.Cinematic.unskippable end
+	local dressEnd = 0 -- (prompt 56) when the last card's stat rows and dupe bar are done (the bar comes after)
 	-- one card at a time, left to right (lowest first): the roller, the cinematic (Legendary+), the card
 	for i, card in ipairs(cards) do
 		if skip then break end
@@ -1195,16 +1354,19 @@ local function play(results, quick: boolean)
 			hideRoller(0.2)
 		end
 		cardIn(card, false)
-		dress(card, false)
+		local took = dress(card, false, fast)
+		dressEnd = os.clock() + took
 		settle(card)
 		if i < #cards then
-			if not wait_(RT.dress) then break end
+			-- (prompt 56) the next roller waits for this card's stat rows
+			if not wait_(math.max(RT.dress, took)) then break end
 		end
 	end
 	if skip then
 		-- every card not done yet: a quick pop each (one combined pop-pop-pop)
 		RollCinematic.Stop()
 		hideRoller(0)
+		dressEnd = 0
 		whiteFlash.BackgroundTransparency = 1
 		dim.BackgroundTransparency = RollReveal.Background.dim
 		spotlight.ImageTransparency = 0.9
@@ -1214,7 +1376,7 @@ local function play(results, quick: boolean)
 				card.holder.Visible = true
 				card.popScale.Scale = 0.6
 				tween(card.popScale, { Scale = 1 }, RT.skipPop, Enum.EasingStyle.Back)
-				card.glow.ImageTransparency = card.glowBase
+				card.glow:Set(true, card.themeColor)
 				dress(card, true)
 				settle(card)
 				task.delay(n * 0.07, function() Audio.PlayUI("GeneticsPop", { volume = RV.pop }) end)
@@ -1235,9 +1397,12 @@ local function play(results, quick: boolean)
 	if fast then
 		busy = false
 		local t1 = os.clock()
-		while os.clock() - t1 < RT.autoClose and not closeWanted do task.wait() end
+		while (os.clock() - t1 < RT.autoClose or os.clock() < dressEnd) and not closeWanted do task.wait() end
 		closeWanted = true
 	else
+		-- (prompt 56) the bar slides up after the stat rows (a tap: at once)
+		while os.clock() < dressEnd and not skip do task.wait() end
+		skip = false
 		task.wait(RT.beforeBar)
 		fanfare(bestRarity)
 		showBar(order)
@@ -1258,7 +1423,7 @@ local function play(results, quick: boolean)
 	task.wait(0.2)
 	overlay.Enabled = false
 	bar.Visible = false
-	if holdConnection then holdConnection:Disconnect() holdConnection = nil end
+	stopHold() -- (prompt 56: every effect stops with it)
 	for _, c in ipairs(cards) do c.holder:Destroy() end
 	for _, s in ipairs(slots) do s:Destroy() end
 	cards, slots = {}, {}
